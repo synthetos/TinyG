@@ -9,23 +9,23 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, DATA
   2 .bss          000003f8  0080211c  0080211c  0000890a  2**0
                   ALLOC
-  3 .debug_aranges 00000320  00000000  00000000  0000890a  2**0
+  3 .debug_aranges 00000240  00000000  00000000  0000890a  2**0
                   CONTENTS, READONLY, DEBUGGING
-  4 .debug_pubnames 00000c02  00000000  00000000  00008c2a  2**0
+  4 .debug_pubnames 00000afc  00000000  00000000  00008b4a  2**0
                   CONTENTS, READONLY, DEBUGGING
-  5 .debug_info   000074e1  00000000  00000000  0000982c  2**0
+  5 .debug_info   000064e9  00000000  00000000  00009646  2**0
                   CONTENTS, READONLY, DEBUGGING
-  6 .debug_abbrev 00002435  00000000  00000000  00010d0d  2**0
+  6 .debug_abbrev 00001be1  00000000  00000000  0000fb2f  2**0
                   CONTENTS, READONLY, DEBUGGING
-  7 .debug_line   0000462f  00000000  00000000  00013142  2**0
+  7 .debug_line   000036ee  00000000  00000000  00011710  2**0
                   CONTENTS, READONLY, DEBUGGING
-  8 .debug_frame  000009a0  00000000  00000000  00017774  2**2
+  8 .debug_frame  000008c0  00000000  00000000  00014e00  2**2
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_str    000021ff  00000000  00000000  00018114  2**0
+  9 .debug_str    00001fda  00000000  00000000  000156c0  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_loc    0000383d  00000000  00000000  0001a313  2**0
+ 10 .debug_loc    000029f3  00000000  00000000  0001769a  2**0
                   CONTENTS, READONLY, DEBUGGING
- 11 .debug_ranges 00000128  00000000  00000000  0001db50  2**0
+ 11 .debug_ranges 00000068  00000000  00000000  0001a08d  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -6273,7 +6273,7 @@ int mc_arc(double theta, double angular_travel, double radius, double linear_tra
 void spindle_init()
 {
 	SPINDLE_ENABLE_PORT.DIRSET = SPINDLE_ENABLE_BIT_bm;
-    44e8:	e0 e6       	ldi	r30, 0x60	; 96
+    44e8:	e0 e0       	ldi	r30, 0x00	; 0
     44ea:	f6 e0       	ldi	r31, 0x06	; 6
     44ec:	80 e4       	ldi	r24, 0x40	; 64
     44ee:	81 83       	std	Z+1, r24	; 0x01
@@ -6292,20 +6292,20 @@ void spindle_run(int direction, uint32_t rpm)
     44f8:	05 c0       	rjmp	.+10     	; 0x4504 <spindle_run+0xe>
     	SPINDLE_DIRECTION_PORT.OUTSET = SPINDLE_DIRECTION_BIT_bm;
     44fa:	80 e8       	ldi	r24, 0x80	; 128
-    44fc:	e0 e6       	ldi	r30, 0x60	; 96
+    44fc:	e0 e0       	ldi	r30, 0x00	; 0
     44fe:	f6 e0       	ldi	r31, 0x06	; 6
     4500:	85 83       	std	Z+5, r24	; 0x05
     4502:	04 c0       	rjmp	.+8      	; 0x450c <spindle_run+0x16>
 	} else {
     	SPINDLE_DIRECTION_PORT.OUTCLR = SPINDLE_DIRECTION_BIT_bm;
     4504:	80 e8       	ldi	r24, 0x80	; 128
-    4506:	e0 e6       	ldi	r30, 0x60	; 96
+    4506:	e0 e0       	ldi	r30, 0x00	; 0
     4508:	f6 e0       	ldi	r31, 0x06	; 6
     450a:	86 83       	std	Z+6, r24	; 0x06
 	}
 	SPINDLE_ENABLE_PORT.OUTSET = SPINDLE_ENABLE_BIT_bm;
     450c:	80 e4       	ldi	r24, 0x40	; 64
-    450e:	e0 e6       	ldi	r30, 0x60	; 96
+    450e:	e0 e0       	ldi	r30, 0x00	; 0
     4510:	f6 e0       	ldi	r31, 0x06	; 6
     4512:	85 83       	std	Z+5, r24	; 0x05
 }
@@ -6317,7 +6317,7 @@ void spindle_stop()
 {
 	SPINDLE_ENABLE_PORT.OUTCLR = SPINDLE_ENABLE_BIT_bm;
     4516:	80 e4       	ldi	r24, 0x40	; 64
-    4518:	e0 e6       	ldi	r30, 0x60	; 96
+    4518:	e0 e0       	ldi	r30, 0x00	; 0
     451a:	f6 e0       	ldi	r31, 0x06	; 6
     451c:	86 83       	std	Z+6, r24	; 0x06
 }
@@ -6338,7 +6338,7 @@ void st_init()
     4528:	10 92 9f 21 	sts	0x219F, r1
 
 	ax.a[X_AXIS].port = &X_MOTOR_PORT;				// bind PORTs to structs
-    452c:	80 e0       	ldi	r24, 0x00	; 0
+    452c:	80 e6       	ldi	r24, 0x60	; 96
     452e:	96 e0       	ldi	r25, 0x06	; 6
     4530:	80 93 ae 21 	sts	0x21AE, r24
     4534:	90 93 af 21 	sts	0x21AF, r25
@@ -6353,7 +6353,7 @@ void st_init()
     4548:	80 93 cc 21 	sts	0x21CC, r24
     454c:	90 93 cd 21 	sts	0x21CD, r25
 	ax.a[A_AXIS].port = &A_MOTOR_PORT;
-    4550:	80 e6       	ldi	r24, 0x60	; 96
+    4550:	80 e0       	ldi	r24, 0x00	; 0
     4552:	96 e0       	ldi	r25, 0x06	; 6
     4554:	80 93 db 21 	sts	0x21DB, r24
     4558:	90 93 dc 21 	sts	0x21DC, r25
@@ -6915,7 +6915,7 @@ ISR(A_TIMER_vect)
 		return;
 	}
 	A_MOTOR_PORT.OUTSET = STEP_BIT_bm;
-    48ae:	e0 e6       	ldi	r30, 0x60	; 96
+    48ae:	e0 e0       	ldi	r30, 0x00	; 0
     48b0:	f6 e0       	ldi	r31, 0x06	; 6
     48b2:	81 e0       	ldi	r24, 0x01	; 1
     48b4:	85 83       	std	Z+5, r24	; 0x05
@@ -6959,7 +6959,7 @@ ISR(A_TIMER_vect)
 	STEPPER_DELAY
 	A_MOTOR_PORT.OUTCLR = STEP_BIT_bm;
     490e:	81 e0       	ldi	r24, 0x01	; 1
-    4910:	e0 e6       	ldi	r30, 0x60	; 96
+    4910:	e0 e0       	ldi	r30, 0x00	; 0
     4912:	f6 e0       	ldi	r31, 0x06	; 6
     4914:	86 83       	std	Z+6, r24	; 0x06
 }
@@ -7230,7 +7230,7 @@ ISR(X_TIMER_vect)
 		return;
 	}
 	X_MOTOR_PORT.OUTSET = STEP_BIT_bm;			// turn X step bit on
-    4b0c:	e0 e0       	ldi	r30, 0x00	; 0
+    4b0c:	e0 e6       	ldi	r30, 0x60	; 96
     4b0e:	f6 e0       	ldi	r31, 0x06	; 6
     4b10:	81 e0       	ldi	r24, 0x01	; 1
     4b12:	85 83       	std	Z+5, r24	; 0x05
@@ -7274,7 +7274,7 @@ ISR(X_TIMER_vect)
 	STEPPER_DELAY								// optional stepper pulse delay
 	X_MOTOR_PORT.OUTCLR = STEP_BIT_bm;			// turn X step bit off
     4b6c:	81 e0       	ldi	r24, 0x01	; 1
-    4b6e:	e0 e0       	ldi	r30, 0x00	; 0
+    4b6e:	e0 e6       	ldi	r30, 0x60	; 96
     4b70:	f6 e0       	ldi	r31, 0x06	; 6
     4b72:	86 83       	std	Z+6, r24	; 0x06
 }

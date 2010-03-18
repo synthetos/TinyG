@@ -1134,334 +1134,237 @@ LOAD c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a
 .debug_sfnames
  *(.debug_sfnames)
 
-.debug_aranges  0x00000000      0x320
+.debug_aranges  0x00000000      0x240
  *(.debug_aranges)
  .debug_aranges
-                0x00000000       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libprintf_flt.a(vfprintf_flt.o)
+                0x00000000       0x20 main.o
  .debug_aranges
-                0x00000020       0x20 main.o
+                0x00000020       0x20 gcode.o
  .debug_aranges
-                0x00000040       0x20 gcode.o
+                0x00000040       0x20 config.o
  .debug_aranges
-                0x00000060       0x20 config.o
+                0x00000060       0x20 encoder.o
  .debug_aranges
-                0x00000080       0x20 encoder.o
+                0x00000080       0x20 xmega_init.o
  .debug_aranges
-                0x000000a0       0x20 xmega_init.o
+                0x000000a0       0x20 motion_control.o
  .debug_aranges
-                0x000000c0       0x20 motion_control.o
+                0x000000c0       0x20 spindle_control.o
  .debug_aranges
-                0x000000e0       0x20 spindle_control.o
+                0x000000e0       0x20 stepper.o
  .debug_aranges
-                0x00000100       0x20 stepper.o
+                0x00000100       0x20 xmega_interrupts.o
  .debug_aranges
-                0x00000120       0x20 xmega_interrupts.o
+                0x00000120       0x20 xio.o
  .debug_aranges
-                0x00000140       0x20 xio.o
+                0x00000140       0x20 xio_usb.o
  .debug_aranges
-                0x00000160       0x20 xio_usb.o
+                0x00000160       0x20 xmega_eeprom.o
  .debug_aranges
-                0x00000180       0x20 xmega_eeprom.o
+                0x00000180       0x20 xio_pgm.o
  .debug_aranges
-                0x000001a0       0x20 xio_pgm.o
+                0x000001a0       0x20 controller.o
  .debug_aranges
-                0x000001c0       0x20 controller.o
+                0x000001c0       0x20 direct_drive.o
  .debug_aranges
-                0x000001e0       0x20 direct_drive.o
+                0x000001e0       0x20 move_buffer.o
  .debug_aranges
-                0x00000200       0x20 move_buffer.o
+                0x00000200       0x20 limit_switches.o
  .debug_aranges
-                0x00000220       0x20 limit_switches.o
- .debug_aranges
-                0x00000240       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
- .debug_aranges
-                0x00000260       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(strtod.o)
- .debug_aranges
-                0x00000280       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(clearerr.o)
- .debug_aranges
-                0x000002a0       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgets.o)
- .debug_aranges
-                0x000002c0       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fputc.o)
- .debug_aranges
-                0x000002e0       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(printf_p.o)
- .debug_aranges
-                0x00000300       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgetc.o)
+                0x00000220       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
 
 .debug_pubnames
-                0x00000000      0xc02
+                0x00000000      0xafc
  *(.debug_pubnames)
  .debug_pubnames
-                0x00000000       0x1f c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libprintf_flt.a(vfprintf_flt.o)
+                0x00000000       0x2e main.o
  .debug_pubnames
-                0x0000001f       0x2e main.o
+                0x0000002e       0x88 gcode.o
  .debug_pubnames
-                0x0000004d       0x88 gcode.o
+                0x000000b6      0x10d config.o
  .debug_pubnames
-                0x000000d5      0x10d config.o
+                0x000001c3       0x1e encoder.o
  .debug_pubnames
-                0x000001e2       0x1e encoder.o
+                0x000001e1       0x44 xmega_init.o
  .debug_pubnames
-                0x00000200       0x44 xmega_init.o
+                0x00000225       0xba motion_control.o
  .debug_pubnames
-                0x00000244       0xba motion_control.o
+                0x000002df       0x4c spindle_control.o
  .debug_pubnames
-                0x000002fe       0x4c spindle_control.o
+                0x0000032b       0xd0 stepper.o
  .debug_pubnames
-                0x0000034a       0xd0 stepper.o
+                0x000003fb       0x5b xmega_interrupts.o
  .debug_pubnames
-                0x0000041a       0x5b xmega_interrupts.o
+                0x00000456       0x95 xio.o
  .debug_pubnames
-                0x00000475       0x95 xio.o
+                0x000004eb       0xd9 xio_usb.o
  .debug_pubnames
-                0x0000050a       0xd9 xio_usb.o
+                0x000005c4      0x15e xmega_eeprom.o
  .debug_pubnames
-                0x000005e3      0x15e xmega_eeprom.o
+                0x00000722       0x94 xio_pgm.o
  .debug_pubnames
-                0x00000741       0x94 xio_pgm.o
+                0x000007b6      0x216 controller.o
  .debug_pubnames
-                0x000007d5      0x216 controller.o
+                0x000009cc       0x3b direct_drive.o
  .debug_pubnames
-                0x000009eb       0x3b direct_drive.o
+                0x00000a07       0x97 move_buffer.o
  .debug_pubnames
-                0x00000a26       0x97 move_buffer.o
+                0x00000a9e       0x1e limit_switches.o
  .debug_pubnames
-                0x00000abd       0x1e limit_switches.o
+                0x00000abc       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
  .debug_pubnames
-                0x00000adb       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
- .debug_pubnames
-                0x00000afb       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_clz.o)
- .debug_pubnames
-                0x00000b1b       0x1d c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(strtod.o)
- .debug_pubnames
-                0x00000b38       0x1f c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(clearerr.o)
- .debug_pubnames
-                0x00000b57       0x1c c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgets.o)
- .debug_pubnames
-                0x00000b73       0x1c c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fputc.o)
- .debug_pubnames
-                0x00000b8f       0x1c c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(iob.o)
- .debug_pubnames
-                0x00000bab       0x1f c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(printf_p.o)
- .debug_pubnames
-                0x00000bca       0x1c c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(errno.o)
- .debug_pubnames
-                0x00000be6       0x1c c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgetc.o)
+                0x00000adc       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_clz.o)
 
-.debug_info     0x00000000     0x74e1
+.debug_info     0x00000000     0x64e9
  *(.debug_info)
- .debug_info    0x00000000      0x421 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libprintf_flt.a(vfprintf_flt.o)
- .debug_info    0x00000421      0x2cd main.o
- .debug_info    0x000006ee      0x9a5 gcode.o
- .debug_info    0x00001093      0x84b config.o
- .debug_info    0x000018de       0x3a encoder.o
- .debug_info    0x00001918      0x244 xmega_init.o
- .debug_info    0x00001b5c      0x76b motion_control.o
- .debug_info    0x000022c7      0x38a spindle_control.o
- .debug_info    0x00002651      0xc0b stepper.o
- .debug_info    0x0000325c      0x10b xmega_interrupts.o
- .debug_info    0x00003367      0x437 xio.o
- .debug_info    0x0000379e      0xc14 xio_usb.o
- .debug_info    0x000043b2      0x620 xmega_eeprom.o
- .debug_info    0x000049d2      0x4c4 xio_pgm.o
- .debug_info    0x00004e96      0xb9f controller.o
- .debug_info    0x00005a35      0x280 direct_drive.o
- .debug_info    0x00005cb5      0x454 move_buffer.o
- .debug_info    0x00006109       0x3a limit_switches.o
- .debug_info    0x00006143      0x71e c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
- .debug_info    0x00006861       0xa9 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_clz.o)
- .debug_info    0x0000690a      0x2ca c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(strtod.o)
- .debug_info    0x00006bd4      0x159 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(clearerr.o)
- .debug_info    0x00006d2d      0x196 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgets.o)
- .debug_info    0x00006ec3      0x16a c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fputc.o)
- .debug_info    0x0000702d      0x156 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(iob.o)
- .debug_info    0x00007183      0x1b4 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(printf_p.o)
- .debug_info    0x00007337       0x3f c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(errno.o)
- .debug_info    0x00007376      0x16b c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgetc.o)
+ .debug_info    0x00000000      0x2cd main.o
+ .debug_info    0x000002cd      0x9a5 gcode.o
+ .debug_info    0x00000c72      0x84b config.o
+ .debug_info    0x000014bd       0x3a encoder.o
+ .debug_info    0x000014f7      0x244 xmega_init.o
+ .debug_info    0x0000173b      0x76b motion_control.o
+ .debug_info    0x00001ea6      0x38a spindle_control.o
+ .debug_info    0x00002230      0xc0b stepper.o
+ .debug_info    0x00002e3b      0x10b xmega_interrupts.o
+ .debug_info    0x00002f46      0x437 xio.o
+ .debug_info    0x0000337d      0xc14 xio_usb.o
+ .debug_info    0x00003f91      0x620 xmega_eeprom.o
+ .debug_info    0x000045b1      0x4c4 xio_pgm.o
+ .debug_info    0x00004a75      0xb9f controller.o
+ .debug_info    0x00005614      0x280 direct_drive.o
+ .debug_info    0x00005894      0x454 move_buffer.o
+ .debug_info    0x00005ce8       0x3a limit_switches.o
+ .debug_info    0x00005d22      0x71e c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
+ .debug_info    0x00006440       0xa9 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_clz.o)
  *(.gnu.linkonce.wi.*)
 
-.debug_abbrev   0x00000000     0x2435
+.debug_abbrev   0x00000000     0x1be1
  *(.debug_abbrev)
- .debug_abbrev  0x00000000      0x191 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libprintf_flt.a(vfprintf_flt.o)
- .debug_abbrev  0x00000191      0x10e main.o
- .debug_abbrev  0x0000029f      0x2ea gcode.o
- .debug_abbrev  0x00000589      0x222 config.o
- .debug_abbrev  0x000007ab       0x29 encoder.o
- .debug_abbrev  0x000007d4      0x14b xmega_init.o
- .debug_abbrev  0x0000091f      0x1f5 motion_control.o
- .debug_abbrev  0x00000b14      0x10c spindle_control.o
- .debug_abbrev  0x00000c20      0x1d3 stepper.o
- .debug_abbrev  0x00000df3       0xb6 xmega_interrupts.o
- .debug_abbrev  0x00000ea9      0x173 xio.o
- .debug_abbrev  0x0000101c      0x2d2 xio_usb.o
- .debug_abbrev  0x000012ee      0x1b3 xmega_eeprom.o
- .debug_abbrev  0x000014a1      0x1c4 xio_pgm.o
- .debug_abbrev  0x00001665      0x2df controller.o
- .debug_abbrev  0x00001944       0xd4 direct_drive.o
- .debug_abbrev  0x00001a18      0x146 move_buffer.o
- .debug_abbrev  0x00001b5e       0x29 limit_switches.o
- .debug_abbrev  0x00001b87      0x181 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
- .debug_abbrev  0x00001d08       0x6a c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_clz.o)
- .debug_abbrev  0x00001d72      0x14a c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(strtod.o)
- .debug_abbrev  0x00001ebc       0xca c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(clearerr.o)
- .debug_abbrev  0x00001f86       0xea c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgets.o)
- .debug_abbrev  0x00002070       0xdb c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fputc.o)
- .debug_abbrev  0x0000214b       0xd0 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(iob.o)
- .debug_abbrev  0x0000221b      0x10f c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(printf_p.o)
- .debug_abbrev  0x0000232a       0x30 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(errno.o)
- .debug_abbrev  0x0000235a       0xdb c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgetc.o)
+ .debug_abbrev  0x00000000      0x10e main.o
+ .debug_abbrev  0x0000010e      0x2ea gcode.o
+ .debug_abbrev  0x000003f8      0x222 config.o
+ .debug_abbrev  0x0000061a       0x29 encoder.o
+ .debug_abbrev  0x00000643      0x14b xmega_init.o
+ .debug_abbrev  0x0000078e      0x1f5 motion_control.o
+ .debug_abbrev  0x00000983      0x10c spindle_control.o
+ .debug_abbrev  0x00000a8f      0x1d3 stepper.o
+ .debug_abbrev  0x00000c62       0xb6 xmega_interrupts.o
+ .debug_abbrev  0x00000d18      0x173 xio.o
+ .debug_abbrev  0x00000e8b      0x2d2 xio_usb.o
+ .debug_abbrev  0x0000115d      0x1b3 xmega_eeprom.o
+ .debug_abbrev  0x00001310      0x1c4 xio_pgm.o
+ .debug_abbrev  0x000014d4      0x2df controller.o
+ .debug_abbrev  0x000017b3       0xd4 direct_drive.o
+ .debug_abbrev  0x00001887      0x146 move_buffer.o
+ .debug_abbrev  0x000019cd       0x29 limit_switches.o
+ .debug_abbrev  0x000019f6      0x181 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
+ .debug_abbrev  0x00001b77       0x6a c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_clz.o)
 
-.debug_line     0x00000000     0x462f
+.debug_line     0x00000000     0x36ee
  *(.debug_line)
- .debug_line    0x00000000      0x723 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libprintf_flt.a(vfprintf_flt.o)
- .debug_line    0x00000723      0x17f main.o
- .debug_line    0x000008a2      0x622 gcode.o
- .debug_line    0x00000ec4      0x592 config.o
- .debug_line    0x00001456       0x5e encoder.o
- .debug_line    0x000014b4      0x182 xmega_init.o
- .debug_line    0x00001636      0x4fc motion_control.o
- .debug_line    0x00001b32      0x146 spindle_control.o
- .debug_line    0x00001c78      0x56d stepper.o
- .debug_line    0x000021e5      0x123 xmega_interrupts.o
- .debug_line    0x00002308      0x197 xio.o
- .debug_line    0x0000249f      0x7d1 xio_usb.o
- .debug_line    0x00002c70      0x41d xmega_eeprom.o
- .debug_line    0x0000308d      0x38b xio_pgm.o
- .debug_line    0x00003418      0x458 controller.o
- .debug_line    0x00003870       0xb8 direct_drive.o
- .debug_line    0x00003928      0x230 move_buffer.o
- .debug_line    0x00003b58       0x65 limit_switches.o
- .debug_line    0x00003bbd      0x1d8 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
- .debug_line    0x00003d95       0x7c c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_clz.o)
- .debug_line    0x00003e11      0x2dd c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(strtod.o)
- .debug_line    0x000040ee       0xaa c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(clearerr.o)
- .debug_line    0x00004198       0xd7 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgets.o)
- .debug_line    0x0000426f       0xd7 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fputc.o)
- .debug_line    0x00004346       0x83 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(iob.o)
- .debug_line    0x000043c9       0xf1 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(printf_p.o)
- .debug_line    0x000044ba       0x5e c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(errno.o)
- .debug_line    0x00004518      0x117 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgetc.o)
+ .debug_line    0x00000000      0x17f main.o
+ .debug_line    0x0000017f      0x622 gcode.o
+ .debug_line    0x000007a1      0x592 config.o
+ .debug_line    0x00000d33       0x5e encoder.o
+ .debug_line    0x00000d91      0x182 xmega_init.o
+ .debug_line    0x00000f13      0x4fc motion_control.o
+ .debug_line    0x0000140f      0x146 spindle_control.o
+ .debug_line    0x00001555      0x56d stepper.o
+ .debug_line    0x00001ac2      0x123 xmega_interrupts.o
+ .debug_line    0x00001be5      0x197 xio.o
+ .debug_line    0x00001d7c      0x7d1 xio_usb.o
+ .debug_line    0x0000254d      0x41d xmega_eeprom.o
+ .debug_line    0x0000296a      0x38b xio_pgm.o
+ .debug_line    0x00002cf5      0x458 controller.o
+ .debug_line    0x0000314d       0xb8 direct_drive.o
+ .debug_line    0x00003205      0x230 move_buffer.o
+ .debug_line    0x00003435       0x65 limit_switches.o
+ .debug_line    0x0000349a      0x1d8 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
+ .debug_line    0x00003672       0x7c c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_clz.o)
 
-.debug_frame    0x00000000      0x9a0
+.debug_frame    0x00000000      0x8c0
  *(.debug_frame)
- .debug_frame   0x00000000       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libprintf_flt.a(vfprintf_flt.o)
- .debug_frame   0x00000020       0x20 main.o
- .debug_frame   0x00000040       0x80 gcode.o
- .debug_frame   0x000000c0       0xb0 config.o
- .debug_frame   0x00000170       0x20 encoder.o
- .debug_frame   0x00000190       0x40 xmega_init.o
- .debug_frame   0x000001d0       0xa0 motion_control.o
- .debug_frame   0x00000270       0x40 spindle_control.o
- .debug_frame   0x000002b0       0xc0 stepper.o
- .debug_frame   0x00000370       0x30 xmega_interrupts.o
- .debug_frame   0x000003a0       0x70 xio.o
- .debug_frame   0x00000410      0x1c0 xio_usb.o
- .debug_frame   0x000005d0       0xf0 xmega_eeprom.o
- .debug_frame   0x000006c0       0x70 xio_pgm.o
- .debug_frame   0x00000730       0xd0 controller.o
- .debug_frame   0x00000800       0x30 direct_drive.o
- .debug_frame   0x00000830       0x70 move_buffer.o
- .debug_frame   0x000008a0       0x20 limit_switches.o
- .debug_frame   0x000008c0       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
- .debug_frame   0x000008e0       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(strtod.o)
- .debug_frame   0x00000900       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(clearerr.o)
- .debug_frame   0x00000920       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgets.o)
- .debug_frame   0x00000940       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fputc.o)
- .debug_frame   0x00000960       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(printf_p.o)
- .debug_frame   0x00000980       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgetc.o)
+ .debug_frame   0x00000000       0x20 main.o
+ .debug_frame   0x00000020       0x80 gcode.o
+ .debug_frame   0x000000a0       0xb0 config.o
+ .debug_frame   0x00000150       0x20 encoder.o
+ .debug_frame   0x00000170       0x40 xmega_init.o
+ .debug_frame   0x000001b0       0xa0 motion_control.o
+ .debug_frame   0x00000250       0x40 spindle_control.o
+ .debug_frame   0x00000290       0xc0 stepper.o
+ .debug_frame   0x00000350       0x30 xmega_interrupts.o
+ .debug_frame   0x00000380       0x70 xio.o
+ .debug_frame   0x000003f0      0x1c0 xio_usb.o
+ .debug_frame   0x000005b0       0xf0 xmega_eeprom.o
+ .debug_frame   0x000006a0       0x70 xio_pgm.o
+ .debug_frame   0x00000710       0xd0 controller.o
+ .debug_frame   0x000007e0       0x30 direct_drive.o
+ .debug_frame   0x00000810       0x70 move_buffer.o
+ .debug_frame   0x00000880       0x20 limit_switches.o
+ .debug_frame   0x000008a0       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
 
-.debug_str      0x00000000     0x21ff
+.debug_str      0x00000000     0x1fda
  *(.debug_str)
- .debug_str     0x00000000      0x145 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libprintf_flt.a(vfprintf_flt.o)
-                                0x18b (size before relaxing)
- .debug_str     0x00000145      0x142 main.o
-                                0x205 (size before relaxing)
- .debug_str     0x00000287      0x3b9 gcode.o
-                                0x5e7 (size before relaxing)
- .debug_str     0x00000640       0xe2 config.o
-                                0x404 (size before relaxing)
- .debug_str     0x00000722       0x15 encoder.o
-                                 0x5b (size before relaxing)
- .debug_str     0x00000737      0x139 xmega_init.o
-                                0x205 (size before relaxing)
- .debug_str     0x00000870      0x1f7 motion_control.o
-                                0x54d (size before relaxing)
- .debug_str     0x00000a67      0x106 spindle_control.o
-                                0x2cb (size before relaxing)
- .debug_str     0x00000b6d      0x4e7 stepper.o
-                                0x7c9 (size before relaxing)
- .debug_str     0x00001054       0x5c xmega_interrupts.o
-                                0x151 (size before relaxing)
- .debug_str     0x000010b0      0x183 xio.o
-                                0x3ac (size before relaxing)
- .debug_str     0x00001233      0x3fc xio_usb.o
-                                0x824 (size before relaxing)
- .debug_str     0x0000162f      0x48f xmega_eeprom.o
-                                0x5a3 (size before relaxing)
- .debug_str     0x00001abe       0x7e xio_pgm.o
-                                0x3a7 (size before relaxing)
- .debug_str     0x00001b3c      0x32c controller.o
-                                0x776 (size before relaxing)
- .debug_str     0x00001e68       0x2d direct_drive.o
-                                0x1e4 (size before relaxing)
- .debug_str     0x00001e95       0xe6 move_buffer.o
-                                0x44c (size before relaxing)
- .debug_str     0x00001f7b       0x1c limit_switches.o
-                                 0x62 (size before relaxing)
- .debug_str     0x00001f97      0x103 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
+ .debug_str     0x00000000      0x1ae main.o
+                                0x203 (size before relaxing)
+ .debug_str     0x000001ae      0x3b9 gcode.o
+                                0x5e5 (size before relaxing)
+ .debug_str     0x00000567       0xf4 config.o
+                                0x402 (size before relaxing)
+ .debug_str     0x0000065b       0x15 encoder.o
+                                 0x59 (size before relaxing)
+ .debug_str     0x00000670      0x139 xmega_init.o
+                                0x203 (size before relaxing)
+ .debug_str     0x000007a9      0x1f7 motion_control.o
+                                0x54b (size before relaxing)
+ .debug_str     0x000009a0      0x106 spindle_control.o
+                                0x2c9 (size before relaxing)
+ .debug_str     0x00000aa6      0x4e7 stepper.o
+                                0x7c7 (size before relaxing)
+ .debug_str     0x00000f8d       0x5c xmega_interrupts.o
+                                0x14f (size before relaxing)
+ .debug_str     0x00000fe9      0x183 xio.o
+                                0x3aa (size before relaxing)
+ .debug_str     0x0000116c      0x403 xio_usb.o
+                                0x822 (size before relaxing)
+ .debug_str     0x0000156f      0x48f xmega_eeprom.o
+                                0x5a1 (size before relaxing)
+ .debug_str     0x000019fe       0x7e xio_pgm.o
+                                0x3a5 (size before relaxing)
+ .debug_str     0x00001a7c      0x32c controller.o
+                                0x774 (size before relaxing)
+ .debug_str     0x00001da8       0x2d direct_drive.o
+                                0x1e2 (size before relaxing)
+ .debug_str     0x00001dd5       0xe6 move_buffer.o
+                                0x44a (size before relaxing)
+ .debug_str     0x00001ebb       0x1c limit_switches.o
+                                 0x60 (size before relaxing)
+ .debug_str     0x00001ed7      0x103 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
                                 0x18f (size before relaxing)
  .debug_str     0x00000000       0xf9 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_clz.o)
- .debug_str     0x0000209a       0x78 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(strtod.o)
-                                0x14f (size before relaxing)
- .debug_str     0x00002112       0x28 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(clearerr.o)
-                                 0xfb (size before relaxing)
- .debug_str     0x0000213a       0x22 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgets.o)
-                                 0xf5 (size before relaxing)
- .debug_str     0x0000215c       0x22 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fputc.o)
-                                 0xf5 (size before relaxing)
- .debug_str     0x0000217e       0x1a c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(iob.o)
-                                 0xec (size before relaxing)
- .debug_str     0x00002198       0x28 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(printf_p.o)
-                                0x123 (size before relaxing)
- .debug_str     0x000021c0       0x1d c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(errno.o)
-                                 0x5d (size before relaxing)
- .debug_str     0x000021dd       0x22 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgetc.o)
-                                 0xf5 (size before relaxing)
 
-.debug_loc      0x00000000     0x383d
+.debug_loc      0x00000000     0x29f3
  *(.debug_loc)
- .debug_loc     0x00000000      0x99a c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libprintf_flt.a(vfprintf_flt.o)
- .debug_loc     0x0000099a      0x51d gcode.o
- .debug_loc     0x00000eb7      0x495 config.o
- .debug_loc     0x0000134c       0x18 xmega_init.o
- .debug_loc     0x00001364      0x5ac motion_control.o
- .debug_loc     0x00001910       0x28 spindle_control.o
- .debug_loc     0x00001938       0x23 stepper.o
- .debug_loc     0x0000195b      0x195 xio.o
- .debug_loc     0x00001af0      0x275 xio_usb.o
- .debug_loc     0x00001d65      0x3bd xmega_eeprom.o
- .debug_loc     0x00002122      0x12d xio_pgm.o
- .debug_loc     0x0000224f      0x143 controller.o
- .debug_loc     0x00002392       0x18 direct_drive.o
- .debug_loc     0x000023aa      0x16f move_buffer.o
- .debug_loc     0x00002519      0xe74 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
- .debug_loc     0x0000338d      0x2b0 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(strtod.o)
- .debug_loc     0x0000363d       0x28 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(clearerr.o)
- .debug_loc     0x00003665       0xf8 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgets.o)
- .debug_loc     0x0000375d       0x60 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fputc.o)
- .debug_loc     0x000037bd       0x80 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgetc.o)
+ .debug_loc     0x00000000      0x51d gcode.o
+ .debug_loc     0x0000051d      0x495 config.o
+ .debug_loc     0x000009b2       0x18 xmega_init.o
+ .debug_loc     0x000009ca      0x5ac motion_control.o
+ .debug_loc     0x00000f76       0x28 spindle_control.o
+ .debug_loc     0x00000f9e       0x23 stepper.o
+ .debug_loc     0x00000fc1      0x195 xio.o
+ .debug_loc     0x00001156      0x275 xio_usb.o
+ .debug_loc     0x000013cb      0x3bd xmega_eeprom.o
+ .debug_loc     0x00001788      0x12d xio_pgm.o
+ .debug_loc     0x000018b5      0x143 controller.o
+ .debug_loc     0x000019f8       0x18 direct_drive.o
+ .debug_loc     0x00001a10      0x16f move_buffer.o
+ .debug_loc     0x00001b7f      0xe74 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
 
 .debug_macinfo
  *(.debug_macinfo)
 OUTPUT(TinyG.elf elf32-avr)
 LOAD linker stubs
 
-.debug_ranges   0x00000000      0x128
- .debug_ranges  0x00000000       0x30 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libprintf_flt.a(vfprintf_flt.o)
- .debug_ranges  0x00000030       0x50 gcode.o
- .debug_ranges  0x00000080       0x18 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
- .debug_ranges  0x00000098       0x18 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(strtod.o)
- .debug_ranges  0x000000b0       0x18 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(clearerr.o)
- .debug_ranges  0x000000c8       0x18 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgets.o)
- .debug_ranges  0x000000e0       0x18 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fputc.o)
- .debug_ranges  0x000000f8       0x18 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(printf_p.o)
- .debug_ranges  0x00000110       0x18 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgetc.o)
+.debug_ranges   0x00000000       0x68
+ .debug_ranges  0x00000000       0x50 gcode.o
+ .debug_ranges  0x00000050       0x18 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
