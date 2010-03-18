@@ -76,7 +76,7 @@ typedef int (*fptr_int_char_p) (char *b);// returns int, character pointer (line
  */
 //#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
 //#define __DEBUG TRUE		// set debug mode (comment out to undefine)
-//#define __RILEY TRUE		// set RILEY mode (comment out to undefine)
+#define __RILEY TRUE		// set RILEY mode (comment out to undefine)
 //#define __FAKE_STEPPERS	// disables stepper ISR load for faster debugging
 
 #endif
