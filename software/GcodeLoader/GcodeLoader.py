@@ -36,9 +36,9 @@ def randCode(count):
 	for x in range(count):
 		print "[*]Running: %s" % COUNT
 		COUNT += 1
-		x = randint(0,10)
-		y = randint(0,10)
-		z = randint(0,10)
+		x = randint(-20,20)
+		y = randint(-20,20)
+		z = randint(-20,20)
 		#print "[*]Gcode Command:\n"
 		print "g1 x%s, y%s, z%s" % (x,y,z)
 		ser.write("g0 x%s y%s z%s F300 \n" % (x,y,z))
@@ -49,6 +49,10 @@ def randCode(count):
 				#print "[*]Sending Newline"
 				ser.write("\n")
 				delim = ser.readline()
+
+def sendCode(code, axis, steps, feedrate):		
+	print "[#]SENDING: %s %s %s %s" % (code, axis, steps, feedrate)
+	ser.write("%s %s%s %s\n" % (code, axis, steps, feedrate))
 			
 			
 			
@@ -104,8 +108,9 @@ class Walker(object):
 def Run():
 	"""THIS IS NOT WORKING RIGHT, ALDEN IS CHANGING THE SERIAL RESPONSE A BIT"""
 	#filename = "hacdc.gcode"
-	filename = "song.gcode"
-	
+	#filename = "song.gcode"
+	#filename = "pcb.gcode"
+	filename = "circles.gcode"
 	f = open(filename, 'r')
 	delim = ""
 	for line in f:
@@ -121,8 +126,8 @@ def Run():
 
 
 x = Walker(232)
-x.walk(20, "g1", "f300")
-		
+x.walk(10, "g1", "f300")
+#sendCode("G0", "x",-85, "F300")
 #Run()		
-#randCode(5)
+#randCode(80)
 #breakIn(10, 10, "X")
