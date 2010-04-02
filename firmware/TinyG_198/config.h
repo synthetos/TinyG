@@ -236,24 +236,24 @@ enum cfgPortBits {				// motor control port bit positions - hardwired
 #define A_MICROSTEPS MICROSTEPS
 
 #define X_POLARITY 0					// motor direction polarity
-#define Y_POLARITY 1
+#define Y_POLARITY 0
 #define Z_POLARITY 0
 #define A_POLARITY 0
 
-#define X_SEEK_WHOLE_STEPS_PER_SEC 1500	// max whole steps per second for G0 motion
-#define Y_SEEK_WHOLE_STEPS_PER_SEC 1500 // (motor parameter)
-#define Z_SEEK_WHOLE_STEPS_PER_SEC 1500
-#define A_SEEK_WHOLE_STEPS_PER_SEC 1500
+#define X_SEEK_WHOLE_STEPS_PER_SEC 400	// max whole steps per second for G0 motion
+#define Y_SEEK_WHOLE_STEPS_PER_SEC 400 // (motor parameter)
+#define Z_SEEK_WHOLE_STEPS_PER_SEC 400
+#define A_SEEK_WHOLE_STEPS_PER_SEC 400
 
 #define X_SEEK_STEPS_PER_SEC (X_SEEK_WHOLE_STEPS_PER_SEC * X_MICROSTEPS)
 #define Y_SEEK_STEPS_PER_SEC (Y_SEEK_WHOLE_STEPS_PER_SEC * Y_MICROSTEPS)
 #define Z_SEEK_STEPS_PER_SEC (Z_SEEK_WHOLE_STEPS_PER_SEC * Z_MICROSTEPS)
 #define A_SEEK_STEPS_PER_SEC (A_SEEK_WHOLE_STEPS_PER_SEC * A_MICROSTEPS)
 
-#define X_FEED_WHOLE_STEPS_PER_SEC 1500	// max whole steps per sec for feed motion
-#define Y_FEED_WHOLE_STEPS_PER_SEC 1500 // (motor parameter)
-#define Z_FEED_WHOLE_STEPS_PER_SEC 1500
-#define A_FEED_WHOLE_STEPS_PER_SEC 1500
+#define X_FEED_WHOLE_STEPS_PER_SEC 400	// max whole steps per sec for feed motion
+#define Y_FEED_WHOLE_STEPS_PER_SEC 400 // (motor parameter)
+#define Z_FEED_WHOLE_STEPS_PER_SEC 400
+#define A_FEED_WHOLE_STEPS_PER_SEC 400
 
 #define X_FEED_STEPS_PER_SEC (X_FEED_WHOLE_STEPS_PER_SEC * X_MICROSTEPS)
 #define Y_FEED_STEPS_PER_SEC (Y_FEED_WHOLE_STEPS_PER_SEC * Y_MICROSTEPS)

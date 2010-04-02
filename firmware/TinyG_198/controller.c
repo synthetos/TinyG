@@ -292,14 +292,14 @@ PGM_P tgModeStrings[] PROGMEM = {	// put string pointer array in program memory
 void _tg_prompt()
 {
 	if ((tg.prompts) && (tg.state == TG_STATE_READY_UNPROMPTED)) {
-//		printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
-		printf_P(PSTR("TinyG [%S]*> \n"),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
+		printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
+//		printf_P(PSTR("TinyG [%S]*> \n"),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
 		tg.state = TG_STATE_READY_PROMPTED;
 	}
 	// bastardized prompts for file sources
 	if ((!tg.prompts) && (tg.state == TG_STATE_READY_UNPROMPTED)) {
-//		printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
-		printf_P(PSTR("TinyG [%S]*> \n"),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
+		printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
+//		printf_P(PSTR("TinyG [%S]*> \n"),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
 //		tg.state = TG_STATE_READY_PROMPTED;
 	}
 
