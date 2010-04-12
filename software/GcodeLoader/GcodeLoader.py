@@ -15,9 +15,13 @@ def usage():
     print "GcodeLoader.py <serial port> <speed> <gcode file>"
     print "EXAMPLE:"
     print "GcodeLoader.py COM4 115200 circles.gcode"
+    print "NOTE: An optional -d as the LAST argument will enable debug mode"
+    
     #sys.exit(3)
 
 def main(SPEED=115200):
+    global debug
+    debug  = 0
     try:
         PORT = sys.argv[1]
         SPEED = sys.argv[2]
@@ -41,7 +45,7 @@ def main(SPEED=115200):
     try:
         dbg_check = sys.argv[4]
         if dbg_check == "-d":
-            print "[!]Eynabling Verbose Debug Mode"
+            print "[!]Enabling Verbose Debug Mode"
             debug = 1
     except:
         pass
@@ -57,7 +61,7 @@ def choice():
     while True:
         confirm = raw_input("Please Enter (Y/N)")
         if confirm == "Y" or confirm == "y":
-            print "Processing Job"
+            print "Processing Job - Press CTRL+C to Abort Job."
             break
         elif confirm == "N" or confirm == "n":
             print "Job Aborted, Exiting..."
@@ -73,9 +77,9 @@ def checkSettings(PORT, SPEED, FILE):
     print "Are these settings correct?"
     choice()
     
-def processFile(ser, f, debug=0):
+def processFile(ser, f ):
     try:
-        ser.write(3*"\n")
+        ser.write(3*"\n") #This might not be need anymore but it just sends a few \n down the wire to clear anything before sending gcode
     except serial.serialutil.SerialException:
         print "[ERROR] Write Failed"
         print "System Exiting"
@@ -87,8 +91,8 @@ def processFile(ser, f, debug=0):
             print "[*]Writing: %s" % line
         ser.write(line+"\n") #send a line of gcode
         delim = ser.readline() #check to see if we found our delimeter '*' 
-        while "*" not in delim: #loop until we do
-            delim = ser.readline()
+        while delim != "*":  #Loop until we find the delim
+            delim = ser.read()
 
 if __name__ == "__main__":
     main()
