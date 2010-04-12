@@ -90,7 +90,7 @@ def processFile(ser, f ):
         if debug == 1:
             print "[*]Writing: %s" % line
         ser.write(line+"\n") #send a line of gcode
-        delim = ser.readline() #check to see if we found our delimeter '*' 
+        delim = ser.read() #check to see if we found our delimeter '*' 
         while delim != "*":  #Loop until we find the delim
             delim = ser.read()
 
