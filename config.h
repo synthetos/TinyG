@@ -53,6 +53,8 @@ void store_setting(int parameter, double value);  // helper method to set new se
 #define CLK_MHZ = (F_CPU/1000000)	// clock in Mhz
 
 #define MM_PER_ARC_SEGMENT 0.1
+//#define MM_PER_ARC_SEGMENT 1
+
 #define INCHES_PER_MM (1.0/25.4) 	// A conversion rate
 
 
