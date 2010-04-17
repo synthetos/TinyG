@@ -22,7 +22,7 @@
   Modified to support Xmega family processors
   Modifications Copyright (c) 2010 Alden S. Hart, Jr.
 
-  --- Line drawing, flow control and synchronization ---
+  --- Line drawing, flow control and synchronization ---++++++++
   This code works differently than the Reprap or Grbl Bresenham implementations.
   Coordinated motion (line drawing) is performed by dedicating a timer to each axis
   and stepping each motor at a computed rate (timer period value) for a specified 
@@ -44,6 +44,10 @@
   execution of the timers are not already running.
   st_execute_line() therefore has a busy flag to prevent ISR and non-ISR invocation
   from stepping on each other,
+
+  To Do
+	- Remove steps_max from the line buffer. It's not needed.
+
 */
 
 #include <math.h>
@@ -55,61 +59,70 @@
 #include "stepper.h"
 #include "config.h"
 #include "nuts_bolts.h"
-#include "debug.h"								// this can be deleted for production
 
-struct Axes ax;									// master axes structure
+#include "wiring_serial.h"	// ++++ NEEDED FOR DEBUG ONLY - OTHERWISE NO PRINTING
+#include <avr/pgmspace.h>
 
-#define LINE_BUFFER_SIZE 10						// number of lines buffered
-struct Line line_buffer[LINE_BUFFER_SIZE];		// buffer for line instructions
-struct Line *ln = NULL;							// pointer to current line
-volatile int line_buffer_head = 0;				// persistent index of written lines
-volatile int line_buffer_tail = 0;				// persistent index of read lines
-volatile int busy; // TRUE when st_execute_line is running. Used to avoid retriggering
+struct Line {
+// 	int32_t steps_max; 	//++++++++				// total steps it will take (max of the axes)
+ 	uint32_t steps_x; 					// total steps in x direction
+	uint32_t steps_y;  					// total steps in y direction
+	uint32_t steps_z; 					// total steps in z direction
+ 	uint32_t microseconds; 				// total microseconds the move will take
+// 	uint8_t direction_bits;	//++++++			// bitmask for directions
+};
+
+#define LINE_BUFFER_SIZE 40					// number of lines buffered
+struct Line line_buffer[LINE_BUFFER_SIZE];	// buffer for line instructions
+struct Line *ln = NULL;						// pointer to current line
+volatile int line_buffer_head = 0;
+volatile int line_buffer_tail = 0;
+volatile int busy; // TRUE when st_execute_line is running. Used to avoid retriggering ++++++
+
+struct axes ax;
 
 
 /* st_motor_test() - test motor subsystem */
 
 void st_motor_test() {
-	ax.x.counter = 0x00001000;					// number of steps
+	ax.x.counter = 0x00000100;					// number of steps
 	ax.x.timer->CTRLA = TC_CLK_DIV_1;			// clock division ratio
 	ax.x.timer->PERH = 0x10;					// step rate (period) high
 	ax.x.timer->PERL = 0x00;					// step rate (period) low
 
-	ax.y.counter = 0x00000800;					// number of steps
+	ax.y.counter = 0x00000100;					// number of steps
 	ax.y.timer->CTRLA = TC_CLK_DIV_1;			// clock division ratio
 	ax.y.timer->PERH = 0x20;					// step rate (period) high
 	ax.y.timer->PERL = 0x00;					// step rate (period) low
 
-	ax.z.counter = 0x00000600;					// number of steps
+	ax.z.counter = 0x00000100;					// number of steps
 	ax.z.timer->CTRLA = TC_CLK_DIV_1;			// clock division ratio
 	ax.z.timer->PERH = 0x30;					// step rate (period) high
 	ax.z.timer->PERL = 0x00;					// step rate (period) low
 
-	ax.a.counter = 0x00000400;					// number of steps
+	ax.a.counter = 0x00000100;					// number of steps
 	ax.a.timer->CTRLA = TC_CLK_DIV_1;			// clock division ratio
 	ax.a.timer->PERH = 0x40;					// step rate (period) high
 	ax.a.timer->PERL = 0x00;					// step rate (period) low
 
 	ax.active_axes |= (X_BIT_bm | Y_BIT_bm | Z_BIT_bm | A_BIT_bm);
+
 }
 
 
 /* st_init() - initialize and start the stepper motor subsystem 
 
    State at completion of initialization is:
-	- each axis has a structure with an initialized port and a timer bound to it
+	- each axis has a structure wth an initialized port and a timer bound to it
 	- ports:
 		- input and output directions set
-	- each axis is enabled 
-	
-   Note: high level interrupts must be enabled in main()
+	- each axis is enabled (
 
 */
 
 void st_init()
 {
 	ax.active_axes = 0;							// clear all active bits
-	busy = FALSE;								// clear the busy flag
 
  /* initialize X axis */
  	// operating variables
@@ -203,7 +216,9 @@ void st_init()
 	ax.a.timer->PERH = 0x00;					// period high
 	ax.a.timer->PERL = 0x00;					// period low
 
-	st_motor_test();							// run the startup motor test
+	// high level interrupts must be enabled in main()
+
+	st_motor_test();							// run the motor test
 }
 
 
@@ -217,10 +232,7 @@ ISR(X_TIMER_vect)
 	if (--ax.x.counter == 0) {
 		ax.x.timer->CTRLA = TC_CLK_OFF;			// stop the clock
 		ax.active_axes &= ~X_BIT_bm;			// clear the X active bit
-		if (ax.active_axes == 0) {				// if all axes are done
-			st_print_done_line("X");			// ++++ DEBUG STATEMENT ++++
-			st_execute_line();					// ...run next line
-		}
+		st_execute_line();						// try to exec next line+++++
 	}
 //	_delay_us(STEP_PULSE_MICROSECONDS);			// delay for correct pulse width
 	ax.x.port->OUTCLR = STEP_BIT_bm;			// turn X step bit off
@@ -233,11 +245,7 @@ ISR(Y_TIMER_vect)
 	if (--ax.y.counter == 0) {
 		ax.y.timer->CTRLA = TC_CLK_OFF;			// stop the clock
 		ax.active_axes &= ~Y_BIT_bm;			// clear the Y active bit
-		if (ax.active_axes == 0) {
-			st_print_done_line("Y");			// ++++ DEBUG STATEMENT ++++
-//			st_print_active(&ax);			// ++++ DEBUG STATEMENT ++++
-			st_execute_line();					// run next line if all axes are done
-		}
+		st_execute_line();						// try to exec next line++++++
 	}
 //	_delay_us(STEP_PULSE_MICROSECONDS);
 	Y_MOTOR_PORT.OUTCLR	= STEP_BIT_bm;
@@ -249,10 +257,7 @@ ISR(Z_TIMER_vect)
 	if (--ax.z.counter == 0) {
 		ax.z.timer->CTRLA = TC_CLK_OFF;			// stop the clock
 		ax.active_axes &= ~Z_BIT_bm;			// clear the Z active bit
-		if (ax.active_axes == 0) {
-			st_print_done_line("Z");			// ++++ DEBUG STATEMENT ++++
-			st_execute_line();					// run next line if all axes are done
-		}
+		st_execute_line();						// try to exec next line+++++++++
 	}
 //	_delay_us(STEP_PULSE_MICROSECONDS);
 	Z_MOTOR_PORT.OUTCLR	= STEP_BIT_bm;
@@ -264,18 +269,14 @@ ISR(A_TIMER_vect)
 	if (--ax.a.counter == 0) {
 		ax.a.timer->CTRLA = TC_CLK_OFF;			// stop the clock
 		ax.active_axes &= ~A_BIT_bm;			// clear the A active bit
-		if (ax.active_axes == 0) {
-			st_print_done_line("A");			// ++++ DEBUG STATEMENT ++++
-			st_execute_line();					// run next line if all axes are done
-		}
+		st_execute_line();						// try to exec next line+++++++
 	}
 //	_delay_us(STEP_PULSE_MICROSECONDS);
 	A_MOTOR_PORT.OUTCLR	= STEP_BIT_bm;
 }
 
-
-/******************************************************************************
- st_execute_line() - run next line if warranted
+/*******************************************************************************
+  st_execute_line() - run a stepper line +++++++
 
   Load next line into timers and set direction bits
   If the line is currently active it will not do the load
@@ -291,96 +292,104 @@ ISR(A_TIMER_vect)
 
 	step_rate is computed as steps_ / microseconds
 
-******************************************************************************/
+*******************************************************************************/
 
 void st_execute_line()
 {
-	struct Line *ln;
-
-//	printInteger(busy);
-//	st_print_active(&ax);
-
-	if (busy) { return; } 					// busy-flag to avoid reentry
-
-	busy = TRUE;
-
+//	uint32_t step_rate_x; 					// step rate in microseconds per step
+//	uint32_t step_rate_y; 
+//	uint32_t step_rate_z; 
+//++++++++++++
+	if (busy) {  							// busy-flag to avoid reentry
+		return; 
+	}
 	if (ax.active_axes != 0) {
-		busy = FALSE;	
 		return;								// if any bit is set the robot is active
 	}
 	if ((ln = st_get_next_line()) == NULL) {
-		busy = FALSE;	
 		return;
   	} 
+	st_print_line(*ln);						// ++++ DEBUG CODE
 
+	busy = TRUE;							//++++++++++++
+
+	// compute the timer intervals we will need (in microseconds)
+//	step_rate_x = (ln->microseconds / ln->steps_x);	// step_rate in microseconds per step
+//	step_rate_y = (ln->microseconds / ln->steps_y);
+//	step_rate_z = (ln->microseconds / ln->steps_z);
+//	st_print_four_ints(step_rate_x, step_rate_y, step_rate_z, ln->microseconds);
+//	st_print_four_ints(((step_rate_x >> 8) & 0x000000FF), (step_rate_x & 0x000000FF), 0, 0);
+	
 	// set direction bits
-	(ln->steps_x < 0) ? (ax.x.port->OUTSET=DIRECTION_BIT_bm) : 	// CCW
-						(ax.x.port->OUTCLR=DIRECTION_BIT_bm);	// CW
-	(ln->steps_y < 0) ? (ax.y.port->OUTSET=DIRECTION_BIT_bm) : 
+	/*
+	if (ln->direction_bits & X_DIRECTION_BIT_bm) {			// if X is set (CW)
+		ax.x.port->OUTSET = DIRECTION_BIT_bm;
+	} else {
+		ax.x.port->OUTCLR = DIRECTION_BIT_bm;
+	}
+	if (ln->direction_bits & Y_DIRECTION_BIT_bm) {
+		ax.y.port->OUTSET = DIRECTION_BIT_bm;
+	} else {
+		ax.y.port->OUTCLR = DIRECTION_BIT_bm;
+	}
+	if (ln->direction_bits & Z_DIRECTION_BIT_bm) {
+		ax.z.port->OUTSET = DIRECTION_BIT_bm;
+	} else {
+		ax.z.port->OUTCLR = DIRECTION_BIT_bm;
+	}
+	*/
+
+	(ln->steps_x > 0) ? (ax.x.port->OUTSET=DIRECTION_BIT_bm) : 
+						(ax.x.port->OUTCLR=DIRECTION_BIT_bm);
+	(ln->steps_y > 0) ? (ax.y.port->OUTSET=DIRECTION_BIT_bm) : 
 						(ax.y.port->OUTCLR=DIRECTION_BIT_bm);
-	(ln->steps_z < 0) ? (ax.z.port->OUTSET=DIRECTION_BIT_bm) : 
+	(ln->steps_z > 0) ? (ax.z.port->OUTSET=DIRECTION_BIT_bm) : 
 						(ax.z.port->OUTCLR=DIRECTION_BIT_bm);
 
-	// load timers: step rate = microseconds / absolute value of step count
-	_st_load_timer(&ax.x, (ln->microseconds / labs(ln->steps_x)), ln->microseconds);
-	_st_load_timer(&ax.y, (ln->microseconds / labs(ln->steps_y)), ln->microseconds);
-	_st_load_timer(&ax.z, (ln->microseconds / labs(ln->steps_z)), ln->microseconds);
-
-	ax.active_axes |= (X_BIT_bm | Y_BIT_bm | Z_BIT_bm);			// set XYZ active
-
-//	st_print_axis(&ax.x, "X");					// ++++ DEBUG STATEMENT ++++
-//	st_print_axis(&ax.y, "Y");					// ++++ DEBUG STATEMENT ++++
-//	st_print_axis(&ax.z, "Z");					// ++++ DEBUG STATEMENT ++++
-	st_print_exec_line(*ln);					// ++++ DEBUG STATEMENT ++++
-
-	busy = FALSE;
-	return;
-}
-
-/* st_load_timer() - helper routine for st_execute line 
-
-  Note: this routine and the ISRs should be modified to always use the highest 
-  clock rate and to drop pulses in the ISR (psot scaling instead of prescaling)
-  This will preserve clock accuracy at very low step rates - which is something 
-  of a problem right now.
-  
-  The ISR should also be modified to end each move on a whole-step boundary 
-  for power management reasons, and possibly revert the microsteps to whole
-  if necessary to do this.  
-*/
-
-void _st_load_timer(struct Axis *A, uint32_t step_rate, uint32_t microseconds) 
-{
-//	st_print_four_ints( a->counter, step_rate, a->timer->CTRLA, microseconds);
-
-	if (step_rate < DIV1_RANGE) {				// short timer - up to 2000 uSec
-		A->timer->CTRLA = TC_CLK_DIV_1;			// set clock divisor
-		A->counter = (microseconds/step_rate);	// # of steps to make at this rate
-		step_rate = (step_rate * 32);			// normalize step rate to timer clock
-	} else if (step_rate < DIV2_RANGE) {
-		A->timer->CTRLA = TC_CLK_DIV_2;	
-		A->counter = (microseconds/step_rate);
-		step_rate = (step_rate * 16);
-	} else if (step_rate < DIV4_RANGE) {
-		A->timer->CTRLA = TC_CLK_DIV_4;	
-		A->counter = (microseconds/step_rate);
-		step_rate = (step_rate * 8);
-	} else if (step_rate < DIV8_RANGE) {
-		A->timer->CTRLA = TC_CLK_DIV_8;	
-		A->counter = (microseconds/step_rate);
-		step_rate = (step_rate * 4);
-	} else if (step_rate < DIV64_RANGE) {
-		A->timer->CTRLA = TC_CLK_DIV_64;	
-		A->counter = (microseconds/step_rate);
-		step_rate = (step_rate / 2);
-	} else if (step_rate < DIV256_RANGE) {
-		A->timer->CTRLA = TC_CLK_DIV_256;	
-		A->counter = (microseconds/step_rate);
-		step_rate = (step_rate / 8);
+	// set direction bits
+	/*
+	if (ln->steps_x > 0) {							// X is positive (CW)
+		ax.x.port->OUTSET = DIRECTION_BIT_bm;
+	} else {
+		ax.x.port->OUTCLR = DIRECTION_BIT_bm;
 	}
-	A->timer->PERH = (uint8_t)((step_rate >> 8) & 0x000000FF);	// period high
-	A->timer->PERL = (uint8_t)(step_rate & 0x000000FF);			// period low
+	if (ln->steps_y > 0) {
+		ax.y.port->OUTSET = DIRECTION_BIT_bm;
+	} else {
+		ax.y.port->OUTCLR = DIRECTION_BIT_bm;
+	}
+	if (ln->steps_z > 0) {
+		ax.z.port->OUTSET = DIRECTION_BIT_bm;
+	} else {
+		ax.z.port->OUTCLR = DIRECTION_BIT_bm;
+	}
+	*/
+
+	// transform step rates into timer load values and load timer
+	st_load_timer(&ax.x, (ln->microseconds / ln->steps_x), ln->microseconds);
+	st_load_timer(&ax.y, (ln->microseconds / ln->steps_y), ln->microseconds);
+	st_load_timer(&ax.z, (ln->microseconds / ln->steps_z), ln->microseconds);
+
+//	st_load_timer(&ax.x, step_rate_x, ln->microseconds);
+//	st_load_timer(&ax.y, step_rate_y, ln->microseconds);
+//	st_load_timer(&ax.z, step_rate_z, ln->microseconds);
+
+	busy = FALSE;				//++++++++++++
 }
+
+/* st_load_timer() - helper routine for st_execute line */
+
+void st_load_timer(struct axis *a, uint32_t step_rate, uint32_t microseconds) 
+{
+	if (step_rate < (DIV1_RANGE)) {				// short timer - up to 2000 uSec
+		a->timer->CTRLA = TC_CLK_DIV_1;			// set clock divisor
+		a->counter = (microseconds/step_rate);	// # of steps to make at this rate
+		step_rate = (step_rate * 32);
+		a->timer->PERH = (uint8_t)((step_rate >> 8) & 0x000000FF);	// period high
+		a->timer->PERL = (uint8_t)(step_rate & 0x000000FF);			// period low
+	}
+}
+
 
 /* st_get_next_line() - return the next line from the line buffer & advance buffer tail*/ 
 
@@ -396,56 +405,9 @@ struct Line *st_get_next_line()
 		line_buffer_tail = 0;
 	}
 	return (ln); 
+//	return (&line_buffer[line_buffer_tail]); 
 }
 
-/* st_buffer_line()
-
-	Add a new linear movement to the buffer.
-	steps_x, _y and _z is the signed, relative motion in steps. 
-	Microseconds specify how many microseconds the move should take to perform.
-
-  Line buffer circular buffer operation
-    line_buffer_tail is the array index from which the previous line was read.
-	line_buffer_tail is always incremented before reading the line.
-
-	line_buffer_head is the array index to which the line will be written.
-	line_buffer_head is always incremented after writing the line.
-
-	Buffer full:	line_buffer_head == line_buffer_tail
-	Buffer empty:	line_buffer_head == line_buffer_tail+1 
-
-*/
-void st_buffer_line(int32_t steps_x, int32_t steps_y, int32_t steps_z, uint32_t microseconds) 
-{
-	struct Line *ln;
-	int next_buffer_head;
-
-	// bail on a zero length line (perhaps test for abs val < min line length)
-	if ((steps_x == 0) && (steps_y == 0) && (steps_z) == 0) {
-		return;
-	};
-
-	// Calculate the buffer head needed to store this line
-	if ((next_buffer_head = line_buffer_head + 1) > LINE_BUFFER_SIZE) {
-		next_buffer_head = 0;					  // wrap condition
-	}
-	// If the buffer is full sleep until there is room in the buffer.
-	while(line_buffer_tail == next_buffer_head) { // tail will advance, breaking this loop
-		sleep_mode(); 
-//		_delay_us(10);
-	};
-
-	ln = &line_buffer[line_buffer_head];  		// write the line record to the buffer head
-	ln->steps_x = steps_x;
-	ln->steps_y = steps_y;
-	ln->steps_z = steps_z;  
-	ln->microseconds = microseconds;
-
-	line_buffer_head = next_buffer_head;
-
-	st_print_line(*ln);							// ++++ DEBUG STATEMENT ++++
-	st_execute_line();							// attempt to run this line
-}
 
 /* st_synchronize() - block until all buffered steps are executed */
 
@@ -466,6 +428,55 @@ void st_flush()
 	sei();
 }
 
+/* st_buffer_line()
+
+	Add a new linear movement to the buffer. 
+	steps_x, _y and _z is the signed relative motion in steps. 
+	Microseconds specify how many microseconds the move should take to perform.
+*/
+
+void st_buffer_line(int32_t steps_x, int32_t steps_y, int32_t steps_z, uint32_t microseconds) 
+{
+	// Calculate the buffer head after we push this byte
+	int next_buffer_head = (line_buffer_head + 1) % LINE_BUFFER_SIZE;	
+
+	// If the buffer is full: good! That means we are well ahead of the robot. 
+	// Nap until there is room in the buffer.
+	while(line_buffer_tail == next_buffer_head) { 
+		sleep_mode(); 
+	};
+
+	struct Line *line = &line_buffer[line_buffer_head];  	// Setup line record
+	line->steps_x = labs(steps_x);
+	line->steps_y = labs(steps_y);
+	line->steps_z = labs(steps_z);  
+//	line->steps_max = max(line->steps_x, max(line->steps_y, line->steps_z)); ++++++
+
+  	// Bail if this is a zero-length line
+	if (max(line->steps_x, max(line->steps_y, line->steps_z)) == 0) { 	//++++++
+		return;
+	};
+
+//	line->rate = microseconds/line->maximum_steps;
+	line->microseconds = microseconds;
+
+	uint8_t direction_bits = 0;
+	if (steps_x < 0) { 
+		direction_bits |= X_DIRECTION_BIT_bm; 
+	}
+	if (steps_y < 0) { 
+		direction_bits |= Y_DIRECTION_BIT_bm; 
+	}
+	if (steps_z < 0) { 
+		direction_bits |= Z_DIRECTION_BIT_bm; 
+	}
+//	line->direction_bits = direction_bits;		//++++++++++
+	line_buffer_head = next_buffer_head;		// Move buffer head
+
+//	st_print_line(*line);						// ++++ DEBUG CODE
+	st_execute_line();						// attempt to run this line +++++++
+}
+
 /* st_go_home() - perform the homing cycle */
 
 void st_go_home()
@@ -473,4 +484,37 @@ void st_go_home()
   // Todo: Perform the homing cycle
 }
 
+// ++++ DEBUG CODE
+void st_print_four_ints(long x, long y, long z, long u) {
+	printPgmString(PSTR("Line: X="));
+	printInteger(x);
+	printPgmString(PSTR(" Y="));
+	printInteger(y);
+	printPgmString(PSTR(" Z="));
+	printInteger(z);
+	printPgmString(PSTR(" uS="));
+	printInteger(u);
+	printPgmString(PSTR("\r\n"));
+}
 
+void st_print_active() {
+	printPgmString(PSTR("ACTIVE = "));
+	printHex(ax.active_axes);
+	printPgmString(PSTR("\r\n"));
+}
+
+void st_print_line(struct Line line) {
+	printPgmString(PSTR("Line X="));		// ++++ DEBUG CODE
+	printInteger(line.steps_x);
+	printPgmString(PSTR(", Y="));
+	printInteger(line.steps_y);
+	printPgmString(PSTR(", Z="));
+	printInteger(line.steps_z);
+	printPgmString(PSTR(", uS="));
+	printInteger(line.microseconds);
+//	printPgmString(PSTR(", D="));
+//	printHex(line.direction_bits);
+//	printPgmString(PSTR(", Steps="));
+//	printInteger(line.steps_max);
+ 	printPgmString(PSTR("\r\n"));
+}

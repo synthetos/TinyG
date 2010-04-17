@@ -180,7 +180,8 @@ char serialRead()
 		return 0x04;											// ASCII EOT
 	} else {
 		char c = rx_buffer[rx_buffer_tail];
-		rx_buffer_tail = (rx_buffer_tail + 1) % RX_BUFFER_SIZE;	// original code
+//		rx_buffer_tail = (rx_buffer_tail + 1) % RX_BUFFER_SIZE;	// original code
+		rx_buffer_tail = (rx_buffer_tail + 1) & RX_BUFFER_MASK;	// optimized code
 		return c;
 	}
 }

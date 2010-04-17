@@ -40,7 +40,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 LIBS = -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = main.o gcode.o config.o eeprom_xmega.o encoder.o xmega_support.o motion_control.o pmic_driver.o serial_protocol.o spindle_control.o stepper.o wiring_serial.o 
+OBJECTS = main.o gcode.o config.o eeprom_xmega.o encoder.o xmega_support.o motion_control.o pmic_driver.o serial_protocol.o spindle_control.o stepper.o wiring_serial.o debug.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -83,6 +83,9 @@ stepper.o: ../stepper.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 wiring_serial.o: ../wiring_serial.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+debug.o: ../debug.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link

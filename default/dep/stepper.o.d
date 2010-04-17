@@ -18,7 +18,7 @@ stepper.o: ../stepper.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h \
   ../stepper.h c:/winavr-20100110/lib/gcc/../../avr/include/avr/sleep.h \
   ../config.h ../nuts_bolts.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/string.h \
+  c:/winavr-20100110/lib/gcc/../../avr/include/string.h ../debug.h \
   ../wiring_serial.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h
 
@@ -65,6 +65,8 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/sleep.h:
 ../nuts_bolts.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/string.h:
+
+../debug.h:
 
 ../wiring_serial.h:
 
