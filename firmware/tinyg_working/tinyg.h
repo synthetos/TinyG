@@ -30,7 +30,7 @@
 #endif
 
 // System Constants
-#define TINYG_VERSION "build 207"
+#define TINYG_VERSION "build 208"
 #define EEPROM_DATA_VERSION 100	// Used to migrate old data during firmware upgrades
 
 #define MM_PER_ARC_SEGMENT 0.05
@@ -52,6 +52,7 @@ enum tgAxisNum {				// define axis numbers and array indexes from 0 to 3
  * The following return codes are unified for various TinyG functions.
  * The first codes (up to the line) are aligned with the XIO codes.
  * Please don't change them without checking the corresponding values in xio.h
+ * If you mess with this be sure to change the strings in tg_print_status
  */
 
 //----- codes aligned with XIO subsystem...
@@ -76,7 +77,7 @@ enum tgAxisNum {				// define axis numbers and array indexes from 0 to 3
 #define TG_BAD_NUMBER_FORMAT 16			// number format error
 #define TG_FLOATING_POINT_ERROR 17		// number conversion error
 #define TG_MOTION_CONTROL_ERROR 18		// motion control failure
-#define TG_ARC_ERROR 19					// arc specification error
+#define TG_ARC_SPECIFICATION_ERROR 19	// arc specification error
 #define TG_ZERO_LENGTH_LINE 20			// XYZ line is zero length 
 
 
@@ -91,6 +92,9 @@ typedef int (*fptr_int_char_p) (char *b);// returns int, character pointer (line
 /*
  * Various debug and other compile-time switches
  */
+
+//#define __RS485_MASTER TRUE		// master RS485 device
+
 //#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
 //#define __DEBUG TRUE		// set debug mode (comment out to undefine)
 //#define __FAKE_STEPPERS	// disables stepper ISR load for faster debugging
