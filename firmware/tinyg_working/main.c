@@ -119,6 +119,7 @@
 #include "xio.h"
 #include "tinyg.h"
 #include "controller.h"
+#include "network.h"
 #include "config.h"
 #include "stepper.h"
 #include "limit_switches.h"
@@ -159,15 +160,29 @@ int main(void)
 
 //	xio_queue_RX_char_usb(ETX);			// send control-c (kill)
 //	xio_queue_RX_string_usb("f\n");
-//	xio_queue_RX_string_usb("?\n");
+	xio_queue_RX_string_usb("?\n");
 
-	xio_queue_RX_string_usb("g0x10y10z25\n");
 //	xio_queue_RX_string_usb("g0x0y0z0\n");
 //	xio_queue_RX_string_usb("g0x1000\n");
 //	xio_queue_RX_string_usb("g0x10000\n");
 //	xio_queue_RX_string_usb("g0x10\ng4p1\ng0x0\n");
 
+/*
+	xio_queue_RX_string_usb("g1 y-50 f300\n");
+	xio_queue_RX_string_usb("g0 20\n");
+	xio_queue_RX_string_usb("g0 y-50\n");
+	xio_queue_RX_string_usb("g0 y100\n");
+*/
+//	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
+//	xio_queue_RX_string_usb("g0 x-10 (MSGtest message)\n");
+
+#ifdef __RS485_MASTER
 	for(;;){
-		tg_controller();
+		tg_repeater();		// this node receives on USB and repeats to RS485
 	}
+#else
+	for(;;){
+		tg_controller();	// this node executes gcode blocks received via RS485
+	}
+#endif
 }
