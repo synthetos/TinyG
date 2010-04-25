@@ -11,19 +11,21 @@ from threading import *
 
 class FlexGridSizer(wx.Frame):
     def __init__(self, parent, id, title):
-        self.Frame = wx.Frame.__init__(self, parent, id, title, (-1,-1), size=(650,350))
-
+        self.Frame = wx.Frame.__init__(self, parent, id, title, (-1,-1), size=(550,350))
+        #State Keepers for Nudging
+        self.X_STATE  = 0
+        self.Y_STATE = 0
         #Needed for Threading
         self.worker = 0
         #Needed for Threading
 
         #MenuBars and Menus
-        menubar = wx.MenuBar()
-        file = wx.Menu()
-        file.Append(wx.ID_EXIT,'Quit', 'Quit Application')
-        menubar.Append(file, '&File')
-        self.SetMenuBar(menubar)
-        menubar.Show()
+        #menubar = wx.MenuBar()
+        #file = wx.Menu()
+        #file.Append(wx.ID_EXIT,'Quit', 'Quit Application')
+        #menubar.Append(file, '&File')
+        #self.SetMenuBar(menubar)
+        #menubar.Show()
 
         #Status Bar
         self.status_bar = self.CreateStatusBar(1,style=wx.EXPAND|wx.ALL)
@@ -39,6 +41,7 @@ class FlexGridSizer(wx.Frame):
         self.CmdInput.SetToolTip(wx.ToolTip("Type a Gcode command and hit enter to execute the command."))
         self.CmdInput.SetEditable(True)
         self.GcodeTxt = wx.TextCtrl(self.panel) #TextCtrl Box that displays the Loaded Gcode File
+        self.NudgeTxt = wx.TextCtrl(self.panel, size=(40,20), value=str(5))
 
         #Sizers
         hbox = wx.BoxSizer(wx.VERTICAL) #Create a master hbox then add everything into it
@@ -76,7 +79,9 @@ class FlexGridSizer(wx.Frame):
         self.Sertext = wx.StaticText(self.panel,   -1, "Serial Port:")
         self.Cmdtext = wx.StaticText(self.panel,   -1, "Gcode Command:")
         self.OutText = wx.StaticText(self.panel,   -1, "Ouput Text:")
-
+        self.NudgeText = wx.StaticText(self.panel, -1, "Nudge Amount")
+        
+        
         #Add Items to hbox2
         hbox2.Add(HardBtn, border=5, flag=wx.ALL)
         hbox2.Add(StopBtn, border=5, flag=wx.ALL)
@@ -105,10 +110,12 @@ class FlexGridSizer(wx.Frame):
         gbs.Add(hbox4,           pos=(4,9),   span=(1,2),   flag=wx.ALL|wx.EXPAND)     #Row 4
 
         gbs.Add(self.OutText,    pos=(5,0),   span=(1,1))                              #Row 5
-        gbs.Add(self.DebugMsg,   pos=(6,0),   span=(3,13), flag=wx.ALL|wx.EXPAND )           #Row 6
-
+        gbs.Add(self.DebugMsg,   pos=(6,0),   span=(3,13), flag=wx.ALL|wx.EXPAND )     #Row 6
+        
+        
         gbs.Add(hbox2,           pos=(9,9),   span=(1,2),  flag=wx.ALL|wx.EXPAND)      #Row 9
-
+        gbs.Add(self.NudgeText,  pos=(9,0),   span=(1,1))
+        gbs.Add(self.NudgeTxt,   pos=(9,1),   span=(1,1))
 
 
         hbox.Add(gbs, -1, wx.ALL | wx.CENTER)  #Add the gbs to the main hbox
@@ -131,12 +138,62 @@ class FlexGridSizer(wx.Frame):
         wx.EVT_BUTTON(self, 22, self.OnClear)
         wx.EVT_BUTTON(self, 23, self.OnStop)
         wx.EVT_BUTTON(self, 24, self.OnStopHARD)
-
+        wx.EVT_IDLE(self, self.CheckSerial)    #Detects if tinyg was unplugged
+        wx.EVT_KEY_DOWN(self.NudgeTxt, self.OnKeyDown)
+        
+        #wx.EVT_CHAR(self, self.OnKeyDown)
+        
         #Show the Frame Code
         self.Centre()
         self.Show(True)
 
-
+    def OnKeyDown(self, event):
+        #print "HERE"
+        keycode = event.GetKeyCode()
+        nudgeAmount = self.NudgeTxt.Value
+        
+        if keycode == wx.WXK_RIGHT:
+            self.Y_STATE = self.Y_STATE + int(nudgeAmount)
+            self.MoveNudge("Y", self.Y_STATE)
+        
+        if keycode == wx.WXK_LEFT:
+            self.Y_STATE = self.Y_STATE - int(nudgeAmount)
+            self.MoveNudge("Y", self.Y_STATE)         
+            
+        if keycode == wx.WXK_UP:
+            self.X_STATE = self.X_STATE + int(nudgeAmount)
+            self.MoveNudge("X", self.X_STATE)
+        
+        if keycode == wx.WXK_DOWN:
+            self.X_STATE = self.X_STATE - int(nudgeAmount)
+            self.MoveNudge("X", self.X_STATE)
+        
+        if keycode == wx.WXK_DELETE:
+            self.ClearNudge()
+            self.MoveNudge("X", 0)
+            self.MoveNudge("Y", 0)
+            
+        
+    def ClearNudge(self):
+        self.X_STATE  = 0
+        self.Y_STATE = 0
+    def MoveNudge(self, axis, amount):
+        #try:
+        try:
+            self.connection.write("g0 %s%s \n" % (axis, amount))
+            self.PrintDebug("[CORD DETAIL:] X:%s Y:%s" % (self.X_STATE, self.Y_STATE))
+        except AttributeError:
+            self.PrintDebug("[!!]Connect to TinyG First!")
+    def NudgeXLeft(self, event):
+        pass
+    def NudgeXRight(self, event):
+        pass
+    def NudgeYLeft(self, event):
+        pass
+    def NudgeYRight(self, event):
+        pass
+    
+    
     def OnLoad(self, event):
         self.PrintDebug("Loading Gcode Files")
         tmpFile = self.GcodeTxt.Value  #Stores the filename that was previously selectev in case of cancel being clicked on dialog
@@ -218,7 +275,6 @@ class FlexGridSizer(wx.Frame):
     def OnRefresh(self, event):
         try:
             self.connection.close()
-            self.status_bar.SetStatusText("DISCONNECTED:")
         except:
             pass
         self.PrintDebug("[*]Scanning For New Serial Ports")
@@ -235,7 +291,7 @@ class FlexGridSizer(wx.Frame):
             self.connection = serinit.connect(self.cmbSports.Value, self.cmbSpeeds.Value)
             self.connection.write("\n")
             #print self.connection.readline()
-            self.status_bar.SetStatusText("CONNECTED:  %s:%s" % (self.connection.port, self.connection._baudrate))
+            self.status_bar.SetStatusText("Connected to Port: %s Speed: %s" % (self.connection.port, self.connection._baudrate))
         except:
             self.PrintDebug("[!!]ERROR: Connecting to the Serial Port")
             self.status_bar.SetStatusText("DISCONNECTED:")
@@ -257,9 +313,12 @@ class FlexGridSizer(wx.Frame):
             self.PrintDebug(event.data)
 
     def OnStopHARD(self, event):
-        self.PrintDebug("[!!]HARD STOP!\n You most likely will need to reboot TinyG now.")
-        self.connection.write('\x03')  #Send the CTRL+C control character
-
+        try:
+            self.connection.write('\x03')  #Send the CTRL+C control character
+            self.PrintDebug("[!!]HARD STOP!\n You most likely will need to reboot TinyG now.")
+            
+        except AttributeError:
+            self.PrintDebug("[!!] Not Connected to TinyG!")
 
     def OnStop(self, event):
         """Stop Processing the Gcode File and kill the tinyG"""
@@ -273,7 +332,13 @@ class FlexGridSizer(wx.Frame):
             #self.connection.close()  #Try to close the serial port connection
 
 
-
+    def CheckSerial(self, event):
+        """Is called by the window IDLE event to check serial connection"""
+        try:
+            if self.connection.read():
+                pass
+        except:
+            self.status_bar.SetStatusText("Disconnected")
 """THREADING CODE SHOULD BE WORKING CORRECTLY"""
 EVT_RESULT_ID = wx.NewId()
 
