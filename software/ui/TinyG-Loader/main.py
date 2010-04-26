@@ -168,15 +168,16 @@ class FlexGridSizer(wx.Frame):
             self.X_STATE = self.X_STATE - int(nudgeAmount)
             self.MoveNudge("X", self.X_STATE)
         
-        if keycode == wx.WXK_DELETE:
+        if keycode == wx.WXK_DELETE or wx.WXK_SPACE: #space for osx compat.
             self.ClearNudge()
-            self.MoveNudge("X", 0)
-            self.MoveNudge("Y", 0)
+            #self.MoveNudge("X", 0)
+            #self.MoveNudge("Y", 0)
             
         
     def ClearNudge(self):
         self.X_STATE  = 0
         self.Y_STATE = 0
+        self.SetZero()
     def MoveNudge(self, axis, amount):
         #try:
         try:
@@ -184,16 +185,17 @@ class FlexGridSizer(wx.Frame):
             self.PrintDebug("[CORD DETAIL:] X:%s Y:%s" % (self.X_STATE, self.Y_STATE))
         except AttributeError:
             self.PrintDebug("[!!]Connect to TinyG First!")
-    def NudgeXLeft(self, event):
-        pass
-    def NudgeXRight(self, event):
-        pass
-    def NudgeYLeft(self, event):
-        pass
-    def NudgeYRight(self, event):
-        pass
     
-    
+    def SetZero(self):
+        try:
+            self.connection.write("G92 X0 Y0 Z0\n")
+            self.PrintDebug("[*]Zeroing Coordinate System. ")
+            self.PrintDebug("[*]Sent: G92 X0 Y0 Z0")
+            
+        except AttributeError:
+            self.PrintDebug("[!!]Serial Port Not Connected.")
+            
+ 
     def OnLoad(self, event):
         self.PrintDebug("Loading Gcode Files")
         tmpFile = self.GcodeTxt.Value  #Stores the filename that was previously selectev in case of cancel being clicked on dialog
