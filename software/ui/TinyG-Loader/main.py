@@ -11,7 +11,7 @@ from threading import *
 
 class FlexGridSizer(wx.Frame):
     def __init__(self, parent, id, title):
-        self.Frame = wx.Frame.__init__(self, parent, id, title, (-1,-1), size=(800,650))
+        self.Frame = wx.Frame.__init__(self, parent, id, title, (-1,-1), size=(750,650))
         #State Keepers for Nudging
         self.X_STATE  = 0
         self.Y_STATE = 0
@@ -69,14 +69,18 @@ class FlexGridSizer(wx.Frame):
         #Ubtn = wx.Button(self.panel, 1002, "U", (10,10), size=(30,20))
         #Lbtn = wx.Button(self.panel, 1003, "L", (10,10), size=(30,20))
         #Rbtn = wx.Button(self.panel, 1004, "R", (10,10), size=(30,20))
-        LoadBtn = wx.Button(self.panel,        17,  "Load Gcode")
-        self.RunBtn  = wx.Button(self.panel,   18,   "Run Gcode")
+        LoadBtn = wx.Button(self.panel,        17,  "Load Gcode", size=(75,25))
+        self.RunBtn  = wx.Button(self.panel,   18,   "Run Gcode", size=(75,25))
         RefBtn  = wx.Button(self.panel,        19,   "Refresh",   size=(75,25))
         ConBtn  = wx.Button(self.panel,        20,   "Connect",   size=(75,25))
         #ExeBtn  = wx.Button(self.panel,       21,   "Execute",   size=(75,25)) #Just hit enter no need for this anymore
         #ClrBrn  = wx.Button(self.panel,       22,   "Clear",     size=(75,25)) #Not super functional just hit enter
         StopBtn = wx.Button(self.panel,        23,   "Stop",      size=(75,25))
-        HardBtn = wx.Button(self.panel,        24,   "Hard Stop", size=(80,25))
+        HardBtn = wx.Button(self.panel,        24,   "Hard Stop", size=(75,25))
+
+        PauseBtn = wx.Button(self.panel,       25,   "Pause",     size=(75,25))
+        ResumeBtn = wx.Button(self.panel,      26,   "Resume",    size=(75,25))
+        
 
         #Static Text
         self.Gtext =   wx.StaticText(self.panel,   -1, "Gcode File:")
@@ -88,8 +92,10 @@ class FlexGridSizer(wx.Frame):
         #self.NudgeFeedText = wx.StaticText(self.panel, -1, "Nudge Feed Rate")
         
         #Add Items to hbox2
+        hbox2.Add(PauseBtn, border=5, flag=wx.ALL)
+        hbox2.Add(ResumeBtn, border=5, flag=wx.ALL)
         hbox2.Add(HardBtn, border=5, flag=wx.ALL)
-        hbox2.Add(StopBtn, border=5, flag=wx.ALL)
+        
 
         #Add Items to hbox3
         hbox3.Add(RefBtn, border=5, flag=wx.ALL)
@@ -98,6 +104,7 @@ class FlexGridSizer(wx.Frame):
         #Add Items to hbox4
         hbox4.Add(LoadBtn, border=5, flag=wx.ALL)
         hbox4.Add(self.RunBtn, border=5, flag=wx.ALL)
+        hbox4.Add(StopBtn, border=5, flag=wx.ALL)
 
 
         #Add Items to the Flex Grid
@@ -118,14 +125,14 @@ class FlexGridSizer(wx.Frame):
         gbs.Add(self.DebugMsg,   pos=(6,0),   span=(3,13), flag=wx.ALL|wx.EXPAND )     #Row 6
         
         
-        gbs.Add(hbox2,           pos=(9,9),   span=(1,2),  flag=wx.ALL|wx.EXPAND)      #Row 9
+        gbs.Add(hbox2,           pos=(10,8),   span=(1,4),  flag=wx.ALL|wx.EXPAND)      #Row 9
         gbs.Add(self.NudgeText,  pos=(9,0),   span=(1,1))
         gbs.Add(self.NudgeTxt,   pos=(9,1),   span=(1,1))
         
-        #gbs.Add(self.NudgeFeedText, pos=(10,0),  span=(1,1))
+        #gbs.Add(self.NudgeFeedText, pos=(9,0),  span=(1,1))
         #gbs.Add(self.NudgeFdTxt, pos=(10,1), span=(1,1))
-        gbs.Add(self.SliderText, pos=(9,4), span=(1,1))
-        gbs.Add(self.feedSlider, pos=(10,3), span=(5,5))
+        gbs.Add(self.SliderText, pos=(9,3), span=(1,1))
+        gbs.Add(self.feedSlider, pos=(10,0), span=(5,5))
 
 
         hbox.Add(gbs, -1, wx.ALL | wx.CENTER)  #Add the gbs to the main hbox
@@ -148,6 +155,9 @@ class FlexGridSizer(wx.Frame):
         wx.EVT_BUTTON(self, 22, self.OnClear)
         wx.EVT_BUTTON(self, 23, self.OnStop)
         wx.EVT_BUTTON(self, 24, self.OnStopHARD)
+        wx.EVT_BUTTON(self, 25, self.OnPause)
+        wx.EVT_BUTTON(self, 26, self.OnResume)
+        
         #wx.EVT_IDLE(self, self.CheckSerial)    #Detects if tinyg was unplugged
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
         
@@ -319,7 +329,29 @@ class FlexGridSizer(wx.Frame):
         except:
             self.PrintDebug("[!!]ERROR: Connecting to the Serial Port")
             self.status_bar.SetStatusText("DISCONNECTED:")
-
+         
+    def OnResume(self, event):
+        """This will cause the system to pause and wait for the resume command"""
+        try:
+            self.connection.write('\x17')
+            self.PrintDebug("[*]Sending Resume (XON)")
+        except AttributeError:
+            self.PrintDebug("[!!]ERROR: Serial Port Not Connected")
+            
+        except Exception, e:
+            self.PrintDebug(str(e))
+            
+    def OnPause(self, event):
+        """This will cause the system to pause and wait for the resume command"""
+        try:
+            self.connection.write('\x19')
+            self.PrintDebug("[*]Sending Pause (XOFF)")
+        except AttributeError:
+            self.PrintDebug("[!!]ERROR: Serial Port Not Connected")
+            
+        except Exception, e:
+            self.PrintDebug(str(e))
+            
     def OnQuit(self, event):
         self.Destroy()
 
