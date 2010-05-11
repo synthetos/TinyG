@@ -435,7 +435,7 @@ int _gc_execute_gcode_block()
 	//--> change coordinate system data goes here
 
 	// set axis offsets
-	if (gn.next_action == NEXT_ACTION_OFFSET_COORDINATES) {
+	if (gf.set_origin_mode) {
 		if ((gp.status = cm_set_origin_offsets(
 						 gn.target[X], gn.target[Y], gn.target[Z]))) {
 			return (gp.status);								// error return
