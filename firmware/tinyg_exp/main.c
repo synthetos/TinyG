@@ -178,8 +178,8 @@ int main(void)
 //	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
 //	xio_queue_RX_string_usb("g0 x-10 (MSGtest)\n");
 
-	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
-//	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
+//	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
+	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
 //	xio_queue_RX_string_usb("g0 x0 y0 z0\n");
 
 //	xio_queue_RX_char_usb(XOFF);		// send control-s (pause)
