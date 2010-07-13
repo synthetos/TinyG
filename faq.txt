@@ -1,3 +1,8 @@
 Still todo.  
 
 Ril3y will be writing the commandline options.
+
+For more information on the project, see the project homepage at: 
+
+https://www.synthetos.com/wiki/index.php?title=Projects:TinyG
+
