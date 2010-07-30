@@ -1,5 +1,5 @@
 /*
- * hardware.h - hardware configuration values
+ * hardware.h - hardware configuration values 
  *			 	Reflects system hardware dependencies 
  *			 	Application (software) globals are in tinyg.h
  * 
