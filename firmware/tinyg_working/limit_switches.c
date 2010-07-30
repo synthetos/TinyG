@@ -17,10 +17,10 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-//#include "xmega_init.h"				// defines CPU speed...
 
 #include "tinyg.h"
 #include "config.h"
+#include "hardware.h"
 #include "stepper.h"
 #include "controller.h"
 #include "limit_switches.h"

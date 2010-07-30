@@ -42,12 +42,13 @@
 #include <stdlib.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include "xmega_init.h"				// defines CPU speed...
-#include <util/delay.h>				//...used here for optional step pulse delay
-#include "move_buffer.h"
-#include "stepper.h"
-#include "config.h"
+
 #include "tinyg.h"
+#include "config.h"
+#include "stepper.h"
+#include "move_buffer.h"
+#include "hardware.h"
+#include <util/delay.h>				//...used here for optional step pulse delay
 
 #ifdef __DEBUG
 #include <stdio.h>
@@ -332,8 +333,8 @@ void st_terminate()
 
 void st_motor_test() {
 	ax.a[X_AXIS].step_counter = 0x00001000;
-	ax.a[X_AXIS].timer->PER = 0x1000;					// step rate (period)
-	ax.a[X_AXIS].timer->CTRLA = TC_CLK_ON;				// start clock
+	ax.a[X_AXIS].timer->PER = 0x1000;			// step rate (period)
+	ax.a[X_AXIS].timer->CTRLA = TC_CLK_ON;		// start clock
 
 	ax.a[Y_AXIS].step_counter = 0x00000800;
 	ax.a[Y_AXIS].timer->PER = 0x2000;

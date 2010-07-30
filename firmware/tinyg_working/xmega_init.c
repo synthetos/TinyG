@@ -24,6 +24,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "hardware.h"
 #include "xmega_init.h"
 
 void xmega_init_clocks(void);
@@ -40,9 +41,9 @@ void xmega_init(void) {
 /*
  * xmega_init_clocks()
  *
- * This routine is lifted and modified from:
+ * This routine is lifted and modified from Boston Android and from
  * http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&p=711659
- * Read this thread to the bottom and you will find:
+ * Read the above thread to the bottom and you will find:
  *
 	OSC.XOSCCTRL = 0xCB;  // 0.4-16 MHz XTAL - 16K CLK Start Up 
 	OSC.CTRL = 0x08;      // Enable External Oscillator 
@@ -58,14 +59,35 @@ void xmega_init(void) {
 
 void xmega_init_clocks(void) 
 { 
-	OSC.XOSCCTRL = 0x4B;	// 2-9 MHz crystal; 0.4-16 MHz XTAL w/16K CLK Start Up
+#ifdef __CLOCK_EXTERNAL_8MHZ // external 8 Mhx Xtal with 4x PLL = 32 Mhz
+	OSC.XOSCCTRL = 0x4B;	// 2-9 MHz crystal; 0.4-16 MHz XTAL w/16K CLK startup
 	OSC.CTRL = 0x08;        // enable external crystal oscillator 
 	while(!(OSC.STATUS & OSC_XOSCRDY_bm));		// wait for oscillator ready
-	OSC.PLLCTRL = 0xC4;		// XOSC is PLL Source; 4x Factor (32 MHz) 
+	OSC.PLLCTRL = 0xC4;		// XOSC is PLL Source; 4x Factor (32 MHz sys clock) 
 	OSC.CTRL = 0x18;        // Enable PLL & External Oscillator 
 	while(!(OSC.STATUS & OSC_PLLRDY_bm));		// wait for PLL ready
 	CCPWrite(&CLK.CTRL, CLK_SCLKSEL_PLL_gc);    // switch to PLL clock
 	OSC.CTRL &= ~OSC_RC2MEN_bm;					// disable internal 2 MHz clock
+#endif
+
+#ifdef __CLOCK_EXTERNAL_16MHZ // external 16 Mhx Xtal with 2x PLL = 32 Mhz
+	OSC.XOSCCTRL = 0xCB;	// 12-16 MHz crystal; 0.4-16 MHz XTAL w/16K CLK startup
+	OSC.CTRL = 0x08;        // enable external crystal oscillator 
+	while(!(OSC.STATUS & OSC_XOSCRDY_bm));		// wait for oscillator ready
+	OSC.PLLCTRL = 0xC2;		// XOSC is PLL Source; 2x Factor (32 MHz sys clock)
+	OSC.CTRL = 0x18;        // Enable PLL & External Oscillator 
+	while(!(OSC.STATUS & OSC_PLLRDY_bm));		// wait for PLL ready
+	CCPWrite(&CLK.CTRL, CLK_SCLKSEL_PLL_gc);    // switch to PLL clock
+	OSC.CTRL &= ~OSC_RC2MEN_bm;					// disable internal 2 MHz clock
+#endif
+
+#ifdef __CLOCK_INTERNAL_32MHZ // 32 MHz internal clock (Boston Android code)
+	CCP = CCP_IOREG_gc; 						// Security Signature to modify clk
+	OSC.CTRL = OSC_RC32MEN_bm; 					// enable internal 32MHz oscillator
+	while(!(OSC.STATUS & OSC_RC32MRDY_bm)); 	// wait for oscillator ready
+	CCP = CCP_IOREG_gc; 						// Security Signature to modify clk
+	CLK.CTRL = 0x01; 							// select sysclock 32MHz osc
+#endif
 }
 
 /******************************************************************************
@@ -166,19 +188,4 @@ void CCPWrite( volatile uint8_t * address, uint8_t value )
 	AVR_LEAVE_CRITICAL_REGION();
 #endif
 }
-
-
-/* Configure 32 MHz clock (original Boston Android code - deprecated) */
-/*
-void config32MHzInternalClock(void) 
-{
-	CCP = CCP_IOREG_gc; 					// Security Signature to modify clk 
-
-	// initialize clock source to be 32MHz internal oscillator (no PLL)
-	OSC.CTRL = OSC_RC32MEN_bm; 				// enable internal 32MHz oscillator
-	while(!(OSC.STATUS & OSC_RC32MRDY_bm)); // wait for oscillator ready
-	CCP = CCP_IOREG_gc; 					// Security Signature to modify clk
-	CLK.CTRL = 0x01; 						// select sysclock 32MHz osc
-};
-*/
 
