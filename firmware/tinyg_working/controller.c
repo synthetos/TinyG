@@ -301,7 +301,6 @@ void _tg_prompt()
 		printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
 //		tg.state = TG_STATE_READY_PROMPTED;
 	}
-
 }
 
 /* 
@@ -325,10 +324,6 @@ static void _tg_poll_active(uint8_t d)
 
 	// read input line or return if not a completed line
 	if ((tg.status = xio_fget_ln(d, tg.dev[d].buf, tg.dev[d].len)) == TG_OK) {
-		if (tg.state >= TG_STATE_READING_COMMAND) {
-			printf_P(PSTR("COMMAND OVERRUN ERROR. SLOW DOWN!\n"));
-			return;
-		} 
 		tg.status = tg_parser(tg.dev[d].buf);	// dispatch to parser
 	}
 

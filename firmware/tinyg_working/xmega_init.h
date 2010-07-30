@@ -18,11 +18,6 @@
 #ifndef xmega_support_h
 #define xmega_support_h
 
-/* set CPU clock for delays */		// should precede <avr/delay.h>
-#ifndef F_CPU
-#define F_CPU 32000000UL
-#endif
-
 /*
  * Global Scope Functions
  */

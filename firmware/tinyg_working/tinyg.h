@@ -1,5 +1,5 @@
 /*
- * tinyg.h - tinyg main header - GLOBALS
+ * tinyg.h - tinyg main header - Application GLOBALS (see hardware.h for HW config)
  * Part of TinyG project
  *
  * Copyright (c) 2010 Alden S. Hart, Jr.
@@ -22,8 +22,6 @@
 #ifndef tinyg_h
 #define tinyg_h
 
-#define TINYG_VERSION "build 200"		// See also CONFIG_VERSION in config.h
-
 #ifndef FALSE
 #define FALSE 0
 #endif
@@ -31,9 +29,34 @@
 #define TRUE 1
 #endif
 
-#define CHAR_BUFFER_SIZE 80				// unified buffer size. 255 maximum.
+#define TINYG_VERSION "build 202"
+#define EEPROM_DATA_VERSION 100	// Used to migrate old data during firmware upgrades
+#define CHAR_BUFFER_SIZE 80		// unified buffer size. 255 maximum.
 
-/* The following enums are unified status return codes for various TinyG functions.
+// Constants from Grbl
+#define MM_PER_ARC_SEGMENT 0.01
+#define ONE_MINUTE_OF_MICROSECONDS 60000000.0
+#define TICKS_PER_MICROSECOND (F_CPU/1000000)
+#define INCHES_PER_MM (1.0/25.4)
+
+/* Define axes */
+
+enum tgAxisNum {				// define axis numbers and array indexes from 0 to 3
+		X_AXIS,
+		Y_AXIS,
+		Z_AXIS,
+		A_AXIS,
+		MAX_AXIS
+};
+
+#define X X_AXIS				// shorter aliases
+#define Y Y_AXIS
+#define Z Z_AXIS
+#define A A_AXIS
+
+
+/* Global status codes
+ * The following enums are unified status return codes for various TinyG functions.
  * This is necessary as some funcs return via callbacks & return codes get jumbled up.
  * The first fixed codes are used for flow control. The rest are up for grabs.
  */
@@ -47,7 +70,8 @@ enum tgStatus {
 	TG_ERROR,			//	5 	generic error return (errors start here)
 
 	// have at it for the rest
-	TG_BUFFER_FULL,				// buffer is full (also used to terminate too-long text line)
+	TG_BUFFER_FULL,				// buffer is full (fatal)
+								// ...also non-fatal to terminate too-long text line
 	TG_UNRECOGNIZED_COMMAND,	// parser didn't recognize the command
 	TG_EXPECTED_COMMAND_LETTER,	// malformed line to parser
 	TG_ZERO_LENGTH_LINE,		// XYZ line is zero length 
@@ -76,7 +100,6 @@ typedef int (*fptr_int_char_p) (char *b);// returns int, character pointer (line
  */
 //#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
 //#define __DEBUG TRUE		// set debug mode (comment out to undefine)
-//#define __RILEY TRUE		// set RILEY mode (comment out to undefine)
 //#define __FAKE_STEPPERS	// disables stepper ISR load for faster debugging
 
 #endif
