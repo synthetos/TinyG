@@ -135,7 +135,7 @@ static int _gc_next_statement(char *letter, double *value_ptr, double *fraction_
 static int _gc_compute_arc(void);
 static int _gc_compute_radius_arc(void);
 static int _gc_compute_center_arc(void);
-static void _gc_print_status(uint8_t status, char *textbuf);
+//static void _gc_print_status(uint8_t status, char *textbuf);
 
 /* 
  * gc_init() 
@@ -670,6 +670,7 @@ int _gc_compute_center_arc()
  * _gc_print_status
  */
 
+/*
 void _gc_print_status(uint8_t status_code, char *textbuf)
 {
 	switch(status_code) {
@@ -725,3 +726,4 @@ void _gc_print_status(uint8_t status_code, char *textbuf)
 	}
 	return;
 }
+*/
