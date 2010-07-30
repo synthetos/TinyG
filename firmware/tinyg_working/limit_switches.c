@@ -1,5 +1,5 @@
 /*
- * limit_switches.c - limit switch interfaces
+ * limit_switches.c - limit switch interfaces 
  * Part of TinyG project
  * Copyright (c) 2010 Alden S. Hart, Jr.
  *
