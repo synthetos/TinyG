@@ -22,6 +22,7 @@
 #include "tinyg.h"
 #include "config.h"
 #include "stepper.h"
+#include "hardware.h"
 #include "xmega_eeprom.h"
 
 void _cfg_computed(void); // prototypes for local functions (helper functions) 
@@ -215,7 +216,7 @@ void _cfg_dump_axis(uint8_t	axis)
 
 void cfg_reset()
 {
-	cfg.config_version = CONFIG_VERSION;
+	cfg.config_version = EEPROM_DATA_VERSION;
 	cfg.mm_per_arc_segment = MM_PER_ARC_SEGMENT;
 
 	cfg.a[X_AXIS].seek_steps_sec = X_SEEK_WHOLE_STEPS_PER_SEC;
@@ -301,7 +302,7 @@ int cfg_read()
 {
 	uint8_t version = eeprom_get_char(0);	// Check version-byte of eeprom
 
-	if (version != CONFIG_VERSION) {		// Read config-record and check checksum
+	if (version != EEPROM_DATA_VERSION) {	// Read config-record and check checksum
 		return(FALSE); 
 	} 
   	if (!(memcpy_from_eeprom_with_checksum

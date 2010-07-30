@@ -23,6 +23,6 @@
  */
 
 void en_init(void);
-
+void en_write(uint8_t n);
 
 #endif

@@ -12,11 +12,10 @@ stepper.o: ../stepper.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h \
-  ../xmega_init.h \
+  c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h ../tinyg.h \
+  ../config.h ../stepper.h ../move_buffer.h ../hardware.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/util/delay.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h \
-  ../move_buffer.h ../stepper.h ../config.h ../tinyg.h
+  c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/math.h:
 
@@ -46,16 +45,16 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h:
 
-../xmega_init.h:
+../tinyg.h:
+
+../config.h:
+
+../stepper.h:
+
+../move_buffer.h:
+
+../hardware.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/util/delay.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h:
-
-../move_buffer.h:
-
-../stepper.h:
-
-../config.h:
-
-../tinyg.h:
