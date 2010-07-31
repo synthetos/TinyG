@@ -99,6 +99,7 @@ struct Axis { 						// axis control struct - one per axis
 	uint16_t postscale_value;		// timer post-scale value (reloads)
 	uint16_t postscale_counter;		// timer post-scale counter
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor polarity
+	uint8_t flags;					// carries dewll flag (& others if needed)
 
 	/* hardware device bindings */
 	struct PORT_struct *port;		// motor control port
