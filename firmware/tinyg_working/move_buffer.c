@@ -95,6 +95,12 @@ void mv_init()
  *
  *	Buffer full:	move_buffer_head == move_buffer_tail
  *	Buffer empty:	move_buffer_head == move_buffer_tail+1 
+ *
+ * Dwell handling
+ *	Loading a dwell involves computing a period and step count that times out to 
+ *	the desired dwell duration (to some accuracy). Setting the dwell accuracy 
+ *	defines the period. The step count 
+
  */
 
 uint8_t mv_queue_move_buffer(int32_t steps_x, 
@@ -109,11 +115,6 @@ uint8_t mv_queue_move_buffer(int32_t steps_x,
 					// cycles at 32 bits to ~3800 cycles using 64 bits
 	uint32_t ticks_per_step; // temp variable
 
-	// Bail on a zero length line (perhaps test for abs val < min line length)
-	if ((steps_x == 0) && (steps_y == 0) && (steps_z) == 0) {
-		return (TG_ZERO_LENGTH_LINE);
-	}
-
 	// Determine the buffer head index needed to store this line
 	if ((next_buffer_head = mv.move_buffer_head + 1) >= MOVE_BUFFER_SIZE) {
 		next_buffer_head = 0;					 // wrap condition
@@ -125,36 +126,47 @@ uint8_t mv_queue_move_buffer(int32_t steps_x,
 //		sleep_mode();	// USE INSTEAD OF THE RETURN IF YOU WANT BLOCKING BEHAVIOR
 	}
 
-	// setup
+	// setup the move struct
 	mv.p = &mv.move_buffer[mv.move_buffer_head];
-	mv.p->a[X_AXIS].steps = steps_x;
-	mv.p->a[Y_AXIS].steps = steps_y;
-	mv.p->a[Z_AXIS].steps = steps_z;
-
+	mv.p->a[X].steps = steps_x;
+	mv.p->a[Y].steps = steps_y;
+	mv.p->a[Z].steps = steps_z;
 	ticks = microseconds * TICKS_PER_MICROSECOND;
 
-	// load axis values
-	for (i = X_AXIS; i <= Z_AXIS; i++) {
+	// Zero length lines are DWELL commands. Load dwell timing into X axis.
+	if ((steps_x == 0) && (steps_y == 0) && (steps_z) == 0) {
+		mv.p->a[X].steps = (((ticks & 0xFFFF0000)>>32)+1);	// compute # of steps
+		mv.p->a[X].postscale = 1;
+		ticks_per_step = (uint32_t)(ticks / mv.p->a[X].steps); // expensive!
+		while (ticks_per_step & 0xFFFF0000) {
+			ticks_per_step >>= 1;
+			mv.p->a[X].postscale <<= 1;
+		}
+		mv.p->a[X].period = (uint16_t)(ticks_per_step & 0x0000FFFF);
+		mv.p->a[X].flags = DWELL_FLAG_bm;
 
-		if (mv.p->a[i].steps) { 				// skip axes with zero steps
+	} else {		// load axis values for line
+		for (i = X; i <= Z; i++) {
+			if (mv.p->a[i].steps) { 				// skip axes with zero steps
 
-			// set direction: (polarity is corrected during execute move)
-			(mv.p->a[i].steps < 0) ? 
-			(mv.p->a[i].direction = 1): 		// CCW = 1 
-			(mv.p->a[i].direction = 0);			// CW = 0
+				// set direction: (polarity is corrected during execute move)
+				(mv.p->a[i].steps < 0) ? 
+				(mv.p->a[i].direction = 1): 		// CCW = 1 
+				(mv.p->a[i].direction = 0);			// CW = 0
 
-			// set steps to absolute value
-			mv.p->a[i].steps = labs(mv.p->a[i].steps);
+				// set steps to absolute value
+				mv.p->a[i].steps = labs(mv.p->a[i].steps);
 
-			// Normalize ticks_per_step by right shifting until the MSword = 0
-			// Accumulate LSBs shifted out of ticks_per_step into postscale
-			mv.p->a[i].postscale = 1;
-			ticks_per_step = (uint32_t)(ticks / mv.p->a[i].steps);// expensive!
-			while (ticks_per_step & 0xFFFF0000) {
-				ticks_per_step >>= 1;
-				mv.p->a[i].postscale <<= 1;
+				// Normalize ticks_per_step by right shifting until the MSword = 0
+				// Accumulate LSBs shifted out of ticks_per_step into postscale
+				mv.p->a[i].postscale = 1;
+				ticks_per_step = (uint32_t)(ticks / mv.p->a[i].steps);// expensive!
+				while (ticks_per_step & 0xFFFF0000) {
+					ticks_per_step >>= 1;
+					mv.p->a[i].postscale <<= 1;
+				}
+				mv.p->a[i].period = (uint16_t)(ticks_per_step & 0x0000FFFF);
 			}
-			mv.p->a[i].period = (uint16_t)(ticks_per_step & 0x0000FFFF);
 		}
 	}
 	mv.move_buffer_head = next_buffer_head;

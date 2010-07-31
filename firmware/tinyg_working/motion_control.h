@@ -30,7 +30,7 @@
 
 void mc_init(void);
 void mc_motion_stop(void);
-void mc_dwell(uint32_t milliseconds);	// Dwell for a couple of time units
+int mc_dwell(uint32_t milliseconds);
 void mc_go_home(void);						// Send the tool home
 
 

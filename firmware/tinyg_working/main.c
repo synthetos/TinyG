@@ -159,7 +159,7 @@ int main(void)
 	// Debug help:
 	// Pre-load the USB RX (input) buffer with some test strings
 	// Be mindful of the 16 char limit on the RX (circular) buffer.
-//	xio_usb_queue_RX_string("f\n");
+	xio_usb_queue_RX_string("f\n");
 //	xio_usb_queue_RX_string("?\n");
 //	xio_usb_queue_RX_string("g0x10y10z25\n");
 

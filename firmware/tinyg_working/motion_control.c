@@ -334,13 +334,19 @@ int mc_arc_continuation()
 }
 
 /* 
- * mc_dwell() 
+ * mc_dwell()
+ *
+ * Dwells are performed by passing a dwell move to the stepper drivers.
+ * A dewll is described as a zero lenegth line with a non-zero execution time.
+ * Dwells look like any other line, except it's flagged as a dwell.
+ * The stepper driver knows this and times the move but does not send any pulses.
+ * This routine uses the X asis as only the X axis knows how to deal with a dwell.
  */
 
-void mc_dwell(uint32_t milliseconds) 
+int mc_dwell(uint32_t milliseconds) 
 {
-//	mv_synchronize();
-	_delay_ms(milliseconds);
+    mv_queue_move_buffer(0, 0, 0, milliseconds);
+	return (TG_OK);
 }
 
 /* 

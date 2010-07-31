@@ -86,9 +86,11 @@ const char PROGMEM spiral_test50a[] = "\
 g1 f333 x0 y0\n\
 g3 x50 y50 i0 j50";
 
+const char PROGMEM dwell_test2[] = "\
+g4 p2.345";
 
-
-
+const char PROGMEM dwell_testMax[] = "\
+g4 p200.1";
 
 const char PROGMEM g0_test1[] = "\
 g0 x10 y20 z30\n\
