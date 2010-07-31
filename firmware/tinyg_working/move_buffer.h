@@ -21,13 +21,20 @@
 
 /*
  * pre-computed move buffer entry structure
+ *
+ * A move buffere entry can either carry a line sgement or a dwell timing.
+ * A dwell command is indicated by b1 set in the direction.
+ * The move will the ISRs run as normal, but no pulses will be issued.
  */
+
+#define DWELL_FLAG_bm (1<<0)		// indicates that the line is actually a dwell command
 
 struct mvMoveAxis {
  	int32_t steps; 					// total steps in each direction
 	uint16_t period;				// timer period value
 	uint16_t postscale;				// timer postscaler value (software counter)
-	uint8_t direction;				// direction (in LSB)
+	uint8_t direction;				// b0 = direction
+	uint8_t flags;					// carries dwell command (other flags if needed)
 };
 
 struct mvMove {						// Linear moves are queued as stepper ISR parameters

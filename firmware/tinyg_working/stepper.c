@@ -110,7 +110,6 @@ void st_init()
 //	st_motor_test();							// run the startup motor test
 }
 
-
 /*
  * ISRs - Motor timer interrupt service routines - service a tick from the axis timer
  *
@@ -120,11 +119,13 @@ void st_init()
 
 ISR(X_TIMER_ISR_vect)
 {
-	if (--ax.a[X_AXIS].postscale_counter != 0) {// get out fast, if you need to
+	if (--ax.a[X].postscale_counter != 0) {		// get out fast, if you need to
 		return;
 	}
-	X_MOTOR_PORT.OUTSET = STEP_BIT_bm;			// turn X step bit on
-	if (--ax.a[X_AXIS].step_counter == 0) {		// end-of-move processing
+	if (!(ax.a[X].flags && DWELL_FLAG_bm)) {	// issue a pulse if not a dwell
+		X_MOTOR_PORT.OUTSET = STEP_BIT_bm;		// turn X step bit on
+	}
+	if (--ax.a[X].step_counter == 0) {			// end-of-move processing
 		X_TIMER.CTRLA = TC_CLK_OFF;				// stop the clock
 		X_MOTOR_PORT.OUTSET = MOTOR_ENABLE_BIT_bm; // disable the motor
 		ax.active_axes &= ~X_ACTIVE_BIT_bm;		// clear the X active bit
@@ -132,7 +133,7 @@ ISR(X_TIMER_ISR_vect)
 			st_execute_move();					// ...run the next move
 		}
 	}
-	ax.a[X_AXIS].postscale_counter = ax.a[X_AXIS].postscale_value;// reset post-scaler counter
+	ax.a[X].postscale_counter = ax.a[X_AXIS].postscale_value;// reset post-scaler counter
 	STEPPER_DELAY								// optional stepper pulse delay
 	X_MOTOR_PORT.OUTCLR = STEP_BIT_bm;			// turn X step bit off
 }
@@ -242,6 +243,9 @@ void st_execute_move()
 		if (ax.p->a[i].steps == 0) {			// skip axis if zero steps
 			continue;
 		}
+
+		ax.a[i].flags = ax.p->a[i].flags; 		// import flags from queued move
+
 		// set direction bit and compensate for polarity
 		(ax.p->a[i].direction ^ ax.a[i].polarity) ?
 		   (ax.a[i].port->OUTSET = DIRECTION_BIT_bm):	// CCW
