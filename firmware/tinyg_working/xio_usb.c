@@ -802,20 +802,21 @@ static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 
 int xio_usb_readln(char *buf, uint8_t len)
 {
-	uint8_t status = 0;
+//	uint8_t status = 0;
 
 	if (!IN_LINE(f.flags)) {					// first time thru initializations
 		f.i = 0;								// zero buffer
+		f.status = 0;							// reset status
 		f.len = len;							// save arg into struct 
 		f.buf = buf;							// save arg into struct 
 		f.sig = XIO_SIG_OK;						// reset signal register
 		f.flags |= XIO_FLAG_IN_LINE_bm;			// yes, we are busy getting a line
 	}
 	while (TRUE) { 
-		switch (status = _xio_usb_readchar(buf, len)) {
+		switch (f.status = _xio_usb_readchar(buf, len)) {
 			case (TG_BUFFER_EMPTY): return (TG_EAGAIN); break;	// empty condition
-			case (TG_BUFFER_FULL): return (status); break;		// overrun error
-			case (TG_EOL):return (TG_OK); break;				// got completed line
+			case (TG_BUFFER_FULL): return (f.status); break;	// overrun error
+			case (TG_EOL): return (TG_OK); break;				// got completed line
 			case (TG_EAGAIN): break;							// loop
 		}
 	}
@@ -853,7 +854,7 @@ static int _readln_NEWLINE(void)				// handles any valid newline char
 	f.buf[f.i] = NUL;
 	f.flags &= ~XIO_FLAG_IN_LINE_bm;			// clear in-line state (reset)
 	if (ECHO(f.flags)) xio_usb_putc('\n',stdout);// echo a newline
-	return (TG_OK);								// return for end-of-line
+	return (TG_EOL);							// return for end-of-line
 }
 
 static int _readln_SEMICOLON(void)				// semicolon is a conditional newline
