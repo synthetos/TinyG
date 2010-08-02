@@ -56,20 +56,21 @@ enum tgAxisNum {				// define axis numbers and array indexes from 0 to 3
 enum tgStatus {
 	// this block should remain fixed and in this order
 	TG_OK,				//	0	function completed successfully with no errors
-	TG_NOOP,			//	1	function had no-operation	
-	TG_CONTINUE,		//	2	function requires continuation (call again)
+	TG_EAGAIN,			//  1	function would block here (must be called again)
+	TG_NOOP,			//	2	function had no-operation	
 	TG_QUIT,			//	3 	function returns QUIT (mode)
-	TG_EOF,				//	4	end-of-file reached
-	TG_ERROR,			//	5 	generic error return (errors start here)
+	TG_EOL,				//  4	function returned end-of-line
+	TG_EOF,				//	5	function returned end-of-file 
+	TG_ERROR,			//	6 	generic error return (errors start here)
 
 	// have at it for the rest
 	TG_BUFFER_FULL,				// buffer is full (fatal)
 								// ...also non-fatal to terminate too-long text line
+	TG_BUFFER_EMPTY,			// more of a statement of fact than en error code
 	TG_UNRECOGNIZED_COMMAND,	// parser didn't recognize the command
 	TG_EXPECTED_COMMAND_LETTER,	// malformed line to parser
 	TG_ZERO_LENGTH_LINE,		// XYZ line is zero length 
 	TG_UNSUPPORTED_STATEMENT,	// a different kind of malformed line to parser
-	TG_EAGAIN,					// 11 - function would block here (11 by convention)
 	TG_BAD_NUMBER_FORMAT,		// number format error
 	TG_FLOATING_POINT_ERROR,	// number conversion error
 	TG_MOTION_CONTROL_ERROR,	// motion control failure

@@ -68,6 +68,8 @@ static struct xioUSART f;			// USART control struct
 #define USB_CTS_bm (1<<0)			// CTS pin
 
 /* Helper Functions */
+int _xio_usb_readchar(char *buf, uint8_t len);
+
 static int _getc_char(void);		// getc character dispatch routines
 static int _getc_NEWLINE(void);
 static int _getc_SEMICOLON(void);
@@ -415,7 +417,7 @@ int xio_usb_putc(const char c, FILE *stream)
 }
 
 /* 
- * xio_usb_getc character dispatch functions
+ *  dispatch table for xio_usb_getc
  *
  *  Functions take no input but use static f.c, f.signals, and others
  *  Returns c (may be translated depending on the function)
@@ -639,7 +641,7 @@ static int _getc_DELETE(void)				// can't handle a delete very well
 
 
 /* 
- * xio_usb_readln character dispatch functions
+ *  dispatch table for xio_usb_readln
  *
  *  Functions take no input but use static 'c', f.signals, and others
  *  Returns c (may be translated depending on the function)
@@ -786,42 +788,45 @@ static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 /* 
  *	xio_usb_readln() - main loop task for USB device
  *
- *	Non-blocking, run-to-completion task for handling incoming data from USB port.
+ *	Read a complete (newline terminated) line from the USB device. 
+ *	Retains line context across calls - so it can be called multiple times.
+ *	Reads as many characters as it can until any of the following is true:
  *
- *	Runs non-blocking (port scan) and retains line context across calls.
- *  Should be called each time a character is received by the RX ISR, but can be 
- *	called randomly and multiple times without damage. 
+ *	  - RX buffer is empty on entry (return TG_EAGAIN)
+ *	  - no more chars to read from RX buffer (return TG_EAGAIN)
+ *	  - read would cause output buffer overflow (return TG_BUFFER_FULL)
+ *	  - read returns complete line (returns TG_OK)
  *
- *	Reads a complete (newline terminated) line from the USB device and invokes
- *	the registered line handler function once line is complete.
- *
- *	Traps signals (e.g. ^c) and dispatches to registered signal handler(s).
- *	Signals leave the line buffer intact, so it either can continue to be collected
- *	of it should be wiped.
- *
- *  Performs the following functions:
- *		- read character from RX buffer
- *		- strip signals and dispatch them to signal handler
- *		- collect complete line and pass to line handler function
- *		- trap buffer overflow condition and return an error
- *
- *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
+ *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
  */
 
 int xio_usb_readln(char *buf, uint8_t len)
 {
+	uint8_t status = 0;
+
 	if (!IN_LINE(f.flags)) {					// first time thru initializations
 		f.i = 0;								// zero buffer
 		f.len = len;							// save arg into struct 
 		f.buf = buf;							// save arg into struct 
-//		f.sig = XIO_SIG_OK;						// no signal action
+		f.sig = XIO_SIG_OK;						// reset signal register
 		f.flags |= XIO_FLAG_IN_LINE_bm;			// yes, we are busy getting a line
 	}
-	if (f.rx_buf_head == f.rx_buf_tail) {		// RX ISR buffer empty
-//		f.sig = XIO_SIG_WOULDBLOCK;
-		return(TG_CONTINUE);
+	while (TRUE) { 
+		switch (status = _xio_usb_readchar(buf, len)) {
+			case (TG_BUFFER_EMPTY): return (TG_EAGAIN); break;	// empty condition
+			case (TG_BUFFER_FULL): return (status); break;		// overrun error
+			case (TG_EOL):return (TG_OK); break;				// got completed line
+			case (TG_EAGAIN): break;							// loop
+		}
 	}
-	if (--(f.rx_buf_tail) == 0) {				// advance RX tail (RXQ read pointer)
+}
+
+int _xio_usb_readchar(char *buf, uint8_t len)
+{
+	if (f.rx_buf_head == f.rx_buf_tail) {		// RX ISR buffer empty
+		return(TG_BUFFER_EMPTY);
+	}
+	if (--(f.rx_buf_tail) == 0) {				// advance RX tail (RX queue read pointer)
 		f.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
 	}
 	f.c = (f.rx_buf[f.rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
@@ -839,7 +844,7 @@ static int _readln_char(void)
 	}
 	f.buf[f.i++] = f.c;
 	if (ECHO(f.flags)) xio_usb_putc(f.c, stdout);// conditional echo
-	return (TG_CONTINUE);						// line is still in process
+	return (TG_EAGAIN);							// line is still in process
 }
 
 static int _readln_NEWLINE(void)				// handles any valid newline char
@@ -848,8 +853,7 @@ static int _readln_NEWLINE(void)				// handles any valid newline char
 	f.buf[f.i] = NUL;
 	f.flags &= ~XIO_FLAG_IN_LINE_bm;			// clear in-line state (reset)
 	if (ECHO(f.flags)) xio_usb_putc('\n',stdout);// echo a newline
-	return 0;
-//	return ((int)f.line_func(f.buf));			// call line handler function
+	return (TG_OK);								// return for end-of-line
 }
 
 static int _readln_SEMICOLON(void)				// semicolon is a conditional newline
@@ -868,7 +872,7 @@ static int _readln_DELETE(void)
 	} else {
 		f.i = 0;
 	}
-	return (TG_CONTINUE);						// line is still in process
+	return (TG_EAGAIN);							// line is still in process
 }
 
 

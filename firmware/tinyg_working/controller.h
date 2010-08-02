@@ -26,10 +26,4 @@ void tg_controller(void);
 int tg_parser(char * buf);
 void tg_reset_source();
 
-//int tg_signal(uint8_t sig);
-//void tg_kill(void);
-//void tg_terminate(void);
-//void tg_pause(void);
-//void tg_resume(void);
-
 #endif
