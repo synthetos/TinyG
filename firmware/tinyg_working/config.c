@@ -331,7 +331,7 @@ void _cfg_print_status(uint8_t status_code, char *textbuf)
 #endif
 			break;
 		};
-		case TG_CONTINUE: 
+		case TG_EAGAIN: 
 			printf_P(PSTR("Config Continuation for: %s\n"), textbuf); 
 			break;
 

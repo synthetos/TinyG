@@ -27,62 +27,6 @@
  *
  *	Once in the selected mode these characters are not active as mode selects.
  *	Most modes use Q (Quit) to exit and return to control mode.
- *
- * ---- Controller Operation ----
- *
- *	The controller implements a simple process control scheme to manage blocking
- *	in the application. The controller works as a aborting "super loop", where 
- *	the highest priority tasks are run first and progressively lower priority 
- *  tasks are run only if the higher priority tasks are ready.
- *
- *	For this to work tasks must be written to run-to-completion (non blocking),
- *	and must offer re-entry points (continuations) to resume operations that would
- *	have blocked (see arc generator for an example). A task returns TG_EAGAIN to 
- *	indicate a blocking point. If EGTG_EAGAIN is received The controller quits
- *	the loop and starts over.Any other return code allows the controller to 
- *	proceed down the list. 
- *
- *	Interrupts run at the highest priority level and may interact with the tasks.
- *
- *	The priority of operations is:
- *
- *	- High priority ISRs
- *		- issue steps to motors
- *		- count dwell timings
- *		- dequeue and load next stepper move
- *
- *	- Medium priority ISRs
- *		- receive serial input (RX)
- *		- execute signals received by serial input
- *
- *	- Low priority ISRs
- *		- send serial output (TX)
- *
- *	- Top priority tasks
- *		- dequeue and load next stepper move (only if stalled by ISRs)
- *
- *  - Medium priority tasks
- *		- line generator continuation - queue line once move buffer is ready
- *		- arc generator continuation - queue arc segments once move buffer...
- *
- *  - Low priority tasks
- *		- read line from active input device. On completed line:
- *			- run gcode interpreter (or other parser)
- *			- run motion control called by the gcode interpreter
- *			- queue lines and arcs (line and arc generators)
- *		- send "receive ready" prompt back to input source (*'s via _tg_prompt())
- *			(does this once and only once a parser has returned)
- *
- *	Notes:
- *	  - Gcode and other command line flow control is managed cooperatively with 
- *		the application sending the Gcode or other command. The '*' char in the 
- *		prompt indicates that the controller is ready for the next line. 
- *		The sending app is supposed to honor this and not stuff lines down the pipe
- *		(which will choke the controller).
- *
- *	Futures: Using a super loop instead of an event system is a design tradoff - or 
- *	more to the point - a hack. If the flow of control gets much more complicated 
- *	it will make sense to replace this section with an event driven dispatcher.
  */
 
 #include <stdio.h>
@@ -122,22 +66,12 @@ enum tgControllerState {				// command execution state vector
 										// reading next one. Running takes precedence
 };
 
-struct tgDevice {						// per-device struct
-	uint8_t flags;						// flags describe the device
-	uint8_t len;						// text buffer length
-	char buf[CHAR_BUFFER_SIZE];			// text buffer
+enum tgDeviceState {					// source channel state
+	TG_SRC_INACTIVE,					// devivce won't receive input or signals
+	TG_SRC_ACTIVE,						// active input source (only one at a time)
+	TG_SRC_SIGNAL,						// read signals only
+	TG_SRC_MAX
 };
-
-struct tgController {					// main controller struct
-	uint8_t state;						// controller state (tgControllerState)
-	uint8_t status;						// return status (controller level)
-	uint8_t mode;						// current operating mode (tgMode)
-	uint8_t src;						// active source device
-	uint8_t default_src;				// default source device
-	uint8_t i;							// temp for indexes
-	struct tgDevice dev[XIO_DEV_MAX];	// one entry per input device
-};
-static struct tgController tg;
 
 enum tgMode {
 	TG_CONTROL_MODE,					// control mode only. No other modes active
@@ -147,10 +81,31 @@ enum tgMode {
 	TG_MAX_MODE
 };
 
-static int _tg_read_next_line(void);
+struct tgDevice {						// per-device struct
+	uint8_t state;						// device state (tgDeviceState)
+	uint8_t len;						// text buffer length
+	void (*poll_func)(uint8_t d);		// polling function for scanning input channel
+	char buf[CHAR_BUFFER_SIZE];			// text buffer
+};
+
+struct tgController {					// main controller struct
+	uint8_t state;						// controller state (tgControllerState)
+	uint8_t status;						// return status (controller level)
+	uint8_t mode;						// current operating mode (tgMode)
+	uint8_t source;						// active source device
+	uint8_t source_default;				// default source device
+	uint8_t	prompts;					// set TRUE to enable prompt lines
+	uint8_t i;							// temp for indexes
+	struct tgDevice dev[XIO_DEV_MAX];	// one entry per input device
+};
+static struct tgController tg;
+
+
 static void _tg_prompt(void);
 static void _tg_set_mode(uint8_t mode);
 static void _tg_set_source(uint8_t d);
+static void _tg_poll_active(uint8_t d);
+static void _tg_poll_signal(uint8_t d);
 static int _tg_test_file(void);
 
 
@@ -160,101 +115,66 @@ static int _tg_test_file(void);
 
 void tg_init() 
 {
-	// initialize devices
-	for (uint8_t i=1; i < XIO_DEV_MAX; i++) { // don't bother with /dev/null
-		tg.dev[i].flags = XIO_FLAG_ASTERISK_bm;
-		tg.dev[i].len = sizeof(tg.dev[i].buf);
-	}
-	tg.dev[XIO_DEV_PGM].flags = 0;			// no asterisks on file devices
-
-	// set input source
-	tg.default_src = XIO_DEV_USB; 			// hard-wire input to USB (for now)
-	_tg_set_source(tg.default_src);			// set initial active source
-	_tg_set_mode(TG_CONTROL_MODE);			// set initial operating mode
+	tg.source_default = XIO_DEV_USB; 
 	tg.state = TG_STATE_READY_UNPROMPTED;
+	_tg_set_source(tg.source_default);		// set initial active source
+	_tg_set_mode(TG_CONTROL_MODE);			// set initial operating mode
 
-	// version string
 	printf_P(PSTR("TinyG - Version %S\n"), (PSTR(TINYG_VERSION)));
 }
 
 /* 
- * tg_controller() - top-level controller.
+ * tg_controller() - top-level controller 
+ *
+ *	Main "super loop" for TinyG application. Responsibilities:
+ *	  - send "receive ready" back to sources (*'s via _tg_prompt())
+ *	  - run generators - re-enter line and arc generators if they would block
+ *	  - receive lines and signals from IO devices (USB, RS485, PGM files)
+ *
+ *	Notes:
+ *	  - Command flow control is managed cooperatively with the application sending
+ *		the Gcode or other command. The '*' char in the prompt indicates that the 
+ *		controller is ready for the next line. The app is supposed to honor this 
+ *		and not stuff lines down the pipe (which will choke the controller).
+ *
+ *	  - The USB and RS485 readers are called even when the system is not ready so 
+ *		they can still receive control characters (aka signals; e.g. ^c). 
+ *		It's up the the calling app not to send lines during the not_ready interval.
+ *
+ *	Futures: Using a super loop instead of an event system is a design tradoff - or 
+ *	more to the point - a hack. If the flow of control gets much more complicated 
+ *	it will make sense to replace this section with an event driven dispatcher.
  */
 
 void tg_controller()
 {
-	// top priority tasks
-	st_execute_move();
+//	uint8_t i = 1;
 
-	// medium priority tasks
-	if ((tg.status = mc_line_continuation()) == TG_EAGAIN) {	// line generator
-		return;
-	}
-	if ((tg.status = mc_arc_continuation()) == TG_EAGAIN) {	 	// arc generator 
-		return;
-	}
-
-	// low priority tasks
-	if ((tg.status = _tg_read_next_line()) == TG_EAGAIN) {			// input line
-		return;
-	}
 	_tg_prompt();		// Send a prompt - but only if controller is ready for input
-}
 
-/* 
- * _tg_read_next_line() - Perform a non-blocking line read from active input device
- */
 
-static int _tg_read_next_line()
-{
-	// read input line or return if not a completed line
-	if ((tg.status = xio_fget_ln(tg.src, tg.dev[tg.src].buf, tg.dev[tg.src].len)) == TG_OK) {
-		tg.status = tg_parser(tg.dev[tg.src].buf);	// dispatch to parser
+	if ((tg.status = mc_line_continuation()) == TG_OK) { // Run the line generator 
+		tg.state = TG_STATE_READY_UNPROMPTED;
+		return;
 	}
 
-	// Note: This switch statement could be reduced as most paths lead to
-	//		 TG_STATE_READY_UNPROMPTED, but it's written for clarity instead.
-	switch (tg.status) {
-
-		case TG_OK: {								// got a completed line
-			tg.state = TG_STATE_READY_UNPROMPTED; 
-			break;
-		}
-
-		case TG_EAGAIN: { 							// returned without a new line
-			tg.state = TG_STATE_READING_COMMAND; 
-			break;
-		}
-
-		case TG_NOOP: {
-			break;
-		}
-
-		case TG_QUIT: {								// Quit returned from parser
-			_tg_set_mode(TG_CONTROL_MODE);
-			tg.state = TG_STATE_READY_UNPROMPTED;
-			break;
-		}
-					  	
-		case TG_EOF: {								// file devices only
-			printf_P(PSTR("End of command file\n"));
-			tg_reset_source();						// reset to default src
-			tg.state = TG_STATE_READY_UNPROMPTED;
-			break;
-		}
-		default: {
-			tg.state = TG_STATE_READY_UNPROMPTED;	// traps various error returns
-		}
+	if ((tg.status = mc_arc_continuation()) == TG_OK) {	 // Run the arc generator 
+		tg.state = TG_STATE_READY_UNPROMPTED;
+		return;
 	}
-	return (TG_OK);
+
+	for (tg.i=1; tg.i < XIO_DEV_MAX; tg.i++) {	// Scan all input devices 
+		tg.dev[tg.i].poll_func(tg.i);			//   ...(except /dev/null)
+	}
 }
+
 
 /* 
  * tg_parser() - process top-level serial input 
  *
  *	tg_parser is the top-level of the input parser tree; dispatches other parsers
  *	Calls lower level parser based on mode
- *
+
  *	Keeps the system MODE, one of:
  *		- control mode (no lines are interpreted, just control characters)
  *		- config mode
@@ -303,6 +223,67 @@ int tg_parser(char * buf)
 }
 
 
+/* 
+ * _tg_read_input() - Perform a non-blocking line read from active input device
+ */
+
+static void _tg_read_input()
+{
+	if (tg.dev[d].state != TG_SRC_ACTIVE) {			// sanity check
+		return;
+	}
+
+	// special handling for file sources
+	if (tg.source == XIO_DEV_PGM) {
+		if (tg.state == TG_STATE_READY_UNPROMPTED) {
+			tg.state = TG_STATE_READY_PROMPTED; 	// issue "virtual prompt"
+		} else {
+			return;									// not ready for next line
+		}
+	}
+
+	// read input line or return if not a completed line
+	if ((tg.status = xio_fget_ln(d, tg.dev[d].buf, tg.dev[d].len)) == TG_OK) {
+		tg.status = tg_parser(tg.dev[d].buf);	// dispatch to parser
+	}
+
+	// Note: This switch statement could be reduced as most paths lead to
+	//		 TG_STATE_READY_UNPROMPTED, but it's written for clarity instead.
+	switch (tg.status) {
+
+		case TG_OK: {								// got a completed line
+			tg.state = TG_STATE_READY_UNPROMPTED; 
+			break;
+		}
+
+		case TG_NOOP: {
+			break;
+		}
+
+		case TG_CONTINUE: { 						// returned without a new line
+			tg.state = TG_STATE_READING_COMMAND; 
+			break;
+		}
+
+		case TG_QUIT: {								// Quit returned from parser
+			_tg_set_mode(TG_CONTROL_MODE);
+			tg.state = TG_STATE_READY_UNPROMPTED;
+			break;
+		}
+					  	
+		case TG_EOF: {								// file devices only
+			printf_P(PSTR("End of command file\n"));
+			_tg_set_source(tg.source_default);		// reset to default src
+			tg.state = TG_STATE_READY_UNPROMPTED;
+			break;
+		}
+		default: {
+			tg.state = TG_STATE_READY_UNPROMPTED;	// traps various error returns
+		}
+	}
+}
+
+
 /*
  * _tg_set_mode() - Set current operating mode
  */
@@ -322,7 +303,23 @@ void _tg_set_mode(uint8_t mode)
 
 void _tg_set_source(uint8_t d)
 {
-	tg.src = d;									// d = XIO device #. See xio.h
+	tg.source = d;									// d = XIO device #. See xio.h
+	tg.prompts = TRUE;
+
+	// reset common settings for all devices
+	for (uint8_t i=1; i < XIO_DEV_MAX; i++) {		// don't bother with /dev/null
+		tg.dev[i].state = TG_SRC_SIGNAL;
+		tg.dev[i].poll_func = &_tg_poll_signal;
+		tg.dev[i].len = sizeof(tg.dev[i].buf);
+	}
+	tg.dev[XIO_DEV_PGM].state = TG_SRC_INACTIVE;	// program memory is an exception
+
+	// make selected device active
+	tg.dev[d].state = TG_SRC_ACTIVE;	
+	tg.dev[d].poll_func = &_tg_poll_active;
+	if (d == XIO_DEV_PGM) {
+		tg.prompts = FALSE;							// no prompts for file input
+	}
 }
 
 /*
@@ -331,7 +328,7 @@ void _tg_set_source(uint8_t d)
 
 void tg_reset_source()
 {
-	_tg_set_source(tg.default_src);
+	_tg_set_source(tg.source_default);
 }
 
 /* 
@@ -363,14 +360,90 @@ PGM_P tgModeStrings[] PROGMEM = {	// put string pointer array in program memory
 
 void _tg_prompt()
 {
-	if (tg.state == TG_STATE_READY_UNPROMPTED) {
-		if (tg.dev[tg.src].flags && XIO_FLAG_ASTERISK_bm) {
-			printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
-		} else {
-			printf_P(PSTR("TinyG [%S]> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
-		}
+	if ((tg.prompts) && (tg.state == TG_STATE_READY_UNPROMPTED)) {
+		printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
 		tg.state = TG_STATE_READY_PROMPTED;
 	}
+	// bastardized prompts for file sources (no asterisk returned)
+	if ((!tg.prompts) && (tg.state == TG_STATE_READY_UNPROMPTED)) {
+		printf_P(PSTR("TinyG [%S]> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
+//		tg.state = TG_STATE_READY_PROMPTED;
+	}
+}
+
+/* 
+ * _tg_poll_active() - Perform a non-blocking line read from active input device
+ */
+
+static void _tg_poll_active(uint8_t d)
+{
+	if (tg.dev[d].state != TG_SRC_ACTIVE) {			// sanity check
+		return;
+	}
+
+	// special handling for file sources
+	if (tg.source == XIO_DEV_PGM) {
+		if (tg.state == TG_STATE_READY_UNPROMPTED) {
+			tg.state = TG_STATE_READY_PROMPTED; 	// issue "virtual prompt"
+		} else {
+			return;									// not ready for next line
+		}
+	}
+
+	// read input line or return if not a completed line
+	if ((tg.status = xio_fget_ln(d, tg.dev[d].buf, tg.dev[d].len)) == TG_OK) {
+		tg.status = tg_parser(tg.dev[d].buf);	// dispatch to parser
+	}
+
+	// Note: This switch statement could be reduced as most paths lead to
+	//		 TG_STATE_READY_UNPROMPTED, but it's written for clarity instead.
+	switch (tg.status) {
+
+		case TG_OK: {								// got a completed line
+			tg.state = TG_STATE_READY_UNPROMPTED; 
+			break;
+		}
+
+		case TG_NOOP: {
+			break;
+		}
+
+		case TG_CONTINUE: { 						// returned without a new line
+			tg.state = TG_STATE_READING_COMMAND; 
+			break;
+		}
+
+		case TG_QUIT: {								// Quit returned from parser
+			_tg_set_mode(TG_CONTROL_MODE);
+			tg.state = TG_STATE_READY_UNPROMPTED;
+			break;
+		}
+					  	
+		case TG_EOF: {								// file devices only
+			printf_P(PSTR("End of command file\n"));
+			_tg_set_source(tg.source_default);		// reset to default src
+			tg.state = TG_STATE_READY_UNPROMPTED;
+			break;
+		}
+		default: {
+			tg.state = TG_STATE_READY_UNPROMPTED;	// traps various error returns
+		}
+	}
+}
+
+/* 
+ * _tg_poll_signal() - Perform a read from a signal-only device
+ *
+ *	If a signal is received it's dispatched from the low-level line reader
+ *	Any line that's read is ignored (tossed)
+ */
+
+static void _tg_poll_signal(uint8_t d)
+{
+	if (tg.dev[d].state != TG_SRC_SIGNAL) {			// sanity check
+		return;
+	}
+	tg.status = xio_fget_ln(d, tg.dev[d].buf, tg.dev[d].len);
 }
 
 /*
