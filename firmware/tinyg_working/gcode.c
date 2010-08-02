@@ -428,19 +428,38 @@ uint8_t gc_execute_block(char *buf)
   
   // Perform any physical actions
 	switch (gc.next_action) {
-		case NEXT_ACTION_DEFAULT: break;		// nothing to do here
-    	case NEXT_ACTION_GO_HOME: mc_go_home(); break;
-		case NEXT_ACTION_DWELL: mc_dwell(gc.dwell_time); break;
-		case NEXT_ACTION_MOTION: 
+		case NEXT_ACTION_DEFAULT: {				// nothing to do here
+			break;
+		}
+
+		case NEXT_ACTION_GO_HOME: { 
+			gc.status = mc_go_home(); 
+			break;
+		}
+
+		case NEXT_ACTION_DWELL: {
+			gc.status = mc_dwell(gc.dwell_time); 
+			break;
+		}
+
+		case NEXT_ACTION_MOTION: {
 			switch (gc.motion_mode) {
-				case MOTION_MODE_CANCEL: break;
-				case MOTION_MODE_RAPID_LINEAR:
-				case MOTION_MODE_LINEAR:
-					gc.status = mc_line_nonblock(gc.target[X], gc.target[Y], gc.target[Z], 
-							    				(gc.inverse_feed_rate_mode) ? 
-								 				 gc.inverse_feed_rate : gc.feed_rate, 
-												 gc.inverse_feed_rate_mode); break;
-				case MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC: _gc_compute_arc(); break;
+				case MOTION_MODE_CANCEL: {
+					break;
+				}
+
+				case MOTION_MODE_RAPID_LINEAR: case MOTION_MODE_LINEAR: {
+					gc.status = mc_line(gc.target[X], gc.target[Y], gc.target[Z],
+							    	   (gc.inverse_feed_rate_mode) ? gc.inverse_feed_rate : gc.feed_rate,
+										gc.inverse_feed_rate_mode); 
+					break;
+				}
+
+				case MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC: {
+					gc.status = _gc_compute_arc(); 
+					break;
+				}
+			}
 		}
 	}
 	/* As far as the g-code parser is concerned the position is now == target. 
@@ -657,16 +676,10 @@ int _gc_compute_center_arc()
 	depth = gc.target[gc.plane_axis_2] - gc.position[gc.plane_axis_2];
 
 	// Trace the arc
-	gc.status = mc_arc_nonblock(theta_start, 
-								angular_travel, 
-								radius_tmp, 
-								depth, 
-						 		gc.plane_axis_0, 
-								gc.plane_axis_1, 
-								gc.plane_axis_2, 
-        	   				   (gc.inverse_feed_rate_mode) ? 
-			   			 		gc.inverse_feed_rate : gc.feed_rate, 
-					 	 		gc.inverse_feed_rate_mode);
+	gc.status = mc_arc(theta_start, angular_travel, radius_tmp, depth, 
+					   gc.plane_axis_0, gc.plane_axis_1, gc.plane_axis_2, 
+        	   		  (gc.inverse_feed_rate_mode) ? gc.inverse_feed_rate : gc.feed_rate, 
+					   gc.inverse_feed_rate_mode);
 
     // Finish off with a line to make sure we arrive exactly where we think we are
 	//--> For this to work correctly it must be delivered ONLY after the arc generator 

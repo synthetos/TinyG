@@ -51,10 +51,11 @@
  * Local Scope Data and Functions
  */
 
-#define MOVE_BUFFER_SIZE 4						// limited to 255 unless you change:
+#define MOVE_BUFFER_SIZE 3						// limited to 255 unless you change:
 												// move_buffer_head (to uint16_t)
 												// move_buffer_tail (to uint16_t)
 												// next_buffer_head (multiple places)
+
 struct mvMoveBuffer {
 	volatile uint8_t move_buffer_head;			// move queue index (for writes)
 	volatile uint8_t move_buffer_tail;			// move dequeue index (for reads)

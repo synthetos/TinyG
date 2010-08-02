@@ -42,18 +42,18 @@ FILE dev_pgm = FDEV_SETUP_STREAM(NULL, xio_pgm_getc, _FDEV_SETUP_RW);
 struct xioPGM {
 	// common struct variables (same for all xio structs)
 	uint16_t flags;						// control flags
+	uint8_t status;						// completion status 
 	uint8_t sig;						// signal or error value
 	uint8_t c;							// line buffer character temp
 	uint8_t i;							// line buffer pointer
 	uint8_t len;						// line buffer maximum length (zero based)
-	int (*sig_func)(uint8_t sig);		// pointer to signal handler function
-	int (*line_func)(char * buf);		// pointer to line handler function
+//	int (*sig_func)(uint8_t sig);		// pointer to signal handler function
+//	int (*line_func)(char * buf);		// pointer to line handler function
 	char *buf;							// pointer to input line buffer
 
 	// pgm device specific variables
 	char * pgmbase_P;					// base location in memory
 	uint16_t idx;						// index into file
-	uint8_t status;						// completion status 
 };
 static struct xioPGM fpgm;				// create local "file" control struct
 

@@ -136,26 +136,4 @@ int xio_fget_ln(uint8_t dev, char *buf, uint8_t len)
 	return (TG_ERROR);		// never should hit this
 }
 
-/*
- * xio_null_signal() - signal handler with no effect
- */
-
-//int xio_null_signal(uint8_t sig)
-//{
-//	return (TG_NOOP);
-//}
-
-/*
- * xio_null_line() - null line handler with no effect
- *
- *	Useful for keeping an input device open for receiving signals (but not lines)
- *	Relies on the readln to reset the line buffer
- * 	Always returns DONE because it's called by the EOL condition
- */
-
-//int xio_null_line(char * buf)
-//{
-//	return (TG_OK);
-//}
-
 
