@@ -30,9 +30,8 @@
 
 void mc_init(void);
 void mc_motion_stop(void);
-int mc_dwell(uint32_t milliseconds);
+int mc_dwell(double seconds);
 void mc_go_home(void);						// Send the tool home
-
 
 int mc_line(double x, double y, double z, 
 			double feed_rate, int invert_feed_rate);

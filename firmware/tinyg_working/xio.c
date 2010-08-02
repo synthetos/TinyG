@@ -67,7 +67,8 @@ void xio_init(void)
 
 	// PGM file defaults are:	XIO_RD | XIO_BLOCK
 //	xio_pgm_init(XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS);
-	xio_pgm_init(XIO_LINEMODE);
+	xio_pgm_init(XIO_ECHO | XIO_CRLF | XIO_LINEMODE);
+//	xio_pgm_init(XIO_LINEMODE);
 
 	stddev = &dev_usb;				// stddev is a convenience
 	stdin = &dev_usb;				// define the console device
