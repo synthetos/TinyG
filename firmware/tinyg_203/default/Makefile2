@@ -15,7 +15,7 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
-CFLAGS += -Wall -gdwarf-2 -std=gnu99                                                  -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -Wall -gdwarf-2 -std=gnu99   -Wl,-u,vfprintf      -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
 
 ## Assembly specific flags
@@ -25,7 +25,7 @@ ASMFLAGS += -x assembler-with-cpp -Wa,-gdwarf2
 
 ## Linker flags
 LDFLAGS = $(COMMON)
-LDFLAGS += -Wl,-u,vfprintf  -lprintf_flt -lm -Wl,-Map=TinyG.map
+LDFLAGS +=  -Wl,-Map=TinyG.map
 
 
 ## Intel Hex file production flags
@@ -37,10 +37,10 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 
 
 ## Libraries
-LIBS = -lm 
+LIBS = -lprintf_flt -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = main.o gcode.o config.o encoder.o xmega_init.o motion_control.o spindle_control.o stepper.o xmega_interrupts.o xio.o xio_usb.o xmega_eeprom.o xio_pgm.o controller.o direct_drive.o move_buffer.o limit_switches.o xio_rs485.o signals.o 
+OBJECTS = main.o gcode.o config.o debug.o encoder.o xmega_init.o motion_control.o spindle_control.o stepper.o parsers.o xmega_interrupts.o xio_wiring_compat.o xio.o xio_usb.o xmega_eeprom.o xio_pgm.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -58,6 +58,9 @@ gcode.o: ../gcode.c
 config.o: ../config.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
+debug.o: ../debug.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
 encoder.o: ../encoder.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
@@ -73,7 +76,13 @@ spindle_control.o: ../spindle_control.c
 stepper.o: ../stepper.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
+parsers.o: ../parsers.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
 xmega_interrupts.o: ../xmega_interrupts.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+xio_wiring_compat.o: ../xio_wiring_compat.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 xio.o: ../xio.c
@@ -86,24 +95,6 @@ xmega_eeprom.o: ../xmega_eeprom.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 xio_pgm.o: ../xio_pgm.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-controller.o: ../controller.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-direct_drive.o: ../direct_drive.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-move_buffer.o: ../move_buffer.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-limit_switches.o: ../limit_switches.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-xio_rs485.o: ../xio_rs485.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-signals.o: ../signals.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link
