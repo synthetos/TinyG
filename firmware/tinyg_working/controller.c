@@ -187,15 +187,15 @@ void tg_controller()
 	st_execute_move();
 
 	// medium priority tasks
-	if ((tg.status = mc_line_continuation()) == TG_EAGAIN) {	// line generator
+	if ((tg.status = mc_line_continue()) == TG_EAGAIN) {	// line generator
 		return;
 	}
-	if ((tg.status = mc_arc_continuation()) == TG_EAGAIN) {	 	// arc generator 
+	if ((tg.status = mc_arc_continue()) == TG_EAGAIN) {	 	// arc generator 
 		return;
 	}
 
 	// low priority tasks
-	if ((tg.status = _tg_read_next_line()) == TG_EAGAIN) {			// input line
+	if ((tg.status = _tg_read_next_line()) == TG_EAGAIN) {	// input line
 		return;
 	}
 	_tg_prompt();		// Send a prompt - but only if controller is ready for input
@@ -216,27 +216,18 @@ static int _tg_read_next_line()
 	//		 TG_STATE_READY_UNPROMPTED, but it's written for clarity instead.
 	switch (tg.status) {
 
+		case TG_EAGAIN: case TG_NOOP: break;
+
 		case TG_OK: {								// got a completed line
 			tg.state = TG_STATE_READY_UNPROMPTED; 
 			break;
 		}
-
-		case TG_EAGAIN: { 							// returned without a new line
-			tg.state = TG_STATE_READING_COMMAND; 
-			break;
-		}
-
-		case TG_NOOP: {
-			break;
-		}
-
 		case TG_QUIT: {								// Quit returned from parser
 			_tg_set_mode(TG_CONTROL_MODE);
 			tg.state = TG_STATE_READY_UNPROMPTED;
 			break;
 		}
-					  	
-		case TG_EOF: {								// file devices only
+		case TG_EOF: {								// EOF comes from file devs only
 			printf_P(PSTR("End of command file\n"));
 			tg_reset_source();						// reset to default src
 			tg.state = TG_STATE_READY_UNPROMPTED;
@@ -284,20 +275,9 @@ int tg_parser(char * buf)
 	// dispatch based on mode
 	tg.status = TG_OK;
 	switch (tg.mode) {
-//		case TG_CONTROL_MODE: 
-//			break;
-
-		case TG_CONFIG_MODE:
-			tg.status = cfg_parse(buf);
-			break;
-
-		case TG_GCODE_MODE: 
-			tg.status = gc_gcode_parser(buf);
-			break;
-
-		case TG_DIRECT_DRIVE_MODE:
-			tg.status = dd_parser(buf);
-			break;
+		case TG_CONFIG_MODE: tg.status = cfg_parse(buf); break;
+		case TG_GCODE_MODE: tg.status = gc_gcode_parser(buf); break;
+		case TG_DIRECT_DRIVE_MODE: tg.status = dd_parser(buf); break;
 	}
 	return (tg.status);
 }
@@ -337,7 +317,11 @@ void tg_reset_source()
 /* 
  * _tg_prompt() - conditionally display command line prompt
  *
- *	Note: Do not display command line prompt if not ready for next input line.
+ * We only want a prompt if the following conditions apply:
+ *	- system is ready for the next line of input
+ *	- no prompt has been issued (issue only one)
+ *
+ * Further, we only want an asterisk in the prompt if it's not a file device.
  *
  * ---- Mode Strings - for ASCII output ----
  *	This is an example of how to put a string table into program memory

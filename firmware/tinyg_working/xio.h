@@ -202,6 +202,7 @@ enum xio_BAUDRATES {         			// BSEL	  BSCALE
 struct xioUSART {
 	// PUBLIC VARIABLES - must be the same in every device type
 	uint16_t flags;						// control flags
+	uint8_t status;						// completion status 
 	uint8_t sig;						// signal or error value
 	uint8_t c;							// line buffer character temp
 	uint8_t i;							// line buffer pointer
