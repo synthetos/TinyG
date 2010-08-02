@@ -42,18 +42,11 @@
 /* Define axes */
 
 enum tgAxisNum {				// define axis numbers and array indexes from 0 to 3
-		X_AXIS,
-		Y_AXIS,
-		Z_AXIS,
-		A_AXIS,
-		MAX_AXIS
+		X,
+		Y,
+		Z,
+		A,
 };
-
-#define X X_AXIS				// shorter aliases
-#define Y Y_AXIS
-#define Z Z_AXIS
-#define A A_AXIS
-
 
 /* Global status codes
  * The following enums are unified status return codes for various TinyG functions.

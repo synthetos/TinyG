@@ -11,6 +11,7 @@ move_buffer.o: ../move_buffer.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h \
+  c:/winavr-20100110/lib/gcc/../../avr/include/string.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/sleep.h \
   ../move_buffer.h ../stepper.h ../config.h ../tinyg.h
@@ -38,6 +39,8 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h:
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
+
+c:/winavr-20100110/lib/gcc/../../avr/include/string.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h:
 

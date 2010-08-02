@@ -34,25 +34,36 @@ void select_plane(uint8_t axis_0, uint8_t axis_1, uint8_t axis_2);
  * various defines used by the gcode module 
  */
 
-#define NEXT_ACTION_DEFAULT 	0
-#define NEXT_ACTION_DWELL 		1
-#define NEXT_ACTION_GO_HOME 	2
+enum gcNextAction {
+	NEXT_ACTION_DEFAULT,					// random G code; no moves
+	NEXT_ACTION_MOTION,						// move is set by motion mode (below)
+	NEXT_ACTION_DWELL,
+	NEXT_ACTION_GO_HOME
+};
 
-#define MOTION_MODE_RAPID_LINEAR 0 		// G0 
-#define MOTION_MODE_LINEAR 		1 		// G1
-#define MOTION_MODE_CW_ARC 		2  		// G2
-#define MOTION_MODE_CCW_ARC 	3  		// G3
-#define MOTION_MODE_CANCEL 		4 		// G80
+enum gcMotionMode {
+	MOTION_MODE_RAPID_LINEAR,		 		// G0 
+	MOTION_MODE_LINEAR,				 		// G1
+	MOTION_MODE_CW_ARC,						// G2
+	MOTION_MODE_CCW_ARC,					// G3
+	MOTION_MODE_CANCEL,						// G80
+};
 
-#define PATH_CONTROL_MODE_EXACT_PATH 0
-#define PATH_CONTROL_MODE_EXACT_STOP 1
-#define PATH_CONTROL_MODE_CONTINOUS  2
+enum gcPathControlMode {
+	PATH_CONTROL_MODE_EXACT_PATH,
+	PATH_CONTROL_MODE_EXACT_STOP,
+	PATH_CONTROL_MODE_CONTINOUS
+};
 
-#define PROGRAM_FLOW_RUNNING	0
-#define PROGRAM_FLOW_PAUSED		1
-#define PROGRAM_FLOW_COMPLETED	2
+enum gcProgramFlow {
+	PROGRAM_FLOW_RUNNING,
+	PROGRAM_FLOW_PAUSED,
+	PROGRAM_FLOW_COMPLETED
+};
 
-#define SPINDLE_DIRECTION_CW	0
-#define SPINDLE_DIRECTION_CCW	1
+enum gcSpindleDirection {
+	SPINDLE_DIRECTION_CW,
+	SPINDLE_DIRECTION_CCW
+};
 
 #endif

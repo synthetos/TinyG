@@ -86,8 +86,55 @@ const char PROGMEM spiral_test50a[] = "\
 g1 f333 x0 y0\n\
 g3 x50 y50 i0 j50";
 
+const char PROGMEM dwell_test1[] = "\
+g0 x10\n\
+g4 p1\n\
+g0 x20\n\
+g4 p1\n\
+g0 x10\n\
+g4 p1\n\
+g0 x00\n\
+g4 p1\n\
+g0 x10\n\
+g4 p1\n\
+g0 x20\n\
+g4 p1\n\
+g0 x10\n\
+g4 p1\n\
+g0 x0\n\
+g4 p1\n\
+g0 x10\n\
+g4 p1\n\
+g0 x20\n\
+g4 p1\n\
+g0 x10\n\
+g4 p1\n\
+g0 x0";
+
 const char PROGMEM dwell_test2[] = "\
-g4 p2.345";
+g0 x1\n\
+g4 p1\n\
+g0 x2\n\
+g4 p1\n\
+g0 x1\n\
+g4 p1\n\
+g0 x0\n\
+g4 p1\n\
+g0 x1\n\
+g4 p1\n\
+g0 x2\n\
+g4 p1\n\
+g0 x1\n\
+g4 p1\n\
+g0 x0\n\
+g4 p1\n\
+g0 x1\n\
+g4 p1\n\
+g0 x2\n\
+g4 p1\n\
+g0 x1\n\
+g4 p1\n\
+g0 x0";
 
 const char PROGMEM dwell_testMax[] = "\
 g4 p200.1";
