@@ -115,8 +115,8 @@ static int _tg_test_file(void);
 
 void tg_init() 
 {
-	xio_control(XIO_DEV_USB, XIO_SIG_FUNC, (int)&tg_signal); // bind sig handler
-	xio_control(XIO_DEV_RS485, XIO_SIG_FUNC, (int)&tg_signal);
+//	xio_control(XIO_DEV_USB, XIO_SIG_FUNC, (int)&tg_signal); // bind sig handler
+//	xio_control(XIO_DEV_RS485, XIO_SIG_FUNC, (int)&tg_signal);
 //	xio_control(XIO_DEV_AUX, XIO_SIG_FUNC, (int)&tg_signal);
 
 	tg.source_default = XIO_DEV_USB; 
@@ -264,6 +264,15 @@ void _tg_set_source(uint8_t d)
 	}
 }
 
+/*
+ * tg_reset_source()  Reset source to default input device
+ */
+
+void tg_reset_source()
+{
+	_tg_set_source(tg.source_default);
+}
+
 /* 
  * _tg_prompt() - conditionally display command line prompt
  *
@@ -378,59 +387,6 @@ static void _tg_poll_signal(uint8_t d)
 	}
 	tg.status = xio_fget_ln(d, tg.dev[d].buf, tg.dev[d].len);
 }
-
-/* 
- * tg_signal() - default signal handler to bind to the line readers
- */
-
-int tg_signal(uint8_t sig)
-{
-	switch (sig) {
-		case XIO_SIG_OK: break;
- 		case XIO_SIG_EOL: break;
-
-		case XIO_SIG_EOF:
-			printf_P(PSTR("\r\nEnd of file encountered\r\n"));
-			_tg_prompt();
-			break;
-
-		case XIO_SIG_WOULDBLOCK: break;
-		case XIO_SIG_KILL: tg_kill(); break;
-		case XIO_SIG_TERMINATE: tg_terminate(); break;
-		case XIO_SIG_PAUSE: tg_pause(); break;
-		case XIO_SIG_RESUME: tg_resume(); break;
-		case XIO_SIG_SHIFTOUT: break;
-		case XIO_SIG_SHIFTIN: break;
-		default: break;
-	}
-	return (0);
-}
-
-void tg_kill()
-{
-	_tg_set_source(tg.source_default);	// return control to standard device
-	mc_motion_stop();					// stop computing and generating motions
-	mv_flush();							// empty and reset the move queue
-	st_stop_steppers();					// stop the steppers
-	return;
-}
-
-void tg_terminate()
-{
-	tg_kill();
-	return;
-}
-
-void tg_pause()
-{
-	return;
-}
-
-void tg_resume()
-{
-	return;
-}
-
 
 /*
  * _tg_test_file() - selects and starts playback from a memory file

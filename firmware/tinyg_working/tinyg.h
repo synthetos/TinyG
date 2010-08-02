@@ -75,6 +75,7 @@ enum tgStatus {
 	TG_MOTION_CONTROL_ERROR,	// motion control failure
 	TG_ARC_ERROR,				// arc specification error
 	TG_UNRECOGNIZED_DEVICE,		// no device with this ID
+	TG_FILE_NOT_OPEN,			// not file is open
 	TG_MAX_ERRNO
 };
 

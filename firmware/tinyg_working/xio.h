@@ -42,6 +42,9 @@ int8_t xio_dev_init(uint8_t dev, const int16_t arg);
 int xio_null_signal(uint8_t sig);	// no-op signal handler
 int xio_null_line(char * buf);		// no-op line handler
 
+void xio_signal_etx(void);			// ^c signal handler
+
+
 FILE *stddev;						// a convenient alias for stdin. stdout, stderr
 
 /*
@@ -128,8 +131,6 @@ enum xio_BAUDRATES {         			// BSEL	  BSCALE
 // _init() io_ctl() control bits
 #define XIO_BAUD_gm		0x0000000F		// baud rate enum mask (keep in LSbyte)
 
-#define XIO_SIG_FUNC	(1<<4)			// signal handler function (see note 1)
-#define XIO_LINE_FUNC	(1<<5)			// line handler function (see note 1)
 #define XIO_RD			(1<<4) 			// read enable bit
 #define XIO_WR			(1<<5)			// write enable only
 #define XIO_RDWR		(XIO_RD | XIO_WR) // read & write
@@ -178,15 +179,13 @@ enum xio_BAUDRATES {         			// BSEL	  BSCALE
 #define IN_FLOW_CONTROL(a) (a & XIO_FLAG_IN_FLOW_CONTROL_bm)
 
 /* 
- * USART control structure - here becuase it's shared by multiple devices.
+ * USART control structure - here because it's shared by multiple devices.
  * Note: As defined this struct won't do buffers larger than 256 chars - 
  *	     or a max of 254 characters usable (see xmega_io.c circular buffer note) 
  */
 
-#define RX_BUFFER_SIZE 18	// device rx buffer - written by ISRs (2 bytes unusable)
-#define TX_BUFFER_SIZE 18	// device tx buffer - read by ISRs (2 bytes unusable)
-//#define TX_BUFFER_SIZE 255 // device tx buffer MAXUIMUM SIZE
-//#define CHAR_BUFFER_SIZE 80 // size of read line buffer (one based)
+#define RX_BUFFER_SIZE 255	// rx buf (255 max) - written by ISRs (2 bytes unusable)
+#define TX_BUFFER_SIZE 18	// tx buf (255 max) - read by ISRs (2 bytes unusable)
 
 struct xioUSART {
 	// PUBLIC VARIABLES - must be the same in every device type
@@ -196,8 +195,6 @@ struct xioUSART {
 	uint8_t i;							// line buffer pointer
 	uint8_t len;						// line buffer maximum length (zero based)
 	char *buf;							// pointer to input line buffer
-	int (*sig_func)(uint8_t sig);		// pointer to signal handler function
-	int (*line_func)(char * buf);		// pointer to line handler function
 
 	// PRIVATE VARIABLES - in this case for USART. Can be different by device type
 	volatile uint_fast8_t rx_buf_tail;	// RX buffer read index
@@ -216,7 +213,47 @@ struct xioUSART {
 
 /**** NOTES ON XIO ****
 
+---- Notes on the circular buffers ----
+
+  An attempt has beeen made to make the circular buffers used by low-level 
+  character read / write as efficient as possible. This opens up higher-speed 
+  IO between 100K and 1Mbaud and better supports high-speed parallel operations.
+
+  The circular buffers are unsigned char arrays that count down from the top 
+  element and wrap back to the top when index zero is reached. This allows 
+  pre-decrement operations, zero tests, and eliminates modulus, mask, substraction 
+  and other less efficient array bounds checking. Buffer indexes are all 
+  unint_fast8_t which limits these buffers to 254 usable locations. (one is lost 
+  to head/tail collision detection and one is lost to the zero position) All this 
+  enables the compiler to do better optimization.
+
+  Chars are written to the *head* and read from the *tail*. 
+
+  The head is left "pointing to" the character that was previously written - 
+  meaning that on write the head is pre-decremented (and wrapped, if necessary), 
+  then the new character is written.
+
+  The tail is left "pointing to" the character that was previouly read - 
+  meaning that on read the tail is pre-decremented (and wrapped, if necessary),
+  then the new character is read.
+
+  The head is only allowed to equal the tail if there are no characters to read.
+
+  On read: If the head = the tail there is nothing to read, so it exits or blocks.
+
+  On write: If the head pre-increment causes the head to equal the tail the buffer
+  is full. The head is reset to its previous value and the device should go into 
+  flow control (and the byte in the device is not read). Reading a character from 
+  a buffer that is in flow control should clear flow control
+
+  (Note: More sophisticated flow control would detect the full condition earlier, 
+   say at a high water mark of 95% full, and may go out of flow control at some low
+   water mark like 33% full).
+
 ---- control characters and signals ----
+
+**** NOTE: This documentation is outdated. Signal handlers now work at the ISR level
+	  The below need to be rewritten. ****
 
   The underlying getc() and readln() routines trap some control characters 
   and treat them as signals.
@@ -277,42 +314,66 @@ struct xioUSART {
 				No echo
 
 
----- Notes on the circular buffers ----
+---- Notes on signal callbacks ----
+  An earlier version of the code had signals implemented as callbacks. 
+  I suppose you could find a pre 203 version, but here's how it worked.
 
-  An attempt has beeen made to make the circular buffers used by low-level 
-  character read / write as efficient as possible. This opens up higher-speed 
-  IO between 100K and 1Mbaud and better supports high-speed parallel operations.
+The struct had sig_func and line_func callback addresses:
 
-  The circular buffers are unsigned char arrays that count down from the top 
-  element and wrap back to the top when index zero is reached. This allows 
-  pre-decrement operations, zero tests, and eliminates modulus, mask, substraction 
-  and other less efficient array bounds checking. Buffer indexes are all 
-  unint_fast8_t which limits these buffers to 254 usable locations. (one is lost 
-  to head/tail collision detection and one is lost to the zero position) All this 
-  enables the compiler to do better optimization.
+struct xioUSART {
+	// PUBLIC VARIABLES - must be the same in every device type
+	uint16_t flags;						// control flags
+	uint8_t sig;						// signal or error value
+	uint8_t c;							// line buffer character temp
+	uint8_t i;							// line buffer pointer
+	uint8_t len;						// line buffer maximum length (zero based)
+	char *buf;							// pointer to input line buffer
+	int (*sig_func)(uint8_t sig);		// pointer to signal handler function
+	int (*line_func)(char * buf);		// pointer to line handler function
 
-  Chars are written to the *head* and read from the *tail*. 
+	// PRIVATE VARIABLES - in this case for USART. Can be different by device type
+	volatile uint_fast8_t rx_buf_tail;	// RX buffer read index
+	volatile uint_fast8_t rx_buf_head;	// RX buffer write index (written by ISR)
+	volatile uint_fast8_t tx_buf_tail;	// TX buffer read index (written by ISR)
+	volatile uint_fast8_t tx_buf_head;	// TX buffer write index
+	uint_fast8_t next_tx_buf_head;		// next TX buffer write index
+	volatile unsigned char rx_buf[RX_BUFFER_SIZE];  // (written by ISR)
+	volatile unsigned char tx_buf[TX_BUFFER_SIZE];
 
-  The head is left "pointing to" the character that was previously written - 
-  meaning that on write the head is pre-decremented (and wrapped, if necessary), 
-  then the new character is written.
+	// hardware bindings
+	struct USART_struct *usart;			// USART structure
+	struct PORT_struct *port;			// corresponding port
+};
 
-  The tail is left "pointing to" the character that was previouly read - 
-  meaning that on read the tail is pre-decremented (and wrapped, if necessary),
-  then the new character is read.
+Bindings occurred during init in xio_usb_init():
 
-  The head is only allowed to equal the tail if there are no characters to read.
+	// bind signal and line handlers to struct
+	f.sig_func = &xio_null_signal;			// bind null signal handler
+	f.line_func = &xio_null_line;			// bind null line handler
 
-  On read: If the head = the tail there is nothing to read, so it exits or blocks.
+...and as controls in xio_usb_control():
 
-  On write: If the head pre-increment causes the head to equal the tail the buffer
-  is full. The head is reset to its previous value and the device should go into 
-  flow control (and the byte in the device is not read). Reading a character from 
-  a buffer that is in flow control should clear flow control
+	// commands with args - only do one flag if there's an arg
+	if (control & XIO_SIG_FUNC) {
+		f.sig_func = (fptr_int_uint8)arg;
+		return (0);	
+	}
+	if (control & XIO_LINE_FUNC) {
+		f.line_func = (fptr_int_char_p)arg;
+		return (0);
+	}
 
-  (Note: More sophisticated flow control would detect the full condition earlier, 
-   say at a high water mark of 95% full, and may go out of flow control at some low
-   water mark like 33% full).
+  Using these defines:
+
+#define XIO_SIG_FUNC	(1<<4)			// signal handler function (see note 1)
+#define XIO_LINE_FUNC	(1<<5)			// line handler function (see note 1)
+
+Applications may call the control functions to bind signal handlers:
+
+	xio_control(XIO_DEV_USB, XIO_SIG_FUNC, (int)&tg_signal); // bind sig handler
+	xio_control(XIO_DEV_RS485, XIO_SIG_FUNC, (int)&tg_signal);
+	xio_control(XIO_DEV_AUX, XIO_SIG_FUNC, (int)&tg_signal);
+
 */
 
 #endif

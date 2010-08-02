@@ -27,6 +27,7 @@
 #include "xio_rs485.h"
 #include "xmega_interrupts.h"
 #include "tinyg.h"				// needed for TG_ return codes, or provide your own
+#include "signals.h"			// application specific signal handlers
 
 /* 
  * Global Scope Declarations
@@ -68,21 +69,18 @@ static int _getc_char(void);		// getc character dispatch routines
 static int _getc_NEWLINE(void);
 static int _getc_SEMICOLON(void);
 static int _getc_DELETE(void);
-static int _getc_KILL(void);	
-static int _getc_PAUSE(void);
-static int _getc_RESUME(void);
-static int _getc_SHIFTOUT(void);
-static int _getc_SHIFTIN(void);
 
 static int _readln_char(void);		// readln character dispatch routines
 static int _readln_NEWLINE(void);
 static int _readln_SEMICOLON(void);
 static int _readln_DELETE(void);
-static int _readln_KILL(void);	
-static int _readln_PAUSE(void);
-static int _readln_RESUME(void);
-static int _readln_SHIFTOUT(void);
-static int _readln_SHIFTIN(void);
+
+static int _sig_KILL(void);			// vestigal stubs for signals
+static int _sig_PAUSE(void);
+static int _sig_RESUME(void);
+static int _sig_SHIFTOUT(void);
+static int _sig_SHIFTIN(void);
+
 
 /* 
  *	xio_rs485_init() - initialize and set controls for USB device 
@@ -159,10 +157,6 @@ void xio_rs485_init(const uint16_t control)
 	fr.tx_buf_tail = 1;
 	fr.len = sizeof(fr.buf);					// offset to zero
 
-	// bindings
-	fr.sig_func = &xio_null_signal;			// bind null signal handler
-	fr.line_func = &xio_null_line;			// bind null line handler
-
 	fr.usart = &RS485_USART;				// bind USART structure
 	fr.port = &RS485_PORT;					// bind PORT structure
 
@@ -208,15 +202,6 @@ void xio_rs485_init(const uint16_t control)
 
 int8_t xio_rs485_control(const uint16_t control, const int16_t arg)
 {
-	// commands with args - only do one flag if there's an arg
-	if (control & XIO_SIG_FUNC) {
-		fr.sig_func = (fptr_int_uint8)arg;
-		return (0);	
-	}
-	if (control & XIO_LINE_FUNC) {
-		fr.line_func = (fptr_int_char_p)arg;
-		return (0);
-	}
 	// commands with no args
 	if ((control & XIO_BAUD_gm) != XIO_BAUD_UNSPECIFIED) {
 		fr.usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[(control & XIO_BAUD_gm)]);
@@ -273,12 +258,21 @@ int8_t xio_rs485_control(const uint16_t control, const int16_t arg)
 
 ISR(RS485_RX_ISR_vect)		//ISR(USARTC1_RXC_vect)	// serial port C0 RX interrupt 
 {
+	uint8_t c = fr.usart->DATA;					// can only read DATA once
+
+	// trap signals - do not insert into RX queue
+	if (c == ETX) {								// trap ^c signal
+		fr.sig = XIO_SIG_KILL;					// set signal value
+		signal_etx();							// call app-specific signal handler
+		return;
+	}
+
 	// normal path
 	if ((--fr.rx_buf_head) == 0) { 				// advance buffer head with wrap
 		fr.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
 	}
 	if (fr.rx_buf_head != fr.rx_buf_tail) {		// write char unless buffer full
-		fr.rx_buf[fr.rx_buf_head] = fr.usart->DATA;// (= USARTC0.DATA;)
+		fr.rx_buf[fr.rx_buf_head] = c;			// (= USARTC0.DATA;)
 		return;
 	}
 	// buffer-full handling
@@ -294,6 +288,13 @@ ISR(RS485_RX_ISR_vect)		//ISR(USARTC1_RXC_vect)	// serial port C0 RX interrupt
 
 void xio_rs485_queue_RX_char(const char c)
 {
+	// trap signals - do not insert into RX queue
+	if (c == ETX) {								// trap ^c signal
+		fr.sig = XIO_SIG_KILL;					// set signal value
+		signal_etx();							// call app-specific signal handler
+		return;
+	}
+
 	// normal path
 	if ((--fr.rx_buf_head) == 0) { 				// wrap condition
 		fr.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
@@ -419,7 +420,7 @@ static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 		_getc_NEWLINE, 		//	0	00	NUL	(Null char)		(TREATED AS NEWLINE)
 		_getc_char, 		//	1	01	SOH	(Start of Header)
 		_getc_char, 		//	2	02	STX	(Start of Text)
-		_getc_KILL,		 	//	3	03	ETX (End of Text) ^c
+		_sig_KILL,		 	//	3	03	ETX (End of Text) ^c
 		_getc_char, 		//	4	04	EOT	(End of Transmission)
 		_getc_char, 		//	5	05	ENQ	(Enquiry)
 		_getc_char, 		//	6	06	ACK	(Acknowledgment)
@@ -430,20 +431,20 @@ static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 		_getc_char, 		//	11	0B	VT	(Vertical Tab)
 		_getc_char, 		//	12	0C	FF	(Form Feed)
 		_getc_NEWLINE, 		//	13	0D	CR	(Carriage Return)
-		_getc_SHIFTOUT,		//	14	0E	SO	(Shift Out)
-		_getc_SHIFTIN, 		//	15	0F	SI	(Shift In)
+		_sig_SHIFTOUT,		//	14	0E	SO	(Shift Out)
+		_sig_SHIFTIN, 		//	15	0F	SI	(Shift In)
 		_getc_char, 		//	16	10	DLE	(Data Link Escape)
-		_getc_RESUME, 		//	17	11	DC1 (XON) (Device Control 1) ^q	
+		_sig_RESUME, 		//	17	11	DC1 (XON) (Device Control 1) ^q	
 		_getc_char, 		//	18	12	DC2	(Device Control 2)
-		_getc_PAUSE,	 	//	19	13	DC3 (XOFF)(Device Control 3) ^s	
+		_sig_PAUSE,		 	//	19	13	DC3 (XOFF)(Device Control 3) ^s	
 		_getc_char, 		//	20	14	DC4	(Device Control 4)
 		_getc_char, 		//	21	15	NAK (Negativ Acknowledgemnt)	
 		_getc_char, 		//	22	16	SYN	(Synchronous Idle)
 		_getc_char, 		//	23	17	ETB	(End of Trans. Block)
-		_getc_KILL,	 		//	24	18	CAN	(Cancel) ^x
+		_sig_KILL,	 		//	24	18	CAN	(Cancel) ^x
 		_getc_char, 		//	25	19	EM	(End of Medium)
 		_getc_char, 		//	26	1A	SUB	(Substitute)
-		_getc_KILL, 		//	27	1B	ESC	(Escape)
+		_sig_KILL, 			//	27	1B	ESC	(Escape)
 		_getc_char, 		//	28	1C	FS	(File Separator)
 		_getc_char, 		//	29	1D	GS	(Group Separator)
 		_getc_char, 		//	30	1E	RS  (Reqst to Send)(Record Sep.)	
@@ -624,36 +625,6 @@ static int _getc_DELETE(void)				// can't handle a delete very well
 	return(_FDEV_ERR);
 }
 
-static int _getc_KILL(void)
-{
-	fr.sig = XIO_SIG_KILL;
-	return(_FDEV_ERR);
-}
-
-static int _getc_PAUSE(void)
-{
-	fr.sig = XIO_SIG_PAUSE;
-	return(_FDEV_ERR);
-}
-
-static int _getc_RESUME(void)
-{
-	fr.sig = XIO_SIG_RESUME;
-	return(_FDEV_ERR);
-}
-
-static int _getc_SHIFTOUT(void)
-{
-	fr.sig = XIO_SIG_SHIFTOUT;
-	return(_FDEV_ERR);
-}
-
-static int _getc_SHIFTIN(void)
-{
-	fr.sig = XIO_SIG_SHIFTIN;
-	return(_FDEV_ERR);
-}
-
 /* 
  * xio_rs485_readln character dispatch functions
  *
@@ -668,7 +639,7 @@ static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 		_readln_NEWLINE, 	//	0	00	NUL	(Null char)  	(TREAT AS NEWLINE)
 		_readln_char, 		//	1	01	SOH	(Start of Header)
 		_readln_char, 		//	2	02	STX	(Start of Text)
-		_readln_KILL,	 	//	3	03	ETX (End of Text) ^c
+		_sig_KILL,	 		//	3	03	ETX (End of Text) ^c
 		_readln_char, 		//	4	04	EOT	(End of Transmission)
 		_readln_char, 		//	5	05	ENQ	(Enquiry)
 		_readln_char, 		//	6	06	ACK	(Acknowledgment)
@@ -679,20 +650,20 @@ static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 		_readln_char, 		//	11	0B	VT	(Vertical Tab)
 		_readln_char, 		//	12	0C	FF	(Form Feed)
 		_readln_NEWLINE, 	//	13	0D	CR	(Carriage Return)
-		_readln_SHIFTOUT,	//	14	0E	SO	(Shift Out)
-		_readln_SHIFTIN, 	//	15	0F	SI	(Shift In)
+		_sig_SHIFTOUT,		//	14	0E	SO	(Shift Out)
+		_sig_SHIFTIN, 		//	15	0F	SI	(Shift In)
 		_readln_char, 		//	16	10	DLE	(Data Link Escape)
-		_readln_RESUME, 	//	17	11	DC1 (XON) (Device Control 1) ^q	
+		_sig_RESUME, 		//	17	11	DC1 (XON) (Device Control 1) ^q	
 		_readln_char, 		//	18	12	DC2	(Device Control 2)
-		_readln_PAUSE, 		//	19	13	DC3 (XOFF)(Device Control 3) ^s	
+		_sig_PAUSE, 		//	19	13	DC3 (XOFF)(Device Control 3) ^s	
 		_readln_char, 		//	20	14	DC4	(Device Control 4)
 		_readln_char, 		//	21	15	NAK (Negativ Acknowledgemnt)	
 		_readln_char, 		//	22	16	SYN	(Synchronous Idle)
 		_readln_char, 		//	23	17	ETB	(End of Trans. Block)
-		_readln_KILL,	 	//	24	18	CAN	(Cancel) ^x
+		_sig_KILL,		 	//	24	18	CAN	(Cancel) ^x
 		_readln_char, 		//	25	19	EM	(End of Medium)
 		_readln_char, 		//	26	1A	SUB	(Substitute)
-		_readln_KILL, 		//	27	1B	ESC	(Escape)
+		_sig_KILL, 			//	27	1B	ESC	(Escape)
 		_readln_char, 		//	28	1C	FS	(File Separator)
 		_readln_char, 		//	29	1D	GS	(Group Separator)
 		_readln_char, 		//	30	1E	RS  (Reqst to Send)(Record Sep.)	
@@ -860,7 +831,8 @@ static int _readln_NEWLINE(void)				// handles any valid newline char
 	fr.buf[fr.i] = NUL;
 	fr.flags &= ~XIO_FLAG_IN_LINE_bm;			// clear in-line state (reset)
 	if (ECHO(fr.flags)) xio_rs485_putc('\n',stdout);// echo a newline
-	return ((int)fr.line_func(fr.buf));			// call line handler function
+	return 0;
+//	return ((int)fr.line_func(fr.buf));			// call line handler function
 }
 
 static int _readln_SEMICOLON(void)				// semicolon is a conditional newline
@@ -882,33 +854,37 @@ static int _readln_DELETE(void)
 	return (TG_CONTINUE);						// line is still in process
 }
 
-static int _readln_SIG(uint8_t sig)
+/*
+ * Signal handlers. These are vestigal stubs that have no effect.
+ */
+
+static int _sig_KILL(void)
 {
-	fr.sig = sig;
-	return ((int)fr.sig_func(sig));				// call signal handler function	
+	fr.sig = XIO_SIG_KILL;
+	return(_FDEV_ERR);
 }
 
-static int _readln_KILL(void)
+static int _sig_PAUSE(void)
 {
-	return _readln_SIG(XIO_SIG_KILL);
+	fr.sig = XIO_SIG_PAUSE;
+	return(_FDEV_ERR);
 }
 
-static int _readln_PAUSE(void)
+static int _sig_RESUME(void)
 {
-	return _readln_SIG(XIO_SIG_PAUSE);
+	fr.sig = XIO_SIG_RESUME;
+	return(_FDEV_ERR);
 }
 
-static int _readln_RESUME(void)
+static int _sig_SHIFTOUT(void)
 {
-	return _readln_SIG(XIO_SIG_RESUME);
+	fr.sig = XIO_SIG_SHIFTOUT;
+	return(_FDEV_ERR);
 }
 
-static int _readln_SHIFTOUT(void)
+static int _sig_SHIFTIN(void)
 {
-	return _readln_SIG(XIO_SIG_SHIFTOUT);
+	fr.sig = XIO_SIG_SHIFTIN;
+	return(_FDEV_ERR);
 }
 
-static int _readln_SHIFTIN(void)
-{
-	return _readln_SIG(XIO_SIG_SHIFTIN);
-}
