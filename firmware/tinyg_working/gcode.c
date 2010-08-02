@@ -103,7 +103,7 @@ struct GCodeState {
 	uint8_t radius_mode;			// TRUE = radius mode
 	uint8_t set_origin_mode;		// TRUE = in set origin mode
 
-  	double dwell_time; 				// (was 'p' in older code)
+  	double dwell_time; 				// dwell time in seconds (was 'p' in older code)
 	double radius;					// radius value
 	double feed_rate; 				// millimeters/second
 	double seek_rate;				// millimeters/second
@@ -155,7 +155,7 @@ void gc_init() {
 	gc.absolute_override = FALSE; 			// TRUE=absolute motion for this block only{G53}
 	gc.next_action = NEXT_ACTION_DEFAULT; 	// One of the NEXT_ACTION_-constants
 
-	select_plane(X_AXIS, Y_AXIS, Z_AXIS);
+	select_plane(X, Y, Z);
 }
 
 /*
@@ -317,24 +317,37 @@ uint8_t gc_execute_block(char *buf)
 
 	gc.status = TG_OK;
 	gc.set_origin_mode = 0;		// you are not in origin mode unless you say you are
+	gc.next_action  = NEXT_ACTION_DEFAULT;	// start each block with no action set
 
   // Pass 1: Commands
 	while(_gc_next_statement(&gc.letter, &gc.value, &gc.fraction, buf, &i)) {
     	switch(gc.letter) {
 			case 'G':
 				switch((int)gc.value) {
-					case 0:  { gc.motion_mode = MOTION_MODE_RAPID_LINEAR; break; }
-					case 1:  { gc.motion_mode = MOTION_MODE_LINEAR; break; }
-					case 2:  { gc.motion_mode = MOTION_MODE_CW_ARC; break; }
-					case 3:  { gc.motion_mode = MOTION_MODE_CCW_ARC; break; }
+					case 0:  { gc.next_action = NEXT_ACTION_MOTION;
+							   gc.motion_mode = MOTION_MODE_RAPID_LINEAR; break; }
+
+					case 1:  { gc.next_action = NEXT_ACTION_MOTION;
+							   gc.motion_mode = MOTION_MODE_LINEAR; break; }
+
+					case 2:  { gc.next_action = NEXT_ACTION_MOTION;
+					           gc.motion_mode = MOTION_MODE_CW_ARC; break; }
+
+					case 3:  { gc.next_action = NEXT_ACTION_MOTION;
+					           gc.motion_mode = MOTION_MODE_CCW_ARC; break; }
+
 					case 4:  { gc.next_action = NEXT_ACTION_DWELL; break; }
-					case 17: { select_plane(X_AXIS, Y_AXIS, Z_AXIS); break; }
-					case 18: { select_plane(X_AXIS, Z_AXIS, Y_AXIS); break; }
-					case 19: { select_plane(Y_AXIS, Z_AXIS, X_AXIS); break; }
+
+					case 17: { select_plane(X, Y, Z); break; }
+					case 18: { select_plane(X, Z, Y); break; }
+					case 19: { select_plane(Y, Z, X); break; }
+
 					case 20: { gc.inches_mode = TRUE; break; }
 					case 21: { gc.inches_mode = FALSE; break; }
+
 					case 28: { gc.next_action = NEXT_ACTION_GO_HOME; break; }
 					case 30: { gc.next_action = NEXT_ACTION_GO_HOME; break; }
+
 					case 53: { gc.absolute_override = TRUE; break; }
 					case 80: { gc.motion_mode = MOTION_MODE_CANCEL; break; }
 					case 90: { gc.absolute_mode = TRUE; break; }
@@ -342,6 +355,7 @@ uint8_t gc_execute_block(char *buf)
 					case 92: { gc.set_origin_mode = TRUE; break; }
 					case 93: { gc.inverse_feed_rate_mode = TRUE; break; }
 					case 94: { gc.inverse_feed_rate_mode = FALSE; break; }
+
 					default: FAIL(TG_UNSUPPORTED_STATEMENT);
 				}
 				break;
@@ -385,7 +399,7 @@ uint8_t gc_execute_block(char *buf)
 				}
 				break;
 			case 'I': case 'J': case 'K': gc.offset[gc.letter-'I'] = gc.unit_converted_value; break;
-			case 'P': gc.dwell_time = gc.value; break;
+			case 'P': gc.dwell_time = gc.value; break;			// dwell time in seconds
 			case 'R': gc.radius = gc.unit_converted_value; gc.radius_mode = TRUE; break;
 			case 'S': gc.spindle_speed = gc.value; break;
 			case 'X': case 'Y': case 'Z':
@@ -414,20 +428,19 @@ uint8_t gc_execute_block(char *buf)
   
   // Perform any physical actions
 	switch (gc.next_action) {
+		case NEXT_ACTION_DEFAULT: break;		// nothing to do here
     	case NEXT_ACTION_GO_HOME: mc_go_home(); break;
-		case NEXT_ACTION_DWELL: mc_dwell(trunc(gc.dwell_time*1000)); break;
-		case NEXT_ACTION_DEFAULT: 
- 		switch (gc.motion_mode) {
-			case MOTION_MODE_CANCEL: break;
-			case MOTION_MODE_RAPID_LINEAR:
-			case MOTION_MODE_LINEAR:
-				gc.status = mc_line_nonblock(gc.target[X_AXIS], 
-											 gc.target[Y_AXIS], 
-											 gc.target[Z_AXIS], 
-						    				(gc.inverse_feed_rate_mode) ? 
-							 				 gc.inverse_feed_rate : gc.feed_rate, 
-											 gc.inverse_feed_rate_mode); break;
-			case MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC: _gc_compute_arc(); break;
+		case NEXT_ACTION_DWELL: mc_dwell(gc.dwell_time); break;
+		case NEXT_ACTION_MOTION: 
+			switch (gc.motion_mode) {
+				case MOTION_MODE_CANCEL: break;
+				case MOTION_MODE_RAPID_LINEAR:
+				case MOTION_MODE_LINEAR:
+					gc.status = mc_line_nonblock(gc.target[X], gc.target[Y], gc.target[Z], 
+							    				(gc.inverse_feed_rate_mode) ? 
+								 				 gc.inverse_feed_rate : gc.feed_rate, 
+												 gc.inverse_feed_rate_mode); break;
+				case MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC: _gc_compute_arc(); break;
 		}
 	}
 	/* As far as the g-code parser is concerned the position is now == target. 

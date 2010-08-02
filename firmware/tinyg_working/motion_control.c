@@ -111,23 +111,23 @@ void mc_motion_stop()
 
 int mc_line(double x, double y, double z, double feed_rate, int invert_feed_rate)
 {
-	mc.target[X_AXIS] = lround(x*CFG(X_AXIS).steps_per_mm);
-	mc.target[Y_AXIS] = lround(y*CFG(Y_AXIS).steps_per_mm);
-	mc.target[Z_AXIS] = lround(z*CFG(Z_AXIS).steps_per_mm); 
+	mc.target[X] = lround(x*CFG(X).steps_per_mm);
+	mc.target[Y] = lround(y*CFG(Y).steps_per_mm);
+	mc.target[Z] = lround(z*CFG(Z).steps_per_mm); 
 
-	mc.steps[X_AXIS] = mc.target[X_AXIS]-mc.position[X_AXIS];
-	mc.steps[Y_AXIS] = mc.target[Y_AXIS]-mc.position[Y_AXIS];
-	mc.steps[Z_AXIS] = mc.target[Z_AXIS]-mc.position[Z_AXIS];
+	mc.steps[X] = mc.target[X]-mc.position[X];
+	mc.steps[Y] = mc.target[Y]-mc.position[Y];
+	mc.steps[Z] = mc.target[Z]-mc.position[Z];
 
 	if (invert_feed_rate) {
 		mc.microseconds = lround(ONE_MINUTE_OF_MICROSECONDS/feed_rate);
 	} else {  // Ask Phythagoras to estimate how many mm next move is going to take
- 		mc.mm_of_travel = sqrt(square(mc.steps[X_AXIS]/CFG(X_AXIS).steps_per_mm) + 
-							   square(mc.steps[Y_AXIS]/CFG(Y_AXIS).steps_per_mm) + 
-							   square(mc.steps[Z_AXIS]/CFG(Z_AXIS).steps_per_mm));
+ 		mc.mm_of_travel = sqrt(square(mc.steps[X]/CFG(X).steps_per_mm) + 
+							   square(mc.steps[Y]/CFG(Y).steps_per_mm) + 
+							   square(mc.steps[Z]/CFG(Z).steps_per_mm));
 		mc.microseconds = lround((mc.mm_of_travel/feed_rate)*1000000);
 	}
-    mv_queue_move_buffer(mc.steps[X_AXIS], mc.steps[Y_AXIS], mc.steps[Z_AXIS], mc.microseconds); 
+    mv_queue_move_buffer(mc.steps[X], mc.steps[Y], mc.steps[Z], mc.microseconds); 
 
 	memcpy(mc.position, mc.target, sizeof(mc.target)); 	// record new robot position
 	return (TG_OK);
@@ -139,20 +139,20 @@ int mc_line(double x, double y, double z, double feed_rate, int invert_feed_rate
 
 int mc_line_nonblock(double x, double y, double z, double feed_rate, int invert_feed_rate)
 {
-	mc.target[X_AXIS] = lround(x*CFG(X_AXIS).steps_per_mm);
-	mc.target[Y_AXIS] = lround(y*CFG(Y_AXIS).steps_per_mm);
-	mc.target[Z_AXIS] = lround(z*CFG(Z_AXIS).steps_per_mm); 
+	mc.target[X] = lround(x*CFG(X).steps_per_mm);
+	mc.target[Y] = lround(y*CFG(Y).steps_per_mm);
+	mc.target[Z] = lround(z*CFG(Z).steps_per_mm); 
 
-	mc.steps[X_AXIS] = mc.target[X_AXIS]-mc.position[X_AXIS];
-	mc.steps[Y_AXIS] = mc.target[Y_AXIS]-mc.position[Y_AXIS];
-	mc.steps[Z_AXIS] = mc.target[Z_AXIS]-mc.position[Z_AXIS];
+	mc.steps[X] = mc.target[X]-mc.position[X];
+	mc.steps[Y] = mc.target[Y]-mc.position[Y];
+	mc.steps[Z] = mc.target[Z]-mc.position[Z];
 
 	if (invert_feed_rate) {
 		mc.microseconds = lround(ONE_MINUTE_OF_MICROSECONDS/feed_rate);
 	} else {  // Ask Phythagoras to estimate how many mm next move is going to take
- 		mc.mm_of_travel = sqrt(square(mc.steps[X_AXIS]/CFG(X_AXIS).steps_per_mm) + 
-							   square(mc.steps[Y_AXIS]/CFG(Y_AXIS).steps_per_mm) + 
-							   square(mc.steps[Z_AXIS]/CFG(Z_AXIS).steps_per_mm));
+ 		mc.mm_of_travel = sqrt(square(mc.steps[X]/CFG(X).steps_per_mm) + 
+							   square(mc.steps[Y]/CFG(Y).steps_per_mm) + 
+							   square(mc.steps[Z]/CFG(Z).steps_per_mm));
 		mc.microseconds = lround((mc.mm_of_travel/feed_rate)*1000000);
 	}
 	mc.line_state = MC_STATE_NEW;
@@ -175,7 +175,7 @@ int mc_line_continuation()
 	if (mv_test_move_buffer_full()) { // this is where you would block
 		return (TG_CONTINUE);
 	}
-	mv_queue_move_buffer(mc.steps[X_AXIS], mc.steps[Y_AXIS], mc.steps[Z_AXIS], mc.microseconds); 
+	mv_queue_move_buffer(mc.steps[X], mc.steps[Y], mc.steps[Z], mc.microseconds); 
 
 	mc.line_state = MC_STATE_OFF;		// line is done. turn the generator off.
 	return (TG_OK);
@@ -228,7 +228,7 @@ int mc_arc(double theta, double angular_travel, double radius, double linear_tra
 	ma.center_y = (mc.position[ma.axis_2]/CFG(ma.axis_2).steps_per_mm)-cos(ma.theta)*ma.radius;
 
   	// 	A vector to track the end point of each segment. Initialize the linear axis
-	ma.dtarget[ma.axis_linear] = mc.position[ma.axis_linear]/CFG(Z_AXIS).steps_per_mm;
+	ma.dtarget[ma.axis_linear] = mc.position[ma.axis_linear]/CFG(Z).steps_per_mm;
 	
 	//	Generate and queue the line segments along the arc
 	for (ma.segment_counter=0; ma.segment_counter<=ma.segments; ma.segment_counter++) {
@@ -236,11 +236,7 @@ int mc_arc(double theta, double angular_travel, double radius, double linear_tra
 		ma.dtarget[ma.axis_1] = ma.center_x+sin(ma.theta)*ma.radius;
 		ma.dtarget[ma.axis_2] = ma.center_y+cos(ma.theta)*ma.radius;
 		ma.dtarget[ma.axis_linear] += ma.linear_per_segment;
-		mc_line(ma.dtarget[X_AXIS], 
-				ma.dtarget[Y_AXIS], 
-				ma.dtarget[Z_AXIS], 
-				ma.feed_rate, 
-				ma.invert_feed_rate);
+		mc_line(ma.dtarget[X], ma.dtarget[Y], ma.dtarget[Z], ma.feed_rate, ma.invert_feed_rate);
   	}
 	return (TG_OK);
 }
@@ -284,7 +280,7 @@ int mc_arc_nonblock(double theta, double angular_travel,
 	ma.center_y = (mc.position[ma.axis_2]/CFG(ma.axis_2).steps_per_mm)-cos(ma.theta)*ma.radius;
 
   	// 	A vector to track the end point of each segment. Initialize the linear axis
-	ma.dtarget[ma.axis_linear] = mc.position[ma.axis_linear]/CFG(Z_AXIS).steps_per_mm;
+	ma.dtarget[ma.axis_linear] = mc.position[ma.axis_linear]/CFG(Z).steps_per_mm;
 	ma.arc_state = MC_STATE_NEW;	// new arc, NJ. (I'm here all week. Try the veal)
 	return (mc_arc_continuation());
 }
@@ -323,31 +319,43 @@ int mc_arc_continuation()
 		ma.dtarget[ma.axis_1] = ma.center_x+sin(ma.theta)*ma.radius;
 		ma.dtarget[ma.axis_2] = ma.center_y+cos(ma.theta)*ma.radius;
 		ma.dtarget[ma.axis_linear] += ma.linear_per_segment;
-		mc_line(ma.dtarget[X_AXIS], 
-				ma.dtarget[Y_AXIS], 
-				ma.dtarget[Z_AXIS], 
-				ma.feed_rate, 
-				ma.invert_feed_rate);
+		mc_line(ma.dtarget[X], ma.dtarget[Y], ma.dtarget[Z], ma.feed_rate, ma.invert_feed_rate);
   	}
 	ma.arc_state = MC_STATE_OFF;		// arc is done. turn the generator off.
 	return (TG_OK);
 }
 
+
 /* 
- * mc_dwell()
+ * mc_dwell() - queue a dwell (non-blocking behavior)
  *
  * Dwells are performed by passing a dwell move to the stepper drivers.
  * A dewll is described as a zero lenegth line with a non-zero execution time.
- * Dwells look like any other line, except it's flagged as a dwell.
- * The stepper driver knows this and times the move but does not send any pulses.
- * This routine uses the X asis as only the X axis knows how to deal with a dwell.
+ * Dwells look like any other line, except they get flagged as a dwell during queing.
+ * The stepper driver sees this and times the move but does not send any pulses.
+ * This routine uses the X axis as only the X axis knows how to deal with a dwell.
+ * Dwells are queued as linbes so the line continuation is used for non-blocking.
  */
 
-int mc_dwell(uint32_t milliseconds) 
+int mc_dwell(double seconds) 
 {
-    mv_queue_move_buffer(0, 0, 0, milliseconds);
+	mc.steps[X] = 0;
+	mc.steps[Y] = 0;
+	mc.steps[Z] = 0;
+	mc.microseconds = trunc(seconds*1000000);
+	mc.line_state = MC_STATE_NEW;
+	return (mc_line_continuation());
+}
+
+/*
+int mc_dwell(double seconds) 
+{
+	uint32_t dwell_us = 0;
+	dwell_us = trunc(seconds*1000000);
+    mv_queue_move_buffer(0, 0, 0, dwell_us);
 	return (TG_OK);
 }
+*/
 
 /* 
  * mc_go_home()  (st_go_home is NOT IMPLEMENTED)

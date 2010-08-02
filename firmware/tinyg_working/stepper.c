@@ -82,17 +82,17 @@ void st_init()
 	ax.active_axes = 0;								// clear all active bits
 	ax.exec_mutex = FALSE;
 
-	ax.a[X_AXIS].port = &X_MOTOR_PORT;				// bind PORTs to structs
-	ax.a[Y_AXIS].port = &Y_MOTOR_PORT;
-	ax.a[Z_AXIS].port = &Z_MOTOR_PORT;
-	ax.a[A_AXIS].port = &A_MOTOR_PORT;
+	ax.a[X].port = &X_MOTOR_PORT;				// bind PORTs to structs
+	ax.a[Y].port = &Y_MOTOR_PORT;
+	ax.a[Z].port = &Z_MOTOR_PORT;
+	ax.a[A].port = &A_MOTOR_PORT;
 
-	ax.a[X_AXIS].timer = &X_TIMER;					// bind TIMERs to structs
-	ax.a[Y_AXIS].timer = &Y_TIMER;
-	ax.a[Z_AXIS].timer = &Z_TIMER;
-	ax.a[A_AXIS].timer = &A_TIMER;
+	ax.a[X].timer = &X_TIMER;					// bind TIMERs to structs
+	ax.a[Y].timer = &Y_TIMER;
+	ax.a[Z].timer = &Z_TIMER;
+	ax.a[A].timer = &A_TIMER;
 
-	for (uint8_t i=0; i <= A_AXIS; i++) {
+	for (uint8_t i=X; i<=A; i++) {
 		ax.a[i].polarity = cfg.a[i].polarity;
 
 		ax.a[i].port->DIR = MOTOR_PORT_DIR_gm;		// set inputs and outputs
@@ -133,18 +133,18 @@ ISR(X_TIMER_ISR_vect)
 			st_execute_move();					// ...run the next move
 		}
 	}
-	ax.a[X].postscale_counter = ax.a[X_AXIS].postscale_value;// reset post-scaler counter
+	ax.a[X].postscale_counter = ax.a[X].postscale_value;// reset post-scaler counter
 	STEPPER_DELAY								// optional stepper pulse delay
 	X_MOTOR_PORT.OUTCLR = STEP_BIT_bm;			// turn X step bit off
 }
 
 ISR(Y_TIMER_ISR_vect)
 {
-	if (--ax.a[Y_AXIS].postscale_counter != 0) {
+	if (--ax.a[Y].postscale_counter != 0) {
 		return;
 	}
 	Y_MOTOR_PORT.OUTSET = STEP_BIT_bm;
-	if (--ax.a[Y_AXIS].step_counter == 0) {
+	if (--ax.a[Y].step_counter == 0) {
 		Y_TIMER.CTRLA = TC_CLK_OFF;
 		Y_MOTOR_PORT.OUTSET = MOTOR_ENABLE_BIT_bm;
 		ax.active_axes &= ~Y_ACTIVE_BIT_bm;
@@ -152,18 +152,18 @@ ISR(Y_TIMER_ISR_vect)
 			st_execute_move();
 		}
 	}
-	ax.a[Y_AXIS].postscale_counter = ax.a[Y_AXIS].postscale_value;
+	ax.a[Y].postscale_counter = ax.a[Y].postscale_value;
 	STEPPER_DELAY
 	Y_MOTOR_PORT.OUTCLR = STEP_BIT_bm;
 }
 
 ISR(Z_TIMER_ISR_vect)
 {
-	if (--ax.a[Z_AXIS].postscale_counter != 0) {
+	if (--ax.a[Z].postscale_counter != 0) {
 		return;
 	}
 	Z_MOTOR_PORT.OUTSET = STEP_BIT_bm;
-	if (--ax.a[Z_AXIS].step_counter == 0) {
+	if (--ax.a[Z].step_counter == 0) {
 		Z_TIMER.CTRLA = TC_CLK_OFF;	
 		Z_MOTOR_PORT.OUTSET = MOTOR_ENABLE_BIT_bm;
 		ax.active_axes &= ~Z_ACTIVE_BIT_bm;
@@ -171,18 +171,18 @@ ISR(Z_TIMER_ISR_vect)
 			st_execute_move();
 		}
 	}
-	ax.a[Z_AXIS].postscale_counter = ax.a[Z_AXIS].postscale_value;
+	ax.a[Z].postscale_counter = ax.a[Z].postscale_value;
 	STEPPER_DELAY
 	Z_MOTOR_PORT.OUTCLR = STEP_BIT_bm;
 }
 
 ISR(A_TIMER_ISR_vect)
 {
-	if (--ax.a[A_AXIS].postscale_counter != 0) {
+	if (--ax.a[A].postscale_counter != 0) {
 		return;
 	}
 	A_MOTOR_PORT.OUTSET = STEP_BIT_bm;
-	if (--ax.a[A_AXIS].step_counter == 0) {
+	if (--ax.a[A].step_counter == 0) {
 		A_TIMER.CTRLA = TC_CLK_OFF;
 		A_MOTOR_PORT.OUTSET = MOTOR_ENABLE_BIT_bm;
 		ax.active_axes &= ~A_ACTIVE_BIT_bm;
@@ -190,7 +190,7 @@ ISR(A_TIMER_ISR_vect)
 			st_execute_move();
 		}
 	}
-	ax.a[A_AXIS].postscale_counter = ax.a[A_AXIS].postscale_value;
+	ax.a[A].postscale_counter = ax.a[A].postscale_value;
 	STEPPER_DELAY
 	A_MOTOR_PORT.OUTCLR = STEP_BIT_bm;
 }
@@ -238,7 +238,7 @@ void st_execute_move()
 	return;
 #endif
 
-	for (i = X_AXIS; i <= Z_AXIS; i++) {
+	for (i=X; i<=Z; i++) {
 		ax.a[i].timer->CTRLA = TC_CLK_OFF;		// turn clock off, to be sure
 		if (ax.p->a[i].steps == 0) {			// skip axis if zero steps
 			continue;
@@ -262,16 +262,16 @@ void st_execute_move()
 
 	// enable all the axes at the same time (roughly). Better for motor sync.
 	ax.active_axes = 0;
-	if (ax.a[X_AXIS].step_counter) { 
-		ax.a[X_AXIS].timer->CTRLA = TC_CLK_ON;
+	if (ax.a[X].step_counter) { 
+		ax.a[X].timer->CTRLA = TC_CLK_ON;
 		ax.active_axes |= X_ACTIVE_BIT_bm;
 	}
-	if (ax.a[Y_AXIS].step_counter) {
-		ax.a[Y_AXIS].timer->CTRLA = TC_CLK_ON;
+	if (ax.a[Y].step_counter) {
+		ax.a[Y].timer->CTRLA = TC_CLK_ON;
 		ax.active_axes |= Y_ACTIVE_BIT_bm;
 	}
-	if (ax.a[Z_AXIS].step_counter) {
-		ax.a[Z_AXIS].timer->CTRLA = TC_CLK_ON;
+	if (ax.a[Z].step_counter) {
+		ax.a[Z].timer->CTRLA = TC_CLK_ON;
 		ax.active_axes |= Z_ACTIVE_BIT_bm;
 	}
 
@@ -310,11 +310,9 @@ void st_set_polarity(uint8_t axis, uint8_t polarity)
 void st_stop_steppers()
 {
 	cli();										// stop interrupts
-	ax.a[X_AXIS].timer->CTRLA = TC_CLK_OFF;		// stop the clocks
-	ax.a[Y_AXIS].timer->CTRLA = TC_CLK_OFF;
-	ax.a[Z_AXIS].timer->CTRLA = TC_CLK_OFF;
-	ax.a[A_AXIS].timer->CTRLA = TC_CLK_OFF;
-	
+	for (uint8_t i=X; i<=A; i++) {
+		ax.a[i].timer->CTRLA = TC_CLK_OFF;		// stop the clocks
+	}	
 	mv_flush();									// flush the move buffer
 	ax.active_axes = 0;							// clear all the active bits
 	sei();
@@ -336,21 +334,21 @@ void st_terminate()
  */
 
 void st_motor_test() {
-	ax.a[X_AXIS].step_counter = 0x00001000;
-	ax.a[X_AXIS].timer->PER = 0x1000;			// step rate (period)
-	ax.a[X_AXIS].timer->CTRLA = TC_CLK_ON;		// start clock
+	ax.a[X].step_counter = 0x00001000;
+	ax.a[X].timer->PER = 0x1000;			// step rate (period)
+	ax.a[X].timer->CTRLA = TC_CLK_ON;		// start clock
 
-	ax.a[Y_AXIS].step_counter = 0x00000800;
-	ax.a[Y_AXIS].timer->PER = 0x2000;
-	ax.a[Y_AXIS].timer->CTRLA = TC_CLK_ON;
+	ax.a[Y].step_counter = 0x00000800;
+	ax.a[Y].timer->PER = 0x2000;
+	ax.a[Y].timer->CTRLA = TC_CLK_ON;
 
-	ax.a[Z_AXIS].step_counter = 0x00000600;
-	ax.a[Z_AXIS].timer->PER = 0x3000;
-	ax.a[Z_AXIS].timer->CTRLA = TC_CLK_ON;
+	ax.a[Z].step_counter = 0x00000600;
+	ax.a[Z].timer->PER = 0x3000;
+	ax.a[Z].timer->CTRLA = TC_CLK_ON;
 
-	ax.a[A_AXIS].step_counter = 0x00000400;
-	ax.a[A_AXIS].timer->PER = 0x4000;
-	ax.a[A_AXIS].timer->CTRLA = TC_CLK_ON;
+	ax.a[A].step_counter = 0x00000400;
+	ax.a[A].timer->PER = 0x4000;
+	ax.a[A].timer->CTRLA = TC_CLK_ON;
 
 	ax.active_axes |= (X_ACTIVE_BIT_bm | Y_ACTIVE_BIT_bm | Z_ACTIVE_BIT_bm | A_ACTIVE_BIT_bm);
 }

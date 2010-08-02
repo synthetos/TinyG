@@ -126,10 +126,10 @@ int cfg_parse(char *text)
 				  status(TG_OK); 
 				  break;
 
-		case 'X': axis = X_AXIS; break;
-		case 'Y': axis = Y_AXIS; break;
-		case 'Z': axis = Z_AXIS; break;
-		case 'A': axis = A_AXIS; break;
+		case 'X': axis = X; break;
+		case 'Y': axis = Y; break;
+		case 'Z': axis = Z; break;
+		case 'A': axis = A; break;
 
 		default: status (TG_UNRECOGNIZED_COMMAND); 	// error return
 	}
@@ -190,7 +190,7 @@ void cfg_dump()
 	printf_P(PSTR(" (default_seek_rate:  %5.3f mm / second)\n"), cfg.default_seek_rate);
 	printf_P(PSTR(" (default_feed_rate:  %5.3f mm / second)\n\n"), cfg.default_feed_rate);
 
-	for (uint8_t axis = 0; axis <= A_AXIS; axis++) {
+	for (uint8_t axis=X; axis<=A; axis++) {
 		_cfg_dump_axis(axis);
 	}
 }
@@ -219,50 +219,50 @@ void cfg_reset()
 	cfg.config_version = EEPROM_DATA_VERSION;
 	cfg.mm_per_arc_segment = MM_PER_ARC_SEGMENT;
 
-	cfg.a[X_AXIS].seek_steps_sec = X_SEEK_WHOLE_STEPS_PER_SEC;
-	cfg.a[Y_AXIS].seek_steps_sec = Y_SEEK_WHOLE_STEPS_PER_SEC;
-	cfg.a[Z_AXIS].seek_steps_sec = Z_SEEK_WHOLE_STEPS_PER_SEC;
-	cfg.a[A_AXIS].seek_steps_sec = A_SEEK_WHOLE_STEPS_PER_SEC;
+	cfg.a[X].seek_steps_sec = X_SEEK_WHOLE_STEPS_PER_SEC;
+	cfg.a[Y].seek_steps_sec = Y_SEEK_WHOLE_STEPS_PER_SEC;
+	cfg.a[Z].seek_steps_sec = Z_SEEK_WHOLE_STEPS_PER_SEC;
+	cfg.a[A].seek_steps_sec = A_SEEK_WHOLE_STEPS_PER_SEC;
 
-	cfg.a[X_AXIS].feed_steps_sec = X_FEED_WHOLE_STEPS_PER_SEC;
-	cfg.a[Y_AXIS].feed_steps_sec = Y_FEED_WHOLE_STEPS_PER_SEC;
-	cfg.a[Z_AXIS].feed_steps_sec = Z_FEED_WHOLE_STEPS_PER_SEC;
-	cfg.a[A_AXIS].feed_steps_sec = A_FEED_WHOLE_STEPS_PER_SEC;
+	cfg.a[X].feed_steps_sec = X_FEED_WHOLE_STEPS_PER_SEC;
+	cfg.a[Y].feed_steps_sec = Y_FEED_WHOLE_STEPS_PER_SEC;
+	cfg.a[Z].feed_steps_sec = Z_FEED_WHOLE_STEPS_PER_SEC;
+	cfg.a[A].feed_steps_sec = A_FEED_WHOLE_STEPS_PER_SEC;
 
-	cfg.a[X_AXIS].degree_per_step = X_DEGREE_PER_WHOLE_STEP;
-	cfg.a[Y_AXIS].degree_per_step = Y_DEGREE_PER_WHOLE_STEP;
-	cfg.a[Z_AXIS].degree_per_step = Z_DEGREE_PER_WHOLE_STEP;
-	cfg.a[A_AXIS].degree_per_step = A_DEGREE_PER_WHOLE_STEP;
+	cfg.a[X].degree_per_step = X_DEGREE_PER_WHOLE_STEP;
+	cfg.a[Y].degree_per_step = Y_DEGREE_PER_WHOLE_STEP;
+	cfg.a[Z].degree_per_step = Z_DEGREE_PER_WHOLE_STEP;
+	cfg.a[A].degree_per_step = A_DEGREE_PER_WHOLE_STEP;
 
-	cfg.a[X_AXIS].mm_per_rev = X_MM_PER_REVOLUTION;
-	cfg.a[Y_AXIS].mm_per_rev = Y_MM_PER_REVOLUTION;
-	cfg.a[Z_AXIS].mm_per_rev = Z_MM_PER_REVOLUTION;
-	cfg.a[A_AXIS].mm_per_rev = A_MM_PER_REVOLUTION;
+	cfg.a[X].mm_per_rev = X_MM_PER_REVOLUTION;
+	cfg.a[Y].mm_per_rev = Y_MM_PER_REVOLUTION;
+	cfg.a[Z].mm_per_rev = Z_MM_PER_REVOLUTION;
+	cfg.a[A].mm_per_rev = A_MM_PER_REVOLUTION;
 	
-	cfg.a[X_AXIS].mm_travel = X_MM_TRAVEL;
-	cfg.a[Y_AXIS].mm_travel = Y_MM_TRAVEL;
-	cfg.a[Z_AXIS].mm_travel = Z_MM_TRAVEL;
-	cfg.a[A_AXIS].mm_travel = A_MM_TRAVEL;
+	cfg.a[X].mm_travel = X_MM_TRAVEL;
+	cfg.a[Y].mm_travel = Y_MM_TRAVEL;
+	cfg.a[Z].mm_travel = Z_MM_TRAVEL;
+	cfg.a[A].mm_travel = A_MM_TRAVEL;
 	
-	cfg.a[X_AXIS].microstep = X_MICROSTEPS;
-	cfg.a[Y_AXIS].microstep = Y_MICROSTEPS;
-	cfg.a[Z_AXIS].microstep = Z_MICROSTEPS;
-	cfg.a[A_AXIS].microstep = A_MICROSTEPS;
+	cfg.a[X].microstep = X_MICROSTEPS;
+	cfg.a[Y].microstep = Y_MICROSTEPS;
+	cfg.a[Z].microstep = Z_MICROSTEPS;
+	cfg.a[A].microstep = A_MICROSTEPS;
 
-	cfg.a[X_AXIS].polarity = X_POLARITY;
-	cfg.a[Y_AXIS].polarity = Y_POLARITY;
-	cfg.a[Z_AXIS].polarity = Z_POLARITY;
-	cfg.a[A_AXIS].polarity = A_POLARITY;
+	cfg.a[X].polarity = X_POLARITY;
+	cfg.a[Y].polarity = Y_POLARITY;
+	cfg.a[Z].polarity = Z_POLARITY;
+	cfg.a[A].polarity = A_POLARITY;
 
-	cfg.a[X_AXIS].limit_enable = X_LIMIT_ENABLE;
-	cfg.a[Y_AXIS].limit_enable = Y_LIMIT_ENABLE;
-	cfg.a[Z_AXIS].limit_enable = Z_LIMIT_ENABLE;
-	cfg.a[A_AXIS].limit_enable = A_LIMIT_ENABLE;
+	cfg.a[X].limit_enable = X_LIMIT_ENABLE;
+	cfg.a[Y].limit_enable = Y_LIMIT_ENABLE;
+	cfg.a[Z].limit_enable = Z_LIMIT_ENABLE;
+	cfg.a[A].limit_enable = A_LIMIT_ENABLE;
 
-	cfg.a[X_AXIS].low_pwr_idle = X_LOW_POWER_IDLE;
-	cfg.a[Y_AXIS].low_pwr_idle = Y_LOW_POWER_IDLE;
-	cfg.a[Z_AXIS].low_pwr_idle = Z_LOW_POWER_IDLE;
-	cfg.a[A_AXIS].low_pwr_idle = A_LOW_POWER_IDLE;
+	cfg.a[X].low_pwr_idle = X_LOW_POWER_IDLE;
+	cfg.a[Y].low_pwr_idle = Y_LOW_POWER_IDLE;
+	cfg.a[Z].low_pwr_idle = Z_LOW_POWER_IDLE;
+	cfg.a[A].low_pwr_idle = A_LOW_POWER_IDLE;
 
 	_cfg_computed();		// generate computed values from the above
 }
@@ -275,23 +275,19 @@ void cfg_reset()
 void _cfg_computed() 
 {
 	// = 360 / (degree_per_step/microstep) / mm_per_rev
-	for (int i = X_AXIS; i <= A_AXIS; i++) {
+	for (uint8_t i=X; i<=A; i++) {
 		cfg.a[i].steps_per_mm = (360 / (cfg.a[i].degree_per_step / 
 										cfg.a[i].microstep)) / 
 										cfg.a[i].mm_per_rev;
 	}
 
 	// = feed_steps_sec / (360/degree_per_step/microstep)
-	cfg.default_feed_rate = (cfg.a[X_AXIS].feed_steps_sec * 
-							  cfg.a[X_AXIS].microstep) / 
-							 (360/(cfg.a[X_AXIS].degree_per_step / 
-							 	   cfg.a[X_AXIS].microstep));
+	cfg.default_feed_rate = (cfg.a[X].feed_steps_sec * cfg.a[X].microstep) / 
+							(360/(cfg.a[X].degree_per_step / cfg.a[X].microstep));
 
 	// = seek_steps_sec / (360/degree_per_step/microstep)
-	cfg.default_seek_rate = (cfg.a[X_AXIS].seek_steps_sec * 
-							  cfg.a[X_AXIS].microstep) / 
-							 (360/(cfg.a[X_AXIS].degree_per_step / 
-							 	   cfg.a[X_AXIS].microstep));
+	cfg.default_seek_rate = (cfg.a[X].seek_steps_sec * cfg.a[X].microstep) / 
+							(360/(cfg.a[X].degree_per_step / cfg.a[X].microstep));
 }
 
 /* 

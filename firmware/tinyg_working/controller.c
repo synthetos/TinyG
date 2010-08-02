@@ -156,6 +156,7 @@ void tg_controller()
 
 	_tg_prompt();		// Send a prompt - but only if controller is ready for input
 
+
 	if ((tg.status = mc_line_continuation()) == TG_OK) { // Run the line generator 
 		tg.state = TG_STATE_READY_UNPROMPTED;
 		return;
@@ -296,9 +297,9 @@ void _tg_prompt()
 		printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
 		tg.state = TG_STATE_READY_PROMPTED;
 	}
-	// bastardized prompts for file sources
+	// bastardized prompts for file sources (no asterisk returned)
 	if ((!tg.prompts) && (tg.state == TG_STATE_READY_UNPROMPTED)) {
-		printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
+		printf_P(PSTR("TinyG [%S]> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
 //		tg.state = TG_STATE_READY_PROMPTED;
 	}
 }

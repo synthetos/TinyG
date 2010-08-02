@@ -52,7 +52,7 @@ static void _ls_handler(void);
 
 void ls_init(void) 
 {
-	for (uint8_t i=0; i <= A_AXIS; i++) {
+	for (uint8_t i=X; i<=A; i++) {
 		AXIS(i).port->DIRCLR = (1<<MIN_LIMIT_BIT_bp);		// min - set as input
 		AXIS(i).port->DIRCLR = (1<<MAX_LIMIT_BIT_bp);		// max - set as input
 		AXIS(i).port->PIN6CTRL = (LS_OPC_gc | LS_ISC_gc);	// min - pin modes

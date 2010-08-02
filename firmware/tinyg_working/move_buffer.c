@@ -39,6 +39,7 @@
 
 #include <stdlib.h>
 #include <avr/io.h>
+#include <string.h>								// for memset();
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include "move_buffer.h"
@@ -126,8 +127,9 @@ uint8_t mv_queue_move_buffer(int32_t steps_x,
 //		sleep_mode();	// USE INSTEAD OF THE RETURN IF YOU WANT BLOCKING BEHAVIOR
 	}
 
-	// setup the move struct
+	// setup the move struct and ticks value
 	mv.p = &mv.move_buffer[mv.move_buffer_head];
+	memset(mv.p, 0, sizeof(struct mvMove));
 	mv.p->a[X].steps = steps_x;
 	mv.p->a[Y].steps = steps_y;
 	mv.p->a[Z].steps = steps_z;
