@@ -1,0 +1,1 @@
+Numbered versions are somewhat stable. No similar guarantees on the working directory.
