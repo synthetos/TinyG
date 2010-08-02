@@ -802,7 +802,7 @@ int xio_rs485_readln(char *buf, uint8_t len)
 	}
 	if (fr.rx_buf_head == fr.rx_buf_tail) {		// RX ISR buffer empty
 //		fr.sig = XIO_SIG_WOULDBLOCK;
-		return(TG_CONTINUE);
+		return(TG_EAGAIN);
 	}
 	if (--(fr.rx_buf_tail) == 0) {				// advance RX tail (RXQ read pointer)
 		fr.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
@@ -822,7 +822,7 @@ static int _readln_char(void)
 	}
 	fr.buf[fr.i++] = fr.c;
 	if (ECHO(fr.flags)) xio_rs485_putc(fr.c, stdout);// conditional echo
-	return (TG_CONTINUE);						// line is still in process
+	return (TG_EAGAIN);						// line is still in process
 }
 
 static int _readln_NEWLINE(void)				// handles any valid newline char
@@ -851,7 +851,7 @@ static int _readln_DELETE(void)
 	} else {
 		fr.i = 0;
 	}
-	return (TG_CONTINUE);						// line is still in process
+	return (TG_EAGAIN);							// line is still in process
 }
 
 /*

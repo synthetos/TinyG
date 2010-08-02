@@ -60,6 +60,17 @@ enum xioDevice {					// device enumerations
 	XIO_DEV_MAX						// *** must be last ***
 };
 
+enum xioDeviceFlags {				// used for setting flow control modes
+	XIO_FLAG_ASTERISK,				// enable asterisks to this device (flow control)
+	XIO_FLAG_XON_XOFF,				// enable XON/XOFF flow control (not implemented)
+	XIO_FLAG_RTS_CTS				// enable rts/cts flow control (not implemented)
+};
+
+#define XIO_FLAG_ASTERISK_bm (1<<XIO_FLAG_ASTERISK)
+#define XIO_FLAG_XON_XOFF_bm (1<<XIO_FLAG_XON_XOFF)
+#define XIO_FLAG_RTS_CTS_bm (1<<XIO_FLAG_RTS_CTS)
+
+
 /*
  * XIO signals and error conditions (loads f.signals register)
  */
@@ -184,7 +195,8 @@ enum xio_BAUDRATES {         			// BSEL	  BSCALE
  *	     or a max of 254 characters usable (see xmega_io.c circular buffer note) 
  */
 
-#define RX_BUFFER_SIZE 255	// rx buf (255 max) - written by ISRs (2 bytes unusable)
+//#define RX_BUFFER_SIZE 255	// rx buf (255 max) - written by ISRs (2 bytes unusable)
+#define RX_BUFFER_SIZE 25	// rx buf (255 max) - written by ISRs (2 bytes unusable)
 #define TX_BUFFER_SIZE 18	// tx buf (255 max) - read by ISRs (2 bytes unusable)
 
 struct xioUSART {

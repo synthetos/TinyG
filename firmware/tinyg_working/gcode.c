@@ -448,7 +448,7 @@ uint8_t gc_execute_block(char *buf)
 	 * and the real tool position is still close to the starting point.
 	 * The endpoint position is not moved if there has been an interpreter error.
 	 */
-	if ((gc.status == TG_OK) || (gc.status == TG_CONTINUE)) {
+	if ((gc.status == TG_OK) || (gc.status == TG_EAGAIN)) {
 		memcpy(gc.position, gc.target, sizeof(gc.target));
 	};
 	return(gc.status);
@@ -702,7 +702,7 @@ void _gc_print_status(uint8_t status_code, char *textbuf)
 			printf_P(PSTR("No operation\n")); 
 			break;
 
-		case TG_CONTINUE: 
+		case TG_EAGAIN: 
 			printf_P(PSTR("%s\n"), textbuf);
 #ifdef __DEBUG
 			printf_P(PSTR("Gcode Continuation for: %s\n"), textbuf); 

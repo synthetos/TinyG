@@ -173,7 +173,7 @@ int mc_line_continuation()
 	}
 	mc.line_state = MC_STATE_RUNNING; // technically correct but not really needed
 	if (mv_test_move_buffer_full()) { // this is where you would block
-		return (TG_CONTINUE);
+		return (TG_EAGAIN);
 	}
 	mv_queue_move_buffer(mc.steps[X], mc.steps[Y], mc.steps[Z], mc.microseconds); 
 
@@ -312,7 +312,7 @@ int mc_arc_continuation()
 	}
 	while (ma.segment_counter <= ma.segments) {
 		if (mv_test_move_buffer_full()) {	// this is where you would block
-			return (TG_CONTINUE);
+			return (TG_EAGAIN);
 		}
 		ma.segment_counter++;
 		ma.theta += ma.theta_per_segment;
