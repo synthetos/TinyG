@@ -1,5 +1,5 @@
 /*
- * tg_controller.h - tinyg controller and top level parsers
+ * signals.h - signal handlers
  * Part of TinyG project
  * Copyright (c) 2010 Alden S. Hart, Jr.
  *
@@ -14,22 +14,13 @@
  * You should have received a copy of the GNU General Public License along with TinyG  
  * If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef controller_h
-#define controller_h
+#ifndef tg_signals_h
+#define tg_signals_h
 
 /*
  * Global Scope Functions
  */
 
-void tg_init(void);
-void tg_controller(void);
-int tg_parser(char * buf);
-void tg_reset_source();
-
-//int tg_signal(uint8_t sig);
-//void tg_kill(void);
-//void tg_terminate(void);
-//void tg_pause(void);
-//void tg_resume(void);
+void signal_etx(void);		// ^c
 
 #endif

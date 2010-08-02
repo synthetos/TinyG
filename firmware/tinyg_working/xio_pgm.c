@@ -111,14 +111,10 @@ void xio_pgm_init(const uint16_t control)
 	if (control & XIO_NOSEMICOLONS) {
 		fpgm.flags &= ~XIO_FLAG_SEMICOLONS_bm;
 	}
-
 	fpgm.idx = 0;
 	fpgm.sig = 0;
 	dev_pgm.udata = &(fpgm.sig); 	// bind signals register to pgm FILE struct
 	fpgm.len = sizeof(fpgm.buf);
-
-	fpgm.sig_func = &xio_null_signal;			// bind null signal handler
-	fpgm.line_func = &xio_null_line;			// bind null line handler
 }
 
 /*	
@@ -152,15 +148,6 @@ FILE * xio_pgm_open(const prog_char *addr)
 
 int8_t xio_pgm_control(const uint16_t control, const int16_t arg)
 {
-	// commands with args - only do one flag if there's an arg
-	if (control & XIO_SIG_FUNC) {
-		fpgm.sig_func = (fptr_int_uint8)arg;
-		return (0);	
-	}
-	if (control & XIO_LINE_FUNC) {
-		fpgm.line_func = (fptr_int_char_p)arg;
-		return (0);
-	}
 	// transfer control flags to internal flag bits
 	fpgm.flags = XIO_FLAG_PGM_DEFS_gm;		// set flags to defaults & initial state
 	if (control & XIO_ECHO) {
@@ -266,8 +253,8 @@ int xio_pgm_getc(FILE *stream)
 
 int xio_pgm_readln(char *buf, uint8_t len)
 {
-	if (!(fpgm.pgmbase_P)) {					// return OK if no file is open
-		return (TG_OK);					 
+	if (!(fpgm.pgmbase_P)) {					// return error if no file is open
+		return (TG_FILE_NOT_OPEN);
 	}
 	fpgm.sig = XIO_SIG_OK;						// initialize signal
 	if (fgets(buf, len, &dev_pgm) == NULL) {
@@ -275,11 +262,5 @@ int xio_pgm_readln(char *buf, uint8_t len)
 		clearerr(&dev_pgm);
 		return (TG_EOF);
 	}
-	// dispatch through line function callback
-//	fpgm.status = ((int)fpgm.line_func(buf));	// call line handler function
-//	return (fpgm.status);
-
-	// return directly without dispatch through line function callback
-//	fpgm.status = ((int)fpgm.line_func(buf));	// call line handler function
 	return (TG_OK);
 }

@@ -78,6 +78,8 @@ ISR(A_MIN_ISR_vect)	{ _ls_handler(); }
 ISR(A_MAX_ISR_vect)	{ _ls_handler(); }
 
 void _ls_handler() {
-	tg_kill();
+//	tg_kill();
+	return;
 }
+
 
