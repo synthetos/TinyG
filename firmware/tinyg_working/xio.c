@@ -35,21 +35,11 @@
 #include <avr/pgmspace.h>
 
 #include "xio.h"				// put includes for all devices here
+#include "xio_usart.h"			// common declarations for USART devices
 #include "xio_usb.h"
 #include "xio_rs485.h"
 #include "xio_pgm.h"
 #include "tinyg.h"				// needed for TG_ return codes, or provide your own
-
-/*
- * Common stuff - used across multiple xio modules
- */
-
-/* USART table lookups (see xio.h for explanation) */
-const uint8_t bsel[] PROGMEM = 				// baud rates
-		{ 0, 207, 103, 51, 34, 33, 31, 27, 19, 1, 1 };
-
-const uint8_t bscale[] PROGMEM =  			// more baud rate data
-		{ 0, 0, 0, 0, 0, (-1<<4), (-2<<4), (-3<<4), (-4<<4), (1<<4), 1 };
 
 /*
  * Common functions 
@@ -59,11 +49,11 @@ const uint8_t bscale[] PROGMEM =  			// more baud rate data
 
 void xio_init(void)
 {	
-	// USB port defaults are:	XIO_RDWR | XIO_ECHO | XIO_CRLF - open additionally:
-	xio_usb_init(XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200);
-
 	// RS485 port defaults are:	XIO_RDWR | XIO_ECHO | XIO_CRLF - open additionally:
 	xio_usb_init(XIO_LINEMODE | XIO_BAUD_115200);
+
+	// USB port defaults are:	XIO_RDWR | XIO_ECHO | XIO_CRLF - open additionally:
+	xio_usb_init(XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200);
 
 	// PGM file defaults are:	XIO_RD | XIO_BLOCK
 //	xio_pgm_init(XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS);
@@ -85,9 +75,8 @@ void xio_init(void)
 int8_t xio_dev_init(uint8_t dev, const int16_t arg)
 {
 	switch (dev) {
-		case (XIO_DEV_NULL): return (TG_OK);
-		case (XIO_DEV_USB): xio_usb_init(arg); return (TG_OK);
 		case (XIO_DEV_RS485): xio_rs485_init(arg); return (TG_OK);
+		case (XIO_DEV_USB): xio_usb_init(arg); return (TG_OK);
 //		case (XIO_DEV_AUX): xio_aux_init(arg); return (TG_OK);
 		case (XIO_DEV_PGM): xio_pgm_init(arg); return (TG_OK);
 		default: return (TG_UNRECOGNIZED_DEVICE);
@@ -103,9 +92,8 @@ int8_t xio_dev_init(uint8_t dev, const int16_t arg)
 int8_t xio_control(uint8_t dev, const uint16_t control, const int16_t arg)
 {
 	switch (dev) {
-		case (XIO_DEV_NULL): return (TG_OK);
-		case (XIO_DEV_USB): return (xio_usb_control(control, arg));
 		case (XIO_DEV_RS485): return (xio_rs485_control(control, arg));
+		case (XIO_DEV_USB): return (xio_usb_control(control, arg));
 //		case (XIO_DEV_AUX): return (xio_aux_control(control, arg));
 		case (XIO_DEV_PGM): return (xio_pgm_control(control, arg));
 		default: return (TG_UNRECOGNIZED_DEVICE);
@@ -126,14 +114,11 @@ int8_t xio_control(uint8_t dev, const uint16_t control, const int16_t arg)
 int xio_fget_ln(uint8_t dev, char *buf, uint8_t len)
 {
 	switch (dev) {
-		case (XIO_DEV_NULL): return (TG_OK);
-		case (XIO_DEV_USB): return (xio_usb_readln(buf, len));
 		case (XIO_DEV_RS485): return (xio_rs485_readln(buf, len));
+		case (XIO_DEV_USB): return (xio_usb_readln(buf, len));
 //		case (XIO_DEV_AUX): return (xio_aux_readln(buf, len));
 		case (XIO_DEV_PGM): return (xio_pgm_readln(buf, len));
 		default: return (TG_UNRECOGNIZED_DEVICE);
 	}
 	return (TG_ERROR);		// never should hit this
 }
-
-

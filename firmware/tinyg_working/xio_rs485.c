@@ -24,6 +24,7 @@
 #include <avr/sleep.h>			// needed for blocking character reads
 
 #include "xio.h"
+#include "xio_usart.h"
 #include "xio_rs485.h"
 #include "xmega_interrupts.h"
 #include "tinyg.h"				// needed for TG_ return codes, or provide your own
@@ -58,10 +59,10 @@ static struct xioUSART fr;		// USART control struct
 //#define RS485_TX2_ISR_vect USARTC1_TXC_vect // (TX) transmission complete (Don't use)
 
 #define RS485_PORT PORTC			// port where the USART is located
-#define RS485_RE_bm (1<<4)			// RE (Receive Enable) pin - active lo
-#define RS485_DE_bm (1<<5)			// DE (Data Enable) pin (TX enable) - active hi
 #define RS485_RX_bm (1<<6)			// RX pin - these pins are wired on the board
 #define RS485_TX_bm (1<<7)			// TX pin
+#define RS485_RE_bm (1<<4)			// RE (Receive Enable) pin - active lo
+#define RS485_DE_bm (1<<5)			// DE (Data Enable) pin (TX enable) - active hi
 
 
 /* Helper Functions */
@@ -78,12 +79,12 @@ static int _readln_DELETE(void);
 static int _sig_KILL(void);			// vestigal stubs for signals
 static int _sig_PAUSE(void);
 static int _sig_RESUME(void);
-static int _sig_SHIFTOUT(void);
-static int _sig_SHIFTIN(void);
+//static int _sig_SHIFTOUT(void);
+//static int _sig_SHIFTIN(void);
 
 
 /* 
- *	xio_rs485_init() - initialize and set controls for USB device 
+ *	xio_rs485_init() - initialize and set controls for RS485 device 
  *
  *	Control		   Arg	  Default		Notes
  *	
@@ -374,7 +375,7 @@ int xio_rs485_putc(const char c, FILE *stream)
 		if (BLOCKING(fr.flags)) {
 			sleep_mode();
 		} else {
-			fr.sig = XIO_SIG_WOULDBLOCK;
+			fr.sig = XIO_SIG_EAGAIN;
 			return(_FDEV_ERR);
 		}
 	};
@@ -431,8 +432,8 @@ static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 		_getc_char, 		//	11	0B	VT	(Vertical Tab)
 		_getc_char, 		//	12	0C	FF	(Form Feed)
 		_getc_NEWLINE, 		//	13	0D	CR	(Carriage Return)
-		_sig_SHIFTOUT,		//	14	0E	SO	(Shift Out)
-		_sig_SHIFTIN, 		//	15	0F	SI	(Shift In)
+		_getc_char,			//	14	0E	SO	(Shift Out)
+		_getc_char, 		//	15	0F	SI	(Shift In)
 		_getc_char, 		//	16	10	DLE	(Data Link Escape)
 		_sig_RESUME, 		//	17	11	DC1 (XON) (Device Control 1) ^q	
 		_getc_char, 		//	18	12	DC2	(Device Control 2)
@@ -583,7 +584,7 @@ int xio_rs485_getc(FILE *stream)
 		if (BLOCKING(fr.flags)) {
 			sleep_mode();
 		} else {
-			fr.sig = XIO_SIG_WOULDBLOCK;
+			fr.sig = XIO_SIG_EAGAIN;
 			return(_FDEV_ERR);
 		}
 	}
@@ -650,8 +651,8 @@ static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 		_readln_char, 		//	11	0B	VT	(Vertical Tab)
 		_readln_char, 		//	12	0C	FF	(Form Feed)
 		_readln_NEWLINE, 	//	13	0D	CR	(Carriage Return)
-		_sig_SHIFTOUT,		//	14	0E	SO	(Shift Out)
-		_sig_SHIFTIN, 		//	15	0F	SI	(Shift In)
+		_readln_char,		//	14	0E	SO	(Shift Out)
+		_readln_char, 		//	15	0F	SI	(Shift In)
 		_readln_char, 		//	16	10	DLE	(Data Link Escape)
 		_sig_RESUME, 		//	17	11	DC1 (XON) (Device Control 1) ^q	
 		_readln_char, 		//	18	12	DC2	(Device Control 2)
@@ -875,7 +876,7 @@ static int _sig_RESUME(void)
 	fr.sig = XIO_SIG_RESUME;
 	return(_FDEV_ERR);
 }
-
+/*
 static int _sig_SHIFTOUT(void)
 {
 	fr.sig = XIO_SIG_SHIFTOUT;
@@ -887,4 +888,4 @@ static int _sig_SHIFTIN(void)
 	fr.sig = XIO_SIG_SHIFTIN;
 	return(_FDEV_ERR);
 }
-
+*/

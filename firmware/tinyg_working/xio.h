@@ -51,14 +51,14 @@ FILE *stddev;						// a convenient alias for stdin. stdout, stderr
  * XIO devices (configured devices)
  */
 
-enum xioDevice {					// device enumerations
-	XIO_DEV_NULL,					// null device
-	XIO_DEV_USB,					// USB device
-	XIO_DEV_RS485,					// RS485 device (typically network port)
-	XIO_DEV_AUX,					// AUX device (typically Arduino)
+enum xioDevice {					// device enumerations - PUT USART DEVICES FIRST
+	XIO_DEV_RS485,					// [USART] RS485 device (typically network port)
+	XIO_DEV_USB,					// [USART] USB device
+	XIO_DEV_AUX,					// [USART] AUX device (typically Arduino)
 	XIO_DEV_PGM,					// program memory file
 	XIO_DEV_MAX						// *** must be last ***
 };
+#define XIO_DEV_USART_MAX (XIO_DEV_AUX+1)	// useful for sizing arrays
 
 enum xioDeviceFlags {				// used for setting flow control modes
 	XIO_FLAG_PROMPTS,				// enable prompts (app-level flow control)
@@ -70,74 +70,9 @@ enum xioDeviceFlags {				// used for setting flow control modes
 #define XIO_FLAG_XON_XOFF_bm (1<<XIO_FLAG_XON_XOFF)
 #define XIO_FLAG_RTS_CTS_bm (1<<XIO_FLAG_RTS_CTS)
 
-
 /*
- * XIO signals and error conditions (loads f.signals register)
+ * xio_control values
  */
-
-enum xio_SIGS {
-	XIO_SIG_OK,						// OK
-	XIO_SIG_EOL,					// end-of-line encountered (string has data)
-	XIO_SIG_EOF,					// end-of-file encountered (string has no data)
-	XIO_SIG_WOULDBLOCK,				// would block - no character returned
-	XIO_SIG_KILL,					// cancel operation immediately (^c, ESC)
-	XIO_SIG_TERMINATE,				// terminate operation nicely (^x)
-	XIO_SIG_PAUSE,					// pause operation (^q)
-	XIO_SIG_RESUME,					// resume operation (^p)
-	XIO_SIG_SHIFTOUT,				// shift to mode (^n)
-	XIO_SIG_SHIFTIN,				// shift back (^o)
-	XIO_SIG_DELETE,					// backspace or delete character (BS, DEL)
-	XIO_SIG_BELL					// BELL character (BEL, ^g)
-};
-
-/*
- * Some useful ASCII definitions
- */
-
-#define NUL 0x00				// ASCII NUL character (0) (not "NULL" which is a pointer)
-#define ETX 0x03				// ^c - aka ETX
-#define BEL 0x07				// ^g - aka BEL
-#define BS  0x08				// ^h - aka backspace 
-#define SHIFTOUT 0x0E			// ^n - aka shift out 
-#define SHITFTIN 0x0F			// ^o - aka shift in
-#define XOFF 0x11				// ^q - aka DC1, XOFF, pause
-#define XON 0x12				// ^s - aka DC3, XON, resume
-#define ESC 0x1B				// ESC(ape)
-#define DEL 0x7F				// DEL(ete)
-
-#define CTRL_C ETX
-#define CTRL_G BEL
-#define CTRL_H BS	
-#define CTRL_N SHIFTOUT	
-#define CTRL_O SHIFTIN	
-#define CTRL_Q XOFF
-#define CTRL_S XON
-#define CTRL_X 0x18				// ^x - aka CAN(cel)
-
-/* 
- * Serial Configuration Settings
- *
- * 	Serial config settings are here because various modules will be opening devices
- *	The BSEL / BSCALE values provided below assume a 32 Mhz clock
- *	These are carried in the bsel and bscale tables in xmega_io.c
- */
-
-enum xio_BAUDRATES {         			// BSEL	  BSCALE
-		XIO_BAUD_UNSPECIFIED,			//	0		0		// use default value 
-		XIO_BAUD_9600,					//	207		0
-		XIO_BAUD_19200,					//	103		0
-		XIO_BAUD_38400,					//	51		0
-		XIO_BAUD_57600,					//	34		0
-		XIO_BAUD_115200,				//	33		(-1<<4)
-		XIO_BAUD_230400,				//	31		(-2<<4)
-		XIO_BAUD_460800,				//	27		(-3<<4)
-		XIO_BAUD_921600,				//	19		(-4<<4)
-		XIO_BAUD_500000,				//	1		(1<<4)
-		XIO_BAUD_1000000				//	1		0
-};		// Note: cannot have more than 16 without changing XIO_BAUD_gm, below
-
-#define	XIO_BAUD_DEFAULT XIO_BAUD_115200
-
 
 // _init() io_ctl() control bits
 #define XIO_BAUD_gm		0x0000000F		// baud rate enum mask (keep in LSbyte)
@@ -189,39 +124,53 @@ enum xio_BAUDRATES {         			// BSEL	  BSCALE
 #define IN_LINE(a) (a & XIO_FLAG_IN_LINE_bm)
 #define IN_FLOW_CONTROL(a) (a & XIO_FLAG_IN_FLOW_CONTROL_bm)
 
-/* 
- * USART control structure - here because it's shared by multiple devices.
- * Note: As defined this struct won't do buffers larger than 256 chars - 
- *	     or a max of 254 characters usable (see xmega_io.c circular buffer note) 
+/*
+ * Generic XIO signals and error conditions. 
+ * See signals.h for application specific signal defs and routines.
  */
 
-//#define RX_BUFFER_SIZE 255	// rx buf (255 max) - written by ISRs (2 bytes unusable)
-#define RX_BUFFER_SIZE 25	// rx buf (255 max) - written by ISRs (2 bytes unusable)
-#define TX_BUFFER_SIZE 18	// tx buf (255 max) - read by ISRs (2 bytes unusable)
-
-struct xioUSART {
-	// PUBLIC VARIABLES - must be the same in every device type
-	uint16_t flags;						// control flags
-	uint8_t status;						// completion status 
-	uint8_t sig;						// signal or error value
-	uint8_t c;							// line buffer character temp
-	uint8_t i;							// line buffer pointer
-	uint8_t len;						// line buffer maximum length (zero based)
-	char *buf;							// pointer to input line buffer
-
-	// PRIVATE VARIABLES - in this case for USART. Can be different by device type
-	volatile uint_fast8_t rx_buf_tail;	// RX buffer read index
-	volatile uint_fast8_t rx_buf_head;	// RX buffer write index (written by ISR)
-	volatile uint_fast8_t tx_buf_tail;	// TX buffer read index (written by ISR)
-	volatile uint_fast8_t tx_buf_head;	// TX buffer write index
-	uint_fast8_t next_tx_buf_head;		// next TX buffer write index
-	volatile unsigned char rx_buf[RX_BUFFER_SIZE];  // (written by ISR)
-	volatile unsigned char tx_buf[TX_BUFFER_SIZE];
-
-	// hardware bindings
-	struct USART_struct *usart;			// USART structure
-	struct PORT_struct *port;			// corresponding port
+enum xio_SIGS {
+	XIO_SIG_OK,						// OK
+	XIO_SIG_EAGAIN,					// would block
+	XIO_SIG_EOL,					// end-of-line encountered (string has data)
+	XIO_SIG_EOF,					// end-of-file encountered (string has no data)
+	XIO_SIG_KILL,					// cancel operation immediately (^c, ETX, 0x04)
+	XIO_SIG_TERMINATE,				// cancel operation nicely (^x, CAN, 0x24)
+	XIO_SIG_PAUSE,					// pause operation (^s, XOFF, DC3, 0x13)
+	XIO_SIG_RESUME,					// resume operation (^q, XON, DC1, 0x11)
+//	XIO_SIG_SHIFTOUT,				// shift to mode (^n) (NOT IMPLEMENTED)
+//	XIO_SIG_SHIFTIN,				// shift back (^o) (NOT IMPLEMENTED)
+	XIO_SIG_ESCAPE,					// ESC. Typically mapped to ^c or ^x functions
+	XIO_SIG_DELETE,					// backspace or delete character (BS, DEL)
+	XIO_SIG_BELL					// BELL character (BEL, ^g)
 };
+
+/*
+ * Some useful ASCII definitions
+ */
+
+#define NUL 0x00				// ASCII NUL character (0) (not "NULL" which is a pointer)
+#define ETX 0x03				// ^c - aka ETX
+#define KILL ETX				// 		synonym
+#define BEL 0x07				// ^g - aka BEL
+#define BS  0x08				// ^h - aka backspace 
+#define SHIFTOUT 0x0E			// ^n - aka shift out 
+#define SHITFTIN 0x0F			// ^o - aka shift in
+#define XOFF 0x11				// ^q - aka DC1, XOFF, pause
+#define XON 0x12				// ^s - aka DC3, XON, resume
+#define ESC 0x1B				// ESC(ape)
+#define DEL 0x7F				// DEL(ete)
+
+#define CTRL_C ETX
+#define CTRL_G BEL
+#define CTRL_H BS	
+#define CTRL_N SHIFTOUT	
+#define CTRL_O SHIFTIN	
+#define CTRL_Q XOFF
+#define CTRL_S XON
+#define CTRL_X 0x18				// ^x - aka CAN(cel)
+
+
 
 
 /**** NOTES ON XIO ****
