@@ -5,16 +5,17 @@
  * Part of TinyG project
  * Copyright (c) 2010 Alden S. Hart, Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation, 
- * either version 3 of the License, or (at your option) any later version.
+ * TinyG is free software: you can redistribute it and/or modify it under the 
+ * terms of the GNU General Public License as published by the Free Software 
+ * Foundation, either version 3 of the License, or (at your option) any later 
+ * version.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
- * PURPOSE. See the GNU General Public License for more details.
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY 
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for details
  *
- * You should have received a copy of the GNU General Public License along with TinyG  
- * If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along with 
+ * TinyG  If not, see <http://www.gnu.org/licenses/>.
  *
  *------
  *
@@ -28,6 +29,7 @@
 #include <avr/sleep.h>			// needed for blocking character reads
 
 #include "xio.h"
+#include "xio_usart.h"
 #include "xio_usb.h"
 #include "xmega_interrupts.h"
 #include "tinyg.h"				// needed for TG_ return codes, or provide your own
@@ -64,8 +66,8 @@ static struct xioUSART f;			// USART control struct
 #define USB_PORT PORTC				// port where the USART is located
 #define USB_RX_bm (1<<2)			// RX pin	- these pins are wired on the board
 #define USB_TX_bm (1<<3)			// TX pin
-#define USB_RTS_bm (1<<1)			// RTS pin
 #define USB_CTS_bm (1<<0)			// CTS pin
+#define USB_RTS_bm (1<<1)			// RTS pin
 
 /* Helper Functions */
 int _xio_usb_readchar(char *buf, uint8_t len);
@@ -83,8 +85,8 @@ static int _readln_DELETE(void);
 static int _sig_KILL(void);			// vestigal stubs for signals
 static int _sig_PAUSE(void);
 static int _sig_RESUME(void);
-static int _sig_SHIFTOUT(void);
-static int _sig_SHIFTIN(void);
+//static int _sig_SHIFTOUT(void);
+//static int _sig_SHIFTIN(void);
 
 /* 
  *	xio_usb_init() - initialize and set controls for USB device 
@@ -384,7 +386,7 @@ int xio_usb_putc(const char c, FILE *stream)
 		if (BLOCKING(f.flags)) {
 			sleep_mode();
 		} else {
-			f.sig = XIO_SIG_WOULDBLOCK;
+			f.sig = XIO_SIG_EAGAIN;
 			return(_FDEV_ERR);
 		}
 	};
@@ -445,8 +447,8 @@ static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 		_getc_char, 		//	11	0B	VT	(Vertical Tab)
 		_getc_char, 		//	12	0C	FF	(Form Feed)
 		_getc_NEWLINE, 		//	13	0D	CR	(Carriage Return)
-		_sig_SHIFTOUT,		//	14	0E	SO	(Shift Out)
-		_sig_SHIFTIN, 		//	15	0F	SI	(Shift In)
+		_getc_char,			//	14	0E	SO	(Shift Out)
+		_getc_char, 		//	15	0F	SI	(Shift In)
 		_getc_char, 		//	16	10	DLE	(Data Link Escape)
 		_sig_RESUME, 		//	17	11	DC1 (XON) (Device Control 1) ^q	
 		_getc_char, 		//	18	12	DC2	(Device Control 2)
@@ -597,7 +599,7 @@ int xio_usb_getc(FILE *stream)
 		if (BLOCKING(f.flags)) {
 			sleep_mode();
 		} else {
-			f.sig = XIO_SIG_WOULDBLOCK;
+			f.sig = XIO_SIG_EAGAIN;
 			return(_FDEV_ERR);
 		}
 	}
@@ -669,8 +671,8 @@ static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 		_readln_char, 		//	11	0B	VT	(Vertical Tab)
 		_readln_char, 		//	12	0C	FF	(Form Feed)
 		_readln_NEWLINE, 	//	13	0D	CR	(Carriage Return)
-		_sig_SHIFTOUT,		//	14	0E	SO	(Shift Out)
-		_sig_SHIFTIN, 		//	15	0F	SI	(Shift In)
+		_readln_char,		//	14	0E	SO	(Shift Out)
+		_readln_char, 		//	15	0F	SI	(Shift In)
 		_readln_char, 		//	16	10	DLE	(Data Link Escape)
 		_sig_RESUME, 		//	17	11	DC1 (XON) (Device Control 1) ^q	
 		_readln_char, 		//	18	12	DC2	(Device Control 2)
@@ -899,6 +901,7 @@ static int _sig_RESUME(void)
 	return(_FDEV_ERR);
 }
 
+/*
 static int _sig_SHIFTOUT(void)
 {
 	f.sig = XIO_SIG_SHIFTOUT;
@@ -910,3 +913,4 @@ static int _sig_SHIFTIN(void)
 	f.sig = XIO_SIG_SHIFTIN;
 	return(_FDEV_ERR);
 }
+*/

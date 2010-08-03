@@ -685,9 +685,9 @@ int _gc_compute_center_arc()
 	//--> For this to work correctly it must be delivered ONLY after the arc generator 
 	// has completed the arc. So the endpoint should be passed to the generator and
 	// executed there.
-//	gc.status = mc_line_nonblock(gc.target[X_AXIS], gc.target[Y_AXIS], gc.target[Z_AXIS], 
-//								(gc.inverse_feed_rate_mode) ? gc.inverse_feed_rate : 
-//								 gc.feed_rate, gc.inverse_feed_rate_mode);
+//	gc.status = mc_line(gc.target[X_AXIS], gc.target[Y_AXIS], gc.target[Z_AXIS], 
+//					   (gc.inverse_feed_rate_mode) ? gc.inverse_feed_rate : 
+//						gc.feed_rate, gc.inverse_feed_rate_mode);
 	return (gc.status);
 }
 
