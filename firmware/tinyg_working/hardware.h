@@ -82,7 +82,7 @@ enum cfgPortBits {						// motor control port bit positions
 #define MICROSTEP_BITS_bm (0)
 #endif
 
-// not needed but could be useful
+// not needed but could be useful later
 //#define MICROSTEP_EIGHTH_bm (MICROSTEP_BIT_1_bm | MICROSTEP_BIT_0_bm)
 //#define MICROSTEP_QUARTER_bm (MICROSTEP_BIT_1_bm)
 //#define MICROSTEP_HALF_bm (MICROSTEP_BIT_0_bm)

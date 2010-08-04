@@ -64,10 +64,11 @@ static struct xioUSART f;			// USART control struct
 #define USB_TX2_ISR_vect USARTC0_TXC_vect 	// (TX) transmission complete (Don't use)
 
 #define USB_PORT PORTC				// port where the USART is located
-#define USB_RX_bm (1<<2)			// RX pin	- these pins are wired on the board
-#define USB_TX_bm (1<<3)			// TX pin
 #define USB_CTS_bm (1<<0)			// CTS pin
 #define USB_RTS_bm (1<<1)			// RTS pin
+#define USB_RX_bm (1<<2)			// RX pin	- these pins are wired on the board
+#define USB_TX_bm (1<<3)			// TX pin
+
 
 /* Helper Functions */
 int _xio_usb_readchar(char *buf, uint8_t len);
