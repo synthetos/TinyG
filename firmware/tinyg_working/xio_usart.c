@@ -28,7 +28,6 @@
 
 #include "xio.h"
 #include "xio_usart.h"
-//#include "xio_usb.h"
 //#include "xmega_interrupts.h"
 //#include "tinyg.h"				// needed for TG_ return codes, or provide your own
 //#include "signals.h"
@@ -36,48 +35,28 @@
 void xio_init_usart(uint8_t d, struct xioUSART *u, const uint16_t control);
 
 
-/* 
- * USART config tables
- */
+// these tables are derived from above - shouldn't need to change it
+const struct USART_struct *usart_addr[] PROGMEM = { &RS4_USART, &USB_USART, &TTL_USART };
+const struct PORT_struct  *port_addr[] PROGMEM = { &RS4_PORT, &USB_PORT, &TTL_PORT };
+const uint8_t dirclr_bm [] PROGMEM = { RS4_DIRCLR_bm, USB_DIRCLR_bm, TTL_DIRCLR_bm };
+const uint8_t dirset_bm [] PROGMEM = { RS4_DIRSET_bm, USB_DIRSET_bm, TTL_DIRSET_bm };
+const uint8_t outclr_bm [] PROGMEM = { RS4_OUTCLR_bm, USB_OUTCLR_bm, TTL_OUTCLR_bm };
+const uint8_t outset_bm [] PROGMEM = { RS4_OUTSET_bm, USB_OUTSET_bm, TTL_OUTSET_bm };
 
-/* device settings. These must be aligned with enum xioDevice
- *							 [ct0, ct1 pin usage]
- *	0 = null device
- *	1 = rs485 device		 [ct0 = RE (Receive Enable) pin - active lo]
- *							 [ct1 = DE (Data Enable) pin (TX enable) - active hi]
- *	2 = USB device			 [ct0 = CTS pin, ct1 = RTS pin]
- *	3 = aux device (Arduino) [not used]
- */
-const struct USART_struct *usart_addr[] PROGMEM = { 0, &USARTC1, &USARTC0, &USARTC0 };
-const struct PORT_struct *port_addr[] PROGMEM = { 0, &PORTC, &PORTC, &PORTC};
-const uint8_t pin_rx_bm[] PROGMEM = { (1<<6), (1<<2), (1<<2) };
-const uint8_t pin_tx_bm[] PROGMEM = { (1<<7), (1<<3), (1<<3) };
-const uint8_t pin_ct0_bm[] PROGMEM = { (1<<4), (1<<0), (1<<0) };
-const uint8_t pin_ct1_bm[] PROGMEM = { (1<<5), (1<<1), (1<<1) };
+// change these control word initializations as you need to
+const uint16_t controls[] PROGMEM = {
+	(XIO_RDWR | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_BAUD_115200),	// RS485
+	(XIO_RDWR | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200),
+	(XIO_RDWR | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200)
+};
 
-// baud rate data, indexed by enum xioBAUDRATES (see xio_usart.h)
+// baud rate lookup tables - indexed by enum xioBAUDRATES (see xio_usart.h)
 const uint8_t bsel[] PROGMEM = { 0, 207, 103, 51, 34, 33, 31, 27, 19, 1, 1 };
 const uint8_t bscale[] PROGMEM =  			// more baud rate data
 		{ 0, 0, 0, 0, 0, (-1<<4), (-2<<4), (-3<<4), (-4<<4), (1<<4), 1 };
 
-
-// Crazy code. Must be aligned with the structure definition, obviously
-
-struct xioUSART us[XIO_DEV_USART_MAX] = {
-	{0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, &USARTC1, &PORTC},
-	{0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, &USARTC0, &PORTC},
-	{0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, &USARTC0, &PORTC}
-};
-
-/* 
- *	xio_init_usarts() - initialize all USART devices
- */
-
-void xio_init_usarts() 
-{
-//	xio_init_usart(2, *u, const uint16_t control)
-	return;
-}
+// allocate an array of usart device control structs
+struct xioUSART us[XIO_DEV_USART_MAX];
 
 /* 
  *	xio_init_usart() - general purpose USART initialization (shared)
@@ -88,7 +67,6 @@ void xio_init_usart(uint8_t dev, struct xioUSART *u, const uint16_t control)
 	uint8_t baud = (uint8_t)(control & XIO_BAUD_gm);
 
 	// transfer control flags to internal flag bits
-//	u->flags = XIO_FLAG_USB_DEFS_gm;		// set flags to defaults & initial state
 	if (control & XIO_RD) {
 		u->flags |= XIO_FLAG_RD_bm;
 	}
@@ -135,10 +113,7 @@ void xio_init_usart(uint8_t dev, struct xioUSART *u, const uint16_t control)
 	u->rx_buf_tail = 1;
 	u->tx_buf_head = 1;
 	u->tx_buf_tail = 1;
-	u->len = sizeof(u->buf);				// offset to zero
-
-//	u->usart = &USB_USART;					// bind USART structure
-//	u->port = &USB_PORT;					// bind PORT structure
+//	u->len = sizeof(u->buf);				// offset to zero THIS IS WRONG. NO BUFFER YET
 
 	// bind USART and PORT structures to xioUSART struct
 	u->usart = (struct USART_struct *)pgm_read_word(&usart_addr[dev]);
@@ -151,15 +126,10 @@ void xio_init_usart(uint8_t dev, struct xioUSART *u, const uint16_t control)
 	u->usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
 	u->usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
 	u->usart->CTRLB = USART_TXEN_bm | USART_RXEN_bm; // enable tx and rx on USART
-/*
-	u->usart->CTRLA = USARTC0_CTRLA_RXON_TXON;		// enable tx and rx interrupts
+	u->usart->CTRLA = CTRLA_RXON_TXON;				// enable tx and rx interrupts
 
-	u->port->DIRCLR = USB_RX_bm;	 			// clr RX pin as input
-	u->port->DIRSET = USB_TX_bm; 			// set TX pin as output
-	u->port->OUTSET = USB_TX_bm;				// set TX HI as initial state
-	u->port->DIRCLR = USB_CTS_bm; 			// set CTS pin as input
-	u->port->DIRSET = USB_RTS_bm; 			// set RTS pin as output
-	u->port->OUTSET = USB_RTS_bm; 			// set RTS HI initially (RTS enabled)
-//	u->port->OUTCLR = USB_RTS_bm; 			// set RTS HI initially (RTS enabled)
-*/
+	u->port->DIRCLR = (uint8_t)pgm_read_byte(&dirclr_bm[dev]);
+	u->port->DIRSET = (uint8_t)pgm_read_byte(&dirset_bm[dev]);
+	u->port->OUTCLR = (uint8_t)pgm_read_byte(&outclr_bm[dev]);
+	u->port->OUTSET = (uint8_t)pgm_read_byte(&outset_bm[dev]);
 }

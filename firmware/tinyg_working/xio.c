@@ -41,6 +41,10 @@
 #include "xio_pgm.h"
 #include "tinyg.h"				// needed for TG_ return codes, or provide your own
 
+
+extern struct xioUSART us[];	// array of usart control structs
+extern uint16_t controls[];		// array of control settings for device inits
+
 /*
  * Common functions 
  *
@@ -49,16 +53,20 @@
 
 void xio_init(void)
 {	
+	// initialize all USART-based devices
+	for (uint8_t i=0; i < XIO_DEV_USART_MAX; i++) {
+		xio_init_usart(i, &us[i], pgm_read_word(&controls[i]));
+	}
 	// RS485 port defaults are:	XIO_RDWR | XIO_ECHO | XIO_CRLF - open additionally:
-	xio_usb_init(XIO_LINEMODE | XIO_BAUD_115200);
+//	xio_usb_init(XIO_LINEMODE | XIO_BAUD_115200);
 
 	// USB port defaults are:	XIO_RDWR | XIO_ECHO | XIO_CRLF - open additionally:
-	xio_usb_init(XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200);
+//	xio_usb_init(XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200);
 
 	// PGM file defaults are:	XIO_RD | XIO_BLOCK
-//	xio_pgm_init(XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS);
 	xio_pgm_init(XIO_ECHO | XIO_CRLF | XIO_LINEMODE);
 //	xio_pgm_init(XIO_LINEMODE);
+
 
 	stddev = &dev_usb;				// stddev is a convenience
 	stdin = &dev_usb;				// define the console device
