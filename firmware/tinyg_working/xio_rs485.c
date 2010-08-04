@@ -59,11 +59,10 @@ static struct xioUSART fr;		// USART control struct
 //#define RS485_TX2_ISR_vect USARTC1_TXC_vect // (TX) transmission complete (Don't use)
 
 #define RS485_PORT PORTC			// port where the USART is located
-#define RS485_RX_bm (1<<6)			// RX pin - these pins are wired on the board
-#define RS485_TX_bm (1<<7)			// TX pin
 #define RS485_RE_bm (1<<4)			// RE (Receive Enable) pin - active lo
 #define RS485_DE_bm (1<<5)			// DE (Data Enable) pin (TX enable) - active hi
-
+#define RS485_RX_bm (1<<6)			// RX pin - these pins are wired on the board
+#define RS485_TX_bm (1<<7)			// TX pin
 
 /* Helper Functions */
 static int _getc_char(void);		// getc character dispatch routines
