@@ -29,11 +29,9 @@
 #include "xio.h"
 #include "xio_usart.h"
 
-// devices
-extern struct xioDEVICE ds[XIO_DEV_MAX];	 // allocate top-level device structs
-extern struct xioUSART us[XIO_DEV_USART_MAX];// allocate USART extended IO structs
-#define DEV ds[dev]							 // device struct accessor
-#define DEVx us[dev]						 // usart extenced struct accessor
+// necessary structs
+extern struct xioDEVICE ds[XIO_DEV_CNT];	 // allocate top-level device structs
+extern struct xioUSART us[XIO_DEV_USART_CNT];// allocate USART extended IO structs
 
 // baud rate lookup tables - indexed by enum xioBAUDRATES (see xio_usart.h)
 const uint8_t bsel[] PROGMEM = { 0, 207, 103, 51, 34, 33, 31, 27, 19, 1, 1 };

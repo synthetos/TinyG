@@ -88,10 +88,7 @@
 #include <stdio.h>
 #include <avr/pgmspace.h>
 
-#include "xio.h"						// must include the main xio.h file
-//#include "xio_usb.h"					//... and all the devices you are using
-//#include "xio_pgm.h"
-
+#include "xio.h"
 #include "tinyg.h"
 #include "controller.h"
 #include "gcode.h"						// calls out to gcode parser, etc.
@@ -113,22 +110,20 @@
  * Local Scope Functions and Data
  */
 
-struct tgDevice {						// per-device struct
-	uint8_t flags;						// flags describe the device
-	uint8_t len;						// text buffer length
-	char buf[CHAR_BUFFER_SIZE];			// text buffer
-};
-
 struct tgController {					// main controller struct
 	uint8_t state;						// controller state (tgControllerState)
+	uint8_t flags;						// control flags
 	uint8_t status;						// return status (controller level)
 	uint8_t mode;						// current operating mode (tgMode)
 	uint8_t src;						// active source device
 	uint8_t default_src;				// default source device
 	uint8_t i;							// temp for indexes
-	struct tgDevice dev[XIO_DEV_MAX];	// one entry per input device
+	uint8_t len;						// text buffer length
+	char buf[CHAR_BUFFER_SIZE];			// text buffer
 };
 static struct tgController tg;
+
+#define TG_FLAG_PROMPTS_bm (1<<0)		// prompt enabled if set
 
 enum tgMode {
 	TG_CONTROL_MODE,					// control mode only. No other modes active
@@ -150,25 +145,18 @@ static void _tg_set_mode(uint8_t mode);
 static void _tg_set_source(uint8_t d);
 static int _tg_test_file(void);
 
-
 /*
  * tg_init()
  */
 
 void tg_init() 
 {
-	// initialize devices
-	for (uint8_t i=1; i < XIO_DEV_MAX; i++) { // don't bother with /dev/null
-		tg.dev[i].flags = XIO_APP_PROMPTS_bm;
-		tg.dev[i].len = sizeof(tg.dev[i].buf);
-	}
-	tg.dev[XIO_DEV_PGM].flags = 0;			// no asterisks on file devices
-
 	// set input source
 	tg.default_src = XIO_DEV_USB; 			// hard-wire input to USB (for now)
 	_tg_set_source(tg.default_src);			// set initial active source
 	_tg_set_mode(TG_CONTROL_MODE);			// set initial operating mode
 	tg.state = TG_READY_UNPROMPTED;
+	tg.len = sizeof (tg.buf);
 
 	// version string
 	printf_P(PSTR("TinyG - Version %S\n"), (PSTR(TINYG_VERSION)));
@@ -205,8 +193,8 @@ void tg_controller()
 static int _tg_read_next_line()
 {
 	// read input line or return if not a completed line
-	if ((tg.status = xio_fget_ln(tg.src, tg.dev[tg.src].buf, tg.dev[tg.src].len)) == TG_OK) {
-		tg.status = tg_parser(tg.dev[tg.src].buf);	// dispatch to parser
+	if ((tg.status = xio_readln(tg.src, tg.buf, tg.len)) == TG_OK) {
+		tg.status = tg_parser(tg.buf);				// dispatch to parser
 	}
 
 	// Note: This switch statement could be reduced as most paths lead to
@@ -300,6 +288,11 @@ void _tg_set_mode(uint8_t mode)
 void _tg_set_source(uint8_t d)
 {
 	tg.src = d;									// d = XIO device #. See xio.h
+	if (tg.src == XIO_DEV_PGM) {
+		tg.flags &= ~TG_FLAG_PROMPTS_bm;
+	} else {
+		tg.flags |= TG_FLAG_PROMPTS_bm;
+	}
 }
 
 /*
@@ -345,7 +338,7 @@ PGM_P tgModeStrings[] PROGMEM = {	// put string pointer array in program memory
 void _tg_prompt()
 {
 	if (tg.state == TG_READY_UNPROMPTED) {
-		if (tg.dev[tg.src].flags && XIO_APP_PROMPTS_bm) {
+		if (tg.flags && TG_FLAG_PROMPTS_bm) {
 			printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
 		}
 		tg.state = TG_READY_PROMPTED;
@@ -380,9 +373,9 @@ int _tg_test_file()
 //	xio_pgm_open(PGMFILE(&contraptor_circle)); 	// contraptor circle test
 //	xio_pgm_open(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
 
-	// set mode and source for file mode
-	_tg_set_mode(TG_GCODE_MODE);
+	// set source and mode
 	_tg_set_source(XIO_DEV_PGM);
+	_tg_set_mode(TG_GCODE_MODE);
 	return (TG_OK);
 }
 

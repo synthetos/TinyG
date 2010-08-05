@@ -35,8 +35,8 @@
 #include "signals.h"
 
 // necessary structures
-extern struct xioDEVICE ds[XIO_DEV_MAX];		// ref top-level device structs
-extern struct xioUSART us[XIO_DEV_USART_MAX];	// ref USART extended IO structs
+extern struct xioDEVICE ds[XIO_DEV_CNT];		// ref top-level device structs
+extern struct xioUSART us[XIO_DEV_USART_CNT];	// ref USART extended IO structs
 #define USB ds[XIO_DEV_USB]						// device struct accessoor
 #define USBx us[XIO_DEV_USB]					// usart extended struct accessor
 
@@ -614,13 +614,14 @@ static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
  *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
  */
 
-int xio_readln_usb()
+int xio_readln_usb(char *buf, uint8_t size)
 {
 //	uint8_t status = 0;
 
 	if (!IN_LINE(USB.flags)) {					// first time thru initializations
 		USB.len = 0;							// zero buffer
 		USB.status = 0;
+		USB.size = size;
 		USB.sig = XIO_SIG_OK;					// reset signal register
 		USB.flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
 	}

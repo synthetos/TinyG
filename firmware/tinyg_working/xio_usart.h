@@ -110,59 +110,6 @@ enum xioBAUDRATES {         			// BSEL	  BSCALE
 
 #define	XIO_BAUD_DEFAULT XIO_BAUD_115200
 
-/*
- * xio_control values
- */
-
-// _init() & _control() control bits
-#define XIO_BAUD_gm		0x0000000F		// baud rate enum mask (keep in LSbyte)
-#define XIO_RD			(1<<4) 			// read enable bit
-#define XIO_WR			(1<<5)			// write enable only
-#define XIO_RDWR		(XIO_RD | XIO_WR) // read & write
-#define XIO_BLOCK		(1<<6)			// enable blocking reads
-#define XIO_NOBLOCK		(1<<7)			// disable blocking reads
-#define XIO_ECHO		(1<<8)			// echo reads from device to stdio
-#define XIO_NOECHO		(1<<9)			// disable echo
-#define XIO_CRLF		(1<<10)			// convert <LF> to <CR><LF> on writes
-#define XIO_NOCRLF		(1<<11)			// do not convert <LF> to <CR><LF> on writes
-#define XIO_LINEMODE	(1<<12)			// special <cr><lf> read handling
-#define XIO_NOLINEMODE	(1<<13)			// no special <cr><lf> read handling
-#define XIO_SEMICOLONS	(1<<14)			// treat semicolons as line breaks
-#define XIO_NOSEMICOLONS (1<<15)		// don't treat semicolons as line breaks
-
-// (note 1) The handler function flags share positions 4 & 5 with RD and WR flags
-//			RD and WR are only valid in init(), handlers only valid in control()
-
-// internal control flags (which are NOT the similar bits in the control word, above)
-// static configuration states
-#define XIO_FLAG_RD_bm		(1<<0)		// enabled for read
-#define XIO_FLAG_WR_bm		(1<<1)		// enabled for write
-#define XIO_FLAG_BLOCK_bm	(1<<2)		// enable blocking reads and writes
-#define XIO_FLAG_FLOW_CONTROL_bm (1<<3)	// enable flow control for device
-#define XIO_FLAG_ECHO_bm 	(1<<4)		// echo received chars to stderr output
-#define XIO_FLAG_CRLF_bm 	(1<<5)		// convert <LF> to <CR><LF> on writes
-#define XIO_FLAG_LINEMODE_bm (1<<6)		// special handling for line-oriented text
-#define XIO_FLAG_SEMICOLONS_bm (1<<7)	// treat semicolons as line breaks (Arduino)
-// transient control states
-#define XIO_FLAG_TX_MUTEX_bm (1<<11)	// TX dequeue mutual exclusion flag
-#define XIO_FLAG_EOL_bm		(1<<12)		// detected EOL (/n, /r, ;)
-#define XIO_FLAG_EOF_bm 	(1<<13)		// detected EOF (NUL)
-#define XIO_FLAG_IN_LINE_bm	(1<<14) 	// partial line is in buffer
-#define XIO_FLAG_IN_FLOW_CONTROL_bm (1<<15) // device is in flow control
-
-#define XIO_FLAG_RESET_gm	(0x0FFF)	// used to clear the top bits
-
-#define READ(a) (a & XIO_FLAG_RD_bm)	// TRUE if read enabled
-#define WRITE(a) (a & XIO_FLAG_WR_bm)	// TRUE if write enabled
-#define BLOCKING(a) (a & XIO_FLAG_BLOCK_bm)	// etc.
-#define ECHO(a) (a & XIO_FLAG_ECHO_bm)
-#define CRLF(a) (a & XIO_FLAG_CRLF_bm)
-#define LINEMODE(a) (a & XIO_FLAG_LINEMODE_bm)
-#define SEMICOLONS(a) (a & XIO_FLAG_SEMICOLONS_bm)
-#define TX_MUTEX(a) (a & XIO_FLAG_TX_MUTEX_bm)
-#define IN_LINE(a) (a & XIO_FLAG_IN_LINE_bm)
-#define IN_FLOW_CONTROL(a) (a & XIO_FLAG_IN_FLOW_CONTROL_bm)
-
 /* 
  * USART extended control structure 
  * Note: As defined this struct won't do buffers larger than 256 chars - 
@@ -203,7 +150,7 @@ void xio_set_baud_usart(const uint8_t dev, const uint8_t baud);
 // RS485 functions
 int xio_putc_rs485(const char c, FILE *stream);
 int xio_getc_rs485(FILE *stream);
-int xio_readln_rs485();						// non-blocking read line function
+int xio_readln_rs485(char *buf, uint8_t len);// non-blocking read line function
 void xio_rs485_queue_RX_char(char c);		// simulate char rcvd into RX buffer
 void xio_rs485_queue_RX_string(char *buf);	// simulate receving a whole string
 
@@ -211,7 +158,7 @@ void xio_rs485_queue_RX_string(char *buf);	// simulate receving a whole string
 // USB functions
 int xio_putc_usb(const char c, FILE *stream);
 int xio_getc_usb(FILE *stream);
-int xio_readln_usb();						// non-blocking read line function
+int xio_readln_usb(char *buf, uint8_t len);	// non-blocking read line function
 void xio_usb_queue_RX_char(char c);			// simulate char rcvd into RX buffer
 void xio_usb_queue_RX_string(char *buf);	// simulate receving a whole string
 
