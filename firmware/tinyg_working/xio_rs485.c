@@ -30,8 +30,8 @@
 #include "signals.h"			// application specific signal handlers
 
 // necessary structures
-extern struct xioDEVICE ds[XIO_DEV_MAX];		// ref top-level device structs
-extern struct xioUSART us[XIO_DEV_USART_MAX];	// ref USART extended IO structs
+extern struct xioDEVICE ds[XIO_DEV_CNT];		// ref top-level device structs
+extern struct xioUSART us[XIO_DEV_USART_CNT];	// ref USART extended IO structs
 #define RS ds[XIO_DEV_RS485]					// device struct accessoor
 #define RSx us[XIO_DEV_RS485]					// usart extended struct accessor
 
@@ -601,7 +601,7 @@ static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
  *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
  */
 
-int xio_readln_rs485()
+int xio_readln_rs485(char *buf, uint8_t len)
 {
 	if (!IN_LINE(RS.flags)) {					// first time thru initializations
 		RS.len = 0;								// zero buffer

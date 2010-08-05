@@ -40,7 +40,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 LIBS = -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = main.o gcode.o config.o encoder.o xmega_init.o motion_control.o spindle_control.o stepper.o xmega_interrupts.o xio.o xmega_eeprom.o controller.o direct_drive.o move_buffer.o limit_switches.o signals.o xio_usart.o xio_usb.o xio_rs485.o 
+OBJECTS = main.o gcode.o config.o encoder.o xmega_init.o motion_control.o spindle_control.o stepper.o xmega_interrupts.o xio.o xmega_eeprom.o controller.o direct_drive.o move_buffer.o limit_switches.o signals.o xio_usart.o xio_usb.o xio_rs485.o xio_pgm.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -104,6 +104,9 @@ xio_usb.o: ../xio_usb.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 xio_rs485.o: ../xio_rs485.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+xio_pgm.o: ../xio_pgm.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link

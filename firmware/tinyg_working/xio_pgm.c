@@ -29,13 +29,14 @@
  */
 
 // pre-allocated stdio FILE struct for PGM - declared extern in the header file
-FILE dev_pgm = FDEV_SETUP_STREAM(NULL, xio_pgm_getc, _FDEV_SETUP_RW);
+//FILE dev_pgm = FDEV_SETUP_STREAM(NULL, xio_pgm_getc, _FDEV_SETUP_RW);
 
 /*
  * Local Scope Data and Functions
  */
 
 // define and allocate local (static) control struct for the device
+/*
 struct xioPGM {
 	// common struct variables (same for all xio structs)
 	uint16_t flags;						// control flags
@@ -53,6 +54,7 @@ struct xioPGM {
 	uint16_t idx;						// index into file
 };
 struct xioPGM fpgm;						// allocate "file" control struct
+*/
 
 /* 
  *	xio_pgm_init() - initialize and set controls for program memory device 
@@ -75,124 +77,53 @@ struct xioPGM fpgm;						// allocate "file" control struct
  *  Control parameters are defaulted and may be set using xio_pgm_control()
  */
 
-void xio_pgm_init(const uint16_t control)
+void xio_init_pgm(const uint16_t control)
 {
-	if (control & XIO_RD) {				// MANDATORY
-		fpgm.flags |= XIO_FLAG_RD_bm;
-	}
-	if (control & XIO_WR) {				// this is actually an error. Ignore for now.
-		fpgm.flags |= XIO_FLAG_WR_bm;
-	}
-	if (control & XIO_BLOCK) {			// MANDATORY
-		fpgm.flags |= XIO_FLAG_BLOCK_bm;
-	}
-	if (control & XIO_NOBLOCK) {		// this is also technically a config error.
-		fpgm.flags &= ~XIO_FLAG_BLOCK_bm;
-	}
-	if (control & XIO_ECHO) {
-		fpgm.flags |= XIO_FLAG_ECHO_bm;
-	}
-	if (control & XIO_NOECHO) {
-		fpgm.flags &= ~XIO_FLAG_ECHO_bm;
-	}
-	if (control & XIO_CRLF) {
-		fpgm.flags |= XIO_FLAG_CRLF_bm;
-	}
-	if (control & XIO_NOCRLF) {
-		fpgm.flags &= ~XIO_FLAG_CRLF_bm;
-	}
-	if (control & XIO_LINEMODE) {
-		fpgm.flags |= XIO_FLAG_LINEMODE_bm;
-	}
-	if (control & XIO_NOLINEMODE) {
-		fpgm.flags &= ~XIO_FLAG_LINEMODE_bm;
-	}
-	if (control & XIO_SEMICOLONS) {
-		fpgm.flags |= XIO_FLAG_SEMICOLONS_bm;
-	}
-	if (control & XIO_NOSEMICOLONS) {
-		fpgm.flags &= ~XIO_FLAG_SEMICOLONS_bm;
-	}
-	fpgm.idx = 0;
-	fpgm.sig = 0;
-	dev_pgm.udata = &(fpgm.sig); 	// bind signals register to pgm FILE struct
+	// might be useful to sanity check the control bits before calling this routine
+	//	- RD and BLOCK are mandatory
+	// 	- WR and NOBLOCK are restricted
+	xio_set_control_flags(XIO_DEV_PGM, control);
+
+//	fpgm.idx = 0;
+//	fpgm.sig = 0;
+//	dev_pgm.udata = &(fpgm.sig); 	// bind signals register to pgm FILE struct
 //	fpgm.len = sizeof(fpgm.buf);	// THIS IS WRONG. NO BUFFER BOUND, YET.
 }
 
 /*	
- *	xio_usb_open() - provide a string address to the program memory device
+ *	xio_open_pgm() - provide a string address to the program memory device
  *
  *	OK, so this is not really a UNIX open() except for it's moral equivalency
  *  Returns a pointer to the stdio FILE struct or -1 on error
  */
 
-FILE * xio_pgm_open(const prog_char *addr)
+FILE * xio_open_pgm(const prog_char *addr)
 {
+/*
 	fpgm.flags &= XIO_FLAG_RESET_gm;			// reset the signaling bits
 	fpgm.pgmbase_P = (PROGMEM char *)addr;		// might want to range check this
 	fpgm.idx = 0;
 	return(&dev_pgm);
+*/
+	return(0);
 }
 
-/*	
- *	xio_usb_control() - set controls for program memory device 
- *
- *	Control		   Arg	  Default		Notes
- *	
- *	XIO_RD		  <null>	Y	Enable device for reads
- *	XIO_ECHO	  <null>	Y	Enable echo
- *	XIO_NOECHO	  <null>		Disable echo
- *	XIO_LINEMODE  <null>		Apply special <cr><lf> read handling
- *	XIO_NOLINEMODE <null>	Y	Do not apply special <cr><lf> read handling
- *	XIO_SEMICOLONS <null>		Treat semicolons as line breaks
- *	XIO_NOSEMICOLONS <null>	Y	Don't treat semicolons as line breaks
- */
 
-int8_t xio_pgm_control(const uint16_t control, const int16_t arg)
-{
-	// transfer control flags to internal flag bits
-//	fpgm.flags = XIO_FLAG_PGM_DEFS_gm;		// set flags to defaults & initial state
-	if (control & XIO_ECHO) {
-		fpgm.flags |= XIO_FLAG_ECHO_bm;
-	}
-	if (control & XIO_NOECHO) {
-		fpgm.flags &= ~XIO_FLAG_ECHO_bm;
-	}
-	if (control & XIO_CRLF) {
-		fpgm.flags |= XIO_FLAG_CRLF_bm;
-	}
-	if (control & XIO_NOCRLF) {
-		fpgm.flags &= ~XIO_FLAG_CRLF_bm;
-	}
-	if (control & XIO_LINEMODE) {
-		fpgm.flags |= XIO_FLAG_LINEMODE_bm;
-	}
-	if (control & XIO_NOLINEMODE) {
-		fpgm.flags &= ~XIO_FLAG_LINEMODE_bm;
-	}
-	if (control & XIO_SEMICOLONS) {
-		fpgm.flags |= XIO_FLAG_SEMICOLONS_bm;
-	}
-	if (control & XIO_NOSEMICOLONS) {
-		fpgm.flags &= ~XIO_FLAG_SEMICOLONS_bm;
-	}
-	return (0);
-}
 
 /* 
- *	xio_pgm_putc() - write character to to program memory device
+ *	xio_putc_pgm() - write character to to program memory device
  *
  *  Always returns error. You cannot write to program memory
  */
 
-int xio_pgm_putc(const char c, FILE *stream)
+int xio_putc_pgm(const char c, FILE *stream)
 {
 	return -1;			// always returns an error. Big surprise.
 }
 
 
 /*
- *  xio_pgm_getc() - read a character from program memory device
+ *  xio_getc_pgm() - read a character from program memory device
  *
  *  Get next character from program memory file.
  *
@@ -216,8 +147,9 @@ int xio_pgm_putc(const char c, FILE *stream)
  *		- Note: putc should expand newlines to <cr><lf>
  */
 
-int xio_pgm_getc(FILE *stream)
+int xio_getc_pgm(FILE *stream)
 {
+/*
 	if (fpgm.flags & XIO_FLAG_EOF_bm) {
 		fpgm.sig = XIO_SIG_EOF;
 		return (_FDEV_EOF);
@@ -244,6 +176,8 @@ int xio_pgm_getc(FILE *stream)
 		putchar(fpgm.c);
 	}
 	return (fpgm.c);
+*/
+	return (0);
 }
 
 /* 
@@ -255,6 +189,7 @@ int xio_pgm_getc(FILE *stream)
 
 int xio_pgm_readln(char *buf, uint8_t len)
 {
+/*
 	if (!(fpgm.pgmbase_P)) {					// return error if no file is open
 		return (TG_FILE_NOT_OPEN);
 	}
@@ -264,5 +199,6 @@ int xio_pgm_readln(char *buf, uint8_t len)
 		clearerr(&dev_pgm);
 		return (TG_EOF);
 	}
+*/
 	return (TG_OK);
 }
