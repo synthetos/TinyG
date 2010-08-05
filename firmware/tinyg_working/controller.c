@@ -89,8 +89,8 @@
 #include <avr/pgmspace.h>
 
 #include "xio.h"						// must include the main xio.h file
-#include "xio_usb.h"					//... and all the devices you are using
-#include "xio_pgm.h"
+//#include "xio_usb.h"					//... and all the devices you are using
+//#include "xio_pgm.h"
 
 #include "tinyg.h"
 #include "controller.h"
@@ -159,7 +159,7 @@ void tg_init()
 {
 	// initialize devices
 	for (uint8_t i=1; i < XIO_DEV_MAX; i++) { // don't bother with /dev/null
-		tg.dev[i].flags = XIO_FLAG_PROMPTS_bm;
+		tg.dev[i].flags = XIO_APP_PROMPTS_bm;
 		tg.dev[i].len = sizeof(tg.dev[i].buf);
 	}
 	tg.dev[XIO_DEV_PGM].flags = 0;			// no asterisks on file devices
@@ -345,7 +345,7 @@ PGM_P tgModeStrings[] PROGMEM = {	// put string pointer array in program memory
 void _tg_prompt()
 {
 	if (tg.state == TG_READY_UNPROMPTED) {
-		if (tg.dev[tg.src].flags && XIO_FLAG_PROMPTS_bm) {
+		if (tg.dev[tg.src].flags && XIO_APP_PROMPTS_bm) {
 			printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
 		}
 		tg.state = TG_READY_PROMPTED;
@@ -377,7 +377,7 @@ int _tg_test_file()
 //	xio_pgm_open(PGMFILE(&spiral_test5));
 //	xio_pgm_open(PGMFILE(&dwell_test2));
 
-	xio_pgm_open(PGMFILE(&contraptor_circle)); 	// contraptor circle test
+//	xio_pgm_open(PGMFILE(&contraptor_circle)); 	// contraptor circle test
 //	xio_pgm_open(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
 
 	// set mode and source for file mode
