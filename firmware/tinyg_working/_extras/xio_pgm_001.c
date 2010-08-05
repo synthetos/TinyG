@@ -29,12 +29,12 @@
  */
 
 // pre-allocated stdio FILE struct for PGM - declared extern in the header file
-FILE dev_pgm = FDEV_SETUP_STREAM(NULL, xio_pgm_getc, _FDEV_SETUP_RW);
+//FILE dev_pgm = FDEV_SETUP_STREAM(NULL, xio_pgm_getc, _FDEV_SETUP_RW);
 
 /*
  * Local Scope Data and Functions
  */
-
+/*
 // define and allocate local (static) control struct for the device
 struct xioPGM {
 	// common struct variables (same for all xio structs)
@@ -53,6 +53,7 @@ struct xioPGM {
 	uint16_t idx;						// index into file
 };
 struct xioPGM fpgm;						// allocate "file" control struct
+*/
 
 /* 
  *	xio_pgm_init() - initialize and set controls for program memory device 

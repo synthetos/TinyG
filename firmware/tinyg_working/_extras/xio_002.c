@@ -37,21 +37,20 @@
 
 #include "xio.h"				// put includes for all devices here
 #include "xio_usart.h"			// common declarations for USART devices
-#include "xio_file.h"			// common declarations for file-type devices
+//#include "xio_file.h"			// common declarations for file-type devices
 #include "tinyg.h"				// needed for TG_ return codes, or provide your own
 
 
 /*
- * structs, static memory allocation, and accessors
+ * structs and memory allocation
  */
 
-struct xioDEVICE ds[XIO_DEV_CNT];		// allocate top-level device structs
-struct xioUSART us[XIO_DEV_USART_CNT];	// allocate USART extended IO structs
-struct xioFILE fs[XIO_DEV_FILE_CNT];	// allocate FILE extended IO structs
-
-#define dev_rs485 (ds[XIO_DEV_RS485].fs)// RS485 device for stdio functions
-#define dev_usb (ds[XIO_DEV_USB].fs)	// USB device for stdio functions
-#define dev_pgm (ds[XIO_DEV_PGM].fs)	// Program memory device
+struct xioDEVICE ds[XIO_DEV_MAX];		// allocate top-level device structs
+struct xioUSART us[XIO_DEV_USART_MAX];	// allocate USART extended IO structs
+//struct xioFILE fs[XIO_DEV_FILE_MAX];	// allocate FILE extended IO structs
+//struct __file __files[XIO_DEV_MAX];	// allocate a stdio __file for each device
+FILE fs[XIO_DEV_MAX];		// allocate a stdio __file for each device
+FILE fs_rs485;
 
 /*
  *	xio_init() - initialize all active XIO devices
@@ -71,6 +70,14 @@ void xio_init(void)
 	ds[i].dev_putc = &xio_putc_rs485;
 	ds[i].dev_getc = &xio_getc_rs485;
 	ds[i].dev_readln = &xio_readln_rs485;
+
+//	struct __file &__files[i] = FDEV_SETUP_STREAM(xio_putc_rs485, xio_getc_rs485, _FDEV_SETUP_RW);
+//	FILE __files[i] = FDEV_SETUP_STREAM(xio_putc_rs485, xio_getc_rs485, _FDEV_SETUP_RW);
+//	struct __file fs[i] = FDEV_SETUP_STREAM(xio_putc_rs485, xio_getc_rs485, _FDEV_SETUP_RW);
+//	FILE fs_rs485 = FDEV_SETUP_STREAM(xio_putc_rs485, xio_getc_rs485, _FDEV_SETUP_RW);	// works
+//	FILE ds.fs[i] = FDEV_SETUP_STREAM(xio_putc_rs485, xio_getc_rs485, _FDEV_SETUP_RW);
+//	ds->fs.put = xio_putc_rs485;
+//	fdev_setup_stream(stream, put, get, rwflag)
 	fdev_setup_stream(&(ds[i].fs), xio_putc_rs485, xio_getc_rs485, _FDEV_SETUP_RW);
 
 	// USB setup
@@ -83,13 +90,28 @@ void xio_init(void)
 	ds[i].dev_putc = &xio_putc_usb;
 	ds[i].dev_getc = &xio_getc_usb;
 	ds[i].dev_readln = &xio_readln_usb;
-	fdev_setup_stream(&(ds[i].fs), xio_putc_usb, xio_getc_usb, _FDEV_SETUP_RW);
+
+//	ds[i].dev_control = &xio_control_usart;
+	
+//	FILE __files[i] = FDEV_SETUP_STREAM(xio_usb_putc, xio_usb_getc, _FDEV_SETUP_RW);
+//FILE dev_usb = FDEV_SETUP_STREAM(xio_usb_putc, xio_usb_getc, _FDEV_SETUP_RW);
+
+	
+	// character signals and error returns
+//	d->sig = 0;
+//	dev_usb.udata = &(u->sig);				// bind sig register to FILE struct
+
+	// brute force the pointer initializations
+//	for (uint8_t i=0; i < XIO_DEV_USART_MAX; i++) {
+//		ds[i] = &us[i];
+//		xio_init_usart(i, ds[i], pgm_read_word(&ucontrols[i]));
+//	}
 
 	// do stdio bindings
-	stddev = &dev_usb;				// stddev is a convenience
-	stdin = &dev_usb;				// define the console device
-	stdout = &dev_usb;				// ...
-	stderr = &dev_usb;				// ...
+//	stddev = &dev_usb;				// stddev is a convenience
+//	stdin = &dev_usb;				// define the console device
+//	stdout = &dev_usb;				// ...
+//	stderr = &dev_usb;				// ...
 
 	printf_P(PSTR("\n\n**** Xmega IO subsystem initialized ****\n"));
 }
@@ -159,7 +181,7 @@ void xio_set_control_flags(const uint8_t dev, const uint16_t control)
 
 
 /*
- * xio_readln() - common entry point for non-blocking receive line functions
+ * xio_fget_ln() - common entry point for non-blocking receive line functions
  *
  * Arguments
  *	buf		text buffer to read into
@@ -167,15 +189,16 @@ void xio_set_control_flags(const uint8_t dev, const uint16_t control)
  *	dev		XIO device enumeration
  */
 
-int xio_readln(uint8_t dev, char *buf, uint8_t len)
+int xio_fget_ln(uint8_t dev, char *buf, uint8_t len)
 {
-
+/*
 	switch (dev) {
-		case (XIO_DEV_RS485): return (xio_readln_rs485(buf, len));
-		case (XIO_DEV_USB): return (xio_readln_usb(buf, len));
-//		case (XIO_DEV_AUX): return (xio_readln_aux(buf, len));
-//		case (XIO_DEV_PGM): return (xio_readln_pgm(buf, len));
+		case (XIO_DEV_RS485): return (xio_rs485_readln(buf, len));
+		case (XIO_DEV_USB): return (xio_usb_readln(buf, len));
+//		case (XIO_DEV_AUX): return (xio_aux_readln(buf, len));
+		case (XIO_DEV_PGM): return (xio_pgm_readln(buf, len));
 		default: return (TG_UNRECOGNIZED_DEVICE);
 	}
+*/
 	return (TG_ERROR);		// never should hit this
 }
