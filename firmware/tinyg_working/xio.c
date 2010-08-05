@@ -1,5 +1,5 @@
 /*
- * xio.c - Xmega IO devices - common file
+ * xio.c - Xmega IO devices - common header file
  * Part of TinyG project
  * Copyright (c) 2010 Alden S. Hart, Jr.
  *
@@ -32,46 +32,90 @@
  */
 
 #include <stdio.h>
+#include <string.h>				// for memset()
 #include <avr/pgmspace.h>
 
 #include "xio.h"				// put includes for all devices here
 #include "xio_usart.h"			// common declarations for USART devices
-#include "xio_usb.h"
-#include "xio_rs485.h"
-#include "xio_pgm.h"
+//#include "xio_file.h"			// common declarations for file-type devices
 #include "tinyg.h"				// needed for TG_ return codes, or provide your own
 
 
-extern struct xioUSART us[];	// array of usart control structs
-extern uint16_t controls[];		// array of control settings for device inits
+/*
+ * structs and memory allocation
+ */
+
+struct xioDEVICE ds[XIO_DEV_MAX];		// allocate top-level device structs
+struct xioUSART us[XIO_DEV_USART_MAX];	// allocate USART extended IO structs
+//struct xioFILE fs[XIO_DEV_FILE_MAX];	// allocate FILE extended IO structs
+struct __file __files[XIO_DEV_MAX];		// allocate a stdio __file for each device
+
+//#define DEV ds[XIO_DEV_USB]				// device struct accessoor
+//#define USx us[XIO_DEV_USB]				// usart extended struct accessor
+//#define FSx fs
 
 /*
- * Common functions 
- *
- *	xio_init()
+ *	xio_init() - initialize all active XIO devices
  */
 
 void xio_init(void)
 {	
-	// initialize all USART-based devices
-	for (uint8_t i=0; i < XIO_DEV_USART_MAX; i++) {
-		xio_init_usart(i, &us[i], pgm_read_word(&controls[i]));
-	}
-	// RS485 port defaults are:	XIO_RDWR | XIO_ECHO | XIO_CRLF - open additionally:
-//	xio_usb_init(XIO_LINEMODE | XIO_BAUD_115200);
+	uint8_t i=0;
 
-	// USB port defaults are:	XIO_RDWR | XIO_ECHO | XIO_CRLF - open additionally:
-//	xio_usb_init(XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200);
+	// RS485
+	i = XIO_DEV_RS485;
+	memset (&ds[i], 0, sizeof(struct xioDEVICE));
+	ds[i].xio = &us[i];								// bind USART extended struct
+	ds[i].size = sizeof(ds[i].buf);
+	xio_init_usart(i, RS485_INIT_bm, &RS485_USART, &RS485_PORT, 
+				   RS485_DIRCLR_bm,RS485_DIRSET_bm,RS485_OUTCLR_bm,RS485_OUTSET_bm);
+//	ds[i].dev_flags = &xio_set_control_flags_rs485;
+	ds[i].dev_putc = &xio_putc_rs485;
+//	void (*dev_flags)(uint16_t control);// set device control flags
+//	int (*dev_putc)(char, struct __file *);	// write char (stdio compatible)
+//	int (*dev_getc)(struct __file *);	// read char (stdio compatible)
+//	int (*dev_readln)();				// specialized line reader
 
-	// PGM file defaults are:	XIO_RD | XIO_BLOCK
-	xio_pgm_init(XIO_ECHO | XIO_CRLF | XIO_LINEMODE);
-//	xio_pgm_init(XIO_LINEMODE);
+
+//	FILE __files[i] = FDEV_SETUP_STREAM(xio_putc_rs485, xio_getc_rs485, _FDEV_SETUP_RW);
+
+	// USB
+	i = XIO_DEV_USB;
+	memset (&ds[i], 0, sizeof(struct xioDEVICE));
+	ds[i].xio = &us[i];								// bind USART extended struct
+	ds[i].size = sizeof(ds[i].buf);
+	xio_init_usart(i, USB_INIT_bm, &USB_USART, &USB_PORT, 
+				   USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
+//	ds[i].dev_control = &xio_control_usart;
+	
+//	FILE __files[i] = FDEV_SETUP_STREAM(xio_usb_putc, xio_usb_getc, _FDEV_SETUP_RW);
+//FILE dev_usb = FDEV_SETUP_STREAM(xio_usb_putc, xio_usb_getc, _FDEV_SETUP_RW);
+
+	
+	// character signals and error returns
+//	d->sig = 0;
+//	dev_usb.udata = &(u->sig);				// bind sig register to FILE struct
 
 
-	stddev = &dev_usb;				// stddev is a convenience
-	stdin = &dev_usb;				// define the console device
-	stdout = &dev_usb;				// ...
-	stderr = &dev_usb;				// ...
+
+	// setup stdio resources
+//	for (uint8_t i=0; i < XIO_DEV_MAX; i++) {
+//		FILE __files[i] = FDEV_SETUP_STREAM(xio_usb_putc, xio_usb_getc, _FDEV_SETUP_RW);
+
+
+	// brute force the pointer initializations
+//	for (uint8_t i=0; i < XIO_DEV_USART_MAX; i++) {
+//		ds[i] = &us[i];
+//		xio_init_usart(i, ds[i], pgm_read_word(&ucontrols[i]));
+//	}
+//	ds[XIO_DEV_PGM] = (struct xioUSART *)(&fpgm);
+//	xio_pgm_init(PGM_INIT_bm);
+
+	// do stdio bindings
+//	stddev = &dev_usb;				// stddev is a convenience
+//	stdin = &dev_usb;				// define the console device
+//	stdout = &dev_usb;				// ...
+//	stderr = &dev_usb;				// ...
 
 	printf_P(PSTR("\n\n**** Xmega IO subsystem initialized ****\n"));
 }
@@ -79,7 +123,7 @@ void xio_init(void)
 /*
  * xio_dev_init() - common entry point for device init functions
  */
-
+/*
 int8_t xio_dev_init(uint8_t dev, const int16_t arg)
 {
 	switch (dev) {
@@ -91,22 +135,52 @@ int8_t xio_dev_init(uint8_t dev, const int16_t arg)
 	}
 	return (TG_ERROR);		// never should hit this
 }
-
+*/
 
 /*
- * xio_control() - common entry point for device control functions
+ * xio_set_control_flags()
  */
 
-int8_t xio_control(uint8_t dev, const uint16_t control, const int16_t arg)
+void xio_set_control_flags(const uint8_t dev, const uint16_t control)
 {
-	switch (dev) {
-		case (XIO_DEV_RS485): return (xio_rs485_control(control, arg));
-		case (XIO_DEV_USB): return (xio_usb_control(control, arg));
-//		case (XIO_DEV_AUX): return (xio_aux_control(control, arg));
-		case (XIO_DEV_PGM): return (xio_pgm_control(control, arg));
-		default: return (TG_UNRECOGNIZED_DEVICE);
+	struct xioDEVICE *d = &ds[dev];
+
+	if (control & XIO_RD) {
+		d->flags |= XIO_FLAG_RD_bm;
 	}
-	return (TG_ERROR);		// never should hit this
+	if (control & XIO_WR) {
+		d->flags |= XIO_FLAG_WR_bm;
+	}
+	if (control & XIO_BLOCK) {
+		d->flags |= XIO_FLAG_BLOCK_bm;
+	}
+	if (control & XIO_NOBLOCK) {
+		d->flags &= ~XIO_FLAG_BLOCK_bm;
+	}
+	if (control & XIO_ECHO) {
+		d->flags |= XIO_FLAG_ECHO_bm;
+	}
+	if (control & XIO_NOECHO) {
+		d->flags &= ~XIO_FLAG_ECHO_bm;
+	}
+	if (control & XIO_CRLF) {
+		d->flags |= XIO_FLAG_CRLF_bm;
+	}
+	if (control & XIO_NOCRLF) {
+		d->flags &= ~XIO_FLAG_CRLF_bm;
+	}
+	if (control & XIO_LINEMODE) {
+		d->flags |= XIO_FLAG_LINEMODE_bm;
+	}
+	if (control & XIO_NOLINEMODE) {
+		d->flags &= ~XIO_FLAG_LINEMODE_bm;
+	}
+	if (control & XIO_SEMICOLONS) {
+		d->flags |= XIO_FLAG_SEMICOLONS_bm;
+	}
+	if (control & XIO_NOSEMICOLONS) {
+		d->flags &= ~XIO_FLAG_SEMICOLONS_bm;
+	}
 }
 
 
@@ -121,6 +195,7 @@ int8_t xio_control(uint8_t dev, const uint16_t control, const int16_t arg)
 
 int xio_fget_ln(uint8_t dev, char *buf, uint8_t len)
 {
+/*
 	switch (dev) {
 		case (XIO_DEV_RS485): return (xio_rs485_readln(buf, len));
 		case (XIO_DEV_USB): return (xio_usb_readln(buf, len));
@@ -128,5 +203,6 @@ int xio_fget_ln(uint8_t dev, char *buf, uint8_t len)
 		case (XIO_DEV_PGM): return (xio_pgm_readln(buf, len));
 		default: return (TG_UNRECOGNIZED_DEVICE);
 	}
+*/
 	return (TG_ERROR);		// never should hit this
 }

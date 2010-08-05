@@ -18,51 +18,68 @@
 #ifndef xio_usart_h
 #define xio_usart_h
 
-/* 
- * USART config values and tables
- */
+/* USART DEVICE HARDWARE CONFIGS */
 
-// this part is hardware - you cannot change it without changing the board
-#define RS4_USART USARTC1		// RS485 usart
-#define RS4_PORT PORTC			// port where the above USART is located
-#define RS4_RE_bm (1<<4)		// RE (Receive Enable) pin - active lo
-#define RS4_DE_bm (1<<5)		// DE (Data Enable) pin (TX enable) - active hi
-#define RS4_RX_bm (1<<6)		// RX pin - these pins are wired on the board
-#define RS4_TX_bm (1<<7)		// TX pin
+// RS485 device
+#define RS485_INIT_bm (XIO_RDWR | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_BAUD_115200)
 
-#define USB_USART USARTC0		// USB usart
-#define USB_PORT PORTC			// port where the USART is located
-#define USB_CTS_bm (1<<0)		// CTS pin
-#define USB_RTS_bm (1<<1)		// RTS pin
-#define USB_RX_bm (1<<2)		// RX pin	- these pins are wired on the board
-#define USB_TX_bm (1<<3)		// TX pin
+#define RS485_USART USARTC1					// RS485 usart
+#define RS485_RX_ISR_vect USARTC1_RXC_vect 	// (RX) reception complete IRQ
+#define RS485_TX_ISR_vect USARTC1_DRE_vect	// (TX) data register empty IRQ
 
-#define TTL_USART USARTC0		// Arduino usart
-#define TTL_PORT PORTC			// port where the USART is located
-#define TTL_CTS_bm (1<<0)		// CTS pin
-#define TTL_RTS_bm (1<<1)		// RTS pin
-#define TTL_RX_bm (1<<2)		// RX pin	- these pins are wired on the board
-#define TTL_TX_bm (1<<3)		// TX pin
+#define RS485_PORT PORTC					// port where USART is located
+#define RS485_RE_bm (1<<4)					// RE (Receive Enable) pin - active lo
+#define RS485_DE_bm (1<<5)					// DE (Data Enable)(TX) - active hi
+#define RS485_RX_bm (1<<6)					// RX pin
+#define RS485_TX_bm (1<<7)					// TX pin
 
-// this part is software - change as needed
-#define RS4_DIRCLR_bm (RS4_RX_bm)							// input bits
-#define RS4_DIRSET_bm (RS4_RE_bm | RS4_DE_bm | RS4_TX_bm)	// output bits
-#define RS4_OUTCLR_bm (RS4_RE_bm | RS4_DE_bm)				// output set to 0
-#define RS4_OUTSET_bm (RS4_TX_bm)							// output set to 1
+#define RS485_DIRCLR_bm (RS485_RX_bm)							// input bits
+#define RS485_DIRSET_bm (RS485_RE_bm | RS485_DE_bm | RS485_TX_bm)// output bits
+#define RS485_OUTCLR_bm (RS485_RE_bm | RS485_DE_bm)				// outputs init'd to 0
+#define RS485_OUTSET_bm (RS485_TX_bm)							// outputs init'd to 1
 
-#define USB_DIRCLR_bm (USB_CTS_bm | USB_RX_bm)				// as above
-#define USB_DIRSET_bm (USB_RTS_bm | USB_TX_bm)
-#define USB_OUTCLR_bm (0)
-#define USB_OUTSET_bm (USB_RTS_bm | USB_TX_bm)
+
+// USB device
+#define USB_INIT_bm (XIO_RDWR | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200)
+
+#define USB_USART USARTC0					// USB usart
+#define USB_RX_ISR_vect USARTC0_RXC_vect 	// (RX) reception complete IRQ
+#define USB_TX_ISR_vect USARTC0_DRE_vect	// (TX) data register empty IRQ
+
+#define USB_PORT PORTC						// port where the USART is located
+#define USB_CTS_bm (1<<0)					// CTS pin (pins are wired on the board)
+#define USB_RTS_bm (1<<1)					// RTS pin
+#define USB_RX_bm (1<<2)					// RX pin
+#define USB_TX_bm (1<<3)					// TX pin
+
+#define USB_DIRCLR_bm (USB_CTS_bm | USB_RX_bm)	// input bits
+#define USB_DIRSET_bm (USB_RTS_bm | USB_TX_bm)	// output bits
+#define USB_OUTCLR_bm (0)						// outputs init'd to 0
+#define USB_OUTSET_bm (USB_RTS_bm | USB_TX_bm)	// outputs init'd to 1
+
+
+// TTL device (Arduino)
+#define TTL_INIT_bm (XIO_RDWR | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200)
+
+#define TTL_USART USARTC0					// Arduino usart
+#define TTL_PORT PORTC						// port where the USART is located
+#define TTL_CTS_bm (1<<0)					// CTS pin
+#define TTL_RTS_bm (1<<1)					// RTS pin
+#define TTL_RX_bm (1<<2)					// RX pin
+#define TTL_TX_bm (1<<3)					// TX pin
 
 #define TTL_DIRCLR_bm (USB_RX_bm)
 #define TTL_DIRSET_bm (USB_TX_bm)
 #define TTL_OUTCLR_bm (0)
 #define TTL_OUTSET_bm (USB_TX_bm)
 
-// some constants for turning interrupts on and off
-#define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc)
-#define CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
+
+/* 
+ * USART DEVICE CONSTANTS AND PARAMETERS
+ */
+
+#define RX_BUFFER_SIZE 18		// USART ISR RX buffer size (255 max)
+#define TX_BUFFER_SIZE 18		// USART ISR TX buffer size (255 max)
 
 /* 
  * Serial Configuration Settings
@@ -72,6 +89,11 @@
  *	These are carried in the bsel and bscale tables in xmega_io.c
  */
 
+// for turning USART interrupts on and off
+#define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc)
+#define CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
+
+// Baud rate configuration
 enum xioBAUDRATES {         			// BSEL	  BSCALE
 		XIO_BAUD_UNSPECIFIED,			//	0		0		// use default value 
 		XIO_BAUD_9600,					//	207		0
@@ -88,57 +110,112 @@ enum xioBAUDRATES {         			// BSEL	  BSCALE
 
 #define	XIO_BAUD_DEFAULT XIO_BAUD_115200
 
-/* 
- * USART control structure - here because it's shared by multiple devices.
- * Note: As defined this struct won't do buffers larger than 256 chars - 
- *	     or a max of 254 characters usable (see xmega_io.c circular buffer note) 
+/*
+ * xio_control values
  */
 
-//#define RX_BUFFER_SIZE 255	// rx buf (255 max) - written by ISRs (2 bytes unusable)
-#define RX_BUFFER_SIZE 18	// rx buf (255 max) - written by ISRs (2 bytes unusable)
-#define TX_BUFFER_SIZE 18	// tx buf (255 max) - read by ISRs (2 bytes unusable)
+// _init() & _control() control bits
+#define XIO_BAUD_gm		0x0000000F		// baud rate enum mask (keep in LSbyte)
+#define XIO_RD			(1<<4) 			// read enable bit
+#define XIO_WR			(1<<5)			// write enable only
+#define XIO_RDWR		(XIO_RD | XIO_WR) // read & write
+#define XIO_BLOCK		(1<<6)			// enable blocking reads
+#define XIO_NOBLOCK		(1<<7)			// disable blocking reads
+#define XIO_ECHO		(1<<8)			// echo reads from device to stdio
+#define XIO_NOECHO		(1<<9)			// disable echo
+#define XIO_CRLF		(1<<10)			// convert <LF> to <CR><LF> on writes
+#define XIO_NOCRLF		(1<<11)			// do not convert <LF> to <CR><LF> on writes
+#define XIO_LINEMODE	(1<<12)			// special <cr><lf> read handling
+#define XIO_NOLINEMODE	(1<<13)			// no special <cr><lf> read handling
+#define XIO_SEMICOLONS	(1<<14)			// treat semicolons as line breaks
+#define XIO_NOSEMICOLONS (1<<15)		// don't treat semicolons as line breaks
+
+// (note 1) The handler function flags share positions 4 & 5 with RD and WR flags
+//			RD and WR are only valid in init(), handlers only valid in control()
+
+// internal control flags (which are NOT the similar bits in the control word, above)
+// static configuration states
+#define XIO_FLAG_RD_bm		(1<<0)		// enabled for read
+#define XIO_FLAG_WR_bm		(1<<1)		// enabled for write
+#define XIO_FLAG_BLOCK_bm	(1<<2)		// enable blocking reads and writes
+#define XIO_FLAG_FLOW_CONTROL_bm (1<<3)	// enable flow control for device
+#define XIO_FLAG_ECHO_bm 	(1<<4)		// echo received chars to stderr output
+#define XIO_FLAG_CRLF_bm 	(1<<5)		// convert <LF> to <CR><LF> on writes
+#define XIO_FLAG_LINEMODE_bm (1<<6)		// special handling for line-oriented text
+#define XIO_FLAG_SEMICOLONS_bm (1<<7)	// treat semicolons as line breaks (Arduino)
+// transient control states
+#define XIO_FLAG_TX_MUTEX_bm (1<<11)	// TX dequeue mutual exclusion flag
+#define XIO_FLAG_EOL_bm		(1<<12)		// detected EOL (/n, /r, ;)
+#define XIO_FLAG_EOF_bm 	(1<<13)		// detected EOF (NUL)
+#define XIO_FLAG_IN_LINE_bm	(1<<14) 	// partial line is in buffer
+#define XIO_FLAG_IN_FLOW_CONTROL_bm (1<<15) // device is in flow control
+
+#define XIO_FLAG_RESET_gm	(0x0FFF)	// used to clear the top bits
+
+#define READ(a) (a & XIO_FLAG_RD_bm)	// TRUE if read enabled
+#define WRITE(a) (a & XIO_FLAG_WR_bm)	// TRUE if write enabled
+#define BLOCKING(a) (a & XIO_FLAG_BLOCK_bm)	// etc.
+#define ECHO(a) (a & XIO_FLAG_ECHO_bm)
+#define CRLF(a) (a & XIO_FLAG_CRLF_bm)
+#define LINEMODE(a) (a & XIO_FLAG_LINEMODE_bm)
+#define SEMICOLONS(a) (a & XIO_FLAG_SEMICOLONS_bm)
+#define TX_MUTEX(a) (a & XIO_FLAG_TX_MUTEX_bm)
+#define IN_LINE(a) (a & XIO_FLAG_IN_LINE_bm)
+#define IN_FLOW_CONTROL(a) (a & XIO_FLAG_IN_FLOW_CONTROL_bm)
+
+/* 
+ * USART extended control structure 
+ * Note: As defined this struct won't do buffers larger than 256 chars - 
+ *	     or a max of 254 characters usable
+ */
 
 struct xioUSART {
-	// PUBLIC VARIABLES - must be the same in every device type
-	uint16_t flags;						// control flags
-	uint8_t status;						// completion status 
-	uint8_t sig;						// signal or error value
-	uint8_t c;							// line buffer character temp
-	uint8_t i;							// line buffer pointer (persistent)
-	uint8_t len;						// line buffer maximum length (zero based)
-	char *buf;							// pointer to input line buffer
-
-	// PRIVATE VARIABLES - in this case for USART. Can be different by device type
 	volatile uint_fast8_t rx_buf_tail;	// RX buffer read index
 	volatile uint_fast8_t rx_buf_head;	// RX buffer write index (written by ISR)
 	volatile uint_fast8_t tx_buf_tail;	// TX buffer read index (written by ISR)
 	volatile uint_fast8_t tx_buf_head;	// TX buffer write index
 	uint_fast8_t next_tx_buf_head;		// next TX buffer write index
 
-	// hardware bindings
 	struct USART_struct *usart;			// USART structure
 	struct PORT_struct *port;			// corresponding port
 
-	// buffers (do these last)
 	volatile unsigned char rx_buf[RX_BUFFER_SIZE];  // (written by ISR)
 	volatile unsigned char tx_buf[TX_BUFFER_SIZE];
-
 };
 
-/*
- * Global Scope Functions
+/* 
+ * USART DEVICE FUNCTION PROTOTYPES
  */
 
-void xio_init_usart(uint8_t dev, struct xioUSART *u, const uint16_t control);
 
-//void xio_usb_init(uint16_t control);
-//int8_t xio_usb_control(uint16_t control, int16_t arg);
-//int xio_usb_putc(char c, FILE *stream);
-//int xio_usb_getc(FILE *stream);
-//void xio_usb_queue_RX_char(char c);		// simulate char received into RX buffer
-//void xio_usb_queue_RX_string(char *buf);// do a whole string
-//int xio_usb_readln(char *buf, uint8_t len);	// non-blocking read line function
+// functions common to all USART devices
+void xio_init_usart(const uint8_t dev, 
+					const uint16_t control,
+					const struct USART_struct *usart_addr,
+					const struct PORT_struct *port_addr,
+					const uint8_t dirclr, 
+					const uint8_t dirset, 
+					const uint8_t outclr, 
+					const uint8_t outset);
 
-//extern FILE dev_usb;					// declare the FILE handle for external use
+void xio_set_baud_usart(const uint8_t dev, const uint8_t baud);
+
+// RS485 functions
+int xio_putc_rs485(const char c, FILE *stream);
+int xio_getc_rs485(FILE *stream);
+int xio_readln_rs485();						// non-blocking read line function
+void xio_rs485_queue_RX_char(char c);		// simulate char rcvd into RX buffer
+void xio_rs485_queue_RX_string(char *buf);	// simulate receving a whole string
+
+
+// USB functions
+int xio_putc_usb(const char c, FILE *stream);
+int xio_getc_usb(FILE *stream);
+int xio_readln_usb();						// non-blocking read line function
+void xio_usb_queue_RX_char(char c);			// simulate char rcvd into RX buffer
+void xio_usb_queue_RX_string(char *buf);	// simulate receving a whole string
+
+
+// TTL usart functions (Arduino)
 
 #endif

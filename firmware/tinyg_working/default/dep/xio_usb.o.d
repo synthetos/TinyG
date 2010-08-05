@@ -15,8 +15,7 @@ xio_usb.o: ../xio_usb.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/sleep.h ../xio.h \
-  ../xio_usart.h ../xio_usb.h ../xmega_interrupts.h ../tinyg.h \
-  ../signals.h
+  ../xio_usart.h ../xmega_interrupts.h ../tinyg.h ../signals.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -53,8 +52,6 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/sleep.h:
 ../xio.h:
 
 ../xio_usart.h:
-
-../xio_usb.h:
 
 ../xmega_interrupts.h:
 

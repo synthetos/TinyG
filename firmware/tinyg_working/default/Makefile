@@ -15,7 +15,7 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
-CFLAGS += -Wall -gdwarf-2 -std=gnu99                                                  -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -Wall -gdwarf-2 -std=gnu99                                                    -DF_CPU=32000000UL -O0 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
 
 ## Assembly specific flags
@@ -40,7 +40,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 LIBS = -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = main.o gcode.o config.o encoder.o xmega_init.o motion_control.o spindle_control.o stepper.o xmega_interrupts.o xio.o xio_usb.o xmega_eeprom.o xio_pgm.o controller.o direct_drive.o move_buffer.o limit_switches.o xio_rs485.o signals.o xio_usart.o 
+OBJECTS = main.o gcode.o config.o encoder.o xmega_init.o motion_control.o spindle_control.o stepper.o xmega_interrupts.o xio.o xmega_eeprom.o controller.o direct_drive.o move_buffer.o limit_switches.o signals.o xio_usart.o xio_usb.o xio_rs485.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -79,13 +79,7 @@ xmega_interrupts.o: ../xmega_interrupts.c
 xio.o: ../xio.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-xio_usb.o: ../xio_usb.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
 xmega_eeprom.o: ../xmega_eeprom.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-xio_pgm.o: ../xio_pgm.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 controller.o: ../controller.c
@@ -100,13 +94,16 @@ move_buffer.o: ../move_buffer.c
 limit_switches.o: ../limit_switches.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-xio_rs485.o: ../xio_rs485.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
 signals.o: ../signals.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 xio_usart.o: ../xio_usart.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+xio_usb.o: ../xio_usb.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+xio_rs485.o: ../xio_rs485.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link
