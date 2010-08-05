@@ -117,8 +117,6 @@
 #include "xmega_init.h"
 #include "xmega_interrupts.h"
 #include "xio.h"
-#include "xio_usb.h"
-#include "xio_pgm.h"
 
 #include "tinyg.h"
 #include "controller.h"

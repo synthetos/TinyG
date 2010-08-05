@@ -15,7 +15,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  *
  * -----
- * Xmega IO devices made compatible with avr-gcc stdio
+ * XIO devices are compatible with avr-gcc stdio, so formatted printing is supported
  * To use this sub-system outside of TinyG you will need some defines in tinyg.h
  * See the end of this file for further documentation.
  */
@@ -30,99 +30,50 @@
 #define TRUE 1
 #endif
 
-/*
- * Global Scope Data and Functions
- */
+/******************************************************************************
+ *
+ *	Device configurations
+ *
+ ******************************************************************************/
 
-void xio_init(void);				// initialize xio system
-int xio_fget_ln(uint8_t dev, char *buf, uint8_t len);
-int8_t xio_control(uint8_t dev, const uint16_t control, const int16_t arg);
-int8_t xio_dev_init(uint8_t dev, const int16_t arg);
+/* Known XIO devices (configured devices) */
 
-int xio_null_signal(uint8_t sig);	// no-op signal handler
-int xio_null_line(char * buf);		// no-op line handler
-
-void xio_signal_etx(void);			// ^c signal handler
-
-
-FILE *stddev;						// a convenient alias for stdin. stdout, stderr
-
-/*
- * XIO devices (configured devices)
- */
-
-enum xioDevice {					// device enumerations - PUT USART DEVICES FIRST
-	XIO_DEV_RS485,					// [USART] RS485 device (typically network port)
-	XIO_DEV_USB,					// [USART] USB device
-	XIO_DEV_AUX,					// [USART] AUX device (typically Arduino)
-	XIO_DEV_PGM,					// program memory file
-	XIO_DEV_MAX						// *** must be last ***
+enum xioDevice {			// device enumerations
+							// TYPE:	DEVICE:
+	XIO_DEV_RS485,			// USART	RS485 device (typ. network port)
+	XIO_DEV_USB,			// USART	USB device
+	XIO_DEV_AUX,			// USART	TTL device (typ. Arduino)
+	XIO_DEV_PGM,			// FILE		program memory file (read only)
+	XIO_DEV_MAX				// *** must be last entry ***
 };
 #define XIO_DEV_USART_MAX (XIO_DEV_AUX+1)	// useful for sizing arrays
 
-enum xioDeviceFlags {				// used for setting flow control modes
-	XIO_FLAG_PROMPTS,				// enable prompts (app-level flow control)
-	XIO_FLAG_XON_XOFF,				// enable XON/XOFF flow control (not implemented)
-	XIO_FLAG_RTS_CTS				// enable rts/cts flow control (not implemented)
+
+enum xioAppStatus {				// used for setting flow control modes
+	XIO_APP_PROMPTS,			// enable prompts (app-level flow control)
+	XIO_APP_XON_XOFF,			// enable XON/XOFF flow control (not implemented)
+	XIO_APP_RTS_CTS				// enable rts/cts flow control (not implemented)
 };
 
-#define XIO_FLAG_PROMPTS_bm (1<<XIO_FLAG_PROMPTS)
-#define XIO_FLAG_XON_XOFF_bm (1<<XIO_FLAG_XON_XOFF)
-#define XIO_FLAG_RTS_CTS_bm (1<<XIO_FLAG_RTS_CTS)
+#define XIO_APP_PROMPTS_bm (1<<XIO_APP_PROMPTS)
+#define XIO_APP_XON_XOFF_bm (1<<XIO_APP_XON_XOFF)
+#define XIO_APP_RTS_CTS_bm (1<<XIO_APP_RTS_CTS)
+
 
 /*
- * xio_control values
+ * Device configurations (all of them)
  */
 
-// _init() io_ctl() control bits
-#define XIO_BAUD_gm		0x0000000F		// baud rate enum mask (keep in LSbyte)
+/* GENERAL CONFIG */
 
-#define XIO_RD			(1<<4) 			// read enable bit
-#define XIO_WR			(1<<5)			// write enable only
-#define XIO_RDWR		(XIO_RD | XIO_WR) // read & write
-#define XIO_BLOCK		(1<<6)			// enable blocking reads
-#define XIO_NOBLOCK		(1<<7)			// disable blocking reads
-#define XIO_ECHO		(1<<8)			// echo reads from device to stdio
-#define XIO_NOECHO		(1<<9)			// disable echo
-#define XIO_CRLF		(1<<10)			// convert <LF> to <CR><LF> on writes
-#define XIO_NOCRLF		(1<<11)			// do not convert <LF> to <CR><LF> on writes
-#define XIO_LINEMODE	(1<<12)			// special <cr><lf> read handling
-#define XIO_NOLINEMODE	(1<<13)			// no special <cr><lf> read handling
-#define XIO_SEMICOLONS	(1<<14)			// treat semicolons as line breaks
-#define XIO_NOSEMICOLONS (1<<15)			// don't treat semicolons as line breaks
+#define CHAR_BUFFER_SIZE 80		// common text buffer size (255 max)
+//#define RX_BUFFER_SIZE 255	// USART ISR RX buffer size (255 max)
 
-// (note 1) The handler function flags share positions 4 & 5 with RD and WR flags
-//			RD and WR are only valid in init(), handlers only valid in control()
+/* FILE DEVICES */
 
-// f.flags flags (which are NOT the similar bits in the control word, above)
-// static configuration states
-#define XIO_FLAG_RD_bm		(1<<0)		// enabled for read
-#define XIO_FLAG_WR_bm		(1<<1)		// enabled for write
-#define XIO_FLAG_BLOCK_bm	(1<<2)		// enable blocking reads and writes
-#define XIO_FLAG_FLOW_CONTROL_bm (1<<3)	// enable flow control for device
-#define XIO_FLAG_ECHO_bm 	(1<<4)		// echo received chars to stderr output
-#define XIO_FLAG_CRLF_bm 	(1<<5)		// convert <LF> to <CR><LF> on writes
-#define XIO_FLAG_LINEMODE_bm (1<<6)		// special handling for line-oriented text
-#define XIO_FLAG_SEMICOLONS_bm (1<<7)	// treat semicolons as line breaks (Arduino)
-// transient control states
-#define XIO_FLAG_TX_MUTEX_bm (1<<11)	// TX dequeue mutual exclusion flag
-#define XIO_FLAG_EOL_bm		(1<<12)		// detected EOL (/n, /r, ;)
-#define XIO_FLAG_EOF_bm 	(1<<13)		// detected EOF (NUL)
-#define XIO_FLAG_IN_LINE_bm	(1<<14) 	// partial line is in buffer
-#define XIO_FLAG_IN_FLOW_CONTROL_bm (1<<15) // device is in flow control
+// PGM device
+#define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
 
-#define XIO_FLAG_RESET_gm	(0x0FFF)	// used to clear the top bits
-
-#define READ(a) (a & XIO_FLAG_RD_bm)	// TRUE if read enabled
-#define WRITE(a) (a & XIO_FLAG_WR_bm)	// TRUE if write enabled
-#define BLOCKING(a) (a & XIO_FLAG_BLOCK_bm)	// etc.
-#define ECHO(a) (a & XIO_FLAG_ECHO_bm)
-#define CRLF(a) (a & XIO_FLAG_CRLF_bm)
-#define LINEMODE(a) (a & XIO_FLAG_LINEMODE_bm)
-#define SEMICOLONS(a) (a & XIO_FLAG_SEMICOLONS_bm)
-#define TX_MUTEX(a) (a & XIO_FLAG_TX_MUTEX_bm)
-#define IN_LINE(a) (a & XIO_FLAG_IN_LINE_bm)
-#define IN_FLOW_CONTROL(a) (a & XIO_FLAG_IN_FLOW_CONTROL_bm)
 
 /*
  * Generic XIO signals and error conditions. 
@@ -145,9 +96,7 @@ enum xio_SIGS {
 	XIO_SIG_BELL					// BELL character (BEL, ^g)
 };
 
-/*
- * Some useful ASCII definitions
- */
+/* Some useful ASCII definitions */
 
 #define NUL 0x00				// ASCII NUL character (0) (not "NULL" which is a pointer)
 #define ETX 0x03				// ^c - aka ETX
@@ -169,6 +118,56 @@ enum xio_SIGS {
 #define CTRL_Q XOFF
 #define CTRL_S XON
 #define CTRL_X 0x18				// ^x - aka CAN(cel)
+
+/******************************************************************************
+ *
+ *	Device structures
+ *
+ ******************************************************************************/
+
+struct xioDEVICE {						// per-device struct
+	uint16_t flags;						// control flags
+	uint8_t app_state;					// device state for use by application
+	uint8_t status;						// completion status 
+	uint8_t sig;						// signal value
+	uint8_t c;							// char temp
+	uint8_t len;						// chars read so far (buf array index)
+	uint8_t size;						// text buffer length
+
+	void (*dev_flags)(uint16_t control);// set device control flags
+	int (*dev_putc)(char, struct __file *);	// write char (stdio compatible)
+	int (*dev_getc)(struct __file *);	// read char (stdio compatible)
+	int (*dev_readln)();				// specialized line reader
+
+	void *xio;							// extended IO parameter binding (note 1)
+	struct __file *std;					// stdio file struct binding
+	char buf[CHAR_BUFFER_SIZE];			// text buffer used by device
+};
+
+/* Note 1: See sub-system headers (e.g. xio_usart.h for usart struct) */
+
+/******************************************************************************
+ *
+ *	Function Prototypes
+ *
+ ******************************************************************************/
+
+void xio_init(void);				// initialize xio system
+void xio_set_control_flags(const uint8_t dev, const uint16_t control);
+
+#define xio_set_control_flags_rs485(a) xio_set_control_flags(XIO_DEV_RS485, a)
+
+int xio_fget_ln(uint8_t dev, char *buf, uint8_t len);
+//int8_t xio_control(uint8_t dev, const uint16_t control, const int16_t arg);
+//int8_t xio_dev_init(uint8_t dev, const int16_t arg);
+
+
+void xio_signal_etx(void);			// ^c signal handler
+
+
+FILE *stddev;						// a convenient alias for stdin. stdout, stderr
+
+
 
 
 

@@ -12,10 +12,8 @@ main.o: ../main.c c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../xmega_init.h \
-  ../xmega_interrupts.h ../xio.h ../xio_usb.h ../xio_pgm.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h ../tinyg.h \
-  ../controller.h ../config.h ../stepper.h ../limit_switches.h \
-  ../move_buffer.h ../motion_control.h \
+  ../xmega_interrupts.h ../xio.h ../tinyg.h ../controller.h ../config.h \
+  ../stepper.h ../limit_switches.h ../move_buffer.h ../motion_control.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/string.h \
   ../spindle_control.h ../direct_drive.h ../encoder.h ../gcode.h
 
@@ -52,12 +50,6 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 ../xmega_interrupts.h:
 
 ../xio.h:
-
-../xio_usb.h:
-
-../xio_pgm.h:
-
-c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h:
 
 ../tinyg.h:
 

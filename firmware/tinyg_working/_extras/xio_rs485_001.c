@@ -1,25 +1,20 @@
 /*
- * xio_usb.c	- FTDI USB device driver for xmega family
+ * xio_rs485.c 	- RS-485 device driver for xmega family
  * 				- works with avr-gcc stdio library
  *
  * Part of TinyG project
  * Copyright (c) 2010 Alden S. Hart, Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it under the 
- * terms of the GNU General Public License as published by the Free Software 
- * Foundation, either version 3 of the License, or (at your option) any later 
- * version.
+ * TinyG is free software: you can redistribute it and/or modify it under the terms
+ * of the GNU General Public License as published by the Free Software Foundation, 
+ * either version 3 of the License, or (at your option) any later version.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for details
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+ * PURPOSE. See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with 
- * TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- *------
- *
- *	This version implements signal capture at the ISR level
+ * You should have received a copy of the GNU General Public License along with TinyG  
+ * If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <stdio.h>
@@ -30,19 +25,46 @@
 
 #include "xio.h"
 #include "xio_usart.h"
+#include "xio_rs485.h"
 #include "xmega_interrupts.h"
 #include "tinyg.h"				// needed for TG_ return codes, or provide your own
-#include "signals.h"
+#include "signals.h"			// application specific signal handlers
 
-// necessary structures
-extern struct xioDEVICE ds[XIO_DEV_MAX];		// ref top-level device structs
-extern struct xioUSART us[XIO_DEV_USART_MAX];	// ref USART extended IO structs
-#define USB ds[XIO_DEV_USB]						// device struct accessoor
-#define USBx us[XIO_DEV_USB]					// usart extended struct accessor
+/* 
+ * Global Scope Declarations
+ */
+// pre-allocated stdio FILE struct for USB - declared extern in the header file
+FILE dev_rs485 = FDEV_SETUP_STREAM(xio_rs485_putc, xio_rs485_getc, _FDEV_SETUP_RW);
+extern uint8_t bsel[];			// shared baud rate selection values
+extern uint8_t bscale[];		// shared baud rate scaling values
 
-// local functions
-int _xio_usb_readchar(char *buf, uint8_t len);
+/* 
+ * Local Scope Declarations
+ */
+static struct xioUSART fr;		// USART control struct
 
+/*default IO flags */
+#define XIO_FLAG_RS485_DEFS_gm (XIO_FLAG_RD_bm | XIO_FLAG_WR_bm | \
+								XIO_FLAG_BLOCK_bm | \
+							 	XIO_FLAG_ECHO_bm |XIO_FLAG_CRLF_bm)
+
+/* these are needed because CTRLA must be written as bytes, not RMW bits */
+#define USART_CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc)
+#define USART_CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
+
+/* Hardwired Device Configurations (describes chip internals and board wiring) */
+#define RS485_USART USARTC1					// RS485 is wired to USARTC1 on board
+#define RS485_RX_ISR_vect USARTC1_RXC_vect 	// (RX) reception complete
+#define RS485_TX_ISR_vect USARTC1_DRE_vect	// (TX) data register empty interrupt
+//#define RS485_TX2_ISR_vect USARTC1_TXC_vect // (TX) transmission complete (Don't use)
+
+#define RS485_PORT PORTC			// port where the USART is located
+#define RS485_RE_bm (1<<4)			// RE (Receive Enable) pin - active lo
+#define RS485_DE_bm (1<<5)			// DE (Data Enable) pin (TX enable) - active hi
+#define RS485_RX_bm (1<<6)			// RX pin - these pins are wired on the board
+#define RS485_TX_bm (1<<7)			// TX pin
+
+/* Helper Functions */
 static int _getc_char(void);		// getc character dispatch routines
 static int _getc_NEWLINE(void);
 static int _getc_SEMICOLON(void);
@@ -56,94 +78,247 @@ static int _readln_DELETE(void);
 static int _sig_KILL(void);			// vestigal stubs for signals
 static int _sig_PAUSE(void);
 static int _sig_RESUME(void);
+//static int _sig_SHIFTOUT(void);
+//static int _sig_SHIFTIN(void);
 
+
+/* 
+ *	xio_rs485_init() - initialize and set controls for RS485 device 
+ *
+ *	Control		   Arg	  Default		Notes
+ *	
+ *	XIO_RD		  <null>	Y	Enable device for reads
+ *	XIO_WR		  <null>	Y	Enable device for write
+ *	XIO_BLOCK	  <null>	Y	Enable blocking reads
+ *	XIO_NOBLOCK   <null>		Disable blocking reads
+ *	XIO_ECHO	  <null>	Y	Enable echo
+ *	XIO_NOECHO	  <null>		Disable echo
+ *	XIO_CRLF	  <null>		Send <cr><lf> if <lf> detected
+ *	XIO_NOCRLF	  <null>	Y	Do not convert <lf> to <cr><lf>
+ *	XIO_LINEMODE  <null>		Apply special <cr><lf> read handling
+ *	XIO_NOLINEMODE <null>	Y	Do not apply special <cr><lf> read handling
+ *	XIO_SEMICOLONS <null>		Treat semicolons as line breaks
+ *	XIO_NOSEMICOLONS <null>	Y	Don't treat semicolons as line breaks
+ *
+ *	XIO_BAUD_xxxxx <null>		One of the supported baud rate enums
+ */
+
+void xio_rs485_init(const uint16_t control)
+{
+	uint8_t baud = (uint8_t)(control & XIO_BAUD_gm);
+
+	// transfer control flags to internal flag bits
+	fr.flags = XIO_FLAG_RS485_DEFS_gm;		// set flags to defaults & initial state
+	if (control & XIO_RD) {
+		fr.flags |= XIO_FLAG_RD_bm;
+	}
+	if (control & XIO_WR) {
+		fr.flags |= XIO_FLAG_WR_bm;
+	}
+	if (control & XIO_BLOCK) {
+		fr.flags |= XIO_FLAG_BLOCK_bm;
+	}
+	if (control & XIO_NOBLOCK) {
+		fr.flags &= ~XIO_FLAG_BLOCK_bm;
+	}
+	if (control & XIO_ECHO) {
+		fr.flags |= XIO_FLAG_ECHO_bm;
+	}
+	if (control & XIO_NOECHO) {
+		fr.flags &= ~XIO_FLAG_ECHO_bm;
+	}
+	if (control & XIO_CRLF) {
+		fr.flags |= XIO_FLAG_CRLF_bm;
+	}
+	if (control & XIO_NOCRLF) {
+		fr.flags &= ~XIO_FLAG_CRLF_bm;
+	}
+	if (control & XIO_LINEMODE) {
+		fr.flags |= XIO_FLAG_LINEMODE_bm;
+	}
+	if (control & XIO_NOLINEMODE) {
+		fr.flags &= ~XIO_FLAG_LINEMODE_bm;
+	}
+	if (control & XIO_SEMICOLONS) {
+		fr.flags |= XIO_FLAG_SEMICOLONS_bm;
+	}
+	if (control & XIO_NOSEMICOLONS) {
+		fr.flags &= ~XIO_FLAG_SEMICOLONS_bm;
+	}
+
+	// character signals and error returns
+	fr.sig = 0;
+	dev_rs485.udata = &(fr.sig);			// bind sig register to FILE struct
+
+	// setup internal RX/TX buffers
+	fr.rx_buf_head = 1;						// can't use location 0
+	fr.rx_buf_tail = 1;
+	fr.tx_buf_head = 1;
+	fr.tx_buf_tail = 1;
+
+	fr.usart = &RS485_USART;				// bind USART structure
+	fr.port = &RS485_PORT;					// bind PORT structure
+
+	// baud rate and USART setup
+	if (baud == XIO_BAUD_UNSPECIFIED) {
+		baud = XIO_BAUD_DEFAULT;
+	}
+	fr.usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
+	fr.usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
+	fr.usart->CTRLB = USART_TXEN_bm | USART_RXEN_bm;// enable tx and rx on USART
+	fr.usart->CTRLA = USART_CTRLA_RXON_TXON;		// enable tx and rx interrupts
+
+	fr.port->DIRCLR = RS485_RX_bm;	// clr RX pin as input
+	fr.port->DIRSET = RS485_TX_bm; 	// set TX pin as output
+	fr.port->OUTSET = RS485_TX_bm;	// set TX HI as initial state
+	fr.port->DIRSET = RS485_DE_bm; 	// Data Enable (TX) to output (TX enabled hi)
+	fr.port->DIRSET = RS485_RE_bm; 	// Recv Enable (RX) to output (RX enabled lo)
+	fr.port->OUTCLR = RS485_DE_bm;	// DE lo initially (TX disabled)
+	fr.port->OUTCLR = RS485_RE_bm; 	// RE lo initially (RX enabled)
+}
+
+/*	
+ *	xio_rs485_control() - set controls for USB device 
+ *
+ *	Control		   Arg	  Default		Notes
+ *	
+ *	XIO_BLOCK	  <null>	Y	Enable blocking reads
+ *	XIO_NOBLOCK   <null>		Disable blocking reads
+ *	XIO_ECHO	  <null>	Y	Enable echo
+ *	XIO_NOECHO	  <null>		Disable echo
+ *	XIO_CRLF	  <null>		Send <cr><lf> if <lf> detected
+ *	XIO_NOCRLF	  <null>	Y	Do not convert <lf> to <cr><lf>
+ *	XIO_LINEMODE  <null>		Apply special <cr><lf> read handling
+ *	XIO_NOLINEMODE <null>	Y	Do not apply special <cr><lf> read handling
+ *	XIO_SEMICOLONS <null>		Treat semicolons as line breaks
+ *	XIO_NOSEMICOLONS <null>	Y	Don't treat semicolons as line breaks
+ *
+ *	XIO_SIG_FUNC	*sig_func()	 Callback for signals
+ *	XIO_LINE_FUNC	*line_func() Callback for completed lines
+ *
+ *	XIO_BAUD_xxxxx	<null>		One of the supported baud rate enums
+ */
+
+int xio_rs485_control(const uint16_t control, const int16_t arg)
+{
+	// commands with no args
+	if ((control & XIO_BAUD_gm) != XIO_BAUD_UNSPECIFIED) {
+		fr.usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[(control & XIO_BAUD_gm)]);
+		fr.usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[(control & XIO_BAUD_gm)]);
+	}
+	if (control & XIO_BLOCK) {
+		fr.flags |= XIO_FLAG_BLOCK_bm;
+	}
+	if (control & XIO_NOBLOCK) {
+		fr.flags &= ~XIO_FLAG_BLOCK_bm;
+	}
+	if (control & XIO_ECHO) {
+		fr.flags |= XIO_FLAG_ECHO_bm;
+	}
+	if (control & XIO_NOECHO) {
+		fr.flags &= ~XIO_FLAG_ECHO_bm;
+	}
+	if (control & XIO_CRLF) {
+		fr.flags |= XIO_FLAG_CRLF_bm;
+	}
+	if (control & XIO_NOCRLF) {
+		fr.flags &= ~XIO_FLAG_CRLF_bm;
+	}
+	if (control & XIO_LINEMODE) {
+		fr.flags |= XIO_FLAG_LINEMODE_bm;
+	}
+	if (control & XIO_NOLINEMODE) {
+		fr.flags &= ~XIO_FLAG_LINEMODE_bm;
+	}
+	if (control & XIO_SEMICOLONS) {
+		fr.flags |= XIO_FLAG_SEMICOLONS_bm;
+	}
+	if (control & XIO_NOSEMICOLONS) {
+		fr.flags &= ~XIO_FLAG_SEMICOLONS_bm;
+	}
+	return (0);
+}
 
 /* 
  * USB_RX_ISR - USB receiver interrupt (RX)
  *
- * RX buffer states can be one of:
+ *	RX buffer states can be one of:
  *	- buffer has space	(CTS should be asserted)
  *	- buffer is full 	(CTS should be not_asserted)
  *	- buffer becomes full with this character (write char and assert CTS)
  *
- * Signals:
- *	- Signals are captured at the ISR level and either dispatched or flag-set
- *	- As RX ISR is a critical code region signal handling is stupid and fast
- *	- signal characters are not put in the RX buffer
+ *	Flow control is not implemented. Need to work RTS line.
+ *	Flow control should cut off at high water mark, re-enable at low water mark
+ *	High water mark should have about 4 - 8 bytes left in buffer (~95% full) 
+ *	Low water mark about 50% full
  *
- * Flow Control:
- *	- Flow control is not implemented. Need to work RTS line.
- *	- Flow control should cut off at high water mark, re-enable at low water mark
- *	- High water mark should have about 4 - 8 bytes left in buffer (~95% full) 
- *	- Low water mark about 50% full
- *
- * 	See end notes in xio.h for a discussion of how the circular buffers work
+ * 	See end notes in xio.h for a discussion of how the circular bufers work
  */
 
-ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX interrupt 
+ISR(RS485_RX_ISR_vect)		//ISR(USARTC1_RXC_vect)	// serial port C0 RX interrupt 
 {
-	uint8_t c = USBx.usart->DATA;				// can only read DATA once
+	uint8_t c = fr.usart->DATA;					// can only read DATA once
 
-	// trap signals - do not insert character into RX queue
-	if (c == ETX) {								// trap ^c signal
-		USB.sig = XIO_SIG_KILL;					// set signal value
-		signal_etx();							// call app-specific signal handler
-		return;
-	}
-
-	// normal character path
-	if ((--USBx.rx_buf_head) == 0) { 			// advance buffer head with wrap
-		USBx.rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids the off-by-one error
-	}
-	if (USBx.rx_buf_head != USBx.rx_buf_tail) {	// write char unless buffer full
-		USBx.rx_buf[USBx.rx_buf_head] = c;
-		return;
-	}
-	// buffer-full handling
-	if ((++USBx.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
-		USBx.rx_buf_head = 1;
-	}
-	// activate flow control here or before it gets to this level
-}
-
-/*
- * xio_usb_queue_RX_char() - fake ISR to put a char in the RX buffer
- */
-
-void xio_usb_queue_RX_char(const char c)
-{
 	// trap signals - do not insert into RX queue
 	if (c == ETX) {								// trap ^c signal
-		USB.sig = XIO_SIG_KILL;					// set signal value
+		fr.sig = XIO_SIG_KILL;					// set signal value
 		signal_etx();							// call app-specific signal handler
 		return;
 	}
 
 	// normal path
-	if ((--USBx.rx_buf_head) == 0) { 			// wrap condition
-		USBx.rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids the off-by-one error
+	if ((--fr.rx_buf_head) == 0) { 				// advance buffer head with wrap
+		fr.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
 	}
-	if (USBx.rx_buf_head != USBx.rx_buf_tail) {	// write char unless buffer full
-		USBx.rx_buf[USBx.rx_buf_head] = c;		// FAKE INPUT DATA
+	if (fr.rx_buf_head != fr.rx_buf_tail) {		// write char unless buffer full
+		fr.rx_buf[fr.rx_buf_head] = c;			// (= USARTC0.DATA;)
 		return;
 	}
 	// buffer-full handling
-	if ((++USBx.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
-		USBx.rx_buf_head = 1;
+	if ((++fr.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+		fr.rx_buf_head = 1;
+	}
+	// activate flow control here or before it gets to this level
+}
+
+/*
+ * xio_rs485_queue_RX_char() - fake ISR to put a char in the RX buffer
+ */
+
+void xio_rs485_queue_RX_char(const char c)
+{
+	// trap signals - do not insert into RX queue
+	if (c == ETX) {								// trap ^c signal
+		fr.sig = XIO_SIG_KILL;					// set signal value
+		signal_etx();							// call app-specific signal handler
+		return;
+	}
+
+	// normal path
+	if ((--fr.rx_buf_head) == 0) { 				// wrap condition
+		fr.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
+	}
+	if (fr.rx_buf_head != fr.rx_buf_tail) {		// write char unless buffer full
+		fr.rx_buf[fr.rx_buf_head] = c;			// FAKE INPUT DATA
+		return;
+	}
+	// buffer-full handling
+	if ((++fr.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+		fr.rx_buf_head = 1;
 	}
 }
 
 /*
- * xio_usb_queue_RX_string() - fake ISR to put a string in the RX buffer
+ * xio_rs485_queue_RX_string() - fake ISR to put a string in the RX buffer
  */
 
-void xio_usb_queue_RX_string(char *buf)
+void xio_rs485_queue_RX_string(char *buf)
 {
 	char c;
 	uint8_t i=0;
 
 	while ((c = buf[i++]) != NUL) {
-		xio_usb_queue_RX_char(c);
+		xio_rs485_queue_RX_char(c);
 	}
 }
 
@@ -157,28 +332,28 @@ void xio_usb_queue_RX_string(char *buf)
  * never empties.
  *
  * So we define a dequeue function that can be called from either the ISR or be 
- * called from the putc() if it detects TXCIF. Care should be taken to make sure 
+ * called from the putc() if it detects TXCIfr. Care should be taken to make sure 
  * these two callers don't collide (like only enabling interrupts in putc() AFTER
  * the dequeue has occurred).
  */
 
-ISR(USB_TX_ISR_vect)	//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
+ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC0 data register empty
 {
-	if (USBx.tx_buf_head == USBx.tx_buf_tail) {	// buffer empty - disable ints
-		USBx.usart->CTRLA = CTRLA_RXON_TXOFF;	// won't work if you just &= it
-//		PMIC_DisableLowLevel(); 				// disable USART TX interrupts
+	if (fr.tx_buf_head == fr.tx_buf_tail) {			// buffer empty - disable ints
+		fr.usart->CTRLA = USART_CTRLA_RXON_TXOFF;	// doesn't work if you just &= it
+//		PMIC_DisableLowLevel(); 					// disable USART TX interrupts
 		return;
 	}
-	if (!TX_MUTEX(USB.flags)) {
-		if (--(USBx.tx_buf_tail) == 0) {		// advance tail and wrap 
-			USBx.tx_buf_tail = TX_BUFFER_SIZE-1;// -1 avoids off-by-one err (OBOE)
+	if (!TX_MUTEX(fr.flags)) {
+		if (--(fr.tx_buf_tail) == 0) {				// advance tail and wrap if needed
+			fr.tx_buf_tail = TX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
 		}
-		USBx.usart->DATA = USBx.tx_buf[USBx.tx_buf_tail]; // write to TX DATA reg
+		fr.usart->DATA = fr.tx_buf[fr.tx_buf_tail];	// write char to TX DATA register
 	}
 }
 
 /* 
- * xio_putc_usb() - blocking and nonblocking char writer for USB device 
+ * xio_rs485_putc() - blocking and nonblocking char writer for USB device 
  *
  *	Compatible with stdio system - may be bound to a FILE handle
  *
@@ -189,41 +364,41 @@ ISR(USB_TX_ISR_vect)	//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
  *		  when the buffer was full. Using a local next_tx_buffer_head prevents this
  */
 
-int xio_putc_usb(const char c, FILE *stream)
+int xio_rs485_putc(const char c, FILE *stream)
 {
-	if ((USBx.next_tx_buf_head = USBx.tx_buf_head-1) == 0) { // advance head and wrap
-		USBx.next_tx_buf_head = TX_BUFFER_SIZE-1;		 // -1 avoids the off-by-one
+	if ((fr.next_tx_buf_head = fr.tx_buf_head-1) == 0) { // advance head and handle wrap
+		fr.next_tx_buf_head = TX_BUFFER_SIZE-1;		 // -1 avoids the off-by-one error
 	}
-	while(USBx.next_tx_buf_head == USBx.tx_buf_tail) {   // buf full. sleep or return
-		if (BLOCKING(USB.flags)) {
+	while(fr.next_tx_buf_head == fr.tx_buf_tail) {   // TX buffer full. sleep or return.
+		if (BLOCKING(fr.flags)) {
 			sleep_mode();
 		} else {
-			USB.sig = XIO_SIG_EAGAIN;
+			fr.sig = XIO_SIG_EAGAIN;
 			return(_FDEV_ERR);
 		}
 	};
 	// write to data register
-	USBx.tx_buf_head = USBx.next_tx_buf_head;	// accept the next buffer head value
-	USBx.tx_buf[USBx.tx_buf_head] = c;			// ...and write char to buffer
+	fr.tx_buf_head = fr.next_tx_buf_head;			// accept the next buffer head value
+	fr.tx_buf[fr.tx_buf_head] = c;				// ...and write char to buffer
 
-	if (CRLF(USB.flags) && (c == '\n')) {		// detect LF and add a CR
-		return xio_putc_usb('\r', stream);		// recursion.
+	if (CRLF(fr.flags) && (c == '\n')) {			// detect LF and add a CR
+		return xio_rs485_putc('\r', stream);		// recursion.
 	}
 
 	// dequeue the buffer if DATA register is ready
-	if (USBx.usart->STATUS & 0x20) {
-		if (USBx.tx_buf_head == USBx.tx_buf_tail) {	// buf might be empty if IRQ got it
+	if (fr.usart->STATUS & 0x20) {
+		if (fr.tx_buf_head == fr.tx_buf_tail) {	// buf might be empty if IRQ got it
 			return (0);
 		}
-		USB.flags |= XIO_FLAG_TX_MUTEX_bm;		// claim mutual exclusion from ISR
-		if (--(USBx.tx_buf_tail) == 0) {		// advance tail and wrap if needed
-			USBx.tx_buf_tail = TX_BUFFER_SIZE-1;// -1 avoids off-by-one error (OBOE)
+		fr.flags |= XIO_FLAG_TX_MUTEX_bm;		// claim mutual exclusion from ISR
+		if (--(fr.tx_buf_tail) == 0) {			// advance tail and wrap if needed
+			fr.tx_buf_tail = TX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
 		}
-		USBx.usart->DATA = USBx.tx_buf[USBx.tx_buf_tail];// write char to TX DATA reg
-		USB.flags &= ~XIO_FLAG_TX_MUTEX_bm;		// release mutual exclusion lock
+		fr.usart->DATA = fr.tx_buf[fr.tx_buf_tail];// write char to TX DATA register
+		fr.flags &= ~XIO_FLAG_TX_MUTEX_bm;		// release mutual exclusion lock
 	}
 	// enable interrupts regardless
-	USBx.usart->CTRLA = CTRLA_RXON_TXON;		// doesn't work if you just |= it
+	fr.usart->CTRLA = USART_CTRLA_RXON_TXON;	// doesn't work if you just |= it
 	PMIC_EnableLowLevel(); 						// enable USART TX interrupts
 	sei();										// enable global interrupts
 
@@ -231,14 +406,10 @@ int xio_putc_usb(const char c, FILE *stream)
 }
 
 /* 
- *  dispatch table for xio_usb_getc
+ * xio_rs485_getc character dispatch functions
  *
- *  Functions take no input but use static USB.c, USB.signals, and others
+ *  Functions take no input but use static fr.c, fr.signals, and others
  *  Returns c (may be translated depending on the function)
- *
- *  NOTE: As of build 203 the signal dispatchers (KILL, SHIFTOUT...) are unused. 
- *	Signal chars are trapped in the ISR and are never inserted into the RX queue
- *	Their dispatchers are left in for clarity and stubbed out
  */
 
 static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
@@ -264,7 +435,7 @@ static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 		_getc_char, 		//	16	10	DLE	(Data Link Escape)
 		_sig_RESUME, 		//	17	11	DC1 (XON) (Device Control 1) ^q	
 		_getc_char, 		//	18	12	DC2	(Device Control 2)
-		_sig_PAUSE,	 		//	19	13	DC3 (XOFF)(Device Control 3) ^s	
+		_sig_PAUSE,		 	//	19	13	DC3 (XOFF)(Device Control 3) ^s	
 		_getc_char, 		//	20	14	DC4	(Device Control 4)
 		_getc_char, 		//	21	15	NAK (Negativ Acknowledgemnt)	
 		_getc_char, 		//	22	16	SYN	(Synchronous Idle)
@@ -376,7 +547,7 @@ static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 };
 
 /*
- *  xio_getc_getc() - char reader for USB device
+ *  xio_rs485_getc() - char reader for USB device
  *
  *	Compatible with stdio system - may be bound to a FILE handle
  *
@@ -405,43 +576,43 @@ static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
  *		  character helper routines. See them for behaviors
  */
 
-int xio_getc_usb(FILE *stream)
+int xio_rs485_getc(FILE *stream)
 {
-	while (USBx.rx_buf_head == USBx.rx_buf_tail) {	// RX ISR buffer empty
-		if (BLOCKING(USB.flags)) {
+	while (fr.rx_buf_head == fr.rx_buf_tail) {	// RX ISR buffer empty
+		if (BLOCKING(fr.flags)) {
 			sleep_mode();
 		} else {
-			USB.sig = XIO_SIG_EAGAIN;
+			fr.sig = XIO_SIG_EAGAIN;
 			return(_FDEV_ERR);
 		}
 	}
-	if (--(USBx.rx_buf_tail) == 0) {				// advance RX tail (RXQ read pointer)
-		USBx.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
+	if (--(fr.rx_buf_tail) == 0) {				// advance RX tail (RXQ read pointer)
+		fr.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
 	}
-	USB.c = (USBx.rx_buf[USBx.rx_buf_tail] & 0x007F);	// get char from RX buffer & mask MSB
+	fr.c = (fr.rx_buf[fr.rx_buf_tail] & 0x007F);	// get char from RX buffer & mask MSB
 	// 	call action procedure from dispatch table in FLASH (see xio.h for typedef)
-	return (((fptr_int_void)(pgm_read_word(&getcFuncs[USB.c])))());
+	return (((fptr_int_void)(pgm_read_word(&getcFuncs[fr.c])))());
 	//return (getcFuncs[c]()); // call action procedure from dispatch table in RAM
 }
 
-/* xio_usb_getc helper routines */
+/* xio_rs485_getc helper routines */
 
 static int _getc_char(void)
 {
-	if (ECHO(USB.flags)) xio_putc_usb(USB.c, stdout);
-	return(USB.c);
+	if (ECHO(fr.flags)) xio_rs485_putc(fr.c, stdout);
+	return(fr.c);
 }
 
 static int _getc_NEWLINE(void)		// convert CRs and LFs to newlines if line mode
 {
-	if (LINEMODE(USB.flags)) USB.c = '\n';
-	if (ECHO(USB.flags)) xio_putc_usb(USB.c, stdout);
-	return(USB.c);
+	if (LINEMODE(fr.flags)) fr.c = '\n';
+	if (ECHO(fr.flags)) xio_rs485_putc(fr.c, stdout);
+	return(fr.c);
 }
 
 static int _getc_SEMICOLON(void)
 {
-	if (SEMICOLONS(USB.flags)) {
+	if (SEMICOLONS(fr.flags)) {
 		return (_getc_NEWLINE());			// if semi mode treat as an EOL
 	} 
 	return (_getc_char());					// else treat as any other character
@@ -449,20 +620,15 @@ static int _getc_SEMICOLON(void)
 
 static int _getc_DELETE(void)				// can't handle a delete very well
 {
-	USB.sig = XIO_SIG_DELETE;
+	fr.sig = XIO_SIG_DELETE;
 	return(_FDEV_ERR);
 }
 
-
 /* 
- *  dispatch table for xio_readln_usb
+ * xio_rs485_readln character dispatch functions
  *
- *  Functions take no input but use static 'c', USB.signals, and others
+ *  Functions take no input but use static 'c', fr.signals, and others
  *  Returns c (may be translated depending on the function)
- *
- *  NOTE: As of build 203 the signal dispatchers (KILL, SHIFTOUT...) are unused. 
- *	Signal chars are trapped in the ISR and are never inserted into the RX queue
- *	Their dispatchers are left in for clarity and stubbed out
  */
 
 static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
@@ -600,78 +766,76 @@ static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 };
 
 /* 
- *	xio_readln_usb() - main loop task for USB device
+ *	xio_rs485_readln() - main loop task for USB device
  *
- *	Read a complete (newline terminated) line from the USB device. 
- *	Retains line context across calls - so it can be called multiple times.
- *	Reads as many characters as it can until any of the following is true:
+ *	Non-blocking, run-to-completion task for handling incoming data from USB port.
  *
- *	  - RX buffer is empty on entry (return TG_EAGAIN)
- *	  - no more chars to read from RX buffer (return TG_EAGAIN)
- *	  - read would cause output buffer overflow (return TG_BUFFER_FULL)
- *	  - read returns complete line (returns TG_OK)
+ *	Runs non-blocking (port scan) and retains line context across calls.
+ *  Should be called each time a character is received by the RX ISR, but can be 
+ *	called randomly and multiple times without damage. 
  *
- *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
+ *	Reads a complete (newline terminated) line from the USB device and invokes
+ *	the registered line handler function once line is complete.
+ *
+ *	Traps signals (e.g. ^c) and dispatches to registered signal handler(s).
+ *	Signals leave the line buffer intact, so it either can continue to be collected
+ *	of it should be wiped.
+ *
+ *  Performs the following functions:
+ *		- read character from RX buffer
+ *		- strip signals and dispatch them to signal handler
+ *		- collect complete line and pass to line handler function
+ *		- trap buffer overflow condition and return an error
+ *
+ *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
  */
 
-int xio_readln_usb()
+int xio_rs485_readln(char *buf, uint8_t size)
 {
-//	uint8_t status = 0;
-
-	if (!IN_LINE(USB.flags)) {					// first time thru initializations
-		USB.len = 0;							// zero buffer
-		USB.status = 0;
-		USB.sig = XIO_SIG_OK;					// reset signal register
-		USB.flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
+	if (!IN_LINE(fr.flags)) {					// first time thru initializations
+		fr.len = 0;							// zero buffer
+		fr.size = size;
+		fr.buf = buf;
+		fr.sig = XIO_SIG_OK;					// no signal action
+		fr.flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
 	}
-	while (TRUE) { 
-		switch (USB.status = _xio_usb_readchar(USB.buf, USB.size)) {
-			case (TG_BUFFER_EMPTY): return (TG_EAGAIN); break;	// empty condition
-			case (TG_BUFFER_FULL): return (USB.status); break;	// overrun error
-			case (TG_EOL): return (TG_OK); break;				// got completed line
-			case (TG_EAGAIN): break;							// loop
-		}
+	if (fr.rx_buf_head == fr.rx_buf_tail) {		// RX ISR buffer empty
+//		fr.sig = XIO_SIG_WOULDBLOCK;
+		return(TG_EAGAIN);
 	}
+	if (--(fr.rx_buf_tail) == 0) {				// advance RX tail (RXQ read pointer)
+		fr.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
+	}
+	fr.c = (fr.rx_buf[fr.rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
+	return (((fptr_int_void)(pgm_read_word(&readlnFuncs[fr.c])))()); // dispatch on character
 }
 
-int _xio_usb_readchar(char *buf, uint8_t len)
-{
-	if (USBx.rx_buf_head == USBx.rx_buf_tail) {	// RX ISR buffer empty
-		return(TG_BUFFER_EMPTY);
-	}
-	if (--(USBx.rx_buf_tail) == 0) {			// advance RX tail (RX q read ptr)
-		USBx.rx_buf_tail = RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
-	}
-	USB.c = (USBx.rx_buf[USBx.rx_buf_tail] & 0x007F); // get char from RX Q & mask MSB
-	return (((fptr_int_void)(pgm_read_word(&readlnFuncs[USB.c])))()); // dispatch char
-}
-
-/* xio_usb_readln helper routines */
+/* xio_rs485_readln helper routines */
 
 static int _readln_char(void)
 {
-	if (USB.len > USB.size) {						// trap buffer overflow
-		USB.sig = XIO_SIG_EOL;
-		USB.buf[USB.size] = NUL;					// size is zero based
+	if (fr.len > fr.size) {					// trap buffer overflow
+		fr.sig = XIO_SIG_EOL;
+		fr.buf[fr.size] = NUL;					// fr.len is zero based
 		return (TG_BUFFER_FULL);
 	}
-	USB.buf[USB.len++] = USB.c;
-	if (ECHO(USB.flags)) xio_putc_usb(USB.c, stdout);// conditional echo
-	return (TG_EAGAIN);							// line is still in process
+	fr.buf[fr.len++] = fr.c;
+	if (ECHO(fr.flags)) xio_rs485_putc(fr.c, stdout);// conditional echo
+	return (TG_EAGAIN);						// line is still in process
 }
 
 static int _readln_NEWLINE(void)				// handles any valid newline char
 {
-	USB.sig = XIO_SIG_EOL;
-	USB.buf[USB.len] = NUL;
-	USB.flags &= ~XIO_FLAG_IN_LINE_bm;			// clear in-line state (reset)
-	if (ECHO(USB.flags)) xio_putc_usb('\n',stdout);// echo a newline
-	return (TG_EOL);							// return for end-of-line
+	fr.sig = XIO_SIG_EOL;
+	fr.buf[fr.len] = NUL;
+	fr.flags &= ~XIO_FLAG_IN_LINE_bm;			// clear in-line state (reset)
+	if (ECHO(fr.flags)) xio_rs485_putc('\n',stdout);// echo a newline
+	return 0;
 }
 
 static int _readln_SEMICOLON(void)				// semicolon is a conditional newline
 {
-	if (SEMICOLONS(USB.flags)) {
+	if (SEMICOLONS(fr.flags)) {
 		return (_readln_NEWLINE());				// if semi mode treat as an EOL
 	} else {
 		return (_readln_char());				// else treat as any other character
@@ -680,14 +844,13 @@ static int _readln_SEMICOLON(void)				// semicolon is a conditional newline
 
 static int _readln_DELETE(void)
 {
-	if (--USB.len >= 0) {
-		if (ECHO(USB.flags)) xio_putc_usb(USB.c, stdout);
+	if (--fr.len >= 0) {
+		if (ECHO(fr.flags)) xio_rs485_putc(fr.c, stdout);
 	} else {
-		USB.len = 0;
+		fr.len = 0;
 	}
 	return (TG_EAGAIN);							// line is still in process
 }
-
 
 /*
  * Signal handlers. These are vestigal stubs that have no effect.
@@ -695,18 +858,31 @@ static int _readln_DELETE(void)
 
 static int _sig_KILL(void)
 {
-	USB.sig = XIO_SIG_KILL;
+	fr.sig = XIO_SIG_KILL;
 	return(_FDEV_ERR);
 }
 
 static int _sig_PAUSE(void)
 {
-	USB.sig = XIO_SIG_PAUSE;
+	fr.sig = XIO_SIG_PAUSE;
 	return(_FDEV_ERR);
 }
 
 static int _sig_RESUME(void)
 {
-	USB.sig = XIO_SIG_RESUME;
+	fr.sig = XIO_SIG_RESUME;
 	return(_FDEV_ERR);
 }
+/*
+static int _sig_SHIFTOUT(void)
+{
+	fr.sig = XIO_SIG_SHIFTOUT;
+	return(_FDEV_ERR);
+}
+
+static int _sig_SHIFTIN(void)
+{
+	fr.sig = XIO_SIG_SHIFTIN;
+	return(_FDEV_ERR);
+}
+*/

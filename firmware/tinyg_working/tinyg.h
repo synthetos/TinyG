@@ -31,7 +31,6 @@
 
 #define TINYG_VERSION "build 203"
 #define EEPROM_DATA_VERSION 100	// Used to migrate old data during firmware upgrades
-#define CHAR_BUFFER_SIZE 80		// unified buffer size. 255 maximum.
 
 // Constants from Grbl
 #define MM_PER_ARC_SEGMENT 0.01
