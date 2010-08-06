@@ -610,7 +610,7 @@ int xio_readln_rs485(char *buf, uint8_t len)
 		RS.flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
 	}
 	if (RSx.rx_buf_head == RSx.rx_buf_tail) {	// RX ISR buffer empty
-//		RS.sig = XIO_SIG_WOULDBLOCK;
+//		RS.sig = XIO_SIG_EAGAIN;
 		return(TG_EAGAIN);
 	}
 	if (--(RSx.rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)

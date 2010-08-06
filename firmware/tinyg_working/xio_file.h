@@ -56,16 +56,21 @@
 
 #include <avr/pgmspace.h>
 
+/* FILE DEVICE CONFIGS */
+
+// PGM device
+#define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
+
 /*
  * Global Scope Functions
  */
 
-void xio_pgm_init(uint16_t control);			// init program memory device
-FILE * xio_pgm_open(const prog_char * addr);	// open a memory string for read
-int8_t xio_pgm_control(uint16_t control, int16_t arg); // set flags
-int xio_pgm_putc(char c, FILE *stream);			// always returns ERROR
-int xio_pgm_getc(FILE *stream);					// get a character
-int xio_pgm_readln(char *buf, uint8_t len);		// read line from program memory
+void xio_init_pgm(uint16_t control);			// init program memory device
+FILE * xio_open_pgm(const prog_char * addr);	// open a memory string for read
+//int8_t xio_pgm_control(uint16_t control, int16_t arg); // set flags
+int xio_putc_pgm(char c, FILE *stream);			// always returns ERROR
+int xio_getc_pgm(FILE *stream);					// get a character
+int xio_readln_pgm(char *buf, uint8_t len);		// read line from program memory
 
 extern FILE dev_pgm;							// used to return a pointer on open()
 

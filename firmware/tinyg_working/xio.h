@@ -63,10 +63,9 @@ enum xioDevice {				// device enumerations
 #define CHAR_BUFFER_SIZE 80		// common text buffer size (255 max)
 //#define RX_BUFFER_SIZE 255	// USART ISR RX buffer size (255 max)
 
-/* FILE DEVICES */
-
-// PGM device
-#define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
+/* Device configurations */
+// USART devices: See xio_usart.h for USART-based device configs
+// FILE devices:  See xio_file/h for FILE-based device configs
 
 /*
  * xio_control values
@@ -211,10 +210,6 @@ void xio_signal_etx(void);			// ^c signal handler
 
 
 FILE *stddev;						// a convenient alias for stdin. stdout, stderr
-
-
-
-
 
 
 /**** NOTES ON XIO ****
