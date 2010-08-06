@@ -18,10 +18,10 @@
 #ifndef xio_usart_h
 #define xio_usart_h
 
-/* USART DEVICE HARDWARE CONFIGS */
+/* USART DEVICE CONFIGS */
 
-// RS485 device
-#define RS485_INIT_bm (XIO_RDWR | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_BAUD_115200)
+// RS485 device configuration
+#define RS485_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_BAUD_115200)
 
 #define RS485_USART USARTC1					// RS485 usart
 #define RS485_RX_ISR_vect USARTC1_RXC_vect 	// (RX) reception complete IRQ
@@ -39,8 +39,8 @@
 #define RS485_OUTSET_bm (RS485_TX_bm)							// outputs init'd to 1
 
 
-// USB device
-#define USB_INIT_bm (XIO_RDWR | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200)
+// USB device configuration
+#define USB_INIT_bm (XIO_RDWR |XIO_BLOCK |  XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200)
 
 #define USB_USART USARTC0					// USB usart
 #define USB_RX_ISR_vect USARTC0_RXC_vect 	// (RX) reception complete IRQ
@@ -59,7 +59,7 @@
 
 
 // TTL device (Arduino)
-#define TTL_INIT_bm (XIO_RDWR | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200)
+#define TTL_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200)
 
 #define TTL_USART USARTC0					// Arduino usart
 #define TTL_PORT PORTC						// port where the USART is located

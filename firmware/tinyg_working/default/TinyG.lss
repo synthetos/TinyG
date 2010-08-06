@@ -10619,7 +10619,7 @@ void xio_init(void)
     6bb8:	80 83       	st	Z, r24
 	xio_init_usart(i, RS485_INIT_bm, &RS485_USART, &RS485_PORT, 
     6bba:	89 81       	ldd	r24, Y+1	; 0x01
-    6bbc:	65 e3       	ldi	r22, 0x35	; 53
+    6bbc:	65 e7       	ldi	r22, 0x75	; 117
     6bbe:	75 e1       	ldi	r23, 0x15	; 21
     6bc0:	40 eb       	ldi	r20, 0xB0	; 176
     6bc2:	58 e0       	ldi	r21, 0x08	; 8
@@ -10862,7 +10862,7 @@ void xio_init(void)
     6d8a:	80 83       	st	Z, r24
 	xio_init_usart(i, USB_INIT_bm, &USB_USART, &USB_PORT, 
     6d8c:	89 81       	ldd	r24, Y+1	; 0x01
-    6d8e:	65 e3       	ldi	r22, 0x35	; 53
+    6d8e:	65 e7       	ldi	r22, 0x75	; 117
     6d90:	75 e5       	ldi	r23, 0x55	; 85
     6d92:	40 ea       	ldi	r20, 0xA0	; 160
     6d94:	58 e0       	ldi	r21, 0x08	; 8
@@ -12418,7 +12418,7 @@ void tg_init()
     76f2:	0e 94 b2 3c 	call	0x7964	; 0x7964 <_tg_set_mode>
 	tg.state = TG_READY_UNPROMPTED;
     76f6:	10 92 83 21 	sts	0x2183, r1
-	tg.len = sizeof (tg.buf);
+	tg.len = sizeof(tg.buf);
     76fa:	80 e5       	ldi	r24, 0x50	; 80
     76fc:	80 93 8a 21 	sts	0x218A, r24
 
@@ -16965,7 +16965,7 @@ int xio_readln_rs485(char *buf, uint8_t len)
     958a:	80 91 2e 23 	lds	r24, 0x232E
     958e:	98 17       	cp	r25, r24
     9590:	29 f4       	brne	.+10     	; 0x959c <xio_readln_rs485+0x58>
-//		RS.sig = XIO_SIG_WOULDBLOCK;
+//		RS.sig = XIO_SIG_EAGAIN;
 		return(TG_EAGAIN);
     9592:	81 e0       	ldi	r24, 0x01	; 1
     9594:	90 e0       	ldi	r25, 0x00	; 0

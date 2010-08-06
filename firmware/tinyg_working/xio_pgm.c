@@ -31,33 +31,8 @@
 // pre-allocated stdio FILE struct for PGM - declared extern in the header file
 //FILE dev_pgm = FDEV_SETUP_STREAM(NULL, xio_pgm_getc, _FDEV_SETUP_RW);
 
-/*
- * Local Scope Data and Functions
- */
-
-// define and allocate local (static) control struct for the device
-/*
-struct xioPGM {
-	// common struct variables (same for all xio structs)
-	uint16_t flags;						// control flags
-	uint8_t status;						// completion status 
-	uint8_t sig;						// signal or error value
-	uint8_t c;							// line buffer character temp
-	uint8_t len;						// line buffer pointer
-	uint8_t size;						// line buffer maximum length (zero based)
-//	int (*sig_func)(uint8_t sig);		// pointer to signal handler function
-//	int (*line_func)(char * buf);		// pointer to line handler function
-	char *buf;							// pointer to input line buffer
-
-	// pgm device specific variables
-	char * pgmbase_P;					// base location in memory
-	uint16_t idx;						// index into file
-};
-struct xioPGM fpgm;						// allocate "file" control struct
-*/
-
 /* 
- *	xio_pgm_init() - initialize and set controls for program memory device 
+ *	xio_init_pgm() - initialize and set controls for program memory device 
  *
  *	Control		   Arg	  Default		Notes
  *	
@@ -181,13 +156,13 @@ int xio_getc_pgm(FILE *stream)
 }
 
 /* 
- *	xio_pgm_readln() - main loop task for program memory device
+ *	xio_readln_pgm() - main loop task for program memory device
  *
  *	Non-blocking, run-to-completion return a line from memory
  *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
  */
 
-int xio_pgm_readln(char *buf, uint8_t len)
+int xio_readln_pgm(char *buf, uint8_t len)
 {
 /*
 	if (!(fpgm.pgmbase_P)) {					// return error if no file is open

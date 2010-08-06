@@ -123,8 +123,6 @@ struct tgController {					// main controller struct
 };
 static struct tgController tg;
 
-#define TG_FLAG_PROMPTS_bm (1<<0)		// prompt enabled if set
-
 enum tgMode {
 	TG_CONTROL_MODE,					// control mode only. No other modes active
 	TG_CONFIG_MODE,						// read and set configurations
@@ -138,6 +136,8 @@ enum tgControllerState {				// command execution state
 	TG_READY_PROMPTED,					// ready for input, prompt has been sent
 	TG_STATE_MAX
 };
+
+#define TG_FLAG_PROMPTS_bm (1<<0)		// prompt enabled if set
 
 static int _tg_read_next_line(void);
 static void _tg_prompt(void);
@@ -156,7 +156,7 @@ void tg_init()
 	_tg_set_source(tg.default_src);			// set initial active source
 	_tg_set_mode(TG_CONTROL_MODE);			// set initial operating mode
 	tg.state = TG_READY_UNPROMPTED;
-	tg.len = sizeof (tg.buf);
+	tg.len = sizeof(tg.buf);
 
 	// version string
 	printf_P(PSTR("TinyG - Version %S\n"), (PSTR(TINYG_VERSION)));

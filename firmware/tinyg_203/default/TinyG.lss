@@ -21,11 +21,11 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING
   8 .debug_frame  00000af0  00000000  00000000  0001f1c4  2**2
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_str    000024b9  00000000  00000000  0001fcb4  2**0
+  9 .debug_str    000024f9  00000000  00000000  0001fcb4  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_loc    00003af9  00000000  00000000  0002216d  2**0
+ 10 .debug_loc    00003af9  00000000  00000000  000221ad  2**0
                   CONTENTS, READONLY, DEBUGGING
- 11 .debug_ranges 00000128  00000000  00000000  00025c66  2**0
+ 11 .debug_ranges 00000128  00000000  00000000  00025ca6  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -872,62 +872,62 @@ Disassembly of section .text:
 
 00001f74 <main>:
 
-
 int main(void) 
 {
 	/* These inits are order dependent */
 	cli();
-    1f74:	f8 94       	cli
 	xmega_init();				// xmega setup
-    1f76:	0e 94 b1 1b 	call	0x3762	; 0x3762 <xmega_init>
+    1f74:	f8 94       	cli
 	xio_init();					// xmega io subsystem
+    1f76:	0e 94 b1 1b 	call	0x3762	; 0x3762 <xmega_init>
+
     1f7a:	0e 94 70 28 	call	0x50e0	; 0x50e0 <xio_init>
-
 	cfg_init();					// get config record from eeprom
-    1f7e:	0e 94 a8 17 	call	0x2f50	; 0x2f50 <cfg_init>
 	st_init(); 					// stepper subsystem
-    1f82:	0e 94 30 24 	call	0x4860	; 0x4860 <st_init>
+    1f7e:	0e 94 a8 17 	call	0x2f50	; 0x2f50 <cfg_init>
 	ls_init();					// limit switches
-    1f86:	0e 94 05 33 	call	0x660a	; 0x660a <ls_init>
+    1f82:	0e 94 30 24 	call	0x4860	; 0x4860 <st_init>
 	mv_init();					// move buffers
-    1f8a:	0e 94 e1 30 	call	0x61c2	; 0x61c2 <mv_init>
+    1f86:	0e 94 05 33 	call	0x660a	; 0x660a <ls_init>
 	mc_init();					// motion control subsystem
-    1f8e:	0e 94 da 1b 	call	0x37b4	; 0x37b4 <mc_init>
+    1f8a:	0e 94 e1 30 	call	0x61c2	; 0x61c2 <mv_init>
 	spindle_init();				// spindle controller
-    1f92:	0e 94 14 24 	call	0x4828	; 0x4828 <spindle_init>
+    1f8e:	0e 94 da 1b 	call	0x37b4	; 0x37b4 <mc_init>
 	en_init();					// encoders
-    1f96:	0e 94 4f 1b 	call	0x369e	; 0x369e <en_init>
+    1f92:	0e 94 14 24 	call	0x4828	; 0x4828 <spindle_init>
 	gc_init();					// gcode-parser
-    1f9a:	0e 94 09 10 	call	0x2012	; 0x2012 <gc_init>
+    1f96:	0e 94 4f 1b 	call	0x369e	; 0x369e <en_init>
 	dd_init();					// direct drive commands
-    1f9e:	0e 94 dd 30 	call	0x61ba	; 0x61ba <dd_init>
+    1f9a:	0e 94 09 10 	call	0x2012	; 0x2012 <gc_init>
 	tg_init();					// tinyg parsers
-    1fa2:	0e 94 b4 30 	call	0x6168	; 0x6168 <tg_init>
+    1f9e:	0e 94 dd 30 	call	0x61ba	; 0x61ba <dd_init>
 
+    1fa2:	0e 94 b4 30 	call	0x6168	; 0x6168 <tg_init>
 	PMIC_SetVectorLocationToApplication();  // as opposed to boot rom
-    1fa6:	0e 94 16 28 	call	0x502c	; 0x502c <PMIC_SetVectorLocationToApplication>
 	PMIC_EnableLowLevel();		// enable TX interrupts
+    1fa6:	0e 94 16 28 	call	0x502c	; 0x502c <PMIC_SetVectorLocationToApplication>
+	PMIC_EnableMediumLevel(); 	// enable RX interrupts
     1faa:	e0 ea       	ldi	r30, 0xA0	; 160
     1fac:	f0 e0       	ldi	r31, 0x00	; 0
     1fae:	80 91 a2 00 	lds	r24, 0x00A2
     1fb2:	81 60       	ori	r24, 0x01	; 1
     1fb4:	82 83       	std	Z+2, r24	; 0x02
-	PMIC_EnableMediumLevel(); 	// enable RX interrupts
+	PMIC_EnableHighLevel();		// enable stepper timer interrupts
     1fb6:	80 91 a2 00 	lds	r24, 0x00A2
     1fba:	82 60       	ori	r24, 0x02	; 2
     1fbc:	82 83       	std	Z+2, r24	; 0x02
-	PMIC_EnableHighLevel();		// enable stepper timer interrupts
+	sei();						// enable global interrupts
     1fbe:	80 91 a2 00 	lds	r24, 0x00A2
     1fc2:	84 60       	ori	r24, 0x04	; 4
     1fc4:	82 83       	std	Z+2, r24	; 0x02
-	sei();						// enable global interrupts
+
     1fc6:	78 94       	sei
-//	xio_usb_queue_RX_string("f\n");
 //	xio_usb_queue_RX_string("?\n");
 //	xio_usb_queue_RX_string("g0x10y10z25\n");
 
 	for(;;){
 		tg_controller();
+	}
     1fc8:	0e 94 26 30 	call	0x604c	; 0x604c <tg_controller>
     1fcc:	fd cf       	rjmp	.-6      	; 0x1fc8 <main+0x54>
 
@@ -2686,9 +2686,9 @@ int _gc_compute_arc()
     2bdc:	0e 94 9f 1e 	call	0x3d3e	; 0x3d3e <mc_arc>
 	// has completed the arc. So the endpoint should be passed to the generator and
 	// executed there.
-//	gc.status = mc_line_nonblock(gc.target[X_AXIS], gc.target[Y_AXIS], gc.target[Z_AXIS], 
-//								(gc.inverse_feed_rate_mode) ? gc.inverse_feed_rate : 
-//								 gc.feed_rate, gc.inverse_feed_rate_mode);
+//	gc.status = mc_line(gc.target[X_AXIS], gc.target[Y_AXIS], gc.target[Z_AXIS], 
+//					   (gc.inverse_feed_rate_mode) ? gc.inverse_feed_rate : 
+//						gc.feed_rate, gc.inverse_feed_rate_mode);
 	return (gc.status);
     2be0:	2d b7       	in	r18, 0x3d	; 61
     2be2:	3e b7       	in	r19, 0x3e	; 62
@@ -7628,12 +7628,12 @@ void PMIC_SetVectorLocationToApplication( void )
     503a:	08 95       	ret
 
 0000503c <xio_fget_ln>:
- *	dev		XIO device enumeration
- */
-
-int xio_fget_ln(uint8_t dev, char *buf, uint8_t len)
-{
-	switch (dev) {
+		d->flags |= XIO_FLAG_RD_bm;
+	}
+	if (control & XIO_WR) {
+		d->flags |= XIO_FLAG_WR_bm;
+	}
+	if (control & XIO_BLOCK) {
     503c:	81 30       	cpi	r24, 0x01	; 1
     503e:	61 f0       	breq	.+24     	; 0x5058 <xio_fget_ln+0x1c>
     5040:	81 30       	cpi	r24, 0x01	; 1
@@ -7648,37 +7648,37 @@ int xio_fget_ln(uint8_t dev, char *buf, uint8_t len)
     5052:	20 e0       	ldi	r18, 0x00	; 0
     5054:	30 e0       	ldi	r19, 0x00	; 0
     5056:	0f c0       	rjmp	.+30     	; 0x5076 <xio_fget_ln+0x3a>
-		case (XIO_DEV_NULL): return (TG_OK);
-		case (XIO_DEV_USB): return (xio_usb_readln(buf, len));
+		d->flags |= XIO_FLAG_BLOCK_bm;
+	}
     5058:	cb 01       	movw	r24, r22
     505a:	64 2f       	mov	r22, r20
     505c:	0e 94 42 2b 	call	0x5684	; 0x5684 <xio_usb_readln>
     5060:	09 c0       	rjmp	.+18     	; 0x5074 <xio_fget_ln+0x38>
-		case (XIO_DEV_RS485): return (xio_rs485_readln(buf, len));
+	if (control & XIO_NOBLOCK) {
     5062:	cb 01       	movw	r24, r22
     5064:	64 2f       	mov	r22, r20
     5066:	0e 94 fa 35 	call	0x6bf4	; 0x6bf4 <xio_rs485_readln>
     506a:	04 c0       	rjmp	.+8      	; 0x5074 <xio_fget_ln+0x38>
-//		case (XIO_DEV_AUX): return (xio_aux_readln(buf, len));
-		case (XIO_DEV_PGM): return (xio_pgm_readln(buf, len));
+		d->flags &= ~XIO_FLAG_BLOCK_bm;
+	}
     506c:	cb 01       	movw	r24, r22
     506e:	64 2f       	mov	r22, r20
     5070:	0e 94 60 2f 	call	0x5ec0	; 0x5ec0 <xio_pgm_readln>
     5074:	9c 01       	movw	r18, r24
-		default: return (TG_UNRECOGNIZED_DEVICE);
+	if (control & XIO_ECHO) {
+		d->flags |= XIO_FLAG_ECHO_bm;
 	}
-	return (TG_ERROR);		// never should hit this
-}
+	if (control & XIO_NOECHO) {
     5076:	c9 01       	movw	r24, r18
     5078:	08 95       	ret
 
 0000507a <xio_control>:
- * xio_control() - common entry point for device control functions
- */
-
-int8_t xio_control(uint8_t dev, const uint16_t control, const int16_t arg)
+/*
+int8_t xio_dev_init(uint8_t dev, const int16_t arg)
 {
 	switch (dev) {
+		case (XIO_DEV_RS485): xio_rs485_init(arg); return (TG_OK);
+		case (XIO_DEV_USB): xio_usb_init(arg); return (TG_OK);
     507a:	81 30       	cpi	r24, 0x01	; 1
     507c:	51 f0       	breq	.+20     	; 0x5092 <xio_control+0x18>
     507e:	81 30       	cpi	r24, 0x01	; 1
@@ -7691,35 +7691,35 @@ int8_t xio_control(uint8_t dev, const uint16_t control, const int16_t arg)
     508c:	08 95       	ret
     508e:	80 e0       	ldi	r24, 0x00	; 0
     5090:	08 95       	ret
-		case (XIO_DEV_NULL): return (TG_OK);
-		case (XIO_DEV_USB): return (xio_usb_control(control, arg));
+//		case (XIO_DEV_AUX): xio_aux_init(arg); return (TG_OK);
+		case (XIO_DEV_PGM): xio_pgm_init(arg); return (TG_OK);
     5092:	cb 01       	movw	r24, r22
     5094:	ba 01       	movw	r22, r20
     5096:	0e 94 55 29 	call	0x52aa	; 0x52aa <xio_usb_control>
     509a:	08 95       	ret
-		case (XIO_DEV_RS485): return (xio_rs485_control(control, arg));
+		default: return (TG_UNRECOGNIZED_DEVICE);
     509c:	cb 01       	movw	r24, r22
     509e:	ba 01       	movw	r22, r20
     50a0:	0e 94 38 34 	call	0x6870	; 0x6870 <xio_rs485_control>
     50a4:	08 95       	ret
-//		case (XIO_DEV_AUX): return (xio_aux_control(control, arg));
-		case (XIO_DEV_PGM): return (xio_pgm_control(control, arg));
+	}
+	return (TG_ERROR);		// never should hit this
     50a6:	cb 01       	movw	r24, r22
     50a8:	ba 01       	movw	r22, r20
     50aa:	0e 94 ff 2e 	call	0x5dfe	; 0x5dfe <xio_pgm_control>
-		default: return (TG_UNRECOGNIZED_DEVICE);
-	}
-	return (TG_ERROR);		// never should hit this
 }
+*/
+
+/*
     50ae:	08 95       	ret
 
 000050b0 <xio_dev_init>:
- * xio_dev_init() - common entry point for device init functions
- */
+		USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
+	ds[i].dev_putc = &xio_putc_usb;
+	ds[i].dev_getc = &xio_getc_usb;
+	ds[i].dev_readln = &xio_readln_usb;
+	fdev_setup_stream(&(ds[i].fs), xio_putc_usb, xio_getc_usb, _FDEV_SETUP_RW);
 
-int8_t xio_dev_init(uint8_t dev, const int16_t arg)
-{
-	switch (dev) {
     50b0:	81 30       	cpi	r24, 0x01	; 1
     50b2:	41 f0       	breq	.+16     	; 0x50c4 <xio_dev_init+0x14>
     50b4:	81 30       	cpi	r24, 0x01	; 1
@@ -7730,25 +7730,25 @@ int8_t xio_dev_init(uint8_t dev, const int16_t arg)
     50be:	59 f0       	breq	.+22     	; 0x50d6 <xio_dev_init+0x26>
     50c0:	81 e1       	ldi	r24, 0x11	; 17
     50c2:	08 95       	ret
-		case (XIO_DEV_NULL): return (TG_OK);
-		case (XIO_DEV_USB): xio_usb_init(arg); return (TG_OK);
+	// do stdio bindings
+	stddev = &dev_usb;				// stddev is a convenience
     50c4:	cb 01       	movw	r24, r22
     50c6:	0e 94 9b 28 	call	0x5136	; 0x5136 <xio_usb_init>
     50ca:	03 c0       	rjmp	.+6      	; 0x50d2 <xio_dev_init+0x22>
-		case (XIO_DEV_RS485): xio_rs485_init(arg); return (TG_OK);
+	stdin = &dev_usb;				// define the console device
     50cc:	cb 01       	movw	r24, r22
     50ce:	0e 94 7d 33 	call	0x66fa	; 0x66fa <xio_rs485_init>
     50d2:	80 e0       	ldi	r24, 0x00	; 0
     50d4:	08 95       	ret
-//		case (XIO_DEV_AUX): xio_aux_init(arg); return (TG_OK);
-		case (XIO_DEV_PGM): xio_pgm_init(arg); return (TG_OK);
+	stdout = &dev_usb;				// ...
+	stderr = &dev_usb;				// ...
     50d6:	cb 01       	movw	r24, r22
     50d8:	0e 94 69 2e 	call	0x5cd2	; 0x5cd2 <xio_pgm_init>
     50dc:	80 e0       	ldi	r24, 0x00	; 0
-		default: return (TG_UNRECOGNIZED_DEVICE);
-	}
-	return (TG_ERROR);		// never should hit this
+
+	printf_P(PSTR("\n\n**** Xmega IO subsystem initialized ****\n"));
 }
+
     50de:	08 95       	ret
 
 000050e0 <xio_init>:
@@ -7756,42 +7756,42 @@ int8_t xio_dev_init(uint8_t dev, const int16_t arg)
 
 void xio_init(void)
 {	
-	// USB port defaults are:	XIO_RDWR | XIO_ECHO | XIO_CRLF - open additionally:
-	xio_usb_init(XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200);
+	uint8_t i=0;
+
     50e0:	85 e0       	ldi	r24, 0x05	; 5
     50e2:	90 e5       	ldi	r25, 0x50	; 80
     50e4:	0e 94 9b 28 	call	0x5136	; 0x5136 <xio_usb_init>
-
-	// RS485 port defaults are:	XIO_RDWR | XIO_ECHO | XIO_CRLF - open additionally:
-	xio_usb_init(XIO_LINEMODE | XIO_BAUD_115200);
+	// RS485 setup
+	i = XIO_DEV_RS485;
+	memset (&ds[i], 0, sizeof(struct xioDEVICE));
     50e8:	85 e0       	ldi	r24, 0x05	; 5
     50ea:	90 e1       	ldi	r25, 0x10	; 16
     50ec:	0e 94 9b 28 	call	0x5136	; 0x5136 <xio_usb_init>
-
-	// PGM file defaults are:	XIO_RD | XIO_BLOCK
-//	xio_pgm_init(XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS);
-	xio_pgm_init(XIO_ECHO | XIO_CRLF | XIO_LINEMODE);
+	ds[i].xio = &us[i];							// bind USART extended struct
+	ds[i].size = sizeof(ds[i].buf);
+	xio_init_usart(i, RS485_INIT_bm, &RS485_USART, &RS485_PORT, 
+		RS485_DIRCLR_bm,RS485_DIRSET_bm,RS485_OUTCLR_bm,RS485_OUTSET_bm);
     50f0:	80 e0       	ldi	r24, 0x00	; 0
     50f2:	95 e1       	ldi	r25, 0x15	; 21
     50f4:	0e 94 69 2e 	call	0x5cd2	; 0x5cd2 <xio_pgm_init>
-//	xio_pgm_init(XIO_LINEMODE);
-
-	stddev = &dev_usb;				// stddev is a convenience
+	ds[i].dev_putc = &xio_putc_rs485;
+	ds[i].dev_getc = &xio_getc_rs485;
+	ds[i].dev_readln = &xio_readln_rs485;
     50f8:	80 e0       	ldi	r24, 0x00	; 0
     50fa:	90 e2       	ldi	r25, 0x20	; 32
     50fc:	80 93 e4 24 	sts	0x24E4, r24
     5100:	90 93 e5 24 	sts	0x24E5, r25
-	stdin = &dev_usb;				// define the console device
+	fdev_setup_stream(&(ds[i].fs), xio_putc_rs485, xio_getc_rs485, _FDEV_SETUP_RW);
     5104:	80 93 3e 25 	sts	0x253E, r24
     5108:	90 93 3f 25 	sts	0x253F, r25
-	stdout = &dev_usb;				// ...
+
     510c:	80 93 40 25 	sts	0x2540, r24
     5110:	90 93 41 25 	sts	0x2541, r25
-	stderr = &dev_usb;				// ...
+	// USB setup
     5114:	80 93 42 25 	sts	0x2542, r24
     5118:	90 93 43 25 	sts	0x2543, r25
-
-	printf_P(PSTR("\n\n**** Xmega IO subsystem initialized ****\n"));
+	i = XIO_DEV_USB;
+	memset (&ds[i], 0, sizeof(struct xioDEVICE));
     511c:	0f 92       	push	r0
     511e:	0f 92       	push	r0
     5120:	8a e3       	ldi	r24, 0x3A	; 58
@@ -7803,173 +7803,173 @@ void xio_init(void)
     512c:	0e 94 34 49 	call	0x9268	; 0x9268 <printf_P>
     5130:	0f 90       	pop	r0
     5132:	0f 90       	pop	r0
-}
+	ds[i].xio = &us[i];							// bind USART extended struct
     5134:	08 95       	ret
 
 00005136 <xio_usb_init>:
- *
- *	XIO_BAUD_xxxxx <null>		One of the supported baud rate enums
- */
+	// activate flow control here or before it gets to this level
+}
 
-void xio_usb_init(const uint16_t control)
-{
+/*
+ * xio_usb_queue_RX_char() - fake ISR to put a char in the RX buffer
+ */
     5136:	9c 01       	movw	r18, r24
-	uint8_t baud = (uint8_t)(control & XIO_BAUD_gm);
+
     5138:	e8 2f       	mov	r30, r24
     513a:	ef 70       	andi	r30, 0x0F	; 15
-
-	// transfer control flags to internal flag bits
-	f.flags = XIO_FLAG_USB_DEFS_gm;		// set flags to defaults & initial state
+void xio_usb_queue_RX_char(const char c)
+{
+	// trap signals - do not insert into RX queue
     513c:	87 e3       	ldi	r24, 0x37	; 55
     513e:	90 e0       	ldi	r25, 0x00	; 0
     5140:	80 93 ad 21 	sts	0x21AD, r24
     5144:	90 93 ae 21 	sts	0x21AE, r25
-		f.flags |= XIO_FLAG_RD_bm;
+		USB.sig = XIO_SIG_KILL;					// set signal value
+		signal_etx();							// call app-specific signal handler
+		return;
 	}
-	if (control & XIO_WR) {
-		f.flags |= XIO_FLAG_WR_bm;
-	}
-	if (control & XIO_BLOCK) {
+
+	// normal path
     5148:	26 ff       	sbrs	r18, 6
     514a:	06 c0       	rjmp	.+12     	; 0x5158 <xio_usb_init+0x22>
-		f.flags |= XIO_FLAG_BLOCK_bm;
+	if ((--USBx.rx_buf_head) == 0) { 			// wrap condition
     514c:	87 e3       	ldi	r24, 0x37	; 55
     514e:	90 e0       	ldi	r25, 0x00	; 0
     5150:	80 93 ad 21 	sts	0x21AD, r24
     5154:	90 93 ae 21 	sts	0x21AE, r25
+		USBx.rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids the off-by-one error
 	}
-	if (control & XIO_NOBLOCK) {
     5158:	27 ff       	sbrs	r18, 7
     515a:	06 c0       	rjmp	.+12     	; 0x5168 <xio_usb_init+0x32>
-		f.flags &= ~XIO_FLAG_BLOCK_bm;
+	if (USBx.rx_buf_head != USBx.rx_buf_tail) {	// write char unless buffer full
     515c:	83 e3       	ldi	r24, 0x33	; 51
     515e:	90 e0       	ldi	r25, 0x00	; 0
     5160:	80 93 ad 21 	sts	0x21AD, r24
     5164:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_ECHO) {
+		USBx.rx_buf[USBx.rx_buf_head] = c;		// FAKE INPUT DATA
+		return;
     5168:	30 ff       	sbrs	r19, 0
     516a:	09 c0       	rjmp	.+18     	; 0x517e <xio_usb_init+0x48>
-		f.flags |= XIO_FLAG_ECHO_bm;
+	}
     516c:	80 91 ad 21 	lds	r24, 0x21AD
     5170:	90 91 ae 21 	lds	r25, 0x21AE
     5174:	80 61       	ori	r24, 0x10	; 16
     5176:	80 93 ad 21 	sts	0x21AD, r24
     517a:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_NOECHO) {
+	// buffer-full handling
+	if ((++USBx.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
     517e:	31 ff       	sbrs	r19, 1
     5180:	09 c0       	rjmp	.+18     	; 0x5194 <xio_usb_init+0x5e>
-		f.flags &= ~XIO_FLAG_ECHO_bm;
+		USBx.rx_buf_head = 1;
     5182:	80 91 ad 21 	lds	r24, 0x21AD
     5186:	90 91 ae 21 	lds	r25, 0x21AE
     518a:	8f 7e       	andi	r24, 0xEF	; 239
     518c:	80 93 ad 21 	sts	0x21AD, r24
     5190:	90 93 ae 21 	sts	0x21AE, r25
 	}
-	if (control & XIO_CRLF) {
+}
     5194:	32 ff       	sbrs	r19, 2
     5196:	09 c0       	rjmp	.+18     	; 0x51aa <xio_usb_init+0x74>
-		f.flags |= XIO_FLAG_CRLF_bm;
+
     5198:	80 91 ad 21 	lds	r24, 0x21AD
     519c:	90 91 ae 21 	lds	r25, 0x21AE
     51a0:	80 62       	ori	r24, 0x20	; 32
     51a2:	80 93 ad 21 	sts	0x21AD, r24
     51a6:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_NOCRLF) {
+/*
+ * xio_usb_queue_RX_string() - fake ISR to put a string in the RX buffer
     51aa:	33 ff       	sbrs	r19, 3
     51ac:	09 c0       	rjmp	.+18     	; 0x51c0 <xio_usb_init+0x8a>
-		f.flags &= ~XIO_FLAG_CRLF_bm;
+ */
     51ae:	80 91 ad 21 	lds	r24, 0x21AD
     51b2:	90 91 ae 21 	lds	r25, 0x21AE
     51b6:	8f 7d       	andi	r24, 0xDF	; 223
     51b8:	80 93 ad 21 	sts	0x21AD, r24
     51bc:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_LINEMODE) {
+
+void xio_usb_queue_RX_string(char *buf)
     51c0:	34 ff       	sbrs	r19, 4
     51c2:	09 c0       	rjmp	.+18     	; 0x51d6 <xio_usb_init+0xa0>
-		f.flags |= XIO_FLAG_LINEMODE_bm;
+{
     51c4:	80 91 ad 21 	lds	r24, 0x21AD
     51c8:	90 91 ae 21 	lds	r25, 0x21AE
     51cc:	80 64       	ori	r24, 0x40	; 64
     51ce:	80 93 ad 21 	sts	0x21AD, r24
     51d2:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_NOLINEMODE) {
+	char c;
+	uint8_t i=0;
     51d6:	35 ff       	sbrs	r19, 5
     51d8:	09 c0       	rjmp	.+18     	; 0x51ec <xio_usb_init+0xb6>
-		f.flags &= ~XIO_FLAG_LINEMODE_bm;
+
     51da:	80 91 ad 21 	lds	r24, 0x21AD
     51de:	90 91 ae 21 	lds	r25, 0x21AE
     51e2:	8f 7b       	andi	r24, 0xBF	; 191
     51e4:	80 93 ad 21 	sts	0x21AD, r24
     51e8:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_SEMICOLONS) {
+	while ((c = buf[i++]) != NUL) {
+		xio_usb_queue_RX_char(c);
     51ec:	36 ff       	sbrs	r19, 6
     51ee:	09 c0       	rjmp	.+18     	; 0x5202 <xio_usb_init+0xcc>
-		f.flags |= XIO_FLAG_SEMICOLONS_bm;
+	}
     51f0:	80 91 ad 21 	lds	r24, 0x21AD
     51f4:	90 91 ae 21 	lds	r25, 0x21AE
     51f8:	80 68       	ori	r24, 0x80	; 128
     51fa:	80 93 ad 21 	sts	0x21AD, r24
     51fe:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_NOSEMICOLONS) {
+}
+
     5202:	37 ff       	sbrs	r19, 7
     5204:	09 c0       	rjmp	.+18     	; 0x5218 <xio_usb_init+0xe2>
-		f.flags &= ~XIO_FLAG_SEMICOLONS_bm;
+/* 
     5206:	80 91 ad 21 	lds	r24, 0x21AD
     520a:	90 91 ae 21 	lds	r25, 0x21AE
     520e:	8f 77       	andi	r24, 0x7F	; 127
     5210:	80 93 ad 21 	sts	0x21AD, r24
     5214:	90 93 ae 21 	sts	0x21AE, r25
-	}
-
-	// character signals and error returns
-	f.sig = 0;
+ * USB_TX_ISR - USB transmitter interrupt (TX)
+ *
+ * The TX interrupt dilemma: TX interrupts occur when the USART DATA register is 
+ * empty (and the ISR must disable interrupts when nothing's left to read, or they 
     5218:	10 92 b0 21 	sts	0x21B0, r1
-	dev_usb.udata = &(f.sig);				// bind sig register to FILE struct
+ * keep firing). If the TX buffer is completely empty (TXCIF is set) then enabling
     521c:	80 eb       	ldi	r24, 0xB0	; 176
     521e:	91 e2       	ldi	r25, 0x21	; 33
     5220:	80 93 0c 20 	sts	0x200C, r24
     5224:	90 93 0d 20 	sts	0x200D, r25
-
-	// setup internal RX/TX buffers
-	f.rx_buf_head = 1;						// can't use location 0
+ * interrupts does no good. The USART won't interrupt and the TX circular buffer 
+ * never empties.
+ *
     5228:	81 e0       	ldi	r24, 0x01	; 1
     522a:	80 93 b7 21 	sts	0x21B7, r24
-	f.rx_buf_tail = 1;
+ * So we define a dequeue function that can be called from either the ISR or be 
     522e:	80 93 b6 21 	sts	0x21B6, r24
-	f.tx_buf_head = 1;
+ * called from the putc() if it detects TXCIF. Care should be taken to make sure 
     5232:	80 93 b9 21 	sts	0x21B9, r24
-	f.tx_buf_tail = 1;
+ * these two callers don't collide (like only enabling interrupts in putc() AFTER
     5236:	80 93 b8 21 	sts	0x21B8, r24
-	f.len = sizeof(f.buf);					// offset to zero
+ * the dequeue has occurred).
     523a:	82 e0       	ldi	r24, 0x02	; 2
     523c:	80 93 b3 21 	sts	0x21B3, r24
+ */
 
-	f.usart = &USB_USART;					// bind USART structure
     5240:	80 ea       	ldi	r24, 0xA0	; 160
     5242:	98 e0       	ldi	r25, 0x08	; 8
     5244:	80 93 e6 21 	sts	0x21E6, r24
     5248:	90 93 e7 21 	sts	0x21E7, r25
-	f.port = &USB_PORT;						// bind PORT structure
+ISR(USB_TX_ISR_vect)	//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
     524c:	80 e4       	ldi	r24, 0x40	; 64
     524e:	96 e0       	ldi	r25, 0x06	; 6
     5250:	80 93 e8 21 	sts	0x21E8, r24
     5254:	90 93 e9 21 	sts	0x21E9, r25
-
-	// baud rate and USART setup
-	if (baud == XIO_BAUD_UNSPECIFIED) {
+{
+	if (USBx.tx_buf_head == USBx.tx_buf_tail) {	// buffer empty - disable ints
+		USBx.usart->CTRLA = CTRLA_RXON_TXOFF;	// won't work if you just &= it
     5258:	ee 23       	and	r30, r30
     525a:	09 f4       	brne	.+2      	; 0x525e <xio_usb_init+0x128>
     525c:	e5 e0       	ldi	r30, 0x05	; 5
-		baud = XIO_BAUD_DEFAULT;
+//		PMIC_DisableLowLevel(); 				// disable USART TX interrupts
+		return;
 	}
-	f.usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
     525e:	8e 2f       	mov	r24, r30
     5260:	90 e0       	ldi	r25, 0x00	; 0
     5262:	fc 01       	movw	r30, r24
@@ -7981,7 +7981,7 @@ void xio_usb_init(const uint16_t control)
     526e:	16 96       	adiw	r26, 0x06	; 6
     5270:	ec 93       	st	X, r30
     5272:	16 97       	sbiw	r26, 0x06	; 6
-	f.usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
+	if (!TX_MUTEX(USB.flags)) {
     5274:	81 5d       	subi	r24, 0xD1	; 209
     5276:	98 4f       	sbci	r25, 0xF8	; 248
     5278:	fc 01       	movw	r30, r24
@@ -7989,53 +7989,53 @@ void xio_usb_init(const uint16_t control)
     527c:	17 96       	adiw	r26, 0x07	; 7
     527e:	8c 93       	st	X, r24
     5280:	17 97       	sbiw	r26, 0x07	; 7
-	f.usart->CTRLB = USART_TXEN_bm | USART_RXEN_bm; // enable tx and rx on USART
+		if (--(USBx.tx_buf_tail) == 0) {		// advance tail and wrap 
     5282:	88 e1       	ldi	r24, 0x18	; 24
     5284:	14 96       	adiw	r26, 0x04	; 4
     5286:	8c 93       	st	X, r24
     5288:	14 97       	sbiw	r26, 0x04	; 4
-	f.usart->CTRLA = USARTC0_CTRLA_RXON_TXON;		// enable tx and rx interrupts
+			USBx.tx_buf_tail = TX_BUFFER_SIZE-1;// -1 avoids off-by-one err (OBOE)
     528a:	81 e2       	ldi	r24, 0x21	; 33
     528c:	13 96       	adiw	r26, 0x03	; 3
     528e:	8c 93       	st	X, r24
-
-	f.port->DIRCLR = USB_RX_bm;	 			// clr RX pin as input
+		}
+		USBx.usart->DATA = USBx.tx_buf[USBx.tx_buf_tail]; // write to TX DATA reg
     5290:	e0 e4       	ldi	r30, 0x40	; 64
     5292:	f6 e0       	ldi	r31, 0x06	; 6
     5294:	84 e0       	ldi	r24, 0x04	; 4
     5296:	82 83       	std	Z+2, r24	; 0x02
-	f.port->DIRSET = USB_TX_bm; 			// set TX pin as output
+	}
     5298:	88 e0       	ldi	r24, 0x08	; 8
     529a:	81 83       	std	Z+1, r24	; 0x01
-	f.port->OUTSET = USB_TX_bm;				// set TX HI as initial state
+}
     529c:	85 83       	std	Z+5, r24	; 0x05
-	f.port->DIRCLR = USB_CTS_bm; 			// set CTS pin as input
+
     529e:	81 e0       	ldi	r24, 0x01	; 1
     52a0:	82 83       	std	Z+2, r24	; 0x02
-	f.port->DIRSET = USB_RTS_bm; 			// set RTS pin as output
+/* 
     52a2:	82 e0       	ldi	r24, 0x02	; 2
     52a4:	81 83       	std	Z+1, r24	; 0x01
-	f.port->OUTSET = USB_RTS_bm; 			// set RTS HI initially (RTS enabled)
+ * xio_putc_usb() - blocking and nonblocking char writer for USB device 
     52a6:	85 83       	std	Z+5, r24	; 0x05
-//	f.port->OUTCLR = USB_RTS_bm; 			// set RTS HI initially (RTS enabled)
-}
+ *
+ *	Compatible with stdio system - may be bound to a FILE handle
     52a8:	08 95       	ret
 
 000052aa <xio_usb_control>:
- *
- *	XIO_BAUD_xxxxx	<null>		One of the supported baud rate enums
- */
+		}
+	};
+	// write to data register
+	USBx.tx_buf_head = USBx.next_tx_buf_head;	// accept the next buffer head value
+	USBx.tx_buf[USBx.tx_buf_head] = c;			// ...and write char to buffer
 
-int8_t xio_usb_control(const uint16_t control, const int16_t arg)
-{
     52aa:	ac 01       	movw	r20, r24
-	// commands with no args
-	if ((control & XIO_BAUD_gm) != XIO_BAUD_UNSPECIFIED) {
+	if (CRLF(USB.flags) && (c == '\n')) {		// detect LF and add a CR
+		return xio_putc_usb('\r', stream);		// recursion.
     52ac:	8f 70       	andi	r24, 0x0F	; 15
     52ae:	90 70       	andi	r25, 0x00	; 0
     52b0:	00 97       	sbiw	r24, 0x00	; 0
     52b2:	91 f0       	breq	.+36     	; 0x52d8 <xio_usb_control+0x2e>
-		f.usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[(control & XIO_BAUD_gm)]);
+	}
     52b4:	a0 91 e6 21 	lds	r26, 0x21E6
     52b8:	b0 91 e7 21 	lds	r27, 0x21E7
     52bc:	9c 01       	movw	r18, r24
@@ -8046,126 +8046,126 @@ int8_t xio_usb_control(const uint16_t control, const int16_t arg)
     52c6:	16 96       	adiw	r26, 0x06	; 6
     52c8:	2c 93       	st	X, r18
     52ca:	16 97       	sbiw	r26, 0x06	; 6
-		f.usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[(control & XIO_BAUD_gm)]);
+
     52cc:	81 5d       	subi	r24, 0xD1	; 209
     52ce:	98 4f       	sbci	r25, 0xF8	; 248
     52d0:	fc 01       	movw	r30, r24
     52d2:	84 91       	lpm	r24, Z+
     52d4:	17 96       	adiw	r26, 0x07	; 7
     52d6:	8c 93       	st	X, r24
-	}
-	if (control & XIO_BLOCK) {
+	// dequeue the buffer if DATA register is ready
+	if (USBx.usart->STATUS & 0x20) {
     52d8:	46 ff       	sbrs	r20, 6
     52da:	09 c0       	rjmp	.+18     	; 0x52ee <xio_usb_control+0x44>
-		f.flags |= XIO_FLAG_BLOCK_bm;
+		if (USBx.tx_buf_head == USBx.tx_buf_tail) {	// buf might be empty if IRQ got it
     52dc:	80 91 ad 21 	lds	r24, 0x21AD
     52e0:	90 91 ae 21 	lds	r25, 0x21AE
     52e4:	84 60       	ori	r24, 0x04	; 4
     52e6:	80 93 ad 21 	sts	0x21AD, r24
     52ea:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_NOBLOCK) {
+			return (0);
+		}
     52ee:	47 ff       	sbrs	r20, 7
     52f0:	09 c0       	rjmp	.+18     	; 0x5304 <xio_usb_control+0x5a>
-		f.flags &= ~XIO_FLAG_BLOCK_bm;
+		USB.flags |= XIO_FLAG_TX_MUTEX_bm;		// claim mutual exclusion from ISR
     52f2:	80 91 ad 21 	lds	r24, 0x21AD
     52f6:	90 91 ae 21 	lds	r25, 0x21AE
     52fa:	8b 7f       	andi	r24, 0xFB	; 251
     52fc:	80 93 ad 21 	sts	0x21AD, r24
     5300:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_ECHO) {
+		if (--(USBx.tx_buf_tail) == 0) {		// advance tail and wrap if needed
+			USBx.tx_buf_tail = TX_BUFFER_SIZE-1;// -1 avoids off-by-one error (OBOE)
     5304:	50 ff       	sbrs	r21, 0
     5306:	09 c0       	rjmp	.+18     	; 0x531a <xio_usb_control+0x70>
-		f.flags |= XIO_FLAG_ECHO_bm;
+		}
     5308:	80 91 ad 21 	lds	r24, 0x21AD
     530c:	90 91 ae 21 	lds	r25, 0x21AE
     5310:	80 61       	ori	r24, 0x10	; 16
     5312:	80 93 ad 21 	sts	0x21AD, r24
     5316:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_NOECHO) {
+		USBx.usart->DATA = USBx.tx_buf[USBx.tx_buf_tail];// write char to TX DATA reg
+		USB.flags &= ~XIO_FLAG_TX_MUTEX_bm;		// release mutual exclusion lock
     531a:	51 ff       	sbrs	r21, 1
     531c:	09 c0       	rjmp	.+18     	; 0x5330 <xio_usb_control+0x86>
-		f.flags &= ~XIO_FLAG_ECHO_bm;
+	}
     531e:	80 91 ad 21 	lds	r24, 0x21AD
     5322:	90 91 ae 21 	lds	r25, 0x21AE
     5326:	8f 7e       	andi	r24, 0xEF	; 239
     5328:	80 93 ad 21 	sts	0x21AD, r24
     532c:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_CRLF) {
+	// enable interrupts regardless
+	USBx.usart->CTRLA = CTRLA_RXON_TXON;		// doesn't work if you just |= it
     5330:	52 ff       	sbrs	r21, 2
     5332:	09 c0       	rjmp	.+18     	; 0x5346 <xio_usb_control+0x9c>
-		f.flags |= XIO_FLAG_CRLF_bm;
+	PMIC_EnableLowLevel(); 						// enable USART TX interrupts
     5334:	80 91 ad 21 	lds	r24, 0x21AD
     5338:	90 91 ae 21 	lds	r25, 0x21AE
     533c:	80 62       	ori	r24, 0x20	; 32
     533e:	80 93 ad 21 	sts	0x21AD, r24
     5342:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_NOCRLF) {
+	sei();										// enable global interrupts
+
     5346:	53 ff       	sbrs	r21, 3
     5348:	09 c0       	rjmp	.+18     	; 0x535c <xio_usb_control+0xb2>
-		f.flags &= ~XIO_FLAG_CRLF_bm;
+	return (0);	// 0 = OK
     534a:	80 91 ad 21 	lds	r24, 0x21AD
     534e:	90 91 ae 21 	lds	r25, 0x21AE
     5352:	8f 7d       	andi	r24, 0xDF	; 223
     5354:	80 93 ad 21 	sts	0x21AD, r24
     5358:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_LINEMODE) {
+}
+
     535c:	54 ff       	sbrs	r21, 4
     535e:	09 c0       	rjmp	.+18     	; 0x5372 <xio_usb_control+0xc8>
-		f.flags |= XIO_FLAG_LINEMODE_bm;
+/* 
     5360:	80 91 ad 21 	lds	r24, 0x21AD
     5364:	90 91 ae 21 	lds	r25, 0x21AE
     5368:	80 64       	ori	r24, 0x40	; 64
     536a:	80 93 ad 21 	sts	0x21AD, r24
     536e:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_NOLINEMODE) {
+ *  dispatch table for xio_usb_getc
+ *
     5372:	55 ff       	sbrs	r21, 5
     5374:	09 c0       	rjmp	.+18     	; 0x5388 <xio_usb_control+0xde>
-		f.flags &= ~XIO_FLAG_LINEMODE_bm;
+ *  Functions take no input but use static USB.c, USB.signals, and others
     5376:	80 91 ad 21 	lds	r24, 0x21AD
     537a:	90 91 ae 21 	lds	r25, 0x21AE
     537e:	8f 7b       	andi	r24, 0xBF	; 191
     5380:	80 93 ad 21 	sts	0x21AD, r24
     5384:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_SEMICOLONS) {
+ *  Returns c (may be translated depending on the function)
+ *
     5388:	56 ff       	sbrs	r21, 6
     538a:	09 c0       	rjmp	.+18     	; 0x539e <xio_usb_control+0xf4>
-		f.flags |= XIO_FLAG_SEMICOLONS_bm;
+ *  NOTE: As of build 203 the signal dispatchers (KILL, SHIFTOUT...) are unused. 
     538c:	80 91 ad 21 	lds	r24, 0x21AD
     5390:	90 91 ae 21 	lds	r25, 0x21AE
     5394:	80 68       	ori	r24, 0x80	; 128
     5396:	80 93 ad 21 	sts	0x21AD, r24
     539a:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	if (control & XIO_NOSEMICOLONS) {
+ *	Signal chars are trapped in the ISR and are never inserted into the RX queue
+ *	Their dispatchers are left in for clarity and stubbed out
     539e:	57 ff       	sbrs	r21, 7
     53a0:	09 c0       	rjmp	.+18     	; 0x53b4 <xio_usb_control+0x10a>
-		f.flags &= ~XIO_FLAG_SEMICOLONS_bm;
+ */
     53a2:	80 91 ad 21 	lds	r24, 0x21AD
     53a6:	90 91 ae 21 	lds	r25, 0x21AE
     53aa:	8f 77       	andi	r24, 0x7F	; 127
     53ac:	80 93 ad 21 	sts	0x21AD, r24
     53b0:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	return (0);
-}
+
+static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
+//static int (*getcFuncs[])(void) = {			// ALTERNATE: put table in SRAM
     53b4:	80 e0       	ldi	r24, 0x00	; 0
     53b6:	08 95       	ret
 
 000053b8 <__vector_26>:
- * these two callers don't collide (like only enabling interrupts in putc() AFTER
- * the dequeue has occurred).
- */
-
-ISR(USB_TX_ISR_vect)		//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
-{
+		_getc_char,			//	99	63	c	
+		_getc_char,			//	100	64	d	
+		_getc_char,			//	101	65	e	
+		_getc_char,			//	102	66	f	
+		_getc_char,			//	103	67	g	
+		_getc_char,			//	104	68	h	
     53b8:	1f 92       	push	r1
     53ba:	0f 92       	push	r0
     53bc:	0f b6       	in	r0, 0x3f	; 63
@@ -8179,37 +8179,37 @@ ISR(USB_TX_ISR_vect)		//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
     53cc:	bf 93       	push	r27
     53ce:	ef 93       	push	r30
     53d0:	ff 93       	push	r31
-	if (f.tx_buf_head == f.tx_buf_tail) {			// buffer empty - disable ints
+		_getc_char,			//	105	69	i	
     53d2:	90 91 b9 21 	lds	r25, 0x21B9
     53d6:	80 91 b8 21 	lds	r24, 0x21B8
     53da:	98 17       	cp	r25, r24
     53dc:	39 f4       	brne	.+14     	; 0x53ec <__vector_26+0x34>
-		f.usart->CTRLA = USARTC0_CTRLA_RXON_TXOFF;	// doesn't work if you just &= it
+		_getc_char,			//	106	6A	j	
     53de:	e0 91 e6 21 	lds	r30, 0x21E6
     53e2:	f0 91 e7 21 	lds	r31, 0x21E7
     53e6:	80 e2       	ldi	r24, 0x20	; 32
     53e8:	83 83       	std	Z+3, r24	; 0x03
     53ea:	1e c0       	rjmp	.+60     	; 0x5428 <__vector_26+0x70>
-//		PMIC_DisableLowLevel(); 					// disable USART TX interrupts
-		return;
-	}
-	if (!TX_MUTEX(f.flags)) {
+		_getc_char,			//	107	6B	k	
+		_getc_char,			//	108	6C	l	
+		_getc_char,			//	109	6D	m	
+		_getc_char,			//	110	6E	n	
     53ec:	80 91 ad 21 	lds	r24, 0x21AD
     53f0:	90 91 ae 21 	lds	r25, 0x21AE
     53f4:	93 fd       	sbrc	r25, 3
     53f6:	18 c0       	rjmp	.+48     	; 0x5428 <__vector_26+0x70>
-		if (--(f.tx_buf_tail) == 0) {				// advance tail and wrap if needed
+		_getc_char,			//	111	6F	o	
     53f8:	80 91 b8 21 	lds	r24, 0x21B8
     53fc:	81 50       	subi	r24, 0x01	; 1
     53fe:	80 93 b8 21 	sts	0x21B8, r24
     5402:	80 91 b8 21 	lds	r24, 0x21B8
     5406:	88 23       	and	r24, r24
     5408:	19 f4       	brne	.+6      	; 0x5410 <__vector_26+0x58>
-			f.tx_buf_tail = TX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
+		_getc_char,			//	112	70	p	
     540a:	81 e1       	ldi	r24, 0x11	; 17
     540c:	80 93 b8 21 	sts	0x21B8, r24
-		}
-		f.usart->DATA = f.tx_buf[f.tx_buf_tail];	// write char to TX DATA register
+		_getc_char,			//	113	71	q	
+		_getc_char,			//	114	72	r	
     5410:	e0 91 e6 21 	lds	r30, 0x21E6
     5414:	f0 91 e7 21 	lds	r31, 0x21E7
     5418:	a0 91 b8 21 	lds	r26, 0x21B8
@@ -8219,8 +8219,8 @@ ISR(USB_TX_ISR_vect)		//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
     5422:	97 96       	adiw	r26, 0x27	; 39
     5424:	8c 91       	ld	r24, X
     5426:	80 83       	st	Z, r24
-	}
-}
+		_getc_char,			//	115	73	s	
+		_getc_char,			//	116	74	t	
     5428:	ff 91       	pop	r31
     542a:	ef 91       	pop	r30
     542c:	bf 91       	pop	r27
@@ -8236,50 +8236,50 @@ ISR(USB_TX_ISR_vect)		//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
     5440:	18 95       	reti
 
 00005442 <xio_usb_putc>:
- *		  detection in the dequeue routine - causing the dequeing ISR to lock up
- *		  when the buffer was full. Using a local next_tx_buffer_head prevents this
- */
+		_getc_char,			//	126	7E	~	(tilde)
+		_getc_DELETE		//	127	7F	DEL	(delete)
+};
 
-int xio_usb_putc(const char c, FILE *stream)
-{
+/*
+ *  xio_getc_getc() - char reader for USB device
     5442:	48 2f       	mov	r20, r24
-	if ((f.next_tx_buf_head = f.tx_buf_head-1) == 0) { // advance head and handle wrap
-		f.next_tx_buf_head = TX_BUFFER_SIZE-1;		 // -1 avoids the off-by-one error
-	}
-	while(f.next_tx_buf_head == f.tx_buf_tail) {   // TX buffer full. sleep or return.
-		if (BLOCKING(f.flags)) {
+ *
+ *	Compatible with stdio system - may be bound to a FILE handle
+ *
+ *  Get next character from RX buffer.
+ *	See "Notes on the circular buffers" at end of xio.h for buffer details.
     5444:	20 91 ad 21 	lds	r18, 0x21AD
     5448:	30 91 ae 21 	lds	r19, 0x21AE
     544c:	d9 01       	movw	r26, r18
     544e:	a4 70       	andi	r26, 0x04	; 4
     5450:	b0 70       	andi	r27, 0x00	; 0
-	};
-	// write to data register
-	f.tx_buf_head = f.next_tx_buf_head;			// accept the next buffer head value
-	f.tx_buf[f.tx_buf_head] = c;				// ...and write char to buffer
-
-	if (CRLF(f.flags) && (c == '\n')) {			// detect LF and add a CR
+ *
+ *  Flags that affect behavior:
+ *
+ *  BLOCKING behaviors
+ *	 	- execute blocking or non-blocking read depending on controls
+ *		- return character or -1 & XIO_SIG_WOULDBLOCK if non-blocking
     5452:	b9 01       	movw	r22, r18
     5454:	60 72       	andi	r22, 0x20	; 32
     5456:	70 70       	andi	r23, 0x00	; 0
- *		  when the buffer was full. Using a local next_tx_buffer_head prevents this
- */
+		_getc_DELETE		//	127	7F	DEL	(delete)
+};
 
-int xio_usb_putc(const char c, FILE *stream)
-{
-	if ((f.next_tx_buf_head = f.tx_buf_head-1) == 0) { // advance head and handle wrap
+/*
+ *  xio_getc_getc() - char reader for USB device
+ *
     5458:	90 91 b9 21 	lds	r25, 0x21B9
     545c:	91 50       	subi	r25, 0x01	; 1
     545e:	c1 f4       	brne	.+48     	; 0x5490 <xio_usb_putc+0x4e>
     5460:	91 e1       	ldi	r25, 0x11	; 17
     5462:	16 c0       	rjmp	.+44     	; 0x5490 <xio_usb_putc+0x4e>
-		f.next_tx_buf_head = TX_BUFFER_SIZE-1;		 // -1 avoids the off-by-one error
-	}
-	while(f.next_tx_buf_head == f.tx_buf_tail) {   // TX buffer full. sleep or return.
-		if (BLOCKING(f.flags)) {
+ *	Compatible with stdio system - may be bound to a FILE handle
+ *
+ *  Get next character from RX buffer.
+ *	See "Notes on the circular buffers" at end of xio.h for buffer details.
     5464:	10 97       	sbiw	r26, 0x00	; 0
     5466:	61 f0       	breq	.+24     	; 0x5480 <xio_usb_putc+0x3e>
-			sleep_mode();
+ *
     5468:	80 91 48 00 	lds	r24, 0x0048
     546c:	81 60       	ori	r24, 0x01	; 1
     546e:	80 93 48 00 	sts	0x0048, r24
@@ -8289,37 +8289,37 @@ int xio_usb_putc(const char c, FILE *stream)
     547a:	80 93 48 00 	sts	0x0048, r24
     547e:	08 c0       	rjmp	.+16     	; 0x5490 <xio_usb_putc+0x4e>
     5480:	90 93 ba 21 	sts	0x21BA, r25
-		} else {
-			f.sig = XIO_SIG_WOULDBLOCK;
+ *	This routine returns a single character from the RX buffer to the caller.
+ *	It's typically called by fgets() and is useful for single-threaded IO cases.
     5484:	83 e0       	ldi	r24, 0x03	; 3
     5486:	80 93 b0 21 	sts	0x21B0, r24
     548a:	2f ef       	ldi	r18, 0xFF	; 255
     548c:	3f ef       	ldi	r19, 0xFF	; 255
     548e:	54 c0       	rjmp	.+168    	; 0x5538 <xio_usb_putc+0xf6>
-int xio_usb_putc(const char c, FILE *stream)
-{
-	if ((f.next_tx_buf_head = f.tx_buf_head-1) == 0) { // advance head and handle wrap
-		f.next_tx_buf_head = TX_BUFFER_SIZE-1;		 // -1 avoids the off-by-one error
-	}
-	while(f.next_tx_buf_head == f.tx_buf_tail) {   // TX buffer full. sleep or return.
+/*
+ *  xio_getc_getc() - char reader for USB device
+ *
+ *	Compatible with stdio system - may be bound to a FILE handle
+ *
+ *  Get next character from RX buffer.
     5490:	80 91 b8 21 	lds	r24, 0x21B8
     5494:	98 17       	cp	r25, r24
     5496:	31 f3       	breq	.-52     	; 0x5464 <xio_usb_putc+0x22>
-			f.sig = XIO_SIG_WOULDBLOCK;
-			return(_FDEV_ERR);
-		}
-	};
-	// write to data register
-	f.tx_buf_head = f.next_tx_buf_head;			// accept the next buffer head value
+ *	It's typically called by fgets() and is useful for single-threaded IO cases.
+ *	Cases with multiple concurrent IO streams may want to use the readln() function
+ *	which is incompatible with the stdio system. 
+ *
+ *  Flags that affect behavior:
+ *
     5498:	90 93 b9 21 	sts	0x21B9, r25
-	f.tx_buf[f.tx_buf_head] = c;				// ...and write char to buffer
+ *  BLOCKING behaviors
     549c:	e0 91 b9 21 	lds	r30, 0x21B9
     54a0:	f0 e0       	ldi	r31, 0x00	; 0
     54a2:	e3 55       	subi	r30, 0x53	; 83
     54a4:	fe 4d       	sbci	r31, 0xDE	; 222
     54a6:	47 a3       	std	Z+39, r20	; 0x27
-
-	if (CRLF(f.flags) && (c == '\n')) {			// detect LF and add a CR
+ *	 	- execute blocking or non-blocking read depending on controls
+ *		- return character or -1 & XIO_SIG_WOULDBLOCK if non-blocking
     54a8:	61 15       	cp	r22, r1
     54aa:	71 05       	cpc	r23, r1
     54ac:	21 f0       	breq	.+8      	; 0x54b6 <xio_usb_putc+0x74>
@@ -8328,11 +8328,11 @@ int xio_usb_putc(const char c, FILE *stream)
     54b2:	4d e0       	ldi	r20, 0x0D	; 13
     54b4:	d1 cf       	rjmp	.-94     	; 0x5458 <xio_usb_putc+0x16>
     54b6:	90 93 ba 21 	sts	0x21BA, r25
-		return xio_usb_putc('\r', stream);		// recursion.
-	}
-
-	// dequeue the buffer if DATA register is ready
-	if (f.usart->STATUS & 0x20) {
+ *		- return character or sleep() if blocking
+ *
+ *  ECHO behaviors
+ *		- if ECHO is enabled echo character to stdout
+ *		- echo all line termination chars as newlines ('\n')
     54ba:	a0 91 e6 21 	lds	r26, 0x21E6
     54be:	b0 91 e7 21 	lds	r27, 0x21E7
     54c2:	11 96       	adiw	r26, 0x01	; 1
@@ -8340,71 +8340,71 @@ int xio_usb_putc(const char c, FILE *stream)
     54c6:	11 97       	sbiw	r26, 0x01	; 1
     54c8:	85 ff       	sbrs	r24, 5
     54ca:	27 c0       	rjmp	.+78     	; 0x551a <xio_usb_putc+0xd8>
-		if (f.tx_buf_head == f.tx_buf_tail) {	// buf might be empty if IRQ got it
+ *		- Note: putc is responsible for expanding newlines to <cr><lf> if needed
     54cc:	90 91 b9 21 	lds	r25, 0x21B9
     54d0:	80 91 b8 21 	lds	r24, 0x21B8
     54d4:	98 17       	cp	r25, r24
     54d6:	71 f1       	breq	.+92     	; 0x5534 <xio_usb_putc+0xf2>
-			return (0);
-		}
-		f.flags |= XIO_FLAG_TX_MUTEX_bm;		// claim mutual exclusion from ISR
+ *
+ *  SPECIAL CHARACTERS 
+ *		- special characters such as EOL and control chars are handled by the
     54d8:	38 60       	ori	r19, 0x08	; 8
     54da:	20 93 ad 21 	sts	0x21AD, r18
     54de:	30 93 ae 21 	sts	0x21AE, r19
-		if (--(f.tx_buf_tail) == 0) {			// advance tail and wrap if needed
+ *		  character helper routines. See them for behaviors
     54e2:	80 91 b8 21 	lds	r24, 0x21B8
     54e6:	81 50       	subi	r24, 0x01	; 1
     54e8:	80 93 b8 21 	sts	0x21B8, r24
     54ec:	80 91 b8 21 	lds	r24, 0x21B8
     54f0:	88 23       	and	r24, r24
     54f2:	19 f4       	brne	.+6      	; 0x54fa <xio_usb_putc+0xb8>
-			f.tx_buf_tail = TX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
+ */
     54f4:	81 e1       	ldi	r24, 0x11	; 17
     54f6:	80 93 b8 21 	sts	0x21B8, r24
-		}
-		f.usart->DATA = f.tx_buf[f.tx_buf_tail];// write char to TX DATA register
+
+int xio_getc_usb(FILE *stream)
     54fa:	e0 91 b8 21 	lds	r30, 0x21B8
     54fe:	f0 e0       	ldi	r31, 0x00	; 0
     5500:	e3 55       	subi	r30, 0x53	; 83
     5502:	fe 4d       	sbci	r31, 0xDE	; 222
     5504:	87 a1       	ldd	r24, Z+39	; 0x27
     5506:	8c 93       	st	X, r24
-		f.flags &= ~XIO_FLAG_TX_MUTEX_bm;		// release mutual exclusion lock
+{
     5508:	80 91 ad 21 	lds	r24, 0x21AD
     550c:	90 91 ae 21 	lds	r25, 0x21AE
     5510:	97 7f       	andi	r25, 0xF7	; 247
     5512:	80 93 ad 21 	sts	0x21AD, r24
     5516:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	// enable interrupts regardless
-	f.usart->CTRLA = USARTC0_CTRLA_RXON_TXON;	// doesn't work if you just |= it
+	while (USBx.rx_buf_head == USBx.rx_buf_tail) {	// RX ISR buffer empty
+		if (BLOCKING(USB.flags)) {
+			sleep_mode();
     551a:	e0 91 e6 21 	lds	r30, 0x21E6
     551e:	f0 91 e7 21 	lds	r31, 0x21E7
     5522:	81 e2       	ldi	r24, 0x21	; 33
     5524:	83 83       	std	Z+3, r24	; 0x03
-	PMIC_EnableLowLevel(); 						// enable USART TX interrupts
+		} else {
     5526:	80 91 a2 00 	lds	r24, 0x00A2
     552a:	81 60       	ori	r24, 0x01	; 1
     552c:	e0 ea       	ldi	r30, 0xA0	; 160
     552e:	f0 e0       	ldi	r31, 0x00	; 0
     5530:	82 83       	std	Z+2, r24	; 0x02
-	sei();										// enable global interrupts
+			USB.sig = XIO_SIG_EAGAIN;
     5532:	78 94       	sei
     5534:	20 e0       	ldi	r18, 0x00	; 0
     5536:	30 e0       	ldi	r19, 0x00	; 0
-
-	return (0);	// 0 = OK
-}
+			return(_FDEV_ERR);
+		}
+	}
     5538:	c9 01       	movw	r24, r18
     553a:	08 95       	ret
 
 0000553c <xio_usb_getc>:
- */
-
-int xio_usb_getc(FILE *stream)
-{
-	while (f.rx_buf_head == f.rx_buf_tail) {	// RX ISR buffer empty
-		if (BLOCKING(f.flags)) {
+		_readln_char,		//	120	78	x	
+		_readln_char,		//	121	79	y	
+		_readln_char,		//	122	7A	z	
+		_readln_char,		//	123	7B	{	(left/opening brace)
+		_readln_char,		//	124	7C	|	(vertical bar)
+		_readln_char,		//	125	7D	}	(right/closing brace)
     553c:	20 91 ad 21 	lds	r18, 0x21AD
     5540:	30 91 ae 21 	lds	r19, 0x21AE
     5544:	24 70       	andi	r18, 0x04	; 4
@@ -8413,7 +8413,7 @@ int xio_usb_getc(FILE *stream)
     554a:	21 15       	cp	r18, r1
     554c:	31 05       	cpc	r19, r1
     554e:	61 f0       	breq	.+24     	; 0x5568 <xio_usb_getc+0x2c>
-			sleep_mode();
+		_readln_char,		//	126	7E	~	(tilde)
     5550:	80 91 48 00 	lds	r24, 0x0048
     5554:	81 60       	ori	r24, 0x01	; 1
     5556:	80 93 48 00 	sts	0x0048, r24
@@ -8422,40 +8422,40 @@ int xio_usb_getc(FILE *stream)
     5560:	8e 7f       	andi	r24, 0xFE	; 254
     5562:	80 93 48 00 	sts	0x0048, r24
     5566:	06 c0       	rjmp	.+12     	; 0x5574 <xio_usb_getc+0x38>
-		} else {
-			f.sig = XIO_SIG_WOULDBLOCK;
+		_readln_DELETE		//	127	7F	DEL	(delete)
+};
     5568:	83 e0       	ldi	r24, 0x03	; 3
     556a:	80 93 b0 21 	sts	0x21B0, r24
     556e:	2f ef       	ldi	r18, 0xFF	; 255
     5570:	3f ef       	ldi	r19, 0xFF	; 255
     5572:	26 c0       	rjmp	.+76     	; 0x55c0 <xio_usb_getc+0x84>
- *		  character helper routines. See them for behaviors
- */
-
-int xio_usb_getc(FILE *stream)
-{
-	while (f.rx_buf_head == f.rx_buf_tail) {	// RX ISR buffer empty
+		_readln_char,		//	119	77	w	
+		_readln_char,		//	120	78	x	
+		_readln_char,		//	121	79	y	
+		_readln_char,		//	122	7A	z	
+		_readln_char,		//	123	7B	{	(left/opening brace)
+		_readln_char,		//	124	7C	|	(vertical bar)
     5574:	90 91 b7 21 	lds	r25, 0x21B7
     5578:	80 91 b6 21 	lds	r24, 0x21B6
     557c:	98 17       	cp	r25, r24
     557e:	29 f3       	breq	.-54     	; 0x554a <xio_usb_getc+0xe>
-		} else {
-			f.sig = XIO_SIG_WOULDBLOCK;
-			return(_FDEV_ERR);
-		}
-	}
-	if (--(f.rx_buf_tail) == 0) {				// advance RX tail (RXQ read pointer)
+		_readln_DELETE		//	127	7F	DEL	(delete)
+};
+
+/* 
+ *	xio_readln_usb() - main loop task for USB device
+ *
     5580:	80 91 b6 21 	lds	r24, 0x21B6
     5584:	81 50       	subi	r24, 0x01	; 1
     5586:	80 93 b6 21 	sts	0x21B6, r24
     558a:	80 91 b6 21 	lds	r24, 0x21B6
     558e:	88 23       	and	r24, r24
     5590:	19 f4       	brne	.+6      	; 0x5598 <xio_usb_getc+0x5c>
-		f.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
+ *	Read a complete (newline terminated) line from the USB device. 
     5592:	88 e1       	ldi	r24, 0x18	; 24
     5594:	80 93 b6 21 	sts	0x21B6, r24
-	}
-	f.c = (f.rx_buf[f.rx_buf_tail] & 0x007F);	// get char from RX buffer & mask MSB
+ *	Retains line context across calls - so it can be called multiple times.
+ *	Reads as many characters as it can until any of the following is true:
     5598:	e0 91 b6 21 	lds	r30, 0x21B6
     559c:	f0 e0       	ldi	r31, 0x00	; 0
     559e:	e3 55       	subi	r30, 0x53	; 83
@@ -8463,8 +8463,8 @@ int xio_usb_getc(FILE *stream)
     55a2:	86 85       	ldd	r24, Z+14	; 0x0e
     55a4:	8f 77       	andi	r24, 0x7F	; 127
     55a6:	80 93 b1 21 	sts	0x21B1, r24
-	// 	call action procedure from dispatch table in FLASH (see xio.h for typedef)
-	return (((fptr_int_void)(pgm_read_word(&getcFuncs[f.c])))());
+ *
+ *	  - RX buffer is empty on entry (return TG_EAGAIN)
     55aa:	90 e0       	ldi	r25, 0x00	; 0
     55ac:	88 0f       	add	r24, r24
     55ae:	99 1f       	adc	r25, r25
@@ -8476,18 +8476,18 @@ int xio_usb_getc(FILE *stream)
     55ba:	f9 01       	movw	r30, r18
     55bc:	19 95       	eicall
     55be:	9c 01       	movw	r18, r24
-	//return (getcFuncs[c]()); // call action procedure from dispatch table in RAM
-}
+ *	  - no more chars to read from RX buffer (return TG_EAGAIN)
+ *	  - read would cause output buffer overflow (return TG_BUFFER_FULL)
     55c0:	c9 01       	movw	r24, r18
     55c2:	08 95       	ret
 
 000055c4 <_getc_char>:
+ *	  - read returns complete line (returns TG_OK)
+ *
+ *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
+ */
 
-/* xio_usb_getc helper routines */
-
-static int _getc_char(void)
-{
-	if (ECHO(f.flags)) xio_usb_putc(f.c, stdout);
+int xio_readln_usb(char *buf, uint8_t size)
     55c4:	80 91 ad 21 	lds	r24, 0x21AD
     55c8:	84 ff       	sbrs	r24, 4
     55ca:	08 c0       	rjmp	.+16     	; 0x55dc <_getc_char+0x18>
@@ -8495,72 +8495,66 @@ static int _getc_char(void)
     55d0:	70 91 41 25 	lds	r23, 0x2541
     55d4:	80 91 b1 21 	lds	r24, 0x21B1
     55d8:	0e 94 21 2a 	call	0x5442	; 0x5442 <xio_usb_putc>
-	return(f.c);
-}
+{
+//	uint8_t status = 0;
     55dc:	80 91 b1 21 	lds	r24, 0x21B1
     55e0:	90 e0       	ldi	r25, 0x00	; 0
     55e2:	08 95       	ret
 
 000055e4 <_getc_NEWLINE>:
 
-static int _getc_NEWLINE(void)		// convert CRs and LFs to newlines if line mode
-{
-	if (LINEMODE(f.flags)) f.c = '\n';
+	if (!IN_LINE(USB.flags)) {					// first time thru initializations
+		USB.len = 0;							// zero buffer
+		USB.status = 0;
     55e4:	90 91 ad 21 	lds	r25, 0x21AD
     55e8:	96 ff       	sbrs	r25, 6
     55ea:	03 c0       	rjmp	.+6      	; 0x55f2 <_getc_NEWLINE+0xe>
     55ec:	8a e0       	ldi	r24, 0x0A	; 10
     55ee:	80 93 b1 21 	sts	0x21B1, r24
-	if (ECHO(f.flags)) xio_usb_putc(f.c, stdout);
+		USB.size = size;
     55f2:	94 ff       	sbrs	r25, 4
     55f4:	08 c0       	rjmp	.+16     	; 0x5606 <_getc_NEWLINE+0x22>
     55f6:	60 91 40 25 	lds	r22, 0x2540
     55fa:	70 91 41 25 	lds	r23, 0x2541
     55fe:	80 91 b1 21 	lds	r24, 0x21B1
     5602:	0e 94 21 2a 	call	0x5442	; 0x5442 <xio_usb_putc>
-	return(f.c);
-}
+		USB.sig = XIO_SIG_OK;					// reset signal register
+		USB.flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
     5606:	80 91 b1 21 	lds	r24, 0x21B1
     560a:	90 e0       	ldi	r25, 0x00	; 0
     560c:	08 95       	ret
 
 0000560e <_getc_SEMICOLON>:
-
-static int _getc_SEMICOLON(void)
-{
-	if (SEMICOLONS(f.flags)) {
+	}
+	while (TRUE) { 
+		switch (USB.status = _xio_usb_readchar(USB.buf, USB.size)) {
+			case (TG_BUFFER_EMPTY): return (TG_EAGAIN); break;	// empty condition
     560e:	80 91 ad 21 	lds	r24, 0x21AD
     5612:	87 ff       	sbrs	r24, 7
     5614:	03 c0       	rjmp	.+6      	; 0x561c <_getc_SEMICOLON+0xe>
-		return (_getc_NEWLINE());			// if semi mode treat as an EOL
+			case (TG_BUFFER_FULL): return (USB.status); break;	// overrun error
     5616:	0e 94 f2 2a 	call	0x55e4	; 0x55e4 <_getc_NEWLINE>
     561a:	08 95       	ret
-	} 
-	return (_getc_char());					// else treat as any other character
+			case (TG_EOL): return (TG_OK); break;				// got completed line
+			case (TG_EAGAIN): break;							// loop
     561c:	0e 94 e2 2a 	call	0x55c4	; 0x55c4 <_getc_char>
-}
+		}
     5620:	08 95       	ret
 
 00005622 <_getc_DELETE>:
+	}
+}
 
-static int _getc_DELETE(void)				// can't handle a delete very well
-{
-	f.sig = XIO_SIG_DELETE;
+int _xio_usb_readchar(char *buf, uint8_t len)
     5622:	8a e0       	ldi	r24, 0x0A	; 10
     5624:	80 93 b0 21 	sts	0x21B0, r24
-	return(_FDEV_ERR);
-}
+{
+	if (USBx.rx_buf_head == USBx.rx_buf_tail) {	// RX ISR buffer empty
     5628:	8f ef       	ldi	r24, 0xFF	; 255
     562a:	9f ef       	ldi	r25, 0xFF	; 255
     562c:	08 95       	ret
 
 0000562e <_xio_usb_readchar>:
-	}
-}
-
-int _xio_usb_readchar(char *buf, uint8_t len)
-{
-	if (f.rx_buf_head == f.rx_buf_tail) {		// RX ISR buffer empty
     562e:	90 91 b7 21 	lds	r25, 0x21B7
     5632:	80 91 b6 21 	lds	r24, 0x21B6
     5636:	98 17       	cp	r25, r24
@@ -8568,20 +8562,14 @@ int _xio_usb_readchar(char *buf, uint8_t len)
     563a:	28 e0       	ldi	r18, 0x08	; 8
     563c:	30 e0       	ldi	r19, 0x00	; 0
     563e:	20 c0       	rjmp	.+64     	; 0x5680 <_xio_usb_readchar+0x52>
-		return(TG_BUFFER_EMPTY);
-	}
-	if (--(f.rx_buf_tail) == 0) {				// advance RX tail (RX queue read pointer)
     5640:	80 91 b6 21 	lds	r24, 0x21B6
     5644:	81 50       	subi	r24, 0x01	; 1
     5646:	80 93 b6 21 	sts	0x21B6, r24
     564a:	80 91 b6 21 	lds	r24, 0x21B6
     564e:	88 23       	and	r24, r24
     5650:	19 f4       	brne	.+6      	; 0x5658 <_xio_usb_readchar+0x2a>
-		f.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
     5652:	88 e1       	ldi	r24, 0x18	; 24
     5654:	80 93 b6 21 	sts	0x21B6, r24
-	}
-	f.c = (f.rx_buf[f.rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
     5658:	e0 91 b6 21 	lds	r30, 0x21B6
     565c:	f0 e0       	ldi	r31, 0x00	; 0
     565e:	e3 55       	subi	r30, 0x53	; 83
@@ -8589,7 +8577,6 @@ int _xio_usb_readchar(char *buf, uint8_t len)
     5662:	86 85       	ldd	r24, Z+14	; 0x0e
     5664:	8f 77       	andi	r24, 0x7F	; 127
     5666:	80 93 b1 21 	sts	0x21B1, r24
-	return (((fptr_int_void)(pgm_read_word(&readlnFuncs[f.c])))()); // dispatch on character
     566a:	90 e0       	ldi	r25, 0x00	; 0
     566c:	88 0f       	add	r24, r24
     566e:	99 1f       	adc	r25, r25
@@ -8601,47 +8588,28 @@ int _xio_usb_readchar(char *buf, uint8_t len)
     567a:	f9 01       	movw	r30, r18
     567c:	19 95       	eicall
     567e:	9c 01       	movw	r18, r24
-}
     5680:	c9 01       	movw	r24, r18
     5682:	08 95       	ret
 
 00005684 <xio_usb_readln>:
- *
- *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
- */
-
-int xio_usb_readln(char *buf, uint8_t len)
-{
     5684:	1f 93       	push	r17
     5686:	cf 93       	push	r28
     5688:	df 93       	push	r29
     568a:	ec 01       	movw	r28, r24
     568c:	16 2f       	mov	r17, r22
-//	uint8_t status = 0;
-
-	if (!IN_LINE(f.flags)) {					// first time thru initializations
     568e:	80 91 ad 21 	lds	r24, 0x21AD
     5692:	90 91 ae 21 	lds	r25, 0x21AE
     5696:	96 fd       	sbrc	r25, 6
     5698:	11 c0       	rjmp	.+34     	; 0x56bc <xio_usb_readln+0x38>
-		f.i = 0;								// zero buffer
     569a:	10 92 b2 21 	sts	0x21B2, r1
-		f.status = 0;							// reset status
     569e:	10 92 af 21 	sts	0x21AF, r1
-		f.len = len;							// save arg into struct 
     56a2:	60 93 b3 21 	sts	0x21B3, r22
-		f.buf = buf;							// save arg into struct 
     56a6:	c0 93 b4 21 	sts	0x21B4, r28
     56aa:	d0 93 b5 21 	sts	0x21B5, r29
-		f.sig = XIO_SIG_OK;						// reset signal register
     56ae:	10 92 b0 21 	sts	0x21B0, r1
-		f.flags |= XIO_FLAG_IN_LINE_bm;			// yes, we are busy getting a line
     56b2:	90 64       	ori	r25, 0x40	; 64
     56b4:	80 93 ad 21 	sts	0x21AD, r24
     56b8:	90 93 ae 21 	sts	0x21AE, r25
-	}
-	while (TRUE) { 
-		switch (f.status = _xio_usb_readchar(buf, len)) {
     56bc:	ce 01       	movw	r24, r28
     56be:	61 2f       	mov	r22, r17
     56c0:	0e 94 17 2b 	call	0x562e	; 0x562e <_xio_usb_readchar>
@@ -8661,12 +8629,6 @@ int xio_usb_readln(char *buf, uint8_t len)
     56e0:	02 c0       	rjmp	.+4      	; 0x56e6 <xio_usb_readln+0x62>
     56e2:	20 e0       	ldi	r18, 0x00	; 0
     56e4:	30 e0       	ldi	r19, 0x00	; 0
-			case (TG_BUFFER_FULL): return (f.status); break;	// overrun error
-			case (TG_EOL): return (TG_OK); break;				// got completed line
-			case (TG_EAGAIN): break;							// loop
-		}
-	}
-}
     56e6:	c9 01       	movw	r24, r18
     56e8:	df 91       	pop	r29
     56ea:	cf 91       	pop	r28
@@ -8674,38 +8636,26 @@ int xio_usb_readln(char *buf, uint8_t len)
     56ee:	08 95       	ret
 
 000056f0 <_readln_char>:
-
-/* xio_usb_readln helper routines */
-
-static int _readln_char(void)
-{
-	if (f.i > f.len) {							// trap buffer overflow
     56f0:	90 91 b2 21 	lds	r25, 0x21B2
     56f4:	20 91 b3 21 	lds	r18, 0x21B3
     56f8:	e0 91 b4 21 	lds	r30, 0x21B4
     56fc:	f0 91 b5 21 	lds	r31, 0x21B5
     5700:	29 17       	cp	r18, r25
     5702:	48 f4       	brcc	.+18     	; 0x5716 <_readln_char+0x26>
-		f.sig = XIO_SIG_EOL;
     5704:	81 e0       	ldi	r24, 0x01	; 1
     5706:	80 93 b0 21 	sts	0x21B0, r24
-		f.buf[f.len] = NUL;						// f.len is zero based
     570a:	e2 0f       	add	r30, r18
     570c:	f1 1d       	adc	r31, r1
     570e:	10 82       	st	Z, r1
     5710:	27 e0       	ldi	r18, 0x07	; 7
     5712:	30 e0       	ldi	r19, 0x00	; 0
     5714:	16 c0       	rjmp	.+44     	; 0x5742 <_readln_char+0x52>
-		return (TG_BUFFER_FULL);
-	}
-	f.buf[f.i++] = f.c;
     5716:	e9 0f       	add	r30, r25
     5718:	f1 1d       	adc	r31, r1
     571a:	80 91 b1 21 	lds	r24, 0x21B1
     571e:	80 83       	st	Z, r24
     5720:	9f 5f       	subi	r25, 0xFF	; 255
     5722:	90 93 b2 21 	sts	0x21B2, r25
-	if (ECHO(f.flags)) xio_usb_putc(f.c, stdout);// conditional echo
     5726:	80 91 ad 21 	lds	r24, 0x21AD
     572a:	84 ff       	sbrs	r24, 4
     572c:	08 c0       	rjmp	.+16     	; 0x573e <_readln_char+0x4e>
@@ -8715,72 +8665,47 @@ static int _readln_char(void)
     573a:	0e 94 21 2a 	call	0x5442	; 0x5442 <xio_usb_putc>
     573e:	21 e0       	ldi	r18, 0x01	; 1
     5740:	30 e0       	ldi	r19, 0x00	; 0
-	return (TG_EAGAIN);							// line is still in process
-}
     5742:	c9 01       	movw	r24, r18
     5744:	08 95       	ret
 
 00005746 <_readln_NEWLINE>:
-
-static int _readln_NEWLINE(void)				// handles any valid newline char
-{
-	f.sig = XIO_SIG_EOL;
     5746:	81 e0       	ldi	r24, 0x01	; 1
     5748:	80 93 b0 21 	sts	0x21B0, r24
-	f.buf[f.i] = NUL;
     574c:	80 91 b2 21 	lds	r24, 0x21B2
     5750:	e0 91 b4 21 	lds	r30, 0x21B4
     5754:	f0 91 b5 21 	lds	r31, 0x21B5
     5758:	e8 0f       	add	r30, r24
     575a:	f1 1d       	adc	r31, r1
     575c:	10 82       	st	Z, r1
-	f.flags &= ~XIO_FLAG_IN_LINE_bm;			// clear in-line state (reset)
     575e:	20 91 ad 21 	lds	r18, 0x21AD
     5762:	30 91 ae 21 	lds	r19, 0x21AE
     5766:	c9 01       	movw	r24, r18
     5768:	9f 7b       	andi	r25, 0xBF	; 191
     576a:	80 93 ad 21 	sts	0x21AD, r24
     576e:	90 93 ae 21 	sts	0x21AE, r25
-	if (ECHO(f.flags)) xio_usb_putc('\n',stdout);// echo a newline
     5772:	24 ff       	sbrs	r18, 4
     5774:	07 c0       	rjmp	.+14     	; 0x5784 <_readln_NEWLINE+0x3e>
     5776:	60 91 40 25 	lds	r22, 0x2540
     577a:	70 91 41 25 	lds	r23, 0x2541
     577e:	8a e0       	ldi	r24, 0x0A	; 10
     5780:	0e 94 21 2a 	call	0x5442	; 0x5442 <xio_usb_putc>
-	return (TG_EOL);							// return for end-of-line
-}
     5784:	84 e0       	ldi	r24, 0x04	; 4
     5786:	90 e0       	ldi	r25, 0x00	; 0
     5788:	08 95       	ret
 
 0000578a <_readln_SEMICOLON>:
-
-static int _readln_SEMICOLON(void)				// semicolon is a conditional newline
-{
-	if (SEMICOLONS(f.flags)) {
     578a:	80 91 ad 21 	lds	r24, 0x21AD
     578e:	87 ff       	sbrs	r24, 7
     5790:	03 c0       	rjmp	.+6      	; 0x5798 <_readln_SEMICOLON+0xe>
-		return (_readln_NEWLINE());				// if semi mode treat as an EOL
     5792:	0e 94 a3 2b 	call	0x5746	; 0x5746 <_readln_NEWLINE>
     5796:	08 95       	ret
-	} else {
-		return (_readln_char());				// else treat as any other character
     5798:	0e 94 78 2b 	call	0x56f0	; 0x56f0 <_readln_char>
-	}
-}
     579c:	08 95       	ret
 
 0000579e <_readln_DELETE>:
-
-static int _readln_DELETE(void)
-{
-	if (--f.i >= 0) {
     579e:	80 91 b2 21 	lds	r24, 0x21B2
     57a2:	81 50       	subi	r24, 0x01	; 1
     57a4:	80 93 b2 21 	sts	0x21B2, r24
-		if (ECHO(f.flags)) xio_usb_putc(f.c, stdout);
     57a8:	80 91 ad 21 	lds	r24, 0x21AD
     57ac:	84 ff       	sbrs	r24, 4
     57ae:	08 c0       	rjmp	.+16     	; 0x57c0 <_readln_DELETE+0x22>
@@ -8788,167 +8713,130 @@ static int _readln_DELETE(void)
     57b4:	70 91 41 25 	lds	r23, 0x2541
     57b8:	80 91 b1 21 	lds	r24, 0x21B1
     57bc:	0e 94 21 2a 	call	0x5442	; 0x5442 <xio_usb_putc>
-	} else {
-		f.i = 0;
-	}
-	return (TG_EAGAIN);							// line is still in process
-}
     57c0:	81 e0       	ldi	r24, 0x01	; 1
     57c2:	90 e0       	ldi	r25, 0x00	; 0
     57c4:	08 95       	ret
 
 000057c6 <_sig_KILL>:
- * Signal handlers. These are vestigal stubs that have no effect.
- */
-
-static int _sig_KILL(void)
-{
-	f.sig = XIO_SIG_KILL;
     57c6:	84 e0       	ldi	r24, 0x04	; 4
     57c8:	80 93 b0 21 	sts	0x21B0, r24
-	return(_FDEV_ERR);
-}
     57cc:	8f ef       	ldi	r24, 0xFF	; 255
     57ce:	9f ef       	ldi	r25, 0xFF	; 255
     57d0:	08 95       	ret
 
 000057d2 <_sig_PAUSE>:
-
-static int _sig_PAUSE(void)
-{
-	f.sig = XIO_SIG_PAUSE;
     57d2:	86 e0       	ldi	r24, 0x06	; 6
     57d4:	80 93 b0 21 	sts	0x21B0, r24
-	return(_FDEV_ERR);
-}
     57d8:	8f ef       	ldi	r24, 0xFF	; 255
     57da:	9f ef       	ldi	r25, 0xFF	; 255
     57dc:	08 95       	ret
 
 000057de <_sig_RESUME>:
-
-static int _sig_RESUME(void)
-{
-	f.sig = XIO_SIG_RESUME;
     57de:	87 e0       	ldi	r24, 0x07	; 7
     57e0:	80 93 b0 21 	sts	0x21B0, r24
-	return(_FDEV_ERR);
-}
     57e4:	8f ef       	ldi	r24, 0xFF	; 255
     57e6:	9f ef       	ldi	r25, 0xFF	; 255
     57e8:	08 95       	ret
 
 000057ea <_sig_SHIFTOUT>:
-
-static int _sig_SHIFTOUT(void)
-{
-	f.sig = XIO_SIG_SHIFTOUT;
     57ea:	88 e0       	ldi	r24, 0x08	; 8
     57ec:	80 93 b0 21 	sts	0x21B0, r24
-	return(_FDEV_ERR);
-}
     57f0:	8f ef       	ldi	r24, 0xFF	; 255
     57f2:	9f ef       	ldi	r25, 0xFF	; 255
     57f4:	08 95       	ret
 
 000057f6 <_sig_SHIFTIN>:
-
-static int _sig_SHIFTIN(void)
-{
-	f.sig = XIO_SIG_SHIFTIN;
     57f6:	89 e0       	ldi	r24, 0x09	; 9
     57f8:	80 93 b0 21 	sts	0x21B0, r24
-	return(_FDEV_ERR);
-}
     57fc:	8f ef       	ldi	r24, 0xFF	; 255
     57fe:	9f ef       	ldi	r25, 0xFF	; 255
     5800:	08 95       	ret
 
 00005802 <xio_usb_queue_RX_char>:
-/*
- * xio_usb_queue_RX_char() - fake ISR to put a char in the RX buffer
- */
-
-void xio_usb_queue_RX_char(const char c)
-{
+		_getc_char,	 		//	47	2F	/	(forward slash)
+		_getc_char, 		//	48	30	0	
+		_getc_char, 		//	49	31	1	
+		_getc_char, 		//	50	32	2	
+		_getc_char, 		//	51	33	3	
+		_getc_char, 		//	52	34	4	
     5802:	28 2f       	mov	r18, r24
-	// trap signals - do not insert into RX queue
-	if (c == ETX) {								// trap ^c signal
+		_getc_char, 		//	53	35	5	
+		_getc_char, 		//	54	36	6	
     5804:	83 30       	cpi	r24, 0x03	; 3
     5806:	31 f4       	brne	.+12     	; 0x5814 <xio_usb_queue_RX_char+0x12>
-		f.sig = XIO_SIG_KILL;					// set signal value
+		_getc_char, 		//	55	37	7	
     5808:	84 e0       	ldi	r24, 0x04	; 4
     580a:	80 93 b0 21 	sts	0x21B0, r24
-		signal_etx();							// call app-specific signal handler
+		_getc_char, 		//	56	38	8	
     580e:	0e 94 5b 37 	call	0x6eb6	; 0x6eb6 <signal_etx>
     5812:	08 95       	ret
-		return;
-	}
-
-	// normal path
-	if ((--f.rx_buf_head) == 0) { 				// wrap condition
+		_getc_char, 		//	57	39	9	
+		_getc_char, 		//	58	3A	:	(colon)
+		_getc_SEMICOLON,	//	59	3B	;	(semi-colon)
+		_getc_char, 		//	60	3C	<	(less than)
+		_getc_char, 		//	61	3D	=	(equal sign)
     5814:	80 91 b7 21 	lds	r24, 0x21B7
     5818:	81 50       	subi	r24, 0x01	; 1
     581a:	80 93 b7 21 	sts	0x21B7, r24
     581e:	80 91 b7 21 	lds	r24, 0x21B7
     5822:	88 23       	and	r24, r24
     5824:	19 f4       	brne	.+6      	; 0x582c <xio_usb_queue_RX_char+0x2a>
-		f.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
+		_getc_char, 		//	62	3E	>	(greater than)
     5826:	88 e1       	ldi	r24, 0x18	; 24
     5828:	80 93 b7 21 	sts	0x21B7, r24
-	}
-	if (f.rx_buf_head != f.rx_buf_tail) {		// write char unless buffer full
+		_getc_char, 		//	63	3F	?	(question mark)
+		_getc_char, 		//	64	40	@	(AT symbol)
     582c:	90 91 b7 21 	lds	r25, 0x21B7
     5830:	80 91 b6 21 	lds	r24, 0x21B6
     5834:	98 17       	cp	r25, r24
     5836:	39 f0       	breq	.+14     	; 0x5846 <xio_usb_queue_RX_char+0x44>
-		f.rx_buf[f.rx_buf_head] = c;			// FAKE INPUT DATA
+		_getc_char,			//	65	41	A	
     5838:	e0 91 b7 21 	lds	r30, 0x21B7
     583c:	f0 e0       	ldi	r31, 0x00	; 0
     583e:	e3 55       	subi	r30, 0x53	; 83
     5840:	fe 4d       	sbci	r31, 0xDE	; 222
     5842:	26 87       	std	Z+14, r18	; 0x0e
     5844:	08 95       	ret
-		return;
-	}
-	// buffer-full handling
-	if ((++f.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+		_getc_char,			//	66	42	B	
+		_getc_char,			//	67	43	C	
+		_getc_char,			//	68	44	D	
+		_getc_char,			//	69	45	E	
     5846:	80 91 b7 21 	lds	r24, 0x21B7
     584a:	8f 5f       	subi	r24, 0xFF	; 255
     584c:	80 93 b7 21 	sts	0x21B7, r24
     5850:	80 91 b7 21 	lds	r24, 0x21B7
     5854:	89 31       	cpi	r24, 0x19	; 25
     5856:	18 f0       	brcs	.+6      	; 0x585e <xio_usb_queue_RX_char+0x5c>
-		f.rx_buf_head = 1;
+		_getc_char,			//	70	46	F	
     5858:	81 e0       	ldi	r24, 0x01	; 1
     585a:	80 93 b7 21 	sts	0x21B7, r24
     585e:	08 95       	ret
 
 00005860 <xio_usb_queue_RX_string>:
-/*
- * xio_usb_queue_RX_string() - fake ISR to put a string in the RX buffer
- */
-
-void xio_usb_queue_RX_string(char *buf)
-{
+		_getc_char,			//	74	4A	J	
+		_getc_char,			//	75	4B	K	
+		_getc_char,			//	76	4C	L	
+		_getc_char,			//	77	4D	M	
+		_getc_char,			//	78	4E	N	
+		_getc_char,			//	79	4F	O	
     5860:	1f 93       	push	r17
     5862:	cf 93       	push	r28
     5864:	df 93       	push	r29
     5866:	ec 01       	movw	r28, r24
     5868:	10 e0       	ldi	r17, 0x00	; 0
     586a:	02 c0       	rjmp	.+4      	; 0x5870 <xio_usb_queue_RX_string+0x10>
-	char c;
-	uint8_t i=0;
-
-	while ((c = buf[i++]) != NUL) {
-		xio_usb_queue_RX_char(c);
+		_getc_char,			//	80	50	P	
+		_getc_char,			//	81	51	Q	
+		_getc_char,			//	82	52	R	
+		_getc_char,			//	83	53	S	
+		_getc_char,			//	84	54	T	
     586c:	0e 94 01 2c 	call	0x5802	; 0x5802 <xio_usb_queue_RX_char>
-void xio_usb_queue_RX_string(char *buf)
-{
-	char c;
-	uint8_t i=0;
-
-	while ((c = buf[i++]) != NUL) {
+		_getc_char,			//	78	4E	N	
+		_getc_char,			//	79	4F	O	
+		_getc_char,			//	80	50	P	
+		_getc_char,			//	81	51	Q	
+		_getc_char,			//	82	52	R	
+		_getc_char,			//	83	53	S	
     5870:	fe 01       	movw	r30, r28
     5872:	e1 0f       	add	r30, r17
     5874:	f1 1d       	adc	r31, r1
@@ -8956,21 +8844,21 @@ void xio_usb_queue_RX_string(char *buf)
     5878:	1f 5f       	subi	r17, 0xFF	; 255
     587a:	88 23       	and	r24, r24
     587c:	b9 f7       	brne	.-18     	; 0x586c <xio_usb_queue_RX_string+0xc>
-		xio_usb_queue_RX_char(c);
-	}
-}
+		_getc_char,			//	84	54	T	
+		_getc_char,			//	85	55	U	
+		_getc_char,			//	86	56	V	
     587e:	df 91       	pop	r29
     5880:	cf 91       	pop	r28
     5882:	1f 91       	pop	r17
     5884:	08 95       	ret
 
 00005886 <__vector_25>:
- *
- * 	See end notes in xio.h for a discussion of how the circular buffers work
- */
-
-ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX interrupt 
-{
+		_sig_RESUME, 		//	17	11	DC1 (XON) (Device Control 1) ^q	
+		_getc_char, 		//	18	12	DC2	(Device Control 2)
+		_sig_PAUSE,	 		//	19	13	DC3 (XOFF)(Device Control 3) ^s	
+		_getc_char, 		//	20	14	DC4	(Device Control 4)
+		_getc_char, 		//	21	15	NAK (Negativ Acknowledgemnt)	
+		_getc_char, 		//	22	16	SYN	(Synchronous Idle)
     5886:	1f 92       	push	r1
     5888:	0f 92       	push	r0
     588a:	0f b6       	in	r0, 0x3f	; 63
@@ -8990,64 +8878,64 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX interrupt
     58a6:	bf 93       	push	r27
     58a8:	ef 93       	push	r30
     58aa:	ff 93       	push	r31
-	uint8_t c = f.usart->DATA;					// can only read DATA once
+		_getc_char, 		//	23	17	ETB	(End of Trans. Block)
     58ac:	e0 91 e6 21 	lds	r30, 0x21E6
     58b0:	f0 91 e7 21 	lds	r31, 0x21E7
     58b4:	20 81       	ld	r18, Z
-
-	// trap signals - do not insert into RX queue
-	if (c == ETX) {								// trap ^c signal
+		_sig_KILL,	 		//	24	18	CAN	(Cancel) ^x
+		_getc_char, 		//	25	19	EM	(End of Medium)
+		_getc_char, 		//	26	1A	SUB	(Substitute)
     58b6:	23 30       	cpi	r18, 0x03	; 3
     58b8:	31 f4       	brne	.+12     	; 0x58c6 <__vector_25+0x40>
-		f.sig = XIO_SIG_KILL;					// set signal value
+		_sig_KILL, 			//	27	1B	ESC	(Escape)
     58ba:	84 e0       	ldi	r24, 0x04	; 4
     58bc:	80 93 b0 21 	sts	0x21B0, r24
-		signal_etx();							// call app-specific signal handler
+		_getc_char, 		//	28	1C	FS	(File Separator)
     58c0:	0e 94 5b 37 	call	0x6eb6	; 0x6eb6 <signal_etx>
     58c4:	25 c0       	rjmp	.+74     	; 0x5910 <__vector_25+0x8a>
-		return;
-	}
-
-	// normal character path
-	if ((--f.rx_buf_head) == 0) { 				// advance buffer head with wrap
+		_getc_char, 		//	29	1D	GS	(Group Separator)
+		_getc_char, 		//	30	1E	RS  (Reqst to Send)(Record Sep.)	
+		_getc_char, 		//	31	1F	US	(Unit Separator)
+		_getc_char, 		//	32	20	SP	(Space)
+		_getc_char, 		//	33	21	!	(exclamation mark)
     58c6:	80 91 b7 21 	lds	r24, 0x21B7
     58ca:	81 50       	subi	r24, 0x01	; 1
     58cc:	80 93 b7 21 	sts	0x21B7, r24
     58d0:	80 91 b7 21 	lds	r24, 0x21B7
     58d4:	88 23       	and	r24, r24
     58d6:	19 f4       	brne	.+6      	; 0x58de <__vector_25+0x58>
-		f.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
+		_getc_char, 		//	34	22	,	(double quote)	
     58d8:	88 e1       	ldi	r24, 0x18	; 24
     58da:	80 93 b7 21 	sts	0x21B7, r24
-	}
-	if (f.rx_buf_head != f.rx_buf_tail) {		// write char unless buffer full
+		_getc_char, 		//	35	23	#	(number sign)
+		_getc_char, 		//	36	24	$	(dollar sign)
     58de:	90 91 b7 21 	lds	r25, 0x21B7
     58e2:	80 91 b6 21 	lds	r24, 0x21B6
     58e6:	98 17       	cp	r25, r24
     58e8:	39 f0       	breq	.+14     	; 0x58f8 <__vector_25+0x72>
-		f.rx_buf[f.rx_buf_head] = c;
+		_getc_char, 		//	37	25	%	(percent)
     58ea:	e0 91 b7 21 	lds	r30, 0x21B7
     58ee:	f0 e0       	ldi	r31, 0x00	; 0
     58f0:	e3 55       	subi	r30, 0x53	; 83
     58f2:	fe 4d       	sbci	r31, 0xDE	; 222
     58f4:	26 87       	std	Z+14, r18	; 0x0e
     58f6:	0c c0       	rjmp	.+24     	; 0x5910 <__vector_25+0x8a>
-		return;
-	}
-	// buffer-full handling
-	if ((++f.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+		_getc_char, 		//	38	26	&	(ampersand)
+		_getc_char, 		//	39	27	'	(single quote)
+		_getc_char, 		//	40	28	(	(left/open parenthesis)
+		_getc_char, 		//	41	29	)	(right/closing parenth.)
     58f8:	80 91 b7 21 	lds	r24, 0x21B7
     58fc:	8f 5f       	subi	r24, 0xFF	; 255
     58fe:	80 93 b7 21 	sts	0x21B7, r24
     5902:	80 91 b7 21 	lds	r24, 0x21B7
     5906:	89 31       	cpi	r24, 0x19	; 25
     5908:	18 f0       	brcs	.+6      	; 0x5910 <__vector_25+0x8a>
-		f.rx_buf_head = 1;
+		_getc_char, 		//	42	2A	*	(asterisk)
     590a:	81 e0       	ldi	r24, 0x01	; 1
     590c:	80 93 b7 21 	sts	0x21B7, r24
-	}
-	// activate flow control here or before it gets to this level
-}
+		_getc_char, 		//	43	2B	+	(plus)
+		_getc_char, 		//	44	2C		(comma)
+		_getc_char,	 		//	45	2D	-	(minus or dash)
     5910:	ff 91       	pop	r31
     5912:	ef 91       	pop	r30
     5914:	bf 91       	pop	r27
@@ -10329,14 +10217,14 @@ void _tg_set_mode(uint8_t mode)
 	tg.mode = mode;
     5ff0:	83 e0       	ldi	r24, 0x03	; 3
     5ff2:	fb cf       	rjmp	.-10     	; 0x5fea <tg_parser+0x40>
-//	xio_pgm_open(PGMFILE(&square_circle_test100));
 //	xio_pgm_open(PGMFILE(&spiral_test50a));
 //	xio_pgm_open(PGMFILE(&spiral_test5));
 //	xio_pgm_open(PGMFILE(&dwell_test2));
 
-	xio_pgm_open(PGMFILE(&contraptor_circle)); 	// contraptor circle test
-    5ff4:	8e e9       	ldi	r24, 0x9E	; 158
-    5ff6:	97 e1       	ldi	r25, 0x17	; 23
+//	xio_pgm_open(PGMFILE(&contraptor_circle)); 	// contraptor circle test
+	xio_pgm_open(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
+    5ff4:	83 ee       	ldi	r24, 0xE3	; 227
+    5ff6:	9d e0       	ldi	r25, 0x0D	; 13
     5ff8:	0e 94 eb 2e 	call	0x5dd6	; 0x5dd6 <xio_pgm_open>
  * _tg_set_mode() - Set current operating mode
  */
@@ -11574,169 +11462,169 @@ ISR(A_MAX_ISR_vect)	{ _ls_handler(); }
     66f8:	18 95       	reti
 
 000066fa <xio_rs485_init>:
- *
- *	XIO_BAUD_xxxxx <null>		One of the supported baud rate enums
- */
+	if (c == ETX) {								// trap ^c signal
+		RS.sig = XIO_SIG_KILL;					// set signal value
+		signal_etx();							// call app-specific signal handler
+		return;
+	}
 
-void xio_rs485_init(const uint16_t control)
-{
     66fa:	9c 01       	movw	r18, r24
-	uint8_t baud = (uint8_t)(control & XIO_BAUD_gm);
+	// normal path
     66fc:	e8 2f       	mov	r30, r24
     66fe:	ef 70       	andi	r30, 0x0F	; 15
-
-	// transfer control flags to internal flag bits
-	fr.flags = XIO_FLAG_RS485_DEFS_gm;		// set flags to defaults & initial state
+	if ((--RSx.rx_buf_head) == 0) { 			// wrap condition
+		RSx.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
+	}
     6700:	87 e3       	ldi	r24, 0x37	; 55
     6702:	90 e0       	ldi	r25, 0x00	; 0
     6704:	80 93 f5 23 	sts	0x23F5, r24
     6708:	90 93 f6 23 	sts	0x23F6, r25
-		fr.flags |= XIO_FLAG_RD_bm;
+		RSx.rx_buf[RSx.rx_buf_head] = c;		// FAKE INPUT DATA
+		return;
 	}
-	if (control & XIO_WR) {
-		fr.flags |= XIO_FLAG_WR_bm;
-	}
-	if (control & XIO_BLOCK) {
+	// buffer-full handling
+	if ((++RSx.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+		RSx.rx_buf_head = 1;
     670c:	26 ff       	sbrs	r18, 6
     670e:	06 c0       	rjmp	.+12     	; 0x671c <xio_rs485_init+0x22>
-		fr.flags |= XIO_FLAG_BLOCK_bm;
+	}
     6710:	87 e3       	ldi	r24, 0x37	; 55
     6712:	90 e0       	ldi	r25, 0x00	; 0
     6714:	80 93 f5 23 	sts	0x23F5, r24
     6718:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_NOBLOCK) {
+}
+
     671c:	27 ff       	sbrs	r18, 7
     671e:	06 c0       	rjmp	.+12     	; 0x672c <xio_rs485_init+0x32>
-		fr.flags &= ~XIO_FLAG_BLOCK_bm;
+/*
     6720:	83 e3       	ldi	r24, 0x33	; 51
     6722:	90 e0       	ldi	r25, 0x00	; 0
     6724:	80 93 f5 23 	sts	0x23F5, r24
     6728:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_ECHO) {
+ * xio_rs485_queue_RX_string() - fake ISR to put a string in the RX buffer
+ */
     672c:	30 ff       	sbrs	r19, 0
     672e:	09 c0       	rjmp	.+18     	; 0x6742 <xio_rs485_init+0x48>
-		fr.flags |= XIO_FLAG_ECHO_bm;
+
     6730:	80 91 f5 23 	lds	r24, 0x23F5
     6734:	90 91 f6 23 	lds	r25, 0x23F6
     6738:	80 61       	ori	r24, 0x10	; 16
     673a:	80 93 f5 23 	sts	0x23F5, r24
     673e:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_NOECHO) {
+void xio_rs485_queue_RX_string(char *buf)
+{
     6742:	31 ff       	sbrs	r19, 1
     6744:	09 c0       	rjmp	.+18     	; 0x6758 <xio_rs485_init+0x5e>
-		fr.flags &= ~XIO_FLAG_ECHO_bm;
+	char c;
     6746:	80 91 f5 23 	lds	r24, 0x23F5
     674a:	90 91 f6 23 	lds	r25, 0x23F6
     674e:	8f 7e       	andi	r24, 0xEF	; 239
     6750:	80 93 f5 23 	sts	0x23F5, r24
     6754:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_CRLF) {
+	uint8_t i=0;
+
     6758:	32 ff       	sbrs	r19, 2
     675a:	09 c0       	rjmp	.+18     	; 0x676e <xio_rs485_init+0x74>
-		fr.flags |= XIO_FLAG_CRLF_bm;
+	while ((c = buf[i++]) != NUL) {
     675c:	80 91 f5 23 	lds	r24, 0x23F5
     6760:	90 91 f6 23 	lds	r25, 0x23F6
     6764:	80 62       	ori	r24, 0x20	; 32
     6766:	80 93 f5 23 	sts	0x23F5, r24
     676a:	90 93 f6 23 	sts	0x23F6, r25
+		xio_rs485_queue_RX_char(c);
 	}
-	if (control & XIO_NOCRLF) {
     676e:	33 ff       	sbrs	r19, 3
     6770:	09 c0       	rjmp	.+18     	; 0x6784 <xio_rs485_init+0x8a>
-		fr.flags &= ~XIO_FLAG_CRLF_bm;
+}
     6772:	80 91 f5 23 	lds	r24, 0x23F5
     6776:	90 91 f6 23 	lds	r25, 0x23F6
     677a:	8f 7d       	andi	r24, 0xDF	; 223
     677c:	80 93 f5 23 	sts	0x23F5, r24
     6780:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_LINEMODE) {
+
+/* 
     6784:	34 ff       	sbrs	r19, 4
     6786:	09 c0       	rjmp	.+18     	; 0x679a <xio_rs485_init+0xa0>
-		fr.flags |= XIO_FLAG_LINEMODE_bm;
+ * USB_TX_ISR - USB transmitter interrupt (TX)
     6788:	80 91 f5 23 	lds	r24, 0x23F5
     678c:	90 91 f6 23 	lds	r25, 0x23F6
     6790:	80 64       	ori	r24, 0x40	; 64
     6792:	80 93 f5 23 	sts	0x23F5, r24
     6796:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_NOLINEMODE) {
+ *
+ * The TX interrupt dilemma: TX interrupts occur when the USART DATA register is 
     679a:	35 ff       	sbrs	r19, 5
     679c:	09 c0       	rjmp	.+18     	; 0x67b0 <xio_rs485_init+0xb6>
-		fr.flags &= ~XIO_FLAG_LINEMODE_bm;
+ * empty (and the ISR must disable interrupts when nothing's left to read, or they 
     679e:	80 91 f5 23 	lds	r24, 0x23F5
     67a2:	90 91 f6 23 	lds	r25, 0x23F6
     67a6:	8f 7b       	andi	r24, 0xBF	; 191
     67a8:	80 93 f5 23 	sts	0x23F5, r24
     67ac:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_SEMICOLONS) {
+ * keep firing). If the TX buffer is completely empty (TXCIF is set) then enabling
+ * interrupts does no good. The USART won't interrupt and the TX circular buffer 
     67b0:	36 ff       	sbrs	r19, 6
     67b2:	09 c0       	rjmp	.+18     	; 0x67c6 <xio_rs485_init+0xcc>
-		fr.flags |= XIO_FLAG_SEMICOLONS_bm;
+ * never empties.
     67b4:	80 91 f5 23 	lds	r24, 0x23F5
     67b8:	90 91 f6 23 	lds	r25, 0x23F6
     67bc:	80 68       	ori	r24, 0x80	; 128
     67be:	80 93 f5 23 	sts	0x23F5, r24
     67c2:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_NOSEMICOLONS) {
+ *
+ * So we define a dequeue function that can be called from either the ISR or be 
     67c6:	37 ff       	sbrs	r19, 7
     67c8:	09 c0       	rjmp	.+18     	; 0x67dc <xio_rs485_init+0xe2>
-		fr.flags &= ~XIO_FLAG_SEMICOLONS_bm;
+ * called from the putc() if it detects TXCIfr. Care should be taken to make sure 
     67ca:	80 91 f5 23 	lds	r24, 0x23F5
     67ce:	90 91 f6 23 	lds	r25, 0x23F6
     67d2:	8f 77       	andi	r24, 0x7F	; 127
     67d4:	80 93 f5 23 	sts	0x23F5, r24
     67d8:	90 93 f6 23 	sts	0x23F6, r25
-	}
+ * these two callers don't collide (like only enabling interrupts in putc() AFTER
+ * the dequeue has occurred).
+ */
 
-	// character signals and error returns
-	fr.sig = 0;
     67dc:	10 92 f8 23 	sts	0x23F8, r1
-	dev_rs485.udata = &(fr.sig);				// bind sig register to FILE struct
+ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC0 data register empty
     67e0:	88 ef       	ldi	r24, 0xF8	; 248
     67e2:	93 e2       	ldi	r25, 0x23	; 35
     67e4:	80 93 28 20 	sts	0x2028, r24
     67e8:	90 93 29 20 	sts	0x2029, r25
-
-	// setup internal RX/TX buffers
-	fr.rx_buf_head = 1;						// can't use location 0
+{
+	if (RSx.tx_buf_head == RSx.tx_buf_tail) {	// buffer empty - disable ints
+		RSx.usart->CTRLA = CTRLA_RXON_TXOFF;	// doesn't work if you just &= it
     67ec:	81 e0       	ldi	r24, 0x01	; 1
     67ee:	80 93 ff 23 	sts	0x23FF, r24
-	fr.rx_buf_tail = 1;
+//		PMIC_DisableLowLevel(); 				// disable USART TX interrupts
     67f2:	80 93 fe 23 	sts	0x23FE, r24
-	fr.tx_buf_head = 1;
+		return;
     67f6:	80 93 01 24 	sts	0x2401, r24
-	fr.tx_buf_tail = 1;
+	}
     67fa:	80 93 00 24 	sts	0x2400, r24
-	fr.len = sizeof(fr.buf);					// offset to zero
+	if (!TX_MUTEX(RS.flags)) {
     67fe:	82 e0       	ldi	r24, 0x02	; 2
     6800:	80 93 fb 23 	sts	0x23FB, r24
-
-	fr.usart = &RS485_USART;				// bind USART structure
+		if (--(RSx.tx_buf_tail) == 0) {			// advance tail and wrap if needed
+			RSx.tx_buf_tail = TX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
     6804:	80 eb       	ldi	r24, 0xB0	; 176
     6806:	98 e0       	ldi	r25, 0x08	; 8
     6808:	80 93 2e 24 	sts	0x242E, r24
     680c:	90 93 2f 24 	sts	0x242F, r25
-	fr.port = &RS485_PORT;					// bind PORT structure
+		}
     6810:	80 e4       	ldi	r24, 0x40	; 64
     6812:	96 e0       	ldi	r25, 0x06	; 6
     6814:	80 93 30 24 	sts	0x2430, r24
     6818:	90 93 31 24 	sts	0x2431, r25
-
-	// baud rate and USART setup
-	if (baud == XIO_BAUD_UNSPECIFIED) {
+		RSx.usart->DATA = RSx.tx_buf[RSx.tx_buf_tail];	// write char to TX DATA reg
+	}
+}
     681c:	ee 23       	and	r30, r30
     681e:	09 f4       	brne	.+2      	; 0x6822 <xio_rs485_init+0x128>
     6820:	e5 e0       	ldi	r30, 0x05	; 5
-		baud = XIO_BAUD_DEFAULT;
-	}
-	fr.usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
+
+/* 
+ * xio_putc_rs485() - blocking and nonblocking char writer for USB device 
     6822:	8e 2f       	mov	r24, r30
     6824:	90 e0       	ldi	r25, 0x00	; 0
     6826:	fc 01       	movw	r30, r24
@@ -11748,7 +11636,7 @@ void xio_rs485_init(const uint16_t control)
     6832:	16 96       	adiw	r26, 0x06	; 6
     6834:	ec 93       	st	X, r30
     6836:	16 97       	sbiw	r26, 0x06	; 6
-	fr.usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
+ *
     6838:	81 5d       	subi	r24, 0xD1	; 209
     683a:	98 4f       	sbci	r25, 0xF8	; 248
     683c:	fc 01       	movw	r30, r24
@@ -11756,54 +11644,54 @@ void xio_rs485_init(const uint16_t control)
     6840:	17 96       	adiw	r26, 0x07	; 7
     6842:	8c 93       	st	X, r24
     6844:	17 97       	sbiw	r26, 0x07	; 7
-	fr.usart->CTRLB = USART_TXEN_bm | USART_RXEN_bm;// enable tx and rx on USART
+ *	Compatible with stdio system - may be bound to a FILE handle
     6846:	88 e1       	ldi	r24, 0x18	; 24
     6848:	14 96       	adiw	r26, 0x04	; 4
     684a:	8c 93       	st	X, r24
     684c:	14 97       	sbiw	r26, 0x04	; 4
-	fr.usart->CTRLA = USART_CTRLA_RXON_TXON;		// enable tx and rx interrupts
+ *
     684e:	81 e2       	ldi	r24, 0x21	; 33
     6850:	13 96       	adiw	r26, 0x03	; 3
     6852:	8c 93       	st	X, r24
-
-	fr.port->DIRCLR = RS485_RX_bm;	// clr RX pin as input
+ *	Note: Originally I had the routine advancing the buffer head and comparing 
+ *		  against the buffer tail to detect buffer full (it would sleep if the 
     6854:	e0 e4       	ldi	r30, 0x40	; 64
     6856:	f6 e0       	ldi	r31, 0x06	; 6
     6858:	80 e4       	ldi	r24, 0x40	; 64
     685a:	82 83       	std	Z+2, r24	; 0x02
-	fr.port->DIRSET = RS485_TX_bm; 	// set TX pin as output
+ *		  buffer was full). This unfortunately collides with the buffer empty 
     685c:	80 e8       	ldi	r24, 0x80	; 128
     685e:	81 83       	std	Z+1, r24	; 0x01
-	fr.port->OUTSET = RS485_TX_bm;	// set TX HI as initial state
+ *		  detection in the dequeue routine - causing the dequeing ISR to lock up
     6860:	85 83       	std	Z+5, r24	; 0x05
-	fr.port->DIRSET = RS485_DE_bm; 	// Data Enable (TX) to output (TX enabled hi)
+ *		  when the buffer was full. Using a local next_tx_buffer_head prevents this
     6862:	90 e2       	ldi	r25, 0x20	; 32
     6864:	91 83       	std	Z+1, r25	; 0x01
-	fr.port->DIRSET = RS485_RE_bm; 	// Recv Enable (RX) to output (RX enabled lo)
+ */
     6866:	80 e1       	ldi	r24, 0x10	; 16
     6868:	81 83       	std	Z+1, r24	; 0x01
-	fr.port->OUTCLR = RS485_DE_bm;	// DE lo initially (TX disabled)
+
     686a:	96 83       	std	Z+6, r25	; 0x06
-	fr.port->OUTCLR = RS485_RE_bm; 	// RE lo initially (RX enabled)
+int xio_putc_rs485(const char c, FILE *stream)
     686c:	86 83       	std	Z+6, r24	; 0x06
-}
+{
     686e:	08 95       	ret
 
 00006870 <xio_rs485_control>:
- *
- *	XIO_BAUD_xxxxx	<null>		One of the supported baud rate enums
- */
-
-int8_t xio_rs485_control(const uint16_t control, const int16_t arg)
-{
+	// dequeue the buffer if DATA register is ready
+	if (RSx.usart->STATUS & 0x20) {
+		if (RSx.tx_buf_head == RSx.tx_buf_tail) {	// buf may be empty if IRQ got it
+			return (0);
+		}
+		RS.flags |= XIO_FLAG_TX_MUTEX_bm;		// claim mutual exclusion from ISR
     6870:	ac 01       	movw	r20, r24
-	// commands with no args
-	if ((control & XIO_BAUD_gm) != XIO_BAUD_UNSPECIFIED) {
+		if (--(RSx.tx_buf_tail) == 0) {			// advance tail and wrap if needed
+			RSx.tx_buf_tail = TX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
     6872:	8f 70       	andi	r24, 0x0F	; 15
     6874:	90 70       	andi	r25, 0x00	; 0
     6876:	00 97       	sbiw	r24, 0x00	; 0
     6878:	91 f0       	breq	.+36     	; 0x689e <xio_rs485_control+0x2e>
-		fr.usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[(control & XIO_BAUD_gm)]);
+		}
     687a:	a0 91 2e 24 	lds	r26, 0x242E
     687e:	b0 91 2f 24 	lds	r27, 0x242F
     6882:	9c 01       	movw	r18, r24
@@ -11814,126 +11702,126 @@ int8_t xio_rs485_control(const uint16_t control, const int16_t arg)
     688c:	16 96       	adiw	r26, 0x06	; 6
     688e:	2c 93       	st	X, r18
     6890:	16 97       	sbiw	r26, 0x06	; 6
-		fr.usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[(control & XIO_BAUD_gm)]);
+		RSx.usart->DATA = RSx.tx_buf[RSx.tx_buf_tail];// write char to TX DATA reg
     6892:	81 5d       	subi	r24, 0xD1	; 209
     6894:	98 4f       	sbci	r25, 0xF8	; 248
     6896:	fc 01       	movw	r30, r24
     6898:	84 91       	lpm	r24, Z+
     689a:	17 96       	adiw	r26, 0x07	; 7
     689c:	8c 93       	st	X, r24
+		RS.flags &= ~XIO_FLAG_TX_MUTEX_bm;		// release mutual exclusion lock
 	}
-	if (control & XIO_BLOCK) {
     689e:	46 ff       	sbrs	r20, 6
     68a0:	09 c0       	rjmp	.+18     	; 0x68b4 <xio_rs485_control+0x44>
-		fr.flags |= XIO_FLAG_BLOCK_bm;
+	// enable interrupts regardless
     68a2:	80 91 f5 23 	lds	r24, 0x23F5
     68a6:	90 91 f6 23 	lds	r25, 0x23F6
     68aa:	84 60       	ori	r24, 0x04	; 4
     68ac:	80 93 f5 23 	sts	0x23F5, r24
     68b0:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_NOBLOCK) {
+	RSx.usart->CTRLA = CTRLA_RXON_TXON;			// won't work if you just |= it
+	PMIC_EnableLowLevel(); 						// enable USART TX interrupts
     68b4:	47 ff       	sbrs	r20, 7
     68b6:	09 c0       	rjmp	.+18     	; 0x68ca <xio_rs485_control+0x5a>
-		fr.flags &= ~XIO_FLAG_BLOCK_bm;
+	sei();										// enable global interrupts
     68b8:	80 91 f5 23 	lds	r24, 0x23F5
     68bc:	90 91 f6 23 	lds	r25, 0x23F6
     68c0:	8b 7f       	andi	r24, 0xFB	; 251
     68c2:	80 93 f5 23 	sts	0x23F5, r24
     68c6:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_ECHO) {
+
+	return (0);	// 0 = OK
     68ca:	50 ff       	sbrs	r21, 0
     68cc:	09 c0       	rjmp	.+18     	; 0x68e0 <xio_rs485_control+0x70>
-		fr.flags |= XIO_FLAG_ECHO_bm;
+}
     68ce:	80 91 f5 23 	lds	r24, 0x23F5
     68d2:	90 91 f6 23 	lds	r25, 0x23F6
     68d6:	80 61       	ori	r24, 0x10	; 16
     68d8:	80 93 f5 23 	sts	0x23F5, r24
     68dc:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_NOECHO) {
+
+/* 
     68e0:	51 ff       	sbrs	r21, 1
     68e2:	09 c0       	rjmp	.+18     	; 0x68f6 <xio_rs485_control+0x86>
-		fr.flags &= ~XIO_FLAG_ECHO_bm;
+ * xio_getc_rs485 character dispatch functions
     68e4:	80 91 f5 23 	lds	r24, 0x23F5
     68e8:	90 91 f6 23 	lds	r25, 0x23F6
     68ec:	8f 7e       	andi	r24, 0xEF	; 239
     68ee:	80 93 f5 23 	sts	0x23F5, r24
     68f2:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_CRLF) {
+ *
+ *  Functions take no input but use static RS.c, RS.signals, and others
     68f6:	52 ff       	sbrs	r21, 2
     68f8:	09 c0       	rjmp	.+18     	; 0x690c <xio_rs485_control+0x9c>
-		fr.flags |= XIO_FLAG_CRLF_bm;
+ *  Returns c (may be translated depending on the function)
     68fa:	80 91 f5 23 	lds	r24, 0x23F5
     68fe:	90 91 f6 23 	lds	r25, 0x23F6
     6902:	80 62       	ori	r24, 0x20	; 32
     6904:	80 93 f5 23 	sts	0x23F5, r24
     6908:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_NOCRLF) {
+ */
+
     690c:	53 ff       	sbrs	r21, 3
     690e:	09 c0       	rjmp	.+18     	; 0x6922 <xio_rs485_control+0xb2>
-		fr.flags &= ~XIO_FLAG_CRLF_bm;
+static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
     6910:	80 91 f5 23 	lds	r24, 0x23F5
     6914:	90 91 f6 23 	lds	r25, 0x23F6
     6918:	8f 7d       	andi	r24, 0xDF	; 223
     691a:	80 93 f5 23 	sts	0x23F5, r24
     691e:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_LINEMODE) {
+//static int (*getcFuncs[])(void) = {			// ALTERNATE: put table in SRAM
+
     6922:	54 ff       	sbrs	r21, 4
     6924:	09 c0       	rjmp	.+18     	; 0x6938 <xio_rs485_control+0xc8>
-		fr.flags |= XIO_FLAG_LINEMODE_bm;
+							// dec  hex symbol
     6926:	80 91 f5 23 	lds	r24, 0x23F5
     692a:	90 91 f6 23 	lds	r25, 0x23F6
     692e:	80 64       	ori	r24, 0x40	; 64
     6930:	80 93 f5 23 	sts	0x23F5, r24
     6934:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_NOLINEMODE) {
+		_getc_NEWLINE, 		//	0	00	NUL	(Null char)		(TREATED AS NEWLINE)
+		_getc_char, 		//	1	01	SOH	(Start of Header)
     6938:	55 ff       	sbrs	r21, 5
     693a:	09 c0       	rjmp	.+18     	; 0x694e <xio_rs485_control+0xde>
-		fr.flags &= ~XIO_FLAG_LINEMODE_bm;
+		_getc_char, 		//	2	02	STX	(Start of Text)
     693c:	80 91 f5 23 	lds	r24, 0x23F5
     6940:	90 91 f6 23 	lds	r25, 0x23F6
     6944:	8f 7b       	andi	r24, 0xBF	; 191
     6946:	80 93 f5 23 	sts	0x23F5, r24
     694a:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_SEMICOLONS) {
+		_sig_KILL,		 	//	3	03	ETX (End of Text) ^c
+		_getc_char, 		//	4	04	EOT	(End of Transmission)
     694e:	56 ff       	sbrs	r21, 6
     6950:	09 c0       	rjmp	.+18     	; 0x6964 <xio_rs485_control+0xf4>
-		fr.flags |= XIO_FLAG_SEMICOLONS_bm;
+		_getc_char, 		//	5	05	ENQ	(Enquiry)
     6952:	80 91 f5 23 	lds	r24, 0x23F5
     6956:	90 91 f6 23 	lds	r25, 0x23F6
     695a:	80 68       	ori	r24, 0x80	; 128
     695c:	80 93 f5 23 	sts	0x23F5, r24
     6960:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	if (control & XIO_NOSEMICOLONS) {
+		_getc_char, 		//	6	06	ACK	(Acknowledgment)
+		_getc_char, 		//	7	07	BEL	(Bell)
     6964:	57 ff       	sbrs	r21, 7
     6966:	09 c0       	rjmp	.+18     	; 0x697a <xio_rs485_control+0x10a>
-		fr.flags &= ~XIO_FLAG_SEMICOLONS_bm;
+		_getc_DELETE, 		//	8	08	BS	(Backspace)
     6968:	80 91 f5 23 	lds	r24, 0x23F5
     696c:	90 91 f6 23 	lds	r25, 0x23F6
     6970:	8f 77       	andi	r24, 0x7F	; 127
     6972:	80 93 f5 23 	sts	0x23F5, r24
     6976:	90 93 f6 23 	sts	0x23F6, r25
-	}
-	return (0);
-}
+		_getc_char, 		//	9	09	HT	(Horizontal Tab)
+		_getc_NEWLINE, 		//	10	0A	LF	(Line Feed)
+		_getc_char, 		//	11	0B	VT	(Vertical Tab)
     697a:	80 e0       	ldi	r24, 0x00	; 0
     697c:	08 95       	ret
 
 0000697e <__vector_29>:
- * these two callers don't collide (like only enabling interrupts in putc() AFTER
- * the dequeue has occurred).
- */
-
-ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC0 data register empty
-{
+		_getc_char,			//	107	6B	k	
+		_getc_char,			//	108	6C	l	
+		_getc_char,			//	109	6D	m	
+		_getc_char,			//	110	6E	n	
+		_getc_char,			//	111	6F	o	
+		_getc_char,			//	112	70	p	
     697e:	1f 92       	push	r1
     6980:	0f 92       	push	r0
     6982:	0f b6       	in	r0, 0x3f	; 63
@@ -11947,37 +11835,37 @@ ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC0 data register empty
     6992:	bf 93       	push	r27
     6994:	ef 93       	push	r30
     6996:	ff 93       	push	r31
-	if (fr.tx_buf_head == fr.tx_buf_tail) {			// buffer empty - disable ints
+		_getc_char,			//	113	71	q	
     6998:	90 91 01 24 	lds	r25, 0x2401
     699c:	80 91 00 24 	lds	r24, 0x2400
     69a0:	98 17       	cp	r25, r24
     69a2:	39 f4       	brne	.+14     	; 0x69b2 <__vector_29+0x34>
-		fr.usart->CTRLA = USART_CTRLA_RXON_TXOFF;	// doesn't work if you just &= it
+		_getc_char,			//	114	72	r	
     69a4:	e0 91 2e 24 	lds	r30, 0x242E
     69a8:	f0 91 2f 24 	lds	r31, 0x242F
     69ac:	80 e2       	ldi	r24, 0x20	; 32
     69ae:	83 83       	std	Z+3, r24	; 0x03
     69b0:	1e c0       	rjmp	.+60     	; 0x69ee <__vector_29+0x70>
-//		PMIC_DisableLowLevel(); 					// disable USART TX interrupts
-		return;
-	}
-	if (!TX_MUTEX(fr.flags)) {
+		_getc_char,			//	115	73	s	
+		_getc_char,			//	116	74	t	
+		_getc_char,			//	117	75	u	
+		_getc_char,			//	118	76	v	
     69b2:	80 91 f5 23 	lds	r24, 0x23F5
     69b6:	90 91 f6 23 	lds	r25, 0x23F6
     69ba:	93 fd       	sbrc	r25, 3
     69bc:	18 c0       	rjmp	.+48     	; 0x69ee <__vector_29+0x70>
-		if (--(fr.tx_buf_tail) == 0) {				// advance tail and wrap if needed
+		_getc_char,			//	119	77	w	
     69be:	80 91 00 24 	lds	r24, 0x2400
     69c2:	81 50       	subi	r24, 0x01	; 1
     69c4:	80 93 00 24 	sts	0x2400, r24
     69c8:	80 91 00 24 	lds	r24, 0x2400
     69cc:	88 23       	and	r24, r24
     69ce:	19 f4       	brne	.+6      	; 0x69d6 <__vector_29+0x58>
-			fr.tx_buf_tail = TX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
+		_getc_char,			//	120	78	x	
     69d0:	81 e1       	ldi	r24, 0x11	; 17
     69d2:	80 93 00 24 	sts	0x2400, r24
-		}
-		fr.usart->DATA = fr.tx_buf[fr.tx_buf_tail];	// write char to TX DATA register
+		_getc_char,			//	121	79	y	
+		_getc_char,			//	122	7A	z	
     69d6:	e0 91 2e 24 	lds	r30, 0x242E
     69da:	f0 91 2f 24 	lds	r31, 0x242F
     69de:	a0 91 00 24 	lds	r26, 0x2400
@@ -11987,8 +11875,8 @@ ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC0 data register empty
     69e8:	97 96       	adiw	r26, 0x27	; 39
     69ea:	8c 91       	ld	r24, X
     69ec:	80 83       	st	Z, r24
-	}
-}
+		_getc_char,			//	123	7B	{	(left/opening brace)
+		_getc_char,			//	124	7C	|	(vertical bar)
     69ee:	ff 91       	pop	r31
     69f0:	ef 91       	pop	r30
     69f2:	bf 91       	pop	r27
@@ -12004,50 +11892,50 @@ ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC0 data register empty
     6a06:	18 95       	reti
 
 00006a08 <xio_rs485_putc>:
- *		  detection in the dequeue routine - causing the dequeing ISR to lock up
- *		  when the buffer was full. Using a local next_tx_buffer_head prevents this
- */
-
-int xio_rs485_putc(const char c, FILE *stream)
-{
+ *
+ *  Get next character from RX buffer.
+ *	See "Notes on the circular buffers" at end of xio.h for buffer details.
+ *
+ *	This routine returns a single character from the RX buffer to the caller.
+ *	It's typically called by fgets() and is useful for single-threaded IO cases.
     6a08:	48 2f       	mov	r20, r24
-	if ((fr.next_tx_buf_head = fr.tx_buf_head-1) == 0) { // advance head and handle wrap
-		fr.next_tx_buf_head = TX_BUFFER_SIZE-1;		 // -1 avoids the off-by-one error
-	}
-	while(fr.next_tx_buf_head == fr.tx_buf_tail) {   // TX buffer full. sleep or return.
-		if (BLOCKING(fr.flags)) {
+ *	Cases with multiple concurrent IO streams may want to use the readln() function
+ *	which is incompatible with the stdio system. 
+ *
+ *  Flags that affect behavior:
+ *
     6a0a:	20 91 f5 23 	lds	r18, 0x23F5
     6a0e:	30 91 f6 23 	lds	r19, 0x23F6
     6a12:	d9 01       	movw	r26, r18
     6a14:	a4 70       	andi	r26, 0x04	; 4
     6a16:	b0 70       	andi	r27, 0x00	; 0
-	};
-	// write to data register
-	fr.tx_buf_head = fr.next_tx_buf_head;			// accept the next buffer head value
-	fr.tx_buf[fr.tx_buf_head] = c;				// ...and write char to buffer
-
-	if (CRLF(fr.flags) && (c == '\n')) {			// detect LF and add a CR
+ *  ECHO behaviors
+ *		- if ECHO is enabled echo character to stdout
+ *		- echo all line termination chars as newlines ('\n')
+ *		- Note: putc is responsible for expanding newlines to <cr><lf> if needed
+ *
+ *  SPECIAL CHARACTERS 
     6a18:	b9 01       	movw	r22, r18
     6a1a:	60 72       	andi	r22, 0x20	; 32
     6a1c:	70 70       	andi	r23, 0x00	; 0
- *		  when the buffer was full. Using a local next_tx_buffer_head prevents this
- */
-
-int xio_rs485_putc(const char c, FILE *stream)
-{
-	if ((fr.next_tx_buf_head = fr.tx_buf_head-1) == 0) { // advance head and handle wrap
+ *  Get next character from RX buffer.
+ *	See "Notes on the circular buffers" at end of xio.h for buffer details.
+ *
+ *	This routine returns a single character from the RX buffer to the caller.
+ *	It's typically called by fgets() and is useful for single-threaded IO cases.
+ *	Cases with multiple concurrent IO streams may want to use the readln() function
     6a1e:	90 91 01 24 	lds	r25, 0x2401
     6a22:	91 50       	subi	r25, 0x01	; 1
     6a24:	c1 f4       	brne	.+48     	; 0x6a56 <xio_rs485_putc+0x4e>
     6a26:	91 e1       	ldi	r25, 0x11	; 17
     6a28:	16 c0       	rjmp	.+44     	; 0x6a56 <xio_rs485_putc+0x4e>
-		fr.next_tx_buf_head = TX_BUFFER_SIZE-1;		 // -1 avoids the off-by-one error
-	}
-	while(fr.next_tx_buf_head == fr.tx_buf_tail) {   // TX buffer full. sleep or return.
-		if (BLOCKING(fr.flags)) {
+ *	which is incompatible with the stdio system. 
+ *
+ *  Flags that affect behavior:
+ *
     6a2a:	10 97       	sbiw	r26, 0x00	; 0
     6a2c:	61 f0       	breq	.+24     	; 0x6a46 <xio_rs485_putc+0x3e>
-			sleep_mode();
+ *  BLOCKING behaviors
     6a2e:	80 91 48 00 	lds	r24, 0x0048
     6a32:	81 60       	ori	r24, 0x01	; 1
     6a34:	80 93 48 00 	sts	0x0048, r24
@@ -12057,37 +11945,37 @@ int xio_rs485_putc(const char c, FILE *stream)
     6a40:	80 93 48 00 	sts	0x0048, r24
     6a44:	08 c0       	rjmp	.+16     	; 0x6a56 <xio_rs485_putc+0x4e>
     6a46:	90 93 02 24 	sts	0x2402, r25
-		} else {
-			fr.sig = XIO_SIG_WOULDBLOCK;
+ *	 	- execute blocking or non-blocking read depending on controls
+ *		- return character or -1 & XIO_SIG_WOULDBLOCK if non-blocking
     6a4a:	83 e0       	ldi	r24, 0x03	; 3
     6a4c:	80 93 f8 23 	sts	0x23F8, r24
     6a50:	2f ef       	ldi	r18, 0xFF	; 255
     6a52:	3f ef       	ldi	r19, 0xFF	; 255
     6a54:	54 c0       	rjmp	.+168    	; 0x6afe <xio_rs485_putc+0xf6>
-int xio_rs485_putc(const char c, FILE *stream)
-{
-	if ((fr.next_tx_buf_head = fr.tx_buf_head-1) == 0) { // advance head and handle wrap
-		fr.next_tx_buf_head = TX_BUFFER_SIZE-1;		 // -1 avoids the off-by-one error
-	}
-	while(fr.next_tx_buf_head == fr.tx_buf_tail) {   // TX buffer full. sleep or return.
+ *	This routine returns a single character from the RX buffer to the caller.
+ *	It's typically called by fgets() and is useful for single-threaded IO cases.
+ *	Cases with multiple concurrent IO streams may want to use the readln() function
+ *	which is incompatible with the stdio system. 
+ *
+ *  Flags that affect behavior:
     6a56:	80 91 00 24 	lds	r24, 0x2400
     6a5a:	98 17       	cp	r25, r24
     6a5c:	31 f3       	breq	.-52     	; 0x6a2a <xio_rs485_putc+0x22>
-			fr.sig = XIO_SIG_WOULDBLOCK;
-			return(_FDEV_ERR);
-		}
-	};
-	// write to data register
-	fr.tx_buf_head = fr.next_tx_buf_head;			// accept the next buffer head value
+ *		- return character or -1 & XIO_SIG_WOULDBLOCK if non-blocking
+ *		- return character or sleep() if blocking
+ *
+ *  ECHO behaviors
+ *		- if ECHO is enabled echo character to stdout
+ *		- echo all line termination chars as newlines ('\n')
     6a5e:	90 93 01 24 	sts	0x2401, r25
-	fr.tx_buf[fr.tx_buf_head] = c;				// ...and write char to buffer
+ *		- Note: putc is responsible for expanding newlines to <cr><lf> if needed
     6a62:	e0 91 01 24 	lds	r30, 0x2401
     6a66:	f0 e0       	ldi	r31, 0x00	; 0
     6a68:	eb 50       	subi	r30, 0x0B	; 11
     6a6a:	fc 4d       	sbci	r31, 0xDC	; 220
     6a6c:	47 a3       	std	Z+39, r20	; 0x27
-
-	if (CRLF(fr.flags) && (c == '\n')) {			// detect LF and add a CR
+ *
+ *  SPECIAL CHARACTERS 
     6a6e:	61 15       	cp	r22, r1
     6a70:	71 05       	cpc	r23, r1
     6a72:	21 f0       	breq	.+8      	; 0x6a7c <xio_rs485_putc+0x74>
@@ -12096,11 +11984,11 @@ int xio_rs485_putc(const char c, FILE *stream)
     6a78:	4d e0       	ldi	r20, 0x0D	; 13
     6a7a:	d1 cf       	rjmp	.-94     	; 0x6a1e <xio_rs485_putc+0x16>
     6a7c:	90 93 02 24 	sts	0x2402, r25
-		return xio_rs485_putc('\r', stream);		// recursion.
-	}
+ *		- special characters such as EOL and control chars are handled by the
+ *		  character helper routines. See them for behaviors
+ */
 
-	// dequeue the buffer if DATA register is ready
-	if (fr.usart->STATUS & 0x20) {
+int xio_getc_rs485(FILE *stream)
     6a80:	a0 91 2e 24 	lds	r26, 0x242E
     6a84:	b0 91 2f 24 	lds	r27, 0x242F
     6a88:	11 96       	adiw	r26, 0x01	; 1
@@ -12108,71 +11996,71 @@ int xio_rs485_putc(const char c, FILE *stream)
     6a8c:	11 97       	sbiw	r26, 0x01	; 1
     6a8e:	85 ff       	sbrs	r24, 5
     6a90:	27 c0       	rjmp	.+78     	; 0x6ae0 <xio_rs485_putc+0xd8>
-		if (fr.tx_buf_head == fr.tx_buf_tail) {	// buf might be empty if IRQ got it
+{
     6a92:	90 91 01 24 	lds	r25, 0x2401
     6a96:	80 91 00 24 	lds	r24, 0x2400
     6a9a:	98 17       	cp	r25, r24
     6a9c:	71 f1       	breq	.+92     	; 0x6afa <xio_rs485_putc+0xf2>
-			return (0);
-		}
-		fr.flags |= XIO_FLAG_TX_MUTEX_bm;		// claim mutual exclusion from ISR
+	while (RSx.rx_buf_head == RSx.rx_buf_tail) {// RX ISR buffer empty
+		if (BLOCKING(RS.flags)) {
+			sleep_mode();
     6a9e:	38 60       	ori	r19, 0x08	; 8
     6aa0:	20 93 f5 23 	sts	0x23F5, r18
     6aa4:	30 93 f6 23 	sts	0x23F6, r19
-		if (--(fr.tx_buf_tail) == 0) {			// advance tail and wrap if needed
+		} else {
     6aa8:	80 91 00 24 	lds	r24, 0x2400
     6aac:	81 50       	subi	r24, 0x01	; 1
     6aae:	80 93 00 24 	sts	0x2400, r24
     6ab2:	80 91 00 24 	lds	r24, 0x2400
     6ab6:	88 23       	and	r24, r24
     6ab8:	19 f4       	brne	.+6      	; 0x6ac0 <xio_rs485_putc+0xb8>
-			fr.tx_buf_tail = TX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
+			RS.sig = XIO_SIG_EAGAIN;
     6aba:	81 e1       	ldi	r24, 0x11	; 17
     6abc:	80 93 00 24 	sts	0x2400, r24
+			return(_FDEV_ERR);
 		}
-		fr.usart->DATA = fr.tx_buf[fr.tx_buf_tail];// write char to TX DATA register
     6ac0:	e0 91 00 24 	lds	r30, 0x2400
     6ac4:	f0 e0       	ldi	r31, 0x00	; 0
     6ac6:	eb 50       	subi	r30, 0x0B	; 11
     6ac8:	fc 4d       	sbci	r31, 0xDC	; 220
     6aca:	87 a1       	ldd	r24, Z+39	; 0x27
     6acc:	8c 93       	st	X, r24
-		fr.flags &= ~XIO_FLAG_TX_MUTEX_bm;		// release mutual exclusion lock
+	}
     6ace:	80 91 f5 23 	lds	r24, 0x23F5
     6ad2:	90 91 f6 23 	lds	r25, 0x23F6
     6ad6:	97 7f       	andi	r25, 0xF7	; 247
     6ad8:	80 93 f5 23 	sts	0x23F5, r24
     6adc:	90 93 f6 23 	sts	0x23F6, r25
+	if (--(RSx.rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
+		RSx.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
 	}
-	// enable interrupts regardless
-	fr.usart->CTRLA = USART_CTRLA_RXON_TXON;	// doesn't work if you just |= it
     6ae0:	e0 91 2e 24 	lds	r30, 0x242E
     6ae4:	f0 91 2f 24 	lds	r31, 0x242F
     6ae8:	81 e2       	ldi	r24, 0x21	; 33
     6aea:	83 83       	std	Z+3, r24	; 0x03
-	PMIC_EnableLowLevel(); 						// enable USART TX interrupts
+	RS.c = (RSx.rx_buf[RSx.rx_buf_tail] & 0x007F);	// get char from RX & mask MSB
     6aec:	80 91 a2 00 	lds	r24, 0x00A2
     6af0:	81 60       	ori	r24, 0x01	; 1
     6af2:	e0 ea       	ldi	r30, 0xA0	; 160
     6af4:	f0 e0       	ldi	r31, 0x00	; 0
     6af6:	82 83       	std	Z+2, r24	; 0x02
-	sei();										// enable global interrupts
+	// 	call action procedure from dispatch table in FLASH (see xio.h for typedef)
     6af8:	78 94       	sei
     6afa:	20 e0       	ldi	r18, 0x00	; 0
     6afc:	30 e0       	ldi	r19, 0x00	; 0
-
-	return (0);	// 0 = OK
+	return (((fptr_int_void)(pgm_read_word(&getcFuncs[RS.c])))());
+	//return (getcFuncs[c]()); // call action procedure from dispatch table in RAM
 }
     6afe:	c9 01       	movw	r24, r18
     6b00:	08 95       	ret
 
 00006b02 <xio_rs485_getc>:
- */
 
-int xio_rs485_getc(FILE *stream)
-{
-	while (fr.rx_buf_head == fr.rx_buf_tail) {	// RX ISR buffer empty
-		if (BLOCKING(fr.flags)) {
+/* 
+ *	xio_readln_rs485() - main loop task for USB device
+ *
+ *	Non-blocking, run-to-completion task for handling incoming data from USB port.
+ *
     6b02:	20 91 f5 23 	lds	r18, 0x23F5
     6b06:	30 91 f6 23 	lds	r19, 0x23F6
     6b0a:	24 70       	andi	r18, 0x04	; 4
@@ -12181,7 +12069,7 @@ int xio_rs485_getc(FILE *stream)
     6b10:	21 15       	cp	r18, r1
     6b12:	31 05       	cpc	r19, r1
     6b14:	61 f0       	breq	.+24     	; 0x6b2e <xio_rs485_getc+0x2c>
-			sleep_mode();
+ *	Runs non-blocking (port scan) and retains line context across calls.
     6b16:	80 91 48 00 	lds	r24, 0x0048
     6b1a:	81 60       	ori	r24, 0x01	; 1
     6b1c:	80 93 48 00 	sts	0x0048, r24
@@ -12190,40 +12078,40 @@ int xio_rs485_getc(FILE *stream)
     6b26:	8e 7f       	andi	r24, 0xFE	; 254
     6b28:	80 93 48 00 	sts	0x0048, r24
     6b2c:	06 c0       	rjmp	.+12     	; 0x6b3a <xio_rs485_getc+0x38>
-		} else {
-			fr.sig = XIO_SIG_WOULDBLOCK;
+ *  Should be called each time a character is received by the RX ISR, but can be 
+ *	called randomly and multiple times without damage. 
     6b2e:	83 e0       	ldi	r24, 0x03	; 3
     6b30:	80 93 f8 23 	sts	0x23F8, r24
     6b34:	2f ef       	ldi	r18, 0xFF	; 255
     6b36:	3f ef       	ldi	r19, 0xFF	; 255
     6b38:	26 c0       	rjmp	.+76     	; 0x6b86 <xio_rs485_getc+0x84>
- *		  character helper routines. See them for behaviors
- */
+};
 
-int xio_rs485_getc(FILE *stream)
-{
-	while (fr.rx_buf_head == fr.rx_buf_tail) {	// RX ISR buffer empty
+/* 
+ *	xio_readln_rs485() - main loop task for USB device
+ *
+ *	Non-blocking, run-to-completion task for handling incoming data from USB port.
     6b3a:	90 91 ff 23 	lds	r25, 0x23FF
     6b3e:	80 91 fe 23 	lds	r24, 0x23FE
     6b42:	98 17       	cp	r25, r24
     6b44:	29 f3       	breq	.-54     	; 0x6b10 <xio_rs485_getc+0xe>
-		} else {
-			fr.sig = XIO_SIG_WOULDBLOCK;
-			return(_FDEV_ERR);
-		}
-	}
-	if (--(fr.rx_buf_tail) == 0) {				// advance RX tail (RXQ read pointer)
+ *  Should be called each time a character is received by the RX ISR, but can be 
+ *	called randomly and multiple times without damage. 
+ *
+ *	Reads a complete (newline terminated) line from the USB device and invokes
+ *	the registered line handler function once line is complete.
+ *
     6b46:	80 91 fe 23 	lds	r24, 0x23FE
     6b4a:	81 50       	subi	r24, 0x01	; 1
     6b4c:	80 93 fe 23 	sts	0x23FE, r24
     6b50:	80 91 fe 23 	lds	r24, 0x23FE
     6b54:	88 23       	and	r24, r24
     6b56:	19 f4       	brne	.+6      	; 0x6b5e <xio_rs485_getc+0x5c>
-		fr.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
+ *	Traps signals (e.g. ^c) and dispatches to registered signal handler(s).
     6b58:	88 e1       	ldi	r24, 0x18	; 24
     6b5a:	80 93 fe 23 	sts	0x23FE, r24
-	}
-	fr.c = (fr.rx_buf[fr.rx_buf_tail] & 0x007F);	// get char from RX buffer & mask MSB
+ *	Signals leave the line buffer intact, so it either can continue to be collected
+ *	of it should be wiped.
     6b5e:	e0 91 fe 23 	lds	r30, 0x23FE
     6b62:	f0 e0       	ldi	r31, 0x00	; 0
     6b64:	eb 50       	subi	r30, 0x0B	; 11
@@ -12231,8 +12119,8 @@ int xio_rs485_getc(FILE *stream)
     6b68:	86 85       	ldd	r24, Z+14	; 0x0e
     6b6a:	8f 77       	andi	r24, 0x7F	; 127
     6b6c:	80 93 f9 23 	sts	0x23F9, r24
-	// 	call action procedure from dispatch table in FLASH (see xio.h for typedef)
-	return (((fptr_int_void)(pgm_read_word(&getcFuncs[fr.c])))());
+ *
+ *  Performs the following functions:
     6b70:	90 e0       	ldi	r25, 0x00	; 0
     6b72:	88 0f       	add	r24, r24
     6b74:	99 1f       	adc	r25, r25
@@ -12244,18 +12132,18 @@ int xio_rs485_getc(FILE *stream)
     6b80:	f9 01       	movw	r30, r18
     6b82:	19 95       	eicall
     6b84:	9c 01       	movw	r18, r24
-	//return (getcFuncs[c]()); // call action procedure from dispatch table in RAM
-}
+ *		- read character from RX buffer
+ *		- strip signals and dispatch them to signal handler
     6b86:	c9 01       	movw	r24, r18
     6b88:	08 95       	ret
 
 00006b8a <_getc_char>:
+ *		- collect complete line and pass to line handler function
+ *		- trap buffer overflow condition and return an error
+ *
+ *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
+ */
 
-/* xio_rs485_getc helper routines */
-
-static int _getc_char(void)
-{
-	if (ECHO(fr.flags)) xio_rs485_putc(fr.c, stdout);
     6b8a:	80 91 f5 23 	lds	r24, 0x23F5
     6b8e:	84 ff       	sbrs	r24, 4
     6b90:	08 c0       	rjmp	.+16     	; 0x6ba2 <_getc_char+0x18>
@@ -12263,90 +12151,77 @@ static int _getc_char(void)
     6b96:	70 91 41 25 	lds	r23, 0x2541
     6b9a:	80 91 f9 23 	lds	r24, 0x23F9
     6b9e:	0e 94 04 35 	call	0x6a08	; 0x6a08 <xio_rs485_putc>
-	return(fr.c);
-}
+int xio_readln_rs485(char *buf, uint8_t len)
+{
     6ba2:	80 91 f9 23 	lds	r24, 0x23F9
     6ba6:	90 e0       	ldi	r25, 0x00	; 0
     6ba8:	08 95       	ret
 
 00006baa <_getc_NEWLINE>:
-
-static int _getc_NEWLINE(void)		// convert CRs and LFs to newlines if line mode
-{
-	if (LINEMODE(fr.flags)) fr.c = '\n';
+	if (!IN_LINE(RS.flags)) {					// first time thru initializations
+		RS.len = 0;								// zero buffer
+		RS.status = 0;
+		RS.sig = XIO_SIG_OK;					// no signal action
     6baa:	90 91 f5 23 	lds	r25, 0x23F5
     6bae:	96 ff       	sbrs	r25, 6
     6bb0:	03 c0       	rjmp	.+6      	; 0x6bb8 <_getc_NEWLINE+0xe>
     6bb2:	8a e0       	ldi	r24, 0x0A	; 10
     6bb4:	80 93 f9 23 	sts	0x23F9, r24
-	if (ECHO(fr.flags)) xio_rs485_putc(fr.c, stdout);
+		RS.flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
     6bb8:	94 ff       	sbrs	r25, 4
     6bba:	08 c0       	rjmp	.+16     	; 0x6bcc <_getc_NEWLINE+0x22>
     6bbc:	60 91 40 25 	lds	r22, 0x2540
     6bc0:	70 91 41 25 	lds	r23, 0x2541
     6bc4:	80 91 f9 23 	lds	r24, 0x23F9
     6bc8:	0e 94 04 35 	call	0x6a08	; 0x6a08 <xio_rs485_putc>
-	return(fr.c);
-}
+	}
+	if (RSx.rx_buf_head == RSx.rx_buf_tail) {	// RX ISR buffer empty
     6bcc:	80 91 f9 23 	lds	r24, 0x23F9
     6bd0:	90 e0       	ldi	r25, 0x00	; 0
     6bd2:	08 95       	ret
 
 00006bd4 <_getc_SEMICOLON>:
-
-static int _getc_SEMICOLON(void)
-{
-	if (SEMICOLONS(fr.flags)) {
+//		RS.sig = XIO_SIG_EAGAIN;
+		return(TG_EAGAIN);
+	}
+	if (--(RSx.rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
     6bd4:	80 91 f5 23 	lds	r24, 0x23F5
     6bd8:	87 ff       	sbrs	r24, 7
     6bda:	03 c0       	rjmp	.+6      	; 0x6be2 <_getc_SEMICOLON+0xe>
-		return (_getc_NEWLINE());			// if semi mode treat as an EOL
+		RSx.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
     6bdc:	0e 94 d5 35 	call	0x6baa	; 0x6baa <_getc_NEWLINE>
     6be0:	08 95       	ret
-	} 
-	return (_getc_char());					// else treat as any other character
+	}
+	RS.c = (RSx.rx_buf[RSx.rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
     6be2:	0e 94 c5 35 	call	0x6b8a	; 0x6b8a <_getc_char>
-}
+	return (((fptr_int_void)(pgm_read_word(&readlnFuncs[RS.c])))()); // dispatch char
     6be6:	08 95       	ret
 
 00006be8 <_getc_DELETE>:
+}
 
-static int _getc_DELETE(void)				// can't handle a delete very well
-{
-	fr.sig = XIO_SIG_DELETE;
+/* xio_rs485_readln helper routines */
+
     6be8:	8a e0       	ldi	r24, 0x0A	; 10
     6bea:	80 93 f8 23 	sts	0x23F8, r24
-	return(_FDEV_ERR);
-}
+static int _readln_char(void)
+{
     6bee:	8f ef       	ldi	r24, 0xFF	; 255
     6bf0:	9f ef       	ldi	r25, 0xFF	; 255
     6bf2:	08 95       	ret
 
 00006bf4 <xio_rs485_readln>:
- *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
- */
-
-int xio_rs485_readln(char *buf, uint8_t len)
-{
-	if (!IN_LINE(fr.flags)) {					// first time thru initializations
     6bf4:	20 91 f5 23 	lds	r18, 0x23F5
     6bf8:	30 91 f6 23 	lds	r19, 0x23F6
     6bfc:	36 fd       	sbrc	r19, 6
     6bfe:	0d c0       	rjmp	.+26     	; 0x6c1a <xio_rs485_readln+0x26>
-		fr.i = 0;								// zero buffer
     6c00:	10 92 fa 23 	sts	0x23FA, r1
-		fr.len = len;							// save arg into struct 
     6c04:	60 93 fb 23 	sts	0x23FB, r22
-		fr.buf = buf;							// save arg into struct 
     6c08:	80 93 fc 23 	sts	0x23FC, r24
     6c0c:	90 93 fd 23 	sts	0x23FD, r25
-//		fr.sig = XIO_SIG_OK;					// no signal action
-		fr.flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
     6c10:	30 64       	ori	r19, 0x40	; 64
     6c12:	20 93 f5 23 	sts	0x23F5, r18
     6c16:	30 93 f6 23 	sts	0x23F6, r19
-	}
-	if (fr.rx_buf_head == fr.rx_buf_tail) {		// RX ISR buffer empty
     6c1a:	90 91 ff 23 	lds	r25, 0x23FF
     6c1e:	80 91 fe 23 	lds	r24, 0x23FE
     6c22:	98 17       	cp	r25, r24
@@ -12354,21 +12229,14 @@ int xio_rs485_readln(char *buf, uint8_t len)
     6c26:	21 e0       	ldi	r18, 0x01	; 1
     6c28:	30 e0       	ldi	r19, 0x00	; 0
     6c2a:	20 c0       	rjmp	.+64     	; 0x6c6c <xio_rs485_readln+0x78>
-//		fr.sig = XIO_SIG_WOULDBLOCK;
-		return(TG_EAGAIN);
-	}
-	if (--(fr.rx_buf_tail) == 0) {				// advance RX tail (RXQ read pointer)
     6c2c:	80 91 fe 23 	lds	r24, 0x23FE
     6c30:	81 50       	subi	r24, 0x01	; 1
     6c32:	80 93 fe 23 	sts	0x23FE, r24
     6c36:	80 91 fe 23 	lds	r24, 0x23FE
     6c3a:	88 23       	and	r24, r24
     6c3c:	19 f4       	brne	.+6      	; 0x6c44 <xio_rs485_readln+0x50>
-		fr.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
     6c3e:	88 e1       	ldi	r24, 0x18	; 24
     6c40:	80 93 fe 23 	sts	0x23FE, r24
-	}
-	fr.c = (fr.rx_buf[fr.rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
     6c44:	e0 91 fe 23 	lds	r30, 0x23FE
     6c48:	f0 e0       	ldi	r31, 0x00	; 0
     6c4a:	eb 50       	subi	r30, 0x0B	; 11
@@ -12376,7 +12244,6 @@ int xio_rs485_readln(char *buf, uint8_t len)
     6c4e:	86 85       	ldd	r24, Z+14	; 0x0e
     6c50:	8f 77       	andi	r24, 0x7F	; 127
     6c52:	80 93 f9 23 	sts	0x23F9, r24
-	return (((fptr_int_void)(pgm_read_word(&readlnFuncs[fr.c])))()); // dispatch on character
     6c56:	90 e0       	ldi	r25, 0x00	; 0
     6c58:	88 0f       	add	r24, r24
     6c5a:	99 1f       	adc	r25, r25
@@ -12388,43 +12255,30 @@ int xio_rs485_readln(char *buf, uint8_t len)
     6c66:	f9 01       	movw	r30, r18
     6c68:	19 95       	eicall
     6c6a:	9c 01       	movw	r18, r24
-}
     6c6c:	c9 01       	movw	r24, r18
     6c6e:	08 95       	ret
 
 00006c70 <_readln_char>:
-
-/* xio_rs485_readln helper routines */
-
-static int _readln_char(void)
-{
-	if (fr.i > fr.len) {						// trap buffer overflow
     6c70:	90 91 fa 23 	lds	r25, 0x23FA
     6c74:	20 91 fb 23 	lds	r18, 0x23FB
     6c78:	e0 91 fc 23 	lds	r30, 0x23FC
     6c7c:	f0 91 fd 23 	lds	r31, 0x23FD
     6c80:	29 17       	cp	r18, r25
     6c82:	48 f4       	brcc	.+18     	; 0x6c96 <_readln_char+0x26>
-		fr.sig = XIO_SIG_EOL;
     6c84:	81 e0       	ldi	r24, 0x01	; 1
     6c86:	80 93 f8 23 	sts	0x23F8, r24
-		fr.buf[fr.len] = NUL;					// fr.len is zero based
     6c8a:	e2 0f       	add	r30, r18
     6c8c:	f1 1d       	adc	r31, r1
     6c8e:	10 82       	st	Z, r1
     6c90:	27 e0       	ldi	r18, 0x07	; 7
     6c92:	30 e0       	ldi	r19, 0x00	; 0
     6c94:	16 c0       	rjmp	.+44     	; 0x6cc2 <_readln_char+0x52>
-		return (TG_BUFFER_FULL);
-	}
-	fr.buf[fr.i++] = fr.c;
     6c96:	e9 0f       	add	r30, r25
     6c98:	f1 1d       	adc	r31, r1
     6c9a:	80 91 f9 23 	lds	r24, 0x23F9
     6c9e:	80 83       	st	Z, r24
     6ca0:	9f 5f       	subi	r25, 0xFF	; 255
     6ca2:	90 93 fa 23 	sts	0x23FA, r25
-	if (ECHO(fr.flags)) xio_rs485_putc(fr.c, stdout);// conditional echo
     6ca6:	80 91 f5 23 	lds	r24, 0x23F5
     6caa:	84 ff       	sbrs	r24, 4
     6cac:	08 c0       	rjmp	.+16     	; 0x6cbe <_readln_char+0x4e>
@@ -12434,73 +12288,47 @@ static int _readln_char(void)
     6cba:	0e 94 04 35 	call	0x6a08	; 0x6a08 <xio_rs485_putc>
     6cbe:	21 e0       	ldi	r18, 0x01	; 1
     6cc0:	30 e0       	ldi	r19, 0x00	; 0
-	return (TG_EAGAIN);						// line is still in process
-}
     6cc2:	c9 01       	movw	r24, r18
     6cc4:	08 95       	ret
 
 00006cc6 <_readln_NEWLINE>:
-
-static int _readln_NEWLINE(void)				// handles any valid newline char
-{
-	fr.sig = XIO_SIG_EOL;
     6cc6:	81 e0       	ldi	r24, 0x01	; 1
     6cc8:	80 93 f8 23 	sts	0x23F8, r24
-	fr.buf[fr.i] = NUL;
     6ccc:	80 91 fa 23 	lds	r24, 0x23FA
     6cd0:	e0 91 fc 23 	lds	r30, 0x23FC
     6cd4:	f0 91 fd 23 	lds	r31, 0x23FD
     6cd8:	e8 0f       	add	r30, r24
     6cda:	f1 1d       	adc	r31, r1
     6cdc:	10 82       	st	Z, r1
-	fr.flags &= ~XIO_FLAG_IN_LINE_bm;			// clear in-line state (reset)
     6cde:	20 91 f5 23 	lds	r18, 0x23F5
     6ce2:	30 91 f6 23 	lds	r19, 0x23F6
     6ce6:	c9 01       	movw	r24, r18
     6ce8:	9f 7b       	andi	r25, 0xBF	; 191
     6cea:	80 93 f5 23 	sts	0x23F5, r24
     6cee:	90 93 f6 23 	sts	0x23F6, r25
-	if (ECHO(fr.flags)) xio_rs485_putc('\n',stdout);// echo a newline
     6cf2:	24 ff       	sbrs	r18, 4
     6cf4:	07 c0       	rjmp	.+14     	; 0x6d04 <_readln_NEWLINE+0x3e>
     6cf6:	60 91 40 25 	lds	r22, 0x2540
     6cfa:	70 91 41 25 	lds	r23, 0x2541
     6cfe:	8a e0       	ldi	r24, 0x0A	; 10
     6d00:	0e 94 04 35 	call	0x6a08	; 0x6a08 <xio_rs485_putc>
-	return 0;
-//	return ((int)fr.line_func(fr.buf));			// call line handler function
-}
     6d04:	80 e0       	ldi	r24, 0x00	; 0
     6d06:	90 e0       	ldi	r25, 0x00	; 0
     6d08:	08 95       	ret
 
 00006d0a <_readln_SEMICOLON>:
-
-static int _readln_SEMICOLON(void)				// semicolon is a conditional newline
-{
-	if (SEMICOLONS(fr.flags)) {
     6d0a:	80 91 f5 23 	lds	r24, 0x23F5
     6d0e:	87 ff       	sbrs	r24, 7
     6d10:	03 c0       	rjmp	.+6      	; 0x6d18 <_readln_SEMICOLON+0xe>
-		return (_readln_NEWLINE());				// if semi mode treat as an EOL
     6d12:	0e 94 63 36 	call	0x6cc6	; 0x6cc6 <_readln_NEWLINE>
     6d16:	08 95       	ret
-	} else {
-		return (_readln_char());				// else treat as any other character
     6d18:	0e 94 38 36 	call	0x6c70	; 0x6c70 <_readln_char>
-	}
-}
     6d1c:	08 95       	ret
 
 00006d1e <_readln_DELETE>:
-
-static int _readln_DELETE(void)
-{
-	if (--fr.i >= 0) {
     6d1e:	80 91 fa 23 	lds	r24, 0x23FA
     6d22:	81 50       	subi	r24, 0x01	; 1
     6d24:	80 93 fa 23 	sts	0x23FA, r24
-		if (ECHO(fr.flags)) xio_rs485_putc(fr.c, stdout);
     6d28:	80 91 f5 23 	lds	r24, 0x23F5
     6d2c:	84 ff       	sbrs	r24, 4
     6d2e:	08 c0       	rjmp	.+16     	; 0x6d40 <_readln_DELETE+0x22>
@@ -12508,167 +12336,130 @@ static int _readln_DELETE(void)
     6d34:	70 91 41 25 	lds	r23, 0x2541
     6d38:	80 91 f9 23 	lds	r24, 0x23F9
     6d3c:	0e 94 04 35 	call	0x6a08	; 0x6a08 <xio_rs485_putc>
-	} else {
-		fr.i = 0;
-	}
-	return (TG_EAGAIN);							// line is still in process
-}
     6d40:	81 e0       	ldi	r24, 0x01	; 1
     6d42:	90 e0       	ldi	r25, 0x00	; 0
     6d44:	08 95       	ret
 
 00006d46 <_sig_KILL>:
- * Signal handlers. These are vestigal stubs that have no effect.
- */
-
-static int _sig_KILL(void)
-{
-	fr.sig = XIO_SIG_KILL;
     6d46:	84 e0       	ldi	r24, 0x04	; 4
     6d48:	80 93 f8 23 	sts	0x23F8, r24
-	return(_FDEV_ERR);
-}
     6d4c:	8f ef       	ldi	r24, 0xFF	; 255
     6d4e:	9f ef       	ldi	r25, 0xFF	; 255
     6d50:	08 95       	ret
 
 00006d52 <_sig_PAUSE>:
-
-static int _sig_PAUSE(void)
-{
-	fr.sig = XIO_SIG_PAUSE;
     6d52:	86 e0       	ldi	r24, 0x06	; 6
     6d54:	80 93 f8 23 	sts	0x23F8, r24
-	return(_FDEV_ERR);
-}
     6d58:	8f ef       	ldi	r24, 0xFF	; 255
     6d5a:	9f ef       	ldi	r25, 0xFF	; 255
     6d5c:	08 95       	ret
 
 00006d5e <_sig_RESUME>:
-
-static int _sig_RESUME(void)
-{
-	fr.sig = XIO_SIG_RESUME;
     6d5e:	87 e0       	ldi	r24, 0x07	; 7
     6d60:	80 93 f8 23 	sts	0x23F8, r24
-	return(_FDEV_ERR);
-}
     6d64:	8f ef       	ldi	r24, 0xFF	; 255
     6d66:	9f ef       	ldi	r25, 0xFF	; 255
     6d68:	08 95       	ret
 
 00006d6a <_sig_SHIFTOUT>:
-
-static int _sig_SHIFTOUT(void)
-{
-	fr.sig = XIO_SIG_SHIFTOUT;
     6d6a:	88 e0       	ldi	r24, 0x08	; 8
     6d6c:	80 93 f8 23 	sts	0x23F8, r24
-	return(_FDEV_ERR);
-}
     6d70:	8f ef       	ldi	r24, 0xFF	; 255
     6d72:	9f ef       	ldi	r25, 0xFF	; 255
     6d74:	08 95       	ret
 
 00006d76 <_sig_SHIFTIN>:
-
-static int _sig_SHIFTIN(void)
-{
-	fr.sig = XIO_SIG_SHIFTIN;
     6d76:	89 e0       	ldi	r24, 0x09	; 9
     6d78:	80 93 f8 23 	sts	0x23F8, r24
-	return(_FDEV_ERR);
-}
     6d7c:	8f ef       	ldi	r24, 0xFF	; 255
     6d7e:	9f ef       	ldi	r25, 0xFF	; 255
     6d80:	08 95       	ret
 
 00006d82 <xio_rs485_queue_RX_char>:
-/*
- * xio_rs485_queue_RX_char() - fake ISR to put a char in the RX buffer
- */
-
-void xio_rs485_queue_RX_char(const char c)
-{
+		_getc_char, 		//	55	37	7	
+		_getc_char, 		//	56	38	8	
+		_getc_char, 		//	57	39	9	
+		_getc_char, 		//	58	3A	:	(colon)
+		_getc_SEMICOLON,	//	59	3B	;	(semi-colon)
+		_getc_char, 		//	60	3C	<	(less than)
     6d82:	28 2f       	mov	r18, r24
-	// trap signals - do not insert into RX queue
-	if (c == ETX) {								// trap ^c signal
+		_getc_char, 		//	61	3D	=	(equal sign)
+		_getc_char, 		//	62	3E	>	(greater than)
     6d84:	83 30       	cpi	r24, 0x03	; 3
     6d86:	31 f4       	brne	.+12     	; 0x6d94 <xio_rs485_queue_RX_char+0x12>
-		fr.sig = XIO_SIG_KILL;					// set signal value
+		_getc_char, 		//	63	3F	?	(question mark)
     6d88:	84 e0       	ldi	r24, 0x04	; 4
     6d8a:	80 93 f8 23 	sts	0x23F8, r24
-		signal_etx();							// call app-specific signal handler
+		_getc_char, 		//	64	40	@	(AT symbol)
     6d8e:	0e 94 5b 37 	call	0x6eb6	; 0x6eb6 <signal_etx>
     6d92:	08 95       	ret
-		return;
-	}
-
-	// normal path
-	if ((--fr.rx_buf_head) == 0) { 				// wrap condition
+		_getc_char,			//	65	41	A	
+		_getc_char,			//	66	42	B	
+		_getc_char,			//	67	43	C	
+		_getc_char,			//	68	44	D	
+		_getc_char,			//	69	45	E	
     6d94:	80 91 ff 23 	lds	r24, 0x23FF
     6d98:	81 50       	subi	r24, 0x01	; 1
     6d9a:	80 93 ff 23 	sts	0x23FF, r24
     6d9e:	80 91 ff 23 	lds	r24, 0x23FF
     6da2:	88 23       	and	r24, r24
     6da4:	19 f4       	brne	.+6      	; 0x6dac <xio_rs485_queue_RX_char+0x2a>
-		fr.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
+		_getc_char,			//	70	46	F	
     6da6:	88 e1       	ldi	r24, 0x18	; 24
     6da8:	80 93 ff 23 	sts	0x23FF, r24
-	}
-	if (fr.rx_buf_head != fr.rx_buf_tail) {		// write char unless buffer full
+		_getc_char,			//	71	47	G	
+		_getc_char,			//	72	48	H	
     6dac:	90 91 ff 23 	lds	r25, 0x23FF
     6db0:	80 91 fe 23 	lds	r24, 0x23FE
     6db4:	98 17       	cp	r25, r24
     6db6:	39 f0       	breq	.+14     	; 0x6dc6 <xio_rs485_queue_RX_char+0x44>
-		fr.rx_buf[fr.rx_buf_head] = c;			// FAKE INPUT DATA
+		_getc_char,			//	73	49	I	
     6db8:	e0 91 ff 23 	lds	r30, 0x23FF
     6dbc:	f0 e0       	ldi	r31, 0x00	; 0
     6dbe:	eb 50       	subi	r30, 0x0B	; 11
     6dc0:	fc 4d       	sbci	r31, 0xDC	; 220
     6dc2:	26 87       	std	Z+14, r18	; 0x0e
     6dc4:	08 95       	ret
-		return;
-	}
-	// buffer-full handling
-	if ((++fr.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+		_getc_char,			//	74	4A	J	
+		_getc_char,			//	75	4B	K	
+		_getc_char,			//	76	4C	L	
+		_getc_char,			//	77	4D	M	
     6dc6:	80 91 ff 23 	lds	r24, 0x23FF
     6dca:	8f 5f       	subi	r24, 0xFF	; 255
     6dcc:	80 93 ff 23 	sts	0x23FF, r24
     6dd0:	80 91 ff 23 	lds	r24, 0x23FF
     6dd4:	89 31       	cpi	r24, 0x19	; 25
     6dd6:	18 f0       	brcs	.+6      	; 0x6dde <xio_rs485_queue_RX_char+0x5c>
-		fr.rx_buf_head = 1;
+		_getc_char,			//	78	4E	N	
     6dd8:	81 e0       	ldi	r24, 0x01	; 1
     6dda:	80 93 ff 23 	sts	0x23FF, r24
     6dde:	08 95       	ret
 
 00006de0 <xio_rs485_queue_RX_string>:
-/*
- * xio_rs485_queue_RX_string() - fake ISR to put a string in the RX buffer
- */
-
-void xio_rs485_queue_RX_string(char *buf)
-{
+		_getc_char,			//	82	52	R	
+		_getc_char,			//	83	53	S	
+		_getc_char,			//	84	54	T	
+		_getc_char,			//	85	55	U	
+		_getc_char,			//	86	56	V	
+		_getc_char,			//	87	57	W	
     6de0:	1f 93       	push	r17
     6de2:	cf 93       	push	r28
     6de4:	df 93       	push	r29
     6de6:	ec 01       	movw	r28, r24
     6de8:	10 e0       	ldi	r17, 0x00	; 0
     6dea:	02 c0       	rjmp	.+4      	; 0x6df0 <xio_rs485_queue_RX_string+0x10>
-	char c;
-	uint8_t i=0;
-
-	while ((c = buf[i++]) != NUL) {
-		xio_rs485_queue_RX_char(c);
+		_getc_char,			//	88	58	X	
+		_getc_char,			//	89	59	Y	
+		_getc_char,			//	90	5A	Z	
+		_getc_char,			//	91	5B	[	(left/opening bracket)
+		_getc_char,			//	92	5C	\	(back slash)
     6dec:	0e 94 c1 36 	call	0x6d82	; 0x6d82 <xio_rs485_queue_RX_char>
-void xio_rs485_queue_RX_string(char *buf)
-{
-	char c;
-	uint8_t i=0;
-
-	while ((c = buf[i++]) != NUL) {
+		_getc_char,			//	86	56	V	
+		_getc_char,			//	87	57	W	
+		_getc_char,			//	88	58	X	
+		_getc_char,			//	89	59	Y	
+		_getc_char,			//	90	5A	Z	
+		_getc_char,			//	91	5B	[	(left/opening bracket)
     6df0:	fe 01       	movw	r30, r28
     6df2:	e1 0f       	add	r30, r17
     6df4:	f1 1d       	adc	r31, r1
@@ -12676,21 +12467,21 @@ void xio_rs485_queue_RX_string(char *buf)
     6df8:	1f 5f       	subi	r17, 0xFF	; 255
     6dfa:	88 23       	and	r24, r24
     6dfc:	b9 f7       	brne	.-18     	; 0x6dec <xio_rs485_queue_RX_string+0xc>
-		xio_rs485_queue_RX_char(c);
-	}
-}
+		_getc_char,			//	92	5C	\	(back slash)
+		_getc_char,			//	93	5D	]	(right/closing bracket)
+		_getc_char,			//	94	5E	^	(caret/circumflex)
     6dfe:	df 91       	pop	r29
     6e00:	cf 91       	pop	r28
     6e02:	1f 91       	pop	r17
     6e04:	08 95       	ret
 
 00006e06 <__vector_28>:
- *
- * 	See end notes in xio.h for a discussion of how the circular bufers work
- */
-
-ISR(RS485_RX_ISR_vect)		//ISR(USARTC1_RXC_vect)	// serial port C0 RX interrupt 
-{
+		_getc_char, 		//	25	19	EM	(End of Medium)
+		_getc_char, 		//	26	1A	SUB	(Substitute)
+		_sig_KILL, 			//	27	1B	ESC	(Escape)
+		_getc_char, 		//	28	1C	FS	(File Separator)
+		_getc_char, 		//	29	1D	GS	(Group Separator)
+		_getc_char, 		//	30	1E	RS  (Reqst to Send)(Record Sep.)	
     6e06:	1f 92       	push	r1
     6e08:	0f 92       	push	r0
     6e0a:	0f b6       	in	r0, 0x3f	; 63
@@ -12710,64 +12501,64 @@ ISR(RS485_RX_ISR_vect)		//ISR(USARTC1_RXC_vect)	// serial port C0 RX interrupt
     6e26:	bf 93       	push	r27
     6e28:	ef 93       	push	r30
     6e2a:	ff 93       	push	r31
-	uint8_t c = fr.usart->DATA;					// can only read DATA once
+		_getc_char, 		//	31	1F	US	(Unit Separator)
     6e2c:	e0 91 2e 24 	lds	r30, 0x242E
     6e30:	f0 91 2f 24 	lds	r31, 0x242F
     6e34:	20 81       	ld	r18, Z
-
-	// trap signals - do not insert into RX queue
-	if (c == ETX) {								// trap ^c signal
+		_getc_char, 		//	32	20	SP	(Space)
+		_getc_char, 		//	33	21	!	(exclamation mark)
+		_getc_char, 		//	34	22	,	(double quote)	
     6e36:	23 30       	cpi	r18, 0x03	; 3
     6e38:	31 f4       	brne	.+12     	; 0x6e46 <__vector_28+0x40>
-		fr.sig = XIO_SIG_KILL;					// set signal value
+		_getc_char, 		//	35	23	#	(number sign)
     6e3a:	84 e0       	ldi	r24, 0x04	; 4
     6e3c:	80 93 f8 23 	sts	0x23F8, r24
-		signal_etx();							// call app-specific signal handler
+		_getc_char, 		//	36	24	$	(dollar sign)
     6e40:	0e 94 5b 37 	call	0x6eb6	; 0x6eb6 <signal_etx>
     6e44:	25 c0       	rjmp	.+74     	; 0x6e90 <__vector_28+0x8a>
-		return;
-	}
-
-	// normal path
-	if ((--fr.rx_buf_head) == 0) { 				// advance buffer head with wrap
+		_getc_char, 		//	37	25	%	(percent)
+		_getc_char, 		//	38	26	&	(ampersand)
+		_getc_char, 		//	39	27	'	(single quote)
+		_getc_char, 		//	40	28	(	(left/open parenthesis)
+		_getc_char, 		//	41	29	)	(right/closing parenth.)
     6e46:	80 91 ff 23 	lds	r24, 0x23FF
     6e4a:	81 50       	subi	r24, 0x01	; 1
     6e4c:	80 93 ff 23 	sts	0x23FF, r24
     6e50:	80 91 ff 23 	lds	r24, 0x23FF
     6e54:	88 23       	and	r24, r24
     6e56:	19 f4       	brne	.+6      	; 0x6e5e <__vector_28+0x58>
-		fr.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
+		_getc_char, 		//	42	2A	*	(asterisk)
     6e58:	88 e1       	ldi	r24, 0x18	; 24
     6e5a:	80 93 ff 23 	sts	0x23FF, r24
-	}
-	if (fr.rx_buf_head != fr.rx_buf_tail) {		// write char unless buffer full
+		_getc_char, 		//	43	2B	+	(plus)
+		_getc_char, 		//	44	2C		(comma)
     6e5e:	90 91 ff 23 	lds	r25, 0x23FF
     6e62:	80 91 fe 23 	lds	r24, 0x23FE
     6e66:	98 17       	cp	r25, r24
     6e68:	39 f0       	breq	.+14     	; 0x6e78 <__vector_28+0x72>
-		fr.rx_buf[fr.rx_buf_head] = c;			// (= USARTC0.DATA;)
+		_getc_char,	 		//	45	2D	-	(minus or dash)
     6e6a:	e0 91 ff 23 	lds	r30, 0x23FF
     6e6e:	f0 e0       	ldi	r31, 0x00	; 0
     6e70:	eb 50       	subi	r30, 0x0B	; 11
     6e72:	fc 4d       	sbci	r31, 0xDC	; 220
     6e74:	26 87       	std	Z+14, r18	; 0x0e
     6e76:	0c c0       	rjmp	.+24     	; 0x6e90 <__vector_28+0x8a>
-		return;
-	}
-	// buffer-full handling
-	if ((++fr.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+		_getc_char, 		//	46	2E	.	(dot)
+		_getc_char,	 		//	47	2F	/	(forward slash)
+		_getc_char, 		//	48	30	0	
+		_getc_char, 		//	49	31	1	
     6e78:	80 91 ff 23 	lds	r24, 0x23FF
     6e7c:	8f 5f       	subi	r24, 0xFF	; 255
     6e7e:	80 93 ff 23 	sts	0x23FF, r24
     6e82:	80 91 ff 23 	lds	r24, 0x23FF
     6e86:	89 31       	cpi	r24, 0x19	; 25
     6e88:	18 f0       	brcs	.+6      	; 0x6e90 <__vector_28+0x8a>
-		fr.rx_buf_head = 1;
+		_getc_char, 		//	50	32	2	
     6e8a:	81 e0       	ldi	r24, 0x01	; 1
     6e8c:	80 93 ff 23 	sts	0x23FF, r24
-	}
-	// activate flow control here or before it gets to this level
-}
+		_getc_char, 		//	51	33	3	
+		_getc_char, 		//	52	34	4	
+		_getc_char, 		//	53	35	5	
     6e90:	ff 91       	pop	r31
     6e92:	ef 91       	pop	r30
     6e94:	bf 91       	pop	r27

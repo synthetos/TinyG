@@ -377,8 +377,8 @@ int _tg_test_file()
 //	xio_pgm_open(PGMFILE(&spiral_test5));
 //	xio_pgm_open(PGMFILE(&dwell_test2));
 
-	xio_pgm_open(PGMFILE(&contraptor_circle)); 	// contraptor circle test
-//	xio_pgm_open(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
+//	xio_pgm_open(PGMFILE(&contraptor_circle)); 	// contraptor circle test
+	xio_pgm_open(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
 
 	// set mode and source for file mode
 	_tg_set_mode(TG_GCODE_MODE);

@@ -65,7 +65,7 @@ void xio_init(void)
 	i = XIO_DEV_RS485;
 	memset (&ds[i], 0, sizeof(struct xioDEVICE));
 	ds[i].xio = &us[i];							// bind USART extended struct
-	ds[i].size = sizeof(ds[i].buf);
+//	ds[i].size = sizeof(ds[i].buf);
 	xio_init_usart(i, RS485_INIT_bm, &RS485_USART, &RS485_PORT, 
 		RS485_DIRCLR_bm,RS485_DIRSET_bm,RS485_OUTCLR_bm,RS485_OUTSET_bm);
 	ds[i].dev_putc = &xio_putc_rs485;
@@ -77,13 +77,26 @@ void xio_init(void)
 	i = XIO_DEV_USB;
 	memset (&ds[i], 0, sizeof(struct xioDEVICE));
 	ds[i].xio = &us[i];							// bind USART extended struct
-	ds[i].size = sizeof(ds[i].buf);
+//	ds[i].size = sizeof(ds[i].buf);
 	xio_init_usart(i, USB_INIT_bm, &USB_USART, &USB_PORT, 
 		USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
 	ds[i].dev_putc = &xio_putc_usb;
 	ds[i].dev_getc = &xio_getc_usb;
 	ds[i].dev_readln = &xio_readln_usb;
 	fdev_setup_stream(&(ds[i].fs), xio_putc_usb, xio_getc_usb, _FDEV_SETUP_RW);
+
+	// Program Memory File device setup
+	i = XIO_DEV_PGM;
+	memset (&ds[i], 0, sizeof(struct xioDEVICE));
+	ds[i].xio = &fs[XIO_DEV_FILE_LO];			// bind lowest FILE extended struct
+//	ds[i].size = sizeof(ds[i].buf);
+	xio_init_pgm(PGM_INIT_bm);
+	ds[i].dev_putc = &xio_putc_pgm;
+	ds[i].dev_getc = &xio_getc_pgm;
+	ds[i].dev_readln = &xio_readln_usb;
+	fdev_setup_stream(&(ds[i].fs), xio_putc_usb, xio_getc_usb, _FDEV_SETUP_RW);
+
+
 
 	// do stdio bindings
 	stddev = &dev_usb;				// stddev is a convenience
