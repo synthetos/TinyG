@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import serial, sys, time
 from random import randint
 from time import sleep
