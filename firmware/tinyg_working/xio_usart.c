@@ -30,8 +30,9 @@
 #include "xio_usart.h"
 
 // necessary structs
-extern struct xioDEVICE ds[XIO_DEV_CNT];	 // allocate top-level device structs
-extern struct xioUSART us[XIO_DEV_USART_CNT];// allocate USART extended IO structs
+extern struct xioDEVICE ds[XIO_DEV_COUNT];		// allocate top-level device structs
+extern struct xioUSART us[XIO_DEV_USART_COUNT];	// allocate USART extended IO structs
+#define USX ((struct xioUSART *)(ds[dev].x))	// USART extended struct accessor
 
 // baud rate lookup tables - indexed by enum xioBAUDRATES (see xio_usart.h)
 const uint8_t bsel[] PROGMEM = { 0, 207, 103, 51, 34, 33, 31, 27, 19, 1, 1 };
@@ -51,43 +52,38 @@ void xio_init_usart(const uint8_t dev,
 					const uint8_t outclr, 
 					const uint8_t outset) 
 {
-//	struct xioUSART *u = (struct xioUSART *)ds[dev].xio; // cast for FILEs
-	struct xioUSART *u = ds[dev].xio;
+//	struct xioUSART *u = (struct xioUSART *)ds[dev].x; // example of a cast for FILEs
+//	struct xioUSART *u = ds[dev].x;
 
 	// bind USART and PORT structures - do this first
-	u->usart = (struct USART_struct *)usart_addr;
-	u->port = (struct PORT_struct *)port_addr;
+	USX->usart = (struct USART_struct *)usart_addr;
+	USX->port = (struct PORT_struct *)port_addr;
 
 	// set flags
-	xio_set_control_flags(dev, control);
+	xio_setflags(dev, control);			// generic version. does not validate flags
 
 	// setup internal RX/TX buffers
-	u->rx_buf_head = 1;						// can't use location 0
-	u->rx_buf_tail = 1;
-	u->tx_buf_head = 1;
-	u->tx_buf_tail = 1;
+	USX->rx_buf_head = 1;					// can't use location 0
+	USX->rx_buf_tail = 1;
+	USX->tx_buf_head = 1;
+	USX->tx_buf_tail = 1;
 
 	// baud rate and USART setup
 	uint8_t baud = (uint8_t)(control & XIO_BAUD_gm);
 	if (baud == XIO_BAUD_UNSPECIFIED) { baud = XIO_BAUD_DEFAULT; }
 	xio_set_baud_usart(dev, baud);					// usart must be bound first
 
-	u->usart->CTRLB = USART_TXEN_bm | USART_RXEN_bm; // enable tx and rx on USART
-	u->usart->CTRLA = CTRLA_RXON_TXON;				// enable tx and rx interrupts
+	USX->usart->CTRLB = USART_TXEN_bm | USART_RXEN_bm;// enable tx and rx on USART
+	USX->usart->CTRLA = CTRLA_RXON_TXON;				// enable tx and rx interrupts
 
-	u->port->DIRCLR = dirclr;
-	u->port->DIRSET = dirset;
-	u->port->OUTCLR = outclr;
-	u->port->OUTSET = outset;
+	USX->port->DIRCLR = dirclr;
+	USX->port->DIRSET = dirset;
+	USX->port->OUTCLR = outclr;
+	USX->port->OUTSET = outset;
 }
 
 void xio_set_baud_usart(const uint8_t dev, const uint8_t baud)
 {
-	struct xioUSART *u = ds[dev].xio;
-
-	u->usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
-	u->usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
+	USX->usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
+	USX->usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
 }
-
-
-

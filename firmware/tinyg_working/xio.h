@@ -30,6 +30,8 @@
 #define TRUE 1
 #endif
 
+#include <avr/pgmspace.h>		// defines prog_char
+
 /******************************************************************************
  *
  *	Device configurations
@@ -42,17 +44,26 @@ enum xioDevice {				// device enumerations
 								// TYPE:	DEVICE:
 	XIO_DEV_RS485,				// USART	RS485 device (typ. network port)
 	XIO_DEV_USB,				// USART	USB device
-	XIO_DEV_AUX,				// USART	TTL device (typ. Arduino)
+	XIO_DEV_TTL,				// USART	TTL device (typ. Arduino)
 	XIO_DEV_PGM,				// FILE		program memory file (read only)
-	XIO_DEV_CNT					// total device count (must be last entry)
+	XIO_DEV_EEP,				// FILE		EEPROM (not implemented)
+	XIO_DEV_SDC,				// FILE		SD card (not implemented)
+	XIO_DEV_ENC,				// HW		Encoder port
+	XIO_DEV_LIM,				// HW		Limit switch port
+	XIO_DEV_COUNT				// total device count (must be last entry)
 };
 
-#define XIO_DEV_USART_LO (0)	// # of lowest USART device 
-#define XIO_DEV_USART_HI (2)	// # of highest USART device
-#define XIO_DEV_USART_CNT (3) 	// # of total USART devices
-#define XIO_DEV_FILE_LO (3)		// # of lowest FILE device
-#define XIO_DEV_FILE_HI (3)		// # of highest FILE device
-#define XIO_DEV_FILE_CNT (1)	// # of total FILE devices
+// If your change these ^, check these v
+
+#define XIO_DEV_RS485_OFFSET XIO_DEV_RS485			// index into USARTS 
+#define XIO_DEV_USB_OFFSET XIO_DEV_USB	
+#define XIO_DEV_TTL_OFFSET XIO_DEV_TTL
+#define XIO_DEV_USART_COUNT (3) 					// count of USART devices
+
+#define XIO_DEV_PGM_OFFSET (XIO_DEV_PGM - XIO_DEV_PGM)// index into FILES
+#define XIO_DEV_EEP_OFFSET (XIO_DEV_EEP - XIO_DEV_PGM)
+#define XIO_DEV_SDC_OFFSET (XIO_DEV_SDC - XIO_DEV_PGM)
+#define XIO_DEV_FILE_COUNT (3)						// count of FILE devices
 
 /*
  * Device configurations (all of them)
@@ -68,10 +79,9 @@ enum xioDevice {				// device enumerations
 // FILE devices:  See xio_file/h for FILE-based device configs
 
 /*
- * xio_control values
+ * xio control flag values
  */
 
-// _init() & _control() control bits
 #define XIO_BAUD_gm		0x0000000F		// baud rate enum mask (keep in LSbyte)
 #define XIO_RD			(1<<4) 			// read enable bit
 #define XIO_WR			(1<<5)			// write enable only
@@ -86,9 +96,6 @@ enum xioDevice {				// device enumerations
 #define XIO_NOLINEMODE	(1<<13)			// no special <cr><lf> read handling
 #define XIO_SEMICOLONS	(1<<14)			// treat semicolons as line breaks
 #define XIO_NOSEMICOLONS (1<<15)		// don't treat semicolons as line breaks
-
-// (note 1) The handler function flags share positions 4 & 5 with RD and WR flags
-//			RD and WR are only valid in init(), handlers only valid in control()
 
 // internal control flags (which are NOT the similar bits in the control word, above)
 // static configuration states
@@ -125,7 +132,7 @@ enum xioDevice {				// device enumerations
  * See signals.h for application specific signal defs and routines.
  */
 
-enum xio_SIGS {
+enum xioSignals {
 	XIO_SIG_OK,						// OK
 	XIO_SIG_EAGAIN,					// would block
 	XIO_SIG_EOL,					// end-of-line encountered (string has data)
@@ -170,26 +177,25 @@ enum xio_SIGS {
  *
  ******************************************************************************/
 
-struct xioDEVICE {						// per-device struct
-	uint16_t flags;						// control flags
+struct xioDEVICE {						// common device struct (one per device)
+	uint16_t flags;						// common control flags
 	uint8_t status;						// completion status 
 	uint8_t sig;						// signal value
 	uint8_t c;							// char temp
 	uint8_t len;						// chars read so far (buf array index)
-	uint8_t size;						// text buffer length
-	char *buf;							// pointer to text buffer
-
-//	void (*dev_set_flags)(uint16_t control);// set device control flags
-	int (*dev_putc)(char, struct __file *);	// write char (stdio compatible)
-	int (*dev_getc)(struct __file *);	// read char (stdio compatible)
+	uint8_t size;						// test buffer length (dynamic)
+	struct __file *(*dev_open)(const prog_char *addr);// file open routine
+	int (*dev_setflags)(const uint16_t control);// set device control flags
+	int (*dev_putc)(char, struct __file *);		// write char (stdio compatible)
+	int (*dev_getc)(struct __file *);			// read char (stdio compatible)
 	int (*dev_readln)(char *buf, uint8_t size);	// specialized line reader
 
-	void *xio;							// extended IO parameter binding (note 1)
-	struct __file fs;					// embed a stdio file struct
-//	char buf[CHAR_BUFFER_SIZE];			// text buffer used by device
+	void *x;							// extended IO parameter binding (static)
+	struct __file *fdev;				// stdio fdev binding (static)
+	char *buf;							// text buffer binding (dynamic)
 };
 
-/* Note 1: See sub-system headers (e.g. xio_usart.h for usart struct) */
+// Notes: See sub-system .h's for extended IO structs (e.g. xio_usart.h)
 
 /******************************************************************************
  *
@@ -198,35 +204,26 @@ struct xioDEVICE {						// per-device struct
  ******************************************************************************/
 
 void xio_init(void);				// initialize xio system
-void xio_set_control_flags(const uint8_t dev, const uint16_t control);
-
-// readln prototypes
+void xio_setflags(const uint8_t dev, const uint16_t control);
 int xio_readln(uint8_t dev, char *buf, uint8_t len);
-int xio_readln_usb(char *buf, uint8_t size);
-int xio_readln_rs485(char *buf, uint8_t size);
-
-
 void xio_signal_etx(void);			// ^c signal handler
 
 
-FILE *stddev;						// a convenient alias for stdin. stdout, stderr
+/**** NOTES ON XIO ****/
 
-
-/**** NOTES ON XIO ****
-
----- Notes on the circular buffers ----
+/*---- Notes on the circular buffers ----
 
   An attempt has beeen made to make the circular buffers used by low-level 
-  character read / write as efficient as possible. This opens up higher-speed 
-  IO between 100K and 1Mbaud and better supports high-speed parallel operations.
+  putc/getc as efficient as possible. This enables high-speed serial IO 
+  operating between 100K and 1Mbaud.
 
-  The circular buffers are unsigned char arrays that count down from the top 
+  The circular buffers are unsigned char arrays that fill down from the top 
   element and wrap back to the top when index zero is reached. This allows 
-  pre-decrement operations, zero tests, and eliminates modulus, mask, substraction 
-  and other less efficient array bounds checking. Buffer indexes are all 
-  unint_fast8_t which limits these buffers to 254 usable locations. (one is lost 
-  to head/tail collision detection and one is lost to the zero position) All this 
-  enables the compiler to do better optimization.
+  pre-decrement operations, zero tests, and eliminates modulus, masks, 
+  substractions and other less efficient array bounds checking. Buffer indexes 
+  are all unint_fast8_t which limits these buffers to 254 usable locations. 
+  (one location is lost to head/tail collision detection and one is lost to 
+  the zero position) All this enables the compiler to do better optimization.
 
   Chars are written to the *head* and read from the *tail*. 
 
@@ -240,56 +237,48 @@ FILE *stddev;						// a convenient alias for stdin. stdout, stderr
 
   The head is only allowed to equal the tail if there are no characters to read.
 
-  On read: If the head = the tail there is nothing to read, so it exits or blocks.
+  On read: If the head = the tail there is nothing to read, so the function either 
+  exits with TG_EAGAIN or blocks (depending on the blocking mode selected).
 
-  On write: If the head pre-increment causes the head to equal the tail the buffer
-  is full. The head is reset to its previous value and the device should go into 
-  flow control (and the byte in the device is not read). Reading a character from 
-  a buffer that is in flow control should clear flow control
+  On write: If the head pre-deccrement causes the head to equal the tail the 
+  buffer is full. The head is left at its original value and the device should 
+  go into flow control (and the byte in the USART device is not read, and 
+  therefore remains in the USART (VERIFY THAT I DIDN'T BREAK THIS BEHAVIOR!)). 
+  Reading a character from a buffer that is in flow control should clear 
+  flow control.
 
   (Note: More sophisticated flow control would detect the full condition earlier, 
-   say at a high water mark of 95% full, and may go out of flow control at some low
-   water mark like 33% full).
+   say at a high water mark of 95% full, and may go out of flow control at some 
+   low water mark like 33% full).
+*/
+/*---- Notes on control characters and signals ----
 
----- control characters and signals ----
-
-**** NOTE: This documentation is outdated. Signal handlers now work at the ISR level
-	  The below need to be rewritten. ****
-
-  The underlying getc() and readln() routines trap some control characters 
-  and treat them as signals.
-
-  In the case of readln they are passed to the signal handler a callback.registered.
-  See xio_usb_readln() for an example.
+  The underlying USART RX ISRs (used by getc() and readln()) trap control 
+  characters and treat them as signals. 
   
-  In the case of getc they are passed via udata to the calling stdio routine.
-  Here's an example of use:
-
-	The device-level struct must have a "uint8_t signal" variable
-	Bind the variable to the udata pointer int the stdio FILE struct as so:
-
-	f.signal = 0;							// initialize signal (none)
-	dev_usb.udata = &(f.signal);			// bind signals register to device FILE struct
-
-	To use the signal via the stdio routines:
-
-	if (fgets(tg.buf, BUF_LEN-1, tg.srcin) == NULL) {	
-		// get the signal from the underlying device struct (do this once. Ugh)
-		tg.signal = *(uint8_t *)tg.srcin->udata;
-
-
-  Details: A control character is trapped by the stdin get_char() routine.
-  get_char() sets a flag in xio_signals and returns an error. The flag can be gotten
-  to via the pointer set in __file.udata. Control characters are not echoed at the 
-  get_char() level, but they may be by top_parser(); depends on what makes sense.
+  On receipt of a signal the signal value (see enum xioSignals) is written to
+  xioDEVICE.sig and a signal handler specific to that signal is invoked 
+  (see signals.c). The signal character is not written into the RX buffer.
   
-  top_parser() exhibits the following control code behaviors:
+  The signal handler runs at the ISR level, so it might be run, set some flag
+  somewhere, or just return, relying on the application to detect the sig 
+  value being set. It's up to the app to reset sig. If a new signal arrives 
+  before the previous sig is handled or cleared the new sig will overwrite 
+  the previous sig value.
+
+  For now, the control chars and their mapping to signals are hard-coded into 
+  the ISR for simplicity and speed. A more flexible system of bindings and 
+  callbacks could be written at some sacrifice to execution speed. 
+
+  IMPORTANT--> Since signals are trapped at the ISR level it is not necessary
+  to be actively reading a device for it to receive signals. Any configured IO
+  device will process signals. This allows input lines to come from one source 
+  (e.g. a file device), while ^c, ^q, ^p are still active from another device 
+  (e.g. the USB port being used as a console).
+  
+  Common signal definitions are:
 
    ^c,^x, ESC	Abort current action
-  				Sends a "STOP" to the currently active mode
-				Does not echo control character
-				Exits the current mode (reverts to control mode)
-				Echos "STOP"
 
    ^h, DEL		Delete previous character
   				Only affects top_parser() buffer
@@ -306,16 +295,11 @@ FILE *stddev;						// a convenient alias for stdin. stdout, stderr
    ^o			Shift in - revert to control mode
    				Exit current mode but do not abort currently executing command
 
-   ^q			Pause
-   				Pause reading input until ^s received
-				No echo
+   ^q			Pause - Pause reading input until ^s received
+   ^s			Resume - Resume reading input
+*/
 
-   ^s			Resume
-   				Resume reading input
-				No echo
-
-
----- Notes on signal callbacks ----
+/*---- Notes on signal callbacks ----
   An earlier version of the code had signals implemented as callbacks. 
   I suppose you could find a pre 203 version, but here's how it worked.
 
