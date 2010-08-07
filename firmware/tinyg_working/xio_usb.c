@@ -35,10 +35,10 @@
 #include "signals.h"
 
 // necessary structures
-extern struct xioDEVICE ds[XIO_DEV_CNT];		// ref top-level device structs
-extern struct xioUSART us[XIO_DEV_USART_CNT];	// ref USART extended IO structs
+extern struct xioDEVICE ds[XIO_DEV_COUNT];		// ref top-level device structs
+extern struct xioUSART us[XIO_DEV_USART_COUNT];	// ref USART extended IO structs
 #define USB ds[XIO_DEV_USB]						// device struct accessoor
-#define USBx us[XIO_DEV_USB]					// usart extended struct accessor
+#define USBu us[XIO_DEV_USB_OFFSET]				// usart extended struct accessor
 
 // local functions
 int _xio_usb_readchar(char *buf, uint8_t len);
@@ -82,7 +82,7 @@ static int _sig_RESUME(void);
 
 ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX interrupt 
 {
-	uint8_t c = USBx.usart->DATA;				// can only read DATA once
+	uint8_t c = USBu.usart->DATA;				// can only read DATA once
 
 	// trap signals - do not insert character into RX queue
 	if (c == ETX) {								// trap ^c signal
@@ -92,16 +92,16 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX interrupt
 	}
 
 	// normal character path
-	if ((--USBx.rx_buf_head) == 0) { 			// advance buffer head with wrap
-		USBx.rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids the off-by-one error
+	if ((--USBu.rx_buf_head) == 0) { 			// advance buffer head with wrap
+		USBu.rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids the off-by-one error
 	}
-	if (USBx.rx_buf_head != USBx.rx_buf_tail) {	// write char unless buffer full
-		USBx.rx_buf[USBx.rx_buf_head] = c;
+	if (USBu.rx_buf_head != USBu.rx_buf_tail) {	// write char unless buffer full
+		USBu.rx_buf[USBu.rx_buf_head] = c;
 		return;
 	}
 	// buffer-full handling
-	if ((++USBx.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
-		USBx.rx_buf_head = 1;
+	if ((++USBu.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+		USBu.rx_buf_head = 1;
 	}
 	// activate flow control here or before it gets to this level
 }
@@ -120,16 +120,16 @@ void xio_usb_queue_RX_char(const char c)
 	}
 
 	// normal path
-	if ((--USBx.rx_buf_head) == 0) { 			// wrap condition
-		USBx.rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids the off-by-one error
+	if ((--USBu.rx_buf_head) == 0) { 			// wrap condition
+		USBu.rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids the off-by-one error
 	}
-	if (USBx.rx_buf_head != USBx.rx_buf_tail) {	// write char unless buffer full
-		USBx.rx_buf[USBx.rx_buf_head] = c;		// FAKE INPUT DATA
+	if (USBu.rx_buf_head != USBu.rx_buf_tail) {	// write char unless buffer full
+		USBu.rx_buf[USBu.rx_buf_head] = c;		// FAKE INPUT DATA
 		return;
 	}
 	// buffer-full handling
-	if ((++USBx.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
-		USBx.rx_buf_head = 1;
+	if ((++USBu.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+		USBu.rx_buf_head = 1;
 	}
 }
 
@@ -164,17 +164,36 @@ void xio_usb_queue_RX_string(char *buf)
 
 ISR(USB_TX_ISR_vect)	//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
 {
-	if (USBx.tx_buf_head == USBx.tx_buf_tail) {	// buffer empty - disable ints
-		USBx.usart->CTRLA = CTRLA_RXON_TXOFF;	// won't work if you just &= it
+	if (USBu.tx_buf_head == USBu.tx_buf_tail) {	// buffer empty - disable ints
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;	// won't work if you just &= it
 //		PMIC_DisableLowLevel(); 				// disable USART TX interrupts
 		return;
 	}
 	if (!TX_MUTEX(USB.flags)) {
-		if (--(USBx.tx_buf_tail) == 0) {		// advance tail and wrap 
-			USBx.tx_buf_tail = TX_BUFFER_SIZE-1;// -1 avoids off-by-one err (OBOE)
+		if (--(USBu.tx_buf_tail) == 0) {		// advance tail and wrap 
+			USBu.tx_buf_tail = TX_BUFFER_SIZE-1;// -1 avoids off-by-one err (OBOE)
 		}
-		USBx.usart->DATA = USBx.tx_buf[USBx.tx_buf_tail]; // write to TX DATA reg
+		USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail]; // write to TX DATA reg
 	}
+}
+
+/*
+ *	xio_open_usb() - all this does is return the stdio fdev handle
+ */
+
+struct __file * xio_open_usb()
+{
+	return(USB.fdev);
+}
+
+/*
+ *	xio_setflags_usb() - check and set control flags for device
+ */
+
+int xio_setflags_usb(const uint16_t control)
+{
+	xio_setflags(XIO_DEV_USB, control);
+	return (TG_OK);									// for now it's always OK
 }
 
 /* 
@@ -191,10 +210,10 @@ ISR(USB_TX_ISR_vect)	//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
 
 int xio_putc_usb(const char c, FILE *stream)
 {
-	if ((USBx.next_tx_buf_head = USBx.tx_buf_head-1) == 0) { // advance head and wrap
-		USBx.next_tx_buf_head = TX_BUFFER_SIZE-1;		 // -1 avoids the off-by-one
+	if ((USBu.next_tx_buf_head = USBu.tx_buf_head-1) == 0) { // advance head and wrap
+		USBu.next_tx_buf_head = TX_BUFFER_SIZE-1;		 // -1 avoids the off-by-one
 	}
-	while(USBx.next_tx_buf_head == USBx.tx_buf_tail) {   // buf full. sleep or return
+	while(USBu.next_tx_buf_head == USBu.tx_buf_tail) {   // buf full. sleep or return
 		if (BLOCKING(USB.flags)) {
 			sleep_mode();
 		} else {
@@ -203,27 +222,27 @@ int xio_putc_usb(const char c, FILE *stream)
 		}
 	};
 	// write to data register
-	USBx.tx_buf_head = USBx.next_tx_buf_head;	// accept the next buffer head value
-	USBx.tx_buf[USBx.tx_buf_head] = c;			// ...and write char to buffer
+	USBu.tx_buf_head = USBu.next_tx_buf_head;	// accept the next buffer head value
+	USBu.tx_buf[USBu.tx_buf_head] = c;			// ...and write char to buffer
 
 	if (CRLF(USB.flags) && (c == '\n')) {		// detect LF and add a CR
 		return xio_putc_usb('\r', stream);		// recursion.
 	}
 
 	// dequeue the buffer if DATA register is ready
-	if (USBx.usart->STATUS & 0x20) {
-		if (USBx.tx_buf_head == USBx.tx_buf_tail) {	// buf might be empty if IRQ got it
+	if (USBu.usart->STATUS & 0x20) {
+		if (USBu.tx_buf_head == USBu.tx_buf_tail) {	// buf might be empty if IRQ got it
 			return (0);
 		}
 		USB.flags |= XIO_FLAG_TX_MUTEX_bm;		// claim mutual exclusion from ISR
-		if (--(USBx.tx_buf_tail) == 0) {		// advance tail and wrap if needed
-			USBx.tx_buf_tail = TX_BUFFER_SIZE-1;// -1 avoids off-by-one error (OBOE)
+		if (--(USBu.tx_buf_tail) == 0) {		// advance tail and wrap if needed
+			USBu.tx_buf_tail = TX_BUFFER_SIZE-1;// -1 avoids off-by-one error (OBOE)
 		}
-		USBx.usart->DATA = USBx.tx_buf[USBx.tx_buf_tail];// write char to TX DATA reg
+		USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];// write char to TX DATA reg
 		USB.flags &= ~XIO_FLAG_TX_MUTEX_bm;		// release mutual exclusion lock
 	}
 	// enable interrupts regardless
-	USBx.usart->CTRLA = CTRLA_RXON_TXON;		// doesn't work if you just |= it
+	USBu.usart->CTRLA = CTRLA_RXON_TXON;		// doesn't work if you just |= it
 	PMIC_EnableLowLevel(); 						// enable USART TX interrupts
 	sei();										// enable global interrupts
 
@@ -407,7 +426,7 @@ static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 
 int xio_getc_usb(FILE *stream)
 {
-	while (USBx.rx_buf_head == USBx.rx_buf_tail) {	// RX ISR buffer empty
+	while (USBu.rx_buf_head == USBu.rx_buf_tail) {	// RX ISR buffer empty
 		if (BLOCKING(USB.flags)) {
 			sleep_mode();
 		} else {
@@ -415,10 +434,10 @@ int xio_getc_usb(FILE *stream)
 			return(_FDEV_ERR);
 		}
 	}
-	if (--(USBx.rx_buf_tail) == 0) {				// advance RX tail (RXQ read pointer)
-		USBx.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
+	if (--(USBu.rx_buf_tail) == 0) {				// advance RX tail (RXQ read pointer)
+		USBu.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
 	}
-	USB.c = (USBx.rx_buf[USBx.rx_buf_tail] & 0x007F);	// get char from RX buffer & mask MSB
+	USB.c = (USBu.rx_buf[USBu.rx_buf_tail] & 0x007F);	// get char from RX buffer & mask MSB
 	// 	call action procedure from dispatch table in FLASH (see xio.h for typedef)
 	return (((fptr_int_void)(pgm_read_word(&getcFuncs[USB.c])))());
 	//return (getcFuncs[c]()); // call action procedure from dispatch table in RAM
@@ -637,13 +656,13 @@ int xio_readln_usb(char *buf, uint8_t size)
 
 int _xio_usb_readchar(char *buf, uint8_t len)
 {
-	if (USBx.rx_buf_head == USBx.rx_buf_tail) {	// RX ISR buffer empty
+	if (USBu.rx_buf_head == USBu.rx_buf_tail) {	// RX ISR buffer empty
 		return(TG_BUFFER_EMPTY);
 	}
-	if (--(USBx.rx_buf_tail) == 0) {			// advance RX tail (RX q read ptr)
-		USBx.rx_buf_tail = RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
+	if (--(USBu.rx_buf_tail) == 0) {			// advance RX tail (RX q read ptr)
+		USBu.rx_buf_tail = RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
 	}
-	USB.c = (USBx.rx_buf[USBx.rx_buf_tail] & 0x007F); // get char from RX Q & mask MSB
+	USB.c = (USBu.rx_buf[USBu.rx_buf_tail] & 0x007F); // get char from RX Q & mask MSB
 	return (((fptr_int_void)(pgm_read_word(&readlnFuncs[USB.c])))()); // dispatch char
 }
 

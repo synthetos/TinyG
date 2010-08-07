@@ -54,36 +54,55 @@
 #ifndef xio_pgm_h
 #define xio_pgm_h
 
-#include <avr/pgmspace.h>
+//#include <avr/pgmspace.h>		// included in parent xio.h
 
-/* FILE DEVICE CONFIGS */
-
-// PGM device
-#define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
-
-/*
- * Global Scope Functions
+/* 
+ * FILE DEVICE CONFIGS 
  */
 
+// PGM device configuration
+#define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
+
+
+/* 
+ * USART DEVICE CONSTANTS AND PARAMETERS
+ */
+
+#define PGMFILE (const PROGMEM char *)	// extends pgmspace.h
+//extern FILE dev_pgm;					// used to return a pointer on open()
+// control flags for inits
+//#define PGM_CONTROL_bm (XIO_RDWR | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_BAUD_115200)
+
+/* 
+ * FILE device extended control structure 
+ * Note: As defined this struct won't do files larger than 65,535 chars
+ */
+
+// file-type device control struct
+struct xioFILE {
+	uint16_t fflags;					// file sub-system flags
+	uint16_t len;						// index into file
+	char * pgmbase_P;					// base location in memory
+};
+
+/* 
+ * FILE DEVICE FUNCTION PROTOTYPES
+ */
+
+// functions common to all FILE devices
+
+
+// PGM functions
+struct __file * xio_open_pgm(const prog_char * addr);// open a memory string readonly
+int xio_setflags_pgm(const uint16_t control);	// valaidate & set dev control flags
 void xio_init_pgm(uint16_t control);			// init program memory device
-FILE * xio_open_pgm(const prog_char * addr);	// open a memory string for read
-//int8_t xio_pgm_control(uint16_t control, int16_t arg); // set flags
 int xio_putc_pgm(char c, FILE *stream);			// always returns ERROR
 int xio_getc_pgm(FILE *stream);					// get a character
 int xio_readln_pgm(char *buf, uint8_t len);		// read line from program memory
 
-extern FILE dev_pgm;							// used to return a pointer on open()
+// EEPROM functions
 
-#define PGMFILE (const PROGMEM char *)			// extends pgmspace.h
+// SD Card functions
 
-// control flags for inits
-#define PGM_CONTROL_bm (XIO_RDWR | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_BAUD_115200)
-
-
-// file-type device control struct
-struct xioFILE {
-	uint16_t len;						// index into file
-	char * pgmbase_P;					// base location in memory
-};
 
 #endif

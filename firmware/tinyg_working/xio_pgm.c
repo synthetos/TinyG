@@ -24,45 +24,22 @@
 #include "xio_file.h"			// general .h for all file-type devices
 #include "tinyg.h"				// needed for TG_ return codes, or provide your own
 
-/*
- * Global Scope Data and Functions
- */
-
-// pre-allocated stdio FILE struct for PGM - declared extern in the header file
-//FILE dev_pgm = FDEV_SETUP_STREAM(NULL, xio_pgm_getc, _FDEV_SETUP_RW);
+// necessary structures
+extern struct xioDEVICE ds[XIO_DEV_COUNT];		// ref top-level device structs
+extern struct xioFILE fs[XIO_DEV_FILE_COUNT];	// ref FILE extended IO structs
+#define PGM ds[XIO_DEV_PGM]						// device struct accessor
+#define PGMf fs[XIO_DEV_PGM_OFFSET]				// file extended struct accessor
 
 /* 
  *	xio_init_pgm() - initialize and set controls for program memory device 
- *
- *	Control		   Arg	  Default		Notes
- *	
- *	XIO_RD		  <null>	Y	Enable device for reads
- *	XIO_WR		  <null>  (err)	Enable device for write
- *	XIO_BLOCK	  <null>	Y	Enable blocking reads
- *	XIO_NOBLOCK   <null>  (err)	Disable blocking reads
- *	XIO_ECHO	  <null>		Enable echo
- *	XIO_NOECHO	  <null>	Y	Disable echo
- *	XIO_CRLF	  <null>		Send <cr><lf> if <lf> detected
- *	XIO_NOCRLF	  <null>	Y	Do not convert <lf> to <cr><lf>
- *	XIO_LINEMODE  <null>		Apply special <cr><lf> read handling
- *	XIO_NOLINEMODE <null>	Y	Do not apply special <cr><lf> read handling
- *	XIO_SEMICOLONS <null>		Treat semicolons as line breaks
- *	XIO_NOSEMICOLONS <null>	Y	Don't treat semicolons as line breaks
- *
- *  Control parameters are defaulted and may be set using xio_pgm_control()
  */
 
 void xio_init_pgm(const uint16_t control)
 {
-	// might be useful to sanity check the control bits before calling this routine
+	// might be useful to sanity check the control bits before calling set flags
 	//	- RD and BLOCK are mandatory
 	// 	- WR and NOBLOCK are restricted
-	xio_set_control_flags(XIO_DEV_PGM, control);
-
-//	fpgm.idx = 0;
-//	fpgm.sig = 0;
-//	dev_pgm.udata = &(fpgm.sig); 	// bind signals register to pgm FILE struct
-//	fpgm.len = sizeof(fpgm.buf);	// THIS IS WRONG. NO BUFFER BOUND, YET.
+	xio_setflags_pgm(control);
 }
 
 /*	
@@ -72,18 +49,24 @@ void xio_init_pgm(const uint16_t control)
  *  Returns a pointer to the stdio FILE struct or -1 on error
  */
 
-FILE * xio_open_pgm(const prog_char *addr)
+struct __file * xio_open_pgm(const prog_char *addr)
 {
-/*
-	fpgm.flags &= XIO_FLAG_RESET_gm;			// reset the signaling bits
-	fpgm.pgmbase_P = (PROGMEM char *)addr;		// might want to range check this
-	fpgm.idx = 0;
-	return(&dev_pgm);
-*/
-	return(0);
+	PGM.flags &= XIO_FLAG_RESET_gm;			// reset flag signaling bits
+	PGM.sig = 0;							// reset signal
+	PGMf.pgmbase_P = (PROGMEM char *)addr;	// might want to range check this
+	PGMf.len = 0;							// initialize buffer pointer
+	return(PGM.fdev);							// return pointer to the fdev stream
 }
 
+/*
+ *	xio_setflags_pgm() - check and set control flags for device
+ */
 
+int xio_setflags_pgm(const uint16_t control)
+{
+	xio_setflags(XIO_DEV_PGM, control);
+	return (TG_OK);									// for now it's always OK
+}
 
 /* 
  *	xio_putc_pgm() - write character to to program memory device
@@ -95,7 +78,6 @@ int xio_putc_pgm(const char c, FILE *stream)
 {
 	return -1;			// always returns an error. Big surprise.
 }
-
 
 /*
  *  xio_getc_pgm() - read a character from program memory device
@@ -124,35 +106,33 @@ int xio_putc_pgm(const char c, FILE *stream)
 
 int xio_getc_pgm(FILE *stream)
 {
-/*
-	if (fpgm.flags & XIO_FLAG_EOF_bm) {
-		fpgm.sig = XIO_SIG_EOF;
+
+	if (PGM.flags & XIO_FLAG_EOF_bm) {
+		PGM.sig = XIO_SIG_EOF;
 		return (_FDEV_EOF);
 	}
-	if ((fpgm.c = pgm_read_byte(&fpgm.pgmbase_P[fpgm.idx])) == NUL) {
-		fpgm.flags |= XIO_FLAG_EOF_bm;
+	if ((PGM.c = pgm_read_byte(&PGMf.pgmbase_P[PGMf.len])) == NUL) {
+		PGM.flags |= XIO_FLAG_EOF_bm;
 	}
-	++fpgm.idx;
-	if (!LINEMODE(fpgm.flags)) {		// processing is simple if not LINEMODE
-		if (ECHO(fpgm.flags)) {
-			putchar(fpgm.c);
+	++PGMf.len;
+	if (!LINEMODE(PGM.flags)) {			// processing is simple if not LINEMODE
+		if (ECHO(PGM.flags)) {
+			putchar(PGM.c);
 		}
-		return (fpgm.c);
+		return (PGM.c);
 	}
 	// now do the LINEMODE stuff
-	if (fpgm.c == NUL) {				// perform newline substitutions
-		fpgm.c = '\n';
-	} else if (fpgm.c == '\r') {
-		fpgm.c = '\n';
-	} else if ((SEMICOLONS(fpgm.flags)) && (fpgm.c == ';')) {
-		fpgm.c = '\n';
+	if (PGM.c == NUL) {					// perform newline substitutions
+		PGM.c = '\n';
+	} else if (PGM.c == '\r') {
+		PGM.c = '\n';
+	} else if ((SEMICOLONS(PGM.flags)) && (PGM.c == ';')) {
+		PGM.c = '\n';
 	}
-	if (ECHO(fpgm.flags)) {
-		putchar(fpgm.c);
+	if (ECHO(PGM.flags)) {
+		putchar(PGM.c);
 	}
-	return (fpgm.c);
-*/
-	return (0);
+	return (PGM.c);
 }
 
 /* 
@@ -164,16 +144,14 @@ int xio_getc_pgm(FILE *stream)
 
 int xio_readln_pgm(char *buf, uint8_t len)
 {
-/*
-	if (!(fpgm.pgmbase_P)) {					// return error if no file is open
+	if (!(PGMf.pgmbase_P)) {					// return error if no file is open
 		return (TG_FILE_NOT_OPEN);
 	}
-	fpgm.sig = XIO_SIG_OK;						// initialize signal
-	if (fgets(buf, len, &dev_pgm) == NULL) {
-		fpgm.pgmbase_P = NULL;
-		clearerr(&dev_pgm);
+	PGM.sig = XIO_SIG_OK;						// initialize signal
+	if (fgets(buf, len, PGM.fdev) == NULL) {
+		PGMf.pgmbase_P = NULL;
+		clearerr(PGM.fdev);
 		return (TG_EOF);
 	}
-*/
 	return (TG_OK);
 }

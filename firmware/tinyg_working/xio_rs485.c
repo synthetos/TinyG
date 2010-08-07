@@ -30,10 +30,10 @@
 #include "signals.h"			// application specific signal handlers
 
 // necessary structures
-extern struct xioDEVICE ds[XIO_DEV_CNT];		// ref top-level device structs
-extern struct xioUSART us[XIO_DEV_USART_CNT];	// ref USART extended IO structs
+extern struct xioDEVICE ds[XIO_DEV_COUNT];		// ref top-level device structs
+extern struct xioUSART us[XIO_DEV_USART_COUNT];	// ref USART extended IO structs
 #define RS ds[XIO_DEV_RS485]					// device struct accessoor
-#define RSx us[XIO_DEV_RS485]					// usart extended struct accessor
+#define RSu us[XIO_DEV_RS485]					// usart extended struct accessor
 
 // local functions
 static int _getc_char(void);		// getc character dispatch routines
@@ -68,7 +68,7 @@ static int _sig_RESUME(void);
 
 ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)	// serial port C0 RX interrupt 
 {
-	uint8_t c = RSx.usart->DATA;				// can only read DATA once
+	uint8_t c = RSu.usart->DATA;				// can only read DATA once
 
 	// trap signals - do not insert into RX queue
 	if (c == ETX) {								// trap ^c signal
@@ -78,16 +78,16 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)	// serial port C0 RX interrupt
 	}
 
 	// normal path
-	if ((--RSx.rx_buf_head) == 0) { 			// advance buffer head with wrap
-		RSx.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
+	if ((--RSu.rx_buf_head) == 0) { 			// advance buffer head with wrap
+		RSu.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
 	}
-	if (RSx.rx_buf_head != RSx.rx_buf_tail) {	// write char unless buffer full
-		RSx.rx_buf[RSx.rx_buf_head] = c;		// (= USARTC0.DATA;)
+	if (RSu.rx_buf_head != RSu.rx_buf_tail) {	// write char unless buffer full
+		RSu.rx_buf[RSu.rx_buf_head] = c;		// (= USARTC0.DATA;)
 		return;
 	}
 	// buffer-full handling
-	if ((++RSx.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
-		RSx.rx_buf_head = 1;
+	if ((++RSu.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+		RSu.rx_buf_head = 1;
 	}
 	// activate flow control here or before it gets to this level
 }
@@ -106,16 +106,16 @@ void xio_rs485_queue_RX_char(const char c)
 	}
 
 	// normal path
-	if ((--RSx.rx_buf_head) == 0) { 			// wrap condition
-		RSx.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
+	if ((--RSu.rx_buf_head) == 0) { 			// wrap condition
+		RSu.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
 	}
-	if (RSx.rx_buf_head != RSx.rx_buf_tail) {	// write char unless buffer full
-		RSx.rx_buf[RSx.rx_buf_head] = c;		// FAKE INPUT DATA
+	if (RSu.rx_buf_head != RSu.rx_buf_tail) {	// write char unless buffer full
+		RSu.rx_buf[RSu.rx_buf_head] = c;		// FAKE INPUT DATA
 		return;
 	}
 	// buffer-full handling
-	if ((++RSx.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
-		RSx.rx_buf_head = 1;
+	if ((++RSu.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+		RSu.rx_buf_head = 1;
 	}
 }
 
@@ -150,17 +150,36 @@ void xio_rs485_queue_RX_string(char *buf)
 
 ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC0 data register empty
 {
-	if (RSx.tx_buf_head == RSx.tx_buf_tail) {	// buffer empty - disable ints
-		RSx.usart->CTRLA = CTRLA_RXON_TXOFF;	// doesn't work if you just &= it
+	if (RSu.tx_buf_head == RSu.tx_buf_tail) {	// buffer empty - disable ints
+		RSu.usart->CTRLA = CTRLA_RXON_TXOFF;	// doesn't work if you just &= it
 //		PMIC_DisableLowLevel(); 				// disable USART TX interrupts
 		return;
 	}
 	if (!TX_MUTEX(RS.flags)) {
-		if (--(RSx.tx_buf_tail) == 0) {			// advance tail and wrap if needed
-			RSx.tx_buf_tail = TX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
+		if (--(RSu.tx_buf_tail) == 0) {			// advance tail and wrap if needed
+			RSu.tx_buf_tail = TX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
 		}
-		RSx.usart->DATA = RSx.tx_buf[RSx.tx_buf_tail];	// write char to TX DATA reg
+		RSu.usart->DATA = RSu.tx_buf[RSu.tx_buf_tail];	// write char to TX DATA reg
 	}
+}
+
+/*
+ *	xio_open_rs485() - all this does is return the stdio fdev handle
+ */
+
+struct __file * xio_open_rs485()
+{
+	return(RS.fdev);
+}
+
+/*
+ *	xio_setflags_rs485() - check and set control flags for device
+ */
+
+int xio_setflags_rs485(const uint16_t control)
+{
+	xio_setflags(XIO_DEV_RS485, control);
+	return (TG_OK);									// for now it's always OK
 }
 
 /* 
@@ -177,10 +196,10 @@ ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC0 data register empty
 
 int xio_putc_rs485(const char c, FILE *stream)
 {
-	if ((RSx.next_tx_buf_head = RSx.tx_buf_head-1) == 0) { // advance head w/wrap
-		RSx.next_tx_buf_head = TX_BUFFER_SIZE-1;	// -1 avoids the off-by-one error
+	if ((RSu.next_tx_buf_head = RSu.tx_buf_head-1) == 0) { // advance head w/wrap
+		RSu.next_tx_buf_head = TX_BUFFER_SIZE-1;	// -1 avoids the off-by-one error
 	}
-	while(RSx.next_tx_buf_head == RSx.tx_buf_tail) { // TX buffer full. sleep or ret
+	while(RSu.next_tx_buf_head == RSu.tx_buf_tail) { // TX buffer full. sleep or ret
 		if (BLOCKING(RS.flags)) {
 			sleep_mode();
 		} else {
@@ -189,27 +208,27 @@ int xio_putc_rs485(const char c, FILE *stream)
 		}
 	};
 	// write to data register
-	RSx.tx_buf_head = RSx.next_tx_buf_head;			// accept next buffer head value
-	RSx.tx_buf[RSx.tx_buf_head] = c;				// ...and write char to buffer
+	RSu.tx_buf_head = RSu.next_tx_buf_head;			// accept next buffer head value
+	RSu.tx_buf[RSu.tx_buf_head] = c;				// ...and write char to buffer
 
 	if (CRLF(RS.flags) && (c == '\n')) {			// detect LF and add a CR
 		return xio_putc_rs485('\r', stream);		// recursion.
 	}
 
 	// dequeue the buffer if DATA register is ready
-	if (RSx.usart->STATUS & 0x20) {
-		if (RSx.tx_buf_head == RSx.tx_buf_tail) {	// buf may be empty if IRQ got it
+	if (RSu.usart->STATUS & 0x20) {
+		if (RSu.tx_buf_head == RSu.tx_buf_tail) {	// buf may be empty if IRQ got it
 			return (0);
 		}
 		RS.flags |= XIO_FLAG_TX_MUTEX_bm;		// claim mutual exclusion from ISR
-		if (--(RSx.tx_buf_tail) == 0) {			// advance tail and wrap if needed
-			RSx.tx_buf_tail = TX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
+		if (--(RSu.tx_buf_tail) == 0) {			// advance tail and wrap if needed
+			RSu.tx_buf_tail = TX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
 		}
-		RSx.usart->DATA = RSx.tx_buf[RSx.tx_buf_tail];// write char to TX DATA reg
+		RSu.usart->DATA = RSu.tx_buf[RSu.tx_buf_tail];// write char to TX DATA reg
 		RS.flags &= ~XIO_FLAG_TX_MUTEX_bm;		// release mutual exclusion lock
 	}
 	// enable interrupts regardless
-	RSx.usart->CTRLA = CTRLA_RXON_TXON;			// won't work if you just |= it
+	RSu.usart->CTRLA = CTRLA_RXON_TXON;			// won't work if you just |= it
 	PMIC_EnableLowLevel(); 						// enable USART TX interrupts
 	sei();										// enable global interrupts
 
@@ -389,7 +408,7 @@ static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 
 int xio_getc_rs485(FILE *stream)
 {
-	while (RSx.rx_buf_head == RSx.rx_buf_tail) {// RX ISR buffer empty
+	while (RSu.rx_buf_head == RSu.rx_buf_tail) {// RX ISR buffer empty
 		if (BLOCKING(RS.flags)) {
 			sleep_mode();
 		} else {
@@ -397,10 +416,10 @@ int xio_getc_rs485(FILE *stream)
 			return(_FDEV_ERR);
 		}
 	}
-	if (--(RSx.rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
-		RSx.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
+	if (--(RSu.rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
+		RSu.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
 	}
-	RS.c = (RSx.rx_buf[RSx.rx_buf_tail] & 0x007F);	// get char from RX & mask MSB
+	RS.c = (RSu.rx_buf[RSu.rx_buf_tail] & 0x007F);	// get char from RX & mask MSB
 	// 	call action procedure from dispatch table in FLASH (see xio.h for typedef)
 	return (((fptr_int_void)(pgm_read_word(&getcFuncs[RS.c])))());
 	//return (getcFuncs[c]()); // call action procedure from dispatch table in RAM
@@ -609,14 +628,14 @@ int xio_readln_rs485(char *buf, uint8_t len)
 		RS.sig = XIO_SIG_OK;					// no signal action
 		RS.flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
 	}
-	if (RSx.rx_buf_head == RSx.rx_buf_tail) {	// RX ISR buffer empty
+	if (RSu.rx_buf_head == RSu.rx_buf_tail) {	// RX ISR buffer empty
 //		RS.sig = XIO_SIG_EAGAIN;
 		return(TG_EAGAIN);
 	}
-	if (--(RSx.rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
-		RSx.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
+	if (--(RSu.rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
+		RSu.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
 	}
-	RS.c = (RSx.rx_buf[RSx.rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
+	RS.c = (RSu.rx_buf[RSu.rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
 	return (((fptr_int_void)(pgm_read_word(&readlnFuncs[RS.c])))()); // dispatch char
 }
 
