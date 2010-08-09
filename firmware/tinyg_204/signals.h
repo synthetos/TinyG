@@ -1,5 +1,5 @@
 /*
- * xio_usb.h - FTDI USB port driver for xmega family
+ * signals.h - signal handlers
  * Part of TinyG project
  * Copyright (c) 2010 Alden S. Hart, Jr.
  *
@@ -14,23 +14,13 @@
  * You should have received a copy of the GNU General Public License along with TinyG  
  * If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef xio_usb_h
-#define xio_usb_h
+#ifndef tg_signals_h
+#define tg_signals_h
 
 /*
  * Global Scope Functions
  */
 
-void xio_usb_init(uint16_t control);
-int xio_usb_control(uint16_t control, int16_t arg);
-int xio_usb_putc(char c, FILE *stream);
-int xio_usb_getc(FILE *stream);
-int xio_usb_readln(char *buf, uint8_t len);	// non-blocking read line function
-
-void xio_usb_queue_RX_char(char c);		// simulate char received into RX buffer
-void xio_usb_queue_RX_string(char *buf);// do a whole string
-
-extern FILE dev_usb;					// declare the FILE handle for external use
+void signal_etx(void);		// ^c
 
 #endif
