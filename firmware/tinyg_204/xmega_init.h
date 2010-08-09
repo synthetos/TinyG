@@ -1,7 +1,7 @@
 /*
- * xio_rs485.h - RS-485 port driver for xmega family
+ * xmega_init.h - general init and support functions for xmega family
  * Part of TinyG project
- * Copyright (c) 2010 Alden S. Hart, Jr.
+ * Copyright (c) 2010 Alden S Hart
  *
  * TinyG is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Foundation, 
@@ -15,22 +15,13 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef xio_rs485_h
-#define xio_rs485_h
+#ifndef xmega_support_h
+#define xmega_support_h
 
 /*
  * Global Scope Functions
  */
 
-void xio_rs485_init(uint16_t control);
-int xio_rs485_control(uint16_t control, int16_t arg);
-int xio_rs485_putc(char c, FILE *stream);
-int xio_rs485_getc(FILE *stream);
-int xio_rs485_readln(char *buf, uint8_t len);// non-blocking read line function
-
-void xio_rs485_queue_RX_char(char c);	  // simulate char received into RX buffer
-void xio_rs485_queue_RX_string(char *buf);// do a whole string
-
-extern FILE dev_rs485;				// declare the FILE handle for external use
+void xmega_init(void);
 
 #endif

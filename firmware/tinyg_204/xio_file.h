@@ -1,5 +1,5 @@
 /*
- * xio_pgm.h	- device driver for program memory "files"
+ * xio_file.h	- device driver for file-type devices
  *   			- works with avr-gcc stdio library
  *
  * Part of TinyG project
@@ -42,7 +42,7 @@
 	why PSTR doesn't work I'd be grateful.
 
   Read a line of text. Example from parsers.c
-	if (fgets(textbuf, BUF_LEN-1, srcin) == NULL) {	
+	if (fgets(textbuf, BUF_LEN, srcin) == NULL) {	
 		printf_P(PSTR("\r\nEnd of file encountered\r\n"));
 		clearerr(srcin);
 		srcin = stdin;
@@ -54,24 +54,50 @@
 #ifndef xio_pgm_h
 #define xio_pgm_h
 
-#include <avr/pgmspace.h>
-
-/*
- * Global Scope Functions
+/* 
+ * FILE DEVICE CONFIGS 
  */
 
-void xio_pgm_init(uint16_t control);			// init program memory device
-FILE * xio_pgm_open(const prog_char * addr);	// open a memory string for read
-int8_t xio_pgm_control(uint16_t control, int16_t arg); // set flags
-int xio_pgm_putc(char c, FILE *stream);			// always returns ERROR
-int xio_pgm_getc(FILE *stream);					// get a character
-int xio_pgm_readln(char *buf, uint8_t len);		// read line from program memory
+// PGM device configuration
+#define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
 
-extern FILE dev_pgm;							// used to return a pointer on open()
 
-#define PGMFILE (const PROGMEM char *)			// extends pgmspace.h
+/* 
+ * USART DEVICE CONSTANTS AND PARAMETERS
+ */
 
-// control flags for inits
-#define RS4_CONTROL_bm (XIO_RDWR | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_BAUD_115200)
+/* 
+ * FILE device extended control structure 
+ * Note: As defined this struct won't do files larger than 65,535 chars
+ */
+
+// file-type device control struct
+struct xioFILE {
+	uint16_t fflags;					// file sub-system flags
+	uint16_t len;						// index into file
+	char * pgmbase_P;					// base location in memory
+};
+
+/* 
+ * FILE DEVICE FUNCTION PROTOTYPES
+ */
+
+// functions common to all FILE devices
+
+
+// PGM functions
+//void xio_init_pgm(uint16_t control);				// init program memory device
+void xio_init_pgm(const uint8_t dev, const uint8_t offset, const uint16_t control);
+
+struct __file * xio_open_pgm(const prog_char * addr);// open memory string read only
+int xio_setflags_pgm(const uint16_t control);		// valaidate & set dev flags
+int xio_putc_pgm(const char c, struct __file *stream);// always returns ERROR
+int xio_getc_pgm(struct __file *stream);			// get a character
+int xio_readln_pgm(char *buf, const uint8_t size);	// read line from program memory
+
+// EEPROM functions
+
+// SD Card functions
+
 
 #endif
