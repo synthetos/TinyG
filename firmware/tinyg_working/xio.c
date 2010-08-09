@@ -123,7 +123,7 @@ void xio_init(void)
 	ds[XIO_DEV_PGM].fdev = &ss[XIO_DEV_PGM];					// bind stdio struct
 	xio_init_pgm(PGM_INIT_bm);
 	fdev_setup_stream(ds[XIO_DEV_PGM].fdev, 
-		xio_putc_usb, xio_getc_usb, _FDEV_SETUP_RW);
+		xio_putc_pgm, xio_getc_pgm, _FDEV_SETUP_RW);
 	ds[XIO_DEV_PGM].dev_open = &xio_open_pgm;
 	ds[XIO_DEV_PGM].dev_setflags = &xio_setflags_pgm;
 	ds[XIO_DEV_PGM].dev_putc = &xio_putc_pgm;
