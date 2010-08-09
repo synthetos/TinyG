@@ -28,10 +28,8 @@
 #include <avr/pgmspace.h>
 #include <avr/sleep.h>			// needed for blocking character reads
 
-#include "xio.h"
-#include "xio_usart.h"
+#include "xio.h"				// includes for all devices are in here
 #include "xmega_interrupts.h"
-#include "tinyg.h"				// needed for TG_ return codes, or provide your own
 #include "signals.h"
 
 // necessary structures
@@ -193,7 +191,7 @@ struct __file * xio_open_usb()
 int xio_setflags_usb(const uint16_t control)
 {
 	xio_setflags(XIO_DEV_USB, control);
-	return (TG_OK);									// for now it's always OK
+	return (XIO_OK);									// for now it's always OK
 }
 
 /* 
@@ -625,10 +623,10 @@ static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
  *	Retains line context across calls - so it can be called multiple times.
  *	Reads as many characters as it can until any of the following is true:
  *
- *	  - RX buffer is empty on entry (return TG_EAGAIN)
- *	  - no more chars to read from RX buffer (return TG_EAGAIN)
- *	  - read would cause output buffer overflow (return TG_BUFFER_FULL)
- *	  - read returns complete line (returns TG_OK)
+ *	  - RX buffer is empty on entry (return XIO_EAGAIN)
+ *	  - no more chars to read from RX buffer (return XIO_EAGAIN)
+ *	  - read would cause output buffer overflow (return XIO_BUFFER_FULL)
+ *	  - read returns complete line (returns XIO_OK)
  *
  *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
  */
@@ -647,10 +645,10 @@ int xio_readln_usb(char *buf, uint8_t size)
 	}
 	while (TRUE) { 
 		switch (USB.status = _xio_usb_readchar(USB.buf, USB.size)) {
-			case (TG_BUFFER_EMPTY): return (TG_EAGAIN); break;	// empty condition
-			case (TG_BUFFER_FULL): return (USB.status); break;	// overrun error
-			case (TG_EOL): return (TG_OK); break;				// got completed line
-			case (TG_EAGAIN): break;							// loop
+			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN); break;	// empty condition
+			case (XIO_BUFFER_FULL_NON_FATAL): return (USB.status); break;	// overrun error
+			case (XIO_EOL): return (XIO_OK); break;				// got completed line
+			case (XIO_EAGAIN): break;							// loop
 		}
 	}
 }
@@ -658,7 +656,7 @@ int xio_readln_usb(char *buf, uint8_t size)
 int _xio_usb_readchar(char *buf, uint8_t len)
 {
 	if (USBu.rx_buf_head == USBu.rx_buf_tail) {	// RX ISR buffer empty
-		return(TG_BUFFER_EMPTY);
+		return(XIO_BUFFER_EMPTY);
 	}
 	if (--(USBu.rx_buf_tail) == 0) {			// advance RX tail (RX q read ptr)
 		USBu.rx_buf_tail = RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
@@ -674,11 +672,11 @@ static int _readln_char(void)
 	if (USB.len > USB.size) {						// trap buffer overflow
 		USB.sig = XIO_SIG_EOL;
 		USB.buf[USB.size] = NUL;					// size is zero based
-		return (TG_BUFFER_FULL);
+		return (XIO_BUFFER_FULL_NON_FATAL);
 	}
 	USB.buf[USB.len++] = USB.c;
 	if (ECHO(USB.flags)) xio_putc_usb(USB.c, stdout);// conditional echo
-	return (TG_EAGAIN);							// line is still in process
+	return (XIO_EAGAIN);							// line is still in process
 }
 
 static int _readln_NEWLINE(void)				// handles any valid newline char
@@ -687,7 +685,7 @@ static int _readln_NEWLINE(void)				// handles any valid newline char
 	USB.buf[USB.len] = NUL;
 	USB.flags &= ~XIO_FLAG_IN_LINE_bm;			// clear in-line state (reset)
 	if (ECHO(USB.flags)) xio_putc_usb('\n',stdout);// echo a newline
-	return (TG_EOL);							// return for end-of-line
+	return (XIO_EOL);							// return for end-of-line
 }
 
 static int _readln_SEMICOLON(void)				// semicolon is a conditional newline
@@ -706,7 +704,7 @@ static int _readln_DELETE(void)
 	} else {
 		USB.len = 0;
 	}
-	return (TG_EAGAIN);							// line is still in process
+	return (XIO_EAGAIN);							// line is still in process
 }
 
 
