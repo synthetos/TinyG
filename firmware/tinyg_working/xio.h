@@ -31,6 +31,7 @@
 #endif
 
 #include <avr/pgmspace.h>		// defines prog_char
+#define PGMFILE (const PROGMEM char *)	// extends pgmspace.h
 
 /******************************************************************************
  *

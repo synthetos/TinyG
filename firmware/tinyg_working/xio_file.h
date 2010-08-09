@@ -68,7 +68,6 @@
  * USART DEVICE CONSTANTS AND PARAMETERS
  */
 
-#define PGMFILE (const PROGMEM char *)	// extends pgmspace.h
 //extern FILE dev_pgm;					// used to return a pointer on open()
 // control flags for inits
 //#define PGM_CONTROL_bm (XIO_RDWR | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_BAUD_115200)
