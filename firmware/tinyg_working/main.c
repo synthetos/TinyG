@@ -117,6 +117,7 @@
 #include "xmega_init.h"
 #include "xmega_interrupts.h"
 #include "xio.h"
+#include "xio_usart.h"
 
 #include "tinyg.h"
 #include "controller.h"
@@ -159,7 +160,7 @@ int main(void)
 	// Pre-load the USB RX (input) buffer with some test strings
 	// Be mindful of the 16 char limit on the RX (circular) buffer.
 //	xio_usb_queue_RX_char(ETX);			// set control-c (kill)
-//	xio_usb_queue_RX_string("f\n");
+	xio_usb_queue_RX_string("f\n");
 //	xio_usb_queue_RX_string("?\n");
 //	xio_usb_queue_RX_string("g0x10y10z25\n");
 

@@ -641,6 +641,7 @@ int xio_readln_usb(char *buf, uint8_t size)
 		USB.len = 0;							// zero buffer
 		USB.status = 0;
 		USB.size = size;
+		USB.buf = buf;
 		USB.sig = XIO_SIG_OK;					// reset signal register
 		USB.flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
 	}

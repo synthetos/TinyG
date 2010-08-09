@@ -70,25 +70,27 @@
  *			- run gcode interpreter (or other parser)
  *			- run motion control called by the gcode interpreter
  *			- queue lines and arcs (line and arc generators)
- *		- send "receive ready" prompt back to input source (*'s via _tg_prompt())
+ *		- send "receive ready" * back to input source (*'s via _tg_prompt())
  *			(does this once and only once a parser has returned)
  *
  *	Notes:
  *	  - Gcode and other command line flow control is managed cooperatively with 
  *		the application sending the Gcode or other command. The '*' char in the 
  *		prompt indicates that the controller is ready for the next line. 
- *		The sending app is supposed to honor this and not stuff lines down the pipe
- *		(which will choke the controller).
+ *		The sending app is supposed to honor this and not stuff lines down the 
+ *		pipe (which will choke the controller).
  *
- *	Futures: Using a super loop instead of an event system is a design tradoff - or 
- *	more to the point - a hack. If the flow of control gets much more complicated 
- *	it will make sense to replace this section with an event driven dispatcher.
+ *	Futures: Using a super loop instead of an event system is a design tradoff 
+ *	- or more to the point - a hack. If the flow of control gets much more 
+ *	complicated it will make sense to replace this section with an event driven 
+ *	dispatcher.
  */
 
 #include <stdio.h>
 #include <avr/pgmspace.h>
 
 #include "xio.h"
+#include "xio_file.h"
 #include "tinyg.h"
 #include "controller.h"
 #include "gcode.h"						// calls out to gcode parser, etc.
@@ -355,23 +357,23 @@ void _tg_prompt()
 int _tg_test_file()
 {
 	// Open a program memory file:
-//	xio_pgm_open(PGMFILE(&g0_test1));		// simple linear motion test
-//	xio_pgm_open(PGMFILE(&g0_test2));		// another simple linear motion test
-//	xio_pgm_open(PGMFILE(&g0_test3));		// very short moves for single stepping
-//	xio_pgm_open(PGMFILE(&radius_arc_test1));
-//	xio_pgm_open(PGMFILE(&radius_arc_test2));
-//	xio_pgm_open(PGMFILE(&square_test1));
-//	xio_pgm_open(PGMFILE(&square_test2));
-//	xio_pgm_open(PGMFILE(&square_test10));
-//	xio_pgm_open(PGMFILE(&circle_test10));
-//	xio_pgm_open(PGMFILE(&square_circle_test10));
-//	xio_pgm_open(PGMFILE(&square_circle_test100));
-//	xio_pgm_open(PGMFILE(&spiral_test50a));
-//	xio_pgm_open(PGMFILE(&spiral_test5));
-//	xio_pgm_open(PGMFILE(&dwell_test2));
+//	xio_open_pgm(PGMFILE(&g0_test1));		// simple linear motion test
+//	xio_open_pgm(PGMFILE(&g0_test2));		// another simple linear motion test
+//	xio_open_pgm(PGMFILE(&g0_test3));		// very short moves for single stepping
+//	xio_open_pgm(PGMFILE(&radius_arc_test1));
+//	xio_open_pgm(PGMFILE(&radius_arc_test2));
+//	xio_open_pgm(PGMFILE(&square_test1));
+//	xio_open_pgm(PGMFILE(&square_test2));
+//	xio_open_pgm(PGMFILE(&square_test10));
+//	xio_open_pgm(PGMFILE(&circle_test10));
+//	xio_open_pgm(PGMFILE(&square_circle_test10));
+//	xio_open_pgm(PGMFILE(&square_circle_test100));
+//	xio_open_pgm(PGMFILE(&spiral_test50a));
+//	xio_open_pgm(PGMFILE(&spiral_test5));
+//	xio_open_pgm(PGMFILE(&dwell_test2));
 
-//	xio_pgm_open(PGMFILE(&contraptor_circle)); 	// contraptor circle test
-//	xio_pgm_open(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
+	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
+//	xio_open_pgm(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
 
 	// set source and mode
 	_tg_set_source(XIO_DEV_PGM);
