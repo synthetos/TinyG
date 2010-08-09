@@ -62,12 +62,7 @@
 #include <stdio.h>
 #include <string.h>				// for memset()
 #include <avr/pgmspace.h>
-
-#include "xio.h"				// includes for all devices here
-//#include "xio_usart.h"		// common declarations for USART devices
-//#include "xio_file.h"			// common declarations for file-type devices
-#include "tinyg.h"				// needed for TG_ return codes, or provide your own
-
+#include "xio.h"				// includes for all devices are in here
 
 /*
  * structs, static memory allocation, and accessors
@@ -223,8 +218,8 @@ int xio_readln(uint8_t dev, char *buf, uint8_t len)
 		case (XIO_DEV_USB): return (xio_readln_usb(buf, len));
 //		case (XIO_DEV_TTL): return (xio_readln_aux(buf, len));
 		case (XIO_DEV_PGM): return (xio_readln_pgm(buf, len));
-		default: return (TG_UNRECOGNIZED_DEVICE);
+		default: return (XIO_NO_SUCH_DEVICE);
 	}
-	return (TG_ERROR);		// never should hit this
+	return (XIO_ERR);		// never should hit this
 }
 

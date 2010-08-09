@@ -25,9 +25,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
-
-#include "xio.h"
-//#include "xio_usart.h"
+#include "xio.h"				// includes for all devices are in here
 
 // necessary structs
 extern struct xioDEVICE ds[XIO_DEV_COUNT];		// allocate top-level device structs

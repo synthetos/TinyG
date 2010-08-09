@@ -19,9 +19,7 @@
 
 #include <stdio.h>
 #include <avr/pgmspace.h>
-
-#include "xio.h"
-#include "tinyg.h"				// needed for TG_ return codes, or provide your own
+#include "xio.h"				// includes for all devices are in here
 
 // necessary structures
 extern struct xioDEVICE ds[XIO_DEV_COUNT];		// ref top-level device structs
@@ -66,7 +64,7 @@ struct __file * xio_open_pgm(const prog_char *addr)
 int xio_setflags_pgm(const uint16_t control)
 {
 	xio_setflags(XIO_DEV_PGM, control);
-	return (TG_OK);									// for now it's always OK
+	return (XIO_OK);									// for now it's always OK
 }
 
 /* 
@@ -146,13 +144,13 @@ int xio_getc_pgm(struct __file *stream)
 int xio_readln_pgm(char *buf, const uint8_t size)
 {
 	if (!(PGMf.pgmbase_P)) {					// return error if no file is open
-		return (TG_FILE_NOT_OPEN);
+		return (XIO_FILE_NOT_OPEN);
 	}
 	PGM.sig = XIO_SIG_OK;						// initialize signal
 	if (fgets(buf, size, PGM.fdev) == NULL) {
 		PGMf.pgmbase_P = NULL;
 		clearerr(PGM.fdev);
-		return (TG_EOF);
+		return (XIO_EOF);
 	}
-	return (TG_OK);
+	return (XIO_OK);
 }
