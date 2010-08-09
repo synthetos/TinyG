@@ -620,11 +620,13 @@ static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
  *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
  */
 
-int xio_readln_rs485(char *buf, uint8_t len)
+int xio_readln_rs485(char *buf, uint8_t size)
 {
 	if (!IN_LINE(RS.flags)) {					// first time thru initializations
 		RS.len = 0;								// zero buffer
 		RS.status = 0;
+		RS.size = size;
+		RS.buf = buf;
 		RS.sig = XIO_SIG_OK;					// no signal action
 		RS.flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
 	}

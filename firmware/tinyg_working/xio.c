@@ -128,7 +128,7 @@ void xio_init(void)
 	ds[XIO_DEV_PGM].dev_setflags = &xio_setflags_pgm;
 	ds[XIO_DEV_PGM].dev_putc = &xio_putc_pgm;
 	ds[XIO_DEV_PGM].dev_getc = &xio_getc_pgm;
-	ds[XIO_DEV_PGM].dev_readln = &xio_readln_usb;
+	ds[XIO_DEV_PGM].dev_readln = &xio_readln_pgm;
 
 	// setup stdio bindings to default IO device
 	stdin = fdev_usb;				// define the console device
