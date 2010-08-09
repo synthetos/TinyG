@@ -29,7 +29,7 @@
 #define TRUE 1
 #endif
 
-#define TINYG_VERSION "build 203"
+#define TINYG_VERSION "build 204"
 #define EEPROM_DATA_VERSION 100	// Used to migrate old data during firmware upgrades
 
 // Constants from Grbl
