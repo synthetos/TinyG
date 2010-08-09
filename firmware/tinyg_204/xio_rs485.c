@@ -24,9 +24,8 @@
 #include <avr/sleep.h>			// needed for blocking character reads
 
 #include "xio.h"
-//#include "xio_usart.h"
 #include "xmega_interrupts.h"
-#include "tinyg.h"				// needed for TG_ return codes, or provide your own
+//#include "tinyg.h"				// needed for TG_ return codes, or provide your own
 #include "signals.h"			// application specific signal handlers
 
 // necessary structures
@@ -179,7 +178,7 @@ struct __file * xio_open_rs485()
 int xio_setflags_rs485(const uint16_t control)
 {
 	xio_setflags(XIO_DEV_RS485, control);
-	return (TG_OK);									// for now it's always OK
+	return (XIO_OK);									// for now it's always OK
 }
 
 /* 
@@ -632,7 +631,7 @@ int xio_readln_rs485(char *buf, uint8_t size)
 	}
 	if (RSu.rx_buf_head == RSu.rx_buf_tail) {	// RX ISR buffer empty
 //		RS.sig = XIO_SIG_EAGAIN;
-		return(TG_EAGAIN);
+		return(XIO_EAGAIN);
 	}
 	if (--(RSu.rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
 		RSu.rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
@@ -648,11 +647,11 @@ static int _readln_char(void)
 	if (RS.len > RS.size) {						// trap buffer overflow
 		RS.sig = XIO_SIG_EOL;
 		RS.buf[RS.size] = NUL;					// RS.len is zero based
-		return (TG_BUFFER_FULL);
+		return (XIO_BUFFER_FULL_NON_FATAL);
 	}
 	RS.buf[RS.len++] = RS.c;
 	if (ECHO(RS.flags)) xio_putc_rs485(RS.c, stdout);// conditional echo
-	return (TG_EAGAIN);							// line is still in process
+	return (XIO_EAGAIN);							// line is still in process
 }
 
 static int _readln_NEWLINE(void)				// handle valid newline char
@@ -680,7 +679,7 @@ static int _readln_DELETE(void)
 	} else {
 		RS.len = 0;
 	}
-	return (TG_EAGAIN);							// line is still in process
+	return (XIO_EAGAIN);							// line is still in process
 }
 
 /*

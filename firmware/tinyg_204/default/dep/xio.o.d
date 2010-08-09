@@ -13,7 +13,7 @@ xio.o: ../xio.c c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../xio.h \
-  ../xio_file.h ../xio_usart.h ../tinyg.h
+  ../xio_file.h ../xio_usart.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -50,5 +50,3 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 ../xio_file.h:
 
 ../xio_usart.h:
-
-../tinyg.h:

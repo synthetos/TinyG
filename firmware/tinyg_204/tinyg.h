@@ -47,45 +47,42 @@ enum tgAxisNum {				// define axis numbers and array indexes from 0 to 3
 		A,
 };
 
-/* Global status codes
- * The following enums are unified status return codes for various TinyG functions.
- * This is necessary as some funcs return via callbacks & return codes get jumbled up.
- * The first fixed codes are used for flow control. The rest are up for grabs.
+/* TinyG return codes
+ * The following return codes are unified for various TinyG functions.
+ * The first codes (up to the line) are aligned with the XIO codes.
+ * Please don't change them without checking the corresponding values in xio.h
  */
-enum tgStatus {
-	// this block should remain fixed and in this order
-	TG_OK,				//	0	function completed successfully with no errors
-	TG_EAGAIN,			//  1	function would block here (must be called again)
-	TG_NOOP,			//	2	function had no-operation	
-	TG_QUIT,			//	3 	function returns QUIT (mode)
-	TG_EOL,				//  4	function returned end-of-line
-	TG_EOF,				//	5	function returned end-of-file 
-	TG_ERROR,			//	6 	generic error return (errors start here)
 
-	// have at it for the rest
-	TG_BUFFER_FULL,				// buffer is full (fatal)
-								// ...also non-fatal to terminate too-long text line
-	TG_BUFFER_EMPTY,			// more of a statement of fact than en error code
-	TG_UNRECOGNIZED_COMMAND,	// parser didn't recognize the command
-	TG_EXPECTED_COMMAND_LETTER,	// malformed line to parser
-	TG_ZERO_LENGTH_LINE,		// XYZ line is zero length 
-	TG_UNSUPPORTED_STATEMENT,	// a different kind of malformed line to parser
-	TG_BAD_NUMBER_FORMAT,		// number format error
-	TG_FLOATING_POINT_ERROR,	// number conversion error
-	TG_MOTION_CONTROL_ERROR,	// motion control failure
-	TG_ARC_ERROR,				// arc specification error
-	TG_UNRECOGNIZED_DEVICE,		// no device with this ID
-	TG_FILE_NOT_OPEN,			// not file is open
-	TG_MAX_ERRNO
-};
+//----- codes aligned with XIO subsystem...
+#define TG_OK 0							// function completed OK
+#define TG_ERR 1						// generic error return (EPERM)
+#define TG_EAGAIN 2						// function would block here (call again)
+#define TG_NOOP 3						// function had no-operation	
+#define TG_EOL 4						// function returned end-of-line
+#define TG_EOF 5						// function returned end-of-file 
+#define TG_FILE_NOT_OPEN 6
+#define TG_NO_SUCH_DEVICE 7
+#define TG_BUFFER_EMPTY 8
+#define TG_BUFFER_FULL_FATAL 9 
+#define TG_BUFFER_FULL_NON_FATAL 10
+//----- ...to here
+
+#define TG_QUIT 11						// function returned QUIT
+#define TG_UNRECOGNIZED_COMMAND 12		// parser didn't recognize the command
+#define TG_EXPECTED_COMMAND_LETTER 13	// malformed line to parser
+#define TG_UNSUPPORTED_STATEMENT 14		// a different kind of malformed line
+#define TG_BAD_NUMBER_FORMAT 15			// number format error
+#define TG_FLOATING_POINT_ERROR 16		// number conversion error
+#define TG_MOTION_CONTROL_ERROR 17		// motion control failure
+#define TG_ARC_ERROR 18					// arc specification error
+#define TG_ZERO_LENGTH_LINE 19			// XYZ line is zero length 
+
 
 /*
- * Common typedefs
+ * Common typedefs (see xio.h for some others)
  */										// pointers to functions:
-typedef void (*fptr_void_void) (void); 	// returns void, void args
 typedef void (*fptr_void_uint8) (void); // returns void, unit8_t arg (poll_func)
 typedef char (*fptr_char_void) (void); 	// returns char, void args
-typedef int (*fptr_int_void) (void); 	// returns int, void args
 typedef int (*fptr_int_uint8)(uint8_t s);// returns int, unit8_t arg (signal handler) 
 typedef int (*fptr_int_char_p) (char *b);// returns int, character pointer (line handler)
 

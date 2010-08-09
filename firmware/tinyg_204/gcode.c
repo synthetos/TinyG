@@ -79,7 +79,7 @@
 #include <stdio.h>
 #include <avr/pgmspace.h>			// needed for exception strings
 
-#include "xio.h"
+//#include "xio.h"
 #include "tinyg.h"
 #include "gcode.h"					// must precede config.h
 #include "config.h"
@@ -194,7 +194,7 @@ char *_gc_normalize_gcode_block(char *block) {
 	uint8_t i = 0; 		// index for incoming characters
 	uint8_t j = 0;		// index for normalized characters
 
-	while ((c = block[i++]) != NUL) {
+	while ((c = block[i++]) != 0) {			// NUL character
 		if (c <= ' ' ) {					// throw away WS & ctrl chars
 			continue;
 		} else if (c >= 'a' && c <= 'z') {	// convert lower to upper

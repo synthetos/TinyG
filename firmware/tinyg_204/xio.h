@@ -23,6 +23,19 @@
 #ifndef xio_h
 #define xio_h
 
+#include <avr/pgmspace.h>		// defines prog_char
+
+// include all xio subsystem header files here.
+#include "xio_file.h"
+#include "xio_usart.h"
+
+
+/******************************************************************************
+ *
+ *	Definitions
+ *
+ ******************************************************************************/
+
 #ifndef FALSE
 #define FALSE 0
 #endif
@@ -30,14 +43,36 @@
 #define TRUE 1
 #endif
 
-#include <avr/pgmspace.h>		// defines prog_char
-
-// include all sub-header files here.
-#include "xio_file.h"
-#include "xio_usart.h"
-
-
 #define PGMFILE (const PROGMEM char *)	// extends pgmspace.h
+
+/* XIO return codes
+ * These codes are the "inner nest" for the TG_ return codes. 
+ * The first N TG codes correspond directly to these codes.
+ * This eases using XIO by itself (without tinyg) and simplifes using
+ * tinyg codes with no mapping when used together. This comes at the cost of 
+ * making sure these lists are aligned. TG_should be based on this list.
+ */
+
+#define XIO_OK 0				// OK - ALWAYS ZERO
+#define XIO_ERR 1				// generic error return (errors start here)
+#define XIO_EAGAIN 2			// function would block here (must be called again)
+#define XIO_NOOP 3				// function had no-operation	
+#define XIO_EOL 4				// function returned end-of-line
+#define XIO_EOF 5				// function returned end-of-file 
+#define XIO_FILE_NOT_OPEN 6		// file is not open
+#define XIO_NO_SUCH_DEVICE 7	// illegal or unavailable device
+#define XIO_BUFFER_EMPTY 8		// more of a statement of fact than an error code
+#define XIO_BUFFER_FULL_FATAL 9
+#define XIO_BUFFER_FULL_NON_FATAL 10
+#define XIO_ERRNO_MAX XIO_BUFFER_FULL_NON_FATAL
+
+/*
+ * Common typedefs
+ */										// pointers to functions:
+
+typedef void (*fptr_void_void) (void); 	// returns void, void args
+typedef int (*fptr_int_void) (void); 	// returns int, void args
+
 
 /******************************************************************************
  *
@@ -155,6 +190,7 @@ enum xioSignals {
 	XIO_SIG_BELL					// BELL character (BEL, ^g)
 };
 
+
 /* Some useful ASCII definitions */
 
 #define NUL 0x00				// ASCII NUL character (0) (not "NULL" which is a pointer)
@@ -177,6 +213,7 @@ enum xioSignals {
 #define CTRL_Q XOFF
 #define CTRL_S XON
 #define CTRL_X 0x18				// ^x - aka CAN(cel)
+
 
 /******************************************************************************
  *

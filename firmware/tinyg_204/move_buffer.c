@@ -124,7 +124,7 @@ uint8_t mv_queue_move_buffer(int32_t steps_x,
 
 	// Return with error if the buffer is full 
 	if (mv.move_buffer_tail == next_buffer_head) {
-		return (TG_BUFFER_FULL);
+		return (TG_BUFFER_FULL_NON_FATAL);
 //		sleep_mode();	// USE INSTEAD OF THE RETURN IF YOU WANT BLOCKING BEHAVIOR
 	}
 
