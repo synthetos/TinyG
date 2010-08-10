@@ -1405,66 +1405,66 @@ LOAD c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a
  .debug_frame   0x00000ab0       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(printf_p.o)
  .debug_frame   0x00000ad0       0x20 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgetc.o)
 
-.debug_str      0x00000000     0x24f9
+.debug_str      0x00000000     0x24b5
  *(.debug_str)
  .debug_str     0x00000000      0x145 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libprintf_flt.a(vfprintf_flt.o)
                                 0x18b (size before relaxing)
- .debug_str     0x00000145      0x526 main.o
-                                0x613 (size before relaxing)
- .debug_str     0x0000066b      0x4d3 gcode.o
-                                0x70b (size before relaxing)
- .debug_str     0x00000b3e       0xe2 config.o
-                                0x7e3 (size before relaxing)
- .debug_str     0x00000c20       0xb6 encoder.o
-                                0x652 (size before relaxing)
- .debug_str     0x00000cd6      0x139 xmega_init.o
-                                0x20f (size before relaxing)
- .debug_str     0x00000e0f      0x1af motion_control.o
-                                0x918 (size before relaxing)
- .debug_str     0x00000fbe       0x3b spindle_control.o
-                                0x4ec (size before relaxing)
- .debug_str     0x00000ff9       0xa0 stepper.o
-                                0x70d (size before relaxing)
- .debug_str     0x00001099       0x5c xmega_interrupts.o
-                                0x15b (size before relaxing)
- .debug_str     0x000010f5      0x165 xio.o
-                                0x3b4 (size before relaxing)
- .debug_str     0x0000125a      0x39f xio_usb.o
-                                0x7f4 (size before relaxing)
- .debug_str     0x000015f9      0x48f xmega_eeprom.o
-                                0x5ad (size before relaxing)
- .debug_str     0x00001a88       0xbe xio_pgm.o
+ .debug_str     0x00000145      0x522 main.o
+                                0x60f (size before relaxing)
+ .debug_str     0x00000667      0x4d3 gcode.o
+                                0x707 (size before relaxing)
+ .debug_str     0x00000b3a       0xe2 config.o
+                                0x7df (size before relaxing)
+ .debug_str     0x00000c1c       0xb6 encoder.o
+                                0x64e (size before relaxing)
+ .debug_str     0x00000cd2      0x139 xmega_init.o
+                                0x20b (size before relaxing)
+ .debug_str     0x00000e0b      0x1af motion_control.o
+                                0x914 (size before relaxing)
+ .debug_str     0x00000fba       0x3b spindle_control.o
+                                0x4e8 (size before relaxing)
+ .debug_str     0x00000ff5       0xa0 stepper.o
+                                0x709 (size before relaxing)
+ .debug_str     0x00001095       0x5c xmega_interrupts.o
+                                0x157 (size before relaxing)
+ .debug_str     0x000010f1      0x165 xio.o
+                                0x3b0 (size before relaxing)
+ .debug_str     0x00001256      0x39f xio_usb.o
+                                0x7f0 (size before relaxing)
+ .debug_str     0x000015f5      0x48f xmega_eeprom.o
+                                0x5a9 (size before relaxing)
+ .debug_str     0x00001a84       0x7e xio_pgm.o
                                 0x3b6 (size before relaxing)
- .debug_str     0x00001b46      0x2ce controller.o
+ .debug_str     0x00001b02      0x2ce controller.o
                                 0xa7f (size before relaxing)
- .debug_str     0x00001e14       0x2d direct_drive.o
-                                0x5c4 (size before relaxing)
- .debug_str     0x00001e41       0xec move_buffer.o
-                                0x81b (size before relaxing)
- .debug_str     0x00001f2d      0x279 limit_switches.o
-                                0x8ad (size before relaxing)
- .debug_str     0x000021a6       0xb3 xio_rs485.o
-                                0x7f4 (size before relaxing)
- .debug_str     0x00002259       0x38 signals.o
-                                0x1d7 (size before relaxing)
- .debug_str     0x00002291      0x103 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
+ .debug_str     0x00001dd0       0x2d direct_drive.o
+                                0x5c0 (size before relaxing)
+ .debug_str     0x00001dfd       0xec move_buffer.o
+                                0x817 (size before relaxing)
+ .debug_str     0x00001ee9      0x279 limit_switches.o
+                                0x8a9 (size before relaxing)
+ .debug_str     0x00002162       0xb3 xio_rs485.o
+                                0x7f0 (size before relaxing)
+ .debug_str     0x00002215       0x38 signals.o
+                                0x1d3 (size before relaxing)
+ .debug_str     0x0000224d      0x103 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_udivdi3.o)
                                 0x18f (size before relaxing)
  .debug_str     0x00000000       0xf9 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/avrxmega6\libgcc.a(_clz.o)
- .debug_str     0x00002394       0x78 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(strtod.o)
+ .debug_str     0x00002350       0x78 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(strtod.o)
                                 0x14f (size before relaxing)
- .debug_str     0x0000240c       0x28 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(clearerr.o)
+ .debug_str     0x000023c8       0x28 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(clearerr.o)
                                  0xfb (size before relaxing)
- .debug_str     0x00002434       0x22 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgets.o)
+ .debug_str     0x000023f0       0x22 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgets.o)
                                  0xf5 (size before relaxing)
- .debug_str     0x00002456       0x22 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fputc.o)
+ .debug_str     0x00002412       0x22 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fputc.o)
                                  0xf5 (size before relaxing)
- .debug_str     0x00002478       0x1a c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(iob.o)
+ .debug_str     0x00002434       0x1a c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(iob.o)
                                  0xec (size before relaxing)
- .debug_str     0x00002492       0x28 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(printf_p.o)
+ .debug_str     0x0000244e       0x28 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(printf_p.o)
                                 0x123 (size before relaxing)
- .debug_str     0x000024ba       0x1d c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(errno.o)
+ .debug_str     0x00002476       0x1d c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(errno.o)
                                  0x5d (size before relaxing)
- .debug_str     0x000024d7       0x22 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgetc.o)
+ .debug_str     0x00002493       0x22 c:/winavr-20100110/bin/../lib/gcc/avr/4.3.3/../../../../avr/lib/avrxmega6\libc.a(fgetc.o)
                                  0xf5 (size before relaxing)
 
 .debug_loc      0x00000000     0x3af9
