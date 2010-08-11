@@ -56,22 +56,14 @@
 												// move_buffer_tail (to uint16_t)
 												// next_buffer_head (multiple places)
 struct mvMoveBuffer {
-	uint64_t ticks;								// see note.
-	uint64_t ticks_per_step;
-	uint64_t microseconds;
 	volatile uint8_t move_buffer_head;			// move queue index (for writes)
 	volatile uint8_t move_buffer_tail;			// move dequeue index (for reads)
+	uint64_t ticks;
+	uint32_t ticks_per_step;
 	struct mvMove *p;							// move buffer pointer
 	struct mvMove move_buffer[MOVE_BUFFER_SIZE];// move buffer storage
 };
 static struct mvMoveBuffer mv;
-
-/*	Note: 64 bit fixed point arithmetic is used to compute ticks, steps and 
-	durations (seconds) while queuing moves. A 2 minute move overflows 32 bits. 
-	Using 64 bits is expensive. The division goes from ~640 cycles at 32 bits
-	to ~3800 cycles using 64 bits. Can't use doubles as you need to manipulate 
-	the bits to load the timers.
-*/
 
 /* 
  * mv_init() - initialize move buffers
@@ -121,6 +113,10 @@ uint8_t mv_queue_move_buffer(int32_t steps_x,
 {
 	uint8_t next_buffer_head;
 	uint8_t i;
+//	uint64_t ticks;	// Timer ticks in the move. A 2 minute move overflows 32 bits
+					// Using 64 bits is expensive! The division goes from ~640 
+					// cycles at 32 bits to ~3800 cycles using 64 bits
+//	uint32_t ticks_per_step; // temp variable
 
 	// Determine the buffer head index needed to store this line
 	if ((next_buffer_head = mv.move_buffer_head + 1) >= MOVE_BUFFER_SIZE) {
@@ -139,15 +135,14 @@ uint8_t mv_queue_move_buffer(int32_t steps_x,
 	mv.p->a[X].steps = steps_x;
 	mv.p->a[Y].steps = steps_y;
 	mv.p->a[Z].steps = steps_z;
-	mv.microseconds = (uint64_t)microseconds;			// cast to larger base
-	mv.ticks = mv.microseconds * TICKS_PER_MICROSECOND;
+	mv.ticks = microseconds * TICKS_PER_MICROSECOND;
 
 	// Zero length lines are DWELL commands. Load dwell timing into X axis.
 	if ((steps_x == 0) && (steps_y == 0) && (steps_z) == 0) {
 		mv.p->a[X].steps = (((mv.ticks & 0xFFFF0000)>>32)+1);	// compute # of steps
 		mv.p->a[X].postscale = 1;
-		mv.ticks_per_step = (uint64_t)(mv.ticks / mv.p->a[X].steps); // expensive!
-		while (mv.ticks_per_step & 0xFFFFFFFFFFFF0000) {
+		mv.ticks_per_step = (uint32_t)(mv.ticks / mv.p->a[X].steps); // expensive!
+		while (mv.ticks_per_step & 0xFFFF0000) {
 			mv.ticks_per_step >>= 1;
 			mv.p->a[X].postscale <<= 1;
 		}
@@ -169,8 +164,8 @@ uint8_t mv_queue_move_buffer(int32_t steps_x,
 				// Normalize ticks_per_step by right shifting until the MSword = 0
 				// Accumulate LSBs shifted out of ticks_per_step into postscale
 				mv.p->a[i].postscale = 1;
-				mv.ticks_per_step = (uint64_t)(mv.ticks / mv.p->a[i].steps);// expensive!
-				while (mv.ticks_per_step & 0xFFFFFFFFFFFF0000) {
+				mv.ticks_per_step = (uint32_t)(mv.ticks / mv.p->a[i].steps);// expensive!
+				while (mv.ticks_per_step & 0xFFFF0000) {
 					mv.ticks_per_step >>= 1;
 					mv.p->a[i].postscale <<= 1;
 				}
