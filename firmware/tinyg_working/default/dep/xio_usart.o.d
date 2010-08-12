@@ -13,8 +13,9 @@ xio_usart.o: ../xio_usart.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h ../xio.h \
-  ../xio_file.h ../xio_usart.h
+  c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h \
+  c:/winavr-20100110/lib/gcc/../../avr/include/avr/sleep.h ../xio.h \
+  ../xio_file.h ../xio_usart.h ../xmega_interrupts.h ../signals.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -46,8 +47,14 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h:
 
+c:/winavr-20100110/lib/gcc/../../avr/include/avr/sleep.h:
+
 ../xio.h:
 
 ../xio_file.h:
 
 ../xio_usart.h:
+
+../xmega_interrupts.h:
+
+../signals.h:

@@ -30,10 +30,10 @@
 #endif
 
 // System Constants
-#define TINYG_VERSION "build 206"
+#define TINYG_VERSION "build 207"
 #define EEPROM_DATA_VERSION 100	// Used to migrate old data during firmware upgrades
 
-#define MM_PER_ARC_SEGMENT 0.02
+#define MM_PER_ARC_SEGMENT 0.05
 #define ONE_MINUTE_OF_MICROSECONDS 60000000.0	// from GRBL - Thanks Simen!
 #define TICKS_PER_MICROSECOND (F_CPU/1000000)	// from GRBL
 #define INCHES_PER_MM (1.0/25.4)				// from GRBL
