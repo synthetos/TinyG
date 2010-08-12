@@ -157,15 +157,15 @@ int main(void)
 // Debug help: Pre-load the USB RX (input) buffer with some test strings
 // Be mindful of the char limit on the RX_BUFFER_SIZE (circular buffer)
 
-//	xio_usb_queue_RX_char(ETX);			// send control-c (kill)
-//	xio_usb_queue_RX_string("f\n");
-//	xio_usb_queue_RX_string("?\n");
+//	xio_queue_RX_char_usb(ETX);			// send control-c (kill)
+//	xio_queue_RX_string_usb("f\n");
+//	xio_queue_RX_string_usb("?\n");
 
-//	xio_usb_queue_RX_string("g0x10y10z25\n");
-//	xio_usb_queue_RX_string("g0x0y0z0\n");
-//	xio_usb_queue_RX_string("g0x1000\n");
-//	xio_usb_queue_RX_string("g0x10000\n");
-//	xio_usb_queue_RX_string("g0x10\ng4p1\ng0x0\n");
+	xio_queue_RX_string_usb("g0x10y10z25\n");
+//	xio_queue_RX_string_usb("g0x0y0z0\n");
+//	xio_queue_RX_string_usb("g0x1000\n");
+//	xio_queue_RX_string_usb("g0x10000\n");
+//	xio_queue_RX_string_usb("g0x10\ng4p1\ng0x0\n");
 
 	for(;;){
 		tg_controller();

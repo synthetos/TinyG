@@ -134,8 +134,10 @@ struct xioUSART {
 };
 
 /* 
- * USART DEVICE FUNCTION PROTOTYPES
+ * USART DEVICE FUNCTION PROTOTYPES AND ALIASES
  */
+
+//#define xio_readln_usb(buf, siz) xio_readln_usart(XIO_DEV_USB, buf, siz)
 
 // Common functions (common to all USART devices)
 void xio_init_usart(const uint8_t dev, 
@@ -149,24 +151,31 @@ void xio_init_usart(const uint8_t dev,
 					const uint8_t outset);
 
 void xio_set_baud_usart(const uint8_t dev, const uint8_t baud);
+int xio_putc_usart(const uint8_t dev, const char c, FILE *stream);
+int xio_getc_usart(const uint8_t dev, FILE *stream);
+int xio_readln_usart(const uint8_t dev, char *buf, const uint8_t size);
+void xio_queue_RX_char_usart(const uint8_t dev, const char c);
+void xio_queue_RX_string_usart(const uint8_t dev, const char *buf);
 
 // RS485 specific functions
-struct __file * xio_open_rs485();				// returns stdio fdev handle
+struct __file * xio_open_rs485();				// returns stdio fdev handle (note)
 int xio_setflags_rs485(const uint16_t control);	// set control flags w/validation
 int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
 int xio_getc_rs485(FILE *stream);				// stdio compatible get character
-int xio_readln_rs485(char *buf, uint8_t len);	// non-blocking read line function
-void xio_rs485_queue_RX_char(char c);			// simulate char rcvd into RX buffer
-void xio_rs485_queue_RX_string(char *buf);		// simulate rec'ving a whole string
+int xio_readln_rs485(char *buf, const uint8_t size);// non-blocking read line function
+void xio_queue_RX_char_rs485(const char c);		// simulate char rcvd into RX buffer
+void xio_queue_RX_string_rs485(const char *buf);// simulate rec'ving a whole string
 
 // USB specific functions
 struct __file * xio_open_usb();					// returns stdio fdev handle
 int xio_setflags_usb(const uint16_t control);	// set control flags w/validation
 int xio_putc_usb(const char c, FILE *stream);	// stdio compatible put character
 int xio_getc_usb(FILE *stream);					// stdio compatible get character
-int xio_readln_usb(char *buf, uint8_t len);		// non-blocking read line function
-void xio_usb_queue_RX_char(char c);				// simulate char rcvd into RX buffer
-void xio_usb_queue_RX_string(char *buf);		// simulate receving a whole string
+int xio_readln_usb(char *buf, const uint8_t size);// non-blocking read line function
+void xio_queue_RX_char_usb(const char c);		// simulate char rcvd into RX buffer
+void xio_queue_RX_string_usb(const char *buf);	// simulate receving a whole string
+
+// Note: don't put void in the open() prototypes- it conflicts with the file open()s
 
 // TTL usart specific functions (Arduino)
 
