@@ -232,7 +232,7 @@ struct xioDEVICE {						// common device struct (one per device)
 	int (*dev_setflags)(const uint16_t control);// set device control flags
 	int (*dev_putc)(char, struct __file *);		// write char (stdio compatible)
 	int (*dev_getc)(struct __file *);			// read char (stdio compatible)
-	int (*dev_readln)(char *buf, uint8_t size);	// specialized line reader
+	int (*dev_readln)(char *buf, const uint8_t size);// specialized line reader
 
 	void *x;							// extended IO parameter binding (static)
 	struct __file *fdev;				// stdio fdev binding (static)
