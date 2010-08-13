@@ -16,7 +16,8 @@ gcode.o: ../gcode.c c:/winavr-20100110/lib/gcc/../../avr/include/ctype.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../tinyg.h \
-  ../gcode.h ../config.h ../motion_control.h ../spindle_control.h
+  ../gcode.h ../config.h ../controller.h ../motion_control.h \
+  ../spindle_control.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/ctype.h:
 
@@ -59,6 +60,8 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 ../gcode.h:
 
 ../config.h:
+
+../controller.h:
 
 ../motion_control.h:
 

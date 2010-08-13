@@ -161,11 +161,19 @@ int main(void)
 //	xio_queue_RX_string_usb("f\n");
 //	xio_queue_RX_string_usb("?\n");
 
-	xio_queue_RX_string_usb("g0x10y10z25\n");
 //	xio_queue_RX_string_usb("g0x0y0z0\n");
 //	xio_queue_RX_string_usb("g0x1000\n");
 //	xio_queue_RX_string_usb("g0x10000\n");
 //	xio_queue_RX_string_usb("g0x10\ng4p1\ng0x0\n");
+
+/*
+	xio_queue_RX_string_usb("g1 y-50 f300\n");
+	xio_queue_RX_string_usb("g0 20\n");
+	xio_queue_RX_string_usb("g0 y-50\n");
+	xio_queue_RX_string_usb("g0 y100\n");
+*/
+//	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
+	xio_queue_RX_string_usb("g0 x-10 (MSGtest message)\n");
 
 	for(;;){
 		tg_controller();

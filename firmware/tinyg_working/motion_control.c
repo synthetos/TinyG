@@ -226,7 +226,7 @@ int mc_arc_blocking(double theta, double angular_travel, double radius, double l
 	ma.mm_of_travel = hypot(ma.angular_travel*ma.radius, labs(ma.linear_travel));
 	
 	if (ma.mm_of_travel < MM_PER_ARC_SEGMENT) { 	// too short to draw
-		return (TG_ARC_ERROR);						// arc specification error
+		return (TG_ARC_SPECIFICATION_ERROR);			
 	}
 	ma.segments = ceil(ma.mm_of_travel/cfg.mm_per_arc_segment);
   
@@ -277,7 +277,7 @@ int mc_arc(double theta, double angular_travel, double radius,
 	ma.mm_of_travel = hypot(ma.angular_travel*ma.radius, labs(ma.linear_travel));
 	
 	if (ma.mm_of_travel < MM_PER_ARC_SEGMENT) { 	// too short to draw
-		return (TG_ARC_ERROR);						// arc specification error
+		return (TG_ARC_SPECIFICATION_ERROR);
 	}
 	ma.segments = ceil(ma.mm_of_travel/cfg.mm_per_arc_segment);
   
