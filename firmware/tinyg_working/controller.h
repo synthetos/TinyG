@@ -25,5 +25,6 @@ void tg_init(void);
 void tg_controller(void);
 int tg_parser(char * buf);
 void tg_reset_source();
+void tg_print_status(const uint8_t status_code, const char *textbuf);
 
 #endif

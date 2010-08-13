@@ -19,7 +19,7 @@
 #define xio_usart_h
 
 /* 
- * USART DEVICE CONFIGS 
+ * USART DEVICE CONFIGS (applied during device-specific inits)
  */
 
 // RS485 device configuration
@@ -37,8 +37,14 @@
 
 #define RS485_DIRCLR_bm (RS485_RX_bm)							// input bits
 #define RS485_DIRSET_bm (RS485_RE_bm | RS485_DE_bm | RS485_TX_bm)// output bits
-#define RS485_OUTCLR_bm (RS485_RE_bm | RS485_DE_bm)				// outputs init'd to 0
-#define RS485_OUTSET_bm (RS485_TX_bm)							// outputs init'd to 1
+
+#ifdef __RS485_MASTER
+#define RS485_OUTCLR_bm (RS485_RE_bm)				// outputs init'd to 0
+#define RS485_OUTSET_bm (RS485_TX_bm | RS485_DE_bm)	// outputs init'd to 1
+#else
+#define RS485_OUTCLR_bm (RS485_RE_bm | RS485_DE_bm)	// outputs init'd to 0
+#define RS485_OUTSET_bm (RS485_TX_bm)				// outputs init'd to 1
+#endif
 
 
 // USB device configuration

@@ -107,6 +107,11 @@ enum xioDevice {				// device enumerations
 #define XIO_DEV_SDC_OFFSET (XIO_DEV_SDC - XIO_DEV_PGM)
 #define XIO_DEV_FILE_COUNT (3)						// count of FILE devices
 
+// aliases for stdio devices (pointers)
+#define fdev_rs485 (ds[XIO_DEV_RS485].fdev)// RS485 device for stdio functions
+#define fdev_usb (ds[XIO_DEV_USB].fdev)	// USB device for stdio functions
+#define fdev_pgm (ds[XIO_DEV_PGM].fdev)	// Program memory device
+
 /*
  * Device configurations (all of them)
  */
@@ -247,7 +252,10 @@ struct xioDEVICE {						// common device struct (one per device)
  *
  ******************************************************************************/
 
-void xio_init(void);				// initialize xio system
+void xio_init(void);							// xio system general init
+void xio_init_rs485(void);						// device-specific inits
+void xio_init_usb(void);
+
 void xio_setflags(const uint8_t dev, const uint16_t control);
 void xio_set_stdin(const uint8_t dev);
 void xio_set_stdout(const uint8_t dev);
