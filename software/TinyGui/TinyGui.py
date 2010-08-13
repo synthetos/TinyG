@@ -1,150 +1,123 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+#TinyG Controller GUI
+#synthetos.com
+#Riley Porter
 
+from wx import *
+import os
 
-import gtk
-import TinyGSerial
-
-
-class TinyG(gtk.Window):
-    def __init__(self):
-        super(TinyG, self).__init__()
-        
-        #Window
-        window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        window.set_title("TinyG Test Terminal")
-        window.set_size_request(600, 300)
-        window.set_position(gtk.WIN_POS_CENTER)
-        window.connect("destroy", self.on_destroy)
-        window.set_border_width(10)
-        
-        vbox = gtk.VBox(False, 5)
-        hbox = gtk.HBox(True, 3)
-        
-        valign = gtk.Alignment(0, 1, 0, 0)
-        vbox.pack_start(valign)
-        
-        
-        cb = gtk.combo_box_new_text()
-        cb.append_text("one")
-        cb.append_text("two")
-        cb.append_text("three")
+class Controller(wx.Frame):
+    def __init__(self, parent, id, title):
+        wx.Frame.__init__(self, parent, id, title, wx.DefaultPosition, wx.Size(800, 600))
       
         
-        ok = gtk.Button("OK")
-        ok.set_size_request(70, 30)
-        ok.connect("clicked", self.on_ok_clicked)
+        #====================WIDGETS================="
         
-        close = gtk.Button("Close")
-        close.connect("clicked",self.on_close_clicked) 
+        #MenuBar Stuff
+        menubar = wx.MenuBar() #Create MenuBar
+        file = wx.Menu() #Create Menu
+        edit = wx.Menu() #Create Menu
+        help = wx.Menu() #Create Menu
+        
+        file.Append(101, '&Load Gcode', 'Open a new Gcode File')
+        file.Append(102, '&Process Job', 'Execute the Gcode')
+        file.AppendSeparator()
+        
+        help.Append(103, '&About', 'Open About Information')
+        quit = wx.MenuItem(file, 104, '&Quit\tCtrl+Q', 'Quit the Application')
+        edit.Append(105, '&Preferences', 'Edit Prefrences')
+        
+        file.AppendItem(quit)
+        menubar.Append(file, '&File')
+        menubar.Append(edit, '&Edit')
+        menubar.Append(help, '&Help')
+        self.SetMenuBar(menubar)
+        self.CreateStatusBar()
+        
+        #Panel Widgets
+        panel = wx.Panel(self, -1)
+        
+        #Sizer Box Widgets
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        #box.Add(btnConnect)
+        #box.Add(btnQuit,1 )
+        
+        #Buttons Widgets
+        box.Add(wx.Button(panel, 201, 'Connect'), 1, wx.ALL, 5)
+        box.Add(wx.Button(panel, 202, 'Quit'), 1, wx.ALL, 5 )
+        #box.Add(btnQuit)
+        panel.SetSizer(box)
+        self.Centre()
         
         
-        buf = gtk.TextBuffer()
-        buf.set_text("Hello World\n hello again")
-        textview = gtk.TextView(buf)
-        #textview.set_wrap_mode(gtk.TextView.set_wrap_mode(GTK_WRAP_WORD))
-        textview.set_editable(True)
-        hbox.add(ok)
-        hbox.add(close)
-        vbox.add(textview)
-        vbox.add(cb)
-        halign = gtk.Alignment(1, 0, 0, 0)
-        halign.add(hbox)
+        #======================BIND EVENTS========================#
+        #Button Binds
+        self.Bind(wx.EVT_BUTTON, self.OnCon,   id=201)   #Attaches the Connect Button
+        self.Bind(wx.EVT_BUTTON, self.OnQuit,  id=202)  #Attaches the Quit Button
+        #Menu Binds
+        self.Bind(wx.EVT_MENU, self.OnOpen,    id=101)    #Attaches the Open menu option
+        self.Bind(wx.EVT_MENU, self.OnProcess, id=102)    #Attaches the Process menu option
+        self.Bind(wx.EVT_MENU, self.OnAbout,   id=103)    #Attaches the About menu option
+        self.Bind(wx.EVT_MENU, self.OnQuit,    id=104)    #Attaches the Quit menu option
+        self.Bind(wx.EVT_MENU, self.OnPrefs,   id=105)    #Attaches the Prefs menu option
+       
+   
         
-        vbox.pack_start(halign, False, False, 3)
-
-        self.add(vbox)
-
-        self.connect("destroy", gtk.main_quit)
-        self.show_all()
+    #=========================EVENT METHODS=========================#
+    def OnQuit(self, event):
+        self.Close()
+        
+    def OnCon(self, event):
+        print "[*]Connecting To Serial Port"
+        
+    def OnOpen(self, event):
+        print "[*]Opening Gcode File Chooser"
+        """
+        Create and show the Open FileDialog
+        """ 
+        wildcard = "Gcode Files (*.gcode)|*.nc| All files (*.*)|*.*"  #Set the file types listed
+        currentDIR = os.getcwd() #get the current directory
+        
+        DIAopen = wx.FileDialog(
+            self, message="Choose a gcode file",
+            defaultDir=currentDIR,
+            defaultFile="",
+            wildcard=wildcard,
+            style=wx.OPEN
+            )
+        if DIAopen.ShowModal() == wx.ID_OK:
+            paths = DIAopen.GetPaths()
+            print "You chose the following file(s):"
+            for path in paths:
+                print path
+        DIAopen.Destroy()
         
         
-        #fixed = gtk.Fixed()
-        #box = gtk.VBox(False, 0)
-        #window.add(box)
-        ##box.show()
-        
-        #box2 = gtk.VBox(False, 0)
-        #box2.set_border_width(10)
-        #box2.pack_start(box2, True, True, 0)
-        #box2.show()
-        
-        #sw = gtk.ScrolledWindow()
-        #sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        #box2.pack_start(box2, False, True, 0)
-        #box2.show()
-        #window.show()
-        ##WIDGETS - buttons, combo boxes etc
-        
-        ##Buttons
-        #btn_Execute = gtk.Button("Execute")
-        #btn_Execute.connect("clicked", self.on_clicked)
-        #btn_Execute.set_size_request(80, 35)
-
-        #btn_Clear = gtk.Button("Clear")
-        #btn_Clear.connect("clicked", self.on_clicked_clear)
-        #btn_Clear.set_size_request(80, 35)
-        
-
-        #menubar_Main = gtk.Menu()
-        #menubar_Main_File = gtk.MenuItem("File")
-        #menubar_Main_File.set_submenu(menubar_Main)
-        
-        ##Text View
-        #textview_Status = gtk.TextView()
-        #buf = gtk.TextBuffer()
-        #buf.set_text("This is the text")
-        #textview_Status.set_border_width(24)
-        #textview_Status.set_buffer(buf)
-        #textview_Status.set_editable(True)
-        #textview_Status.set_left_margin(50)
-        #textview_Status.set_right_margin(50)
-        #textview_Status.set_border_width(10)
-        #sw.add(textview_Status)
-        #sw.show()
-        #textview_Status.show()
-        ##fixed.put(vbox, 20, 40)
-        
-        ##Combo Box
-        
-        #cmb_serial_Device = gtk.combo_box_new_text()
-        #ports = TinyGSerial.scanLinux()
-        
-        ##Enumerates OS and scans for Possible Serial Ports
-        #for x in ports:
-            #cmb_serial_Device.append_text(x)
-
-        
-        ##Place Widgets on Container
-        ##fixed.put(menubar_Main)
-        #fixed.put(btn_Execute, 5, 50)
-        #fixed.put(btn_Clear, 5, 100)
-        #fixed.put(cmb_serial_Device, 90, 50)
-        #fixed.put(textview_Status,150,200)
-        ##self.add(fixed)
-        #self.show_all()
-        
-    #Callback Connectors
-    def on_ok_clicked(self, widget):
-        self.set_title("Word")
+    def OnAbout(self, event):
+        """ 
+        Create and show the About Dialog
+        """
+        print "[*]TinyG Controller Program By Riley Porter and Alden Hart"  
+        DIAabout = wx.MessageDialog(parent=None,
+                                    message = "About TinyG Controller", 
+                                    caption = "About TinyG",
+                                    style = wx.OK|wx.ICON_INFORMATION)
+        DIAabout.ShowModal() #Show Message Dialog
+        DIAabout.Destroy()   #Close Message Dialog once OK clicked
+        return True
     
-    def on_destroy(self, widget):
-        gtk.main_quit()
-    def on_close_clicked(self, widget):
-        gtk.main_quit()
-    #Enc Callback Connectors
+    def OnProcess(self, event):
+        print "[*]Sending Gcode file to TinyG... Please Wait for job to finish."
     
+    def OnPrefs(self, event):
+        print "[*]Opening the prefrences dialog"
         
-    #def on_clicked(self, widget):
         
-        #print "Clicked Connect"
-        ##ser.connect("/dev/ttyUSB0")
-        
-    #def on_clicked_clear(self, widget):
-        #print("Clear Clicked")
-        #buf = ""
-        ##textview_Status.set_buffer(buf)
-    
+class MyApp(wx.App):
+    def OnInit(self):
+        frame = Controller(None, -1, 'TinyG Controller')
+        frame.Show(True)
+        return True
 
-
-TinyG()
-gtk.main()
+app = MyApp(0)
+app.MainLoop()
