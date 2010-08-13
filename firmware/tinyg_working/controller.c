@@ -18,7 +18,7 @@
  *
  *	From Control mode a line starting with the following letters will enter modes:
  *
- *		G,M,N	enter GCODE_MODE (as will lower-case of the same)
+ *		G,M,N,(	enter GCODE_MODE (as will lower-case of the same)
  *		C,?		enter CONFIG_MODE
  *		D,A		enter DIRECT_DRIVE_MODE
  *		F		enter FILE_MODE (returns automatically after file selection)
@@ -250,7 +250,7 @@ int tg_parser(char * buf)
 	// auto-detect mode if not already set 
 	if (tg.mode == TG_CONTROL_MODE) {
 		switch (toupper(buf[0])) {
-			case 'G': case 'M': case 'N': _tg_set_mode(TG_GCODE_MODE); break;
+			case 'G': case 'M': case 'N': case '(': case '\\': _tg_set_mode(TG_GCODE_MODE); break;
 			case 'C': case '?': _tg_set_mode(TG_CONFIG_MODE); break;
 			case 'D': _tg_set_mode(TG_DIRECT_DRIVE_MODE); break;
 			case 'F': return (_tg_test_file());
@@ -343,6 +343,72 @@ void _tg_prompt()
 		}
 		tg.state = TG_READY_PROMPTED;
 	}
+}
+
+/*
+ * tg_print_status()
+ *
+ *	Send status message to stderr. "Case out" common messages 
+ */
+
+// put strings in program memory
+char tgStatusMsg00[] PROGMEM = "OK";
+char tgStatusMsg01[] PROGMEM = "ERROR";
+char tgStatusMsg02[] PROGMEM = "EAGAIN";
+char tgStatusMsg03[] PROGMEM = "NOOP";
+char tgStatusMsg04[] PROGMEM = "End of line";
+char tgStatusMsg05[] PROGMEM = "End of file";
+char tgStatusMsg06[] PROGMEM = "File not open";
+char tgStatusMsg07[] PROGMEM = "No such device";
+char tgStatusMsg08[] PROGMEM = "Buffer empty";
+char tgStatusMsg09[] PROGMEM = "Buffer full - fatal";
+char tgStatusMsg10[] PROGMEM = "Buffer full - non-fatal";
+char tgStatusMsg11[] PROGMEM = "QUIT";
+char tgStatusMsg12[] PROGMEM = "Unrecognized command";
+char tgStatusMsg13[] PROGMEM = "Expected command letter";
+char tgStatusMsg14[] PROGMEM = "Unsupported statement";
+char tgStatusMsg15[] PROGMEM = "Parameter over range";
+char tgStatusMsg16[] PROGMEM = "Bad number format";
+char tgStatusMsg17[] PROGMEM = "Floating point error";
+char tgStatusMsg18[] PROGMEM = "Motion control error";
+char tgStatusMsg19[] PROGMEM = "Arc specification error";
+char tgStatusMsg20[] PROGMEM = "Zero length line";
+
+// put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
+PGM_P tgStatusStrings[] PROGMEM = {	
+	tgStatusMsg00,
+	tgStatusMsg01,
+	tgStatusMsg02,
+	tgStatusMsg03,
+	tgStatusMsg04,
+	tgStatusMsg05,
+	tgStatusMsg06,
+	tgStatusMsg07,
+	tgStatusMsg08,
+	tgStatusMsg09,
+	tgStatusMsg10,
+	tgStatusMsg11,
+	tgStatusMsg12,
+	tgStatusMsg13,
+	tgStatusMsg14,
+	tgStatusMsg15,
+	tgStatusMsg16,
+	tgStatusMsg17,
+	tgStatusMsg18,
+	tgStatusMsg19,
+	tgStatusMsg20
+};
+
+void tg_print_status(const uint8_t status_code, const char *textbuf)
+{
+	switch (status_code) {		// don't send messages for these status codes
+		case TG_OK: return;
+		case TG_EAGAIN: return;
+		case TG_NOOP: return;
+		case TG_QUIT: return;
+	}
+	printf_P(PSTR("%S--> %s\n"),(PGM_P)pgm_read_word(&tgStatusStrings[status_code]), textbuf);
+//	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgStatusStrings[status_code]));
 }
 
 /*

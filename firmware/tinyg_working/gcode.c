@@ -83,6 +83,7 @@
 #include "tinyg.h"
 #include "gcode.h"					// must precede config.h
 #include "config.h"
+#include "controller.h"
 #include "motion_control.h"
 #include "spindle_control.h"
 
@@ -123,19 +124,20 @@ struct GCodeState {
 	uint8_t tool;
 	int8_t spindle_direction;
 	int16_t spindle_speed;			// RPM/100
+	char *comment;
+
 };
 static struct GCodeState gc;
 
 #define FAIL(stat) gc.status = stat;
 
 /* local helper functions */
-static char *_gc_normalize_gcode_block(char *block);
+static void _gc_normalize_gcode_block(char *block);
 static int _gc_read_double(char *buf, int *i, double *double_ptr);
 static int _gc_next_statement(char *letter, double *value_ptr, double *fraction_ptr, char *line, int *i);
 static int _gc_compute_arc(void);
 static int _gc_compute_radius_arc(void);
 static int _gc_compute_center_arc(void);
-//static void _gc_print_status(uint8_t status, char *textbuf);
 
 /* 
  * gc_init() 
@@ -165,10 +167,7 @@ void gc_init() {
 uint8_t gc_gcode_parser(char *block)
 {
 	_gc_normalize_gcode_block(block);
-#ifdef __DEBUG
-	printf_P(PSTR("GCode read:   %s\n"), block);
-#endif
-	if (block[0] == '(') { 					// ignore comments
+	if (block[0] == 0) { 					// ignore comments (stripped)
 		return(TG_OK);
 	}
 	if (block[0] == 'Q') { 					// quit
@@ -178,30 +177,53 @@ uint8_t gc_gcode_parser(char *block)
 		return(TG_OK);
 	} 
 	gc.status = gc_execute_block(block);	// execute gcode block
-#ifdef __ECHO
-	_gc_print_status(gc.status, block);
-#endif
+	tg_print_status(gc.status, block);
 	return (gc.status);
 }
 
 /*
  * _gc_normalize_gcode_block() - normalize a block (line) of gcode in place
+ *
+ *	Comments always terminate the block (embedded comments are not supported)
+ *	Messages in comments are sent to stderr (console)
+ *	Processing: split string into command and comment portions. Valid choices:
+ *	  (case 1)	command <no comment>
+ *	  (case 2)	comment <no command>
+ *	  (case 3)	command comment
  */
 
-char *_gc_normalize_gcode_block(char *block) {
-
+void _gc_normalize_gcode_block(char *block) 
+{
 	char c;
-	uint8_t i = 0; 		// index for incoming characters
-	uint8_t j = 0;		// index for normalized characters
+	char *comment=0;	// comment pointer - first char past opening paren
+	uint8_t i=0; 		// index for incoming characters
+	uint8_t j=0;		// index for normalized characters
 
-	while ((c = toupper(block[i++])) != 0) { // NUL character
-		if (c <= ' ' ) continue;			 // toss WS & ctrl chars
+	// normalize the comamnd block & mark the comment(if any)
+	while ((c = toupper(block[i++])) != 0) {// NUL character
+		if (c <= ' ') continue;				// toss WS & ctrl codes
+		if (c == '(') {						// detect & handle comment
+			block[j] = 0;
+			comment = &block[i]; 
+			break;
+		}
 		block[j++] = c;
 	}
-	block[j] = 0;							// nul terminate string
-	return block;
+	if (comment) {
+		if ((toupper(comment[0]) == 'M') && 
+			(toupper(comment[1]) == 'S') &&
+			(toupper(comment[2]) == 'G')) {
+			i=0;
+			while ((c = comment[i++]) != 0) {	// remove trailing paren
+				if (c == ')') {
+					comment[--i] = 0;
+					break;
+				}
+			}
+			printf_P(PSTR("%s\n"), (comment+3));
+		}
+	}
 }
-
 
 /* 
  * select_plane() - select axis plane 
@@ -635,7 +657,7 @@ int _gc_compute_center_arc()
 	// calculate the theta (angle) of the current point
 	theta_start = theta(-gc.offset[gc.plane_axis_0], -gc.offset[gc.plane_axis_1]);
 	if(isnan(theta_start)) { 
-		FAIL(TG_ARC_ERROR); 
+		FAIL(TG_ARC_SPECIFICATION_ERROR); 
 		return(gc.status); 
 	}
 
@@ -648,7 +670,7 @@ int _gc_compute_center_arc()
 					- gc.position[gc.plane_axis_1]);
 
 	if(isnan(theta_end)) { 
-		FAIL(TG_ARC_ERROR); 
+		FAIL(TG_ARC_SPECIFICATION_ERROR); 
 		return(gc.status); 
 	}
 
@@ -685,65 +707,3 @@ int _gc_compute_center_arc()
 	return (gc.status);
 }
 
-
-/*
- * _gc_print_status
- */
-
-/*
-void _gc_print_status(uint8_t status_code, char *textbuf)
-{
-	switch(status_code) {
-		case TG_OK: {
-			printf_P(PSTR("%s\n"), textbuf);
-#ifdef __DEBUG
-			printf_P(PSTR("Gcode position X%.3f Y%.3f Z%.3f\n"), 
-				gc.target[X_AXIS],
-				gc.target[Y_AXIS],
-				gc.target[Z_AXIS]);
-#endif
-			break; 
-		};
-
-		case TG_NOOP: 
-			printf_P(PSTR("No operation\n")); 
-			break;
-
-		case TG_EAGAIN: 
-			printf_P(PSTR("%s\n"), textbuf);
-#ifdef __DEBUG
-			printf_P(PSTR("Gcode Continuation for: %s\n"), textbuf); 
-#endif
-			break;
-
-		case TG_QUIT: 
-			printf_P(PSTR("Quitting Gcode Mode\n")); 
-			break;
-
-		case TG_BAD_NUMBER_FORMAT: 
-			printf_P(PSTR("Bad Number Format: %s\n"), textbuf); 
-			break;
-
-		case TG_EXPECTED_COMMAND_LETTER: 
-			printf_P(PSTR("Expected Command Letter: %s\n"), textbuf); 
-			break;
-
-		case TG_UNSUPPORTED_STATEMENT: 
-			printf_P(PSTR("Unsupported Statement: %s\n"), textbuf); 
-			break;
-
-		case TG_MOTION_CONTROL_ERROR: 
-			printf_P(PSTR("Motion Control Error: %s\n"), textbuf); 
-			break;
-
-		case TG_FLOATING_POINT_ERROR: 
-			printf_P(PSTR("Floating Point Error: %s\n"), textbuf); 
-			break;
-
-		case TG_ARC_ERROR:
-			printf_P(PSTR("Illegal Arc Statement: %s\n"), textbuf); 
-			break;
-	}
-	return;
-}
-*/

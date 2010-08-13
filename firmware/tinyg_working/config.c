@@ -351,7 +351,7 @@ void _cfg_print_status(uint8_t status_code, char *textbuf)
 			printf_P(PSTR("Floating Point Error: %s\n"), textbuf); 
 			break;
 
-		case TG_ARC_ERROR:
+		case TG_ARC_SPECIFICATION_ERROR:
 			printf_P(PSTR("Illegal Arc Statement: %s\n"), textbuf); 
 			break;
 	}

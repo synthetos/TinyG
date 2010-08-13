@@ -38,6 +38,26 @@ extern struct xioUSART us[XIO_DEV_USART_COUNT];	// ref USART extended IO structs
 #define USB ds[XIO_DEV_USB]						// device struct accessoor
 #define USBu us[XIO_DEV_USB_OFFSET]				// usart extended struct accessor
 
+void xio_init_usb()
+{
+	xio_init_dev(XIO_DEV_USB, 
+				 xio_open_usb, 
+				 xio_setflags_usb, 
+				 xio_putc_usb, 
+				 xio_getc_usb, 
+				 xio_readln_usb);
+
+	xio_init_usart(XIO_DEV_USB, 
+				   XIO_DEV_USB_OFFSET, 
+				   USB_INIT_bm, 
+				   &USB_USART, 
+				   &USB_PORT, 
+				   USB_DIRCLR_bm, 
+				   USB_DIRSET_bm, 
+				   USB_OUTCLR_bm, 
+				   USB_OUTSET_bm);
+}
+
 /*
  *	xio_open_usb() - all this does is return the stdio fdev handle
  */

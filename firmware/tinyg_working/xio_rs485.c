@@ -24,14 +24,39 @@
 #include <avr/sleep.h>			// needed for blocking character reads
 
 #include "xio.h"
-#include "xmega_interrupts.h"
 #include "signals.h"			// application specific signal handlers
+#include "xmega_interrupts.h"
 
 // necessary structures
 extern struct xioDEVICE ds[XIO_DEV_COUNT];		// ref top-level device structs
 extern struct xioUSART us[XIO_DEV_USART_COUNT];	// ref USART extended IO structs
 #define RS ds[XIO_DEV_RS485]					// device struct accessoor
 #define RSu us[XIO_DEV_RS485]					// usart extended struct accessor
+
+/*
+ *	xio_init_rs485()
+ */
+
+void xio_init_rs485()
+{
+	// RS485 device setup (brute force!)
+	xio_init_dev(XIO_DEV_RS485, 
+				 xio_open_rs485, 
+				 xio_setflags_rs485, 
+				 xio_putc_rs485, 
+				 xio_getc_rs485, 
+				 xio_readln_rs485);
+
+	xio_init_usart(XIO_DEV_RS485, 
+				   XIO_DEV_RS485_OFFSET, 
+				   RS485_INIT_bm, 
+				   &RS485_USART, 
+				   &RS485_PORT, 
+				   RS485_DIRCLR_bm,
+				   RS485_DIRSET_bm,
+				   RS485_OUTCLR_bm,
+				   RS485_OUTSET_bm);
+}
 
 /*
  *	xio_open_rs485() - all this does is return the stdio fdev handle

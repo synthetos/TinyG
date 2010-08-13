@@ -73,24 +73,14 @@ struct xioUSART us[XIO_DEV_USART_COUNT];// allocate USART extended IO structs
 struct xioFILE fs[XIO_DEV_FILE_COUNT];	// allocate FILE extended IO structs
 struct __file ss[XIO_DEV_COUNT];		// allocate stdio stream for each dev
 
-// aliases for stdio devices (pointers)
-#define fdev_rs485 (ds[XIO_DEV_RS485].fdev)// RS485 device for stdio functions
-#define fdev_usb (ds[XIO_DEV_USB].fdev)	// USB device for stdio functions
-#define fdev_pgm (ds[XIO_DEV_PGM].fdev)	// Program memory device
-
 /*
  *	xio_init() - initialize all active XIO devices
  */
 
 void xio_init(void)
 {	
-	// RS485 device setup (brute force!)
-	xio_init_dev(XIO_DEV_RS485, xio_open_rs485, xio_setflags_rs485, xio_putc_rs485, xio_getc_rs485, xio_readln_rs485);
-	xio_init_usart(XIO_DEV_RS485, XIO_DEV_RS485_OFFSET, RS485_INIT_bm, &RS485_USART, &RS485_PORT, RS485_DIRCLR_bm,RS485_DIRSET_bm,RS485_OUTCLR_bm,RS485_OUTSET_bm);
-
-	// USB device setup
-	xio_init_dev(XIO_DEV_USB, xio_open_usb, xio_setflags_usb, xio_putc_usb, xio_getc_usb, xio_readln_usb);
-	xio_init_usart(XIO_DEV_USB, XIO_DEV_USB_OFFSET, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
+	xio_init_rs485();
+	xio_init_usb();
 
 	// Program memory file device setup
 	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_setflags_pgm, xio_putc_pgm, xio_getc_pgm, xio_readln_pgm);

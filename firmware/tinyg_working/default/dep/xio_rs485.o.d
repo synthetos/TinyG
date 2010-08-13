@@ -15,7 +15,7 @@ xio_rs485.o: ../xio_rs485.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/sleep.h ../xio.h \
-  ../xio_file.h ../xio_usart.h ../xmega_interrupts.h ../signals.h
+  ../xio_file.h ../xio_usart.h ../signals.h ../xmega_interrupts.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -55,6 +55,6 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/sleep.h:
 
 ../xio_usart.h:
 
-../xmega_interrupts.h:
-
 ../signals.h:
+
+../xmega_interrupts.h:
