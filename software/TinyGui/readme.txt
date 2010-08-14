@@ -24,6 +24,15 @@ wxPython For:
 Python 2.5 - http://downloads.sourceforge.net/wxpython/wxPython2.8-osx-ansi-2.8.11.0-universal-py2.5.dmg
 Python 2.6 - http://downloads.sourceforge.net/wxpython/wxPython2.8-osx-ansi-2.8.11.0-universal-py2.6.dmg
 Python 2.7 - http://downloads.sourceforge.net/wxpython/wxPython2.8-osx-ansi-2.8.11.0-universal-py2.7.dmg
+OSX Note:
+If you are running a 64bit OSX version you will need to execute this command:
+If you want a temporary solution, you can run the following command in Terminal. Then you will be able to run a Python script in a 32-bit mode.
+
+export VERSIONER_PYTHON_PREFER_32_BIT=yes
+
+
+
+
 
 Linux:
 Should be as easy as sudo apt-get install python-wx (untested)
