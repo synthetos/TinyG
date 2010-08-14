@@ -119,6 +119,7 @@
 #include "xio.h"
 #include "tinyg.h"
 #include "controller.h"
+#include "network.h"
 #include "config.h"
 #include "stepper.h"
 #include "limit_switches.h"
@@ -175,7 +176,13 @@ int main(void)
 //	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
 	xio_queue_RX_string_usb("g0 x-10 (MSGtest message)\n");
 
+#ifdef __RS485_MASTER
 	for(;;){
-		tg_controller();
+		tg_repeater();		// this node receives on USB and repeats to RS485
 	}
+#else
+	for(;;){
+		tg_controller();	// this node executes gcode blocks received via RS485
+	}
+#endif
 }

@@ -16,28 +16,31 @@
  * You should have received a copy of the GNU General Public License along with TinyG  
  * If not, see <http://www.gnu->org/licenses/>.
  *
- *------
+ * ---- Non-threadsafe code ----
  *
- *	This version implements signal capture at the ISR level.
- *
- *	The getc() and readln() code is not thread safe. 
+ *	WARNING: The getc() and readln() code is not thread safe. 
  *	I had to use a global variable (gdev) to pass the device number to the 
- *	character dispatch handlers.
+ *	character dispatch handlers. Any suggestions on how to do this better?
  *
  * ---- Efficiency ----
  *
  *	Originally structures were accessed using "floating" accessor macros - e.g:
  *
- *  #define DEV (ds[dev])							// device struct accessor
- *  #define DEVx ((struct xioUSART *)(ds[dev].x))	// USART extended struct accessor
+ *    #define DEV (ds[dev])							// device struct accessor
+ *    #define DEVx ((struct xioUSART *)(ds[dev].x))	// USART extended struct accessor
  *
  *	It turned out to be more efficient to initialize pointers in each routine and 
  *	use them instead - e.g:
  *
- *	struct xioDEVICE *d = &ds[dev];					// setup device struct pointer
- *	struct xioUSART *dx = (struct xioUSART *)ds[dev].x;	// setup USART struct pointer
+ *	  struct xioDEVICE *d = &ds[dev];					// setup device struct ptr
+ *    struct xioUSART *dx = (struct xioUSART *)ds[dev].x; // setup USART struct ptr
  *
  *	There are other examples of this approch as well (e.g. xio_set_baud_usart())
+ *
+ * ---- HACK ALERT ----
+ *
+ *	In a Q&D effort to get RS485 working there are device specific if statements
+ *	(labeled HACK) in xio_putc_usart(). This should be cleaned up at some point.
  */
 
 #include <stdio.h>
@@ -95,10 +98,10 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 	dx->port = (struct PORT_struct *)port_addr;		// bind PORT
 
 	// set flags
-	xio_setflags(dev, control);				// generic, doesn't validate flags
+	xio_setflags(dev, control);		// generic setflags - doesn't validate flags
 
 	// setup internal RX/TX buffers
-	dx->rx_buf_head = 1;					// can't use location 0 in  circ buffer
+	dx->rx_buf_head = 1;			// can't use location 0 in circular buffer
 	dx->rx_buf_tail = 1;
 	dx->tx_buf_head = 1;
 	dx->tx_buf_tail = 1;
@@ -168,11 +171,18 @@ int xio_putc_usart(const uint8_t dev, const char c, FILE *stream)
 		if (--(dx->tx_buf_tail) == 0) {				// advance tail & wrap if needed
 			dx->tx_buf_tail = TX_BUFFER_SIZE-1;		// -1 avoid off-by-one err (OBOE)
 		}
+		if (dev == XIO_DEV_RS485) {						// HACK
+			dx->port->OUTSET = (RS485_DE_bm | RS485_RE_bm);	// enable DE, disable RE
+		}
 		dx->usart->DATA = dx->tx_buf[dx->tx_buf_tail];// write to TX DATA reg
 		d->flags &= ~XIO_FLAG_TX_MUTEX_bm;			// release mutual exclusion lock
 	}
 	// enable interrupts regardless
-	dx->usart->CTRLA = CTRLA_RXON_TXON;				// doesn't work if you just |= it
+	if (dev == XIO_DEV_RS485) {						// HACK
+		dx->usart->CTRLA = CTRLA_RXON_TXON_TXCON;	// doesn't work if you just |= it
+	} else {
+		dx->usart->CTRLA = CTRLA_RXON_TXON;			// doesn't work if you just |= it
+	}
 	PMIC_EnableLowLevel(); 							// enable USART TX interrupts
 	sei();											// enable global interrupts
 	return (XIO_OK);
@@ -401,7 +411,6 @@ static int _getc_DELETE(void)				// can't handle a delete very well
 	ds[gdev].sig = XIO_SIG_DELETE;
 	return(_FDEV_ERR);
 }
-
 
 /* 
  *  dispatch table for xio_readln_usart

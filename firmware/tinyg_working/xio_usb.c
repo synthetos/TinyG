@@ -38,89 +38,23 @@ extern struct xioUSART us[XIO_DEV_USART_COUNT];	// ref USART extended IO structs
 #define USB ds[XIO_DEV_USB]						// device struct accessoor
 #define USBu us[XIO_DEV_USB_OFFSET]				// usart extended struct accessor
 
-void xio_init_usb()
-{
-	xio_init_dev(XIO_DEV_USB, 
-				 xio_open_usb, 
-				 xio_setflags_usb, 
-				 xio_putc_usb, 
-				 xio_getc_usb, 
-				 xio_readln_usb);
 
-	xio_init_usart(XIO_DEV_USB, 
-				   XIO_DEV_USB_OFFSET, 
-				   USB_INIT_bm, 
-				   &USB_USART, 
-				   &USB_PORT, 
-				   USB_DIRCLR_bm, 
-				   USB_DIRSET_bm, 
-				   USB_OUTCLR_bm, 
-				   USB_OUTSET_bm);
+/* USB Device specific entry points to USART routines */
+struct __file * xio_open_usb() {return(USB.fdev);}
+int xio_setflags_usb(const uint16_t control) {return xio_setflags(XIO_DEV_USB, control);} // SEE NOTE
+int xio_putc_usb(const char c, FILE *stream) {return xio_putc_usart(XIO_DEV_USB, c, stream);}
+int xio_getc_usb(FILE *stream) {return xio_getc_usart(XIO_DEV_USB, stream);}
+int xio_readln_usb(char *buf, const uint8_t size) {return xio_readln_usart(XIO_DEV_USB, buf, size);}
+void xio_queue_RX_char_usb(const char c) {xio_queue_RX_char_usart(XIO_DEV_USB, c);}
+void xio_queue_RX_string_usb(const char *buf) {xio_queue_RX_string_usart(XIO_DEV_USB, buf);}
+void xio_init_usb()	// USB inits
+{
+	xio_init_dev(XIO_DEV_USB, xio_open_usb, xio_setflags_usb, xio_putc_usb, xio_getc_usb, xio_readln_usb);
+	xio_init_usart(XIO_DEV_USB, XIO_DEV_USB_OFFSET, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
 }
 
-/*
- *	xio_open_usb() - all this does is return the stdio fdev handle
- */
+// NOTE: Might later expand setflags() to validate control bits and return errors
 
-struct __file * xio_open_usb()
-{
-	return(USB.fdev);
-}
-
-/*
- *	xio_setflags_usb() - check and set control flags for device
- */
-
-int xio_setflags_usb(const uint16_t control)
-{
-	xio_setflags(XIO_DEV_USB, control);
-	return (XIO_OK);									// for now it's always OK
-}
-
-/*
- *  xio_putc_usb() - stdio compatible char writer for USB device
- */
-
-int xio_putc_usb(const char c, FILE *stream)
-{
-	return xio_putc_usart(XIO_DEV_USB, c, stream);
-}
-
-/*
- *  xio_getc_usb() - stdio compatible char reader for USB device
- */
-
-int xio_getc_usb(FILE *stream)
-{
-	return xio_getc_usart(XIO_DEV_USB, stream);
-}
-
-/*
- * xio_readln_usb() - non-block line reader for USB device (calls USART generic)
- */
-
-int xio_readln_usb(char *buf, const uint8_t size)
-{
-	return xio_readln_usart(XIO_DEV_USB, buf, size);
-}
-
-/*
- * xio_usb_queue_RX_char() - fake ISR to put a char in the RX buffer
- */
-
-void xio_queue_RX_char_usb(const char c)
-{
-	xio_queue_RX_char_usart(XIO_DEV_USB, c);
-}
-
-/*
- * xio_queue_RX_string_usb() - fake ISR to put a string in the RX buffer
- */
-
-void xio_queue_RX_string_usb(const char *buf)
-{
-	xio_queue_RX_string_usart(XIO_DEV_USB, buf);
-}
 
 /* 
  * USB_TX_ISR - USB transmitter interrupt (TX)

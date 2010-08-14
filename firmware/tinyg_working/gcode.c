@@ -170,11 +170,8 @@ uint8_t gc_gcode_parser(char *block)
 	if (block[0] == 0) { 					// ignore comments (stripped)
 		return(TG_OK);
 	}
-	if (block[0] == 'Q') { 					// quit
+	if (block[0] == 'Q') {					// quit gcode mode
 		return(TG_QUIT);
-	} 
-	if (block[0] == '/') { 					// ignore block delete
-		return(TG_OK);
 	} 
 	gc.status = gc_execute_block(block);	// execute gcode block
 	tg_print_status(gc.status, block);
@@ -199,6 +196,11 @@ void _gc_normalize_gcode_block(char *block)
 	uint8_t i=0; 		// index for incoming characters
 	uint8_t j=0;		// index for normalized characters
 
+	// discard deleted block
+	if (block[0] == '/') {
+		block[0] = 0;
+		return;
+	} 
 	// normalize the comamnd block & mark the comment(if any)
 	while ((c = toupper(block[i++])) != 0) {// NUL character
 		if (c <= ' ') continue;				// toss WS & ctrl codes

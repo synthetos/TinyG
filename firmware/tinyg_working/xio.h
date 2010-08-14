@@ -118,7 +118,7 @@ enum xioDevice {				// device enumerations
 
 /* GENERAL CONFIG */
 
-#define CHAR_BUFFER_SIZE 80		// common text buffer size (255 max)
+#define CHAR_BUFFER_SIZE 40		// common text buffer size (255 max)
 //#define RX_BUFFER_SIZE 255	// USART ISR RX buffer size (255 max)
 
 /* Device configurations */
@@ -256,12 +256,14 @@ void xio_init(void);							// xio system general init
 void xio_init_rs485(void);						// device-specific inits
 void xio_init_usb(void);
 
-void xio_setflags(const uint8_t dev, const uint16_t control);
+int xio_setflags(const uint8_t dev, const uint16_t control);
 void xio_set_stdin(const uint8_t dev);
 void xio_set_stdout(const uint8_t dev);
 void xio_set_stderr(const uint8_t dev);
 
-int xio_readln(uint8_t dev, char *buf, uint8_t len);
+int xio_getc(const uint8_t dev);
+int xio_putc(const uint8_t dev, const char c);
+int xio_readln(const uint8_t dev, char *buf, const uint8_t size);
 
 void xio_init_dev(uint8_t dev,					// device number
 	FILE *(*dev_open)(const prog_char *addr),	// device open routine
