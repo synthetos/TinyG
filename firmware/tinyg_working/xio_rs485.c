@@ -33,95 +33,22 @@ extern struct xioUSART us[XIO_DEV_USART_COUNT];	// ref USART extended IO structs
 #define RS ds[XIO_DEV_RS485]					// device struct accessoor
 #define RSu us[XIO_DEV_RS485]					// usart extended struct accessor
 
-/*
- *	xio_init_rs485()
- */
-
-void xio_init_rs485()
+/* RS485 device specific entry points to USART routines */
+struct __file * xio_open_rs485() { return(RS.fdev); }
+int xio_setflags_rs485(const uint16_t control) {return xio_setflags(XIO_DEV_RS485, control);} // See NOTE
+int xio_putc_rs485(const char c, FILE *stream) {return xio_putc_usart(XIO_DEV_RS485, c, stream);}
+int xio_getc_rs485(FILE *stream) {return xio_getc_usart(XIO_DEV_RS485, stream);}
+int xio_readln_rs485(char *buf, const uint8_t size) {return xio_readln_usart(XIO_DEV_RS485, buf, size);}
+void xio_queue_RX_char_rs485(const char c) {xio_queue_RX_char_usart(XIO_DEV_RS485, c);}
+void xio_queue_RX_string_rs485(const char *buf) {xio_queue_RX_string_usart(XIO_DEV_RS485, buf);}
+void xio_init_rs485()	// RS485 init
 {
-	// RS485 device setup (brute force!)
-	xio_init_dev(XIO_DEV_RS485, 
-				 xio_open_rs485, 
-				 xio_setflags_rs485, 
-				 xio_putc_rs485, 
-				 xio_getc_rs485, 
-				 xio_readln_rs485);
-
-	xio_init_usart(XIO_DEV_RS485, 
-				   XIO_DEV_RS485_OFFSET, 
-				   RS485_INIT_bm, 
-				   &RS485_USART, 
-				   &RS485_PORT, 
-				   RS485_DIRCLR_bm,
-				   RS485_DIRSET_bm,
-				   RS485_OUTCLR_bm,
-				   RS485_OUTSET_bm);
+	xio_init_dev(XIO_DEV_RS485, xio_open_rs485, xio_setflags_rs485, xio_putc_rs485, xio_getc_rs485, xio_readln_rs485);
+	xio_init_usart(XIO_DEV_RS485, XIO_DEV_RS485_OFFSET, RS485_INIT_bm, &RS485_USART, &RS485_PORT, RS485_DIRCLR_bm, RS485_DIRSET_bm, RS485_OUTCLR_bm, RS485_OUTSET_bm);
 }
 
-/*
- *	xio_open_rs485() - all this does is return the stdio fdev handle
- */
+// NOTE: Might later expand setflags() to validate control bits and return errors
 
-struct __file * xio_open_rs485()
-{
-	return(RS.fdev);
-}
-
-/*
- *	xio_setflags_rs485() - check and set control flags for RS485 device
- */
-
-int xio_setflags_rs485(const uint16_t control)
-{
-	xio_setflags(XIO_DEV_RS485, control);
-	return (XIO_OK);									// for now it's always OK
-}
-
-/*
- *  xio_putc_rs485() - stdio compatible char writer for RS485 device
- */
-
-int xio_putc_rs485(const char c, FILE *stream)
-{
-	return xio_putc_usart(XIO_DEV_RS485, c, stream);
-}
-
-/*
- *  xio_getc_rs485() - stdio compatible char reader for RS485 device
- */
-
-int xio_getc_rs485(FILE *stream)
-{
-	return xio_getc_usart(XIO_DEV_RS485, stream);
-}
-
-
-/*
- * xio_readln_rs485() - non-blocking line reader for RS485 device
- */
-
-int xio_readln_rs485(char *buf, const uint8_t size)
-{
-	return xio_readln_usart(XIO_DEV_RS485, buf, size);
-}
-
-/*
- * xio_rs485_queue_RX_char() - fake ISR to put a char in the RX buffer
- */
-
-void xio_queue_RX_char_rs485(const char c)
-{
-	xio_queue_RX_char_usart(XIO_DEV_RS485, c);
-}
-
-/*
- * xio_queue_RX_string_rs485() - fake ISR to put a string in the RX buffer
- */
-
-void xio_queue_RX_string_rs485(const char *buf)
-{
-	xio_queue_RX_string_usart(XIO_DEV_RS485, buf);
-}
 
 /* 
  * RS485_TX_ISR - RS485 transmitter interrupt (TX)
@@ -138,10 +65,10 @@ void xio_queue_RX_string_rs485(const char *buf)
  * the dequeue has occurred).
  */
 
-ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC0 data register empty
+ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC1 data register empty
 {
-	if (RSu.tx_buf_head == RSu.tx_buf_tail) {	// buffer empty - disable ints
-		RSu.usart->CTRLA = CTRLA_RXON_TXOFF;	// doesn't work if you just &= it
+	if (RSu.tx_buf_head == RSu.tx_buf_tail) {	// buffer empty - disable ints (Note)
+		RSu.usart->CTRLA = CTRLA_RXON_TXOFF_TXCON;	// doesn't work if you just &= it
 //		PMIC_DisableLowLevel(); 				// disable USART TX interrupts
 		return;
 	}
@@ -149,8 +76,19 @@ ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC0 data register empty
 		if (--(RSu.tx_buf_tail) == 0) {			// advance tail and wrap if needed
 			RSu.tx_buf_tail = TX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
 		}
+		RSu.port->OUTSET = (RS485_DE_bm | RS485_RE_bm);	// enable DE (active hi)
+														// disable RE (active lo)
 		RSu.usart->DATA = RSu.tx_buf[RSu.tx_buf_tail];	// write char to TX DATA reg
 	}
+}
+
+/* Note: Finding a buffer empty condition on the first byte of a string is common 
+ * as the TX byte is often written by the task itself */
+
+ISR(RS485_TXC_ISR_vect)		// ISR(USARTC1_TXC_vect) // USARTC1 transmission complete
+{
+		RSu.port->OUTCLR = (RS485_DE_bm | RS485_RE_bm);	// disable DE (active hi)
+														// enable RE (active lo)
 }
 
 /* 
@@ -194,4 +132,3 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)	// serial port C0 RX interrupt
 	}
 	// activate flow control here or before it gets to this level
 }
-

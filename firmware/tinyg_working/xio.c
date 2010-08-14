@@ -127,10 +127,10 @@ void xio_init_dev(uint8_t dev, 					// device number
 }
 
 /*
- * xio_set_control_flags()
+ * xio_setflags()
  */
 
-void xio_setflags(const uint8_t dev, const uint16_t control)
+int xio_setflags(const uint8_t dev, const uint16_t control)
 {
 	struct xioDEVICE *d = &ds[dev];
 
@@ -170,6 +170,7 @@ void xio_setflags(const uint8_t dev, const uint16_t control)
 	if (control & XIO_NOSEMICOLONS) {
 		d->flags &= ~XIO_FLAG_SEMICOLONS_bm;
 	}
+	return (XIO_OK);
 }
 
 /*
@@ -192,6 +193,32 @@ void xio_set_stderr(const uint8_t dev)
 }
 
 /*
+ * xio_putc() - common entry point for putc
+ */
+
+int xio_putc(const uint8_t dev, const char c)
+{
+	if (dev < XIO_DEV_COUNT) {
+		return ds[dev].dev_putc(c, ds[dev].fdev);
+	} else {
+		return (XIO_NO_SUCH_DEVICE);
+	}
+}
+
+/*
+ * xio_getc() - common entry point for getc
+ */
+
+int xio_getc(const uint8_t dev)
+{
+	if (dev < XIO_DEV_COUNT) {
+		return ds[dev].dev_getc(ds[dev].fdev);
+	} else {
+		return (XIO_NO_SUCH_DEVICE);
+	}		
+}
+
+/*
  * xio_readln() - common entry point for non-blocking receive line functions
  *
  * Arguments
@@ -200,21 +227,11 @@ void xio_set_stderr(const uint8_t dev)
  *	size	size of text buffer in 1 offset form: e.g. use 80 instead of 79
  */
 
-int xio_readln(uint8_t dev, char *buf, uint8_t size)
+int xio_readln(const uint8_t dev, char *buf, const uint8_t size)
 {
 	if (dev < XIO_DEV_COUNT) {
 		return ds[dev].dev_readln(buf, size);
 	} else {
 		return (XIO_NO_SUCH_DEVICE);
 	}		
-/*
-	switch (dev) {
-		case (XIO_DEV_RS485): return (xio_readln_rs485(buf, size));
-		case (XIO_DEV_USB): return (xio_readln_usb(buf, size));
-//		case (XIO_DEV_TTL): return (xio_readln_aux(buf, size));
-		case (XIO_DEV_PGM): return (xio_readln_pgm(buf, size));
-		default: return (XIO_NO_SUCH_DEVICE);
-	}
-	return (XIO_ERR);		// never should hit this
-*/
 }

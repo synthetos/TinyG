@@ -24,10 +24,12 @@
 
 // RS485 device configuration
 #define RS485_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_BAUD_115200)
+//#define RS485_INIT_bm (XIO_RDWR | XIO_NONBLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_BAUD_115200)
 
 #define RS485_USART USARTC1					// RS485 usart
 #define RS485_RX_ISR_vect USARTC1_RXC_vect 	// (RX) reception complete IRQ
 #define RS485_TX_ISR_vect USARTC1_DRE_vect	// (TX) data register empty IRQ
+#define RS485_TXC_ISR_vect USARTC1_TXC_vect	// (TX) transmission complete IRQ
 
 #define RS485_PORT PORTC					// port where USART is located
 #define RS485_RE_bm (1<<4)					// RE (Receive Enable) pin - active lo
@@ -49,6 +51,7 @@
 
 // USB device configuration
 #define USB_INIT_bm (XIO_RDWR |XIO_BLOCK |  XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200)
+//#define USB_INIT_bm (XIO_RDWR |XIO_NONBLOCK |  XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200)
 
 #define USB_USART USARTC0					// USB usart
 #define USB_RX_ISR_vect USARTC0_RXC_vect 	// (RX) reception complete IRQ
@@ -86,8 +89,10 @@
  * USART DEVICE CONSTANTS AND PARAMETERS
  */
 
-#define RX_BUFFER_SIZE 64		// USART ISR RX buffer size (255 max)
-#define TX_BUFFER_SIZE 64		// USART ISR TX buffer size (255 max)
+#define RX_BUFFER_SIZE 18		// USART ISR RX buffer size (255 max)
+#define TX_BUFFER_SIZE 18		// USART ISR TX buffer size (255 max)
+//#define RX_BUFFER_SIZE 255		// USART ISR RX buffer size (255 max)
+//#define TX_BUFFER_SIZE 255		// USART ISR TX buffer size (255 max)
 
 /* 
  * Serial Configuration Settings
@@ -97,13 +102,15 @@
  *	These are carried in the bsel and bscale tables in xmega_io.c
  */
 
-// for turning USART interrupts on and off
-#define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc)
+// defines for turning USART interrupts on and off
 #define CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
-
-#define	XIO_BAUD_DEFAULT XIO_BAUD_115200
+#define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc)
+#define CTRLA_RXON_TXOFF_TXCON (USART_RXCINTLVL_MED_gc | USART_TXCINTLVL_LO_gc)
+#define CTRLA_RXON_TXON_TXCON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc | USART_TXCINTLVL_LO_gc)
 
 // Baud rate configuration
+#define	XIO_BAUD_DEFAULT XIO_BAUD_115200
+
 enum xioBAUDRATES {         			// BSEL	  BSCALE
 		XIO_BAUD_UNSPECIFIED,			//	0		0		// use default value 
 		XIO_BAUD_9600,					//	207		0
