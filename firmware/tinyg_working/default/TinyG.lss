@@ -980,11 +980,13 @@ int main(void)
     1f46:	80 e0       	ldi	r24, 0x00	; 0
     1f48:	90 e2       	ldi	r25, 0x20	; 32
     1f4a:	0e 94 5c 34 	call	0x68b8	; 0x68b8 <xio_queue_RX_string_usb>
-
-#ifdef __RS485_MASTER
 	for(;;){
 		tg_repeater();		// this node receives on USB and repeats to RS485
-    1f4e:	0e 94 40 36 	call	0x6c80	; 0x6c80 <tg_repeater>
+	}
+#else
+	for(;;){
+		tg_controller();	// this node executes gcode blocks received via RS485
+    1f4e:	0e 94 58 2c 	call	0x58b0	; 0x58b0 <tg_controller>
     1f52:	fd cf       	rjmp	.-6      	; 0x1f4e <main+0x5c>
 
 00001f54 <select_plane>:
