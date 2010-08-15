@@ -93,7 +93,7 @@ typedef int (*fptr_int_char_p) (char *b);// returns int, character pointer (line
  * Various debug and other compile-time switches
  */
 
-#define __RS485_MASTER TRUE		// master RS485 device
+//#define __RS485_MASTER TRUE		// master RS485 device
 
 //#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
 //#define __DEBUG TRUE		// set debug mode (comment out to undefine)
