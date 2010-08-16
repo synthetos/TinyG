@@ -29,9 +29,6 @@
 
 void _cfg_computed(void); // prototypes for local functions (helper functions) 
 void _cfg_dump_axis(uint8_t	axis);
-void _cfg_print_status(uint8_t status_code, char *textbuf);
-
-#define status(a) 	cfg.status = a
 
 /* 
  * cfg_init() - initialize config system 
@@ -119,11 +116,11 @@ int cfg_parse(char *text)
 	// pick off tag characters starting with first character
 	cfg.status = TG_OK;
 	switch (text[0]) {
-		case '?': cfg_dump(); status (TG_OK); break;
-		case '(': status (TG_OK);	break;			// ignore comment lines
-		case 'Q': status (TG_QUIT); break;
+		case '?': cfg_dump(); cfg.status = TG_OK; break;
+		case '(': cfg.status = TG_OK; break;		// ignore comment lines
+		case 'Q': cfg.status = TG_QUIT; break;
 		case 'M': cfg.mm_per_arc_segment = strtod(val, &end); 
-				  status(TG_OK); 
+				  cfg.status = TG_OK; 
 				  break;
 
 		case 'X': axis = X; break;
@@ -131,10 +128,10 @@ int cfg_parse(char *text)
 		case 'Z': axis = Z; break;
 		case 'A': axis = A; break;
 
-		default: status (TG_UNRECOGNIZED_COMMAND); 	// error return
+		default: cfg.status = TG_UNRECOGNIZED_COMMAND; 	// error return
 	}
 	if (cfg.status == TG_OK) {
-		status(TG_OK);							// pre-emptive setting
+		cfg.status = TG_OK;							// pre-emptive setting
 		switch (text[1]) {
 			case 'S': CFG(axis).seek_steps_sec = (uint16_t)atoi(val); break;
 			case 'F': CFG(axis).feed_steps_sec = (uint16_t)atoi(val); break;
@@ -158,10 +155,9 @@ int cfg_parse(char *text)
 					CFG(axis).limit_enable = (uint8_t)atoi(val); break;
 				}
 
-			default: status (TG_UNRECOGNIZED_COMMAND);	// error return
+			default: cfg.status = TG_UNRECOGNIZED_COMMAND;	// error return
 		}
 	}
-	_cfg_print_status(cfg.status, text);
 //	cfg_write();
 	return (cfg.status);
 }
@@ -316,46 +312,6 @@ void cfg_write()
 {
 //	eeprom_put_char(0, CONFIG_VERSION);
 	memcpy_to_eeprom_with_checksum(0, (char*)&cfg, sizeof(struct cfgStructGlobal));
-}
-
-/*
- * _cfg_print_status
- */
-
-void _cfg_print_status(uint8_t status_code, char *textbuf)
-{
-	switch(status_code) {
-		case TG_OK: {
-#ifdef __DEBUG
-			printf_P(PSTR("Config command: %s\n"), textbuf);
-#endif
-			break;
-		};
-		case TG_EAGAIN: 
-			printf_P(PSTR("Config Continuation for: %s\n"), textbuf); 
-			break;
-
-		case TG_QUIT: 
-			printf_P(PSTR("Quitting Config Mode\n")); 
-			break;
-
-		case TG_BAD_NUMBER_FORMAT: 
-			printf_P(PSTR("Bad Number Format: %s\n"), textbuf); 
-			break;
-
-		case TG_UNRECOGNIZED_COMMAND: 
-			printf_P(PSTR("Unrecognized Command: %s\n"), textbuf); 
-			break;
-
-		case TG_FLOATING_POINT_ERROR: 
-			printf_P(PSTR("Floating Point Error: %s\n"), textbuf); 
-			break;
-
-		case TG_ARC_SPECIFICATION_ERROR:
-			printf_P(PSTR("Illegal Arc Statement: %s\n"), textbuf); 
-			break;
-	}
-	return;
 }
 
 /* 

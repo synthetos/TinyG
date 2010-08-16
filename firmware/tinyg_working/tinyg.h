@@ -30,7 +30,7 @@
 #endif
 
 // System Constants
-#define TINYG_VERSION "build 207"
+#define TINYG_VERSION "build 208"
 #define EEPROM_DATA_VERSION 100	// Used to migrate old data during firmware upgrades
 
 #define MM_PER_ARC_SEGMENT 0.05
