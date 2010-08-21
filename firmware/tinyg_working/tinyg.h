@@ -93,7 +93,16 @@ typedef int (*fptr_int_char_p) (char *b);// returns int, character pointer (line
  * Various debug and other compile-time switches
  */
 
-//#define __RS485_MASTER TRUE		// master RS485 device
+// Chose only one:
+#define __NORMAL_MODE					// normal operation - receive from USB
+//#define __RELAY_MODE					// receive from USB, relay to rs485
+//#define __SLAVE_MODE					// receive from rs485
+
+#ifdef __SLAVE_MODE
+#define DEFAULT_SOURCE XIO_DEV_RS485
+#else
+#define DEFAULT_SOURCE XIO_DEV_USB		// default source device
+#endif
 
 //#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
 //#define __DEBUG TRUE		// set debug mode (comment out to undefine)

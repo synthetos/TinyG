@@ -91,13 +91,70 @@ void mc_init()
 }
 
 /* 
- * mc_motion_stop() - stop all current motions
+ * mc_motion_pause() - pause current motion
+ */
+
+int mc_motion_pause()
+{
+	return (TG_OK);
+}
+
+/* 
+ * mc_motion_resume() - resume current motion
+ */
+
+int mc_motion_resume()
+{
+	return (TG_OK);
+}
+
+/* 
+ * mc_motion_stop() - stop current motion immediately
  */
 
 int mc_motion_stop()
 {
 	mc.line_state = MC_STATE_OFF;	// turn off the generators
 	ma.arc_state = MC_STATE_OFF;
+	mv_flush();						// empty and reset the move queue
+	st_stop_steppers();				// stop the steppers
+	return (mc_motion_stop());
+}
+
+/* 
+ * mc_motion_end() - end current motion and program
+ *
+ *	Should do all the following things (those form NIST RS274NG_3 are marked RS274)
+ * 	Those we don't care about are in [brackets]
+ *
+ *	- Stop all motion once current block is complete 
+ *		(as opposed to kill, which stops immediately)
+ *	- Axes is set to zero (like G92)
+ * 	- Selected plane is set to CANON_PLANE_XY (like G17).
+ *	- Distance mode is set to MODE_ABSOLUTE (like G90).
+ *	- Feed rate mode is set to UNITS_PER_MINUTE (like G94).
+ * 	- [Feed and speed overrides are set to ON (like M48).
+ *	- [Cutter compensation is turned off (like G40).
+ *	- The spindle is stopped (like M5).
+ *	- The current motion mode is set to G1
+ *	- Coolant is turned off (like M9).
+ */
+
+int mc_motion_end()
+{
+	return (TG_OK);
+}
+
+
+/* 
+ * mc_set_position() - set current position (support for G92)
+ */
+
+int mc_set_position(double x, double y, double z)
+{
+	mc.position[X] = lround(x*CFG(X).steps_per_mm);
+	mc.position[Y] = lround(y*CFG(Y).steps_per_mm);
+	mc.position[Z] = lround(z*CFG(Z).steps_per_mm); 
 	return (TG_OK);
 }
 

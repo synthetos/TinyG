@@ -5,7 +5,7 @@
  * NIST RS274/NGC Interpreter by Kramer, Proctor and Messina. 
  *
  * Copyright (c) 2009 Simen Svale Skogsrud
- * Modified for TinyG project by Alden Hart
+ * Modified for TinyG project by Alden S Hart, Jr.
  *
  * Grbl is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Foundation, 
@@ -57,7 +57,7 @@
 	G54 - G59.3		Select coordinate system (group 12)
 	G61, G61.1, G64 Set path control mode (group 13)
 	G81 - G89		Canned cycles
-	G92 - G92.3		Coordinate system offsets
+	G92				Coordinate system offsets (simplified, see notes)
 	G98, G99		Set canned cycle return level
 
 	M6				Tool change
@@ -72,6 +72,30 @@
 	- Multiple home locations
 	- Probing
 	- Override control
+
+  FYI: GCode modal groups (from NIST RS274NGC_3 Table 4)
+
+   The modal groups for G codes are:
+	group 1 = {G0, G1, G2, G3, G38.2, G80, G81, G82, G83, G84, G85, G86, G87, G88, G89} motion
+	group 2 = {G17, G18, G19} plane selection 
+	group 3 = {G90, G91} distance mode 
+	group 5 = {G93, G94} feed rate mode
+	group 6 = {G20, G21} units 
+	group 7 = {G40, G41, G42} cutter radius compensation 
+	group 8 = {G43, G49} tool length offset 
+	group 10 = {G98, G99} return mode in canned cycles 
+	group 12 = {G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3} coordinate system selection 
+	group 13 = {G61, G61.1, G64} path control mode
+
+   The modal groups for M codes are:
+	group 4 = {M0, M1, M2, M30, M60} stopping 
+	group 6 = {M6} tool change 
+	group 7 = {M3, M4, M5} spindle turning 
+	group 8 = {M7, M8, M9} coolant (special case: M7 and M8 may be active at the same time) 
+	group 9 = {M48, M49} enable/disable feed and speed override switches
+
+   In addition to the above modal groups, there is a group for non-modal G codes:
+	group 0 = {G4, G10, G28, G30, G53, G92, G92.1, G92.2, G92.3}	
 */
 
 #include <ctype.h>
@@ -99,12 +123,12 @@ struct GCodeState {
 	uint8_t next_action; 			// "G mode" - preserved across blocks
 	uint8_t program_flow;			// M0, M1 - pause / resume program flow
 	uint8_t motion_mode;			// G0, G1, G2, G3, G38.2, G80, G81, G82, G83, 
-									// ...G84, G85, G86, G87, G88, G89
-	uint8_t inverse_feed_rate_mode; // G93, G94
+									// ...G84, G85, G86, G87, G88, G89 (modal group 1)
+	uint8_t inverse_feed_rate_mode; // G93, G94 (feed rate group; modal group 5)
 	uint8_t inches_mode;         	// 0 = millimeter mode, 1 = inches mode {G20,G21}
 	uint8_t absolute_mode;       	// 0 = relative motion, 1 = abs motion {G90,G91}
 	uint8_t radius_mode;			// TRUE = radius mode
-	uint8_t set_origin_mode;		// TRUE = in set origin mode
+	uint8_t set_origin_mode;		// TRUE = in set origin mode {G92}
 	uint8_t absolute_override; 		// TRUE=absolute motion for this block only{G53}
 
 	uint8_t plane_axis_0; 			// axes of the selected plane
@@ -125,12 +149,8 @@ struct GCodeState {
 	uint8_t tool;
 	int8_t spindle_direction;
 	int16_t spindle_speed;			// RPM/100
-	char *comment;
-
 };
 static struct GCodeState gc;
-
-#define FAIL(stat) gc.status = stat;
 
 /* local helper functions */
 static void _gc_normalize_gcode_block(char *block);
@@ -148,17 +168,29 @@ void gc_init() {
 	memset(&gc, 0, sizeof(gc));				// must set doubles independently (true?)
   	gc.dwell_time = 0; 						// was 'p' 
 	gc.radius = 0;							// radius value
-	gc.feed_rate = cfg.default_feed_rate;	// was divided by 60 in Grbl
-	gc.seek_rate = cfg.default_seek_rate;	// was divided by 60 in Grbl
+	gc.feed_rate = cfg.default_feed_rate;	// Note: is divided by 60 in Grbl
+	gc.seek_rate = cfg.default_seek_rate;	// Note: is divided by 60 in Grbl
 
 	gc.absolute_mode = TRUE;
 	gc.inverse_feed_rate = -1; 				// negative inverse_feed_rate means 
 											//	  no inverse_feed_rate specified
 	gc.radius_mode = FALSE;
 	gc.absolute_override = FALSE; 			// TRUE=absolute motion for this block only{G53}
-	gc.next_action = NEXT_ACTION_DEFAULT; 	// One of the NEXT_ACTION_-constants
+	gc.next_action = NEXT_ACTION_NONE; 		// no operation
 
-	select_plane(X, Y, Z);
+	select_plane(X, Y, Z);					// default planes, 0, 1 and 2
+}
+
+/*
+ * gc_send_to_parser() - send a block of gcode to the parser
+ *
+ *	Inject a block into parser taking gcode command processing state into account
+ */
+
+void gc_send_to_parser(char *block)
+{
+	gc_gcode_parser(block);
+	return;
 }
 
 /*
@@ -173,7 +205,7 @@ uint8_t gc_gcode_parser(char *block)
 	}
 	if (block[0] == 'Q') {					// quit gcode mode
 		return(TG_QUIT);
-	} 
+	}
 	gc.status = gc_execute_block(block);	// execute gcode block
 	tg_print_status(gc.status, block);
 	return (gc.status);
@@ -183,11 +215,31 @@ uint8_t gc_gcode_parser(char *block)
  * _gc_normalize_gcode_block() - normalize a block (line) of gcode in place
  *
  *	Comments always terminate the block (embedded comments are not supported)
- *	Messages in comments are sent to stderr (console)
+ *	Messages in comments are sent to console (stderr)
  *	Processing: split string into command and comment portions. Valid choices:
- *	  (case 1)	command <no comment>
- *	  (case 2)	comment <no command>
- *	  (case 3)	command comment
+ *	  supported:	command
+ *	  supported:	comment
+ *	  supported:	command comment
+ *	  unsupported:	command command
+ *	  unsupported:	comment command
+ *	  unsupported:	command comment command
+ *
+ *	Valid characters in a Gcode block are (see RS274NGC_3 Appendix E)
+ *		digits						all digits are passed to interpreter
+ *		lower case alpha			all alpha is passed
+ *		upper case alpha			all alpha is passed
+ *		+ - . / *	< = > 			chars passed to interpreter
+ *		| % # ( ) [ ] { } 			chars passed to interpreter
+ *		<sp> <tab> 					chars are legal but are not passed
+ *		/  							if first, block delete char - omits the block
+ *
+ *	Invalid characters in a Gcode block are:
+ *		control characters			chars < 0x20
+ *		! $ % ,	; ; ? @ 
+ *		^ _ ~ " ' <DEL>
+ *
+ *	MSG specifier in comment can have mixed case but cannot cannot have 
+ *	embedded white spaces
  */
 
 void _gc_normalize_gcode_block(char *block) 
@@ -201,24 +253,31 @@ void _gc_normalize_gcode_block(char *block)
 	if (block[0] == '/') {
 		block[0] = 0;
 		return;
-	} 
+	}
 	// normalize the comamnd block & mark the comment(if any)
 	while ((c = toupper(block[i++])) != 0) {// NUL character
-		if (c <= ' ') continue;				// toss WS & ctrl codes
-		if (c == '(') {						// detect & handle comment
+		if ((isupper(c)) || (isdigit(c))) {	// capture common chars
+		 	block[j++] = c; 
+			continue;
+		}
+		if (c == '(') {						// detect & handle comments
 			block[j] = 0;
 			comment = &block[i]; 
 			break;
 		}
+		if (c <= ' ') continue;				// toss controls & whitespace
+		if (c == 0x7F) continue;			// toss DELETE
+		if (strchr("!$%,;:?@^_~`\'\"", c))	// toss invalid punctuation
+			continue;
 		block[j++] = c;
 	}
-	block[j] = 0;
+	block[j] = 0;							// nul terminate the command
 	if (comment) {
 		if ((toupper(comment[0]) == 'M') && 
 			(toupper(comment[1]) == 'S') &&
 			(toupper(comment[2]) == 'G')) {
 			i=0;
-			while ((c = comment[i++]) != 0) {	// remove trailing paren
+			while ((c = comment[i++]) != 0) {// remove trailing parenthesis
 				if (c == ')') {
 					comment[--i] = 0;
 					break;
@@ -278,7 +337,7 @@ double theta(double x, double y)
  *	Parses the next statement and leaves the counter on the first character 
  *	following the statement. 
  *	Returns TRUE if there was a statement, FALSE if end of string was reached
- *	or there was an error (check state.status).
+ *	or there was an error (check gc.status).
  */
 
 int _gc_next_statement(char *letter, double *value_ptr, 
@@ -288,8 +347,8 @@ int _gc_next_statement(char *letter, double *value_ptr,
 	}
   
 	*letter = buf[*i];
-	if((*letter < 'A') || (*letter > 'Z')) {
-		FAIL(TG_EXPECTED_COMMAND_LETTER);
+	if(!isupper(*letter)) {
+		gc.status = TG_EXPECTED_COMMAND_LETTER;
 		return(FALSE);
 	}
 	(*i)++;
@@ -315,7 +374,7 @@ int _gc_read_double(char *buf, int *i, double *double_ptr)
   
 	*double_ptr = strtod(start, &end);
 	if(end == start) { 
-		FAIL(TG_BAD_NUMBER_FORMAT); 
+		gc.status = TG_BAD_NUMBER_FORMAT; 
 		return(FALSE); 
 	};
 	*i = end - buf;
@@ -337,7 +396,7 @@ uint8_t gc_execute_block(char *buf)
 	clear_vector(gc.offset);
 
 	gc.status = TG_OK;
-	gc.set_origin_mode = 0;		// you are not in origin mode unless you say you are
+	gc.set_origin_mode = 0;	// you are not in set origin mode unless you say you are
 
   // Pass 1: Commands
 	while(_gc_next_statement(&gc.letter, &gc.value, &gc.fraction, buf, &i)) {
@@ -375,11 +434,10 @@ uint8_t gc_execute_block(char *buf)
 					case 92: { gc.set_origin_mode = TRUE; break; }
 					case 93: { gc.inverse_feed_rate_mode = TRUE; break; }
 					case 94: { gc.inverse_feed_rate_mode = FALSE; break; }
-
-					default: FAIL(TG_UNSUPPORTED_STATEMENT);
+					default: gc.status = TG_UNSUPPORTED_STATEMENT;
 				}
 				break;
-      
+
 			case 'M':
 				switch((int)gc.value) {
 					case 0: case 1: gc.program_flow = PROGRAM_FLOW_PAUSED; break;
@@ -387,7 +445,7 @@ uint8_t gc_execute_block(char *buf)
 					case 3: gc.spindle_direction = 1; break;
 					case 4: gc.spindle_direction = -1; break;
 					case 5: gc.spindle_direction = 0; break;
-        			default: FAIL(TG_UNSUPPORTED_STATEMENT);
+        			default: gc.status = TG_UNSUPPORTED_STATEMENT;
 				}
 				break;
 
@@ -405,7 +463,7 @@ uint8_t gc_execute_block(char *buf)
 
 	i = 0;
 	clear_vector(gc.offset);
-	memcpy(gc.target, gc.position, sizeof(gc.target)); // target = gc.position
+	memcpy(gc.target, gc.position, sizeof(gc.target)); // target = position
 
   // Pass 2: Parameters
 	while(_gc_next_statement(&gc.letter, &gc.value, &gc.fraction, buf, &i)) {
@@ -413,24 +471,41 @@ uint8_t gc_execute_block(char *buf)
 		switch(gc.letter) {
 			case 'F': 
 				if (gc.inverse_feed_rate_mode) {
-					gc.inverse_feed_rate = gc.unit_converted_value; // seconds per motion for this motion only
+					gc.inverse_feed_rate = gc.unit_converted_value; // secs per motion for this motion only
 				} else {
 					gc.feed_rate = gc.unit_converted_value/60; // mm per second
 				}
 				break;
-			case 'I': case 'J': case 'K': gc.offset[gc.letter-'I'] = gc.unit_converted_value; break;
-			case 'P': gc.dwell_time = gc.value; break;			// dwell time in seconds
-			case 'R': gc.radius = gc.unit_converted_value; gc.radius_mode = TRUE; break;
-			case 'S': gc.spindle_speed = gc.value; break;
-			case 'X': case 'Y': case 'Z':
+			case 'I': case 'J': case 'K': {
+				gc.offset[gc.letter-'I'] = gc.unit_converted_value; 
+				break;
+			}
+			case 'P': {
+				gc.dwell_time = gc.value; 			// dwell time in seconds
+				break;
+			}
+			case 'R': {
+				gc.radius = gc.unit_converted_value; 
+				gc.radius_mode = TRUE; 
+				break;
+			}
+			case 'S': {
+				gc.spindle_speed = gc.value; 
+				break;
+			}
+			case 'X': case 'Y': case 'Z': {
 				if (gc.set_origin_mode) {
 					gc.position[gc.letter - 'X'] = gc.unit_converted_value;
+					gc.target[gc.letter - 'X'] = gc.position[gc.letter - 'X'];
+//					memcpy(gc.target, gc.position, sizeof(gc.target));	// target = position
+					gc.next_action = NEXT_ACTION_SET_COORDINATES;
 				} else if (gc.absolute_mode || gc.absolute_override) {
 					gc.target[gc.letter - 'X'] = gc.unit_converted_value;
 				} else {
 					gc.target[gc.letter - 'X'] += gc.unit_converted_value;
 				}
  				break;
+			}
 		}	
 	}
   
@@ -448,12 +523,17 @@ uint8_t gc_execute_block(char *buf)
   
   // Perform any physical actions
 	switch (gc.next_action) {
-		case NEXT_ACTION_DEFAULT: {				// nothing to do here
+		case NEXT_ACTION_NONE: {				// nothing to do here
 			break;
 		}
 
 		case NEXT_ACTION_GO_HOME: { 
 			gc.status = mc_go_home(); 
+			break;
+		}
+
+		case NEXT_ACTION_SET_COORDINATES: { 
+			gc.status = mc_set_position(gc.position[X], gc.position[Y], gc.position[Z]); 
 			break;
 		}
 
@@ -585,7 +665,7 @@ int _gc_compute_radius_arc()
 	// the reach of any real CNC, and thus - for practical reasons - we will 
 	// terminate promptly (well spoken Simen!)
 	if(isnan(h_x2_div_d)) { 
-		FAIL(TG_FLOATING_POINT_ERROR); 
+		gc.status = TG_FLOATING_POINT_ERROR; 
 		return(gc.status); 
 	}
 
@@ -661,7 +741,7 @@ int _gc_compute_center_arc()
 	// calculate the theta (angle) of the current point
 	theta_start = theta(-gc.offset[gc.plane_axis_0], -gc.offset[gc.plane_axis_1]);
 	if(isnan(theta_start)) { 
-		FAIL(TG_ARC_SPECIFICATION_ERROR); 
+		gc.status = TG_ARC_SPECIFICATION_ERROR;
 		return(gc.status); 
 	}
 
@@ -674,8 +754,8 @@ int _gc_compute_center_arc()
 					- gc.position[gc.plane_axis_1]);
 
 	if(isnan(theta_end)) { 
-		FAIL(TG_ARC_SPECIFICATION_ERROR); 
-		return(gc.status); 
+		gc.status = TG_ARC_SPECIFICATION_ERROR; 
+		return(gc.status);
 	}
 
 	// ensure that the difference is positive so that we have clockwise travel

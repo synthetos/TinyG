@@ -17,6 +17,21 @@
 #ifndef controller_h
 #define controller_h
 
+/* Global structures and definitions */
+
+#define CHAR_BUFFER_SIZE 80		// common text buffer size (255 max)
+
+struct tgController {					// main controller struct
+	uint8_t state;						// controller state (tgControllerState)
+	uint8_t flags;						// control flags
+	uint8_t status;						// return status (controller level)
+	uint8_t mode;						// current operating mode (tgMode)
+	uint8_t src;						// active source device
+	uint8_t default_src;				// default source device
+	uint8_t i;							// temp for indexes
+	char buf[CHAR_BUFFER_SIZE];			// text buffer
+};
+
 /*
  * Global Scope Functions
  */

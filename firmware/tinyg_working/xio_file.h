@@ -84,12 +84,13 @@ struct xioFILE {
 
 // functions common to all FILE devices
 
+void xio_init_file(const uint8_t dev, const uint8_t offset, const uint16_t control);
 
 // PGM functions
 //void xio_init_pgm(uint16_t control);				// init program memory device
-void xio_init_pgm(const uint8_t dev, const uint8_t offset, const uint16_t control);
+void xio_init_pgm(void);
 
-struct __file * xio_open_pgm(const prog_char * addr);// open memory string read only
+FILE * xio_open_pgm(const prog_char * addr);		// open memory string read only
 int xio_setflags_pgm(const uint16_t control);		// valaidate & set dev flags
 int xio_putc_pgm(const char c, struct __file *stream);// always returns ERROR
 int xio_getc_pgm(struct __file *stream);			// get a character

@@ -21,17 +21,14 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
-#include <avr/sleep.h>			// needed for blocking character reads
+#include <avr/sleep.h>					// needed for blocking character reads
 
 #include "xio.h"
-#include "signals.h"			// application specific signal handlers
+#include "signals.h"					// application specific signal handlers
 #include "xmega_interrupts.h"
 
-// necessary structures
-extern struct xioDEVICE ds[XIO_DEV_COUNT];		// ref top-level device structs
-extern struct xioUSART us[XIO_DEV_USART_COUNT];	// ref USART extended IO structs
-#define RS ds[XIO_DEV_RS485]					// device struct accessoor
-#define RSu us[XIO_DEV_RS485]					// usart extended struct accessor
+#define RS ds[XIO_DEV_RS485]			// device struct accessoor
+#define RSu us[XIO_DEV_RS485_OFFSET]	// usart extended struct accessor
 
 /* RS485 device specific entry points to USART routines */
 struct __file * xio_open_rs485() { return(RS.fdev); }
@@ -41,6 +38,7 @@ int xio_getc_rs485(FILE *stream) {return xio_getc_usart(XIO_DEV_RS485, stream);}
 int xio_readln_rs485(char *buf, const uint8_t size) {return xio_readln_usart(XIO_DEV_RS485, buf, size);}
 void xio_queue_RX_char_rs485(const char c) {xio_queue_RX_char_usart(XIO_DEV_RS485, c);}
 void xio_queue_RX_string_rs485(const char *buf) {xio_queue_RX_string_usart(XIO_DEV_RS485, buf);}
+
 void xio_init_rs485()	// RS485 init
 {
 	xio_init_dev(XIO_DEV_RS485, xio_open_rs485, xio_setflags_rs485, xio_putc_rs485, xio_getc_rs485, xio_readln_rs485);
@@ -48,7 +46,6 @@ void xio_init_rs485()	// RS485 init
 }
 
 // NOTE: Might later expand setflags() to validate control bits and return errors
-
 
 /* 
  * RS485_TX_ISR - RS485 transmitter interrupt (TX)
@@ -76,8 +73,8 @@ ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC1 data register empty
 		if (--(RSu.tx_buf_tail) == 0) {			// advance tail and wrap if needed
 			RSu.tx_buf_tail = TX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
 		}
-		RSu.port->OUTSET = (RS485_DE_bm | RS485_RE_bm);	// enable DE (active hi)
-														// disable RE (active lo)
+		RSu.port->OUTSET = (RS485_DE_bm | RS485_RE_bm);	// enable DE (TX, active hi)
+														// disable RE (RX, active lo)
 		RSu.usart->DATA = RSu.tx_buf[RSu.tx_buf_tail];	// write char to TX DATA reg
 	}
 }
@@ -87,24 +84,11 @@ ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC1 data register empty
 
 ISR(RS485_TXC_ISR_vect)		// ISR(USARTC1_TXC_vect) // USARTC1 transmission complete
 {
-		RSu.port->OUTCLR = (RS485_DE_bm | RS485_RE_bm);	// disable DE (active hi)
-														// enable RE (active lo)
+	RSu.port->OUTCLR = (RS485_DE_bm | RS485_RE_bm);	// disable DE (TX), enable RE (RX)
 }
 
 /* 
  * RS485_RX_ISR - RS485 receiver interrupt (RX)
- *
- *	RX buffer states can be one of:
- *	- buffer has space	(CTS should be asserted)
- *	- buffer is full 	(CTS should be not_asserted)
- *	- buffer becomes full with this character (write char and assert CTS)
- *
- *	Flow control is not implemented. Need to work RTS line.
- *	Flow control should cut off at high water mark, re-enable at low water mark
- *	High water mark should have about 4 - 8 bytes left in buffer (~95% full) 
- *	Low water mark about 50% full
- *
- * 	See end notes in xio.h for a discussion of how the circular bufers work
  */
 
 ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)	// serial port C0 RX interrupt 
@@ -123,7 +107,7 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)	// serial port C0 RX interrupt
 		RSu.rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
 	}
 	if (RSu.rx_buf_head != RSu.rx_buf_tail) {	// write char unless buffer full
-		RSu.rx_buf[RSu.rx_buf_head] = c;		// (= USARTC0.DATA;)
+		RSu.rx_buf[RSu.rx_buf_head] = c;		// (= USARTC1.DATA;)
 		return;
 	}
 	// buffer-full handling

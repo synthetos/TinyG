@@ -17,18 +17,18 @@
  */
 
 #include <stdio.h>
-#include <ctype.h>
-#include <avr/pgmspace.h>
+//#include <ctype.h>
+//#include <avr/pgmspace.h>
 
 #include "xio.h"
-#include "tinyg.h"
-#include "controller.h"
-#include "gcode.h"						// calls out to gcode parser, etc.
-#include "config.h"						// calls out to config parser, etc.
-#include "move_buffer.h"
-#include "motion_control.h"
-#include "direct_drive.h"
-#include "stepper.h"					// needed for stepper kill and terminate
+//#include "tinyg.h"
+//#include "controller.h"
+//#include "gcode.h"						// calls out to gcode parser, etc.
+//#include "config.h"						// calls out to config parser, etc.
+//#include "move_buffer.h"
+//#include "motion_control.h"
+//#include "direct_drive.h"
+//#include "stepper.h"					// needed for stepper kill and terminate
 
 /*
  * Local Scope Functions and Data

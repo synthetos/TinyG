@@ -112,17 +112,7 @@
  * Local Scope Functions and Data
  */
 
-struct tgController {					// main controller struct
-	uint8_t state;						// controller state (tgControllerState)
-	uint8_t flags;						// control flags
-	uint8_t status;						// return status (controller level)
-	uint8_t mode;						// current operating mode (tgMode)
-	uint8_t src;						// active source device
-	uint8_t default_src;				// default source device
-	uint8_t i;							// temp for indexes
-	char buf[CHAR_BUFFER_SIZE];			// text buffer
-};
-static struct tgController tg;
+struct tgController tg;
 
 enum tgControllerState {				// command execution state
 	TG_READY_UNPROMPTED,				// ready for input, no prompt sent
@@ -140,6 +130,7 @@ enum tgMode {
 	TG_MAX_MODE
 };
 
+// local helper functions
 static int _tg_read_next_line(void);
 static void _tg_prompt(void);
 static void _tg_set_mode(uint8_t mode);
@@ -153,40 +144,54 @@ static int _tg_test_file(void);
 void tg_init() 
 {
 	// set input source
-	tg.default_src = XIO_DEV_USB; 			// hard-wire input to USB (for now)
+	tg.default_src = DEFAULT_SOURCE; 		// set in tinyg.h
 	_tg_set_source(tg.default_src);			// set initial active source
 	_tg_set_mode(TG_CONTROL_MODE);			// set initial operating mode
 	tg.state = TG_READY_UNPROMPTED;
 
-	// version string
 	printf_P(PSTR("TinyG - Version %S\n"), (PSTR(TINYG_VERSION)));
 }
 
 /* 
  * tg_controller() - top-level controller.
+ *
+ * Put tasks in order of highest to lowest priority (blocking hierarchy)
  */
+
+#define	DISPATCH(func) switch (func) { case (TG_EAGAIN): return; \
+	case (TG_OK): { tg.state = TG_READY_UNPROMPTED; _tg_prompt(); return;}}
 
 void tg_controller()
 {
-	// top priority tasks
 	st_execute_move();
-
+	DISPATCH(mc_line_continue());
+	DISPATCH(mc_arc_continue());
+	DISPATCH(_tg_read_next_line());
+	_tg_prompt();
+/*
 	// medium priority tasks
 	switch (mc_line_continue()) {
 		case (TG_EAGAIN): return;
-		case (TG_OK): tg.state = TG_READY_UNPROMPTED; return;
+		case (TG_OK): {
+			tg.state = TG_READY_UNPROMPTED; 
+			_tg_prompt();
+			return;
+		}
 	}
-
 	switch (mc_arc_continue()) {
 		case (TG_EAGAIN): return;
-		case (TG_OK): tg.state = TG_READY_UNPROMPTED; return;
+		case (TG_OK): {
+			tg.state = TG_READY_UNPROMPTED; 
+			_tg_prompt();
+			return;
+		}
 	}
-
 	// low priority tasks
 	if ((tg.status = _tg_read_next_line()) == TG_EAGAIN) {	// input line
 		return;
 	}
 	_tg_prompt();		// Send a prompt - but only if controller is ready for input
+*/
 }
 
 /* 
@@ -435,8 +440,8 @@ int _tg_test_file()
 //	xio_open_pgm(PGMFILE(&spiral_test5));
 //	xio_open_pgm(PGMFILE(&dwell_test2));
 
-	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
-//	xio_open_pgm(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
+//	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
+	xio_open_pgm(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
 
 	// set source and mode
 	_tg_set_source(XIO_DEV_PGM);
