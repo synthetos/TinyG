@@ -26,7 +26,7 @@ class FlexGridSizer(wx.Frame):
         self.panel = wx.Panel(self, -1)
        
         #Text Ctrl Boxes
-        self.DebugMsg = wx.TextCtrl(self.panel, wx.ALL)
+        self.DebugMsg = wx.TextCtrl(self.panel, 205, style=wx.TE_MULTILINE | wx.ALL | wx.TE_PROCESS_ENTER)
         self.CmdInput = wx.TextCtrl(self.panel, wx.ALL)
         
         
@@ -49,7 +49,7 @@ class FlexGridSizer(wx.Frame):
         ExeBtn = wx.Button(self.panel, 21, "Execute", size=(75,25))
         
      
-        self.FindInitPorts()
+        self.FindInitPorts() #Scan for ports on program start
         
         #Static Boxes Connect | Refresh Button
         #self.staticBox1 = wx.StaticBox(self.panel, label="Serial")
@@ -91,6 +91,8 @@ class FlexGridSizer(wx.Frame):
         wx.EVT_BUTTON(self, 19, self.OnRefresh)
         wx.EVT_BUTTON(self, 21, self.OnExecute)
         
+        #Key Events
+        
         #Show the Frame Code
         self.Centre()
         self.Show(True)
@@ -99,9 +101,9 @@ class FlexGridSizer(wx.Frame):
         """Execute the gcode command that is typed into the Cmd Input Box"""
         CMD = self.CmdInput.Value
         if CMD == "":
-            print "[!!]ERROR: Invalid Gcode Command"
+            self.PrintDebug("[!!]ERROR: Invalid Gcode Command")
         else:
-            print "[*]Sending: G0 X100, Y100, Z100\n"
+            self.PrintDebug("[*]Sending: %s" % CMD)
             try:
                 self.connection.write(CMD+"\n")
                 fullResponse = ""
@@ -112,37 +114,48 @@ class FlexGridSizer(wx.Frame):
                     else:
                         fullResponse = fullResponse+res
             except:
-                print "[!!]ERROR: Serial Port Not Connected"
+                self.PrintDebug("[!!]ERROR: Serial Port Not Connected")
                 return
-            self.DebugMsg.Value = fullResponse
+            self.PrintDebug("[TINYG RESPONSE]: %s " % fullResponse.lstrip())
                 
-            
+    def PrintDebug(self, msg):
+        """Accepts a MSG you want to display"""
+        return self.DebugMsg.AppendText(msg+"\n")
     
     def FindInitPorts(self):
         """Initial Run to find connected ports"""
         self.SERIAL_PORTS = serinit.scan() #Find the serial ports connected to a system (OS independent)
-        
+        self.status_bar.SetStatusText("%s Serial Port/s Found." % str(len(self.SERIAL_PORTS))) 
         if self.SERIAL_PORTS == []:  #If no serial ports were detected we return a msg where the port should be
             msg = "No Serial Ports Found"
             self.SERIAL_PORTS.append(msg)
-        self.DebugMsg.Value = "%s" % self.SERIAL_PORTS 
         
     def OnRefresh(self, event):
+        try:
+            self.connection.close()
+            self.status_bar.SetStatusText("DISCONNECTED:")
+        except:
+            pass
+        self.PrintDebug("[*]Scanning For New Serial Ports")
         self.FindInitPorts()
         self.cmbSports.Items = self.SERIAL_PORTS #This updates the combo box with the list of ports returned
 
     def OnConnect(self, event):
         try:
+            self.connection.close() #Try to close an existing connection.  Perhaps you connected to the wrong port first
+        except:
+            pass
+        
+        try:
             self.connection = serinit.connect(self.cmbSports.Value, self.cmbSpeeds.Value)
             self.connection.write("\n")
-            print self.connection.readline()
-            self.status_bar.SetStatusText("CONNECTED:  %s:%s" % (self.cmbSports.Value, self.cmbSpeeds.Value))
+            #print self.connection.readline()
+            self.status_bar.SetStatusText("CONNECTED:  %s:%s" % (self.connection.port, self.connection._baudrate))
         except:
-            print "[!!]ERROR: Connecting to the Serial Port"
-            self.status_bar.SetStatusText("DISCONNECTED:  %s:%s" % ("1","2"))
+            self.PrintDebug("[!!]ERROR: Connecting to the Serial Port")
+            self.status_bar.SetStatusText("DISCONNECTED:")
             
     def OnQuit(self, event):
-        print "Destroyed"
         self.Destroy()
    
 
