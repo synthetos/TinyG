@@ -49,9 +49,10 @@
  */
 
 #include <stdio.h>
-#include <string.h>				// for memset()
+#include <string.h>						// for memset()
 #include <avr/pgmspace.h>
-#include "xio.h"				// includes for all devices are in here
+#include "xio.h"						// all device includes are nested here
+#include "controller.h"					// needed by init() for default source
 
 /*
  * structs, static memory allocation, and accessors
@@ -62,6 +63,8 @@ struct xioUSART us[XIO_DEV_USART_COUNT];// allocate USART extended IO structs
 struct xioFILE fs[XIO_DEV_FILE_COUNT];	// allocate FILE extended IO structs
 struct __file ss[XIO_DEV_COUNT];		// allocate stdio stream for each dev
 
+extern struct tgController tg;			// needed by init() for default source
+
 /*
  *	xio_init() - initialize all active XIO devices
  */
@@ -70,15 +73,16 @@ void xio_init(void)
 {	
 	xio_init_rs485();
 	xio_init_usb();
+	xio_init_pgm();
 
 	// Program memory file device setup
-	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_setflags_pgm, xio_putc_pgm, xio_getc_pgm, xio_readln_pgm);
-	xio_init_pgm(XIO_DEV_PGM, XIO_DEV_PGM_OFFSET, PGM_INIT_bm);
+//	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_setflags_pgm, xio_putc_pgm, xio_getc_pgm, xio_readln_pgm);
+//	xio_init_pgm(XIO_DEV_PGM, XIO_DEV_PGM_OFFSET, PGM_INIT_bm);
 
-	// setup stdio bindings to default IO device
-	xio_set_stdin(XIO_DEV_USB);
-	xio_set_stdout(XIO_DEV_USB);
-	xio_set_stderr(XIO_DEV_USB);
+	// setup stdio bindings to default source device
+	xio_set_stdin(tg.default_src);
+	xio_set_stdout(tg.default_src);
+	xio_set_stderr(tg.default_src);
 
 	// tell the world we are ready!
 	printf_P(PSTR("\n\n**** Xmega IO subsystem initialized ****\n"));

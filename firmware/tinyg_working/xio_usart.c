@@ -53,10 +53,9 @@
 #include "xmega_interrupts.h"
 #include "signals.h"			// application specific signal handlers
 
-// necessary structs
-extern struct xioDEVICE ds[XIO_DEV_COUNT];		// allocate top-level device structs
-extern struct xioUSART us[XIO_DEV_USART_COUNT];	// allocate USART extended IO structs
-static uint8_t gdev;							// global device # variable (yuk)
+#include "encoder.h"			// ++++ DEBUG
+
+static uint8_t gdev;			// global device # variable (yuk)
 
 // baud rate lookup tables - indexed by enum xioBAUDRATES (see xio_usart.h)
 const uint8_t bsel[] PROGMEM = { 0, 207, 103, 51, 34, 33, 31, 27, 19, 1, 1 };
@@ -171,14 +170,15 @@ int xio_putc_usart(const uint8_t dev, const char c, FILE *stream)
 		if (--(dx->tx_buf_tail) == 0) {				// advance tail & wrap if needed
 			dx->tx_buf_tail = TX_BUFFER_SIZE-1;		// -1 avoid off-by-one err (OBOE)
 		}
-		if (dev == XIO_DEV_RS485) {						// HACK
+		if (dev == XIO_DEV_RS485) {					// ++++ HACK ++++
 			dx->port->OUTSET = (RS485_DE_bm | RS485_RE_bm);	// enable DE, disable RE
+			en_toggle(2);							// ++++ DEBUG
 		}
 		dx->usart->DATA = dx->tx_buf[dx->tx_buf_tail];// write to TX DATA reg
 		d->flags &= ~XIO_FLAG_TX_MUTEX_bm;			// release mutual exclusion lock
 	}
 	// enable interrupts regardless
-	if (dev == XIO_DEV_RS485) {						// HACK
+	if (dev == XIO_DEV_RS485) {						// ++++ HACK ++++
 		dx->usart->CTRLA = CTRLA_RXON_TXON_TXCON;	// doesn't work if you just |= it
 	} else {
 		dx->usart->CTRLA = CTRLA_RXON_TXON;			// doesn't work if you just |= it
@@ -377,6 +377,7 @@ int xio_getc_usart(const uint8_t dev, FILE *stream)
 	if (--(dx->rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
 		dx->rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
 	}
+	en_toggle(1);								// ++++ DEBUG
 	d->c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);// get char from RX buf & mask MSB
 	// 	call action procedure from dispatch table in FLASH (see xio.h for typedef)
 	return (((fptr_int_void)(pgm_read_word(&getcFuncs[d->c])))());
@@ -664,22 +665,22 @@ static int _readln_DELETE(void)
 
 void xio_queue_RX_char_usart(const uint8_t dev, const char c)
 {
-	struct xioDEVICE *d = &ds[dev];					// init device struct pointer
-	struct xioUSART *dx = ((struct xioUSART *)(ds[dev].x));	// init USART pointer
+	struct xioDEVICE *d = &ds[dev];				// init device struct pointer
+	struct xioUSART *dx = ((struct xioUSART *)(ds[dev].x));// init USART pointer
 
 	// trap signals - do not insert into RX queue
 	if (c == ETX) {								// trap ^c signal
 		d->sig = XIO_SIG_KILL;					// set signal value
-		signal_etx();							// call app-specific signal handler
+		signal_etx();							// call app-specific sig handler
 		return;
 	}
 
 	// normal path
 	if ((--dx->rx_buf_head) == 0) { 			// wrap condition
-		dx->rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids the off-by-one error
+		dx->rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one error
 	}
-	if (dx->rx_buf_head != dx->rx_buf_tail) {// write char unless buffer full
-		dx->rx_buf[dx->rx_buf_head] = c;	// FAKE INPUT DATA
+	if (dx->rx_buf_head != dx->rx_buf_tail) {	// write char unless buffer full
+		dx->rx_buf[dx->rx_buf_head] = c;		// FAKE INPUT DATA
 		return;
 	}
 	// buffer-full handling

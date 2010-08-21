@@ -159,7 +159,7 @@ int main(void)
 // Be mindful of the char limit on the RX_BUFFER_SIZE (circular buffer)
 
 //	xio_queue_RX_char_usb(ETX);			// send control-c (kill)
-	xio_queue_RX_string_usb("f\n");
+//	xio_queue_RX_string_usb("f\n");
 //	xio_queue_RX_string_usb("?\n");
 
 //	xio_queue_RX_string_usb("g0x0y0z0\n");

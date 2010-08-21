@@ -19,19 +19,25 @@
 
 #include <stdio.h>
 #include <avr/pgmspace.h>
-#include "xio.h"				// includes for all devices are in here
+#include "xio.h"						// includes for all devices are in here
 
-// necessary structures
-extern struct xioDEVICE ds[XIO_DEV_COUNT];		// ref top-level device structs
-extern struct xioFILE fs[XIO_DEV_FILE_COUNT];	// ref FILE extended IO structs
-#define PGM ds[XIO_DEV_PGM]						// device struct accessor
-#define PGMf fs[XIO_DEV_PGM_OFFSET]				// file extended struct accessor
+#define PGM ds[XIO_DEV_PGM]				// device struct accessor
+#define PGMf fs[XIO_DEV_PGM_OFFSET]		// file extended struct accessor
 
 /* 
  *	xio_init_pgm() - initialize and set controls for program memory device 
  */
+void xio_init_pgm()
+{
+	// Program memory file device setup
+	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_setflags_pgm, xio_putc_pgm, xio_getc_pgm, xio_readln_pgm);
+	xio_init_file(XIO_DEV_PGM, XIO_DEV_PGM_OFFSET, PGM_INIT_bm);
+}
 
-void xio_init_pgm(const uint8_t dev, const uint8_t offset, const uint16_t control)
+/* 
+ *	xio_init_file() - generic init for file devices
+ */
+void xio_init_file(const uint8_t dev, const uint8_t offset, const uint16_t control)
 {
 	// bind file struct to extended device parameters
 	ds[dev].x = &fs[offset];		// bind pgm FILE struct

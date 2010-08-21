@@ -29,10 +29,15 @@
  */
 
 void mc_init(void);
+int mc_motion_pause(void);
+int mc_motion_resume(void);
 int mc_motion_stop(void);
+int mc_motion_end(void);
+
 int mc_dwell(double seconds);
 int mc_go_home(void);						// Send the tool home
 
+int mc_set_position(double x, double y, double z);
 int mc_line_blocking(double x, double y, double z, 
 			double feed_rate, int invert_feed_rate);
 

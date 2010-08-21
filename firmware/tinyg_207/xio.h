@@ -118,8 +118,7 @@ enum xioDevice {				// device enumerations
 
 /* GENERAL CONFIG */
 
-#define CHAR_BUFFER_SIZE 40		// common text buffer size (255 max)
-//#define RX_BUFFER_SIZE 255	// USART ISR RX buffer size (255 max)
+#define CHAR_BUFFER_SIZE 255		// common text buffer size (255 max)
 
 /* Device configurations */
 // USART devices: See xio_usart.h for USART-based device configs
@@ -234,7 +233,6 @@ struct xioDEVICE {						// common device struct (one per device)
 	uint8_t len;						// chars read so far (buf array index)
 	uint8_t size;						// test buffer length (dynamic)
 	FILE *(*x_open)(const prog_char *addr);// device open routine
-//	struct __file *(x_*open)(const prog_char *addr);// device open routine
 	int (*x_setflags)(const uint16_t control);// set device control flags
 	int (*x_putc)(char, struct __file *);	// write char (stdio compatible)
 	int (*x_getc)(struct __file *);		// read char (stdio compatible)
@@ -242,7 +240,6 @@ struct xioDEVICE {						// common device struct (one per device)
 
 	void *x;							// extended IO parameter binding (static)
 	FILE *fdev;							// stdio fdev binding (static)
-//	struct __file *fdev;				// stdio fdev binding (static)
 	char *buf;							// text buffer binding (dynamic)
 };
 

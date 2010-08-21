@@ -113,6 +113,7 @@
 
 #include <stdio.h>			// defines "FILE"
 #include <avr/interrupt.h>
+#include <util/delay.h>
 
 #include "xmega_init.h"
 #include "xmega_interrupts.h"
@@ -133,12 +134,12 @@
 
 int main(void) 
 {
-	/* These inits are order dependent */
+	// Order dependent inits are numbered (n):
 	cli();
-	xmega_init();				// xmega setup
-	xio_init();					// xmega io subsystem
-
-	cfg_init();					// get config record from eeprom
+	xmega_init();				// (1) xmega setup
+	tg_init();					// (2) tinyg controller
+	xio_init();					// (3) xmega io subsystem
+	cfg_init();					// (4) get config record from eeprom
 	st_init(); 					// stepper subsystem
 	ls_init();					// limit switches
 	mv_init();					// move buffers
@@ -147,7 +148,6 @@ int main(void)
 	en_init();					// encoders
 	gc_init();					// gcode-parser
 	dd_init();					// direct drive commands
-	tg_init();					// tinyg parsers
 
 	PMIC_SetVectorLocationToApplication();  // as opposed to boot rom
 	PMIC_EnableLowLevel();		// enable TX interrupts
@@ -160,23 +160,32 @@ int main(void)
 
 //	xio_queue_RX_char_usb(ETX);			// send control-c (kill)
 //	xio_queue_RX_string_usb("f\n");
-	xio_queue_RX_string_usb("?\n");
+//	xio_queue_RX_string_usb("?\n");
 
 //	xio_queue_RX_string_usb("g0x0y0z0\n");
 //	xio_queue_RX_string_usb("g0x1000\n");
 //	xio_queue_RX_string_usb("g0x10000\n");
 //	xio_queue_RX_string_usb("g0x10\ng4p1\ng0x0\n");
 
-/*
-	xio_queue_RX_string_usb("g1 y-50 f300\n");
+/*	xio_queue_RX_string_usb("g1 y-50 f300\n");
 	xio_queue_RX_string_usb("g0 20\n");
 	xio_queue_RX_string_usb("g0 y-50\n");
 	xio_queue_RX_string_usb("g0 y100\n");
 */
 //	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
-//	xio_queue_RX_string_usb("g0 x-10 (MSGtest message)\n");
+//	xio_queue_RX_string_usb("g0 x-10 (MSGtest)\n");
 
-#ifdef __RS485_MASTER
+//	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
+//	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
+//	xio_queue_RX_string_usb("g0 x0 y0 z0\n");
+
+//	for(;;){
+//		xio_putc_rs485('a', fdev_rs485);
+//		en_toggle(1);
+//		_delay_ms(1);
+//	}
+
+#ifdef __RELAY_MODE
 	for(;;){
 		tg_repeater();		// this node receives on USB and repeats to RS485
 	}

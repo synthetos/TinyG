@@ -11,8 +11,10 @@ main.o: ../main.c c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/common.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../xmega_init.h \
-  ../xmega_interrupts.h ../xio.h \
+  c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h \
+  c:/winavr-20100110/lib/gcc/../../avr/include/util/delay.h \
+  c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h \
+  ../xmega_init.h ../xmega_interrupts.h ../xio.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h \
   ../xio_file.h ../xio_usart.h ../tinyg.h ../controller.h ../network.h \
   ../config.h ../stepper.h ../limit_switches.h ../move_buffer.h \
@@ -47,6 +49,10 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h:
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
+
+c:/winavr-20100110/lib/gcc/../../avr/include/util/delay.h:
+
+c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h:
 
 ../xmega_init.h:
 
