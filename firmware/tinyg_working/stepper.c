@@ -62,7 +62,6 @@
  */
 
 void _st_fake_move(void);
-//void _st_print_exec_line(int32_t x, int32_t y, int32_t z, uint32_t us, uint8_t active);
 void _st_print_exec_line(int32_t x, int32_t y, int32_t z, uint8_t active);
 
 /* 

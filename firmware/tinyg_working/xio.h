@@ -116,11 +116,6 @@ enum xioDevice {				// device enumerations
  * Device configurations (all of them)
  */
 
-/* GENERAL CONFIG */
-
-#define CHAR_BUFFER_SIZE 40		// common text buffer size (255 max)
-//#define RX_BUFFER_SIZE 255	// USART ISR RX buffer size (255 max)
-
 /* Device configurations */
 // USART devices: See xio_usart.h for USART-based device configs
 // FILE devices:  See xio_file/h for FILE-based device configs
@@ -234,7 +229,6 @@ struct xioDEVICE {						// common device struct (one per device)
 	uint8_t len;						// chars read so far (buf array index)
 	uint8_t size;						// test buffer length (dynamic)
 	FILE *(*x_open)(const prog_char *addr);// device open routine
-//	struct __file *(x_*open)(const prog_char *addr);// device open routine
 	int (*x_setflags)(const uint16_t control);// set device control flags
 	int (*x_putc)(char, struct __file *);	// write char (stdio compatible)
 	int (*x_getc)(struct __file *);		// read char (stdio compatible)
@@ -242,9 +236,13 @@ struct xioDEVICE {						// common device struct (one per device)
 
 	void *x;							// extended IO parameter binding (static)
 	FILE *fdev;							// stdio fdev binding (static)
-//	struct __file *fdev;				// stdio fdev binding (static)
 	char *buf;							// text buffer binding (dynamic)
 };
+
+// structure exports. See xio.c for defintions
+extern struct xioDEVICE ds[XIO_DEV_COUNT];		// makes fdev_xxxx descriptors valid
+extern struct xioUSART us[XIO_DEV_USART_COUNT];	// allocate USART extended IO structs
+extern struct xioFILE fs[XIO_DEV_FILE_COUNT];	// ref FILE extended IO structs
 
 // Notes: See sub-system .h's for extended IO structs (e.g. xio_usart.h)
 
@@ -276,6 +274,7 @@ void xio_init_dev(uint8_t dev,					// device number
 	); 
 
 void xio_signal_etx(void);			// ^c signal handler
+
 
 
 /**** NOTES ON XIO ****/

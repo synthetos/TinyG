@@ -24,6 +24,7 @@
 #include "encoder.h"
 #include "hardware.h"
 
+static uint8_t encoder_port_value;
 
 void en_init(void) 
 {
@@ -31,7 +32,7 @@ void en_init(void)
 }
 
 /*
- * en_write() - write lowest 4 bits of a byte to encoder outpur port
+ * en_write() - write lowest 4 bits of a byte to encoder output port
  *
  * This is a hack to hide the fact that we've scattered the encode output
  * bits all over the place becuase we have no more contiguous ports left. 
@@ -39,27 +40,40 @@ void en_init(void)
 
 void en_write(uint8_t b)
 {
-	if (b && 0x01) { 								// b0 is on A axis
+	encoder_port_value = b;
+
+	if (b & 0x01) { 								// b0 is on A axis
 		AXIS(A).port->OUTSET = ENCODER_OUT_BIT_bm;
 	} else {
 		AXIS(A).port->OUTCLR = ENCODER_OUT_BIT_bm;
 	}
 
-	if (b && 0x02) { 								// b1 is on Z axis
+	if (b & 0x02) { 								// b1 is on Z axis
 		AXIS(Z).port->OUTSET = ENCODER_OUT_BIT_bm;
 	} else {
 		AXIS(Z).port->OUTCLR = ENCODER_OUT_BIT_bm;
 	}
 
-	if (b && 0x04) { 								// b2 is on Y axis
+	if (b & 0x04) { 								// b2 is on Y axis
 		AXIS(Y).port->OUTSET = ENCODER_OUT_BIT_bm;
 	} else {
 		AXIS(Y).port->OUTCLR = ENCODER_OUT_BIT_bm;
 	}
 
-	if (b && 0x08) { 								// b3 is on X axis
+	if (b & 0x08) { 								// b3 is on X axis
 		AXIS(X).port->OUTSET = ENCODER_OUT_BIT_bm;
 	} else {
 		AXIS(X).port->OUTCLR = ENCODER_OUT_BIT_bm;
 	}
 }
+
+/*
+ * en_toggle() - toggle lowest 4 bits of a byte to encoder output port
+ */
+
+void en_toggle(uint8_t b)
+{
+	encoder_port_value ^= b;	// xor the stored encoder value with b
+	en_write(encoder_port_value);
+}
+

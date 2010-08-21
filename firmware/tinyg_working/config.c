@@ -27,7 +27,8 @@
 #include "hardware.h"
 #include "xmega_eeprom.h"
 
-void _cfg_computed(void); // prototypes for local functions (helper functions) 
+// prototypes for local helper functions
+void _cfg_computed(void); 
 void _cfg_dump_axis(uint8_t	axis);
 
 /* 

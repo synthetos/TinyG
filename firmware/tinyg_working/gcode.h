@@ -35,10 +35,11 @@ void select_plane(uint8_t axis_0, uint8_t axis_1, uint8_t axis_2);
  */
 
 enum gcNextAction {
-	NEXT_ACTION_DEFAULT,					// random G code; no moves
+	NEXT_ACTION_NONE,						// no moves
 	NEXT_ACTION_MOTION,						// move is set by motion mode (below)
 	NEXT_ACTION_DWELL,
-	NEXT_ACTION_GO_HOME
+	NEXT_ACTION_GO_HOME,
+	NEXT_ACTION_SET_COORDINATES
 };
 
 enum gcMotionMode {
@@ -56,7 +57,7 @@ enum gcPathControlMode {
 };
 
 enum gcProgramFlow {
-	PROGRAM_FLOW_RUNNING,
+	PROGRAM_FLOW_RUNNING,					// must be zero
 	PROGRAM_FLOW_PAUSED,
 	PROGRAM_FLOW_COMPLETED
 };

@@ -24,20 +24,16 @@
 #include <stdio.h>
 #include "tinyg.h"
 #include "controller.h"
-#include "move_buffer.h"
 #include "motion_control.h"
-#include "stepper.h"					// needed for stepper kill and terminate
 
 /*
  * signal_etx() - trap and dispatch ^c
  */
 
-void signal_etx() {			// ^c
+void signal_etx()				// ^c
 {
-	tg_reset_source();					// return control to standard device
-	mc_motion_stop();					// stop computing and generating motions
-	mv_flush();							// empty and reset the move queue
-	st_stop_steppers();					// stop the steppers
+	tg_reset_source();			// return control to standard device
+	mc_motion_stop();			// stop computing and generating motions
 	return;
 }
 
@@ -55,33 +51,5 @@ void tg_pause()
 void tg_resume()
 {
 	return;
-}
-
-/* 
- * tg_signal() - default signal handler to bind to the line readers
- */
-/*
-int tg_signal(uint8_t sig)
-{
-	switch (sig) {
-		case XIO_SIG_OK: break;
- 		case XIO_SIG_EOL: break;
-
-		case XIO_SIG_EOF:
-			printf_P(PSTR("\r\nEnd of file encountered\r\n"));
-			_tg_prompt();
-			break;
-
-		case XIO_SIG_WOULDBLOCK: break;
-		case XIO_SIG_KILL: tg_kill(); break;
-		case XIO_SIG_TERMINATE: tg_terminate(); break;
-		case XIO_SIG_PAUSE: tg_pause(); break;
-		case XIO_SIG_RESUME: tg_resume(); break;
-		case XIO_SIG_SHIFTOUT: break;
-		case XIO_SIG_SHIFTIN: break;
-		default: break;
-	}
-	return (0);
-*/
 }
 

@@ -23,6 +23,7 @@
  */
 
 void en_init(void);
-void en_write(uint8_t n);
+void en_write(uint8_t b);
+void en_toggle(uint8_t b);
 
 #endif

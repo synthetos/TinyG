@@ -174,12 +174,20 @@ void tg_controller()
 	// medium priority tasks
 	switch (mc_line_continue()) {
 		case (TG_EAGAIN): return;
-		case (TG_OK): tg.state = TG_READY_UNPROMPTED; return;
+		case (TG_OK): {
+			tg.state = TG_READY_UNPROMPTED; 
+			_tg_prompt();
+			return;
+		}
 	}
 
 	switch (mc_arc_continue()) {
 		case (TG_EAGAIN): return;
-		case (TG_OK): tg.state = TG_READY_UNPROMPTED; return;
+		case (TG_OK): {
+			tg.state = TG_READY_UNPROMPTED; 
+			_tg_prompt();
+			return;
+		}
 	}
 
 	// low priority tasks

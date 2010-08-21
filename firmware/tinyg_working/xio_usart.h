@@ -37,17 +37,11 @@
 #define RS485_RX_bm (1<<6)					// RX pin
 #define RS485_TX_bm (1<<7)					// TX pin
 
-#define RS485_DIRCLR_bm (RS485_RX_bm)							// input bits
+#define RS485_DIRCLR_bm (RS485_RX_bm)							 // input bits
 #define RS485_DIRSET_bm (RS485_RE_bm | RS485_DE_bm | RS485_TX_bm)// output bits
 
-#ifdef __RS485_MASTER
-#define RS485_OUTCLR_bm (RS485_RE_bm)				// outputs init'd to 0
-#define RS485_OUTSET_bm (RS485_TX_bm | RS485_DE_bm)	// outputs init'd to 1
-#else
-#define RS485_OUTCLR_bm (RS485_RE_bm | RS485_DE_bm)	// outputs init'd to 0
+#define RS485_OUTCLR_bm (RS485_RE_bm| RS485_DE_bm)	// outputs init'd to 0
 #define RS485_OUTSET_bm (RS485_TX_bm)				// outputs init'd to 1
-#endif
-
 
 // USB device configuration
 #define USB_INIT_bm (XIO_RDWR |XIO_BLOCK |  XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200)
@@ -89,10 +83,10 @@
  * USART DEVICE CONSTANTS AND PARAMETERS
  */
 
-#define RX_BUFFER_SIZE 18		// USART ISR RX buffer size (255 max)
-#define TX_BUFFER_SIZE 18		// USART ISR TX buffer size (255 max)
-//#define RX_BUFFER_SIZE 255		// USART ISR RX buffer size (255 max)
-//#define TX_BUFFER_SIZE 255		// USART ISR TX buffer size (255 max)
+//#define RX_BUFFER_SIZE 18		// USART ISR RX buffer size (255 max)
+//#define TX_BUFFER_SIZE 18		// USART ISR TX buffer size (255 max)
+#define RX_BUFFER_SIZE 255		// USART ISR RX buffer size (255 max)
+#define TX_BUFFER_SIZE 255		// USART ISR TX buffer size (255 max)
 
 /* 
  * Serial Configuration Settings

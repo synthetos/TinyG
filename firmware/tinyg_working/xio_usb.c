@@ -23,21 +23,17 @@
  */
 
 #include <stdio.h>
-#include <avr/io.h>				// why is this not needed?
+#include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
-#include <avr/sleep.h>			// needed for blocking character reads & writes
+#include <avr/sleep.h>				// needed for blocking character reads & writes
 
-#include "xio.h"				// includes for all devices are in here
+#include "xio.h"					// includes for all devices are in here
 #include "xmega_interrupts.h"
 #include "signals.h"
 
-// necessary structures
-extern struct xioDEVICE ds[XIO_DEV_COUNT];		// ref top-level device structs
-extern struct xioUSART us[XIO_DEV_USART_COUNT];	// ref USART extended IO structs
-#define USB ds[XIO_DEV_USB]						// device struct accessoor
-#define USBu us[XIO_DEV_USB_OFFSET]				// usart extended struct accessor
-
+#define USB ds[XIO_DEV_USB]			// device struct accessoor
+#define USBu us[XIO_DEV_USB_OFFSET]	// usart extended struct accessor
 
 /* USB Device specific entry points to USART routines */
 FILE * xio_open_usb() {return(USB.fdev);}
@@ -47,6 +43,7 @@ int xio_getc_usb(FILE *stream) {return xio_getc_usart(XIO_DEV_USB, stream);}
 int xio_readln_usb(char *buf, const uint8_t size) {return xio_readln_usart(XIO_DEV_USB, buf, size);}
 void xio_queue_RX_char_usb(const char c) {xio_queue_RX_char_usart(XIO_DEV_USB, c);}
 void xio_queue_RX_string_usb(const char *buf) {xio_queue_RX_string_usart(XIO_DEV_USB, buf);}
+
 void xio_init_usb()	// USB inits
 {
 	xio_init_dev(XIO_DEV_USB, xio_open_usb, xio_setflags_usb, xio_putc_usb, xio_getc_usb, xio_readln_usb);
