@@ -29,6 +29,12 @@
 #define TRUE 1
 #endif
 
+// Operating Mode: (chose only one)
+//#define __NORMAL_MODE					// normal operation - receive from USB
+#define __RELAY_MODE					// receive from USB, relay to rs485
+//#define __SLAVE_MODE					// receive from rs485
+
+
 // System Constants
 #define TINYG_VERSION "build 208"
 #define EEPROM_DATA_VERSION 100	// Used to migrate old data during firmware upgrades
@@ -92,11 +98,6 @@ typedef int (*fptr_int_char_p) (char *b);// returns int, character pointer (line
 /*
  * Various debug and other compile-time switches
  */
-
-// Chose only one:
-#define __NORMAL_MODE					// normal operation - receive from USB
-//#define __RELAY_MODE					// receive from USB, relay to rs485
-//#define __SLAVE_MODE					// receive from rs485
 
 #ifdef __SLAVE_MODE
 #define DEFAULT_SOURCE XIO_DEV_RS485

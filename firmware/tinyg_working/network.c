@@ -19,22 +19,16 @@
 #include <stdio.h>
 //#include <ctype.h>
 //#include <avr/pgmspace.h>
+#include <util/delay.h>
 
 #include "xio.h"
 //#include "tinyg.h"
-//#include "controller.h"
-//#include "gcode.h"						// calls out to gcode parser, etc.
-//#include "config.h"						// calls out to config parser, etc.
-//#include "move_buffer.h"
-//#include "motion_control.h"
-//#include "direct_drive.h"
-//#include "stepper.h"					// needed for stepper kill and terminate
+#include "encoder.h"
+#include "controller.h"
 
 /*
  * Local Scope Functions and Data
  */
-
-
 
 /*
  * net_init()
@@ -51,10 +45,39 @@ void net_init()
 
 void tg_repeater()
 {
+/*	while (TRUE) {
+		xio_putc_rs485('A', fdev_rs485);
+		en_toggle(1);
+		_delay_ms(50);
+	}
+*/	
 	char c;
 
+	en_write(4);
 	while (TRUE) {
 		c = xio_getc(XIO_DEV_USB);		// blocking read
 		xio_putc(XIO_DEV_RS485, c);		// transfer to RS485 port
+		en_toggle(1);
 	}
+}
+
+/* 
+ * tg_receiver()
+ */
+
+void tg_receiver()
+{
+	tg_controller();	// this node executes gcode blocks received via RS485
+
+/*	char c;
+
+	en_write(4);
+	while (TRUE) {
+		c = xio_getc(XIO_DEV_RS485);	// blocking read
+		xio_putc(XIO_DEV_USB, c);		// transfer to USB port
+		if (c != CR) {
+			en_toggle(1);
+		}
+	}
+*/
 }
