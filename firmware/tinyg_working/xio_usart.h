@@ -22,9 +22,8 @@
  * USART DEVICE CONFIGS (applied during device-specific inits)
  */
 
-// RS485 device configuration
-#define RS485_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_BAUD_115200)
-//#define RS485_INIT_bm (XIO_RDWR | XIO_NONBLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_BAUD_115200)
+// RS485 device configuration (no echo or CRLF)
+#define RS485_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_LINEMODE | XIO_BAUD_115200)
 
 #define RS485_USART USARTC1					// RS485 usart
 #define RS485_RX_ISR_vect USARTC1_RXC_vect 	// (RX) reception complete IRQ
@@ -45,7 +44,6 @@
 
 // USB device configuration
 #define USB_INIT_bm (XIO_RDWR |XIO_BLOCK |  XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200)
-//#define USB_INIT_bm (XIO_RDWR |XIO_NONBLOCK |  XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200)
 
 #define USB_USART USARTC0					// USB usart
 #define USB_RX_ISR_vect USARTC0_RXC_vect 	// (RX) reception complete IRQ
@@ -61,7 +59,6 @@
 #define USB_DIRSET_bm (USB_RTS_bm | USB_TX_bm)	// output bits
 #define USB_OUTCLR_bm (0)						// outputs init'd to 0
 #define USB_OUTSET_bm (USB_RTS_bm | USB_TX_bm)	// outputs init'd to 1
-
 
 // TTL device (Arduino)
 #define TTL_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_SEMICOLONS | XIO_BAUD_115200)
@@ -83,10 +80,10 @@
  * USART DEVICE CONSTANTS AND PARAMETERS
  */
 
-//#define RX_BUFFER_SIZE 18		// USART ISR RX buffer size (255 max)
-//#define TX_BUFFER_SIZE 18		// USART ISR TX buffer size (255 max)
-#define RX_BUFFER_SIZE 255		// USART ISR RX buffer size (255 max)
-#define TX_BUFFER_SIZE 255		// USART ISR TX buffer size (255 max)
+#define RX_BUFFER_SIZE 64		// USART ISR RX buffer size (255 max)
+#define TX_BUFFER_SIZE 64		// USART ISR TX buffer size (255 max)
+//#define RX_BUFFER_SIZE 255		// USART ISR RX buffer size (255 max)
+//#define TX_BUFFER_SIZE 255		// USART ISR TX buffer size (255 max)
 
 /* 
  * Serial Configuration Settings
@@ -165,7 +162,7 @@ void xio_queue_RX_char_usart(const uint8_t dev, const char c);
 void xio_queue_RX_string_usart(const uint8_t dev, const char *buf);
 
 // RS485 specific functions
-struct __file * xio_open_rs485();				// returns stdio fdev handle (note)
+FILE * xio_open_rs485();						// returns stdio fdev handle (note)
 int xio_setflags_rs485(const uint16_t control);	// set control flags w/validation
 int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
 int xio_getc_rs485(FILE *stream);				// stdio compatible get character
@@ -174,7 +171,7 @@ void xio_queue_RX_char_rs485(const char c);		// simulate char rcvd into RX buffe
 void xio_queue_RX_string_rs485(const char *buf);// simulate rec'ving a whole string
 
 // USB specific functions
-struct __file * xio_open_usb();					// returns stdio fdev handle
+FILE * xio_open_usb();							// returns stdio fdev handle
 int xio_setflags_usb(const uint16_t control);	// set control flags w/validation
 int xio_putc_usb(const char c, FILE *stream);	// stdio compatible put character
 int xio_getc_usb(FILE *stream);					// stdio compatible get character

@@ -131,7 +131,6 @@ enum tgMode {
 };
 
 // local helper functions
-static int _tg_read_next_line(void);
 static void _tg_prompt(void);
 static void _tg_set_mode(uint8_t mode);
 static void _tg_set_source(uint8_t d);
@@ -155,50 +154,30 @@ void tg_init()
 /* 
  * tg_controller() - top-level controller.
  *
- * Put tasks in order of highest to lowest priority (blocking hierarchy)
+ * Put tasks in order of highest to lowest priority.
+ * Tasks are ordered by increasing dependency (blocking hierarchy)
+ * Tasks that are dependent on the completion of lower-level tasks should be
+ * placed later in the list than the task(s) they are dependent upon.
  */
 
-#define	DISPATCH(func) switch (func) { case (TG_EAGAIN): return; \
-	case (TG_OK): { tg.state = TG_READY_UNPROMPTED; _tg_prompt(); return;}}
+#define	DISPATCH(func) switch (func) { \
+	case (TG_EAGAIN): { return; } \
+	case (TG_OK): { tg.state = TG_READY_UNPROMPTED; _tg_prompt(); return; } }
 
 void tg_controller()
 {
-	st_execute_move();
+	st_execute_move();					// always start with this
 	DISPATCH(mc_line_continue());
 	DISPATCH(mc_arc_continue());
-	DISPATCH(_tg_read_next_line());
-	_tg_prompt();
-/*
-	// medium priority tasks
-	switch (mc_line_continue()) {
-		case (TG_EAGAIN): return;
-		case (TG_OK): {
-			tg.state = TG_READY_UNPROMPTED; 
-			_tg_prompt();
-			return;
-		}
-	}
-	switch (mc_arc_continue()) {
-		case (TG_EAGAIN): return;
-		case (TG_OK): {
-			tg.state = TG_READY_UNPROMPTED; 
-			_tg_prompt();
-			return;
-		}
-	}
-	// low priority tasks
-	if ((tg.status = _tg_read_next_line()) == TG_EAGAIN) {	// input line
-		return;
-	}
-	_tg_prompt();		// Send a prompt - but only if controller is ready for input
-*/
+	DISPATCH(tg_read_next_line());
+	_tg_prompt();						// always end with this
 }
 
 /* 
- * _tg_read_next_line() - Perform a non-blocking line read from active input device
+ * tg_read_next_line() - Perform a non-blocking line read from active input device
  */
 
-static int _tg_read_next_line()
+int tg_read_next_line()
 {
 	// read input line or return if not a completed line
 	if ((tg.status = xio_readln(tg.src, tg.buf, sizeof(tg.buf))) == TG_OK) {
