@@ -22,6 +22,7 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include <avr/sleep.h>					// needed for blocking character reads
+#include <util/delay.h>
 
 #include "xio.h"
 #include "signals.h"					// application specific signal handlers
@@ -84,6 +85,7 @@ ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC1 data register empty
 
 ISR(RS485_TXC_ISR_vect)		// ISR(USARTC1_TXC_vect) // USARTC1 transmission complete
 {
+//	_delay_us(10);
 	RSu.port->OUTCLR = (RS485_DE_bm | RS485_RE_bm);	// disable DE (TX), enable RE (RX)
 }
 
