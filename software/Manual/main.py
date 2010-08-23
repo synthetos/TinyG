@@ -9,7 +9,8 @@ import time
 
 class FlexGridSizer(wx.Frame):
     def __init__(self, parent, id, title):
-	wx.Frame.__init__(self, parent, id, title, size=(600,300))
+	self.Frame = wx.Frame.__init__(self, parent, id, title, size=(600,300))
+	
 
 	#Serial Port Speeds:
 	self.SPORT_SPEEDS = ["115200", "57600", "38400","19200"]
@@ -31,11 +32,14 @@ class FlexGridSizer(wx.Frame):
 
 	#Text Ctrl Boxes
 	self.DebugMsg = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE | wx.ALL)
-	self.CmdInput = wx.TextCtrl(self.panel, wx.ALL)
-	self.CmdInput.Value = "g0 x100 y100 z100"
-	self.GcodeTxt = wx.TextCtrl(self.panel)
-
-
+	
+	self.CmdInput = wx.TextCtrl(self.panel, id=30, style = wx.ALL | wx.TE_MULTILINE | wx.TE_PROCESS_ENTER )
+	self.CmdInput.Value = "(Example) \ng0 x100 y100 z100"
+	self.CmdInput.SetToolTip(wx.ToolTip("Type a Gcode command and hit enter or click execute"))
+	self.CmdInput.SetEditable(True)
+	
+	self.GcodeTxt = wx.TextCtrl(self.panel) #TextCtrl Box that displays the Loaded Gcode File
+	
 	#Sizers
 	hbox = wx.BoxSizer(wx.HORIZONTAL) #Create a master hbox then add everything into it
 	gbs = wx.GridBagSizer(5, 5)
@@ -109,7 +113,7 @@ class FlexGridSizer(wx.Frame):
 	gbs.Add(self.DebugMsg,   pos=(4,0),   span=(1,10),  flag=wx.ALL | wx.EXPAND)
 	gbs.Add(self.CmdInput,   pos=(1,1),   span=(1,5),   flag=wx.ALL | wx.EXPAND)
 	gbs.Add(self.Cmdtext,    pos=(1,0),   span=(1,1),   flag=wx.ALL | wx.EXPAND)
-
+	
 	#gbs.Add(RefBtn, pos=(1,9), span=(1,1), flag=wx.ALL)
 	#gbs.Add(Dbtn, pos=(3,2), span=(1,1), flag=wx.ALL)
 	#gbs.Add(Ubtn, pos=(1,2), span=(1,1), flag=wx.ALL)        
@@ -122,6 +126,9 @@ class FlexGridSizer(wx.Frame):
 	self.panel.SetSizer(hbox)
 
 	#Bind Events
+	#Text Ctrl Events
+	#wx.EVT_COMMAND_ENTER(30, self.OnExecute)
+	wx.EVT_TEXT_ENTER(self, 30, self.OnExecute)
 	#Menu Events
 	wx.EVT_MENU(self, wx.ID_EXIT, self.OnQuit)
 
@@ -186,9 +193,9 @@ class FlexGridSizer(wx.Frame):
 	if CMD == "":
 	    self.PrintDebug("[!!]ERROR: Invalid Gcode Command")
 	else:
-	    self.PrintDebug("[*]Sending: %s" % CMD)
 	    try:
 		self.connection.write(CMD+"\n")
+		self.PrintDebug("[*]Sending: %s" % CMD)
 		fullResponse = ""
 		while(1):
 		    res = self.connection.read()
@@ -196,6 +203,7 @@ class FlexGridSizer(wx.Frame):
 			break
 		    else:
 			fullResponse = fullResponse+res
+		self.CmdInput.Value = ""
 	    except:
 		self.PrintDebug("[!!]ERROR: Serial Port Not Connected")
 		return
@@ -289,5 +297,5 @@ class WriteEvent(wx.PyCommandEvent):
 
 
 app = wx.App()
-FlexGridSizer(None, -1, 'TinyG Manual Controller')
+FlexGridSizer(None, -1, 'TinyG Controller')
 app.MainLoop()
