@@ -2,10 +2,14 @@
 
 import wx
 import ser.serial_init as serinit
+import ser.loader
+
+
+
 
 class FlexGridSizer(wx.Frame):
     def __init__(self, parent, id, title):
-        wx.Frame.__init__(self, parent, id, title, size=(600,400))
+        wx.Frame.__init__(self, parent, id, title, size=(600,300))
         
         #Serial Port Speeds:
         self.SPORT_SPEEDS = ["115200", "57600", "38400","19200"]
@@ -26,8 +30,10 @@ class FlexGridSizer(wx.Frame):
         self.panel = wx.Panel(self, -1)
        
         #Text Ctrl Boxes
-        self.DebugMsg = wx.TextCtrl(self.panel, 205, style=wx.TE_MULTILINE | wx.ALL | wx.TE_PROCESS_ENTER)
+        self.DebugMsg = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE | wx.ALL)
         self.CmdInput = wx.TextCtrl(self.panel, wx.ALL)
+        self.CmdInput.Value = "g0 x100 y100 z100"
+        self.GcodeTxt = wx.TextCtrl(self.panel)
         
         
         #Sizers
@@ -44,9 +50,14 @@ class FlexGridSizer(wx.Frame):
         #Ubtn = wx.Button(self.panel, 1002, "U", (10,10), size=(30,20))
         #Lbtn = wx.Button(self.panel, 1003, "L", (10,10), size=(30,20))
         #Rbtn = wx.Button(self.panel, 1004, "R", (10,10), size=(30,20))
-        RefBtn = wx.Button(self.panel, 19, "Refresh", size=(75,25))
-        ConBtn = wx.Button(self.panel, 20, "Connect", size=(75,25))
-        ExeBtn = wx.Button(self.panel, 21, "Execute", size=(75,25))
+        LoadBtn = wx.Button(self.panel,   17,  "Load Gcode")
+        RunBtn  = wx.Button(self.panel,   18,   "Run Gcode")
+        RefBtn  = wx.Button(self.panel,   19,   "Refresh",   size=(75,25))
+        ConBtn  = wx.Button(self.panel,   20,   "Connect",   size=(75,25))
+        ExeBtn  = wx.Button(self.panel,   21,   "Execute",   size=(75,25))
+        ClrBrn  = wx.Button(self.panel,   22,   "Clear",     size=(75,25))
+        StopBtn = wx.Button(self.panel,   23,   "Stop",      size=(75,25))
+        
         
      
         self.FindInitPorts() #Scan for ports on program start
@@ -54,24 +65,51 @@ class FlexGridSizer(wx.Frame):
         #Static Boxes Connect | Refresh Button
         #self.staticBox1 = wx.StaticBox(self.panel, label="Serial")
         self.Box1 = wx.BoxSizer(wx.VERTICAL)
+        self.Box2 = wx.BoxSizer(wx.VERTICAL)
+        
+        self.Box2.Add(ClrBrn)
+        self.Box2.Add(ExeBtn)
      
         
         #self.Box1 = wx.StaticBoxSizer(self.staticBox1, wx.VERTICAL)
         self.Box1.Add(ConBtn)
         self.Box1.Add(RefBtn)
+        self.Box1.Add(StopBtn)
+        
+        #Hbox2 Create
+        hbox2 = wx.BoxSizer(wx.HORIZONTAL) #Box for the run and load gcode buttons
+        
+      
+        #Add the Text Input Boxes to Flex Grid
+        #gbs.Add(self.CmdInput,  pos=(1, 3),span=(1,3), flag=wx.ALL | wx.EXPAND)  #Execute  Button follows this one
+        
+        #Static Text
+        self.Gtext = wx.StaticText(self.panel,   -1, "Gcode File:")
+        self.Sertext = wx.StaticText(self.panel, -1, "Serial Port:")
+        self.Cmdtext = wx.StaticText(self.panel, -1, "Command:")
+        
+        #Add buttons run / load to hbox2
+        hbox2.Add(LoadBtn)
+        hbox2.Add(RunBtn)
+        
         
         #Add Combo Boxes to Flex Grid
-        gbs.Add(self.cmbSports, pos=(0,3), span=(1,3), flag=wx.ALL | wx.EXPAND)
-        gbs.Add(self.cmbSpeeds, pos=(0,7), span=(1,2), flag=wx.ALL | wx.EXPAND)
-
-        #Add the Text Input Boxes to Flex Grid
-        gbs.Add(self.DebugMsg,  pos=(7, 1),span=(6,9), flag=wx.ALL | wx.EXPAND)
-        gbs.Add(self.CmdInput,  pos=(1, 3),span=(1,3), flag=wx.ALL | wx.EXPAND)  #Execute  Button follows this one
-        
-        
+        gbs.Add(self.cmbSports,  pos=(0,1),   span=(1,5),   flag=wx.ALL | wx.EXPAND)
+        gbs.Add(self.cmbSpeeds,  pos=(0,7),   span=(1,2),   flag=wx.ALL | wx.EXPAND)
         #Add Buttons to Flex Grid
-        gbs.Add(self.Box1, pos=(0,9), span=(2,1), flag=wx.ALL)
-        gbs.Add(ExeBtn,    pos=(1,7), span=(1,1), flag=wx.ALL)
+        gbs.Add(self.Box1,       pos=(0,9),   span=(2,1),   flag=wx.ALL)
+        #gbs.Add(ExeBtn,          pos=(1,7),   span=(1,1),   flag=wx.ALL)
+        #gbs.Add(ClrBrn,          pos=(1,8),   span=(1,1),   flag=wx.ALL)
+        gbs.Add(self.Box2,       pos=(1,7),   span=(1,2),   flag=wx.ALL)
+        gbs.Add(RunBtn,          pos=(2,9),   span=(1,1),   flag=wx.ALL)
+        gbs.Add(LoadBtn,         pos=(3,9),   span=(1,1),   flag=wx.ALL)
+        gbs.Add(self.Sertext,    pos=(0,0),   span=(1,1),   flag=wx.ALL)
+        gbs.Add(self.Gtext,      pos=(2,0),   span=(1,1),   flag=wx.ALL)
+        gbs.Add(self.GcodeTxt,   pos=(2,1),   span=(1,8),   flag=wx.ALL | wx.EXPAND) 
+        gbs.Add(self.DebugMsg,   pos=(4,0),   span=(1,10),  flag=wx.ALL | wx.EXPAND)
+        gbs.Add(self.CmdInput,   pos=(1,1),   span=(1,5),   flag=wx.ALL | wx.EXPAND)
+        gbs.Add(self.Cmdtext,    pos=(1,0),   span=(1,1),   flag=wx.ALL | wx.EXPAND)
+
         #gbs.Add(RefBtn, pos=(1,9), span=(1,1), flag=wx.ALL)
         #gbs.Add(Dbtn, pos=(3,2), span=(1,1), flag=wx.ALL)
         #gbs.Add(Ubtn, pos=(1,2), span=(1,1), flag=wx.ALL)        
@@ -86,16 +124,44 @@ class FlexGridSizer(wx.Frame):
         #Bind Events
         #Menu Events
         wx.EVT_MENU(self, wx.ID_EXIT, self.OnQuit)
-        #Button Events
-        wx.EVT_BUTTON(self, 20, self.OnConnect)
-        wx.EVT_BUTTON(self, 19, self.OnRefresh)
-        wx.EVT_BUTTON(self, 21, self.OnExecute)
         
-        #Key Events
+        #Button Events
+        wx.EVT_BUTTON(self, 17, self.OnLoad)
+        wx.EVT_BUTTON(self, 18, self.OnRun)
+        wx.EVT_BUTTON(self, 19, self.OnRefresh)
+        wx.EVT_BUTTON(self, 20, self.OnConnect)
+        wx.EVT_BUTTON(self, 21, self.OnExecute)
+        wx.EVT_BUTTON(self, 22, self.OnClear)
         
         #Show the Frame Code
         self.Centre()
         self.Show(True)
+        
+    def OnLoad(self, event):
+        self.PrintDebug("Loading Gcode Files")
+        tmpFile = self.GcodeTxt.Value  #Stores the filename that was previously selectev in case of cancel being clicked on dialog
+        newFile = wx.FileSelector("Select the Gcode File", default_path="", default_filename="",default_extension="", wildcard="*.gcode", flags=0, parent=None,x=-1, y=-1)
+        if newFile == "":
+            pass
+        else:
+            self.GcodeTxt.Value = newFile
+            
+    def OnRun(self, event):
+        self.PrintDebug("Running Gcode Files")
+        if self.GcodeTxt.Value == "":  #Make sure that a file has been loaded
+            self.PrintDebug("[ERROR] Load a Gcode File First")
+            return
+        try:
+            if self.connection: #Check to make sure the serial connection to tinyg is open
+                f = open(self.GcodeTxt.Value, "r")
+                ser.loader.processFile(self.DebugMsg, self.connection, f)
+        except AttributeError:
+            self.PrintDebug("[ERROR] Open a Serial Connection to TinyG First")
+        
+    def OnClear(self, event):
+        """Clear the execute box."""
+        self.CmdInput.Value = ""
+        
         
     def OnExecute(self, event):
         """Execute the gcode command that is typed into the Cmd Input Box"""
