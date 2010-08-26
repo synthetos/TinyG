@@ -139,7 +139,7 @@ class FlexGridSizer(wx.Frame):
         wx.EVT_BUTTON(self, 23, self.OnStop)
         wx.EVT_BUTTON(self, 24, self.OnStopHARD)
         wx.EVT_IDLE(self, self.CheckSerial)    #Detects if tinyg was unplugged
-        wx.EVT_KEY_DOWN(self.NudgeTxt, self.OnKeyDown)
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
         
         #wx.EVT_CHAR(self, self.OnKeyDown)
         
@@ -151,27 +151,34 @@ class FlexGridSizer(wx.Frame):
         #print "HERE"
         keycode = event.GetKeyCode()
         nudgeAmount = self.NudgeTxt.Value
-        
-        if keycode == wx.WXK_RIGHT:
-            self.Y_STATE = self.Y_STATE + int(nudgeAmount)
-            self.MoveNudge("Y", self.Y_STATE)
-        
-        if keycode == wx.WXK_LEFT:
-            self.Y_STATE = self.Y_STATE - int(nudgeAmount)
-            self.MoveNudge("Y", self.Y_STATE)         
+        try:
+                
+            if keycode == wx.WXK_RIGHT:
+                self.Y_STATE = self.Y_STATE + int(nudgeAmount)
+                self.MoveNudge("Y", self.Y_STATE)
             
-        if keycode == wx.WXK_UP:
-            self.X_STATE = self.X_STATE + int(nudgeAmount)
-            self.MoveNudge("X", self.X_STATE)
+            if keycode == wx.WXK_LEFT:
+                self.Y_STATE = self.Y_STATE - int(nudgeAmount)
+                self.MoveNudge("Y", self.Y_STATE)         
+                
+            if keycode == wx.WXK_UP:
+                self.X_STATE = self.X_STATE + int(nudgeAmount)
+                self.MoveNudge("X", self.X_STATE)
+            
+            if keycode == wx.WXK_DOWN:
+                self.X_STATE = self.X_STATE - int(nudgeAmount)
+                self.MoveNudge("X", self.X_STATE)
+            
+            if keycode == wx.WXK_ESCAPE: #space for osx compat.
+                self.ClearNudge()
+                #self.MoveNudge("X", 0)
+                #self.MoveNudge("Y", 0)
+            else:
+                event.Skip()
+        except ValueError:
+            self.PrintDebug("[!!]Nudge Amount Needs to be an Integer")
+            return
         
-        if keycode == wx.WXK_DOWN:
-            self.X_STATE = self.X_STATE - int(nudgeAmount)
-            self.MoveNudge("X", self.X_STATE)
-        
-        if keycode == wx.WXK_DELETE or wx.WXK_SPACE: #space for osx compat.
-            self.ClearNudge()
-            #self.MoveNudge("X", 0)
-            #self.MoveNudge("Y", 0)
             
         
     def ClearNudge(self):
@@ -180,6 +187,12 @@ class FlexGridSizer(wx.Frame):
         self.SetZero()
     def MoveNudge(self, axis, amount):
         #try:
+        if int(amount):
+            pass
+        else:
+            self.PrintDebug("[!!]Nudge Amount Needs to be an Integer")
+            return
+        
         try:
             self.connection.write("g0 %s%s \n" % (axis, amount))
             self.PrintDebug("[CORD DETAIL:] X:%s Y:%s" % (self.X_STATE, self.Y_STATE))
@@ -193,7 +206,7 @@ class FlexGridSizer(wx.Frame):
             self.PrintDebug("[*]Sent: G92 X0 Y0 Z0")
             
         except AttributeError:
-            self.PrintDebug("[!!]Serial Port Not Connected.")
+            self.PrintDebug("[!!]Connect to TinyG First!")
             
  
     def OnLoad(self, event):
