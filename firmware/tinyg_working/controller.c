@@ -104,9 +104,10 @@
  * Canned gcode files for testing
  */
 
-#include "data_gcode_asst.h"			// assorted test code
-#include "data_gcode_zoetrope.h"		// zoetrope moves. makes really cool sounds
-#include "data_gcode_contraptor_circle.h"
+//#include "data_gcode_asst.h"			// assorted test code
+//#include "data_gcode_zoetrope.h"		// zoetrope moves. makes really cool sounds
+//#include "data_gcode_roadrunner.h"
+//#include "data_gcode_contraptor_circle.h"
 
 /*
  * Local Scope Functions and Data
@@ -147,8 +148,8 @@ void tg_init()
 	_tg_set_source(tg.default_src);			// set initial active source
 	_tg_set_mode(TG_CONTROL_MODE);			// set initial operating mode
 	tg.state = TG_READY_UNPROMPTED;
-
 	printf_P(PSTR("TinyG - Version %S\n"), (PSTR(TINYG_VERSION)));
+	_tg_prompt();
 }
 
 /* 
@@ -420,7 +421,8 @@ int _tg_test_file()
 //	xio_open_pgm(PGMFILE(&dwell_test2));
 
 //	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
-	xio_open_pgm(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
+//	xio_open_pgm(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
+//	xio_open_pgm(PGMFILE(&roadrunner));
 
 	// set source and mode
 	_tg_set_source(XIO_DEV_PGM);

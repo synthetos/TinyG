@@ -21,6 +21,14 @@
 #ifndef motion_control_h
 #define motion_control_h 
 
+enum mcType {			// types of moves that can be put in the move queue
+	MC_TYPE_LINE,
+	MC_TYPE_DWELL,
+	MC_TYPE_START,
+	MC_TYPE_STOP,
+	MC_TYPE_END
+};
+
 #include <string.h>						// needed for memset in clear_vector()
 #define clear_vector(a) memset(a,0,sizeof(a)) // used in motion_control.c & gcode.c
 
@@ -29,13 +37,12 @@
  */
 
 void mc_init(void);
-int mc_motion_pause(void);
-int mc_motion_resume(void);
+int mc_motion_start(void);
 int mc_motion_stop(void);
 int mc_motion_end(void);
 
 int mc_dwell(double seconds);
-int mc_go_home(void);						// Send the tool home
+int mc_home(void);						// Send the tool home
 
 int mc_set_position(double x, double y, double z);
 int mc_line_blocking(double x, double y, double z, 

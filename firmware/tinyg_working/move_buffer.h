@@ -46,7 +46,8 @@ struct mvMove {						// Linear moves are queued as stepper ISR parameters
  */
 
 void mv_init(void);
-uint8_t mv_queue_move_buffer(int32_t steps_x, int32_t steps_y, int32_t steps_z, uint32_t microseconds);
+uint8_t mv_queue_move_buffer(int32_t steps_x, int32_t steps_y, int32_t steps_z, 
+							 uint32_t microseconds, uint8_t move_type);
 struct mvMove *mv_dequeue_move_buffer(void);
 uint8_t mv_test_move_buffer_full(void);
 void mv_flush(void);				// Cancel all pending steps

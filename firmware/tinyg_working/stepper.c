@@ -79,14 +79,15 @@ void _st_print_exec_line(int32_t x, int32_t y, int32_t z, uint8_t active);
 void st_init()
 {
 	ax.active_axes = 0;								// clear all active bits
-	ax.exec_mutex = FALSE;
+	ax.mutex = FALSE;
+	ax.stopped = FALSE;
 
-	ax.a[X].port = &X_MOTOR_PORT;				// bind PORTs to structs
+	ax.a[X].port = &X_MOTOR_PORT;					// bind PORTs to structs
 	ax.a[Y].port = &Y_MOTOR_PORT;
 	ax.a[Z].port = &Z_MOTOR_PORT;
 	ax.a[A].port = &A_MOTOR_PORT;
 
-	ax.a[X].timer = &X_TIMER;					// bind TIMERs to structs
+	ax.a[X].timer = &X_TIMER;						// bind TIMERs to structs
 	ax.a[Y].timer = &Y_TIMER;
 	ax.a[Z].timer = &Z_TIMER;
 	ax.a[A].timer = &A_TIMER;
@@ -118,6 +119,9 @@ void st_init()
 
 ISR(X_TIMER_ISR_vect)
 {
+	if (ax.stopped) {
+		return;
+	}
 	if (--ax.a[X].postscale_counter != 0) {		// get out fast, if you need to
 		return;
 	}
@@ -139,6 +143,9 @@ ISR(X_TIMER_ISR_vect)
 
 ISR(Y_TIMER_ISR_vect)
 {
+	if (ax.stopped) {
+		return;
+	}
 	if (--ax.a[Y].postscale_counter != 0) {
 		return;
 	}
@@ -158,6 +165,9 @@ ISR(Y_TIMER_ISR_vect)
 
 ISR(Z_TIMER_ISR_vect)
 {
+	if (ax.stopped) {
+		return;
+	}
 	if (--ax.a[Z].postscale_counter != 0) {
 		return;
 	}
@@ -177,6 +187,9 @@ ISR(Z_TIMER_ISR_vect)
 
 ISR(A_TIMER_ISR_vect)
 {
+	if (ax.stopped) {
+		return;
+	}
 	if (--ax.a[A].postscale_counter != 0) {
 		return;
 	}
@@ -218,16 +231,16 @@ void st_execute_move()
 	uint8_t i;
 
 	// ******** don't re-order this code region - from here... ********
-	if (ax.exec_mutex) { 	// prevents ISR from clobbering non-ISR invocation
+	if (ax.mutex) { 			// prevents ISR from clobbering non-ISR invocation
 		return;
 	}
-	ax.exec_mutex = TRUE;
+	ax.mutex = TRUE;
 	if (ax.active_axes != 0) {	// exit if any axis is still busy (any bit set)
-		ax.exec_mutex = FALSE;	
+		ax.mutex = FALSE;	
 		return;
 	}
 	if ((ax.p = mv_dequeue_move_buffer()) == NULL) {// NULL is empty buffer condition
-		ax.exec_mutex = FALSE;
+		ax.mutex = FALSE;
 		return;
   	} 
 	//********...to here. See Mutex race condition header note. ********
@@ -279,7 +292,7 @@ void st_execute_move()
 //						ax.a[Y_AXIS].step_counter,
 //						ax.a[Z_AXIS].step_counter, ax.active_axes);
 #endif
-	ax.exec_mutex = FALSE;
+	ax.mutex = FALSE;
 }
 
 /* 
@@ -288,7 +301,7 @@ void st_execute_move()
 
 void _st_fake_move()
 {
-	ax.exec_mutex = FALSE;
+	ax.mutex = FALSE;
 	st_execute_move();		// recursively empty the move queue
 	return;
 }
@@ -303,9 +316,24 @@ void st_set_polarity(uint8_t axis, uint8_t polarity)
 }
 
 /* 
- * st_kill() - STOP. NOW. UNCONDITIONALLY
+ * st_start() - start steppers
+ * st_stop() - stop steppers
  */
 
+void st_start()
+{
+	ax.stopped = FALSE;
+}
+
+void st_stop()
+{
+	ax.stopped = TRUE;
+}
+
+/* 
+ * st_kill() - STOP. NOW. UNCONDITIONALLY
+ */
+/*
 void st_stop_steppers()
 {
 	cli();										// stop interrupts
@@ -316,18 +344,18 @@ void st_stop_steppers()
 	ax.active_axes = 0;							// clear all the active bits
 	sei();
 }
-
+*/
 /* 
  * st_terminate() - stop moves after the current move
  */
-
+/*
 void st_terminate()
 {
 	cli();
 	mv_flush();									// flush the move buffer
 	sei();
 }
-
+*/
 /* 
  * st_motor_test() - test motor subsystem 
  */

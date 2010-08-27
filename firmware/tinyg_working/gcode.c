@@ -19,14 +19,6 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 /* 
-  TinyG Notes:
-  Modified Grbl to support Xmega family processors (Alden Hart, 2010)
-  Added local gc_execute_line variables to round out ParserState (gc) struct, 
-  	and put the variable inits in gc_init (or gc_execute_line) as appropriate
-  Eliminated some variables and consolidated some code
-  Broke out arc computations into helper routines
-  Added gc_print_status to better support hand generated G code and experimentation
-
   Supported commands are:
  	G0				Rapid linear motion
 	G1				Linear motion at feed rate
@@ -57,7 +49,7 @@
 	G54 - G59.3		Select coordinate system (group 12)
 	G61, G61.1, G64 Set path control mode (group 13)
 	G81 - G89		Canned cycles
-	G92				Coordinate system offsets (simplified, see notes)
+	G92	- G92.3		Coordinate system offsets
 	G98, G99		Set canned cycle return level
 
 	M6				Tool change
@@ -528,7 +520,7 @@ uint8_t gc_execute_block(char *buf)
 		}
 
 		case NEXT_ACTION_GO_HOME: { 
-			gc.status = mc_go_home(); 
+			gc.status = mc_home(); 
 			break;
 		}
 
@@ -790,4 +782,5 @@ int _gc_compute_center_arc()
 //						gc.feed_rate, gc.inverse_feed_rate_mode);
 	return (gc.status);
 }
+
 

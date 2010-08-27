@@ -134,12 +134,12 @@
 
 int main(void) 
 {
-	// Order dependent inits are numbered (n):
-	cli();
+	cli();						// Order dependent inits (1-N):
 	xmega_init();				// (1) xmega setup
-	tg_init();					// (2) tinyg controller
 	xio_init();					// (3) xmega io subsystem
+	tg_init();					// (2) tinyg controller
 	cfg_init();					// (4) get config record from eeprom
+
 	st_init(); 					// stepper subsystem
 	ls_init();					// limit switches
 	mv_init();					// move buffers
@@ -173,6 +173,9 @@ int main(void)
 //	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
 //	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
 //	xio_queue_RX_string_usb("g0 x0 y0 z0\n");
+
+
+	xio_queue_RX_string_usb("G1 X7.626420 Y4.890310 Z-0.100000");
 
 #ifdef __RELAY_MODE
 	for(;;){
