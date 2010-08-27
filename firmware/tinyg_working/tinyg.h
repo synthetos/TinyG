@@ -15,7 +15,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
  * PURPOSE. See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with TinyG  
+ * You should have received a copy of the GNU General Public License along with TinyG 
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -30,13 +30,13 @@
 #endif
 
 // Operating Mode: (chose only one)
-//#define __NORMAL_MODE					// normal operation - receive from USB
-#define __RELAY_MODE					// receive from USB, relay to rs485
+#define __NORMAL_MODE					// normal operation - receive from USB
+//#define __RELAY_MODE					// receive from USB, relay to rs485
 //#define __SLAVE_MODE					// receive from rs485
 
 
 // System Constants
-#define TINYG_VERSION "build 208"
+#define TINYG_VERSION "build 209"
 #define EEPROM_DATA_VERSION 100	// Used to migrate old data during firmware upgrades
 
 #define MM_PER_ARC_SEGMENT 0.05

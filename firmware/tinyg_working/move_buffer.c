@@ -110,14 +110,11 @@ void mv_init()
  * Dwell handling
  *	Loading a dwell involves computing a period and step count that times out to 
  *	the desired dwell duration (to some accuracy). Setting the dwell accuracy 
- *	defines the period. The step count 
-
+ *	defines the period. 
  */
 
-uint8_t mv_queue_move_buffer(int32_t steps_x, 
-							 int32_t steps_y, 
-							 int32_t steps_z, 
-							 uint32_t microseconds)
+uint8_t mv_queue_move_buffer(int32_t steps_x, int32_t steps_y, int32_t steps_z, 
+							 uint32_t microseconds, uint8_t move_type)
 {
 	uint8_t next_buffer_head;
 	uint8_t i;

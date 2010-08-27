@@ -46,7 +46,8 @@ enum mcGeneratorState {
 };
 
 struct MotionControlState {			// robot position & vars used by lines and arcs
-	int8_t line_state;				// line generator state. See mc_line_generator()
+	uint8_t line_state;				// line generator state. See mc_line_continue()
+	uint8_t move_type;				// type of move. See mvType
 	int32_t position[3];    		// current position of the tool in absolute steps
 	int32_t target[3];				// target position of the tool in absolute steps
 	int32_t steps[3];				// target line in relative steps
@@ -91,24 +92,6 @@ void mc_init()
 }
 
 /* 
- * mc_motion_pause() - pause current motion
- */
-
-int mc_motion_pause()
-{
-	return (TG_OK);
-}
-
-/* 
- * mc_motion_resume() - resume current motion
- */
-
-int mc_motion_resume()
-{
-	return (TG_OK);
-}
-
-/* 
  * mc_motion_stop() - stop current motion immediately
  */
 
@@ -117,8 +100,17 @@ int mc_motion_stop()
 	mc.line_state = MC_STATE_OFF;	// turn off the generators
 	ma.arc_state = MC_STATE_OFF;
 	mv_flush();						// empty and reset the move queue
-	st_stop_steppers();				// stop the steppers
+	st_stop();						// stop the steppers
 	return (mc_motion_stop());
+}
+
+/* 
+ * mc_motion_start() - (re)start motion
+ */
+
+int mc_motion_start()
+{
+	return (TG_OK);
 }
 
 /* 
@@ -144,7 +136,6 @@ int mc_motion_end()
 {
 	return (TG_OK);
 }
-
 
 /* 
  * mc_set_position() - set current position (support for G92)
@@ -190,7 +181,8 @@ int mc_line_blocking(double x, double y, double z, double feed_rate, int invert_
 							   square(mc.steps[Z]/CFG(Z).steps_per_mm));
 		mc.microseconds = lround((mc.mm_of_travel/feed_rate)*1000000);
 	}
-    mv_queue_move_buffer(mc.steps[X], mc.steps[Y], mc.steps[Z], mc.microseconds); 
+	mc.move_type = MC_TYPE_LINE;
+    mv_queue_move_buffer(mc.steps[X], mc.steps[Y], mc.steps[Z], mc.microseconds, mc.move_type); 
 
 	memcpy(mc.position, mc.target, sizeof(mc.target)); 	// record new robot position
 	return (TG_OK);
@@ -227,6 +219,7 @@ int mc_line(double x, double y, double z, double feed_rate, int invert_feed_rate
 							   square(mc.steps[Z]/CFG(Z).steps_per_mm));
 		mc.microseconds = lround((mc.mm_of_travel/feed_rate)*1000000);
 	}
+	mc.move_type = MC_TYPE_LINE;
 	mc.line_state = MC_STATE_NEW;
 	memcpy(mc.position, mc.target, sizeof(mc.target)); 	// record new robot position
 	return (mc_line_continue());
@@ -237,19 +230,20 @@ int mc_line(double x, double y, double z, double feed_rate, int invert_feed_rate
  *
  *	This is a line generator that can be called multiple times until it can 
  *	successfully load the line into the move buffer.
+ *	The mc.move_type must be set before calling this routine
  */
 int mc_line_continue() 
 {
 	if (mc.line_state == MC_STATE_OFF) {
-		return (TG_NOOP);				// return NULL for non-started line
+		return (TG_NOOP);			  // return NULL for non-started line
 	}
 	mc.line_state = MC_STATE_RUNNING; // technically correct but not really needed
 	if (mv_test_move_buffer_full()) { // this is where you would block
 		return (TG_EAGAIN);
 	}
-	mv_queue_move_buffer(mc.steps[X], mc.steps[Y], mc.steps[Z], mc.microseconds); 
+	mv_queue_move_buffer(mc.steps[X], mc.steps[Y], mc.steps[Z], mc.microseconds, mc.move_type); 
 
-	mc.line_state = MC_STATE_OFF;		// line is done. turn the generator off.
+	mc.line_state = MC_STATE_OFF;	  // line is done. turn the generator off.
 	return (TG_OK);
 }
 
@@ -270,7 +264,8 @@ int mc_line_continue()
 int mc_arc_blocking(double theta, double angular_travel, double radius, double linear_travel, 
 	int axis_1, int axis_2, int axis_linear, double feed_rate, int invert_feed_rate)
 {
-	// load the arc struct
+	// load the move and arc structs
+	mc.move_type = MC_TYPE_LINE;
 	ma.theta = theta;
 	ma.radius = radius;
 	ma.angular_travel = angular_travel;
@@ -321,7 +316,8 @@ int mc_arc(double theta, double angular_travel, double radius,
 		   double linear_travel, int axis_1, int axis_2, int axis_linear, 
 		   double feed_rate, int invert_feed_rate)
 {
-	// load the arc struct
+	// load the move and arc structs
+	mc.move_type = MC_TYPE_LINE;
 	ma.theta = theta;
 	ma.radius = radius;
 	ma.angular_travel = angular_travel;
@@ -381,6 +377,7 @@ int mc_arc_continue()
 		ma.segment_counter=0;
 		ma.arc_state = MC_STATE_RUNNING;
 	}
+	mc.move_type = MC_TYPE_LINE;
 	while (ma.segment_counter <= ma.segments) {
 		if (mv_test_move_buffer_full()) {	// this is where you would block
 			return (TG_EAGAIN);
@@ -416,16 +413,17 @@ int mc_dwell(double seconds)
 	mc.steps[Z] = 0;
 	mc.mm_of_travel = 0;	// not actually used, but makes debug make more sense
 	mc.microseconds = trunc(seconds*1000000);
+	mc.move_type = MC_TYPE_DWELL;
 	mc.line_state = MC_STATE_NEW;
 	return (mc_line_continue());
 }
 
 
 /* 
- * mc_go_home()  (st_go_home is NOT IMPLEMENTED)
+ * mc_home()  (st_go_home is NOT IMPLEMENTED)
  */
 
-int mc_go_home()
+int mc_home()
 {
 //	st_go_home();
 	clear_vector(mc.position); // By definition this is location [0, 0, 0]

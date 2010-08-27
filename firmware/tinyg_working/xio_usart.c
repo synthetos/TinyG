@@ -172,9 +172,7 @@ int xio_putc_usart(const uint8_t dev, const char c, FILE *stream)
 			dx->tx_buf_tail = TX_BUFFER_SIZE-1;		// -1 avoid off-by-one err (OBOE)
 		}
 		if (dev == XIO_DEV_RS485) {					// ++++ HACK ++++
-//			_delay_us(100);
 			dx->port->OUTSET = (RS485_DE_bm | RS485_RE_bm);	// enable DE, disable RE
-//			en_toggle(2);							// ++++ DEBUG
 		}
 		dx->usart->DATA = dx->tx_buf[dx->tx_buf_tail];// write to TX DATA reg
 		d->flags &= ~XIO_FLAG_TX_MUTEX_bm;			// release mutual exclusion lock
@@ -379,7 +377,6 @@ int xio_getc_usart(const uint8_t dev, FILE *stream)
 	if (--(dx->rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
 		dx->rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
 	}
-//	en_toggle(1);								// ++++ DEBUG
 	d->c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);// get char from RX buf & mask MSB
 	// 	call action procedure from dispatch table in FLASH (see xio.h for typedef)
 	return (((fptr_int_void)(pgm_read_word(&getcFuncs[d->c])))());
