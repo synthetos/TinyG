@@ -106,8 +106,9 @@ struct Axis { 						// axis control struct - one per axis
 	struct TC0_struct *timer;		// timer/counter (type 0)
 };
 
-struct Axes {						// All axes grouped in 1 struct + some extra stuff
-	uint8_t exec_mutex;				// mutual exclusion flag for dequeuing moves
+struct Axes {						// All axes + some extra stuff
+	uint8_t mutex;					// mutual exclusion flag for dequeuing moves
+	uint8_t stopped;				// set TRUE if STOP (FALSE for running)
 	uint8_t active_axes;			// bits are set if axis is active. 0 = robot is idle
 	struct mvMove *p;				// pointer to dequeued move structure
 	struct Axis a[4];				// 4 axis structures, X, Y, Z, A
@@ -125,7 +126,9 @@ void st_init(void);					// Initialize and start stepper motor subsystem
 void st_motor_test(void);			// Test stepper motor subsystem
 void st_execute_move(void);			// Dequeue and start next linear move in the move buffer
 void st_set_polarity(uint8_t axis, uint8_t polarity);
-void st_stop_steppers(void);		// Kill current move
+void st_start(void);				// start steppers
+void st_stop(void);					// stop steppers
+//void st_stop_steppers(void);		// Kill current move
 void st_terminate(void);			// Terminate moves after the current move
 
 #endif

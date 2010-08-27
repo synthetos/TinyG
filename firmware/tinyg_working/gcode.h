@@ -68,3 +68,81 @@ enum gcSpindleDirection {
 };
 
 #endif
+
+
+/**** GCODE NOTES ****/
+
+/*---- Coordinate system notes ----
+
+  TinyG runs a reduced functionality coordinate system from full NIST.
+  Commands that affect the coordinate system are:
+
+  	G10				Coordinate system origin setting
+	G54 - G59.3		Select coordinate system (group 12)
+	G92	- G92.3		Coordinate system offsets
+	G43				Tool offset
+
+  There are 9 coordinate systems (P1 - P9), plus the machine coordinate system
+  which also defines the machine zero. Our challenge is that we don't know the 
+  machine zero unless we go through a lengthy homing cycle - which is not even 
+  necessarily supported on all machines. On power up the Gcode interpreter 
+  is set to zero (X,Y,Z), which makes the machine zero the current (random) 
+  position of the tool.
+
+  The solution (hack) is to define P1 as the only supported coordinate system
+  and simply ignore the machine coordinate system or make it the same as the 
+  P1 system. The steps to set up the machine would be:
+ 
+  Alternate 1 - using a homing cycle:
+	- The machine travels to maximum excursion in all axes then resets to a 
+	  machine coordinate zero position that is defined relative to the max 
+	  excursions. In practice this would be either in the middle of the X/Y 
+	  plane (4 quadrant solution) or in the "upper left", which is a the 
+	  traditional zero point for many machines.
+ 
+    - From this point the P1 coordinate system is set relative to the machine
+	  coordinate system - either identical to it, or some config-defined
+	  offset (like turning an upper-left zero into a 4 quadrant zero.
+ 
+  Alternate 2 - using a "touch off" dialog (similar to Linux CNC)
+	- The user must position the machine and enter zero. This defines the zero
+	  for the P1 coordinate system. If the machine has a machine coordinate 
+	  system 
+ 
+  and require an offset (G10) to a floating machine zero. LinuxCNC uses a 
+  "touch off" dialog to set zero
+
+
+*/
+/*---- Notes on Starting, Stopping and program state ----
+  
+  NIST RS274NGC_3 defines program run state semantics as so:
+
+ 	(Program) Start Program starts when if begins receiving blocks.
+  					Corresponds to pressing the "cycle start" button.
+					Program preserves state from previously run program, or
+					defaults to persisted state (defaults, currently) upon power-on
+
+ 	(Program) Stop {M0} Program stops running temporarily (also M1)
+
+ 	(Program) End {M2} Program ends without the ability to resume
+  					Also corresponds to trailing '%' sign in a g-code file
+
+ 	Reset 		  Resets machine parameters to defaults (NIST pg 38):
+					- zero is reset
+					- plane is set to xy
+					- distance mode is set to absolute mode
+					- feed rate mode is set to units per minute
+					- spindle stopped
+					- current motion mode set to G1
+					- (others may be added)
+
+
+  We define mappings as so:
+
+  	^c	End and Reset
+	^x	End and Reset
+	^s	Stop
+	^q	Start (resume)
+	^z	Set coordinate system P1 origin to current tool position
+*/
