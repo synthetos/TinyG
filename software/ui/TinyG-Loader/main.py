@@ -178,12 +178,11 @@ class FlexGridSizer(wx.Frame):
             self.PrintDebug("[!!]Nudge Amount Needs to be an Integer")
             return
         
-            
-        
     def ClearNudge(self):
         self.X_STATE  = 0
         self.Y_STATE = 0
         self.SetZero()
+        
     def MoveNudge(self, axis, amount):
         #try:
         if int(amount) or amount == 0:
@@ -191,7 +190,6 @@ class FlexGridSizer(wx.Frame):
         else:
             self.PrintDebug("[!!]Nudge Amount Needs to be an Integer")
             return
-        
         try:
             cmd = ("g0 %s%s \n" % (axis, amount))
             self.quickCommand(cmd)
@@ -220,7 +218,6 @@ class FlexGridSizer(wx.Frame):
             self.quickCommand(("G92 X0 Y0 Z0\n"))
             self.PrintDebug("[*]Zeroing Coordinate System. ")
             self.PrintDebug("[*]Sent: G92 X0 Y0 Z0")
-            
         except AttributeError:
             self.PrintDebug("[!!]Connect to TinyG First!")
             
@@ -317,7 +314,6 @@ class FlexGridSizer(wx.Frame):
             self.connection.close() #Try to close an existing connection.  Perhaps you connected to the wrong port first
         except:
             pass
-
         try:
             self.connection = serinit.connect(self.cmbSports.Value, self.cmbSpeeds.Value)
             self.connection.write("\n")
@@ -354,7 +350,6 @@ class FlexGridSizer(wx.Frame):
     def OnStop(self, event):
         """Stop Processing the Gcode File and kill the tinyG"""
         # Flag the worker thread to stop if running
-
         if self.worker:
             self.RunBtn.SetLabel("Run Gcode")  #Change the Run button label back from Running
             self.PrintDebug('"[!!]Abort Signal Sent,  Trying to Abort Now!"')
@@ -370,6 +365,7 @@ class FlexGridSizer(wx.Frame):
                 pass
         except:
             self.status_bar.SetStatusText("Disconnected")
+            
 """THREADING CODE SHOULD BE WORKING CORRECTLY"""
 EVT_RESULT_ID = wx.NewId()
 
