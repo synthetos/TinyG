@@ -138,7 +138,7 @@ class FlexGridSizer(wx.Frame):
         wx.EVT_BUTTON(self, 22, self.OnClear)
         wx.EVT_BUTTON(self, 23, self.OnStop)
         wx.EVT_BUTTON(self, 24, self.OnStopHARD)
-        wx.EVT_IDLE(self, self.CheckSerial)    #Detects if tinyg was unplugged
+        #wx.EVT_IDLE(self, self.CheckSerial)    #Detects if tinyg was unplugged
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
         
         #wx.EVT_CHAR(self, self.OnKeyDown)
@@ -152,7 +152,6 @@ class FlexGridSizer(wx.Frame):
         keycode = event.GetKeyCode()
         nudgeAmount = self.NudgeTxt.Value
         try:
-                
             if keycode == wx.WXK_RIGHT:
                 self.Y_STATE = self.Y_STATE + int(nudgeAmount)
                 self.MoveNudge("Y", self.Y_STATE)
@@ -187,21 +186,38 @@ class FlexGridSizer(wx.Frame):
         self.SetZero()
     def MoveNudge(self, axis, amount):
         #try:
-        if int(amount):
+        if int(amount) or amount == 0:
             pass
         else:
             self.PrintDebug("[!!]Nudge Amount Needs to be an Integer")
             return
         
         try:
-            self.connection.write("g0 %s%s \n" % (axis, amount))
+            cmd = ("g0 %s%s \n" % (axis, amount))
+            self.quickCommand(cmd)
             self.PrintDebug("[CORD DETAIL:] X:%s Y:%s" % (self.X_STATE, self.Y_STATE))
         except AttributeError:
             self.PrintDebug("[!!]Connect to TinyG First!")
+        except Exception, f:
+            self.PrintDebug("[!!] %s" % f)
+            
+    
+    def quickCommand(self, cmd):
+        """This is used to send manual commands with the arrow keys in order to have some sort of flow control implemented"""
+        try:
+            self.connection.write(cmd)
+            state = self.connection.read()
+            while (1):
+                if state == "*":
+                    break
+                else:
+                    state = self.connection.read()
+        except Exception as g:
+            self.PrintDebug("[!!]Exception: %s" % g)
     
     def SetZero(self):
         try:
-            self.connection.write("G92 X0 Y0 Z0\n")
+            self.quickCommand(("G92 X0 Y0 Z0\n"))
             self.PrintDebug("[*]Zeroing Coordinate System. ")
             self.PrintDebug("[*]Sent: G92 X0 Y0 Z0")
             
