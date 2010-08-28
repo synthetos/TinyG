@@ -26,14 +26,20 @@ def main(SPEED=115200):
 #        PORT = sys.argv[1]
 #        SPEED = sys.argv[2]
 #        FILE = sys.argv[3]
+
 #        PORT = '/dev/cu.usbserial-A700fhW6'      # board #8 (Alden)
         PORT = '/dev/tty.usbserial-A700fhW6'      # board #8 (Alden)
 #        PORT = '/dev/cu.usbserial-A700fhWe'      # board #1 (Alden)
         SPEED = 115200
+
 #        FILE = "gcode_files/circles.gcode"
-        FILE = "gcode_files/song.gcode"
+#        FILE = "gcode_files/song.gcode"
 #        FILE = "gcode_files/hacdc.gcode"
 #        FILE = "gcode_files/pcb.gcode"
+#        FILE = "../../gcode_samples/song.gcode"
+        FILE = "../../gcode_samples/roadrunner.gcode"
+#        FILE = "../../gcode_samples/GrimReaper.gcode"
+
         debug = 1
     except:
         print "[ERROR]"
