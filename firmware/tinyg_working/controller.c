@@ -148,6 +148,14 @@ void tg_init()
 	_tg_set_source(tg.default_src);			// set initial active source
 	_tg_set_mode(TG_CONTROL_MODE);			// set initial operating mode
 	tg.state = TG_READY_UNPROMPTED;
+}
+
+/*
+ * tg_alive() - announce that TinyG is alive
+ */
+
+void tg_alive() 
+{
 	printf_P(PSTR("TinyG - Version %S\n"), (PSTR(TINYG_VERSION)));
 	_tg_prompt();
 }
