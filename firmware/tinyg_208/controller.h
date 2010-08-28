@@ -37,6 +37,7 @@ struct tgController {					// main controller struct
  */
 
 void tg_init(void);
+void tg_alive(void);
 void tg_controller(void);
 int tg_parser(char * buf);
 int tg_read_next_line(void);
