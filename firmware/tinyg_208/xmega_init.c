@@ -34,7 +34,7 @@ void CCPWrite(volatile uint8_t * address, uint8_t value);
  * xmega_init()
  */
 
-void xmega_init(void) {
+void xmega_init() {
 	xmega_init_clocks();
 }
 

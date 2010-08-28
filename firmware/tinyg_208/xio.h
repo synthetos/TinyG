@@ -255,6 +255,7 @@ extern struct xioFILE fs[XIO_DEV_FILE_COUNT];	// ref FILE extended IO structs
  ******************************************************************************/
 
 void xio_init(void);							// xio system general init
+void xio_init_stdio(void);						// set std devices & do startup prompt
 void xio_init_rs485(void);						// device-specific inits
 void xio_init_usb(void);
 

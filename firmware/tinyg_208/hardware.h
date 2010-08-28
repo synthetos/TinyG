@@ -22,6 +22,8 @@
 #ifndef hardware_h
 #define hardware_h
 
+void hw_init(void);						// lowest level hardware init
+
 /* CPU clock */	
 
 #undef F_CPU							// set for delays
@@ -32,10 +34,7 @@
 //#define __CLOCK_EXTERNAL_8MHZ	TRUE	// uses PLL to provide 32 MHz system clock
 #define __CLOCK_EXTERNAL_16MHZ TRUE		// uses PLL to provide 32 MHz system clock
 
-//#define __RILEY TRUE					// set RILEY mode (comment out to undefine)
-
-
-/* Stepper Ports \- motor port bits are:
+/* Stepper Ports - motor port bits are:
  *	b7	(in) max limit switch  			// alt: (out) spindle direction on A axis
  *	b6	(in) min limit switch			// alt: (out) spindle enable on A axis
  *	b5	(out) output bit for encoder port

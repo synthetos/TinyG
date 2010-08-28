@@ -69,13 +69,22 @@ extern struct tgController tg;			// needed by init() for default source
  *	xio_init() - initialize all active XIO devices
  */
 
-void xio_init(void)
+void xio_init()
 {	
 	// call device inits
 	xio_init_rs485();
 	xio_init_usb();
 	xio_init_pgm();
+}
 
+/*
+ *	xio_init_stdio() - initialize stdio devices
+ *
+ *	Requires xio_init and tg_init to have been run previously
+ */
+
+void xio_init_stdio()
+{
 	// setup stdio bindings to default source device
 	xio_set_stdin(tg.default_src);
 	xio_set_stdout(tg.default_src);

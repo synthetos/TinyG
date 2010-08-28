@@ -115,6 +115,7 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
+#include "hardware.h"
 #include "xmega_init.h"
 #include "xmega_interrupts.h"
 #include "xio.h"
@@ -136,10 +137,12 @@ int main(void)
 {
 	// Order dependent inits are numbered (n):
 	cli();
-	xmega_init();				// (1) xmega setup
-	xio_init();					// (3) xmega io subsystem
-	tg_init();					// (2) tinyg controller
-	cfg_init();					// (4) get config record from eeprom
+	hw_init();					// (1) hardware setup
+	xio_init();					// (2) xmega io subsystem
+	cfg_init();					// (3) config record from eeprom (reqs xio)
+	tg_init();					// (4) tinyg controller (selects std devices)
+	xio_init_stdio();			// (5) set stdin, stdout, stderr
+
 	st_init(); 					// stepper subsystem
 	ls_init();					// limit switches
 	mv_init();					// move buffers
@@ -154,6 +157,9 @@ int main(void)
 	PMIC_EnableMediumLevel(); 	// enable RX interrupts
 	PMIC_EnableHighLevel();		// enable stepper timer interrupts
 	sei();						// enable global interrupts
+
+	tg_alive();					// (LAST) announce things are online
+
 
 // Debug help: Pre-load the USB RX (input) buffer with some test strings
 // Be mindful of the char limit on the RX_BUFFER_SIZE (circular buffer)
@@ -174,6 +180,12 @@ int main(void)
 //	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
 //	xio_queue_RX_string_usb("g0 x0 y0 z0\n");
 
+#ifdef __NORMAL_MODE
+	for(;;){
+		tg_controller();	// this node executes gcode blocks received via RS485
+	}
+#endif
+
 #ifdef __RELAY_MODE
 	for(;;){
 		tg_repeater();		// this node receives on USB and repeats to RS485
@@ -183,12 +195,6 @@ int main(void)
 #ifdef __SLAVE_MODE
 	for(;;){
 		tg_receiver();
-	}
-#endif
-
-#ifdef __NORMAL_MODE
-	for(;;){
-		tg_controller();	// this node executes gcode blocks received via RS485
 	}
 #endif
 
