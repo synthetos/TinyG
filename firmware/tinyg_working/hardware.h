@@ -22,6 +22,8 @@
 #ifndef hardware_h
 #define hardware_h
 
+void hw_init(void);						// master hardware init
+
 /* CPU clock */	
 
 #undef F_CPU							// set for delays
