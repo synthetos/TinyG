@@ -255,18 +255,6 @@ class FlexGridSizer(wx.Frame):
             delim = self.connection.read()
         return
 
-    def OnRun(self, event):
-        self.PrintDebug("Running Gcode Files")
-        if self.GcodeTxt.Value == "":  #Make sure that a file has been loaded
-            self.PrintDebug("[ERROR] Load a Gcode File First")
-            return
-        try:
-            if self.connection: #Check to make sure the serial connection to tinyg is open
-                f = open(self.GcodeTxt.Value, "r")
-                ser.loader.processFile(self.DebugMsg, self.connection, f)
-        except AttributeError:
-            self.PrintDebug("[ERROR] Open a Serial Connection to TinyG First")
-
     def OnClear(self, event):
         """Clear the execute box."""
         self.CmdInput.Value = ""
@@ -345,8 +333,14 @@ class FlexGridSizer(wx.Frame):
         if event.data is None:
             pass
         else:
+            msg = event.data[0]
+            currentLine = event.data[1]
+            totalLines = event.data[2]
             #event.data = str(event.data)
-            self.PrintDebug(event.data)
+            self.PrintDebug("%s of %s : %s" % (currentLine, totalLines, msg))
+            #self.RunBtn.SetLabel("%s: Running" % ((currentLine/totalLines)))
+                            
+            
 
     def OnStopHARD(self, event):
         try:
@@ -386,6 +380,16 @@ class ResultEvent(wx.PyEvent):
     """Simple event to carry arbitrary result data."""
     def __init__(self, data):
         """Init Result Event."""
+        try:
+            msg = data[0]
+            currentLine = data[1]
+            totalLines = data[2]
+        except TypeError:
+            pass
+        
+        except Exception, z:
+            print z
+            
         wx.PyEvent.__init__(self)
         self.SetEventType(EVT_RESULT_ID)
         self.data = data
@@ -400,6 +404,8 @@ class WorkerThread(Thread):
         self.connection = ser        #Give the worker object access to the serial port
         self.gcodeFile = gcodeFile   #Give the worker object access to the file
         self.start()                 #Starts the thread
+        
+        
 
     def abort(self):
         """abort worker thread."""
@@ -416,34 +422,29 @@ class WorkerThread(Thread):
         if self.connection:                        #check to see if the serial port is connected
             f = open(self.gcodeFile, 'r')          #Open the gcode file 
             fread =  f.readlines()                 #Read the whole gcode file
-            total = len(fread)                     #Get the total lines of gcode in the file
-            currentLine = 0
+            totalLines = len(fread)                     #Get the total lines of gcode in the file
+            currentLine = 1
             for line in fread:                     #Loop through gcode file
-                currentLine =+ 1
+                currentLine = currentLine + 1
                 line = line.strip()                #Strip \n at the beggining of the line
                 delim = self.processFile(line)     #Send one line of gcode to ProcessGcode get a readline() back
                 while delim != "*":                #Loop until we find the delim
                     try:
                         delim = self.connection.read() #Read a char again to find delim
                     except Exception, e:
-                        #wx.PostEvent(self._notify_window, ResultEvent(str(e)))
+                        wx.PostEvent(self._notify_window, ResultEvent(str(e)))
                         return
-                wx.PostEvent(self._notify_window, ResultEvent(line))
+                wx.PostEvent(self._notify_window, ResultEvent((line, currentLine, totalLines)))
 
                 if self._want_abort:
                     """Catch Aborts and break the loop!"""
                     wx.PostEvent(self._notify_window, ResultEvent("[!!]Aborted"))
                     return
-
+            
     def processFile(self, line):
         """Pass a line of the file object (aka line of gcode)"""
         self.connection.write(line+"\n")   #send a line of gcode
         return self.connection.read()      #check to see if we found our delimeter '*' 
-
-    def abort(self):
-        """abort worker thread."""
-        # Method for use by main thread to signal an abort
-        self._want_abort = 1
 
 
 
