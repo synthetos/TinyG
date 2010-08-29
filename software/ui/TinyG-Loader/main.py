@@ -11,7 +11,7 @@ from threading import *
 
 class FlexGridSizer(wx.Frame):
     def __init__(self, parent, id, title):
-        self.Frame = wx.Frame.__init__(self, parent, id, title, (-1,-1), size=(550,350))
+        self.Frame = wx.Frame.__init__(self, parent, id, title, (-1,-1), size=(800,650))
         #State Keepers for Nudging
         self.X_STATE  = 0
         self.Y_STATE = 0
@@ -35,13 +35,17 @@ class FlexGridSizer(wx.Frame):
         self.panel = wx.Panel(self, -1)
 
         #Text Ctrl Boxes
-        self.DebugMsg = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE | wx.ALL)
+        self.DebugMsg = wx.TextCtrl(self.panel,size=(300,300), style=wx.TE_MULTILINE |wx.EXPAND | wx.ALL)
         self.CmdInput = wx.TextCtrl(self.panel, id=30, style =wx.TE_PROCESS_ENTER )
-        self.CmdInput.Value = "g1 x100 y100 z100 f450"
+        self.CmdInput.Value = "g1 x50 y50 z50 f450"
         self.CmdInput.SetToolTip(wx.ToolTip("Type a Gcode command and hit enter to execute the command."))
         self.CmdInput.SetEditable(True)
         self.GcodeTxt = wx.TextCtrl(self.panel) #TextCtrl Box that displays the Loaded Gcode File
-        self.NudgeTxt = wx.TextCtrl(self.panel, size=(40,20), value=str(5))
+        self.NudgeTxt = wx.TextCtrl(self.panel, size=(40,20), value=str(1))
+        #self.NudgeFdTxt = wx.TextCtrl(self.panel, size=(40,20), value="50")
+        
+        #Sliders
+        self.feedSlider = wx.Slider(self.panel, -1, 325, 150, 500, (10, 10),(300, 50), wx.SL_HORIZONTAL  | wx.SL_LABELS)
 
         #Sizers
         hbox = wx.BoxSizer(wx.VERTICAL) #Create a master hbox then add everything into it
@@ -80,7 +84,7 @@ class FlexGridSizer(wx.Frame):
         self.Cmdtext = wx.StaticText(self.panel,   -1, "Gcode Command:")
         self.OutText = wx.StaticText(self.panel,   -1, "Ouput Text:")
         self.NudgeText = wx.StaticText(self.panel, -1, "Nudge Amount")
-        
+        #self.NudgeFeedText = wx.StaticText(self.panel, -1, "Nudge Feed Rate")
         
         #Add Items to hbox2
         hbox2.Add(HardBtn, border=5, flag=wx.ALL)
@@ -116,6 +120,10 @@ class FlexGridSizer(wx.Frame):
         gbs.Add(hbox2,           pos=(9,9),   span=(1,2),  flag=wx.ALL|wx.EXPAND)      #Row 9
         gbs.Add(self.NudgeText,  pos=(9,0),   span=(1,1))
         gbs.Add(self.NudgeTxt,   pos=(9,1),   span=(1,1))
+        
+        #gbs.Add(self.NudgeFeedText, pos=(10,0),  span=(1,1))
+        #gbs.Add(self.NudgeFdTxt, pos=(10,1), span=(1,1))
+        gbs.Add(self.feedSlider, pos=(10,3), span=(5,5))
 
 
         hbox.Add(gbs, -1, wx.ALL | wx.CENTER)  #Add the gbs to the main hbox
@@ -151,22 +159,23 @@ class FlexGridSizer(wx.Frame):
         #print "HERE"
         keycode = event.GetKeyCode()
         nudgeAmount = self.NudgeTxt.Value
+        feed = float(self.feedSlider.Value)
         try:
             if keycode == wx.WXK_RIGHT:
                 self.Y_STATE = self.Y_STATE + int(nudgeAmount)
-                self.MoveNudge("Y", self.Y_STATE)
+                self.MoveNudge("Y", self.Y_STATE, feed)
             
             if keycode == wx.WXK_LEFT:
                 self.Y_STATE = self.Y_STATE - int(nudgeAmount)
-                self.MoveNudge("Y", self.Y_STATE)         
+                self.MoveNudge("Y", self.Y_STATE, feed)         
                 
             if keycode == wx.WXK_UP:
                 self.X_STATE = self.X_STATE + int(nudgeAmount)
-                self.MoveNudge("X", self.X_STATE)
+                self.MoveNudge("X", self.X_STATE, feed)
             
             if keycode == wx.WXK_DOWN:
                 self.X_STATE = self.X_STATE - int(nudgeAmount)
-                self.MoveNudge("X", self.X_STATE)
+                self.MoveNudge("X", self.X_STATE, feed)
             
             if keycode == wx.WXK_ESCAPE: #space for osx compat.
                 self.ClearNudge()
@@ -183,7 +192,7 @@ class FlexGridSizer(wx.Frame):
         self.Y_STATE = 0
         self.SetZero()
         
-    def MoveNudge(self, axis, amount):
+    def MoveNudge(self, axis, amount, feed):
         #try:
         if int(amount) or amount == 0:
             pass
@@ -191,9 +200,9 @@ class FlexGridSizer(wx.Frame):
             self.PrintDebug("[!!]Nudge Amount Needs to be an Integer")
             return
         try:
-            cmd = ("g0 %s%s \n" % (axis, amount))
+            cmd = ("g0 %s%s F%s\n" % (axis, amount, feed))
             self.quickCommand(cmd)
-            self.PrintDebug("[CORD DETAIL:] X:%s Y:%s" % (self.X_STATE, self.Y_STATE))
+            self.PrintDebug("[*]CORD DETAIL: X:%s Y:%s" % (self.X_STATE, self.Y_STATE))
         except AttributeError:
             self.PrintDebug("[!!]Connect to TinyG First!")
         except Exception, f:
@@ -202,17 +211,13 @@ class FlexGridSizer(wx.Frame):
     
     def quickCommand(self, cmd):
         """This is used to send manual commands with the arrow keys in order to have some sort of flow control implemented"""
-        try:
-            self.connection.write(cmd)
-            state = self.connection.read()
-            while (1):
-                if state == "*":
-                    break
-                else:
-                    state = self.connection.read()
-        except Exception as g:
-            self.PrintDebug("[!!]Exception: %s" % g)
-    
+        
+        self.connection.write(cmd)
+        while (1):
+            delim = self.connection.read()
+            if delim == "*":
+                break
+                
     def SetZero(self):
         try:
             self.quickCommand(("G92 X0 Y0 Z0\n"))
@@ -275,13 +280,15 @@ class FlexGridSizer(wx.Frame):
 		we are waiting to standardize a feed back standard
 		with TinyG.  For now this will just echo what command was ran"""
                 self.connection.write(CMD+"\n")
-                self.PrintDebug("[*]Sending: %s" % CMD)		
-                #while(1):
-                #    res = self.connection.read()
-                #    if res == "\n":
-                #        break
-                #    else:
-                #        fullResponse = fullResponse+res
+                self.PrintDebug("[*]Sending: %s" % CMD)
+                response = ""
+                while (1):
+                    tmp = self.connection.read()
+                    if tmp == "*":
+                        break
+                msg = self.connection.readline()
+                self.PrintDebug("[TG OUT]--%s" % msg)
+                
                 self.CmdInput.Value = ""  #Clear the execute command after enter was pressed.
             except:
                 self.PrintDebug("[!!]ERROR: Serial Port Not Connected")
