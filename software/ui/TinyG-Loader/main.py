@@ -41,11 +41,11 @@ class FlexGridSizer(wx.Frame):
         self.CmdInput.SetToolTip(wx.ToolTip("Type a Gcode command and hit enter to execute the command."))
         self.CmdInput.SetEditable(True)
         self.GcodeTxt = wx.TextCtrl(self.panel) #TextCtrl Box that displays the Loaded Gcode File
-        self.NudgeTxt = wx.TextCtrl(self.panel, size=(40,20), value=str(1))
+        self.NudgeTxt = wx.TextCtrl(self.panel, size=(40,20), value=str(.1))
         #self.NudgeFdTxt = wx.TextCtrl(self.panel, size=(40,20), value="50")
         
         #Sliders
-        self.feedSlider = wx.Slider(self.panel, -1, 325, 150, 500, (10, 10),(300, 50), wx.SL_HORIZONTAL  | wx.SL_LABELS)
+        self.feedSlider = wx.Slider(self.panel, -1, 50, 50, 500, (10, 10),(300, 50), wx.SL_HORIZONTAL  | wx.SL_LABELS)
 
         #Sizers
         hbox = wx.BoxSizer(wx.VERTICAL) #Create a master hbox then add everything into it
@@ -164,19 +164,19 @@ class FlexGridSizer(wx.Frame):
         feed = float(self.feedSlider.Value)
         try:
             if keycode == wx.WXK_RIGHT:
-                self.Y_STATE = self.Y_STATE + int(nudgeAmount)
+                self.Y_STATE = self.Y_STATE + float(nudgeAmount)
                 self.MoveNudge("Y", self.Y_STATE, feed)
             
             if keycode == wx.WXK_LEFT:
-                self.Y_STATE = self.Y_STATE - int(nudgeAmount)
+                self.Y_STATE = self.Y_STATE - float(nudgeAmount)
                 self.MoveNudge("Y", self.Y_STATE, feed)         
                 
             if keycode == wx.WXK_UP:
-                self.X_STATE = self.X_STATE + int(nudgeAmount)
+                self.X_STATE = self.X_STATE + float(nudgeAmount)
                 self.MoveNudge("X", self.X_STATE, feed)
             
             if keycode == wx.WXK_DOWN:
-                self.X_STATE = self.X_STATE - int(nudgeAmount)
+                self.X_STATE = self.X_STATE - float(nudgeAmount)
                 self.MoveNudge("X", self.X_STATE, feed)
             
             if keycode == wx.WXK_ESCAPE: #space for osx compat.
@@ -186,7 +186,7 @@ class FlexGridSizer(wx.Frame):
             else:
                 event.Skip()
         except ValueError:
-            self.PrintDebug("[!!]Nudge Amount Needs to be an Integer")
+            self.PrintDebug("[!!]Nudge Amount Needs to be an float")
             return
         
     def ClearNudge(self):
@@ -196,10 +196,10 @@ class FlexGridSizer(wx.Frame):
         
     def MoveNudge(self, axis, amount, feed):
         #try:
-        if int(amount) or amount == 0:
+        if float(amount) or amount == 0:
             pass
         else:
-            self.PrintDebug("[!!]Nudge Amount Needs to be an Integer")
+            self.PrintDebug("[!!]Nudge Amount Needs to be an Float")
             return
         try:
             cmd = ("g0 %s%s F%s\n" % (axis, amount, feed))
@@ -416,7 +416,10 @@ class WorkerThread(Thread):
         if self.connection:                        #check to see if the serial port is connected
             f = open(self.gcodeFile, 'r')          #Open the gcode file 
             fread =  f.readlines()                 #Read the whole gcode file
+            total = len(fread)                     #Get the total lines of gcode in the file
+            currentLine = 0
             for line in fread:                     #Loop through gcode file
+                currentLine =+ 1
                 line = line.strip()                #Strip \n at the beggining of the line
                 delim = self.processFile(line)     #Send one line of gcode to ProcessGcode get a readline() back
                 while delim != "*":                #Loop until we find the delim
