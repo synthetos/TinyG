@@ -84,6 +84,7 @@ class FlexGridSizer(wx.Frame):
         self.Cmdtext = wx.StaticText(self.panel,   -1, "Gcode Command:")
         self.OutText = wx.StaticText(self.panel,   -1, "Ouput Text:")
         self.NudgeText = wx.StaticText(self.panel, -1, "Nudge Amount")
+        self.SliderText = wx.StaticText(self.panel,-1, "Manual Feed Rate")
         #self.NudgeFeedText = wx.StaticText(self.panel, -1, "Nudge Feed Rate")
         
         #Add Items to hbox2
@@ -123,6 +124,7 @@ class FlexGridSizer(wx.Frame):
         
         #gbs.Add(self.NudgeFeedText, pos=(10,0),  span=(1,1))
         #gbs.Add(self.NudgeFdTxt, pos=(10,1), span=(1,1))
+        gbs.Add(self.SliderText, pos=(9,4), span=(1,1))
         gbs.Add(self.feedSlider, pos=(10,3), span=(5,5))
 
 
