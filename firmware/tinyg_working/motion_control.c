@@ -20,6 +20,7 @@
  *  Modified to support Xmega family processors (Alden Hart, 2010)
  *  Introduced non-blocking line and arc generation behaviors to support multitasking
  *  Organized variabales into static structs
+ *	The blocking versions of mc_line and mc_arc have been removed as of build 209
  */
 
 #include "xmega_init.h"				// put before <util/delay.h>
@@ -80,6 +81,51 @@ struct MotionControlArc {			// vars used by arc generation & re-entrancy
 };
 struct MotionControlArc ma;
 
+/* canonical machining functions
+
+mc_init_canon()						// init canonical machineing functions
+mc_end_canon()
+
+mc_set_origin_offsets(x,y,z)		// G92 - set_position()
+mc_use_unit_lengths(UNITS)			// G20/G21
+mc_straight_traverse(x,y,z)			// G0
+mc_select_plane()					// G17/G18/G19 (steal from GC routine)
+mc_set_feed_rate(rate)				// F command. Use mc routine to mask units
+										and inverted feed rate modes (case 'F')
+mc_set_feed_reference()
+mc_set_motion_control_mode()
+mc_start_speed_feed_synch()
+mc_stop_speed_feed_synch()
+
+mc_arc_feed()
+mc_dwell(seconds)					// OK
+mc_straight_feed()
+mc_straight_probe()
+
+mc_orient_spindle(orientation, direction)
+mc_set_spindle_speed()
+mc_start_spindle_clockwise()
+mc_start_spindle_counterclockwise()
+mc_spindle_retract()
+mc_spindle_retract_traverse()
+mc_stop_spindle_turning
+
+mc_change_tool()
+mc_select_tool()
+mc_use_tool_length_offset()
+
+mc_clamp_axis()
+mc_unclamp_axis()
+
+mc_set_cutter_radius_compensation()
+mc_start_cutter_radius_compensation()
+mc_stop_cutter_radius_compensation()
+
+mc_optional_program_stop()
+mc_optional_end()
+mc_optional_stop()
+ */
+
 /* 
  * mc_init() 
  */
@@ -92,24 +138,21 @@ void mc_init()
 }
 
 /* 
- * mc_motion_stop() - stop current motion immediately
- */
-
-int mc_motion_stop()
-{
-	mc.line_state = MC_STATE_OFF;	// turn off the generators
-	ma.arc_state = MC_STATE_OFF;
-	mv_flush();						// empty and reset the move queue
-	st_stop();						// stop the steppers
-	return (mc_motion_stop());
-}
-
-/* 
  * mc_motion_start() - (re)start motion
  */
 
 int mc_motion_start()
 {
+	return (TG_OK);
+}
+
+/* 
+ * mc_motion_stop() - stop current motion immediately
+ */
+
+int mc_motion_stop()
+{
+	st_stop();						// stop the steppers
 	return (TG_OK);
 }
 
@@ -134,6 +177,10 @@ int mc_motion_start()
 
 int mc_motion_end()
 {
+	mc_motion_stop();				// first actually stop the motion
+	mc.line_state = MC_STATE_OFF;	// turn off the generators
+	ma.arc_state = MC_STATE_OFF;
+	mv_flush();						// empty and reset the move queue
 	return (TG_OK);
 }
 
@@ -149,47 +196,14 @@ int mc_set_position(double x, double y, double z)
 	return (TG_OK);
 }
 
-/* mc_line_blocking() - queue a line move; blocking version
- *
- *	Compute and post a line segment to the move buffer.
- *	Execute linear motion in absolute millimeter coordinates. 
- *	Feed rate given in millimeters/second unless invert_feed_rate is true. 
- *	Then the feed_rate means that the motion should be completed in 
- *	  1/feed_rate minutes
- */
-
-int mc_line_blocking(double x, double y, double z, double feed_rate, int invert_feed_rate)
-{
-	mc.target[X] = lround(x*CFG(X).steps_per_mm);
-	mc.target[Y] = lround(y*CFG(Y).steps_per_mm);
-	mc.target[Z] = lround(z*CFG(Z).steps_per_mm); 
-
-	mc.steps[X] = mc.target[X]-mc.position[X];
-	mc.steps[Y] = mc.target[Y]-mc.position[Y];
-	mc.steps[Z] = mc.target[Z]-mc.position[Z];
-
-	// skip zero length lines
-	if ((mc.steps[X] + mc.steps[Y] + mc.steps[Z]) == 0) {
-		return (TG_ZERO_LENGTH_LINE);
-	}
-
-	if (invert_feed_rate) {
-		mc.microseconds = lround(ONE_MINUTE_OF_MICROSECONDS/feed_rate);
-	} else {  // Ask Phythagoras to estimate how many mm next move is going to take
- 		mc.mm_of_travel = sqrt(square(mc.steps[X]/CFG(X).steps_per_mm) + 
-							   square(mc.steps[Y]/CFG(Y).steps_per_mm) + 
-							   square(mc.steps[Z]/CFG(Z).steps_per_mm));
-		mc.microseconds = lround((mc.mm_of_travel/feed_rate)*1000000);
-	}
-	mc.move_type = MC_TYPE_LINE;
-    mv_queue_move_buffer(mc.steps[X], mc.steps[Y], mc.steps[Z], mc.microseconds, mc.move_type); 
-
-	memcpy(mc.position, mc.target, sizeof(mc.target)); 	// record new robot position
-	return (TG_OK);
-}
-
 /* 
  * mc_line() - queue a line move; non-blocking version
+ *
+ * Compute and post a line segment to the move buffer.
+ * Execute linear motion in absolute millimeter coordinates. 
+ * Feed rate given in millimeters/second unless invert_feed_rate is true. 
+ * Then the feed_rate means that the motion should be completed in 
+ *	 1/feed_rate minutes
  *
  * Zero length lines are skipped at this level. 
  * Zero length lines that are actually dwells come in thru mc_dwell().
@@ -237,84 +251,57 @@ int mc_line_continue()
 	if (mc.line_state == MC_STATE_OFF) {
 		return (TG_NOOP);			  // return NULL for non-started line
 	}
-	mc.line_state = MC_STATE_RUNNING; // technically correct but not really needed
+//	mc.line_state = MC_STATE_RUNNING; // technically correct but not really needed
 	if (mv_test_move_buffer_full()) { // this is where you would block
 		return (TG_EAGAIN);
+	} else {
+		mv_queue_move_buffer(mc.steps[X], mc.steps[Y], mc.steps[Z], mc.microseconds, mc.move_type); 
+		mc.line_state = MC_STATE_OFF;	  // line is done. turn the generator off.
+		return (TG_OK);
 	}
-	mv_queue_move_buffer(mc.steps[X], mc.steps[Y], mc.steps[Z], mc.microseconds, mc.move_type); 
-
-	mc.line_state = MC_STATE_OFF;	  // line is done. turn the generator off.
-	return (TG_OK);
 }
 
-/* mc_arc_blocking() - execute an arc; blocking version
+/* 
+ * mc_dwell() - queue a dwell (non-blocking behavior)
  *
- *	Theta = start angle 
- *	Angular_travel = number of radians to go along the arc
- *		Positive angular_travel means clockwise, negative means counterclockwise. 
- *	Radius = the radius of the circle in millimeters. 
- *	Axis_1 and axis_2 selects the circle plane in tool space. 
- *	Stick the remaining axis in axis_l which will be the axis for linear travel 
- *		if you are tracing a helical motion.
+ * Dwells are performed by passing a dwell move to the stepper drivers.
+ * A dewll is described as a zero lenegth line with a non-zero execution time.
+ * Dwells look like any other line, except they get flagged as a dwell during queing.
+ * The stepper driver sees this and times the move but does not send any pulses.
+ * This routine uses the X axis as only the X axis knows how to deal with a dwell.
+ * Dwells are queued as linbes so the line continuation is used for non-blocking.
+ *
+ * NOTE: It's not necessary to set the target as this is set correctly in the Gcode. 
+ */
+
+int mc_dwell(double seconds) 
+{
+	mc.steps[X] = 0;
+	mc.steps[Y] = 0;
+	mc.steps[Z] = 0;
+	mc.mm_of_travel = 0;	// not actually used, but makes debug make more sense
+	mc.microseconds = trunc(seconds*1000000);
+	mc.move_type = MC_TYPE_DWELL;
+	mc.line_state = MC_STATE_NEW;
+	return (mc_line_continue());
+}
+
+/* 
+ * mc_arc() - execute an arc; non-blocking version
  *
  *	The arc is approximated by generating a huge number of tiny, linear segments. 
  *	The length of each segment is configured in config.h by setting MM_PER_ARC_SEGMENT.  
  */
 
-int mc_arc_blocking(double theta, double angular_travel, double radius, double linear_travel, 
-	int axis_1, int axis_2, int axis_linear, double feed_rate, int invert_feed_rate)
-{
-	// load the move and arc structs
-	mc.move_type = MC_TYPE_LINE;
-	ma.theta = theta;
-	ma.radius = radius;
-	ma.angular_travel = angular_travel;
-	ma.linear_travel = linear_travel;
-	ma.feed_rate = feed_rate;
-	ma.invert_feed_rate = invert_feed_rate;
-	ma.axis_1 = axis_1;
-	ma.axis_2 = axis_2;
-	ma.axis_linear = axis_linear;
-	ma.mm_of_travel = hypot(ma.angular_travel*ma.radius, labs(ma.linear_travel));
-	
-	if (ma.mm_of_travel < MM_PER_ARC_SEGMENT) { 	// too short to draw
-		return (TG_ARC_SPECIFICATION_ERROR);			
-	}
-	ma.segments = ceil(ma.mm_of_travel/cfg.mm_per_arc_segment);
-  
-  	/*  Multiply inverse feed_rate to compensate for the fact that this movement
-	 *	is approximated by a number of discrete segments. 
-	 *	The inverse feed_rate should be correct for the sum of all segments.
-	 */
-	if (ma.invert_feed_rate) { 
-		ma.feed_rate *= ma.segments; 
-	}
-	ma.theta_per_segment = ma.angular_travel/ma.segments;
-	ma.linear_per_segment = ma.linear_travel/ma.segments;
-	ma.center_x = (mc.position[ma.axis_1]/CFG(ma.axis_1).steps_per_mm)-sin(ma.theta)*ma.radius;
-	ma.center_y = (mc.position[ma.axis_2]/CFG(ma.axis_2).steps_per_mm)-cos(ma.theta)*ma.radius;
-
-  	// 	A vector to track the end point of each segment. Initialize the linear axis
-	ma.dtarget[ma.axis_linear] = mc.position[ma.axis_linear]/CFG(Z).steps_per_mm;
-	
-	//	Generate and queue the line segments along the arc
-	for (ma.segment_counter=0; ma.segment_counter<=ma.segments; ma.segment_counter++) {
-		ma.theta += ma.theta_per_segment;
-		ma.dtarget[ma.axis_1] = ma.center_x+sin(ma.theta)*ma.radius;
-		ma.dtarget[ma.axis_2] = ma.center_y+cos(ma.theta)*ma.radius;
-		ma.dtarget[ma.axis_linear] += ma.linear_per_segment;
-		mc_line(ma.dtarget[X], ma.dtarget[Y], ma.dtarget[Z], ma.feed_rate, ma.invert_feed_rate);
-  	}
-	return (TG_OK);
-}
-
-/* 
- * mc_arc() - execute an arc; non-blocking version
- */
-
-int mc_arc(double theta, double angular_travel, double radius, 
-		   double linear_travel, int axis_1, int axis_2, int axis_linear, 
-		   double feed_rate, int invert_feed_rate)
+int mc_arc(double theta, 			// starting angle
+		   double angular_travel, 	// radians to go along arc (+ CW, - CCW)
+		   double radius, 			// radius of the circle in millimeters.
+		   double linear_travel, 
+		   int axis_1, 				// select circle plane in tool space
+		   int axis_2,  			// select circle plane in tool space
+		   int axis_linear, 		// linear travel if tracing a helical motion
+		   double feed_rate, 		// feed rate
+		   int invert_feed_rate)	// feed rate mode
 {
 	// load the move and arc structs
 	mc.move_type = MC_TYPE_LINE;
@@ -391,31 +378,6 @@ int mc_arc_continue()
   	}
 	ma.arc_state = MC_STATE_OFF;		// arc is done. turn the generator off.
 	return (TG_OK);
-}
-
-/* 
- * mc_dwell() - queue a dwell (non-blocking behavior)
- *
- * Dwells are performed by passing a dwell move to the stepper drivers.
- * A dewll is described as a zero lenegth line with a non-zero execution time.
- * Dwells look like any other line, except they get flagged as a dwell during queing.
- * The stepper driver sees this and times the move but does not send any pulses.
- * This routine uses the X axis as only the X axis knows how to deal with a dwell.
- * Dwells are queued as linbes so the line continuation is used for non-blocking.
- *
- * NOTE: It's not necessary to set the target as this is set correctly in the Gcode. 
- */
-
-int mc_dwell(double seconds) 
-{
-	mc.steps[X] = 0;
-	mc.steps[Y] = 0;
-	mc.steps[Z] = 0;
-	mc.mm_of_travel = 0;	// not actually used, but makes debug make more sense
-	mc.microseconds = trunc(seconds*1000000);
-	mc.move_type = MC_TYPE_DWELL;
-	mc.line_state = MC_STATE_NEW;
-	return (mc_line_continue());
 }
 
 
