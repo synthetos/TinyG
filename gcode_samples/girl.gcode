@@ -1,4 +1,5 @@
 (SuperCam Ver 2.2a SPINDLE)
+N1 G20	( set inches mode - ash )
 N5 G40 G17
 N10 T1 M06
 N15 G90 G0 X0 Y0 Z0
