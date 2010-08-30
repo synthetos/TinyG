@@ -102,7 +102,7 @@
 #include "config.h"
 #include "controller.h"
 #include "motion_control.h"
-#include "spindle_control.h"
+#include "spindle.h"
 
 struct GCodeState {
 	// parser variables
@@ -117,7 +117,7 @@ struct GCodeState {
 	uint8_t motion_mode;			// G0, G1, G2, G3, G38.2, G80, G81, G82, G83, 
 									// ...G84, G85, G86, G87, G88, G89 (modal group 1)
 	uint8_t inverse_feed_rate_mode; // G93, G94 (feed rate group; modal group 5)
-	uint8_t inches_mode;         	// 0 = millimeter mode, 1 = inches mode {G20,G21}
+	uint8_t inches_mode;         	// 0 = millimeter mode, 1 = inches mode {G21,G20}
 	uint8_t absolute_mode;       	// 0 = relative motion, 1 = abs motion {G90,G91}
 	uint8_t radius_mode;			// TRUE = radius mode
 	uint8_t set_origin_mode;		// TRUE = in set origin mode {G92}
@@ -163,6 +163,7 @@ void gc_init() {
 	gc.feed_rate = cfg.default_feed_rate;	// Note: is divided by 60 in Grbl
 	gc.seek_rate = cfg.default_seek_rate;	// Note: is divided by 60 in Grbl
 
+	gc.inches_mode = TRUE;					// default for US
 	gc.absolute_mode = TRUE;
 	gc.inverse_feed_rate = -1; 				// negative inverse_feed_rate means 
 											//	  no inverse_feed_rate specified
@@ -303,6 +304,7 @@ float to_millimeters(double value)
 
 /* 
  * theta(double x, double y)
+ *
  *	Find the angle in radians of deviance from the positive y axis. 
  *	negative angles to the left of y-axis, positive to the right.
  */
@@ -337,7 +339,6 @@ int _gc_next_statement(char *letter, double *value_ptr,
 	if (buf[*i] == 0) {
 		return(FALSE); // No more statements
 	}
-  
 	*letter = buf[*i];
 	if(!isupper(*letter)) {
 		gc.status = TG_EXPECTED_COMMAND_LETTER;
@@ -432,8 +433,8 @@ uint8_t gc_execute_block(char *buf)
 
 			case 'M':
 				switch((int)gc.value) {
-					case 0: case 1: gc.program_flow = PROGRAM_FLOW_PAUSED; break;
-					case 2: case 30: case 60: gc.program_flow = PROGRAM_FLOW_COMPLETED; break;
+					case 0: case 1: gc.program_flow = PROGRAM_FLOW_STOP; break;
+					case 2: case 30: case 60: gc.program_flow = PROGRAM_FLOW_END; break;
 					case 3: gc.spindle_direction = 1; break;
 					case 4: gc.spindle_direction = -1; break;
 					case 5: gc.spindle_direction = 0; break;
@@ -508,9 +509,9 @@ uint8_t gc_execute_block(char *buf)
     
   // Update spindle state
 	if (gc.spindle_direction) {
-    	spindle_run(gc.spindle_direction, gc.spindle_speed);
+    	sp_spindle_run(gc.spindle_direction, gc.spindle_speed);
 	} else {
-		spindle_stop();
+		sp_spindle_stop();
 	}
   
   // Perform any physical actions

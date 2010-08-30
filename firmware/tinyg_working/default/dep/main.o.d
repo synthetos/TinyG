@@ -19,8 +19,8 @@ main.o: ../main.c c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h \
   ../xio_file.h ../xio_usart.h ../tinyg.h ../controller.h ../network.h \
   ../config.h ../stepper.h ../limit_switches.h ../move_buffer.h \
   ../motion_control.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/string.h \
-  ../spindle_control.h ../direct_drive.h ../encoder.h ../gcode.h
+  c:/winavr-20100110/lib/gcc/../../avr/include/string.h ../spindle.h \
+  ../direct_drive.h ../encoder.h ../gcode.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -86,7 +86,7 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/string.h:
 
-../spindle_control.h:
+../spindle.h:
 
 ../direct_drive.h:
 

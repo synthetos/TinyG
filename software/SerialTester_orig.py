@@ -1,7 +1,11 @@
 #!/usr/bin/env python
+import serial, sys, time
+from random import randint
+from time import sleep
 #TinyG Serial Testing Program
 #Synthetos.com
 #Alden Hart, Riley Porter
+
 
 """This program is to diagnose sending MANY gcode lines to the TinyG Board.  If the compiled version of TinyG was
 built with the RX_BUFF set to 18 you can send about 5 lines of gcode (provide the TestingRig with a count of 5.. IE: TestingRig(5, ser)  )
@@ -12,20 +16,15 @@ If you are to recompile TinyG to use a RX_BUFF as 255 then you can do more comma
 the delimeter or something going on in the control loop.  Not sure which.
 """
 
-import serial, sys, time
-from random import randint
-from time import sleep
-
-
 #Set your's Here
 #SERIAL_PORT = '/dev/cu.usbserial-A700eUQq'     # Board #_ (Riley)
 #SERIAL_PORT = '/dev/cu.usbserial-A700____'      # board #_ (Riley)
 #SERIAL_PORT = '/dev/cu.usbserial-A700____'      # board #_ (Riley)
 #SERIAL_PORT = '/dev/cu.usbserial-A700____'      # board #_ (Riley)
 
-SERIAL_PORT = '/dev/cu.usbserial-A700fhWe'      # board #1 (Alden)
+#SERIAL_PORT = '/dev/cu.usbserial-A700____'      # board #1 (Alden)
 #SERIAL_PORT = '/dev/cu.usbserial-A700____'      # board #3 (Alden)
-#SERIAL_PORT = '/dev/cu.usbserial-A700fhW6'      # board #8 (Alden)
+SERIAL_PORT = '/dev/cu.usbserial-A700fhW6'      # board #8 (Alden)
 
 try:
 	#Open the serial Port.  Set the serial port for your system in the SERIAL_PORT var above.
@@ -54,14 +53,13 @@ def TestingRig(count, ser):
 			DIR = 0
 
 		feed = 333  #Static set feed
-		print     "g1 x%s y%s z%s f%s" % (x,y,z, feed) #Print the gcode line to stdout that will be sent
+		print "g1 x%s, y%s, z%s f%s" % (x,y,z, feed)     #Print the gcode line to stdout that will be sent
 		ser.write("g1 x%s y%s z%s f%s\n" % (x,y,z,feed)) #Send the gcode line
 		current = current+1 #Increment loop counter
-#		time.sleep(.2) #This was a sanity testing delay.  By enabling this it seems to make it through the whole loop
+		#time.sleep(.2) #This was a sanity testing delay.  By enabling this it seems to make it through the whole loop
 		delim = ser.read()
 		while delim != "*":  #while * is not in the delimeter
 			delim = ser.read() #read a char from the serial port.. In theory if it * it should break the for loop
-#			print "%s" % (delim)
 	else:  #Will run when all "counts" have been sent thus exiting the program
 		print "Done"			
 		sys.exit()

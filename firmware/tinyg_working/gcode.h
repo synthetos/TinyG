@@ -31,7 +31,7 @@ uint8_t gc_execute_block(char *line);		// Execute one block of rs275/ngc/g-code
 void select_plane(uint8_t axis_0, uint8_t axis_1, uint8_t axis_2);
 
 /* 
- * various defines used by the gcode module 
+ * various defines used by the gcode interpreter 
  */
 
 enum gcNextAction {
@@ -57,9 +57,9 @@ enum gcPathControlMode {
 };
 
 enum gcProgramFlow {
-	PROGRAM_FLOW_RUNNING,					// must be zero
-	PROGRAM_FLOW_PAUSED,
-	PROGRAM_FLOW_COMPLETED
+	PROGRAM_FLOW_START,						// START must be zero
+	PROGRAM_FLOW_STOP,
+	PROGRAM_FLOW_END
 };
 
 enum gcSpindleDirection {

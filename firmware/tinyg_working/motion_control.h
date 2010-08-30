@@ -40,29 +40,19 @@ void mc_init(void);
 int mc_motion_start(void);
 int mc_motion_stop(void);
 int mc_motion_end(void);
-
 int mc_dwell(double seconds);
-int mc_home(void);						// Send the tool home
-
 int mc_set_position(double x, double y, double z);
-int mc_line_blocking(double x, double y, double z, 
-			double feed_rate, int invert_feed_rate);
 
 int mc_line(double x, double y, double z, 
 			double feed_rate, int invert_feed_rate);
-
 int mc_line_continue();
-
-int mc_arc_blocking(double theta, double angular_travel, 
-		   double radius, double linear_travel,
-		   int axis_1, int axis_2, int axis_linear, 
-		   double feed_rate, int invert_feed_rate);
 
 int mc_arc(double theta, double angular_travel, 
 		   double radius, double linear_travel, 
 		   int axis_1, int axis_2, int axis_linear, 
 		   double feed_rate, int invert_feed_rate);
-
 int mc_arc_continue();
+
+int mc_home(void);						// send tool home
 
 #endif

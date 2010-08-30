@@ -127,7 +127,7 @@
 #include "limit_switches.h"
 #include "move_buffer.h"
 #include "motion_control.h"
-#include "spindle_control.h"
+#include "spindle.h"
 #include "direct_drive.h"
 #include "encoder.h"
 #include "gcode.h"
@@ -147,7 +147,7 @@ int main(void)
 	ls_init();					// limit switches
 	mv_init();					// move buffers
 	mc_init();					// motion control subsystem
-	spindle_init();				// spindle controller
+	sp_init();					// spindle controller
 	en_init();					// encoders
 	gc_init();					// gcode-parser
 	dd_init();					// direct drive commands
