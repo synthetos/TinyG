@@ -1,22 +1,24 @@
 /*
  * gcode.c - rs274/ngc parser.
  * Part of Grbl
- * This code is inspired by the Arduino GCode Interpreter by Mike Ellery and the 
- * NIST RS274/NGC Interpreter by Kramer, Proctor and Messina. 
+ * This code is inspired by the Arduino GCode Interpreter by Mike Ellery and 
+ * the NIST RS274/NGC Interpreter by Kramer, Proctor and Messina. 
  *
  * Copyright (c) 2009 Simen Svale Skogsrud
  * Modified for TinyG project by Alden S Hart, Jr.
  *
- * Grbl is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation, 
- * either version 3 of the License, or (at your option) any later version.
+ * Grbl is free software: you can redistribute it and/or modify it under the 
+ * termsof the GNU General Public License as published by the Free Software 
+ * Foundation, either version 3 of the License, or (at your option) any later 
+ * version.
  *
- * Grbl is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
- * PURPOSE. See the GNU General Public License for more details.
+ * Grbl is distributed in the hope that it will be useful, but WITHOUT 
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
+ * for more details.
  *
- * You should have received a copy of the GNU General Public License along with Grbl.  
- * If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along 
+ * with Grbl. If not, see <http://www.gnu.org/licenses/>.
  */
 /* 
   Supported commands are:
@@ -27,7 +29,7 @@
 	G17, G18, G19	Select plane: XY plane {G17}, XZ plane {G18}, YZ plane {G19}
 	G20, G21		Length units: inches {G20}, millimeters {G21}
 	G53				Move in absolute coordinates
-	G80				Cancel modal motion
+	G80				Cancel motion mode
 	G90, G91		Set distance mode; absolute {G90}, incremental {G91}
 	G93, G94		Set feed rate mode: inverse time mode {93}, 
 										units per minute mode {G94}
@@ -113,35 +115,39 @@ struct GCodeState {
 
 	// model state
 	uint8_t next_action; 			// "G mode" - preserved across blocks
-	uint8_t program_flow;			// M0, M1 - pause / resume program flow
 	uint8_t motion_mode;			// G0, G1, G2, G3, G38.2, G80, G81, G82, G83, 
 									// ...G84, G85, G86, G87, G88, G89 (modal group 1)
 	uint8_t inverse_feed_rate_mode; // G93, G94 (feed rate group; modal group 5)
 	uint8_t inches_mode;         	// 0 = millimeter mode, 1 = inches mode {G21,G20}
 	uint8_t absolute_mode;       	// 0 = relative motion, 1 = abs motion {G90,G91}
-	uint8_t radius_mode;			// TRUE = radius mode
-	uint8_t set_origin_mode;		// TRUE = in set origin mode {G92}
-	uint8_t absolute_override; 		// TRUE=absolute motion for this block only{G53}
+	uint8_t program_flow;			// M0, M1 - pause / resume program flow
+
+	double feed_rate; 				// millimeters/second
+	double seek_rate;				// millimeters/second
+	double position[3];				// where the interpreter considers the tool
+									// ...to be at this point in the code
+	uint8_t tool;
+	int8_t spindle_direction;
+	int16_t spindle_speed;			// RPM/100
 
 	uint8_t plane_axis_0; 			// axes of the selected plane
 	uint8_t plane_axis_1; 
 	uint8_t plane_axis_2; 
 
+	// helper variables
+	uint8_t radius_mode;			// TRUE = radius mode
+	uint8_t set_origin_mode;		// TRUE = in set origin mode {G92}
+	uint8_t absolute_override; 		// TRUE=absolute motion for this block only{G53}
+
   	double dwell_time; 				// dwell time in seconds (was 'p' in older code)
 	double radius;					// radius value
-	double feed_rate; 				// millimeters/second
-	double seek_rate;				// millimeters/second
 	double unit_converted_value;
 	double inverse_feed_rate; 		// negative inverse_feed_rate means 
-									//    no inverse_feed_rate specified
-	double position[3];				// where the interpreter considers the tool
+									// ...no inverse_feed_rate specified
 	double target[3]; 				// where the move should go
 	double offset[3];  				// used by arc commands
-
-	uint8_t tool;
-	int8_t spindle_direction;
-	int16_t spindle_speed;			// RPM/100
 };
+
 static struct GCodeState gc;
 
 /* local helper functions */
@@ -163,12 +169,12 @@ void gc_init() {
 	gc.feed_rate = cfg.default_feed_rate;	// Note: is divided by 60 in Grbl
 	gc.seek_rate = cfg.default_seek_rate;	// Note: is divided by 60 in Grbl
 
-	gc.inches_mode = TRUE;					// default for US
+	gc.inches_mode = TRUE;					// default to inches
 	gc.absolute_mode = TRUE;
 	gc.inverse_feed_rate = -1; 				// negative inverse_feed_rate means 
-											//	  no inverse_feed_rate specified
+											//...no inverse_feed_rate specified
 	gc.radius_mode = FALSE;
-	gc.absolute_override = FALSE; 			// TRUE=absolute motion for this block only{G53}
+	gc.absolute_override = FALSE; 			// TRUE=abs motion this block only {G53}
 	gc.next_action = NEXT_ACTION_NONE; 		// no operation
 
 	select_plane(X, Y, Z);					// default planes, 0, 1 and 2
@@ -299,7 +305,7 @@ void select_plane(uint8_t axis_0, uint8_t axis_1, uint8_t axis_2)
 //inline float to_millimeters(double value) 	// inline won't compile at -O0
 float to_millimeters(double value) 
 {
-	return(gc.inches_mode ? (value * INCHES_PER_MM) : value);
+	return(gc.inches_mode ? (value * MM_PER_INCH) : value);
 }
 
 /* 

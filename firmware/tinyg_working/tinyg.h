@@ -37,17 +37,17 @@
 
 // System Constants
 #define TINYG_VERSION "build 209"
-#define EEPROM_DATA_VERSION 100	// Used to migrate old data during firmware upgrades
+#define EEPROM_DATA_VERSION 100	// Used to migrate data in firmware upgrades
 
 #define MM_PER_ARC_SEGMENT 0.05
 #define ONE_MINUTE_OF_MICROSECONDS 60000000.0	// from GRBL - Thanks Simen!
 #define TICKS_PER_MICROSECOND (F_CPU/1000000)	// from GRBL
-#define INCHES_PER_MM (1.0/25.4)				// from GRBL
-#define MINIMUM_TICKS_PER_STEP (0xC00)		// too small and the steppers freeze	
+#define MM_PER_INCH (25.4)						// from GRBL
+#define MINIMUM_TICKS_PER_STEP (0xC00)	// too small and the steppers freeze
 
 /* Define axes */
 
-enum tgAxisNum {				// define axis numbers and array indexes from 0 to 3
+enum tgAxisNum {		// define axis numbers and array indexes from 0 to 3
 		X,
 		Y,
 		Z,
