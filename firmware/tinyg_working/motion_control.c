@@ -4,23 +4,25 @@
  *
  * Copyright (c) 2009 Simen Svale Skogsrud
  *
- * Grbl is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation, 
- * either version 3 of the License, or (at your option) any later version.
+ * Grbl is free software: you can redistribute it and/or modify it under the 
+ * termsof the GNU General Public License as published by the Free Software 
+ * Foundation, either version 3 of the License, or (at your option) any later 
+ * version.
  *
- * Grbl is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
- * PURPOSE. See the GNU General Public License for more details.
+ * Grbl is distributed in the hope that it will be useful, but WITHOUT ANY 
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ * FOR A PARTICULAR PURPOSE. See GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with Grbl.  
- * If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along 
+ * with Grbl. If not, see <http://www.gnu.org/licenses/>.
  */
 /* --- TinyG Notes ----
  *
  *  Modified to support Xmega family processors (Alden Hart, 2010)
- *  Introduced non-blocking line and arc generation behaviors to support multitasking
+ *  Introduced non-blocking line and arc generation to support multitasking
  *  Organized variabales into static structs
- *	The blocking versions of mc_line and mc_arc have been removed as of build 209
+ *	Blocking versions of mc_line and mc_arc have been removed as of build 209
+ *	There's a long discussion of canonical machining funcs at end of the .h
  */
 
 #include "xmega_init.h"				// put before <util/delay.h>
@@ -46,21 +48,21 @@ enum mcGeneratorState {
 	MC_STATE_MAX
 };
 
-struct MotionControlState {			// robot position & vars used by lines and arcs
-	uint8_t line_state;				// line generator state. See mc_line_continue()
+struct MotionControlState {			// robot pos & vars used by lines and arcs
+	uint8_t line_state;				// line generator state. mc_line_continue()
 	uint8_t move_type;				// type of move. See mvType
-	int32_t position[3];    		// current position of the tool in absolute steps
-	int32_t target[3];				// target position of the tool in absolute steps
+	int32_t position[3];    		// current position of the tool in abs steps
+	int32_t target[3];				// target position of the tool in abs steps
 	int32_t steps[3];				// target line in relative steps
 	uint32_t microseconds;			// target move microseconds
 	double mm_of_travel;			// different than ma.mm_of_travel
 };
 static struct MotionControlState mc;
 
-struct MotionControlArc {			// vars used by arc generation & re-entrancy
-	int8_t arc_state;				// arc generator state. See mc_arc_generator()
+struct MotionControlArc {			// vars used by arc generation & continue
+	int8_t arc_state;				// arc generator state. mc_arc_continue()
 	int segments;					// number of segments in arc
-	int	segment_counter;			// number of segments queued so far by generator
+	int	segment_counter;			// number of segments queued so far
 	int invert_feed_rate;
 	int axis_1;
 	int axis_2;
@@ -80,51 +82,6 @@ struct MotionControlArc {			// vars used by arc generation & re-entrancy
 	double linear_travel;
 };
 struct MotionControlArc ma;
-
-/* canonical machining functions
-
-mc_init_canon()						// init canonical machineing functions
-mc_end_canon()
-
-mc_set_origin_offsets(x,y,z)		// G92 - set_position()
-mc_use_unit_lengths(UNITS)			// G20/G21
-mc_straight_traverse(x,y,z)			// G0
-mc_select_plane()					// G17/G18/G19 (steal from GC routine)
-mc_set_feed_rate(rate)				// F command. Use mc routine to mask units
-										and inverted feed rate modes (case 'F')
-mc_set_feed_reference()
-mc_set_motion_control_mode()
-mc_start_speed_feed_synch()
-mc_stop_speed_feed_synch()
-
-mc_arc_feed()
-mc_dwell(seconds)					// OK
-mc_straight_feed()
-mc_straight_probe()
-
-mc_orient_spindle(orientation, direction)
-mc_set_spindle_speed()
-mc_start_spindle_clockwise()
-mc_start_spindle_counterclockwise()
-mc_spindle_retract()
-mc_spindle_retract_traverse()
-mc_stop_spindle_turning
-
-mc_change_tool()
-mc_select_tool()
-mc_use_tool_length_offset()
-
-mc_clamp_axis()
-mc_unclamp_axis()
-
-mc_set_cutter_radius_compensation()
-mc_start_cutter_radius_compensation()
-mc_stop_cutter_radius_compensation()
-
-mc_optional_program_stop()
-mc_optional_end()
-mc_optional_stop()
- */
 
 /* 
  * mc_init() 
@@ -159,7 +116,7 @@ int mc_motion_stop()
 /* 
  * mc_motion_end() - end current motion and program
  *
- *	Should do all the following things (those form NIST RS274NG_3 are marked RS274)
+ *	Should do all the following things (from NIST RS274NG_3 are marked RS274)
  * 	Those we don't care about are in [brackets]
  *
  *	- Stop all motion once current block is complete 
@@ -227,7 +184,7 @@ int mc_line(double x, double y, double z, double feed_rate, int invert_feed_rate
 
 	if (invert_feed_rate) {
 		mc.microseconds = lround(ONE_MINUTE_OF_MICROSECONDS/feed_rate);
-	} else {  // Ask Phythagoras to estimate how many mm next move is going to take
+	} else {  // Ask Phythagoras to estimate how many mm next move will take
  		mc.mm_of_travel = sqrt(square(mc.steps[X]/CFG(X).steps_per_mm) + 
 							   square(mc.steps[Y]/CFG(Y).steps_per_mm) + 
 							   square(mc.steps[Z]/CFG(Z).steps_per_mm));
@@ -235,7 +192,7 @@ int mc_line(double x, double y, double z, double feed_rate, int invert_feed_rate
 	}
 	mc.move_type = MC_TYPE_LINE;
 	mc.line_state = MC_STATE_NEW;
-	memcpy(mc.position, mc.target, sizeof(mc.target)); 	// record new robot position
+	memcpy(mc.position, mc.target, sizeof(mc.target)); 	// record new robot pos
 	return (mc_line_continue());
 }
 
@@ -251,12 +208,12 @@ int mc_line_continue()
 	if (mc.line_state == MC_STATE_OFF) {
 		return (TG_NOOP);			  // return NULL for non-started line
 	}
-//	mc.line_state = MC_STATE_RUNNING; // technically correct but not really needed
+//	mc.line_state = MC_STATE_RUNNING; // technically correct but not needed
 	if (mv_test_move_buffer_full()) { // this is where you would block
 		return (TG_EAGAIN);
 	} else {
 		mv_queue_move_buffer(mc.steps[X], mc.steps[Y], mc.steps[Z], mc.microseconds, mc.move_type); 
-		mc.line_state = MC_STATE_OFF;	  // line is done. turn the generator off.
+		mc.line_state = MC_STATE_OFF;	  // line is done. turn generator off
 		return (TG_OK);
 	}
 }
@@ -266,12 +223,13 @@ int mc_line_continue()
  *
  * Dwells are performed by passing a dwell move to the stepper drivers.
  * A dewll is described as a zero lenegth line with a non-zero execution time.
- * Dwells look like any other line, except they get flagged as a dwell during queing.
+ * Dwells look like any other line except they are flagged as dwell for queing.
  * The stepper driver sees this and times the move but does not send any pulses.
- * This routine uses the X axis as only the X axis knows how to deal with a dwell.
- * Dwells are queued as linbes so the line continuation is used for non-blocking.
+ * Uses the X axis as only the X axis knows how to deal with a dwell.
+ * Dwells are queued as lines so the line continuation is used for non-blocking.
  *
- * NOTE: It's not necessary to set the target as this is set correctly in the Gcode. 
+ * NOTE: 
+ *	It's not necessary to set the target as this is set correctly in the Gcode. 
  */
 
 int mc_dwell(double seconds) 
@@ -279,7 +237,7 @@ int mc_dwell(double seconds)
 	mc.steps[X] = 0;
 	mc.steps[Y] = 0;
 	mc.steps[Z] = 0;
-	mc.mm_of_travel = 0;	// not actually used, but makes debug make more sense
+	mc.mm_of_travel = 0;	// not actually used, but debug makes more sense
 	mc.microseconds = trunc(seconds*1000000);
 	mc.move_type = MC_TYPE_DWELL;
 	mc.line_state = MC_STATE_NEW;
@@ -290,7 +248,8 @@ int mc_dwell(double seconds)
  * mc_arc() - execute an arc; non-blocking version
  *
  *	The arc is approximated by generating a huge number of tiny, linear segments. 
- *	The length of each segment is configured in config.h by setting MM_PER_ARC_SEGMENT.  
+ *	The length of each segment is configured in config.h by setting 
+ *	MM_PER_ARC_SEGMENT.  
  */
 
 int mc_arc(double theta, 			// starting angle
@@ -333,9 +292,9 @@ int mc_arc(double theta, 			// starting angle
 	ma.center_x = (mc.position[ma.axis_1]/CFG(ma.axis_1).steps_per_mm)-sin(ma.theta)*ma.radius;
 	ma.center_y = (mc.position[ma.axis_2]/CFG(ma.axis_2).steps_per_mm)-cos(ma.theta)*ma.radius;
 
-  	// 	A vector to track the end point of each segment. Initialize the linear axis
+  	// 	A vector to track the end point of each segment. Initialize linear axis
 	ma.dtarget[ma.axis_linear] = mc.position[ma.axis_linear]/CFG(Z).steps_per_mm;
-	ma.arc_state = MC_STATE_NEW;	// new arc, NJ. (I'm here all week. Try the veal)
+	ma.arc_state = MC_STATE_NEW;	// new arc, NJ. (I'm here all week Try veal)
 	return (mc_arc_continue());
 }
 
@@ -347,7 +306,7 @@ int mc_arc(double theta, 			// starting angle
  * Operation: 
  *	This function is called initially by mc_arc_nonblock.
  * 	Function will either run to arc completion or the move buffer queue is full.
- * 	It can then be re-entered to generate and queue the next segment(s) of the arc.
+ * 	It can then be re-entered to generate and queue the next segment(s) of arc.
  * 	Calling this function when there is no arc in process has no effect (NOOP).
  *
  * Note on mv_test_move_buffer_full()
@@ -359,7 +318,7 @@ int mc_arc(double theta, 			// starting angle
 int mc_arc_continue() 
 {
 	if (ma.arc_state == MC_STATE_OFF) {
-		return (TG_NOOP);						// return NULL for non-started arc
+		return (TG_NOOP);					// return NULL for non-started arc
 	} else if (ma.arc_state == MC_STATE_NEW) {
 		ma.segment_counter=0;
 		ma.arc_state = MC_STATE_RUNNING;
@@ -376,7 +335,7 @@ int mc_arc_continue()
 		ma.dtarget[ma.axis_linear] += ma.linear_per_segment;
 		mc_line(ma.dtarget[X], ma.dtarget[Y], ma.dtarget[Z], ma.feed_rate, ma.invert_feed_rate);
   	}
-	ma.arc_state = MC_STATE_OFF;		// arc is done. turn the generator off.
+	ma.arc_state = MC_STATE_OFF;		// arc is done. turn the generator off
 	return (TG_OK);
 }
 
