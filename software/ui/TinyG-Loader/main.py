@@ -164,20 +164,20 @@ class FlexGridSizer(wx.Frame):
         feed = float(self.feedSlider.Value)
         try:
             if keycode == wx.WXK_RIGHT:
-                self.Y_STATE = self.Y_STATE + float(nudgeAmount)
-                self.MoveNudge("Y", self.Y_STATE, feed)
-            
-            if keycode == wx.WXK_LEFT:
-                self.Y_STATE = self.Y_STATE - float(nudgeAmount)
-                self.MoveNudge("Y", self.Y_STATE, feed)         
-                
-            if keycode == wx.WXK_UP:
                 self.X_STATE = self.X_STATE + float(nudgeAmount)
                 self.MoveNudge("X", self.X_STATE, feed)
             
-            if keycode == wx.WXK_DOWN:
+            if keycode == wx.WXK_LEFT:
                 self.X_STATE = self.X_STATE - float(nudgeAmount)
-                self.MoveNudge("X", self.X_STATE, feed)
+                self.MoveNudge("X", self.X_STATE, feed)         
+                
+            if keycode == wx.WXK_UP:
+                self.Y_STATE = self.Y_STATE + float(nudgeAmount)
+                self.MoveNudge("Y", self.Y_STATE, feed)
+            
+            if keycode == wx.WXK_DOWN:
+                self.Y_STATE = self.Y_STATE - float(nudgeAmount)
+                self.MoveNudge("Y", self.Y_STATE, feed)
             
             if keycode == wx.WXK_ESCAPE: #space for osx compat.
                 self.ClearNudge()
