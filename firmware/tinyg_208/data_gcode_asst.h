@@ -30,6 +30,14 @@ x2 y2\n\
 x0 y2\n\
 x0 y0";
 
+const char PROGMEM square_test_inch[] = "\
+g20 (MSGset to inches)\n\
+g1 f12 x0 y0\n\
+x1\n\
+y1\n\
+x0\n\
+y0";
+
 //g1 f333 x10 y0
 const char PROGMEM square_test10[] = "\
 g1 f333 x-10 y-5\n\

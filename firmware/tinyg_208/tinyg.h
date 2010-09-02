@@ -42,7 +42,7 @@
 #define MM_PER_ARC_SEGMENT 0.05
 #define ONE_MINUTE_OF_MICROSECONDS 60000000.0	// from GRBL - Thanks Simen!
 #define TICKS_PER_MICROSECOND (F_CPU/1000000)	// from GRBL
-#define INCHES_PER_MM (1.0/25.4)				// from GRBL
+#define MM_PER_INCH (25.4)						// from GRBL
 #define MINIMUM_TICKS_PER_STEP (0xC00)		// too small and the steppers freeze	
 
 /* Define axes */
