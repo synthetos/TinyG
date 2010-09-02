@@ -298,7 +298,7 @@ void select_plane(uint8_t axis_0, uint8_t axis_1, uint8_t axis_2)
 //inline float to_millimeters(double value) 	// inline won't compile at -O0
 float to_millimeters(double value) 
 {
-	return(gc.inches_mode ? (value * INCHES_PER_MM) : value);
+	return(gc.inches_mode ? (value * MM_PER_INCH) : value);
 }
 
 /* 
