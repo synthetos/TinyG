@@ -111,10 +111,10 @@ void st_init()
 }
 
 /*
- * ISRs - Motor timer interrupt service routines - service a tick from the axis timer
+ * ISRs - Motor timer interrupt routines - service ticks from the axis timers
  *
- *	Uses direct struct addresses and literal values for hardware devices because it's 
- *  faster than using the timer and port pointers in the axis structs
+ *	Uses direct struct addresses and literal values for hardware devices -
+ *	it's faster than using the timer and port pointers in the axis structs
  */
 
 ISR(X_TIMER_ISR_vect)
@@ -125,7 +125,7 @@ ISR(X_TIMER_ISR_vect)
 	if (--ax.a[X].postscale_counter != 0) {		// get out fast, if you need to
 		return;
 	}
-	if (!(ax.a[X].flags && DWELL_FLAG_bm)) {	// issue a pulse if not a dwell
+	if (ax.line_mode) {							// issue a pulse if not a dwell
 		X_MOTOR_PORT.OUTSET = STEP_BIT_bm;		// turn X step bit on
 	}
 	if (--ax.a[X].step_counter == 0) {			// end-of-move processing
@@ -231,15 +231,15 @@ void st_execute_move()
 	uint8_t i;
 
 	// ******** don't re-order this code region - from here... ********
-	if (ax.mutex) { 			// prevents ISR from clobbering non-ISR invocation
+	if (ax.mutex) { 		// prevents ISR from clobbering non-ISR invocation
 		return;
 	}
 	ax.mutex = TRUE;
-	if (ax.active_axes != 0) {	// exit if any axis is still busy (any bit set)
+	if (ax.active_axes != 0) { // exit if any axis is still busy (any bit set)
 		ax.mutex = FALSE;	
 		return;
 	}
-	if ((ax.p = mv_dequeue_move_buffer()) == NULL) {// NULL is empty buffer condition
+	if ((ax.p = mv_dequeue_move_buffer()) == NULL) {// NULL is empty buffer
 		ax.mutex = FALSE;
 		return;
   	} 
@@ -250,14 +250,27 @@ void st_execute_move()
 	return;
 #endif
 
+	if (ax.p->move_type == MOVE_TYPE_STOP) {
+		ax.stopped = TRUE;
+		ax.mutex = FALSE;
+		return;
+	}
+	if (ax.p->move_type == MOVE_TYPE_START) {
+		ax.stopped = FALSE;
+		ax.mutex = FALSE;
+		return;
+	}
+	if (ax.p->move_type == MOVE_TYPE_DWELL) {
+		ax.line_mode = FALSE;
+	} else {
+		ax.line_mode = TRUE;
+	}
+
 	for (i=X; i<=Z; i++) {
 		ax.a[i].timer->CTRLA = TC_CLK_OFF;		// turn clock off, to be sure
 		if (ax.p->a[i].steps == 0) {			// skip axis if zero steps
 			continue;
 		}
-
-		ax.a[i].flags = ax.p->a[i].flags; 		// import flags from queued move
-
 		// set direction bit and compensate for polarity
 		(ax.p->a[i].direction ^ ax.a[i].polarity) ?
 		   (ax.a[i].port->OUTSET = DIRECTION_BIT_bm):	// CCW

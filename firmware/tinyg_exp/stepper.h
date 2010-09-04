@@ -87,7 +87,6 @@
 #define SPINDLE_DIRECTION_PORT 	A_MOTOR_PORT
 #define SPINDLE_DIRECTION_BIT_bm (1<<7)		// also used to set port I/O direction
 
-
 /*  
  *	Stepper axis structures
  */
@@ -99,7 +98,7 @@ struct Axis { 						// axis control struct - one per axis
 	uint16_t postscale_value;		// timer post-scale value (reloads)
 	uint16_t postscale_counter;		// timer post-scale counter
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor polarity
-	uint8_t flags;					// carries dewll flag (& others if needed)
+	uint8_t flags;					// carries dwell, start, stop flags
 
 	/* hardware device bindings */
 	struct PORT_struct *port;		// motor control port
@@ -108,7 +107,8 @@ struct Axis { 						// axis control struct - one per axis
 
 struct Axes {						// All axes + some extra stuff
 	uint8_t mutex;					// mutual exclusion flag for dequeuing moves
-	uint8_t stopped;				// set TRUE if STOP (FALSE for running)
+	uint8_t stopped;				// set TRUE if STOP (FALSE for STARTed)
+	uint8_t line_mode;				// set TRUE if LINE command (FALSE for DWELLs)
 	uint8_t active_axes;			// bits are set if axis is active. 0 = robot is idle
 	struct mvMove *p;				// pointer to dequeued move structure
 	struct Axis a[4];				// 4 axis structures, X, Y, Z, A

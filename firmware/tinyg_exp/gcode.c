@@ -107,10 +107,10 @@
 #include "spindle.h"
 
 /* data structures */
-static struct GCodeParser gp;		// gcode parser and helper variables
-static struct GCodeModel gm;		// current gcode model state
-static struct GCodeModel gn;		// next gcode model parameters
-static struct GCodeModel gf;		// next gcode model flags (1 = changed)
+static struct GCodeParser gp;		// gcode parser variables
+static struct GCodeModel gm;		// gcode model - current state
+static struct GCodeModel gn;		// gcode model - parameters for next state
+static struct GCodeModel gf;		// gcode model - flags changed values
 
 /* local helper functions and macros */
 static void _gc_normalize_gcode_block(char *block);
@@ -133,24 +133,18 @@ static double _theta(double x, double y);
 
 void gc_init()
 {
-	ZERO_MODEL_STATE(&gm);
+	ZERO_MODEL_STATE(&gm);					// most vars start at zero
 	ZERO_MODEL_STATE(&gn);
 	ZERO_MODEL_STATE(&gf);
 
 	cm_select_plane(CANON_PLANE_XY);		// default planes, 0, 1 and 2
-
-	gm.feed_rate = cfg.default_feed_rate;	// units/sec (grbl is units/min)
-	gm.seek_rate = cfg.default_seek_rate;	// units/sec (grbl is units/min)
-
+	gm.seek_rate = cfg.max_seek_rate;		// units/minute
+	gm.max_seek_rate = cfg.max_seek_rate;	// units/minute
+	gm.max_feed_rate = cfg.max_feed_rate;	// units/minute
 	gm.inches_mode = TRUE;					// default to inches (G20)
-	gm.absolute_mode = TRUE;
+	gm.absolute_mode = TRUE;				// default to absolute mode (G90)
 	gm.inverse_feed_rate = -1; 				// negative inverse_feed_rate means
 											//...no inverse_feed_rate specified
-
-//	Not needed if all values are set to zero, but here it is anyway:
-//	gm.radius_mode = FALSE;		
-//	gm.absolute_override = FALSE; 	// TRUE=abs motion this block only {G53}
-//	gm.next_action = NEXT_ACTION_NONE; 	// no operation
 }
 
 /*
@@ -158,12 +152,13 @@ void gc_init()
  *
  *	Inject a block into parser taking gcode command processing state into account
  */
-
+/*
 void gc_send_to_parser(char *block)
 {
 	gc_gcode_parser(block);
 	return;
 }
+*/
 
 /*
  * gc_gcode_parser() - parse a block (line) of gcode
@@ -258,31 +253,9 @@ void _gc_normalize_gcode_block(char *block)
 					break;
 				}
 			}
-			printf_P(PSTR("%s\n"), (comment+3));
+			printf_P(PSTR("%s\n"),(comment+3)); // canonical machining func
 		}
 	}
-}
-
-/* 
- * cm_select_plane() - select axis plane 
- */
-
-uint8_t cm_select_plane(uint8_t plane) 
-{
-	if (plane == CANON_PLANE_XY) {
-		gm.plane_axis_0 = X;
-		gm.plane_axis_1 = Y;
-		gm.plane_axis_2 = Z;
-	} else if (plane == CANON_PLANE_XZ) {
-		gm.plane_axis_0 = X;
-		gm.plane_axis_1 = Z;
-		gm.plane_axis_2 = Y;
-	} else {
-		gm.plane_axis_0 = Y;
-		gm.plane_axis_1 = Z;
-		gm.plane_axis_2 = X;
-	}
-	return (TG_OK);
 }
 
 /*
@@ -370,21 +343,21 @@ int _gc_read_double(char *buf, int *i, double *double_ptr)
 /*
  * _gc_parse_gcode_block() - parses one line of NULL terminated G-Code. 
  *
- *	The line is assumed to contain only uppercase characters and signed floats 
- *	(no whitespace).
+ *	All the parser does is load the state values in gn (next model state),
+ *	and flags in gf (model state flags). The execute routine applies them.
+ *	The line is assumed to contain only uppercase characters and signed 
+ *  floats (no whitespace).
  */
 
 int _gc_parse_gcode_block(char *buf) 
 {
 	int i = 0;  				// index into Gcode block buffer (buf)
   
-	ZERO_MODEL_STATE(&gn);		// blank slate to start
-	ZERO_MODEL_STATE(&gf);
-
+	ZERO_MODEL_STATE(&gn);		// clear all next-state values
+	ZERO_MODEL_STATE(&gf);		// clear all next-state flags
 	gp.status = TG_OK;
-//	gn.set_origin_mode = FALSE; // not in set origin mode unless you say you are
 
-  // Pass 1: Commands
+  	// extract commands and parameters
 	while(_gc_next_statement(&gp.letter, &gp.value, &gp.fraction, buf, &i)) {
     	switch(gp.letter) {
 			case 'G':
@@ -421,22 +394,31 @@ int _gc_parse_gcode_block(char *buf)
 							SET_NEXT_STATE(program_flow, PROGRAM_FLOW_STOP);
 					case 2: case 30: case 60:
 							SET_NEXT_STATE(program_flow, PROGRAM_FLOW_END);
-					case 3: SET_NEXT_STATE(spindle_direction,  1);
-					case 4: SET_NEXT_STATE(spindle_direction, -1);
-					case 5: SET_NEXT_STATE(spindle_direction,  0);
+					case 3: SET_NEXT_STATE(spindle_mode, SPINDLE_CW);
+					case 4: SET_NEXT_STATE(spindle_mode, SPINDLE_CCW);
+					case 5: SET_NEXT_STATE(spindle_mode, SPINDLE_OFF);
+					case 6: SET_NEXT_STATE(change_tool, TRUE);
+					case 7: break;	// ignore mist coolant on
+					case 8: break;	// ignore flood coolant on
+					case 9: break;	// ignore mist and flood coolant off
+					case 48: break;	// enable speed and feed overrides
+					case 49: break;	// disable speed and feed overrides
  					default: gp.status = TG_UNSUPPORTED_STATEMENT;
 				}
 				break;
 
 			case 'T': SET_NEXT_STATE(tool, trunc(gp.value));
-			case 'F': SET_NEXT_STATE(feed_rate, to_millimeters(gp.value));
-			case 'I': SET_NEXT_STATE(offset[0], to_millimeters(gp.value));
-			case 'J': SET_NEXT_STATE(offset[1], to_millimeters(gp.value));
-			case 'K': SET_NEXT_STATE(offset[2], to_millimeters(gp.value));
+			case 'F': SET_NEXT_STATE(feed_rate, gp.value);
+			case 'I': SET_NEXT_STATE(offset[0], gp.value);
+			case 'J': SET_NEXT_STATE(offset[1], gp.value);
+			case 'K': SET_NEXT_STATE(offset[2], gp.value);
 			case 'P': SET_NEXT_STATE(dwell_time, gp.value);
-			case 'R': SET_NEXT_STATE(radius, to_millimeters(gp.value)); 
-					  SET_NEXT_STATE(radius_mode, TRUE); 
+			case 'R': SET_NEXT_STATE(radius, gp.value); 
+					  SET_NEXT_STATE(radius_mode, TRUE); 	// +++ FIX THIS
 			case 'S': SET_NEXT_STATE(spindle_speed, gp.value); 
+			case 'X': SET_NEXT_STATE(target[X], gp.value);
+			case 'Y': SET_NEXT_STATE(target[Y], gp.value);
+			case 'Z': SET_NEXT_STATE(target[Z], gp.value);
 			case 'N': break;	// ignore line numbers
 			default: gp.status = TG_UNSUPPORTED_STATEMENT;
 		}
@@ -444,42 +426,83 @@ int _gc_parse_gcode_block(char *buf)
 			break;
 		}
 	}
-  // If there were any errors parsing this line return right away with the bad news
-//	if (gp.status) { 
-//		return(gp.status); 
-//	}
-//	i = 0;
-//	clear_vector(gp.offset);
-//	memcpy(gm.target, gm.position, sizeof(gm.target)); // target = position
+	return(gp.status);
+}
+
 /*
-  // Pass 2: Parameters
-	while(_gc_next_statement(&gp.letter, &gp.value, &gp.fraction, buf, &i)) {
-//		gp.unit_converted_value = to_millimeters(gp.value);
-		switch(gp.letter) {
-			case 'F': 
-				if (gn.inverse_feed_rate_mode) {
-					gn.inverse_feed_rate = gp.unit_converted_value; // secs per motion for this motion only
-				} else {
-					gn.feed_rate = gp.unit_converted_value/60; // mm per second
-				}
-				break;
-			case 'I': case 'J': case 'K': {
-				gp.offset[gp.letter-'I'] = gp.unit_converted_value; 
-				break;
-			}
-			case 'P': {
-				gn.dwell_time = gp.value; 			// dwell time in seconds
-				break;
-			}
-			case 'R': {
-				gp.radius = gp.unit_converted_value; 
-				gp.radius_mode = TRUE; 
-				break;
-			}
-			case 'S': {
-				gn.spindle_speed = gp.value; 
-				break;
-			}
+ * _gc_execute_gcode_block() - execute parsed block
+ *
+ *  Conditionally (based on gf) call the canonical machining functions in 
+ *	order of execution as per RS274NGC_3 table 8 (below, with modifications):
+ *
+ *		1. comment (includes message) [handled during block normalization]
+ *		2. set feed rate mode (G93, G94 - inverse time or per minute). 
+ *		3. set feed rate (F). 
+ *		4. set spindle speed (S). 
+ *		5. select tool (T). 
+ *		6. change tool (M6). 
+ *		7. spindle on or off (M3, M4, M5). 
+ *		8. coolant on or off (M7, M8, M9). 
+ *		9. enable or disable overrides (M48, M49). 
+ *		10. dwell (G4). 
+ *		11. set active plane (G17, G18, G19). 
+ *		12. set length units (G20, G21). 
+ *		13. cutter radius compensation on or off (G40, G41, G42) 
+ *		14. cutter length compensation on or off (G43, G49) 
+ *		15. coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3) 
+ *		16. set path control mode (G61, G61.1, G64) 
+ *		17. set distance mode (G90, G91). 
+ *		18. set retract mode (G98, G99). 
+ *		19. home (G28, G30) or
+ *				change coordinate system data (G10) or
+ *				set axis offsets (G92, G92.1, G92.2, G94)
+ *		20. perform motion (G0 to G3, G80-G89) as modified (possibly) by G53
+ *		21. stop (M0, M1, M2, M30, M60).
+ *
+ *	Unit conversions should occur (as needed) on the inputs to the canonical 
+ *	functions.
+ */
+
+int _gc_execute_gcode_block() 
+{
+	if (gf.inverse_feed_rate_mode) {
+		cm_set_inverse_feed_rate_mode(gn.inverse_feed_rate_mode);
+	}
+	if (gf.feed_rate) {
+		if ((gp.status = cm_set_feed_rate(to_millimeters(gn.feed_rate)))) {
+			return (gp.status);				// error return
+		}
+	}
+	if (gf.spindle_speed) {
+		if ((gp.status = cm_set_spindle_speed(gn.spindle_speed))) {
+			return (gp.status);
+		}
+	}
+	if (gf.tool) {
+		cm_select_tool(gn.tool);
+	}
+	if (gf.change_tool) {
+		cm_change_tool();
+	}
+	if (gf.spindle_mode) {
+    	if (gn.spindle_mode == SPINDLE_CW) {
+			cm_start_spindle_clockwise();
+		} else if (gn.spindle_mode == SPINDLE_CCW) {
+			cm_start_spindle_counterclockwise();
+		} else {
+			cm_stop_spindle_turning();
+		}
+	}
+ 	// coolant goes here
+	// overrides go here
+	if (gn.next_action == NEXT_ACTION_DWELL) {
+		gm.dwell_time = gn.dwell_time;
+		gp.status = mc_dwell(gm.dwell_time); 
+	}
+
+
+ 
+/*
 			case 'X': case 'Y': case 'Z': {
 				if (gn.set_origin_mode) {
 					gp.position[gp.letter - 'X'] = gp.unit_converted_value;
@@ -495,41 +518,10 @@ int _gc_parse_gcode_block(char *buf)
 			}
 		}	
 	}
-*/
-	return(gp.status);
-}
 
-/*
- * _gc_execute_gcode_block() - execute parsed block
- *
- *  Follows RS274NGC order of execution
- */
-
-int _gc_execute_gcode_block() 
-{
-	memcpy(gm.target, gm.position, sizeof(gm.target)); // target = position
-
-
-	if (gf.inverse_feed_rate_mode) {
-		cm_set_inverse_feed_rate_mode(gn.inverse_feed_rate_mode);
-	}
-//	if (gf.inverse_feed_rate_mode) {
-//		gm.inverse_feed_rate_mode = gn.inverse_feed_rate_mode;
-//	}
-
-	if (gf.feed_rate) {
-		gm.feed_rate = gn.feed_rate;
-	}
-
-/*
-  // Update spindle state
-	if (gm.spindle_direction) {
-    	sp_spindle_run(gm.spindle_direction, gp.spindle_speed);
-	} else {
-		sp_spindle_stop();
-	}
-  
   // Perform any physical actions
+  //	memcpy(gm.target, gm.position, sizeof(gm.target)); // target = position
+
 	switch (gp.next_action) {
 		case NEXT_ACTION_NONE: {				// nothing to do here
 			break;
@@ -542,11 +534,6 @@ int _gc_execute_gcode_block()
 
 		case NEXT_ACTION_OFFSET_COORDINATES: { 
 			gp.status = mc_set_position(gp.position[X], gp.position[Y], gp.position[Z]); 
-			break;
-		}
-
-		case NEXT_ACTION_DWELL: {
-			gp.status = mc_dwell(gp.dwell_time); 
 			break;
 		}
 
@@ -576,6 +563,150 @@ int _gc_execute_gcode_block()
 */
 	return(gp.status);
 }
+
+
+/*****************************************************************************
+ *
+ * CANONICAL MACHINING FUNCTIONS
+ *
+ *	Arguments are assumed to be unit-converted (to millimeters) as appropriate
+ *	All operations occur on gm (current model state)
+ *
+ ****************************************************************************/
+
+/*
+ * cm_set_inverse_feed_rate()
+ */
+
+inline uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode)  // T=inv feed rate
+{
+	gm.inverse_feed_rate_mode = mode;
+	return (TG_OK);
+}
+
+/*
+ * cm_set_feed_rate() - F parameter
+ */
+
+uint8_t cm_set_feed_rate(double rate) // rate in mm / minute (unit converted)
+{
+	if (rate > gm.max_feed_rate) {
+		return (TG_MAX_FEED_RATE_EXCEEDED);
+	}
+	if (gm.inverse_feed_rate_mode) {
+		gm.inverse_feed_rate = rate; // minutes per motion for this motion only
+	} else {
+		gm.feed_rate = rate; 		// mm per minute
+	}
+	return (TG_OK);
+}
+
+/* 
+ * cm_select_plane() - select axis plane 
+ */
+
+uint8_t cm_select_plane(uint8_t plane) 
+{
+	if (plane == CANON_PLANE_XY) {
+		gm.plane_axis_0 = X;
+		gm.plane_axis_1 = Y;
+		gm.plane_axis_2 = Z;
+	} else if (plane == CANON_PLANE_XZ) {
+		gm.plane_axis_0 = X;
+		gm.plane_axis_1 = Z;
+		gm.plane_axis_2 = Y;
+	} else {
+		gm.plane_axis_0 = Y;
+		gm.plane_axis_1 = Z;
+		gm.plane_axis_2 = X;
+	}
+	return (TG_OK);
+}
+
+/* 
+ * cm_select_tool() - T parameter
+ */
+
+uint8_t cm_select_tool(uint8_t tool)
+{
+	gm.tool = tool;
+	return (TG_OK);
+}
+
+/* 
+ * cm_change_tool() - M6
+ */
+
+uint8_t cm_change_tool(void)
+{
+	return (TG_OK);
+}
+
+/* 
+ * cm_set_spindle_speed() - S parameter
+ */
+
+uint8_t cm_set_spindle_speed(double speed)
+{
+//	if (rate > gm.max_spindle speed) {
+//		return (TG_MAX_SPINDLE_SPEED_EXCEEDED);
+//	}
+	gm.spindle_speed = speed;
+	return (TG_OK);
+}
+
+/* 
+ * cm_start_spindle_clockwise() - M3
+ */
+
+uint8_t cm_start_spindle_clockwise(void)
+{
+	return (TG_OK);
+}
+
+/* 
+ * cm_start_spindle_counterclockwise() - M4
+ */
+
+uint8_t cm_start_spindle_counterclockwise(void)
+{
+	return (TG_OK);
+}
+
+/* 
+ * cm_stop_spindle_turning() - M5
+ */
+
+uint8_t cm_stop_spindle_turning(void)
+{
+	return (TG_OK);
+}
+
+
+/*
+uint8_t cm_init_canon()						// init canonical machining functions
+uint8_t cm_set_origin_offsets(x,y,z)		// supported as limited G92 for zeroing
+uint8_t cm_use_length_units(UNITS)			// G20/G21
+uint8_t cm_set_traverse_rate(rate)			// (no code, get from config)
+uint8_t cm_straight_traverse(x,y,z)			// G0
+uint8_t cm_arc_feed()						// G2/G3
+uint8_t cm_dwell(seconds)					// G4, P parameter
+uint8_t cm_straight_feed()					// G1
+uint8_t cm_start_spindle_clockwise()		// M3
+uint8_t cm_start_spindle_counterclockwise()	// M4
+uint8_t cm_stop_spindle_turning				// M5
+uint8_t cm_change_tool()					// M6, T parameter
+uint8_t cm_select_tool()					// T parameter
+uint8_t cm_comment(char *)					// ignore comments (I do)
+uint8_t cm_message(char *)					// send message to console
+uint8_t cm_optional_program_stop()			// M1
+uint8_t cm_program_stop()					// M0
+uint8_t cm_program_end()					// M2
+uint8_t cm_stop()							// used by M0,M1
+uint8_t cm_start()							// (re)enables stepper timers
+uint8_t cm_return_to_home()					// G28 
+uint8_t cm_set_distance_mode()				// G90/G91 (absolute/incremental motion)
+*/
 
 
 /*
@@ -797,13 +928,4 @@ int _gc_compute_center_arc()
 	return (gp.status);
 }
 
-/*****************************************************************************
- *
- * CANONICAL MACHINING FUNCTIONS
- *
- ****************************************************************************/
 
-inline uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode) { // TRUE = inverse feed rate
-	gm.inverse_feed_rate_mode = mode;
-	return (TG_OK);
-}
