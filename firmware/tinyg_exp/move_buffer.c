@@ -84,10 +84,10 @@ void mv_init()
 }
 
 /*
- * mv_queue_move_buffer() - Add a new linear movement to the move buffer
+ * mv_queue_line() - Add a new linear movement to the move buffer
  *
  * Arguments:
- *	steps_x, steps_y and steps_z are signed, relative motion in steps 
+ *	steps_x, steps_y and steps_z are signed relative motion in steps 
  *	Microseconds specify how many microseconds the move should take to perform.
  *
  * Blocking behavior:
@@ -106,15 +106,9 @@ void mv_init()
  *
  *	Buffer full:	move_buffer_head == move_buffer_tail
  *	Buffer empty:	move_buffer_head == move_buffer_tail+1 
- *
- * Dwell handling
- *	Loading a dwell involves computing a period and step count that times out to 
- *	the desired dwell duration (to some accuracy). Setting the dwell accuracy 
- *	defines the period. 
  */
 
-uint8_t mv_queue_move_buffer(int32_t steps_x, int32_t steps_y, int32_t steps_z, 
-							 uint32_t microseconds, uint8_t move_type)
+uint8_t mv_queue_line(int32_t steps_x, int32_t steps_y, int32_t steps_z, uint32_t microseconds)
 {
 	uint8_t next_buffer_head;
 	uint8_t i;
@@ -127,7 +121,7 @@ uint8_t mv_queue_move_buffer(int32_t steps_x, int32_t steps_y, int32_t steps_z,
 	// Return with error if the buffer is full 
 	if (mv.move_buffer_tail == next_buffer_head) {
 		return (TG_BUFFER_FULL_NON_FATAL);
-//		sleep_mode();	// USE INSTEAD OF THE RETURN IF YOU WANT BLOCKING BEHAVIOR
+//		sleep_mode();	// USE INSTEAD IF YOU WANT BLOCKING BEHAVIOR
 	}
 
 	// setup the move struct and ticks value
@@ -139,42 +133,90 @@ uint8_t mv_queue_move_buffer(int32_t steps_x, int32_t steps_y, int32_t steps_z,
 	mv.microseconds = (uint64_t)microseconds;			// cast to larger base
 	mv.ticks = mv.microseconds * TICKS_PER_MICROSECOND;
 
-	// Zero length lines are DWELL commands. Load dwell timing into X axis.
-	if ((steps_x == 0) && (steps_y == 0) && (steps_z) == 0) {
-		mv.p->a[X].steps = (((mv.ticks & 0xFFFF0000)>>32)+1);	// compute # of steps
-		mv.p->a[X].postscale = 1;
-		mv.ticks_per_step = (uint64_t)(mv.ticks / mv.p->a[X].steps); // expensive!
-		while (mv.ticks_per_step & 0xFFFFFFFFFFFF0000) {
-			mv.ticks_per_step >>= 1;
-			mv.p->a[X].postscale <<= 1;
-		}
-		mv.p->a[X].period = (uint16_t)(mv.ticks_per_step & 0x0000FFFF);
-		mv.p->a[X].flags = DWELL_FLAG_bm;
+	for (i = X; i <= Z; i++) {
+		if (mv.p->a[i].steps) { 				// skip axes with zero steps
+			// set direction: (polarity is corrected during execute move)
+			(mv.p->a[i].steps < 0) ? 
+			(mv.p->a[i].direction = 1): 		// CCW = 1 
+			(mv.p->a[i].direction = 0);			// CW = 0
 
-	} else {		// load axis values for line
-		for (i = X; i <= Z; i++) {
-			if (mv.p->a[i].steps) { 				// skip axes with zero steps
+			// set steps to absolute value
+			mv.p->a[i].steps = labs(mv.p->a[i].steps);
 
-				// set direction: (polarity is corrected during execute move)
-				(mv.p->a[i].steps < 0) ? 
-				(mv.p->a[i].direction = 1): 		// CCW = 1 
-				(mv.p->a[i].direction = 0);			// CW = 0
-
-				// set steps to absolute value
-				mv.p->a[i].steps = labs(mv.p->a[i].steps);
-
-				// Normalize ticks_per_step by right shifting until the MSword = 0
-				// Accumulate LSBs shifted out of ticks_per_step into postscale
-				mv.p->a[i].postscale = 1;
-				mv.ticks_per_step = (uint64_t)(mv.ticks / mv.p->a[i].steps);// expensive!
-				while (mv.ticks_per_step & 0xFFFFFFFFFFFF0000) {
-					mv.ticks_per_step >>= 1;
-					mv.p->a[i].postscale <<= 1;
-				}
-				mv.p->a[i].period = (uint16_t)(mv.ticks_per_step & 0x0000FFFF);
+			// Normalize ticks_per_step by right shifting until the MSword = 0
+			// Accumulate LSBs shifted out of ticks_per_step into postscale
+			mv.p->a[i].postscale = 1;
+			mv.ticks_per_step = (uint64_t)(mv.ticks / mv.p->a[i].steps);// expensive!
+			while (mv.ticks_per_step & 0xFFFFFFFFFFFF0000) {
+				mv.ticks_per_step >>= 1;
+				mv.p->a[i].postscale <<= 1;
 			}
+			mv.p->a[i].period = (uint16_t)(mv.ticks_per_step & 0x0000FFFF);
 		}
 	}
+	mv.p->move_type = MOVE_TYPE_LINE;
+	mv.move_buffer_head = next_buffer_head;
+	st_execute_move();			// kick the stepper drivers
+	return (TG_OK);
+}
+
+/*
+ * mv_queue_dwell() - Add a dwell to the move buffer
+ *
+ * (See mv_queue_line() for detail on blocking and circular buffers)
+ */
+
+uint8_t mv_queue_dwell(uint32_t microseconds)
+{
+	uint8_t next_buffer_head;
+
+	// Determine the buffer head index needed to store this line
+	if ((next_buffer_head = mv.move_buffer_head + 1) >= MOVE_BUFFER_SIZE) {
+		next_buffer_head = 0;					 // wrap condition
+	}
+
+	// Return with error if the buffer is full 
+	if (mv.move_buffer_tail == next_buffer_head) {
+		return (TG_BUFFER_FULL_NON_FATAL);
+//		sleep_mode();	// USE INSTEAD IF YOU WANT BLOCKING BEHAVIOR
+	}
+
+	// setup the move struct and ticks value
+	mv.p = &mv.move_buffer[mv.move_buffer_head];
+	memset(mv.p, 0, sizeof(struct mvMove));
+	mv.microseconds = (uint64_t)microseconds;			// cast to larger base
+	mv.ticks = mv.microseconds * TICKS_PER_MICROSECOND;
+	mv.p->a[X].steps = (((mv.ticks & 0xFFFF0000)>>32)+1);	// compute steps
+	mv.p->a[X].postscale = 1;
+	mv.ticks_per_step = (uint64_t)(mv.ticks / mv.p->a[X].steps); // expensive!
+	while (mv.ticks_per_step & 0xFFFFFFFFFFFF0000) {
+		mv.ticks_per_step >>= 1;
+		mv.p->a[X].postscale <<= 1;
+	}
+	mv.p->a[X].period = (uint16_t)(mv.ticks_per_step & 0x0000FFFF);
+	mv.p->move_type = MOVE_TYPE_DWELL;
+	mv.move_buffer_head = next_buffer_head;
+	st_execute_move();
+	return (TG_OK);
+}
+
+/*
+ * mv_queue_start_stop() - Add a start or stop to the move buffer
+ */
+
+uint8_t mv_queue_start_stop(uint8_t move_type)
+{
+	uint8_t next_buffer_head;
+
+	// Determine the buffer head index needed to store this line
+	if ((next_buffer_head = mv.move_buffer_head + 1) >= MOVE_BUFFER_SIZE) {
+		next_buffer_head = 0;					 // wrap condition
+	}
+	if (mv.move_buffer_tail == next_buffer_head) {
+		return (TG_BUFFER_FULL_NON_FATAL);
+//		sleep_mode();	// USE INSTEAD OF THE RETURN IF YOU WANT BLOCKING BEHAVIOR
+	}
+	mv.p->move_type = move_type;
 	mv.move_buffer_head = next_buffer_head;
 	st_execute_move();
 	return (TG_OK);
@@ -222,17 +264,6 @@ uint8_t mv_test_move_buffer_full()
 		return (TRUE);
 	};
 	return (FALSE);
-}
-
-/* 
- * mv_synchronize() - block until all buffered steps are executed 
- */
-
-void mv_synchronize()
-{
-	while(mv.move_buffer_tail != mv.move_buffer_head) {
-		sleep_mode();
-	}    
 }
 
 /* 

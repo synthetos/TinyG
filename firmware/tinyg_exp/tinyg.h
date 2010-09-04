@@ -42,8 +42,9 @@
 #define MM_PER_ARC_SEGMENT 0.05
 #define ONE_MINUTE_OF_MICROSECONDS 60000000.0	// from GRBL - Thanks Simen!
 #define TICKS_PER_MICROSECOND (F_CPU/1000000)	// from GRBL
-#define MM_PER_INCH (25.4)						// from GRBL
-#define MINIMUM_TICKS_PER_STEP (0xC00)	// too small and the steppers freeze
+#define MM_PER_INCH 25.4						// from GRBL
+#define REVS_PER_DEGREE 0.00277778				// 1/360
+#define MINIMUM_TICKS_PER_STEP 0xC00	// too small and the steppers freeze
 
 /* Define axes */
 
@@ -85,7 +86,9 @@ enum tgAxisNum {		// define axis numbers and array indexes from 0 to 3
 #define TG_MOTION_CONTROL_ERROR 18		// motion control failure
 #define TG_ARC_SPECIFICATION_ERROR 19	// arc specification error
 #define TG_ZERO_LENGTH_LINE 20			// XYZ line is zero length 
-
+#define TG_MAX_FEED_RATE_EXCEEDED 21
+#define TG_MAX_TRAVEL_EXCEEDED 22
+#define TG_MAX_SPINDLE_SPEED_EXCEEDED 23
 
 /*
  * Common typedefs (see xio.h for some others)

@@ -33,7 +33,7 @@
 void signal_etx()				// ^c
 {
 	tg_reset_source();			// return control to standard device
-	mc_motion_stop();			// stop computing and generating motions
+	mc_stop();					// stop computing and generating motions
 	return;
 }
 

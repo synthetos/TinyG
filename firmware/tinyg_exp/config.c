@@ -183,9 +183,9 @@ void cfg_dump()
 {
 	printf_P(PSTR("\n***** CONFIGURATION [version %d] ****\n"), cfg.config_version);
 	printf_P(PSTR("G-code Model Configuration Values ---\n"));
-	printf_P(PSTR("  mm_per_arc_segment: %5.3f mm / segment\n"), cfg.mm_per_arc_segment);
-	printf_P(PSTR(" (default_seek_rate:  %5.3f mm / second)\n"), cfg.default_seek_rate);
-	printf_P(PSTR(" (default_feed_rate:  %5.3f mm / second)\n\n"), cfg.default_feed_rate);
+	printf_P(PSTR("  mm_per_arc_segment:   %5.3f mm / segment\n"), cfg.mm_per_arc_segment);
+	printf_P(PSTR(" (maximum_seek_rate:  %7.3f mm / minute)\n"), cfg.max_seek_rate);
+	printf_P(PSTR(" (maximum_feed_rate:  %7.3f mm / minute)\n\n"), cfg.max_feed_rate);
 
 	for (uint8_t axis=X; axis<=A; axis++) {
 		_cfg_dump_axis(axis);
@@ -277,14 +277,13 @@ void _cfg_computed()
 										cfg.a[i].microstep)) / 
 										cfg.a[i].mm_per_rev;
 	}
+	// max_feed_rate = 60 * feed_steps_sec / (360/degree_per_step/mm_per_rev)
+	cfg.max_feed_rate = ((60 * (double)cfg.a[X].feed_steps_sec) /
+						 (360/cfg.a[X].degree_per_step/cfg.a[X].mm_per_rev));
 
-	// = feed_steps_sec / (360/degree_per_step/microstep)
-	cfg.default_feed_rate = (cfg.a[X].feed_steps_sec * cfg.a[X].microstep) / 
-							(360/(cfg.a[X].degree_per_step / cfg.a[X].microstep));
-
-	// = seek_steps_sec / (360/degree_per_step/microstep)
-	cfg.default_seek_rate = (cfg.a[X].seek_steps_sec * cfg.a[X].microstep) / 
-							(360/(cfg.a[X].degree_per_step / cfg.a[X].microstep));
+	// max_seek_rate = 60 * seek_steps_sec / (360/degree_per_step/mm_per_rev)
+	cfg.max_seek_rate = ((60 * (double)cfg.a[X].seek_steps_sec) /
+						 (360/cfg.a[X].degree_per_step/cfg.a[X].mm_per_rev));
 }
 
 /* 

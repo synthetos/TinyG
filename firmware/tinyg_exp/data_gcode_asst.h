@@ -9,8 +9,12 @@ N1 G00 G17 G21 G40 G49 G80 G90\n\
 N2 T1 M6\n\
 N3 G92 X0 Y0 Z0\n\
 N20 S5000 M03 \n\
-N25 G00 F30.0\n\
-N30 X0.076 Y0.341";
+N25 G00 F300\n\
+N30 X0.076 Y0.341\n\
+g4 p10\n\
+g0 x0 y0 z0";
+
+// G1 F600 x21.45 y76.0982\n\		// test max feed rate error
 
 const char PROGMEM square_test1[] = "\
 g1 f333 x0 y0\n\
