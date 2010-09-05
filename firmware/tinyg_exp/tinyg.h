@@ -87,8 +87,9 @@ enum tgAxisNum {		// define axis numbers and array indexes from 0 to 3
 #define TG_ARC_SPECIFICATION_ERROR 19	// arc specification error
 #define TG_ZERO_LENGTH_LINE 20			// XYZ line is zero length 
 #define TG_MAX_FEED_RATE_EXCEEDED 21
-#define TG_MAX_TRAVEL_EXCEEDED 22
-#define TG_MAX_SPINDLE_SPEED_EXCEEDED 23
+#define TG_MAX_SEEK_RATE_EXCEEDED 22
+#define TG_MAX_TRAVEL_EXCEEDED 23
+#define TG_MAX_SPINDLE_SPEED_EXCEEDED 24
 
 /*
  * Common typedefs (see xio.h for some others)

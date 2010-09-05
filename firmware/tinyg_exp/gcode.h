@@ -25,21 +25,16 @@ struct GCodeParser {				// gcode parser state & helper variables
 	uint8_t status;					// now uses unified TG_ status codes
 	char letter;					// parsed letter, eg.g. G or X or Y
 	double value;					// value parsed from letter (e.g. 2 for G2)
-//	double unit_converted_value;	// value expressed in millimeters
 	double fraction;				// value fraction, eg. 0.1 for 92.1
 };
 
-struct GCodeModel {					// Gcode model - meaning depends on context
-	double feed_rate; 				// F - in millimeters/minute
+struct GCodeModel {					// Gcode model- meaning depends on context
+	double feed_rate; 				// F - normalized to millimeters/minute
 	double seek_rate;				// seek rate in millimeters/second
-	double max_feed_rate;			// max supported feed rate
-	double max_seek_rate;			// max supported seek rate
-	double inverse_feed_rate; 		// negative if inverse_feed_rate not active
-	uint8_t inverse_feed_rate_mode; // G93, G94 (G group 5)
-	uint8_t	override_enable;		// M48, M49 (M group 9)
-
-	uint8_t tool;					// T value
-	uint8_t change_tool;			// M6
+	double max_feed_rate;			// max supported feed rate (mm/min)
+	double max_seek_rate;			// max supported seek rate (mm/min)
+	double inverse_feed_rate; 		// ignored if inverse_feed_rate not active
+	uint8_t inverse_feed_rate_mode; // TRUE = inv (G93) FALSE = normal (G94)
 
 	uint8_t set_plane;				// values to set plane to
 	uint8_t plane_axis_0; 			// actual axes of the selected plane
@@ -47,26 +42,28 @@ struct GCodeModel {					// Gcode model - meaning depends on context
 	uint8_t plane_axis_2; 
 
 	uint8_t inches_mode;         	// TRUE = inches (G20), FALSE = mm (G21)
-
 	uint8_t absolute_mode;			// TRUE = absolute (G90), FALSE = rel.(G91)
 	uint8_t absolute_override; 		// TRUE = abs motion- this block only (G53)
 	uint8_t set_origin_mode;		// TRUE = in set origin mode (G92)
+	uint8_t	override_enable;		// TRUE = overrides enabled (M48), F=(M49)
+
+	uint8_t tool;					// T value
+	uint8_t change_tool;			// M6
+
 	uint8_t spindle_mode;			// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
 	double spindle_speed;			// in RPM
 	double max_spindle_speed;		// limit
 
-	uint8_t motion_mode;			// G0, G1, G2, G3, G38.2, G80, G81, G82,G83
-									// G84, G85, G86, G87, G88, G89 (G group 1)
+	uint8_t next_action;			// handles G modal Grp1 moves & non-modals
+	uint8_t motion_mode;			// Group1: G0, G1, G2, G3, G38.2, G80, G81,
+									// G82, G83 G84, G85, G86, G87, G88, G89 
 	uint8_t program_flow;			// M0, M1 - pause / resume program flow
 
-	uint8_t next_action;			// handles moves and non-modals
 	double dwell_time;				// P - dwell time in seconds
-
 	double position[3];				// X, Y, Z - meaning depends on context
-	double target[3]; 				// where the move should go
-	double offset[3];  				// used by arc commands
-	double radius;					// radius value
-	uint8_t radius_mode;			// TRUE = radius mode for arc computation
+	double target[3]; 				// X, Y, Z - where the move should go
+	double offset[3];  				// I, J, K - used by arc commands
+	double radius;					// R - radius value in arc raduis mode
 
 /* unimplemented					// this block would follow inches_mode
 	double cutter_radius;			// D - cutter radius compensation (0 is off)
@@ -84,98 +81,104 @@ struct GCodeModel {					// Gcode model - meaning depends on context
  * Global Scope Functions
  */
 
-void gc_init(void);							// Initialize the parser
+void gc_init(void);								// Initialize the parser
 uint8_t gc_gcode_parser(char *block);
 
 /* canonical machining functions */
+uint8_t cm_init_canon(void);					// init canonical machine
+
+uint8_t cm_set_traverse_rate(double rate);		// (no corresponding G code) 
+uint8_t cm_straight_traverse(double x,double y,double z);// G0
+uint8_t cm_straight_feed(double x,double y,double z);	// G1
+uint8_t cm_arc_feed(uint8_t radius_mode);				// G2, G3
+
+uint8_t cm_comment(char *comment);					// comment handler (null)
+uint8_t cm_message(char *message);					// send message to console
 uint8_t cm_select_plane(uint8_t plane);
-uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode); // TRUE = inverse feed rate
+uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode); // T = inverse feed rate
 uint8_t cm_set_feed_rate(double rate);				// F parameter
 uint8_t cm_select_tool(uint8_t tool);				// T parameter
-uint8_t cm_change_tool(void);						// M6
+uint8_t cm_change_tool(uint8_t tool);				// M6, T
 uint8_t cm_set_spindle_speed(double speed);			// S parameter
 uint8_t cm_start_spindle_clockwise(void);			// M3
 uint8_t cm_start_spindle_counterclockwise(void);	// M4
 uint8_t cm_stop_spindle_turning(void);				// M5
+uint8_t cm_return_to_home(void);					// G28, G30
+uint8_t cm_set_origin_offsets(double x, double y, double z); // G92
+uint8_t cm_use_length_units(uint8_t inches_mode);	// G20, G21
+uint8_t cm_stop(void);								// M0, M1
+uint8_t cm_start(void);								// (re)enable steppers
+uint8_t cm_message(char *);							// send message to console
+uint8_t cm_dwell(double seconds);					// G4, P parameter
+uint8_t cm_set_distance_mode(uint8_t absolute_mode);// G90, G91 (abs/incr motion)
 
+uint8_t cm_optional_program_stop(void);				// M1
+uint8_t cm_program_stop(void);						// M0
+uint8_t cm_program_end(void);						// M2
 
-/*
-uint8_t cm_init_canon();					// init canonical machining functions
-uint8_t cm_set_origin_offsets(x,y,z);		// supported as limited G92 for zeroing
-uint8_t cm_use_length_units(UNITS);			// G20/G21
-uint8_t cm_set_traverse_rate(rate);			// (no code, get from config)
-uint8_t cm_straight_traverse(x,y,z);		// G0
-uint8_t cm_arc_feed();						// G2/G3
-uint8_t cm_dwell(seconds);					// G4, P parameter
-uint8_t cm_straight_feed();					// G1
-uint8_t cm_comment(char *);					// ignore comments (I do)
-uint8_t cm_message(char *);					// send message to console
-uint8_t cm_optional_program_stop();			// M1
-uint8_t cm_program_stop();					// M0
-uint8_t cm_program_end();					// M2
-uint8_t cm_stop();							// used by M0,M1
-uint8_t cm_start();							// (re)enables stepper timers
-uint8_t cm_return_to_home();				// G28 
-uint8_t cm_set_distance_mode();				// G90/G91 (absolute/incremental motion)
-*/
+//--- helper functions for canonical machining funntions
+double _to_millimeters(double value);
+uint8_t cm_get_next_action(void);
+uint8_t cm_get_motion_mode(void);
+uint8_t cm_get_position(uint8_t axis);
 
 /* 
  * definitions used by gcode interpreter 
  *
- * The difference between NextAction and MotionMode is that NextAction is used
- * by the current block, and may carry non-modal commands, whereas MotionMode 
- * persists across blocks (as G modal group 1)
+ * The difference between NextAction and MotionMode is that NextAction is 
+ * used by the current block, and may carry non-modal commands, whereas 
+ * MotionMode persists across blocks (as G modal group 1)
  */
 
-enum gcNextAction {							// motion mode an non-modals
-	NEXT_ACTION_NONE,						// no moves
-	NEXT_ACTION_MOTION,						// action set by MotionMode
-	NEXT_ACTION_DWELL,						// G4
-	NEXT_ACTION_GO_HOME,					// G28
-	NEXT_ACTION_OFFSET_COORDINATES			// G92
+enum gcNextAction {						// motion mode and non-modals
+	NEXT_ACTION_NONE,					// no moves
+	NEXT_ACTION_MOTION,					// action set by MotionMode
+	NEXT_ACTION_DWELL,					// G4
+	NEXT_ACTION_GO_HOME,				// G28
+	NEXT_ACTION_OFFSET_COORDINATES		// G92
 };
 
-enum gcMotionMode {							// G Modal Group 1
-	MOTION_MODE_STRAIGHT_TRAVERSE,		 	// G0 - seek
-	MOTION_MODE_STRAIGHT_FEED,				// G1 - feed
-	MOTION_MODE_CW_ARC,						// G2 - arc feed
-	MOTION_MODE_CCW_ARC,					// G3 - arc feed
-	MOTION_MODE_STRAIGHT_PROBE,				// G38.2
-	MOTION_MODE_CANCEL_MOTION_MODE,			// G80
-	MOTION_MODE_CANNED_CYCLE_81,			// G81 - drilling
-	MOTION_MODE_CANNED_CYCLE_82,			// G82 - drilling with dwell
-	MOTION_MODE_CANNED_CYCLE_83,			// G83 - peck drilling
-	MOTION_MODE_CANNED_CYCLE_84,			// G84 - right hand tapping
-	MOTION_MODE_CANNED_CYCLE_85,			// G85 - boring, no dwell, feed out
-	MOTION_MODE_CANNED_CYCLE_86,			// G86 - boring, spindle stop, rapid out
-	MOTION_MODE_CANNED_CYCLE_87,			// G87 - back boring
-	MOTION_MODE_CANNED_CYCLE_88,			// G88 - boring, spindle stop, manual out
-	MOTION_MODE_CANNED_CYCLE_89				// G89 - boring, dwell, feed out
+enum gcMotionMode {						// G Modal Group 1
+	MOTION_MODE_STRAIGHT_TRAVERSE,		// G0 - seek
+	MOTION_MODE_STRAIGHT_FEED,			// G1 - feed
+	MOTION_MODE_CW_ARC,					// G2 - arc feed
+	MOTION_MODE_CCW_ARC,				// G3 - arc feed
+	MOTION_MODE_STRAIGHT_PROBE,			// G38.2
+	MOTION_MODE_CANCEL_MOTION_MODE,		// G80
+	MOTION_MODE_CANNED_CYCLE_81,		// G81 - drilling
+	MOTION_MODE_CANNED_CYCLE_82,		// G82 - drilling with dwell
+	MOTION_MODE_CANNED_CYCLE_83,		// G83 - peck drilling
+	MOTION_MODE_CANNED_CYCLE_84,		// G84 - right hand tapping
+	MOTION_MODE_CANNED_CYCLE_85,		// G85 - boring, no dwell, feed out
+	MOTION_MODE_CANNED_CYCLE_86,		// G86 - boring, spindle stop, rapid out
+	MOTION_MODE_CANNED_CYCLE_87,		// G87 - back boring
+	MOTION_MODE_CANNED_CYCLE_88,		// G88 - boring, spindle stop, manual out
+	MOTION_MODE_CANNED_CYCLE_89			// G89 - boring, dwell, feed out
 };
 
-enum gcPathControlMode {					// G Modal Group 13
+enum gcPathControlMode {				// G Modal Group 13
 	PATH_CONTROL_MODE_EXACT_PATH,
 	PATH_CONTROL_MODE_EXACT_STOP,
 	PATH_CONTROL_MODE_CONTINOUS
 };
 
 enum gcProgramFlow {
-	PROGRAM_FLOW_START,						// START must be zero
+	PROGRAM_FLOW_START,					// START must be zero
 	PROGRAM_FLOW_STOP,
 	PROGRAM_FLOW_END
 };
 
-enum gcCanonicalSpindle {					// spindle settings
+enum gcCanonicalSpindle {				// spindle settings
 	SPINDLE_OFF,
 	SPINDLE_CW,
 	SPINDLE_CCW
 };
 
-enum gcCanonicalPlane {						// canonical plane - translates to:
-											// axis_0	axis_1	axis_2
-	CANON_PLANE_XY,							//   X		  Y		  Z
-	CANON_PLANE_XZ,							//   X		  Z		  Y
-	CANON_PLANE_YZ							//	 Y		  Z		  X							
+enum gcCanonicalPlane {					// canonical plane - translates to:
+										// axis_0	axis_1	axis_2
+	CANON_PLANE_XY,						//   X		  Y		  Z
+	CANON_PLANE_XZ,						//   X		  Z		  Y
+	CANON_PLANE_YZ						//	 Y		  Z		  X							
 };
 
 enum gcSpindleDirection {

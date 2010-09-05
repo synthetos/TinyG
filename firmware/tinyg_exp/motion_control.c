@@ -99,6 +99,18 @@ void mc_init()
 }
 
 /* 
+ * mc_set_position() - set current position (support for G92)
+ */
+
+int mc_set_position(double x, double y, double z)
+{
+	mc.position[X] = lround(x*CFG(X).steps_per_mm);
+	mc.position[Y] = lround(y*CFG(Y).steps_per_mm);
+	mc.position[Z] = lround(z*CFG(Z).steps_per_mm); 
+	return (TG_OK);
+}
+
+/* 
  * mc_motion_start() - (re)start motion
  */
 
@@ -146,15 +158,39 @@ int mc_motion_end()
 }
 
 /* 
- * mc_set_position() - set current position (support for G92)
+ * mc_start() - queue a motor start
+ * mc_stop() - queue a motor stop
+ * mc_start_stop_continue() - start and stop continuation
+ *
+ * Underlying stop, start and continue to support motion stop and start
  */
 
-int mc_set_position(double x, double y, double z)
+int mc_start() 
 {
-	mc.position[X] = lround(x*CFG(X).steps_per_mm);
-	mc.position[Y] = lround(y*CFG(Y).steps_per_mm);
-	mc.position[Z] = lround(z*CFG(Z).steps_per_mm); 
-	return (TG_OK);
+	mc.move_type = MC_TYPE_START;
+	mc.stop_continue_state = MC_STATE_NEW;
+	return (mc_start_stop_continue());
+}
+
+int mc_stop() 
+{
+	mc.move_type = MC_TYPE_STOP;
+	mc.stop_continue_state = MC_STATE_NEW;
+	return (mc_start_stop_continue());
+}
+
+int mc_start_stop_continue() 
+{
+	if (mc.stop_continue_state == MC_STATE_OFF) {
+		return (TG_NOOP);
+	}
+	if (mv_test_move_buffer_full()) { // this is where you would block
+		return (TG_EAGAIN);			  //...but instead you return	
+	} else {
+		mv_queue_start_stop(mc.microseconds); 
+		mc.stop_continue_state = MC_STATE_OFF;
+		return (TG_OK);
+	}
 }
 
 /* 
@@ -174,7 +210,7 @@ int mc_set_position(double x, double y, double z)
  * can successfully load the line into the move buffer.
  */
 
-int mc_line(double x, double y, double z, double feed_rate, int invert_feed_rate)
+int mc_line(double x, double y, double z, double feed_rate, uint8_t invert_feed_rate)
 {
 	mc.target[X] = lround(x*CFG(X).steps_per_mm);
 	mc.target[Y] = lround(y*CFG(Y).steps_per_mm);
@@ -195,7 +231,7 @@ int mc_line(double x, double y, double z, double feed_rate, int invert_feed_rate
  		mc.mm_of_travel = sqrt(square(mc.steps[X]/CFG(X).steps_per_mm) + 
 							   square(mc.steps[Y]/CFG(Y).steps_per_mm) + 
 							   square(mc.steps[Z]/CFG(Z).steps_per_mm));
-		mc.microseconds = lround((mc.mm_of_travel/feed_rate)*1000000);
+		mc.microseconds = lround((mc.mm_of_travel/feed_rate)*ONE_MINUTE_OF_MICROSECONDS);
 	}
 	mc.move_type = MC_TYPE_LINE;
 	mc.line_continue_state = MC_STATE_NEW;
@@ -249,56 +285,36 @@ int mc_dwell_continue()
 }
 
 /* 
- * mc_start() - queue a motor start
- * mc_stop() - queue a motor stop
- * mc_start_stop_continue() - start and stop continuation
- */
-
-int mc_start() 
-{
-	mc.move_type = MC_TYPE_START;
-	mc.stop_continue_state = MC_STATE_NEW;
-	return (mc_start_stop_continue());
-}
-
-int mc_stop() 
-{
-	mc.move_type = MC_TYPE_STOP;
-	mc.stop_continue_state = MC_STATE_NEW;
-	return (mc_start_stop_continue());
-}
-
-int mc_start_stop_continue() 
-{
-	if (mc.stop_continue_state == MC_STATE_OFF) {
-		return (TG_NOOP);
-	}
-	if (mv_test_move_buffer_full()) { // this is where you would block
-		return (TG_EAGAIN);			  //...but instead you return	
-	} else {
-		mv_queue_start_stop(mc.microseconds); 
-		mc.stop_continue_state = MC_STATE_OFF;
-		return (TG_OK);
-	}
-}
-
-/* 
  * mc_arc() - execute an arc; non-blocking version
+ * mc_arc_continue() - continuation inner loop to generate an arc
  *
- *	The arc is approximated by generating a huge number of tiny, linear segments. 
- *	The length of each segment is configured in config.h by setting 
- *	MM_PER_ARC_SEGMENT.  
+ * Generates the line segments in an arc and queues them to the move buffer.
+ * The arc is approximated by generating a huge number of tiny, linear
+ * segments. The length of each segment is configured in config.h by 
+ * setting MM_PER_ARC_SEGMENT.  
+ *
+ * Continue operation: 
+ *	Continue is called initially by mc_arc. Continue will will either run to 
+ *  arc completion (unlikely) or until the move buffer queue is full (likely).
+ * 	It can then be re-entered to generate and queue the next segment(s) of arc.
+ * 	Calling this function when there is no arc in process has no effect (NOOP).
+ *
+ * Note on mv_test_move_buffer_full()
+ *	The move buffer is tested and sometime later it's queued (via mc_line())
+ *	This only works because no ISRs queue this buffer, and this continuation 
+ *	routine cannot be pre-empted. If these conditions change you need to 
+ *	implement a critical region or mutex of some sort.
  */
 
 int mc_arc(double theta, 			// starting angle
 		   double angular_travel, 	// radians to go along arc (+ CW, - CCW)
 		   double radius, 			// radius of the circle in millimeters.
 		   double linear_travel, 
-		   int axis_1, 				// select circle plane in tool space
-		   int axis_2,  			// select circle plane in tool space
-		   int axis_linear, 		// linear travel if tracing a helical motion
+		   uint8_t axis_1, 			// select circle plane in tool space
+		   uint8_t axis_2,  		// select circle plane in tool space
+		   uint8_t axis_linear, 	// linear travel if helical motion
 		   double feed_rate, 		// feed rate
-		   int invert_feed_rate)	// feed rate mode
+		   uint8_t invert_feed_rate) // feed rate mode
 {
 	// load the move and arc structs
 	mc.move_type = MC_TYPE_LINE;
@@ -336,23 +352,6 @@ int mc_arc(double theta, 			// starting angle
 	return (mc_arc_continue());
 }
 
-/* 
- * mc_arc_continue() - continuation inner loop to generate and load an arc move
- *
- * Generates the line segments in an arc and queues them to the move buffer.
- *
- * Operation: 
- *	This function is called initially by mc_arc_nonblock.
- * 	Function will either run to arc completion or the move buffer queue is full.
- * 	It can then be re-entered to generate and queue the next segment(s) of arc.
- * 	Calling this function when there is no arc in process has no effect (NOOP).
- *
- * Note on mv_test_move_buffer_full()
- *	The move buffer is tested and sometime later it's queued (via mc_line())
- *	This only works because no ISRs queue this buffer, and this continuation 
- *	routine cannot be pre-empted. If these conditions change you need to 
- *	implement a critical region or mutex of some sort.
- */
 int mc_arc_continue() 
 {
 	if (ma.arc_continue_state == MC_STATE_OFF) {
@@ -377,12 +376,11 @@ int mc_arc_continue()
 	return (TG_OK);
 }
 
-
 /* 
- * mc_home()  (st_go_home is NOT IMPLEMENTED)
+ * mc_go_home_cycle()  (NOT IMPLEMENTED)
  */
 
-int mc_home()
+int mc_go_home_cycle()
 {
 //	st_go_home();
 	clear_vector(mc.position); // By definition this is location [0, 0, 0]
