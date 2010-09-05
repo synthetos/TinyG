@@ -37,29 +37,28 @@ enum mcType {			// types of moves that can be put in the move queue
  */
 
 void mc_init(void);
-//int mc_motion_start(void);
-//int mc_motion_stop(void);
-//int mc_motion_end(void);
-
 int mc_set_position(double x, double y, double z);
-
-int mc_line(double x, double y, double z, double feed_rate, int invert_feed_rate);
-int mc_line_continue(void);
-
-int mc_dwell(double seconds);
-int mc_dwell_continue(void);
+int mc_motion_start(void);
+int mc_motion_stop(void);
+int mc_motion_end(void);
 
 int mc_start(void);
 int mc_stop(void);
 int mc_start_stop_continue();
 
+int mc_line(double x, double y, double z, double feed_rate, uint8_t invert_feed_rate);
+int mc_line_continue(void);
+
+int mc_dwell(double seconds);
+int mc_dwell_continue(void);
+
 int mc_arc(double theta, double angular_travel, 
 		   double radius, double linear_travel, 
-		   int axis_1, int axis_2, int axis_linear, 
-		   double feed_rate, int invert_feed_rate);
+		   uint8_t axis_1, uint8_t axis_2, uint8_t axis_linear, 
+		   double feed_rate, uint8_t invert_feed_rate);
 int mc_arc_continue();
 
-int mc_home(void);						// send tool home
+int mc_go_home_cycle(void);
 
 
 /****** Canonical machining functions from RS274NGC_3 *****

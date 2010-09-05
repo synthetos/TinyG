@@ -4,19 +4,20 @@
  * Copyright (c) 2010 Alden S. Hart, Jr.
  * Portions if this module copyright (c) 2009 Simen Svale Skogsrud
  *
- * TinyG is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation, 
- * either version 3 of the License, or (at your option) any later version.
+ * TinyG is free software: you can redistribute it and/or modify it under the 
+ * terms of the GNU General Public License as published by the Free Software 
+ * Foundation, either version 3 of the License, or (at your option) any later 
+ * version.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
- * PURPOSE. See the GNU General Public License for more details.
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY 
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for details.
  *
- * You should have received a copy of the GNU General Public License along with TinyG  
- * If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along 
+ * with TinyG  If not, see <http://www.gnu.org/licenses/>.
  *
  * ------
- * This version uses a pre-computed move buffer to optimize dequeuing / loading time
+ * This code buffers pre-computed moves to optimize dequeuing / loading time
  *
  *	Instead of queueing the move as:
  *		- steps_x
@@ -24,11 +25,12 @@
  *		- steps_z
  *		- microseconds (length of move),
  *
- *	the move is pre-computed and carried as the values needed by the stepper ISRs:
+ *	move is pre-computed and carried as the values needed by the stepper ISRs:
+ *	  ...for each axis:
  *		- steps
  *		- timer period
  *		- timer postscaler value
- *		- direction ...for each axis
+ *		- direction 
  *
  *	This moves an expensive 64 bit division operation (~3800 cycles X 3) 
  *	to this phase and keeps it out of the high-priority stepper ISRs. 
@@ -88,7 +90,7 @@ void mv_init()
  *
  * Arguments:
  *	steps_x, steps_y and steps_z are signed relative motion in steps 
- *	Microseconds specify how many microseconds the move should take to perform.
+ *	Microseconds specify how many microseconds the move should take to perform
  *
  * Blocking behavior:
  *	This routine returns BUFFER _FULL if there is no space in the buffer.
@@ -130,11 +132,11 @@ uint8_t mv_queue_line(int32_t steps_x, int32_t steps_y, int32_t steps_z, uint32_
 	mv.p->a[X].steps = steps_x;
 	mv.p->a[Y].steps = steps_y;
 	mv.p->a[Z].steps = steps_z;
-	mv.microseconds = (uint64_t)microseconds;			// cast to larger base
+	mv.microseconds = (uint64_t)microseconds;	// cast to larger base
 	mv.ticks = mv.microseconds * TICKS_PER_MICROSECOND;
 
 	for (i = X; i <= Z; i++) {
-		if (mv.p->a[i].steps) { 				// skip axes with zero steps
+		if (mv.p->a[i].steps) { 				// skip axes w/ zero steps
 			// set direction: (polarity is corrected during execute move)
 			(mv.p->a[i].steps < 0) ? 
 			(mv.p->a[i].direction = 1): 		// CCW = 1 
@@ -163,7 +165,7 @@ uint8_t mv_queue_line(int32_t steps_x, int32_t steps_y, int32_t steps_z, uint32_
 /*
  * mv_queue_dwell() - Add a dwell to the move buffer
  *
- * (See mv_queue_line() for detail on blocking and circular buffers)
+ * Queue a dwell on the Z axis
  */
 
 uint8_t mv_queue_dwell(uint32_t microseconds)
@@ -186,14 +188,14 @@ uint8_t mv_queue_dwell(uint32_t microseconds)
 	memset(mv.p, 0, sizeof(struct mvMove));
 	mv.microseconds = (uint64_t)microseconds;			// cast to larger base
 	mv.ticks = mv.microseconds * TICKS_PER_MICROSECOND;
-	mv.p->a[X].steps = (((mv.ticks & 0xFFFF0000)>>32)+1);	// compute steps
-	mv.p->a[X].postscale = 1;
-	mv.ticks_per_step = (uint64_t)(mv.ticks / mv.p->a[X].steps); // expensive!
+	mv.p->a[Z].steps = (((mv.ticks & 0xFFFF0000)>>32)+1);	// compute steps
+	mv.p->a[Z].postscale = 1;
+	mv.ticks_per_step = (uint64_t)(mv.ticks / mv.p->a[Z].steps); // expensive!
 	while (mv.ticks_per_step & 0xFFFFFFFFFFFF0000) {
 		mv.ticks_per_step >>= 1;
-		mv.p->a[X].postscale <<= 1;
+		mv.p->a[Z].postscale <<= 1;
 	}
-	mv.p->a[X].period = (uint16_t)(mv.ticks_per_step & 0x0000FFFF);
+	mv.p->a[Z].period = (uint16_t)(mv.ticks_per_step & 0x0000FFFF);
 	mv.p->move_type = MOVE_TYPE_DWELL;
 	mv.move_buffer_head = next_buffer_head;
 	st_execute_move();
@@ -214,7 +216,7 @@ uint8_t mv_queue_start_stop(uint8_t move_type)
 	}
 	if (mv.move_buffer_tail == next_buffer_head) {
 		return (TG_BUFFER_FULL_NON_FATAL);
-//		sleep_mode();	// USE INSTEAD OF THE RETURN IF YOU WANT BLOCKING BEHAVIOR
+//		sleep_mode();	// USE INSTEAD IF YOU WANT BLOCKING BEHAVIOR
 	}
 	mv.p->move_type = move_type;
 	mv.move_buffer_head = next_buffer_head;
@@ -267,7 +269,7 @@ uint8_t mv_test_move_buffer_full()
 }
 
 /* 
- * mv_flush() - cancel all buffered steps 
+ * mv_flush() - remove all buffered moves (reset queue) 
  */
 
 void mv_flush()

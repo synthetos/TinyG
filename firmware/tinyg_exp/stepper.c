@@ -115,6 +115,8 @@ void st_init()
  *
  *	Uses direct struct addresses and literal values for hardware devices -
  *	it's faster than using the timer and port pointers in the axis structs
+ * 
+ * Note that the Z axis is also used to time out dwells
  */
 
 ISR(X_TIMER_ISR_vect)
@@ -122,12 +124,10 @@ ISR(X_TIMER_ISR_vect)
 	if (ax.stopped) {
 		return;
 	}
-	if (--ax.a[X].postscale_counter != 0) {		// get out fast, if you need to
+	if (--ax.a[X].postscale_counter) {			// get out fast, if you need to
 		return;
 	}
-	if (ax.line_mode) {							// issue a pulse if not a dwell
-		X_MOTOR_PORT.OUTSET = STEP_BIT_bm;		// turn X step bit on
-	}
+	X_MOTOR_PORT.OUTSET = STEP_BIT_bm;			// turn X step bit on
 	if (--ax.a[X].step_counter == 0) {			// end-of-move processing
 		X_TIMER.CTRLA = TC_CLK_OFF;				// stop the clock
 		X_MOTOR_PORT.OUTSET = MOTOR_ENABLE_BIT_bm; // disable the motor
@@ -171,7 +171,9 @@ ISR(Z_TIMER_ISR_vect)
 	if (--ax.a[Z].postscale_counter != 0) {
 		return;
 	}
-	Z_MOTOR_PORT.OUTSET = STEP_BIT_bm;
+	if (ax.line_mode) {							// issue a pulse if not a dwell
+		Z_MOTOR_PORT.OUTSET = STEP_BIT_bm;		// turn Z step bit on
+	}
 	if (--ax.a[Z].step_counter == 0) {
 		Z_TIMER.CTRLA = TC_CLK_OFF;	
 		Z_MOTOR_PORT.OUTSET = MOTOR_ENABLE_BIT_bm;
