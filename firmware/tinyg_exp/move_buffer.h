@@ -27,12 +27,6 @@
  * The move will the ISRs run as normal, but no pulses will be issued.
  */
 
-// axis flags
-//#define DIR_FLAG_bm   (7<<0)		// direction
-//#define DWELL_FLAG_bm (1<<0)		// set if dwell command
-//#define START_FLAG_bm (2<<0)		// set if start command
-//#define STOP_FLAG_bm  (3<<0)		// set if stop command
-
 enum mvType {
 	MOVE_TYPE_LINE,
 	MOVE_TYPE_DWELL,

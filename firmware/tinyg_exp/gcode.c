@@ -118,13 +118,14 @@ static int _gc_parse_gcode_block(char *line);	// Parse the block into structs
 static int _gc_execute_gcode_block(void);		// Execute the gcode block
 static int _gc_read_double(char *buf, int *i, double *double_ptr);
 static int _gc_next_statement(char *letter, double *value_ptr, double *fraction_ptr, char *line, int *i);
-static int _gc_compute_arc(void);
+//static int _gc_compute_arc(uint8_t radius_mode);
 static int _gc_compute_radius_arc(void);
 static int _gc_compute_center_arc(void);
 static double _theta(double x, double y);
 
 #define ZERO_MODEL_STATE(g) memset(g, 0, sizeof(struct GCodeModel))
 #define SET_NEXT_STATE(a,v) ({gn.a=v; gf.a=1; break;})
+#define SET_NEXT_STATE_x2(a,v,b,w) ({gn.a=v; gf.a=1; gn.b=w; gf.a=1; break;})
 #define SET_NEXT_ACTION_MOTION(a,v) ({gn.a=v; gf.a=1; gn.next_action=NEXT_ACTION_MOTION; gf.next_action=1; break;})
 
 /* 
@@ -138,27 +139,12 @@ void gc_init()
 	ZERO_MODEL_STATE(&gf);
 
 	cm_select_plane(CANON_PLANE_XY);		// default planes, 0, 1 and 2
-	gm.seek_rate = cfg.max_seek_rate;		// units/minute
-	gm.max_seek_rate = cfg.max_seek_rate;	// units/minute
-	gm.max_feed_rate = cfg.max_feed_rate;	// units/minute
-	gm.inches_mode = TRUE;					// default to inches (G20)
+	gm.seek_rate = cfg.max_seek_rate;		// in mm/minute
+	gm.max_seek_rate = cfg.max_seek_rate;	// in mm/minute
+	gm.max_feed_rate = cfg.max_feed_rate;	// in mm/minute
+//	gm.inches_mode = TRUE;					// default to inches (G20)
 	gm.absolute_mode = TRUE;				// default to absolute mode (G90)
-	gm.inverse_feed_rate = -1; 				// negative inverse_feed_rate means
-											//...no inverse_feed_rate specified
 }
-
-/*
- * gc_send_to_parser() - send a block of gcode to the parser
- *
- *	Inject a block into parser taking gcode command processing state into account
- */
-/*
-void gc_send_to_parser(char *block)
-{
-	gc_gcode_parser(block);
-	return;
-}
-*/
 
 /*
  * gc_gcode_parser() - parse a block (line) of gcode
@@ -210,6 +196,8 @@ uint8_t gc_gcode_parser(char *block)
  *
  *	MSG specifier in comment can have mixed case but cannot cannot have 
  *	embedded white spaces
+ *
+ *	++++ todo: Support leading and trailing spaces around the MSG specifier
  */
 
 void _gc_normalize_gcode_block(char *block) 
@@ -253,19 +241,10 @@ void _gc_normalize_gcode_block(char *block)
 					break;
 				}
 			}
-			printf_P(PSTR("%s\n"),(comment+3)); // canonical machining func
+			cm_message(comment+3);
+//			printf_P(PSTR("%s\n"),(comment+3)); // canonical machining func
 		}
 	}
-}
-
-/*
- * to_millimeters()
- */
-
-static inline double to_millimeters(double value) 	// inline won't compile at -O0
-//float to_millimeters(double value) 
-{
-	return(gn.inches_mode ? (value * MM_PER_INCH) : value);
 }
 
 /* 
@@ -347,6 +326,10 @@ int _gc_read_double(char *buf, int *i, double *double_ptr)
  *	and flags in gf (model state flags). The execute routine applies them.
  *	The line is assumed to contain only uppercase characters and signed 
  *  floats (no whitespace).
+ *
+ *	Note: A lot of implicit things happen when the gn struct is zeroed:
+ *	  - inverse feed rate mode is cancelled - set back to units_per_minute mode
+ *	  - 
  */
 
 int _gc_parse_gcode_block(char *buf) 
@@ -355,7 +338,15 @@ int _gc_parse_gcode_block(char *buf)
   
 	ZERO_MODEL_STATE(&gn);		// clear all next-state values
 	ZERO_MODEL_STATE(&gf);		// clear all next-state flags
-	gp.status = TG_OK;
+
+	// pull needed state from gm structure to preset next state
+	gn.target[X] = cm_get_position(X);		// pre-set X target
+	gn.target[Y] = cm_get_position(Y);		// pre-set Y target
+	gn.target[Z] = cm_get_position(Z);		// pre-set Z target
+	gn.next_action = cm_get_next_action();	// next action persists
+	gn.motion_mode = cm_get_motion_mode();	// set motion mode (modal group1)
+
+	gp.status = TG_OK;						// initialize return code
 
   	// extract commands and parameters
 	while(_gc_next_statement(&gp.letter, &gp.value, &gp.fraction, buf, &i)) {
@@ -409,16 +400,15 @@ int _gc_parse_gcode_block(char *buf)
 
 			case 'T': SET_NEXT_STATE(tool, trunc(gp.value));
 			case 'F': SET_NEXT_STATE(feed_rate, gp.value);
-			case 'I': SET_NEXT_STATE(offset[0], gp.value);
-			case 'J': SET_NEXT_STATE(offset[1], gp.value);
-			case 'K': SET_NEXT_STATE(offset[2], gp.value);
 			case 'P': SET_NEXT_STATE(dwell_time, gp.value);
-			case 'R': SET_NEXT_STATE(radius, gp.value); 
-					  SET_NEXT_STATE(radius_mode, TRUE); 	// +++ FIX THIS
 			case 'S': SET_NEXT_STATE(spindle_speed, gp.value); 
 			case 'X': SET_NEXT_STATE(target[X], gp.value);
 			case 'Y': SET_NEXT_STATE(target[Y], gp.value);
 			case 'Z': SET_NEXT_STATE(target[Z], gp.value);
+			case 'I': SET_NEXT_STATE(offset[0], gp.value);
+			case 'J': SET_NEXT_STATE(offset[1], gp.value);
+			case 'K': SET_NEXT_STATE(offset[2], gp.value);
+			case 'R': SET_NEXT_STATE(radius, gp.value);
 			case 'N': break;	// ignore line numbers
 			default: gp.status = TG_UNSUPPORTED_STATEMENT;
 		}
@@ -432,153 +422,225 @@ int _gc_parse_gcode_block(char *buf)
 /*
  * _gc_execute_gcode_block() - execute parsed block
  *
- *  Conditionally (based on gf) call the canonical machining functions in 
- *	order of execution as per RS274NGC_3 table 8 (below, with modifications):
+ *  Conditionally (based on whether a flag is set in gf) call the canonical 
+ *	machining functions in order of execution as per RS274NGC_3 table 8 
+ *  (below, with modifications):
  *
  *		1. comment (includes message) [handled during block normalization]
- *		2. set feed rate mode (G93, G94 - inverse time or per minute). 
- *		3. set feed rate (F). 
- *		4. set spindle speed (S). 
- *		5. select tool (T). 
- *		6. change tool (M6). 
- *		7. spindle on or off (M3, M4, M5). 
- *		8. coolant on or off (M7, M8, M9). 
- *		9. enable or disable overrides (M48, M49). 
- *		10. dwell (G4). 
- *		11. set active plane (G17, G18, G19). 
- *		12. set length units (G20, G21). 
- *		13. cutter radius compensation on or off (G40, G41, G42) 
- *		14. cutter length compensation on or off (G43, G49) 
- *		15. coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3) 
- *		16. set path control mode (G61, G61.1, G64) 
- *		17. set distance mode (G90, G91). 
- *		18. set retract mode (G98, G99). 
- *		19. home (G28, G30) or
- *				change coordinate system data (G10) or
- *				set axis offsets (G92, G92.1, G92.2, G94)
+ *		2. set feed rate mode (G93, G94 - inverse time or per minute)
+ *		3. set feed rate (F)
+ *		4. set spindle speed (S)
+ *		5. select tool (T)
+ *		6. change tool (M6)
+ *		7. spindle on or off (M3, M4, M5)
+ *		8. coolant on or off (M7, M8, M9)
+ *		9. enable or disable overrides (M48, M49)
+ *		10. dwell (G4)
+ *		11. set active plane (G17, G18, G19)
+ *		12. set length units (G20, G21)
+ *		13. cutter radius compensation on or off (G40, G41, G42)
+ *		14. cutter length compensation on or off (G43, G49)
+ *		15. coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3)
+ *		16. set path control mode (G61, G61.1, G64)
+ *		17. set distance mode (G90, G91)
+ *		18. set retract mode (G98, G99)
+ *		19a. home (G28, G30) or
+ *		19b. change coordinate system data (G10) or
+ *		19c. set axis offsets (G92, G92.1, G92.2, G94)
  *		20. perform motion (G0 to G3, G80-G89) as modified (possibly) by G53
- *		21. stop (M0, M1, M2, M30, M60).
+ *		21. stop (M0, M1, M2, M30, M60)
  *
- *	Unit conversions should occur (as needed) on the inputs to the canonical 
- *	functions.
+ *	Values in gn are in original units and should not be unit converted prior 
+ *	to calling the canonical functions (which do the unit conversions)
+ */
+
+#define CALL_CM_FUNC(f,v) if(gf.v) {if((gp.status = f(gn.v))) {return(gp.status);}}
+/* Example:
+	if (gf.feed_rate) {
+		if ((gp.status = cm_set_feed_rate(gn.feed_rate))) {
+			return(gp.status);								// error return
+		}
+	}
  */
 
 int _gc_execute_gcode_block() 
 {
-	if (gf.inverse_feed_rate_mode) {
-		cm_set_inverse_feed_rate_mode(gn.inverse_feed_rate_mode);
-	}
-	if (gf.feed_rate) {
-		if ((gp.status = cm_set_feed_rate(to_millimeters(gn.feed_rate)))) {
-			return (gp.status);				// error return
-		}
-	}
-	if (gf.spindle_speed) {
-		if ((gp.status = cm_set_spindle_speed(gn.spindle_speed))) {
-			return (gp.status);
-		}
-	}
-	if (gf.tool) {
-		cm_select_tool(gn.tool);
-	}
-	if (gf.change_tool) {
-		cm_change_tool();
-	}
+	CALL_CM_FUNC(cm_set_inverse_feed_rate_mode, inverse_feed_rate_mode);
+	CALL_CM_FUNC(cm_set_feed_rate, feed_rate);
+	CALL_CM_FUNC(cm_set_spindle_speed, spindle_speed);
+	CALL_CM_FUNC(cm_select_tool, tool);
+	CALL_CM_FUNC(cm_change_tool, tool);
+
+	// spindle on or off
 	if (gf.spindle_mode) {
     	if (gn.spindle_mode == SPINDLE_CW) {
 			cm_start_spindle_clockwise();
 		} else if (gn.spindle_mode == SPINDLE_CCW) {
 			cm_start_spindle_counterclockwise();
 		} else {
-			cm_stop_spindle_turning();
+			cm_stop_spindle_turning();	// failsafe: any error causes stop
 		}
 	}
- 	// coolant goes here
-	// overrides go here
+
+ 	// coolant on or off goes here
+	// enable or disable overrides goes here
+
+	// dwell
 	if (gn.next_action == NEXT_ACTION_DWELL) {
-		gm.dwell_time = gn.dwell_time;
-		gp.status = mc_dwell(gm.dwell_time); 
-	}
-
-
- 
-/*
-			case 'X': case 'Y': case 'Z': {
-				if (gn.set_origin_mode) {
-					gp.position[gp.letter - 'X'] = gp.unit_converted_value;
-					gp.target[gp.letter - 'X'] = gp.position[gp.letter - 'X'];
-//					memcpy(gp.target, gp.position, sizeof(gp.target));	// target = position
-					gn.next_action = NEXT_ACTION_OFFSET_COORDINATES;
-				} else if (gp.absolute_mode || gp.absolute_override) {
-					gp.target[gp.letter - 'X'] = gp.unit_converted_value;
-				} else {
-					gp.target[gp.letter - 'X'] += gp.unit_converted_value;
-				}
- 				break;
-			}
-		}	
-	}
-
-  // Perform any physical actions
-  //	memcpy(gm.target, gm.position, sizeof(gm.target)); // target = position
-
-	switch (gp.next_action) {
-		case NEXT_ACTION_NONE: {				// nothing to do here
-			break;
-		}
-
-		case NEXT_ACTION_GO_HOME: { 
-			gp.status = mc_home(); 
-			break;
-		}
-
-		case NEXT_ACTION_OFFSET_COORDINATES: { 
-			gp.status = mc_set_position(gp.position[X], gp.position[Y], gp.position[Z]); 
-			break;
-		}
-
-		case NEXT_ACTION_MOTION: {
-			switch (gp.motion_mode) {
-				case MOTION_MODE_CANCEL_MOTION_MODE: {
-					break;
-				}
-
-				case MOTION_MODE_STRAIGHT_TRAVERSE: case MOTION_MODE_STRAIGHT_FEED: {
-					gp.status = mc_line(gp.target[X], gp.target[Y], gp.target[Z],
-							    	   (gp.inverse_feed_rate_mode) ? gp.inverse_feed_rate : gp.feed_rate,
-										gp.inverse_feed_rate_mode); 
-					break;
-				}
-
-				case MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC: {
-					gp.status = _gc_compute_arc(); 
-					break;
-				}
-			}
+		if ((gp.status = cm_dwell(gn.dwell_time))) {
+			return (gp.status);
 		}
 	}
-	if ((gp.status == TG_OK) || (gp.status == TG_EAGAIN)) {
-		memcpy(gp.position, gp.target, sizeof(gp.target));
-	};
-*/
+
+	CALL_CM_FUNC(cm_select_plane, set_plane);
+	CALL_CM_FUNC(cm_use_length_units, inches_mode);
+
+	// cutter radius compensation goes here
+	// cutter length compensation goes here
+	// coordinate system selection goes here
+	// set path control mode goes here
+
+	CALL_CM_FUNC(cm_set_distance_mode, absolute_mode);
+
+	// set retract mode goes here
+
+	// home
+	if (gn.next_action == NEXT_ACTION_GO_HOME) {
+		if ((gp.status = cm_return_to_home())) {
+			return (gp.status);								// error return
+		}
+	}
+
+	// change coordinate system data goes here
+
+	// set axis offsets
+	if (gn.next_action == NEXT_ACTION_OFFSET_COORDINATES) {
+		if ((gp.status = cm_set_origin_offsets(
+						 gn.target[X], gn.target[Y], gn.target[Z]))) {
+			return (gp.status);								// error return
+		}
+	}
+
+	// G0 (linear traverse motion command)
+	if ((gn.next_action == NEXT_ACTION_MOTION) && 
+	    (gn.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE)) {
+		gp.status = cm_straight_traverse(gn.target[X], gn.target[Y], gn.target[Z]);
+		return (gp.status);
+	}
+
+	// G1 (linear feed motion command)
+	if ((gn.next_action == NEXT_ACTION_MOTION) && 
+	    (gn.motion_mode == MOTION_MODE_STRAIGHT_FEED)) {
+		gp.status = cm_straight_feed(gn.target[X], gn.target[Y], gn.target[Z]);
+		return (gp.status);
+	}
+
+	// G2 or G3 (arc motion command)
+	if ((gn.next_action == NEXT_ACTION_MOTION) && 
+		((gn.motion_mode == MOTION_MODE_CW_ARC) || (gn.motion_mode == MOTION_MODE_CCW_ARC))) {
+		gp.status = cm_arc_feed(gf.radius);	// set radius mode if radius present
+		return (gp.status);
+	}
 	return(gp.status);
 }
 
 
-/*****************************************************************************
+/*************************************************************************
  *
  * CANONICAL MACHINING FUNCTIONS
  *
- *	Arguments are assumed to be unit-converted (to millimeters) as appropriate
+ *	Values are passed on pre-unit_converted state
  *	All operations occur on gm (current model state)
  *
- ****************************************************************************/
+ ************************************************************************/
+
+/*
+ * cm_get_next_action() - get next_action from the gm struct
+ * cm_get_motion_mode() - get motion mode from the gm struct
+ * cm_get_position() - get position from the gm struct
+ */
+
+inline uint8_t cm_get_next_action() { return gm.next_action; }
+inline uint8_t cm_get_motion_mode() { return gm.motion_mode; }
+inline uint8_t cm_get_position(uint8_t axis) { return gm.position[axis]; }
+
+/*
+ * _to_millimeters()
+ */
+
+inline double _to_millimeters(double value) 	// inline won't compile at -O0
+{
+	return(gm.inches_mode ? (value * MM_PER_INCH) : value);
+}
+
+/*
+ * cm_comment() - ignore comments (I do)
+ */
+
+uint8_t cm_comment(char *comment)
+{
+	return (TG_OK);		// no operation
+}
+
+/*
+ * cm_message() - send message to console
+ */
+
+uint8_t cm_message(char *message)
+{
+	printf_P(PSTR("%s\n"), message);
+	return (TG_OK);
+}
+
+/*
+ * cm_straight_traverse() - linear seek (G0)
+ */
+
+uint8_t cm_straight_traverse(double x, double y, double z)
+{
+	// copy parameters into the current state
+	gm.next_action = NEXT_ACTION_MOTION;			// set it so it persists
+	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;	// set it so it persists
+	gm.target[X] = _to_millimeters(x);
+	gm.target[Y] = _to_millimeters(y);
+	gm.target[Z] = _to_millimeters(z);
+
+	// execute the move
+	gp.status = mc_line(gm.target[X], 
+						gm.target[Y], 
+						gm.target[Z], 
+						gm.seek_rate, FALSE);
+	return (gp.status);
+}
+
+/*
+ * cm_straight_feed() - G1
+ */
+
+uint8_t cm_straight_feed(double x, double y, double z)
+{
+	// copy parameters into the current state
+	gm.next_action = NEXT_ACTION_MOTION;
+	gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
+	gm.target[X] = _to_millimeters(x);
+	gm.target[Y] = _to_millimeters(y);
+	gm.target[Z] = _to_millimeters(z);
+
+	// execute the move
+	gp.status = mc_line(gm.target[X], gm.target[Y], gm.target[Z],  
+						((gm.inverse_feed_rate_mode) ? gm.inverse_feed_rate : gm.feed_rate),
+						gm.inverse_feed_rate_mode);
+	return (gp.status);
+}
 
 /*
  * cm_set_inverse_feed_rate()
+ *
+ *	TRUE = inverse time feed rate in effect - for this block only
+ *	FALSE = units per minute feed rate in effect
  */
 
-inline uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode)  // T=inv feed rate
+inline uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode)
 {
 	gm.inverse_feed_rate_mode = mode;
 	return (TG_OK);
@@ -586,39 +648,64 @@ inline uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode)  // T=inv feed rate
 
 /*
  * cm_set_feed_rate() - F parameter
+ *
+ * Sets feed rate; or sets inverse feed rate if it's active.
+ * Converts all values to internal format (mm's)
+ * Errs out of feed rate exceeds maximum, but doesn't compute maximum for 
+ * inverse feed rate as this would require knowing the move length in advance.
  */
 
-uint8_t cm_set_feed_rate(double rate) // rate in mm / minute (unit converted)
+uint8_t cm_set_feed_rate(double rate)
 {
-	if (rate > gm.max_feed_rate) {
-		return (TG_MAX_FEED_RATE_EXCEEDED);
-	}
 	if (gm.inverse_feed_rate_mode) {
-		gm.inverse_feed_rate = rate; // minutes per motion for this motion only
+		gm.inverse_feed_rate = rate; // minutes per motion for this block only
 	} else {
-		gm.feed_rate = rate; 		// mm per minute
+		rate = _to_millimeters(rate);
+		if (rate > gm.max_feed_rate) {
+			return (TG_MAX_FEED_RATE_EXCEEDED);
+		} else {
+			gm.feed_rate = rate; 	// as mm per minute
+		}
+	}
+	return (TG_OK);
+}
+
+/*
+ * cm_set_traverse_rate() - set seek rate
+ */
+
+uint8_t cm_set_traverse_rate(double rate)
+{
+	rate = _to_millimeters(rate);
+
+	if (rate > gm.max_seek_rate) {
+		return (TG_MAX_SEEK_RATE_EXCEEDED);
+	} else {
+		gm.seek_rate = rate; 		// mm per minute
 	}
 	return (TG_OK);
 }
 
 /* 
  * cm_select_plane() - select axis plane 
+ *
+ * Defaults to XY on erroneous specification
  */
 
 uint8_t cm_select_plane(uint8_t plane) 
 {
-	if (plane == CANON_PLANE_XY) {
-		gm.plane_axis_0 = X;
-		gm.plane_axis_1 = Y;
-		gm.plane_axis_2 = Z;
+	if (plane == CANON_PLANE_YZ) {
+		gm.plane_axis_0 = Y;
+		gm.plane_axis_1 = Z;
+		gm.plane_axis_2 = X;
 	} else if (plane == CANON_PLANE_XZ) {
 		gm.plane_axis_0 = X;
 		gm.plane_axis_1 = Z;
 		gm.plane_axis_2 = Y;
 	} else {
-		gm.plane_axis_0 = Y;
-		gm.plane_axis_1 = Z;
-		gm.plane_axis_2 = X;
+		gm.plane_axis_0 = X;
+		gm.plane_axis_1 = Y;
+		gm.plane_axis_2 = Z;
 	}
 	return (TG_OK);
 }
@@ -637,7 +724,7 @@ uint8_t cm_select_tool(uint8_t tool)
  * cm_change_tool() - M6
  */
 
-uint8_t cm_change_tool(void)
+uint8_t cm_change_tool(uint8_t tool)
 {
 	return (TG_OK);
 }
@@ -648,7 +735,7 @@ uint8_t cm_change_tool(void)
 
 uint8_t cm_set_spindle_speed(double speed)
 {
-//	if (rate > gm.max_spindle speed) {
+//	if (speed > gm.max_spindle speed) {
 //		return (TG_MAX_SPINDLE_SPEED_EXCEEDED);
 //	}
 	gm.spindle_speed = speed;
@@ -682,42 +769,118 @@ uint8_t cm_stop_spindle_turning(void)
 	return (TG_OK);
 }
 
+/* 
+ * cm_start() - (re)enable stepper timers
+ */
 
-/*
+uint8_t cm_start()
+{
+	return (TG_OK);
+}
+
+/* 
+ * cm_stop() - M0, M1
+ */
+
+uint8_t cm_stop()
+{
+	return (TG_OK);
+}
+
+/* 
+ * cm_return_to_home() - G28
+ */
+
+uint8_t cm_return_to_home()
+{
+	return (TG_OK);
+}
+
+/* 
+ * cm_set_origin_offsets() - G92
+ */
+
+uint8_t cm_set_origin_offsets(double x, double y, double z)
+{
+	mc_set_position(_to_millimeters(x), _to_millimeters(y), _to_millimeters(z));
+	return (TG_OK);
+}
+
+/* 
+ * cm_use_length_units() - G20, G21
+ */
+
+uint8_t cm_use_length_units(uint8_t inches_mode)
+{
+	gm.inches_mode = inches_mode;
+	return (TG_OK);
+}
+
+/* 
+ * cm_set_distance_mode() - G90, G91
+ */
+
+uint8_t cm_set_distance_mode(uint8_t absolute_mode)
+{
+	gm.absolute_mode = absolute_mode;
+	return (TG_OK);
+}
+
+/* 
+ * cm_dwell() - G4, P parameter (seconds)
+ */
+
+uint8_t cm_dwell(double seconds)
+{
+	gm.dwell_time = seconds;
+	mc_dwell(seconds);
+	return (TG_OK);
+}
+
 uint8_t cm_init_canon()						// init canonical machining functions
-uint8_t cm_set_origin_offsets(x,y,z)		// supported as limited G92 for zeroing
-uint8_t cm_use_length_units(UNITS)			// G20/G21
-uint8_t cm_set_traverse_rate(rate)			// (no code, get from config)
-uint8_t cm_straight_traverse(x,y,z)			// G0
-uint8_t cm_arc_feed()						// G2/G3
-uint8_t cm_dwell(seconds)					// G4, P parameter
-uint8_t cm_straight_feed()					// G1
-uint8_t cm_start_spindle_clockwise()		// M3
-uint8_t cm_start_spindle_counterclockwise()	// M4
-uint8_t cm_stop_spindle_turning				// M5
-uint8_t cm_change_tool()					// M6, T parameter
-uint8_t cm_select_tool()					// T parameter
-uint8_t cm_comment(char *)					// ignore comments (I do)
-uint8_t cm_message(char *)					// send message to console
+{
+	return (TG_OK);
+}
+
 uint8_t cm_optional_program_stop()			// M1
+{
+	return (TG_OK);
+}
+
 uint8_t cm_program_stop()					// M0
+{
+	return (TG_OK);
+}
+
 uint8_t cm_program_end()					// M2
-uint8_t cm_stop()							// used by M0,M1
-uint8_t cm_start()							// (re)enables stepper timers
-uint8_t cm_return_to_home()					// G28 
-uint8_t cm_set_distance_mode()				// G90/G91 (absolute/incremental motion)
-*/
+{
+	return (TG_OK);
+}
 
 
 /*
- * _gc_compute_arc() - arc computation helper routine 
+ * cm_arc_feed() - G2, G3
+ * (_gc_compute_arc() - arc computation helper routine )
  *
  * Works completely from current state (gm)
  */
 
-int _gc_compute_arc()
+uint8_t cm_arc_feed(uint8_t radius_mode)
 {
-	if (gn.radius_mode) {
+	// copy parameters into the current state
+	// ++++ this is a cheat. Not supposed to access gn. Should pass parameters in
+	gm.next_action = NEXT_ACTION_MOTION;
+	gm.motion_mode = gn.motion_mode;	
+	gm.target[X] = _to_millimeters(gn.target[X]);
+	gm.target[Y] = _to_millimeters(gn.target[X]);
+	gm.target[Z] = _to_millimeters(gn.target[X]);
+	if (gf.offset[0]) { gm.offset[0] = gn.offset[0]; }
+	if (gf.offset[1]) { gm.offset[1] = gn.offset[1]; }
+	if (gf.offset[2]) { gm.offset[2] = gn.offset[2]; }
+	if (gf.radius) { gm.radius = gn.radius; }
+
+	// execute the move
+	if (radius_mode) {
 		if ((_gc_compute_radius_arc() != TG_OK)) {
 			return (gp.status);
 		}

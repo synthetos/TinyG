@@ -107,7 +107,7 @@
 #include "data_gcode_asst.h"			// assorted test code
 //#include "data_gcode_zoetrope.h"		// zoetrope moves. makes really cool sounds
 //#include "data_gcode_roadrunner.h"
-//#include "data_gcode_contraptor_circle.h"
+#include "data_gcode_contraptor_circle.h"
 
 /*
  * Local Scope Functions and Data
@@ -163,9 +163,8 @@ void tg_alive()
 /* 
  * tg_controller() - top-level controller.
  *
- * Put tasks in order of highest to lowest priority.
- * Tasks are ordered by increasing dependency (blocking hierarchy)
- * Tasks that are dependent on the completion of lower-level tasks should be
+ * Tasks are ordered by increasing dependency (blocking hierarchy) - tasks 
+ * that are dependent on the completion of lower-level tasks should be
  * placed later in the list than the task(s) they are dependent upon.
  */
 
@@ -177,15 +176,20 @@ void tg_alive()
 void tg_controller()
 {
 	st_execute_move();					// always start with this
+
 	// level 0 routines - stepper queueing routines
 	DISPATCH(mc_line_continue());
 	DISPATCH(mc_dwell_continue());
 	DISPATCH(mc_start_stop_continue());
+
 	// level 1 routines - canonical motion primitives
 	DISPATCH(mc_arc_continue());
+
 	// level 2 routines - motion cycle routines
+
 	// level 3 routines - parsers and line readers
 	DISPATCH(tg_read_next_line());
+
 	_tg_prompt();						// always end with this
 }
 
@@ -374,8 +378,9 @@ char tgStatusMsg18[] PROGMEM = "{18} Motion control error";
 char tgStatusMsg19[] PROGMEM = "{19} Arc specification error";
 char tgStatusMsg20[] PROGMEM = "{20} Zero length line";
 char tgStatusMsg21[] PROGMEM = "{21} Maximum feed rate exceeded";
-char tgStatusMsg22[] PROGMEM = "{22} Maximum table travel exceeded";
-char tgStatusMsg23[] PROGMEM = "{23} Maximum spindle speed exceeded";
+char tgStatusMsg22[] PROGMEM = "{22} Maximum seek rate exceeded";
+char tgStatusMsg23[] PROGMEM = "{23} Maximum table travel exceeded";
+char tgStatusMsg24[] PROGMEM = "{24} Maximum spindle speed exceeded";
 
 // put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
 PGM_P tgStatusStrings[] PROGMEM = {	
@@ -402,7 +407,8 @@ PGM_P tgStatusStrings[] PROGMEM = {
 	tgStatusMsg20,
 	tgStatusMsg21,
 	tgStatusMsg22,
-	tgStatusMsg23
+	tgStatusMsg23,
+	tgStatusMsg24
 };
 
 void tg_print_status(const uint8_t status_code, const char *textbuf)
@@ -412,6 +418,7 @@ void tg_print_status(const uint8_t status_code, const char *textbuf)
 		case TG_EAGAIN: return;
 		case TG_NOOP: return;
 		case TG_QUIT: return;
+		case TG_ZERO_LENGTH_LINE: return;
 	}
 	printf_P(PSTR("%S: %s\n"),(PGM_P)pgm_read_word(&tgStatusStrings[status_code]), textbuf);
 //	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgStatusStrings[status_code]));
@@ -442,11 +449,11 @@ int _tg_test_file()
 //	xio_open_pgm(PGMFILE(&spiral_test5));
 //	xio_open_pgm(PGMFILE(&dwell_test2));
 
-//	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
+	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
 //	xio_open_pgm(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
 //	xio_open_pgm(PGMFILE(&roadrunner));
 
-	xio_open_pgm(PGMFILE(&parser_test1));	// gcode parser tests
+//	xio_open_pgm(PGMFILE(&parser_test1));	// gcode parser tests
 
 	// set source and mode
 	_tg_set_source(XIO_DEV_PGM);
