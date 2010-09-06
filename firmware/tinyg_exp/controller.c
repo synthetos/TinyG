@@ -105,9 +105,9 @@
  */
 
 #include "data_gcode_asst.h"			// assorted test code
-//#include "data_gcode_zoetrope.h"		// zoetrope moves. makes really cool sounds
-//#include "data_gcode_roadrunner.h"
+#include "data_gcode_zoetrope.h"		// zoetrope moves. makes really cool sounds
 #include "data_gcode_contraptor_circle.h"
+//#include "data_gcode_roadrunner.h"
 
 /*
  * Local Scope Functions and Data

@@ -106,19 +106,35 @@
 #include "motion_control.h"
 #include "spindle.h"
 
-/* data structures */
+/* data structures 
+ *
+ * - gp is a minimal structure to keep parser state
+ *
+ * The three GCodeModel structs look the same but have different uses:
+ *
+ * - gm keeps the internal state model in normalized, canonical form. All
+ * 	 values are unit converted (to mm) and in the internal coordinate system.
+ *	 Gm is owned by the canonical motion layer and is  accessed by the 
+ *	 parser through cm_ routines (which include various setters and getters).
+ *	 Gm's state persists from block to block.
+ *
+ * - gn records the data in the new gcode block in the formats present in
+ *	 the block (pre-normalized forms). It is initialized for each block 
+ *	 during which some state elements may be restored from gm.
+ *
+ * - gf is a flag struct which records any data that has changed in gn. 
+ */
 static struct GCodeParser gp;		// gcode parser variables
 static struct GCodeModel gm;		// gcode model - current state
-static struct GCodeModel gn;		// gcode model - parameters for next state
+static struct GCodeModel gn;		// gcode model - current block values
 static struct GCodeModel gf;		// gcode model - flags changed values
 
 /* local helper functions and macros */
 static void _gc_normalize_gcode_block(char *block);
 static int _gc_parse_gcode_block(char *line);	// Parse the block into structs
 static int _gc_execute_gcode_block(void);		// Execute the gcode block
-static int _gc_read_double(char *buf, int *i, double *double_ptr);
-static int _gc_next_statement(char *letter, double *value_ptr, double *fraction_ptr, char *line, int *i);
-//static int _gc_compute_arc(uint8_t radius_mode);
+static int _gc_read_double(char *buf, uint8_t *i, double *double_ptr);
+static int _gc_next_statement(char *letter, double *value_ptr, double *fraction_ptr, char *line, uint8_t *i);
 static int _gc_compute_radius_arc(void);
 static int _gc_compute_center_arc(void);
 static double _theta(double x, double y);
@@ -280,7 +296,7 @@ static double _theta(double x, double y)
  */
 
 int _gc_next_statement(char *letter, double *value_ptr, double *fraction_ptr, 
-					   char *buf, int *i) {
+					   char *buf, uint8_t *i) {
 	if (buf[*i] == 0) {
 		return(FALSE); // No more statements
 	}
@@ -305,7 +321,7 @@ int _gc_next_statement(char *letter, double *value_ptr, double *fraction_ptr,
  *	double_ptr	pointer to double to be read
  */
 
-int _gc_read_double(char *buf, int *i, double *double_ptr) 
+int _gc_read_double(char *buf, uint8_t *i, double *double_ptr) 
 {
 	char *start = buf + *i;
 	char *end;
@@ -327,28 +343,29 @@ int _gc_read_double(char *buf, int *i, double *double_ptr)
  *	The line is assumed to contain only uppercase characters and signed 
  *  floats (no whitespace).
  *
- *	Note: A lot of implicit things happen when the gn struct is zeroed:
+ *	A lot of implicit things happen when the gn struct is zeroed:
  *	  - inverse feed rate mode is cancelled - set back to units_per_minute mode
- *	  - 
  */
 
 int _gc_parse_gcode_block(char *buf) 
 {
-	int i = 0;  				// index into Gcode block buffer (buf)
+	uint8_t i = 0;  			// index into Gcode block buffer (buf)
   
 	ZERO_MODEL_STATE(&gn);		// clear all next-state values
 	ZERO_MODEL_STATE(&gf);		// clear all next-state flags
 
 	// pull needed state from gm structure to preset next state
-	gn.target[X] = cm_get_position(X);		// pre-set X target
-	gn.target[Y] = cm_get_position(Y);		// pre-set Y target
-	gn.target[Z] = cm_get_position(Z);		// pre-set Z target
+	for (i=X; i<=Z; i++) {
+		gn.target[i] = cm_get_position(i);	// pre-set target values
+		gn.position[i] = gn.target[i];		//...and current position
+	}
 	gn.next_action = cm_get_next_action();	// next action persists
 	gn.motion_mode = cm_get_motion_mode();	// set motion mode (modal group1)
 
 	gp.status = TG_OK;						// initialize return code
 
   	// extract commands and parameters
+	i = 0;
 	while(_gc_next_statement(&gp.letter, &gp.value, &gp.fraction, buf, &i)) {
     	switch(gp.letter) {
 			case 'G':
@@ -482,8 +499,8 @@ int _gc_execute_gcode_block()
 		}
 	}
 
- 	// coolant on or off goes here
-	// enable or disable overrides goes here
+ 	//--> coolant on or off goes here
+	//--> enable or disable overrides goes here
 
 	// dwell
 	if (gn.next_action == NEXT_ACTION_DWELL) {
@@ -495,23 +512,23 @@ int _gc_execute_gcode_block()
 	CALL_CM_FUNC(cm_select_plane, set_plane);
 	CALL_CM_FUNC(cm_use_length_units, inches_mode);
 
-	// cutter radius compensation goes here
-	// cutter length compensation goes here
-	// coordinate system selection goes here
-	// set path control mode goes here
+	//--> cutter radius compensation goes here
+	//--> cutter length compensation goes here
+	//--> coordinate system selection goes here
+	//--> set path control mode goes here
 
 	CALL_CM_FUNC(cm_set_distance_mode, absolute_mode);
 
-	// set retract mode goes here
+	//--> set retract mode goes here
 
-	// home
+	// homing cycle
 	if (gn.next_action == NEXT_ACTION_GO_HOME) {
 		if ((gp.status = cm_return_to_home())) {
 			return (gp.status);								// error return
 		}
 	}
 
-	// change coordinate system data goes here
+	//--> change coordinate system data goes here
 
 	// set axis offsets
 	if (gn.next_action == NEXT_ACTION_OFFSET_COORDINATES) {
@@ -536,9 +553,11 @@ int _gc_execute_gcode_block()
 	}
 
 	// G2 or G3 (arc motion command)
-	if ((gn.next_action == NEXT_ACTION_MOTION) && 
-		((gn.motion_mode == MOTION_MODE_CW_ARC) || (gn.motion_mode == MOTION_MODE_CCW_ARC))) {
-		gp.status = cm_arc_feed(gf.radius);	// set radius mode if radius present
+	if ((gn.next_action == NEXT_ACTION_MOTION) &&
+	   ((gn.motion_mode == MOTION_MODE_CW_ARC) || 
+		(gn.motion_mode == MOTION_MODE_CCW_ARC))) {
+		// gf.radius sets radius mode if radius was collected in gn
+		gp.status = cm_arc_feed(gn.motion_mode, gf.radius);
 		return (gp.status);
 	}
 	return(gp.status);
@@ -549,29 +568,79 @@ int _gc_execute_gcode_block()
  *
  * CANONICAL MACHINING FUNCTIONS
  *
- *	Values are passed on pre-unit_converted state
+ *	Values are passed in pre-unit_converted state
  *	All operations occur on gm (current model state)
  *
  ************************************************************************/
 
-/*
- * cm_get_next_action() - get next_action from the gm struct
- * cm_get_motion_mode() - get motion mode from the gm struct
- * cm_get_position() - get position from the gm struct
- */
-
-inline uint8_t cm_get_next_action() { return gm.next_action; }
-inline uint8_t cm_get_motion_mode() { return gm.motion_mode; }
-inline uint8_t cm_get_position(uint8_t axis) { return gm.position[axis]; }
+/*--- HELPER ROUTINES ---*/
 
 /*
+ * Helpers
+ *
  * _to_millimeters()
  */
 
-inline double _to_millimeters(double value) 	// inline won't compile at -O0
+inline double _to_millimeters(double value)
 {
 	return(gm.inches_mode ? (value * MM_PER_INCH) : value);
 }
+/*
+ * Getters
+ *
+ * cm_get_position() - return position from the gm struct into gn struct form
+ * cm_get_next_action() - get next_action from the gm struct
+ * cm_get_motion_mode() - get motion mode from the gm struct
+ */
+inline double cm_get_position(uint8_t axis) 
+{
+	return (gm.inches_mode ? (gm.position[axis] / MM_PER_INCH) : gm.position[axis]);
+}
+
+inline uint8_t cm_get_next_action() { return gm.next_action; }
+inline uint8_t cm_get_motion_mode() { return gm.motion_mode; }
+
+
+/*
+ * Setters
+ *
+ * cm_set_position() - set XYZ position
+ * cm_set_target() - set XYZ target
+ * cm_set_offset() - set IJK offset
+ * cm_set_radius() - set R
+ * cm_set_position_to_target()
+ *
+ *	Input coordinates are not unit adjusted (are raw gn coords)
+ */
+
+inline void cm_set_position(double x, double y, double z) 
+{ 
+	gm.position[X] = _to_millimeters(x);
+	gm.position[Y] = _to_millimeters(y);
+	gm.position[Z] = _to_millimeters(z);
+}
+
+inline void cm_set_target(double x, double y, double z) 
+{ 
+	gm.target[X] = _to_millimeters(x);
+	gm.target[Y] = _to_millimeters(y);
+	gm.target[Z] = _to_millimeters(z);
+}
+
+inline void cm_set_offset(double i, double j, double k) 
+{ 
+	gm.offset[0] = _to_millimeters(i);
+	gm.offset[1] = _to_millimeters(j);
+	gm.offset[2] = _to_millimeters(k);
+}
+
+inline void cm_set_radius(double r) 
+{ 
+	gm.radius = _to_millimeters(r);
+}
+
+
+/*--- CANONICAL MACHINING FUNCTIONS ---*/
 
 /*
  * cm_comment() - ignore comments (I do)
@@ -599,17 +668,15 @@ uint8_t cm_message(char *message)
 uint8_t cm_straight_traverse(double x, double y, double z)
 {
 	// copy parameters into the current state
-	gm.next_action = NEXT_ACTION_MOTION;			// set it so it persists
-	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;	// set it so it persists
-	gm.target[X] = _to_millimeters(x);
-	gm.target[Y] = _to_millimeters(y);
-	gm.target[Z] = _to_millimeters(z);
+	gm.next_action = NEXT_ACTION_MOTION;
+	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
+	cm_set_target(x, y, z);
 
 	// execute the move
-	gp.status = mc_line(gm.target[X], 
-						gm.target[Y], 
-						gm.target[Z], 
-						gm.seek_rate, FALSE);
+	gp.status = mc_line(gm.target[X], gm.target[Y], gm.target[Z], gm.seek_rate, FALSE);
+
+	// set final position
+	cm_set_position(x, y, z);
 	return (gp.status);
 }
 
@@ -622,14 +689,20 @@ uint8_t cm_straight_feed(double x, double y, double z)
 	// copy parameters into the current state
 	gm.next_action = NEXT_ACTION_MOTION;
 	gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
-	gm.target[X] = _to_millimeters(x);
-	gm.target[Y] = _to_millimeters(y);
-	gm.target[Z] = _to_millimeters(z);
+	cm_set_target(x, y, z);
 
 	// execute the move
 	gp.status = mc_line(gm.target[X], gm.target[Y], gm.target[Z],  
-						((gm.inverse_feed_rate_mode) ? gm.inverse_feed_rate : gm.feed_rate),
+					  ((gm.inverse_feed_rate_mode) ? gm.inverse_feed_rate : gm.feed_rate),
 						gm.inverse_feed_rate_mode);
+
+	// set final position
+	/* As far as the gcode engine is concerned the position is now the target.
+	 * In reality, motion_control / steppers will still be processing the
+	 * action and the real tool position is still close to the starting point.
+	 * The endpoint position is not moved if there has been an error.
+	 */
+	cm_set_position(x, y, z);
 	return (gp.status);
 }
 
@@ -802,6 +875,7 @@ uint8_t cm_return_to_home()
 
 uint8_t cm_set_origin_offsets(double x, double y, double z)
 {
+	cm_set_position(x, y, z);
 	mc_set_position(_to_millimeters(x), _to_millimeters(y), _to_millimeters(z));
 	return (TG_OK);
 }
@@ -858,26 +932,28 @@ uint8_t cm_program_end()					// M2
 }
 
 
-/*
+/***********************************************************************
+ *
  * cm_arc_feed() - G2, G3
- * (_gc_compute_arc() - arc computation helper routine )
+ * _gc_compute_radius_arc() - compute arc center (offset) from radius.
+ * _gc_compute_center_arc() - compute arc from I and J (arc center point)
  *
  * Works completely from current state (gm)
+ * Note: this is all original grbl code with little modification other
+ * 		 that refactoring into smaller routines.
  */
 
-uint8_t cm_arc_feed(uint8_t radius_mode)
+uint8_t cm_arc_feed(uint8_t motion_mode, uint8_t radius_mode)
 {
 	// copy parameters into the current state
-	// ++++ this is a cheat. Not supposed to access gn. Should pass parameters in
 	gm.next_action = NEXT_ACTION_MOTION;
-	gm.motion_mode = gn.motion_mode;	
-	gm.target[X] = _to_millimeters(gn.target[X]);
-	gm.target[Y] = _to_millimeters(gn.target[X]);
-	gm.target[Z] = _to_millimeters(gn.target[X]);
-	if (gf.offset[0]) { gm.offset[0] = gn.offset[0]; }
-	if (gf.offset[1]) { gm.offset[1] = gn.offset[1]; }
-	if (gf.offset[2]) { gm.offset[2] = gn.offset[2]; }
-	if (gf.radius) { gm.radius = gn.radius; }
+	gm.motion_mode = motion_mode;
+
+	// ++++ this is a cheat. The gn values should be passed in, not read directly from gn
+	// ++++ fix this
+	cm_set_target(gn.target[X], gn.target[Y], gn.target[Z]);
+	cm_set_offset(gn.offset[0], gn.offset[1], gn.offset[2]);
+	cm_set_radius(gn.radius);
 
 	// execute the move
 	if (radius_mode) {
@@ -885,14 +961,16 @@ uint8_t cm_arc_feed(uint8_t radius_mode)
 			return (gp.status);
 		}
 	}
-	return (_gc_compute_center_arc());
+	gp.status = _gc_compute_center_arc();
+
+	// set final position
+	if ((gp.status == TG_OK) || (gp.status == TG_EAGAIN)) {
+		cm_set_position(gm.target[X], gm.target[Y], gm.target[Z]);
+	}
+	return (gp.status);
 }
 
-/*
- * _gc_compute_radius_arc()
- *
- * Compute arc center (offset) from radius. Used to prep for computing an center arc
- */
+/* _gc_compute_radius_arc() - compute arc center (offset) from radius. */
 
 int _gc_compute_radius_arc()
 {
@@ -1011,9 +1089,7 @@ int _gc_compute_radius_arc()
 } 
     
 /*
- * _gc_compute_center_arc()
- *
- * Compute the arc move given I and J (arc center point - found in offset vector).
+ * _gc_compute_center_arc() - compute arc from I and J (arc center point)
  */
 
 int _gc_compute_center_arc()

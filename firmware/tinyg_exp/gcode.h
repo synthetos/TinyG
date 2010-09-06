@@ -84,13 +84,13 @@ struct GCodeModel {					// Gcode model- meaning depends on context
 void gc_init(void);								// Initialize the parser
 uint8_t gc_gcode_parser(char *block);
 
-/* canonical machining functions */
+/*--- canonical machining functions ---*/
 uint8_t cm_init_canon(void);					// init canonical machine
 
 uint8_t cm_set_traverse_rate(double rate);		// (no corresponding G code) 
-uint8_t cm_straight_traverse(double x,double y,double z);// G0
-uint8_t cm_straight_feed(double x,double y,double z);	// G1
-uint8_t cm_arc_feed(uint8_t radius_mode);				// G2, G3
+uint8_t cm_straight_traverse(double x,double y,double z);	// G0
+uint8_t cm_straight_feed(double x,double y,double z);		// G1
+uint8_t cm_arc_feed(uint8_t direction, uint8_t radius_mode);// G2, G3
 
 uint8_t cm_comment(char *comment);					// comment handler (null)
 uint8_t cm_message(char *message);					// send message to console
@@ -116,11 +116,16 @@ uint8_t cm_optional_program_stop(void);				// M1
 uint8_t cm_program_stop(void);						// M0
 uint8_t cm_program_end(void);						// M2
 
-//--- helper functions for canonical machining funntions
+//--- helper functions for canonical machining functions---//
 double _to_millimeters(double value);
+double cm_get_position(uint8_t axis);
 uint8_t cm_get_next_action(void);
 uint8_t cm_get_motion_mode(void);
-uint8_t cm_get_position(uint8_t axis);
+void cm_set_position(double x, double y, double z);
+void cm_set_target(double x, double y, double z);
+void cm_set_offset(double i, double j, double k);
+void cm_set_radius(double r);
+//void cm_set_position_to_target(void);
 
 /* 
  * definitions used by gcode interpreter 
@@ -181,9 +186,9 @@ enum gcCanonicalPlane {					// canonical plane - translates to:
 	CANON_PLANE_YZ						//	 Y		  Z		  X							
 };
 
-enum gcSpindleDirection {
-	SPINDLE_DIRECTION_CW,
-	SPINDLE_DIRECTION_CCW
+enum gcDirection {						// used for spindle and arc dir
+	DIRECTION_CW,
+	DIRECTION_CCW
 };
 
 #endif
