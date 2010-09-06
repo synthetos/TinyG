@@ -35,16 +35,17 @@
 //#define __SLAVE_MODE					// receive from rs485
 
 
-// System Constants
+// Global Settings
 #define TINYG_VERSION "build 209"
 #define EEPROM_DATA_VERSION 100	// Used to migrate data in firmware upgrades
+#define MM_PER_ARC_SEGMENT 0.02
 
-#define MM_PER_ARC_SEGMENT 0.05
+// Constants
 #define ONE_MINUTE_OF_MICROSECONDS 60000000.0	// from GRBL - Thanks Simen!
 #define TICKS_PER_MICROSECOND (F_CPU/1000000)	// from GRBL
 #define MM_PER_INCH 25.4						// from GRBL
-#define REVS_PER_DEGREE 0.00277778				// 1/360
-#define MINIMUM_TICKS_PER_STEP 0xC00	// too small and the steppers freeze
+//#define REVS_PER_DEGREE 0.00277778				// 1/360
+//#define MINIMUM_TICKS_PER_STEP 0xC00	// too small and the steppers freeze
 
 /* Define axes */
 
