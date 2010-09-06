@@ -17,7 +17,8 @@ controller.o: ../controller.c \
   ../xio_file.h ../xio_usart.h ../tinyg.h ../controller.h ../gcode.h \
   ../config.h ../move_buffer.h ../motion_control.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/string.h ../direct_drive.h \
-  ../stepper.h ../data_gcode_asst.h ../data_gcode_contraptor_circle.h
+  ../stepper.h ../data_gcode_asst.h ../data_gcode_zoetrope.h \
+  ../data_gcode_contraptor_circle.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -74,5 +75,7 @@ c:/winavr-20100110/lib/gcc/../../avr/include/string.h:
 ../stepper.h:
 
 ../data_gcode_asst.h:
+
+../data_gcode_zoetrope.h:
 
 ../data_gcode_contraptor_circle.h:
