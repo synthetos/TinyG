@@ -84,49 +84,6 @@ struct GCodeModel {					// Gcode model- meaning depends on context
 void gc_init(void);								// Initialize the parser
 uint8_t gc_gcode_parser(char *block);
 
-/*--- canonical machining functions ---*/
-uint8_t cm_init_canon(void);					// init canonical machine
-
-uint8_t cm_set_traverse_rate(double rate);		// (no corresponding G code) 
-uint8_t cm_straight_traverse(double x,double y,double z);	// G0
-uint8_t cm_straight_feed(double x,double y,double z);		// G1
-uint8_t cm_arc_feed(uint8_t direction, uint8_t radius_mode);// G2, G3
-
-uint8_t cm_comment(char *comment);					// comment handler (null)
-uint8_t cm_message(char *message);					// send message to console
-uint8_t cm_select_plane(uint8_t plane);
-uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode); // T = inverse feed rate
-uint8_t cm_set_feed_rate(double rate);				// F parameter
-uint8_t cm_select_tool(uint8_t tool);				// T parameter
-uint8_t cm_change_tool(uint8_t tool);				// M6, T
-uint8_t cm_set_spindle_speed(double speed);			// S parameter
-uint8_t cm_start_spindle_clockwise(void);			// M3
-uint8_t cm_start_spindle_counterclockwise(void);	// M4
-uint8_t cm_stop_spindle_turning(void);				// M5
-uint8_t cm_return_to_home(void);					// G28, G30
-uint8_t cm_set_origin_offsets(double x, double y, double z); // G92
-uint8_t cm_use_length_units(uint8_t inches_mode);	// G20, G21
-uint8_t cm_stop(void);								// M0, M1
-uint8_t cm_start(void);								// (re)enable steppers
-uint8_t cm_message(char *);							// send message to console
-uint8_t cm_dwell(double seconds);					// G4, P parameter
-uint8_t cm_set_distance_mode(uint8_t absolute_mode);// G90, G91 (abs/incr motion)
-
-uint8_t cm_optional_program_stop(void);				// M1
-uint8_t cm_program_stop(void);						// M0
-uint8_t cm_program_end(void);						// M2
-
-//--- helper functions for canonical machining functions---//
-double _to_millimeters(double value);
-double cm_get_position(uint8_t axis);
-uint8_t cm_get_next_action(void);
-uint8_t cm_get_motion_mode(void);
-void cm_set_position(double x, double y, double z);
-void cm_set_target(double x, double y, double z);
-void cm_set_offset(double i, double j, double k);
-void cm_set_radius(double r);
-//void cm_set_position_to_target(void);
-
 /* 
  * definitions used by gcode interpreter 
  *
