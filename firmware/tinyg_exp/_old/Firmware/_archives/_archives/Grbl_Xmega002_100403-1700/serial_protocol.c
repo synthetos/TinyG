@@ -1,0 +1,108 @@
+/*
+  serial_protocol.c - the serial protocol master control unit
+  Part of Grbl
+
+  Copyright (c) 2009 Simen Svale Skogsrud
+
+  Grbl is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Grbl is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
+*/
+/*
+  GrblX Notes
+  Modified to support Xmega family processors
+  Modifications Copyright (c) 2010 Alden S. Hart, Jr.
+
+  Added semicolon as line completion character to support Arduino serial monitor
+	in sp_process()
+		if((c == '\n') || (c == ';')) {  	// Line is complete. Then execute!
+
+*/
+
+#include <avr/io.h>
+#include <math.h>
+#include <avr/pgmspace.h>
+#include "xmega_support.h"
+#include "serial_protocol.h"
+#include "gcode.h"
+#include "wiring_serial.h"
+#include "config.h"
+#include "nuts_bolts.h"
+
+
+#define LINE_BUFFER_SIZE RX_BUFFER_SIZE+1
+char line[LINE_BUFFER_SIZE];
+uint8_t char_counter = 0;
+
+void prompt() 
+{
+	printPgmString(PSTR("GrblX <ok>>>"));
+}
+
+void sp_init() 
+{
+	beginSerial(BAUD_RATE);
+	printPgmString(PSTR("\r\nGrblX [TEST MODE] - Version "));
+	printPgmString(PSTR(GRBLX_VERSION));
+	printPgmString(PSTR("\r\n"));
+	prompt();
+
+	line[0] = 0;		// initialize line buffer
+
+//	char str[20] = "test string";
+//	printString(str);
+
+}
+
+/* sp_process() - process serial prototol */
+
+void sp_process()
+{
+	char c;
+
+//	char str[20] = "test string";
+//	printString(str);
+
+	while((c = serialRead()) != 0x04) {
+		if((c == '\n') || (c == ';')) {  	// Line is complete. Then execute!
+			line[char_counter] = 0;
+			/*
+			printByte(line[0]);
+			printByte(line[1]);
+			printByte(line[2]);
+			printByte(line[3]);
+			printByte(line[4]);
+			printByte(line[5]);
+			printByte(line[6]);
+			printByte(line[7]);
+			printByte(line[8]);
+			*/
+//			char_counter = 0;
+			printString(line);
+			printPgmString(PSTR("\r\n"));        
+			gc_execute_line(line);
+			char_counter = 0;
+      		prompt();
+//		} else if (c == 't') { 				// prints test string
+//			printString(str);
+		} else if (c <= ' ') { 				// Throw away whitespace & control chars
+		} else if (c >= 'a' && c <= 'z') {	// Convert lowercase to uppercase
+			line[char_counter++] = c-'a'+'A';
+			line[char_counter] = 0;
+//			printString(line);
+		} else {
+			line[char_counter++] = c;
+			line[char_counter] = 0;
+//			printString(line);
+		}
+	}
+}
