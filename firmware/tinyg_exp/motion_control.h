@@ -37,14 +37,16 @@ enum mcType {			// types of moves that can be put in the move queue
  */
 
 void mc_init(void);
-int mc_set_position(double x, double y, double z);
-int mc_motion_start(void);
-int mc_motion_stop(void);
-int mc_motion_end(void);
 
-int mc_start(void);
-int mc_stop(void);
-int mc_start_stop_continue();
+int mc_set_position(double x, double y, double z);
+int mc_async_stop(void);
+int mc_async_start(void);
+int mc_async_end(void);
+
+int mc_queued_stop(void);
+int mc_queued_start(void);
+int mc_queued_end(void);
+int mc_queued_start_stop_continue();
 
 int mc_line(double x, double y, double z, double feed_rate, uint8_t invert_feed_rate);
 int mc_line_continue(void);

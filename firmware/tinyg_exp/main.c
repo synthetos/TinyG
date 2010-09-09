@@ -165,7 +165,7 @@ int main(void)
 // Be mindful of the char limit on the RX_BUFFER_SIZE (circular buffer)
 
 //	xio_queue_RX_char_usb(ETX);			// send control-c (kill)
-	xio_queue_RX_string_usb("R\n");		// run a file
+//	xio_queue_RX_string_usb("R\n");		// run a file
 //	xio_queue_RX_string_usb("?\n");		// dump config
 
 //	xio_queue_RX_string_usb("g1 f450 x10 y13\n");
@@ -178,9 +178,11 @@ int main(void)
 //	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
 //	xio_queue_RX_string_usb("g0 x-10 (MSGtest)\n");
 
-//	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
+	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
 //	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
 //	xio_queue_RX_string_usb("g0 x0 y0 z0\n");
+
+//	xio_queue_RX_char_usb(XOFF);		// send control-s (pause)
 
 #ifdef __NORMAL_MODE
 	for(;;){

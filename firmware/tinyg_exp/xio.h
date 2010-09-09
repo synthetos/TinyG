@@ -180,7 +180,7 @@ enum xioSignals {
 	XIO_SIG_EOL,					// end-of-line encountered (string has data)
 	XIO_SIG_EOF,					// end-of-file encountered (string has no data)
 	XIO_SIG_KILL,					// cancel operation immediately (^c, ETX, 0x04)
-	XIO_SIG_TERMINATE,				// cancel operation nicely (^x, CAN, 0x24)
+	XIO_SIG_TERM,					// cancel operation nicely (^x, CAN, 0x24)
 	XIO_SIG_PAUSE,					// pause operation (^s, XOFF, DC3, 0x13)
 	XIO_SIG_RESUME,					// resume operation (^q, XON, DC1, 0x11)
 //	XIO_SIG_SHIFTOUT,				// shift to mode (^n) (NOT IMPLEMENTED)
@@ -216,6 +216,14 @@ enum xioSignals {
 #define CTRL_S XON
 #define CTRL_X 0x18				// ^x - aka CAN(cel)
 
+/* Signal character mappings */
+
+#define SIG_KILL_CHAR ETX
+#define SIG_TERM_CHAR ETX
+#define SIG_PAUSE_CHAR XOFF
+#define SIG_RESUME_CHAR XON
+//#define SIG_PAUSE_CHAR 'A'		// test values
+//#define SIG_RESUME_CHAR 'B'
 
 /******************************************************************************
  *
