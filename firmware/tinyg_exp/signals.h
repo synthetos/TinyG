@@ -21,6 +21,9 @@
  * Global Scope Functions
  */
 
-void signal_etx(void);		// ^c
+void sig_kill(void);		// ^c
+void sig_term(void);		// ^x
+void sig_pause(void);		// ^s
+void sig_resume(void);		// ^q
 
 #endif

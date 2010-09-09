@@ -180,7 +180,7 @@ void tg_controller()
 	// level 0 routines - stepper queueing routines
 	DISPATCH(mc_line_continue());
 	DISPATCH(mc_dwell_continue());
-	DISPATCH(mc_start_stop_continue());
+	DISPATCH(mc_queued_start_stop_continue());
 
 	// level 1 routines - canonical motion primitives
 	DISPATCH(mc_arc_continue());
