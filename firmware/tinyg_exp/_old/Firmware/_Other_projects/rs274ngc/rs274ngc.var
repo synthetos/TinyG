@@ -1,0 +1,105 @@
+#************************************************************************
+#
+#    Copyright 2008 Mark Pictor
+#
+#    This file is part of RS274NGC.
+#
+#    RS274NGC is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    RS274NGC is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with RS274NGC.  If not, see <http://www.gnu.org/licenses/>.
+#
+#    This software is based on software that was produced by the National 
+#    Institute of Standards and Technology (NIST).
+#
+#************************************************************************
+
+default_rs274ngc.var
+
+This is the default variables file for the rs274ngc interpreter.
+All parameters are initialized to zero, except 5220, which is initialized
+to one, since it must be in the range from one to nine. All the parameters
+in this file are required parameters. A variables file missing any one
+of these parameters will cause an error message in the interpreter.
+
+5161	0.000000
+5162	0.000000
+5163	0.000000
+5164	0.000000
+5165	0.000000
+5166	0.000000
+5181	0.000000
+5182	0.000000
+5183	0.000000
+5184	0.000000
+5185	0.000000
+5186	0.000000
+5211	0.000000
+5212	0.000000
+5213	0.000000
+5214	0.000000
+5215	0.000000
+5216	0.000000
+5220	1.000000  initialized to one
+5221	0.000000
+5222	0.000000
+5223	0.000000
+5224	0.000000
+5225	0.000000
+5226	0.000000
+5241	0.000000
+5242	0.000000
+5243	0.000000
+5244	0.000000
+5245	0.000000
+5246	0.000000
+5261	0.000000
+5262	0.000000
+5263	0.000000
+5264	0.000000
+5265	0.000000
+5266	0.000000
+5281	0.000000
+5282	0.000000
+5283	0.000000
+5284	0.000000
+5285	0.000000
+5286	0.000000
+5301	0.000000
+5302	0.000000
+5303	0.000000
+5304	0.000000
+5305	0.000000
+5306	0.000000
+5321	0.000000
+5322	0.000000
+5323	0.000000
+5324	0.000000
+5325	0.000000
+5326	0.000000
+5341	0.000000
+5342	0.000000
+5343	0.000000
+5344	0.000000
+5345	0.000000
+5346	0.000000
+5361	0.000000
+5362	0.000000
+5363	0.000000
+5364	0.000000
+5365	0.000000
+5366	0.000000
+5381	0.000000
+5382	0.000000
+5383	0.000000
+5384	0.000000
+5385	0.000000
+5386	0.000000

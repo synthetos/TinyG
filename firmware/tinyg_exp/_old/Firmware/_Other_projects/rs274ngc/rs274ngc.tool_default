@@ -1,0 +1,33 @@
+#************************************************************************
+#    Copyright 2008 Mark Pictor
+#
+#    This file is part of RS274NGC.
+#
+#    RS274NGC is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    RS274NGC is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with RS274NGC.  If not, see <http://www.gnu.org/licenses/>.
+#
+#    This software is based on software that was produced by the National 
+#    Institute of Standards and Technology (NIST).
+#
+# ***********************************************************************
+POCKET	FMS	TLO	DIAM	HOLDER	TOOL DESCRIPTION
+
+1	1	2.0	1.0	0	
+2       2       1.0     0.2     0
+5       5       1.5     0.25    0       0.25" end mill
+10      10      2.4    -0.03    0       for tool radius comp testing
+20	20	173.740 0	0       1" carbide end mill (0.060 radius)
+21	21	247.615 0	0       1/2" spot drill short
+32	32	296.515 0	0       8.5mm drill
+41	41	228.360 0	0       10mm x 1.25 tap
+60	60	0       0	0       large chuck

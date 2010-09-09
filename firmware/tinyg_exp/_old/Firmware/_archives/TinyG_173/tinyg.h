@@ -1,0 +1,30 @@
+/*
+  tinyg.h - tinyg main header - GLOBALS
+  Copyright (c) 1020 Alden S Hart Jr.
+*/
+
+#ifndef tinyg_h
+#define tinyg_h
+
+#define TINYG_VERSION "0.04"
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+enum continuationState {			// states for continuation routines
+	_OFF,							// off - not generating a line or arc
+	_NEW,							// first pass through a line or arc (transient state)
+	_ACTIVE,						// generator is in process
+	_DONE							// generator is done
+};
+
+#define CHAR_BUFFER_SIZE 80	// unified buffer size. 255 maximum.
+
+//#define __DEBUG TRUE		// set debug mode (comment out to undefine)
+//#define __RILEY TRUE		// set RILEY mode (comment out to undefine)
+
+#endif
