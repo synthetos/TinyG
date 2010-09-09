@@ -333,7 +333,7 @@ class FlexGridSizer(wx.Frame):
     def OnResume(self, event):
         """This will cause the system to pause and wait for the resume command"""
         try:
-            self.connection.write('\x17')
+            self.connection.write('\x11')
             self.PrintDebug("[*]Sending Resume (XON)")
         except AttributeError:
             self.PrintDebug("[!!]ERROR: Serial Port Not Connected")
@@ -344,7 +344,7 @@ class FlexGridSizer(wx.Frame):
     def OnPause(self, event):
         """This will cause the system to pause and wait for the resume command"""
         try:
-            self.connection.write('\x19')
+            self.connection.write('\x13')
             self.PrintDebug("[*]Sending Pause (XOFF)")
         except AttributeError:
             self.PrintDebug("[!!]ERROR: Serial Port Not Connected")
