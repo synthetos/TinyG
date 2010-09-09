@@ -1,1 +1,0 @@
-pathing.o: ../pathing.c
