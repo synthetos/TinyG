@@ -96,8 +96,8 @@ enum gcNextAction {						// motion mode and non-modals
 	NEXT_ACTION_NONE,					// no moves
 	NEXT_ACTION_MOTION,					// action set by MotionMode
 	NEXT_ACTION_DWELL,					// G4
-	NEXT_ACTION_GO_HOME,				// G28
-	NEXT_ACTION_OFFSET_COORDINATES		// G92
+	NEXT_ACTION_GO_HOME					// G28
+//	NEXT_ACTION_OFFSET_COORDINATES		// G92
 };
 
 enum gcMotionMode {						// G Modal Group 1

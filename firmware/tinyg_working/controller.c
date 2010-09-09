@@ -243,10 +243,11 @@ int tg_parser(char * buf)
 	// auto-detect mode if not already set 
 	if (tg.mode == TG_CONTROL_MODE) {
 		switch (toupper(buf[0])) {
-			case 'G': case 'M': case 'N': case '(': case '\\': _tg_set_mode(TG_GCODE_MODE); break;
+			case 'G': case 'M': case 'N': case 'F': case '(': case '\\':
+				 _tg_set_mode(TG_GCODE_MODE); break;
 			case 'C': case '?': _tg_set_mode(TG_CONFIG_MODE); break;
 			case 'D': _tg_set_mode(TG_DIRECT_DRIVE_MODE); break;
-			case 'F': return (_tg_test_file());
+			case 'R': return (_tg_test_file());
 			default:  _tg_set_mode(TG_CONTROL_MODE); break; //+++ put a help prompt here
 		}
 	}
