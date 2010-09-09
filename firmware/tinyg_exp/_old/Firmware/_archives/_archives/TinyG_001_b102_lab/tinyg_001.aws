@@ -1,1 +1,0 @@
-<AVRWorkspace><IOSettings><CurrentRegisters/></IOSettings><part name="ATXMEGA256A3"/><Files><File00000 Name="stepper.c" Position="283 159 1454 674" LineCol="35 0"/><File00002 Name="debug.c" Position="305 181 1472 670" LineCol="35 0"/><File00003 Name="c:\winavr-20100110\avr\include\avr\iox256a3.h" Position="327 203 1494 692" LineCol="40 0"/></Files></AVRWorkspace>
