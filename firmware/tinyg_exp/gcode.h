@@ -153,6 +153,77 @@ enum gcDirection {						// used for spindle and arc dir
 
 /**** GCODE NOTES ****/
 
+/* ---Supported commands are:
+ 	G0				Rapid linear motion
+	G1				Linear motion at feed rate
+	G2, G3			Clockwise / counterclockwise arc at feed rate
+	G4				Dwell
+	G17, G18, G19	Select plane: XY plane {G17}, XZ plane {G18}, YZ plane {G19}
+	G20, G21		Length units: inches {G20}, millimeters {G21}
+	G53				Move in absolute coordinates
+	G80				Cancel motion mode
+	G90, G91		Set distance mode; absolute {G90}, incremental {G91}
+	G92				Coordinate System Offsets - limited support provided
+	G93, G94		Set feed rate mode: inverse time mode {93}, 
+										units per minute mode {G94}
+	M0				Program stop
+	M1				Optional program stop
+	M2				Program end
+	M3, M4			Turn spindle clockwise / counterclockwise
+	M5				Stop spindle turning
+	M30				Program end (pallet shuttle and reset)
+	M60				Program stop (and pallet shuttle)
+
+  Commands omitted for the time being:
+	G10	  			Coordinate system data
+	G14, G15		Spiral motion
+	G28, G30		Return to home (requires parameters)
+	G38.2 			Straight probe
+	G40, G41, G42	Cutter radius compensation
+	G43, G49		Tool length offsets
+	G54 - G59.3		Select coordinate system (group 12)
+	G61, G61.1, G64 Set path control mode (group 13)
+	G81 - G89		Canned cycles
+	G92	- G92.3		Coordinate system offsets
+	G98, G99		Set canned cycle return level
+
+	M6				Tool change
+	M7, M8, M9		Coolant (group8)
+	M48, M49		Enable/disable feed and speed override switches (group 9)
+	
+  Other commands and features intentionally not supported:
+	- A,B,C axes
+	- Multiple coordinate systems
+	- Evaluation of expressions
+	- Variables (Parameters)
+	- Multiple home locations
+	- Probing
+	- Override control
+
+  FYI: GCode modal groups (from NIST RS274NGC_3 Table 4)
+
+   The modal groups for G codes are:
+	group 1 = {G0, G1, G2, G3, G38.2, G80, G81, G82, G83, G84, G85, G86, G87, G88, G89} motion
+	group 2 = {G17, G18, G19} plane selection 
+	group 3 = {G90, G91} distance mode 
+	group 5 = {G93, G94} feed rate mode
+	group 6 = {G20, G21} units 
+	group 7 = {G40, G41, G42} cutter radius compensation 
+	group 8 = {G43, G49} tool length offset 
+	group 10 = {G98, G99} return mode in canned cycles 
+	group 12 = {G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3} coordinate system selection 
+	group 13 = {G61, G61.1, G64} path control mode
+
+   The modal groups for M codes are:
+	group 4 = {M0, M1, M2, M30, M60} stopping 
+	group 6 = {M6} tool change 
+	group 7 = {M3, M4, M5} spindle turning 
+	group 8 = {M7, M8, M9} coolant (special case: M7 and M8 may be active at the same time) 
+	group 9 = {M48, M49} enable/disable feed and speed override switches
+
+   In addition to the above modal groups, there is a group for non-modal G codes:
+	group 0 = {G4, G10, G28, G30, G53, G92, G92.1, G92.2, G92.3}	
+*/
 /*---- Coordinate system notes ----
 
   TinyG runs a reduced functionality coordinate system from full NIST.

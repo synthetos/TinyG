@@ -80,10 +80,10 @@
  * USART DEVICE CONSTANTS AND PARAMETERS
  */
 
-#define RX_BUFFER_SIZE 64		// USART ISR RX buffer size (255 max)
-#define TX_BUFFER_SIZE 64		// USART ISR TX buffer size (255 max)
-//#define RX_BUFFER_SIZE 255		// USART ISR RX buffer size (255 max)
-//#define TX_BUFFER_SIZE 255		// USART ISR TX buffer size (255 max)
+//#define RX_BUFFER_SIZE 64		// USART ISR RX buffer size (255 max)
+//#define TX_BUFFER_SIZE 64		// USART ISR TX buffer size (255 max)
+#define RX_BUFFER_SIZE 255		// USART ISR RX buffer size (255 max)
+#define TX_BUFFER_SIZE 255		// USART ISR TX buffer size (255 max)
 
 /* 
  * Serial Configuration Settings

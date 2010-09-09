@@ -111,28 +111,39 @@ int mc_set_position(double x, double y, double z)
 }
 
 /* 
- * mc_motion_start() - (re)start motion
+ * mc_async_stop() - stop current motion immediately
+ * mc_async_start() - (re)start motion
+ * mc_async_end() - stop current motion immediately
  */
 
-int mc_motion_start()
-{
-	return (TG_OK);
-}
-
-/* 
- * mc_motion_stop() - stop current motion immediately
- */
-
-int mc_motion_stop()
+int mc_async_stop()
 {
 	st_stop();						// stop the steppers
 	return (TG_OK);
 }
 
+int mc_async_start()
+{
+	st_start();						// start the stoppers
+	return (TG_OK);
+}
+
+int mc_async_end()
+{
+	st_stop();						// first actually stop the motion
+	mc.line_continue_state = MC_STATE_OFF;	// turn off the generators
+	ma.arc_continue_state = MC_STATE_OFF;
+	mv_flush();						// empty and reset the move queue
+	return (TG_OK);
+}
+
 /* 
- * mc_motion_end() - end current motion and program
+ * mc_queued_stop() - queue a motor stop
+ * mc_queued_start() - queue a motor start
+ * mc_queued_end() - end current motion and program
+ * mc_queued_start_stop_continue() - start and stop continuation
  *
- *	Should do all the following things (from NIST RS274NG_3 are marked RS274)
+ *	End should do all the following things (from NIST RS274NG_3)
  * 	Those we don't care about are in [brackets]
  *
  *	- Stop all motion once current block is complete 
@@ -148,38 +159,28 @@ int mc_motion_stop()
  *	- Coolant is turned off (like M9).
  */
 
-int mc_motion_end()
-{
-	mc_motion_stop();				// first actually stop the motion
-	mc.line_continue_state = MC_STATE_OFF;	// turn off the generators
-	ma.arc_continue_state = MC_STATE_OFF;
-	mv_flush();						// empty and reset the move queue
-	return (TG_OK);
-}
-
-/* 
- * mc_start() - queue a motor start
- * mc_stop() - queue a motor stop
- * mc_start_stop_continue() - start and stop continuation
- *
- * Underlying stop, start and continue to support motion stop and start
- */
-
-int mc_start() 
-{
-	mc.move_type = MC_TYPE_START;
-	mc.stop_continue_state = MC_STATE_NEW;
-	return (mc_start_stop_continue());
-}
-
-int mc_stop() 
+int mc_queued_stop() 
 {
 	mc.move_type = MC_TYPE_STOP;
 	mc.stop_continue_state = MC_STATE_NEW;
-	return (mc_start_stop_continue());
+	return (mc_queued_start_stop_continue());
 }
 
-int mc_start_stop_continue() 
+int mc_queued_start() 
+{
+	mc.move_type = MC_TYPE_START;
+	mc.stop_continue_state = MC_STATE_NEW;
+	return (mc_queued_start_stop_continue());
+}
+
+int mc_queued_end() 				// +++ fix this. not right yet. resets must also be queued
+{
+	mc.move_type = MC_TYPE_END;
+	mc.stop_continue_state = MC_STATE_NEW;
+	return (mc_queued_start_stop_continue());
+}
+
+int mc_queued_start_stop_continue() 
 {
 	if (mc.stop_continue_state == MC_STATE_OFF) {
 		return (TG_NOOP);
@@ -187,7 +188,7 @@ int mc_start_stop_continue()
 	if (mv_test_move_buffer_full()) { // this is where you would block
 		return (TG_EAGAIN);			  //...but instead you return	
 	} else {
-		mv_queue_start_stop(mc.microseconds); 
+		mv_queue_start_stop(mc.move_type);
 		mc.stop_continue_state = MC_STATE_OFF;
 		return (TG_OK);
 	}

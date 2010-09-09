@@ -333,23 +333,20 @@ void st_set_polarity(uint8_t axis, uint8_t polarity)
 /* 
  * st_start() - start steppers
  * st_stop() - stop steppers
+ * st_end() - STOP. NOW. UNCONDITIONALLY
  */
-
-void st_start()
-{
-	ax.stopped = FALSE;
-}
 
 void st_stop()
 {
 	ax.stopped = TRUE;
 }
 
-/* 
- * st_kill() - STOP. NOW. UNCONDITIONALLY
- */
-/*
-void st_stop_steppers()
+void st_start()
+{
+	ax.stopped = FALSE;
+}
+
+void st_end()
 {
 	cli();										// stop interrupts
 	for (uint8_t i=X; i<=A; i++) {
@@ -359,18 +356,7 @@ void st_stop_steppers()
 	ax.active_axes = 0;							// clear all the active bits
 	sei();
 }
-*/
-/* 
- * st_terminate() - stop moves after the current move
- */
-/*
-void st_terminate()
-{
-	cli();
-	mv_flush();									// flush the move buffer
-	sei();
-}
-*/
+
 /* 
  * st_motor_test() - test motor subsystem 
  */
