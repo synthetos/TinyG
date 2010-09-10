@@ -202,8 +202,8 @@ enum xioSignals {
 #define CR	0x0D				//  carriage return
 #define SHIFTOUT 0x0E			// ^n - aka shift out 
 #define SHITFTIN 0x0F			// ^o - aka shift in
-#define XOFF 0x11				// ^q - aka DC1, XOFF, pause
-#define XON 0x13				// ^s - aka DC3, XON, resume
+#define XON 0x11				// ^q - aka DC1, XON, pause
+#define XOFF 0x13				// ^s - aka DC3, XOFF, resume
 #define ESC 0x1B				// ESC(ape)
 #define DEL 0x7F				// DEL(ete)
 
