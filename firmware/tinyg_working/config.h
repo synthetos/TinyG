@@ -76,8 +76,8 @@ struct cfgStructGlobal {
 	uint8_t status;				// interpreter status
  // model configuration
 	double mm_per_arc_segment;	// arc drawing resolution in millimeters per segment
-	double default_feed_rate;	// mm of trav in mm/s (was mm/min in Grbl)(COMPUTED)
-	double default_seek_rate;	// mm of trav in mm/s (was mm/min in Grbl)(COMPUTED)
+	double max_feed_rate;		// mm of trav in mm/min (COMPUTED)
+	double max_seek_rate;		// mm of trav in mm/min (COMPUTED)
  // axis structs
 	struct cfgStructAxis a[4];	// holds axes X,Y,Z,A
 };

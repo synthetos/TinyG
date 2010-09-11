@@ -168,6 +168,8 @@ int main(void)
 	xio_queue_RX_string_usb("R\n");		// run a file
 //	xio_queue_RX_string_usb("?\n");		// dump config
 
+//	xio_queue_RX_string_usb("g1 f200 x10 y11\n");
+
 //	xio_queue_RX_string_usb("g0x0y0z0\n");
 //	xio_queue_RX_string_usb("g0x1000\n");
 //	xio_queue_RX_string_usb("g0x10000\n");
