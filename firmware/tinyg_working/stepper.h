@@ -34,9 +34,8 @@
 #define STEP_PULSE_ADDITIONAL_MICROSECONDS	2
 #define STEPPER_DELAY _delay_us(STEP_PULSE_ADDITIONAL_MICROSECONDS);
 #else
-#define STEPPER_DELAY				// used as a no-op in the ISR
+#define STEPPER_DELAY			// used as a no-op in the ISR
 #endif
-
 
 #ifdef __RILEY					// support for Rileys's blown X axis
 #define X_MOTOR_PORT PORTD		// labeled as motor #1
@@ -55,7 +54,7 @@
 #define Y_MOTOR_PORT_DIR_gm		MOTOR_PORT_DIR_gm
 #define Z_MOTOR_PORT_DIR_gm		MOTOR_PORT_DIR_gm
 #define A_MOTOR_PORT_DIR_gm		MOTOR_PORT_DIR_gm	
-								// Note: spindle out bits are on PORT_A - b7 & b6
+							// Note: spindle out bits are on PORT_A - b7 & b6
 
 #define X_TIMER					TCC0		// x-axis timer
 #define Y_TIMER					TCD0
@@ -67,7 +66,7 @@
 #define Z_TIMER_ISR_vect		TCE0_OVF_vect
 #define A_TIMER_ISR_vect 		TCF0_OVF_vect
 
-#define X_ACTIVE_BIT_bm			(1<<3)		// used in Axes to detect move complete
+#define X_ACTIVE_BIT_bm			(1<<3)	// used in Axes to detect move complete
 #define Y_ACTIVE_BIT_bm			(1<<2)
 #define Z_ACTIVE_BIT_bm			(1<<1)
 #define A_ACTIVE_BIT_bm			(1<<0)
@@ -87,7 +86,6 @@
 #define SPINDLE_DIRECTION_PORT 	A_MOTOR_PORT
 #define SPINDLE_DIRECTION_BIT_bm (1<<7)		// also used to set port I/O direction
 
-
 /*  
  *	Stepper axis structures
  */
@@ -96,10 +94,10 @@ struct Axis { 						// axis control struct - one per axis
 	/* operating  variables */
 	uint32_t step_counter;			// counts steps down to 0 (end of line)
 	uint16_t timer_period;			// value loaded into timers
-	uint16_t postscale_value;		// timer post-scale value (reloads)
-	uint16_t postscale_counter;		// timer post-scale counter
+	uint_fast16_t postscale_value;		// timer post-scale value (reloads)
+	uint_fast16_t postscale_counter;		// timer post-scale counter
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor polarity
-	uint8_t flags;					// carries dewll flag (& others if needed)
+//	uint8_t flags;					// carries dwell, start, stop flags
 
 	/* hardware device bindings */
 	struct PORT_struct *port;		// motor control port
@@ -108,7 +106,8 @@ struct Axis { 						// axis control struct - one per axis
 
 struct Axes {						// All axes + some extra stuff
 	uint8_t mutex;					// mutual exclusion flag for dequeuing moves
-	uint8_t stopped;				// set TRUE if STOP (FALSE for running)
+	uint_fast8_t stopped;				// set TRUE if STOP (FALSE for STARTed)
+	uint_fast8_t line_mode;				// set TRUE if LINE command (FALSE for DWELLs)
 	uint8_t active_axes;			// bits are set if axis is active. 0 = robot is idle
 	struct mvMove *p;				// pointer to dequeued move structure
 	struct Axis a[4];				// 4 axis structures, X, Y, Z, A

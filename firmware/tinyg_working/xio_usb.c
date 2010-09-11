@@ -110,9 +110,24 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX interrupt
 	uint8_t c = USBu.usart->DATA;				// can only read DATA once
 
 	// trap signals - do not insert character into RX queue
-	if (c == ETX) {								// trap ^c signal
+	if (c == SIG_KILL_CHAR) {	 				// trap Kill signal
 		USB.sig = XIO_SIG_KILL;					// set signal value
-		signal_etx();							// call app-specific signal handler
+		sig_kill();								// call app-specific sig handler
+		return;
+	}
+	if (c == SIG_TERM_CHAR) {					// trap Terminate signal
+		USB.sig = XIO_SIG_KILL;
+		sig_term();
+		return;
+	}
+	if (c == SIG_PAUSE_CHAR) {					// trap Pause signal
+		USB.sig = XIO_SIG_PAUSE;
+		sig_pause();
+		return;
+	}
+	if (c == SIG_RESUME_CHAR) {					// trap Resume signal
+		USB.sig = XIO_SIG_RESUME;
+		sig_resume();
 		return;
 	}
 

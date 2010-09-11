@@ -69,7 +69,7 @@ enum cfgPortBits {						// motor control port bit positions
 #define MAX_LIMIT_BIT_bm		(1<<MAX_LIMIT_BIT_bp) // motor control port bit masks
 
 /* Microstep defaults - chose a value on the top line */
-#define MICROSTEPS 8	// Chose one of: 8, 4, 2, 1
+#define MICROSTEPS 8	// Choose one of: 8, 4, 2, 1
 
 #if (MICROSTEPS == 8)
 #define MICROSTEP_BITS_bm (MICROSTEP_BIT_1_bm | MICROSTEP_BIT_0_bm)

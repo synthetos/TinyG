@@ -165,8 +165,10 @@ int main(void)
 // Be mindful of the char limit on the RX_BUFFER_SIZE (circular buffer)
 
 //	xio_queue_RX_char_usb(ETX);			// send control-c (kill)
-//	xio_queue_RX_string_usb("f\n");
-//	xio_queue_RX_string_usb("?\n");
+//	xio_queue_RX_string_usb("R\n");		// run a file
+//	xio_queue_RX_string_usb("?\n");		// dump config
+
+//	xio_queue_RX_string_usb("g1 f450 x10 y13\n");
 
 //	xio_queue_RX_string_usb("g0x0y0z0\n");
 //	xio_queue_RX_string_usb("g0x1000\n");
@@ -177,24 +179,26 @@ int main(void)
 //	xio_queue_RX_string_usb("g0 x-10 (MSGtest)\n");
 
 //	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
-//	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
+	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
 //	xio_queue_RX_string_usb("g0 x0 y0 z0\n");
+
+//	xio_queue_RX_char_usb(XOFF);		// send control-s (pause)
 
 #ifdef __NORMAL_MODE
 	for(;;){
-		tg_controller();	// this node executes gcode blocks received via RS485
+		tg_controller();// this mode executes gcode blocks received via USB
 	}
 #endif
 
 #ifdef __RELAY_MODE
 	for(;;){
-		tg_repeater();		// this node receives on USB and repeats to RS485
+		tg_repeater();	// this mode receives on USB and repeats to RS485
 	}
 #endif
 
 #ifdef __SLAVE_MODE
 	for(;;){
-		tg_receiver();
+		tg_receiver();	// this mode executes gcode blocks received via RS485
 	}
 #endif
 

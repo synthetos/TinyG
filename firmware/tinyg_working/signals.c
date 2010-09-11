@@ -25,15 +25,42 @@
 #include "tinyg.h"
 #include "controller.h"
 #include "motion_control.h"
+#include "canonical_machine.h"
 
 /*
- * signal_etx() - trap and dispatch ^c
+ * sig_kill()	^c - end program
+ * sig_term()	^x - end program
+ * sig_pause()	^s - stop motion
+ * sig_resume()	^q - resume motion
  */
 
+void sig_kill()				// ^c
+{
+	tg_reset_source();			// return control to standard device
+	cm_async_end();				// stop computing and generating motions
+}
+
+void sig_term()				// ^x
+{
+	tg_reset_source();
+	cm_async_end();
+}
+
+void sig_pause()			// ^s (XOFF)
+{
+	cm_async_stop();
+}
+
+void sig_resume()			// ^q (XON)
+{
+	cm_async_start();
+}
+
+/*
 void signal_etx()				// ^c
 {
 	tg_reset_source();			// return control to standard device
-	mc_motion_stop();			// stop computing and generating motions
+//	mc_async_stop();			// stop computing and generating motions
 	return;
 }
 
@@ -52,4 +79,4 @@ void tg_resume()
 {
 	return;
 }
-
+*/
