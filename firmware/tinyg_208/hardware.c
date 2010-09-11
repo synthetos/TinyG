@@ -13,13 +13,6 @@
  *
  * You should have received a copy of the GNU General Public License along with TinyG  
  * If not, see <http://www.gnu.org/licenses/>.
- *
- * ------
- * Notes:
- *	- add full interrupt tables and dummy interrupt routine (maybe)
- *	- add crystal oscillator failover
- *	- add watchdog timer functions
- *
  */
 
 //#include <avr/io.h>
