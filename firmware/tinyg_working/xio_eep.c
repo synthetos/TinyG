@@ -1,5 +1,5 @@
 /*
- *  xio_pgm.c	- device driver for program memory "files"
+ *  xio_eep.c	- device driver for program memory "files" in eeprom
  * 				- works with avr-gcc stdio library
  *
  * Part of TinyG project
@@ -22,17 +22,17 @@
 #include <avr/pgmspace.h>
 #include "xio.h"						// includes for all devices are in here
 
-#define PGM ds[XIO_DEV_PGM]				// device struct accessor
-#define PGMf fs[XIO_DEV_PGM_OFFSET]		// file extended struct accessor
+#define EEP ds[XIO_DEV_EEP]				// device struct accessor
+#define EEPf fs[XIO_DEV_EEP_OFFSET]		// file extended struct accessor
 
 /* 
- *	xio_init_pgm() - initialize and set controls for program memory device 
+ *	xio_init_eep() - initialize and set controls for program memory device 
  */
-void xio_init_pgm()
+void xio_init_eep()
 {
 	// Program memory file device setup
-	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_setflags_pgm, xio_putc_pgm, xio_getc_pgm, xio_readln_pgm);
-	xio_init_file(XIO_DEV_PGM, XIO_DEV_PGM_OFFSET, PGM_INIT_bm);
+	xio_init_dev(XIO_DEV_EEP, xio_open_eep, xio_setflags_eep, xio_putc_eep, xio_getc_eep, xio_readln_eep);
+	xio_init_file(XIO_DEV_EEP, XIO_DEV_EEP_OFFSET, EEP_INIT_bm);
 }
 
 /* 
@@ -45,48 +45,48 @@ void xio_init_file(const uint8_t dev, const uint8_t offset, const uint16_t contr
 	// might be useful to sanity check the control bits before calling set flags
 	//	- RD and BLOCK are mandatory
 	// 	- WR and NOBLOCK are restricted
-	xio_setflags_pgm(control);
+	xio_setflags_eep(control);
 }
 
 /*	
- *	xio_open_pgm() - provide a string address to the program memory device
+ *	xio_open_eep() - provide a string address to the program memory device
  *
  *	OK, so this is not really a UNIX open() except for it's moral equivalency
  *  Returns a pointer to the stdio FILE struct or -1 on error
  */
 
-struct __file * xio_open_pgm(const prog_char *addr)
+struct __file * xio_open_eep(const prog_char *addr)
 {
-	PGM.flags &= XIO_FLAG_RESET_gm;			// reset flag signaling bits
-	PGM.sig = 0;							// reset signal
-	PGMf.pgmbase_P = (PROGMEM char *)addr;	// might want to range check this
-	PGMf.len = 0;							// initialize buffer pointer
-	return(PGM.fdev);							// return pointer to the fdev stream
+	EEP.flags &= XIO_FLAG_RESET_gm;			// reset flag signaling bits
+	EEP.sig = 0;							// reset signal
+	EEPf.pgmbase_P = (PROGMEM char *)addr;	// might want to range check this
+	EEPf.len = 0;							// initialize buffer pointer
+	return(EEP.fdev);							// return pointer to the fdev stream
 }
 
 /*
- *	xio_setflags_pgm() - check and set control flags for device
+ *	xio_setflags_eep() - check and set control flags for device
  */
 
-int xio_setflags_pgm(const uint16_t control)
+int xio_setflags_eep(const uint16_t control)
 {
-	xio_setflags(XIO_DEV_PGM, control);
+	xio_setflags(XIO_DEV_EEP, control);
 	return (XIO_OK);									// for now it's always OK
 }
 
 /* 
- *	xio_putc_pgm() - write character to to program memory device
+ *	xio_putc_eep() - write character to to program memory device
  *
  *  Always returns error. You cannot write to program memory
  */
 
-int xio_putc_pgm(const char c, struct __file *stream)
+int xio_putc_eep(const char c, struct __file *stream)
 {
 	return -1;			// always returns an error. Big surprise.
 }
 
 /*
- *  xio_getc_pgm() - read a character from program memory device
+ *  xio_getc_eep() - read a character from program memory device
  *
  *  Get next character from program memory file.
  *
@@ -110,53 +110,53 @@ int xio_putc_pgm(const char c, struct __file *stream)
  *		- Note: putc should expand newlines to <cr><lf>
  */
 
-int xio_getc_pgm(struct __file *stream)
+int xio_getc_eep(struct __file *stream)
 {
 
-	if (PGM.flags & XIO_FLAG_EOF_bm) {
-		PGM.sig = XIO_SIG_EOF;
+	if (EEP.flags & XIO_FLAG_EOF_bm) {
+		EEP.sig = XIO_SIG_EOF;
 		return (_FDEV_EOF);
 	}
-	if ((PGM.c = pgm_read_byte(&PGMf.pgmbase_P[PGMf.len])) == NUL) {
-		PGM.flags |= XIO_FLAG_EOF_bm;
+	if ((EEP.c = pgm_read_byte(&EEPf.pgmbase_P[EEPf.len])) == NUL) {
+		EEP.flags |= XIO_FLAG_EOF_bm;
 	}
-	++PGMf.len;
-	if (!LINEMODE(PGM.flags)) {			// processing is simple if not LINEMODE
-		if (ECHO(PGM.flags)) {
-			putchar(PGM.c);
+	++EEPf.len;
+	if (!LINEMODE(EEP.flags)) {			// processing is simple if not LINEMODE
+		if (ECHO(EEP.flags)) {
+			putchar(EEP.c);
 		}
-		return (PGM.c);
+		return (EEP.c);
 	}
 	// now do the LINEMODE stuff
-	if (PGM.c == NUL) {					// perform newline substitutions
-		PGM.c = '\n';
-	} else if (PGM.c == '\r') {
-		PGM.c = '\n';
-	} else if ((SEMICOLONS(PGM.flags)) && (PGM.c == ';')) {
-		PGM.c = '\n';
+	if (EEP.c == NUL) {					// perform newline substitutions
+		EEP.c = '\n';
+	} else if (EEP.c == '\r') {
+		EEP.c = '\n';
+	} else if ((SEMICOLONS(EEP.flags)) && (EEP.c == ';')) {
+		EEP.c = '\n';
 	}
-	if (ECHO(PGM.flags)) {
-		putchar(PGM.c);
+	if (ECHO(EEP.flags)) {
+		putchar(EEP.c);
 	}
-	return (PGM.c);
+	return (EEP.c);
 }
 
 /* 
- *	xio_readln_pgm() - main loop task for program memory device
+ *	xio_readln_eep() - main loop task for program memory device
  *
  *	Non-blocking, run-to-completion return a line from memory
  *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
  */
 
-int xio_readln_pgm(char *buf, const uint8_t size)
+int xio_readln_eep(char *buf, const uint8_t size)
 {
-	if (!(PGMf.pgmbase_P)) {					// return error if no file is open
+	if (!(EEPf.pgmbase_P)) {					// return error if no file is open
 		return (XIO_FILE_NOT_OPEN);
 	}
-	PGM.sig = XIO_SIG_OK;						// initialize signal
-	if (fgets(buf, size, PGM.fdev) == NULL) {
-		PGMf.pgmbase_P = NULL;
-		clearerr(PGM.fdev);
+	EEP.sig = XIO_SIG_OK;						// initialize signal
+	if (fgets(buf, size, EEP.fdev) == NULL) {
+		EEPf.pgmbase_P = NULL;
+		clearerr(EEP.fdev);
 		return (XIO_EOF);
 	}
 	return (XIO_OK);
