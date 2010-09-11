@@ -106,7 +106,7 @@
 
 #include "data_gcode_asst.h"			// assorted test code
 //#include "data_gcode_zoetrope.h"		// zoetrope moves. makes really cool sounds
-//#include "data_gcode_contraptor_circle.h"
+#include "data_gcode_contraptor_circle.h"
 
 /*
  * Local Scope Functions and Data
@@ -420,7 +420,7 @@ int _tg_test_file()
 //	xio_open_pgm(PGMFILE(&radius_arc_test2));
 //	xio_open_pgm(PGMFILE(&square_test1));
 //	xio_open_pgm(PGMFILE(&square_test2));
-	xio_open_pgm(PGMFILE(&square_test_inch));
+//	xio_open_pgm(PGMFILE(&square_test_inch));
 //	xio_open_pgm(PGMFILE(&square_test10));
 //	xio_open_pgm(PGMFILE(&circle_test10));
 //	xio_open_pgm(PGMFILE(&square_circle_test10));
@@ -429,7 +429,7 @@ int _tg_test_file()
 //	xio_open_pgm(PGMFILE(&spiral_test5));
 //	xio_open_pgm(PGMFILE(&dwell_test2));
 
-//	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
+	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
 //	xio_open_pgm(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
 
 	// set source and mode

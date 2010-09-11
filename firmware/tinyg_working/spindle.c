@@ -23,6 +23,7 @@
 #include <avr/io.h>
 #include "stepper.h"
 #include "spindle.h"
+#include "gcode.h"
 
 /* 
  * sp_init()
@@ -38,14 +39,24 @@ void sp_init()
 	SPINDLE_DIRECTION_PORT.DIRSET = SPINDLE_DIRECTION_BIT_bm;
 }
 
-void sp_spindle_run(int direction, uint32_t rpm) 
+/*
+ * sp_spindle_run() - spindle controls
+ *
+ * Failsafe: if invalid setting (mode) is passed in spindle will stop
+ * Speed is a no-op for now.
+ */
+
+void sp_spindle_run(uint8_t mode, double speed)
 {
-	if(direction >= 0) {
+	if (mode == SPINDLE_CW) {
     	SPINDLE_DIRECTION_PORT.OUTSET = SPINDLE_DIRECTION_BIT_bm;
-	} else {
+		SPINDLE_ENABLE_PORT.OUTSET = SPINDLE_ENABLE_BIT_bm;
+	} else if (mode == SPINDLE_CCW) {
     	SPINDLE_DIRECTION_PORT.OUTCLR = SPINDLE_DIRECTION_BIT_bm;
+		SPINDLE_ENABLE_PORT.OUTSET = SPINDLE_ENABLE_BIT_bm;
+	} else {
+		SPINDLE_ENABLE_PORT.OUTCLR = SPINDLE_ENABLE_BIT_bm;
 	}
-	SPINDLE_ENABLE_PORT.OUTSET = SPINDLE_ENABLE_BIT_bm;
 }
 
 void sp_spindle_stop()

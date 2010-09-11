@@ -104,10 +104,10 @@
  * Canned gcode files for testing
  */
 
-//#include "data_gcode_asst.h"			// assorted test code
-//#include "data_gcode_zoetrope.h"		// zoetrope moves. makes really cool sounds
+#include "data_gcode_tests.h"			// assorted test code
+#include "data_gcode_zoetrope.h"		// zoetrope moves. makes really cool sounds
+#include "data_gcode_contraptor_circle.h"
 //#include "data_gcode_roadrunner.h"
-//#include "data_gcode_contraptor_circle.h"
 
 /*
  * Local Scope Functions and Data
@@ -163,22 +163,33 @@ void tg_alive()
 /* 
  * tg_controller() - top-level controller.
  *
- * Put tasks in order of highest to lowest priority.
- * Tasks are ordered by increasing dependency (blocking hierarchy)
- * Tasks that are dependent on the completion of lower-level tasks should be
+ * Tasks are ordered by increasing dependency (blocking hierarchy) - tasks 
+ * that are dependent on the completion of lower-level tasks should be
  * placed later in the list than the task(s) they are dependent upon.
  */
 
 #define	DISPATCH(func) switch (func) { \
 	case (TG_EAGAIN): { return; } \
 	case (TG_OK): { tg.state = TG_READY_UNPROMPTED; _tg_prompt(); return; } }
+	// any other condition drops through and runs the next routine in the list
 
 void tg_controller()
 {
 	st_execute_move();					// always start with this
+
+	// level 0 routines - stepper queueing routines
 	DISPATCH(mc_line_continue());
+	DISPATCH(mc_dwell_continue());
+	DISPATCH(mc_queued_start_stop_continue());
+
+	// level 1 routines - canonical motion primitives
 	DISPATCH(mc_arc_continue());
+
+	// level 2 routines - motion cycle routines
+
+	// level 3 routines - parsers and line readers
 	DISPATCH(tg_read_next_line());
+
 	_tg_prompt();						// always end with this
 }
 
@@ -243,8 +254,8 @@ int tg_parser(char * buf)
 	// auto-detect mode if not already set 
 	if (tg.mode == TG_CONTROL_MODE) {
 		switch (toupper(buf[0])) {
-			case 'G': case 'M': case 'N': case 'F': case '(': case '\\':
-				 _tg_set_mode(TG_GCODE_MODE); break;
+			case 'G': case 'M': case 'N': case 'F': case '(': case '\\': 
+				_tg_set_mode(TG_GCODE_MODE); break;
 			case 'C': case '?': _tg_set_mode(TG_CONFIG_MODE); break;
 			case 'D': _tg_set_mode(TG_DIRECT_DRIVE_MODE); break;
 			case 'R': return (_tg_test_file());
@@ -346,26 +357,30 @@ void _tg_prompt()
 
 // put strings in program memory
 char tgStatusMsg00[] PROGMEM = "OK";
-char tgStatusMsg01[] PROGMEM = "ERROR";
-char tgStatusMsg02[] PROGMEM = "EAGAIN";
-char tgStatusMsg03[] PROGMEM = "NOOP";
-char tgStatusMsg04[] PROGMEM = "End of line";
-char tgStatusMsg05[] PROGMEM = "End of file";
-char tgStatusMsg06[] PROGMEM = "File not open";
-char tgStatusMsg07[] PROGMEM = "No such device";
-char tgStatusMsg08[] PROGMEM = "Buffer empty";
-char tgStatusMsg09[] PROGMEM = "Buffer full - fatal";
-char tgStatusMsg10[] PROGMEM = "Buffer full - non-fatal";
-char tgStatusMsg11[] PROGMEM = "QUIT";
-char tgStatusMsg12[] PROGMEM = "Unrecognized command";
-char tgStatusMsg13[] PROGMEM = "Expected command letter";
-char tgStatusMsg14[] PROGMEM = "Unsupported statement";
-char tgStatusMsg15[] PROGMEM = "Parameter over range";
-char tgStatusMsg16[] PROGMEM = "Bad number format";
-char tgStatusMsg17[] PROGMEM = "Floating point error";
-char tgStatusMsg18[] PROGMEM = "Motion control error";
-char tgStatusMsg19[] PROGMEM = "Arc specification error";
-char tgStatusMsg20[] PROGMEM = "Zero length line";
+char tgStatusMsg01[] PROGMEM = "{01} ERROR";
+char tgStatusMsg02[] PROGMEM = "{02} EAGAIN";
+char tgStatusMsg03[] PROGMEM = "{03} NOOP";
+char tgStatusMsg04[] PROGMEM = "{04} End of line";
+char tgStatusMsg05[] PROGMEM = "{05} End of file";
+char tgStatusMsg06[] PROGMEM = "{06} File not open";
+char tgStatusMsg07[] PROGMEM = "{07} No such device";
+char tgStatusMsg08[] PROGMEM = "{08} Buffer empty";
+char tgStatusMsg09[] PROGMEM = "{09} Buffer full - fatal";
+char tgStatusMsg10[] PROGMEM = "{10} Buffer full - non-fatal";
+char tgStatusMsg11[] PROGMEM = "{11} QUIT";
+char tgStatusMsg12[] PROGMEM = "{12} Unrecognized command";
+char tgStatusMsg13[] PROGMEM = "{13} Expected command letter";
+char tgStatusMsg14[] PROGMEM = "{14} Unsupported statement";
+char tgStatusMsg15[] PROGMEM = "{15} Parameter over range";
+char tgStatusMsg16[] PROGMEM = "{16} Bad number format";
+char tgStatusMsg17[] PROGMEM = "{17} Floating point error";
+char tgStatusMsg18[] PROGMEM = "{18} Motion control error";
+char tgStatusMsg19[] PROGMEM = "{19} Arc specification error";
+char tgStatusMsg20[] PROGMEM = "{20} Zero length line";
+char tgStatusMsg21[] PROGMEM = "{21} Maximum feed rate exceeded";
+char tgStatusMsg22[] PROGMEM = "{22} Maximum seek rate exceeded";
+char tgStatusMsg23[] PROGMEM = "{23} Maximum table travel exceeded";
+char tgStatusMsg24[] PROGMEM = "{24} Maximum spindle speed exceeded";
 
 // put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
 PGM_P tgStatusStrings[] PROGMEM = {	
@@ -389,7 +404,11 @@ PGM_P tgStatusStrings[] PROGMEM = {
 	tgStatusMsg17,
 	tgStatusMsg18,
 	tgStatusMsg19,
-	tgStatusMsg20
+	tgStatusMsg20,
+	tgStatusMsg21,
+	tgStatusMsg22,
+	tgStatusMsg23,
+	tgStatusMsg24
 };
 
 void tg_print_status(const uint8_t status_code, const char *textbuf)
@@ -399,6 +418,7 @@ void tg_print_status(const uint8_t status_code, const char *textbuf)
 		case TG_EAGAIN: return;
 		case TG_NOOP: return;
 		case TG_QUIT: return;
+		case TG_ZERO_LENGTH_LINE: return;
 	}
 	printf_P(PSTR("%S: %s\n"),(PGM_P)pgm_read_word(&tgStatusStrings[status_code]), textbuf);
 //	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgStatusStrings[status_code]));
@@ -429,9 +449,11 @@ int _tg_test_file()
 //	xio_open_pgm(PGMFILE(&spiral_test5));
 //	xio_open_pgm(PGMFILE(&dwell_test2));
 
-//	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
+	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
 //	xio_open_pgm(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
 //	xio_open_pgm(PGMFILE(&roadrunner));
+
+//	xio_open_pgm(PGMFILE(&parser_test1));	// gcode parser tests
 
 	// set source and mode
 	_tg_set_source(XIO_DEV_PGM);

@@ -30,7 +30,6 @@
 /* Note: See hardware.h for spindle port assignments and bit positions */
 
 void sp_init();
-void sp_spindle_run(int direction, uint32_t rpm);
-void sp_spindle_stop();
+void sp_spindle_run(uint8_t mode, double speed);
 
 #endif

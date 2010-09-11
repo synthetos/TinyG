@@ -27,17 +27,22 @@
  * The move will the ISRs run as normal, but no pulses will be issued.
  */
 
-#define DWELL_FLAG_bm (1<<0)		// indicates that the line is actually a dwell command
-
-struct mvMoveAxis {
- 	int32_t steps; 					// total steps in each direction
-	uint16_t period;				// timer period value
-	uint16_t postscale;				// timer postscaler value (software counter)
-	uint8_t direction;				// b0 = direction
-	uint8_t flags;					// carries dwell command (other flags if needed)
+enum mvType {
+	MOVE_TYPE_LINE,
+	MOVE_TYPE_DWELL,
+	MOVE_TYPE_START,
+	MOVE_TYPE_STOP
 };
 
-struct mvMove {						// Linear moves are queued as stepper ISR parameters
+struct mvMoveAxis {
+	int8_t direction;				// b0 = direction
+ 	int32_t steps; 					// total steps in each direction
+	uint16_t period;				// timer period value
+	uint16_t postscale;				// timer postscaler value (sw counter)
+};
+
+struct mvMove {						// moves are queued as stepper ISR parms
+	uint8_t move_type;				// move type
 	struct mvMoveAxis a[3];			// axis structs
 };
 
@@ -46,12 +51,12 @@ struct mvMove {						// Linear moves are queued as stepper ISR parameters
  */
 
 void mv_init(void);
-uint8_t mv_queue_move_buffer(int32_t steps_x, int32_t steps_y, int32_t steps_z, 
-							 uint32_t microseconds, uint8_t move_type);
+uint8_t mv_queue_line(int32_t steps_x, int32_t steps_y, int32_t steps_z, uint32_t microseconds);
+uint8_t mv_queue_dwell(uint32_t microseconds);
+uint8_t mv_queue_start_stop(uint8_t move_type);	// queue stops and starts
 struct mvMove *mv_dequeue_move_buffer(void);
 uint8_t mv_test_move_buffer_full(void);
 void mv_flush(void);				// Cancel all pending steps
-void mv_synchronize(void);			// Block until all buffered steps are executed
 
 #endif
 

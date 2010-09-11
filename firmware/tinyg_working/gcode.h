@@ -21,50 +21,131 @@
 #ifndef gcode_h
 #define gcode_h
 
+struct GCodeParser {				// gcode parser state & helper variables
+	uint8_t status;					// now uses unified TG_ status codes
+	char letter;					// parsed letter, eg.g. G or X or Y
+	double value;					// value parsed from letter (e.g. 2 for G2)
+	double fraction;				// value fraction, eg. 0.1 for 92.1
+};
+
+struct GCodeModel {					// Gcode model- meaning depends on context
+	double feed_rate; 				// F - normalized to millimeters/minute
+	double seek_rate;				// seek rate in millimeters/second
+	double max_feed_rate;			// max supported feed rate (mm/min)
+	double max_seek_rate;			// max supported seek rate (mm/min)
+	double inverse_feed_rate; 		// ignored if inverse_feed_rate not active
+	uint8_t inverse_feed_rate_mode; // TRUE = inv (G93) FALSE = normal (G94)
+
+	uint8_t set_plane;				// values to set plane to
+	uint8_t plane_axis_0; 			// actual axes of the selected plane
+	uint8_t plane_axis_1; 			// ...(set in gm only)
+	uint8_t plane_axis_2; 
+
+	uint8_t inches_mode;         	// TRUE = inches (G20), FALSE = mm (G21)
+	uint8_t absolute_mode;			// TRUE = absolute (G90), FALSE = rel.(G91)
+	uint8_t absolute_override; 		// TRUE = abs motion- this block only (G53)
+	uint8_t set_origin_mode;		// TRUE = in set origin mode (G92)
+	uint8_t	override_enable;		// TRUE = overrides enabled (M48), F=(M49)
+
+	uint8_t tool;					// T value
+	uint8_t change_tool;			// M6
+
+	uint8_t spindle_mode;			// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
+	double spindle_speed;			// in RPM
+	double max_spindle_speed;		// limit
+
+	uint8_t next_action;			// handles G modal Grp1 moves & non-modals
+	uint8_t motion_mode;			// Group1: G0, G1, G2, G3, G38.2, G80, G81,
+									// G82, G83 G84, G85, G86, G87, G88, G89 
+	uint8_t program_flow;			// M0, M1 - pause / resume program flow
+
+	double dwell_time;				// P - dwell time in seconds
+	double position[3];				// X, Y, Z - meaning depends on context
+	double target[3]; 				// X, Y, Z - where the move should go
+	double offset[3];  				// I, J, K - used by arc commands
+	double radius;					// R - radius value in arc raduis mode
+
+/* unimplemented					// this block would follow inches_mode
+	double cutter_radius;			// D - cutter radius compensation (0 is off)
+	double cutter_length;			// H - cutter length compensation (0 is off)
+	uint8_t coord_system;			// select coordinate system 1-9
+	uint8_t path_control_mode;
+
+   unimplemented					// this block would follow spindle_speed
+	uint8_t mist_coolant_on;		// TRUE = mist on (M7), FALSE = off (M9)
+	uint8_t flood_coolant_on;		// TRUE = flood on (M8), FALSE = off (M9)
+*/
+};
+
 /*
  * Global Scope Functions
  */
 
-void gc_init(void);							// Initialize the parser
+void gc_init(void);								// Initialize the parser
 uint8_t gc_gcode_parser(char *block);
-uint8_t gc_execute_block(char *line);		// Execute one block of rs275/ngc/g-code
-void select_plane(uint8_t axis_0, uint8_t axis_1, uint8_t axis_2);
 
 /* 
- * various defines used by the gcode interpreter 
+ * definitions used by gcode interpreter 
+ *
+ * The difference between NextAction and MotionMode is that NextAction is 
+ * used by the current block, and may carry non-modal commands, whereas 
+ * MotionMode persists across blocks (as G modal group 1)
  */
 
-enum gcNextAction {
-	NEXT_ACTION_NONE,						// no moves
-	NEXT_ACTION_MOTION,						// move is set by motion mode (below)
-	NEXT_ACTION_DWELL,
-	NEXT_ACTION_GO_HOME,
-	NEXT_ACTION_SET_COORDINATES
+enum gcNextAction {						// motion mode and non-modals
+	NEXT_ACTION_NONE,					// no moves
+	NEXT_ACTION_MOTION,					// action set by MotionMode
+	NEXT_ACTION_DWELL,					// G4
+	NEXT_ACTION_GO_HOME					// G28
+//	NEXT_ACTION_OFFSET_COORDINATES		// G92
 };
 
-enum gcMotionMode {
-	MOTION_MODE_RAPID_LINEAR,		 		// G0 
-	MOTION_MODE_LINEAR,				 		// G1
-	MOTION_MODE_CW_ARC,						// G2
-	MOTION_MODE_CCW_ARC,					// G3
-	MOTION_MODE_CANCEL,						// G80
+enum gcMotionMode {						// G Modal Group 1
+	MOTION_MODE_STRAIGHT_TRAVERSE,		// G0 - seek
+	MOTION_MODE_STRAIGHT_FEED,			// G1 - feed
+	MOTION_MODE_CW_ARC,					// G2 - arc feed
+	MOTION_MODE_CCW_ARC,				// G3 - arc feed
+	MOTION_MODE_STRAIGHT_PROBE,			// G38.2
+	MOTION_MODE_CANCEL_MOTION_MODE,		// G80
+	MOTION_MODE_CANNED_CYCLE_81,		// G81 - drilling
+	MOTION_MODE_CANNED_CYCLE_82,		// G82 - drilling with dwell
+	MOTION_MODE_CANNED_CYCLE_83,		// G83 - peck drilling
+	MOTION_MODE_CANNED_CYCLE_84,		// G84 - right hand tapping
+	MOTION_MODE_CANNED_CYCLE_85,		// G85 - boring, no dwell, feed out
+	MOTION_MODE_CANNED_CYCLE_86,		// G86 - boring, spindle stop, rapid out
+	MOTION_MODE_CANNED_CYCLE_87,		// G87 - back boring
+	MOTION_MODE_CANNED_CYCLE_88,		// G88 - boring, spindle stop, manual out
+	MOTION_MODE_CANNED_CYCLE_89			// G89 - boring, dwell, feed out
 };
 
-enum gcPathControlMode {
+enum gcPathControlMode {				// G Modal Group 13
 	PATH_CONTROL_MODE_EXACT_PATH,
 	PATH_CONTROL_MODE_EXACT_STOP,
 	PATH_CONTROL_MODE_CONTINOUS
 };
 
 enum gcProgramFlow {
-	PROGRAM_FLOW_START,						// START must be zero
+	PROGRAM_FLOW_START,					// START must be zero
 	PROGRAM_FLOW_STOP,
 	PROGRAM_FLOW_END
 };
 
-enum gcSpindleDirection {
-	SPINDLE_DIRECTION_CW,
-	SPINDLE_DIRECTION_CCW
+enum gcCanonicalSpindle {				// spindle settings
+	SPINDLE_OFF,
+	SPINDLE_CW,
+	SPINDLE_CCW
+};
+
+enum gcCanonicalPlane {					// canonical plane - translates to:
+										// axis_0	axis_1	axis_2
+	CANON_PLANE_XY,						//   X		  Y		  Z
+	CANON_PLANE_XZ,						//   X		  Z		  Y
+	CANON_PLANE_YZ						//	 Y		  Z		  X							
+};
+
+enum gcDirection {						// used for spindle and arc dir
+	DIRECTION_CW,
+	DIRECTION_CCW
 };
 
 #endif
@@ -72,6 +153,77 @@ enum gcSpindleDirection {
 
 /**** GCODE NOTES ****/
 
+/* ---Supported commands are:
+ 	G0				Rapid linear motion
+	G1				Linear motion at feed rate
+	G2, G3			Clockwise / counterclockwise arc at feed rate
+	G4				Dwell
+	G17, G18, G19	Select plane: XY plane {G17}, XZ plane {G18}, YZ plane {G19}
+	G20, G21		Length units: inches {G20}, millimeters {G21}
+	G53				Move in absolute coordinates
+	G80				Cancel motion mode
+	G90, G91		Set distance mode; absolute {G90}, incremental {G91}
+	G92				Coordinate System Offsets - limited support provided
+	G93, G94		Set feed rate mode: inverse time mode {93}, 
+										units per minute mode {G94}
+	M0				Program stop
+	M1				Optional program stop
+	M2				Program end
+	M3, M4			Turn spindle clockwise / counterclockwise
+	M5				Stop spindle turning
+	M30				Program end (pallet shuttle and reset)
+	M60				Program stop (and pallet shuttle)
+
+  Commands omitted for the time being:
+	G10	  			Coordinate system data
+	G14, G15		Spiral motion
+	G28, G30		Return to home (requires parameters)
+	G38.2 			Straight probe
+	G40, G41, G42	Cutter radius compensation
+	G43, G49		Tool length offsets
+	G54 - G59.3		Select coordinate system (group 12)
+	G61, G61.1, G64 Set path control mode (group 13)
+	G81 - G89		Canned cycles
+	G92	- G92.3		Coordinate system offsets
+	G98, G99		Set canned cycle return level
+
+	M6				Tool change
+	M7, M8, M9		Coolant (group8)
+	M48, M49		Enable/disable feed and speed override switches (group 9)
+	
+  Other commands and features intentionally not supported:
+	- A,B,C axes
+	- Multiple coordinate systems
+	- Evaluation of expressions
+	- Variables (Parameters)
+	- Multiple home locations
+	- Probing
+	- Override control
+
+  FYI: GCode modal groups (from NIST RS274NGC_3 Table 4)
+
+   The modal groups for G codes are:
+	group 1 = {G0, G1, G2, G3, G38.2, G80, G81, G82, G83, G84, G85, G86, G87, G88, G89} motion
+	group 2 = {G17, G18, G19} plane selection 
+	group 3 = {G90, G91} distance mode 
+	group 5 = {G93, G94} feed rate mode
+	group 6 = {G20, G21} units 
+	group 7 = {G40, G41, G42} cutter radius compensation 
+	group 8 = {G43, G49} tool length offset 
+	group 10 = {G98, G99} return mode in canned cycles 
+	group 12 = {G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3} coordinate system selection 
+	group 13 = {G61, G61.1, G64} path control mode
+
+   The modal groups for M codes are:
+	group 4 = {M0, M1, M2, M30, M60} stopping 
+	group 6 = {M6} tool change 
+	group 7 = {M3, M4, M5} spindle turning 
+	group 8 = {M7, M8, M9} coolant (special case: M7 and M8 may be active at the same time) 
+	group 9 = {M48, M49} enable/disable feed and speed override switches
+
+   In addition to the above modal groups, there is a group for non-modal G codes:
+	group 0 = {G4, G10, G28, G30, G53, G92, G92.1, G92.2, G92.3}	
+*/
 /*---- Coordinate system notes ----
 
   TinyG runs a reduced functionality coordinate system from full NIST.
