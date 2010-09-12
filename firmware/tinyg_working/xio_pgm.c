@@ -59,7 +59,7 @@ struct __file * xio_open_pgm(const prog_char *addr)
 {
 	PGM.flags &= XIO_FLAG_RESET_gm;			// reset flag signaling bits
 	PGM.sig = 0;							// reset signal
-	PGMf.pgmbase_P = (PROGMEM char *)addr;	// might want to range check this
+	PGMf.filebase_P = (PROGMEM char *)addr;	// might want to range check this
 	PGMf.len = 0;							// initialize buffer pointer
 	return(PGM.fdev);							// return pointer to the fdev stream
 }
@@ -117,7 +117,7 @@ int xio_getc_pgm(struct __file *stream)
 		PGM.sig = XIO_SIG_EOF;
 		return (_FDEV_EOF);
 	}
-	if ((PGM.c = pgm_read_byte(&PGMf.pgmbase_P[PGMf.len])) == NUL) {
+	if ((PGM.c = pgm_read_byte(&PGMf.filebase_P[PGMf.len])) == NUL) {
 		PGM.flags |= XIO_FLAG_EOF_bm;
 	}
 	++PGMf.len;
@@ -150,12 +150,12 @@ int xio_getc_pgm(struct __file *stream)
 
 int xio_readln_pgm(char *buf, const uint8_t size)
 {
-	if (!(PGMf.pgmbase_P)) {					// return error if no file is open
+	if (!(PGMf.filebase_P)) {					// return error if no file is open
 		return (XIO_FILE_NOT_OPEN);
 	}
 	PGM.sig = XIO_SIG_OK;						// initialize signal
 	if (fgets(buf, size, PGM.fdev) == NULL) {
-		PGMf.pgmbase_P = NULL;
+		PGMf.filebase_P = NULL;
 		clearerr(PGM.fdev);
 		return (XIO_EOF);
 	}

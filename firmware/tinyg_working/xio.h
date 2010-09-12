@@ -89,6 +89,7 @@ enum xioDevice {				// device enumerations
 	XIO_DEV_TTL,				// USART	TTL device (typ. Arduino)
 	XIO_DEV_PGM,				// FILE		program memory file (read only)
 	XIO_DEV_EEP,				// FILE		EEPROM (not implemented)
+	XIO_DEV_RAM,				// FILE		RAM (not implemented)
 	XIO_DEV_SDC,				// FILE		SD card (not implemented)
 	XIO_DEV_ENC,				// HW		Encoder port
 	XIO_DEV_LIM,				// HW		Limit switch port
@@ -104,13 +105,17 @@ enum xioDevice {				// device enumerations
 
 #define XIO_DEV_PGM_OFFSET (XIO_DEV_PGM - XIO_DEV_PGM)// index into FILES
 #define XIO_DEV_EEP_OFFSET (XIO_DEV_EEP - XIO_DEV_PGM)
+#define XIO_DEV_RAM_OFFSET (XIO_DEV_RAM - XIO_DEV_PGM)
 #define XIO_DEV_SDC_OFFSET (XIO_DEV_SDC - XIO_DEV_PGM)
-#define XIO_DEV_FILE_COUNT (3)						// count of FILE devices
+#define XIO_DEV_FILE_COUNT (4)						// count of FILE devices
 
 // aliases for stdio devices (pointers)
 #define fdev_rs485 (ds[XIO_DEV_RS485].fdev)// RS485 device for stdio functions
 #define fdev_usb (ds[XIO_DEV_USB].fdev)	// USB device for stdio functions
 #define fdev_pgm (ds[XIO_DEV_PGM].fdev)	// Program memory device
+#define fdev_eep (ds[XIO_DEV_EEP].fdev)	// EEPROM memory device
+#define fdev_ram (ds[XIO_DEV_RAM].fdev)	// RAM memory device
+
 
 /*
  * Device configurations (all of them)
@@ -212,8 +217,8 @@ enum xioSignals {
 #define CTRL_H BS	
 #define CTRL_N SHIFTOUT	
 #define CTRL_O SHIFTIN	
-#define CTRL_Q XOFF
-#define CTRL_S XON
+#define CTRL_Q XON
+#define CTRL_S XOFF
 #define CTRL_X 0x18				// ^x - aka CAN(cel)
 
 /* Signal character mappings */
@@ -266,6 +271,9 @@ void xio_init(void);							// xio system general init
 void xio_init_stdio(void);						// set std devs & do startup prompt
 void xio_init_rs485(void);						// device-specific inits
 void xio_init_usb(void);
+void xio_init_pgm(void);
+void xio_init_eep(void);
+//void xio_init_ram(void);
 
 int xio_setflags(const uint8_t dev, const uint16_t control);
 void xio_set_stdin(const uint8_t dev);
