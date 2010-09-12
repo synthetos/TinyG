@@ -38,6 +38,7 @@ void xio_init_eep()
 /* 
  *	xio_init_file() - generic init for file devices
  */
+/*
 void xio_init_file(const uint8_t dev, const uint8_t offset, const uint16_t control)
 {
 	// bind file struct to extended device parameters
@@ -47,6 +48,7 @@ void xio_init_file(const uint8_t dev, const uint8_t offset, const uint16_t contr
 	// 	- WR and NOBLOCK are restricted
 	xio_setflags_eep(control);
 }
+*/
 
 /*	
  *	xio_open_eep() - provide a string address to the program memory device
@@ -59,7 +61,7 @@ struct __file * xio_open_eep(const prog_char *addr)
 {
 	EEP.flags &= XIO_FLAG_RESET_gm;			// reset flag signaling bits
 	EEP.sig = 0;							// reset signal
-	EEPf.pgmbase_P = (PROGMEM char *)addr;	// might want to range check this
+	EEPf.filebase_P = (PROGMEM char *)addr;	// might want to range check this
 	EEPf.len = 0;							// initialize buffer pointer
 	return(EEP.fdev);							// return pointer to the fdev stream
 }
@@ -117,7 +119,7 @@ int xio_getc_eep(struct __file *stream)
 		EEP.sig = XIO_SIG_EOF;
 		return (_FDEV_EOF);
 	}
-	if ((EEP.c = pgm_read_byte(&EEPf.pgmbase_P[EEPf.len])) == NUL) {
+	if ((EEP.c = pgm_read_byte(&EEPf.filebase_P[EEPf.len])) == NUL) {
 		EEP.flags |= XIO_FLAG_EOF_bm;
 	}
 	++EEPf.len;
@@ -150,12 +152,12 @@ int xio_getc_eep(struct __file *stream)
 
 int xio_readln_eep(char *buf, const uint8_t size)
 {
-	if (!(EEPf.pgmbase_P)) {					// return error if no file is open
+	if (!(EEPf.filebase_P)) {					// return error if no file is open
 		return (XIO_FILE_NOT_OPEN);
 	}
 	EEP.sig = XIO_SIG_OK;						// initialize signal
 	if (fgets(buf, size, EEP.fdev) == NULL) {
-		EEPf.pgmbase_P = NULL;
+		EEPf.filebase_P = NULL;
 		clearerr(EEP.fdev);
 		return (XIO_EOF);
 	}
