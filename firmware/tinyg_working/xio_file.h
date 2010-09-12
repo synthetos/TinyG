@@ -5,16 +5,17 @@
  * Part of TinyG project
  * Copyright (c) 2010 Alden S. Hart, Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation, 
- * either version 3 of the License, or (at your option) any later version.
+ * TinyG is free software: you can redistribute it and/or modify it under the 
+ * terms of the GNU General Public License as published by the Free Software 
+ * Foundation, either version 3 of the License, or (at your option) any later 
+ * version.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
- * PURPOSE. See the GNU General Public License for more details.
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY 
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for details.
  *
- * You should have received a copy of the GNU General Public License along with TinyG  
- * If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along 
+ * with TinyG  If not, see <http://www.gnu.org/licenses/>.
 
 ---- How to setup and use program memory "files" ----
 
@@ -51,20 +52,17 @@
 	}
 */
 
-#ifndef xio_pgm_h
-#define xio_pgm_h
+#ifndef xio_file_h
+#define xio_file_h
 
 /* 
  * FILE DEVICE CONFIGS 
  */
 
-// PGM device configuration
 #define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
+#define EEP_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
+#define RAM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
 
-
-/* 
- * USART DEVICE CONSTANTS AND PARAMETERS
- */
 
 /* 
  * FILE device extended control structure 
@@ -76,7 +74,7 @@
 struct xioFILE {
 	uint16_t fflags;					// file sub-system flags
 	uint32_t len;						// index into file
-	char * pgmbase_P;					// base location in memory
+	char * filebase_P;					// base location in memory
 };
 
 /* 
@@ -88,9 +86,7 @@ struct xioFILE {
 void xio_init_file(const uint8_t dev, const uint8_t offset, const uint16_t control);
 
 // PGM functions
-//void xio_init_pgm(uint16_t control);				// init program memory device
 void xio_init_pgm(void);
-
 FILE * xio_open_pgm(const prog_char * addr);		// open memory string read only
 int xio_setflags_pgm(const uint16_t control);		// valaidate & set dev flags
 int xio_putc_pgm(const char c, struct __file *stream);// always returns ERROR
@@ -98,6 +94,14 @@ int xio_getc_pgm(struct __file *stream);			// get a character
 int xio_readln_pgm(char *buf, const uint8_t size);	// read line from program memory
 
 // EEPROM functions
+void xio_init_eep(void);
+FILE * xio_open_eep(const prog_char * addr);		// open EEPROM string
+int xio_setflags_eep(const uint16_t control);		// valaidate & set dev flags
+int xio_putc_eep(const char c, struct __file *stream);// always returns ERROR
+int xio_getc_eep(struct __file *stream);			// get a character from EEPROM
+int xio_readln_eep(char *buf, const uint8_t size);	// read line from EEPROM
+
+// RAM Card functions
 
 // SD Card functions
 

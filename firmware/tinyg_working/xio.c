@@ -70,7 +70,9 @@ void xio_init()
 	// call device inits
 	xio_init_rs485();
 	xio_init_usb();
-	xio_init_pgm();
+	xio_init_pgm();						// program memory file device
+	xio_init_eep();						// EEPROM memory file device
+//	xio_init_ram();						// RAM memory file device
 }
 
 /*
