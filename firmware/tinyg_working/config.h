@@ -1,40 +1,20 @@
 /*
  * config.h - configuration sub-system
- * 
  * Part of TinyG project
+ *
  * Copyright (c) 2010 Alden S. Hart, Jr.
- * Portions if this module copyright (c) 2009 Simen Svale Skogsrud
  *
- * TinyG is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation, 
- * either version 3 of the License, or (at your option) any later version.
+ * TinyG is free software: you can redistribute it and/or modify it under the 
+ * terms of the GNU General Public License as published by the Free Software 
+ * Foundation, either version 3 of the License, or (at your option) any later 
+ * version.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
- * PURPOSE. See the GNU General Public License for more details.
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY 
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for details.
  *
- * You should have received a copy of the GNU General Public License along with TinyG  
- * If not, see <http://www.gnu.org/licenses/>.
- *
- * ------
- * This file is somewhat different.from the original Grbl settings code
- * TinyG configurations are held in the config struct (cfg)
- *
- *	Config				example	description
- *	-------------------	-------	---------------------------------------------
- *	(non-axis configs)
- *	config_version		1.00	config version
- *	mm_arc_segment		0.01	arc drawing resolution in millimeters per segment 
- *
- *	(axis configs - one per axis - only X axis is shown)
- *	x_seek_steps_sec	1800	max seek whole steps per second for X axis
- *	x_feed_steps_sec	1200	max feed whole steps per second for X axis
- *	x_degree_per_step	1.8		degrees per whole step for X axis
- *	x_mm_per_rev		2.54	millimeters of travel per revolution of X axis
- *	x_mm_travel			406		millimeters of travel in X dimension (total)
- * 	x_microstep			8		microsteps to apply for X axis steps
- *	x_low_pwr_idle		1		1=low power idle mode, 0=full power idle mode 
- *	x_limit_enable		1		1=max limit switch enabled, 0=not enabled
+ * You should have received a copy of the GNU General Public License along 
+ * with TinyG  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef config_h
@@ -44,13 +24,14 @@
  * Global Scope Functions
  */
 
-void cfg_init(void);		// initialize config struct by reading from EEPROM
-void cfg_reset(void);		// reset config values to defaults
-int cfg_parse(char *text);	// parse a tag=value config string
-int cfg_read(void);			// read config record from EEPROM
-void cfg_write(void);		// write config record to EEPROM
+void cfg_init(void);			// initialize config struct by reading from EEPROM
+void cfg_reset(void);			// reset config values to defaults
+int cfg_parse(char *text);		// parse a tag=value config string
+int cfg_read(void);				// read config record from EEPROM
+void cfg_write(void);			// write config record to EEPROM
 void cfg_dump(void);
-void cfg_test(void);		// unit tests for config routines
+void cfg_test(void);			// unit tests for config routines
+void cfg_test2(void);			// unit tests for config routines
 
 /*
  * Global scope config structs

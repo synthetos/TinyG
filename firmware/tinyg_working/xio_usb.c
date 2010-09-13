@@ -40,13 +40,13 @@ FILE * xio_open_usb() {return(USB.fdev);}
 int xio_setflags_usb(const uint16_t control) {return xio_setflags(XIO_DEV_USB, control);} // SEE NOTE
 int xio_putc_usb(const char c, FILE *stream) {return xio_putc_usart(XIO_DEV_USB, c, stream);}
 int xio_getc_usb(FILE *stream) {return xio_getc_usart(XIO_DEV_USB, stream);}
-int xio_readln_usb(char *buf, const uint8_t size) {return xio_readln_usart(XIO_DEV_USB, buf, size);}
+int xio_gets_usb(char *buf, const uint8_t size) {return xio_gets_usart(XIO_DEV_USB, buf, size);}
 void xio_queue_RX_char_usb(const char c) {xio_queue_RX_char_usart(XIO_DEV_USB, c);}
 void xio_queue_RX_string_usb(const char *buf) {xio_queue_RX_string_usart(XIO_DEV_USB, buf);}
 
 void xio_init_usb()	// USB inits
 {
-	xio_init_dev(XIO_DEV_USB, xio_open_usb, xio_setflags_usb, xio_putc_usb, xio_getc_usb, xio_readln_usb);
+	xio_init_dev(XIO_DEV_USB, xio_open_usb, xio_setflags_usb, xio_putc_usb, xio_getc_usb, xio_gets_usb);
 	xio_init_usart(XIO_DEV_USB, XIO_DEV_USB_OFFSET, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
 }
 

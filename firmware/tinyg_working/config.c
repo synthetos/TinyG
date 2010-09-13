@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>					// for memset(), strchr()
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
@@ -25,11 +26,42 @@
 #include "config.h"
 #include "stepper.h"
 #include "hardware.h"
-#include "xmega_eeprom.h"
+#include "xmega_nvm.h"
 
 // prototypes for local helper functions
 void _cfg_computed(void); 
+void _cfg_normalize_config_block(char *block);
+uint8_t _cfg_parse_config_block(char *block);
 void _cfg_dump_axis(uint8_t	axis);
+
+// local data
+struct cfgConfigParser {
+	int8_t axis;				// axis value or -1 if none
+	uint8_t param;				// tokenized parameteer
+	double value;				// value parsed
+	char block[40];				// 
+};
+static struct cfgConfigParser cp;
+
+// Config parameter tokens
+
+enum cfgTokens {
+	CPTOK_NONE,
+	CPTOK_MM_PER_ARC_SEGMENT,
+	CPTOK_SEEK_STEPS_MAX,
+	CPTOK_FEED_STEPS_MAX,
+	CPTOK_DEGREES_PER_STEP,
+	CPTOK_MICROSTEP_MODE,
+	CPTOK_POLARITY,
+	CPTOK_TRAVEL_MAX,
+	CPTOK_TRAVEL_WARN,				// stop homing cycle if above this value
+	CPTOK_TRAVEL_PER_REVOLUTION,
+	CPTOK_IDLE_MODE,
+	CPTOK_LIMIT_SWITCH_MODE,
+	CPTOK_MAP_AXIS_TO_MOTOR,
+	CPTOK_GCODE_UNITS,
+	CPTOK_GCODE_PLANE
+};
 
 /* 
  * cfg_init() - initialize config system 
@@ -38,6 +70,282 @@ void _cfg_dump_axis(uint8_t	axis);
 void cfg_init() 
 {
 	cfg_reset();
+}
+
+/* 
+ * cg_config_parser() - parse a config line
+ *					  - write into config record and persist to EEPROM
+ *
+ * How it works:
+ *
+ *	'C' enter config mode from control mode
+ *	'Q' quit config mode (return to control mode)
+ *	'?' dump config to console
+ *	'H' show help screen
+ *
+ *	Configuration parameters are set one line at a time.
+ *	Whitespace is ignored and not used for delimiting.
+ *	Non-alpha and non numeric characters are ignored (except newline).
+ *	Parameter strings are case insensitive. 
+ *	Tags can have extra letters for readability.
+ *	Comments are in parentheses and cause the rest of the line to be ignored.
+ *
+ *	Per-axis parameters have an axis letter followed by a 2 letter tag 
+ *	followed by the parameter value. Examples:
+ *		X SE 1500 (set X axis max seek rate to 1500 steps per second)
+ *		zseek1800.99 (set Z axis max seek rate to 1800 steps per second)
+ *
+ *	General parameters are formatted as needed, and are explained separately
+ *		AR 0.01  	(arc steps per mm)
+ *
+ *	------ Supported parameters ------
+ *
+ * 	In the examples below 'X' means any supported axis: X, Y, Z or A.
+ *	[nnnn] is the range or list of values supported. The []'s are not typed.
+ *  .00 indicates a floating point value - all others are integers.
+ *
+ *	General config parameters
+ * 
+ *		  AR [0.00-1.00]	Millimeters per arc segment 
+ *							Current driver resolution is between 0.05 and 0.01 mm
+ *
+ *	Per-axis parameters
+ *
+ *		X SE [0-65535]		Maximum seek steps per second
+ *							In whole steps (not microsteps)
+ *							A practical limit will be < 2000 steps/sec
+ *
+ *		X FE [0-65535]		Maximum feed steps per second. As above
+ *
+ *		X DE [0.00-360.00]	Degrees per step
+ *							Commonly 1.8
+ *							A practical limit will be 7.5
+ *
+ *		X MI [-1,1,2,4,8]	Microstep mode
+ *							1-8 is whole to 1/8 step
+ *							-1 is morphing microsteps with rotational speed
+ *							(microstep morphing is not yet implemented)
+ *							(other morphing modes may be supported as well)
+ *
+ *		X PO [0,1]			Axis motor polarity
+ *							0 = normal polarity
+ *							1 = reverse polarity
+ *
+ *		X TR [0-65535]		Maximum axis travel in mm (table size)
+ *
+ *		X RE [0-9999.99]	Travel per revolution in mm (mm per revolution)
+ *
+ *		X ID [0,1]			Idle mode
+ *							0 = no idle mode
+ *							1 = low power idle mode enabled
+ *
+ *		X LI [0,1]			Limit switch mode
+ *							0 = no limit switches
+ *							1 = limit switches enabled (may need more modes than this)
+ *
+ *		X MA [0-4]			Map axis to motor #
+ *							0 = axis disabled
+ *							This setting will also be used to support axis slaving
+ *
+ *	Computed parameters
+ *
+ *	There are also a set of parameters that are computed from the above and 
+ *	are displayed for convenience
+ *
+ *		steps_per_mm
+ *		steps_per_inch
+ *		maximum_seek_rate in mm/minute and inches/minute
+ *		maximum_feed_rate in mm/minute and inches/minute
+ *
+ *	G code configuration
+ *
+ *	Config accepts the following G codes which become the power-on defaults 
+ *
+ *		G20/G21			Select inches (G20) or millimeters mode (G21)
+ *		G17/G18/G19		Plane selection
+ *
+ *	Examples of valid config lines:
+ *
+ *		X SE 1800			Set X maximum seek to 1800 whole steps / second 
+ *		XSE1800				Same as above
+ *		xseek1800			Same as above
+ *		xseek+1800			Same as above
+ *		xseek 1800.00		Same as above
+ *		xseek 1800.99		OK, but will be truncated to 1800 (integer value)
+ *		X FE [1800]			OK, but the [] brackets are superfluous
+ *		ZID1 (set low power idle mode on Z axis and show how comments work)
+ *		zmicrsteps 4 (sets Z microsteps to 1/4, misspelling is intentional)
+ *		G20					Set Gcode to default to inches mode 
+ *
+ *	Examples of invalid config lines:
+ *
+ *		SE 1800				No axis specified
+ *		SE 1800 X			Axis specifier must be first
+ *		SEX 1800			No SEX allowed (axis specifier must be first)
+ *		X FE -100			Can't have a negative feed step rate
+ *		X FE 100000			Find a motor this fast and I'll bump the data size
+ *		C LI 1				C axis not currently supported (nor is B)
+ */
+
+int cfg_parse2(char *block)
+{
+//	char *val = 0;				// pointer to normalized value 
+//	char *end = 0;				// pointer to end of value
+//	uint8_t	axis = 0;			// axis index
+
+	cfg.status = TG_OK;
+	_cfg_normalize_config_block(block);		// normalize text in place
+	if (block[0] == 0) { 					// ignore comments (stripped)
+		return(TG_OK);
+	}
+	if (block[0] == 'Q') {					// quit config mode
+		return(TG_QUIT);
+	}
+	if (block[0] == '?') {					// dump state
+		cfg_dump();
+		return(TG_OK);
+	}
+	_cfg_parse_config_block(block);
+
+	CPTOK_MM_PER_ARC_SEGMENT,
+	CPTOK_MICROSTEP_MODE,
+	,
+	CPTOK_TRAVEL_MAX,
+	CPTOK_TRAVEL_WARN,				// stop homing cycle if above this value
+	CPTOK_TRAVEL_PER_REVOLUTION,
+	CPTOK_IDLE_MODE,
+	CPTOK_LIMIT_SWITCH_MODE,
+	CPTOK_MAP_AXIS_TO_MOTOR,
+	CPTOK_GCODE_UNITS,
+	CPTOK_GCODE_PLANE
+
+	// dispatch based on parameter type
+	switch (cp.param) {
+		case CPTOK_SEEK_STEPS_MAX: CFG(cp.axis).seek_steps_sec = (uint16_t)cp.value; break;
+		case CPTOK_FEED_STEPS_MAX: CFG(cp.axis).feed_steps_sec = (uint16_t)cp.value; break;
+		case CPTOK_DEGREES_PER_STEP: CFG(cp.axis).degree_per_step = cp.value; break;
+		case CPTOK_POLARITY: CFG(cp.axis).degree_per_step = (uint16_t)cp.value; break;
+
+			case 'P': CFG(axis).polarity = (uint8_t)atoi(val);
+					  st_set_polarity(axis, CFG(axis).polarity);
+					  break;
+
+			case 'M': 
+				if (block[2] == 'I') {
+					CFG(axis).microstep = (uint8_t)atoi(val); break;
+				} else if (block[3] == 'R') {
+					CFG(axis).mm_per_rev = strtod(val, &end); break;
+				} else if (block[3] == 'T') {
+					CFG(axis).mm_travel = strtod(val, &end); break;
+				}
+			case 'L': 
+				if (block[2] == 'O') {
+					CFG(axis).low_pwr_idle = (uint8_t)atoi(val); break;
+				} else if (block[2] == 'I') {
+					CFG(axis).limit_enable = (uint8_t)atoi(val); break;
+				}
+
+			default: cfg.status = TG_UNRECOGNIZED_COMMAND;	// error return
+		}
+	}
+//	cfg_write();
+	return (cfg.status);
+}
+
+/*
+ * _cfg_normalize_config_block() - normalize a config block (text line) in place
+ *
+ *	Comments always terminate the block (embedded comments are not supported)
+ *	Processing: split string into command and comment portions. Valid choices:
+ *	  supported:	command
+ *	  supported:	comment
+ *	  supported:	command comment
+ *	  unsupported:	command command
+ *	  unsupported:	comment command
+ *	  unsupported:	command comment command
+ *
+ *	Valid characters (these are passed to config parser):
+ *		digits						all digits are passed to parser
+ *		lower case alpha			all alpha is passed - converted to upper
+ *		upper case alpha			all alpha is passed
+ *		- . 						sign and decimal chars passed to parser
+ *
+ *	Invalid characters (these are stripped but don't cause failure):
+ *		control characters			chars < 0x20 are all removed
+ *		/ *	< = > | % #	+			expression chars removed from string
+ *		( ) [ ] { } 				expression chars removed from string
+ *		<sp> <tab> 					whitespace chars removed from string
+ *		! $ % ,	; ; ? @ 			removed
+ *		^ _ ~ " ' <DEL>				removed
+ */
+
+void _cfg_normalize_config_block(char *block) 
+{
+	char c;
+	uint8_t i=0; 		// index for incoming characters
+	uint8_t j=0;		// index for normalized characters
+
+	// normalize the block & prune the comment(if any)
+	while ((c = toupper(block[i++])) != 0) {// NUL character
+		if ((isupper(c)) || (isdigit(c))) {	// capture common chars
+		 	block[j++] = c; 
+			continue;
+		}
+		if (strchr("-.", c)) {				// catch valid non-alphanumerics
+		 	block[j++] = c; 
+			continue;
+		}
+		if (c == '(') {						// detect & handle comments
+			break;
+		}
+	}										// ignores any other characters
+	block[j] = 0;							// terminate block and end
+}
+
+/*
+ * _cfg_parse_config_block() - parse block into struct
+ */
+
+uint8_t _cfg_parse_config_block(char *block)
+{
+	uint8_t i=0; 				// char index into block
+	char *end;					// pointer to end of value
+
+	switch(block[i++]) {
+		case 'X': { cp.axis = X; break;}
+		case 'Y': { cp.axis = Y; break;}
+		case 'Z': { cp.axis = Z; break;}
+		case 'A': { cp.axis = A; break;}
+		default:  { cp.axis = -1; i--; }
+	}
+	switch(block[i++]) {
+		case 'A': { cp.param = CPTOK_MM_PER_ARC_SEGMENT; break; }
+		case 'S': { cp.param = CPTOK_SEEK_STEPS_MAX; break; }
+		case 'F': { cp.param = CPTOK_FEED_STEPS_MAX; break; }
+		case 'D': { cp.param = CPTOK_DEGREES_PER_STEP; break; }
+		case 'P': { cp.param = CPTOK_POLARITY; break; }
+		case 'T': { cp.param = CPTOK_TRAVEL_MAX; break; }
+		case 'R': { cp.param = CPTOK_TRAVEL_PER_REVOLUTION; break; }
+		case 'I': { cp.param = CPTOK_IDLE_MODE; break; }
+		case 'L': { cp.param = CPTOK_LIMIT_SWITCH_MODE; break; }
+		case 'M': 
+			switch (block[i]) {
+				case 'I': { cp.param = CPTOK_MICROSTEP_MODE; break; }
+				case 'A': { cp.param = CPTOK_MAP_AXIS_TO_MOTOR; break; }
+				default: return(TG_UNRECOGNIZED_COMMAND);
+			}
+//		case 'G': 
+//			switch (block[i]) {
+//				case 'I': { cp.param = CPTOK_GCODE_UNITS; break; }
+//				case 'A': { cp.param = CPTOK_GCODE_PLANE; break; }
+//				default: return(TG_UNRECOGNIZED_COMMAND);
+//			}
+		default: return(TG_UNRECOGNIZED_COMMAND);
+	}
+	while (isupper(block[++i])) {	// advance past any remaining chars
+	}
+	cp.value = strtod(&block[i], &end);
+	return (TG_OK);
 }
 
 /* 
@@ -292,6 +600,7 @@ void _cfg_computed()
 
 int cfg_read()
 {
+/*
 	uint8_t version = eeprom_get_char(0);	// Check version-byte of eeprom
 
 	if (version != EEPROM_DATA_VERSION) {	// Read config-record and check checksum
@@ -301,6 +610,7 @@ int cfg_read()
 		((char*)&cfg, 0, sizeof(struct cfgStructGlobal)))) {
     	return(FALSE);
   	}
+*/
   	return(TRUE);
 }
 
@@ -311,7 +621,7 @@ int cfg_read()
 void cfg_write()
 {
 //	eeprom_put_char(0, CONFIG_VERSION);
-	memcpy_to_eeprom_with_checksum(0, (char*)&cfg, sizeof(struct cfgStructGlobal));
+//	memcpy_to_eeprom_with_checksum(0, (char*)&cfg, sizeof(struct cfgStructGlobal));
 }
 
 /* 
@@ -359,3 +669,35 @@ void cfg_test()
 		}
 	}
 }
+
+/* 
+ * cfg_test2() - generate some strings for the parser and test EEPROM read and write 
+ */
+
+char configs2_P[] PROGMEM = "\
+xseek1892\n";
+
+void cfg_test2()
+{
+//	char text[40];
+	int i = 0;					// ROM buffer index (int allows for > 256 chars)
+	int j = 0;					// RAM buffer index (text)
+	char c;
+
+	// feed the parser one line at a time
+	while (TRUE) {
+		c = pgm_read_byte(&configs2_P[i++]);
+		if (c == 0) {								// last line
+			cp.block[j] = 0;
+			cfg_parse2(cp.block);
+			break;			
+		} else if (c == '\n') {						// line complete
+			cp.block[j] = 0;							// terminate the string
+			cfg_parse2(cp.block);						// parse line 
+			j = 0;			
+		} else {
+			cp.block[j++] = c;							// put characters into line
+		}
+	}
+}
+

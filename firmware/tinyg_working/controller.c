@@ -200,7 +200,7 @@ void tg_controller()
 int tg_read_next_line()
 {
 	// read input line or return if not a completed line
-	if ((tg.status = xio_readln(tg.src, tg.buf, sizeof(tg.buf))) == TG_OK) {
+	if ((tg.status = xio_gets(tg.src, tg.buf, sizeof(tg.buf))) == TG_OK) {
 		tg.status = tg_parser(tg.buf);				// dispatch to parser
 	}
 
@@ -363,24 +363,25 @@ char tgStatusMsg03[] PROGMEM = "{03} NOOP";
 char tgStatusMsg04[] PROGMEM = "{04} End of line";
 char tgStatusMsg05[] PROGMEM = "{05} End of file";
 char tgStatusMsg06[] PROGMEM = "{06} File not open";
-char tgStatusMsg07[] PROGMEM = "{07} No such device";
-char tgStatusMsg08[] PROGMEM = "{08} Buffer empty";
-char tgStatusMsg09[] PROGMEM = "{09} Buffer full - fatal";
-char tgStatusMsg10[] PROGMEM = "{10} Buffer full - non-fatal";
-char tgStatusMsg11[] PROGMEM = "{11} QUIT";
-char tgStatusMsg12[] PROGMEM = "{12} Unrecognized command";
-char tgStatusMsg13[] PROGMEM = "{13} Expected command letter";
-char tgStatusMsg14[] PROGMEM = "{14} Unsupported statement";
-char tgStatusMsg15[] PROGMEM = "{15} Parameter over range";
-char tgStatusMsg16[] PROGMEM = "{16} Bad number format";
-char tgStatusMsg17[] PROGMEM = "{17} Floating point error";
-char tgStatusMsg18[] PROGMEM = "{18} Motion control error";
-char tgStatusMsg19[] PROGMEM = "{19} Arc specification error";
-char tgStatusMsg20[] PROGMEM = "{20} Zero length line";
-char tgStatusMsg21[] PROGMEM = "{21} Maximum feed rate exceeded";
-char tgStatusMsg22[] PROGMEM = "{22} Maximum seek rate exceeded";
-char tgStatusMsg23[] PROGMEM = "{23} Maximum table travel exceeded";
-char tgStatusMsg24[] PROGMEM = "{24} Maximum spindle speed exceeded";
+char tgStatusMsg07[] PROGMEM = "{07} Max file size exceeded";
+char tgStatusMsg08[] PROGMEM = "{08} No such device";
+char tgStatusMsg09[] PROGMEM = "{09} Buffer empty";
+char tgStatusMsg10[] PROGMEM = "{10} Buffer full - fatal";
+char tgStatusMsg11[] PROGMEM = "{11} Buffer full - non-fatal";
+char tgStatusMsg12[] PROGMEM = "{12} QUIT";
+char tgStatusMsg13[] PROGMEM = "{13} Unrecognized command";
+char tgStatusMsg14[] PROGMEM = "{14} Expected command letter";
+char tgStatusMsg15[] PROGMEM = "{15} Unsupported statement";
+char tgStatusMsg16[] PROGMEM = "{16} Parameter over range";
+char tgStatusMsg17[] PROGMEM = "{17} Bad number format";
+char tgStatusMsg18[] PROGMEM = "{18} Floating point error";
+char tgStatusMsg19[] PROGMEM = "{19} Motion control error";
+char tgStatusMsg20[] PROGMEM = "{20} Arc specification error";
+char tgStatusMsg21[] PROGMEM = "{21} Zero length line";
+char tgStatusMsg22[] PROGMEM = "{22} Maximum feed rate exceeded";
+char tgStatusMsg23[] PROGMEM = "{23} Maximum seek rate exceeded";
+char tgStatusMsg24[] PROGMEM = "{24} Maximum table travel exceeded";
+char tgStatusMsg25[] PROGMEM = "{25} Maximum spindle speed exceeded";
 
 // put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
 PGM_P tgStatusStrings[] PROGMEM = {	
@@ -408,7 +409,8 @@ PGM_P tgStatusStrings[] PROGMEM = {
 	tgStatusMsg21,
 	tgStatusMsg22,
 	tgStatusMsg23,
-	tgStatusMsg24
+	tgStatusMsg24,
+	tgStatusMsg25
 };
 
 void tg_print_status(const uint8_t status_code, const char *textbuf)

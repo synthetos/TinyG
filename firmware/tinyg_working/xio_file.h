@@ -60,9 +60,19 @@
  */
 
 #define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
-#define EEP_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
-#define RAM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
+#define EEP_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_LINEMODE)
+#define TBL_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_LINEMODE)
+#define RAM_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_LINEMODE)
 
+//#define EEP_ADDR_BASE (0x1000)		// needed to support memory mapped mode
+#define EEP_ADDR_BASE (0x0000)		// needed to support memory mapped mode
+#define TBL_ADDR_BASE (0x1000)
+#define RAM_ADDR_BASE (0x1000)
+
+#define PGM_ADDR_MAX (0x4000)		// 16K
+#define EEP_ADDR_MAX (0x1000)		// 4K
+#define TBL_ADDR_MAX (0x2000)		// 8K
+#define RAM_ADDR_MAX (0x4000)		// 8K
 
 /* 
  * FILE device extended control structure 
@@ -73,7 +83,9 @@
 // file-type device control struct
 struct xioFILE {
 	uint16_t fflags;					// file sub-system flags
-	uint32_t len;						// index into file
+	uint32_t rd_offset;					// read index into file
+	uint32_t wr_offset;					// write index into file
+	uint32_t max_offset;				// max size of file
 	char * filebase_P;					// base location in memory
 };
 
@@ -81,17 +93,13 @@ struct xioFILE {
  * FILE DEVICE FUNCTION PROTOTYPES
  */
 
-// functions common to all FILE devices
-
-void xio_init_file(const uint8_t dev, const uint8_t offset, const uint16_t control);
-
 // PGM functions
 void xio_init_pgm(void);
 FILE * xio_open_pgm(const prog_char * addr);		// open memory string read only
 int xio_setflags_pgm(const uint16_t control);		// valaidate & set dev flags
 int xio_putc_pgm(const char c, struct __file *stream);// always returns ERROR
 int xio_getc_pgm(struct __file *stream);			// get a character
-int xio_readln_pgm(char *buf, const uint8_t size);	// read line from program memory
+int xio_gets_pgm(char *buf, const uint8_t size);	// read string from program memory
 
 // EEPROM functions
 void xio_init_eep(void);
@@ -99,7 +107,11 @@ FILE * xio_open_eep(const prog_char * addr);		// open EEPROM string
 int xio_setflags_eep(const uint16_t control);		// valaidate & set dev flags
 int xio_putc_eep(const char c, struct __file *stream);// always returns ERROR
 int xio_getc_eep(struct __file *stream);			// get a character from EEPROM
-int xio_readln_eep(char *buf, const uint8_t size);	// read line from EEPROM
+int xio_gets_eep(char *buf, const uint8_t size);	// read string from EEPROM
+int xio_seek_eep(uint32_t offset);
+int xio_rewind_eep();
+//int xio_puts_eep(const char *buf, struct __file *stream);
+
 
 // RAM Card functions
 

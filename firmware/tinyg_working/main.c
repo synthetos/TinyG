@@ -157,6 +157,8 @@ int main(void)
 
 	tg_alive();					// (LAST) announce things are online
 
+ //	xio_tests();
+	cfg_test2();
 
 // Debug help: Pre-load the USB RX (input) buffer with some test strings
 // Be mindful of the char limit on the RX_BUFFER_SIZE (circular buffer)

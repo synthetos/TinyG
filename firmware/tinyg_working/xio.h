@@ -60,10 +60,11 @@
 #define XIO_EOL 4				// function returned end-of-line
 #define XIO_EOF 5				// function returned end-of-file 
 #define XIO_FILE_NOT_OPEN 6		// file is not open
-#define XIO_NO_SUCH_DEVICE 7	// illegal or unavailable device
-#define XIO_BUFFER_EMPTY 8		// more of a statement of fact than an error code
-#define XIO_BUFFER_FULL_FATAL 9
-#define XIO_BUFFER_FULL_NON_FATAL 10
+#define XIO_FILE_SIZE_EXCEEDED 7 // maximum file size exceeded
+#define XIO_NO_SUCH_DEVICE 8	// illegal or unavailable device
+#define XIO_BUFFER_EMPTY 9		// more of a statement of fact than an error code
+#define XIO_BUFFER_FULL_FATAL 10
+#define XIO_BUFFER_FULL_NON_FATAL 11
 #define XIO_ERRNO_MAX XIO_BUFFER_FULL_NON_FATAL
 
 /*
@@ -84,12 +85,13 @@ typedef int (*fptr_int_void) (void); 	// returns int, void args
 
 enum xioDevice {				// device enumerations
 								// TYPE:	DEVICE:
-	XIO_DEV_RS485,				// USART	RS485 device (typ. network port)
+	XIO_DEV_RS485,				// USART	RS485 device (network port)
 	XIO_DEV_USB,				// USART	USB device
-	XIO_DEV_TTL,				// USART	TTL device (typ. Arduino)
-	XIO_DEV_PGM,				// FILE		program memory file (read only)
-	XIO_DEV_EEP,				// FILE		EEPROM (not implemented)
-	XIO_DEV_RAM,				// FILE		RAM (not implemented)
+	XIO_DEV_TTL,				// USART	TTL device (typically Arduino)
+	XIO_DEV_PGM,				// FILE		Program memory file  (read only)
+	XIO_DEV_EEP,				// FILE		EEPROM 				 (read/write)
+	XIO_DEV_TBL,				// FILE		Prog mem table space (read/write)
+	XIO_DEV_RAM,				// FILE		RAM 				 (read/write)
 	XIO_DEV_SDC,				// FILE		SD card (not implemented)
 	XIO_DEV_ENC,				// HW		Encoder port
 	XIO_DEV_LIM,				// HW		Limit switch port
@@ -101,21 +103,22 @@ enum xioDevice {				// device enumerations
 #define XIO_DEV_RS485_OFFSET XIO_DEV_RS485			// index into USARTS 
 #define XIO_DEV_USB_OFFSET XIO_DEV_USB	
 #define XIO_DEV_TTL_OFFSET XIO_DEV_TTL
-#define XIO_DEV_USART_COUNT (3) 					// count of USART devices
+#define XIO_DEV_USART_COUNT (3) 					// # of USART devices
 
 #define XIO_DEV_PGM_OFFSET (XIO_DEV_PGM - XIO_DEV_PGM)// index into FILES
 #define XIO_DEV_EEP_OFFSET (XIO_DEV_EEP - XIO_DEV_PGM)
+#define XIO_DEV_TBL_OFFSET (XIO_DEV_TBL - XIO_DEV_PGM)
 #define XIO_DEV_RAM_OFFSET (XIO_DEV_RAM - XIO_DEV_PGM)
 #define XIO_DEV_SDC_OFFSET (XIO_DEV_SDC - XIO_DEV_PGM)
-#define XIO_DEV_FILE_COUNT (4)						// count of FILE devices
+#define XIO_DEV_FILE_COUNT (5)						// # of FILE devices
 
 // aliases for stdio devices (pointers)
 #define fdev_rs485 (ds[XIO_DEV_RS485].fdev)// RS485 device for stdio functions
 #define fdev_usb (ds[XIO_DEV_USB].fdev)	// USB device for stdio functions
 #define fdev_pgm (ds[XIO_DEV_PGM].fdev)	// Program memory device
 #define fdev_eep (ds[XIO_DEV_EEP].fdev)	// EEPROM memory device
+#define fdev_tbl (ds[XIO_DEV_TBL].fdev)	// TABLE space device
 #define fdev_ram (ds[XIO_DEV_RAM].fdev)	// RAM memory device
-
 
 /*
  * Device configurations (all of them)
@@ -188,8 +191,6 @@ enum xioSignals {
 	XIO_SIG_TERM,					// cancel operation nicely (^x, CAN, 0x24)
 	XIO_SIG_PAUSE,					// pause operation (^s, XOFF, DC3, 0x13)
 	XIO_SIG_RESUME,					// resume operation (^q, XON, DC1, 0x11)
-//	XIO_SIG_SHIFTOUT,				// shift to mode (^n) (NOT IMPLEMENTED)
-//	XIO_SIG_SHIFTIN,				// shift back (^o) (NOT IMPLEMENTED)
 	XIO_SIG_ESCAPE,					// ESC. Typically mapped to ^c or ^x functions
 	XIO_SIG_DELETE,					// backspace or delete character (BS, DEL)
 	XIO_SIG_BELL					// BELL character (BEL, ^g)
@@ -199,19 +200,19 @@ enum xioSignals {
 /* Some useful ASCII definitions */
 
 #define NUL 0x00				// ASCII NUL character (0) (not "NULL" which is a pointer)
-#define ETX 0x03				// ^c - aka ETX
-#define KILL ETX				// 		synonym
+#define ETX 0x03				// ^c - aka ETX, KILL, END
 #define BEL 0x07				// ^g - aka BEL
 #define BS  0x08				// ^h - aka backspace 
 #define LF	0x0A				//  line feed
 #define CR	0x0D				//  carriage return
 #define SHIFTOUT 0x0E			// ^n - aka shift out 
 #define SHITFTIN 0x0F			// ^o - aka shift in
-#define XON 0x11				// ^q - aka DC1, XON, pause
-#define XOFF 0x13				// ^s - aka DC3, XOFF, resume
+#define XON 0x11				// ^q - aka DC1, XON, resume
+#define XOFF 0x13				// ^s - aka DC3, XOFF, pause
 #define ESC 0x1B				// ESC(ape)
 #define DEL 0x7F				// DEL(ete)
 
+#define KILL ETX
 #define CTRL_C ETX
 #define CTRL_G BEL
 #define CTRL_H BS	
@@ -219,16 +220,15 @@ enum xioSignals {
 #define CTRL_O SHIFTIN	
 #define CTRL_Q XON
 #define CTRL_S XOFF
-#define CTRL_X 0x18				// ^x - aka CAN(cel)
+#define CTRL_X 0x18				// ^x - aka CAN(cel), TERM(inate)
 
 /* Signal character mappings */
 
 #define SIG_KILL_CHAR ETX
 #define SIG_TERM_CHAR ETX
-#define SIG_PAUSE_CHAR XOFF
 #define SIG_RESUME_CHAR XON
-//#define SIG_PAUSE_CHAR 'A'		// test values
-//#define SIG_RESUME_CHAR 'B'
+#define SIG_PAUSE_CHAR XOFF
+
 
 /******************************************************************************
  *
@@ -247,7 +247,7 @@ struct xioDEVICE {						// common device struct (one per device)
 	int (*x_setflags)(const uint16_t control);// set device control flags
 	int (*x_putc)(char, struct __file *);	// write char (stdio compatible)
 	int (*x_getc)(struct __file *);		// read char (stdio compatible)
-	int (*x_readln)(char *buf, const uint8_t size);// specialized line reader
+	int (*x_gets)(char *buf, const uint8_t size);// specialized line reader
 
 	void *x;							// extended IO parameter binding (static)
 	FILE *fdev;							// stdio fdev binding (static)
@@ -268,11 +268,13 @@ extern struct xioFILE fs[XIO_DEV_FILE_COUNT];	// ref FILE extended IO structs
  ******************************************************************************/
 
 void xio_init(void);							// xio system general init
+void xio_init_file(const uint8_t dev, const uint8_t offset, const uint16_t control);
 void xio_init_stdio(void);						// set std devs & do startup prompt
 void xio_init_rs485(void);						// device-specific inits
 void xio_init_usb(void);
 void xio_init_pgm(void);
 void xio_init_eep(void);
+//void xio_init_tbl(void);
 //void xio_init_ram(void);
 
 int xio_setflags(const uint8_t dev, const uint16_t control);
@@ -282,19 +284,17 @@ void xio_set_stderr(const uint8_t dev);
 
 int xio_getc(const uint8_t dev);
 int xio_putc(const uint8_t dev, const char c);
-int xio_readln(const uint8_t dev, char *buf, const uint8_t size);
+int xio_gets(const uint8_t dev, char *buf, const uint8_t size);
 
 void xio_init_dev(uint8_t dev,					// device number
 	FILE *(*dev_open)(const prog_char *addr),	// device open routine
 	int (*dev_setflags)(const uint16_t control),// set device control flags
 	int (*dev_putc)(char, struct __file *),		// write char (stdio compatible)
 	int (*dev_getc)(struct __file *),			// read char (stdio compatible)
-	int (*dev_readln)(char *buf, uint8_t size)	// specialized line reader
+	int (*dev_gets)(char *buf, uint8_t size)	// specialized line reader
 	); 
 
-void xio_signal_etx(void);			// ^c signal handler
-
-
+void xio_tests(void);
 
 /**** NOTES ON XIO ****/
 
@@ -340,7 +340,7 @@ void xio_signal_etx(void);			// ^c signal handler
 */
 /*---- Notes on control characters and signals ----
 
-  The underlying USART RX ISRs (used by getc() and readln()) trap control 
+  The underlying USART RX ISRs (used by getc() and gets()) trap control 
   characters and treat them as signals. 
   
   On receipt of a signal the signal value (see enum xioSignals) is written to

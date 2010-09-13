@@ -18,7 +18,7 @@
  *
  * ---- Non-threadsafe code ----
  *
- *	WARNING: The getc() and readln() code is not thread safe. 
+ *	WARNING: The getc() and gets() code is not thread safe. 
  *	I had to use a global variable (gdev) to pass the device number to the 
  *	character dispatch handlers. Any suggestions on how to do this better?
  *
@@ -71,10 +71,10 @@ static int _getc_NEWLINE(void);
 static int _getc_SEMICOLON(void);
 static int _getc_DELETE(void);
 
-static int _readln_char(void);		// readln character dispatch routines
-static int _readln_NEWLINE(void);
-static int _readln_SEMICOLON(void);
-static int _readln_DELETE(void);
+static int _gets_char(void);		// gets character dispatch routines
+static int _gets_NEWLINE(void);
+static int _gets_SEMICOLON(void);
+static int _gets_DELETE(void);
 
 /* 
  *	xio_init_usart() - general purpose USART initialization (shared)
@@ -339,7 +339,7 @@ static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
  *
  *	This routine returns a single character from the RX buffer to the caller.
  *	It's typically called by fgets() and is useful for single-threaded IO cases.
- *	Cases with multiple concurrent IO streams may want to use the readln() function
+ *	Cases with multiple concurrent IO streams may want to use the gets() function
  *	which is incompatible with the stdio system. 
  *
  *  Flags that affect behavior:
@@ -413,7 +413,7 @@ static int _getc_DELETE(void)				// can't handle a delete very well
 }
 
 /* 
- *  dispatch table for xio_readln_usart
+ *  dispatch table for xio_gets_usart
  *
  *  Functions take no input but use static 'c', d->signals, and others
  *  Returns c (may be translated depending on the function)
@@ -423,142 +423,142 @@ static int _getc_DELETE(void)				// can't handle a delete very well
  *	Their dispatchers are left in for clarity and stubbed out
  */
 
-static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
-//static int (*readlnFuncs[])(void) = {		// ALTERNATE: put table in SRAM
+static int (*getsFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
+//static int (*getsFuncs[])(void) = {		// ALTERNATE: put table in SRAM
 
 							// dec  hex symbol
-		_readln_NEWLINE, 	//	0	00	NUL	(Null char)  	(TREAT AS NEWLINE)
-		_readln_char, 		//	1	01	SOH	(Start of Header)
-		_readln_char, 		//	2	02	STX	(Start of Text)
-		_readln_char,			//	3	03	ETX (End of Text) ^c
-		_readln_char, 		//	4	04	EOT	(End of Transmission)
-		_readln_char, 		//	5	05	ENQ	(Enquiry)
-		_readln_char, 		//	6	06	ACK	(Acknowledgment)
-		_readln_char, 		//	7	07	BEL	(Bell)
-		_readln_DELETE, 	//	8	08	BS	(Backspace)
-		_readln_char, 		//	9	09	HT	(Horizontal Tab)
-		_readln_NEWLINE, 	//	10	0A	LF	(Line Feed)
-		_readln_char, 		//	11	0B	VT	(Vertical Tab)
-		_readln_char, 		//	12	0C	FF	(Form Feed)
-		_readln_NEWLINE, 	//	13	0D	CR	(Carriage Return)
-		_readln_char,		//	14	0E	SO	(Shift Out)
-		_readln_char, 		//	15	0F	SI	(Shift In)
-		_readln_char, 		//	16	10	DLE	(Data Link Escape)
-		_readln_char, 		//	17	11	DC1 (XON) (Device Control 1) ^q	
-		_readln_char, 		//	18	12	DC2	(Device Control 2)
-		_readln_char,		//	19	13	DC3 (XOFF)(Device Control 3) ^s	
-		_readln_char, 		//	20	14	DC4	(Device Control 4)
-		_readln_char, 		//	21	15	NAK (Negativ Acknowledgemnt)	
-		_readln_char, 		//	22	16	SYN	(Synchronous Idle)
-		_readln_char, 		//	23	17	ETB	(End of Trans. Block)
-		_readln_char,	 	//	24	18	CAN	(Cancel) ^x
-		_readln_char, 		//	25	19	EM	(End of Medium)
-		_readln_char, 		//	26	1A	SUB	(Substitute)
-		_readln_char,		//	27	1B	ESC	(Escape)
-		_readln_char, 		//	28	1C	FS	(File Separator)
-		_readln_char, 		//	29	1D	GS	(Group Separator)
-		_readln_char, 		//	30	1E	RS  (Reqst to Send)(Record Sep.)	
-		_readln_char, 		//	31	1F	US	(Unit Separator)
-		_readln_char, 		//	32	20	SP	(Space)
-		_readln_char, 		//	33	21	!	(exclamation mark)
-		_readln_char, 		//	34	22	,	(double quote)	
-		_readln_char, 		//	35	23	#	(number sign)
-		_readln_char, 		//	36	24	$	(dollar sign)
-		_readln_char, 		//	37	25	%	(percent)
-		_readln_char, 		//	38	26	&	(ampersand)
-		_readln_char, 		//	39	27	'	(single quote)
-		_readln_char, 		//	40	28	(	(left/open parenthesis)
-		_readln_char, 		//	41	29	)	(right/closing parenth.)
-		_readln_char, 		//	42	2A	*	(asterisk)
-		_readln_char, 		//	43	2B	+	(plus)
-		_readln_char, 		//	44	2C		(comma)
-		_readln_char,	 	//	45	2D	-	(minus or dash)
-		_readln_char, 		//	46	2E	.	(dot)
-		_readln_char,	 	//	47	2F	/	(forward slash)
-		_readln_char, 		//	48	30	0	
-		_readln_char, 		//	49	31	1	
-		_readln_char, 		//	50	32	2	
-		_readln_char, 		//	51	33	3	
-		_readln_char, 		//	52	34	4	
-		_readln_char, 		//	53	35	5	
-		_readln_char, 		//	54	36	6	
-		_readln_char, 		//	55	37	7	
-		_readln_char, 		//	56	38	8	
-		_readln_char, 		//	57	39	9	
-		_readln_char, 		//	58	3A	:	(colon)
-		_readln_SEMICOLON, //	59	3B	;	(semi-colon)
-		_readln_char, 		//	60	3C	<	(less than)
-		_readln_char, 		//	61	3D	=	(equal sign)
-		_readln_char, 		//	62	3E	>	(greater than)
-		_readln_char, 		//	63	3F	?	(question mark)
-		_readln_char, 		//	64	40	@	(AT symbol)
-		_readln_char,		//	65	41	A	
-		_readln_char,		//	66	42	B	
-		_readln_char,		//	67	43	C	
-		_readln_char,		//	68	44	D	
-		_readln_char,		//	69	45	E	
-		_readln_char,		//	70	46	F	
-		_readln_char,		//	71	47	G	
-		_readln_char,		//	72	48	H	
-		_readln_char,		//	73	49	I	
-		_readln_char,		//	74	4A	J	
-		_readln_char,		//	75	4B	K	
-		_readln_char,		//	76	4C	L	
-		_readln_char,		//	77	4D	M	
-		_readln_char,		//	78	4E	N	
-		_readln_char,		//	79	4F	O	
-		_readln_char,		//	80	50	P	
-		_readln_char,		//	81	51	Q	
-		_readln_char,		//	82	52	R	
-		_readln_char,		//	83	53	S	
-		_readln_char,		//	84	54	T	
-		_readln_char,		//	85	55	U	
-		_readln_char,		//	86	56	V	
-		_readln_char,		//	87	57	W	
-		_readln_char,		//	88	58	X	
-		_readln_char,		//	89	59	Y	
-		_readln_char,		//	90	5A	Z	
-		_readln_char,		//	91	5B	[	(left/opening bracket)
-		_readln_char,		//	92	5C	\	(back slash)
-		_readln_char,		//	93	5D	]	(right/closing bracket)
-		_readln_char,		//	94	5E	^	(caret/circumflex)
-		_readln_char,		//	95	5F	_	(underscore)
-		_readln_char,		//	96	60	`	
-		_readln_char,		//	97	61	a	
-		_readln_char,		//	98	62	b	
-		_readln_char,		//	99	63	c	
-		_readln_char,		//	100	64	d	
-		_readln_char,		//	101	65	e	
-		_readln_char,		//	102	66	f	
-		_readln_char,		//	103	67	g	
-		_readln_char,		//	104	68	h	
-		_readln_char,		//	105	69	i	
-		_readln_char,		//	106	6A	j	
-		_readln_char,		//	107	6B	k	
-		_readln_char,		//	108	6C	l	
-		_readln_char,		//	109	6D	m	
-		_readln_char,		//	110	6E	n	
-		_readln_char,		//	111	6F	o	
-		_readln_char,		//	112	70	p	
-		_readln_char,		//	113	71	q	
-		_readln_char,		//	114	72	r	
-		_readln_char,		//	115	73	s	
-		_readln_char,		//	116	74	t	
-		_readln_char,		//	117	75	u	
-		_readln_char,		//	118	76	v	
-		_readln_char,		//	119	77	w	
-		_readln_char,		//	120	78	x	
-		_readln_char,		//	121	79	y	
-		_readln_char,		//	122	7A	z	
-		_readln_char,		//	123	7B	{	(left/opening brace)
-		_readln_char,		//	124	7C	|	(vertical bar)
-		_readln_char,		//	125	7D	}	(right/closing brace)
-		_readln_char,		//	126	7E	~	(tilde)
-		_readln_DELETE		//	127	7F	DEL	(delete)
+		_gets_NEWLINE,	 	//	0	00	NUL	(Null char)  	(TREAT AS NEWLINE)
+		_gets_char, 		//	1	01	SOH	(Start of Header)
+		_gets_char, 		//	2	02	STX	(Start of Text)
+		_gets_char,			//	3	03	ETX (End of Text) ^c
+		_gets_char, 		//	4	04	EOT	(End of Transmission)
+		_gets_char, 		//	5	05	ENQ	(Enquiry)
+		_gets_char, 		//	6	06	ACK	(Acknowledgment)
+		_gets_char, 		//	7	07	BEL	(Bell)
+		_gets_DELETE,	 	//	8	08	BS	(Backspace)
+		_gets_char, 		//	9	09	HT	(Horizontal Tab)
+		_gets_NEWLINE,	 	//	10	0A	LF	(Line Feed)
+		_gets_char, 		//	11	0B	VT	(Vertical Tab)
+		_gets_char, 		//	12	0C	FF	(Form Feed)
+		_gets_NEWLINE,	 	//	13	0D	CR	(Carriage Return)
+		_gets_char,			//	14	0E	SO	(Shift Out)
+		_gets_char, 		//	15	0F	SI	(Shift In)
+		_gets_char, 		//	16	10	DLE	(Data Link Escape)
+		_gets_char, 		//	17	11	DC1 (XON) (Device Control 1) ^q	
+		_gets_char, 		//	18	12	DC2	(Device Control 2)
+		_gets_char,			//	19	13	DC3 (XOFF)(Device Control 3) ^s	
+		_gets_char, 		//	20	14	DC4	(Device Control 4)
+		_gets_char, 		//	21	15	NAK (Negativ Acknowledgemnt)	
+		_gets_char, 		//	22	16	SYN	(Synchronous Idle)
+		_gets_char, 		//	23	17	ETB	(End of Trans. Block)
+		_gets_char,		 	//	24	18	CAN	(Cancel) ^x
+		_gets_char, 		//	25	19	EM	(End of Medium)
+		_gets_char, 		//	26	1A	SUB	(Substitute)
+		_gets_char,			//	27	1B	ESC	(Escape)
+		_gets_char, 		//	28	1C	FS	(File Separator)
+		_gets_char, 		//	29	1D	GS	(Group Separator)
+		_gets_char, 		//	30	1E	RS  (Reqst to Send)(Record Sep.)	
+		_gets_char, 		//	31	1F	US	(Unit Separator)
+		_gets_char, 		//	32	20	SP	(Space)
+		_gets_char, 		//	33	21	!	(exclamation mark)
+		_gets_char, 		//	34	22	,	(double quote)	
+		_gets_char, 		//	35	23	#	(number sign)
+		_gets_char, 		//	36	24	$	(dollar sign)
+		_gets_char, 		//	37	25	%	(percent)
+		_gets_char, 		//	38	26	&	(ampersand)
+		_gets_char, 		//	39	27	'	(single quote)
+		_gets_char, 		//	40	28	(	(left/open parenthesis)
+		_gets_char, 		//	41	29	)	(right/closing parenth.)
+		_gets_char, 		//	42	2A	*	(asterisk)
+		_gets_char, 		//	43	2B	+	(plus)
+		_gets_char, 		//	44	2C		(comma)
+		_gets_char,		 	//	45	2D	-	(minus or dash)
+		_gets_char, 		//	46	2E	.	(dot)
+		_gets_char,		 	//	47	2F	/	(forward slash)
+		_gets_char, 		//	48	30	0	
+		_gets_char, 		//	49	31	1	
+		_gets_char, 		//	50	32	2	
+		_gets_char, 		//	51	33	3	
+		_gets_char, 		//	52	34	4	
+		_gets_char, 		//	53	35	5	
+		_gets_char, 		//	54	36	6	
+		_gets_char, 		//	55	37	7	
+		_gets_char, 		//	56	38	8	
+		_gets_char, 		//	57	39	9	
+		_gets_char, 		//	58	3A	:	(colon)
+		_gets_SEMICOLON, //	59	3B	;	(semi-colon)
+		_gets_char, 			//	60	3C	<	(less than)
+		_gets_char, 		//	61	3D	=	(equal sign)
+		_gets_char, 		//	62	3E	>	(greater than)
+		_gets_char, 		//	63	3F	?	(question mark)
+		_gets_char, 		//	64	40	@	(AT symbol)
+		_gets_char,			//	65	41	A	
+		_gets_char,			//	66	42	B	
+		_gets_char,			//	67	43	C	
+		_gets_char,			//	68	44	D	
+		_gets_char,			//	69	45	E	
+		_gets_char,			//	70	46	F	
+		_gets_char,			//	71	47	G	
+		_gets_char,			//	72	48	H	
+		_gets_char,			//	73	49	I	
+		_gets_char,			//	74	4A	J	
+		_gets_char,			//	75	4B	K	
+		_gets_char,			//	76	4C	L	
+		_gets_char,			//	77	4D	M	
+		_gets_char,			//	78	4E	N	
+		_gets_char,			//	79	4F	O	
+		_gets_char,			//	80	50	P	
+		_gets_char,			//	81	51	Q	
+		_gets_char,			//	82	52	R	
+		_gets_char,			//	83	53	S	
+		_gets_char,			//	84	54	T	
+		_gets_char,			//	85	55	U	
+		_gets_char,			//	86	56	V	
+		_gets_char,			//	87	57	W	
+		_gets_char,			//	88	58	X	
+		_gets_char,			//	89	59	Y	
+		_gets_char,			//	90	5A	Z	
+		_gets_char,			//	91	5B	[	(left/opening bracket)
+		_gets_char,			//	92	5C	\	(back slash)
+		_gets_char,			//	93	5D	]	(right/closing bracket)
+		_gets_char,			//	94	5E	^	(caret/circumflex)
+		_gets_char,			//	95	5F	_	(underscore)
+		_gets_char,			//	96	60	`	
+		_gets_char,			//	97	61	a	
+		_gets_char,			//	98	62	b	
+		_gets_char,			//	99	63	c	
+		_gets_char,			//	100	64	d	
+		_gets_char,			//	101	65	e	
+		_gets_char,			//	102	66	f	
+		_gets_char,			//	103	67	g	
+		_gets_char,			//	104	68	h	
+		_gets_char,			//	105	69	i	
+		_gets_char,			//	106	6A	j	
+		_gets_char,			//	107	6B	k	
+		_gets_char,			//	108	6C	l	
+		_gets_char,			//	109	6D	m	
+		_gets_char,			//	110	6E	n	
+		_gets_char,			//	111	6F	o	
+		_gets_char,			//	112	70	p	
+		_gets_char,			//	113	71	q	
+		_gets_char,			//	114	72	r	
+		_gets_char,			//	115	73	s	
+		_gets_char,			//	116	74	t	
+		_gets_char,			//	117	75	u	
+		_gets_char,			//	118	76	v	
+		_gets_char,			//	119	77	w	
+		_gets_char,			//	120	78	x	
+		_gets_char,			//	121	79	y	
+		_gets_char,			//	122	7A	z	
+		_gets_char,			//	123	7B	{	(left/opening brace)
+		_gets_char,			//	124	7C	|	(vertical bar)
+		_gets_char,			//	125	7D	}	(right/closing brace)
+		_gets_char,			//	126	7E	~	(tilde)
+		_gets_DELETE		//	127	7F	DEL	(delete)
 };
 
 /* 
- *	xio_readln_usb() - read a complete line from the USB device
+ *	xio_gets_usb() - read a complete line from the USB device
  *
  *	Retains line context across calls - so it can be called multiple times.
  *	Reads as many characters as it can until any of the following is true:
@@ -571,7 +571,7 @@ static int (*readlnFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
  *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
  */
 
-int xio_readln_usart(const uint8_t dev, char *buf, const uint8_t size)
+int xio_gets_usart(const uint8_t dev, char *buf, const uint8_t size)
 {
 	struct xioDEVICE *d = &ds[dev];				// init device struct pointer
 	
@@ -598,7 +598,7 @@ int xio_readln_usart(const uint8_t dev, char *buf, const uint8_t size)
 }
 
 /*
- * _xio_readc_usart() - non-blocking character getter for readln
+ * _xio_readc_usart() - non-blocking character getter for gets
  */
 
 static int _xio_readc_usart(const uint8_t dev, const char *buf)
@@ -613,12 +613,12 @@ static int _xio_readc_usart(const uint8_t dev, const char *buf)
 		dx->rx_buf_tail = RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
 	}
 	d->c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
-	return (((fptr_int_void)(pgm_read_word(&readlnFuncs[d->c])))()); // dispatch char
+	return (((fptr_int_void)(pgm_read_word(&getsFuncs[d->c])))()); // dispatch char
 }
 
-/* xio_usb_readln helper routines */
+/* xio_usb_gets helper routines */
 
-static int _readln_char(void)
+static int _gets_char(void)
 {
 	if (ds[gdev].len > ds[gdev].size) {			// trap buffer overflow
 		ds[gdev].sig = XIO_SIG_EOL;
@@ -630,7 +630,7 @@ static int _readln_char(void)
 	return (XIO_EAGAIN);						// line is still in process
 }
 
-static int _readln_NEWLINE(void)				// handles any valid newline char
+static int _gets_NEWLINE(void)				// handles any valid newline char
 {
 	ds[gdev].sig = XIO_SIG_EOL;
 	ds[gdev].buf[ds[gdev].len] = NUL;
@@ -639,16 +639,16 @@ static int _readln_NEWLINE(void)				// handles any valid newline char
 	return (XIO_EOL);							// return for end-of-line
 }
 
-static int _readln_SEMICOLON(void)				// semicolon is a conditional newln
+static int _gets_SEMICOLON(void)				// semicolon is a conditional newln
 {
 	if (SEMICOLONS(ds[gdev].flags)) {
-		return (_readln_NEWLINE());				// if semi mode treat as an EOL
+		return (_gets_NEWLINE());				// if semi mode treat as an EOL
 	} else {
-		return (_readln_char());				// else treat as any other character
+		return (_gets_char());				// else treat as any other character
 	}
 }
 
-static int _readln_DELETE(void)
+static int _gets_DELETE(void)
 {
 	if (--ds[gdev].len >= 0) {
 		if (ECHO(ds[gdev].flags)) ds[gdev].x_putc(ds[gdev].c, stdout);
