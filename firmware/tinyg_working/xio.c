@@ -40,7 +40,7 @@
  *	- Stdio FILE streams are managed as bindings to the above devices
  *	- Additional functions provided include:
  *		- open file (initialize address and other parameters)
- *		- readln (non-blocking inout line reader - extends fgets functionality)
+ *		- gets (non-blocking inout line reader - extends fgets functionality)
  *		- setflags (ioctl-like knockoff for setting device parameters)
  *		- signal handling - captures ^c, pause, resume, etc. as interrupts
  *		- interrupt buffered RX and TX functions 
@@ -110,7 +110,7 @@ void xio_init_dev(uint8_t dev, 					// device number
 	int (*x_setflags)(const uint16_t control),// set device control flags
 	int (*x_putc)(char, struct __file *),		// write char (stdio compatible)
 	int (*x_getc)(struct __file *),			// read char (stdio compatible)
-	int (*x_readln)(char *buf, uint8_t size)	// specialized line reader
+	int (*x_gets)(char *buf, uint8_t size)	// specialized line reader
 	) 
 {
 	// clear device struct
@@ -121,11 +121,25 @@ void xio_init_dev(uint8_t dev, 					// device number
 	ds[dev].x_setflags = x_setflags;
 	ds[dev].x_putc = x_putc;
 	ds[dev].x_getc = x_getc;
-	ds[dev].x_readln = x_readln;
+	ds[dev].x_gets = x_gets;
 
 	// bind and setup stdio struct
 	ds[dev].fdev = &ss[dev];					
 	fdev_setup_stream(ds[dev].fdev, x_putc, x_getc, _FDEV_SETUP_RW);
+}
+
+/* 
+ *	xio_init_file() - generic init for file devices
+ */
+
+void xio_init_file(const uint8_t dev, const uint8_t offset, const uint16_t control)
+{
+	// bind file struct to extended device parameters
+	ds[dev].x = &fs[offset];		// bind pgm FILE struct
+	// might be useful to sanity check the control bits before calling set flags
+	//	- RD and BLOCK are mandatory
+	// 	- WR and NOBLOCK are restricted
+	xio_setflags(dev, control);
 }
 
 /*
@@ -176,7 +190,9 @@ int xio_setflags(const uint8_t dev, const uint16_t control)
 }
 
 /*
- * xio_set_std___() - functions to set standard IO devices from device numbers
+ * xio_set_stdin()  - set stdin from device number
+ * xio_set_stdout() - set stdout from device number
+ * xio_set_stderr() - set stderr from device number
  */
 
 void xio_set_stdin(const uint8_t dev)
@@ -221,7 +237,7 @@ int xio_getc(const uint8_t dev)
 }
 
 /*
- * xio_readln() - common entry point for non-blocking receive line functions
+ * xio_gets() - common entry point for non-blocking receive line functions
  *
  * Arguments
  *	dev		XIO device enumeration
@@ -229,11 +245,29 @@ int xio_getc(const uint8_t dev)
  *	size	size of text buffer in 1 offset form: e.g. use 80 instead of 79
  */
 
-int xio_readln(const uint8_t dev, char *buf, const uint8_t size)
+int xio_gets(const uint8_t dev, char *buf, const uint8_t size)
 {
 	if (dev < XIO_DEV_COUNT) {
-		return ds[dev].x_readln(buf, size);
+		return ds[dev].x_gets(buf, size);
 	} else {
 		return (XIO_NO_SUCH_DEVICE);
 	}		
+}
+
+/*
+ * xio_tests() - a collection of tests for xio
+ */
+
+void xio_tests()
+{
+	FILE * fdev;
+
+	fdev = xio_open_eep(0);
+//	xio_puts_eep("ABCDEFGHIJKLMNOP\n", fdev);
+	xio_putc_eep('A', fdev);
+	xio_putc_eep('B', fdev);
+	xio_putc_eep('C', fdev);
+	xio_getc_eep(fdev);
+	xio_getc_eep(fdev);
+	xio_getc_eep(fdev);
 }
