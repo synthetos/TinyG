@@ -71,26 +71,27 @@ enum tgAxisNum {		// define axis numbers and array indexes from 0 to 3
 #define TG_EOL 4						// function returned end-of-line
 #define TG_EOF 5						// function returned end-of-file 
 #define TG_FILE_NOT_OPEN 6
-#define TG_NO_SUCH_DEVICE 7
-#define TG_BUFFER_EMPTY 8
-#define TG_BUFFER_FULL_FATAL 9 
-#define TG_BUFFER_FULL_NON_FATAL 10
+#define TG_FILE_SIZE_EXCEEDED 7
+#define TG_NO_SUCH_DEVICE 8
+#define TG_BUFFER_EMPTY 9
+#define TG_BUFFER_FULL_FATAL 10 
+#define TG_BUFFER_FULL_NON_FATAL 11
 //----- ...to here
 
-#define TG_QUIT 11						// function returned QUIT
-#define TG_UNRECOGNIZED_COMMAND 12		// parser didn't recognize the command
-#define TG_EXPECTED_COMMAND_LETTER 13	// malformed line to parser
-#define TG_UNSUPPORTED_STATEMENT 14		// a different kind of malformed line
-#define TG_PARAMETER_OVER_RANGE 15		// parameter is too large
-#define TG_BAD_NUMBER_FORMAT 16			// number format error
-#define TG_FLOATING_POINT_ERROR 17		// number conversion error
-#define TG_MOTION_CONTROL_ERROR 18		// motion control failure
-#define TG_ARC_SPECIFICATION_ERROR 19	// arc specification error
-#define TG_ZERO_LENGTH_LINE 20			// XYZ line is zero length 
-#define TG_MAX_FEED_RATE_EXCEEDED 21
-#define TG_MAX_SEEK_RATE_EXCEEDED 22
-#define TG_MAX_TRAVEL_EXCEEDED 23
-#define TG_MAX_SPINDLE_SPEED_EXCEEDED 24
+#define TG_QUIT 12						// function returned QUIT
+#define TG_UNRECOGNIZED_COMMAND 13		// parser didn't recognize the command
+#define TG_EXPECTED_COMMAND_LETTER 14	// malformed line to parser
+#define TG_UNSUPPORTED_STATEMENT 15		// a different kind of malformed line
+#define TG_PARAMETER_OVER_RANGE 16		// parameter is too large
+#define TG_BAD_NUMBER_FORMAT 17			// number format error
+#define TG_FLOATING_POINT_ERROR 18		// number conversion error
+#define TG_MOTION_CONTROL_ERROR 19		// motion control failure
+#define TG_ARC_SPECIFICATION_ERROR 20	// arc specification error
+#define TG_ZERO_LENGTH_LINE 21			// XYZ line is zero length 
+#define TG_MAX_FEED_RATE_EXCEEDED 22
+#define TG_MAX_SEEK_RATE_EXCEEDED 23
+#define TG_MAX_TRAVEL_EXCEEDED 24
+#define TG_MAX_SPINDLE_SPEED_EXCEEDED 25
 
 /*
  * Common typedefs (see xio.h for some others)

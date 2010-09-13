@@ -31,21 +31,8 @@
 void xio_init_pgm()
 {
 	// Program memory file device setup
-	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_setflags_pgm, xio_putc_pgm, xio_getc_pgm, xio_readln_pgm);
+	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_setflags_pgm, xio_putc_pgm, xio_getc_pgm, xio_gets_pgm);
 	xio_init_file(XIO_DEV_PGM, XIO_DEV_PGM_OFFSET, PGM_INIT_bm);
-}
-
-/* 
- *	xio_init_file() - generic init for file devices
- */
-void xio_init_file(const uint8_t dev, const uint8_t offset, const uint16_t control)
-{
-	// bind file struct to extended device parameters
-	ds[dev].x = &fs[offset];		// bind pgm FILE struct
-	// might be useful to sanity check the control bits before calling set flags
-	//	- RD and BLOCK are mandatory
-	// 	- WR and NOBLOCK are restricted
-	xio_setflags_pgm(control);
 }
 
 /*	
@@ -60,8 +47,10 @@ struct __file * xio_open_pgm(const prog_char *addr)
 	PGM.flags &= XIO_FLAG_RESET_gm;			// reset flag signaling bits
 	PGM.sig = 0;							// reset signal
 	PGMf.filebase_P = (PROGMEM char *)addr;	// might want to range check this
-	PGMf.len = 0;							// initialize buffer pointer
-	return(PGM.fdev);							// return pointer to the fdev stream
+	PGMf.rd_offset = 0;						// initialize read buffer pointer
+	PGMf.wr_offset = 0;						// initialize write buffer pointer
+	PGMf.max_offset = PGM_ADDR_MAX;
+	return(PGM.fdev);						// return pointer to the fdev stream
 }
 
 /*
@@ -117,10 +106,10 @@ int xio_getc_pgm(struct __file *stream)
 		PGM.sig = XIO_SIG_EOF;
 		return (_FDEV_EOF);
 	}
-	if ((PGM.c = pgm_read_byte(&PGMf.filebase_P[PGMf.len])) == NUL) {
+	if ((PGM.c = pgm_read_byte(&PGMf.filebase_P[PGMf.rd_offset])) == NUL) {
 		PGM.flags |= XIO_FLAG_EOF_bm;
 	}
-	++PGMf.len;
+	++PGMf.rd_offset;
 	if (!LINEMODE(PGM.flags)) {			// processing is simple if not LINEMODE
 		if (ECHO(PGM.flags)) {
 			putchar(PGM.c);
@@ -142,13 +131,13 @@ int xio_getc_pgm(struct __file *stream)
 }
 
 /* 
- *	xio_readln_pgm() - main loop task for program memory device
+ *	xio_gets_pgm() - main loop task for program memory device
  *
  *	Non-blocking, run-to-completion return a line from memory
  *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
  */
 
-int xio_readln_pgm(char *buf, const uint8_t size)
+int xio_gets_pgm(char *buf, const uint8_t size)
 {
 	if (!(PGMf.filebase_P)) {					// return error if no file is open
 		return (XIO_FILE_NOT_OPEN);

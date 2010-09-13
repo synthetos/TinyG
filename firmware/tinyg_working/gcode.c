@@ -26,7 +26,7 @@
 
 #include <ctype.h>
 #include <stdlib.h>
-#include <string.h>					// for memset()
+#include <string.h>					// for memset(), strchr()
 #include <math.h>
 #include <stdio.h>
 #include <avr/pgmspace.h>			// needed for exception strings
@@ -190,18 +190,18 @@ void _gc_normalize_gcode_block(char *block)
 }
 
 /* 
- * _gc_next_statement() - parse next block of Gcode
+ * _gc_next_statement() - parse next statement in a block of Gcode
  *
  *	Parses the next statement and leaves the counter on the first character 
  *	following the statement. 
  *	Returns TRUE if there was a statement, FALSE if end of string was reached
- *	or there was an error (check gp.status).
+ *	or there was an error, and writes error code into gp.status.
  */
 
-int _gc_next_statement(char *letter, double *value_ptr, double *fraction_ptr, 
+inline int _gc_next_statement(char *letter, double *value_ptr, double *fraction_ptr, 
 					   char *buf, uint8_t *i) {
 	if (buf[*i] == 0) {
-		return(FALSE); // No more statements
+		return(FALSE); 		// no more statements
 	}
 	*letter = buf[*i];
 	if(!isupper(*letter)) {
@@ -224,7 +224,7 @@ int _gc_next_statement(char *letter, double *value_ptr, double *fraction_ptr,
  *	double_ptr	pointer to double to be read
  */
 
-int _gc_read_double(char *buf, uint8_t *i, double *double_ptr) 
+inline int _gc_read_double(char *buf, uint8_t *i, double *double_ptr) 
 {
 	char *start = buf + *i;
 	char *end;
@@ -272,7 +272,7 @@ int _gc_parse_gcode_block(char *buf)
 	while(_gc_next_statement(&gp.letter, &gp.value, &gp.fraction, buf, &i)) {
     	switch(gp.letter) {
 			case 'G':
-				switch((int)gp.value) {
+				switch((uint8_t)gp.value) {
 					case 0:  SET_NEXT_ACTION_MOTION(motion_mode, MOTION_MODE_STRAIGHT_TRAVERSE);
 					case 1:  SET_NEXT_ACTION_MOTION(motion_mode, MOTION_MODE_STRAIGHT_FEED);
 					case 2:  SET_NEXT_ACTION_MOTION(motion_mode, MOTION_MODE_CW_ARC);
@@ -300,7 +300,7 @@ int _gc_parse_gcode_block(char *buf)
 				break;
 
 			case 'M':
-				switch((int)gp.value) {
+				switch((uint8_t)gp.value) {
 					case 0: case 1: 
 							SET_NEXT_STATE(program_flow, PROGRAM_FLOW_STOP);
 					case 2: case 30: case 60:

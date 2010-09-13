@@ -36,13 +36,13 @@ struct __file * xio_open_rs485() { return(RS.fdev); }
 int xio_setflags_rs485(const uint16_t control) {return xio_setflags(XIO_DEV_RS485, control);} // See NOTE
 int xio_putc_rs485(const char c, FILE *stream) {return xio_putc_usart(XIO_DEV_RS485, c, stream);}
 int xio_getc_rs485(FILE *stream) {return xio_getc_usart(XIO_DEV_RS485, stream);}
-int xio_readln_rs485(char *buf, const uint8_t size) {return xio_readln_usart(XIO_DEV_RS485, buf, size);}
+int xio_gets_rs485(char *buf, const uint8_t size) {return xio_gets_usart(XIO_DEV_RS485, buf, size);}
 void xio_queue_RX_char_rs485(const char c) {xio_queue_RX_char_usart(XIO_DEV_RS485, c);}
 void xio_queue_RX_string_rs485(const char *buf) {xio_queue_RX_string_usart(XIO_DEV_RS485, buf);}
 
 void xio_init_rs485()	// RS485 init
 {
-	xio_init_dev(XIO_DEV_RS485, xio_open_rs485, xio_setflags_rs485, xio_putc_rs485, xio_getc_rs485, xio_readln_rs485);
+	xio_init_dev(XIO_DEV_RS485, xio_open_rs485, xio_setflags_rs485, xio_putc_rs485, xio_getc_rs485, xio_gets_rs485);
 	xio_init_usart(XIO_DEV_RS485, XIO_DEV_RS485_OFFSET, RS485_INIT_bm, &RS485_USART, &RS485_PORT, RS485_DIRCLR_bm, RS485_DIRSET_bm, RS485_OUTCLR_bm, RS485_OUTSET_bm);
 }
 

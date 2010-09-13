@@ -66,7 +66,7 @@ FILE * xio_eep_open(const prog_char * addr);	// open a memory string for read
 int8_t xio_eep_control(uint16_t control, int16_t arg); // set flags
 int xio_eep_putc(char c, FILE *stream);			// always returns ERROR
 int xio_eep_getc(FILE *stream);					// get a character
-int xio_eep_readln(char *buf, uint8_t len);		// read line from program memory
+int xio_eep_gets(char *buf, uint8_t len);		// read line from program memory
 
 extern FILE dev_eep;							// used to return a pointer on open()
 
