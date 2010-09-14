@@ -1,4 +1,4 @@
-/* Combined Xmega Non Volatile Memory functions 
+/* Xmega Non Volatile Memory functions 
  *
  * Ahem. Before you waste a day trying to figure out why none of this works
  * in the simulator, you should realize that IT DOESN'T WORK IN THE WINAVR
@@ -18,12 +18,12 @@
  *		is intended for rapid prototyping and documentation purposes for 
  *		getting started with the XMEGA EEPROM module.
  *
- *		Besides which, it doesn't work in the GD simulator, so how would
- *		you ever know?
- *
  *      For size and/or speed critical code, it is recommended to copy the
  *      function contents directly into your application instead of making
  *      a function call (or just inline the functions, bonehead).
+ *
+ *		Besides which, it doesn't work in the GD simulator, so how would
+ *		you ever know?
  *
  * Notes:
  *      See AVR1315: Accessing the XMEGA EEPROM + Code eeprom_driver.c /.h
@@ -64,56 +64,94 @@
 /* TinyG Notes:
  *  Modified to support Xmega family processors
  *  Modifications Copyright (c) 2010 Alden S. Hart, Jr.
- *
- * The Grbl EEPROM issue. It's totally different in xmegas
- *	ref: http://old.nabble.com/xmega-support-td21322852.html
- *		 http://www.avrfreaks.net/index.php?name=PNphpBB2&file=printview&t=84542&start=0
- *
- * Need to:
- *	- replace eeprom.c/.h with eeprom_xmega.c/.h
- *	- the above implements the Grbl eeprom calls by wrapping xmega 
- *		calls provided in App note AVR 1315 code example: eeprom_driver.c/.h
- *	- alternately wait for AVR GCC to get memory mapped eeprom IO working (i.e. address 0x1000)
  */
 
 #include "xmega_nvm.h"
+#include <string.h>
 #include <avr/interrupt.h>
 
 /****** Functions added for TinyG ******/
 
 /* 
- * EEPROM_WriteString() - write a string to one or more EEPROM pages
+ * EEPROM_WriteString() - write string to EEPROM; may span multiple pages
  *
- *	This function writes a character string to EEPROM using IO-mapped access.
- *	If memory mapped EEPROM is enabled this function will not work.
- *	This functiom will cancel all ongoing EEPROM page buffer loading
+ *	This function writes a character string to EEPROM using IO-mapped 
+ *	access. If memory mapped EEPROM is enabled this function will not work. 
+ *	This functiom will cancel all ongoing EEPROM page buffer loading 
  *	operations, if any.
  *
- *	WriteString will write to multiple pages as the string spans pages.
+ *	A string may span multiple EEPROM pages. For each affected page:
+ *		- load the page buffer from EEPROM with the contents for that page
+ *		- write the string bytes for that page into the page buffer
+ *		- perform an atomic write for that page (erase and write)
+ *		- do the next page
+ *
+ *	If 'terminate' is TRUE, add a null to the string, if FALSE, don't.
+ *
+ *	Note that only the page buffer locations that have been copied into
+ *	the page buffer (during string copy) will be affected when writing to 
+ *	the EEPROM (using AtomicPageWrite). Page buffer locations that have not 
+ *	been loaded will be left untouched in EEPROM.
+ *
+ *	  address 	 must be between 0 and top-of-EEPROM (0x0FFF in a 256 or 192)
+ *	  string 	 must be null-terminated
+ *	  terminate	 set TRUE to write string termination (NULL) to EEPROM
+ *				 set FALSE to not write NULL (useful for writing "files")
+ *
+ *	Background: The xmega EEPROM is rated at 100,000 operations (endurance).
+ *	The endurance figure is dominated by the erase operation. Reads do not
+ *	affect the endurance and writes have minimal effect. Erases occur at 
+ *	the page level, so a strategy to minimize page erases is needed. This
+ *	function is a reasonably high endurance solution since erases only occur
+ *	once for each time a string crosses a page, as opposed to once per byte
+ *	written (as in EEPROM_WriteByte()). A slightly higher endurance solution 
+ *	would be to store up multiple contiguous string writes and perform them 
+ *	as single page operations.
  */
 
-void EEPROM_WriteString(uint16_t address, char *str)
+void EEPROM_WriteString(uint16_t address, char *string, uint8_t terminate)
 {
-//	uint8_t pageAddr;	// starting and subsequent page address
-//	uint8_t byteAddr;	// starting and subsequent byte address
-//	uint8_t i;			// string index
+	uint8_t i = 0;			// index into string
+	uint16_t curaddr;		// starting address of string remaining to write
+	uint16_t endaddr;		// ending address, adjusted for termination
+	uint16_t stringlen;		// remaining unwritten length of string
+	uint8_t curpage;		// current page number (0 - 127)
+	uint8_t endpage;		// ending page number  (0 - 127)
+	uint8_t byteidx;		// index into page
+	uint8_t byteend;		// ending byte number in page
+	uint8_t temp;
 
-	EEPROM_FlushBuffer();		// make sure no unintentional data is written
-	NVM.CMD = NVM_CMD_LOAD_EEPROM_BUFFER_gc;	// Page Load command
+	// initialize variables
+	curaddr = address;
+	stringlen = strlen(string) + terminate - 1;	// terminate will be 1 or 0
+	endaddr = address + stringlen;
+	curpage = (curaddr >> 5) & 0x7F;		// mask it just to be safe
+	endpage = (endaddr >> 5) & 0x7F;		// mask it just to be safe
 
-	NVM.ADDR0 = address & 0xFF;					// set starting write address
-	NVM.ADDR1 = (address >> 8) & 0x1F;
-	NVM.ADDR2 = 0x00;
+	while (curpage <= endpage) {
+		// initialize addresses and variables for this write page
+		byteidx = curaddr & 0x1F;
+		byteend = min(stringlen, EEPROM_PAGESIZE);
+		stringlen = stringlen - (byteend - byteidx);// chars left in string
+		curaddr = curaddr + (byteend - byteidx) + 1;// bump current address
+		NVM.ADDR1 = curpage++;			 			// set upper addr bytes
+		NVM.ADDR2 = 0x00;
 
-//	NVM.DATA0 = value;	// load write data - triggers EEPROM page buffer load
-
-	// Issue EEPROM Atomic Write (Erase&Write) command.
-	// Load command, write the protection signature and execute command
-	NVM.CMD = NVM_CMD_ERASE_WRITE_EEPROM_PAGE_gc;
-	NVM_EXEC();
+		// load page buffer with string contents and optional NULL term
+		EEPROM_FlushBuffer();	// ensure no unintentional data is written
+		NVM.CMD = NVM_CMD_LOAD_EEPROM_BUFFER_gc; // Page Load command
+		while (byteidx <= byteend) {
+			NVM.ADDR0 = byteidx++;	// set buffer location for data
+//			NVM.DATA0 = string[i++];// writing DATA0 triggers write to buffer
+			temp = string[i++];
+		}
+		// run EEPROM Atomic Write (Erase&Write) command.
+		NVM.CMD = NVM_CMD_ERASE_WRITE_EEPROM_PAGE_gc;	// load command
+		NVM_EXEC();	//write the protection signature and execute command
+	}
 }
 
-/****** Functions from Atmel eeprom_driver.c ******/
+/****** Functions from Atmel eeprom_driver.c (and some derived from them) ******/
 
 /* 
  * EEPROM_WaitForNVM() - Wait for any NVM access to finish
@@ -152,16 +190,16 @@ inline void EEPROM_FlushBuffer( void )
  * EEPROM_WriteByteByPage() - write one byte to EEPROM using IO mapping
  * EEPROM_WriteByte() 		- write one byte to EEPROM using IO mapping
  *
- *  This function writes one byte to EEPROM using IO-mapped access.
- *  If memory mapped EEPROM is enabled this function will not work.
- *  This functiom will cancel all ongoing EEPROM page buffer loading
- *  operations, if any.
+ *	This function writes one byte to EEPROM using IO-mapped access.
+ *	This functiom will cancel all ongoing EEPROM page buffer loading
+ *	operations, if any. If memory mapped EEPROM is enabled this function 
+ *	will not work.
  *
- *  \param  pageAddr  EEPROM Page address, between 0 and EEPROM_SIZE/EEPROM_PAGESIZE
- *  \param  byteAddr  EEPROM Byte address, between 0 and EEPROM_PAGESIZE.
- *  \param  value     Byte value to write to EEPROM.
+ *	  pageAddr  EEPROM Page address, between 0 and EEPROM_SIZE/EEPROM_PAGESIZE
+ *	  byteAddr  EEPROM Byte address, between 0 and EEPROM_PAGESIZE.
+ *	  value     Byte value to write to EEPROM.
  */
-
+/*
 void EEPROM_WriteByteByPage(uint8_t pageAddr, uint8_t byteAddr, uint8_t value)
 {
 	uint16_t address;
@@ -183,8 +221,8 @@ void EEPROM_WriteByteByPage(uint8_t pageAddr, uint8_t byteAddr, uint8_t value)
 	NVM.CMD = NVM_CMD_ERASE_WRITE_EEPROM_PAGE_gc;
 	NVM_EXEC();
 }
-
-void EEPROM_WriteByte(uint16_t address, uint8_t value)
+*/
+inline void EEPROM_WriteByte(uint16_t address, uint8_t value)
 {
 	EEPROM_FlushBuffer();		// make sure no unintentional data is written
 	NVM.CMD = NVM_CMD_LOAD_EEPROM_BUFFER_gc;	// Page Load command
@@ -206,11 +244,11 @@ void EEPROM_WriteByte(uint16_t address, uint8_t value)
  *  This function reads one byte from EEPROM using IO-mapped access.
  *  If memory mapped EEPROM is enabled, this function will not work.
  *
- *  \param  pageAddr  EEPROM Page address, between 0 and EEPROM_SIZE/EEPROM_PAGESIZE
- *  \param  byteAddr  EEPROM Byte address, between 0 and EEPROM_PAGESIZE.
- *
- *  \return  Byte value read from EEPROM.
+ *	  pageAddr  EEPROM Page address, between 0 and EEPROM_SIZE/EEPROM_PAGESIZE
+ *	  byteAddr  EEPROM Byte address, between 0 and EEPROM_PAGESIZE.
+ *	  Returns byte value read from EEPROM.
  */
+/*
 uint8_t EEPROM_ReadByteByPage(uint8_t pageAddr, uint8_t byteAddr)
 {
 	uint16_t address;
@@ -228,8 +266,8 @@ uint8_t EEPROM_ReadByteByPage(uint8_t pageAddr, uint8_t byteAddr)
 	NVM_EXEC();
 	return NVM.DATA0;
 }
-
-uint8_t EEPROM_ReadByte(uint16_t address)
+*/
+inline uint8_t EEPROM_ReadByte(uint16_t address)
 {
 	EEPROM_WaitForNVM();				// Wait until NVM is not busy
 	NVM.ADDR0 = address & 0xFF;			// set write address
@@ -240,22 +278,21 @@ uint8_t EEPROM_ReadByte(uint16_t address)
 	return NVM.DATA0;
 }
 
-
 /* 
  * EEPROM_LoadByte() - Load single byte into temporary page buffer.
  *
  *  This function loads one byte into the temporary EEPROM page buffers.
- *  If memory mapped EEPROM is enabled, this function will not work.
  *  Make sure that the buffer is flushed before starting to load bytes.
  *  Also, if multiple bytes are loaded into the same location, they will
  *  be ANDed together, thus 0x55 and 0xAA will result in 0x00 in the buffer.
+ *  If memory mapped EEPROM is enabled this function will not work.
  *
  *  Note: Only one page buffer exists, thus only one page can be loaded with
  *        data and programmed into one page. If data needs to be written to
  *        different pages the loading and writing needs to be repeated.
  *
- *  \param  byteAddr  EEPROM Byte address, between 0 and EEPROM_PAGESIZE.
- *  \param  value     Byte value to write to buffer.
+ *    byteAddr  EEPROM Byte address, between 0 and EEPROM_PAGESIZE.
+ *    value     Byte value to write to buffer.
  */
 
 inline void EEPROM_LoadByte(uint8_t byteAddr, uint8_t value)
@@ -272,21 +309,21 @@ inline void EEPROM_LoadByte(uint8_t byteAddr, uint8_t value)
  * EEPROM_LoadPage() - Load entire page into temporary EEPROM page buffer.
  *
  *  This function loads an entire EEPROM page from an SRAM buffer to
- *  the EEPROM page buffers. If memory mapped EEPROM is enabled, this
- *  function will not work. Make sure that the buffer is flushed before
- *  starting to load bytes.
+ *  the EEPROM page buffers. Make sure that the buffer is flushed before
+ *  starting to load bytes. If memory mapped EEPROM is enabled this
+ *  function will not work.
  *
  *  Note: Only the lower part of the address is used to address the buffer.
  *        Therefore, no address parameter is needed. In the end, the data
  *        is written to the EEPROM page given by the address parameter to the
  *        EEPROM write page operation.
  *
- *  \param  values   Pointer to SRAM buffer containing an entire page.
+ *    values   Pointer to SRAM buffer containing an entire page.
  */
 
 inline void EEPROM_LoadPage( const uint8_t * values )
 {
-	EEPROM_WaitForNVM();						// wait until NVM is not busy
+	EEPROM_WaitForNVM();						// wait until NVM not busy
 	NVM.CMD = NVM_CMD_LOAD_EEPROM_BUFFER_gc;
 	NVM.ADDR1 = 0x00;							// set upper addr's to zero
 	NVM.ADDR2 = 0x00;
@@ -301,32 +338,24 @@ inline void EEPROM_LoadPage( const uint8_t * values )
 /* 
  * EEPROM_AtomicWritePage() - Write already loaded page into EEPROM.
  *
- *  This function writes the contents of an already loaded EEPROM page
- *  buffer into EEPROM memory.
+ *	This function writes the contents of an already loaded EEPROM page
+ *	buffer into EEPROM memory.  As this is an atomic write, the page in 
+ *	EEPROM will be erased automatically before writing. Note that only the 
+ *	page buffer locations that have been loaded will be used when writing 
+ *	to EEPROM. Page buffer locations that have not been loaded will be left
+ *	untouched in EEPROM.
  *
- *  As this is an atomic write, the page in EEPROM will be erased
- *  automatically before writing. Note that only the page buffer locations
- *  that have been loaded will be used when writing to EEPROM. Page buffer
- *  locations that have not been loaded will be left untouched in EEPROM.
- *
- *  \param  pageAddr  EEPROM Page address, between 0 and EEPROM_SIZE/EEPROM_PAGESIZE
+ *	  pageAddr  EEPROM Page address between 0 and EEPROM_SIZE/EEPROM_PAGESIZE
  */
 
-void EEPROM_AtomicWritePage( uint8_t pageAddr )
+inline void EEPROM_AtomicWritePage(uint8_t pageAddr)
 {
-	/* Wait until NVM is not busy. */
-	EEPROM_WaitForNVM();
-
-	/* Calculate page address */
+	EEPROM_WaitForNVM();						// wait until NVM not busy
 	uint16_t address = (uint16_t)(pageAddr*EEPROM_PAGESIZE);
-
-	/* Set address. */
-	NVM.ADDR0 = address & 0xFF;
+	NVM.ADDR0 = address & 0xFF;					// set addresses
 	NVM.ADDR1 = (address >> 8) & 0x1F;
 	NVM.ADDR2 = 0x00;
-
-	/* Issue EEPROM Atomic Write (Erase&Write) command. */
-	NVM.CMD = NVM_CMD_ERASE_WRITE_EEPROM_PAGE_gc;
+	NVM.CMD = NVM_CMD_ERASE_WRITE_EEPROM_PAGE_gc; // erase & write page command
 	NVM_EXEC();
 }
 
@@ -335,71 +364,48 @@ void EEPROM_AtomicWritePage( uint8_t pageAddr )
  *
  *  This function erases one EEPROM page, so that every location reads 0xFF.
  *
- *  \param  pageAddr  EEPROM Page address, between 0 and EEPROM_SIZE/EEPROM_PAGESIZE
+ *	  pageAddr  EEPROM Page address between 0 and EEPROM_SIZE/EEPROM_PAGESIZE
  */
 
-void EEPROM_ErasePage( uint8_t pageAddr )
+inline void EEPROM_ErasePage( uint8_t pageAddr )
 {
-	/* Wait until NVM is not busy. */
-	EEPROM_WaitForNVM();
-
-	/* Calculate page address */
+	EEPROM_WaitForNVM();						// wait until NVM not busy
 	uint16_t address = (uint16_t)(pageAddr*EEPROM_PAGESIZE);
-
-	/* Set address. */
-	NVM.ADDR0 = address & 0xFF;
+	NVM.ADDR0 = address & 0xFF;					// set addresses
 	NVM.ADDR1 = (address >> 8) & 0x1F;
 	NVM.ADDR2 = 0x00;
-
-	/* Issue EEPROM Erase command. */
-	NVM.CMD = NVM_CMD_ERASE_EEPROM_PAGE_gc;
+	NVM.CMD = NVM_CMD_ERASE_EEPROM_PAGE_gc;		// erase page command
 	NVM_EXEC();
 }
-
 
 /* 
  * EEPROM_SplitWritePage() - Write (without erasing) EEPROM page.
  *
  *  This function writes the contents of an already loaded EEPROM page
- *  buffer into EEPROM memory.
+ *  buffer into EEPROM memory. As this is a split write, the page in 
+ *	EEPROM will *NOT* be erased before writing.
  *
- *  As this is a split write, the page in EEPROM will _not_ be erased
- *  before writing.
- *
- *  \param  pageAddr  EEPROM Page address, between 0 and EEPROM_SIZE/EEPROM_PAGESIZE
+ *	  pageAddr  EEPROM Page address between 0 and EEPROM_SIZE/EEPROM_PAGESIZE
  */
 
-void EEPROM_SplitWritePage( uint8_t pageAddr )
+inline void EEPROM_SplitWritePage( uint8_t pageAddr )
 {
-	/* Wait until NVM is not busy. */
-	EEPROM_WaitForNVM();
-
-	/* Calculate page address */
+	EEPROM_WaitForNVM();						// wait until NVM not busy
 	uint16_t address = (uint16_t)(pageAddr*EEPROM_PAGESIZE);
-
-	/* Set address. */
-	NVM.ADDR0 = address & 0xFF;
+	NVM.ADDR0 = address & 0xFF;					// set addresses
 	NVM.ADDR1 = (address >> 8) & 0x1F;
 	NVM.ADDR2 = 0x00;
-
-	/* Issue EEPROM Split Write command. */
-	NVM.CMD = NVM_CMD_WRITE_EEPROM_PAGE_gc;
+	NVM.CMD = NVM_CMD_WRITE_EEPROM_PAGE_gc;		// split write command
 	NVM_EXEC();
 }
 
 /* 
- * EEPROM_EraseAll() - Erase entire EEPROM memory.
- *
- *  This function erases the entire EEPROM memory block to 0xFF.
+ * EEPROM_EraseAll() - Erase entire EEPROM memory to 0xFF
  */
 
-void EEPROM_EraseAll( void )
+inline void EEPROM_EraseAll( void )
 {
-	/* Wait until NVM is not busy. */
-	EEPROM_WaitForNVM();
-
-	/* Issue EEPROM Erase All command. */
-	NVM.CMD = NVM_CMD_ERASE_EEPROM_gc;
+	EEPROM_WaitForNVM();						// wait until NVM not busy
+	NVM.CMD = NVM_CMD_ERASE_EEPROM_gc;			// erase all command
 	NVM_EXEC();
 }
-
