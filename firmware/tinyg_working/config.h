@@ -26,12 +26,10 @@
 
 void cfg_init(void);			// initialize config struct by reading from EEPROM
 void cfg_reset(void);			// reset config values to defaults
-int cfg_parse(char *text);		// parse a tag=value config string
+int cfg_parse(char *text);		// parse config record
 int cfg_read(void);				// read config record from EEPROM
-void cfg_write(void);			// write config record to EEPROM
 void cfg_dump(void);
 void cfg_test(void);			// unit tests for config routines
-void cfg_test2(void);			// unit tests for config routines
 
 /*
  * Global scope config structs
