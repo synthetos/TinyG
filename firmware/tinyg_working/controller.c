@@ -38,9 +38,9 @@
  *	For this to work tasks must be written to run-to-completion (non blocking),
  *	and must offer re-entry points (continuations) to resume operations that would
  *	have blocked (see arc generator for an example). A task returns TG_EAGAIN to 
- *	indicate a blocking point. If EGTG_EAGAIN is received The controller quits
+ *	indicate a blocking point. If TG_EAGAIN is received The controller quits
  *	the loop and starts over.Any other return code allows the controller to 
- *	proceed down the list. 
+ *	proceed down the list.
  *
  *	Interrupts run at the highest priority level and may interact with the tasks.
  *
@@ -124,7 +124,7 @@ enum tgControllerState {				// command execution state
 #define TG_FLAG_PROMPTS_bm (1<<0)		// prompt enabled if set
 
 enum tgMode {
-	TG_CONTROL_MODE,					// control mode only. No other modes active
+	TG_IDLE_MODE,						// idle mode only. No other modes active
 	TG_CONFIG_MODE,						// read and set configurations
 	TG_GCODE_MODE,						// gcode interpreter
 	TG_DIRECT_DRIVE_MODE,				// direct drive motors
@@ -146,7 +146,7 @@ void tg_init()
 	// set input source
 	tg.default_src = DEFAULT_SOURCE; 		// set in tinyg.h
 	_tg_set_source(tg.default_src);			// set initial active source
-	_tg_set_mode(TG_CONTROL_MODE);			// set initial operating mode
+	_tg_set_mode(TG_IDLE_MODE);				// set initial operating mode
 	tg.state = TG_READY_UNPROMPTED;
 }
 
@@ -215,7 +215,7 @@ int tg_read_next_line()
 			break;
 		}
 		case TG_QUIT: {								// Quit returned from parser
-			_tg_set_mode(TG_CONTROL_MODE);
+			_tg_set_mode(TG_IDLE_MODE);
 			tg.state = TG_READY_UNPROMPTED;
 			break;
 		}
@@ -252,14 +252,14 @@ int tg_read_next_line()
 int tg_parser(char * buf)
 {
 	// auto-detect mode if not already set 
-	if (tg.mode == TG_CONTROL_MODE) {
+	if (tg.mode == TG_IDLE_MODE) {
 		switch (toupper(buf[0])) {
 			case 'G': case 'M': case 'N': case 'F': case '(': case '\\': 
 				_tg_set_mode(TG_GCODE_MODE); break;
 			case 'C': case '?': _tg_set_mode(TG_CONFIG_MODE); break;
 			case 'D': _tg_set_mode(TG_DIRECT_DRIVE_MODE); break;
 			case 'R': return (_tg_test_file());
-			default:  _tg_set_mode(TG_CONTROL_MODE); break; //+++ put a help prompt here
+			default:  _tg_set_mode(TG_IDLE_MODE); break; //+++ put a help prompt here
 		}
 	}
 	// dispatch based on mode
@@ -327,13 +327,13 @@ void tg_reset_source()
  *	ref: http://johnsantic.com/comp/state.html, "Writing Efficient State Machines in C"
  */
 
-char tgModeStringControl[] PROGMEM = "CONTROL MODE"; // put strings in program memory
+char tgModeStringIdle[] PROGMEM = "IDLE MODE"; // put strings in program memory
 char tgModeStringConfig[] PROGMEM = "CONFIG MODE";
 char tgModeStringGCode[] PROGMEM = "G-CODE MODE";
 char tgModeStringDirect[] PROGMEM = "DIRECT DRIVE";
 
 PGM_P tgModeStrings[] PROGMEM = {	// put string pointer array in program memory
-	tgModeStringControl,
+	tgModeStringIdle,
 	tgModeStringConfig,
 	tgModeStringGCode,
 	tgModeStringDirect
