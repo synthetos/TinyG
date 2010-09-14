@@ -32,38 +32,50 @@
 void _cfg_computed(void); 
 void _cfg_normalize_config_block(char *block);
 uint8_t _cfg_parse_config_block(char *block);
+void _cfg_write_record(void);
 void _cfg_dump_axis(uint8_t	axis);
+
+// Config parameter tokens and config record constants
+// These values are used to tokenize config strings and 
+// to compute the EEPROM record addresses (_cfg_write_record())
+
+enum cfgTokens {
+	CFG_RECORD_HEADER,			// header record is always zero
+	CFG_GCODE_UNITS,
+	CFG_GCODE_PLANE,
+	CFG_GCODE_DEFAULT_FEED_RATE,
+	CFG_GCODE_DEFAULT_SPINDLE_SPEED,
+	CFG_GCODE_DEFAULT_TOOL,
+	CFG_MM_PER_ARC_SEGMENT,
+
+	CFG_SEEK_STEPS_MAX,			// this is the axis base
+	CFG_FEED_STEPS_MAX,
+	CFG_DEGREES_PER_STEP,
+	CFG_MICROSTEP_MODE,
+	CFG_POLARITY,
+	CFG_TRAVEL_MAX,
+	CFG_TRAVEL_WARN,			// stop homing cycle if above this value
+	CFG_TRAVEL_PER_REV,
+	CFG_IDLE_MODE,
+	CFG_LIMIT_SWITCH_MODE,
+	CFG_MAP_AXIS_TO_MOTOR,
+	CFG_RECORD_LAST				// last record
+};
+#define CFG_RECORD_LEN 16		// length of ASCII strings
+#define CFG_AXIS_BASE CFG_SEEK_STEPS_MAX	// start of axis records
+
 
 // local data
 struct cfgConfigParser {
 	int8_t axis;				// axis value or -1 if none
-	uint8_t param;				// tokenized parameteer
+	uint8_t param;				// tokenized parameter number
 	double value;				// value parsed
-	char block[40];				// 
+	char record[CFG_RECORD_LEN];// config record for EEPROM
+	char block[40];				// TEMP
 };
 static struct cfgConfigParser cp;
 
-// Config parameter tokens
-
-enum cfgTokens {
-	CPTOK_NONE,
-	CPTOK_MM_PER_ARC_SEGMENT,
-	CPTOK_SEEK_STEPS_MAX,
-	CPTOK_FEED_STEPS_MAX,
-	CPTOK_DEGREES_PER_STEP,
-	CPTOK_MICROSTEP_MODE,
-	CPTOK_POLARITY,
-	CPTOK_TRAVEL_MAX,
-	CPTOK_TRAVEL_WARN,				// stop homing cycle if above this value
-	CPTOK_TRAVEL_PER_REVOLUTION,
-	CPTOK_IDLE_MODE,
-	CPTOK_LIMIT_SWITCH_MODE,
-	CPTOK_MAP_AXIS_TO_MOTOR,
-	CPTOK_GCODE_UNITS,
-	CPTOK_GCODE_PLANE
-};
-
-/* 
+/*
  * cfg_init() - initialize config system 
  */
 
@@ -73,8 +85,65 @@ void cfg_init()
 }
 
 /* 
- * cg_config_parser() - parse a config line
- *					  - write into config record and persist to EEPROM
+ * cfg_reset() - load default settings into config 
+ */
+
+void cfg_reset()
+{
+	cfg.config_version = EEPROM_DATA_VERSION;
+	cfg.mm_per_arc_segment = MM_PER_ARC_SEGMENT;
+
+	cfg.a[X].seek_steps_sec = X_SEEK_WHOLE_STEPS_PER_SEC;
+	cfg.a[Y].seek_steps_sec = Y_SEEK_WHOLE_STEPS_PER_SEC;
+	cfg.a[Z].seek_steps_sec = Z_SEEK_WHOLE_STEPS_PER_SEC;
+	cfg.a[A].seek_steps_sec = A_SEEK_WHOLE_STEPS_PER_SEC;
+
+	cfg.a[X].feed_steps_sec = X_FEED_WHOLE_STEPS_PER_SEC;
+	cfg.a[Y].feed_steps_sec = Y_FEED_WHOLE_STEPS_PER_SEC;
+	cfg.a[Z].feed_steps_sec = Z_FEED_WHOLE_STEPS_PER_SEC;
+	cfg.a[A].feed_steps_sec = A_FEED_WHOLE_STEPS_PER_SEC;
+
+	cfg.a[X].degree_per_step = X_DEGREE_PER_WHOLE_STEP;
+	cfg.a[Y].degree_per_step = Y_DEGREE_PER_WHOLE_STEP;
+	cfg.a[Z].degree_per_step = Z_DEGREE_PER_WHOLE_STEP;
+	cfg.a[A].degree_per_step = A_DEGREE_PER_WHOLE_STEP;
+
+	cfg.a[X].mm_per_rev = X_MM_PER_REVOLUTION;
+	cfg.a[Y].mm_per_rev = Y_MM_PER_REVOLUTION;
+	cfg.a[Z].mm_per_rev = Z_MM_PER_REVOLUTION;
+	cfg.a[A].mm_per_rev = A_MM_PER_REVOLUTION;
+	
+	cfg.a[X].mm_travel = X_MM_TRAVEL;
+	cfg.a[Y].mm_travel = Y_MM_TRAVEL;
+	cfg.a[Z].mm_travel = Z_MM_TRAVEL;
+	cfg.a[A].mm_travel = A_MM_TRAVEL;
+	
+	cfg.a[X].microstep = X_MICROSTEPS;
+	cfg.a[Y].microstep = Y_MICROSTEPS;
+	cfg.a[Z].microstep = Z_MICROSTEPS;
+	cfg.a[A].microstep = A_MICROSTEPS;
+
+	cfg.a[X].polarity = X_POLARITY;
+	cfg.a[Y].polarity = Y_POLARITY;
+	cfg.a[Z].polarity = Z_POLARITY;
+	cfg.a[A].polarity = A_POLARITY;
+
+	cfg.a[X].limit_enable = X_LIMIT_ENABLE;
+	cfg.a[Y].limit_enable = Y_LIMIT_ENABLE;
+	cfg.a[Z].limit_enable = Z_LIMIT_ENABLE;
+	cfg.a[A].limit_enable = A_LIMIT_ENABLE;
+
+	cfg.a[X].low_pwr_idle = X_LOW_POWER_IDLE;
+	cfg.a[Y].low_pwr_idle = Y_LOW_POWER_IDLE;
+	cfg.a[Z].low_pwr_idle = Z_LOW_POWER_IDLE;
+	cfg.a[A].low_pwr_idle = A_LOW_POWER_IDLE;
+
+	_cfg_computed();		// generate computed values from the above
+}
+
+/* 
+ * cfg_parse() - parse a config line
+ *			   - write into config record and persist to EEPROM
  *
  * How it works:
  *
@@ -187,12 +256,8 @@ void cfg_init()
  *		C LI 1				C axis not currently supported (nor is B)
  */
 
-int cfg_parse2(char *block)
+int cfg_parse(char *block)
 {
-//	char *val = 0;				// pointer to normalized value 
-//	char *end = 0;				// pointer to end of value
-//	uint8_t	axis = 0;			// axis index
-
 	cfg.status = TG_OK;
 	_cfg_normalize_config_block(block);		// normalize text in place
 	if (block[0] == 0) { 					// ignore comments (stripped)
@@ -207,48 +272,27 @@ int cfg_parse2(char *block)
 	}
 	_cfg_parse_config_block(block);
 
-	CPTOK_MM_PER_ARC_SEGMENT,
-	CPTOK_MICROSTEP_MODE,
-	,
-	CPTOK_TRAVEL_MAX,
-	CPTOK_TRAVEL_WARN,				// stop homing cycle if above this value
-	CPTOK_TRAVEL_PER_REVOLUTION,
-	CPTOK_IDLE_MODE,
-	CPTOK_LIMIT_SWITCH_MODE,
-	CPTOK_MAP_AXIS_TO_MOTOR,
-	CPTOK_GCODE_UNITS,
-	CPTOK_GCODE_PLANE
-
 	// dispatch based on parameter type
 	switch (cp.param) {
-		case CPTOK_SEEK_STEPS_MAX: CFG(cp.axis).seek_steps_sec = (uint16_t)cp.value; break;
-		case CPTOK_FEED_STEPS_MAX: CFG(cp.axis).feed_steps_sec = (uint16_t)cp.value; break;
-		case CPTOK_DEGREES_PER_STEP: CFG(cp.axis).degree_per_step = cp.value; break;
-		case CPTOK_POLARITY: CFG(cp.axis).degree_per_step = (uint16_t)cp.value; break;
+		case CFG_MM_PER_ARC_SEGMENT: cfg.mm_per_arc_segment = cp.value; break;
 
-			case 'P': CFG(axis).polarity = (uint8_t)atoi(val);
-					  st_set_polarity(axis, CFG(axis).polarity);
-					  break;
+		case CFG_SEEK_STEPS_MAX: 	CFG(cp.axis).seek_steps_sec = (uint16_t)cp.value; break;
+		case CFG_FEED_STEPS_MAX: 	CFG(cp.axis).feed_steps_sec = (uint16_t)cp.value; break;
+		case CFG_DEGREES_PER_STEP:	CFG(cp.axis).degree_per_step = cp.value; break;
+		case CFG_POLARITY:			CFG(cp.axis).polarity = (uint8_t)cp.value; 
+					  		 		st_set_polarity(cp.axis, CFG(cp.axis).polarity);
+							 		break;
 
-			case 'M': 
-				if (block[2] == 'I') {
-					CFG(axis).microstep = (uint8_t)atoi(val); break;
-				} else if (block[3] == 'R') {
-					CFG(axis).mm_per_rev = strtod(val, &end); break;
-				} else if (block[3] == 'T') {
-					CFG(axis).mm_travel = strtod(val, &end); break;
-				}
-			case 'L': 
-				if (block[2] == 'O') {
-					CFG(axis).low_pwr_idle = (uint8_t)atoi(val); break;
-				} else if (block[2] == 'I') {
-					CFG(axis).limit_enable = (uint8_t)atoi(val); break;
-				}
+		case CFG_MICROSTEP_MODE:	CFG(cp.axis).microstep = (uint8_t)cp.value; break;
+		case CFG_IDLE_MODE: 		CFG(cp.axis).low_pwr_idle = (uint8_t)cp.value; break;
+		case CFG_LIMIT_SWITCH_MODE: CFG(cp.axis).limit_enable = (uint8_t)cp.value; break;
+		case CFG_TRAVEL_PER_REV: 	CFG(cp.axis).mm_per_rev = cp.value; break;
+		case CFG_TRAVEL_MAX: 		CFG(cp.axis).mm_travel = cp.value; break;
 
-			default: cfg.status = TG_UNRECOGNIZED_COMMAND;	// error return
-		}
+
+		default: cfg.status = TG_UNRECOGNIZED_COMMAND;	// error return
 	}
-//	cfg_write();
+	_cfg_write_record();	// write the current record to EEPROM
 	return (cfg.status);
 }
 
@@ -308,9 +352,11 @@ void _cfg_normalize_config_block(char *block)
 
 uint8_t _cfg_parse_config_block(char *block)
 {
-	uint8_t i=0; 				// char index into block
 	char *end;					// pointer to end of value
+	uint8_t i=0; 				// char index into block
+	uint8_t j; 					// char index into record string
 
+	memcpy(cp.record, block, CFG_RECORD_LEN);	// init record
 	switch(block[i++]) {
 		case 'X': { cp.axis = X; break;}
 		case 'Y': { cp.axis = Y; break;}
@@ -319,156 +365,63 @@ uint8_t _cfg_parse_config_block(char *block)
 		default:  { cp.axis = -1; i--; }
 	}
 	switch(block[i++]) {
-		case 'A': { cp.param = CPTOK_MM_PER_ARC_SEGMENT; break; }
-		case 'S': { cp.param = CPTOK_SEEK_STEPS_MAX; break; }
-		case 'F': { cp.param = CPTOK_FEED_STEPS_MAX; break; }
-		case 'D': { cp.param = CPTOK_DEGREES_PER_STEP; break; }
-		case 'P': { cp.param = CPTOK_POLARITY; break; }
-		case 'T': { cp.param = CPTOK_TRAVEL_MAX; break; }
-		case 'R': { cp.param = CPTOK_TRAVEL_PER_REVOLUTION; break; }
-		case 'I': { cp.param = CPTOK_IDLE_MODE; break; }
-		case 'L': { cp.param = CPTOK_LIMIT_SWITCH_MODE; break; }
+		case 'A': { cp.param = CFG_MM_PER_ARC_SEGMENT; break; }
+		case 'S': { cp.param = CFG_SEEK_STEPS_MAX; break; }
+		case 'F': { cp.param = CFG_FEED_STEPS_MAX; break; }
+		case 'D': { cp.param = CFG_DEGREES_PER_STEP; break; }
+		case 'P': { cp.param = CFG_POLARITY; break; }
+		case 'T': { cp.param = CFG_TRAVEL_MAX; break; }
+		case 'R': { cp.param = CFG_TRAVEL_PER_REV; break; }
+		case 'I': { cp.param = CFG_IDLE_MODE; break; }
+		case 'L': { cp.param = CFG_LIMIT_SWITCH_MODE; break; }
 		case 'M': 
 			switch (block[i]) {
-				case 'I': { cp.param = CPTOK_MICROSTEP_MODE; break; }
-				case 'A': { cp.param = CPTOK_MAP_AXIS_TO_MOTOR; break; }
+				case 'I': { cp.param = CFG_MICROSTEP_MODE; break; }
+				case 'A': { cp.param = CFG_MAP_AXIS_TO_MOTOR; break; }
 				default: return(TG_UNRECOGNIZED_COMMAND);
 			}
 //		case 'G': 
 //			switch (block[i]) {
-//				case 'I': { cp.param = CPTOK_GCODE_UNITS; break; }
-//				case 'A': { cp.param = CPTOK_GCODE_PLANE; break; }
+//				case 'I': { cp.param = CFG_GCODE_UNITS; break; }
+//				case 'A': { cp.param = CFG_GCODE_PLANE; break; }
 //				default: return(TG_UNRECOGNIZED_COMMAND);
 //			}
 		default: return(TG_UNRECOGNIZED_COMMAND);
 	}
-	while (isupper(block[++i])) {	// advance past any remaining chars
+	j = i+1;						// save end position of tag (+1)
+	while (isupper(block[++i])) {	// position to start of value by...
+	}								// advancing past any remaining tag chars
+	cp.value = strtod(&block[i], &end); // extract the value
+	while (&block[i] < end) {		// copy value string into EEPROM record
+		cp.record[j++] = block[i++];
 	}
-	cp.value = strtod(&block[i], &end);
+	while (j < CFG_RECORD_LEN-1) {	// space fill remainder of record
+		cp.record[j++] = ' ';
+	}
+	cp.record[j] = '\n';			// terminate with newline
 	return (TG_OK);
 }
 
 /* 
- * cfg_parse() - parse a config string into the config record
- *
- * YACLHCP - yet-another-crappy-little-hard-coded-parser for reading config values
- *	Config string may consist of one or more tag=value pairs 
- *
- * Supported tags (axes X,Y,Z,A are supported - only X is shown)
- *	mm_arc_segment		0.1		arc drawing resolution in millimeters per segment 
- *	x_seek_steps_sec	1800	max seek whole steps per second for X axis
- *	x_feed_steps_sec	1200	max feed whole steps per second for X axis
- *	x_degree_step		1.8		degrees per whole step for X axis
- *	x_mm_rev			2.54	millimeters of travel per revolution of X axis
- *	x_mm_travel			406		millimeters of travel in X dimension (total envelope)
- * 	x_microstep			8		microsteps to apply for X axis steps
- *	x_polarity_invert	0		0=normal drive polarity, 1=inverted polarity
- *	x_low_pwr_idle		1		1=low power idle mode, 0=full power idle mode 
- *	x_limit_enable		1		1=max limit switch enabled, 0=not enabled
- *
- * Parsing rules:
- *	Tags are case insensitive 
- *	Punctuation and whitespace are ignored 
- *	Tags and values are separated by '=' sign
- *	Whitespace is optional and ignored
- *	Values are read as floating point numbers and cast to proper internal types
- *	Integers received as fractional numbers are truncated (this shouldn't happen)
- *	Comments are in parentheses and cause the remainder of the line to be ignored 
- *	Tags are only parsed to the point of uniqueness; the following are equivalent:
- *		z_seek_steps_sec
- *		z-seek-steps-sec
- *		z_seek_steps_*&*&^@#*&^_sec
- *		zSeekStepsSec
- *		zs
- *		ZS
- *
- *	Examples:
- *		mm=0.01					(set mm per arc segment to 0.01)
- *		xd = 0.9				(set x axis motor ot 0.9 degrees per step
- *		y_low_power_idle = 1	(enable low power idle on Y axis)
- *		y_lo_poweridle = 1		(enable low power idle on Y axis)
- *		ylo=1					(enable low power idle on Y axis)
- *		zlim=0					(disable Z axis limit switch)
- *		y_mm_revolution = 1.27	(mm per revolution of the Y axis)
- *		ymmr=1.27				(mm per revolution of the Y axis)
+ * _cfg_computed() - helper function to generate computed config values 
+ *	call this every time you change any configs
  */
 
-int cfg_parse(char *text)
+void _cfg_computed() 
 {
-	char c;
-	char *val = 0;				// pointer to normalized value 
-	char *end = 0;				// pointer to end of value
-	uint8_t i = 0;				// buffer read index (buf must be < 256 chars)
-	uint8_t j = 0;				// buffer write index
-	uint8_t	axis = 0;			// axis index
-
-	// normalize and split text in place
-	while ((c = toupper(text[i++])) != 0) {
-		if (c == '=') {							// handle separator
-			text[j++] = 0;						// terminate tag at separator
-			val = &text[j];						// new string starts at value
-		} else if ( (c == '-') || 				// capture special characters
-					(c == '+') || 
-					(c == '.') || 
-					(c == '?') || 
-					(c == '(')) { 
-			text[j++] = c;
-		} else if (c >= 'A' && c <= 'Z') {		// capture letters
-			text[j++] = c;
-		} else if (c >= '0' && c <= '9') {		// capture numbers
-			text[j++] = c;
-		}
+	// = 360 / (degree_per_step/microstep) / mm_per_rev
+	for (uint8_t i=X; i<=A; i++) {
+		cfg.a[i].steps_per_mm = (360 / (cfg.a[i].degree_per_step / 
+										cfg.a[i].microstep)) / 
+										cfg.a[i].mm_per_rev;
 	}
-	text[j++] = 0;								// nul terminate line
-	end = &text[j];								// needed for string-to-double
+	// max_feed_rate = 60 * feed_steps_sec / (360/degree_per_step/mm_per_rev)
+	cfg.max_feed_rate = ((60 * (double)cfg.a[X].feed_steps_sec) /
+						 (360/cfg.a[X].degree_per_step/cfg.a[X].mm_per_rev));
 
-	// pick off tag characters starting with first character
-	cfg.status = TG_OK;
-	switch (text[0]) {
-		case '?': cfg_dump(); cfg.status = TG_OK; break;
-		case '(': cfg.status = TG_OK; break;		// ignore comment lines
-		case 'Q': cfg.status = TG_QUIT; break;
-		case 'M': cfg.mm_per_arc_segment = strtod(val, &end); 
-				  cfg.status = TG_OK; 
-				  break;
-
-		case 'X': axis = X; break;
-		case 'Y': axis = Y; break;
-		case 'Z': axis = Z; break;
-		case 'A': axis = A; break;
-
-		default: cfg.status = TG_UNRECOGNIZED_COMMAND; 	// error return
-	}
-	if (cfg.status == TG_OK) {
-		cfg.status = TG_OK;							// pre-emptive setting
-		switch (text[1]) {
-			case 'S': CFG(axis).seek_steps_sec = (uint16_t)atoi(val); break;
-			case 'F': CFG(axis).feed_steps_sec = (uint16_t)atoi(val); break;
-			case 'D': CFG(axis).degree_per_step = strtod(val, &end); break;
-			case 'P': CFG(axis).polarity = (uint8_t)atoi(val);
-					  st_set_polarity(axis, CFG(axis).polarity);
-					  break;
-
-			case 'M': 
-				if (text[2] == 'I') {
-					CFG(axis).microstep = (uint8_t)atoi(val); break;
-				} else if (text[3] == 'R') {
-					CFG(axis).mm_per_rev = strtod(val, &end); break;
-				} else if (text[3] == 'T') {
-					CFG(axis).mm_travel = strtod(val, &end); break;
-				}
-			case 'L': 
-				if (text[2] == 'O') {
-					CFG(axis).low_pwr_idle = (uint8_t)atoi(val); break;
-				} else if (text[2] == 'I') {
-					CFG(axis).limit_enable = (uint8_t)atoi(val); break;
-				}
-
-			default: cfg.status = TG_UNRECOGNIZED_COMMAND;	// error return
-		}
-	}
-//	cfg_write();
-	return (cfg.status);
+	// max_seek_rate = 60 * seek_steps_sec / (360/degree_per_step/mm_per_rev)
+	cfg.max_seek_rate = ((60 * (double)cfg.a[X].seek_steps_sec) /
+						 (360/cfg.a[X].degree_per_step/cfg.a[X].mm_per_rev));
 }
 
 /*
@@ -516,85 +469,6 @@ void _cfg_dump_axis(uint8_t	axis)
 }
 
 /* 
- * config_reset() - load default settings into config 
- */
-
-void cfg_reset()
-{
-	cfg.config_version = EEPROM_DATA_VERSION;
-	cfg.mm_per_arc_segment = MM_PER_ARC_SEGMENT;
-
-	cfg.a[X].seek_steps_sec = X_SEEK_WHOLE_STEPS_PER_SEC;
-	cfg.a[Y].seek_steps_sec = Y_SEEK_WHOLE_STEPS_PER_SEC;
-	cfg.a[Z].seek_steps_sec = Z_SEEK_WHOLE_STEPS_PER_SEC;
-	cfg.a[A].seek_steps_sec = A_SEEK_WHOLE_STEPS_PER_SEC;
-
-	cfg.a[X].feed_steps_sec = X_FEED_WHOLE_STEPS_PER_SEC;
-	cfg.a[Y].feed_steps_sec = Y_FEED_WHOLE_STEPS_PER_SEC;
-	cfg.a[Z].feed_steps_sec = Z_FEED_WHOLE_STEPS_PER_SEC;
-	cfg.a[A].feed_steps_sec = A_FEED_WHOLE_STEPS_PER_SEC;
-
-	cfg.a[X].degree_per_step = X_DEGREE_PER_WHOLE_STEP;
-	cfg.a[Y].degree_per_step = Y_DEGREE_PER_WHOLE_STEP;
-	cfg.a[Z].degree_per_step = Z_DEGREE_PER_WHOLE_STEP;
-	cfg.a[A].degree_per_step = A_DEGREE_PER_WHOLE_STEP;
-
-	cfg.a[X].mm_per_rev = X_MM_PER_REVOLUTION;
-	cfg.a[Y].mm_per_rev = Y_MM_PER_REVOLUTION;
-	cfg.a[Z].mm_per_rev = Z_MM_PER_REVOLUTION;
-	cfg.a[A].mm_per_rev = A_MM_PER_REVOLUTION;
-	
-	cfg.a[X].mm_travel = X_MM_TRAVEL;
-	cfg.a[Y].mm_travel = Y_MM_TRAVEL;
-	cfg.a[Z].mm_travel = Z_MM_TRAVEL;
-	cfg.a[A].mm_travel = A_MM_TRAVEL;
-	
-	cfg.a[X].microstep = X_MICROSTEPS;
-	cfg.a[Y].microstep = Y_MICROSTEPS;
-	cfg.a[Z].microstep = Z_MICROSTEPS;
-	cfg.a[A].microstep = A_MICROSTEPS;
-
-	cfg.a[X].polarity = X_POLARITY;
-	cfg.a[Y].polarity = Y_POLARITY;
-	cfg.a[Z].polarity = Z_POLARITY;
-	cfg.a[A].polarity = A_POLARITY;
-
-	cfg.a[X].limit_enable = X_LIMIT_ENABLE;
-	cfg.a[Y].limit_enable = Y_LIMIT_ENABLE;
-	cfg.a[Z].limit_enable = Z_LIMIT_ENABLE;
-	cfg.a[A].limit_enable = A_LIMIT_ENABLE;
-
-	cfg.a[X].low_pwr_idle = X_LOW_POWER_IDLE;
-	cfg.a[Y].low_pwr_idle = Y_LOW_POWER_IDLE;
-	cfg.a[Z].low_pwr_idle = Z_LOW_POWER_IDLE;
-	cfg.a[A].low_pwr_idle = A_LOW_POWER_IDLE;
-
-	_cfg_computed();		// generate computed values from the above
-}
-
-/* 
- * _cfg_computed() - helper function to generate computed config values 
- *	call this every time you change any configs
- */
-
-void _cfg_computed() 
-{
-	// = 360 / (degree_per_step/microstep) / mm_per_rev
-	for (uint8_t i=X; i<=A; i++) {
-		cfg.a[i].steps_per_mm = (360 / (cfg.a[i].degree_per_step / 
-										cfg.a[i].microstep)) / 
-										cfg.a[i].mm_per_rev;
-	}
-	// max_feed_rate = 60 * feed_steps_sec / (360/degree_per_step/mm_per_rev)
-	cfg.max_feed_rate = ((60 * (double)cfg.a[X].feed_steps_sec) /
-						 (360/cfg.a[X].degree_per_step/cfg.a[X].mm_per_rev));
-
-	// max_seek_rate = 60 * seek_steps_sec / (360/degree_per_step/mm_per_rev)
-	cfg.max_seek_rate = ((60 * (double)cfg.a[X].seek_steps_sec) /
-						 (360/cfg.a[X].degree_per_step/cfg.a[X].mm_per_rev));
-}
-
-/* 
  * cfg_read() - read config data from EEPROM into the config struct 
  */
 
@@ -615,19 +489,38 @@ int cfg_read()
 }
 
 /* 
- * cfg_write() - write config struct to program ROM 
+ * _cfg_write_record() - write config record to EEPROM 
+ *
+ * Write recrods by the following index scheme:
+ *
+ *	Record address for non-axis values:
+ *
+ *		token * CFG_RECORD_LEN
+ *
+ *	Record address for axis values:
+ *
+ *		((((token-CFG_AXIS_BASE)*4) + axis value) + CFG_AXIS_BASE) * CFG_RECORD_LEN
  */
 
-void cfg_write()
+void _cfg_write_record()
 {
+	uint16_t address;
+
+	if (cp.param < CFG_AXIS_BASE) {
+		address = cp.param * CFG_RECORD_LEN;
+	} else {
+		address = ((((cp.param-CFG_AXIS_BASE)*4) + cp.axis) + CFG_AXIS_BASE) * CFG_RECORD_LEN;
+	}
+
 //	eeprom_put_char(0, CONFIG_VERSION);
 //	memcpy_to_eeprom_with_checksum(0, (char*)&cfg, sizeof(struct cfgStructGlobal));
 }
 
+
 /* 
  * cfg_test() - generate some strings for the parser and test EEPROM read and write 
  */
-
+/*
 char configs_P[] PROGMEM = "\
 mm_per_arc_segment = 0.2 \n\
 x_seek_steps_sec = 1000 \n\
@@ -644,40 +537,13 @@ x_mm_travel	= 410 \n\
 z_microstep	= 2	 \n\
 x_low_pwr_idle = 0 \n\
 x_limit_enable=	0";
+*/
 
-void cfg_test()
-{
-	char text[40];
-	int i = 0;					// ROM buffer index (int allows for > 256 chars)
-	int j = 0;					// RAM buffer index (text)
-	char c;
-
-	// feed the parser one line at a time
-	while (TRUE) {
-		c = pgm_read_byte(&configs_P[i++]);
-		if (c == 0) {									// last line
-			text[j] = 0;
-			cfg_parse(text);
-			break;			
-		} else if ((c == '\r') || (c == '\n') || (c == ';')) {	// line complete
-			text[j] = 0;							// terminate the string
-			cfg_parse(text);						// parse line 
-			j = 0;			
-		} else if (c <= ' ') { 							// toss whitespace & ctrls
-		} else {
-			text[j++] = c;							// put characters into line
-		}
-	}
-}
-
-/* 
- * cfg_test2() - generate some strings for the parser and test EEPROM read and write 
- */
-
-char configs2_P[] PROGMEM = "\
+char configs_P[] PROGMEM = "\
+xse1891\n\
 xseek1892\n";
 
-void cfg_test2()
+void cfg_test()
 {
 //	char text[40];
 	int i = 0;					// ROM buffer index (int allows for > 256 chars)
@@ -686,14 +552,14 @@ void cfg_test2()
 
 	// feed the parser one line at a time
 	while (TRUE) {
-		c = pgm_read_byte(&configs2_P[i++]);
+		c = pgm_read_byte(&configs_P[i++]);
 		if (c == 0) {								// last line
 			cp.block[j] = 0;
-			cfg_parse2(cp.block);
+			cfg_parse(cp.block);
 			break;			
 		} else if (c == '\n') {						// line complete
 			cp.block[j] = 0;							// terminate the string
-			cfg_parse2(cp.block);						// parse line 
+			cfg_parse(cp.block);						// parse line 
 			j = 0;			
 		} else {
 			cp.block[j++] = c;							// put characters into line
