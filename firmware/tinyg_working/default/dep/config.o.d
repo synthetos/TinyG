@@ -16,7 +16,7 @@ config.o: ../config.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../tinyg.h \
-  ../config.h ../stepper.h ../hardware.h ../xmega_nvm.h
+  ../config.h ../stepper.h ../hardware.h ../xmega_eeprom.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -60,4 +60,4 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../hardware.h:
 
-../xmega_nvm.h:
+../xmega_eeprom.h:

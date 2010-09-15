@@ -13,7 +13,7 @@ xio_eep.o: ../xio_eep.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../xio.h \
-  ../xio_file.h ../xio_usart.h ../xmega_nvm.h
+  ../xio_file.h ../xio_usart.h ../xmega_eeprom.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -49,4 +49,4 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../xio_usart.h:
 
-../xmega_nvm.h:
+../xmega_eeprom.h:

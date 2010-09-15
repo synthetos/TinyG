@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <avr/pgmspace.h>
 #include "xio.h"						// includes for all devices are in here
-#include "xmega_nvm.h"
+#include "xmega_eeprom.h"
 
 #define EEP ds[XIO_DEV_EEP]				// device struct accessor
 #define EEPf fs[XIO_DEV_EEP_OFFSET]		// file extended struct accessor
@@ -53,7 +53,6 @@ struct __file * xio_open_eep(const prog_char *addr)
 	EEPf.wr_offset = 0;						// initialize write buffer pointer
 	EEPf.max_offset = EEP_ADDR_MAX;			// initialize write buffer pointer
 
-//	EEPROM_EnableMapping();					// EEPROM must be memory mapped
 	EEPROM_DisableMapping();				// EEPROM must be IO mapped
 	return(EEP.fdev);						// return pointer to the fdev stream
 }
@@ -106,20 +105,17 @@ int xio_putc_eep(const char c, struct __file *stream)
 }
 
 /* 
- *	xio_puts_eep() - write string to EEPROM
+ *	xio_puts_eep() - write terminated string to EEPROM
  */
-/*
+
 int xio_puts_eep(const char *buf, struct __file *stream)
 {
-	char c;
-	uint8_t i=0;
-
-	while ((c = buf[i++]) != NUL) {
-		xio_putc_eep(c, stream);
-	}
+/*
+	uint16_t address = EEP_ADDR_BASE + (uint16_t)EEPf.filebase_P + EEPf.wr_offset;
+	EEPf.wr_offset = (uint32_t)EEPROM_WriteString(address, buf, TRUE);
+*/
 	return (XIO_OK);
 }
-*/
 
 /*
  *  xio_getc_eep() - read a character from program memory device
