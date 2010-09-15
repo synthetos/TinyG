@@ -115,6 +115,7 @@
 #include "hardware.h"
 #include "xmega_init.h"
 #include "xmega_interrupts.h"
+#include "xmega_eeprom.h"
 #include "xio.h"
 #include "tinyg.h"
 #include "controller.h"
@@ -158,6 +159,7 @@ int main(void)
 	tg_alive();					// (LAST) announce things are online
 
 //	xio_tests();
+	EEPROM_test();
 //	cfg_test();					// test config and/or EEPROM writes
 
 // Debug help: Pre-load the USB RX (input) buffer with some test strings

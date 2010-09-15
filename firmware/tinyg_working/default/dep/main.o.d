@@ -14,8 +14,8 @@ main.o: ../main.c c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/util/delay.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h \
-  ../hardware.h ../xmega_init.h ../xmega_interrupts.h ../xio.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h \
+  ../hardware.h ../xmega_init.h ../xmega_interrupts.h ../xmega_eeprom.h \
+  ../xio.h c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h \
   ../xio_file.h ../xio_usart.h ../tinyg.h ../controller.h ../network.h \
   ../config.h ../stepper.h ../limit_switches.h ../move_buffer.h \
   ../motion_control.h \
@@ -59,6 +59,8 @@ c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h:
 ../xmega_init.h:
 
 ../xmega_interrupts.h:
+
+../xmega_eeprom.h:
 
 ../xio.h:
 

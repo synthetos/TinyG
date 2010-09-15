@@ -26,7 +26,7 @@
 #include "config.h"
 #include "stepper.h"
 #include "hardware.h"
-#include "xmega_nvm.h"
+#include "xmega_eeprom.h"
 
 // prototypes for local helper functions
 void _cfg_computed(void); 
@@ -545,24 +545,11 @@ xseek1892\n";
 
 void cfg_test()
 {
+/*
 //	char text[40];
 	int i = 0;					// ROM buffer index (int allows for > 256 chars)
 	int j = 0;					// RAM buffer index (text)
 	char c;
-
-	// test a write that fits in page 0 - not terminated
-//	EEPROM_WriteString(0x00, "Test String for EEPROM Write32\n", FALSE);
-
-	// test a write that fits in page 1 - terminated
-//	EEPROM_WriteString(0x20, "Test String for EEPROM Write32\n", TRUE);
-
-	// test a write that spans page 0 and page 1 - terminated
-	EEPROM_WriteString(0x10, "Test String for EEPROM Write32\n", TRUE);
-
-	// test a write that spans pages 4 through 6 - terminated
-	EEPROM_WriteString(0x8C, "Test String for EEPROM Write with a somewhat longer string\n", FALSE);
-
-/*
 
 	// feed the parser one line at a time
 	while (TRUE) {
@@ -581,4 +568,5 @@ void cfg_test()
 	}
 */
 }
+
 
