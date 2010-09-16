@@ -28,7 +28,8 @@ void cfg_init(void);			// initialize config struct by reading from EEPROM
 void cfg_reset(void);			// reset config values to defaults
 int cfg_parse(char *text);		// parse config record
 int cfg_read(void);				// read config record from EEPROM
-void cfg_dump(void);
+void cfg_show(void);
+void cfg_help(void);
 void cfg_test(void);			// unit tests for config routines
 
 /*
@@ -52,7 +53,6 @@ struct cfgStructAxis {
 
 struct cfgStructGlobal {
 	uint8_t config_version;		// config format version. starts at 100
-	uint8_t status;				// interpreter status
  // model configuration
 	double mm_per_arc_segment;	// arc drawing resolution in millimeters per segment
 	double max_feed_rate;		// mm of trav in mm/min (COMPUTED)

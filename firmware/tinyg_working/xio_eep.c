@@ -106,14 +106,15 @@ int xio_putc_eep(const char c, struct __file *stream)
 
 /* 
  *	xio_puts_eep() - write terminated string to EEPROM
+ *
+ *	The main difference between this routine and the underlying driver routine
+ *	EEPROM_WriteString() is that puts_eep() keeps track of the file location.
  */
 
-int xio_puts_eep(const char *buf, struct __file *stream)
+int xio_puts_eep(char *buf, struct __file *stream)
 {
-/*
 	uint16_t address = EEP_ADDR_BASE + (uint16_t)EEPf.filebase_P + EEPf.wr_offset;
-	EEPf.wr_offset = (uint32_t)EEPROM_WriteString(address, buf, TRUE);
-*/
+	EEPf.wr_offset = (uint16_t)EEPROM_WriteString(address, buf, TRUE);
 	return (XIO_OK);
 }
 
@@ -149,7 +150,7 @@ int xio_getc_eep(struct __file *stream)
 		return (_FDEV_EOF);
 	}
 	uint16_t address = EEP_ADDR_BASE + (uint16_t)EEPf.filebase_P + EEPf.rd_offset;
-	if ((EEP.c = EEPROM_ReadByte(address)) == NUL) {
+	if ((EEP.c = EEPROM_ReadChar(address)) == NUL) {
 		EEP.flags |= XIO_FLAG_EOF_bm;
 	}
 	++EEPf.rd_offset;
@@ -174,7 +175,7 @@ int xio_getc_eep(struct __file *stream)
 }
 
 /* 
- *	xio_gets_eep() - main loop task for program memory device
+ *	xio_gets_eep() - get string from EEPROM device
  *
  *	Non-blocking, run-to-completion return a line from memory
  *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
