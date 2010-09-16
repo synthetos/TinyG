@@ -60,9 +60,14 @@
 #ifndef MAPPED_EEPROM_START
 #define MAPPED_EEPROM_START 0x1000
 #endif
-
 #define EEPROM_PAGESIZE 32
-#define MAPPED_SIZE 0x0FFF		// 4K for 256 and 192's. Others are 2K
+
+//#define MAPPED_SIZE 0x0FFF // unused	// 4K for 256 and 192's. Others are 2K
+
+// added these definitions to clean things up a bit in the Atmel code
+#define EEPROM_BYTE_ADDR_MASK_gm 0x1F	// range of valid byte addrs in page
+#define EEPROM_ADDR1_MASK_gm 0x0F		// 4K = 0x0F, 2K = 0x07
+
 #define EEPROM(_pageAddr, _byteAddr) \
 	((uint8_t *) MAPPED_EEPROM_START)[_pageAddr*EEPROM_PAGESIZE + _byteAddr]
 
@@ -82,8 +87,13 @@ void EEPROM_ErasePage( uint8_t pageAddress );
 void EEPROM_SplitWritePage( uint8_t pageAddr );
 void EEPROM_EraseAll( void );
 
+/* Some MACRO Definitions */
 
-/* MACRO Definitions */
+// Note: the ByPage macros rely on pagesize = 32, and are as yet untested
+#define EEPROM_ReadChar (char)EEPROM_ReadByte
+#define EEPROM_ReadByteByPage(p,b) EEPROM_ReadByte( (p<<5) | (b) )
+#define EEPROM_ReadCharByPage(p,b) (char)EEPROM_ReadByte( (p<<5) | (b) )
+#define EEPROM_WriteByteByPage(p,b,v) EEPROM_ReadByte( ((p<<5) | (b)), v )
 
 #ifndef max
 #define max(a, b) (((a)>(b))?(a):(b))

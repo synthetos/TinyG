@@ -158,9 +158,11 @@ int main(void)
 
 	tg_alive();					// (LAST) announce things are online
 
+#ifdef __UNIT_TESTS				// call unit tests from here
 //	xio_tests();
-	EEPROM_test();
-//	cfg_test();					// test config and/or EEPROM writes
+//	EEPROM_test();				// test EEPROM writes
+	cfg_test();					// test config functions
+#endif
 
 // Debug help: Pre-load the USB RX (input) buffer with some test strings
 // Be mindful of the char limit on the RX_BUFFER_SIZE (circular buffer)

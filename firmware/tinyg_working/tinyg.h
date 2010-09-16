@@ -29,6 +29,13 @@
 #define TRUE 1
 #endif
 
+#ifndef max
+#define max(a, b) (((a)>(b))?(a):(b))
+#endif
+#ifndef min
+#define min(a, b) (((a)<(b))?(a):(b))
+#endif
+
 // Operating Mode: (chose only one)
 #define __NORMAL_MODE					// normal operation - receive from USB
 //#define __RELAY_MODE					// receive from USB, relay to rs485
@@ -111,8 +118,9 @@ typedef int (*fptr_int_char_p) (char *b);// returns int, character pointer (line
 #define DEFAULT_SOURCE XIO_DEV_USB		// default source device
 #endif
 
+#define __UNIT_TESTS		// uncomment to compile the unit tests into the code
+//#define __DEBUG			// uncomment to enable debug logging
 //#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
-//#define __DEBUG TRUE		// set debug mode (comment out to undefine)
 //#define __FAKE_STEPPERS	// disables stepper ISR load for faster debugging
 
 #endif
