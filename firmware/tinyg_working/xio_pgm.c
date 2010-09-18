@@ -31,7 +31,7 @@
 void xio_init_pgm()
 {
 	// Program memory file device setup
-	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_setflags_pgm, xio_putc_pgm, xio_getc_pgm, xio_gets_pgm);
+	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_cntrl_pgm, xio_putc_pgm, xio_getc_pgm, xio_gets_pgm);
 	xio_init_file(XIO_DEV_PGM, XIO_DEV_PGM_OFFSET, PGM_INIT_bm);
 }
 
@@ -54,12 +54,12 @@ struct __file * xio_open_pgm(const prog_char *addr)
 }
 
 /*
- *	xio_setflags_pgm() - check and set control flags for device
+ *	xio_cntrl_pgm() - check and set control flags for device
  */
 
-int xio_setflags_pgm(const uint16_t control)
+int xio_cntrl_pgm(const uint16_t control)
 {
-	xio_setflags(XIO_DEV_PGM, control);
+	xio_cntrl(XIO_DEV_PGM, control);
 	return (XIO_OK);									// for now it's always OK
 }
 

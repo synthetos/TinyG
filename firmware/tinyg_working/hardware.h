@@ -68,31 +68,14 @@ enum cfgPortBits {						// motor control port bit positions
 #define MIN_LIMIT_BIT_bm		(1<<MIN_LIMIT_BIT_bp)
 #define MAX_LIMIT_BIT_bm		(1<<MAX_LIMIT_BIT_bp) // motor control port bit masks
 
+/*
+ * BASELINE HARDWARE CONFIGURATION VALUES (overridden by EEPROM values)
+ */
+
+#define MM_PER_ARC_SEGMENT 0.02
+
 /* Microstep defaults - chose a value on the top line */
 #define MICROSTEPS 8	// Choose one of: 8, 4, 2, 1
-
-#if (MICROSTEPS == 8)
-#define MICROSTEP_BITS_bm (MICROSTEP_BIT_1_bm | MICROSTEP_BIT_0_bm)
-#endif
-#if (MICROSTEPS == 4)
-#define MICROSTEP_BITS_bm (MICROSTEP_BIT_1_bm)
-#endif
-#if (MICROSTEPS == 2)
-#define MICROSTEP_BITS_bm (MICROSTEP_BIT_0_bm)
-#endif
-#if (MICROSTEPS == 1)
-#define MICROSTEP_BITS_bm (0)
-#endif
-
-// not needed but could be useful later
-//#define MICROSTEP_EIGHTH_bm (MICROSTEP_BIT_1_bm | MICROSTEP_BIT_0_bm)
-//#define MICROSTEP_QUARTER_bm (MICROSTEP_BIT_1_bm)
-//#define MICROSTEP_HALF_bm (MICROSTEP_BIT_0_bm)
-//#define MICROSTEP_FULL_bm (0)
-
-/*
- * HARDWARE CONFIGURATION DEFAULT VALUES (used when resetting eeprom-settings)
- */
 
 #define X_MICROSTEPS MICROSTEPS			// microsteps 
 #define Y_MICROSTEPS MICROSTEPS			// (stepper driver configuration parameter)
@@ -160,5 +143,27 @@ enum cfgPortBits {						// motor control port bit positions
 #define Y_LOW_POWER_IDLE TRUE			// (robot parameter)
 #define Z_LOW_POWER_IDLE TRUE
 #define A_LOW_POWER_IDLE TRUE
+
+
+// Some derived values
+
+#if (MICROSTEPS == 8)
+#define MICROSTEP_BITS_bm (MICROSTEP_BIT_1_bm | MICROSTEP_BIT_0_bm)
+#endif
+#if (MICROSTEPS == 4)
+#define MICROSTEP_BITS_bm (MICROSTEP_BIT_1_bm)
+#endif
+#if (MICROSTEPS == 2)
+#define MICROSTEP_BITS_bm (MICROSTEP_BIT_0_bm)
+#endif
+#if (MICROSTEPS == 1)
+#define MICROSTEP_BITS_bm (0)
+#endif
+
+// not needed but could be useful later
+//#define MICROSTEP_EIGHTH_bm (MICROSTEP_BIT_1_bm | MICROSTEP_BIT_0_bm)
+//#define MICROSTEP_QUARTER_bm (MICROSTEP_BIT_1_bm)
+//#define MICROSTEP_HALF_bm (MICROSTEP_BIT_0_bm)
+//#define MICROSTEP_FULL_bm (0)
 
 #endif

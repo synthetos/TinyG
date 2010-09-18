@@ -160,16 +160,16 @@ int main(void)
 
 #ifdef __UNIT_TESTS				// call unit tests from here
 //	xio_tests();
-//	EEPROM_test();				// test EEPROM writes
-	cfg_test();					// test config functions
+//	EEPROM_tests();				// unit test EEPROM function
+	cfg_tests();				// unit test config functions
 #endif
 
 // Debug help: Pre-load the USB RX (input) buffer with some test strings
 // Be mindful of the char limit on the RX_BUFFER_SIZE (circular buffer)
 
 //	xio_queue_RX_char_usb(ETX);			// send control-c (kill)
-//	xio_queue_RX_string_usb("R\n");		// run a file
-//	xio_queue_RX_string_usb("?\n");		// dump config
+//	xio_queue_RX_string_usb("R\n");		// run a file - select on controller.c
+	xio_queue_RX_string_usb("?\n");		// enter config mode and dump config
 
 //	xio_queue_RX_string_usb("g1 f450 x10 y13\n");
 
@@ -182,7 +182,7 @@ int main(void)
 //	xio_queue_RX_string_usb("g0 x-10 (MSGtest)\n");
 
 //	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
-	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
+//	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
 //	xio_queue_RX_string_usb("g0 x0 y0 z0\n");
 
 //	xio_queue_RX_char_usb(XOFF);		// send control-s (pause)
@@ -204,5 +204,4 @@ int main(void)
 		tg_receiver();	// this mode executes gcode blocks received via RS485
 	}
 #endif
-
 }
