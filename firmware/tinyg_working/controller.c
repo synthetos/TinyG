@@ -464,7 +464,6 @@ int _tg_test_file()
 }
 
 
-
 /* FURTHER NOTES
 
 ---- Generalized Serial Handler / Parser ----

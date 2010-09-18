@@ -73,6 +73,13 @@
 
 /****** Functions added for TinyG ******/
 
+// workaround for EEPROM not working in Simulator2
+//#define __TEST_EEPROM_WRITE		// comment out for production. 
+
+#ifdef __TEST_EEPROM_WRITE
+	uint8_t testbuffer[32];	// fake out the page buffer
+#endif
+
 /* 
  * EEPROM_WriteString() - write string to EEPROM; may span multiple pages
  *
@@ -122,7 +129,6 @@ uint16_t EEPROM_WriteString(uint16_t address, char *string, uint8_t terminate)
 	uint8_t endpage;		// ending page number  (0 - 127)
 	uint8_t byteidx;		// index into page
 	uint8_t byteend;		// ending byte number in page
-//	uint8_t test[32];		// ++++ test only - comment out for real operation
 
 	// initialize variables
 	curaddr = address;
@@ -144,20 +150,65 @@ uint16_t EEPROM_WriteString(uint16_t address, char *string, uint8_t terminate)
 		EEPROM_FlushBuffer();	// ensure no unintentional data is written
 		NVM.CMD = NVM_CMD_LOAD_EEPROM_BUFFER_gc; // Page Load command
 		while (byteidx <= byteend) {
+#ifdef __TEST_EEPROM_WRITE
+			NVM.ADDR0 = byteidx;
+			testbuffer[byteidx++] = string[i++];
+#else
 			// use EEPROM (the real code)
 			NVM.ADDR0 = byteidx++;	// set buffer location for data
 			NVM.DATA0 = string[i++];// writing DATA0 triggers write to buffer
-
-			// TEST CODE: comment out above 2 lines; uncomment these 2 lines
-			// Also comment/uncomment test[32] in the struct
-//			NVM.ADDR0 = byteidx;
-//			test[byteidx++] = string[i++];
+#endif
 		}
 		// run EEPROM Atomic Write (Erase&Write) command.
 		NVM.CMD = NVM_CMD_ERASE_WRITE_EEPROM_PAGE_gc;	// load command
 		NVM_EXEC();	//write the protection signature and execute command
 	}
 	return (curaddr);
+}
+
+/* 
+ * EEPROM_ReadString() - read string from EEPROM; may span multiple pages
+ *
+ *	This function reads a character string to IO mapped EEPROM. 
+ *	If memory mapped EEPROM is enabled this function will not work. 
+ *	A string may span multiple EEPROM pages. 
+ *
+ *		address		starting address of string in EEPROM space
+ *		buf			buffer to read string into
+ *		max_len		cutoff string and terminate at this length 
+ *		return		next address past string termination
+ */
+
+uint16_t EEPROM_ReadString(uint16_t address, char *buf, uint16_t max_len)
+{
+#ifdef __TEST_EEPROM_WRITE
+	uint8_t j = address & 0x1F;
+#endif
+	uint16_t local_addr = address;
+	uint16_t i = 0;
+
+	for (i = 0; i < max_len; i++) {
+		NVM.ADDR0 = local_addr & 0xFF;		// set read address
+		NVM.ADDR1 = (local_addr++ >> 8) & EEPROM_ADDR1_MASK_gm;
+		NVM.ADDR2 = 0x00;
+
+		EEPROM_WaitForNVM();				// Wait until NVM is not busy
+		NVM.CMD = NVM_CMD_READ_EEPROM_gc;	// issue EEPROM Read command
+		NVM_EXEC();
+#ifdef __TEST_EEPROM_WRITE
+		if (!(buf[i] = testbuffer[j++])) {
+			break;
+		}
+#else
+		if (!(buf[i] = NVM.DATA0)) {
+			break;
+		}		
+#endif
+	}
+	if (i == max_len) {		// null terinate the buffer overflow case
+		buf[i] = 0;
+	}
+	return local_addr;
 }
 
 /****** Functions from Atmel eeprom_driver.c (and some derived from them) ******/
@@ -393,7 +444,7 @@ inline void EEPROM_EraseAll( void )
 #define TRUE (1)
 #endif
 
-void EEPROM_test()
+void EEPROM_tests()
 {
 	// write fits easily in page 0, starts at 0, not terminated (return 0x06)
 	EEPROM_WriteString(0x00, "0123\n", FALSE);

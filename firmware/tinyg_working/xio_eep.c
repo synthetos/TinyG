@@ -32,8 +32,8 @@
 
 void xio_init_eep()
 {
-	// Program memory file device setup
-	xio_init_dev(XIO_DEV_EEP, xio_open_eep, xio_setflags_eep, xio_putc_eep, xio_getc_eep, xio_gets_eep);
+	// EEPROM file device setup
+	xio_init_dev(XIO_DEV_EEP, xio_open_eep, xio_cntrl_eep, xio_putc_eep, xio_getc_eep, xio_gets_eep);
 	xio_init_file(XIO_DEV_EEP, XIO_DEV_EEP_OFFSET, EEP_INIT_bm);
 }
 
@@ -49,6 +49,7 @@ struct __file * xio_open_eep(const prog_char *addr)
 	EEP.flags &= XIO_FLAG_RESET_gm;			// reset flag signaling bits
 	EEP.sig = 0;							// reset signal
 	EEPf.filebase_P = (PROGMEM char *)addr;	// might want to range check this
+//	EEPf.filebase_P = (char *)addr;			// might want to range check this
 	EEPf.rd_offset = 0;						// initialize read buffer pointer
 	EEPf.wr_offset = 0;						// initialize write buffer pointer
 	EEPf.max_offset = EEP_ADDR_MAX;			// initialize write buffer pointer
@@ -83,12 +84,12 @@ int xio_rewind_eep()
 }
 
 /*
- *	xio_setflags_eep() - check and set control flags for device
+ *	xio_cntrl_eep() - check and set control flags for device
  */
 
-int xio_setflags_eep(const uint16_t control)
+int xio_cntrl_eep(const uint16_t control)
 {
-	xio_setflags(XIO_DEV_EEP, control);
+	xio_cntrl(XIO_DEV_EEP, control);
 	return (XIO_OK);									// for now it's always OK
 }
 

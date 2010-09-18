@@ -1,20 +1,21 @@
 /*
- * xio_usb.c	- FTDI USB device driver for xmega family
+ * xio_usart.c	- General purpose USART device driver for xmega family
  * 				- works with avr-gcc stdio library
  *
  * Part of TinyG project
  * Copyright (c) 2010 Alden S. Hart, Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation, 
- * either version 3 of the License, or (at your option) any later version.
+ * TinyG is free software: you can redistribute it and/or modify it under the 
+ * terms of the GNU General Public License as published by the Free Software 
+ * Foundation, either version 3 of the License, or (at your option) any later 
+ * version.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
- * PURPOSE. See the GNU General Public License for more details.
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY 
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for details.
  *
- * You should have received a copy of the GNU General Public License along with TinyG  
- * If not, see <http://www.gnu->org/licenses/>.
+ * You should have received a copy of the GNU General Public License along 
+ * with TinyG  If not, see <http://www.gnu.org/licenses/>.
  *
  * ---- Non-threadsafe code ----
  *
@@ -98,7 +99,7 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 	dx->port = (struct PORT_struct *)port_addr;		// bind PORT
 
 	// set flags
-	xio_setflags(dev, control);		// generic setflags - doesn't validate flags
+	xio_cntrl(dev, control);		// generic setflags - doesn't validate flags
 
 	// setup internal RX/TX buffers
 	dx->rx_buf_head = 1;			// can't use location 0 in circular buffer
