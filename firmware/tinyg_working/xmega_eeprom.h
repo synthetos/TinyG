@@ -73,7 +73,8 @@
 
 /* function prototypes for TinyG added functions */
 uint16_t EEPROM_WriteString(uint16_t address, char *string, uint8_t terminate);
-void EEPROM_test(void);
+uint16_t EEPROM_ReadString(uint16_t address, char *buf, uint16_t max_len);
+void EEPROM_tests(void);
 
 /* Function prototypes for Atmel and Atmel-derived functions */
 uint8_t EEPROM_ReadByte(uint16_t address);

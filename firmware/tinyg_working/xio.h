@@ -244,8 +244,8 @@ struct xioDEVICE {						// common device struct (one per device)
 	uint8_t len;						// chars read so far (buf array index)
 	uint8_t size;						// test buffer length (dynamic)
 	FILE *(*x_open)(const prog_char *addr);// device open routine
-	int (*x_setflags)(const uint16_t control);// set device control flags
-	int (*x_putc)(char, struct __file *);	// write char (stdio compatible)
+	int (*x_cntrl)(const uint16_t control);// device control flags
+	int (*x_putc)(char, struct __file *);// write char (stdio compatible)
 	int (*x_getc)(struct __file *);		// read char (stdio compatible)
 	int (*x_gets)(char *buf, const uint8_t size);// specialized line reader
 
@@ -277,7 +277,7 @@ void xio_init_eep(void);
 //void xio_init_tbl(void);
 //void xio_init_ram(void);
 
-int xio_setflags(const uint8_t dev, const uint16_t control);
+int xio_cntrl(const uint8_t dev, const uint16_t control);
 void xio_set_stdin(const uint8_t dev);
 void xio_set_stdout(const uint8_t dev);
 void xio_set_stderr(const uint8_t dev);

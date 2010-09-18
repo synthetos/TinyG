@@ -44,8 +44,7 @@
 
 // Global Settings
 #define TINYG_VERSION "build 209"
-#define EEPROM_DATA_VERSION 100	// Used to migrate data in firmware upgrades
-#define MM_PER_ARC_SEGMENT 0.02
+
 
 // Constants
 #define ONE_MINUTE_OF_MICROSECONDS 60000000.0	// from GRBL - Thanks Simen!

@@ -16,7 +16,8 @@ config.o: ../config.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../tinyg.h \
-  ../gcode.h ../config.h ../stepper.h ../hardware.h ../xmega_eeprom.h
+  ../xio.h ../xio_file.h ../xio_usart.h ../gcode.h ../config.h \
+  ../stepper.h ../hardware.h ../controller.h ../xmega_eeprom.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -54,6 +55,12 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../tinyg.h:
 
+../xio.h:
+
+../xio_file.h:
+
+../xio_usart.h:
+
 ../gcode.h:
 
 ../config.h:
@@ -61,5 +68,7 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 ../stepper.h:
 
 ../hardware.h:
+
+../controller.h:
 
 ../xmega_eeprom.h:

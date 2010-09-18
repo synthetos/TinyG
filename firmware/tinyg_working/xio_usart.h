@@ -163,7 +163,7 @@ void xio_queue_RX_string_usart(const uint8_t dev, const char *buf);
 
 // RS485 specific functions
 FILE * xio_open_rs485();						// returns stdio fdev handle (note)
-int xio_setflags_rs485(const uint16_t control);	// set control flags w/validation
+int xio_cntrl_rs485(const uint16_t control);	// set control flags w/validation
 int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
 int xio_getc_rs485(FILE *stream);				// stdio compatible get character
 int xio_gets_rs485(char *buf, const uint8_t size);// non-blocking read line function
@@ -172,7 +172,7 @@ void xio_queue_RX_string_rs485(const char *buf);// simulate rec'ving a whole str
 
 // USB specific functions
 FILE * xio_open_usb();							// returns stdio fdev handle
-int xio_setflags_usb(const uint16_t control);	// set control flags w/validation
+int xio_cntrl_usb(const uint16_t control);		// set control flags w/validation
 int xio_putc_usb(const char c, FILE *stream);	// stdio compatible put character
 int xio_getc_usb(FILE *stream);					// stdio compatible get character
 int xio_gets_usb(char *buf, const uint8_t size);// non-blocking read line function

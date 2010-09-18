@@ -106,11 +106,11 @@ void xio_init_stdio()
  */
 
 void xio_init_dev(uint8_t dev, 					// device number
-	FILE *(*x_open)(const prog_char *addr),	// device open routine
-	int (*x_setflags)(const uint16_t control),// set device control flags
-	int (*x_putc)(char, struct __file *),		// write char (stdio compatible)
-	int (*x_getc)(struct __file *),			// read char (stdio compatible)
-	int (*x_gets)(char *buf, uint8_t size)	// specialized line reader
+	FILE *(*x_open)(const prog_char *addr),		// device open routine
+	int (*x_cntrl)(const uint16_t control),		// device control flags
+	int (*x_putc)(char, struct __file *),		// write char (stdio compat)
+	int (*x_getc)(struct __file *),				// read char (stdio compat)
+	int (*x_gets)(char *buf, uint8_t size)		// specialized line reader
 	) 
 {
 	// clear device struct
@@ -118,7 +118,7 @@ void xio_init_dev(uint8_t dev, 					// device number
 
 	// bind functions
 	ds[dev].x_open = x_open;	
-	ds[dev].x_setflags = x_setflags;
+	ds[dev].x_cntrl = x_cntrl;
 	ds[dev].x_putc = x_putc;
 	ds[dev].x_getc = x_getc;
 	ds[dev].x_gets = x_gets;
@@ -139,14 +139,14 @@ void xio_init_file(const uint8_t dev, const uint8_t offset, const uint16_t contr
 	// might be useful to sanity check the control bits before calling set flags
 	//	- RD and BLOCK are mandatory
 	// 	- WR and NOBLOCK are restricted
-	xio_setflags(dev, control);
+	xio_cntrl(dev, control);
 }
 
 /*
- * xio_setflags()
+ * xio_cntrl()
  */
 
-int xio_setflags(const uint8_t dev, const uint16_t control)
+int xio_cntrl(const uint8_t dev, const uint16_t control)
 {
 	struct xioDEVICE *d = &ds[dev];
 
@@ -254,6 +254,8 @@ int xio_gets(const uint8_t dev, char *buf, const uint8_t size)
 	}		
 }
 
+#ifdef __UNIT_TESTS
+
 /*
  * xio_tests() - a collection of tests for xio
  */
@@ -271,3 +273,5 @@ void xio_tests()
 	xio_getc_eep(fdev);
 	xio_getc_eep(fdev);
 }
+
+#endif

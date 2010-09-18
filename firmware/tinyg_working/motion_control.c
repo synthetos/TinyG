@@ -330,7 +330,8 @@ int mc_arc(double theta, 			// starting angle
 	ma.axis_linear = axis_linear;
 	ma.mm_of_travel = hypot(ma.angular_travel*ma.radius, labs(ma.linear_travel));
 	
-	if (ma.mm_of_travel < MM_PER_ARC_SEGMENT) { 	// too short to draw
+//	if (ma.mm_of_travel < MM_PER_ARC_SEGMENT) { 	// too short to draw
+	if (ma.mm_of_travel < cfg.mm_per_arc_segment) { // too short to draw
 		return (TG_ARC_SPECIFICATION_ERROR);
 	}
 	ma.segments = ceil(ma.mm_of_travel/cfg.mm_per_arc_segment);
