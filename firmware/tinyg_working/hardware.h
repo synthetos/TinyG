@@ -34,9 +34,6 @@ void hw_init(void);						// master hardware init
 //#define __CLOCK_EXTERNAL_8MHZ	TRUE	// uses PLL to provide 32 MHz system clock
 #define __CLOCK_EXTERNAL_16MHZ TRUE		// uses PLL to provide 32 MHz system clock
 
-//#define __RILEY TRUE					// set RILEY mode (comment out to undefine)
-
-
 /* Stepper Ports \- motor port bits are:
  *	b7	(in) max limit switch  			// alt: (out) spindle direction on A axis
  *	b6	(in) min limit switch			// alt: (out) spindle enable on A axis
@@ -71,6 +68,15 @@ enum cfgPortBits {						// motor control port bit positions
 /*
  * BASELINE HARDWARE CONFIGURATION VALUES (overridden by EEPROM values)
  */
+
+/* Gcode defaults */
+#define GCODE_PLANE	CANON_PLANE_XY
+#define GCODE_UNITS 1					// mm
+#define HOMING_MODE 0					// unsupported
+#define SPINDLE_SPEED 1500
+#define GCODE_TOOL 1
+
+/* non-axis machine defaults */
 
 #define MM_PER_ARC_SEGMENT 0.02
 
