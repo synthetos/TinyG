@@ -4,217 +4,31 @@
  *
  * Copyright (c) 2010 Alden S. Hart, Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it under the 
- * terms of the GNU General Public License as published by the Free Software 
- * Foundation, either version 3 of the License, or (at your option) any later 
- * version.
+ * TinyG is free software: you can redistribute it and/or modify it under 
+ * the terms of the GNU General Public License as published by the Free 
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for details.
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT 
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
+ * for details.
  *
- * You should have received a copy of the GNU General Public License along 
- * with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License 
+ * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* How it works:
- *
- *	'C' enter config mode from control mode
- *	'Q' quit config mode (return to control mode)
- *	'?' dump config to console
- *	'H' show help screen
- *
- *	Configuration parameters are set one line at a time.
- *	Whitespace is ignored and not used for delimiting.
- *	Non-alpha and non numeric characters are ignored (except newline).
- *	Parameter strings are case insensitive. 
- *	Tags can have extra letters for readability.
- *	Comments are in parentheses and cause the rest of the line to be ignored.
- *
- *	Per-axis parameters have an axis letter followed by a 2 letter tag 
- *	followed by the parameter value. Examples:
- *		X SE 1500 (set X axis max seek rate to 1500 steps per second)
- *		zseek1800.99 (set Z axis max seek rate to 1800 steps per second)
- *
- *	General parameters are formatted as needed, and are explained separately
- *		AR 0.01  	(arc steps per mm)
- *
- *	------ Supported parameters ------
- *
- * 	In the examples below 'X' means any supported axis: X, Y, Z or A.
- *	[nnnn] is the range or list of values supported. The []'s are not typed.
- *  .00 indicates a floating point value - all others are integers.
- *
- * Non-axis config parameters
- * 
- *		  MM [0.00-1.00]	Millimeters per arc segment 
- *							Current driver resolution is between 0.05 and 0.01 mm
- *
- * Per-axis parameters
- *
- *		X SE [0-65535]		Maximum seek steps per second
- *							In whole steps (not microsteps)
- *							A practical limit will be < 2000 steps/sec
- *
- *		X FE [0-65535]		Maximum feed steps per second. As above
- *
- *		X DE [0.00-360.00]	Degrees per step
- *							Commonly 1.8
- *							A practical limit will be 7.5
- *
- *		X MI [-1,1,2,4,8]	Microstep mode
- *							1-8 is whole to 1/8 step
- *							-1 is morphing microsteps with rotational speed
- *							(microstep morphing is not yet implemented)
- *							(other morphing modes may be supported as well)
- *
- *		X PO [0,1]			Axis motor polarity
- *							0 = normal polarity
- *							1 = reverse polarity
- *
- *		X TR [0-65535]		Maximum axis travel in mm (table size)
- *
- *		X RE [0-9999.99]	Travel per revolution in mm (mm per revolution)
- *
- *		X ID [0,1]			Idle mode
- *							0 = no idle mode
- *							1 = low power idle mode enabled
- *
- *		X LI [0,1]			Limit switch mode
- *							0 = no limit switches
- *							1 = limit switches enabled 
- *							(may need more modes than this)
- *
- *		X MA [0-4]			Map axis to motor number
- *							0 = axis disabled
- *							1-4 = motor number 1-4
- *							Can also be used to support axis slaving
- *
- * Motor numbers, axis mapping, and axis slaving [to be implemented]
- *	
- *	Axis letters are logical values that map down to the physical motors.
- *	The default mapping is X=1, Y=2, Z=3, A=4
- *	Per-axis settings can be specified by axis or by motor number. 
- *	The following are valid and equivalent (assuming default mapping, above):
- *
- *		X SE 1500	(set motor 1 seek rate to 1500 steps per second)
- *		1se1500		(set motor 1 seek rate to 1500 steps per second)
- *
- *	Axis slaving is supported by mapping an axis letter to 2 or more motors:
- *
- *		XMA1		(map X axis to motor 1)
- *		XMA2		(map X axis to motor 2)
- *
- *	...would slave motors 1 and 2 to the X axis. Gcode X movements will be 
- *	executed by both motors. Config settings addressed to motor 1  set 
- *	motor 1, to motor 2 set motor 2, and to X set parameters for both 
- *	motor 1 and motor 2.
- *
- * Computed parameters
- *
- *	There are also a set of parameters that are computed from the above and 
- *	are displayed for convenience
- *
- *		steps per mm by axis
- *		steps per inch by axis
- *		maximum seek rate in mm/minute and inches/minute
- *		maximum feed rate in mm/minute and inches/minute
- *
- * G code configuration
- *
- *	Config accepts the following G codes which become the power-on defaults 
- *
- *		G20/G21			Select inches (G20) or millimeters mode (G21)
- *		G17/G18/G19		Plane selection
- *
- *	Examples of valid config lines:
- *
- *		X SE 1800			(Set X maximum seek to 1800 whole steps / second)
- *		XSE1800				(Same as above)
- *		xseek1800			(Same as above)
- *		xseek+1800			(Same as above)
- *		xseek 1800.00		(Same as above)
- *		xseek 1800.99		(OK, but will be truncated to 1800 integer value)
- *		X FE [1800]			(OK, but the [] brackets are superfluous)
- *		ZID1(set low power idle mode on Z axis, & show no space needed for comment)
- *		zmicrsteps 4 		(sets Z microsteps to 1/4, misspelling is intentional)
- *		G20					(Set Gcode to default to inches mode) 
- *		mm_per_arc_segment 0.01 (underscores)
- *		mm per arc segment 0.01	(spaces)
- *		MM0.01
- *
- *	Examples of invalid config lines:
- *
- *		SE 1800				(No axis specified)
- *		XSE1800	(config is OK, but has illegal (embedded) comment (see Note))
- *		SE 1800 X			(Axis specifier must be first)
- *		SEX 1800			(SEX is unsupported -axis specifier must be first)
- *		FEX 1800			(FEX is also unsupported)
- *		C LI 1				(C axis not currently supported -nor is B)
- *		X FE -100			(Negative feed step rate -you can try it...)
- *		X FE 100000			(Exceeds number range)
- *							(Find a motor this fast and we'll bump the data size)
- *
- *  NOTE: Technically embedded comments are against the RS274NGC spec, but the 
- *		  dumb-as-dirt comment parser will actually allow them. Still, it's 
- *		  best not to use them as they are out of spec.
- */
-/*
- * CONFIG INTERNALS
- *
- *	Config is a collection of settings for:
- *		(1) Gcode defaults
- *		(2) non-axis machine settings
- *		(3) per-axis machine settings (4 axes are defined)
- *
- *	Config is stored and used at run-time in the cfg struct (in binary form).
- *	Config is persisted to EEPROM as a set of ASCII config records ("records")
- *	Functions exist to move settings between the two.
- *	A baseline config is defined in hardware.h. It is loaded at power-up
- *	  before attempting to read the EEPROM so the cfg struct always has some
- *	  degree of sanity even if the EEPROM fails or is not initialized.
- *	In addition to hardware.h / user entered settings there are a set of 
- *	  computed settings in cfg that are derived from the config settings. 
- *	  These are recomputed every time a config change occurs.
- *
- *	EEPROM has a header record of format:
- *		'%'	first character
- *		"NNN"   format revision level EEPROM_FORMAT_REVISION (not build number!)
- *		"l:NN"  record length specifier (CFG_RECORD_LEN == 12)
- *
- *	EEPROM has a trailer record of format:
- *		'%'	first character
- *		"END"
- *
- * 	Reset performs the following actions:
- *		- load config struct with compiled hardware.h default settings
- *		- if EEPROM is not initialized:
- *			- initialize EEPROM
- *			- write the default config to EEPROM
- *			- exit
- *		- if EEPROM is initialized but is not the current revision:
- *			- read settings from EEPROM into config struct
- *			- initialize EEPROM (with new revision and trailer)
- *			- write config struct back to the EEPROM
- *			- exit
- *		- else (EEPROM is intialized and current):
- *			- read settings from EEPROM into config struct
- *			  Note that not all settings are required to be in EEPROM,
- *			  and only those settings in EEPROM will be loaded 
- *			  (and overwrite the hardware,h settings).
- *
- *	Parsing a setting from the command line performs the following actions:
- *		- normalize and parse the input into a record and fielded values
- *		- update the cfg struct
- *		- write the record into EEPROM
- */
 /* TODO:
 	- help screen
  */
+/*
+ * Fake NVM to help test if EEPROM is working or not
+ */
+//#define __FAKE_NVM
 
 #include <stdio.h>
 #include <ctype.h>
-#include <string.h>					// for memset(), strchr()
+#include <string.h>
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
@@ -230,23 +44,34 @@
 // prototypes for local helper functions
 void _cfg_computed(void); 
 void _cfg_normalize_config_block(char *block);
-char *_cfg_create_config_record(char *block);
+char *_cfg_format_config_record(char *block);
 uint8_t _cfg_tokenize_config_record();
 
-void _cfg_load_default_settings(void);
-void _cfg_write_config_struct_to_eeprom(uint16_t address);
+void _cfg_load_hardwired_settings(void);
 
-void _cfg_write_config_record(uint8_t param, double value, char axis);
-uint16_t _cfg_compute_record_address(uint16_t address);
-void _cfg_write_config_record_to_eeprom(const uint16_t address);
-char *_cfg_read_config_record_from_eeprom(const uint16_t address);
+void _cfg_write_profile_to_NVM(uint16_t base_addr);
+void _cfg_sprintf_as_record(char *record, uint8_t param, char axis, double value);
+
+void _cfg_write_as_record_to_NVM(uint16_t base_addr, uint8_t param, uint8_t axis, double value);
+
+void _cfg_write_record_to_NVM(uint16_t base_addr, char *record, uint8_t param, uint8_t axis);
+void _cfg_read_record_from_NVM(uint16_t base_addr, char *record, uint8_t param, uint8_t axis);
+void _cfg_write_to_NVM(uint16_t address, char *record);
+void _cfg_read_from_NVM(uint16_t address, char *record, uint8_t size);
+uint16_t _cfg_compute_record_address(uint16_t address, uint8_t param, uint8_t axis);
+
 void _cfg_print_config_record(char *record);
 void _cfg_print_axis(uint8_t axis);
 
-// Config parameter tokens and config record constants
-// These values are used to tokenize config strings and 
-// to compute the EEPROM record addresses (_cfg_write_record())
+#ifdef __FAKE_NVM
+void NNVM_WriteString(uint16_t address, char *record, uint8_t unused);
+void NNVM_ReadString(uint16_t address, char *record, uint8_t size);
+#endif
 
+/* Config parameter tokens and config record constants
+ * These values are used to tokenize config strings and 
+ * to compute the NVM record addresses (_cfg_write_record())
+ */
 enum cfgTokens {
 	CFG_ZERO_TOKEN,				// header record must always be location zero
 
@@ -277,32 +102,39 @@ enum cfgTokens {
 	CFG_LAST_TOKEN				// must always be last token enum
 };
 
-#define CFG_EEPROM_BASE 0x0000	// base address of usable EEPROM
-#define CFG_RECORD_LEN 12		// length of ASCII EEPROM strings (see note)
-#define CFG_NON_AXIS_BASE CFG_MM_PER_ARC_SEGMENT // start of non-axis params
-#define CFG_AXIS_BASE CFG_MAP_AXIS_TO_MOTOR // start of axis parameters
-#define CFG_AXIS_COUNT (CFG_LAST_TOKEN - CFG_AXIS_BASE) // # of axis params
-#define CFG_HEADER_RECORD_ADDR CFG_EEPROM_BASE
+#ifdef __FAKE_NVM
+char nnvm[700];	// not non-volatile memory - sized to hold entire config
+#endif
+
+#define CFG_NVM_BASE 0x0000	// base address of usable NVM
+#define CFG_RECORD_LEN 12		// length of ASCII NVM strings (see note)
+
+#define CFG_NON_AXIS_BASE CFG_GCODE_PLANE		// start of non-axis parms
+#define CFG_AXIS_BASE CFG_MAP_AXIS_TO_MOTOR 	// start of axis parameters
+#define CFG_AXIS_COUNT (CFG_LAST_TOKEN - CFG_AXIS_BASE) // # of axis parms
+
+#define CFG_HEADER_RECORD_ADDR CFG_NVM_BASE
 #define CFG_TRAILER_RECORD (CFG_AXIS_BASE + (4*CFG_AXIS_COUNT))
 #define CFG_TRAILER_RECORD_ADDR (CFG_TRAILER_RECORD * CFG_RECORD_LEN)
 
-/* Note: A CFG_RECORD_LEN of 12 will accommodate numbers up to 8 digits long 
-	- seven if it has a decimal point, 6 if it also has a minus sign. Numbers
-	with more digits will be truncated from the right. This should suffice 
-	for any reasonable setting, but if not the record length must be increased
+/* Note: A CFG_RECORD_LEN of 12 will accommodate numbers up to 8 digits
+	- seven if it has a decimal point, 6 if it also has a minus sign. 
+	Numbers with more digits will be truncated from the right. 
+	This should suffice for any reasonable setting, but if not the 
+	record length must be increased.
  */
 
-// local data
 struct cfgConfigParser {
 	uint8_t status;				// parser status
 	uint8_t param;				// tokenized parameter number
+	uint8_t axis;				// internal axis number (0-3 = X-A)
 	double value;				// setting value
-	int8_t axis;				// internal axis # (0-3) or -1 if none
-	char axis_char;				// axis character or space if none
-	uint16_t profile_base;		// base address of current profile
-	char record[CFG_RECORD_LEN+1];// config record for EEPROM
+	uint16_t base_addr;			// base address in NVM (of current profile)
+	char record[CFG_RECORD_LEN];// config record for NVM
 };
 static struct cfgConfigParser cp;
+
+#define GETAXISCHAR(a) ((a==0)?('X'): ((a==1)?('Y'): ((a==2)?('Z'):('A'))))
 
 /*
  * cfg_init() - initialize config system
@@ -310,199 +142,92 @@ static struct cfgConfigParser cp;
 
 void cfg_init() 
 {
-	cp.profile_base = CFG_EEPROM_BASE;	// first (and only) profile
-	cfg_reset();			// reset config from compiled defaults
+	cp.base_addr = CFG_NVM_BASE;// first (and only) profile
+	cfg_reset();				// reset config w/compiled hardwired values
+	cfg_reset();				// reset config w/compiled hardwired values
 }
 
 /* 
- * cfg_reset() - reset configs (but not necessarily the entire config system)
+ * cfg_reset() - reset configs (but not the entire config system)
  *
  * 	Reset performs the following actions:
- *		- load config struct with compiled hardware.h default settings
- *		- if EEPROM is not initialized:
- *			- initialize EEPROM
- *			- write the default config to EEPROM
+ *		- load config struct with hardwired settings from hardware.h
+ *		- if NVM is not initialized:
+ *			- initialize NVM
+ *			- write the hardwired settings to NVM
  *			- exit
- *		- if EEPROM is initialized but is not the current revision:
- *			- read settings from EEPROM into config struct
- *			- initialize EEPROM (with new revision and trailer)
- *			- write config struct back to the EEPROM
+ *		- if NVM is initialized but is not the current revision:
+ *			- read settings from NVM into config struct (profile)
+ *			- initialize NVM (with new header and trailer)
+ *			- write config struct back to the NVM
  *			- exit
- *		- else (EEPROM is intialized and current):
- *			- read settings from EEPROM into config struct
- *			  Note that not all settings are required to be in EEPROM,
- *			  and only those settings in EEPROM will be loaded 
+ *		- else (NVM is intialized and current):
+ *			- read settings from NVM into config struct
+ *			  Note that not all settings are required to be in NVM,
+ *			  and only those settings in NVM will be loaded 
  *			  (and thus overwrite the hardware.h settings).
  */
 
 void cfg_reset()
 {
-	uint16_t address = cp.profile_base;
+	uint16_t address = cp.base_addr;
 
-	// load hardware.h default settings
-	_cfg_load_default_settings();
+	// load hardware.h hardwired settings into cfg struct
+	_cfg_load_hardwired_settings();
 
-	// see if EEPROM is initialized and tak approriate action
-	EEPROM_ReadString(cp.profile_base, cp.record, CFG_RECORD_LEN);
+	// see if NVM is initialized and take approriate action
+	_cfg_read_from_NVM(cp.base_addr, cp.record, CFG_RECORD_LEN);
 
 	// if the header is not initialzed, set it up and exit
 	if (cp.record[0] != '%') {
-		_cfg_write_config_struct_to_eeprom(cp.profile_base);
+		_cfg_write_profile_to_NVM(cp.base_addr);
 		return;
 	}
 
 	// if the header is initialzed but the wrong revision...
 //	if (cp.record[0] != '%') {
-//		// initialize EEPROM for config records
-//		EEPROM_WriteString(CFG_HEADER_RECORD_ADDR, CFG_HEADER, TRUE);
-//		EEPROM_WriteString(CFG_TRAILER_RECORD_ADDR, CFG_TRAILER, TRUE);
-//		_cfg_write_config_struct_to_eeprom();
+//		// initialize NVM for config records
+//		_cfg_write_to_NVM(CFG_HEADER_RECORD_ADDR, CFG_HEADER, TRUE);
+//		_cfg_write_to_NVM(CFG_TRAILER_RECORD_ADDR, CFG_TRAILER, TRUE);
+//		_cfg_write_profile_to_NVM(cp.base_addr);
 //		return;
 //	}
 
-	// if the header is initialized, read the EEPROM configs into the struct
+	// if the header is initialized, read the NVM configs into the struct
 	for (uint16_t i = 0; i < CFG_TRAILER_RECORD; i++) {
-		EEPROM_ReadString(address, cp.record, CFG_RECORD_LEN);
+		_cfg_read_from_NVM(address, cp.record, CFG_RECORD_LEN);
 		cfg_parse(cp.record);
 		address += CFG_RECORD_LEN;
 	}
 	return;
 }
 
-/*
- * _cfg_write_config_struct_to_eeprom()
- *
- * Write entire config structure to EEPROM
- * Also writes header and trailer records
- */
-
-void _cfg_write_config_struct_to_eeprom(uint16_t address)
-{
-	// write header and trailer records
-	EEPROM_WriteString((address + CFG_HEADER_RECORD_ADDR), CFG_HEADER, TRUE);
-	EEPROM_WriteString((address + CFG_TRAILER_RECORD_ADDR), CFG_TRAILER, TRUE);
-
-	_cfg_write_config_record(CFG_GCODE_PLANE, (17 + cfg.gcode_plane), 0);
-	_cfg_write_config_record(CFG_GCODE_UNITS, (20 + cfg.gcode_units), 0);
-	_cfg_write_config_record(CFG_GCODE_HOMING_MODE, 28, 0);
-	_cfg_write_config_record(CFG_GCODE_FEED_RATE, 400.50, 0); 
-	_cfg_write_config_record(CFG_GCODE_SPINDLE_SPEED, 12000, 0);
-	_cfg_write_config_record(CFG_GCODE_TOOL, 1, 0);
-
-	_cfg_write_config_record(CFG_MM_PER_ARC_SEGMENT, 0.01, 0); 
-/*
-	for (uint8_t axis=X; axis<=A; axis++) {
-
-		_cfg_print_axis(axis);
-		_cfg_write_config_record(CFG_MAP_AXIS_TO_MOTOR, 1, 'X'); 
-		_cfg_write_config_record(CFG_MAP_AXIS_TO_MOTOR, 2, 'Y'); 
-		_cfg_write_config_record(CFG_MAP_AXIS_TO_MOTOR, 3, 'Z'); 
-		_cfg_write_config_record(CFG_MAP_AXIS_TO_MOTOR, 4, 'A'); 
-
-		_cfg_write_config_record(CFG_SEEK_STEPS_MAX, 1500, 'X'); 
-		_cfg_write_config_record(CFG_FEED_STEPS_MAX, 1200, 'X'); 
-		_cfg_write_config_record(CFG_DEGREES_PER_STEP, 1.8, 'X'); 
-		_cfg_write_config_record(CFG_MICROSTEP_MODE, -1, 'X'); 
-		_cfg_write_config_record(CFG_POLARITY, 0, 'X'); 
-		_cfg_write_config_record(CFG_TRAVEL_MAX, 400, 'X'); 
-		_cfg_write_config_record(CFG_TRAVEL_WARN, 425, 'X'); 
-		_cfg_write_config_record(CFG_TRAVEL_PER_REV, 1.27, 'X'); 
-		_cfg_write_config_record(CFG_IDLE_MODE, 1, 'X'); 
-		_cfg_write_config_record(CFG_LIMIT_SWITCH_MODE, 0, 'X'); 
-	}
-*/
-}
-
-/*
- * _cfg_write_config_record() - make a confg record string from a cp struct
- *
- *	cp.param		set to proper enum
- *	cp.value		value loaded as a double
- *	cp.axis_char	axis character (must be null for non-axis settings)
- *
- *	For Gcode settings to work cp.value must be set to proper Gcode number:
- *
- *		17 	select XY plane	(cfg.plane = CANON_PLANE_XY  (0))
- *		18 	select XZ plane	(cfg.plane = CANON_PLANE_XZ  (1))
- *		19 	select YZ plane	(cfg.plane = CANON_PLANE_YZ  (2))
- *		20 	units in mm 	(cfg.units = 0)
- *		21 	units in inches	(cfg.units = 1)
- *		28 	home on startup	(cfg homing_mode = 1)
- */
-
-// put record format strings in program memory
-char cfgMakeRecord00[] PROGMEM = "HEADER%c%f";
-char cfgMakeRecord01[] PROGMEM = "G%1.0f";		// Plane G17/G18/G19
-char cfgMakeRecord02[] PROGMEM = "G%1.0f";		// Units G20/G21
-char cfgMakeRecord03[] PROGMEM = "G%1.0f";		// G28  Power-on homing
-char cfgMakeRecord04[] PROGMEM = "F%1.3f";		// F Feed rate
-char cfgMakeRecord05[] PROGMEM = "S%1.2f";		// S Spindle speed
-char cfgMakeRecord06[] PROGMEM = "T%1.0f";		// T Tool
-char cfgMakeRecord07[] PROGMEM = "MM%1.3f";		// MM per arc segment
-char cfgMakeRecord08[] PROGMEM = "%cMA%1.0f";	// Map axis to motor
-char cfgMakeRecord09[] PROGMEM = "%cSE%1.0f";	// Seek steps per second
-char cfgMakeRecord10[] PROGMEM = "%cFE%1.0f";	// Feed steps / sec
-char cfgMakeRecord11[] PROGMEM = "%cDE%1.3f";	// Degrees per step
-char cfgMakeRecord12[] PROGMEM = "%cMI%1.0f";	// Microstep mode
-char cfgMakeRecord13[] PROGMEM = "%cPO%1.0f";	// Polarity
-char cfgMakeRecord14[] PROGMEM = "%cTR%1.0f";	// Travel max (mm)
-char cfgMakeRecord15[] PROGMEM = "%cTW%1.0f";	// Travel Warning
-char cfgMakeRecord16[] PROGMEM = "%cRE%1.3f";	// mm per REvolution
-char cfgMakeRecord17[] PROGMEM = "%cID%1.0f";	// Idle mode
-char cfgMakeRecord18[] PROGMEM = "%cLI%1.0f";	// Limit switches on
-
-// put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
-PGM_P cfgMkStrings[] PROGMEM = {	
-	cfgMakeRecord00,
-	cfgMakeRecord01,
-	cfgMakeRecord02,
-	cfgMakeRecord03,
-	cfgMakeRecord04,
-	cfgMakeRecord05,
-	cfgMakeRecord06,
-	cfgMakeRecord07,
-	cfgMakeRecord08,
-	cfgMakeRecord09,
-	cfgMakeRecord10,
-	cfgMakeRecord11,
-	cfgMakeRecord12,
-	cfgMakeRecord13,
-	cfgMakeRecord14,
-	cfgMakeRecord15,
-	cfgMakeRecord16,
-	cfgMakeRecord17,
-	cfgMakeRecord18
-};
-
-void _cfg_write_config_record(uint8_t param, double value, char axis)
-{
-	uint16_t address;
-
-	cp.param = param;
-	cp.axis = axis;
-
-	if (param < CFG_AXIS_BASE) {
-		sprintf_P(cp.record,(PGM_P)pgm_read_word(&cfgMkStrings[param]), value);
-	} else {
-		sprintf_P(cp.record,(PGM_P)pgm_read_word(&cfgMkStrings[param]), axis, value);
-	}
-//	address = _cfg_compute_record_address(cp.profile_base, cp.param, cp.axis);
-	EEPROM_WriteString(address, cp.record, TRUE);
-}
-
 /* 
  * cfg_parse() - parse a config line
- *			   - write into config record and persist to EEPROM
+ *			   - write into config record and persist to NVM
+ *
+ * Processing steps:
+ *	  - normalize config string (block) protocol agnostic cleanup)
+ *	  - format config block into a well-formed config record
+ *	  - tokenize the record and extract parameter enum, axis & value
+ *	  - update config structure with new value
+ *	  - persist record to NVM
+ *	  - display the update
  */
 
 int cfg_parse(char *block)
 {
 	cp.status = TG_OK;
 
+	// cutout for header and trailer blocks. Don't parse them
+	if (block[0] == '%') {
+		return (TG_OK);
+	}
+
 	// normalize the block in place
 	_cfg_normalize_config_block(block);
 
-	// dispatch on special characters in the first location
+	// dispatch on special characters in the first byte location
 	switch (block[0]) {
 		case  0:  return(TG_OK);			// ignore comments (stripped)
 		case 'Q': return(TG_QUIT);			// quit config mode
@@ -511,14 +236,14 @@ int cfg_parse(char *block)
 	}
 
 	// create a well-formed config record from the normalized block
-	_cfg_create_config_record(block);		
+	_cfg_format_config_record(block);		
 	
 	// parse the config record into a parser structure (or die trying)
 	if (_cfg_tokenize_config_record()) {
 		tg_print_status(cp.status, block);
 	}
 
-	// load value based on parameter type (cp.param)
+	// load value into cfg struct based on parameter type
 	switch (cp.param) {
 		case CFG_GCODE_PLANE:		break;
 		case CFG_GCODE_UNITS:	  	break;
@@ -545,14 +270,14 @@ int cfg_parse(char *block)
 		default: cp.status = TG_UNRECOGNIZED_COMMAND;	// error return
 	}
 
-	// save config record in EEPROM
-	_cfg_write_config_record_to_eeprom(cp.profile_base);
-
 	// generate & (re)populate computed config values
 	_cfg_computed();
 
+	// save config record in NVM
+	_cfg_write_record_to_NVM(cp.base_addr, cp.record, cp.param, cp.axis);
+
 	// do config displays
-//	_cfg_read_config_record_from_eeprom(cp.profile_base);
+	_cfg_read_record_from_NVM (cp.base_addr, cp.record, cp.param, cp.axis);
 	_cfg_print_config_record(cp.record);
 
 	return (cp.status);
@@ -634,10 +359,10 @@ void _cfg_normalize_config_block(char *block)
 }
 
 /*
- * _cfg_create_config_record() - create an EEPROM record from a block
+ * _cfg_format_config_record() - create an NVM record from a block
  *
- *	Converts a block into a record: parser and EEPROM friendly form
- *	Block must be pre-normalized (uppercase, no WS | comments | illegal chars)
+ *	Converts a block into a record: parser and NVM friendly form
+ *	Block must be pre-normalized (uppercase, no WS, comments, illegal chars)
  *	Keys off syntax only, does not validate comamnd semantics
  *
  *	Handles these command forms:
@@ -650,7 +375,7 @@ void _cfg_normalize_config_block(char *block)
  *	The non-axis and axis forms can have extra ASCII. Gcode configs cannot
  */
 
-char *_cfg_create_config_record(char *block)
+char *_cfg_format_config_record(char *block)
 {
 	uint8_t i=0; 				// char index into block
 	uint8_t j=0; 				// char index into record
@@ -659,7 +384,7 @@ char *_cfg_create_config_record(char *block)
 	if (!block[0]) {
 		return (0);
 	}
-	memcpy(cp.record, block, CFG_RECORD_LEN-1);// initialize record string
+	memcpy(cp.record, block, CFG_RECORD_LEN);// initialize record string
 
 	if (isdigit(block[1])) {			// handle Gcode settings
 		return (block);					// OK as-is. Return it.
@@ -670,7 +395,7 @@ char *_cfg_create_config_record(char *block)
 	}
 	while (isupper(block[++i])) {		// position to value by advancing
 	}									//...past any remaining tag alphas
-	while (block[0] && j < CFG_RECORD_LEN-1) {	// copy value to EEPROM record
+	while (block[0] && j < CFG_RECORD_LEN) {	// copy value to NVM record
 		cp.record[j++] = block[i++];
 	}
 	cp.record[j] = 0;					// terminate string
@@ -693,7 +418,6 @@ uint8_t _cfg_tokenize_config_record()
 	}										// & skip leading digit
 	cp.value = strtod(&cp.record[i], &end); // extract the value
 	cp.axis = -1;
-	cp.axis_char = ' ';							// initialize it to nothing
 
 	// tokenize everything
 	switch(cp.record[0]) {
@@ -716,15 +440,11 @@ uint8_t _cfg_tokenize_config_record()
 		// non-axis settings
 		case 'M': { cp.param = CFG_MM_PER_ARC_SEGMENT; break; }
 
-		// axis and mapped axis settings
-		case 'X': { cp.axis = 0; cp.axis_char = 'X'; break;} // axis settings
-		case 'Y': { cp.axis = 1; cp.axis_char = 'Y'; break;}
-		case 'Z': { cp.axis = 2; cp.axis_char = 'Z'; break;}
-		case 'A': { cp.axis = 3; cp.axis_char = 'A'; break;}
-		case '1': { cp.axis = 0; cp.axis_char = '1'; break;} // by motor number
-		case '2': { cp.axis = 1; cp.axis_char = '2'; break;}
-		case '3': { cp.axis = 2; cp.axis_char = '3'; break;}
-		case '4': { cp.axis = 3; cp.axis_char = '4'; break;}
+		// axis and mapped axis settings by axxess letter and by motor number
+		case 'X': case '1': { cp.axis = 0; break;}
+		case 'Y': case '2': { cp.axis = 1; break;}
+		case 'Z': case '3': { cp.axis = 2; break;}
+		case 'A': case '4': { cp.axis = 3; break;}
 
 		// has to have been one of the above or it's an error
 		default: return(TG_UNRECOGNIZED_COMMAND);
@@ -756,6 +476,22 @@ uint8_t _cfg_tokenize_config_record()
 }
 
 /*
+ * cfg_print_config_records() - dump configs from NVM to stderr
+ */
+
+void cfg_print_config_records()
+{
+	uint16_t address = cp.base_addr;
+
+	for (uint16_t i = 0; i < CFG_TRAILER_RECORD; i++) {
+
+		_cfg_read_from_NVM(address, cp.record, CFG_RECORD_LEN);
+		_cfg_print_config_record(cp.record);
+		address += CFG_RECORD_LEN;
+	}
+}
+
+/*
  * _cfg_print_config_record()
  *
  *  Takes a config record as input - record must obey record formatting
@@ -764,27 +500,27 @@ uint8_t _cfg_tokenize_config_record()
 
 // put record format strings in program memory
 char cfgShowRecord00[] PROGMEM = "HEADER%s%d";
-char cfgShowRecord01[] PROGMEM = "%c Gcode: {G17/G18/G19}    Plane:  %1.0f\n";
-char cfgShowRecord02[] PROGMEM = "%c Gcode: {G20/G21} Units (1=mm):  %1.0f\n";
-char cfgShowRecord03[] PROGMEM = "%c Gcode: {G28}  Power-on homing:  %1.0f\n";
-char cfgShowRecord04[] PROGMEM = "%c Gcode: {F} Feed rate:       %8.2f\n";
-char cfgShowRecord05[] PROGMEM = "%c Gcode: {S} Spindle speed:   %8.2f\n";
-char cfgShowRecord06[] PROGMEM = "%c Gcode: {T} Tool:                %1.0f\n";
-char cfgShowRecord07[] PROGMEM = "%c MM(illimeters) / arc segment:  %6.3f\n";
-char cfgShowRecord08[] PROGMEM = "MAp %c axis to motor number: %7.0f\n";
-char cfgShowRecord09[] PROGMEM = "  %c axis - SEek steps / sec:  %5.0f\n";
-char cfgShowRecord10[] PROGMEM = "  %c axis - FEed steps / sec:  %5.0f\n";
-char cfgShowRecord11[] PROGMEM = "  %c axis - DEgrees per step:  %5.0f\n";
-char cfgShowRecord12[] PROGMEM = "  %c axis - MIcrostep mode:    %5.0f\n";
-char cfgShowRecord13[] PROGMEM = "  %c axis - POlarity:          %5.0f\n";
-char cfgShowRecord14[] PROGMEM = "  %c axis - TRavel max:        %5.0f\n";
-char cfgShowRecord15[] PROGMEM = "  %c axis - Travel Warning:    %5.0f\n";
-char cfgShowRecord16[] PROGMEM = "  %c axis - mm per REvolution: %5.0f\n";
-char cfgShowRecord17[] PROGMEM = "  %c axis - IDle mode          %5.0f\n";
-char cfgShowRecord18[] PROGMEM = "  %c axis - LImit switches on: %5.0f\n";
+char cfgShowRecord01[] PROGMEM = "  Gcode: {G17/G18/G19}    Plane   %1.0f";
+char cfgShowRecord02[] PROGMEM = "  Gcode: {G20/G21} Units (1=mm)   %1.0f";
+char cfgShowRecord03[] PROGMEM = "  Gcode: {G28}  Power-on homing   %1.0f";
+char cfgShowRecord04[] PROGMEM = "  Gcode: {F} Feed rate        %8.2f";
+char cfgShowRecord05[] PROGMEM = "  Gcode: {S} Spindle speed    %8.2f";
+char cfgShowRecord06[] PROGMEM = "  Gcode: {T} Tool                 %1.0f";
+char cfgShowRecord07[] PROGMEM = "  MM(illimeters) / arc segment   %6.3f";
+char cfgShowRecord08[] PROGMEM = "%c axis mapped to motor number  %4.0f";
+char cfgShowRecord09[] PROGMEM = "  %c axis - Seek steps / sec   %5.0f";
+char cfgShowRecord10[] PROGMEM = "  %c axis - Feed steps / sec   %5.0f";
+char cfgShowRecord11[] PROGMEM = "  %c axis - Degrees per step   %5.3f";
+char cfgShowRecord12[] PROGMEM = "  %c axis - Microstep mode     %5.0f";
+char cfgShowRecord13[] PROGMEM = "  %c axis - Polarity           %5.0f";
+char cfgShowRecord14[] PROGMEM = "  %c axis - Travel max         %5.0f";
+char cfgShowRecord15[] PROGMEM = "  %c axis - Travel warning     %5.0f";
+char cfgShowRecord16[] PROGMEM = "  %c axis - mm per revolution  %5.3f";
+char cfgShowRecord17[] PROGMEM = "  %c axis - Idle mode          %5.0f";
+char cfgShowRecord18[] PROGMEM = "  %c axis - Limit switches     %5.0f";
 
 // put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
-PGM_P cfgShowRecordStrings[] PROGMEM = {	
+PGM_P rShowStrings[] PROGMEM = {	
 	cfgShowRecord00,
 	cfgShowRecord01,
 	cfgShowRecord02,
@@ -809,105 +545,268 @@ PGM_P cfgShowRecordStrings[] PROGMEM = {
 void _cfg_print_config_record(char *record)
 {
 	// tokenize the record and return if failed
-	if (_cfg_tokenize_config_record()) {
+	if (_cfg_tokenize_config_record()) {	// populates cp.struct used below
 		tg_print_status(cp.status, record);
 		return;
 	}
+
 	// otherwise print it
-//	printf_P(PSTR("\n%s    "), cp.record);
-	printf_P((PGM_P)pgm_read_word(&cfgShowRecordStrings[cp.param]), cp.axis_char, cp.value);
+	if (cp.param < CFG_AXIS_BASE) {
+		printf_P((PGM_P)pgm_read_word(&rShowStrings[cp.param]), cp.value);
+	} else {
+		char axis = GETAXISCHAR(cp.axis);
+		printf_P((PGM_P)pgm_read_word(&rShowStrings[cp.param]), axis, cp.value);
+	}
+	printf_P(PSTR("     %-12s\n"), record);	// Must use 12 instead of CFG_RECORD_LEN
+
 }
 
 /*
- * cfg_print_config_records() - dump configs from EEPROM to stderr
+ * _cfg_sprintf_as_record() - make a formatted config record from parameters
+ *
+ *	record			string to write to
+ *	param			parameter enumneration
+ *	value			value loaded as a double
+ *	axis			axis (numeric)
+ *
+ *	For Gcode settings to work cp.value must be set to proper Gcode number:
+ *
+ *		17 	select XY plane	(cfg.plane = CANON_PLANE_XY  (0))
+ *		18 	select XZ plane	(cfg.plane = CANON_PLANE_XZ  (1))
+ *		19 	select YZ plane	(cfg.plane = CANON_PLANE_YZ  (2))
+ *		20 	units in mm 	(cfg.units = 0)
+ *		21 	units in inches	(cfg.units = 1)
+ *		28 	home on startup	(cfg homing_mode = 1)
  */
 
-void cfg_print_config_records()
-{
-	uint16_t record_addr = cp.profile_base;
+// put record format strings in program memory
+char cfgFmtRecord00[] PROGMEM = "HEADER%c%f";
+char cfgFmtRecord01[] PROGMEM = "G%1.0f";		// Plane G17/G18/G19
+char cfgFmtRecord02[] PROGMEM = "G%1.0f";		// Units G20/G21
+char cfgFmtRecord03[] PROGMEM = "G%1.0f";		// G28  Power-on homing
+char cfgFmtRecord04[] PROGMEM = "F%1.3f";		// F Feed rate
+char cfgFmtRecord05[] PROGMEM = "S%1.2f";		// S Spindle speed
+char cfgFmtRecord06[] PROGMEM = "T%1.0f";		// T Tool
+char cfgFmtRecord07[] PROGMEM = "MM%1.3f";		// MM per arc segment
+char cfgFmtRecord08[] PROGMEM = "%cMA%1.0f";	// Map axis to motor
+char cfgFmtRecord09[] PROGMEM = "%cSE%1.0f";	// Seek steps per second
+char cfgFmtRecord10[] PROGMEM = "%cFE%1.0f";	// Feed steps / sec
+char cfgFmtRecord11[] PROGMEM = "%cDE%1.3f";	// Degrees per step
+char cfgFmtRecord12[] PROGMEM = "%cMI%1.0f";	// Microstep mode
+char cfgFmtRecord13[] PROGMEM = "%cPO%1.0f";	// Polarity
+char cfgFmtRecord14[] PROGMEM = "%cTR%1.0f";	// Travel max (mm)
+char cfgFmtRecord15[] PROGMEM = "%cTW%1.0f";	// Travel Warning
+char cfgFmtRecord16[] PROGMEM = "%cRE%1.3f";	// mm per REvolution
+char cfgFmtRecord17[] PROGMEM = "%cID%1.0f";	// Idle mode
+char cfgFmtRecord18[] PROGMEM = "%cLI%1.0f";	// Limit switches on
 
-	for (uint16_t i = 0; i < CFG_TRAILER_RECORD; i++) {
-		EEPROM_ReadString(record_addr, cp.record, CFG_RECORD_LEN);
-		_cfg_print_config_record(cp.record);
-		record_addr += CFG_RECORD_LEN;
+// put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
+PGM_P rFmtStrings[] PROGMEM = {	
+	cfgFmtRecord00,
+	cfgFmtRecord01,
+	cfgFmtRecord02,
+	cfgFmtRecord03,
+	cfgFmtRecord04,
+	cfgFmtRecord05,
+	cfgFmtRecord06,
+	cfgFmtRecord07,
+	cfgFmtRecord08,
+	cfgFmtRecord09,
+	cfgFmtRecord10,
+	cfgFmtRecord11,
+	cfgFmtRecord12,
+	cfgFmtRecord13,
+	cfgFmtRecord14,
+	cfgFmtRecord15,
+	cfgFmtRecord16,
+	cfgFmtRecord17,
+	cfgFmtRecord18
+};
+
+void _cfg_sprintf_as_record(char *record, uint8_t param, char axis, double value)
+{
+	if (param < CFG_AXIS_BASE) {
+		sprintf_P(record,(PGM_P)pgm_read_word(&rFmtStrings[param]), value);
+	} else {
+		char axisc = GETAXISCHAR(axis);
+		sprintf_P(record,(PGM_P)pgm_read_word(&rFmtStrings[param]), axisc, value);
 	}
 }
 
-/* 
- * _cfg_read_config_record_from_eeprom()
+/*
+ * _cfg_write_profile_to_NVM()
  *
- * Uses cp struct to read 
- */
-
-char *_cfg_read_config_record_from_eeprom(uint16_t address)
-{
-	address = _cfg_compute_record_address(address);
-//	EEPROM_ReadString(address, cp.record, FALSE);
-  	return(cp.record);
-}
-
-/* 
- * _cfg_write_config_struct_to_eeprom()
- *
- * Write entire config structure to EEPROM
+ * Write entire config structure to NVM
  * Also writes header and trailer records
  */
 
-//void _cfg_write_config_struct_to_eeprom(uint16_t address)
-//{
-//	address = _cfg_compute_record_address(address);
-//	EEPROM_WriteString(address, cp.record, TRUE);
-//}
+void _cfg_write_profile_to_NVM(uint16_t base_addr)
+{
+	// write header and trailer records
+	_cfg_write_to_NVM((base_addr + CFG_HEADER_RECORD_ADDR), CFG_HEADER);
+	_cfg_write_to_NVM((base_addr + CFG_TRAILER_RECORD_ADDR), CFG_TRAILER);
+
+	// Gcode settings
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_PLANE, 0, (17 + cfg.gcode_plane));
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_UNITS, 0, (20 + cfg.gcode_units));
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_HOMING_MODE, 0, 28);
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_FEED_RATE, 0, cfg.max_feed_rate); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_SPINDLE_SPEED, 0, cfg.spindle_speed);
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_TOOL, 0, cfg.gcode_tool);
+
+	// non-axis machine settings
+	_cfg_write_as_record_to_NVM(base_addr, CFG_MM_PER_ARC_SEGMENT, 0, cfg.mm_per_arc_segment); 
+
+	// per-axis settings
+	for (uint8_t axis = 0; axis <= 3; axis++) {	// cycle thru axes X,Y,Z,A
+
+		_cfg_write_as_record_to_NVM(base_addr, CFG_MAP_AXIS_TO_MOTOR, axis,
+											   CFG(axis).map_axis+1); 
+
+		_cfg_write_as_record_to_NVM(base_addr, CFG_SEEK_STEPS_MAX, axis,
+											   CFG(axis).seek_steps_sec); 
+
+		_cfg_write_as_record_to_NVM(base_addr, CFG_FEED_STEPS_MAX, axis,
+											   CFG(axis).feed_steps_sec); 
+
+		_cfg_write_as_record_to_NVM(base_addr, CFG_DEGREES_PER_STEP, axis,
+											   CFG(axis).degree_per_step); 
+
+		_cfg_write_as_record_to_NVM(base_addr, CFG_MICROSTEP_MODE, axis,
+											   CFG(axis).microstep); 
+
+		_cfg_write_as_record_to_NVM(base_addr, CFG_POLARITY, axis,
+											   CFG(axis).polarity);
+										 
+		_cfg_write_as_record_to_NVM(base_addr, CFG_TRAVEL_MAX, axis,
+											   CFG(axis).mm_travel); 
+
+		_cfg_write_as_record_to_NVM(base_addr, CFG_TRAVEL_WARN, axis,
+											   CFG(axis).mm_travel); 
+
+		_cfg_write_as_record_to_NVM(base_addr, CFG_TRAVEL_PER_REV, axis,
+											   CFG(axis).mm_per_rev); 
+
+		_cfg_write_as_record_to_NVM(base_addr, CFG_IDLE_MODE, axis,
+											   CFG(axis).low_pwr_idle); 
+
+		_cfg_write_as_record_to_NVM(base_addr, CFG_LIMIT_SWITCH_MODE, axis,
+											   CFG(axis).limit_enable); 
+	}
+}
+
+/*
+ * _cfg_write_as_record_to_NVM() - format a config record and write to NVM
+ *
+ *	base_addr		base address in NVM for this profile
+ *	param			parameter enumneration
+ *	value			value loaded as a double
+ *	axis			axis (numeric)
+ */
+
+void _cfg_write_as_record_to_NVM(uint16_t base_addr, uint8_t param, uint8_t axis, double value)
+{
+	uint16_t address;
+	char record[CFG_RECORD_LEN];
+
+	_cfg_sprintf_as_record(record, param, axis, value);
+	address = _cfg_compute_record_address(base_addr, param, axis);
+	_cfg_write_to_NVM(address, record);
+}
 
 /* 
- * _cfg_write_config_record_to_eeprom()
- *
- * Configuration records are written to EEPROM using the following scheme:
- *	- header record - identifies revision and carries record length
- *	- Gcode settings		(identified by token < CFG_AXIS_BASE)
- *	- non-axis settings		(identified by token < CFG_AXIS_BASE)
- *	- per-axis settings		(identified by token >= CFG_AXIS_BASE)
+ * _cfg_write_record_to_NVM()  - write NVM record given param & axis values
+ * _cfg_read_record_from_NVM() - read NVM record given param & axis values
+ * _cfg_write_to_NVM() 		   - raw write to NVM w/no address calculation
+ * _cfg_read_from_NVM() 	   - raw read from NVM w/no address calculation
  *
  *	The base address of the record-set is provided as an argument to 
  *	support writing and reading multiple machine profiles.
  */
 
-void _cfg_write_config_record_to_eeprom(uint16_t address)
+void _cfg_write_record_to_NVM(uint16_t base_addr, char *record, uint8_t param, uint8_t axis)
 {
-	address = _cfg_compute_record_address(address);
-	EEPROM_WriteString(address, cp.record, TRUE);
+	uint16_t address = _cfg_compute_record_address(base_addr, param, axis);
+	_cfg_write_to_NVM(address, record);
 }
 
-/* config EEPROM address function */
-
-inline uint16_t _cfg_compute_record_address(uint16_t address)
+void _cfg_read_record_from_NVM(uint16_t base_addr, char *record, uint8_t param, uint8_t axis)
 {
-	if (cp.param < CFG_AXIS_BASE) {
-		address = address + (cp.param * CFG_RECORD_LEN);
-	} else {
-		address = address + (CFG_AXIS_BASE 
-						  + cp.axis * CFG_AXIS_COUNT 
-						  + cp.param - CFG_AXIS_BASE) 
-						  * CFG_RECORD_LEN;
+	uint16_t address = _cfg_compute_record_address(base_addr, param, axis);
+	_cfg_read_from_NVM(address, record, CFG_RECORD_LEN);
+  	return;
+}
+
+inline void _cfg_write_to_NVM(uint16_t address, char *record)
+{
+#ifdef __FAKE_NVM
+	NNVM_WriteString(address, record, TRUE);
+#else
+	EEPROM_WriteString(address, record, TRUE);
+#endif
+}
+
+inline void _cfg_read_from_NVM(uint16_t address, char *record, uint8_t size)
+{
+#ifdef __FAKE_NVM
+	NNVM_ReadString(address, record, size);
+#else
+	EEPROM_ReadString(address, record, size);
+#endif
+}
+
+#ifdef __FAKE_NVM
+inline void NNVM_WriteString(uint16_t address, char *record, uint8_t unused)
+{
+	uint16_t j = address;		// NNVM pointer
+
+	for (uint16_t i = 0; i < CFG_RECORD_LEN; i++) {
+		nnvm[j++] = record[i];
+		if (!record[i]) {
+			return;
+		}
 	}
-	return (address);
 }
 
-/*
- * cfg_print_help_screen() - send config help screen to stderr
- */
-
-void cfg_print_help_screen()
+inline void NNVM_ReadString(uint16_t address, char *record, uint8_t size)
 {
-	printf_P(PSTR("Configuration Help\n"));
-	return;
-}
+	uint16_t j = address;		// NNVM pointer
 
+	for (uint16_t i = 0; i < CFG_RECORD_LEN; i++) {
+		record[i] = nnvm[j++];
+		if (!record[i]) {
+			return;
+		}
+	}
+}
+#endif
 
 /*
- * cfg_print_config_struct() - dump configs from internal structure to stderr
+ * _cfg_compute_record_address() - compute NVM address
+ *
+ * The record address in NVM is computed as follows:
+ *	- header record - identifies revision and carries record length
+ *	- Gcode settings		(identified by token < CFG_AXIS_BASE)
+ *	- non-axis settings		(identified by token < CFG_AXIS_BASE)
+ *	- per-axis settings		(identified by token >= CFG_AXIS_BASE)
+ *	- trailer record is a known value
  */
 
+inline uint16_t _cfg_compute_record_address(uint16_t base_addr, uint8_t param, uint8_t axis)
+{
+	if (param == CFG_TRAILER_RECORD) {
+		return (base_addr + CFG_TRAILER_RECORD_ADDR);
+	} else if (param < CFG_AXIS_BASE) {
+		return (base_addr += (param * CFG_RECORD_LEN));
+	} else {
+		return (base_addr += (CFG_AXIS_BASE + (axis * CFG_AXIS_COUNT) + param - CFG_AXIS_BASE) * CFG_RECORD_LEN);
+	}
+}
+
+/*
+ * cfg_print_profile() - dump configs from internal structure to stderr
+ */
+/*
 char cfgMsgXaxis[] PROGMEM = "X";
 char cfgMsgYaxis[] PROGMEM = "Y";
 char cfgMsgZaxis[] PROGMEM = "Z";
@@ -920,7 +819,7 @@ PGM_P cfgMsgs[] PROGMEM = {	// put string pointer array in program memory
 	cfgMsgAaxis
 };
 
-void cfg_print_config_struct()
+void cfg_print_profile()
 {
 	printf_P(PSTR("\n***** CONFIGURATION ****\n"));
 	printf_P(PSTR("G-code Model Configuration Values ---\n"));
@@ -947,16 +846,18 @@ void _cfg_print_axis(uint8_t	axis)
 	printf_P(PSTR("  polarity:        %4d    1=inverted, 0=normal\n"), CFG(axis).polarity);
 	printf_P(PSTR(" (steps_per_mm:    %7.2f microsteps / millimeter)\n\n"), CFG(axis).steps_per_mm);
 }
-
+*/
 /* 
- * _cfg_load_default_settings() - load compiled default settings into strict
+ * _cfg_load_hardwired_settings() - load compiled hardwired settings into strict
  */
 
-void _cfg_load_default_settings()
+void _cfg_load_hardwired_settings()
 {
 	cfg.gcode_plane = CANON_PLANE_XY;
-	cfg.gcode_units = 1;
-	cfg.homing_mode = 0;
+	cfg.gcode_units = GCODE_UNITS;
+	cfg.homing_mode = HOMING_MODE;
+	cfg.spindle_speed = SPINDLE_SPEED;
+	cfg.gcode_tool = GCODE_TOOL;
 
 	cfg.mm_per_arc_segment = MM_PER_ARC_SEGMENT;
 
@@ -1008,46 +909,60 @@ void _cfg_load_default_settings()
 	_cfg_computed();		// generate computed values from the above
 }
 
+/*
+ * cfg_print_help_screen() - send config help screen to stderr
+ */
+
+void cfg_print_help_screen()
+{
+	printf_P(PSTR("Configuration Help\n"));
+	return;
+}
+
+
+
 #ifdef __UNIT_TESTS
 
 void _cfg_test_parse(void);
-void _cfg_test_write_config_record(void);
+void _cfg_test_write_record(void);
 
 void cfg_tests()
 {
 //	_cfg_test_parse();
-	_cfg_test_write_config_record();
+//	_cfg_test_write_record();
 }
 
-void _cfg_test_write_config_record()
+void _cfg_test_write_record()
 {
-	_cfg_write_config_record(CFG_GCODE_PLANE, 17, 0); // G17
-	_cfg_write_config_record(CFG_GCODE_PLANE, 18, 0); // G18
-	_cfg_write_config_record(CFG_GCODE_PLANE, 19, 0); // G19
-	_cfg_write_config_record(CFG_GCODE_UNITS, 20, 0); 	// G20
-	_cfg_write_config_record(CFG_GCODE_UNITS, 21, 0); 	// G21
-	_cfg_write_config_record(CFG_GCODE_HOMING_MODE, 28, 0); // G28 startup homing
-	_cfg_write_config_record(CFG_GCODE_FEED_RATE, 400.50, 0); 
-	_cfg_write_config_record(CFG_GCODE_SPINDLE_SPEED, 12000, 0);
-	_cfg_write_config_record(CFG_GCODE_TOOL, 1, 0);
+	uint16_t base_addr = 0;
 
-	_cfg_write_config_record(CFG_MM_PER_ARC_SEGMENT, 0.01, 0); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_PLANE, 0, 17); // G17
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_PLANE, 0, 18); // G18
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_PLANE, 0, 19); // G19
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_UNITS, 0, 20); // G20
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_UNITS, 0, 21); // G21
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_HOMING_MODE, 0, 28); // G28 startup homing
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_FEED_RATE, 0, 400.50); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_SPINDLE_SPEED, 0, 12000);
+	_cfg_write_as_record_to_NVM(base_addr, CFG_GCODE_TOOL, 0, 1);
 
-	_cfg_write_config_record(CFG_MAP_AXIS_TO_MOTOR, 1, 'X'); 
-	_cfg_write_config_record(CFG_MAP_AXIS_TO_MOTOR, 2, 'Y'); 
-	_cfg_write_config_record(CFG_MAP_AXIS_TO_MOTOR, 3, 'Z'); 
-	_cfg_write_config_record(CFG_MAP_AXIS_TO_MOTOR, 4, 'A'); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_MM_PER_ARC_SEGMENT, 0, MM_PER_ARC_SEGMENT); 
 
-	_cfg_write_config_record(CFG_SEEK_STEPS_MAX, 1500, 'X'); 
-	_cfg_write_config_record(CFG_FEED_STEPS_MAX, 1200, 'X'); 
-	_cfg_write_config_record(CFG_DEGREES_PER_STEP, 1.8, 'X'); 
-	_cfg_write_config_record(CFG_MICROSTEP_MODE, -1, 'X'); 
-	_cfg_write_config_record(CFG_POLARITY, 0, 'X'); 
-	_cfg_write_config_record(CFG_TRAVEL_MAX, 400, 'X'); 
-	_cfg_write_config_record(CFG_TRAVEL_WARN, 425, 'X'); 
-	_cfg_write_config_record(CFG_TRAVEL_PER_REV, 1.27, 'X'); 
-	_cfg_write_config_record(CFG_IDLE_MODE, 1, 'X'); 
-	_cfg_write_config_record(CFG_LIMIT_SWITCH_MODE, 0, 'X'); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_MAP_AXIS_TO_MOTOR, X, 1); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_MAP_AXIS_TO_MOTOR, Y, 2); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_MAP_AXIS_TO_MOTOR, Z, 3); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_MAP_AXIS_TO_MOTOR, A, 4); 
+
+	_cfg_write_as_record_to_NVM(base_addr, CFG_SEEK_STEPS_MAX, X, 1500); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_FEED_STEPS_MAX, X, 1200); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_DEGREES_PER_STEP, X, 1.8); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_MICROSTEP_MODE, X, -1); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_POLARITY, X, 0); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_TRAVEL_MAX, X, 400); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_TRAVEL_WARN, X, 425); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_TRAVEL_PER_REV, X, 1.27); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_IDLE_MODE, X, 1); 
+	_cfg_write_as_record_to_NVM(base_addr, CFG_LIMIT_SWITCH_MODE, X, 0); 
 
 	return;
 }
@@ -1063,10 +978,10 @@ s12000\n\
 t1 \n\
 mm per arc segment 0.01\n\
 X map axis to motor 1\n\
- xse1891 (leading space)\n\
-x feed steps 1892.123456789\n\
+ xse1600 (leading space)\n\
+x feed steps 1500.123456789\n\
 XDE1.8\n\
-Xmicrosteps -1\n\
+Xmicrosteps 8\n\
 Xpolarity 0\n\
 Xtravel 400.00\n\
 XTW warning 425.00\n\
@@ -1107,7 +1022,7 @@ aRE1.27\n\
 aID1\n\
 aLI0\n";
 
-/* generate some strings for the parser and test EEPROM read and write */
+/* generate some strings for the parser and test NVM read and write */
 
 void _cfg_test_parse()
 {
