@@ -71,13 +71,20 @@
 #include <avr/interrupt.h>
 #include "tinyg.h"		// only used to define __UNIT_TESTS. can be removed.
 
+#ifdef __UNIT_TESTS
+#include <stdio.h>
+#include <string.h>						// for memset()
+#include <avr/pgmspace.h>
+#include "xio.h"						// all device includes are nested here
+#endif
+
 /****** Functions added for TinyG ******/
 
 // workaround for EEPROM not working in Simulator2
-//#define __TEST_EEPROM_WRITE		// comment out for production. 
+//#define __TEST_EEPROM_WRITE			// comment out for production 
 
 #ifdef __TEST_EEPROM_WRITE
-	uint8_t testbuffer[32];	// fake out the page buffer
+	uint8_t testbuffer[32];			// fake out the page buffer
 #endif
 
 /* 
@@ -444,7 +451,26 @@ inline void EEPROM_EraseAll( void )
 #define TRUE (1)
 #endif
 
+void _EEPROM_test_write(void);
+void _EEPROM_test_write_and_read(void);
+
 void EEPROM_tests()
+{
+	_EEPROM_test_write();
+	_EEPROM_test_write_and_read();
+}
+
+void _EEPROM_test_write_and_read()
+{
+	uint16_t address = 0;
+	char tbuf[16];
+
+	EEPROM_WriteString(address, "0123456789", TRUE);	// 10 chars + termination
+	EEPROM_ReadString(address, tbuf, 16);
+	printf("%s\n", tbuf);
+}
+
+void _EEPROM_test_write()
 {
 	// write fits easily in page 0, starts at 0, not terminated (return 0x06)
 	EEPROM_WriteString(0x00, "0123\n", FALSE);

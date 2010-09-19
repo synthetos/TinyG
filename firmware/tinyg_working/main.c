@@ -169,7 +169,7 @@ int main(void)
 
 //	xio_queue_RX_char_usb(ETX);			// send control-c (kill)
 //	xio_queue_RX_string_usb("R\n");		// run a file - select on controller.c
-	xio_queue_RX_string_usb("?\n");		// enter config mode and dump config
+//	xio_queue_RX_string_usb("?\n");		// enter config mode and dump config
 
 //	xio_queue_RX_string_usb("g1 f450 x10 y13\n");
 
