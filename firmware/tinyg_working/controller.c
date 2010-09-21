@@ -3,46 +3,51 @@
  * Part of TinyG project
  * Copyright (c) 2010 Alden S. Hart, Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation, 
- * either version 3 of the License, or (at your option) any later version.
+ * TinyG is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free 
+ * Software Foundation, either version 3 of the License, or (at your 
+ * option) any later version.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
- * PURPOSE. See the GNU General Public License for more details.
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT 
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
+ * for more details.
  *
- * You should have received a copy of the GNU General Public License along with TinyG  
- * If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License 
+ * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  *
  * ---- Mode Auto-Detection behaviors ----
  *
- *	From Control mode a line starting with the following letters will enter modes:
+ *	The first letter of an IDLE mode  line performs the following actions
  *
- *		G,M,N,(	enter GCODE_MODE (as will lower-case of the same)
- *		C,?		enter CONFIG_MODE
- *		D,A		enter DIRECT_DRIVE_MODE
- *		F		enter FILE_MODE (returns automatically after file selection)
- *		I		<reserved>
- *		V		<reserved>
+ *		G,M,N,F,(	enter GCODE_MODE (as will lower-case of the same)
+ *		C,?			enter CONFIG_MODE
+ *		D,A			enter DIRECT_DRIVE_MODE
+ *		F			enter FILE_MODE (returns automatically after file ends)
+ *		H			help screen (returns to IDLE mode)
+ *		T			execute test (whatever you link into it)
+ *		I			<reserved>
+ *		V			<reserved>
  *
- *	Once in the selected mode these characters are not active as mode selects.
- *	Most modes use Q (Quit) to exit and return to control mode.
+ *	Once in the selected mode these characters are not active as mode 
+ *	selects. Most modes use Q (Quit) to exit and return to idle mode.
  *
  * ---- Controller Operation ----
  *
- *	The controller implements a simple process control scheme to manage blocking
- *	in the application. The controller works as a aborting "super loop", where 
- *	the highest priority tasks are run first and progressively lower priority 
- *  tasks are run only if the higher priority tasks are ready.
+ *	The controller implements a simple process control scheme to manage 
+ *	blocking in the application. The controller works as a aborting "super
+ *	loop", where the highest priority tasks are run first and progressively
+ *	lower priority tasks are run only if the higher priority tasks are not 
+ *	blocked.
  *
- *	For this to work tasks must be written to run-to-completion (non blocking),
- *	and must offer re-entry points (continuations) to resume operations that would
- *	have blocked (see arc generator for an example). A task returns TG_EAGAIN to 
- *	indicate a blocking point. If TG_EAGAIN is received The controller quits
- *	the loop and starts over.Any other return code allows the controller to 
- *	proceed down the list.
+ *	For this to work tasks must be written to run-to-completion (non 
+ *	blocking), and must offer re-entry points (continuations) to resume
+ *	operations that would have blocked (see arc generator for an example). 
+ *	A task returns TG_EAGAIN to indicate a blocking point. If TG_EAGAIN 
+ *	is received The controller quits the loop and starts over.Any other 
+ *	return code allows the controller to proceed down the list.
  *
- *	Interrupts run at the highest priority level and may interact with the tasks.
+ *	Interrupts run at the highest priority level.
  *
  *	The priority of operations is:
  *
@@ -74,16 +79,16 @@
  *			(does this once and only once a parser has returned)
  *
  *	Notes:
- *	  - Gcode and other command line flow control is managed cooperatively with 
- *		the application sending the Gcode or other command. The '*' char in the 
- *		prompt indicates that the controller is ready for the next line. 
- *		The sending app is supposed to honor this and not stuff lines down the 
- *		pipe (which will choke the controller).
+ *	  - Gcode and other command line flow control is managed cooperatively
+ *		with the application sending the Gcode or other command. The '*' 
+ *		char in the prompt indicates that the controller is ready for the 
+ *		next line. The sending app is supposed to honor this and not stuff
+ *		lines down the pipe (which will choke the controller).
  *
- *	Futures: Using a super loop instead of an event system is a design tradoff 
- *	- or more to the point - a hack. If the flow of control gets much more 
- *	complicated it will make sense to replace this section with an event driven 
- *	dispatcher.
+ *	Futures: Using a super loop instead of an event system is a design 
+ *	tradoff - or more to the point - a hack. If the flow of control gets 
+ *	much more complicated it will make sense to replace this section 
+ *	with an event driven dispatcher.
  */
 
 #include <stdio.h>
@@ -93,21 +98,23 @@
 #include "xio.h"
 #include "tinyg.h"
 #include "controller.h"
-#include "gcode.h"						// calls out to gcode parser, etc.
-#include "config.h"						// calls out to config parser, etc.
+#include "gcode.h"				// calls out to gcode parser, etc.
+#include "config.h"				// calls out to config parser, etc.
 #include "move_buffer.h"
 #include "motion_control.h"
 #include "direct_drive.h"
-#include "stepper.h"					// needed for stepper kill and terminate
+#include "stepper.h"			// needed for stepper kill and terminate
+#include "xmega_eeprom.h"
 
 /*
  * Canned gcode files for testing
  */
 
-#include "data_gcode_tests.h"			// assorted test code
-#include "data_gcode_zoetrope.h"		// zoetrope moves. makes really cool sounds
-#include "data_gcode_contraptor_circle.h"
-//#include "data_gcode_roadrunner.h"
+//#include "gcode_tests.h"		// assorted test code
+#include "gcode_zoetrope.h"		// zoetrope moves. makes really cool sounds
+#include "gcode_mudflap.h"
+//#include "gcode_contraptor_circle.h"
+//#include "gcode_roadrunner.h"
 
 /*
  * Local Scope Functions and Data
@@ -115,19 +122,19 @@
 
 struct tgController tg;
 
-enum tgControllerState {				// command execution state
-	TG_READY_UNPROMPTED,				// ready for input, no prompt sent
-	TG_READY_PROMPTED,					// ready for input, prompt has been sent
+enum tgControllerState {		// command execution state
+	TG_READY_UNPROMPTED,		// ready for input, no prompt sent
+	TG_READY_PROMPTED,			// ready for input, prompt has been sent
 	TG_STATE_MAX
 };
 
-#define TG_FLAG_PROMPTS_bm (1<<0)		// prompt enabled if set
+#define TG_FLAG_PROMPTS_bm (1<<0)// prompt enabled if set
 
 enum tgMode {
-	TG_IDLE_MODE,						// idle mode only. No other modes active
-	TG_CONFIG_MODE,						// read and set configurations
-	TG_GCODE_MODE,						// gcode interpreter
-	TG_DIRECT_DRIVE_MODE,				// direct drive motors
+	TG_IDLE_MODE,				// idle mode only. No other modes active
+	TG_CONFIG_MODE,				// read and set configurations
+	TG_GCODE_MODE,				// gcode interpreter
+	TG_DIRECT_DRIVE_MODE,		// direct drive motors
 	TG_MAX_MODE
 };
 
@@ -136,6 +143,8 @@ static void _tg_prompt(void);
 static void _tg_set_mode(uint8_t mode);
 static void _tg_set_source(uint8_t d);
 static int _tg_test_file(void);
+static int _tg_mudflap_file(void);
+static int _tg_test(void);
 
 /*
  * tg_init()
@@ -144,9 +153,9 @@ static int _tg_test_file(void);
 void tg_init() 
 {
 	// set input source
-	tg.default_src = DEFAULT_SOURCE; 		// set in tinyg.h
-	_tg_set_source(tg.default_src);			// set initial active source
-	_tg_set_mode(TG_IDLE_MODE);				// set initial operating mode
+	tg.default_src = DEFAULT_SOURCE;// set in tinyg.h
+	_tg_set_source(tg.default_src);	// set initial active source
+	_tg_set_mode(TG_IDLE_MODE);		// set initial operating mode
 	tg.state = TG_READY_UNPROMPTED;
 }
 
@@ -201,32 +210,32 @@ int tg_read_next_line()
 {
 	// read input line or return if not a completed line
 	if ((tg.status = xio_gets(tg.src, tg.buf, sizeof(tg.buf))) == TG_OK) {
-		tg.status = tg_parser(tg.buf);				// dispatch to parser
+		tg.status = tg_parser(tg.buf);			// dispatch to parser
 	}
 
 	// Note: This switch statement could be reduced as most paths lead to
 	//		 TG_READY_UNPROMPTED, but it's written for clarity instead.
 	switch (tg.status) {
 
-		case TG_EAGAIN: case TG_NOOP: break;		// no change of state
+		case TG_EAGAIN: case TG_NOOP: break;	// no change of state
 
-		case TG_OK: {								// finished a line OK
-			tg.state = TG_READY_UNPROMPTED; 		// ready for next input line
+		case TG_OK: {							// finished a line OK
+			tg.state = TG_READY_UNPROMPTED; 	// ready for next input line
 			break;
 		}
-		case TG_QUIT: {								// Quit returned from parser
+		case TG_QUIT: {							// Quit returned from parser
 			_tg_set_mode(TG_IDLE_MODE);
 			tg.state = TG_READY_UNPROMPTED;
 			break;
 		}
-		case TG_EOF: {								// EOF comes from file devs only
+		case TG_EOF: {							// EOF from file devs only
 			printf_P(PSTR("End of command file\n"));
-			tg_reset_source();						// reset to default src
+			tg_reset_source();					// reset to default src
 			tg.state = TG_READY_UNPROMPTED;
 			break;
 		}
 		default: {
-			tg.state = TG_READY_UNPROMPTED;			// traps various error returns
+			tg.state = TG_READY_UNPROMPTED;		// traps various errors
 		}
 	}
 	return (tg.status);
@@ -235,8 +244,8 @@ int tg_read_next_line()
 /* 
  * tg_parser() - process top-level serial input 
  *
- *	tg_parser is the top-level of the input parser tree; dispatches other parsers
- *	Calls lower level parser based on mode
+ *	tg_parser is the top-level of the input parser tree; dispatches other 
+ *	parsers. Calls lower level parser based on mode
  *
  *	Keeps the system MODE, one of:
  *		- control mode (no lines are interpreted, just control characters)
@@ -245,7 +254,7 @@ int tg_read_next_line()
  *		- gcode mode
  *
  *	In control mode it auto-detects mode by first character of input buffer
- *	Quits from a parser are handled by the controller (not the individual parsers)
+ *	Quits from a parser are handled by the controller (not individual parsers)
  *	Preserves and passes through return codes (status codes) from lower levels
  */
 
@@ -259,7 +268,10 @@ int tg_parser(char * buf)
 			case 'C': case '?': _tg_set_mode(TG_CONFIG_MODE); break;
 			case 'D': _tg_set_mode(TG_DIRECT_DRIVE_MODE); break;
 			case 'R': return (_tg_test_file());
-			default:  _tg_set_mode(TG_IDLE_MODE); break; //+++ put a help prompt here
+			case 'Q': return (_tg_mudflap_file());
+//			case 'H': return (_tg_help_file());
+			case 'T': return (_tg_test());		// run whatever test you want
+			default:  _tg_set_mode(TG_IDLE_MODE); break;
 		}
 	}
 	// dispatch based on mode
@@ -284,14 +296,14 @@ void _tg_set_mode(uint8_t mode)
 /*
  * _tg_set_source()  Set current input source
  *
- * Note: Once multiple serial devices are supported this function should be 
- *	expanded to also set the stdout/stderr console device so the prompt and
- *	other messages are sent to the active device.
+ * Note: Once multiple serial devices are supported this function should 
+ *	be expanded to also set the stdout/stderr console device so the prompt
+ *	and other messages are sent to the active device.
  */
 
 void _tg_set_source(uint8_t d)
 {
-	tg.src = d;									// d = XIO device #. See xio.h
+	tg.src = d;							// d = XIO device #. See xio.h
 	if (tg.src == XIO_DEV_PGM) {
 		tg.flags &= ~TG_FLAG_PROMPTS_bm;
 	} else {
@@ -451,8 +463,9 @@ int _tg_test_file()
 //	xio_open_pgm(PGMFILE(&spiral_test5));
 //	xio_open_pgm(PGMFILE(&dwell_test2));
 
-	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
-//	xio_open_pgm(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
+	xio_open_pgm(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
+//	xio_open_pgm(PGMFILE(&mudflap)); 	// contraptor circle test
+//	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
 //	xio_open_pgm(PGMFILE(&roadrunner));
 
 //	xio_open_pgm(PGMFILE(&parser_test1));	// gcode parser tests
@@ -461,6 +474,28 @@ int _tg_test_file()
 	_tg_set_source(XIO_DEV_PGM);
 	_tg_set_mode(TG_GCODE_MODE);
 	return (TG_OK);
+}
+
+int _tg_mudflap_file()
+{
+	xio_open_pgm(PGMFILE(&mudflap)); 	// contraptor circle test
+	_tg_set_source(XIO_DEV_PGM);
+	_tg_set_mode(TG_GCODE_MODE);
+	return (TG_OK);
+}
+
+
+int _tg_test(void)
+{
+	uint16_t address = 0x500;
+	char wrbuf[16] = "0123456789";
+	char rdbuf[16];
+
+	EEPROM_WriteString(address, wrbuf, TRUE);	// 10 chars + termination
+	printf("wr: %s\n", wrbuf);
+	EEPROM_ReadString(address, rdbuf, 16);
+	printf("rd: %s\n", rdbuf);
+	return(TG_OK);
 }
 
 

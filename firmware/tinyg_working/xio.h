@@ -226,9 +226,11 @@ enum xioSignals {
 
 #define SIG_KILL_CHAR ETX
 #define SIG_TERM_CHAR ETX
-#define SIG_RESUME_CHAR XON
-#define SIG_PAUSE_CHAR XOFF
+//#define SIG_PAUSE_CHAR XOFF
+//#define SIG_RESUME_CHAR XON
 
+#define SIG_PAUSE_CHAR 'a'
+#define SIG_RESUME_CHAR 'b'
 
 /******************************************************************************
  *
