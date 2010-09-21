@@ -89,8 +89,8 @@ enum cfgPortBits {						// motor control port bit positions
 #define A_MICROSTEPS MICROSTEPS
 
 #define X_POLARITY 0					// motor direction polarity
-#define Y_POLARITY 1
-#define Z_POLARITY 0
+#define Y_POLARITY 0
+#define Z_POLARITY 1
 #define A_POLARITY 0
 
 #define X_SEEK_WHOLE_STEPS_PER_SEC 1500	// max whole steps per second for G0 motion
@@ -129,15 +129,20 @@ enum cfgPortBits {						// motor control port bit positions
 #define Z_MM_PER_REVOLUTION 2.54
 #define A_MM_PER_REVOLUTION 2.54
 */
-
+/*
 #define X_MM_PER_REVOLUTION 1.27		// 1/4 - 20 lead screw (0.050" per rev)
 #define Y_MM_PER_REVOLUTION 1.27		// (robot parameter)
 #define Z_MM_PER_REVOLUTION 1.27
 #define A_MM_PER_REVOLUTION 1.27
+*/
+#define X_MM_PER_REVOLUTION 33			// Makerbot settings
+#define Y_MM_PER_REVOLUTION 33			// (robot parameter)
+#define Z_MM_PER_REVOLUTION 1.27
+#define A_MM_PER_REVOLUTION 1.27
 
-#define X_MM_TRAVEL 400					// full excursion from min to max 
-#define Y_MM_TRAVEL 400					// (robot parameter)
-#define Z_MM_TRAVEL 300
+#define X_MM_TRAVEL 100					// full excursion from min to max 
+#define Y_MM_TRAVEL 100					// (robot parameter)
+#define Z_MM_TRAVEL 150
 #define A_MM_TRAVEL -1					// -1 is no limit (typ for rotary axis)
 
 #define X_LIMIT_ENABLE TRUE				// 1=limit switches present and enabled

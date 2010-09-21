@@ -11,7 +11,7 @@ limit_switches.o: ../limit_switches.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h ../tinyg.h \
   ../config.h ../hardware.h ../stepper.h ../controller.h \
-  ../limit_switches.h
+  ../limit_switches.h ../canonical_machine.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/io.h:
 
@@ -46,3 +46,5 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h:
 ../controller.h:
 
 ../limit_switches.h:
+
+../canonical_machine.h:

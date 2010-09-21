@@ -55,32 +55,25 @@
 #ifndef xmega_eeprom_h
 #define xmega_eeprom_h
 
-#include <avr/io.h>
-//#include <avr/interrupt.h>
-//#include <avr/sleep.h>
-//#include "xboot.h"
-
-/* Configuration and test settings */
-
-#define __USE_AVR1008_EEPROM
-//#define __FAKE_NVM				// define to use RAM instead of EEPROM
-//#define __TEST_EEPROM_WRITE		// simulates  EEPROM buffer page as RAM
-
+#include <avr/io.h>			// Was #include "avr_compiler.h"  (ash mod)
 
 #ifndef MAPPED_EEPROM_START
 #define MAPPED_EEPROM_START 0x1000
 #endif
+#define EEPROM_PAGESIZE 32
 
-#define EEPROM_PAGESIZE 32				// if this changes ...change below:
+//#define MAPPED_SIZE 0x0FFF // unused	// 4K for 256 and 192's. Others are 2K
+
+// added these definitions to clean things up a bit in the Atmel code
 #define EEPROM_BYTE_ADDR_MASK_gm 0x1F	// range of valid byte addrs in page
-#define EEPROM_ADDR1_MASK_gm 0x0F		// EEPROM is 4K = 0x0F, 2K = 0x07
+#define EEPROM_ADDR1_MASK_gm 0x0F		// 4K = 0x0F, 2K = 0x07
 
 #define EEPROM(_pageAddr, _byteAddr) \
 	((uint8_t *) MAPPED_EEPROM_START)[_pageAddr*EEPROM_PAGESIZE + _byteAddr]
 
 /* function prototypes for TinyG added functions */
-uint16_t EEPROM_WriteString(const uint16_t address, const char *string, const uint8_t terminate);
-uint16_t EEPROM_ReadString(const uint16_t address, char *buf, const uint16_t size);
+uint16_t EEPROM_WriteString(uint16_t address, char *string, uint8_t terminate);
+uint16_t EEPROM_ReadString(uint16_t address, char *buf, uint16_t max_len);
 void EEPROM_tests(void);
 
 /* Function prototypes for Atmel and Atmel-derived functions */
@@ -149,7 +142,7 @@ void EEPROM_EraseAll( void );
  *  NVM.CTRLA register. The CMDEX bit must be set within 4 clock cycles 
  *	after setting the protection byte in the CCP register.
  */
-/*
+
 #define NVM_EXEC()  asm("push r30"	"\n\t"	\
 			    "push r31"			"\n\t"	\
     			"push r16"			"\n\t"	\
@@ -165,7 +158,7 @@ void EEPROM_EraseAll( void );
 			    "pop r31"			"\n\t"	\
 			    "pop r30"			"\n\t"	\
 			    )
-*/
+
 /* ------------------------------------------------------------------------
  * Modified version from jl_1978 - Feb 01, 2010 - 06:30 PM in thread:
  * http://www.avrfreaks.net/index.php?name=PNphpBB2&file=printview&t=87793&start=0

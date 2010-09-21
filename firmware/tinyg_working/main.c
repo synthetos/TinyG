@@ -141,7 +141,7 @@ int main(void)
 	tg_init();					// (4) tinyg controller (selects std devices)
 	xio_init_stdio();			// (5) set stdin, stdout, stderr
 
-	st_init(); 					// stepper subsystem
+//	st_init(); 					// stepper subsystem
 	ls_init();					// limit switches
 	mv_init();					// move buffers
 	mc_init();					// motion control subsystem
@@ -161,7 +161,7 @@ int main(void)
 #ifdef __UNIT_TESTS				// call unit tests from here
 //	xio_tests();
 //	EEPROM_tests();				// unit test EEPROM function
-	cfg_tests();				// unit test config functions
+//	cfg_tests();				// unit test config functions
 #endif
 
 // Debug help: Pre-load the USB RX (input) buffer with some test strings
@@ -170,6 +170,7 @@ int main(void)
 //	xio_queue_RX_char_usb(ETX);			// send control-c (kill)
 //	xio_queue_RX_string_usb("R\n");		// run a file - select on controller.c
 //	xio_queue_RX_string_usb("?\n");		// enter config mode and dump config
+	xio_queue_RX_string_usb("T\n");		// invoke test
 
 //	xio_queue_RX_string_usb("g1 f450 x10 y13\n");
 

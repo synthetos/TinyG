@@ -21,10 +21,6 @@
 /* TODO:
 	- help screen
  */
-/*
- * Fake NVM to help test if EEPROM is working or not
- */
-//#define __FAKE_NVM
 
 #include <stdio.h>
 #include <ctype.h>
@@ -63,55 +59,49 @@ uint16_t _cfg_compute_record_address(uint16_t address, uint8_t param, uint8_t ax
 void _cfg_print_config_record(char *record);
 void _cfg_print_axis(uint8_t axis);
 
-#ifdef __FAKE_NVM
-void NNVM_WriteString(uint16_t address, char *record, uint8_t unused);
-void NNVM_ReadString(uint16_t address, char *record, uint8_t size);
-#endif
-
-/* Config parameter tokens and config record constants
- * These values are used to tokenize config strings and 
- * to compute the NVM record addresses (_cfg_write_record())
+/* 
+ * Config parameter tokens and config record constants
+ *
+ * These values are used to tokenize config strings and to compute the NVM 
+ * record addresses (_cfg_write_record())
  */
+
 enum cfgTokens {
-	CFG_ZERO_TOKEN,				// header record must always be location zero
+	CFG_HEADER_TOKEN,			// location zero reserved for header record
 
 	// Gcode default settings
-	CFG_GCODE_PLANE,			// use gcCanonicalPlane enum (0-2)
-	CFG_GCODE_UNITS,			// 0=inches (G20), 1=mm (G21)
-	CFG_GCODE_HOMING_MODE,		// TRUE = homing cycle on startup
-	CFG_GCODE_FEED_RATE,		// Default F value
+	CFG_GCODE_PLANE,			// default gcCanonicalPlane enum (0-2)
+	CFG_GCODE_UNITS,			// default 0=inches (G20), 1=mm (G21)
+	CFG_GCODE_HOMING_MODE,		// TRUE = do a homing cycle on startup
+	CFG_GCODE_FEED_RATE,		// default F value
 	CFG_GCODE_SPINDLE_SPEED,	// default S value
 	CFG_GCODE_TOOL,				// default T value
 
 	// machine default settings
-	CFG_MM_PER_ARC_SEGMENT,
+	CFG_MM_PER_ARC_SEGMENT,		// the only global machine setting for now
 
 	// per-axis settings 
-	CFG_MAP_AXIS_TO_MOTOR,		// must be the first axis setting 
-	CFG_SEEK_STEPS_MAX,
-	CFG_FEED_STEPS_MAX,
-	CFG_DEGREES_PER_STEP,
+	CFG_MAP_AXIS_TO_MOTOR,		// the map must be the first axis setting.
+	CFG_SEEK_STEPS_MAX,			// the rest are ordered by convention and 
+	CFG_FEED_STEPS_MAX,			//...the order will be visible to the user 
+	CFG_DEGREES_PER_STEP,		//...so try not to change it too much
 	CFG_MICROSTEP_MODE,
 	CFG_POLARITY,
 	CFG_TRAVEL_MAX,
-	CFG_TRAVEL_WARN,			// stop homing cycle if above this value
-	CFG_TRAVEL_PER_REV,
+	CFG_TRAVEL_WARN,			// warn the user if travel exceeds this value
+	CFG_TRAVEL_PER_REV,			// in mm per revolution
 	CFG_IDLE_MODE,
 	CFG_LIMIT_SWITCH_MODE,
 
-	CFG_LAST_TOKEN				// must always be last token enum
+	CFG_TRAILER_TOKEN			// must always be last token enum
 };
-
-#ifdef __FAKE_NVM
-char nnvm[700];	// not non-volatile memory - sized to hold entire config
-#endif
 
 #define CFG_NVM_BASE 0x0000	// base address of usable NVM
 #define CFG_RECORD_LEN 12		// length of ASCII NVM strings (see note)
 
 #define CFG_NON_AXIS_BASE CFG_GCODE_PLANE		// start of non-axis parms
 #define CFG_AXIS_BASE CFG_MAP_AXIS_TO_MOTOR 	// start of axis parameters
-#define CFG_AXIS_COUNT (CFG_LAST_TOKEN - CFG_AXIS_BASE) // # of axis parms
+#define CFG_AXIS_COUNT (CFG_TRAILER_TOKEN - CFG_AXIS_BASE) // # of axis parms
 
 #define CFG_HEADER_RECORD_ADDR CFG_NVM_BASE
 #define CFG_TRAILER_RECORD (CFG_AXIS_BASE + (4*CFG_AXIS_COUNT))
@@ -144,7 +134,6 @@ void cfg_init()
 {
 	cp.base_addr = CFG_NVM_BASE;// first (and only) profile
 	cfg_reset();				// reset config w/compiled hardwired values
-	cfg_reset();				// reset config w/compiled hardwired values
 }
 
 /* 
@@ -170,6 +159,7 @@ void cfg_init()
 
 void cfg_reset()
 {
+/*
 	uint16_t address = cp.base_addr;
 
 	// load hardware.h hardwired settings into cfg struct
@@ -199,6 +189,7 @@ void cfg_reset()
 		cfg_parse(cp.record);
 		address += CFG_RECORD_LEN;
 	}
+*/
 	return;
 }
 
@@ -477,6 +468,8 @@ uint8_t _cfg_tokenize_config_record()
 
 /*
  * cfg_print_config_records() - dump configs from NVM to stderr
+ *
+ * Also display computed values at end
  */
 
 void cfg_print_config_records()
@@ -489,6 +482,8 @@ void cfg_print_config_records()
 		_cfg_print_config_record(cp.record);
 		address += CFG_RECORD_LEN;
 	}
+	printf_P(PSTR(" (maximum_seek_rate:  %7.3f mm / minute)\n"), cfg.max_seek_rate);
+	printf_P(PSTR(" (maximum_feed_rate:  %7.3f mm / minute)\n"), cfg.max_feed_rate);
 }
 
 /*
@@ -515,7 +510,7 @@ char cfgShowRecord12[] PROGMEM = "  %c axis - Microstep mode     %5.0f";
 char cfgShowRecord13[] PROGMEM = "  %c axis - Polarity           %5.0f";
 char cfgShowRecord14[] PROGMEM = "  %c axis - Travel max         %5.0f";
 char cfgShowRecord15[] PROGMEM = "  %c axis - Travel warning     %5.0f";
-char cfgShowRecord16[] PROGMEM = "  %c axis - mm per revolution  %5.3f";
+char cfgShowRecord16[] PROGMEM = "  %c axis - mm per revolution  %5.2f";
 char cfgShowRecord17[] PROGMEM = "  %c axis - Idle mode          %5.0f";
 char cfgShowRecord18[] PROGMEM = "  %c axis - Limit switches     %5.0f";
 
@@ -739,47 +734,13 @@ void _cfg_read_record_from_NVM(uint16_t base_addr, char *record, uint8_t param, 
 
 inline void _cfg_write_to_NVM(uint16_t address, char *record)
 {
-#ifdef __FAKE_NVM
-	NNVM_WriteString(address, record, TRUE);
-#else
 	EEPROM_WriteString(address, record, TRUE);
-#endif
 }
 
 inline void _cfg_read_from_NVM(uint16_t address, char *record, uint8_t size)
 {
-#ifdef __FAKE_NVM
-	NNVM_ReadString(address, record, size);
-#else
 	EEPROM_ReadString(address, record, size);
-#endif
 }
-
-#ifdef __FAKE_NVM
-inline void NNVM_WriteString(uint16_t address, char *record, uint8_t unused)
-{
-	uint16_t j = address;		// NNVM pointer
-
-	for (uint16_t i = 0; i < CFG_RECORD_LEN; i++) {
-		nnvm[j++] = record[i];
-		if (!record[i]) {
-			return;
-		}
-	}
-}
-
-inline void NNVM_ReadString(uint16_t address, char *record, uint8_t size)
-{
-	uint16_t j = address;		// NNVM pointer
-
-	for (uint16_t i = 0; i < CFG_RECORD_LEN; i++) {
-		record[i] = nnvm[j++];
-		if (!record[i]) {
-			return;
-		}
-	}
-}
-#endif
 
 /*
  * _cfg_compute_record_address() - compute NVM address
