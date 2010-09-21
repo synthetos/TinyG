@@ -24,6 +24,7 @@
 #include "stepper.h"
 #include "controller.h"
 #include "limit_switches.h"
+#include "canonical_machine.h"
 
 /*
  * Interrupt vectors - these are hard-wired to ports in the xmega
@@ -39,7 +40,10 @@
 #define A_MIN_ISR_vect	PORTD_INT0_vect
 #define A_MAX_ISR_vect	PORTD_INT1_vect
 
-static void _ls_handler(void);
+//static void _ls_handler(void);
+static void _ls_stop(void);
+static void _ls_start(void);
+static void _ls_end(void);
 
 /*
  * ls_init() - initialize limit switches
@@ -68,18 +72,27 @@ void ls_init(void)
  * ISRs - Limit switch interrupt handler routine and vectors
  */
 
-ISR(X_MIN_ISR_vect)	{ _ls_handler(); }
-ISR(X_MAX_ISR_vect)	{ _ls_handler(); }
-ISR(Y_MIN_ISR_vect)	{ _ls_handler(); }
-ISR(Y_MAX_ISR_vect)	{ _ls_handler(); }
-ISR(Z_MIN_ISR_vect)	{ _ls_handler(); }
-ISR(Z_MAX_ISR_vect)	{ _ls_handler(); }
-ISR(A_MIN_ISR_vect)	{ _ls_handler(); }
-ISR(A_MAX_ISR_vect)	{ _ls_handler(); }
+ISR(X_MIN_ISR_vect)	{ _ls_end(); }
+ISR(X_MAX_ISR_vect)	{ _ls_end(); }
+ISR(Y_MIN_ISR_vect)	{ _ls_end(); }
+ISR(Y_MAX_ISR_vect)	{ _ls_end(); }
+ISR(Z_MIN_ISR_vect)	{ _ls_end(); }
+ISR(Z_MAX_ISR_vect)	{ _ls_end(); }
+ISR(A_MIN_ISR_vect)	{ _ls_start(); }
+ISR(A_MAX_ISR_vect)	{ _ls_stop(); }
 
-void _ls_handler() {
-//	tg_kill();
+void _ls_start() {
+//	cm_async_start();
 	return;
 }
 
+void _ls_stop() {
+//	cm_async_stop();
+	return;
+}
+
+void _ls_end() {
+//	cm_async_end();
+	return;
+}
 
