@@ -159,7 +159,6 @@ void cfg_init()
 
 void cfg_reset()
 {
-/*
 	uint16_t address = cp.base_addr;
 
 	// load hardware.h hardwired settings into cfg struct
@@ -189,7 +188,6 @@ void cfg_reset()
 		cfg_parse(cp.record);
 		address += CFG_RECORD_LEN;
 	}
-*/
 	return;
 }
 

@@ -60,12 +60,7 @@
 //#include <avr/sleep.h>
 //#include "xboot.h"
 
-/* Configuration and test settings */
-
-#define __USE_AVR1008_EEPROM
-//#define __FAKE_NVM				// define to use RAM instead of EEPROM
-//#define __TEST_EEPROM_WRITE		// simulates  EEPROM buffer page as RAM
-
+/* Configuration settings */
 
 #ifndef MAPPED_EEPROM_START
 #define MAPPED_EEPROM_START 0x1000
