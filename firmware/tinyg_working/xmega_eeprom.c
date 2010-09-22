@@ -64,6 +64,20 @@
 /* 
  * Modified to support Xmega family processors
  * Modifications Copyright (c) 2010 Alden S. Hart, Jr.
+ *
+ * Note: The xmega A3 family has some big problems with EEPROM as 
+ * documented in Atmel release note AVR1008 and in the chip Errata.
+ * In addition, the simulator doesn't woirk (which I think I've mentioned)
+ * This file contains workarounds to those problems. 
+ * Code was used from the avr-xboot project: 
+ *
+ *		http://code.google.com/p/avr-xboot/,
+ * 		xboot-20100529.tar.gz release.
+ *
+ * These refs were also helpful:
+ * http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&p=669385
+ * http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=88416
+ * http://www.avrfreaks.net/index.php?name=PNphpBB2&file=printview&t=89810&start=0
  */
 
 #include "xmega_eeprom.h"
@@ -74,10 +88,16 @@
 
 #ifdef __UNIT_TESTS
 #include <stdio.h>
-#include <string.h>						// for memset()
+#include <string.h>					// for memset()
 #include <avr/pgmspace.h>
-#include "xio.h"						// all device includes are nested here
+#include "xio.h"					// all device includes are nested here
 #endif
+
+#define __USE_AVR1008_EEPROM		// use the AVR1008 workaround code
+//#define __NNVM					// use a RAM block to simulate EEPROM
+
+
+/**** Inline assembly to support NVM operations ****/
 
 static inline void NVM_EXEC(void)
 {
@@ -92,20 +112,20 @@ static inline void NVM_EXEC(void)
 		[z] "z" (z)
                      );
 }
-#ifdef __TEST_EEPROM_WRITE
-	uint8_t testbuffer[32];			// fake out the page buffer
-#endif	// __TEST_EEPROM_WRITE
+
+/**** AVR1008 fixes ****/
 
 #ifdef __USE_AVR1008_EEPROM
 
 //Interrupt handler for for EEPROM write "done" interrupt
+
 ISR(NVM_EE_vect)
 {
-	// Disable the EEPROM interrupt
-	NVM.INTCTRL = (NVM.INTCTRL & ~NVM_EELVL_gm);
+	NVM.INTCTRL = (NVM.INTCTRL & ~NVM_EELVL_gm); // Disable EEPROM interrupt
 }
 
-// AVR1008 fix
+// Wrapper for NVM_EXEC that executes the workaround code
+
 static inline void NVM_EXEC_WRAPPER(void)
 {
 	uint8_t sleepCtr = SLEEP.CTRL;			// Save the Sleep register
@@ -129,28 +149,26 @@ static inline void NVM_EXEC_WRAPPER(void)
 	SREG = globalInt;						// Restore global int settings
 }
 #else
-
 #define NVM_EXEC_WRAPPER NVM_EXEC
-
 #endif // __USE_AVR1008_EEPROM
 
-/****** Functions added for TinyG ******/
+/**** Functions added for TinyG ****/
 
 /*
- * Define Non Non-Volatile Memory RAM array & functions to substitute for 
- * EEPROM which either is not working correct or my access routines are bad
+ * Non Non-Volatile Memory RAM array & functions to substitute for EEPROM
+ * for testing.
  */
 
-#ifdef __FAKE_NVM
-void NNVM_WriteString(uint16_t address, char *record, uint8_t unused);
-void NNVM_ReadString(uint16_t address, char *record, uint8_t size);
+#ifdef __NNVM
+void NNVM_WriteString(const uint16_t address, const char *record, const uint8_t unused);
+void NNVM_ReadString(const uint16_t address, char *record, const uint8_t size);
 char nnvm[700];	// not non-volatile memory - sized to hold entire config
 
-inline void NNVM_WriteString(uint16_t address, char *record, uint8_t unused)
+inline void NNVM_WriteString(const uint16_t address, const char *record, const uint8_t unused)
 {
 	uint16_t j = address;		// NNVM pointer
 
-	for (uint16_t i = 0; i < 12; i++) {
+	for (uint16_t i = 0; i < 80; i++) {		// arbitrary string max of 80
 		nnvm[j++] = record[i];
 		if (!record[i]) {
 			return;
@@ -158,7 +176,7 @@ inline void NNVM_WriteString(uint16_t address, char *record, uint8_t unused)
 	}
 }
 
-inline void NNVM_ReadString(uint16_t address, char *record, uint8_t size)
+inline void NNVM_ReadString(const uint16_t address, char *record, const uint8_t size)
 {
 	uint16_t j = address;		// NNVM pointer
 
@@ -216,21 +234,26 @@ uint16_t EEPROM_WriteString(const uint16_t address, const char *string, const ui
 	NNVM_WriteString(address, string, TRUE);
 	return (address);
 #else
-	uint8_t i = 0;			// index into string
+	uint16_t addr = address;	// local copy
+	uint8_t i = 0;				// index into string
 
 	EEPROM_DisableMapping();
 	while (string[i]) {
-		EEPROM_WriteByte(address, string[i++]);
+		EEPROM_WriteByte(addr++, string[i++]);
 	}
 	if (terminate) {
-		EEPROM_WriteByte(address, 0);
+		EEPROM_WriteByte(addr++, 0);
 	}
-	return (address + (++i)); // return next address in EEPROM
+	return (addr); 				// return next address in EEPROM
 #endif //__Fake_NVM
 }
 
-/*
-uint16_t EEPROM_WriteString(uint16_t address, char *string, uint8_t terminate)
+/* //+++ this is broken and will need to be fixed to work with NNVM
+#ifdef __TEST_EEPROM_WRITE
+	uint8_t testbuffer[32];			// fake out the page buffer
+#endif	// __TEST_EEPROM_WRITE
+
+uint16_t EEPROM_WriteString(const uint16_t address, const char *string, const uint8_t terminate)
 {
 	uint8_t i = 0;			// index into string
 	uint16_t curaddr;		// starting address of string remaining to write
@@ -262,7 +285,7 @@ uint16_t EEPROM_WriteString(uint16_t address, char *string, uint8_t terminate)
 		EEPROM_FlushBuffer();	// ensure no unintentional data is written
 		NVM.CMD = NVM_CMD_LOAD_EEPROM_BUFFER_gc; // Page Load command
 		while (byteidx <= byteend) {
-#ifdef __TEST_EEPROM_WRITE
+#ifdef __FAKE_NVM	
 			NVM.ADDR0 = byteidx;
 			testbuffer[byteidx++] = string[i++];
 #else
@@ -273,7 +296,7 @@ uint16_t EEPROM_WriteString(uint16_t address, char *string, uint8_t terminate)
 		}
 		// run EEPROM Atomic Write (Erase&Write) command.
 		NVM.CMD = NVM_CMD_ERASE_WRITE_EEPROM_PAGE_gc;	// load command
-		NVM_EXEC();	//write the protection signature and execute command
+		NVM_EXEC_WRAPPER();	//write the protection signature and execute command
 	}
 	return (curaddr);
 }
@@ -288,7 +311,7 @@ uint16_t EEPROM_WriteString(uint16_t address, char *string, uint8_t terminate)
  *
  *		address		starting address of string in EEPROM space
  *		buf			buffer to read string into
- *		max_len		cutoff string and terminate at this length 
+ *		size		cutoff string and terminate at this length 
  *		return		next address past string termination
  */
 
@@ -296,43 +319,35 @@ uint16_t EEPROM_ReadString(const uint16_t address, char *buf, const uint16_t siz
 {
 #ifdef __FAKE_NVM
 	NNVM_ReadString(address, buf, size);
-	return(address);
+	return(address + sixeof(buf));
 #else
-#ifdef __TEST_EEPROM_WRITE
-	uint8_t j = address & 0x1F;
-#endif
-	uint16_t local_addr = address;
-	uint16_t i = 0;
+	uint16_t addr = address;				// local copy
+	uint16_t i = 0;							// index into strings
 
 	EEPROM_DisableMapping();
 
 	for (i = 0; i < size; i++) {
-		NVM.ADDR0 = local_addr & 0xFF;		// set read address
-		NVM.ADDR1 = (local_addr++ >> 8) & EEPROM_ADDR1_MASK_gm;
+		NVM.ADDR0 = addr & 0xFF;			// set read address
+		NVM.ADDR1 = (addr++ >> 8) & EEPROM_ADDR1_MASK_gm;
 		NVM.ADDR2 = 0x00;
 
 		EEPROM_WaitForNVM();				// Wait until NVM is not busy
 		NVM.CMD = NVM_CMD_READ_EEPROM_gc;	// issue EEPROM Read command
 		NVM_EXEC();
-#ifdef __TEST_EEPROM_WRITE
-		if (!(buf[i] = testbuffer[j++])) {
-			break;
-		}
-#else
 		if (!(buf[i] = NVM.DATA0)) {
 			break;
 		}		
-#endif // __TEST_EEPROM_WRITE
 	}
 	if (i == size) {		// null terinate the buffer overflow case
 		buf[i] = 0;
 	}
-	return local_addr;
+	return (addr);
 #endif //__Fake_NVM
 }
 
 
-/****** Functions from Atmel eeprom_driver.c (and some derived from them) ******/
+/****** Functions from Atmel eeprom_driver.c w/some changes ******/
+// Look for NVM_EXEC_WRAPPER in places.
 
 /* 
  * EEPROM_WaitForNVM() - Wait for any NVM access to finish

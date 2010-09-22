@@ -141,7 +141,7 @@ int main(void)
 	tg_init();					// (4) tinyg controller (selects std devices)
 	xio_init_stdio();			// (5) set stdin, stdout, stderr
 
-//	st_init(); 					// stepper subsystem
+	st_init(); 					// stepper subsystem
 	ls_init();					// limit switches
 	mv_init();					// move buffers
 	mc_init();					// motion control subsystem
