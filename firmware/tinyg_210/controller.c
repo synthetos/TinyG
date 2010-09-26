@@ -110,7 +110,7 @@
  * Canned gcode files for testing
  */
 
-//#include "gcode_tests.h"		// assorted test code
+#include "gcode_tests.h"		// assorted test code
 #include "gcode_zoetrope.h"		// zoetrope moves. makes really cool sounds
 #include "gcode_mudflap.h"
 //#include "gcode_contraptor_circle.h"
@@ -487,7 +487,12 @@ int _tg_mudflap_file()
 
 int _tg_test(void)
 {
-	uint16_t address = 0x500;
+	xio_open_pgm(PGMFILE(&motor_test1));	// motor tests
+	_tg_set_source(XIO_DEV_PGM);
+	_tg_set_mode(TG_GCODE_MODE);
+	return (TG_OK);
+
+/*	uint16_t address = 0x500;
 	char wrbuf[16] = "0123456789";
 	char rdbuf[16];
 
@@ -496,6 +501,7 @@ int _tg_test(void)
 	EEPROM_ReadString(address, rdbuf, 16);
 	printf("rd: %s\n", rdbuf);
 	return(TG_OK);
+*/
 }
 
 

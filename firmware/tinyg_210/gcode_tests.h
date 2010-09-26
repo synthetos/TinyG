@@ -2,6 +2,19 @@
  * data_gcode_tests.h - data file containing assorted tests
  */
 
+const char PROGMEM motor_test1[] = "\
+G00 G17 G21 G40 G49 G80 G90\n\
+T1 M6\n\
+G92 X0 Y0 Z0\n\
+S5000 M03 \n\
+G1 F300\n\
+x10 y0\n\
+y10 x10\n\
+x0 y10\n\
+x0 y0\n\
+g21";
+
+
 //const char PROGMEM g0_test1[] = "g0 x10 y20 z30";
 
 const char PROGMEM parser_test1[] = "\
