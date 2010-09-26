@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<resource>
+  <object class="wxPanel" name="MyPanel">
+   <object class="wxTextCtrl" name="Debug">
+   <pos>30,25</pos>
+   </object>
+   <object class="wxButton" name="CloseButton">
+    <label>Close</label>
+    <pos>15,10</pos>
+   </object>
+  </object>
+</resource>
