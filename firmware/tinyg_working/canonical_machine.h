@@ -32,9 +32,9 @@ uint8_t cm_get_motion_mode(void);
 void cm_set_positions(double x, double y, double z);
 void cm_set_targets(double x, double y, double z);
 void cm_set_offsets(double i, double j, double k);
-void cm_set_position(uint8_t axis, double value);
-void cm_set_target(uint8_t axis, double value);
-void cm_set_offset(uint8_t axis, double value);
+//void cm_set_position(uint8_t axis, double value);
+//void cm_set_target(uint8_t axis, double value);
+//void cm_set_offset(uint8_t axis, double value);
 void cm_set_radius(double r);
 
 /*--- canonical machining functions ---*/
@@ -43,6 +43,7 @@ uint8_t cm_select_plane(uint8_t plane);
 uint8_t cm_set_origin_offsets(double x, double y, double z);// G92
 uint8_t cm_use_length_units(uint8_t inches_mode);			// G20, G21
 uint8_t cm_set_distance_mode(uint8_t absolute_mode);		// G90, G91
+uint8_t cm_set_absolute_override(uint8_t setting);			// G53
 
 uint8_t cm_set_traverse_rate(double rate);					// (no code)
 uint8_t cm_straight_traverse(double x, double y, double z);	// G0
@@ -77,5 +78,6 @@ uint8_t cm_arc_feed(double x, double y, double z, 			// G2, G3
 					double i, double j, double k,
 					double radius, uint8_t motion_mode);
 
+void cm_print_machine_state(void);							// ? command
 #endif
 

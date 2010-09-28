@@ -59,7 +59,7 @@ enum tgAxisNum {		// define axis numbers and array indexes from 0 to 3
 		X,
 		Y,
 		Z,
-		A,
+		A
 };
 
 /* TinyG return codes

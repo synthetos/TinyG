@@ -9,17 +9,18 @@
  * Copyright (c) 2010 Alden S Hart, Jr.
  * Portions copyright (c) 2009 Simen Svale Skogsrud
  *
- * TinyG is free software: you can redistribute it and/or modify it under the
- * terms of the GNU General Public License as published by the Free Software 
- * Foundation, either version 3 of the License, or (at your option) any later 
- * version.
+ * TinyG is free software: you can redistribute it and/or modify it under 
+ * the terms of the GNU General Public License as published by the Free 
+ * Software Foundation, either version 3 of the License, or (at your 
+ * option) any later version.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for details.
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT 
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
+ * for details.
  *
- * You should have received a copy of the GNU General Public License along 
- * with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License 
+ * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <math.h>
@@ -44,8 +45,8 @@ static uint8_t cm_status;
 
 static double _to_millimeters(double value);
 static double _theta(double x, double y);
-static int _gc_compute_radius_arc(void);
-static int _gc_compute_center_arc(void);
+static int _cm_compute_radius_arc(void);
+static int _cm_compute_center_arc(void);
 
 /*************************************************************************
  *
@@ -59,32 +60,32 @@ static int _gc_compute_center_arc(void);
 /*
  * Getters
  *
- * cm_get_position() - return position from the gm struct into gn struct form
  * cm_get_next_action() - get next_action from the gm struct
  * cm_get_motion_mode() - get motion mode from the gm struct
+ * cm_get_position() - return position from the gm struct into gn struct form
  */
+
+inline uint8_t cm_get_next_action() { return gm.next_action; }
+inline uint8_t cm_get_motion_mode() { return gm.motion_mode; }
 
 inline double cm_get_position(uint8_t axis) 
 {
 	return (gm.inches_mode ? (gm.position[axis] / MM_PER_INCH) : gm.position[axis]);
 }
 
-inline uint8_t cm_get_next_action() { return gm.next_action; }
-inline uint8_t cm_get_motion_mode() { return gm.motion_mode; }
 
 /*
- * Setters
+ * Setters - these inhale gn values into the gm struct
+ *
+ *	Input coordinates are in native block formats (gn form);
+ *	i.e. they are not unit adjusted or otherwise pre-processed.
+ *	The setters take care of coordinate system, units, and 
+ *	distance mode conversions and normalizations.
  *
  * cm_set_positions()	- set all XYZ positions
  * cm_set_targets()		- set all XYZ targets
  * cm_set_offsets()		- set all IJK offsets
- * cm_set_position() 	- set one XYZ position
- * cm_set_target()		- set one XYZ target
- * cm_set_offset()		- set one IJK offset
  * cm_set_radius()		- set radius value
- *
- *	Input coordinates are in native block formats;
- *	i.e. they are not unit adjusted or otherwise pre-processed
  */
 
 inline void cm_set_positions(double x, double y, double z) 
@@ -96,9 +97,15 @@ inline void cm_set_positions(double x, double y, double z)
 
 inline void cm_set_targets(double x, double y, double z) 
 { 
-	gm.target[X] = _to_millimeters(x);
-	gm.target[Y] = _to_millimeters(y);
-	gm.target[Z] = _to_millimeters(z);
+	if (gm.absolute_mode || gm.absolute_override) {
+		gm.target[X] = _to_millimeters(x);
+		gm.target[Y] = _to_millimeters(y);
+		gm.target[Z] = _to_millimeters(z);
+	} else {
+		gm.target[X] += _to_millimeters(x);
+		gm.target[Y] += _to_millimeters(y);
+		gm.target[Z] += _to_millimeters(z);
+	}
 }
 
 inline void cm_set_offsets(double i, double j, double k) 
@@ -106,21 +113,6 @@ inline void cm_set_offsets(double i, double j, double k)
 	gm.offset[0] = _to_millimeters(i);
 	gm.offset[1] = _to_millimeters(j);
 	gm.offset[2] = _to_millimeters(k);
-}
-
-inline void cm_set_position(uint8_t axis, double value) 
-{ 
-	gm.position[axis] = _to_millimeters(value);
-}
-
-inline void cm_set_target(uint8_t axis, double value) 
-{ 
-	gm.target[axis] = _to_millimeters(value);
-}
-
-inline void cm_set_offset(uint8_t axis, double value) 
-{ 
-	gm.offset[axis] = _to_millimeters(value);
 }
 
 inline void cm_set_radius(double r) 
@@ -191,6 +183,7 @@ void cm_init_canon()
  * cm_set_origin_offsets() - G92
  * cm_use_length_units()  - G20, G21
  * cm_set_distance_mode() - G90, G91
+ * cm_set_absolute_override() - G53 
  */
 
 uint8_t cm_select_plane(uint8_t plane) 
@@ -218,15 +211,21 @@ uint8_t cm_set_origin_offsets(double x, double y, double z)
 	return (TG_OK);
 }
 
-uint8_t cm_use_length_units(uint8_t inches_mode)
+inline uint8_t cm_use_length_units(uint8_t inches_mode)
 {
 	gm.inches_mode = inches_mode;
 	return (TG_OK);
 }
 
-uint8_t cm_set_distance_mode(uint8_t absolute_mode)
+inline uint8_t cm_set_distance_mode(uint8_t absolute_mode)
 {
 	gm.absolute_mode = absolute_mode;
+	return (TG_OK);
+}
+
+inline uint8_t cm_set_absolute_override(uint8_t setting) 
+{ 
+	gm.absolute_override = setting;
 	return (TG_OK);
 }
 
@@ -260,7 +259,10 @@ uint8_t cm_straight_traverse(double x, double y, double z)
 	cm_status = mc_line(gm.target[X], gm.target[Y], gm.target[Z], gm.seek_rate, FALSE);
 
 	// set final position
-	cm_set_positions(x, y, z); // ++++ should be able to move this to before mc_line() call
+	gm.position[X] = gm.target[X];
+	gm.position[Y] = gm.target[Y];
+	gm.position[Z] = gm.target[Z];
+
 	return (cm_status);
 }
 
@@ -347,7 +349,10 @@ uint8_t cm_straight_feed(double x, double y, double z)
 	 * action and the real tool position is still close to the starting point.
 	 * The endpoint position is not moved if there has been an error.
 	 */
-	cm_set_positions(x, y, z); // ++++ should be able to move this to before mc_line() call
+	gm.position[X] = gm.target[X];
+	gm.position[Y] = gm.target[Y];
+	gm.position[Z] = gm.target[Z];
+
 	return (cm_status);
 }
 
@@ -516,8 +521,8 @@ uint8_t cm_return_to_home()
 /***********************************************************************
  *
  * cm_arc_feed() - G2, G3
- * _gc_compute_radius_arc() - compute arc center (offset) from radius.
- * _gc_compute_center_arc() - compute arc from I and J (arc center point)
+ * _cm_compute_radius_arc() - compute arc center (offset) from radius.
+ * _cm_compute_center_arc() - compute arc from I and J (arc center point)
  *
  * Note: this is mostly original grbl code with little modification other
  * 		 than calling differently and refactoring into smaller routines.
@@ -538,22 +543,24 @@ uint8_t cm_arc_feed(double x, double y, double z, // XYZ of the endpoint
 
 	// execute the move
 	if (radius) {
-		if ((_gc_compute_radius_arc() != TG_OK)) {
+		if ((_cm_compute_radius_arc() != TG_OK)) {
 			return (cm_status);						// error return
 		}
 	}
-	cm_status = _gc_compute_center_arc();
+	cm_status = _cm_compute_center_arc();
 
 	// set final position
 	if ((cm_status == TG_OK) || (cm_status == TG_EAGAIN)) {
-		cm_set_positions(gm.target[X], gm.target[Y], gm.target[Z]);
+		gm.position[X] = gm.target[X];
+		gm.position[Y] = gm.target[Y];
+		gm.position[Z] = gm.target[Z];
 	}
 	return (cm_status);
 }
 
-/* _gc_compute_radius_arc() - compute arc center (offset) from radius. */
+/* _cm_compute_radius_arc() - compute arc center (offset) from radius. */
 
-int _gc_compute_radius_arc()
+int _cm_compute_radius_arc()
 {
 	double x;
 	double y;
@@ -670,10 +677,10 @@ int _gc_compute_radius_arc()
 } 
     
 /*
- * _gc_compute_center_arc() - compute arc from I and J (arc center point)
+ * _cm_compute_center_arc() - compute arc from I and J (arc center point)
  */
 
-int _gc_compute_center_arc()
+int _cm_compute_center_arc()
 {
 	double theta_start;
 	double theta_end;
@@ -746,4 +753,85 @@ int _gc_compute_center_arc()
 //					   (gp.inverse_feed_rate_mode) ? gp.inverse_feed_rate : 
 //						gp.feed_rate, gp.inverse_feed_rate_mode);
 	return (cm_status);
+}
+
+/*
+ * gc_print_machine_state()
+ */
+#define GC_MSG_MOTION 0	// these line up with the memory string indexes below
+#define GC_MSG_PLANE 5
+#define GC_MSG_DISTANCE 8
+#define GC_MSG_FEEDRATEMODE 10
+#define GC_MSG_UNITS 12
+#define GC_MSG_STOP 14
+#define GC_MSG_X 17
+#define GC_MSG_Y 18
+#define GC_MSG_Z 19
+#define GC_MSG_A 20
+#define GC_MSG_I 21
+#define GC_MSG_J 22
+#define GC_MSG_FEEDRATE 23
+#define GC_MSG_SEEKRATE 24
+
+// put display strings in program memory
+char gms00[] PROGMEM = "Motion mode:     G0  - linear traverse (seek)\n";
+char gms01[] PROGMEM = "Motion mode:     G1  - linear feed\n";
+char gms02[] PROGMEM = "Motion mode:     G2  - clockwise arc feed\n";
+char gms03[] PROGMEM = "Motion mode:     G3  - counter clockwise arc feed\n";
+char gms04[] PROGMEM = "Motion mode:     G80 - cancel motion mode (none active)\n";
+char gms05[] PROGMEM = "Plane selection: G17 - XY plane\n";
+char gms06[] PROGMEM = "Plane selection: G18 - XZ plane\n";
+char gms07[] PROGMEM = "Plane selection: G19 - YZ plane\n";
+char gms08[] PROGMEM = "Distance mode:   G91 - incremental distance\n";// This pair is inverted
+char gms09[] PROGMEM = "Distance mode:   G90 - absolute distance\n";
+char gms10[] PROGMEM = "Feed rate mode:  G94 - units per minute\n";	// This pair is inverted
+char gms11[] PROGMEM = "Feed rate mode:  G93 - inverse time\n";
+char gms12[] PROGMEM = "Units:           G21 - millimeters\n";		// This pair is inverted
+char gms13[] PROGMEM = "Units:           G20 - inches\n";
+char gms14[] PROGMEM = "Stop / end:      --  - running\n";
+char gms15[] PROGMEM = "Stop / end:      M0, M1, M30  - stopped\n";
+char gms16[] PROGMEM = "Stop / end:      M2, M60  - end\n";
+char gms17[] PROGMEM = "Position X:   %8.3f %s\n";
+char gms18[] PROGMEM = "Position Y:   %8.3f %s\n";
+char gms19[] PROGMEM = "Position Z:   %8.3f %s\n";
+char gms20[] PROGMEM = "Position A:   %8.3f degrees\n";
+char gms21[] PROGMEM = "Offset I:     %8.3f %s\n";
+char gms22[] PROGMEM = "Offset J:     %8.3f %s\n";
+char gms23[] PROGMEM = "Feed Rate:    %8.3f %s \\ min\n";
+char gms24[] PROGMEM = "Seek Rate:    %8.3f %s \\ min\n";
+
+// put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
+PGM_P gcMsg[] PROGMEM = {	
+	gms00, gms01, gms02, gms03, gms04, gms05, gms06, gms07, gms08, gms09,
+	gms10, gms11, gms12, gms13, gms14, gms15, gms16, gms17, gms18, gms19,
+	gms20, gms21, gms22, gms23, gms24
+};
+
+void cm_print_machine_state()
+{
+	char units[8] = "mm";
+
+	printf_P((PGM_P)pgm_read_word(&gcMsg[(gm.motion_mode + GC_MSG_MOTION)]));
+	printf_P((PGM_P)pgm_read_word(&gcMsg[(gm.set_plane + GC_MSG_PLANE)]));
+	printf_P((PGM_P)pgm_read_word(&gcMsg[(gm.absolute_mode + GC_MSG_DISTANCE)]));
+	printf_P((PGM_P)pgm_read_word(&gcMsg[(gm.inverse_feed_rate_mode + GC_MSG_FEEDRATEMODE)]));
+	printf_P((PGM_P)pgm_read_word(&gcMsg[(gm.inches_mode + GC_MSG_UNITS)]));
+	printf_P((PGM_P)pgm_read_word(&gcMsg[(gm.program_flow + GC_MSG_STOP)]));
+
+	if (gm.inches_mode) {
+		strncpy(units,"inches", 8);
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_X]), gm.position[X] / (25.4), units);
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_Y]), gm.position[Y] / (25.4), units);
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_Z]), gm.position[Z] / (25.4), units);
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_A]), gm.position[A],"degrees");
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_FEEDRATE]), gm.feed_rate / (25.4), units);
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_SEEKRATE]), gm.seek_rate / (25.4), units);
+	} else {
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_X]), gm.position[X], units);
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_Y]), gm.position[Y], units);
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_Z]), gm.position[Z], units);
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_A]), gm.position[A],"degrees");
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_FEEDRATE]), gm.feed_rate, units);
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_SEEKRATE]), gm.seek_rate, units);
+	}
 }

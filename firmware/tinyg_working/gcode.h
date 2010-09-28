@@ -60,9 +60,9 @@ struct GCodeModel {					// Gcode model- meaning depends on context
 	uint8_t program_flow;			// M0, M1 - pause / resume program flow
 
 	double dwell_time;				// P - dwell time in seconds
-	double position[3];				// X, Y, Z - meaning depends on context
-	double target[3]; 				// X, Y, Z - where the move should go
-	double offset[3];  				// I, J, K - used by arc commands
+	double position[4];				// X, Y, Z - meaning depends on context
+	double target[4]; 				// X, Y, Z - where the move should go
+	double offset[4];  				// I, J, K - used by arc commands
 	double radius;					// R - radius value in arc raduis mode
 
 /* unimplemented					// this block would follow inches_mode
@@ -105,8 +105,8 @@ enum gcMotionMode {						// G Modal Group 1
 	MOTION_MODE_STRAIGHT_FEED,			// G1 - feed
 	MOTION_MODE_CW_ARC,					// G2 - arc feed
 	MOTION_MODE_CCW_ARC,				// G3 - arc feed
-	MOTION_MODE_STRAIGHT_PROBE,			// G38.2
 	MOTION_MODE_CANCEL_MOTION_MODE,		// G80
+	MOTION_MODE_STRAIGHT_PROBE,			// G38.2
 	MOTION_MODE_CANNED_CYCLE_81,		// G81 - drilling
 	MOTION_MODE_CANNED_CYCLE_82,		// G82 - drilling with dwell
 	MOTION_MODE_CANNED_CYCLE_83,		// G83 - peck drilling
@@ -164,7 +164,7 @@ enum gcDirection {						// used for spindle and arc dir
 	G80				Cancel motion mode
 	G90, G91		Set distance mode; absolute {G90}, incremental {G91}
 	G92				Coordinate System Offsets - limited support provided
-	G93, G94		Set feed rate mode: inverse time mode {93}, 
+	G93, G94		Set feed rate mode: inverse time mode {G93}, 
 										units per minute mode {G94}
 	M0				Program stop
 	M1				Optional program stop

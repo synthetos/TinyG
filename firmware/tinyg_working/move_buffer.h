@@ -19,20 +19,21 @@
 #ifndef move_buffer_h
 #define move_buffer_h 
 
-/*
- * pre-computed move buffer entry structure
- *
- * A move buffere entry can either carry a line sgement or a dwell timing.
- * A dwell command is indicated by b1 set in the direction.
- * The move will the ISRs run as normal, but no pulses will be issued.
+/* 
+ * types of moves that can be put in the move queue 
  */
 
 enum mvType {
-	MOVE_TYPE_LINE,
-	MOVE_TYPE_DWELL,
-	MOVE_TYPE_START,
-	MOVE_TYPE_STOP
+	MV_TYPE_LINE,
+	MV_TYPE_DWELL,
+	MV_TYPE_START,
+	MV_TYPE_STOP,
+	MV_TYPE_END
 };
+
+/*
+ * pre-computed move buffer entry structure
+ */
 
 struct mvMoveAxis {
 	int8_t direction;				// b0 = direction
@@ -43,7 +44,7 @@ struct mvMoveAxis {
 
 struct mvMove {						// moves are queued as stepper ISR parms
 	uint8_t move_type;				// move type
-	struct mvMoveAxis a[3];			// axis structs
+	struct mvMoveAxis a[4];			// axis structs (XYZA)
 };
 
 /*

@@ -47,6 +47,7 @@
 #include "config.h"
 #include "stepper.h"
 #include "move_buffer.h"
+#include "motion_control.h"			// callback to mc_async_end()
 #include "hardware.h"
 #include <util/delay.h>				//...used here for optional step pulse delay
 
@@ -252,17 +253,22 @@ void st_execute_move()
 	return;
 #endif
 
-	if (ax.p->move_type == MOVE_TYPE_STOP) {
+	if (ax.p->move_type == MV_TYPE_STOP) {
 		ax.stopped = TRUE;
 		ax.mutex = FALSE;
 		return;
 	}
-	if (ax.p->move_type == MOVE_TYPE_START) {
+	if (ax.p->move_type == MV_TYPE_START) {
 		ax.stopped = FALSE;
 		ax.mutex = FALSE;
 		return;
 	}
-	if (ax.p->move_type == MOVE_TYPE_DWELL) {
+	if (ax.p->move_type == MV_TYPE_END) {
+		mc_async_end();							// think of it as a callback
+		ax.mutex = FALSE;
+		return;
+	}
+	if (ax.p->move_type == MV_TYPE_DWELL) {
 		ax.line_mode = FALSE;
 	} else {
 		ax.line_mode = TRUE;
