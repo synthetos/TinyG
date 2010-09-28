@@ -134,6 +134,8 @@ int mc_async_end()
 	mc.line_continue_state = MC_STATE_OFF;	// turn off the generators
 	ma.arc_continue_state = MC_STATE_OFF;
 	mv_flush();						// empty and reset the move queue
+	st_init();						// reset the motors
+
 	return (TG_OK);
 }
 
@@ -161,21 +163,21 @@ int mc_async_end()
 
 int mc_queued_stop() 
 {
-	mc.move_type = MC_TYPE_STOP;
+	mc.move_type = MV_TYPE_STOP;
 	mc.stop_continue_state = MC_STATE_NEW;
 	return (mc_queued_start_stop_continue());
 }
 
 int mc_queued_start() 
 {
-	mc.move_type = MC_TYPE_START;
+	mc.move_type = MV_TYPE_START;
 	mc.stop_continue_state = MC_STATE_NEW;
 	return (mc_queued_start_stop_continue());
 }
 
 int mc_queued_end() 				// +++ fix this. not right yet. resets must also be queued
 {
-	mc.move_type = MC_TYPE_END;
+	mc.move_type = MV_TYPE_END;
 	mc.stop_continue_state = MC_STATE_NEW;
 	return (mc_queued_start_stop_continue());
 }
@@ -234,7 +236,7 @@ int mc_line(double x, double y, double z, double feed_rate, uint8_t invert_feed_
 							   square(mc.steps[Z]/CFG(Z).steps_per_mm));
 		mc.microseconds = lround((mc.mm_of_travel/feed_rate)*ONE_MINUTE_OF_MICROSECONDS);
 	}
-	mc.move_type = MC_TYPE_LINE;
+	mc.move_type = MV_TYPE_LINE;
 	mc.line_continue_state = MC_STATE_NEW;
 	memcpy(mc.position, mc.target, sizeof(mc.target)); 	// record new position
 	return (mc_line_continue());
@@ -266,7 +268,7 @@ int mc_line_continue()
 int mc_dwell(double seconds) 
 {
 	mc.microseconds = trunc(seconds*1000000);
-	mc.move_type = MC_TYPE_DWELL;
+	mc.move_type = MV_TYPE_DWELL;
 	mc.dwell_continue_state = MC_STATE_NEW;
 	return (mc_dwell_continue());
 }
@@ -318,7 +320,7 @@ int mc_arc(double theta, 			// starting angle
 		   uint8_t invert_feed_rate) // feed rate mode
 {
 	// load the move and arc structs
-	mc.move_type = MC_TYPE_LINE;
+	mc.move_type = MV_TYPE_LINE;
 	ma.theta = theta;
 	ma.radius = radius;
 	ma.angular_travel = angular_travel;
@@ -362,7 +364,7 @@ int mc_arc_continue()
 		ma.segment_counter=0;
 		ma.arc_continue_state = MC_STATE_RUNNING;
 	}
-	mc.move_type = MC_TYPE_LINE;
+	mc.move_type = MV_TYPE_LINE;
 	while (ma.segment_counter <= ma.segments) {
 		if (mv_test_move_buffer_full()) {	// this is where you would block
 			return (TG_EAGAIN);

@@ -4,17 +4,18 @@
  *
  * Copyright (c) 2010 Alden S. Hart, Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it under the 
- * terms of the GNU General Public License as published by the Free Software 
- * Foundation, either version 3 of the License, or (at your option) any later 
- * version.
+ * TinyG is free software: you can redistribute it and/or modify it under 
+ * the terms of the GNU General Public License as published by the Free 
+ * Software Foundation, either version 3 of the License, or (at your 
+ * (option) any later version.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY 
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for details.
+ * TinyG is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ * See the GNU General Public License for details.
  *
- * You should have received a copy of the GNU General Public License along 
- * with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License 
+ * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
 
@@ -168,25 +169,25 @@ int main(void)
 // Be mindful of the char limit on the RX_BUFFER_SIZE (circular buffer)
 
 //	xio_queue_RX_char_usb(ETX);			// send control-c (kill)
+//	xio_queue_RX_char_usb(XOFF);		// send control-s (pause)
 //	xio_queue_RX_string_usb("R\n");		// run a file - select on controller.c
 //	xio_queue_RX_string_usb("?\n");		// enter config mode and dump config
-	xio_queue_RX_string_usb("T\n");		// invoke test
+//	xio_queue_RX_string_usb("T\n");		// invoke test
 
+//	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
 //	xio_queue_RX_string_usb("g1 f450 x10 y13\n");
-
 //	xio_queue_RX_string_usb("g0x0y0z0\n");
 //	xio_queue_RX_string_usb("g0x1000\n");
 //	xio_queue_RX_string_usb("g0x10000\n");
 //	xio_queue_RX_string_usb("g0x10\ng4p1\ng0x0\n");
-
-//	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
 //	xio_queue_RX_string_usb("g0 x-10 (MSGtest)\n");
-
 //	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
-//	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
 //	xio_queue_RX_string_usb("g0 x0 y0 z0\n");
-
-//	xio_queue_RX_char_usb(XOFF);		// send control-s (pause)
+//	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
+	xio_queue_RX_string_usb("g0x10y10z0\n");
+//	xio_queue_RX_string_usb("g91g0x5y5\n");
+//	xio_queue_RX_string_usb("?\n");
+	xio_queue_RX_string_usb("g20\n");
 
 #ifdef __NORMAL_MODE
 	for(;;){

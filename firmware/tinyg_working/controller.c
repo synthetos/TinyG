@@ -20,7 +20,7 @@
  *
  *	The first letter of an IDLE mode  line performs the following actions
  *
- *		G,M,N,F,(	enter GCODE_MODE (as will lower-case of the same)
+ *		G,M,N,F,%,(	enter GCODE_MODE (as will lower-case of the same)
  *		C,?			enter CONFIG_MODE
  *		D,A			enter DIRECT_DRIVE_MODE
  *		F			enter FILE_MODE (returns automatically after file ends)
@@ -263,7 +263,7 @@ int tg_parser(char * buf)
 	// auto-detect mode if not already set 
 	if (tg.mode == TG_IDLE_MODE) {
 		switch (toupper(buf[0])) {
-			case 'G': case 'M': case 'N': case 'F': case '(': case '\\': 
+			case 'G': case 'M': case 'N': case 'F': case '(': case '%': case '\\':
 				_tg_set_mode(TG_GCODE_MODE); break;
 			case 'C': case '?': _tg_set_mode(TG_CONFIG_MODE); break;
 			case 'D': _tg_set_mode(TG_DIRECT_DRIVE_MODE); break;
@@ -271,6 +271,8 @@ int tg_parser(char * buf)
 			case 'Q': return (_tg_mudflap_file());
 //			case 'H': return (_tg_help_file());
 			case 'T': return (_tg_test());		// run whatever test you want
+//			case 'I': return (_tg_reserved());	// reserved
+//			case 'V': return (_tg_reserved());	// reserved
 			default:  _tg_set_mode(TG_IDLE_MODE); break;
 		}
 	}
@@ -368,61 +370,38 @@ void _tg_prompt()
  */
 
 // put strings in program memory
-char tgStatusMsg00[] PROGMEM = "OK";
-char tgStatusMsg01[] PROGMEM = "{01} ERROR";
-char tgStatusMsg02[] PROGMEM = "{02} EAGAIN";
-char tgStatusMsg03[] PROGMEM = "{03} NOOP";
-char tgStatusMsg04[] PROGMEM = "{04} End of line";
-char tgStatusMsg05[] PROGMEM = "{05} End of file";
-char tgStatusMsg06[] PROGMEM = "{06} File not open";
-char tgStatusMsg07[] PROGMEM = "{07} Max file size exceeded";
-char tgStatusMsg08[] PROGMEM = "{08} No such device";
-char tgStatusMsg09[] PROGMEM = "{09} Buffer empty";
-char tgStatusMsg10[] PROGMEM = "{10} Buffer full - fatal";
-char tgStatusMsg11[] PROGMEM = "{11} Buffer full - non-fatal";
-char tgStatusMsg12[] PROGMEM = "{12} QUIT";
-char tgStatusMsg13[] PROGMEM = "{13} Unrecognized command";
-char tgStatusMsg14[] PROGMEM = "{14} Expected command letter";
-char tgStatusMsg15[] PROGMEM = "{15} Unsupported statement";
-char tgStatusMsg16[] PROGMEM = "{16} Parameter over range";
-char tgStatusMsg17[] PROGMEM = "{17} Bad number format";
-char tgStatusMsg18[] PROGMEM = "{18} Floating point error";
-char tgStatusMsg19[] PROGMEM = "{19} Motion control error";
-char tgStatusMsg20[] PROGMEM = "{20} Arc specification error";
-char tgStatusMsg21[] PROGMEM = "{21} Zero length line";
-char tgStatusMsg22[] PROGMEM = "{22} Maximum feed rate exceeded";
-char tgStatusMsg23[] PROGMEM = "{23} Maximum seek rate exceeded";
-char tgStatusMsg24[] PROGMEM = "{24} Maximum table travel exceeded";
-char tgStatusMsg25[] PROGMEM = "{25} Maximum spindle speed exceeded";
+char tgs00[] PROGMEM = "OK";
+char tgs01[] PROGMEM = "{01} ERROR";
+char tgs02[] PROGMEM = "{02} EAGAIN";
+char tgs03[] PROGMEM = "{03} NOOP";
+char tgs04[] PROGMEM = "{04} End of line";
+char tgs05[] PROGMEM = "{05} End of file";
+char tgs06[] PROGMEM = "{06} File not open";
+char tgs07[] PROGMEM = "{07} Max file size exceeded";
+char tgs08[] PROGMEM = "{08} No such device";
+char tgs09[] PROGMEM = "{09} Buffer empty";
+char tgs10[] PROGMEM = "{10} Buffer full - fatal";
+char tgs11[] PROGMEM = "{11} Buffer full - non-fatal";
+char tgs12[] PROGMEM = "{12} QUIT";
+char tgs13[] PROGMEM = "{13} Unrecognized command";
+char tgs14[] PROGMEM = "{14} Expected command letter";
+char tgs15[] PROGMEM = "{15} Unsupported statement";
+char tgs16[] PROGMEM = "{16} Parameter over range";
+char tgs17[] PROGMEM = "{17} Bad number format";
+char tgs18[] PROGMEM = "{18} Floating point error";
+char tgs19[] PROGMEM = "{19} Motion control error";
+char tgs20[] PROGMEM = "{20} Arc specification error";
+char tgs21[] PROGMEM = "{21} Zero length line";
+char tgs22[] PROGMEM = "{22} Maximum feed rate exceeded";
+char tgs23[] PROGMEM = "{23} Maximum seek rate exceeded";
+char tgs24[] PROGMEM = "{24} Maximum table travel exceeded";
+char tgs25[] PROGMEM = "{25} Maximum spindle speed exceeded";
 
 // put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
-PGM_P tgStatusStrings[] PROGMEM = {	
-	tgStatusMsg00,
-	tgStatusMsg01,
-	tgStatusMsg02,
-	tgStatusMsg03,
-	tgStatusMsg04,
-	tgStatusMsg05,
-	tgStatusMsg06,
-	tgStatusMsg07,
-	tgStatusMsg08,
-	tgStatusMsg09,
-	tgStatusMsg10,
-	tgStatusMsg11,
-	tgStatusMsg12,
-	tgStatusMsg13,
-	tgStatusMsg14,
-	tgStatusMsg15,
-	tgStatusMsg16,
-	tgStatusMsg17,
-	tgStatusMsg18,
-	tgStatusMsg19,
-	tgStatusMsg20,
-	tgStatusMsg21,
-	tgStatusMsg22,
-	tgStatusMsg23,
-	tgStatusMsg24,
-	tgStatusMsg25
+PGM_P tgStatus[] PROGMEM = {	
+	tgs00, tgs01, tgs02, tgs03, tgs04, tgs05, tgs06, tgs07, tgs08, tgs09,
+	tgs10, tgs11, tgs12, tgs13, tgs14, tgs15, tgs16, tgs17, tgs18, tgs19,
+	tgs20, tgs21, tgs22, tgs23, tgs24, tgs25
 };
 
 void tg_print_status(const uint8_t status_code, const char *textbuf)
@@ -434,8 +413,8 @@ void tg_print_status(const uint8_t status_code, const char *textbuf)
 		case TG_QUIT: return;
 		case TG_ZERO_LENGTH_LINE: return;
 	}
-	printf_P(PSTR("%S: %s\n"),(PGM_P)pgm_read_word(&tgStatusStrings[status_code]), textbuf);
-//	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgStatusStrings[status_code]));
+	printf_P(PSTR("%S: %s\n"),(PGM_P)pgm_read_word(&tgStatus[status_code]), textbuf);
+//	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgStatus[status_code]));
 }
 
 /*

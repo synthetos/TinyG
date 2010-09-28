@@ -5,18 +5,19 @@
  * 
  * Part of TinyG project
  * Copyright (c) 2010 Alden S. Hart, Jr.
- * Portions if this module copyright (c) 2009 Simen Svale Skogsrud
  *
- * TinyG is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation, 
- * either version 3 of the License, or (at your option) any later version.
+ * TinyG is free software: you can redistribute it and/or modify it under 
+ * the terms of the GNU General Public License as published by the Free 
+ * Software Foundation, either version 3 of the License, or (at your 
+ * (option) any later version.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
- * PURPOSE. See the GNU General Public License for more details.
+ * TinyG is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ * See the GNU General Public License for details.
  *
- * You should have received a copy of the GNU General Public License along with TinyG  
- * If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License 
+ * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef hardware_h
@@ -28,6 +29,10 @@ void hw_init(void);						// master hardware init
 
 #undef F_CPU							// set for delays
 #define F_CPU 32000000UL				// should always precede <avr/delay.h>
+
+// default hardwired settings in - chose one:
+#define __LEADSCREW_20					// 1/4" 20 leadscrew table
+//#define __MAKERBOT						// makerbot settings
 
 // Clock Crystal Config. Pick one:
 //#define __CLOCK_INTERNAL_32MHZ TRUE	// use internal oscillator
@@ -80,6 +85,8 @@ enum cfgPortBits {						// motor control port bit positions
 
 #define MM_PER_ARC_SEGMENT 0.02
 
+#ifdef __LEADSCREW_20
+
 /* Microstep defaults - chose a value on the top line */
 #define MICROSTEPS 8	// Choose one of: 8, 4, 2, 1
 
@@ -98,43 +105,68 @@ enum cfgPortBits {						// motor control port bit positions
 #define Z_SEEK_WHOLE_STEPS_PER_SEC 1500
 #define A_SEEK_WHOLE_STEPS_PER_SEC 1500
 
-#define X_SEEK_STEPS_PER_SEC (X_SEEK_WHOLE_STEPS_PER_SEC * X_MICROSTEPS)
-#define Y_SEEK_STEPS_PER_SEC (Y_SEEK_WHOLE_STEPS_PER_SEC * Y_MICROSTEPS)
-#define Z_SEEK_STEPS_PER_SEC (Z_SEEK_WHOLE_STEPS_PER_SEC * Z_MICROSTEPS)
-#define A_SEEK_STEPS_PER_SEC (A_SEEK_WHOLE_STEPS_PER_SEC * A_MICROSTEPS)
-
 #define X_FEED_WHOLE_STEPS_PER_SEC 1500	// max whole steps per sec for feed motion
 #define Y_FEED_WHOLE_STEPS_PER_SEC 1500 // (motor parameter)
 #define Z_FEED_WHOLE_STEPS_PER_SEC 1500
 #define A_FEED_WHOLE_STEPS_PER_SEC 1500
-
-#define X_FEED_STEPS_PER_SEC (X_FEED_WHOLE_STEPS_PER_SEC * X_MICROSTEPS)
-#define Y_FEED_STEPS_PER_SEC (Y_FEED_WHOLE_STEPS_PER_SEC * Y_MICROSTEPS)
-#define Z_FEED_STEPS_PER_SEC (Z_FEED_WHOLE_STEPS_PER_SEC * Z_MICROSTEPS)
-#define A_FEED_STEPS_PER_SEC (A_FEED_WHOLE_STEPS_PER_SEC * A_MICROSTEPS)
 
 #define X_DEGREE_PER_WHOLE_STEP	1.8		// degrees per whole step
 #define Y_DEGREE_PER_WHOLE_STEP	1.8 	// (motor parameter)
 #define Z_DEGREE_PER_WHOLE_STEP	1.8
 #define A_DEGREE_PER_WHOLE_STEP	1.8
 
-#define X_DEGREE_PER_STEP (X_DEGREE_PER_WHOLE_STEP / X_MICROSTEPS)
-#define Y_DEGREE_PER_STEP (Y_DEGREE_PER_WHOLE_STEP / Y_MICROSTEPS)
-#define Z_DEGREE_PER_STEP (Z_DEGREE_PER_WHOLE_STEP / Z_MICROSTEPS)
-#define A_DEGREE_PER_STEP (A_DEGREE_PER_WHOLE_STEP / A_MICROSTEPS)
-
-/*
-#define X_MM_PER_REVOLUTION 2.54		// settings for 0.100 per revolution
-#define Y_MM_PER_REVOLUTION 2.54		// (robot parameter)
-#define Z_MM_PER_REVOLUTION 2.54
-#define A_MM_PER_REVOLUTION 2.54
-*/
-/*
 #define X_MM_PER_REVOLUTION 1.27		// 1/4 - 20 lead screw (0.050" per rev)
 #define Y_MM_PER_REVOLUTION 1.27		// (robot parameter)
 #define Z_MM_PER_REVOLUTION 1.27
 #define A_MM_PER_REVOLUTION 1.27
-*/
+
+#define X_MM_TRAVEL 400					// full excursion from min to max 
+#define Y_MM_TRAVEL 400					// (robot parameter)
+#define Z_MM_TRAVEL 100
+#define A_MM_TRAVEL -1					// -1 is no limit (typ for rotary axis)
+
+#define X_LIMIT_ENABLE TRUE				// 1=limit switches present and enabled
+#define Y_LIMIT_ENABLE TRUE				// (robot parameter)
+#define Z_LIMIT_ENABLE TRUE
+#define A_LIMIT_ENABLE FALSE
+
+#define X_LOW_POWER_IDLE TRUE			// 1=low power idle enabled 
+#define Y_LOW_POWER_IDLE TRUE			// (robot parameter)
+#define Z_LOW_POWER_IDLE TRUE
+#define A_LOW_POWER_IDLE TRUE
+
+#endif	// _LEADSCREW_20
+
+#ifdef __MAKERBOT
+
+/* Microstep defaults - chose a value on the top line */
+#define MICROSTEPS 8	// Choose one of: 8, 4, 2, 1
+
+#define X_MICROSTEPS MICROSTEPS			// microsteps 
+#define Y_MICROSTEPS MICROSTEPS			// (stepper driver configuration parameter)
+#define Z_MICROSTEPS MICROSTEPS
+#define A_MICROSTEPS MICROSTEPS
+
+#define X_POLARITY 0					// motor direction polarity
+#define Y_POLARITY 0
+#define Z_POLARITY 1
+#define A_POLARITY 0
+
+#define X_SEEK_WHOLE_STEPS_PER_SEC 500	// max whole steps per second for G0 motion
+#define Y_SEEK_WHOLE_STEPS_PER_SEC 500 // (motor parameter)
+#define Z_SEEK_WHOLE_STEPS_PER_SEC 500
+#define A_SEEK_WHOLE_STEPS_PER_SEC 500
+
+#define X_FEED_WHOLE_STEPS_PER_SEC 500	// max whole steps per sec for feed motion
+#define Y_FEED_WHOLE_STEPS_PER_SEC 500 // (motor parameter)
+#define Z_FEED_WHOLE_STEPS_PER_SEC 500
+#define A_FEED_WHOLE_STEPS_PER_SEC 500
+
+#define X_DEGREE_PER_WHOLE_STEP	1.8		// degrees per whole step
+#define Y_DEGREE_PER_WHOLE_STEP	1.8 	// (motor parameter)
+#define Z_DEGREE_PER_WHOLE_STEP	1.8
+#define A_DEGREE_PER_WHOLE_STEP	1.8
+
 #define X_MM_PER_REVOLUTION 33			// Makerbot settings
 #define Y_MM_PER_REVOLUTION 33			// (robot parameter)
 #define Z_MM_PER_REVOLUTION 1.27
@@ -155,8 +187,25 @@ enum cfgPortBits {						// motor control port bit positions
 #define Z_LOW_POWER_IDLE TRUE
 #define A_LOW_POWER_IDLE TRUE
 
+#endif	// __MAKERBOT
 
-// Some derived values
+
+/* Derived Values */
+
+#define X_SEEK_STEPS_PER_SEC (X_SEEK_WHOLE_STEPS_PER_SEC * X_MICROSTEPS)
+#define Y_SEEK_STEPS_PER_SEC (Y_SEEK_WHOLE_STEPS_PER_SEC * Y_MICROSTEPS)
+#define Z_SEEK_STEPS_PER_SEC (Z_SEEK_WHOLE_STEPS_PER_SEC * Z_MICROSTEPS)
+#define A_SEEK_STEPS_PER_SEC (A_SEEK_WHOLE_STEPS_PER_SEC * A_MICROSTEPS)
+
+#define X_FEED_STEPS_PER_SEC (X_FEED_WHOLE_STEPS_PER_SEC * X_MICROSTEPS)
+#define Y_FEED_STEPS_PER_SEC (Y_FEED_WHOLE_STEPS_PER_SEC * Y_MICROSTEPS)
+#define Z_FEED_STEPS_PER_SEC (Z_FEED_WHOLE_STEPS_PER_SEC * Z_MICROSTEPS)
+#define A_FEED_STEPS_PER_SEC (A_FEED_WHOLE_STEPS_PER_SEC * A_MICROSTEPS)
+
+#define X_DEGREE_PER_STEP (X_DEGREE_PER_WHOLE_STEP / X_MICROSTEPS)
+#define Y_DEGREE_PER_STEP (Y_DEGREE_PER_WHOLE_STEP / Y_MICROSTEPS)
+#define Z_DEGREE_PER_STEP (Z_DEGREE_PER_WHOLE_STEP / Z_MICROSTEPS)
+#define A_DEGREE_PER_STEP (A_DEGREE_PER_WHOLE_STEP / A_MICROSTEPS)
 
 #if (MICROSTEPS == 8)
 #define MICROSTEP_BITS_bm (MICROSTEP_BIT_1_bm | MICROSTEP_BIT_0_bm)

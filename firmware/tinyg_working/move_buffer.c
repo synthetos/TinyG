@@ -156,7 +156,7 @@ uint8_t mv_queue_line(int32_t steps_x, int32_t steps_y, int32_t steps_z, uint32_
 			mv.p->a[i].period = (uint16_t)(mv.ticks_per_step & 0x0000FFFF);
 		}
 	}
-	mv.p->move_type = MOVE_TYPE_LINE;
+	mv.p->move_type = MV_TYPE_LINE;
 	mv.move_buffer_head = next_buffer_head;
 	st_execute_move();			// kick the stepper drivers
 	return (TG_OK);
@@ -196,7 +196,7 @@ uint8_t mv_queue_dwell(uint32_t microseconds)
 		mv.p->a[Z].postscale <<= 1;
 	}
 	mv.p->a[Z].period = (uint16_t)(mv.ticks_per_step & 0x0000FFFF);
-	mv.p->move_type = MOVE_TYPE_DWELL;
+	mv.p->move_type = MV_TYPE_DWELL;
 	mv.move_buffer_head = next_buffer_head;
 	st_execute_move();
 	return (TG_OK);

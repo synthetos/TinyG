@@ -482,6 +482,8 @@ void cfg_print_config_records()
 	}
 	printf_P(PSTR(" (maximum_seek_rate:  %7.3f mm / minute)\n"), cfg.max_seek_rate);
 	printf_P(PSTR(" (maximum_feed_rate:  %7.3f mm / minute)\n"), cfg.max_feed_rate);
+	printf_P(PSTR(" (maximum_seek_rate:  %7.3f in / minute)\n"), cfg.max_seek_rate/(25.4));
+	printf_P(PSTR(" (maximum_feed_rate:  %7.3f in / minute)\n"), cfg.max_feed_rate/(25.4));
 }
 
 /*
@@ -492,47 +494,30 @@ void cfg_print_config_records()
  */
 
 // put record format strings in program memory
-char cfgShowRecord00[] PROGMEM = "HEADER%s%d";
-char cfgShowRecord01[] PROGMEM = "  Gcode: {G17/G18/G19}    Plane   %1.0f";
-char cfgShowRecord02[] PROGMEM = "  Gcode: {G20/G21} Units (1=mm)   %1.0f";
-char cfgShowRecord03[] PROGMEM = "  Gcode: {G28}  Power-on homing   %1.0f";
-char cfgShowRecord04[] PROGMEM = "  Gcode: {F} Feed rate        %8.2f";
-char cfgShowRecord05[] PROGMEM = "  Gcode: {S} Spindle speed    %8.2f";
-char cfgShowRecord06[] PROGMEM = "  Gcode: {T} Tool                 %1.0f";
-char cfgShowRecord07[] PROGMEM = "  MM(illimeters) / arc segment   %6.3f";
-char cfgShowRecord08[] PROGMEM = "%c axis mapped to motor number  %4.0f";
-char cfgShowRecord09[] PROGMEM = "  %c axis - Seek steps / sec   %5.0f";
-char cfgShowRecord10[] PROGMEM = "  %c axis - Feed steps / sec   %5.0f";
-char cfgShowRecord11[] PROGMEM = "  %c axis - Degrees per step   %5.3f";
-char cfgShowRecord12[] PROGMEM = "  %c axis - Microstep mode     %5.0f";
-char cfgShowRecord13[] PROGMEM = "  %c axis - Polarity           %5.0f";
-char cfgShowRecord14[] PROGMEM = "  %c axis - Travel max         %5.0f";
-char cfgShowRecord15[] PROGMEM = "  %c axis - Travel warning     %5.0f";
-char cfgShowRecord16[] PROGMEM = "  %c axis - mm per revolution  %5.2f";
-char cfgShowRecord17[] PROGMEM = "  %c axis - Idle mode          %5.0f";
-char cfgShowRecord18[] PROGMEM = "  %c axis - Limit switches     %5.0f";
+char cfs00[] PROGMEM = "HEADER%s%d";
+char cfs01[] PROGMEM = "  Gcode: {G17/G18/G19}    Plane   %1.0f";
+char cfs02[] PROGMEM = "  Gcode: {G20/G21} Units (1=mm)   %1.0f";
+char cfs03[] PROGMEM = "  Gcode: {G28}  Power-on homing   %1.0f";
+char cfs04[] PROGMEM = "  Gcode: {F} Feed rate        %8.2f";
+char cfs05[] PROGMEM = "  Gcode: {S} Spindle speed    %8.2f";
+char cfs06[] PROGMEM = "  Gcode: {T} Tool                 %1.0f";
+char cfs07[] PROGMEM = "  MM(illimeters) / arc segment   %6.3f";
+char cfs08[] PROGMEM = "%c axis mapped to motor number  %4.0f";
+char cfs09[] PROGMEM = "  %c axis - Seek steps / sec   %5.0f";
+char cfs10[] PROGMEM = "  %c axis - Feed steps / sec   %5.0f";
+char cfs11[] PROGMEM = "  %c axis - Degrees per step   %5.3f";
+char cfs12[] PROGMEM = "  %c axis - Microstep mode     %5.0f";
+char cfs13[] PROGMEM = "  %c axis - Polarity           %5.0f";
+char cfs14[] PROGMEM = "  %c axis - Travel max         %5.0f";
+char cfs15[] PROGMEM = "  %c axis - Travel warning     %5.0f";
+char cfs16[] PROGMEM = "  %c axis - mm per revolution  %5.2f";
+char cfs17[] PROGMEM = "  %c axis - Idle mode          %5.0f";
+char cfs18[] PROGMEM = "  %c axis - Limit switches     %5.0f";
 
 // put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
-PGM_P rShowStrings[] PROGMEM = {	
-	cfgShowRecord00,
-	cfgShowRecord01,
-	cfgShowRecord02,
-	cfgShowRecord03,
-	cfgShowRecord04,
-	cfgShowRecord05,
-	cfgShowRecord06,
-	cfgShowRecord07,
-	cfgShowRecord08,
-	cfgShowRecord09,
-	cfgShowRecord10,
-	cfgShowRecord11,
-	cfgShowRecord12,
-	cfgShowRecord13,
-	cfgShowRecord14,
-	cfgShowRecord15,
-	cfgShowRecord16,
-	cfgShowRecord17,
-	cfgShowRecord18
+PGM_P cfgShow[] PROGMEM = {	
+	cfs00, cfs01, cfs02, cfs03, cfs04, cfs05, cfs06, cfs07, cfs08, cfs09,
+	cfs10, cfs11, cfs12, cfs13, cfs14, cfs15, cfs16, cfs17,	cfs18
 };
 
 void _cfg_print_config_record(char *record)
@@ -545,10 +530,10 @@ void _cfg_print_config_record(char *record)
 
 	// otherwise print it
 	if (cp.param < CFG_AXIS_BASE) {
-		printf_P((PGM_P)pgm_read_word(&rShowStrings[cp.param]), cp.value);
+		printf_P((PGM_P)pgm_read_word(&cfgShow[cp.param]), cp.value);
 	} else {
 		char axis = GETAXISCHAR(cp.axis);
-		printf_P((PGM_P)pgm_read_word(&rShowStrings[cp.param]), axis, cp.value);
+		printf_P((PGM_P)pgm_read_word(&cfgShow[cp.param]), axis, cp.value);
 	}
 	printf_P(PSTR("     %-12s\n"), record);	// Must use 12 instead of CFG_RECORD_LEN
 
@@ -573,56 +558,39 @@ void _cfg_print_config_record(char *record)
  */
 
 // put record format strings in program memory
-char cfgFmtRecord00[] PROGMEM = "HEADER%c%f";
-char cfgFmtRecord01[] PROGMEM = "G%1.0f";		// Plane G17/G18/G19
-char cfgFmtRecord02[] PROGMEM = "G%1.0f";		// Units G20/G21
-char cfgFmtRecord03[] PROGMEM = "G%1.0f";		// G28  Power-on homing
-char cfgFmtRecord04[] PROGMEM = "F%1.3f";		// F Feed rate
-char cfgFmtRecord05[] PROGMEM = "S%1.2f";		// S Spindle speed
-char cfgFmtRecord06[] PROGMEM = "T%1.0f";		// T Tool
-char cfgFmtRecord07[] PROGMEM = "MM%1.3f";		// MM per arc segment
-char cfgFmtRecord08[] PROGMEM = "%cMA%1.0f";	// Map axis to motor
-char cfgFmtRecord09[] PROGMEM = "%cSE%1.0f";	// Seek steps per second
-char cfgFmtRecord10[] PROGMEM = "%cFE%1.0f";	// Feed steps / sec
-char cfgFmtRecord11[] PROGMEM = "%cDE%1.3f";	// Degrees per step
-char cfgFmtRecord12[] PROGMEM = "%cMI%1.0f";	// Microstep mode
-char cfgFmtRecord13[] PROGMEM = "%cPO%1.0f";	// Polarity
-char cfgFmtRecord14[] PROGMEM = "%cTR%1.0f";	// Travel max (mm)
-char cfgFmtRecord15[] PROGMEM = "%cTW%1.0f";	// Travel Warning
-char cfgFmtRecord16[] PROGMEM = "%cRE%1.3f";	// mm per REvolution
-char cfgFmtRecord17[] PROGMEM = "%cID%1.0f";	// Idle mode
-char cfgFmtRecord18[] PROGMEM = "%cLI%1.0f";	// Limit switches on
+char cff00[] PROGMEM = "HEADER%c%f";
+char cff01[] PROGMEM = "G%1.0f";		// Plane G17/G18/G19
+char cff02[] PROGMEM = "G%1.0f";		// Units G20/G21
+char cff03[] PROGMEM = "G%1.0f";		// G28  Power-on homing
+char cff04[] PROGMEM = "F%1.3f";		// F Feed rate
+char cff05[] PROGMEM = "S%1.2f";		// S Spindle speed
+char cff06[] PROGMEM = "T%1.0f";		// T Tool
+char cff07[] PROGMEM = "MM%1.3f";		// MM per arc segment
+char cff08[] PROGMEM = "%cMA%1.0f";	// Map axis to motor
+char cff09[] PROGMEM = "%cSE%1.0f";	// Seek steps per second
+char cff10[] PROGMEM = "%cFE%1.0f";	// Feed steps / sec
+char cff11[] PROGMEM = "%cDE%1.3f";	// Degrees per step
+char cff12[] PROGMEM = "%cMI%1.0f";	// Microstep mode
+char cff13[] PROGMEM = "%cPO%1.0f";	// Polarity
+char cff14[] PROGMEM = "%cTR%1.0f";	// Travel max (mm)
+char cff15[] PROGMEM = "%cTW%1.0f";	// Travel Warning
+char cff16[] PROGMEM = "%cRE%1.3f";	// mm per REvolution
+char cff17[] PROGMEM = "%cID%1.0f";	// Idle mode
+char cff18[] PROGMEM = "%cLI%1.0f";	// Limit switches on
 
 // put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
-PGM_P rFmtStrings[] PROGMEM = {	
-	cfgFmtRecord00,
-	cfgFmtRecord01,
-	cfgFmtRecord02,
-	cfgFmtRecord03,
-	cfgFmtRecord04,
-	cfgFmtRecord05,
-	cfgFmtRecord06,
-	cfgFmtRecord07,
-	cfgFmtRecord08,
-	cfgFmtRecord09,
-	cfgFmtRecord10,
-	cfgFmtRecord11,
-	cfgFmtRecord12,
-	cfgFmtRecord13,
-	cfgFmtRecord14,
-	cfgFmtRecord15,
-	cfgFmtRecord16,
-	cfgFmtRecord17,
-	cfgFmtRecord18
+PGM_P cfgFmt[] PROGMEM = {	
+	cff00, cff01, cff02, cff03, cff04, cff05, cff06, cff07, cff08, cff09,
+	cff10, cff11, cff12, cff13, cff14, cff15, cff16, cff17, cff18
 };
 
 void _cfg_sprintf_as_record(char *record, uint8_t param, char axis, double value)
 {
 	if (param < CFG_AXIS_BASE) {
-		sprintf_P(record,(PGM_P)pgm_read_word(&rFmtStrings[param]), value);
+		sprintf_P(record,(PGM_P)pgm_read_word(&cfgFmt[param]), value);
 	} else {
 		char axisc = GETAXISCHAR(axis);
-		sprintf_P(record,(PGM_P)pgm_read_word(&rFmtStrings[param]), axisc, value);
+		sprintf_P(record,(PGM_P)pgm_read_word(&cfgFmt[param]), axisc, value);
 	}
 }
 
