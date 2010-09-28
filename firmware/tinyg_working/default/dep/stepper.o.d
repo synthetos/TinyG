@@ -13,7 +13,8 @@ stepper.o: ../stepper.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h ../tinyg.h \
-  ../config.h ../stepper.h ../move_buffer.h ../hardware.h \
+  ../config.h ../stepper.h ../move_buffer.h ../motion_control.h \
+  c:/winavr-20100110/lib/gcc/../../avr/include/string.h ../hardware.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/util/delay.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h
 
@@ -52,6 +53,10 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h:
 ../stepper.h:
 
 ../move_buffer.h:
+
+../motion_control.h:
+
+c:/winavr-20100110/lib/gcc/../../avr/include/string.h:
 
 ../hardware.h:
 

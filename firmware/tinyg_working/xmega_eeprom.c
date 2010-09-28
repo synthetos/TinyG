@@ -1,9 +1,24 @@
 /* Xmega Non Volatile Memory functions 
  *
- * Ahem. Before you waste a day trying to figure out why none of this works
+ * Ahem. Before you waste days trying to figure out why none of this works
  * in the simulator, you should realize that IT DOESN'T WORK IN THE WINAVR
- * SIMULATOR (now I'll calm down now.) 
+ * SIMULATOR (now I'll calm down now.).
+ *
+ * Then before you waste more time figuring out why it doesn't work AT ALL,
+ * realize that there is a serious bug in the xmega A3 processor family.
+ * This is documented in Atmel release note AVR1008 and in the chip Errata.
+ * This file contains workarounds to those problems. 
+ * Some code was incorporated from the avr-xboot project: 
+ *
+ *		http://code.google.com/p/avr-xboot/
+ * 			xboot-20100529.tar.gz release.
+ *
+ * These refs were also helpful:
+ * http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&p=669385
+ * http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=88416
+ * http://www.avrfreaks.net/index.php?name=PNphpBB2&file=printview&t=89810&start=0
  */
+
 /***************************************************************************
  *
  * XMEGA EEPROM driver source file.
@@ -64,20 +79,6 @@
 /* 
  * Modified to support Xmega family processors
  * Modifications Copyright (c) 2010 Alden S. Hart, Jr.
- *
- * Note: The xmega A3 family has some big problems with EEPROM as 
- * documented in Atmel release note AVR1008 and in the chip Errata.
- * In addition, the simulator doesn't woirk (which I think I've mentioned)
- * This file contains workarounds to those problems. 
- * Code was used from the avr-xboot project: 
- *
- *		http://code.google.com/p/avr-xboot/,
- * 		xboot-20100529.tar.gz release.
- *
- * These refs were also helpful:
- * http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&p=669385
- * http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=88416
- * http://www.avrfreaks.net/index.php?name=PNphpBB2&file=printview&t=89810&start=0
  */
 
 #include "xmega_eeprom.h"
@@ -140,7 +141,7 @@ static inline void NVM_EXEC_WRAPPER(void)
 	SLEEP.CTRL |= SLEEP_SEN_bm;				// Set sleep enabled
 	uint8_t eepromintStore = NVM.INTCTRL;	// Save eeprom int settings
 	NVM_EXEC();								// exec EEPROM command
-	NVM.INTCTRL =  NVM_EELVL0_bm | NVM_EELVL1_bm;// Enable EEPROM int
+	NVM.INTCTRL = NVM_EELVL0_bm | NVM_EELVL1_bm;// Enable EEPROM int
 	sleep_cpu();							// Sleep before 2.5uS passed
 	SLEEP.CTRL = sleepCtr;					// Restore sleep settings
 	PMIC.STATUS = statusStore;				// Restore PMIC status...
@@ -187,7 +188,7 @@ inline void NNVM_ReadString(const uint16_t address, char *record, const uint8_t 
 		}
 	}
 }
-#endif // __FAKE_NVM
+#endif // __NNVM
 
 /* 
  * EEPROM_WriteString() - write string to EEPROM; may span multiple pages
@@ -230,7 +231,7 @@ inline void NNVM_ReadString(const uint16_t address, char *record, const uint8_t 
 
 uint16_t EEPROM_WriteString(const uint16_t address, const char *string, const uint8_t terminate)
 {
-#ifdef __FAKE_NVM
+#ifdef __NNVM
 	NNVM_WriteString(address, string, TRUE);
 	return (address);
 #else
@@ -245,7 +246,7 @@ uint16_t EEPROM_WriteString(const uint16_t address, const char *string, const ui
 		EEPROM_WriteByte(addr++, 0);
 	}
 	return (addr); 				// return next address in EEPROM
-#endif //__Fake_NVM
+#endif //__NNVM
 }
 
 /* //+++ this is broken and will need to be fixed to work with NNVM
@@ -317,7 +318,7 @@ uint16_t EEPROM_WriteString(const uint16_t address, const char *string, const ui
 
 uint16_t EEPROM_ReadString(const uint16_t address, char *buf, const uint16_t size)
 {
-#ifdef __FAKE_NVM
+#ifdef __NNVM
 	NNVM_ReadString(address, buf, size);
 	return(address + sixeof(buf));
 #else
@@ -342,7 +343,7 @@ uint16_t EEPROM_ReadString(const uint16_t address, char *buf, const uint16_t siz
 		buf[i] = 0;
 	}
 	return (addr);
-#endif //__Fake_NVM
+#endif //__NNVM
 }
 
 

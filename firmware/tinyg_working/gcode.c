@@ -71,6 +71,7 @@ static int _gc_parse_gcode_block(char *line);	// Parse the block into structs
 static int _gc_execute_gcode_block(void);		// Execute the gcode block
 static int _gc_read_double(char *buf, uint8_t *i, double *double_ptr);
 static int _gc_next_statement(char *letter, double *value_ptr, double *fraction_ptr, char *line, uint8_t *i);
+static void _gc_print_gcode_state(void);
 
 #define ZERO_MODEL_STATE(g) memset(g, 0, sizeof(struct GCodeModel))
 #define SET_NEXT_STATE(a,v) ({gn.a=v; gf.a=1; break;})
@@ -100,6 +101,10 @@ uint8_t gc_gcode_parser(char *block)
 	}
 	if (block[0] == 'Q') {					// quit gcode mode (see note 1)
 		return(TG_QUIT);
+	}
+	if (block[0] == '?') {
+		_gc_print_gcode_state();
+		return(TG_OK);
 	}
 	if (_gc_parse_gcode_block(block)) { // parse & exec block or fail trying
 		tg_print_status(gp.status, block);
@@ -153,6 +158,9 @@ void _gc_normalize_gcode_block(char *block)
 	// discard deleted block
 	if (block[0] == '/') {
 		block[0] = 0;
+		return;
+	}
+	if (block[0] == '?') {					// trap and return ? command
 		return;
 	}
 	// normalize the comamnd block & mark the comment(if any)
@@ -260,14 +268,14 @@ int _gc_parse_gcode_block(char *buf)
 	// pull needed state from gm structure to preset next state
 	gn.next_action = cm_get_next_action();	// next action persists
 	gn.motion_mode = cm_get_motion_mode();	// motion mode (G modal group 1)
-	for (i=X; i<=Z; i++) {
+	cm_set_absolute_override(FALSE);		// must be set per block 
+
+	for (i=X; i<=A; i++) {
 		gn.target[i] = cm_get_position(i);	// pre-set the target values
-//		gn.position[i] = gn.target[i];		//...and current position
 	}
 
-	gp.status = TG_OK;						// initialize return code
-
   	// extract commands and parameters
+	gp.status = TG_OK;						// initialize return code
 	i = 0;
 	while(_gc_next_statement(&gp.letter, &gp.value, &gp.fraction, buf, &i)) {
     	switch(gp.letter) {
@@ -325,6 +333,7 @@ int _gc_parse_gcode_block(char *buf)
 			case 'X': SET_NEXT_STATE(target[X], gp.value);
 			case 'Y': SET_NEXT_STATE(target[Y], gp.value);
 			case 'Z': SET_NEXT_STATE(target[Z], gp.value);
+			case 'A': SET_NEXT_STATE(target[A], gp.value);
 			case 'I': SET_NEXT_STATE(offset[0], gp.value);
 			case 'J': SET_NEXT_STATE(offset[1], gp.value);
 			case 'K': SET_NEXT_STATE(offset[2], gp.value);
@@ -442,6 +451,11 @@ int _gc_execute_gcode_block()
 		}
 	}
 
+	// return now if no target has been set
+	if ((gf.target[X] + gf.target[Y] + gf.target[Z] + gf.target[A]) == 0) {
+		return (gp.status);
+	}
+
 	// G0 (linear traverse motion command)
 	if ((gn.next_action == NEXT_ACTION_MOTION) && 
 	    (gn.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE)) {
@@ -467,4 +481,13 @@ int _gc_execute_gcode_block()
 		return (gp.status);
 	}
 	return(gp.status);
+}
+
+/*
+ * _gc_print_gcode_state()
+ */
+
+static inline void _gc_print_gcode_state()
+{
+	cm_print_machine_state();
 }

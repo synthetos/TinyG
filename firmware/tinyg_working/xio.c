@@ -195,17 +195,17 @@ int xio_cntrl(const uint8_t dev, const uint16_t control)
  * xio_set_stderr() - set stderr from device number
  */
 
-void xio_set_stdin(const uint8_t dev)
+inline void xio_set_stdin(const uint8_t dev)
 {
 	stdin = ds[dev].fdev;
 }
 
-void xio_set_stdout(const uint8_t dev)
+inline void xio_set_stdout(const uint8_t dev)
 {
 	stdout = ds[dev].fdev;
 }
 
-void xio_set_stderr(const uint8_t dev)
+inline void xio_set_stderr(const uint8_t dev)
 {
 	stderr = ds[dev].fdev;
 }
