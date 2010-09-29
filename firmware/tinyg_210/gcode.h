@@ -164,7 +164,7 @@ enum gcDirection {						// used for spindle and arc dir
 	G80				Cancel motion mode
 	G90, G91		Set distance mode; absolute {G90}, incremental {G91}
 	G92				Coordinate System Offsets - limited support provided
-	G93, G94		Set feed rate mode: inverse time mode {93}, 
+	G93, G94		Set feed rate mode: inverse time mode {G93}, 
 										units per minute mode {G94}
 	M0				Program stop
 	M1				Optional program stop

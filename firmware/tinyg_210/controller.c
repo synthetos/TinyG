@@ -20,7 +20,7 @@
  *
  *	The first letter of an IDLE mode  line performs the following actions
  *
- *		G,M,N,F,(	enter GCODE_MODE (as will lower-case of the same)
+ *		G,M,N,F,%,(	enter GCODE_MODE (as will lower-case of the same)
  *		C,?			enter CONFIG_MODE
  *		D,A			enter DIRECT_DRIVE_MODE
  *		F			enter FILE_MODE (returns automatically after file ends)
@@ -110,7 +110,7 @@
  * Canned gcode files for testing
  */
 
-#include "gcode_tests.h"		// assorted test code
+//#include "gcode_tests.h"		// assorted test code
 #include "gcode_zoetrope.h"		// zoetrope moves. makes really cool sounds
 #include "gcode_mudflap.h"
 //#include "gcode_contraptor_circle.h"
@@ -263,7 +263,7 @@ int tg_parser(char * buf)
 	// auto-detect mode if not already set 
 	if (tg.mode == TG_IDLE_MODE) {
 		switch (toupper(buf[0])) {
-			case 'G': case 'M': case 'N': case 'F': case '(': case '\\': 
+			case 'G': case 'M': case 'N': case 'F': case '(': case '%': case '\\':
 				_tg_set_mode(TG_GCODE_MODE); break;
 			case 'C': case '?': _tg_set_mode(TG_CONFIG_MODE); break;
 			case 'D': _tg_set_mode(TG_DIRECT_DRIVE_MODE); break;
@@ -271,6 +271,8 @@ int tg_parser(char * buf)
 			case 'Q': return (_tg_mudflap_file());
 //			case 'H': return (_tg_help_file());
 			case 'T': return (_tg_test());		// run whatever test you want
+//			case 'I': return (_tg_reserved());	// reserved
+//			case 'V': return (_tg_reserved());	// reserved
 			default:  _tg_set_mode(TG_IDLE_MODE); break;
 		}
 	}
@@ -487,12 +489,7 @@ int _tg_mudflap_file()
 
 int _tg_test(void)
 {
-	xio_open_pgm(PGMFILE(&motor_test1));	// motor tests
-	_tg_set_source(XIO_DEV_PGM);
-	_tg_set_mode(TG_GCODE_MODE);
-	return (TG_OK);
-
-/*	uint16_t address = 0x500;
+	uint16_t address = 0x500;
 	char wrbuf[16] = "0123456789";
 	char rdbuf[16];
 
@@ -501,7 +498,6 @@ int _tg_test(void)
 	EEPROM_ReadString(address, rdbuf, 16);
 	printf("rd: %s\n", rdbuf);
 	return(TG_OK);
-*/
 }
 
 
