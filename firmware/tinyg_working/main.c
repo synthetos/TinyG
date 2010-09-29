@@ -184,10 +184,16 @@ int main(void)
 //	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
 //	xio_queue_RX_string_usb("g0 x0 y0 z0\n");
 //	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
-	xio_queue_RX_string_usb("g0x10y10z0\n");
+//	xio_queue_RX_string_usb("g0x10y10z0\n");
 //	xio_queue_RX_string_usb("g91g0x5y5\n");
 //	xio_queue_RX_string_usb("?\n");
-	xio_queue_RX_string_usb("g20\n");
+//	xio_queue_RX_string_usb("g20\n");
+//	xio_queue_RX_string_usb("c\n");
+//	xio_queue_RX_string_usb("xse800\n");
+//	xio_queue_RX_string_usb("q\n");
+	xio_queue_RX_string_usb("g0x100y120z0\n");
+	xio_queue_RX_string_usb("x0\n");
+	xio_queue_RX_string_usb("y0\n");
 
 #ifdef __NORMAL_MODE
 	for(;;){
