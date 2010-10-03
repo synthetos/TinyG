@@ -120,7 +120,7 @@ enum cfgPortBits {						// motor control port bit positions
 #define X_TRAVEL_PER_REVOLUTION 1.27	// 1/4 - 20 lead screw (0.050" per rev)
 #define Y_TRAVEL_PER_REVOLUTION 1.27	// (robot parameter)
 #define Z_TRAVEL_PER_REVOLUTION 1.27
-#define A_TRAVEL_PER_REVOLUTION 10		// moves 10 degrees per motor revolution (hypothetical machine)
+#define A_TRAVEL_PER_REVOLUTION 1		// moves 1 degree per 360 deg motor revolution (hypothetical machine)
 
 #define X_TRAVEL_MAX 400				// full excursion from min to max 
 #define Y_TRAVEL_MAX 400				// (robot parameter)
