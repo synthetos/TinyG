@@ -231,7 +231,7 @@ enum xioSignals {
 //#define SIG_TERM_CHAR ETX
 // test mappings
 #define SIG_PAUSE_CHAR '@'
-#define SIG_RESUME_CHAR '#'
+#define SIG_RESUME_CHAR '$'
 #define SIG_KILL_CHAR '!'
 #define SIG_TERM_CHAR '!'
 

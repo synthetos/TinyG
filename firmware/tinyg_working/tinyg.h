@@ -43,7 +43,7 @@
 
 
 // Global Settings
-#define TINYG_VERSION "build 212 - \"bezor\""
+#define TINYG_VERSION "build 213 - \"chlamydia\""
 
 
 // Constants

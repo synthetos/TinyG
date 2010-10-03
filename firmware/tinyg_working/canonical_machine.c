@@ -259,6 +259,8 @@ uint8_t cm_straight_traverse(double x, double y, double z, double a)
 	double	length;		// cartesian distance of XYZ traverse
 	uint8_t longest;	// # of the axis which would take the longest to
 						// arrive if all axes were run at their max seek rate
+	uint8_t	longer_xy;
+	uint8_t	longer_za;
 
 	// copy parameters into the current state
 	gm.next_action = NEXT_ACTION_MOTION;
@@ -272,6 +274,9 @@ uint8_t cm_straight_traverse(double x, double y, double z, double a)
 	}
  	length = sqrt(square(l[X]) + square(l[Y]) + square(l[Z]));
 
+	// scale rotary motion to equivalent linear motion (effective travel)
+	l[A] = l[A] * (CFG(X).travel_per_rev / CFG(A).travel_per_rev);
+
 	// skip zero length lines
 	if ((length + l[A]) == 0) {
 		return (TG_ZERO_LENGTH_LINE);
@@ -279,7 +284,11 @@ uint8_t cm_straight_traverse(double x, double y, double z, double a)
 
 	// find the longest running axis in the move (rate-limiting axis) and 
 	// compute the resultant seek rate based on the rate-limiting axis
-	longest = ((t[Z] > ((t[X] > t[Y]) ? t[X] : t[Y])) ? Z : ((t[X] > t[Y]) ? X : Y));
+	longer_xy = ((t[X] > t[Y]) ? X : Y);
+	longer_za = ((t[Z] > t[A]) ? Z : A);
+	longest = ((t[longer_xy] > t[longer_za]) ? longer_xy : longer_za);
+
+//	longest = ((t[Z] > ((t[X] > t[Y]) ? t[X] : t[Y])) ? Z : ((t[X] > t[Y]) ? X : Y));
 	gm.seek_rate = (length / l[longest]) * CFG(longest).max_seek_rate;
 
 	// execute the move using this grossed-up seek rate
