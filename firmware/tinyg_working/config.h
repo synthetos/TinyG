@@ -269,7 +269,10 @@ struct cfgStructGlobal {
 	double gcode_spindle_speed;
 
 	// model configuration
-	double mm_per_arc_segment;	// arc drawing resolution in millimeters per segment
+	double mm_per_arc_segment;	// arc drawing resolution in mm / segment
+	double linear_to_rotary_factor; // scale linear rate to rotational rate
+	double rotary_to_linear_factor; // scale rotational rate to linear rate
+
 //	double max_feed_rate;		// mm of trav in mm/min (COMPUTED)
 //	double max_seek_rate;		// mm of trav in mm/min (COMPUTED)
  // axis structs
