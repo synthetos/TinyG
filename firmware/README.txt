@@ -1,1 +1,1 @@
-Numbered versions are somewhat stable. No similar guarantees on the working directory.
+You probably want the second to last build, which by convention is supposed to be somewhat stable. The latest build is always experimental and does not have similar guarantees.
