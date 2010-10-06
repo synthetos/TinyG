@@ -93,7 +93,7 @@ enum tgAxisNum {		// define axis numbers and array indexes from 0 to 3
 #define TG_FLOATING_POINT_ERROR 18		// number conversion error
 #define TG_MOTION_CONTROL_ERROR 19		// motion control failure
 #define TG_ARC_SPECIFICATION_ERROR 20	// arc specification error
-#define TG_ZERO_LENGTH_LINE 21			// XYZ line is zero length 
+#define TG_ZERO_LENGTH_MOVE 21			// XYZA move is zero length 
 #define TG_MAX_FEED_RATE_EXCEEDED 22
 #define TG_MAX_SEEK_RATE_EXCEEDED 23
 #define TG_MAX_TRAVEL_EXCEEDED 24
