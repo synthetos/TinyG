@@ -306,6 +306,9 @@ int cfg_parse(char *block)
 
 inline void _cfg_computed() 
 {
+	cfg.linear_to_rotary_factor = cfg.a[A].travel_per_rev / cfg.a[X].travel_per_rev;
+	cfg.rotary_to_linear_factor = cfg.a[X].travel_per_rev / cfg.a[A].travel_per_rev;
+
 	for (uint8_t i=X; i<=A; i++) {
 		// = 360 / (degree_per_step/microstep) / travel_per_rev
 		cfg.a[i].steps_per_unit = (360 / (cfg.a[i].degree_per_step / 

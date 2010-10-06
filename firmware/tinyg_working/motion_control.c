@@ -209,7 +209,7 @@ int mc_queued_start_stop_continue()
  * Then the feed_rate means that the motion should be completed in 
  *	 1/feed_rate minutes
  *
- * Zero length lines are skipped at this level. 
+ * Zero length moves are trapped and returned.
  * The mv_queue doesn't check line length and queues anything.
  * 
  * The line generator (continuation) can be called multiple times until it
@@ -228,9 +228,9 @@ int mc_line(double x, double y, double z, double a, double feed_rate)
 	mc.steps[Z] = mc.target[Z]-mc.position[Z];
 	mc.steps[A] = mc.target[A]-mc.position[A];
 
-	// skip zero length lines
-	if ((mc.steps[X] + mc.steps[Y] + mc.steps[Z]) == 0) {
-		return (TG_ZERO_LENGTH_LINE);
+	// skip zero length moves
+	if ((mc.steps[X] + mc.steps[Y] + mc.steps[Z] + mc.steps[A]) == 0) {
+		return (TG_ZERO_LENGTH_MOVE);
 	}
 
 	// Ask Phythagoras to estimate how many mm next move will take (thanks Simen!)

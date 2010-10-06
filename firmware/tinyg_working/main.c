@@ -199,6 +199,8 @@ int main(void)
 //	xio_queue_RX_string_usb("g0x0y0z0\n");
 //	xio_queue_RX_string_usb("g2 x10 y10 z25.4 i8 j8 g93 f.2\n");
 	xio_queue_RX_string_usb("g0x20y30z40a20\n");
+	xio_queue_RX_string_usb("a0\n");
+
 
 #ifdef __NORMAL_MODE
 	for(;;){

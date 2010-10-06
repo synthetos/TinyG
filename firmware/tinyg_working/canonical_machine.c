@@ -257,10 +257,9 @@ uint8_t cm_straight_traverse(double x, double y, double z, double a)
 	double 	l[4];		// XYZ lengths (absolute values)  
 	double 	t[4];		// XYZ times to complete axis moves
 	double	length;		// cartesian distance of XYZ traverse
-	uint8_t longest;	// # of the axis which would take the longest to
-						// arrive if all axes were run at their max seek rate
-	uint8_t	longer_xy;
-	uint8_t	longer_za;
+	uint8_t	longer_xy;	// values to compute the axis that would take the 
+	uint8_t	longer_za;	//...longest to arrive if all axes were run at 
+	uint8_t longest;	//...their max seek rate
 
 	// copy parameters into the current state
 	gm.next_action = NEXT_ACTION_MOTION;
@@ -275,20 +274,21 @@ uint8_t cm_straight_traverse(double x, double y, double z, double a)
  	length = sqrt(square(l[X]) + square(l[Y]) + square(l[Z]));
 
 	// scale rotary motion to equivalent linear motion (effective travel)
-	l[A] = l[A] * (CFG(X).travel_per_rev / CFG(A).travel_per_rev);
+//	l[A] = l[A] * (CFG(X).travel_per_rev / CFG(A).travel_per_rev);
+	l[A] *= cfg.rotary_to_linear_factor;
 
-	// skip zero length lines
+	// skip zero length moves
 	if ((length + l[A]) == 0) {
-		return (TG_ZERO_LENGTH_LINE);
+		return (TG_ZERO_LENGTH_MOVE);
 	}
 
 	// find the longest running axis in the move (rate-limiting axis) and 
 	// compute the resultant seek rate based on the rate-limiting axis
+//	longest = ((t[Z] > ((t[X] > t[Y]) ? t[X] : t[Y])) ? Z : ((t[X] > t[Y]) ? X : Y));  // 3 way comparison
 	longer_xy = ((t[X] > t[Y]) ? X : Y);
 	longer_za = ((t[Z] > t[A]) ? Z : A);
 	longest = ((t[longer_xy] > t[longer_za]) ? longer_xy : longer_za);
 
-//	longest = ((t[Z] > ((t[X] > t[Y]) ? t[X] : t[Y])) ? Z : ((t[X] > t[Y]) ? X : Y));
 	gm.seek_rate = (length / l[longest]) * CFG(longest).max_seek_rate;
 
 	// execute the move using this grossed-up seek rate
@@ -348,6 +348,16 @@ uint8_t cm_set_motion_control_mode(uint8_t motion_control_mode)
  * (see end of file for arc_feed. It's a long one)
  * cm_dwell() - G4, P parameter (seconds)
  * cm_straight_feed() - G1
+ *
+ * Straight feed implements 4 dimensional feed rate limiting. 
+ * The move is attempted with all axes scaled to meet the desired feed rate.
+ * The rotary axis (A) is "converted" to linear coordinates for comparison 
+ * purposes (the concept of "equivalent linear travel"). E.g. if 'A' has a 
+ * max rate of 360 degrees per minute and X has a max rate of 500 mm/min,
+ * then 'A' is compared to X for maximum rate, and the equivalent linear 
+ * feedrate of A is 500/360 of its degree rate
+ 
+ * The comments should explaian what's happening
  */ 
 
 uint8_t cm_dwell(double seconds)
@@ -364,9 +374,10 @@ uint8_t cm_straight_feed(double x, double y, double z, double a)
 	double	t[4];		// time of each axis to complete move (at max)
 	double	length;		// cartesian distance of the move
 	double	time;		// time required to complete move at desired feedrate
-	uint8_t	exceeds = 0;// set TRUE if desired feedrate exceeds machine capacity
-	uint8_t longest;	// # of the axis which would take the longest to
-						// arrive if all axes were run at their max seek rate
+	uint8_t	exceeds = 0;// set TRUE if desired feedrate exceeds machine max
+	uint8_t	longer_xy;	// values to compute the axis that would take the 
+	uint8_t	longer_za;	//...longest to arrive if all axes were run at 
+	uint8_t longest;	//...their max feed rate
 
 	// copy parameters into the current state
 	gm.next_action = NEXT_ACTION_MOTION;
@@ -388,25 +399,33 @@ uint8_t cm_straight_feed(double x, double y, double z, double a)
 
 	// compare the theoretical max feed times against desired feed time
 	for (uint8_t i = 0; i <= A; i++) {
-		l[i] = fabs(gm.target[i] - gm.position[i]);	// line lengths
+		l[i] = fabs(gm.target[i] - gm.position[i]);	// line lengths (travel)
 		t[i] = l[i] / CFG(i).max_feed_rate;			// theoretical run times
 		r[i] = (length / l[i]) * CFG(i).max_feed_rate;// required feedrate
 		if (r[i] > CFG(i).max_feed_rate) {
 			exceeds = TRUE;
 		}
 	}
-
-	// skip zero length lines
+	// skip zero length moves
 	if ((length + l[A]) == 0) {
-		return (TG_ZERO_LENGTH_LINE);
+		return (TG_ZERO_LENGTH_MOVE);
 	}
 
 	// Adjust feed rate if multi-axis feed exceeds any axis' max rate.
-	// Find the longest running axis in the move (rate-limiting axis).
-	// Compute the resultant seek rate based on the rate-limiting axis.
+	// 1. Scale rotary motion to equivalent linear motion for comparison
+	// 2. Find the longest running axis in the move (rate-limiting axis).
+	// 3. Compute the resultant seek rate based on the rate-limiting axis.
 	if (exceeds) {
-		longest = ((t[Z] > ((t[X] > t[Y]) ? t[X] : t[Y])) ? Z : ((t[X] > t[Y]) ? X : Y));
-		gm.feed_rate = (length / l[longest]) * CFG(longest).max_feed_rate;
+//		l[A] *= (CFG(X).travel_per_rev / CFG(A).travel_per_rev);
+		l[A] *= cfg.rotary_to_linear_factor;
+		longer_xy = ((t[X] > t[Y]) ? X : Y);
+		longer_za = ((t[Z] > t[A]) ? Z : A);
+		longest = ((t[longer_xy] > t[longer_za]) ? longer_xy : longer_za);
+		if (longest == A) {
+			gm.feed_rate = (length / l[longest]) * CFG(X).max_feed_rate;
+		} else {
+			gm.feed_rate = (length / l[longest]) * CFG(longest).max_feed_rate;
+		}
 	}
 
 	// execute the move
@@ -838,8 +857,8 @@ int _cm_compute_center_arc()
 #define GC_MSG_A 20
 #define GC_MSG_I 21
 #define GC_MSG_J 22
-#define GC_MSG_FEEDRATE 23
-#define GC_MSG_SEEKRATE 24
+#define GC_MSG_SEEKRATE 23
+#define GC_MSG_FEEDRATE 24
 
 // put display strings in program memory
 char gms00[] PROGMEM = "Motion mode:     G0  - linear traverse (seek)\n";
@@ -865,8 +884,8 @@ char gms19[] PROGMEM = "Position Z:   %8.3f %s\n";
 char gms20[] PROGMEM = "Position A:   %8.3f degrees\n";
 char gms21[] PROGMEM = "Offset I:     %8.3f %s\n";
 char gms22[] PROGMEM = "Offset J:     %8.3f %s\n";
-char gms23[] PROGMEM = "Feed Rate:    %8.3f %s \\ min\n";
-char gms24[] PROGMEM = "Seek Rate:    %8.3f %s \\ min\n";
+char gms23[] PROGMEM = "Seek Rate:    %8.3f %s \\ min\n";
+char gms24[] PROGMEM = "Feed Rate:    %8.3f %s \\ min\n";
 
 // put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
 PGM_P gcMsg[] PROGMEM = {	
@@ -892,14 +911,14 @@ void cm_print_machine_state()
 		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_Y]), gm.position[Y] / (25.4), units);
 		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_Z]), gm.position[Z] / (25.4), units);
 		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_A]), gm.position[A],"degrees");
-		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_FEEDRATE]), gm.feed_rate / (25.4), units);
 		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_SEEKRATE]), gm.seek_rate / (25.4), units);
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_FEEDRATE]), gm.feed_rate / (25.4), units);
 	} else {
 		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_X]), gm.position[X], units);
 		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_Y]), gm.position[Y], units);
 		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_Z]), gm.position[Z], units);
 		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_A]), gm.position[A],"degrees");
-		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_FEEDRATE]), gm.feed_rate, units);
 		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_SEEKRATE]), gm.seek_rate, units);
+		printf_P((PGM_P)pgm_read_word(&gcMsg[GC_MSG_FEEDRATE]), gm.feed_rate, units);
 	}
 }

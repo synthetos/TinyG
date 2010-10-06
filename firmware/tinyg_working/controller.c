@@ -411,7 +411,7 @@ void tg_print_status(const uint8_t status_code, const char *textbuf)
 		case TG_EAGAIN: return;
 		case TG_NOOP: return;
 		case TG_QUIT: return;
-		case TG_ZERO_LENGTH_LINE: return;
+		case TG_ZERO_LENGTH_MOVE: return;
 	}
 	printf_P(PSTR("%S: %s\n"),(PGM_P)pgm_read_word(&tgStatus[status_code]), textbuf);
 //	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgStatus[status_code]));
