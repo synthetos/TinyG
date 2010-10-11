@@ -2,6 +2,30 @@
  * data_gcode_tests.h - data file containing assorted tests
  */
 
+const char PROGMEM hokanson_01[] = "\
+G1 F500 X345 Y-150\n\
+G1 F500 X276 Y-120\n\
+G1 F500 X207 Y-90\n\
+G1 F500 X138 Y-60\n\
+G1 F500 X69 Y-30\n\
+G1 F500 X0 Y0\n\
+G1 F500 X-69 Y30\n\
+G1 F500 X-138 Y60\n\
+G1 F500 X-207 Y90\n\
+G1 F500 X-276 Y120\n\
+G1 F500 X-345 Y150\n\
+G1 F500 X-276 Y120\n\
+G1 F500 X-207 Y90\n\
+G1 F500 X-138 Y60\n\
+G1 F500 X-69 Y30\n\
+G1 F500 X0 Y0\n\
+G1 F500 X69 Y30\n\
+G1 F500 X138 Y60\n\
+G1 F500 X207 Y90\n\
+G1 F500 X276 Y120\n\
+G1 F500 X345 Y150";
+
+
 const char PROGMEM motor_test1[] = "\
 G00 G17 G21 G40 G49 G80 G90\n\
 T1 M6\n\

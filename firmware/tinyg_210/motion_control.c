@@ -333,7 +333,6 @@ int mc_arc(double theta, 			// starting angle
 	ma.axis_linear = axis_linear;
 	ma.mm_of_travel = hypot(ma.angular_travel*ma.radius, labs(ma.linear_travel));
 	
-//	if (ma.mm_of_travel < MM_PER_ARC_SEGMENT) { 	// too short to draw
 	if (ma.mm_of_travel < cfg.mm_per_arc_segment) { // too short to draw
 		return (TG_ARC_SPECIFICATION_ERROR);
 	}
@@ -348,11 +347,17 @@ int mc_arc(double theta, 			// starting angle
 	}
 	ma.theta_per_segment = ma.angular_travel/ma.segments;
 	ma.linear_per_segment = ma.linear_travel/ma.segments;
-	ma.center_x = (mc.position[ma.axis_1]/CFG(ma.axis_1).steps_per_mm)-sin(ma.theta)*ma.radius;
-	ma.center_y = (mc.position[ma.axis_2]/CFG(ma.axis_2).steps_per_mm)-cos(ma.theta)*ma.radius;
+	ma.center_x = (mc.position[ma.axis_1] / 
+					CFG(ma.axis_1).steps_per_mm)-sin(ma.theta) * ma.radius;
+	ma.center_y = (mc.position[ma.axis_2] / 
+					CFG(ma.axis_2).steps_per_mm)-cos(ma.theta) * ma.radius;
 
   	// 	A vector to track the end point of each segment. Initialize linear axis
-	ma.dtarget[ma.axis_linear] = mc.position[ma.axis_linear]/CFG(Z).steps_per_mm;
+//	ma.dtarget[ma.axis_linear] = mc.position[ma.axis_linear] / 
+//								 CFG(Z).steps_per_mm;
+	ma.dtarget[ma.axis_linear] = mc.position[ma.axis_linear] / 
+								 CFG(ma.axis_linear).steps_per_mm;
+
 	ma.arc_continue_state = MC_STATE_NEW;	// new arc, NJ. (I'm here all week Try veal)
 	return (mc_arc_continue());
 }
@@ -375,7 +380,8 @@ int mc_arc_continue()
 		ma.dtarget[ma.axis_1] = ma.center_x+sin(ma.theta)*ma.radius;
 		ma.dtarget[ma.axis_2] = ma.center_y+cos(ma.theta)*ma.radius;
 		ma.dtarget[ma.axis_linear] += ma.linear_per_segment;
-		mc_line(ma.dtarget[X], ma.dtarget[Y], ma.dtarget[Z], ma.feed_rate, ma.invert_feed_rate);
+		mc_line(ma.dtarget[X], ma.dtarget[Y], 
+				ma.dtarget[Z], ma.feed_rate, ma.invert_feed_rate);
   	}
 	ma.arc_continue_state = MC_STATE_OFF;	// arc is done. turn the generator off
 	return (TG_OK);
