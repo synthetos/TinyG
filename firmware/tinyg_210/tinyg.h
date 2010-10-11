@@ -43,15 +43,14 @@
 
 
 // Global Settings
-#define TINYG_VERSION "build 210 - \"aphasia\""
+#define TINYG_VERSION "build 210f - \"aphasia\""
 
 
 // Constants
 #define ONE_MINUTE_OF_MICROSECONDS 60000000.0	// from GRBL - Thanks Simen!
 #define TICKS_PER_MICROSECOND (F_CPU/1000000)	// from GRBL
 #define MM_PER_INCH 25.4						// from GRBL
-//#define REVS_PER_DEGREE 0.00277778				// 1/360
-//#define MINIMUM_TICKS_PER_STEP 0xC00	// too small and the steppers freeze
+
 
 /* Define axes */
 
