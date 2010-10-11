@@ -110,7 +110,7 @@
  * Canned gcode files for testing
  */
 
-//#include "gcode_tests.h"		// assorted test code
+#include "gcode_tests.h"		// assorted test code
 #include "gcode_zoetrope.h"		// zoetrope moves. makes really cool sounds
 #include "gcode_mudflap.h"
 #include "gcode_contraptor_circle.h"
@@ -467,8 +467,10 @@ int _tg_test_file()
 
 //	xio_open_pgm(PGMFILE(&zoetrope));			// crazy noisy zoetrope file
 //	xio_open_pgm(PGMFILE(&mudflap)); 			// mudflap girl
-	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
+//	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
 //	xio_open_pgm(PGMFILE(&roadrunner));
+
+	xio_open_pgm(PGMFILE(&hokanson_01));
 
 //	xio_open_pgm(PGMFILE(&parser_test1));		// gcode parser tests
 
