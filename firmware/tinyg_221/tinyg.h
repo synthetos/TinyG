@@ -4,19 +4,18 @@
  *
  * Copyright (c) 2010 Alden S. Hart, Jr.
  *
- * TinyG is derived from Simen Svale Skogsrud's Grbl code from March 2010
- * It ports the code to the Atmel xmega chip and adds some capabilities
+ * TinyG is free software: you can redistribute it and/or modify it under 
+ * the terms of the GNU General Public License as published by the Free 
+ * Software Foundation, either version 3 of the License, or (at your 
+ * (option) any later version.
  *
- * TinyG is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation, 
- * either version 3 of the License, or (at your option) any later version.
+ * TinyG is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ * See the GNU General Public License for details.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
- * PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with TinyG 
- * If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License 
+ * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef tinyg_h
@@ -36,7 +35,10 @@
 #define min(a, b) (((a)<(b))?(a):(b))
 #endif
 
-void tg_app_reset(void);				// found in main.c
+// found in main.c
+void tg_system_init(void);
+void tg_application_init(void);
+void tg_unit_tests(void);
 
 // Operating Mode: (chose only one)
 #define __NORMAL_MODE					// normal operation - receive from USB
@@ -51,7 +53,8 @@ void tg_app_reset(void);				// found in main.c
 //#define TINYG_VERSION "build 215 - \"dropsy\""
 //#define TINYG_VERSION "build 216 - \"eczema\""
 //#define TINYG_VERSION "build 217 - \"fainting spells\""
-#define TINYG_VERSION "build 220 - \"gout\""
+//#define TINYG_VERSION "build 220 - \"gout\""
+#define TINYG_VERSION "build 221 - \"hovorkova\""
 
 // Constants
 #define ONE_MINUTE_OF_MICROSECONDS 60000000.0	// from GRBL
@@ -132,7 +135,7 @@ typedef int (*fptr_int_char_p) (char *b);// returns int, character pointer (line
 #define DEFAULT_SOURCE XIO_DEV_USB		// default source device
 #endif
 
-#define __UNIT_TESTS		// uncomment to compile the unit tests into the code
+//#define __UNIT_TESTS		// uncomment to compile the unit tests into the code
 //#define __DEBUG			// uncomment to enable debug logging
 //#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
 //#define __FAKE_STEPPERS	// disables stepper ISR load for faster debugging
