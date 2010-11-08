@@ -39,6 +39,7 @@
 #include "config.h"
 #include "motion_control.h"
 #include "canonical_machine.h"
+#include "controller.h"
 #include "limit_switches.h"
 #include "spindle.h"
 
@@ -67,7 +68,7 @@ struct canonicalMachineCycle {		// struct to manage cycles
 enum cyCycleState {
 	CY_STATE_OFF,					// cycle is OFF (must be zero)
 	CY_STATE_NEW,					// initial call to cycle
-	CY_STATE_HOMING_X_START,		// start move
+	CY_STATE_HOMING_X_START,		// start X homing move
 	CY_STATE_HOMING_X_WAIT,			// wait for limit switch or end-of-move
 	CY_STATE_HOMING_Y_START,
 	CY_STATE_HOMING_Y_WAIT,
@@ -108,7 +109,7 @@ inline uint8_t cm_get_motion_mode() { return gm.motion_mode; }
 
 inline uint8_t cm_get_absolute_mode() { return gm.absolute_mode; }
 
-inline double cm_get_position(uint8_t axis)
+inline double cm_get_position(uint8_t axis) 
 {
 	return (gm.inches_mode ? (gm.position[axis] / MM_PER_INCH) : gm.position[axis]);
 }
@@ -121,13 +122,10 @@ inline double cm_get_position(uint8_t axis)
  *	The setters take care of coordinate system, units, and 
  *	distance mode conversions and normalizations.
  *
- * cm_set_positions()	- set all XYZ positions
  * cm_set_targets()		- set all XYZ targets
  * cm_set_offsets()		- set all IJK offsets
- * cm_set_position() 	- set one XYZ position
- * cm_set_target()		- set one XYZ target
- * cm_set_offset()		- set one IJK offset
  * cm_set_radius()		- set radius value
+ * cm_set_absolute_override()
  */
 
 void cm_set_targets(double x, double y, double z, double a) 
@@ -538,20 +536,21 @@ uint8_t cm_message(char *message)
  * - given that there is no coresponding gcode for it.
  */
 
-uint8_t cm_program_stop()					// M0, M60
+uint8_t cm_program_stop()			// M0, M60
 {
 	mc_queued_stop();
 	return (TG_OK);
 }
 
-uint8_t cm_optional_program_stop()			// M1
+uint8_t cm_optional_program_stop()	// M1
 {
 	mc_queued_stop();
 	return (TG_OK);
 }
 
-uint8_t cm_program_end()					// M2, M30
+uint8_t cm_program_end()			// M2, M30
 {
+	tg_reset_source();	// stop reading from a file (return to std device)
 	mc_queued_end();
 	return (TG_OK);
 }
@@ -570,6 +569,7 @@ uint8_t cm_async_start()
 
 uint8_t cm_async_end()
 {
+	tg_reset_source(); // stop reading from a file (return to std device)
 	mc_async_end();
 	return (TG_OK);
 }
@@ -584,27 +584,14 @@ uint8_t cm_stop()					// stop cycle. not implemented
 
 /* 
  * cm_return_to_home() - homing cycle similar to G28
- * cm_return_to_home_continue() - state machine executes the cycle
+ * cm_return_to_home_continue() - state machine that executes the cycle
  *
- *	The continue is coded as a state machine. The main function call 
- *	cm_return_to_home() initiates the cycle and calls the continuation,
- *	cm_return_to_home_continue(). The continuation is then called from 
- *	the controller loop if (and only if) the lower layers are idle 
- *	(i.e. there are no movements, dwells or stops occurring). 
- *
- *	The continuation sequences through the various homing moves and 
- *	reacts to limit switch interrupts. 
- *
- *	The mc_isbusy() function is used to synchronize the homing cycle moves
- *	to the move queue so it won;t issue any new moves before the current 
- *	move has completed.
- *
- *	This routine is especially tricky because the state machine is 
- *	activated if the previously requested move is complete, or if a limit 
- *	switch is hit. The limit switches cause an interrupt to occur which
- *	(1) sets a limit switch flag, (2) shuts down the motors, and (3) 
- *	iniitates a limit switch lockout interval which serves to debounce 
- *	the switch.
+ *	The continue is coded as a state machine. It is entered from the main
+ *	controller loop and runs when the cycle is enabled and the lower layers 
+ *	are idle (i.e. there is no motion). It sequences through the various 
+ *	moves and reacts to limit switch interrupts. This one is tricky because
+ *	the routine can be re-entered if a limit switch is hit (ANY limit 
+ *	switch) or if the previously queued move completes.
  *
  *	Operation:
  *	  - cm_return_to_home()
@@ -613,8 +600,9 @@ uint8_t cm_stop()					// stop cycle. not implemented
  *		- setup for incremental travel & other inits
  *		- run the continuation (for the first time)
  *
- *	  - cm_return_to_home_continuation() - entered above and from the 
- *			controller idle loop if no lower-level functions are still running
+ *	  - cm_return_to_home_continuation()   
+ *			(entered from above and from the controller idle loop if no 
+ *			 lower-level functions are still executing) 
  *		- only run the continuation if state is not OFF, & motors are idle
  *			(i.e. sync execution to the move queue and steppers) 
  *		- for each axis to be homed:
@@ -647,13 +635,15 @@ uint8_t cm_stop()					// stop cycle. not implemented
 uint8_t cm_return_to_home()
 {
 	// initialize this whole operation
-	cfg.homing_cycle_active = TRUE;		// tell the world you are a Homer
+	cfg.cycle_active = TRUE;			// tell the world you are a Homer
+	cfg.homing_state = HOMING_IN_PROCESS;
+	cm_set_targets(0, 0, 0, 0);					// this is necessary
 	cm_set_origin_offsets(0, 0, 0, 0);			// zero gcode model
 	memcpy(&gt, &gm, sizeof(struct GCodeModel));// save gcode model
 	cm_use_length_units(MILLIMETER_MODE);
 	cm_set_distance_mode(INCREMENTAL_MODE);
 	ls_clear_limit_switches();					// reset the switch flags
-	cy.state = CY_STATE_HOMING_X_START;			// attempt to start with X
+	cy.state = CY_STATE_NEW;
 	return (cm_return_to_home_continue());		// run the continuation
 }
 
@@ -666,9 +656,27 @@ uint8_t cm_return_to_home_continue()
 		return (TG_EAGAIN);
 	}
 
-	// if X homing is enabled do a max_travel X move
+	// handle any initial switch closures by backing off the switch
+	if (cy.state == CY_STATE_NEW) {
+		cy.state = CY_STATE_HOMING_X_START;
+		ls_read_limit_switches();
+		if (ls_xmin_thrown()) {
+			ls_clear_limit_switches();
+			return(HOMING_BACKOFF_MOVE(CFG(X).homing_backoff, 0, 0, 0));
+		}
+		if (ls_ymin_thrown()) {
+			ls_clear_limit_switches();
+			return(HOMING_BACKOFF_MOVE(0, CFG(Y).homing_backoff, 0, 0));
+		}
+		if (ls_zmin_thrown()) {
+			ls_clear_limit_switches();
+			return(HOMING_BACKOFF_MOVE(0, 0, CFG(Z).homing_backoff, 0));
+		}
+	}
+
+	// if X homing is enabled issue a max_travel X move
 	if (CFG(X).homing_enable && cy.state == CY_STATE_HOMING_X_START) {
-		cy.state = CY_STATE_HOMING_X_WAIT;	// next state
+		cy.state = CY_STATE_HOMING_X_WAIT;
 		cm_set_feed_rate(CFG(X).homing_rate);
 		return(cm_straight_feed(-(CFG(X).travel_max), 0, 0, 0));
 	}
@@ -716,10 +724,11 @@ uint8_t cm_return_to_home_continue()
 	mc_set_position(gt.position[X], gt.position[Y], // MC layer must agree...
 					gt.position[Z], gt.position[A]);//...with gt values
 	cm_set_distance_mode(ABSOLUTE_MODE);
-	cfg.homing_cycle_active = FALSE;				// not a homer anymore
+	cfg.cycle_active = FALSE;						// not a homer anymore
 	cy.state = CY_STATE_OFF;
 	cm_set_feed_rate(HOMING_ZERO_RATE);
-	return(HOMING_ZERO_MOVE(0, 0, 0, 0));
+	cfg.homing_state = HOMING_COMPLETE; // actually it's not yet complete...
+	return(HOMING_ZERO_MOVE(0,0,0,0));	//...but will be once this move's done
 }
 
 
@@ -955,7 +964,7 @@ int _cm_compute_center_arc()
 		move_time = mm_of_travel / gm.feed_rate;
 	}
 
-	// check if any of the axes will rate-limit the move
+	// check if any axis requires more time than the move allows
 	// +++ proper max velocity checking has been put off for now
 //	for (uint8_t i = 0; i < AXES; i++) {
 //		axis_time = (fabs(gm.target[i] - gm.position[i])) / CFG(i).max_seek_rate;
@@ -965,7 +974,8 @@ int _cm_compute_center_arc()
 //	}
 
 	// Trace the arc
-	cm_status = mc_arc(theta_start, radius_tmp, angular_travel, linear_travel, 
+	cm_status = mc_arc(theta_start, radius_tmp, 
+					   angular_travel, linear_travel, 
 					   gm.plane_axis_0, gm.plane_axis_1, gm.plane_axis_2, 
 					   move_time);
 
