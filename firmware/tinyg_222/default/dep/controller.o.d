@@ -15,9 +15,10 @@ controller.o: ../controller.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../xio.h \
   ../xio_file.h ../xio_usart.h ../tinyg.h ../controller.h ../gcode.h \
-  ../config.h ../move_queue.h ../canonical_machine.h ../motion_control.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/string.h ../direct_drive.h \
-  ../stepper.h ../limit_switches.h ../xmega_eeprom.h ../gcode_hokanson.h
+  ../config.h ../canonical_machine.h ../motion_control.h \
+  c:/winavr-20100110/lib/gcc/../../avr/include/string.h ../motor_queue.h \
+  ../direct_drive.h ../stepper.h ../limit_switches.h ../xmega_eeprom.h \
+  ../gcode_hokanson.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -63,13 +64,13 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../config.h:
 
-../move_queue.h:
-
 ../canonical_machine.h:
 
 ../motion_control.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/string.h:
+
+../motor_queue.h:
 
 ../direct_drive.h:
 

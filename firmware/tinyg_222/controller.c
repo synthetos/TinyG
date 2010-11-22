@@ -19,26 +19,28 @@
  *
  * ---- Controller Operation ----
  *
- *	The controller implements a simple process control scheme to manage 
- *	blocking of multiple "threads" in the application. Technically, the 
- *	controller implements a simple event-drive state machine using inverted
+ *	The controller provides a simple process control scheme to manage 
+ *	blocking of multiple "threads" in the application. The controller is 
+ *	an event-driven hierarchical state machine (HSM) using inverted
  *	control to manage a set of cooperative run-to-completion kernel tasks.
  * 	(ref: http://www.state-machine.com/products)
  *
- *	More simply, it works as a aborting "superloop", where the highest 
- *	priority tasks are run first and progressively lower priority tasks 
- *	are run only if the higher priority tasks are not blocked. No task 
- *	should ever actually block, but instead return "busy" when it would
- *	ordinarily block, and provide a re-entry point to resume the task
- *	once the blocking condition has been removed.
+ *	More simply, it works as a set of aborting "superloops", one superloop
+ *	per hierarchical state machine (or thread - sort of). Within each HSM
+ *	the highest priority tasks are run first and progressively lower 
+ *	priority tasks are run only if the higher priority tasks are not blocked. 
+ *	No task ever actually blocks, but instead returns "busy" (eagain) when 
+ *	it would ordinarily block. It must also provide a re-entry point to 
+ *	resume the task once the blocking condition has been removed.
  *
- *	For this to work tasks must be written to run-to-completion (non 
- *	blocking), and must offer re-entry points (continuations) to resume
- *	operations that would have blocked (see arc generator for an example). 
- *	A task returns TG_EAGAIN to indicate a blocking point. If TG_EAGAIN 
- *	is received The controller quits the loop and starts over. Any other 
- *	return code allows the controller to proceed down the task list.
- *	(See end notes in this file for how to write a continuation).
+ *	For this scheme to work tasks must be written to run-to-completion 
+ *	(non-blocking), and must offer re-entry points (continuations) to 
+ *	resume operations that would have blocked (see line generator for an 
+ *	example). A task returns TG_EAGAIN to indicate a blocking point. If 
+ *	TG_EAGAIN is received the controller quits the loop (HSM) and starts 
+ *	the next one in the round-robnin (all HSMs are round robined).  
+ *	Any other return code allows the controller to proceed down the task 
+ *	list. See end notes in this file for how to write a continuation.
  *
  *	Interrupts run at the highest priority level; kernel tasks are 
  *	organized into priority groups below the interrupt levels. The 
@@ -98,9 +100,9 @@
 #include "controller.h"
 #include "gcode.h"				// calls out to gcode parser, etc.
 #include "config.h"				// calls out to config parser, etc.
-#include "move_queue.h"
 #include "canonical_machine.h"	// uses homing cycle
 #include "motion_control.h"
+#include "motor_queue.h"
 #include "direct_drive.h"
 #include "stepper.h"			// needed for stepper kill and terminate
 #include "limit_switches.h"
@@ -116,12 +118,10 @@
 //#include "gcode_contraptor_circle.h"
 #include "gcode_hokanson.h"
 
-/*
- * Local Scope Functions and Data
- */
 
 struct tgController tg;			// controller state structure
 
+static void _tg_controller_HSM(void);
 static int _tg_parser(char * buf);
 static int _tg_read_next_line(void);
 static void _tg_prompt(void);
@@ -145,11 +145,13 @@ void tg_init()
 	tg.default_src = DEFAULT_SOURCE;// set in tinyg.h
 	_tg_set_source(tg.default_src);	// set initial active source
 	_tg_set_mode(TG_IDLE_MODE);		// set initial operating mode
-	tg.state = TG_READY_UNPROMPTED;
 }
 
 void tg_alive() 
-{										 // see tinyg.h for string
+{
+#ifdef __SIMULATION_MODE
+	return;
+#endif									// see tinyg.h for string
 	printf_P(PSTR("**** TinyG %S ****\n"), (PSTR(TINYG_VERSION)));
 	_tg_prompt();
 }
@@ -157,44 +159,84 @@ void tg_alive()
 /* 
  * tg_controller() - top-level controller
  *
- * Tasks are ordered by increasing dependency (blocking hierarchy) - tasks 
- * that are dependent on the completion of lower-level tasks should be
- * placed later in the list than the task(s) they are dependent upon.
- * Any task in the list must be written as a continuation. See end notes
- * in this file for how to code continuations.
+ * The order of the dispatched tasks is very important. 
+ * Tasks are ordered by increasing dependency (blocking hierarchy).
+ * Tasks that are dependent on completion of lower-level tasks must be
+ * later in the list than the task(s) they are dependent upon. 
+ *
+ * Tasks must be written as continuations as they will be called 
+ * repeatedly, and often called even if they are not currently active. 
+ * See end notes in this file for how to code continuations.
+ *
+ * The DISPATCH macro calls the function and returns to the controller 
+ * parent if not finished (TG_EAGAIN), preventing later routines from 
+ * running (they remain blocked). Any other condition - OK or ERR - 
+ * drops through and runs the next routine in the list.
+ *
+ * A routine that had no action (i.e. is OFF or idle) should return TG_NOOP
  */
-
-#define	DISPATCH(func) switch (func) { \
-	case (TG_EAGAIN): { return; } \
-	case (TG_OK): { if (cfg.cycle_active) { return; } \
-					else { tg.state = TG_READY_UNPROMPTED; _tg_prompt(); return; \
-				  } } }
-	// Any other condition drops through and runs the next routine in the list
-	// A routine returning TG_EAGAIN pre-empts the rest of the list
-	// A routine returning TG_OK will cause a prompt to occur
-	// A routine that had no action (i.e. is OFF or idle) should return TG_NOOP 
+#define	DISPATCH(func) if (func == TG_EAGAIN) return; 
 
 void tg_controller()
 {
-	// level 0 routines - main loop routines invoked from interrupts
-	DISPATCH(ls_handler());				// limit switch handler
-//	DISPATCH(tg_process_end());			// complete processing ENDs
+	while (TRUE) {
+		_tg_controller_HSM();
+	}
+}
 
-	// level 1 routines - stepper and motion primitives
-	st_execute_move();					// always do this (no dispatch)
-	DISPATCH(mc_line_continue());
-	DISPATCH(mc_dwell_continue());
-	DISPATCH(mc_queued_start_stop_continue());
-	DISPATCH(mc_arc_continue());
+static void _tg_controller_HSM()
+{
+//----- kernel level ISR handlers ----------------------------------------//
+	DISPATCH(ls_handler());			// limit switch main handler (from ISR)
+//	DISPATCH(tg_process_end());		// complete processing ENDs (M2)
 
-	// level 2 routines - canonical machine cycles
-	DISPATCH(cm_return_to_home_continue());
+//----- low-level motor control ------------------------------------------//
+	DISPATCH(st_execute_move());	// run next stepper queue command
+	DISPATCH(mc_move_controller());	// run current or next move in queue
 
-	// level 3 routines - parsers and line readers
-	DISPATCH(_tg_read_next_line());
-	
-	// level N - always end with the prompt
-	_tg_prompt();
+//----- machine cycles ---------------------------------------------------//
+	DISPATCH(cm_run_homing_cycle());// homing cycle
+
+//----- command readers and parsers --------------------------------------//
+	DISPATCH(_tg_read_next_line());	// read and execute next command
+}
+
+/* 
+ * _tg_read_next_line() - non-blocking line read from active input device
+ *
+ *	Reads next command line and dispatches to currently active parser
+ *	Manages various device and mode change conditions
+ *	Also responsible for prompts and for flow control. 
+ *	Accepts commands if the move queue has room - halts if it doesn't
+ */
+
+int _tg_read_next_line()
+{
+	// see if there's room for a new command (e.g. Gcode block)
+	if (!mc_test_write_buffer()) {
+		return (TG_EAGAIN);
+	}
+	// read input line or return if not a completed line
+	if ((tg.status = xio_gets(tg.src, tg.buf, sizeof(tg.buf))) == TG_OK) {
+		tg.status = _tg_parser(tg.buf);		// dispatch to active parser
+	}
+	// handle cases where nothing happened - don't re-prompt
+	if ((tg.status == TG_EAGAIN) || (tg.status == TG_NOOP)) {
+		return (tg.status);
+	}
+	// handle case where the parser detected a QUIT
+	if (tg.status == TG_QUIT) {
+		_tg_set_mode(TG_IDLE_MODE);
+	}
+	// handle end-of-file case (EOF can come from file devices only)
+	if (tg.status == TG_EOF) {
+		printf_P(PSTR("End of command file\n"));
+		tg_reset_source();				// reset to default src
+	}
+	if (tg.prompt_enabled && mc_test_write_buffer()) {
+		_tg_prompt();
+	}
+	return (tg.status);
 }
 
 /* 
@@ -207,7 +249,7 @@ uint8_t tg_application_startup(void)
 
 	// inititate homing cycle
 	if (cfg.homing_mode == TRUE) { 
-		tg.status = cm_return_to_home();
+		tg.status = cm_homing_cycle();
 	}
 
 	// Pre-load the USB RX (input) buffer with some test strings
@@ -229,10 +271,34 @@ uint8_t tg_application_startup(void)
 //	xio_queue_RX_string_usb("g0x10000\n");
 //	xio_queue_RX_string_usb("g0x10\ng4p1\ng0x0\n");
 //	xio_queue_RX_string_usb("g0 x-10 (MSGtest)\n");
-	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
+
+//	xio_queue_RX_string_usb("g0 x2.1 y1.1 z2.2\n");
+//	xio_queue_RX_string_usb("g4 p2\n");
+
+//	xio_queue_RX_string_usb("g1 f400 x0\n");
+//	xio_queue_RX_string_usb("y0\n");
+//	xio_queue_RX_string_usb("z0\n");
+
+	xio_queue_RX_string_usb("g0 x100 y110 z120\n");
+//	xio_queue_RX_string_usb("g1 f400 x0\n");
+//	xio_queue_RX_string_usb("y0\n");
+//	xio_queue_RX_string_usb("z0\n");
+//	xio_queue_RX_string_usb("x100\n");
+//	xio_queue_RX_string_usb("y100\n");
+//	xio_queue_RX_string_usb("z100\n");
+
+//	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
+//	xio_queue_RX_string_usb("g0 x-10 y-11 z-21.7\n");
 //	xio_queue_RX_string_usb("g0 x0 y0 z0\n");
-//	xio_queue_RX_string_usb("g2 x10 y10 z0 i5 j5 f200\n");
+//	xio_queue_RX_string_usb("g2x100y100z25i50j50f249\n");
+
+//	xio_queue_RX_string_usb("g0 x1 y1.1 z1.2\n");
+//	xio_queue_RX_string_usb("x-1\n");
+//	xio_queue_RX_string_usb("y-1.3\n");
+//	xio_queue_RX_string_usb("z-2.01\n");
+
 //	xio_queue_RX_string_usb("g2 f300 x10 y10 i8 j8\n");
+//	xio_queue_RX_string_usb("g2 f300 x3 y3 i1.5 j1.5\n");
 //	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
 //	xio_queue_RX_string_usb("g0x10y10z0\n");
 //	xio_queue_RX_string_usb("g91g0x5y5\n");
@@ -241,47 +307,6 @@ uint8_t tg_application_startup(void)
 //	xio_queue_RX_string_usb("g0 x100 y100 z100 a100\n");
 //	xio_queue_RX_string_usb("?\n");
 
-	return (tg.status);
-}
-
-
-/* 
- * _tg_read_next_line() - Perform a non-blocking line read from active input device
- */
-
-int _tg_read_next_line()
-{
-	// read input line or return if not a completed line
-	if ((tg.status = xio_gets(tg.src, tg.buf, sizeof(tg.buf))) == TG_OK) {
-		tg.status = _tg_parser(tg.buf);			// dispatch to parser
-	}
-
-	// Note: This switch statement could be reduced as most paths lead to
-	//		 TG_READY_UNPROMPTED, but it's written for clarity instead.
-	switch (tg.status) {
-
-		case TG_EAGAIN: case TG_NOOP: break;	// no change of state
-
-		case TG_OK: {							// finished a line OK
-			tg.state = TG_READY_UNPROMPTED; 	// ready for next input line
-			break;
-		}
-		case TG_QUIT: {							// Quit returned from parser
-			_tg_set_mode(TG_IDLE_MODE);
-			tg.state = TG_READY_UNPROMPTED;
-			break;
-		}
-		case TG_EOF: {							// EOF from file devs only
-			printf_P(PSTR("End of command file\n"));
-			tg_reset_source();					// reset to default src
-//			xio_queue_RX_string_usb("Q\nT\n");	// +++++ run test file again (forever)
-			tg.state = TG_READY_UNPROMPTED;
-			break;
-		}
-		default: {
-			tg.state = TG_READY_UNPROMPTED;		// traps various errors
-		}
-	}
 	return (tg.status);
 }
 
@@ -340,6 +365,16 @@ void _tg_set_mode(uint8_t mode)
 }
 
 /*
+ * _tg_reset() - run power-up resets, including homing (table zero)
+ */
+
+int _tg_reset(void)
+{
+	tg.status = tg_application_startup();	// application startup sequence
+	return(tg.status);
+}
+
+/*
  * tg_reset_source()  Reset source to default input device
  * _tg_set_source()  Set current input source
  *
@@ -357,9 +392,9 @@ void _tg_set_source(uint8_t d)
 {
 	tg.src = d;							// d = XIO device #. See xio.h
 	if (tg.src == XIO_DEV_PGM) {
-		tg.flags &= ~TG_FLAG_PROMPTS_bm;
+		tg.prompt_enabled = FALSE;
 	} else {
-		tg.flags |= TG_FLAG_PROMPTS_bm;
+		tg.prompt_enabled = TRUE;
 	}
 }
 
@@ -396,12 +431,7 @@ PGM_P tgModeStrings[] PROGMEM = {	// put string pointer array in program memory
 
 void _tg_prompt()
 {
-	if (tg.state == TG_READY_UNPROMPTED) {
-		if (tg.flags && TG_FLAG_PROMPTS_bm) {
-			printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
-		}
-		tg.state = TG_READY_PROMPTED;
-	}
+	printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
 }
 
 /*
@@ -411,38 +441,39 @@ void _tg_prompt()
  */
 
 // put strings in program memory
-char tgs00[] PROGMEM = "OK";
+char tgs00[] PROGMEM = "{00} OK";
 char tgs01[] PROGMEM = "{01} ERROR";
 char tgs02[] PROGMEM = "{02} EAGAIN";
 char tgs03[] PROGMEM = "{03} NOOP";
-char tgs04[] PROGMEM = "{04} End of line";
-char tgs05[] PROGMEM = "{05} End of file";
-char tgs06[] PROGMEM = "{06} File not open";
-char tgs07[] PROGMEM = "{07} Max file size exceeded";
-char tgs08[] PROGMEM = "{08} No such device";
-char tgs09[] PROGMEM = "{09} Buffer empty";
-char tgs10[] PROGMEM = "{10} Buffer full - fatal";
-char tgs11[] PROGMEM = "{11} Buffer full - non-fatal";
-char tgs12[] PROGMEM = "{12} QUIT";
-char tgs13[] PROGMEM = "{13} Unrecognized command";
-char tgs14[] PROGMEM = "{14} Expected command letter";
-char tgs15[] PROGMEM = "{15} Unsupported statement";
-char tgs16[] PROGMEM = "{16} Parameter over range";
-char tgs17[] PROGMEM = "{17} Bad number format";
-char tgs18[] PROGMEM = "{18} Floating point error";
-char tgs19[] PROGMEM = "{19} Motion control error";
-char tgs20[] PROGMEM = "{20} Arc specification error";
-char tgs21[] PROGMEM = "{21} Zero length line";
-char tgs22[] PROGMEM = "{22} Maximum feed rate exceeded";
-char tgs23[] PROGMEM = "{23} Maximum seek rate exceeded";
-char tgs24[] PROGMEM = "{24} Maximum table travel exceeded";
-char tgs25[] PROGMEM = "{25} Maximum spindle speed exceeded";
+char tgs04[] PROGMEM = "{04} COMPLETE";
+char tgs05[] PROGMEM = "{05} End of line";
+char tgs06[] PROGMEM = "{06} End of file";
+char tgs07[] PROGMEM = "{07} File not open";
+char tgs08[] PROGMEM = "{08} Max file size exceeded";
+char tgs09[] PROGMEM = "{09} No such device";
+char tgs10[] PROGMEM = "{10} Buffer empty";
+char tgs11[] PROGMEM = "{11} Buffer full - fatal";
+char tgs12[] PROGMEM = "{12} Buffer full - non-fatal";
+char tgs13[] PROGMEM = "{13} QUIT";
+char tgs14[] PROGMEM = "{14} Unrecognized command";
+char tgs15[] PROGMEM = "{15} Expected command letter";
+char tgs16[] PROGMEM = "{16} Unsupported statement";
+char tgs17[] PROGMEM = "{17} Parameter over range";
+char tgs18[] PROGMEM = "{18} Bad number format";
+char tgs19[] PROGMEM = "{19} Floating point error";
+char tgs20[] PROGMEM = "{20} Motion control error";
+char tgs21[] PROGMEM = "{21} Arc specification error";
+char tgs22[] PROGMEM = "{22} Zero length line";
+char tgs23[] PROGMEM = "{23} Maximum feed rate exceeded";
+char tgs24[] PROGMEM = "{24} Maximum seek rate exceeded";
+char tgs25[] PROGMEM = "{25} Maximum table travel exceeded";
+char tgs26[] PROGMEM = "{26} Maximum spindle speed exceeded";
 
 // put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
 PGM_P tgStatus[] PROGMEM = {	
 	tgs00, tgs01, tgs02, tgs03, tgs04, tgs05, tgs06, tgs07, tgs08, tgs09,
 	tgs10, tgs11, tgs12, tgs13, tgs14, tgs15, tgs16, tgs17, tgs18, tgs19,
-	tgs20, tgs21, tgs22, tgs23, tgs24, tgs25
+	tgs20, tgs21, tgs22, tgs23, tgs24, tgs25, tgs26
 };
 
 void tg_print_status(const uint8_t status_code, const char *textbuf)
@@ -456,23 +487,6 @@ void tg_print_status(const uint8_t status_code, const char *textbuf)
 	}
 	printf_P(PSTR("%S: %s\n"),(PGM_P)pgm_read_word(&tgStatus[status_code]), textbuf);
 //	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgStatus[status_code]));
-}
-
-/*
- * _tg_reset() - run power-up resets, including homing (table zero)
- */
-
-int _tg_reset(void)
-{
-//	tg_application_init();				// application hard init
-	tg.status = tg_application_startup();			// application startup sequence
-
-	if (cfg.homing_mode) {
-		tg.status = cm_return_to_home(); // do a homing cycle
-	} else {
-		tg.status = (TG_OK);
-	}
-	return(tg.status);
 }
 
 /*
