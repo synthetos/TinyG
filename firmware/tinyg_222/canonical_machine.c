@@ -43,9 +43,6 @@
 #include "limit_switches.h"
 #include "spindle.h"
 
-//#define MC_LINE mc_line
-#define MC_LINE mc_line_accel
-
 /* data structures (see notes in gcode.c) */
 static struct GCodeModel gm;	// gcode model
 static struct GCodeModel gt;	// temp storage for model during cycles
@@ -57,6 +54,7 @@ static uint8_t cm_status;
 #endif
 
 //static double _to_millimeters(double value);
+static uint8_t _cm_run_homing_cycle(void);
 static void _cm_set_endpoint_position(uint8_t status);
 static double _theta(double x, double y);
 static int _cm_compute_radius_arc(void);
@@ -77,7 +75,8 @@ enum cyCycleState {
 	CY_STATE_HOMING_Y_WAIT,
 	CY_STATE_HOMING_Z_START,
 	CY_STATE_HOMING_Z_WAIT,
-	CY_STATE_HOMING_FINAL,
+	CY_STATE_HOMING_RTZ_START,		// return to zero move
+	CY_STATE_HOMING_RTZ_WAIT,
 	CY_STATE_MAX
 };
 
@@ -363,6 +362,7 @@ inline uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode)
 
 uint8_t cm_set_motion_control_mode(uint8_t mode)
 {
+	gm.path_control_mode = mode;
 	return (TG_OK);
 }
 
@@ -617,10 +617,21 @@ uint8_t cm_stop()					// stop cycle. not implemented
  *		  - restore the previous model state
  *		  - perform a seek from the current position to zero
  *
+ *	The continuation is coded as an outer "wrapper" routine and an inner 
+ *	routine. The wrapper handles trivial noop cases and translates the return
+ *	codes from the lower routines so the continuation sends well-behaved 
+ *	return codes.
+ *
  *	Note: When coding a cycle (like this one) you get to perform one queued 
  *	move per entry into the continuation, then you must exit. The status of 
  *	the call must be communicated back to the controller idle loop, so the
  *	call should be wrapped in a return().
+ *
+ *	Another Note: When coding a cycle (like this one) you must wait until 
+ *	the last move has actually been queued (or has finished) before declaring
+ *	the cycle to be done (setting cfg.cycle_active = FALSE). Otherwise there
+ *	is a nasty race condition in the tg_controller() that will accept then 
+ *	next command before the position of the final move has been set.
  *
  *	Cheat: The routine doesn't actually check *which* limit switch was 
  *	hit, just that one was hit. I'm not sure what I'd do anyway if the 
@@ -635,7 +646,7 @@ uint8_t cm_stop()					// stop cycle. not implemented
 //#define HOMING_ZERO_MOVE cm_straight_feed
 #define HOMING_ZERO_RATE 500
 
-uint8_t cm_return_to_home()
+uint8_t cm_homing_cycle()
 {
 	// initialize this whole operation
 	cfg.cycle_active = TRUE;			// tell the world you are a Homer
@@ -647,10 +658,10 @@ uint8_t cm_return_to_home()
 	cm_set_distance_mode(INCREMENTAL_MODE);
 	ls_clear_limit_switches();					// reset the switch flags
 	cy.state = CY_STATE_NEW;
-	return (cm_return_to_home_continue());		// run the continuation
+	return (cm_run_homing_cycle());
 }
 
-uint8_t cm_return_to_home_continue()
+uint8_t cm_run_homing_cycle()			// outer wrapper
 {
 	if (cy.state == CY_STATE_OFF) { 
 		return (TG_NOOP);
@@ -658,7 +669,14 @@ uint8_t cm_return_to_home_continue()
 	if (mc_isbusy()) {  				// sync to the move queue
 		return (TG_EAGAIN);
 	}
+	if (_cm_run_homing_cycle() == TG_COMPLETE) {
+		return (TG_OK);
+	} 
+	return (TG_EAGAIN);
+}		
 
+uint8_t _cm_run_homing_cycle()			// inner routine
+{
 	// handle any initial switch closures by backing off the switch
 	if (cy.state == CY_STATE_NEW) {
 		cy.state = CY_STATE_HOMING_X_START;
@@ -683,7 +701,6 @@ uint8_t cm_return_to_home_continue()
 		cm_set_feed_rate(CFG(X).homing_rate);
 		return(cm_straight_feed(-(CFG(X).travel_max), 0, 0, 0));
 	}
-
 	// wait for the end of the X move or a limit switch closure
 	if (cy.state == CY_STATE_HOMING_X_WAIT) {
 		cy.state = CY_STATE_HOMING_Y_START;
@@ -698,7 +715,6 @@ uint8_t cm_return_to_home_continue()
 		cm_set_feed_rate(CFG(Y).homing_rate);
 		return(cm_straight_feed(0, -(CFG(Y).travel_max), 0, 0));
 	}
-
 	// wait for the end of the Y move or a limit switch closure
 	if (cy.state == CY_STATE_HOMING_Y_WAIT) {
 		cy.state = CY_STATE_HOMING_Z_START;
@@ -713,25 +729,32 @@ uint8_t cm_return_to_home_continue()
 		cm_set_feed_rate(CFG(Z).homing_rate);
 		return(cm_straight_feed(0, 0, -(CFG(Z).travel_max), 0));
 	}
-
-	// wait for the end of the Y move or a limit switch closure
+	// wait for the end of the Z move or a limit switch closure
 	if (cy.state == CY_STATE_HOMING_Z_WAIT) {
-		cy.state = CY_STATE_HOMING_FINAL; // final state actually never checked
+		cy.state = CY_STATE_HOMING_RTZ_START;
 		ls_clear_limit_switches();
 		gt.position[Z] = CFG(Z).homing_offset + CFG(Z).homing_backoff;
 		return(HOMING_BACKOFF_MOVE(0, 0, CFG(Z).homing_backoff, 0));
 	}
 
-	// Final move - return to zero and reset the models
-	memcpy(&gm, &gt, sizeof(struct GCodeModel));	// restore gcode model
-	mc_set_position(gt.position[X], gt.position[Y], // MC layer must agree...
-					gt.position[Z], gt.position[A]);//...with gt values
-	cm_set_distance_mode(ABSOLUTE_MODE);
-	cfg.cycle_active = FALSE;						// not a homer anymore
-	cy.state = CY_STATE_OFF;
-	cm_set_feed_rate(HOMING_ZERO_RATE);
-	cfg.homing_state = HOMING_COMPLETE; // actually it's not yet complete...
-	return(HOMING_ZERO_MOVE(0,0,0,0));	//...but will be once this move's done
+	// Return-to-zero move - return to zero and reset the models
+	if (cy.state != CY_STATE_HOMING_RTZ_WAIT) {
+		cy.state = CY_STATE_HOMING_RTZ_WAIT;
+		memcpy(&gm, &gt, sizeof(struct GCodeModel));	// restore gcode model
+		mc_set_position(gt.position[X], gt.position[Y], // MC layer must agree...
+						gt.position[Z], gt.position[A]);//...with gt position
+		cm_set_distance_mode(ABSOLUTE_MODE);
+		cm_set_feed_rate(HOMING_ZERO_RATE);
+		return(HOMING_ZERO_MOVE(0,0,0,0));
+	}
+	// wait until return to zero is complete before releasing the cycle
+	if (cy.state == CY_STATE_HOMING_RTZ_WAIT) {
+		cfg.cycle_active = FALSE;						// not a homer anymore
+		cfg.homing_state = HOMING_COMPLETE;				//...and we're done
+		cy.state = CY_STATE_OFF;						//...don't come back
+		return (TG_COMPLETE);
+	}
+	return (TG_OK);
 }
 
 
@@ -977,9 +1000,8 @@ int _cm_compute_center_arc()
 //	}
 
 	// Trace the arc
-	cm_status = mc_arc(theta_start, radius_tmp, 
-					   angular_travel, linear_travel, 
-					   gm.plane_axis_0, gm.plane_axis_1, gm.plane_axis_2, 
+	cm_status = mc_arc(theta_start, radius_tmp, angular_travel, linear_travel, 
+					   gm.plane_axis_0, gm.plane_axis_1, gm.plane_axis_2,
 					   move_time);
 
     // Finish off with a line to make sure we arrive exactly where we think we are

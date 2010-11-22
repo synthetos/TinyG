@@ -50,10 +50,10 @@
 #include <avr/interrupt.h>
 
 #include "tinyg.h"
+#include "system.h"
 #include "config.h"
 #include "stepper.h"
-#include "move_queue.h"
-#include "hardware.h"
+#include "motor_queue.h"
 #include <util/delay.h>				//...used here for optional step pulse delay
 
 #ifdef __DEBUG
@@ -149,7 +149,7 @@ void st_end()
 {
 	st_init();
 //	st_reset();						// reset the motors
-	mv_flush();						// flush the move buffer
+	mq_flush_motor_buffer();
 }
 
 
@@ -160,9 +160,8 @@ inline uint8_t st_isbusy()
 {
 	if (ax.active_axes) {
 		return (TRUE);
-	} else {
-		return (FALSE);
-	}
+	} 
+	return (FALSE);
 }
 
 /* 
@@ -313,39 +312,40 @@ ISR(MOTOR_4_TIMER_ISR_vect)
  *	mess with the ordering of this code region.
  */
 
-void st_execute_move()
+uint8_t st_execute_move()
 {
 	uint8_t i;
 
 	// ******** don't re-order this code region - from here... ********
 	if (ax.mutex) { 		// prevents ISR from clobbering non-ISR invocation
-		return;
+		return (0);
 	}
 	ax.mutex = TRUE;
 	if (ax.active_axes != 0) { // exit if any axis is still busy (any bit set)
 		ax.mutex = FALSE;	
-		return;
+		return (0);
 	}
-	if ((ax.p = mv_dequeue_move_buffer()) == NULL) {// NULL is empty buffer
+	if ((ax.p = mq_dequeue_motor_buffer()) == NULL) {// NULL is empty buffer
 		ax.mutex = FALSE;
-		return;
+		return (0);
   	} 
 	//********...to here. See Mutex race condition header note. ********
 
-#ifdef __FAKE_STEPPERS	// bypasses the ISR load for fast debugging in simulation
+/*
+#ifdef __SIMULATION_MODE	// bypasses the ISR load for faster simulations
 	_st_fake_move();
-	return;
+	return (0);
 #endif
-
+*/
 	if (ax.p->move_type == MOVE_TYPE_STOP) {
 		ax.stopped = TRUE;
 		ax.mutex = FALSE;
-		return;
+		return (0);
 	}
 	if (ax.p->move_type == MOVE_TYPE_START) {
 		ax.stopped = FALSE;
 		ax.mutex = FALSE;
-		return;
+		return (0);
 	}
 	if (ax.p->move_type == MOVE_TYPE_DWELL) {
 		ax.line_mode = FALSE;
@@ -391,13 +391,14 @@ void st_execute_move()
 		ax.active_axes |= MOTOR_4_ACTIVE_BIT_bm;
 	}
 	ax.mutex = FALSE;
+	return (0);
 }
 
 /* 
  * _st_fake_move() - Debugging tool
  */
 
-void _st_fake_move()
+inline void _st_fake_move()
 {
 	ax.mutex = FALSE;
 	st_execute_move();		// recursively empty the move queue
