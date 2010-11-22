@@ -1,13 +1,14 @@
 /*
- * tinyg.h - tinyg main header - Application GLOBALS (see hardware.h for HW config)
+ * tinyg.h - tinyg main header - Application GLOBALS 
+ *			 (see also system.h and settings.h)
  * Part of TinyG project
  *
  * Copyright (c) 2010 Alden S. Hart, Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it under 
- * the terms of the GNU General Public License as published by the Free 
- * Software Foundation, either version 3 of the License, or (at your 
- * (option) any later version.
+ * TinyG is free software: you can redistribute it and/or modify it 
+ * under the terms of the GNU General Public License as published by 
+ * the Free Software Foundation, either version 3 of the License, 
+ * or (at your option) any later version.
  *
  * TinyG is distributed in the hope that it will be useful, but 
  * WITHOUT ANY WARRANTY; without even the implied warranty of 
@@ -88,35 +89,37 @@ enum tgAxisNum {		// define axis numbers and array indexes from 0 to 3
  * If you mess with this be sure to change the strings in tg_print_status
  */
 
-//----- codes aligned with XIO subsystem...
-#define TG_OK 0							// function completed OK
-#define TG_ERR 1						// generic error return (EPERM)
-#define TG_EAGAIN 2						// function would block here (call again)
-#define TG_NOOP 3						// function had no-operation	
-#define TG_EOL 4						// function returned end-of-line
-#define TG_EOF 5						// function returned end-of-file 
-#define TG_FILE_NOT_OPEN 6
-#define TG_FILE_SIZE_EXCEEDED 7
-#define TG_NO_SUCH_DEVICE 8
-#define TG_BUFFER_EMPTY 9
-#define TG_BUFFER_FULL_FATAL 10 
-#define TG_BUFFER_FULL_NON_FATAL 11
+//----- codes must align with xio.h and tg_print_status strings...
+enum tgCodes {
+	TG_OK = 0,					// function completed OK
+	TG_ERR,						// generic error return (EPERM)
+	TG_EAGAIN,					// function would block here (call again)
+	TG_NOOP,					// function had no-operation
+	TG_COMPLETE,				// operation is complete
+	TG_EOL,						// function returned end-of-line
+	TG_EOF,						// function returned end-of-file 
+	TG_FILE_NOT_OPEN,
+	TG_FILE_SIZE_EXCEEDED,
+	TG_NO_SUCH_DEVICE,
+	TG_BUFFER_EMPTY,
+	TG_BUFFER_FULL_FATAL, 
+	TG_BUFFER_FULL_NON_FATAL,
 //----- ...to here
-
-#define TG_QUIT 12						// function returned QUIT
-#define TG_UNRECOGNIZED_COMMAND 13		// parser didn't recognize the command
-#define TG_EXPECTED_COMMAND_LETTER 14	// malformed line to parser
-#define TG_UNSUPPORTED_STATEMENT 15		// a different kind of malformed line
-#define TG_PARAMETER_OVER_RANGE 16		// parameter is too large
-#define TG_BAD_NUMBER_FORMAT 17			// number format error
-#define TG_FLOATING_POINT_ERROR 18		// number conversion error
-#define TG_MOTION_CONTROL_ERROR 19		// motion control failure
-#define TG_ARC_SPECIFICATION_ERROR 20	// arc specification error
-#define TG_ZERO_LENGTH_MOVE 21			// XYZA move is zero length
-#define TG_MAX_FEED_RATE_EXCEEDED 22
-#define TG_MAX_SEEK_RATE_EXCEEDED 23
-#define TG_MAX_TRAVEL_EXCEEDED 24
-#define TG_MAX_SPINDLE_SPEED_EXCEEDED 25
+    TG_QUIT,					// function returned QUIT
+	TG_UNRECOGNIZED_COMMAND,	// parser didn't recognize the command
+	TG_EXPECTED_COMMAND_LETTER,	// malformed line to parser
+	TG_UNSUPPORTED_STATEMENT,	// a different kind of malformed line
+	TG_PARAMETER_OVER_RANGE,	// parameter is too large
+	TG_BAD_NUMBER_FORMAT,		// number format error
+	TG_FLOATING_POINT_ERROR,	// number conversion error
+	TG_MOTION_CONTROL_ERROR,	// motion control failure
+	TG_ARC_SPECIFICATION_ERROR,	// arc specification error
+	TG_ZERO_LENGTH_MOVE,		// XYZA move is zero length
+	TG_MAX_FEED_RATE_EXCEEDED,
+	TG_MAX_SEEK_RATE_EXCEEDED,
+	TG_MAX_TRAVEL_EXCEEDED,
+	TG_MAX_SPINDLE_SPEED_EXCEEDED
+};
 
 /*
  * Common typedefs (see xio.h for some others)
@@ -139,6 +142,8 @@ typedef int (*fptr_int_char_p) (char *b);// returns int, character pointer (line
 //#define __UNIT_TESTS		// uncomment to compile the unit tests into the code
 //#define __DEBUG			// uncomment to enable debug logging
 //#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
-//#define __FAKE_STEPPERS	// disables stepper ISR load for faster debugging
+#define __SIMULATION_MODE	// settings to enable faster and more accurate simulation
+//#define MC_LINE mc_line
+#define MC_LINE mc_aline
 
 #endif
