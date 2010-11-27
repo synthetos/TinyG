@@ -162,6 +162,7 @@ uint8_t mq_queue_line(int32_t steps_x, int32_t steps_y,
 	}
 	if ((steps_x + steps_y + steps_z + steps_a) == 0) { // 0 len non-zero time
 		return (mq_queue_dwell(microseconds));			// queue it as a dwell
+//		return (TG_ZERO_LENGTH_MOVE);
 	}
 	if ((mq.p = mq_queue_motor_buffer()) == NULL) {	// should always get a buffer
 		return (TG_BUFFER_FULL_NON_FATAL);
@@ -196,7 +197,7 @@ uint8_t mq_queue_line(int32_t steps_x, int32_t steps_y,
 			mq.p->a[i].period = (uint16_t)(mq.ticks_per_step & 0x0000FFFF);
 		}
 	}
-	mq.p->move_type = MOVE_TYPE_LINE;
+	mq.p->mq_type = MQ_LINE;
 	st_execute_move();			// kick the stepper drivers
 	return (TG_OK);
 }
@@ -224,7 +225,7 @@ uint8_t mq_queue_dwell(uint32_t microseconds)
 		mq.p->a[Z].postscale <<= 1;
 	}
 	mq.p->a[Z].period = (uint16_t)(mq.ticks_per_step & 0x0000FFFF);
-	mq.p->move_type = MOVE_TYPE_DWELL;
+	mq.p->mq_type = MQ_DWELL;
 	st_execute_move();
 	return (TG_OK);
 }
@@ -233,12 +234,12 @@ uint8_t mq_queue_dwell(uint32_t microseconds)
  * mq_queue_start_stop() - Add a start or stop to the move buffer
  */
 
-uint8_t mq_queue_start_stop(uint8_t move_type)
+uint8_t mq_queue_start_stop(uint8_t mq_type)
 {
 	if ((mq.p = mq_queue_motor_buffer()) == NULL) {	// should always get a buffer
 		return (TG_BUFFER_FULL_NON_FATAL);
 	}
-	mq.p->move_type = move_type;
+	mq.p->mq_type = mq_type;
 	st_execute_move();
 	return (TG_OK);
 }

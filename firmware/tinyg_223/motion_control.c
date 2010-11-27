@@ -517,20 +517,24 @@ uint8_t _mc_run_line(struct mcMotionControl *m)
  *	  - tail	ending acceleration/deceleration to exit velocity
  *
  *	The head is computed from the exit velocity of the previous move
- *	or from zero velocity if fresh start. The head is queued as a set of 
- *	constant-time segments that implement the transition ramp. The time 
- *	constant is chosen to allow sufficient time between ramp segments for 
- *	the computation of the next segment and for other processor tasks. 
+ *	or from zero velocity if fresh start or in certain modes. The head 
+ *	is queued as a set of constant-time segments that implement the 
+ *	transition acceleration region. The segment time constant is chosen 
+ *	to allow sufficiently fine acceleration resolution and enough time 
+ *	between segments for the computation of the next segment and for 
+ *	other processor tasks (note: A segment takes <150 uSec to compute)
  *
- *	The remainder of the move after the head is divided into a body and 
- *	a tail. The tail length is a reserved region that allows for the 
- *	worst-case length required to decelerate the line to zero velocity. 
+ *	The remainder of the move after the head is divided into a body and a
+ *	tail. The body is the "cruise region" where the line is running at its
+ *	target velocity. The tail length is a reserved region that allows for
+ *	the worst-case length required to decelerate the line to zero velocity. 
  *
- *	Once the body and tail are computed the body is queued. The tail region
- *	is held back until the body is complete, and may be used by the current 
- *	running line as a stop, or by the next move as a blend region.
+ *	Once the head has been run the body is queued as a single line.
  *
- *	The shape of the tail is set by the path control mode in effect:
+ *	The tail region is held back until the body is complete, and may be 
+ *	used by the current running line as a stop, or by the next move as a 
+ *	blend region. The shape of the tail is set by the path control mode 
+ *	in effect:
  *
  *	  -	Exact Stop Mode: The move runs to zero velocity before the next 
  *		move is started. The entire tail region is used.
@@ -577,7 +581,7 @@ uint8_t _mc_run_line(struct mcMotionControl *m)
  *	the blend into the run struct). If there is no move to blend it 
  *	does a start from zero velocity.
  *	
- *	It then queues the body (cruise region). 
+ *	It then queues the body (cruise region) and waits for it to complete. 
  *
  *	It then looks to see if there is another line queued behind it. 
  *	If there is if copies its parameters into the "previous tail" vars
@@ -586,8 +590,7 @@ uint8_t _mc_run_line(struct mcMotionControl *m)
  *	If there is not another line queued it executes the tail by 
  *	decelerating to zero (exact stop).
  *
- *	Note: Ideally the run should wait for the body to almost complete 
- *	before looking for the next line. Might do this later.
+ *	Note: See the excel sheet that has the simulations and equations.
  *
  *	Comments on the functions
  *	- All math is done in floating point and minutes until the very end,
@@ -659,19 +662,19 @@ uint8_t mc_aline(double x, double y, double z, double a, double minutes)
 	nx->prev_tail_length = m->tail_length;
 	nx->prev_tail_time = m->tail_time;
 
-	return(mc_commit_write_buffer(MOVE_TYPE_ALINE)); // also sets ...STATE_NEW
+	return(mc_commit_write_buffer(MOVE_TYPE_ALINE)); // sets MOVE_STATE_NEW
 }
 
 uint8_t _mc_run_aline(struct mcMotionControl *m)
 {
 	// initialize for head acceleration
 	if (m->move_state == MOVE_STATE_NEW) {
-		if (m->velocity_target > m->velocity_initial) {
+		if (m->velocity_target > m->velocity_initial) {	// acceleration case
 			m->move_state = MOVE_STATE_HEAD_A1;	// run a simple head
-			m->elapsed_time = 0;
 			m->segments = uSec(m->head_time / cfg.min_segment_time);
 			m->segment_time = m->head_time / m->segments;
 			m->segment_count = m->segments / 2;
+			m->elapsed_time = m->segment_time;	// initial elapsed time
 			m->microseconds = uSec(m->segment_time);
 		} else {
 			// initial deceleration is not implemented yet
@@ -680,13 +683,8 @@ uint8_t _mc_run_aline(struct mcMotionControl *m)
 	// first half of a head acceleration
 	if (m->move_state == MOVE_STATE_HEAD_A1) {	// concave portion of curve
 		while (m->segment_count) {
-//			if (!mq_test_motor_buffer()) { 
-//				return (TG_EAGAIN); 
-//			}
 			return_if_motor_buffer_full(TG_EAGAIN);
-			m->segment_count--;
 			// compute the acceleration segment and setup and queue the line segment
-			m->elapsed_time += m->segment_time;
 			m->segment_velocity = m->velocity_initial + 
 								 (m->linear_jerk_div2 * square(m->elapsed_time));
 			for (uint8_t i=0; i < AXES; i++) {
@@ -696,9 +694,11 @@ uint8_t _mc_run_aline(struct mcMotionControl *m)
 				m->steps[i] = m->target[i] - mm.position[i];
 			}
 			mq_queue_line(m->steps[X], m->steps[Y], m->steps[Z], m->steps[A], m->microseconds);
+			m->segment_count--;
+			m->elapsed_time += m->segment_time;
 			_mc_set_endpoint_position(m);
 		}
-		m->elapsed_time = 0;
+		m->elapsed_time = m->segment_time;
 		m->segment_count = m->segments / 2;
 		m->move_state = MOVE_STATE_HEAD_A2;
 	}
@@ -706,8 +706,6 @@ uint8_t _mc_run_aline(struct mcMotionControl *m)
 	if (m->move_state == MOVE_STATE_HEAD_A2) {	// convex portion of curve
 		while (m->segment_count) {
 			return_if_motor_buffer_full(TG_EAGAIN);
-			m->segment_count--;
-			m->elapsed_time += m->segment_time;
 			m->segment_velocity = m->velocity_midpoint + 
 								 (m->elapsed_time * m->acceleration_midpoint) -
 								 (m->linear_jerk_div2 * square(m->elapsed_time));
@@ -718,6 +716,8 @@ uint8_t _mc_run_aline(struct mcMotionControl *m)
 				m->steps[i] = m->target[i] - mm.position[i];
 			}
 			mq_queue_line(m->steps[X], m->steps[Y], m->steps[Z], m->steps[A], m->microseconds);
+			m->segment_count--;
+			m->elapsed_time += m->segment_time;
 			_mc_set_endpoint_position(m);
 		}
 		m->move_state = MOVE_STATE_BODY;
@@ -743,11 +743,10 @@ uint8_t _mc_run_aline(struct mcMotionControl *m)
 
 		m->velocity_initial = m->velocity_target;
 		m->velocity_target = 0;
-		m->elapsed_time = 0;
-
 		m->segments = uSec(m->tail_time / cfg.min_segment_time);
 		m->segment_time = m->tail_time / m->segments;
 		m->segment_count = m->segments / 2;
+		m->elapsed_time = m->segment_time;
 		m->microseconds = uSec(m->segment_time);
 	}
 
@@ -755,8 +754,6 @@ uint8_t _mc_run_aline(struct mcMotionControl *m)
 	if (m->move_state == MOVE_STATE_TAIL_D1) {
 		while (m->segment_count) {
 			return_if_motor_buffer_full(TG_EAGAIN);
-			m->segment_count--;
-			m->elapsed_time += m->segment_time;
 			m->segment_velocity = m->velocity_initial - 
 								 (m->linear_jerk_div2 * square(m->elapsed_time));
 			for (uint8_t i=0; i < AXES; i++) {
@@ -766,9 +763,11 @@ uint8_t _mc_run_aline(struct mcMotionControl *m)
 				m->steps[i] = m->target[i] - mm.position[i];
 			}
 			mq_queue_line(m->steps[X], m->steps[Y], m->steps[Z], m->steps[A], m->microseconds);
+			m->segment_count--;
+			m->elapsed_time += m->segment_time;
 			_mc_set_endpoint_position(m);
 		}
-		m->elapsed_time = 0;
+		m->elapsed_time = m->segment_time;
 		m->segment_count = m->segments / 2;
 		m->move_state = MOVE_STATE_TAIL_D2;
 	}
@@ -776,8 +775,6 @@ uint8_t _mc_run_aline(struct mcMotionControl *m)
 	if (m->move_state == MOVE_STATE_TAIL_D2) {	// convex portion of curve
 		while (m->segment_count) {
 			return_if_motor_buffer_full(TG_EAGAIN);
-			m->segment_count--;
-			m->elapsed_time += m->segment_time;
 			m->segment_velocity = m->velocity_midpoint - 
 								 (m->elapsed_time * m->acceleration_midpoint) +
 								 (m->linear_jerk_div2 * square(m->elapsed_time));
@@ -788,6 +785,8 @@ uint8_t _mc_run_aline(struct mcMotionControl *m)
 				m->steps[i] = m->target[i] - mm.position[i];
 			}
 			mq_queue_line(m->steps[X], m->steps[Y], m->steps[Z], m->steps[A], m->microseconds);
+			m->segment_count--;
+			m->elapsed_time += m->segment_time;
 			_mc_set_endpoint_position(m);
 		}
 		m->move_state = MOVE_STATE_OFF;
