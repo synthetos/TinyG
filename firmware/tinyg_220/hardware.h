@@ -160,8 +160,10 @@ enum cfgPortBits {						// motor control port bit positions
 #define Z_LIMIT_MODE TRUE
 #define A_LIMIT_MODE FALSE
 
-#define X_TRAVEL_PER_REV 22.86			// usually set by leadscrews or cogwheels
-#define Y_TRAVEL_PER_REV 48.768			// (robot parameter)
+//#define X_TRAVEL_PER_REV 22.86			// usually set by leadscrews or cogwheels
+//#define Y_TRAVEL_PER_REV 48.768			// (robot parameter)
+#define X_TRAVEL_PER_REV 2.54			// usually set by leadscrews or cogwheels
+#define Y_TRAVEL_PER_REV 2.54			// (robot parameter)
 #define Z_TRAVEL_PER_REV 2.54
 #define A_TRAVEL_PER_REV 2.54			// degrees moved per motor revolution
 

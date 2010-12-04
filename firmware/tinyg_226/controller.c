@@ -114,7 +114,7 @@
 
 #include "gcode_tests.h"		// system tests and other assorted test code
 //#include "gcode_zoetrope.h"	// zoetrope moves. makes really cool sounds
-#include "gcode_contraptor_circle.h"
+//#include "gcode_contraptor_circle.h"
 #include "gcode_mudflap.h"
 
 struct tgController tg;			// controller state structure
@@ -127,7 +127,7 @@ static void _tg_set_mode(uint8_t mode);
 static void _tg_set_source(uint8_t d);
 static int _tg_reset(void);
 static int _tg_test(void);
-//static int _tg_mudflap_file(void);
+static int _tg_mudflap_file(void);
 
 /*
  * tg_init() - controller init
@@ -211,7 +211,7 @@ static void _tg_controller_HSM()
 int _tg_read_next_line()
 {
 	// see if there's room for a new command (e.g. Gcode block)
-	if (!mc_test_write_buffer(MAX_BUFFERS_NEEDED)) {
+	if (!mc_test_write_buffer(MC_BUFFERS_NEEDED)) {
 		return (TG_EAGAIN);
 	}
 
@@ -237,7 +237,7 @@ int _tg_read_next_line()
 	}
 
 	// issue a new prompt and signal that it's OK for another command
-	if (tg.prompt_enabled && mc_test_write_buffer(MAX_BUFFERS_NEEDED)) {
+	if (tg.prompt_enabled && mc_test_write_buffer(MC_BUFFERS_NEEDED)) {
 		_tg_prompt();
 	}
 	return (tg.status);
@@ -277,6 +277,9 @@ uint8_t tg_application_startup(void)
 //	xio_queue_RX_string_usb("g0x10\ng4p1\ng0x0\n");
 //	xio_queue_RX_string_usb("g0 x-10 (MSGtest)\n");
 
+//	xio_queue_RX_string_usb("g1 F500 x10\n");
+//	xio_queue_RX_string_usb("g1 F100 y8\n");
+//	xio_queue_RX_string_usb("g1 F100 x10.1\n");
 //	xio_queue_RX_string_usb("g0 x2.1 y1.1 z2.2\n");
 //	xio_queue_RX_string_usb("g4 p2\n");
 
@@ -351,7 +354,7 @@ int _tg_parser(char * buf)
 			case 'R': return (_tg_reset());
 			case 'T': return (_tg_test());		// run whatever test you want
 //			case 'H': return (_tg_help_file());
-//			case 'Q': return (_tg_mudflap_file());
+			case 'Q': return (_tg_mudflap_file());
 //			case 'I': return (_tg_reserved());	// reserved
 //			case 'V': return (_tg_reserved());	// reserved
 			default:  _tg_set_mode(TG_IDLE_MODE); break;
@@ -470,22 +473,23 @@ char tgs13[] PROGMEM = "{13} QUIT";
 char tgs14[] PROGMEM = "{14} Unrecognized command";
 char tgs15[] PROGMEM = "{15} Expected command letter";
 char tgs16[] PROGMEM = "{16} Unsupported statement";
-char tgs17[] PROGMEM = "{17} Parameter over range";
-char tgs18[] PROGMEM = "{18} Bad number format";
-char tgs19[] PROGMEM = "{19} Floating point error";
-char tgs20[] PROGMEM = "{20} Motion control error";
-char tgs21[] PROGMEM = "{21} Arc specification error";
-char tgs22[] PROGMEM = "{22} Zero length line";
-char tgs23[] PROGMEM = "{23} Maximum feed rate exceeded";
-char tgs24[] PROGMEM = "{24} Maximum seek rate exceeded";
-char tgs25[] PROGMEM = "{25} Maximum table travel exceeded";
-char tgs26[] PROGMEM = "{26} Maximum spindle speed exceeded";
+char tgs17[] PROGMEM = "{17} Parameter under range";
+char tgs18[] PROGMEM = "{18} Parameter over range";
+char tgs19[] PROGMEM = "{19} Bad number format";
+char tgs20[] PROGMEM = "{20} Floating point error";
+char tgs21[] PROGMEM = "{21} Motion control error";
+char tgs22[] PROGMEM = "{22} Arc specification error";
+char tgs23[] PROGMEM = "{23} Zero length line";
+char tgs24[] PROGMEM = "{24} Maximum feed rate exceeded";
+char tgs25[] PROGMEM = "{25} Maximum seek rate exceeded";
+char tgs26[] PROGMEM = "{26} Maximum table travel exceeded";
+char tgs27[] PROGMEM = "{27} Maximum spindle speed exceeded";
 
 // put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
 PGM_P tgStatus[] PROGMEM = {	
 	tgs00, tgs01, tgs02, tgs03, tgs04, tgs05, tgs06, tgs07, tgs08, tgs09,
 	tgs10, tgs11, tgs12, tgs13, tgs14, tgs15, tgs16, tgs17, tgs18, tgs19,
-	tgs20, tgs21, tgs22, tgs23, tgs24, tgs25, tgs26
+	tgs20, tgs21, tgs22, tgs23, tgs24, tgs25, tgs26, tgs27
 };
 
 void tg_print_status(const uint8_t status_code, const char *textbuf)
@@ -507,10 +511,12 @@ void tg_print_status(const uint8_t status_code, const char *textbuf)
 
 int _tg_test(void)
 {
+	xio_open_pgm(PGMFILE(&trajectory_cases_01));
 //	xio_open_pgm(PGMFILE(&system_test01)); 		// collected system tests
-	xio_open_pgm(PGMFILE(&system_test01a)); 	// short version of 01
+//	xio_open_pgm(PGMFILE(&system_test01a)); 	// short version of 01
 //	xio_open_pgm(PGMFILE(&system_test02)); 		// arcs only
 //	xio_open_pgm(PGMFILE(&system_test03)); 		// lines only
+//	xio_open_pgm(PGMFILE(&system_test04)); 		// decreasing 3d boxes
 //	xio_open_pgm(PGMFILE(&straight_feed_test));
 //	xio_open_pgm(PGMFILE(&arc_feed_test));
 //	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test

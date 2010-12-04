@@ -2,6 +2,45 @@
  * data_gcode_tests.h - data file containing assorted tests
  */
 
+/* trajectory planner cases */
+const char PROGMEM trajectory_cases_01[] = "\
+G00 G17 G21 G40 G49 G80 G90 (initialize model)\n\
+T1 M6 (set tool)\n\
+G92 X0 Y0 Z0 (zero system)\n\
+S5000 M03 (set spindle)\n\
+(jerk set to 25000000)\n\
+G02 F400 x4 y4 i2 j2\n\
+G02 F200 x0 y0 i2 j2\n\
+g0 x0 y0 z0";
+
+/*
+G02 F200 x-4 y-4 i0 j0\n\
+
+
+G01 F500 x20 (acceleration)\n\
+G01 F200 x20.1 (deceleration too-short)\n\
+G01 F100 x10 (deceleration continuous short)\n\
+G01 F500 y10 (exact path short)\n\
+G01 F500 y-10 (exact stop short)\n\
+
+G02 F400 x10 y10 i5 j5\n\
+G02 F300 x0 y0 i5 j5\n\
+G02 F200 x10 y10 i5 j5\n\
+
+
+G64 (continuous mode)\n\
+
+
+G01 F100 x10 (from stop)\n\
+g0 x13 y-10 z11\n\
+
+g0 x10 y-10 z0\n\
+g0 x0 y0 z0";
+
+g0 x0 y0 z0";
+*/
+
+/* straight feed tests */
 const char PROGMEM straight_feed_test[] = "\
 G0 G17 G21 G40 G49 G80 G90 (initialize model)\n\
 g92x0y0z0a0\n\
@@ -211,6 +250,48 @@ G01 F350 x20 (fast-ish)\n\
 y23\n\
 z27\n\
 x0 y0 z0\n";
+
+//G00 x10 (fast)\n
+
+const char PROGMEM system_test04[] = "\
+G00 G17 G21 G40 G49 G80 G90 (initialize model)\n\
+T1 M6 (set tool)\n\
+G92 X0 Y0 Z0 (zero system)\n\
+S5000 M03 (set spindle)\n\
+G61\n\
+G01 F400 x10 (fast)\n\
+y10\n\
+z10\n\
+x-10\n\
+y-10\n\
+z-10\n\
+x6\n\
+y6\n\
+z6\n\
+x-6\n\
+y-6\n\
+z-6\n\
+x4\n\
+y4\n\
+z4\n\
+x-4\n\
+y-4\n\
+z-4\n\
+x2\n\
+y2\n\
+z2\n\
+x-2\n\
+y-2\n\
+z-2\n\
+x1\n\
+y1\n\
+z1\n\
+x-1\n\
+y-1\n\
+z-1\n\
+g0 x0 y0 z0";
+
+
 
 
 /*

@@ -32,23 +32,32 @@
 /*
  * SYSTEM CONFIGURATION VALUES - for initial load of EEPROM values
  */
-
 /* general machine settings */
+
+/*	Angular jerk thresholds set that ranges over which different path 
+	control modes are in effect. Angular jerk of 0.0 is no jerk - i.e. 
+ 	a straight line. Max jerk is 1.0 for a 180 degree turn. A 90 degree 
+	turn is 0.707... If the jerk is above the upper threshold the path
+	control mode will be degraded to exact_stop mode. If between the upper 
+	and lower if will be degraded to exact_path mode. If below the lower 
+	threshold the path control mode will not be affected - i.e. can 
+	operate in full continuous mode.
+ */
+#define ANGULAR_JERK_UPPER_THRESHOLD 0.9	// above which it's exact stop
+#define ANGULAR_JERK_LOWER_THRESHOLD 0.1	// below which it's continuous
 
 //#define MAX_LINEAR_JERK 5000000	//   5,000,000 mm/(min^3)
 //#define MAX_LINEAR_JERK 1000000	//  10,000,000 mm/(min^3)
-#define MAX_LINEAR_JERK 50000000	//  50,000,000 mm/(min^3)
+#define MAX_LINEAR_JERK 25000000	//  25,000,000 mm/(min^3)
+//#define MAX_LINEAR_JERK 50000000	//  50,000,000 mm/(min^3)
 //#define MAX_LINEAR_JERK 100000000	// 100,000,000 mm/(min^3)
-
-#define MAX_ANGULAR_JERK 0.8		// 0.0 - 1.0
-#define MIN_SEGMENT_TIME 10000		// microseconds - 10 ms. seems to work well
-#define MM_PER_ARC_SEGMENT 0.05
 
 /* Gcode power-on defaults */
 
 #define GCODE_PLANE	CANON_PLANE_XY
 #define GCODE_UNITS 1				// mm
 #define GCODE_PATH_CONTROL PATH_CONTINUOUS
+//#define GCODE_PATH_CONTROL PATH_EXACT_PATH
 //#define GCODE_PATH_CONTROL PATH_EXACT_STOP
 #define GCODE_TOOL 1
 #define GCODE_FEED_RATE 400			// mm/min

@@ -22,6 +22,11 @@
 #ifndef tinyg_h
 #define tinyg_h
 
+//#define __UNIT_TESTS		// uncomment to compile the unit tests into the code
+//#define __DEBUG			// uncomment to enable debug logging
+//#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
+//#define __SIMULATION_MODE	// settings to enable faster and more accurate simulation
+
 #ifndef FALSE
 #define FALSE 0
 #endif
@@ -57,7 +62,8 @@ void tg_unit_tests(void);
 //#define TINYG_VERSION "build 220 - \"gout\""
 //#define TINYG_VERSION "build 221 - \"hacking cough\""
 //#define TINYG_VERSION "build 222 - \"turning japanese\""
-#define TINYG_VERSION "build 223 - \"impetigo\""
+//#define TINYG_VERSION "build 223 - \"impetigo\""
+#define TINYG_VERSION "build 226 - \"jaundice\""
 
 
 // Constants
@@ -111,6 +117,7 @@ enum tgCodes {
 	TG_UNRECOGNIZED_COMMAND,	// parser didn't recognize the command
 	TG_EXPECTED_COMMAND_LETTER,	// malformed line to parser
 	TG_UNSUPPORTED_STATEMENT,	// a different kind of malformed line
+	TG_PARAMETER_UNDER_RANGE,	// parameter is too small
 	TG_PARAMETER_OVER_RANGE,	// parameter is too large
 	TG_BAD_NUMBER_FORMAT,		// number format error
 	TG_FLOATING_POINT_ERROR,	// number conversion error
@@ -140,10 +147,5 @@ typedef int (*fptr_int_char_p) (char *b);// returns int, character pointer (line
 #else
 #define DEFAULT_SOURCE XIO_DEV_USB		// default source device
 #endif
-
-//#define __UNIT_TESTS		// uncomment to compile the unit tests into the code
-//#define __DEBUG			// uncomment to enable debug logging
-//#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
-#define __SIMULATION_MODE	// settings to enable faster and more accurate simulation
 
 #endif

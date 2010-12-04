@@ -26,7 +26,25 @@
 //#define MC_LINE mc_line
 #define MC_LINE mc_aline
 
-#define MAX_BUFFERS_NEEDED 4	// worst case write buffers needed for aline
+/*
+ *	Most of these factors are the result of a lot of tweaking. 
+ *	Change at your peril.
+ */
+#define MC_BUFFER_SIZE 8		// sub-move buffer pool (255 max)
+#define MC_BUFFERS_NEEDED 4		// worst case write buffers needed for aline
+
+#define MIN_SEGMENT_TIME 10000	// microseconds - 10 ms. works well
+#define MIN_TAIL_FACTOR 0.05	// below which it uses linear ramps
+#define MM_PER_ARC_SEGMENT 0.05
+
+#define _mc_bump(a) ((a<MC_BUFFER_SIZE-1)?(a+1):0)	// buffer incr & wrap
+#define _steps(x,a) round(a * CFG(x).steps_per_unit)
+
+// ritorno is Italian for return - it returns only if an error occurred
+uint8_t ritcode;	// defined once globally for ritorno
+#define ritorno(a) if((ritcode=a) != TG_OK) {return(ritcode);}
+
+
 #define clear_vector(a) memset(a,0,sizeof(a)) // used in motion_control.c & gcode.c
 #define uSec(a)	(round(a * ONE_MINUTE_OF_MICROSECONDS))
 
