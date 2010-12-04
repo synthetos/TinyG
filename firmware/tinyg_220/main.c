@@ -164,9 +164,9 @@ void _tg_unit_tests(void) 		// function itself
 // Debug help: Pre-load the USB RX (input) buffer with some test strings
 // Be mindful of the char limit on the RX_BUFFER_SIZE (circular buffer)
 
-	xio_queue_RX_string_usb("?\n");		// enter config mode and dump config
-	xio_queue_RX_string_usb("Q\n");		// reset - run a homing cycle
-	xio_queue_RX_string_usb("R\n");		// reset - run a homing cycle
+//	xio_queue_RX_string_usb("?\n");		// enter config mode and dump config
+//	xio_queue_RX_string_usb("Q\n");		// reset - run a homing cycle
+//	xio_queue_RX_string_usb("R\n");		// reset - run a homing cycle
 	xio_queue_RX_string_usb("T\n");		// run test file
 
 //	xio_queue_RX_char_usb(ETX);			// send control-c (kill)

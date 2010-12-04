@@ -2,6 +2,20 @@
  * data_gcode_tests.h - data file containing assorted tests
  */
 
+const char PROGMEM trajectory_cases_01[] = "\
+G00 G17 G21 G40 G49 G80 G90 (initialize model)\n\
+T1 M6 (set tool)\n\
+G92 X0 Y0 Z0 (zero system)\n\
+S5000 M03 (set spindle)\n\
+(jerk set to 25000000)\n\
+G02 F400 x4 y4 i2 j2\n\
+g0 x0 y0 z0";
+
+/*
+G02 F200 x0 y0 i2 j2\n\
+
+*/
+
 const char PROGMEM straight_feed_test[] = "\
 G0 G17 G21 G40 G49 G80 G90 (initialize model)\n\
 g92x0y0z0a0\n\

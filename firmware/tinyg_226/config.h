@@ -301,7 +301,10 @@ struct cfgStructGlobal {
 	double mm_per_arc_segment;	// arc drawing resolution in mm per segment
 	double min_segment_time;	// minimum segment time in microseconds
 	double max_linear_jerk;		// linear jerk constant
-	double max_angular_jerk;	// angular jerk constant
+//	double max_angular_jerk;	// angular jerk constant
+	double angular_jerk_upper;	// angular jerk upper threshold >continuous
+	double angular_jerk_lower;	// angular jerk lower threshold <exact stop
+
 	double a_radius;			// radius for A axis feedrate computation
 
 	uint8_t homing_mode;		// 0=off, 1=power-on (G28)

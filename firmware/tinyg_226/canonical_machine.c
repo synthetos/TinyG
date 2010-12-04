@@ -938,26 +938,26 @@ int _cm_compute_center_arc()
  	*/
 
 	// calculate the theta (angle) of the current point
-	theta_start = _theta(-gm.offset[gm.plane_axis_0], -gm.offset[gm.plane_axis_1]);
+//	theta_start = _theta(-gm.offset[gm.plane_axis_0], -gm.offset[gm.plane_axis_1]);
+	theta_start = _theta(gm.position[gm.plane_axis_0] - gm.offset[gm.plane_axis_0], 
+					     gm.position[gm.plane_axis_1] - gm.offset[gm.plane_axis_1]);
+
 	if(isnan(theta_start)) { 
 		cm_status = TG_ARC_SPECIFICATION_ERROR;
 		return(cm_status); 
 	}
 
 	// calculate the theta (angle) of the target point
-	theta_end = _theta(gm.target[gm.plane_axis_0] 
-					- gm.offset[gm.plane_axis_0] 
-					- gm.position[gm.plane_axis_0], 
- 					  gm.target[gm.plane_axis_1] 
-					- gm.offset[gm.plane_axis_1] 
-					- gm.position[gm.plane_axis_1]);
+	theta_end = _theta
+		(gm.target[gm.plane_axis_0] - gm.offset[gm.plane_axis_0] - gm.position[gm.plane_axis_0], 
+ 		 gm.target[gm.plane_axis_1] - gm.offset[gm.plane_axis_1] - gm.position[gm.plane_axis_1]);
 
 	if(isnan(theta_end)) { 
 		cm_status = TG_ARC_SPECIFICATION_ERROR; 
 		return(cm_status);
 	}
 
-	// ensure that the difference is positive so that we have clockwise travel
+	// ensure that the difference is positive so we have clockwise travel
 	if (theta_end < theta_start) {
 		theta_end += 2*M_PI;
 	}

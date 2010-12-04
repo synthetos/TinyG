@@ -18,7 +18,7 @@ controller.o: ../controller.c \
   ../config.h ../canonical_machine.h ../motion_control.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/string.h ../motor_queue.h \
   ../direct_drive.h ../stepper.h ../limit_switches.h ../xmega_eeprom.h \
-  ../gcode_tests.h ../gcode_contraptor_circle.h ../gcode_mudflap.h
+  ../gcode_tests.h ../gcode_mudflap.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -81,7 +81,5 @@ c:/winavr-20100110/lib/gcc/../../avr/include/string.h:
 ../xmega_eeprom.h:
 
 ../gcode_tests.h:
-
-../gcode_contraptor_circle.h:
 
 ../gcode_mudflap.h:
