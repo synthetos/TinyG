@@ -15,7 +15,7 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
-CFLAGS += -Wall -gdwarf-2 -std=gnu99                                                                                                                                        -DF_CPU=32000000UL -O0 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -Wall -gdwarf-2 -std=gnu99                                                                                                                                                              -DF_CPU=32000000UL -O0 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
 
 ## Assembly specific flags
@@ -46,7 +46,7 @@ OBJECTS = main.o config.o encoder.o xmega_init.o motion_control.o spindle.o step
 LINKONLYOBJECTS = 
 
 ## Build
-all: $(TARGET) TinyG.hex TinyG.eep TinyG.lss size
+all: $(TARGET) TinyG.hex TinyG.eep size
 
 ## Compile
 main.o: ../main.c
@@ -144,7 +144,7 @@ size: ${TARGET}
 ## Clean target
 .PHONY: clean
 clean:
-	-rm -rf $(OBJECTS) TinyG.elf dep/* TinyG.hex TinyG.eep TinyG.lss TinyG.map
+	-rm -rf $(OBJECTS) TinyG.elf dep/* TinyG.hex TinyG.eep TinyG.map
 
 
 ## Other dependencies

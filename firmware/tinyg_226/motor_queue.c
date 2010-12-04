@@ -42,6 +42,7 @@
  */
 
 #include <stdlib.h>
+#include <math.h>
 #include <avr/io.h>
 #include <string.h>								// for memset();
 #include <avr/interrupt.h>
@@ -160,7 +161,8 @@ uint8_t mq_queue_line(int32_t steps_x, int32_t steps_y,
 	if (microseconds == 0) {						// zero time move
 		return (TG_ZERO_LENGTH_MOVE);
 	}
-	if ((steps_x + steps_y + steps_z + steps_a) == 0) { // 0 len non-zero time
+	if (sqrt(square(steps_x) + square(steps_y) + 
+			 square(steps_z) + square(steps_a)) == 0) {
 		return (mq_queue_dwell(microseconds));			// queue it as a dwell
 //		return (TG_ZERO_LENGTH_MOVE);
 	}

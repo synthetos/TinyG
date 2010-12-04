@@ -958,10 +958,12 @@ void _cfg_load_hardwired_settings()
 	cfg.gcode_feed_rate = GCODE_FEED_RATE;
 	cfg.gcode_spindle_speed = GCODE_SPINDLE_SPEED;
 
-	cfg.mm_per_arc_segment = MM_PER_ARC_SEGMENT;
-	cfg.min_segment_time = MIN_SEGMENT_TIME;
+//	cfg.mm_per_arc_segment = MM_PER_ARC_SEGMENT;
+//	cfg.min_segment_time = MIN_SEGMENT_TIME;
 	cfg.max_linear_jerk = MAX_LINEAR_JERK;
-	cfg.max_angular_jerk = MAX_ANGULAR_JERK;
+//	cfg.max_angular_jerk = ANGULAR_JERK_UPPER;
+	cfg.angular_jerk_upper = ANGULAR_JERK_UPPER_THRESHOLD;	// TODO
+	cfg.angular_jerk_lower = ANGULAR_JERK_LOWER_THRESHOLD;
 	cfg.homing_mode = HOMING_MODE;
 	cfg.a_radius = A_RADIUS;
 
