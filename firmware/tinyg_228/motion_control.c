@@ -867,7 +867,8 @@ uint8_t mc_aline(double x, double y, double z, double a, double minutes)
 	// setup initial values
 	mm.length = sqrt(square(mm.target[X] - mm.position[X]) +
 					 square(mm.target[Y] - mm.position[Y]) +
-					 square(mm.target[Z] - mm.position[Z]));
+					 square(mm.target[Z] - mm.position[Z]) +
+					 square(mm.target[A] - mm.position[A]));
 
 	if (mm.length < MIN_LINE_LENGTH) {			// trap zero-length lines
 		return (TG_ZERO_LENGTH_MOVE);
