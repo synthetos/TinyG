@@ -85,22 +85,24 @@
 
 /* robot dimensions */
 
-#define X_TRAVEL 400				// total travel in X in mm
-#define Y_TRAVEL 400
-#define Z_TRAVEL 50
+#define X_TRAVEL 200				// total travel in X in mm
+#define Y_TRAVEL 200
+#define Z_TRAVEL 200
+#define A_TRAVEL 200
+
 #define A_RADIUS RADIAN				// makes mm/min = degrees/min on conversion
 
 /* homing cycle settings */
 
-//#define HOMING_MODE TRUE			// set TRUE for power-on-homing
-#define HOMING_MODE FALSE			// set TRUE for power-on-homing
+#define HOMING_MODE TRUE			// set TRUE for power-on-homing
+//#define HOMING_MODE FALSE			// set TRUE for power-on-homing
 #define HOMING_RATE 500				// mm/min
 #define HOMING_BACKOFF 10			// mm
 
 #define X_HOMING_ENABLE 1			// 1=enabled for that axis
 #define Y_HOMING_ENABLE 1
-#define Z_HOMING_ENABLE 0
-#define A_HOMING_ENABLE 0
+#define Z_HOMING_ENABLE 1
+#define A_HOMING_ENABLE 1
 
 /* machine profiles - chose one: */
 
@@ -155,9 +157,9 @@
 #define A_MICROSTEP_MODE MICROSTEP_MODE
 
 #define X_POLARITY 0					// motor direction polarity
-#define Y_POLARITY 1
+#define Y_POLARITY 0
 #define Z_POLARITY 0
-#define A_POLARITY 1
+#define A_POLARITY 0
 
 #define X_POWER_MODE TRUE				// 1=low power idle enabled 
 #define Y_POWER_MODE TRUE				// (robot parameter)
@@ -167,7 +169,7 @@
 #define X_LIMIT_MODE TRUE				// 1=limit switches present and enabled
 #define Y_LIMIT_MODE TRUE				// (robot parameter)
 #define Z_LIMIT_MODE TRUE
-#define A_LIMIT_MODE FALSE
+#define A_LIMIT_MODE TRUE
 
 #define X_TRAVEL_PER_REV TRAVEL_PER_REV	// typ. set by leadscrews or cogwheels
 #define Y_TRAVEL_PER_REV TRAVEL_PER_REV	// (robot parameter)
@@ -177,7 +179,7 @@
 #define X_TRAVEL_MAX X_TRAVEL			// full excursion from min to max 
 #define Y_TRAVEL_MAX Y_TRAVEL			// (robot parameter)
 #define Z_TRAVEL_MAX Z_TRAVEL
-#define A_TRAVEL_MAX -1					// -1 is no limit (typ for rotary axis)
+#define A_TRAVEL_MAX A_TRAVEL			// -1 is no limit (typ for rotary axis)
 
 #define X_TRAVEL_WARN X_TRAVEL			// full excursion from min to max 
 #define Y_TRAVEL_WARN Y_TRAVEL
@@ -187,7 +189,7 @@
 #define X_HOMING_OFFSET -(X_TRAVEL/2) 	// offset to zero from axis minimum
 #define Y_HOMING_OFFSET -(Y_TRAVEL/2)
 #define Z_HOMING_OFFSET -(Z_TRAVEL/2)
-#define A_HOMING_OFFSET 0
+#define A_HOMING_OFFSET -(A_TRAVEL/2)
 
 #define X_HOMING_RATE HOMING_RATE
 #define Y_HOMING_RATE HOMING_RATE

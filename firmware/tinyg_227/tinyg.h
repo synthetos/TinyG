@@ -26,7 +26,7 @@
 //#define __DEBUG			// uncomment to enable debug logging
 //#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
 #define __UNFORGIVING		// hard fail versus introduce errors
-#define __SIMULATION_MODE	// settings to enable faster and more accurate simulation
+//#define __SIMULATION_MODE	// settings to enable faster and more accurate simulation
 
 #ifndef FALSE
 #define FALSE 0
