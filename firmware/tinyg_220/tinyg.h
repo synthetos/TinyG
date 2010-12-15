@@ -135,6 +135,6 @@ typedef int (*fptr_int_char_p) (char *b);// returns int, character pointer (line
 #define __UNIT_TESTS		// uncomment to compile the unit tests into the code
 //#define __DEBUG			// uncomment to enable debug logging
 //#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
-//#define __FAKE_STEPPERS	// disables stepper ISR load for faster debugging
+#define __FAKE_STEPPERS	// disables stepper ISR load for faster debugging
 
 #endif

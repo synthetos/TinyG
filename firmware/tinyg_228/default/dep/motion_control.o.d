@@ -16,7 +16,7 @@ motion_control.o: ../motion_control.c ../xmega_init.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../tinyg.h \
   ../gcode.h ../config.h ../settings.h ../motion_control.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/string.h ../motor_queue.h \
-  ../stepper.h
+  ../stepper.h ../limit_switches.h
 
 ../xmega_init.h:
 
@@ -65,3 +65,5 @@ c:/winavr-20100110/lib/gcc/../../avr/include/string.h:
 ../motor_queue.h:
 
 ../stepper.h:
+
+../limit_switches.h:

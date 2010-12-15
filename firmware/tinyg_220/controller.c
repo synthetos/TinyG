@@ -114,7 +114,7 @@
 #include "gcode_tests.h"		// system tests and other assorted test code
 //#include "gcode_zoetrope.h"	// zoetrope moves. makes really cool sounds
 //#include "gcode_mudflap.h"
-//#include "gcode_contraptor_circle.h"
+#include "gcode_contraptor_circle.h"
 //#include "gcode_hokanson.h"
 
 /*
@@ -442,9 +442,9 @@ int _tg_test(void)
 //	xio_open_pgm(PGMFILE(&system_test)); // collected system tests
 //	xio_open_pgm(PGMFILE(&straight_feed_test));
 //	xio_open_pgm(PGMFILE(&arc_feed_test));
-//	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
+	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
 //	xio_open_pgm(PGMFILE(&hokanson_02)); 	// contraptor circle test
-	xio_open_pgm(PGMFILE(&trajectory_cases_01));
+//	xio_open_pgm(PGMFILE(&trajectory_cases_01));
 	_tg_set_source(XIO_DEV_PGM);
 	_tg_set_mode(TG_GCODE_MODE);
 //	xio_queue_RX_string_usb("Q\nT\n");	// run test file again (forever)
