@@ -18,15 +18,21 @@
  * You should have received a copy of the GNU General Public License 
  * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  */
+/******** VERSION NOTES *******
+  228.4 - works for mudflap girl on line and aline 
+		- homing cycle works in aline but fails in line mode
+  228.5 - reduced aline struct footprint; went to local steps vars
+*/
 
 #ifndef tinyg_h
 #define tinyg_h
 
+//#define __SIMULATION_MODE	// settings to enable faster and more accurate simulation
 //#define __UNIT_TESTS		// uncomment to compile the unit tests into the code
 //#define __DEBUG			// uncomment to enable debug logging
 //#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
+//#define __CHATTY			// uncomment to enable verbose runtime messages
 #define __UNFORGIVING		// hard fail versus introduce errors
-//#define __SIMULATION_MODE	// settings to enable faster and more accurate simulation
 
 #ifndef FALSE
 #define FALSE 0

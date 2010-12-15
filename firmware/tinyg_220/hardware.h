@@ -167,15 +167,15 @@ enum cfgPortBits {						// motor control port bit positions
 #define Z_TRAVEL_PER_REV 2.54
 #define A_TRAVEL_PER_REV 2.54			// degrees moved per motor revolution
 
-#define X_TRAVEL_MAX 720				// full excursion from min to max 
-#define Y_TRAVEL_MAX 360				// (robot parameter)
-#define Z_TRAVEL_MAX 100
-#define A_TRAVEL_MAX -1					// -1 is no limit (typ for rotary axis)
+#define X_TRAVEL_MAX 400				// full excursion from min to max 
+#define Y_TRAVEL_MAX 400				// (robot parameter)
+#define Z_TRAVEL_MAX 400
+#define A_TRAVEL_MAX 400				// -1 is no limit (typ for rotary axis)
 
 #define X_TRAVEL_WARN 400				// full excursion from min to max 
 #define Y_TRAVEL_WARN 400				// (robot parameter)
-#define Z_TRAVEL_WARN 100
-#define A_TRAVEL_WARN -1				// -1 is no limit (typ for rotary axis)
+#define Z_TRAVEL_WARN 400
+#define A_TRAVEL_WARN 400				// -1 is no limit (typ for rotary axis)
 
 #define X_HOMING_ENABLE 1
 #define Y_HOMING_ENABLE 1
@@ -187,8 +187,8 @@ enum cfgPortBits {						// motor control port bit positions
 #define Z_HOMING_RATE 500
 #define A_HOMING_RATE 500
 
-#define X_HOMING_OFFSET -360			// offset to zero from minimum travel
-#define Y_HOMING_OFFSET -180
+#define X_HOMING_OFFSET -200			// offset to zero from minimum travel
+#define Y_HOMING_OFFSET -200
 #define Z_HOMING_OFFSET HOMING_OFFSET
 #define A_HOMING_OFFSET HOMING_OFFSET
 

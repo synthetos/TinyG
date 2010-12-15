@@ -46,6 +46,7 @@
 #include "motion_control.h"
 #include "motor_queue.h"
 #include "stepper.h"
+#include "limit_switches.h"	// ++++++ debug only
 
 /*
  * Local Scope Data and Functions
@@ -57,10 +58,11 @@ static uint8_t _mc_run_accel(struct mcBuffer *m);
 static uint8_t _mc_run_decel(struct mcBuffer *m);
 static uint8_t _mc_run_dwell(struct mcBuffer *m);
 static uint8_t _mc_run_arc(struct mcBuffer *m);
-static uint8_t _mc_run_start_stop(struct mcBuffer *m);
+static uint8_t _mc_run_stops(struct mcBuffer *m);
+static uint8_t _mc_aline_run_helper(struct mcBuffer *m);
 
-static void _mc_set_final_position(const struct mcBuffer *m);
-static void _mc_set_sub_position(const struct mcBuffer *m);
+static void _mc_set_move_position(const struct mcBuffer *m);
+static void _mc_set_run_position(const struct mcBuffer *m);
 
 static uint8_t _mc_line_to_arc(struct mcBuffer *p);
 static uint8_t _mc_queue_head(void);
@@ -97,24 +99,20 @@ enum mcMoveType {				// m->move_type values
 enum mcMoveState {				// m->move_state values
 	MC_STATE_NEW = 0,			// value on initial call (MUST BE ZERO)
 	MC_STATE_RUNNING_1,			// first half of move or sub-move
-	MC_STATE_RUNNING_2			// second half of move or sub-move
+	MC_STATE_RUNNING_2,			// second half of move or sub-move
+	MC_STATE_END				// force the move to end (kill)
 };
 #define MC_STATE_RUNNING MC_STATE_RUNNING_1	// a convenience for above
 
 struct mcBuffer {				// move/sub-move motion control structure
-	// buffer management		// INIT - marks required initial values
 	struct mcBuffer *nx;		// INIT: static pointer to next buffer
 	struct mcBuffer *pv;		// INIT: static pointer to previous buffer
 	uint8_t buffer_state;		// INIT: mcBufferState - manages queues
-
-	// move control variables
 	uint8_t move_type;			// INIT: used to dispatch to run routine
 	uint8_t move_state;			// INIT: state machine sequence
 
-	// common variables
-	double target[AXES];		// target position in floating point
-	int32_t steps[AXES];		// target position in relative steps
-	double unit_vector[AXES];	// INIT: axis scaling & jerk computation
+	double target[AXES];		// INIT: target position in floating point
+	double unit_vec[AXES];		// INIT: axis scaling & jerk computation
 
 	double length;				// INIT: line or helix length in mm
 	double starting_velocity;	// INIT: starting velocity of a region
@@ -122,20 +120,6 @@ struct mcBuffer {				// move/sub-move motion control structure
 
 	double time;				// line, helix or dwell time in minutes
 	uint32_t microseconds;		// line or segment time in microseconds
-	double midpoint_velocity;	// velocity at accel/decel midpoint
-	double midpoint_acceleration;//acceleration at the midpoint
-	double linear_jerk_div2;	// max linear jerk divided by 2
-	uint32_t segments;			// number of segments in arc or blend
-	uint32_t segment_count;		// number of segments run (queued) so far
-
-	// acceleration / deceleration working variables
-	double segment_time;		// constant time per aline segment
-	double segment_length;		// computed length for aline segment
-	double segment_velocity;	// computed velocity for aline segment
-	double elapsed_time;		// running time of region (sub-move)
-
-	// arc variables (that are not already captured above)
-	double segment_theta;		// angular motion per segment
 	double theta;				// INIT: total angle specified by arc
 	double radius;				// INIT: computed via offsets
 	double center_1;			// INIT: center of circle at axis 1 (typ X)
@@ -145,19 +129,18 @@ struct mcBuffer {				// move/sub-move motion control structure
 	uint8_t axis_linear;		// INIT: transverse axis (helical)
 };
 
+struct mcBufferPool {			// ring buffer for queueing and processing moves
+	struct mcBuffer *w;			// get_write_buffer pointer
+	struct mcBuffer *q;			// queue_write_buffer pointer
+	struct mcBuffer *r;			// get/end_run_buffer pointer
+	struct mcBuffer b[MC_BUFFER_SIZE];// buffer storage
+};
+
 struct mcMotionMaster {	
-	uint8_t (*run_move)(struct mcBuffer *m);	// currently running move
-	uint8_t run_flag;							// move status
-	uint8_t path_mode;			// Gcode path control mode w/adjustments
-//	uint8_t regions;			// number of regions in resulting move
-
-	// persistent position info
-	double target[AXES];		// target move position
 	double position[AXES];		// final move position
-	double position_sub[AXES];	// sub-move position (intermediate pos'n)
-	double unit_vector[AXES];	// for axis scaling and jerk computation
+	double target[AXES];		// target move position
+	double unit_vec[AXES];	// for axis scaling and jerk computation
 
-	// common data used and passed around by the trajectory planner
 	double length;				// length of line or helix in mm
 	double head_length;			// computed for trajectory planning
 	double body_length;			// redundant, but useful
@@ -168,18 +151,38 @@ struct mcMotionMaster {
 	double target_velocity;		// move target velocity
 	double final_velocity;		// move exit velocity
 	double angular_jerk;		// angular jerk factor: 0=none, 1=max
-	double time;				// move time in minutes
-
-	// ring buffer for queueing and processing moves
-	struct mcBuffer *w;			// get_write_buffer pointer
-	struct mcBuffer *q;			// queue_write_buffer pointer
-	struct mcBuffer *r;			// get/end_run_buffer pointer
-	struct mcBuffer b[MC_BUFFER_SIZE];// buffer storage
 };
+
+struct mcMotionRuntime {	
+	uint8_t run_flag;							// move status
+	uint8_t (*run_move)(struct mcBuffer *m);	// currently running move
+
+	double position[AXES];		// final move position
+	double target[AXES];		// target move position
+
+	double length;				// length of line or helix in mm
+	double time;				// total running time (derived)
+	double elapsed_time;		// current running time (increments)
+	double midpoint_velocity;	// velocity at accel/decel midpoint
+	double midpoint_acceleration;//acceleration at the midpoint
+	double linear_jerk_div2;	// max linear jerk divided by 2
+
+	uint32_t microseconds;		// line or segment time in microseconds
+	double segments;			// number of segments in arc or blend
+	uint32_t segment_count;		// count of running segments
+	double segment_time;		// constant time per aline segment
+	double segment_length;		// computed length for aline segment
+	double segment_velocity;	// computed velocity for aline segment
+	double segment_theta;		// angular motion per segment
+};
+
 static struct mcMotionMaster mm;
+static struct mcMotionRuntime mr;
+static struct mcBufferPool mb;
 
 // p.s. I tried listing variables both ways: target_velocity or Vt,
-//		initial_velocity or Vi, etc. and found the first way easier to read
+//		initial_velocity or Vi, etc. and found the first way easier to 
+//		read in spite of the wrapped lines.
 
 /* 
  * mc_init()
@@ -198,15 +201,18 @@ void mc_init()
 	cfg.mm_per_arc_segment = MM_PER_ARC_SEGMENT;
 	cfg.min_segment_time = MIN_SEGMENT_TIME;
 
+	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
 	memset(&mm, 0, sizeof(mm));	// clear all values, pointers and status
-	mm.w = &mm.b[0];			// init write and read buffer pointers
-	mm.q = &mm.b[0];
-	mm.r = &mm.b[0];
-	pv = &mm.b[MC_BUFFER_SIZE-1];
+	memset(&mb, 0, sizeof(mb));	// clear all values, pointers and status
+
+	mb.w = &mb.b[0];			// init write and read buffer pointers
+	mb.q = &mb.b[0];
+	mb.r = &mb.b[0];
+	pv = &mb.b[MC_BUFFER_SIZE-1];
 	for (i=0; i < MC_BUFFER_SIZE; i++) {  // setup ring pointers
-		mm.b[i].nx = &mm.b[_mc_bump(i)];
-		mm.b[i].pv = pv;
-		pv = &mm.b[i];
+		mb.b[i].nx = &mb.b[_mc_bump(i)];
+		mb.b[i].pv = pv;
+		pv = &mb.b[i];
 	}
 }
 
@@ -219,31 +225,38 @@ void mc_init()
  *	Runs as a continuation itself; called from tg_controller()
  */
 
-uint8_t mc_move_dispatcher() 
+uint8_t mc_move_dispatcher(uint8_t kill) 
 {
 	uint8_t status;
+	struct mcBuffer *m;
 
-	if (mc_get_run_buffer() == NULL) {	// NULL means nothing's running
+	if ((m = mc_get_run_buffer()) == NULL) {	// NULL means nothing's running
 		return (TG_NOOP);
 	}
-	if (mm.r->move_state == MC_STATE_NEW) {	// first time in?
-		mm.run_flag = TRUE;					// it's useful to have a flag
-		switch (mm.r->move_type) { 			// setup the dispatch vector
-			case MC_TYPE_LINE:	{ mm.run_move = _mc_run_line; break; }
-			case MC_TYPE_CRUISE:{ mm.run_move = _mc_run_cruise; break; }
-			case MC_TYPE_ACCEL:	{ mm.run_move = _mc_run_accel; break; }
-			case MC_TYPE_DECEL:	{ mm.run_move = _mc_run_decel; break; }
-			case MC_TYPE_ARC:	{ mm.run_move = _mc_run_arc; break; }
-			case MC_TYPE_DWELL:	{ mm.run_move = _mc_run_dwell; break; }
-			case MC_TYPE_START:	{ mm.run_move = _mc_run_start_stop; break;}
-			case MC_TYPE_STOP:	{ mm.run_move = _mc_run_start_stop; break;}
-			case MC_TYPE_END: 	{ mm.run_move = _mc_run_start_stop; break;}
+	if (kill) {
+		m->move_state = MC_STATE_END;
+		mr.run_flag = FALSE;				// finalize and return
+		mc_end_run_buffer();
+		return (TG_OK);
+	}
+	if (m->move_state == MC_STATE_NEW) {	// first time in?
+		mr.run_flag = TRUE;					// it's useful to have a flag
+		switch (m->move_type) { 			// setup the dispatch vector
+			case MC_TYPE_ACCEL:	{ mr.run_move = _mc_run_accel; break; }
+			case MC_TYPE_CRUISE:{ mr.run_move = _mc_run_cruise; break; }
+			case MC_TYPE_DECEL:	{ mr.run_move = _mc_run_decel; break; }
+			case MC_TYPE_LINE:	{ mr.run_move = _mc_run_line; break; }
+			case MC_TYPE_ARC:	{ mr.run_move = _mc_run_arc; break; }
+			case MC_TYPE_DWELL:	{ mr.run_move = _mc_run_dwell; break; }
+			case MC_TYPE_START:	{ mr.run_move = _mc_run_stops; break;}
+			case MC_TYPE_STOP:	{ mr.run_move = _mc_run_stops; break;}
+			case MC_TYPE_END: 	{ mr.run_move = _mc_run_stops; break;}
 		}
 	}
-	if ((status = mm.run_move(mm.r)) == TG_EAGAIN) { // run current run buf
+	if ((status = mr.run_move(m)) == TG_EAGAIN) { // run current run buf
 		return (TG_EAGAIN);
 	}
-	mm.run_flag = FALSE;				// finalize and return
+	mr.run_flag = FALSE;				// finalize and return
 	mc_end_run_buffer();
 	return (status);
 }
@@ -300,7 +313,7 @@ uint8_t mc_move_dispatcher()
 
 uint8_t mc_test_write_buffer(const uint8_t count) 
 {
-	struct mcBuffer *w = mm.w;	// temp write buffer pointer
+	struct mcBuffer *w = mb.w;	// temp write buffer pointer
 
 	for (uint8_t i=0; i < count; i++) {
 		if (w->buffer_state != MC_BUFFER_EMPTY) {
@@ -313,15 +326,15 @@ uint8_t mc_test_write_buffer(const uint8_t count)
 
 struct mcBuffer * mc_get_write_buffer() 
 {
-	if (mm.w->buffer_state == MC_BUFFER_EMPTY) {
-		struct mcBuffer *w = mm.w;
-		struct mcBuffer *nx = mm.w->nx;	// save pointers
-		struct mcBuffer *pv = mm.w->pv;
-		memset(mm.w, 0, sizeof(struct mcBuffer));
+	if (mb.w->buffer_state == MC_BUFFER_EMPTY) {
+		struct mcBuffer *w = mb.w;
+		struct mcBuffer *nx = mb.w->nx;	// save pointers
+		struct mcBuffer *pv = mb.w->pv;
+		memset(mb.w, 0, sizeof(struct mcBuffer));
 		w->nx = nx;			// restore pointers
 		w->pv = pv;
 		w->buffer_state = MC_BUFFER_LOADING;
-		mm.w = w->nx;
+		mb.w = w->nx;
 		return (w);
 	}
 	return (NULL);
@@ -329,42 +342,42 @@ struct mcBuffer * mc_get_write_buffer()
 
 uint8_t mc_queue_write_buffer(const uint8_t move_type)
 {
-	mm.q->move_type = move_type;
-	mm.q->move_state = MC_STATE_NEW;
-	mm.q->buffer_state = MC_BUFFER_QUEUED;
-	mm.q = mm.q->nx;		// advance the queued buffer pointer
+	mb.q->move_type = move_type;
+	mb.q->move_state = MC_STATE_NEW;
+	mb.q->buffer_state = MC_BUFFER_QUEUED;
+	mb.q = mb.q->nx;		// advance the queued buffer pointer
 	return (TG_OK);			// convenience for calling routines
 }
 
 void mc_unget_write_buffer()
 {
-	mm.w->buffer_state = MC_BUFFER_EMPTY;
-	mm.w = mm.w->pv;
+	mb.w->buffer_state = MC_BUFFER_EMPTY;
+	mb.w = mb.w->pv;
 }
 
 struct mcBuffer * mc_get_run_buffer() 
 {
 	// condition: fresh buffer; buffer becomes running if it's queued
-	if (mm.r->buffer_state == MC_BUFFER_QUEUED) {
-		mm.r->buffer_state = MC_BUFFER_RUNNING;
+	if (mb.r->buffer_state == MC_BUFFER_QUEUED) {
+		mb.r->buffer_state = MC_BUFFER_RUNNING;
 	}
 	// condition: asking for the same run buffer for the Nth time
-	if (mm.r->buffer_state == MC_BUFFER_RUNNING) { // return same buffer
-		return (mm.r);
+	if (mb.r->buffer_state == MC_BUFFER_RUNNING) { // return same buffer
+		return (mb.r);
 	}
 	return (NULL);		// condition: no queued buffers. fail it.
 }
 
 uint8_t mc_end_run_buffer()	// EMPTY current run buf & advance to next
 {
-	mm.r->buffer_state = MC_BUFFER_EMPTY;
-	mm.r = mm.r->nx;		// advance to next run buffer
+	mb.r->buffer_state = MC_BUFFER_EMPTY;
+	mb.r = mb.r->nx;		// advance to next run buffer
 	return (TG_OK);			// convenience for calling routines
 }
 
 struct mcBuffer * mc_get_prev_buffer()
 {
-	return (mm.w->pv);
+	return (mb.w->pv);
 }
 
 /* 
@@ -376,7 +389,7 @@ struct mcBuffer * mc_get_prev_buffer()
 
 uint8_t mc_isbusy()
 {
-	if (st_isbusy() || mm.run_flag) {
+	if (st_isbusy() || mr.run_flag) {
 		return (TRUE);
 	}
 	return (FALSE);
@@ -384,40 +397,52 @@ uint8_t mc_isbusy()
 
 /**** POSITION SETTING ROUTINES ******************************************
  * mc_set_position() 		  - set current MC position (support for G92)
- * _mc_set_final_position()	  - copy move final position
- * _mc_set_sub_position() 	  - copy sub-move position
+ * _mc_set_move_position()	  - copy move final position
+ * _mc_set_run_position() 	  - copy sub-move position
  *
- * Keeping track of position is complicated by the fact that moves that 
- *	have sub-moves (e.g. aline) require multiple reference frames. 
- *	A final position is needed to compute the next incoming move, whereas 
- *	an interim position is needed to support the execution of sub-moves.
+ * 	Keeping track of position is complicated by the fact that moves can
+ *	have sub-moves (e.g. aline) which require multiple reference frames.
+ *	To keep this straight the scheme is:
+ *
+ *	 - mm.position	- start and end move position for trajectory planning
+ *	 - mm.target	- move target for trajectory planning
+ *	 - mr.position	- current position of the running move
+ *	 - mr.target	- target of current region of the running move
+ *	 - m->target	- target of current section of running move.
+ *					  also used to carry move target from mm to mr
  *
  * Bear in mind that the positions are set immediately when they are 
  *	computed and are not an accurate representation of the tool position.
  *	In reality the motors will still be processing the action and the 
  *	real tool position is still close to the starting point. 
- *
- * Note: Position values are global in mm struct, 
- *		 not in any given move buffer
  */
 
+/* used by external callers such as G92 */
 uint8_t mc_set_position(const double x, const double y, const double z, const double a)
 {
 	mm.position[X] = x;
 	mm.position[Y] = y;
 	mm.position[Z] = z; 
 	mm.position[A] = a; 
+
+	mr.position[X] = x;
+	mr.position[Y] = y;
+	mr.position[Z] = z; 
+	mr.position[A] = a; 
 	return (TG_OK);
 }
 
-inline static void _mc_set_final_position(const struct mcBuffer *m)
+/* copy both levels to keep run level sync'd with move level */
+inline static void _mc_set_move_position(const struct mcBuffer *m)
 { 
 	memcpy(mm.position, m->target, sizeof(mm.position));
+	memcpy(mr.position, m->target, sizeof(mr.position));
 }
 
-inline static void _mc_set_sub_position(const struct mcBuffer *m) 
+/* copy only run level position */
+inline static void _mc_set_run_position(const struct mcBuffer *m) 
 { 
-	memcpy(mm.position_sub, m->target, sizeof(mm.position_sub));
+	memcpy(mr.position, m->target, sizeof(mr.position));
 }
 
 /**** STOP START AND END ROUTINES ****************************************
@@ -443,10 +468,7 @@ uint8_t mc_async_start()
 uint8_t mc_async_end()
 {
 	st_end();						// stop the motion
-//	mm.line_generator_state = MC_GENERATOR_OFF;	// kill the generators
-//	mm.dwell_generator_state = MC_GENERATOR_OFF;
-//	mm.stop_generator_state = MC_GENERATOR_OFF;
-//	mm.arc_generator_state = MC_GENERATOR_OFF;
+	mc_move_dispatcher(TRUE);		// kill the current move
 	return (TG_OK);
 }
 
@@ -496,12 +518,12 @@ uint8_t mc_queued_end() // +++ fix this. not right yet. resets must also be queu
 	return (mc_queue_write_buffer(MC_TYPE_END));
 }
 
-static uint8_t _mc_run_start_stop(struct mcBuffer *m) 
+static uint8_t _mc_run_stops(struct mcBuffer *m) 
 {
 	if (!mq_test_motor_buffer()) { 
 		return (TG_EAGAIN); 
 	}
-	mq_queue_start_stop(m->move_type);
+	mq_queue_stops(m->move_type);
 	return (TG_OK);
 }
 
@@ -550,27 +572,33 @@ static uint8_t _mc_run_dwell(struct mcBuffer *m)
 
 uint8_t mc_line(double x, double y, double z, double a, double minutes)
 {
-	struct mcBuffer *m; 
+	struct mcBuffer *m;
 
 	if ((m = mc_get_write_buffer()) == NULL) {	// get write buffer or fail
 		return (TG_BUFFER_FULL_FATAL);			// (not supposed to fail)
 	}
-	m->target[X] = x;
+
+	// capture the function args and compute line length
+	m->target[X] = x;		// targets for the move
 	m->target[Y] = y;
 	m->target[Z] = z;
 	m->target[A] = a;
-	m->time = minutes;
 
-	for (uint8_t i=0; i < AXES; i++) {
-		m->steps[i] = _steps(i, m->target[i]) - _steps(i, mm.position[i]);
-	}
-	// skip zero length moves
-	if ((m->steps[X] == 0) && (m->steps[Y] == 0) && (m->steps[Z] == 0) && 
-		(m->steps[A] == 0)) {
+	if ((m->microseconds = uSec(minutes)) == 0) {
 		mc_unget_write_buffer();	// early exit requires you free buffer
 		return (TG_ZERO_LENGTH_MOVE);
 	}
-	return(mc_queue_write_buffer(MC_TYPE_LINE));
+	m->length = sqrt(square(m->target[X] - mr.position[X]) +
+					 square(m->target[Y] - mr.position[Y]) +
+					 square(m->target[Z] - mr.position[Z]) +
+					 square(m->target[A] - mr.position[A]));
+
+	if (m->length < MIN_LINE_LENGTH) {			// trap zero-length lines
+		mc_unget_write_buffer();	// early exit requires you free buffer
+		return (TG_ZERO_LENGTH_MOVE);
+	}
+	ritorno(mc_queue_write_buffer(MC_TYPE_LINE));
+	return(TG_OK);
 }
 
 static uint8_t _mc_run_line(struct mcBuffer *m) 
@@ -578,8 +606,21 @@ static uint8_t _mc_run_line(struct mcBuffer *m)
 	if (!mq_test_motor_buffer()) { 
 		return (TG_EAGAIN); 
 	}
-	mq_queue_line(m->steps[X], m->steps[Y], m->steps[Z], m->steps[A], uSec(m->time));
-	_mc_set_final_position(m);
+
+	uint32_t steps[AXES];	// this form is more memory efficient
+	for (uint8_t i=0; i < AXES; i++) {
+		steps[i] = _steps(i, m->target[i]) - _steps(i, mr.position[i]);
+	}
+	mq_queue_line(steps[X], steps[Y], steps[Z], steps[A], m->microseconds);
+
+//	mq_queue_line((_steps(X, m->target[X]) - _steps(X, mr.position[X])),
+//				  (_steps(Y, m->target[Y]) - _steps(Y, mr.position[Y])),
+//				  (_steps(Z, m->target[Z]) - _steps(Z, mr.position[Z])),
+//				  (_steps(A, m->target[A]) - _steps(A, mr.position[A])),
+//				   m->microseconds);
+
+	_mc_set_move_position(m);
+// ls_isr_helper(LS_X_MIN);		//+++++++++++++++++++++++++++ TEST
 	return (TG_OK);
 }
 
@@ -628,45 +669,69 @@ uint8_t mc_arc(double theta, 		// starting angle
 		mc_unget_write_buffer();	// early exit requires you free buffer
 		return (TG_ZERO_LENGTH_MOVE);
 	}
-	m->starting_velocity = m->length / minutes; // used for trajectory
 
-	// load the move struct
+	// load the move struct for an arc
+	m->time = minutes;
+	m->starting_velocity = m->length / m->time; // for trajectory planning
+	mr.segments = ceil(m->length / cfg.mm_per_arc_segment);
 	m->theta = theta;
 	m->radius = radius;
 	m->axis_1 = axis_1;
 	m->axis_2 = axis_2;
 	m->axis_linear = axis_linear;
+	mr.segment_theta = angular_travel / mr.segments;
+	mr.segment_length = linear_travel / mr.segments;
 
-	m->segment_count=0;
-	m->segments = ceil(m->length / cfg.mm_per_arc_segment);
- 	m->microseconds = uSec(minutes / m->segments);
-	m->segment_theta = angular_travel / m->segments;
-	m->segment_length = linear_travel / m->segments;
-	m->center_1 = mm.position[m->axis_1] - sin(m->theta) * m->radius;
-	m->center_2 = mm.position[m->axis_2] - cos(m->theta) * m->radius;
-	m->target[m->axis_linear] = mm.position[m->axis_linear];
+//	for (uint8_t i=0; i < AXES; i++) {
+//		mr.position[i] = mr.position[i];
+//		mr.target[i] = mr.position[i];		// not actually used
+	// 	m->unit_vec[i] = ???? (unit vector at exit)
+	//	I think you take the normal of the vector between the 
+	//	center point (i,j) and the target (x,y) and divide by the 
+	//	length of (i,j) to (x,y). Must also account for plane-axes
+	//	and the linear axis.
+//	}
+
 	return(mc_queue_write_buffer(MC_TYPE_ARC));
 }
 
 static uint8_t _mc_run_arc(struct mcBuffer *m) 
 {
-	while (m->segment_count <= m->segments) {
-		if (!mq_test_motor_buffer()) { 
-			return (TG_EAGAIN); 
-		}
-		// compute the arc segment
-		m->segment_count++;
-		m->theta += m->segment_theta;
+	if (!mq_test_motor_buffer()) { 
+		return (TG_EAGAIN); 
+	}
+	// initialize arc variables
+	if (m->move_state == MC_STATE_NEW) {
+		m->move_state = MC_STATE_RUNNING;
+		mr.segment_count=0;
+ 		m->microseconds = uSec(m->time / mr.segments);
+		m->center_1 = mr.position[m->axis_1] - sin(m->theta) * m->radius;
+		m->center_2 = mr.position[m->axis_2] - cos(m->theta) * m->radius;
+		m->target[m->axis_linear] = mr.position[m->axis_linear];
+	}
+	// compute an arc segment and exit
+	if (m->move_state == MC_STATE_RUNNING) {
+		m->theta += mr.segment_theta;
 		m->target[m->axis_1] = m->center_1 + sin(m->theta) * m->radius;
 		m->target[m->axis_2] = m->center_2 + cos(m->theta) * m->radius;
-		m->target[m->axis_linear] += m->segment_length;
+		m->target[m->axis_linear] += mr.segment_length;
 
-		// setup and queue the arc segment
-		for (uint8_t i = X; i < AXES; i++) {
-			m->steps[i] = _steps(i, m->target[i]) - _steps(i, mm.position[i]);
+		uint32_t steps[AXES];
+		for (uint8_t i=0; i < AXES; i++) {
+			steps[i] = _steps(i, m->target[i]) - _steps(i, mr.position[i]);
 		}
-		mq_queue_line(m->steps[X], m->steps[Y], m->steps[Z], m->steps[A], m->microseconds);
-		_mc_set_final_position(m);
+		mq_queue_line(steps[X], steps[Y], steps[Z], steps[A], m->microseconds);
+
+//		mq_queue_line((_steps(X, m->target[X]) - _steps(X, mr.position[X])),
+//					  (_steps(Y, m->target[Y]) - _steps(Y, mr.position[Y])),
+//					  (_steps(Z, m->target[Z]) - _steps(Z, mr.position[Z])),
+//					  (_steps(A, m->target[A]) - _steps(A, mr.position[A])),
+//					   m->microseconds);
+
+		_mc_set_move_position(m);
+		if (mr.segment_count++ <= mr.segments) {
+			return (TG_EAGAIN);
+		}
 	}
 	return (TG_OK);
 }
@@ -855,6 +920,7 @@ static uint8_t _mc_run_arc(struct mcBuffer *m)
 uint8_t mc_aline(double x, double y, double z, double a, double minutes)
 {
 	uint8_t i;
+	uint8_t path_mode;
 	struct mcBuffer *p; 	// previous tail buffer pointer
 
 	// capture the function args and compute line length
@@ -862,7 +928,6 @@ uint8_t mc_aline(double x, double y, double z, double a, double minutes)
 	mm.target[Y] = y;
 	mm.target[Z] = z;
 	mm.target[A] = a;
-	mm.time = minutes; 
 	
 	// setup initial values
 	mm.length = sqrt(square(mm.target[X] - mm.position[X]) +
@@ -873,12 +938,13 @@ uint8_t mc_aline(double x, double y, double z, double a, double minutes)
 	if (mm.length < MIN_LINE_LENGTH) {			// trap zero-length lines
 		return (TG_ZERO_LENGTH_MOVE);
 	}
+	mm.target_velocity = mm.length / minutes;		// Vt requested
 	mm.initial_velocity = 0;						// Vi starting value
-	mm.target_velocity = mm.length / mm.time;		// Vt requested
-	mm.path_mode = cfg.gcode_path_control;			// starting path mode
+	path_mode = cfg.gcode_path_control;			// starting path mode
 	for (i=0; i < AXES; i++) {						// compute unit vector
-		mm.unit_vector[i] = (mm.target[i] - mm.position[i]) / mm.length;
+		mm.unit_vec[i] = (mm.target[i] - mm.position[i]) / mm.length;
 	}
+	mr.linear_jerk_div2 = cfg.max_linear_jerk / 2;
 
 	// setup initial conditions from the previous move
 	p = mc_get_prev_buffer();
@@ -889,15 +955,15 @@ uint8_t mc_aline(double x, double y, double z, double a, double minutes)
 		mm.previous_velocity = p->starting_velocity;// Vt of previous move
 	} else {
 		mm.previous_velocity = 0;
-		mm.path_mode = PATH_EXACT_STOP;				// downgrade path mode
+		path_mode = PATH_EXACT_STOP;				// downgrade path mode
 	}
 	// getting angular jerk requires unit vectors and mm.previous_velocity
 	mm.angular_jerk = _mc_estimate_angular_jerk(p);	// for path downgrades
 
 	// setup initial velocity and do path downgrades
-	if (mm.path_mode == PATH_CONTINUOUS) {
+	if (path_mode == PATH_CONTINUOUS) {
 		if (mm.angular_jerk > cfg.angular_jerk_lower) {
-			mm.path_mode = PATH_EXACT_PATH; 		// downgrade path
+			path_mode = PATH_EXACT_PATH; 		// downgrade path
 		} else if (mm.target_velocity > mm.previous_velocity) {// accels
 			mm.initial_velocity = mm.previous_velocity;
 		} else { 									// decels and cruises
@@ -905,9 +971,9 @@ uint8_t mc_aline(double x, double y, double z, double a, double minutes)
 							min(mm.previous_velocity, mm.target_velocity);
 		}
 	} 
-	if (mm.path_mode == PATH_EXACT_PATH) {
+	if (path_mode == PATH_EXACT_PATH) {
 		if (mm.angular_jerk > cfg.angular_jerk_upper) {	// downgrade
-			mm.path_mode = PATH_EXACT_STOP;	
+			path_mode = PATH_EXACT_STOP;	
 			mm.initial_velocity = 0;
 		} else {
 			mm.initial_velocity = mm.previous_velocity * 
@@ -921,8 +987,9 @@ uint8_t mc_aline(double x, double y, double z, double a, double minutes)
 	ritorno(_mc_queue_head());		// queue a head if head_length != 0
 	ritorno(_mc_queue_body());		// queue a body if body_length != 0
 	ritorno(_mc_queue_tail());		// queue a tail if tail_length != 0
-	return(mc_set_position(mm.target[X], mm.target[Y], 
-						   mm.target[Z], mm.target[A]));
+//	mc_set_position(mm.target[X], mm.target[Y], 
+//					mm.target[Z], mm.target[A]));
+	return (TG_OK);
 }
 
 /**** ALINE HELPERS ****
@@ -976,7 +1043,9 @@ static uint8_t _mc_queue_line_buffer(double Vi, double Vt, double len, uint8_t t
 	m->ending_velocity = Vt;
 	m->length = len;
 	for (uint8_t i=0; i < AXES; i++) { 			// copy the unit vector from mm
-		m->unit_vector[i] = mm.unit_vector[i]; 
+		m->unit_vec[i] = mm.unit_vec[i]; 
+		mm.position[i] += len * m->unit_vec[i];
+		m->target[i] = mm.position[i]; 
 	}
 	return(mc_queue_write_buffer(type));		// queue the buffer and return
 }
@@ -1025,9 +1094,9 @@ static uint8_t _mc_queue_line_buffer(double Vi, double Vt, double len, uint8_t t
 static uint8_t _mc_compute_regions() 
 {
 	double Vt = mm.target_velocity;
-	double Vt_ = Vt;				// previous pass Vt
+	double Vt_ = Vt;						// previous pass Vt
 
-	if (mm.length < MIN_LINE_LENGTH) {			// line is too short or zero
+	if (mm.length < MIN_LINE_LENGTH) {		// line is too short or zero
 		mm.head_length = 0;
 		mm.body_length = 0;
 		mm.tail_length = 0;
@@ -1052,7 +1121,7 @@ static uint8_t _mc_compute_regions()
 	// 2 region case (head and tail)
 	if (mm.length > mm.tail_length) {
 		while (fabs(mm.body_length) > ROUNDING_ERROR) {
-			Vt_ = Vt;		// previous pass - speeds convergence dramatically
+			Vt_ = Vt;		// previous pass value - speeds convergence
 			Vt *= mm.length / (mm.head_length + mm.tail_length);
 			Vt = (Vt + Vt_)/2;
 			mm.tail_length = _mc_get_length(Vt, 0);
@@ -1124,8 +1193,9 @@ static uint8_t _mc_compute_regions()
 
 static uint8_t _mc_recompute_previous(struct mcBuffer *p)
 {
-	struct mcBuffer *m;			// pointer to active buffer
+	uint8_t i;
 	double length;				// desired tail length
+	struct mcBuffer *m;			// pointer to active buffer
 
 	// exit if the buffer anything but queued and idle. Leaves Ve=0
 	if (p->buffer_state != MC_BUFFER_QUEUED) {
@@ -1141,25 +1211,28 @@ static uint8_t _mc_recompute_previous(struct mcBuffer *p)
 	if (fabs(mm.initial_velocity - mm.previous_velocity) < ROUNDING_ERROR) {
 		p->ending_velocity = mm.previous_velocity;
 		p->move_type = MC_TYPE_CRUISE;	// change tail to a cruise
-		return (TG_OK);					// no need to update unit_vector
+		return (TG_OK);	// no need to update unit_vector or target
 	} 
 
 	// compute the new tail length
 	length = (_mc_get_length(mm.previous_velocity, mm.initial_velocity));
 
-	// attempt to convert the old tail into a cruise
+	// case where new tail length is too short to bother - leave old tail
+	if (fabs(length) < MIN_LINE_LENGTH) {
+//		p->starting_velocity = p->ending_velocity;
+//		p->ending_velocity = mm.initial_velocity;
+//		p->length = length;
+		return (TG_OK);	
+	}
+
+	// convert the old tail into a cruise
 	p->ending_velocity = mm.previous_velocity;
 	p->move_type = MC_TYPE_CRUISE;
 	p->length -= length;
-
-	// corner case where delta length drops off the face of the earth...
-	//...convert the old tail to a (similar or identical) new tail
-	if (p->length < MIN_LINE_LENGTH) {
-		p->starting_velocity = p->ending_velocity;
-		p->ending_velocity = mm.initial_velocity;
-		p->length = length;
-		return (TG_OK);	
+	for (i=0; i < AXES; i++) { 
+		p->target[i] -= length * p->unit_vec[i];
 	}
+
 	// make a new tail (normal cases)
 	if ((m = mc_get_write_buffer()) == NULL) {
 		return (TG_BUFFER_FULL_FATAL); 
@@ -1169,7 +1242,8 @@ static uint8_t _mc_recompute_previous(struct mcBuffer *p)
 	m->ending_velocity = mm.initial_velocity;
 	m->length = length;
 	for (uint8_t i=0; i < AXES; i++) {
-		m->unit_vector[i] = p->unit_vector[i];
+		m->unit_vec[i] = p->unit_vec[i];
+		m->target[i] = mm.position[i]; // use end of prev move as target
 	}
 	mc_queue_write_buffer(MC_TYPE_DECEL);
 	return (TG_OK);
@@ -1189,9 +1263,9 @@ static uint8_t _mc_recompute_previous(struct mcBuffer *p)
 
 static double _mc_estimate_angular_jerk(const struct mcBuffer *p)
 {
-	double j = (sqrt(square(mm.unit_vector[X] - p->unit_vector[X]) +
-				 	 square(mm.unit_vector[Y] - p->unit_vector[Y]) +
-				 	 square(mm.unit_vector[Z] - p->unit_vector[Z]))/2.0);
+	double j = (sqrt(square(mm.unit_vec[X] - p->unit_vec[X]) +
+				 	 square(mm.unit_vec[Y] - p->unit_vec[Y]) +
+				 	 square(mm.unit_vec[Z] - p->unit_vec[Z]))/2.0);
 	j *= min(1,(mm.previous_velocity / MAX_VELOCITY)); // +++ remove to test
 	return (j);
 }
@@ -1222,6 +1296,10 @@ inline static double _mc_get_length(double start, double end)
  *	_mc_run_cruise()
  *	_mc_run_accel()
  *	_mc_run_decel()
+ *	_mc_aline_run_helper()
+ *
+ *	Note to self: Returning TG_OK from these routines ends the aline
+ *	Returning TG_EAGAIN (or any other non-zero value) continues iteration 
  */
 
 static uint8_t _mc_run_cruise(struct mcBuffer *m)
@@ -1233,13 +1311,39 @@ static uint8_t _mc_run_cruise(struct mcBuffer *m)
 		return (TG_OK);
 	}
 	m->time = m->length / m->ending_velocity;	// must derive time from length
-	for (uint8_t i=0; i < AXES; i++) {
-		m->target[i] = mm.position_sub[i] + m->unit_vector[i] * m->length;
-		m->steps[i] = _steps(i, m->target[i]) - _steps(i, mm.position_sub[i]);
-	}
 	m->microseconds = uSec(m->time);
-	mq_queue_line(m->steps[X], m->steps[Y], m->steps[Z], m->steps[A], m->microseconds);
-	_mc_set_sub_position(m);
+
+	uint32_t steps[AXES];
+	for (uint8_t i=0; i < AXES; i++) {
+		mr.target[i] = m->target[i];
+		m->target[i] = mr.position[i] + m->unit_vec[i] * m->length;
+		steps[i] = _steps(i, m->target[i]) - _steps(i, mr.position[i]);
+	}
+	mq_queue_line(steps[X], steps[Y], steps[Z], steps[A], m->microseconds);
+	_mc_set_run_position(m);
+	return (TG_OK);
+}
+
+static uint8_t _mc_aline_run_helper(struct mcBuffer *m)
+{
+	uint32_t steps[AXES];
+
+	/* Multiply the computed position by the unit vector to get the 
+	 * contribution for each axis. Set the target in absolute coords
+	 * (floating point) and compute the relative steps.
+	 */
+	for (uint8_t i=0; i < AXES; i++) {
+		m->target[i] = mr.position[i] + (m->unit_vec[i] * 
+					   mr.segment_velocity * mr.segment_time);
+		steps[i] = _steps(i, m->target[i]) - _steps(i, mr.position[i]);
+	}
+	// queue the line and adjust the variables for the next iteration
+	mq_queue_line(steps[X], steps[Y], steps[Z], steps[A], mr.microseconds);
+	mr.elapsed_time += mr.segment_time;
+	_mc_set_run_position(m);
+	if (--mr.segment_count) {
+		return (TG_EAGAIN);
+	}
 	return (TG_OK);
 }
 
@@ -1250,65 +1354,50 @@ static uint8_t _mc_run_accel(struct mcBuffer *m)
 	}
 	// initialize for acceleration
 	if (m->move_state == MC_STATE_NEW) {
-		if (m->length < MIN_LINE_LENGTH) {	// toss the line
-			return (TG_OK);
+		if (m->length < MIN_LINE_LENGTH) { return (TG_OK); }	// toss
+		mr.midpoint_velocity = (m->starting_velocity + m->ending_velocity) / 2;
+		mr.time = m->length / mr.midpoint_velocity;
+		mr.midpoint_acceleration = mr.time * mr.linear_jerk_div2;
+		for (uint8_t i=0; i < AXES; i++) {
+			mr.target[i] = m->target[i];	// transfer target to mr
 		}
+		// number of segments in *each half*
+		mr.segments = mr.time / cfg.min_segment_time;
+		mr.segments = uSec(mr.segments);
+		mr.segment_theta = mr.segments;
+		mr.segments = round(mr.segments);
+		mr.segments = mr.segments / 2;
+		mr.segments = round(mr.segments);
+
+//		mr.segments = round(round(uSec(mr.time / cfg.min_segment_time)) / 2);
+//		mr.segments = trunc(trunc(uSec(mr.time / cfg.min_segment_time)) / 2);
+		if (isinf(mr.segment_time = mr.time / (2 * mr.segments))) {
+			return (TG_OK);					// cancel the move if too small
+		}
+		mr.microseconds = uSec(mr.segment_time);
+		mr.segment_count = mr.segments;
+		mr.elapsed_time = mr.segment_time /2; // compute pos'n from midpoint 
 		m->move_state = MC_STATE_RUNNING_1;
-		m->midpoint_velocity = (m->starting_velocity + m->ending_velocity) / 2;
-		m->time = m->length / m->midpoint_velocity;
-		m->segments = uSec(m->time / cfg.min_segment_time);
-		if (isinf(m->segment_time = m->time / m->segments)) {	// too small
-			return (TG_OK);
-		}
-		m->microseconds = uSec(m->segment_time);
-		m->segment_count = m->segments / 2;
-		m->elapsed_time = 0;
-		m->linear_jerk_div2 = cfg.max_linear_jerk / 2;
-		m->midpoint_acceleration = m->time * m->linear_jerk_div2;
 	}
 	// first half of acceleration - concave portion of curve
 	if (m->move_state == MC_STATE_RUNNING_1) {
-		m->elapsed_time += m->segment_time;
-		m->segment_velocity = m->starting_velocity + 
-							 (m->linear_jerk_div2 * square(m->elapsed_time));
-		// multiply the computed position by the unit vector to get the 
-		// contribution for each axis. Set the target in absolute coords
-		// (floating point) and compute the relative steps.
-		for (uint8_t i=0; i < AXES; i++) {
-			m->target[i] = mm.position_sub[i] + m->unit_vector[i] * 
-						    m->segment_velocity * m->segment_time;
-			m->steps[i] = _steps(i, m->target[i]) - _steps(i, mm.position_sub[i]);
-		}
-		// queue the line and adjust the variables for the next iteration
-		mq_queue_line(m->steps[X], m->steps[Y], m->steps[Z], m->steps[A], m->microseconds);
-		_mc_set_sub_position(m);
-		if (m->segment_count--) {	// post decrement handles the zero segment case
-			return (TG_EAGAIN);
-		}
+		mr.segment_velocity = m->starting_velocity + 
+							 (mr.linear_jerk_div2 * square(mr.elapsed_time));
+		ritorno (_mc_aline_run_helper(m));
 		// setup for second half
-		m->elapsed_time = 0;
-		m->segment_count = m->segments / 2;
+		mr.segment_count = mr.segments;
+		mr.elapsed_time = mr.segment_time /2;
 		m->move_state = MC_STATE_RUNNING_2;
 		return (TG_EAGAIN); // no guarantee you can get a buffer
 	}
 	// second half of acceleration - convex portion of curve
 	if (m->move_state == MC_STATE_RUNNING_2) {
-		m->elapsed_time += m->segment_time;
-		m->segment_velocity = m->midpoint_velocity + 
-							 (m->elapsed_time * m->midpoint_acceleration) -
-							 (m->linear_jerk_div2 * square(m->elapsed_time));
-		for (uint8_t i=0; i < AXES; i++) {
-			m->target[i] = mm.position_sub[i] + m->unit_vector[i] * 
-						    m->segment_velocity * m->segment_time;
-			m->steps[i] = _steps(i, m->target[i]) - _steps(i, mm.position_sub[i]);
-		}
-		mq_queue_line(m->steps[X], m->steps[Y], m->steps[Z], m->steps[A], m->microseconds);
-		_mc_set_sub_position(m);
-		if (m->segment_count--) {
-			return (TG_EAGAIN);
-		}
+		mr.segment_velocity = mr.midpoint_velocity + 
+							 (mr.elapsed_time * mr.midpoint_acceleration) -
+							 (mr.linear_jerk_div2 * square(mr.elapsed_time));
+		ritorno(_mc_aline_run_helper(m));
 	}
-	return (TG_OK);
+	return (TG_OK);			// final exit
 }
 
 static uint8_t _mc_run_decel(struct mcBuffer *m)
@@ -1318,62 +1407,42 @@ static uint8_t _mc_run_decel(struct mcBuffer *m)
 	}
 	// initialize for deceleration
 	if (m->move_state == MC_STATE_NEW) {
-		if (m->length < MIN_LINE_LENGTH) {	// toss the line
-			return (TG_OK);
+		if (m->length < MIN_LINE_LENGTH) { return (TG_OK); } // toss
+		mr.midpoint_velocity = (m->starting_velocity + m->ending_velocity) / 2;
+		mr.time = m->length / mr.midpoint_velocity;
+		mr.midpoint_acceleration = mr.time * mr.linear_jerk_div2;
+		for (uint8_t i=0; i < AXES; i++) {
+			mr.target[i] = m->target[i];	// transfer target
 		}
+		// number of segments in *each half*
+		mr.segments = round(round(uSec(mr.time / cfg.min_segment_time)) / 2);
+		if (isinf(mr.segment_time = mr.time / (2 * mr.segments))) {
+			return (TG_OK);					// cancel the move if too small
+		}
+		mr.microseconds = uSec(mr.segment_time);
+		mr.segment_count = mr.segments;
+		mr.elapsed_time = mr.segment_time / 2;
 		m->move_state = MC_STATE_RUNNING_1;
-		m->midpoint_velocity = (m->starting_velocity + m->ending_velocity) / 2;
-		m->time = m->length / m->midpoint_velocity;
-		m->segments = uSec(m->time / cfg.min_segment_time);
-		if (isinf(m->segment_time = m->time / m->segments)) {	// too small
-			return (TG_OK);
-		}
-		m->microseconds = uSec(m->segment_time);
-		m->segment_count = m->segments / 2;
-		m->elapsed_time = 0;
-		m->linear_jerk_div2 = cfg.max_linear_jerk / 2;
-		m->midpoint_acceleration = m->time * m->linear_jerk_div2;
 	}
 	// first half of deceleration
 	if (m->move_state == MC_STATE_RUNNING_1) {	// concave portion of curve
-		m->segment_velocity = m->starting_velocity - 
-							 (m->linear_jerk_div2 * square(m->elapsed_time));
-		for (uint8_t i=0; i < AXES; i++) {
-			m->target[i] = mm.position_sub[i] + m->unit_vector[i] * 
-						    m->segment_velocity * m->segment_time;
-			m->steps[i] = _steps(i, m->target[i]) - _steps(i, mm.position_sub[i]);
-		}
-		// queue the line and adjust the variables for the next iteration
-		mq_queue_line(m->steps[X], m->steps[Y], m->steps[Z], m->steps[A], m->microseconds);
-		_mc_set_sub_position(m);
-		m->elapsed_time += m->segment_time;
-		if (m->segment_count--) {
-			return (TG_EAGAIN);
-		}
+		mr.segment_velocity = m->starting_velocity - 
+							 (mr.linear_jerk_div2 * square(mr.elapsed_time));
+		ritorno(_mc_aline_run_helper(m));
 		// setup for second half
-		m->elapsed_time = 0;
-		m->segment_count = m->segments / 2;
+		mr.segment_count = mr.segments;
+		mr.elapsed_time = mr.segment_time / 2;
 		m->move_state = MC_STATE_RUNNING_2;
 		return (TG_EAGAIN); // no guarantee you can get a buffer
 	}
 	// second half of deceleration
 	if (m->move_state == MC_STATE_RUNNING_2) {	// convex portion of curve
-		m->segment_velocity = m->midpoint_velocity - 
-							 (m->elapsed_time * m->midpoint_acceleration) +
-							 (m->linear_jerk_div2 * square(m->elapsed_time));
-		for (uint8_t i=0; i < AXES; i++) {
-			m->target[i] = mm.position_sub[i] + m->unit_vector[i] * 
-						    m->segment_velocity * m->segment_time;
-			m->steps[i] = _steps(i, m->target[i]) - _steps(i, mm.position_sub[i]);
-		}
-		mq_queue_line(m->steps[X], m->steps[Y], m->steps[Z], m->steps[A], m->microseconds);
-		_mc_set_sub_position(m);
-		m->elapsed_time += m->segment_time;
-		if (m->segment_count--) {
-			return (TG_EAGAIN);
-		}
+		mr.segment_velocity = mr.midpoint_velocity - 
+							 (mr.elapsed_time * mr.midpoint_acceleration) +
+							 (mr.linear_jerk_div2 * square(mr.elapsed_time));
+		ritorno(_mc_aline_run_helper(m));
 	}
-	return (TG_OK);
+	return (TG_OK);			// final exit
 }
 
 //############## UNIT TESTS ################
