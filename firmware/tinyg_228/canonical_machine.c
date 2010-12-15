@@ -417,17 +417,14 @@ uint8_t cm_straight_feed(double x, double y, double z, double a)
 			fastest_time = axis_time;
 		}
 	}
-
 	// skip 0 length moves
 	if (fastest_time == 0) {
 		return (TG_ZERO_LENGTH_MOVE);
 	}
-
 	// execute the move
 	cm_status = MC_LINE(gm.target[X], gm.target[Y], 
 						gm.target[Z], gm.target[A], 
 						max(fastest_time, move_time));
-
 	_cm_set_endpoint_position(cm_status);
 	return (cm_status);
 }
@@ -573,7 +570,7 @@ uint8_t cm_async_start()
 
 uint8_t cm_async_end()
 {
-	tg_reset_source(); // stop reading from a file (return to std device)
+//	tg_reset_source(); // stop reading from a file (return to std device)
 	mc_async_end();
 	return (TG_OK);
 }
@@ -657,15 +654,20 @@ uint8_t cm_homing_cycle()
 	cm_set_distance_mode(INCREMENTAL_MODE);
 	ls_clear_limit_switches();					// reset the switch flags
 	cy.state = CY_STATE_NEW;
-//	return (cm_run_homing_cycle());
 	return (TG_OK);
 }
 
 uint8_t cm_run_homing_cycle()			// outer wrapper
 {
-	if (cy.state == CY_STATE_OFF) { return (TG_NOOP);}
-	if (mc_isbusy()) { return (TG_EAGAIN); }  // sync to the move queue
-	if (_cm_run_homing_cycle() == TG_COMPLETE) { return (TG_OK); } 
+	if (cy.state == CY_STATE_OFF) { 
+		return (TG_NOOP);
+	}
+	if (mc_isbusy()) {   				// sync to the move queue
+		return (TG_EAGAIN); 
+	}
+	if (_cm_run_homing_cycle() == TG_COMPLETE) { 
+		return (TG_OK); 
+	} 
 	return (TG_EAGAIN);
 }
 

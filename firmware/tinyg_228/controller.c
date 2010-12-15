@@ -189,21 +189,21 @@ void tg_controller()
 
 static void _tg_controller_HSM()
 {
-//----- kernel level ISR handlers ----------------------------------------//
-	DISPATCH(ls_handler());			// limit switch main handler (from ISR)
+//----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
+	DISPATCH(ls_handler());			// limit switch handler
 	DISPATCH(_tg_kill_handler());	// complete processing of ENDs (M2)
 	DISPATCH(_tg_term_handler());	// complete processing of ENDs (M2)
 	DISPATCH(_tg_pause_handler());	// complete processing of STOPs
 	DISPATCH(_tg_resume_handler());	// complete processing of STARTs
 
-//----- low-level motor control ------------------------------------------//
+//----- low-level motor control ----------------------------------------//
 	DISPATCH(st_execute_move());	// run next stepper queue command
-	DISPATCH(mc_move_dispatcher());	// run current or next move in queue
+	DISPATCH(mc_move_dispatcher(0));// run current or next move in queue
 
-//----- machine cycles ---------------------------------------------------//
+//----- machine cycles -------------------------------------------------//
 	DISPATCH(cm_run_homing_cycle());// homing cycle
 
-//----- command readers and parsers --------------------------------------//
+//----- command readers and parsers ------------------------------------//
 	DISPATCH(_tg_read_next_line());	// read and execute next command
 }
 
@@ -297,6 +297,10 @@ uint8_t tg_application_startup(void)
 //	xio_queue_RX_string_usb("z0\n");
 
 //	xio_queue_RX_string_usb("g2x100y100z25i50j50f249\n");
+//	xio_queue_RX_string_usb("g2 f300 x10 y10 i8 j8\n");
+//	xio_queue_RX_string_usb("g2 f300 x3 y3 i1.5 j1.5\n");
+
+
 //	xio_queue_RX_string_usb("g0 x100 y110 z120\n");
 //	xio_queue_RX_string_usb("g0 x0 y0 z0\n");
 
@@ -321,8 +325,6 @@ uint8_t tg_application_startup(void)
 //	xio_queue_RX_string_usb("y-1.3\n");
 //	xio_queue_RX_string_usb("z-2.01\n");
 
-//	xio_queue_RX_string_usb("g2 f300 x10 y10 i8 j8\n");
-//	xio_queue_RX_string_usb("g2 f300 x3 y3 i1.5 j1.5\n");
 //	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
 //	xio_queue_RX_string_usb("g0x10y10z0\n");
 //	xio_queue_RX_string_usb("g91g0x5y5\n");
@@ -407,7 +409,7 @@ int _tg_reset(void)
 
 int _tg_kill_handler(void)
 {
-	if (!sig_kill_flag) { return (TG_OK); }
+	if (!sig_kill_flag) { return (TG_NOOP); }
 	sig_kill_flag = 0;
 	tg_reset_source();
 	cm_async_end();			// stop computing and generating motions
@@ -416,7 +418,7 @@ int _tg_kill_handler(void)
 
 int _tg_term_handler(void)
 {
-	if (!sig_term_flag) { return (TG_OK); }
+	if (!sig_term_flag) { return (TG_NOOP); }
 	sig_term_flag = 0;
 	tg_reset_source();
 	cm_async_end();			// stop computing and generating motions
@@ -425,7 +427,7 @@ int _tg_term_handler(void)
 
 int _tg_pause_handler(void)
 {
-	if (!sig_pause_flag) { return (TG_OK); }
+	if (!sig_pause_flag) { return (TG_NOOP); }
 	sig_pause_flag = 0;
 	cm_async_stop();
 	return (TG_EAGAIN);
@@ -433,7 +435,7 @@ int _tg_pause_handler(void)
 
 int _tg_resume_handler(void)
 {
-	if (!sig_resume_flag) { return (TG_OK); }
+	if (!sig_resume_flag) { return (TG_NOOP); }
 	sig_resume_flag = 0;
 	cm_async_start();
 	return (TG_EAGAIN);

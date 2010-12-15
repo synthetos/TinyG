@@ -53,7 +53,8 @@ uint8_t ritcode;	// defined once globally for ritorno
  */
 
 void mc_init(void);
-uint8_t mc_move_dispatcher(void);
+//uint8_t mc_move_dispatcher(void);
+uint8_t mc_move_dispatcher(uint8_t kill);
 
 uint8_t mc_test_write_buffer(uint8_t count);
 struct mcBuffer * mc_get_write_buffer(void); 
