@@ -36,11 +36,12 @@ void st_end(void);				// stop steppers and empty all queues
  * Stepper configs and constants
  */
 
-/* The stepper ISRs generate step pulses approximately 1.5 microseconds duration
- * The TI DRV8811's used on the TinyG board are fine with this pulse width. 
- * Some outboarded drivers might not be. If the drivers require a longer pulse 
- * uncomment __STEPPER_DELAY and adjust the microseconds to your requirements.
- * The delay is in addition to the 1.5 uSec burned in the ISR.
+/* The stepper ISRs generate step pulses approximately 1.5 microseconds 
+ * duration. The TI DRV8811's used on the TinyG board are fine with this 
+ * pulse width. Some outboarded drivers might not be. If the drivers 
+ * require a longer pulse uncomment __STEPPER_DELAY and adjust the 
+ * microseconds to your requirements. The delay is in addition to the 
+ * 1.5 uSec burned in the ISR.
  */
 //#define __STEPPER_DELAY
 #ifdef __STEPPER_DELAY
@@ -52,26 +53,25 @@ void st_end(void);				// stop steppers and empty all queues
 
 /* Motor channel setup */
 
-#define MOTORS 					4			// number of motors
+#define MOTORS 					4		// number of motors
 
-#define MOTOR_1					0			// array index, #1 must be first
+#define MOTOR_1					0		// array index, #1 must be first
 #define MOTOR_2					1
 #define MOTOR_3					2
-#define MOTOR_4					3			// #4 must be last
+#define MOTOR_4					3		// motor #4 must be last
 
-#define MOTOR_1_PORT			PORTA		// Typically the X axis
+#define MOTOR_1_PORT			PORTA	// Typically the X axis
 #define MOTOR_2_PORT 			PORTF
 #define MOTOR_3_PORT 			PORTE
 #define MOTOR_4_PORT 			PORTD
 
-#define MOTOR_PORT_DIR_gm		0x3F		// direction register settings
+#define MOTOR_PORT_DIR_gm		0x3F	// direction register settings
 #define MOTOR_1_PORT_DIR_gm		MOTOR_PORT_DIR_gm
 #define MOTOR_2_PORT_DIR_gm		MOTOR_PORT_DIR_gm
 #define MOTOR_3_PORT_DIR_gm		MOTOR_PORT_DIR_gm
 #define MOTOR_4_PORT_DIR_gm		MOTOR_PORT_DIR_gm	
-							// Note: spindle out bits are on PORT_A - b7 & b6
 
-#define MOTOR_1_TIMER			TCC0		// x-axis timer
+#define MOTOR_1_TIMER			TCC0	// x-axis timer
 #define MOTOR_2_TIMER			TCD0
 #define MOTOR_3_TIMER			TCE0
 #define MOTOR_4_TIMER			TCF0
@@ -81,25 +81,25 @@ void st_end(void);				// stop steppers and empty all queues
 #define MOTOR_3_TIMER_ISR_vect	TCE0_OVF_vect
 #define MOTOR_4_TIMER_ISR_vect 	TCF0_OVF_vect
 
-#define MOTOR_1_ACTIVE_BIT_bm	(1<<3)	// used in Axes to detect move complete
+#define MOTOR_1_ACTIVE_BIT_bm	(1<<3)	// used detect move complete
 #define MOTOR_2_ACTIVE_BIT_bm	(1<<2)
 #define MOTOR_3_ACTIVE_BIT_bm	(1<<1)
 #define MOTOR_4_ACTIVE_BIT_bm	(1<<0)
 
 /* timer constants */
 
-#define TC_WGMODE		0			// normal mode (count to TOP and rollover)
-#define TC_OVFINTLVL	3			// assign timer interrupt level (3=hi)
-#define TC_CLK_OFF 		0			// turn timer off (clock = 0 Hz)
-#define TC_CLK_ON		1			// turn timer clock on (32 Mhz)
+#define TC_WGMODE		0		// normal mode (count to TOP and rollover)
+#define TC_OVFINTLVL	3		// assign timer interrupt level (3=hi)
+#define TC_CLK_OFF 		0		// turn timer off (clock = 0 Hz)
+#define TC_CLK_ON		1		// turn timer clock on (32 Mhz)
 
-/* spindle config and constants - bits use the min/max bits from the A axis as outputs */
-
+/* spindle config and constants
+ * spindle uses the min/max bits from the A axis as outputs (A6/A7)
+ */
 #define SPINDLE_ENABLE_PORT 	MOTOR_4_PORT
-#define SPINDLE_ENABLE_BIT_bm 	(1<<6)		// also used to set port I/O direction
-
+#define SPINDLE_ENABLE_BIT_bm 	(1<<6)	// also used to set port I/O direction
 #define SPINDLE_DIRECTION_PORT 	MOTOR_4_PORT
-#define SPINDLE_DIRECTION_BIT_bm (1<<7)		// also used to set port I/O direction
+#define SPINDLE_DIRECTION_BIT_bm (1<<7)	// also used to set port I/O direction
 
 /*  
  *	Stepper axis structures
@@ -128,8 +128,7 @@ struct Axes {						// All axes + some extra stuff
 };
 struct Axes ax;						// master axes structure
 #define AXIS(x) ax.a[x]				// handy macro for referencing the axis values, 
-									// e.g: AXIS(X).port->OUTSET or 
-									//		AXIS(i).port->PIN6CTRL or
-									//		AXIS(Y).step_counter
-
+									// e.g: AXIS(MOTOR_1).port->OUTSET 
+									//		AXIS(i).port->PIN6CTRL
+									//		AXIS(MOTOR_2).step_counter
 #endif
