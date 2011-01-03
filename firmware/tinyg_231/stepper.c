@@ -5,10 +5,10 @@
  * Copyright (c) 2010 Alden S. Hart, Jr.
  * Portions if this module copyright (c) 2009 Simen Svale Skogsrud
  *
- * TinyG is free software: you can redistribute it and/or modify it under 
- * the terms of the GNU General Public License as published by the Free 
- * Software Foundation, either version 3 of the License, or (at your 
- * (option) any later version.
+ * TinyG is free software: you can redistribute it and/or modify it 
+ * under the terms of the GNU General Public License as published by 
+ * the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
  *
  * TinyG is distributed in the hope that it will be useful, but 
  * WITHOUT ANY WARRANTY; without even the implied warranty of 
@@ -27,21 +27,22 @@
  *	Coordinated motion (line drawing) is performed by dedicating a timer 
  *	to each axis and stepping each motor at a computed rate (timer period) 
  *	for a specified number of pulses (step counter). Each timeout fires a 
- *	high-priority interrupt. The ISR will decrement a post-scaler; and may 
- *	or may not generate a step and decrement the step counter. Timer counters
- *	are post-scaled in software to extend the HW timer range to 32 bits.
+ *	high-priority interrupt. The ISR will decrement a post-scaler; and 
+ *	may or may not generate a step and decrement the step counter. Timer 
+ *	counters are post-scaled in software to extend the HW timer range 
+ *	to 32 bits.
  *
- *	Moves are dequeued from the move buffer (move_buffer.c) and loaded into 
- *	the stepper controllers (ISRs). Any axis that is part of the move has 
- *	its ACTIVE bit set in ax.active. When the axis move is complete this bit 
- *	is cleared. When all active bits are cleared st_execute_move() is called 
- *	to load the next move into the timers.
+ *	Moves are dequeued from the move buffer (move_buffer.c) and loaded 
+ *	into the stepper controllers (ISRs). Any axis that is part of the 
+ *	move has its ACTIVE bit set in ax.active. When the axis move is 
+ *	complete this bit is cleared. When all active bits are cleared 
+ *	st_execute_move() is called to load the next move into the timers.
  *
  *	But you need some way to start the timers if they are not already 
- *	running, so st_execute_move() is called from mv_queue_move_buffer() to 
- *	start move execution if the timers are not already running.  
- *	st_execute_move() therefore has a busy flag to prevent ISR and non-ISR 
- *	calls from stepping on each other.
+ *	running, so st_execute_move() is called from mv_queue_move_buffer() 
+ *	to start move execution if the timers are not already running.  
+ *	st_execute_move() therefore has a busy flag to prevent ISR and 
+ *	non-ISR calls from stepping on each other.
  */
 
 #include <math.h>
@@ -76,44 +77,44 @@
 
 void st_init()
 {
-	ax.active_axes = 0;								// clear all active bits
+	ax.active_axes = 0;							// clear all active bits
 	ax.mutex = FALSE;
 	ax.stopped = FALSE;
 
-	ax.a[MOTOR_1].port = &MOTOR_1_PORT;				// bind PORTs to structs
+	ax.a[MOTOR_1].port = &MOTOR_1_PORT;			// bind PORTs to structs
 	ax.a[MOTOR_2].port = &MOTOR_2_PORT;
 	ax.a[MOTOR_3].port = &MOTOR_3_PORT;
 	ax.a[MOTOR_4].port = &MOTOR_4_PORT;
 
-	ax.a[MOTOR_1].timer = &MOTOR_1_TIMER;			// bind TIMERs to structs
+	ax.a[MOTOR_1].timer = &MOTOR_1_TIMER;		// bind TIMERs to structs
 	ax.a[MOTOR_2].timer = &MOTOR_2_TIMER;
 	ax.a[MOTOR_3].timer = &MOTOR_3_TIMER;
 	ax.a[MOTOR_4].timer = &MOTOR_4_TIMER;
 
 	for (uint8_t i = MOTOR_1; i <= MOTOR_4; i++) {
 		// setup port. Do this first or st_set_microsteps() can fail
-		ax.a[i].port->DIR = MOTOR_PORT_DIR_gm;		// set inputs and outputs
-		ax.a[i].port->OUT = 0x00;					// set port bits to zero
-		ax.a[i].port->OUTSET = MOTOR_ENABLE_BIT_bm; // disable the motor
+		ax.a[i].port->DIR = MOTOR_PORT_DIR_gm;		// set inputs & outputs
+		ax.a[i].port->OUT = 0x00;					// zero port bits
+		ax.a[i].port->OUTSET = MOTOR_ENABLE_BIT_bm; // disable motor
 
 		st_set_polarity(i, cfg.a[i].polarity);		// motor polarity
 		st_set_microsteps(i, cfg.a[i].microstep_mode);
-		// NOTE: limit switch port bits and interrupts are setup in ls_init()
+		// NOTE: limit switch ports and interrupts are setup in ls_init()
 
 		ax.a[i].timer->CTRLA = TC_CLK_OFF;			// turn motor off
-		ax.a[i].timer->CTRLB = TC_WGMODE;			// waveform generation mode
+		ax.a[i].timer->CTRLB = TC_WGMODE;			// waveform mode
 		ax.a[i].timer->INTCTRLA = TC_OVFINTLVL;		// interrupt mode
 	}
 	// if you need to anything special for AXIS modes (e.g. spindle), do it here
 }
 
 /*
- * ISRs - Motor timer interrupt routines - service ticks from the axis timers
+ * ISRs - Motor timer interrupt routines - service ticks from axis timers
  *
  *	Uses direct struct addresses and literal values for hardware devices -
  *	it's faster than using the timer and port pointers in the axis structs
  * 
- * Note that the Z axis is also used to time out dwells
+ *	Note that the Z axis is also used to time out dwells
  */
 
 ISR(MOTOR_1_TIMER_ISR_vect)
@@ -121,7 +122,7 @@ ISR(MOTOR_1_TIMER_ISR_vect)
 	if (ax.stopped) {
 		return;
 	}
-	if (--ax.a[MOTOR_1].postscale_counter) { // get out fast, if you need to
+	if (--ax.a[MOTOR_1].postscale_counter) { // get out fast if you need to
 		return;
 	}
 	MOTOR_1_PORT.OUTSET = STEP_BIT_bm;			// turn X step bit on
@@ -144,7 +145,7 @@ ISR(MOTOR_2_TIMER_ISR_vect)
 	if (ax.stopped) {
 		return;
 	}
-	if (--ax.a[MOTOR_2].postscale_counter != 0) {
+	if (--ax.a[MOTOR_2].postscale_counter) {
 		return;
 	}
 	MOTOR_2_PORT.OUTSET = STEP_BIT_bm;
@@ -166,7 +167,7 @@ ISR(MOTOR_3_TIMER_ISR_vect)		// this one also counts out dwells
 	if (ax.stopped) {
 		return;
 	}
-	if (--ax.a[MOTOR_3].postscale_counter != 0) {
+	if (--ax.a[MOTOR_3].postscale_counter) {
 		return;
 	}
 	if (ax.line_mode) {							// issue a pulse if not a dwell
@@ -190,7 +191,7 @@ ISR(MOTOR_4_TIMER_ISR_vect)
 	if (ax.stopped) {
 		return;
 	}
-	if (--ax.a[MOTOR_4].postscale_counter != 0) {
+	if (--ax.a[MOTOR_4].postscale_counter) {
 		return;
 	}
 	MOTOR_4_PORT.OUTSET = STEP_BIT_bm;
