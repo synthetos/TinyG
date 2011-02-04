@@ -200,7 +200,7 @@ static void _tg_controller_HSM()
 	DISPATCH(st_execute_move());	// run next stepper queue command
 	DISPATCH(mc_move_dispatcher(0));// run current or next move in queue
 
-	printf_P(PSTR("Move completed\n"));
+//	printf_P(PSTR("Move completed\n"));
 
 //----- machine cycles -------------------------------------------------//
 	DISPATCH(cm_run_homing_cycle());// homing cycle
@@ -230,7 +230,7 @@ static int _tg_read_next_line()
 	// read input line or return if not a completed line
 	if ((tg.status = xio_gets(tg.src, tg.buf, sizeof(tg.buf))) == TG_OK) {
 //		printf_P(PSTR("Read next line\n"));
-		printf_P(PSTR("Read next line %s\n"), tg.buf);
+//		printf_P(PSTR("Read next line %s\n"), tg.buf);
 		tg.status = _tg_parser(tg.buf);	// dispatch to active parser
 	}
 
@@ -278,7 +278,7 @@ uint8_t tg_application_startup(void)
 //	xio_queue_RX_string_usb("Q\n");		// go to idle mode
 //	xio_queue_RX_string_usb("R\n");		// run a homing cycle
 //	xio_queue_RX_string_usb("Q\n");		// go to idle mode / run mudflap
-	xio_queue_RX_string_usb("T\n");		// run test file
+//	xio_queue_RX_string_usb("T\n");		// run test file
 
 //	xio_queue_RX_string_usb("!\n");		// kill
 //	xio_queue_RX_string_usb("@\n");		// pause
