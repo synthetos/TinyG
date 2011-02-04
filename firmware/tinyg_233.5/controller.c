@@ -199,9 +199,8 @@ static void _tg_controller_HSM()
 
 //----- low-level motor control ----------------------------------------//
 	DISPATCH(st_execute_move());	// run next stepper queue command
-	DISPATCH(mc_move_dispatcher(0));// run current or next move in queue
-
-//	printf_P(PSTR("Move completed\n"));
+//	DISPATCH(mc_move_dispatcher(0));// run current or next move in queue
+	mc_move_dispatcher(0);// run current or next move in queue
 
 //----- machine cycles -------------------------------------------------//
 	DISPATCH(cm_run_homing_cycle());// homing cycle
@@ -220,6 +219,10 @@ static int _tg_run_prompt()
 	if ((tg.prompt_disabled) || (tg.prompted)) { 
 		return (TG_NOOP);			// exit w/continue if already prompted
 	}
+	// test if it's OK to read the next line
+	if (!mc_test_write_buffer(MC_BUFFERS_NEEDED)) {
+		return (TG_EAGAIN);				// exit w/abort if not enough buffers
+	}
 	_tg_prompt();
 	return (TG_OK);
 }
@@ -235,21 +238,14 @@ static int _tg_run_prompt()
 
 static int _tg_read_next_line()
 {
-	// test if it's OK to read the next line
-	if (!mc_test_write_buffer(MC_BUFFERS_NEEDED)) {
-		return (TG_EAGAIN);				// exit w/abort if not enough buffers
-	}
+
+
 	// read input line or return if not a completed line
 	if ((tg.status = xio_gets(tg.src, tg.buf, sizeof(tg.buf))) == TG_OK) {
 //		printf_P(PSTR("Read next line %s\n"), tg.buf);
 		tg.status = _tg_parser(tg.buf);	// dispatch to active parser
 		tg.prompted = FALSE;			// revert prompt state
 	}
-
-	// handle cases where nothing happened - don't re-prompt
-//	if ((tg.status == TG_EAGAIN) || (tg.status == TG_NOOP)) {
-//		return (tg.status);
-//	}
 
 	// handle case where the parser detected a QUIT
 	if (tg.status == TG_QUIT) {
@@ -261,6 +257,8 @@ static int _tg_read_next_line()
 		printf_P(PSTR("End of command file\n"));
 		tg_reset_source();				// reset to default src
 	}
+
+	// Note that TG_EAGAIN and TG_NOOPs will just flow through
 	return (tg.status);
 }
 
@@ -348,12 +346,13 @@ uint8_t tg_application_startup(void)
 //	xio_queue_RX_string_usb("?\n");
 
 // mudflap simulation
-//	xio_queue_RX_string_usb("(SuperCam Ver 2.2a SPINDLE)\n");
-//	xio_queue_RX_string_usb("N1 G20	( set inches mode - ash )\n");
+/*
+	xio_queue_RX_string_usb("(SuperCam Ver 2.2a SPINDLE)\n");
+	xio_queue_RX_string_usb("N1 G20	( set inches mode - ash )\n");
 	xio_queue_RX_string_usb("N1 G20\n");
 	xio_queue_RX_string_usb("N5 G40 G17\n");
 	xio_queue_RX_string_usb("N10 T1 M06\n");
-//	xio_queue_RX_string_usb("(N15 G90 G0 X0 Y0 Z0)\n");
+	xio_queue_RX_string_usb("(N15 G90 G0 X0 Y0 Z0)\n");
 	xio_queue_RX_string_usb("N20 S5000 M03\n");
 	xio_queue_RX_string_usb("N25 G00 F30.0\n");
 	xio_queue_RX_string_usb("N30 X0.076 Y0.341\n");
@@ -366,6 +365,7 @@ uint8_t tg_application_startup(void)
 	xio_queue_RX_string_usb("N65 X0.111 Y0.257\n");
 	xio_queue_RX_string_usb("N70 X0.149 Y0.252\n");
 	xio_queue_RX_string_usb("N75 X0.188 Y0.255\n");
+*/
 	return (tg.status);
 }
 
