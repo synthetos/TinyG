@@ -123,7 +123,6 @@
 #include "direct_drive.h"
 #include "encoder.h"
 #include "gcode.h"
-#include "mathpack.h"
 //#include "network.h"
 //#include "settings.h"
 
@@ -184,8 +183,7 @@ void tg_unit_tests(void)
 //	xio_tests();				// IO subsystem
 //	EEPROM_tests();				// EEPROM functions
 //	cfg_tests();				// config functions
-//	mc_unit_tests();			// motion control module
-	mp_unit_tests();			// math pack routines
+	mc_unit_tests();			// motion control module
   #endif
 }
 
@@ -196,8 +194,8 @@ void tg_unit_tests(void)
 int main(void)
 {
 	tg_system_init();
-	tg_unit_tests();
 	tg_application_init();
+	tg_unit_tests();
 	tg_application_startup();
 
 #ifdef __NORMAL_MODE

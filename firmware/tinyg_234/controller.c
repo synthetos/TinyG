@@ -122,6 +122,7 @@ struct tgController tg;			// controller state structure
 
 static void _tg_controller_HSM(void);
 static int _tg_parser(char * buf);
+static int _tg_run_prompt(void);
 static int _tg_read_next_line(void);
 static void _tg_prompt(void);
 static void _tg_set_mode(uint8_t mode);
@@ -155,7 +156,7 @@ void tg_alive()
 #ifdef __SIMULATION_MODE
 	return;
 #endif									// see tinyg.h for string
-	printf_P(PSTR("**** TinyG %S ****\n"), (PSTR(TINYG_VERSION)));
+	printf_P(PSTR("____ TinyG %S ____\n"), (PSTR(TINYG_VERSION)));
 	_tg_prompt();
 }
 
@@ -198,13 +199,35 @@ static void _tg_controller_HSM()
 
 //----- low-level motor control ----------------------------------------//
 	DISPATCH(st_execute_move());	// run next stepper queue command
-	DISPATCH(mc_move_dispatcher(0));// run current or next move in queue
+//	DISPATCH(mc_move_dispatcher(0));// run current or next move in queue
+	mc_move_dispatcher(0);			// run current or next move in queue
 
 //----- machine cycles -------------------------------------------------//
 	DISPATCH(cm_run_homing_cycle());// homing cycle
 
 //----- command readers and parsers ------------------------------------//
+	DISPATCH(_tg_run_prompt());		// manage prompts and flow control
 	DISPATCH(_tg_read_next_line());	// read and execute next command
+}
+
+/* 
+ * _tg_run_prompt()
+ *
+ * This routine is specific to Gcode parser (because of the buffers)
+ * May need to be revised if other parsers are added
+ */
+
+static int _tg_run_prompt()
+{
+	if ((tg.prompt_disabled) || (tg.prompted)) { 
+		return (TG_NOOP);			// exit w/continue if already prompted
+	}
+	// test if it's OK to read the next line
+	if (!mc_test_write_buffer(MC_BUFFERS_NEEDED)) {
+		return (TG_EAGAIN);				// exit w/abort if not enough buffers
+	}
+	_tg_prompt();
+	return (TG_OK);
 }
 
 /* 
@@ -218,19 +241,11 @@ static void _tg_controller_HSM()
 
 static int _tg_read_next_line()
 {
-	// see if there's room for a new command (e.g. Gcode block)
-	if (!mc_test_write_buffer(MC_BUFFERS_NEEDED)) {
-		return (TG_EAGAIN);
-	}
-
 	// read input line or return if not a completed line
 	if ((tg.status = xio_gets(tg.src, tg.buf, sizeof(tg.buf))) == TG_OK) {
+//		printf_P(PSTR("Read next line %s\n"), tg.buf);
 		tg.status = _tg_parser(tg.buf);	// dispatch to active parser
-	}
-
-	// handle cases where nothing happened - don't re-prompt
-	if ((tg.status == TG_EAGAIN) || (tg.status == TG_NOOP)) {
-		return (tg.status);
+		tg.prompted = FALSE;			// revert prompt state
 	}
 
 	// handle case where the parser detected a QUIT
@@ -244,10 +259,7 @@ static int _tg_read_next_line()
 		tg_reset_source();				// reset to default src
 	}
 
-	// issue a new prompt and signal that it's OK for another command
-	if (tg.prompt_enabled && mc_test_write_buffer(MC_BUFFERS_NEEDED)) {
-		_tg_prompt();
-	}
+	// Note that TG_EAGAIN and TG_NOOPs will just flow through
 	return (tg.status);
 }
 
@@ -272,7 +284,7 @@ uint8_t tg_application_startup(void)
 //	xio_queue_RX_string_usb("Q\n");		// go to idle mode
 //	xio_queue_RX_string_usb("R\n");		// run a homing cycle
 //	xio_queue_RX_string_usb("Q\n");		// go to idle mode / run mudflap
-	xio_queue_RX_string_usb("T\n");		// run test file
+//	xio_queue_RX_string_usb("T\n");		// run test file
 
 //	xio_queue_RX_string_usb("!\n");		// kill
 //	xio_queue_RX_string_usb("@\n");		// pause
@@ -334,6 +346,27 @@ uint8_t tg_application_startup(void)
 //	xio_queue_RX_string_usb("g0 x100 y100 z100 a100\n");
 //	xio_queue_RX_string_usb("?\n");
 
+// mudflap simulation
+/*
+	xio_queue_RX_string_usb("(SuperCam Ver 2.2a SPINDLE)\n");
+	xio_queue_RX_string_usb("N1 G20	( set inches mode - ash )\n");
+	xio_queue_RX_string_usb("N1 G20\n");
+	xio_queue_RX_string_usb("N5 G40 G17\n");
+	xio_queue_RX_string_usb("N10 T1 M06\n");
+	xio_queue_RX_string_usb("(N15 G90 G0 X0 Y0 Z0)\n");
+	xio_queue_RX_string_usb("N20 S5000 M03\n");
+	xio_queue_RX_string_usb("N25 G00 F30.0\n");
+	xio_queue_RX_string_usb("N30 X0.076 Y0.341\n");
+	xio_queue_RX_string_usb("N35 G00 Z-1.000 F90.0\n");
+	xio_queue_RX_string_usb("N40 G01 Z-1.125 F30.0\n");
+	xio_queue_RX_string_usb("N45 G01 F60.0\n");
+	xio_queue_RX_string_usb("N50 X0.064 Y0.326\n");
+	xio_queue_RX_string_usb("N55 X0.060 Y0.293\n");
+	xio_queue_RX_string_usb("N60 X0.077 Y0.267\n");
+	xio_queue_RX_string_usb("N65 X0.111 Y0.257\n");
+	xio_queue_RX_string_usb("N70 X0.149 Y0.252\n");
+	xio_queue_RX_string_usb("N75 X0.188 Y0.255\n");
+*/
 	return (tg.status);
 }
 
@@ -460,9 +493,9 @@ void _tg_set_source(uint8_t d)
 {
 	tg.src = d;							// d = XIO device #. See xio.h
 	if (tg.src == XIO_DEV_PGM) {
-		tg.prompt_enabled = FALSE;
+		tg.prompt_disabled = TRUE;
 	} else {
-		tg.prompt_enabled = TRUE;
+		tg.prompt_disabled = FALSE;
 	}
 }
 
@@ -485,10 +518,15 @@ void _tg_set_source(uint8_t d)
  *	ref: http://johnsantic.com/comp/state.html, "Writing Efficient State Machines in C"
  */
 
-char tgModeStringIdle[] PROGMEM = "IDLE MODE"; // put strings in program memory
-char tgModeStringConfig[] PROGMEM = "CONFIG MODE";
-char tgModeStringGCode[] PROGMEM = "G-CODE MODE";
-char tgModeStringDirect[] PROGMEM = "DIRECT DRIVE";
+//char tgModeStringIdle[] PROGMEM = "IDLE MODE"; // put strings in program memory
+//char tgModeStringConfig[] PROGMEM = "CONFIG MODE";
+//char tgModeStringGCode[] PROGMEM = "G-CODE MODE";
+//char tgModeStringDirect[] PROGMEM = "DIRECT DRIVE";
+
+char tgModeStringIdle[] PROGMEM = "IDLE"; // put strings in program memory
+char tgModeStringConfig[] PROGMEM = "CONFIG";
+char tgModeStringGCode[] PROGMEM = "G-CODE";
+char tgModeStringDirect[] PROGMEM = "DIRECT";
 
 PGM_P tgModeStrings[] PROGMEM = {	// put string pointer array in program memory
 	tgModeStringIdle,
@@ -499,7 +537,9 @@ PGM_P tgModeStrings[] PROGMEM = {	// put string pointer array in program memory
 
 void _tg_prompt()
 {
-	printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
+//	printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
+	printf_P(PSTR("tinyg[%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
+	tg.prompted = TRUE;				// set prompt state
 }
 
 /*

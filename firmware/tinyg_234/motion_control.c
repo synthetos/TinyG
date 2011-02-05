@@ -1513,7 +1513,7 @@ void _mc_call_recompute_vt(double l, double Vp, double Vi, double Vt)
 	mm.target_velocity = Vt;
 	mm.head_length = _mc_get_length(mm.target_velocity, mm.initial_velocity);
 	mm.tail_length = _mc_get_length(mm.target_velocity, 0);
-	_mc_compute_regions();
+	_mc_recompute_velocity();
 }
 
 void _mc_test_recompute_vt()

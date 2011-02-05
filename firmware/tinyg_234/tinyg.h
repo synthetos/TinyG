@@ -27,8 +27,8 @@
 #ifndef tinyg_h
 #define tinyg_h
 
-#define __SIMULATION_MODE	// settings to enable faster and more accurate simulation
-#define __UNIT_TESTS		// uncomment to compile the unit tests into the code
+//#define __SIMULATION_MODE	// settings to enable faster and more accurate simulation
+//#define __UNIT_TESTS		// uncomment to compile the unit tests into the code
 //#define __DEBUG			// uncomment to enable debug logging
 //#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
 //#define __CHATTY			// uncomment to enable verbose runtime messages
@@ -74,7 +74,8 @@ void tg_unit_tests(void);
 //#define TINYG_VERSION "build 227 - \"krupka\""
 //#define TINYG_VERSION "build 228 - \"lumbago\""
 //#define TINYG_VERSION "build 229 - \"mumps\""
-#define TINYG_VERSION "build 230 - \"neutropenia\""
+//#define TINYG_VERSION "build 230 - \"neutropenia\""
+#define TINYG_VERSION "build 234 - \"oral leukoplakia\""
 
 // Constants
 #define ONE_MINUTE_OF_MICROSECONDS 60000000.0	// from GRBL

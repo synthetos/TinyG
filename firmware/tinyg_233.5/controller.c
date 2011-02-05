@@ -200,7 +200,7 @@ static void _tg_controller_HSM()
 //----- low-level motor control ----------------------------------------//
 	DISPATCH(st_execute_move());	// run next stepper queue command
 //	DISPATCH(mc_move_dispatcher(0));// run current or next move in queue
-	mc_move_dispatcher(0);// run current or next move in queue
+	mc_move_dispatcher(0);			// run current or next move in queue
 
 //----- machine cycles -------------------------------------------------//
 	DISPATCH(cm_run_homing_cycle());// homing cycle
@@ -212,6 +212,9 @@ static void _tg_controller_HSM()
 
 /* 
  * _tg_run_prompt()
+ *
+ * This routine is specific to Gcode parser (buffers)
+ * May need to be revised if other parsers are added
  */
 
 static int _tg_run_prompt()
@@ -238,8 +241,6 @@ static int _tg_run_prompt()
 
 static int _tg_read_next_line()
 {
-
-
 	// read input line or return if not a completed line
 	if ((tg.status = xio_gets(tg.src, tg.buf, sizeof(tg.buf))) == TG_OK) {
 //		printf_P(PSTR("Read next line %s\n"), tg.buf);

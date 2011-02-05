@@ -620,13 +620,13 @@ uint8_t cm_stop()					// stop cycle. not implemented
  *
  *	Note: When coding a cycle (like this one) you get to perform one queued 
  *	move per entry into the continuation, then you must exit. The status of 
- *	the call must be communicated back to the controller idle loop, so the
+ *	the call must be communicated back to the controller wrapper, so the
  *	call should be wrapped in a return().
  *
  *	Another Note: When coding a cycle (like this one) you must wait until 
  *	the last move has actually been queued (or has finished) before declaring
  *	the cycle to be done (setting cfg.cycle_active = FALSE). Otherwise there
- *	is a nasty race condition in the tg_controller() that will accept then 
+ *	is a nasty race condition in the tg_controller() that will accept the 
  *	next command before the position of the final move has been set.
  *
  *	Cheat: The routine doesn't actually check *which* limit switch was 
@@ -688,6 +688,10 @@ uint8_t _cm_run_homing_cycle()			// inner routine
 		if (ls_zmin_thrown()) {
 			ls_clear_limit_switches();
 			return(HOMING_BACKOFF_MOVE(0, 0, CFG(Z).homing_backoff, 0));
+		}
+		if (ls_amin_thrown()) {
+			ls_clear_limit_switches();
+			return(HOMING_BACKOFF_MOVE(0, 0, 0, CFG(A).homing_backoff));
 		}
 	}
 
