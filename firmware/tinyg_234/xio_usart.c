@@ -37,7 +37,7 @@
  *	  struct xioDEVICE *d = &ds[dev];					// setup device struct ptr
  *    struct xioUSART *dx = (struct xioUSART *)ds[dev].x; // setup USART struct ptr
  *
- *	There are other examples of this approch as well (e.g. xio_set_baud_usart())
+ *	There are other examples of this approach as well (e.g. xio_set_baud_usart())
  *
  * ---- HACK ALERT ----
  *
@@ -594,7 +594,7 @@ int xio_gets_usart(const uint8_t dev, char *buf, const uint8_t size)
 			case (XIO_EOL): return (XIO_OK);					// got complete line
 			case (XIO_EAGAIN): break;							// loop
 		}
-		// +++ put a size check here of buffers can overrun.
+		// +++ put a size check here or buffers can overrun.
 	}
 	return (XIO_OK);
 }

@@ -32,7 +32,8 @@ enum tgMode {
 
 struct tgController {			// main controller struct
 	uint8_t status;				// return status (controller level)
-	uint8_t prompt_enabled;		// enable prompts		
+	uint8_t prompt_disabled;	// TRUE = disables prompts
+	uint8_t prompted;			// TRUE = prompted
 	uint8_t mode;				// current operating mode (tgMode)
 	uint8_t src;				// active source device
 	uint8_t default_src;		// default source device
