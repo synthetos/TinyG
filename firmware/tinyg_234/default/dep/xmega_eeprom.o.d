@@ -12,11 +12,7 @@ xmega_eeprom.o: ../xmega_eeprom.c ../xmega_eeprom.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/string.h \
   c:\winavr-20100110\bin\../lib/gcc/avr/4.3.3/include/stddef.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/avr/sleep.h ../tinyg.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h \
-  c:\winavr-20100110\bin\../lib/gcc/avr/4.3.3/include/stdarg.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h ../xio.h \
-  ../xio_file.h ../xio_usart.h
+  c:/winavr-20100110/lib/gcc/../../avr/include/avr/sleep.h ../tinyg.h
 
 ../xmega_eeprom.h:
 
@@ -49,15 +45,3 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h:
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/sleep.h:
 
 ../tinyg.h:
-
-c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
-
-c:\winavr-20100110\bin\../lib/gcc/avr/4.3.3/include/stdarg.h:
-
-c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h:
-
-../xio.h:
-
-../xio_file.h:
-
-../xio_usart.h:

@@ -96,7 +96,7 @@ void xio_init_stdio()
 #endif
 
 	// tell the world we are ready!
-	printf_P(PSTR("\n\n**** Xmega IO subsystem initialized ****\n"));
+	printf_P(PSTR("\n\n____ Xmega IO subsystem initialized ____\n"));
 }
 
 

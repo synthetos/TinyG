@@ -18,7 +18,7 @@ main.o: ../main.c c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h \
   ../config.h ../stepper.h ../limit_switches.h ../motor_queue.h \
   ../motion_control.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/string.h ../spindle.h \
-  ../direct_drive.h ../encoder.h ../gcode.h ../mathpack.h
+  ../direct_drive.h ../encoder.h ../gcode.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -87,5 +87,3 @@ c:/winavr-20100110/lib/gcc/../../avr/include/string.h:
 ../encoder.h:
 
 ../gcode.h:
-
-../mathpack.h:

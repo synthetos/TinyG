@@ -15,7 +15,7 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
-CFLAGS += -Wall -gdwarf-2 -std=gnu99                                                                                                                                                                                                    -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -Wall -gdwarf-2 -std=gnu99                                                                                                                                                                                                  -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
 
 ## Assembly specific flags
@@ -40,7 +40,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 LIBS = -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = main.o config.o encoder.o xmega_init.o motion_control.o spindle.o stepper.o xmega_interrupts.o xio.o xmega_eeprom.o controller.o direct_drive.o motor_queue.o limit_switches.o signals.o xio_usart.o xio_usb.o xio_rs485.o xio_pgm.o network.o system.o canonical_machine.o gcode.o xio_eep.o xmega_rtc.o mathpack.o 
+OBJECTS = main.o config.o encoder.o xmega_init.o motion_control.o spindle.o stepper.o xmega_interrupts.o xio.o xmega_eeprom.o controller.o direct_drive.o motor_queue.o limit_switches.o signals.o xio_usart.o xio_usb.o xio_rs485.o xio_pgm.o network.o system.o canonical_machine.o gcode.o xio_eep.o xmega_rtc.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -122,9 +122,6 @@ xio_eep.o: ../xio_eep.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 xmega_rtc.o: ../xmega_rtc.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-mathpack.o: ../mathpack.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link
