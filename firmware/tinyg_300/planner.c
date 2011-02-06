@@ -1,5 +1,5 @@
 /*
- * planner.c - cartesian trajectory planning and motion execution
+ * planner.c - motion planning and execution
  * Part of TinyG
  *
  * Copyright (c) 2011 Alden S. Hart Jr.
@@ -102,7 +102,7 @@ enum mcMoveState {				// m->move_state values
 };
 #define MP_STATE_RUNNING MP_STATE_RUNNING_1	// a convenience for above
 
-struct mpBuffer {				// move/sub-move motion control structure
+struct mpBuffer {				// move/sub-move motion planning structure
 	struct mpBuffer *nx;		// static pointer to next buffer
 	struct mpBuffer *pv;		// static pointer to previous buffer
 	uint8_t buffer_state;		// mpBufferState - manages queues
@@ -376,7 +376,7 @@ struct mpBuffer * mp_get_prev_buffer()
 }
 
 /* 
- * mp_isbusy() - return TRUE if motion control busy (i.e. robot is moving)
+ * mp_isbusy() - return TRUE if motion busy (i.e. robot is moving)
  *
  *	Use this function to sync to the queue. If you wait until it returns
  *	FALSE you know the queue is empty and the motors have stopped.
@@ -620,7 +620,7 @@ static uint8_t _mp_run_line(struct mpBuffer *m)
  *
  * Generates an arc by queueing line segments to the move buffer.
  * The arc is approximated by generating a large number of tiny, linear
- * segments. The length of the segments is configured in motion_control.h
+ * segments. The length of the segments is configured in planner.h
  * as MM_PER_ARC_SEGMENT.
  *
  * mp_arc()

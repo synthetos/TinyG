@@ -21,7 +21,7 @@
  */
 /*
  * The canonical machine is the layer between the Gcode parser and the
- * motion control code for a specific robot. It keeps state and executes
+ * motion planning code for a specific robot. It keeps state and executes
  * commands - passing the simplest caommands it can down to the motion 
  * control layer. See the notes at the end of gcode.h for more details.
  */
@@ -166,8 +166,8 @@ inline void cm_set_absolute_override(uint8_t absolute_override)
  *
  * Note: As far as the canonical machine is concerned the final position 
  *	is achieved as soon at the move is executed and the position is now 
- *	the target. In reality, motion_control / steppers will still be 
- *	processing the action and the real tool position is still close to 
+ *	the target. In reality the move will be queued or steppers will still 
+ *	be processing the action and the real tool position is still close to 
  *	the starting point. 
  *
  * Note: This routine will not move the endpoint position if status 
