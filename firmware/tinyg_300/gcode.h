@@ -5,18 +5,16 @@
  * Copyright (c) 2010 Alden S. Hart, Jr.
  * Portions copyright (c) 2009 Simen Svale Skogsrud
  *
- * TinyG is free software: you can redistribute it and/or modify it under 
- * the terms of the GNU General Public License as published by the Free 
- * Software Foundation, either version 3 of the License, or (at your 
- * (option) any later version.
+ * TinyG is free software: you can redistribute it and/or modify
+ * it under the terms of the Creative Commons CC-BY-NC license 
+ * (Creative Commons Attribution Non-Commercial Share-Alike license)
+ * as published by Creative Commons. You should have received a copy 
+ * of the Creative Commons CC-BY-NC license along with TinyG.
+ * If not see http://creativecommons.org/licenses/
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * TinyG is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
- *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef gcode_h
@@ -164,7 +162,7 @@ enum gcDirection {						// used for spindle and arc dir
 
 	gcode.c/.h
 	canonical_machine.c/.h
-	motion_control.c/.h
+	planner.c/.h
 	move_buffer.c/.h
 	stepper.c/.h
 
@@ -179,20 +177,21 @@ enum gcDirection {						// used for spindle and arc dir
 	some not implemented, and some of the calling conventions are 
 	different. The canonical machine normalizes all coordinates and 
 	parameters to internal representation, keeps the Gcode model state,
-	and makes calls to the motion control layer for actual movement.
+	and makes calls to the motion planning layer for actual movement.
 	The canonical machine may be extended to handle canned cycles, homing
 	and probe cycles, and other complex cycles using motion primitives.
 	(I'm not sure if this is exactly how Kramer planned it - particularly
 	when it comes to state management, but it's how it's implemented).
 
-	motion_control.c/.h executes motion primitives for the desired robot
-	type. Primitives include lines, arcs, dwells, stop/start. The motion 
-	control layer implements the actual robot kinematics. A cartesian robot 
-	for X,Y,Z and A axes is supported. Other types of robot kinematics 
-	would replace this layer. The motion control layer may be extended 
-	to manage acelleration/decelleration and path control.
+	planner.c/.h plans trajectories and executes motion primitives for 
+	the desired robot type. Motion primitives include lines, arcs, dwells, 
+	stop/start. The motion planning  layer implements the actual robot 
+	kinematics. At the current time only a cartesian robot for X,Y,Z and A 
+	axes is supported. Other types of robot kinematics would extend this 
+	layer. The motion planning layer may be extended to manage 
+	acelleration/decelleration and path control.
 
-	move_buffer.c/.h queues axis moves from the motion control layer for 
+	move_buffer.c/.h queues axis moves from the motion planning layer for 
 	the steppers (or other motor control layer). It also pre-computes the 
 	queued moves for the motors so the motor interrupts can just load
 	values without having computational load during line segment 

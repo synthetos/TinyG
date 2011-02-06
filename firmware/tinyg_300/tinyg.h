@@ -127,7 +127,7 @@ enum tgCodes {
 	TG_PARAMETER_OVER_RANGE,	// parameter is too large
 	TG_BAD_NUMBER_FORMAT,		// number format error
 	TG_FLOATING_POINT_ERROR,	// number conversion error
-	TG_MOTION_CONTROL_ERROR,	// motion control failure
+	TG_MOTION_PLANNING_ERROR,	// motion planning failure
 	TG_ARC_SPECIFICATION_ERROR,	// arc specification error
 	TG_ZERO_LENGTH_MOVE,		// XYZA move is zero length
 	TG_MAX_FEED_RATE_EXCEEDED,

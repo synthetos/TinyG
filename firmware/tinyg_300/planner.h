@@ -1,5 +1,5 @@
 /*
- * planner.h - cartesian trajectory planning and motion execution
+ * planner.h - motion planning and execution
  * Part of TinyG project
  *
  * Copyright (c) 2011 Alden S. Hart Jr.
@@ -44,7 +44,7 @@
 uint8_t ritcode;	// defined once globally for ritorno
 #define ritorno(a) if((ritcode=a) != TG_OK) { return(ritcode); }
 
-#define clear_vector(a) memset(a,0,sizeof(a)) // used in motion_control.c & gcode.c
+#define clear_vector(a) memset(a,0,sizeof(a)) // used in planner.c & gcode.c
 #define uSec(a)	(round(a * ONE_MINUTE_OF_MICROSECONDS))
 
 /*
