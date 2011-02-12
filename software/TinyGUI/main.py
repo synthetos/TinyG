@@ -158,10 +158,10 @@ class FlexGridSizer(wx.Frame):
         wx.EVT_BUTTON(self, 20, self.OnConnect)
         wx.EVT_BUTTON(self, 21, self.OnExecute)
         wx.EVT_BUTTON(self, 22, self.OnClear)
-        wx.EVT_BUTTON(self, 23, self.OnStop)
-        wx.EVT_BUTTON(self, 24, self.EStop)
-        wx.EVT_BUTTON(self, 25, self.OnPause)
-        wx.EVT_BUTTON(self, 26, self.OnResume)
+        #wx.EVT_BUTTON(self, 23, self.OnStop)
+        wx.EVT_BUTTON(self, 26, self.EStop)
+        #wx.EVT_BUTTON(self, 25, self.OnPause) #Pause Button
+        wx.EVT_BUTTON(self, 25, self.PauseResume) 
 
         #wx.EVT_IDLE(self, self.CheckSerial)    #Detects if tinyg was unplugged
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
@@ -342,7 +342,16 @@ class FlexGridSizer(wx.Frame):
                 self.status_bar.SetStatusText("DISCONNECTED:")
             except Exception, disconnect_exception:
                 self.PrintDebug("[ERROR] When trying to disconnect active serial port:\n %s" % disconnect_exception)
-
+    def PauseResume(self,event):
+        try:
+            if self.PauseResumeBtn.Label == "Pause": #Check to see what state the pause resume button is in by its lable
+                self.OnPause(self)
+            elif self.PauseResumeBtn.Label == "Resume": # Ditto
+                self.OnResume(self)
+        except Exception, g:
+            self.DebugMsg("[!!]ERROR: %s" % g)
+            
+                
     def OnResume(self, event):
         """This will cause the system to pause and wait for the resume command"""
         try:
@@ -399,19 +408,26 @@ class FlexGridSizer(wx.Frame):
         try:
             self.connection.write(ESTOP)  #Send the CTRL+C control character
             self.PrintDebug("[!!]Emergency Stop Executed...")
+            
+            if self.worker:
+                self.RunBtn.SetLabel("Run Gcode")  #Change the Run button label back from Running
+                self.PrintDebug('"[!!]Abort Signal Sent,  Trying to Abort Now!"')
+                self.worker.abort()
+                self.worker = None
+       
 
         except AttributeError:
             self.PrintDebug("[!!] Not Connected to TinyG!")
 
-    def OnStop(self, event):
-        """Stop Processing the Gcode File and kill the tinyG"""
-        # Flag the worker thread to stop if running
-        if self.worker:
-            self.RunBtn.SetLabel("Run Gcode")  #Change the Run button label back from Running
-            self.PrintDebug('"[!!]Abort Signal Sent,  Trying to Abort Now!"')
-            self.worker.abort()
-            self.worker = None
-            #self.connection.close()  #Try to close the serial port connection
+    #def OnStop(self, event):
+        #"""Stop Processing the Gcode File and kill the tinyG"""
+        ## Flag the worker thread to stop if running
+        #if self.worker:
+            #self.RunBtn.SetLabel("Run Gcode")  #Change the Run button label back from Running
+            #self.PrintDebug('"[!!]Abort Signal Sent,  Trying to Abort Now!"')
+            #self.worker.abort()
+            #self.worker = None
+            ##self.connection.close()  #Try to close the serial port connection
 
 
     def CheckSerial(self, event):
