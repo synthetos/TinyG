@@ -49,6 +49,7 @@ enum mpBufferState {			// b->buffer_state values
 	MP_BUFFER_EMPTY = 0,		// struct is available for use (MUST BE 0)
 	MP_BUFFER_LOADING,			// being written ("checked out")
 	MP_BUFFER_QUEUED,			// in queue
+	MP_BUFFER_PENDING,			// marked as the next buffer to run
 	MP_BUFFER_RUNNING			// current running buffer
 };
 
@@ -385,6 +386,7 @@ uint8_t mp_end_run_buffer()	// EMPTY current run buf & advance to next
 {
 	mb.r->buffer_state = MP_BUFFER_EMPTY;
 	mb.r = mb.r->nx;		// advance to next run buffer
+	mb.r->buffer_state = MP_BUFFER_PENDING; // mark new run buffer pending
 	return (TG_OK);			// convenience for calling routines
 }
 
@@ -1489,7 +1491,9 @@ static uint8_t _mp_run_accel(struct mpBuffer *m)
 	}
 	// initialize for acceleration
 	if (m->move_state == MP_STATE_NEW) {
-		if (m->length < MIN_LINE_LENGTH) { return (TG_OK); }	// toss
+		if (m->length < MIN_LINE_LENGTH) { 	// toss
+			return (TG_OK); 
+		}
 		mr.midpoint_velocity = (m->start_velocity + m->end_velocity) / 2;
 		mr.time = m->length / mr.midpoint_velocity;
 		mr.midpoint_acceleration = mr.time * mr.linear_jerk_div2;
@@ -1538,7 +1542,9 @@ static uint8_t _mp_run_decel(struct mpBuffer *m)
 	}
 	// initialize for deceleration
 	if (m->move_state == MP_STATE_NEW) {
-		if (m->length < MIN_LINE_LENGTH) { return (TG_OK); } // toss
+		if (m->length < MIN_LINE_LENGTH) {  // toss
+			return (TG_OK); 
+		}
 		mr.midpoint_velocity = (m->start_velocity + m->end_velocity) / 2;
 		mr.time = m->length / mr.midpoint_velocity;
 		mr.midpoint_acceleration = mr.time * mr.linear_jerk_div2;
