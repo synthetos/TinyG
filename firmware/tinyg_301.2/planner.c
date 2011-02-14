@@ -74,13 +74,6 @@ enum mcMoveState {				// b->move_state values
 };
 #define MP_STATE_RUNNING MP_STATE_RUNNING_1	// a convenience for above
 
-enum mpPlanState {				// descibes the state in M, P and B structs
-	MP_PLAN_NULL = 0,			// zero-length move
-	MP_PLAN_1_REGION,			// move meets final target only
-	MP_PLAN_2_REGION,			// move meets initial and final targets
-	MP_PLAN_3_REGION,			// move meets all targets
-};
-
 struct mpBuffer {				// move/sub-move motion control structure
 	struct mpBuffer *nx;		// static pointer to next buffer
 	struct mpBuffer *pv;		// static pointer to previous buffer
@@ -121,13 +114,10 @@ struct mpMotionMaster {
 };
 
 struct mpMovePlanner {			// used to compute or recompute regions
-	uint8_t	plan_state;			// state of move plan
 								// buffer pointers
-	struct mpBuffer *prev;		// pointer to tail of previous move
 	struct mpBuffer *head;		// pointer to head of current move
 	struct mpBuffer *body;		// pointer to body of current move
 	struct mpBuffer *tail;		// pointer to tail of current move
-	struct mpBuffer *next;		// pointer to head of next move
 
 	double length;				// length of line or helix in mm
 	double head_length;			// computed for trajectory planning
@@ -141,7 +131,7 @@ struct mpMovePlanner {			// used to compute or recompute regions
 	double final_velocity;		// actual exit velocity
 };
 
-struct mpMoveRuntime {		// persistent runtime variables
+struct mpMoveRuntime {			// persistent runtime variables
 	uint8_t run_flag;			// move status
 	uint8_t (*run_move)(struct mpBuffer *m); // currently running move
 
@@ -167,7 +157,7 @@ struct mpMoveRuntime {		// persistent runtime variables
 };
 
 static struct mpMotionMaster mm;
-static struct mpMovePlanner mp[2];	// current and fwd or bkwd neighbor
+static struct mpMovePlanner mp[2];// current move and fwd or bkwd neighbor
 static struct mpMoveRuntime mr;
 static struct mpBufferPool mb;
 
@@ -196,9 +186,10 @@ static double _mp_estimate_angular_jerk(const struct mpBuffer *p, double previou
 static double _mp_get_length(double Vi, double Vt);
 
 static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMovePlanner *m);
-static uint8_t _mp_construct_prev_move(struct mpMovePlanner *p, struct mpMovePlanner *m);
+static uint8_t _mp_construct_backwards_move(struct mpMovePlanner *p, struct mpMovePlanner *m);
+static uint8_t _mp_detect_backwards_stop(struct mpMovePlanner *p, struct mpMovePlanner *m);
 static uint8_t _mp_recompute_backwards(struct mpMovePlanner *m);
-static uint8_t _mp_recompute_forwards(struct mpMovePlanner *p, struct mpMovePlanner *m);
+static uint8_t _mp_recompute_forwards(struct mpMovePlanner *m);
 
 
 // p.s. I tried listing variables both ways: target_velocity or Vt,
@@ -281,21 +272,21 @@ uint8_t mp_move_dispatcher(uint8_t kill)
 }
 
 /**** MOVE QUEUE ROUTINES ************************************************
- * mp_test_write_buffer()  Return TRUE if N write buffers are available
+ * mp_test_write_buffer(N) Return TRUE if N write buffers are available
  *
  * mp_get_write_buffer()   Get pointer to next available write buffer
  *						   Returns pointer or NULL if no buffer available
  *						   Multiple write buffers may be open at once
  *
- * mp_queue_write_buffer() Commit the next write buffer to the queue
- *						   Write buffers will queue in order gotten,
- *						   and will run in the order queued.
- *						   Advances write pointer & changes buffer state
- *
  * mp_unget_write_buffer() Free write buffer if you decide not to queue it
  *						   Only works on most recently gotten write buffer
  *						   You could work your way back in a set or buffers
  *						   Use this one carefully.
+ *
+ * mp_queue_write_buffer() Commit the next write buffer to the queue
+ *						   Write buffers will queue in order gotten,
+ *						   and will run in the order queued.
+ *						   Advances write pointer & changes buffer state
  *
  * mp_get_run_buffer()	   Get pointer to the next or current run buffer
  *						   Returns a new run buffer if prev buf was ENDed
@@ -312,12 +303,12 @@ uint8_t mp_move_dispatcher(uint8_t kill)
  *						   backwards pointers. This buffer cannot be 
  *						   queued and should not be ENDed.
  *
- * mp_get_prev_buffer()	   Return pointer to prev buffer in linked list
- * mp_get_next_buffer()	   Return pointer to next buffer in linked list 
+ * mp_get_prev_buffer(b)   Return pointer to prev buffer in linked list
+ * mp_get_next_buffer(b)   Return pointer to next buffer in linked list 
  *
  * A typical usage sequence is:
- *	1 - test if you can get 4 write buffers (worst case needed for aline)
- *	2 - aline first gets prev_buffer to look back at the previous tail
+ *	1 - test if you can get 3 write buffers - for an aline()
+ *	2 - aline first gets prev_buffer_implicit to look back at previous Vt
  *	3 - aline then gets write buffers as they are needed
  *  3a- sometimes aline ungets a write buffer an exception case is detected
  *	4 - aline queues the write buffers - one queue_write call per buffer
@@ -362,6 +353,12 @@ struct mpBuffer * mp_get_write_buffer()
 	return (NULL);
 }
 
+void mp_unget_write_buffer()
+{
+	mb.w->buffer_state = MP_BUFFER_EMPTY;
+	mb.w = mb.w->pv;
+}
+
 uint8_t mp_queue_write_buffer(const uint8_t move_type)
 {
 	mb.q->move_type = move_type;
@@ -369,12 +366,6 @@ uint8_t mp_queue_write_buffer(const uint8_t move_type)
 	mb.q->buffer_state = MP_BUFFER_QUEUED;
 	mb.q = mb.q->nx;		// advance the queued buffer pointer
 	return (TG_OK);			// convenience for calling routines
-}
-
-void mp_unget_write_buffer()
-{
-	mb.w->buffer_state = MP_BUFFER_EMPTY;
-	mb.w = mb.w->pv;
 }
 
 struct mpBuffer * mp_get_run_buffer() 
@@ -1121,7 +1112,7 @@ static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMov
 		m->head_length = 0;
 		m->body_length = 0;
 		m->tail_length = 0;
-		m->plan_state = MP_PLAN_NULL;	// indicates zero length move
+//		m->plan_state = MP_PLAN_NULL;	// indicates zero length move
 		return (TG_OK);
 	}
 	// setup M struct
@@ -1142,7 +1133,7 @@ static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMov
 
 	m->body_length = m->length - m->head_length - m->tail_length;
 	if (m->body_length > 0) {	// exit if no reduction required
-		m->plan_state = MP_PLAN_3_REGION;
+//		m->plan_state = MP_PLAN_3_REGION;
 		return (TG_OK);			// 3 region return
 	}
 
@@ -1154,7 +1145,7 @@ static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMov
 		m->body_length = m->length - m->tail_length;
 		m->cruise_velocity = Vi;
 		m->final_velocity = Vf;
-		m->plan_state = MP_PLAN_2_REGION;
+//		m->plan_state = MP_PLAN_2_REGION;
 		return (TG_OK);	// 2 region return
 	}
 
@@ -1181,7 +1172,7 @@ static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMov
 		m->final_velocity = Vf;
 		m->body_length = 0;
 		if (m->head_length > MIN_LINE_LENGTH) {
-			m->plan_state = MP_PLAN_2_REGION;
+//			m->plan_state = MP_PLAN_2_REGION;
 			return (TG_OK);	// 2 region return
 		}
 	}
@@ -1211,7 +1202,7 @@ static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMov
 		m->tail_length = m->length;
 		m->head_length = 0;
 		m->body_length = 0;
-		m->plan_state = MP_PLAN_1_REGION;
+//		m->plan_state = MP_PLAN_1_REGION;
 		return (TG_OK);	// 1 region return
 	}
 	return (TG_ERR);	// should only happen if isNAN or other math error
@@ -1249,7 +1240,7 @@ static uint8_t _mp_recompute_backwards(struct mpMovePlanner *m)
 	struct mpMovePlanner *tmp;
 
 	// setup struct for previous move
-	while (_mp_construct_prev_move(p,m) != TG_COMPLETE) {	
+	while (_mp_construct_backwards_move(p,m) != TG_COMPLETE) {
 		_mp_compute_regions(p->initial_velocity_req, p->target_velocity, m->initial_velocity, p);
 		_mp_update_move(p); 
 		tmp=m; m=p; p=tmp; 	// shuffle buffers to walk backwards
@@ -1257,31 +1248,25 @@ static uint8_t _mp_recompute_backwards(struct mpMovePlanner *m)
 	return (TG_OK);
 }
 
-static uint8_t _mp_recompute_forwards(struct mpMovePlanner *p, struct mpMovePlanner *m)
+static uint8_t _mp_recompute_forwards(struct mpMovePlanner *m)
 {
 	return (TG_OK);
 }
 
 /*
- * construct the M struct for previous move (P) based on current move (M) 
- * Assumes M has valid buffer popinters for head, body, tail (but not prev)
+ * Construct the M struct for previous move (P) based on current move (M) 
+ * Assumes M has valid buffer pointers for the head
  * Assumes P has no valid buffer pointers 
+ * Returns TG_COMPLETE if move is empty, complete, or currently executing
  */
-static uint8_t _mp_construct_prev_move(struct mpMovePlanner *p, struct mpMovePlanner *m)
+static uint8_t _mp_construct_backwards_move(struct mpMovePlanner *p, struct mpMovePlanner *m)
 {
 	// setup buffer linkages (the compiler will optimize these get calls down)
-	p->next = m->head;						// link to later move as next
+//	p->next = m->head;						// link to later move as next
 	p->tail = mp_get_prev_buffer(m->head);	// set previous tail
 	p->body = mp_get_prev_buffer(p->tail);	// etc.
 	p->head = mp_get_prev_buffer(p->body);
 
-	// Detect buffer state end conditions - move must be queued & idle 
-	// Only test that the body is free. It's OK to recompute a line 
-	// where the head is running. This creates a potential race condition,
-	// but the alternative of not recomputing the tail is worse.
-	if (p->body->buffer_state != MP_BUFFER_QUEUED) {
-		return (TG_COMPLETE);
-	}
 	// populate the move velocities and lengths from underlying buffers
 	p->initial_velocity_req = p->head->request_velocity;// requested start v
 	p->initial_velocity = p->head->start_velocity;	// actual initial vel
@@ -1294,16 +1279,35 @@ static uint8_t _mp_construct_prev_move(struct mpMovePlanner *p, struct mpMovePla
 	p->tail_length = p->tail->length;
 	p->length = p->head_length + p->body_length + p->tail_length;
 
-	// detect end condition - if move is already optimal
+	return (_mp_detect_backwards_stop(p,m));
+}
+
 /*
-	if ((p->initial_velocity == p->initial_velocity_req) && 
-		(p->cruise_velocity == p->target_velocity) &&
-		(p->final_velocity == m->initial_velocity)) {
+ * Detect if the move is a stopping point for backwards replanning
+ * Returns TG_COMPLETE if it is a stopping point, TG_OK if it's not
+ * Returns TG_OK if the head is executing but the body and tail are idle
+ * This is an acceptable condition for a replan to occur.
+ */
+static uint8_t _mp_detect_backwards_stop(struct mpMovePlanner *p, struct mpMovePlanner *m)
+{
+	// Detect buffers for end conditions - move must be queued & idle
+	// It's OK if the head is executing but the body and tail must be idle
+	if (p->body->buffer_state != MP_BUFFER_QUEUED) {
 		return (TG_COMPLETE);
 	}
-*/
+	if (p->tail->buffer_state != MP_BUFFER_QUEUED) {
+		return (TG_COMPLETE);
+	}
+
+	// detect an exact stop on the current block
+	if (m->initial_velocity_req < ROUNDING_ERROR) {
+		return (TG_COMPLETE);
+	}
+
+	// detect if move is already optimally computed
 	if ((p->initial_velocity == p->initial_velocity_req) && 
-		(p->cruise_velocity == p->target_velocity)) {
+		(p->cruise_velocity == p->target_velocity) &&
+		(p->final_velocity == m->initial_velocity_req)) {
 		return (TG_COMPLETE);
 	}
 	return (TG_OK);
@@ -1398,11 +1402,11 @@ static struct mpBuffer *_mp_queue_buffer(double Vi, double Vt, double Vr, double
 		mm.position[i] += len * b->unit_vec[i];	// set mm position
 		b->target[i] = mm.position[i]; 
 	}
-	if (len < MIN_LINE_LENGTH) { 
-		mp_queue_write_buffer(MP_TYPE_NULL);	// make it a null buffer
-	} else {
+//	if (len < MIN_LINE_LENGTH) { 
+//		mp_queue_write_buffer(MP_TYPE_NULL);	// make it a null buffer
+//	} else {
 		mp_queue_write_buffer(type);
-	}
+//	}
 	return(b);									// return pointer
 }
 
