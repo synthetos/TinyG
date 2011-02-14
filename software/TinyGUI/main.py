@@ -9,6 +9,11 @@ import time
 from threading import *
 
 
+#Commands
+ESTOP = "!"
+PAUSE = "@"
+RESUME = "$"
+
 class FlexGridSizer(wx.Frame):
     def __init__(self, parent, id, title):
         self.Frame = wx.Frame.__init__(self, parent, id, title, (-1,-1), size=(750,650))
@@ -70,31 +75,31 @@ class FlexGridSizer(wx.Frame):
         #Lbtn = wx.Button(self.panel, 1003, "L", (10,10), size=(30,20))
         #Rbtn = wx.Button(self.panel, 1004, "R", (10,10), size=(30,20))
         self.LoadBtn = wx.Button(self.panel,        17,  "Load Gcode", size=(75,25))
-        self.RunBtn  = wx.Button(self.panel,   18,   "Run Gcode", size=(75,25))
+        self.RunBtn  = wx.Button(self.panel,        18,   "Run Gcode", size=(75,25))
         self.RefBtn  = wx.Button(self.panel,        19,   "Refresh",   size=(75,25))
         self.ConBtn  = wx.Button(self.panel,        20,   "Connect",   size=(75,25))
-        #ExeBtn  = wx.Button(self.panel,       21,   "Execute",   size=(75,25)) #Just hit enter no need for this anymore
-        #ClrBrn  = wx.Button(self.panel,       22,   "Clear",     size=(75,25)) #Not super functional just hit enter
-        self.StopBtn = wx.Button(self.panel,        23,   "Stop",      size=(75,25))
-        self.HardBtn = wx.Button(self.panel,        24,   "Hard Stop", size=(75,25))
+        #ExeBtn  = wx.Button(self.panel,            21,   "Execute",   size=(75,25)) #Just hit enter no need for this anymore
+        #ClrBrn  = wx.Button(self.panel,            22,   "Clear",     size=(75,25)) #Not super functional just hit enter
+        #self.StopBtn = wx.Button(self.panel,        23,   "Stop",      size=(75,25))
+        #self.HardBtn = wx.Button(self.panel,        24,   "Hard Stop", size=(75,25))
 
-        self.PauseBtn = wx.Button(self.panel,       25,   "Pause",     size=(75,25))
-        self.ResumeBtn = wx.Button(self.panel,      26,   "Resume",    size=(75,25))
+        self.PauseResumeBtn = wx.Button(self.panel,       25,   "Pause",     size=(75,25))
+        self.EstopBtn = wx.Button(self.panel,      26,   "Emergency Stop",   size=(75,25))
 
 
         #Static Text
         self.Gtext =   wx.StaticText(self.panel,   -1, "Gcode File:")
         self.Sertext = wx.StaticText(self.panel,   -1, "Serial Port:")
         self.Cmdtext = wx.StaticText(self.panel,   -1, "Gcode Command:")
-        self.OutText = wx.StaticText(self.panel,   -1, "Ouput Text:")
+        self.OutText = wx.StaticText(self.panel,   -1, "Output Text:")
         self.NudgeText = wx.StaticText(self.panel, -1, "Nudge Amount")
         self.SliderText = wx.StaticText(self.panel,-1, "Manual Feed Rate")
         #self.NudgeFeedText = wx.StaticText(self.panel, -1, "Nudge Feed Rate")
 
         #Add Items to hbox2
-        hbox2.Add(self.PauseBtn, border=5, flag=wx.ALL)
-        hbox2.Add(self.ResumeBtn, border=5, flag=wx.ALL)
-        hbox2.Add(self.HardBtn, border=5, flag=wx.ALL)
+        hbox2.Add(self.PauseResumeBtn,  border=5, flag=wx.ALL)
+        hbox2.Add(self.EstopBtn, border=5, flag=wx.ALL|wx.EXPAND|wx.GROW)
+        #hbox2.Add(self.HardBtn,   border=5, flag=wx.ALL)
 
 
         #Add Items to hbox3
@@ -103,8 +108,8 @@ class FlexGridSizer(wx.Frame):
 
         #Add Items to hbox4
         hbox4.Add(self.LoadBtn, border=5, flag=wx.ALL)
-        hbox4.Add(self.RunBtn, border=5, flag=wx.ALL)
-        hbox4.Add(self.StopBtn, border=5, flag=wx.ALL)
+        hbox4.Add(self.RunBtn,  border=5, flag=wx.ALL)
+        #hbox4.Add(self.StopBtn, border=5, flag=wx.ALL)
 
 
         #Add Items to the Flex Grid
@@ -116,16 +121,16 @@ class FlexGridSizer(wx.Frame):
 
         gbs.Add(self.Cmdtext,    pos=(1,0),   span=(1,1),   flag=wx.ALL | wx.EXPAND)   #Row 1
         gbs.Add(self.CmdInput,   pos=(2,0),   span=(1,11),  flag=wx.ALL | wx.EXPAND)   #Row 2
-        gbs.Add(self.Gtext,      pos=(3,0),   span=(1,13),  flag=wx.ALL|wx.EXPAND)     #Row 3
+        gbs.Add(self.Gtext,      pos=(3,0),   span=(1,13),  flag=wx.ALL |wx.EXPAND)    #Row 3
 
-        gbs.Add(self.GcodeTxt,   pos=(4,0),   span=(1,9),   flag=wx.ALL|wx.EXPAND)     #Row 4
-        gbs.Add(hbox4,           pos=(4,9),   span=(1,2),   flag=wx.ALL|wx.EXPAND)     #Row 4
+        gbs.Add(self.GcodeTxt,   pos=(4,0),   span=(1,9),   flag=wx.ALL |wx.EXPAND)    #Row 4
+        gbs.Add(hbox4,           pos=(4,9),   span=(1,2),   flag=wx.ALL |wx.EXPAND)    #Row 4
 
         gbs.Add(self.OutText,    pos=(5,0),   span=(1,1))                              #Row 5
-        gbs.Add(self.DebugMsg,   pos=(6,0),   span=(3,13), flag=wx.ALL|wx.EXPAND )     #Row 6
+        gbs.Add(self.DebugMsg,   pos=(6,0),   span=(3,13), flag=wx.ALL  |wx.EXPAND )   #Row 6
 
 
-        gbs.Add(hbox2,           pos=(10,8),   span=(1,4),  flag=wx.ALL|wx.EXPAND)      #Row 9
+        gbs.Add(hbox2,           pos=(10,8),   span=(1,4),  flag=wx.ALL  |wx.EXPAND)   #Row 9
         gbs.Add(self.NudgeText,  pos=(9,0),   span=(1,1))
         gbs.Add(self.NudgeTxt,   pos=(9,1),   span=(1,1))
 
@@ -153,10 +158,10 @@ class FlexGridSizer(wx.Frame):
         wx.EVT_BUTTON(self, 20, self.OnConnect)
         wx.EVT_BUTTON(self, 21, self.OnExecute)
         wx.EVT_BUTTON(self, 22, self.OnClear)
-        wx.EVT_BUTTON(self, 23, self.OnStop)
-        wx.EVT_BUTTON(self, 24, self.OnStopHARD)
-        wx.EVT_BUTTON(self, 25, self.OnPause)
-        wx.EVT_BUTTON(self, 26, self.OnResume)
+        #wx.EVT_BUTTON(self, 23, self.OnStop)
+        wx.EVT_BUTTON(self, 26, self.EStop)
+        #wx.EVT_BUTTON(self, 25, self.OnPause) #Pause Button
+        wx.EVT_BUTTON(self, 25, self.PauseResume) 
 
         #wx.EVT_IDLE(self, self.CheckSerial)    #Detects if tinyg was unplugged
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
@@ -337,12 +342,22 @@ class FlexGridSizer(wx.Frame):
                 self.status_bar.SetStatusText("DISCONNECTED:")
             except Exception, disconnect_exception:
                 self.PrintDebug("[ERROR] When trying to disconnect active serial port:\n %s" % disconnect_exception)
-
+    def PauseResume(self,event):
+        try:
+            if self.PauseResumeBtn.Label == "Pause": #Check to see what state the pause resume button is in by its lable
+                self.OnPause(self)
+            elif self.PauseResumeBtn.Label == "Resume": # Ditto
+                self.OnResume(self)
+        except Exception, g:
+            self.DebugMsg("[!!]ERROR: %s" % g)
+            
+                
     def OnResume(self, event):
         """This will cause the system to pause and wait for the resume command"""
         try:
-            self.connection.write('\x11')
-            self.PrintDebug("[*]Sending Resume (XON)")
+            self.connection.write(RESUME)
+            self.PrintDebug("[*]Sending Resume...")
+            self.PauseResumeBtn.Label="Pause"
         except AttributeError:
             self.PrintDebug("[!!]ERROR: Serial Port Not Connected")
 
@@ -352,8 +367,10 @@ class FlexGridSizer(wx.Frame):
     def OnPause(self, event):
         """This will cause the system to pause and wait for the resume command"""
         try:
-            self.connection.write('\x13')
-            self.PrintDebug("[*]Sending Pause (XOFF)")
+            
+            self.connection.write(PAUSE)
+            self.PrintDebug("[*]Sending Pause\n")
+            self.PauseResumeBtn.Label="Resume"
         except AttributeError:
             self.PrintDebug("[!!]ERROR: Serial Port Not Connected")
 
@@ -361,11 +378,16 @@ class FlexGridSizer(wx.Frame):
             self.PrintDebug(str(e))
 
     def OnQuit(self, event):
+        try:
+            #Try to close a serial port connection if its open
+            self.connection.close()
+        except:
+            pass
         self.Destroy()
 
     def OnStart(self, event):
         if not self.worker:
-            self.RunBtn.SetLabel("Running")
+            self.RunBtn.SetLabel("Starting TinyG")
             """Worker takes self, serial port, debug text box and the loaded file"""
             self.worker = WorkerThread(self, self.connection, self.GcodeTxt.Value)
 
@@ -382,23 +404,30 @@ class FlexGridSizer(wx.Frame):
 
 
 
-    def OnStopHARD(self, event):
+    def EStop(self, event):
         try:
-            self.connection.write('\x03')  #Send the CTRL+C control character
-            self.PrintDebug("[!!]HARD STOP!\n You most likely will need to reboot TinyG now.")
+            self.connection.write(ESTOP)  #Send the CTRL+C control character
+            self.PrintDebug("[!!]Emergency Stop Executed...")
+            
+            if self.worker:
+                self.RunBtn.SetLabel("Run Gcode")  #Change the Run button label back from Running
+                self.PrintDebug('"[!!]Abort Signal Sent,  Trying to Abort Now!"')
+                self.worker.abort()
+                self.worker = None
+       
 
         except AttributeError:
             self.PrintDebug("[!!] Not Connected to TinyG!")
 
-    def OnStop(self, event):
-        """Stop Processing the Gcode File and kill the tinyG"""
-        # Flag the worker thread to stop if running
-        if self.worker:
-            self.RunBtn.SetLabel("Run Gcode")  #Change the Run button label back from Running
-            self.PrintDebug('"[!!]Abort Signal Sent,  Trying to Abort Now!"')
-            self.worker.abort()
-            self.worker = None
-            #self.connection.close()  #Try to close the serial port connection
+    #def OnStop(self, event):
+        #"""Stop Processing the Gcode File and kill the tinyG"""
+        ## Flag the worker thread to stop if running
+        #if self.worker:
+            #self.RunBtn.SetLabel("Run Gcode")  #Change the Run button label back from Running
+            #self.PrintDebug('"[!!]Abort Signal Sent,  Trying to Abort Now!"')
+            #self.worker.abort()
+            #self.worker = None
+            ##self.connection.close()  #Try to close the serial port connection
 
 
     def CheckSerial(self, event):
