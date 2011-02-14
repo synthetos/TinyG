@@ -20,8 +20,8 @@
 #ifndef tinyg_h
 #define tinyg_h
 
-//#define __SIMULATION_MODE	// settings to enable faster and more accurate simulation
-//#define __NO_EEPROM		// disable EEPROM initialization
+#define __SIMULATION_MODE	// settings to enable faster and more accurate simulation
+#define __NO_EEPROM		// disable EEPROM initialization
 //#define __UNIT_TESTS		// uncomment to compile the unit tests into the code
 //#define __DEBUG			// uncomment to enable debug logging
 //#define __ECHO TRUE		// set to echo Gcode commands. If false, only prompts returned
