@@ -191,7 +191,7 @@ static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMov
 static uint8_t _mp_construct_backward_move(struct mpMovePlanner *p, struct mpMovePlanner *m);
 static uint8_t _mp_detect_backward_stop(struct mpMovePlanner *p, struct mpMovePlanner *m);
 static uint8_t _mp_recompute_backward(struct mpMovePlanner *m);
-static uint8_t _mp_recompute_forward(struct mpMovePlanner *m);
+//static uint8_t _mp_recompute_forward(struct mpMovePlanner *m);
 
 
 // p.s. I tried listing variables both ways: target_velocity or Vt,
@@ -989,34 +989,41 @@ uint8_t mp_aline(double x, double y, double z, double a, double minutes)
 	if (m->length < MIN_LINE_LENGTH) {			// trap zero-length lines
 		return (TG_ZERO_LENGTH_MOVE);
 	}
-	m->target_velocity = m->length / minutes;		// Vt requested
-	m->initial_velocity_req = 0;					// Vi requested starting value
-	path_mode = cfg.gcode_path_control;				// starting path mode
-	for (i=0; i < AXES; i++) {						// compute unit vector
+	m->target_velocity = m->length / minutes;	// Vt requested
+	m->initial_velocity_req = 0;				// Vi requested start value
+	path_mode = cfg.gcode_path_control;			// starting path mode
+	for (i=0; i < AXES; i++) {					// compute unit vector
 		mm.unit_vec[i] = (mm.target[i] - mm.position[i]) / m->length;
 	}
-	mr.linear_jerk_div2 = cfg.max_linear_jerk / 2;	// init linear jerk term
+	mr.linear_jerk_div2 = cfg.max_linear_jerk / 2; // init linear jerk term
 
 	// setup initial conditions from the previous move
-	p = mp_get_prev_buffer_implicit();
+	p = mp_get_prev_buffer_implicit();			// get previous tail
+	// handle case where previous move is an arc
 	if ((p->move_type == MP_TYPE_ARC) && 
-		(p->buffer_state != MP_BUFFER_EMPTY)) {		// q'd or running arc
+		(p->buffer_state != MP_BUFFER_EMPTY)) {	// q'd or running arc
 		previous_velocity = p->end_velocity;
 		m->initial_velocity_req = previous_velocity;// +++ test various arc join speed changes up and down
 
 		// compute region lengths & Vt, w/Vf=0
 		ritorno(_mp_compute_regions(m->initial_velocity_req, m->target_velocity, 0, m));
 		ritorno(_mp_queue_move(m));
+		// don't bother to backplan into the arc. Just return.
 		return (TG_OK);
 
-	} else if (p->buffer_state == MP_BUFFER_QUEUED){// q'd but not running
-		previous_velocity = p->start_velocity;		// Vt of previous move
-	} else {
+	} 
+	// handle non-arc cases
+	if (p->buffer_state == MP_BUFFER_EMPTY) {	// no prev move or done
 		previous_velocity = 0;
-		path_mode = PATH_EXACT_STOP;				// downgrade path mode
+		path_mode = PATH_EXACT_STOP;			// downgrade path mode
+	} else if (p->buffer_state == MP_BUFFER_QUEUED) { // q'd but not running
+		previous_velocity = p->start_velocity;	// Vt of previous move
+	} else {									// tail RUNNING or PENDING
+		previous_velocity = p->end_velocity;	// which is typically 0
+		path_mode = PATH_EXACT_PATH;			// downgrade path mode
 	}
-	// getting angular jerk requires unit vectors and mm.previous_velocity
-	angular_jerk = _mp_estimate_angular_jerk(p, previous_velocity);	// for path downgrades
+	// estimate angular jerk - uses unit vectors and previous_velocity
+	angular_jerk = _mp_estimate_angular_jerk(p, previous_velocity);
 
 	// setup initial velocity and do path downgrades
 	if (path_mode == PATH_CONTINUOUS) {
@@ -1027,6 +1034,7 @@ uint8_t mp_aline(double x, double y, double z, double a, double minutes)
 		} else { 									// decels and cruises
 			m->initial_velocity_req = min(previous_velocity, m->target_velocity);
 		}
+
 	} 
 	if (path_mode == PATH_EXACT_PATH) {
 		if (angular_jerk > cfg.angular_jerk_upper) {	// downgrade
@@ -1041,7 +1049,6 @@ uint8_t mp_aline(double x, double y, double z, double a, double minutes)
 	ritorno(_mp_compute_regions(m->initial_velocity_req, m->target_velocity, 0, m));
 	ritorno(_mp_queue_move(m));
 	ritorno(_mp_recompute_backward(m));
-//	ritorno(_mp_recompute_forward(m));
 	return (TG_OK);
 }
 
@@ -1107,9 +1114,11 @@ uint8_t mp_aline(double x, double y, double z, double a, double minutes)
  *		Vf = final velocity requested
  *
  */
-static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMovePlanner *m) 
+static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMovePlanner *m) 
 {
-	double Vt_ = Vt;					// previous iteration's Vt
+	double Vi = Vir;	// achieved initial velocity (from requested)
+	double Vc = Vt;		// cruise velocity, or "adjusted" target velocity
+	double Vc_ = Vc;	// previous iteration's Vc
 	double temp_tail;
 
 	// ----- 0 region case - line is too short of zero length -----
@@ -1122,15 +1131,15 @@ static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMov
 		return (TG_OK);
 	}
 	// setup M struct
-	m->initial_velocity_req = Vi;		// requested value
-	m->initial_velocity = Vi;			// value achieved
-	m->target_velocity = Vt;			// requested value
-	m->cruise_velocity = Vt;			// value achieved
+	m->initial_velocity_req = Vir;		// requested initial velocity 
+	m->initial_velocity = Vi;			// achieved initial velocity
+	m->target_velocity = Vt;			// requested target velocity
+	m->cruise_velocity = Vc;			// achieved cruise velocity
 	m->final_velocity = Vf;				// this one never changes
 
 	// compute optimal head and tail lengths
 	m->tail_length = _mp_get_length(Vt, Vf);
-	m->head_length = _mp_get_length(Vt, Vi);
+	m->head_length = _mp_get_length(Vt, Vir);
 	if (m->head_length < ROUNDING_ERROR) {
 		m->head_length = 0;
 	}
@@ -1160,11 +1169,11 @@ static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMov
 	// ----- 2 region case (head and tail) -----
 	if (m->length > m->tail_length) {
 		while (fabs(m->body_length) > ROUNDING_ERROR) {
-			Vt_ = Vt;		// previous pass value - speeds convergence
-			Vt *= m->length / (m->head_length + m->tail_length);
-			Vt = (Vt + Vt_)/2;
-			m->tail_length = _mp_get_length(Vt, Vf);
-			m->head_length = _mp_get_length(Vt, Vi);
+			Vc_ = Vc;		// previous pass value - speeds convergence
+			Vc *= m->length / (m->head_length + m->tail_length);
+			Vc = (Vc + Vc_)/2;
+			m->tail_length = _mp_get_length(Vc, Vf);
+			m->head_length = _mp_get_length(Vc, Vi);
 			m->body_length = m->length - m->head_length - m->tail_length;
 			if (i++ > 20) { // chose value with lots of experimentation
 #ifdef __UNFORGIVING		// usually converges in ~2 - but not always
@@ -1174,7 +1183,7 @@ static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMov
 #endif
 			}
 		}
-		m->cruise_velocity = Vt;
+		m->cruise_velocity = Vc;
 		m->final_velocity = Vf;
 		m->body_length = 0;
 		if (m->head_length > MIN_LINE_LENGTH) {
@@ -1191,10 +1200,10 @@ static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMov
 	if (m->length <= m->tail_length) {	// ++++ add in the low Vt case
 		i=0;
 		while (fabs(m->length - m->tail_length) > ROUNDING_ERROR) {
-			Vt_ = Vt;
-			Vt *= m->length / m->tail_length;
-			Vt = (Vt + Vt_)/2;
-			m->tail_length = _mp_get_length(Vt, Vf);
+			Vc_ = Vc;
+			Vc *= m->length / m->tail_length;
+			Vc = (Vc + Vc_)/2;
+			m->tail_length = _mp_get_length(Vc, Vf);
 			if (i++ > 20) { 	// usually converges in ~5 - but not always
 #ifdef __UNFORGIVING
 				return (TG_FAILED_TO_CONVERGE);
@@ -1203,8 +1212,8 @@ static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMov
 #endif
 			}
 		}
-		m->initial_velocity = Vt;
-		m->cruise_velocity = Vt; 				
+		m->initial_velocity = Vc;
+		m->cruise_velocity = Vc; 				
 		m->tail_length = m->length;
 		m->head_length = 0;
 		m->body_length = 0;
@@ -1254,10 +1263,12 @@ static uint8_t _mp_recompute_backward(struct mpMovePlanner *m)
 	return (TG_OK);
 }
 
+/*
 static uint8_t _mp_recompute_forward(struct mpMovePlanner *m)
 {
 	return (TG_OK);
 }
+*/
 
 /*
  * Construct the M struct for previous move (P) based on current move (M) 

@@ -176,6 +176,10 @@ void tg_alive()
  * drops through and runs the next routine in the list.
  *
  * A routine that had no action (i.e. is OFF or idle) should return TG_NOOP
+ *
+ *---> mp_move_dispatcher() is called FALSE becuase it's not a KILL (TRUE)
+ *	It has no DISPATCH wrapper because regardless of the results the later
+ *	routines should be run.
  */
 #define	DISPATCH(func) if (func == TG_EAGAIN) return; 
 
@@ -197,8 +201,7 @@ static void _tg_controller_HSM()
 
 //----- low-level motor control ----------------------------------------//
 	DISPATCH(st_execute_move());	// run next stepper queue command
-//	DISPATCH(mp_move_dispatcher(0));// run current or next move in queue
-	mp_move_dispatcher(0);			// run current or next move in queue
+	mp_move_dispatcher(FALSE);		// run current or next move in queue
 
 //----- machine cycles -------------------------------------------------//
 	DISPATCH(cm_run_homing_cycle());// homing cycle
@@ -281,7 +284,7 @@ uint8_t tg_application_startup(void)
 //	xio_queue_RX_string_usb("?\n");		// enter config mode and dump config
 //	xio_queue_RX_string_usb("Q\n");		// go to idle mode
 //	xio_queue_RX_string_usb("R\n");		// run a homing cycle
-//	xio_queue_RX_string_usb("T\n");		// run test file
+	xio_queue_RX_string_usb("T\n");		// run test file
 
 //	xio_queue_RX_string_usb("!\n");		// kill
 //	xio_queue_RX_string_usb("@\n");		// pause
@@ -530,7 +533,6 @@ PGM_P tgModeStrings[] PROGMEM = {	// put string pointer array in program memory
 
 void _tg_prompt()
 {
-//	printf_P(PSTR("TinyG [%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
 	printf_P(PSTR("tinyg[%S]*> "),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
 	tg.prompted = TRUE;				// set prompt state
 }
@@ -590,7 +592,7 @@ void tg_print_status(const uint8_t status_code, const char *textbuf)
 		case TG_ZERO_LENGTH_MOVE: return;
 	}
 	printf_P(PSTR("%S: %s\n"),(PGM_P)pgm_read_word(&tgStatus[status_code]), textbuf);
-//	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgStatus[status_code]));
+//	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgStatus[status_code])); // w/no text
 }
 
 /*
