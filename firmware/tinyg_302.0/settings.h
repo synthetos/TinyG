@@ -48,8 +48,8 @@
 #define MAX_LINEAR_JERK 50000000	//  50,000,000 mm/(min^3)
 //#define MAX_LINEAR_JERK 100000000	// 100,000,000 mm/(min^3)
 
-#define ANGULAR_JERK_UPPER_THRESHOLD 0.95	// above which it's exact stop
-#define ANGULAR_JERK_LOWER_THRESHOLD 0.10	// below which it's continuous
+#define ANGULAR_JERK_UPPER_THRESHOLD 0.995	// above which it's exact stop
+#define ANGULAR_JERK_LOWER_THRESHOLD 0.30	// below which it's continuous
 
 #define MAX_VELOCITY 750			// ++++ THIS NEEDS TO BE A COMPUTED VALUE
 
