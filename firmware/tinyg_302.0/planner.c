@@ -91,6 +91,7 @@ struct mpBuffer {				// move/sub-move motion control structure
 	double end_velocity;		// actual ending velocity of a region
 	double request_velocity;	// requested initial, target, or end velocity
 								// for head, body, or tail, respectively
+	double angular_jerk;		// back planning persistence for ang jerk
 
 	double theta;				// total angle specified by arc
 	double radius;				// computed via offsets
@@ -131,6 +132,7 @@ struct mpMovePlanner {			// used to compute or recompute regions
 	double target_velocity; 	// requested target velocity 
 	double cruise_velocity;		// actual achieved velocity
 	double final_velocity;		// actual exit velocity
+	double angular_jerk;		// estimate of angular jerk
 };
 
 struct mpMoveRuntime {			// persistent runtime variables
@@ -187,7 +189,7 @@ static void _mp_set_mr_position(double target[AXES]);
 
 static uint8_t _mp_queue_move(struct mpMovePlanner *m);
 static uint8_t _mp_update_move(struct mpMovePlanner *m);
-static struct mpBuffer *_mp_queue_buffer(double Vs, double Ve, double Vr, double len, uint8_t type);
+static struct mpBuffer *_mp_queue_buffer(double Vs, double Ve, double Vr, double len, double Aj, uint8_t type);
 static double _mp_estimate_angular_jerk(const struct mpBuffer *p, double previous_velocity);
 static double _mp_get_length(double Vi, double Vt);
 
@@ -196,6 +198,8 @@ static uint8_t _mp_construct_backward_move(struct mpMovePlanner *p, struct mpMov
 static uint8_t _mp_detect_backward_stop(struct mpMovePlanner *p, struct mpMovePlanner *m);
 static uint8_t _mp_recompute_backward(struct mpMovePlanner *m);
 //static uint8_t _mp_recompute_forward(struct mpMovePlanner *m);
+
+void mp_trap(uint8_t code);
 
 /* 
  * mp_init()
@@ -969,7 +973,7 @@ uint8_t mp_aline(double x, double y, double z, double a, double minutes)
 {
 	uint8_t i;
 	uint8_t path_mode;
-	double angular_jerk;
+//	double angular_jerk;
 	double previous_velocity;
 	struct mpBuffer *p; 		// previous tail buffer pointer
 	struct mpMovePlanner *m = &mp[0];
@@ -1026,26 +1030,26 @@ uint8_t mp_aline(double x, double y, double z, double a, double minutes)
 		path_mode = PATH_EXACT_PATH;			// downgrade path mode
 	}
 	// estimate angular jerk - uses unit vectors and previous_velocity
-	angular_jerk = _mp_estimate_angular_jerk(p, previous_velocity);
+	m->angular_jerk = _mp_estimate_angular_jerk(p, previous_velocity);
 
 	// setup initial velocity and do path downgrades
 	if (path_mode == PATH_CONTINUOUS) {
-		if (angular_jerk > cfg.angular_jerk_lower) {
-			path_mode = PATH_EXACT_PATH; 			// downgrade path
+		if (m->angular_jerk > cfg.angular_jerk_lower) {
+			path_mode = PATH_EXACT_PATH; 		// downgrade path
 		} else if (m->target_velocity > previous_velocity) {// accels
 			m->initial_velocity_req = previous_velocity;
-		} else { 									// decels and cruises
+		} else { 								// decels and cruises
 			m->initial_velocity_req = min(previous_velocity, m->target_velocity);
 		}
 	} 
 	if (path_mode == PATH_EXACT_PATH) {
-		if (angular_jerk > cfg.angular_jerk_upper) {// downgrade path
+		if (m->angular_jerk > cfg.angular_jerk_upper) {// downgrade path
 			path_mode = PATH_EXACT_STOP; // illustrative, but unnecessary
 			m->initial_velocity_req = 0;
 		} else {
-//			m->initial_velocity_req = previous_velocity * (1 - angular_jerk);	// dip adjustment
+//			m->initial_velocity_req = previous_velocity * (1 - m->angular_jerk);	// dip adjustment
 			m->initial_velocity_req = previous_velocity * 
-								(1 - (angular_jerk - cfg.angular_jerk_lower));	// dip adjustment
+								(1 - (m->angular_jerk - cfg.angular_jerk_lower));	// dip adjustment
 		}
 	}
 
@@ -1053,7 +1057,23 @@ uint8_t mp_aline(double x, double y, double z, double a, double minutes)
 	ritorno(_mp_compute_regions(m->initial_velocity_req, m->target_velocity, 0, m));
 	ritorno(_mp_queue_move(m));
 	ritorno(_mp_recompute_backward(m));
+
+	//+++++++++++++++++++++++++++++++++++++++++++
+	// ++++++++ test code for simulation ++++++++
+	if (m->length > 20) mp_trap(1);
+	if (m->target_velocity > 381) mp_trap(2);
+	if (mm.unit_vec[X] < 0) mp_trap(3);
+
+
 	return (TG_OK);
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++
+// ++++++++ test code for simulation ++++++++
+void mp_trap(uint8_t code)
+{
+	uint8_t c = code;
+	return;
 }
 
 /**** ALINE HELPERS ****
@@ -1299,6 +1319,15 @@ static uint8_t _mp_construct_backward_move(struct mpMovePlanner *p, struct mpMov
 	p->tail_length = p->tail->length;
 	p->length = p->head_length + p->body_length + p->tail_length;
 
+	// reconstruct the regions value
+	p->regions = 0;
+	if (p->head_length) p->regions++;
+	if (p->body_length) p->regions++;
+	if (p->tail_length) p->regions++;
+
+	// retrieve angular jerk estimate
+	p->angular_jerk = p->tail->angular_jerk;
+
 	return (_mp_detect_backward_stop(p,m));
 }
 
@@ -1394,31 +1423,43 @@ static double _mp_estimate_angular_jerk(const struct mpBuffer *p, double previou
 
 static uint8_t _mp_queue_move(struct mpMovePlanner *m) 
 {
+	uint8_t head_type;
+
+	if (m->initial_velocity < m->cruise_velocity) {
+		head_type = MP_TYPE_ACCEL;		// default case
+	} else {
+		head_type = MP_TYPE_DECEL;		
+	}
 	if ((m->head = _mp_queue_buffer(
 								m->initial_velocity, 
 								m->cruise_velocity, 
 								m->initial_velocity_req,
-								m->head_length, MP_TYPE_ACCEL)) == NULL) {
+								m->head_length, 0,
+								head_type)) == NULL) {
 		return (TG_BUFFER_FULL_FATAL);
 	}
 	if ((m->body = _mp_queue_buffer(
 								m->cruise_velocity, 
 								m->cruise_velocity, 
 								m->target_velocity, 
-								m->body_length, MP_TYPE_CRUISE)) == NULL) {
+								m->body_length, 0,
+								MP_TYPE_CRUISE)) == NULL) {
 		return (TG_BUFFER_FULL_FATAL);
 	}
 	if ((m->tail = _mp_queue_buffer(
 								m->cruise_velocity, 
 								m->final_velocity, 
 								m->target_velocity, 
-								m->tail_length, MP_TYPE_DECEL)) == NULL) {
+								m->tail_length, 
+								m->angular_jerk,
+								MP_TYPE_DECEL)) == NULL) {
 		return (TG_BUFFER_FULL_FATAL);
 	}
 	return (TG_OK);
 }
 
-static struct mpBuffer *_mp_queue_buffer(double Vs, double Ve, double Vr, double len, uint8_t type)
+static struct mpBuffer *_mp_queue_buffer(double Vs, double Ve, double Vr, 
+										 double len, double Aj, uint8_t type)
 {
 	struct mpBuffer *b;
 
@@ -1429,6 +1470,7 @@ static struct mpBuffer *_mp_queue_buffer(double Vs, double Ve, double Vr, double
 	b->end_velocity = Ve;
 	b->request_velocity = Vr;
 	b->length = len;
+	b->angular_jerk = Aj;
 	for (uint8_t i=0; i < AXES; i++) { 			// copy unit vector from mm
 		b->unit_vec[i] = mm.unit_vec[i]; 
 		mm.position[i] += len * b->unit_vec[i];	// set mm position
@@ -1452,6 +1494,11 @@ static uint8_t _mp_update_move(struct mpMovePlanner *m)
 	m->head->end_velocity = m->cruise_velocity;
 	m->head->request_velocity = m->initial_velocity_req;
 	m->head->length = m->head_length;
+	if (m->head->start_velocity < m->head->end_velocity) {// may need to change type
+		m->head->move_type = MP_TYPE_ACCEL;
+	} else {
+		m->head->move_type = MP_TYPE_DECEL;		
+	}
 
 	m->body->start_velocity = m->cruise_velocity;
 	m->body->end_velocity = m->cruise_velocity;
