@@ -281,10 +281,11 @@ uint8_t tg_application_startup(void)
 // Pre-load the USB RX (input) buffer with some test strings
 // Be mindful of the char limit on the RX_BUFFER_SIZE (circular buffer)
 
+#ifdef __SIMULATION_MODE
+	xio_queue_RX_string_usb("T\n");		// run test file
 //	xio_queue_RX_string_usb("?\n");		// enter config mode and dump config
 //	xio_queue_RX_string_usb("Q\n");		// go to idle mode
 //	xio_queue_RX_string_usb("R\n");		// run a homing cycle
-	xio_queue_RX_string_usb("T\n");		// run test file
 
 //	xio_queue_RX_string_usb("!\n");		// kill
 //	xio_queue_RX_string_usb("@\n");		// pause
@@ -368,6 +369,7 @@ uint8_t tg_application_startup(void)
 	xio_queue_RX_string_usb("N70 X0.149 Y0.252\n");
 	xio_queue_RX_string_usb("N75 X0.188 Y0.255\n");
 */
+#endif
 	return (tg.status);
 }
 
