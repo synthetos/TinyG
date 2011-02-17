@@ -110,6 +110,8 @@ inline uint8_t cm_get_motion_mode() { return gm.motion_mode; }
 
 inline uint8_t cm_get_absolute_mode() { return gm.absolute_mode; }
 
+inline uint8_t cm_get_path_control_mode() { return gm.path_control_mode; }
+
 inline double cm_get_position(uint8_t axis) 
 {
 	return (gm.inches_mode ? (gm.position[axis] / MM_PER_INCH) : gm.position[axis]);
@@ -222,6 +224,7 @@ void cm_init_canon()
 	gm.inches_mode = FALSE;					// FALSE = mm, TRUE = inches
 	gm.absolute_mode = TRUE;				// default to absolute mode (G90)
 	cm_set_feed_rate(cfg.gcode_feed_rate);	// set a default
+	cm_set_motion_control_mode(cfg.gcode_path_control);
 }
 
 /* 

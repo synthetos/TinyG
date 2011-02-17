@@ -2,7 +2,7 @@
  * gcode_interpreter.c - rs274/ngc parser.
  * Part of TinyG project
  *
- * Copyright (c) 2010 Alden S. Hart, Jr.
+ * Copyright (c) 2010-2011 Alden S. Hart, Jr.
  * Portions copyright (c) 2009 Simen Svale Skogsrud
  *
  * This interpreter attempts to follow the NIST RS274/NGC 
@@ -42,26 +42,28 @@
 /* 
  * Data structures 
  *
- * - gp is a minimal structure to keep parser state
+ * - gp is a minimal singleton structure to keep parser state
  *
- * The three GCodeModel structs look the same but have different uses:
+ * The following GCodeModel structs are used:
  *
- * - gm keeps the internal state model in normalized, canonical form. All
- * 	 values are unit converted (to mm) and in the internal coordinate system.
- *	 Gm is owned by the canonical motion layer and is accessed by the 
- *	 parser through cm_ routines (which also include various setters and 
- *	 getters). Gm's state persists throughout the program.
+ * - gm keeps the internal gcode state model in normalized, canonical form. 
+ *	 All values are unit converted (to mm) and in the internal coordinate 
+ *	 system. Gm is owned by the canonical machine layer and is accessed by 
+ *	 the parser through cm_ routines.
  *
- * - gn records the data in the new gcode block in the formats present in
- *	 the block (pre-normalized forms). It is used by the gcode interpreter 
- *	 and is initialized for each block. During initialization some state 
- *	 elements are necessarily restored from gm.
+ * - gn is used by the gcode interpreter and is re-initialized for each 
+ *   gcode block.It records data in the new gcode block in the formats 
+ *	 present in the block (pre-normalized forms). During initialization 
+ *	 some state elements are necessarily restored from gm.
  *
- * - gf is used by the interpreter to hold flag for any data that has changed
- *	 in gn durint the parse. 
+ * - gf is used by the interpreter to hold flags for any data that has 
+ *	 changed in gn during the parse. 
+ *
+ * - gt is used to temporarily persist the mode state during homing
+ *	 operations, after wich it is restored.
  */
 static struct GCodeParser gp;		// gcode parser variables
-//static struct GCodeModel gm;		// (see conaonical machine.c)
+//static struct GCodeModel gm;		// located in canonical machine.c
 static struct GCodeModel gn;		// gcode model - current block values
 static struct GCodeModel gf;		// gcode model - flags changed values
 
@@ -86,7 +88,7 @@ void gc_init()
 {
 	ZERO_MODEL_STATE(&gn);
 	ZERO_MODEL_STATE(&gf);
-	cm_init_canon();						// initialize canonical machine
+	cm_init_canon();					// initialize canonical machine
 }
 
 /*
@@ -96,17 +98,17 @@ void gc_init()
 uint8_t gc_gcode_parser(char *block)
 {
 	_gc_normalize_gcode_block(block);
-	if (block[0] == 0) { 					// ignore comments (stripped)
+	if (block[0] == 0) { 				// ignore comments (stripped)
 		return(TG_OK);
 	}
-	if (block[0] == 'Q') {					// quit gcode mode (see note 1)
+	if (block[0] == 'Q') {				// quit gcode mode (see note 1)
 		return(TG_QUIT);
 	}
-	if (block[0] == '?') {
+	if (block[0] == '?') {				// display internal state
 		_gc_print_gcode_state();
 		return(TG_OK);
 	}
-	if (_gc_parse_gcode_block(block)) { // parse & exec block or fail trying
+	if (_gc_parse_gcode_block(block)) { // parse & exec block or fail
 		tg_print_status(gp.status, block);
 	}
 	return (gp.status);
@@ -199,13 +201,13 @@ void _gc_normalize_gcode_block(char *block)
 /* 
  * _gc_next_statement() - parse next statement in a block of Gcode
  *
- *	Parses the next statement and leaves the counter on the first character 
- *	following the statement. 
- *	Returns TRUE if there was a statement, FALSE if end of string was reached
- *	or there was an error, and writes error code into gp.status.
+ *	Parses the next statement and leaves the counter on the first 
+ *	character following the statement. 
+ *	Returns TRUE if there was a statement, FALSE if end of string was 
+ *	reached or there was an error, and writes error code into gp.status.
  */
 
-inline int _gc_next_statement(char *letter, double *value_ptr, double *fraction_ptr, 
+int _gc_next_statement(char *letter, double *value_ptr, double *fraction_ptr, 
 					   char *buf, uint8_t *i) {
 	if (buf[*i] == 0) {
 		return(FALSE); 		// no more statements
@@ -253,7 +255,7 @@ inline int _gc_read_double(char *buf, uint8_t *i, double *double_ptr)
  *	The line is assumed to contain only uppercase characters and signed 
  *  floats (no whitespace).
  *
- *	A lot of implicit things happen when the gn struct is zeroed:
+ *	A number of implicit things happen when the gn struct is zeroed:
  *	  - inverse feed rate mode is cancelled - set back to units_per_minute mode
  */
 
@@ -290,6 +292,8 @@ int _gc_parse_gcode_block(char *buf)
 					case 28: SET_NEXT_STATE(next_action, NEXT_ACTION_GO_HOME);
 					case 30: SET_NEXT_STATE(next_action, NEXT_ACTION_GO_HOME);
 					case 53: SET_NEXT_STATE(absolute_override, TRUE);
+					case 61: SET_NEXT_STATE(path_control_mode, PATH_EXACT_PATH);
+					case 64: SET_NEXT_STATE(path_control_mode, PATH_CONTINUOUS);
 					case 80: SET_NEXT_STATE(motion_mode, MOTION_MODE_CANCEL_MOTION_MODE);
 					case 90: SET_NEXT_STATE(absolute_mode, TRUE);
 					case 91: SET_NEXT_STATE(absolute_mode, FALSE);
@@ -298,7 +302,6 @@ int _gc_parse_gcode_block(char *buf)
 					case 94: SET_NEXT_STATE(inverse_feed_rate_mode, FALSE);
 					case 40: break;	// ignore cancel cutter radius compensation
 					case 49: break;	// ignore cancel tool length offset comp.
-					case 61: break;	// ignore set exact path (it is anyway)
 					default: gp.status = TG_UNSUPPORTED_STATEMENT;
 				}
 				break;
@@ -338,6 +341,10 @@ int _gc_parse_gcode_block(char *buf)
 			case 'R': SET_NEXT_STATE(radius, gp.value);
 			case 'N': break;	// ignore line numbers
 			default: gp.status = TG_UNSUPPORTED_STATEMENT;
+		}
+		// pick up the G61.1 state. Ugh
+		if ((gp.letter == 'G') && (gp.value = 61) && (gp.fraction != 0)) {
+			SET_NEXT_STATE(path_control_mode, PATH_EXACT_STOP);
 		}
 		if(gp.status) {
 			break;

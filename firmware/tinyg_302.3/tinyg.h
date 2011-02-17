@@ -74,7 +74,8 @@ void tg_unit_tests(void);
 //#define TINYG_VERSION "build 228 - \"lumbago\""
 //#define TINYG_VERSION "build 229 - \"mumps\""
 //#define TINYG_VERSION "build 230 - \"neutropenia\""
-#define TINYG_VERSION "build 234 - \"oral leukoplakia\""
+//#define TINYG_VERSION "build 234 - \"oral leukoplakia\""
+#define TINYG_VERSION "build 302 - \"pneumonia\""
 
 // Constants
 #define ONE_MINUTE_OF_MICROSECONDS 60000000

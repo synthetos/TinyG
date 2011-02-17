@@ -41,6 +41,7 @@
 #include "settings.h"
 #include "planner.h"
 #include "motor_queue.h"
+#include "canonical_machine.h"
 #include "stepper.h"
 
 // All the enums that equal zero must be zero. Don't change this
@@ -117,6 +118,7 @@ struct mpMotionMaster {
 	double target[AXES];		// target move position
 	double unit_vec[AXES];		// for axis scaling and jerk computation
 	double ang_jerk_vec[AXES];	// for angular jerk time accumulation
+	uint8_t path_mode;			// active path control mode
 };
 
 struct mpMovePlanner {			// used to compute or recompute regions
@@ -192,17 +194,22 @@ static void _mp_set_mm_position(double target[AXES]) ;
 static void _mp_set_mr_position(double target[AXES]);
 
 static uint8_t _mp_queue_move(struct mpMovePlanner *m);
-static uint8_t _mp_update_move(struct mpMovePlanner *m);
-static uint8_t _mp_get_move_type(struct mpBuffer *b);
-static struct mpBuffer *_mp_queue_buffer(double Vs, double Ve, double Vr, double len);
-static double _mp_estimate_angular_jerk(const struct mpBuffer *p, double previous_velocity);
-static double _mp_get_length(double Vi, double Vt);
+static uint8_t _mp_update_move(const struct mpMovePlanner *m);
+static uint8_t _mp_get_move_type(const struct mpBuffer *b);
 
-static uint8_t _mp_compute_regions(double Vi, double Vt, double Vf, struct mpMovePlanner *m);
+static struct mpBuffer *_mp_queue_buffer(const double Vs, const double Ve, 
+									     const double Vr, const double len);
+
+static double _mp_estimate_angular_jerk(const struct mpBuffer *p, 
+									    double previous_velocity);
+
+static double _mp_get_length(const double Vi, const double Vt);
+
+static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMovePlanner *m);
 static uint8_t _mp_construct_backward_move(struct mpMovePlanner *p, struct mpMovePlanner *m);
 static uint8_t _mp_detect_backward_stop(struct mpMovePlanner *p, struct mpMovePlanner *m);
-static uint8_t _mp_recompute_backward(struct mpMovePlanner *m);
-//static uint8_t _mp_recompute_forward(struct mpMovePlanner *m);
+static uint8_t _mp_backward_replan(struct mpMovePlanner *m);
+//static uint8_t _mp_forward_replan(struct mpMovePlanner *m);
 
 void mp_trap(uint8_t code);
 
@@ -977,10 +984,8 @@ static uint8_t _mp_run_arc(struct mpBuffer *b)
 uint8_t mp_aline(double x, double y, double z, double a, double minutes)
 {
 	uint8_t i;
-	uint8_t path_mode;
-//	double angular_jerk;
-	double previous_velocity;
-	struct mpBuffer *p; 		// previous tail buffer pointer
+//	double previous_velocity;
+	struct mpBuffer *t; 		// previous tail buffer pointer
 	struct mpMovePlanner *m = &mp[0];
 	
 	// capture the function args and compute line length
@@ -1003,19 +1008,20 @@ uint8_t mp_aline(double x, double y, double z, double a, double minutes)
 	m->initial_velocity = 0;	// strictly for clarity in debugging...
 	m->cruise_velocity = 0;		//...has no effect on the answer
 
-	path_mode = cfg.gcode_path_control;			// starting path mode
+//	mm.path_mode = cfg.gcode_path_control;		// starting path mode
+	mm.path_mode = cm_get_path_control_mode();	// starting path mode
 	for (i=0; i < AXES; i++) {					// compute unit vector
 		mm.unit_vec[i] = (mm.target[i] - mm.position[i]) / m->length;
 	}
-	mr.linear_jerk_div2 = cfg.max_linear_jerk / 2; // init linear jerk term
+	mr.linear_jerk_div2 = cfg.max_linear_jerk/2;// init linear jerk term
 
 	// setup initial conditions from the previous move
-	p = mp_get_prev_buffer_implicit();			// get previous tail
+	t = mp_get_prev_buffer_implicit();			// get previous tail
+
 	// handle case where previous move is an arc
-	if ((p->move_type == MP_TYPE_ARC) && 
-		(p->buffer_state != MP_BUFFER_EMPTY)) {	// q'd or running arc
-		previous_velocity = p->end_velocity;
-		m->initial_velocity_req = previous_velocity;// +++ test various arc join speed changes up and down
+	if ((t->move_type == MP_TYPE_ARC) && 
+		(t->buffer_state != MP_BUFFER_EMPTY)) {	// q'd or running arc
+		m->initial_velocity_req = t->end_velocity;// +++ test various arc join speed changes up and down
 
 		// compute region lengths & Vt, w/Vf=0
 		ritorno(_mp_compute_regions(m->initial_velocity_req, m->target_velocity, 0, m));
@@ -1023,38 +1029,35 @@ uint8_t mp_aline(double x, double y, double z, double a, double minutes)
 		// don't bother to backplan into the arc. Just return.
 		return (TG_OK);
 	} 
+
 	// handle non-arc cases
-	if (p->buffer_state == MP_BUFFER_QUEUED) { 	// q'd but not running
-//		previous_velocity = p->start_velocity;	// Vc of previous move
-		previous_velocity = p->request_velocity;// Vt of previous move
-	} else if (p->buffer_state == MP_BUFFER_EMPTY) {// no prev move or done
-		previous_velocity = 0;
-		path_mode = PATH_EXACT_STOP;			// downgrade path mode
+	if (t->buffer_state == MP_BUFFER_QUEUED) { 	// q'd but not running
+		m->initial_velocity_req = t->request_velocity;// Vt of previous move
+	} else if (t->buffer_state == MP_BUFFER_EMPTY) {// no prev move or done
+		m->initial_velocity_req = 0;
+		mm.path_mode = PATH_EXACT_STOP;			// downgrade path mode
 	} else { // tail is RUNNING or PENDING
-		previous_velocity = p->end_velocity;	// typically 0 velocity
-		path_mode = PATH_EXACT_PATH;			// downgrade path mode
+		m->initial_velocity_req = t->end_velocity;// typically 0 velocity
+		mm.path_mode = PATH_EXACT_PATH;			// downgrade path mode
 	}
-	// estimate angular jerk - uses unit vectors and previous_velocity
-	m->angular_jerk = _mp_estimate_angular_jerk(p, previous_velocity);
+
+	// estimate angular jerk - uses unit vectors & requested initial velocity
+	m->angular_jerk = _mp_estimate_angular_jerk(t, m->initial_velocity_req);
 
 	// setup initial velocity and do path downgrades
-	if (path_mode == PATH_CONTINUOUS) {
+	if (mm.path_mode == PATH_CONTINUOUS) {
 		if (m->angular_jerk > cfg.angular_jerk_lower) {
-			path_mode = PATH_EXACT_PATH; 		// downgrade path
-		} else if (m->target_velocity > previous_velocity) {// accels
-			m->initial_velocity_req = previous_velocity;
-		} else { 								// decels and cruises
-			m->initial_velocity_req = min(previous_velocity, m->target_velocity);
+			mm.path_mode = PATH_EXACT_PATH; 	// downgrade path
+		} else { // set Vir to allow for accel, decel or cruise
+			m->initial_velocity_req = min(m->initial_velocity_req, m->target_velocity);
 		}
-	} 
-	if (path_mode == PATH_EXACT_PATH) {
+	}
+	if (mm.path_mode == PATH_EXACT_PATH) {
 		if (m->angular_jerk > cfg.angular_jerk_upper) {// downgrade path
-			path_mode = PATH_EXACT_STOP; // illustrative, but unnecessary
+			mm.path_mode = PATH_EXACT_STOP; //illustrative, but unnecessary
 			m->initial_velocity_req = 0;
 		} else { // adjust way-point velocity to reduce angular jerk
-//			m->initial_velocity_req = previous_velocity * (1 - m->angular_jerk);
-			m->initial_velocity_req = previous_velocity * 
-								(1 - (m->angular_jerk - cfg.angular_jerk_lower));
+			m->initial_velocity_req *= (1 - (m->angular_jerk - cfg.angular_jerk_lower));
 		}
 	}
 
@@ -1070,13 +1073,11 @@ uint8_t mp_aline(double x, double y, double z, double a, double minutes)
 //	if (mm.unit_vec[X] < 0) mp_trap(4);			// point X reverses
 	// ++++++++ END TRAPS +++++++++++++++++++++++
 
-	ritorno(_mp_recompute_backward(m));
+	ritorno(_mp_backward_replan(m));
 
 	return (TG_OK);
 }
 
-// ++++++++ TRAPS +++++++++++++++++++++++++++
-// ++++++++ test code for simulation ++++++++
 void mp_trap(uint8_t code)
 {
 	uint8_t c = code;
@@ -1149,7 +1150,6 @@ void mp_trap(uint8_t code)
  *		Vi = actual initial velocity, which may be Vir or less
  *		Vc = cruise velocity, which may be Vt or less
  *		regions = numberof active regions - 0 through 3
- *
  */
 static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMovePlanner *m) 
 {
@@ -1261,8 +1261,8 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
 }
 
 /*
- * _mp_recompute_backward()
- * _mp_recompute_forward()
+ * _mp_backward_replan()
+ * _mp_forward_replan()
  *
  *	Recompute the previous moves to optimize target velocities.
  *
@@ -1285,7 +1285,7 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
  *	velocity.
  */
 
-static uint8_t _mp_recompute_backward(struct mpMovePlanner *m)
+static uint8_t _mp_backward_replan(struct mpMovePlanner *m)
 {
 	struct mpMovePlanner *p = &mp[1];// pointer to a move in bkwds chain
 	struct mpMovePlanner *tmp;
@@ -1300,7 +1300,7 @@ static uint8_t _mp_recompute_backward(struct mpMovePlanner *m)
 }
 
 /*
-static uint8_t _mp_recompute_forward(struct mpMovePlanner *m)
+static uint8_t _mp_forward_replan(struct mpMovePlanner *m)
 {
 	return (TG_OK);
 }
@@ -1343,19 +1343,26 @@ static uint8_t _mp_construct_backward_move(struct mpMovePlanner *p, struct mpMov
 /*
  * Detect if the move is a stopping point for backwards replanning
  * Returns TG_COMPLETE if it is a stopping point, TG_OK if it's not
- * Returns TG_OK if the head is executing but the body and tail are idle
- * This is an acceptable condition for a replan to occur.
  */
 static uint8_t _mp_detect_backward_stop(struct mpMovePlanner *p, struct mpMovePlanner *m)
 {
 	struct mpBuffer *r = mp_get_run_buffer();	// current run buffer address
 
-	// test if you have gone back one further than the current running move
+	// exit if you've gone back one further than the current running move
 	if ((p->head->nx == r) || (p->body->nx == r) || (p->tail->nx == r)) {
 		return (TG_COMPLETE);
 	}
 
-	// detect if move is the currently executing move (anchor)
+/*
+	// exit if the inspected move is not an aline
+	if ((p->tail->move_type != MP_TYPE_NULL) &&
+		(p->tail->move_type != MP_TYPE_ACCEL) &&
+		(p->tail->move_type != MP_TYPE_CRUISE) &&
+		(p->tail->move_type != MP_TYPE_DECEL)) {
+		return (TG_COMPLETE);
+	}
+*/
+	// exit if inspected move is the currently executing move (anchor)
 	if ((p->head == r) || (p->body == r) || (p->tail == r)) {
 		if ((p->head->buffer_state != MP_BUFFER_QUEUED) && (p->regions == 3)) {
 			return (TG_OK);
@@ -1363,7 +1370,7 @@ static uint8_t _mp_detect_backward_stop(struct mpMovePlanner *p, struct mpMovePl
 			return (TG_COMPLETE);
 		}
 	}
-	// It's OK if the head is executing but the body and tail must be idle
+	// It's OK if the anchor head is executing but body & tail must be idle
 	if (p->body->buffer_state != MP_BUFFER_QUEUED) {
 		return (TG_COMPLETE);
 	}
@@ -1371,12 +1378,12 @@ static uint8_t _mp_detect_backward_stop(struct mpMovePlanner *p, struct mpMovePl
 		return (TG_COMPLETE);
 	}
 
-	// detect an exact stop on the current block
+	// exit if the current move is an exact stop
 	if (m->initial_velocity_req < ROUNDING_ERROR) {
 		return (TG_COMPLETE);
 	}
 
-	// detect if move is already optimally computed
+	// exit if the inspected move is already optimally computed
 	if ((p->initial_velocity == p->initial_velocity_req) && 
 		(p->cruise_velocity == p->target_velocity) &&
 		(p->final_velocity == m->initial_velocity_req)) {
@@ -1385,81 +1392,6 @@ static uint8_t _mp_detect_backward_stop(struct mpMovePlanner *p, struct mpMovePl
 	return (TG_OK);
 }
 /*
-	struct mpBuffer *r = mp_get_run_buffer();	// current run buffer address
-
-	// test if you have gone back one further than the current running move
-	if ((p->head->nx == r) || (p->body->nx == r) || (p->tail->nx == r)) {
-		return (TG_COMPLETE);
-	}
-
-	// detect if move is the currently executing move (anchor)
-	if ((p->head == r) || (p->body == r) || (p->tail == r)) {
-//		if ((p->head->buffer_state != MP_BUFFER_QUEUED) && (p->regions == 3)) {
-		if (p->head->buffer_state != MP_BUFFER_QUEUED) {
-			return (TG_OK);
-		} else {
-			return (TG_COMPLETE);
-		}
-	}
-	if (p->body->buffer_state != MP_BUFFER_QUEUED) {
-		return (TG_COMPLETE);
-	}
-	if (p->tail->buffer_state != MP_BUFFER_QUEUED) {
-		return (TG_COMPLETE);
-	}
-
-	// detect an exact stop on the current block
-	if (m->initial_velocity_req < ROUNDING_ERROR) {
-		return (TG_COMPLETE);
-	}
-	if ((p->head->start_velocity == p->head->request_velocity) && 
-		(p->body->start_velocity == p->body->request_velocity) &&
-		(p->tail->end_velocity == p->tail->request_velocity)) {
-		return (TG_COMPLETE);
-	}
-
-	// detect if move is already optimally computed
-//	if ((p->initial_velocity == p->initial_velocity_req) && 
-//		(p->cruise_velocity == p->target_velocity) &&
-//		(p->final_velocity == m->initial_velocity_req)) {
-//		return (TG_COMPLETE);
-//	}
-	return (TG_OK);
-}
-*/
-/*
-
-	// test if you have gone back one further than the current running move
-	struct mpBuffer *r = mp_get_run_buffer();	// current run buffer address
-//	if ((p->head->nx == r) || (p->body->nx == r) || (p->tail->nx == r)) {
-//		return (TG_COMPLETE);
-//	}
-	// if *body* or *tail* of the move is running it's NOT OK to replan
-//	if ((p->body == r) || (p->tail == r)) {
-//		return (TG_COMPLETE);
-//	}
-
-	// detect if move is the currently executing move (anchor)
-	if ((p->head == r) || (p->body == r) || (p->tail == r)) {
-		if ((p->head->buffer_state != MP_BUFFER_QUEUED) && (p->regions == 3)) {
-			return (TG_OK);
-		} else {
-			return (TG_COMPLETE);
-		}
-	}
-	// Detect buffers for end conditions - move must be queued & idle
-	// It's OK if the head is executing but the body and tail must be idle
-	if (p->body->buffer_state != MP_BUFFER_QUEUED) {
-		return (TG_COMPLETE);
-	}
-	if (p->tail->buffer_state != MP_BUFFER_QUEUED) {
-		return (TG_COMPLETE);
-	}
-
-	// test if the inspected move is an exact stop
-	if (m->initial_velocity_req < ROUNDING_ERROR) {
-		return (TG_COMPLETE);
-	}
 	// test if the inspected move is already optimized
 	if ((p->head->start_velocity == p->head->request_velocity) && 
 		(p->body->start_velocity == p->body->request_velocity) &&
@@ -1467,6 +1399,10 @@ static uint8_t _mp_detect_backward_stop(struct mpMovePlanner *p, struct mpMovePl
 		return (TG_COMPLETE);
 	}
 
+	// if *body* or *tail* of the move is running it's NOT OK to replan
+	if ((p->body == r) || (p->tail == r)) {
+		return (TG_COMPLETE);
+	}
 
 	// if the *head* of the inspected move is running it's OK to replan
 	// ...but it's unnecessary to actually test for this condition
@@ -1474,49 +1410,14 @@ static uint8_t _mp_detect_backward_stop(struct mpMovePlanner *p, struct mpMovePl
 //		return (TG_OK);
 //	}
 	return (TG_OK);
-}
-*/
-/*
-	struct mpBuffer *r = mp_get_run_buffer();	// current run buffer address
 
-	// detect if move is the currently executing move (anchor)
-	if ((p->head == r) || (p->body == r) || (p->tail == r)) {
-		if ((p->head->buffer_state != MP_BUFFER_QUEUED) && (p->regions == 3)) {
-			return (TG_OK);
-		} else {
-			return (TG_COMPLETE);
-		}
-	}
-
-	// Detect buffers for end conditions - move must be queued & idle
-	// It's OK if the head is executing but the body and tail must be idle
-		if (p->body->buffer_state != MP_BUFFER_QUEUED) {
-			return (TG_COMPLETE);
-		}
-		if (p->tail->buffer_state != MP_BUFFER_QUEUED) {
-			return (TG_COMPLETE);
-		}
-
-	// detect an exact stop on the current block
-	if (m->initial_velocity_req < ROUNDING_ERROR) {
-		return (TG_COMPLETE);
-	}
-
-	// detect if move is already optimally computed
-	if ((p->initial_velocity == p->initial_velocity_req) && 
-		(p->cruise_velocity == p->target_velocity) &&
-		(p->final_velocity == m->initial_velocity_req)) {
-		return (TG_COMPLETE);
-	}
-	return (TG_OK);
-}
 */
 
 /*	
  * _mp_get_length()
  *
- * 	A convenient expression for determinting the length of a line 
- *	given the starting and ending velocities and the jerk is:
+ * 	A convenient expression for determining the length of a line 
+ *	given the starting and ending velocities and the jerk:
  *
  *	  length = abs(end-start) * sqrt(abs(end-start) / max_linear_jerk)
  *
@@ -1525,12 +1426,12 @@ static uint8_t _mp_detect_backward_stop(struct mpMovePlanner *p, struct mpMovePl
  *	  time = 2 * sqrt(abs(end-start) / max_linear_jerk);	// 5.x
  *	  length = abs(end-start) * time / 2;					// [2]
  *
- *	Let the compiler optimize out the Vi=0 constant case
+ *	Let the compiler optimize out the start=0 constant case
  */
 
-inline static double _mp_get_length(double start, double end)
+inline static double _mp_get_length(const double start, const double end)
 {
-	double delta = fabs(start - end);
+	double delta = fabs(end - start);
 	return (delta * sqrt(delta / cfg.max_linear_jerk));
 }
 
@@ -1551,7 +1452,7 @@ static double _mp_estimate_angular_jerk(const struct mpBuffer *p, double previou
 	double j = (sqrt(square(mm.unit_vec[X] - p->unit_vec[X]) +
 				 	 square(mm.unit_vec[Y] - p->unit_vec[Y]) +
 				 	 square(mm.unit_vec[Z] - p->unit_vec[Z]))/2.0);
-	j *= min(1,(previous_velocity / MAX_VELOCITY)); // +++ remove to test
+//	j *= min(1,(previous_velocity / MAX_VELOCITY)); // +++ remove to test
 	return (j);
 }
 
@@ -1561,31 +1462,31 @@ static double _mp_estimate_angular_jerk(const struct mpBuffer *p, double previou
 
 static uint8_t _mp_queue_move(struct mpMovePlanner *m) 
 {
-	if ((m->head = _mp_queue_buffer(
-								m->initial_velocity, 
-								m->cruise_velocity, 
-								m->initial_velocity_req,
-								m->head_length)) == NULL) {
+	if ((m->head = _mp_queue_buffer(m->initial_velocity, 
+									m->cruise_velocity, 
+									m->initial_velocity_req,
+									m->head_length)) == NULL) {
 		return (TG_BUFFER_FULL_FATAL);
 	}
-	if ((m->body = _mp_queue_buffer(
-								m->cruise_velocity, 
-								m->cruise_velocity, 
-								m->target_velocity, 
-								m->body_length)) == NULL) {
+	if ((m->body = _mp_queue_buffer(m->cruise_velocity, 
+									m->cruise_velocity, 
+									m->target_velocity, 
+									m->body_length)) == NULL) {
 		return (TG_BUFFER_FULL_FATAL);
 	}
-	if ((m->tail = _mp_queue_buffer(
-								m->cruise_velocity, 
-								m->final_velocity, 
-								m->target_velocity, 
-								m->tail_length)) == NULL) {
+	if ((m->tail = _mp_queue_buffer(m->cruise_velocity, 
+									m->final_velocity, 
+									m->target_velocity, 
+									m->tail_length)) == NULL) {
 		return (TG_BUFFER_FULL_FATAL);
 	}
 	return (TG_OK);
 }
 
-static struct mpBuffer *_mp_queue_buffer(double Vs, double Ve, double Vr, double len)
+static struct mpBuffer *_mp_queue_buffer(const double Vs,
+										 const double Ve, 		
+										 const double Vr, 
+										 const double len)
 {
 	struct mpBuffer *b;
 
@@ -1609,7 +1510,7 @@ static struct mpBuffer *_mp_queue_buffer(double Vs, double Ve, double Vr, double
  * _mp_get_move_type() - based on conditions in the buffer
  */
 
-static uint8_t _mp_get_move_type(struct mpBuffer *b)
+static uint8_t _mp_get_move_type(const struct mpBuffer *b)
 {
 	if (b->length < MIN_LINE_LENGTH) {
 		return (MP_TYPE_NULL);
@@ -1626,7 +1527,7 @@ static uint8_t _mp_get_move_type(struct mpBuffer *b)
  * _mp_update_move() - update buffers according to M struct
  */
 
-static uint8_t _mp_update_move(struct mpMovePlanner *m) 
+static uint8_t _mp_update_move(const struct mpMovePlanner *m) 
 {
 	m->head->start_velocity = m->initial_velocity;
 	m->head->end_velocity = m->cruise_velocity;
