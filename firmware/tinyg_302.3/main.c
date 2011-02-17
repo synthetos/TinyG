@@ -2,7 +2,7 @@
  * main.c - TinyG - An embedded rs274/ngc CNC controller
  * Part of TinyG project
  *
- * Copyright (c) 2011 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2011 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify
  * it under the terms of the Creative Commons CC-BY-NC license 
@@ -88,11 +88,10 @@
 
 . This code is possibly over-commented. I do this to remind 
   myself in 6 months on what I was thinking when I wrote the code. 
-  More skilled programmers won't need all these comments. - Alden
+  More skilled programmers won't need all these comments.
 
 ---- ToDo ----
 
-	- implement Aux device for direct Arduino drive (mooted)
 	- implement RS485 device and packet protocol
 	- finish direct drive commands
 */
@@ -129,7 +128,7 @@
  *
  *	System startup procedes through the following levels:
  *
- *	  tg_system_init() 			- called first and only once
+ *	  tg_system_init() 			- called first (on reset) and only once
  *	  tg_application_init()		- typically only called at startup
  *	  tg_unit_tests() 			- called at startup only if unit tests enabled
  *	  tg_application_startup()	- called last; may be called again at any point
@@ -158,7 +157,7 @@ void tg_application_init(void)
 {
 	st_init(); 				// stepper subsystem
 	ls_init();				// limit switches
-	mq_init();				// move buffers
+	mq_init();				// motor queues (buffers)
 	mp_init();				// motion planning subsystem
 	sp_init();				// spindle controller
 	en_init();				// encoders

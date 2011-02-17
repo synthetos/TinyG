@@ -29,7 +29,8 @@
  *	Most of these factors are the result of a lot of tweaking. 
  *	Change at your peril.
  */
-#define MP_BUFFER_SIZE 48		// sub-move buffer pool (8 min, 255 max)
+//#define MP_BUFFER_SIZE 12		// sub-move buffer pool (48 min, 255 max)
+#define MP_BUFFER_SIZE 48		// sub-move buffer pool (48 min, 255 max)
 #define MP_BUFFERS_NEEDED 3		// write buffers needed for aline
 
 #define MIN_LINE_LENGTH 0.01	// mm - smallest complete line it can handle

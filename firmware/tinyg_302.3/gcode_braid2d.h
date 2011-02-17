@@ -2,7 +2,7 @@
 gcode_braind2d.h - data file containing gcode
 */
 
-// braid test
+// braid test - in 2 arrays
 const char PROGMEM braid2d[] = "\
 T1M6\n\
 G17\n\
@@ -2117,7 +2117,9 @@ X11.664Y-33.076\n\
 M30";
 
 
-/*
+/****************************************************************
+*/
+const char PROGMEM braid2d_part2[] = "\
 X11.945Y-33.215\n\
 X12.536Y-33.483\n\
 X12.846Y-33.611\n\
@@ -2526,4 +2528,3 @@ G0Z6.000\n\
 G0Z20.000\n\
 G0X0.000Y0.000\n\
 M30";
-*/

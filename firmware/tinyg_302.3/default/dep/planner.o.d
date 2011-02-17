@@ -8,7 +8,7 @@ planner.o: ../planner.c ../xmega_init.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/math.h ../tinyg.h \
   ../gcode.h ../config.h ../settings.h ../planner.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/string.h ../motor_queue.h \
-  ../stepper.h
+  ../canonical_machine.h ../stepper.h
 
 ../xmega_init.h:
 
@@ -39,5 +39,7 @@ c:/winavr-20100110/lib/gcc/../../avr/include/math.h:
 c:/winavr-20100110/lib/gcc/../../avr/include/string.h:
 
 ../motor_queue.h:
+
+../canonical_machine.h:
 
 ../stepper.h:

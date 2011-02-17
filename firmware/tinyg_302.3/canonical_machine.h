@@ -34,6 +34,7 @@ double cm_get_position(uint8_t axis);
 uint8_t cm_get_next_action(void);
 uint8_t cm_get_motion_mode(void);
 uint8_t cm_get_absolute_mode(void);
+uint8_t cm_get_path_control_mode(void);
 void cm_set_targets(double x, double y, double z, double a);
 void cm_set_offsets(double i, double j, double k);
 void cm_set_radius(double r);
