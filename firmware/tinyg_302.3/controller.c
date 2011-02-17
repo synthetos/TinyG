@@ -2,7 +2,7 @@
  * controller.c - tinyg controller and top level parser
  * Part of TinyG project
  *
- * Copyright (c) 2011 Alden S. Hart Jr.
+ * Copyright (c) 2010-2011 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify
  * it under the terms of the Creative Commons CC-BY-NC license 
@@ -36,11 +36,11 @@
  *	resume operations that would have blocked (see line generator for an 
  *	example). A task returns TG_EAGAIN to indicate a blocking point. If 
  *	TG_EAGAIN is received the controller quits the loop (HSM) and starts 
- *	the next one in the round-robnin (all HSMs are round robined).  
+ *	the next one in the round-robin (all HSMs are round robined).  
  *	Any other return code allows the controller to proceed down the task 
  *	list. See end notes in this file for how to write a continuation.
  *
- *	Interrupts run at the highest priority level; kernel tasks are 
+ *	Interrupts run at the highest priority levels; kernel tasks are 
  *	organized into priority groups below the interrupt levels. The 
  *	priority of operations is:
  *
@@ -81,12 +81,13 @@
  *		D,A			enter DIRECT_DRIVE_MODE
  *		F			enter FILE_MODE (returns automatically after file ends)
  *		H			help screen (returns to IDLE mode)
- *		T			execute test (whatever you link into it)
+ *		T			execute primary test (whatever you link into it)
+ *		U			execute secondary test (whatever you link into it)
  *		I			<reserved>
  *		V			<reserved>
  *
  *	Once in the selected mode these characters are not active as mode 
- *	selects. Most modes use Q (Quit) to exit and return to idle mode.
+ *	selects. All modes use Q (Quit) to exit and return to idle mode.
  */
 
 #include <stdio.h>
@@ -131,7 +132,10 @@ static int _tg_term_handler(void);
 static int _tg_pause_handler(void);
 static int _tg_resume_handler(void);
 static int _tg_reset(void);
-static int _tg_test(void);
+static int _tg_print_help(void);
+static int _tg_test_T(void);
+static int _tg_test_U(void);
+static void _tg_canned_startup(void);
 
 /*
  * tg_init() - controller init
@@ -154,7 +158,7 @@ void tg_alive()
 #ifdef __SIMULATION_MODE
 	return;
 #endif									// see tinyg.h for string
-	printf_P(PSTR("____ TinyG %S ____\n"), (PSTR(TINYG_VERSION)));
+	printf_P(PSTR("==== TinyG %S ====\n"), (PSTR(TINYG_VERSION)));
 	_tg_prompt();
 }
 
@@ -240,13 +244,14 @@ static int _tg_read_next_line()
 {
 	// test if it's OK to read the next line
 	if (!mp_test_write_buffer(MP_BUFFERS_NEEDED)) {
-		return (TG_EAGAIN);				// exit w/abort if not enough buffers
+		return (TG_EAGAIN);				// exit w/busy if not enough buffers
 	}
 	// read input line or return if not a completed line
+	// xio_gets() is a non-blocking workalike of fgets()
 	if ((tg.status = xio_gets(tg.src, tg.buf, sizeof(tg.buf))) == TG_OK) {
 //		printf_P(PSTR("Read next line %s\n"), tg.buf);
 		tg.status = _tg_parser(tg.buf);	// dispatch to active parser
-		tg.prompted = FALSE;			// revert prompt state
+		tg.prompted = FALSE;			// signals ready-for-next-line
 	}
 
 	// handle case where the parser detected a QUIT
@@ -260,7 +265,7 @@ static int _tg_read_next_line()
 		tg_reset_source();				// reset to default src
 	}
 
-	// Note that TG_EAGAIN and TG_NOOPs will just flow through
+	// Note that TG_OK, TG_EAGAIN, TG_NOOP etc. will just flow through
 	return (tg.status);
 }
 
@@ -270,105 +275,12 @@ static int _tg_read_next_line()
 
 uint8_t tg_application_startup(void)
 {
-	tg.status = TG_OK;					// pre-emptively set
-
-	// conditionally run a startup homing cycle
-	if (cfg.homing_mode == TRUE) { 
+	tg.status = TG_OK;
+	if (cfg.homing_mode == TRUE) { 	// conditionally run startup homing
 		tg.status = cm_homing_cycle();
 	}
-
-// TESTS AND CANNED STARTUP ROUTINES
-// Pre-load the USB RX (input) buffer with some test strings
-// Be mindful of the char limit on the RX_BUFFER_SIZE (circular buffer)
-
 #ifdef __SIMULATION_MODE
-	xio_queue_RX_string_usb("T\n");		// run test file
-//	xio_queue_RX_string_usb("?\n");		// enter config mode and dump config
-//	xio_queue_RX_string_usb("Q\n");		// go to idle mode
-//	xio_queue_RX_string_usb("R\n");		// run a homing cycle
-
-//	xio_queue_RX_string_usb("!\n");		// kill
-//	xio_queue_RX_string_usb("@\n");		// pause
-//	xio_queue_RX_string_usb("$\n");		// resume
-
-//	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
-//	xio_queue_RX_string_usb("g1 f450 x10 y13\n");
-//	xio_queue_RX_string_usb("g0x0y0z0\n");
-//	xio_queue_RX_string_usb("g0x10y10\n");
-//	xio_queue_RX_string_usb("g0x1000\n");
-//	xio_queue_RX_string_usb("g0x10000\n");
-//	xio_queue_RX_string_usb("g0x10\ng4p1\ng0x0\n");
-//	xio_queue_RX_string_usb("g0 x-10 (MSGtest)\n");
-
-//	xio_queue_RX_string_usb("g1 F500 x10\n");
-//	xio_queue_RX_string_usb("g1 F100 y8\n");
-//	xio_queue_RX_string_usb("g1 F100 x10.1\n");
-//	xio_queue_RX_string_usb("g0 x2.1 y1.1 z2.2\n");
-//	xio_queue_RX_string_usb("g4 p2\n");
-
-//	xio_queue_RX_string_usb("g1 f400 x0\n");
-//	xio_queue_RX_string_usb("y0\n");
-//	xio_queue_RX_string_usb("z0\n");
-
-//	xio_queue_RX_string_usb("g2x100y100z25i50j50f249\n");
-//	xio_queue_RX_string_usb("g2 f300 x10 y10 i8 j8\n");
-//	xio_queue_RX_string_usb("g2 f300 x10 y10 i5 j5\n");
-//	xio_queue_RX_string_usb("g2 f300 x3 y3 i1.5 j1.5\n");
-
-
-//	xio_queue_RX_string_usb("g0 x100 y110 z120\n");
-//	xio_queue_RX_string_usb("g0 x0 y0 z0\n");
-
-//	xio_queue_RX_string_usb("g1 f400 x0\n");
-//	xio_queue_RX_string_usb("y0\n");
-//	xio_queue_RX_string_usb("z0\n");
-//	xio_queue_RX_string_usb("x100\n");
-//	xio_queue_RX_string_usb("y100\n");
-//	xio_queue_RX_string_usb("z100\n");
-
-//	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
-//	xio_queue_RX_string_usb("g1 f200 x20 y22.5 z28\n");
-//	xio_queue_RX_string_usb("g0 x20 y22.5 z28\n");
-//	xio_queue_RX_string_usb("g1 f340 x0 y10 z-13\n");
-
-//	xio_queue_RX_string_usb("g1 f300 x3 y4 z5\n");
-//	xio_queue_RX_string_usb("g1 f450 x-10 y-11 z-21.7\n");
-//	xio_queue_RX_string_usb("g0 x0 y10 z-10\n");
-
-//	xio_queue_RX_string_usb("g0 x1 y1.1 z1.2\n");
-//	xio_queue_RX_string_usb("x-1\n");
-//	xio_queue_RX_string_usb("y-1.3\n");
-//	xio_queue_RX_string_usb("z-2.01\n");
-
-//	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
-//	xio_queue_RX_string_usb("g0x10y10z0\n");
-//	xio_queue_RX_string_usb("g91g0x5y5\n");
-//	xio_queue_RX_string_usb("g1 f200 x10\n");
-//	xio_queue_RX_string_usb("y10\n");
-//	xio_queue_RX_string_usb("g0 x100 y100 z100 a100\n");
-//	xio_queue_RX_string_usb("?\n");
-
-// mudflap simulation
-/*
-	xio_queue_RX_string_usb("(SuperCam Ver 2.2a SPINDLE)\n");
-	xio_queue_RX_string_usb("N1 G20	( set inches mode - ash )\n");
-	xio_queue_RX_string_usb("N1 G20\n");
-	xio_queue_RX_string_usb("N5 G40 G17\n");
-	xio_queue_RX_string_usb("N10 T1 M06\n");
-	xio_queue_RX_string_usb("(N15 G90 G0 X0 Y0 Z0)\n");
-	xio_queue_RX_string_usb("N20 S5000 M03\n");
-	xio_queue_RX_string_usb("N25 G00 F30.0\n");
-	xio_queue_RX_string_usb("N30 X0.076 Y0.341\n");
-	xio_queue_RX_string_usb("N35 G00 Z-1.000 F90.0\n");
-	xio_queue_RX_string_usb("N40 G01 Z-1.125 F30.0\n");
-	xio_queue_RX_string_usb("N45 G01 F60.0\n");
-	xio_queue_RX_string_usb("N50 X0.064 Y0.326\n");
-	xio_queue_RX_string_usb("N55 X0.060 Y0.293\n");
-	xio_queue_RX_string_usb("N60 X0.077 Y0.267\n");
-	xio_queue_RX_string_usb("N65 X0.111 Y0.257\n");
-	xio_queue_RX_string_usb("N70 X0.149 Y0.252\n");
-	xio_queue_RX_string_usb("N75 X0.188 Y0.255\n");
-*/
+	_tg_canned_startup();			// pre-load input buffers (for test)
 #endif
 	return (tg.status);
 }
@@ -380,12 +292,12 @@ uint8_t tg_application_startup(void)
  *	parsers. Calls lower level parser based on mode
  *
  *	Keeps the system MODE, one of:
- *		- control mode (no lines are interpreted, just control characters)
+ *		- idle mode (no lines are interpreted, just control characters)
  *		- config mode
- *		- direct drive mode
  *		- gcode mode
+ *		- direct drive mode
  *
- *	In control mode it auto-detects mode by first character of input buffer
+ *	In idle mode it auto-detects mode by first character of input buffer
  *	Quits from a parser are handled by the controller (not individual parsers)
  *	Preserves and passes through return codes (status codes) from lower levels
  */
@@ -398,10 +310,11 @@ int _tg_parser(char * buf)
 			case 'G': case 'M': case 'N': case 'F': case '(': case '%': case '\\':
 				_tg_set_mode(TG_GCODE_MODE); break;
 			case 'C': case '?': _tg_set_mode(TG_CONFIG_MODE); break;
-			case 'D': _tg_set_mode(TG_DIRECT_DRIVE_MODE); break;
+			case 'D': 			_tg_set_mode(TG_DIRECT_DRIVE_MODE); break;
 			case 'R': return (_tg_reset());
-			case 'T': return (_tg_test());		// run whatever test you want
-//			case 'H': return (_tg_help_file());
+			case 'T': return (_tg_test_T());	// run whatever test u want
+			case 'U': return (_tg_test_U());	// run 2nd test you want
+			case 'H': return (_tg_print_help());
 //			case 'I': return (_tg_reserved());	// reserved
 //			case 'V': return (_tg_reserved());	// reserved
 			case 'Q': return (TG_OK);			// no operation on a Q
@@ -523,7 +436,7 @@ void _tg_set_source(uint8_t d)
 
 char tgModeStringIdle[] PROGMEM = "IDLE"; // put strings in program memory
 char tgModeStringConfig[] PROGMEM = "CONFIG";
-char tgModeStringGCode[] PROGMEM = "G-CODE";
+char tgModeStringGCode[] PROGMEM = "GCODE";
 char tgModeStringDirect[] PROGMEM = "DIRECT";
 
 PGM_P tgModeStrings[] PROGMEM = {	// put string pointer array in program memory
@@ -597,11 +510,38 @@ void tg_print_status(const uint8_t status_code, const char *textbuf)
 //	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgStatus[status_code])); // w/no text
 }
 
+
 /*
- * _tg_test() - run a test file from program memory
+ * _tg_print_help() - Send help screen to stderr
  */
 
-int _tg_test(void)
+const char tgHelp[] PROGMEM = "\
+Welcome to TinyG\n\
+You are  in IDLE mode as you can see by the prompt\n\
+- To enter CONFIG mode hit '?' or 'c'\n\
+- To enter GCODE mode hit 'g' or start loading gcode\n\
+- To exit any mode hit 'q'\n\
+- To display the state of any mode hit '?'\n\
+- To display this help file hit 'h'\n\
+Please log an issues you have with www.synthetos.com\n\
+Have fun\n";
+
+int _tg_print_help(void)
+{
+//	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgHelp[0]));
+	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(tgHelp));
+//	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgStatus[status_code])); // w/no text
+	return (TG_OK);
+}
+
+/*********************************************************************************
+ * Various test routines
+ * _tg_test_T() - 'T' runs a test file from program memory
+ * _tg_test_U() - 'U' runs a different test file from program memory
+ * _tg_canned_startup() - loads input buffer at reset
+ */
+
+int _tg_test_T(void)
 {
 //	xio_open_pgm(PGMFILE(&trajectory_cases_01));
 //	xio_open_pgm(PGMFILE(&system_test01)); 		// collected system tests
@@ -612,12 +552,122 @@ int _tg_test(void)
 //	xio_open_pgm(PGMFILE(&straight_feed_test));
 //	xio_open_pgm(PGMFILE(&arc_feed_test));
 //	xio_open_pgm(PGMFILE(&contraptor_circle)); 	// contraptor circle test
-	xio_open_pgm(PGMFILE(&braid2d)); 			// braid test
+	xio_open_pgm(PGMFILE(&braid2d)); 			// braid test, part 1
 	_tg_set_source(XIO_DEV_PGM);
 	_tg_set_mode(TG_GCODE_MODE);
 	return (TG_OK);
 }
 
+int _tg_test_U(void)
+{
+	xio_open_pgm(PGMFILE(&braid2d_part2)); 		// braid test, part 2
+	_tg_set_source(XIO_DEV_PGM);
+	_tg_set_mode(TG_GCODE_MODE);
+	return (TG_OK);
+}
+
+// TESTS AND CANNED STARTUP ROUTINES
+// Pre-load the USB RX (input) buffer with some test strings
+// Be mindful of the char limit on the RX_BUFFER_SIZE (circular buffer)
+
+void _tg_canned_startup()
+{
+//	xio_queue_RX_string_usb("H\n");		// run help file
+
+	xio_queue_RX_string_usb("T\n");		// run test file
+	xio_queue_RX_string_usb("U\n");		// run second test file
+
+//	xio_queue_RX_string_usb("g64\n");	// test setting path control modes
+//	xio_queue_RX_string_usb("g61\n");
+//	xio_queue_RX_string_usb("g61.1\n");
+
+//	xio_queue_RX_string_usb("?\n");		// enter config mode and dump config
+//	xio_queue_RX_string_usb("Q\n");		// go to idle mode
+//	xio_queue_RX_string_usb("R\n");		// run a homing cycle
+
+//	xio_queue_RX_string_usb("!\n");		// kill
+//	xio_queue_RX_string_usb("@\n");		// pause
+//	xio_queue_RX_string_usb("$\n");		// resume
+
+//	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
+//	xio_queue_RX_string_usb("g1 f450 x10 y13\n");
+//	xio_queue_RX_string_usb("g0x0y0z0\n");
+//	xio_queue_RX_string_usb("g0x10y10\n");
+//	xio_queue_RX_string_usb("g0x1000\n");
+//	xio_queue_RX_string_usb("g0x10000\n");
+//	xio_queue_RX_string_usb("g0x10\ng4p1\ng0x0\n");
+//	xio_queue_RX_string_usb("g0 x-10 (MSGtest)\n");
+
+//	xio_queue_RX_string_usb("g1 F500 x10\n");
+//	xio_queue_RX_string_usb("g1 F100 y8\n");
+//	xio_queue_RX_string_usb("g1 F100 x10.1\n");
+//	xio_queue_RX_string_usb("g0 x2.1 y1.1 z2.2\n");
+//	xio_queue_RX_string_usb("g4 p2\n");
+
+//	xio_queue_RX_string_usb("g1 f400 x0\n");
+//	xio_queue_RX_string_usb("y0\n");
+//	xio_queue_RX_string_usb("z0\n");
+
+//	xio_queue_RX_string_usb("g2x100y100z25i50j50f249\n");
+//	xio_queue_RX_string_usb("g2 f300 x10 y10 i8 j8\n");
+//	xio_queue_RX_string_usb("g2 f300 x10 y10 i5 j5\n");
+//	xio_queue_RX_string_usb("g2 f300 x3 y3 i1.5 j1.5\n");
+
+
+//	xio_queue_RX_string_usb("g0 x100 y110 z120\n");
+//	xio_queue_RX_string_usb("g0 x0 y0 z0\n");
+
+//	xio_queue_RX_string_usb("g1 f400 x0\n");
+//	xio_queue_RX_string_usb("y0\n");
+//	xio_queue_RX_string_usb("z0\n");
+//	xio_queue_RX_string_usb("x100\n");
+//	xio_queue_RX_string_usb("y100\n");
+//	xio_queue_RX_string_usb("z100\n");
+
+//	xio_queue_RX_string_usb("g0 x10 y11 z12\n");
+//	xio_queue_RX_string_usb("g1 f200 x20 y22.5 z28\n");
+//	xio_queue_RX_string_usb("g0 x20 y22.5 z28\n");
+//	xio_queue_RX_string_usb("g1 f340 x0 y10 z-13\n");
+
+//	xio_queue_RX_string_usb("g1 f300 x3 y4 z5\n");
+//	xio_queue_RX_string_usb("g1 f450 x-10 y-11 z-21.7\n");
+//	xio_queue_RX_string_usb("g0 x0 y10 z-10\n");
+
+//	xio_queue_RX_string_usb("g0 x1 y1.1 z1.2\n");
+//	xio_queue_RX_string_usb("x-1\n");
+//	xio_queue_RX_string_usb("y-1.3\n");
+//	xio_queue_RX_string_usb("z-2.01\n");
+
+//	xio_queue_RX_string_usb("g92 x0 y0 z0\n");
+//	xio_queue_RX_string_usb("g0x10y10z0\n");
+//	xio_queue_RX_string_usb("g91g0x5y5\n");
+//	xio_queue_RX_string_usb("g1 f200 x10\n");
+//	xio_queue_RX_string_usb("y10\n");
+//	xio_queue_RX_string_usb("g0 x100 y100 z100 a100\n");
+//	xio_queue_RX_string_usb("?\n");
+
+// mudflap simulation
+/*
+	xio_queue_RX_string_usb("(SuperCam Ver 2.2a SPINDLE)\n");
+	xio_queue_RX_string_usb("N1 G20	( set inches mode - ash )\n");
+	xio_queue_RX_string_usb("N1 G20\n");
+	xio_queue_RX_string_usb("N5 G40 G17\n");
+	xio_queue_RX_string_usb("N10 T1 M06\n");
+	xio_queue_RX_string_usb("(N15 G90 G0 X0 Y0 Z0)\n");
+	xio_queue_RX_string_usb("N20 S5000 M03\n");
+	xio_queue_RX_string_usb("N25 G00 F30.0\n");
+	xio_queue_RX_string_usb("N30 X0.076 Y0.341\n");
+	xio_queue_RX_string_usb("N35 G00 Z-1.000 F90.0\n");
+	xio_queue_RX_string_usb("N40 G01 Z-1.125 F30.0\n");
+	xio_queue_RX_string_usb("N45 G01 F60.0\n");
+	xio_queue_RX_string_usb("N50 X0.064 Y0.326\n");
+	xio_queue_RX_string_usb("N55 X0.060 Y0.293\n");
+	xio_queue_RX_string_usb("N60 X0.077 Y0.267\n");
+	xio_queue_RX_string_usb("N65 X0.111 Y0.257\n");
+	xio_queue_RX_string_usb("N70 X0.149 Y0.252\n");
+	xio_queue_RX_string_usb("N75 X0.188 Y0.255\n");
+*/
+}
 
 /* FURTHER NOTES
 

@@ -39,6 +39,7 @@ struct tgController {			// main controller struct
 	uint8_t src;				// active source device
 	uint8_t default_src;		// default source device
 	uint8_t i;					// temp for indexes
+	double position[4];			// buffer for current position form gcode.c
 	char buf[CHAR_BUFFER_SIZE];	// text buffer
 };
 
