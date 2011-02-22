@@ -563,7 +563,7 @@ char tgs17[] PROGMEM = "{17} Parameter under range";
 char tgs18[] PROGMEM = "{18} Parameter over range";
 char tgs19[] PROGMEM = "{19} Bad number format";
 char tgs20[] PROGMEM = "{20} Floating point error";
-char tgs21[] PROGMEM = "{21} Motion control error";
+char tgs21[] PROGMEM = "{21} Motion planning error";
 char tgs22[] PROGMEM = "{22} Arc specification error";
 char tgs23[] PROGMEM = "{23} Zero length line";
 char tgs24[] PROGMEM = "{24} Maximum feed rate exceeded";
@@ -635,7 +635,7 @@ int _tg_mudflap_file()
 		- Control commands from stdio - e.g. ^c, ^q/^p, ^n/^o...
 		- Configuration commands for various sub-systems
 		- Gcode blocks
-		- Motion control commands (that bypass the Gcode layer)
+		- Motion commands (that bypass the Gcode layer)
 		- Multi-DOF protocols TBD 
 	- Accept and mix inputs from multiple sources:
 		- USB
@@ -663,7 +663,7 @@ int _tg_mudflap_file()
 		Supported dispatches:
 		- Gcode block
 		- Gcode configuration line
-		- Direct drive (motion control) command
+		- Direct drive (motion) command
 		- Network command / config (not implemented)
 
 	- Individual parsers/interpreters are called from tg_parser
