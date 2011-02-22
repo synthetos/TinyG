@@ -20,8 +20,10 @@
 
 #ifndef motion_control_h
 #define motion_control_h 
-
+#include <stdlib.h>
 #include <string.h>				// needed for memset in clear_vector()
+#include <stdio.h>
+#include <inttypes.h>
 
 //#define MC_LINE mc_line
 #define MC_LINE mc_aline
@@ -51,6 +53,7 @@
 /*
  * Global Scope Functions
  */
+uint8_t x;
 
 void mc_init(void);
 //uint8_t mc_move_dispatcher(void);
