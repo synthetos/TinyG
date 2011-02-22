@@ -36,6 +36,7 @@
 //#include "xmega_init.h"				// put before <util/delay.h>
 #include <delay.h>				// needed for dwell
 #include <stdlib.h>
+#include <sys/types.h>
 #include <math.h>
 //#include <avr/io.h>
 
