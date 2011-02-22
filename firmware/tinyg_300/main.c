@@ -180,7 +180,7 @@ void tg_unit_tests(void)
 //	xio_tests();				// IO subsystem
 //	EEPROM_tests();				// EEPROM functions
 //	cfg_tests();				// config functions
-	mc_unit_tests();			// motion control module
+	mp_unit_tests();			// motion planning module
   #endif
 }
 
