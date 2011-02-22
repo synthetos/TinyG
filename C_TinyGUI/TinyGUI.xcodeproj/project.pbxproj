@@ -31,6 +31,7 @@
 
 /* Begin PBXFileReference section */
 		08FB7796FE84155DC02AAC07 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		339780F612D3FF0400E21625 /* math.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = math.h; path = /usr/include/math.h; sourceTree = "<absolute>"; };
 		339982B512D3DCAB000D0424 /* gcode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = gcode.c; sourceTree = "<group>"; };
 		339982B612D3DCAB000D0424 /* gcode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gcode.h; sourceTree = "<group>"; };
 		339982D012D3DD78000D0424 /* canonical_machine.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = canonical_machine.c; sourceTree = "<group>"; };
@@ -70,6 +71,7 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				339780F612D3FF0400E21625 /* math.h */,
 				3399832412D3F2CD000D0424 /* tinyg.h */,
 				08FB7796FE84155DC02AAC07 /* main.c */,
 				339982ED12D3E306000D0424 /* motion_control.c */,
