@@ -132,7 +132,7 @@ static int _tg_term_handler(void);
 static int _tg_pause_handler(void);
 static int _tg_resume_handler(void);
 static int _tg_reset(void);
-static int _tg_help(void);
+static int _tg_print_help(void);
 static int _tg_test_T(void);
 static int _tg_test_U(void);
 static void _tg_canned_startup(void);
@@ -314,7 +314,7 @@ int _tg_parser(char * buf)
 			case 'R': return (_tg_reset());
 			case 'T': return (_tg_test_T());	// run whatever test u want
 			case 'U': return (_tg_test_U());	// run 2nd test you want
-			case 'H': return (_tg_help());
+			case 'H': return (_tg_print_help());
 //			case 'I': return (_tg_reserved());	// reserved
 //			case 'V': return (_tg_reserved());	// reserved
 			case 'Q': return (TG_OK);			// no operation on a Q
@@ -526,11 +526,10 @@ You are  in IDLE mode as you can see by the prompt\n\
 Please log an issues you have with www.synthetos.com\n\
 Have fun\n";
 
-int _tg_help(void)
+int _tg_print_help(void)
 {
-	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(tgHelp));
-
 //	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgHelp[0]));
+	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(tgHelp));
 //	printf_P(PSTR("%S\n"),(PGM_P)pgm_read_word(&tgStatus[status_code])); // w/no text
 	return (TG_OK);
 }
@@ -576,9 +575,8 @@ void _tg_canned_startup()
 //	xio_queue_RX_string_usb("H\n");		// run help file
 
 	xio_queue_RX_string_usb("T\n");		// run test file
-//	xio_queue_RX_string_usb("Q\n");		// back to idle mode
-//	xio_queue_RX_string_usb("U\n");		// run second test file
-//
+	xio_queue_RX_string_usb("U\n");		// run second test file
+
 //	xio_queue_RX_string_usb("g64\n");	// test setting path control modes
 //	xio_queue_RX_string_usb("g61\n");
 //	xio_queue_RX_string_usb("g61.1\n");
