@@ -1,6 +1,8 @@
 /*
 gcode_braind2d.h - data file containing gcode
 */
+
+// braid test - in 2 arrays
 const char PROGMEM braid2d[] = "\
 T1M6\n\
 G17\n\
