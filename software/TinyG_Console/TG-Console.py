@@ -155,7 +155,7 @@ class Console(object):
         DO NOT REMOVE - Start Important Code
         """
         try:
-            ser.write(3*"\n") 
+            ser.write(3*"\n") #Initializes GCODE MODE to start accepting commands
         except Exception, e:
             print "[ERROR] Write Failed"
             print "Kicking you into scanport mode to re-connect to TinyG"
@@ -295,7 +295,6 @@ class Console(object):
             if MODE  in tmp:
                 break
 
-
     def manual_mode(self):
         MODE = "MANUAL"
         self.change_modes(MODE)
@@ -309,9 +308,5 @@ class Console(object):
         self.ser_term(MODE)
 
 
-def main(SPEED=115200):
-    Console()
-
-
 if __name__ == "__main__":
-    main()
+    Console()
