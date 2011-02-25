@@ -205,8 +205,7 @@ static uint8_t _mp_queue_move(struct mpMovePlanner *m);
 static uint8_t _mp_update_move(const struct mpMovePlanner *p, const struct mpMovePlanner *m);
 static uint8_t _mp_get_move_type(const struct mpBuffer *b);
 static struct mpBuffer *_mp_queue_buffer(const double Vs, const double Ve, 
-									     const double Vr, const double len,
-										 uint8_t path_mode);
+									     const double Vr, const double len);
 
 static double _mp_get_length(const double Vi, const double Vt);
 static double _mp_estimate_angular_jerk(const struct mpBuffer *p, 
@@ -1061,30 +1060,158 @@ uint8_t mp_aline(double x, double y, double z, double a, double minutes)
 	}
 	ritorno(_mp_queue_move(m));
 
-	// ++++++++ TRAPS +++++++++++++++++++++++++++
-	// ++++++++ test code for simulation ++++++++
+	// ####### TRAPS #######
 	if (m->length > 40) tg_trap(TG_TRAP_TOO_LONG);
-//	if (m->cruise_velocity > 420) tg_trap(TG_TRAP_TOO_FAST);
+	if (m->cruise_velocity > 420) tg_trap(TG_TRAP_TOO_FAST);
 	if (m->cruise_velocity < 20) tg_trap(TG_TRAP_TOO_SLOW);	// ka-thunk ka-thunk ka-thunk
-	// ++++++++ END TRAPS +++++++++++++++++++++++
+	// ####### END TRAPS #######
 
 	ritorno(_mp_backplan(m));
-
 	return (TG_OK);
 }
 
 /**** ALINE HELPERS ****
+ * _mp_backplan()  			  - recompute moves backwards from latest move
+ * _mp_lookback()	 		  - scan backwards for velocities and length
+ * _mp_make_previous_move()	  - reconstruct a planning struct from move buffers
  * _mp_compute_regions() 	  - compute region lengths and velocity contours
- * _mp_recompute_backwards()  - recompute moves backwards from latest move
- * _mp_recompute_forwards()	  - recompute moves forwards from running move
- * _mp_get_length()			  - get length given Vi and Vt
- * _mp_estimate_angular_jerk()- factor of 0 to 1 where 1 = max jerk
  * _mp_queue_move()			  - queue 3 regions of a move
  * _mp_queue_buffer() 		  - helper helper for making line buffers
  * _mp_get_move_type()		  - writes the move type based on velocities
  * _mp_update_move()		  - update a move after a replan
- * _mp_line_to_arc()		  - handle arc cases
+ * _mp_get_length()			  - get length given Vi and Vt
+ * _mp_estimate_angular_jerk()- factor of 0 to 1 where 1 = max jerk
  */
+
+/*
+ * _mp_backplan()
+ *
+ *	Recompute the previous moves to optimize target velocities.
+ *
+ *	Back planning starts at the latest queued move and works back
+ *	in the queue until a "pinned" velocity is encountered - one of:
+ *
+ *	  (a) requested target velocity (Vt) is achieved,
+ *	  (b) a way point between moves was set to a velocity by path control
+ *		  (exact stop (G61) or exact path (G61.1) mode in effect). 
+ *	  (c) the region being examined is already executing (running) 
+ *
+ *	Backplan assumes that the requested Vt of the latest move 
+ *	can be achieved, and recomputes previous moves based on that assumption.
+ *	The computation stops looking backwards once it gets to a pinned 
+ *	velocity - either it (a) achieves Vt, or (b) or (c) condition is found.
+ *
+ *	If the requested Vt is achieved - either Vt or a way-point velocity - 
+ *	then the computation is done. It not, recompute_forward is called
+ *	from the pinned velocity, which optimized forwards from the pinned 
+ *	velocity.
+ */
+
+static uint8_t _mp_backplan(struct mpMovePlanner *m)
+{
+	struct mpMovePlanner *tmp;
+	struct mpMovePlanner *p = &mp[1];	// pointer to a move in bkwds chain
+
+	// set previous move non-replannable if current move is exact stop 
+	if (m->path_mode == PATH_EXACT_STOP) {
+		_mp_make_previous_move(p,m);
+		p->head->replannable = FALSE;
+		p->body->replannable = FALSE;
+		p->tail->replannable = FALSE;
+		return (TG_OK);
+	}
+
+	// do backplanning passes
+	double actual_target_velocity = _mp_lookback(p,m);	// 1st pass - global knowledge
+	while (_mp_make_previous_move(p,m) != TG_COMPLETE) {
+		_mp_compute_regions(p->initial_velocity_req, actual_target_velocity, m->initial_velocity, p);
+		_mp_update_move(p,m); 
+		tmp=m; m=p; p=tmp; 	// shuffle buffers to walk backwards
+	}
+	return (TG_OK);
+}
+
+/*
+ * _mp_lookback()
+ *
+ *	Starting with the M struct for the current move, look back at the chain
+ *	of replannable moves. Compute a "psequdo" M struct (p) that describes 
+ *	length and velocities of the full replannable region (global knowledge).
+ *	Use this to return the maximum achievable velocity between the 
+ *	starting and ending velocities (for the given length and jerk params)
+ */
+static double _mp_lookback(struct mpMovePlanner *p, struct mpMovePlanner *m)
+{
+//	double exact_path_scaling_factor;
+
+	_mp_clear_planner(p);
+
+	// set P as current move (M)
+	p->head = m->head;
+	p->body = m->body;
+	p->tail = m->tail;
+
+	// set initial values
+	p->length = m->length;
+	p->target_velocity = m->target_velocity;
+	p->final_velocity = 0;
+
+	// move pointers back to prev move and accumulate length & Vt
+	do {
+		p->tail = p->head->pv;
+		p->body = p->tail->pv;
+		p->head = p->body->pv;
+		p->length += p->head->length + p->body->length + p->tail->length;
+		p->target_velocity = max(p->target_velocity, p->body->request_velocity);
+	} while (p->head->pv->replannable);
+
+	// skip out if zero length
+	if (p->length == 0) {
+		return (m->target_velocity); // no adjustment is possible
+	}
+	// calculate the maximum achievable velocity of the chain
+	p->initial_velocity = p->head->request_velocity;
+	_mp_compute_regions(p->initial_velocity, p->target_velocity, p->final_velocity, p);
+	return (p->cruise_velocity);
+}
+
+/*
+ * _mp_make_previous_move() - reconstruct M struct from buffers
+ *
+ * Construct the M struct for previous move (P) based on current move (M) 
+ * Assumes M has valid buffer pointers for the head
+ * Assumes P has no valid buffer pointers 
+ * Returns TG_COMPLETE if move is empty, complete, or currently executing
+ */
+static uint8_t _mp_make_previous_move(struct mpMovePlanner *p, struct mpMovePlanner *m)
+{
+	_mp_clear_planner(p);					// zero it out
+
+	// setup buffer linkages (the compiler will optimize these get calls down)
+	p->tail = mp_get_prev_buffer(m->head);	// set previous tail
+	p->body = mp_get_prev_buffer(p->tail);	// etc.
+	p->head = mp_get_prev_buffer(p->body);
+
+	// return if the move is not replannable
+	if ((p->tail->replannable == FALSE) ||
+		(p->body->replannable == FALSE)) {
+		return (TG_COMPLETE);
+	}
+
+	// populate the move velocities and lengths from underlying buffers
+	p->initial_velocity_req = p->head->request_velocity;// requested start v
+	p->initial_velocity = p->head->start_velocity;	// actual initial vel
+	p->target_velocity = p->body->request_velocity;	// requested cruise vel
+	p->cruise_velocity = p->body->start_velocity;	// actual cruise vel
+	p->final_velocity = p->tail->end_velocity;		// actual final vel
+
+	p->head_length = p->head->length;
+	p->body_length = p->body->length;
+	p->tail_length = p->tail->length;
+	p->length = p->head_length + p->body_length + p->tail_length;
+
+	return (TG_OK);
+}
 
 /*
  * _mp_compute_regions()
@@ -1115,7 +1242,7 @@ uint8_t mp_aline(double x, double y, double z, double a, double minutes)
  *				with no body. Returns 2 regions w/body_length = 0
  *
  *	2 regions:	Vi is fixed at zero and cannot be adjusted (e.g. exact stop), 
- *	(Vir = 0)	and Vf is fixed (as always). THe line is processed as above.
+ *	(Vir = 0)	and Vf is fixed (as always). The line is processed as above.
  *				Returns 2 regions w/body_length = 0
  *
  *	1 region:	The line is too short for a proper tail deceleration to 
@@ -1145,7 +1272,6 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
 {
 	double Vi = Vir;	// achieved initial velocity (from requested)
 	double Vc = Vt;		// cruise velocity, or "adjusted" target velocity
-	double Vc_ = Vc;	// previous iteration's Vc
 
 	// ----- 0 region case - line is too short of zero length -----
 
@@ -1180,9 +1306,23 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
 	}
 
 	uint8_t i=0;
-
+	double Vc_ = Vc;	// previous iteration's Vc
+	double Vc1;
+	double Vc2;
+	double deltaV1;
+	double deltaV2;
+	 
 	// ----- 2 region case (head and tail) -----
 	if ((m->length > m->tail_length) || (Vir == 0)) {
+		deltaV1	= fabs(Vi-Vc);
+		deltaV2	= fabs(Vc-Vf);
+		m->head_length = m->length * (deltaV1 / (deltaV1 + deltaV2));
+		m->tail_length - m->length - m->head_length;
+
+		m->head_length = _mp_get_length(Vc, Vf);
+
+
+
 		while (fabs(m->body_length) > ROUNDING_ERROR) {
 			Vc_ = Vc;		// previous pass value - speeds convergence
 			Vc *= m->length / (m->head_length + m->tail_length);
@@ -1196,6 +1336,22 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
 				break;
 			}
 		}
+/*
+		while (fabs(m->body_length) > ROUNDING_ERROR) {
+			Vc_ = Vc;		// previous pass value - speeds convergence
+			Vc *= m->length / (m->head_length + m->tail_length);
+			Vc = (Vc + Vc_)/2;
+			m->tail_length = _mp_get_length(Vc, Vf);
+			m->head_length = _mp_get_length(Vc, Vi);
+			m->body_length = m->length - m->head_length - m->tail_length;
+			if (i++ > 20) { // chose value with lots of experimentation
+				tg_trap(TG_TRAP_NO_CONVERGE);
+				// failed to find a solution. Try again w/only 1 region (tail)
+				break;
+			}
+		}
+*/
+
 		m->cruise_velocity = Vc;
 		m->final_velocity = Vf;
 		m->body_length = 0;
@@ -1220,9 +1376,9 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
 	// ----- 1 region case (tail-only case) -----
 	i=0;
 	while (fabs(m->length - m->tail_length) > ROUNDING_ERROR) {
-		Vc_ = Vc;
+//		Vc_ = Vc;
 		Vc *= m->length / m->tail_length;
-		Vc = (Vc + Vc_)/2;
+//		Vc = (Vc + Vc_)/2;
 		m->tail_length = _mp_get_length(Vc, Vf);
 		if (i++ > 20) { 	// usually converges in ~5 - but not always
 			tg_trap(TG_TRAP_NO_CONVERGE);
@@ -1258,131 +1414,6 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
 	return (TG_OK);	// 1 region return
 }
 
-/*
- * _mp_backplan()
- *
- *	Recompute the previous moves to optimize target velocities.
- *
- *	Back planning starts at the latest queued move and works back
- *	in the queue until a "pinned" velocity is encountered - one of:
- *
- *	  (a) requested target velocity (Vt) is achieved,
- *	  (b) a way point between moves was set to a velocity by path control
- *		  (exact stop (G61) or exact path (G61.1) mode in effect). 
- *	  (c) the region being examined is already executing (running) 
- *
- *	Backplan assumes that the requested Vt of the latest move 
- *	can be achieved, and recomputes previous moves based on that assumption.
- *	The computation stops looking backwards once it gets to a pinned 
- *	velocity - either it (a) achieves Vt, or (b) or (c) condition is found.
- *
- *	If the requested Vt is achieved - either Vt or a way-point velocity - 
- *	then the computation is done. It not, recompute_forward is called
- *	from the pinned velocity, which optimized forwards from the pinned 
- *	velocity.
- */
-
-static uint8_t _mp_backplan(struct mpMovePlanner *m)
-{
-	struct mpMovePlanner *p = _mp_clear_planner(&mp[1]);// pointer to a move in bkwds chain
-	struct mpMovePlanner *tmp;
-	double actual_target_velocity; 	// achievable Vt for chain
-
-	// set previous move non-replannable if current move is exact stop 
-	if (m->path_mode == PATH_EXACT_STOP) {
-		_mp_make_previous_move(p,m);
-		p->head->replannable = FALSE;
-		p->body->replannable = FALSE;
-		p->tail->replannable = FALSE;
-		return (TG_OK);
-	}
-
-	// do backplanning passes
-	actual_target_velocity = _mp_lookback(p,m);	// 1st pass - global knowledge
-	while (_mp_make_previous_move(p,m) != TG_COMPLETE) {
-		_mp_compute_regions(p->initial_velocity_req, actual_target_velocity, m->initial_velocity, p);
-		_mp_update_move(p,m); 
-		tmp=m; m=p; p=tmp; 	// shuffle buffers to walk backwards
-		_mp_clear_planner(p);
-	}
-	return (TG_OK);
-}
-
-/*
- * _mp_lookback()
- *
- *	Starting with the M struct for the current move, look back at the chain
- *	of replannable moves. Compute a "psequdo" M struct (p) that describes 
- *	length and velocities of the full replannable region (global knowledge).
- *	Use this to return the maximum achievable velocity between the 
- *	starting and ending velocities (for the given length and jerk params)
- */
-static double _mp_lookback(struct mpMovePlanner *p, struct mpMovePlanner *m)
-{
-	// initialize P to current move (M)
-	p->head = m->head;
-	p->body = m->body;
-	p->tail = m->tail;
-	p->length = m->length;
-	p->target_velocity = m->target_velocity;
-	p->final_velocity = 0;
-
-	// accumulate the length of the replannable chain & velocities
-	while (p->tail->replannable) {
-		p->tail = p->head->pv;			// move pointers back to prev move
-		p->body = p->tail->pv;
-		p->head = p->body->pv;
-		p->length += p->head->length + p->body->length + p->tail->length;
-		p->target_velocity = min(p->target_velocity, p->body->request_velocity);
-	}
-	p->initial_velocity = p->head->start_velocity;
-
-	// skip out if zero length
-	if (p->length == 0) {
-		return (m->target_velocity); // no adjustment is possible
-	}
-
-	// calculate the maximum achievable velocity of the chain
-	_mp_compute_regions(p->initial_velocity, p->target_velocity, p->final_velocity, p);
-	return (p->cruise_velocity);
-}
-
-/*
- * _mp_make_previous_move() - reconstruct M struct from buffers
- *
- * Construct the M struct for previous move (P) based on current move (M) 
- * Assumes M has valid buffer pointers for the head
- * Assumes P has no valid buffer pointers 
- * Returns TG_COMPLETE if move is empty, complete, or currently executing
- */
-static uint8_t _mp_make_previous_move(struct mpMovePlanner *p, struct mpMovePlanner *m)
-{
-	// setup buffer linkages (the compiler will optimize these get calls down)
-	p->tail = mp_get_prev_buffer(m->head);	// set previous tail
-	p->body = mp_get_prev_buffer(p->tail);	// etc.
-	p->head = mp_get_prev_buffer(p->body);
-
-	// return if the move is not replannable
-	if ((p->tail->replannable == FALSE) ||
-		(p->body->replannable == FALSE)) {
-		return (TG_COMPLETE);
-	}
-
-	// populate the move velocities and lengths from underlying buffers
-	p->initial_velocity_req = p->head->request_velocity;// requested start v
-	p->initial_velocity = p->head->start_velocity;	// actual initial vel
-	p->target_velocity = p->body->request_velocity;	// requested cruise vel
-	p->cruise_velocity = p->body->start_velocity;	// actual cruise vel
-	p->final_velocity = p->tail->end_velocity;		// actual final vel
-
-	p->head_length = p->head->length;
-	p->body_length = p->body->length;
-	p->tail_length = p->tail->length;
-	p->length = p->head_length + p->body_length + p->tail_length;
-
-	return (TG_OK);
-}
-
 /*	
  * _mp_queue_move() - write an M structure to buffers
  */
@@ -1392,30 +1423,26 @@ static uint8_t _mp_queue_move(struct mpMovePlanner *m)
 	if ((m->head = _mp_queue_buffer(m->initial_velocity, 
 									m->cruise_velocity, 
 									m->initial_velocity_req,
-									m->head_length,
-									m->path_mode)) == NULL) {
+									m->head_length)) == NULL) {
 		return (TG_BUFFER_FULL_FATAL);
 	}
 	if ((m->body = _mp_queue_buffer(m->cruise_velocity, 
 									m->cruise_velocity, 
 									m->target_velocity, 
-									m->body_length,
-									m->path_mode)) == NULL) {
+									m->body_length)) == NULL) {
 		return (TG_BUFFER_FULL_FATAL);
 	}
 	if ((m->tail = _mp_queue_buffer(m->cruise_velocity, 
 									m->final_velocity, 
 									m->target_velocity, 
-									m->tail_length,
-									m->path_mode)) == NULL) {
+									m->tail_length)) == NULL) {
 		return (TG_BUFFER_FULL_FATAL);
 	}
 	return (TG_OK);
 }
 
 static struct mpBuffer *_mp_queue_buffer(const double Vs, const double Ve,	
-										 const double Vr, const double len,
-										 uint8_t path_mode)
+										 const double Vr, const double len)
 {
 	struct mpBuffer *b;
 
@@ -1491,7 +1518,6 @@ static uint8_t _mp_update_move(const struct mpMovePlanner *p, const struct mpMov
 	}
 	return (TG_OK);
 }
-
 
 /*	
  * _mp_get_length()
