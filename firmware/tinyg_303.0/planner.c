@@ -29,8 +29,8 @@
  *	operation is complete (like queuing an arc).
  */
 
-#include "xmega_init.h"				// put before <util/delay.h>
-#include <util/delay.h>				// needed for dwell
+#include "xmega_init.h"			// put before <util/delay.h>
+#include <util/delay.h>			// needed for dwell
 #include <stdlib.h>
 #include <math.h>
 //#include <avr/io.h>
@@ -43,6 +43,7 @@
 #include "motor_queue.h"
 #include "canonical_machine.h"
 #include "stepper.h"
+#include "controller.h"
 
 // All the enums that equal zero must be zero. Don't change this
 
@@ -54,7 +55,7 @@ enum mpBufferState {			// b->buffer_state values
 	MP_BUFFER_RUNNING			// current running buffer
 };
 
-enum mcMoveType {				// b->move_type values 
+enum mpMoveType {				// b->move_type values 
 	MP_TYPE_NULL = 0,			// null move
 	MP_TYPE_ACCEL,				// controlled jerk acceleration region
 	MP_TYPE_CRUISE,				// cruise at fixed velocity
@@ -67,7 +68,7 @@ enum mcMoveType {				// b->move_type values
 	MP_TYPE_END					// stop motors and end program
 };
 
-enum mcMoveState {				// b->move_state values
+enum mpMoveState {				// b->move_state values
 	MP_STATE_NEW = 0,			// value on initial call (MUST BE ZERO)
 	MP_STATE_RUNNING_1,			// first half of move or sub-move
 	MP_STATE_RUNNING_2,			// second half of move or sub-move
@@ -75,6 +76,7 @@ enum mcMoveState {				// b->move_state values
 	MP_STATE_END				// force the move to end (kill)
 };
 #define MP_STATE_RUNNING MP_STATE_RUNNING_1	// a convenience for above
+
 
 struct mpBufferArc {			// arc variables for move/sub-move buffers
 	double theta;				// total angle specified by arc
@@ -114,11 +116,11 @@ struct mpBufferPool {			// ring buffer for sub-moves
 };
 
 struct mpMotionMaster {	
+	uint8_t path_mode;			// active path control mode
 	double position[AXES];		// final move position
 	double target[AXES];		// target move position
 	double unit_vec[AXES];		// for axis scaling and jerk computation
 	double ang_jerk_vec[AXES];	// for angular jerk time accumulation
-	uint8_t path_mode;			// active path control mode
 };
 
 struct mpMovePlanner {			// used to compute or recompute regions
@@ -210,8 +212,6 @@ static uint8_t _mp_construct_backward_move(struct mpMovePlanner *p, struct mpMov
 static uint8_t _mp_detect_backward_stop(struct mpMovePlanner *p, struct mpMovePlanner *m);
 static uint8_t _mp_backward_replan(struct mpMovePlanner *m);
 //static uint8_t _mp_forward_replan(struct mpMovePlanner *m);
-
-void mp_trap(uint8_t code);
 
 /* 
  * mp_init()
@@ -1063,25 +1063,21 @@ uint8_t mp_aline(double x, double y, double z, double a, double minutes)
 
 	// do the actual work
 	ritorno(_mp_compute_regions(m->initial_velocity_req, m->target_velocity, 0, m));
+	if (m->regions == 0) {	// exit if line too-short
+		return (TG_OK);
+	}
 	ritorno(_mp_queue_move(m));
 
 	// ++++++++ TRAPS +++++++++++++++++++++++++++
 	// ++++++++ test code for simulation ++++++++
-	if (m->length > 20) mp_trap(1);
-//	if (m->cruise_velocity > 420) mp_trap(2);
-	if (m->cruise_velocity < 100) mp_trap(3);	// ka-thunk ka-thunk ka-thunk
-//	if (mm.unit_vec[X] < 0) mp_trap(4);			// point X reverses
+	if (m->length > 20) tg_trap(TG_TRAP_TOO_LONG);
+//	if (m->cruise_velocity > 420) tg_trap(TG_TRAP_TOO_FAST);
+//	if (m->cruise_velocity < 50) tg_trap(TG_TRAP_TOO_SLOW);	// ka-thunk ka-thunk ka-thunk
 	// ++++++++ END TRAPS +++++++++++++++++++++++
 
 	ritorno(_mp_backward_replan(m));
 
 	return (TG_OK);
-}
-
-void mp_trap(uint8_t code)
-{
-	uint8_t c = code;
-	return;
 }
 
 /**** ALINE HELPERS ****
@@ -1100,38 +1096,39 @@ void mp_trap(uint8_t code)
 /*
  * _mp_compute_regions()
  *
- *	This function computes the region lengths and Vt. It first attempts 
- *	to generate an optimal 3-region line (head, body, tail) - which it can
- *	if sufficient length exists for a head, body and tail at the requested
- *	Vt and the prevailing max jerk.
+ *	This function computes the region lengths and the initial, cruise, and
+ *	final velocities (Vi, Vc, Vf). It first attempts to generate an optimal 
+ *	3-region line (head, body, tail) - which it can if sufficient length 
+ *	exists for a head, body and tail at the requested Vt and the prevailing 
+ *	max jerk.
  *
- *	If it cannot support a full-speed move it adjusts Vt so that the 
- *	acceleration and deceleration regions will obey maximum jerk. This 
- *	means reducing the Vt, omitting the body, and possibly the head. The 
- *	tail is always computed. In some very short cases the Vi will also be
- *	reduced to accommodate a tail deceleration to zero.
+ *	If the length cannot support a full-speed move it adjusts Vc so that 
+ *	the acceleration and deceleration regions will obey maximum jerk. 
+ *	This means reducing the requested (target) velocity Vt down to a lower
+ *	Vc, omitting the body, and possibly the head. The tail is always 
+ *	computed, and always terminates at the Vf value provided - which is 
+ *	usually zero for a new move - but may be some other value for a replan. 
  *
- *	This function should be called before adjusting the previous tail to 
- *	properly fit the previous tail to the ultimate Vi of the new line.
+ *	In some very short cases the Vi will also be reduced to accommodate 
+ *	the requried tail deceleration (e.g. to zero).
  *
- *	Cases:
+ *	These cases are handled:
  *
- *	3 regions:	The line supports a head, body and tail. No Vt adjustment
- *				made. Returns 3 regions.
+ *	3 regions:	The length and speed supports a head, body and tail. 
+ *				Vc = Vt. Returns 3 regions.
  *
- *	2 regions:	The line cruises at Vi then decelerates to final velocity 
- *				Vt is reduced to Vi. 
- *				Returns 2 regions w/head_length = 0
- *
- *	2 regions:	The line can't achieve cruise velocity. Vt is reduced to 
+ *	2 regions:	The line can't achieve cruise velocity. Vc is reduced to 
  *				a value where the head and tail can be joined directly
- *				with no intervening body. 
+ *				with no body. Returns 2 regions w/body_length = 0
+ *
+ *	2 regions:	Vi is fixed at zero and cannot be adjusted (e.g. exact stop), 
+ *	(Vir = 0)	and Vf is fixed (as always). THe line is processed as above.
  *				Returns 2 regions w/body_length = 0
  *
- *	1 region:	The line is too short for either of the above. Vt is 
- *				reduced to permit a tail deceleration region only.
- *				Returns tail_region only, head_length = 0 and 
- *				body_length = 0.
+ *	1 region:	The line is too short for a proper tail deceleration to 
+ *				occur from Vir to Vf. Vi is reduced from Vir to permit a 
+ *				tail deceleration region only. Returns tail_region only, 
+ *				head_length = 0 and body_length = 0.
  *
  *	0 regions:	Pathological case where the routine was passed a line
  *				below the minimum length. Returns regions & lengths = 0.
@@ -1156,7 +1153,6 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
 	double Vi = Vir;	// achieved initial velocity (from requested)
 	double Vc = Vt;		// cruise velocity, or "adjusted" target velocity
 	double Vc_ = Vc;	// previous iteration's Vc
-	double temp_tail;
 
 	// ----- 0 region case - line is too short of zero length -----
 
@@ -1165,6 +1161,7 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
 		m->body_length = 0;
 		m->tail_length = 0;
 		m->regions = 0;					// indicates zero length move
+		tg_trap(TG_TRAP_TOO_SHORT);
 		return (TG_OK);
 	}
 	// setup M struct
@@ -1177,7 +1174,7 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
 	// compute optimal head and tail lengths
 	m->tail_length = _mp_get_length(Vt, Vf);
 	m->head_length = _mp_get_length(Vt, Vir);
-	if (m->head_length < ROUNDING_ERROR) {
+	if (m->head_length < ROUNDING_ERROR) {	// too short
 		m->head_length = 0;
 	}
 
@@ -1189,22 +1186,10 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
 		return (TG_OK);			// 3 region return
 	}
 
-	// ----- 2 region case (body and tail, where Vi > Vf) ----- 
-	temp_tail = _mp_get_length(Vir, Vf);
-	if (m->length > temp_tail) {
-		m->head_length = 0;
-		m->tail_length = temp_tail;
-		m->body_length = m->length - m->tail_length;
-		m->cruise_velocity = Vi;
-		m->final_velocity = Vf;
-		m->regions = 2;
-		return (TG_OK);	// 2 region return
-	}
-
 	uint8_t i=0;
 
 	// ----- 2 region case (head and tail) -----
-	if (m->length > m->tail_length) {
+	if ((m->length > m->tail_length) || (Vir == 0)) {
 		while (fabs(m->body_length) > ROUNDING_ERROR) {
 			Vc_ = Vc;		// previous pass value - speeds convergence
 			Vc *= m->length / (m->head_length + m->tail_length);
@@ -1213,11 +1198,9 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
 			m->head_length = _mp_get_length(Vc, Vi);
 			m->body_length = m->length - m->head_length - m->tail_length;
 			if (i++ > 20) { // chose value with lots of experimentation
-#ifdef __UNFORGIVING		// usually converges in ~2 - but not always
-				return (TG_FAILED_TO_CONVERGE);
-#elif
+				tg_trap(TG_TRAP_NO_CONVERGE);
+				// failed to find a solution. Try again w/only 1 region (tail)
 				break;
-#endif
 			}
 		}
 		m->cruise_velocity = Vc;
@@ -1227,6 +1210,14 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
 			m->regions = 2;
 			return (TG_OK);	// 2 region return
 		}
+		// if the line splits into 2 lines that are too short to process,
+		// try it as a 1 segment line - even though this is not optimal,
+		// as it will ignore the exact-stop condition. and attempt to join
+		// to the previous line at velocity. This is usually OK as the Vi
+		// will be very slow due to the shortness of the line - but will 
+		// violate the exact-stop condition.
+//		tg_trap(TG_TRAP_TOO_SHORT);			
+		m->head_length = 0;
 	}
 
 	// In some cases computed above the new Vt will have become less 
@@ -1234,30 +1225,42 @@ static uint8_t _mp_compute_regions(double Vir, double Vt, double Vf, struct mpMo
 	// So you must run it again, below
 
 	// ----- 1 region case (tail-only case) -----
-	if (m->length <= m->tail_length) {	// ++++ add in the low Vt case
-		i=0;
-		while (fabs(m->length - m->tail_length) > ROUNDING_ERROR) {
-			Vc_ = Vc;
-			Vc *= m->length / m->tail_length;
-			Vc = (Vc + Vc_)/2;
-			m->tail_length = _mp_get_length(Vc, Vf);
-			if (i++ > 20) { 	// usually converges in ~5 - but not always
-#ifdef __UNFORGIVING
-				return (TG_FAILED_TO_CONVERGE);
-#elif
-				break;
-#endif
+	i=0;
+	while (fabs(m->length - m->tail_length) > ROUNDING_ERROR) {
+		Vc_ = Vc;
+		Vc *= m->length / m->tail_length;
+		Vc = (Vc + Vc_)/2;
+		m->tail_length = _mp_get_length(Vc, Vf);
+		if (i++ > 20) { 	// usually converges in ~5 - but not always
+			tg_trap(TG_TRAP_NO_CONVERGE);
+
+			// How horrible, it truly didn't converge. This can happen 
+			// when backplanning very short lines. Better patch a 
+			// barely passable line together and return.
+			m->initial_velocity = m->head->pv->end_velocity;
+			m->cruise_velocity = m->initial_velocity;
+			m->final_velocity = Vf;
+			m->head_length = 0;
+			m->body_length = 0;
+			m->tail_length = 0;
+			if (m->initial_velocity < m->final_velocity) {
+				m->head_length = m->length;
+			} else if (m->initial_velocity > m->final_velocity) {
+				m->tail_length = m->length;
+			} else {
+				m->body_length = m->length;
 			}
+			return (TG_OK);
+//			return(TG_FAILED_TO_CONVERGE);
 		}
-		m->initial_velocity = Vc;
-		m->cruise_velocity = Vc; 				
-		m->tail_length = m->length;
-		m->head_length = 0;
-		m->body_length = 0;
-		m->regions = 1;
-		return (TG_OK);	// 1 region return
 	}
-	return (TG_ERR);	// should only happen if isNAN or other math error
+	m->initial_velocity = Vc;
+	m->cruise_velocity = Vc; 
+	m->tail_length = m->length;
+	m->head_length = 0;
+	m->body_length = 0;
+	m->regions = 1;
+	return (TG_OK);	// 1 region return
 }
 
 /*
@@ -1584,6 +1587,10 @@ static uint8_t _mp_run_cruise(struct mpBuffer *m)
 	if (m->length < MIN_LINE_LENGTH) {			// toss the line
 		return (TG_OK);
 	}
+	if (m->length < MIN_SEGMENT_LENGTH) {//++++++++++++++++++++++++
+		tg_trap(TG_TRAP_ZERO_CRUISE);
+	}
+
 	m->time = m->length / m->end_velocity;		// get time from length
 	mr.microseconds = uSec(m->time);
 
@@ -1608,6 +1615,10 @@ static uint8_t _mp_run_accel(struct mpBuffer *m)
 		if (m->length < MIN_LINE_LENGTH) { 	// toss
 			return (TG_OK); 
 		}
+		if (m->length < MIN_SEGMENT_LENGTH) {//++++++++++++++++++++++++
+			tg_trap(TG_TRAP_ZERO_ACCEL);
+		}
+
 		mr.midpoint_velocity = (m->start_velocity + m->end_velocity) / 2;
 		mr.time = m->length / mr.midpoint_velocity;
 		mr.midpoint_acceleration = mr.time * mr.linear_jerk_div2;
@@ -1659,6 +1670,10 @@ static uint8_t _mp_run_decel(struct mpBuffer *m)
 		if (m->length < MIN_LINE_LENGTH) {  // toss
 			return (TG_OK); 
 		}
+		if (m->length < MIN_SEGMENT_LENGTH) {//++++++++++++++++++++++++
+			tg_trap(TG_TRAP_ZERO_DECEL);
+		}
+
 		mr.midpoint_velocity = (m->start_velocity + m->end_velocity) / 2;
 		mr.time = m->length / mr.midpoint_velocity;
 		mr.midpoint_acceleration = mr.time * mr.linear_jerk_div2;
