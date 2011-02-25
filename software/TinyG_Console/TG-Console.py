@@ -6,7 +6,9 @@
 import serial, sys, getopt, time
 from ser.serial_init import scan
 print "############################"
-print "[*]TinyG Console v1"
+print "      TinyG Console v1"
+print "     www.synthetos.com" 
+print "By rileyporter@gmail.com"
 print "############################"
 
 
@@ -257,11 +259,12 @@ class Console(object):
                 print "Quitting Program"
                 self.ser.close()
                 sys.exit()
+                
 
             else:
                 # send the characters to TinyG
                 self.ser.write(input + "\n")
-                if MODE == "GCODE":
+                if MODE == "GCODE" and input != "?":
                     self.get_coords()  #Run this after every command to get location
                 out = ''
                 time.sleep(.2) #Sleep a bit for an answer
