@@ -1,16 +1,21 @@
 /*
 gcode_braind2d.h - data file containing gcode
+
+--> subsitute for: F800.0\n\
+G0Z20.000\n\
+G0X0.000Y0.000S8000M3\n\
+G0X0.000Y-33.519Z6.000\n\
+F800.0\n\
+G1Z-1.000\n\
+
+
 */
 const char PROGMEM braid2d[] = "\
 T1M6\n\
 G17\n\
 G21 (mm mode)\n\
-G0Z20.000\n\
-G0X0.000Y0.000S8000M3\n\
-G0X0.000Y-33.519Z6.000\n\
-G1Z-1.000\n\
-G1X0.327Y-33.521\n\
 F800.0\n\
+G1X0.327Y-33.521\n\
 X0.654Y-33.526\n\
 X0.980Y-33.534\n\
 X1.304Y-33.546\n\
