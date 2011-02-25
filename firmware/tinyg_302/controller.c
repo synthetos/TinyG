@@ -160,6 +160,7 @@ void tg_alive()
 	return;
 #endif									// see tinyg.h for string
 	printf_P(PSTR("==== TinyG %S ====\n"), (PSTR(TINYG_VERSION)));
+	printf_P(PSTR("---- Hi Stefan and Addie\n"));
 	printf_P(PSTR("---- hit 'h' for help\n"));
 
 	_tg_prompt();
@@ -525,7 +526,6 @@ You are  in IDLE mode as you can see by the prompt\n\
 - To enter CONFIG mode hit '?'\n\
 - To enter GCODE mode hit 'g' or start loading gcode\n\
 - To show the state of any mode hit '?'\n\
-- To run a test pattern hit 't' (allow 6 inches in positive X and Y)\n\
 - To exit any mode hit 'q'\n\
 - To show this help file hit 'h'\n\
 Please log any issues at http://synthetos.com/forums\n\
