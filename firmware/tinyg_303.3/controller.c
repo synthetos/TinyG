@@ -169,11 +169,18 @@ void tg_alive()
  * tg_trap() - trap and throw an exception
  */
 
-void tg_trap(uint8_t code)
+//void tg_trap(uint8_t code)
+//	tg.trap_code = code;
+//#ifndef __SIMULATION_MODE
+//	printf_P(PSTR("######## TRAP %d ########\n"), code);
+//#endif
+//	return;
+//}
+
+void tg_trap(char *msg)
 {
-	tg.trap_code = code;
 #ifndef __SIMULATION_MODE
-	printf_P(PSTR("######## TRAP %d ########\n"), code);
+	printf_P(PSTR("######## TRAP %s ########\n"), msg);
 #endif
 	return;
 }
