@@ -1,0 +1,20 @@
+Grbl functions
+
+Module / functions()
+
+gcode.c
+	next_statement()
+	read_double()
+	arc commands
+
+canonical_machine.c
+	theta()
+	select_plane()
+
+planner.c
+	mc_arc() portions
+
+spindle.c
+	run_spindle()
+
+
