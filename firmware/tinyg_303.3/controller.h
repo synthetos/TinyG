@@ -50,7 +50,8 @@ void tg_alive(void);
 void tg_controller(void);
 void tg_reset_source(void);
 uint8_t tg_application_startup(void);
-void tg_trap(uint8_t code);
+//void tg_trap(uint8_t code);
+void tg_trap(char *msg);
 void tg_print_status(const uint8_t status_code, const char *textbuf);
 
 #endif
