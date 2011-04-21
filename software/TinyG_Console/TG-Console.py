@@ -203,9 +203,9 @@ class Console(object):
     def init_serial(self):
         #Get Serial Port Options
         port_selected, ports = self.pick_port()
-        if port_selected == False:
-            while(port_choice == False):            
-                port_selected, ports = self.pick_port()
+        #if port_selected == False:
+            #while(port_choice == False):            
+                #port_selected, ports = self.pick_port()
         try:
             self.ser = serial.Serial(ports[port_selected], self.SPEED, timeout=1)
         except:
