@@ -1,0 +1,86 @@
+solid box1
+  facet normal 0.707143 -0.408041 0.577452
+    outer loop
+      vertex 2.563112 -5.599983 2.267282
+      vertex 5.339321 -3.997340 0.000022
+      vertex 2.562797 -2.393577 4.533387
+    endloop
+  endfacet
+  facet normal 0.707143 -0.408041 0.577452
+    outer loop
+      vertex 5.339321 -3.997340 0.000022
+      vertex 5.339006 -0.790934 2.266127
+      vertex 2.562797 -2.393577 4.533387
+    endloop
+  endfacet
+  facet normal -0.707143 0.408041 -0.577452
+    outer loop
+      vertex -0.213384 -3.997869 0.000000
+      vertex -0.213699 -0.791464 2.266105
+      vertex 2.562824 -2.395226 -2.267260
+    endloop
+  endfacet
+  facet normal -0.707143 0.408041 -0.577452
+    outer loop
+      vertex -0.213699 -0.791464 2.266105
+      vertex 2.562510 0.811179 -0.001155
+      vertex 2.562824 -2.395226 -2.267260
+    endloop
+  endfacet
+  facet normal 0.707070 0.408176 -0.577446
+    outer loop
+      vertex 5.339006 -0.790934 2.266127
+      vertex 2.562824 -2.395226 -2.267260
+      vertex 2.562510 0.811179 -0.001155
+    endloop
+  endfacet
+  facet normal 0.707070 0.408176 -0.577446
+    outer loop
+      vertex 5.339006 -0.790934 2.266127
+      vertex 5.339321 -3.997340 0.000022
+      vertex 2.562824 -2.395226 -2.267260
+    endloop
+  endfacet
+  facet normal -0.707070 -0.408176 0.577446
+    outer loop
+      vertex -0.213384 -3.997869 0.000000
+      vertex 2.562797 -2.393577 4.533387
+      vertex -0.213699 -0.791464 2.266105
+    endloop
+  endfacet
+  facet normal -0.707070 -0.408176 0.577446
+    outer loop
+      vertex -0.213384 -3.997869 0.000000
+      vertex 2.563112 -5.599983 2.267282
+      vertex 2.562797 -2.393577 4.533387
+    endloop
+  endfacet
+  facet normal -0.000080 0.816637 0.577152
+    outer loop
+      vertex -0.213699 -0.791464 2.266105
+      vertex 5.339006 -0.790934 2.266127
+      vertex 2.562510 0.811179 -0.001155
+    endloop
+  endfacet
+  facet normal -0.000080 0.816637 0.577152
+    outer loop
+      vertex -0.213699 -0.791464 2.266105
+      vertex 2.562797 -2.393577 4.533387
+      vertex 5.339006 -0.790934 2.266127
+    endloop
+  endfacet
+  facet normal 0.000080 -0.816637 -0.577152
+    outer loop
+      vertex -0.213384 -3.997869 0.000000
+      vertex 5.339321 -3.997340 0.000022
+      vertex 2.563112 -5.599983 2.267282
+    endloop
+  endfacet
+  facet normal 0.000080 -0.816637 -0.577152
+    outer loop
+      vertex -0.213384 -3.997869 0.000000
+      vertex 2.562824 -2.395226 -2.267260
+      vertex 5.339321 -3.997340 0.000022
+    endloop
+  endfacet
+endsolid box1

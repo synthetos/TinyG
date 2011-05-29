@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resource>
+  <object class="wxFrame" name="frame.main">
+    <title>TinyGUI</title>
+    <centered>1</centered>
+    <size>800,600</size>
+    <style>wxCLOSE_BOX|wxMAXIMIZE_BOX|wxMINIMIZE_BOX</style>
+    <object class="wxBoxSizer">
+      <orient>wxHORIZONTAL</orient>
+      <object class="sizeritem">
+        <object class="wxBoxSizer">
+          <orient>wxVERTICAL</orient>
+          <object class="sizeritem">
+            <object class="wxButton">
+              <label></label>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <object class="wxButton">
+              <label></label>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <object class="wxTextCtrl"/>
+          </object>
+        </object>
+        <flag>wxALL|wxEXPAND</flag>
+        <border>10</border>
+        <minsize>800,600</minsize>
+      </object>
+    </object>
+  </object>
+</resource>
