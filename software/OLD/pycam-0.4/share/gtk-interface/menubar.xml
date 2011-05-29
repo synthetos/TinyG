@@ -1,0 +1,52 @@
+<ui>
+  <menubar name="MenuBar">
+    <menu action="FileMenu">
+      <menuitem action="OpenModel"/>
+      <menuitem action="OpenRecentModel" name="OpenRecentModelMenu"/>
+      <menuitem action="SaveModel"/>
+      <menuitem action="SaveAsModel"/>
+      <separator />
+      <menuitem action="ExportGCode"/>
+      <separator />
+      <menuitem action="Quit"/>
+    </menu>
+    <menu action="SettingsMenu">
+      <menuitem action="LoadTaskSettings"/>
+      <menuitem action="SaveTaskSettings"/>
+      <menuitem action="SaveAsTaskSettings"/>
+      <separator />
+      <menuitem action="ExportEMCToolDefinition"/>
+      <separator />
+      <menuitem action="GeneralSettings"/>
+    </menu>
+    <menu action="WindowMenu">
+      <menuitem action="Toggle3DView"/>
+      <menuitem action="ToggleLogWindow"/>
+      <menuitem action="ToggleProcessPoolWindow"/>
+    </menu>
+    <menu action="HelpMenu">
+      <menuitem action="HelpIntroduction"/>
+      <menuitem action="HelpSupportedFormats"/>
+      <menuitem action="HelpModelTransformations"/>
+      <menuitem action="HelpGCodeExport"/>
+      <menuitem action="HelpSimulation"/>
+      <menuitem action="HelpServerMode"/>
+      <menuitem action="HelpCommandLine"/>
+      <menuitem action="HelpHotkeys"/>
+      <separator />
+      <menuitem action="HelpToolTypes"/>
+      <menuitem action="HelpProcessSettings"/>
+      <menuitem action="HelpBoundsSettings"/>
+      <menuitem action="HelpTaskSetup"/>
+      <separator />
+      <menuitem action="ProjectWebsite"/>
+      <menuitem action="Forum"/>
+      <menuitem action="FeatureRequest"/>
+      <menuitem action="BugTracker"/>
+      <menuitem action="DevelopmentBlog"/>
+      <separator />
+      <menuitem action="About"/>
+    </menu>
+  </menubar>
+</ui>
+
