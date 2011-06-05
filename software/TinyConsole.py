@@ -9,6 +9,16 @@ import sys
 import random
 from optparse import OptionParser
 
+logo = """
+  _______ _              _____ 
+ |__   __(_)            / ____|
+    | |   _ _ __  _   _| |  __ 
+    | |  | | '_ \| | | | | |_ |
+    | |  | | | | | |_| | |__| |
+    |_|  |_|_| |_|\__, |\_____|
+    CONSOLE        __/ |       
+                  |___/        """
+
 def usage():
     print """[?] Usage: 
          -f indicates the filename to be sent to TinyG.
@@ -22,6 +32,7 @@ EXAMPLE:
 
 def main():
     #Option Parser Code
+    print logo
     parser = OptionParser()
     parser.add_option("-f", "--file",
                       dest="filename",
@@ -35,7 +46,7 @@ def main():
     
     (options, args) =  parser.parse_args()
     if options.filename == None or options.serial_port == None:
-        print "[!] Error:"
+        print "[!] Error: Incorrect Usage...."
         usage()
         sys.exit()
         
@@ -44,7 +55,8 @@ def main():
     try:
         s = serial.Serial(options.serial_port, 115200, timeout=.5) #Setup Serial port COnnection
     except:
-        print "Error Opening Serial Port\n"
+        print "[!] Error Opening Serial Port"
+        print "\t-Make sure you specified the correct serial port and TinyG is powered."
         sys.exit()
      
     #Try to open the gcode file that was passed via the command line
