@@ -54,6 +54,8 @@ def main():
     
     try:
         s = serial.Serial(options.serial_port, 115200, timeout=.5) #Setup Serial port COnnection
+        s.xonxoff = True #Turn on software flow control.  TinyG supports this
+        
     except:
         print "[!] Error Opening Serial Port"
         print "\t-Make sure you specified the correct serial port and TinyG is powered."
@@ -73,11 +75,12 @@ def main():
     for line in f.readlines():
         s.writelines(line)
         y = s.readline()
-        if y != "":
-            if "ok" in y:
-                print "\t[#]LINE: %s" % line.rstrip()
-            else:
-                print "\t[#]LINE: %s" % line.rstrip()
+        print y.rstrip()
+        #if y != "":
+            #if "ok" in y:
+                #print "\t[#]LINE: %s" % line.rstrip()
+            #else:
+                #print "\t[#]LINE: %s" % line.rstrip()
                 
     print "[*]Job Complete"
     sys.exit()
