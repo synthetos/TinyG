@@ -105,7 +105,7 @@ def ser_term():
             print colored("Exiting....", "grey")
             sys.exit()
             
-        elif input.find("#FILE#") >= 0:  #Look for the #FILE# string
+        elif input.find("load") >= 0:  #Look for the #FILE# string
             """loading a gcode file function called"""
             loadFile(input)
         ########################################################    
@@ -120,19 +120,25 @@ def ser_term():
                     else:
                         print bufLine
 def loadFile(input):
+    
     def processFileXOFF(f):
         """Used Grep Flow Control"""
-        for line in f.readlines():
-            #time.sleep(.25) #Not cool man
-            s.writelines(line)
-            y = s.readline()
-            #print y.rstrip()
-            if y != "":
-                if "ok" in y:
-                    print "\t[#]LINE: %s" % line.rstrip()
-                else:
-                    print "\t[#]LINE: %s" % line.rstrip()
- 
+        try:
+            for line in f.readlines():
+                #time.sleep(.25) #Not cool man
+                s.writelines(line)
+                y = s.readline()
+                #print y.rstrip()
+                if y != "":
+                    if "ok" in y:
+                        print "\t"+y.rstrip().lstrip()
+                    else:
+                        print "\t"+y.rstrip().lstrip()
+        except KeyboardInterrupt: #catch a CTRL-C
+            s.writelines("!\n")
+            print colored("EMERGENCY STOP SENT!", "magenta")
+            ser_term()
+                
     def processFileXON(f):
         """Use TinyG Flow Control"""
         for line in f.readlines():
@@ -142,7 +148,7 @@ def loadFile(input):
 
         
     try:
-        input = input.split("#FILE#")[-1] #Parse out the path/to/file.gc
+        input = input.split("load")[-1].rstrip().lstrip() #Parse out the path/to/file.gc
         f = open(input, 'r')
     except IOError:
         print colored("[!] Error opening file... Check your file path....", "red")
@@ -157,16 +163,22 @@ def loadFile(input):
 
     
 def main():
-    init()  #Windows Terminal Color Support.. Just ignore this
-    print colored(logo, 'blue') #Print the TinyG Console Logo
-    global s, XON
-    XON = False  #Set this to test out XON XOFF MODE (not tested)
-    
-    s = init_serial()
-    #s = serial.Serial(ports[port_choice], 115200, timeout=.5) #Setup Serial port COnnection
-    s.xonxoff = True #Turn on software flow control.  TinyG supports this
-    usage()  #display #FILE# usage
-    ser_term() #Run the terminal function
+    try:
+        
+        init()  #Windows Terminal Color Support.. Just ignore this
+        print colored(logo, 'blue') #Print the TinyG Console Logo
+        global s, XON
+        XON = False  #Set this to test out XON XOFF MODE (not tested)
+        
+        s = init_serial()
+        #s = serial.Serial(ports[port_choice], 115200, timeout=.5) #Setup Serial port COnnection
+        s.xonxoff = True #Turn on software flow control.  TinyG supports this
+        usage()  #display #FILE# usage
+        ser_term() #Run the terminal function
+    except OSError:
+        print colored("TinyG disconnected or powered down during operations... Exiting Hard...", "red")
+        sys.exit()
+        
 
 if __name__ == "__main__":
     main()
