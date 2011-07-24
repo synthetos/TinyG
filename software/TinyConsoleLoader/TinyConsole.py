@@ -1,6 +1,5 @@
 #!/usr/bin/python
-#Console Loader for TinyG
-#This version of the Console loader is meant to be used with 308.11 + versions of TinyG
+#Console Loader for TinyG v5-v6
 #Riley Porter
 #Synthetos.com
 
@@ -15,7 +14,6 @@ from termcolor import colored
 
 import sys
 import random
-from optparse import OptionParser
 import time
 
 logo = """
@@ -33,12 +31,12 @@ logo = """
 
 def usage():
     print """[?] Usage: 
-         -f indicates the filename to be sent to TinyG.
-         -s indicates the serial port that TinyG is connected to.
+         Typing #FILE# filename will run a gcode file
+         Everything else will operate as you were "Consoled In" to TinyG
+        
 EXAMPLE:
-           python TinyConsole.py -f gcodefile.nc -s COM7
-           or
-           python TinyConsole.py -filename gcodefile.nc -serialport /dev/tty/USB0"""
+           #FILE# ./files/gcodefile.nc
+        """
 
 def init_serial():
     #Get Serial Port Options
@@ -75,6 +73,7 @@ def init_serial():
 
     try:
         s = serial.Serial(ports[port_selected], 115200, timeout=.5)
+        s.flush()  #Removes any trailing char's from previous sessions
         print colored(("TinyG successfully connected to %s" % ports[port_selected]), 'magenta')
         return s
     except:
@@ -106,7 +105,7 @@ def ser_term():
             print colored("Exiting....", "grey")
             sys.exit()
             
-        elif input.find("#FILE#") <= 0:  #Look for the #FILE# string
+        elif input.find("#FILE#") >= 0:  #Look for the #FILE# string
             """loading a gcode file function called"""
             loadFile(input)
         ########################################################    
@@ -146,7 +145,7 @@ def loadFile(input):
         input = input.split("#FILE#")[-1] #Parse out the path/to/file.gc
         f = open(input, 'r')
     except IOError:
-        pass
+        print colored("[!] Error opening file... Check your file path....", "red")
     #Begin Processing the Gcode File
     print colored("[*] Begin Processing Gcode File", "magenta")
     #Check to see if flow control is enabled
@@ -161,11 +160,12 @@ def main():
     init()  #Windows Terminal Color Support.. Just ignore this
     print colored(logo, 'blue') #Print the TinyG Console Logo
     global s, XON
-    XON = False
+    XON = False  #Set this to test out XON XOFF MODE (not tested)
     
     s = init_serial()
     #s = serial.Serial(ports[port_choice], 115200, timeout=.5) #Setup Serial port COnnection
     s.xonxoff = True #Turn on software flow control.  TinyG supports this
+    usage()  #display #FILE# usage
     ser_term() #Run the terminal function
 
 if __name__ == "__main__":
