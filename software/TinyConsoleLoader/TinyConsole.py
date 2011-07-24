@@ -123,7 +123,7 @@ def loadFile(input):
     def processFileXOFF(f):
         """Used Grep Flow Control"""
         for line in f.readlines():
-            time.sleep(.25) #Not cool man
+            #time.sleep(.25) #Not cool man
             s.writelines(line)
             y = s.readline()
             #print y.rstrip()
