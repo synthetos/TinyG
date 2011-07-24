@@ -1,9 +1,0 @@
-[Desktop Entry]
-Version=1.0
-Name=PyCAM
-GenericName=Toolpath Generator
-Comment=Toolpath Generation for 3-Axis CNC machining
-Exec=pycam
-Terminal=false
-Type=Application
-Categories=Development;Engineering;Robotics;
