@@ -15,6 +15,9 @@ from termcolor import colored
 import sys
 import random
 import time
+global SPEED
+
+SPEED = 115200
 
 logo = """
   _______ _              _____ 
@@ -32,11 +35,39 @@ logo = """
 def usage():
     print """[?] Usage: 
          Typing #FILE# filename will run a gcode file
-         Everything else will operate as you were "Consoled In" to TinyG
+         Everything else will operate as you were "Jacked" into TinyG
         
 EXAMPLE:
            #FILE# ./files/gcodefile.nc
         """
+
+
+def IdentifyBoard(port_selected):
+    SPEEDS = {"TINYG":115200,
+              "GRBL":9600}
+    print "[*] Running Auto Board Identification Now!"
+    for tmpPort,tmpSpeed in SPEEDS.items():
+        print "\t[#]Trying %s at Speed %s" % (tmpPort, tmpSpeed)
+        try:
+            s = serial.Serial(port_selected, tmpSpeed, timeout=.5)
+            s.writelines("\n")
+            if s.inWaiting > 1:
+                readbuf = s.readall()
+                if readbuf == "":
+                    s.writelines("$\n")
+                    readbuf = s.readall()
+                if "ok" in readbuf:
+                    print colored("\t[*]Auto Board Identification selected %s:%s\n" % (tmpPort,tmpSpeed), "magenta")
+                    return(s)
+        except Exception, e:
+            print e
+    
+    
+    s = serial.Serial(ports[port_selected], SPEED, timeout=.5)
+    s.flush()  #Removes any trailing char's from previous sessions
+    print colored(("TinyG successfully connected to %s" % ports[port_selected]), 'magenta')
+    return s, tmpPort
+    
 
 def init_serial():
     #Get Serial Port Options
@@ -70,12 +101,11 @@ def init_serial():
                 print colored("Invalid Choice.... Try Again...\n", 'red')
             
     port_selected, ports = pick_port()
-
+    
+    
     try:
-        s = serial.Serial(ports[port_selected], 115200, timeout=.5)
-        s.flush()  #Removes any trailing char's from previous sessions
-        print colored(("TinyG successfully connected to %s" % ports[port_selected]), 'magenta')
-        return s
+        s = IdentifyBoard(ports[port_selected])
+        return(s)
     except:
         print colored("[ERROR] Opening Serial Port", 'red')
         pick_port()
@@ -84,8 +114,11 @@ def init_serial():
 def ser_term():
     """Main Serial terminal function"""
     s.writelines("\n") #Get a prompt in the serial recv buffer
+    
     tmpBuf = s.readall().rstrip().lstrip()  #This is to capture the recv buffer to a var to put it on the same line as the raw_input
-
+    if tmpBuf == "":
+        #Print a prompt to identify GRBL is ready
+        print "GRBL Ready>"
     while 1 :
 
         #Simple prompt fix to catch the right type of prompt string
@@ -172,7 +205,7 @@ def main():
         
         s = init_serial()
         #s = serial.Serial(ports[port_choice], 115200, timeout=.5) #Setup Serial port COnnection
-        s.xonxoff = True #Turn on software flow control.  TinyG supports this
+        #s.xonxoff = True #Turn on software flow control.  TinyG supports this
         usage()  #display #FILE# usage
         ser_term() #Run the terminal function
     except OSError:
