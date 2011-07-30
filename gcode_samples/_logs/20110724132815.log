@@ -1,0 +1,334 @@
+Terminal log file
+Date: 7/24/2011 - 1:28:25 PM
+-----------------------------------------------
+G90
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G0 X12.3355310396262 Y4.93677365565761 Z0.0
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X12.3355310396262 Y4.93677365565761 Z0.0
+#### TRAP #### Attempted move G1X12.3355310396262Y4.93677365565761Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X12.4531508553397 Y5.13072789099702 Z0.0
+#### TRAP #### Attempted move G1X12.4531508553397Y5.13072789099702Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X12.5844857063411 Y5.32172105388789 Z0.0
+#### TRAP ####Atempted move G1X12.5844857063411Y5.32172105388789Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X12.7293393420891 Y5.50971204539556 Z0.0
+#### TRAP #### Attempted move G1X12.7293393420891Y5.50971204539556Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X12.8874947857157 Y5.69466091418552 Z0.0
+#### TRP #### Attempted move G1X12.8874947857157Y5.69466091418552Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X13.0587146646707 Y5.87652887162503 Z0.0
+#### TRP #### Attempted move G1X13.0587146646707Y5.87652887162503Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X13.2427415724474 Y6.05527830644158 Z0.0
+#### TRAP####Attempted move G1X13.2427415724474Y6.05527830644158Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X13.4392984608402 Y6.23087279893283 Z0.0
+#### TRAP #### Attempted move G1X13.4392984608402Y6.23087279893283Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X13.6480890621351 Y6.4032771347225 Z0.0
+#### TRAP #### Attempted move G1X13.6480890621351Y6.4032771347225Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X13.8687983405893 Y6.57245731805703 Z0.0
+#### TRAP #### Attempted move G1X13.8687983405893Y6.57245731805703Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X14.1010929725135 Y6.73838058463784 Z0.0
+#### TRAP #### Attempted move G1X14.1010929725135Y6.73838058463784Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X14.3446218542238 Y6.90101541398439 Z0.0
+#### TRAP #### Attempted move G1X14.3446218542238Y6.90101541398439Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X14.5990166370893 Y7.06033154132337 Z0.0
+#### TRAP #### Attempted move G1X14.5990166370893Y7.06033154132337Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X14.863892288861 Y7.21629996899935 Z0.0
+#### TRAP #### Attempted move G1X14.863892288861Y7.21629996899935Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X15.4234661970901 Y7.51808413541042 Z0.0
+#### TRAP #### Attempted move G1X15.4234661970901Y7.51808413541042Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X15.7173163734666 Y7.66384831033618 Z0.0
+#### TRAP #### Attempted move G1X15.7173163734666Y7.66384831033618Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X16.0199525509882 Y7.80616167738552 Z0.0
+#### TRAP #### Attempted move G1X16.0199525509882Y7.80616167738552Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X16.6497334047771 Y8.08034728137583 Z0.0
+#### TRAP #### Attempted move G1X16.6497334047771Y8.08034728137583Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X16.975922012241 Y8.21217848628707 Z0.0
+#### TRAP #### Attempted move G1X16.975922012241Y8.21217848628707Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X17.3089859402155 Y8.34047683465472 Z0.0
+#### TRAP #### Attempted move G1X17.3089859402155Y8.34047683465472Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X17.9937057603946 Y8.5864076715477 Z0.0
+#### TRAP #### Attempted move G1X17.9937057603946Y8.5864076715477Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X18.3443208622486 Y8.70400990598243 Z0.0
+#### TRAP #### Attempted move G1X18.3443208622486Y8.70400990598243Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X18.6997312899981 Y8.818018786978 Z0.0
+#### TRAP #### Attempted move G1X18.6997312899981Y8.818018786978Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X19.4227691333465 Y9.03521101700248 Z0.0
+#### TRAP #### Attempted move G1X19.4227691333465Y9.03521101700248Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X20.9022066884608 Y9.42605222072762 Z0.0
+#### TRAP #### Attempted move G1X20.9022066884608Y9.42605222072762Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X21.2757364708361 Y9.51465691615976 Z0.0
+#### TRAP #### Attempted move G1X21.2757364708361Y9.51465691615976Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X21.6495990147857 Y9.59961322975207 Z0.0
+#### TRAP #### Attempted move G1X21.6495990147857Y9.59961322975207Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X22.3960437696012 Y9.75857955033345 Z0.0
+#### TRAP #### Attempted move G1X22.3960437696012Y9.75857955033345Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X22.7674881301345 Y9.83259245216372 Z0.0
+#### TRAP #### Attempted move G1X22.7674881301345Y9.83259245216372Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X23.1369912855881 Y9.90296276049176 Z0.0
+#### TRAP #### Attempted move G1X23.1369912855881Y9.90296276049176Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X23.8679233962217 Y10.0327966575568 Z0.0
+#### TRAP #### Attempted move G1X23.8679233962217Y10.0327966575568Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X24.2282371428706 Y10.0922742380037 Z0.0
+#### TRAP #### Attempted move G1X24.2282371428706Y10.0922742380037Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X24.5843809668867 Y10.1481372027948 Z0.0
+#### TRAP #### Attempted move G1X24.5843809668867Y10.1481372027948Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X24.9358111584758 Y10.2003959955771 Z0.0
+#### TRAP #### Attempted move G1X24.9358111584758Y10.2003959955771Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X25.2819910663171 Y10.2490624322584 Z0.0
+#### TRAP #### Attempted move G1X25.2819910663171Y10.2490624322584Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X25.6223919153891 Y10.2941496963848 Z0.0
+#### TRAP #### Attempted move G1X25.6223919153891Y10.2941496963848Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X25.9564936127931 Y10.3356723339964 Z0.0
+#### TRAP #### Attempted move G1X25.9564936127931Y10.3356723339964Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X26.6037673327305 Y10.4080886918107 Z0.0
+#### TRAP #### Attempted move G1X26.6037673327305Y10.4080886918107Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X26.9099079934268 Y10.4384455890366 Z0.0
+#### TRAP #### Attempted move G1X26.9099079934268Y10.4384455890366Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X27.2081017537992 Y10.4654447562388 Z0.0
+#### TRAP #### Attempted move G1X27.2081017537992Y10.4654447562388Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X27.497909974211 Y10.4891061938919 Z0.0
+#### TRAP #### Attempted move G1X27.497909974211Y10.4891061938919Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X27.778906182752 Y10.5094511230297 Z0.0
+#### TRAP #### Attempted move G1X27.778906182752Y10.5094511230297Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X28.050676699933 Y10.5265019773641 Z0.0
+#### TRAP #### Attempted move G1X28.050676699933Y10.5265019773641Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X28.3128212446431 Y10.5402823949598 Z0.0
+#### TRAP #### Attempted move G1X28.3128212446431Y10.5402823949598Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X28.5649535204821 Y10.5508172094679 Z0.0
+#### TRAP #### Attempted move G1X28.5649535204821Y10.5508172094679Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X28.806701781608 Y10.5581324409216 Z0.0
+#### TRAP #### Attempted move G1X28.806701781608Y10.5581324409216Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X29.0377093772722 Y10.5622552860977 Z0.0
+#### TRAP #### Attempted move G1X29.0377093772722Y10.5622552860977Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X29.2576352742437 Y10.5632141084465 Z0.0
+#### TRAP #### Attempted move G1X29.2576352742437Y10.5632141084465Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X29.4661545563582 Y10.5610384275955 Z0.0
+#### TRAP #### Attempted move G1X29.4661545563582Y10.5610384275955Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X29.6629589004583 Y10.5557589084287 Z0.0
+#### TRAP #### Attempted move G1X29.6629589004583Y10.5557589084287Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X29.8477570280305 Y10.5474073497468 Z0.0
+#### TRAP #### Attempted move G1X29.8477570280305Y10.5474073497468Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.020275131875 Y10.5360166725123 Z0.0
+#### TRAP #### Attempted move G1X30.020275131875Y10.5360166725123Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.1802572771849 Y10.5216209076835 Z0.0
+#### TRAP #### Attempted move G1X30.1802572771849Y10.5216209076835Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.3274657764457 Y10.5042551836423 Z0.0
+#### TRAP #### Attempted move G1X30.3274657764457Y10.5042551836423Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.4616815376084 Y10.4839557132193 Z0.0
+#### TRAP #### Attempted move G1X30.4616815376084Y10.4839557132193Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.5827043850235 Y10.4607597803227 Z0.0
+#### TRAP #### Attempted move G1X30.5827043850235Y10.4607597803227Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.6903533526676 Y10.4347057261743 Z0.0
+#### TRAP #### Attempted move G1X30.6903533526676Y10.4347057261743Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.7844669492324 Y10.405832935159 Z0.0
+#### TRAP #### Attempted move G1X30.7844669492324Y10.405832935159Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.8649033946882 Y10.374181820291 Z0.0
+#### TRAP #### Attempted move G1X30.8649033946882Y10.374181820291Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.9315408279745 Y10.339793808305 Z0.0
+#### TRAP #### Attempted move G1X30.9315408279745Y10.339793808305Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.9842774855148 Y10.3027113243745 Z0.0
+#### TRAP #### Attempted move G1X30.9842774855148Y10.3027113243745Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X31.0230318502931 Y10.2629777764659 Z0.0
+#### TRAP #### Attempted move G1X31.0230318502931Y10.2629777764659Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X31.0477427712741 Y10.2206375393316 Z0.0
+#### TRAP #### Attempted move G1X31.0477427712741Y10.2206375393316Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X31.0583695529918 Y10.1757359381496 Z0.0
+#### TRAP #### Attempted move G1X31.0583695529918Y10.1757359381496Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X31.0548920151765 Y10.1283192318147 Z0.0
+#### TRAP #### Attempted move G1X31.0548920151765Y10.1283192318147Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X31.0373105223305 Y10.0784345958884 Z0.0
+#### TRAP #### Attempted move G1X31.0373105223305Y10.0784345958884Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X31.0056459832125 Y10.0261301052123 Z0.0
+#### TRAP #### Attempted move G1X31.0056459832125Y10.0261301052123Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.9599398202279 Y9.97145471619289 Z0.0
+#### TRAP #### Attempted move G1X30.9599398202279Y9.97145471619289Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.9002539087723 Y9.91445824876273 Z0.0
+#### TRAP #### Attempted move G1X30.9002539087723Y9.91445824876273Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.8266704866167 Y9.85519136802623 Z0.0
+#### TRAP #### Attempted move G1X30.8266704866167Y9.85519136802623Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.7392920334654 Y9.79370556559536 Z0.0
+#### TRAP #### Attempted move G1X30.7392920334654Y9.79370556559536Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.638241120866 Y9.73005314062286 Z0.0
+#### TRAP #### Attempted move G1X30.638241120866Y9.73005314062286Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.5236602326883 Y9.66428718053975 Z0.0
+#### TRAP #### Attempted move G1X30.5236602326883Y9.66428718053975Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.3957115564371 Y9.5964615415041 Z0.0
+#### TRAP #### Attempted move G1X30.3957115564371Y9.5964615415041Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.2545767457037 Y9.5266308285684 Z0.0
+#### TRAP #### Attempted move G1X30.2545767457037Y9.5266308285684Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X30.1004566541045 Y9.45485037557253 Z0.0
+#### TRAP #### Attempted move G1X30.1004566541045Y9.45485037557253Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X29.7541582500978 Y9.30566510619459 Z0.0
+#### TRAP #### Attempted move G1X29.7541582500978Y9.30566510619459Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X29.5624748593928 Y9.22837441677542 Z0.0
+#### TRAP #### Attempted move G1X29.5624748593928Y9.22837441677542Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X29.3587953063209 Y9.14936219920743 Z0.0
+#### TRAP #### Attempted move G1X29.3587953063209Y9.14936219920743Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X28.9166323203412 Y8.98640845081082 Z0.0
+#### TRAP #### Attempted move G1X28.9166323203412Y8.98640845081082Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X27.902310721526 Y8.64246312884818 Z0.0
+#### TRAP #### Attempted move G1X27.902310721526Y8.64246312884818Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X27.6237517170994 Y8.55307511126404 Z0.0
+#### TRAP #### Attempted move G1X27.6237517170994Y8.55307511126404Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X27.3359815345597 Y8.46245054475933 Z0.0
+#### TRAP #### Attempted move G1X27.3359815345597Y8.46245054475933Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X26.7344770159498 Y8.2777436572493 Z0.0
+#### TRAP #### Attempted move G1X26.7344770159498Y8.2777436572493Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X25.4399767135338 Y7.89628447783126 Z0.0
+#### TRAP #### Attempted move G1X25.4399767135338Y7.89628447783126Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X22.592331549438 Y7.09974137873572 Z0.0
+#### TRAP #### Attempted move G1X22.592331549438Y7.09974137873572Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X22.1905990121108 Y6.98970521542345 Z0.0
+#### TRAP #### Attempted move G1X22.1905990121108Y6.98970521542345Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X21.7872367485376 Y6.87944838373069 Z0.0
+#### TRAP #### Attempted move G1X21.7872367485376Y6.87944838373069Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X20.9783580929745 Y6.65861365128917 Z0.0
+#### TRAP #### Attempted move G1X20.9783580929745Y6.65861365128917Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X19.3711460270307 Y6.21804698184884 Z0.0
+#### TRAP #### Attempted move G1X19.3711460270307Y6.21804698184884Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X18.9755106296033 Y6.10863170350067 Z0.0
+#### TRAP #### Attempted move G1X18.9755106296033Y6.10863170350067Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X18.5836878943571 Y5.99967676342436 Z0.0
+#### TRAP #### Attempted move G1X18.5836878943571Y5.99967676342436Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X17.8141215291068 Y5.78348588756565 Z0.0
+#### TRAP #### Attempted move G1X17.8141215291068Y5.78348588756565Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X16.3492896703746 Y5.36033013575759 Z0.0
+#### TRAP #### Attempted move G1X16.3492896703746Y5.36033013575759Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X16.0021797907599 Y5.25694877715396 Z0.0
+#### TRAP #### Attempted move G1X16.0021797907599Y5.25694877715396Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X15.6638982511423 Y5.15469524647079 Z0.0
+#### TRAP #### Attempted move G1X15.6638982511423Y5.15469524647079Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X15.0160787137047 Y4.9538973706445 Z0.0
+#### TRAP #### Attempted move G1X15.0160787137047Y4.9538973706445Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X14.7076281460512 Y4.8555145015725 Z0.0
+#### TRAP #### Attempted move G1X14.7076281460512Y4.8555145015725Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X14.4101789047941 Y4.75858234266128 Z0.0
+#### TRAP #### Attempted move G1X14.4101789047941Y4.75858234266128Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X13.8502553147349 Y4.56938630620037 Z0.0
+#### TRAP #### Attempted move G1X13.8502553147349Y4.56938630620037Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X13.5887156647273 Y4.4772787834477 Z0.0
+#### TRAP #### Attempted move G1X13.5887156647273Y4.4772787834477Z0.0 with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> G1 X13.3400451279922 Y4.38693461275558 Z0.
+#### TRAP #### Attempted move G1X with feed rate = zero
+tinyg GCODE[mm] ok> 
+tinyg GCODE[mm] ok> ?
+Units:           G21 - millimeter mode
+Motion mode:     G1  - linear feed
+Plane selection: G17 - XY plane
+Distance mode:   G90 - absolute distance
+Feed rate mode:  G94 - units per minute
+Feed Rate:       0.000 mm \ min
+Position X:     12.336 mm
+Position Y:      4.937 mm
+Position Z:      0.000 mm
+Position A:      0.000 degrees
+Position B:      0.000 degrees
+Position C:      0.000 degrees
+Offset I:        0.000 mm
+Offset J:        0.000 mm
+Offset K:        0.000 mm
+Run state:       Running
+tinyg GCODE[mm] ok> 
+-----------------------------------------------
+Date: 7/24/2011 - 1:38:44 PM
+End log file
