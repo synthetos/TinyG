@@ -1,7 +1,14 @@
 #!/usr/bin/python
 
-import serial
 import sys
+try:
+    import serial
+except ImportError:
+    print("[ERROR] Importing the serial module.\n\tGo to http://pyserial.sourceforge.net/ and install the serial python package.")
+    print("Exiting...")
+    sys.exit()
+    
+
 import ctypes
 import os
 import platform
