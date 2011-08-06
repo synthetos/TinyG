@@ -5,28 +5,152 @@ import ctypes
 import os
 import platform
 import serial
+import time
 
-def scan():
-    """ Scan for available ports. return a list of device names. """
-    if platform.system() == 'Windows':
-        #print "[*]Scanning for Windows Serial Ports"
-        import scanwin32
-        ports = []
-        for order, port, desc, hwid in sorted(scanwin32.comports()):
-            ports.append(port)
-        return ports
-    elif platform.system() == "Darwin":
-        #print "[*]Scanning for OSX Serial Ports"
-        ports = []
-        import scanosx
-        return scanosx.scan()
-    else:
-        #print "[*]Scanning for Linux Serial Ports"
-        import scanlinux
-        return scanlinux.scan()
- 
-def connect(port, speed):
-    #print "[*]Connecting to %s at %s" % (port, speed)
-    ser = serial.Serial(port, speed, timeout=.3)
-    return ser
+        
+    
+class Serial(object):
+    def __init__(self):
+        self.PORTS = self.scan()
+        
+    
+    def scan(self):
+        """ Scan for available self.PORTS. return a list of device names. """
+        if platform.system() == 'Windows':
+            #print "[*]Scanning for Windows Serial self.PORTS"
+            import scanwin32
+            self.PORTS = []
+            for order, port, desc, hwid in sorted(scanwin32.comself.PORTS()):
+                self.PORTS.append(port)
+            return self.PORTS
+        elif platform.system() == "Darwin":
+            #print "[*]Scanning for OSX Serial self.PORTS"
+            self.PORTS = []
+            import scanosx
+            return scanosx.scan()
+        else:
+            #print "[*]Scanning for Linux Serial self.PORTS"
+            import scanlinux
+            return scanlinux.scan()
+
+        
+        
+    def pick_port(self,msg=""):  #msg is used to prepend "Re-" when the serial ports are needed to be scanned again
+        print("[#]%sScanning Serial Ports:" % msg)
+        while(1):
+            if len(self.PORTS) == 0:
+                self.scan()
+                #self.PORTS_mode()
+    
+            print "[?]Select a Serial Port:"
+            count = 1
+            for port in self.PORTS:
+                print "    [%s] %s " % (count, port)
+                count = count + 1
+            print("Default Selection: [%s]  " % (self.PORTS[-1]))
+    
+            try:
+                self.port_choice =(raw_input("Choice#> "))
+                if self.port_choice == "":
+                    self.port_choice = -1 #Enter was hit as the default port was selected
+                    self.port_selected = self.PORTS[self.port_choice]
+                    break
+                
+                else: #A port number was selected
+                    self.port_choice = (int(self.port_choice)-1)
+                    
+
+                    if self.port_choice >= len(self.PORTS):
+                        raise ValueError()
+                    self.port_selected = self.PORTS[self.port_choice]
+                    break
+                    
+            except ValueError:
+                print("\t[!]Invalid Choice.... Try Again...\n")
+            
+        while(1): 
+            try:
+                self.s, self.board, self.speed = self.IdentifyBoard()
+                return
+            except serial.SerialException:
+                print("[ERROR]Opening Serial Port")
+                self.pick_port()
+            except TypeError("NoneType"):
+                print "[ERROR]Opening %s... Select a different port....\n" % self.port_selected
+                
+                
+                
+                
+    def IdentifyBoard(self):
+        """Need to cycle thorugh all speeds in a list for each board  TODO"""
+        delay = .2
+        SPEEDS = {"GRBL":9600,
+                  "TINYG":115200
+                  }
+        
+        for tmpPort,tmpSpeed in SPEEDS.items():
+    
+            print "\t[#]Trying %s at Speed %s" % (tmpPort, tmpSpeed)
+            try:
+                s = serial.Serial(self.port_selected, tmpSpeed, timeout=.4)
+            except serial.SerialException:
+                print "Error connecting to %s at %s" % (self.port_selected, tmpSpeed)
+                continue
+            
+            s.writelines("\n")
+            readbuf = s.readall()
+            if readbuf == "":  #Possibly GRBL
+                s.writelines("$\n")
+                readbuf = s.readall()
+                if "ok" in readbuf:
+                    print("\t[#]Auto Board Identification selected %s:%s\n" % (tmpPort,tmpSpeed))
+                    return(s, tmpPort, tmpSpeed)
+            elif "ok" in readbuf:
+                print("\t[#]Auto Board Identification selected %s:%s\n" % (tmpPort,tmpSpeed))
+                return(s, tmpPort, tmpSpeed)
+            
+        
+            if s is None:
+                #No TinyG / GRBL board was found.
+                print "[#]Auto Detection has failed."
+                print "[!]System will now exit.. Verify your board connections are secure and power is on."
+                #sys.exit()
+                return
+    
+        
+        #print "[*]Running Auto Board Identification Now!"
+        #for tmpPort,tmpSpeed in SPEEDS.items():
+            #print "\t[#]Trying %s at Speed %s" % (tmpPort, tmpSpeed)
+            #try:
+                #s = serial.Serial(self.port_selected, tmpSpeed, timeout=.4)
+                ##time.sleep(2)
+                #s.writelines("\n")
+                #time.sleep(delay)  #these delays are needed to connect to the board
+                #if s.inWaiting() > 1:
+                    #time.sleep(delay)  #these delays are needed to connect to the board
+                    #readbuf = s.readall()
+                    #readbuf = readbuf.strip("\x00")
+                    #time.sleep(delay)  #these delays are needed to connect to the board
+                    #if readbuf == "":
+                        #s.writelines("$\n")
+                        #time.sleep(delay)  #these delays are needed to connect to the board
+                        #readbuf = s.readall()
+                        #time.sleep(delay)  #these delays are needed to connect to the board
+                    #elif "ok" in readbuf:
+                        #print("\t[#]Auto Board Identification selected %s:%s\n" % (tmpPort,tmpSpeed))
+                        #return(s, tmpPort, tmpSpeed)
+                    #else:
+                        #s = None #Clears out the serial connection could not connect to a valid board
+            #except Exception, e:
+                #print "[ERROR]Opening %s... Select a different port....\n" % self.port_selected
+                #self.pick_port("Re-")
+      
+        
+        
+        #s = serial.Serial(self.port_selected, SPEED, timeout=.5)
+        #s.flush()  #Removes any trailing char's from previous sessions
+        #self.s = s
+        #s = None
+        #print ("Console successfully connected to %s" % self.port_selected)
+        #return self
     
