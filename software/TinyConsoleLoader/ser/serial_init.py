@@ -20,7 +20,7 @@ class Serial(object):
             #print "[*]Scanning for Windows Serial self.PORTS"
             import scanwin32
             self.PORTS = []
-            for order, port, desc, hwid in sorted(scanwin32.comself.PORTS()):
+            for order, port, desc, hwid in sorted(scanwin32.comports()):
                 self.PORTS.append(port)
             return self.PORTS
         elif platform.system() == "Darwin":
@@ -70,6 +70,7 @@ class Serial(object):
             
         while(1): 
             try:
+                """Toss an try here if there is a com port but not tinyg it blows up"""
                 self.s, self.board, self.speed = self.IdentifyBoard()
                 return
             except serial.SerialException:
