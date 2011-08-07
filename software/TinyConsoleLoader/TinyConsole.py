@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+#Riley Porter and Alden Hart 2011
 import sys
 try:
     import serial
