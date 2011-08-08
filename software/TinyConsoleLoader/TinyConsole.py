@@ -1,5 +1,5 @@
 #!/usr/bin/python
-#Riley Porter and Alden Hart 2011
+
 import sys
 try:
     import serial
@@ -52,7 +52,7 @@ class Console(object):
             print "\t[#]Disabling XON Flow Control"
             print "[*]Done"
             self.ser.s.writelines("$ee0\n") #Disable Local Echo
-            self.ser.s.writelines("$ex0\n") #Disable Flow Control
+            self.ser.s.writelines("$ex1\n") #Disable Flow Control
         
         elif self.ser.board.lower() == "grbl":
             """Placeholder for auto configuration GRBL"""

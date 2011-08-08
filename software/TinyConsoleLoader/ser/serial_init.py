@@ -6,7 +6,6 @@ import os
 import platform
 import serial
 import time
-
         
     
 class Serial(object):
@@ -20,7 +19,7 @@ class Serial(object):
             #print "[*]Scanning for Windows Serial self.PORTS"
             import scanwin32
             self.PORTS = []
-            for order, port, desc, hwid in sorted(scanwin32.comports()):
+            for order, port, desc, hwid in sorted(scanwin32.comself.PORTS()):
                 self.PORTS.append(port)
             return self.PORTS
         elif platform.system() == "Darwin":
@@ -67,24 +66,26 @@ class Serial(object):
                     
             except ValueError:
                 print("\t[!]Invalid Choice.... Try Again...\n")
-            
+                
         while(1): 
             try:
-                """Toss an try here if there is a com port but not tinyg it blows up"""
                 self.s, self.board, self.speed = self.IdentifyBoard()
                 return
             except serial.SerialException:
                 print("[ERROR]Opening Serial Port")
                 self.pick_port()
-            except TypeError("NoneType"):
+            except TypeError:
                 print "[ERROR]Opening %s... Select a different port....\n" % self.port_selected
+                sys.exit()
+            
+                
                 
                 
                 
                 
     def IdentifyBoard(self):
         """Need to cycle thorugh all speeds in a list for each board  TODO"""
-        delay = .2
+                
         SPEEDS = {"GRBL":9600,
                   "TINYG":115200
                   }
@@ -93,7 +94,7 @@ class Serial(object):
     
             print "\t[#]Trying %s at Speed %s" % (tmpPort, tmpSpeed)
             try:
-                s = serial.Serial(self.port_selected, tmpSpeed, timeout=.4)
+                s = serial.Serial(self.port_selected, tmpSpeed, timeout=.025)
             except serial.SerialException:
                 print "Error connecting to %s at %s" % (self.port_selected, tmpSpeed)
                 continue
@@ -119,39 +120,4 @@ class Serial(object):
                 return
     
         
-        #print "[*]Running Auto Board Identification Now!"
-        #for tmpPort,tmpSpeed in SPEEDS.items():
-            #print "\t[#]Trying %s at Speed %s" % (tmpPort, tmpSpeed)
-            #try:
-                #s = serial.Serial(self.port_selected, tmpSpeed, timeout=.4)
-                ##time.sleep(2)
-                #s.writelines("\n")
-                #time.sleep(delay)  #these delays are needed to connect to the board
-                #if s.inWaiting() > 1:
-                    #time.sleep(delay)  #these delays are needed to connect to the board
-                    #readbuf = s.readall()
-                    #readbuf = readbuf.strip("\x00")
-                    #time.sleep(delay)  #these delays are needed to connect to the board
-                    #if readbuf == "":
-                        #s.writelines("$\n")
-                        #time.sleep(delay)  #these delays are needed to connect to the board
-                        #readbuf = s.readall()
-                        #time.sleep(delay)  #these delays are needed to connect to the board
-                    #elif "ok" in readbuf:
-                        #print("\t[#]Auto Board Identification selected %s:%s\n" % (tmpPort,tmpSpeed))
-                        #return(s, tmpPort, tmpSpeed)
-                    #else:
-                        #s = None #Clears out the serial connection could not connect to a valid board
-            #except Exception, e:
-                #print "[ERROR]Opening %s... Select a different port....\n" % self.port_selected
-                #self.pick_port("Re-")
-      
-        
-        
-        #s = serial.Serial(self.port_selected, SPEED, timeout=.5)
-        #s.flush()  #Removes any trailing char's from previous sessions
-        #self.s = s
-        #s = None
-        #print ("Console successfully connected to %s" % self.port_selected)
-        #return self
     
