@@ -2,6 +2,7 @@
 import os
 import time
 #from TinyConsole import DEFAULT_GCODE_DIR
+from serial import XON, XOFF
 
 global DEFAULT_GCODE_DIR
 DEFAULT_GCODE_DIR = "./gcode_files"
@@ -9,9 +10,7 @@ DEFAULT_GCODE_DIR = "./gcode_files"
 
 
 def loadFile(input, self):
-    s = self
-    def processDelimiter(f):
-        """Used Grep Flow Control"""
+    def getFileStats(f):
         totalLines = 0
         count = 0
         
@@ -20,45 +19,64 @@ def loadFile(input, self):
             count = count + 1
         totalLines = count
         f.seek(0)  #reset file to zero'th line
+        return(totalLines)
+    
         
+    def processDelimiter(f):
+        """Used Grep Flow Control"""
+        statsCount  = 0
+        totalLines = getFileStats(f)
         
-        statsCount = 0
         for line in f.readlines():
             try:
                 statsCount = statsCount + 1
-                time.sleep(.1) #Not cool man
-                s.writelines(line)
+                s.write(line)
+                charbuff = s.inWaiting()
                 y = s.readline()
                
-                #print y.rstrip()
-                
-                if y != "":
-                    percentageComplete =  "%.f" % (100 * float(statsCount)/float(totalLines))
-                    if "ok" in y:
+                while(1):
+                    if DELIM in y: #DELIM for TinyG and GRBL is "ok"
+                        percentageComplete =  "%.f" % (100 * float(statsCount)/float(totalLines))
                         print "\t"+y.rstrip().lstrip() + " - %s%s of Job Complete" % (percentageComplete,"%")
+                        break
                     else:
-                        print "\t"+y.rstrip().lstrip() + " - %s%s of Job Complete" % (percentageComplete,"%")
-
-        
+                        y = s.readline() #Re-read the buffer for the delim
             except KeyboardInterrupt: #catch a CTRL-C
                 s.writelines("!\n")
                 print("EMERGENCY STOP SENT!")
                 return
-            
-        print "[*]Sending File Complete:"
+        print "[*]Sending File Complete:... Wait for final commands to finish..."
     
     def processFileXON(f):
         """Use TinyG Flow Control XON/XOFF"""
-        for line in f.readlines():
-            s.writelines(line)
-            y = s.readline()
-            print y.rstrip()
+        try:
+            statsCount  = 0
+            totalLines = getFileStats(f)
             
+            for line in f.readlines():
+                percentageComplete =  "%.f" % (100 * float(statsCount)/float(totalLines))
+                statsCount = statsCount + 1
+                print "\t%s%s of Job Complete" % (percentageComplete,"%")
+                s.write(line)
+                r = s.readline() #read the line coming back from TinyG
+                if XOFF in r:  #Check to see if the XOFF char is in the recv buffer
+                    print("[*]XOFF Recieved... Stopping data flow...")
+                    while(1):
+                        r = s.readline()  #Keep reading, looking for XON command from TinyG
+                        if XON in r:
+                            print("\t[#]XON Recieved... Starting data flow again...")
+                            break   #Found the XON signal... Now break out of the infinite loop                 
+                    
+        except KeyboardInterrupt: #catch a CTRL-C
+                s.writelines("!\n")
+                print("EMERGENCY STOP SENT!")
+                return
             
-    #Check to see if Flow control is enabled
-    XON = s.xonxoff
-    #Check file exists and is abled to be read
-    try:
+    s = self
+    DELIM = "ok"       
+    s.xonxoff = True    #Set it to use XON
+    
+    try: #Check file exists and is abled to be read
         input = input.split("load")[-1].rstrip().lstrip() #Parse out the path/to/file.gc
         f = open(input, 'r') #Attempt to open file
     except IOError:
@@ -68,9 +86,9 @@ def loadFile(input, self):
     #Begin Processing the Gcode File
     print ("[*] Begin Processing Gcode File")
     
-    if XON == False:  #if xon is off call processDelimiter
+    if s.xonxoff == False:  #if xon is off call processDelimiter
         processDelimiter(f)
-    elif XON == True: #if xon is on call processXON
+    elif s.xonxoff == True: #if xon is on call processXON
         processFileXON(f) 
 
         
