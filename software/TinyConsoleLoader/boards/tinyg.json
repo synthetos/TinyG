@@ -1,0 +1,14 @@
+{
+    "board": {
+        "name": "TinyG",
+        "speed": 115200,
+        "options": {
+            "xon": "true",
+            "echo": "false"
+        },
+        "auto_init": {
+            "Disable Echo": "$ee1",
+            "Enable XON": "$ex1"
+        }
+    }
+}
