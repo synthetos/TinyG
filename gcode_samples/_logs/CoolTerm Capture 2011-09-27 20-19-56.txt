@@ -1,0 +1,52 @@
+#### TinyG build 320.06 - "Dermatitis" ####
+Type h for help
+tinyg[mm] ok> N1 T1M6
+tinyg[mm] ok> 
+tinyg[mm] ok> N2 G17
+tinyg[mm] ok> 
+tinyg[mm] ok> N3 G21 (mm)
+tinyg[mm] ok> 
+tinyg[mm] ok> N4 (S8000)
+ting[mm] ok> 
+tinyg[mm] ok> N5 (M3)
+tinyg[mm] ok> 
+tinyg[mm] ok> N6 G92X0.327Y-33.521Z-1.000
+tinyg[mm] ok> 
+tinyg[mm] ok> N7 G0Z4.000
+tinyg[mm] ok> 
+tinyg[mm] ok> N8 F600.0
+tinyg[mm] ok> 
+tinyg[mm] ok> N9 G1X0.327Y-33.521
+tinyg[mm] ok> 
+tinyg[mm] ok> N10 G1Z-1.000
+tinyg[mm] ok> 
+tinyg[mm] ok> N11 X0.654Y-33.526
+tinyg[mm] ok> 
+tinyg[mm] ok> N12 X0.980Y-33.534
+tinyg[mm] ok> 
+tinyg[mm] ok> N13 X1.304Y-33.546
+*** Controller state: line:13.000000, block:25.000000  N13X1.304Y-33.546
+Units:           G21 - millimeter mode
+Motion mode:     G1  - linear feed
+Plane selection: G17 - XY plane
+Distance mode:   G90 - absolute distance
+Feed rate mode:  G94 - units per minute
+Feed Rate:     600.000 mm \ min
+Position X:      0.980 mm
+Position Y:    -33.534 mm
+Position Z:     -1.000 mm
+Position A:      0.000 degrees
+Position B:      0.000 degrees
+Position C:      0.000 degrees
+Offset I:        0.000 mm
+Offset J:        0.000 mm
+Offset K:        0.000 mm
+Run state:       Running
+***Runtime Buffer[0] bstate:4  mtype:2  mstate:1  replan:0
+position:             0.98  -33.53  -1.00  0.00  0.00  0.00
+target:               0.33  -33.52  4.00  0.00  0.00  0.00
+unit:                 0.00  0.00  1.00  0.00  0.00  0.00
+jerk:                50000000.0000
+time:                  0.0100
+length:                5.0000
+head_length:    
