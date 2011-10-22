@@ -1,0 +1,229 @@
+N1 T1M6
+Executing Gcode block N1 T1M6
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N2 G17
+Executing Gcode block N2 G17
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N3 G21 (mm)
+Executing Gcode block N3 G21 (mm)
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N4 (S8000)
+Executing Gcode block N4 (S8000)
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N5 (M3)
+Executing Gcode block N5 (M3)
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N6 G92X0.327Y-33.521Z-1.000
+Executing Gcode block N6 G92X0.327Y-33.521Z-1.000
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N7 G0Z4.000
+Executing Gcode block N7 G0Z4.000
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N8 F600.0
+Executing Gcode block N8 F600.0
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N9 G1X0.327Y-33.521
+Executing Gcode block N9 G1X0.327Y-33.521
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N10 G1Z-1.000
+Executing Gcode block N10 G1Z-1.000
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N11 X0.654Y-33.526
+Executing Gcode block N11 X0.654Y-33.526
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N12 X0.980Y-33.534
+Executing Gcode block N12 X0.980Y-33.534
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N13 X1.304Y-33.546
+Executing Gcode block N13 X1.304Y-33.546
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N14 X1.626Y-33.562
+Executing Gcode block N14 X1.626Y-33.562
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N15 X1.946Y-33.580
+Executing Gcode block N15 X1.946Y-33.580
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N16 X2.262Y-33.602
+Executing Gcode block N16 X2.262Y-33.602
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N17 X2.574Y-33.628
+Executing Gcode block N17 X2.574Y-33.628
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N18 X2.882Y-33.656
+Executing Gcode block N18 X2.882Y-33.656
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N19 X3.185Y-33.688
+Executing Gcode block N19 X3.185Y-33.688
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N20 X3.483Y-31 X3.775-33.8X5.130Y-342N31X6.268Y-34.328
+Executing Gcode block N20 X3.483Y-31 X3.775-33.8X5.130Y-342N31X6.268Y-34.328
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N
+Executing Gcde block N
+tinyg[mm] ok> 8
+Executing Gcode block 8
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N37 X7.280Y.42 X7.783Y-35.304
+Executing Gcode block N37 X7.280Y.42 X7.783Y-35.304
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> 3859
+Executing Gcode block 3859
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N48 X7.937Y-353Y-36.605
+Executing Gcode block N48 X7.937Y-353Y-36.605
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N54 X7.586X6.903Y-37.431
+Executing Gcode block N54 X7.586X6.903Y-37.431
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N60
+Executing Gcode block N60
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N65 X5.135Y-38.65
+Executing Gcode block N65 X5.135Y-38.65
+tinyg[mm] ok> 5.317
+Executing Gcode block 5.317
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N71 X0.193Y-47X-6.803Y-44.012
+Executing Gcode block N71 X0.193Y-47X-6.803Y-44.012
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N740Y-46.272
+Executing Gcode block N740Y-46.272
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N82 .915..214
+Executing Gcode block N82 .915..214
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N87 X-96Y-47.N
+Executing Gcode block N87 X-96Y-47.N
+tinyg[mm] ok> N92 X-11Y-48.071
+Executing Gcode block N92 X-11Y-48.071
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N93 X-14.326Y-48.204
+Executing Gcode block N93 X-14.326Y-48.204
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N94 X-14.424Y-1057Y 59
+Executing Gcode block N94 X-14.424Y-1057Y 59
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N106 X-14.305Y-49.69
+Executing Gcode block N106 X-14.305Y-49.69
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N104.0.094
+Executing Gcode block N104.0.094
+tinyg[mm] ok> -50.267
+Executing Gcode block -50.267
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N116 X-12.655Y-10.870Y-50.575
+Executing Gcode block N116 X-12.655Y-10.870Y-50.575
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N124 X-10.-
+Executing Gcode block N124 X-10.-
+tinyg[mm] ok> N130131 X-8.408Y-50.68N138 X59 X-5.754Y-50.479
+Executing Gcode block N130131 X-8.408Y-50.68N138 X59 X-5.754Y-50.479
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N140 X-5.424250
+Executing Gcode block N140 X-5.424250
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N145 X-3Y
+Executing Gcode block N145 X-3Y
+tinyg[mm] ok> 
+Execuing Gcode block 
+tinyg[mm] ok> N150 X-2.04361Y-49.322
+Executing Gcode block N150 X-2.04361Y-49.322
+tinyg[mm] ok> 
+Executng Gcode block 
+tinyg[mm] ok> N15583
+Executing Gcode block N15583
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N160 X0.398Y-690
+Executing Gcode block N160 X0.398Y-690
+tinyg[mm] ok> 
+Executin Gcode block 
+tinyg[mm] ok> N164 X0.943Y-48.1-
+Executing Gcode block N164 X0.943Y-48.1-
+tinyg[mm] ok> N170 X1.357Y-47.308
+Executing Gcode block N170 X1.357Y-47.308
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N1267Y-46.369
+Executing Gcode block N1267Y-46.369
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N177 X1.5182 X0.677Y
+Executing Gcode block N177 X1.5182 X0.677Y
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N184 X.8 X-3.245
+Executing Gcode block N184 X.8 X-3.245
+tinyg[mm] ok> 
+Executing Gcode lock 
+tinyg[mm] ok> N189 X-1.903Y-43.04410.052
+Executing Gcode block N189 X-1.903Y-43.04410.052
+tinyg[mm] ok> 
+Exeuting Gcode block 
+tinyg[mm] ok> N472
+Executing Gcode block N472
+tinyg[mm] ok> N907 X-6.787Y21.441
+Executing Gcode block N907 X-6.787Y21.441
+tinyg[mm] ok> 
+Executing code block 
+tinyg[mm] ok> N908 X-6.783Y21.654
+Executing Gcode block N908 X-6.783Y21.654
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N90951.144Y42.208
+Executing Gcode block N90951.144Y42.208
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N94N1011 X-5..036 X-1.667Y43.094
+Executig Gcode block N94N1011 X-5..036 X-1.667Y43.094
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> N1021046 X-9 X-3.134Y41.646
+Executing Gcode block N1021046 X-9 X-3.134Y41.646
+tinyg[mm] ok> 
+Executing Gcode block 
+tinyg[mm] ok> Y
+Executing Gcode block Y
+tinyg[mm] ok> N1079 X-17.847Y33.92
+Executing Gcode block N1079 X-17.847Y33.92
+tinyg[mm] ok> #### TinyG build 322.02 - "Filariasis" ####
+Type h for help
+tinyg[mm] ok> 

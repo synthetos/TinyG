@@ -1,0 +1,799 @@
+(SuperCam Ver 2.2a SPINDLE)
+ti]yg[inch] ok> 
+tinyg[inch] ok> G92 X0 Y0 Z0(zero table - ash)
+tinyg[inch] ok> 
+tinyg[inch] ok> N1 G20	( set inches mode - ash )
+tinyg[inch] ok> 
+tinyg[inch] ok> N5 G40 G17
+tinyg[inch] ok> 
+tinyg[inch] ok> N10 T1 M06
+tinyg[inch] ok> 
+tinyg[inch] ok> N15 G90 G0 X0 Y0 Z0
+tinyg[inch] ok> 
+tinyg[inch] ok> N20 S5000 M03 
+tinyg[inch] ok> 
+tinyg[inch] ok> N25 G00 F8.0 (was F30.0)
+tinyg[inch] ok> 
+tinyg[inch] ok> N30 X0.076 Y0.341
+tinyg[inch] ok> 
+tinyg[inch] ok> N35 G00 Z-1.000 F90.0
+tinyg[inch] ok> 
+tinyg[inch] ok> N40 G01 Z-1.125 F30.0
+tinyg[inch] ok> 
+tinyg[inch] ok> N45 G01 F10.0 (was F60.0)
+tinyg[inch] ok> 
+tinyg[inch] ok> N50 X0.064 Y0.326
+tinyg[inch] ok> 
+tinyg[inch] ok> N55 X0.060 Y0.293
+tinyg[inch] ok> 
+tinyg[inch] ok> N60 X0.077 Y0.267
+tinyg[inch] ok> 
+tinyg[inch] ok> N65 X0.111 Y0.257
+tinyg[inc] ok> 
+tinyg[inch] ok> N70 X0.149 Y0.252
+tinyg[inch] ok> 
+tinyg[inch] ok> N75 X0.188 Y0.255
+tinyg[inch] ok> 
+tinyg[inch] ok> N80 X0.227 Y0.268
+tinyg[inch] ok> 
+tinyg[inch] ok> N85 X0.257 Y0.271
+tinyg[inch] ok> 
+tinyg[inch] ok> N90 X0.335 Y0.265
+tinyg[inch] ok> 
+tinyg[inch] ok> N95 X0.412 Y0.271
+tinyg[inch] ok> 
+tinyg[inch] ok> N100 X0.474 Y0.287
+tinyg[inch] ok>
+tinyg[inch] ok> N105 X0.491 Y0.289
+tinyg[inch] ok> 
+tinyg[inch] ok> N110 X0.517 Y0.273
+tinyg[inch] ok> 
+tinyg[inch] ok> N115 X0.544 Y0.263
+tinyg[inch] ok> 
+tinyg[inch] ok> N120 X0.580 Y0.261
+tinyg[inch] ok> 
+tinyg[inch] ok> N125 X0.595 Y0.263
+tinyg[inch] ok> 
+tinyg[inch] ok> N130 X0.621 Y0.274
+tinyg[inch] ok> 
+tinyg[inch] ok> N135 X0.659 Y0.306
+tinyg[inch] ok> 
+tinyg[inch] ok> N140 X0.673 Y0.335
+tinyg[inch] ok> 
+tinyg[inch] ok> N145 X0.679 Y0.361
+tinyg[inch] ok> 
+tinyg[inch] ok> N150 X0.678 Y0.389
+tinyg[inch] ok> 
+tinyg[inch] ok> N155 X0.670 Y0.420
+tiny][inch] ok> 
+tinyg[inch] ok> N160 X0.670 Y0.446
+tinyg[inch] ok> 
+tinyg[inch] ok> N165 X0.680 Y0.474
+tinyg[inch] ok> 
+tiny][inch] ok> N170 X0.704 Y0.497
+tinyg[inch] ok> 
+tinyg[inch] ok> N175 X0.732 Y0.515
+tinyg[inch] ok> 
+tinyg[inch] ok> N180 X0.794 Y0.535
+tinyg[inch] ok> 
+tinyg[inch] ok> N185 X0.872 Y0.567
+tinyg[inch] ok> 
+tinyg[inch] ok> N190 X0.950 Y0.604
+tinyg[inch] ok> 
+tinyg[inch] ok> N195 X1.031 Y0.647
+tinyg[inch] ok> 
+tinyg[inch] ok> N200 X1.149 Y0.722
+tinyg[inch] ok> 
+tinyg[inch] ok> N205 X1.308 Y0.854
+tinyg[inch] ok> 
+tinyg[inch] ok> N210 X1.430 Y0.984
+tinyg[inch] ok> 
+tinyg[inch] ok> N215 X1.447 Y0.986
+tinyg[inch] ok> 
+tinyg[inch] ok> N220 X1.628 Y0.822
+tinyg[inch] ok> 
+tinyg[inch] ok> N225 X1.732 Y0.714
+tinyg[inch] ok> 
+tinyg[inch] ok> N230 X2.009 Y0.381
+tinyg[inch] ok> 
+tinyg[inch] ok> N235 X2.116 Y0266
+tinyg[inch] ok> 
+tinyg[inch] ok> N240 X2.228 Y0.157
+tiny][inch] ok> 
+tinyg[inch] ok> N245 X2.280 Y0.123
+tinyg[inch] ok> 
+tinyg[inch] ok> N250 X2.332 Y0.094
+tinyg[inch] ok> 
+tinyg[inch] ok> N255 X2.423 Y0.070
+tinyg[inch] ok> 
+tinyg[inc] ok> N260 X2.489 Y0.065
+tinyg[inch] ok> 
+tinyg[inch] ok> N265 X2.557 Y0.066
+tinyg[inch] ok> 
+tinyg[inch] ok> N270 X2.627 Y0.084
+tinyg[inch] ok> 
+tinyg[inch] ok> N275 X2.693 Y0.109
+tinyg[inch] ok> 
+tinyg[inch] ok> N280 X2.730 Y0.133
+tinyg[inch] ok> 
+tinyg[inch] ok> N285 X2.805 Y0.190
+tinyg[inch] ok> 
+tinyg[inch] ok> N290 X2.829 Y0.216
+tinyg[inch] ok> 
+tinyg[inch] ok> N295 X2.880 Y0.291
+tinyg[inch] ok> 
+tinyg[inch] ok> N300 X2.884 Y0.300
+tinyg[inch] ok> 
+tinyg[inch] ok> N305 X2.898 Y0.332
+tinyg[inch] ok> 
+tinyg[inch] ok> N310 X2.905 Y0.367
+tinyg[inch] ok> 
+tinyg[inch] ok> N315 X2.910 Y0.407
+tinyg[inch] ok> 
+tinyg[inch] ok> N320 X2.908 Y0.446
+tinyg[inch] ok> 
+tinyg[inch] ok> N325 X2.901 Y0.495
+tinyg[inch] ok> 
+tinyg[inch] ok> N330 X2.897 Y0.495
+tinyg[inch] ok> 
+tinyg[inch] ok> N335 X2.890 Y0.524
+tinyg[inch] ok> 
+tinyg[inch] ok> N340 X2.842 Y0.604
+tinyg[inch] ok> 
+tinyg[inch] ok> N345 X2.814 Y0.665
+tinyg[inch] ok> 
+tinyg[inch] ok> N350 X2.794 Y0.750
+tinyg[inch] ok> 
+tinyg[inch] ok> N355 X2.91 Y0.838
+tinyg[inch] ok> 
+tinyg[inch] ok> N360 X2.819 Y0.976
+tinyg[inch] ok> 
+tinyg[inch] ok> N365 X2.837 Y1.044
+tinyg[inch] ok> 
+tinyg[inch] ok> N370 X2.862 Y1.112
+tinyg[inch] ok> 
+tinyg[inch] ok> N375 X2.877 Y1.145
+tinyg[inch] ok> 
+tinyg[inch] ok> N380 X2.912 Y1.217
+tiny][inch] ok> 
+tinyg[inch] ok> N385 X2.917 Y1.226
+tinyg[onch] ok> 
+tinyg[inch] ok> N390 X2.951 Y1.281
+tinyg[inch] ok> 
+tinyg[inch] ok> N395 X2.970 Y1.295
+tinyg[inch] ok> 
+tinyg[inch] ok> N400 X2.996 Y1.295
+tinyg[inch] ok> 
+tinyg[inch] ok> N405 X3.013 Y1.275
+tinyg[inch] ok> 
+tinyg[inch] ok> N410 X3.024 Y1.254
+tinyg[inch] ok> 
+tinyg[inch] ok> N415 X3.070 Y1.151
+tinyg[inch] ok> 
+tinyg[inch] ok> N420 X3.077 Y1.134
+tinyg[inch] ok> 
+tinyg[inch] ok> N425 X3.125 Y1.039
+tinyg[inch] ok> 
+tinyg[inch] ok> N430 X3.138 Y1.019
+tinyg[inch] ok> 
+tinyg[inch] ok> N435 X3.205 Y0.908
+tinyg[inch] ok> 
+tinyg[inch] ok> N440 X3.282 Y0.797
+tinyg[inch] ok> 
+tinyg[inch] ok> N445 X3.361 Y0.691
+tinyg[inc ] ok> 
+tinyg[inch] ok> N450 X3.426 Y0.592
+tinyg[inch] ok> 
+tinyg[inch] ok> N455 X3.456 Y0.543
+tinyg[inch] ok> 
+tinyg[inch] ok> N460 X3.479 Y0.493
+tinyg[inch] ok> 
+tinyg[inch] ok> N465 X3.494 Y0.472
+tinyg[inch] ok> 
+tinyg[inch] ok> N470 X3.505 Y0.446
+tinyg[inch] ok> 
+tinyg[inch] ok> N475 X3518 Y0.417
+tinyg[inch] ok> 
+tinyg[inch] ok> N480 X3.530 Y0.391
+tinyg[inch] ok> 
+tinyg[inch] ok> N485 X3.564 Y0.300
+tinyg[inch] ok> 
+tinyg[inch] ok> N490 X3.577 Y0.253
+tinyg[inch] ok> 
+tinyg[inch] ok> N495 X3.568 Y0.212
+tinyg[inch] ok> 
+tinyg[inch] ok> N500 X3.544 Y0.176
+tinyg[inch] ok> 
+tinyg[nch] ok> N505 X3.541 Y0.146
+tinyg[inch] ok> 
+tinyg[inch] ok> N510 X3.553 Y0.119
+tinyg[inch] ok> 
+tinyg[inch] ok> N515 X3.576 Y0.106
+tinyg[inch] ok> 
+tinyg[inch] ok> N520 X3.597 Y0.102
+tinyg[inch] ok> 
+tinyg[inch] ok> N525 X3.618 Y0.109
+tinyg[inch] ok> 
+tiny][inch] ok> N530 X3.639 Y0.129
+tinyg[inch] ok> 
+tinyg[inch] ok> N535 X3.650 Y0.159
+tinyg[inch] ok> 
+tinyg[inch] ok> N540 X3.663 Y0.178
+tinyg[inch] ok> 
+tiny][inch] ok> N545 X3.678 Y0.192
+tinyg[inch] ok> 
+tinyg[inch] ok> N550 X3.699 Y0.197
+tinyg[inch] ok> 
+tiny][inch] ok> N555 X3.723 Y0.196
+tinyg[inch] ok> 
+tinyg[inch] ok> N560 X3.764 Y0.179
+tinyg[inch] ok> 
+tinyg[inch] ok> N565 X3.805 Y0.165
+tinyg[inch] on> 
+tinyg[inch] ok> N570 X3.884 Y0.159
+tinyg[inch] ok> 
+tinyg[inch] ok> N575 X3.949 Y0.165
+tinyg[inch] ok> 
+tinyg[inch] ok> N580 X3.966 Y0.175
+tinyg[inch] ok> 
+tinyg[inch] ok> N585 X3.978 Y0.194
+tinyg[inch] ok> 
+tiny][inch] ok> N590 X3.978 Y0.223
+tinyg[inch] ok> 
+tinyg[inch] ok> N595 X3.960 Y0.245
+tinyg[inch] ok> 
+tinyg[inch] ok> N600 X3.834 Y0.311
+tinyg[inch] ok> 
+tinyg[inch] ok> N605 X3.762 Y0.345
+tinyg[inch] ok> 
+tinyg[inch] ok> N610 X3.726 Y0.389
+tinyg[inch] ok> 
+tinyg[inch] ok> N615 X3.703 Y0.458
+tinyg[inch] ok> 
+tinyg[inch] ok> N620 X3.682 Y0.530
+tinyg[inch] ok> 
+tinyg[inch] ok> N625 X3.679 Y0.534
+tinyg[inch] ok> 
+tinyg[inch] ok> N630 X3.626 Y0.681
+tinyg[inch] ok> 
+tinyg[inch] ok> N635 X3.568 Y0.828
+tiny][inch] ok> 
+tinyg[inch] ok> N640 X3.444 Y1.080
+tinyg[inch] ok> 
+tinyg[inch] ok> N645 X3.405 Y1.167
+tinyg[inch] ok> 
+tinyg[inch] ok> N650 X3.404 Y1.167
+tinyg[inch] ok> 
+tinyg[inch] ok> N655 X3.387 Y1.208
+tinyg[inch] ok> 
+tinyg[inch] ok> N660 X3.384 Y1.208
+tiny][inch] ok> 
+tinyg[inch] ok> N665 X3.365 Y1.265
+tinyg[inch] ok> 
+tinyg[inch] ok> N670 X3.355 Y1.285
+tinyg[inch] ok> 
+tinyg[inch] ok> N675 X3.348 Y1.308
+tinyg[inch] ok> 
+tinyg[inch] ok> N680 X3.333 Y1.350
+tinyg[inch] ok> 
+tinyg[inch] ok> N685 X3.321 Y1.391
+tinyg[inch] ok> 
+tinyg[inch] ok> N690 X3.311 Y1.428
+tinyg[inch] ok> 
+tinyg[inch] ok> N695 X3.339 Y1.423
+tinyg[inch] ok> 
+tinyg[inch] ok> N700 X3.440 Y1.406
+tinyg[inch] ok> 
+tinyg[inch] ok> N705 X3.510 Y1.408
+tinyg[inch] ok> 
+tinyg[inch] ok> N710 X3.585 Y1.421
+tinyg[inch] ok> 
+tinyg[inch] ok> N715 X3.611 Y1.439
+tinyg[inch] ok> 
+tinyg[inch] ok> N720 X3.611 Y1.441
+tinyg[inch] ok> 
+tinyg[inch] ok> N725 X3.615 Y1.441
+tinyg[inch] ok> 
+tinyg[inch] ok> N730 X3.636 Y1.488
+tinyg[inch] ok> 
+tinyg[inch] ok> N735 X3.634 Y1.517
+tinyg[inch] ok> 
+tinyg[inch] ok> N740 X3.622 Y1.543
+tinyg[inch] ok> 
+tinyg[inch] ok> N745 X3.605 Y1.56g
+tinyg[inch] ok> 
+tinyg[inch] ok> N750 X3.576 Y1.575
+tinyg[inch] ok> 
+tinyg[inch] ok> N755 X3.544 Y1.581
+tinyg[inch] ok> 
+tinyg[inch] ok> N760 X3.479 Y1.592
+tinyg[inch] ok> 
+tinyg[inch] ok> N765 X3.451 Y1.598
+tinyg[inch] ok> 
+tinyg[inch] ok> N770 X3.387 Y1.626
+tinyg[inch] ok> 
+tinyg[inch] ok> N775 X3.390 Y1.636
+tinyg[inch] ok> 
+tinyg[inch] ok> N780 X3.532 Y1.602
+tinyg[inch] ok> 
+tinyg[inch] ok> N785 X3.601 Y1.597
+tinyg[inch] ok> 
+tinyg[inch] ok> N790 X3.668 Y1.598
+tinyg[inch] ok> 
+tinyg[inch] ok> N795 X3.782 Y1.612
+tinyg[inch] ok> 
+tinyg[inch] ok> N800 X3.794 Y1.618
+tinyg[inch] ok> 
+tiny][inch] ok> N805 X3.868 Y1.636
+tinyg[inch] ok> 
+tinyg[inch] ok> N810 X3.918 Y1.655
+tinyg[inch] ok> 
+tinyg[inch] ok> N815 X3.945 Y1.667
+tinyg[inch] ok> 
+tinyg[inch] ok> N820 X3.964 Y1.685
+tinyg[inch] ok> 
+tinyg[inch] ok> N825 X3.967 Y1.685
+tinyg[inch] ok> 
+tinyg[inch] ok> N830 X3.974 Y1.699
+tinyg[inch] ok> 
+tinyg[inch] ok> N835 X3.984 Y1.725
+tinyg[inch] ok> 
+tiny][inch] ok> N840 X3.984 Y1.758
+tinyg[inch] ok> 
+tinyg[inch] ok> N845 X3.970 Y1.790
+tinyg[inch] ok> 
+tiny][inch] ok> N850 X3.945 Y1.817
+tinyg[inch] ok> 
+tiny][inch] ok> N855 X3.918 Y1.826
+tinyg[inch] ok> 
+tinyg[inch] ok> N860 X3.891 Y1.827
+tinyg[inch] ok> 
+tinyg[inch] ok> N865 X3.842 Y1.809
+tinyg[inch] ok> 
+tinyg[inch] ok> N870 X3.798 Y1.784
+tinyg[inch] ok> 
+tinyg[inch] ok> N875 X3.746 Y1.772
+tinyg[inch] ok> 
+tinyg[inch] ok> N880 X3.698 Y1.764
+tinyg[inch] ok> 
+tinyg[inch] ok> N885 X3.635 Y1.766
+tinyg[inch] ok> 
+tinyg[inch] ok> N890 X3.553 Y1.785
+tinyg[inch] ok> 
+tinyg[inch] ok> N895 X3.478 Y1.820
+tinyg[inc ] ok> 
+tinyg[inch] ok> N900 X3.409 Y1.864
+tinyg[inch] ok> 
+tinyg[inch] ok> N905 X3.345 Y1.918
+tinyg[inch] ok> 
+tinyg[inch] ok> N910 X3.264 Y2.023
+tinyg[inch] ok> 
+tinyg[inch] ok> N915 X3.248 Y2.051
+tinyg[inch] ok> 
+tinyg[inch] ok> N920 X3.240 Y2.081
+tinyg[inch] ok> 
+tinyg[inch] ok> N925 X3.316 Y2.086
+tinyg[inch] ok> 
+tinhg[inch] ok> N930 X3.390 Y2.104
+tinyg[inch] ok> 
+tinyg[inch] ok> N935 X3.414 Y2.121
+tinyg[inch] ok> 
+tinyg[inch] ok> N940 X3.431 Y2.153
+tinyg[inch] ok> 
+tinyg[inch] ok> N945 X3.433 Y2.180
+tinyg[inch] ok> 
+tinyg[inch] ok> N950 X3.427 Y2.205
+tinyg[inch] ok> 
+tiny][inch] ok> N955 X3.413 Y2.224
+tinyg[inch] ok> 
+tinyg[inch] ok> N960 X3.392 Y2.242
+tinyg[inch] ok> 
+tinyg[inch] ok> N965 X3.335 Y2.244
+tinyg[inch] ok> 
+tinyg[inch] ok> N970 X3.278 Y2.236
+tinyg[inch] ok> 
+tiny][inch] ok> N975 X3.256 Y2.242
+tinyg[inch] ok> 
+tinyg[inch] ok> N980 X3.239 Y2.251
+tinyg[inch] ok> 
+tinyg[inch] ok> N985 X3.211 Y2.280
+tinyg[inch] ok> 
+tinyg[inch] ok> N990 X3.174 Y2.356
+tinyg[inch] ok> 
+tinyg inch] ok> N995 X3.159 Y2.397
+tinyg[inch] ok> 
+tinyg[inch] ok> N1000 X3.150 Y2.438
+tiny [inch] ok> 
+tinyg[inch] ok> N1005 X3.140 Y2.481
+tinyg[inch] ok> 
+tinyo[inch] ok> N1010 X3.132 Y2.510
+tinyg[inch] ok> 
+tinyg[inch] ok> N1015 X3.118 Y2.543
+tinyg[inch] ok> 
+tinyg[inch] ok> N1020 X3.099 Y2.576
+tinyg[inch] ok> 
+tinyg[inch] ok> N1025 X3.051 Y2.631
+tinyg[inch] ok> 
+tinyg[inch] ok> N1030 X3.003 Y2.666
+tinyg[inch] ok> 
+tinyg[inch] ok> N1035 X2.957 Y2.685
+tinyg[inch] ok> 
+tinyg[inch] ok> N1040 X2.907 Y2.699
+tinyg[inch] ok> 
+tinyg[inch] ok> N1045 X2.860 Y2.711
+tikyg[inch] ok> 
+tinyg[inch] ok> N1050 X2.819 Y2.727
+tinyg[inch] ok> 
+tinyg[inch] ok> N1055 X2.768 Y2.745
+tinyg[inch] ok> 
+tinyg[inch] ok> N1060 X2.716 Y2.757
+tinyg[inch] ok> 
+tinyg[inch] ok> N1065 X2.675 Y2.757
+tinyg[inch] ok> 
+tinyg[inch] ok> N1070 X2.579 Y2.731
+tinyg[inch] ok> 
+tiny [inch] ok> N1075 X2.570 Y2.723
+tinyg[inch] ok> 
+tiny [inch] ok> N1080 X2.559 Y2.720
+tinyg[inch] ok> 
+tinyg[inch] ok> N1085 X2.530 Y2.701
+tinyg[inch] ok> 
+tinyg[inch] ok> N1090 X2.501 Y2.693
+tinyg[inch] ok> 
+tiny [inch] ok> N1095 X2.471 Y2.683
+tinyg[inch] ok> 
+tinyg[inch] ok> N1100 X2.443 Y2.668
+tinyg[inch] ok> 
+tinyg[inch] ok> N1105 X2.396 Y2.634
+tinyg[inch] ok> 
+tinyg[inch] ok> N1110 X2.354 Y2.591
+tinyg[inch] ok> 
+tinyg[inc] ok> N1115 X2.352 Y2.591
+tinyg[inch] ok> 
+tinyg[inch] ok> N1120 X2.325 Y2.543
+tinyg[inch] ok> 
+tinyg[inch] ok> N1125 X2.31 Y2.521
+tinyg[inch] ok> 
+tinyg[inch] ok> N1130 X2.307 Y2.498
+tinyg[inch] ok> 
+tinyg[inch] ok> N1135 X2.296 Y2.464
+tinyg[inch] k> 
+tinyg[inch] ok> N1140 X2.293 Y2.427
+tinyg[inch] ok> 
+tinyg[inch] ok> N1145 X2.295 Y2.366
+tinyg[inch] ok> 
+tinyg[inch] ok> N1150 X2.321 Y2.303
+tinyg[inch] ok> 
+tinyg[inch] ok> N1155 X2.358 Y2.247
+tinyg[inch] ok> 
+tinyg[inch] ok> N1160 X2.419 Y2.203
+tinyg[inch] ok> 
+tinyg[inch] ok> N1165 X2.419 Y2.179
+tinyg[inch] ok> 
+tinyg[inch] ok> N1170 X2.405 Y2.158
+tinyg[inch] ok> 
+tinyg[inch] ok> N1175 X2.362 Y2.123
+tinyg[inch] ok> 
+tinyg[inch] ok> N1180 X2.354 Y2.104
+tinyg[inch] ok> 
+tinyg[inch] ok> N1185 X2.354 Y2.091
+tinyg[inch] ok> 
+tinyg[inch] ok> N1190 X2.380 Y2.065
+tinyg[inch] ok> 
+tinyg[inch] ok> N1195 X2.410 Y2.051
+tinyg[inch] ok> 
+tinyg[inch] ok> N1200 X2.410 Y2.047
+tinyg[inch] ok> 
+tinyg[inch] ok> N1205 X2.405 Y2.028
+tinyg[inch] ok> 
+tinyg[inch] ok> N1210 X2.408 Y2.010
+tinyg[inch] ok> 
+tinyg[inch] ok> N1215 X2.416 Y1.995
+tinyg[inch] ok> 
+tinyg[inch] ok> N1220 X2.433 Y1.982
+tinyg[inch] ok> 
+tinyg[inch] ok> N1225 X2.438 Y1.963
+tiny [inch] ok> 
+tinyg[inch] ok> N1230 X2.447 Y1.948
+tinyg[inch] ok> 
+tinyg[inch] ok> N1235 X2.461 Y1.938
+tiny [inch] ok> 
+tiny [inch] ok> N1240 X2.480 Y1.931
+tinyg[inch] ok> 
+tinyg[inch] ok> N1245 X2.478 Y1.899
+tinyg[inch] ok> 
+tinyg[inch] ok> N1250 X2.487 Y1.875
+tinyg[inch] ok> 
+tinyg[inch] ok> N1255 X2.504 Y1.854
+tinyg[inch] ok> 
+tinyg[inch] ok> N1260 X2.527 Y1.848
+tinyg[inch] ok> 
+tinyg[inch] ok> N1265 X2.549 Y1.849
+tinyg[nch] ok> 
+tinyg[inch] ok> N1270 X2577 Y1.861
+tinyg[inch] ok> 
+tinyg[inch] ok> N1275 X2.604 Y1.866
+tinyg[inch] ok> 
+tinyg[inch] ok> N1280 X2.631 Y1.854
+tinyg[inch] ok> 
+tinyg[inch] ok> N1285 X2.640 Y1.827
+tiny [inch] ok> 
+tinyg[inch] ok> N1290 X2.640 Y1.792
+tinyg[inch] ok> 
+tinyg[inch] ok> N1295 X2.629 Y1.759
+tiny [inch] ok> 
+tiny [inch] ok> N1300 X2.612 Y1.727
+tinyg[inch] ok> 
+tinyg[inch] ok> N1305 X2.576 Y1.694
+tin>g[inch] ok> 
+tinyg[inch] ok> N1310 X2.536 Y1.662
+tinyg[inch] ok> 
+tinyg[inch] ok> N1315 X2.470 Y1.616
+tinyg[inch] ok> 
+tinyg[inch] ok> N1320 X2.345 Y1.551
+tinyg[inch] ok> 
+tinyg[inch] ok> N1325 X2.307 Y1.521
+tinyg[inch] ok> 
+tinyg[inc] ok> N1330 X2.260 Y1.482
+tinyg[inch] ok> 
+tinyg[inch] ok> N1335 X2.243 Y1.477
+tinyg[inch] ok> 
+tinyg[inch] ok> N1340 X2.228 Y1.469
+tinyg[inch] ok> 
+tinyg[inch] ok> N1345 X2.222 Y1.448
+tinyg[inch] ok> 
+tinyg[inch] ok> N1350 X2.228 Y1.425
+tinyg[inch] ok> 
+tinyg[inch] ok> N1355 X2.254 Y1.405
+tinyg[inch] ok> 
+tinyg[inch] ok> N1360 X2.268 Y1.373
+tinyg[inch] ok> 
+tinyg[inch] ok> N1365 X2.279 Y1.342
+tinyg[inch] ok> 
+tinyg[inch] ok> N1370 X2.308 Y1.287
+tinyg[inch] ok> 
+tinyg[inch] ok> N1375 X2.340 Y1.254
+tinyg[inch] ok> 
+tinyg[inch] ok> N1380 X2.407 Y1.201
+tinyg[inch] ok> 
+tinygNinch] ok> N1385 X2.441 Y1.156
+tinyg[inch] ok> 
+tinyg[inch] ok> N1390 X2.454 Y1.131
+tinyg[inch] ok> 
+tinyg[inch] ok> N1395 X2.460 Y1.106
+tinyg[inch] ok> 
+tinyg[inch] ok> N1400 X2.464 Y1.102
+tinyg[inch] ok> 
+tinyg[inch] ok> N1405 X2.471 Y1.036
+tinyg[inch] ok> 
+tinyg[inch] ok> N1410 X2.466 Y0.971
+tinyg[nch] ok> 
+tinyg[inch] ok> N1415 X2.451 Y0.897
+tinyg[inch] ok> 
+tinyg[inch] ok> N1420 X2.415 Y0.791
+tinyg[inch] ok> 
+tinyg[inch] ok> N1425 X2.403 Y0.767
+tinyg[inch] ok> 
+tinyg[inch] ok> N1430 X2.388 Y0.765
+tinyg[inch] ok> 
+tinyg[inch] ok> N1435 X2.306 Y0.841
+tinyg[inch] ok> 
+tinyg[inch] ok> N1440 X2.222 Y0.911
+tinyg[inch] ok> 
+tinyg[inch] ok> N1445 X2.114 Y0.995
+tinyg[inch] ok> 
+tinyg[nch] ok> N1450 X2.002 Y1.076
+tinyg[inch] ok> 
+tinyg[inch] ok> N1455 X1.905 Y1.139
+tinyg[inch] ok> 
+tinyg[inch] ok> N1460 X1.754 Y1.223
+tinyg[inch] ok> 
+tinyg[inch] ok> N1465 X1.637 Y1.278
+tinyg[inch] ok> 
+tinyg[inch] ok> N1470 X1.582 Y1.301
+tinyg[inch] ok> 
+tinyg[inch] ok> N1475 X1.558 Y1.315
+tinyg[inch] ok> 
+tinyg[inch] ok> N1480 X1.460 Y1.352
+tinyg[inch] ok> 
+tinyg[inc] ok> N1485 X1.399 Y1.360
+tinyg[inch] ok> 
+tinyg[inch] ok> N1490 X1.338 Y1.354
+tinyg[inch] ok> 
+tinyg[inch] ok> N1495 X1.287 Y1.329
+tinyg[incy] ok> 
+tinyg[inch] ok> N1500 X1.248 Y1.294
+tinyg[inch] ok> 
+tinyg[inch] ok> N1505 X1.217 Y1.254
+tiny [inch] ok> 
+tinyg[inch] ok> N1510 X1.214 Y1.252
+tinyg[inch] ok> 
+tinyg[inch] ok> N1515 X1.172 Y1.195
+tinyg[inch] ok> 
+tinyg[inch] ok> N1520 X1.128 Y1.139
+tinyg[inch] ok> 
+tinyg[inch] ok> N1525 X1.110 Y1.117
+tinyg[inch] ok> 
+tinyg[inch] ok> N1530 X0.958 Y0.941
+tinyg[inch] ok> 
+tinyg[inch] ok> N1535 X0.891 Y0.873
+tinyg[inch] ok> 
+tinyg[inch] ok> N1540 X0.825 Y0.808
+tinyg[inch] ok> 
+tinyg[inch] ok> N1545 X0.755 Y0.747
+tinyg[inch] ok> 
+tinyg[inch] ok> N1550 X0.619 Y0.633
+tinyg[inch] ok> 
+tinyg[inch] ok> N1555 X0.477 Y0.526
+tinyg[inch] ok> 
+tinyg[inch] ok> N1560 X0.477 Y0.524
+tinyg[inch] ok> 
+tinyg[inch] ok> N1565 X0.411 Y0.476
+tinyg[inch] ok> 
+tiny [inch] ok> N1570 X0.331 Y0.454
+tinyg[inch] ok> 
+tinyg[inch] ok> N1575 X0.278 Y0.427
+tinyg[inch] ok> 
+tinyg[inch] ok> N1580 X0.231 Y0.397
+tinyg[inch] ok> 
+tinyg[inch] ok> N1585 X0.183 Y0.379
+tinyg[inch] ok> 
+tinyg[inch] ok> N1590 X0.135 Y0.365
+tinyg[inch] ok> 
+tinyg[inch] ok> N1595 X0.076 Y0.341
+tinyg[inch] ok> 
+tinyg[inch] ok> N1600 G00 Z-0.875 F90.0
+tinyg[inch] ok> 
+tinyg[inch] ok> N1605 G00 F30.0
+tinyg[inch] ok> 
+tinyg[inch] ok> N1610 M05 
+tinyg[inch] ok> 
+tinyg[inch] ok> N1615 G90 X0 Y0 Z0 M30
+tinyg[inch] ok> 
+tinyg[inch] ok> (End of CNC Program)
+tinyg[inch] ok> 
+tinyg[inch] ok> #### TRAP #### Acceleration Segments: 0.000000
+#### TinyG build 317.11 - "Bulemia" ####
+Type h for help
+tinyg[mm] ok> Q
+tinygTEST[mm] ok> T
+G20	(inches mode)
+G40 G17
+T1 M06
+G90 G0 X0 Y0 Z0
+S5000 M03 
+G1 F8
+X0.076 Y0.341
+G1 F10.0
+X2.228 Y0.157
+X2.280 Y0.123
+X2.332 Y0.094
+X2.423 Y0.070
+X2.489 Y0.065
+X2.557 Y0.066
+X2.627 Y0.084
+X2.693 Y0.109
+X2.730 Y0.133
+X2.805 Y0.190
+X2.829 Y0.216
+X2.880 Y0.291
+X2.884 Y0.300
+X2.898 Y0.332
+X2.905 Y0.367
+X2.910 Y0.407
+X2.908 Y0.446
+X2.901 Y0.495
+X2.897 Y0.495
+X2.890 Y0.524
+#### TinyG build 317.11 - "Bulemia" ####
+Type h for help
+tinyg[mm] ok> Q
+tinygTEST[mm] ok> T
+G20	(inches mode)
+G40 G17
+T1 M06
+G90 G0 X0 Y0 Z0
+S5000 M03 
+G1 F8
+X0.076 Y0.341
+G1 F10.0
+X2.228 Y0.157
+X2.280 Y0.123
+X2.332 Y0.094
+X2.423 Y0.070
+X2.489 Y0.065
+X2.557 Y0.066
+X2.627 Y0.084
+X2.693 Y0.109
+X2.730 Y0.133
+X2.805 Y0.190
+X2.829 Y0.216
+X2.880 Y0.291
+X2.884 Y0.300
+X2.898 Y0.332
+X2.905 Y0.367
+X2.910 Y0.407
+X2.908 Y0.446
+X2.901 Y0.495
+X2.897 Y0.495
+X2.890 Y0.524
+X2.842 Y0.604
+X2.814 Y0.665
+X2.794 Y0.750
+X2.791 Y0.838
+X2.819 Y .976
+X2.837 Y1.044
+X2.862 Y1.112
+X2.877 Y1.145
+X2.912 Y1.217
+X2.917 Y1.226
+X2.951 Y1.281
+X2.970 Y1.295
+X2.996 Y1.295
+X3.013 Y1.275
+X3.024 Y1.254
+X3.070 Y1.151
+X3.077 Y1.134
+X3.125 Y1.039
+X3.138 Y1.019
+X3.205 Y0.908
+X3.282 Y0.797
+X3.361 Y0.691
+X3.426 Y0.592
+X3.4563Y0.543
+X3.479 Y0.493
+X3.494 Y0.472
+X3.505 Y0.446
+X3.518 Y0.417
+X3.530 Y0.391
+X3.5647Y0.300
+X3.577 Y0.253
+X3.568 Y0.212
+X3.544 Y0.176
+X3.5417Y0.146
+X3.553 Y0.119
+X3.576 Y0.106
+X3.597 Y0.102
+X3.618 Y0.109
+X3.639 Y0.129
+X3.6506Y0.159
+X3.663 Y0.178
+X3.678 Y .192
+X3.6997Y0.197
+X3.723 Y0.196
+X3.764 Y0.179
+X3.805 Y0.165
+X3.8843Y0.159
+X3.949 Y0.165
+X3.966 Y0.175
+X3.978 Y0.194
+X3.978 Y0.223
+X3.960 Y0.245
+X3.834 Y0.311
+X3.762 Y0.345
+X3.726 Y0.389
+X3.703 Y0.458
+X3.682 Y0.530
+X3.679 Y0.534
+X3.6266Y0.681
+X3.568 Y0.828
+X3.4449Y1.080
+X3.405 Y1.167
+X3.404 Y1.167
+X3.387 Y1.208
+X3.384 Y1.208
+X3.365 Y1.265
+X3.355 Y1.285
+X3.348 Y1.308
+X3.333 Y1.350
+X3.321 Y1.391
+X3.311 41.428
+X3.339 21.423
+X3.4402Y1.406
+X3.5100Y1.408
+X3.585 Y1.421
+X3.611 Y1.439
+X3.611 Y1.441
+X3.615 Y1.441
+X3.636 Y1.488
+X3.6340Y1.517

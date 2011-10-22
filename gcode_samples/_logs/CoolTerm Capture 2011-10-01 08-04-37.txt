@@ -1,0 +1,765 @@
+N1 T1M6
+tinyg[mm] ok> 
+tinyg[mm] ok> N2 G17
+tinyg[mm] ok> 
+tinyg[mm] ok> N3 G21 (mm)
+tinyg[mm] ok> 
+tinyg[mm] ok> N4 (S8000)
+tinyg[mm] ok> 
+tinyg[mm] ok> N5 (M3)
+tinyg[mm] ok> 
+tinyg[mm] ok> N6 G92X0.327Y-33.521Z-1.000
+tinyg[mm] ok> 
+tinyg[mm] ok> N7 G0Z4.000
+tinyg[mm] ok> 
+tinyg[mm] ok> N8 F600.0
+tinyg[mm] ok> 
+tinyg[mm] ok> N9 G1X0.327Y-33.521
+tinyg[mm] ok> 
+tinyg[mm] ok> N10 G1Z-1.000
+tinyg[mm] ok> 
+tinyg[mm] ok> N11 X0.654Y-33.526
+tinyg[mm] ok> N1000 X-10.116Y44.679
+tinyg[mm] ok> 
+tinyg[mm] ok> N1001 X-9.691Y44.704
+tinyg[mm] ok> 
+tinyg[mm] ok> N1002 X-9.271Y44.726
+tinyg[mm] ok> 
+tinyg[mm] ok> N1003 X-8.856Y44.742
+tinyg[mm] ok> 
+tinyg[mm] ok> N1004 X-8.447Y44.755
+tinyg[mm] ok> 
+tinyg[mm] ok> N1005 X-8.044Y44.763
+tinyg[mm] ok> 
+tinyg[mm] ok> N1006 X-7.650Y44.767
+tinyg[mm] ok> 
+tinyg[mm] ok> N1007 X-7.263Y44.766
+tinyg[mm] ok> 
+tinyg[mm] ok> N1008 X-6.885Y44.762
+tinyg[mm] ok> 
+tinyg[mm] ok> N1009 X-6.516Y44.753
+tinyg[mm] ok> 
+tinyg[mm] ok> N1010 X-6.157Y44.740
+tinygmm] ok> 
+tinyg[mm] ok> N1011 X-5.808Y44.723
+tinyg[mm] ok> 
+tinyg[mm] ok> N1012 X-5.471Y44.702
+tinyg[mm] ok> 
+tinyg[mm] ok> N1013 X-5.145Y44.676
+tinyg[mm] ok> 
+tinyg[mm] ok> N1014 X-4.830Y44.647
+tinyg[mm] ok> 
+tinyg[mm] ok> N1015 X-4.529Y44.613
+tinyg[mm] ok> 
+tinyg[mm] ok> N1016 X-4.240Y44.576
+tinyg[mm] ok> 
+tinyg[mm] ok> N1017 X-3.965Y44.535
+tinyg[mm] ok> 
+tinyg[mm] ok> N1018 X-3.703Y44.489
+tinyg[mm] ok> 
+tinyg[mm] ok> N1019 X-3.456Y44.440
+tinyg[mm] ok> 
+tinyg[mm] ok> N1020 X-3.227Y44.388
+tinyg[mm] ok> 
+tinyg[mm] ok> N1021 X-3.013Y44.332
+tinyg[mm] ok> 
+tinyg[mm] ok> N1022 X-2.813Y44.273
+tinyg[mm] ok> 
+tinyg[mm] ok> N1023 X-2.629Y44.210
+tinyg[mm] ok> 
+tinyg[mm] ok> N1024 X-2.459Y44.144
+tinyg[mm] ok> 
+tinyg[mm] ok> N1025 X-2.305Y44.074
+tinyg[mm] ok> 
+tinyg[mm] ok> N1026 X-2.167Y44.001
+tinyg[mm] ok> 
+tinyg[mm] ok> N1027 X-2.044Y43.925
+tinyg[mm] ok> 
+tinyg[mm] ok> N1028 X-1.938Y43.845
+tinyg[mm] ok> 
+t>nyg[mm] ok> N1029 X-1.847Y43.762
+tinyg[mm] ok> 
+tinyg[mm] ok> N1030 X-1.773Y43.675
+tinyg[mm] ok> 
+tinyg[mm] ok> N1031 X-1.715Y43.586
+tinyg[mm] ok> 
+tinyg[mm] ok> N1032 X-1.673Y43.494
+tinyg[mm] ok> 
+tinyg[mm] ok> N1033 X-1.647Y43.398
+tinyg[mm] ok> 
+tinyg[mm] ok> N1034 X-1.638Y43.299
+tinyg[mm] ok> 
+tinyg[mm] ok> N1035 X-1.645Y43.198
+tinyg[mm] ok> 
+tinyg[mm] ok> N1036 X-1.667Y43.094
+tinyg[mm] ok> 
+tinyg[mm] ok> N1037 X-1.706Y42.987
+tinyg[mm] ok> 
+tinyg[mm] ok> N1038 X-1.761Y42.877
+tinyg[mm] ok> 
+tinyg[mm] ok> N1039 X-1.832Y42.765
+tinyg[mm] ok> 
+tinyg[mm] ok> N1040 X-1.918Y42.650
+tinyg[mm] ok> 
+tinygmm] ok> N1041 X-2.019Y42.532
+tinyg[mm] ok> 
+tinyg[mm] ok> N1042 X-2.135Y42.412
+tinyg[mm] ok> 
+tinyg[mm] ok> N1043 X-2.267Y42.290
+tinyg[mm] ok> 
+tinyg[mm] ok> N1044 X-2.412Y42.166
+tinyg[mm] ok> 
+tinyg[mm] ok> N1045 X-2.572Y42.039
+tinyg[mm] ok> 
+tinyg[mm] ok> N1046 X-2.934Y41.779
+tinyg[mm] ok> 
+tinyg[mm] ok> N1047 X-3.134Y41.646
+tinyg[mm] ok> 
+tinyg[mm] ok> N1048 X-3.347Y41.511
+tinyg[mm] ok> 
+tinyg[mm] ok> N1049 X-3.810Y41.235
+tinyg[mm] ok> 
+tinyg[mm] ok> N1050 X-4.059Y41.095
+tinyg[mm] ok> 
+tinyg[mm] ok> N1051 X-4.319Y40.953
+tinyg[mm] ok> 
+tinyg[mm] ok> N1052 X-4.869Y40.664
+tinyg[mm] ok> 
+tinyg[mm] ok> N1053 X-6.076Y40.071
+tinyg[mm] ok> 
+tinyg[mm] ok> N1054 X-8.785Y38.840
+tinyg[mm] ok> 
+tinyg[mm] ok> N1055 X-9.139Y38.683
+tinyg[mm] ok> 
+tinyg[mm] ok> N1056 X-9.494Y38.526
+tinyg[mm] ok> 
+tinyg[mm] ok> N1057 X-10.205Y38.212
+tinyg[mm] ok> 
+tinyg[mm] ok> N1058 X-11.612Y37.583
+tinyg[mm] ok> 
+tinyg[mm] ok> N1059 X-14.215Y36.343
+tinyg[mm] ok> 
+tinyg[mm] ok> N1060 X-14.490Y36.201
+tinyg[mm] ok> 
+tinyg[mm] ok> N1061 X-14.756Y36.061
+tinyg[mm] ok> 
+tinyg[mm] ok> N1062 X-15.263Y35.782
+tinyg[mm] ok> 
+tinyg[mm] ok> N1063 X-15.503Y35.645
+tinyg[mm] ok> 
+tinyg[mm] ok> N1064 X-15.734Y35.508
+tinyg[mm] ok> 
+tinyg[mm] ok> N1065 X-16.165Y35.239
+tinyg[mm] ok> 
+tinyg[mm] ok> N1066 X-16.365Y35.106
+tinyg[mm] ok> 
+tinyg[mm] ok> N1067 X-16.553Y34.975
+tinyg[mm] ok> 
+tinyg[mm] ok> N1068 X-16.730Y34.845
+tinyg[mm] ok> 
+tinyg[mm] ok> N1069 X-16.895Y34.717
+tinyg[mm] ok> 
+tinyg[mm] ok> N1070 X-17.049Y34.590
+tinyg[mm] ok> 
+tinyg[mm] ok> N1071 X-17.190Y34.465
+tinyg[mm] ok> 
+tinyg[mm] ok> N1072 X-17.318Y34.341
+tinyg[mm] ok> 
+tinyg[mm] ok> N1073 X-17.434Y34.219
+tinyg[mm] ok> 
+tinyg[mm] ok> N1074 X-17.537Y34.099
+tinyg[mm] ok> 
+tinyg[mm] ok> N1075 X-17.626Y33.981
+tinyg[mm] ok> 
+tinyg[mm] ok> N1076 X-17.702Y33.865
+tinyg[mm] ok> 
+tinyg[mm] ok> N1077 X-17.764Y33.751
+tinyg[mm] ok> 
+tinyg[mm] ok> N1078 X-17.813Y33.639
+tinyg[mm] ok> 
+tinyg[mm] ok> N1079 X-17.847Y33.528
+tinyg[mm] ok> 
+tinyg[mm] ok> N1080 X-17.868Y33.420
+tinyg[mm] ok> 
+tinyg[mm] ok> N1081 X-17.875Y33.315
+tinyg[mm] ok> 
+tinyg[mm] ok> N1082 X-17.867Y33.211
+tinyg[mm] ok> 
+tinyg[mm] ok> N1083 X-17.845Y33.110
+tinyg[mm] ok> 
+tinyg[mm] ok> N1084 X-17.809Y33.011
+tinyg[mm] ok> 
+tinyg[mm] ok> N1085 X-17.759Y32.914
+tinyg[mm] ok> 
+tinyg[m] ok> N1086 X-17.695Y32.820
+tinyg[mm] ok> 
+tinyg[mm] ok> N1087 X-17.616Y32.728
+tinyg[mm] ok> 
+tinyg[mm] ok> N1088 X-17.523Y32.639
+tinyg[mm] ok> 
+tinyg[mm] ok> N1089 X-17.417Y32.552
+tinyg[mm] ok> 
+tinyg[mm] ok> N1090 X-17.296Y32.468
+tinyg[mm] ok> 
+tinyg[mm] ok> N1091 X-17.162Y32.387
+tinyg[mm] ok> 
+tinyg[mm] ok> N1092 X-17.014Y32.308
+tinyg[mm] ok> 
+tinyg[mm] ok> N1093 X-16.852Y32.232
+tinyg[mm] ok> 
+tinyg[mm] ok> N1094 X-16.677Y32.159
+tinyg[mm] ok> 
+tinyg[mm] ok> N1095 X-16.489Y32.089
+tinyg[mm] ok> 
+tinyg[mm] ok> N1096 X-16.288Y32.021
+tinyg[mm] ok> 
+tinyg[mm] ok> N1097 X-16.075Y31.956
+tinyg[mm] ok> 
+tinyg[mm] ok> N1098 X-15.849Y31.895
+tinyg[mm] ok> 
+tinyg[mm] ok> N1099 X-15.611Y31.836
+tinyg[mm] ok> 
+tinyg[mm] ok> N1100 X-15.361Y31.780
+tinyg[mm] ok> 
+tinyg[mm] ok> N1101 X-15.099Y31.727
+tinyg[mm] ok> 
+tinyg[mm] ok> N1102 X-14.827Y31.677
+tinyg[mm] ok> 
+tinyg[mm] ok> N1103 X-14.543Y31.631
+tinyg[mm] ok> 
+tinyg[mm] ok> N1104 X-14.250Y31.587
+tinyg[mm] ok> 
+tinyg[mm] ok> N1105 X-13.946Y31.547
+tinyg[mm] ok> 
+tinyg[mm] ok> N1106 X-13.632Y31.509
+tinyg[mm] ok> 
+tinyg[mm] ok> N1107 X-13.309Y31.475
+tinyg[mm] ok> 
+tinyg[mm] ok> N1108 X-12.977Y31.444
+tinyg[mm] ok> 
+tinyg[mm] ok> N1109 X-12.637Y31.417
+tinyg[mm] ok> 
+tinyg[mm] ok> N1110 X-12.289Y31.392
+tinyg[mm] ok> 
+tinyg[mm] ok> N1111 X-11.933Y31.371
+tinyg[mm] ok> 
+tinyg[mm] ok> N1112 X-11.570Y31.353
+tinyg[mm] ok> 
+tinyg[mm] ok> N1113 X-11.201Y31.338
+tinyg[mm] ok> 
+tinyg[mm] ok> N1114 X-10.825Y31.327
+tinyg[mm] ok> tinyg[mm] ok> N1115 X-10.444Y31.319
+tinyg[mm] ok> 
+tinyg[mm] ok> N1116 X-10.058Y31.314
+tinyg[mm] ok> 
+tinyg[mm] ok> N1117 X-9.667Y31.313
+tinyg[mm] ok> 
+tinyg[mm] ok> N1118 X-9.273Y31.315
+tinyg[mm] ok> 
+tinyg[mm] ok> N1119 X-8.874Y31.320
+tinyg[mm] ok> 
+tinyg[mm] ok> N1120 X-8.473Y31.329
+tinyg[mm] ok> 
+tinyg[mm] ok> N1121 X-8.069Y31.341
+tinyg[mm] ok> 
+tinyg[mm] ok> N1122 X-7.630Y31.358
+tinyg[mm] ok> 
+tinyg[mm] ok> N1123 X-7.188Y31.379
+tinyg[mm] ok> 
+tinyg[mm] ok> N1124 X-6.746Y31.404
+tinyg[mm] ok> 
+tinyg[mm] ok> N1125 X-6.303Y31.433
+tinyg[mm] ok> 
+tinyg[mm] ok> N1126 X-5.861Y31.466
+tinyg[mm] ok> 
+tinyg[mm] ok> N1127 X-5.421Y31.503
+tinyg[mm] ok> 
+tinyg[mm] ok> N1128 X-4.982Y31.544
+tinyg[mm] ok> 
+tinyg[mm] ok> N1129 X-4.546Y31.589
+tinyg[mm] ok> 
+tinyg[mm] ok> N1130 X-4.113Y31.638
+tinyg[mm] ok> 
+tinyg[mm] ok> N1131 X-3.684Y31.691
+tinyg[mm] ok> 
+tinyg[mm] ok> N1132 X-3.260Y31.748
+tinyg[mm] ok> 
+tinyg[mm] ok> N1133 X-2.841Y31.809
+tinyg[mm] ok> 
+tinyg[mm] ok> N1134 X-2.428Y31.873
+tinyg[mm] ok> 
+tinyg[mm] ok> N1135 X-2.021Y31.942
+tinyg[mm] ok> 
+tinyg[mm] ok> N1136 X-1.231Y32.091
+tinyg[mm] ok> 
+tinyg[mm] ok> N1137 X-0.848Y32.171
+tinyg[mm] ok> 
+tinyg[mm] ok> N1138 X-0.475Y32.255
+tinyg[mm] ok> 
+tinyg[mm] ok> N1139 X-0.110Y32.343
+tinyg[mm] ok> 
+tinyg[mm] ok> N1140 X0.243Y32.434
+tinyg[mm] ok> 
+tinyg[mm] ok> N1141 X0.587Y32.530
+tinyg[mm] ok> 
+tinyg[mm] ok> N1142 X0.919Y32.629
+tinyg[mm] ok> 
+tinyg[mm] ok> N1143 X1.547Y32.838
+tinyg[mm] ok> 
+tinyg[mm] ok> N1144 X1.842Y32.948
+tinyg[mm] ok> 
+tinyg[mm] ok> N1145 X2.124Y33.061
+tinyg[mm] ok> 
+tinyg[mm] ok> N1146 X2.392Y33.178
+tinyg[mm] ok> 
+tinyg[mm] ok> N1147 X2.647Y33.299
+tinyg[mm] ok> 
+tinyg[mm] ok> N1148 X2.887Y33.423
+tinyg[mm] ok> 
+tinyg[mm] ok> N1149 X3.112Y33.550
+tinyg[mm] ok> 
+tinyg[mm] ok> N1150 X3.323Y33.681
+tinyg[mm] ok> 
+tinyg[mm] ok> N1151 X3.518Y33.815
+tinyg[mm] ok> 
+tinyg[mm] ok> N1152 X3.698Y33.952
+tinyg[mm] ok> 
+tinyg[mm] ok> N1153 X3.862Y34.092
+tinyg[mm] ok> 
+tinyg[mm] ok> N1154 X4.010Y34.236
+tinyg[mm] ok> 
+tinyg[mm] ok> N1155 X4.142Y34.383
+tinyg[mm] ok> 
+tinyg[mm] ok> N1156 X4.257Y34.533
+tinyg[mm] ok> 
+tinyg[mm] ok> N1157 X4.356Y34.685
+tinyg[mm] ok> 
+tinyg[mm] ok> N1158 X4.439Y34.841
+tinyg[mm] ok> 
+tinyg[mm] ok> N1159 X4.505Y35.000
+tinyg[mm] ok> 
+tinyg[mm] ok> N1160 X4.554Y35.161
+tinyg[mm] ok> 
+tinyg[mm] ok> N1161 X4.586Y35.325
+tinyg[mm] ok> 
+tinyg[mm] ok> N1162 X4.602Y35.492
+tinyg[mm] ok> 
+tinyg[mm] ok> N1163 X4.602Y35.662
+tinyg[mm] ok> 
+tinyg[mm] ok> N1164 X4.584Y35.834
+tinyg[mm] ok> 
+tinyg[mm] ok> N1165 X4.551Y36.008
+tinyg[mm] ok> 
+tinyg[mm] ok> N1166 X4.501Y36.185
+tinyg[mm] ok> 
+tinyg[mm] ok> N1167 X4.435Y36.364
+tinyg[mm] ok> 
+tinyg[mm] ok> N1168 X4.353Y36.546
+tinyg[mm] ok> 
+tinyg[mm] ok> N1169 X4.255Y36.730
+tinyg[mm] ok> 
+tinyg[mm] ok> N1170 X4.142Y36.916
+tinyg[mm] ok> 
+tinyg[mm] ok> N1171 X4.014Y37.104
+tinyg[mm] ok> 
+tinyg[mm] ok> N1172 X3.871Y37.294
+tinyg[mm] ok> 
+tinyg[mm] ok> N1173 X3.713Y37.486
+tinyg[mm] ok> 
+tinyg[mm] ok> N1174 X3.356Y37.876
+tinyg[mm] ok> 
+tinyg[mm] ok> N1175 X3.157Y38.073
+tinyg[mm] ok> 
+tinyg[mm] ok> N1176 X2.944Y38.272
+tinyg[mm] ok> 
+tinyg[mm] ok> N1177 X2.483Y38.675
+tinyg[mm] ok> 
+tinyg[mm] ok> N1178 X1.425Y39.496
+tinyg[mm] ok> 
+tinygmm] ok> N1179 X1.155Y39.690
+tinyg[mm] ok> 
+tinyg[mm] ok> N1180 X0.877Y39.885
+tinyg[mm] ok> 
+tinyg[mm] ok> N1181 X0.300Y40.277
+tinyg[mm] ok> 
+tiny[mm] ok> N1182 X-0.925Y41.070
+tinyg[mm] ok> 
+tinyg[mm] ok> N1183 X-3.540Y42.667
+tinyg[mm] ok> 
+tinyg[mm] ok> N1184 X-3.871Y42.867
+tinyg[mm] ok> 
+tinyg[mm] ok> N1185 X-4.202Y43.066
+tinyg[mm] ok> 
+tinyg[mm] ok> N1186 X-4.858Y43.463
+tinyg[mm] ok> 
+tinyg[mm] ok> N1187 X-6.136Y44.252
+tinyg[mm] ok> 
+tinyg[mm] o> N1188 X-6.444Y44.447
+tinyg[mm] ok> 
+tinyg[mm] ok> N1189 X-6.748Y44.642
+tinyg[mm] ok> 
+tinyg[mm]ok> N1190 X-7.337Y45.028
+tinyg[mm] ok> 
+tinyg[mm] ok> N1191 X-8.430Y45.788
+tinyg[mm] ok> 
+tinyg[mm] ok> N1192 X-8.682Y45.975
+tinyg[mm] ok> 
+tinyg[mm] ok> N1193 X-8.926Y46.161
+tinyg[mm] ok> 
+tinyg[mm] ok> N1194 X-9.383Y46.527
+tinyg[mm] ok> 
+tinyg[mm] ok> N1195 X-9.596Y46.708
+tinyg[mm] ok> 
+tinyg[mm] ok> N1196 X-9.799Y46.887
+tinyg[mm] ok> 
+tinyg[mm] ok> N1197 X-10.170Y47.241
+tinyg[mm] ok> 
+tinyg[mm] ok> N1198 X-10.337Y47.415
+tinyg[mm] ok> 
+tinyg[mm] ok> N1199 X-10.493Y47.587
+tinyg[mm] ok> 
+tinyg[mm] ok> N1200 X-10.636Y47.757
+tinyg[mm] ok> 
+tinyg[mm] ok> N1201 X-10.766Y47.925
+tinyg[mm] ok> 
+tinyg[mm] ok> N1202 X-10.884Y48.091
+tinyg[mm] ok> 
+tinyg[mm] ok> N1203 X-10.988Y48.255
+tinyg[mm] ok> 
+tinyg[mm] ok> N1204 X-11.078Y48.416
+tinyg[mm] ok> 
+tinyg[mm] ok> N1205 X-11.155Y48.576
+tinyg[mm] ok> 
+tinyg[mm] ok> N1206 X-11.218Y48.733
+tinyg[mm] ok> 
+tinyg[mm] ok> N1207 X-11.267Y48.888
+tinyg[mm] ok> 
+tinyg[mm] ok> N1208 X-11.301Y49.040
+tinyg[mm] ok> 
+tinyg[mm] ok> N1209 X-11.322Y49.190
+tinyg[mm] ok> 
+tinyg[mm] ok> N1210 X-11.328Y49.337
+tinyg[mm] ok> 
+tinyg[mm] ok> N1211 X-11.319Y49.482
+tinyg[mm] ok> 
+tinyg[mm] ok> N1212 X-11.296Y49.624
+tinyg[mm] ok> 
+tinyg[mm] ok> N1213 X-11.259Y49.763
+tinyg[mm] ok> 
+tinyg[mm] ok> N1214 X-11.207Y49.900
+tinyg[mm] ok> 
+tinyg[mm] ok> N1215 X-11.140Y50.033
+tinyg[mm] ok> 
+tinyg[mm] ok> N1216 X-11.059Y50.164
+tinyg[mm] ok> 
+tinyg[mm] ok> N1217 X-10.963Y50.293
+tinyg[mm] ok> 
+tinyg[mm] ok> N1218 X-10.853Y50.418
+tinyg[mm] ok> 
+tinyg[mm] ok> N1219 X-10.729Y50.540
+tinyg[mm] ok> 
+tinyg[mm] ok> N1220 X-10.591Y50.659
+tinyg[mm] ok> 
+tinyg[mm] ok> N1221 X-10.439Y50.775
+tinyg[mm] ok> 
+tinyg[mm] ok> N1222 X-10.276Y50.886
+tinyg[mm] ok> 
+tinyg[mm] ok> N1223 X-10.100Y50.994
+tinyg[mm] ok> 
+tinyg[mm] ok> N1224 X-9.912Y51.098
+tinyg[mm] ok> 
+tinyg[mm] ok> N1225 X-9.710Y51.200
+tinyg[mm] ok> 
+tinyg[mm] ok> N1226 X-9.496Y51.298
+tinyg[mm] ok> 
+tinyg[mm] ok> N1227 X-9.270Y51.394
+tinyg[mm] ok> 
+tinyg[mm] ok> N1228 X-8.783Y51.574
+tinyg[mm] ok> 
+tinyg[mm] ok> N1229 X-8.522Y51.660
+tinyg[mm] ok> 
+tinyg[m] ok> N1230 X-8.250Y51.742
+tinyg[mm] ok> 
+tinyg[mm] ok> N1231 X-7.968Y51.821
+tinyg[mm] ok> 
+tinyg[mm] ok> N1232 X-7.675Y51.897
+tinyg[mm] ok> 
+tinyg[mm] ok> N1233 X-7.372Y51.969
+tinyg[mm] ok> 
+tinyg[mm] ok> N1234 X-7.059Y52.038
+tinyg[mm] ok> 
+tinyg[mm] ok> N1235 X-6.407Y52.165
+tinyg[mm] ok> 
+tinyg[mm] ok> N1236 X-6.068Y52.223
+tinyg[mm] ok> 
+tinyg[mm] ok> N1237 X-5.722Y52.278
+tinyg[mm] ok> 
+tinyg[mm] ok> N1238 X-5.368Y52.330
+tinyg[mm] ok> 
+tinyg[mm] ok> N1239 X-5.006Y52.378
+tinygmm] ok> 
+tinyg[mm] ok> N1240 X-4.639Y52.422
+tinyg[mm] ok> 
+tinyg[mm] ok> N1241 X-4.265Y52.463
+tinyg[mm] ok> 
+tinyg[mm] ok> N1242 X-3.886Y52.500
+tinyg[mm] ok> 
+tinyg[mm] ok> N1243 X-3.501Y52.533
+tinyg[mm] ok> 
+tinyg[mm] ok> N1244 X-3.112Y52.563
+tinyg[mm] ok> 
+tinyg[mm] ok> N1245 X-2.719Y52.590
+tinyg[mm] ok> 
+tinyg[mm] ok> N1246 X-2.322Y52.613
+tinyg[mm] ok> 
+tinyg[mm] ok> N1247 X-1.923Y52.632
+tinyg[mm] ok> 
+tinyg[mm] ok> N1248 X-1.521Y52.647
+tinyg[mm] ok> 
+tinyg[mm] ok> N1249 X-1.116Y52.659
+tinyg[mm] ok> 
+tinyg[mm] ok> N1250 X-0.711Y52.667
+tinyg[mm] ok> 
+tinyg[mm] ok> N1251 X-0.304Y52.672
+tinyg[mm] ok> 
+tinyg[mm] ok> N1252 X0.103Y52.673
+tinyg[mm] ok> 
+tinyg[mm] ok> N1253 X0.510Y52.670
+tinyg[mm] ok> 
+tinyg[mm] ok> N1254 X0.916Y52.664
+tinyg[mm] ok> 
+tinyg[mm] ok> N1255 X1.321Y52.654
+tinyg[mm] ok> 
+tinyg[mm] ok> N1256 X1.724Y52.640
+tinyg[mm] ok> 
+tinyg[mm] ok> N1257 X2.125Y52.623
+tinyg[mm] ok> 
+tinyg[mm] ok> N1258 X2.524Y52.602
+tinyg[mm] ok> 
+tinyg[mm] ok> N1259 X2.919Y52.577
+tinyg[mm] ok> 
+tinyg[mm] ok> N1260 X3.310Y52.549
+tinyg[mm] ok> 
+tinyg[mm] ok> N1261 X3.696Y52.517
+tinyg[mm] ok> 
+tinyg[mm] ok> N1262 X4.078Y52.481
+tinyg[mm] ok> 
+tinyg[mm] ok> N1263 X4.455Y52.442
+tinyg[mm] ok> 
+tinyg[mm] ok> N1264 X4.826Y52.400
+tinyg[mm] ok> 
+tinyg[mm] ok> N1265 X5.190Y52.354
+tinyg[mm] ok> 
+tinyg[mm] ok> N1266 X5.548Y52.304
+tinyg[mm] ok> 
+tinyg[mm] ok> N1267 X5.898Y52.251
+tinyg[mm] ok> 
+tinyg[mm] ok> N1268 X6.241Y52.194
+tinyg[mm] ok> 
+tinyg[mm] ok> N1269 X6.576Y52.134
+tinyg[mm] ok> 
+tinyg[mm] ok> N1270 X6.902Y52.070
+tinyg[mm] ok> 
+tinyg[mm] ok> N1271 X7.219Y52.003
+tinyg[mm] ok> 
+tinyg[mm] ok> N1272 X7.526Y51.933
+tinyg[mm] ok> 
+tinyg[mm] ok> N1273 X7.824Y51.859
+tinyg[mm] ok> 
+tinyg[mm] ok> N1274 X8.389Y51.701
+tinyg[mm] ok> 
+tinyg[mm] ok> N1275 X8.656Y51.617
+tinyg[mm] ok> 
+tinyg[mm] ok> N1276 X8.911Y51.530
+tinyg[mm] ok> 
+tinyg[mm] ok> N1277 X9.154Y51.439
+tinyg[mm] ok> 
+tinyg[mm] ok> N1278 X9.386Y51.346
+tinyg[mm] ok> 
+tinyg[mm] ok> N1279 X9.606Y51.249
+tinyg[mm] ok> 
+tinyg[mm] ok> N1280 X9.814Y51.149
+tinyg[mm] ok> 
+tinyg[mm] ok> N1281 X10.009Y51.046
+tinyg[mm] ok> 
+tinyg[mm] ok> N1282 X10.191Y50.939
+tinyg[mm] ok> 
+tinyg[mm] ok> N1283 X10.374Y50.821
+tinyg[mm] ok> 
+tinyg[mm] ok> N1284 X10.541Y50.698
+tinyg[mm] ok> 
+tinyg[mm] ok> N1285 X10.693Y50.573
+tinyg[mm] ok> 
+tinyg[mm] ok> N1286 X10.829Y50.444
+tinyg[mm] ok> 
+tinyg[mm] ok> N1287 X10.948Y50.311
+tinyg[mm] ok> 
+tinyg[mm] ok> N1288 X11.052Y50.175
+tinyg[mm] ok> 
+tinyg[mm] ok> N1289 X11.139Y50.036
+tinyg[mm] ok> 
+tinyg[mm] ok> N1290 X11.209Y49.894
+tinyg[mm] ok> 
+tinyg[mm] ok> N1291 X11.263Y49.748
+tinyg[mm] ok> 
+tinyg[mm] ok> N1292 X11.301Y49.600
+tinyg[mm] ok> 
+tinyg[mm] ok> N1293 X11.323Y49.448
+tinyg[mm] ok> 
+tinyg[mm] ok> N1294 X11.327Y49.293
+tinyg[mm] ok> 
+tinyg[mm] ok> N1295 X11.316Y49.136
+tinyg[mm] ok> 
+tinyg[mm] ok> N1296 X11.288Y48.975
+tinyg[mm] ok> 
+tinyg[mm] ok> N1297 X11.245Y48.812
+tinyg[mm] ok> 
+tinyg[mm] ok> N1298 X11.185Y48.646
+tinyg[mm] ok> 
+tinyg[mm] ok> N1299 X11.109Y48.478
+tinyg[mm] ok> 
+tinyg[mm] ok> N1300 X11.018Y48.307
+tinyg[mm] ok> 
+tinyg[mm]ok> N1301 X10.912Y48.133
+tinyg[mm] ok> 
+tinyg[mm] ok> N1302 X10.790Y47.957
+tinyg[mm] ok> 
+tinyg[mm] ok> N1303 X10.654Y47.779
+tinyg[mm] ok> 
+tinyg[mm] ok> N1304 X10.503Y47.598
+tinyg[mm] ok> 
+tinyg[mm] ok> N1305 X10.159Y47.230
+tinyg[mm] ok> 
+tinyg[mm] ok> N1306 X9.967Y47.043
+tinyg[mm] ok> 
+tinyg[mm] ok> N1307 X9.762Y46.854
+tinyg[mm] ok> 
+tinyg[mm] ok> N1308 X9.314Y46.470
+tinyg[mm] ok> 
+tinyg[mm] ok> N1309 X8.282Y45.681
+tinyg[mm] ok> 
+tinyg[mm] ok> N1310 X7.999Y45.480
+tinyg[mm] ok> 
+tinyg[mm] ok> N1311 X7.707Y45.278
+tinyg[mm] ok> 
+tinyg[mm] ok> N1312 X7.098Y44.870
+tinyg[mm] ok> 
+tinyg[mm] ok> N1313 X5.798Y44.041
+tinyg[mm] ok> 
+tinyg[mm] ok> N1314 X3.014Y42.350
+tinyg[mm] ok> 
+tinyg[mm] ok> N1315 X2.662Y42.138
+tinyg[mm] ok> 
+tinyg[mm] ok> N1316 X2.311Y41.925
+tinyg[mm] ok> 
+tinyg[mm] ok> N1317 X1.617Y41.500
+tinyg[mm] ok> 
+tinyg[mm] ok> N1318 X0.273Y40.654
+tinyg[mm] ok> 
+tinyg[mm] o> N1319 X-0.049Y40.444
+tinyg[mm] ok> 
+tinyg[mm] ok> N1320 X-0.365Y40.234
+tinyg[mm] ok> 
+tinyg[mm] ok> N1321 X-0.975Y39.817
+tinyg[mm] ok> 
+tinyg[mm] ok> N1322 X-2.088Y38.994
+tinyg[mm] ok> 
+tinyg[mm] ok> N1323 X-2.324Y38.805
+tinyg[mm] ok> 
+tinyg[mm] ok> N1324 X-2.551Y38.617
+tinyg[mm] ok> 
+tinyg[mm] ok> N1325 X-2.974Y38.245
+tinyg[mm] ok> 
+tinyg[mm] ok> N1326 X-3.170Y38.061
+tinyg[mm] ok> 
+tinyg[mm] ok> N1327 X-3.354Y37.878
+tinyg[mm] ok> 
+tinyg[mm] ok> N1328 X-3.687Y37.516
+tinygmm] ok> 
+tinyg[mm] ok> N1329 X-3.836Y37.338
+tinyg[mm] ok> 
+tinyg[mm] ok> N1330 X-3.972Y37.162
+tinyg[mm] ok> 
+tinyg[mm] ok> N1331 X-4.096Y36.987
+tinyg[mm] ok> 
+tinyg[mm] ok> N1332 X-4.206Y36.813
+tinyg[mm] ok> 
+tinyg[mm] ok> N1333 X-4.304Y36.642
+tinyg[mm] ok> 
+tinyg[mm] ok> N1334 X-4.388Y36.473
+tinyg[mm] ok> 
+tinyg[mm] ok> N1335 X-4.459Y36.305
+tinyg[mm] ok> 
+tinyg[mm] ok> N1336 X-4.515Y36.139
+tinyg[mm] ok> 
+tinyg[mm] ok> N1337 X-4.558Y35.976
+tinyg[mm] ok> 
+tinyg[mm] ok> N1338 X-4.587Y35.815
+tinyg[mm] ok> 
+tinyg[mm] ok> N1339 X-4.602Y35.655
+tinyg[mm] ok> 
+tinyg[mm] ok> N1340 X-4.603Y35.498
+tinyg[mm] ok> 
+tinyg[mm] ok> N1341 X-4.589Y35.343
+tinyg[mm] ok> 
+tinyg[mm] ok> N1342 X-4.561Y35.191
+tinyg[mm] ok> 
+tinyg[mm] ok> N1343 X-4.519Y35.041
+tinyg[mm] ok> 
+tinyg[mm] ok> N1344 X-4.462Y34.893
+tinyg[mm] ok> 
+tinyg[mm] ok> N1345 X-4.391Y34.748
+tinyg[mm] ok> 
+tinyg[mm] ok> N1346 X-4.306Y34.605
+tinyg[mm] ok> 
+tinyg[mm] ok> N1347 X-4.207Y34.465
+tinyg[mm] ok> 
+tinyg[mm] ok> N1348 X-4.094Y34.327
+tinyg[mm] ok> 
+tinyg[mm] ok> N1349 X-3.967Y34.192
+tinyg[mm] ok> 
+tinyg[mm] ok> N1350 X-3.826Y34.060
+tinyg[mm] ok> 
+tinyg[mm] ok> N1351 X-3.671Y33.930
+tinyg[mm] ok> 
+tinyg[mm] ok> N1352 X-3.503Y33.803
+tinyg[mm] ok> 
+tinyg[mm] ok> N1353 X-3.321Y33.679
+tinyg[mm] ok> #### TinyG build 321.01 - "Elephantitis" ####
+Type h for help
+tinyg[mm] ok> Q
+tinygTEST[mm] ok> U
+N1 T1M6
+N2 G17G21
+N3 G92X-11.000Y-3.000Z0.000
+N4 F600.0
+N500 G1X-1.000Y-3.000
+N545 X-11.440Y-3.415
+N546 X-11.491Y-3.472	(***HT!***)
+N547 X-11.556Y-3.532	(***HT!***)
+N548 X-11.636Y-3.594	(***HT!***)
+N549 X-11.729Y-3.658
+N550 X-11.837Y-3.724	(***HT!***)
+N551 X-11.959Y-3.793
+N552 X-12.094Y-3.863	(***HT!***)
+N553 -12.242Y-3.936
+N554 X-12.404Y-4.010
+N555 X-12.767Y-4.165
+N556 X-12.967Y-4.245
+N557 X-13.179Y-4.327
+N558 X-13.639Y-4.495
+N559 X-14.691Y-4.850
+N560 X-14.979Y-4.942
+N561 X-15.277Y-5.036
+N562 X-15.897Y-5.225
+N563 X-17.230Y-5.617
+N564 X-20.146Y-6.431
+N565 X-20.516Y-6.532
+N566 X-20.887Y-6.634
+N567 X-21.630Y-6.837
+N568 X-23.106Y-7.241	(***Steppers!***)
+N569 X-25.895Y-8.028
+N570 X-26.218Y-8.123
+N571 X-26.535Y-8.218
+End of command file
+tinyg[mm] ok> ***Steppers!***
