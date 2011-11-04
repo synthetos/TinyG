@@ -1,0 +1,32 @@
+N1 T1M6
+tinyg[mm] ok> 
+tinyg[mm] ok> N2 G17
+tinyg[mm] ok> 
+tinyg[mm] ok> N3 G21 (mm)
+tinyg[mm] ok> 
+tinyg[mm] ok> N4 (S8000)
+tinyg[mm] ok 
+tinyg[mm] ok> N5 (M3)
+tinyg[mm] ok> 
+tinyg[mm] ok> N6 G92X0.327Y-33.521Z-1.000
+tinyg[mm] ok> 
+tinyg[mm] ok> N7 G0Z4.000
+tinyg[mm] ok> 
+tinyg[m] ok> N8 F600.0
+tinyg[mm] ok> 
+tinyg[mm] ok> N9 G1X0.327Y-33.521
+tinyg[mm] ok> 
+tinyg[mm] ok> N10 G1Z-1.000
+tinyg[mm] ok> 
+tinyg[mm] ok> N11 X0.654Y-33.526
+***H', T'******HT******Runtim Buffer[2] bstate:1  mtype:0  mstate:0  replan:1
+line number:       11.0000
+position:          0.33  -33.52  -1.00  0.00  0.00  0.00
+target:            0.65  -33.53  -1.00  0.00  0.00  0.00
+unit:              1.00  -0.02  0.00  0.00  0.00  0.00
+jerk:             50000004.0000
+time:               0.0007
+length:             0.3270
+head_length:        1.2276
+body_length:        0.0000
+tail_length:        0

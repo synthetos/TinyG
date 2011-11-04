@@ -6,7 +6,8 @@ import os
 import platform
 import serial
 import time
-        
+import json
+
     
 class Serial(object):
     def __init__(self):
@@ -85,7 +86,20 @@ class Serial(object):
                 
     def IdentifyBoard(self):
         """Need to cycle thorugh all speeds in a list for each board  TODO"""
-                
+        BOARD_DIR = "./boards"
+        boards = os.listdir(BOARD_DIR)
+        BOARD_LIST = []
+        
+        
+        #Future JSON Configurations Options.. Not working right now.
+        #for board in boards:
+            #try:
+                #BOARD_LIST.append(open(BOARD_DIR+"/"+board).read())
+            #except Exception, e:
+                #print e
+            
+            
+            
         SPEEDS = {"GRBL":9600,
                   "TINYG":115200
                   }
@@ -95,11 +109,13 @@ class Serial(object):
             print "\t[#]Trying %s at Speed %s" % (tmpPort, tmpSpeed)
             try:
                 s = serial.Serial(self.port_selected, tmpSpeed, timeout=.025)
+                time.sleep(.5)
             except serial.SerialException:
                 print "Error connecting to %s at %s" % (self.port_selected, tmpSpeed)
                 continue
             
             s.writelines("\n")
+            time.sleep(.5)
             readbuf = s.readall()
             if readbuf == "":  #Possibly GRBL
                 s.writelines("$\n")

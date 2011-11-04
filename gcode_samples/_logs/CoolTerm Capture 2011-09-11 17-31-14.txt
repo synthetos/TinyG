@@ -1,0 +1,853 @@
+X3.013 Y1.275
+X3.024 Y1.254
+X3.070 Y1.151
+X3.077 Y1.134
+X3.125 Y1.039
+X3.138 Y1.019
+X3.205 Y0.908
+X3.282 Y0.797
+X3.361 Y0.691
+X3.426 Y0.592
+X3.456 Y0.543
+X3.479 Y0.493
+X3.494 Y0.472
+X3.505 Y0.446
+X3.518 Y0.417
+X3.530 Y0.391
+X3.569 Y0.300
+X3.577 Y0.253
+X3.568 Y0.212
+X3.544 Y0.176
+X3.541 Y0.146
+X3.553 Y0.119
+X3.576 Y0.106
+X3.597 Y0.102
+X3.618 Y0.109
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.639 Y0.129
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero lengthmove in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.650 Y0.159
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.663 Y0.178
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.678 Y0.192
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.699 Y0.197
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.723 Y0.196
+#### TRAP #### Trappedzero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.764 Y0.179
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.805 Y0.165
+#### TRAP ### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.884 Y0.159
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.949 Y0.165
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.966 Y0.175
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.978 Y0.194
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP ### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.978 Y0.223
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.960 Y0.245
+#### TRP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.834 Y0.311
+#### TRAP #### Trapped zero lenth move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.762 Y0.345
+X3.726 Y0.389
+X3.703 Y0.458
+X3.68e Y0.530
+X3.679 Y0.534
+X3.626 Y0.681
+X3.568 Y0.828
+X3.444 Y1.080
+X3.405 Y1.167
+X3.404 Y1.167
+X3.387 Y1.208
+X3.384 Y1.208
+X3.365 Y1.265
+X3.355 Y1.285
+X3.348 Y1.308
+X3.333 Y1.350
+X3.321 Y1.391
+X3.311 Y1.428
+X3.339 Y1.423
+X3.447 Y1.406
+X3.510 Y1.408
+X3.585 Y1.421
+X3.611 Y1.439
+X3.611 Y1.441
+#### TRAP #### Trapped zero length move in mp_queue_line()
+####TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.615 Y1.441
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.636 Y1.488
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.634 Y1.517
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.622 Y1.543
+X3.605 Y1.563
+X3.576 Y1.575
+X3.544 Y1.581
+X3.479 Y1.592
+X3.451 Y1.598
+X3.387 Y1.626
+X3.390 Y1.636
+X3.532 Y1.602
+X3.60n Y1.597
+X3.668 Y1.598
+X3.782 Y1.612
+X3.79v Y1.618
+X3.868 Y1.636
+X3.918 Y1.655
+X3.945 Y1.667
+X3.964 Y1.685
+X3.96e Y1.685
+X3.974 Y1.699
+X3.984 Y1.725
+X3.984 Y1.758
+X3.970 Y1.790
+X3.945 Y1.817
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.918 Y1.826
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.891 Y1.827
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.842 Y1.809
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.798 Y1.784
+#### TRAP #### Trapped zero length move in mp_quee_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.746 Y1.772
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trappd zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.698 Y1.764
+#### TRAP #### Trapped zero length move in p_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.635 Y1.766
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.553 Y1.785
+#### RAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.478 Y1.820
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.409 Y1.864
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.345 Y1.918
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.264 Y2.023
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.248 Y2.051
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.240 Y2.081
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.316 Y2.086
+#### TRAP #### Trapped zero length move in mp_ueue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.390 Y2.104
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.414 Y2.121
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.431 Y2.153
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.433 Y2.180
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.427 Y2.205
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP ####Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.413 Y2.224
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.392 Y2.242
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.335 Y2.244
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.278 Y2.236
+###
+ TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.256 Y2.242
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.239 Y2.251
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.211 Y2.280
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.174 Y2.356
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.159 Y2.397
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.150 Y2.438
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.140 Y2.481
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.132 Y2.510
+#### TRAP ### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.118 Y2.543
+#### RAP ### Trapped zero length move in mp_queue_line()
+#### TRAP #### rapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.099 Y2.576
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.051 Y2.631
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X3.003 Y2.666
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.957 Y2.685
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.907 Y2.699
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.860 Y2.711
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.812 Y2.727
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.768 Y2.745
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.716 Y2.757
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.672 Y2.757
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.579 Y2.731
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.570 Y2.723
+#### TRAP #### Tappe zero length move in mp_queue_line()
+#### TRAP #### Trapped zero legth ove in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.559 Y2.720
+#### TRAP #### Trapped zero length move in m_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.530 Y2.701
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.501 Y2.693
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.471 Y2.683
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trappe zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.443 Y2.668
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.396 Y2.634
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.354 Y2.591
+#### TRAP #### Trapped zero length move in mp_quee_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.352 Y2.591
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length ove in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.322 Y2.543
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.315 Y2.521
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.307 Y2.498
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.296 Y2.464
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.293 Y2.427
+#### TRAP #### Trapped zero length mve in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.295 Y2.366
+#### TRAP #### Trapped zero length mve in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.321 Y2.303
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.358 Y2.247
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.419 Y2.203
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.419 Y2.179
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.405 Y2.158
+#### TRP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.362 Y2.123
+#### TRAP #### Traped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.354 Y2.104
+X2.354 Y2.091
+X2.380 Y2.065
+X2.410 Y2.051
+X2.410 Y2.047
+X2.405 Y2.028
+X2.408 Y2.010
+X2.416 Y1.995
+X2.433 Y1.982
+X2.438 Y1.963
+X2.447 Y1.948
+X2.461 Y1.938
+X2.480 Y1.931
+X2.478 Y1.899
+X2.487 Y1.875
+X2.504 Y1.854
+X2.527 Y1.848
+X2.54e Y1.849
+X2.573 Y1.861
+X2.604 Y1.866
+X2.631 Y1.854
+X2.640 Y1.827
+X2.640 Y1.792
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.629 Y1.759
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.612 Y1.727
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.576 Y1.694
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.536 Y1.662
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.470 Y1.616
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.345 Y1.551
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.307 Y1.521
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.262 Y1.482
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.243 Y1.477
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.228 Y1.469
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.222 Y1.448
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.228 Y1.425
+#### TRAP #### Trapped zero length move in mp_qeue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.254 Y1.405
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.268 Y1.373
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Traped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.279 Y1.342
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.308 Y1.287
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.3X0 Y1.254
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.407 Y1.201
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.441 Y1.156
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.454 Y1.131
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.460 Y1.106
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.464 Y1.102
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.472 Y1.036
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.466 Y0.971
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.451 Y0.897
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.415 Y0.791
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP ### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.403 Y0.767
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.388 Y0.765
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.306 Y0.841
+#### TRAP ### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.222 Y0.911
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.114 Y0.995
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X2.002 Y1.076
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.905 Y1.139
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.754 Y1.223
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.637 Y1.278
+#### TRAP #### Trapped zero length move in mp_qeue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.582 Y1.301
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.558 Y1.315
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped ero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.460 Y1.352
+#### TRAP #### Trapped ero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.399 Y1.360
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_qeue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.338 Y1.354
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.287 Y1.329
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.2X8 Y1.294
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.217 Y1.254
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.214 Y1.252
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.171 Y1.195
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.128 Y1.139
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X1.110 Y1.117
+#### TRAP #### Trapped zero length move in mp_qeue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.958 Y0.941
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.890 Y0.873
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.825 Y0.808
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.755 Y0.747
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.619 Y0.633
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_qeue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.477 Y0.526
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.477 Y0.524
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.411 Y0.476
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.331 Y0.454
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.278 Y0.427
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zeo length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.231 Y0.397
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.183 Y0.379
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.135 Y0.365
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+X0.076 Y0.341
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+G1 Z-0.875 F10.0
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+G1 F10.0
+M05
+G21
+G90 X0 Y0 Z0 M30
+End of command file
+tinyg[mm] ok> #### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()
+#### TRAP #### Trapped zero length move in mp_queue_line()

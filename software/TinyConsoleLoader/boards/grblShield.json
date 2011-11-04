@@ -1,0 +1,10 @@
+{
+    "board": {
+        "name": "grblShield",
+        "speed": 9600,
+        "options": {
+            "xon": "false",
+            "echo": "false"
+        }
+    }
+}
