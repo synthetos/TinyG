@@ -120,10 +120,11 @@ void rpt_init_status_report(uint8_t persist_flag)
 	cmdObj cmd;
 	uint8_t i=0;
 	INDEX_T sr_index = cmd_get_index_by_token("sr00");	// find first persistence index
-//	char sr_defaults[][CMD_TOKEN_LEN+1] = {"line","posx","posy","posz","posa","vel","unit","motm","stat"};
+	char sr_defaults[][CMD_TOKEN_LEN+1] = {"line","posx","posy","posz","posa","vel","unit","motm","stat"};
+/*
 	char sr_defaults[][CMD_TOKEN_LEN+1] = {"line","unit","coor","motm","plan","path","dist","feed",\
 "posx","posy","posz","posa","posb","posc","mpsx","mpsy","mpsz","vel","stat"};
-
+*/
 	for (; i < (sizeof(sr_defaults)/(CMD_TOKEN_LEN+1)); i++) {
 		cmd.value = cmd_get_index_by_token(sr_defaults[i]);
 		cfg.status_report_spec[i] = cmd.value;
