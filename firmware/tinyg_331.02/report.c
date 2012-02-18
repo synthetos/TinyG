@@ -90,9 +90,10 @@ void rpt_force_status_report()
 
 uint8_t rpt_try_status_report()	  // called by controller dispatcher
 {
-	if ((cm.machine_state == MACHINE_RUN) && 
-		(cfg.status_report_interval > 0) && 
-		(cm.status_report_counter == 0)) {
+//	if ((cm.machine_state == MACHINE_RUN) && 
+//		(cfg.status_report_interval > 0) && 
+//		(cm.status_report_counter == 0)) {
+	if ((cfg.status_report_interval > 0) && (cm.status_report_counter == 0)) {
 		rpt_run_status_report();
 		cm.status_report_counter = cfg.status_report_interval;
 		return (TG_OK);
