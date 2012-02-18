@@ -263,7 +263,7 @@ static uint8_t _dispatch()
 //			break; 
 //		}
 		
-		case '$': { 							// command-line input
+		case '$': case '?':{ 					// text-mode config and query
 			if (tg.communications_mode != TG_GRBL_MODE) {
 				tg.communications_mode = TG_TEXT_MODE;
 			}
