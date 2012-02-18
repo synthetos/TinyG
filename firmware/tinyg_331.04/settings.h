@@ -38,7 +38,7 @@
 
 #define STATUS_REPORT_ENABLE 		1		// 0=off, 1=on
 #define STATUS_REPORT_INTERVAL_MS	250		// ms
-#define STATUS_REPORT_MIN_MS		100		// ms - enforce a viable minimum
+#define STATUS_REPORT_MIN_MS		20		// ms - enforce a viable minimum
 #define STATUS_REPORT_MAX_MS		2500
 
 /*** Gcode power-on defaults ***/
