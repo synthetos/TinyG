@@ -203,16 +203,23 @@ char str_stat[] PROGMEM = "stat,machine_state,[stat] machine_state %14d\n";
 //char str_fs[] PROGMEM = "fs,feedhold_state,[fs]  feedhold_state %1d\n";
 char str_vel[] PROGMEM = "vel,velocity,[vel] velocity %23.3f %S/min\n";
 char str_unit[] PROGMEM = "unit,unit,";		// current units mode as an ASCII string
-//char str_wo[] PROGMEM = "wo,wo,";			// work coordinate system
 char str_sr[] PROGMEM = "sr,status_r,";		// status_report
 char str_si[] PROGMEM = "si,status_i,[si]  status_interval    %10.0f ms [0=off]\n";
 
 char str_gc[] PROGMEM = "gc,gcod,[gc]";
+// gcode power-on reset defaults
 char str_gpl[] PROGMEM = "gpl,gcode_pl,[gpl] gcode_select_plane %10d [G17,G18,G19]\n";
 char str_gun[] PROGMEM = "gun,gcode_u, [gun] gcode_units_mode   %10d [G20,G21]\n";
 char str_gco[] PROGMEM = "gco,gcode_c, [gco] gcode_coord_system %10d [G54-G59]\n";
 char str_gpa[] PROGMEM = "gpa,gcode_pa,[gpa] gcode_path_control %10d [G61,G61.1,G64]\n";
 char str_gdi[] PROGMEM = "gdi,gcode_d, [gdi] gcode_distance_mode%10d [G90,G91]\n";
+// gcode current model state
+char str_gmun[] PROGMEM = "gmun,gmun,Units%10d\n";
+char str_gmpl[] PROGMEM = "gmpl,gmpl,Plane%10d\n";
+char str_gmco[] PROGMEM = "gmco,gmco,Coordinate system%10d\n";
+char str_gmdi[] PROGMEM = "gmdi,gmdi,Distance mode%10d\n";
+char str_gmfr[] PROGMEM = "gmfr,gmfr,Feed rate%10d\n";
+char str_gmmm[] PROGMEM = "gmmm,gmmm,Motion mode%10d\n";
 
 char str_ea[] PROGMEM = "ea,enable_a,[ea]  enable_acceleration%10d [0,1]\n";
 char str_ja[] PROGMEM = "ja,junc,[ja]  junction_acceleration%8.0f%S\n";
@@ -266,8 +273,8 @@ char str_xsm[] PROGMEM = "xsm,x_s,[xsm] x_switch_mode%16d [0,1]\n";
 char str_xsv[] PROGMEM = "xsv,x_s,[xsv] x_search_velocity%16.3f%S/min\n";
 char str_xlv[] PROGMEM = "xlv,x_l,[xlv] x_latch_velocity%17.3f%S/min\n";
 char str_xzo[] PROGMEM = "xzo,x_z,[xzo] x_zero_offset%20.3f%S\n";
-char str_xabs[] PROGMEM = "xabs,x_ab,[xabs] x_absolute_position%13.3f%S\n";
-char str_xpos[] PROGMEM = "xpos,x_po,[xpos] x_position%22.3f%S\n";
+char str_xabs[] PROGMEM = "xabs,x_ab,x_absolute_position%13.3f%S\n";
+char str_xpos[] PROGMEM = "xpos,x_po,x_position%22.3f%S\n";
 
 char str_yam[] PROGMEM = "yam,y_a,[yam] y_axis_mode%18d %S\n";
 char str_yfr[] PROGMEM = "yfr,y_f,[yfr] y_feedrate_maximum%15.3f%S/min\n";
@@ -1477,14 +1484,14 @@ static uint8_t _get_sys(const INDEX_T i, cmdObj *cmd)
 {
 	char token[CMD_TOKEN_LEN+1];	// token retrived from cmdArray
 	INDEX_T grp_index = cmd->index;
-	char system[] = {"fv,fb,si,gpl,gun,gco,gpa,gdi,ea,ja,ml,ma,mt,ic,il,ec,ee,ex"};
+	char include[] = {"fv,fb,si,gpl,gun,gco,gpa,gdi,ea,ja,ml,ma,mt,ic,il,ec,ee,ex"};
 	char exclude[] = {"gc"};
 
 	cmd->value_type = VALUE_TYPE_PARENT;
 	for (INDEX_T i=0; i<grp_index; i++) {
 		cmd_get_token(i, token);
 		if (strstr(exclude, token) != NULL) continue;
-		if (strstr(system, token) != NULL) {
+		if (strstr(include, token) != NULL) {
 			cmd_get_cmd(i,++cmd);
 			(cmd-1)->nx = cmd;	// set next object of previous object to this object
 		}
@@ -1496,14 +1503,14 @@ static uint8_t _get_qm(const INDEX_T i, cmdObj *cmd)
 {
 	char token[CMD_TOKEN_LEN+1];	// token retrived from cmdArray
 	INDEX_T grp_index = cmd->index;
-	char system[] = {"fv,fb,si,gpl,gun,gco,gpa,gdi,ea,ja,ml,ma,mt,ic,il,ec,ee,ex"};
-	char exclude[] = {"gc"};
+	char include[] = {"xpos,ypos,zpos,apos,bpos,cpos,stat"};
+//	char exclude[] = {"gc"};
 
 	cmd->value_type = VALUE_TYPE_PARENT;
 	for (INDEX_T i=0; i<grp_index; i++) {
 		cmd_get_token(i, token);
-		if (strstr(exclude, token) != NULL) continue;
-		if (strstr(system, token) != NULL) {
+//		if (strstr(exclude, token) != NULL) continue;
+		if (strstr(include, token) != NULL) {
 			cmd_get_cmd(i,++cmd);
 			(cmd-1)->nx = cmd;	// set next object of previous object to this object
 		}
