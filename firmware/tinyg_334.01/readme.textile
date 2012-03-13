@@ -9,17 +9,17 @@ Key TinyG features are:
 * XON/XOFF protocol over serial to simplify code streaming
 * Comprehensive configuration system ('$' commands)
 * Machine position and state status displays ('?' command)
-* Obeys NIST RS274/NGCv3 with add'l guidance from Smid's CNC Programming Handbook v3
+* Obeys NIST RS274/NGCv3 with additional guidance from Smid's CNC Programming Handbook v3
 
 New functionality added in 0.93:
-* Feedhold and resume - Use ! to stop, ~ to resume - maintains position thought
+* Feedhold and resume - Use ! to stop, ~ to resume - maintains position throughout
 * Software reset (abort) - hit ^x to reset from the USB port
-* Separate machine and work coordinate systems - M54-M59 support 6 work coordinate systems
-* Full support for G92 offsets
+* Separate machine and work coordinate systems - supports 6 work coordinate systems (G54 - G59)
+* Full support for G92 offsets (G92, G92.1, G92.2, G92.3)
 * Homing support - full search + latch homing cycles on any or all 6 axes
-* Spindle support - on, off and direction (M3, M4, M5)
-* Coolant support - on, off (M7, M8, M9)
-* Automatic status reports for "DRO" style output during motion
+* Spindle support - on, direction and off (M3, M4, M5)
+* Coolant support - on, off (M7/M8, M9)
+* Configurable automatic status reports for "DRO" style output during motion
 * JSON interface for simplified control from high-level interfaces
 * Advanced arc planning - full acceleration / deceleration and cornering control
 * Built in self tests using the $test=N command
