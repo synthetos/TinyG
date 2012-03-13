@@ -546,7 +546,6 @@ uint8_t cm_resume_origin_offsets()		// G92.3
 	return (TG_OK);
 }
 
-
 /* 
  * Free Space Motion (4.3.4)
  *

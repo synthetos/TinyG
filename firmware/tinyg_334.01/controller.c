@@ -57,7 +57,7 @@
 static void _controller_HSM(void);
 static uint8_t _sync_to_tx_buffer(void);
 static uint8_t _sync_to_planner(void);
-static uint8_t _test_cycle_end(void);
+//static uint8_t _test_cycle_end(void);
 static uint8_t _dispatch(void);
 static void _dispatch_return(uint8_t status, char *buf);
 static void _prompt_without_message(void);
@@ -162,7 +162,7 @@ static void _controller_HSM()
 //----- command readers and parsers ------------------------------------//
 	DISPATCH(_sync_to_tx_buffer());		// sync with TX buffer (pseudo-blocking)
 	DISPATCH(_sync_to_planner());		// sync with planning queue
-	DISPATCH(_test_cycle_end());		// test for end of cycle
+//	DISPATCH(_test_cycle_end());		// test for end of cycle
 	DISPATCH(_dispatch());				// read and execute next command
 }
 
@@ -281,12 +281,12 @@ static uint8_t _sync_to_planner()
 	}
 	return (TG_OK);
 }
-
+/*
 static uint8_t _test_cycle_end()
 {
 	return (TG_OK);
 }
-
+*/
 /*
  * tg_make_json_gcode_response() - generate JSON response object for Gcode
  */

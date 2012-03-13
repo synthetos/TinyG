@@ -163,10 +163,8 @@
 static void _exec_move(void);
 static void _load_move(void);
 static void _request_load_move(void);
-static void _set_f_dda(double *f_dda,
-						  double *dda_substeps, 
-						  const double major_axis_steps, 
-						  const double microseconds);
+static void _set_f_dda(double *f_dda, double *dda_substeps, 
+					   const double major_axis_steps, const double microseconds);
 /*
  * Stepper structures
  *
@@ -551,10 +549,8 @@ uint8_t st_prep_line(double steps[], double microseconds)
  *	precision until it does. If it *still* doesn't fit get rid of the 
  *	overclocking. If it **still** doesn't fit throw a trap and give up.
  */
-static void _set_f_dda(double *f_dda,
-						  double *dda_substeps, 
-						  const double major_axis_steps, 
-						  const double microseconds)
+static void _set_f_dda(double *f_dda, double *dda_substeps, 
+					   const double major_axis_steps, const double microseconds)
 {
 	double f_dda_base = (major_axis_steps / microseconds) * 1000000;
 
@@ -581,7 +577,7 @@ static void _set_f_dda(double *f_dda,
 				 *f_dda = F_DDA_MIN;
 			}
 			if ((microseconds *(*f_dda) *(*dda_substeps)) > (MAX_ULONG * 1000000)) {
-//				INFO1(PSTR("_mq_set_f_dda() line overflow: %f"), major_axis_steps)
+//				fprintf_P(stderr, PSTR("_mq_set_f_dda() line overflow: %f"), major_axis_steps);
 				break;
 			}
 		}
@@ -656,10 +652,7 @@ void st_dump_stepper_state()
 	fprintf_P(stderr, (PGM_P)sts_timr, "exec", DEVICE_TIMER_EXEC.CTRLA, DEVICE_TIMER_EXEC.PER);
 
 	for (i=0; i<MOTORS; i++) {
-		fprintf_P(stderr, (PGM_P)sts_motr, i, 
-			st.m[i].polarity,
-			st.m[i].steps,
-			st.m[i].counter);
+		fprintf_P(stderr, (PGM_P)sts_motr, i, st.m[i].polarity, st.m[i].steps, st.m[i].counter);
 	}
 }
 #endif

@@ -574,7 +574,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_fv, _print_dbl, _get_dbl, _set_nul, (double *)&tg.version,  TINYG_VERSION_NUMBER },
 	{ str_id, _print_int, _get_id,  _set_nul, (double *)&tg.null, 0}, 	// device ID (signature)
 	{ str_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval, STATUS_REPORT_INTERVAL_MS },
-	{ str_sr,  _print_sr,  _get_sr,  _set_sr, (double *)&tg.null, 0 },	// status report object
+	{ str_sr, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
 
 	// gcode model attributes for reporting puropses
 	{ str_line,_print_int, _get_int, _set_int, (double *)&gm.linenum, 0 },// line number

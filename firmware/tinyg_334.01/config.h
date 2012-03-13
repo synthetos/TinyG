@@ -175,6 +175,7 @@ struct cfgParameters {
 	double estd_segment_usec;		// approximate segment time in microseconds
 	double junction_acceleration;	// centripetal acceleration max for cornering
 	uint8_t enable_acceleration;	// enable acceleration control
+//	double max_spindle_speed;		// in RPM
 
 	// gcode power-on default settings - defaults are not the same as the gm state
 	uint8_t coord_system;			// G10 active coordinate system default
