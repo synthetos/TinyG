@@ -1,4 +1,5 @@
-== Readme for TinyG Release 0.93 ==
+Readme for TinyG Release 0.93
+--------------------------------
 
 Release 0.93 is the last planned pre-production release for TinyG. Many things have been fixed since 0.92 and major new functionality has been added. At this point we think the code base is pretty solid.
 
