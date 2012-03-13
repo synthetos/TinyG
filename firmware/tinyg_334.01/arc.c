@@ -3,7 +3,7 @@
  * Part of TinyG project
  *
  * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
- * Portions copyright (c) 2009 Simen Svale Skogsrud
+ * Copyright (c) 2009 Simen Svale Skogsrud
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -42,7 +42,7 @@
 #include "planner.h"
 #include "kinematics.h"
 
-struct arArcSingleton 		{	// persistent planner and runtime variables
+struct arArcSingleton {			// persistent planner and runtime variables
 	uint8_t run_state;			// runtime state machine sequence
 	uint32_t linenum;			// gcode line number (Nxxxxx)
 
@@ -206,9 +206,6 @@ uint8_t cm_arc_feed(double target[], double flags[],// arc endpoints
 
 	if (radius > EPSILON) {					// non-zero radius is a radius arc
 		ritorno(_get_arc_radius());			// returns if error occurs
-//		if ((status = _get_arc_radius()) != TG_OK) {
-//			return (status);				// error return
-//		}
 	}
 	// Introduce a short dwell if the machine is idle to enable the planning
 	// queue to begin to fill (avoids first block having to plan down to zero)
