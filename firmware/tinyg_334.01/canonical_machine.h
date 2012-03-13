@@ -197,7 +197,7 @@ struct GCodeInput gf;					// gcode input flags
  */
 // *** Note: check config printout strings align with all the state variables
 
-enum cmCombinedState {	
+enum cmCombinedState {
 	COMBINED_RESET = 0,				// machine has been reset or aborted
 	COMBINED_CYCLE,					// machine is running (cycling)
 	COMBINED_PROGRAM_STOP,			// program stop or no more blocks
@@ -209,14 +209,14 @@ enum cmCombinedState {
 	COMBINED_JOG					// jogging is treated as a cycle
 };
 
-enum cmMachineState {	
+enum cmMachineState {				// THIS MUST ALIGN WITH COMBINED STATE, ABOVE	
 	MACHINE_RESET = 0,				// machine has been reset or aborted
 	MACHINE_CYCLE,					// machine is running (cycling)
 	MACHINE_PROGRAM_STOP,			// program stop or no more blocks
 	MACHINE_PROGRAM_END				// program end
 };
 
-enum cmCycleState {					// top-level machine state
+enum cmCycleState {
 	CYCLE_OFF = 0,					// machine is idle
 	CYCLE_STARTED,					// machine in normal cycle
 	CYCLE_HOMING,					// machine in homing cycle
@@ -492,7 +492,7 @@ uint8_t cm_arc_feed(double target[], double flags[], // G2, G3
 /*--- homing and canned cycles ---*/
 
 uint8_t cm_return_to_home(void);					// G28
-uint8_t cm_homing_cycle(void);						// G28.1
+uint8_t cm_homing_cycle(void);						// G28.1 homing cycle
 uint8_t cm_homing_callback(void);					// G28.1 main loop callback
 
 #endif

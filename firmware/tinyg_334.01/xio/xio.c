@@ -116,7 +116,7 @@ void xio_init_dev(uint8_t dev, 					// device number
 	// bind functions to device structure
 	ds[dev].x_open = x_open;	
 	ds[dev].x_cntl = x_cntl;
-//	ds[dev].x_rctl = x_rctl;
+//	ds[dev].x_rctl = x_rctl;					// reserved for read ioctl function
 	ds[dev].x_putc = x_putc;
 	ds[dev].x_getc = x_getc;
 	ds[dev].x_gets = x_gets;

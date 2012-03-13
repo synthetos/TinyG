@@ -80,7 +80,7 @@ void cm_exec_spindle_control(uint8_t spindle_mode)
 
 uint8_t cm_set_spindle_speed(double speed)
 {
-//	if (speed > gm.max_spindle speed) {
+//	if (speed > cfg.max_spindle speed) {
 //		return (TG_MAX_SPINDLE_SPEED_EXCEEDED);
 //	}
 	cm_set_spindle_speed_parameter(speed);

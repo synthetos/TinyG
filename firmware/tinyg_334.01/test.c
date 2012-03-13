@@ -86,7 +86,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
-	xio_queue_RX_string_usb("$defa=1\n");
+//	xio_queue_RX_string_usb("$defa=1\n");
 
 //	xio_queue_RX_string_usb("N6 G92X0.327Y-33.521Z-1.000\n");
 //	xio_queue_RX_string_usb("N7 G0Z4.000\n");

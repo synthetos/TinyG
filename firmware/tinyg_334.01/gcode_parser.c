@@ -410,6 +410,8 @@ static uint8_t _check_gcode_block()
 	// earlier line), and a group 0 G-code that uses axis words appears on the 
 	// line, the activity of the group 1 G-code is suspended for that line. 
 	// The axis word-using G-codes from group 0 are G10, G28, G30, and G92"
+
+// These tests omitted from 0.93 pending fuurther testing
 //	if ((gp.modals[MODAL_GROUP_G0] == true) && (gp.modals[MODAL_GROUP_G1] == true)) {
 //		return (TG_MODAL_GROUP_VIOLATION);
 //	}

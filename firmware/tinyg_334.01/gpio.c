@@ -147,9 +147,7 @@ static void _switch_isr_helper(uint8_t sw_flag)
 		gpio.sw_thrown = true;					// triggers the switch handler tasks
 		gpio.sw_flags[sw_flag] = true;
 		gpio.sw_count = SW_LOCKOUT_TICKS;		// start the debounce lockout timer
-
-//		if (cm.homing_state == HOMING_IN_CYCLE) {// true if currently in homing cycle
-		if (cm.cycle_state == CYCLE_HOMING) {
+		if (cm.cycle_state == CYCLE_HOMING) {	// true if currently in homing cycle
 			sig_feedhold();
 		} else {
 			sig_abort();
