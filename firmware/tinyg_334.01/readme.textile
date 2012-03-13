@@ -1,5 +1,4 @@
-Readme for TinyG Release 0.93
---------------------------------
+h2.Readme for TinyG Release 0.93
 
 Release 0.93 is the last planned pre-production release for TinyG. Many things have been fixed since 0.92 and major new functionality has been added. At this point we think the code base is pretty solid.
 
@@ -28,6 +27,6 @@ New functionality added in 0.93:
 * Restore "factory" default settings using the $defaults=1 command
 * Enhanced help functions - type 'h' at the command line
 
-See the Synthetos website for more details.
-http://www.synthetos.com/wiki/index.php?title=Projects:TinyG
-https://www.synthetos.com/
+See the "Synthetos":https://www.synthetos.com/ website and TinyG wiki for more details.
+"TinyG Wiki":http://www.synthetos.com/wiki/index.php?title=Projects:TinyG
+
