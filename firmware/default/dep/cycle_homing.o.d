@@ -15,7 +15,7 @@ cycle_homing.o: ../cycle_homing.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../tinyg.h \
   ../config.h ../gcode_parser.h ../canonical_machine.h ../planner.h \
-  ../util.h ../gpio.h
+  ../report.h ../util.h ../gpio.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdlib.h:
 
@@ -56,6 +56,8 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 ../canonical_machine.h:
 
 ../planner.h:
+
+../report.h:
 
 ../util.h:
 

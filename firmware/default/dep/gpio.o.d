@@ -10,11 +10,13 @@ gpio.o: ../gpio.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../tinyg.h \
-  ../util.h ../system.h ../config.h ../controller.h \
+  ../util.h ../config.h ../controller.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h \
   c:\winavr-20100110\bin\../lib/gcc/avr/4.3.3/include/stdarg.h \
-  c:\winavr-20100110\bin\../lib/gcc/avr/4.3.3/include/stddef.h ../gpio.h \
-  ../canonical_machine.h
+  c:\winavr-20100110\bin\../lib/gcc/avr/4.3.3/include/stddef.h \
+  ../system.h ../gpio.h ../canonical_machine.h \
+  c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h \
+  ../xio/xio.h ../xio/xio_file.h ../xio/xio_usart.h ../xio/xio_signals.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h:
 
@@ -42,8 +44,6 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../util.h:
 
-../system.h:
-
 ../config.h:
 
 ../controller.h:
@@ -54,6 +54,18 @@ c:\winavr-20100110\bin\../lib/gcc/avr/4.3.3/include/stdarg.h:
 
 c:\winavr-20100110\bin\../lib/gcc/avr/4.3.3/include/stddef.h:
 
+../system.h:
+
 ../gpio.h:
 
 ../canonical_machine.h:
+
+c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h:
+
+../xio/xio.h:
+
+../xio/xio_file.h:
+
+../xio/xio_usart.h:
+
+../xio/xio_signals.h:

@@ -21,46 +21,65 @@
 #ifndef gpio_h
 #define gpio_h
 
-enum swFlags {	 // indexes into the limit switch flag array
-	SW_X_MIN, SW_X_MAX,
-	SW_Y_MIN, SW_Y_MAX,
-	SW_Z_MIN, SW_Z_MAX,
-	SW_A_MIN, SW_A_MAX,
-	SW_FLAG_SIZE // last one. Used for array sizing and for loops
-};
+/*
+ * Interrupt levels and vectors - The vectors are hard-wired to xmega ports
+ * If you change axis port assignments you need to chanage these, too.
+ */
+// Interrupt level: pick one:
+//#define GPIO1_INTLVL (PORT_INT0LVL_HI_gc|PORT_INT1LVL_HI_gc)
+#define GPIO1_INTLVL (PORT_INT0LVL_MED_gc|PORT_INT1LVL_MED_gc)
+//#define GPIO1_INTLVL (PORT_INT0LVL_LO_gc|PORT_INT1LVL_LO_gc)
+
+// port assignments for vectors
+#define X_MIN_ISR_vect PORTA_INT0_vect
+#define Y_MIN_ISR_vect PORTF_INT0_vect
+#define Z_MIN_ISR_vect PORTE_INT0_vect
+#define A_MIN_ISR_vect PORTD_INT0_vect
+
+#define X_MAX_ISR_vect PORTA_INT1_vect
+#define Y_MAX_ISR_vect PORTF_INT1_vect
+#define Z_MAX_ISR_vect PORTE_INT1_vect
+#define A_MAX_ISR_vect PORTD_INT1_vect
 
 /*
- * Global Scope Functions and Data
+ * Global Scope Definitions, Functions and Data
  */
 
-struct swStruct {						// limit and homing switch state
-	volatile uint8_t thrown;			// 0=idle, 1=switch thrown
-	volatile uint8_t count;				// lockout counter (debouncing)
-	volatile uint8_t flag[SW_FLAG_SIZE];// min/max flag array
+enum swFlags {	 			// indexes into sw_flag array
+	SW_MIN_X = 0,			// this group corresponds to XYZA values
+	SW_MIN_Y, 
+	SW_MIN_Z, 
+	SW_MIN_A, 
+
+	SW_MAX_X,				// this group corresponds to XYZA + SW_MAX_OFFSET
+	SW_MAX_Y,
+	SW_MAX_Z,
+	SW_MAX_A,
+	SW_SIZE 				// last one. Used for array sizing and for loops
 };
-struct swStruct sw;
+#define SW_OFFSET_TO_MAX 4
 
-void sw_init(void);
-uint8_t sw_handler(void);
-void sw_rtc_callback(void);
-void sw_clear_limit_switches(void);
-void sw_read_limit_switches(void);
-void sw_isr_helper(uint8_t flag);	// brought out for simulation purposes
+struct gpioStruct {							// switch state
+	volatile uint8_t sw_thrown;				// 1=thrown (Note 1)
+	volatile uint8_t sw_count;				// lockout counter (debouncing)
+	volatile uint8_t sw_flags[SW_SIZE];		// switch flag array
+};
+struct gpioStruct gpio;
 
-uint8_t sw_any_thrown(void);		// return TRUE if any switch is thrown
-uint8_t sw_xmin_thrown(void);		// return TRUE is X min is thrown
-uint8_t sw_xmax_thrown(void);
-uint8_t sw_ymin_thrown(void);
-uint8_t sw_ymax_thrown(void);
-uint8_t sw_zmin_thrown(void);
-uint8_t sw_zmax_thrown(void);
-uint8_t sw_amin_thrown(void);
-uint8_t sw_amax_thrown(void);
+// Note 1: The term "thrown" is used becuase switches could be normally-open 
+//		   or normally-closed. "Thrown" means activated or hit.
 
-void en_init(void);
-void en_bit_on(uint8_t b);
-void en_bit_off(uint8_t b);
-void en_write(uint8_t b);
-void en_toggle(uint8_t b);
+void gpio_init(void);
+void gpio_clear_switches(void);
+void gpio_read_switches(void);
+void gpio_set_switch(uint8_t sw_flag);
+uint8_t gpio_get_switch(uint8_t sw_flag);		// test specific switch by arg
+uint8_t gpio_switch_handler(void);
+void gpio_switch_timer_callback(void);
+
+void gpio_set_bit_on(uint8_t b);
+void gpio_set_bit_off(uint8_t b);
+void gpio_write_port(uint8_t b);
+void gpio_toggle_port(uint8_t b);
 
 #endif

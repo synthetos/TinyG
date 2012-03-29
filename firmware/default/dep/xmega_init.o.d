@@ -1,4 +1,4 @@
-xmega_init.o: ../xmega_init.c \
+xmega_init.o: ../xmega/xmega_init.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/io.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/sfr_defs.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/inttypes.h \
@@ -10,7 +10,7 @@ xmega_init.o: ../xmega_init.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h \
-  ../system.h ../xmega_init.h
+  ../xmega/../system.h ../xmega/xmega_init.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/io.h:
 
@@ -34,6 +34,6 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h:
 
-../system.h:
+../xmega/../system.h:
 
-../xmega_init.h:
+../xmega/xmega_init.h:

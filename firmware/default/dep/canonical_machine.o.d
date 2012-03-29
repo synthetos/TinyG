@@ -16,9 +16,9 @@ canonical_machine.o: ../canonical_machine.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../tinyg.h \
-  ../config.h ../controller.h ../gcode_parser.h ../canonical_machine.h \
-  ../plan_arc.h ../planner.h ../stepper.h ../spindle.h ../util.h \
-  ../gpio.h
+  ../util.h ../config.h ../controller.h ../gcode_parser.h \
+  ../canonical_machine.h ../arc.h ../planner.h ../stepper.h ../spindle.h \
+  ../report.h ../gpio.h ../system.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdlib.h:
 
@@ -56,6 +56,8 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../tinyg.h:
 
+../util.h:
+
 ../config.h:
 
 ../controller.h:
@@ -64,7 +66,7 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../canonical_machine.h:
 
-../plan_arc.h:
+../arc.h:
 
 ../planner.h:
 
@@ -72,6 +74,8 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../spindle.h:
 
-../util.h:
+../report.h:
 
 ../gpio.h:
+
+../system.h:

@@ -16,9 +16,9 @@ stepper.o: ../stepper.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h ../xio.h \
-  ../xio_file.h ../xio_usart.h ../xio_signals.h ../tinyg.h ../util.h \
-  ../system.h ../config.h ../stepper.h ../planner.h
+  c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h \
+  ../xio/xio.h ../xio/xio_file.h ../xio/xio_usart.h ../xio/xio_signals.h \
+  ../tinyg.h ../util.h ../system.h ../config.h ../stepper.h ../planner.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdlib.h:
 
@@ -56,13 +56,13 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h:
 
-../xio.h:
+../xio/xio.h:
 
-../xio_file.h:
+../xio/xio_file.h:
 
-../xio_usart.h:
+../xio/xio_usart.h:
 
-../xio_signals.h:
+../xio/xio_signals.h:
 
 ../tinyg.h:
 

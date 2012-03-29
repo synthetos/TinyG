@@ -1,4 +1,4 @@
-xio_usb.o: ../xio_usb.c \
+xio_usb.o: ../xio/xio_usb.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/inttypes.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/stdint.h \
@@ -13,9 +13,9 @@ xio_usb.o: ../xio_usb.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h ../xio.h \
-  ../xio_file.h ../xio_usart.h ../xio_signals.h ../xmega_interrupts.h \
-  ../gpio.h
+  c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h \
+  ../xio/xio.h ../xio/xio_file.h ../xio/xio_usart.h ../xio/xio_signals.h \
+  ../xio/../xmega/xmega_interrupts.h ../xio/../gpio.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -47,14 +47,14 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h:
 
-../xio.h:
+../xio/xio.h:
 
-../xio_file.h:
+../xio/xio_file.h:
 
-../xio_usart.h:
+../xio/xio_usart.h:
 
-../xio_signals.h:
+../xio/xio_signals.h:
 
-../xmega_interrupts.h:
+../xio/../xmega/xmega_interrupts.h:
 
-../gpio.h:
+../xio/../gpio.h:

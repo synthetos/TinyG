@@ -17,10 +17,11 @@ config.o: ../config.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../tinyg.h \
-  ../config.h ../settings.h ../settings/settings_zen7x12.h \
-  ../controller.h ../gcode_parser.h ../canonical_machine.h ../planner.h \
-  ../stepper.h ../util.h ../help.h ../system.h ../xio.h ../xio_file.h \
-  ../xio_usart.h ../xio_signals.h ../xmega_eeprom.h
+  ../util.h ../config.h ../report.h ../settings.h \
+  ../settings/settings_zen7x12.h ../controller.h ../canonical_machine.h \
+  ../gcode_parser.h ../planner.h ../stepper.h ../test.h ../help.h \
+  ../system.h ../xio/xio.h ../xio/xio_file.h ../xio/xio_usart.h \
+  ../xio/xio_signals.h ../xmega/xmega_eeprom.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/ctype.h:
 
@@ -60,7 +61,11 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../tinyg.h:
 
+../util.h:
+
 ../config.h:
+
+../report.h:
 
 ../settings.h:
 
@@ -68,26 +73,26 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../controller.h:
 
-../gcode_parser.h:
-
 ../canonical_machine.h:
+
+../gcode_parser.h:
 
 ../planner.h:
 
 ../stepper.h:
 
-../util.h:
+../test.h:
 
 ../help.h:
 
 ../system.h:
 
-../xio.h:
+../xio/xio.h:
 
-../xio_file.h:
+../xio/xio_file.h:
 
-../xio_usart.h:
+../xio/xio_usart.h:
 
-../xio_signals.h:
+../xio/xio_signals.h:
 
-../xmega_eeprom.h:
+../xmega/xmega_eeprom.h:

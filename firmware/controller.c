@@ -2,7 +2,7 @@
  * controller.c - tinyg controller and top level parser
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2011 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -25,104 +25,95 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* See tinyg_docs.txt for general notes. 
- * See tinyg_docs_developers.txt for coding details and explanations of:
- *	- basic controller operation and design notes
- *	- modeness (or not)
- *	- how to code continuations for use with the controller
- *
- * For the most current and complete info see:
- *	   http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info:
- *		(yes, the trailing ':' is required!)
+/* See the wiki for module details and additional information:
+ *	 http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info
  */
 
 #include <ctype.h>				// for parsing
+#include <string.h>				// for memset
 #include <stdio.h>				// precursor for xio.h
 #include <avr/pgmspace.h>		// precursor for xio.h
 
-#include "tinyg.h"
-#include "config.h"
-#include "settings.h"
+#include "tinyg.h"				// #1 unfortunately, there are some dependencies
+#include "util.h"				// #2
+#include "config.h"				// #3
 #include "controller.h"
+#include "settings.h"
+#include "json_parser.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"	// uses homing cycle
-#include "plan_arc.h"
+#include "arc.h"
 #include "planner.h"
 #include "stepper.h"			// needed for stepper kill and terminate
-#include "util.h"
+#include "report.h"
+#include "test.h"
 
 #include "system.h"
 #include "gpio.h"
 #include "help.h"
-#include "xio.h"
+#include "xio/xio.h"
 
 #include <util/delay.h>			// debug
 
-/* 
- * Canned gcode files for testing - enable only one of the U set
- * 	If you want to enable more than one of these you need to change the 
- *	name of the char[] array to something other than "gcode_file" and edit
- *	_tg_test_T or _tg_test_U to recognize it.
- */
-// 'T' test
-#include "gcode/gcode_startup_tests.h" // system tests and other assorted test code
-// 'U' test
-//#include "gcode/gcode_test001.h"
-#include "gcode/gcode_test_002.h"
-//#include "gcode/gcode_star_1x1.h"
-//#include "gcode/gcode_square_pocket.h"
-//#include "gcode/gcode_reilly_111115.h"
 
-static void _tg_controller_HSM(void);
-static uint8_t _tg_parser(char * buf);
-static uint8_t _tg_run_prompt(void);
-static uint8_t _tg_read_next_line(void);
-static void _tg_prompt(void);
-static void _tg_set_mode(uint8_t mode);
-static void _tg_set_active_source(uint8_t dev);
-static uint8_t _tg_kill_handler(void);
-static uint8_t _tg_term_handler(void);
-static uint8_t _tg_pause_handler(void);
-static uint8_t _tg_resume_handler(void);
-static uint8_t _tg_reset(void);
-static uint8_t _tg_test_T(void);
-static uint8_t _tg_test_U(void);
-static void _tg_canned_startup(void);
+static void _controller_HSM(void);
+static uint8_t _sync_to_tx_buffer(void);
+static uint8_t _sync_to_planner(void);
+static uint8_t _dispatch(void);
+static void _dispatch_return(uint8_t status, char *buf);
+static void _prompt_without_message(void);
+static void _prompt_with_message(uint8_t status, char *buf);
+
+static uint8_t _abort_handler(void);
+static uint8_t _feedhold_handler(void);
+static uint8_t _cycle_start_handler(void);
 
 /*
  * tg_init() - controller init
- * tg_alive() - announce that TinyG is alive
+ * tg_reset() - application-level reset
+ * tg_announce() - announce that TinyG is alive
+ * tg_ready() - final part of announcement - syste is ready fo input
  * tg_application_startup() - application start and restart
  *
  *	The controller init is split in two: the actual init, and tg_alive()
- *	which should be issued once the rest of he application is initialized.
+ *	which should be issued once the rest of the application is initialized.
  */
 
 void tg_init(uint8_t default_src) 
 {
+	tg.version = TINYG_VERSION_NUMBER;
+	tg.build = TINYG_BUILD_NUMBER;
+
 	tg.default_src = default_src;
 	xio_set_stdin(tg.default_src);
 	xio_set_stdout(tg.default_src);
 	xio_set_stderr(STD_ERROR);
-	_tg_set_active_source(tg.default_src);	// set initial active source
-	_tg_set_mode(TG_GCODE_MODE);			// set initial operating mode
+	tg_set_active_source(tg.default_src);	// set initial active source
+	tg.communications_mode = TG_TEXT_MODE;
 }
 
-void tg_alive(void)
+void tg_reset(void)
 {
-	fprintf_P(stderr, PSTR("#### "));
-	tg_print_version_string();
-	fprintf_P(stderr, PSTR(" ####\nType h for help\n"));
-	_tg_prompt();
+	mp_flush_planner();
+	tg_application_reset();
+}
+
+void tg_announce(void)
+{
+	fprintf_P(stderr, PSTR("#### TinyG version %0.2f (build %0.2f) \"%s\" ####\n" ), 
+		tg.version, tg.build, TINYG_VERSION_NAME);
+	fprintf_P(stderr,PSTR("#### %s Profile ####\n"), TINYG_CONFIGURATION_PROFILE);
+}
+
+void tg_ready(void)
+{
+	fprintf_P(stderr, PSTR("Type h for help\n"));
+	_prompt_without_message();
 }
 
 void tg_application_startup(void)
 {
-	tg.status = TG_OK;
-	if (cfg.homing_mode == TRUE) { 	// conditionally run startup homing
-		tg.status = cm_homing_cycle();
-	}
-	_tg_canned_startup();			// pre-load input buffers (for test)
+	tg_canned_startup();			// pre-load input buffers (for test)
 }
 
 /* 
@@ -133,123 +124,281 @@ void tg_application_startup(void)
  * Tasks that are dependent on completion of lower-level tasks must be
  * later in the list than the task(s) they are dependent upon. 
  *
- * Tasks must be written as continuations as they will be called 
- * repeatedly, and are called even if they are not currently active. 
+ * Tasks must be written as continuations as they will be called repeatedly, 
+ * and are called even if they are not currently active. 
  *
- * The DISPATCH macro calls the function and returns to the controller 
- * parent if not finished (TG_EAGAIN), preventing later routines from 
- * running (they remain blocked). Any other condition - OK or ERR - 
- * drops through and runs the next routine in the list.
+ * The DISPATCH macro calls the function and returns to the controller parent 
+ * if not finished (TG_EAGAIN), preventing later routines from running 
+ * (they remain blocked). Any other condition - OK or ERR - drops through 
+ * and runs the next routine in the list.
  *
  * A routine that had no action (i.e. is OFF or idle) should return TG_NOOP
+ *
+ * Useful reference on state machines:
+ * http://johnsantic.com/comp/state.html, "Writing Efficient State Machines in C"
  */
 #define	DISPATCH(func) if (func == TG_EAGAIN) return; 
 
 void tg_controller()
 {
-	while (TRUE) {
-		_tg_controller_HSM();
-	}
+	while (TRUE) { _controller_HSM();}
 }
 
-static void _tg_controller_HSM()
+static void _controller_HSM()
 {
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
-	DISPATCH(sw_handler());			// limit and homing switch handler
-	DISPATCH(_tg_kill_handler());	// complete processing of ENDs (M2)
-	DISPATCH(_tg_term_handler());	// complete processing of ENDs (M2)
-	DISPATCH(_tg_pause_handler());	// complete processing of STOPs
-	DISPATCH(_tg_resume_handler());	// complete processing of STARTs
+	DISPATCH(gpio_switch_handler());	// limit and homing switch handler
+	DISPATCH(_abort_handler());
+	DISPATCH(_feedhold_handler());
+	DISPATCH(_cycle_start_handler());
 
 //----- planner hierarchy for gcode and cycles -------------------------//
-	DISPATCH(cm_try_status_report());// send status report
-	DISPATCH(ar_run_arc());			// arc generation runs behind lines
-	DISPATCH(cm_run_homing_cycle());// homing cycle
+	DISPATCH(rpt_status_report_callback());	// conditionally send status report
+	DISPATCH(mp_plan_hold_callback());		// plan a feedhold 
+	DISPATCH(mp_end_hold_callback());		// end a feedhold
+	DISPATCH(ar_arc_callback());			// arc generation runs behind lines
+	DISPATCH(cm_homing_callback());			// G28.1 continuation
+	DISPATCH(cm_return_to_home_callback());	// G28 continuation
 
 //----- command readers and parsers ------------------------------------//
-	DISPATCH(_tg_run_prompt());		// manage sending command line prompt
-	DISPATCH(_tg_read_next_line());	// read and execute next command
+	DISPATCH(_sync_to_tx_buffer());		// sync with TX buffer (pseudo-blocking)
+	DISPATCH(_sync_to_planner());		// sync with planning queue
+	DISPATCH(_dispatch());				// read and execute next command
 }
 
-/* 
- * _tg_read_next_line() - non-blocking line read from active input device
+/***************************************************************************** 
+ * _dispatch() 			- dispatch line read from active input device
+ * _dispatch_return()	- perform returns and prompting for commands
  *
- *	Reads next command line and dispatches to currently active parser
- *	Manages various device and mode change conditions
- *	Also responsible for prompts and for flow control. 
- *	Accepts commands if the move queue has room - halts if it doesn't
+ *	Reads next command line and dispatches to relevant parser or action
+ *	Accepts commands if the move queue has room - EAGAINS if it doesn't
+ *	Manages cutback to serial input from file devices (EOF)
+ *	Also responsible for prompts and for flow control 
  */
 
-static uint8_t _tg_read_next_line()
+static uint8_t _dispatch()
 {
-	if (mp_test_write_buffer() == FALSE) { 	// got a buffer you can use?
-		return (TG_EAGAIN);
-	}
+	uint8_t status;
+
 	// read input line or return if not a completed line
 	// xio_gets() is a non-blocking workalike of fgets()
-	if ((tg.status = xio_gets(tg.src, tg.buf, sizeof(tg.buf))) == TG_OK) {
-		tg.status = _tg_parser(tg.buf);	// dispatch to active parser
-		tg.prompted = FALSE;			// signals ready-for-next-line
+	if ((status = xio_gets(tg.src, tg.in_buf, sizeof(tg.in_buf))) != TG_OK) {
+		if (status == TG_EOF) {					// EOF can come from file devices only
+			fprintf_P(stderr, PSTR("End of command file\n"));
+			tg_reset_source();					// reset to default source
+		}
+		// Note that TG_EAGAIN, TG_NOOP etc. will just flow through
+		return (status);
 	}
-	if (tg.status == TG_QUIT) {			// handle case where parser detected QUIT
-		_tg_set_mode(TG_TEST_MODE);
+
+	// dispatch the new text line
+	switch (toupper(tg.in_buf[0])) {
+//		case '^': { sig_abort(); break; }		// debug char for abort tests
+//		case '@': { sig_feedhold(); break;}		// debug char for feedhold tests
+//		case '#': { sig_cycle_start(); break;}	// debug char for cycle start tests
+
+		case NUL: { 							// blank line (just a CR)
+			_dispatch_return(TG_OK, tg.in_buf); 
+			break;
+		}
+		case 'H': { 							// help screen
+			help_print_general_help();
+			_dispatch_return(TG_OK, tg.in_buf);
+			break;
+		}
+		case '$': case '?':{ 					// text-mode config and query
+			if (tg.communications_mode != TG_GRBL_MODE) {
+				tg.communications_mode = TG_TEXT_MODE;
+			}
+			_dispatch_return(cfg_config_parser(tg.in_buf), tg.in_buf);
+			break;
+		}
+		case '{': { 							// JSON input
+			tg.communications_mode = TG_JSON_MODE;
+			_dispatch_return(js_json_parser(tg.in_buf, tg.out_buf), tg.out_buf); 
+			break;
+		}
+		default: {								// Gcode - is anything else
+			if (tg.communications_mode == TG_JSON_MODE) {
+				tg_make_json_gcode_response(gc_gcode_parser(tg.in_buf), tg.in_buf, tg.out_buf);
+				_dispatch_return(NUL, tg.out_buf);	// status is ignored
+			} else {
+				_dispatch_return(gc_gcode_parser(tg.in_buf), tg.in_buf);
+			}
+		}
 	}
-	if (tg.status == TG_EOF) {			//(EOF can come from file devices only)
-		fprintf_P(stderr, PSTR("End of command file\n"));
-		tg_reset_source();				// reset to default src
+	return (TG_OK);
+}
+
+void _dispatch_return(uint8_t status, char *buf)
+{
+	if (tg.communications_mode == TG_JSON_MODE) {
+		fprintf(stderr, "%s", buf);
+		return;
 	}
-	// Note that TG_OK, TG_EAGAIN, TG_NOOP etc. will just flow through
-	return (tg.status);
+	if (tg.communications_mode == TG_GRBL_MODE) {
+		if (status == TG_OK) {
+			fprintf_P(stderr, PSTR("ok"));
+		} else {
+			fprintf_P(stderr, PSTR("err"));
+		}
+		return;
+	} 
+	if (tg.communications_mode == TG_TEXT_MODE) {
+		// for these status codes just send a prompt 
+		switch (status) {
+			case TG_OK: case TG_EAGAIN: case TG_NOOP: { 
+				_prompt_without_message(); 
+				break; 
+			}
+			default: { 	// for everything else
+				_prompt_with_message(status, buf); 
+				break;
+			}
+		}
+	}
 }
 
 /* 
- * _tg_parser() - process top-level serial input 
- *
- *	tg_parser is the top-level of the input parser tree; dispatches other 
- *	parsers. Calls lower level parser based on mode
- *
- *	Keeps the system MODE, one of:
- *		- gcode mode
- *		- direct drive mode
- *		- test mode
- *
- *	In test mode it auto-detects mode by first character of input buffer
- *	Quits from a parser are handled by the controller (not individual parsers)
- *	Preserves and passes through return codes (status codes) from lower levels
+ * _sync_to_tx_buffer() - return eagain if TX queue is backed up
+ * _sync_to_planner() - return eagain if planner is not ready for a new command
  */
 
-static uint8_t _tg_parser(char * buf)
+static uint8_t _sync_to_tx_buffer()
 {
-	// auto-detect operating mode if not already set 
-	if (tg.mode == TG_TEST_MODE) {
-		switch (toupper(buf[0])) {
-			case 'G': case 'M': case 'N': case 'F': case 'Q': 
-			case '(': case '%': case '\\': case '$':
-					  _tg_set_mode(TG_GCODE_MODE); break;
-			case 'T': return (_tg_test_T());	// run whatever test u want
-			case 'U': return (_tg_test_U());	// run 2nd test you want
-			case 'R': return (_tg_reset());
-		//	case 'D': _tg_set_mode(TG_DIRECT_DRIVE_MODE); break;
-		//	case 'I': return (_tg_reserved());	// reserved
-		//	case 'V': return (_tg_reserved());	// reserved
-			case 'H': help_print_test_mode_help(); return (TG_OK);
-			default:  _tg_set_mode(TG_TEST_MODE); break;
-		}
+	if ((xio_get_tx_bufcount_usart(ds[XIO_DEV_USB].x) >= XOFF_TX_LO_WATER_MARK)) {
+		return (TG_EAGAIN);
 	}
-	// dispatch based on mode
-	tg.status = TG_OK;
-	switch (tg.mode) {
-		case TG_GCODE_MODE: tg.status = gc_gcode_parser(buf); break;
-	//	case TG_DIRECT_DRIVE_MODE: tg.status = dd_parser(buf); break;
+	return (TG_OK);
+}
+
+static uint8_t _sync_to_planner()
+{
+	if (mp_test_write_buffer() == FALSE) { 		// got a buffer you can use?
+		return (TG_EAGAIN);
 	}
-	return (tg.status);
+	return (TG_OK);
 }
 
 /*
- * tg_reset_source()	Reset source to default input device (see note)
- * _tg_set_source()		Set current input source
- * _tg_set_mode()		Set current operating mode
- * _tg_reset()			Run power-up resets, including homing (table zero)
+ * tg_make_json_gcode_response() - generate JSON response object for Gcode
+ */
+void tg_make_json_gcode_response(uint8_t status, char *block, char *out_buf)
+{
+	cmdObj *cmd = cmd_array;
+
+	cmd_new_object(cmd);						// parent gcode response
+	sprintf_P(cmd->token, PSTR("gc"));
+	cmd->value_type = VALUE_TYPE_PARENT;
+	cmd++;
+
+	cmd_new_object(cmd);						// child gcode string echo
+	sprintf_P(cmd->token, PSTR("gc"));
+	sprintf(cmd->string_value, block);
+	cmd->value_type = VALUE_TYPE_STRING;
+	(cmd-1)->nx = cmd;
+	cmd++;
+
+	cmd_new_object(cmd);						// status as an integer
+	sprintf_P(cmd->token, PSTR("st"));
+	cmd->value = status;
+	cmd->value_type = VALUE_TYPE_INTEGER;
+	(cmd-1)->nx = cmd;
+	cmd++;
+
+	cmd_new_object(cmd);						// status as message
+	sprintf_P(cmd->token, PSTR("msg"));
+	tg_get_status_message(status, cmd->string_value);
+	cmd->value_type = VALUE_TYPE_STRING;
+	(cmd-1)->nx = cmd;
+
+	js_make_json_string(cmd_array, out_buf);
+}
+
+/**** Prompting **************************************************************
+ * tg_get_status_message()
+ * _prompt_with_message()
+ * _prompt_without_message()
+ *
+ *	Handles response formatting and prompt generation.
+ *	Aware of communications mode: COMMAND_LINE_MODE, JSON_MODE, GRBL_MODE
+ */
+
+/* The number of elements in the indexing array must match the # of strings
+ * Reference for putting display strings and string arrays in program memory:
+ * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
+ */
+char msg_stat00[] PROGMEM = "OK";
+char msg_stat01[] PROGMEM = "Error";
+char msg_stat02[] PROGMEM = "Eagain";
+char msg_stat03[] PROGMEM = "Noop";
+char msg_stat04[] PROGMEM = "Complete";
+char msg_stat05[] PROGMEM = "End of line";
+char msg_stat06[] PROGMEM = "End of file";
+char msg_stat07[] PROGMEM = "File not open";
+char msg_stat08[] PROGMEM = "Max file size exceeded";
+char msg_stat09[] PROGMEM = "No such device";
+char msg_stat10[] PROGMEM = "Buffer empty";
+char msg_stat11[] PROGMEM = "Buffer full - fatal";
+char msg_stat12[] PROGMEM = "Buffer full - non-fatal";
+char msg_stat13[] PROGMEM = "Quit";
+char msg_stat14[] PROGMEM = "Unrecognized command";
+char msg_stat15[] PROGMEM = "Number range error";
+char msg_stat16[] PROGMEM = "Expected command letter";
+char msg_stat17[] PROGMEM = "JSON sysntax error";
+char msg_stat18[] PROGMEM = "Input exceeds max length";
+char msg_stat19[] PROGMEM = "Output exceeds max length";
+char msg_stat20[] PROGMEM = "Internal error";
+char msg_stat21[] PROGMEM = "Bad number format";
+char msg_stat22[] PROGMEM = "Floating point error";
+char msg_stat23[] PROGMEM = "Arc specification error";
+char msg_stat24[] PROGMEM = "Zero length line";
+char msg_stat25[] PROGMEM = "Gcode block skipped";
+char msg_stat26[] PROGMEM = "Gcode input error";
+char msg_stat27[] PROGMEM = "Gcode feedrate error";
+char msg_stat28[] PROGMEM = "Gcode axis word missing";
+char msg_stat29[] PROGMEM = "Gcode modal group violation";
+char msg_stat30[] PROGMEM = "Homing cycle failed";
+char msg_stat31[] PROGMEM = "Max travel exceeded";
+char msg_stat32[] PROGMEM = "Max spindle speed exceeded";
+PGM_P msgStatus[] PROGMEM = {	
+	msg_stat00, msg_stat01, msg_stat02, msg_stat03, msg_stat04, 
+	msg_stat05, msg_stat06, msg_stat07, msg_stat08, msg_stat09,
+	msg_stat10, msg_stat11, msg_stat12, msg_stat13, msg_stat14, 
+	msg_stat15, msg_stat16, msg_stat17, msg_stat18, msg_stat19,
+	msg_stat20, msg_stat21, msg_stat22, msg_stat23, msg_stat24,
+	msg_stat25, msg_stat26, msg_stat27, msg_stat28, msg_stat29,
+	msg_stat30, msg_stat31, msg_stat32
+};
+
+char pr1[] PROGMEM = "tinyg";
+char pr_in[] PROGMEM = "[inch] ok> ";
+char pr_mm[] PROGMEM = "[mm] ok> ";
+
+char *tg_get_status_message(uint8_t status, char *msg) 
+{
+	strncpy_P(msg,(PGM_P)pgm_read_word(&msgStatus[status]), STATUS_MESSAGE_LEN);
+	return (msg);
+}
+
+static void _prompt_with_message(uint8_t status, char *buf)
+{
+	fprintf_P(stderr, PSTR("%S: %s \n"),(PGM_P)pgm_read_word(&msgStatus[status]),buf);
+	_prompt_without_message();
+}
+
+static void _prompt_without_message()
+{
+	if (cm_get_units_mode() == INCHES) {
+		fprintf_P(stderr, PSTR("%S%S"), pr1, pr_in);
+	} else {
+		fprintf_P(stderr, PSTR("%S%S"), pr1, pr_mm);
+	}
+}
+
+/**** Input source controls ****
+ * tg_reset_source() - reset source to default input device (see note)
+ * tg_set_active_source() - set current input source
  *
  * Note: Once multiple serial devices are supported reset_source() should
  *	be expanded to also set the stdout/stderr console device so the prompt
@@ -258,302 +407,45 @@ static uint8_t _tg_parser(char * buf)
 
 void tg_reset_source()
 {
-	_tg_set_active_source(tg.default_src);
+	tg_set_active_source(tg.default_src);
 }
 
-static void _tg_set_active_source(uint8_t dev)
+void tg_set_active_source(uint8_t dev)
 {
 	tg.src = dev;							// dev = XIO device #. See xio.h
 	if (tg.src == XIO_DEV_PGM) {
-		tg.prompt_disabled = TRUE;
+		tg.prompt_enabled = false;
 	} else {
-		tg.prompt_disabled = FALSE;
+		tg.prompt_enabled = true;
 	}
 }
 
-static void _tg_set_mode(uint8_t mode)
-{
-	tg.mode = mode;
-}
-
-static uint8_t _tg_reset(void)
-{
-	tg_application_startup();	// application startup sequence
-	return (TG_OK);
-}
-
-/* 
- * _tg_run_prompt()		Conditionally display command line prompt
- * _tg_prompt() 		Display command line prompt
- *
- * We only want a prompt if the following conditions apply:
- *	- prompts are enabled (usually not enabled for direct-from-file reads)
- *	- system is ready for the next line of input
- *	- no prompt has been issued (issue only one)
- *
- * References for putting display strings in program memory:
- *	http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
- *	http://johnsantic.com/comp/state.html, "Writing Efficient State Machines in C"
+/**** Main loop signal handlers ****
+ * _abort_handler()
+ * _feedhold_handler()
+ * _cycle_start_handler()
  */
 
-static uint8_t _tg_run_prompt()
+static uint8_t _abort_handler(void)
 {
-	if ((tg.prompt_disabled) || (tg.prompted)) { 
-		return (TG_NOOP);			// exit w/continue if already prompted
-	}
-	_tg_prompt();
-	return (TG_OK);
+	if (sig.sig_abort == false) { return (TG_NOOP);}
+	sig.sig_abort = false;
+	tg_reset();							// stop all activity and reset
+	return (TG_EAGAIN);					// best to restart the control loop
 }
 
-char tgModeStringGCode[] PROGMEM = "";	// put strings in program memory
-char tgModeStringDumb[] PROGMEM = "DUMB";
-char tgModeStringTest[] PROGMEM = "TEST"; 
-
-PGM_P tgModeStrings[] PROGMEM = {	// put string pointer array in prog mem
-	tgModeStringGCode,
-	tgModeStringDumb,
-	tgModeStringTest
-};
-
-static void _tg_prompt()
+static uint8_t _feedhold_handler(void)
 {
-	fprintf_P(stderr, PSTR("tinyg%S"),(PGM_P)pgm_read_word(&tgModeStrings[tg.mode]));
-	if (cm_get_inches_mode() == TRUE) {
-		fprintf_P(stderr, PSTR("[inch] ok> "));
-	} else {
-		fprintf_P(stderr, PSTR("[mm] ok> "));
-	}
-//	fprintf_P(stderr, PSTR("ok\n"));	// send a grbl response
-	tg.prompted = TRUE;					// set prompt state
+	if (sig.sig_feedhold == false) { return (TG_NOOP);}
+	sig.sig_feedhold = false;
+	cm_feedhold();
+	return (TG_EAGAIN);
 }
 
-/*
- * _tg_kill_handler()		Main loop signal handlers
- * _tg_term_handler()
- * _tg_pause_handler()
- * _tg_resume_handler()
- */
-
-static uint8_t _tg_kill_handler(void)
+static uint8_t _cycle_start_handler(void)
 {
-	if (sig.sig_kill_flag == TRUE) { 
-		sig.sig_kill_flag = FALSE;
-		tg_reset_source();
-		(void)cm_async_end();	// stop computing and generating motions
-		return (TG_EAGAIN);		// best to restart the control loop
-	} else {
-		return (TG_NOOP);		
-	}		
+	if (sig.sig_cycle_start == FALSE) { return (TG_NOOP);}
+	sig.sig_cycle_start = FALSE;
+	cm_cycle_start();
+	return (TG_EAGAIN);
 }
-
-static uint8_t _tg_term_handler(void)
-{
-	return (_tg_kill_handler());
-}
-
-static uint8_t _tg_pause_handler(void)
-{
-	if (sig.sig_pause_flag == TRUE) { 
-		sig.sig_pause_flag = FALSE;
-		(void)cm_async_stop();
-		return (TG_EAGAIN);
-	} else {
-		return (TG_NOOP);		
-	}		
-}
-
-static uint8_t _tg_resume_handler(void)
-{
-	if (sig.sig_resume_flag == TRUE) {
-		sig.sig_resume_flag = FALSE;
-		(void)cm_async_start();
-		return (TG_EAGAIN);
-	} else {
-		return (TG_NOOP);		
-	}		
-}
-
-/*
- * tg_print_version_string()
- * 	see tinyg.h for TINYG_VERSION string
- */
-void tg_print_version_string(void)
-{
-//	fprintf_P(stderr, PSTR("#### TinyG %S ####\n"), (PSTR(TINYG_VERSION)));
-	fprintf_P(stderr, PSTR("TinyG %S"), (PSTR(TINYG_VERSION)));
-}
-
-/*
- * tg_print_status() - Send status message to stderr.
- */
-char tgs00[] PROGMEM = "{00} OK";	// put strings in program memory
-char tgs01[] PROGMEM = "{01} ERROR";
-char tgs02[] PROGMEM = "{02} EAGAIN";
-char tgs03[] PROGMEM = "{03} NOOP";
-char tgs04[] PROGMEM = "{04} COMPLETE";
-char tgs05[] PROGMEM = "{05} End of line";
-char tgs06[] PROGMEM = "{06} End of file";
-char tgs07[] PROGMEM = "{07} File not open";
-char tgs08[] PROGMEM = "{08} Max file size exceeded";
-char tgs09[] PROGMEM = "{09} No such device";
-char tgs10[] PROGMEM = "{10} Buffer empty";
-char tgs11[] PROGMEM = "{11} Buffer full - fatal";
-char tgs12[] PROGMEM = "{12} Buffer full - non-fatal";
-char tgs13[] PROGMEM = "{13} QUIT";
-char tgs14[] PROGMEM = "{14} Unrecognized command";
-char tgs15[] PROGMEM = "{15} Expected command letter";
-char tgs16[] PROGMEM = "{16} Unsupported statement";
-char tgs17[] PROGMEM = "{17} Input error";
-char tgs18[] PROGMEM = "{18} Parameter not found";
-char tgs19[] PROGMEM = "{19} Parameter under range";
-char tgs20[] PROGMEM = "{20} Parameter over range";
-char tgs21[] PROGMEM = "{21} Bad number format";
-char tgs22[] PROGMEM = "{22} Floating point error";
-char tgs23[] PROGMEM = "{23} Motion control error";
-char tgs24[] PROGMEM = "{24} Arc specification error";
-char tgs25[] PROGMEM = "{25} Zero length line";
-char tgs26[] PROGMEM = "{26} Maximum feed rate exceeded";
-char tgs27[] PROGMEM = "{27} Maximum seek rate exceeded";
-char tgs28[] PROGMEM = "{28} Maximum table travel exceeded";
-char tgs29[] PROGMEM = "{29} Maximum spindle speed exceeded";
-char tgs30[] PROGMEM = "{30} Failed to converge";
-char tgs31[] PROGMEM = "{31} Unused error string";
-
-// put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
-PGM_P tgStatus[] PROGMEM = {	
-	tgs00, tgs01, tgs02, tgs03, tgs04, tgs05, tgs06, tgs07, tgs08, tgs09,
-	tgs10, tgs11, tgs12, tgs13, tgs14, tgs15, tgs16, tgs17, tgs18, tgs19,
-	tgs20, tgs21, tgs22, tgs23, tgs24, tgs25, tgs26, tgs27, tgs28, tgs29,
-	tgs30, tgs31
-};
-
-void tg_print_status(const uint8_t status_code, const char *textbuf)
-{
-	switch (status_code) {		// don't send messages for these status codes
-		case TG_OK: return;
-		case TG_EAGAIN: return;
-		case TG_NOOP: return;
-		case TG_QUIT: return;
-		case TG_ZERO_LENGTH_MOVE: return;
-	}
-	fprintf_P(stderr, PSTR("%S: %s\n"),(PGM_P)pgm_read_word(&tgStatus[status_code]), textbuf);
-//	fprintf_P(stderr, PSTR("%S\n"),(PGM_P)pgm_read_word(&tgStatus[status_code])); // w/no text
-}
-
-/***** TEST ROUTINES *****
- * Various test routines
- * _tg_test_T() - 'T' runs a test file from program memory
- * _tg_test_U() - 'U' runs a different test file from program memory
- * _tg_canned_startup() - loads input buffer at reset
- */
-
-static uint8_t _tg_test_T(void)
-{
-	xio_open_pgm(PGMFILE(&startup_tests)); 		// collected system tests
-	_tg_set_active_source(XIO_DEV_PGM);
-	_tg_set_mode(TG_GCODE_MODE);
-	return (TG_OK);
-}
-
-static uint8_t _tg_test_U(void)
-{
-	xio_open_pgm(PGMFILE(&gcode_file)); 		// defined by the .h enabled
-	_tg_set_active_source(XIO_DEV_PGM);
-	_tg_set_mode(TG_GCODE_MODE);
-	return (TG_OK);
-}
-
-/*
- * Pre-load the USB RX (input) buffer with some test strings that 
- * will be called on startup. Be mindful of the char limit on the 
- * read buffer (RX_BUFFER_SIZE)
- */
-
-static void _tg_canned_startup()
-{
-#ifdef __CANNED_STARTUP
-
-/**** RUN TEST FILE ON STARTUP ***
- * Uncomment both Q and T lines to run a test file on startup
- * Will run test file active in _tg_test_T()   (see above routine)
- * Also requires uncommenting  #define __CANNED_STARTUP in tinyg.h
- */
-
-//	xio_queue_RX_string_usb("Q\n");				// exits back to test mode
-//	xio_queue_RX_string_usb("U\n");				// run second test file
-//	xio_queue_RX_string_usb("T\n");				// run first test file
-
-/* Other command sequences */
-//	xio_queue_RX_string_usb("H\n");				// show help file
-//	xio_queue_RX_string_usb("R\n");				// run a homing cycle
-//	xio_queue_RX_string_usb("!\n");				// stop
-//	xio_queue_RX_string_usb("@\n");				// pause
-//	xio_queue_RX_string_usb("%\n");				// resume
-
-/* G0's */
-	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
-	xio_queue_RX_string_usb("g0 x2\n");
-//	xio_queue_RX_string_usb("g0 x3\n");
-//	xio_queue_RX_string_usb("g0 y3\n");
-//	xio_queue_RX_string_usb("g0 x3 y4 z5.5\n");
-//	xio_queue_RX_string_usb("g0 x10 y10 z10 a10\n");
-//	xio_queue_RX_string_usb("g0 x2000 y3000 z4000 a5000\n");
-
-/* G1's */
-//	xio_queue_RX_string_usb("g1 f300 x100\n");
-//	xio_queue_RX_string_usb("g1 f10 x100\n");
-//	xio_queue_RX_string_usb("g1 f450 x10 y13\n");
-//	xio_queue_RX_string_usb("g1 f450 x10 y13\n");
-//	xio_queue_RX_string_usb("g1 f0 x10\n");
-
-/* G2/G3's */
-//	xio_queue_RX_string_usb("g3 f500 x100 y100 z25 i50 j50\n");	// arcs
-//	xio_queue_RX_string_usb("g2 f2000 x50 y50 z2 i25 j25\n");	// arcs
-//	xio_queue_RX_string_usb("g2 f300 x10 y10 i8 j8\n");
-//	xio_queue_RX_string_usb("g2 f300 x10 y10 i5 j5\n");
-//	xio_queue_RX_string_usb("g2 f300 x3 y3 i1.5 j1.5\n");
-
-/* G4 tests (dwells) */
-//	xio_queue_RX_string_usb("g0 x20 y23 z10\n");
-//	xio_queue_RX_string_usb("g4 p0.1\n");
-//	xio_queue_RX_string_usb("g0 x10 y10 z-10\n");
-
-/* G92 tests */
-//	xio_queue_RX_string_usb("g0 x10 y10\n");
-//	xio_queue_RX_string_usb("g92 x0 y0\n");
-//	xio_queue_RX_string_usb("g0 x5\n");
-
-/* Configs and controls */
-//	xio_queue_RX_string_usb("g20\n");
-//	xio_queue_RX_string_usb("$xjm6102\n");
-//	xio_queue_RX_string_usb("$xsr\n");			// config with no data
-//	xio_queue_RX_string_usb("$ja\n");			// config with no data
-//	xio_queue_RX_string_usb("$amo3\n");			// set A to radius mode
-//	xio_queue_RX_string_usb("$amo10\n");		// set A to SLAVE_XYZ mode
-//	xio_queue_RX_string_usb("$arf1.2\n");		// set A rotary factor 
-//	xio_queue_RX_string_usb("$ XSS=1200\n");	// some settings tests
-//	xio_queue_RX_string_usb("$HM1\n");
-//	xio_queue_RX_string_usb("$x\n");
-
-//	xio_queue_RX_string_usb("$gp64\n");			// path control modes
-//	xio_queue_RX_string_usb("$gp61\n");
-//	xio_queue_RX_string_usb("$gp61.1\n");
-//	xio_queue_RX_string_usb("$ec0\n");			// disable CR (LF only)
-//	xio_queue_RX_string_usb("$x\n");
-//	xio_queue_RX_string_usb("g20\n$xsr40\n");	// set inch mode, set SR
-//	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
-//	xio_queue_RX_string_usb("g18\n");			// plane select
-
-#endif
-}
-
-/***** DEBUG routines *****/
-
-#ifdef __DEBUG
-void tg_dump_controller_state()
-{
-	fprintf_P(stderr, PSTR("*** Controller state: line:%5f, block:%5f  %s\n"),
-		tg.linenumber, tg.linecount, &tg.buf);
-} 
-#endif
-

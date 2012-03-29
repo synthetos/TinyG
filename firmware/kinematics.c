@@ -2,7 +2,7 @@
  * kinematics.c - inverse kinematics routines
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2011 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -34,7 +34,7 @@
 #include "canonical_machine.h"
 #include "kinematics.h"
 
-uint8_t _ik_cartesian_kinematics(double travel[], double joint[], double microseconds);
+static uint8_t _cartesian_kinematics(double travel[], double joint[], double microseconds);
 
 /*
  * ik_kinematics() - wrapper routine for inverse kinematics
@@ -57,7 +57,7 @@ uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
 	double joint[AXES];
 
 	// inverse kinematics --> insert kinematics transformations here
-	_ik_cartesian_kinematics(travel, joint, microseconds);
+	_cartesian_kinematics(travel, joint, microseconds);
 
 	// Map motors to axes and convert length units to steps
 	// Most of the conversion math has already been done in steps_per_unit
@@ -76,12 +76,12 @@ uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
 }
 
 /*
- * _ik_cartesian_kinematics() - inverse kinematics for cartesian machines
+ * _cartesian_kinematics() - inverse kinematics for cartesian machines
  *
  *	Provides inverse kinematics for cartesian machines. Which is none.
  */
 
-uint8_t _ik_cartesian_kinematics(double travel[], double joint[], double microseconds)
+static uint8_t _cartesian_kinematics(double travel[], double joint[], double microseconds)
 {
 	uint8_t i;
 
@@ -94,7 +94,8 @@ uint8_t _ik_cartesian_kinematics(double travel[], double joint[], double microse
 
 //############## UNIT TESTS ################
 
-#ifdef __UNIT_TESTS
+//#define __UNIT_TEST_KINEMATICS
+#ifdef __UNIT_TEST_KINEMATICS
 
 void _ik_test_inverse_kinematics(void);
 

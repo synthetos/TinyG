@@ -17,8 +17,9 @@ planner.o: ../planner.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../tinyg.h \
   ../config.h ../controller.h ../gcode_parser.h ../canonical_machine.h \
-  ../planner.h ../kinematics.h ../stepper.h ../util.h ../xio.h \
-  ../xio_file.h ../xio_usart.h ../xio_signals.h
+  ../arc.h ../planner.h ../spindle.h ../kinematics.h ../stepper.h \
+  ../report.h ../util.h ../test.h ../xio/xio.h ../xio/xio_file.h \
+  ../xio/xio_usart.h ../xio/xio_signals.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdlib.h:
 
@@ -64,18 +65,26 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../canonical_machine.h:
 
+../arc.h:
+
 ../planner.h:
+
+../spindle.h:
 
 ../kinematics.h:
 
 ../stepper.h:
 
+../report.h:
+
 ../util.h:
 
-../xio.h:
+../test.h:
 
-../xio_file.h:
+../xio/xio.h:
 
-../xio_usart.h:
+../xio/xio_file.h:
 
-../xio_signals.h:
+../xio/xio_usart.h:
+
+../xio/xio_signals.h:

@@ -12,7 +12,7 @@ help.o: ../help.c c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../tinyg.h \
-  ../controller.h ../help.h
+  ../util.h ../config.h ../controller.h ../help.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -43,6 +43,10 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h:
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../tinyg.h:
+
+../util.h:
+
+../config.h:
 
 ../controller.h:
 

@@ -33,9 +33,9 @@
 
 uint8_t ik_kinematics(double travel[], double steps[], double microseconds);
 
-#ifdef __UNIT_TESTS
-void ik_unit_tests(void);
-#endif
+//#ifdef __UNIT_TESTS
+//void ik_unit_tests(void);
+//#endif
 
 #endif
 

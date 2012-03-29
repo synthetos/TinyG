@@ -17,9 +17,9 @@ gcode_parser.o: ../gcode_parser.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../tinyg.h \
-  ../config.h ../controller.h ../gcode_parser.h ../canonical_machine.h \
-  ../planner.h ../help.h ../util.h ../xio.h ../xio_file.h ../xio_usart.h \
-  ../xio_signals.h
+  ../util.h ../config.h ../controller.h ../gcode_parser.h \
+  ../canonical_machine.h ../planner.h ../help.h ../xio/xio.h \
+  ../xio/xio_file.h ../xio/xio_usart.h ../xio/xio_signals.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/ctype.h:
 
@@ -59,6 +59,8 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../tinyg.h:
 
+../util.h:
+
 ../config.h:
 
 ../controller.h:
@@ -71,12 +73,10 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 ../help.h:
 
-../util.h:
+../xio/xio.h:
 
-../xio.h:
+../xio/xio_file.h:
 
-../xio_file.h:
+../xio/xio_usart.h:
 
-../xio_usart.h:
-
-../xio_signals.h:
+../xio/xio_signals.h:

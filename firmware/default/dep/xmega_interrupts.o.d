@@ -1,4 +1,5 @@
-xmega_interrupts.o: ../xmega_interrupts.c ../xmega_interrupts.h \
+xmega_interrupts.o: ../xmega/xmega_interrupts.c \
+  ../xmega/xmega_interrupts.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/io.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/sfr_defs.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/inttypes.h \
@@ -10,7 +11,7 @@ xmega_interrupts.o: ../xmega_interrupts.c ../xmega_interrupts.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h
 
-../xmega_interrupts.h:
+../xmega/xmega_interrupts.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/io.h:
 

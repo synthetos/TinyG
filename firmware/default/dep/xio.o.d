@@ -1,4 +1,4 @@
-xio.o: ../xio.c c:/winavr-20100110/lib/gcc/../../avr/include/string.h \
+xio.o: ../xio/xio.c c:/winavr-20100110/lib/gcc/../../avr/include/string.h \
   c:\winavr-20100110\bin\../lib/gcc/avr/4.3.3/include/stddef.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/inttypes.h \
@@ -12,8 +12,9 @@ xio.o: ../xio.c c:/winavr-20100110/lib/gcc/../../avr/include/string.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/common.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../xio.h \
-  ../xio_file.h ../xio_usart.h ../xio_signals.h ../controller.h
+  c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../xio/xio.h \
+  ../xio/xio_file.h ../xio/xio_usart.h ../xio/xio_signals.h \
+  ../xio/../tinyg.h ../xio/../config.h ../xio/../controller.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/string.h:
 
@@ -45,12 +46,16 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
-../xio.h:
+../xio/xio.h:
 
-../xio_file.h:
+../xio/xio_file.h:
 
-../xio_usart.h:
+../xio/xio_usart.h:
 
-../xio_signals.h:
+../xio/xio_signals.h:
 
-../controller.h:
+../xio/../tinyg.h:
+
+../xio/../config.h:
+
+../xio/../controller.h:

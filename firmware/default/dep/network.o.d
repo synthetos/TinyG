@@ -12,8 +12,8 @@ network.o: ../network.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/common.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/version.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
-  c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../xio.h \
-  ../xio_file.h ../xio_usart.h ../xio_signals.h ../gpio.h ../controller.h
+  c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../xio/xio.h \
+  ../xio/xio_file.h ../xio/xio_usart.h ../xio/xio_signals.h ../gpio.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -43,14 +43,12 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
-../xio.h:
+../xio/xio.h:
 
-../xio_file.h:
+../xio/xio_file.h:
 
-../xio_usart.h:
+../xio/xio_usart.h:
 
-../xio_signals.h:
+../xio/xio_signals.h:
 
 ../gpio.h:
-
-../controller.h:

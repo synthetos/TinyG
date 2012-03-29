@@ -59,19 +59,16 @@
 #ifndef stepper_h
 #define stepper_h
 
-void st_init(void);			// initialize and start stepper subsystem
+void st_init(void);			// initialize stepper subsystem
+void st_reset(void);		// reset stepper subsystem
 uint8_t st_isbusy(void);	// return TRUE is any axis is running (F=idle)
 void st_set_polarity(const uint8_t motor, const uint8_t polarity);
 void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode);
 
-void st_stop(void);			// stop steppers
-void st_start(void);		// start steppers
-void st_end(void);			// stop steppers and empty all queues
-
 uint8_t st_test_prep_state(void);
 void st_request_exec_move(void);
+void st_prep_null(void);
 void st_prep_dwell(double microseconds);
-void st_prep_stops(uint8_t move_type);
 uint8_t st_prep_line(double steps[], double microseconds);
 
 #ifdef __DEBUG

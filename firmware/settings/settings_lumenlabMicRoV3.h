@@ -30,13 +30,15 @@
 /**** Lumenlabs micRo v3 profile ***************************************/
 /***********************************************************************/
 
-#define JERK_MAX 			50000000	// yes, that's "50,000,000" mm/(min^3)
-#define CORNER_DELTA 		0.05		// default value, in mm
-#define CORNER_ACCELERATION 100000
+#define TINYG_CONFIGURATION_PROFILE "Lumenlabs micRo v3" // displays base config profile
+
+#define JERK_MAX_COMMON 	50000000	// yes, that's "50,000,000" mm/(min^3)
+#define CORNER_ACCELERATION 200000
+#define JUNCTION_DEVIATION 	0.05		// default value, in mm
 
 // motor values
 #define M1_MOTOR_MAP X				// motor maps to axis
-#define M2_MOTOR_MAP X
+#define M2_MOTOR_MAP Y
 #define M3_MOTOR_MAP Y
 #define M4_MOTOR_MAP Z
 
@@ -55,9 +57,9 @@
 #define M3_MICROSTEPS 8
 #define M4_MICROSTEPS 8
 
-#define M1_POLARITY 1				// 0=normal, 1=reversed
+#define M1_POLARITY 1				// 0=normal, 1=inverted
 #define M2_POLARITY 1
-#define M3_POLARITY 0
+#define M3_POLARITY 1
 #define M4_POLARITY 0
 
 #define M1_POWER_MODE TRUE			// TRUE=low power idle enabled 
@@ -73,101 +75,94 @@
 #define B_AXIS_MODE AXIS_RADIUS
 #define C_AXIS_MODE AXIS_RADIUS
 
-#define X_SEEK_RATE_MAX 1500 		// G0 max seek rate in mm/min
-#define Y_SEEK_RATE_MAX 1500
-#define Z_SEEK_RATE_MAX 1500
+#define X_VELOCITY_MAX 1600 		// G0 max seek rate in mm/min
+#define Y_VELOCITY_MAX 1600
+#define Z_VELOCITY_MAX 1600
 
 #define M4_STEPS_PER_SEC 1200 		// motor characteristic
-#define A_SEEK_RATE_MAX ((M4_STEPS_PER_SEC * M4_STEP_ANGLE * 60) / M4_TRAVEL_PER_REV)
-#define B_SEEK_RATE_MAX A_SEEK_RATE_MAX
-#define C_SEEK_RATE_MAX A_SEEK_RATE_MAX
+#define A_VELOCITY_MAX ((M4_STEPS_PER_SEC * M4_STEP_ANGLE * 60) / M4_TRAVEL_PER_REV)
+#define B_VELOCITY_MAX A_VELOCITY_MAX
+#define C_VELOCITY_MAX A_VELOCITY_MAX
+
+#define X_FEEDRATE_MAX X_VELOCITY_MAX // G1 max feed rate in mm/min
+#define Y_FEEDRATE_MAX Y_VELOCITY_MAX
+#define Z_FEEDRATE_MAX Z_VELOCITY_MAX
+#define A_FEEDRATE_MAX A_VELOCITY_MAX
+#define B_FEEDRATE_MAX B_VELOCITY_MAX
+#define C_FEEDRATE_MAX C_VELOCITY_MAX
+
+#define X_TRAVEL_MAX 400		// travel between switches or crashes
+#define Y_TRAVEL_MAX 300
+#define Z_TRAVEL_MAX 75
+#define A_TRAVEL_MAX -1		// -1 is no limit (typ for rotary axis)
+#define B_TRAVEL_MAX -1
+#define C_TRAVEL_MAX -1
+
+#define X_JERK_MAX JERK_MAX_COMMON
+#define Y_JERK_MAX JERK_MAX_COMMON
+#define Z_JERK_MAX JERK_MAX_COMMON
+#define A_JERK_MAX JERK_MAX_COMMON
+#define B_JERK_MAX JERK_MAX_COMMON
+#define C_JERK_MAX JERK_MAX_COMMON
+
+#define X_JUNCTION_DEVIATION JUNCTION_DEVIATION
+#define Y_JUNCTION_DEVIATION JUNCTION_DEVIATION
+#define Z_JUNCTION_DEVIATION JUNCTION_DEVIATION
+#define A_JUNCTION_DEVIATION JUNCTION_DEVIATION
+#define B_JUNCTION_DEVIATION JUNCTION_DEVIATION
+#define C_JUNCTION_DEVIATION JUNCTION_DEVIATION
 
 #define A_RADIUS 10					// radius in mm
 #define B_RADIUS 10					// (XYZ values are not defined)
 #define C_RADIUS 10
 
-#define X_JERK JERK_MAX
-#define Y_JERK JERK_MAX
-#define Z_JERK JERK_MAX
-#define A_JERK JERK_MAX
-#define B_JERK JERK_MAX
-#define C_JERK JERK_MAX
-
-#define X_CORNER_DELTA CORNER_DELTA
-#define Y_CORNER_DELTA CORNER_DELTA
-#define Z_CORNER_DELTA CORNER_DELTA
-#define A_CORNER_DELTA CORNER_DELTA
-#define B_CORNER_DELTA CORNER_DELTA
-#define C_CORNER_DELTA CORNER_DELTA
-
-// G1 max feed rate in mm/min
-#define FEED_RATE_FACTOR (0.9)
-#define X_FEED_RATE_MAX (X_SEEK_RATE_MAX * FEED_RATE_FACTOR)
-#define Y_FEED_RATE_MAX (Y_SEEK_RATE_MAX * FEED_RATE_FACTOR)
-#define Z_FEED_RATE_MAX (Z_SEEK_RATE_MAX * FEED_RATE_FACTOR)
-#define A_FEED_RATE_MAX (A_SEEK_RATE_MAX * FEED_RATE_FACTOR)
-#define B_FEED_RATE_MAX (B_SEEK_RATE_MAX * FEED_RATE_FACTOR)
-#define C_FEED_RATE_MAX (C_SEEK_RATE_MAX * FEED_RATE_FACTOR)
-
-#define X_TRAVEL_HARD_LIMIT 400		// travel between switches or crashes
-#define Y_TRAVEL_HARD_LIMIT 300
-#define Z_TRAVEL_HARD_LIMIT 75
-#define A_TRAVEL_HARD_LIMIT -1		// -1 is no limit (typ for rotary axis)
-#define B_TRAVEL_HARD_LIMIT -1
-#define C_TRAVEL_HARD_LIMIT -1
-
-#define SOFT_LIMIT_FACTOR (0.95)
-#define X_TRAVEL_SOFT_LIMIT (X_TRAVEL_HARD_LIMIT * SOFT_LIMIT_FACTOR)
-#define Y_TRAVEL_SOFT_LIMIT (Y_TRAVEL_HARD_LIMIT * SOFT_LIMIT_FACTOR)
-#define Z_TRAVEL_SOFT_LIMIT (Z_TRAVEL_HARD_LIMIT * SOFT_LIMIT_FACTOR)
-#define A_TRAVEL_SOFT_LIMIT -1
-#define B_TRAVEL_SOFT_LIMIT -1
-#define C_TRAVEL_SOFT_LIMIT -1
-
-#define X_LIMIT_MODE TRUE			// 1=limit switches present and enabled
-#define Y_LIMIT_MODE TRUE
-#define Z_LIMIT_MODE TRUE
-#define A_LIMIT_MODE TRUE
-#define B_LIMIT_MODE TRUE
-#define C_LIMIT_MODE TRUE
+#define X_SWITCH_MODE TRUE			// 1=limit switches present and enabled
+#define Y_SWITCH_MODE TRUE
+#define Z_SWITCH_MODE TRUE
+#define A_SWITCH_MODE FALSE
+#define B_SWITCH_MODE FALSE
+#define C_SWITCH_MODE FALSE
 
 // homing settings
-//#define HOMING_MODE TRUE			// global: set TRUE for power-on-homing
-#define HOMING_MODE FALSE			// global: set TRUE for power-on-homing
+#define X_HOMING_SEARCH_TRAVEL X_TRAVEL_MAX
+#define Y_HOMING_SEARCH_TRAVEL Y_TRAVEL_MAX 
+#define Z_HOMING_SEARCH_TRAVEL Z_TRAVEL_MAX 
+#define A_HOMING_SEARCH_TRAVEL -1
+#define B_HOMING_SEARCH_TRAVEL -1
+#define C_HOMING_SEARCH_TRAVEL -1
 
-#define X_HOMING_ENABLE 1			// 1=enabled for that axis
-#define Y_HOMING_ENABLE 1
-#define Z_HOMING_ENABLE 1
-#define A_HOMING_ENABLE 1
-#define B_HOMING_ENABLE 0
-#define C_HOMING_ENABLE 0
+#define X_HOMING_SEARCH_VELOCITY X_VELOCITY_MAX
+#define Y_HOMING_SEARCH_VELOCITY Y_VELOCITY_MAX
+#define Z_HOMING_SEARCH_VELOCITY Z_VELOCITY_MAX
+#define A_HOMING_SEARCH_VELOCITY A_VELOCITY_MAX
+#define B_HOMING_SEARCH_VELOCITY B_VELOCITY_MAX
+#define C_HOMING_SEARCH_VELOCITY C_VELOCITY_MAX
 
-#define X_HOMING_OFFSET -(X_TRAVEL_HARD_LIMIT/2) // offset to zero from axis minimum
-#define Y_HOMING_OFFSET -(Y_TRAVEL_HARD_LIMIT/2)
-#define Z_HOMING_OFFSET -(Z_TRAVEL_HARD_LIMIT/2)
-#define A_HOMING_OFFSET -(A_TRAVEL_HARD_LIMIT/2)
-#define B_HOMING_OFFSET -(A_TRAVEL_HARD_LIMIT/2)
-#define C_HOMING_OFFSET -(A_TRAVEL_HARD_LIMIT/2)
+#define X_HOMING_LATCH_VELOCITY 100		// mm/min
+#define Y_HOMING_LATCH_VELOCITY 100
+#define Z_HOMING_LATCH_VELOCITY 100
+#define A_HOMING_LATCH_VELOCITY 3600	// degrees per minute
+#define B_HOMING_LATCH_VELOCITY 3600
+#define C_HOMING_LATCH_VELOCITY 3600
 
-#define X_HOMING_SEEK_RATE X_FEED_RATE_MAX
-#define Y_HOMING_SEEK_RATE Y_FEED_RATE_MAX
-#define Z_HOMING_SEEK_RATE Z_FEED_RATE_MAX
-#define A_HOMING_SEEK_RATE A_FEED_RATE_MAX
-#define B_HOMING_SEEK_RATE B_FEED_RATE_MAX
-#define C_HOMING_SEEK_RATE C_FEED_RATE_MAX
+#define X_HOMING_ZERO_OFFSET 5			// mm
+#define Y_HOMING_ZERO_OFFSET 5
+#define Z_HOMING_ZERO_OFFSET 5
+#define A_HOMING_ZERO_OFFSET 5			// degrees
+#define B_HOMING_ZERO_OFFSET 5
+#define C_HOMING_ZERO_OFFSET 5
 
-#define X_HOMING_CLOSE_RATE 10		// mm/min
-#define Y_HOMING_CLOSE_RATE 10
-#define Z_HOMING_CLOSE_RATE 10
-#define A_HOMING_CLOSE_RATE 360		// degrees per minute
-#define B_HOMING_CLOSE_RATE 360
-#define C_HOMING_CLOSE_RATE 360
+#define X_HOMING_WORK_OFFSET (X_TRAVEL_MAX/2) // offset to zero from axis minimum
+#define Y_HOMING_WORK_OFFSET (Y_TRAVEL_MAX/2)
+#define Z_HOMING_WORK_OFFSET (Z_TRAVEL_MAX/2)
+#define A_HOMING_WORK_OFFSET (A_TRAVEL_MAX/2)
+#define B_HOMING_WORK_OFFSET (A_TRAVEL_MAX/2)
+#define C_HOMING_WORK_OFFSET (A_TRAVEL_MAX/2)
 
-#define X_HOMING_BACKOFF 5			// mm
-#define Y_HOMING_BACKOFF 5
-#define Z_HOMING_BACKOFF 5
-#define A_HOMING_BACKOFF 5			// degrees
-#define B_HOMING_BACKOFF 5
-#define C_HOMING_BACKOFF 5
-
+#define X_HOMING_JERK 1000000000		// 1,000,000,000
+#define Y_HOMING_JERK X_HOMING_JERK
+#define Z_HOMING_JERK X_HOMING_JERK
+#define A_HOMING_JERK X_HOMING_JERK
+#define B_HOMING_JERK A_HOMING_JERK
+#define C_HOMING_JERK a_HOMING_JERK
 

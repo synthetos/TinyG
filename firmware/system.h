@@ -17,11 +17,23 @@
  * You should have received a copy of the GNU General Public License 
  * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  */
-
+/*
+ * INTERRUPT USAGE - TinyG uses a lot of them all over the place
+ *
+ *	HI	Stepper DDA pulse generation		(set in stepper.h)
+ *	HI	Stepper load routine SW interrupt	(set in stepper.h)
+ *	HI	Dwell timer counter 				(set in stepper.h)
+ *  LO	Segment execution SW interrupt		(set in stepper.h) 
+ *	MED	GPIO1 switch port					(set in gpio.h)
+ *  MED	Serial RX for USB & RS-485			(set in xio_usart.h)
+ *  MED	Serial TX for USB & RS-485			(set in xio_usart.h)
+ *	LO	Real time clock interrupt			(set in xmega_rtc.h)
+ */
 #ifndef system_h
 #define system_h
 
-void hw_init(void);						// master hardware init
+void sys_init(void);					// master hardware init
+//uint8_t sys_read_signature(uint8_t index);
 
 /* CPU clock */	
 
@@ -43,43 +55,27 @@ void hw_init(void);						// master hardware init
 #define DEVICE_TIMER_EXEC			TCF0			// Exec timer (SW interrupt)
 #define DEVICE_TIMER_EXEC_ISR_vect	TCF0_OVF_vect
 
-/* Motor port setup */
-#define MOTOR_1					0		// array index, #1 must be first
-#define MOTOR_2					1
-#define MOTOR_3					2
-#define MOTOR_4					3		// motor #4 must be last
-
-#define MOTOR_PORT_DIR_gm		0x3F	// direction register settings
-#define MOTOR_1_PORT_DIR_gm		MOTOR_PORT_DIR_gm
-#define MOTOR_2_PORT_DIR_gm		MOTOR_PORT_DIR_gm
-#define MOTOR_3_PORT_DIR_gm		MOTOR_PORT_DIR_gm
-#define MOTOR_4_PORT_DIR_gm		MOTOR_PORT_DIR_gm	
-
-#define DEVICE_PORT_MOTOR_1	PORTA
-#define DEVICE_PORT_MOTOR_2 PORTF
-#define DEVICE_PORT_MOTOR_3	PORTE
-#define DEVICE_PORT_MOTOR_4	PORTD
-
-/* Stepper Ports \- motor port bits are:
- *	b7	(in) max limit switch  		// alt: (out) spindle direction on A axis
- *	b6	(in) min limit switch		// alt: (out) spindle enable on A axis
- *	b5	(out) output bit for GPIO port1
- *	b4	(out) microstep 1
- *	b3	(out) microstep 0 
- *	b2	(out) motor enable 	(CLR = Enabled)
- *	b1	(out) direction		(CLR = Clockwise)
+/* Stepper / Switch Ports:
  *	b0	(out) step			(SET is step,  CLR is rest)
+ *	b1	(out) direction		(CLR = Clockwise)
+ *	b2	(out) motor enable 	(CLR = Enabled)
+ *	b3	(out) microstep 0 
+ *	b4	(out) microstep 1
+ *	b5	(out) output bit for GPIO port1
+ *	b6	(in) min limit switch on GPIO 2
+ *	b7	(in) max limit switch on GPIO 2
  */
+#define MOTOR_PORT_DIR_gm 0x3F	// dir settings: lower 6 out, upper 2 in
 
 enum cfgPortBits {			// motor control port bit positions
-	STEP_BIT_bp,			// bit 0
+	STEP_BIT_bp = 0,		// bit 0
 	DIRECTION_BIT_bp,		// bit 1
 	MOTOR_ENABLE_BIT_bp,	// bit 2
 	MICROSTEP_BIT_0_bp,		// bit 3
 	MICROSTEP_BIT_1_bp,		// bit 4
-	GPIO1_OUT_BIT_bp,		// bit 5 (4 gpio output bits; 1 from each axis)
-	MIN_LIMIT_BIT_bp,		// bit 6 (4 gpio input bits for switch closures)
-	MAX_LIMIT_BIT_bp		// bit 7 (4 gpio input bits for switch closures)
+	GPIO1_OUT_BIT_bp,		// bit 5 (4 gpio1 output bits; 1 from each axis)
+	GPIO2_MIN_BIT_bp,		// bit 6 (4 gpio2 input bits for switch closures)
+	GPIO2_MAX_BIT_bp		// bit 7 (4 gpio2 input bits for switch closures)
 };
 
 #define STEP_BIT_bm			(1<<STEP_BIT_bp)
@@ -87,8 +83,35 @@ enum cfgPortBits {			// motor control port bit positions
 #define MOTOR_ENABLE_BIT_bm (1<<MOTOR_ENABLE_BIT_bp)
 #define MICROSTEP_BIT_0_bm	(1<<MICROSTEP_BIT_0_bp)
 #define MICROSTEP_BIT_1_bm	(1<<MICROSTEP_BIT_1_bp)
-#define GPIO1_OUT_BIT_bm	(1<<GPIO1_OUT_BIT_bp)		
-#define MIN_LIMIT_BIT_bm	(1<<MIN_LIMIT_BIT_bp)
-#define MAX_LIMIT_BIT_bm	(1<<MAX_LIMIT_BIT_bp) // motor control port bit masks
+#define GPIO1_OUT_BIT_bm	(1<<GPIO1_OUT_BIT_bp)
+#define GPIO2_MIN_BIT_bm	(1<<GPIO2_MIN_BIT_bp)
+#define GPIO2_MAX_BIT_bm	(1<<GPIO2_MAX_BIT_bp) // motor control port bit masks
+
+/* Motor & switch port assignments */
+
+#define DEVICE_PORT_MOTOR_1		PORTA
+#define DEVICE_PORT_MOTOR_2 	PORTF
+#define DEVICE_PORT_MOTOR_3		PORTE
+#define DEVICE_PORT_MOTOR_4		PORTD
+#define DEVICE_PORT_GPIO2_IN	PORTB
+
+enum gpio1Inputs {
+	GPIO1_IN_BIT_0_bp = 0,	// gpio1 input bit 0
+	GPIO1_IN_BIT_1_bp,		// gpio1 input bit 1
+	GPIO1_IN_BIT_2_bp,		// gpio1 input bit 2
+	GPIO1_IN_BIT_3_bp		// gpio1 input bit 3
+};
+#define GPIO1_IN_BIT_0_bm	(1<<GPIO1_IN_BIT_0_bp)
+#define GPIO1_IN_BIT_1_bm	(1<<GPIO1_IN_BIT_1_bp)
+#define GPIO1_IN_BIT_2_bm	(1<<GPIO1_IN_BIT_2_bp)
+#define GPIO1_IN_BIT_3_bm	(1<<GPIO1_IN_BIT_3_bp)
+
+/* Bit assignments for GPIO1_OUTs for spindle, PWM and coolant */
+
+#define SPINDLE_BIT	0x08	// spindle on/off
+#define SPINDLE_DIR	0x04	// spindle direction, 1=CW, 0=CCW
+#define SPINDLE_PWM	0x02	// spindle PWN port
+#define MIST_COOLANT_BIT	0x01	// coolant on/off - these are the same due to limited ports
+#define FLOOD_COOLANT_BIT	0x01	// coolant on/off
 
 #endif

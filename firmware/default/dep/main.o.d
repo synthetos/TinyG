@@ -13,10 +13,11 @@ main.o: ../main.c c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h \
-  ../system.h ../xmega_interrupts.h ../xmega_rtc.h ../xio.h ../xio_file.h \
-  ../xio_usart.h ../xio_signals.h ../tinyg.h ../config.h ../controller.h \
-  ../gcode_parser.h ../stepper.h ../planner.h ../spindle.h ../network.h \
-  ../gpio.h ../util.h
+  ../system.h ../xmega/xmega_interrupts.h ../xmega/xmega_rtc.h \
+  ../xio/xio.h ../xio/xio_file.h ../xio/xio_usart.h ../xio/xio_signals.h \
+  ../tinyg.h ../util.h ../config.h ../controller.h ../canonical_machine.h \
+  ../json_parser.h ../gcode_parser.h ../report.h ../planner.h \
+  ../stepper.h ../spindle.h ../network.h ../gpio.h ../test.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -50,29 +51,37 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h:
 
 ../system.h:
 
-../xmega_interrupts.h:
+../xmega/xmega_interrupts.h:
 
-../xmega_rtc.h:
+../xmega/xmega_rtc.h:
 
-../xio.h:
+../xio/xio.h:
 
-../xio_file.h:
+../xio/xio_file.h:
 
-../xio_usart.h:
+../xio/xio_usart.h:
 
-../xio_signals.h:
+../xio/xio_signals.h:
 
 ../tinyg.h:
+
+../util.h:
 
 ../config.h:
 
 ../controller.h:
 
+../canonical_machine.h:
+
+../json_parser.h:
+
 ../gcode_parser.h:
 
-../stepper.h:
+../report.h:
 
 ../planner.h:
+
+../stepper.h:
 
 ../spindle.h:
 
@@ -80,4 +89,4 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h:
 
 ../gpio.h:
 
-../util.h:
+../test.h:
