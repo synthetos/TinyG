@@ -500,7 +500,6 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
 		}
 	}
 	// see if it's OK to write them now, or if they need to wait until STOP
-//	if ((cm.machine_state != MACHINE_RUN) && (cm.machine_state != MACHINE_HOMING)) {
 	if (cm.machine_state != MACHINE_CYCLE) {
 		cmd_persist_offsets(cm.g10_flag);
 	}
@@ -509,7 +508,7 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
 
 uint8_t cm_set_distance_mode(uint8_t mode)	// G90, G91
 {
-	gm.distance_mode = mode;	// 0 = absolute mode, 1 = incremental
+	gm.distance_mode = mode;			// 0 = absolute mode, 1 = incremental
 	return (TG_OK);
 }
 
@@ -558,7 +557,7 @@ uint8_t cm_straight_traverse(double target[], double flags[])
 {
 	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_target(target, flags);
-	cm_cycle_start();							//required for homing & other cycles
+	cm_cycle_start();					//required for homing & other cycles
 	uint8_t status = MP_LINE(gm.target, _get_move_time());
 	cm_set_gcode_model_endpoint_position(status);
 	return (status);
@@ -651,9 +650,6 @@ uint8_t cm_straight_feed(double target[], double flags[])
 
 /* 
  * Spindle Functions (4.3.7) - see canonical_spindle.c/.h
- */
-
-/* 
  * Tool Functions (4.3.8)
  *
  * cm_change_tool() - M6 (This might become a complete tool change cycle)
@@ -780,7 +776,6 @@ void cm_cycle_start()
 	if (cm.cycle_state == CYCLE_OFF) {
 		cm.cycle_state = CYCLE_STARTED;	// don't change homing, probe or other cycles
 	}
-//	fprintf_P(stderr, PSTR("***cycle start*** hold_state:%d\n"),cm.hold_state);
 }
 
 void cm_cycle_end() 

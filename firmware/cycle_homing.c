@@ -9,13 +9,11 @@
  * the Free Software Foundation, either version 3 of the License, 
  * or (at your option) any later version.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
- *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
+ * for details. You should have received a copy of the GNU General Public 
+ * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -27,15 +25,16 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include <avr/pgmspace.h>		// needed for exception strings
 
 #include "tinyg.h"
+#include "util.h"
 #include "config.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "planner.h"
 #include "report.h"
-#include "util.h"
 #include "gpio.h"
 
 /**** NOTE: global prototypes and other .h info is located in canonical_machine.h ****/
@@ -60,7 +59,6 @@ struct hmHomingSingleton {		// persistent G28 and G30 runtime variables
 
 	// convenience copies of config parameters
 	double zero_offset;			// somewhat wasteful, but makes the coding simpler
-	double coord_offset;		//   ""
 	double search_travel;		//	 ""
 	double search_velocity;		//   ""
 	double latch_velocity;		//   ""
@@ -75,21 +73,34 @@ struct hmHomingSingleton {		// persistent G28 and G30 runtime variables
 };
 static struct hmHomingSingleton hm;
 
-/* 
- * cm_homing_cycle() 	- homing cycle using limit switches
- * cm_homing_callback() - wrapper routine for running the homing cycle
+/*****************************************************************************
+ * cm_return_to_home() - G28 cycle
+ * cm_return_to_home_callback() - main loop callback for the above
+ */
+
+uint8_t cm_return_to_home(void)
+{
+	double zero[] = {0,0,0,0,0,0};
+	double flags[] = {1,1,1,1,1,1};
+	ritorno(cm_straight_traverse(zero, flags));
+	return (TG_OK);
+}
+
+/*****************************************************************************
+ * cm_homing_cycle() 	- G28.1 homing cycle using limit switches
+ * cm_homing_callback() - main loop callback for running the homing cycle
  *
- * Homing works from a G30 according to the following writeup: 
- * 		http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Homing
+ * Homing works from a G28.1 according to the following writeup: 
+ * 	http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Homing
  *
  *	--- How does this work? ---
  *
- *	When a G30 homing cycle is intiated machine state is set to RUN and homing
- *	state is set to HOMING_IN_CYCLE. At the start of a homing cycle the limit 
- *	switches in gpio.c are treated as homing switches (they become modal).
+ *	When a homing cycle is intiated the cycle state is set to CYCLE_HOMING.
+ *	At the start of a homing cycle the limit switches in gpio.c are treated 
+ *	as homing switches (they become modal).
  *
  *	After some initialization and backing off any closed switches a series of 
- *	search and latch moves are run for each axis specified in the G30 command.
+ *	search and latch moves are run for each axis specified in the G28.1 command.
  *	The cm_homing_callback() function is a dispatcher that vectors to the homing 
  *	currently running homing move. Each move must clear the planner and any 
  *	previous hold state before it can be run.
@@ -103,9 +114,6 @@ static struct hmHomingSingleton hm;
  *	in order to support dual-gantry homing.
  *
  *	The act of finishing the per-axis homing resets the machine to machine zero. 
- *	Once this occurs a return-to-zero move is performed that sends the machine
- *	to the zero of the selected coordinate system via the way-point specified 
- *	in the G30 request. 
  *
  *	--- Some further details ---
  *
@@ -141,7 +149,6 @@ uint8_t cm_homing_cycle(void)
 
 uint8_t cm_homing_callback(void)
 {
-//	if (cm.homing_state != HOMING_IN_CYCLE) return (TG_NOOP);// exit if not in a homing cycle
 	if (cm.cycle_state != CYCLE_HOMING) { return (TG_NOOP);} // exit if not in a homing cycle
 	if (cm_isbusy() == true) { return (TG_EAGAIN);}			 // sync to planner move ends
 	return (hm.func(hm.axis));
@@ -169,18 +176,21 @@ static uint8_t _homing_axis_start(int8_t axis)
 			return (TG_HOMING_CYCLE_FAILED);
 		}
 	}
-	hm.axis = axis;									// make convenience copies
-	hm.coord_offset = cm_get_coord_offset(axis);	// offset for this axis of active coord system
-	hm.search_travel = cfg.a[axis].travel_max;
-	hm.zero_offset = cfg.a[axis].zero_offset;
-	hm.search_velocity = cfg.a[axis].search_velocity;
-	hm.latch_velocity = cfg.a[axis].latch_velocity;
-//	hm.jerk_saved = cfg.a[axis].jerk_max;			// per-axis save
-
-	if ((hm.search_velocity == 0) || (hm.search_travel == 0)) {
-		return (TG_GCODE_INPUT_ERROR);	// requested axis that can't be homed
+	if ((cfg.a[axis].search_velocity == 0) || (cfg.a[axis].travel_max == 0)) {
+		return (TG_GCODE_INPUT_ERROR);				// requested axis can't be homed
 	}
-	// Note: the is-the-switch-enabled? test is left out for now
+	hm.axis = axis;
+	hm.search_velocity = fabs(cfg.a[axis].search_velocity); // search velocity is always positive
+	hm.latch_velocity = fabs(cfg.a[axis].latch_velocity); 	// and so is latch velocity
+//	hm.jerk_saved = cfg.a[axis].jerk_max;			// per-axis save
+	// move to minimum switch
+	if (cfg.a[axis].search_velocity < 0) {			// search velocity is negative
+		hm.search_travel = -cfg.a[axis].travel_max;	// make search travel negative
+		hm.zero_offset = cfg.a[axis].zero_offset;	// offset moves opposite of search
+	} else {	// move to maximum switch			// search velocity is positive
+		hm.search_travel = cfg.a[axis].travel_max;	// make search travel positive
+		hm.zero_offset = -cfg.a[axis].zero_offset;	// offset moves opposite of search
+	}
 
 	// ---> For now all axes are single - no dual axis detection or invocation
 	// This is where you have to detect and handle dual axes.
@@ -197,7 +207,7 @@ static uint8_t _homing_axis_start(int8_t axis)
 
 static uint8_t _homing_axis_search(int8_t axis)
 {
-	_homing_axis_move(axis, -hm.search_travel, hm.search_velocity);
+	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
 	return (_set_hm_func(_homing_axis_backoff));
 }
 
@@ -216,14 +226,13 @@ static uint8_t _homing_axis_latch(int8_t axis)
 static uint8_t _homing_axis_final(int8_t axis)
 {
 	_homing_axis_move(axis, hm.zero_offset, hm.search_velocity);
-//	cfg.a[axis].jerk_max = hm.jerk_saved;		// per-axis restore
+//	cfg.a[axis].jerk_max = hm.jerk_saved;		// restore jerk per-axis
 	return (_set_hm_func(_homing_axis_start));
 }
 
 static uint8_t _homing_axis_move(int8_t axis, double target, double velocity)
 {
 	double flags[] = {1,1,1,1,1,1};
-//	INFO3(PSTR("Homing move: [%d] %f, %f"), axis, target, velocity);
 	set_vector_by_axis(target, axis);
 	cm_set_feed_rate(velocity);
 	mp_flush_planner();
@@ -255,49 +264,6 @@ static uint8_t _run_homing_dual_axis(int8_t axis)
 	return (TG_OK);
 }
 */
-/***************************************************************************** 
- * cm_return_to_home() - G28 cycle
- * cm_return_to_home_callback() - continuation for the above
- */
-
-uint8_t cm_return_to_home(void)
-{
-
-/* Homing finalization moves:
- *	_homing_finalize_1() - move to way point specified in G30 command
- *	_homing_finalize_2() - move to work coordinate system zero
- *	_homing_finalize_3() - wait for finalize_2 move to complete and restore Gcode model
- */
- /*
-static uint8_t _homing_finalize_1(int8_t axis)	// move to way point in return to home
-{
-	cm_set_machine_zero();						// reset machine zero coordinates
-//	cm_set_machine_coords(set_vector(0,0,0,0,0,0));	// reset baseline machine coordinates
-	mp_flush_planner(); // should be stopped, but just in case of switch closure
-
-	cm_set_coord_system(hm.coord_system_saved);	// restore to work coordinate system
-	cm_set_distance_mode(ABSOLUTE_MODE); 		// needs to work in absolute coordinates for now
-//	cm_straight_traverse(gn.target, gf.target);	// only axes with gf flags set will move
-//	return (_set_hm_func(_homing_finalize_2));
-	cm_straight_traverse(set_vector(0,0,0,0,0,0), gf.target);// only axes with gf flags will move
-	return (_set_hm_func(_homing_finalize_3));
-}
-*/
-/*
-static uint8_t _homing_finalize_2(int8_t axis) // move to zero in selected coordinate system
-{
-	cm_straight_traverse(set_vector(0,0,0,0,0,0), gf.target);// only axes with gf flags will move
-	return (_set_hm_func(_homing_finalize_3));
-}
-*/
-	return (TG_OK);
-}
-
-uint8_t cm_return_to_home_callback(void)
-{
-	return (TG_NOOP);
-}
-
 
 /**** HELPERS ****************************************************************/
 /*

@@ -79,7 +79,6 @@ struct mpBuffer {				// See Planning Velocity Notes for variable usage
 	uint8_t move_code;			// M code or T code
 	uint8_t move_state;			// move state machine sequence
 	uint8_t replannable;		// TRUE if move can be replanned
-//	uint8_t hold_point;			// marks the first buffer after a feedhold
 
 	double target[AXES];		// target position in floating point
 	double unit[AXES];			// unit vector for axis scaling & planning
@@ -170,23 +169,21 @@ static struct mpMoveRuntimeSingleton mr;// static context for runtime
  */
 #define _bump(a) ((a<PLANNER_BUFFER_POOL_SIZE-1)?(a+1):0) // buffer incr & wrap
 
-//static struct mpBuffer * _get_prev_buffer(const struct mpBuffer *bf);
-//static struct mpBuffer * _get_next_buffer(const struct mpBuffer *bf);
-#define _get_prev_buffer(b) ((struct mpBuffer *)(b->pv))
-#define _get_next_buffer(b) ((struct mpBuffer *)(b->nx))
+//static mpBuf * _get_prev_buffer(const mpBuf *bf);
+//static mpBuf * _get_next_buffer(const mpBuf *bf);
+#define _get_prev_buffer(b) ((mpBuf *)(b->pv))
+#define _get_next_buffer(b) ((mpBuf *)(b->nx))
 
 // aline planner routines / feedhold planning
 static void _plan_block_list(mpBuf *bf, uint8_t *mr_flag);
-static void _calculate_trapezoid(struct mpBuffer *bf);
-static double _get_target_length(const double Vi, const double Vt, const struct mpBuffer *bf);
-static double _get_target_velocity(const double Vi, const double L, const struct mpBuffer *bf);
-//static double _get_target_jerk(const double deltaV, const double L, struct mpBuffer *bf);
+static void _calculate_trapezoid(mpBuf *bf);
+static double _get_target_length(const double Vi, const double Vt, const mpBuf *bf);
+static double _get_target_velocity(const double Vi, const double L, const mpBuf *bf);
 static double _get_junction_vmax(const double a_unit[], const double b_unit[]);
 static double _get_junction_deviation(const double a_unit[], const double b_unit[]);
 static void _reset_replannable_list(void);
 
 // execute routines (NB: These are all called from the LO interrupt)
-static void _set_null_move(mpBuf *bf);
 static uint8_t _exec_null(mpBuf *bf);
 static uint8_t _exec_line(mpBuf *bf);
 static uint8_t _exec_dwell(mpBuf *bf);
@@ -202,18 +199,18 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag);
 // planning buffer routines
 static void _init_buffers(void);
 static void _unget_write_buffer(void);
-static void _clear_buffer(struct mpBuffer *bf); 
-static void _copy_buffer(struct mpBuffer *bf, const struct mpBuffer *bp);
+static void _clear_buffer(mpBuf *bf); 
+static void _copy_buffer(mpBuf *bf, const mpBuf *bp);
 static void _queue_write_buffer(const uint8_t move_type);
 static void _free_run_buffer(void);
-static struct mpBuffer * _get_write_buffer(void); 
-static struct mpBuffer * _get_run_buffer(void);
-static struct mpBuffer * _get_first_buffer(void);
-static struct mpBuffer * _get_last_buffer(void);
+static mpBuf * _get_write_buffer(void); 
+static mpBuf * _get_run_buffer(void);
+static mpBuf * _get_first_buffer(void);
+static mpBuf * _get_last_buffer(void);
 
 #ifdef __DEBUG
-static uint8_t _get_buffer_index(struct mpBuffer *bf); 
-static void _dump_plan_buffer(struct mpBuffer *bf);
+static uint8_t _get_buffer_index(mpBuf *bf); 
+static void _dump_plan_buffer(mpBuf *bf);
 #endif
 
 /* 
@@ -303,14 +300,12 @@ double *mp_get_plan_position(double position[])
 void mp_set_plan_position(const double position[])
 {
 	copy_axis_vector(mm.position, position);
-//	return (TG_OK);
 }
 
 void mp_set_axis_position(const double position[])
 {
 	copy_axis_vector(mm.position, position);
 	copy_axis_vector(mr.position, position);
-//	return (TG_OK);
 }
 
 double mp_get_runtime_position(uint8_t axis) { return (mr.position[axis]);}
@@ -326,7 +321,7 @@ double mp_get_runtime_linenum(void) { return (mr.linenum);}
 
 uint8_t mp_exec_move() 
 {
-	struct mpBuffer *bf;
+	mpBuf *bf;
 
 	if ((bf = _get_run_buffer()) == NULL) { return (TG_NOOP);}	// NULL means nothing's running
 	if (cm.cycle_state == CYCLE_OFF) { cm_cycle_start();} 		// cycle state management
@@ -346,24 +341,8 @@ uint8_t mp_exec_move()
 }
 
 /*
- * _exec_null() - execute a null move.
- * _set_null_move() - set a move to a null move
- *
- *	This is used when a buffer is dropped from the list and you need to skip over it.
- *	If a null move is encountered in back-planning it is treated as a temporary hold,
- *	planning down to zero then back up from zero. Use _set_null_move() if you need
- *	to turn a buffer into a null move.
+ * _exec_null() - execute a null move
  */
-
-static void _set_null_move(mpBuf *bf) 
-{ 
- 	bf->move_type = MOVE_TYPE_NULL;
-	bf->length = 0;	
-	bf->entry_vmax = 0;
-	bf->delta_vmax = 0;
-	bf->exit_vmax = 0;
-}
-
 static uint8_t _exec_null(mpBuf *bf) 
 { 
 	st_prep_null();		// must call this to leep the loader happy
@@ -471,7 +450,7 @@ static uint8_t _exec_spindle_speed(mpBuf *bf)
 
 uint8_t mp_dwell(double seconds) 
 {
-	struct mpBuffer *bf; 
+	mpBuf *bf; 
 
 	if ((bf = _get_write_buffer()) == NULL) {	// get write buffer or fail
 		return (TG_BUFFER_FULL_FATAL);		   // (not supposed to fail)
@@ -481,7 +460,7 @@ uint8_t mp_dwell(double seconds)
 	return (TG_OK);
 }
 
-static uint8_t _exec_dwell(struct mpBuffer *bf)	// NEW
+static uint8_t _exec_dwell(mpBuf *bf)	// NEW
 {
 	st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
 	_free_run_buffer();
@@ -503,7 +482,7 @@ static uint8_t _exec_dwell(struct mpBuffer *bf)	// NEW
 
 uint8_t mp_line(const double target[], const double minutes)
 {
-	struct mpBuffer *bf;
+	mpBuf *bf;
 
 	if (minutes < EPSILON) {
 		return (TG_ZERO_LENGTH_MOVE);
@@ -524,7 +503,7 @@ uint8_t mp_line(const double target[], const double minutes)
 	return(TG_OK);
 }
 
-static uint8_t _exec_line(struct mpBuffer *bf) 
+static uint8_t _exec_line(mpBuf *bf) 
 {
 	uint8_t i;
 	double travel[AXES];
@@ -672,7 +651,7 @@ uint8_t mp_aline(const double target[], const double minutes)
  *	[1]	Whether or not a block is planned is controlled by the bf->replannable 
  *		setting (set TRUE if it should be). Replan flags are checked during the 
  *		backwards pass and prune the replan list to include only the the latest 
- *		blocks that require planning.
+ *		blocks that require planning
  *
  *		In normal operation the first block (currently running block) is not 
  *		replanned, but may be for feedholds and feed overrides. In these cases 
@@ -705,14 +684,30 @@ static void _plan_block_list(mpBuf *bf, uint8_t *mr_flag)
 		bp->exit_velocity = min4(bp->exit_vmax, bp->nx->braking_velocity, bp->nx->entry_vmax,
 								(bp->entry_velocity + bp->delta_vmax));
 		_calculate_trapezoid(bp);
-		// test for optimally planned trapezoids - only need to check the exit
-		if (bp->exit_velocity == bp->exit_vmax) { bp->replannable = false;}
+		// test for optimally planned trapezoids - only need to check various exit conditions
+		if ((bp->exit_velocity == bp->exit_vmax) || (bp->exit_velocity == bp->nx->entry_vmax) || 
+		   ((bp->pv->replannable == false) && (bp->exit_velocity == bp->entry_velocity + bp->delta_vmax))) {
+			bp->replannable = false;
+		}
 	}
 	// finish up the last block move
 	bp->entry_velocity = bp->pv->exit_velocity;
 	bp->cruise_velocity = bp->cruise_vmax;
 	bp->exit_velocity = 0;
 	_calculate_trapezoid(bp);
+}
+
+/*
+ *	_reset_replannable_list() - resets all blocks in the planning list to be replannable
+ */	
+void _reset_replannable_list()
+{
+	mpBuf *bf = _get_first_buffer();
+	if (bf == NULL) { return;}
+	mpBuf *bp = bf;
+	do {
+		bp->replannable = true;
+	} while (((bp = _get_next_buffer(bp)) != bf) && (bp->move_state != MOVE_STATE_OFF));
 }
 
 /*
@@ -795,16 +790,8 @@ static void _plan_block_list(mpBuf *bf, uint8_t *mr_flag)
 #define MIN_TAIL_LENGTH (MIN_SEGMENT_TIME * (bf->cruise_velocity + bf->exit_velocity))
 #define MIN_BODY_LENGTH (MIN_SEGMENT_TIME * bf->cruise_velocity)
 
-static void _calculate_trapezoid(struct mpBuffer *bf) 
+static void _calculate_trapezoid(mpBuf *bf) 
 {
-	// +++++ DIAGNOSTIC CODE
-//	double min_head_length = MIN_HEAD_LENGTH;	// DIAGNOSTIC
-//	double min_body_length = MIN_BODY_LENGTH;	// DIAGNOSTIC
-//	double min_tail_length = MIN_TAIL_LENGTH;	// DIAGNOSTIC
-//	if (bf->linenum == 359) {
-//		bf->body_length = 0;	// ++++++++++++++++++++++++++++++++++++++++
-//	}
-
 	bf->head_length = 0;		// inialize the lengths
 	bf->body_length = 0;
 	bf->tail_length = 0;
@@ -924,7 +911,6 @@ static void _calculate_trapezoid(struct mpBuffer *bf)
 /*	
  * _get_target_length()		- derive accel/decl length from delta V and jerk
  * _get_target_velocity()	- derive velocity achievable from delta V and length
- * _get_target_jerk()		- derive jerk term from deltaV and length
  *
  *	This set of functions returns the fourth thing knowing the other three.
  *	
@@ -951,22 +937,20 @@ static void _calculate_trapezoid(struct mpBuffer *bf)
  *
  *	 d)	Vt = (sqrt(L)*(L/sqrt(1/Jm))^(1/6)+(1/Jm)^(1/4)*Vi)/(1/Jm)^(1/4)
  *	 e)	Vt = L^(2/3) * Jm^(1/3) + Vi
+ *
+ * FYI: Here's an expression that returns the jerk for a given deltaV and L:
+ * 	return(cube(deltaV / (pow(L, 0.66666666))));
  */
-static double _get_target_length(const double Vi, const double Vt, const struct mpBuffer *bf)
+static double _get_target_length(const double Vi, const double Vt, const mpBuf *bf)
 {
 	return (fabs(Vi-Vt) * sqrt(fabs(Vi-Vt) * bf->recip_jerk));
 }
 
-static double _get_target_velocity(const double Vi, const double L, const struct mpBuffer *bf)
+static double _get_target_velocity(const double Vi, const double L, const mpBuf *bf)
 {
 	return (pow(L, 0.66666666) * bf->cubert_jerk + Vi);
 }
-/*
-static double _get_target_jerk(const double deltaV, const double L, struct mpBuffer *bf)
-{
-	return(cube(deltaV / (pow(L, 0.66666666))));
-}
-*/
+
 /*
  * _get_junction_vmax() - Chamnit's algorithm - simple
  *
@@ -1059,18 +1043,6 @@ static double _get_junction_deviation(const double a_unit[], const double b_unit
 	return (d);
 }
 
-/*
- *	_reset_replannable_list() - resets all blocks in the planning list to be replannable
- */	
-void _reset_replannable_list()
-{
-	struct mpBuffer *bf = _get_first_buffer();
-	if (bf == NULL) { return;}
-	struct mpBuffer *bp = bf;
-	do {
-		bp->replannable = true;
-	} while (((bp = _get_next_buffer(bp)) != bf) && (bp->move_state != MOVE_STATE_OFF));
-}
 /*************************************************************************
  * feedholds - functions for performing holds
  *
@@ -1124,7 +1096,7 @@ void _reset_replannable_list()
  *
  *	Note: There are multiple opportunities for more efficient organization of 
  *		  code in this module, but the code is so complicated I just left it
- *		  organized for clarity and hoped for the best with compiler optimization. 
+ *		  organized for clarity and hoped for the best from compiler optimization. 
  */
 
 uint8_t mp_plan_hold_callback()
@@ -1136,8 +1108,8 @@ uint8_t mp_plan_hold_callback()
 	double braking_velocity;	// velocity left to shed to brake to zero
 	double braking_length;		// distance required to brake to zero from braking_velocity
 
-	if (cm.hold_state != FEEDHOLD_PLAN) { return (TG_NOOP);}
-	if ((bp = _get_run_buffer()) == NULL) { return (TG_NOOP);} // nothing's running
+	if (cm.hold_state != FEEDHOLD_PLAN) { return (TG_NOOP);}	// not planning a feedhold
+	if ((bp = _get_run_buffer()) == NULL) { return (TG_NOOP);}	// Oops! nothing's running
 
 	// examine and process mr buffer
 	mr_available_length = get_axis_vector_length(mr.endpoint, mr.position); 
@@ -1159,11 +1131,11 @@ uint8_t mp_plan_hold_callback()
 		bp->length = mr_available_length - braking_length;
 		bp->delta_vmax = _get_target_velocity(0, bp->length, bp);
 		bp->entry_vmax = 0;						// set bp+0 as hold point
-		bp->move_state = MOVE_STATE_NEW;		// tell _exec to re-use buffer
+		bp->move_state = MOVE_STATE_NEW;		// tell _exec to re-use the bf buffer
 
 //		fprintf_P(stderr,PSTR("***plan_hold(1)*** [%d] L:%f b:%f v:%f\n"),_get_buffer_index(bp), bp->length, braking_length, braking_velocity);
 
-		_reset_replannable_list();
+		_reset_replannable_list();				// make it replan all the blocks
 		_plan_block_list(_get_last_buffer(), &mr_flag);
 		cm.hold_state = FEEDHOLD_DECEL;			// set state to decelerate and exit
 		return (TG_OK);
@@ -1202,18 +1174,18 @@ uint8_t mp_plan_hold_callback()
 	// Plan the first buffer of the pair as the decel, the second as the accel
 	bp->length = braking_length;
 	bp->exit_vmax = 0;
-	bp = _get_next_buffer(bp);				// point to the acceleration buffer
+	bp = _get_next_buffer(bp);					// point to the acceleration buffer
 	bp->entry_vmax = 0;
-	bp->length -= braking_length;			// the buffers were identical (and hence their lengths)
+	bp->length -= braking_length;				// the buffers were identical (and hence their lengths)
 	bp->delta_vmax = _get_target_velocity(0, bp->length, bp);
 	bp->exit_vmax = bp->delta_vmax;
 
 //	fprintf_P(stderr, PSTR("***plan_hold(4)*** [%d] L:%f v:%f\n"),_get_buffer_index(bp), bp->length, braking_velocity);
 
-	_reset_replannable_list();
+	_reset_replannable_list();					// make it replan all the blocks
 	_plan_block_list(_get_last_buffer(), &mr_flag);
-//	mp_dump_runtime_state();					//+++++++++++++++++++++++++++++++++
-//	mp_dump_plan_buffers();						//+++++++++++++++++++++++++++++++++
+//	mp_dump_runtime_state();					//+++++ turn on __DEBUG if you need this
+//	mp_dump_plan_buffers();						//+++++ turn on __DEBUG if you need this
 	cm.hold_state = FEEDHOLD_DECEL;				// set state to decelerate and exit
 	return (TG_OK);
 }
@@ -1312,7 +1284,7 @@ uint8_t mp_end_hold_callback()
  *	 _RUN1 - run the first part
  *	 _RUN2 - run the second part 
  */
-static uint8_t _exec_aline(struct mpBuffer *bf)
+static uint8_t _exec_aline(mpBuf *bf)
 {
 	uint8_t status;
 
@@ -1345,7 +1317,6 @@ static uint8_t _exec_aline(struct mpBuffer *bf)
 		mr.exit_velocity = bf->exit_velocity;
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.endpoint, bf->target);	// save the final target of the move
-//		_mr_segment_compensation();					// compensate for non-executable segments
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -1409,8 +1380,6 @@ static uint8_t _exec_aline_head()
 		mr.elapsed_accel_time = mr.segment_accel_time / 2; // elapsed time starting point (offset)
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-//			fprintf_P(stderr,PSTR("*** _exec_head() *** ln:%ld uSec:%8.3f seg:%2.0f\n"), 
-//				mr.linenum, mr.microseconds, mr.segments);
 			return(TG_GCODE_BLOCK_SKIPPED);					// exit without advancing position
 		}
 		mr.section_state = MOVE_STATE_RUN1;
@@ -1453,7 +1422,6 @@ static uint8_t _exec_aline_body()
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-//			fprintf_P(stderr,PSTR("*** _exec_body() *** ln:%ld uSec:%8.3f\n"),mr.linenum,mr.microseconds);
 			return(TG_GCODE_BLOCK_SKIPPED);					// exit without advancing position
 		}
 		mr.section_state = MOVE_STATE_RUN;
@@ -1485,7 +1453,6 @@ static uint8_t _exec_aline_tail()
 		mr.elapsed_accel_time = mr.segment_accel_time / 2; //compute time from midpoint of segment
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-//			fprintf_P(stderr,PSTR("*** _exec_tail() *** ln:%ld uSec:%8.3f\n"), mr.linenum, mr.microseconds);
 			return(TG_GCODE_BLOCK_SKIPPED);					// exit without advancing position
 		}
 		mr.section_state = MOVE_STATE_RUN1;
@@ -1590,7 +1557,7 @@ uint8_t mp_test_write_buffer()
 
 static void _init_buffers()
 {
-	struct mpBuffer *pv;
+	mpBuf *pv;
 	uint8_t i;
 
 	memset(&mb, 0, sizeof(mb));		// clear all values, pointers and status
@@ -1605,13 +1572,13 @@ static void _init_buffers()
 	}
 }
 
-static struct mpBuffer * _get_write_buffer() 	// get & clear a buffer
+static mpBuf * _get_write_buffer() 	// get & clear a buffer
 {
 	if (mb.w->buffer_state == MP_BUFFER_EMPTY) {
-		struct mpBuffer *w = mb.w;
-		struct mpBuffer *nx = mb.w->nx;			// save pointers
-		struct mpBuffer *pv = mb.w->pv;
-		memset(mb.w, 0, sizeof(struct mpBuffer));
+		mpBuf *w = mb.w;
+		mpBuf *nx = mb.w->nx;			// save pointers
+		mpBuf *pv = mb.w->pv;
+		memset(mb.w, 0, sizeof(mpBuf));
 		w->nx = nx;								// restore pointers
 		w->pv = pv;
 		w->buffer_state = MP_BUFFER_LOADING;
@@ -1636,7 +1603,7 @@ static void _queue_write_buffer(const uint8_t move_type)
 	st_request_exec_move();						// request a move exec if not busy
 }
 
-static struct mpBuffer * _get_run_buffer() 
+static mpBuf * _get_run_buffer() 
 {
 	// condition: fresh buffer; becomes running if queued or pending
 	if ((mb.r->buffer_state == MP_BUFFER_QUEUED) || 
@@ -1661,15 +1628,15 @@ static void _free_run_buffer()					// EMPTY current run buf & adv to next
 	if (mb.w == mb.r) { cm_cycle_end();}		// end the cycle if the queue empties
 }
 
-static struct mpBuffer * _get_first_buffer(void)
+static mpBuf * _get_first_buffer(void)
 {
 	return(_get_run_buffer());	// returns buffer or NULL if nothing's running
 }
 
-static struct mpBuffer * _get_last_buffer(void)
+static mpBuf * _get_last_buffer(void)
 {
-	struct mpBuffer *bf = _get_run_buffer();
-	struct mpBuffer *bp = bf;
+	mpBuf *bf = _get_run_buffer();
+	mpBuf *bp = bf;
 
 	if (bf == NULL) { return(NULL);}
 
@@ -1682,31 +1649,31 @@ static struct mpBuffer * _get_last_buffer(void)
 }
 
 // Use the macro instead
-//static struct mpBuffer * _get_prev_buffer(const struct mpBuffer *bf) { return (bf->pv);}
-//static struct mpBuffer * _get_next_buffer(const struct mpBuffer *bf) { return (bf->nx);}
+//static mpBuf * _get_prev_buffer(const mpBuf *bf) { return (bf->pv);}
+//static mpBuf * _get_next_buffer(const mpBuf *bf) { return (bf->nx);}
 
-static void _clear_buffer(struct mpBuffer *bf) 
+static void _clear_buffer(mpBuf *bf) 
 {
-	struct mpBuffer *nx = bf->nx;	// save pointers
-	struct mpBuffer *pv = bf->pv;
-	memset(bf, 0, sizeof(struct mpBuffer));
+	mpBuf *nx = bf->nx;	// save pointers
+	mpBuf *pv = bf->pv;
+	memset(bf, 0, sizeof(mpBuf));
 	bf->nx = nx;					// restore pointers
 	bf->pv = pv;
 }
 
-static void _copy_buffer(struct mpBuffer *bf, const struct mpBuffer *bp)
+static void _copy_buffer(mpBuf *bf, const mpBuf *bp)
 {
-	struct mpBuffer *nx = bf->nx;	// save pointers
-	struct mpBuffer *pv = bf->pv;
- 	memcpy(bf, bp, sizeof(struct mpBuffer));
+	mpBuf *nx = bf->nx;	// save pointers
+	mpBuf *pv = bf->pv;
+ 	memcpy(bf, bp, sizeof(mpBuf));
 	bf->nx = nx;					// restore pointers
 	bf->pv = pv;
 }
 
 #ifdef __DEBUG	// currently this routine is only used by debug routines
-static uint8_t _get_buffer_index(struct mpBuffer *bf) 
+static uint8_t _get_buffer_index(mpBuf *bf) 
 {
-	struct mpBuffer *b = bf;		// temp buffer pointer
+	mpBuf *b = bf;		// temp buffer pointer
 
 	for (uint8_t i=0; i < PLANNER_BUFFER_POOL_SIZE; i++) {
 		if (b->pv > b) {
@@ -1728,7 +1695,7 @@ static uint8_t _get_buffer_index(struct mpBuffer *bf)
 void mp_dump_running_plan_buffer() { _dump_plan_buffer(mb.r);}
 void mp_dump_plan_buffer_by_index(uint8_t index) { _dump_plan_buffer(&mb.bf[index]);	}
 
-static void _dump_plan_buffer(struct mpBuffer *bf)
+static void _dump_plan_buffer(mpBuf *bf)
 {
 	fprintf_P(stderr, PSTR("***Runtime Buffer[%d] bstate:%d  mtype:%d  mstate:%d  replan:%d\n"),
 			_get_buffer_index(bf),
@@ -1791,9 +1758,9 @@ void mp_dump_runtime_state(void)
 
 static void _test_calculate_trapezoid(void);
 static void _test_get_junction_vmax(void);
-static void _test_trapezoid(double length, double Ve, double Vt, double Vx, struct mpBuffer *bf);
+static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBuf *bf);
 static void _make_unit_vector(double unit[], double x, double y, double z, double a, double b, double c);
-//static void _set_jerk(const double jerk, struct mpBuffer *bf);
+//static void _set_jerk(const double jerk, mpBuf *bf);
 
 void mp_unit_tests()
 {
@@ -1801,7 +1768,7 @@ void mp_unit_tests()
 //	_test_get_junction_vmax();
 }
 
-static void _test_trapezoid(double length, double Ve, double Vt, double Vx, struct mpBuffer *bf)
+static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBuf *bf)
 {
 	bf->length = length;
 	bf->entry_velocity = Ve;
@@ -1817,7 +1784,7 @@ static void _test_trapezoid(double length, double Ve, double Vt, double Vx, stru
 
 static void _test_calculate_trapezoid()
 {
-	struct mpBuffer *bf = _get_write_buffer();
+	mpBuf *bf = _get_write_buffer();
 
 // these tests are calibrated the following parameters:
 //	jerk_max 				50 000 000		(all axes)

@@ -57,10 +57,8 @@ enum moveState {
 /* ESTD_SEGMENT_USEC	 Microseconds per planning segment
  *	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
  */
+#define NOM_SEGMENT_USEC ((double)5000)			// nominal segment time
 #define MIN_SEGMENT_USEC ((double)2500)			// minimum segment time
-#define NOM_SEGMENT_USEC ((double)5000)		// nominal segment time
-//#define MIN_SEGMENT_USEC ((double)5000)			// minimum segment time
-//#define NOM_SEGMENT_USEC ((double)10000)		// nominal segment time
 #define MIN_ARC_SEGMENT_USEC ((double)20000)	// minimum arc segment time
 #define NOM_SEGMENT_TIME (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
@@ -90,7 +88,7 @@ enum moveState {
  */
 #define TRAPEZOID_ITERATION_MAX 10
 #define TRAPEZOID_ITERATION_ERROR_PERCENT 0.10
-#define TRAPEZOID_LENGTH_FIT_TOLERANCE (0.0001)
+#define TRAPEZOID_LENGTH_FIT_TOLERANCE (0.0001)	// allowable mm of error in planning phase
 #define TRAPEZOID_VELOCITY_TOLERANCE (max(2,bf->entry_velocity/100))
 
 /*

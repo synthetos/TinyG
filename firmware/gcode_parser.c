@@ -347,8 +347,9 @@ static uint8_t _execute_gcode_block()
 	EXEC_FUNC(cm_select_tool, tool);
 	EXEC_FUNC(cm_change_tool, tool);
 	EXEC_FUNC(cm_spindle_control, spindle_mode); 	// spindle on or off
-	//--> coolant on or off goes here
-	//--> enable or disable overrides goes here
+	EXEC_FUNC(cm_mist_coolant_control, mist_coolant); 
+	EXEC_FUNC(cm_flood_coolant_control, flood_coolant);	// also disables mist coolant if OFF 
+	EXEC_FUNC(cm_feed_override_enable, feed_override_enable);
 
 	if (gn.next_action == NEXT_ACTION_DWELL) { 		// G4 - dwell
 		ritorno(cm_dwell(gn.dwell_time));			// return if error, otherwise complete the block
