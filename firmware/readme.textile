@@ -1,4 +1,8 @@
-h2. Readme for TinyG Release 0.93
+h2. Readme for TinyG Development Branch
+This is the TinyG development branch. The code is completely experimental. There's a good chance that it won't work. If you are interested in the official supported release see the Master branch. If you are experimenting you might check out the Edge branch, which is typically at an alpha state.   
+
+
+h2. Readme for TinyG 0.93 release
 
 Release 0.93 is the last planned pre-production release for TinyG. Many things have been fixed since 0.92 and major new functionality has been added. At this point we think the code base is pretty solid.
 
