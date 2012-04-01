@@ -35,7 +35,7 @@
 /*** System setup and operation ***/
 
 #define ENABLE_ACCELERATION 1				// 1 to enable
-#define DISABLED_ACCELERATION_JERK 2000000000	// jerk to use if acceleration disabled
+#define DISABLED_ACCELERATION_JERK	2000000000	// jerk to use if acceleration disabled
 
 #define STATUS_REPORT_INTERVAL_MS	100		// ms
 #define STATUS_REPORT_MIN_MS		30		// ms - enforce a viable minimum
@@ -50,11 +50,11 @@
 
 /*** Communications defaults ***/
 
-#define COM_APPEND_TX_CR		FALSE
-#define COM_IGNORE_RX_CR		FALSE
-#define COM_IGNORE_RX_LF		FALSE
-#define COM_ENABLE_XON			TRUE
-#define COM_ENABLE_ECHO			TRUE
+#define COM_APPEND_TX_CR			FALSE
+#define COM_IGNORE_RX_CR			FALSE
+#define COM_IGNORE_RX_LF			FALSE
+#define COM_ENABLE_XON				TRUE
+#define COM_ENABLE_ECHO				TRUE
 
 /**** MACHINE PROFILES ******************************************************/
 // default machine profiles - chose only one:
