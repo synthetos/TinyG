@@ -166,15 +166,15 @@
 #define G54_B_OFFSET 0
 #define G54_C_OFFSET 0
 
-#define G55_X_OFFSET X_TRAVEL_MAX/2
-#define G55_Y_OFFSET Y_TRAVEL_MAX/2
+#define G55_X_OFFSET 0
+#define G55_Y_OFFSET 0
 #define G55_Z_OFFSET 0
 #define G55_A_OFFSET 0
 #define G55_B_OFFSET 0
 #define G55_C_OFFSET 0
 
-#define G56_X_OFFSET 1
-#define G56_Y_OFFSET 1
+#define G56_X_OFFSET 0
+#define G56_Y_OFFSET 0
 #define G56_Z_OFFSET 0
 #define G56_A_OFFSET 0
 #define G56_B_OFFSET 0

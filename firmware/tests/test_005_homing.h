@@ -7,5 +7,5 @@
  */
 const char PROGMEM test_homing[] = "\
 (MSG**** Homing Test [v1] ****)\n\
-g28.1x0y0\n\
+g28.1x0y0z0\n\
 m30";
