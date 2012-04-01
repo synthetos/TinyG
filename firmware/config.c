@@ -348,11 +348,11 @@ char str_test[] PROGMEM = "te,test,";	// specialized _print_test() function
 char str_defa[] PROGMEM = "de,defa,";	// restore default settings
 
 // Gcode model power-on reset default values
-char str_gpl[] PROGMEM = "gpl,gcode_pl,[gpl] gcode_select_plane %10d [G17,G18,G19]\n";
-char str_gun[] PROGMEM = "gun,gcode_u, [gun] gcode_units_mode   %10d [G20,G21]\n";
-char str_gco[] PROGMEM = "gco,gcode_c, [gco] gcode_coord_system %10d [G54-G59]\n";
-char str_gpa[] PROGMEM = "gpa,gcode_pa,[gpa] gcode_path_control %10d [G61,G61.1,G64]\n";
-char str_gdi[] PROGMEM = "gdi,gcode_d, [gdi] gcode_distance_mode%10d [G90,G91]\n";
+char str_gpl[] PROGMEM = "gpl,gcode_pl,[gpl] gcode_select_plane %10d [0,1,2]\n";
+char str_gun[] PROGMEM = "gun,gcode_u, [gun] gcode_units_mode   %10d [0,1]\n";
+char str_gco[] PROGMEM = "gco,gcode_c, [gco] gcode_coord_system %10d [1-6]\n";
+char str_gpa[] PROGMEM = "gpa,gcode_pa,[gpa] gcode_path_control %10d [0,1,2]\n";
+char str_gdi[] PROGMEM = "gdi,gcode_d, [gdi] gcode_distance_mode%10d [0,1]\n";
 char str_gc[] PROGMEM = "gc,gcod,[gc]";
 
 char str_ea[] PROGMEM = "ea,enable_a,[ea]  enable_acceleration%10d [0,1]\n";
@@ -617,12 +617,12 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_defa,help_print_defaults_help,_get_nul,_set_defa,(double *)&tg.null,0 },
 
 	// NOTE: The ordering within the gcode group is important for token resolution
-	{ str_gc,  _print_nul, _get_gc, _run_gc,  (double *)&tg.null, 0 },	 // gcode block
 	{ str_gpl, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.select_plane,			GCODE_DEFAULT_PLANE },
 	{ str_gun, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.units_mode,			GCODE_DEFAULT_UNITS },
 	{ str_gco, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.coord_system,			GCODE_DEFAULT_COORD_SYSTEM },
 	{ str_gpa, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.path_control,			GCODE_DEFAULT_PATH_CONTROL },
 	{ str_gdi, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.distance_mode,			GCODE_DEFAULT_DISTANCE_MODE },
+	{ str_gc,  _print_nul, _get_gc, _run_gc,  (double *)&tg.null, 0 },	 // gcode block
 
 	{ str_ea, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_acceleration, 	ENABLE_ACCELERATION },
 	{ str_ja, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.junction_acceleration,	JUNCTION_ACCELERATION },
