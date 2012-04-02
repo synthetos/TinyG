@@ -161,7 +161,7 @@ enum tgCodes {
 //Note: This is the point where the naming convention switched to bad fashion
 //#define TINYG_VERSION "build 324.15 - \"Argyles\""
 //#define TINYG_VERSION "0.911 (build 325.07 - \"Butt Slogan\")"
-#define TINYG_VERSION "0.92 (build 326.01 - \"Crocs\")"
+#define TINYG_VERSION "0.92 (build 326.06 - \"Crocs\")"
 //#define TINYG_VERSION "build 327.01 - \"Daisy Dukes\""
 //#define TINYG_VERSION "build 328.01 - \"Elastic Belt\""
 //#define TINYG_VERSION "build 329.01 - \"Fanny Pack\""

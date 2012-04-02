@@ -125,13 +125,11 @@ struct mpMoveRuntimeSingleton {	// persistent runtime variables
 
 	double position[AXES];		// final move position
 	double target[AXES];		// target move position
-	double section_target[AXES];// target for current section
 
 	double length;				// length of line or helix in mm
 	double move_time;			// total running time (derived)
 	double accel_time;			// total pseudo-time for acceleration calculation
 	double elapsed_accel_time;	// current running time for accel calculation
-	double endpoint_velocity;	// exit velocity for section
 	double midpoint_velocity;	// velocity at accel/decel midpoint
 	double midpoint_acceleration;//acceleration at the midpoint
 	double jerk_div2;			// max linear jerk divided by 2
@@ -162,7 +160,6 @@ static uint8_t _mp_exec_aline_head(struct mpBuffer *bf);
 static uint8_t _mp_exec_aline_body(struct mpBuffer *bf);
 static uint8_t _mp_exec_aline_tail(struct mpBuffer *bf);
 static uint8_t _mp_exec_aline_segment(struct mpBuffer *bf);
-//static void _mp_finalize_aline_segment(struct mpBuffer *bf);
 
 //UNUSED static void _mp_kill_dispatcher(void);
 
@@ -1052,17 +1049,22 @@ static double _mp_get_corner_delta(const double a_unit[], const double b_unit[])
  *	_mp_exec_aline_body()		- helper for cruise section
  *	_mp_exec_aline_tail()		- helper for deceleration section
  *	_mp_exec_aline_segment()	- helper for running a segment
- *	_mp_exec_aline_finalize()	- helper for running a finalize segment
  *
  *	Returns:
- *	 TG_NOOP	no operation occurred
- *	 TG_AGAIN	move is not finished - continue iteration
+ *	 TG_AGAIN	move is not finished - has more segments to run
  *	 TG_OK		move is done. Returning TG_OK makes caller free the bf buffer
- *	 TG_xxxxx	move finished with error. Free buffer
+ *	 TG_xxxxx	fatal error. Ends the move and frees the bf buffer
  *	
- *	This routine is called from the (LO) interrupt level. It must either 
- *	execute and prepare a single line segment or return TG_OK if done.
+ *	This routine is called from the (LO) interrupt level. The interrupt 
+ *	sequencing relies on the behaviors of the routines being exactly correct.
+ *	Each call to _mp_exec_aline() must execute and prep *one and only one* 
+ *	segment. If the segment is the not the last segment in the bf buffer the 
+ *	_aline() must return TG_EAGAIN. If it's the last segment it must return 
+ *	TG_OK. If it encounters a fatal error that would terminate the move it 
+ *	should return a valid error code. Failure to obey this will introduce 
+ *	subtle and very difficult to diagnose bugs (trust me on this).
  *
+ * OPERATION:
  *	Aline generates jerk-controlled S-curves as per Ed Red's course notes:
  *	http://www.et.byu.edu/~ered/ME537/Notes/Ch5.pdf
  *	http://www.scribd.com/doc/63521608/Ed-Red-Ch5-537-Jerk-Equations
@@ -1156,8 +1158,8 @@ static uint8_t _mp_exec_aline_head(struct mpBuffer *bf)
 		mr.segment_move_time = mr.move_time / (2 * mr.segments);
 		mr.segment_accel_time = mr.accel_time / (2 * mr.segments);// time to advance for each segment
 		mr.elapsed_accel_time = mr.segment_accel_time / 2; // elapsed time starting point (offset)
-		mr.microseconds = uSec(mr.segment_move_time);
 		mr.segment_count = (uint32_t)mr.segments;
+		mr.microseconds = uSec(mr.segment_move_time);
 		mr.sub_state = MOVE_STATE_RUN1;
 	}
 	if (mr.sub_state == MOVE_STATE_RUN1) {
@@ -1191,21 +1193,16 @@ static uint8_t _mp_exec_aline_head(struct mpBuffer *bf)
 static uint8_t _mp_exec_aline_body(struct mpBuffer *bf) 
 {
 	if (mr.sub_state == MOVE_STATE_NEW) {
-		// look for various premature end conditions
 		if (bf->body_length < MIN_LINE_LENGTH) {
 			mr.move_state = MOVE_STATE_TAIL;
 			return(_mp_exec_aline_tail(bf));	// skip ahead
 		}
 		mr.move_time = bf->body_length / bf->cruise_velocity;
 		mr.segments = ceil(uSec(mr.move_time) / cfg.estd_segment_usec);
-//		if ((uint16_t)mr.segments == 0) {		// no segments - shouldn't have got this far
-//			mr.move_state = MOVE_STATE_TAIL;
-//			return (_mp_exec_aline_tail(bf));	// skip ahead
-//		}
 		mr.segment_move_time = mr.move_time / mr.segments;
-		mr.microseconds = uSec(mr.segment_move_time);
-		mr.segment_count = (uint32_t)mr.segments;
 		mr.segment_velocity = bf->cruise_velocity;
+		mr.segment_count = (uint32_t)mr.segments;
+		mr.microseconds = uSec(mr.segment_move_time);
 		mr.sub_state = MOVE_STATE_RUN;
 	}
 	if (mr.sub_state == MOVE_STATE_RUN) {
@@ -1237,8 +1234,8 @@ static uint8_t _mp_exec_aline_tail(struct mpBuffer *bf)
 		mr.segment_move_time = mr.move_time / (2 * mr.segments);// time to advance for each segment
 		mr.segment_accel_time = mr.accel_time / (2 * mr.segments);// time to advance for each segment
 		mr.elapsed_accel_time = mr.segment_accel_time / 2; //compute time from midpoint of segment
-		mr.microseconds = uSec(mr.segment_move_time);
 		mr.segment_count = (uint32_t)mr.segments;
+		mr.microseconds = uSec(mr.segment_move_time);
 		mr.sub_state = MOVE_STATE_RUN1;
 	}
 	if (mr.sub_state == MOVE_STATE_RUN1) {
@@ -1276,18 +1273,17 @@ static uint8_t _mp_exec_aline_segment(struct mpBuffer *bf)
 		mr.target[i] = mr.position[i] + (bf->unit[i] * mr.segment_velocity * mr.segment_move_time);
 		travel[i] = mr.target[i] - mr.position[i];
 	}
-	// queue the line and adjust the variables for the next iteration
+	// prep the segment for the steppers and adjust the variables for the next iteration
 	(void)ik_kinematics(travel, steps, mr.microseconds);
 	SEGMENT_LOGGER				// DEBUG statement
 	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
-		copy_axis_vector(mr.position, mr.target); // update runtime position	
+		copy_axis_vector(mr.position, mr.target); 	// update runtime position	
 	}
-	mr.elapsed_accel_time += mr.segment_accel_time; // ignored if running a cruise
-	if (--mr.segment_count != 0) {
-		return (TG_EAGAIN);			// this section still has more segments to run
-	} else {
+	mr.elapsed_accel_time += mr.segment_accel_time; // NB: ignored if running the body
+	if (--mr.segment_count == 0) {
 		return (TG_COMPLETE);		// this section has run all its segments
 	}
+	return (TG_EAGAIN);			// this section still has more segments to run
 }
 
 /*
