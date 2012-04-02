@@ -38,8 +38,7 @@ enum runState {
 	MOVE_STATE_RUN2,		// used for sub-states
 	MOVE_STATE_HEAD,		// aline() acceleration portions
 	MOVE_STATE_BODY,		// aline() cruise portions
-	MOVE_STATE_TAIL,		// aline() deceleration portions
-	MOVE_STATE_FINAL		// aline() finalize
+	MOVE_STATE_TAIL			// aline() deceleration portions
 };
 #define MOVE_STATE_RUN1 MOVE_STATE_RUN // a convenience
 
