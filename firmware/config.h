@@ -145,7 +145,7 @@ struct cfgAxisParameters {
 	double jerk_max;				// max jerk (Jm) in mm/min^3
 	double junction_dev;			// aka cornering delta
 	double radius;					// radius in mm for rotary axis modes
-	uint8_t switch_mode;			// 1=limit switches enabled, 0=not enabled
+	uint8_t switch_mode;			// 0=disabled, 1=enabled NO for homing only, 2=enabled NO for homing & limits
 	double search_velocity;			// homing search velocity
 	double latch_velocity;			// homing latch velocity
 	double zero_offset;				// machine coordinate system zero offset from switches (backoff value)

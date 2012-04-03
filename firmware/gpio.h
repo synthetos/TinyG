@@ -59,6 +59,14 @@ enum swFlags {	 			// indexes into sw_flag array
 };
 #define SW_OFFSET_TO_MAX 4
 
+enum swMode {				// limit switch operation modes
+	SW_MODE_DISABLED = 0,	// disabled for all operations
+	SW_MODE_HOMING_NO,		// enable NO switch for homing only
+	SW_MODE_ENABLED_NO,		// enable NO switch for homing and limits
+	SW_MODE_HOMING_NC,		// enable NC switch for homing only
+	SW_MODE_ENABLED_NC		// enable NC switch for homing and limits
+};
+
 struct gpioStruct {							// switch state
 	volatile uint8_t sw_thrown;				// 1=thrown (Note 1)
 	volatile uint8_t sw_count;				// lockout counter (debouncing)
