@@ -67,8 +67,7 @@
 // 'T' test
 #include "gcode/gcode_startup_tests.h" // system tests and other assorted test code
 // 'U' test
-//#include "gcode/gcode_test001.h"
-#include "gcode/gcode_test_002.h"
+#include "gcode/gcode_test001.h"
 //#include "gcode/gcode_star_1x1.h"
 //#include "gcode/gcode_square_pocket.h"
 //#include "gcode/gcode_reilly_111115.h"
@@ -491,8 +490,8 @@ static void _tg_canned_startup()
 //	xio_queue_RX_string_usb("%\n");				// resume
 
 /* G0's */
-	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
-	xio_queue_RX_string_usb("g0 x2\n");
+//	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
+//	xio_queue_RX_string_usb("g0 x2\n");
 //	xio_queue_RX_string_usb("g0 x3\n");
 //	xio_queue_RX_string_usb("g0 y3\n");
 //	xio_queue_RX_string_usb("g0 x3 y4 z5.5\n");
