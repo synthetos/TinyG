@@ -784,6 +784,7 @@ void _reset_replannable_list()
  *	The order of the cases/tests in the code is pretty important
  */
 
+// The minimum lengths are dynamic, and depend on the velocity
 // These expressions evaluate to the minimum lengths for the current velocity settings
 // Note: The head and tail lengths are 2 minimum segments, the body is 1 min segment
 #define MIN_HEAD_LENGTH (MIN_SEGMENT_TIME * (bf->cruise_velocity + bf->entry_velocity))
@@ -1184,9 +1185,9 @@ uint8_t mp_plan_hold_callback()
 
 	_reset_replannable_list();					// make it replan all the blocks
 	_plan_block_list(_get_last_buffer(), &mr_flag);
-//	mp_dump_runtime_state();					//+++++ turn on __DEBUG if you need this
-//	mp_dump_plan_buffers();						//+++++ turn on __DEBUG if you need this
 	cm.hold_state = FEEDHOLD_DECEL;				// set state to decelerate and exit
+												//	mp_dump_runtime_state(); //+++++ turn on __DEBUG if you need this
+												//	mp_dump_plan_buffers(); //+++++ turn on __DEBUG if you need this
 	return (TG_OK);
 }
 
@@ -1397,8 +1398,7 @@ static uint8_t _exec_aline_head()
 		mr.segment_velocity = mr.midpoint_velocity + (mr.elapsed_accel_time * mr.midpoint_acceleration) -
 							 (square(mr.elapsed_accel_time) * mr.jerk_div2);
 		if (_exec_aline_segment(false) == TG_COMPLETE) {
-			if ((mr.body_length < MIN_LINE_LENGTH) && 
-				(mr.tail_length < MIN_LINE_LENGTH)) { return(TG_OK);}	// end the move
+			if ((mr.body_length < EPSILON) && (mr.tail_length < EPSILON)) { return(TG_OK);}	// end the move
 			mr.move_state = MOVE_STATE_BODY;
 			mr.section_state = MOVE_STATE_NEW;
 		}
@@ -1428,7 +1428,7 @@ static uint8_t _exec_aline_body()
 	}
 	if (mr.section_state == MOVE_STATE_RUN) {
 		if (_exec_aline_segment(false) == TG_COMPLETE) {
-			if (mr.tail_length < MIN_LINE_LENGTH) { return(TG_OK);}	// end the move
+			if (mr.tail_length < EPSILON) { return(TG_OK);}	// end the move
 			mr.move_state = MOVE_STATE_TAIL;
 			mr.section_state = MOVE_STATE_NEW;
 		}
