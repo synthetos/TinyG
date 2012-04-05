@@ -50,8 +50,9 @@
 #include "tests/test_008_json.h"	// JSON parser and IO
 #include "tests/test_009_inverse_time.h"// inverse time mode
 #include "tests/test_010_rotary.h"	// ABC axes
+#include "tests/test_011_small_moves.h"	// small move tests
 #include "tests/test_050_mudflap.h"	// mudflap test - entire drawing
-#include "tests/test_051_BRAID.h"	// braid test - partial drawing
+#include "tests/test_051_braid.h"	// braid test - partial drawing
 
 /*
  * tg_test() - system tests from FLASH invoked by $test=n command
@@ -73,6 +74,7 @@ uint8_t tg_test(cmdObj *cmd)
 		case 8: { xio_open_pgm(PGMFILE(&test_json)); break;}
 		case 9: { xio_open_pgm(PGMFILE(&test_inverse_time)); break;}
 		case 10: { xio_open_pgm(PGMFILE(&test_rotary)); break;}
+		case 11: { xio_open_pgm(PGMFILE(&test_small_moves)); break;}
 		case 50: { xio_open_pgm(PGMFILE(&test_mudflap)); break;}
 		case 51: { xio_open_pgm(PGMFILE(&test_braid)); break;}
 		default: {
@@ -104,7 +106,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$test=3\n");
 //	xio_queue_RX_string_usb("$test=4\n");
 //	xio_queue_RX_string_usb("$test=50\n");
-	xio_queue_RX_string_usb("$test=51\n");
+//	xio_queue_RX_string_usb("$test=51\n");
+	xio_queue_RX_string_usb("$test=11\n");
 
 /* Other command sequences */
 //	xio_queue_RX_string_usb("H\n");				// show help file
