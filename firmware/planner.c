@@ -283,7 +283,7 @@ void mp_flush_planner()
  *	 - mm.position	- start and end position for planning
  *	 - mr.position	- current position of runtime segment
  *	 - mr.target	- target position of runtime segment
- *	 - bf->target	- final target position of runtime segment
+ *	 - mr.endpoint	- final target position of runtime segment
  *
  *	Note that the positions are set immediately when they are computed and 
  *	are not an accurate representation of the tool position. In reality 
