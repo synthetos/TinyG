@@ -884,7 +884,7 @@ static uint8_t _set_sr(cmdObj *cmd)
 
 static uint8_t _set_si(cmdObj *cmd) 
 {
-	if (cmd->value < STATUS_REPORT_MIN_MS) {
+	if ((cmd->value < STATUS_REPORT_MIN_MS) && (cmd->value!=0)) {
 		cmd->value = STATUS_REPORT_MIN_MS;
 	}
 	cfg.status_report_interval = (uint32_t)cmd->value;

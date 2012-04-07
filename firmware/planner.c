@@ -556,10 +556,6 @@ uint8_t mp_aline(const double target[], const double minutes)
 	}
 	bf->linenum = cm_get_linenum();
 	mm.linenum = bf->linenum;					// block being planned
-	if (mm.linenum == 293) {
-		mm.linenum++;
-		mm.linenum--;
-	}
 
 	bf->time = minutes;
 	bf->length = length;
