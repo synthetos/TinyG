@@ -517,8 +517,7 @@ uint8_t cm_set_origin_offsets(double offset[], double flag[])	// G92
 	gm.origin_offset_mode = true;
 	for (uint8_t i=0; i<AXES; i++) {
 		if (flag[i] > EPSILON) {	 	// behaves according to NIST 3.5.18
-			gm.origin_offset[i] = gm.position[i] 
-								  - cfg.offset[gm.coord_system][i] 
+			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] 
 								  - _to_millimeters(offset[i]);
 		}
 	}

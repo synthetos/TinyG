@@ -348,11 +348,11 @@ char str_test[] PROGMEM = "te,test,";	// specialized _print_test() function
 char str_defa[] PROGMEM = "de,defa,";	// restore default settings
 
 // Gcode model power-on reset default values
-char str_gpl[] PROGMEM = "gpl,gcode_pl,[gpl] gcode_select_plane %10d [G17,G18,G19]\n";
-char str_gun[] PROGMEM = "gun,gcode_u, [gun] gcode_units_mode   %10d [G20,G21]\n";
-char str_gco[] PROGMEM = "gco,gcode_c, [gco] gcode_coord_system %10d [G54-G59]\n";
-char str_gpa[] PROGMEM = "gpa,gcode_pa,[gpa] gcode_path_control %10d [G61,G61.1,G64]\n";
-char str_gdi[] PROGMEM = "gdi,gcode_d, [gdi] gcode_distance_mode%10d [G90,G91]\n";
+char str_gpl[] PROGMEM = "gpl,gcode_pl,[gpl] gcode_select_plane %10d [0,1,2]\n";
+char str_gun[] PROGMEM = "gun,gcode_u, [gun] gcode_units_mode   %10d [0,1]\n";
+char str_gco[] PROGMEM = "gco,gcode_c, [gco] gcode_coord_system %10d [1-6]\n";
+char str_gpa[] PROGMEM = "gpa,gcode_pa,[gpa] gcode_path_control %10d [0,1,2]\n";
+char str_gdi[] PROGMEM = "gdi,gcode_d, [gdi] gcode_distance_mode%10d [0,1]\n";
 char str_gc[] PROGMEM = "gc,gcod,[gc]";
 
 char str_ea[] PROGMEM = "ea,enable_a,[ea]  enable_acceleration%10d [0,1]\n";
@@ -403,7 +403,7 @@ char str_xvm[] PROGMEM = "xvm,x_v,[xvm] x_velocity_maximum%15.3f%S/min\n";
 char str_xtm[] PROGMEM = "xtm,x_t,[xtm] x_travel_maximum%17.3f%S\n";
 char str_xjm[] PROGMEM = "xjm,x_je,[xjm] x_jerk_maximum%15.0f%S/min^3\n";
 char str_xjd[] PROGMEM = "xjd,x_ju,[xjd] x_junction_deviation%14.4f%S\n";
-char str_xsm[] PROGMEM = "xsm,x_s,[xsm] x_switch_mode%16d [0,1]\n";
+char str_xsm[] PROGMEM = "xsm,x_s,[xsm] x_switch_mode%16d [0,1,2]\n";
 char str_xsv[] PROGMEM = "xsv,x_s,[xsv] x_search_velocity%16.3f%S/min\n";
 char str_xlv[] PROGMEM = "xlv,x_l,[xlv] x_latch_velocity%17.3f%S/min\n";
 char str_xzo[] PROGMEM = "xzo,x_z,[xzo] x_zero_offset%20.3f%S\n";
@@ -414,7 +414,7 @@ char str_yvm[] PROGMEM = "yvm,y_v,[yvm] y_velocity_maximum%15.3f%S/min\n";
 char str_ytm[] PROGMEM = "ytm,y_t,[ytm] y_travel_maximum%17.3f%S\n";
 char str_yjm[] PROGMEM = "yjm,y_je,[yjm] y_jerk_maximum%15.0f%S/min^3\n";
 char str_yjd[] PROGMEM = "yjd,y_ju,[yjd] y_junction_deviation%14.4f%S\n";
-char str_ysm[] PROGMEM = "ysm,y_s,[ysm] y_switch_mode%16d [0,1]\n";
+char str_ysm[] PROGMEM = "ysm,y_s,[ysm] y_switch_mode%16d [0,1,2]\n";
 char str_ysv[] PROGMEM = "ysv,y_s,[ysv] y_search_velocity%16.3f%S/min\n";
 char str_ylv[] PROGMEM = "ylv,y_l,[ylv] y_latch_velocity%17.3f%S/min\n";
 char str_yzo[] PROGMEM = "yzo,y_z,[yzo] y_zero_offset%20.3f%S\n";
@@ -425,7 +425,7 @@ char str_zvm[] PROGMEM = "zvm,z_v,[zvm] z_velocity_maximum%15.3f%S/min\n";
 char str_ztm[] PROGMEM = "ztm,z_t,[ztm] z_travel_maximum%17.3f%S\n";
 char str_zjm[] PROGMEM = "zjm,z_je,[zjm] z_jerk_maximum%15.0f%S/min^3\n";
 char str_zjd[] PROGMEM = "zjd,z_ju,[zjd] z_junction_deviation%14.4f%S\n";
-char str_zsm[] PROGMEM = "zsm,z_s,[zsm] z_switch_mode%16d [0,1]\n";
+char str_zsm[] PROGMEM = "zsm,z_s,[zsm] z_switch_mode%16d [0,1,2]\n";
 char str_zsv[] PROGMEM = "zsv,z_s,[zsv] z_search_velocity%16.3f%S/min\n";
 char str_zlv[] PROGMEM = "zlv,z_l,[zlv] z_latch_velocity%17.3f%S/min\n";
 char str_zzo[] PROGMEM = "zzo,z_z,[zzo] z_zero_offset%20.3f%S\n";
@@ -437,7 +437,7 @@ char str_atm[] PROGMEM = "atm,a_t,[atm] a_travel_maximum  %15.3f%S\n";
 char str_ajm[] PROGMEM = "ajm,a_je,[ajm] a_jerk_maximum%15.0f%S/min^3\n";
 char str_ajd[] PROGMEM = "ajd,a_ju,[ajc] a_junction_deviation%14.4f%S\n";
 char str_ara[] PROGMEM = "ara,a_r,[ara] a_radius_value%20.4f%S\n";
-char str_asm[] PROGMEM = "asm,a_s,[asm] a_switch_mode%16d [0,1]\n";
+char str_asm[] PROGMEM = "asm,a_s,[asm] a_switch_mode%16d [0,1,2]\n";
 char str_asv[] PROGMEM = "asv,a_s,[asv] a_search_velocity%16.3f%S/min\n";
 char str_alv[] PROGMEM = "alv,a_l,[alv] a_latch_velocity%17.3f%S/min\n";
 char str_azo[] PROGMEM = "azo,a_z,[azo] a_zero_offset%20.3f%S\n";
@@ -449,7 +449,7 @@ char str_btm[] PROGMEM = "btm,b_t,[btm] b_travel_maximum%17.3f%S\n";
 char str_bjm[] PROGMEM = "bjm,b_je,[bjm] b_jerk_maximum%15.0f%S/min^3\n";
 char str_bjd[] PROGMEM = "bcd,b_ju,[bjd] b_junction_deviation%14.4f%S\n";
 char str_bra[] PROGMEM = "bra,b_r,[bra] b_radius_value%20.4f%S\n";
-char str_bsm[] PROGMEM = "bsm,b_s,[bsm] b_switch_mode%16d [0,1]\n";
+char str_bsm[] PROGMEM = "bsm,b_s,[bsm] b_switch_mode%16d [0,1,2]\n";
 char str_bsv[] PROGMEM = "bsv,b_s,[bsv] b_search_velocity%16.3f%S/min\n";
 char str_blv[] PROGMEM = "blv,b_l,[blv] b_latch_velocity%17.3f%S/min\n";
 char str_bzo[] PROGMEM = "bzo,b_z,[bzo] b_zero_offset%20.3f%S\n";
@@ -461,7 +461,7 @@ char str_ctm[] PROGMEM = "ctm,c_t,[ctm] c_travel_maximum%17.3f%S\n";
 char str_cjm[] PROGMEM = "cjm,c_je,[cjm] c_jerk_maximum%15.0f%S/min^3\n";
 char str_cjd[] PROGMEM = "cjd,c_ju,[cjd] c_junction_deviation%14.4f%S\n";
 char str_cra[] PROGMEM = "cra,c_r,[cra] c_radius_value%20.4f%S\n";
-char str_csm[] PROGMEM = "csm,c_s,[csm] c_switch_mode%16d [0,1]\n";
+char str_csm[] PROGMEM = "csm,c_s,[csm] c_switch_mode%16d [0,1,2]\n";
 char str_csv[] PROGMEM = "csv,c_s,[csv] c_search_velocity%16.3f%S/min\n";
 char str_clv[] PROGMEM = "cls,c_l,[clv] c_latch_velocity%17.3f%S/min\n";
 char str_czo[] PROGMEM = "czo,c_z,[czo] c_zero_offset%20.3f%S\n";
@@ -617,12 +617,12 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_defa,help_print_defaults_help,_get_nul,_set_defa,(double *)&tg.null,0 },
 
 	// NOTE: The ordering within the gcode group is important for token resolution
-	{ str_gc,  _print_nul, _get_gc, _run_gc,  (double *)&tg.null, 0 },	 // gcode block
 	{ str_gpl, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.select_plane,			GCODE_DEFAULT_PLANE },
 	{ str_gun, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.units_mode,			GCODE_DEFAULT_UNITS },
 	{ str_gco, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.coord_system,			GCODE_DEFAULT_COORD_SYSTEM },
 	{ str_gpa, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.path_control,			GCODE_DEFAULT_PATH_CONTROL },
 	{ str_gdi, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.distance_mode,			GCODE_DEFAULT_DISTANCE_MODE },
+	{ str_gc,  _print_nul, _get_gc, _run_gc,  (double *)&tg.null, 0 },	 // gcode block
 
 	{ str_ea, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_acceleration, 	ENABLE_ACCELERATION },
 	{ str_ja, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.junction_acceleration,	JUNCTION_ACCELERATION },
@@ -884,7 +884,7 @@ static uint8_t _set_sr(cmdObj *cmd)
 
 static uint8_t _set_si(cmdObj *cmd) 
 {
-	if (cmd->value < STATUS_REPORT_MIN_MS) {
+	if ((cmd->value < STATUS_REPORT_MIN_MS) && (cmd->value!=0)) {
 		cmd->value = STATUS_REPORT_MIN_MS;
 	}
 	cfg.status_report_interval = (uint32_t)cmd->value;

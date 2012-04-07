@@ -145,16 +145,25 @@ ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
 
 static void _switch_isr_helper(uint8_t sw_flag)
 {
-	if (gpio.sw_count == 0) {					// true if not in a debounce lockout 
+	if (gpio.sw_count == 0) {					// true if not in a debounce lockout
+		uint8_t axis = sw_flag;					// find out what axis this is
+		if (axis >= SW_OFFSET_TO_MAX) {
+			axis -= SW_OFFSET_TO_MAX;
+		} 
+		if (cfg.a[axis].switch_mode == SW_MODE_DISABLED) {
+			return;
+		}
 		gpio.sw_thrown = true;					// triggers the switch handler tasks
 		gpio.sw_flags[sw_flag] = true;
 		gpio.sw_count = SW_LOCKOUT_TICKS;		// start the debounce lockout timer
 
-//		if (cm.homing_state == HOMING_IN_CYCLE) {// true if currently in homing cycle
 		if (cm.cycle_state == CYCLE_HOMING) {
 			sig_feedhold();
 		} else {
-			sig_abort();
+			if ((cfg.a[axis].switch_mode == SW_MODE_ENABLED_NO) || 
+				(cfg.a[axis].switch_mode == SW_MODE_ENABLED_NC)) { // only fire abort if fully enabled
+				sig_abort();
+			}
 		}
 	}
 }

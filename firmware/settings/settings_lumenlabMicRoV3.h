@@ -33,7 +33,7 @@
 #define TINYG_CONFIGURATION_PROFILE "Lumenlabs micRo v3" // displays base config profile
 
 #define JERK_MAX_COMMON 	50000000	// yes, that's "50,000,000" mm/(min^3)
-#define CORNER_ACCELERATION 200000
+#define JUNCTION_ACCELERATION 200000
 #define JUNCTION_DEVIATION 	0.05		// default value, in mm
 
 // motor values
@@ -122,42 +122,33 @@
 #define A_SWITCH_MODE FALSE
 #define B_SWITCH_MODE FALSE
 #define C_SWITCH_MODE FALSE
+#define X_ZERO_OFFSET 3					// mm
+#define Y_ZERO_OFFSET 3
+#define Z_ZERO_OFFSET 3
+#define A_ZERO_OFFSET 0					// degrees
+#define B_ZERO_OFFSET 0
+#define C_ZERO_OFFSET 0
 
-// homing settings
-#define X_HOMING_SEARCH_TRAVEL X_TRAVEL_MAX
-#define Y_HOMING_SEARCH_TRAVEL Y_TRAVEL_MAX 
-#define Z_HOMING_SEARCH_TRAVEL Z_TRAVEL_MAX 
-#define A_HOMING_SEARCH_TRAVEL -1
-#define B_HOMING_SEARCH_TRAVEL -1
-#define C_HOMING_SEARCH_TRAVEL -1
+#define X_COORD_OFFSET (X_TRAVEL_MAX/2) // offset to coordinate zero from machine zero
+#define Y_COORD_OFFSET (Y_TRAVEL_MAX/2)
+#define Z_COORD_OFFSET (Z_TRAVEL_MAX/2)
+#define A_COORD_OFFSET (A_TRAVEL_MAX/2)
+#define B_COORD_OFFSET (B_TRAVEL_MAX/2)
+#define C_COORD_OFFSET (C_TRAVEL_MAX/2)
 
-#define X_HOMING_SEARCH_VELOCITY X_VELOCITY_MAX
-#define Y_HOMING_SEARCH_VELOCITY Y_VELOCITY_MAX
-#define Z_HOMING_SEARCH_VELOCITY Z_VELOCITY_MAX
-#define A_HOMING_SEARCH_VELOCITY A_VELOCITY_MAX
-#define B_HOMING_SEARCH_VELOCITY B_VELOCITY_MAX
-#define C_HOMING_SEARCH_VELOCITY C_VELOCITY_MAX
+#define X_SEARCH_VELOCITY -X_VELOCITY_MAX	// move in negative direction
+#define Y_SEARCH_VELOCITY -Y_VELOCITY_MAX	// move in negative direction
+#define Z_SEARCH_VELOCITY Z_VELOCITY_MAX	// move in positive direction
+#define A_SEARCH_VELOCITY A_VELOCITY_MAX
+#define B_SEARCH_VELOCITY B_VELOCITY_MAX
+#define C_SEARCH_VELOCITY C_VELOCITY_MAX
 
-#define X_HOMING_LATCH_VELOCITY 100		// mm/min
-#define Y_HOMING_LATCH_VELOCITY 100
-#define Z_HOMING_LATCH_VELOCITY 100
-#define A_HOMING_LATCH_VELOCITY 3600	// degrees per minute
-#define B_HOMING_LATCH_VELOCITY 3600
-#define C_HOMING_LATCH_VELOCITY 3600
-
-#define X_HOMING_ZERO_OFFSET 5			// mm
-#define Y_HOMING_ZERO_OFFSET 5
-#define Z_HOMING_ZERO_OFFSET 5
-#define A_HOMING_ZERO_OFFSET 5			// degrees
-#define B_HOMING_ZERO_OFFSET 5
-#define C_HOMING_ZERO_OFFSET 5
-
-#define X_HOMING_WORK_OFFSET (X_TRAVEL_MAX/2) // offset to zero from axis minimum
-#define Y_HOMING_WORK_OFFSET (Y_TRAVEL_MAX/2)
-#define Z_HOMING_WORK_OFFSET (Z_TRAVEL_MAX/2)
-#define A_HOMING_WORK_OFFSET (A_TRAVEL_MAX/2)
-#define B_HOMING_WORK_OFFSET (A_TRAVEL_MAX/2)
-#define C_HOMING_WORK_OFFSET (A_TRAVEL_MAX/2)
+#define X_LATCH_VELOCITY 100		// mm/min
+#define Y_LATCH_VELOCITY 100
+#define Z_LATCH_VELOCITY 100
+#define A_LATCH_VELOCITY 3600	// degrees per minute
+#define B_LATCH_VELOCITY 3600
+#define C_LATCH_VELOCITY 3600
 
 #define X_HOMING_JERK 1000000000		// 1,000,000,000
 #define Y_HOMING_JERK X_HOMING_JERK
@@ -166,3 +157,46 @@
 #define B_HOMING_JERK A_HOMING_JERK
 #define C_HOMING_JERK a_HOMING_JERK
 
+/**** DEFAULT COORDINATE SYSTEM OFFSETS *************************************/
+
+#define G54_X_OFFSET 0			// G54 is traditionally set to all zeros
+#define G54_Y_OFFSET 0
+#define G54_Z_OFFSET 0
+#define G54_A_OFFSET 0
+#define G54_B_OFFSET 0
+#define G54_C_OFFSET 0
+
+#define G55_X_OFFSET 0
+#define G55_Y_OFFSET 0
+#define G55_Z_OFFSET 0
+#define G55_A_OFFSET 0
+#define G55_B_OFFSET 0
+#define G55_C_OFFSET 0
+
+#define G56_X_OFFSET 0
+#define G56_Y_OFFSET 0
+#define G56_Z_OFFSET 0
+#define G56_A_OFFSET 0
+#define G56_B_OFFSET 0
+#define G56_C_OFFSET 0
+
+#define G57_X_OFFSET 0
+#define G57_Y_OFFSET 0
+#define G57_Z_OFFSET 0
+#define G57_A_OFFSET 0
+#define G57_B_OFFSET 0
+#define G57_C_OFFSET 0
+
+#define G58_X_OFFSET 0
+#define G58_Y_OFFSET 0
+#define G58_Z_OFFSET 0
+#define G58_A_OFFSET 0
+#define G58_B_OFFSET 0
+#define G58_C_OFFSET 0
+
+#define G59_X_OFFSET 0
+#define G59_Y_OFFSET 0
+#define G59_Z_OFFSET 0
+#define G59_A_OFFSET 0
+#define G59_B_OFFSET 0
+#define G59_C_OFFSET 0

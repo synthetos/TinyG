@@ -398,11 +398,11 @@ void _load_move()
 		return;
 	}
 	if (sp.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	// defensive programming
-//		fprintf_P(stderr, PSTR("#### INFO #### No prep buffer for _load_move()\n"));
+		fprintf_P(stderr, PSTR("#### INFO #### No prep buffer for _load_move()\n"));
 		return;
 	}
 	if (sp.timer_period < TIMER_PERIOD_MIN) { 			// defensive programming
-//		INFO1(PSTR("Timer period %d too short in st_load_move()"), sp.timer_period);
+		fprintf_P(stderr, PSTR("Timer period %d too short in st_load_move()"), sp.timer_period);
 		return;
 	}
 	if (sp.move_type == MOVE_TYPE_DWELL) {
@@ -493,15 +493,10 @@ uint8_t st_prep_line(double steps[], double microseconds)
 	double major_axis_steps = 0;
 
 	// trap conditions that would prevent queueing the line
-	if (sp.exec_state != PREP_BUFFER_OWNED_BY_EXEC) {  	// defensive programming
-//		INFO(PSTR("Prep buffer not owned by exec in st_prep_line()"));
-		return (TG_INTERNAL_ERROR);
-	} else if (isfinite(microseconds) == FALSE) {
-//		INFO(PSTR("Infinite time move in st_prep_line()"));
-		return (TG_ZERO_LENGTH_MOVE);
-	} else if (microseconds < EPSILON) {	//+++++++++++++++++
-//		INFO(PSTR("Zero time move in st_prep_line()"));
-		return (TG_ZERO_LENGTH_MOVE);
+	// defensive programming
+	if (sp.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (TG_INTERNAL_ERROR);
+	} else if (isfinite(microseconds) == FALSE) { return (TG_ZERO_LENGTH_MOVE);
+	} else if (microseconds < EPSILON) { return (TG_ZERO_LENGTH_MOVE);
 	}
 	// get the major axis
 	for (i=0; i<MOTORS; i++) {

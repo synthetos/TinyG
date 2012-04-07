@@ -129,9 +129,9 @@
 #define B_COORD_OFFSET (B_TRAVEL_MAX/2)
 #define C_COORD_OFFSET (C_TRAVEL_MAX/2)
 
-#define X_SEARCH_VELOCITY X_VELOCITY_MAX
-#define Y_SEARCH_VELOCITY Y_VELOCITY_MAX
-#define Z_SEARCH_VELOCITY Z_VELOCITY_MAX
+#define X_SEARCH_VELOCITY -X_VELOCITY_MAX	// move in negative direction
+#define Y_SEARCH_VELOCITY -Y_VELOCITY_MAX	// move in negative direction
+#define Z_SEARCH_VELOCITY Z_VELOCITY_MAX	// move in positive direction
 #define A_SEARCH_VELOCITY A_VELOCITY_MAX
 #define B_SEARCH_VELOCITY B_VELOCITY_MAX
 #define C_SEARCH_VELOCITY C_VELOCITY_MAX
@@ -159,15 +159,15 @@
 #define G54_B_OFFSET 0
 #define G54_C_OFFSET 0
 
-#define G55_X_OFFSET X_TRAVEL_MAX/2
-#define G55_Y_OFFSET Y_TRAVEL_MAX/2
+#define G55_X_OFFSET 0
+#define G55_Y_OFFSET 0
 #define G55_Z_OFFSET 0
 #define G55_A_OFFSET 0
 #define G55_B_OFFSET 0
 #define G55_C_OFFSET 0
 
-#define G56_X_OFFSET 1
-#define G56_Y_OFFSET 1
+#define G56_X_OFFSET 0
+#define G56_Y_OFFSET 0
 #define G56_Z_OFFSET 0
 #define G56_A_OFFSET 0
 #define G56_B_OFFSET 0
