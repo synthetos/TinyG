@@ -1,5 +1,0 @@
-#### TinyG build 319.13 - "Croup" ####
-Type h for help
-tinyg[mm] ok> #### TinyG build 319.13 - "Croup" ####
-Type h for help
-tinyg[mm] ok> 
