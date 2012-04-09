@@ -142,7 +142,7 @@ struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	double cruise_velocity;
 	double exit_velocity;
 
-	double length;				// length of line or helix in mm
+	double length;				// length of line in mm
 	double move_time;			// total running time (derived)
 	double accel_time;			// total pseudo-time for acceleration calculation
 	double elapsed_accel_time;	// current running time for accel calculation
@@ -514,7 +514,8 @@ static uint8_t _exec_line(mpBuf *bf)
 	}
 	mr.microseconds = uSec(bf->time);
 	(void)ik_kinematics(travel, steps, mr.microseconds);
-	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
+//	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
+	if (st_prep_line(steps, mr.microseconds, bf->cruise_vmax) == TG_OK) {
 		copy_axis_vector(mr.position, bf->target);	// update runtime position
 	}
 	_free_run_buffer();
@@ -1494,7 +1495,8 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 	// prep the segment for the steppers and adjust the variables for the next iteration
 	(void)ik_kinematics(travel, steps, mr.microseconds);
 	SEGMENT_LOGGER				// conditional DEBUG statement
-	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
+//	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
+	if (st_prep_line(steps, mr.microseconds, mr.segment_velocity) == TG_OK) {
 		copy_axis_vector(mr.position, mr.target); 	// update runtime position	
 	}
 	mr.elapsed_accel_time += mr.segment_accel_time; // NB: ignored if running the body

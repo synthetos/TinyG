@@ -36,17 +36,20 @@
 
 #define M1_STEP_ANGLE 1.8				// degrees per whole step
 #define M2_STEP_ANGLE 1.8
-#define M3_STEP_ANGLE 1.8
+#define M3_STEP_ANGLE 0.72				// #########################
+//#define M3_STEP_ANGLE 1.8
 #define M4_STEP_ANGLE 1.8
 
 #define M1_TRAVEL_PER_REV 1.25			// mm of travel = lead screw pitch
 #define M2_TRAVEL_PER_REV 1.25
-#define M3_TRAVEL_PER_REV 1.25
+#define M3_TRAVEL_PER_REV 5.00			// ##########################
+//#define M3_TRAVEL_PER_REV 1.25
 #define M4_TRAVEL_PER_REV 18			// degrees traveled per motor rev
 
 #define M1_MICROSTEPS 8					// one of: 8, 4, 2, 1
 #define M2_MICROSTEPS 8
-#define M3_MICROSTEPS 8
+#define M3_MICROSTEPS 1					// ##########################
+//#define M3_MICROSTEPS 8
 #define M4_MICROSTEPS 8
 
 #define M1_POLARITY 0					// 0=normal, 1=reversed
@@ -56,7 +59,8 @@
 
 #define M1_POWER_MODE TRUE				// TRUE=low power idle enabled 
 #define M2_POWER_MODE TRUE
-#define M3_POWER_MODE TRUE
+#define M3_POWER_MODE FALSE				// ##########################
+//#define M3_POWER_MODE TRUE
 #define M4_POWER_MODE TRUE
 
 // axis values
@@ -70,7 +74,8 @@
 
 #define X_VELOCITY_MAX 800 				// G0 max velocity in mm/min
 #define Y_VELOCITY_MAX 800
-#define Z_VELOCITY_MAX 500				// Z axis won't move as fast
+#define Z_VELOCITY_MAX 2000				// ###############################
+//#define Z_VELOCITY_MAX 500				// Z axis won't move as fast
 #define M4_STEPS_PER_SEC 2000 			// motor characteristic
 #define A_VELOCITY_MAX ((M4_STEPS_PER_SEC * M4_STEP_ANGLE * 60) / M4_TRAVEL_PER_REV)
 #define B_VELOCITY_MAX A_VELOCITY_MAX
@@ -78,7 +83,8 @@
 
 #define X_FEEDRATE_MAX X_VELOCITY_MAX	// G1 max feed rate in mm/min
 #define Y_FEEDRATE_MAX Y_VELOCITY_MAX
-#define Z_FEEDRATE_MAX Z_VELOCITY_MAX
+#define Z_FEEDRATE_MAX Z_VELOCITY_MAX/2	// ###############################
+//#define Z_FEEDRATE_MAX Z_VELOCITY_MAX
 #define A_FEEDRATE_MAX A_VELOCITY_MAX
 #define B_FEEDRATE_MAX B_VELOCITY_MAX
 #define C_FEEDRATE_MAX C_VELOCITY_MAX

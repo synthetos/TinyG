@@ -131,7 +131,7 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
-#include "xio/xio.h"				// supports INFO and debug statements
+#include "xio/xio.h"			// supports INFO and debug statements
 #include "tinyg.h"
 #include "util.h"
 #include "system.h"
@@ -173,10 +173,13 @@ struct stRunMotor { 				// one per controlled motor
 struct stRunSingleton {				// Stepper static values and axis parameters
 	int32_t timer_ticks_downcount;	// tick down-counter (unscaled)
 	int32_t timer_ticks_X_substeps;	// ticks multiplied by scaling factor
+	double x_step_counter;			// +++++ total steps in X as a diagnostic
+	double y_step_counter;			// +++++ total steps in Y as a diagnostic
+	double z_step_counter;			// +++++ total steps in Z as a diagnostic
+	double segment_velocity;		// +++++ record segment velocity for diagnostics
 	struct stRunMotor m[MOTORS];	// runtime motor structures
 };
 static struct stRunSingleton st;
-
 
 // Prep-time structs. Used by exec/prep ISR (MED) and read-only during load 
 // Must be careful about volatiles in this one
@@ -199,6 +202,7 @@ struct stPrepSingleton {
 	uint16_t timer_period;			// DDA or dwell clock period setting
 	uint32_t timer_ticks;			// DDA or dwell ticks for the move
 	uint32_t timer_ticks_X_substeps;// DDA ticks scaled by substep factor
+	double segment_velocity;		// +++++ record segment velocity for diagnostics
 	struct stPrepMotor m[MOTORS];	// per-motor structs
 };
 static struct stPrepSingleton sp;
@@ -292,6 +296,7 @@ ISR(DEVICE_TIMER_DDA_ISR_vect)
 	}
 	if ((st.m[MOTOR_3].counter += st.m[MOTOR_3].steps) > 0) {
 		DEVICE_PORT_MOTOR_3.OUTSET = STEP_BIT_bm;
+		if (sp.m[MOTOR_3].dir == 0) z_cnt++; else z_cnt--;	//#######################
  		st.m[MOTOR_3].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_3.OUTCLR = STEP_BIT_bm;
 	}
@@ -300,8 +305,8 @@ ISR(DEVICE_TIMER_DDA_ISR_vect)
  		st.m[MOTOR_4].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_4.OUTCLR = STEP_BIT_bm;
 	}
-	if (--st.timer_ticks_downcount == 0) {		// end move
- 		DEVICE_TIMER_DDA.CTRLA = TIMER_DISABLE;	// disable DDA timer
+	if (--st.timer_ticks_downcount == 0) {			// end move
+ 		DEVICE_TIMER_DDA.CTRLA = TIMER_DISABLE;		// disable DDA timer
 		// power-down motors if this feature is enabled
 		if (cfg.m[MOTOR_1].power_mode == TRUE) {
 			DEVICE_PORT_MOTOR_1.OUTSET = MOTOR_ENABLE_BIT_bm; 
@@ -315,7 +320,7 @@ ISR(DEVICE_TIMER_DDA_ISR_vect)
 		if (cfg.m[MOTOR_4].power_mode == TRUE) {
 			DEVICE_PORT_MOTOR_4.OUTSET = MOTOR_ENABLE_BIT_bm; 
 		}
-		_load_move();						// load the next move
+		_load_move();							// load the next move
 	}
 }
 
@@ -438,6 +443,8 @@ void _load_move()
 	}
 	DEVICE_TIMER_DDA.CTRLA = TIMER_ENABLE;
 
+	st.segment_velocity = sp.segment_velocity;			// +++++ diagnostic
+
 	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
 	st_request_exec_move();								// exec and prep next move
 }
@@ -485,7 +492,7 @@ void st_prep_dwell(double microseconds)
  *  A blocking version should wrap this code with blocking semantics
  */
 
-uint8_t st_prep_line(double steps[], double microseconds)
+uint8_t st_prep_line(double steps[], double microseconds, double velocity)
 {
 	uint8_t i;
 	double f_dda = F_DDA;		// starting point for adjustment
@@ -523,6 +530,7 @@ uint8_t st_prep_line(double steps[], double microseconds)
 	}
 	sp.previous_ticks = sp.timer_ticks;
 	sp.move_type = MOVE_TYPE_ALINE;
+	sp.segment_velocity = velocity;
 	return (TG_OK);
 }
 

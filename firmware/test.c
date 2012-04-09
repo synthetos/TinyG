@@ -102,13 +102,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0 x10\n");
 
 /* Run test file */
-//	xio_queue_RX_string_usb("$test=1\n");		// run test file
-//	xio_queue_RX_string_usb("$test=2\n");
-//	xio_queue_RX_string_usb("$test=3\n");
-//	xio_queue_RX_string_usb("$test=4\n");
-//	xio_queue_RX_string_usb("$test=50\n");
-//	xio_queue_RX_string_usb("$test=51\n");
-	xio_queue_RX_string_usb("$test=12\n");
+	xio_queue_RX_string_usb("$test=12\n");		// run test file
 
 /* Other command sequences */
 //	xio_queue_RX_string_usb("H\n");				// show help file

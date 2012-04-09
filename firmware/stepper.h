@@ -69,11 +69,17 @@ uint8_t st_test_prep_state(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(double microseconds);
-uint8_t st_prep_line(double steps[], double microseconds);
+//uint8_t st_prep_line(double steps[], double microseconds);
+uint8_t st_prep_line(double steps[], double microseconds, double velocity);
 
 #ifdef __DEBUG
 void st_dump_stepper_state(void);
 #endif
+
+//######################### START diagnostic ##############################
+double z_cnt;
+//######################### END diagnostic ##############################
+
 
 /*
  * Stepper configs and constants
@@ -97,8 +103,8 @@ void st_dump_stepper_state(void);
  *
  *	Set to 0 to disable.
  */
-#define DDA_OVERCLOCK 16		// doesn't have to be a binary multiple
-//#define DDA_OVERCLOCK 0		// doesn't have to be a binary multiple
+//#define DDA_OVERCLOCK 16		// doesn't have to be a binary multiple
+#define DDA_OVERCLOCK 0		// doesn't have to be a binary multiple
 
 /* Counter resets
  * 	You want to reset the DDA counters if the new ticks value is way less 

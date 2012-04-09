@@ -1230,10 +1230,21 @@ uint8_t cfg_config_parser(char *str)
 {
 	cmdObj *cmd = cmd_array;				// point at first struct in the array
 
+//######################### START diagnostic ##############################
 	if (str[0] == '?') {					// special handling for status report
-		rpt_run_multiline_status_report();
-		return (TG_OK);
+		if (str[1] == 'z') {
+			fprintf_P(stderr,PSTR("Programmed=[%1.3f] "),cm_get_runtime_work_position(Z));
+			fprintf_P(stderr,PSTR("Real=[%1.3f] "),z_cnt/100); 
+			double err=((z_cnt/100)-cm_get_runtime_work_position(Z))/cm_get_runtime_work_position(Z); //100 is step/mm
+			// 100 is step/mm=( 360*micro_step/(step angle * travel_per_revolution))  360*1/(0.72*5)=100
+			fprintf_P(stderr,PSTR("Error=[%1.3f percent] \n"),err*100);    // 100 to do percent !
+		} else {
+			rpt_run_multiline_status_report();
+			return (TG_OK);
+		}
 	}
+//######################### END diagnostic ##############################
+
 	ritorno(_parse_config_string(str,cmd));	// get the first object
 	if ((cmd->value_type != VALUE_TYPE_PARENT) && (cmd->value_type != VALUE_TYPE_NULL)) {
 		cmd_set(cmd);						// set single value
