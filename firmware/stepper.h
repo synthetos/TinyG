@@ -92,7 +92,7 @@ double z_cnt;
  *
  *	Set to 1 to disable.
  */
-#define DDA_SUBSTEPS 1000		// doesn't have to be a binary multiple
+#define DDA_SUBSTEPS 100000		// doesn't have to be a binary multiple
 
 /* DDA overclocking
  * 	Overclocking multiplies the step rate of the fastest axis (major axis) 

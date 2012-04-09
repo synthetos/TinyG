@@ -403,7 +403,7 @@ void _load_move()
 		return;
 	}
 	if (sp.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	// defensive programming
-		fprintf_P(stderr, PSTR("#### INFO #### No prep buffer for _load_move()\n"));
+//		fprintf_P(stderr, PSTR("[info] No prep buffer for _load_move()\n"));
 		return;
 	}
 	if (sp.timer_period < TIMER_PERIOD_MIN) { 			// defensive programming
