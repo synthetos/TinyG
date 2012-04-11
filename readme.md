@@ -6,7 +6,8 @@ An attempt is made to keep everything working and somewhat ysable, but there are
 WHAT'S CURRENTLY IN EDGE?
 ========
 Edge is the staging area for version 0.93, which includes:
-- Feedhold and restart
+
+* Feedhold and restart
 - Homing cycle (G28.1)
 - Return to home (G28)
 - Spindle and coolant support
