@@ -1,29 +1,28 @@
-TinyG Introduction
+TINYG EDGE BRANCH
 ========
+The edge branch is the work-in-process for the next stable release. Depending on the velocity of changes it's somewhere between alpha and beta. 
+An attempt is made to keep everything working and somewhat ysable, but there are no guarantees. Generally speaking, the edge branch should not be used for production uses - use the master branch instead.
 
-TinyG is a port of grbl to the Atmel xmega that runs on the TinyG hardware. Some differences are:
+WHAT'S CURRENTLY IN EDGE?
+========
+Edge is the staging area for version 0.93, which includes:
+* Feedhold and restart
+* Homing cycle (G28.1)
+* Return to home (G28)
+* Spindle and coolant support
+* Added 6 work coordinate systems (G54, G55, G56, G57, G58, G59) in addition to machine coordinates (G53)
+* Enhanced G92 offsets
+* Acceleration management added to arc motion (G2, G3)
+* Enhanced status reporting supports configuration of stat report contents and reporting intervals
+* Embedded self tests ($test command)
+* Enhanced config system (type $h for details or see the [TinyG Wiki](http://www.synthetos.com/wiki/index.php?title=Projects:TinyG))
+* JSON support
+* Bug fixes
 
-* 6 axis motion (XYXABC axes)
-* jerk controlled motion for acceleration planning (3rd order motion planning)
-* status displays ('?' character)
-* XON/XOFF protocol over serila
-* config is necessarily different to take into account the larger number of settings
+![TinyG v6 Board](http://farm7.staticflickr.com/6080/6138119387_c6301797dd.jpg)
 
 See the Synthetos website for more details.
 
 * [Synthetos](https://www.synthetos.com/)
 * [TinyG Wiki](http://www.synthetos.com/wiki/index.php?title=Projects:TinyG)
-
-
-
-
-CURRENT VERSION
-========
-The current stable version is 0.92 (Crocs)
-This version has been used "in the field" now for a couple of months and is pretty stable
-A variety of issues from earlier version have been fixed.
-If you find any bugs please log them in the Issues tab.
-
-
-![TinyG v6 Board](http://farm7.staticflickr.com/6080/6138119387_c6301797dd.jpg)
 
