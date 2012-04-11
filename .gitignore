@@ -6,3 +6,4 @@
 *.map
 *.d
 tinyg.aws
+.DS_Store
