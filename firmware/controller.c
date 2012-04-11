@@ -68,9 +68,6 @@
 #include "gcode/gcode_startup_tests.h" // system tests and other assorted test code
 // 'U' test
 #include "gcode/gcode_test001.h"
-//#include "gcode/gcode_star_1x1.h"
-//#include "gcode/gcode_square_pocket.h"
-//#include "gcode/gcode_reilly_111115.h"
 
 static void _tg_controller_HSM(void);
 static uint8_t _tg_parser(char * buf);
