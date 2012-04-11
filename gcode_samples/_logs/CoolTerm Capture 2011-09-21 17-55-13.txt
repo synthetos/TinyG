@@ -1,5 +1,0 @@
-....Initializing EEPROM
-EEPROM profile  nan, version  nan
-#### TinyG build 319.13 - "Croup" ####
-Type h for help
-tinyg[mm] ok> 
