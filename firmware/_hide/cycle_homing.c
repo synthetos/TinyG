@@ -242,8 +242,7 @@ static uint8_t _homing_axis_move(int8_t axis, double target, double velocity)
 
 static uint8_t _homing_finalize(int8_t axis)	// third part of return to home
 {
-//	cm_set_machine_zero();						// reset machine zero coordinates
-	cm_set_machine_axis_position(axis, 0);		// set axis to machine zero
+	cm_set_machine_zero();						// reset machine zero coordinates
 	mp_flush_planner(); 						// should be stopped, but in case of switch closure
 	cm_set_coord_system(hm.coord_system_saved);	// restore to work coordinate system
 	cm_set_units_mode(hm.units_mode_saved);

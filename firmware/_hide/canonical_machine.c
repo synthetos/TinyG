@@ -428,9 +428,8 @@ void cm_init()
 /* 
  * Representation (4.3.3)
  *
- * cm_set_machine_coords() - update machine coordinates
  * cm_set_machine_zero() - set machine coordinates to zero
- * cm_set_machine_axis_position() - ste the position of a single axis
+ * cm_set_machine_coords() - update machine coordinates
  * cm_select_plane() - G17,G18,G19 select axis plane
  * cm_set_units_mode()  - G20, G21
  * cm_set_coord_system() - G54-G59
@@ -449,20 +448,12 @@ uint8_t cm_set_machine_coords(double offset[])
 	mp_set_axis_position(gm.position);
 	return (TG_OK);
 }
-
+*/
 uint8_t cm_set_machine_zero()
 {
 	copy_axis_vector(gm.position, set_vector(0,0,0,0,0,0));
 	copy_axis_vector(gm.target, gm.position);
-	mp_set_axes_position(gm.position);
-	return (TG_OK);
-}
-*/
-uint8_t cm_set_machine_axis_position(uint8_t axis, const double position)
-{
-	gm.position[axis] = position;
-	gm.target[axis] = position;
-	mp_set_axis_position(axis, position);
+	mp_set_axis_position(gm.position);
 	return (TG_OK);
 }
 
@@ -817,11 +808,11 @@ void _exec_program_finalize(uint8_t machine_state)
 	cm.machine_state = machine_state;
 	cm.cycle_state = CYCLE_OFF;
 	cm.motion_state = MOTION_STOP;
-	cm.hold_state = FEEDHOLD_OFF;		//...and any feedhold is ended
+	cm.hold_state = FEEDHOLD_OFF;			//...and any feedhold is ended
 	cm.cycle_start_flag = false;
-	mp_zero_segment_velocity();			// for reporting purposes
-	rpt_queue_status_report();			// queue final status report (if enabled)
-	cmd_persist_offsets(cm.g10_flag);	// persist offsets (if any changes made)
+	mp_zero_segment_velocity();				// for reporting purposes
+	rpt_queue_status_report();				// queue final status report (if enabled)
+	cmd_persist_offsets(cm.g10_flag);		// persist offsets (if any changes made)
 }
 
 

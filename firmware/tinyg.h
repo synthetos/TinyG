@@ -25,7 +25,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.93
-#define TINYG_BUILD_NUMBER   	337.07
+#define TINYG_BUILD_NUMBER   	337.08
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -56,6 +56,10 @@
 #define __UNFORGIVING			// fails hard versus introduce errors
 #define __INFO					// enables exception logging (see util.h)
 
+//++++ Diagnostic variables +++++
+double x_step_counter;
+double y_step_counter;
+double z_step_counter;
 
 /***** Boolean Comparisons *****/
 

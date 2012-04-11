@@ -108,9 +108,7 @@ void mp_flush_planner(void);
 uint8_t mp_test_write_buffer(void);
 double *mp_get_plan_position(double position[]);
 void mp_set_plan_position(const double position[]);
-void mp_set_axes_position(const double position[]);
-void mp_set_axis_position(uint8_t axis, const double position);
-
+void mp_set_axis_position(const double position[]);
 double mp_get_runtime_position(uint8_t axis);
 double mp_get_runtime_velocity(void);
 double mp_get_runtime_linenum(void);

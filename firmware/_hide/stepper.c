@@ -2,26 +2,20 @@
  * stepper.c - stepper motor controls
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2011 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
  * the Free Software Foundation, either version 3 of the License, 
  * or (at your option) any later version.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
- * for details. You should have received a copy of the GNU General Public 
- * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * TinyG is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ * See the GNU General Public License for details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License 
+ * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  */
 /* 	This module provides the low-level stepper drivers and some related
  * 	functions. It dequeues lines queued by the motor_queue routines.
@@ -148,8 +142,10 @@
 static void _exec_move(void);
 static void _load_move(void);
 static void _request_load_move(void);
-static void _set_f_dda(double *f_dda, double *dda_substeps, 
-					   const double major_axis_steps, const double microseconds);
+static void _set_f_dda(double *f_dda,
+						  double *dda_substeps, 
+						  const double major_axis_steps, 
+						  const double microseconds);
 /*
  * Stepper structures
  *
@@ -177,6 +173,9 @@ struct stRunMotor { 				// one per controlled motor
 struct stRunSingleton {				// Stepper static values and axis parameters
 	int32_t timer_ticks_downcount;	// tick down-counter (unscaled)
 	int32_t timer_ticks_X_substeps;	// ticks multiplied by scaling factor
+	double x_step_counter;			// +++++ total steps in X as a diagnostic
+	double y_step_counter;			// +++++ total steps in Y as a diagnostic
+	double z_step_counter;			// +++++ total steps in Z as a diagnostic
 	double segment_velocity;		// +++++ record segment velocity for diagnostics
 	struct stRunMotor m[MOTORS];	// runtime motor structures
 };
@@ -297,7 +296,7 @@ ISR(DEVICE_TIMER_DDA_ISR_vect)
 	}
 	if ((st.m[MOTOR_3].counter += st.m[MOTOR_3].steps) > 0) {
 		DEVICE_PORT_MOTOR_3.OUTSET = STEP_BIT_bm;
-//		if (sp.m[MOTOR_3].dir == 0) z_cnt++; else z_cnt--;	// ++++ diagnostic
+		if (sp.m[MOTOR_3].dir == 0) z_cnt++; else z_cnt--;	//#######################
  		st.m[MOTOR_3].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_3.OUTCLR = STEP_BIT_bm;
 	}

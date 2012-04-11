@@ -302,16 +302,10 @@ void mp_set_plan_position(const double position[])
 	copy_axis_vector(mm.position, position);
 }
 
-void mp_set_axes_position(const double position[])
+void mp_set_axis_position(const double position[])
 {
 	copy_axis_vector(mm.position, position);
 	copy_axis_vector(mr.position, position);
-}
-
-void mp_set_axis_position(uint8_t axis, const double position)
-{
-	mm.position[axis] = position;
-	mr.position[axis] = position;
 }
 
 double mp_get_runtime_position(uint8_t axis) { return (mr.position[axis]);}
@@ -1189,8 +1183,8 @@ uint8_t mp_plan_hold_callback()
 	_reset_replannable_list();					// make it replan all the blocks
 	_plan_block_list(_get_last_buffer(), &mr_flag);
 	cm.hold_state = FEEDHOLD_DECEL;				// set state to decelerate and exit
-												//	mp_dump_runtime_state(); // turn on __DEBUG if you need this
-												//	mp_dump_plan_buffers(); // turn on __DEBUG if you need this
+												//	mp_dump_runtime_state(); //+++++ turn on __DEBUG if you need this
+												//	mp_dump_plan_buffers(); //+++++ turn on __DEBUG if you need this
 	return (TG_OK);
 }
 
