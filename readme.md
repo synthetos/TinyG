@@ -7,7 +7,7 @@ Generally speaking, the edge branch should not be used for production uses - use
 
 What's currently in edge?
 ========
-Edge is the staging area for version 0.93. So for the following has been implemented:
+Edge is the staging area for version 0.93. So far the following has been implemented:
 
 * Feedhold and restart (! and ~)
 * System reset (^x)
