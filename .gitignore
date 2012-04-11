@@ -7,3 +7,7 @@
 *.eep
 tinyg.aws
 .DS_Store
+*.gbr
+*.dch
+*.dip
+
