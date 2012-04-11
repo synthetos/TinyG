@@ -20,7 +20,7 @@ See the Synthetos website for more details.
 CURRENT VERSION
 ========
 The current stable version is 0.92 (Crocs)
-This version has been used "in the field" now for a couple of months and is pretty stable
+This version has been used "in the field" now for a couple of months and is pretty stable.
 A variety of issues from earlier version have been fixed.
 If you find any bugs please log them in the Issues tab.
 
