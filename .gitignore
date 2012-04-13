@@ -5,3 +5,9 @@
 *.lss
 *.map
 *.eep
+tinyg.aws
+.DS_Store
+*.gbr
+*.dch
+*.dip
+*.zip

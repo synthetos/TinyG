@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 <AVRWorkspace><IOSettings><CurrentRegisters/></IOSettings><part name="ATXMEGA256A3"/><Files><File00011 Name="Z:\Alden\Projects\proj38_TinyG\TinyG\firmware\tinyg_326.06_RELEASE_0.92_111120\tinyg.h" Position="251 71 1230 984" LineCol="125 0"/></Files></AVRWorkspace>
+=======
+<AVRWorkspace><IOSettings><CurrentRegisters/></IOSettings><part name="ATXMEGA256A3"/><Files><File00011 Name="Z:\Alden\Projects\proj38_TinyG\TinyG\firmware\tinyg.h" Position="251 71 1222 743" LineCol="148 48"/></Files></AVRWorkspace>
+>>>>>>> 1a362a04750fa3dc9e9e2d5a8ced0a8f1e8363ee

@@ -1,0 +1,2 @@
+The hardware designs of the TinyG Motion Controller by Synthetos LLC are licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
+All commercial use of these designs is permitted under separate license. Please contact Syntheos LLC for details.
