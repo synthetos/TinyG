@@ -59,11 +59,9 @@
 /**** MACHINE PROFILES ******************************************************/
 // default machine profiles - chose only one:
 
-//#include "settings/settings_zen7x12.h"			// Zen Toolworks 7x12
+#include "settings/settings_zen7x12.h"			// Zen Toolworks 7x12
 //#include "settings/settings_probotixV90.h"		// Probotix FireballV90
-#include "settings/settings_lumenlabMicRoV3.h"	// Lumenlabs micRo v3
+//#include "settings/settings_lumenlabMicRoV3.h"	// Lumenlabs micRo v3
 //#include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
-
-//#include "settings/settings_DIYLILCNC.h"
 
 #endif
