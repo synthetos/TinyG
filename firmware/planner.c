@@ -142,7 +142,7 @@ struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	double cruise_velocity;
 	double exit_velocity;
 
-	double length;				// length of line or helix in mm
+	double length;				// length of line in mm
 	double move_time;			// total running time (derived)
 	double accel_time;			// total pseudo-time for acceleration calculation
 	double elapsed_accel_time;	// current running time for accel calculation
@@ -302,10 +302,16 @@ void mp_set_plan_position(const double position[])
 	copy_axis_vector(mm.position, position);
 }
 
-void mp_set_axis_position(const double position[])
+void mp_set_axes_position(const double position[])
 {
 	copy_axis_vector(mm.position, position);
 	copy_axis_vector(mr.position, position);
+}
+
+void mp_set_axis_position(uint8_t axis, const double position)
+{
+	mm.position[axis] = position;
+	mr.position[axis] = position;
 }
 
 double mp_get_runtime_position(uint8_t axis) { return (mr.position[axis]);}
@@ -514,7 +520,8 @@ static uint8_t _exec_line(mpBuf *bf)
 	}
 	mr.microseconds = uSec(bf->time);
 	(void)ik_kinematics(travel, steps, mr.microseconds);
-	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
+//	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
+	if (st_prep_line(steps, mr.microseconds, bf->cruise_vmax) == TG_OK) {
 		copy_axis_vector(mr.position, bf->target);	// update runtime position
 	}
 	_free_run_buffer();
@@ -1182,8 +1189,8 @@ uint8_t mp_plan_hold_callback()
 	_reset_replannable_list();					// make it replan all the blocks
 	_plan_block_list(_get_last_buffer(), &mr_flag);
 	cm.hold_state = FEEDHOLD_DECEL;				// set state to decelerate and exit
-												//	mp_dump_runtime_state(); //+++++ turn on __DEBUG if you need this
-												//	mp_dump_plan_buffers(); //+++++ turn on __DEBUG if you need this
+												//	mp_dump_runtime_state(); // turn on __DEBUG if you need this
+												//	mp_dump_plan_buffers(); // turn on __DEBUG if you need this
 	return (TG_OK);
 }
 
@@ -1494,7 +1501,8 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 	// prep the segment for the steppers and adjust the variables for the next iteration
 	(void)ik_kinematics(travel, steps, mr.microseconds);
 	SEGMENT_LOGGER				// conditional DEBUG statement
-	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
+//	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
+	if (st_prep_line(steps, mr.microseconds, mr.segment_velocity) == TG_OK) {
 		copy_axis_vector(mr.position, mr.target); 	// update runtime position	
 	}
 	mr.elapsed_accel_time += mr.segment_accel_time; // NB: ignored if running the body

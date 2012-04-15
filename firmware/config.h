@@ -148,7 +148,8 @@ struct cfgAxisParameters {
 	uint8_t switch_mode;			// 0=disabled, 1=enabled NO for homing only, 2=enabled NO for homing & limits
 	double search_velocity;			// homing search velocity
 	double latch_velocity;			// homing latch velocity
-	double zero_offset;				// machine coordinate system zero offset from switches (backoff value)
+	double latch_backoff;			// backoff from switches prior to homing latch movement
+	double zero_backoff;			// backoff from switches for machine zero
 };
 
 struct cfgMotorParameters {

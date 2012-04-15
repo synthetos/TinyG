@@ -25,14 +25,13 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.93
-#define TINYG_BUILD_NUMBER   	337.06
+#define TINYG_BUILD_NUMBER   	338.01
 
 /****** DEVELOPMENT SETTINGS ******/
 
 //#define __CANNED_STARTUP			// run any canned startup moves
 //#define __DISABLE_EEPROM_INIT		// disable EEPROM init for faster simulation
 //#define __DISABLE_TRANSMIT		// disable serial tranmission (TX)
-//#define __DISABLE_STEPPERS		// disable steppers for faster simulation
 //#define __SEGMENT_LOGGER			// enable segment logging to memory array
 //#define __DEBUG					// enable debug (see util.c /.h)
 // See the end of module header files to enable UNIT_TESTS
@@ -55,7 +54,6 @@
 // RUNTIME SETTINGS
 #define __UNFORGIVING			// fails hard versus introduce errors
 #define __INFO					// enables exception logging (see util.h)
-
 
 /***** Boolean Comparisons *****/
 

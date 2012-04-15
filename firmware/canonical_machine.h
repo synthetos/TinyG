@@ -418,6 +418,7 @@ void cm_set_absolute_override(uint8_t absolute_override);
 
 double cm_get_model_work_position(uint8_t axis);
 double *cm_get_model_work_position_vector(double position[]);
+double cm_get_model_canonical_target(uint8_t axis);
 double *cm_get_model_canonical_position_vector(double position[]);
 double cm_get_runtime_machine_position(uint8_t axis);
 double cm_get_runtime_work_position(uint8_t axis);
@@ -434,8 +435,10 @@ void cm_set_linenum(uint32_t linenum);
 /*--- canonical machining functions ---*/
 void cm_init(void);									// init canonical machine
 
-uint8_t cm_set_machine_zero(void);					// set absolute zero point
 //uint8_t cm_set_machine_coords(double offset[]);
+//uint8_t cm_set_machine_zero(void);					// set absolute zero point
+uint8_t cm_set_machine_axis_position(uint8_t axis, const double position);	// set absolute position
+
 uint8_t cm_select_plane(uint8_t plane);				// G17, G18, G19
 uint8_t cm_set_units_mode(uint8_t mode);			// G20, G21
 uint8_t	cm_set_coord_system(uint8_t coord_system);	// G10 (G54...G59)

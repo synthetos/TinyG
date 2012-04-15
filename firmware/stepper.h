@@ -1,20 +1,26 @@
 /* stepper.h - stepper motor interface
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2011 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
  * the Free Software Foundation, either version 3 of the License, 
  * or (at your option) any later version.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
+ * for details. You should have received a copy of the GNU General Public 
+ * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* 
  *	Coordinated motion (line drawing) is performed using a classic 
@@ -69,7 +75,8 @@ uint8_t st_test_prep_state(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(double microseconds);
-uint8_t st_prep_line(double steps[], double microseconds);
+//uint8_t st_prep_line(double steps[], double microseconds);
+uint8_t st_prep_line(double steps[], double microseconds, double velocity);
 
 #ifdef __DEBUG
 void st_dump_stepper_state(void);
@@ -84,9 +91,9 @@ void st_dump_stepper_state(void);
  *	Substepping is kind of like microsteps done in software to make
  *	interpolation more accurate.
  *
- *	Set to 1 to disable.
+ *	Set to 1 to disable, but don't do this or you will lose a lot of accuracy.
  */
-#define DDA_SUBSTEPS 1000		// doesn't have to be a binary multiple
+#define DDA_SUBSTEPS 100000		// 100,000 accumulates substeps to 6 decimal places
 
 /* DDA overclocking
  * 	Overclocking multiplies the step rate of the fastest axis (major axis) 
@@ -96,9 +103,14 @@ void st_dump_stepper_state(void);
  *	less than the max frequency when possible.
  *
  *	Set to 0 to disable.
+ *
+ *	### Known bug identified in 337.06 ###
+ *
+ *	Until this is fixed using a value other than 0 will result in severe loss
+ *	of accuracy for very slow moves (F<100).		  
  */
-#define DDA_OVERCLOCK 16		// doesn't have to be a binary multiple
-//#define DDA_OVERCLOCK 0		// doesn't have to be a binary multiple
+//#define DDA_OVERCLOCK 16		// doesn't have to be a binary multiple
+#define DDA_OVERCLOCK 0			// Disabled for now until root cause of Issue #7 is fixed
 
 /* Counter resets
  * 	You want to reset the DDA counters if the new ticks value is way less 

@@ -108,19 +108,12 @@
 #define B_RADIUS 10						// (XYZ values are not defined)
 #define C_RADIUS 10
 
-#define X_SWITCH_MODE TRUE				// 1=limit switches present and enabled
-#define Y_SWITCH_MODE TRUE
-#define Z_SWITCH_MODE TRUE
-#define A_SWITCH_MODE FALSE
-#define B_SWITCH_MODE FALSE
-#define C_SWITCH_MODE FALSE
-
-#define X_ZERO_OFFSET 3					// mm
-#define Y_ZERO_OFFSET 3
-#define Z_ZERO_OFFSET 3
-#define A_ZERO_OFFSET 0					// degrees
-#define B_ZERO_OFFSET 0
-#define C_ZERO_OFFSET 0
+#define X_SWITCH_MODE 1					// 1=limit switches present and enabled
+#define Y_SWITCH_MODE 1
+#define Z_SWITCH_MODE 1
+#define A_SWITCH_MODE 0
+#define B_SWITCH_MODE 0
+#define C_SWITCH_MODE 0
 
 #define X_COORD_OFFSET (X_TRAVEL_MAX/2) // offset to coordinate zero from machine zero
 #define Y_COORD_OFFSET (Y_TRAVEL_MAX/2)
@@ -136,12 +129,26 @@
 #define B_SEARCH_VELOCITY B_VELOCITY_MAX
 #define C_SEARCH_VELOCITY C_VELOCITY_MAX
 
-#define X_LATCH_VELOCITY 100		// mm/min
+#define X_LATCH_VELOCITY 100			// mm/min
 #define Y_LATCH_VELOCITY 100
 #define Z_LATCH_VELOCITY 100
-#define A_LATCH_VELOCITY 3600	// degrees per minute
+#define A_LATCH_VELOCITY 3600			// degrees per minute
 #define B_LATCH_VELOCITY 3600
 #define C_LATCH_VELOCITY 3600
+
+#define X_LATCH_BACKOFF 2				// mm
+#define Y_LATCH_BACKOFF 2
+#define Z_LATCH_BACKOFF 2
+#define A_LATCH_BACKOFF 0				// degrees
+#define B_LATCH_BACKOFF 0
+#define C_LATCH_BACKOFF 0
+
+#define X_ZERO_BACKOFF 1				// mm
+#define Y_ZERO_BACKOFF 1
+#define Z_ZERO_BACKOFF 5
+#define A_ZERO_BACKOFF 0				// degrees
+#define B_ZERO_BACKOFF 0
+#define C_ZERO_BACKOFF 0
 
 #define X_HOMING_JERK 1000000000		// 1,000,000,000
 #define Y_HOMING_JERK X_HOMING_JERK
