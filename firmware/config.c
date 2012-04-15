@@ -430,8 +430,8 @@ char str_zjd[] PROGMEM = "zjd,z_ju,[zjd] z_junction_deviation%14.4f%S (larger is
 char str_zsm[] PROGMEM = "zsm,z_s,[zsm] z_switch_mode%16d [0,1,2]\n";
 char str_zsv[] PROGMEM = "zsv,z_s,[zsv] z_search_velocity%16.3f%S/min\n";
 char str_zlv[] PROGMEM = "zlv,z_latch_v,[zlv] z_latch_velocity%17.3f%S/min\n";
-char str_zlb[] PROGMEM = "xlb,z_latch_b,[zlb] z_latch_backoff%18.3f%S\n";
-char str_zzb[] PROGMEM = "xzb,z_z,[zzb] z_zero_backoff%19.3f%S\n";
+char str_zlb[] PROGMEM = "zlb,z_latch_b,[zlb] z_latch_backoff%18.3f%S\n";
+char str_zzb[] PROGMEM = "zzb,z_z,[zzb] z_zero_backoff%19.3f%S\n";
 
 char str_aam[] PROGMEM = "aam,a_a,[aam] a_axis_mode%18d %S\n";
 char str_afr[] PROGMEM = "afr,a_f,[afr] a_feedrate_maximum%15.3f%S/min\n";
@@ -456,7 +456,7 @@ char str_bra[] PROGMEM = "bra,b_r,[bra] b_radius_value%20.4f%S\n";
 char str_bsm[] PROGMEM = "bsm,b_s,[bsm] b_switch_mode%16d [0,1,2]\n";
 char str_bsv[] PROGMEM = "bsv,b_s,[bsv] b_search_velocity%16.3f%S/min\n";
 char str_blv[] PROGMEM = "blv,b_latch_v,[blv] b_latch_velocity%17.3f%S/min\n";
-char str_blb[] PROGMEM = "xlb,b_latch_b,[blb] b_latch_backoff%18.3f%S\n";
+char str_blb[] PROGMEM = "blb,b_latch_b,[blb] b_latch_backoff%18.3f%S\n";
 char str_bzb[] PROGMEM = "bzb,b_z,[bzb] b_zero_backoff%19.3f%S\n";
 
 char str_cam[] PROGMEM = "cam,c_a,[cam] c_axis_mode%18d %S\n";
@@ -470,7 +470,7 @@ char str_csm[] PROGMEM = "csm,c_s,[csm] c_switch_mode%16d [0,1,2]\n";
 char str_csv[] PROGMEM = "csv,c_s,[csv] c_search_velocity%16.3f%S/min\n";
 char str_clv[] PROGMEM = "cls,c_latch_v,[clv] c_latch_velocity%17.3f%S/min\n";
 char str_clb[] PROGMEM = "clb,c_latch_b,[clb] c_latch_backoff%18.3f%S\n";
-char str_czb[] PROGMEM = "xzb,c_z,[czb] c_zero_backoff%19.3f%S\n";
+char str_czb[] PROGMEM = "czb,c_z,[czb] c_zero_backoff%19.3f%S\n";
 
 // Coordinate system offset groups
 char str_g54x[] PROGMEM = "g54x,g54_x,[g54x] g54_x_offset%20.3f%S\n";
