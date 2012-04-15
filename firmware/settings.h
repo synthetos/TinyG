@@ -64,6 +64,4 @@
 //#include "settings/settings_lumenlabMicRoV3.h"	// Lumenlabs micRo v3
 //#include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
 
-//#include "settings/settings_DIYLILCNC.h"
-
 #endif

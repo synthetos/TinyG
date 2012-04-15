@@ -17,6 +17,14 @@
  * You should have received a copy of the GNU General Public License 
  * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  */
+/* Note: The values in this file are the default settings that are loaded
+ * 		 into a virgin EEPROM, and can be changed using the config commands.
+ *		 After initial load the EEPROM values (or changed values) are used.
+ *
+ *		 System and hardware settings that you shouldn't need to change 
+ *		 are in system.h  Application settings that also shouldn't need 
+ *		 to be changed are in tinyg.h
+ */
 
 /***********************************************************************/
 /**** Zen Toolworks 7x12 profile ***************************************/
@@ -25,7 +33,7 @@
 #define TINYG_CONFIGURATION_PROFILE "Zen Toolworks 7x12" // displays base config profile
 
 #define JERK_MAX_COMMON 	100000000	// yes, that's "50,000,000" mm/(min^3)
-#define JUNCTION_ACCELERATION 200000	// centripetal acceleration around corners
+#define JUNCTION_ACCELERATION 100000	// centripetal acceleration around corners
 #define JUNCTION_DEVIATION	0.05		// default value, in mm
 
 // motor values
@@ -68,8 +76,8 @@
 #define B_AXIS_MODE AXIS_RADIUS
 #define C_AXIS_MODE AXIS_RADIUS
 
-#define X_VELOCITY_MAX 800 				// G0 max velocity in mm/min
-#define Y_VELOCITY_MAX 800
+#define X_VELOCITY_MAX 600 				// G0 max velocity in mm/min
+#define Y_VELOCITY_MAX 600
 #define Z_VELOCITY_MAX 500				// Z axis won't move as fast
 #define M4_STEPS_PER_SEC 2000 			// motor characteristic
 #define A_VELOCITY_MAX ((M4_STEPS_PER_SEC * M4_STEP_ANGLE * 60) / M4_TRAVEL_PER_REV)
@@ -115,13 +123,6 @@
 #define B_SWITCH_MODE 0
 #define C_SWITCH_MODE 0
 
-#define X_COORD_OFFSET (X_TRAVEL_MAX/2) // offset to coordinate zero from machine zero
-#define Y_COORD_OFFSET (Y_TRAVEL_MAX/2)
-#define Z_COORD_OFFSET (Z_TRAVEL_MAX/2)
-#define A_COORD_OFFSET (A_TRAVEL_MAX/2)
-#define B_COORD_OFFSET (B_TRAVEL_MAX/2)
-#define C_COORD_OFFSET (C_TRAVEL_MAX/2)
-
 #define X_SEARCH_VELOCITY -X_VELOCITY_MAX	// move in negative direction
 #define Y_SEARCH_VELOCITY -Y_VELOCITY_MAX	// move in negative direction
 #define Z_SEARCH_VELOCITY Z_VELOCITY_MAX	// move in positive direction
@@ -145,7 +146,7 @@
 
 #define X_ZERO_BACKOFF 1				// mm
 #define Y_ZERO_BACKOFF 1
-#define Z_ZERO_BACKOFF 5
+#define Z_ZERO_BACKOFF 1
 #define A_ZERO_BACKOFF 0				// degrees
 #define B_ZERO_BACKOFF 0
 #define C_ZERO_BACKOFF 0

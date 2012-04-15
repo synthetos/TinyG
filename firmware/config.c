@@ -274,7 +274,7 @@ static char msg_g90[] PROGMEM = "G90 - absolute distance mode";
 static char msg_g91[] PROGMEM = "G91 - incremental distance mode";
 static PGM_P msg_dist[] PROGMEM = { msg_g90, msg_g91 };
 
-static char msg_g94[] PROGMEM = "G94 - units per minute mode";
+static char msg_g94[] PROGMEM = "G94 - units-per-minute mode (i.e. feedrate mode)";
 static char msg_g93[] PROGMEM = "G93 - inverse time mode";
 static PGM_P msg_frmo[] PROGMEM = { msg_g94, msg_g93 };
 
@@ -402,7 +402,7 @@ char str_xfr[] PROGMEM = "xfr,x_f,[xfr] x_feedrate_maximum%15.3f%S/min\n";
 char str_xvm[] PROGMEM = "xvm,x_v,[xvm] x_velocity_maximum%15.3f%S/min\n";
 char str_xtm[] PROGMEM = "xtm,x_t,[xtm] x_travel_maximum%17.3f%S\n";
 char str_xjm[] PROGMEM = "xjm,x_je,[xjm] x_jerk_maximum%15.0f%S/min^3\n";
-char str_xjd[] PROGMEM = "xjd,x_ju,[xjd] x_junction_deviation%14.4f%S\n";
+char str_xjd[] PROGMEM = "xjd,x_ju,[xjd] x_junction_deviation%14.4f%S (larger is faster)\n";
 char str_xsm[] PROGMEM = "xsm,x_s,[xsm] x_switch_mode%16d [0,1,2]\n";
 char str_xsv[] PROGMEM = "xsv,x_s,[xsv] x_search_velocity%16.3f%S/min\n";
 char str_xlv[] PROGMEM = "xlv,x_latch_v,[xlv] x_latch_velocity%17.3f%S/min\n";
@@ -414,7 +414,7 @@ char str_yfr[] PROGMEM = "yfr,y_f,[yfr] y_feedrate_maximum%15.3f%S/min\n";
 char str_yvm[] PROGMEM = "yvm,y_v,[yvm] y_velocity_maximum%15.3f%S/min\n";
 char str_ytm[] PROGMEM = "ytm,y_t,[ytm] y_travel_maximum%17.3f%S\n";
 char str_yjm[] PROGMEM = "yjm,y_je,[yjm] y_jerk_maximum%15.0f%S/min^3\n";
-char str_yjd[] PROGMEM = "yjd,y_ju,[yjd] y_junction_deviation%14.4f%S\n";
+char str_yjd[] PROGMEM = "yjd,y_ju,[yjd] y_junction_deviation%14.4f%S (larger is faster)\n";
 char str_ysm[] PROGMEM = "ysm,y_s,[ysm] y_switch_mode%16d [0,1,2]\n";
 char str_ysv[] PROGMEM = "ysv,y_s,[ysv] y_search_velocity%16.3f%S/min\n";
 char str_ylv[] PROGMEM = "ylv,y_latch_v,[ylv] y_latch_velocity%17.3f%S/min\n";
@@ -426,12 +426,12 @@ char str_zfr[] PROGMEM = "zfr,z_f,[zfr] z_feedrate_maximum%15.3f%S/min\n";
 char str_zvm[] PROGMEM = "zvm,z_v,[zvm] z_velocity_maximum%15.3f%S/min\n";
 char str_ztm[] PROGMEM = "ztm,z_t,[ztm] z_travel_maximum%17.3f%S\n";
 char str_zjm[] PROGMEM = "zjm,z_je,[zjm] z_jerk_maximum%15.0f%S/min^3\n";
-char str_zjd[] PROGMEM = "zjd,z_ju,[zjd] z_junction_deviation%14.4f%S\n";
+char str_zjd[] PROGMEM = "zjd,z_ju,[zjd] z_junction_deviation%14.4f%S (larger is faster)\n";
 char str_zsm[] PROGMEM = "zsm,z_s,[zsm] z_switch_mode%16d [0,1,2]\n";
 char str_zsv[] PROGMEM = "zsv,z_s,[zsv] z_search_velocity%16.3f%S/min\n";
 char str_zlv[] PROGMEM = "zlv,z_latch_v,[zlv] z_latch_velocity%17.3f%S/min\n";
-char str_zlb[] PROGMEM = "xlb,z_latch_b,[zlb] z_latch_backoff%18.3f%S\n";
-char str_zzb[] PROGMEM = "xzb,z_z,[zzb] z_zero_backoff%19.3f%S\n";
+char str_zlb[] PROGMEM = "zlb,z_latch_b,[zlb] z_latch_backoff%18.3f%S\n";
+char str_zzb[] PROGMEM = "zzb,z_z,[zzb] z_zero_backoff%19.3f%S\n";
 
 char str_aam[] PROGMEM = "aam,a_a,[aam] a_axis_mode%18d %S\n";
 char str_afr[] PROGMEM = "afr,a_f,[afr] a_feedrate_maximum%15.3f%S/min\n";
@@ -456,7 +456,7 @@ char str_bra[] PROGMEM = "bra,b_r,[bra] b_radius_value%20.4f%S\n";
 char str_bsm[] PROGMEM = "bsm,b_s,[bsm] b_switch_mode%16d [0,1,2]\n";
 char str_bsv[] PROGMEM = "bsv,b_s,[bsv] b_search_velocity%16.3f%S/min\n";
 char str_blv[] PROGMEM = "blv,b_latch_v,[blv] b_latch_velocity%17.3f%S/min\n";
-char str_blb[] PROGMEM = "xlb,b_latch_b,[blb] b_latch_backoff%18.3f%S\n";
+char str_blb[] PROGMEM = "blb,b_latch_b,[blb] b_latch_backoff%18.3f%S\n";
 char str_bzb[] PROGMEM = "bzb,b_z,[bzb] b_zero_backoff%19.3f%S\n";
 
 char str_cam[] PROGMEM = "cam,c_a,[cam] c_axis_mode%18d %S\n";
@@ -470,7 +470,7 @@ char str_csm[] PROGMEM = "csm,c_s,[csm] c_switch_mode%16d [0,1,2]\n";
 char str_csv[] PROGMEM = "csv,c_s,[csv] c_search_velocity%16.3f%S/min\n";
 char str_clv[] PROGMEM = "cls,c_latch_v,[clv] c_latch_velocity%17.3f%S/min\n";
 char str_clb[] PROGMEM = "clb,c_latch_b,[clb] c_latch_backoff%18.3f%S\n";
-char str_czb[] PROGMEM = "xzb,c_z,[czb] c_zero_backoff%19.3f%S\n";
+char str_czb[] PROGMEM = "czb,c_z,[czb] c_zero_backoff%19.3f%S\n";
 
 // Coordinate system offset groups
 char str_g54x[] PROGMEM = "g54x,g54_x,[g54x] g54_x_offset%20.3f%S\n";
