@@ -407,6 +407,11 @@ void _load_move()
 //		fprintf_P(stderr, PSTR("[info] No prep buffer for _load_move()\n"));
 		return;
 	}
+	if (sp.move_type == MOVE_TYPE_NULL) {				// this happens after M codes
+		sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;		// flip it back
+		st_request_exec_move();							// exec and prep next move
+		return;
+	}
 	if (sp.timer_period < TIMER_PERIOD_MIN) { 			// defensive programming
 		fprintf_P(stderr, PSTR("Timer period %d too short in st_load_move()"), sp.timer_period);
 		return;
