@@ -297,7 +297,6 @@ ISR(DEVICE_TIMER_DDA_ISR_vect)
 	}
 	if ((st.m[MOTOR_3].counter += st.m[MOTOR_3].steps) > 0) {
 		DEVICE_PORT_MOTOR_3.OUTSET = STEP_BIT_bm;
-//		if (sp.m[MOTOR_3].dir == 0) z_cnt++; else z_cnt--;	// ++++ diagnostic
  		st.m[MOTOR_3].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_3.OUTCLR = STEP_BIT_bm;
 	}
@@ -397,60 +396,43 @@ static void _request_load_move()
 
 void _load_move()
 {
-#ifdef __DISABLE_STEPPERS	
-	return;						// bypasses execution for fast simulations
-#endif
-	if (st.timer_ticks_downcount != 0) { 				// exit if it's still busy
-		return;
-	}
-	if (sp.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	// defensive programming
-//		fprintf_P(stderr, PSTR("[info] No prep buffer for _load_move()\n"));
-		return;
-	}
-	if (sp.move_type == MOVE_TYPE_NULL) {				// this happens after M codes
-		sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;		// flip it back
-		st_request_exec_move();							// exec and prep next move
-		return;
-	}
-	if (sp.timer_period < TIMER_PERIOD_MIN) { 			// defensive programming
-		fprintf_P(stderr, PSTR("Timer period %d too short in st_load_move()"), sp.timer_period);
-		return;
-	}
-	if (sp.move_type == MOVE_TYPE_DWELL) {
+	if (st.timer_ticks_downcount != 0) { return;}				 // exit if it's still busy
+	if (sp.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	return;} // if there are no more moves
+
+	// handle line loads first (most common case)
+	if ((sp.move_type == MOVE_TYPE_ALINE) || (sp.move_type == MOVE_TYPE_LINE)) {
+		st.timer_ticks_downcount = sp.timer_ticks;
+		st.timer_ticks_X_substeps = sp.timer_ticks_X_substeps;
+		DEVICE_TIMER_DDA.PER = sp.timer_period;
+ 
+		// This section is somewhat optimized for execution speed 
+		// All axes must set steps and compensate for out-of-range pulse phasing. 
+		// If axis has 0 steps direction setting can be omitted
+		// If axis has 0 steps enabling motors is req'd to support power mode = 1
+		for (uint8_t i=0; i < MOTORS; i++) {
+			st.m[i].steps = sp.m[i].steps;						// set steps
+			if (sp.counter_reset_flag == TRUE) {				//compensate for pulse phasing
+				st.m[i].counter = -(st.timer_ticks_downcount);
+			}
+			if (st.m[i].steps != 0) {
+				if (sp.m[i].dir == 0) {							// set direction
+					device.port[i]->OUTCLR = DIRECTION_BIT_bm;	// CW motion
+				} else {
+					device.port[i]->OUTSET = DIRECTION_BIT_bm;	// CCW motion
+				}
+				device.port[i]->OUTCLR = MOTOR_ENABLE_BIT_bm;	// enable motor
+			}
+		}
+		DEVICE_TIMER_DDA.CTRLA = TIMER_ENABLE;
+
+	// handle dwells
+	} else if (sp.move_type == MOVE_TYPE_DWELL) {
 		st.timer_ticks_downcount = sp.timer_ticks;
 		DEVICE_TIMER_DWELL.PER = sp.timer_period;		// load dwell timer period
  		DEVICE_TIMER_DWELL.CTRLA = TIMER_ENABLE;		// enable the dwell timer
-		sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;		// flip it back
-		st_request_exec_move();							// exec and prep next move
-		return;
 	}
 
-	st.timer_ticks_downcount = sp.timer_ticks;
-	st.timer_ticks_X_substeps = sp.timer_ticks_X_substeps;
-	DEVICE_TIMER_DDA.PER = sp.timer_period;
- 
-	// This section is somewhat optimized for execution speed 
-	// All axes must set steps and compensate for out-of-range pulse phasing. 
-	// If axis has 0 steps direction setting can be omitted
-	// If axis has 0 steps enabling motors is req'd to support power mode = 1
-	for (uint8_t i=0; i < MOTORS; i++) {
-		st.m[i].steps = sp.m[i].steps;					// set steps
-		if (sp.counter_reset_flag == TRUE) {			//compensate for pulse phasing
-			st.m[i].counter = -(st.timer_ticks_downcount);
-		}
-		if (st.m[i].steps != 0) {
-			if (sp.m[i].dir == 0) {							// set direction
-				device.port[i]->OUTCLR = DIRECTION_BIT_bm;	// CW motion
-			} else {
-				device.port[i]->OUTSET = DIRECTION_BIT_bm;	// CCW motion
-			}
-			device.port[i]->OUTCLR = MOTOR_ENABLE_BIT_bm;	// enable motor
-		}
-	}
-	DEVICE_TIMER_DDA.CTRLA = TIMER_ENABLE;
-
-	st.segment_velocity = sp.segment_velocity;			// +++++ diagnostic
-
+	// all other cases drop tp here (e.g. Null moves after Mcodes skip to here) 
 	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
 	st_request_exec_move();								// exec and prep next move
 }

@@ -110,7 +110,7 @@ void st_dump_stepper_state(void);
  *	of accuracy for very slow moves (F<100).		  
  */
 //#define DDA_OVERCLOCK 16		// doesn't have to be a binary multiple
-#define DDA_OVERCLOCK 0		// doesn't have to be a binary multiple
+#define DDA_OVERCLOCK 0			// Disabled for now until root cause of Issue #7 is fixed
 
 /* Counter resets
  * 	You want to reset the DDA counters if the new ticks value is way less 

@@ -405,8 +405,9 @@ char str_xjm[] PROGMEM = "xjm,x_je,[xjm] x_jerk_maximum%15.0f%S/min^3\n";
 char str_xjd[] PROGMEM = "xjd,x_ju,[xjd] x_junction_deviation%14.4f%S\n";
 char str_xsm[] PROGMEM = "xsm,x_s,[xsm] x_switch_mode%16d [0,1,2]\n";
 char str_xsv[] PROGMEM = "xsv,x_s,[xsv] x_search_velocity%16.3f%S/min\n";
-char str_xlv[] PROGMEM = "xlv,x_l,[xlv] x_latch_velocity%17.3f%S/min\n";
-char str_xzo[] PROGMEM = "xzo,x_z,[xzo] x_zero_offset%20.3f%S\n";
+char str_xlv[] PROGMEM = "xlv,x_latch_v,[xlv] x_latch_velocity%17.3f%S/min\n";
+char str_xlb[] PROGMEM = "xlb,x_latch_b,[xlb] x_latch_backoff%18.3f%S\n";
+char str_xzb[] PROGMEM = "xzb,x_z,[xzb] x_zero_backoff%19.3f%S\n";
 
 char str_yam[] PROGMEM = "yam,y_a,[yam] y_axis_mode%18d %S\n";
 char str_yfr[] PROGMEM = "yfr,y_f,[yfr] y_feedrate_maximum%15.3f%S/min\n";
@@ -416,8 +417,9 @@ char str_yjm[] PROGMEM = "yjm,y_je,[yjm] y_jerk_maximum%15.0f%S/min^3\n";
 char str_yjd[] PROGMEM = "yjd,y_ju,[yjd] y_junction_deviation%14.4f%S\n";
 char str_ysm[] PROGMEM = "ysm,y_s,[ysm] y_switch_mode%16d [0,1,2]\n";
 char str_ysv[] PROGMEM = "ysv,y_s,[ysv] y_search_velocity%16.3f%S/min\n";
-char str_ylv[] PROGMEM = "ylv,y_l,[ylv] y_latch_velocity%17.3f%S/min\n";
-char str_yzo[] PROGMEM = "yzo,y_z,[yzo] y_zero_offset%20.3f%S\n";
+char str_ylv[] PROGMEM = "ylv,y_latch_v,[ylv] y_latch_velocity%17.3f%S/min\n";
+char str_ylb[] PROGMEM = "ylb,y_latch_b,[ylb] y_latch_backoff%18.3f%S\n";
+char str_yzb[] PROGMEM = "yzb,y_z,[yzb] y_zero_backoff%19.3f%S\n";
 
 char str_zam[] PROGMEM = "zam,z_a,[zam] z_axis_mode%18d %S\n";
 char str_zfr[] PROGMEM = "zfr,z_f,[zfr] z_feedrate_maximum%15.3f%S/min\n";
@@ -427,8 +429,9 @@ char str_zjm[] PROGMEM = "zjm,z_je,[zjm] z_jerk_maximum%15.0f%S/min^3\n";
 char str_zjd[] PROGMEM = "zjd,z_ju,[zjd] z_junction_deviation%14.4f%S\n";
 char str_zsm[] PROGMEM = "zsm,z_s,[zsm] z_switch_mode%16d [0,1,2]\n";
 char str_zsv[] PROGMEM = "zsv,z_s,[zsv] z_search_velocity%16.3f%S/min\n";
-char str_zlv[] PROGMEM = "zlv,z_l,[zlv] z_latch_velocity%17.3f%S/min\n";
-char str_zzo[] PROGMEM = "zzo,z_z,[zzo] z_zero_offset%20.3f%S\n";
+char str_zlv[] PROGMEM = "zlv,z_latch_v,[zlv] z_latch_velocity%17.3f%S/min\n";
+char str_zlb[] PROGMEM = "xlb,z_latch_b,[zlb] z_latch_backoff%18.3f%S\n";
+char str_zzb[] PROGMEM = "xzb,z_z,[zzb] z_zero_backoff%19.3f%S\n";
 
 char str_aam[] PROGMEM = "aam,a_a,[aam] a_axis_mode%18d %S\n";
 char str_afr[] PROGMEM = "afr,a_f,[afr] a_feedrate_maximum%15.3f%S/min\n";
@@ -439,8 +442,9 @@ char str_ajd[] PROGMEM = "ajd,a_ju,[ajc] a_junction_deviation%14.4f%S\n";
 char str_ara[] PROGMEM = "ara,a_r,[ara] a_radius_value%20.4f%S\n";
 char str_asm[] PROGMEM = "asm,a_s,[asm] a_switch_mode%16d [0,1,2]\n";
 char str_asv[] PROGMEM = "asv,a_s,[asv] a_search_velocity%16.3f%S/min\n";
-char str_alv[] PROGMEM = "alv,a_l,[alv] a_latch_velocity%17.3f%S/min\n";
-char str_azo[] PROGMEM = "azo,a_z,[azo] a_zero_offset%20.3f%S\n";
+char str_alv[] PROGMEM = "alv,a_latch_v,[alv] a_latch_velocity%17.3f%S/min\n";
+char str_alb[] PROGMEM = "alb,a_latch_b,[alb] a_latch_backoff%18.3f%S\n";
+char str_azb[] PROGMEM = "azb,a_z,[azb] a_zero_backoff%19.3f%S\n";
 
 char str_bam[] PROGMEM = "bam,b_a,[bam] b_axis_mode%18d %S\n";
 char str_bfr[] PROGMEM = "bfr,b_f,[bfr] b_feedrate_maximum%15.3f%S/min\n";
@@ -451,8 +455,9 @@ char str_bjd[] PROGMEM = "bcd,b_ju,[bjd] b_junction_deviation%14.4f%S\n";
 char str_bra[] PROGMEM = "bra,b_r,[bra] b_radius_value%20.4f%S\n";
 char str_bsm[] PROGMEM = "bsm,b_s,[bsm] b_switch_mode%16d [0,1,2]\n";
 char str_bsv[] PROGMEM = "bsv,b_s,[bsv] b_search_velocity%16.3f%S/min\n";
-char str_blv[] PROGMEM = "blv,b_l,[blv] b_latch_velocity%17.3f%S/min\n";
-char str_bzo[] PROGMEM = "bzo,b_z,[bzo] b_zero_offset%20.3f%S\n";
+char str_blv[] PROGMEM = "blv,b_latch_v,[blv] b_latch_velocity%17.3f%S/min\n";
+char str_blb[] PROGMEM = "xlb,b_latch_b,[blb] b_latch_backoff%18.3f%S\n";
+char str_bzb[] PROGMEM = "bzb,b_z,[bzb] b_zero_backoff%19.3f%S\n";
 
 char str_cam[] PROGMEM = "cam,c_a,[cam] c_axis_mode%18d %S\n";
 char str_cfr[] PROGMEM = "cfr,c_f,[cfr] c_feedrate_maximum%15.3f%S/min\n";
@@ -463,8 +468,9 @@ char str_cjd[] PROGMEM = "cjd,c_ju,[cjd] c_junction_deviation%14.4f%S\n";
 char str_cra[] PROGMEM = "cra,c_r,[cra] c_radius_value%20.4f%S\n";
 char str_csm[] PROGMEM = "csm,c_s,[csm] c_switch_mode%16d [0,1,2]\n";
 char str_csv[] PROGMEM = "csv,c_s,[csv] c_search_velocity%16.3f%S/min\n";
-char str_clv[] PROGMEM = "cls,c_l,[clv] c_latch_velocity%17.3f%S/min\n";
-char str_czo[] PROGMEM = "czo,c_z,[czo] c_zero_offset%20.3f%S\n";
+char str_clv[] PROGMEM = "cls,c_latch_v,[clv] c_latch_velocity%17.3f%S/min\n";
+char str_clb[] PROGMEM = "clb,c_latch_b,[clb] c_latch_backoff%18.3f%S\n";
+char str_czb[] PROGMEM = "xzb,c_z,[czb] c_zero_backoff%19.3f%S\n";
 
 // Coordinate system offset groups
 char str_g54x[] PROGMEM = "g54x,g54_x,[g54x] g54_x_offset%20.3f%S\n";
@@ -673,7 +679,8 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_xsm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.a[X].switch_mode,		X_SWITCH_MODE },
 	{ str_xsv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].search_velocity,	X_SEARCH_VELOCITY },
 	{ str_xlv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_velocity,	X_LATCH_VELOCITY },
-	{ str_xzo, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].zero_offset,		X_ZERO_OFFSET },
+	{ str_xlb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_backoff,	X_LATCH_BACKOFF },
+	{ str_xzb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].zero_backoff,		X_ZERO_BACKOFF },
 
 	{ str_yam, _print_am,  _get_am,  _set_ui8,(double *)&cfg.a[Y].axis_mode,		Y_AXIS_MODE },
 	{ str_yfr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].feedrate_max,		Y_FEEDRATE_MAX },
@@ -684,7 +691,8 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_ysm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.a[Y].switch_mode,		Y_SWITCH_MODE },
 	{ str_ysv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].search_velocity,	Y_SEARCH_VELOCITY },
 	{ str_ylv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_velocity,	Y_LATCH_VELOCITY },
-	{ str_yzo, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].zero_offset,		Y_ZERO_OFFSET },
+	{ str_ylb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_backoff,	Y_LATCH_BACKOFF },
+	{ str_yzb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].zero_backoff,		Y_ZERO_BACKOFF },
 
 	{ str_zam, _print_am,  _get_am,  _set_ui8,(double *)&cfg.a[Z].axis_mode,		Z_AXIS_MODE },
 	{ str_zfr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].feedrate_max, 	Z_FEEDRATE_MAX },
@@ -695,7 +703,8 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_zsm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.a[Z].switch_mode,		Z_SWITCH_MODE },
 	{ str_zsv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].search_velocity,	Z_SEARCH_VELOCITY },
 	{ str_zlv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_velocity,	Z_LATCH_VELOCITY },
-	{ str_zzo, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].zero_offset,		Z_ZERO_OFFSET },
+	{ str_zlb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_backoff,	Z_LATCH_BACKOFF },
+	{ str_zzb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].zero_backoff,		Z_ZERO_BACKOFF },
 
 	{ str_aam, _print_am,  _get_am,  _set_ui8,(double *)&cfg.a[A].axis_mode,		A_AXIS_MODE },
 	{ str_afr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].feedrate_max, 	A_FEEDRATE_MAX },
@@ -707,7 +716,8 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_asm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.a[A].switch_mode,		A_SWITCH_MODE },
 	{ str_asv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].search_velocity,	A_SEARCH_VELOCITY },
 	{ str_alv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_velocity,	A_LATCH_VELOCITY },
-	{ str_azo, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].zero_offset,		A_ZERO_OFFSET },
+	{ str_alb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_backoff,	A_LATCH_BACKOFF },
+	{ str_azb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].zero_backoff,		A_ZERO_BACKOFF },
 
 	{ str_bam, _print_am,  _get_am,  _set_ui8,(double *)&cfg.a[B].axis_mode,		B_AXIS_MODE },
 	{ str_bfr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].feedrate_max, 	B_FEEDRATE_MAX },
@@ -719,7 +729,8 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_bsm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.a[B].switch_mode,		B_SWITCH_MODE },
 	{ str_bsv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].search_velocity,	B_SEARCH_VELOCITY },
 	{ str_blv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_velocity,	B_LATCH_VELOCITY },
-	{ str_bzo, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].zero_offset,		B_ZERO_OFFSET },
+	{ str_blb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_backoff,	B_LATCH_BACKOFF },
+	{ str_bzb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].zero_backoff,		B_ZERO_BACKOFF },
 
 	{ str_cam, _print_am,  _get_am,  _set_ui8,(double *)&cfg.a[C].axis_mode,		C_AXIS_MODE },
 	{ str_cfr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].feedrate_max, 	C_FEEDRATE_MAX },
@@ -731,7 +742,8 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_csm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.a[C].switch_mode,		C_SWITCH_MODE },
 	{ str_csv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].search_velocity,	C_SEARCH_VELOCITY },
 	{ str_clv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_velocity,	C_LATCH_VELOCITY },
-	{ str_czo, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].zero_offset,		C_ZERO_OFFSET },
+	{ str_clb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_backoff,	C_LATCH_BACKOFF },
+	{ str_czb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].zero_backoff,		C_ZERO_BACKOFF },
 
 	// coordinate system offsets
 	{ str_g54x, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G54][X], G54_X_OFFSET },
@@ -1229,27 +1241,10 @@ static uint8_t _set_defa(cmdObj *cmd)
 uint8_t cfg_config_parser(char *str)
 {
 	cmdObj *cmd = cmd_array;				// point at first struct in the array
-
-//######################### START diagnostic ##############################
 	if (str[0] == '?') {					// special handling for status report
-		if (str[1] == 'z') {
-			fprintf_P(stderr,PSTR("Programmed=[%1.3f] "),cm_get_runtime_work_position(Z));
-			fprintf_P(stderr,PSTR("Real=[%1.3f] "),z_step_counter/100); 
-			double err=((z_step_counter/100)-cm_get_runtime_work_position(Z))/cm_get_runtime_work_position(Z); //100 is step/mm
-			// 100 is step/mm=( 360*micro_step/(step angle * travel_per_revolution))  360*1/(0.72*5)=100
-			fprintf_P(stderr,PSTR("Error=[%1.3f percent] \n"),err*100);    // 100 to do percent !
-		} else {
-			rpt_run_multiline_status_report();
-			return (TG_OK);
-		}
+		rpt_run_multiline_status_report();
+		return (TG_OK);
 	}
-// was:
-//	if (str[0] == '?') {					// special handling for status report
-//		rpt_run_multiline_status_report();
-//		return (TG_OK);
-//	}
-//######################### END diagnostic ##############################
-
 	ritorno(_parse_config_string(str,cmd));	// get the first object
 	if ((cmd->value_type != VALUE_TYPE_PARENT) && (cmd->value_type != VALUE_TYPE_NULL)) {
 		cmd_set(cmd);						// set single value

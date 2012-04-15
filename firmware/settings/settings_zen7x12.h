@@ -36,20 +36,17 @@
 
 #define M1_STEP_ANGLE 1.8				// degrees per whole step
 #define M2_STEP_ANGLE 1.8
-#define M3_STEP_ANGLE 0.72				// #########################
-//#define M3_STEP_ANGLE 1.8
+#define M3_STEP_ANGLE 1.8
 #define M4_STEP_ANGLE 1.8
 
 #define M1_TRAVEL_PER_REV 1.25			// mm of travel = lead screw pitch
 #define M2_TRAVEL_PER_REV 1.25
-#define M3_TRAVEL_PER_REV 5.00			// ##########################
-//#define M3_TRAVEL_PER_REV 1.25
+#define M3_TRAVEL_PER_REV 1.25
 #define M4_TRAVEL_PER_REV 18			// degrees traveled per motor rev
 
 #define M1_MICROSTEPS 8					// one of: 8, 4, 2, 1
 #define M2_MICROSTEPS 8
-#define M3_MICROSTEPS 1					// ##########################
-//#define M3_MICROSTEPS 8
+#define M3_MICROSTEPS 8
 #define M4_MICROSTEPS 8
 
 #define M1_POLARITY 0					// 0=normal, 1=reversed
@@ -59,8 +56,7 @@
 
 #define M1_POWER_MODE TRUE				// TRUE=low power idle enabled 
 #define M2_POWER_MODE TRUE
-#define M3_POWER_MODE FALSE				// ##########################
-//#define M3_POWER_MODE TRUE
+#define M3_POWER_MODE TRUE
 #define M4_POWER_MODE TRUE
 
 // axis values
@@ -74,8 +70,7 @@
 
 #define X_VELOCITY_MAX 800 				// G0 max velocity in mm/min
 #define Y_VELOCITY_MAX 800
-#define Z_VELOCITY_MAX 2000				// ###############################
-//#define Z_VELOCITY_MAX 500				// Z axis won't move as fast
+#define Z_VELOCITY_MAX 500				// Z axis won't move as fast
 #define M4_STEPS_PER_SEC 2000 			// motor characteristic
 #define A_VELOCITY_MAX ((M4_STEPS_PER_SEC * M4_STEP_ANGLE * 60) / M4_TRAVEL_PER_REV)
 #define B_VELOCITY_MAX A_VELOCITY_MAX
@@ -83,8 +78,7 @@
 
 #define X_FEEDRATE_MAX X_VELOCITY_MAX	// G1 max feed rate in mm/min
 #define Y_FEEDRATE_MAX Y_VELOCITY_MAX
-#define Z_FEEDRATE_MAX Z_VELOCITY_MAX/2	// ###############################
-//#define Z_FEEDRATE_MAX Z_VELOCITY_MAX
+#define Z_FEEDRATE_MAX Z_VELOCITY_MAX
 #define A_FEEDRATE_MAX A_VELOCITY_MAX
 #define B_FEEDRATE_MAX B_VELOCITY_MAX
 #define C_FEEDRATE_MAX C_VELOCITY_MAX
@@ -114,19 +108,12 @@
 #define B_RADIUS 10						// (XYZ values are not defined)
 #define C_RADIUS 10
 
-#define X_SWITCH_MODE TRUE				// 1=limit switches present and enabled
-#define Y_SWITCH_MODE TRUE
-#define Z_SWITCH_MODE TRUE
-#define A_SWITCH_MODE FALSE
-#define B_SWITCH_MODE FALSE
-#define C_SWITCH_MODE FALSE
-
-#define X_ZERO_OFFSET 3					// mm
-#define Y_ZERO_OFFSET 3
-#define Z_ZERO_OFFSET 3
-#define A_ZERO_OFFSET 0					// degrees
-#define B_ZERO_OFFSET 0
-#define C_ZERO_OFFSET 0
+#define X_SWITCH_MODE 1					// 1=limit switches present and enabled
+#define Y_SWITCH_MODE 1
+#define Z_SWITCH_MODE 1
+#define A_SWITCH_MODE 0
+#define B_SWITCH_MODE 0
+#define C_SWITCH_MODE 0
 
 #define X_COORD_OFFSET (X_TRAVEL_MAX/2) // offset to coordinate zero from machine zero
 #define Y_COORD_OFFSET (Y_TRAVEL_MAX/2)
@@ -142,12 +129,26 @@
 #define B_SEARCH_VELOCITY B_VELOCITY_MAX
 #define C_SEARCH_VELOCITY C_VELOCITY_MAX
 
-#define X_LATCH_VELOCITY 100		// mm/min
+#define X_LATCH_VELOCITY 100			// mm/min
 #define Y_LATCH_VELOCITY 100
 #define Z_LATCH_VELOCITY 100
-#define A_LATCH_VELOCITY 3600	// degrees per minute
+#define A_LATCH_VELOCITY 3600			// degrees per minute
 #define B_LATCH_VELOCITY 3600
 #define C_LATCH_VELOCITY 3600
+
+#define X_LATCH_BACKOFF 2				// mm
+#define Y_LATCH_BACKOFF 2
+#define Z_LATCH_BACKOFF 2
+#define A_LATCH_BACKOFF 0				// degrees
+#define B_LATCH_BACKOFF 0
+#define C_LATCH_BACKOFF 0
+
+#define X_ZERO_BACKOFF 1				// mm
+#define Y_ZERO_BACKOFF 1
+#define Z_ZERO_BACKOFF 5
+#define A_ZERO_BACKOFF 0				// degrees
+#define B_ZERO_BACKOFF 0
+#define C_ZERO_BACKOFF 0
 
 #define X_HOMING_JERK 1000000000		// 1,000,000,000
 #define Y_HOMING_JERK X_HOMING_JERK

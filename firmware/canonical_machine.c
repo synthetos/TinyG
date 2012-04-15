@@ -122,6 +122,7 @@ uint8_t cm_get_combined_state()
  * cm_get_coord_offset() - return the currently active coordinate offset for an axis
  * cm_get_model_work_position() - return position from the gm struct into gn struct form (external form)
  * cm_get_model_work_position_vector() - return model position vector in externalized form
+ * cm_get_model_canonical_target() - return model target in internal canonical form
  * cm_get_model_canonical_position_vector() - return model position vector in internal canonical form
  * cm_get_runtime_machine_position() - return current machine position in external form 
  * cm_get_runtime runtome_position() - return current work coordinate position in external form 
@@ -148,12 +149,18 @@ double cm_get_model_work_position(uint8_t axis)
 	}
 }
 
+
 double *cm_get_model_work_position_vector(double position[]) 
 {
 	for (uint8_t i=0; i<AXES; i++) {
 		position[i] = cm_get_model_work_position(i);
 	}
 	return (position);
+}
+
+double cm_get_model_canonical_target(uint8_t axis) 
+{
+	return (gm.target[axis]);
 }
 
 double *cm_get_model_canonical_position_vector(double position[])
