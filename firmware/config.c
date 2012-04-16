@@ -537,6 +537,9 @@ char str_sr17[] PROGMEM = "sr17,sr17,";
 char str_sr18[] PROGMEM = "sr18,sr18,";
 char str_sr19[] PROGMEM = "sr19,sr19,";
 
+// help screen
+char str_h[] PROGMEM = "h,h,";			// help screen
+
 // Group strings
 char str_1[] PROGMEM = "1,1,";			// motor groups
 char str_2[] PROGMEM = "2,2,";
@@ -810,6 +813,8 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_sr18, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[18],0 },
 	{ str_sr19, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[19],0 },
 
+	{ str_h, help_print_config_help, _get_nul, _set_nul,(double *)&tg.null,0 },		// config help
+	
 	// group lookups - must follow the single-valued entries for proper sub-string matching
 	{ str_sys, _print_grp, _get_sys, _set_grp,(double *)&tg.null,0 },	// system group (must be first)
 	{ str_1, _print_grp, _get_grp, _set_grp,(double *)&tg.null,0 },		// motor groups
