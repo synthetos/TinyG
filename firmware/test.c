@@ -98,10 +98,11 @@ uint8_t tg_test(cmdObj *cmd)
 void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
-
-	xio_queue_RX_string_usb("m3\n");
-	xio_queue_RX_string_usb("g0 x10\n");
-
+	
+	xio_queue_RX_string_usb("$\n");
+//	xio_queue_RX_string_usb("$4tr=720\n");
+//	xio_queue_RX_string_usb("g0 a360\n");
+//	xio_queue_RX_string_usb("m3\n");
 //	xio_queue_RX_string_usb("g0 x10\n");
 
 /* Run test file */

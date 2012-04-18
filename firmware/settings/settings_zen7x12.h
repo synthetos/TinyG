@@ -50,7 +50,7 @@
 #define M1_TRAVEL_PER_REV 1.25			// mm of travel = lead screw pitch
 #define M2_TRAVEL_PER_REV 1.25
 #define M3_TRAVEL_PER_REV 1.25
-#define M4_TRAVEL_PER_REV 18			// degrees traveled per motor rev
+#define M4_TRAVEL_PER_REV 360			// degrees per motor rev - 1:1 gearing
 
 #define M1_MICROSTEPS 8					// one of: 8, 4, 2, 1
 #define M2_MICROSTEPS 8
@@ -67,14 +67,13 @@
 #define M3_POWER_MODE TRUE
 #define M4_POWER_MODE TRUE
 
-// axis values
-#define X_AXIS_MODE AXIS_STANDARD		// see gcode.h for valid values
+// axis values							// see canonical_machine.h cmAxisMode for valid values
+#define X_AXIS_MODE AXIS_STANDARD
 #define Y_AXIS_MODE AXIS_STANDARD
 #define Z_AXIS_MODE AXIS_STANDARD
-//#define Z_AXIS_MODE AXIS_INHIBITED	// Z kill
-#define A_AXIS_MODE AXIS_RADIUS
-#define B_AXIS_MODE AXIS_RADIUS
-#define C_AXIS_MODE AXIS_RADIUS
+#define A_AXIS_MODE AXIS_STANDARD
+#define B_AXIS_MODE AXIS_STANDARD
+#define C_AXIS_MODE AXIS_STANDARD
 
 #define X_VELOCITY_MAX 600 				// G0 max velocity in mm/min
 #define Y_VELOCITY_MAX 600
@@ -116,10 +115,10 @@
 #define B_RADIUS 10						// (XYZ values are not defined)
 #define C_RADIUS 10
 
-#define X_SWITCH_MODE 1					// 1=limit switches present and enabled
+#define X_SWITCH_MODE 1					// 1=switches enabled for homing only
 #define Y_SWITCH_MODE 1
 #define Z_SWITCH_MODE 1
-#define A_SWITCH_MODE 0
+#define A_SWITCH_MODE 0					// 0=switches disabled
 #define B_SWITCH_MODE 0
 #define C_SWITCH_MODE 0
 

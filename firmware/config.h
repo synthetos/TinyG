@@ -121,7 +121,7 @@ cmdObj *cmd_new_object(cmdObj *cmd);
 INDEX_T cmd_get_index_by_token(const char *str);
 INDEX_T cmd_get_index(const char *str);
 char *cmd_get_token(const INDEX_T i, char *string);
-char cmd_get_group(const INDEX_T i);
+//char cmd_get_group(const INDEX_T i);
 uint8_t cmd_is_group(const char *str);
 uint8_t cmd_persist_offsets(uint8_t flag);
 

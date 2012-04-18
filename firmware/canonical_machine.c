@@ -275,7 +275,7 @@ void cm_set_target(double target[], double flag[])
 				gm.target[i] += _to_millimeters(target[i]);
 			}
 //		} else if (i<A) {
-//			INFO1(PSTR("%c axis using unsupported axis mode"), cfg_get_configuration_group_char(i));
+//			printf_P(stderr,PSTR("%c axis using unsupported axis mode"), cfg_get_configuration_group_char(i));
 		}
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
