@@ -79,7 +79,8 @@
 #define Y_VELOCITY_MAX 600
 #define Z_VELOCITY_MAX 500				// Z axis won't move as fast
 #define M4_STEPS_PER_SEC 2000 			// motor characteristic
-#define A_VELOCITY_MAX ((M4_STEPS_PER_SEC * M4_STEP_ANGLE * 60) / M4_TRAVEL_PER_REV)
+//#define A_VELOCITY_MAX ((M4_STEPS_PER_SEC * M4_STEP_ANGLE * 60) / M4_TRAVEL_PER_REV)
+#define A_VELOCITY_MAX 36000
 #define B_VELOCITY_MAX A_VELOCITY_MAX
 #define C_VELOCITY_MAX A_VELOCITY_MAX
 
