@@ -60,9 +60,10 @@
 // NOTE: The number of SYSTEM_GROUP or SR_DEFAULTS elements cannot exceed CMD_MAX_OBJECTS
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
 #define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ea,ja,ml,ma,mt,ic,il,ec,ee,ex"
-#define SR_DEFAULTS 	"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat","mots","hold"
+#define SR_DEFAULTS 	"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+//#define SR_DEFAULTS 	"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat","mots","hold"
 #define DONT_PERSIST	"gc,te,de"	// commands that should not be persisted (comma separated)
-#define DONT_INITIALIZE "gc,sr,te,he,de"
+#define DONT_INITIALIZE "gc,sr,te,he,de" // commands that should not be initialized
 
 enum cmdValueType {					// value typing for config and JSON
 	VALUE_TYPE_ERROR = -2,			// was unable to process the record
@@ -84,6 +85,7 @@ struct cmdObject {					// depending on use, not all elements may be populated
 	char token[CMD_TOKEN_LEN+1];	// mnemonic token
 	char vstring[CMD_STRING_LEN+1];	// value string (see note below)
 }; 									// OK, so it's not REALLY an object
+typedef struct cmdObject cmdObj;	// handy typedef for command onjects
 
 // The cmdObj vstring field is overloaded to save RAM. Its primary use is to 
 // carry a value-type of string. It is also used in some preliminary operations
@@ -93,7 +95,6 @@ struct cmdObject {					// depending on use, not all elements may be populated
 #define friendly_name vstring		// used here as a friendly name field
 #define group_token vstring			// used here as a group token field
 
-typedef struct cmdObject cmdObj;
 typedef uint8_t (*fptrCmd)(cmdObj *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
 
@@ -121,7 +122,7 @@ cmdObj *cmd_new_object(cmdObj *cmd);
 INDEX_T cmd_get_index_by_token(const char *str);
 INDEX_T cmd_get_index(const char *str);
 char *cmd_get_token(const INDEX_T i, char *string);
-char cmd_get_group(const INDEX_T i);
+//char cmd_get_group(const INDEX_T i);
 uint8_t cmd_is_group(const char *str);
 uint8_t cmd_persist_offsets(uint8_t flag);
 

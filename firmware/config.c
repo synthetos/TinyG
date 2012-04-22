@@ -183,6 +183,7 @@ static uint8_t _set_ee(cmdObj *cmd);	// enable character echo
 static uint8_t _set_ex(cmdObj *cmd);	// enable XON/XOFF
 
 static uint8_t _set_sa(cmdObj *cmd);	// set motor step angle
+static uint8_t _set_tr(cmdObj *cmd);	// set motor travel per revolution
 static uint8_t _set_mi(cmdObj *cmd);	// set microsteps
 static uint8_t _set_po(cmdObj *cmd);	// set motor polarity
 static uint8_t _set_motor_steps_per_unit(cmdObj *cmd);
@@ -556,6 +557,7 @@ char str_g58[] PROGMEM = "g58,g58,";
 char str_g59[] PROGMEM = "g59,g59,";
 char str_g92[] PROGMEM = "g92,g92,";	// origin offsets
 char str_sys[] PROGMEM = "sys,sys,";	// system group
+char str_s[] PROGMEM = "s,s,";			// system group alias
 char str_pos[] PROGMEM = "pos,pos,";	// work position group
 char str_mpo[] PROGMEM = "mpo,mpo,";	// machine position group
 
@@ -565,6 +567,8 @@ char str_axes[] PROGMEM = "n,n,";		// display all axis groups
 char str_ofs[] PROGMEM = "o,o,";		// display all offsets
 char str_all[] PROGMEM = "$,$,";		// display all parameters
 
+// help screen
+char str_h[] PROGMEM = "h,h,";			// help screen
 
 /***** PROGMEM config array **************************************************
  *
@@ -644,28 +648,28 @@ struct cfgItem cfgArray[] PROGMEM = {
 
 	{ str_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ str_1sa, _print_rot, _get_dbl ,_set_sa, (double *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
-	{ str_1tr, _print_lin, _get_dbu ,_set_dbu,(double *)&cfg.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
+	{ str_1tr, _print_lin, _get_dbu ,_set_tr, (double *)&cfg.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
 	{ str_1mi, _print_ui8, _get_ui8, _set_mi, (double *)&cfg.m[MOTOR_1].microsteps,	M1_MICROSTEPS },
 	{ str_1po, _print_ui8, _get_ui8, _set_po, (double *)&cfg.m[MOTOR_1].polarity,	M1_POLARITY },
 	{ str_1pm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].power_mode,	M1_POWER_MODE },
 
 	{ str_2ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_2].motor_map,	M2_MOTOR_MAP },
 	{ str_2sa, _print_rot, _get_dbl, _set_sa, (double *)&cfg.m[MOTOR_2].step_angle,	M2_STEP_ANGLE },
-	{ str_2tr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.m[MOTOR_2].travel_rev,	M2_TRAVEL_PER_REV },
+	{ str_2tr, _print_lin, _get_dbu, _set_tr, (double *)&cfg.m[MOTOR_2].travel_rev,	M2_TRAVEL_PER_REV },
 	{ str_2mi, _print_ui8, _get_ui8, _set_mi, (double *)&cfg.m[MOTOR_2].microsteps,	M2_MICROSTEPS },
 	{ str_2po, _print_ui8, _get_ui8, _set_po, (double *)&cfg.m[MOTOR_2].polarity,	M2_POLARITY },
 	{ str_2pm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_2].power_mode,	M2_POWER_MODE },
 
 	{ str_3ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_3].motor_map,	M3_MOTOR_MAP },
 	{ str_3sa, _print_rot, _get_dbl, _set_sa, (double *)&cfg.m[MOTOR_3].step_angle,	M3_STEP_ANGLE },
-	{ str_3tr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.m[MOTOR_3].travel_rev,	M3_TRAVEL_PER_REV },
+	{ str_3tr, _print_lin, _get_dbu, _set_tr, (double *)&cfg.m[MOTOR_3].travel_rev,	M3_TRAVEL_PER_REV },
 	{ str_3mi, _print_ui8, _get_ui8, _set_mi, (double *)&cfg.m[MOTOR_3].microsteps,	M3_MICROSTEPS },
 	{ str_3po, _print_ui8, _get_ui8, _set_po, (double *)&cfg.m[MOTOR_3].polarity,	M3_POLARITY },
 	{ str_3pm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_3].power_mode,	M3_POWER_MODE },
 
 	{ str_4ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_4].motor_map,	M4_MOTOR_MAP },
 	{ str_4sa, _print_rot, _get_dbl, _set_sa, (double *)&cfg.m[MOTOR_4].step_angle,	M4_STEP_ANGLE },
-	{ str_4tr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.m[MOTOR_4].travel_rev,	M4_TRAVEL_PER_REV },
+	{ str_4tr, _print_lin, _get_dbu, _set_tr, (double *)&cfg.m[MOTOR_4].travel_rev,	M4_TRAVEL_PER_REV },
 	{ str_4mi, _print_ui8, _get_ui8, _set_mi, (double *)&cfg.m[MOTOR_4].microsteps,	M4_MICROSTEPS },
 	{ str_4po, _print_ui8, _get_ui8, _set_po, (double *)&cfg.m[MOTOR_4].polarity,	M4_POLARITY },
 	{ str_4pm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_4].power_mode,	M4_POWER_MODE },
@@ -809,9 +813,10 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_sr17, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[17],0 },
 	{ str_sr18, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[18],0 },
 	{ str_sr19, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[19],0 },
-
+	
 	// group lookups - must follow the single-valued entries for proper sub-string matching
 	{ str_sys, _print_grp, _get_sys, _set_grp,(double *)&tg.null,0 },	// system group (must be first)
+	{ str_s, _print_grp, _get_sys, _set_grp,(double *)&tg.null,0 },		// alias for system group
 	{ str_1, _print_grp, _get_grp, _set_grp,(double *)&tg.null,0 },		// motor groups
 	{ str_2, _print_grp, _get_grp, _set_grp,(double *)&tg.null,0 },
 	{ str_3, _print_grp, _get_grp, _set_grp,(double *)&tg.null,0 },
@@ -836,15 +841,18 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_moto, _print_motors, _get_nul, _set_nul,(double *)&tg.null,0 },
 	{ str_axes, _print_axes, _get_nul, _set_nul,(double *)&tg.null,0 },
 	{ str_ofs, _print_offsets, _get_nul, _set_nul,(double *)&tg.null,0 },
-	{ str_all, _print_all, _get_nul, _set_nul,(double *)&tg.null,0 }
+	{ str_all, _print_all, _get_nul, _set_nul,(double *)&tg.null,0 },
+
+	// help display
+	{ str_h, help_print_config_help, _get_nul, _set_nul,(double *)&tg.null,0 }
 
 // *** REMEMBER TO UPDATE CMD_COUNT_GROUPS, BELOW ****
 };
 #define CMD_INDEX_MAX (sizeof cfgArray / sizeof(struct cfgItem))
 
 // hack alert. Find a better way to do this
-#define CMD_COUNT_STATUS 20		// number of status report persistence elements
-#define CMD_COUNT_GROUPS 24		// includes count of groups and uber-groups
+#define CMD_COUNT_STATUS 20		// number of status report persistence elements - see final array [index]
+#define CMD_COUNT_GROUPS 26		// includes count of groups, uber-groups and help display
 #define CMD_INDEX_END_SINGLES (CMD_INDEX_MAX - CMD_COUNT_STATUS - CMD_COUNT_GROUPS)
 #define CMD_INDEX_START_GROUPS (CMD_INDEX_MAX - CMD_COUNT_GROUPS)
 
@@ -1053,9 +1061,10 @@ static uint8_t _run_gc(cmdObj *cmd)
 }
 
 /**** AXIS AND MOTOR FUNCTIONS ****
- * _get_am()	- get axis mode w/enumeration string
- * _print_am()	- print axis mode w/enumeration string
- * _set_sa() - set step_angle or travel_per_rev & recompute steps_per_unit
+ * _get_am() - get axis mode w/enumeration string
+ * _print_am() - print axis mode w/enumeration string
+ * _set_tr() - set motor travel_per_rev & recompute steps_per_unit
+ * _set_sa() - set motor step_angle & recompute steps_per_unit
  * _set_mi() - set microsteps & recompute steps_per_unit
  * _set_po() - set polarity and update stepper structs
  * _set_motor_steps_per_unit() - update this derived value
@@ -1077,6 +1086,13 @@ static void _print_am(cmdObj *cmd)
 static uint8_t _set_sa(cmdObj *cmd)
 { 
 	_set_dbl(cmd);
+	_set_motor_steps_per_unit(cmd); 
+	return (TG_OK);
+}
+
+static uint8_t _set_tr(cmdObj *cmd)
+{ 
+	_set_dbu(cmd);
 	_set_motor_steps_per_unit(cmd); 
 	return (TG_OK);
 }
@@ -1267,6 +1283,7 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 	cmd_new_object(cmd);					// initialize config object, index=0
 	if (*str == '$') str++;					// ignore leading $
 	tmp = str;
+	if (*tmp==NUL) *tmp='s';				// make $ behave as a system listing
 	for (; *tmp!=NUL; tmp++) {
 		*tmp = tolower(*tmp);				// convert string to lower case
 		// todo: put comma tolerance in here
@@ -1330,21 +1347,24 @@ void cmd_persist(cmdObj *cmd)
 }
 
 /****************************************************************************
- * Secondary cmd functions
+ * cmd helper functions
  * cmd_get_max_index()		- utility function to return array size				
  * cmd_get_cmd()			- like cmd_get but populates the entire cmdObj struct
  * cmd_new_object() 		- initialize a command object (that you actually passed in)
  * cmd_get_index_by_token() - get index from mnenonic token (most efficient scan)
  * cmd_get_index() 			- get index from mnenonic token or friendly name
  * cmd_get_token()			- returns token in arg string & returns pointer to string
- * cmd_get_group() 			- returns the axis prefix, motor prefix, or 'g' for general
- * cmd_is_group()			- returns true of the command is a group
+ * cmd_get_group() 			- returns the axis prefix, motor prefix, or 's' for system
+ * cmd_is_group()			- returns true if the command is a group
  * cmd_persist_offsets()	- write any changed G54 (et al) offsets back to NVM
  *
  *	cmd_get_index() and cmd_get_index_by_token() are the most expensive routines 
- *	in the whole mess. They do a linear table scan of the PROGMEM strings, and
- *	could of course be further optimized. Use cmd_get_index_by_token() if you 
- *	know your input string is a token - it's much faster than cmd_get_index()
+ *	in the whole config. They do a linear table scan of the PROGMEM strings, which 
+ *	of course could be further optimized with indexes or hashing if it made a 
+ *	difference. Which it doesn't. At least not with about 230 tokens to manage. 
+ *
+ *	That said, use cmd_get_index_by_token() if you know your input string is a 
+ *	token - it's much faster than cmd_get_index()
  *
  *	The full string is not needed in the friendly name, just enough to match to
  *	uniqueness. This saves a fair amount of memory and time and is easier to use.
@@ -1416,7 +1436,7 @@ char *cmd_get_token(const INDEX_T i, char *token)
 	*ptr = NUL;								// terminate the string after the token
 	return (token);
 }
-
+/*
 char cmd_get_group(const INDEX_T i)
 {
 	char *ptr;
@@ -1426,16 +1446,14 @@ char cmd_get_group(const INDEX_T i)
 	if ((i < 0) || (i >= CMD_INDEX_MAX)) return (NUL);
 	strncpy_P(&chr,(PGM_P)pgm_read_word(&cfgArray[i].string), 1);
 	if ((ptr = strchr(groups, chr)) == NULL) {
-		return ('g');
+		return ('s');
 	}
 	return (*ptr);
 }
-
+*/
 uint8_t cmd_is_group(const char *str)
 {
-	if (strstr(GROUP_PREFIXES, str) != NULL) { // see config.h
-		return (true);
-	}
+	if (strstr(GROUP_PREFIXES, str) != NULL) return (true);
 	return (false);
 }
 

@@ -95,6 +95,7 @@ void tg_init(uint8_t default_src)
 void tg_reset(void)
 {
 	mp_flush_planner();
+	tg_system_reset();
 	tg_application_reset();
 }
 
@@ -246,7 +247,7 @@ void _dispatch_return(uint8_t status, char *buf)
 	if (tg.communications_mode == TG_TEXT_MODE) {
 		// for these status codes just send a prompt 
 		switch (status) {
-			case TG_OK: case TG_EAGAIN: case TG_NOOP: { 
+			case TG_OK: case TG_EAGAIN: case TG_NOOP: case TG_ZERO_LENGTH_MOVE:{ 
 				_prompt_without_message(); 
 				break; 
 			}

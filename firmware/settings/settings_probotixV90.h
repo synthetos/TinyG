@@ -50,7 +50,7 @@
 #define M1_TRAVEL_PER_REV 5.08		// 5 TPI in mm
 #define M2_TRAVEL_PER_REV 5.08
 #define M3_TRAVEL_PER_REV 2.1166666	// 12 TPI in mm
-#define M4_TRAVEL_PER_REV 18		// degrees per motor rev - 20:1 gearing
+#define M4_TRAVEL_PER_REV 360		// degrees per motor rev - 1:1 gearing
 
 #define M1_MICROSTEPS 8				// one of: 8, 4, 2, 1
 #define M2_MICROSTEPS 8
@@ -67,13 +67,13 @@
 #define M3_POWER_MODE TRUE
 #define M4_POWER_MODE TRUE
 
-// axis values
+// axis values						// see canonical_machine.h cmAxisMode for valid values
 #define X_AXIS_MODE AXIS_STANDARD
 #define Y_AXIS_MODE AXIS_STANDARD
 #define Z_AXIS_MODE AXIS_STANDARD
-#define A_AXIS_MODE AXIS_RADIUS
-#define B_AXIS_MODE AXIS_RADIUS
-#define C_AXIS_MODE AXIS_RADIUS
+#define A_AXIS_MODE AXIS_STANDARD
+#define B_AXIS_MODE AXIS_STANDARD
+#define C_AXIS_MODE AXIS_STANDARD
 
 #define X_VELOCITY_MAX 2400 		// G0 max seek rate in mm/min
 #define Y_VELOCITY_MAX 2400
@@ -115,10 +115,10 @@
 #define B_RADIUS 10					// (XYZ values are not defined)
 #define C_RADIUS 10
 
-#define X_SWITCH_MODE 1				// 1=limit switches present and enabled
+#define X_SWITCH_MODE 1				// 1=switches enabled for homing only
 #define Y_SWITCH_MODE 1
 #define Z_SWITCH_MODE 1
-#define A_SWITCH_MODE 0
+#define A_SWITCH_MODE 0				// 0=switches disabled
 #define B_SWITCH_MODE 0
 #define C_SWITCH_MODE 0
 
@@ -129,10 +129,10 @@
 #define B_SEARCH_VELOCITY B_VELOCITY_MAX
 #define C_SEARCH_VELOCITY C_VELOCITY_MAX
 
-#define X_LATCH_VELOCITY 100		// mm/min
+#define X_LATCH_VELOCITY 100			// mm/min
 #define Y_LATCH_VELOCITY 100
 #define Z_LATCH_VELOCITY 100
-#define A_LATCH_VELOCITY 3600	// degrees per minute
+#define A_LATCH_VELOCITY 3600			// degrees per minute
 #define B_LATCH_VELOCITY 3600
 #define C_LATCH_VELOCITY 3600
 

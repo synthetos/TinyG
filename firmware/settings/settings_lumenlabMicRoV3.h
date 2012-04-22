@@ -67,13 +67,13 @@
 #define M3_POWER_MODE TRUE
 #define M4_POWER_MODE TRUE
 
-// axis values
-#define X_AXIS_MODE AXIS_STANDARD	// see gcode.h for valid values
+// axis values						// see canonical_machine.h cmAxisMode for valid values
+#define X_AXIS_MODE AXIS_STANDARD
 #define Y_AXIS_MODE AXIS_STANDARD
 #define Z_AXIS_MODE AXIS_STANDARD
-#define A_AXIS_MODE AXIS_RADIUS
-#define B_AXIS_MODE AXIS_RADIUS
-#define C_AXIS_MODE AXIS_RADIUS
+#define A_AXIS_MODE AXIS_STANDARD
+#define B_AXIS_MODE AXIS_STANDARD
+#define C_AXIS_MODE AXIS_STANDARD
 
 #define X_VELOCITY_MAX 1600 		// G0 max seek rate in mm/min
 #define Y_VELOCITY_MAX 1600
@@ -116,10 +116,10 @@
 #define B_RADIUS 10					// (XYZ values are not defined)
 #define C_RADIUS 10
 
-#define X_SWITCH_MODE 1				// 1=limit switches present and enabled
+#define X_SWITCH_MODE 1				// 1=switches enabled for homing only
 #define Y_SWITCH_MODE 1
 #define Z_SWITCH_MODE 1
-#define A_SWITCH_MODE 0
+#define A_SWITCH_MODE 0				// 0=switches disabled
 #define B_SWITCH_MODE 0
 #define C_SWITCH_MODE 0
 

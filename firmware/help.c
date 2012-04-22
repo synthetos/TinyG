@@ -69,7 +69,7 @@ tg_announce();
 fprintf_P(stderr, PSTR("#### TinyG CONFIGURATION Help ####\n"));
 fprintf_P(stderr, PSTR("\
 These commands are active for configuration:\n\
-  $    Show general settings\n\
+  $sys Show system (general) settings\n\
   $1   Show motor 1 settings (or whatever motor you want 1,2,3,4)\n\
   $x   Show X axis settings (or whatever axis you want x,y,z,a,b,c)\n\
   $m   Show all motor settings\n\
@@ -133,7 +133,7 @@ static void _help_status_report_advisory()
 fprintf_P(stderr, PSTR("\n\
 Note: TinyG generates automatic status reports by default\n\
 This can be disabled by entering $si=0\n\
-See the wiki for more details.\n\
+See the wiki below for more details.\n\
 "));
 }
 
