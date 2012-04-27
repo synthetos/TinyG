@@ -1,3 +1,3 @@
-Edge Branch: 
-Version 0.9 release candidate "Fanny Pack"
-build 337.04
+Master Branch: 
+Version 0.9 release "Fanny Pack"
+build 338.05
