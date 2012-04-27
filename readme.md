@@ -6,7 +6,7 @@ TinyG is a port of grbl to the Atmel xmega that runs on the TinyG hardware. Some
 * 6 axis motion (XYXABC axes)
 * jerk controlled motion for acceleration planning (3rd order motion planning)
 * status displays ('?' character)
-* XON/XOFF protocol over serila
+* XON/XOFF protocol over serial
 * config is necessarily different to take into account the larger number of settings
 
 See the Synthetos website for more details.
