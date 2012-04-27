@@ -2,20 +2,26 @@
  * stepper.c - stepper motor controls
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2011 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
  * the Free Software Foundation, either version 3 of the License, 
  * or (at your option) any later version.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
+ * for details. You should have received a copy of the GNU General Public 
+ * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* 	This module provides the low-level stepper drivers and some related
  * 	functions. It dequeues lines queued by the motor_queue routines.
@@ -40,7 +46,7 @@
  *	Arc movement is planned above the above the line planner. The arc 
  *	planner generates short lines that are passed to the line planner.
  *
- *	Move execution and load prep takes place at the MED interrupt level. 
+ *	Move execution and load prep takes place at the LOW interrupt level. 
  *	Move execution generates the next acceleration, cruise, or deceleration
  *	segment for planned lines, or just transfers parameters needed for 
  *	dwells and stops. This layer also prepares moves for loading by 
@@ -90,13 +96,13 @@
  *	 3b If the steppers are not running this will set a timer to cause a 
  *		"software interrupt" that will ultimately call st_exec_move().
  *
- *   4  At this point a call to _st_exec_move() is made, either by the 
+ *   4  At this point a call to _exec_move() is made, either by the 
  *		software interrupt from 3b, or once the steppers finish running 
  *		the current segment and have loaded the next segment. In either 
  *		case the call is initated via the sofwtare interrupt which causes 
- *		_st_exec_move() to run at the MEDium interupt level.
+ *		_exec_move() to run at the MEDium interupt level.
  *		 
- *	 5	_st_exec_move() calls back to planner.mp_exec_move() which generates 
+ *	 5	_exec_move() calls back to planner.mp_exec_move() which generates 
  *		the next segment using the mr singleton.
  *
  *	 6	When this operation is complete mp_exec_move() calls the appropriate
@@ -116,7 +122,7 @@
  *		to receive the next Gcode block. This handoff prevents possible data 
  *		conflicts between the interrupt and main loop.
  *
- *	10	The final step in the sequence is _st_load_move() requesting the next 
+ *	10	The final step in the sequence is _load_move() requesting the next 
  *		segment to be executed and prepared by calling st_request_exec() 
  *		- control goes back to step 4.
  *
@@ -131,7 +137,7 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
-#include "xio.h"				// supports INFO and debug statements
+#include "xio/xio.h"			// supports INFO and debug statements
 #include "tinyg.h"
 #include "util.h"
 #include "system.h"
@@ -139,13 +145,11 @@
 #include "stepper.h" 	
 #include "planner.h"
 
-static void _st_exec_move(void);
-static void _st_load_move(void);
-static void _st_request_load_move(void);
-static void _st_set_f_dda(double *f_dda,
-						  double *dda_substeps, 
-						  const double major_axis_steps, 
-						  const double microseconds);
+static void _exec_move(void);
+static void _load_move(void);
+static void _request_load_move(void);
+static void _set_f_dda(double *f_dda, double *dda_substeps, 
+					   const double major_axis_steps, const double microseconds);
 /*
  * Stepper structures
  *
@@ -173,10 +177,10 @@ struct stRunMotor { 				// one per controlled motor
 struct stRunSingleton {				// Stepper static values and axis parameters
 	int32_t timer_ticks_downcount;	// tick down-counter (unscaled)
 	int32_t timer_ticks_X_substeps;	// ticks multiplied by scaling factor
+	double segment_velocity;		// +++++ record segment velocity for diagnostics
 	struct stRunMotor m[MOTORS];	// runtime motor structures
 };
 static struct stRunSingleton st;
-
 
 // Prep-time structs. Used by exec/prep ISR (MED) and read-only during load 
 // Must be careful about volatiles in this one
@@ -199,12 +203,14 @@ struct stPrepSingleton {
 	uint16_t timer_period;			// DDA or dwell clock period setting
 	uint32_t timer_ticks;			// DDA or dwell ticks for the move
 	uint32_t timer_ticks_X_substeps;// DDA ticks scaled by substep factor
+	double segment_velocity;		// +++++ record segment velocity for diagnostics
 	struct stPrepMotor m[MOTORS];	// per-motor structs
 };
 static struct stPrepSingleton sp;
 
 /* 
- * st_init() - initialize and start the stepper motor subsystem 
+ * st_init() - initialize stepper motor subsystem 
+ * st_reset() - reset and start stepper motor subsystem 
  *
  *	Notes: 
  *	  - High level interrupts must be enabled in main()
@@ -247,13 +253,19 @@ void st_init()
 	DEVICE_TIMER_LOAD.INTCTRLA = TIMER_LOAD_INTLVL;	// interrupt mode
 	DEVICE_TIMER_LOAD.PER = SWI_PERIOD;				// set period
 
-	// setup software interrupt prep timer
+	// setup software interrupt exec timer
 	DEVICE_TIMER_EXEC.CTRLA = TIMER_DISABLE;		// turn timer off
 	DEVICE_TIMER_EXEC.CTRLB = TIMER_WGMODE;			// waveform mode
 	DEVICE_TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	DEVICE_TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
+	st_reset();
+}
+
+void st_reset()
+{
 	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
+	return;
 }
 
 /*
@@ -293,8 +305,8 @@ ISR(DEVICE_TIMER_DDA_ISR_vect)
  		st.m[MOTOR_4].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_4.OUTCLR = STEP_BIT_bm;
 	}
-	if (--st.timer_ticks_downcount == 0) {		// end move
- 		DEVICE_TIMER_DDA.CTRLA = TIMER_DISABLE;	// disable DDA timer
+	if (--st.timer_ticks_downcount == 0) {			// end move
+ 		DEVICE_TIMER_DDA.CTRLA = TIMER_DISABLE;		// disable DDA timer
 		// power-down motors if this feature is enabled
 		if (cfg.m[MOTOR_1].power_mode == TRUE) {
 			DEVICE_PORT_MOTOR_1.OUTSET = MOTOR_ENABLE_BIT_bm; 
@@ -308,34 +320,34 @@ ISR(DEVICE_TIMER_DDA_ISR_vect)
 		if (cfg.m[MOTOR_4].power_mode == TRUE) {
 			DEVICE_PORT_MOTOR_4.OUTSET = MOTOR_ENABLE_BIT_bm; 
 		}
-		_st_load_move();						// load the next move
+		_load_move();							// load the next move
 	}
 }
 
 ISR(DEVICE_TIMER_DWELL_ISR_vect) {				// DWELL timer interupt
 	if (--st.timer_ticks_downcount == 0) {
  		DEVICE_TIMER_DWELL.CTRLA = TIMER_DISABLE;// disable DWELL timer
-		_st_load_move();
+		_load_move();
 	}
 }
 
 ISR(DEVICE_TIMER_LOAD_ISR_vect) {				// load steppers SW interrupt
  	DEVICE_TIMER_LOAD.CTRLA = TIMER_DISABLE;	// disable SW interrupt timer
-	_st_load_move();
+	_load_move();
 }
 
 ISR(DEVICE_TIMER_EXEC_ISR_vect) {				// exec move SW interrupt
  	DEVICE_TIMER_EXEC.CTRLA = TIMER_DISABLE;	// disable SW interrupt timer
-	_st_exec_move();
+	_exec_move();
 }
 
 /* Software interrupts to fire the above
  * st_test_exec_state()	   - return TRUE if exec/prep can run
- * _st_request_load_move() - SW interrupt to request to load a move
+ * _request_load_move() - SW interrupt to request to load a move
  *	st_request_exec_move() - SW interrupt to request to execute a move
- * _st_exec_move() 		   - Run a move from the planner and prepare it for loading
+ * _exec_move() 		   - Run a move from the planner and prepare it for loading
  *
- *	_st_exec_move() can only be called be called from an ISR at a level lower
+ *	_exec_move() can only be called be called from an ISR at a level lower
  *	than DDA, Only use st_request_exec_move() to call it.
  */
 
@@ -355,17 +367,17 @@ void st_request_exec_move()
 	}
 }
 
-static void _st_exec_move()
+static void _exec_move()
 {
    	if (sp.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
 		if (mp_exec_move() != TG_NOOP) {
 			sp.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
-			_st_request_load_move();
+			_request_load_move();
 		}
 	}
 }
 
-static void _st_request_load_move()
+static void _request_load_move()
 {
 	if (st.timer_ticks_downcount == 0) {				// bother interrupting
 		DEVICE_TIMER_LOAD.PER = SWI_PERIOD;
@@ -375,72 +387,69 @@ static void _st_request_load_move()
 }
 
 /*
- * _st_load_move() - Dequeue move and load into stepper struct
+ * _load_move() - Dequeue move and load into stepper struct
  *
  *	This routine can only be called be called from an ISR at the same or 
  *	higher level as the DDA or dwell ISR. A software interrupt has been 
  *	provided to allow a non-ISR to request a load (see st_request_load_move())
  */
 
-void _st_load_move()
+void _load_move()
 {
-#ifdef __DISABLE_STEPPERS	
-	return;						// bypasses execution for fast simulations
-#endif
-	if (st.timer_ticks_downcount != 0) { 				// exit if it's still busy
-		return;
-	}
-	if (sp.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	// defensive programming
-	//	INFO(PSTR("No prep buffer for _st_load_move()"));
-		return;
-	}
-	if (sp.timer_period < TIMER_PERIOD_MIN) { 			// defensive programming
-		INFO1(PSTR("Timer period too short in st_load_move() %d"), sp.timer_period);
-		return;
-	}
+	if (st.timer_ticks_downcount != 0) { return;}				 // exit if it's still busy
+	if (sp.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	return;} // if there are no more moves
 
-//	if (sp.move_type == MOVE_TYPE_STOP) { return; }		// not implemented
-//	if (sp.move_type == MOVE_TYPE_START) { return; }	// not implemented
+	// handle line loads first (most common case)
+	if ((sp.move_type == MOVE_TYPE_ALINE) || (sp.move_type == MOVE_TYPE_LINE)) {
+		st.timer_ticks_downcount = sp.timer_ticks;
+		st.timer_ticks_X_substeps = sp.timer_ticks_X_substeps;
+		DEVICE_TIMER_DDA.PER = sp.timer_period;
+ 
+		// This section is somewhat optimized for execution speed 
+		// All axes must set steps and compensate for out-of-range pulse phasing. 
+		// If axis has 0 steps direction setting can be omitted
+		// If axis has 0 steps enabling motors is req'd to support power mode = 1
+		for (uint8_t i=0; i < MOTORS; i++) {
+			st.m[i].steps = sp.m[i].steps;						// set steps
+			if (sp.counter_reset_flag == TRUE) {				//compensate for pulse phasing
+				st.m[i].counter = -(st.timer_ticks_downcount);
+			}
+			if (st.m[i].steps != 0) {
+				if (sp.m[i].dir == 0) {							// set direction
+					device.port[i]->OUTCLR = DIRECTION_BIT_bm;	// CW motion
+				} else {
+					device.port[i]->OUTSET = DIRECTION_BIT_bm;	// CCW motion
+				}
+				device.port[i]->OUTCLR = MOTOR_ENABLE_BIT_bm;	// enable motor
+			}
+		}
+		DEVICE_TIMER_DDA.CTRLA = TIMER_ENABLE;
 
-	if (sp.move_type == MOVE_TYPE_DWELL) {
+	// handle dwells
+	} else if (sp.move_type == MOVE_TYPE_DWELL) {
 		st.timer_ticks_downcount = sp.timer_ticks;
 		DEVICE_TIMER_DWELL.PER = sp.timer_period;		// load dwell timer period
  		DEVICE_TIMER_DWELL.CTRLA = TIMER_ENABLE;		// enable the dwell timer
-		sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;		// flip it back
-		st_request_exec_move();							// exec and prep next move
-		return;
 	}
 
-	st.timer_ticks_downcount = sp.timer_ticks;
-	st.timer_ticks_X_substeps = sp.timer_ticks_X_substeps;
-	DEVICE_TIMER_DDA.PER = sp.timer_period;
- 
-	// This section is somewhat optimized for execution speed 
-	// All axes must set steps and compensate for out-of-range pulse phasing. 
-	// If axis has 0 steps direction setting can be omitted
-	// If axis has 0 steps enabling motors is req'd to support power mode = 1
-	for (uint8_t i=0; i < MOTORS; i++) {
-		st.m[i].steps = sp.m[i].steps;					// set steps
-		if (sp.counter_reset_flag == TRUE) {			//compensate for pulse phasing
-			st.m[i].counter = -(st.timer_ticks_downcount);
-		}
-		if (st.m[i].steps != 0) {
-			if (sp.m[i].dir == 0) {							// set direction
-				device.port[i]->OUTCLR = DIRECTION_BIT_bm;	// CW motion
-			} else {
-				device.port[i]->OUTSET = DIRECTION_BIT_bm;	// CCW motion
-			}
-			device.port[i]->OUTCLR = MOTOR_ENABLE_BIT_bm;	// enable motor
-		}
-	}
-	DEVICE_TIMER_DDA.CTRLA = TIMER_ENABLE;
-
+	// all other cases drop tp here (e.g. Null moves after Mcodes skip to here) 
 	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
 	st_request_exec_move();								// exec and prep next move
 }
 
-/* st_prep_dwell() 	 - Add a dwell to the move buffer
- * st_prep_stops() 	 - Add a start, stop or end to the move buffer
+/* 
+ * st_prep_null() - Keeps the loader happy. Otherwise performs no action
+ *
+ *	Used by M codes, tool and spindle changes
+ */
+
+void st_prep_null()
+{
+	sp.move_type = MOVE_TYPE_NULL;
+}
+
+/* 
+ * st_prep_dwell() 	 - Add a dwell to the move buffer
  */
 
 void st_prep_dwell(double microseconds)
@@ -448,11 +457,6 @@ void st_prep_dwell(double microseconds)
 	sp.move_type = MOVE_TYPE_DWELL;
 	sp.timer_period = _f_to_period(F_DWELL);
 	sp.timer_ticks = (uint32_t)((microseconds/1000000) * F_DWELL);
-}
-
-void st_prep_stops(uint8_t move_type)
-{
-	sp.move_type = move_type;
 }
 
 /*
@@ -476,7 +480,7 @@ void st_prep_stops(uint8_t move_type)
  *  A blocking version should wrap this code with blocking semantics
  */
 
-uint8_t st_prep_line(double steps[], double microseconds)
+uint8_t st_prep_line(double steps[], double microseconds, double velocity)
 {
 	uint8_t i;
 	double f_dda = F_DDA;		// starting point for adjustment
@@ -484,15 +488,10 @@ uint8_t st_prep_line(double steps[], double microseconds)
 	double major_axis_steps = 0;
 
 	// trap conditions that would prevent queueing the line
-	if (sp.exec_state != PREP_BUFFER_OWNED_BY_EXEC) {  	// defensive programming
-		INFO(PSTR("Prep buffer not owned by exec in st_prep_line()"));
-		return (TG_INPUT_ERROR);
-	} else if (isfinite(microseconds) == FALSE) {
-		INFO(PSTR("Infinite time move in st_prep_line()"));
-		return (TG_ZERO_LENGTH_MOVE);
-	} else if (microseconds < EPSILON) {
-		INFO(PSTR("Zero time move in st_prep_line()"));
-		return (TG_ZERO_LENGTH_MOVE);
+	// defensive programming
+	if (sp.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (TG_INTERNAL_ERROR);
+	} else if (isfinite(microseconds) == FALSE) { return (TG_ZERO_LENGTH_MOVE);
+	} else if (microseconds < EPSILON) { return (TG_ZERO_LENGTH_MOVE);
 	}
 	// get the major axis
 	for (i=0; i<MOTORS; i++) {
@@ -501,7 +500,7 @@ uint8_t st_prep_line(double steps[], double microseconds)
 		}
 	}
 	// set dda clock frequency and substeps
-	_st_set_f_dda(&f_dda, &dda_substeps, major_axis_steps, microseconds);
+	_set_f_dda(&f_dda, &dda_substeps, major_axis_steps, microseconds);
 
 	// setup motor parameters
 	for (i=0; i<MOTORS; i++) {
@@ -519,11 +518,12 @@ uint8_t st_prep_line(double steps[], double microseconds)
 	}
 	sp.previous_ticks = sp.timer_ticks;
 	sp.move_type = MOVE_TYPE_ALINE;
+	sp.segment_velocity = velocity;
 	return (TG_OK);
 }
 
 /* 
- * _st_set_f_dda() - get optimal DDA frequency setting
+ * _set_f_dda() - get optimal DDA frequency setting
  *
  *	Find the highest integer multiple of the major axis step rate that is
  *	less than DDA max frequency and no more than OVERCLOCK times the
@@ -533,7 +533,7 @@ uint8_t st_prep_line(double steps[], double microseconds)
  *	precision until it does. If it *still* doesn't fit get rid of the 
  *	overclocking. If it **still** doesn't fit throw a trap and give up.
  */
-static void _st_set_f_dda(double *f_dda,
+static void _set_f_dda(double *f_dda,
 						  double *dda_substeps, 
 						  const double major_axis_steps, 
 						  const double microseconds)
@@ -563,24 +563,12 @@ static void _st_set_f_dda(double *f_dda,
 				 *f_dda = F_DDA_MIN;
 			}
 			if ((microseconds *(*f_dda) *(*dda_substeps)) > (MAX_ULONG * 1000000)) {
-				INFO1(PSTR("_mq_set_f_dda() line overflow: %f"), major_axis_steps)
+//				INFO1(PSTR("_mq_set_f_dda() line overflow: %f"), major_axis_steps)
 				break;
 			}
 		}
 	}
 }
-
-/*
- * st_start() - start steppers
- * st_stop() - stop steppers
- * st_end() - STOP. NOW. UNCONDITIONALLY
- *
- *	These routines must be safe to call from ISRs
- *	Mind the volatiles.
- */
-void st_stop() { }
-void st_start() { }
-void st_end() { st_init(); }
 
 /*
  * st_isbusy() - return TRUE if motors are running or a dwell is running
@@ -611,18 +599,18 @@ void st_set_polarity(const uint8_t motor, const uint8_t polarity)
 
 void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode)
 {
-	if (microstep_mode == 1) {
-		device.port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
-		device.port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
-	} else if (microstep_mode == 2) {
+	if (microstep_mode == 8) {
 		device.port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
-		device.port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
+		device.port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
 	} else if (microstep_mode == 4) {
 		device.port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
 		device.port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
-	} else if (microstep_mode == 8) {
+	} else if (microstep_mode == 2) {
 		device.port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
-		device.port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
+		device.port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
+	} else if (microstep_mode == 1) {
+		device.port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
+		device.port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
 	}
 }
 

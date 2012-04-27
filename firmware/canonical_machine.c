@@ -2,8 +2,7 @@
  * canonical_machine.c - rs274/ngc canonical machine.
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2011 Alden S Hart, Jr.
- * Portions copyright (c) 2009 Simen Svale Skogsrud
+ * Copyright (c) 2010 - 2012 Alden S Hart, Jr.
  *
  * This code is a loose implementation of Kramer, Proctor and Messina's
  * canonical machining functions as described in the NIST RS274/NGC v3
@@ -31,8 +30,10 @@
  */
 /* The canonical machine is the layer between the Gcode parser and the
  * motion control code for a specific robot. It keeps state and executes
- * commands - passing the simplest caommands it can down to the motion 
- * control layer. See the notes at the end of gcode.h for more details.
+ * commands - passing the stateless commands to the motion control layer. 
+ */
+/* See the wiki for module details and additional information:
+ *	 http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info
  */
 
 #include <stdlib.h>
@@ -42,33 +43,26 @@
 #include <avr/pgmspace.h>		// needed for exception strings
 
 #include "tinyg.h"
+#include "util.h"
 #include "config.h"
 #include "controller.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
-#include "plan_arc.h"
+#include "arc.h"
 #include "planner.h"
 #include "stepper.h"
 #include "spindle.h"
-#include "util.h"
+#include "report.h"
 #include "gpio.h"
+#include "system.h"
 
 // NOTE: The canonical machine singleton "cm" would normally be declared here 
 // but it's also used by cycles so it's in canonical_machine.h instead.
 
-/* useful macros */
-#ifndef ZERO_MODEL_STATE	// isolates this rather dangerous memset
-#define ZERO_MODEL_STATE(g) memset(g, 0, sizeof(struct GCodeModel))
-#endif
-#define _to_millimeters(a) ((gm.inches_mode == TRUE) ? (a * MM_PER_INCH) : a)
+static double _get_move_time(void);
+void _exec_program_finalize(uint8_t machine_state);
 
-/* local function prototypes */
-static double _cm_get_move_time();
-static void _cm_set_gcode_model_endpoint_position(uint8_t status);
-static uint8_t _cm_compute_center_arc(void);
-static uint8_t _cm_get_arc_radius(void);
-static double _cm_get_arc_time (const double linear_travel, const double angular_travel, const double radius);
-static double _cm_get_theta(const double x, const double y);
+#define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
 /*************************************************************************
  *
@@ -79,44 +73,118 @@ static double _cm_get_theta(const double x, const double y);
  ************************************************************************/
 
 /*
- * Save and restore gcode model
+ * Simple Getters and Setters (just the one liners, see below for more complex ones)
+ */
+// get parameter from cm struct
+uint8_t cm_get_machine_state() { return cm.machine_state;}
+uint8_t cm_get_cycle_state() { return cm.cycle_state;}
+uint8_t cm_get_motion_state() { return cm.motion_state;}
+uint8_t cm_get_hold_state() { return cm.hold_state;}
+
+// get parameter from gm struct
+uint8_t cm_get_motion_mode() { return gm.motion_mode;}
+uint8_t cm_get_coord_system() { return gm.coord_system;}
+uint8_t cm_get_units_mode() { return gm.units_mode;}
+uint8_t cm_get_select_plane() { return gm.select_plane;}
+uint8_t cm_get_path_control() { return gm.path_control;}
+uint8_t cm_get_distance_mode() { return gm.distance_mode;}
+uint8_t cm_get_inverse_feed_rate_mode() { return gm.inverse_feed_rate_mode;}
+uint8_t cm_get_spindle_mode() { return gm.spindle_mode;} 
+uint32_t cm_get_linenum() { return gm.linenum; }
+uint8_t cm_isbusy() { return (mp_isbusy());}
+
+// set parameter in gm struct
+void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
+void cm_set_tool_parameter(uint8_t tool) { gm.tool = tool;}
+void cm_set_spindle_speed_parameter(double speed) { gm.spindle_speed = speed;}
+void cm_set_absolute_override(uint8_t absolute_override) { gm.absolute_override = absolute_override;}
+
+/* 
+ * cm_get_combined_state() - combines raw states into something a user might want to see
  */
 
-void cm_save_gcode_model()   {memcpy(&gt, &gm, sizeof(struct GCodeModel));}
-void cm_restore_gcode_model(){memcpy(&gm, &gt, sizeof(struct GCodeModel));}
-
-/*
- * Getters
- *
- * cm_get_position() - return position from the gm struct into gn struct form
- * cm_get_gcode_model_position() - return position from the model in internal form
- * cm_get_next_action() - get next_action from the gm struct
- * cm_get_motion_mode() - get motion mode from the gm struct
- * cm_get_inches_mode() - get inches mode from the gm struct
- * cm_get_absolute_mode() - get absolute mode from the gm struct
- * cm_isbusy() - return TRUE if motion control busy (i.e. robot is moving)
- */
-
-inline uint8_t cm_get_next_action() { return gm.next_action; }
-inline uint8_t cm_get_motion_mode() { return gm.motion_mode; }
-inline uint8_t cm_get_inches_mode() { return gm.inches_mode; }
-inline uint8_t cm_get_absolute_mode() { return gm.absolute_mode; }
-inline uint8_t cm_get_path_control_mode() { return gm.path_control_mode; }
-
-inline double cm_get_position(uint8_t axis) 
+uint8_t cm_get_combined_state() 
 {
-	return ((gm.inches_mode == TRUE) ? (gm.position[axis] / MM_PER_INCH) : gm.position[axis]);
+	if (cm.machine_state == MACHINE_CYCLE) {
+		if (cm.motion_state == MOTION_RUN) cm.combined_state = COMBINED_RUN;
+		if (cm.motion_state == MOTION_HOLD) cm.combined_state = COMBINED_HOLD;
+		if (cm.cycle_state == CYCLE_HOMING) cm.combined_state = COMBINED_HOMING;
+		if (cm.cycle_state == CYCLE_PROBE) cm.combined_state = COMBINED_PROBE;
+		if (cm.cycle_state == CYCLE_JOG) cm.combined_state = COMBINED_JOG;
+	} else {
+		cm.combined_state = cm.machine_state;
+	}
+	return cm.combined_state;
 }
 
-double *cm_get_gcode_model_position(double position[])
+/* Position and Offset getters
+ *
+ * cm_get_coord_offset() - return the currently active coordinate offset for an axis
+ * cm_get_model_work_position() - return position from the gm struct into gn struct form (external form)
+ * cm_get_model_work_position_vector() - return model position vector in externalized form
+ * cm_get_model_canonical_target() - return model target in internal canonical form
+ * cm_get_model_canonical_position_vector() - return model position vector in internal canonical form
+ * cm_get_runtime_machine_position() - return current machine position in external form 
+ * cm_get_runtime runtome_position() - return current work coordinate position in external form 
+ */
+
+double cm_get_coord_offset(uint8_t axis)
+{
+	if (gm.absolute_override == true) {
+		return (0);						// no work offset if in abs override mode
+	}
+	if (gm.origin_offset_mode == true) {
+		return (cfg.offset[gm.coord_system][axis] + gm.origin_offset[axis]);
+	} else {
+		return (cfg.offset[gm.coord_system][axis]);
+	}
+}
+
+double cm_get_model_work_position(uint8_t axis) 
+{
+	if (gm.units_mode == INCHES) {
+		return ((gm.position[axis] - cm_get_coord_offset(axis)) / MM_PER_INCH);
+	} else {
+		return (gm.position[axis] - cm_get_coord_offset(axis));
+	}
+}
+
+
+double *cm_get_model_work_position_vector(double position[]) 
+{
+	for (uint8_t i=0; i<AXES; i++) {
+		position[i] = cm_get_model_work_position(i);
+	}
+	return (position);
+}
+
+double cm_get_model_canonical_target(uint8_t axis) 
+{
+	return (gm.target[axis]);
+}
+
+double *cm_get_model_canonical_position_vector(double position[])
 {
 	copy_axis_vector(position, gm.position);	
 	return (position);
 }
 
-uint8_t cm_isbusy()
+double cm_get_runtime_machine_position(uint8_t axis) 
 {
-	return (mp_isbusy());
+	if (gm.units_mode == INCHES) {
+		return (mp_get_runtime_position(axis) / MM_PER_INCH);
+	} else {
+		return (mp_get_runtime_position(axis));
+	}
+}
+
+double cm_get_runtime_work_position(uint8_t axis) 
+{
+	if (gm.units_mode == INCHES) {
+		return ((mp_get_runtime_position(axis) - cm_get_coord_offset(axis)) / MM_PER_INCH);
+	} else {
+		return (mp_get_runtime_position(axis) - cm_get_coord_offset(axis));
+	}
 }
 
 /*
@@ -127,40 +195,32 @@ uint8_t cm_isbusy()
  *	The setters take care of coordinate system, units, and 
  *	distance mode conversions and normalizations.
  *
- * cm_set_vector()	- utility function to load values into vector form
- * cm_set_offset()	- set all IJK offsets
+ * cm_set_arc_offset()	- set all IJK offsets
  * cm_set_radius()	- set radius value
  * cm_set_absolute_override()
+ * cm_set_linenum()
  * cm_set_target()	- set all XYZABC targets
  */
 
-double *cm_set_vector(double x, double y, double z, 
-					  double a, double b, double c)
+void cm_set_arc_offset(double i, double j, double k)
+{ 
+	gm.arc_offset[0] = _to_millimeters(i);
+	gm.arc_offset[1] = _to_millimeters(j);
+	gm.arc_offset[2] = _to_millimeters(k);
+}
+
+void cm_set_arc_radius(double r) 
+{ 
+	gm.arc_radius = _to_millimeters(r);
+}
+
+void cm_set_linenum(uint32_t linenum)
 {
-	vector[X] = x;
-	vector[Y] = y;
-	vector[Z] = z;
-	vector[A] = a;
-	vector[B] = b;
-	vector[C] = c;
-	return (vector);	// vector is defined globally in canonical_machine.h
-}
-
-void cm_set_offset(double i, double j, double k) 
-{ 
-	gm.offset[0] = _to_millimeters(i);
-	gm.offset[1] = _to_millimeters(j);
-	gm.offset[2] = _to_millimeters(k);
-}
-
-void cm_set_radius(double r) 
-{ 
-	gm.radius = _to_millimeters(r);
-}
-
-void cm_set_absolute_override(uint8_t absolute_override) 
-{ 
-	gm.absolute_override = absolute_override;
+	if (linenum != 0) {
+		gm.linenum = linenum;
+	} else {
+		gm.linenum++;			// autoincrement if no line number
+	}
 }
 
 /* 
@@ -168,7 +228,8 @@ void cm_set_absolute_override(uint8_t absolute_override)
  *
  * This is a core routine. It handles:
  *	- conversion of linear units to internal canonical form (mm)
- *	- conversion of relative mode to absolute (canonical form)
+ *	- conversion of relative mode to absolute (internal canonical form)
+ *	- translation of work coordinates to machine coordinates (internal canonical form)
  *	- computation and application of axis modes as so:
  *
  *		DISABLED
@@ -207,15 +268,14 @@ void cm_set_target(double target[], double flag[])
 	for (i=X; i<=Z; i++) {
 		if ((flag[i] < EPSILON) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 			continue;
-		} else if ((cfg.a[i].axis_mode == AXIS_STANDARD) || 
-				   (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
-			if ((gm.absolute_mode == TRUE) || (gm.absolute_override == TRUE)) {
-				gm.target[i] = _to_millimeters(target[i]);
+		} else if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
+			if (gm.distance_mode == ABSOLUTE_MODE) {
+				gm.target[i] = cm_get_coord_offset(i) + _to_millimeters(target[i]);
 			} else {
 				gm.target[i] += _to_millimeters(target[i]);
 			}
-		} else if (i<A) {
-			INFO1(PSTR("%c axis using unsupported axis mode"), cfg_get_configuration_group_char(i));
+//		} else if (i<A) {
+//			printf_P(stderr,PSTR("%c axis using unsupported axis mode"), cfg_get_configuration_group_char(i));
 		}
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
@@ -264,7 +324,7 @@ void cm_set_target(double target[], double flag[])
 						  square(target[Z] - gm.position[Z]));
 			tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
 		}
-		if ((gm.absolute_mode == TRUE) || (gm.absolute_override == TRUE)) {
+		if (gm.distance_mode == ABSOLUTE_MODE) {
 			gm.target[i] = tmp;
 		} else {
 			gm.target[i] += tmp;
@@ -273,7 +333,7 @@ void cm_set_target(double target[], double flag[])
 }
 
 /* 
- * _cm_set_gcode_model_endpoint_position() - uses internal coordinates only
+ * cm_set_gcode_model_endpoint_position() - uses internal coordinates only
  *
  * 	This routine sets the endpoint position in the gccode model if the move
  *	was is successfully completed (no errors). Leaving the endpoint position
@@ -286,31 +346,28 @@ void cm_set_target(double target[], double flag[])
  *	the starting point. 
  */
 
-static void _cm_set_gcode_model_endpoint_position(uint8_t status) 
-{ 
-//	if ((status == TG_OK) || (status == TG_EAGAIN)) {
-	if (status == TG_OK) {
-		copy_axis_vector(gm.position, gm.target);
-	}
+void cm_set_gcode_model_endpoint_position(uint8_t status) 
+{
+	if (status == TG_OK) { copy_axis_vector(gm.position, gm.target);}
 }
 
 /* 
- * _cm_get_move_time() - get required time for move
+ * _get_move_time() - get required time for move
  *
  *	Compute the optimum time for the move. This will either be the 
- *	length / rate (feedrate or seekrate), or just time specified by inverse
- *	feed rate if G93 is active. Then test the move against the maximum 
- *	feed or seek rates for each axis in the move and increase the time to 
+ *	length / rate (feedrate or traverse rate), or just time specified by inverse
+ *	feed rate if G93 is active. Then test the move against the maximum feed
+ *	feed or traverse rates for each axis in the move and increase the time to 
  *	accommodate the rate limiting axis. Axis modes are taken into account
- *	by having cm_set_target load the targets.
+ *	by having cm_set_target load the targets before calling this function.
  *
- *	The following times are compared, and the longest is returned:
+ *	The following times are compared and the longest is returned:
  *	  -	G93 inverse time (if G93 is active)
  *	  -	time for coordinated move at requested feed rate
  *	  -	time that the slowest axis would require for the move
  */
 
-static double _cm_get_move_time()
+static double _get_move_time()
 {
 	uint8_t i;
 	double inv_time=0;	// inverse time if doing a feed in G93 mode
@@ -320,27 +377,23 @@ static double _cm_get_move_time()
 
 	// compute times for feed motion
 	if (gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
-		if (gm.inverse_feed_rate_mode == TRUE) {
+		if (gm.inverse_feed_rate_mode == true) {
 			inv_time = gm.inverse_feed_rate;
 		} else {
 			xyz_time = sqrt(square(gm.target[X] - gm.position[X]) + // in mm
 							square(gm.target[Y] - gm.position[Y]) +
-							square(gm.target[Z] - gm.position[Z])) 
-							/ gm.feed_rate;
+							square(gm.target[Z] - gm.position[Z])) / gm.feed_rate;
 
 			abc_time = sqrt(square(gm.target[A] - gm.position[A]) + // in deg
 							square(gm.target[B] - gm.position[B]) +
-							square(gm.target[C] - gm.position[C])) 
-							/ gm.feed_rate;
+							square(gm.target[C] - gm.position[C])) / gm.feed_rate;
 		}
 	}
  	for (i=0; i<AXES; i++) {
 		if (gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
-			max_time = max(max_time, (fabs(gm.target[i] - gm.position[i]) /
-									  cfg.a[i].feed_rate_max));
+			max_time = max(max_time, (fabs(gm.target[i] - gm.position[i]) / cfg.a[i].feedrate_max));
 		} else { // gm.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
-			max_time = max(max_time, (fabs(gm.target[i] - gm.position[i]) /
-									  cfg.a[i].seek_rate_max));
+			max_time = max(max_time, (fabs(gm.target[i] - gm.position[i]) / cfg.a[i].velocity_max));
 		}
 	}
 	return (max4(inv_time, max_time, xyz_time, abc_time));
@@ -350,7 +403,7 @@ static double _cm_get_move_time()
  *
  * CANONICAL MACHINING FUNCTIONS
  *
- *	Values are passed in pre-unit_converted state
+ *	Values are passed in pre-unit_converted state (from gn structure)
  *	All operations occur on gm (current model state)
  *
  ************************************************************************/
@@ -358,31 +411,71 @@ static double _cm_get_move_time()
 /* 
  * Initialization and Termination (4.3.2)
  *
- * cm_init_canon() 
+ * cm_init() 
  *
- *	Most of canonical machine initialization is done thru the config system
+ *	Config init cfg_init() must have been run beforehand. Many parameters 
+ *	used by the canonical machine are actually set during cfg_init().
  */
 
-void cm_init_canon()
+void cm_init()
 {
-	ZERO_MODEL_STATE(&gm);
-	ZERO_MODEL_STATE(&gt);
-	cfg_init_gcode_model();			// set all the gcode defaults
-	cm_init_status_report();
+	memset(&cm, 0, sizeof(cm));			// reset canonicalMachineSingleton
+	memset(&gn, 0, sizeof(gn));			// clear all values, pointers and status
+	memset(&gf, 0, sizeof(gf));
+	memset(&gm, 0, sizeof(gm));
+
+	// set gcode defaults
+	cm_set_units_mode(cfg.units_mode);
+	cm_set_coord_system(cfg.coord_system);
+	cm_select_plane(cfg.select_plane);
+	cm_set_path_control(cfg.path_control);
+	cm_set_distance_mode(cfg.distance_mode);
 }
 
 /* 
  * Representation (4.3.3)
  *
- * cm_select_plane() - select axis plane Defaults to XY on erroneous specification
- * cm_set_origin_offsets() - G92
- * cm_use_length_units()  - G20, G21
+ * cm_set_machine_coords() - update machine coordinates
+ * cm_set_machine_zero() - set machine coordinates to zero
+ * cm_set_machine_axis_position() - ste the position of a single axis
+ * cm_select_plane() - G17,G18,G19 select axis plane
+ * cm_set_units_mode()  - G20, G21
+ * cm_set_coord_system() - G54-G59
+ * cm_set_coord_system_offsets() - G10
  * cm_set_distance_mode() - G90, G91
+ * cm_set_origin_offsets() - G92
+ * cm_reset_origin_offsets() - G92.1
+ * cm_suspend_origin_offsets() - G92.2
+ * cm_resume_origin_offsets() - G92.3
  */
+/*
+uint8_t cm_set_machine_coords(double offset[])
+{
+	copy_axis_vector(gm.position, offset);
+	copy_axis_vector(gm.target, gm.position);
+	mp_set_axis_position(gm.position);
+	return (TG_OK);
+}
+
+uint8_t cm_set_machine_zero()
+{
+	copy_axis_vector(gm.position, set_vector(0,0,0,0,0,0));
+	copy_axis_vector(gm.target, gm.position);
+	mp_set_axes_position(gm.position);
+	return (TG_OK);
+}
+*/
+uint8_t cm_set_machine_axis_position(uint8_t axis, const double position)
+{
+	gm.position[axis] = position;
+	gm.target[axis] = position;
+	mp_set_axis_position(axis, position);
+	return (TG_OK);
+}
 
 uint8_t cm_select_plane(uint8_t plane) 
 {
-	gm.set_plane = plane;
+	gm.select_plane = plane;
 	if (plane == CANON_PLANE_YZ) {
 		gm.plane_axis_0 = Y;
 		gm.plane_axis_1 = Z;
@@ -399,54 +492,90 @@ uint8_t cm_select_plane(uint8_t plane)
 	return (TG_OK);
 }
 
-uint8_t cm_set_origin_offsets(double offset[])
+uint8_t cm_set_units_mode(uint8_t mode)		// G20, G21
 {
-	gm.position[X] = _to_millimeters(offset[X]);
-	gm.position[Y] = _to_millimeters(offset[Y]);
-	gm.position[Z] = _to_millimeters(offset[Z]);
-	gm.position[A] = offset[A];	// in degrees
-	gm.position[B] = offset[B];	// in degrees
-	gm.position[C] = offset[C];	// in degrees
-
-	// make the lower layer agree with this
-	copy_axis_vector(gm.target, gm.position);
-	(void)mp_set_axis_position(gm.position);
+	gm.units_mode = mode;		// 0 = inches, 1 = mm.
 	return (TG_OK);
 }
 
-uint8_t cm_use_length_units(uint8_t inches_mode)
+uint8_t	cm_set_coord_system(uint8_t coord_system)
 {
-	gm.inches_mode = inches_mode;
+	gm.coord_system = coord_system;	
 	return (TG_OK);
 }
 
-uint8_t cm_set_distance_mode(uint8_t absolute_mode)
+uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[])
 {
-	gm.absolute_mode = absolute_mode;
+	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
+		return (TG_RANGE_ERROR);
+	}
+	for (uint8_t i=0; i<AXES; i++) {
+		if (flag[i] > EPSILON) {
+			cfg.offset[coord_system][i] = offset[i];
+			cm.g10_flag = true;	// this will persist offsets to NVM once move has stopped
+		}
+	}
+	// see if it's OK to write them now, or if they need to wait until STOP
+	if (cm.machine_state != MACHINE_CYCLE) {
+		cmd_persist_offsets(cm.g10_flag);
+	}
 	return (TG_OK);
 }
+
+uint8_t cm_set_distance_mode(uint8_t mode)	// G90, G91
+{
+	gm.distance_mode = mode;			// 0 = absolute mode, 1 = incremental
+	return (TG_OK);
+}
+
+uint8_t cm_set_origin_offsets(double offset[], double flag[])	// G92
+{
+	gm.origin_offset_mode = true;
+	for (uint8_t i=0; i<AXES; i++) {
+		if (flag[i] > EPSILON) {	 	// behaves according to NIST 3.5.18
+			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] 
+								  - _to_millimeters(offset[i]);
+		}
+	}
+	return (TG_OK);
+}
+
+uint8_t cm_reset_origin_offsets() 		// G92.1
+{
+	gm.origin_offset_mode = false;
+	for (uint8_t i=0; i<AXES; i++) {
+		gm.origin_offset[i] = 0;
+	}
+	return (TG_OK);
+}
+
+uint8_t cm_suspend_origin_offsets()		// G92.2
+{
+	gm.origin_offset_mode = true;
+	return (TG_OK);
+}
+
+uint8_t cm_resume_origin_offsets()		// G92.3
+{
+	gm.origin_offset_mode = false;
+	return (TG_OK);
+}
+
 
 /* 
  * Free Space Motion (4.3.4)
  *
- * cm_set_traverse_rate() - set seek rate
  * cm_straight_traverse() - G0 linear seek
  */
 
-uint8_t cm_set_traverse_rate(double seek_rate)
+uint8_t cm_straight_traverse(double target[], double flags[])
 {
-	gm.seek_rate = _to_millimeters(seek_rate);
-	return (TG_OK);
-}
-
-uint8_t cm_straight_traverse(double target[])
-{
-	gm.next_action = NEXT_ACTION_MOTION;
 	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
-	cm_set_target(target, gf.target);
-	cm.status = MP_LINE(gm.target, _cm_get_move_time());
-	_cm_set_gcode_model_endpoint_position(cm.status);
-	return (cm.status);
+	cm_set_target(target, flags);
+	cm_cycle_start();					//required for homing & other cycles
+	uint8_t status = MP_LINE(gm.target, _get_move_time());
+	cm_set_gcode_model_endpoint_position(status);
+	return (status);
 }
 
 /* 
@@ -464,7 +593,7 @@ uint8_t cm_straight_traverse(double target[])
 
 uint8_t cm_set_feed_rate(double feed_rate)
 {
-	if (gm.inverse_feed_rate_mode == TRUE) {
+	if (gm.inverse_feed_rate_mode == true) {
 		gm.inverse_feed_rate = feed_rate; // minutes per motion for this block only
 	} else {
 		gm.feed_rate = _to_millimeters(feed_rate);
@@ -486,19 +615,19 @@ inline uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode)
 }
 
 /*
- * cm_set_motion_control_mode() - G61, G61.1, G64
+ * cm_set_path_control() - G61, G61.1, G64
  */
 
-uint8_t cm_set_motion_control_mode(uint8_t mode)
+uint8_t cm_set_path_control(uint8_t mode)
 {
-	gm.path_control_mode = mode;
+	gm.path_control = mode;
 	return (TG_OK);
 }
 
 /* 
  * Machining Functions (4.3.6)
  *
- * (see end of file for arc_feed. It's a long one)
+ * cm_arc_feed() - see plan_arc.c
  * cm_dwell() - G4, P parameter (seconds)
  * cm_straight_feed() - G1
  */ 
@@ -510,64 +639,32 @@ uint8_t cm_dwell(double seconds)
 	return (TG_OK);
 }
 
-uint8_t cm_straight_feed(double target[])
+uint8_t cm_straight_feed(double target[], double flags[])
 {
-	gm.next_action = NEXT_ACTION_MOTION;
+	uint8_t status;
+
 	gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 
 	// trap zero feed rate condition
-	if ((gm.inverse_feed_rate_mode == FALSE) && (gm.feed_rate == 0)) {
-		INFO1(PSTR("Attempted move %s with feed rate = zero"), tg.buf);
-		cm.status = TG_ZERO_LENGTH_MOVE;
-		return (cm.status);
+	if ((gm.inverse_feed_rate_mode == false) && (gm.feed_rate == 0)) {
+		return (TG_GCODE_FEEDRATE_ERROR);
 	}
 
 	// Introduce a short dwell if the machine is not busy to enable the planning
 	// queue to begin to fill (avoids first block having to plan down to zero)
-//	if (st_isbusy() == FALSE) {
+//	if (st_isbusy() == false) {
 //		cm_dwell(PLANNER_STARTUP_DELAY_SECONDS);
 //	}
 
-	cm_set_target(target, gf.target);
-	cm.status = MP_LINE(gm.target, _cm_get_move_time());
-	_cm_set_gcode_model_endpoint_position(cm.status);
-	return (cm.status);
+	cm_set_target(target, flags);
+	cm_cycle_start();							//required for homing & other cycles
+	status = MP_LINE(gm.target, _get_move_time());
+	cm_set_gcode_model_endpoint_position(status);
+	return (status);
 }
 
 /* 
- * Spindle Functions (4.3.7)
- *
- * cm_set_spindle_speed() - S parameter
- * cm_start_spindle_clockwise() - M3
- * cm_start_spindle_counterclockwise() - M4
- * cm_stop_spindle_turning() - M5
- */
-
-uint8_t cm_set_spindle_speed(double speed)
-{
-//	if (speed > gm.max_spindle speed) {
-//		return (TG_MAX_SPINDLE_SPEED_EXCEEDED);
-//	}
-	gm.spindle_speed = speed;
-	return (TG_OK);
-}
-
-uint8_t cm_start_spindle_clockwise(void)
-{
-	return (TG_OK);
-}
-
-uint8_t cm_start_spindle_counterclockwise(void)
-{
-	return (TG_OK);
-}
-
-uint8_t cm_stop_spindle_turning(void)
-{
-	return (TG_OK);
-}
-
-/* 
+ * Spindle Functions (4.3.7) - see canonical_spindle.c/.h
  * Tool Functions (4.3.8)
  *
  * cm_change_tool() - M6 (This might become a complete tool change cycle)
@@ -589,34 +686,92 @@ uint8_t cm_select_tool(uint8_t tool)
 /* 
  * Miscellaneous Functions (4.3.9)
  *
+ * cm_mist_coolant_control() - M7
+ * cm_flood_coolant_control() - M8, M9
+ * cm_feed_override_enable() - M48, M49
  * cm_comment() - ignore comments (I do)
  * cm_message() - send message to console
  */
 
-uint8_t cm_comment(char *comment)
+uint8_t cm_mist_coolant_control(uint8_t mist_coolant)
 {
-	return (TG_OK);		// no operation
+	if (mist_coolant == true) {
+		mp_queue_mcode(MCODE_MIST_COOLANT_ON);
+	} 
+	return (TG_OK);
 }
 
-uint8_t cm_message(char *message)
+void cm_exec_mist_coolant_control(uint8_t mist_coolant)
+{
+	gm.mist_coolant = mist_coolant;
+	if (mist_coolant == true) {
+		gpio_set_bit_on(MIST_COOLANT_BIT);
+	} else {
+		gpio_set_bit_off(MIST_COOLANT_BIT);
+	}
+}
+
+uint8_t cm_flood_coolant_control(uint8_t flood_coolant)
+{
+	if (flood_coolant == true) {
+		mp_queue_mcode(MCODE_FLOOD_COOLANT_ON);
+	} else {
+		mp_queue_mcode(MCODE_FLOOD_COOLANT_OFF);
+	}
+	return (TG_OK);
+}
+
+void cm_exec_flood_coolant_control(uint8_t flood_coolant)
+{
+	gm.flood_coolant = flood_coolant;
+	if (flood_coolant == true) {
+		gpio_set_bit_on(FLOOD_COOLANT_BIT);
+	} else {
+		gpio_set_bit_off(FLOOD_COOLANT_BIT);
+		cm_mist_coolant_control(false);		// M9 special function
+	}
+}
+
+uint8_t cm_feed_override_enable(uint8_t feed_override)
+{
+	if (feed_override == true) {
+		mp_queue_mcode(MCODE_FEED_OVERRIDE_ON);
+	} else {
+		mp_queue_mcode(MCODE_FEED_OVERRIDE_OFF);
+	}
+	return (TG_OK);
+}
+
+void cm_exec_feed_override_enable(uint8_t feed_override)
+{
+	gm.feed_override_enable = feed_override;
+}
+
+
+void cm_comment(char *comment)
+{
+	return;
+}
+
+void cm_message(char *message)
 {
 	printf_P(PSTR("%s\n"), message);
-	return (TG_OK);
 }
 
 /*
  * Program Functions (4.3.10)
  *
- * This group implements stop, start and end. 
+ * This group implements stop, start, end, and hold. 
  * It is extended beyond the NIST spec to handle various situations.
  *
+ *	cm_cycle_start()			(no Gcode)
+ *	cm_cycle_end()				(no Gcode)
+ *	cm_feedhold()				(no Gcode)
  *	cm_program_stop()			(M0, M60)
  *	cm_optional_program_stop()	(M1)
  *	cm_program_end()			(M2, M30)
- *	cm_async_stop()				(no code)
- *	cm_async_start()			(no code)
- *	cm_async_end()				(no code)
- *	cm_stop()					(no code, not implemented)
+ *	cm_exec_program_stop()
+ *	cm_exec_program_end()
  *
  * cm_program_stop and cm_optional_program_stop are synchronous Gcode 
  * commands that are received through the interpreter. They cause all motion
@@ -626,515 +781,54 @@ uint8_t cm_message(char *message)
  *
  * cm_program_end is a stop that also resets the machine to initial state
  *
- * The three asynchronous commands are not specified in RS724. These commands
- * "jump the queue" and are effective immediately. Async_stop and async_start 
- * can be used in sequence to stop motion in the middle of a move then resume.
- * These are meant to be linked to the keyboard "signals" as so:
- *
- *		<ctrl> c	end immediately (ETX, KILL)
- *		<ctrl> x	end immediately (TERM)
- *		<ctrl> s	stop motion immediately (XOFF)
- *		<ctrl> q	restart motion from  async or queued stop (XON)
- *
- * cm_stop() is a cycle specified by RS274 where the machine pauses for some
- * unspecified length of time then resumes. This is not implemented until 
- * someone can tell me who uses this and for what, and how it's invoked 
- * - given that there is no corresponding gcode for it.
+ * See planner.c for feedhold details.
  */
 
-uint8_t cm_program_stop()			// M0, M60
+void cm_cycle_start()
 {
-	mp_queued_stop();
-	return (TG_OK);
-}
-
-uint8_t cm_optional_program_stop()	// M1
-{
-	mp_queued_stop();
-	return (TG_OK);
-}
-
-uint8_t cm_program_end()			// M2, M30
-{
-	tg_reset_source();	// stop reading from a file (return to std device)
-	mp_queued_end();
-	return (TG_OK);
-}
-
-uint8_t cm_async_stop()
-{
-	mp_async_stop();
-	return (TG_OK);
-}
-
-uint8_t cm_async_start()
-{
-	mp_async_start();
-	return (TG_OK);
-}
-
-uint8_t cm_async_end()
-{
-	mp_async_end();
-	return (TG_OK);
-}
-
-
-/***********************************************************************
- *
- * cm_arc_feed() - G2, G3
- * _cm_compute_center_arc() - compute arc from I and J (arc center point)
- * _cm_get_arc_radius() 	- compute arc center (offset) from radius.
- * _cm_get_arc_time()
- */
-
-uint8_t cm_arc_feed(double target[],				// arc endpoints
-					double i, double j, double k, 	// offsets
-					double radius, 			// non-zero sets radius mode
-					uint8_t motion_mode)	// defined motion mode
-{
-	// copy parameters into the current state
-	gm.next_action = NEXT_ACTION_MOTION;
-	gm.motion_mode = motion_mode;
-
-	// trap zero feed rate condition
-	if ((gm.inverse_feed_rate_mode == FALSE) && (gm.feed_rate == 0)) {
-		INFO1(PSTR("Attempted arc %s with feed rate = zero"), tg.buf);
-		cm.status = TG_ZERO_LENGTH_MOVE;
-		return (cm.status);
-	}
-
-	// set parameters
-	cm_set_target(target, gf.target);
-	cm_set_offset(i,j,k);
-	cm_set_radius(radius);
-	cm.status = TG_OK;
-
-	// execute the move - non-zero radius is a radius arc
-	if (radius > EPSILON) {
-		if ((_cm_get_arc_radius() != TG_OK)) {
-			return (cm.status);				// error return
-		}
-	}
-	// Introduce a short dwell if the machine is idle to enable the planning
-	// queue to begin to fill (avoids first block having to plan down to zero)
-//	if (st_isbusy() == FALSE) {
-//		cm_dwell(PLANNER_STARTUP_DELAY_SECONDS);
-//	}
-	cm.status = _cm_compute_center_arc();
-	_cm_set_gcode_model_endpoint_position(cm.status);
-	return (cm.status);
-}
-
-/*
- * _cm_compute_center_arc() - compute arc from I and J (arc center point)
- *
- *	The theta calculation sets up an clockwise or counterclockwise arc from 
- *	the current position to the target position around the center designated 
- *	by the offset vector. All theta-values measured in radians of deviance 
- *	from the positive y-axis. 
- *
- *                      | <- theta == 0
- *                    * * *
- *                  *       *
- *                *           *
- *                *     O ----T   <- theta_end (e.g. 90 degrees: theta_end == PI/2)
- *                *   /
- *                  C   <- theta_start (e.g. -145 degrees: theta_start == -PI*(3/4))
- */
-
-uint8_t _cm_compute_center_arc()
-{
-	double theta_start;
-	double theta_end;
-	double radius_tmp;
-	double angular_travel;
-	double linear_travel;
-	double move_time;
-
-	// calculate the theta (angle) of the current point (see header notes)
-	theta_start = _cm_get_theta(-gm.offset[gm.plane_axis_0], -gm.offset[gm.plane_axis_1]);
-
-	if(isnan(theta_start) == TRUE) { 
-		cm.status = TG_ARC_SPECIFICATION_ERROR;
-		return(cm.status); 
-	}
-
-	// calculate the theta (angle) of the target point
-	theta_end = _cm_get_theta(
-		gm.target[gm.plane_axis_0] - gm.offset[gm.plane_axis_0] - gm.position[gm.plane_axis_0], 
- 		gm.target[gm.plane_axis_1] - gm.offset[gm.plane_axis_1] - gm.position[gm.plane_axis_1]);
-
-	if(isnan(theta_end) == TRUE) { 
-		cm.status = TG_ARC_SPECIFICATION_ERROR; 
-		return(cm.status);
-	}
-
-	// ensure that the difference is positive so we have clockwise travel
-	if (theta_end < theta_start) {
-		theta_end += 2*M_PI;
-	}
-	angular_travel = theta_end - theta_start;
-
-	// Invert angular motion if the g-code wanted a counterclockwise arc
-	if (gm.motion_mode == MOTION_MODE_CCW_ARC) {
-		angular_travel = angular_travel - 2*M_PI;
-	}
-
-	// Find the radius
-	radius_tmp = hypot(gm.offset[gm.plane_axis_0], gm.offset[gm.plane_axis_1]);
-
-	// Calculate the motion along the depth axis of the helix
-	linear_travel = gm.target[gm.plane_axis_2] - gm.position[gm.plane_axis_2];
-
-	// compute the time it should take to perform the move
-	move_time = _cm_get_arc_time(linear_travel, angular_travel, radius_tmp);
-
-	// Trace the arc
-	cm_set_vector(gm.target[gm.plane_axis_0],
-				  gm.target[gm.plane_axis_1],
-				  gm.target[gm.plane_axis_2],
-				  gm.target[A], gm.target[B], gm.target[C]);
-
-	cm.status = ar_arc(vector,
-					   gm.offset[gm.plane_axis_0],
-					   gm.offset[gm.plane_axis_1],
-					   gm.offset[gm.plane_axis_2],
-					   theta_start, radius_tmp, 
-					   angular_travel, linear_travel, 
-					   gm.plane_axis_0, gm.plane_axis_1, gm.plane_axis_2,
-					   move_time);
-	return (cm.status);
-}
-
-/* 
- * _cm_get_arc_radius() - compute arc center (offset) from radius. 
- *
- *  We need to calculate the center of the circle that has the designated 
- *	radius and passes through both the current position and the target position
- *		  
- *	This method calculates the following set of equations where:
- *	`  [x,y] is the vector from current to target position, 
- *		d == magnitude of that vector, 
- *		h == hypotenuse of the triangle formed by the radius of the circle, 
- *			 the distance to the center of the travel vector. 
- *		  
- *	A vector perpendicular to the travel vector [-y,x] is scaled to the length
- *	of h [-y/d*h, x/d*h] and added to the center of the travel vector [x/2,y/2]
- *	to form the new point [i,j] at [x/2-y/d*h, y/2+x/d*h] which will be the 
- *	center of our arc.
- *        
- *		d^2 == x^2 + y^2
- *		h^2 == r^2 - (d/2)^2
- *		i == x/2 - y/d*h
- *		j == y/2 + x/d*h
- *                                        O <- [i,j]
- *                                     -  |
- *                           r      -     |
- *                               -        |
- *                            -           | h
- *                         -              |
- *           [0,0] ->  C -----------------+--------------- T  <- [x,y]
- *                     | <------ d/2 ---->|
- *                  
- *		C - Current position
- *		T - Target position
- *		O - center of circle that pass through both C and T
- *		d - distance from C to T
- *		r - designated radius
- *		h - distance from center of CT to O
- *  
- *	Expanding the equations:
- *		d -> sqrt(x^2 + y^2)
- *		h -> sqrt(4 * r^2 - x^2 - y^2)/2
- *		i -> (x - (y * sqrt(4 * r^2 - x^2 - y^2)) / sqrt(x^2 + y^2)) / 2 
- *		j -> (y + (x * sqrt(4 * r^2 - x^2 - y^2)) / sqrt(x^2 + y^2)) / 2
- * 
- *	Which can be written:  
- *		i -> (x - (y * sqrt(4 * r^2 - x^2 - y^2))/sqrt(x^2 + y^2))/2
- *		j -> (y + (x * sqrt(4 * r^2 - x^2 - y^2))/sqrt(x^2 + y^2))/2
- *  
- *	Which we for size and speed reasons optimize to:
- *		h_x2_div_d = sqrt(4 * r^2 - x^2 - y^2)/sqrt(x^2 + y^2)
- *		i = (x - (y * h_x2_div_d))/2
- *		j = (y + (x * h_x2_div_d))/2
- *
- * ----Computing clockwise vs counter-clockwise motion ----
- *
- *	The counter clockwise circle lies to the left of the target direction. 
- *	When offset is positive, the left hand circle will be generated - 
- *	when it is negative the right hand circle is generated.
- *
- *                                   T  <-- Target position
- *  
- *                                   ^ 
- *      Clockwise circles with       |     Clockwise circles with
- *		this center will have        |     this center will have
- *      > 180 deg of angular travel  |     < 180 deg of angular travel, 
- *                        \          |      which is a good thing!
- *                         \         |         /
- *  center of arc when  ->  x <----- | -----> x <- center of arc when 
- *  h_x2_div_d is positive           |             h_x2_div_d is negative
- *                                   |
- *                                   C  <-- Current position
- */
-
-uint8_t _cm_get_arc_radius()
-{
-	double x;
-	double y;
-	double h_x2_div_d;
-
-	// Calculate the change in position along each selected axis
-	x = gm.target[gm.plane_axis_0]-gm.position[gm.plane_axis_0];
-	y = gm.target[gm.plane_axis_1]-gm.position[gm.plane_axis_1];
-
-	gm.offset[0] = 0;	// reset the offsets
-	gm.offset[1] = 0;
-	gm.offset[2] = 0;
-
-	// == -(h * 2 / d)
-	h_x2_div_d = -sqrt(4 * square(gm.radius) - (square(x) - square(y))) / hypot(x,y);
-
-	// If r is smaller than d the arc is now traversing the complex plane beyond
-	// the reach of any real CNC, and thus - for practical reasons - we will 
-	// terminate promptly (well spoken Simen!)
-	if(isnan(h_x2_div_d) == TRUE) { 
-		cm.status = TG_FLOATING_POINT_ERROR; 
-		return(cm.status); 
-	}
-
-	// Invert the sign of h_x2_div_d if circle is counter clockwise (see header notes)
-	if (gm.motion_mode == MOTION_MODE_CCW_ARC) {
-		h_x2_div_d = -h_x2_div_d;
-	}
-
-	// Negative R is g-code-alese for "I want a circle with more than 180 degrees
-	// of travel" (go figure!), even though it is advised against ever generating
-	// such circles in a single line of g-code. By inverting the sign of 
-	// h_x2_div_d the center of the circles is placed on the opposite side of 
-	// the line of travel and thus we get the unadvisably long arcs as prescribed.
-	if (gm.radius < 0) { 
-		h_x2_div_d = -h_x2_div_d; 
-	}   
-	// Complete the operation by calculating the actual center of the arc
-	gm.offset[gm.plane_axis_0] = (x-(y*h_x2_div_d))/2;
-	gm.offset[gm.plane_axis_1] = (y+(x*h_x2_div_d))/2;
-	return (cm.status);
-} 
-    
-/*
- * _cm_get_arc_time ()
- *
- *	This is a naiive rate-limiting function. The arc drawing time is computed 
- *	not to exceed the time taken in the slowest dimension - in the arc plane
- *	or in linear travel. Maximum feed rates are compared in each dimension,
- *	but the comparison assumes that the arc will have at least one segment
- *	where the unit vector is 1 in that dimension. This is not true for any
- *	arbitrary arc, with the result that the time returned may be less than 
- *	optimal.
- *
- *	Room for improvement: At least take the hypotenuse of the planar movement 
- *	and the linear travel into account, but how many people actually use helixes?
- */
-
-static double _cm_get_arc_time (const double linear_travel, 	// in mm
-								const double angular_travel, 	// in radians
-								const double radius)			// in mm
-{
-	double tmp;
-	double move_time=0;	// picks through the times and retains the slowest
-	double planar_travel = fabs(angular_travel * radius);// travel in arc plane
-
-	if (gm.inverse_feed_rate_mode == TRUE) {
-		move_time = gm.inverse_feed_rate;
-	} else {
-		move_time = sqrt(square(planar_travel) + square(linear_travel)) / gm.feed_rate;
-	}
-	if ((tmp = planar_travel/cfg.a[gm.plane_axis_0].feed_rate_max) > move_time) {
-		move_time = tmp;
-	}
-	if ((tmp = planar_travel/cfg.a[gm.plane_axis_1].feed_rate_max) > move_time) {
-		move_time = tmp;
-	}
-	if ((tmp = fabs(linear_travel/cfg.a[gm.plane_axis_2].feed_rate_max)) > move_time) {
-		move_time = tmp;
-	}
-	return (move_time);
-}
-
-/* 
- * _cm_get_theta(double x, double y)
- *
- *	Find the angle in radians of deviance from the positive y axis. 
- *	negative angles to the left of y-axis, positive to the right.
- */
-
-static double _cm_get_theta(const double x, const double y)
-{
-	double theta = atan(x/fabs(y));
-
-	if (y>0) {
-		return (theta);
-	} else {
-		if (theta>0) {
-			return ( M_PI-theta);
-    	} else {
-			return (-M_PI-theta);
-		}
+	cm.cycle_start_flag = true;
+	cm.machine_state = MACHINE_CYCLE;
+	if (cm.cycle_state == CYCLE_OFF) {
+		cm.cycle_state = CYCLE_STARTED;	// don't change homing, probe or other cycles
 	}
 }
 
-/*
- * cm_print_machine_state()
- */
-// these must line up with the memory string indexes below
-#define GC_MSG_UNITS 00 
-#define GC_MSG_MOTION 02	
-#define GC_MSG_PLANE 07
-#define GC_MSG_DISTANCE 10
-#define GC_MSG_FEEDRATEMODE 12
-#define GC_MSG_STOP 14
-
-// put display strings in program memory
-static char gms00[] PROGMEM = "Units:           G21 - millimeter mode\n";	// This pair is inverted
-static char gms01[] PROGMEM = "Units:           G20 - inches mode\n";
-static char gms02[] PROGMEM = "Motion mode:     G0  - linear traverse (seek)\n";
-static char gms03[] PROGMEM = "Motion mode:     G1  - linear feed\n";
-static char gms04[] PROGMEM = "Motion mode:     G2  - clockwise arc feed\n";
-static char gms05[] PROGMEM = "Motion mode:     G3  - counter clockwise arc feed\n";
-static char gms06[] PROGMEM = "Motion mode:     G80 - cancel motion mode (none active)\n";
-static char gms07[] PROGMEM = "Plane selection: G17 - XY plane\n";
-static char gms08[] PROGMEM = "Plane selection: G18 - XZ plane\n";
-static char gms09[] PROGMEM = "Plane selection: G19 - YZ plane\n";
-static char gms10[] PROGMEM = "Distance mode:   G91 - incremental distance\n";// This pair is inverted
-static char gms11[] PROGMEM = "Distance mode:   G90 - absolute distance\n";
-static char gms12[] PROGMEM = "Feed rate mode:  G94 - units per minute\n";	// This pair is inverted
-static char gms13[] PROGMEM = "Feed rate mode:  G93 - inverse time\n";
-static char gms14[] PROGMEM = "Run state:       Running\n";
-static char gms15[] PROGMEM = "Run state:       Stopped (M0,M1,M30, Pause)\n";
-static char gms16[] PROGMEM = "Run state:       Ended (M2,M60)\n";
-
-static char gmsPosX[] PROGMEM = "Position X:   %8.3f %s\n";
-static char gmsPosY[] PROGMEM = "Position Y:   %8.3f %s\n";
-static char gmsPosZ[] PROGMEM = "Position Z:   %8.3f %s\n";
-static char gmsPosA[] PROGMEM = "Position A:   %8.3f degrees\n";
-static char gmsPosB[] PROGMEM = "Position B:   %8.3f degrees\n";
-static char gmsPosC[] PROGMEM = "Position C:   %8.3f degrees\n";
-static char gmsOfsI[] PROGMEM = "Offset I:     %8.3f %s\n";
-static char gmsOfsJ[] PROGMEM = "Offset J:     %8.3f %s\n";
-static char gmsOfsK[] PROGMEM = "Offset K:     %8.3f %s\n";
-static char gmsFeed[] PROGMEM = "Feed Rate:    %8.3f %s \\ min\n";
-//static char gmsLimit[] PROGMEM = "Limit Switches: %3.0f %s\n";
-
-// put string pointer array in program memory. MUST BE SAME COUNT AS ABOVE
-static PGM_P gcMsg[] PROGMEM = {	
-	gms00, gms01, gms02, gms03, gms04, gms05, gms06, gms07, gms08, gms09,
-	gms10, gms11, gms12, gms13, gms14, gms15, gms16
-};
-
-void cm_print_machine_state()
+void cm_cycle_end() 
 {
-	char units[8] = "mm";
-
-	fprintf_P(stderr, (PGM_P)pgm_read_word(&gcMsg[(gm.inches_mode + GC_MSG_UNITS)]));
-	fprintf_P(stderr, (PGM_P)pgm_read_word(&gcMsg[(gm.motion_mode + GC_MSG_MOTION)]));
-	fprintf_P(stderr, (PGM_P)pgm_read_word(&gcMsg[(gm.set_plane + GC_MSG_PLANE)]));
-	fprintf_P(stderr, (PGM_P)pgm_read_word(&gcMsg[(gm.absolute_mode + GC_MSG_DISTANCE)]));
-	fprintf_P(stderr, (PGM_P)pgm_read_word(&gcMsg[(gm.inverse_feed_rate_mode + GC_MSG_FEEDRATEMODE)]));
-
-	if (gm.inches_mode == TRUE) {
-		strncpy(units,"inches", 8);// unnecessary, but useful to know about
-		fprintf_P(stderr, (PGM_P)gmsFeed, gm.feed_rate / MM_PER_INCH, units);
-		fprintf_P(stderr, (PGM_P)gmsPosX, gm.position[X] / MM_PER_INCH, units);
-		fprintf_P(stderr, (PGM_P)gmsPosY, gm.position[Y] / MM_PER_INCH, units);
-		fprintf_P(stderr, (PGM_P)gmsPosZ, gm.position[Z] / MM_PER_INCH, units);
-		fprintf_P(stderr, (PGM_P)gmsPosA, gm.position[A]);
-		fprintf_P(stderr, (PGM_P)gmsPosB, gm.position[B]);
-		fprintf_P(stderr, (PGM_P)gmsPosC, gm.position[C]);
-		fprintf_P(stderr, (PGM_P)gmsOfsI, gm.offset[0] / MM_PER_INCH, units);
-		fprintf_P(stderr, (PGM_P)gmsOfsJ, gm.offset[1] / MM_PER_INCH, units);
-		fprintf_P(stderr, (PGM_P)gmsOfsK, gm.offset[2] / MM_PER_INCH, units);
-	} else {
-		fprintf_P(stderr, (PGM_P)gmsFeed, gm.feed_rate, units);
-		fprintf_P(stderr, (PGM_P)gmsPosX, gm.position[X], units);
-		fprintf_P(stderr, (PGM_P)gmsPosY, gm.position[Y], units);
-		fprintf_P(stderr, (PGM_P)gmsPosZ, gm.position[Z], units);
-		fprintf_P(stderr, (PGM_P)gmsPosA, gm.position[A]);
-		fprintf_P(stderr, (PGM_P)gmsPosB, gm.position[B]);
-		fprintf_P(stderr, (PGM_P)gmsPosC, gm.position[C]);
-		fprintf_P(stderr, (PGM_P)gmsOfsI, gm.offset[0], units);
-		fprintf_P(stderr, (PGM_P)gmsOfsJ, gm.offset[1], units);
-		fprintf_P(stderr, (PGM_P)gmsOfsK, gm.offset[2], units);
-	}
-	fprintf_P(stderr, (PGM_P)pgm_read_word(&gcMsg[(gm.program_flow + GC_MSG_STOP)]));
-//	fprintf_P(stderr, (PGM_P)gmsLimit, ls.min[X]);
-}
-
-/*
- * cm_init_status_report()
- * cm_decr_status_report()
- * cm_try_status_report() - will send one if it's time
- * cm_send_status_report() - will send one if it's enabled
- *
- * Enable can be one of:
- *	0 = disabled
- *	1 = enabled for basic values (xyz, vel, mm)
- *	2 = enabled for extended values (abc)
- */
-
-void cm_init_status_report() 
-{ 
-	cm.status_report_counter = cfg.status_report_interval; 
-}
-
-void cm_decr_status_report() 
-{ 
-	if (cm.status_report_counter != 0) {	// stick at zero
-		cm.status_report_counter--; 
+	if (cm.cycle_state == CYCLE_STARTED) {
+		cm_exec_program_stop();		// don't stop if it's in a homing or other specialized cycle
 	}
 }
 
-void cm_force_status_report()
+void cm_feedhold()
 {
-	cm.status_report_counter = 0;
+	if ((cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF)) {
+		cm.motion_state = MOTION_HOLD;
+		cm.hold_state = FEEDHOLD_SYNC;
+		cm.cycle_start_flag = false;
+	}
 }
 
-uint8_t cm_try_status_report() 
+void cm_program_stop() { mp_queue_mcode(MCODE_PROGRAM_STOP);}
+void cm_optional_program_stop()	{ mp_queue_mcode(MCODE_PROGRAM_STOP); }
+void cm_program_end()				// M2, M30
 {
-	if ((cfg.status_report_enabled == FALSE) || (cm.status_report_counter != 0)) {
-		return (TG_NOOP);
-	}
-	mp_get_runtime_position(vector);
-	double velocity = mp_get_runtime_velocity();
-	uint8_t distance_mode = 1;			// indicating mm mode
-
-	if (gm.inches_mode == TRUE) {
-		vector[X] = vector[X] / MM_PER_INCH;
-		vector[Y] = vector[Y] / MM_PER_INCH;
-		vector[Z] = vector[Z] / MM_PER_INCH;
-		velocity = velocity / MM_PER_INCH;
-		distance_mode = 0;
-	}
-	fprintf_P(stderr,PSTR("{"));
-	fprintf_P(stderr,PSTR("\"ln\":%1.0f, "), mp_get_runtime_linenum()); 
-	fprintf_P(stderr,PSTR("\"xyz\":[%1.3f,%1.3f,%1.3f], "),  vector[X], vector[Y], vector[Z]);
-	if (cfg.status_report_enabled > 1) {
-		fprintf_P(stderr,PSTR("\"abc\":[%1.3f,%1.3f,%1.3f], "),vector[A], vector[B], vector[C]);
-	}
-	fprintf_P(stderr,PSTR("\"vel\":%5.2f, "), velocity);
-	fprintf_P(stderr,PSTR("\"mm\":%d}\n"), distance_mode);
-
-	cm.status_report_counter = cfg.status_report_interval;
-	return (TG_OK);
+	tg_reset_source();				// stop reading from a file (return to std device)
+	mp_queue_mcode(MCODE_PROGRAM_END);
 }
 
-/***********************************************************************/
-/*--- CANONICAL MACHINING CYCLES ---*/
-
-uint8_t cm_stop()					// stop cycle. not implemented
+void cm_exec_program_stop() { _exec_program_finalize(MACHINE_PROGRAM_STOP);}
+void cm_exec_program_end() { _exec_program_finalize(MACHINE_PROGRAM_END);}
+void _exec_program_finalize(uint8_t machine_state)
 {
-	return (TG_OK);
+	cm.machine_state = machine_state;
+	cm.cycle_state = CYCLE_OFF;
+	cm.motion_state = MOTION_STOP;
+	cm.hold_state = FEEDHOLD_OFF;		//...and any feedhold is ended
+	cm.cycle_start_flag = false;
+	mp_zero_segment_velocity();			// for reporting purposes
+	rpt_queue_status_report();			// queue final status report (if enabled)
+	cmd_persist_offsets(cm.g10_flag);	// persist offsets (if any changes made)
 }
 
 

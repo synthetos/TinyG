@@ -4,7 +4,7 @@
 
 ## General Flags
 PROJECT = tinyg
-MCU = atxmega256a3
+MCU = atxmega192a3
 TARGET = tinyg.elf
 CC = avr-gcc
 
@@ -15,7 +15,7 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
-CFLAGS += -Wall -gdwarf-2 -std=gnu99    -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -Wall -gdwarf-2 -std=gnu99                 -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
 
 ## Assembly specific flags
@@ -25,7 +25,7 @@ ASMFLAGS += -x assembler-with-cpp -Wa,-gdwarf2
 
 ## Linker flags
 LDFLAGS = $(COMMON)
-LDFLAGS += -lprintf_flt -lm  -Wl,-u,vfprintf -Wl,-Map=tinyg.map
+LDFLAGS += -Wl,-u,vfprintf  -lprintf_flt  -lm -Wl,-Map=tinyg.map
 
 
 ## Intel Hex file production flags
@@ -37,10 +37,10 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 
 
 ## Libraries
-LIBS = -lc -lm -lprintf_flt 
+LIBS = -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = xmega_rtc.o canonical_machine.o config.o controller.o gcode_parser.o gpio.o main.o network.o planner.o spindle.o stepper.o system.o xio.o xio_pgm.o xio_rs485.o xio_signals.o xio_usart.o xio_usb.o xmega_eeprom.o xmega_init.o xmega_interrupts.o cycle_homing.o help.o kinematics.o util.o plan_arc.o 
+OBJECTS = util.o arc.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o network.o planner.o report.o spindle.o stepper.o system.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio.o xio_pgm.o xio_rs485.o xio_signals.o xio_usart.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -49,7 +49,10 @@ LINKONLYOBJECTS =
 all: $(TARGET) tinyg.hex tinyg.eep tinyg.lss size
 
 ## Compile
-xmega_rtc.o: ../xmega_rtc.c
+util.o: ../util.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+arc.o: ../arc.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 canonical_machine.o: ../canonical_machine.c
@@ -61,10 +64,22 @@ config.o: ../config.c
 controller.o: ../controller.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
+cycle_homing.o: ../cycle_homing.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
 gcode_parser.o: ../gcode_parser.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 gpio.o: ../gpio.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+help.o: ../help.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+json_parser.o: ../json_parser.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+kinematics.o: ../kinematics.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 main.o: ../main.c
@@ -76,6 +91,9 @@ network.o: ../network.c
 planner.o: ../planner.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
+report.o: ../report.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
 spindle.o: ../spindle.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
@@ -85,46 +103,37 @@ stepper.o: ../stepper.c
 system.o: ../system.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-xio.o: ../xio.c
+test.o: ../test.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-xio_pgm.o: ../xio_pgm.c
+xmega_rtc.o: ../xmega/xmega_rtc.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-xio_rs485.o: ../xio_rs485.c
+xmega_eeprom.o: ../xmega/xmega_eeprom.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-xio_signals.o: ../xio_signals.c
+xmega_init.o: ../xmega/xmega_init.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-xio_usart.o: ../xio_usart.c
+xmega_interrupts.o: ../xmega/xmega_interrupts.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-xio_usb.o: ../xio_usb.c
+xio_usb.o: ../xio/xio_usb.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-xmega_eeprom.o: ../xmega_eeprom.c
+xio.o: ../xio/xio.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-xmega_init.o: ../xmega_init.c
+xio_pgm.o: ../xio/xio_pgm.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-xmega_interrupts.o: ../xmega_interrupts.c
+xio_rs485.o: ../xio/xio_rs485.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-cycle_homing.o: ../cycle_homing.c
+xio_signals.o: ../xio/xio_signals.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-help.o: ../help.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-kinematics.o: ../kinematics.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-util.o: ../util.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-plan_arc.o: ../plan_arc.c
+xio_usart.o: ../xio/xio_usart.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link

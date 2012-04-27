@@ -42,17 +42,19 @@
 
 #include "tinyg.h"
 #include "util.h"
+#include "config.h"
 #include "controller.h"
 #include "canonical_machine.h"
 #include "planner.h"
 #include "stepper.h"
-
 
 /**** Vector functions ****
  * copy_vector()			- copy vector of arbitrary length
  * copy_axis_vector()		- copy an axis vector
  * set_unit_vector()		- populate a unit vector by pos. & target
  * get_axis_vector_length()	- return the length of an axis vector
+ * set_vector()				- load values into vector form
+ * set_vector_by_axis()		- load a single value into a zero vector
  */
 
 void copy_vector(double dest[], const double src[], uint8_t length) 
@@ -88,16 +90,42 @@ void set_unit_vector(double unit[], double target[], double position[])
 	unit[C] = (target[C] - position[C]) * recip_length;
 }
 
+double *set_vector(double x, double y, double z, double a, double b, double c)
+{
+	vector[X] = x;
+	vector[Y] = y;
+	vector[Z] = z;
+	vector[A] = a;
+	vector[B] = b;
+	vector[C] = c;
+	return (vector);
+}
+
+double *set_vector_by_axis(double value, uint8_t axis)
+{
+	clear_vector(vector);
+	switch (axis) {
+		case (X): vector[X] = value; break;
+		case (Y): vector[Y] = value; break;
+		case (Z): vector[Z] = value; break;
+		case (A): vector[A] = value; break;
+		case (B): vector[B] = value; break;
+		case (C): vector[C] = value;
+	}
+	return (vector);
+}
+
 /**** Math and other general purpose functions ****/
 
 /*
- * isnumber() - isdigit that also accepts '.' and '-'
+ * isnumber() - isdigit that also accepts plus, minus, and decimal point
  */
 
 uint8_t isnumber(char c)
 {
-	if (c == '.') { return (TRUE); }
-	if (c == '-') { return (TRUE); }
+	if (c == '.') { return (true); }
+	if (c == '-') { return (true); }
+	if (c == '+') { return (true); }
 	return (isdigit(c));
 }
 
@@ -119,97 +147,10 @@ uint8_t read_double(char *buf, uint8_t *i, double *double_ptr)
   
 	*double_ptr = strtod(start, &end);
 	if(end == start) { 
-		return(FALSE); 
+		return(false); 
 	}
 	*i = (uint8_t)(end - buf);
-	return(TRUE);
+	return(true);
 }
 
-/***** Debug Functions ******/
-#ifdef __DEBUG
-
-/* Note: these dump routines pack a lot of characters into the USART TX buffer
- * and can kill the running instance. I'll have to figure out how to prevent that,
- * but in the mean time if you want to use them you should go into xio_usart.h and 
- * temporarily change to the following settings:
- * 
- *	//#define BUFFER_T uint8_t		// faster, but limits buffer to 255 char max
- *	#define BUFFER_T uint16_t		// slower, but larger buffers
- *
- *	// USART ISR TX buffer size
- *	//#define TX_BUFFER_SIZE (BUFFER_T)64
- *	//#define TX_BUFFER_SIZE (BUFFER_T)128
- *	//#define TX_BUFFER_SIZE (BUFFER_T)255
- *	//#define TX_BUFFER_SIZE (BUFFER_T)256	// uint16_t buffer type is required
- *	//#define TX_BUFFER_SIZE (BUFFER_T)1024
- *	#define TX_BUFFER_SIZE (BUFFER_T)2048
- */
-void dump_everything()
-{
-	tg_dump_controller_state();
-	cm_print_machine_state();
-	mp_dump_running_plan_buffer();	
-	mp_dump_runtime_state();
-	st_dump_stepper_state();
-
-	for (uint8_t i=0; i<PLANNER_BUFFER_POOL_SIZE; i++) {
-		mp_dump_plan_buffer_by_index(i);
-	}
-}
-
-void roll_over_and_die()
-{
-	tg_system_init();
-	tg_application_init();
-	tg_application_startup();
-}
-
-void print_scalar(char *label, double value)
-{
-	fprintf_P(stderr,PSTR("%S %8.4f\n"),label,value); 
-}
-
-void print_vector(char *label, double vector[], uint8_t count)
-{
-	fprintf_P(stderr,PSTR("%S"),label); 
-	for (uint8_t i=0; i<count; i++) {
-		fprintf_P(stderr,PSTR("  %4.2f"),vector[i]);
-	} 	
-	fprintf_P(stderr,PSTR("\n"));
-}
-#endif	// __DEBUG
-
-/*
- * segment_logger() - diagnostic function
- */
-#ifdef __SEGMENT_LOGGER
-void segment_logger(uint8_t move_state, 
-					double linenum,
-					uint32_t segments, 
-					uint32_t segment_count, 
-					double velocity,
-					double microseconds,
-//					double position_x, 
-//					double target_x,
-//					double step_x, 
-//					double move_time,
-//					double accel_time
-					)
-
-{
-	if (sl_index < SEGMENT_LOGGER_MAX) {
-		sl[sl_index].move_state = move_state;
-		sl[sl_index].linenum = linenum;
-		sl[sl_index].segments = (double)segments + (double)segment_count*0.001 + 0.0000002;
-		sl[sl_index].velocity = velocity;
-		sl[sl_index].microseconds = microseconds;
-//		sl[sl_index].position_x = position_x;
-//		sl[sl_index].target_x = target_x;
-//		sl[sl_index].step_x = step_x;
-//		sl[sl_index].move_time = move_time;
-//		sl[sl_index].accel_time = accel_time;
-		sl_index++;
-	}
-}
-#endif // __SEGMENT_LOGGER
 

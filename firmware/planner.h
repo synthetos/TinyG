@@ -2,7 +2,7 @@
  * planner.h - cartesian trajectory planning and motion execution
  * Part of TinyG project
  *
- * Copyright (c) 2011 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -22,48 +22,47 @@
 #define planner_h 
 
 enum moveType {				// bf->move_type values 
-	MOVE_TYPE_NULL = 0,		// null move - nothing should be NULL
+	MOVE_TYPE_NULL = 0,		// null move - does a no-op
 	MOVE_TYPE_LINE,			// simple line
 	MOVE_TYPE_ALINE,		// acceleration planned line
 	MOVE_TYPE_DWELL,		// delay with no movement
-	MOVE_TYPE_START,		// restart motors
+	MOVE_TYPE_MCODE,		// M code execution
+	MOVE_TYPE_TOOL,			// T command
+	MOVE_TYPE_SPINDLE_SPEED,// S command
 	MOVE_TYPE_STOP,			// stop motors
 	MOVE_TYPE_END			// stop motors and end program
 };
 
-enum runState {
+enum moveState {
 	MOVE_STATE_OFF = 0,		// move inactive (MUST BE ZERO)
 	MOVE_STATE_NEW,			// general value if you need an initialization
 	MOVE_STATE_RUN,			// general run state (for non-acceleration moves) 
 	MOVE_STATE_RUN2,		// used for sub-states
 	MOVE_STATE_HEAD,		// aline() acceleration portions
 	MOVE_STATE_BODY,		// aline() cruise portions
-	MOVE_STATE_TAIL			// aline() deceleration portions
+	MOVE_STATE_TAIL,		// aline() deceleration portions
+	MOVE_STATE_SKIP			// mark a skipped block
 };
 #define MOVE_STATE_RUN1 MOVE_STATE_RUN // a convenience
 
-/*
- *	Most of these factors are the result of a lot of tweaking. Change with caution.
- */
+/***	Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
-/* MM_PER_ARC_SEGMENT	Arc segment size (mm). 
- * MIN_LINE_LENGTH		Smallest line the system can plan (mm)
- * MIN_SEGMENT_LENGTH	Smallest accel/decel segment (mm). Set to produce ~10 ms segments
- *
- * The following must apply:
+/* The following must apply:
  *	  MM_PER_ARC_SEGMENT >= MIN_LINE_LENGTH >= MIN_SEGMENT_LENGTH 
  */
-#define MM_PER_ARC_SEGMENT 0.1		// 0.03
-#define MIN_LINE_LENGTH 0.08		// 0.02
-#define MIN_SEGMENT_LENGTH 0.05		// 0.01
+#define ARC_SEGMENT_LENGTH 0.1		// Arc segment size (mm).(0.03)
+#define MIN_LINE_LENGTH 0.08		// Smallest line the system can plan (mm) (0.02)
+#define MIN_SEGMENT_LENGTH 0.05		// Smallest accel/decel segment (mm). Set to produce ~10 ms segments (0.01)
 
 /* ESTD_SEGMENT_USEC	 Microseconds per planning segment
  *	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
  */
-#define ESTD_SEGMENT_USEC 10000
-#define MIN_ARC_SEGMENT_USEC 20000
-#define MIN_SEGMENT_SEC (ESTD_SEGMENT_USEC/1000000)	// a convenience
-
+#define NOM_SEGMENT_USEC ((double)5000)			// nominal segment time
+#define MIN_SEGMENT_USEC ((double)2500)			// minimum segment time
+#define MIN_ARC_SEGMENT_USEC ((double)20000)	// minimum arc segment time
+#define NOM_SEGMENT_TIME (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
+#define MIN_SEGMENT_TIME (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
+#define MIN_ARC_SEGMENT_TIME (MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.
@@ -79,42 +78,24 @@ enum runState {
  *	Suggest 12 min. Limit is 255
  */
 #define PLANNER_BUFFER_POOL_SIZE 24
+//#define PLANNER_BUFFER_POOL_SIZE 8
 
-/* PLANNER_ITERATION_MAX
- * PLANNER_ITERATION_ERROR_PERCENT
- *	Max iterations for convergence in the HT asymmetric case.
- *	Error percentage for iteration convergence. As percent - 0.01 = 1%
+/* Some parameters for _generate_trapezoid()
+ * TRAPEZOID_ITERATION_MAX	 			Max iterations for convergence in the HT asymmetric case.
+ * TRAPEZOID_ITERATION_ERROR_PERCENT	Error percentage for iteration convergence. As percent - 0.01 = 1%
+ * TRAPEZOID_LENGTH_FIT_TOLERANCE		Tolerance for "exact fit" for H and T cases
+ * TRAPEZOID_VELOCITY_TOLERANCE			Adaptive velocity tolerance term
  */
-#define PLANNER_ITERATION_MAX 10
-#define PLANNER_ITERATION_ERROR_PERCENT 0.10
-
-/* PLANNER_VELOCITY_TOLERANCE
- * PLANNER_LENGTH_TOLERANCE
- *	Tolerance below which velocities are considered equal for planning 
- *	purposes (mm/min)
- *	Tolerance below which lengths are considered equal for *comparison* 
- *	purposes only
- */
-#define PLANNER_VELOCITY_TOLERANCE 2
-#define PLANNER_LENGTH_TOLERANCE 0.05
-
-/* PLANNER_LENGTH_FACTOR
- *	Length factor over which an HB or BT should be treated as an HT case.
- *	The amount over 1.00 is the maximum cruise length relative to the head or 
- *	tail length. For example, a setting of 1.5 and a head length of 0.4 mm would 
- *	plan lines up to 0.6 mm as HB cases. Longer than this would be planned as HT
- *	cases. This must be at least 1.00.
- */
-#define PLANNER_LENGTH_FACTOR 1.25
+#define TRAPEZOID_ITERATION_MAX 10
+#define TRAPEZOID_ITERATION_ERROR_PERCENT 0.10
+#define TRAPEZOID_LENGTH_FIT_TOLERANCE (0.0001)	// allowable mm of error in planning phase
+#define TRAPEZOID_VELOCITY_TOLERANCE (max(2,bf->entry_velocity/100))
 
 /*
  *	Useful macros
  */
 
-#define clear_vector(a) memset(a,0,sizeof(a)) // used in motion_control.c & gcode.c
-#define _mp_bump(a) ((a<PLANNER_BUFFER_POOL_SIZE-1)?(a+1):0) // buffer incr & wrap
-#define uSec(a) (a * MICROSECONDS_PER_MINUTE)
-#define MP_LINE(t,m) ((cfg.accel_enabled == TRUE) ? mp_aline(t,m) : mp_line(t,m))
+#define MP_LINE(t,m) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m) : mp_line(t,m))
 
 /*
  * Global Scope Functions
@@ -122,23 +103,24 @@ enum runState {
 
 void mp_init(void);
 
-uint8_t mp_exec_move(void);
-uint8_t mp_test_write_buffer(void);
-uint8_t mp_set_plan_position(const double position[]);
-double *mp_get_plan_position(double position[]);
-uint8_t mp_set_axis_position(const double position[]);
 uint8_t mp_isbusy(void);
-double *mp_get_runtime_position(double vector[]);
+void mp_flush_planner(void);
+uint8_t mp_test_write_buffer(void);
+double *mp_get_plan_position(double position[]);
+void mp_set_plan_position(const double position[]);
+void mp_set_axes_position(const double position[]);
+void mp_set_axis_position(uint8_t axis, const double position);
+
+double mp_get_runtime_position(uint8_t axis);
 double mp_get_runtime_velocity(void);
 double mp_get_runtime_linenum(void);
+void mp_zero_segment_velocity(void);
 
-void mp_async_stop(void);
-void mp_async_start(void);
-void mp_async_end(void);
-void mp_queued_stop(void);
-void mp_queued_start(void);
-void mp_queued_end(void);
+uint8_t mp_exec_move(void);
+void mp_queue_mcode(uint8_t mcode);
 
+uint8_t mp_plan_hold_callback(void);
+uint8_t mp_end_hold_callback(void);
 uint8_t mp_dwell(const double seconds);
 uint8_t mp_line(const double target[], const double minutes);
 uint8_t mp_aline(const double target[], const double minutes);
@@ -150,6 +132,13 @@ void mp_dump_plan_buffer_by_index(uint8_t index);
 void mp_dump_runtime_state(void);
 #endif
 
+//#define __UNIT_TEST_PLANNER	// start __UNIT_TEST_PLANNER
+#ifdef __UNIT_TEST_PLANNER
 void mp_unit_tests(void);
+void mp_plan_arc_unit_tests(void);
+#define	PLANNER_UNITS mp_unit_tests();
+#else
+#define	PLANNER_UNITS
+#endif // end __UNIT_TEST_PLANNER
 
 #endif

@@ -1,9 +1,8 @@
 /*
- * spindle_control.c - spindle control driver
+ * canonical_spindle.c - canonical machine spindle driver
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2011 Alden S. Hart Jr.
- * Portions copyright (c) 2009 Simen Svale Skogsrud
+ * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -15,54 +14,83 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
  * for details. You should have received a copy of the GNU General Public 
  * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- */
-/* This module is pretty much a direct lift from the grbl project.
- * It has not been exercised or tested.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include <avr/io.h>
 #include "tinyg.h"
+#include "gpio.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
-#include "stepper.h"			// for spindle bit assignments
 #include "spindle.h"
+#include "planner.h"
 #include "system.h"
 
 /* 
  * sp_init()
- *
- *	Spindle init takes over the 2 MSBs of the A axis port for spindle control
- *	These should have been initially set as A axis max/min limit inputs
- *	See hardware.h for settings
  */
 
-void sp_init()
+void cm_spindle_init()
 {
-	SPINDLE_ENABLE_PORT.DIRSET = SPINDLE_ENABLE_BIT_bm;
-	SPINDLE_DIRECTION_PORT.DIRSET = SPINDLE_DIRECTION_BIT_bm;
+	return;
 }
 
 /*
- * sp_spindle_run() - spindle controls
- *
- * Failsafe: if invalid setting (mode) is passed in spindle will stop
- * Speed is a no-op for now.
+ * cm_spindle_control() -  queue the spindle command to the planner buffer
  */
-
-void sp_spindle_run(uint8_t mode, double speed)
+uint8_t cm_spindle_control(uint8_t spindle_mode)
 {
-	if (mode == SPINDLE_CW) {
-    	SPINDLE_DIRECTION_PORT.OUTSET = SPINDLE_DIRECTION_BIT_bm;
-		SPINDLE_ENABLE_PORT.OUTSET = SPINDLE_ENABLE_BIT_bm;
-	} else if (mode == SPINDLE_CCW) {
-    	SPINDLE_DIRECTION_PORT.OUTCLR = SPINDLE_DIRECTION_BIT_bm;
-		SPINDLE_ENABLE_PORT.OUTSET = SPINDLE_ENABLE_BIT_bm;
+	if (spindle_mode == SPINDLE_CW) {
+		mp_queue_mcode(MCODE_SPINDLE_CW);
+	} else if (spindle_mode == SPINDLE_CCW) {
+		mp_queue_mcode(MCODE_SPINDLE_CCW);
 	} else {
-		SPINDLE_ENABLE_PORT.OUTCLR = SPINDLE_ENABLE_BIT_bm;
+		mp_queue_mcode(MCODE_SPINDLE_OFF);	// failsafe operation
+	}
+	return(TG_OK);
+}
+
+/*
+ * cm_exec_spindle_control() - execute the spindle command (called from planner)
+ */
+void cm_exec_spindle_control(uint8_t spindle_mode)
+{
+	cm_set_spindle_mode(spindle_mode);
+ 	if (spindle_mode == SPINDLE_CW) {
+		gpio_set_bit_on(SPINDLE_BIT);
+		gpio_set_bit_off(SPINDLE_DIR);
+	} else if (spindle_mode == SPINDLE_CCW) {
+		gpio_set_bit_on(SPINDLE_BIT);
+		gpio_set_bit_on(SPINDLE_DIR);
+	} else {
+		gpio_set_bit_off(SPINDLE_BIT);	// failsafe: any error causes stop
 	}
 }
 
-void sp_spindle_stop()
+/*
+ * cm_set_spindle_speed() - queue the S parameter to the planner buffer
+ */
+
+uint8_t cm_set_spindle_speed(double speed)
 {
-	SPINDLE_ENABLE_PORT.OUTCLR = SPINDLE_ENABLE_BIT_bm;
+//	if (speed > cfg.max_spindle speed) {
+//		return (TG_MAX_SPINDLE_SPEED_EXCEEDED);
+//	}
+	cm_set_spindle_speed_parameter(speed);
+	return (TG_OK);
+}
+
+/*
+ * cm_exec_spindle_speed() - execute the S command (called from the planner buffer)
+ */
+void cm_exec_spindle_speed(double speed)
+{
+
 }

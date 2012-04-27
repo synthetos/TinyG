@@ -29,18 +29,9 @@
 #ifndef util_h
 #define util_h
 
-/****** DEVELOPMENT SETTINGS ******/ // See tinyg.h for production settings
+/****** Global Scope Variables and Functions ******/
 
-//#define __CANNED_STARTUP		// run any canned startup moves
-//#define __DISABLE_EEPROM_INIT	// disable EEPROM init for faster simulation
-//#define __DISABLE_TRANSMIT	// disable serial tranmission (TX)
-//#define __DISABLE_STEPPERS	// disable steppers for faster simulation
-//#define __DISABLE_LIMITS		// disable limit switches for faster simulation
-//#define __SEGMENT_LOGGER		// enable segment logging to array
-//#define __UNIT_TESTS			// include unit tests in the build
-//#define __DEBUG				// enable debug (see below & end-file notes)
-
-/****** Global Scope Functions ******/
+double vector[AXES];				// vector of axes for passing to subroutines
 
 uint8_t isnumber(char c);
 uint8_t read_double(char *buf, uint8_t *i, double *double_ptr);
@@ -49,6 +40,9 @@ void copy_vector(double dest[], const double src[], uint8_t length);
 void copy_axis_vector(double dest[], const double src[]);
 void set_unit_vector(double unit[], double target[], double position[]);
 double get_axis_vector_length(const double a[], const double b[]);
+double *set_vector(double x, double y, double z, double a, double b, double c);
+double *set_vector_by_axis(double value, uint8_t axis);
+#define clear_vector(a) memset(a,0,sizeof(a))
 
 // ritorno is a handy way to provide exception returns - it returns only 
 // if an error occurred. (ritorno is Italian for return) 
@@ -56,13 +50,6 @@ uint8_t errcode;
 #define ritorno(a) if((errcode=a) != TG_OK) { return(errcode); }
 
 /***** Math Support *****/
-
-#ifndef FALSE
-#define FALSE 0
-#endif
-#ifndef TRUE
-#define TRUE 1
-#endif
 
 // side-effect safe forms of min and max
 #ifndef max
@@ -92,201 +79,39 @@ uint8_t errcode;
 #define cubert(a) pow((a), 0.33333333333333)
 
 #ifndef EPSILON
-#define EPSILON 0.0001						// rounding error for floats
+//#define EPSILON 0.0001					// rounding error for floats
+#define EPSILON 0.00001					// rounding error for floats
 #endif
-#ifndef FLOAT_EQ
-#define FLOAT_EQ(a,b) (fabs(a-b) < EPSILON)	// requires math.h to be included in each file used
+#ifndef fp_EQ
+#define fp_EQ(a,b) (fabs(a-b) < EPSILON)// requires math.h to be included in each file used
 #endif
-#ifndef FLOAT_NE
-#define FLOAT_NE(a,b) (fabs(a-b) > EPSILON)	// requires math.h to be included in each file used
+#ifndef fp_NE
+#define fp_NE(a,b) (fabs(a-b) > EPSILON)// requires math.h to be included in each file used
+#endif
+#ifndef fp_ZERO
+#define fp_ZERO(a) (fabs(a) < EPSILON)	// requires math.h to be included in each file used
+#endif
+#ifndef fp_NOT_ZERO
+#define fp_NOT_ZERO(a) (fabs(a) > EPSILON)// requires math.h to be included in each file used
+#endif
+#ifndef fp_FALSE
+#define fp_FALSE(a) (a < EPSILON)		// float is interpreted as FALSE (equals zero)
+#endif
+#ifndef fp_TRUE
+#define fp_TRUE(a) (a > EPSILON)		// float is interpreted as TRUE (not equal to zero)
 #endif
 
 // Constants
 #define MAX_LONG (2147483647)
 #define MAX_ULONG (4294967295)
 #define MM_PER_INCH (25.4)
-#define MM_IN_SQUARED ((25.4) * (25.4))
-#define MM_IN_CUBED ((25.4) * (25.4) * (25.4))
-#define MICROSECONDS_PER_MINUTE 60000000
+#define INCH_PER_MM (1/25.4)
+#define MICROSECONDS_PER_MINUTE ((double)60000000)
+#define uSec(a) ((double)(a * MICROSECONDS_PER_MINUTE))
+
 #define RADIAN (57.2957795)
 //		M_PI is pi as defined in math.h
 //		M_SQRT2 is radical2 as defined in math.h
 #define M_SQRT3 (1.73205080756888)
-
-/***** INFO trap support ******
- *
- *	INFO traps are exception statements that can be enabled or disabled.
- *
- *	All INFOs are enabled if __INFO is defined (see tinyg.h runtime settings)
- *	INFOs are coded so they occupy no RAM or program space if not enabled.
- *	Format strings should be in program memory, so use the PSTR macro.
- *	A closing semicolon is not required but is recommended for style.
- *
- *	INFO usage examples:
- *		INFO(PSTR("Line length is too short"));
- *		INFO1(PSTR("Line length is too short: %f"), m->length);
- *		INFO2(PSTR("Line length failed division: %f / %f"), m->length, m->divisor);
- */
-#ifdef __INFO 	// Note: __INFO is defined in tinyg.h as a runtime setting
-#define INFO(msg) { fprintf_P(stderr,PSTR("#### INFO #### ")); \
-					fprintf_P(stderr,msg); \
-					fprintf_P(stderr,PSTR("\n")); \
-				  }
-
-#define INFO1(msg,a) { fprintf_P(stderr,PSTR("#### INFO #### ")); \
-					  fprintf_P(stderr,msg,a); \
-					  fprintf_P(stderr,PSTR("\n")); \
-					}
-
-#define INFO2(msg,a,b) { fprintf_P(stderr,PSTR("#### INFO #### ")); \
-						 fprintf_P(stderr,msg,a,b); \
-						 fprintf_P(stderr,PSTR("\n")); \
-					   }
-
-#define INFO3(msg,a,b,c) { fprintf_P(stderr,PSTR("#### INFO #### ")); \
-						   fprintf_P(stderr,msg,a,b,c); \
-						   fprintf_P(stderr,PSTR("\n")); \
-						 }
-
-#define INFO4(msg,a,b,c,d) { fprintf_P(stderr,PSTR("#### INFO #### ")); \
-						 	 fprintf_P(stderr,msg,a,b,c,d); \
-						 	 fprintf_P(stderr,PSTR("\n")); \
-						   }
-#else
-#define INFO(msg)
-#define INFO1(msg,a)
-#define INFO2(msg,a,b)
-#define INFO3(msg,a,b,c)
-#define INFO4(msg,a,b,c,d)
-#endif	// __INFO
-
-/***** DEBUG support ******
- *
- *	DEBUGs are print statements you probably only want enabled during 
- *	debugging, and then probably only for one section of code or another.
- *
- *	DEBUG logging is enabled if __DEBUG is defined.
- *	__DEBUG enables a set of arbitrary __dbXXXXXX defines that control 
- *	various debug regions, e.g. __dbCONFIG to enable debugging in config.c.
- *	Each __dbXXXXXX pairs with a dbXXXXXX global variable used as a flag.
- *	Each dbXXXXXX is initialized to TRUE or FALSE at startup in main.c.
- *	dbXXXXXX is used as a condition to enable or disable logging.
- *	No varargs, so you must use the one with the right number of variables.
- *	A closing semicolon is not required but is recommended for style.
- *
- *	DEBUG usage examples:
- *		DEBUG0(dbCONFIG, PSTR("String with no variables"));
- *		DEBUG1(dbCONFIG, PSTR("String with one variable: %f"), double_var);
- *		DEBUG2(dbCONFIG, PSTR("String with two variables: %4.2f, %d"), double_var, int_var);
- *
- *	DEBUG print statements are coded so they occupy no program space if 
- *	they are not enabled. If you also use __dbXXXX defines to enable debug
- *	code these will - of course - be in the code regardless.
- *
- *	There are also a variety of module-specific diagnostic print statements 
- *	that are enabled or not depending on whether __DEBUG is defined
- */
- 
-#ifdef __DEBUG
-void dump_everything(void);
-void roll_over_and_die(void);
-void print_scalar(char *label, double value);
-void print_vector(char *label, double vector[], uint8_t length);
-
-//#define __dbECHO_GCODE_BLOCK	// echos input to Gcode interpreter	(gcode.c)
-//#define __dbALINE_CALLED		// shows call to mp_aline() 		(planner.c)
-//#define __dbSHOW_QUEUED_LINE	// shows line being queued 			(motor_queue.c)
-//#define __dbSHOW_LIMIT_SWITCH	// shows switch closures 			(limit_switches.c)
-//#define __dbSHOW_CONFIG_STATE	// shows config settings			(config.c)
-//#define __dbCONFIG_DEBUG_ENABLED// enable config.c debug statements
-//#define __dbSHOW_LOAD_MOVE	// shows move being loaded 
-
-// global allocation of debug control variables
-	uint8_t dbECHO_GCODE_BLOCK;
-	uint8_t dbALINE_CALLED;
-	uint8_t dbSHOW_QUEUED_LINE;
-	uint8_t dbSHOW_LIMIT_SWITCH;
-	uint8_t dbSHOW_CONFIG_STATE;
-	uint8_t dbCONFIG_DEBUG_ENABLED;
-	uint8_t dbSHOW_LOAD_MOVE;
-
-#define DEBUG0(dbXXXXXX,msg) { if (dbXXXXXX == TRUE) { \
-								fprintf_P(stderr,PSTR("DEBUG: ")); \
-								fprintf_P(stderr,msg); \
-								fprintf_P(stderr,PSTR("\n"));}}
-
-#define DEBUG1(dbXXXXXX,msg,a) { if (dbXXXXXX == TRUE) { \
-								fprintf_P(stderr,PSTR("DEBUG: ")); \
-								fprintf_P(stderr,msg,a); \
-								fprintf_P(stderr,PSTR("\n"));}}
-
-#define DEBUG2(dbXXXXXX,msg,a,b) { if (dbXXXXXX == TRUE) { \
-								fprintf_P(stderr,PSTR("DEBUG: ")); \
-								fprintf_P(stderr,msg,a,b); \
-								fprintf_P(stderr,PSTR("\n"));}}
-
-#define DEBUG3(dbXXXXXX,msg,a,b,c) { if (dbXXXXXX == TRUE) { \
-								fprintf_P(stderr,PSTR("DEBUG: ")); \
-								fprintf_P(stderr,msg,a,b,c); \
-								fprintf_P(stderr,PSTR("\n"));}}
-#else
-#define DEBUG0(dbXXXXXX,msg)
-#define DEBUG1(dbXXXXXX,msg,a)
-#define DEBUG2(dbXXXXXX,msg,a,b)
-#define DEBUG3(dbXXXXXX,msg,a,b,c)
-#endif	// __DEBUG
-
-/***** Runtime Segment Data Logger Stuff *****
- *
- * This is independent of __DEBUG and does not need __DEBUG defined
- */
-#ifdef __SEGMENT_LOGGER
-#define SEGMENT_LOGGER_MAX 256
-
-// segment logger structure and index
-struct mpSegmentLog {
-	uint8_t move_state;
-	double linenum;
-	double segments;
-	double velocity;
-	double microseconds;
-//	double position_x;
-//	double target_x;
-//	double step_x;
-//	double move_time;
-//	double accel_time;
-};
-struct mpSegmentLog sl[SEGMENT_LOGGER_MAX];
-uint16_t sl_index;
-
-// function prototype and calling macro
-void segment_logger(uint8_t move_state, 
-					double linenum,
-					uint32_t segments, 
-					uint32_t segment_count, 
-					double velocity,
-					double microseconds,
-//					double position_x, 
-//					double target_x,
-//					double step_x, 
-//					double move_time,
-//					double accel_time
-					);
-
-#define SEGMENT_LOGGER segment_logger(bf->move_state, \
-									  mr.linenum, mr.segments, mr.segment_count, \
-									  mr.segment_velocity, \
-									  mr.microseconds);
-/*
-									  mr.microseconds, \
-									  mr.position[X], \
-									  mr.target[X], \
-									  steps[X], \
-									  mr.segment_move_time, \
-									  mr.segment_accel_time);
-*/
-#else
-#define SEGMENT_LOGGER
-#endif	// __SEGMENT_LOGGER
 
 #endif	// util_h

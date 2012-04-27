@@ -2,7 +2,7 @@
  * main.c - TinyG - An embedded rs274/ngc CNC controller
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2011 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -40,20 +40,25 @@
 #include <avr/interrupt.h>
 
 #include "system.h"
-#include "xmega_interrupts.h"
-#include "xmega_rtc.h"
-#include "xio.h"
+#include "xmega/xmega_interrupts.h"
+//#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
+#include "xmega/xmega_rtc.h"
+#include "xio/xio.h"
 
-#include "tinyg.h"
-#include "config.h"
+#include "tinyg.h"				// #1 There are some dependencies
+#include "util.h"				// #2
+#include "config.h"				// #3
 #include "controller.h"
+#include "canonical_machine.h"
+#include "json_parser.h"
 #include "gcode_parser.h"
-#include "stepper.h"
+#include "report.h"
 #include "planner.h"
+#include "stepper.h"
 #include "spindle.h"
 #include "network.h"
 #include "gpio.h"
-#include "util.h"
+#include "test.h"
 
 // local function prototypes (global prototypes are in tinyg.h)
 #ifdef __DEBUG
@@ -62,11 +67,7 @@ static void _tg_debug_init(void);
 #define _tg_debug_init()
 #endif
 
-#ifdef __UNIT_TESTS
 static void _tg_unit_tests(void);
-#else
-#define _tg_unit_tests()
-#endif
 
 /*
  * Init structure
@@ -86,27 +87,31 @@ static void _tg_unit_tests(void);
  *	input buffer.
  */
 
-void tg_system_init(void)
+void tg_system_reset(void)
 {
 	cli();					// These inits are order dependent:
 	_tg_debug_init();		// (0) inits for the debug system
-	hw_init();				// (1) hardware setup
+	sys_init();				// (1) system hardware setup
 	xio_init();				// (2) xmega io subsystem
 	tg_init(STD_INPUT);		// (3) tinyg controller (arg is std devices)
-	cfg_init();				// (4) get config record from eeprom (reqs xio)
-	sig_init();				// (5) signal flags
-	rtc_init();				// (6) real time counter
+
+	sig_init();				// (4) signal flags
+	rtc_init();				// (5) real time counter
+	st_init(); 				// (6) stepper subsystem (must run before gp_init())
+	gpio_init();			// (7) switches and parallel IO
+
+	PMIC_EnableMediumLevel();// enable TX interrupts for init reporting 
 	sei();					// enable global interrupts
+	cfg_init();				// (8) get config record from eeprom (reqs xio)
+	tg_announce();			// print version string
 }
 
-void tg_application_init(void) 
+void tg_application_reset(void) 
 {
 	cli();					// disable global interrupts
-	st_init(); 				// stepper subsystem
-	sw_init();				// limit & homing switches
+	st_reset(); 			// reset stepper subsystem
 	mp_init();				// motion planning subsystem
-	sp_init();				// spindle controller
-	en_init();				// GPIO port
+	cm_init();				// canonical machine
 	gc_init();				// gcode-parser
 
 	PMIC_SetVectorLocationToApplication();  // as opposed to boot ROM
@@ -114,19 +119,18 @@ void tg_application_init(void)
 	PMIC_EnableMediumLevel();
 	PMIC_EnableLowLevel();
 	sei();					// enable global interrupts
-	tg_alive();				// (LAST) announce app is online
+	tg_ready();				// (LAST) announce app is online
 }
 
-#ifdef __UNIT_TESTS			// uncomment __UNIT_TESTS in util.h and uncomment what you need
 static void _tg_unit_tests(void)
 {
-//	xio_tests();			// IO subsystem
-//	EEPROM_tests();			// EEPROM tests
-//	cfg_unit_tests();		// config tests
-//	mp_unit_tests();		// planner tests
-//	mq_unit_tests();		// motor queue / stepper tests
+	XIO_UNITS;				// conditional unit tests for xio sub-system
+//	EEPROM_UNITS;			// if you want this you must include the .h file in this file
+	CONFIG_UNITS;
+	JSON_UNITS;
+	REPORT_UNITS;
+	PLANNER_UNITS;
 }
-#endif
 
 /*
  * MAIN
@@ -134,27 +138,22 @@ static void _tg_unit_tests(void)
 
 int main(void)
 {
-	tg_system_init();
-	tg_application_init();
+	tg_system_reset();
+	tg_application_reset();
 	_tg_unit_tests();
 	tg_application_startup();
 
 #ifdef __STANDALONE_MODE
-	for(;;){
-		tg_controller();	// this mode executes gcode blocks received via USB
-	}
+	for(;;){ tg_controller();}	// this mode executes gcode blocks received via USB
 #endif
 
 #ifdef __MASTER_MODE
-	for(;;){
-		tg_repeater();		// this mode receives on USB and repeats to RS485
+	for(;;){ tg_repeater();}	// this mode receives on USB and repeats to RS485
 	}
 #endif
 
 #ifdef __SLAVE_MODE
-	for(;;){
-		tg_receiver();		// this mode executes gcode blocks received via RS485
-	}
+	for(;;){ tg_receiver();}	// this mode executes gcode blocks received via RS485
 #endif
 }
 
@@ -168,4 +167,3 @@ void _tg_debug_init(void)	// inits for the debug system
 #endif
 }
 #endif
-

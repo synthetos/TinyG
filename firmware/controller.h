@@ -11,7 +11,7 @@
  *
  * TinyG is distributed in the hope that it will be useful, but 
  * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for details.
  *
  * You should have received a copy of the GNU General Public License 
@@ -20,43 +20,46 @@
 #ifndef controller_h
 #define controller_h
 
-#include <stdio.h>				// needed for FILE def'n
+#include <stdio.h>					// needed for FILE def'n
 
-/* Global structures and definitions */
-
-enum tgMode {
-	TG_GCODE_MODE,				// gcode interpreter
-	TG_DIRECT_DRIVE_MODE,		// direct drive motors
-	TG_TEST_MODE,				// run tests
-	TG_MAX_MODE
+enum tgCommunicationsMode {
+	TG_TEXT_MODE = 0,				// default
+	TG_JSON_MODE,
+	TG_GRBL_MODE
 };
 
-#define TG_FLAG_PROMPTS_bm (1<<0)// prompt enabled if set
-#define CHAR_BUFFER_SIZE 80		// common text buffer size (255 max)
+#define TG_FLAG_PROMPTS_bm (1<<0)	// prompt enabled if set
+#define INPUT_BUFFER_LEN 255		// text buffer size (255 max)
+#define OUTPUT_BUFFER_LEN 255		// text buffer size (255 max)
+#define STATUS_MESSAGE_LEN 32		// status message string storage
 
-struct controllerSingleton {	// main TG controller struct
-	uint8_t status;				// return status (controller level)
-	uint8_t prompt_disabled;	// TRUE = disables prompts
-	uint8_t prompted;			// TRUE = prompted
-	uint8_t xoff_enabled;		// TRUE = enable XON/XOFF flow control
-	uint8_t xoff_active;		// TRUE = in XOFF mode right now
-	uint8_t mode;				// current operating mode (tgMode)
-	uint8_t src;				// active source device
-	uint8_t default_src;		// default source device
-	uint8_t nop;				// no op variable for debugging
-	double linecount;			// count of executed gcode blocks
-	double linenum;				// actual gcode line number (Nxxxxx)
-	char buf[CHAR_BUFFER_SIZE];	// text buffer
+struct controllerSingleton {		// main TG controller struct
+	double version;					// tinyg version number
+	double build;					// tinyg build number
+	double null;					// dumping ground for items with no target
+	uint8_t test;
+	uint8_t communications_mode;	// command line, JSON, grbl
+	uint8_t prompt_enabled;			// TRUE = enables prompts
+	uint8_t src;					// active source device
+	uint8_t default_src;			// default source device
+	char in_buf[INPUT_BUFFER_LEN];	// input text buffer
+	char out_buf[OUTPUT_BUFFER_LEN];// output text buffer
 };
-struct controllerSingleton tg;			// controller state structure
+struct controllerSingleton tg;		// controller state structure
 
 void tg_init(uint8_t default_src);
-void tg_alive(void); 
+void tg_reset(void);
+void tg_ready(void);
+void tg_announce(void); 
 void tg_controller(void);
 void tg_application_startup(void);
+void tg_set_active_source(uint8_t dev);
 void tg_reset_source(void);
-void tg_print_version_string(void);
-void tg_print_status(const uint8_t status_code, const char *textbuf);
+char *tg_get_status_message(uint8_t status, char *msg);
+//void tg_json_gcode_return(uint8_t status, char *in_buf, char *out_buf);
+//void tg_json_gcode_return(uint8_t status, char *block, char *out_buf);
+void tg_make_json_gcode_response(uint8_t status, char *block, char *out_buf);
+
 
 #ifdef __DEBUG
 void tg_dump_controller_state(void);

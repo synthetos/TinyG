@@ -35,15 +35,15 @@
 #include <stdio.h>					// precursor for xio.h
 #include <avr/pgmspace.h>			// precursor for xio.h
 
-#include "xio.h"
+#include "xio/xio.h"
 #include "gpio.h"
-#include "controller.h"
+//#include "controller.h"
 
 /*
  * Local Scope Functions and Data
  */
 
-char nextchar(char c);
+static char _nextchar(char c);
 
 /*
  * net_init()
@@ -66,7 +66,7 @@ void tg_repeater()
 	unsigned char rx;
 
 	while (TRUE) {
-		tx = nextchar(tx);
+		tx = _nextchar(tx);
 		xio_putc(XIO_DEV_RS485, tx);	// write to RS485 port
 		if (full_duplex) {
 			while ((rx = xio_getc(XIO_DEV_RS485)) == -1);	// blocking read
@@ -74,7 +74,7 @@ void tg_repeater()
 		} else {
 			xio_putc(XIO_DEV_USB, tx);	// write TX to USB port
 		}	
-		en_toggle(1);
+		gpio_toggle_port(1);
 //		_delay_ms(10);
 	}
 }
@@ -96,11 +96,11 @@ void tg_receiver()
 		while ((rx = xio_getc(XIO_DEV_RS485)) == -1);
 //		xio_putc(XIO_DEV_USB, rx);		// write to USB port
 		xio_putc_rs485(rx, fdev_rs485);	// alternate form of above
-		en_toggle(1);
+		gpio_toggle_port(1);
 	}
 }
 
-char nextchar(char c)
+static char _nextchar(char c)
 {
 //	uint8_t cycle = FALSE;
 	uint8_t cycle = TRUE;

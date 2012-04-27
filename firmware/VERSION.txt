@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-326.06 "Crocs"
-=======
-Version 0.92, build 326.06 "Crocs"
->>>>>>> 1a362a04750fa3dc9e9e2d5a8ced0a8f1e8363ee
+Edge Branch: 
+Version 0.9 release candidate "Fanny Pack"
+build 337.04

@@ -2,14 +2,7 @@
  * gcode_interpreter.c - rs274/ngc parser.
  * Part of TinyG project
  *
- * Copyright (c) 2010-2011 Alden S. Hart, Jr.
- * Portions copyright (c) 2009 Simen Svale Skogsrud
- *
- * This interpreter attempts to follow the NIST RS274/NGC 
- * specification as closely as possible with regard to order 
- * of operations and other behaviors.
- *
- * Copyright (c) 2010 - 2011 Alden S. Hart Jr.
+ * Copyright (c) 2010-2012 Alden S. Hart, Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -24,7 +17,6 @@
  * You should have received a copy of the GNU General Public License 
  * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  *
- *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
@@ -33,10 +25,7 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* See tinyg_docs.txt and tinyg_docs_developers.txt for notes
- * For the most current and complete info see:
- *	   http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info:
- *		(yes, the trailing ':' is required!)
+/* See http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info
  */
 
 #include <ctype.h>
@@ -47,61 +36,33 @@
 #include <avr/pgmspace.h>		// precursor for xio.h
 
 #include "tinyg.h"
+#include "util.h"
 #include "config.h"
 #include "controller.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "planner.h"
 #include "help.h"
-#include "util.h"
-#include "xio.h"				// for char definitions
+#include "xio/xio.h"				// for char definitions
 
-/* 
- * Data structures 
- *
- * - gp is a minimal singleton structure to keep parser state
- *
- * The following GCodeModel structs are used:
- *
- * - gm keeps the internal gcode state model in normalized, canonical form. 
- *	 All values are unit converted (to mm) and in the internal coordinate 
- *	 system. Gm is owned by the canonical machine layer and is accessed by 
- *	 the parser through cm_ routines.
- *
- * - gn is used by the gcode interpreter and is re-initialized for each 
- *   gcode block.It records data in the new gcode block in the formats 
- *	 present in the block (pre-normalized forms). During initialization 
- *	 some state elements are necessarily restored from gm.
- *
- * - gf is used by the interpreter to hold flags for any data that has 
- *	 changed in gn during the parse. 
- *
- * - gt is used to temporarily persist the mode state during homing
- *	 operations, after wich it is restored.
- */
-static struct GCodeParser gp;		// gcode parser variables
+struct gcodeParserSingleton {	 	  // struct to manage globals
+	uint8_t modals[MODAL_GROUP_COUNT];// collects modal groups in a block
+}; struct gcodeParserSingleton gp;
 
 /* local helper functions and macros */
-static void _gc_print_state(char *block);
-static void _gc_normalize_gcode_block(char *block);
-static uint8_t _gc_parse_gcode_block(char *line);	// Parse the block into structs
-static uint8_t _gc_execute_gcode_block(void);		// Execute the gcode block
-static uint8_t _gc_next_statement(char *letter, double *value_ptr, double *fraction_ptr, char *line, uint8_t *i);
-static void _gc_print_gcode_state(void);
+static void _normalize_gcode_block(char *block);
+static uint8_t _parse_gcode_block(char *line);	// Parse the block into structs
+static uint8_t _execute_gcode_block(void);		// Execute the gcode block
+static uint8_t _check_gcode_block(void);		// check the block for correctness
+static uint8_t _get_next_statement(char *letter, double *value, char *buf, uint8_t *i);
+static uint8_t _point(double value);
+static uint8_t _axis_changed(void);
 
-#define ZERO_MODEL_STATE(g) memset(g, 0, sizeof(struct GCodeModel))
-#define SET_NEXT_STATE(a,v) ({gn.a=v; gf.a=1; break;})
-#define SET_NEXT_STATE_x2(a,v,b,w) ({gn.a=v; gf.a=1; gn.b=w; gf.a=1; break;})
-#define SET_NEXT_ACTION_MOTION(a,v) ({gn.a=v; gf.a=1; gn.next_action=NEXT_ACTION_MOTION; gf.next_action=1; break;})
-#define SET_NEXT_ACTION_OFFSET(a,v) ({gn.a=v; gf.a=1; gn.next_action=NEXT_ACTION_OFFSET_COORDINATES; gf.next_action=1; break;})
-#define CALL_CM_FUNC(f,v) if((int)gf.v != 0) { if ((gp.status = f(gn.v)) != TG_OK) { return(gp.status); } }
-/* Derived from::
-	if ((int)gf.feed_rate != 0) { // != 0 either means TRUE or non-zero value
-		if ((gp.status = cm_set_feed_rate(gn.feed_rate)) != TG_OK) {
-			return(gp.status);						// error return
-		}
-	}
- */
+#define coord_select ((uint8_t)gn.dwell_time)	// alias for P which is shared by both dwells and G10s
+
+#define SET_MODAL(m,parm,val) ({gn.parm=val; gf.parm=1; gp.modals[m]+=1; break;})
+#define SET_NON_MODAL(parm,val) ({gn.parm=val; gf.parm=1; break;})
+#define EXEC_FUNC(f,v) if((uint8_t)gf.v != false) { status = f(gn.v);}
 
 /* 
  * gc_init() 
@@ -109,70 +70,24 @@ static void _gc_print_gcode_state(void);
 
 void gc_init()
 {
-	ZERO_MODEL_STATE(&gn);
-	ZERO_MODEL_STATE(&gf);
-	cm_init_canon();					// initialize canonical machine
-	tg.linecount = 0;
-	tg.linenum = 0;
+	return;
 }
 
 /*
  * gc_gcode_parser() - parse a block (line) of gcode
+ *
+ *	Top level of gcode parser. Normalizes block and looks for special cases
  */
 
 uint8_t gc_gcode_parser(char *block)
 {
-#ifdef __dbECHO_GCODE_BLOCK
-	fprintf_P(stderr, PSTR("Executing Gcode block %s\n"), block);
-#endif
-
-	if (block[0] == '$') { 				// config commands
-		return(cfg_config_parser(block, TRUE, TRUE));
-	}
-	_gc_normalize_gcode_block(block);
-	if (block[0] == NUL) { 				// ignore comments (stripped)
-		return(TG_OK);
-	}
-	if (block[0] == 'Q') {				// quit gcode mode (see note 1)
-		return(TG_QUIT);
-	}
-	if (block[0] == '?') {				// display an internal state
-		_gc_print_state(block);
-		return(TG_OK);
-	}
-	if (block[0] == 'H') {				// help screen
-		help_print_general_help();
-		return(TG_OK);
-	}
-	if ((gp.status = _gc_parse_gcode_block(block)) != TG_OK) { // parse & exec block or fail
-		tg_print_status(gp.status, block);
-	}
-	return (gp.status);
-}
-// Note 1:	Q is the feed_increment value for a peck drilling (G83) cycle. 
-//			So you might have to change this if you implement peck drilling
-//			or expect to see a leading Q value in a CGode file/block.
-
-/*
- * _gc_print_state() - invoke one of a number of print-state functions
- *						aka the '?' handler
- */
-
-static void _gc_print_state(char *block)
-{
-//	if (block[1] == NUL) {		// just a ? and no following chars
-//		_gc_print_gcode_state();
-//	}
-//	if (block[1] == 'm') {		// dial 'm' for motors
-//		mq_print_motor_queue();
-//		return;
-//	}
-	// else
-	_gc_print_gcode_state();	// just a ? and no following chars
+	_normalize_gcode_block(block);			// get block ready for parsing
+	if (block[0] == NUL) return (TG_NOOP); 	// ignore comments (stripped)
+	return(_parse_gcode_block(block));		// parse block & return status
 }
 
 /*
- * _gc_normalize_gcode_block() - normalize a block (line) of gcode in place
+ * _normalize_gcode_block() - normalize a block (line) of gcode in place
  *
  *	Comments always terminate the block (embedded comments are not supported)
  *	Messages in comments are sent to console (stderr)
@@ -204,7 +119,7 @@ static void _gc_print_state(char *block)
  *	++++ todo: Support leading and trailing spaces around the MSG specifier
  */
 
-static void _gc_normalize_gcode_block(char *block) 
+static void _normalize_gcode_block(char *block) 
 {
 	char c;
 	char *comment=0;	// comment pointer - first char past opening paren
@@ -250,39 +165,10 @@ static void _gc_normalize_gcode_block(char *block)
 			(void)cm_message(comment+3);
 		}
 	}
-	tg.linecount += 1;
-}
-
-/* 
- * _gc_next_statement() - parse next statement in a block of Gcode
- *
- *	Parses the next statement and leaves the counter on the first 
- *	character following the statement. 
- *	Returns TRUE if there was a statement, FALSE if end of string was 
- *	reached or there was an error, and writes error code into gp.status.
- */
-
-static uint8_t _gc_next_statement(char *letter, double *value_ptr, 
-				double *fraction_ptr,  char *buf, uint8_t *i) {
-	if (buf[*i] == NUL) {
-		return(FALSE); 		// no more statements
-	}
-	*letter = buf[*i];
-	if(isupper(*letter) == FALSE) {
-		gp.status = TG_EXPECTED_COMMAND_LETTER;
-		return(FALSE);
-	}
-	(*i)++;
-	if (read_double(buf, i, value_ptr) == FALSE) {
-		gp.status = TG_BAD_NUMBER_FORMAT; 
-		return(FALSE);
-	}
-	*fraction_ptr = (*value_ptr - trunc(*value_ptr));
-	return(TRUE);
 }
 
 /*
- * _gc_parse_gcode_block() - parses one line of NULL terminated G-Code. 
+ * _parse_gcode_block() - parses one line of NULL terminated G-Code. 
  *
  *	All the parser does is load the state values in gn (next model state),
  *	and flags in gf (model state flags). The execute routine applies them.
@@ -293,119 +179,135 @@ static uint8_t _gc_next_statement(char *letter, double *value_ptr,
  *	  - inverse feed rate mode is cancelled - set back to units_per_minute mode
  */
 
-static uint8_t _gc_parse_gcode_block(char *buf) 
+static uint8_t _parse_gcode_block(char *buf) 
 {
-	uint8_t i = 0;  			// index into Gcode block buffer (buf)
-  
-	ZERO_MODEL_STATE(&gn);		// clear all next-state values
-	ZERO_MODEL_STATE(&gf);		// clear all next-state flags
+	uint8_t i=0; 	 			// persistent index into Gcode block buffer (buf)
+  	char letter;				// parsed letter, eg.g. G or X or Y
+	double value;				// value parsed from letter (e.g. 2 for G2)
+	uint8_t status = TG_OK;
 
-	// pull needed state from gm structure to preset next state
-	gn.next_action = cm_get_next_action();	// next action persists
-	gn.motion_mode = cm_get_motion_mode();	// motion mode (G modal group 1)
-	gn.absolute_mode = cm_get_absolute_mode();
-	cm_set_absolute_override(FALSE);		// must be set per block 
-	gp.status = TG_OK;						// initialize return code
+	// set initial state for new move 
+	memset(&gp, 0, sizeof(gp));	// clear all parser values
+	memset(&gf, 0, sizeof(gf));	// clear all next-state flags
+	memset(&gn, 0, sizeof(gn));	// clear all next-state values
+	gn.motion_mode = cm_get_motion_mode();	// get motion mode from previous block
 
   	// extract commands and parameters
-	i = 0;
-	while(_gc_next_statement(&gp.letter, &gp.value, &gp.fraction, buf, &i) == TRUE) {
-		switch(gp.letter) {
+	while((status = _get_next_statement(&letter, &value, buf, &i)) == TG_OK) {
+
+		switch(letter) {
 			case 'G':
-				switch((uint8_t)gp.value) {
-					case 0:  SET_NEXT_ACTION_MOTION(motion_mode, MOTION_MODE_STRAIGHT_TRAVERSE);
-					case 1:  SET_NEXT_ACTION_MOTION(motion_mode, MOTION_MODE_STRAIGHT_FEED);
-					case 2:  SET_NEXT_ACTION_MOTION(motion_mode, MOTION_MODE_CW_ARC);
-					case 3:  SET_NEXT_ACTION_MOTION(motion_mode, MOTION_MODE_CCW_ARC);
-					case 4:  SET_NEXT_STATE(next_action, NEXT_ACTION_DWELL);
-					case 17: SET_NEXT_STATE(set_plane, CANON_PLANE_XY);
-					case 18: SET_NEXT_STATE(set_plane, CANON_PLANE_XZ);
-					case 19: SET_NEXT_STATE(set_plane, CANON_PLANE_YZ);
-					case 20: SET_NEXT_STATE(inches_mode, TRUE);
-					case 21: SET_NEXT_STATE(inches_mode, FALSE);
-					case 28: SET_NEXT_STATE(next_action, NEXT_ACTION_GO_HOME);
-					case 30: SET_NEXT_STATE(next_action, NEXT_ACTION_GO_HOME);
-					case 53: SET_NEXT_STATE(absolute_override, TRUE);
-					case 61: SET_NEXT_STATE(path_control_mode, PATH_EXACT_PATH);
-					case 64: SET_NEXT_STATE(path_control_mode, PATH_CONTINUOUS);
-					case 80: SET_NEXT_STATE(motion_mode, MOTION_MODE_CANCEL_MOTION_MODE);
-					case 90: SET_NEXT_STATE(absolute_mode, TRUE);
-					case 91: SET_NEXT_STATE(absolute_mode, FALSE);
-					case 92: SET_NEXT_ACTION_OFFSET(set_origin_mode, TRUE);
-					case 93: SET_NEXT_STATE(inverse_feed_rate_mode, TRUE);
-					case 94: SET_NEXT_STATE(inverse_feed_rate_mode, FALSE);
+				switch((uint8_t)value) {
+					case 0:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_STRAIGHT_TRAVERSE);
+					case 1:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_STRAIGHT_FEED);
+					case 2:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_CW_ARC);
+					case 3:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_CCW_ARC);
+					case 4:  SET_NON_MODAL (next_action, NEXT_ACTION_DWELL);
+					case 10: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_COORD_DATA);
+					case 17: SET_MODAL (MODAL_GROUP_G2, select_plane, CANON_PLANE_XY);
+					case 18: SET_MODAL (MODAL_GROUP_G2, select_plane, CANON_PLANE_XZ);
+					case 19: SET_MODAL (MODAL_GROUP_G2, select_plane, CANON_PLANE_YZ);
+					case 20: SET_MODAL (MODAL_GROUP_G6, units_mode, INCHES);
+					case 21: SET_MODAL (MODAL_GROUP_G6, units_mode, MILLIMETERS);
+					case 28: {
+						switch (_point(value)) {
+							case 0: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_GO_HOME);
+							case 1: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SEARCH_HOME); 
+							default: status = TG_UNRECOGNIZED_COMMAND;
+						}
+						break;
+					}
 					case 40: break;	// ignore cancel cutter radius compensation
 					case 49: break;	// ignore cancel tool length offset comp.
-					default: gp.status = TG_UNSUPPORTED_STATEMENT;
+					case 53: SET_NON_MODAL (absolute_override, true);
+					case 54: SET_MODAL (MODAL_GROUP_G12, coord_system, G54);
+					case 55: SET_MODAL (MODAL_GROUP_G12, coord_system, G55);
+					case 56: SET_MODAL (MODAL_GROUP_G12, coord_system, G56);
+					case 57: SET_MODAL (MODAL_GROUP_G12, coord_system, G57);
+					case 58: SET_MODAL (MODAL_GROUP_G12, coord_system, G58);
+					case 59: SET_MODAL (MODAL_GROUP_G12, coord_system, G59);
+					case 61: {
+						switch (_point(value)) {
+							case 0: SET_MODAL (MODAL_GROUP_G13, path_control, PATH_EXACT_PATH);
+							case 1: SET_MODAL (MODAL_GROUP_G13, path_control, PATH_EXACT_STOP); 
+							default: status = TG_UNRECOGNIZED_COMMAND;
+						}
+						break;
+					}
+					case 64: SET_MODAL (MODAL_GROUP_G13,path_control, PATH_CONTINUOUS);
+					case 80: SET_MODAL (MODAL_GROUP_G1, motion_mode,  MOTION_MODE_CANCEL_MOTION_MODE);
+					case 90: SET_MODAL (MODAL_GROUP_G3, distance_mode, ABSOLUTE_MODE);
+					case 91: SET_MODAL (MODAL_GROUP_G3, distance_mode, INCREMENTAL_MODE);
+					case 92: {
+						switch (_point(value)) {
+							case 0: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_ORIGIN_OFFSETS);
+							case 1: SET_NON_MODAL (next_action, NEXT_ACTION_RESET_ORIGIN_OFFSETS);
+							case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS);
+							case 3: SET_NON_MODAL (next_action, NEXT_ACTION_RESUME_ORIGIN_OFFSETS); 
+							default: status = TG_UNRECOGNIZED_COMMAND;
+						}
+						break;
+					}
+					case 93: SET_MODAL (MODAL_GROUP_G5, inverse_feed_rate_mode, true);
+					case 94: SET_MODAL (MODAL_GROUP_G5, inverse_feed_rate_mode, false);
+					default: status = TG_UNRECOGNIZED_COMMAND;
 				}
 				break;
 
 			case 'M':
-				switch((uint8_t)gp.value) {
+				switch((uint8_t)value) {
 					case 0: case 1: 
-							SET_NEXT_STATE(program_flow, PROGRAM_FLOW_STOP);
+							SET_MODAL (MODAL_GROUP_M4, program_flow, PROGRAM_STOP);
 					case 2: case 30: case 60:
-							SET_NEXT_STATE(program_flow, PROGRAM_FLOW_END);
-					case 3: SET_NEXT_STATE(spindle_mode, SPINDLE_CW);
-					case 4: SET_NEXT_STATE(spindle_mode, SPINDLE_CCW);
-					case 5: SET_NEXT_STATE(spindle_mode, SPINDLE_OFF);
-					case 6: SET_NEXT_STATE(change_tool, TRUE);
-					case 7: break;	// ignore mist coolant on
-					case 8: break;	// ignore flood coolant on
-					case 9: break;	// ignore mist and flood coolant off
-					case 48: break;	// enable speed and feed overrides
-					case 49: break;	// disable speed and feed overrides
- 					default: gp.status = TG_UNSUPPORTED_STATEMENT;
+							SET_MODAL (MODAL_GROUP_M4, program_flow, PROGRAM_END);
+					case 3: SET_MODAL (MODAL_GROUP_M7, spindle_mode, SPINDLE_CW);
+					case 4: SET_MODAL (MODAL_GROUP_M7, spindle_mode, SPINDLE_CCW);
+					case 5: SET_MODAL (MODAL_GROUP_M7, spindle_mode, SPINDLE_OFF);
+					case 6: SET_NON_MODAL (change_tool, true);
+					case 7: SET_MODAL (MODAL_GROUP_M8, mist_coolant, true);
+					case 8: SET_MODAL (MODAL_GROUP_M8, flood_coolant, true);
+					case 9: SET_MODAL (MODAL_GROUP_M8, flood_coolant, false);
+					case 48: SET_MODAL (MODAL_GROUP_M9, feed_override_enable, true);
+					case 49: SET_MODAL (MODAL_GROUP_M9, feed_override_enable, false);
+					default: status = TG_UNRECOGNIZED_COMMAND;
 				}
 				break;
 
-			case 'T': SET_NEXT_STATE(tool, (uint8_t)trunc(gp.value));
-			case 'F': SET_NEXT_STATE(feed_rate, gp.value);
-			case 'P': SET_NEXT_STATE(dwell_time, gp.value);
-			case 'S': SET_NEXT_STATE(spindle_speed, gp.value); 
-			case 'X': SET_NEXT_STATE(target[X], gp.value);
-			case 'Y': SET_NEXT_STATE(target[Y], gp.value);
-			case 'Z': SET_NEXT_STATE(target[Z], gp.value);
-			case 'A': SET_NEXT_STATE(target[A], gp.value);
-			case 'B': SET_NEXT_STATE(target[B], gp.value);
-			case 'C': SET_NEXT_STATE(target[C], gp.value);
-		//	case 'U': SET_NEXT_STATE(target[U], gp.value);	// reserved
-		//	case 'V': SET_NEXT_STATE(target[V], gp.value);	// reserved
-		//	case 'W': SET_NEXT_STATE(target[W], gp.value);	// reserved
-			case 'I': SET_NEXT_STATE(offset[0], gp.value);
-			case 'J': SET_NEXT_STATE(offset[1], gp.value);
-			case 'K': SET_NEXT_STATE(offset[2], gp.value);
-			case 'R': SET_NEXT_STATE(radius, gp.value);
-			case 'N': tg.linenum = gp.value; break;		// save line #
-			default: gp.status = TG_UNSUPPORTED_STATEMENT;
+			case 'T': SET_NON_MODAL (tool, (uint8_t)trunc(value));
+			case 'F': SET_NON_MODAL (feed_rate, value);
+			case 'P': SET_NON_MODAL (dwell_time, value); 	// also used as G10 coord system select
+			case 'S': SET_NON_MODAL (spindle_speed, value); 
+			case 'X': SET_NON_MODAL (target[X], value);
+			case 'Y': SET_NON_MODAL (target[Y], value);
+			case 'Z': SET_NON_MODAL (target[Z], value);
+			case 'A': SET_NON_MODAL (target[A], value);
+			case 'B': SET_NON_MODAL (target[B], value);
+			case 'C': SET_NON_MODAL (target[C], value);
+		//	case 'U': SET_NON_MODAL (target[U], value);		// reserved
+		//	case 'V': SET_NON_MODAL (target[V], value);		// reserved
+		//	case 'W': SET_NON_MODAL (target[W], value);		// reserved
+			case 'I': SET_NON_MODAL (arc_offset[0], value);
+			case 'J': SET_NON_MODAL (arc_offset[1], value);
+			case 'K': SET_NON_MODAL (arc_offset[2], value);
+			case 'R': SET_NON_MODAL (arc_radius, value);
+			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);// line number
+			case 'L': break;								// not used for anything
+			default: status = TG_UNRECOGNIZED_COMMAND;
 		}
-		// pick up the G61.1 state. Ugh
-		if ((gp.letter == 'G') && ((uint8_t)gp.value == 61) && ((uint8_t)gp.fraction != 0)) {
-			SET_NEXT_STATE(path_control_mode, PATH_EXACT_STOP);
-		}
-		if(gp.status != TG_OK) {
-			break;
-		}
+		if(status != TG_OK) break;
 	}
-	// set targets correctly. fill-in any unset target if in absolute mode, 
-	// otherwise leave the target values alone
-	for (i=0; i<AXES; i++) {
-		if (((gn.absolute_mode == TRUE) || 
-			 (gn.absolute_override == TRUE)) && 
-			 (gf.target[i] < EPSILON)) {		
-			gn.target[i] = cm_get_position(i); // get target from model
-		}
-	}
-	return (_gc_execute_gcode_block());
+	ritorno(_check_gcode_block());			// perform error checking
+	return (_execute_gcode_block());		// if successful execute the block
 }
 
 /*
- * _gc_execute_gcode_block() - execute parsed block
+ * _execute_gcode_block() - execute parsed block
  *
  *  Conditionally (based on whether a flag is set in gf) call the canonical 
  *	machining functions in order of execution as per RS274NGC_3 table 8 
  *  (below, with modifications):
  *
+ *	    0. apply the line number or auto-increment if there are none
  *		1. comment (includes message) [handled during block normalization]
  *		2. set feed rate mode (G93, G94 - inverse time or per minute)
  *		3. set feed rate (F)
@@ -420,13 +322,13 @@ static uint8_t _gc_parse_gcode_block(char *buf)
  *		12. set length units (G20, G21)
  *		13. cutter radius compensation on or off (G40, G41, G42)
  *		14. cutter length compensation on or off (G43, G49)
- *		15. coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3)
+ *		15. coordinate system selection (G54, G55, G56, G57, G58, G59)
  *		16. set path control mode (G61, G61.1, G64)
  *		17. set distance mode (G90, G91)
  *		18. set retract mode (G98, G99)
  *		19a. home (G28, G30) or
  *		19b. change coordinate system data (G10) or
- *		19c. set axis offsets (G92, G92.1, G92.2, G94)
+ *		19c. set axis offsets (G92, G92.1, G92.2, G92.3)
  *		20. perform motion (G0 to G3, G80-G89) as modified (possibly) by G53
  *		21. stop (M0, M1, M2, M30, M60)
  *
@@ -434,100 +336,114 @@ static uint8_t _gc_parse_gcode_block(char *buf)
  *	to calling the canonical functions (which do the unit conversions)
  */
 
-static uint8_t _gc_execute_gcode_block() 
+static uint8_t _execute_gcode_block()
 {
-	CALL_CM_FUNC(cm_set_inverse_feed_rate_mode, inverse_feed_rate_mode);
-	CALL_CM_FUNC(cm_set_feed_rate, feed_rate);
-	CALL_CM_FUNC(cm_set_spindle_speed, spindle_speed);
-	CALL_CM_FUNC(cm_select_tool, tool);
-	CALL_CM_FUNC(cm_change_tool, tool);
+	uint8_t status = TG_OK;
 
-	// spindle on or off
-	if (gf.spindle_mode == TRUE) {
-    	if (gn.spindle_mode == SPINDLE_CW) {
-			(void)cm_start_spindle_clockwise();
-		} else if (gn.spindle_mode == SPINDLE_CCW) {
-			(void)cm_start_spindle_counterclockwise();
-		} else {
-			(void)cm_stop_spindle_turning();	// failsafe: any error causes stop
-		}
+	cm_set_linenum(gn.linenum);
+	EXEC_FUNC(cm_set_inverse_feed_rate_mode, inverse_feed_rate_mode);
+	EXEC_FUNC(cm_set_feed_rate, feed_rate);
+	EXEC_FUNC(cm_set_spindle_speed, spindle_speed);
+	EXEC_FUNC(cm_select_tool, tool);
+	EXEC_FUNC(cm_change_tool, tool);
+	EXEC_FUNC(cm_spindle_control, spindle_mode); 	// spindle on or off
+	EXEC_FUNC(cm_mist_coolant_control, mist_coolant); 
+	EXEC_FUNC(cm_flood_coolant_control, flood_coolant);	// also disables mist coolant if OFF 
+	EXEC_FUNC(cm_feed_override_enable, feed_override_enable);
+
+	if (gn.next_action == NEXT_ACTION_DWELL) { 		// G4 - dwell
+		ritorno(cm_dwell(gn.dwell_time));			// return if error, otherwise complete the block
 	}
-
- 	//--> coolant on or off goes here
-	//--> enable or disable overrides goes here
-
-	// dwell
-	if (gn.next_action == NEXT_ACTION_DWELL) {
-		if ((gp.status = cm_dwell(gn.dwell_time)) != TG_OK) {
-			return (gp.status);
-		}
-	}
-
-	// select plane
-	CALL_CM_FUNC(cm_select_plane, set_plane);
-
-	// use units (incehs mode / mm mode)
-	if (gf.inches_mode == TRUE) {
-		gp.status = cm_use_length_units(gn.inches_mode);
-		return(gp.status);			// always return
-	}
-
+	EXEC_FUNC(cm_select_plane, select_plane);
+	EXEC_FUNC(cm_set_units_mode, units_mode);
 	//--> cutter radius compensation goes here
 	//--> cutter length compensation goes here
-	//--> coordinate system selection goes here
-	//--> set path control mode goes here
-
-	CALL_CM_FUNC(cm_set_distance_mode, absolute_mode);
-
+	EXEC_FUNC(cm_set_coord_system, coord_system);
+	EXEC_FUNC(cm_set_path_control, path_control);
+	EXEC_FUNC(cm_set_distance_mode, distance_mode);
 	//--> set retract mode goes here
 
-	// homing cycle
-	if (gn.next_action == NEXT_ACTION_GO_HOME) {
-		if ((gp.status = cm_homing_cycle()) != TG_OK) {		// initiates a homing cycle
-			return (gp.status);						// error return
+	switch (gn.next_action) {
+		case NEXT_ACTION_GO_HOME: { status = cm_return_to_home(); break;}
+		case NEXT_ACTION_SEARCH_HOME: { status = cm_homing_cycle(); break;}
+		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(coord_select, gn.target, gf.target); break;}
+
+		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(gn.target, gf.target); break;}
+		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}
+		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}
+		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS: { status = cm_resume_origin_offsets(); break;}
+
+		case NEXT_ACTION_DEFAULT: { 
+			if (_axis_changed() == false) break;
+			cm_set_absolute_override(gn.absolute_override);	// apply override setting to gm struct
+			switch (gn.motion_mode) {
+				case MOTION_MODE_STRAIGHT_TRAVERSE: { status = cm_straight_traverse(gn.target, gf.target); break;}
+				case MOTION_MODE_STRAIGHT_FEED: { status = cm_straight_feed(gn.target, gf.target); break;}
+				case MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC:
+					// gf.radius sets radius mode if radius was collected in gn
+					{ status = cm_arc_feed(gn.target, gf.target, gn.arc_offset[0], gn.arc_offset[1],
+								gn.arc_offset[2], gn.arc_radius, gn.motion_mode); break;}
+			}
+			cm_set_absolute_override(false);		// now un-set it (for reporting purposes) 
 		}
 	}
-
-	//--> change coordinate system data goes here
-
-	// set axis offsets (G92)
-	if (gn.next_action == NEXT_ACTION_OFFSET_COORDINATES) {
-		if ((gp.status = cm_set_origin_offsets(gn.target)) != TG_OK) {
-			return (gp.status);		// error return
-		}
+	if (gf.program_flow == true) {
+		// do the M stops: M0, M1, M2, M30, M60
 	}
-
-	// G0 (linear traverse motion command)
-	if ((gn.next_action == NEXT_ACTION_MOTION) && 
-	    (gn.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE)) {
-		gp.status = cm_straight_traverse(gn.target);
-		return (gp.status);
-	}
-
-	// G1 (linear feed motion command)
-	if ((gn.next_action == NEXT_ACTION_MOTION) && 
-	    (gn.motion_mode == MOTION_MODE_STRAIGHT_FEED)) {
-		gp.status = cm_straight_feed(gn.target);
-		return (gp.status);
-	}
-
-	// G2 or G3 (arc motion command)
-	if ((gn.next_action == NEXT_ACTION_MOTION) &&
-	   ((gn.motion_mode == MOTION_MODE_CW_ARC) || 
-		(gn.motion_mode == MOTION_MODE_CCW_ARC))) {
-		// gf.radius sets radius mode if radius was collected in gn
-		gp.status = cm_arc_feed(gn.target, gn.offset[0], gn.offset[1], gn.offset[2], 
-								gn.radius, gn.motion_mode);
-		return (gp.status);
-	}
-	return(gp.status);
+	return (status);
 }
 
 /*
- * _gc_print_gcode_state()
+ * _check_gcode_block() - return a TG_ error if an error is detected
  */
 
-static void _gc_print_gcode_state()
+static uint8_t _check_gcode_block()
 {
-	cm_print_machine_state();
+	// Check for modal group violations. From NIST, section 3.4 "It is an error 
+	// to put a G-code from group 1 and a G-code from group 0 on the same line 
+	// if both of them use axis words. If an axis word-using G-code from group 
+	// 1 is implicitly in effect on a line (by having been activated on an 
+	// earlier line), and a group 0 G-code that uses axis words appears on the 
+	// line, the activity of the group 1 G-code is suspended for that line. 
+	// The axis word-using G-codes from group 0 are G10, G28, G30, and G92"
+//	if ((gp.modals[MODAL_GROUP_G0] == true) && (gp.modals[MODAL_GROUP_G1] == true)) {
+//		return (TG_MODAL_GROUP_VIOLATION);
+//	}
+	
+	// look for commands that require an axis word to be present
+//	if ((gp.modals[MODAL_GROUP_G0] == true) || (gp.modals[MODAL_GROUP_G1] == true)) {
+//		if (_axis_changed() == false)
+//		return (TG_GCODE_AXIS_WORD_MISSING);
+//	}
+	return (TG_OK);
 }
+
+/*
+ * helpers
+ */
+
+static uint8_t _get_next_statement(char *letter, double *value, char *buf, uint8_t *i) {
+	if (buf[*i] == NUL) { 		// no more statements
+		return (TG_COMPLETE);
+	}
+	*letter = buf[*i];
+	if(isupper(*letter) == false) { 
+		return (TG_EXPECTED_COMMAND_LETTER);
+	}
+	(*i)++;
+	if (read_double(buf, i, value) == false) {
+		return (TG_BAD_NUMBER_FORMAT);
+	}
+	return (TG_OK);		// leave the index on the next character after the statement
+}
+
+static uint8_t _point(double value) 
+{
+	return((uint8_t)(value*10 - trunc(value)*10));	// isolate the decimal point as an int
+}
+
+static uint8_t _axis_changed()
+{
+	return (gf.target[X] + gf.target[Y] + gf.target[Z] + gf.target[A] + gf.target[B] + gf.target[C]);
+}
+
