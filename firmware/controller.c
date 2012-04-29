@@ -103,7 +103,7 @@ void tg_announce(void)
 {
 	fprintf_P(stderr, PSTR("#### TinyG version %0.2f (build %0.2f) \"%s\" ####\n" ), 
 		tg.version, tg.build, TINYG_VERSION_NAME);
-	fprintf_P(stderr,PSTR("#### %s Profile ####\n"), TINYG_CONFIGURATION_PROFILE);
+//	fprintf_P(stderr,PSTR("#### %s Profile ####\n"), TINYG_CONFIGURATION_PROFILE);
 }
 
 void tg_ready(void)

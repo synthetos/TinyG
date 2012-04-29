@@ -189,6 +189,7 @@ static uint8_t _set_po(cmdObj *cmd);	// set motor polarity
 static uint8_t _set_motor_steps_per_unit(cmdObj *cmd);
 
 static uint8_t _get_am(cmdObj *cmd);	// get axis mode
+static uint8_t _set_am(cmdObj *cmd);	// set axis mode
 static void _print_am(cmdObj *cmd);		// print axis mode
 
 static uint8_t _set_grp(cmdObj *cmd);	// set data for a group
@@ -299,8 +300,16 @@ static PGM_P msg_am[] PROGMEM = {
  *	Use accessors to get at elements in the combined strings.
  *
  *	NOTE: DO NOT USE TABS IN FORMAT STRINGS
+ *
  *	NOTE: LEAVE NO SPACE BEFORE OR AFTER FIRST COMMA (TOKEN,NAME)
- *		  LEAVE NO SPACE BEFORE SECOND COMMA (SPACE AFTER IS OK)
+ *		  LEAVE NO SPACE BEFORE SECOND COMMA (SPACE AFTER IS OK)'
+ *
+ *	NOTE: In general, any mnemonic that starts with a group character will be 
+ *		  returned when that group is retrieved. Groups are 1 2 3 4 x y z a b c. 
+ *		  For example, xam, xfr, xvm etc will all be returned when the 'x' group is queried.
+ *		  In some cases this is not desired. To exclude an element from group 
+ *		  retrieval you must list it in the GROUP_EXCLUDE string in config.h.
+ *		  Currently only cycs(tate) and coor(inate system) are excluded. 
  */
 char str_fb[] PROGMEM = "fb,firmware_b,[fb]  firmware_build%18.2f\n";
 char str_fv[] PROGMEM = "fv,firmware_v,[fv]  firmware_version%16.2f\n";
@@ -439,7 +448,7 @@ char str_afr[] PROGMEM = "afr,a_f,[afr] a_feedrate_maximum%15.3f%S/min\n";
 char str_avm[] PROGMEM = "avm,a_v,[avm] a_velocity_maximum%15.3f%S/min\n";
 char str_atm[] PROGMEM = "atm,a_t,[atm] a_travel_maximum  %15.3f%S\n";
 char str_ajm[] PROGMEM = "ajm,a_je,[ajm] a_jerk_maximum%15.0f%S/min^3\n";
-char str_ajd[] PROGMEM = "ajd,a_ju,[ajc] a_junction_deviation%14.4f%S\n";
+char str_ajd[] PROGMEM = "ajd,a_ju,[ajd] a_junction_deviation%14.4f%S\n";
 char str_ara[] PROGMEM = "ara,a_r,[ara] a_radius_value%20.4f%S\n";
 char str_asm[] PROGMEM = "asm,a_s,[asm] a_switch_mode%16d [0,1,2]\n";
 char str_asv[] PROGMEM = "asv,a_s,[asv] a_search_velocity%16.3f%S/min\n";
@@ -452,7 +461,7 @@ char str_bfr[] PROGMEM = "bfr,b_f,[bfr] b_feedrate_maximum%15.3f%S/min\n";
 char str_bvm[] PROGMEM = "bvm,b_v,[bvm] b_velocity_maximum%15.3f%S/min\n";
 char str_btm[] PROGMEM = "btm,b_t,[btm] b_travel_maximum%17.3f%S\n";
 char str_bjm[] PROGMEM = "bjm,b_je,[bjm] b_jerk_maximum%15.0f%S/min^3\n";
-char str_bjd[] PROGMEM = "bcd,b_ju,[bjd] b_junction_deviation%14.4f%S\n";
+char str_bjd[] PROGMEM = "bjd,b_ju,[bjd] b_junction_deviation%14.4f%S\n";
 char str_bra[] PROGMEM = "bra,b_r,[bra] b_radius_value%20.4f%S\n";
 char str_bsm[] PROGMEM = "bsm,b_s,[bsm] b_switch_mode%16d [0,1,2]\n";
 char str_bsv[] PROGMEM = "bsv,b_s,[bsv] b_search_velocity%16.3f%S/min\n";
@@ -674,7 +683,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_4po, _print_ui8, _get_ui8, _set_po, (double *)&cfg.m[MOTOR_4].polarity,	M4_POLARITY },
 	{ str_4pm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_4].power_mode,	M4_POWER_MODE },
 
-	{ str_xam, _print_am,  _get_am,  _set_ui8,(double *)&cfg.a[X].axis_mode,		X_AXIS_MODE },
+	{ str_xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[X].axis_mode,		X_AXIS_MODE },
 	{ str_xfr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].feedrate_max,		X_FEEDRATE_MAX },
 	{ str_xvm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].velocity_max,		X_VELOCITY_MAX },
 	{ str_xtm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].travel_max,		X_TRAVEL_MAX },
@@ -686,7 +695,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_xlb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_backoff,	X_LATCH_BACKOFF },
 	{ str_xzb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].zero_backoff,		X_ZERO_BACKOFF },
 
-	{ str_yam, _print_am,  _get_am,  _set_ui8,(double *)&cfg.a[Y].axis_mode,		Y_AXIS_MODE },
+	{ str_yam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[Y].axis_mode,		Y_AXIS_MODE },
 	{ str_yfr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].feedrate_max,		Y_FEEDRATE_MAX },
 	{ str_yvm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].velocity_max,		Y_VELOCITY_MAX },
 	{ str_ytm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].travel_max,		Y_TRAVEL_MAX },
@@ -698,7 +707,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_ylb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_backoff,	Y_LATCH_BACKOFF },
 	{ str_yzb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].zero_backoff,		Y_ZERO_BACKOFF },
 
-	{ str_zam, _print_am,  _get_am,  _set_ui8,(double *)&cfg.a[Z].axis_mode,		Z_AXIS_MODE },
+	{ str_zam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[Z].axis_mode,		Z_AXIS_MODE },
 	{ str_zfr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].feedrate_max, 	Z_FEEDRATE_MAX },
 	{ str_zvm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].velocity_max, 	Z_VELOCITY_MAX },
 	{ str_ztm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].travel_max,		Z_TRAVEL_MAX },
@@ -710,7 +719,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_zlb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_backoff,	Z_LATCH_BACKOFF },
 	{ str_zzb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].zero_backoff,		Z_ZERO_BACKOFF },
 
-	{ str_aam, _print_am,  _get_am,  _set_ui8,(double *)&cfg.a[A].axis_mode,		A_AXIS_MODE },
+	{ str_aam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[A].axis_mode,		A_AXIS_MODE },
 	{ str_afr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].feedrate_max, 	A_FEEDRATE_MAX },
 	{ str_avm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].velocity_max, 	A_VELOCITY_MAX },
 	{ str_atm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].travel_max,		A_TRAVEL_MAX },
@@ -723,7 +732,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_alb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_backoff,	A_LATCH_BACKOFF },
 	{ str_azb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].zero_backoff,		A_ZERO_BACKOFF },
 
-	{ str_bam, _print_am,  _get_am,  _set_ui8,(double *)&cfg.a[B].axis_mode,		B_AXIS_MODE },
+	{ str_bam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[B].axis_mode,		B_AXIS_MODE },
 	{ str_bfr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].feedrate_max, 	B_FEEDRATE_MAX },
 	{ str_bvm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].velocity_max, 	B_VELOCITY_MAX },
 	{ str_btm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].travel_max,		B_TRAVEL_MAX },
@@ -736,7 +745,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_blb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_backoff,	B_LATCH_BACKOFF },
 	{ str_bzb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].zero_backoff,		B_ZERO_BACKOFF },
 
-	{ str_cam, _print_am,  _get_am,  _set_ui8,(double *)&cfg.a[C].axis_mode,		C_AXIS_MODE },
+	{ str_cam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[C].axis_mode,		C_AXIS_MODE },
 	{ str_cfr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].feedrate_max, 	C_FEEDRATE_MAX },
 	{ str_cvm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].velocity_max, 	C_VELOCITY_MAX },
 	{ str_ctm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].travel_max,		C_TRAVEL_MAX },
@@ -1062,6 +1071,7 @@ static uint8_t _run_gc(cmdObj *cmd)
 
 /**** AXIS AND MOTOR FUNCTIONS ****
  * _get_am() - get axis mode w/enumeration string
+ * _set_am() - set axis mode w./ exception handling for axis type
  * _print_am() - print axis mode w/enumeration string
  * _set_tr() - set motor travel_per_rev & recompute steps_per_unit
  * _set_sa() - set motor step_angle & recompute steps_per_unit
@@ -1070,10 +1080,29 @@ static uint8_t _run_gc(cmdObj *cmd)
  * _set_motor_steps_per_unit() - update this derived value
  *		This function will need to be rethought if microstep morphing is implemented, 
  */
- static uint8_t _get_am(cmdObj *cmd)
+static uint8_t _get_am(cmdObj *cmd)
 {
 	_get_ui8(cmd);
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_am, cmd->value));	// see 331.09 for old method
+}
+
+static uint8_t _set_am(cmdObj *cmd)
+{
+	char linear_axes[] = {"xyz"};
+
+	if (strchr(linear_axes, cmd->token[0]) != NULL) {		// true if it's a linear axis
+		if (cmd->value > AXIS_MAX_LINEAR) {
+			cmd->value = 0;
+			fprintf_P(stderr, PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED\n"));
+		}
+	} else {
+		if (cmd->value > AXIS_MAX_ROTARY) {
+			cmd->value = 0;
+			fprintf_P(stderr, PSTR("*** WARNING *** Unsupported rotary axis mode. Axis DISABLED\n"));
+		}
+	}
+	_set_ui8(cmd);
+	return(TG_OK);
 }
 
 static void _print_am(cmdObj *cmd)
@@ -1718,11 +1747,13 @@ static uint8_t _get_grp(cmdObj *cmd)
 	char *grp = cmd->group_token;			// group token in the parent cmd object
 	INDEX_T grp_index = cmd->index;
 	char token[CMD_TOKEN_LEN+1];			// token retrived from cmdArray list
+	char exclude[] = { GROUP_EXCLUSIONS };	// see config.h
 
 	cmd->value_type = VALUE_TYPE_PARENT;	// make first obj the parent 
 	for (INDEX_T i=0; i<grp_index; i++) {	// stop before you recurse
 		cmd_get_token(i,token);
 		if (strstr(token, grp) == token) {
+			if (strstr(exclude, token) != NULL) continue;
 			(++cmd)->index = i;
 			cmd_get_cmd(cmd);
 			strncpy(cmd->token, &cmd->token[strlen(grp)], CMD_TOKEN_LEN+1);	// strip group prefixes from token
