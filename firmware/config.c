@@ -1300,24 +1300,12 @@ uint8_t cfg_config_parser(char *str)
 			case 'A':fprintf_P(stderr,PSTR("[a=%1.3f]\n"), cm_get_runtime_machine_position(A));break;
 			case 'd':{ 
 
-				fprintf_P(stderr,PSTR("Programmed X =[%1.3f] "),cm_get_runtime_work_position(X));
+				fprintf_P(stderr,PSTR("Programmed X=[%1.3f] "),cm_get_runtime_work_position(X));
 				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),x_cnt/cfg.m[X].steps_per_unit); 
-
-				fprintf_P(stderr,PSTR("Programmed Y =[%1.3f] "),cm_get_runtime_work_position(Y));
+				fprintf_P(stderr,PSTR("Programmed Y=[%1.3f] "),cm_get_runtime_work_position(Y));
 				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),y_cnt/cfg.m[Y].steps_per_unit); 
-
-			    fprintf_P(stderr,PSTR("Programmed Z =[%1.3f] "),cm_get_runtime_work_position(Z));
+			    fprintf_P(stderr,PSTR("Programmed Z=[%1.3f] "),cm_get_runtime_work_position(Z));
 				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),z_cnt/cfg.m[Z].steps_per_unit); 
-/*
-				fprintf_P(stderr,PSTR("Programmed X =[%1.3f] "),cm_get_runtime_work_position(X));
-				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),x_cnt/100); 
-				// 100 is step/mm=( 360*micro_step/(step angle * travel_per_revolution)) 360*1/(0.72*5)=100
-	        	fprintf_P(stderr,PSTR("Programmed Y =[%1.3f] "),cm_get_runtime_work_position(Y));
-	        	fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),y_cnt/100); 
-
-		        fprintf_P(stderr,PSTR("Programmed Z =[%1.3f] "),cm_get_runtime_work_position(Z));
-		        fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),z_cnt/100); 
-*/
 	     	   break;
 	        }
 			default: rpt_run_multiline_status_report(); 

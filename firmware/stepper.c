@@ -129,6 +129,22 @@
  *	Note: For this to work you have to be really careful about what structures
  *	are modified at what level, and use volatiles where necessary.
  */
+/* Partial steps and phase angle compensation
+ *	The DDA accepts partial steps as input to the DDA. Fractional steps are 
+ *	managed by the sub-step value as exlained elsewhere. The fraction initially
+ *	loaded into the DDA and the remainder left at the end of a move (the "residual")
+ *	can be tought of as a phase angle valaue for the DDA accumulation. Each 360
+ *	degrees of phase angle results in a step being generated. 
+ *
+ *	360 degrees of phase is defined as:
+ 
+ The total magnitude
+ *	of the 
+ *
+ *	In order to preserve positional accuracy and to get the most even pulse
+ *	spacing between segments it's necessary to preserve phase  
+ */
+
 #include <stdlib.h>
 #include <string.h>				// needed for memset in st_init()
 #include <math.h>				// isinfinite()
@@ -179,7 +195,7 @@ struct stRunMotor { 				// one per controlled motor
 struct stRunSingleton {				// Stepper static values and axis parameters
 	int32_t timer_ticks_downcount;	// tick down-counter (unscaled)
 	int32_t timer_ticks_X_substeps;	// ticks multiplied by scaling factor
-	double segment_velocity;		// +++++ record segment velocity for diagnostics
+	double segment_velocity;		// #### segment velocity recorded for diagnostics
 	struct stRunMotor m[MOTORS];	// runtime motor structures
 };
 static struct stRunSingleton st;
@@ -293,21 +309,18 @@ ISR(DEVICE_TIMER_DDA_ISR_vect)
 {
 	if ((st.m[MOTOR_1].counter += st.m[MOTOR_1].steps) > 0) {
 		DEVICE_PORT_MOTOR_1.OUTSET = STEP_BIT_bm;	// turn step bit on
-//		if (sp.m[MOTOR_1].dir == 0) x_cnt++; else x_cnt--;	//############ diagnostic ###########
 		x_cnt += st.m[MOTOR_1].step_counter_incr; 			//############ diagnostic ###########
  		st.m[MOTOR_1].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_1.OUTCLR = STEP_BIT_bm;	// turn step bit off in ~1 uSec
 	}
 	if ((st.m[MOTOR_2].counter += st.m[MOTOR_2].steps) > 0) {
 		DEVICE_PORT_MOTOR_2.OUTSET = STEP_BIT_bm;
-//		if (sp.m[MOTOR_2].dir == 0) y_cnt--; else y_cnt++;  //############ diagnostic ###########
 		y_cnt += st.m[MOTOR_2].step_counter_incr; 			//############ diagnostic ###########
  		st.m[MOTOR_2].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_2.OUTCLR = STEP_BIT_bm;
 	}
 	if ((st.m[MOTOR_3].counter += st.m[MOTOR_3].steps) > 0) {
 		DEVICE_PORT_MOTOR_3.OUTSET = STEP_BIT_bm;
-//		if (sp.m[MOTOR_3].dir == 0) z_cnt++; else z_cnt--;  //############# diagnostic ##########
 		z_cnt += st.m[MOTOR_3].step_counter_incr; 			//############# diagnostic ##########
  		st.m[MOTOR_3].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_3.OUTCLR = STEP_BIT_bm;
@@ -453,28 +466,6 @@ void _load_move()
 	st_request_exec_move();								// exec and prep next move
 }
 
-/* 
- * st_prep_null() - Keeps the loader happy. Otherwise performs no action
- *
- *	Used by M codes, tool and spindle changes
- */
-
-void st_prep_null()
-{
-	sp.move_type = MOVE_TYPE_NULL;
-}
-
-/* 
- * st_prep_dwell() 	 - Add a dwell to the move buffer
- */
-
-void st_prep_dwell(double microseconds)
-{
-	sp.move_type = MOVE_TYPE_DWELL;
-	sp.timer_period = _f_to_period(F_DWELL);
-	sp.timer_ticks = (uint32_t)((microseconds/1000000) * F_DWELL);
-}
-
 /*
  * st_prep_line() - Add a new linear movement to the move buffer
  *
@@ -490,10 +481,6 @@ void st_prep_dwell(double microseconds)
  *	steps_x ... steps_a are signed relative motion in steps
  *	Microseconds specifies how many microseconds the move should take 
  *	 (Note that these are constant speed segments being queued)
- *
- * Blocking behavior:
- *	This routine returns BUFFER_FULL if there is no space in the buffer.
- *  A blocking version should wrap this code with blocking semantics
  */
 
 uint8_t st_prep_line(double steps[], double microseconds, double velocity)
@@ -522,14 +509,10 @@ uint8_t st_prep_line(double steps[], double microseconds, double velocity)
 	for (i=0; i<MOTORS; i++) {
 		sp.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ cfg.m[i].polarity;
 		sp.m[i].steps = (uint32_t)fabs(steps[i] * dda_substeps);
-//		sp.m[i].residual_steps = fabs(steps[i] - trunc(steps[i])) * dda_substeps;
-//		if (sp.m[i].dir != sp.m[i].previous_dir) {
-//			sp.m[i].counter_adjustment = sp.m[i].residual_steps;
-//		}
 	}
 	sp.timer_period = _f_to_period(f_dda);
 	sp.timer_ticks = (uint32_t)((microseconds/1000000) * f_dda);
-	sp.timer_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
+	sp.timer_ticks_X_substeps = sp.timer_ticks * dda_substeps;
 
 //	if ((sp.timer_ticks * COUNTER_RESET_FACTOR) < sp.previous_ticks) {  // uint32_t math
 //		sp.counter_reset_flag = TRUE;
@@ -541,6 +524,28 @@ uint8_t st_prep_line(double steps[], double microseconds, double velocity)
 	sp.move_type = MOVE_TYPE_ALINE;
 	sp.segment_velocity = velocity;
 	return (TG_OK);
+}
+
+/* 
+ * st_prep_null() - Keeps the loader happy. Otherwise performs no action
+ *
+ *	Used by M codes, tool and spindle changes
+ */
+
+void st_prep_null()
+{
+	sp.move_type = MOVE_TYPE_NULL;
+}
+
+/* 
+ * st_prep_dwell() 	 - Add a dwell to the move buffer
+ */
+
+void st_prep_dwell(double microseconds)
+{
+	sp.move_type = MOVE_TYPE_DWELL;
+	sp.timer_period = _f_to_period(F_DWELL);
+	sp.timer_ticks = (uint32_t)((microseconds/1000000) * F_DWELL);
 }
 
 /* 
