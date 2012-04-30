@@ -522,10 +522,10 @@ uint8_t st_prep_line(double steps[], double microseconds, double velocity)
 	for (i=0; i<MOTORS; i++) {
 		sp.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ cfg.m[i].polarity;
 		sp.m[i].steps = (uint32_t)fabs(steps[i] * dda_substeps);
-		sp.m[i].residual_steps = fabs(steps[i] - trunc(steps[i])) * dda_substeps;
-		if (sp.m[i].dir != sp.m[i].previous_dir) {
-			sp.m[i].counter_adjustment = sp.m[i].residual_steps;
-		}
+//		sp.m[i].residual_steps = fabs(steps[i] - trunc(steps[i])) * dda_substeps;
+//		if (sp.m[i].dir != sp.m[i].previous_dir) {
+//			sp.m[i].counter_adjustment = sp.m[i].residual_steps;
+//		}
 	}
 	sp.timer_period = _f_to_period(f_dda);
 	sp.timer_ticks = (uint32_t)((microseconds/1000000) * f_dda);
