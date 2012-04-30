@@ -172,6 +172,8 @@ struct stRunMotor { 				// one per controlled motor
 	int32_t steps;					// total steps in axis
 	int32_t counter;				// DDA counter for axis
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor polarity
+	// experimental values:
+	int8_t step_counter_incr;		// counts positive or negative steps
 };
 
 struct stRunSingleton {				// Stepper static values and axis parameters
@@ -193,6 +195,7 @@ enum prepBufferState {
 struct stPrepMotor {
  	uint32_t steps; 				// total steps in each direction
 	int8_t dir;						// b0 = direction
+	// experimental values:
 	int8_t previous_dir;			// direction of travel of previous segment
 	uint32_t residual_steps;		// fractional steps from previous segment
 	uint8_t counter_adjustment;		// adjustment to phase when this axis is loaded
@@ -290,19 +293,22 @@ ISR(DEVICE_TIMER_DDA_ISR_vect)
 {
 	if ((st.m[MOTOR_1].counter += st.m[MOTOR_1].steps) > 0) {
 		DEVICE_PORT_MOTOR_1.OUTSET = STEP_BIT_bm;	// turn step bit on
-		if (sp.m[MOTOR_1].dir == 0) x_cnt--; else x_cnt++; //################ diagnostic #######
+//		if (sp.m[MOTOR_1].dir == 0) x_cnt++; else x_cnt--;	//############ diagnostic ###########
+		x_cnt += st.m[MOTOR_1].step_counter_incr; 			//############ diagnostic ###########
  		st.m[MOTOR_1].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_1.OUTCLR = STEP_BIT_bm;	// turn step bit off in ~1 uSec
 	}
 	if ((st.m[MOTOR_2].counter += st.m[MOTOR_2].steps) > 0) {
 		DEVICE_PORT_MOTOR_2.OUTSET = STEP_BIT_bm;
-		if (sp.m[MOTOR_2].dir == 0) y_cnt--; else y_cnt++;  //############ diagnostic ###########
+//		if (sp.m[MOTOR_2].dir == 0) y_cnt--; else y_cnt++;  //############ diagnostic ###########
+		y_cnt += st.m[MOTOR_2].step_counter_incr; 			//############ diagnostic ###########
  		st.m[MOTOR_2].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_2.OUTCLR = STEP_BIT_bm;
 	}
 	if ((st.m[MOTOR_3].counter += st.m[MOTOR_3].steps) > 0) {
 		DEVICE_PORT_MOTOR_3.OUTSET = STEP_BIT_bm;
-		if (sp.m[MOTOR_3].dir == 0) z_cnt++; else z_cnt--;  //############# diagnostic ##########
+//		if (sp.m[MOTOR_3].dir == 0) z_cnt++; else z_cnt--;  //############# diagnostic ##########
+		z_cnt += st.m[MOTOR_3].step_counter_incr; 			//############# diagnostic ##########
  		st.m[MOTOR_3].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_3.OUTCLR = STEP_BIT_bm;
 	}
@@ -424,9 +430,12 @@ void _load_move()
 			if (st.m[i].steps != 0) {
 				if (sp.m[i].dir == 0) {							// set direction
 					device.port[i]->OUTCLR = DIRECTION_BIT_bm;	// CW motion
+					st.m[i].step_counter_incr = 1;				//###### diagnostic #######
 				} else {
 					device.port[i]->OUTSET = DIRECTION_BIT_bm;	// CCW motion
+					st.m[i].step_counter_incr = -1;				//###### diagnostic #######
 				}
+				if (cfg.m[i].polarity == 1) { st.m[i].step_counter_incr *= -1; } //###### diagnostic #######
 				device.port[i]->OUTCLR = MOTOR_ENABLE_BIT_bm;	// enable motor
 			}
 		}

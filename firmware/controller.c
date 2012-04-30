@@ -395,6 +395,7 @@ static void _prompt_without_message()
 		fprintf_P(stderr, PSTR("%S%S"), pr1, pr_mm);
 	}
 
+/*
 //##################### BEGIN DIAGNOSTIC #######################
 	fprintf_P(stderr,PSTR("Programmed X =[%1.3f] "),cm_get_runtime_work_position(X));
 // 100 is step/mm=( 360*micro_step/(step angle * travel_per_revolution)) 360*1/(0.72*5)=100
@@ -411,6 +412,7 @@ static void _prompt_without_message()
 	double z_factor = (360 * cfg.m[Z].microsteps / (cfg.m[Z].step_angle * cfg.m[Z].travel_rev));
     fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),z_cnt/z_factor); 
 //    fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),z_cnt/100); 
+*/
 
 //##################### EMD DIAGNOSTIC #######################
 

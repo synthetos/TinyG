@@ -60,7 +60,7 @@
 /**** MACHINE PROFILES ******************************************************/
 // default machine profiles - chose only one:
 
-#include "settings/settings_default.h"			// Issue #12
+#include "settings/settings_default.h"				// Default settings for shipment
 //#include "settings/settings_sacidu93.h"			// Issue #12
 
 //#include "settings/settings_zen7x12.h"			// Zen Toolworks 7x12
