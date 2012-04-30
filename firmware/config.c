@@ -1286,10 +1286,55 @@ static uint8_t _set_defa(cmdObj *cmd)
 uint8_t cfg_config_parser(char *str)
 {
 	cmdObj *cmd = cmd_array;				// point at first struct in the array
-	if (str[0] == '?') {					// special handling for status report
-		rpt_run_multiline_status_report();
+
+//######################### START diagnostic ##############################
+	if (str[0] == '?') { // special handling for status report
+		switch(str[1]) {
+			case 'x':fprintf_P(stderr,PSTR("[x=%1.3f]\n"), cm_get_runtime_work_position(X)); break;
+			case 'X':fprintf_P(stderr,PSTR("[x=%1.3f]\n"), cm_get_runtime_machine_position(X));break;
+			case 'y':fprintf_P(stderr,PSTR("[y=%1.3f]\n"), cm_get_runtime_work_position(Y));break;
+			case 'Y':fprintf_P(stderr,PSTR("[y=%1.3f]\n"), cm_get_runtime_machine_position(Y));break;
+			case 'z':fprintf_P(stderr,PSTR("[z=%1.3f]\n"), cm_get_runtime_work_position(Z));break;
+			case 'Z':fprintf_P(stderr,PSTR("[z=%1.3f]\n"), cm_get_runtime_machine_position(Z));break;
+			case 'a':fprintf_P(stderr,PSTR("[a=%1.3f]\n"), cm_get_runtime_work_position(A));break;
+			case 'A':fprintf_P(stderr,PSTR("[a=%1.3f]\n"), cm_get_runtime_machine_position(A));break;
+			case 'd':{ 
+
+				fprintf_P(stderr,PSTR("Programmed X =[%1.3f] "),cm_get_runtime_work_position(X));
+				double x_factor = (360 * cfg.m[X].microsteps / (cfg.m[X].step_angle * cfg.m[X].travel_rev));
+				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),x_cnt/x_factor); 
+
+				fprintf_P(stderr,PSTR("Programmed Y =[%1.3f] "),cm_get_runtime_work_position(Y));
+				double y_factor = (360 * cfg.m[Y].microsteps / (cfg.m[Y].step_angle * cfg.m[Y].travel_rev));
+				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),y_cnt/y_factor); 
+
+			    fprintf_P(stderr,PSTR("Programmed Z =[%1.3f] "),cm_get_runtime_work_position(Z));
+				double z_factor = (360 * cfg.m[Z].microsteps / (cfg.m[Z].step_angle * cfg.m[Z].travel_rev));
+				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),z_cnt/z_factor); 
+
+/*
+				fprintf_P(stderr,PSTR("Programmed X =[%1.3f] "),cm_get_runtime_work_position(X));
+				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),x_cnt/100); 
+				// 100 is step/mm=( 360*micro_step/(step angle * travel_per_revolution)) 360*1/(0.72*5)=100
+	        	fprintf_P(stderr,PSTR("Programmed Y =[%1.3f] "),cm_get_runtime_work_position(Y));
+	        	fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),y_cnt/100); 
+
+		        fprintf_P(stderr,PSTR("Programmed Z =[%1.3f] "),cm_get_runtime_work_position(Z));
+		        fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),z_cnt/100); 
+*/
+	     	   break;
+	        }
+			default: rpt_run_multiline_status_report(); 
+		}
 		return (TG_OK);
 	}
+//######################### END diagnostic ##############################
+
+
+//	if (str[0] == '?') {					// special handling for status report
+//		rpt_run_multiline_status_report();
+//		return (TG_OK);
+//	}
 	ritorno(_parse_config_string(str,cmd));	// get the first object
 	if ((cmd->value_type != VALUE_TYPE_PARENT) && (cmd->value_type != VALUE_TYPE_NULL)) {
 		cmd_set(cmd);						// set single value
@@ -1298,6 +1343,9 @@ uint8_t cfg_config_parser(char *str)
 	cmd_print(cmd);							// print value(s)
 	return (TG_OK);
 }
+
+
+
 
 /****************************************************************************
  * _parse_config_string() - parse a command line

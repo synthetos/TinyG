@@ -193,6 +193,9 @@ enum prepBufferState {
 struct stPrepMotor {
  	uint32_t steps; 				// total steps in each direction
 	int8_t dir;						// b0 = direction
+	int8_t previous_dir;			// direction of travel of previous segment
+	uint32_t residual_steps;		// fractional steps from previous segment
+	uint8_t counter_adjustment;		// adjustment to phase when this axis is loaded
 };
 
 struct stPrepSingleton {
@@ -287,16 +290,19 @@ ISR(DEVICE_TIMER_DDA_ISR_vect)
 {
 	if ((st.m[MOTOR_1].counter += st.m[MOTOR_1].steps) > 0) {
 		DEVICE_PORT_MOTOR_1.OUTSET = STEP_BIT_bm;	// turn step bit on
+		if (sp.m[MOTOR_1].dir == 0) x_cnt--; else x_cnt++; //################ diagnostic #######
  		st.m[MOTOR_1].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_1.OUTCLR = STEP_BIT_bm;	// turn step bit off in ~1 uSec
 	}
 	if ((st.m[MOTOR_2].counter += st.m[MOTOR_2].steps) > 0) {
 		DEVICE_PORT_MOTOR_2.OUTSET = STEP_BIT_bm;
+		if (sp.m[MOTOR_2].dir == 0) y_cnt--; else y_cnt++;  //############ diagnostic ###########
  		st.m[MOTOR_2].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_2.OUTCLR = STEP_BIT_bm;
 	}
 	if ((st.m[MOTOR_3].counter += st.m[MOTOR_3].steps) > 0) {
 		DEVICE_PORT_MOTOR_3.OUTSET = STEP_BIT_bm;
+		if (sp.m[MOTOR_3].dir == 0) z_cnt++; else z_cnt--;  //############# diagnostic ##########
  		st.m[MOTOR_3].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_3.OUTCLR = STEP_BIT_bm;
 	}
@@ -411,9 +417,10 @@ void _load_move()
 		// If axis has 0 steps enabling motors is req'd to support power mode = 1
 		for (uint8_t i=0; i < MOTORS; i++) {
 			st.m[i].steps = sp.m[i].steps;						// set steps
-			if (sp.counter_reset_flag == TRUE) {				//compensate for pulse phasing
-				st.m[i].counter = -(st.timer_ticks_downcount);
-			}
+//			if (sp.counter_reset_flag == TRUE) {				// compensate for pulse phasing
+//				st.m[i].counter = -(st.timer_ticks_downcount);
+//			}
+			st.m[i].counter -= sp.m[i].counter_adjustment;		// compensate pulse phasing for direction changes
 			if (st.m[i].steps != 0) {
 				if (sp.m[i].dir == 0) {							// set direction
 					device.port[i]->OUTCLR = DIRECTION_BIT_bm;	// CW motion
@@ -506,17 +513,22 @@ uint8_t st_prep_line(double steps[], double microseconds, double velocity)
 	for (i=0; i<MOTORS; i++) {
 		sp.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ cfg.m[i].polarity;
 		sp.m[i].steps = (uint32_t)fabs(steps[i] * dda_substeps);
+		sp.m[i].residual_steps = fabs(steps[i] - trunc(steps[i])) * dda_substeps;
+		if (sp.m[i].dir != sp.m[i].previous_dir) {
+			sp.m[i].counter_adjustment = sp.m[i].residual_steps;
+		}
 	}
 	sp.timer_period = _f_to_period(f_dda);
 	sp.timer_ticks = (uint32_t)((microseconds/1000000) * f_dda);
 	sp.timer_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
 
-	if ((sp.timer_ticks * COUNTER_RESET_FACTOR) < sp.previous_ticks) {  // uint32_t math
-		sp.counter_reset_flag = TRUE;
-	} else {
-		sp.counter_reset_flag = FALSE;
-	}
-	sp.previous_ticks = sp.timer_ticks;
+//	if ((sp.timer_ticks * COUNTER_RESET_FACTOR) < sp.previous_ticks) {  // uint32_t math
+//		sp.counter_reset_flag = TRUE;
+//		fprintf_P(stderr,PSTR("*** counter reset ***\n"));  //############# diagnostic ##############
+//	} else {
+//		sp.counter_reset_flag = FALSE;
+//	}
+//	sp.previous_ticks = sp.timer_ticks;
 	sp.move_type = MOVE_TYPE_ALINE;
 	sp.segment_velocity = velocity;
 	return (TG_OK);
