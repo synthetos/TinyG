@@ -1301,16 +1301,19 @@ uint8_t cfg_config_parser(char *str)
 			case 'd':{ 
 
 				fprintf_P(stderr,PSTR("Programmed X =[%1.3f] "),cm_get_runtime_work_position(X));
-				double x_factor = (360 * cfg.m[X].microsteps / (cfg.m[X].step_angle * cfg.m[X].travel_rev));
-				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),x_cnt/x_factor); 
+//				double x_factor = (360 * cfg.m[X].microsteps / (cfg.m[X].step_angle * cfg.m[X].travel_rev));
+//				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),x_cnt/x_factor); 
+				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),x_cnt/cfg.m[X].steps_per_unit); 
 
 				fprintf_P(stderr,PSTR("Programmed Y =[%1.3f] "),cm_get_runtime_work_position(Y));
-				double y_factor = (360 * cfg.m[Y].microsteps / (cfg.m[Y].step_angle * cfg.m[Y].travel_rev));
-				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),y_cnt/y_factor); 
+//				double y_factor = (360 * cfg.m[Y].microsteps / (cfg.m[Y].step_angle * cfg.m[Y].travel_rev));
+//				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),y_cnt/y_factor); 
+				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),y_cnt/cfg.m[Y].steps_per_unit); 
 
 			    fprintf_P(stderr,PSTR("Programmed Z =[%1.3f] "),cm_get_runtime_work_position(Z));
-				double z_factor = (360 * cfg.m[Z].microsteps / (cfg.m[Z].step_angle * cfg.m[Z].travel_rev));
-				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),z_cnt/z_factor); 
+//				double z_factor = (360 * cfg.m[Z].microsteps / (cfg.m[Z].step_angle * cfg.m[Z].travel_rev));
+//				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),z_cnt/z_factor); 
+				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),z_cnt/cfg.m[Z].steps_per_unit); 
 
 /*
 				fprintf_P(stderr,PSTR("Programmed X =[%1.3f] "),cm_get_runtime_work_position(X));

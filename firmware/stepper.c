@@ -426,7 +426,7 @@ void _load_move()
 //			if (sp.counter_reset_flag == TRUE) {				// compensate for pulse phasing
 //				st.m[i].counter = -(st.timer_ticks_downcount);
 //			}
-			st.m[i].counter -= sp.m[i].counter_adjustment;		// compensate pulse phasing for direction changes
+//			st.m[i].counter -= sp.m[i].counter_adjustment;		// compensate pulse phasing for direction changes
 			if (st.m[i].steps != 0) {
 				if (sp.m[i].dir == 0) {							// set direction
 					device.port[i]->OUTCLR = DIRECTION_BIT_bm;	// CW motion
