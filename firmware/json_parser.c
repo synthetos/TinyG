@@ -266,7 +266,7 @@ uint8_t js_make_json_string(cmdObj *cmd, char *str)
 		} else if (cmd->value_type == VALUE_TYPE_NULL)   { str += sprintf(str, "\"\"");
 		} else if (cmd->value_type == VALUE_TYPE_FALSE)  { str += sprintf(str, "false");
 		} else if (cmd->value_type == VALUE_TYPE_TRUE)   { str += sprintf(str, "true");
-		} else if (cmd->value_type == VALUE_TYPE_INTEGER){ str += sprintf(str, "%d", (int)cmd->value);
+		} else if (cmd->value_type == VALUE_TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
 		} else if (cmd->value_type == VALUE_TYPE_FLOAT)  { str += sprintf(str, "%0.3f", cmd->value);
 		} else if (cmd->value_type == VALUE_TYPE_STRING) { str += sprintf(str, "\"%s\"", cmd->string_value);
 		} 

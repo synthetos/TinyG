@@ -25,7 +25,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.93
-#define TINYG_BUILD_NUMBER   	338.05
+#define TINYG_BUILD_NUMBER   	338.11
 
 /****** DEVELOPMENT SETTINGS ******/
 

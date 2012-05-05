@@ -38,132 +38,138 @@
 
 #define TINYG_CONFIGURATION_PROFILE "Shapeoko 375mm"	// displays base config profile
 
-#define JERK_MAX_COMMON 	5000000000	// yes, that's "5 billion" mm/(min^3)
-#define JUNCTION_ACCELERATION 200000	// centripetal acceleration around corners
+// **** common settings - applied to all axes or motors ****
+
 #define JUNCTION_DEVIATION	0.05		// default value, in mm
 
-// motor values
-#define M1_MOTOR_MAP X					// motor maps to axis
+// **** system settings ****
+
+#define JUNCTION_ACCELERATION 200000	// centripetal acceleration around corners
+
+#define STATUS_REPORT_INTERVAL_MS	0	// in milliseconds
+
+#define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
+#define GCODE_DEFAULT_UNITS			MILLIMETERS
+#define GCODE_DEFAULT_COORD_SYSTEM	G54
+#define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
+#define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
+
+#define COM_APPEND_TX_CR			FALSE
+#define COM_IGNORE_RX_CR			FALSE
+#define COM_IGNORE_RX_LF			FALSE
+#define COM_ENABLE_ECHO				TRUE
+#define COM_ENABLE_XON				TRUE
+
+#define ENABLE_ACCELERATION 1			// *** NOTE: this feature is disabled in 338.11 - always equal to 1 
+
+// *** motor settings ***
+
+#define M1_MOTOR_MAP X					// 1ma
+#define M1_STEP_ANGLE 1.8				// 1sa
+#define M1_TRAVEL_PER_REV 34.5			// 1tr
+#define M1_MICROSTEPS 8					// 1mi		1,2,4,8
+#define M1_POLARITY 0					// 1po		0=normal, 1=reversed
+#define M1_POWER_MODE 1					// 1pm		TRUE=low power idle enabled 
+
 #define M2_MOTOR_MAP Y
-#define M3_MOTOR_MAP Z
-#define M4_MOTOR_MAP A
-
-#define M1_STEP_ANGLE 1.8				// degrees per whole step
 #define M2_STEP_ANGLE 1.8
-#define M3_STEP_ANGLE 1.8
-#define M4_STEP_ANGLE 1.8
-
-#define M1_TRAVEL_PER_REV 34.5			// mm of travel = belt travel
-#define M2_TRAVEL_PER_REV 34.5			// belt travel
-#define M3_TRAVEL_PER_REV 1.25			// screw travel
-#define M4_TRAVEL_PER_REV 360			// degrees per motor rev - 1:1 gearing
-
-#define M1_MICROSTEPS 8					// one of: 8, 4, 2, 1
+#define M2_TRAVEL_PER_REV 34.5
 #define M2_MICROSTEPS 8
+#define M2_POLARITY 1
+#define M2_POWER_MODE 1
+
+#define M3_MOTOR_MAP Z
+#define M3_STEP_ANGLE 1.8
+#define M3_TRAVEL_PER_REV 1.25
 #define M3_MICROSTEPS 8
-#define M4_MICROSTEPS 8
-
-#define M1_POLARITY 0					// 0=normal, 1=reversed
-#define M2_POLARITY 1					// Y is inverted
 #define M3_POLARITY 0
+#define M3_POWER_MODE 1
+
+#define M4_MOTOR_MAP A
+#define M4_STEP_ANGLE 1.8
+#define M4_TRAVEL_PER_REV 360			// degrees per motor rev - 1:1 gearing
+#define M4_MICROSTEPS 8
 #define M4_POLARITY 0
+#define M4_POWER_MODE 0
 
-#define M1_POWER_MODE TRUE				// TRUE=low power idle enabled 
-#define M2_POWER_MODE TRUE
-#define M3_POWER_MODE TRUE
-#define M4_POWER_MODE TRUE
+// *** axis settings ***
 
-// axis values							// see canonical_machine.h cmAxisMode for valid values
-#define X_AXIS_MODE AXIS_STANDARD
+#define X_AXIS_MODE AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
+#define X_VELOCITY_MAX 16000 			// xvm		G0 max velocity in mm/min
+#define X_FEEDRATE_MAX X_VELOCITY_MAX	// xfr 		G1 max feed rate in mm/min
+#define X_TRAVEL_MAX 170				// xtm		travel between switches or crashes
+#define X_JERK_MAX 5000000000			// xjm		yes, that's "5 billion" mm/(min^3)
+#define X_JUNCTION_DEVIATION JUNCTION_DEVIATION	 // xjd
+#define X_SWITCH_MODE 1					// xsm		1=switches enabled for homing only
+#define X_SEARCH_VELOCITY -1000			// xsv		move in negative direction
+#define X_LATCH_VELOCITY 100			// xlv		mm/min
+#define X_LATCH_BACKOFF 2				// xlb		mm
+#define X_ZERO_BACKOFF 1				// xzb		mm
+
 #define Y_AXIS_MODE AXIS_STANDARD
-#define Z_AXIS_MODE AXIS_STANDARD
-#define A_AXIS_MODE AXIS_STANDARD
-#define B_AXIS_MODE AXIS_STANDARD
-#define C_AXIS_MODE AXIS_STANDARD
-
-#define X_VELOCITY_MAX 16000 			// G0 max velocity in mm/min
 #define Y_VELOCITY_MAX 16000
-#define Z_VELOCITY_MAX 1200				// Z axis won't move as fast
-#define M4_STEPS_PER_SEC 2000 			// motor characteristic
-#define A_VELOCITY_MAX ((M4_STEPS_PER_SEC * M4_STEP_ANGLE * 60) / M4_TRAVEL_PER_REV)
-#define B_VELOCITY_MAX A_VELOCITY_MAX
-#define C_VELOCITY_MAX A_VELOCITY_MAX
-
-#define X_FEEDRATE_MAX X_VELOCITY_MAX	// G1 max feed rate in mm/min
 #define Y_FEEDRATE_MAX Y_VELOCITY_MAX
-#define Z_FEEDRATE_MAX Z_VELOCITY_MAX
-#define A_FEEDRATE_MAX A_VELOCITY_MAX
-#define B_FEEDRATE_MAX B_VELOCITY_MAX
-#define C_FEEDRATE_MAX C_VELOCITY_MAX
-
-#define X_TRAVEL_MAX 170				// travel between switches or crashes
 #define Y_TRAVEL_MAX 170
-#define Z_TRAVEL_MAX 50
-#define A_TRAVEL_MAX -1					// -1 is no limit (typ for rotary axis)
-#define B_TRAVEL_MAX -1
-#define C_TRAVEL_MAX -1
-
-#define X_JERK_MAX JERK_MAX_COMMON
-#define Y_JERK_MAX JERK_MAX_COMMON
-#define Z_JERK_MAX (JERK_MAX_COMMON/10)	// must limit the jerk on this axis
-#define A_JERK_MAX JERK_MAX_COMMON
-#define B_JERK_MAX JERK_MAX_COMMON
-#define C_JERK_MAX JERK_MAX_COMMON
-
-#define X_JUNCTION_DEVIATION JUNCTION_DEVIATION
+#define Y_JERK_MAX 5000000000			// 5,000,000,000
 #define Y_JUNCTION_DEVIATION JUNCTION_DEVIATION
-#define Z_JUNCTION_DEVIATION JUNCTION_DEVIATION
-#define A_JUNCTION_DEVIATION JUNCTION_DEVIATION
-#define B_JUNCTION_DEVIATION JUNCTION_DEVIATION
-#define C_JUNCTION_DEVIATION JUNCTION_DEVIATION
-
-#define A_RADIUS 10						// radius in mm
-#define B_RADIUS 10						// (XYZ values are not defined)
-#define C_RADIUS 10
-
-#define X_SWITCH_MODE 1					// 1=switches enabled for homing only
 #define Y_SWITCH_MODE 1
-#define Z_SWITCH_MODE 1
-#define A_SWITCH_MODE 0					// 0=switches disabled
-#define B_SWITCH_MODE 0
-#define C_SWITCH_MODE 0
-
-#define X_SEARCH_VELOCITY -(X_VELOCITY_MAX/10)	// hit X minumum switch
-#define Y_SEARCH_VELOCITY -(Y_VELOCITY_MAX/10)	// hit Y minimum switch
-#define Z_SEARCH_VELOCITY (Z_VELOCITY_MAX/2)	// hit Z maximum switch
-#define A_SEARCH_VELOCITY A_VELOCITY_MAX
-#define B_SEARCH_VELOCITY B_VELOCITY_MAX
-#define C_SEARCH_VELOCITY C_VELOCITY_MAX
-
-#define X_LATCH_VELOCITY 100		// mm/min
+#define Y_SEARCH_VELOCITY -1000
 #define Y_LATCH_VELOCITY 100
-#define Z_LATCH_VELOCITY 100
-#define A_LATCH_VELOCITY 3600	// degrees per minute
-#define B_LATCH_VELOCITY 3600
-#define C_LATCH_VELOCITY 3600
-
-#define X_LATCH_BACKOFF 2				// mm
 #define Y_LATCH_BACKOFF 2
-#define Z_LATCH_BACKOFF 2
-#define A_LATCH_BACKOFF 0				// degrees
-#define B_LATCH_BACKOFF 0
-#define C_LATCH_BACKOFF 0
-
-#define X_ZERO_BACKOFF 1				// mm
 #define Y_ZERO_BACKOFF 1
+
+#define Z_AXIS_MODE AXIS_STANDARD
+#define Z_VELOCITY_MAX 1200
+#define Z_FEEDRATE_MAX Z_VELOCITY_MAX
+#define Z_TRAVEL_MAX 50
+#define Z_JERK_MAX 50000000				// 50,000,000
+#define Z_JUNCTION_DEVIATION JUNCTION_DEVIATION
+#define Z_SWITCH_MODE 1
+#define Z_SEARCH_VELOCITY -400
+#define Z_LATCH_VELOCITY 100
+#define Z_LATCH_BACKOFF 2
 #define Z_ZERO_BACKOFF 1
-#define A_ZERO_BACKOFF 0				// degrees
-#define B_ZERO_BACKOFF 0
-#define C_ZERO_BACKOFF 0
 
-#define X_HOMING_JERK 1000000000		// 1,000,000,000
-#define Y_HOMING_JERK X_HOMING_JERK
-#define Z_HOMING_JERK X_HOMING_JERK
-#define A_HOMING_JERK X_HOMING_JERK
-#define B_HOMING_JERK A_HOMING_JERK
-#define C_HOMING_JERK a_HOMING_JERK
+#define A_AXIS_MODE AXIS_STANDARD
+#define A_VELOCITY_MAX 3600
+#define A_FEEDRATE_MAX A_VELOCITY_MAX
+#define A_TRAVEL_MAX -1
+#define A_JERK_MAX 20000000				//			20,000,000
+#define A_JUNCTION_DEVIATION JUNCTION_DEVIATION
+#define A_RADIUS 1
+#define A_SWITCH_MODE 1
+#define A_SEARCH_VELOCITY -600
+#define A_LATCH_VELOCITY 100
+#define A_LATCH_BACKOFF -5
+#define A_ZERO_BACKOFF 2
 
-/**** DEFAULT COORDINATE SYSTEM OFFSETS *************************************/
+#define B_AXIS_MODE AXIS_DISABLED
+#define B_VELOCITY_MAX 3600
+#define B_FEEDRATE_MAX B_VELOCITY_MAX
+#define B_TRAVEL_MAX -1
+#define B_JERK_MAX 20000000
+#define B_JUNCTION_DEVIATION JUNCTION_DEVIATION
+#define B_RADIUS 1
+#define B_SWITCH_MODE 1
+#define B_SEARCH_VELOCITY -600
+#define B_LATCH_VELOCITY 100
+#define B_LATCH_BACKOFF -5
+#define B_ZERO_BACKOFF 2
+
+#define C_AXIS_MODE AXIS_DISABLED
+#define C_VELOCITY_MAX 3600
+#define C_FEEDRATE_MAX C_VELOCITY_MAX
+#define C_TRAVEL_MAX -1
+#define C_JERK_MAX 20000000
+#define C_JUNCTION_DEVIATION JUNCTION_DEVIATION
+#define C_RADIUS 1
+#define C_SWITCH_MODE 1
+#define C_SEARCH_VELOCITY -600
+#define C_LATCH_VELOCITY 100
+#define C_LATCH_BACKOFF -5
+#define C_ZERO_BACKOFF 2
+
+// *** DEFAULT COORDINATE SYSTEM OFFSETS ***
 
 #define G54_X_OFFSET 0			// G54 is traditionally set to all zeros
 #define G54_Y_OFFSET 0
@@ -172,7 +178,7 @@
 #define G54_B_OFFSET 0
 #define G54_C_OFFSET 0
 
-#define G55_X_OFFSET 0
+#define G55_X_OFFSET 0			// but the again, so is everyting else (at least for start)
 #define G55_Y_OFFSET 0
 #define G55_Z_OFFSET 0
 #define G55_A_OFFSET 0
@@ -206,3 +212,5 @@
 #define G59_A_OFFSET 0
 #define G59_B_OFFSET 0
 #define G59_C_OFFSET 0
+
+

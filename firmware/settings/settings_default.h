@@ -1,8 +1,8 @@
 /*
- * settings_zen7x12.h - Zen Toolworks 7x12 machine profile
+ * settings_default.h - default machine profile
  * Part of TinyG project
  *
- * Copyright (c) 2011 Alden S. Hart Jr.
+ * Copyright (c) 2012 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -26,15 +26,11 @@
  *		 to be changed are in tinyg.h
  */
 
-/***********************************************************************/
-/**** Zen Toolworks 7x12 profile ***************************************/
-/***********************************************************************/
-
-#define TINYG_CONFIGURATION_PROFILE "Zen Toolworks 7x12" // displays base config profile
+#define TINYG_CONFIGURATION_PROFILE "Default Profile" // displays base config profile
 
 // **** common settings - applied to all axes or motors ****
 
-#define JERK_MAX 			100000000	// yes, that's "100,000,000" mm/(min^3)
+#define JERK_MAX 			20000000	// yes, that's "20,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION	0.05		// default value, in mm
 
 // **** system settings ****
@@ -94,7 +90,7 @@
 #define X_FEEDRATE_MAX X_VELOCITY_MAX	// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX 475				// travel between switches or crashes
 #define X_JERK_MAX JERK_MAX				// xjm
-#define X_JUNCTION_DEVIATION JUNCTION_DEVIATION	 // xjd
+#define X_JUNCTION_DEVIATION JUNCTION_DEVIATION		// xjd
 #define X_SWITCH_MODE 1					// xsm		1=switches enabled for homing only
 #define X_SEARCH_VELOCITY -500			// xsv		move in negative direction
 #define X_LATCH_VELOCITY 100			// xlv		mm/min
