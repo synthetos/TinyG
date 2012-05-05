@@ -100,6 +100,7 @@ void st_dump_stepper_state(void);
  *
  *	Set to 1 to disable, but don't do this or you will lose a lot of accuracy.
  */
+//#define DDA_SUBSTEPS 1000000		// 100,000 accumulates substeps to 6 decimal places
 #define DDA_SUBSTEPS 100000		// 100,000 accumulates substeps to 6 decimal places
 
 /* DDA overclocking

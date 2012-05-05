@@ -212,16 +212,16 @@ struct stPrepMotor {
  	uint32_t steps; 				// total steps in each direction
 	int8_t dir;						// b0 = direction
 	// experimental values:
-	int8_t previous_dir;			// direction of travel of previous segment
-	uint32_t residual_steps;		// fractional steps from previous segment
-	uint8_t counter_adjustment;		// adjustment to phase when this axis is loaded
+	int8_t prev_dir;				// direction of travel of previous segment
+//	uint32_t residual_steps;		// fractional steps from previous segment
+//	uint8_t counter_adjustment;		// adjustment to phase when this axis is loaded
 };
 
 struct stPrepSingleton {
 	uint8_t move_type;				// move type
 	volatile uint8_t exec_state;	// move execution state 
 	volatile uint8_t counter_reset_flag; // set TRUE if counter should be reset
-	uint32_t previous_ticks;		// tick count from previous move
+	uint32_t prev_ticks;			// tick count from previous move
 	uint16_t timer_period;			// DDA or dwell clock period setting
 	uint32_t timer_ticks;			// DDA or dwell ticks for the move
 	uint32_t timer_ticks_X_substeps;// DDA ticks scaled by substep factor
@@ -436,20 +436,20 @@ void _load_move()
 		// If axis has 0 steps enabling motors is req'd to support power mode = 1
 		for (uint8_t i=0; i < MOTORS; i++) {
 			st.m[i].steps = sp.m[i].steps;						// set steps
-//			if (sp.counter_reset_flag == TRUE) {				// compensate for pulse phasing
-//				st.m[i].counter = -(st.timer_ticks_downcount);
-//			}
-//			st.m[i].counter -= sp.m[i].counter_adjustment;		// compensate pulse phasing for direction changes
+			if (sp.counter_reset_flag == TRUE) {				// compensate for pulse phasing
+//				st.m[i].counter = 0;
+				st.m[i].counter = -(st.timer_ticks_downcount);
+			}
 			if (st.m[i].steps != 0) {
 				if (sp.m[i].dir == 0) {							// set direction
 					device.port[i]->OUTCLR = DIRECTION_BIT_bm;	// CW motion
-					st.m[i].step_counter_incr = 1;				//###### diagnostic #######
+					st.m[i].step_counter_incr = 1;				//##### pulse counting diagnostic
 				} else {
 					device.port[i]->OUTSET = DIRECTION_BIT_bm;	// CCW motion
-					st.m[i].step_counter_incr = -1;				//###### diagnostic #######
+					st.m[i].step_counter_incr = -1;				//##### pulse counting diagnostic
 				}
-				if (cfg.m[i].polarity == 1) { st.m[i].step_counter_incr *= -1; } //###### diagnostic #######
 				device.port[i]->OUTCLR = MOTOR_ENABLE_BIT_bm;	// enable motor
+				if (cfg.m[i].polarity == 1) st.m[i].step_counter_incr *= -1; //##### pulse counting diagnostic
 			}
 		}
 		DEVICE_TIMER_DDA.CTRLA = TIMER_ENABLE;
@@ -496,6 +496,8 @@ uint8_t st_prep_line(double steps[], double microseconds, double velocity)
 	} else if (isfinite(microseconds) == FALSE) { return (TG_ZERO_LENGTH_MOVE);
 	} else if (microseconds < EPSILON) { return (TG_ZERO_LENGTH_MOVE);
 	}
+	sp.counter_reset_flag = FALSE;		// initialize counter reset flag for this move.
+
 	// get the major axis
 	for (i=0; i<MOTORS; i++) {
 		if (major_axis_steps < fabs(steps[i])) { 
@@ -509,20 +511,25 @@ uint8_t st_prep_line(double steps[], double microseconds, double velocity)
 	for (i=0; i<MOTORS; i++) {
 		sp.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ cfg.m[i].polarity;
 		sp.m[i].steps = (uint32_t)fabs(steps[i] * dda_substeps);
+//		if (sp.m[i].prev_dir != sp.m[i].dir) {
+//			sp.counter_reset_flag = TRUE;
+//		}
+//		sp.m[i].prev_dir = sp.m[i].dir;
 	}
 	sp.timer_period = _f_to_period(f_dda);
 	sp.timer_ticks = (uint32_t)((microseconds/1000000) * f_dda);
 	sp.timer_ticks_X_substeps = sp.timer_ticks * dda_substeps;
+// Note: This was previously computed by the following line by rounding errors caused position errors:
+//	sp.timer_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
 
-//	if ((sp.timer_ticks * COUNTER_RESET_FACTOR) < sp.previous_ticks) {  // uint32_t math
-//		sp.counter_reset_flag = TRUE;
+	// anti-stall measure in case change in velocity between segments is too great 
+	if ((sp.timer_ticks * COUNTER_RESET_FACTOR) < sp.prev_ticks) {  // NB: uint32_t math
+		sp.counter_reset_flag = TRUE;
 //		fprintf_P(stderr,PSTR("*** counter reset ***\n"));  //############# diagnostic ##############
-//	} else {
-//		sp.counter_reset_flag = FALSE;
-//	}
-//	sp.previous_ticks = sp.timer_ticks;
+	}
+	sp.prev_ticks = sp.timer_ticks;
 	sp.move_type = MOVE_TYPE_ALINE;
-	sp.segment_velocity = velocity;
+	sp.segment_velocity = velocity;		// #### "track velocity" diagnostic
 	return (TG_OK);
 }
 

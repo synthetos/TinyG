@@ -478,7 +478,7 @@ char str_cjd[] PROGMEM = "cjd,c_ju,[cjd] c_junction_deviation%14.4f%S\n";
 char str_cra[] PROGMEM = "cra,c_r,[cra] c_radius_value%20.4f%S\n";
 char str_csm[] PROGMEM = "csm,c_s,[csm] c_switch_mode%16d [0,1,2]\n";
 char str_csv[] PROGMEM = "csv,c_s,[csv] c_search_velocity%16.3f%S/min\n";
-char str_clv[] PROGMEM = "cls,c_latch_v,[clv] c_latch_velocity%17.3f%S/min\n";
+char str_clv[] PROGMEM = "clv,c_latch_v,[clv] c_latch_velocity%17.3f%S/min\n";
 char str_clb[] PROGMEM = "clb,c_latch_b,[clb] c_latch_backoff%18.3f%S\n";
 char str_czb[] PROGMEM = "czb,c_z,[czb] c_zero_backoff%19.3f%S\n";
 
@@ -684,8 +684,8 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_4pm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_4].power_mode,	M4_POWER_MODE },
 
 	{ str_xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[X].axis_mode,		X_AXIS_MODE },
-	{ str_xfr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].feedrate_max,		X_FEEDRATE_MAX },
 	{ str_xvm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].velocity_max,		X_VELOCITY_MAX },
+	{ str_xfr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].feedrate_max,		X_FEEDRATE_MAX },
 	{ str_xtm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].travel_max,		X_TRAVEL_MAX },
 	{ str_xjm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].jerk_max,			X_JERK_MAX },
 	{ str_xjd, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].junction_dev,		X_JUNCTION_DEVIATION },
@@ -696,8 +696,8 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_xzb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].zero_backoff,		X_ZERO_BACKOFF },
 
 	{ str_yam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[Y].axis_mode,		Y_AXIS_MODE },
-	{ str_yfr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].feedrate_max,		Y_FEEDRATE_MAX },
 	{ str_yvm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].velocity_max,		Y_VELOCITY_MAX },
+	{ str_yfr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].feedrate_max,		Y_FEEDRATE_MAX },
 	{ str_ytm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].travel_max,		Y_TRAVEL_MAX },
 	{ str_yjm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].jerk_max,			Y_JERK_MAX },
 	{ str_yjd, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].junction_dev,		Y_JUNCTION_DEVIATION },
@@ -708,8 +708,8 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_yzb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].zero_backoff,		Y_ZERO_BACKOFF },
 
 	{ str_zam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[Z].axis_mode,		Z_AXIS_MODE },
-	{ str_zfr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].feedrate_max, 	Z_FEEDRATE_MAX },
 	{ str_zvm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].velocity_max, 	Z_VELOCITY_MAX },
+	{ str_zfr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].feedrate_max, 	Z_FEEDRATE_MAX },
 	{ str_ztm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].travel_max,		Z_TRAVEL_MAX },
 	{ str_zjm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].jerk_max,			Z_JERK_MAX },
 	{ str_zjd, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].junction_dev, 	Z_JUNCTION_DEVIATION },
@@ -720,8 +720,8 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_zzb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].zero_backoff,		Z_ZERO_BACKOFF },
 
 	{ str_aam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[A].axis_mode,		A_AXIS_MODE },
-	{ str_afr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].feedrate_max, 	A_FEEDRATE_MAX },
 	{ str_avm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].velocity_max, 	A_VELOCITY_MAX },
+	{ str_afr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].feedrate_max, 	A_FEEDRATE_MAX },
 	{ str_atm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].travel_max,		A_TRAVEL_MAX },
 	{ str_ajm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].jerk_max,			A_JERK_MAX },
 	{ str_ajd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].junction_dev, 	A_JUNCTION_DEVIATION },
@@ -733,8 +733,8 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_azb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].zero_backoff,		A_ZERO_BACKOFF },
 
 	{ str_bam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[B].axis_mode,		B_AXIS_MODE },
-	{ str_bfr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].feedrate_max, 	B_FEEDRATE_MAX },
 	{ str_bvm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].velocity_max, 	B_VELOCITY_MAX },
+	{ str_bfr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].feedrate_max, 	B_FEEDRATE_MAX },
 	{ str_btm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].travel_max,		B_TRAVEL_MAX },
 	{ str_bjm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].jerk_max,			B_JERK_MAX },
 	{ str_bjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].junction_dev, 	B_JUNCTION_DEVIATION },
@@ -746,9 +746,10 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_bzb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].zero_backoff,		B_ZERO_BACKOFF },
 
 	{ str_cam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[C].axis_mode,		C_AXIS_MODE },
-	{ str_cfr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].feedrate_max, 	C_FEEDRATE_MAX },
 	{ str_cvm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].velocity_max, 	C_VELOCITY_MAX },
+	{ str_cfr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].feedrate_max, 	C_FEEDRATE_MAX },
 	{ str_ctm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].travel_max,		C_TRAVEL_MAX },
+
 	{ str_cjm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].jerk_max,			C_JERK_MAX },
 	{ str_cjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].junction_dev,		C_JUNCTION_DEVIATION },
 	{ str_cra, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].radius,			C_RADIUS },
