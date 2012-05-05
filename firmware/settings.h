@@ -29,39 +29,19 @@
 #ifndef settings_h
 #define settings_h
 
-
 /**** GENERAL SETTINGS ******************************************************/
 
-/*** System setup and operation ***/
-
-#define ENABLE_ACCELERATION 1				// 1 to enable
-#define DISABLED_ACCELERATION_JERK	2000000000	// jerk to use if acceleration disabled
-
-#define STATUS_REPORT_INTERVAL_MS	100		// ms
-#define STATUS_REPORT_MIN_MS		30		// ms - enforce a viable minimum
-
-/*** Gcode power-on defaults ***/
-
-#define GCODE_DEFAULT_UNITS			MILLIMETERS
-#define GCODE_DEFAULT_COORD_SYSTEM	G54
-#define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
-#define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
-#define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
-
-/*** Communications defaults ***/
-
-#define COM_APPEND_TX_CR			FALSE
-#define COM_IGNORE_RX_CR			FALSE
-#define COM_IGNORE_RX_LF			FALSE
-#define COM_ENABLE_XON				TRUE
-#define COM_ENABLE_ECHO				TRUE
+#define STATUS_REPORT_MIN_MS		50		// ms - enforce a viable minimum
 
 /**** MACHINE PROFILES ******************************************************/
+
 // default machine profiles - chose only one:
 
-#include "settings/settings_zen7x12.h"			// Zen Toolworks 7x12
+#include "settings/settings_default.h"				// Default settings for shipment
+//#include "settings/settings_zen7x12.h"			// Zen Toolworks 7x12
+//#include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
 //#include "settings/settings_probotixV90.h"		// Probotix FireballV90
 //#include "settings/settings_lumenlabMicRoV3.h"	// Lumenlabs micRo v3
-//#include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
+//#include "settings/settings_sacidu93.h"			// related to Issue #12
 
 #endif

@@ -95,7 +95,8 @@ enum moveState {
  *	Useful macros
  */
 
-#define MP_LINE(t,m) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m) : mp_line(t,m))
+//#define MP_LINE(t,m) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m) : mp_line(t,m))
+#define MP_LINE(t,m) (mp_aline(t,m))	// non-planned lines are disabled
 
 /*
  * Global Scope Functions

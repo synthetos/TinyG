@@ -391,6 +391,8 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 	AXIS_SLAVE_YZ,					// rotary axis slaved to YZ plane
 	AXIS_SLAVE_XYZ					// rotary axis slaved to XYZ movement
 };	// ordering must be preserved. See _cm_get_feed_time() and seek time()
+#define AXIS_MAX_LINEAR AXIS_INHIBITED
+#define AXIS_MAX_ROTARY AXIS_SLAVE_XYZ
 
 /*****************************************************************************
  * FUNCTION PROTOTYPES

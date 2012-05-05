@@ -129,6 +129,22 @@
  *	Note: For this to work you have to be really careful about what structures
  *	are modified at what level, and use volatiles where necessary.
  */
+/* Partial steps and phase angle compensation
+ *	The DDA accepts partial steps as input to the DDA. Fractional steps are 
+ *	managed by the sub-step value as exlained elsewhere. The fraction initially
+ *	loaded into the DDA and the remainder left at the end of a move (the "residual")
+ *	can be tought of as a phase angle valaue for the DDA accumulation. Each 360
+ *	degrees of phase angle results in a step being generated. 
+ *
+ *	360 degrees of phase is defined as:
+ 
+ The total magnitude
+ *	of the 
+ *
+ *	In order to preserve positional accuracy and to get the most even pulse
+ *	spacing between segments it's necessary to preserve phase  
+ */
+
 #include <stdlib.h>
 #include <string.h>				// needed for memset in st_init()
 #include <math.h>				// isinfinite()
@@ -172,12 +188,14 @@ struct stRunMotor { 				// one per controlled motor
 	int32_t steps;					// total steps in axis
 	int32_t counter;				// DDA counter for axis
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor polarity
+	// experimental values:
+	int8_t step_counter_incr;		// counts positive or negative steps
 };
 
 struct stRunSingleton {				// Stepper static values and axis parameters
 	int32_t timer_ticks_downcount;	// tick down-counter (unscaled)
 	int32_t timer_ticks_X_substeps;	// ticks multiplied by scaling factor
-	double segment_velocity;		// +++++ record segment velocity for diagnostics
+	double segment_velocity;		// #### segment velocity recorded for diagnostics
 	struct stRunMotor m[MOTORS];	// runtime motor structures
 };
 static struct stRunSingleton st;
@@ -193,13 +211,17 @@ enum prepBufferState {
 struct stPrepMotor {
  	uint32_t steps; 				// total steps in each direction
 	int8_t dir;						// b0 = direction
+	// experimental values:
+	int8_t prev_dir;				// direction of travel of previous segment
+//	uint32_t residual_steps;		// fractional steps from previous segment
+//	uint8_t counter_adjustment;		// adjustment to phase when this axis is loaded
 };
 
 struct stPrepSingleton {
 	uint8_t move_type;				// move type
 	volatile uint8_t exec_state;	// move execution state 
 	volatile uint8_t counter_reset_flag; // set TRUE if counter should be reset
-	uint32_t previous_ticks;		// tick count from previous move
+	uint32_t prev_ticks;			// tick count from previous move
 	uint16_t timer_period;			// DDA or dwell clock period setting
 	uint32_t timer_ticks;			// DDA or dwell ticks for the move
 	uint32_t timer_ticks_X_substeps;// DDA ticks scaled by substep factor
@@ -287,16 +309,19 @@ ISR(DEVICE_TIMER_DDA_ISR_vect)
 {
 	if ((st.m[MOTOR_1].counter += st.m[MOTOR_1].steps) > 0) {
 		DEVICE_PORT_MOTOR_1.OUTSET = STEP_BIT_bm;	// turn step bit on
+		x_cnt += st.m[MOTOR_1].step_counter_incr; 			//############ diagnostic ###########
  		st.m[MOTOR_1].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_1.OUTCLR = STEP_BIT_bm;	// turn step bit off in ~1 uSec
 	}
 	if ((st.m[MOTOR_2].counter += st.m[MOTOR_2].steps) > 0) {
 		DEVICE_PORT_MOTOR_2.OUTSET = STEP_BIT_bm;
+		y_cnt += st.m[MOTOR_2].step_counter_incr; 			//############ diagnostic ###########
  		st.m[MOTOR_2].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_2.OUTCLR = STEP_BIT_bm;
 	}
 	if ((st.m[MOTOR_3].counter += st.m[MOTOR_3].steps) > 0) {
 		DEVICE_PORT_MOTOR_3.OUTSET = STEP_BIT_bm;
+		z_cnt += st.m[MOTOR_3].step_counter_incr; 			//############# diagnostic ##########
  		st.m[MOTOR_3].counter -= st.timer_ticks_X_substeps;
 		DEVICE_PORT_MOTOR_3.OUTCLR = STEP_BIT_bm;
 	}
@@ -411,16 +436,20 @@ void _load_move()
 		// If axis has 0 steps enabling motors is req'd to support power mode = 1
 		for (uint8_t i=0; i < MOTORS; i++) {
 			st.m[i].steps = sp.m[i].steps;						// set steps
-			if (sp.counter_reset_flag == TRUE) {				//compensate for pulse phasing
+			if (sp.counter_reset_flag == TRUE) {				// compensate for pulse phasing
+//				st.m[i].counter = 0;
 				st.m[i].counter = -(st.timer_ticks_downcount);
 			}
 			if (st.m[i].steps != 0) {
 				if (sp.m[i].dir == 0) {							// set direction
 					device.port[i]->OUTCLR = DIRECTION_BIT_bm;	// CW motion
+					st.m[i].step_counter_incr = 1;				//##### pulse counting diagnostic
 				} else {
 					device.port[i]->OUTSET = DIRECTION_BIT_bm;	// CCW motion
+					st.m[i].step_counter_incr = -1;				//##### pulse counting diagnostic
 				}
 				device.port[i]->OUTCLR = MOTOR_ENABLE_BIT_bm;	// enable motor
+				if (cfg.m[i].polarity == 1) st.m[i].step_counter_incr *= -1; //##### pulse counting diagnostic
 			}
 		}
 		DEVICE_TIMER_DDA.CTRLA = TIMER_ENABLE;
@@ -435,6 +464,73 @@ void _load_move()
 	// all other cases drop tp here (e.g. Null moves after Mcodes skip to here) 
 	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
 	st_request_exec_move();								// exec and prep next move
+}
+
+/*
+ * st_prep_line() - Add a new linear movement to the move buffer
+ *
+ * This function queues a line segment to the motor buffer. It works 
+ * in joint space (motors) and it works in steps, not length units.
+ * 
+ * It deals with all the DDA optimizations and timer setups *here* so 
+ * that the dequeuing operation can be as rapid as possible. All args 
+ * are provided as doubles and converted to their appropriate integer 
+ * types during queuing.
+ *
+ * Args:
+ *	steps_x ... steps_a are signed relative motion in steps
+ *	Microseconds specifies how many microseconds the move should take 
+ *	 (Note that these are constant speed segments being queued)
+ */
+
+uint8_t st_prep_line(double steps[], double microseconds, double velocity)
+{
+	uint8_t i;
+	double f_dda = F_DDA;		// starting point for adjustment
+	double dda_substeps = DDA_SUBSTEPS;
+	double major_axis_steps = 0;
+
+	// trap conditions that would prevent queueing the line
+	// defensive programming
+	if (sp.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (TG_INTERNAL_ERROR);
+	} else if (isfinite(microseconds) == FALSE) { return (TG_ZERO_LENGTH_MOVE);
+	} else if (microseconds < EPSILON) { return (TG_ZERO_LENGTH_MOVE);
+	}
+	sp.counter_reset_flag = FALSE;		// initialize counter reset flag for this move.
+
+	// get the major axis
+	for (i=0; i<MOTORS; i++) {
+		if (major_axis_steps < fabs(steps[i])) { 
+			major_axis_steps = fabs(steps[i]); 
+		}
+	}
+	// set dda clock frequency and substeps
+	_set_f_dda(&f_dda, &dda_substeps, major_axis_steps, microseconds);
+
+	// setup motor parameters
+	for (i=0; i<MOTORS; i++) {
+		sp.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ cfg.m[i].polarity;
+		sp.m[i].steps = (uint32_t)fabs(steps[i] * dda_substeps);
+//		if (sp.m[i].prev_dir != sp.m[i].dir) {
+//			sp.counter_reset_flag = TRUE;
+//		}
+//		sp.m[i].prev_dir = sp.m[i].dir;
+	}
+	sp.timer_period = _f_to_period(f_dda);
+	sp.timer_ticks = (uint32_t)((microseconds/1000000) * f_dda);
+	sp.timer_ticks_X_substeps = sp.timer_ticks * dda_substeps;
+// Note: This was previously computed by the following line by rounding errors caused position errors:
+//	sp.timer_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
+
+	// anti-stall measure in case change in velocity between segments is too great 
+	if ((sp.timer_ticks * COUNTER_RESET_FACTOR) < sp.prev_ticks) {  // NB: uint32_t math
+		sp.counter_reset_flag = TRUE;
+//		fprintf_P(stderr,PSTR("*** counter reset ***\n"));  //############# diagnostic ##############
+	}
+	sp.prev_ticks = sp.timer_ticks;
+	sp.move_type = MOVE_TYPE_ALINE;
+	sp.segment_velocity = velocity;		// #### "track velocity" diagnostic
+	return (TG_OK);
 }
 
 /* 
@@ -457,69 +553,6 @@ void st_prep_dwell(double microseconds)
 	sp.move_type = MOVE_TYPE_DWELL;
 	sp.timer_period = _f_to_period(F_DWELL);
 	sp.timer_ticks = (uint32_t)((microseconds/1000000) * F_DWELL);
-}
-
-/*
- * st_prep_line() - Add a new linear movement to the move buffer
- *
- * This function queues a line segment to the motor buffer. It works 
- * in joint space (motors) and it works in steps, not length units.
- * 
- * It deals with all the DDA optimizations and timer setups *here* so 
- * that the dequeuing operation can be as rapid as possible. All args 
- * are provided as doubles and converted to their appropriate integer 
- * types during queuing.
- *
- * Args:
- *	steps_x ... steps_a are signed relative motion in steps
- *	Microseconds specifies how many microseconds the move should take 
- *	 (Note that these are constant speed segments being queued)
- *
- * Blocking behavior:
- *	This routine returns BUFFER_FULL if there is no space in the buffer.
- *  A blocking version should wrap this code with blocking semantics
- */
-
-uint8_t st_prep_line(double steps[], double microseconds, double velocity)
-{
-	uint8_t i;
-	double f_dda = F_DDA;		// starting point for adjustment
-	double dda_substeps = DDA_SUBSTEPS;
-	double major_axis_steps = 0;
-
-	// trap conditions that would prevent queueing the line
-	// defensive programming
-	if (sp.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (TG_INTERNAL_ERROR);
-	} else if (isfinite(microseconds) == FALSE) { return (TG_ZERO_LENGTH_MOVE);
-	} else if (microseconds < EPSILON) { return (TG_ZERO_LENGTH_MOVE);
-	}
-	// get the major axis
-	for (i=0; i<MOTORS; i++) {
-		if (major_axis_steps < fabs(steps[i])) { 
-			major_axis_steps = fabs(steps[i]); 
-		}
-	}
-	// set dda clock frequency and substeps
-	_set_f_dda(&f_dda, &dda_substeps, major_axis_steps, microseconds);
-
-	// setup motor parameters
-	for (i=0; i<MOTORS; i++) {
-		sp.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ cfg.m[i].polarity;
-		sp.m[i].steps = (uint32_t)fabs(steps[i] * dda_substeps);
-	}
-	sp.timer_period = _f_to_period(f_dda);
-	sp.timer_ticks = (uint32_t)((microseconds/1000000) * f_dda);
-	sp.timer_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
-
-	if ((sp.timer_ticks * COUNTER_RESET_FACTOR) < sp.previous_ticks) {  // uint32_t math
-		sp.counter_reset_flag = TRUE;
-	} else {
-		sp.counter_reset_flag = FALSE;
-	}
-	sp.previous_ticks = sp.timer_ticks;
-	sp.move_type = MOVE_TYPE_ALINE;
-	sp.segment_velocity = velocity;
-	return (TG_OK);
 }
 
 /* 
