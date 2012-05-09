@@ -13,10 +13,10 @@ TinyG is a port of grbl to the Atmel xmega that runs on the TinyG hardware. Some
 
 See these websites for more details.
 
-* [Synthetos](https://www.synthetos.com/)
 * [TinyG Wiki](http://www.synthetos.com/wiki/index.php?title=Projects:TinyG)
 * [TinyG Github](https://github.com/synthetos/TinyG)
-
+* [Synthetos Blog](https://www.synthetos.com/)
+* [Synthetos Web Store](https://www.synthetos.com/webstore/)
 
 
 CURRENT VERSION
