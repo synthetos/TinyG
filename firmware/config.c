@@ -1094,12 +1094,16 @@ static uint8_t _set_am(cmdObj *cmd)
 	if (strchr(linear_axes, cmd->token[0]) != NULL) {		// true if it's a linear axis
 		if (cmd->value > AXIS_MAX_LINEAR) {
 			cmd->value = 0;
-			fprintf_P(stderr, PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED\n"));
+			if (tg.communications_mode == TG_TEXT_MODE) {
+				fprintf_P(stderr, PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED\n"));
+			}
 		}
 	} else {
 		if (cmd->value > AXIS_MAX_ROTARY) {
 			cmd->value = 0;
-			fprintf_P(stderr, PSTR("*** WARNING *** Unsupported rotary axis mode. Axis DISABLED\n"));
+			if (tg.communications_mode == TG_TEXT_MODE) {
+				fprintf_P(stderr, PSTR("*** WARNING *** Unsupported rotary axis mode. Axis DISABLED\n"));
+			}
 		}
 	}
 	_set_ui8(cmd);
@@ -1130,7 +1134,9 @@ static uint8_t _set_tr(cmdObj *cmd)
 static uint8_t _set_mi(cmdObj *cmd)
 {
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
-		fprintf_P(stderr, PSTR("*** WARNING *** Unsupported microstep value\n"));		
+		if (tg.communications_mode == TG_TEXT_MODE) {
+			fprintf_P(stderr, PSTR("*** WARNING *** Unsupported microstep value\n"));
+		}
 	}
 	_set_ui8(cmd);						// but set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);
@@ -1288,37 +1294,10 @@ uint8_t cfg_config_parser(char *str)
 {
 	cmdObj *cmd = cmd_array;				// point at first struct in the array
 
-//######################### START diagnostic ##############################
-	if (str[0] == '?') { // special handling for status report
-		switch(str[1]) {
-			case 'x':fprintf_P(stderr,PSTR("[x=%1.3f]\n"), cm_get_runtime_work_position(X)); break;
-			case 'X':fprintf_P(stderr,PSTR("[x=%1.3f]\n"), cm_get_runtime_machine_position(X));break;
-			case 'y':fprintf_P(stderr,PSTR("[y=%1.3f]\n"), cm_get_runtime_work_position(Y));break;
-			case 'Y':fprintf_P(stderr,PSTR("[y=%1.3f]\n"), cm_get_runtime_machine_position(Y));break;
-			case 'z':fprintf_P(stderr,PSTR("[z=%1.3f]\n"), cm_get_runtime_work_position(Z));break;
-			case 'Z':fprintf_P(stderr,PSTR("[z=%1.3f]\n"), cm_get_runtime_machine_position(Z));break;
-			case 'a':fprintf_P(stderr,PSTR("[a=%1.3f]\n"), cm_get_runtime_work_position(A));break;
-			case 'A':fprintf_P(stderr,PSTR("[a=%1.3f]\n"), cm_get_runtime_machine_position(A));break;
-			case 'd':{ 
-
-				fprintf_P(stderr,PSTR("Programmed X=[%1.3f] "),cm_get_runtime_work_position(X));
-				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),x_cnt/cfg.m[X].steps_per_unit); 
-				fprintf_P(stderr,PSTR("Programmed Y=[%1.3f] "),cm_get_runtime_work_position(Y));
-				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),y_cnt/cfg.m[Y].steps_per_unit); 
-			    fprintf_P(stderr,PSTR("Programmed Z=[%1.3f] "),cm_get_runtime_work_position(Z));
-				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),z_cnt/cfg.m[Z].steps_per_unit); 
-	     	   break;
-	        }
-			default: rpt_run_multiline_status_report(); 
-		}
+	if (str[0] == '?') {					// special handling for status report
+		rpt_run_multiline_status_report();
 		return (TG_OK);
 	}
-//######################### END diagnostic ##############################
-
-//	if (str[0] == '?') {					// special handling for status report
-//		rpt_run_multiline_status_report();
-//		return (TG_OK);
-//	}
 	ritorno(_parse_config_string(str,cmd));	// get the first object
 	if ((cmd->value_type != VALUE_TYPE_PARENT) && (cmd->value_type != VALUE_TYPE_NULL)) {
 		cmd_set(cmd);						// set single value

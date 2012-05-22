@@ -75,15 +75,7 @@ uint8_t st_test_prep_state(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(double microseconds);
-//uint8_t st_prep_line(double steps[], double microseconds);
 uint8_t st_prep_line(double steps[], double microseconds, double velocity);
-
-//######################### START diagnostic ##############################
-double z_cnt;
-double y_cnt;
-double x_cnt;
-//######################### END diagnostic ##############################
-
 
 #ifdef __DEBUG
 void st_dump_stepper_state(void);
