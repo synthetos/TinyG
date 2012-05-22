@@ -37,7 +37,6 @@
 
 #define STATUS_REPORT_INTERVAL_MS	250	// in milliseconds
 
-=======
 #define JUNCTION_ACCELERATION 		50000	// centripetal acceleration around corners
 
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
