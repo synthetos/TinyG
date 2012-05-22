@@ -35,9 +35,10 @@
 
 // **** system settings ****
 
-#define JUNCTION_ACCELERATION 100000	// centripetal acceleration around corners
+#define STATUS_REPORT_INTERVAL_MS	250	// in milliseconds
 
-#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
+=======
+#define JUNCTION_ACCELERATION 		50000	// centripetal acceleration around corners
 
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
 #define GCODE_DEFAULT_UNITS			MILLIMETERS
