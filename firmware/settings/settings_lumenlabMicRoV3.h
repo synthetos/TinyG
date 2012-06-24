@@ -31,6 +31,7 @@
 /***********************************************************************/
 
 #define TINYG_CONFIGURATION_PROFILE "Lumenlabs micRo v3" // displays base config profile
+#define INIT_CONFIGURATION_MESSAGE "\n#### Initializing configs to Lumenlabs profile ####\n"
 
 // **** common settings - applied to all axes or motors ****
 

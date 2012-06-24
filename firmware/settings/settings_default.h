@@ -27,6 +27,7 @@
  */
 
 #define TINYG_CONFIGURATION_PROFILE "Default Profile" // displays base config profile
+#define INIT_CONFIGURATION_MESSAGE "\n#### Initializing configs to default settings ####\n"
 
 // **** common settings - applied to all axes or motors ****
 
@@ -35,9 +36,9 @@
 
 // **** system settings ****
 
-#define STATUS_REPORT_INTERVAL_MS	250	// in milliseconds
+#define JUNCTION_ACCELERATION 100000	// centripetal acceleration around corners
 
-#define JUNCTION_ACCELERATION 		50000	// centripetal acceleration around corners
+#define STATUS_REPORT_INTERVAL_MS	0	// in milliseconds
 
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
 #define GCODE_DEFAULT_UNITS			MILLIMETERS

@@ -627,7 +627,7 @@ uint8_t cm_set_path_control(uint8_t mode)
 /* 
  * Machining Functions (4.3.6)
  *
- * cm_arc_feed() - see plan_arc.c
+ * cm_arc_feed() - see arc.c
  * cm_dwell() - G4, P parameter (seconds)
  * cm_straight_feed() - G1
  */ 

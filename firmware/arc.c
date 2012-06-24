@@ -42,7 +42,7 @@
 #include "planner.h"
 #include "kinematics.h"
 
-struct arArcSingleton 		{	// persistent planner and runtime variables
+struct arArcSingleton {			// persistent planner and runtime variables
 	uint8_t run_state;			// runtime state machine sequence
 	uint32_t linenum;			// gcode line number (Nxxxxx)
 
@@ -183,11 +183,11 @@ void ar_abort_arc()
 }
 
 /*****************************************************************************
- * Canonical Machining arc fucntions (arc prep for planning and runtime)
+ * Canonical Machining arc functions (arc prep for planning and runtime)
  * cm_arc_feed() - entry point for arc prep
  * _compute_center_arc() - compute arc from I and J (arc center point)
- * _get_arc_radius() 	- compute arc center (offset) from radius.
- * _get_arc_time()
+ * _get_arc_radius() 	 - compute arc center (offset) from radius.
+ * _get_arc_time()		 - compute time to complete arc at current feed rate
  */
 uint8_t cm_arc_feed(double target[], double flags[],// arc endpoints
 					double i, double j, double k, 	// offsets

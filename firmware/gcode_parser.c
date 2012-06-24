@@ -374,7 +374,7 @@ static uint8_t _execute_gcode_block()
 		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS: { status = cm_resume_origin_offsets(); break;}
 
 		case NEXT_ACTION_DEFAULT: { 
-			if (_axis_changed() == false) break;
+//			if (_axis_changed() == false) break;
 			cm_set_absolute_override(gn.absolute_override);	// apply override setting to gm struct
 			switch (gn.motion_mode) {
 				case MOTION_MODE_STRAIGHT_TRAVERSE: { status = cm_straight_traverse(gn.target, gf.target); break;}
