@@ -571,7 +571,7 @@ uint8_t cm_resume_origin_offsets()		// G92.3
 uint8_t cm_straight_traverse(double target[], double flags[])
 {
 	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
-	cm_set_target(target, flags);
+	cm_set_target(target,flags);
 	cm_cycle_start();					//required for homing & other cycles
 	uint8_t status = MP_LINE(gm.target, _get_move_time());
 	cm_set_gcode_model_endpoint_position(status);

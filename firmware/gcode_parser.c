@@ -56,7 +56,6 @@ static uint8_t _execute_gcode_block(void);		// Execute the gcode block
 static uint8_t _check_gcode_block(void);		// check the block for correctness
 static uint8_t _get_next_statement(char *letter, double *value, char *buf, uint8_t *i);
 static uint8_t _point(double value);
-static uint8_t _axis_changed(void);
 
 #define coord_select ((uint8_t)gn.dwell_time)	// alias for P which is shared by both dwells and G10s
 
@@ -374,9 +373,9 @@ static uint8_t _execute_gcode_block()
 		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS: { status = cm_resume_origin_offsets(); break;}
 
 		case NEXT_ACTION_DEFAULT: { 
-//			if (_axis_changed() == false) break;
 			cm_set_absolute_override(gn.absolute_override);	// apply override setting to gm struct
 			switch (gn.motion_mode) {
+				case MOTION_MODE_CANCEL_MOTION_MODE: { gm.motion_mode = gn.motion_mode; break;}
 				case MOTION_MODE_STRAIGHT_TRAVERSE: { status = cm_straight_traverse(gn.target, gf.target); break;}
 				case MOTION_MODE_STRAIGHT_FEED: { status = cm_straight_feed(gn.target, gf.target); break;}
 				case MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC:
@@ -442,8 +441,4 @@ static uint8_t _point(double value)
 	return((uint8_t)(value*10 - trunc(value)*10));	// isolate the decimal point as an int
 }
 
-static uint8_t _axis_changed()
-{
-	return (gf.target[X] + gf.target[Y] + gf.target[Z] + gf.target[A] + gf.target[B] + gf.target[C]);
-}
 
