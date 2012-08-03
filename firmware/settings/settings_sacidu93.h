@@ -50,10 +50,10 @@
 //#define JUNCTION_ACCELERATION 20000000	// centripetal acceleration around corners
 
 #define COM_APPEND_TX_CR			FALSE
-#define COM_IGNORE_RX_CR			FALSE
-#define COM_IGNORE_RX_LF			FALSE
+#define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_ENABLE_ECHO				FALSE
 #define COM_ENABLE_XON				TRUE
+#define COM_ENABLE_HASHCODE			TRUE
 
 // motor values
 
