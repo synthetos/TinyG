@@ -53,6 +53,7 @@
 #define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_ENABLE_ECHO				FALSE
 #define COM_ENABLE_XON				TRUE
+#define COM_ENABLE_HASHCODE			TRUE
 
 // motor values
 

@@ -276,7 +276,11 @@ uint8_t js_make_json_string(cmdObj *cmd, char *str)
 	while (end_curlies-- != 0) {
 		str += sprintf(str, "}");
 	}
-	sprintf(str, "%lu\n", calculate_hash(str_start));
+	if (cfg.enable_hashcode == TRUE) {
+		sprintf(str, "%lu\n", calculate_hash(str_start));
+	} else {
+		sprintf(str, "\n");
+	}
 	return (TG_OK);
 }
 

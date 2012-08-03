@@ -54,6 +54,7 @@
 #define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_ENABLE_ECHO				TRUE
 #define COM_ENABLE_XON				TRUE
+#define COM_ENABLE_HASHCODE			TRUE
 
 #define ENABLE_ACCELERATION 1			// *** NOTE: this feature is disabled in 338.11 - always equal to 1 
 

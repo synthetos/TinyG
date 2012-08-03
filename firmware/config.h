@@ -60,7 +60,7 @@
 // NOTE: The number of SYSTEM_GROUP or SR_DEFAULTS elements cannot exceed CMD_MAX_OBJECTS
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
 #define GROUP_EXCLUSIONS "cycs,coor"	 // items that are not actually part of the 1234xyzabc groups
-#define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ea,ja,ml,ma,mt,ic,il,ec,ee,ex"
+#define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ea,ja,ml,ma,mt,ic,il,ec,ee,ex,eh"
 #define SR_DEFAULTS 	"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 #define DONT_PERSIST	"gc,te,de"		 // commands that should not be persisted (comma separated)
 #define DONT_INITIALIZE "gc,sr,te,he,de" // commands that should not be initialized
@@ -192,12 +192,11 @@ struct cfgParameters {
 
 	// communications settings		// these are shadow settigns for XIO cntrl bits
 	uint8_t ignore_crlf;			// ignore CR or LF on RX
-//	uint8_t ignore_cr;				// ignore CR on RX
-//	uint8_t ignore_lf;				// ignore LF on RX
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable echo - also used for gating JSON responses
 	uint8_t enable_xon;				// enable XON/XOFF mode
-
+	uint8_t enable_hashcode;		// enable Java hashCode on JSON responses
+	
 	// status report configs
 	uint32_t status_report_interval;// in MS. set non-zero to enable
 	INDEX_T status_report_spec[CMD_STATUS_REPORT_LEN];
