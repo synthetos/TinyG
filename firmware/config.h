@@ -65,6 +65,10 @@
 #define DONT_PERSIST	"gc,te,de"		 // commands that should not be persisted (comma separated)
 #define DONT_INITIALIZE "gc,sr,te,he,de" // commands that should not be initialized
 
+#define IGNORE_OFF 0				// accept either CR or LF as termination on RX text line
+#define IGNORE_CR 1					// ignore CR on RX
+#define IGNORE_LF 2					// ignore LF on RX
+
 enum cmdValueType {					// value typing for config and JSON
 	VALUE_TYPE_ERROR = -2,			// was unable to process the record
 	VALUE_TYPE_NULL = -1,			// value is 'null'
@@ -187,8 +191,9 @@ struct cfgParameters {
 	uint8_t distance_mode;			// G90,G91 reset default
 
 	// communications settings		// these are shadow settigns for XIO cntrl bits
-	uint8_t ignore_cr;				// ignore CR on RX
-	uint8_t ignore_lf;				// ignore LF on RX
+	uint8_t ignore_crlf;			// ignore CR or LF on RX
+//	uint8_t ignore_cr;				// ignore CR on RX
+//	uint8_t ignore_lf;				// ignore LF on RX
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable echo - also used for gating JSON responses
 	uint8_t enable_xon;				// enable XON/XOFF mode

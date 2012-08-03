@@ -50,8 +50,6 @@
 static uint8_t _json_parser(char *str);
 static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *level, const char *grp);
 static uint8_t _normalize_json_string(char *str, uint16_t size);
-//static uint8_t _make_json_response(cmdObj *cmd, char *str, uint16_t size);
-//static uint8_t _make_json_error_response(cmdObj *cmd, char **pstr, uint8_t status);
 
 /****************************************************************************
  * js_init() 
@@ -278,93 +276,10 @@ uint8_t js_make_json_string(cmdObj *cmd, char *str)
 	while (end_curlies-- != 0) {
 		str += sprintf(str, "}");
 	}
-//	uint32_t cks = calculate_hash(str_start);
 	sprintf(str, "%lu\n", calculate_hash(str_start));
 	return (TG_OK);
 }
 
-/****************************************************************************
- * _make_json_response() - make a response string from JSON object array
- * _make_json_error_response() - add an error response to the string
- *
- *	*cmd is a pointer to the first element in the cmd array
- *	*str is a pointer to the output string - usually what was the input string
- *
- * 	Generates one non-nested response or multiple nested responses of form:
- *	 {"name":
- *		{"name":value,				// value form depends on value type
- *		 "stat":0,					// stat zero is TG_OK. All else are errors
- *		 "msg":"error message"		// msg only present if error
- *		}
- *	 }
- *
- *	Note: This function only handles objects made of single and multiple NV pairs.
- *	It does not handle parent/child nested objects.
- */
-/*
-static uint8_t _make_json_response(cmdObj *cmd, char *str, uint16_t size)
-{
-	uint8_t status = TG_OK;
-
-	// write opening curly
-	strcpy(str++, "{");
-
-	// preprocess struct looking for gross errors affecting the entire structure
-	if (cmd->index == -1) {	
-		status = _make_json_error_response(cmd, &str, TG_UNRECOGNIZED_COMMAND);
-		str += sprintf(str, "}\n");
-		return (status);
-	}
-
-	// iterate over command object array to make NV responses
-	for (uint8_t i=0; i<CMD_ARRAY_SIZE; i++) {
-
-		// trap error response cases
-		if (cmd->index == -1) {
-			status = _make_json_error_response(cmd, &str, TG_UNRECOGNIZED_COMMAND);
-		} else if (cmd->status != TG_OK) {
-			status = _make_json_error_response(cmd, &str, cmd->status);
-		} else if ((cmd->value_type < VALUE_TYPE_NULL) || (cmd->value_type > VALUE_TYPE_STRING)) {
-			status = _make_json_error_response(cmd, &str, TG_JSON_SYNTAX_ERROR);
-
-		// non-error response cases
-		} else {
-			str += sprintf(str, "\"%s\":{\"%s\":", cmd->token, cmd->token);
-			if (cmd->value_type == VALUE_TYPE_NULL) {
-				str += sprintf(str, "\"\"");
-			} else if (cmd->value_type == VALUE_TYPE_FALSE) {
-				str += sprintf(str, "false");
-			} else if (cmd->value_type == VALUE_TYPE_TRUE) {
-				str += sprintf(str, "true");
-			} else if (cmd->value_type == VALUE_TYPE_NUMBER) {
-				str += sprintf(str, "%0.3f", cmd->value);
-			} else if (cmd->value_type == VALUE_TYPE_STRING) {
-				str += sprintf(str, "\"%s\"", cmd->string);
-			} 
-			str += sprintf(str, ",\"st\":%d}", cmd->status);	// status NV pair & termination
-		}
-		if (strlen(str) > size) return (TG_OUTPUT_EXCEEDS_MAX_LENGTH); // that's bad
-		if (cmd->nx == NULL) break;			// no more. You can leave now.
-		str += sprintf(str, ","); 
-		cmd = cmd->nx;
-	}
-
-	// write closing curly
-	str += sprintf(str, "}\n");
-	return (status);
-}
-
-static uint8_t _make_json_error_response(cmdObj *cmd, char **pstr, uint8_t status)
-{
-	char tbuf[STATUS_MESSAGE_LEN];
-
-	cmd->status = status;
-	*pstr += sprintf(*pstr, "\"%s\":{\"%s\":\"\"", cmd->name, cmd->name);
-	*pstr += sprintf(*pstr, ",\"stat\":%d", cmd->status);
-	*pstr += sprintf(*pstr, ",\"msg\":\"%s\"}", tg_get_status_message(cmd->status, tbuf));
-	return (status);
-}
-*/
 //###########################################################################
 //##### UNIT TESTS ##########################################################
 //###########################################################################

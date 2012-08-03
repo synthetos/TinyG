@@ -176,9 +176,8 @@ static void _print_pos(cmdObj *cmd);	// print runtime work position
 
 static uint8_t _set_defa(cmdObj *cmd);	// reset config to defaults
 
-static uint8_t _set_ic(cmdObj *cmd);	// ignore CR on input
-static uint8_t _set_il(cmdObj *cmd);	// ignore LF on input
-static uint8_t _set_ec(cmdObj *cmd);	// expand CRLF on outout
+static uint8_t _set_ic(cmdObj *cmd);	// ignore CR or LF on RX input
+static uint8_t _set_ec(cmdObj *cmd);	// expand CRLF on TX outout
 static uint8_t _set_ee(cmdObj *cmd);	// enable character echo
 static uint8_t _set_ex(cmdObj *cmd);	// enable XON/XOFF
 
@@ -371,8 +370,7 @@ char str_ml[] PROGMEM = "ml,min_l,[ml]  min_line_segment   %14.3f%S\n";
 char str_ma[] PROGMEM = "ma,min_a,[ma]  min_arc_segment    %14.3f%S\n";
 char str_mt[] PROGMEM = "mt,min_s,[mt]  min_segment_time   %10.0f uSec\n";
 
-char str_ic[] PROGMEM = "ic,ignore_c,[ic]  ignore_CR (on RX)%12d [0,1]\n";
-char str_il[] PROGMEM = "il,ignore_l,[il]  ignore_LF (on RX)%12d [0,1]\n";
+char str_ic[] PROGMEM = "ic,ignore_c,[ic]  ignore CR or LF on RX %7d [0,1=CR,2=LF]\n";
 char str_ec[] PROGMEM = "ec,enable_c,[ec]  enable_CR (on TX)%12d [0,1]\n";
 char str_ee[] PROGMEM = "ee,enable_e,[ee]  enable_echo      %12d [0,1]\n";
 char str_ex[] PROGMEM = "ex,enable_x,[ex]  enable_xon_xoff  %12d [0,1]\n";
@@ -649,8 +647,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_ma, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.arc_segment_len,		ARC_SEGMENT_LENGTH },
 	{ str_mt, _print_lin, _get_dbl, _set_dbl, (double *)&cfg.estd_segment_usec,		NOM_SEGMENT_USEC },
 
-	{ str_ic, _print_ui8, _get_ui8, _set_ic,  (double *)&cfg.ignore_cr,				COM_IGNORE_RX_CR },
-	{ str_il, _print_ui8, _get_ui8, _set_il,  (double *)&cfg.ignore_lf,				COM_IGNORE_RX_LF },
+	{ str_ic, _print_ui8, _get_ui8, _set_ic,  (double *)&cfg.ignore_crlf,			COM_IGNORE_CRLF },
 	{ str_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,				COM_APPEND_TX_CR },
 	{ str_ee, _print_ui8, _get_ui8, _set_ee,  (double *)&cfg.enable_echo,			COM_ENABLE_ECHO },
 	{ str_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
@@ -1159,8 +1156,7 @@ static uint8_t _set_motor_steps_per_unit(cmdObj *cmd)
 }
 
 /**** SERIAL IO FUNCTIONS ****
- * _set_ic() - ignore cr on RX
- * _set_il() - ignore lf on RX
+ * _set_ic() - ignore CR or LF on RX
  * _set_ec() - enable CRLF on TX
  * _set_ee() - enable character echo
  * _set_ex() - enable XON/XOFF
@@ -1180,14 +1176,16 @@ static uint8_t _set_comm_helper(cmdObj *cmd, uint32_t yes, uint32_t no)
 
 static uint8_t _set_ic(cmdObj *cmd) 
 {
-	cfg.ignore_cr = (uint8_t)cmd->value;
-	return(_set_comm_helper(cmd, XIO_IGNORECR, XIO_NOIGNORECR));
-}
+	cfg.ignore_crlf = (uint8_t)cmd->value;
+	(void)xio_cntl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
+	(void)xio_cntl(XIO_DEV_USB, XIO_NOIGNORELF);
 
-static uint8_t _set_il(cmdObj *cmd) 
-{
-	cfg.ignore_lf = (uint8_t)cmd->value;
-	return(_set_comm_helper(cmd, XIO_IGNORELF, XIO_NOIGNORELF));
+	if (cfg.ignore_crlf == IGNORE_CR) {
+		(void)xio_cntl(XIO_DEV_USB, XIO_IGNORECR);
+	} else if (cfg.ignore_crlf == IGNORE_LF) {
+		(void)xio_cntl(XIO_DEV_USB, XIO_IGNORELF);
+	}
+	return(cmd_write_NVM_value(cmd));				// persist the setting
 }
 
 static uint8_t _set_ec(cmdObj *cmd) 

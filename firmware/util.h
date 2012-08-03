@@ -36,8 +36,6 @@ double vector[AXES];				// vector of axes for passing to subroutines
 uint8_t isnumber(char c);
 uint8_t read_double(char *buf, uint8_t *i, double *double_ptr);
 uint32_t calculate_hash(char const *string);
-uint8_t calculate_intelhexcc(char const *string);
-uint16_t calculate_crc16(char *string);
 
 void copy_vector(double dest[], const double src[], uint8_t length);
 void copy_axis_vector(double dest[], const double src[]);
