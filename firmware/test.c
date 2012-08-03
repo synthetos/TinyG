@@ -41,7 +41,7 @@
 
 // regression test files
 #include "tests/test_001_smoke.h" 	// basic functionality
-#include "tests/test_002_motion.h"	// square and circle moves
+#include "tests/test_002_squares.h"	// square moves
 #include "tests/test_003_arcs.h"	// arc moves
 #include "tests/test_004_dwell.h"	// dwells embedded in move sequences
 #include "tests/test_005_homing.h"	// G28.1 homing cycles
@@ -66,7 +66,7 @@ uint8_t tg_test(cmdObj *cmd)
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (TG_OK);}
 		case 1: { xio_open_pgm(PGMFILE(&test_smoke)); break;}
-		case 2: { xio_open_pgm(PGMFILE(&test_motion)); break;}
+		case 2: { xio_open_pgm(PGMFILE(&test_squares)); break;}
 		case 3: { xio_open_pgm(PGMFILE(&test_arcs)); break;}
 		case 4: { xio_open_pgm(PGMFILE(&test_dwell)); break;}
 		case 5: { xio_open_pgm(PGMFILE(&test_homing)); break;}
@@ -98,7 +98,23 @@ uint8_t tg_test(cmdObj *cmd)
 void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
-	
+
+//	xio_queue_RX_string_usb("g00g17g21g40g49g80g90\n");
+//	xio_queue_RX_string_usb("g2x0y0i1f2000\n");
+//	xio_queue_RX_string_usb("f3000\n");
+//	xio_queue_RX_string_usb("g80\n");
+
+/*
+	xio_queue_RX_string_usb("N0000 G91\n");
+	xio_queue_RX_string_usb("N0010 M6 T1\n");
+	xio_queue_RX_string_usb("N0020 G00 Z2.0000\n");
+	xio_queue_RX_string_usb("N0030 M03\n");
+	xio_queue_RX_string_usb("N0040 G00 X21.5000 Y13.0000\n");
+	xio_queue_RX_string_usb("N0050 G00 Z0.5000\n");
+	xio_queue_RX_string_usb("N0060 G01 Z-0.5000 F100 S1000\n");
+	xio_queue_RX_string_usb("N0070 G02 I20.0000 J13.0000 F100.0\n");
+*/
+
 //	xio_queue_RX_string_usb("$aam=3\n");
 //	xio_queue_RX_string_usb("$\n");
 //	xio_queue_RX_string_usb("$4tr=720\n");
@@ -145,7 +161,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 /* G0's */
 //	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
 //	xio_queue_RX_string_usb("g0 x0\n");
-	xio_queue_RX_string_usb("g0 x2\n");
+//	xio_queue_RX_string_usb("g0 x2\n");
 //	xio_queue_RX_string_usb("g0 x3\n");
 //	xio_queue_RX_string_usb("g0 y3\n");
 //	xio_queue_RX_string_usb("g0 x3 y4 z5.5\n");
@@ -165,6 +181,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g2 f300 x10 y10 i8 j8\n");
 //	xio_queue_RX_string_usb("g2 f300 x10 y10 i5 j5\n");
 //	xio_queue_RX_string_usb("g2 f300 x3 y3 i1.5 j1.5\n");
+//	xio_queue_RX_string_usb("g2 f300 i10 j10\n");				// G2 pocket arc
+//	xio_queue_RX_string_usb("f400\n");							// set feed rate while in arc motion mode
+//	xio_queue_RX_string_usb("g3 f300 i10 j10\n");				// G3 pocket arc
 
 /* G4 tests (dwells) */
 //	xio_queue_RX_string_usb("g0 x20 y23 z10\n");
@@ -222,12 +241,13 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 /* JSON tests */
 // If you want to use all these you need to set RX buffer to 1024 in xio_usart.h
-/*	xio_queue_RX_string_usb("{\"x_feedrate\":1200}\n");
-	xio_queue_RX_string_usb("{\"xfr\":1200, \"yfr\":1201, \"zfr\":600}\n");
-	xio_queue_RX_string_usb("{\"err_1\":36000}\n");
-	xio_queue_RX_string_usb("{\"1sa\":3.6.000}\n");
+//	xio_queue_RX_string_usb("{\"x_feedrate\":1200}\n");
+//	xio_queue_RX_string_usb("{\"xfr\":1200, \"yfr\":1201, \"zfr\":600}\n");
+//	xio_queue_RX_string_usb("{\"err_1\":36000}\n");
+//	xio_queue_RX_string_usb("{\"1sa\":3.6.000}\n");
+
 	xio_queue_RX_string_usb("{\"gcode\":\"g0 x3 y4 z5.5 (comment line)\"}\n");
-	xio_queue_RX_string_usb("{\"config_version\":null}\n");	// simple null test
+/*	xio_queue_RX_string_usb("{\"config_version\":null}\n");	// simple null test
 	xio_queue_RX_string_usb("{\"config_profile\":true}\n");	// simple true test
 	xio_queue_RX_string_usb("{\"prompt\":false}\n");		// simple false test
 	xio_queue_RX_string_usb("{\"gcode\":\"g0 x3 y4 z5.5 (comment line)\"}\n");// string test w/comment

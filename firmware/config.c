@@ -1268,7 +1268,7 @@ static uint8_t _set_defa(cmdObj *cmd)
 	} 
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
 
-	fprintf_P(stderr,PSTR("\n#### Initializing configs to default values ####\n"));
+	fprintf_P(stderr,PSTR(INIT_CONFIGURATION_MESSAGE));		// see settings.h & sub-headers
 	for (cmd->index=0; cmd->index<CMD_INDEX_END_SINGLES; cmd->index++) {
 		if (strstr(DONT_INITIALIZE, cmd_get_token(cmd->index, cmd->token)) != NULL) continue;
 		cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
@@ -1306,9 +1306,6 @@ uint8_t cfg_config_parser(char *str)
 	cmd_print(cmd);							// print value(s)
 	return (TG_OK);
 }
-
-
-
 
 /****************************************************************************
  * _parse_config_string() - parse a command line

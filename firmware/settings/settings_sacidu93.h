@@ -35,6 +35,7 @@
 // **** settings ****
 
 #define TINYG_CONFIGURATION_PROFILE "Sacidu93" // displays base config profile
+#define INIT_CONFIGURATION_MESSAGE "\n#### Initializing configs to Sacidu93 profile ####\n"
 
 #define STATUS_REPORT_INTERVAL_MS	0		// ms
 

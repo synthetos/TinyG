@@ -24,8 +24,8 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_VERSION_NUMBER	0.93
-#define TINYG_BUILD_NUMBER   	338.12
+#define TINYG_VERSION_NUMBER	0.94
+#define TINYG_BUILD_NUMBER   	339.03
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -169,8 +169,8 @@ enum tgCodes {
 //#define TINYG_VERSION_NAME	  	"Crocs"			// 0.92	build 326.06
 //#define TINYG_VERSION_NAME	  	"Daisy Dukes"
 //#define TINYG_VERSION_NAME	  	"Elastic Belt"
-#define TINYG_VERSION_NAME	  	"Fanny Pack"
-//#define TINYG_VERSION_NAME	  	"GoGo Boots"
+//#define TINYG_VERSION_NAME	  	"Fanny Pack"
+#define TINYG_VERSION_NAME	  	"GoGo Boots"
 //#define TINYG_VERSION_NAME	  	"Hoodie"
 //#define TINYG_VERSION_NAME	  	"Ironic Hipster Fashion"
 //#define TINYG_VERSION_NAME	  	"Jumpsuit"

@@ -31,6 +31,7 @@
 /***********************************************************************/
 
 #define TINYG_CONFIGURATION_PROFILE "Probotix Fireball V90" // displays base config profile
+#define INIT_CONFIGURATION_MESSAGE "\n#### Initializing configs to Probotix Fireball V90 profile ####\n"
 
 // **** common settings - applied to all axes or motors ****
 
