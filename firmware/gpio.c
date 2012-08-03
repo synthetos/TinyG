@@ -85,9 +85,20 @@
 #define SW_ISC_gc PORT_ISC_FALLING_gc		// ISRs on *leading* edge
 #define SW_LOCKOUT_TICKS 10					// ticks are ~10ms each
 
+static uint8_t _gpio_v7_test();
 static void _switch_isr_helper(uint8_t sw_flag);
-
 static uint8_t gpio_port_value;				// global for synthetic port read value
+
+/*
+ * _gpio_v7_test() - truens TRUE if v7 or later board
+ */
+
+static uint8_t _gpio_v7_test() 
+{
+	// insert code to detect if pullup resistors exist on gpio port bits
+	return (TRUE);
+}
+
 
 /*
  * gpio_init() - initialize limit switches
@@ -100,6 +111,7 @@ void gpio_init(void)
 	// GPIO1 - switch port
 	for (uint8_t i=0; i<MOTORS; i++) {
 
+		// Note: the device structure singleton is defined in tinyg.h
 		// set initial port bit state to OFF
 		device.port[i]->DIRSET = GPIO2_MIN_BIT_bm;			// set min to output
 		device.port[i]->OUTSET = GPIO2_MIN_BIT_bm;			// min bit off
