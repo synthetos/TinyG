@@ -42,7 +42,7 @@
 
 #define JUNCTION_ACCELERATION 200000	// centripetal acceleration around corners
 
-#define STATUS_REPORT_INTERVAL_MS	0	// in milliseconds
+#define STATUS_REPORT_INTERVAL_MS	0	// in milliseconds - 0=off
 
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
 #define GCODE_DEFAULT_UNITS			MILLIMETERS

@@ -31,7 +31,7 @@
 
 /**** GENERAL SETTINGS ******************************************************/
 
-#define STATUS_REPORT_MIN_MS		50		// ms - enforce a viable minimum
+#define STATUS_REPORT_MIN_MS		200		// ms - enforces a viable minimum
 
 /**** MACHINE PROFILES ******************************************************/
 

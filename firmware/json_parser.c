@@ -279,7 +279,7 @@ uint8_t js_make_json_string(cmdObj *cmd, char *str)
 		str += sprintf(str, "}");
 	}
 //	uint32_t cks = calculate_hash(str_start);
-	sprintf(str, "%ld\n", calculate_hash(str_start));
+	sprintf(str, "%lu\n", calculate_hash(str_start));
 	return (TG_OK);
 }
 
