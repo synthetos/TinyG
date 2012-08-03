@@ -27,6 +27,7 @@
 #define TINYG_VERSION_NUMBER	0.94
 #define TINYG_BUILD_NUMBER   	339.05
 
+
 /****** DEVELOPMENT SETTINGS ******/
 
 //#define __CANNED_STARTUP			// run any canned startup moves
