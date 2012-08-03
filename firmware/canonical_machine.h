@@ -192,7 +192,7 @@ struct GCodeInput gf;					// gcode input flags
  */
 // *** Note: check config printout strings align with all the state variables
 
- enum cmCombinedState {
+enum cmCombinedState {
 	COMBINED_RESET = 0,				// machine has been reset or aborted
 	COMBINED_CYCLE,					// machine is running (cycling)
 	COMBINED_PROGRAM_STOP,			// program stop or no more blocks

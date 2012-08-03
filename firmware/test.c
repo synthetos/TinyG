@@ -99,10 +99,10 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
-	xio_queue_RX_string_usb("g00g17g21g40g49g80g90\n");
-	xio_queue_RX_string_usb("g2x0y0i1f2000\n");
-	xio_queue_RX_string_usb("f3000\n");
-	xio_queue_RX_string_usb("g80\n");
+//	xio_queue_RX_string_usb("g00g17g21g40g49g80g90\n");
+//	xio_queue_RX_string_usb("g2x0y0i1f2000\n");
+//	xio_queue_RX_string_usb("f3000\n");
+//	xio_queue_RX_string_usb("g80\n");
 
 /*
 	xio_queue_RX_string_usb("N0000 G91\n");
@@ -245,9 +245,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"xfr\":1200, \"yfr\":1201, \"zfr\":600}\n");
 //	xio_queue_RX_string_usb("{\"err_1\":36000}\n");
 //	xio_queue_RX_string_usb("{\"1sa\":3.6.000}\n");
-/*
+
 	xio_queue_RX_string_usb("{\"gcode\":\"g0 x3 y4 z5.5 (comment line)\"}\n");
-	xio_queue_RX_string_usb("{\"config_version\":null}\n");	// simple null test
+/*	xio_queue_RX_string_usb("{\"config_version\":null}\n");	// simple null test
 	xio_queue_RX_string_usb("{\"config_profile\":true}\n");	// simple true test
 	xio_queue_RX_string_usb("{\"prompt\":false}\n");		// simple false test
 	xio_queue_RX_string_usb("{\"gcode\":\"g0 x3 y4 z5.5 (comment line)\"}\n");// string test w/comment

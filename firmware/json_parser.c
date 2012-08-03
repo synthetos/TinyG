@@ -253,6 +253,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *level, const char 
 uint8_t js_make_json_string(cmdObj *cmd, char *str)
 {
 	uint8_t end_curlies = 1;
+	char *str_start = str;
 
 	strcpy(str++, "{"); 							// write opening curly
 	for (uint8_t i=0; i<CMD_ARRAY_SIZE; i++) {		// iterate cmd array
@@ -277,7 +278,8 @@ uint8_t js_make_json_string(cmdObj *cmd, char *str)
 	while (end_curlies-- != 0) {
 		str += sprintf(str, "}");
 	}
-	sprintf(str, "\n");
+//	uint32_t cks = calculate_hash(str_start);
+	sprintf(str, "%ld\n", calculate_hash(str_start));
 	return (TG_OK);
 }
 
