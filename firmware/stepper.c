@@ -240,6 +240,7 @@ void st_init()
 {
 	memset(&st, 0, sizeof(st));	// clear all values, pointers and status
 
+	// Note: these defines are found in system.h
 	// Note: the device structure singleton is defined in tinyg.h
 	device.port[MOTOR_1] = &DEVICE_PORT_MOTOR_1;// bind PORTs to struct
 	device.port[MOTOR_2] = &DEVICE_PORT_MOTOR_2;
