@@ -6,4 +6,8 @@
 *.map
 *.d
 tinyg.aws
+tinyg.aps
+readme_dev.md
+readme_edge.md
+readme_master.md
 .DS_Store

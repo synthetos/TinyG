@@ -277,7 +277,7 @@ uint8_t js_make_json_string(cmdObj *cmd, char *str)
 		str += sprintf(str, "}");
 	}
 	if (cfg.enable_hashcode == TRUE) {
-		sprintf(str, "|%lu\n", calculate_hash(str_start));
+		sprintf(str, "<<%lu>>\n", calculate_hash(str_start));
 	} else {
 		sprintf(str, "\n");
 	}
