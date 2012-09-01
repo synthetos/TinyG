@@ -1,3 +1,0 @@
-Edge Branch: 
-Version 0.9 release candidate "Fanny Pack"
-build 337.04
