@@ -19,10 +19,18 @@ See these websites for more details.
 * [Synthetos Web Store](https://www.synthetos.com/webstore/)
 
 
-CURRENT VERSION
+CURRENT MASTER VERSION
 ========
-The current master version is 0.93, BUILD 338.12 (Fanny Pack)
-Changes in this version include:
+The current master version is 0.94, BUILD 339.09 (GoGo Boots)
+Changelog:
+
+339.09: 
+BUG FIXES IN 0.94
+* Issue #14 - Full circle G02 resslts in error - fixed
+* Issue #15 - Ignore CR and Ignore LF comnined into a single command to prevent both from being active at once and bricking TinyG
+* Checksum added to JSON output lines
+
+338.12
 
 MAJOR FEATURES IN 0.93
 * [Homing cycles added - G28.1](http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Homing)
@@ -50,9 +58,16 @@ BUG FIXES IN 0.93
 * Issue #8 - $xTR did not update until reset
 * Fixed some typos in command strings (fixed since 0.93)
 
+* Removed diagnostic logging to fix bug where rapid status reports and feed rates < 800 mm/min would occasionally cause input to lock up. (338.12)
+* Removed config warning messages when in JSON mode. Warnings still echoed in text mode (command line mode) (338.12)
+
 If you have feature requests or find any bugs please log them in the Issues tab on the github
 
-Changelog:
-338.12
-* Removed diagnostic logging to fix bug where rapid status reports and feed rates < 800 mm/min would occasionally cause input to lock up.
-* Removed config warning messages when in JSON mode. Warnings still echoed in text mode (command line mode)
+
+========
+BRANCHES
+========
+
+MASTER is the current production code. This is not updated very frequently.
+EDGE branch is thought to be relatively stable, but has not received enough testing to be promoted to maser
+DEV is work in process. THere are no gurantees that it will even run. This code from dev only if specificlly sent there
