@@ -79,7 +79,7 @@
 
 #define M4_MOTOR_MAP A
 #define M4_STEP_ANGLE 1.8
-#define M4_TRAVEL_PER_REV 360			// degrees per motor rev - 1:1 gearing
+#define M4_TRAVEL_PER_REV 1.25			// degrees moved per motor rev
 #define M4_MICROSTEPS 8
 #define M4_POLARITY 0
 #define M4_POWER_MODE 0
