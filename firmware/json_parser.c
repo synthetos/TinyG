@@ -47,6 +47,7 @@
 
 // local scope stuff
 
+static void _js_init_json_response_header(void);
 static uint8_t _json_parser(char *str);
 static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *level, const char *grp);
 static uint8_t _normalize_json_string(char *str, uint16_t size);
@@ -56,7 +57,8 @@ static uint8_t _normalize_json_string(char *str, uint16_t size);
  */
 
 void js_init() 
-{ 
+{
+	_js_init_json_response_header();
 	return;
 }
 
@@ -91,7 +93,7 @@ void js_init()
 uint8_t js_json_parser(char *in_str, char *out_str)
 {
 	uint8_t status = _json_parser(in_str);
-	js_make_json_string(&cmd_array[0], out_str);
+	js_make_json_response(status, out_str);
 	return (status);
 }
 
@@ -174,7 +176,7 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
  *	cfgArray.
  */
 
-static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *level, const char *grp) 
+static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *level, const char *grp)
 {
 	char *tmp;
 	char terminators[] = {"},"};
@@ -243,15 +245,16 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *level, const char 
 }
 
 /****************************************************************************
- * js_make_json_string() - make a vanilla JSON string from JSON object array
+ * js_make_json_string() - make a JSON object string from JSON object array
  *
  *	*cmd is a pointer to the first element in the cmd array
  *	*str is a pointer to the output string - usually what was the input string
+ *	Returns the character count of the resulting string
  */
-uint8_t js_make_json_string(cmdObj *cmd, char *str)
+uint16_t js_make_json_string(cmdObj *cmd, char *str)
 {
-	uint8_t end_curlies = 1;
 	char *str_start = str;
+	uint8_t end_curlies = 1;
 
 	strcpy(str++, "{"); 							// write opening curly
 	for (uint8_t i=0; i<CMD_ARRAY_SIZE; i++) {		// iterate cmd array
@@ -266,7 +269,8 @@ uint8_t js_make_json_string(cmdObj *cmd, char *str)
 		} else if (cmd->value_type == VALUE_TYPE_FALSE)  { str += sprintf(str, "false");
 		} else if (cmd->value_type == VALUE_TYPE_TRUE)   { str += sprintf(str, "true");
 		} else if (cmd->value_type == VALUE_TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
-		} else if (cmd->value_type == VALUE_TYPE_FLOAT)  { str += sprintf(str, "%0.3f", cmd->value);
+//		} else if (cmd->value_type == VALUE_TYPE_INTEGER){ str += sprintf(str, "%lu", (uint32_t)cmd->value);
+		} else if (cmd->value_type == VALUE_TYPE_FLOAT)  { str += sprintf(str, "%0.3f", (double)cmd->value);
 		} else if (cmd->value_type == VALUE_TYPE_STRING) { str += sprintf(str, "\"%s\"", cmd->string_value);
 		} 
 		if (cmd->nx == NULL) break;					// no more. You can leave now.
@@ -276,13 +280,82 @@ uint8_t js_make_json_string(cmdObj *cmd, char *str)
 	while (end_curlies-- != 0) {
 		str += sprintf(str, "}");
 	}
-	if (cfg.enable_hashcode == TRUE) {
-		sprintf(str, "<<%lu>>\n", calculate_hash(str_start));
-	} else {
-		sprintf(str, "\n");
+	sprintf(str, "\n");
+//	}
+	return (str - str_start);
+}
+
+/****************************************************************************
+ * js_make_json_response() - wrap a response around a JSON object JSON object array
+ *
+ * Assumes the locations of the command array, response header and footer arrays
+ * Assumes _js_init_json_response_header() has run to setup headers and footers
+ */
+
+uint8_t js_make_json_response(uint8_t status, char *out_buf)
+{
+	cmdObj *cmd = cmd_array;
+	uint16_t strcount;
+
+	// populate parent objects in header
+	while (cmd->nx != NULL) {
+		cmd++;
 	}
+	cmd->nx = json_ftr_array;					// link cmd_array to footer
+	cmd = json_ftr_array;
+	cmd->value = status;
+	cmd++;										// advance to message pair
+	tg_get_status_message(status, cmd->string_value);
+	strcount = js_make_json_string(json_hdr_array, out_buf); // make the string with a zero checksum
+
+	// walk backwards to find the comma separating the msg pair and the cks pair 
+	while (out_buf[strcount] != ',') {
+		strcount--;
+	}
+	out_buf[strcount] = NUL;					// the terminator
+	cmd++;										// advance to checksum pair
+	sprintf(cmd->vstring, "%lu", calculate_hash(out_buf));
+	js_make_json_string(json_hdr_array, out_buf); // make the string with the real checksum
 	return (TG_OK);
 }
+
+/****************************************************************************
+ * _js_init_json_response_header()
+ */
+
+void _js_init_json_response_header()
+{
+	cmdObj *cmd = json_hdr_array;
+
+	cmd_new_object(cmd);						// "r" parent
+	sprintf_P(cmd->token, PSTR("r"));
+	cmd->value_type = VALUE_TYPE_PARENT;
+
+	cmd++;
+	(cmd-1)->nx = cmd;
+	cmd_new_object(cmd);						// "body" parent
+	sprintf_P(cmd->token, PSTR("body"));
+	cmd->value_type = VALUE_TYPE_PARENT;
+	cmd->nx = cmd_array;						// link to cmd_array
+
+	cmd = json_ftr_array;
+	cmd_new_object(cmd);						// status code
+	sprintf_P(cmd->token, PSTR("st"));
+	cmd->value_type = VALUE_TYPE_INTEGER;
+
+	cmd++;
+	(cmd-1)->nx = cmd;
+	cmd_new_object(cmd);						// message
+	sprintf_P(cmd->token, PSTR("msg"));
+	cmd->value_type = VALUE_TYPE_STRING;
+
+	cmd++;
+	(cmd-1)->nx = cmd;
+	cmd_new_object(cmd);						// checksum is a string
+	sprintf_P(cmd->token, PSTR("cks"));
+	cmd->value_type = VALUE_TYPE_STRING;
+}
+
 
 //###########################################################################
 //##### UNIT TESTS ##########################################################

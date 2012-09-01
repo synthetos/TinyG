@@ -1067,7 +1067,7 @@ static uint8_t _run_gc(cmdObj *cmd)
 {
 	strncpy(tg.in_buf, cmd->string_value, INPUT_BUFFER_LEN);
 	uint8_t status = gc_gcode_parser(tg.in_buf);
-	tg_make_json_gcode_response(status, tg.in_buf, tg.out_buf);
+//+++++	tg_make_json_gcode_response(status, tg.in_buf, tg.out_buf);
 	return (TG_OK);
 }
 

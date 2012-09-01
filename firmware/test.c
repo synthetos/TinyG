@@ -246,7 +246,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"err_1\":36000}\n");
 //	xio_queue_RX_string_usb("{\"1sa\":3.6.000}\n");
 
-	xio_queue_RX_string_usb("{\"gcode\":\"g0 x3 y4 z5.5 (comment line)\"}\n");
+	xio_queue_RX_string_usb("{\"gc\":\"g0 x3 y4 z5.5 (comment line)\"}\n");
 /*	xio_queue_RX_string_usb("{\"config_version\":null}\n");	// simple null test
 	xio_queue_RX_string_usb("{\"config_profile\":true}\n");	// simple true test
 	xio_queue_RX_string_usb("{\"prompt\":false}\n");		// simple false test

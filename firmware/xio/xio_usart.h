@@ -161,14 +161,15 @@ void xio_dump_RX_queue_usart(void);				//+++++++++++++++++++++
  */
 
 //Choose one: (this define sets the data type in all places that need it)
-#define BUFFER_T uint_fast8_t	// faster, but limits buffer to 255 char max
-//#define BUFFER_T uint16_t		// slower, but larger buffers
+//#define BUFFER_T uint_fast8_t	// faster, but limits buffer to 255 char max
+#define BUFFER_T uint16_t		// slower, but larger buffers
 
 #define RX_BUFFER_SIZE (BUFFER_T)255	// BUFFER_T can be 8 bits
 //#define RX_BUFFER_SIZE (BUFFER_T)256	// BUFFER_T must be 16 bits if >255
 //#define RX_BUFFER_SIZE (BUFFER_T)1024	// 2048 is the practical upper limit
-#define TX_BUFFER_SIZE (BUFFER_T)255	// BUFFER_T can be 8 bits
+//#define TX_BUFFER_SIZE (BUFFER_T)255	// BUFFER_T can be 8 bits
 //#define TX_BUFFER_SIZE (BUFFER_T)256	// BUFFER_T must be 16 bits if >255
+#define TX_BUFFER_SIZE (BUFFER_T)512	// BUFFER_T must be 16 bits if >255
 //#define TX_BUFFER_SIZE (BUFFER_T)1024	// 2048 is practical upper limit given RAM
 
 // XON/XOFF hi and lo watermarks. At 115.200 the host has approx. 100 uSec

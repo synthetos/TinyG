@@ -218,13 +218,8 @@ static uint8_t _dispatch()
 			_dispatch_return(js_json_parser(tg.in_buf, tg.out_buf), tg.out_buf); 
 			break;
 		}
-		default: {								// Gcode - is anything else
-			if (tg.communications_mode == TG_JSON_MODE) {
-				tg_make_json_gcode_response(gc_gcode_parser(tg.in_buf), tg.in_buf, tg.out_buf);
-				_dispatch_return(NUL, tg.out_buf);	// status is ignored
-			} else {
-				_dispatch_return(gc_gcode_parser(tg.in_buf), tg.in_buf);
-			}
+		default: {								// anything else must be Gcode
+			_dispatch_return(gc_gcode_parser(tg.in_buf), tg.in_buf);
 		}
 	}
 	return (TG_OK);
@@ -280,41 +275,6 @@ static uint8_t _sync_to_planner()
 	return (TG_OK);
 }
 
-/*
- * tg_make_json_gcode_response() - generate JSON response object for Gcode
- */
-void tg_make_json_gcode_response(uint8_t status, char *block, char *out_buf)
-{
-	cmdObj *cmd = cmd_array;
-
-	cmd_new_object(cmd);						// parent gcode response
-	sprintf_P(cmd->token, PSTR("gc"));
-	cmd->value_type = VALUE_TYPE_PARENT;
-	cmd++;
-
-	cmd_new_object(cmd);						// child gcode string echo
-	sprintf_P(cmd->token, PSTR("gc"));
-	sprintf(cmd->string_value, block);
-	cmd->value_type = VALUE_TYPE_STRING;
-	(cmd-1)->nx = cmd;
-	cmd++;
-
-	cmd_new_object(cmd);						// status as an integer
-	sprintf_P(cmd->token, PSTR("st"));
-	cmd->value = status;
-	cmd->value_type = VALUE_TYPE_INTEGER;
-	(cmd-1)->nx = cmd;
-	cmd++;
-
-	cmd_new_object(cmd);						// status as message
-	sprintf_P(cmd->token, PSTR("msg"));
-	tg_get_status_message(status, cmd->string_value);
-	cmd->value_type = VALUE_TYPE_STRING;
-	(cmd-1)->nx = cmd;
-
-	js_make_json_string(cmd_array, out_buf);
-}
-
 /**** Prompting **************************************************************
  * tg_get_status_message()
  * _prompt_with_message()
@@ -345,7 +305,7 @@ char msg_stat13[] PROGMEM = "Quit";
 char msg_stat14[] PROGMEM = "Unrecognized command";
 char msg_stat15[] PROGMEM = "Number range error";
 char msg_stat16[] PROGMEM = "Expected command letter";
-char msg_stat17[] PROGMEM = "JSON sysntax error";
+char msg_stat17[] PROGMEM = "JSON syntax error";
 char msg_stat18[] PROGMEM = "Input exceeds max length";
 char msg_stat19[] PROGMEM = "Output exceeds max length";
 char msg_stat20[] PROGMEM = "Internal error";
@@ -361,7 +321,7 @@ char msg_stat29[] PROGMEM = "Gcode modal group violation";
 char msg_stat30[] PROGMEM = "Homing cycle failed";
 char msg_stat31[] PROGMEM = "Max travel exceeded";
 char msg_stat32[] PROGMEM = "Max spindle speed exceeded";
-PGM_P msgStatus[] PROGMEM = {	
+PGM_P msgStatus[] PROGMEM = {
 	msg_stat00, msg_stat01, msg_stat02, msg_stat03, msg_stat04, 
 	msg_stat05, msg_stat06, msg_stat07, msg_stat08, msg_stat09,
 	msg_stat10, msg_stat11, msg_stat12, msg_stat13, msg_stat14, 

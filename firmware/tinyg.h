@@ -24,14 +24,14 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_VERSION_NUMBER	0.94
-#define TINYG_BUILD_NUMBER   	339.09
+#define TINYG_VERSION_NUMBER	0.95
+#define TINYG_BUILD_NUMBER   	340.01
 
 
 /****** DEVELOPMENT SETTINGS ******/
 
-//#define __CANNED_STARTUP			// run any canned startup moves
-//#define __DISABLE_EEPROM_INIT		// disable EEPROM init for faster simulation
+#define __CANNED_STARTUP			// run any canned startup moves
+#define __DISABLE_EEPROM_INIT		// disable EEPROM init for faster simulation
 //#define __DISABLE_TRANSMIT		// disable serial tranmission (TX)
 //#define __SEGMENT_LOGGER			// enable segment logging to memory array
 //#define __DEBUG					// enable debug (see util.c /.h)
@@ -171,8 +171,8 @@ enum tgCodes {
 //#define TINYG_VERSION_NAME	  	"Daisy Dukes"
 //#define TINYG_VERSION_NAME	  	"Elastic Belt"
 //#define TINYG_VERSION_NAME	  	"Fanny Pack"
-#define TINYG_VERSION_NAME	  	"GoGo Boots"
-//#define TINYG_VERSION_NAME	  	"Hoodie"
+//#define TINYG_VERSION_NAME	  	"GoGo Boots"
+#define TINYG_VERSION_NAME	  	"Hoodie"
 //#define TINYG_VERSION_NAME	  	"Ironic Hipster Fashion"
 //#define TINYG_VERSION_NAME	  	"Jumpsuit"
 //#define TINYG_VERSION_NAME	  	"Kulats"

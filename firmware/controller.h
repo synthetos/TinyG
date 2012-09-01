@@ -30,7 +30,8 @@ enum tgCommunicationsMode {
 
 #define TG_FLAG_PROMPTS_bm (1<<0)	// prompt enabled if set
 #define INPUT_BUFFER_LEN 255		// text buffer size (255 max)
-#define OUTPUT_BUFFER_LEN 255		// text buffer size (255 max)
+//#define OUTPUT_BUFFER_LEN 255		// text buffer size (255 max)
+#define OUTPUT_BUFFER_LEN 512
 #define STATUS_MESSAGE_LEN 32		// status message string storage
 
 struct controllerSingleton {		// main TG controller struct
@@ -56,10 +57,6 @@ void tg_application_startup(void);
 void tg_set_active_source(uint8_t dev);
 void tg_reset_source(void);
 char *tg_get_status_message(uint8_t status, char *msg);
-//void tg_json_gcode_return(uint8_t status, char *in_buf, char *out_buf);
-//void tg_json_gcode_return(uint8_t status, char *block, char *out_buf);
-void tg_make_json_gcode_response(uint8_t status, char *block, char *out_buf);
-
 
 #ifdef __DEBUG
 void tg_dump_controller_state(void);

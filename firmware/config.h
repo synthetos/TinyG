@@ -50,6 +50,9 @@
 #define CMD_ARRAY_SIZE (1 + CMD_MAX_OBJECTS) 	// a root + maximum children
 #define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS	// max elements in a status report
 
+#define JSON_RESPONSE_HEADERS 2		// number of leading elements in JSON response
+#define JSON_RESPONSE_FOOTERS 4		// number of trailing elements in JSON response
+
 #define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
 #define CMD_STRING_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN + CMD_FORMAT_LEN +3)
 #define JSON_STRING_LEN (OUTPUT_BUFFER_LEN)	// biggest thing that can fit in the output buffer
@@ -82,7 +85,7 @@ enum cmdValueType {					// value typing for config and JSON
 
 struct cmdObject {					// depending on use, not all elements may be populated
 	INDEX_T index;					// index of tokenized name, or -1 if no token
-//	uint8_t nesting_level;			// 0 is root (commented out - unnecessary for now)
+	uint8_t tree_depth;				// depth of object in the tree. 0 is root
 	struct cmdObject *nx;			// pointer to next object or NULL if last (or only) object
 	int8_t value_type;				// see cfgValueType
 	double value;					// numeric value
@@ -103,6 +106,8 @@ typedef uint8_t (*fptrCmd)(cmdObj *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
 
 cmdObj cmd_array[CMD_ARRAY_SIZE];	// cmd_array[0] is the root object
+cmdObj json_hdr_array[JSON_RESPONSE_HEADERS];// allocate header objects for JSON response
+cmdObj json_ftr_array[JSON_RESPONSE_FOOTERS];// allocate footer objects for JSON response
 
 /*
  * Global Scope Functions

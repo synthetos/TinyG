@@ -99,10 +99,11 @@ void tg_system_reset(void)
 	rtc_init();				// (5) real time counter
 	st_init(); 				// (6) stepper subsystem (must run before gp_init())
 	gpio_init();			// (7) switches and parallel IO
+	js_init();				// (8) JSON init
 
 	PMIC_EnableMediumLevel();// enable TX interrupts for init reporting 
 	sei();					// enable global interrupts
-	cfg_init();				// (8) get config record from eeprom (reqs xio)
+	cfg_init();				// (9) get config record from eeprom (reqs xio)
 	tg_announce();			// print version string
 }
 
