@@ -1,0 +1,13 @@
+*.elf
+*.pyc
+*.o
+*.map
+*.lss
+*.map
+*.d
+tinyg.aws
+tinyg.aps
+readme_dev.ms
+readme_edge.ms
+readme_master.ms
+.DS_Store
