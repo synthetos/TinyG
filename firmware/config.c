@@ -94,6 +94,7 @@
 #include "gcode_parser.h"
 #include "planner.h"
 #include "stepper.h"
+#include "gpio.h"
 #include "test.h"
 #include "help.h"
 #include "system.h"
@@ -176,9 +177,8 @@ static void _print_pos(cmdObj *cmd);	// print runtime work position
 
 static uint8_t _set_defa(cmdObj *cmd);	// reset config to defaults
 
-static uint8_t _set_ic(cmdObj *cmd);	// ignore CR on input
-static uint8_t _set_il(cmdObj *cmd);	// ignore LF on input
-static uint8_t _set_ec(cmdObj *cmd);	// expand CRLF on outout
+static uint8_t _set_ic(cmdObj *cmd);	// ignore CR or LF on RX input
+static uint8_t _set_ec(cmdObj *cmd);	// expand CRLF on TX outout
 static uint8_t _set_ee(cmdObj *cmd);	// enable character echo
 static uint8_t _set_ex(cmdObj *cmd);	// enable XON/XOFF
 
@@ -191,6 +191,7 @@ static uint8_t _set_motor_steps_per_unit(cmdObj *cmd);
 static uint8_t _get_am(cmdObj *cmd);	// get axis mode
 static uint8_t _set_am(cmdObj *cmd);	// set axis mode
 static void _print_am(cmdObj *cmd);		// print axis mode
+static uint8_t _set_sm(cmdObj *cmd);	// set switch mode
 
 static uint8_t _set_grp(cmdObj *cmd);	// set data for a group
 static uint8_t _get_grp(cmdObj *cmd);	// get data for a group
@@ -371,11 +372,11 @@ char str_ml[] PROGMEM = "ml,min_l,[ml]  min_line_segment   %14.3f%S\n";
 char str_ma[] PROGMEM = "ma,min_a,[ma]  min_arc_segment    %14.3f%S\n";
 char str_mt[] PROGMEM = "mt,min_s,[mt]  min_segment_time   %10.0f uSec\n";
 
-char str_ic[] PROGMEM = "ic,ignore_c,[ic]  ignore_CR (on RX)%12d [0,1]\n";
-char str_il[] PROGMEM = "il,ignore_l,[il]  ignore_LF (on RX)%12d [0,1]\n";
+char str_ic[] PROGMEM = "ic,ignore_c,[ic]  ignore CR or LF on RX %7d [0,1=CR,2=LF]\n";
 char str_ec[] PROGMEM = "ec,enable_c,[ec]  enable_CR (on TX)%12d [0,1]\n";
 char str_ee[] PROGMEM = "ee,enable_e,[ee]  enable_echo      %12d [0,1]\n";
 char str_ex[] PROGMEM = "ex,enable_x,[ex]  enable_xon_xoff  %12d [0,1]\n";
+char str_eh[] PROGMEM = "eh,enable_h,[eh]  enable_hashcode  %12d [0,1]\n";
 
 // Motor strings in program memory 
 char str_1ma[] PROGMEM = "1ma,m1_ma, [1ma] m1_map_to_axis%15d [0=X, 1=Y...]\n";
@@ -413,7 +414,7 @@ char str_xvm[] PROGMEM = "xvm,x_v,[xvm] x_velocity_maximum%15.3f%S/min\n";
 char str_xtm[] PROGMEM = "xtm,x_t,[xtm] x_travel_maximum%17.3f%S\n";
 char str_xjm[] PROGMEM = "xjm,x_je,[xjm] x_jerk_maximum%15.0f%S/min^3\n";
 char str_xjd[] PROGMEM = "xjd,x_ju,[xjd] x_junction_deviation%14.4f%S (larger is faster)\n";
-char str_xsm[] PROGMEM = "xsm,x_s,[xsm] x_switch_mode%16d [0,1,2]\n";
+char str_xsm[] PROGMEM = "xsm,x_s,[xsm] x_switch_mode%16d [0,1,2,3,4]\n";
 char str_xsv[] PROGMEM = "xsv,x_s,[xsv] x_search_velocity%16.3f%S/min\n";
 char str_xlv[] PROGMEM = "xlv,x_latch_v,[xlv] x_latch_velocity%17.3f%S/min\n";
 char str_xlb[] PROGMEM = "xlb,x_latch_b,[xlb] x_latch_backoff%18.3f%S\n";
@@ -425,7 +426,7 @@ char str_yvm[] PROGMEM = "yvm,y_v,[yvm] y_velocity_maximum%15.3f%S/min\n";
 char str_ytm[] PROGMEM = "ytm,y_t,[ytm] y_travel_maximum%17.3f%S\n";
 char str_yjm[] PROGMEM = "yjm,y_je,[yjm] y_jerk_maximum%15.0f%S/min^3\n";
 char str_yjd[] PROGMEM = "yjd,y_ju,[yjd] y_junction_deviation%14.4f%S (larger is faster)\n";
-char str_ysm[] PROGMEM = "ysm,y_s,[ysm] y_switch_mode%16d [0,1,2]\n";
+char str_ysm[] PROGMEM = "ysm,y_s,[ysm] y_switch_mode%16d [0,1,2,3,4]\n";
 char str_ysv[] PROGMEM = "ysv,y_s,[ysv] y_search_velocity%16.3f%S/min\n";
 char str_ylv[] PROGMEM = "ylv,y_latch_v,[ylv] y_latch_velocity%17.3f%S/min\n";
 char str_ylb[] PROGMEM = "ylb,y_latch_b,[ylb] y_latch_backoff%18.3f%S\n";
@@ -437,7 +438,7 @@ char str_zvm[] PROGMEM = "zvm,z_v,[zvm] z_velocity_maximum%15.3f%S/min\n";
 char str_ztm[] PROGMEM = "ztm,z_t,[ztm] z_travel_maximum%17.3f%S\n";
 char str_zjm[] PROGMEM = "zjm,z_je,[zjm] z_jerk_maximum%15.0f%S/min^3\n";
 char str_zjd[] PROGMEM = "zjd,z_ju,[zjd] z_junction_deviation%14.4f%S (larger is faster)\n";
-char str_zsm[] PROGMEM = "zsm,z_s,[zsm] z_switch_mode%16d [0,1,2]\n";
+char str_zsm[] PROGMEM = "zsm,z_s,[zsm] z_switch_mode%16d [0,1,2,3,4]\n";
 char str_zsv[] PROGMEM = "zsv,z_s,[zsv] z_search_velocity%16.3f%S/min\n";
 char str_zlv[] PROGMEM = "zlv,z_latch_v,[zlv] z_latch_velocity%17.3f%S/min\n";
 char str_zlb[] PROGMEM = "zlb,z_latch_b,[zlb] z_latch_backoff%18.3f%S\n";
@@ -450,7 +451,7 @@ char str_atm[] PROGMEM = "atm,a_t,[atm] a_travel_maximum  %15.3f%S\n";
 char str_ajm[] PROGMEM = "ajm,a_je,[ajm] a_jerk_maximum%15.0f%S/min^3\n";
 char str_ajd[] PROGMEM = "ajd,a_ju,[ajd] a_junction_deviation%14.4f%S\n";
 char str_ara[] PROGMEM = "ara,a_r,[ara] a_radius_value%20.4f%S\n";
-char str_asm[] PROGMEM = "asm,a_s,[asm] a_switch_mode%16d [0,1,2]\n";
+char str_asm[] PROGMEM = "asm,a_s,[asm] a_switch_mode%16d [0,1,2,3,4]\n";
 char str_asv[] PROGMEM = "asv,a_s,[asv] a_search_velocity%16.3f%S/min\n";
 char str_alv[] PROGMEM = "alv,a_latch_v,[alv] a_latch_velocity%17.3f%S/min\n";
 char str_alb[] PROGMEM = "alb,a_latch_b,[alb] a_latch_backoff%18.3f%S\n";
@@ -463,7 +464,7 @@ char str_btm[] PROGMEM = "btm,b_t,[btm] b_travel_maximum%17.3f%S\n";
 char str_bjm[] PROGMEM = "bjm,b_je,[bjm] b_jerk_maximum%15.0f%S/min^3\n";
 char str_bjd[] PROGMEM = "bjd,b_ju,[bjd] b_junction_deviation%14.4f%S\n";
 char str_bra[] PROGMEM = "bra,b_r,[bra] b_radius_value%20.4f%S\n";
-char str_bsm[] PROGMEM = "bsm,b_s,[bsm] b_switch_mode%16d [0,1,2]\n";
+char str_bsm[] PROGMEM = "bsm,b_s,[bsm] b_switch_mode%16d [0,1,2,3,4]\n";
 char str_bsv[] PROGMEM = "bsv,b_s,[bsv] b_search_velocity%16.3f%S/min\n";
 char str_blv[] PROGMEM = "blv,b_latch_v,[blv] b_latch_velocity%17.3f%S/min\n";
 char str_blb[] PROGMEM = "blb,b_latch_b,[blb] b_latch_backoff%18.3f%S\n";
@@ -476,7 +477,7 @@ char str_ctm[] PROGMEM = "ctm,c_t,[ctm] c_travel_maximum%17.3f%S\n";
 char str_cjm[] PROGMEM = "cjm,c_je,[cjm] c_jerk_maximum%15.0f%S/min^3\n";
 char str_cjd[] PROGMEM = "cjd,c_ju,[cjd] c_junction_deviation%14.4f%S\n";
 char str_cra[] PROGMEM = "cra,c_r,[cra] c_radius_value%20.4f%S\n";
-char str_csm[] PROGMEM = "csm,c_s,[csm] c_switch_mode%16d [0,1,2]\n";
+char str_csm[] PROGMEM = "csm,c_s,[csm] c_switch_mode%16d [0,1,2,3,4]\n";
 char str_csv[] PROGMEM = "csv,c_s,[csv] c_search_velocity%16.3f%S/min\n";
 char str_clv[] PROGMEM = "clv,c_latch_v,[clv] c_latch_velocity%17.3f%S/min\n";
 char str_clb[] PROGMEM = "clb,c_latch_b,[clb] c_latch_backoff%18.3f%S\n";
@@ -649,11 +650,11 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_ma, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.arc_segment_len,		ARC_SEGMENT_LENGTH },
 	{ str_mt, _print_lin, _get_dbl, _set_dbl, (double *)&cfg.estd_segment_usec,		NOM_SEGMENT_USEC },
 
-	{ str_ic, _print_ui8, _get_ui8, _set_ic,  (double *)&cfg.ignore_cr,				COM_IGNORE_RX_CR },
-	{ str_il, _print_ui8, _get_ui8, _set_il,  (double *)&cfg.ignore_lf,				COM_IGNORE_RX_LF },
+	{ str_ic, _print_ui8, _get_ui8, _set_ic,  (double *)&cfg.ignore_crlf,			COM_IGNORE_CRLF },
 	{ str_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,				COM_APPEND_TX_CR },
 	{ str_ee, _print_ui8, _get_ui8, _set_ee,  (double *)&cfg.enable_echo,			COM_ENABLE_ECHO },
 	{ str_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
+	{ str_eh, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_hashcode,		COM_ENABLE_HASHCODE },
 
 	{ str_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ str_1sa, _print_rot, _get_dbl ,_set_sa, (double *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
@@ -689,7 +690,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_xtm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].travel_max,		X_TRAVEL_MAX },
 	{ str_xjm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].jerk_max,			X_JERK_MAX },
 	{ str_xjd, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].junction_dev,		X_JUNCTION_DEVIATION },
-	{ str_xsm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.a[X].switch_mode,		X_SWITCH_MODE },
+	{ str_xsm, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[X].switch_mode,		X_SWITCH_MODE },
 	{ str_xsv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].search_velocity,	X_SEARCH_VELOCITY },
 	{ str_xlv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_velocity,	X_LATCH_VELOCITY },
 	{ str_xlb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_backoff,	X_LATCH_BACKOFF },
@@ -701,7 +702,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_ytm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].travel_max,		Y_TRAVEL_MAX },
 	{ str_yjm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].jerk_max,			Y_JERK_MAX },
 	{ str_yjd, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].junction_dev,		Y_JUNCTION_DEVIATION },
-	{ str_ysm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.a[Y].switch_mode,		Y_SWITCH_MODE },
+	{ str_ysm, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[Y].switch_mode,		Y_SWITCH_MODE },
 	{ str_ysv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].search_velocity,	Y_SEARCH_VELOCITY },
 	{ str_ylv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_velocity,	Y_LATCH_VELOCITY },
 	{ str_ylb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_backoff,	Y_LATCH_BACKOFF },
@@ -713,7 +714,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_ztm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].travel_max,		Z_TRAVEL_MAX },
 	{ str_zjm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].jerk_max,			Z_JERK_MAX },
 	{ str_zjd, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].junction_dev, 	Z_JUNCTION_DEVIATION },
-	{ str_zsm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.a[Z].switch_mode,		Z_SWITCH_MODE },
+	{ str_zsm, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[Z].switch_mode,		Z_SWITCH_MODE },
 	{ str_zsv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].search_velocity,	Z_SEARCH_VELOCITY },
 	{ str_zlv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_velocity,	Z_LATCH_VELOCITY },
 	{ str_zlb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_backoff,	Z_LATCH_BACKOFF },
@@ -726,7 +727,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_ajm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].jerk_max,			A_JERK_MAX },
 	{ str_ajd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].junction_dev, 	A_JUNCTION_DEVIATION },
 	{ str_ara, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].radius,			A_RADIUS},
-	{ str_asm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.a[A].switch_mode,		A_SWITCH_MODE },
+	{ str_asm, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[A].switch_mode,		A_SWITCH_MODE },
 	{ str_asv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].search_velocity,	A_SEARCH_VELOCITY },
 	{ str_alv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_velocity,	A_LATCH_VELOCITY },
 	{ str_alb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_backoff,	A_LATCH_BACKOFF },
@@ -739,7 +740,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_bjm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].jerk_max,			B_JERK_MAX },
 	{ str_bjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].junction_dev, 	B_JUNCTION_DEVIATION },
 	{ str_bra, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].radius,			B_RADIUS },
-	{ str_bsm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.a[B].switch_mode,		B_SWITCH_MODE },
+	{ str_bsm, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[B].switch_mode,		B_SWITCH_MODE },
 	{ str_bsv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].search_velocity,	B_SEARCH_VELOCITY },
 	{ str_blv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_velocity,	B_LATCH_VELOCITY },
 	{ str_blb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_backoff,	B_LATCH_BACKOFF },
@@ -753,7 +754,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_cjm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].jerk_max,			C_JERK_MAX },
 	{ str_cjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].junction_dev,		C_JUNCTION_DEVIATION },
 	{ str_cra, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].radius,			C_RADIUS },
-	{ str_csm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.a[C].switch_mode,		C_SWITCH_MODE },
+	{ str_csm, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[C].switch_mode,		C_SWITCH_MODE },
 	{ str_csv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].search_velocity,	C_SEARCH_VELOCITY },
 	{ str_clv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_velocity,	C_LATCH_VELOCITY },
 	{ str_clb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_backoff,	C_LATCH_BACKOFF },
@@ -1072,8 +1073,9 @@ static uint8_t _run_gc(cmdObj *cmd)
 
 /**** AXIS AND MOTOR FUNCTIONS ****
  * _get_am() - get axis mode w/enumeration string
- * _set_am() - set axis mode w./ exception handling for axis type
+ * _set_am() - set axis mode w/exception handling for axis type
  * _print_am() - print axis mode w/enumeration string
+ * _set_sm() - set switch mode
  * _set_tr() - set motor travel_per_rev & recompute steps_per_unit
  * _set_sa() - set motor step_angle & recompute steps_per_unit
  * _set_mi() - set microsteps & recompute steps_per_unit
@@ -1115,6 +1117,19 @@ static void _print_am(cmdObj *cmd)
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, _get_format(cmd->index, format), (uint8_t)cmd->value, (PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
+}
+
+static uint8_t _set_sm(cmdObj *cmd)
+{ 
+	if (cmd->value > SW_MODE_ENABLED_NC) {
+		cmd->value = 0;
+		if (tg.communications_mode == TG_TEXT_MODE) {
+			fprintf_P(stderr, PSTR("*** WARNING *** Unsupported switch mode. Switch DISABLED\n"));
+		}
+	}
+	_set_ui8(cmd);
+	gpio_init();
+	return (TG_OK);
 }
 
 static uint8_t _set_sa(cmdObj *cmd)
@@ -1159,8 +1174,7 @@ static uint8_t _set_motor_steps_per_unit(cmdObj *cmd)
 }
 
 /**** SERIAL IO FUNCTIONS ****
- * _set_ic() - ignore cr on RX
- * _set_il() - ignore lf on RX
+ * _set_ic() - ignore CR or LF on RX
  * _set_ec() - enable CRLF on TX
  * _set_ee() - enable character echo
  * _set_ex() - enable XON/XOFF
@@ -1180,14 +1194,16 @@ static uint8_t _set_comm_helper(cmdObj *cmd, uint32_t yes, uint32_t no)
 
 static uint8_t _set_ic(cmdObj *cmd) 
 {
-	cfg.ignore_cr = (uint8_t)cmd->value;
-	return(_set_comm_helper(cmd, XIO_IGNORECR, XIO_NOIGNORECR));
-}
+	cfg.ignore_crlf = (uint8_t)cmd->value;
+	(void)xio_cntl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
+	(void)xio_cntl(XIO_DEV_USB, XIO_NOIGNORELF);
 
-static uint8_t _set_il(cmdObj *cmd) 
-{
-	cfg.ignore_lf = (uint8_t)cmd->value;
-	return(_set_comm_helper(cmd, XIO_IGNORELF, XIO_NOIGNORELF));
+	if (cfg.ignore_crlf == IGNORE_CR) {
+		(void)xio_cntl(XIO_DEV_USB, XIO_IGNORECR);
+	} else if (cfg.ignore_crlf == IGNORE_LF) {
+		(void)xio_cntl(XIO_DEV_USB, XIO_IGNORELF);
+	}
+	return(cmd_write_NVM_value(cmd));				// persist the setting
 }
 
 static uint8_t _set_ec(cmdObj *cmd) 
@@ -1268,7 +1284,7 @@ static uint8_t _set_defa(cmdObj *cmd)
 	} 
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
 
-	fprintf_P(stderr,PSTR("\n#### Initializing configs to default values ####\n"));
+	fprintf_P(stderr,PSTR(INIT_CONFIGURATION_MESSAGE));		// see settings.h & sub-headers
 	for (cmd->index=0; cmd->index<CMD_INDEX_END_SINGLES; cmd->index++) {
 		if (strstr(DONT_INITIALIZE, cmd_get_token(cmd->index, cmd->token)) != NULL) continue;
 		cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
@@ -1306,9 +1322,6 @@ uint8_t cfg_config_parser(char *str)
 	cmd_print(cmd);							// print value(s)
 	return (TG_OK);
 }
-
-
-
 
 /****************************************************************************
  * _parse_config_string() - parse a command line

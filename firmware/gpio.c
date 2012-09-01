@@ -52,12 +52,12 @@
  *	  - Hitting a homing switch puts the current move into feedhold
  *	  - Hitting a limit switch causes the machine to abort and go into reset
  *
- * 	The switches trigger an interrupt on the leading edge (falling) and lockout 
- *	subsequent interrupts for the defined lockout period. This approach beats 
- *	doing debouncing as an integration as the switches fire immediately.
+ * 	The normally open switch modes (NO) trigger an interrupt on the falling edge 
+ *	and lockout subsequent interrupts for the defined lockout period. This approach 
+ *	beats doing debouncing as an integration as switches fire immediately.
  *
- *	Note: This module assumes the switches are normally open (and active LO).
- *	At some point it should support NC switches and optos by config option
+ * 	The normally closed switch modes (NC) trigger an interrupt on the rising edge 
+ *	and lockout subsequent interrupts for the defined lockout period. Ditto on the method.
  */
 
 #include <avr/interrupt.h>
@@ -79,24 +79,32 @@
 /*
  * variables and settings 
  */
+/*
+struct gpioControls {						// GPIO controls for various modes
+ 	uint8_t pin_mode; 						// pin mode for GPIO port
+	uint8_t int_mode;						// interrupt mode for GPIO port
+}; 
+static struct gpioControls gctl;
+*/
 
-#define	SW_OPC_gc PORT_OPC_PULLUP_gc		// totem poll pullup mode
-//#define SW_ISC_gc PORT_ISC_RISING_gc		// ISRs on *trailing* edge
-#define SW_ISC_gc PORT_ISC_FALLING_gc		// ISRs on *leading* edge
 #define SW_LOCKOUT_TICKS 10					// ticks are ~10ms each
 
 static void _switch_isr_helper(uint8_t sw_flag);
-
 static uint8_t gpio_port_value;				// global for synthetic port read value
 
 /*
  * gpio_init() - initialize limit switches
  *
- * This function assumes st_init() has been run previously.
+ *	This function assumes st_init() has been run previously.
+ *	The device structure singleton is defined in tinyg.h
+ *	These inits assume stepper.c, st_init() has run previously
  */
 
 void gpio_init(void) 
 {
+	uint8_t int_mode;							// interrupt mode
+	uint8_t pin_mode = PORT_OPC_PULLUP_gc;		// pin mode. see iox192a3.h for details
+
 	// GPIO1 - switch port
 	for (uint8_t i=0; i<MOTORS; i++) {
 
@@ -106,13 +114,21 @@ void gpio_init(void)
 		device.port[i]->DIRSET = GPIO2_MAX_BIT_bm;			// set max to output
 		device.port[i]->OUTSET = GPIO2_MAX_BIT_bm;			// max bit off
 
+		// set interrupt mode for NO or NC
+		if ((cfg.a[i].switch_mode == SW_MODE_HOMING_NO) || 
+			(cfg.a[i].switch_mode == SW_MODE_ENABLED_NO)) {
+			int_mode = PORT_ISC_FALLING_gc;
+		} else {
+			int_mode = PORT_ISC_RISING_gc;
+		}
+
 		// setup ports input bits (previously set to inputs by st_init())
 		device.port[i]->DIRCLR = GPIO2_MIN_BIT_bm;		 	// set min input
-		device.port[i]->PIN6CTRL = (SW_OPC_gc | SW_ISC_gc);	// pin modes
+		device.port[i]->PIN6CTRL = (pin_mode | int_mode);	// see 13.14.14
 		device.port[i]->INT0MASK = GPIO2_MIN_BIT_bm;	 	// min on INT0
 
 		device.port[i]->DIRCLR = GPIO2_MAX_BIT_bm;		 	// set max input
-		device.port[i]->PIN7CTRL = (SW_OPC_gc | SW_ISC_gc);	// pin modes
+		device.port[i]->PIN7CTRL = (pin_mode | int_mode);	// 13.14.14
 		device.port[i]->INT1MASK = GPIO2_MAX_BIT_bm;		// max on INT1
 
 		// set interrupt levels. Interrupts must be enabled in main()

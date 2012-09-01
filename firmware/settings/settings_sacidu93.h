@@ -35,8 +35,9 @@
 // **** settings ****
 
 #define TINYG_CONFIGURATION_PROFILE "Sacidu93" // displays base config profile
+#define INIT_CONFIGURATION_MESSAGE "\n#### Initializing configs to Sacidu93 profile ####\n"
 
-#define STATUS_REPORT_INTERVAL_MS	0		// ms
+#define STATUS_REPORT_INTERVAL_MS	0	// in milliseconds - 0=off
 
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
 #define GCODE_DEFAULT_UNITS			MILLIMETERS
@@ -49,10 +50,10 @@
 //#define JUNCTION_ACCELERATION 20000000	// centripetal acceleration around corners
 
 #define COM_APPEND_TX_CR			FALSE
-#define COM_IGNORE_RX_CR			FALSE
-#define COM_IGNORE_RX_LF			FALSE
+#define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_ENABLE_ECHO				FALSE
 #define COM_ENABLE_XON				TRUE
+#define COM_ENABLE_HASHCODE			TRUE
 
 // motor values
 

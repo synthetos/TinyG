@@ -42,7 +42,7 @@
 #include "planner.h"
 #include "kinematics.h"
 
-struct arArcSingleton 		{	// persistent planner and runtime variables
+struct arArcSingleton {			// persistent planner and runtime variables
 	uint8_t run_state;			// runtime state machine sequence
 	uint32_t linenum;			// gcode line number (Nxxxxx)
 
@@ -183,11 +183,11 @@ void ar_abort_arc()
 }
 
 /*****************************************************************************
- * Canonical Machining arc fucntions (arc prep for planning and runtime)
+ * Canonical Machining arc functions (arc prep for planning and runtime)
  * cm_arc_feed() - entry point for arc prep
  * _compute_center_arc() - compute arc from I and J (arc center point)
- * _get_arc_radius() 	- compute arc center (offset) from radius.
- * _get_arc_time()
+ * _get_arc_radius() 	 - compute arc center (offset) from radius.
+ * _get_arc_time()		 - compute time to complete arc at current feed rate
  */
 uint8_t cm_arc_feed(double target[], double flags[],// arc endpoints
 					double i, double j, double k, 	// offsets
@@ -204,26 +204,40 @@ uint8_t cm_arc_feed(double target[], double flags[],// arc endpoints
 		return (TG_GCODE_FEEDRATE_ERROR);
 	}
 
+	// Trap conditions where no arc movement will occur, 
+	// but the system is still in arc motion mode - this is not an error.
+	// This can happen when a F word or M word is by itself.
+	// (The tests below are organized for execution efficiency)
+	if ((i==0) && (j==0) && (radius==0) && (k==0)) {
+		if ((flags[X] + flags[Y] + flags[Z] + flags[A] + flags[B] + flags[C]) == 0) {
+			return (TG_OK);
+		}
+	}
 	// set parameters
-	cm_set_target(target, flags);
+	cm_set_target(target,flags);
 	cm_set_arc_offset(i,j,k);
 	cm_set_arc_radius(radius);
 
-	// execute the move - non-zero radius is a radius arc
+	// A non-zero radius is a radius arc. Compute the IJK offset coordinates.
+	// These will override any IJK offsets provided in the call
 	if (radius > EPSILON) {
 		if ((_get_arc_radius() != TG_OK)) {
 			return (status);					// error return
 		}
 	}
+
 	// Introduce a short dwell if the machine is idle to enable the planning
 	// queue to begin to fill (avoids first block having to plan down to zero)
 //	if (st_isbusy() == false) {
 //		cm_dwell(PLANNER_STARTUP_DELAY_SECONDS);
 //	}
+
+	// execute the move
 	status = _compute_center_arc();
 	cm_set_gcode_model_endpoint_position(status);
 	return (status);
 }
+
 
 /*
  * _cm_compute_center_arc() - compute arc from I and J (arc center point)

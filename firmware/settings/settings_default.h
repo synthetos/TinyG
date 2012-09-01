@@ -27,6 +27,7 @@
  */
 
 #define TINYG_CONFIGURATION_PROFILE "Default Profile" // displays base config profile
+#define INIT_CONFIGURATION_MESSAGE "\n#### Initializing configs to default settings ####\n"
 
 // **** common settings - applied to all axes or motors ****
 
@@ -35,9 +36,9 @@
 
 // **** system settings ****
 
-#define STATUS_REPORT_INTERVAL_MS	250	// in milliseconds
+#define JUNCTION_ACCELERATION 100000	// centripetal acceleration around corners
 
-#define JUNCTION_ACCELERATION 		50000	// centripetal acceleration around corners
+#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
 
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
 #define GCODE_DEFAULT_UNITS			MILLIMETERS
@@ -46,10 +47,10 @@
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
 
 #define COM_APPEND_TX_CR			FALSE
-#define COM_IGNORE_RX_CR			FALSE
-#define COM_IGNORE_RX_LF			FALSE
+#define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_ENABLE_ECHO				TRUE
 #define COM_ENABLE_XON				TRUE
+#define COM_ENABLE_HASHCODE			TRUE
 
 #define ENABLE_ACCELERATION 1			// *** NOTE: this feature is disabled in 338.11 - always equal to 1 
 
@@ -78,7 +79,7 @@
 
 #define M4_MOTOR_MAP A
 #define M4_STEP_ANGLE 1.8
-#define M4_TRAVEL_PER_REV 360			// degrees per motor rev - 1:1 gearing
+#define M4_TRAVEL_PER_REV 1.25			// degrees moved per motor rev
 #define M4_MICROSTEPS 8
 #define M4_POLARITY 0
 #define M4_POWER_MODE 0

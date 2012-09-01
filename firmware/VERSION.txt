@@ -1,3 +1,0 @@
-Master Branch: 
-Version 0.9 release "Fanny Pack"
-build 338.05
