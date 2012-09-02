@@ -284,10 +284,100 @@ static uint8_t _sync_to_planner()
  *	Aware of communications mode: COMMAND_LINE_MODE, JSON_MODE, GRBL_MODE
  */
 
+/* These strings must align with the status codes in tinyg.h
+ * The number of elements in the indexing array must match the # of strings
+ * Reference for putting display strings and string arrays in program memory:
+ * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
+ */
+char msg_st00[] PROGMEM = "OK";
+char msg_st01[] PROGMEM = "Error";
+char msg_st02[] PROGMEM = "Eagain";
+char msg_st03[] PROGMEM = "Noop";
+char msg_st04[] PROGMEM = "Complete";
+char msg_st05[] PROGMEM = "Terminated";
+char msg_st06[] PROGMEM = "Aborted";
+char msg_st07[] PROGMEM = "End of line";
+char msg_st08[] PROGMEM = "End of file";
+char msg_st09[] PROGMEM = "File not open";
+char msg_st10[] PROGMEM = "Max file size exceeded";
+char msg_st11[] PROGMEM = "No such device";
+char msg_st12[] PROGMEM = "Buffer empty";
+char msg_st13[] PROGMEM = "Buffer full - fatal";
+char msg_st14[] PROGMEM = "Buffer full - non-fatal";
+char msg_st15[] PROGMEM = "#15";
+char msg_st16[] PROGMEM = "#16";
+char msg_st17[] PROGMEM = "#17";
+char msg_st18[] PROGMEM = "#18";
+char msg_st19[] PROGMEM = "#19";
+
+char msg_st20[] PROGMEM = "Internal error";
+char msg_st21[] PROGMEM = "Internal range error";
+char msg_st22[] PROGMEM = "Floating point error";
+char msg_st23[] PROGMEM = "Divide by zero";
+char msg_st24[] PROGMEM = "#24";
+char msg_st25[] PROGMEM = "#25";
+char msg_st26[] PROGMEM = "#26";
+char msg_st27[] PROGMEM = "#27";
+char msg_st28[] PROGMEM = "#28";
+char msg_st29[] PROGMEM = "#29";
+char msg_st30[] PROGMEM = "#30";
+char msg_st31[] PROGMEM = "#31";
+char msg_st32[] PROGMEM = "#32";
+char msg_st33[] PROGMEM = "#33";
+char msg_st34[] PROGMEM = "#34";
+char msg_st35[] PROGMEM = "#35";
+char msg_st36[] PROGMEM = "#36";
+char msg_st37[] PROGMEM = "#37";
+char msg_st38[] PROGMEM = "#38";
+char msg_st39[] PROGMEM = "#39";
+
+char msg_st40[] PROGMEM = "Unrecognized command";
+char msg_st41[] PROGMEM = "Expected command letter";
+char msg_st42[] PROGMEM = "Bad number format";
+char msg_st43[] PROGMEM = "Input exceeds max length";
+char msg_st44[] PROGMEM = "Input value too small";
+char msg_st45[] PROGMEM = "Input value too large";
+char msg_st46[] PROGMEM = "Input value range error";
+char msg_st47[] PROGMEM = "Input value unsupported";
+char msg_st48[] PROGMEM = "JSON syntax error";
+char msg_st49[] PROGMEM = "JSON input has too many pairs";
+char msg_st50[] PROGMEM = "#50";
+char msg_st51[] PROGMEM = "#51";
+char msg_st52[] PROGMEM = "#52";
+char msg_st53[] PROGMEM = "#53";
+char msg_st54[] PROGMEM = "#54";
+char msg_st55[] PROGMEM = "#55";
+char msg_st56[] PROGMEM = "#56";
+char msg_st57[] PROGMEM = "#57";
+char msg_st58[] PROGMEM = "#58";
+char msg_st59[] PROGMEM = "#59";
+
+char msg_st60[] PROGMEM = "Zero length move";
+char msg_st61[] PROGMEM = "Gcode block skipped";
+char msg_st62[] PROGMEM = "Gcode input error";
+char msg_st63[] PROGMEM = "Gcode feedrate error";
+char msg_st64[] PROGMEM = "Gcode axis word missing";
+char msg_st65[] PROGMEM = "Gcode modal group violation";
+char msg_st66[] PROGMEM = "Homing cycle failed";
+char msg_st67[] PROGMEM = "Max travel exceeded";
+char msg_st68[] PROGMEM = "Max spindle speed exceeded";
+char msg_st69[] PROGMEM = "Arc specification error";
+
+PGM_P msgStatus[] PROGMEM = {
+	msg_st00, msg_st01, msg_st02, msg_st03, msg_st04, msg_st05, msg_st06, msg_st07, msg_st08, msg_st09,
+	msg_st10, msg_st11, msg_st12, msg_st13, msg_st14, msg_st15, msg_st16, msg_st17, msg_st18, msg_st19,
+	msg_st20, msg_st21, msg_st22, msg_st23, msg_st24, msg_st25, msg_st26, msg_st27, msg_st28, msg_st29,
+	msg_st30, msg_st31, msg_st32, msg_st33, msg_st34, msg_st35, msg_st36, msg_st37, msg_st38, msg_st39,
+	msg_st40, msg_st41, msg_st42, msg_st43, msg_st44, msg_st45, msg_st46, msg_st47, msg_st48, msg_st49,
+	msg_st50, msg_st51, msg_st52, msg_st53, msg_st54, msg_st55, msg_st56, msg_st57, msg_st58, msg_st59,
+	msg_st60, msg_st61, msg_st62, msg_st63, msg_st64, msg_st65, msg_st66, msg_st67, msg_st68, msg_st69
+};
+
 /* The number of elements in the indexing array must match the # of strings
  * Reference for putting display strings and string arrays in program memory:
  * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
  */
+ /*
 char msg_stat00[] PROGMEM = "OK";
 char msg_stat01[] PROGMEM = "Error";
 char msg_stat02[] PROGMEM = "Eagain";
@@ -306,21 +396,22 @@ char msg_stat14[] PROGMEM = "Unrecognized command";
 char msg_stat15[] PROGMEM = "Number range error";
 char msg_stat16[] PROGMEM = "Expected command letter";
 char msg_stat17[] PROGMEM = "JSON syntax error";
-char msg_stat18[] PROGMEM = "Input exceeds max length";
-char msg_stat19[] PROGMEM = "Output exceeds max length";
-char msg_stat20[] PROGMEM = "Internal error";
-char msg_stat21[] PROGMEM = "Bad number format";
-char msg_stat22[] PROGMEM = "Floating point error";
-char msg_stat23[] PROGMEM = "Arc specification error";
-char msg_stat24[] PROGMEM = "Zero length line";
-char msg_stat25[] PROGMEM = "Gcode block skipped";
-char msg_stat26[] PROGMEM = "Gcode input error";
-char msg_stat27[] PROGMEM = "Gcode feedrate error";
-char msg_stat28[] PROGMEM = "Gcode axis word missing";
-char msg_stat29[] PROGMEM = "Gcode modal group violation";
-char msg_stat30[] PROGMEM = "Homing cycle failed";
-char msg_stat31[] PROGMEM = "Max travel exceeded";
-char msg_stat32[] PROGMEM = "Max spindle speed exceeded";
+char msg_stat18[] PROGMEM = "JSON input has too many pairs";
+char msg_stat19[] PROGMEM = "Input exceeds max length";
+char msg_stat20[] PROGMEM = "Output exceeds max length";
+char msg_stat21[] PROGMEM = "Internal error";
+char msg_stat22[] PROGMEM = "Bad number format";
+char msg_stat23[] PROGMEM = "Floating point error";
+char msg_stat24[] PROGMEM = "Arc specification error";
+char msg_stat25[] PROGMEM = "Zero length line";
+char msg_stat26[] PROGMEM = "Gcode block skipped";
+char msg_stat27[] PROGMEM = "Gcode input error";
+char msg_stat28[] PROGMEM = "Gcode feedrate error";
+char msg_stat29[] PROGMEM = "Gcode axis word missing";
+char msg_stat30[] PROGMEM = "Gcode modal group violation";
+char msg_stat31[] PROGMEM = "Homing cycle failed";
+char msg_stat32[] PROGMEM = "Max travel exceeded";
+char msg_stat33[] PROGMEM = "Max spindle speed exceeded";
 PGM_P msgStatus[] PROGMEM = {
 	msg_stat00, msg_stat01, msg_stat02, msg_stat03, msg_stat04, 
 	msg_stat05, msg_stat06, msg_stat07, msg_stat08, msg_stat09,
@@ -328,8 +419,9 @@ PGM_P msgStatus[] PROGMEM = {
 	msg_stat15, msg_stat16, msg_stat17, msg_stat18, msg_stat19,
 	msg_stat20, msg_stat21, msg_stat22, msg_stat23, msg_stat24,
 	msg_stat25, msg_stat26, msg_stat27, msg_stat28, msg_stat29,
-	msg_stat30, msg_stat31, msg_stat32
+	msg_stat30, msg_stat31, msg_stat32, msg_stat33
 };
+*/
 
 char pr1[] PROGMEM = "tinyg";
 char pr_in[] PROGMEM = "[inch] ok> ";

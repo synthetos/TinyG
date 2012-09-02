@@ -55,7 +55,7 @@
 
 #define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
 #define CMD_STRING_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN + CMD_FORMAT_LEN +3)
-#define JSON_STRING_LEN (OUTPUT_BUFFER_LEN)	// biggest thing that can fit in the output buffer
+#define JSON_OUTPUT_STRING_MAX (OUTPUT_BUFFER_LEN)
 
 #define NVM_VALUE_LEN 4				// NVM value length (double, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
@@ -85,22 +85,22 @@ enum cmdValueType {					// value typing for config and JSON
 
 struct cmdObject {					// depending on use, not all elements may be populated
 	INDEX_T index;					// index of tokenized name, or -1 if no token
-	uint8_t tree_depth;				// depth of object in the tree. 0 is root
+	int8_t depth;					// depth of object in the tree. 0 is root (-1 is invalid)
 	struct cmdObject *nx;			// pointer to next object or NULL if last (or only) object
 	int8_t value_type;				// see cfgValueType
 	double value;					// numeric value
 	char token[CMD_TOKEN_LEN+1];	// mnemonic token
-	char vstring[CMD_STRING_LEN+1];	// value string (see note below)
+	char vstrg[CMD_STRING_LEN+1];	// value string (see note below)
 }; 									// OK, so it's not REALLY an object
 typedef struct cmdObject cmdObj;	// handy typedef for command onjects
 
 // The cmdObj vstring field is overloaded to save RAM. Its primary use is to 
-// carry a value-type of string. It is also used in some preliminary operations
-// to carry the friendly_name or the parent group specifier (group_token). 
+// carry a value-type of string. It is also used in some preliminary parsing
+// to carry the friendly_name or the parent group specifier (group_token).
 // Care must be taken that these uses do not clobber each other.
-#define string_value vstring		// used here as a string value field
-#define friendly_name vstring		// used here as a friendly name field
-#define group_token vstring			// used here as a group token field
+#define string_value vstrg			// used here as a string value field
+#define friendly_name vstrg			// used here as a friendly name field
+#define group_token vstrg			// used here as a group token field
 
 typedef uint8_t (*fptrCmd)(cmdObj *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access

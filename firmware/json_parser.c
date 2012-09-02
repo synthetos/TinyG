@@ -49,7 +49,7 @@
 
 static void _js_init_json_response_header(void);
 static uint8_t _json_parser(char *str);
-static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *level, const char *grp);
+static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *depth, const char *grp);
 static uint8_t _normalize_json_string(char *str, uint16_t size);
 
 /****************************************************************************
@@ -66,7 +66,9 @@ void js_init()
  * js_json_parser() - parse a JSON string
  * _json_parser()   - inner loop so any errors retrun back to the main routine
  *
- *	This is a dumbed down JSON parser to fit in limited memory with no malloc.
+ *	This is a dumbed down JSON parser to fit in limited memory with no malloc
+ *	or practical way to do recursion ("depth" tracks parent/child levels).
+ *
  *	This function will parse the following forms up to the JSON_MAX limits:
  *
  *	  {"name":"value"}
@@ -80,12 +82,12 @@ void js_init()
  *	Numbers
  *	  - number values are not quoted and can start with a digit or -. 
  *	  - numbers cannot start with + or . (period)
- *	  - exponentiated numbers ore OK. 
- *	  - hexadecimal is not supported
+ *	  - exponentiated numbers are handled OK. 
+ *	  - hexadecimal or other non-decimal number bases are not supported
  *
  *	The parser:
  *	  - extracts an array of one or more JSON object structs from the input string
- *	  - executes the object(s) in the array
+ *	  - once the array is built it executes the object(s) in order in the array
  *	  - passes the executed array to the response handler to generate the response string
  *	  - returns the status and the JSON response string
  */
@@ -100,23 +102,26 @@ uint8_t js_json_parser(char *in_str, char *out_str)
 static uint8_t _json_parser(char *str)
 {
 	uint8_t i=0;								// json array index
-	int8_t nesting_level = 0;					// root is starting level 
+	int8_t depth = 0;							// starting tree depth is root, or 0
 	cmdObj *cmd = &cmd_array[0];				// point at first struct in the array
 	char grp[CMD_GROUP_LEN+1] = {""};			// group identifier
 
-	ritorno(_normalize_json_string(str, JSON_STRING_LEN)); 	// test and normalize
+	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX)); 	// test and normalize
 	for (i=0; i<CMD_ARRAY_SIZE; i++) {			// deserialize JSON into cmdObj array
-		ritorno(_get_nv_pair(&cmd_array[i], &str, &nesting_level, grp));
+		ritorno(_get_nv_pair(&cmd_array[i], &str, &depth, grp));
 		if (cmd_array[i].nx == NULL) break;		// NULL means it's the last (or only) NV pair
 		if ((cmd->value_type == VALUE_TYPE_PARENT) && cmd_is_group(cmd->token)) {
 			strncpy(grp, cmd->group_token, CMD_GROUP_LEN);
 		}
 	}
+	if (i == CMD_ARRAY_SIZE) {					// test if input had too many pairs
+		return (TG_JSON_TOO_MANY_PAIRS);
+	}
 	for (i=0; i<CMD_ARRAY_SIZE; i++) {			// take action on cmdObj array
 		if (cmd->value_type == VALUE_TYPE_NULL){// means GET the value
-			ritorno(cmd_get(cmd));
+			ritorno(cmd_get(cmd));				// this will return status on any errors
 		} else {
-			ritorno(cmd_set(cmd));				// set value or perform function
+			ritorno(cmd_set(cmd));				// set value or call a function (e.g. gcode)
 			cmd_persist(cmd);
 		}
 		if ((cmd->nx == NULL) || (cmd->value_type == VALUE_TYPE_PARENT)) {
@@ -124,7 +129,7 @@ static uint8_t _json_parser(char *str)
 		}
 		cmd = cmd->nx;
 	}
-	return (TG_OK);
+	return (TG_OK);						// only successful commands exit through this point
 }
 
 /*
@@ -158,15 +163,15 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
 /*
  * _get_nv_pair() - get the next name-value pair
  *
- *	Parse the next statement and populate the JSON object.
+ *	Parse the next statement and populate the command object (cmdObj).
  *
  *	Leaves string pointer (str) on the first character following the object.
  *	Which is the character just past the ',' separator if it's a multi-valued 
  *	object or the terminating NUL if single object or the last in a multi.
  *
- *	Keeps track of nesting levels and closing braces as much as it has to.
+ *	Keeps track of tree depth and closing braces as much as it has to.
  *	If this were to be extended to track multiple parents or more than two
- *	levels it would have to track closing curlies - which it does not.
+ *	levels deep it would have to track closing curlies - which it does not.
  *
  *	ASSUMES INPUT STRING HAS FIRST BEEN NORMALIZED BY _normalize_json_string()
  *
@@ -176,13 +181,13 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
  *	cfgArray.
  */
 
-static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *level, const char *grp)
+static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *depth, const char *grp)
 {
 	char *tmp;
 	char terminators[] = {"},"};
 
 	cmd_new_object(cmd);						// wipe the object
-//	cmd->nesting_level = *level;				// add this back in if you find you need it
+	cmd->depth = *depth;						// tree depth. 0 = root
 	cmd->value_type = VALUE_TYPE_ERROR;			//...until told otherwise
 
 	// process name field
@@ -225,7 +230,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *level, const char 
 		*pstr = ++tmp;
 	} else if (**pstr == '{') { cmd->value_type = VALUE_TYPE_PARENT;
 		cmd->nx = cmd + 1;						// signal that there is more to come
-		*level += 1;
+		*depth += 1;							// will set the next object down one level
 		(*pstr)++;
 //		strncpy(cmd->group_token, grp, CMD_TOKEN_LEN+1); // preserve group specifier in string field
 		return(TG_OK);
@@ -233,9 +238,13 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *level, const char 
 		 return (TG_JSON_SYNTAX_ERROR);			// ill-formed JSON
 	}
 
-	// process end condition
-	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { 
+	// process pair transitions and end conditions
+	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { // advance to terminator or err out
 		return (TG_JSON_SYNTAX_ERROR);
+	}
+	if (**pstr == '}') { 
+		*depth -= 1;							// pop up a nesting level
+		(*pstr)++;								// advance to comma or whatever follows
 	}
 	if (**pstr == ',') { 
 		cmd->nx = cmd + 1;						// signal that there is more to come
@@ -254,7 +263,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *level, const char 
 uint16_t js_make_json_string(cmdObj *cmd, char *str)
 {
 	char *str_start = str;
-	uint8_t end_curlies = 1;
+	int8_t depth = 0;
 
 	strcpy(str++, "{"); 							// write opening curly
 	for (uint8_t i=0; i<CMD_ARRAY_SIZE; i++) {		// iterate cmd array
@@ -263,25 +272,27 @@ uint16_t js_make_json_string(cmdObj *cmd, char *str)
 		if (cmd->value_type == VALUE_TYPE_PARENT) {
 			str += sprintf(str, "{");
 			cmd = cmd->nx;
-			end_curlies++;
+			depth = cmd->depth;
 			continue;
 		} else if (cmd->value_type == VALUE_TYPE_NULL)   { str += sprintf(str, "\"\"");
 		} else if (cmd->value_type == VALUE_TYPE_FALSE)  { str += sprintf(str, "false");
 		} else if (cmd->value_type == VALUE_TYPE_TRUE)   { str += sprintf(str, "true");
 		} else if (cmd->value_type == VALUE_TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
-//		} else if (cmd->value_type == VALUE_TYPE_INTEGER){ str += sprintf(str, "%lu", (uint32_t)cmd->value);
 		} else if (cmd->value_type == VALUE_TYPE_FLOAT)  { str += sprintf(str, "%0.3f", (double)cmd->value);
 		} else if (cmd->value_type == VALUE_TYPE_STRING) { str += sprintf(str, "\"%s\"", cmd->string_value);
 		} 
 		if (cmd->nx == NULL) break;					// no more. You can leave now.
-		str += sprintf(str, ","); 
 		cmd = cmd->nx;
+		if (cmd->depth < depth) {
+			str += sprintf(str, "}");
+		}
+		depth = cmd->depth;
+		str += sprintf(str, ",");
 	}
-	while (end_curlies-- != 0) {
+	do {
 		str += sprintf(str, "}");
-	}
+	} while (depth-- > 0);
 	sprintf(str, "\n");
-//	}
 	return (str - str_start);
 }
 
@@ -299,8 +310,10 @@ uint8_t js_make_json_response(uint8_t status, char *out_buf)
 
 	// populate parent objects in header
 	while (cmd->nx != NULL) {
+		cmd->depth +=2;
 		cmd++;
 	}
+	cmd->depth +=2;
 	cmd->nx = json_ftr_array;					// link cmd_array to footer
 	cmd = json_ftr_array;
 	cmd->value = status;
@@ -314,7 +327,7 @@ uint8_t js_make_json_response(uint8_t status, char *out_buf)
 	}
 	out_buf[strcount] = NUL;					// the terminator
 	cmd++;										// advance to checksum pair
-	sprintf(cmd->vstring, "%lu", calculate_hash(out_buf));
+	sprintf(cmd->string_value, "%lu", calculate_hash(out_buf));
 	js_make_json_string(json_hdr_array, out_buf); // make the string with the real checksum
 	return (TG_OK);
 }
@@ -336,24 +349,28 @@ void _js_init_json_response_header()
 	cmd_new_object(cmd);						// "body" parent
 	sprintf_P(cmd->token, PSTR("body"));
 	cmd->value_type = VALUE_TYPE_PARENT;
+	cmd->depth = 1;
 	cmd->nx = cmd_array;						// link to cmd_array
 
 	cmd = json_ftr_array;
 	cmd_new_object(cmd);						// status code
 	sprintf_P(cmd->token, PSTR("st"));
 	cmd->value_type = VALUE_TYPE_INTEGER;
+	cmd->depth = 1;
 
 	cmd++;
 	(cmd-1)->nx = cmd;
 	cmd_new_object(cmd);						// message
 	sprintf_P(cmd->token, PSTR("msg"));
 	cmd->value_type = VALUE_TYPE_STRING;
+	cmd->depth = 1;
 
 	cmd++;
 	(cmd-1)->nx = cmd;
 	cmd_new_object(cmd);						// checksum is a string
 	sprintf_P(cmd->token, PSTR("cks"));
 	cmd->value_type = VALUE_TYPE_STRING;
+	cmd->depth = 1;
 }
 
 

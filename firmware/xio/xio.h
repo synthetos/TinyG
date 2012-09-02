@@ -68,6 +68,8 @@ enum xioCodes {
 	XIO_EAGAIN,				// function would block here (must be called again)
 	XIO_NOOP,				// function had no-operation	
 	XIO_COMPLETE,			// operation complete
+	XIO_TERMINATE,			// operation terminated (gracefully)
+	XIO_ABORT,				// operation aborted
 	XIO_EOL,				// function returned end-of-line
 	XIO_EOF,				// function returned end-of-file 
 	XIO_FILE_NOT_OPEN,		// file is not open

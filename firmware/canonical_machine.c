@@ -507,7 +507,7 @@ uint8_t	cm_set_coord_system(uint8_t coord_system)
 uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[])
 {
 	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
-		return (TG_RANGE_ERROR);
+		return (TG_INTERNAL_RANGE_ERROR);
 	}
 	for (uint8_t i=0; i<AXES; i++) {
 		if (flag[i] > EPSILON) {
