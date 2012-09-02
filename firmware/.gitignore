@@ -1,0 +1,11 @@
+*.elf
+*.pyc
+*.o
+*.map
+*.lss
+*.map
+*.d
+tinyg.aws
+tinyg.aps
+tinyg.eep
+.DS_Store
