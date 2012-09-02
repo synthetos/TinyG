@@ -878,11 +878,11 @@ static uint8_t _get_id(cmdObj *cmd)
 }
 
 /**** STATUS REPORT FUNCTIONS ****
- * _get_sr() - run status report
+ * _get_sr()   - run status report
  * _print_sr() - run status report
- * _set_sr() - set status report specification
- * _get_si() - get status report interval
- * _set_si() - set status report interval
+ * _set_sr()   - set status report specification
+ * _get_si()   - get status report interval
+ * _set_si()   - set status report interval
  *
  *	Note: _set_sr() is called during initialization and during reset when 
  *	there's actually nothing to do. So it rejects all get requests except 
