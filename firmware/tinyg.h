@@ -25,7 +25,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95
-#define TINYG_BUILD_NUMBER   	340.02
+#define TINYG_BUILD_NUMBER   	340.03
 
 
 /****** DEVELOPMENT SETTINGS ******/
@@ -117,14 +117,15 @@ struct deviceSingleton {
 };
 struct deviceSingleton device;
 
-/* TinyG return codes
- * The following return codes are unified for various TinyG functions.
- * The first codes (up to the line) are aligned with the XIO codes.
+/* TinyG status codes
+ * The first code range (0-19) is aligned with the XIO codes and must be so.
  * Please don't change them without checking the corresponding values in xio.h
- * If you mess with this be sure to change the print strings in 
- * tg_print_status found in controller.c
- */										// OS, communications and low-level errors 
-										// (this first block of code is shared by XIO as well)
+ *
+ * Any changes to the ranges also require changing the message strings and 
+ * string array in controller.c
+ */
+ 
+// OS, communications and low-level status (must align with XIO_xxxx codes in xio.h)
 #define	TG_OK 0							// function completed OK
 #define	TG_ERROR 1						// generic error return (EPERM)
 #define	TG_EAGAIN 2						// function would block here (call again)
@@ -145,7 +146,8 @@ struct deviceSingleton device;
 #define	TG_ERROR_17 17
 #define	TG_ERROR_18 18
 #define	TG_ERROR_19 19
-										// Internal errors (500s, if you will)
+
+// Internal errors (500s, if you will)
 #define	TG_INTERNAL_ERROR 20			// unrecoverable internal error
 #define	TG_INTERNAL_RANGE_ERROR 21		// number range other than by user input
 #define	TG_FLOATING_POINT_ERROR 22		// number conversion error
@@ -166,7 +168,8 @@ struct deviceSingleton device;
 #define	TG_ERROR_37 37
 #define	TG_ERROR_38 38
 #define	TG_ERROR_39 39
-										// Input errors (400's, if you will)
+
+// Input errors (400's, if you will)
 #define	TG_UNRECOGNIZED_COMMAND 40		// parser didn't recognize the command
 #define	TG_EXPECTED_COMMAND_LETTER 41	// malformed line to parser
 #define	TG_BAD_NUMBER_FORMAT 42			// number format error
@@ -187,7 +190,8 @@ struct deviceSingleton device;
 #define	TG_ERROR_57 57
 #define	TG_ERROR_58 58
 #define	TG_ERROR_59 59
-										// Gcode and machining errors
+
+// Gcode and machining errors
 #define	TG_ZERO_LENGTH_MOVE 60			// move is zero length
 #define	TG_GCODE_BLOCK_SKIPPED 61		// block is too short - was skipped
 #define	TG_GCODE_INPUT_ERROR 62			// general error for gcode input 
@@ -199,46 +203,6 @@ struct deviceSingleton device;
 #define	TG_MAX_SPINDLE_SPEED_EXCEEDED 68
 #define	TG_ARC_SPECIFICATION_ERROR 69	// arc specification error
 
-/*
-//----- codes must align with xio.h and tg_print_status strings in controller.c
-enum tgCodes {
-	TG_OK = 0,					// function completed OK
-	TG_ERROR,					// generic error return (EPERM)
-	TG_EAGAIN,					// function would block here (call again)
-	TG_NOOP,					// function had no-operation
-	TG_COMPLETE,				// operation is complete
-	TG_EOL,						// function returned end-of-line
-	TG_EOF,						// function returned end-of-file 
-	TG_FILE_NOT_OPEN,
-	TG_FILE_SIZE_EXCEEDED,
-	TG_NO_SUCH_DEVICE,
-	TG_BUFFER_EMPTY,
-	TG_BUFFER_FULL_FATAL, 
-	TG_BUFFER_FULL_NON_FATAL,
-//----- ...to here				// XIO codes only run to here
-    TG_QUIT,					// QUIT current mode
-	TG_UNRECOGNIZED_COMMAND,	// parser didn't recognize the command
-	TG_RANGE_ERROR,				// number is out-of-range
-	TG_EXPECTED_COMMAND_LETTER,	// malformed line to parser
-	TG_JSON_SYNTAX_ERROR,		// JSON string is not well formed
-	TG_JSON_TOO_MANY_PAIRS,		// JSON string or has too many JSON pairs
-	TG_INPUT_EXCEEDS_MAX_LENGTH,// input string is too long 
-	TG_OUTPUT_EXCEEDS_MAX_LENGTH,// output string is too long
-	TG_INTERNAL_ERROR,			// an internal error occurred
-	TG_BAD_NUMBER_FORMAT,		// number format error
-	TG_FLOATING_POINT_ERROR,	// number conversion error
-	TG_ARC_SPECIFICATION_ERROR,	// arc specification error
-	TG_ZERO_LENGTH_MOVE,		// move is zero length
-	TG_GCODE_BLOCK_SKIPPED,		// block is too short - was skipped
-	TG_GCODE_INPUT_ERROR,		// general error for gcode input 
-	TG_GCODE_FEEDRATE_ERROR,	// move has no feedrate
-	TG_GCODE_AXIS_WORD_MISSING,	// command requires at least one axis present
-	TG_MODAL_GROUP_VIOLATION,	// gcode modal group error
-	TG_HOMING_CYCLE_FAILED,		// homing cycle did not complete
-	TG_MAX_TRAVEL_EXCEEDED,
-	TG_MAX_SPINDLE_SPEED_EXCEEDED,
-};
-*/
 
 /* Version value and strings */
 

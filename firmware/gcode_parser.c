@@ -295,7 +295,8 @@ static uint8_t _parse_gcode_block(char *buf)
 		}
 		if(status != TG_OK) break;
 	}
-	ritorno(_check_gcode_block());			// perform error checking
+	if ((status != TG_OK) && (status != TG_COMPLETE)) return (status);
+	ritorno(_check_gcode_block());			// perform Gcode error checking
 	return (_execute_gcode_block());		// if successful execute the block
 }
 
