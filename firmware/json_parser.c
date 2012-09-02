@@ -186,7 +186,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *depth, const char 
 	char *tmp;
 	char terminators[] = {"},"};
 
-	cmd_new_object(cmd);						// wipe the object
+	cmd_new_cmdObj(cmd);						// wipe the object
 	cmd->depth = *depth;						// tree depth. 0 = root
 	cmd->value_type = VALUE_TYPE_ERROR;			//...until told otherwise
 
@@ -340,34 +340,34 @@ void _js_init_json_response_header()
 {
 	cmdObj *cmd = json_hdr_array;
 
-	cmd_new_object(cmd);						// "r" parent
+	cmd_new_cmdObj(cmd);						// "r" parent
 	sprintf_P(cmd->token, PSTR("r"));
 	cmd->value_type = VALUE_TYPE_PARENT;
 
 	cmd++;
 	(cmd-1)->nx = cmd;
-	cmd_new_object(cmd);						// "body" parent
+	cmd_new_cmdObj(cmd);						// "body" parent
 	sprintf_P(cmd->token, PSTR("body"));
 	cmd->value_type = VALUE_TYPE_PARENT;
 	cmd->depth = 1;
 	cmd->nx = cmd_array;						// link to cmd_array
 
 	cmd = json_ftr_array;
-	cmd_new_object(cmd);						// status code
+	cmd_new_cmdObj(cmd);						// status code
 	sprintf_P(cmd->token, PSTR("st"));
 	cmd->value_type = VALUE_TYPE_INTEGER;
 	cmd->depth = 1;
 
 	cmd++;
 	(cmd-1)->nx = cmd;
-	cmd_new_object(cmd);						// message
+	cmd_new_cmdObj(cmd);						// message
 	sprintf_P(cmd->token, PSTR("msg"));
 	cmd->value_type = VALUE_TYPE_STRING;
 	cmd->depth = 1;
 
 	cmd++;
 	(cmd-1)->nx = cmd;
-	cmd_new_object(cmd);						// checksum is a string
+	cmd_new_cmdObj(cmd);						// checksum is a string
 	sprintf_P(cmd->token, PSTR("cks"));
 	cmd->value_type = VALUE_TYPE_STRING;
 	cmd->depth = 1;

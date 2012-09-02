@@ -1332,7 +1332,7 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 	char separators[] = {" =:|\t"};			// anything someone might use
 
 	// pre-processing
-	cmd_new_object(cmd);					// initialize config object, index=0
+	cmd_new_cmdObj(cmd);					// initialize config object, index=0
 	if (*str == '$') str++;					// ignore leading $
 	tmp = str;
 	if (*tmp==NUL) *tmp='s';				// make $ behave as a system listing
@@ -1401,8 +1401,8 @@ void cmd_persist(cmdObj *cmd)
 /****************************************************************************
  * cmd helper functions
  * cmd_get_max_index()		- utility function to return array size				
- * cmd_get_cmd()			- like cmd_get but populates the entire cmdObj struct
- * cmd_new_object() 		- initialize a command object (that you actually passed in)
+ * cmd_get_cmdObj()			- like cmd_get but populates the entire cmdObj struct
+ * cmd_new_cmdObj() 		- initialize a command object (that you actually passed in)
  * cmd_get_index_by_token() - get index from mnenonic token (most efficient scan)
  * cmd_get_index() 			- get index from mnenonic token or friendly name
  * cmd_get_token()			- returns token in arg string & returns pointer to string
@@ -1423,17 +1423,17 @@ void cmd_persist(cmdObj *cmd)
  */
 INDEX_T cmd_get_max_index() { return (CMD_INDEX_MAX);}
 
-uint8_t cmd_get_cmd(cmdObj *cmd)
+uint8_t cmd_get_cmdObj(cmdObj *cmd)
 {
 	ASSERT_INDEX(TG_UNRECOGNIZED_COMMAND);
 	INDEX_T tmp = cmd->index;
-	cmd_new_object(cmd);
+	cmd_new_cmdObj(cmd);
 	cmd_get_token((cmd->index = tmp), cmd->token);
 	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);
 	return (cmd->value);
 }
 
-cmdObj *cmd_new_object(cmdObj *cmd)
+cmdObj *cmd_new_cmdObj(cmdObj *cmd)
 {
 	memset(cmd, 0, sizeof(struct cmdObject));
 	cmd->value_type = VALUE_TYPE_NULL;
@@ -1778,7 +1778,7 @@ static uint8_t _get_grp(cmdObj *cmd)
 		if (strstr(token, grp) == token) {
 			if (strstr(exclude, token) != NULL) continue;
 			(++cmd)->index = i;
-			cmd_get_cmd(cmd);
+			cmd_get_cmdObj(cmd);
 			strncpy(cmd->token, &cmd->token[strlen(grp)], CMD_TOKEN_LEN+1);	// strip group prefixes from token
 			(cmd-1)->nx = cmd;	// set next object of previous object to this object
 		}
@@ -1799,7 +1799,7 @@ static uint8_t _get_sys(cmdObj *cmd)
 		if (strstr(exclude, token) != NULL) continue;
 		if (strstr(include, token) != NULL) {
 			(++cmd)->index = i;
-			cmd_get_cmd(cmd);
+			cmd_get_cmdObj(cmd);
 			(cmd-1)->nx = cmd;	// set next object of previous object to this object
 		}
 	}

@@ -126,8 +126,8 @@ void cmd_print(cmdObj *cmd);		// entry point for print
 void cmd_persist(cmdObj *cmd);		// entry point for persistence
 
 INDEX_T cmd_get_max_index(void);
-uint8_t cmd_get_cmd(cmdObj *cmd);
-cmdObj *cmd_new_object(cmdObj *cmd);
+uint8_t cmd_get_cmdObj(cmdObj *cmd);
+cmdObj *cmd_new_cmdObj(cmdObj *cmd);
 INDEX_T cmd_get_index_by_token(const char *str);
 INDEX_T cmd_get_index(const char *str);
 char *cmd_get_token(const INDEX_T i, char *string);
