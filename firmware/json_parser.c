@@ -266,8 +266,8 @@ uint16_t js_make_json_string(cmdObj *cmd, char *str)
 	int8_t depth = 0;
 
 	strcpy(str++, "{"); 							// write opening curly
-	for (uint8_t i=0; i<CMD_ARRAY_SIZE; i++) {		// iterate cmd array
-		if (cmd->index == -1) break;
+	for (uint8_t i=0; i<CMD_ARRAY_EXTENDED_SIZE; i++) { // iterate cmd array, headers and footers
+		if (cmd->index == -1) break;				// explicit end of list
 		str += sprintf(str, "\"%s\":", cmd->token);
 		if (cmd->value_type == VALUE_TYPE_PARENT) {
 			str += sprintf(str, "{");
@@ -282,11 +282,13 @@ uint16_t js_make_json_string(cmdObj *cmd, char *str)
 		} else if (cmd->value_type == VALUE_TYPE_STRING) { str += sprintf(str, "\"%s\"", cmd->string_value);
 		} 
 		if (cmd->nx == NULL) break;					// no more. You can leave now.
-		cmd = cmd->nx;
-		if (cmd->depth < depth) {
+
+		cmd = cmd->nx;								// advance to next command object
+		while (depth > cmd->depth) {				// how many closing curlies do we need?
 			str += sprintf(str, "}");
+			depth--;
+//			depth = cmd->depth;
 		}
-		depth = cmd->depth;
 		str += sprintf(str, ",");
 	}
 	do {
@@ -321,11 +323,11 @@ uint8_t js_make_json_response(uint8_t status, char *out_buf)
 	tg_get_status_message(status, cmd->string_value);
 	strcount = js_make_json_string(json_hdr_array, out_buf); // make the string with a zero checksum
 
-	// walk backwards to find the comma separating the msg pair and the cks pair 
-	while (out_buf[strcount] != ',') {
+	// walk backwards to find the colon after the "cks" name 
+	while (out_buf[strcount] != ':') {
 		strcount--;
 	}
-	out_buf[strcount] = NUL;					// the terminator
+	out_buf[strcount] = NUL;					// the terminator!
 	cmd++;										// advance to checksum pair
 	sprintf(cmd->string_value, "%lu", calculate_hash(out_buf));
 	js_make_json_string(json_hdr_array, out_buf); // make the string with the real checksum
@@ -371,6 +373,9 @@ void _js_init_json_response_header()
 	sprintf_P(cmd->token, PSTR("cks"));
 	cmd->value_type = VALUE_TYPE_STRING;
 	cmd->depth = 1;
+
+	cmd++;										// terminate the array
+	cmd->index = -1;
 }
 
 

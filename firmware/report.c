@@ -142,21 +142,22 @@ uint8_t rpt_status_report_callback() // called by controller dispatcher
 	if ((cm.machine_state != MACHINE_RESET) && 
 		(cfg.status_report_interval > 0) && (cm.status_report_counter == 0)) {
 		rpt_run_status_report();
+		js_make_json_response(TG_OK, tg.out_buf);
+		fprintf_P(stderr, PSTR("%s"), tg.out_buf);
 		cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
 		return (TG_OK);
 	}
 	return (TG_NOOP);
 }
 
-void rpt_run_status_report()
+uint8_t rpt_run_status_report()
 {
 	if (tg.communications_mode == TG_JSON_MODE) {
 		rpt_run_json_status_report();
-		js_make_json_response(TG_OK, tg.out_buf);
-		fprintf_P(stderr, PSTR("%s"), tg.out_buf);
 	} else {
 		_run_csv_status_report();
 	}
+	return (TG_OK);
 }
 
 static void _run_csv_status_report() 		// single line status report
@@ -194,6 +195,7 @@ void rpt_run_json_status_report() 			// JSON status report
 {
 	cmdObj *cmd = cmd_array;
 
+	cmd_new_cmdObj(cmd);					// wipe it first
 	cmd->value_type = VALUE_TYPE_PARENT; 	// setup the parent object
 	strcpy(cmd->token, "sr");
 	cmd++;

@@ -33,7 +33,7 @@ void rpt_init_status_report(uint8_t persist_flag);
 void rpt_decr_status_report(void);
 void rpt_queue_status_report(void);
 uint8_t rpt_status_report_callback(void);
-void rpt_run_status_report(void);
+uint8_t rpt_run_status_report(void);
 void rpt_run_multiline_status_report(void);
 void rpt_run_json_status_report(void);
 

@@ -47,11 +47,12 @@
 // of CMD_NAME_LEN and CMD_VALUE_STRING_LEN which are statically allocated 
 // and should be as short as possible. 
 #define CMD_MAX_OBJECTS 20			// maximum number of objects in a JSON string
-#define CMD_ARRAY_SIZE (1 + CMD_MAX_OBJECTS) 	// a root + maximum children
-#define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS	// max elements in a status report
-
 #define JSON_RESPONSE_HEADERS 2		// number of leading elements in JSON response
 #define JSON_RESPONSE_FOOTERS 4		// number of trailing elements in JSON response
+#define CMD_ARRAY_SIZE (1 + CMD_MAX_OBJECTS) 	// a root + maximum children
+#define CMD_ARRAY_EXTENDED_SIZE (CMD_ARRAY_SIZE + JSON_RESPONSE_HEADERS + JSON_RESPONSE_FOOTERS)
+#define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS	// max elements in a status report
+
 
 #define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
 #define CMD_STRING_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN + CMD_FORMAT_LEN +3)
