@@ -38,21 +38,53 @@
 #define CMD_STRING_LEN 64			// original value string or value as a string
 #define CMD_FORMAT_LEN 64			// print formatting string
 
-// CMD_MAX_OBJECTS needs to allow for one parent JSON object and enough children
-// to complete the largest possible operation. Right now this is the axis group 
-// query which has 20 elements for the rotary axes. 
-//
-// CMD_ARRAY_SIZE - this is the biggest memory hog in the whole system with 
-// the possible exception of the planner queue. It is dominated by the size 
-// of CMD_NAME_LEN and CMD_VALUE_STRING_LEN which are statically allocated 
-// and should be as short as possible. 
-#define CMD_MAX_OBJECTS 20			// maximum number of objects in a JSON string
-#define JSON_RESPONSE_HEADERS 2		// number of leading elements in JSON response
-#define JSON_RESPONSE_FOOTERS 4		// number of trailing elements in JSON response
-#define CMD_ARRAY_SIZE (1 + CMD_MAX_OBJECTS) 	// a root + maximum children
-#define CMD_ARRAY_EXTENDED_SIZE (CMD_ARRAY_SIZE + JSON_RESPONSE_HEADERS + JSON_RESPONSE_FOOTERS)
-#define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS	// max elements in a status report
+/**** cmdObj lists ****
+ *
+ * cmdObjects are processed as doubly linked lists. List elements are:
+ *	- header	(depth 0 - contains parent obj and body parent)
+ *	- body		(depth 2 - may go deeper)
+ *	- message	(depth 2 - optional application/body message)
+ *	- status	(depth 1 - response status code and status message)
+ *	- checksum	(depth 1 - checksum of all previous elements)
+ *
+ *	A list can be processed from any given entry point - e.g. the body only for 
+ *	reading or constructing commands, the message, or the entire list if you start
+ *	at the beginning of the response header. The last element in the list is 
+ *	signalled by cmd->nx == NULL (in an unused element following the checksum).
+ * 
+ *	When the list (or a subset of the list) is printed in either text or JSON
+ *	format any element with a value type VALUE_TYPE_EMPTY is skipped over.
+ *
+ * 	Because we don't have recursion parent/child nesting relationships are 
+ *	captured in a 'depth' variable, This must remain consistent if the curlies 
+ *	are to work out. In general you should not have to track depth explicitly 
+ *	if you use cmd_clear_cmdObj or functions that call it (including cmd_get_cmdObj(), 
+ *	cmd_clear_body(), cmd_clear_message() and some other low-level routines. 
+ *	cmd_clear_cmdObj sets depth correctly based on the object's predecessor. 
+ *	If you see problems with curlies check the depth values in the lists.
+ *
+ *	Use cmd_print_list() to output JSON and text string. Do not simply run these
+ *	through printf. This function does some hosekeeping including clearing the 
+ *	body and message after the output string is queued.
+ *
+ *	CMD_BODY_LEN needs to allow for one parent JSON object and enough children
+ *	to complete the largest possible operation. Right now this is the axis group 
+ *	query which has 20 elements for the rotary axes. 
+ *
+ *	CMD_TOTAL_LEN - this is the biggest memory hog in the whole system with 
+ *	the possible exception of the planner queue. It is dominated by the size 
+ *	of CMD_NAME_LEN and CMD_VALUE_STRING_LEN which are statically allocated 
+ *	and should be as short as possible. 
+ */
+#define CMD_HEADER_LEN 2			// contains the "r" and "body" elements
+#define CMD_BODY_LEN 21				// main body
+#define CMD_MESSAGE_LEN 1			// body message (optional)
+#define CMD_STATUS_LEN 2			// status code and message (response footer)
+#define CMD_CHECKSUM_LEN 2			// checksum and final element (terminator)
 
+#define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
+#define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_MESSAGE_LEN + CMD_STATUS_LEN + CMD_CHECKSUM_LEN)
+#define CMD_STATUS_REPORT_LEN CMD_BODY_LEN	// max elements in a status report
 
 #define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
 #define CMD_STRING_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN + CMD_FORMAT_LEN +3)
@@ -75,8 +107,9 @@
 #define IGNORE_LF 2					// ignore LF on RX
 
 enum cmdValueType {					// value typing for config and JSON
+	VALUE_TYPE_EMPTY = -3,			// object is not used
 	VALUE_TYPE_ERROR = -2,			// was unable to process the record
-	VALUE_TYPE_NULL = -1,			// value is 'null'
+	VALUE_TYPE_NULL = -1,			// value is 'null' (meaning the JSON null value)
 	VALUE_TYPE_FALSE = 0,			// value is 'false'
 	VALUE_TYPE_TRUE = 1,			// value is 'true'
 	VALUE_TYPE_INTEGER,				// value is a uint32_t
@@ -86,37 +119,50 @@ enum cmdValueType {					// value typing for config and JSON
 };
 
 struct cmdObject {					// depending on use, not all elements may be populated
-	INDEX_T index;					// index of tokenized name, or -1 if no token
+	INDEX_T index;					// index of tokenized name, or -1 if no token (optional)
 	int8_t depth;					// depth of object in the tree. 0 is root (-1 is invalid)
-	struct cmdObject *nx;			// pointer to next object or NULL if last (or only) object
+	struct cmdObject *nx;			// pointer to next object or NULL if last object
+	struct cmdObject *pv;			// pointer to previous object or NULL if first object
 	int8_t value_type;				// see cfgValueType
 	double value;					// numeric value
 	char token[CMD_TOKEN_LEN+1];	// mnemonic token
-	char vstrg[CMD_STRING_LEN+1];	// value string (see note below)
+	char xs1Rg[CMD_STRING_LEN+1];	// string storage (don't use this variable literally. See note below)
 }; 									// OK, so it's not REALLY an object
 typedef struct cmdObject cmdObj;	// handy typedef for command onjects
 
-// The cmdObj vstring field is overloaded to save RAM. Its primary use is to 
-// carry a value-type of string. It is also used in some preliminary parsing
+// The xs1Rg field is intentionally named so badly that you can't remember it.
+// Use the aliases below - depending on what function you are performing This 
+// field is an overloaded string storage field to save RAM. Its primary use is 
+// to carry a value-type of string. It is also used in some preliminary parsing
 // to carry the friendly_name or the parent group specifier (group_token).
-// Care must be taken that these uses do not clobber each other.
-#define string_value vstrg			// used here as a string value field
-#define friendly_name vstrg			// used here as a friendly name field
-#define group_token vstrg			// used here as a group token field
+// ** Care must be taken that these uses do not clobber each other **.
+#define string_value xs1Rg			// used here as a string value field
+#define friendly_name xs1Rg			// used here as a friendly name field
+#define group_token xs1Rg			// used here as a group token field
 
 typedef uint8_t (*fptrCmd)(cmdObj *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
 
-cmdObj cmd_array[CMD_ARRAY_SIZE];			 // cmd_array[0] is the root object
-cmdObj json_hdr_array[JSON_RESPONSE_HEADERS];// allocate header objects for JSON response
-cmdObj json_ftr_array[JSON_RESPONSE_FOOTERS];// allocate footer objects for JSON response
-
+// Allocate memory for all objects that may be used in cmdObj lists
+cmdObj cmd_header[CMD_HEADER_LEN];	// header objects for JSON responses
+cmdObj cmd_body[CMD_BODY_LEN];		// cmd_body[0] is the root object
+cmdObj cmd_message[CMD_MESSAGE_LEN];// usually just a single element for a message
+cmdObj cmd_status[CMD_STATUS_LEN];	// allocate footer objects for JSON response
+cmdObj cmd_checksum[CMD_CHECKSUM_LEN];// checksum element
+/*
+cmdObj cmd_array[CMD_TOTAL_LEN];
+#define cmd_header (&cmd_array[0])
+#define cmd_body (&cmd_array[CMD_HEADER_LEN])
+#define cmd_message (&cmd_array[CMD_HEADER_LEN + CMD_BODY_LEN])
+#define cmd_status (&cmd_array[CMD_HEADER_LEN + CMD_BODY_LEN + CMD_MESSAGE_LEN])
+#define cmd_checksum (&cmd_array[CMD_HEADER_LEN + CMD_BODY_LEN + CMD_MESSAGE_LEN + CMD_STATUS_LEN])
+*/
 /*
  * Global Scope Functions
  */
 
 #define ASSERT_CMD_INDEX(a) if ((cmd->index < 0) || (cmd->index >= CMD_INDEX_MAX)) return (a);
-#define ASSERT_CMD_ARRAY(a) if ((cmd < cmd_array) || (cmd > cmd_array + CMD_ARRAY_SIZE)) { return ((cmdObj *)a);}
+//++++#define ASSERT_CMD_ARRAY(a) if ((cmd < cmd_array) || (cmd > cmd_array + CMD_ARRAY_SIZE)) { return ((cmdObj *)a);}
 
 void cfg_init(void);
 uint8_t cfg_config_parser(char *str);
@@ -129,12 +175,15 @@ void cmd_print(cmdObj *cmd);		// entry point for print
 void cmd_persist(cmdObj *cmd);		// entry point for persistence
 
 INDEX_T cmd_get_max_index(void);
-cmdObj *cmd_new_cmdObj(cmdObj *cmd);
 uint8_t cmd_get_cmdObj(cmdObj *cmd);
-cmdObj *cmd_array_reset(void);
-cmdObj *cmd_array_add_token(cmdObj *cmd, char *token);
-cmdObj *cmd_array_add_string(cmdObj *cmd, char *token, char *string);
-void cmd_array_print(void);
+cmdObj *cmd_clear_cmdObj(cmdObj *cmd);
+
+cmdObj *cmd_reset_list(void);
+cmdObj *cmd_clear_body(void);
+cmdObj *cmd_clear_message(void);
+cmdObj *cmd_insert_token(cmdObj *cmd, char *token);
+cmdObj *cmd_insert_string(cmdObj *cmd, char *token, char *string);
+void cmd_print_list(cmdObj *cmd);
 
 INDEX_T cmd_get_index_by_token(const char *str);
 INDEX_T cmd_get_index(const char *str);

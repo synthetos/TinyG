@@ -100,7 +100,7 @@ void tg_reset(void)
 
 void tg_prompt_system_ready(void)
 {
-	cmdObj *cmd = cmd_array;
+	cmdObj *cmd = cmd_body;
 
 	if (cfg.enable_json_mode == false) {
 		fprintf_P(stderr, PSTR("#### TinyG version %0.2f (build %0.2f) \"%s\" ####\n" ), 
@@ -108,20 +108,22 @@ void tg_prompt_system_ready(void)
 		fprintf_P(stderr, PSTR("Type h for help\n"));
 		_prompt_ok();
 	} else {
-		cmd = cmd_array_add_token(cmd, "fv");
-		cmd = cmd_array_add_token(cmd, "fb");
-		cmd = cmd_array_add_string(cmd, "msg", "SYSTEM READY");
-		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
+//		cmd_clear_body();
+		cmd = cmd_insert_token(cmd, "fv");
+		cmd_insert_token(cmd, "fb");
+		cmd_insert_string(cmd_message, "msg", "SYSTEM READY");
+		cmd_print_list(cmd_header);
+//		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
 	}
 }
 
 void tg_prompt_configuration_profile(void)
 {
-	cmdObj *cmd = cmd_array;
+	cmdObj *cmd = cmd_body;
 
 //	if (cfg.enable_json_mode == true) {
 	if (COM_ENABLE_JSON_MODE) {
-		cmd_array_add_string(cmd, "msg", INIT_CONFIGURATION_MESSAGE);
+		cmd_insert_string(cmd, "msg", INIT_CONFIGURATION_MESSAGE);
 		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
 	} else {
 		fprintf_P(stderr, PSTR("\n%s\n"), INIT_CONFIGURATION_MESSAGE);		// see settings.h & sub-headers
@@ -313,7 +315,8 @@ static uint8_t _dispatch()
 void _dispatch_return(uint8_t status, char *buf)
 {
 	if (tg.communications_mode == TG_JSON_MODE) {
-		fprintf(stderr, "%s", buf);
+		cmd_print_list(cmd_header);
+//		fprintf(stderr, "%s", buf);
 		return;
 	}
 	switch (status) {
@@ -464,13 +467,21 @@ PGM_P msgApplicationMessage[] PROGMEM = {
 
 void tg_print_message(char *msg)
 {
+	cmdObj *cmd = cmd_body;
+//	cmd = cmd_array_reset();
+//	cmd_clear_body();
+	cmd_insert_string(cmd, msg, "msg");
+	cmd_print_list(cmd);
+
+/*
 	if (cfg.enable_json_mode == true) {
-		cmdObj *cmd = cmd_array;
+		cmdObj *cmd = cmd_body;
 		cmd_array_add_string(cmd, "msg", msg);
 		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
 	} else {
 		fprintf(stderr, "%s\n", msg);
 	}
+*/
 }
 
 void tg_print_message_number(uint8_t msgnum) 

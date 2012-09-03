@@ -1242,6 +1242,8 @@ void cfg_init()
 	cmdObj cmd;
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
 
+	cmd_reset_list();				// setup the cmd object lists. Do this first.
+
 #ifdef __DISABLE_EEPROM_INIT		// cutout for debug simulation
 	// Apply the hard-coded default values from settings.h and exit
 	for (cmd.index=0; cmd.index<CMD_INDEX_START_GROUPS; cmd.index++) {
@@ -1310,7 +1312,7 @@ static uint8_t _set_defa(cmdObj *cmd)
 
 uint8_t cfg_config_parser(char *str)
 {
-	cmdObj *cmd = cmd_array;				// point at first struct in the array
+	cmdObj *cmd = cmd_body;					// point at first object in the body
 
 	if (str[0] == '?') {					// special handling for status report
 		rpt_run_multiline_status_report();
@@ -1335,7 +1337,7 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 	char separators[] = {" =:|\t"};			// anything someone might use
 
 	// pre-processing
-	cmd_new_cmdObj(cmd);					// initialize config object, index=0
+	cmd_clear_cmdObj(cmd);					// initialize config object, index=0
 	if (*str == '$') str++;					// ignore leading $
 	tmp = str;
 	if (*tmp==NUL) *tmp='s';				// make $ behave as a system listing
@@ -1375,6 +1377,8 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
  * cmd_set()   - set a value or invoke a function
  * cmd_print() - invoke print function
  * cmd_persist() - persist a value to NVM. Takes special cases into account
+ * cmd_new_cmdObj() - initialize a command object (that you actually passed in)
+ * cmd_get_cmdObj()	- like cmd_get but populates the cmdObj struct
  */
 uint8_t cmd_get(cmdObj *cmd)
 {
@@ -1401,12 +1405,36 @@ void cmd_persist(cmdObj *cmd)
 	cmd_write_NVM_value(cmd);
 }
 
+uint8_t cmd_get_cmdObj(cmdObj *cmd)
+{
+	ASSERT_CMD_INDEX(TG_UNRECOGNIZED_COMMAND);
+	INDEX_T tmp = cmd->index;
+	cmd_clear_cmdObj(cmd);
+	cmd_get_token((cmd->index = tmp), cmd->token);
+	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);
+	return (cmd->value);
+}
+
+cmdObj *cmd_clear_cmdObj(cmdObj *cmd)
+{
+	cmdObj *nx = cmd->nx;			// save pointers
+	cmdObj *pv = cmd->pv;
+	memset(cmd, 0, sizeof(struct cmdObject));
+	cmd->nx = nx;					// restore pointers
+	cmd->pv = pv;
+	if (cmd->pv != NULL) { 			// set depth correctly
+		cmd->depth = cmd->pv->depth;
+		if (cmd->pv->value_type == VALUE_TYPE_PARENT) { 
+			cmd->depth++; 
+		}
+	}
+	cmd->value_type = VALUE_TYPE_EMPTY;
+	return (cmd);
+}
+
 /****************************************************************************
  * cmdObj helper functions and other low-level cmd helpers
- * cmd_new_cmdObj() 		- initialize a command object (that you actually passed in)
- * cmd_get_cmdObj()			- like cmd_get but populates the cmdObj struct
- *
- * cmd_get_max_index()		- utility function to return array size				
+ * cmd_get_max_index()		- utility function to return index array size				
  * cmd_get_index_by_token() - get index from mnenonic token (most efficient scan)
  * cmd_get_index() 			- get index from mnenonic token or friendly name
  * cmd_get_token()			- returns token in arg string & returns pointer to string
@@ -1425,22 +1453,6 @@ void cmd_persist(cmdObj *cmd)
  *	The full string is not needed in the friendly name, just enough to match to
  *	uniqueness. This saves a fair amount of memory and time and is easier to use.
  */
-cmdObj *cmd_new_cmdObj(cmdObj *cmd)
-{
-	memset(cmd, 0, sizeof(struct cmdObject));
-	cmd->value_type = VALUE_TYPE_NULL;
-	return (cmd);
-}
-
-uint8_t cmd_get_cmdObj(cmdObj *cmd)
-{
-	ASSERT_CMD_INDEX(TG_UNRECOGNIZED_COMMAND);
-	INDEX_T tmp = cmd->index;
-	cmd_new_cmdObj(cmd);
-	cmd_get_token((cmd->index = tmp), cmd->token);
-	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);
-	return (cmd->value);
-}
 
 INDEX_T cmd_get_max_index() { return (CMD_INDEX_MAX);}
 
@@ -1530,90 +1542,142 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 }
 
 /****************************************************************************
- * cmdObj array methods (or they would be cmd_array methods if this were OO code)
- * cmd_array_reset()	  - reset array to known initial condition
- * cmd_array_add_token()  - populate current cmdObj from token
- * cmd_array_add_string() - set current cmdObj string from input string
- * cmd_array_print()	  - print the command array in text or JSON mode
+ * cmdObj list methods (or would be methods if this were OO code)
+ * cmd_clear_body()	  	- reset cmdObjs in the body
+ * cmd_clear_message()	- reset cmdObjs in the message
+ * cmd_reset_list()		- reset the entire list, including headers, body, msg and footers
+ * cmd_insert_token()	- populate current cmdObj from token
+ * cmd_insert_string()	- set current cmdObj string from input string
+ * cmd_print_list()		- print the command array in text or JSON mode
  */
 
-cmdObj *cmd_array_reset() 
+cmdObj *cmd_clear_body()
 {
-	cmdObj *cmd = cmd_array;
-
-	for (uint8_t i=0; i<CMD_ARRAY_SIZE; i++) {
-		cmd = cmd_new_cmdObj(cmd);
+	cmdObj *cmd = cmd_body;
+	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
+		cmd_clear_cmdObj(cmd);
+		cmd->pv = (cmd-1);
+		cmd->nx = (cmd+1);
+		cmd->depth = 2;
+		cmd++;
 	}
-	return (cmd_array);
+	(--cmd)->nx = cmd_message;					// correct last element
+	cmd = cmd_body;
+	cmd->pv = &cmd_header[CMD_HEADER_LEN-1];	// correct first element
+	cmd_clear_message();	
+	return (cmd_body);
 }
 
-/**** cmd_array_add_token - populate current cmdObj with contents of the token ****
+cmdObj *cmd_clear_message()
+{
+	cmdObj *cmd = cmd_message;
+	cmd_clear_cmdObj(cmd);						// "msg" element
+	sprintf_P(cmd->token, PSTR("msg"));
+	cmd->value_type = VALUE_TYPE_EMPTY;
+	cmd->pv = &cmd_body[CMD_BODY_LEN-1];
+	cmd->nx = cmd_status;
+	cmd->depth = 2;
+	return (cmd_message);
+}
+
+cmdObj *cmd_reset_list()
+{
+	cmdObj *cmd;
+
+	// setup header objects (2)
+	cmd = cmd_header;
+	cmd_clear_cmdObj(cmd);						// "r" parent
+	sprintf_P(cmd->token, PSTR("r"));
+	cmd->value_type = VALUE_TYPE_PARENT;
+	cmd->pv = 0;
+	cmd->nx = (cmd+1);
+	cmd->depth = 0;
+
+	cmd_clear_cmdObj(++cmd);					// "body" parent
+	sprintf_P(cmd->token, PSTR("body"));
+	cmd->value_type = VALUE_TYPE_PARENT;
+	cmd->pv = (cmd-1);
+	cmd->nx = cmd_body;
+	cmd->depth = 1;
+
+	// setup body objects and message object
+	cmd_clear_body();							// also clears message
+
+	// setup status objects (2)
+	cmd = cmd_status;
+	cmd_clear_cmdObj(cmd);						// "sc" element
+	sprintf_P(cmd->token, PSTR("sc"));
+	cmd->value_type = VALUE_TYPE_INTEGER;
+	cmd->pv = &cmd_message[CMD_MESSAGE_LEN-1];
+	cmd->nx = (cmd+1);
+	cmd->depth = 1;
+
+	cmd_clear_cmdObj(++cmd);					// "sm" element
+	sprintf_P(cmd->token, PSTR("sm"));
+	cmd->value_type = VALUE_TYPE_STRING;
+	cmd->pv = (cmd-1);
+	cmd->nx = cmd_checksum;
+	cmd->depth = 1;
+
+	// setup checksum element
+	cmd = cmd_checksum;	
+	cmd_clear_cmdObj(cmd);						// "cks" element
+	sprintf_P(cmd->token, PSTR("cks"));
+	cmd->value_type = VALUE_TYPE_STRING;
+	cmd->pv = &cmd_status[CMD_STATUS_LEN-1];
+	cmd->nx = cmd+1;
+	cmd->depth = 1;
+
+	cmd_clear_cmdObj(++cmd);					// last element
+	cmd->pv = (cmd-1);
+//	cmd->mx = NULL;	  // already = zero by clear // signals the last one. 
+
+	return (cmd_header);
+}
+
+/**** cmd_insert_token - write contents of token to cmd list ****
  *
- *  Inputs:	 *cmd points to current array location
+ *  Inputs:	 *cmd points to current list element
  *			 token you want to lookup and populate
  *
  *	Returns: pointer to next cmdObj unless:
  *				0 = last list element occupied 
- *			   -1 = cmd_array pointer out of range (range error)
- * 			   -2 = token was not found (not found error)
+ * 			   -1 = token was not found (not found error)
  */
-
-cmdObj *cmd_array_add_token(cmdObj *cmd, char *token) 
+cmdObj *cmd_insert_token(cmdObj *cmd, char *token) 
 {
-	ASSERT_CMD_ARRAY(-1)			// -2 = cmd address error
-//	if ((cmd < cmd_array) || (cmd > cmd_array + CMD_ARRAY_SIZE)) {
-//		return ((cmdObj *)-2);	
-//	}
 	// load the index from the token or die trying
 	if ((cmd->index = cmd_get_index_by_token(token)) == -1) {
-		return ((cmdObj *)-2);		// -1 = token error
+		return ((cmdObj *)-1);		// token error
 	}
 	cmd_get_cmdObj(cmd);			// populate the value from the index
-	if (cmd > cmd_array) {			// link the previous object to this one
-		(cmd-1)->nx = cmd;
-		cmd->depth = (cmd-1)->depth;// propagate the depth value
-	}
-	if (cmd+1 <= cmd_array + CMD_ARRAY_SIZE) {
-		return (cmd+1);				// return the next cmd object in the chain
-	} else {
-		return ((cmdObj *)0);		// 0 = end of array
-	}
+	return (cmd+1);
 }
 
-/**** cmd_array_add_string - add a string object to cmd_array **** 
+/**** cmd_insert_string - add a string object to cmd list **** 
  *
  *  Inputs:	 *cmd points to current array location
- *			 token to write to cmdObj.
+ *			 token to write into cmdObj.
  *			 string value to write in the cmdObj
  *
  *	Returns: pointer to next cmdObj unless:
  *				0 = last list element occupied 
- *			   -2 = cmd_array pointer out of range (range error)
  */
 
-cmdObj *cmd_array_add_string(cmdObj *cmd, char *token, char *string)
+cmdObj *cmd_insert_string(cmdObj *cmd, char *token, char *string)
 {
-	ASSERT_CMD_ARRAY(-1)			// -2 = cmd address error
 	strncpy(cmd->token, token, CMD_TOKEN_LEN);
 	cmd->token[CMD_TOKEN_LEN-1] = NUL;	// safety measure
 	strncpy(cmd->string_value, string, CMD_STRING_LEN);
 	cmd->value_type = VALUE_TYPE_STRING;
-
-	if (cmd > cmd_array) {
-		(cmd-1)->nx = cmd;			// link the previous object to this one
-		cmd->depth = (cmd-1)->depth;// propagate the depth value
-	}
-	if (cmd+1 <= cmd_array + CMD_ARRAY_SIZE) {
-		return (cmd+1);				// return the next cmd object in the chain
-	} else {
-		return ((cmdObj *)0);		// 0 = end of array
-	}
+	return (cmd+1);				// return the next cmd object in the chain
 }
 
-void cmd_array_print()
+/**** cmd_print_list - print cmd_array in text or JSON mode ****
+ * Use this function for all object output. It also cleans up. 
+ */
+void cmd_print_list(cmdObj *cmd)
 {
-	cmdObj *cmd = cmd_array;
-
 	if (cfg.enable_json_mode == true) {
 		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
 	} else {
@@ -1623,8 +1687,8 @@ void cmd_array_print()
 		} while (cmd->nx != NULL);
 		fprintf(stderr, "\n");	
 	}
+	cmd_clear_body();			// clear the message once its printed
 }
-
 
 /***** Generic Internal Functions *******************************************
  * _set_nul() - set nothing (noop)
@@ -1844,7 +1908,7 @@ static int8_t _get_motor(const INDEX_T i)
  *	But it's useful to be able to round-trip a group back to the JSON requestor.
  *
  *	NOTE: The 'cmd' arg in many group commands must be the address of the head of a 
- *	cmd struct array (cmd_array), not a single cmd struct. These command expand 
+ *	cmd struct array (cmd_body), not a single cmd struct. These command expand 
  *	into groups of multiple cmd structs, and assume the array provides the RAM. 
  */
 static void _print_grp(cmdObj *cmd)
@@ -1920,7 +1984,7 @@ static void _print_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]) // help
 {
 	for (uint8_t i=0; i < CMD_MAX_OBJECTS; i++) {
 		if (list[i][0] == NUL) return;
-		cmd = cmd_array;
+		cmd = cmd_body;
 		strncpy(cmd->group_token, list[i], CMD_TOKEN_LEN);
 		cmd->index = cmd_get_index_by_token(cmd->group_token);
 		cmd->value_type = VALUE_TYPE_PARENT;
@@ -1956,7 +2020,7 @@ static void _print_all(cmdObj *cmd)		// print all parameters
 static void _print_groups(cmdObj *cmd, char *ptr) // helper to print multiple groups
 {
 	while (*ptr != NUL) {
-		cmd = cmd_array;
+		cmd = cmd_body;
 		memset(cmd->group_token, NUL, CMD_TOKEN_LEN+1); // clear group token.
 		cmd->group_token[0] = *ptr++;
 		cmd->index = cmd_get_index_by_token(cmd->group_token);

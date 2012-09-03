@@ -142,8 +142,9 @@ uint8_t rpt_status_report_callback() // called by controller dispatcher
 	if ((cm.machine_state != MACHINE_RESET) && 
 		(cfg.status_report_interval > 0) && (cm.status_report_counter == 0)) {
 		rpt_run_status_report();
-		js_make_json_response(TG_OK, tg.out_buf);
-		fprintf_P(stderr, PSTR("%s"), tg.out_buf);
+//++++		js_make_json_response(TG_OK, tg.out_buf);
+//		fprintf_P(stderr, PSTR("%s"), tg.out_buf);
+		cmd_print_list(cmd_header);
 		cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
 		return (TG_OK);
 	}
@@ -182,7 +183,7 @@ static void _run_csv_status_report() 		// single line status report
 
 void rpt_run_multiline_status_report()		// multiple line status report
 {
-	cmdObj *cmd = cmd_array;
+	cmdObj *cmd = cmd_body;
 	fprintf_P(stderr,PSTR("\n"));
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		cmd->index = cfg.status_report_spec[i];
@@ -193,20 +194,19 @@ void rpt_run_multiline_status_report()		// multiple line status report
 
 void rpt_run_json_status_report() 			// JSON status report
 {
-	cmdObj *cmd = cmd_array;
+	cmdObj *cmd = cmd_body;
 
-	cmd_new_cmdObj(cmd);					// wipe it first
+	cmd_clear_cmdObj(cmd);					// wipe it first
 	cmd->value_type = VALUE_TYPE_PARENT; 	// setup the parent object
-	strcpy(cmd->token, "sr");
-	cmd++;
+	sprintf_P(cmd->token, PSTR("sr"));
+//	strcpy(cmd->token, "sr");				// alternate form of above: more RAM, less FLASH & cycles
+	cmd = cmd->nx;
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_spec[i]) == -1) { continue;}
 		if (cmd->index == 0) { break;}
 		cmd_get_cmdObj(cmd);
-		cmd->depth = 1;						// hack becuase we don't have recursion
-		(cmd-1)->nx = cmd; // set the next object of the previous object to be this object
-		cmd++;
+		cmd = cmd->nx;
 	}
 }
 
