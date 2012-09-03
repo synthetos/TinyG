@@ -366,7 +366,7 @@ char str_gpa[] PROGMEM = "gpa,gcode_pa,[gpa] gcode_path_control %10d [0,1,2]\n";
 char str_gdi[] PROGMEM = "gdi,gcode_d, [gdi] gcode_distance_mode%10d [0,1]\n";
 char str_gc[] PROGMEM = "gc,gcod,[gc]";
 
-char str_ea[] PROGMEM = "ea,enable_a,[ea]  enable_acceleration%10d [0,1]\n";
+//char str_ea[] PROGMEM = "ea,enable_a,[ea]  enable_acceleration%10d [0,1]\n";
 char str_ja[] PROGMEM = "ja,junc,[ja]  junction_acceleration%8.0f%S\n";
 char str_ml[] PROGMEM = "ml,min_l,[ml]  min_line_segment   %14.3f%S\n";
 char str_ma[] PROGMEM = "ma,min_a,[ma]  min_arc_segment    %14.3f%S\n";
@@ -376,7 +376,7 @@ char str_ic[] PROGMEM = "ic,ignore_c,[ic]  ignore CR or LF on RX %7d [0,1=CR,2=L
 char str_ec[] PROGMEM = "ec,enable_c,[ec]  enable_CR (on TX)%12d [0,1]\n";
 char str_ee[] PROGMEM = "ee,enable_e,[ee]  enable_echo      %12d [0,1]\n";
 char str_ex[] PROGMEM = "ex,enable_x,[ex]  enable_xon_xoff  %12d [0,1]\n";
-char str_eh[] PROGMEM = "eh,enable_h,[eh]  enable_hashcode  %12d [0,1]\n";
+char str_ej[] PROGMEM = "ej,enable_j,[ej]  enable_json_mode %12d [0,1]\n";
 
 // Motor strings in program memory 
 char str_1ma[] PROGMEM = "1ma,m1_ma, [1ma] m1_map_to_axis%15d [0=X, 1=Y...]\n";
@@ -644,7 +644,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_gdi, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.distance_mode,			GCODE_DEFAULT_DISTANCE_MODE },
 	{ str_gc,  _print_nul, _get_gc, _run_gc,  (double *)&tg.null, 0 },	 // gcode block
 
-	{ str_ea, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_acceleration, 	ENABLE_ACCELERATION },
+//	{ str_ea, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_acceleration, 	ENABLE_ACCELERATION },
 	{ str_ja, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.junction_acceleration,	JUNCTION_ACCELERATION },
 	{ str_ml, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.min_segment_len,		MIN_LINE_LENGTH },
 	{ str_ma, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.arc_segment_len,		ARC_SEGMENT_LENGTH },
@@ -654,7 +654,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,				COM_APPEND_TX_CR },
 	{ str_ee, _print_ui8, _get_ui8, _set_ee,  (double *)&cfg.enable_echo,			COM_ENABLE_ECHO },
 	{ str_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
-	{ str_eh, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_hashcode,		COM_ENABLE_HASHCODE },
+	{ str_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_json_mode,		COM_ENABLE_JSON_MODE },
 
 	{ str_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ str_1sa, _print_rot, _get_dbl ,_set_sa, (double *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
@@ -1280,10 +1280,11 @@ static uint8_t _set_defa(cmdObj *cmd)
 	if (cmd->value != true) {
 		help_print_defaults_help(cmd);
 		return (TG_OK);
-	} 
+	}
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
+	tg_prompt_configuration_profile();
+//	fprintf_P(stderr,PSTR(INIT_CONFIGURATION_MESSAGE));		// see settings.h & sub-headers
 
-	fprintf_P(stderr,PSTR(INIT_CONFIGURATION_MESSAGE));		// see settings.h & sub-headers
 	for (cmd->index=0; cmd->index<CMD_INDEX_END_SINGLES; cmd->index++) {
 		if (strstr(DONT_INITIALIZE, cmd_get_token(cmd->index, cmd->token)) != NULL) continue;
 		cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
@@ -1403,23 +1404,6 @@ void cmd_persist(cmdObj *cmd)
  * cmd_get_max_index()		- utility function to return array size				
  * cmd_get_cmdObj()			- like cmd_get but populates the entire cmdObj struct
  * cmd_new_cmdObj() 		- initialize a command object (that you actually passed in)
- * cmd_get_index_by_token() - get index from mnenonic token (most efficient scan)
- * cmd_get_index() 			- get index from mnenonic token or friendly name
- * cmd_get_token()			- returns token in arg string & returns pointer to string
- * cmd_get_group() 			- returns the axis prefix, motor prefix, or 's' for system
- * cmd_is_group()			- returns true if the command is a group
- * cmd_persist_offsets()	- write any changed G54 (et al) offsets back to NVM
- *
- *	cmd_get_index() and cmd_get_index_by_token() are the most expensive routines 
- *	in the whole config. They do a linear table scan of the PROGMEM strings, which 
- *	of course could be further optimized with indexes or hashing if it made a 
- *	difference. Which it doesn't. At least not with about 230 tokens to manage. 
- *
- *	That said, use cmd_get_index_by_token() if you know your input string is a 
- *	token - it's much faster than cmd_get_index()
- *
- *	The full string is not needed in the friendly name, just enough to match to
- *	uniqueness. This saves a fair amount of memory and time and is easier to use.
  */
 INDEX_T cmd_get_max_index() { return (CMD_INDEX_MAX);}
 
@@ -1439,6 +1423,96 @@ cmdObj *cmd_new_cmdObj(cmdObj *cmd)
 	cmd->value_type = VALUE_TYPE_NULL;
 	return (cmd);
 }
+
+/**** cmd_append_token ***
+ *	Lookup a token and append to the cmd_array
+ *
+ *  Inputs:	 cmd points to empty array location
+ *			 token is the token you want to lookup and populate
+ *
+ *	Returns: pointer to next element in the list unless:
+ *				0 = last list element occupied
+ * 			   -1 = token failed lookup
+ *			   -2 = array address out of range
+ *
+ */
+
+cmdObj *cmd_append_token(cmdObj *cmd, char *token) 
+{
+	if ((cmd < cmd_array) || (cmd > cmd_array + CMD_ARRAY_SIZE)) {
+		return ((cmdObj *)-2);		// -2 = comd address error
+	}
+	// load the index from the token or die trying
+	if ((cmd->index = cmd_get_index_by_token(token)) == -1) {
+		return ((cmdObj *)-1);		// -1 = token error
+	}
+	cmd_get_cmdObj(cmd);			// populate the value from the index
+	if (cmd > cmd_array) {			// link the previous object to this one
+		(cmd-1)->nx = cmd;
+		cmd->depth = (cmd-1)->depth;// propagate the depth
+	}
+	if (cmd+1 <= cmd_array + CMD_ARRAY_SIZE) {
+		return (cmd+1);				// return the next cmd object in the chain
+	} else {
+		return ((cmdObj *)0);		// 0 = end of array
+	}
+}
+
+/**** cmd_append_string ***
+ *	Append a cmdObj to the cmd_array with a string 
+ *
+ *  Inputs:	 cmd points to empty array location
+ *			 token is the token you want to name
+ *			 string is the string value to write in the cmdObj
+ *
+ *	Returns: pointer to next element in the list unless:
+ *				0 = last list element occupied
+ * 			   -1 = token failed lookup
+ *			   -2 = array address out of range
+ *
+ */
+
+cmdObj *cmd_append_string(cmdObj *cmd, char *token, char *string)
+{
+	if ((cmd < cmd_array) || (cmd > cmd_array + CMD_ARRAY_SIZE)) {
+		return ((cmdObj *)-2);		// -2 = comd address error
+	}
+	cmd_new_cmdObj(cmd);			// wipe it
+	strncpy(cmd->token, token, CMD_TOKEN_LEN-1);
+	strncpy(cmd->vstrg, string, CMD_STRING_LEN-1);
+	cmd->value_type = VALUE_TYPE_STRING;
+
+	if (cmd > cmd_array) {
+		(cmd-1)->nx = cmd;			// link the previous object to this one
+		cmd->depth = (cmd-1)->depth;// propagate the depth
+	}
+	if (cmd+1 <= cmd_array + CMD_ARRAY_SIZE) {
+		return (cmd+1);				// return the next cmd object in the chain
+	} else {
+		return ((cmdObj *)0);		// 0 = end of array
+	}
+}
+
+/****************************************************************************
+ * cmd helper functions
+ * cmd_get_index_by_token() - get index from mnenonic token (most efficient scan)
+ * cmd_get_index() 			- get index from mnenonic token or friendly name
+ * cmd_get_token()			- returns token in arg string & returns pointer to string
+ * cmd_get_group() 			- returns the axis prefix, motor prefix, or 's' for system
+ * cmd_is_group()			- returns true if the command is a group
+ * cmd_persist_offsets()	- write any changed G54 (et al) offsets back to NVM
+ *
+ *	cmd_get_index() and cmd_get_index_by_token() are the most expensive routines 
+ *	in the whole config. They do a linear table scan of the PROGMEM strings, which 
+ *	of course could be further optimized with indexes or hashing if it made a 
+ *	difference. Which it doesn't. At least not with about 230 tokens to manage. 
+ *
+ *	That said, use cmd_get_index_by_token() if you know your input string is a 
+ *	token - it's much faster than cmd_get_index()
+ *
+ *	The full string is not needed in the friendly name, just enough to match to
+ *	uniqueness. This saves a fair amount of memory and time and is easier to use.
+ */
 
 INDEX_T cmd_get_index_by_token(const char *str)
 {

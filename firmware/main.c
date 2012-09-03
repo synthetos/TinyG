@@ -104,7 +104,6 @@ void tg_system_reset(void)
 	PMIC_EnableMediumLevel();// enable TX interrupts for init reporting 
 	sei();					// enable global interrupts
 	cfg_init();				// (9) get config record from eeprom (reqs xio)
-	tg_announce();			// print version string
 }
 
 void tg_application_reset(void) 
@@ -120,7 +119,7 @@ void tg_application_reset(void)
 	PMIC_EnableMediumLevel();
 	PMIC_EnableLowLevel();
 	sei();					// enable global interrupts
-	tg_ready();				// (LAST) announce app is online
+	tg_prompt_system_ready();// (LAST) announce system is ready
 }
 
 static void _tg_unit_tests(void)

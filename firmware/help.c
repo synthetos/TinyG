@@ -42,7 +42,6 @@ static void _help_status_report_advisory(void);
  */
 void help_print_general_help()
 {
-tg_announce();
 fprintf_P(stderr, PSTR("#### TinyG Help ####\n"));
 fprintf_P(stderr, PSTR("\
 These commands are active from the command line:\n\
@@ -58,6 +57,7 @@ These commands are active from the command line:\n\
 "));
 _help_status_report_advisory();
 _help_postscript();
+tg_prompt_system_ready();
 }
 
 /*
@@ -65,7 +65,6 @@ _help_postscript();
  */
 void help_print_config_help(cmdObj *cmd)
 {
-tg_announce();
 fprintf_P(stderr, PSTR("#### TinyG CONFIGURATION Help ####\n"));
 fprintf_P(stderr, PSTR("\
 These commands are active for configuration:\n\
@@ -88,6 +87,7 @@ For example $yfr=800 to set the Y max feed rate to 800 mm/minute\n\
 "));
 _help_status_report_advisory();
 _help_postscript();
+tg_prompt_system_ready();
 }
 
 /*
@@ -95,7 +95,6 @@ _help_postscript();
  */
 void help_print_test_help(cmdObj *cmd)
 {
-tg_announce();
 fprintf_P(stderr, PSTR("#### TinyG SELF TEST Help ####\n"));
 fprintf_P(stderr, PSTR("\
 Invoke self test by entering $test=N where N is one of:\n\
@@ -111,6 +110,7 @@ Invoke self test by entering $test=N where N is one of:\n\
   $test=10 rotary motion test\n\
 "));
 _help_postscript();
+tg_prompt_system_ready();
 }
 
 /*
@@ -118,12 +118,12 @@ _help_postscript();
  */
 void help_print_defaults_help(cmdObj *cmd)
 {
-tg_announce();
 fprintf_P(stderr, PSTR("#### TinyG RESTORE DEFAULTS Help ####\n"));
 fprintf_P(stderr, PSTR("\
 Enter $defaults=1 to reset the system to the default values for the profile listed above.\n\
 This will overwrite any changes you have made.\n"));
 _help_postscript();
+tg_prompt_system_ready();
 }
 
 // help helper functions (snicker)

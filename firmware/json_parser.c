@@ -284,15 +284,14 @@ uint16_t js_make_json_string(cmdObj *cmd, char *str)
 		if (cmd->nx == NULL) break;					// no more. You can leave now.
 
 		cmd = cmd->nx;								// advance to next command object
-		while (depth > cmd->depth) {				// how many closing curlies do we need?
+		while (depth > cmd->depth) {				// how many closing curlies does the body need?
 			str += sprintf(str, "}");
 			depth--;
-//			depth = cmd->depth;
 		}
 		str += sprintf(str, ",");
 	}
 	do {
-		str += sprintf(str, "}");
+		str += sprintf(str, "}");					// how many closing curlies does the header need?
 	} while (depth-- > 0);
 	sprintf(str, "\n");
 	return (str - str_start);
@@ -305,7 +304,8 @@ uint16_t js_make_json_string(cmdObj *cmd, char *str)
  * Assumes _js_init_json_response_header() has run to setup headers and footers
  */
 
-uint8_t js_make_json_response(uint8_t status, char *out_buf)
+//uint8_t js_make_json_response(uint8_t status, char *out_buf)
+char *js_make_json_response(uint8_t status, char *out_buf)
 {
 	cmdObj *cmd = cmd_array;
 	uint16_t strcount;
@@ -331,7 +331,7 @@ uint8_t js_make_json_response(uint8_t status, char *out_buf)
 	cmd++;										// advance to checksum pair
 	sprintf(cmd->string_value, "%lu", calculate_hash(out_buf));
 	js_make_json_string(json_hdr_array, out_buf); // make the string with the real checksum
-	return (TG_OK);
+	return (out_buf);
 }
 
 /****************************************************************************
@@ -356,14 +356,14 @@ void _js_init_json_response_header()
 
 	cmd = json_ftr_array;
 	cmd_new_cmdObj(cmd);						// status code
-	sprintf_P(cmd->token, PSTR("st"));
+	sprintf_P(cmd->token, PSTR("sc"));
 	cmd->value_type = VALUE_TYPE_INTEGER;
 	cmd->depth = 1;
 
 	cmd++;
 	(cmd-1)->nx = cmd;
-	cmd_new_cmdObj(cmd);						// message
-	sprintf_P(cmd->token, PSTR("msg"));
+	cmd_new_cmdObj(cmd);						// status message
+	sprintf_P(cmd->token, PSTR("sm"));
 	cmd->value_type = VALUE_TYPE_STRING;
 	cmd->depth = 1;
 
@@ -373,9 +373,6 @@ void _js_init_json_response_header()
 	sprintf_P(cmd->token, PSTR("cks"));
 	cmd->value_type = VALUE_TYPE_STRING;
 	cmd->depth = 1;
-
-	cmd++;										// terminate the array
-	cmd->index = -1;
 }
 
 

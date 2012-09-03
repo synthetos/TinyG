@@ -98,17 +98,34 @@ void tg_reset(void)
 	tg_application_reset();
 }
 
-void tg_announce(void)
+void tg_prompt_system_ready(void)
 {
-	fprintf_P(stderr, PSTR("#### TinyG version %0.2f (build %0.2f) \"%s\" ####\n" ), 
-		tg.version, tg.build, TINYG_VERSION_NAME);
-//	fprintf_P(stderr,PSTR("#### %s Profile ####\n"), TINYG_CONFIGURATION_PROFILE);
+	cmdObj *cmd = cmd_array;
+
+	if (cfg.enable_json_mode == false) {
+		fprintf_P(stderr, PSTR("#### TinyG version %0.2f (build %0.2f) \"%s\" ####\n" ), 
+			tg.version, tg.build, TINYG_VERSION_NAME);
+		fprintf_P(stderr, PSTR("Type h for help\n"));
+		_prompt_ok();
+	} else {
+		cmd = cmd_append_token(cmd, "fv");
+		cmd = cmd_append_token(cmd, "fb");
+		cmd = cmd_append_string(cmd, "msg", "SYSTEM READY");
+		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
+	}
 }
 
-void tg_ready(void)
+void tg_prompt_configuration_profile(void)
 {
-	fprintf_P(stderr, PSTR("Type h for help\n"));
-	_prompt_ok();
+	cmdObj *cmd = cmd_array;
+
+//	if (cfg.enable_json_mode == true) {
+	if (COM_ENABLE_JSON_MODE) {
+		cmd_append_string(cmd, "msg", INIT_CONFIGURATION_MESSAGE);
+		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
+	} else {
+		fprintf_P(stderr, PSTR("\n%s\n"), INIT_CONFIGURATION_MESSAGE);		// see settings.h & sub-headers
+	}
 }
 
 void tg_application_startup(void)

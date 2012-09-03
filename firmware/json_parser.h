@@ -36,8 +36,7 @@
 void js_init(void);						// Initialize the parser
 uint8_t js_json_parser(char *in_str, char *out_str);
 uint16_t js_make_json_string(cmdObj *cmd, char *str);
-uint8_t js_make_json_response(uint8_t status, char *out_str);
-
+char *js_make_json_response(uint8_t status, char *out_str);
 
 /* unit test setup */
 

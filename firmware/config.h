@@ -61,13 +61,14 @@
 #define NVM_VALUE_LEN 4				// NVM value length (double, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
 
+// Here are all the exceptions to the display and config rules, as neat little lists
 // NOTE: The number of SYSTEM_GROUP or SR_DEFAULTS elements cannot exceed CMD_MAX_OBJECTS
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
 #define GROUP_EXCLUSIONS "cycs,coor"	 // items that are not actually part of the 1234xyzabc groups
-#define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ea,ja,ml,ma,mt,ic,il,ec,ee,ex,eh"
-#define SR_DEFAULTS 	"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
-#define DONT_PERSIST	"gc,te,de"		 // commands that should not be persisted (comma separated)
+#define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ec,ee,ex,ej" // cats and dogs
 #define DONT_INITIALIZE "gc,sr,te,he,de" // commands that should not be initialized
+#define DONT_PERSIST	"gc,te,de"		 // commands that should not be persisted
+#define SR_DEFAULTS 	"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
 #define IGNORE_OFF 0				// accept either CR or LF as termination on RX text line
 #define IGNORE_CR 1					// ignore CR on RX
@@ -106,7 +107,7 @@ typedef struct cmdObject cmdObj;	// handy typedef for command onjects
 typedef uint8_t (*fptrCmd)(cmdObj *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
 
-cmdObj cmd_array[CMD_ARRAY_SIZE];	// cmd_array[0] is the root object
+cmdObj cmd_array[CMD_ARRAY_SIZE];			 // cmd_array[0] is the root object
 cmdObj json_hdr_array[JSON_RESPONSE_HEADERS];// allocate header objects for JSON response
 cmdObj json_ftr_array[JSON_RESPONSE_FOOTERS];// allocate footer objects for JSON response
 
@@ -129,6 +130,9 @@ void cmd_persist(cmdObj *cmd);		// entry point for persistence
 INDEX_T cmd_get_max_index(void);
 uint8_t cmd_get_cmdObj(cmdObj *cmd);
 cmdObj *cmd_new_cmdObj(cmdObj *cmd);
+cmdObj *cmd_append_token(cmdObj *cmd, char *token);
+cmdObj *cmd_append_string(cmdObj *cmd, char *token, char *string);
+
 INDEX_T cmd_get_index_by_token(const char *str);
 INDEX_T cmd_get_index(const char *str);
 char *cmd_get_token(const INDEX_T i, char *string);
@@ -201,7 +205,7 @@ struct cfgParameters {
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable echo - also used for gating JSON responses
 	uint8_t enable_xon;				// enable XON/XOFF mode
-	uint8_t enable_hashcode;		// enable Java hashCode on JSON responses
+	uint8_t enable_json_mode;		// enable JSON mode from power-up and reset
 	
 	// status report configs
 	uint32_t status_report_interval;// in MS. set non-zero to enable

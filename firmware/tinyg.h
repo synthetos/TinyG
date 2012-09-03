@@ -33,7 +33,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95
-#define TINYG_BUILD_NUMBER   	340.05
+#define TINYG_BUILD_NUMBER   	340.06
 
 
 /****** DEVELOPMENT SETTINGS ******/
@@ -155,7 +155,7 @@ struct deviceSingleton device;
 #define	TG_ERROR_18 18
 #define	TG_ERROR_19 19
 
-// Internal errors (500s, if you will)
+// Internal errors and startup messages
 #define	TG_INTERNAL_ERROR 20			// unrecoverable internal error
 #define	TG_INTERNAL_RANGE_ERROR 21		// number range other than by user input
 #define	TG_FLOATING_POINT_ERROR 22		// number conversion error

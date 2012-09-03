@@ -57,8 +57,8 @@ struct controllerSingleton tg;		// controller state structure
 
 void tg_init(uint8_t default_src);
 void tg_reset(void);
-void tg_ready(void);
-void tg_announce(void); 
+void tg_prompt_system_ready(void);
+void tg_prompt_configuration_profile(void);
 void tg_controller(void);
 void tg_application_startup(void);
 void tg_set_active_source(uint8_t dev);
