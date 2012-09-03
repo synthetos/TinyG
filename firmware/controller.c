@@ -108,9 +108,9 @@ void tg_prompt_system_ready(void)
 		fprintf_P(stderr, PSTR("Type h for help\n"));
 		_prompt_ok();
 	} else {
-		cmd = cmd_append_token(cmd, "fv");
-		cmd = cmd_append_token(cmd, "fb");
-		cmd = cmd_append_string(cmd, "msg", "SYSTEM READY");
+		cmd = cmd_array_add_token(cmd, "fv");
+		cmd = cmd_array_add_token(cmd, "fb");
+		cmd = cmd_array_add_string(cmd, "msg", "SYSTEM READY");
 		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
 	}
 }
@@ -121,7 +121,7 @@ void tg_prompt_configuration_profile(void)
 
 //	if (cfg.enable_json_mode == true) {
 	if (COM_ENABLE_JSON_MODE) {
-		cmd_append_string(cmd, "msg", INIT_CONFIGURATION_MESSAGE);
+		cmd_array_add_string(cmd, "msg", INIT_CONFIGURATION_MESSAGE);
 		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
 	} else {
 		fprintf_P(stderr, PSTR("\n%s\n"), INIT_CONFIGURATION_MESSAGE);		// see settings.h & sub-headers
@@ -338,88 +338,88 @@ void _dispatch_return(uint8_t status, char *buf)
  * Reference for putting display strings and string arrays in program memory:
  * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
  */
-char msg_st00[] PROGMEM = "OK";
-char msg_st01[] PROGMEM = "Error";
-char msg_st02[] PROGMEM = "Eagain";
-char msg_st03[] PROGMEM = "Noop";
-char msg_st04[] PROGMEM = "Complete";
-char msg_st05[] PROGMEM = "Terminated";
-char msg_st06[] PROGMEM = "Aborted";
-char msg_st07[] PROGMEM = "End of line";
-char msg_st08[] PROGMEM = "End of file";
-char msg_st09[] PROGMEM = "File not open";
-char msg_st10[] PROGMEM = "Max file size exceeded";
-char msg_st11[] PROGMEM = "No such device";
-char msg_st12[] PROGMEM = "Buffer empty";
-char msg_st13[] PROGMEM = "Buffer full - fatal";
-char msg_st14[] PROGMEM = "Buffer full - non-fatal";
-char msg_st15[] PROGMEM = "#15";
-char msg_st16[] PROGMEM = "#16";
-char msg_st17[] PROGMEM = "#17";
-char msg_st18[] PROGMEM = "#18";
-char msg_st19[] PROGMEM = "#19";
+char msg_sc00[] PROGMEM = "OK";
+char msg_sc01[] PROGMEM = "Error";
+char msg_sc02[] PROGMEM = "Eagain";
+char msg_sc03[] PROGMEM = "Noop";
+char msg_sc04[] PROGMEM = "Complete";
+char msg_sc05[] PROGMEM = "Terminated";
+char msg_sc06[] PROGMEM = "Aborted";
+char msg_sc07[] PROGMEM = "End of line";
+char msg_sc08[] PROGMEM = "End of file";
+char msg_sc09[] PROGMEM = "File not open";
+char msg_sc10[] PROGMEM = "Max file size exceeded";
+char msg_sc11[] PROGMEM = "No such device";
+char msg_sc12[] PROGMEM = "Buffer empty";
+char msg_sc13[] PROGMEM = "Buffer full - fatal";
+char msg_sc14[] PROGMEM = "Buffer full - non-fatal";
+char msg_sc15[] PROGMEM = "#15";
+char msg_sc16[] PROGMEM = "#16";
+char msg_sc17[] PROGMEM = "#17";
+char msg_sc18[] PROGMEM = "#18";
+char msg_sc19[] PROGMEM = "#19";
 
-char msg_st20[] PROGMEM = "Internal error";
-char msg_st21[] PROGMEM = "Internal range error";
-char msg_st22[] PROGMEM = "Floating point error";
-char msg_st23[] PROGMEM = "Divide by zero";
-char msg_st24[] PROGMEM = "#24";
-char msg_st25[] PROGMEM = "#25";
-char msg_st26[] PROGMEM = "#26";
-char msg_st27[] PROGMEM = "#27";
-char msg_st28[] PROGMEM = "#28";
-char msg_st29[] PROGMEM = "#29";
-char msg_st30[] PROGMEM = "#30";
-char msg_st31[] PROGMEM = "#31";
-char msg_st32[] PROGMEM = "#32";
-char msg_st33[] PROGMEM = "#33";
-char msg_st34[] PROGMEM = "#34";
-char msg_st35[] PROGMEM = "#35";
-char msg_st36[] PROGMEM = "#36";
-char msg_st37[] PROGMEM = "#37";
-char msg_st38[] PROGMEM = "#38";
-char msg_st39[] PROGMEM = "#39";
+char msg_sc20[] PROGMEM = "Internal error";
+char msg_sc21[] PROGMEM = "Internal range error";
+char msg_sc22[] PROGMEM = "Floating point error";
+char msg_sc23[] PROGMEM = "Divide by zero";
+char msg_sc24[] PROGMEM = "#24";
+char msg_sc25[] PROGMEM = "#25";
+char msg_sc26[] PROGMEM = "#26";
+char msg_sc27[] PROGMEM = "#27";
+char msg_sc28[] PROGMEM = "#28";
+char msg_sc29[] PROGMEM = "#29";
+char msg_sc30[] PROGMEM = "#30";
+char msg_sc31[] PROGMEM = "#31";
+char msg_sc32[] PROGMEM = "#32";
+char msg_sc33[] PROGMEM = "#33";
+char msg_sc34[] PROGMEM = "#34";
+char msg_sc35[] PROGMEM = "#35";
+char msg_sc36[] PROGMEM = "#36";
+char msg_sc37[] PROGMEM = "#37";
+char msg_sc38[] PROGMEM = "#38";
+char msg_sc39[] PROGMEM = "#39";
 
-char msg_st40[] PROGMEM = "Unrecognized command";
-char msg_st41[] PROGMEM = "Expected command letter";
-char msg_st42[] PROGMEM = "Bad number format";
-char msg_st43[] PROGMEM = "Input exceeds max length";
-char msg_st44[] PROGMEM = "Input value too small";
-char msg_st45[] PROGMEM = "Input value too large";
-char msg_st46[] PROGMEM = "Input value range error";
-char msg_st47[] PROGMEM = "Input value unsupported";
-char msg_st48[] PROGMEM = "JSON syntax error";
-char msg_st49[] PROGMEM = "JSON input has too many pairs";
-char msg_st50[] PROGMEM = "#50";
-char msg_st51[] PROGMEM = "#51";
-char msg_st52[] PROGMEM = "#52";
-char msg_st53[] PROGMEM = "#53";
-char msg_st54[] PROGMEM = "#54";
-char msg_st55[] PROGMEM = "#55";
-char msg_st56[] PROGMEM = "#56";
-char msg_st57[] PROGMEM = "#57";
-char msg_st58[] PROGMEM = "#58";
-char msg_st59[] PROGMEM = "#59";
+char msg_sc40[] PROGMEM = "Unrecognized command";
+char msg_sc41[] PROGMEM = "Expected command letter";
+char msg_sc42[] PROGMEM = "Bad number format";
+char msg_sc43[] PROGMEM = "Input exceeds max length";
+char msg_sc44[] PROGMEM = "Input value too small";
+char msg_sc45[] PROGMEM = "Input value too large";
+char msg_sc46[] PROGMEM = "Input value range error";
+char msg_sc47[] PROGMEM = "Input value unsupported";
+char msg_sc48[] PROGMEM = "JSON syntax error";
+char msg_sc49[] PROGMEM = "JSON input has too many pairs";
+char msg_sc50[] PROGMEM = "#50";
+char msg_sc51[] PROGMEM = "#51";
+char msg_sc52[] PROGMEM = "#52";
+char msg_sc53[] PROGMEM = "#53";
+char msg_sc54[] PROGMEM = "#54";
+char msg_sc55[] PROGMEM = "#55";
+char msg_sc56[] PROGMEM = "#56";
+char msg_sc57[] PROGMEM = "#57";
+char msg_sc58[] PROGMEM = "#58";
+char msg_sc59[] PROGMEM = "#59";
 
-char msg_st60[] PROGMEM = "Zero length move";
-char msg_st61[] PROGMEM = "Gcode block skipped";
-char msg_st62[] PROGMEM = "Gcode input error";
-char msg_st63[] PROGMEM = "Gcode feedrate error";
-char msg_st64[] PROGMEM = "Gcode axis word missing";
-char msg_st65[] PROGMEM = "Gcode modal group violation";
-char msg_st66[] PROGMEM = "Homing cycle failed";
-char msg_st67[] PROGMEM = "Max travel exceeded";
-char msg_st68[] PROGMEM = "Max spindle speed exceeded";
-char msg_st69[] PROGMEM = "Arc specification error";
+char msg_sc60[] PROGMEM = "Zero length move";
+char msg_sc61[] PROGMEM = "Gcode block skipped";
+char msg_sc62[] PROGMEM = "Gcode input error";
+char msg_sc63[] PROGMEM = "Gcode feedrate error";
+char msg_sc64[] PROGMEM = "Gcode axis word missing";
+char msg_sc65[] PROGMEM = "Gcode modal group violation";
+char msg_sc66[] PROGMEM = "Homing cycle failed";
+char msg_sc67[] PROGMEM = "Max travel exceeded";
+char msg_sc68[] PROGMEM = "Max spindle speed exceeded";
+char msg_sc69[] PROGMEM = "Arc specification error";
 
-PGM_P msgStatus[] PROGMEM = {
-	msg_st00, msg_st01, msg_st02, msg_st03, msg_st04, msg_st05, msg_st06, msg_st07, msg_st08, msg_st09,
-	msg_st10, msg_st11, msg_st12, msg_st13, msg_st14, msg_st15, msg_st16, msg_st17, msg_st18, msg_st19,
-	msg_st20, msg_st21, msg_st22, msg_st23, msg_st24, msg_st25, msg_st26, msg_st27, msg_st28, msg_st29,
-	msg_st30, msg_st31, msg_st32, msg_st33, msg_st34, msg_st35, msg_st36, msg_st37, msg_st38, msg_st39,
-	msg_st40, msg_st41, msg_st42, msg_st43, msg_st44, msg_st45, msg_st46, msg_st47, msg_st48, msg_st49,
-	msg_st50, msg_st51, msg_st52, msg_st53, msg_st54, msg_st55, msg_st56, msg_st57, msg_st58, msg_st59,
-	msg_st60, msg_st61, msg_st62, msg_st63, msg_st64, msg_st65, msg_st66, msg_st67, msg_st68, msg_st69
+PGM_P msgStatusMessage[] PROGMEM = {
+	msg_sc00, msg_sc01, msg_sc02, msg_sc03, msg_sc04, msg_sc05, msg_sc06, msg_sc07, msg_sc08, msg_sc09,
+	msg_sc10, msg_sc11, msg_sc12, msg_sc13, msg_sc14, msg_sc15, msg_sc16, msg_sc17, msg_sc18, msg_sc19,
+	msg_sc20, msg_sc21, msg_sc22, msg_sc23, msg_sc24, msg_sc25, msg_sc26, msg_sc27, msg_sc28, msg_sc29,
+	msg_sc30, msg_sc31, msg_sc32, msg_sc33, msg_sc34, msg_sc35, msg_sc36, msg_sc37, msg_sc38, msg_sc39,
+	msg_sc40, msg_sc41, msg_sc42, msg_sc43, msg_sc44, msg_sc45, msg_sc46, msg_sc47, msg_sc48, msg_sc49,
+	msg_sc50, msg_sc51, msg_sc52, msg_sc53, msg_sc54, msg_sc55, msg_sc56, msg_sc57, msg_sc58, msg_sc59,
+	msg_sc60, msg_sc61, msg_sc62, msg_sc63, msg_sc64, msg_sc65, msg_sc66, msg_sc67, msg_sc68, msg_sc69
 };
 
 char prompt1[] PROGMEM = "tinyg";
@@ -428,7 +428,7 @@ char prompt_mm[] PROGMEM = "[mm] ok> ";
 
 char *tg_get_status_message(uint8_t status, char *msg) 
 {
-	strncpy_P(msg,(PGM_P)pgm_read_word(&msgStatus[status]), STATUS_MESSAGE_LEN);
+	strncpy_P(msg,(PGM_P)pgm_read_word(&msgStatusMessage[status]), STATUS_MESSAGE_LEN);
 	return (msg);
 }
 
@@ -443,7 +443,47 @@ static void _prompt_ok()
 
 static void _prompt_error(uint8_t status, char *buf)
 {
-	fprintf_P(stderr, PSTR("error: %S: %s \n"),(PGM_P)pgm_read_word(&msgStatus[status]),buf);
+	fprintf_P(stderr, PSTR("error: %S: %s \n"),(PGM_P)pgm_read_word(&msgStatusMessage[status]),buf);
 }
 
+/**** Application Messages *********************************************************
+ * tg_get_message() 		 - returns a canned application message in a pre-allocated string
+ * tg_print_message()        - print a character string passed as argument
+ * tg_print_message_number() - print a canned message by number
+ *
+ * Messages are collected in this one place to manage alternate display options
+ * such as text mode or JSON mode.
+ */
 
+char msg_ap00[] PROGMEM = "<null message>";
+char msg_ap01[] PROGMEM = "Loading configs from EEPROM";
+
+PGM_P msgApplicationMessage[] PROGMEM = {
+	msg_ap00, msg_ap01
+};
+
+void tg_print_message(char *msg)
+{
+	if (cfg.enable_json_mode == true) {
+		cmdObj *cmd = cmd_array;
+		cmd_array_add_string(cmd, "msg", msg);
+		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
+	} else {
+		fprintf(stderr, "%s\n", msg);
+	}
+}
+
+void tg_print_message_number(uint8_t msgnum) 
+{
+	char msg[APPLICATION_MESSAGE_LEN];
+	strncpy_P(msg,(PGM_P)pgm_read_word(&msgApplicationMessage[msgnum]), APPLICATION_MESSAGE_LEN);
+	tg_print_message(msg);
+}
+
+/*
+char *tg_get_message(uint8_t msgnum, char *msg)
+{
+	strncpy_P(msg,(PGM_P)pgm_read_word(&msgApplicationMessage[msgnum]), APPLICATION_MESSAGE_LEN);
+	return (msg);
+}
+*/

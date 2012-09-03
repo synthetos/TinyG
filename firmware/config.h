@@ -115,7 +115,8 @@ cmdObj json_ftr_array[JSON_RESPONSE_FOOTERS];// allocate footer objects for JSON
  * Global Scope Functions
  */
 
-#define ASSERT_INDEX(a) if ((cmd->index < 0) || (cmd->index >= CMD_INDEX_MAX)) return (a);
+#define ASSERT_CMD_INDEX(a) if ((cmd->index < 0) || (cmd->index >= CMD_INDEX_MAX)) return (a);
+#define ASSERT_CMD_ARRAY(a) if ((cmd < cmd_array) || (cmd > cmd_array + CMD_ARRAY_SIZE)) { return ((cmdObj *)a);}
 
 void cfg_init(void);
 uint8_t cfg_config_parser(char *str);
@@ -128,10 +129,12 @@ void cmd_print(cmdObj *cmd);		// entry point for print
 void cmd_persist(cmdObj *cmd);		// entry point for persistence
 
 INDEX_T cmd_get_max_index(void);
-uint8_t cmd_get_cmdObj(cmdObj *cmd);
 cmdObj *cmd_new_cmdObj(cmdObj *cmd);
-cmdObj *cmd_append_token(cmdObj *cmd, char *token);
-cmdObj *cmd_append_string(cmdObj *cmd, char *token, char *string);
+uint8_t cmd_get_cmdObj(cmdObj *cmd);
+cmdObj *cmd_array_reset(void);
+cmdObj *cmd_array_add_token(cmdObj *cmd, char *token);
+cmdObj *cmd_array_add_string(cmdObj *cmd, char *token, char *string);
+void cmd_array_print(void);
 
 INDEX_T cmd_get_index_by_token(const char *str);
 INDEX_T cmd_get_index(const char *str);

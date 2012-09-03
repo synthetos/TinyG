@@ -39,7 +39,8 @@ enum tgCommunicationsMode {
 #define TG_FLAG_PROMPTS_bm (1<<0)	// prompt enabled if set
 #define INPUT_BUFFER_LEN 255		// text buffer size (255 max)
 #define OUTPUT_BUFFER_LEN 255		// text buffer size (255 max)
-#define STATUS_MESSAGE_LEN 32		// status message string storage
+#define STATUS_MESSAGE_LEN 32		// status message string storage allocation
+#define APPLICATION_MESSAGE_LEN 64	// application message string storage allocation
 
 struct controllerSingleton {		// main TG controller struct
 	double version;					// tinyg version number
@@ -64,6 +65,8 @@ void tg_application_startup(void);
 void tg_set_active_source(uint8_t dev);
 void tg_reset_source(void);
 char *tg_get_status_message(uint8_t status, char *msg);
+void tg_print_message(char *msg);
+void tg_print_message_number(uint8_t msgnum);
 
 #ifdef __DEBUG
 void tg_dump_controller_state(void);
