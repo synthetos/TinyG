@@ -53,11 +53,11 @@
 #define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
 
-#define COM_APPEND_TX_CR			FALSE
+#define COM_APPEND_TX_CR			false
 #define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
-#define COM_ENABLE_ECHO				TRUE
-#define COM_ENABLE_XON				TRUE
-#define COM_ENABLE_JSON_MODE		TRUE
+#define COM_ENABLE_ECHO				true
+#define COM_ENABLE_XON				true
+#define COM_ENABLE_JSON_MODE		true
 
 #define ENABLE_ACCELERATION 1			// *** NOTE: this feature is disabled in 338.11 - always equal to 1 
 

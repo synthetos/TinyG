@@ -44,8 +44,6 @@
 #include "xio/xio.h"
 #include "xmega/xmega_rtc.h"
 
-static void _run_csv_status_report();
-
 /*****************************************************************************
  * Status Reports
  *
@@ -142,9 +140,7 @@ uint8_t rpt_status_report_callback() // called by controller dispatcher
 	if ((cm.machine_state != MACHINE_RESET) && 
 		(cfg.status_report_interval > 0) && (cm.status_report_counter == 0)) {
 		rpt_run_status_report();
-//++++		js_make_json_response(TG_OK, tg.out_buf);
-//		fprintf_P(stderr, PSTR("%s"), tg.out_buf);
-		cmd_print_list(cmd_header);
+		cmd_print_list(tg.out_buf, TG_OK, 0);
 		cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
 		return (TG_OK);
 	}
@@ -152,47 +148,6 @@ uint8_t rpt_status_report_callback() // called by controller dispatcher
 }
 
 uint8_t rpt_run_status_report()
-{
-	if (tg.communications_mode == TG_JSON_MODE) {
-		rpt_run_json_status_report();
-	} else {
-		_run_csv_status_report();
-	}
-	return (TG_OK);
-}
-
-static void _run_csv_status_report() 		// single line status report
-{
-	cmdObj cmd;
-
-	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		cmd.index = cfg.status_report_spec[i];
-		if (cmd.index < 1) continue;		// trap 0 and -1 cases
-		if (i != 0) fprintf_P(stderr,PSTR(","));
-		cmd_get_cmdObj(&cmd);
-		if (cmd.value_type == VALUE_TYPE_FLOAT) {
-			fprintf_P(stderr,PSTR("%s:%1.3f"), cmd.token, cmd.value);
-		} else if (cmd.value_type == VALUE_TYPE_INTEGER) {
-			fprintf_P(stderr,PSTR("%s:%1.0f"), cmd.token, cmd.value);
-		} else if (cmd.value_type == VALUE_TYPE_STRING) {
-			fprintf_P(stderr,PSTR("%s:%s"), cmd.token, cmd.string_value);
-		}
-	}
-	fprintf_P(stderr,PSTR("\n"));
-}
-
-void rpt_run_multiline_status_report()		// multiple line status report
-{
-	cmdObj *cmd = cmd_body;
-	fprintf_P(stderr,PSTR("\n"));
-	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		cmd->index = cfg.status_report_spec[i];
-		if (cmd->index < 1) continue;		// trap 0 and -1 cases
-		cmd_print(cmd);
-	}
-}
-
-void rpt_run_json_status_report() 			// JSON status report
 {
 	cmdObj *cmd = cmd_body;
 
@@ -207,6 +162,17 @@ void rpt_run_json_status_report() 			// JSON status report
 		if (cmd->index == 0) { break;}
 		cmd_get_cmdObj(cmd);
 		cmd = cmd->nx;
+	}
+	return (TG_OK);
+}
+void rpt_run_multiline_status_report()		// multiple line status report
+{
+	cmdObj *cmd = cmd_body;
+	fprintf_P(stderr,PSTR("\n"));
+	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
+		cmd->index = cfg.status_report_spec[i];
+		if (cmd->index < 1) continue;		// trap 0 and -1 cases
+		cmd_print(cmd);
 	}
 }
 

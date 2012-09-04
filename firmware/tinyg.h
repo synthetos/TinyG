@@ -33,13 +33,13 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95
-#define TINYG_BUILD_NUMBER   	340.08
+#define TINYG_BUILD_NUMBER   	340.09
 
 
 /****** DEVELOPMENT SETTINGS ******/
 
-#define __CANNED_STARTUP			// run any canned startup moves
-#define __DISABLE_EEPROM_INIT		// disable EEPROM init for faster simulation
+//#define __CANNED_STARTUP			// run any canned startup moves
+//#define __DISABLE_EEPROM_INIT		// disable EEPROM init for faster simulation
 //#define __DISABLE_TRANSMIT		// disable serial tranmission (TX)
 //#define __SEGMENT_LOGGER			// enable segment logging to memory array
 //#define __DEBUG					// enable debug (see util.c /.h)
@@ -188,7 +188,7 @@ struct deviceSingleton device;
 #define	TG_INPUT_VALUE_UNSUPPORTED 47	// input error: value is not supported
 #define	TG_JSON_SYNTAX_ERROR 48			// JSON string is not well formed
 #define	TG_JSON_TOO_MANY_PAIRS 49		// JSON string or has too many JSON pairs
-#define	TG_ERROR_50 50
+#define	TG_NO_BUFFER_SPACE 50			// Buffer pool is full and cannot perform this operation
 #define	TG_ERROR_51 51
 #define	TG_ERROR_52 52
 #define	TG_ERROR_53 53

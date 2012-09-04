@@ -924,7 +924,7 @@ static uint8_t _set_si(cmdObj *cmd)
 }
 
 /**** Reporting functions ****************************************/
-/* _get_msg_helper()  - helper to get display message
+/* _get_msg_helper() - helper to get display message
  * _get_stat() - get combined machine state as value and string
  * _get_macs() - get raw machine state as value and string
  * _get_cycs() - get raw cycle state as value and string
@@ -1544,14 +1544,13 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 /****************************************************************************
  * cmdObj list methods (or would be methods if this were OO code)
  * cmd_clear_body()	  	- reset cmdObjs in the body
- * cmd_clear_message()	- reset cmdObjs in the message
  * cmd_reset_list()		- reset the entire list, including headers, body, msg and footers
  * cmd_insert_token()	- populate current cmdObj from token
  * cmd_insert_string()	- set current cmdObj string from input string
  * cmd_print_list()		- print the command array in text or JSON mode
  */
 
-cmdObj *cmd_clear_body()
+void cmd_clear_body()
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
@@ -1561,26 +1560,12 @@ cmdObj *cmd_clear_body()
 		cmd->depth = 2;
 		cmd++;
 	}
-	(--cmd)->nx = cmd_message;					// correct last element
+	(--cmd)->nx = cmd_status;					// correct last element
 	cmd = cmd_body;
 	cmd->pv = &cmd_header[CMD_HEADER_LEN-1];	// correct first element
-	cmd_clear_message();	
-	return (cmd_body);
 }
 
-cmdObj *cmd_clear_message()
-{
-	cmdObj *cmd = cmd_message;
-	cmd_clear_cmdObj(cmd);						// "msg" element
-	sprintf_P(cmd->token, PSTR("msg"));
-	cmd->value_type = VALUE_TYPE_EMPTY;
-	cmd->pv = &cmd_body[CMD_BODY_LEN-1];
-	cmd->nx = cmd_status;
-	cmd->depth = 2;
-	return (cmd_message);
-}
-
-cmdObj *cmd_reset_list()
+void cmd_reset_list()
 {
 	cmdObj *cmd;
 
@@ -1600,15 +1585,15 @@ cmdObj *cmd_reset_list()
 	cmd->nx = cmd_body;
 	cmd->depth = 1;
 
-	// setup body objects and message object
-	cmd_clear_body();							// also clears message
+	// setup body objects
+	cmd_clear_body();
 
 	// setup status objects (2)
 	cmd = cmd_status;
 	cmd_clear_cmdObj(cmd);						// "sc" element
 	sprintf_P(cmd->token, PSTR("sc"));
 	cmd->value_type = VALUE_TYPE_INTEGER;
-	cmd->pv = &cmd_message[CMD_MESSAGE_LEN-1];
+	cmd->pv = &cmd_body[CMD_BODY_LEN-1];
 	cmd->nx = (cmd+1);
 	cmd->depth = 1;
 
@@ -1631,63 +1616,122 @@ cmdObj *cmd_reset_list()
 	cmd_clear_cmdObj(++cmd);					// last element
 	cmd->pv = (cmd-1);
 //	cmd->mx = NULL;	  // already = zero by clear // signals the last one. 
-
-	return (cmd_header);
 }
 
 /**** cmd_insert_token - write contents of token to cmd list ****
- *
- *  Inputs:	 *cmd points to current list element
- *			 token you want to lookup and populate
- *
- *	Returns: pointer to next cmdObj unless:
- *				0 = last list element occupied 
- * 			   -1 = token was not found (not found error)
+ *	input token you want to look up and populate into the object
  */
-cmdObj *cmd_insert_token(cmdObj *cmd, char *token) 
+uint8_t cmd_insert_token(char *token)
 {
-	// load the index from the token or die trying
-	if ((cmd->index = cmd_get_index_by_token(token)) == -1) {
-		return ((cmdObj *)-1);		// token error
+	cmdObj *cmd = cmd_body;
+
+	// find first free element or exit if none available
+	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
+		if (cmd->value_type != VALUE_TYPE_EMPTY) {
+			cmd = cmd->nx;
+			continue;
+		}
+		// load the index from the token or die trying
+		if ((cmd->index = cmd_get_index_by_token(token)) == -1) {
+			return (TG_UNRECOGNIZED_COMMAND);
+		}
+		cmd_get_cmdObj(cmd);			// populate the value from the index
+		return (TG_OK);		
 	}
-	cmd_get_cmdObj(cmd);			// populate the value from the index
-	return (cmd+1);
+	return (TG_NO_BUFFER_SPACE);
 }
 
 /**** cmd_insert_string - add a string object to cmd list **** 
- *
- *  Inputs:	 *cmd points to current array location
- *			 token to write into cmdObj.
- *			 string value to write in the cmdObj
- *
- *	Returns: pointer to next cmdObj unless:
- *				0 = last list element occupied 
+ *	input token and string values you want to write
  */
-
-cmdObj *cmd_insert_string(cmdObj *cmd, char *token, char *string)
+uint8_t cmd_insert_string(char *token, char *string)
 {
-	strncpy(cmd->token, token, CMD_TOKEN_LEN);
-	cmd->token[CMD_TOKEN_LEN-1] = NUL;	// safety measure
-	strncpy(cmd->string_value, string, CMD_STRING_LEN);
-	cmd->value_type = VALUE_TYPE_STRING;
-	return (cmd+1);				// return the next cmd object in the chain
+	cmdObj *cmd = cmd_body;
+
+	// find first free element or exit if none available
+	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
+		if (cmd->value_type != VALUE_TYPE_EMPTY) {
+			cmd = cmd->nx;
+			continue;
+		}
+		strncpy(cmd->token, token, CMD_TOKEN_LEN);
+		cmd->token[CMD_TOKEN_LEN-1] = NUL;	// safety measure
+		strncpy(cmd->string_value, string, CMD_STRING_LEN);
+		cmd->value_type = VALUE_TYPE_STRING;
+		return (TG_OK);
+	}
+	return (TG_NO_BUFFER_SPACE);
 }
 
 /**** cmd_print_list - print cmd_array in text or JSON mode ****
- * Use this function for all object output. It also cleans up. 
+ * 	Use this function for all text and JSON output (dont just printf stuff)
+ * 	It generates and prints the JSON and text mode output strings 
+ *	It also cleans up the lists and gets ready for the next use
+ *	In JSON mode it generates the status code, status message and checksum
+ *	In text mode it uses the the textmode variable to set the output format
  */
-void cmd_print_list(cmdObj *cmd)
+void cmd_print_list(char *out_buf, uint8_t status, uint8_t textmode)
 {
+	cmdObj *cmd;
+
+	/* JSON handling 
+	 * First populate the status code and message. Then make the string w/o the checksum
+	 * Slice the string at the last colon (following "cks") and generate the checksum. 
+	 * Then print the whole thing
+	 */
 	if (cfg.enable_json_mode == true) {
-		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
+		cmd = cmd_status;
+		cmd->value = status;
+		cmd = cmd->nx;
+		tg_get_status_message(status, cmd->string_value);
+		uint16_t strcount = js_make_json_string(out_buf);	// w/o checksum
+		while (out_buf[strcount] != ':') { strcount--; }	// slice at last colon
+		out_buf[strcount] = NUL;
+		cmd = cmd_checksum;									// write checksum
+		sprintf(cmd->string_value, "%lu", calculate_hash(out_buf));
+		js_make_json_string(out_buf); 						// make the string w/checksum
+		fprintf(stderr, "%s", out_buf);
+
 	} else {
+		cmd = cmd_body;
 		do {
-			fprintf(stderr, "%s ", cmd->string_value);
-			cmd = cmd->nx;	
-		} while (cmd->nx != NULL);
-		fprintf(stderr, "\n");	
+			switch (cmd->value_type) {
+				case VALUE_TYPE_PARENT: case VALUE_TYPE_EMPTY: {
+					cmd = cmd->nx;
+					continue;	
+				}
+				case VALUE_TYPE_FLOAT: {
+					fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value);
+					break;
+				}
+				case VALUE_TYPE_INTEGER: {
+					fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value);
+					break;
+				}
+				case VALUE_TYPE_STRING: {
+					fprintf_P(stderr,PSTR("%s:%s"), cmd->token, cmd->string_value);
+					break;
+				}
+			}
+			cmd = cmd->nx;
+			if (cmd->value_type != VALUE_TYPE_EMPTY) {
+				fprintf_P(stderr,PSTR(","));
+			}
+		} while (cmd_is_body(cmd));
+		fprintf_P(stderr,PSTR("\n"));
 	}
-	cmd_clear_body();			// clear the message once its printed
+	cmd_clear_body();			// clear the body
+}
+
+/**** some ugly little routines to determine where you are in the list ***/
+uint8_t cmd_is_header(cmdObj *cmd) 
+{ 
+	return((cmd >= cmd_header) && (cmd <= &cmd_header[CMD_HEADER_LEN-1]));
+}
+
+uint8_t cmd_is_body(cmdObj *cmd) 
+{ 
+	return((cmd >= cmd_body) && (cmd <= &cmd_body[CMD_BODY_LEN-1]));
 }
 
 /***** Generic Internal Functions *******************************************

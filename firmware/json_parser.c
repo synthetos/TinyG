@@ -93,7 +93,7 @@ void js_init()
 uint8_t js_json_parser(char *in_str, char *out_str)
 {
 	uint8_t status = _json_parser(in_str);
-	js_make_json_response(status, out_str);
+	cmd_print_list(out_str, status, 0);
 	return (status);
 }
 
@@ -260,12 +260,14 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *depth, const char 
  *	Returns the character count of the resulting string
  */
 
-uint16_t js_make_json_string(cmdObj *cmd, char *str)
+//uint16_t js_make_json_string(cmdObj *cmd, char *out_buf)
+uint16_t js_make_json_string(char *out_buf)
 {
-	char *str_start = str;
+	cmdObj *cmd = cmd_header;
+	char *str = out_buf;						// set workikng string pointer 
 	int8_t depth = 0;
 
-	strcpy(str++, "{"); 							// write opening curly
+	strcpy(str++, "{"); 						// write opening curly
 	do {	// serialize the current element (assumes the first element is not empty)
 		str += sprintf(str, "\"%s\":", cmd->token);
 		if (cmd->value_type == VALUE_TYPE_PARENT) {
@@ -298,16 +300,16 @@ uint16_t js_make_json_string(cmdObj *cmd, char *str)
 		str += sprintf(str, "}");
 	} while (depth-- > 0);
 	sprintf(str, "\n");
-	return (str - str_start);
+	return (str - out_buf);
 }
 
 /****************************************************************************
  * js_make_json_response() - wrap a response around a JSON object JSON object array
  *
- * Assumes _js_init_json_response_header() has run to setup headers and footers
+ * The checksum is generated up through the ...,"cks" tag - including the closing quote
+ * The resulting output string should be output using 
  */
-
-//uint8_t js_make_json_response(uint8_t status, char *out_buf)
+/*
 char *js_make_json_response(uint8_t status, char *out_buf)
 {
 	uint16_t strcount;
@@ -316,18 +318,17 @@ char *js_make_json_response(uint8_t status, char *out_buf)
 	cmd->value = status;						// write status value
 	cmd = cmd->nx;
 	tg_get_status_message(status, cmd->string_value);
-	strcount = js_make_json_string(cmd_header, out_buf); // make the string with a zero checksum
+	strcount = js_make_json_string(cmd_header, out_buf); // make string with no checksum
 
-	// walk backwards to find the colon after the "cks" name 
-	while (out_buf[strcount] != ':') {
-		strcount--;
-	}
-	out_buf[strcount] = NUL;					// the terminator!
-	cmd = cmd_checksum;
+	// walk backwards to find the colon after the "cks" tag
+	while (out_buf[strcount] != ':') { strcount--; }
+	out_buf[strcount] = NUL;					// terminate on the colon
+	cmd = cmd_checksum;							// write checksum value to checksum element
 	sprintf(cmd->string_value, "%lu", calculate_hash(out_buf));
-	js_make_json_string(cmd_header, out_buf); // make the string with the real checksum
+	js_make_json_string(cmd_header, out_buf); 	// make the string with the real checksum
 	return (out_buf);
 }
+*/
 
 //###########################################################################
 //##### UNIT TESTS ##########################################################

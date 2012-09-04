@@ -100,31 +100,25 @@ void tg_reset(void)
 
 void tg_prompt_system_ready(void)
 {
-	cmdObj *cmd = cmd_body;
-
 	if (cfg.enable_json_mode == false) {
 		fprintf_P(stderr, PSTR("#### TinyG version %0.2f (build %0.2f) \"%s\" ####\n" ), 
 			tg.version, tg.build, TINYG_VERSION_NAME);
 		fprintf_P(stderr, PSTR("Type h for help\n"));
 		_prompt_ok();
 	} else {
-//		cmd_clear_body();
-		cmd = cmd_insert_token(cmd, "fv");
-		cmd_insert_token(cmd, "fb");
-		cmd_insert_string(cmd_message, "msg", "SYSTEM READY");
-		cmd_print_list(cmd_header);
-//		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
+		cmd_insert_token("fv");
+		cmd_insert_token("fb");
+		cmd_insert_string("msg", "SYSTEM READY");
+		cmd_print_list(tg.out_buf, TG_OK, 0);
 	}
 }
 
 void tg_prompt_configuration_profile(void)
 {
-	cmdObj *cmd = cmd_body;
-
 //	if (cfg.enable_json_mode == true) {
 	if (COM_ENABLE_JSON_MODE) {
-		cmd_insert_string(cmd, "msg", INIT_CONFIGURATION_MESSAGE);
-		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
+		cmd_insert_string("msg", INIT_CONFIGURATION_MESSAGE);
+		cmd_print_list(tg.out_buf, TG_OK, 0);
 	} else {
 		fprintf_P(stderr, PSTR("\n%s\n"), INIT_CONFIGURATION_MESSAGE);		// see settings.h & sub-headers
 	}
@@ -315,8 +309,7 @@ static uint8_t _dispatch()
 void _dispatch_return(uint8_t status, char *buf)
 {
 	if (tg.communications_mode == TG_JSON_MODE) {
-		cmd_print_list(cmd_header);
-//		fprintf(stderr, "%s", buf);
+		cmd_print_list(buf, status, 0);
 		return;
 	}
 	switch (status) {
@@ -393,7 +386,7 @@ char msg_sc46[] PROGMEM = "Input value range error";
 char msg_sc47[] PROGMEM = "Input value unsupported";
 char msg_sc48[] PROGMEM = "JSON syntax error";
 char msg_sc49[] PROGMEM = "JSON input has too many pairs";
-char msg_sc50[] PROGMEM = "#50";
+char msg_sc50[] PROGMEM = "Out of buffer space";
 char msg_sc51[] PROGMEM = "#51";
 char msg_sc52[] PROGMEM = "#52";
 char msg_sc53[] PROGMEM = "#53";
@@ -467,34 +460,15 @@ PGM_P msgApplicationMessage[] PROGMEM = {
 
 void tg_print_message(char *msg)
 {
-	cmdObj *cmd = cmd_body;
-//	cmd = cmd_array_reset();
-//	cmd_clear_body();
-	cmd_insert_string(cmd, msg, "msg");
-	cmd_print_list(cmd);
-
-/*
-	if (cfg.enable_json_mode == true) {
-		cmdObj *cmd = cmd_body;
-		cmd_array_add_string(cmd, "msg", msg);
-		fprintf(stderr, "%s", js_make_json_response(TG_OK, tg.out_buf));
-	} else {
-		fprintf(stderr, "%s\n", msg);
-	}
-*/
+	cmd_insert_string("msg", msg);
+	cmd_print_list(tg.out_buf, TG_OK, 0);
 }
 
 void tg_print_message_number(uint8_t msgnum) 
 {
 	char msg[APPLICATION_MESSAGE_LEN];
 	strncpy_P(msg,(PGM_P)pgm_read_word(&msgApplicationMessage[msgnum]), APPLICATION_MESSAGE_LEN);
-	tg_print_message(msg);
+	cmd_insert_string("msg", msg);
+	cmd_print_list(tg.out_buf, TG_OK, 0);
+//	tg_print_message(msg);
 }
-
-/*
-char *tg_get_message(uint8_t msgnum, char *msg)
-{
-	strncpy_P(msg,(PGM_P)pgm_read_word(&msgApplicationMessage[msgnum]), APPLICATION_MESSAGE_LEN);
-	return (msg);
-}
-*/

@@ -78,12 +78,11 @@
  */
 #define CMD_HEADER_LEN 2			// contains the "r" and "body" elements
 #define CMD_BODY_LEN 21				// main body
-#define CMD_MESSAGE_LEN 1			// body message (optional)
 #define CMD_STATUS_LEN 2			// status code and message (response footer)
 #define CMD_CHECKSUM_LEN 2			// checksum and final element (terminator)
 
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
-#define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_MESSAGE_LEN + CMD_STATUS_LEN + CMD_CHECKSUM_LEN)
+#define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_STATUS_LEN + CMD_CHECKSUM_LEN)
 #define CMD_STATUS_REPORT_LEN CMD_BODY_LEN	// max elements in a status report
 
 #define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
@@ -130,12 +129,14 @@ struct cmdObject {					// depending on use, not all elements may be populated
 }; 									// OK, so it's not REALLY an object
 typedef struct cmdObject cmdObj;	// handy typedef for command onjects
 
-// The xs1Rg field is intentionally named so badly that you can't remember it.
-// Use the aliases below - depending on what function you are performing This 
-// field is an overloaded string storage field to save RAM. Its primary use is 
-// to carry a value-type of string. It is also used in some preliminary parsing
-// to carry the friendly_name or the parent group specifier (group_token).
-// ** Care must be taken that these uses do not clobber each other **.
+/* NOTE: 
+   The xs1Rg field is intentionally named so badly that you can't remember it.
+   Use the aliases below - depending on what function you are performing This 
+   field is an overloaded string storage field to save RAM. Its primary use is 
+   to carry a value-type of string. It is also used in some preliminary parsing
+   to carry the friendly_name or the parent group specifier (group_token).
+   *** Care must be taken that these uses do not clobber each other ***
+*/
 #define string_value xs1Rg			// used here as a string value field
 #define friendly_name xs1Rg			// used here as a friendly name field
 #define group_token xs1Rg			// used here as a group token field
@@ -146,17 +147,9 @@ typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
 // Allocate memory for all objects that may be used in cmdObj lists
 cmdObj cmd_header[CMD_HEADER_LEN];	// header objects for JSON responses
 cmdObj cmd_body[CMD_BODY_LEN];		// cmd_body[0] is the root object
-cmdObj cmd_message[CMD_MESSAGE_LEN];// usually just a single element for a message
 cmdObj cmd_status[CMD_STATUS_LEN];	// allocate footer objects for JSON response
 cmdObj cmd_checksum[CMD_CHECKSUM_LEN];// checksum element
-/*
-cmdObj cmd_array[CMD_TOTAL_LEN];
-#define cmd_header (&cmd_array[0])
-#define cmd_body (&cmd_array[CMD_HEADER_LEN])
-#define cmd_message (&cmd_array[CMD_HEADER_LEN + CMD_BODY_LEN])
-#define cmd_status (&cmd_array[CMD_HEADER_LEN + CMD_BODY_LEN + CMD_MESSAGE_LEN])
-#define cmd_checksum (&cmd_array[CMD_HEADER_LEN + CMD_BODY_LEN + CMD_MESSAGE_LEN + CMD_STATUS_LEN])
-*/
+
 /*
  * Global Scope Functions
  */
@@ -178,12 +171,13 @@ INDEX_T cmd_get_max_index(void);
 uint8_t cmd_get_cmdObj(cmdObj *cmd);
 cmdObj *cmd_clear_cmdObj(cmdObj *cmd);
 
-cmdObj *cmd_reset_list(void);
-cmdObj *cmd_clear_body(void);
-cmdObj *cmd_clear_message(void);
-cmdObj *cmd_insert_token(cmdObj *cmd, char *token);
-cmdObj *cmd_insert_string(cmdObj *cmd, char *token, char *string);
-void cmd_print_list(cmdObj *cmd);
+void cmd_reset_list(void);
+void cmd_clear_body(void);
+uint8_t cmd_insert_token(char *token);
+uint8_t cmd_insert_string(char *token, char *string);
+void cmd_print_list(char *out_buf, uint8_t status, uint8_t textmode);
+uint8_t cmd_is_header(cmdObj *cmd);
+uint8_t cmd_is_body(cmdObj *cmd);
 
 INDEX_T cmd_get_index_by_token(const char *str);
 INDEX_T cmd_get_index(const char *str);
