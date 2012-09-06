@@ -47,7 +47,6 @@ struct controllerSingleton {		// main TG controller struct
 	double build;					// tinyg build number
 	double null;					// dumping ground for items with no target
 	uint8_t test;
-	uint8_t communications_mode;	// command line, JSON, grbl
 	uint8_t prompt_enabled;			// TRUE = enables prompts
 	uint8_t src;					// active source device
 	uint8_t default_src;			// default source device

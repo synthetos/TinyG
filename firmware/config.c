@@ -143,6 +143,12 @@ static int8_t _get_position_axis(const INDEX_T i);
 static int8_t _get_motor(const INDEX_T i);
 static uint8_t _parse_config_string(char *str, struct cmdObject *c);
 static uint8_t _get_msg_helper(cmdObj *cmd, prog_char_ptr msg, uint8_t value);
+static void _print_text_inline_raw();
+static void _print_text_inline_pairs();
+static void _print_text_inline_values();
+static void _print_text_multiline_pairs();
+static void _print_text_multiline_values();
+static void _print_text_multiline_formatted();
 
 /*****************************************************************************
  **** PARAMETER-SPECIFIC CODE REGION *****************************************
@@ -655,7 +661,7 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,				COM_APPEND_TX_CR },
 	{ str_ee, _print_ui8, _get_ui8, _set_ee,  (double *)&cfg.enable_echo,			COM_ENABLE_ECHO },
 	{ str_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
-	{ str_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_json_mode,		COM_ENABLE_JSON_MODE },
+	{ str_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.communications_mode,	COM_COMMUNICATIONS_MODE },
 
 	{ str_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ str_1sa, _print_rot, _get_dbl ,_set_sa, (double *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
@@ -891,13 +897,13 @@ static uint8_t _get_id(cmdObj *cmd)
  */
 static uint8_t _get_sr(cmdObj *cmd) 
 {
-	rpt_run_status_report();
+	rpt_populate_status_report();
 	return (TG_OK);
 }
 
 static void _print_sr(cmdObj *cmd) 
 {
-	rpt_run_status_report();
+	rpt_populate_status_report();
 }
 
 static uint8_t _set_sr(cmdObj *cmd) 
@@ -1096,14 +1102,14 @@ static uint8_t _set_am(cmdObj *cmd)
 	if (strchr(linear_axes, cmd->token[0]) != NULL) {		// true if it's a linear axis
 		if (cmd->value > AXIS_MAX_LINEAR) {
 			cmd->value = 0;
-			if (tg.communications_mode == TG_TEXT_MODE) {
+			if (cfg.communications_mode == TG_TEXT_MODE) {
 				fprintf_P(stderr, PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED\n"));
 			}
 		}
 	} else {
 		if (cmd->value > AXIS_MAX_ROTARY) {
 			cmd->value = 0;
-			if (tg.communications_mode == TG_TEXT_MODE) {
+			if (cfg.communications_mode == TG_TEXT_MODE) {
 				fprintf_P(stderr, PSTR("*** WARNING *** Unsupported rotary axis mode. Axis DISABLED\n"));
 			}
 		}
@@ -1123,7 +1129,7 @@ static uint8_t _set_sm(cmdObj *cmd)
 { 
 	if (cmd->value > SW_MODE_ENABLED_NC) {
 		cmd->value = 0;
-		if (tg.communications_mode == TG_TEXT_MODE) {
+		if (cfg.communications_mode == TG_TEXT_MODE) {
 			fprintf_P(stderr, PSTR("*** WARNING *** Unsupported switch mode. Switch DISABLED\n"));
 		}
 	}
@@ -1149,7 +1155,7 @@ static uint8_t _set_tr(cmdObj *cmd)
 static uint8_t _set_mi(cmdObj *cmd)
 {
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
-		if (tg.communications_mode == TG_TEXT_MODE) {
+		if (cfg.communications_mode == TG_TEXT_MODE) {
 			fprintf_P(stderr, PSTR("*** WARNING *** Unsupported microstep value\n"));
 		}
 	}
@@ -1300,7 +1306,6 @@ static uint8_t _set_defa(cmdObj *cmd)
 	return (TG_OK);
 }
 
-
 /****************************************************************************
  * cfg_config_parser() - update a config setting from a text block
  * 
@@ -1318,12 +1323,14 @@ uint8_t cfg_config_parser(char *str)
 		rpt_run_multiline_status_report();
 		return (TG_OK);
 	}
-	ritorno(_parse_config_string(str,cmd));	// get the first object
-	if ((cmd->value_type != VALUE_TYPE_PARENT) && (cmd->value_type != VALUE_TYPE_NULL)) {
+	ritorno(_parse_config_string(str, cmd));// decode the first object
+	if ((cmd->value_type == VALUE_TYPE_PARENT) || (cmd->value_type == VALUE_TYPE_NULL)) {
+		cmd_print(cmd);						// print value(s) 
+	} else { 								// process SET and RUN commands
 		cmd_set(cmd);						// set single value
 		cmd_persist(cmd);
 	}
-	cmd_print(cmd);							// print value(s)
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED); // print the results
 	return (TG_OK);
 }
 
@@ -1373,10 +1380,10 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 /****************************************************************************/
 /**** CMD FUNCTIONS *********************************************************/
 /**** These are the primary external access points to cmd functions *********
- * cmd_get()   - get a value from the target - in external format
- * cmd_set()   - set a value or invoke a function
- * cmd_print() - invoke print function
- * cmd_persist() - persist a value to NVM. Takes special cases into account
+ * cmd_get()   		- get a value from the target - in external format
+ * cmd_set()   		- set a value or invoke a function
+ * cmd_formatted_print() - formatted print function for this parameter
+ * cmd_persist() 	- persist a value to NVM. Takes special cases into account
  * cmd_new_cmdObj() - initialize a command object (that you actually passed in)
  * cmd_get_cmdObj()	- like cmd_get but populates the cmdObj struct
  */
@@ -1392,7 +1399,7 @@ uint8_t cmd_set(cmdObj *cmd)
 	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].set)))(cmd));
 }
 
-void cmd_print(cmdObj *cmd)
+void cmd_formatted_print(cmdObj *cmd)
 {
 	if ((cmd->index < 0) || (cmd->index >= CMD_INDEX_MAX)) return;
 	((fptrPrint)(pgm_read_word(&cfgArray[cmd->index].print)))(cmd);
@@ -1428,7 +1435,7 @@ cmdObj *cmd_clear_cmdObj(cmdObj *cmd)
 			cmd->depth++; 
 		}
 	}
-	cmd->value_type = VALUE_TYPE_EMPTY;
+	cmd->value_type = VALUE_TYPE_END;
 	return (cmd);
 }
 
@@ -1618,16 +1625,22 @@ void cmd_reset_list()
 //	cmd->mx = NULL;	  // already = zero by clear // signals the last one. 
 }
 
-/**** cmd_insert_token - write contents of token to cmd list ****
- *	input token you want to look up and populate into the object
+
+/**** List manipulation methods **** 
+ * cmd_add_token()	 - write contents of token to end of cmd body
+ * cmd_add_string()	 - add a string to end of cmd body
+ * cmd_add_float()	 - add a floating point value to end of cmd body
+ * cmd_add_integer() - add an integer value to end of cmd body
+ *
+ *	Note: adding a really large integer (like a checksum value) may lose 
+ *	precision due to the cast to a double. Sometimes it's better to load 
+ *	it as a string if all you want to do is display it
  */
-uint8_t cmd_insert_token(char *token)
+uint8_t cmd_add_token(char *token)
 {
 	cmdObj *cmd = cmd_body;
-
-	// find first free element or exit if none available
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->value_type != VALUE_TYPE_EMPTY) {
+		if (cmd->value_type != VALUE_TYPE_END) {
 			cmd = cmd->nx;
 			continue;
 		}
@@ -1641,16 +1654,11 @@ uint8_t cmd_insert_token(char *token)
 	return (TG_NO_BUFFER_SPACE);
 }
 
-/**** cmd_insert_string - add a string object to cmd list **** 
- *	input token and string values you want to write
- */
-uint8_t cmd_insert_string(char *token, char *string)
+uint8_t cmd_add_string(char *token, char *string)
 {
 	cmdObj *cmd = cmd_body;
-
-	// find first free element or exit if none available
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->value_type != VALUE_TYPE_EMPTY) {
+		if (cmd->value_type != VALUE_TYPE_END) {
 			cmd = cmd->nx;
 			continue;
 		}
@@ -1663,75 +1671,144 @@ uint8_t cmd_insert_string(char *token, char *string)
 	return (TG_NO_BUFFER_SPACE);
 }
 
-/**** cmd_print_list - print cmd_array in text or JSON mode ****
+uint8_t cmd_add_integer(char *token, uint32_t value)
+{
+	cmdObj *cmd = cmd_body;
+	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
+		if (cmd->value_type != VALUE_TYPE_END) {
+			cmd = cmd->nx;
+			continue;
+		}
+		strncpy(cmd->token, token, CMD_TOKEN_LEN);
+		cmd->token[CMD_TOKEN_LEN-1] = NUL;	// safety measure
+		cmd->value = (double) value;
+		cmd->value_type = VALUE_TYPE_INTEGER;
+		return (TG_OK);
+	}
+	return (TG_NO_BUFFER_SPACE);
+}
+
+uint8_t cmd_add_float(char *token, double value)
+{
+	cmdObj *cmd = cmd_body;
+	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
+		if (cmd->value_type != VALUE_TYPE_END) {
+			cmd = cmd->nx;
+			continue;
+		}
+		strncpy(cmd->token, token, CMD_TOKEN_LEN);
+		cmd->token[CMD_TOKEN_LEN-1] = NUL;	// safety measure
+		cmd->value = value;
+		cmd->value_type = VALUE_TYPE_FLOAT;
+		return (TG_OK);
+	}
+	return (TG_NO_BUFFER_SPACE);
+}
+
+/**** cmd_print_list - print cmd_array in JSON mode or one of the text modes ****
  * 	Use this function for all text and JSON output (dont just printf stuff)
  * 	It generates and prints the JSON and text mode output strings 
  *	It also cleans up the lists and gets ready for the next use
  *	In JSON mode it generates the status code, status message and checksum
  *	In text mode it uses the the textmode variable to set the output format
  */
-void cmd_print_list(char *out_buf, uint8_t status, uint8_t textmode)
+void cmd_print_list(uint8_t status, uint8_t textmode)
 {
-	cmdObj *cmd;
-
 	/* JSON handling 
 	 * First populate the status code and message. Then make the string w/o the checksum
 	 * Slice the string at the last colon (following "cks") and generate the checksum. 
 	 * Then print the whole thing
 	 */
-	if (cfg.enable_json_mode == true) {
-		cmd = cmd_status;
+	if (cfg.communications_mode == TG_JSON_MODE) {
+		cmdObj *cmd = cmd_status;
 		cmd->value = status;
 		cmd = cmd->nx;
 		tg_get_status_message(status, cmd->string_value);
-		uint16_t strcount = js_make_json_string(out_buf);	// w/o checksum
-		while (out_buf[strcount] != ':') { strcount--; }	// slice at last colon
-		out_buf[strcount] = NUL;
+		uint16_t strcount = js_make_json_string(tg.out_buf);	// w/o checksum
+		while (tg.out_buf[strcount] != ':') { strcount--; }	// slice at last colon
+		tg.out_buf[strcount] = NUL;
 		cmd = cmd_checksum;									// write checksum
-		sprintf(cmd->string_value, "%lu", calculate_hash(out_buf));
-		js_make_json_string(out_buf); 						// make the string w/checksum
-		fprintf(stderr, "%s", out_buf);
+		sprintf(cmd->string_value, "%lu", calculate_hash(tg.out_buf));
+		js_make_json_string(tg.out_buf); 						// make the string w/checksum
+		fprintf(stderr, "%s", tg.out_buf);
 
 	} else {
-		cmd = cmd_body;
-		do {
-			switch (cmd->value_type) {
-				case VALUE_TYPE_PARENT: case VALUE_TYPE_EMPTY: {
-					cmd = cmd->nx;
-					continue;	
-				}
-				case VALUE_TYPE_FLOAT: {
-					fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value);
-					break;
-				}
-				case VALUE_TYPE_INTEGER: {
-					fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value);
-					break;
-				}
-				case VALUE_TYPE_STRING: {
-					fprintf_P(stderr,PSTR("%s:%s"), cmd->token, cmd->string_value);
-					break;
-				}
-			}
-			cmd = cmd->nx;
-			if (cmd->value_type != VALUE_TYPE_EMPTY) {
-				fprintf_P(stderr,PSTR(","));
-			}
-		} while (cmd_is_body(cmd));
-		fprintf_P(stderr,PSTR("\n"));
+		
+		switch (textmode) {
+			case TEXT_INLINE_RAW: { _print_text_inline_raw(); break; }
+			case TEXT_INLINE_PAIRS: { _print_text_inline_pairs(); break; }
+			case TEXT_INLINE_VALUES: { _print_text_inline_values(); break; }
+			case TEXT_MULTILINE_PAIRS: { _print_text_multiline_pairs(); break; }
+			case TEXT_MULTILINE_VALUES: { _print_text_multiline_values(); break; }
+			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted(); break; }
+
+		}
 	}
 	cmd_clear_body();			// clear the body
 }
 
-/**** some ugly little routines to determine where you are in the list ***/
-uint8_t cmd_is_header(cmdObj *cmd) 
-{ 
-	return((cmd >= cmd_header) && (cmd <= &cmd_header[CMD_HEADER_LEN-1]));
+void _print_text_inline_raw()
+{
+	return;			// unimplemented
 }
 
-uint8_t cmd_is_body(cmdObj *cmd) 
-{ 
-	return((cmd >= cmd_body) && (cmd <= &cmd_body[CMD_BODY_LEN-1]));
+void _print_text_inline_pairs()
+{
+	cmdObj *cmd = cmd_body;
+
+	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
+		switch (cmd->value_type) {
+			case VALUE_TYPE_PARENT:	{ cmd = cmd->nx; continue; }
+			case VALUE_TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
+			case VALUE_TYPE_INTEGER:{ fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
+			case VALUE_TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), cmd->token, cmd->string_value); break;}
+			case VALUE_TYPE_END:	{ fprintf_P(stderr,PSTR("\n")); return; }
+		}
+		cmd = cmd->nx;
+		if (cmd->value_type != VALUE_TYPE_END) {
+			fprintf_P(stderr,PSTR(","));
+		}		
+	}
+}
+
+void _print_text_inline_values()
+{
+	cmdObj *cmd = cmd_body;
+
+	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
+		switch (cmd->value_type) {
+			case VALUE_TYPE_PARENT:	{ cmd = cmd->nx; continue; }
+			case VALUE_TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%1.3f"), cmd->value); break;}
+			case VALUE_TYPE_INTEGER:{ fprintf_P(stderr,PSTR("%1.0f"), cmd->value); break;}
+			case VALUE_TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), cmd->string_value); break;}
+			case VALUE_TYPE_END:	{ fprintf_P(stderr,PSTR("\n")); return; }
+		}
+		cmd = cmd->nx;
+		if (cmd->value_type != VALUE_TYPE_END) {
+			fprintf_P(stderr,PSTR(","));
+		}		
+	}
+}
+
+void _print_text_multiline_pairs()
+{
+	return;			// unimplemented
+}
+
+void _print_text_multiline_values()
+{
+	return;			// unimplemented
+}
+
+void _print_text_multiline_formatted()
+{
+	cmdObj *cmd = cmd_body;
+
+	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
+		cmd_formatted_print(cmd);
+		cmd = cmd->nx;
+		if (cmd->value_type == VALUE_TYPE_END) { break;}
+	}
 }
 
 /***** Generic Internal Functions *******************************************
@@ -1828,7 +1905,7 @@ static void _print_str(cmdObj *cmd)
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, _get_format(cmd->index,format), cmd->string_value);
+	fprintf(stderr, _get_format(cmd->index, format), cmd->string_value);
 }
 
 static void _print_ui8(cmdObj *cmd)
@@ -1958,10 +2035,7 @@ static int8_t _get_motor(const INDEX_T i)
 static void _print_grp(cmdObj *cmd)
 {
 	cmd_get(cmd);							// expand cmdArray for the group or sys
-	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
-		if ((cmd = cmd->nx) == NULL) break;
-		cmd_print(cmd);
-	}
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
 }
 
 static uint8_t _set_grp(cmdObj *cmd)
@@ -1989,7 +2063,7 @@ static uint8_t _get_grp(cmdObj *cmd)
 			(++cmd)->index = i;
 			cmd_get_cmdObj(cmd);
 			strncpy(cmd->token, &cmd->token[strlen(grp)], CMD_TOKEN_LEN+1);	// strip group prefixes from token
-			(cmd-1)->nx = cmd;	// set next object of previous object to this object
+//			(cmd-1)->nx = cmd;	// set next object of previous object to this object
 		}
 	}
 	return (TG_OK);
@@ -1997,7 +2071,7 @@ static uint8_t _get_grp(cmdObj *cmd)
 
 static uint8_t _get_sys(cmdObj *cmd)
 {
-	char token[CMD_TOKEN_LEN+1];			// token retrived from cmdArray
+	char token[CMD_TOKEN_LEN+1];			// token retrived from cmdObj
 //	INDEX_T grp_index = cmd->index;
 	char include[] = { SYSTEM_GROUP };		// see config.h
 	char exclude[] = {"gc"};
@@ -2018,10 +2092,7 @@ static uint8_t _get_sys(cmdObj *cmd)
 static void _print_sys(cmdObj *cmd)		// print parameters for system group
 {
 	_get_sys(cmd);
-	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
-		if ((cmd = cmd->nx) == NULL) break;
-		cmd_print(cmd);
-	}
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
 }
 
 static void _print_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list

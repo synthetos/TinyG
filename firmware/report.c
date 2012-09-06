@@ -120,10 +120,11 @@ void rpt_init_status_report(uint8_t persist_flag)
 	cm.status_report_counter = cfg.status_report_interval;
 }
 
-/*	rpt_decr_status_report()  - decrement status report counter
- *	rpt_queue_status_report() - force a status report to be sent on next callback
+/*	rpt_decr_status_report()  	 - decrement status report counter
+ *	rpt_queue_status_report() 	 - force a status report to be sent on next callback
  *	rpt_status_report_callback() - main loop callback to send a report if one is ready
- *	rpt_run_status_report()	  - actually send the status report
+ *	rpt_run_multiline_status_report() - generate a status report in multiline format
+ *	rpt_run_status_report()	  	 - populate cmdObj body with status values
  */
 void rpt_decr_status_report() 
 {
@@ -139,15 +140,21 @@ uint8_t rpt_status_report_callback() // called by controller dispatcher
 {
 	if ((cm.machine_state != MACHINE_RESET) && 
 		(cfg.status_report_interval > 0) && (cm.status_report_counter == 0)) {
-		rpt_run_status_report();
-		cmd_print_list(tg.out_buf, TG_OK, 0);
+		rpt_populate_status_report();
+		cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);	// will report in JSON or inline text modes
 		cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
 		return (TG_OK);
 	}
 	return (TG_NOOP);
 }
 
-uint8_t rpt_run_status_report()
+void rpt_run_multiline_status_report()		// multiple line status report
+{
+	rpt_populate_status_report();
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+}
+
+uint8_t rpt_populate_status_report()
 {
 	cmdObj *cmd = cmd_body;
 
@@ -164,16 +171,6 @@ uint8_t rpt_run_status_report()
 		cmd = cmd->nx;
 	}
 	return (TG_OK);
-}
-void rpt_run_multiline_status_report()		// multiple line status report
-{
-	cmdObj *cmd = cmd_body;
-	fprintf_P(stderr,PSTR("\n"));
-	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		cmd->index = cfg.status_report_spec[i];
-		if (cmd->index < 1) continue;		// trap 0 and -1 cases
-		cmd_print(cmd);
-	}
 }
 
 /****************************************************************************

@@ -40,20 +40,24 @@
 
 /**** cmdObj lists ****
  *
- * cmdObjects are processed as doubly linked lists. List elements are:
- *	- header	(depth 0 - contains parent obj and body parent)
- *	- body		(depth 2 - may go deeper)
- *	- message	(depth 2 - optional application/body message)
- *	- status	(depth 1 - response status code and status message)
- *	- checksum	(depth 1 - checksum of all previous elements)
+ * 	Commands and groups of commands are processed internally as lists of cmdObj's.
+ * 	This isolates the command and config internals from the details of text mode, 
+ *	JSON mode and other communications issues. Commands live as an array of 
+ *	objects in the body. The body is wrapped by a header that vuagely resembles
+ *	an HTTP response header. Structure is:
+ *	 - header	(depth 0 - contains the response parent ("r") and body parent ("body")
+ *	 - body		(depth 2 - contains the meat of the command / config item(s)
+ *	 - status	(depth 1 - contains the response status code and status message
+ *	 - checksum	(depth 1 - contains checksum of all previous elements and a terminating object
  *
- *	A list can be processed from any given entry point - e.g. the body only for 
- *	reading or constructing commands, the message, or the entire list if you start
- *	at the beginning of the response header. The last element in the list is 
- *	signalled by cmd->nx == NULL (in an unused element following the checksum).
+ *	Depending on the operation, a list will be processed for a variety of starting
+ *	points: The header start, the body start, status or checksum elements.
+ *
+ *	Lists are linked together as doubly linked list (although I have yet to find 
+ *	a use for the backwards pointer and may remove it). The last element of the list 
+ *	has a null "next" pointer.
  * 
- *	When the list (or a subset of the list) is printed in either text or JSON
- *	format any element with a value type VALUE_TYPE_EMPTY is skipped over.
+ *	List objects that are unused carry a value type of VALUE_TYPE_EMPTY. 
  *
  * 	Because we don't have recursion parent/child nesting relationships are 
  *	captured in a 'depth' variable, This must remain consistent if the curlies 
@@ -63,9 +67,11 @@
  *	cmd_clear_cmdObj sets depth correctly based on the object's predecessor. 
  *	If you see problems with curlies check the depth values in the lists.
  *
- *	Use cmd_print_list() to output JSON and text string. Do not simply run these
- *	through printf. This function does some hosekeeping including clearing the 
+ *	Use cmd_print_list() for all JSON and text output. Do not simply run these
+ *	through printf. This function does some housekeeping including clearing the 
  *	body and message after the output string is queued.
+ *
+ *	Notes:
  *
  *	CMD_BODY_LEN needs to allow for one parent JSON object and enough children
  *	to complete the largest possible operation. Right now this is the axis group 
@@ -92,6 +98,13 @@
 #define NVM_VALUE_LEN 4				// NVM value length (double, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
 
+#define TEXT_INLINE_RAW	0			// print values without separators
+#define TEXT_INLINE_PAIRS 1			// print key:value pairs as comma separated pairs
+#define TEXT_INLINE_VALUES 2		// print values separated by commas
+#define TEXT_MULTILINE_PAIRS 3		// print key_value pairs on separate lines
+#define TEXT_MULTILINE_VALUES 4		// print values on separate lines
+#define TEXT_MULTILINE_FORMATTED 5	// print formatted values on separate lines
+
 // Here are all the exceptions to the display and config rules, as neat little lists
 // NOTE: The number of SYSTEM_GROUP or SR_DEFAULTS elements cannot exceed CMD_MAX_OBJECTS
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
@@ -106,8 +119,7 @@
 #define IGNORE_LF 2					// ignore LF on RX
 
 enum cmdValueType {					// value typing for config and JSON
-	VALUE_TYPE_EMPTY = -3,			// object is not used
-	VALUE_TYPE_ERROR = -2,			// was unable to process the record
+	VALUE_TYPE_END = -2,			// object terminates the list
 	VALUE_TYPE_NULL = -1,			// value is 'null' (meaning the JSON null value)
 	VALUE_TYPE_FALSE = 0,			// value is 'false'
 	VALUE_TYPE_TRUE = 1,			// value is 'true'
@@ -164,7 +176,7 @@ void cfg_init_gcode_model(void);
 // cmd accessors
 uint8_t cmd_get(cmdObj *cmd);		// entry point for GETs
 uint8_t cmd_set(cmdObj *cmd);		// entry point for SETs
-void cmd_print(cmdObj *cmd);		// entry point for print
+void cmd_formatted_print(cmdObj *cmd);// entry point for formatted print
 void cmd_persist(cmdObj *cmd);		// entry point for persistence
 
 INDEX_T cmd_get_max_index(void);
@@ -173,11 +185,13 @@ cmdObj *cmd_clear_cmdObj(cmdObj *cmd);
 
 void cmd_reset_list(void);
 void cmd_clear_body(void);
-uint8_t cmd_insert_token(char *token);
-uint8_t cmd_insert_string(char *token, char *string);
-void cmd_print_list(char *out_buf, uint8_t status, uint8_t textmode);
-uint8_t cmd_is_header(cmdObj *cmd);
-uint8_t cmd_is_body(cmdObj *cmd);
+uint8_t cmd_add_token(char *token);
+uint8_t cmd_add_string(char *token, char *string);
+uint8_t cmd_add_float(char *token, double value);
+uint8_t cmd_add_integer(char *token, uint32_t value);
+void cmd_print_list(uint8_t status, uint8_t textmode);
+//uint8_t cmd_is_header(cmdObj *cmd);
+//uint8_t cmd_is_body(cmdObj *cmd);
 
 INDEX_T cmd_get_index_by_token(const char *str);
 INDEX_T cmd_get_index(const char *str);
@@ -251,7 +265,7 @@ struct cfgParameters {
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable echo - also used for gating JSON responses
 	uint8_t enable_xon;				// enable XON/XOFF mode
-	uint8_t enable_json_mode;		// enable JSON mode from power-up and reset
+	uint8_t communications_mode;	// TEXT or JSON mode
 	
 	// status report configs
 	uint32_t status_report_interval;// in MS. set non-zero to enable

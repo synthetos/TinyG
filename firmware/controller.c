@@ -88,7 +88,6 @@ void tg_init(uint8_t default_src)
 	xio_set_stdout(tg.default_src);
 	xio_set_stderr(STD_ERROR);
 	tg_set_active_source(tg.default_src);	// set initial active source
-	tg.communications_mode = TG_TEXT_MODE;
 }
 
 void tg_reset(void)
@@ -100,25 +99,25 @@ void tg_reset(void)
 
 void tg_prompt_system_ready(void)
 {
-	if (cfg.enable_json_mode == false) {
+	if (cfg.communications_mode == TG_TEXT_MODE) {
 		fprintf_P(stderr, PSTR("#### TinyG version %0.2f (build %0.2f) \"%s\" ####\n" ), 
 			tg.version, tg.build, TINYG_VERSION_NAME);
 		fprintf_P(stderr, PSTR("Type h for help\n"));
 		_prompt_ok();
 	} else {
-		cmd_insert_token("fv");
-		cmd_insert_token("fb");
-		cmd_insert_string("msg", "SYSTEM READY");
-		cmd_print_list(tg.out_buf, TG_OK, 0);
+		cmd_add_token("fv");
+		cmd_add_token("fb");
+		cmd_add_string("msg", "SYSTEM READY");
+		cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);
 	}
 }
 
 void tg_prompt_configuration_profile(void)
 {
-//	if (cfg.enable_json_mode == true) {
-	if (COM_ENABLE_JSON_MODE) {
-		cmd_insert_string("msg", INIT_CONFIGURATION_MESSAGE);
-		cmd_print_list(tg.out_buf, TG_OK, 0);
+//	if (cfg.communications_mode == TG_JSON_MODE) {
+	if (COM_COMMUNICATIONS_MODE == TG_JSON_MODE) {
+		cmd_add_string("msg", INIT_CONFIGURATION_MESSAGE);
+		cmd_print_list(TG_OK, TEXT_INLINE_VALUES);
 	} else {
 		fprintf_P(stderr, PSTR("\n%s\n"), INIT_CONFIGURATION_MESSAGE);		// see settings.h & sub-headers
 	}
@@ -284,18 +283,18 @@ static uint8_t _dispatch()
 			break;
 		}
 		case 'H': { 							// intercept help screens
-			tg.communications_mode = TG_TEXT_MODE;
+			cfg.communications_mode = TG_TEXT_MODE;
 			help_print_general_help();
 			_dispatch_return(TG_OK, tg.in_buf);
 			break;
 		}
 		case '$': case '?':{ 					// text-mode config and query
-			tg.communications_mode = TG_TEXT_MODE;
+			cfg.communications_mode = TG_TEXT_MODE;
 			_dispatch_return(cfg_config_parser(tg.in_buf), tg.in_buf);
 			break;
 		}
 		case '{': { 							// JSON input
-			tg.communications_mode = TG_JSON_MODE;
+			cfg.communications_mode = TG_JSON_MODE;
 			_dispatch_return(js_json_parser(tg.in_buf, tg.out_buf), tg.out_buf); 
 			break;
 		}
@@ -308,8 +307,8 @@ static uint8_t _dispatch()
 
 void _dispatch_return(uint8_t status, char *buf)
 {
-	if (tg.communications_mode == TG_JSON_MODE) {
-		cmd_print_list(buf, status, 0);
+	if (cfg.communications_mode == TG_JSON_MODE) {
+		cmd_print_list(status, TEXT_INLINE_PAIRS);
 		return;
 	}
 	switch (status) {
@@ -460,15 +459,13 @@ PGM_P msgApplicationMessage[] PROGMEM = {
 
 void tg_print_message(char *msg)
 {
-	cmd_insert_string("msg", msg);
-	cmd_print_list(tg.out_buf, TG_OK, 0);
+	cmd_add_string("msg", msg);
+	cmd_print_list(TG_OK, TEXT_INLINE_VALUES);
 }
 
 void tg_print_message_number(uint8_t msgnum) 
 {
 	char msg[APPLICATION_MESSAGE_LEN];
 	strncpy_P(msg,(PGM_P)pgm_read_word(&msgApplicationMessage[msgnum]), APPLICATION_MESSAGE_LEN);
-	cmd_insert_string("msg", msg);
-	cmd_print_list(tg.out_buf, TG_OK, 0);
-//	tg_print_message(msg);
+	tg_print_message(msg);
 }

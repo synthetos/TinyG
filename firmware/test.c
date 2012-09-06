@@ -99,6 +99,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
+//	xio_queue_RX_string_usb("?\n");
+	xio_queue_RX_string_usb("$x\n");
+
 //	xio_queue_RX_string_usb("g00xqwrsdfs\n");
 //	xio_queue_RX_string_usb("g0x10\n");
 
@@ -249,7 +252,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"xfr\":1200, \"yfr\":1201, \"zfr\":600}\n");
 //	xio_queue_RX_string_usb("{\"err_1\":36000}\n");
 //	xio_queue_RX_string_usb("{\"1sa\":3.6.000}\n");
-	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");				// invoke a status report
+//	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");				// invoke a status report
 
 //	xio_queue_RX_string_usb("{\"gc\":{\"sr\":{\"momo\":\"null\"},\"x\":0,\"y\":\"OK\",\"z\":123}}\n");
 /*	xio_queue_RX_string_usb("{\"config_version\":null}\n");	// simple null test

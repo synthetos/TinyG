@@ -93,7 +93,7 @@ void js_init()
 uint8_t js_json_parser(char *in_str, char *out_str)
 {
 	uint8_t status = _json_parser(in_str);
-	cmd_print_list(out_str, status, 0);
+	cmd_print_list(status, TEXT_INLINE_PAIRS);
 	return (status);
 }
 
@@ -187,7 +187,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *depth, const char 
 
 	cmd_clear_cmdObj(cmd);						// wipe the object
 	cmd->depth = *depth;						// tree depth. 0 = root
-	cmd->value_type = VALUE_TYPE_ERROR;			//...until told otherwise
+	cmd->value_type = VALUE_TYPE_END;			//...until told otherwise
 
 	// process name field
 	// find leading and trailing name quotes and set pointers accordingly
@@ -285,7 +285,7 @@ uint16_t js_make_json_string(char *out_buf)
 		do {  // advance to the next non-empty element
 			cmd = cmd->nx;
 			if (cmd->nx == NULL) break;
-		} while (cmd->value_type == VALUE_TYPE_EMPTY); // skip over empty elements
+		} while (cmd->value_type == VALUE_TYPE_END); // skip over empty elements
 
 		while (depth > cmd->depth) {		// write commas or embedded closing curlies
 			str += sprintf(str, "}");
