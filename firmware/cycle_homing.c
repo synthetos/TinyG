@@ -1,4 +1,4 @@
- /*
+/*
  * cycle_homing - homing cycle extension to canonical_machine.c
  * Part of TinyG project
  *

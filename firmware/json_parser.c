@@ -68,7 +68,6 @@ void js_init()
  *	or practical way to do recursion ("depth" tracks parent/child levels).
  *
  *	This function will parse the following forms up to the JSON_MAX limits:
- *
  *	  {"name":"value"}
  *	  {"name":12345}
  *	  {"name1":"value1", "n2":"v2", ... "nN":"vN"}
@@ -92,8 +91,8 @@ void js_init()
 
 uint8_t js_json_parser(char *in_str, char *out_str)
 {
-	uint8_t status = _json_parser(in_str);
-	cmd_print_list(status, TEXT_INLINE_PAIRS);
+	uint8_t status = _json_parser(in_str);		// parse and execute the input
+	cmd_print_list(status, TEXT_INLINE_PAIRS);	// echo result as JSON
 	return (status);
 }
 
@@ -105,8 +104,8 @@ static uint8_t _json_parser(char *str)
 	char grp[CMD_GROUP_LEN+1] = {""};			// group identifier
 	uint8_t max_elements = CMD_BODY_LEN;
 
-	// parse the JSON command into the body array
-	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX)); 	// test and normalize
+	// parse the JSON command into the cmd body
+	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));  // return if error
 	do {
 		if ((status = _get_nv_pair(cmd, &str, &depth, grp)) > TG_EAGAIN) {
 			return (status);
@@ -120,7 +119,7 @@ static uint8_t _json_parser(char *str)
 		cmd = cmd->nx;
 	} while (status != TG_OK);
 
-	// now execute the command - only does the one that's first in the body.
+	// execute the command - only does the one that's first in the body.
 	cmd = cmd_body;
 	if (cmd->value_type == VALUE_TYPE_NULL){	// means GET the value
 		ritorno(cmd_get(cmd));					// ritorno returns w/status on any errors
@@ -185,7 +184,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *depth, const char 
 	char *tmp;
 	char terminators[] = {"},"};
 
-	cmd_clear_cmdObj(cmd);						// wipe the object
+	cmd_clear(cmd);								// wipe the object
 	cmd->depth = *depth;						// tree depth. 0 = root
 	cmd->value_type = VALUE_TYPE_END;			//...until told otherwise
 
@@ -253,15 +252,14 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *depth, const char 
 }
 
 /****************************************************************************
- * js_make_json_string() - make a JSON object string from JSON object array
+ * js_serialize_json() - make a JSON object string from JSON object array
  *
  *	*cmd is a pointer to the first element in the cmd list to serialize
  *	*str is a pointer to the output string - usually what was the input string
  *	Returns the character count of the resulting string
  */
 
-//uint16_t js_make_json_string(cmdObj *cmd, char *out_buf)
-uint16_t js_make_json_string(char *out_buf)
+uint16_t js_serialize_json(char *out_buf)
 {
 	cmdObj *cmd = cmd_header;
 	char *str = out_buf;						// set workikng string pointer 
@@ -302,33 +300,6 @@ uint16_t js_make_json_string(char *out_buf)
 	sprintf(str, "\n");
 	return (str - out_buf);
 }
-
-/****************************************************************************
- * js_make_json_response() - wrap a response around a JSON object JSON object array
- *
- * The checksum is generated up through the ...,"cks" tag - including the closing quote
- * The resulting output string should be output using 
- */
-/*
-char *js_make_json_response(uint8_t status, char *out_buf)
-{
-	uint16_t strcount;
-	cmdObj *cmd = cmd_status;
-
-	cmd->value = status;						// write status value
-	cmd = cmd->nx;
-	tg_get_status_message(status, cmd->string_value);
-	strcount = js_make_json_string(cmd_header, out_buf); // make string with no checksum
-
-	// walk backwards to find the colon after the "cks" tag
-	while (out_buf[strcount] != ':') { strcount--; }
-	out_buf[strcount] = NUL;					// terminate on the colon
-	cmd = cmd_checksum;							// write checksum value to checksum element
-	sprintf(cmd->string_value, "%lu", calculate_hash(out_buf));
-	js_make_json_string(cmd_header, out_buf); 	// make the string with the real checksum
-	return (out_buf);
-}
-*/
 
 //###########################################################################
 //##### UNIT TESTS ##########################################################

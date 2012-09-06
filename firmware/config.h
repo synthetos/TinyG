@@ -98,13 +98,6 @@
 #define NVM_VALUE_LEN 4				// NVM value length (double, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
 
-#define TEXT_INLINE_RAW	0			// print values without separators
-#define TEXT_INLINE_PAIRS 1			// print key:value pairs as comma separated pairs
-#define TEXT_INLINE_VALUES 2		// print values separated by commas
-#define TEXT_MULTILINE_PAIRS 3		// print key_value pairs on separate lines
-#define TEXT_MULTILINE_VALUES 4		// print values on separate lines
-#define TEXT_MULTILINE_FORMATTED 5	// print formatted values on separate lines
-
 // Here are all the exceptions to the display and config rules, as neat little lists
 // NOTE: The number of SYSTEM_GROUP or SR_DEFAULTS elements cannot exceed CMD_MAX_OBJECTS
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
@@ -127,6 +120,15 @@ enum cmdValueType {					// value typing for config and JSON
 	VALUE_TYPE_FLOAT,				// value is a floating point number
 	VALUE_TYPE_STRING,				// value is in string field
 	VALUE_TYPE_PARENT				// object is a parent to a sub-object
+};
+
+enum cmdTextMode {					// these set the print modes for text output
+//	TEXT_INLINE_RAW,				// print values without separators
+	TEXT_INLINE_PAIRS,				// print key:value pairs as comma separated pairs
+	TEXT_INLINE_VALUES,				// print values as commas separated values
+//	TEXT_MULTILINE_PAIRS,			// print key_value pairs on separate lines
+//	TEXT_MULTILINE_VALUES,			// print values on separate lines
+	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines
 };
 
 struct cmdObject {					// depending on use, not all elements may be populated
@@ -178,12 +180,11 @@ uint8_t cmd_get(cmdObj *cmd);		// entry point for GETs
 uint8_t cmd_set(cmdObj *cmd);		// entry point for SETs
 void cmd_formatted_print(cmdObj *cmd);// entry point for formatted print
 void cmd_persist(cmdObj *cmd);		// entry point for persistence
+uint8_t cmd_get_cmdObj(cmdObj *cmd);
 
 INDEX_T cmd_get_max_index(void);
-uint8_t cmd_get_cmdObj(cmdObj *cmd);
-cmdObj *cmd_clear_cmdObj(cmdObj *cmd);
-
-void cmd_reset_list(void);
+cmdObj *cmd_clear(cmdObj *cmd);
+void cmd_clear_list(void);
 void cmd_clear_body(void);
 uint8_t cmd_add_token(char *token);
 uint8_t cmd_add_string(char *token, char *string);
