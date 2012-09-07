@@ -57,8 +57,6 @@ struct controllerSingleton tg;		// controller state structure
 
 void tg_init(uint8_t default_src);
 void tg_reset(void);
-void tg_prompt_system_ready(void);
-void tg_prompt_configuration_profile(void);
 void tg_controller(void);
 void tg_application_startup(void);
 void tg_set_active_source(uint8_t dev);
@@ -66,6 +64,8 @@ void tg_reset_source(void);
 char *tg_get_status_message(uint8_t status, char *msg);
 void tg_print_message(char *msg);
 void tg_print_message_number(uint8_t msgnum);
+void tg_print_configuration_profile(void);
+void tg_print_system_ready(void);
 
 #ifdef __DEBUG
 void tg_dump_controller_state(void);

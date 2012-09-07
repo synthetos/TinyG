@@ -97,32 +97,6 @@ void tg_reset(void)
 	tg_application_reset();
 }
 
-void tg_prompt_system_ready(void)
-{
-	if (cfg.communications_mode == TG_TEXT_MODE) {
-		fprintf_P(stderr, PSTR("#### TinyG version %0.2f (build %0.2f) \"%s\" ####\n" ), 
-			tg.version, tg.build, TINYG_VERSION_NAME);
-		fprintf_P(stderr, PSTR("Type h for help\n"));
-		_prompt_ok();
-	} else {
-		cmd_add_token("fv");
-		cmd_add_token("fb");
-		cmd_add_string("msg", "SYSTEM READY");
-		cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);
-	}
-}
-
-void tg_prompt_configuration_profile(void)
-{
-//	if (cfg.communications_mode == TG_JSON_MODE) {
-	if (COM_COMMUNICATIONS_MODE == TG_JSON_MODE) {
-		cmd_add_string("msg", INIT_CONFIGURATION_MESSAGE);
-		cmd_print_list(TG_OK, TEXT_INLINE_VALUES);
-	} else {
-		fprintf_P(stderr, PSTR("\n%s\n"), INIT_CONFIGURATION_MESSAGE);		// see settings.h & sub-headers
-	}
-}
-
 void tg_application_startup(void)
 {
 	tg_canned_startup();			// pre-load input buffers (for test)
@@ -322,7 +296,7 @@ void _dispatch_return(uint8_t status, char *buf)
 	}
 }
 
-/**** Prompting **************************************************************
+/**** System Prompts **************************************************************
  * tg_get_status_message()
  * _prompt_ok()
  * _prompt_error()
@@ -445,6 +419,8 @@ static void _prompt_error(uint8_t status, char *buf)
  * tg_get_message() 		 - returns a canned application message in a pre-allocated string
  * tg_print_message()        - print a character string passed as argument
  * tg_print_message_number() - print a canned message by number
+ * tg_print_configuration_profile()
+ * tg_print_system_ready()
  *
  * Messages are collected in this one place to manage alternate display options
  * such as text mode or JSON mode.
@@ -468,4 +444,18 @@ void tg_print_message_number(uint8_t msgnum)
 	char msg[APPLICATION_MESSAGE_LEN];
 	strncpy_P(msg,(PGM_P)pgm_read_word(&msgApplicationMessage[msgnum]), APPLICATION_MESSAGE_LEN);
 	tg_print_message(msg);
+}
+
+void tg_print_configuration_profile(void)
+{
+	cmd_add_string("msg", INIT_CONFIGURATION_MESSAGE); // see settings.h & sub-headers
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+}
+
+void tg_print_system_ready(void)
+{
+	cmd_add_token("fv");
+	cmd_add_token("fb");
+	cmd_add_string("msg", "SYSTEM READY");
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
 }

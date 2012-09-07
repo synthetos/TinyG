@@ -356,10 +356,11 @@ char str_g92a[] PROGMEM = "g92a,g92a,A origin offset:%10.3f%S\n";
 char str_g92b[] PROGMEM = "g92b,g92b,B origin offset:%10.3f%S\n";
 char str_g92c[] PROGMEM = "g92c,g92c,C origin offset:%10.3f%S\n";
 
-// commands, tests and help 
+// commands, tests, help, messages 
 char str_help[] PROGMEM = "he,help,";	// display configuration help
 char str_test[] PROGMEM = "te,test,";	// specialized _print_test() function
 char str_defa[] PROGMEM = "de,defa,";	// restore default settings
+char str_msg[]  PROGMEM = "msg,msg,%s\n";// generic message (with no formatting)
 
 // Gcode model power-on reset default values
 char str_gpl[] PROGMEM = "gpl,gcode_pl,[gpl] gcode_select_plane %10d [0,1,2]\n";
@@ -634,10 +635,11 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_g92b,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[B], 0 },
 	{ str_g92c,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[C], 0 },
 
-	// commands, tests and help 
+	// commands, tests, help, messages
 	{ str_test,help_print_test_help,_get_ui8, tg_test, (double *)&tg.test, 0 },
 	{ str_help,help_print_config_help,_get_nul,_set_nul,(double *)&tg.null,0 },
 	{ str_defa,help_print_defaults_help,_get_nul,_set_defa,(double *)&tg.null,0 },
+	{ str_msg, _print_str,_get_nul,_set_nul,(double *)&tg.null,0 },
 
 	// NOTE: The ordering within the gcode group is important for token resolution
 	{ str_gpl, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.select_plane,			GCODE_DEFAULT_PLANE },
@@ -1243,8 +1245,8 @@ void cfg_init()
 {
 	cmdObj cmd;
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
-
 	cmd_clear_list();				// setup the cmd object lists. Do this first.
+	cfg.communications_mode = TG_JSON_MODE; // initial value until EEPROM is read
 
 #ifdef __DISABLE_EEPROM_INIT		// cutout for debug simulation
 	// Apply the hard-coded default values from settings.h and exit
@@ -1261,7 +1263,6 @@ void cfg_init()
 	cmd_read_NVM_value(&cmd);
 
 	if (cmd.value == tg.build) { // Case (1) NVM is set up and current revision. Load config from NVM
-//+++++		fprintf_P(stderr,PSTR("\n#### Loading configs from EEPROM ####\n"));
 		tg_print_message_number(1);
 		for (cmd.index=0; cmd.index<CMD_INDEX_END_SINGLES; cmd.index++) {
 			cmd_read_NVM_value(&cmd);
@@ -1288,9 +1289,8 @@ static uint8_t _set_defa(cmdObj *cmd)
 		return (TG_OK);
 	}
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
-	tg_prompt_configuration_profile();
-//++++	fprintf_P(stderr,PSTR(INIT_CONFIGURATION_MESSAGE));		// see settings.h & sub-headers
-
+	tg_print_configuration_profile();
+	
 	for (cmd->index=0; cmd->index<CMD_INDEX_END_SINGLES; cmd->index++) {
 		if (strstr(DONT_INITIALIZE, cmd_get_token(cmd->index, cmd->token)) != NULL) continue;
 		cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
@@ -1377,7 +1377,7 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 /****************************************************************************/
 /* These are the primary access points to cmd functions
  *
- * cmd_get()  - Build a cmdObj with the values from the target
+ * cmd_get()  - Build a cmdObj with the values from the target & return the value
  * 				Populate cmd body with single valued elements or groups (iterates)
  *
  * cmd_set()  - Write a value or invoke a function
@@ -1385,12 +1385,9 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
  *
  * Single object functions:
  *
- * cmd_formatted_print()  - Formatted print function for this parameter
- *						  - Output a formatted string for the value. 
- *							Does not expand groups. 
- *
- * cmd_persist() 	- persist a value to NVM. Takes special cases into account
- * cmd_get_cmdObj()	- like cmd_get but returns cmdObj pointer instead of the value
+ * cmd_formatted_print() - Output a formatted string for the value.
+ * cmd_persist() 		 - persist value to NVM. Takes special cases into account
+ * cmd_get_cmdObj()		 - like cmd_get but returns cmdObj pointer instead of the value
  */
 
 uint8_t cmd_get(cmdObj *cmd)
@@ -1668,6 +1665,7 @@ uint8_t cmd_add_string(char *token, char *string)
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		cmd->token[CMD_TOKEN_LEN-1] = NUL;	// safety measure
 		strncpy(cmd->string_value, string, CMD_STRING_LEN);
+		cmd->index = cmd_get_index_by_token(cmd->token);
 		cmd->value_type = VALUE_TYPE_STRING;
 		return (TG_OK);
 	}
@@ -2082,7 +2080,6 @@ static void _print_sys(cmdObj *cmd)
  * _print_axes()		- print axis uber group XYZABC
  * _print_offsets()		- print offset uber group G54-G59
  * _print_all()			- print all groups uber group
- * _print_uber_groups()	- helper
  */
 
 static void _print_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
@@ -2122,57 +2119,6 @@ static void _print_all(cmdObj *cmd)		// print all parameters
 	_print_motors(cmd);
 	_print_axes(cmd);
 }
-
-/*
-static void _print_group(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
-{
-	for (uint8_t i=0; i < CMD_MAX_OBJECTS; i++) {
-		if (list[i][0] == NUL) return;
-		cmd = cmd_body;
-		strncpy(cmd->group_token, list[i], CMD_TOKEN_LEN);
-		cmd->index = cmd_get_index_by_token(cmd->group_token);
-		cmd->value_type = VALUE_TYPE_PARENT;
-		cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
-	}
-}
-
-static void _print_motors(cmdObj *cmd)	// print parameters for all motor groups
-{
-	char list[][CMD_TOKEN_LEN+1] = {"1","2","3","4",""}; // must have a terminating element
-	_print_group_list(cmd, list);
-}
-
-static void _print_axes(cmdObj *cmd)	// print parameters for all axis groups
-{
-	char list[][CMD_TOKEN_LEN+1] = {"x","y","z","a","b","c",""}; // must have a terminating element
-	_print_group_list(cmd, list);
-}
-
-static void _print_offsets(cmdObj *cmd)	// print offset parameters for G54-G59,G92
-{
-	char list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92",""}; // must have a terminating element
-	_print_group_list(cmd, list);
-}
-
-static void _print_all(cmdObj *cmd)		// print all parameters
-{
-	_get_sys(cmd);
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
-	_print_offsets(cmd);
-	_print_groups(cmd, "1234xyzabc");
-}
-
-static void _print_groups(cmdObj *cmd, char *ptr) // helper to print multiple groups
-{
-	while (*ptr != NUL) {
-		cmd = cmd_body;
-		memset(cmd->group_token, NUL, CMD_TOKEN_LEN+1); // clear group token.
-		cmd->group_token[0] = *ptr++;
-		cmd->index = cmd_get_index_by_token(cmd->group_token);
-		cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
-	}
-}
-*/
 
 /****************************************************************************
  * EEPROM access functions:
