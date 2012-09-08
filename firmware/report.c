@@ -159,7 +159,7 @@ uint8_t rpt_populate_status_report()
 	cmdObj *cmd = cmd_body;
 
 	cmd_clear(cmd);							// wipe it first
-	cmd->value_type = VALUE_TYPE_PARENT; 	// setup the parent object
+	cmd->type = TYPE_PARENT; 				// setup the parent object
 	sprintf_P(cmd->token, PSTR("sr"));
 //	strcpy(cmd->token, "sr");				// alternate form of above: more RAM, less FLASH & cycles
 	cmd = cmd->nx;

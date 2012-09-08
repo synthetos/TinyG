@@ -57,7 +57,7 @@
  *	a use for the backwards pointer and may remove it). The last element of the list 
  *	has a null "next" pointer.
  * 
- *	List objects that are unused carry a value type of VALUE_TYPE_EMPTY. 
+ *	List objects that are unused carry a value type of CMD_TYPE_EMPTY. 
  *
  * 	Because we don't have recursion parent/child nesting relationships are 
  *	captured in a 'depth' variable, This must remain consistent if the curlies 
@@ -111,15 +111,15 @@
 #define IGNORE_CR 1					// ignore CR on RX
 #define IGNORE_LF 2					// ignore LF on RX
 
-enum cmdValueType {					// value typing for config and JSON
-	VALUE_TYPE_END = -2,			// object terminates the list
-	VALUE_TYPE_NULL = -1,			// value is 'null' (meaning the JSON null value)
-	VALUE_TYPE_FALSE = 0,			// value is 'false'
-	VALUE_TYPE_TRUE = 1,			// value is 'true'
-	VALUE_TYPE_INTEGER,				// value is a uint32_t
-	VALUE_TYPE_FLOAT,				// value is a floating point number
-	VALUE_TYPE_STRING,				// value is in string field
-	VALUE_TYPE_PARENT				// object is a parent to a sub-object
+enum cmdType {						// object / value typing for config and JSON
+	TYPE_END = -2,					// object terminates the list
+	TYPE_NULL = -1,					// value is 'null' (meaning the JSON null value)
+	TYPE_FALSE = false,				// value is 'false' (0)
+	TYPE_TRUE = true,				// value is 'true' (1)
+	TYPE_INTEGER,					// value is a uint32_t
+	TYPE_FLOAT,						// value is a floating point number
+	TYPE_STRING,					// value is in string field
+	TYPE_PARENT						// object is a parent to a sub-object
 };
 
 enum cmdTextMode {					// these set the print modes for text output
@@ -136,27 +136,19 @@ struct cmdObject {					// depending on use, not all elements may be populated
 	int8_t depth;					// depth of object in the tree. 0 is root (-1 is invalid)
 	struct cmdObject *nx;			// pointer to next object or NULL if last object
 	struct cmdObject *pv;			// pointer to previous object or NULL if first object
-	int8_t value_type;				// see cfgValueType
+	int8_t type;					// see cmdType
 	double value;					// numeric value
 	char token[CMD_TOKEN_LEN+1];	// mnemonic token
-	char xs1Rg[CMD_STRING_LEN+1];	// string storage (don't use this variable literally. See note below)
+	char group[CMD_GROUP_LEN+1];	// group token or NUL if not in a group
+	char string[CMD_STRING_LEN+1];	// string storage (See note below)
 }; 									// OK, so it's not REALLY an object
 typedef struct cmdObject cmdObj;	// handy typedef for command onjects
-
-/* NOTE: 
-   The xs1Rg field is intentionally named so badly that you can't remember it.
-   Use the aliases below - depending on what function you are performing This 
-   field is an overloaded string storage field to save RAM. Its primary use is 
-   to carry a value-type of string. It is also used in some preliminary parsing
-   to carry the friendly_name or the parent group specifier (group_token).
-   *** Care must be taken that these uses do not clobber each other ***
-*/
-#define string_value xs1Rg			// used here as a string value field
-#define friendly_name xs1Rg			// used here as a friendly name field
-#define group_token xs1Rg			// used here as a group token field
-
 typedef uint8_t (*fptrCmd)(cmdObj *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
+
+// NOTE: Be aware: the string field is mainly used to carry string values, 
+// but is used as temp storage for the friendly_name during parsing to save RAM..
+#define friendly_name string			// used here as a friendly name field
 
 // Allocate memory for all objects that may be used in cmdObj lists
 cmdObj cmd_header[CMD_HEADER_LEN];	// header objects for JSON responses

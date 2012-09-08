@@ -891,7 +891,7 @@ static uint8_t _get_id(cmdObj *cmd)
  *
  *	Note: _set_sr() is called during initialization and during reset when 
  *	there's actually nothing to do. So it rejects all get requests except 
- *	those where cmd->value_type == true and cmd->value == true.
+ *	those where cmd->type == true and cmd->value == true.
  */
 static uint8_t _get_sr(cmdObj *cmd) 
 {
@@ -909,7 +909,7 @@ static uint8_t _set_sr(cmdObj *cmd)
 	memset(cfg.status_report_spec, -1 , sizeof(cfg.status_report_spec));
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
-		if ((cmd->value_type == true) && (cmd->value == true)) { // see function header note
+		if ((cmd->type == true) && (cmd->value == true)) { // see function header note
 			cfg.status_report_spec[i] = cmd->index;
 			cmd->value = cmd->index;	// you want to persist the index as the value
 			cmd_write_NVM_value(cmd);	// persist the value
@@ -950,8 +950,8 @@ static uint8_t _set_si(cmdObj *cmd)
 static uint8_t _get_msg_helper(cmdObj *cmd, prog_char_ptr msg, uint8_t value)
 {
 	cmd->value = (double)value;
-	cmd->value_type = VALUE_TYPE_INTEGER;
-	strncpy_P(cmd->string_value, (PGM_P)pgm_read_word(&msg[value*2]), CMD_STRING_LEN); // hack alert: direct computation of index
+	cmd->type = TYPE_INTEGER;
+	strncpy_P(cmd->string, (PGM_P)pgm_read_word(&msg[value*2]), CMD_STRING_LEN); // hack alert: direct computation of index
 	return (TG_OK);
 //	return((char *)pgm_read_word(&msg[(uint8_t)value]));
 }
@@ -962,7 +962,7 @@ static uint8_t _get_stat(cmdObj *cmd)
 
 // how to do this w/o calling the helper routine - See 331.09 for original routines
 //	cmd->value = cm_get_machine_state();
-//	cmd->value_type = VALUE_TYPE_INTEGER;
+//	cmd->type = TYPE_INTEGER;
 //	strncpy_P(cmd->string_value,(PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN);
 //	return (TG_OK);
 }
@@ -1026,21 +1026,21 @@ static uint8_t _get_vel(cmdObj *cmd)
 {
 	cmd->value = mp_get_runtime_velocity();
 	if (cm_get_units_mode() == INCHES) cmd->value *= INCH_PER_MM;
-	cmd->value_type = VALUE_TYPE_FLOAT;
+	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 
 static uint8_t _get_pos(cmdObj *cmd) 
 {
 	cmd->value = cm_get_runtime_work_position(_get_position_axis(cmd->index));
-	cmd->value_type = VALUE_TYPE_FLOAT;
+	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 
 static uint8_t _get_mpos(cmdObj *cmd) 
 {
 	cmd->value = cm_get_runtime_machine_position(_get_position_axis(cmd->index));
-	cmd->value_type = VALUE_TYPE_FLOAT;
+	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 
@@ -1063,14 +1063,14 @@ static void _print_pos(cmdObj *cmd)
 
 static uint8_t _get_gc(cmdObj *cmd)
 {
-	strncpy(cmd->string_value, tg.in_buf, CMD_STRING_LEN);
-	cmd->value_type = VALUE_TYPE_STRING;
+	strncpy(cmd->string, tg.in_buf, CMD_STRING_LEN);
+	cmd->type = TYPE_STRING;
 	return (TG_OK);
 }
 
 static uint8_t _run_gc(cmdObj *cmd)
 {
-	strncpy(tg.in_buf, cmd->string_value, INPUT_BUFFER_LEN);
+	strncpy(tg.in_buf, cmd->string, INPUT_BUFFER_LEN);
 	uint8_t status = gc_gcode_parser(tg.in_buf);
 	return (status);
 }
@@ -1090,7 +1090,7 @@ static uint8_t _run_gc(cmdObj *cmd)
 static uint8_t _get_am(cmdObj *cmd)
 {
 	_get_ui8(cmd);
-	return(_get_msg_helper(cmd, (prog_char_ptr)msg_am, cmd->value));	// see 331.09 for old method
+	return(_get_msg_helper(cmd, (prog_char_ptr)msg_am, cmd->value));// see 331.09 for old method
 }
 
 static uint8_t _set_am(cmdObj *cmd)
@@ -1320,7 +1320,7 @@ uint8_t cfg_config_parser(char *str)
 		return (TG_OK);
 	}
 	ritorno(_parse_config_string(str, cmd));// decode the first object
-	if ((cmd->value_type == VALUE_TYPE_PARENT) || (cmd->value_type == VALUE_TYPE_NULL)) {
+	if ((cmd->type == TYPE_PARENT) || (cmd->type == TYPE_NULL)) {
 		cmd_get(cmd);						// populate value(s) 
 	} else { 								// process SET and RUN commands
 		cmd_set(cmd);						// set single value
@@ -1349,7 +1349,7 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 		// todo: insert separator for xfr1000 case in here
 	}
 	// field processing
-	cmd->value_type = VALUE_TYPE_NULL;
+	cmd->type = TYPE_NULL;
 	if ((tmp = strpbrk(str, separators)) == NULL) {
 		strncpy(cmd->friendly_name, str, CMD_STRING_LEN);// no value part
 	} else {
@@ -1358,7 +1358,7 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 		str = ++tmp;
 		cmd->value = strtod(str, &tmp);		// tmp is the end pointer
 		if (tmp != str) {
-			cmd->value_type = VALUE_TYPE_FLOAT;
+			cmd->type = TYPE_FLOAT;
 		}
 	}
 	if ((cmd->index = cmd_get_index(cmd->friendly_name)) == -1) { 
@@ -1366,8 +1366,8 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 	}
 	cmd_get_token(cmd->index, cmd->token);
 	if (cmd->index >= CMD_INDEX_START_GROUPS) {
-		cmd->value_type = VALUE_TYPE_PARENT;	// indicating it's a group token
-		strncpy(cmd->group_token, cmd->token, CMD_TOKEN_LEN+1);	// copy group token into string field
+		cmd->type = TYPE_PARENT;	// indicating it's a group token
+		strncpy(cmd->group, cmd->token, CMD_TOKEN_LEN+1);	// copy group token into string field
 	}
 	return (TG_OK);
 }
@@ -1459,11 +1459,11 @@ cmdObj *cmd_clear(cmdObj *cmd)		// clear the cmdObj structure
 	cmd->pv = pv;
 	if (cmd->pv != NULL) { 			// set depth correctly
 		cmd->depth = cmd->pv->depth;
-		if (cmd->pv->value_type == VALUE_TYPE_PARENT) { 
+		if (cmd->pv->type == TYPE_PARENT) { 
 			cmd->depth++; 
 		}
 	}
-	cmd->value_type = VALUE_TYPE_END;
+	cmd->type = TYPE_END;
 	return (cmd);
 }
 
@@ -1566,14 +1566,14 @@ void cmd_clear_list()
 	cmd = cmd_header;
 	cmd_clear(cmd);								// "r" parent
 	sprintf_P(cmd->token, PSTR("r"));
-	cmd->value_type = VALUE_TYPE_PARENT;
+	cmd->type = TYPE_PARENT;
 	cmd->pv = 0;
 	cmd->nx = (cmd+1);
 	cmd->depth = 0;
 
-	cmd_clear(++cmd);							// "body" parent
-	sprintf_P(cmd->token, PSTR("body"));
-	cmd->value_type = VALUE_TYPE_PARENT;
+	cmd_clear(++cmd);							// "bd" parent (body)
+	sprintf_P(cmd->token, PSTR("bd"));
+	cmd->type = TYPE_PARENT;
 	cmd->pv = (cmd-1);
 	cmd->nx = cmd_body;
 	cmd->depth = 1;
@@ -1585,14 +1585,14 @@ void cmd_clear_list()
 	cmd = cmd_status;
 	cmd_clear(cmd);								// "sc" element
 	sprintf_P(cmd->token, PSTR("sc"));
-	cmd->value_type = VALUE_TYPE_INTEGER;
+	cmd->type = TYPE_INTEGER;
 	cmd->pv = &cmd_body[CMD_BODY_LEN-1];
 	cmd->nx = (cmd+1);
 	cmd->depth = 1;
 
 	cmd_clear(++cmd);							// "sm" element
 	sprintf_P(cmd->token, PSTR("sm"));
-	cmd->value_type = VALUE_TYPE_STRING;
+	cmd->type = TYPE_STRING;
 	cmd->pv = (cmd-1);
 	cmd->nx = cmd_checksum;
 	cmd->depth = 1;
@@ -1601,7 +1601,7 @@ void cmd_clear_list()
 	cmd = cmd_checksum;	
 	cmd_clear(cmd);								// "cks" element
 	sprintf_P(cmd->token, PSTR("cks"));
-	cmd->value_type = VALUE_TYPE_STRING;
+	cmd->type = TYPE_STRING;
 	cmd->pv = &cmd_status[CMD_STATUS_LEN-1];
 	cmd->nx = cmd+1;
 	cmd->depth = 1;
@@ -1640,7 +1640,7 @@ uint8_t cmd_add_token(char *token)
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->value_type != VALUE_TYPE_END) {
+		if (cmd->type != TYPE_END) {
 			cmd = cmd->nx;
 			continue;
 		}
@@ -1658,15 +1658,15 @@ uint8_t cmd_add_string(char *token, char *string)
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->value_type != VALUE_TYPE_END) {
+		if (cmd->type != TYPE_END) {
 			cmd = cmd->nx;
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		cmd->token[CMD_TOKEN_LEN-1] = NUL;	// safety measure
-		strncpy(cmd->string_value, string, CMD_STRING_LEN);
+		strncpy(cmd->string, string, CMD_STRING_LEN);
 		cmd->index = cmd_get_index_by_token(cmd->token);
-		cmd->value_type = VALUE_TYPE_STRING;
+		cmd->type = TYPE_STRING;
 		return (TG_OK);
 	}
 	return (TG_NO_BUFFER_SPACE);
@@ -1676,14 +1676,14 @@ uint8_t cmd_add_integer(char *token, uint32_t value)
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->value_type != VALUE_TYPE_END) {
+		if (cmd->type != TYPE_END) {
 			cmd = cmd->nx;
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		cmd->token[CMD_TOKEN_LEN-1] = NUL;	// safety measure
 		cmd->value = (double) value;
-		cmd->value_type = VALUE_TYPE_INTEGER;
+		cmd->type = TYPE_INTEGER;
 		return (TG_OK);
 	}
 	return (TG_NO_BUFFER_SPACE);
@@ -1693,14 +1693,14 @@ uint8_t cmd_add_float(char *token, double value)
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->value_type != VALUE_TYPE_END) {
+		if (cmd->type != TYPE_END) {
 			cmd = cmd->nx;
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		cmd->token[CMD_TOKEN_LEN-1] = NUL;	// safety measure
 		cmd->value = value;
-		cmd->value_type = VALUE_TYPE_FLOAT;
+		cmd->type = TYPE_FLOAT;
 		return (TG_OK);
 	}
 	return (TG_NO_BUFFER_SPACE);
@@ -1724,12 +1724,12 @@ void cmd_print_list(uint8_t status, uint8_t textmode)
 		cmdObj *cmd = cmd_status;
 		cmd->value = status;
 		cmd = cmd->nx;
-		tg_get_status_message(status, cmd->string_value);
+		tg_get_status_message(status, cmd->string);
 		uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
 		while (tg.out_buf[strcount] != ':') { strcount--; }	// slice at last colon
 		tg.out_buf[strcount] = NUL;
 		cmd = cmd_checksum;									// write checksum
-		sprintf(cmd->string_value, "%lu", calculate_hash(tg.out_buf));
+		sprintf(cmd->string, "%lu", calculate_hash(tg.out_buf));
 		js_serialize_json(tg.out_buf); 						// make JSON string w/checksum
 		fprintf(stderr, "%s", tg.out_buf);
 	} else {
@@ -1747,15 +1747,15 @@ void _print_text_inline_pairs()
 	cmdObj *cmd = cmd_body;
 
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		switch (cmd->value_type) {
-			case VALUE_TYPE_PARENT:	{ cmd = cmd->nx; continue; }
-			case VALUE_TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
-			case VALUE_TYPE_INTEGER:{ fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
-			case VALUE_TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), cmd->token, cmd->string_value); break;}
-			case VALUE_TYPE_END:	{ fprintf_P(stderr,PSTR("\n")); return; }
+		switch (cmd->type) {
+			case TYPE_PARENT:	{ cmd = cmd->nx; continue; }
+			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
+			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
+			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), cmd->token, cmd->string); break;}
+			case TYPE_END:		{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
-		if (cmd->value_type != VALUE_TYPE_END) {
+		if (cmd->type != TYPE_END) {
 			fprintf_P(stderr,PSTR(","));
 		}		
 	}
@@ -1766,15 +1766,15 @@ void _print_text_inline_values()
 	cmdObj *cmd = cmd_body;
 
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		switch (cmd->value_type) {
-			case VALUE_TYPE_PARENT:	{ cmd = cmd->nx; continue; }
-			case VALUE_TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%1.3f"), cmd->value); break;}
-			case VALUE_TYPE_INTEGER:{ fprintf_P(stderr,PSTR("%1.0f"), cmd->value); break;}
-			case VALUE_TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), cmd->string_value); break;}
-			case VALUE_TYPE_END:	{ fprintf_P(stderr,PSTR("\n")); return; }
+		switch (cmd->type) {
+			case TYPE_PARENT:	{ cmd = cmd->nx; continue; }
+			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%1.3f"), cmd->value); break;}
+			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), cmd->value); break;}
+			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), cmd->string); break;}
+			case TYPE_END:		{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
-		if (cmd->value_type != VALUE_TYPE_END) {
+		if (cmd->type != TYPE_END) {
 			fprintf_P(stderr,PSTR(","));
 		}		
 	}
@@ -1787,7 +1787,7 @@ void _print_text_multiline_formatted()
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		cmd_formatted_print(cmd);
 		cmd = cmd->nx;
-		if (cmd->value_type == VALUE_TYPE_END) { break;}
+		if (cmd->type == TYPE_END) { break;}
 	}
 }
 
@@ -1845,28 +1845,28 @@ static uint8_t _set_dbu(cmdObj *cmd)
 
 static uint8_t _get_nul(cmdObj *cmd) 
 { 
-	cmd->value_type = VALUE_TYPE_NULL;
+	cmd->type = TYPE_NULL;
 	return (TG_OK);
 }
 
 static uint8_t _get_ui8(cmdObj *cmd)
 {
 	cmd->value = (double)*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target));
-	cmd->value_type = VALUE_TYPE_INTEGER;
+	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }
 
 static uint8_t _get_int(cmdObj *cmd)
 {
 	cmd->value = (double)*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target));
-	cmd->value_type = VALUE_TYPE_INTEGER;
+	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }
 
 static uint8_t _get_dbl(cmdObj *cmd)
 {
 	cmd->value = *((double *)pgm_read_word(&cfgArray[cmd->index].target));
-	cmd->value_type = VALUE_TYPE_FLOAT;
+	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 
@@ -1885,7 +1885,7 @@ static void _print_str(cmdObj *cmd)
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, _get_format(cmd->index, format), cmd->string_value);
+	fprintf(stderr, _get_format(cmd->index, format), cmd->string);
 }
 
 static void _print_ui8(cmdObj *cmd)
@@ -2023,12 +2023,12 @@ static uint8_t _set_grp(cmdObj *cmd)
 
 static uint8_t _get_grp(cmdObj *cmd)
 {
-	char *grp = cmd->group_token;			// group token in the parent cmd object
+	char *grp = cmd->group;					// group token in the parent cmd object
 	INDEX_T grp_index = cmd->index;
 	char token[CMD_TOKEN_LEN+1];			// token retrived from cmdArray list
 	char exclude[] = { GROUP_EXCLUSIONS };	// see config.h
 
-	cmd->value_type = VALUE_TYPE_PARENT;	// make first obj the parent 
+	cmd->type = TYPE_PARENT;	// make first obj the parent 
 	for (INDEX_T i=0; i<grp_index; i++) {	// stop before you recurse
 		cmd_get_token(i,token);
 		if (strstr(token, grp) == token) {
@@ -2049,7 +2049,7 @@ static uint8_t _get_sys(cmdObj *cmd)
 	char include[] = { SYSTEM_GROUP };		// see config.h
 	char exclude[] = {"gc"};
 
-	cmd->value_type = VALUE_TYPE_PARENT;
+	cmd->type = TYPE_PARENT;
 	for (INDEX_T i=0; i<=CMD_INDEX_END_SINGLES; i++) {
 		cmd_get_token(i, token);
 		if (strstr(exclude, token) != NULL) continue;
@@ -2087,9 +2087,9 @@ static void _print_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]) // help
 	for (uint8_t i=0; i < CMD_MAX_OBJECTS; i++) {
 		if (list[i][0] == NUL) return;
 		cmd = cmd_body;
-		strncpy(cmd->group_token, list[i], CMD_TOKEN_LEN);
-		cmd->index = cmd_get_index_by_token(cmd->group_token);
-		cmd->value_type = VALUE_TYPE_PARENT;
+		strncpy(cmd->group, list[i], CMD_TOKEN_LEN);
+		cmd->index = cmd_get_index_by_token(cmd->group);
+		cmd->type = TYPE_PARENT;
 		cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
 	}
 }
@@ -2133,7 +2133,7 @@ uint8_t cmd_read_NVM_value(cmdObj *cmd)
 	uint16_t nvm_address = cfg.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
 	(void)EEPROM_ReadBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
 	memcpy(&cmd->value, &nvm_byte_array, NVM_VALUE_LEN);
-	cmd->value_type = VALUE_TYPE_FLOAT;
+	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 

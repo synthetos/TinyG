@@ -48,7 +48,7 @@
 // local scope stuff
 
 static uint8_t _json_parser(char *str);
-static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *depth, const char *grp);
+static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t *depth);
 static uint8_t _normalize_json_string(char *str, uint16_t size);
 
 /****************************************************************************
@@ -101,32 +101,37 @@ static uint8_t _json_parser(char *str)
 	uint8_t status;
 	int8_t depth = 2;							// starting body depth is 2
 	cmdObj *cmd = cmd_body;						// point at first struct in the body
-	char grp[CMD_GROUP_LEN+1] = {""};			// group identifier
-	uint8_t max_elements = CMD_BODY_LEN;
+	char group[CMD_GROUP_LEN+1] = {""};			// group identifier - starts as NUL
+	int8_t i = CMD_BODY_LEN;
 
 	// parse the JSON command into the cmd body
-	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));  // return if error
+	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
 	do {
-		if ((status = _get_nv_pair(cmd, &str, &depth, grp)) > TG_EAGAIN) {
+		if (--i == 0) { return (TG_JSON_TOO_MANY_PAIRS); }			// length error
+		if ((status = _get_nv_pair(cmd, &str, group, &depth)) > TG_EAGAIN) { // erred out
 			return (status);
 		}
-		if (--max_elements == 0) {
-			return (TG_JSON_TOO_MANY_PAIRS);
-		}
-		if ((cmd->value_type == VALUE_TYPE_PARENT) && cmd_is_group(cmd->token)) {
-			strncpy(grp, cmd->group_token, CMD_GROUP_LEN);
-		}
+		strncpy(group, cmd->group, CMD_GROUP_LEN);// propagate the group ID from previous obj
 		cmd = cmd->nx;
-	} while (status != TG_OK);
+	} while (status != TG_OK);					// breaks when parsing is complete
 
-	// execute the command - only does the one that's first in the body.
+	// execute the command - iterate through all commands in the body
 	cmd = cmd_body;
-	if (cmd->value_type == VALUE_TYPE_NULL){	// means GET the value
+	if (cmd->type == TYPE_NULL){				// means GET the value
 		ritorno(cmd_get(cmd));					// ritorno returns w/status on any errors
 	} else {
 		ritorno(cmd_set(cmd));					// set value or call a function (e.g. gcode)
 		cmd_persist(cmd);
 	}
+
+	// execute the command - only does the one that's first in the body.
+//	cmd = cmd_body;
+//	if (cmd->type == TYPE_NULL){				// means GET the value
+//		ritorno(cmd_get(cmd));					// ritorno returns w/status on any errors
+//	} else {
+//		ritorno(cmd_set(cmd));					// set value or call a function (e.g. gcode)
+//		cmd_persist(cmd);
+//	}
 	return (TG_OK);								// only successful commands exit through this point
 }
 
@@ -179,59 +184,60 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
  *	cfgArray.
  */
 
-static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, int8_t *depth, const char *grp)
+static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t *depth)
 {
 	char *tmp;
 	char terminators[] = {"},"};
 
-	cmd_clear(cmd);								// wipe the object
-	cmd->depth = *depth;						// tree depth. 0 = root
-	cmd->value_type = VALUE_TYPE_END;			//...until told otherwise
+	cmd_clear(cmd);								// wipe the object and set the depth
+//	cmd->depth = *depth;						// tree depth. 0 = root
 
-	// process name field
+	// process name element
 	// find leading and trailing name quotes and set pointers accordingly
 	// accommodate groups by looking up index by full name but stripping group from token
 	if ((*pstr = strchr(*pstr, '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	if ((tmp = strchr(++(*pstr), '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	*tmp = NUL;
 //	strncpy(cmd->friendly_name, *pstr, CMD_STRING_LEN);// copy name from string
-	strncpy(cmd->friendly_name, grp, CMD_STRING_LEN);  // prepend the group or noop if no group
-	strncpy(&cmd->friendly_name[strlen(grp)], *pstr, CMD_STRING_LEN); // cat group prefix to name
+	strncpy(cmd->friendly_name, group, CMD_GROUP_LEN);  // prepend the group or noop if no group
+	strncpy(&cmd->friendly_name[strlen(group)], *pstr, CMD_STRING_LEN); // cat name to the group prefix
 	if ((cmd->index = cmd_get_index(cmd->friendly_name)) == -1) { return (TG_UNRECOGNIZED_COMMAND);}
 	cmd_get_token(cmd->index, cmd->token);
-	strncpy(cmd->token, &cmd->friendly_name[strlen(grp)], CMD_TOKEN_LEN+1);// strip group if group
+	if (group[0] != NUL) {						// strip group prefix if this is a group
+		strncpy(cmd->token, &cmd->friendly_name[strlen(group)], CMD_TOKEN_LEN);
+		strncpy(cmd->group, group, CMD_GROUP_LEN);// propagate group token to this child
+	}
 	*pstr = ++tmp;
 
-	// process value field
+	// process value element
 	if ((*pstr = strchr(*pstr, ':')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	(*pstr)++;									// advance to start of value field
 	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { 
-		cmd->value_type = VALUE_TYPE_NULL;
-		cmd->value = VALUE_TYPE_NULL;
+		cmd->type = TYPE_NULL;
+		cmd->value = TYPE_NULL;
 	} else if (**pstr == 'f') { 
-		cmd->value_type = VALUE_TYPE_FALSE;
+		cmd->type = TYPE_FALSE;
 		cmd->value = false;						// (technically not necessary due to the init)
 	} else if (**pstr == 't') { 
-		cmd->value_type = VALUE_TYPE_TRUE;
+		cmd->type = TYPE_TRUE;
 		cmd->value = true;
 	} else if (isdigit(**pstr) || (**pstr == '-')) { // value is a number
 		cmd->value = strtod(*pstr, &tmp);		// tmp is the end pointer
 		if(tmp == *pstr) return (TG_BAD_NUMBER_FORMAT);
-		cmd->value_type = VALUE_TYPE_FLOAT;
+		cmd->type = TYPE_FLOAT;
 	} else if (**pstr == '\"') { 				// value is a string
 		(*pstr)++;
 		if ((tmp = strchr(*pstr, '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR); // find the end of the string
 		*tmp = NUL;
 		if (strlen(*pstr) >= CMD_STRING_LEN) return (TG_INPUT_EXCEEDS_MAX_LENGTH);
-		strncpy(cmd->string_value, *pstr, CMD_STRING_LEN);
-		cmd->value_type = VALUE_TYPE_STRING;
+		strncpy(cmd->string, *pstr, CMD_STRING_LEN);
+		cmd->type = TYPE_STRING;
 		*pstr = ++tmp;
-	} else if (**pstr == '{') { cmd->value_type = VALUE_TYPE_PARENT;
-		cmd->nx = cmd + 1;						// signal that there is more to come
-		*depth += 1;							// will set the next object down one level
+	} else if (**pstr == '{') { cmd->type = TYPE_PARENT;
+		strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);// record the group token
+//		*depth += 1;							// will set the next object down one level
 		(*pstr)++;
-//		strncpy(cmd->group_token, grp, CMD_TOKEN_LEN+1); // preserve group specifier in string field
-		return(TG_OK);
+		return(TG_EAGAIN);						// signal that there is more to parse
 	} else {
 		 return (TG_JSON_SYNTAX_ERROR);			// ill-formed JSON
 	}
@@ -268,22 +274,22 @@ uint16_t js_serialize_json(char *out_buf)
 	strcpy(str++, "{"); 						// write opening curly
 	do {	// serialize the current element (assumes the first element is not empty)
 		str += sprintf(str, "\"%s\":", cmd->token);
-		if (cmd->value_type == VALUE_TYPE_PARENT) {
+		if (cmd->type == TYPE_PARENT) {
 			str += sprintf(str, "{");
 			cmd = cmd->nx;
 			depth = cmd->depth;
 			continue;
-		} else if (cmd->value_type == VALUE_TYPE_NULL)   { str += sprintf(str, "\"\"");
-		} else if (cmd->value_type == VALUE_TYPE_FALSE)  { str += sprintf(str, "false");
-		} else if (cmd->value_type == VALUE_TYPE_TRUE)   { str += sprintf(str, "true");
-		} else if (cmd->value_type == VALUE_TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
-		} else if (cmd->value_type == VALUE_TYPE_FLOAT)  { str += sprintf(str, "%0.3f", (double)cmd->value);
-		} else if (cmd->value_type == VALUE_TYPE_STRING) { str += sprintf(str, "\"%s\"", cmd->string_value);
+		} else if (cmd->type == TYPE_NULL)   { str += sprintf(str, "\"\"");
+		} else if (cmd->type == TYPE_FALSE)  { str += sprintf(str, "false");
+		} else if (cmd->type == TYPE_TRUE)   { str += sprintf(str, "true");
+		} else if (cmd->type == TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
+		} else if (cmd->type == TYPE_FLOAT)  { str += sprintf(str, "%0.3f", (double)cmd->value);
+		} else if (cmd->type == TYPE_STRING) { str += sprintf(str, "\"%s\"", cmd->string);
 		} 
 		do {  // advance to the next non-empty element
 			cmd = cmd->nx;
 			if (cmd->nx == NULL) break;
-		} while (cmd->value_type == VALUE_TYPE_END); // skip over empty elements
+		} while (cmd->type == TYPE_END); // skip over empty elements
 
 		while (depth > cmd->depth) {		// write commas or embedded closing curlies
 			str += sprintf(str, "}");
