@@ -215,6 +215,9 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { 
 		cmd->type = TYPE_NULL;
 		cmd->value = TYPE_NULL;
+		if (cmd_is_group(cmd->token) == true) { 
+			strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);// record the group token
+		}
 	} else if (**pstr == 'f') { 
 		cmd->type = TYPE_FALSE;
 		cmd->value = false;						// (technically not necessary due to the init)

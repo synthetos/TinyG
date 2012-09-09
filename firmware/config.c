@@ -2023,19 +2023,19 @@ static uint8_t _set_grp(cmdObj *cmd)
 
 static uint8_t _get_grp(cmdObj *cmd)
 {
-	char *grp = cmd->group;					// group token in the parent cmd object
-	INDEX_T grp_index = cmd->index;
+	char *group = cmd->group;				// group token in the parent cmd object
+	INDEX_T group_index = cmd->index;
 	char token[CMD_TOKEN_LEN+1];			// token retrived from cmdArray list
 	char exclude[] = { GROUP_EXCLUSIONS };	// see config.h
 
 	cmd->type = TYPE_PARENT;	// make first obj the parent 
-	for (INDEX_T i=0; i<grp_index; i++) {	// stop before you recurse
+	for (INDEX_T i=0; i<group_index; i++) {	// stop before you recurse
 		cmd_get_token(i,token);
-		if (strstr(token, grp) == token) {
+		if (strstr(token, group) == token) {
 			if (strstr(exclude, token) != NULL) continue;
 			(++cmd)->index = i;
 			cmd_get_cmdObj(cmd);
-			strncpy(cmd->token, &cmd->token[strlen(grp)], CMD_TOKEN_LEN+1);	// strip group prefixes from token
+			strncpy(cmd->token, &cmd->token[strlen(group)], CMD_TOKEN_LEN+1);// strip group prefixes from token
 //			(cmd-1)->nx = cmd;	// set next object of previous object to this object
 		}
 	}
