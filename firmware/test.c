@@ -99,6 +99,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
+	xio_queue_RX_string_usb("$$\n");
 //	xio_queue_RX_string_usb("?\n");
 //	xio_queue_RX_string_usb("$x\n");
 //	xio_queue_RX_string_usb("\n");
@@ -279,7 +280,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 	xio_queue_RX_string_usb("{\"err_3\":\"12345\",}\n");	// bad } termination
 	xio_queue_RX_string_usb("{\"err_4\":\"12345\"\n");		// no } termination
 */
-	xio_queue_RX_string_usb("{\"x\":\"\"}\n");				// x axis group display
+//	xio_queue_RX_string_usb("{\"x\":\"\"}\n");				// x axis group display
 //	xio_queue_RX_string_usb("{\"c\":\"\"}\n");				// c axis group display
 //	xio_queue_RX_string_usb("{\"1\":\"\"}\n");				// motor 1 group display
 //	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");			// system group display

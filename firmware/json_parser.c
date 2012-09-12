@@ -123,15 +123,6 @@ static uint8_t _json_parser(char *str)
 		ritorno(cmd_set(cmd));					// set value or call a function (e.g. gcode)
 		cmd_persist(cmd);
 	}
-
-	// execute the command - only does the one that's first in the body.
-//	cmd = cmd_body;
-//	if (cmd->type == TYPE_NULL){				// means GET the value
-//		ritorno(cmd_get(cmd));					// ritorno returns w/status on any errors
-//	} else {
-//		ritorno(cmd_set(cmd));					// set value or call a function (e.g. gcode)
-//		cmd_persist(cmd);
-//	}
 	return (TG_OK);								// only successful commands exit through this point
 }
 
@@ -277,16 +268,26 @@ uint16_t js_serialize_json(char *out_buf)
 	strcpy(str++, "{"); 						// write opening curly
 	do {	// serialize the current element (assumes the first element is not empty)
 		str += sprintf(str, "\"%s\":", cmd->token);
+
+//		switch (cmd->type) {
+//			case TYPE_PARENT:
+//				str += sprintf(str, "{");
+//				cmd = cmd->nx;
+//				depth = cmd->depth;
+//				continue;
+//			}
+//
 		if (cmd->type == TYPE_PARENT) {
 			str += sprintf(str, "{");
 			cmd = cmd->nx;
 			depth = cmd->depth;
 			continue;
-		} else if (cmd->type == TYPE_NULL)   { str += sprintf(str, "\"\"");
-		} else if (cmd->type == TYPE_FALSE)  { str += sprintf(str, "false");
-		} else if (cmd->type == TYPE_TRUE)   { str += sprintf(str, "true");
+		} else if (cmd->type == TYPE_END)	 { str += sprintf(str, "\"\"");
+		} else if (cmd->type == TYPE_NULL)	 { str += sprintf(str, "\"\"");
+		} else if (cmd->type == TYPE_FALSE)	 { str += sprintf(str, "false");
+		} else if (cmd->type == TYPE_TRUE)	 { str += sprintf(str, "true");
 		} else if (cmd->type == TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
-		} else if (cmd->type == TYPE_FLOAT)  { str += sprintf(str, "%0.3f", (double)cmd->value);
+		} else if (cmd->type == TYPE_FLOAT)	 { str += sprintf(str, "%0.3f", (double)cmd->value);
 		} else if (cmd->type == TYPE_STRING) { str += sprintf(str, "\"%s\"", cmd->string);
 		} 
 		do {  // advance to the next non-empty element
