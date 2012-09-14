@@ -26,10 +26,13 @@
 /*
  *	Config system overview
  *
- *	Config has been rewritten to support JSON objects and to be easier to extend 
- *	and modify. Each configuration value is identified by a a short mnemonic string 
- *	(token), and also a friendly name. The token or friendly name is resolved to
- *	an index into the config arrays for that entry.
+ *	Config has been rewritten to support multiple modes - text and JSON modes.
+ *	The internals now no longer care about the IO format (for the most part).
+ *
+ *	Each configuration value is identified by a short mnemonic string (token)
+ *	and also a friendly name. The token or friendly name is resolved to an
+ *	index into the config array for that entry. The array has data and 
+ *	function pointers needed to process that value.
  *
  *	Config keeps the following arrays:
  * 
@@ -1315,10 +1318,17 @@ uint8_t cfg_config_parser(char *str)
 {
 	cmdObj *cmd = cmd_body;					// point at first object in the body
 
-	if (str[0] == '?') {					// special handling for status report
+	// handle text-mode special cases
+	if (str[0] == '?') {					// status report
 		rpt_run_multiline_status_report();
 		return (TG_OK);
 	}
+	if ((str[0] == '$') && (str[1] == '$')) {// print all groups
+		_print_all(cmd);
+		return (TG_OK);
+	}
+
+	// normal parser processing
 	ritorno(_parse_config_string(str, cmd));// decode the first object
 	if ((cmd->type == TYPE_PARENT) || (cmd->type == TYPE_NULL)) {
 		cmd_get(cmd);						// populate value(s) 
@@ -1581,7 +1591,7 @@ void cmd_clear_list()
 	// setup body objects
 	cmd_clear_body();
 
-	// setup status objects (2)
+	// setup footer objects (2)
 	cmd = cmd_status;
 	cmd_clear(cmd);								// "sc" element
 	sprintf_P(cmd->token, PSTR("sc"));
@@ -1594,21 +1604,26 @@ void cmd_clear_list()
 	sprintf_P(cmd->token, PSTR("sm"));
 	cmd->type = TYPE_STRING;
 	cmd->pv = (cmd-1);
-	cmd->nx = cmd_checksum;
+	cmd->nx = (cmd+1);
 	cmd->depth = 1;
 
-	// setup checksum element
-	cmd = cmd_checksum;	
-	cmd_clear(cmd);								// "cks" element
+	cmd_clear(++cmd);							// "buf" element
+	sprintf_P(cmd->token, PSTR("buf"));
+	cmd->type = TYPE_INTEGER;
+	cmd->pv = (cmd-1);
+	cmd->nx = (cmd+1);
+	cmd->depth = 1;
+
+	cmd_clear(++cmd);							// "cks" element
 	sprintf_P(cmd->token, PSTR("cks"));
 	cmd->type = TYPE_STRING;
-	cmd->pv = &cmd_status[CMD_STATUS_LEN-1];
-	cmd->nx = cmd+1;
+	cmd->pv = (cmd-1);
+	cmd->nx = (cmd+1);
 	cmd->depth = 1;
 
-	cmd_clear(++cmd);							// last element
+	cmd_clear(++cmd);							// null last element (unused)
 	cmd->pv = (cmd-1);
-//	cmd->mx = NULL;	  // already = zero by clear // signals the last one. 
+//	cmd->nx = NULL;	  // already = zeroed by cmd_clear. signals the last one. 
 }
 
 void cmd_clear_body()
@@ -1725,6 +1740,8 @@ void cmd_print_list(uint8_t status, uint8_t textmode)
 		cmd->value = status;
 		cmd = cmd->nx;
 		tg_get_status_message(status, cmd->string);
+		cmd = cmd->nx;
+		cmd->value = xio_get_usb_rx_free();
 		uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
 		while (tg.out_buf[strcount] != ':') { strcount--; }	// slice at last colon
 		tg.out_buf[strcount] = NUL;

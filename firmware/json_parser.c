@@ -269,14 +269,6 @@ uint16_t js_serialize_json(char *out_buf)
 	do {	// serialize the current element (assumes the first element is not empty)
 		str += sprintf(str, "\"%s\":", cmd->token);
 
-//		switch (cmd->type) {
-//			case TYPE_PARENT:
-//				str += sprintf(str, "{");
-//				cmd = cmd->nx;
-//				depth = cmd->depth;
-//				continue;
-//			}
-//
 		if (cmd->type == TYPE_PARENT) {
 			str += sprintf(str, "{");
 			cmd = cmd->nx;

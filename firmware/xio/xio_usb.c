@@ -41,8 +41,8 @@
 #include "../xmega/xmega_interrupts.h"
 #include "../gpio.h"
 
-#define USB ds[XIO_DEV_USB]			// device struct accessor
-#define USBu us[XIO_DEV_USB_OFFSET]	// usart extended struct accessor
+//#define USB ds[XIO_DEV_USB]			// device struct accessor
+//#define USBu us[XIO_DEV_USB_OFFSET]	// usart extended struct accessor
 
 /* USB device wrappers for generic USART routines */
 FILE * xio_open_usb() {return(USB.fdev);}

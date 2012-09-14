@@ -84,11 +84,10 @@
  */
 #define CMD_HEADER_LEN 2			// contains the "r" and "body" elements
 #define CMD_BODY_LEN 21				// main body
-#define CMD_STATUS_LEN 2			// status code and message (response footer)
-#define CMD_CHECKSUM_LEN 2			// checksum and final element (terminator)
+#define CMD_FOOTER_LEN 5			// status code & msg, buffer count, checksum and termination
 
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
-#define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_STATUS_LEN + CMD_CHECKSUM_LEN)
+#define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_FOOTER_LEN)
 #define CMD_STATUS_REPORT_LEN CMD_BODY_LEN	// max elements in a status report
 
 #define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
@@ -153,8 +152,12 @@ typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
 // Allocate memory for all objects that may be used in cmdObj lists
 cmdObj cmd_header[CMD_HEADER_LEN];	// header objects for JSON responses
 cmdObj cmd_body[CMD_BODY_LEN];		// cmd_body[0] is the root object
-cmdObj cmd_status[CMD_STATUS_LEN];	// allocate footer objects for JSON response
-cmdObj cmd_checksum[CMD_CHECKSUM_LEN];// checksum element
+cmdObj cmd_footer[CMD_FOOTER_LEN];	// allocate footer objects for JSON response
+
+#define cmd_status &cmd_footer[0]	// status elements
+#define cmd_bufcount &cmd_footer[2]	// checksum element
+#define cmd_checksum &cmd_footer[3]	// checksum element
+#define cmd_terminal &cmd_footer[4]	// termination element
 
 /*
  * Global Scope Functions

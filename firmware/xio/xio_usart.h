@@ -89,6 +89,9 @@ void xio_dump_RX_queue_usart(void);				//+++++++++++++++++++++
 
 // general USART defines
 
+#define USB ds[XIO_DEV_USB]			// device struct accessor
+#define USBu us[XIO_DEV_USB_OFFSET]	// usart extended struct accessor
+
 #define USART_TX_REGISTER_READY_bm USART_DREIF_bm
 #define USART_RX_DATA_READY_bm USART_RXCIF_bm
 
@@ -243,5 +246,6 @@ struct xioUSART {
 // down here by their lonesome because they need xioUSART defined
 BUFFER_T xio_get_rx_bufcount_usart(const struct xioUSART *dx);
 BUFFER_T xio_get_tx_bufcount_usart(const struct xioUSART *dx);
+uint16_t xio_get_usb_rx_free(void);
 
 #endif
