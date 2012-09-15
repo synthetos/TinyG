@@ -149,6 +149,9 @@ static uint8_t _get_msg_helper(cmdObj *cmd, prog_char_ptr msg, uint8_t value);
 static void _print_text_inline_pairs();
 static void _print_text_inline_values();
 static void _print_text_multiline_formatted();
+static uint8_t _cmd_index_is_single(uint8_t index);
+static uint8_t _cmd_index_is_group(uint8_t index);
+static uint8_t _cmd_index_is_uber_group(uint8_t index);
 
 /*****************************************************************************
  **** PARAMETER-SPECIFIC CODE REGION *****************************************
@@ -204,11 +207,11 @@ static uint8_t _set_grp(cmdObj *cmd);	// set data for a group
 static uint8_t _get_grp(cmdObj *cmd);	// get data for a group
 static uint8_t _get_sys(cmdObj *cmd);	// get data for system group (special case)
 static void _print_sys(cmdObj *cmd);	// print system group
-static void _print_motors(cmdObj *cmd);	// print parameters for all motor groups
-static void _print_axes(cmdObj *cmd);	// print parameters for all axis groups
-static void _print_offsets(cmdObj *cmd);// print offsets for G54-G59, G92
-static void _print_all(cmdObj *cmd);	// print all parameters
-static void _print_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]); // helper to print multiple groups in a list
+static uint8_t _do_motors(cmdObj *cmd);	// print parameters for all motor groups
+static uint8_t _do_axes(cmdObj *cmd);		// print parameters for all axis groups
+static uint8_t _do_offsets(cmdObj *cmd);	// print offsets for G54-G59, G92
+static uint8_t _do_all(cmdObj *cmd);		// print all parameters
+static void _do_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]); // helper to print multiple groups in a list
 //static void _print_groups(cmdObj *cmd, char *ptr); // helper to print multiple groups
 
 /***** PROGMEM Strings ******************************************************/
@@ -834,8 +837,8 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_sr19, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[19],0 },
 	
 	// group lookups - must follow the single-valued entries for proper sub-string matching
-	{ str_sys, _print_nul, _get_sys, _set_grp,(double *)&tg.null,0 },	// system group (must be first)
-	{ str_s, _print_nul, _get_sys, _set_grp,(double *)&tg.null,0 },		// alias for system group
+	{ str_sys, _print_nul, _get_sys, _set_grp,(double *)&tg.null,0 },	// system group 	   (must be 1st)
+	{ str_s, _print_nul, _get_sys, _set_grp,(double *)&tg.null,0 },		// alias for sys group (must be 2nd)
 	{ str_1, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },		// motor groups
 	{ str_2, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },
 	{ str_3, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },
@@ -857,10 +860,15 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_mpo, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// machine position group
 
 	// uber-group (groups of groups, for text-mode displays only)
-	{ str_moto, _print_motors, _get_nul, _set_nul,(double *)&tg.null,0 },
-	{ str_axes, _print_axes, _get_nul, _set_nul,(double *)&tg.null,0 },
-	{ str_ofs, _print_offsets, _get_nul, _set_nul,(double *)&tg.null,0 },
-	{ str_all, _print_all, _get_nul, _set_nul,(double *)&tg.null,0 },
+//	{ str_moto, _print_motors, _get_nul, _set_nul,(double *)&tg.null,0 },
+//	{ str_axes, _print_axes, _get_nul, _set_nul,(double *)&tg.null,0 },
+//	{ str_ofs, _print_offsets, _get_nul, _set_nul,(double *)&tg.null,0 },
+//	{ str_all, _print_all, _get_nul, _set_nul,(double *)&tg.null,0 },
+
+	{ str_moto, _print_nul, _do_motors, _set_nul,(double *)&tg.null,0 },
+	{ str_axes, _print_nul, _do_axes,   _set_nul,(double *)&tg.null,0 },
+	{ str_ofs,  _print_nul, _do_offsets,_set_nul,(double *)&tg.null,0 },
+	{ str_all,  _print_nul, _do_all,    _set_nul,(double *)&tg.null,0 },
 
 	// help display
 	{ str_h, help_print_config_help, _get_nul, _set_nul,(double *)&tg.null,0 }
@@ -871,9 +879,23 @@ struct cfgItem cfgArray[] PROGMEM = {
 
 // hack alert. Find a better way to do this
 #define CMD_COUNT_STATUS 20		// number of status report persistence elements - see final array [index]
-#define CMD_COUNT_GROUPS 26		// includes count of groups, uber-groups and help display
-#define CMD_INDEX_END_SINGLES (CMD_INDEX_MAX - CMD_COUNT_STATUS - CMD_COUNT_GROUPS)
-#define CMD_INDEX_START_GROUPS (CMD_INDEX_MAX - CMD_COUNT_GROUPS)
+#define CMD_COUNT_GROUPS 22		// count of simple groups
+#define CMD_COUNT_UBER_GROUPS 4 // count of uber-groups
+
+#define CMD_INDEX_END_SINGLES (CMD_INDEX_MAX - CMD_COUNT_STATUS - CMD_COUNT_GROUPS - CMD_COUNT_UBER_GROUPS)
+#define CMD_INDEX_START_GROUPS (CMD_INDEX_MAX - CMD_COUNT_GROUPS - CMD_COUNT_UBER_GROUPS)
+#define CMD_INDEX_START_UBER_GROUPS (CMD_INDEX_MAX - CMD_COUNT_UBER_GROUPS)
+
+// Evaluators for the above:
+static uint8_t _cmd_index_is_single(uint8_t index) {
+	if (index <= CMD_INDEX_END_SINGLES) { return (true);} return (false);
+}
+static uint8_t _cmd_index_is_group(uint8_t index) {
+	if ((index >= CMD_INDEX_START_GROUPS) && (index < CMD_INDEX_START_UBER_GROUPS)) { return (true);} return (false);
+}
+static uint8_t _cmd_index_is_uber_group(uint8_t index) {
+	if (index >= CMD_INDEX_START_UBER_GROUPS) { return (true);} return (false);
+}
 
 /**** DEVICE ID ****
  * _get_id() - get device ID (signature)
@@ -1253,7 +1275,8 @@ void cfg_init()
 
 #ifdef __DISABLE_EEPROM_INIT		// cutout for debug simulation
 	// Apply the hard-coded default values from settings.h and exit
-	for (cmd.index=0; cmd.index<CMD_INDEX_START_GROUPS; cmd.index++) {
+
+	for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
 		if (strstr(DONT_INITIALIZE, cmd_get_token(cmd.index, cmd.token)) != NULL) continue;
 		cmd.value = (double)pgm_read_float(&cfgArray[cmd.index].def_value);
 		cmd_set(&cmd);
@@ -1267,7 +1290,7 @@ void cfg_init()
 
 	if (cmd.value == tg.build) { // Case (1) NVM is set up and current revision. Load config from NVM
 		tg_print_message_number(1);
-		for (cmd.index=0; cmd.index<CMD_INDEX_END_SINGLES; cmd.index++) {
+		for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
 			cmd_read_NVM_value(&cmd);
 			if (strstr(DONT_INITIALIZE, cmd_get_token(cmd.index, cmd.token)) != NULL) continue;
 			cmd_set(&cmd);
@@ -1293,8 +1316,8 @@ static uint8_t _set_defa(cmdObj *cmd)
 	}
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
 	tg_print_configuration_profile();
-	
-	for (cmd->index=0; cmd->index<CMD_INDEX_END_SINGLES; cmd->index++) {
+
+	for (cmd->index=0; _cmd_index_is_single(cmd->index); cmd->index++) {
 		if (strstr(DONT_INITIALIZE, cmd_get_token(cmd->index, cmd->token)) != NULL) continue;
 		cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
 		cmd_set(cmd);
@@ -1318,20 +1341,17 @@ uint8_t cfg_config_parser(char *str)
 {
 	cmdObj *cmd = cmd_body;					// point at first object in the body
 
-	// handle text-mode special cases
-	if (str[0] == '?') {					// status report
+	// handle status report case
+	if (str[0] == '?') {
 		rpt_run_multiline_status_report();
 		return (TG_OK);
 	}
-	if ((str[0] == '$') && (str[1] == '$')) {// print all groups
-		_print_all(cmd);
-		return (TG_OK);
-	}
-
-	// normal parser processing
+	// single-unit parser processing
 	ritorno(_parse_config_string(str, cmd));// decode the first object
 	if ((cmd->type == TYPE_PARENT) || (cmd->type == TYPE_NULL)) {
-		cmd_get(cmd);						// populate value(s) 
+		if (cmd_get(cmd) == TG_COMPLETE) {	// populate value, group values, or run uber-group displays
+			return (TG_OK);					// return for uber-group displays so they don't print twice
+		}
 	} else { 								// process SET and RUN commands
 		cmd_set(cmd);						// set single value
 		cmd_persist(cmd);
@@ -1375,7 +1395,7 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 		return (TG_UNRECOGNIZED_COMMAND);
 	}
 	cmd_get_token(cmd->index, cmd->token);
-	if (cmd->index >= CMD_INDEX_START_GROUPS) {
+	if ((_cmd_index_is_group(cmd->index)) || (_cmd_index_is_uber_group(cmd->index))) {
 		cmd->type = TYPE_PARENT;	// indicating it's a group token
 		strncpy(cmd->group, cmd->token, CMD_TOKEN_LEN+1);	// copy group token into string field
 	}
@@ -1420,7 +1440,7 @@ void cmd_formatted_print(cmdObj *cmd)
 
 void cmd_persist(cmdObj *cmd)
 {
-	if ((cmd->index < 0) || (cmd->index >= CMD_INDEX_START_GROUPS)) return;
+	if ((cmd->index < 0) || (_cmd_index_is_single(cmd->index) == false)) return;
 	if (strstr(DONT_PERSIST, cmd->token) != NULL) return;
 	cmd_write_NVM_value(cmd);
 }
@@ -1431,6 +1451,7 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd)
 	INDEX_T tmp = cmd->index;
 	cmd_clear(cmd);
 	cmd_get_token((cmd->index = tmp), cmd->token);
+	if (_cmd_index_is_group(cmd->index)) { strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);}
 	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);
 	return (cmd->value);
 }
@@ -2045,7 +2066,7 @@ static uint8_t _get_grp(cmdObj *cmd)
 	char token[CMD_TOKEN_LEN+1];			// token retrived from cmdArray list
 	char exclude[] = { GROUP_EXCLUSIONS };	// see config.h
 
-	cmd->type = TYPE_PARENT;	// make first obj the parent 
+	cmd->type = TYPE_PARENT;				// make first obj the parent 
 	for (INDEX_T i=0; i<group_index; i++) {	// stop before you recurse
 		cmd_get_token(i,token);
 		if (strstr(token, group) == token) {
@@ -2053,7 +2074,6 @@ static uint8_t _get_grp(cmdObj *cmd)
 			(++cmd)->index = i;
 			cmd_get_cmdObj(cmd);
 			strncpy(cmd->token, &cmd->token[strlen(group)], CMD_TOKEN_LEN+1);// strip group prefixes from token
-//			(cmd-1)->nx = cmd;	// set next object of previous object to this object
 		}
 	}
 	return (TG_OK);
@@ -2062,7 +2082,6 @@ static uint8_t _get_grp(cmdObj *cmd)
 static uint8_t _get_sys(cmdObj *cmd)
 {
 	char token[CMD_TOKEN_LEN+1];			// token retrived from cmdObj
-//	INDEX_T grp_index = cmd->index;
 	char include[] = { SYSTEM_GROUP };		// see config.h
 	char exclude[] = {"gc"};
 
@@ -2092,49 +2111,54 @@ static void _print_sys(cmdObj *cmd)
  *	- offsets	- group of all offset groups
  *	- all		- group of all groups
  *
- * _print_group_list()	- print all groups in the list (iteration)
- * _print_motors()		- print motor uber group 1-4
- * _print_axes()		- print axis uber group XYZABC
- * _print_offsets()		- print offset uber group G54-G59
- * _print_all()			- print all groups uber group
+ * _do_group_list()	- get and print all groups in the list (iteration)
+ * _do_motors()		- get and print motor uber group 1-4
+ * _do_axes()		- get and print axis uber group XYZABC
+ * _do_offsets()	- get and print offset uber group G54-G59
+ * _do_all()		- get and print all groups uber group
  */
 
-static void _print_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
+static void _do_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
 {
 	for (uint8_t i=0; i < CMD_MAX_OBJECTS; i++) {
 		if (list[i][0] == NUL) return;
 		cmd = cmd_body;
 		strncpy(cmd->group, list[i], CMD_TOKEN_LEN);
 		cmd->index = cmd_get_index_by_token(cmd->group);
-		cmd->type = TYPE_PARENT;
+//		cmd->type = TYPE_PARENT;
+		cmd_get_cmdObj(cmd);
 		cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
 	}
 }
 
-static void _print_motors(cmdObj *cmd)	// print parameters for all motor groups
+static uint8_t _do_motors(cmdObj *cmd)	// print parameters for all motor groups
 {
 	char list[][CMD_TOKEN_LEN+1] = {"1","2","3","4",""}; // must have a terminating element
-	_print_group_list(cmd, list);
+	_do_group_list(cmd, list);
+	return (TG_COMPLETE);
 }
 
-static void _print_axes(cmdObj *cmd)	// print parameters for all axis groups
+static uint8_t _do_axes(cmdObj *cmd)	// print parameters for all axis groups
 {
 	char list[][CMD_TOKEN_LEN+1] = {"x","y","z","a","b","c",""}; // must have a terminating element
-	_print_group_list(cmd, list);
+	_do_group_list(cmd, list);
+	return (TG_COMPLETE);
 }
 
-static void _print_offsets(cmdObj *cmd)	// print offset parameters for G54-G59,G92
+static uint8_t _do_offsets(cmdObj *cmd)	// print offset parameters for G54-G59,G92
 {
 	char list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92",""}; // must have a terminating element
-	_print_group_list(cmd, list);
+	_do_group_list(cmd, list);
+	return (TG_COMPLETE);
 }
 
-static void _print_all(cmdObj *cmd)		// print all parameters
+static uint8_t _do_all(cmdObj *cmd)		// print all parameters
 {
 	_print_sys(cmd);
-	_print_offsets(cmd);
-	_print_motors(cmd);
-	_print_axes(cmd);
+	_do_offsets(cmd);
+	_do_motors(cmd);
+	_do_axes(cmd);
+	return (TG_COMPLETE);
 }
 
 /****************************************************************************
