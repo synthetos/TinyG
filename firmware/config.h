@@ -84,7 +84,7 @@
  */
 #define CMD_HEADER_LEN 2			// contains the "r" and "body" elements
 #define CMD_BODY_LEN 21				// main body
-#define CMD_FOOTER_LEN 5			// status code & msg, buffer count, checksum and termination
+#define CMD_FOOTER_LEN 6			// status code, msg, buffer count, line num, checksum and termination
 
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 #define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_FOOTER_LEN)
@@ -100,7 +100,7 @@
 // Here are all the exceptions to the display and config rules, as neat little lists
 // NOTE: The number of SYSTEM_GROUP or SR_DEFAULTS elements cannot exceed CMD_MAX_OBJECTS
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
-#define GROUP_EXCLUSIONS "cycs,coor"	 // items that are not actually part of the 1234xyzabc groups
+#define GROUP_EXCLUSIONS "cycs,coor"	 // items that are not actually part of the xyzabcuvw0123456789 groups
 #define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ec,ee,ex,ej" // cats and dogs
 #define DONT_INITIALIZE "gc,sr,te,he,de" // commands that should not be initialized
 #define DONT_PERSIST	"gc,te,de"		 // commands that should not be persisted
@@ -164,7 +164,6 @@ cmdObj cmd_footer[CMD_FOOTER_LEN];	// allocate footer objects for JSON response
  */
 
 #define ASSERT_CMD_INDEX(a) if ((cmd->index < 0) || (cmd->index >= CMD_INDEX_MAX)) return (a);
-//++++#define ASSERT_CMD_ARRAY(a) if ((cmd < cmd_array) || (cmd > cmd_array + CMD_ARRAY_SIZE)) { return ((cmdObj *)a);}
 
 void cfg_init(void);
 uint8_t cfg_config_parser(char *str);

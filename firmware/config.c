@@ -26,8 +26,10 @@
 /*
  *	Config system overview
  *
- *	Config has been rewritten to support multiple modes - text and JSON modes.
- *	The internals now no longer care about the IO format (for the most part).
+ *	Config has been rewritten to support text-mode and JSON mode.
+ *	The internals no longer care about the IO format (for the most part),
+ *	as all operations occur on a cmdObj array that is populated and read out
+ *	by text or JSON routines depending on what mode is active.
  *
  *	Each configuration value is identified by a short mnemonic string (token)
  *	and also a friendly name. The token or friendly name is resolved to an
@@ -37,9 +39,9 @@
  *	Config keeps the following arrays:
  * 
  *	- PROGMEM array (cfgArray) contains typed data in program memory. Each item has:
- *		- function pointer for print() method
- *		- function pointer for get() method
- *		- function pointer for set() method
+ *		- function pointer for formatted print() method (used only in text mode)
+ *		- function pointer for get() method (populates single values or groups of values)
+ *		- function pointer for set() method (sets values and runs functions)
  *		- target (memory location that the value is written to / read from)
  *		- default value - for cold initialization
  *		- pointer to a combined string - a comma separated list which carries:
@@ -47,8 +49,7 @@
  *			- friendly name lookup string (just long enough for matching)
  *			- format string for print formatting
  *
- *	- NVM array - Contains the values persisted to EEPROM (NVM), indexed by 
- *		cfgArray index
+ *	- NVM array - Contains the values persisted to EEPROM, indexed by cfgArray index
  *
  *	The following rules apply to friendly names:
  *	 - can be up to 24 chars and cannot contain whitespace or separators ( =  :  | , )  
@@ -58,7 +59,7 @@
  *	 - by convention motor friendly names start with a motor designator (e.g. m1_microsteps)
  *	 - Note: Friendly names are carried in the 'string' field on entry and are 
  *		discarded after they are resolved to the index, freeing the string field for 
- *		other uses. The field "friendly_name" is actually an alias for "string" (RAM saver hack).
+ *		other uses. The variable "friendly_name" is actually an alias for "string" (RAM saver hack).
  *
  *	The following rules apply to mnemonic tokens
  *	 - are up to 4 characters and cannot contain whitespace or separators ( =  :  | , )
@@ -66,18 +67,18 @@
  *	 - axis tokens start with the axis letter and are typically 3 characters including the axis letter
  *	 - motor tokens start with the motor digit and are typically 3 characters including the motor digit
  *	 - non-axis or non-motor tokens are 2-4 characters and should not start with: xyzabcuvw0123456789
+ *		(any exceptions to this rule must be added to GROUP_EXCLUSIONS in config.h)
  *
  *	Adding a new value to config (or changing an existing one) involves touching the following places:
  *	 - Add a token / friendly name / formatting string to str_XXX strings (ensure unique token & name!)
- *	 - Create a new record in cfgArray[] with includes:
+ *	 - Create a new record in cfgArray[] which includes:
  *		- reference to the above string
  *		- an existing print() function or create a new one if necessary 
  *		- an existing apply() fucntion or create a new one if necessary
  *		- target pointer (a variable must exist somewhere, often in the cfg struct)
  *		- default value for the parameter
- *	 - Change CFG_VERSION in config.h to something different so it will migrate ye olde configs in NVM.
  *
- * 	The order of display is set somewhat by the order of strArray. None of the other orders 
+ * 	The ordering of group displays is set by the order of items in cfgArray. None of the other orders 
  *	matter but are generally kept sequenced for easier reading and code maintenance.
  */
 #include <ctype.h>
@@ -139,6 +140,10 @@ static void _print_dbl(cmdObj *cmd);	// print double value w/no units
 static void _print_lin(cmdObj *cmd);	// print linear values
 static void _print_rot(cmdObj *cmd);	// print rotary values
 
+static uint8_t _cmd_index_is_single(uint8_t index);
+static uint8_t _cmd_index_is_group(uint8_t index);
+static uint8_t _cmd_index_is_uber_group(uint8_t index);
+
 // helpers
 static char *_get_format(const INDEX_T i, char *format);
 //static int8_t _get_axis(const INDEX_T i);
@@ -149,9 +154,6 @@ static uint8_t _get_msg_helper(cmdObj *cmd, prog_char_ptr msg, uint8_t value);
 static void _print_text_inline_pairs();
 static void _print_text_inline_values();
 static void _print_text_multiline_formatted();
-static uint8_t _cmd_index_is_single(uint8_t index);
-static uint8_t _cmd_index_is_group(uint8_t index);
-static uint8_t _cmd_index_is_uber_group(uint8_t index);
 
 /*****************************************************************************
  **** PARAMETER-SPECIFIC CODE REGION *****************************************
@@ -167,6 +169,7 @@ static uint8_t _set_si(cmdObj *cmd);	// set status report interval
 static uint8_t _get_gc(cmdObj *cmd);	// get current gcode block
 static uint8_t _run_gc(cmdObj *cmd);	// run a gcode block
 
+static uint8_t _get_line(cmdObj *cmd);	// get runtime line nunmber
 static uint8_t _get_stat(cmdObj *cmd);	// get combined machine state as value and string
 static uint8_t _get_macs(cmdObj *cmd);	// get raw machine state as value and string
 static uint8_t _get_cycs(cmdObj *cmd);	// get raw cycle state as value and string
@@ -217,7 +220,7 @@ static void _do_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]); // helper
 /***** PROGMEM Strings ******************************************************/
 
 /* 
- * messages used by print functions 
+ * messages used by formatted print functions 
  */
 static char msg_units0[] PROGMEM = " in";	// used by generic print functions
 static char msg_units1[] PROGMEM = " mm";
@@ -600,14 +603,14 @@ char str_h[] PROGMEM = "h,h,";			// help screen
 struct cfgItem cfgArray[] PROGMEM = {
 
 //	 string *, print func, get func, set func  target for get/set,    default value
-	{ str_fb, _print_dbl, _get_dbl, _set_nul, (double *)&tg.build,    TINYG_BUILD_NUMBER },
 	{ str_fv, _print_dbl, _get_dbl, _set_nul, (double *)&tg.version,  TINYG_VERSION_NUMBER },
+	{ str_fb, _print_dbl, _get_dbl, _set_nul, (double *)&tg.build,    TINYG_BUILD_NUMBER },
 	{ str_id, _print_int, _get_id,  _set_nul, (double *)&tg.null, 0}, 	// device ID (signature)
 	{ str_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval, STATUS_REPORT_INTERVAL_MS },
 	{ str_sr, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
 
 	// gcode model attributes for reporting puropses
-	{ str_line,_print_int, _get_int, _set_int, (double *)&gm.linenum, 0 },// line number
+	{ str_line,_print_int, _get_line,_set_int, (double *)&gm.linenum, 0 },// line number - gets runtime line number
 	{ str_feed,_print_lin, _get_dbu, _set_nul, (double *)&tg.null, 0 },	// feed rate
 	{ str_stat,_print_str, _get_stat,_set_nul, (double *)&tg.null, 0 },	// combined machine state
 	{ str_macs,_print_str, _get_macs,_set_nul, (double *)&tg.null, 0 },	// raw machine state
@@ -642,10 +645,10 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_g92c,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[C], 0 },
 
 	// commands, tests, help, messages
-	{ str_test,help_print_test_help,_get_ui8, tg_test, (double *)&tg.test, 0 },
-	{ str_help,help_print_config_help,_get_nul,_set_nul,(double *)&tg.null,0 },
-	{ str_defa,help_print_defaults_help,_get_nul,_set_defa,(double *)&tg.null,0 },
-	{ str_msg, _print_str,_get_nul,_set_nul,(double *)&tg.null,0 },
+	{ str_test,help_print_test_help,_get_ui8, tg_test, (double *)&tg.test, 0 },		// prints help screen with null input
+	{ str_help,help_print_config_help,_get_nul,_set_nul,(double *)&tg.null,0 },		// prints help screen with null input
+	{ str_defa,help_print_defaults_help,_get_nul,_set_defa,(double *)&tg.null,0 },	// prints help screen with null input
+	{ str_msg, _print_str,_get_nul,_set_nul,(double *)&tg.null,0 },					// string for generic messages
 
 	// NOTE: The ordering within the gcode group is important for token resolution
 	{ str_gpl, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.select_plane,			GCODE_DEFAULT_PLANE },
@@ -860,11 +863,6 @@ struct cfgItem cfgArray[] PROGMEM = {
 	{ str_mpo, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// machine position group
 
 	// uber-group (groups of groups, for text-mode displays only)
-//	{ str_moto, _print_motors, _get_nul, _set_nul,(double *)&tg.null,0 },
-//	{ str_axes, _print_axes, _get_nul, _set_nul,(double *)&tg.null,0 },
-//	{ str_ofs, _print_offsets, _get_nul, _set_nul,(double *)&tg.null,0 },
-//	{ str_all, _print_all, _get_nul, _set_nul,(double *)&tg.null,0 },
-
 	{ str_moto, _print_nul, _do_motors, _set_nul,(double *)&tg.null,0 },
 	{ str_axes, _print_nul, _do_axes,   _set_nul,(double *)&tg.null,0 },
 	{ str_ofs,  _print_nul, _do_offsets,_set_nul,(double *)&tg.null,0 },
@@ -952,8 +950,8 @@ static uint8_t _set_si(cmdObj *cmd)
 	return(TG_OK);
 }
 
-/**** Reporting functions ****************************************/
-/* _get_msg_helper() - helper to get display message
+/**** Reporting functions ****************************************
+ * _get_msg_helper() - helper to get display message
  * _get_stat() - get combined machine state as value and string
  * _get_macs() - get raw machine state as value and string
  * _get_cycs() - get raw cycle state as value and string
@@ -967,9 +965,10 @@ static uint8_t _set_si(cmdObj *cmd)
  * _get_dist() - get gcode distance mode as string
  * _get_frmo() - get gcode feed rate mode as string
  * _get_feed() - get feed rate 
- * _get_vel()  - get velocity
- * _get_pos()  - get work position
- * _get_mpos() - get machine position
+ * _get_line() - get runtime line number for status reports
+ * _get_vel()  - get runtime velocity
+ * _get_pos()  - get runtime work position
+ * _get_mpos() - get runtime machine position
  * _print_pos()  - print work or machine position
  */
 static uint8_t _get_msg_helper(cmdObj *cmd, prog_char_ptr msg, uint8_t value)
@@ -1045,6 +1044,13 @@ static uint8_t _get_dist(cmdObj *cmd)
 static uint8_t _get_frmo(cmdObj *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_frmo, cm_get_inverse_feed_rate_mode()));
+}
+
+static uint8_t _get_line(cmdObj *cmd)
+{
+	cmd->value = (double)mp_get_runtime_linenum();
+	cmd->type = TYPE_INTEGER;
+	return (TG_OK);
 }
 
 static uint8_t _get_vel(cmdObj *cmd) 
@@ -1125,16 +1131,17 @@ static uint8_t _set_am(cmdObj *cmd)
 	if (strchr(linear_axes, cmd->token[0]) != NULL) {		// true if it's a linear axis
 		if (cmd->value > AXIS_MAX_LINEAR) {
 			cmd->value = 0;
-			if (cfg.communications_mode == TG_TEXT_MODE) {
-				fprintf_P(stderr, PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED\n"));
-			}
+
+			cmd_add_string("msg","*** WARNING *** Unsupported linear axis mode. Axis DISABLED");
+		//  Bby way of example, the following method saves RAM at the expense of FLASH size:
+		//	char message[CMD_STRING_LEN];
+		//	sprintf_P(message, PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED\n"));
+		//	cmd_add_string("msg",message);
 		}
 	} else {
 		if (cmd->value > AXIS_MAX_ROTARY) {
 			cmd->value = 0;
-			if (cfg.communications_mode == TG_TEXT_MODE) {
-				fprintf_P(stderr, PSTR("*** WARNING *** Unsupported rotary axis mode. Axis DISABLED\n"));
-			}
+			cmd_add_string("msg","*** WARNING *** Unsupported rotary axis mode. Axis DISABLED");
 		}
 	}
 	_set_ui8(cmd);
@@ -1152,9 +1159,7 @@ static uint8_t _set_sm(cmdObj *cmd)
 { 
 	if (cmd->value > SW_MODE_ENABLED_NC) {
 		cmd->value = 0;
-		if (cfg.communications_mode == TG_TEXT_MODE) {
-			fprintf_P(stderr, PSTR("*** WARNING *** Unsupported switch mode. Switch DISABLED\n"));
-		}
+		cmd_add_string("msg","*** WARNING *** Unsupported switch mode. Switch DISABLED");
 	}
 	_set_ui8(cmd);
 	gpio_init();
@@ -1178,9 +1183,7 @@ static uint8_t _set_tr(cmdObj *cmd)
 static uint8_t _set_mi(cmdObj *cmd)
 {
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
-		if (cfg.communications_mode == TG_TEXT_MODE) {
-			fprintf_P(stderr, PSTR("*** WARNING *** Unsupported microstep value\n"));
-		}
+		cmd_add_string("msg","*** WARNING *** Unsupported microstep value");
 	}
 	_set_ui8(cmd);						// but set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);
@@ -1635,6 +1638,13 @@ void cmd_clear_list()
 	cmd->nx = (cmd+1);
 	cmd->depth = 1;
 
+	cmd_clear(++cmd);							// "ln" element
+	sprintf_P(cmd->token, PSTR("ln"));
+	cmd->type = TYPE_INTEGER;
+	cmd->pv = (cmd-1);
+	cmd->nx = (cmd+1);
+	cmd->depth = 1;
+
 	cmd_clear(++cmd);							// "cks" element
 	sprintf_P(cmd->token, PSTR("cks"));
 	cmd->type = TYPE_STRING;
@@ -1758,11 +1768,10 @@ void cmd_print_list(uint8_t status, uint8_t textmode)
 	 */
 	if (cfg.communications_mode == TG_JSON_MODE) {
 		cmdObj *cmd = cmd_status;
-		cmd->value = status;
-		cmd = cmd->nx;
-		tg_get_status_message(status, cmd->string);
-		cmd = cmd->nx;
-		cmd->value = xio_get_usb_rx_free();
+		cmd->value = status;								// set status code
+		tg_get_status_message(status, (cmd = cmd->nx)->string); // set status message
+		(cmd = cmd->nx)->value = xio_get_usb_rx_free();		// set buffer available size
+		(cmd = cmd->nx)->value = cm_get_model_linenum();	// set model line number
 		uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
 		while (tg.out_buf[strcount] != ':') { strcount--; }	// slice at last colon
 		tg.out_buf[strcount] = NUL;

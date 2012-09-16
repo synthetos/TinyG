@@ -340,7 +340,7 @@ static uint8_t _execute_gcode_block()
 {
 	uint8_t status = TG_OK;
 
-	cm_set_linenum(gn.linenum);
+	cm_set_model_linenum(gn.linenum);
 	EXEC_FUNC(cm_set_inverse_feed_rate_mode, inverse_feed_rate_mode);
 	EXEC_FUNC(cm_set_feed_rate, feed_rate);
 	EXEC_FUNC(cm_set_spindle_speed, spindle_speed);

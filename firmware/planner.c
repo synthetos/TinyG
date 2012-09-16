@@ -71,7 +71,7 @@ enum mpBufferState {			// bf->buffer_state values
 };
 
 struct mpBuffer {				// See Planning Velocity Notes for variable usage
-	uint32_t linenum;			// line number; or block count if not numbered
+	uint32_t linenum;			// runtime line number; or block count if not numbered
 	struct mpBuffer *pv;		// static pointer to previous buffer
 	struct mpBuffer *nx;		// static pointer to next buffer
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
@@ -114,7 +114,7 @@ struct mpBufferPool {			// ring buffer for sub-moves
 };
 
 struct mpMoveMasterSingleton {	// common variables for planning (move master)
-	uint32_t linenum;			// line/block number of BF being planned
+	uint32_t linenum;			// runtime line/block number of BF being planned
 	double position[AXES];		// final move position for planning purposes
 #ifdef __UNIT_TEST_PLANNER
 	double test_case;
@@ -125,7 +125,7 @@ struct mpMoveMasterSingleton {	// common variables for planning (move master)
 };
 
 struct mpMoveRuntimeSingleton {	// persistent runtime variables
-	uint32_t linenum;			// line/block number of BF being executed
+	uint32_t linenum;			// runtime line/block number of BF being executed
 //	uint8_t (*run_move)(struct mpBuffer *m); // currently running move - left in for reference
 	uint8_t move_state;			// state of the overall move
 	uint8_t section_state;		// state within a move section
@@ -561,7 +561,7 @@ uint8_t mp_aline(const double target[], const double minutes)
 	if ((bf = _get_write_buffer()) == NULL) {	// get buffer or die trying
 		return (TG_BUFFER_FULL_FATAL);			// (not supposed to fail)
 	}
-	bf->linenum = cm_get_linenum();
+	bf->linenum = cm_get_model_linenum();
 	mm.linenum = bf->linenum;					// block being planned
 
 	bf->time = minutes;

@@ -77,7 +77,7 @@ These commands are active for configuration:\n\
   $h   Show this help screen\n\n\
 "));
 fprintf_P(stderr, PSTR("\
-Each $ command above also displays the token for each setting in [] brackets\n\
+Each $ command above also displays the token for each setting in [ ] brackets\n\
 To view settings enter a token:\n\n\
   $<token>\n\n\
 For example $yfr to display the Y max feed rate\n\n\
@@ -87,7 +87,6 @@ For example $yfr=800 to set the Y max feed rate to 800 mm/minute\n\
 "));
 _help_status_report_advisory();
 _help_postscript();
-tg_print_system_ready();
 }
 
 /*
@@ -110,7 +109,6 @@ Invoke self test by entering $test=N where N is one of:\n\
   $test=10 rotary motion test\n\
 "));
 _help_postscript();
-tg_print_system_ready();
 }
 
 /*
@@ -120,10 +118,9 @@ void help_print_defaults_help(cmdObj *cmd)
 {
 fprintf_P(stderr, PSTR("#### TinyG RESTORE DEFAULTS Help ####\n"));
 fprintf_P(stderr, PSTR("\
-Enter $defaults=1 to reset the system to the default values for the profile listed above.\n\
+Enter $defaults=1 to reset the system to the factory default values.\n\
 This will overwrite any changes you have made.\n"));
 _help_postscript();
-tg_print_system_ready();
 }
 
 // help helper functions (snicker)

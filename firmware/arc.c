@@ -44,7 +44,7 @@
 
 struct arArcSingleton {			// persistent planner and runtime variables
 	uint8_t run_state;			// runtime state machine sequence
-	uint32_t linenum;			// gcode line number (Nxxxxx)
+	uint32_t linenum;			// line number of the arc feed move (Nxxxxx)
 
 	double endpoint[AXES];		// endpoint position
 	double position[AXES];		// accumulating runtime position
@@ -103,7 +103,7 @@ uint8_t ar_arc( const double target[],
 	if (ar.run_state != MOVE_STATE_OFF) {
 		return (TG_INTERNAL_ERROR);			// (not supposed to fail)
 	}
-	ar.linenum = cm_get_linenum();			// get line number as debugging convenience
+	ar.linenum = cm_get_model_linenum();	// get gcode model line number as debugging convenience
 
 	// "move_length" is the total mm of travel of the helix (or just arc)
 	ar.length = hypot(angular_travel * radius, fabs(linear_travel));	

@@ -90,7 +90,7 @@ uint8_t cm_get_path_control() { return gm.path_control;}
 uint8_t cm_get_distance_mode() { return gm.distance_mode;}
 uint8_t cm_get_inverse_feed_rate_mode() { return gm.inverse_feed_rate_mode;}
 uint8_t cm_get_spindle_mode() { return gm.spindle_mode;} 
-uint32_t cm_get_linenum() { return gm.linenum; }
+uint32_t cm_get_model_linenum() { return gm.linenum;}
 uint8_t cm_isbusy() { return (mp_isbusy());}
 
 // set parameter in gm struct
@@ -198,7 +198,7 @@ double cm_get_runtime_work_position(uint8_t axis)
  * cm_set_arc_offset()	- set all IJK offsets
  * cm_set_radius()	- set radius value
  * cm_set_absolute_override()
- * cm_set_linenum()
+ * cm_set_model_linenum() - set line number in the model (this is NOT the runtime line number)
  * cm_set_target()	- set all XYZABC targets
  */
 
@@ -214,7 +214,7 @@ void cm_set_arc_radius(double r)
 	gm.arc_radius = _to_millimeters(r);
 }
 
-void cm_set_linenum(uint32_t linenum)
+void cm_set_model_linenum(uint32_t linenum)
 {
 	if (linenum != 0) {
 		gm.linenum = linenum;
