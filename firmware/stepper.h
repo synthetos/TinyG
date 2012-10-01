@@ -75,7 +75,7 @@ uint8_t st_test_prep_state(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(double microseconds);
-uint8_t st_prep_line(double steps[], double microseconds, double velocity);
+uint8_t st_prep_line(double steps[], double microseconds);
 
 #ifdef __DEBUG
 void st_dump_stepper_state(void);
@@ -104,13 +104,14 @@ void st_dump_stepper_state(void);
  *
  *	Set to 0 to disable.
  *
- *	### Known bug identified in 337.06 ###
- *
- *	Until this is fixed using a value other than 0 will result in severe loss
- *	of accuracy for very slow moves (F<100).		  
+ *	NOTE: TinyG doesn't use tunable overclocking any more. It just overclocks
+ *	at the fastest sustainable step rate which is about 50 Khz for the xmega.
+ *	This minimizes the aliasing on minor axes at minimal impact to the major 
+ *	axis. The DDA overclock setting and associated code are left in for historical
+ *	purposes and in case we ever want to go back to pure overclocking.
  */
 //#define DDA_OVERCLOCK 16		// doesn't have to be a binary multiple
-#define DDA_OVERCLOCK 0			// Disabled for now until root cause of Issue #7 is fixed
+#define DDA_OVERCLOCK 0			// Permanently disabled. See above NOTE
 
 /* Counter resets
  * 	You want to reset the DDA counters if the new ticks value is way less 
@@ -136,7 +137,7 @@ void st_dump_stepper_state(void);
 #define SWI_PERIOD 		100				// cycles you have to shut off SW interrupt
 #define TIMER_PERIOD_MIN (20)			// trap bad timer loads
 
-/* timer constants (these probably won't) */
+/* timer constants (these probably won't change) */
 #define TIMER_DISABLE 	0		// turn timer off (clock = 0 Hz)
 #define TIMER_ENABLE	1		// turn timer clock on (F_CPU = 32 Mhz)
 #define TIMER_WGMODE	0		// normal mode (count to TOP and rollover)
@@ -149,13 +150,5 @@ void st_dump_stepper_state(void);
 #define TIMER_DWELL_INTLVL 		TIMER_OVFINTLVL_HI
 #define TIMER_LOAD_INTLVL 		TIMER_OVFINTLVL_HI
 #define TIMER_EXEC_INTLVL 		TIMER_OVFINTLVL_LO
-
-/* spindle config and constants
- * spindle uses the min/max bits from the A axis as outputs (A6/A7)
- */
-#define SPINDLE_ENABLE_PORT 	DEVICE_PORT_MOTOR_4
-#define SPINDLE_ENABLE_BIT_bm 	(1<<6)	// also used to set port I/O direction
-#define SPINDLE_DIRECTION_PORT 	DEVICE_PORT_MOTOR_4
-#define SPINDLE_DIRECTION_BIT_bm (1<<7)	// also used to set port I/O direction
 
 #endif

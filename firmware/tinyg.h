@@ -35,7 +35,6 @@
 #define TINYG_VERSION_NUMBER	0.95
 #define TINYG_BUILD_NUMBER   	340.18
 
-
 /****** DEVELOPMENT SETTINGS ******/
 
 //#define __CANNED_STARTUP			// run any canned startup moves
@@ -61,24 +60,7 @@
 #endif
 
 // RUNTIME SETTINGS
-#define __UNFORGIVING			// fails hard versus introduce errors
-#define __INFO					// enables exception logging (see util.h)
-
-/***** Boolean Comparisons *****/
-
-#ifndef false
-#define false 0
-#endif
-#ifndef true
-#define true 1
-#endif
-
-#ifndef FALSE			// deprecated, use lowercase forms
-#define FALSE 0
-#endif
-#ifndef TRUE
-#define TRUE 1
-#endif
+#define __UNFORGIVING			// fail hard versus introducing motion errors
 
 /*************************************************************************
  * TinyG application-specific prototypes, defines and globals

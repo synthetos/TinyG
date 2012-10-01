@@ -35,9 +35,8 @@
 /* See the wiki for module details and additional information:
  *	 http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info
  */
-
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <string.h>				// needed for memcpy, memset
 #include <avr/pgmspace.h>		// needed for exception strings
@@ -276,6 +275,7 @@ void cm_set_target(double target[], double flag[])
 			}
 //		} else if (i<A) {
 //			printf_P(stderr,PSTR("%c axis using unsupported axis mode"), cfg_get_configuration_group_char(i));
+//			cmd_add_string("msg", msg);
 		}
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
@@ -755,7 +755,7 @@ void cm_comment(char *comment)
 
 void cm_message(char *message)
 {
-	printf_P(PSTR("%s\n"), message);
+	cmd_add_string("msg", message);		// adds the message to the response object
 }
 
 /*

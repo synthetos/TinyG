@@ -15,8 +15,10 @@ arc.o: ../arc.c c:/winavr-20100110/lib/gcc/../../avr/include/stdlib.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h ../xio/xio.h \
   ../xio/xio_file.h ../xio/xio_usart.h ../xio/xio_signals.h ../tinyg.h \
-  ../config.h ../controller.h ../canonical_machine.h ../util.h ../arc.h \
-  ../planner.h ../kinematics.h
+  ../config.h \
+  c:\winavr-20100110\bin\../lib/gcc/avr/4.3.3/include/stdbool.h \
+  ../controller.h ../canonical_machine.h ../util.h ../arc.h ../planner.h \
+  ../kinematics.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdlib.h:
 
@@ -61,6 +63,8 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 ../tinyg.h:
 
 ../config.h:
+
+c:\winavr-20100110\bin\../lib/gcc/avr/4.3.3/include/stdbool.h:
 
 ../controller.h:
 

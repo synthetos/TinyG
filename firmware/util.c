@@ -30,12 +30,12 @@
  *
  *	  - math and min/max utilities and extensions 
  *	  - vector manipulation utilities
- *	  - support for INFO traps
  *	  - support for debugging routines
  */  
 #include <ctype.h>
 #include <stdio.h>				// precursor for xio.h
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 #include <string.h>
 #include <avr/pgmspace.h>		// precursor for xio.h

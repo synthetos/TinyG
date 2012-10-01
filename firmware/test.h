@@ -33,55 +33,6 @@
 uint8_t tg_test(cmdObj *cmd);
 void tg_canned_startup(void);
 
-
-/***** INFO trap support ******
- *
- *	INFO traps are exception statements that can be enabled or disabled.
- *
- *	All INFOs are enabled if __INFO is defined (see tinyg.h runtime settings)
- *	INFOs are coded so they occupy no RAM or program space if not enabled.
- *	Format strings should be in program memory, so use the PSTR macro.
- *	A closing semicolon is not required but is recommended for style.
- *
- *	INFO usage examples:
- *		INFO(PSTR("Line length is too short"));
- *		INFO1(PSTR("Line length is too short: %f"), m->length);
- *		INFO2(PSTR("Line length failed division: %f / %f"), m->length, m->divisor);
- */
-#ifdef __INFO 	// Note: __INFO is defined in tinyg.h as a runtime setting
-
-#define INFO(msg) { fprintf_P(stderr,PSTR("#### INFO #### ")); \
-					fprintf_P(stderr,msg); \
-					fprintf_P(stderr,PSTR("\n")); \
-				  }
-
-#define INFO1(msg,a) { fprintf_P(stderr,PSTR("#### INFO #### ")); \
-					  fprintf_P(stderr,msg,a); \
-					  fprintf_P(stderr,PSTR("\n")); \
-					}
-
-#define INFO2(msg,a,b) { fprintf_P(stderr,PSTR("#### INFO #### ")); \
-						 fprintf_P(stderr,msg,a,b); \
-						 fprintf_P(stderr,PSTR("\n")); \
-					   }
-
-#define INFO3(msg,a,b,c) { fprintf_P(stderr,PSTR("#### INFO #### ")); \
-						   fprintf_P(stderr,msg,a,b,c); \
-						   fprintf_P(stderr,PSTR("\n")); \
-						 }
-
-#define INFO4(msg,a,b,c,d) { fprintf_P(stderr,PSTR("#### INFO #### ")); \
-						 	 fprintf_P(stderr,msg,a,b,c,d); \
-						 	 fprintf_P(stderr,PSTR("\n")); \
-						   }
-#else
-#define INFO(msg)
-#define INFO1(msg,a)
-#define INFO2(msg,a,b)
-#define INFO3(msg,a,b,c)
-#define INFO4(msg,a,b,c,d)
-#endif	// __INFO
-
 /***** DEBUG support ******
  *
  *	DEBUGs are print statements you probably only want enabled during 

@@ -27,6 +27,8 @@
 #ifndef config_h
 #define config_h
 
+#include <stdbool.h>
+
 /**** Command definitions and objects (used by config and JSON) ****/
 
 // Choose one: This sets the index size into the cmdArray

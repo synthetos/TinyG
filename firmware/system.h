@@ -62,6 +62,11 @@ void sys_init(void);					// master hardware init
 #define DEVICE_TIMER_LOAD_ISR_vect	TCE0_OVF_vect
 #define DEVICE_TIMER_EXEC			TCF0			// Exec timer (SW interrupt)
 #define DEVICE_TIMER_EXEC_ISR_vect	TCF0_OVF_vect
+#define DEVICE_TIMER_PWM1			TCC1			// PWM timer #1 (spindle / laser)
+#define DEVICE_TIMER_PWM1_ISR_vect	TCC1_OVF_vect
+#define DEVICE_TIMER_PWM2			TCD1			// PWM timer #2
+#define DEVICE_TIMER_PWM2_ISR_vect	TCD1_OVF_vect
+
 
 /* Stepper / Switch Ports:
  *	b0	(out) step			(SET is step,  CLR is rest)

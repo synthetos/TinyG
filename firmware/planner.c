@@ -520,8 +520,7 @@ static uint8_t _exec_line(mpBuf *bf)
 	}
 	mr.microseconds = uSec(bf->time);
 	(void)ik_kinematics(travel, steps, mr.microseconds);
-//	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
-	if (st_prep_line(steps, mr.microseconds, bf->cruise_vmax) == TG_OK) {
+	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
 		copy_axis_vector(mr.position, bf->target);	// update runtime position
 	}
 	_free_run_buffer();
@@ -1501,8 +1500,7 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 	// prep the segment for the steppers and adjust the variables for the next iteration
 	(void)ik_kinematics(travel, steps, mr.microseconds);
 	SEGMENT_LOGGER				// conditional DEBUG statement
-//	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
-	if (st_prep_line(steps, mr.microseconds, mr.segment_velocity) == TG_OK) {
+	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
 		copy_axis_vector(mr.position, mr.target); 	// update runtime position	
 	}
 	mr.elapsed_accel_time += mr.segment_accel_time; // NB: ignored if running the body

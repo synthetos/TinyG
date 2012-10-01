@@ -30,7 +30,6 @@
  *
  *	  - math and min/max utilities and extensions 
  *	  - vector manipulation utilities
- *	  - support for INFO traps
  *	  - support for debugging routines
  */  
 
