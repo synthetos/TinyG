@@ -82,7 +82,10 @@ uint8_t errcode;
 #ifndef avg
 #define avg(a,b) ((a+b)/2)
 #endif
-#define square(a) ((a)*(a))
+
+// the following line conflicts with function square() declared in <math.h>
+//#define square(a) ((a)*(a))
+
 #define cube(a) ((a)*(a)*(a))
 #define cubert(a) pow((a), 0.33333333333333)
 

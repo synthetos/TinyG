@@ -52,11 +52,11 @@ void xio_init_pgm()
  *  Returns a pointer to the stdio FILE struct or -1 on error
  */
 
-struct __file * xio_open_pgm(const prog_char *addr)
+struct __file * xio_open_pgm(const char *addr)
 {
 	PGM.flags &= XIO_FLAG_RESET_gm;	// reset flag signaling bits
 	PGM.signal = 0;					// reset signal
-	PGMf.filebase_P = (PROGMEM char *)addr;	// might want to range check this
+	PGMf.filebase_P = (const char *)addr;	// might want to range check this
 	PGMf.rd_offset = 0;				// initialize read buffer pointer
 	PGMf.wr_offset = 0;				// initialize write buffer pointer
 	PGMf.max_offset = PGM_ADDR_MAX;

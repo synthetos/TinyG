@@ -63,8 +63,8 @@ void tg_canned_startup(void);
 #ifdef __DEBUG
 void dump_everything(void);
 void roll_over_and_die(void);
-void print_scalar(char *label, double value);
-void print_vector(char *label, double vector[], uint8_t length);
+void print_scalar(const char *label, double value);
+void print_vector(const char *label, double vector[], uint8_t length);
 
 #define __dbECHO_GCODE_BLOCK	// echos input to Gcode interpreter	(gcode.c)
 //#define __dbALINE_CALLED		// shows call to mp_aline() 		(planner.c)
@@ -138,7 +138,7 @@ void segment_logger(uint8_t move_state,
 					uint32_t segments, 
 					uint32_t segment_count, 
 					double velocity,
-					double microseconds,
+					double microseconds
 //					double position_x, 
 //					double target_x,
 //					double step_x, 

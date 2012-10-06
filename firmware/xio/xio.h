@@ -119,7 +119,7 @@ int xio_putc(const uint8_t dev, const char c);
 int xio_gets(const uint8_t dev, char *buf, const int size);
 
 void xio_init_dev(uint8_t dev,					// device number
-	FILE *(*dev_open)(const prog_char *addr),	// device open routine
+	FILE *(*dev_open)(const char *addr),		// device open routine
 	int (*dev_cntl)(const uint32_t control),	// set device control flags
 //	int (*dev_rctl)(uint32_t *control),			// get device control flags
 	int (*dev_putc)(char, struct __file *),		// write char (stdio compatible)
@@ -138,7 +138,7 @@ struct xioDEVICE {				// common device struct (one per dev)
 	uint8_t len;				// chars read so far (buf array index)
 	int size;					// text buffer length (dynamic)
 	uint32_t flags;				// common control flags
-	FILE *(*x_open)(const prog_char *addr);	// device open routine
+	FILE *(*x_open)(const char *addr);	// device open routine
 	int (*x_cntl)(const uint32_t control);	// set device control flags
 //	int (*x_rctl)(uint32_t *control);		// get device control flags
 	int (*x_putc)(char, struct __file *);	// write char (stdio compatible)
