@@ -101,7 +101,11 @@
 #define X_TRAVEL_MAX 170				// xtm		travel between switches or crashes
 #define X_JERK_MAX 5000000000			// xjm		yes, that's "5 billion" mm/(min^3)
 #define X_JUNCTION_DEVIATION JUNCTION_DEVIATION	 // xjd
-#define X_SWITCH_MODE 1					// xsm		1=switches enabled for homing only
+#define X_SWITCH_MODE 1					// xsm		0 = off
+										//			1 = NO homing only
+										//			2 = NO homing and limits
+										//			3 = NC homing only
+										//			4 = NC homing and limits
 #define X_SEARCH_VELOCITY -1000			// xsv		move in negative direction
 #define X_LATCH_VELOCITY 100			// xlv		mm/min
 #define X_LATCH_BACKOFF 2				// xlb		mm

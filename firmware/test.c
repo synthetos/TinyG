@@ -99,7 +99,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
-	xio_queue_RX_string_usb("$h\n");
+//	xio_queue_RX_string_usb("$h\n");
 //	xio_queue_RX_string_usb("$m\n");
 //	xio_queue_RX_string_usb("$$\n");
 //	xio_queue_RX_string_usb("?\n");
@@ -219,7 +219,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g92.3\n");
 
 /* G28 and G30 homing tests */
-//	xio_queue_RX_string_usb("g28x0y0z0\n");
+//	xio_queue_RX_string_usb("g28.1x0y0z0\n");
+//	xio_queue_RX_string_usb("g28.1x0y0z0a0\n");
+	xio_queue_RX_string_usb("g28.1 a0\n");
 //	xio_queue_RX_string_usb("g30x0y0z0\n");
 //	xio_queue_RX_string_usb("g30x42\n");
 

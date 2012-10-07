@@ -289,7 +289,7 @@ uint8_t _set_hm_func(uint8_t (*func)(int8_t axis))
  * _get_next_axis() - return next axis in sequence based on axis in arg
  *
  *	Accepts "axis" arg as the current axis; or -1 to retrieve the first axis
- *	Returns next axis based on "axis" argument
+ *	Returns next axis based on "axis" argument and if that axis is flagged for homing in the gf struct
  *	Returns -1 when all axes have been processed
  *	Returns -2 if no axes are specified (Gcode calling error)
  *	Homes Z first, then the rest in sequence
@@ -303,36 +303,36 @@ uint8_t _set_hm_func(uint8_t (*func)(int8_t axis))
 
 int8_t _get_next_axis(int8_t axis)
 {
-	int8_t next_axis = Z;
-
-	while (true) {
-		switch (axis) {
-			case (-1):{ next_axis = Z; break;}
-			case (X): { next_axis = Y; break;}
-			case (Y): { next_axis = A; break;}
-			case (Z): { next_axis = X; break;}
-			case (A): { next_axis = B; break;}
-			case (B): { next_axis = C; break;}
-			case (C): { return (-1);}
-			default:  { return (-2);}
-		}
-		if (gf.target[next_axis] == true) { return (next_axis);}
+	if (axis == -1) {	// inelegant brute force solution
+		if (gf.target[Z] == true) return (Z);
+		if (gf.target[X] == true) return (X);
+		if (gf.target[Y] == true) return (Y);
+		if (gf.target[A] == true) return (A);
+		if (gf.target[B] == true) return (B);
+		if (gf.target[C] == true) return (C);
+		return (-2);	// error
+	} else if (axis == Z) {
+		if (gf.target[X] == true) return (X);
+		if (gf.target[Y] == true) return (Y);
+		if (gf.target[A] == true) return (A);
+		if (gf.target[B] == true) return (B);
+		if (gf.target[C] == true) return (C);
+	} else if (axis == X) {
+		if (gf.target[Y] == true) return (Y);
+		if (gf.target[A] == true) return (A);
+		if (gf.target[B] == true) return (B);
+		if (gf.target[C] == true) return (C);
+	} else if (axis == Y) {
+		if (gf.target[A] == true) return (A);
+		if (gf.target[B] == true) return (B);
+		if (gf.target[C] == true) return (C);
+	} else if (axis == A) {
+		if (gf.target[B] == true) return (B);
+		if (gf.target[C] == true) return (C);
+	} else if (axis == B) {
+		if (gf.target[C] == true) return (C);
 	}
-/*
-	// test for next axis or break if no more
-	for (next_axis = ++axis; next_axis < AXES; next_axis++) {
-		if (gf.target[next_axis] == true) {
-			return (next_axis);
-		}
-	}
-	// test if there are axes to process
-	for (next_axis = 0; next_axis < AXES; next_axis++) {	
-		if (gf.target[next_axis] == true) {
-			return (-1);
-		}
-	}
-	return (-2);
-*/
+	return (-1);	// done
 }
 
 /*

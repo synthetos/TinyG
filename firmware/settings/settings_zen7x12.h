@@ -43,7 +43,9 @@
 
 // **** common settings - applied to all axes or motors ****
 
-#define JERK_MAX 			100000000	// yes, that's "100,000,000" mm/(min^3)
+#define JERK_MAX_LINEAR 			100000000	// yes, that's "100,000,000" mm/(min^3)
+#define JERK_MAX_ROTARY 			10000000000	// yes, that's "10 billion" mm/(min^3)
+
 #define JUNCTION_DEVIATION	0.05		// default value, in mm
 
 // **** system settings ****
@@ -95,7 +97,7 @@
 #define M4_TRAVEL_PER_REV 360			// degrees per motor rev - 1:1 gearing
 #define M4_MICROSTEPS 8
 #define M4_POLARITY 0
-#define M4_POWER_MODE 0
+#define M4_POWER_MODE 1
 
 // *** axis settings ***
 
@@ -103,7 +105,7 @@
 #define X_VELOCITY_MAX 600 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX X_VELOCITY_MAX	// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX 475				// travel between switches or crashes
-#define X_JERK_MAX JERK_MAX				// xjm
+#define X_JERK_MAX JERK_MAX_LINEAR			// xjm
 #define X_JUNCTION_DEVIATION JUNCTION_DEVIATION	 // xjd
 #define X_SWITCH_MODE 1					// xsm		1=switches enabled for homing only
 #define X_SEARCH_VELOCITY -500			// xsv		move in negative direction
@@ -115,7 +117,7 @@
 #define Y_VELOCITY_MAX 600
 #define Y_FEEDRATE_MAX Y_VELOCITY_MAX
 #define Y_TRAVEL_MAX 200
-#define Y_JERK_MAX JERK_MAX
+#define Y_JERK_MAX JERK_MAX_LINEAR
 #define Y_JUNCTION_DEVIATION JUNCTION_DEVIATION
 #define Y_SWITCH_MODE 1
 #define Y_SEARCH_VELOCITY -500
@@ -127,50 +129,50 @@
 #define Z_VELOCITY_MAX 500
 #define Z_FEEDRATE_MAX Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX 75
-#define Z_JERK_MAX JERK_MAX
+#define Z_JERK_MAX JERK_MAX_LINEAR
 #define Z_JUNCTION_DEVIATION JUNCTION_DEVIATION
 #define Z_SWITCH_MODE 1
-#define Z_SEARCH_VELOCITY -400
+#define Z_SEARCH_VELOCITY 400
 #define Z_LATCH_VELOCITY 100
 #define Z_LATCH_BACKOFF 2
 #define Z_ZERO_BACKOFF 1
 
 #define A_AXIS_MODE AXIS_STANDARD
-#define A_VELOCITY_MAX 3600
+#define A_VELOCITY_MAX 144000			// 360 degrees * 400 RPM
 #define A_FEEDRATE_MAX A_VELOCITY_MAX
 #define A_TRAVEL_MAX -1
-#define A_JERK_MAX JERK_MAX
+#define A_JERK_MAX JERK_MAX_ROTARY
 #define A_JUNCTION_DEVIATION JUNCTION_DEVIATION
 #define A_RADIUS 1
 #define A_SWITCH_MODE 1
-#define A_SEARCH_VELOCITY -600
-#define A_LATCH_VELOCITY 100
+#define A_SEARCH_VELOCITY 72000
+#define A_LATCH_VELOCITY 360
 #define A_LATCH_BACKOFF -5
 #define A_ZERO_BACKOFF 2
 
 #define B_AXIS_MODE AXIS_DISABLED
-#define B_VELOCITY_MAX 3600
+#define B_VELOCITY_MAX 144000
 #define B_FEEDRATE_MAX B_VELOCITY_MAX
 #define B_TRAVEL_MAX -1
-#define B_JERK_MAX JERK_MAX
+#define B_JERK_MAX JERK_MAX_ROTARY
 #define B_JUNCTION_DEVIATION JUNCTION_DEVIATION
 #define B_RADIUS 1
 #define B_SWITCH_MODE 1
-#define B_SEARCH_VELOCITY -600
-#define B_LATCH_VELOCITY 100
+#define B_SEARCH_VELOCITY 72000
+#define B_LATCH_VELOCITY 360
 #define B_LATCH_BACKOFF -5
 #define B_ZERO_BACKOFF 2
 
 #define C_AXIS_MODE AXIS_DISABLED
-#define C_VELOCITY_MAX 3600
+#define C_VELOCITY_MAX 144000
 #define C_FEEDRATE_MAX C_VELOCITY_MAX
 #define C_TRAVEL_MAX -1
-#define C_JERK_MAX JERK_MAX
+#define C_JERK_MAX JERK_MAX_ROTARY
 #define C_JUNCTION_DEVIATION JUNCTION_DEVIATION
 #define C_RADIUS 1
 #define C_SWITCH_MODE 1
-#define C_SEARCH_VELOCITY -600
-#define C_LATCH_VELOCITY 100
+#define C_SEARCH_VELOCITY 72000
+#define C_LATCH_VELOCITY 360
 #define C_LATCH_BACKOFF -5
 #define C_ZERO_BACKOFF 2
 
