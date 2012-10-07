@@ -35,6 +35,10 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+
+//#include "../system.h"
+
+#include "../tinyg.h"
 #include "../system.h"
 #include "xmega_init.h"
 

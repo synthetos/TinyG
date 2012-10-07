@@ -270,18 +270,18 @@ uint8_t gpio_switch_handler(void)
 
 void gpio_set_bit_on(uint8_t b)
 {
-	if (b & 0x01) { DEVICE_PORT_MOTOR_4.OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x02) { DEVICE_PORT_MOTOR_3.OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x04) { DEVICE_PORT_MOTOR_2.OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x08) { DEVICE_PORT_MOTOR_1.OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x01) { PORT_MOTOR_4.OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x02) { PORT_MOTOR_3.OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x04) { PORT_MOTOR_2.OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x08) { PORT_MOTOR_1.OUTSET = GPIO1_OUT_BIT_bm;}
 }
 
 void gpio_set_bit_off(uint8_t b)
 {
-	if (b & 0x01) { DEVICE_PORT_MOTOR_4.OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x02) { DEVICE_PORT_MOTOR_3.OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x04) { DEVICE_PORT_MOTOR_2.OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x08) { DEVICE_PORT_MOTOR_1.OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x01) { PORT_MOTOR_4.OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x02) { PORT_MOTOR_3.OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x04) { PORT_MOTOR_2.OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x08) { PORT_MOTOR_1.OUTCLR = GPIO1_OUT_BIT_bm;}
 }
 
 /*
@@ -296,27 +296,27 @@ void gpio_write_port(uint8_t b)
 	gpio_port_value = b;
 
 	if (b & 0x01) { // b0 is on MOTOR_4 (A axis)
-		DEVICE_PORT_MOTOR_4.OUTSET = GPIO1_OUT_BIT_bm;
+		PORT_MOTOR_4.OUTSET = GPIO1_OUT_BIT_bm;
 	} else {
-		DEVICE_PORT_MOTOR_4.OUTCLR = GPIO1_OUT_BIT_bm;
+		PORT_MOTOR_4.OUTCLR = GPIO1_OUT_BIT_bm;
 	}
 
 	if (b & 0x02) { // b1 is on MOTOR_3 (Z axis)
-		DEVICE_PORT_MOTOR_3.OUTSET = GPIO1_OUT_BIT_bm;
+		PORT_MOTOR_3.OUTSET = GPIO1_OUT_BIT_bm;
 	} else {
-		DEVICE_PORT_MOTOR_3.OUTCLR = GPIO1_OUT_BIT_bm;
+		PORT_MOTOR_3.OUTCLR = GPIO1_OUT_BIT_bm;
 	}
 
 	if (b & 0x04) { // b2 is on MOTOR_2 (Y axis)
-		DEVICE_PORT_MOTOR_2.OUTSET = GPIO1_OUT_BIT_bm;
+		PORT_MOTOR_2.OUTSET = GPIO1_OUT_BIT_bm;
 	} else {
-		DEVICE_PORT_MOTOR_2.OUTCLR = GPIO1_OUT_BIT_bm;
+		PORT_MOTOR_2.OUTCLR = GPIO1_OUT_BIT_bm;
 	}
 
 	if (b & 0x08) { // b3 is on MOTOR_1 (X axis)
-		DEVICE_PORT_MOTOR_1.OUTSET = GPIO1_OUT_BIT_bm;
+		PORT_MOTOR_1.OUTSET = GPIO1_OUT_BIT_bm;
 	} else {
-		DEVICE_PORT_MOTOR_1.OUTCLR = GPIO1_OUT_BIT_bm;
+		PORT_MOTOR_1.OUTCLR = GPIO1_OUT_BIT_bm;
 	}
 }
 

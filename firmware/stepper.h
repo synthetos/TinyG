@@ -81,6 +81,9 @@ uint8_t st_prep_line(double steps[], double microseconds);
 void st_dump_stepper_state(void);
 #endif
 
+// handy macro
+#define _f_to_period(f) (uint16_t)((double)F_CPU / (double)f)
+
 /*
  * Stepper configs and constants
  */
@@ -109,6 +112,10 @@ void st_dump_stepper_state(void);
  *	This minimizes the aliasing on minor axes at minimal impact to the major 
  *	axis. The DDA overclock setting and associated code are left in for historical
  *	purposes and in case we ever want to go back to pure overclocking.
+ *
+ *	Setting this value to 0 has the effect of telling the optimizer to take out
+ *	entire code regions that are not called if this value is zero. So they are 
+ *	left in for historical purposes and not commented out. These regions are noted.
  */
 //#define DDA_OVERCLOCK 16		// doesn't have to be a binary multiple
 #define DDA_OVERCLOCK 0			// Permanently disabled. See above NOTE
@@ -129,26 +136,31 @@ void st_dump_stepper_state(void);
 //#define F_DDA_MIN (double)489	// hz
 #define F_DDA_MIN (double)500	// hz - is 489 Hz with some margin
 
-#define _f_to_period(f) (uint16_t)((double)F_CPU / (double)f)
+/* Timer settings for stepper module. See system.h for timer assignments
+ */
+#define F_DDA 		(double)50000	// Max DDA frequency in hz.
+#define F_DWELL		(double)10000	// Dwell count frequency in hz.
+#define SWI_PERIOD 	100				// cycles you have to shut off SW interrupt
+#define TIMER_PERIOD_MIN (20)		// used to trap bad timer loads
 
-/* timer settings (these might change) */
-#define F_DDA 			(double)50000	// Max DDA frequency in hz.
-#define F_DWELL			(double)10000	// Dwell count frequency in hz.
-#define SWI_PERIOD 		100				// cycles you have to shut off SW interrupt
-#define TIMER_PERIOD_MIN (20)			// trap bad timer loads
+// Timer setups
+#define STEP_TIMER_TYPE		TC0_struct // stepper subsubstem uses all the TC0's
+#define STEP_TIMER_DISABLE 	0		// turn timer off (clock = 0 Hz)
+#define STEP_TIMER_ENABLE	1		// turn timer clock on (F_CPU = 32 Mhz)
+#define STEP_TIMER_WGMODE	0		// normal mode (count to TOP and rollover)
 
-/* timer constants (these probably won't change) */
-#define TIMER_DISABLE 	0		// turn timer off (clock = 0 Hz)
-#define TIMER_ENABLE	1		// turn timer clock on (F_CPU = 32 Mhz)
-#define TIMER_WGMODE	0		// normal mode (count to TOP and rollover)
-#define TIMER_OVFINTLVL_HI	3	// timer interrupt level (3=hi)
-#define	TIMER_OVFINTLVL_MED 2;	// timer interrupt level (2=med)
-#define	TIMER_OVFINTLVL_LO  1;	// timer interrupt level (1=lo)
+#define TIMER_DDA_ISR_vect	TCC0_OVF_vect	// must agree with assignment in system.h
+#define TIMER_DWELL_ISR_vect TCD0_OVF_vect	// must agree with assignment in system.h
+#define TIMER_LOAD_ISR_vect	TCE0_OVF_vect	// must agree with assignment in system.h
+#define TIMER_EXEC_ISR_vect	TCF0_OVF_vect	// must agree with assignment in system.h
 
-/* stepper interrupt levels (see cooperate with serial interrupt levels) */
-#define TIMER_DDA_INTLVL 		TIMER_OVFINTLVL_HI
-#define TIMER_DWELL_INTLVL 		TIMER_OVFINTLVL_HI
-#define TIMER_LOAD_INTLVL 		TIMER_OVFINTLVL_HI
-#define TIMER_EXEC_INTLVL 		TIMER_OVFINTLVL_LO
+#define TIMER_OVFINTLVL_HI	3		// timer interrupt level (3=hi)
+#define	TIMER_OVFINTLVL_MED 2;		// timer interrupt level (2=med)
+#define	TIMER_OVFINTLVL_LO  1;		// timer interrupt level (1=lo)
+
+#define TIMER_DDA_INTLVL 	TIMER_OVFINTLVL_HI
+#define TIMER_DWELL_INTLVL	TIMER_OVFINTLVL_HI
+#define TIMER_LOAD_INTLVL	TIMER_OVFINTLVL_HI
+#define TIMER_EXEC_INTLVL	TIMER_OVFINTLVL_LO
 
 #endif

@@ -292,6 +292,7 @@ uint8_t _set_hm_func(uint8_t (*func)(int8_t axis))
  *	Returns next axis based on "axis" argument
  *	Returns -1 when all axes have been processed
  *	Returns -2 if no axes are specified (Gcode calling error)
+ *	Homes Z first, then the rest in sequence
  *
  *	hm.axis2 is set to the secondary axis if axis is a dual axis
  *	hm.axis2 is set to -1 otherwise
@@ -302,8 +303,22 @@ uint8_t _set_hm_func(uint8_t (*func)(int8_t axis))
 
 int8_t _get_next_axis(int8_t axis)
 {
-	int8_t next_axis;
+	int8_t next_axis = Z;
 
+	while (true) {
+		switch (axis) {
+			case (-1):{ next_axis = Z; break;}
+			case (X): { next_axis = Y; break;}
+			case (Y): { next_axis = A; break;}
+			case (Z): { next_axis = X; break;}
+			case (A): { next_axis = B; break;}
+			case (B): { next_axis = C; break;}
+			case (C): { return (-1);}
+			default:  { return (-2);}
+		}
+		if (gf.target[next_axis] == true) { return (next_axis);}
+	}
+/*
 	// test for next axis or break if no more
 	for (next_axis = ++axis; next_axis < AXES; next_axis++) {
 		if (gf.target[next_axis] == true) {
@@ -317,6 +332,7 @@ int8_t _get_next_axis(int8_t axis)
 		}
 	}
 	return (-2);
+*/
 }
 
 /*

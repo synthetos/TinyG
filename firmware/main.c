@@ -39,13 +39,13 @@
 #include <avr/pgmspace.h>		// precursor for xio.h
 #include <avr/interrupt.h>
 
-#include "system.h"
 #include "xmega/xmega_interrupts.h"
 //#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
 #include "xmega/xmega_rtc.h"
 #include "xio/xio.h"
 
 #include "tinyg.h"				// #1 There are some dependencies
+#include "system.h"
 #include "util.h"				// #2
 #include "config.h"				// #3
 #include "controller.h"
@@ -59,6 +59,7 @@
 #include "network.h"
 #include "gpio.h"
 #include "test.h"
+#include "pwm.h"
 
 // local function prototypes (global prototypes are in tinyg.h)
 #ifdef __DEBUG
@@ -99,11 +100,12 @@ void tg_system_reset(void)
 	rtc_init();				// (5) real time counter
 	st_init(); 				// (6) stepper subsystem (must run before gp_init())
 	gpio_init();			// (7) switches and parallel IO
-	js_init();				// (8) JSON init
+	pwm_init();				// (8) pulse width modulation drivers
+	js_init();				// (9) JSON parser & etc.
 
 	PMIC_EnableMediumLevel();// enable TX interrupts for init reporting 
 	sei();					// enable global interrupts
-	cfg_init();				// (9) get config record from eeprom (reqs xio)
+	cfg_init();				// (10) get config record from eeprom (reqs xio)
 }
 
 void tg_application_reset(void) 
@@ -122,7 +124,7 @@ void tg_application_reset(void)
 	tg_print_system_ready();// (LAST) announce system is ready
 }
 
-static void _tg_unit_tests(void)
+static void _tg_unit_tests(void) // uncomment __UNITS... line in .h file to enable unit tests
 {
 	XIO_UNITS;				// conditional unit tests for xio sub-system
 //	EEPROM_UNITS;			// if you want this you must include the .h file in this file
@@ -130,6 +132,7 @@ static void _tg_unit_tests(void)
 	JSON_UNITS;
 	REPORT_UNITS;
 	PLANNER_UNITS;
+	PWM_UNITS;
 }
 
 /*

@@ -33,7 +33,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95
-#define TINYG_BUILD_NUMBER   	340.18
+#define TINYG_BUILD_NUMBER   	340.19
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -80,6 +80,8 @@ typedef void (*fptr_void_double)(double); 	// returns void, double arg (config b
 #define AXES 6					// number of axes supported in this version
 #define MOTORS 4				// number of motors on the board
 #define COORDS 6				// number of supported coordinate systems (1-6)
+#define PWMS 2					// number of supported PWM channels
+
 // if you change COORDS you must adjust the entries in cfgArray table in config.c
 
 enum tgAxisNum {				// define axis numbers and array indexes
@@ -101,11 +103,11 @@ enum tgMotorNum {				// define motor numbers and array indexes
 		MOTOR_4
 };
 
-// Device structure - structure to allow iteration through shared devices
-struct deviceSingleton {
-	struct PORT_struct *port[MOTORS];// motor control port
+enum tgPWMnum {				// define motor numbers and array indexes
+		PWM_1 = 0,
+		PWM_2
 };
-struct deviceSingleton device;
+
 
 /* TinyG status codes
  * The first code range (0-19) is aligned with the XIO codes and must be so.

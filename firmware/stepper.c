@@ -192,7 +192,7 @@ struct stRunMotor { 				// one per controlled motor
 	int32_t steps;					// total steps in axis
 	int32_t counter;				// DDA counter for axis
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor polarity
-	// experimental values:
+// experimental values:
 //	int8_t step_counter_incr;		// counts positive or negative steps
 };
 
@@ -243,12 +243,11 @@ void st_init()
 {
 	memset(&st, 0, sizeof(st));	// clear all values, pointers and status
 
-	// Note: these defines are found in system.h
-	// Note: the device structure singleton is defined in tinyg.h
-	device.port[MOTOR_1] = &DEVICE_PORT_MOTOR_1;// bind PORTs to struct
-	device.port[MOTOR_2] = &DEVICE_PORT_MOTOR_2;
-	device.port[MOTOR_3] = &DEVICE_PORT_MOTOR_3;
-	device.port[MOTOR_4] = &DEVICE_PORT_MOTOR_4;
+	// Note: these defines and the device struct are found in system.h
+	device.port[MOTOR_1] = &PORT_MOTOR_1;// bind PORTs to struct
+	device.port[MOTOR_2] = &PORT_MOTOR_2;
+	device.port[MOTOR_3] = &PORT_MOTOR_3;
+	device.port[MOTOR_4] = &PORT_MOTOR_4;
 
 	for (uint8_t i=0; i<MOTORS; i++) {
 		// setup port. Do this first or st_set_microsteps() can fail
@@ -261,26 +260,26 @@ void st_init()
 		// NOTE: limit switch ports and interrupts are setup in ls_init()
 	}
 	// setup DDA timer
-	DEVICE_TIMER_DDA.CTRLA = TIMER_DISABLE;			// turn timer off
-	DEVICE_TIMER_DDA.CTRLB = TIMER_WGMODE;			// waveform mode
-	DEVICE_TIMER_DDA.INTCTRLA = TIMER_DDA_INTLVL;	// interrupt mode
+	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// turn timer off
+	TIMER_DDA.CTRLB = STEP_TIMER_WGMODE;		// waveform mode
+	TIMER_DDA.INTCTRLA = TIMER_DDA_INTLVL;		// interrupt mode
 
 	// setup DWELL timer
-	DEVICE_TIMER_DWELL.CTRLA = TIMER_DISABLE;		// turn timer off
-	DEVICE_TIMER_DWELL.CTRLB = TIMER_WGMODE;		// waveform mode
-	DEVICE_TIMER_DWELL.INTCTRLA = TIMER_DWELL_INTLVL;// interrupt mode
+	TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;		// turn timer off
+	TIMER_DWELL.CTRLB = STEP_TIMER_WGMODE;		// waveform mode
+	TIMER_DWELL.INTCTRLA = TIMER_DWELL_INTLVL;	// interrupt mode
 
 	// setup software interrupt load timer
-	DEVICE_TIMER_LOAD.CTRLA = TIMER_DISABLE;		// turn timer off
-	DEVICE_TIMER_LOAD.CTRLB = TIMER_WGMODE;			// waveform mode
-	DEVICE_TIMER_LOAD.INTCTRLA = TIMER_LOAD_INTLVL;	// interrupt mode
-	DEVICE_TIMER_LOAD.PER = SWI_PERIOD;				// set period
+	TIMER_LOAD.CTRLA = STEP_TIMER_DISABLE;		// turn timer off
+	TIMER_LOAD.CTRLB = STEP_TIMER_WGMODE;		// waveform mode
+	TIMER_LOAD.INTCTRLA = TIMER_LOAD_INTLVL;	// interrupt mode
+	TIMER_LOAD.PER = SWI_PERIOD;				// set period
 
 	// setup software interrupt exec timer
-	DEVICE_TIMER_EXEC.CTRLA = TIMER_DISABLE;		// turn timer off
-	DEVICE_TIMER_EXEC.CTRLB = TIMER_WGMODE;			// waveform mode
-	DEVICE_TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
-	DEVICE_TIMER_EXEC.PER = SWI_PERIOD;				// set period
+	TIMER_EXEC.CTRLA = STEP_TIMER_DISABLE;		// turn timer off
+	TIMER_EXEC.CTRLB = STEP_TIMER_WGMODE;		// waveform mode
+	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
+	TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
 	st_reset();
 }
@@ -306,61 +305,61 @@ void st_reset()
  *	Even when -0s or -03 is used.
  */
 
-ISR(DEVICE_TIMER_DDA_ISR_vect)
+ISR(TIMER_DDA_ISR_vect)
 {
 	if ((st.m[MOTOR_1].counter += st.m[MOTOR_1].steps) > 0) {
-		DEVICE_PORT_MOTOR_1.OUTSET = STEP_BIT_bm;	// turn step bit on
+		PORT_MOTOR_1.OUTSET = STEP_BIT_bm;	// turn step bit on
  		st.m[MOTOR_1].counter -= st.timer_ticks_X_substeps;
-		DEVICE_PORT_MOTOR_1.OUTCLR = STEP_BIT_bm;	// turn step bit off in ~1 uSec
+		PORT_MOTOR_1.OUTCLR = STEP_BIT_bm;	// turn step bit off in ~1 uSec
 	}
 	if ((st.m[MOTOR_2].counter += st.m[MOTOR_2].steps) > 0) {
-		DEVICE_PORT_MOTOR_2.OUTSET = STEP_BIT_bm;
+		PORT_MOTOR_2.OUTSET = STEP_BIT_bm;
  		st.m[MOTOR_2].counter -= st.timer_ticks_X_substeps;
-		DEVICE_PORT_MOTOR_2.OUTCLR = STEP_BIT_bm;
+		PORT_MOTOR_2.OUTCLR = STEP_BIT_bm;
 	}
 	if ((st.m[MOTOR_3].counter += st.m[MOTOR_3].steps) > 0) {
-		DEVICE_PORT_MOTOR_3.OUTSET = STEP_BIT_bm;
+		PORT_MOTOR_3.OUTSET = STEP_BIT_bm;
  		st.m[MOTOR_3].counter -= st.timer_ticks_X_substeps;
-		DEVICE_PORT_MOTOR_3.OUTCLR = STEP_BIT_bm;
+		PORT_MOTOR_3.OUTCLR = STEP_BIT_bm;
 	}
 	if ((st.m[MOTOR_4].counter += st.m[MOTOR_4].steps) > 0) {
-		DEVICE_PORT_MOTOR_4.OUTSET = STEP_BIT_bm;
+		PORT_MOTOR_4.OUTSET = STEP_BIT_bm;
  		st.m[MOTOR_4].counter -= st.timer_ticks_X_substeps;
-		DEVICE_PORT_MOTOR_4.OUTCLR = STEP_BIT_bm;
+		PORT_MOTOR_4.OUTCLR = STEP_BIT_bm;
 	}
 	if (--st.timer_ticks_downcount == 0) {			// end move
- 		DEVICE_TIMER_DDA.CTRLA = TIMER_DISABLE;		// disable DDA timer
+ 		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// disable DDA timer
 		// power-down motors if this feature is enabled
 		if (cfg.m[MOTOR_1].power_mode == true) {
-			DEVICE_PORT_MOTOR_1.OUTSET = MOTOR_ENABLE_BIT_bm; 
+			PORT_MOTOR_1.OUTSET = MOTOR_ENABLE_BIT_bm; 
 		}
 		if (cfg.m[MOTOR_2].power_mode == true) {
-			DEVICE_PORT_MOTOR_2.OUTSET = MOTOR_ENABLE_BIT_bm; 
+			PORT_MOTOR_2.OUTSET = MOTOR_ENABLE_BIT_bm; 
 		}
 		if (cfg.m[MOTOR_3].power_mode == true) {
-			DEVICE_PORT_MOTOR_3.OUTSET = MOTOR_ENABLE_BIT_bm; 
+			PORT_MOTOR_3.OUTSET = MOTOR_ENABLE_BIT_bm; 
 		}
 		if (cfg.m[MOTOR_4].power_mode == true) {
-			DEVICE_PORT_MOTOR_4.OUTSET = MOTOR_ENABLE_BIT_bm; 
+			PORT_MOTOR_4.OUTSET = MOTOR_ENABLE_BIT_bm; 
 		}
 		_load_move();							// load the next move
 	}
 }
 
-ISR(DEVICE_TIMER_DWELL_ISR_vect) {				// DWELL timer interupt
+ISR(TIMER_DWELL_ISR_vect) {				// DWELL timer interupt
 	if (--st.timer_ticks_downcount == 0) {
- 		DEVICE_TIMER_DWELL.CTRLA = TIMER_DISABLE;// disable DWELL timer
+ 		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;// disable DWELL timer
 		_load_move();
 	}
 }
 
-ISR(DEVICE_TIMER_LOAD_ISR_vect) {				// load steppers SW interrupt
- 	DEVICE_TIMER_LOAD.CTRLA = TIMER_DISABLE;	// disable SW interrupt timer
+ISR(TIMER_LOAD_ISR_vect) {				// load steppers SW interrupt
+ 	TIMER_LOAD.CTRLA = STEP_TIMER_DISABLE;	// disable SW interrupt timer
 	_load_move();
 }
 
-ISR(DEVICE_TIMER_EXEC_ISR_vect) {				// exec move SW interrupt
- 	DEVICE_TIMER_EXEC.CTRLA = TIMER_DISABLE;	// disable SW interrupt timer
+ISR(TIMER_EXEC_ISR_vect) {				// exec move SW interrupt
+ 	TIMER_EXEC.CTRLA = STEP_TIMER_DISABLE;	// disable SW interrupt timer
 	_exec_move();
 }
 
@@ -385,8 +384,8 @@ uint8_t st_test_exec_state()
 void st_request_exec_move()
 {
 	if (sp.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {	// bother interrupting
-		DEVICE_TIMER_EXEC.PER = SWI_PERIOD;
-		DEVICE_TIMER_EXEC.CTRLA = TIMER_ENABLE;			// trigger a LO interrupt
+		TIMER_EXEC.PER = SWI_PERIOD;
+		TIMER_EXEC.CTRLA = STEP_TIMER_ENABLE;			// trigger a LO interrupt
 	}
 }
 
@@ -403,8 +402,8 @@ static void _exec_move()
 static void _request_load_move()
 {
 	if (st.timer_ticks_downcount == 0) {				// bother interrupting
-		DEVICE_TIMER_LOAD.PER = SWI_PERIOD;
-		DEVICE_TIMER_LOAD.CTRLA = TIMER_ENABLE;			// trigger a HI interrupt
+		TIMER_LOAD.PER = SWI_PERIOD;
+		TIMER_LOAD.CTRLA = STEP_TIMER_ENABLE;			// trigger a HI interrupt
 	} 	// else don't bother to interrupt. You'll just trigger an 
 		// interrupt and find out the load routine is not ready for you
 }
@@ -427,7 +426,7 @@ void _load_move()
 	if (sp.move_type == MOVE_TYPE_ALINE) {						// no more lines, only alines
 		st.timer_ticks_downcount = sp.timer_ticks;
 		st.timer_ticks_X_substeps = sp.timer_ticks_X_substeps;
-		DEVICE_TIMER_DDA.PER = sp.timer_period;
+		TIMER_DDA.PER = sp.timer_period;
  
 		// This section is somewhat optimized for execution speed 
 		// All axes must set steps and compensate for out-of-range pulse phasing. 
@@ -447,18 +446,18 @@ void _load_move()
 				device.port[i]->OUTCLR = MOTOR_ENABLE_BIT_bm;	// enable motor
 			}
 		}
-		DEVICE_TIMER_DDA.CTRLA = TIMER_ENABLE;					// enable the DDA timer
+		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;					// enable the DDA timer
 
 	// handle dwells
 	} else if (sp.move_type == MOVE_TYPE_DWELL) {
 		st.timer_ticks_downcount = sp.timer_ticks;
-		DEVICE_TIMER_DWELL.PER = sp.timer_period;		// load dwell timer period
- 		DEVICE_TIMER_DWELL.CTRLA = TIMER_ENABLE;		// enable the dwell timer
+		TIMER_DWELL.PER = sp.timer_period;						// load dwell timer period
+ 		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;					// enable the dwell timer
 	}
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here) 
-	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
-	st_request_exec_move();								// exec and prep next move
+	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;					// flip it back
+	st_request_exec_move();										// exec and prep next move
 }
 
 /*
@@ -654,10 +653,10 @@ void st_dump_stepper_state()
 
 	fprintf_P(stderr, (PGM_P)sts_sing, st.timer_ticks_downcount);
 
-	fprintf_P(stderr, (PGM_P)sts_timr, "dda", DEVICE_TIMER_DDA.CTRLA, DEVICE_TIMER_DDA.PER);
-	fprintf_P(stderr, (PGM_P)sts_timr, "dwl", DEVICE_TIMER_DWELL.CTRLA, DEVICE_TIMER_DWELL.PER);
-	fprintf_P(stderr, (PGM_P)sts_timr, "load", DEVICE_TIMER_LOAD.CTRLA, DEVICE_TIMER_LOAD.PER);
-	fprintf_P(stderr, (PGM_P)sts_timr, "exec", DEVICE_TIMER_EXEC.CTRLA, DEVICE_TIMER_EXEC.PER);
+	fprintf_P(stderr, (PGM_P)sts_timr, "dda", TIMER_DDA.CTRLA, TIMER_DDA.PER);
+	fprintf_P(stderr, (PGM_P)sts_timr, "dwl", TIMER_DWELL.CTRLA, TIMER_DWELL.PER);
+	fprintf_P(stderr, (PGM_P)sts_timr, "load", TIMER_LOAD.CTRLA, TIMER_LOAD.PER);
+	fprintf_P(stderr, (PGM_P)sts_timr, "exec", TIMER_EXEC.CTRLA, TIMER_EXEC.PER);
 
 	for (i=0; i<MOTORS; i++) {
 		fprintf_P(stderr, (PGM_P)sts_motr, i, 
