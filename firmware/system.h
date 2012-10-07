@@ -53,6 +53,14 @@ void sys_init(void);					// master hardware init
 //#define __CLOCK_EXTERNAL_8MHZ	TRUE	// uses PLL to provide 32 MHz system clock
 #define __CLOCK_EXTERNAL_16MHZ TRUE		// uses PLL to provide 32 MHz system clock
 
+/* Motor & switch port assignments */
+
+#define PORT_MOTOR_1		PORTA
+#define PORT_MOTOR_2 		PORTF
+#define PORT_MOTOR_3		PORTE
+#define PORT_MOTOR_4		PORTD
+#define PORT_GPIO2_IN		PORTB
+
 /*
  * Port setup - Stepper / Switch Ports:
  *	b0	(out) step			(SET is step,  CLR is rest)
@@ -86,14 +94,6 @@ enum cfgPortBits {			// motor control port bit positions
 #define GPIO2_MIN_BIT_bm	(1<<GPIO2_MIN_BIT_bp)
 #define GPIO2_MAX_BIT_bm	(1<<GPIO2_MAX_BIT_bp) // motor control port bit masks
 
-/* Motor & switch port assignments */
-
-#define PORT_MOTOR_1		PORTA
-#define PORT_MOTOR_2 		PORTF
-#define PORT_MOTOR_3		PORTE
-#define PORT_MOTOR_4		PORTD
-#define PORT_GPIO2_IN		PORTB
-
 enum gpio1Inputs {
 	GPIO1_IN_BIT_0_bp = 0,	// gpio1 input bit 0
 	GPIO1_IN_BIT_1_bp,		// gpio1 input bit 1
@@ -113,15 +113,8 @@ enum gpio1Inputs {
 #define MIST_COOLANT_BIT	0x01	// coolant on/off - these are the same due to limited ports
 #define FLOOD_COOLANT_BIT	0x01	// coolant on/off
 
-// Device structure - global structure to allow iteration through similar devices
-// Ports are shared between steppers and GPIO so we need a global struct
-
-struct deviceSingleton {
-	struct PORT_struct *port[MOTORS];	// motor control ports
-};
-struct deviceSingleton device;
-
 /* Timer assignments - see specific modules for details) */
+
 #define TIMER_DDA				TCC0			// DDA timer 	(see stepper.h)
 #define TIMER_DWELL	 			TCD0			// Dwell timer	(see stepper.h)
 #define TIMER_LOAD				TCE0			// Loader timer	(see stepper.h)
@@ -129,5 +122,14 @@ struct deviceSingleton device;
 #define TIMER_5					TCC1			// unallocated timer
 #define TIMER_PWM1				TCD1			// PWM timer #1 (see pwm.c)
 #define TIMER_PWM2				TCE1			// PWM timer #2	(see pwm.c)
+
+
+/**** Device singleton - global structure to allow iteration through similar devices ****/
+// Ports are shared between steppers and GPIO so we need a global struct
+
+struct deviceSingleton {
+	struct PORT_struct *port[MOTORS];	// motor control ports
+};
+struct deviceSingleton device;
 
 #endif

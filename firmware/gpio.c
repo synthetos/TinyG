@@ -93,10 +93,10 @@ static void _switch_isr_helper(uint8_t sw_flag);
 static uint8_t gpio_port_value;				// global for synthetic port read value
 
 /*
- * gpio_init() - initialize limit switches
+ * gpio_init() - initialize homing/limit switches
  *
  *	This function assumes st_init() has been run previously.
- *	The device structure singleton is defined in tinyg.h
+ *	The device structure singleton is defined in system.h
  *	These inits assume stepper.c, st_init() has run previously
  */
 
