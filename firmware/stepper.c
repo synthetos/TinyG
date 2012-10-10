@@ -244,7 +244,7 @@ void st_init()
 	memset(&st, 0, sizeof(st));	// clear all values, pointers and status
 
 	// Note: these defines and the device struct are found in system.h
-	device.port[MOTOR_1] = &PORT_MOTOR_1;// bind PORTs to struct
+	device.port[MOTOR_1] = &PORT_MOTOR_1;		// bind PORTs to struct
 	device.port[MOTOR_2] = &PORT_MOTOR_2;
 	device.port[MOTOR_3] = &PORT_MOTOR_3;
 	device.port[MOTOR_4] = &PORT_MOTOR_4;

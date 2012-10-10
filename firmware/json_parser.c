@@ -181,7 +181,6 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	char terminators[] = {"},"};
 
 	cmd_clear(cmd);								// wipe the object and set the depth
-//	cmd->depth = *depth;						// tree depth. 0 = root
 
 	// process name element
 	// find leading and trailing name quotes and set pointers accordingly
@@ -189,9 +188,16 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	if ((*pstr = strchr(*pstr, '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	if ((tmp = strchr(++(*pstr), '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	*tmp = NUL;
-//	strncpy(cmd->friendly_name, *pstr, CMD_STRING_LEN);// copy name from string
-	strncpy(cmd->friendly_name, group, CMD_GROUP_LEN);  // prepend the group or noop if no group
-	strncpy(&cmd->friendly_name[strlen(group)], *pstr, CMD_STRING_LEN); // cat name to the group prefix
+
+	// copy the token by itself or with a group prefix if it's a prefixed group
+	if (strstr(GROUP_PREFIXES, group) == NULL) {
+		strncpy(cmd->friendly_name, *pstr, CMD_STRING_LEN);	// copy name from string
+	} else {
+		strncpy(cmd->friendly_name, group, CMD_GROUP_LEN);// prepend the group
+		strncpy(&cmd->friendly_name[strlen(group)], *pstr, CMD_STRING_LEN);// cat name to group prefix
+	}
+
+	// get the index or return if the toekn / friendly_name is invalid
 	if ((cmd->index = cmd_get_index(cmd->friendly_name)) == -1) { return (TG_UNRECOGNIZED_COMMAND);}
 	cmd_get_token(cmd->index, cmd->token);
 	if (group[0] != NUL) {						// strip group prefix if this is a group

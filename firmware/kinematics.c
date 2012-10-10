@@ -46,9 +46,9 @@ static uint8_t _cartesian_kinematics(double travel[], double joint[], double mic
  *	Note: The reason steps are returned as doubles (as opposed to, say,
  *		  uint32_t) is to accommodate fractional DDA steps. The DDA deals 
  *		  with fractional step values as fixed-point binary in order to get
- *		  the smoothest possible operation. Steps are passed to the 
- *		  motor_queue routine as doubles and converted to fixed-point binary 
- *		  during queue loading. See motor_queue.c and steppers.c for details.
+ *		  the smoothest possible operation. Steps are passed to the move prep
+ *		  routine as doubles and converted to fixed-point binary during queue 
+ *		  loading. See stepper.c for details.
  */
 
 uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
@@ -83,9 +83,7 @@ uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
 
 static uint8_t _cartesian_kinematics(double travel[], double joint[], double microseconds)
 {
-	uint8_t i;
-
-	for (i=0; i<AXES; i++) {
+	for (uint8_t i=0; i<AXES; i++) {
 		joint[i] = travel[i];
 	}	
 	return (TG_OK);

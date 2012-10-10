@@ -27,14 +27,16 @@
  */
 /*
  *	This GPIO file is where all parallel port bits are managed that are 
- *	not already taken up by steppers, serial ports, JTAG or PDI programming
+ *	not already taken up by steppers, serial ports, SPI or PDI programming
  *
  *	There are 2 GPIO ports:
  *
- *	  gpio1	  Located on 8x2 header next to the RS485 plugs (RJ45s)
+ *	  gpio1	  Located on 5x2 header next to the PDI programming plugs (on v7's)
  *			  Four (4) output bits capable of driving 3.3v or 5v logic
+ *
+ *			Note: On v6 and earlier boards there are also 4 inputs:
  *			  Four (4) level converted input bits capable of being driven 
- *				by 3.3v or 5v logic
+ *				by 3.3v or 5v logic - connected to B0 - B3 
  *
  *	  gpio2	  Located on 9x2 header on "bottom" of board
  *			  Eight (8) non-level converted input bits
@@ -44,8 +46,7 @@
  *				3.3v input bits depending on port configuration
  *				**** These bits CANNOT be used as 5v inputs ****
  */
-/*
- *	Switch Modes
+/* Switch Modes
  *
  *	The switches are considered to be homing switches when machine_state is
  *	MACHINE_HOMING. At all other times they are treated as limit switches:
@@ -87,7 +88,7 @@ struct gpioControls {						// GPIO controls for various modes
 static struct gpioControls gctl;
 */
 
-#define SW_LOCKOUT_TICKS 10					// ticks are ~10ms each
+#define SW_LOCKOUT_TICKS 10					// the RTC ticks are ~10ms each
 
 static void _switch_isr_helper(uint8_t sw_flag);
 static uint8_t gpio_port_value;				// global for synthetic port read value
@@ -95,17 +96,24 @@ static uint8_t gpio_port_value;				// global for synthetic port read value
 /*
  * gpio_init() - initialize homing/limit switches
  *
- *	This function assumes st_init() has been run previously.
- *	The device structure singleton is defined in system.h
- *	These inits assume stepper.c, st_init() has run previously
+ *	This function assumes st_init() has been run previously to bind the ports
+ *	to the device structure and to set GPIO1 and GPIO2 bit IO directions 
+ *	(see system.h for all of this)
+ *
+ *	Note: v7 boards have external strong pullups on GPIO2 pins (2.7K ohm). 
+ *	v6 and earlier use internal upllups only. Internal pullups are set 
+ *	regardless of board type but are extraneous for v7 boards.
  */
 
 void gpio_init(void) 
 {
 	uint8_t int_mode;							// interrupt mode
 	uint8_t pin_mode = PORT_OPC_PULLUP_gc;		// pin mode. see iox192a3.h for details
+//	uint8_t pin_mode = PORT_OPC_TOTEM_gc;		// alternate pin mode for v7 boards
 
-	// GPIO1 - switch port
+	// GPIO1 - output port (nothing here yet)
+
+	// GPIO2 - switch port
 	for (uint8_t i=0; i<MOTORS; i++) {
 
 		// set initial port bit state to OFF
@@ -118,8 +126,12 @@ void gpio_init(void)
 		if ((cfg.a[i].switch_mode == SW_MODE_HOMING_NO) || 
 			(cfg.a[i].switch_mode == SW_MODE_ENABLED_NO)) {
 			int_mode = PORT_ISC_FALLING_gc;
+			gpio.sw_sense[i] = SW_SENSE_NO;
+			gpio.sw_sense[i+SW_OFFSET_TO_MAX] = SW_SENSE_NO;
 		} else {
 			int_mode = PORT_ISC_RISING_gc;
+			gpio.sw_sense[i] = SW_SENSE_NC;
+			gpio.sw_sense[i+SW_OFFSET_TO_MAX] = SW_SENSE_NC;
 		}
 
 		// setup ports input bits (previously set to inputs by st_init())
@@ -132,17 +144,10 @@ void gpio_init(void)
 		device.port[i]->INT1MASK = GPIO2_MAX_BIT_bm;		// max on INT1
 
 		// set interrupt levels. Interrupts must be enabled in main()
-//		device.port[i]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
-		device.port[i]->INTCTRL = (PORT_INT0LVL_MED_gc|PORT_INT1LVL_MED_gc);
-//		device.port[i]->INTCTRL |= (PORT_INT0LVL_LO_gc|PORT_INT1LVL_LO_gc);
-
+		device.port[i]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
 	}
 	gpio_clear_switches();
 	gpio.sw_count = 0;
-
-	// GPIO2 - inputs and outputs port
-	// (nothing here yet)
-
 }
 
 /*
@@ -164,7 +169,7 @@ static void _switch_isr_helper(uint8_t sw_flag)
 	if (gpio.sw_count == 0) {					// true if not in a debounce lockout
 		uint8_t axis = sw_flag;					// find out what axis this is
 		if (axis >= SW_OFFSET_TO_MAX) {
-			axis -= SW_OFFSET_TO_MAX;
+			axis -= SW_OFFSET_TO_MAX;			// subtract offset to get the axis number
 		} 
 		if (cfg.a[axis].switch_mode == SW_MODE_DISABLED) {
 			return;
@@ -223,7 +228,7 @@ void gpio_clear_switches()
 
 void gpio_read_switches()
 {
-	gpio_clear_switches();				// clear flags and thrown
+	gpio_clear_switches();				// clear flags and thrown bit
 
 	for (uint8_t i=0; i<4; i++) {
 		if (!(device.port[i]->IN & GPIO2_MIN_BIT_bm)) { 	// min

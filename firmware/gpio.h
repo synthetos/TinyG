@@ -34,9 +34,9 @@
  * If you change axis port assignments you need to chanage these, too.
  */
 // Interrupt level: pick one:
-//#define GPIO1_INTLVL (PORT_INT0LVL_HI_gc|PORT_INT1LVL_HI_gc)
+//#define GPIO1_INTLVL (PORT_INT0LVL_HI_gc|PORT_INT1LVL_HI_gc)	// can't be hi
 #define GPIO1_INTLVL (PORT_INT0LVL_MED_gc|PORT_INT1LVL_MED_gc)
-//#define GPIO1_INTLVL (PORT_INT0LVL_LO_gc|PORT_INT1LVL_LO_gc)
+//#define GPIO1_INTLVL (PORT_INT0LVL_LO_gc|PORT_INT1LVL_LO_gc)	// shouldn;t be low
 
 // port assignments for vectors
 #define X_MIN_ISR_vect PORTA_INT0_vect
@@ -75,10 +75,16 @@ enum swMode {				// limit switch operation modes
 	SW_MODE_ENABLED_NC		// enable NC switch for homing and limits
 };
 
+enum swSense {
+	SW_SENSE_NO = 0,		// Normally open switch
+	SW_SENSE_NC				// Normally closed switch
+};
+
 struct gpioStruct {							// switch state
 	volatile uint8_t sw_thrown;				// 1=thrown (Note 1)
 	volatile uint8_t sw_count;				// lockout counter (debouncing)
 	volatile uint8_t sw_flags[SW_SIZE];		// switch flag array
+	volatile uint8_t sw_sense[SW_SIZE];		// 0=NO, 1=NC
 };
 struct gpioStruct gpio;
 
