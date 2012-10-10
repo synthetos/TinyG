@@ -105,7 +105,7 @@ struct xioFILE {
 
 // PGM functions
 void xio_init_pgm(void);
-FILE * xio_open_pgm(const prog_char * addr);		// open memory string read only
+FILE * xio_open_pgm(const char * addr);		// open memory string read only
 int xio_cntl_pgm(const uint32_t control);			// validate & set dev flags
 int xio_putc_pgm(const char c, struct __file *stream);// always returns ERROR
 int xio_getc_pgm(struct __file *stream);			// get a character

@@ -380,12 +380,12 @@ void roll_over_and_die()
 	tg_application_reset();
 }
 
-void print_scalar(char *label, double value)
+void print_scalar(const char *label, double value)
 {
 	fprintf_P(stderr,PSTR("%S %8.4f\n"),label,value); 
 }
 
-void print_vector(char *label, double vector[], uint8_t count)
+void print_vector(const char *label, double vector[], uint8_t count)
 {
 	fprintf_P(stderr,PSTR("%S"),label); 
 	for (uint8_t i=0; i<count; i++) {

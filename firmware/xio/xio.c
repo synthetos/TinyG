@@ -104,7 +104,7 @@ void xio_init()
  */
 
 void xio_init_dev(uint8_t dev, 					// device number
-	FILE *(*x_open)(const prog_char *addr),		// device open routine
+	FILE *(*x_open)(const char *addr),			// device open routine
 	int (*x_cntl)(const uint32_t control),		// set device control flags
 //	int (*x_rctl)(uint32_t *control),			// get device control flags
 	int (*x_putc)(char, struct __file *),		// write char (stdio compat)

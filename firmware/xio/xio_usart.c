@@ -246,7 +246,7 @@ int xio_putc_usart(const uint8_t dev, const char c, FILE *stream)
  *  Returns c (may be translated depending on the function)
  */
 
-static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
+static int (*const getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 //static int (*getcFuncs[])(void) = {			// ALTERNATE: put table in SRAM
 							// dec  hex symbol
 		_getc_NEWLINE, 		//	0	00	NUL	(Null char)		(TREATED AS NEWLINE)
@@ -479,7 +479,7 @@ static int _getc_DELETE(void)				// can't handle a delete very well
  *	I just paid the penalty and set up separate dispatch tables
  */
 
-static int (*getsFuncs[])(void) PROGMEM = { // use if you want it in FLASH
+static int (*const getsFuncs[])(void) PROGMEM = { // use if you want it in FLASH
 //static int (*getsFuncs[])(void) = {		// ALTERNATE: put table in SRAM
 
 							// dec  hex symbol

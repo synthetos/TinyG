@@ -643,9 +643,9 @@ void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode)
 
 #ifdef __DEBUG
 
-static char sts_sing[] PROGMEM = "stSingleton timer_ticks (remaining):%d\n";
-static char sts_timr[] PROGMEM = "  timer %s  enabled:%d  period:%d\n";
-static char sts_motr[] PROGMEM = "  motor[%d] pol:%d  steps:%d  counter:%d\n";
+static const char sts_sing[] PROGMEM = "stSingleton timer_ticks (remaining):%d\n";
+static const char sts_timr[] PROGMEM = "  timer %s  enabled:%d  period:%d\n";
+static const char sts_motr[] PROGMEM = "  motor[%d] pol:%d  steps:%d  counter:%d\n";
 
 void st_dump_stepper_state()
 {
