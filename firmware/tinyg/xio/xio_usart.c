@@ -49,24 +49,25 @@
  *	There are other examples of this approach as well (e.g. xio_set_baud_usart())
  */
 
-#include <stdio.h>					// precursor for xio.h
-#include <avr/pgmspace.h>			// precursor for xio.h
+#include <stdio.h>						// precursor for xio.h
+#include <stdbool.h>					// true and false
+#include <avr/pgmspace.h>				// precursor for xio.h
 #include <avr/interrupt.h>
-#include <avr/sleep.h>				// needed for blocking character writes
+#include <avr/sleep.h>					// needed for blocking character writes
 
-#include "xio.h"					// includes for all devices are in here
+#include "xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
 
-#include "../tinyg.h"				// needed for AXES definition
-#include "../gpio.h"				// needed for XON/XOFF LED indicator
-#include "../util.h"				// needed to pick up __debug defines
+#include "../tinyg.h"					// needed for AXES definition
+#include "../gpio.h"					// needed for XON/XOFF LED indicator
+#include "../util.h"					// needed to pick up __debug defines
 
-static uint8_t gdev;				// global device # variable (yuk)
-									// used by helper routines
+static uint8_t gdev;					// global device # variable (yuk)
+										// used by helper routines
 
 // baud rate lookup tables - indexed by enum xioBAUDRATES (see xio_usart.h)
-const uint8_t bsel[] PROGMEM = { 0, 207, 103, 51, 34, 33, 31, 27, 19, 1, 1 };
-const uint8_t bscale[] PROGMEM = { 0, 0, 0, 0, 0, (-1<<4), (-2<<4), (-3<<4), (-4<<4), (1<<4), 1 };
+static const uint8_t bsel[] PROGMEM = { 0, 207, 103, 51, 34, 33, 31, 27, 19, 1, 1 };
+static const uint8_t bscale[] PROGMEM = { 0, 0, 0, 0, 0, (-1<<4), (-2<<4), (-3<<4), (-4<<4), (1<<4), 1 };
 
 // local function prototypes
 static int _xio_readc_usart(const uint8_t dev, const char *buf);
@@ -102,7 +103,7 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 
 	// set flags
 	(void)xio_cntl(dev, control);// generic setflags -doesn't validate flags
-	if (EN_XOFF(d->flags) == TRUE) {				// transfer flow control setting 
+	if (EN_XOFF(d->flags) == true) {				// transfer flow control setting 
 		dx->fc_state = FC_IN_XON;					// resting state 
 	}
 
@@ -246,7 +247,7 @@ int xio_putc_usart(const uint8_t dev, const char c, FILE *stream)
  *  Returns c (may be translated depending on the function)
  */
 
-static int (*getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
+static int (*const getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
 //static int (*getcFuncs[])(void) = {			// ALTERNATE: put table in SRAM
 							// dec  hex symbol
 		_getc_NEWLINE, 		//	0	00	NUL	(Null char)		(TREATED AS NEWLINE)
@@ -479,7 +480,7 @@ static int _getc_DELETE(void)				// can't handle a delete very well
  *	I just paid the penalty and set up separate dispatch tables
  */
 
-static int (*getsFuncs[])(void) PROGMEM = { // use if you want it in FLASH
+static int (*const getsFuncs[])(void) PROGMEM = { // use if you want it in FLASH
 //static int (*getsFuncs[])(void) = {		// ALTERNATE: put table in SRAM
 
 							// dec  hex symbol
@@ -706,7 +707,7 @@ int xio_gets_usart(const uint8_t dev, char *buf, const int size)
 		d->signal = XIO_SIG_OK;					// reset signal register
 		d->flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
 	}
-	while (TRUE) {
+	while (true) {
 		switch (d->status = _xio_readc_usart(dev, d->buf)) {
 			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN);		// empty condition
 			case (XIO_BUFFER_FULL_NON_FATAL): return (d->status);// overrun err

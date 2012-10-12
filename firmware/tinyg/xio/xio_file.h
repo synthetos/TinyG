@@ -96,7 +96,7 @@ struct xioFILE {
 	uint32_t rd_offset;					// read index into file
 	uint32_t wr_offset;					// write index into file
 	uint32_t max_offset;				// max size of file
-	char * filebase_P;					// base location in memory
+	const char * filebase_P;			// base location in program memory (PROGMEM)
 };
 
 /* 
@@ -105,11 +105,11 @@ struct xioFILE {
 
 // PGM functions
 void xio_init_pgm(void);
-FILE * xio_open_pgm(const prog_char * addr);		// open memory string read only
-int xio_cntl_pgm(const uint32_t control);			// validate & set dev flags
+FILE * xio_open_pgm(const char * addr);		// open memory string read only
+int xio_cntl_pgm(const uint32_t control);	// validate & set dev flags
 int xio_putc_pgm(const char c, struct __file *stream);// always returns ERROR
-int xio_getc_pgm(struct __file *stream);			// get a character
-int xio_gets_pgm(char *buf, const int size);	// read string from program memory
+int xio_getc_pgm(struct __file *stream);	// get a character
+int xio_gets_pgm(char *buf, const int size);// read string from program memory
 
 // EEPROM functions
 /*

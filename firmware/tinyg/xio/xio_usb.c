@@ -32,12 +32,13 @@
  *	This version implements signal capture at the ISR level
  */
 
-#include <stdio.h>					// precursor for xio.h
-#include <avr/pgmspace.h>			// precursor for xio.h
+#include <stdio.h>						// precursor for xio.h
+#include <stdbool.h>					// true and false
+#include <avr/pgmspace.h>				// precursor for xio.h
 #include <avr/interrupt.h>
-//#include <avr/sleep.h>			// needed if blocking reads & writes are used
+//#include <avr/sleep.h>				// needed if blocking reads & writes are used
 
-#include "xio.h"				// includes for all devices are in here
+#include "xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
 #include "../gpio.h"
 
@@ -138,8 +139,8 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		return;
 	}
 	// filter out CRs and LFs if they are to be ignored
-	if ((IGNORECR(USB.flags) == TRUE) && (c == CR)) { return;}
-	if ((IGNORELF(USB.flags) == TRUE) && (c == LF)) { return;}
+	if ((IGNORECR(USB.flags) == true) && (c == CR)) { return;}
+	if ((IGNORELF(USB.flags) == true) && (c == LF)) { return;}
 
 	// normal character path
 	if ((--USBu.rx_buf_head) == 0) { 			// adv buffer head with wrap
@@ -147,7 +148,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 	}
 	if (USBu.rx_buf_head != USBu.rx_buf_tail) {	// buffer is not full
 		USBu.rx_buf[USBu.rx_buf_head] = c;		// write char unless full
-		if ((EN_XOFF(USB.flags) == TRUE) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
+		if ((EN_XOFF(USB.flags) == true) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
 			xio_xoff_usart(XIO_DEV_USB);
 		}
 	} else { // buffer-full - toss the incoming character

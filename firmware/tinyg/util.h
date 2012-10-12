@@ -82,31 +82,37 @@ uint8_t errcode;
 #ifndef avg
 #define avg(a,b) ((a+b)/2)
 #endif
+
+/*
+#ifndef square
 #define square(a) ((a)*(a))
+#endif
+*/
+
 #define cube(a) ((a)*(a)*(a))
 #define cubert(a) pow((a), 0.33333333333333)
 
 #ifndef EPSILON
 //#define EPSILON 0.0001					// rounding error for floats
-#define EPSILON 0.00001					// rounding error for floats
+#define EPSILON 0.00001						// rounding error for floats
 #endif
 #ifndef fp_EQ
-#define fp_EQ(a,b) (fabs(a-b) < EPSILON)// requires math.h to be included in each file used
+#define fp_EQ(a,b) (fabs(a-b) < EPSILON)	// requires math.h to be included in each file used
 #endif
 #ifndef fp_NE
-#define fp_NE(a,b) (fabs(a-b) > EPSILON)// requires math.h to be included in each file used
+#define fp_NE(a,b) (fabs(a-b) > EPSILON)	// requires math.h to be included in each file used
 #endif
 #ifndef fp_ZERO
-#define fp_ZERO(a) (fabs(a) < EPSILON)	// requires math.h to be included in each file used
+#define fp_ZERO(a) (fabs(a) < EPSILON)		// requires math.h to be included in each file used
 #endif
 #ifndef fp_NOT_ZERO
-#define fp_NOT_ZERO(a) (fabs(a) > EPSILON)// requires math.h to be included in each file used
+#define fp_NOT_ZERO(a) (fabs(a) > EPSILON)	// requires math.h to be included in each file used
 #endif
 #ifndef fp_FALSE
-#define fp_FALSE(a) (a < EPSILON)		// float is interpreted as FALSE (equals zero)
+#define fp_FALSE(a) (a < EPSILON)			// float is interpreted as FALSE (equals zero)
 #endif
 #ifndef fp_TRUE
-#define fp_TRUE(a) (a > EPSILON)		// float is interpreted as TRUE (not equal to zero)
+#define fp_TRUE(a) (a > EPSILON)			// float is interpreted as TRUE (not equal to zero)
 #endif
 
 // Constants

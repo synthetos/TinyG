@@ -35,6 +35,7 @@
 
 /*  Note: anything that includes xio.h first needs the following:
  	#include <stdio.h>				// needed for FILE def'n
+	#include <stdbool.h>			// needed for true and false 
 	#include <avr/pgmspace.h>		// defines prog_char, PSTR
 */
 
@@ -45,20 +46,14 @@
 
 /* Globals */
 // Note: stdin, stdout and stderr are defined in stdio.h and are used by XIO
-
+/*
 #ifndef false
 #define false 0
 #endif
 #ifndef true
 #define true 1
 #endif
-
-#ifndef FALSE			// deprecated, use lowercase forms
-#define FALSE 0
-#endif
-#ifndef TRUE
-#define TRUE 1
-#endif
+*/
 
 #define PGMFILE (const PROGMEM char *)	// extends pgmspace.h
 
@@ -118,36 +113,36 @@ int xio_getc(const uint8_t dev);
 int xio_putc(const uint8_t dev, const char c);
 int xio_gets(const uint8_t dev, char *buf, const int size);
 
-void xio_init_dev(uint8_t dev,					// device number
-	FILE *(*dev_open)(const prog_char *addr),	// device open routine
-	int (*dev_cntl)(const uint32_t control),	// set device control flags
-//	int (*dev_rctl)(uint32_t *control),			// get device control flags
-	int (*dev_putc)(char, struct __file *),		// write char (stdio compatible)
-	int (*dev_getc)(struct __file *),			// read char (stdio compatible)
-	int (*dev_gets)(char *buf, int size)		// specialized line reader
+void xio_init_dev(uint8_t dev,				// device number
+	FILE *(*dev_open)(const char *addr),	// device open routine
+	int (*dev_cntl)(const uint32_t control),// set device control flags
+//	int (*dev_rctl)(uint32_t *control),		// get device control flags
+	int (*dev_putc)(char, struct __file *),	// write char (stdio compatible)
+	int (*dev_getc)(struct __file *),		// read char (stdio compatible)
+	int (*dev_gets)(char *buf, int size)	// specialized line reader
 	); 
 
 /*************************************************************************
  *	Device structures
  *************************************************************************/
 
-struct xioDEVICE {				// common device struct (one per dev)
-	uint8_t status;				// completion status 
-	uint8_t signal;				// signal value
-	char c;						// char temp
-	uint8_t len;				// chars read so far (buf array index)
-	int size;					// text buffer length (dynamic)
-	uint32_t flags;				// common control flags
-	FILE *(*x_open)(const prog_char *addr);	// device open routine
+struct xioDEVICE {							// common device struct (one per dev)
+	uint8_t status;							// completion status 
+	uint8_t signal;							// signal value
+	char c;									// char temp
+	uint8_t len;							// chars read so far (buf array index)
+	int size;								// text buffer length (dynamic)
+	uint32_t flags;							// common control flags
+	FILE *(*x_open)(const char *addr);		// device open routine
 	int (*x_cntl)(const uint32_t control);	// set device control flags
 //	int (*x_rctl)(uint32_t *control);		// get device control flags
 	int (*x_putc)(char, struct __file *);	// write char (stdio compatible)
 	int (*x_getc)(struct __file *);			// read char (stdio compatible)
 	int (*x_gets)(char *buf, const int size);// specialized line reader
 
-	void *x;					// device-specific struct binding (static)
-	FILE *fdev;					// stdio fdev binding (static)
-	char *buf;					// text buffer binding (dynamic)
+	void *x;								// device-specific struct binding (static)
+	FILE *fdev;								// stdio fdev binding (static)
+	char *buf;								// text buffer binding (dynamic)
 };
 
 /*************************************************************************
@@ -252,16 +247,16 @@ extern struct xioSIGNALS sig;					// signal flags
 // Bit evaluations that return actual TRUE and FALSE
 // Just using the (a & blahblah) returns FALSE and not_FALSE 
 // ...but not actually TRUE (which = 1)
-#define READ(a) 		((a & XIO_FLAG_RD_bm) ? TRUE : FALSE)
-#define WRITE(a)	 	((a & XIO_FLAG_WR_bm) ? TRUE : FALSE)
-#define BLOCKING(a) 	((a & XIO_FLAG_BLOCK_bm) ? TRUE : FALSE)
-#define EN_XOFF(a)		((a & XIO_FLAG_XOFF_bm) ? TRUE : FALSE)
-#define ECHO(a)		 	((a & XIO_FLAG_ECHO_bm) ? TRUE : FALSE)
-#define CRLF(a) 		((a & XIO_FLAG_CRLF_bm) ? TRUE : FALSE)
-#define IGNORECR(a) 	((a & XIO_FLAG_IGNORECR_bm) ? TRUE : FALSE)
-#define IGNORELF(a) 	((a & XIO_FLAG_IGNORELF_bm) ? TRUE : FALSE)
-#define LINEMODE(a)		((a & XIO_FLAG_LINEMODE_bm) ? TRUE : FALSE)
-#define IN_LINE(a)		((a & XIO_FLAG_IN_LINE_bm) ? TRUE : FALSE)
+#define READ(a) 		((a & XIO_FLAG_RD_bm) ? true : false)
+#define WRITE(a)	 	((a & XIO_FLAG_WR_bm) ? true : false)
+#define BLOCKING(a) 	((a & XIO_FLAG_BLOCK_bm) ? true : false)
+#define EN_XOFF(a)		((a & XIO_FLAG_XOFF_bm) ? true : false)
+#define ECHO(a)		 	((a & XIO_FLAG_ECHO_bm) ? true : false)
+#define CRLF(a) 		((a & XIO_FLAG_CRLF_bm) ? true : false)
+#define IGNORECR(a) 	((a & XIO_FLAG_IGNORECR_bm) ? true : false)
+#define IGNORELF(a) 	((a & XIO_FLAG_IGNORELF_bm) ? true : false)
+#define LINEMODE(a)		((a & XIO_FLAG_LINEMODE_bm) ? true : false)
+#define IN_LINE(a)		((a & XIO_FLAG_IN_LINE_bm) ? true : false)
 
 
 /*

@@ -123,7 +123,7 @@ void tg_application_startup(void)
  * Useful reference on state machines:
  * http://johnsantic.com/comp/state.html, "Writing Efficient State Machines in C"
  */
-void tg_controller() { while (TRUE) { _controller_HSM();}}
+void tg_controller() { while (true) { _controller_HSM();}}
 #define	DISPATCH(func) if (func == TG_EAGAIN) return; 
 static void _controller_HSM()
 {
@@ -170,8 +170,8 @@ static uint8_t _feedhold_handler(void)
 
 static uint8_t _cycle_start_handler(void)
 {
-	if (sig.sig_cycle_start == FALSE) { return (TG_NOOP);}
-	sig.sig_cycle_start = FALSE;
+	if (sig.sig_cycle_start == false) { return (TG_NOOP);}
+	sig.sig_cycle_start = false;
 	cm_cycle_start();
 	return (TG_EAGAIN);
 }
@@ -191,7 +191,7 @@ static uint8_t _sync_to_tx_buffer()
 
 static uint8_t _sync_to_planner()
 {
-	if (mp_test_write_buffer() == FALSE) { 		// got a buffer you can use?
+	if (mp_test_write_buffer() == false) { 		// got a buffer you can use?
 		return (TG_EAGAIN);
 	}
 	return (TG_OK);
@@ -307,81 +307,81 @@ void _dispatch_return(uint8_t status, char *buf)
  * Reference for putting display strings and string arrays in program memory:
  * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
  */
-char msg_sc00[] PROGMEM = "OK";
-char msg_sc01[] PROGMEM = "Error";
-char msg_sc02[] PROGMEM = "Eagain";
-char msg_sc03[] PROGMEM = "Noop";
-char msg_sc04[] PROGMEM = "Complete";
-char msg_sc05[] PROGMEM = "Terminated";
-char msg_sc06[] PROGMEM = "Aborted";
-char msg_sc07[] PROGMEM = "End of line";
-char msg_sc08[] PROGMEM = "End of file";
-char msg_sc09[] PROGMEM = "File not open";
-char msg_sc10[] PROGMEM = "Max file size exceeded";
-char msg_sc11[] PROGMEM = "No such device";
-char msg_sc12[] PROGMEM = "Buffer empty";
-char msg_sc13[] PROGMEM = "Buffer full - fatal";
-char msg_sc14[] PROGMEM = "Buffer full - non-fatal";
-char msg_sc15[] PROGMEM = "#15";
-char msg_sc16[] PROGMEM = "#16";
-char msg_sc17[] PROGMEM = "#17";
-char msg_sc18[] PROGMEM = "#18";
-char msg_sc19[] PROGMEM = "#19";
+static const char msg_sc00[] PROGMEM = "OK";
+static const char msg_sc01[] PROGMEM = "Error";
+static const char msg_sc02[] PROGMEM = "Eagain";
+static const char msg_sc03[] PROGMEM = "Noop";
+static const char msg_sc04[] PROGMEM = "Complete";
+static const char msg_sc05[] PROGMEM = "Terminated";
+static const char msg_sc06[] PROGMEM = "Aborted";
+static const char msg_sc07[] PROGMEM = "End of line";
+static const char msg_sc08[] PROGMEM = "End of file";
+static const char msg_sc09[] PROGMEM = "File not open";
+static const char msg_sc10[] PROGMEM = "Max file size exceeded";
+static const char msg_sc11[] PROGMEM = "No such device";
+static const char msg_sc12[] PROGMEM = "Buffer empty";
+static const char msg_sc13[] PROGMEM = "Buffer full - fatal";
+static const char msg_sc14[] PROGMEM = "Buffer full - non-fatal";
+static const char msg_sc15[] PROGMEM = "#15";
+static const char msg_sc16[] PROGMEM = "#16";
+static const char msg_sc17[] PROGMEM = "#17";
+static const char msg_sc18[] PROGMEM = "#18";
+static const char msg_sc19[] PROGMEM = "#19";
 
-char msg_sc20[] PROGMEM = "Internal error";
-char msg_sc21[] PROGMEM = "Internal range error";
-char msg_sc22[] PROGMEM = "Floating point error";
-char msg_sc23[] PROGMEM = "Divide by zero";
-char msg_sc24[] PROGMEM = "#24";
-char msg_sc25[] PROGMEM = "#25";
-char msg_sc26[] PROGMEM = "#26";
-char msg_sc27[] PROGMEM = "#27";
-char msg_sc28[] PROGMEM = "#28";
-char msg_sc29[] PROGMEM = "#29";
-char msg_sc30[] PROGMEM = "#30";
-char msg_sc31[] PROGMEM = "#31";
-char msg_sc32[] PROGMEM = "#32";
-char msg_sc33[] PROGMEM = "#33";
-char msg_sc34[] PROGMEM = "#34";
-char msg_sc35[] PROGMEM = "#35";
-char msg_sc36[] PROGMEM = "#36";
-char msg_sc37[] PROGMEM = "#37";
-char msg_sc38[] PROGMEM = "#38";
-char msg_sc39[] PROGMEM = "#39";
+static const char msg_sc20[] PROGMEM = "Internal error";
+static const char msg_sc21[] PROGMEM = "Internal range error";
+static const char msg_sc22[] PROGMEM = "Floating point error";
+static const char msg_sc23[] PROGMEM = "Divide by zero";
+static const char msg_sc24[] PROGMEM = "#24";
+static const char msg_sc25[] PROGMEM = "#25";
+static const char msg_sc26[] PROGMEM = "#26";
+static const char msg_sc27[] PROGMEM = "#27";
+static const char msg_sc28[] PROGMEM = "#28";
+static const char msg_sc29[] PROGMEM = "#29";
+static const char msg_sc30[] PROGMEM = "#30";
+static const char msg_sc31[] PROGMEM = "#31";
+static const char msg_sc32[] PROGMEM = "#32";
+static const char msg_sc33[] PROGMEM = "#33";
+static const char msg_sc34[] PROGMEM = "#34";
+static const char msg_sc35[] PROGMEM = "#35";
+static const char msg_sc36[] PROGMEM = "#36";
+static const char msg_sc37[] PROGMEM = "#37";
+static const char msg_sc38[] PROGMEM = "#38";
+static const char msg_sc39[] PROGMEM = "#39";
 
-char msg_sc40[] PROGMEM = "Unrecognized command";
-char msg_sc41[] PROGMEM = "Expected command letter";
-char msg_sc42[] PROGMEM = "Bad number format";
-char msg_sc43[] PROGMEM = "Input exceeds max length";
-char msg_sc44[] PROGMEM = "Input value too small";
-char msg_sc45[] PROGMEM = "Input value too large";
-char msg_sc46[] PROGMEM = "Input value range error";
-char msg_sc47[] PROGMEM = "Input value unsupported";
-char msg_sc48[] PROGMEM = "JSON syntax error";
-char msg_sc49[] PROGMEM = "JSON input has too many pairs";
-char msg_sc50[] PROGMEM = "Out of buffer space";
-char msg_sc51[] PROGMEM = "#51";
-char msg_sc52[] PROGMEM = "#52";
-char msg_sc53[] PROGMEM = "#53";
-char msg_sc54[] PROGMEM = "#54";
-char msg_sc55[] PROGMEM = "#55";
-char msg_sc56[] PROGMEM = "#56";
-char msg_sc57[] PROGMEM = "#57";
-char msg_sc58[] PROGMEM = "#58";
-char msg_sc59[] PROGMEM = "#59";
+static const char msg_sc40[] PROGMEM = "Unrecognized command";
+static const char msg_sc41[] PROGMEM = "Expected command letter";
+static const char msg_sc42[] PROGMEM = "Bad number format";
+static const char msg_sc43[] PROGMEM = "Input exceeds max length";
+static const char msg_sc44[] PROGMEM = "Input value too small";
+static const char msg_sc45[] PROGMEM = "Input value too large";
+static const char msg_sc46[] PROGMEM = "Input value range error";
+static const char msg_sc47[] PROGMEM = "Input value unsupported";
+static const char msg_sc48[] PROGMEM = "JSON syntax error";
+static const char msg_sc49[] PROGMEM = "JSON input has too many pairs";
+static const char msg_sc50[] PROGMEM = "Out of buffer space";
+static const char msg_sc51[] PROGMEM = "#51";
+static const char msg_sc52[] PROGMEM = "#52";
+static const char msg_sc53[] PROGMEM = "#53";
+static const char msg_sc54[] PROGMEM = "#54";
+static const char msg_sc55[] PROGMEM = "#55";
+static const char msg_sc56[] PROGMEM = "#56";
+static const char msg_sc57[] PROGMEM = "#57";
+static const char msg_sc58[] PROGMEM = "#58";
+static const char msg_sc59[] PROGMEM = "#59";
 
-char msg_sc60[] PROGMEM = "Zero length move";
-char msg_sc61[] PROGMEM = "Gcode block skipped";
-char msg_sc62[] PROGMEM = "Gcode input error";
-char msg_sc63[] PROGMEM = "Gcode feedrate error";
-char msg_sc64[] PROGMEM = "Gcode axis word missing";
-char msg_sc65[] PROGMEM = "Gcode modal group violation";
-char msg_sc66[] PROGMEM = "Homing cycle failed";
-char msg_sc67[] PROGMEM = "Max travel exceeded";
-char msg_sc68[] PROGMEM = "Max spindle speed exceeded";
-char msg_sc69[] PROGMEM = "Arc specification error";
+static const char msg_sc60[] PROGMEM = "Zero length move";
+static const char msg_sc61[] PROGMEM = "Gcode block skipped";
+static const char msg_sc62[] PROGMEM = "Gcode input error";
+static const char msg_sc63[] PROGMEM = "Gcode feedrate error";
+static const char msg_sc64[] PROGMEM = "Gcode axis word missing";
+static const char msg_sc65[] PROGMEM = "Gcode modal group violation";
+static const char msg_sc66[] PROGMEM = "Homing cycle failed";
+static const char msg_sc67[] PROGMEM = "Max travel exceeded";
+static const char msg_sc68[] PROGMEM = "Max spindle speed exceeded";
+static const char msg_sc69[] PROGMEM = "Arc specification error";
 
-PGM_P msgStatusMessage[] PROGMEM = {
+PGM_P const msgStatusMessage[] PROGMEM = {
 	msg_sc00, msg_sc01, msg_sc02, msg_sc03, msg_sc04, msg_sc05, msg_sc06, msg_sc07, msg_sc08, msg_sc09,
 	msg_sc10, msg_sc11, msg_sc12, msg_sc13, msg_sc14, msg_sc15, msg_sc16, msg_sc17, msg_sc18, msg_sc19,
 	msg_sc20, msg_sc21, msg_sc22, msg_sc23, msg_sc24, msg_sc25, msg_sc26, msg_sc27, msg_sc28, msg_sc29,
@@ -391,9 +391,9 @@ PGM_P msgStatusMessage[] PROGMEM = {
 	msg_sc60, msg_sc61, msg_sc62, msg_sc63, msg_sc64, msg_sc65, msg_sc66, msg_sc67, msg_sc68, msg_sc69
 };
 
-char prompt1[] PROGMEM = "tinyg";
-char prompt_inch[] PROGMEM = "[inch] ok> ";
-char prompt_mm[] PROGMEM = "[mm] ok> ";
+static const char prompt1[] PROGMEM = "tinyg";
+static const char prompt_inch[] PROGMEM = "[inch] ok> ";
+static const char prompt_mm[] PROGMEM = "[mm] ok> ";
 
 char *tg_get_status_message(uint8_t status, char *msg) 
 {
@@ -426,10 +426,10 @@ static void _prompt_error(uint8_t status, char *buf)
  * such as text mode or JSON mode.
  */
 
-char msg_ap00[] PROGMEM = "<null message>";
-char msg_ap01[] PROGMEM = "Loading configs from EEPROM";
+static const char msg_ap00[] PROGMEM = "<null message>";	// in case caller didn't provide a message #
+static const char msg_ap01[] PROGMEM = "Loading configs from EEPROM";
 
-PGM_P msgApplicationMessage[] PROGMEM = {
+PGM_P const msgApplicationMessage[] PROGMEM = {
 	msg_ap00, msg_ap01
 };
 

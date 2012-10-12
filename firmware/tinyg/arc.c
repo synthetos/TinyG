@@ -153,7 +153,7 @@ uint8_t ar_arc( const double target[],
 uint8_t ar_arc_callback() 
 {
 	if (ar.run_state == MOVE_STATE_OFF) { return (TG_NOOP);}
-	if (mp_test_write_buffer() == FALSE) { return (TG_EAGAIN);}
+	if (mp_test_write_buffer() == false) { return (TG_EAGAIN);}
 	if (ar.run_state == MOVE_STATE_RUN) {
 		if (--ar.segment_count > 0) {
 			ar.theta += ar.segment_theta;

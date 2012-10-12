@@ -39,6 +39,7 @@
  */
 
 #include <stdio.h>						// precursor for xio.h
+#include <stdbool.h>					// true and false
 #include <avr/pgmspace.h>				// precursor for xio.h
 #include <avr/interrupt.h>
 #include <avr/sleep.h>		// needed for blocking character writes

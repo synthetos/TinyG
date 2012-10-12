@@ -1283,7 +1283,7 @@ uint8_t mp_end_hold_callback()
  */
 static uint8_t _exec_aline(mpBuf *bf)
 {
-	uint8_t status;
+	uint8_t status = TG_OK;
 
 	if (bf->move_state == MOVE_STATE_OFF) { return (TG_NOOP);} 
 	if (mr.move_state == MOVE_STATE_OFF) {

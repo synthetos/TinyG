@@ -32,6 +32,7 @@
  */
 
 #include <stdio.h>						// precursor for xio.h
+#include <stdbool.h>					// true and false
 #include <avr/pgmspace.h>				// precursor for xio.h
 #include "../tinyg.h"
 #include "xio.h"
@@ -45,9 +46,9 @@
 
 void sig_init()
 {
-	sig.sig_abort = FALSE;
-	sig.sig_feedhold = FALSE;
-	sig.sig_cycle_start = FALSE;
+	sig.sig_abort = false;
+	sig.sig_feedhold = false;
+	sig.sig_cycle_start = false;
 }
 
 inline void sig_abort()					// reset

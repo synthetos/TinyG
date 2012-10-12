@@ -25,7 +25,7 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* 	This module is really nothing mre than a placehilder at this time.
+/* 	This module is really nothing mre than a placeholder at this time.
  * 	"Networking" refers to a planned RS485 broadcast network to support
  *	multi-board configs and external RS485 devices such as extruders.
  *	Basic operation of RS485 on the TinyG hardware has been verified
@@ -33,6 +33,7 @@
  */
 
 #include <stdio.h>					// precursor for xio.h
+#include <stdbool.h>				// true and false
 #include <avr/pgmspace.h>			// precursor for xio.h
 
 #include "xio/xio.h"
@@ -60,12 +61,12 @@ void net_init()
 
 void tg_repeater()
 {
-//	uint8_t full_duplex = FALSE;
-	uint8_t full_duplex = TRUE;
+//	uint8_t full_duplex = false;
+	uint8_t full_duplex = true;
 	unsigned char tx = 'Z';
 	unsigned char rx;
 
-	while (TRUE) {
+	while (true) {
 		tx = _nextchar(tx);
 		xio_putc(XIO_DEV_RS485, tx);	// write to RS485 port
 		if (full_duplex) {
@@ -92,7 +93,7 @@ void tg_receiver()
 
 	xio_queue_RX_string_rs485("Z");		// simulate an RX char
 
-	while (TRUE) {
+	while (true) {
 		while ((rx = xio_getc(XIO_DEV_RS485)) == -1);
 //		xio_putc(XIO_DEV_USB, rx);		// write to USB port
 		xio_putc_rs485(rx, fdev_rs485);	// alternate form of above
@@ -102,8 +103,8 @@ void tg_receiver()
 
 static char _nextchar(char c)
 {
-//	uint8_t cycle = FALSE;
-	uint8_t cycle = TRUE;
+//	uint8_t cycle = false;
+	uint8_t cycle = true;
 	char n = c;
 
 	if ((cycle) && ((n = ++c) > 'z')) {
