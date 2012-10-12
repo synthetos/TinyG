@@ -48,11 +48,11 @@ void cm_spindle_init()
 uint8_t cm_spindle_control(uint8_t spindle_mode)
 {
 	if (spindle_mode == SPINDLE_CW) {
-		mp_queue_mcode(MCODE_SPINDLE_CW);
+		mp_queue_sync_command(SYNC_SPINDLE_CW);
 	} else if (spindle_mode == SPINDLE_CCW) {
-		mp_queue_mcode(MCODE_SPINDLE_CCW);
+		mp_queue_sync_command(SYNC_SPINDLE_CCW);
 	} else {
-		mp_queue_mcode(MCODE_SPINDLE_OFF);	// failsafe operation
+		mp_queue_sync_command(SYNC_SPINDLE_OFF);	// failsafe operation
 	}
 	return(TG_OK);
 }

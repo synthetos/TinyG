@@ -733,7 +733,7 @@ uint8_t cm_select_tool(uint8_t tool)
 uint8_t cm_mist_coolant_control(uint8_t mist_coolant)
 {
 	if (mist_coolant == true) {
-		mp_queue_mcode(MCODE_MIST_COOLANT_ON);
+		mp_queue_sync_command(SYNC_MIST_COOLANT_ON);
 	} 
 	return (TG_OK);
 }
@@ -751,9 +751,9 @@ void cm_exec_mist_coolant_control(uint8_t mist_coolant)
 uint8_t cm_flood_coolant_control(uint8_t flood_coolant)
 {
 	if (flood_coolant == true) {
-		mp_queue_mcode(MCODE_FLOOD_COOLANT_ON);
+		mp_queue_sync_command(SYNC_FLOOD_COOLANT_ON);
 	} else {
-		mp_queue_mcode(MCODE_FLOOD_COOLANT_OFF);
+		mp_queue_sync_command(SYNC_FLOOD_COOLANT_OFF);
 	}
 	return (TG_OK);
 }
@@ -772,9 +772,9 @@ void cm_exec_flood_coolant_control(uint8_t flood_coolant)
 uint8_t cm_feed_override_enable(uint8_t feed_override)
 {
 	if (feed_override == true) {
-		mp_queue_mcode(MCODE_FEED_OVERRIDE_ON);
+		mp_queue_sync_command(SYNC_FEED_OVERRIDE_ON);
 	} else {
-		mp_queue_mcode(MCODE_FEED_OVERRIDE_OFF);
+		mp_queue_sync_command(SYNC_FEED_OVERRIDE_OFF);
 	}
 	return (TG_OK);
 }
@@ -846,12 +846,12 @@ void cm_feedhold()
 	}
 }
 
-void cm_program_stop() { mp_queue_mcode(MCODE_PROGRAM_STOP);}
-void cm_optional_program_stop()	{ mp_queue_mcode(MCODE_PROGRAM_STOP); }
+void cm_program_stop() { mp_queue_sync_command(SYNC_PROGRAM_STOP);}
+void cm_optional_program_stop()	{ mp_queue_sync_command(SYNC_PROGRAM_STOP); }
 void cm_program_end()				// M2, M30
 {
 	tg_reset_source();				// stop reading from a file (return to std device)
-	mp_queue_mcode(MCODE_PROGRAM_END);
+	mp_queue_sync_command(SYNC_PROGRAM_END);
 }
 
 void cm_exec_program_stop() { _exec_program_finalize(MACHINE_PROGRAM_STOP);}

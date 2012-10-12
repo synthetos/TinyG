@@ -187,7 +187,7 @@ static void _reset_replannable_list(void);
 static uint8_t _exec_null(mpBuf *bf);
 static uint8_t _exec_line(mpBuf *bf);
 static uint8_t _exec_dwell(mpBuf *bf);
-static uint8_t _exec_mcode(mpBuf *bf);
+static uint8_t _exec_sync_command(mpBuf *bf);
 static uint8_t _exec_tool(mpBuf *bf);
 static uint8_t _exec_spindle_speed(mpBuf *bf);
 static uint8_t _exec_aline(mpBuf *bf);
@@ -339,7 +339,7 @@ uint8_t mp_exec_move()
 		case MOVE_TYPE_LINE: { return (_exec_line(bf));}
 		case MOVE_TYPE_ALINE: { return (_exec_aline(bf));}
 		case MOVE_TYPE_DWELL: { return (_exec_dwell(bf));}
-		case MOVE_TYPE_MCODE: { return (_exec_mcode(bf));}
+		case MOVE_TYPE_COMMAND: { return (_exec_sync_command(bf));}
 		case MOVE_TYPE_TOOL: { return (_exec_tool(bf));}
 		case MOVE_TYPE_SPINDLE_SPEED: { return (_exec_spindle_speed(bf));}
 	}
@@ -357,43 +357,43 @@ static uint8_t _exec_null(mpBuf *bf)
 }
 
 /*************************************************************************
- * mp_queue_mcode()	- queue an Mcode to the planner queue 
- * _exec_mcode()	- execute an mcode from planner queue (from stepper _exec call)
+ * mp_queue_sync_command()	- queue a synchronous command to the planner queue 
+ * _exec_sync_command()		- execute a synchronous command from planner queue (from stepper _exec call)
  *
  *	This works like:
- *	  - The M command is called by the Gcode interpreter (cm_<command>)
- *	  - cm_ function calls mp_queue_mcode which puts it in the planning queue
- *	  - the planning queue gets to the function and calls _exec_mcode()
+ *	  - The command is called by the Gcode interpreter (cm_<command>, e.g. an M code)
+ *	  - cm_ function calls mp_queue_sync_command which puts it in the planning queue
+ *	  - the planning queue gets to the function and calls _exec_command()
  *	  - ...which is typically a callback to the cm_exec_<command> function.
  *
- *	Doing it this way instead of synchronizing on queue empty simplifes the
+ *	Doing it this way instead of synchronizing on queue empty simplifies the
  *	handling of feedholds, feed overrides, buffer flushes, and thread blocking.
  */
 
-void mp_queue_mcode(uint8_t mcode) 
+void mp_queue_sync_command(uint8_t command) 
 {
 	mpBuf *bf;
 
 	if ((bf = _get_write_buffer()) == NULL) { return;}
-	bf->move_code = mcode;
-	_queue_write_buffer(MOVE_TYPE_MCODE);
+	bf->move_code = command;
+	_queue_write_buffer(MOVE_TYPE_COMMAND);
 }
 
-static uint8_t _exec_mcode(mpBuf *bf)
+static uint8_t _exec_sync_command(mpBuf *bf)
 {
 	uint8_t status = TG_OK;
 	switch(bf->move_code) {
-		case MCODE_PROGRAM_STOP: case MCODE_OPTIONAL_STOP: { cm_exec_program_stop(); break;}
-		case MCODE_PROGRAM_END: { cm_exec_program_end(); break;}
-		case MCODE_SPINDLE_CW: { cm_exec_spindle_control(SPINDLE_CW); break;}	
-		case MCODE_SPINDLE_CCW: { cm_exec_spindle_control(SPINDLE_CCW); break;}
-		case MCODE_SPINDLE_OFF: { cm_exec_spindle_control(SPINDLE_OFF); break;}
-//		case MCODE_CHANGE_TOOL:	 // M6 - not yet implemented
-		case MCODE_MIST_COOLANT_ON:	{ cm_exec_mist_coolant_control(true); break;}
-		case MCODE_FLOOD_COOLANT_ON: { cm_exec_flood_coolant_control(true); break;}
-		case MCODE_FLOOD_COOLANT_OFF: { cm_exec_flood_coolant_control(false); break;}
-		case MCODE_FEED_OVERRIDE_ON: { cm_exec_feed_override_enable(true); break;}
-		case MCODE_FEED_OVERRIDE_OFF: { cm_exec_feed_override_enable(false); break;}
+		case SYNC_PROGRAM_STOP: case SYNC_OPTIONAL_STOP: { cm_exec_program_stop(); break;}
+		case SYNC_PROGRAM_END: { cm_exec_program_end(); break;}
+		case SYNC_SPINDLE_CW: { cm_exec_spindle_control(SPINDLE_CW); break;}	
+		case SYNC_SPINDLE_CCW: { cm_exec_spindle_control(SPINDLE_CCW); break;}
+		case SYNC_SPINDLE_OFF: { cm_exec_spindle_control(SPINDLE_OFF); break;}
+//		case SYNC_CHANGE_TOOL:	 // M6 - not yet implemented
+		case SYNC_MIST_COOLANT_ON:	{ cm_exec_mist_coolant_control(true); break;}
+		case SYNC_FLOOD_COOLANT_ON: { cm_exec_flood_coolant_control(true); break;}
+		case SYNC_FLOOD_COOLANT_OFF: { cm_exec_flood_coolant_control(false); break;}
+		case SYNC_FEED_OVERRIDE_ON: { cm_exec_feed_override_enable(true); break;}
+		case SYNC_FEED_OVERRIDE_OFF: { cm_exec_feed_override_enable(false); break;}
 		default: { 
 			status = TG_INTERNAL_ERROR;
 		}

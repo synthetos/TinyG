@@ -305,23 +305,23 @@ enum cmModalGroup {					// Used for detecting gcode errors. See NIST section 3.4
 #define MODAL_GROUP_COUNT (MODAL_GROUP_M9+1)
 // Note 1: Our G0 omits G4,G30,G53,G92.1,G92.2,G92.3 as these have no axis components to error check
 
-enum cmMcode {						// need to map these because there are gaps in the numbers
-	MCODE_PROGRAM_STOP = 0,			// M0
-	MCODE_OPTIONAL_STOP,			// M1
-	MCODE_PROGRAM_END,				// M2
-	MCODE_SPINDLE_CW,				// M3			
-	MCODE_SPINDLE_CCW,				// M4
-	MCODE_SPINDLE_OFF,				// M5
-	MCODE_CHANGE_TOOL,				// M6
-	MCODE_MIST_COOLANT_ON,			// M7
-	MCODE_FLOOD_COOLANT_ON,			// M8
-	MCODE_FLOOD_COOLANT_OFF,		// M9 - also turns off mist coolant
-	MCODE_FEED_OVERRIDE_ON,			// M48
-	MCODE_FEED_OVERRIDE_OFF,		// M49
-	MCODE_TOOL,						// T command ...and we need some way to synchronize tool
-	MCODE_SPINDLE_SPEED				// S command ...and spindle speed 
+enum cmSyncCommand {				// M Codes and other synchronized commands
+	SYNC_PROGRAM_STOP = 0,			// M0
+	SYNC_OPTIONAL_STOP,			// M1
+	SYNC_PROGRAM_END,				// M2
+	SYNC_SPINDLE_CW,				// M3			
+	SYNC_SPINDLE_CCW,				// M4
+	SYNC_SPINDLE_OFF,				// M5
+	SYNC_CHANGE_TOOL,				// M6
+	SYNC_MIST_COOLANT_ON,			// M7
+	SYNC_FLOOD_COOLANT_ON,			// M8
+	SYNC_FLOOD_COOLANT_OFF,		// M9 - also turns off mist coolant
+	SYNC_FEED_OVERRIDE_ON,			// M48
+	SYNC_FEED_OVERRIDE_OFF,		// M49
+	SYNC_TOOL,						// T command ...and we need some way to synchronize tool
+	SYNC_SPINDLE_SPEED				// S command ...and spindle speed 
 };
-#define MCODE_MAX MCODE_SPINDLE_SPEED
+#define SYNC_MAX SYNC_SPINDLE_SPEED
 
 enum cmCanonicalPlane {				// canonical plane - translates to:
 									// 		axis_0	axis_1	axis_2
