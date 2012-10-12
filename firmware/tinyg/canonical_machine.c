@@ -465,6 +465,8 @@ void cm_init()
 	cm_select_plane(cfg.select_plane);
 	cm_set_path_control(cfg.path_control);
 	cm_set_distance_mode(cfg.distance_mode);
+	cm.machine_state = MACHINE_RESET;	// signal that the machine is ready for action
+	cm.combined_state = COMBINED_RESET;
 }
 
 /* 

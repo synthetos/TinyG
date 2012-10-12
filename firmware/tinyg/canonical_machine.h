@@ -200,8 +200,9 @@ struct GCodeInput gf;					// gcode input flags
  */
 // *** Note: check config printout strings align with all the state variables
 
-enum cmCombinedState {
-	COMBINED_RESET = 0,				// machine has been reset or aborted
+enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
+	COMBINED_INITIALIZING = 0,		// machine is initializing
+	COMBINED_RESET,					// machine has been reset or aborted
 	COMBINED_CYCLE,					// machine is running (cycling)
 	COMBINED_PROGRAM_STOP,			// program stop or no more blocks
 	COMBINED_PROGRAM_END,			// program end
@@ -212,8 +213,9 @@ enum cmCombinedState {
 	COMBINED_JOG					// jogging is treated as a cycle
 };
 
-enum cmMachineState {				// *** Note: check status strings for cm_print_machine_state()
-	MACHINE_RESET = 0,				// machine has been reset or aborted
+enum cmMachineState {
+	MACHINE_INITIALIZING = 0,		// machine is initializing
+	MACHINE_RESET,					// machine has been reset or aborted
 	MACHINE_CYCLE,					// machine is running (cycling)
 	MACHINE_PROGRAM_STOP,			// program stop or no more blocks
 	MACHINE_PROGRAM_END,			// program end
@@ -495,17 +497,15 @@ void cm_optional_program_stop(void);				// M1
 void cm_program_end(void);							// M2
 void cm_exec_program_stop(void);
 void cm_exec_program_end(void);
-
-uint8_t cm_arc_feed(double target[], double flags[], // G2, G3
-					double i, double j, double k,
-					double radius, uint8_t motion_mode);
+													// G2, G3
+uint8_t cm_arc_feed(double target[], double flags[], double i, double j, double k, double radius, uint8_t motion_mode);
 
 /*--- canned cycles ---*/
 
 uint8_t cm_return_to_home(void);					// G28
 uint8_t cm_return_to_home_callback(void);			// G28 main loop callback
 
-uint8_t cm_homing_cycle(void);						// G30
-uint8_t cm_homing_callback(void);					// G30 main loop callback
+uint8_t cm_homing_cycle(void);						// G28.1
+uint8_t cm_homing_callback(void);					// G28.1 main loop callback
 
 #endif

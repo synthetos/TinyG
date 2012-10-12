@@ -231,15 +231,16 @@ static const char msg_g20[] PROGMEM = "G20 - inches mode";
 static const char msg_g21[] PROGMEM = "G21 - millimeter mode";
 static PGM_P const msg_unit[] PROGMEM = { msg_g20, msg_g21 };
 
-static const char msg_stat0[] PROGMEM = "Reset";	// both stat and macs use this array
-static const char msg_stat1[] PROGMEM = "Cycle";
-static const char msg_stat2[] PROGMEM = "Stop";
-static const char msg_stat3[] PROGMEM = "End";
-static const char msg_stat4[] PROGMEM = "Run";	// stat extensions for combined states
-static const char msg_stat5[] PROGMEM = "Hold";	// ""
-static const char msg_stat6[] PROGMEM = "Homing";	// "" 
-static const char msg_stat7[] PROGMEM = "Jog";	// "" 
-static PGM_P const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3 , msg_stat4 , msg_stat5 , msg_stat6 , msg_stat7 };
+static const char msg_stat0[] PROGMEM = "Initializing";	// both stat and macs use this array
+static const char msg_stat1[] PROGMEM = "Reset";
+static const char msg_stat2[] PROGMEM = "Cycle";
+static const char msg_stat3[] PROGMEM = "Stop";
+static const char msg_stat4[] PROGMEM = "End";
+static const char msg_stat5[] PROGMEM = "Run";			// stat extensions for combined states
+static const char msg_stat6[] PROGMEM = "Hold";			// ""
+static const char msg_stat7[] PROGMEM = "Homing";		// "" 
+static const char msg_stat8[] PROGMEM = "Jog";			// "" 
+static PGM_P const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3 , msg_stat4 , msg_stat5 , msg_stat6 , msg_stat7, msg_stat8 };
 
 static const char msg_cycs0[] PROGMEM = "Off";
 static const char msg_cycs1[] PROGMEM = "Started";

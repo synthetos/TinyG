@@ -364,7 +364,6 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 void dump_everything()
 {
 //	tg_dump_controller_state();
-//	cm_print_machine_state();
 	mp_dump_running_plan_buffer();	
 	mp_dump_runtime_state();
 	st_dump_stepper_state();
