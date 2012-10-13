@@ -87,6 +87,7 @@
 #define CMD_HEADER_LEN 2			// contains the "r" and "body" elements
 #define CMD_BODY_LEN 21				// main body
 #define CMD_FOOTER_LEN 6			// status code, msg, buffer count, line num, checksum and termination
+									// if you change this you must also change cmd_status, cmd_bufcount, etc, below
 
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 #define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_FOOTER_LEN)
@@ -157,9 +158,10 @@ cmdObj cmd_body[CMD_BODY_LEN];		// cmd_body[0] is the root object
 cmdObj cmd_footer[CMD_FOOTER_LEN];	// allocate footer objects for JSON response
 
 #define cmd_status &cmd_footer[0]	// status elements
-#define cmd_bufcount &cmd_footer[2]	// checksum element
-#define cmd_checksum &cmd_footer[3]	// checksum element
-#define cmd_terminal &cmd_footer[4]	// termination element
+#define cmd_bufcount &cmd_footer[2]	// buffer available element
+#define cmd_linenum &cmd_footer[3]	// line number element
+#define cmd_checksum &cmd_footer[4]	// checksum element
+#define cmd_terminal &cmd_footer[5]	// termination element
 
 /*
  * Global Scope Functions

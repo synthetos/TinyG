@@ -197,7 +197,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 		strncpy(&cmd->friendly_name[strlen(group)], *pstr, CMD_STRING_LEN);// cat name to group prefix
 	}
 
-	// get the index or return if the toekn / friendly_name is invalid
+	// get the index or return if the token / friendly_name is invalid
 	if ((cmd->index = cmd_get_index(cmd->friendly_name)) == -1) { return (TG_UNRECOGNIZED_COMMAND);}
 	cmd_get_token(cmd->index, cmd->token);
 	if (group[0] != NUL) {						// strip group prefix if this is a group
@@ -268,7 +268,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 uint16_t js_serialize_json(char *out_buf)
 {
 	cmdObj *cmd = cmd_header;
-	char *str = out_buf;						// set workikng string pointer 
+	char *str = out_buf;						// set working string pointer 
 	int8_t depth = 0;
 
 	strcpy(str++, "{"); 						// write opening curly
