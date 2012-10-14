@@ -99,13 +99,13 @@ void tg_system_reset(void)
 	sig_init();				// (4) signal flags
 	rtc_init();				// (5) real time counter
 	st_init(); 				// (6) stepper subsystem (must run before gp_init())
-	gpio_init();			// (7) switches and parallel IO
 	pwm_init();				// (8) pulse width modulation drivers
 	js_init();				// (9) JSON parser & etc.
 
 	PMIC_EnableMediumLevel();// enable TX interrupts for init reporting 
 	sei();					// enable global interrupts
 	cfg_init();				// (10) get config record from eeprom (reqs xio)
+	gpio_init();			// (7) switches and parallel IO
 }
 
 void tg_application_reset(void) 
@@ -130,6 +130,7 @@ static void _tg_unit_tests(void) // uncomment __UNITS... line in .h file to enab
 //	EEPROM_UNITS;			// if you want this you must include the .h file in this file
 	CONFIG_UNITS;
 	JSON_UNITS;
+	GPIO_UNITS;
 	REPORT_UNITS;
 	PLANNER_UNITS;
 	PWM_UNITS;

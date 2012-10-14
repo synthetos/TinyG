@@ -325,8 +325,8 @@ static PGM_P const msg_am[] PROGMEM = {
  *		  retrieval you must list it in the GROUP_EXCLUDE string in config.h.
  *		  Currently only cycs(tate) and coor(inate system) are excluded. 
  */
-static const char str_fb[] PROGMEM = "fb,firmware_b,[fb]  firmware_build%18.2f\n";
 static const char str_fv[] PROGMEM = "fv,firmware_v,[fv]  firmware_version%16.2f\n";
+static const char str_fb[] PROGMEM = "fb,firmware_b,[fb]  firmware_build%18.2f\n";
 static const char str_id[] PROGMEM = "id,id,[id]  id_device%16d\n";
 static const char str_si[] PROGMEM = "si,status_i,[si]  status_interval    %10.0f ms [0=off]\n";
 static const char str_sr[] PROGMEM = "sr,status_r,";	// status_report {"sr":""}  and ? command
@@ -604,8 +604,8 @@ static const char str_h[] PROGMEM = "h,h,";			// help screen
 struct cfgItem const cfgArray[] PROGMEM = {
 
 //	 string *, print func, get func, set func  target for get/set,    default value
-	{ str_fv, _print_dbl, _get_dbl, _set_nul, (double *)&tg.version,  TINYG_VERSION_NUMBER },
 	{ str_fb, _print_dbl, _get_dbl, _set_nul, (double *)&tg.build,    TINYG_BUILD_NUMBER },
+	{ str_fv, _print_dbl, _get_dbl, _set_nul, (double *)&tg.version,  TINYG_VERSION_NUMBER },
 	{ str_id, _print_int, _get_id,  _set_nul, (double *)&tg.null, 0}, 	// device ID (signature)
 	{ str_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval, STATUS_REPORT_INTERVAL_MS },
 	{ str_sr, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
@@ -1292,7 +1292,7 @@ void cfg_init()
 	cmd.index = 0;					// this will read the first record in NVM
 	cmd_read_NVM_value(&cmd);
 
-	if (cmd.value == tg.build) { // Case (1) NVM is set up and current revision. Load config from NVM
+	if (fp_EQ(cmd.value,tg.build)) { // Case (1) NVM is set up and current revision. Load config from NVM
 		tg_print_message_number(1);
 		for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
 			cmd_read_NVM_value(&cmd);

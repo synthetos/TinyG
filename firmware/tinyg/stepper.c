@@ -257,7 +257,7 @@ void st_init()
 
 		st_set_microsteps(i, cfg.m[i].microsteps);
 		// NOTE: st_set_polarity(i, cfg.a[i].polarity);	// motor polarity
-		// NOTE: limit switch ports and interrupts are setup in ls_init()
+		// NOTE: switch ports and interrupts are setup in gpio_init()
 	}
 	// setup DDA timer
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// turn timer off

@@ -57,15 +57,15 @@ enum swFlags {	 			// indexes into sw_flag array
 	SW_MIN_X = 0,			// this group corresponds to XYZA values
 	SW_MIN_Y, 
 	SW_MIN_Z, 
-	SW_MIN_A, 
-
-	SW_MAX_X,				// this group corresponds to XYZA + SW_MAX_OFFSET
+	SW_MIN_A,
+	SW_MAX_X,				// this group corresponds to XYZA + SW_OFFSET
 	SW_MAX_Y,
 	SW_MAX_Z,
 	SW_MAX_A,
-	SW_SIZE 				// last one. Used for array sizing and for loops
+	SW_ARRAY_SIZE 			// must be last one. Used for array sizing and for loops
 };
-#define SW_OFFSET_TO_MAX 4
+#define SW_OFFSET SW_MAX_X	// offset between MIN and MAX switches
+#define SW_PAIRS (SW_ARRAY_SIZE/2)
 
 enum swMode {				// limit switch operation modes
 	SW_MODE_DISABLED = 0,	// disabled for all operations
@@ -76,19 +76,21 @@ enum swMode {				// limit switch operation modes
 };
 
 enum swSense {
-	SW_SENSE_NO = 0,		// Normally open switch
+	SW_SENSE_DISABLED = 0,	// not enabled
+	SW_SENSE_NO,			// Normally open switch
 	SW_SENSE_NC				// Normally closed switch
 };
 
-struct gpioStruct {							// switch state
-	volatile uint8_t sw_thrown;				// 1=thrown (Note 1)
-	volatile uint8_t sw_count;				// lockout counter (debouncing)
-	volatile uint8_t sw_flags[SW_SIZE];		// switch flag array
-	volatile uint8_t sw_sense[SW_SIZE];		// 0=NO, 1=NC
+struct swStruct {						// switch state
+	volatile uint8_t thrown;			// 1=thrown (Note 1)
+	volatile uint8_t lockout_count;		// switch lockout counter (debouncing)
+	volatile uint8_t flags[SW_ARRAY_SIZE];// switch flag array
+	volatile uint8_t sense[SW_ARRAY_SIZE];// 0=NO, 1=NC
+	uint8_t detect[SW_ARRAY_SIZE];		// switch state detected on initialization
 };
-struct gpioStruct gpio;
+struct swStruct sw;
 
-// Note 1: The term "thrown" is used becuase switches could be normally-open 
+// Note 1: The term "thrown" is used because switches could be normally-open 
 //		   or normally-closed. "Thrown" means activated or hit.
 
 void gpio_init(void);
@@ -103,5 +105,15 @@ void gpio_set_bit_on(uint8_t b);
 void gpio_set_bit_off(uint8_t b);
 void gpio_write_port(uint8_t b);
 void gpio_toggle_port(uint8_t b);
+
+/* unit test setup */
+
+//#define __UNIT_TEST_GPIO				// uncomment to enable GPIO unit tests
+#ifdef __UNIT_TEST_GPIO
+void gpio_unit_tests(void);
+#define	GPIO_UNITS gpio_unit_tests();
+#else
+#define	GPIO_UNITS
+#endif // __UNIT_TEST_GPIO
 
 #endif

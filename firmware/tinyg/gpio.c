@@ -61,6 +61,8 @@
  *	and lockout subsequent interrupts for the defined lockout period. Ditto on the method.
  */
 
+//#include <stdio.h>						// precursor to xio.h
+//#include <avr/pgmspace.h>					// precursor to xio.h
 #include <avr/interrupt.h>
 
 #include "tinyg.h"
@@ -70,12 +72,7 @@
 #include "system.h"							// gpio port bits are mapped here
 #include "gpio.h"
 #include "canonical_machine.h"
-
-//#ifdef __dbSHOW_LIMIT_SWITCH
-#include <stdio.h>							// precursor to xio.h
-#include <avr/pgmspace.h>					// precursor to xio.h
-#include "xio/xio.h"						// for debug statements
-//#endif
+#include "xio/xio.h"						// signals
 
 /*
  * variables and settings 
@@ -90,7 +87,7 @@ static struct gpioControls gctl;
 
 #define SW_LOCKOUT_TICKS 10					// the RTC ticks are ~10ms each
 
-static void _switch_isr_helper(uint8_t sw_flag);
+static void _switch_isr_helper(uint8_t sw_flag, uint8_t axis);
 static uint8_t gpio_port_value;				// global for synthetic port read value
 
 /*
@@ -107,6 +104,8 @@ static uint8_t gpio_port_value;				// global for synthetic port read value
 
 void gpio_init(void) 
 {
+//	cli();
+	uint8_t j = 0;
 	uint8_t int_mode;							// interrupt mode
 	uint8_t pin_mode = PORT_OPC_PULLUP_gc;		// pin mode. see iox192a3.h for details
 //	uint8_t pin_mode = PORT_OPC_TOTEM_gc;		// alternate pin mode for v7 boards
@@ -114,76 +113,77 @@ void gpio_init(void)
 	// GPIO1 - output port (nothing here yet)
 
 	// GPIO2 - switch port
-	for (uint8_t i=0; i<MOTORS; i++) {
 
-		// set initial port bit state to OFF
-		device.port[i]->DIRSET = GPIO2_MIN_BIT_bm;			// set min to output
-		device.port[i]->OUTSET = GPIO2_MIN_BIT_bm;			// min bit off
-		device.port[i]->DIRSET = GPIO2_MAX_BIT_bm;			// set max to output
-		device.port[i]->OUTSET = GPIO2_MAX_BIT_bm;			// max bit off
+	for (uint8_t i=0; i<SW_PAIRS; i++) {
+		j=i + SW_OFFSET;
 
-		// set interrupt mode for NO or NC
-		if ((cfg.a[i].switch_mode == SW_MODE_HOMING_NO) || 
-			(cfg.a[i].switch_mode == SW_MODE_ENABLED_NO)) {
+		// detect initial state of all switches.
+		sw.detect[i] = device.port[i]->IN & SW_MIN_BIT_bm;	// evaluates to true or false
+		sw.detect[j] = device.port[i]->IN & SW_MAX_BIT_bm;	// evaluates to true or false
+	
+		// set the switch senses and interrupt modes
+		if (cfg.a[i].switch_mode == SW_MODE_DISABLED) {
+			sw.sense[i] = SW_SENSE_DISABLED;
+			sw.sense[j] = SW_SENSE_DISABLED;
+
+		} else if ((cfg.a[i].switch_mode == SW_MODE_ENABLED_NO) || (cfg.a[i].switch_mode == SW_MODE_HOMING_NO)) {
+			sw.sense[i] = SW_SENSE_NO;
+			sw.sense[j] = SW_SENSE_NO;
 			int_mode = PORT_ISC_FALLING_gc;
-			gpio.sw_sense[i] = SW_SENSE_NO;
-			gpio.sw_sense[i+SW_OFFSET_TO_MAX] = SW_SENSE_NO;
-		} else {
+
+		} else if ((cfg.a[i].switch_mode == SW_MODE_ENABLED_NC) || (cfg.a[i].switch_mode == SW_MODE_HOMING_NC)) {
+			sw.sense[i] = SW_SENSE_NC;
+			sw.sense[j] = SW_SENSE_NC;
 			int_mode = PORT_ISC_RISING_gc;
-			gpio.sw_sense[i] = SW_SENSE_NC;
-			gpio.sw_sense[i+SW_OFFSET_TO_MAX] = SW_SENSE_NC;
 		}
 
 		// setup ports input bits (previously set to inputs by st_init())
-		device.port[i]->DIRCLR = GPIO2_MIN_BIT_bm;		 	// set min input
+		device.port[i]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input
 		device.port[i]->PIN6CTRL = (pin_mode | int_mode);	// see 13.14.14
-		device.port[i]->INT0MASK = GPIO2_MIN_BIT_bm;	 	// min on INT0
+		device.port[i]->INT0MASK = SW_MIN_BIT_bm;	 	// min on INT0
 
-		device.port[i]->DIRCLR = GPIO2_MAX_BIT_bm;		 	// set max input
+		device.port[i]->DIRCLR = SW_MAX_BIT_bm;		 	// set max input
 		device.port[i]->PIN7CTRL = (pin_mode | int_mode);	// 13.14.14
-		device.port[i]->INT1MASK = GPIO2_MAX_BIT_bm;		// max on INT1
+		device.port[i]->INT1MASK = SW_MAX_BIT_bm;		// max on INT1
 
 		// set interrupt levels. Interrupts must be enabled in main()
 		device.port[i]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
 	}
+	sw.lockout_count = 0;
 	gpio_clear_switches();
-	gpio.sw_count = 0;
+//	sei();
 }
 
 /*
  * ISRs - Switch interrupt handler routine and vectors
  */
 
-ISR(X_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_X);}
-ISR(Y_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Y);}
-ISR(Z_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Z);}
-ISR(A_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_A);}
+ISR(X_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_X, X);}
+ISR(Y_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Y, Y);}
+ISR(Z_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Z, Z);}
+ISR(A_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_A, A);}
 
-ISR(X_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_X);}
-ISR(Y_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Y);}
-ISR(Z_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Z);}
-ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
+ISR(X_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_X, X);}
+ISR(Y_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Y, Y);}
+ISR(Z_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Z, Z);}
+ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A, A);}
 
-static void _switch_isr_helper(uint8_t sw_flag)
+static void _switch_isr_helper(uint8_t sw_flag, uint8_t axis)
 {
-	if (gpio.sw_count == 0) {					// true if not in a debounce lockout
-		uint8_t axis = sw_flag;					// find out what axis this is
-		if (axis >= SW_OFFSET_TO_MAX) {
-			axis -= SW_OFFSET_TO_MAX;			// subtract offset to get the axis number
-		} 
-		if (cfg.a[axis].switch_mode == SW_MODE_DISABLED) {
-			return;
-		}
-		gpio.sw_thrown = true;					// triggers the switch handler tasks
-		gpio.sw_flags[sw_flag] = true;
-		gpio.sw_count = SW_LOCKOUT_TICKS;		// start the debounce lockout timer
+	if (sw.lockout_count != 0) return;		// exit if you are in a debounce lockout
+	if (cfg.a[axis].switch_mode == SW_MODE_DISABLED) return;
 
+	gpio_read_switches();					// now read the switches for real
+	if (sw.thrown == false) return;			// false alarm
+	sw.lockout_count = SW_LOCKOUT_TICKS;	// start the debounce lockout timer
+
+	if (sw.flags[sw_flag] == true) {		// process switch closure
 		if (cm.cycle_state == CYCLE_HOMING) {
-			sig_feedhold();
+			sig_feedhold();					// do not reset the switch flag array
 		} else {
 			if ((cfg.a[axis].switch_mode == SW_MODE_ENABLED_NO) || 
 				(cfg.a[axis].switch_mode == SW_MODE_ENABLED_NC)) { // only fire abort if fully enabled
-				sig_abort();
+				sig_abort();				// do not reset the switch flag array
 			}
 		}
 	}
@@ -199,7 +199,7 @@ static void _switch_isr_helper(uint8_t sw_flag)
 
 inline void gpio_switch_timer_callback(void)
 {
-	if (gpio.sw_count) { --gpio.sw_count;}	// counts down to zero and sticks on zero
+	if (sw.lockout_count) { --sw.lockout_count;}	// counts down to zero and sticks on zero
 }
 
 /*
@@ -210,19 +210,22 @@ inline void gpio_switch_timer_callback(void)
 
 void gpio_clear_switches() 
 {
-	gpio.sw_thrown = false;
-	for (uint8_t i=0; i < SW_SIZE; i++) {
-		gpio.sw_flags[i] = false; 
+	sw.thrown = false;
+	for (uint8_t i=0; i < SW_ARRAY_SIZE; i++) {
+		sw.flags[i] = false; 
 	}
 }
 
 /*
  * gpio_read_switches() - read the switches into the switch flag array
  *
- *	As configured switches are active LO
+ *	Read the switch states into the switch array as an array of true/false bytes
+ *	Read Normally Open switches as active LO, Normally Closed as active LO.
+ *	Ignore switches that are disabled.
+ *	This function does not care about cycle (e.g. homing), it just reads the switches
  *
- *	This routine relies on SW_FLAG array being in order of 
- *	MIN_X, MIN_Y, MIN_Z, MIN_A, MAX_X, MAX_Y, MAX_Z, MAX_A
+ *	This routine relies on SW_FLAG array being in order of:
+ *		MIN_X, MIN_Y, MIN_Z, MIN_A, MAX_X, MAX_Y, MAX_Z, MAX_A
  *	and there being 2 groups of 4 flags.
  */
 
@@ -231,13 +234,25 @@ void gpio_read_switches()
 	gpio_clear_switches();				// clear flags and thrown bit
 
 	for (uint8_t i=0; i<4; i++) {
-		if (!(device.port[i]->IN & GPIO2_MIN_BIT_bm)) { 	// min
-			gpio.sw_flags[i] = true;
-			gpio.sw_thrown = true;
+		if ((cfg.a[i].switch_mode == SW_MODE_ENABLED_NO) || (cfg.a[i].switch_mode == SW_MODE_HOMING_NO)) {
+			if ((device.port[i]->IN & SW_MIN_BIT_bm) == 0) { 	// NO switch MIN bit
+				sw.flags[i] = true;
+				sw.thrown = true;
+			}
+			if ((device.port[i]->IN & SW_MAX_BIT_bm) == 0) { 	// NO switch MAX bit
+				sw.flags[i+SW_OFFSET] = true;
+				sw.thrown = true;
+			}			
 		}
-		if (!(device.port[i]->IN & GPIO2_MAX_BIT_bm)) { 	// max
-			gpio.sw_flags[i + SW_OFFSET_TO_MAX] = true;
-			gpio.sw_thrown = true;
+		if ((cfg.a[i].switch_mode == SW_MODE_ENABLED_NC) || (cfg.a[i].switch_mode == SW_MODE_HOMING_NC)) {
+			if ((device.port[i]->IN & SW_MIN_BIT_bm) == 1) { 	// NC switch MIN bit
+				sw.flags[i] = true;
+				sw.thrown = true;
+			}
+			if ((device.port[i]->IN & SW_MAX_BIT_bm) == 1) { 	// NC switch MAX bit
+				sw.flags[i+SW_OFFSET] = true;
+				sw.thrown = true;
+			}			
 		}
 	}
 }
@@ -247,12 +262,15 @@ void gpio_read_switches()
  * gpio_set_switch() - diagnostic function for emulating a switch closure
  */
 
-uint8_t gpio_get_switch(uint8_t sw_flag) { return (gpio.sw_flags[sw_flag]);}
+uint8_t gpio_get_switch(uint8_t sw_flag) 
+{
+	return (sw.flags[sw_flag]);
+}
 
 void gpio_set_switch(uint8_t sw_flag)
 {
-	gpio.sw_thrown = true;
-	gpio.sw_flags[sw_flag] = true;
+	sw.thrown = true;
+	sw.flags[sw_flag] = true;
 }
 
 /*
@@ -261,7 +279,7 @@ void gpio_set_switch(uint8_t sw_flag)
 
 uint8_t gpio_switch_handler(void)
 {
-	if (gpio.sw_thrown == false) {			// leave if no switches are thrown
+	if (sw.thrown == false) {			// leave if no switches are thrown
 		return (TG_NOOP);
 	}
 	gpio_clear_switches();					// reset the switches last, not before
@@ -352,4 +370,18 @@ static void _show_switch(void)
 		sw.flag[SW_MIN_A], sw.flag[SW_MAX_A]);
 }
 #endif
+
+
+//###########################################################################
+//##### UNIT TESTS ##########################################################
+//###########################################################################
+
+#ifdef __UNIT_TEST_GPIO
+
+void gpio_unit_tests()
+{
+	_switch_isr_helper(SW_MIN_X, X);
+}
+
+#endif // __UNIT_TEST_GPIO
 

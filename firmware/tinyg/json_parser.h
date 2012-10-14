@@ -45,6 +45,6 @@ void js_unit_tests(void);
 #define	JSON_UNITS js_unit_tests();
 #else
 #define	JSON_UNITS
-#endif
+#endif // __UNIT_TEST_JSON
 
 #endif

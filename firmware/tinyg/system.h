@@ -81,8 +81,8 @@ enum cfgPortBits {			// motor control port bit positions
 	MICROSTEP_BIT_0_bp,		// bit 3
 	MICROSTEP_BIT_1_bp,		// bit 4
 	GPIO1_OUT_BIT_bp,		// bit 5 (4 gpio1 output bits; 1 from each axis)
-	GPIO2_MIN_BIT_bp,		// bit 6 (4 gpio2 input bits for switch closures)
-	GPIO2_MAX_BIT_bp		// bit 7 (4 gpio2 input bits for switch closures)
+	SW_MIN_BIT_bp,			// bit 6 (4 input bits for switch closures)
+	SW_MAX_BIT_bp			// bit 7 (4 input bits for switch closures)
 };
 
 #define STEP_BIT_bm			(1<<STEP_BIT_bp)
@@ -91,8 +91,8 @@ enum cfgPortBits {			// motor control port bit positions
 #define MICROSTEP_BIT_0_bm	(1<<MICROSTEP_BIT_0_bp)
 #define MICROSTEP_BIT_1_bm	(1<<MICROSTEP_BIT_1_bp)
 #define GPIO1_OUT_BIT_bm	(1<<GPIO1_OUT_BIT_bp)
-#define GPIO2_MIN_BIT_bm	(1<<GPIO2_MIN_BIT_bp)
-#define GPIO2_MAX_BIT_bm	(1<<GPIO2_MAX_BIT_bp) // motor control port bit masks
+#define SW_MIN_BIT_bm		(1<<SW_MIN_BIT_bp)
+#define SW_MAX_BIT_bm		(1<<SW_MAX_BIT_bp) // motor control port bit masks
 
 enum gpio1Inputs {
 	GPIO1_IN_BIT_0_bp = 0,	// gpio1 input bit 0
