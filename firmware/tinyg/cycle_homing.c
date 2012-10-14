@@ -153,7 +153,7 @@ uint8_t cm_homing_callback(void)
 {
 	if (cm.cycle_state != CYCLE_HOMING) { return (TG_NOOP);} // exit if not in a homing cycle
 	if (cm_isbusy() == true) { return (TG_EAGAIN);}			 // sync to planner move ends
-	return (hm.func(hm.axis));
+	return (hm.func(hm.axis));				// execute the current homing move
 }
 
 /* Homing axis moves - these execute in sequence:

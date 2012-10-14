@@ -125,6 +125,7 @@ void gpio_init(void)
 		if (cfg.a[i].switch_mode == SW_MODE_DISABLED) {
 			sw.sense[i] = SW_SENSE_DISABLED;
 			sw.sense[j] = SW_SENSE_DISABLED;
+			continue;									// don;t fiddle with interrupts in this case
 
 		} else if ((cfg.a[i].switch_mode == SW_MODE_ENABLED_NO) || (cfg.a[i].switch_mode == SW_MODE_HOMING_NO)) {
 			sw.sense[i] = SW_SENSE_NO;
@@ -139,13 +140,12 @@ void gpio_init(void)
 
 		// setup ports input bits (previously set to inputs by st_init())
 		device.port[i]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input
-		device.port[i]->PIN6CTRL = (pin_mode | int_mode);	// see 13.14.14
+		device.port[i]->PIN6CTRL = (pin_mode | int_mode);// see 13.14.14
 		device.port[i]->INT0MASK = SW_MIN_BIT_bm;	 	// min on INT0
 
 		device.port[i]->DIRCLR = SW_MAX_BIT_bm;		 	// set max input
-		device.port[i]->PIN7CTRL = (pin_mode | int_mode);	// 13.14.14
+		device.port[i]->PIN7CTRL = (pin_mode | int_mode);// 13.14.14
 		device.port[i]->INT1MASK = SW_MAX_BIT_bm;		// max on INT1
-
 		// set interrupt levels. Interrupts must be enabled in main()
 		device.port[i]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
 	}
