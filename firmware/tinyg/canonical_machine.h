@@ -307,7 +307,7 @@ enum cmModalGroup {					// Used for detecting gcode errors. See NIST section 3.4
 
 enum cmSyncCommand {				// M Codes and other synchronized commands
 	SYNC_PROGRAM_STOP = 0,			// M0
-	SYNC_OPTIONAL_STOP,			// M1
+	SYNC_OPTIONAL_STOP,				// M1
 	SYNC_PROGRAM_END,				// M2
 	SYNC_SPINDLE_CW,				// M3			
 	SYNC_SPINDLE_CCW,				// M4
@@ -315,11 +315,11 @@ enum cmSyncCommand {				// M Codes and other synchronized commands
 	SYNC_CHANGE_TOOL,				// M6
 	SYNC_MIST_COOLANT_ON,			// M7
 	SYNC_FLOOD_COOLANT_ON,			// M8
-	SYNC_FLOOD_COOLANT_OFF,		// M9 - also turns off mist coolant
+	SYNC_FLOOD_COOLANT_OFF,			// M9 - also turns off mist coolant
 	SYNC_FEED_OVERRIDE_ON,			// M48
-	SYNC_FEED_OVERRIDE_OFF,		// M49
-	SYNC_TOOL,						// T command ...and we need some way to synchronize tool
-	SYNC_SPINDLE_SPEED				// S command ...and spindle speed 
+	SYNC_FEED_OVERRIDE_OFF,			// M49
+	SYNC_TOOL_NUMBER,				// T command
+	SYNC_SPINDLE_SPEED				// S command
 };
 #define SYNC_MAX SYNC_SPINDLE_SPEED
 
@@ -423,8 +423,10 @@ uint8_t cm_get_distance_mode(void);
 uint32_t cm_get_model_linenum(void);
 uint8_t cm_isbusy(void);
 
+void cm_sync_tool_number(uint8_t tool);
+void cm_set_tool_number(uint8_t tool);
 void cm_set_spindle_mode(uint8_t spindle_mode);
-void cm_set_tool_parameter(uint8_t tool);
+void cm_sync_spindle_speed_parameter(double speed);
 void cm_set_spindle_speed_parameter(double speed);
 void cm_set_absolute_override(uint8_t absolute_override);
 

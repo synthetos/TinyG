@@ -101,6 +101,12 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 //	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"posa\":true,\"posx\":true,\"gc\":true,\"feed\":true,\"posy\":true,\"line\":true,\"stat\":true,\"posz\":true}}");
 
+	xio_queue_RX_string_usb("g0a2\n");
+	xio_queue_RX_string_usb("g92a0\n");
+	xio_queue_RX_string_usb("g0a3\n");	// should be a=3. Instead it's a=1
+
+//	xio_queue_RX_string_usb("t3\n");	// change tool
+
 //	xio_queue_RX_string_usb("$h\n");
 //	xio_queue_RX_string_usb("$m\n");
 //	xio_queue_RX_string_usb("$$\n");
@@ -223,7 +229,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 /* G28 and G30 homing tests */
 //	xio_queue_RX_string_usb("g28.1x0y0z0\n");
 //	xio_queue_RX_string_usb("g28.1x0y0z0a0\n");
-	xio_queue_RX_string_usb("g28.1 z0\n");
+//	xio_queue_RX_string_usb("g28.1 z0\n");
 //	xio_queue_RX_string_usb("g30x0y0z0\n");
 //	xio_queue_RX_string_usb("g30x42\n");
 

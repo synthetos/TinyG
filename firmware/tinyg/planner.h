@@ -34,7 +34,8 @@ enum moveType {				// bf->move_type values
 	MOVE_TYPE_LINE,			// simple line
 	MOVE_TYPE_ALINE,		// acceleration planned line
 	MOVE_TYPE_DWELL,		// delay with no movement
-	MOVE_TYPE_COMMAND,		// M code or other synchrouous command execution
+	MOVE_TYPE_MCODE,		// M code or other synchrouous command execution
+	MOVE_TYPE_COMMAND,		// general command
 	MOVE_TYPE_TOOL,			// T command
 	MOVE_TYPE_SPINDLE_SPEED,// S command
 	MOVE_TYPE_STOP,			// stop motors
@@ -126,7 +127,8 @@ double mp_get_runtime_linenum(void);
 void mp_zero_segment_velocity(void);
 
 uint8_t mp_exec_move(void);
-void mp_queue_sync_command(uint8_t command);
+void mp_sync_mcode(uint8_t mcode);
+void mp_sync_command(uint8_t command, double parameter);
 
 uint8_t mp_plan_hold_callback(void);
 uint8_t mp_end_hold_callback(void);

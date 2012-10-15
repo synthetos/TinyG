@@ -72,7 +72,7 @@ static void _exec_program_finalize(uint8_t machine_state);
  ************************************************************************/
 
 /*
- * Simple Getters and Setters (just the one liners, see below for more complex ones)
+ * Low-level Getters and Setters (work directly on the Gcode model struct)
  */
 // get parameter from cm struct
 uint8_t cm_get_machine_state() { return cm.machine_state;}
@@ -92,11 +92,17 @@ uint8_t cm_get_spindle_mode() { return gm.spindle_mode;}
 uint32_t cm_get_model_linenum() { return gm.linenum;}
 uint8_t cm_isbusy() { return (mp_isbusy());}
 
-// set parameter in gm struct
-void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
-void cm_set_tool_parameter(uint8_t tool) { gm.tool = tool;}
-void cm_set_spindle_speed_parameter(double speed) { gm.spindle_speed = speed;}
+// set parameters in gm struct
+
 void cm_set_absolute_override(uint8_t absolute_override) { gm.absolute_override = absolute_override;}
+
+void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
+
+//void cm_sync_tool_number(uint8_t tool) { mp_sync_command(SYNC_TOOL_NUMBER, (double)tool);}
+void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
+
+//void cm_sync_spindle_speed_parameter(double speed) { mp_sync_command(SYNC_SPINDLE_SPEED, speed);}
+void cm_set_spindle_speed_parameter(double speed) { gm.spindle_speed = speed;}
 
 /* 
  * cm_get_combined_state() - combines raw states into something a user might want to see
@@ -195,10 +201,9 @@ double cm_get_runtime_work_position(uint8_t axis)
  *	distance mode conversions and normalizations.
  *
  * cm_set_arc_offset()	- set all IJK offsets
- * cm_set_radius()	- set radius value
- * cm_set_absolute_override()
+ * cm_set_radius()		- set radius value
  * cm_set_model_linenum() - set line number in the model (this is NOT the runtime line number)
- * cm_set_target()	- set all XYZABC targets
+ * cm_set_target()		- set all XYZABC targets
  */
 
 void cm_set_arc_offset(double i, double j, double k)
@@ -324,7 +329,7 @@ void cm_set_target(double target[], double flag[])
 		if ((flag[i] < EPSILON) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 			continue;
 
-				// spill register bug workaround in avr-gcc 4.7.0 and avr-libc 1.8.0 --- from here.....
+		// spill register bug workaround in avr-gcc 4.7.0 and avr-libc 1.8.0 --- from here.....
 		} else /* if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
 			tmp = target[i];	// no mm conversion - it's in degrees
 
@@ -360,7 +365,7 @@ void cm_set_target(double target[], double flag[])
 		//..... to here
 		
 		if (gm.distance_mode == ABSOLUTE_MODE) {
-			gm.target[i] = tmp;
+			gm.target[i] = tmp + cm_get_coord_offset(i); // sacidu93's fix to Issue #22
 		} else {
 			gm.target[i] += tmp;
 		}
@@ -710,12 +715,14 @@ uint8_t cm_straight_feed(double target[], double flags[])
 
 uint8_t cm_change_tool(uint8_t tool)
 {
+//	cm_sync_tool_number(tool);
 	gm.tool = tool;
 	return (TG_OK);
 }
 
 uint8_t cm_select_tool(uint8_t tool)
 {
+//	cm_sync_tool_number(tool);
 	gm.tool = tool;
 	return (TG_OK);
 }
@@ -733,7 +740,7 @@ uint8_t cm_select_tool(uint8_t tool)
 uint8_t cm_mist_coolant_control(uint8_t mist_coolant)
 {
 	if (mist_coolant == true) {
-		mp_queue_sync_command(SYNC_MIST_COOLANT_ON);
+		mp_sync_mcode(SYNC_MIST_COOLANT_ON);
 	} 
 	return (TG_OK);
 }
@@ -751,9 +758,9 @@ void cm_exec_mist_coolant_control(uint8_t mist_coolant)
 uint8_t cm_flood_coolant_control(uint8_t flood_coolant)
 {
 	if (flood_coolant == true) {
-		mp_queue_sync_command(SYNC_FLOOD_COOLANT_ON);
+		mp_sync_mcode(SYNC_FLOOD_COOLANT_ON);
 	} else {
-		mp_queue_sync_command(SYNC_FLOOD_COOLANT_OFF);
+		mp_sync_mcode(SYNC_FLOOD_COOLANT_OFF);
 	}
 	return (TG_OK);
 }
@@ -772,9 +779,9 @@ void cm_exec_flood_coolant_control(uint8_t flood_coolant)
 uint8_t cm_feed_override_enable(uint8_t feed_override)
 {
 	if (feed_override == true) {
-		mp_queue_sync_command(SYNC_FEED_OVERRIDE_ON);
+		mp_sync_mcode(SYNC_FEED_OVERRIDE_ON);
 	} else {
-		mp_queue_sync_command(SYNC_FEED_OVERRIDE_OFF);
+		mp_sync_mcode(SYNC_FEED_OVERRIDE_OFF);
 	}
 	return (TG_OK);
 }
@@ -846,12 +853,12 @@ void cm_feedhold()
 	}
 }
 
-void cm_program_stop() { mp_queue_sync_command(SYNC_PROGRAM_STOP);}
-void cm_optional_program_stop()	{ mp_queue_sync_command(SYNC_PROGRAM_STOP); }
+void cm_program_stop() { mp_sync_mcode(SYNC_PROGRAM_STOP);}
+void cm_optional_program_stop()	{ mp_sync_mcode(SYNC_PROGRAM_STOP); }
 void cm_program_end()				// M2, M30
 {
 	tg_reset_source();				// stop reading from a file (return to std device)
-	mp_queue_sync_command(SYNC_PROGRAM_END);
+	mp_sync_mcode(SYNC_PROGRAM_END);
 }
 
 void cm_exec_program_stop() { _exec_program_finalize(MACHINE_PROGRAM_STOP);}
