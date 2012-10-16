@@ -341,7 +341,7 @@ static const char str_pbc[] PROGMEM = "pbc,planner_buffer_c,";
 // Gcode model values for reporting purposes
 static const char str_vel[]  PROGMEM = "vel,velocity,Velocity:%17.3f%S/min\n";
 static const char str_line[] PROGMEM = "line,line_n,Line number:%10.0f\n";
-static const char str_lix[]  PROGMEM = "lix,line_i,Line index:%11.0f\n";
+static const char str_lix[]  PROGMEM = "lix,line_i,Line index:%13d\n";
 static const char str_feed[] PROGMEM = "feed,feed,Feed rate:%16.3f%S/min\n";
 static const char str_stat[] PROGMEM = "stat,stat,Machine state:       %s\n"; // combined machine state
 static const char str_macs[] PROGMEM = "macs,macs,Raw machine state:   %s\n"; // raw machine state

@@ -47,7 +47,6 @@
 
 // local scope stuff
 
-static uint8_t _json_parser(char *str);
 static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t *depth);
 static uint8_t _normalize_json_string(char *str, uint16_t size);
 
@@ -62,7 +61,6 @@ void js_init()
 
 /****************************************************************************
  * js_json_parser() - parse a JSON string
- * _json_parser()   - inner loop so any errors retrun back to the main routine
  *
  *	This is a dumbed down JSON parser to fit in limited memory with no malloc
  *	or practical way to do recursion ("depth" tracks parent/child levels).
@@ -89,14 +87,7 @@ void js_init()
  *	  - returns the status and the JSON response string
  */
 
-uint8_t js_json_parser(char *in_str, char *out_str)
-{
-	uint8_t status = _json_parser(in_str);		// parse and execute the input
-	cmd_print_list(status, TEXT_INLINE_PAIRS);	// echo result as JSON
-	return (status);
-}
-
-static uint8_t _json_parser(char *str)
+uint8_t js_json_parser(char *str)
 {
 	uint8_t status;
 	int8_t depth = 2;							// starting body depth is 2

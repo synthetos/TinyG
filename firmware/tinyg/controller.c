@@ -269,7 +269,7 @@ static uint8_t _dispatch()
 		}
 		case '{': { 							// JSON input
 			cfg.communications_mode = TG_JSON_MODE;
-			_dispatch_return(js_json_parser(tg.in_buf, tg.out_buf), tg.out_buf); 
+			_dispatch_return(js_json_parser(tg.in_buf), tg.out_buf); 
 			break;
 		}
 		default: {								// anything else must be Gcode

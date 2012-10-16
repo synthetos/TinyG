@@ -101,9 +101,12 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 //	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"posa\":true,\"posx\":true,\"gc\":true,\"feed\":true,\"posy\":true,\"line\":true,\"stat\":true,\"posz\":true}}");
 
-	xio_queue_RX_string_usb("g0a2\n");
-	xio_queue_RX_string_usb("g92a0\n");
-	xio_queue_RX_string_usb("g0a3\n");	// should be a=3. Instead it's a=1
+	xio_queue_RX_string_usb("{\"gc\":\"g0x1\"}\n");
+//	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
+
+//	xio_queue_RX_string_usb("g0a2\n");
+//	xio_queue_RX_string_usb("g92a0\n");
+//	xio_queue_RX_string_usb("g0a3\n");	// should be a=3. Instead it's a=1
 
 //	xio_queue_RX_string_usb("t3\n");	// change tool
 

@@ -449,7 +449,7 @@ void cm_set_arc_radius(double r);
 //void cm_set_absolute_override(uint8_t absolute_override);
 void cm_set_model_linenum(uint32_t linenum);
 void cm_set_model_lineindex(uint32_t lineindex);
-void cm_incr_model_linenum(void);
+void cm_incr_model_lineindex(void);
 
 /*--- canonical machining functions ---*/
 void cm_init(void);									// init canonical machine

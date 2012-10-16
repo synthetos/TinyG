@@ -34,7 +34,7 @@
  */
 
 void js_init(void);						// Initialize the parser
-uint8_t js_json_parser(char *in_str, char *out_str);
+uint8_t js_json_parser(char *str);
 uint16_t js_serialize_json(char *out_buf);
 
 /* unit test setup */
