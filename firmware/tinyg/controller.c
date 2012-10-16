@@ -191,10 +191,16 @@ static uint8_t _sync_to_tx_buffer()
 
 static uint8_t _sync_to_planner()
 {
+	if (mp_get_planner_buffers_available() > 0) {
+		return (TG_EAGAIN);
+	}
+	return (TG_OK);
+/*			
 	if (mp_test_write_buffer() == false) { 		// got a buffer you can use?
 		return (TG_EAGAIN);
 	}
 	return (TG_OK);
+*/
 }
 
 /**** Input source controls ****

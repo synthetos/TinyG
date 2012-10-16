@@ -90,6 +90,7 @@ uint8_t cm_get_distance_mode() { return gm.distance_mode;}
 uint8_t cm_get_inverse_feed_rate_mode() { return gm.inverse_feed_rate_mode;}
 uint8_t cm_get_spindle_mode() { return gm.spindle_mode;} 
 uint32_t cm_get_model_linenum() { return gm.linenum;}
+uint32_t cm_get_model_lineindex() { return gm.lineindex;}
 uint8_t cm_isbusy() { return (mp_isbusy());}
 
 // set parameters in gm struct
@@ -203,6 +204,7 @@ double cm_get_runtime_work_position(uint8_t axis)
  * cm_set_arc_offset()	- set all IJK offsets
  * cm_set_radius()		- set radius value
  * cm_set_model_linenum() - set line number in the model (this is NOT the runtime line number)
+ * cm_set_model_lineindex() - set line index in the model (this is NOT the runtime line index)
  * cm_set_target()		- set all XYZABC targets
  */
 
@@ -225,6 +227,16 @@ void cm_set_model_linenum(uint32_t linenum)
 	} else {
 		gm.linenum++;			// autoincrement if no line number
 	}
+}
+
+void cm_set_model_lineindex(uint32_t lineindex)
+{
+	gm.lineindex = lineindex;
+}
+
+void cm_incr_model_lineindex()
+{
+	gm.lineindex++;
 }
 
 /* 

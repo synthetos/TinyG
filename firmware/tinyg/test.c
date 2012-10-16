@@ -405,7 +405,7 @@ void print_vector(const char *label, double vector[], uint8_t count)
  */
 #ifdef __SEGMENT_LOGGER
 void segment_logger(uint8_t move_state, 
-					uint32_t linenum,
+					uint32_t lineindex,
 					uint32_t segments, 
 					uint32_t segment_count, 
 					double velocity,
@@ -420,7 +420,7 @@ void segment_logger(uint8_t move_state,
 {
 	if (sl_index < SEGMENT_LOGGER_MAX) {
 		sl[sl_index].move_state = move_state;
-		sl[sl_index].linenum = linenum;
+		sl[sl_index].lineindex = lineindex;
 		sl[sl_index].segments = (double)segments + (double)segment_count*0.001 + 0.0000002;
 		sl[sl_index].velocity = velocity;
 		sl[sl_index].microseconds = microseconds;

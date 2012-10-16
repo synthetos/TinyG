@@ -25,12 +25,6 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/*
- * At some point this whole thing ought to be renamed as the line buffer,
- * segment buffer, motor buffer, motor command buffer, joint buffer, or 
- * something that's more descriptive and not in conflict with the 
- * upper-level move buffer used by the planner.
- */
 
 #ifndef kinematics_h
 #define kinematics_h 

@@ -35,6 +35,7 @@ void rpt_queue_status_report(void);
 uint8_t rpt_status_report_callback(void);
 void rpt_run_multiline_status_report(void);
 uint8_t rpt_populate_status_report(void);
+uint8_t rpt_populate_queue_report(void);
 
 // If you are looking for the defaults for the status report see config.h
 

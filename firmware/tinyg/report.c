@@ -109,7 +109,7 @@ void rpt_init_status_report(uint8_t persist_flag)
 			cmd.index++;
 		}
 	}
-	for (; i < CMD_STATUS_REPORT_LEN; i++) {	// fill rest of spec with -1
+	for (; i < CMD_STATUS_REPORT_LEN; i++) {		// fill rest of spec with -1
 		cmd.value = -1;
 		cfg.status_report_spec[i] = cmd.value;
 		if (persist_flag == true) {
@@ -170,6 +170,45 @@ uint8_t rpt_populate_status_report()
 		cmd_get_cmdObj(cmd);
 		cmd = cmd->nx;
 	}
+	return (TG_OK);
+}
+
+/*****************************************************************************
+ * Queue Reports
+ *
+ *	rpt_populate_queue_report() - report on planner queue
+ *
+ *	Queue reports return 
+ *		[lix] - line index 
+ *		[pba] - planner buffers available 
+ *
+ *	Related functions
+ *		{"lic":true} - clear the line index (reset to zero)
+ *		{"pqc":true} - clear (reset) the planner queue  
+ */
+
+uint8_t rpt_populate_queue_report()
+{
+	cmdObj *cmd = cmd_body;
+
+	// setup parent qr object
+	cmd_clear(cmd);							// wipe it first
+	cmd->type = TYPE_PARENT; 				// setup the parent object
+	sprintf_P(cmd->token, PSTR("qr"));
+	cmd = cmd->nx;
+
+	// line index element
+ 	sprintf_P(cmd->token, PSTR("lix"));
+	cmd->value = mp_get_runtime_lineindex();
+	cmd_get_cmdObj(cmd);
+	cmd = cmd->nx;
+
+	// planner buffers available element
+	sprintf_P(cmd->token, PSTR("pba"));
+	cmd->value = mp_get_planner_buffers_available();
+	cmd_get_cmdObj(cmd);
+	cmd = cmd->nx;
+
 	return (TG_OK);
 }
 

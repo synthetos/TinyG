@@ -41,6 +41,8 @@
  *	cm_get_xxxx functions. Callbacks (e.g. functions like _exec_aline(), _exec_dwell()) 
  *	should work from the buffer (bf) and their singletons (e.g. mr.) and never call the 
  *	gcode model - which may have changed.
+ *
+ *	For info on how the planner buffers are handled scan down for PLANNER BUFFERS
  */
 
 #include <stdlib.h>
@@ -76,7 +78,8 @@ enum mpBufferState {			// bf->buffer_state values
 };
 
 struct mpBuffer {				// See Planning Velocity Notes for variable usage
-	uint32_t linenum;			// runtime line number; or block count if not numbered
+	uint32_t linenum;			// runtime line number; or line index if not numbered
+	uint32_t lineindex;			// runtime autoincremented line index
 	struct mpBuffer *pv;		// static pointer to previous buffer
 	struct mpBuffer *nx;		// static pointer to next buffer
 //	uint8_t (*exec_func)(double parameter); // callback to function to execute w/parameter
@@ -115,6 +118,7 @@ typedef struct mpBuffer mpBuf;
 #define parameter time			// alias parameter to the time variable
 
 struct mpBufferPool {			// ring buffer for sub-moves
+	uint8_t buffers_available;	// running count of available buffers
 	struct mpBuffer *w;			// get_write_buffer pointer
 	struct mpBuffer *q;			// queue_write_buffer pointer
 	struct mpBuffer *r;			// get/end_run_buffer pointer
@@ -123,6 +127,7 @@ struct mpBufferPool {			// ring buffer for sub-moves
 
 struct mpMoveMasterSingleton {	// common variables for planning (move master)
 	uint32_t linenum;			// runtime line/block number of BF being planned
+	uint32_t lineindex;			// runtime line index of BF being planned
 	double position[AXES];		// final move position for planning purposes
 #ifdef __UNIT_TEST_PLANNER
 	double test_case;
@@ -134,6 +139,7 @@ struct mpMoveMasterSingleton {	// common variables for planning (move master)
 
 struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	uint32_t linenum;			// runtime line/block number of BF being executed
+	uint32_t lineindex;			// runtime line index of BF being executed
 //	uint8_t (*run_move)(struct mpBuffer *m); // currently running move - left in for reference
 	uint8_t move_state;			// state of the overall move
 	uint8_t section_state;		// state within a move section
@@ -177,7 +183,7 @@ static struct mpMoveRuntimeSingleton mr;// static context for runtime
  */
 #define _bump(a) ((a<PLANNER_BUFFER_POOL_SIZE-1)?(a+1):0) // buffer incr & wrap
 
-//static mpBuf * _get_prev_buffer(const mpBuf *bf);
+//static mpBuf * _get_prev_buffer(const mpBuf *bf);	// use the defines below instead
 //static mpBuf * _get_next_buffer(const mpBuf *bf);
 #define _get_prev_buffer(b) ((mpBuf *)(b->pv))
 #define _get_next_buffer(b) ((mpBuf *)(b->nx))
@@ -285,6 +291,7 @@ void mp_flush_planner()
  * mp_get_runtime_position()	- returns current position of queried axis
  * mp_get_runtime_velocity()	- returns current velocity (aggregate)
  * mp_get_runtime_linenum()		- returns currently executing line number
+ * mp_get_runtime_lineindex()	- returns currently executing line index
  *
  * 	Keeping track of position is complicated by the fact that moves can
  *	require multiple reference frames. The scheme to keep this straight is:
@@ -326,6 +333,7 @@ void mp_set_axis_position(uint8_t axis, const double position)
 double mp_get_runtime_position(uint8_t axis) { return (mr.position[axis]);}
 double mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 double mp_get_runtime_linenum(void) { return (mr.linenum);}
+double mp_get_runtime_lineindex(void) { return (mr.lineindex);}
 
 /*************************************************************************/
 /* mp_exec_move() - execute runtime functions to prep move for steppers
@@ -603,7 +611,9 @@ uint8_t mp_aline(const double target[], const double minutes)
 		return (TG_BUFFER_FULL_FATAL);			// (not supposed to fail)
 	}
 	bf->linenum = cm_get_model_linenum();
+	bf->lineindex = cm_get_model_lineindex();
 	mm.linenum = bf->linenum;					// block being planned
+	mm.lineindex = bf->lineindex;				// block being planned
 
 	bf->time = minutes;
 	bf->length = length;
@@ -1347,6 +1357,7 @@ static uint8_t _exec_aline(mpBuf *bf)
 		mr.move_state = MOVE_STATE_HEAD;
 		mr.section_state = MOVE_STATE_NEW;
 		mr.linenum = bf->linenum;
+		mr.lineindex = bf->lineindex;
 		mr.jerk = bf->jerk;
 		mr.jerk_div2 = bf->jerk/2;
 		mr.head_length = bf->head_length;
@@ -1550,15 +1561,36 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 	return (TG_EAGAIN);			// this section still has more segments to run
 }
 
-
-/**** PLANNER BUFFER ROUTINES *********************************************
+/**** PLANNER BUFFERS - FUNCTIONS *********************************************
  *
- * mp_test_write_buffer()	Returns TRUE if a write buffer is available
+ * Planner buffers are used to queue and operate on Gcode blocks. Each buffer 
+ * contains one Gcode block which may be a move, and M code, or other command 
+ * that must be executed synchronously with movement.
+ *
+ * Buffers are in a circularly linked list managed by a WRITE pointer and a RUN pointer.
+ * New blocks are populated by (1) getting a write buffer, (2) populating the buffer,
+ * then (3) placing it in the queue (queue write buffer). If an exception occurs
+ * during population you can unget the write buffer before queuing it, which returns
+ * it to the pool of available buffers.
+ *
+ * The RUN buffer is the buffer currently executing. It may be retrieved once for 
+ * simple commands, or multiple times for long-running commands like moves. When 
+ * the command is complete the run buffer is returned to the pool by freeing it.
+ * 
+ * Notes:
+ *	The write buffer pointer only moves forward on _queue_write_buffer, and
+ *	the read buffer pointer only moves forward on free_read calls.
+ *	(test, get and unget have no effect)
+ * 
+ * mp_get_planner_buffers_available()   Returns # of available planner buffers
+ *
  * _init_buffers()			Initializes or resets buffers
+ *
  * _get_write_buffer()		Get pointer to next available write buffer
  *							Returns pointer or NULL if no buffer available.
  *
  * _unget_write_buffer()	Free write buffer if you decide not to queue it.
+ *
  * _queue_write_buffer()	Commit the next write buffer to the queue
  *							Advances write pointer & changes buffer state
  *
@@ -1568,15 +1600,7 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
  *							Returns NULL if no buffer available
  *							The behavior supports continuations (iteration)
  *
- * _finalize_run_buffer()	Release the run buffer & return to buffer pool.
- * _request_finalize_run_buffer() Request that a finalize be run before 
- *							the next planning pass. This allows the exec routine
- *							to free the buffer w/o stomping on the main loop.
- *							
- * mp_invoke_finalize_run_buffer() Execute the finalize request. This is how 
- *							the main loop completes a request. 
- *
- * _test_buffer_queue_empty() Returns TRUE if buffer queue is empty
+ * _free_run_buffer()		Release the run buffer & return to buffer pool.
  *
  * _get_prev_buffer(bf)		Returns pointer to prev buffer in linked list
  * _get_next_buffer(bf)		Returns pointer to next buffer in linked list 
@@ -1584,20 +1608,22 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
  * _get_last_buffer(bf)		Returns pointer to last buffer, i.e. last block (zero)
  * _clear_buffer(bf)		Zeroes the contents of the buffer
  * _copy_buffer(bf,bp)		Copies the contents of bp into bf - preserves links
- *
- * Notes:
- *	The write buffer pointer only moves forward on queue_write, and 
- *	the read buffer pointer only moves forward on finalize_read calls.
- *	(test, get and unget have no effect)
  */
 
-uint8_t mp_test_write_buffer()
+/*
+uint8_t mp_test_write_buffer(void)
 {
 	if (mb.w->buffer_state == MP_BUFFER_EMPTY) { return (true); }
 	return (false);
 }
+*/
 
-static void _init_buffers()
+uint8_t mp_get_planner_buffers_available(void)
+{
+	return (mb.buffers_available);
+}
+
+static void _init_buffers(void)
 {
 	mpBuf *pv;
 	uint8_t i;
@@ -1607,24 +1633,26 @@ static void _init_buffers()
 	mb.q = &mb.bf[0];
 	mb.r = &mb.bf[0];
 	pv = &mb.bf[PLANNER_BUFFER_POOL_SIZE-1];
-	for (i=0; i < PLANNER_BUFFER_POOL_SIZE; i++) {  // setup ring pointers
+	for (i=0; i < PLANNER_BUFFER_POOL_SIZE; i++) { // setup ring pointers
 		mb.bf[i].nx = &mb.bf[_bump(i)];
 		mb.bf[i].pv = pv;
 		pv = &mb.bf[i];
 	}
+	mb.buffers_available = PLANNER_BUFFER_POOL_SIZE;
 }
 
-static mpBuf * _get_write_buffer() 	// get & clear a buffer
+static mpBuf * _get_write_buffer() 				// get & clear a buffer
 {
 	if (mb.w->buffer_state == MP_BUFFER_EMPTY) {
 		mpBuf *w = mb.w;
-		mpBuf *nx = mb.w->nx;			// save pointers
+		mpBuf *nx = mb.w->nx;					// save pointers
 		mpBuf *pv = mb.w->pv;
 		memset(mb.w, 0, sizeof(mpBuf));
 		w->nx = nx;								// restore pointers
 		w->pv = pv;
 		w->buffer_state = MP_BUFFER_LOADING;
 		mb.w = w->nx;
+		mb.buffers_available--;
 		return (w);
 	}
 	return (NULL);
@@ -1634,6 +1662,7 @@ static void _unget_write_buffer()
 {
 	mb.w = mb.w->pv;							// queued --> write
 	mb.w->buffer_state = MP_BUFFER_EMPTY; 		// not loading anymore
+	mb.buffers_available++;
 }
 
 static void _queue_write_buffer(const uint8_t move_type)
@@ -1668,6 +1697,7 @@ static void _free_run_buffer()					// EMPTY current run buf & adv to next
 		mb.r->buffer_state = MP_BUFFER_PENDING;  // pend next buffer
 	}
 	if (mb.w == mb.r) { cm_exec_cycle_end();}	// end the cycle if the queue empties
+	mb.buffers_available++;
 }
 
 static mpBuf * _get_first_buffer(void)
@@ -1747,6 +1777,7 @@ static void _dump_plan_buffer(mpBuf *bf)
 			bf->replannable);
 
 	print_scalar(PSTR("line number:     "), bf->linenum);
+	print_scalar(PSTR("line index:      "), bf->lineindex);
 	print_vector(PSTR("position:        "), mm.position, AXES);
 	print_vector(PSTR("target:          "), bf->target, AXES);
 	print_vector(PSTR("unit:            "), bf->unit, AXES);
@@ -1770,6 +1801,7 @@ void mp_dump_runtime_state(void)
 {
 	fprintf_P(stderr, PSTR("***Runtime Singleton (mr)\n"));
 	print_scalar(PSTR("line number:       "), mr.linenum);
+	print_scalar(PSTR("line index:        "), mr.lineindex);
 	print_vector(PSTR("position:          "), mr.position, AXES);
 	print_vector(PSTR("target:            "), mr.target, AXES);
 	print_scalar(PSTR("length:            "), mr.length);
