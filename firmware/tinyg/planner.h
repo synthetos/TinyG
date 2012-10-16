@@ -111,6 +111,8 @@ enum moveState {
  * Global Scope Functions
  */
 
+typedef uint8_t (*fptrCallback)(double parameter);	// for planner callbacks
+
 void mp_init(void);
 
 uint8_t mp_isbusy(void);

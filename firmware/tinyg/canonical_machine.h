@@ -423,12 +423,13 @@ uint8_t cm_get_distance_mode(void);
 uint32_t cm_get_model_linenum(void);
 uint8_t cm_isbusy(void);
 
-void cm_sync_tool_number(uint8_t tool);
 void cm_set_tool_number(uint8_t tool);
 void cm_set_spindle_mode(uint8_t spindle_mode);
-void cm_sync_spindle_speed_parameter(double speed);
 void cm_set_spindle_speed_parameter(double speed);
 void cm_set_absolute_override(uint8_t absolute_override);
+
+//void cm_sync_tool_number(uint8_t tool);
+//void cm_sync_spindle_speed_parameter(double speed);
 
 double cm_get_model_work_position(uint8_t axis);
 double *cm_get_model_work_position_vector(double position[]);
@@ -443,7 +444,7 @@ double *cm_set_vector(double x, double y, double z, double a, double b, double c
 void cm_set_target(double target[], double flag[]);
 void cm_set_arc_offset(double i, double j, double k);
 void cm_set_arc_radius(double r);
-void cm_set_absolute_override(uint8_t absolute_override);
+//void cm_set_absolute_override(uint8_t absolute_override);
 void cm_set_model_linenum(uint32_t linenum);
 
 /*--- canonical machining functions ---*/
@@ -491,9 +492,9 @@ uint8_t cm_select_tool(uint8_t tool);				// T parameter
 void cm_comment(char *comment);						// comment handler
 void cm_message(char *message);						// msg to console
 
-void cm_cycle_start(void);							// (no Gcode)
-void cm_cycle_end(void); 							// (no Gcode)
-void cm_feedhold(void);								// (no Gcode)
+void cm_exec_cycle_start(void);						// (no Gcode)
+void cm_exec_cycle_end(void); 						// (no Gcode)
+void cm_exec_feedhold(void);						// (no Gcode)
 void cm_program_stop(void);							// M0
 void cm_optional_program_stop(void);				// M1
 void cm_program_end(void);							// M2

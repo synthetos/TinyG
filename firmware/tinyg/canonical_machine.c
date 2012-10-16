@@ -95,14 +95,12 @@ uint8_t cm_isbusy() { return (mp_isbusy());}
 // set parameters in gm struct
 
 void cm_set_absolute_override(uint8_t absolute_override) { gm.absolute_override = absolute_override;}
-
 void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
+void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
+void cm_set_spindle_speed_parameter(double speed) { gm.spindle_speed = speed;}
 
 //void cm_sync_tool_number(uint8_t tool) { mp_sync_command(SYNC_TOOL_NUMBER, (double)tool);}
-void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
-
 //void cm_sync_spindle_speed_parameter(double speed) { mp_sync_command(SYNC_SPINDLE_SPEED, speed);}
-void cm_set_spindle_speed_parameter(double speed) { gm.spindle_speed = speed;}
 
 /* 
  * cm_get_combined_state() - combines raw states into something a user might want to see
@@ -121,6 +119,8 @@ uint8_t cm_get_combined_state()
 	}
 	return cm.combined_state;
 }
+
+
 
 /* Position and Offset getters
  *
@@ -614,7 +614,7 @@ uint8_t cm_straight_traverse(double target[], double flags[])
 {
 	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_target(target,flags);
-	cm_cycle_start();					//required for homing & other cycles
+	cm_exec_cycle_start();					//required for homing & other cycles
 	uint8_t status = MP_LINE(gm.target, _get_move_time());
 	cm_set_gcode_model_endpoint_position(status);
 	return (status);
@@ -699,7 +699,7 @@ uint8_t cm_straight_feed(double target[], double flags[])
 //	}
 
 	cm_set_target(target, flags);
-	cm_cycle_start();							//required for homing & other cycles
+	cm_exec_cycle_start();					//required for homing & other cycles
 	status = MP_LINE(gm.target, _get_move_time());
 	cm_set_gcode_model_endpoint_position(status);
 	return (status);
@@ -808,10 +808,10 @@ void cm_message(char *message)
  * This group implements stop, start, end, and hold. 
  * It is extended beyond the NIST spec to handle various situations.
  *
- *	cm_cycle_start()			(no Gcode)
- *	cm_cycle_end()				(no Gcode)
- *	cm_feedhold()				(no Gcode)
- *	cm_program_stop()			(M0, M60)
+ *	cm_exec_cycle_start()		(no Gcode)  Do a cycle start right now
+ *	cm_exec_cycle_end()			(no Gcode)	Do a cycle end right now
+ *	cm_exec_feedhold()			(no Gcode)	Initiate a feedhold right now	
+ *	cm_program_stop()			(M0, M60)	Queue a program stop
  *	cm_optional_program_stop()	(M1)
  *	cm_program_end()			(M2, M30)
  *	cm_exec_program_stop()
@@ -828,7 +828,7 @@ void cm_message(char *message)
  * See planner.c for feedhold details.
  */
 
-void cm_cycle_start()
+void cm_exec_cycle_start()
 {
 	cm.cycle_start_flag = true;
 	cm.machine_state = MACHINE_CYCLE;
@@ -837,14 +837,14 @@ void cm_cycle_start()
 	}
 }
 
-void cm_cycle_end() 
+void cm_exec_cycle_end() 
 {
 	if (cm.cycle_state == CYCLE_STARTED) {
 		cm_exec_program_stop();		// don't stop if it's in a homing or other specialized cycle
 	}
 }
 
-void cm_feedhold()
+void cm_exec_feedhold()
 {
 	if ((cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF)) {
 		cm.motion_state = MOTION_HOLD;

@@ -25,17 +25,22 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* --- TinyG Notes ----
+/* --- Planner Notes ----
  *
- *	This layer works below the canonical machine.and above the motor
- *	mapping and queues. It is responsible only for cartesian motions.
- *	The calls to the routines are simple and do not need to know about
- *	the state of the gcode model. A rudimentary multitasking capability 
- *	is implemented for lines, arcs, dwells, and program control. 
+ *	The planner works below the canonical machine and above the motor mapping and stepper 
+ *	execution layers. A rudimentary multitasking capability is implemented for long-running
+ *	commands such as lines, arcs, and dwells. These functions are coded as non-blocking 
+ *	continuations - which are simple state machines that are re-entered multiple times until 
+ *	a particular operation is complete. These functions have 2 parts - the initial call, 
+ *	which sets up the local context, and callbacks (continuations) that are called from 
+ *	the main loop (in controller.c).
  *
- *	Routines are coded as non-blocking continuations - which are simple 
- *	state machines that are re-entered multiple times until a particular 
- *	operation is complete.
+ *	One important concept is isolation of the Gcode model from the planner runtime model.
+ *	Functions that are called from the canonical_machine to set up operations (e.g. mp_aline(), 
+ *	mp_dwell()) can get their data from the gcode model, but generally should do this using 
+ *	cm_get_xxxx functions. Callbacks (e.g. functions like _exec_aline(), _exec_dwell()) 
+ *	should work from the buffer (bf) and their singletons (e.g. mr.) and never call the 
+ *	gcode model - which may have changed.
  */
 
 #include <stdlib.h>
@@ -74,6 +79,8 @@ struct mpBuffer {				// See Planning Velocity Notes for variable usage
 	uint32_t linenum;			// runtime line number; or block count if not numbered
 	struct mpBuffer *pv;		// static pointer to previous buffer
 	struct mpBuffer *nx;		// static pointer to next buffer
+//	uint8_t (*exec_func)(double parameter); // callback to function to execute w/parameter
+	fptrCallback callback;		// callback to execution function
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
 	uint8_t move_type;			// used to dispatch to run routine
 	uint8_t move_code;			// M code or T code
@@ -189,7 +196,7 @@ static uint8_t _exec_null(mpBuf *bf);
 static uint8_t _exec_line(mpBuf *bf);
 static uint8_t _exec_dwell(mpBuf *bf);
 static uint8_t _exec_mcode(mpBuf *bf);
-static uint8_t _exec_command(mpBuf *bf);
+//static uint8_t _exec_command(mpBuf *bf);
 static uint8_t _exec_tool(mpBuf *bf);
 static uint8_t _exec_spindle_speed(mpBuf *bf);
 static uint8_t _exec_aline(mpBuf *bf);
@@ -332,7 +339,7 @@ uint8_t mp_exec_move()
 	mpBuf *bf;
 
 	if ((bf = _get_run_buffer()) == NULL) { return (TG_NOOP);}	// NULL means nothing's running
-	if (cm.cycle_state == CYCLE_OFF) { cm_cycle_start();} 		// cycle state management
+	if (cm.cycle_state == CYCLE_OFF) { cm_exec_cycle_start();}	// cycle state management
 	if ((cm.motion_state == MOTION_STOP) && (bf->move_type == MOVE_TYPE_ALINE)) {
 		cm.motion_state = MOTION_RUN;							// auto state-change
 	}
@@ -611,12 +618,13 @@ uint8_t mp_aline(const double target[], const double minutes)
 					square(bf->unit[B] * cfg.a[B].jerk_max) +
 					square(bf->unit[C] * cfg.a[C].jerk_max));
 	bf->recip_jerk = 1/bf->jerk;				// used by planning
-	bf->cubert_jerk = pow(bf->jerk, 0.333333);	// used by planning
+	bf->cubert_jerk = cubert(bf->jerk);			// used by planning
+//	bf->cubert_jerk = pow(bf->jerk, 0.333333);	// used by planning
 
 	// finish up the current block variables
 	if (cm_get_path_control() != PATH_EXACT_STOP) { // exact stop cases already zeroed
 		bf->replannable = true;
-		exact_stop = 12345678;					// an arbitrarily large number
+		exact_stop = 12345678;					// an arbitrarily large floating point number
 	}
 	bf->cruise_vmax = bf->length / bf->time;	// target velocity requested
 	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);
@@ -1659,7 +1667,7 @@ static void _free_run_buffer()					// EMPTY current run buf & adv to next
 	if (mb.r->buffer_state == MP_BUFFER_QUEUED) {// only if queued...
 		mb.r->buffer_state = MP_BUFFER_PENDING;  // pend next buffer
 	}
-	if (mb.w == mb.r) { cm_cycle_end();}		// end the cycle if the queue empties
+	if (mb.w == mb.r) { cm_exec_cycle_end();}	// end the cycle if the queue empties
 }
 
 static mpBuf * _get_first_buffer(void)
