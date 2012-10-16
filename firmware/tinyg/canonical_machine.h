@@ -76,7 +76,7 @@ struct GCodeModel {						// Gcode model- meaning depends on context
 										// G82, G83 G84, G85, G86, G87, G88, G89 
 	uint8_t program_flow;				// currently vestigal - captured, but not uses
 	uint32_t linenum;					// N word or autoincrement in the model
-	uint32_t lineindex;					// autoincremented line number (idex)
+	uint32_t lineindex;					// autoincremented line index
 
 	double target[AXES]; 				// XYZABC where the move should go
 	double position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
@@ -124,7 +124,7 @@ struct GCodeInput {						// Gcode model- meaning depends on context
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
 										// G82, G83 G84, G85, G86, G87, G88, G89 
 	uint8_t program_flow;				// currently vestigal - captured, but not uses
-	uint32_t linenum;					// N word for line number input
+	uint32_t linenum;					// N word or autoincrement in the model
 
 	double target[AXES]; 				// XYZABC where the move should go
 
@@ -449,7 +449,7 @@ void cm_set_arc_radius(double r);
 //void cm_set_absolute_override(uint8_t absolute_override);
 void cm_set_model_linenum(uint32_t linenum);
 void cm_set_model_lineindex(uint32_t lineindex);
-void cm_incr_model_lineindex();
+void cm_incr_model_linenum(void);
 
 /*--- canonical machining functions ---*/
 void cm_init(void);									// init canonical machine

@@ -44,6 +44,7 @@
 #include "xio/xio.h"
 #include "xmega/xmega_rtc.h"
 
+
 /*****************************************************************************
  * Status Reports
  *
@@ -181,33 +182,37 @@ uint8_t rpt_populate_status_report()
  *	Queue reports return 
  *		[lix] - line index 
  *		[pba] - planner buffers available 
- *
- *	Related functions
- *		{"lic":true} - clear the line index (reset to zero)
- *		{"pqc":true} - clear (reset) the planner queue  
  */
+
+struct qrIndexes {			// static data for queue repirts
+	INDEX_T qr;				// index for QR parent
+	INDEX_T lix;			// index for line index
+	INDEX_T pba;			// index for planner_buffer_available value
+};
+struct qrIndexes qr_index = { 0,0,0 };
 
 uint8_t rpt_populate_queue_report()
 {
 	cmdObj *cmd = cmd_body;
 
-	// setup parent qr object
-	cmd_clear(cmd);							// wipe it first
-	cmd->type = TYPE_PARENT; 				// setup the parent object
+	if (qr_index.qr == 0) {					// cache the report indices
+		qr_index.qr = cmd_get_index("qr");	// this only happens once
+		qr_index.lix = cmd_get_index("lix");
+		qr_index.pba = cmd_get_index("pba");
+	}
+
+	cmd_clear(cmd);			 				// setup the parent object			
+	cmd->type = TYPE_PARENT;
+	cmd->index = qr_index.qr;
 	sprintf_P(cmd->token, PSTR("qr"));
-	cmd = cmd->nx;
 
-	// line index element
- 	sprintf_P(cmd->token, PSTR("lix"));
-	cmd->value = mp_get_runtime_lineindex();
-	cmd_get_cmdObj(cmd);
 	cmd = cmd->nx;
+	cmd->index = qr_index.lix;				// line index element
+	cmd_get_cmdObj(cmd);
 
-	// planner buffers available element
-	sprintf_P(cmd->token, PSTR("pba"));
-	cmd->value = mp_get_planner_buffers_available();
-	cmd_get_cmdObj(cmd);
 	cmd = cmd->nx;
+	cmd->index = qr_index.pba;				// planner buffers available element
+	cmd_get_cmdObj(cmd);
 
 	return (TG_OK);
 }
@@ -224,6 +229,5 @@ void sr_unit_tests(void)
 	tg.communications_mode = TG_JSON_MODE;
 	sr_run_status_report();
 }
-
 
 #endif

@@ -75,7 +75,7 @@ int xio_getc_usb(FILE *stream);					// stdio compatible get character
 int xio_gets_usb(char *buf, const int size);	// non-blocking read line function
 void xio_queue_RX_char_usb(const char c);		// simulate char rcvd into RX buffer
 void xio_queue_RX_string_usb(const char *buf);	// simulate receving a whole string
-void xio_dump_RX_queue_usart(void);				//+++++++++++++++++++++
+void xio_dump_RX_queue_usart(void);
 
 // Note: don't put void in the open() prototypes- it conflicts with the file open()s
 

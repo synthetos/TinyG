@@ -1610,13 +1610,11 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
  * _copy_buffer(bf,bp)		Copies the contents of bp into bf - preserves links
  */
 
-/*
 uint8_t mp_test_write_buffer(void)
 {
 	if (mb.w->buffer_state == MP_BUFFER_EMPTY) { return (true); }
 	return (false);
 }
-*/
 
 uint8_t mp_get_planner_buffers_available(void)
 {

@@ -335,7 +335,8 @@ static const char str_id[] PROGMEM = "id,id,[id]  id_device%16d\n";
 static const char str_si[] PROGMEM = "si,status_i,[si]  status_interval    %10.0f ms [0=off]\n";
 static const char str_sr[] PROGMEM = "sr,status_r,";	// status_report {"sr":""}  and ? command
 static const char str_qr[] PROGMEM = "qr,queue_r,";		// queue_report {"qr":""}
-static const char str_pba[] PROGMEM = "pba,plann,Planner buffers:%8.0f\n";
+static const char str_pba[] PROGMEM = "pba,planner_buffer_a,Planner buffers:%8d\n";
+static const char str_pbc[] PROGMEM = "pbc,planner_buffer_c,";
 
 // Gcode model values for reporting purposes
 static const char str_vel[]  PROGMEM = "vel,velocity,Velocity:%17.3f%S/min\n";
@@ -618,10 +619,11 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_sr, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
 	{ str_qr, _print_nul, _get_qr,  _set_nul, (double *)&tg.null, 0 },	// queue report object
 	{ str_pba,_print_int, _get_pba, _set_nul, (double *)&tg.null, 0 },	// planner buffers available
+//	{ str_pbc,_print_nul, _get_pba, _set_nul, (double *)&tg.null, 0 },	// planner buffer clear
 
 	// gcode model attributes for reporting puropses
-	{ str_line,_print_int, _get_line,_set_int, (double *)&gm.linenum, 0 },// line number - gets runtime line number
-	{ str_lix, _print_int, _get_lix, _set_int, (double *)&gm.lineindex, 0 },// line index - gets runtime line index
+	{ str_line,_print_int, _get_line,_set_int, (double *)&gm.linenum, 0 }, // line number - gets runtime line number
+	{ str_lix, _print_int, _get_lix, _set_int, (double *)&gm.lineindex,0 },// line index - gets runtime line index
 	{ str_feed,_print_lin, _get_dbu, _set_nul, (double *)&tg.null, 0 },	// feed rate
 	{ str_stat,_print_str, _get_stat,_set_nul, (double *)&tg.null, 0 },	// combined machine state
 	{ str_macs,_print_str, _get_macs,_set_nul, (double *)&tg.null, 0 },	// raw machine state
@@ -971,7 +973,9 @@ static uint8_t _get_qr(cmdObj *cmd)
 
 static uint8_t _get_pba(cmdObj *cmd)
 {
-	return (mp_get_planner_buffers_available());
+	cmd->value = (double)mp_get_planner_buffers_available();
+	cmd->type = TYPE_INTEGER;
+	return (TG_OK);
 }
 
 /**** REPORTING FUNCTIONS ****************************************

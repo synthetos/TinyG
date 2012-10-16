@@ -121,8 +121,6 @@ uint8_t cm_get_combined_state()
 	return cm.combined_state;
 }
 
-
-
 /* Position and Offset getters
  *
  * cm_get_coord_offset() - return the currently active coordinate offset for an axis
@@ -205,6 +203,7 @@ double cm_get_runtime_work_position(uint8_t axis)
  * cm_set_radius()		- set radius value
  * cm_set_model_linenum() - set line number in the model (this is NOT the runtime line number)
  * cm_set_model_lineindex() - set line index in the model (this is NOT the runtime line index)
+ * cm_incr_model_lineindex() - increment line index in the model (this is NOT the runtime line index)
  * cm_set_target()		- set all XYZABC targets
  */
 
