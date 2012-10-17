@@ -1388,7 +1388,7 @@ static uint8_t _exec_aline(mpBuf *bf)
 	// initiate the hold - look for the end of the decel move
 	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == TG_OK)) {
 		cm.hold_state = FEEDHOLD_HOLD;
-		rpt_queue_status_report();
+		rpt_request_status_report();
 	}
 
 	// There are 3 things that can happen here depending on return conditions:
@@ -1550,7 +1550,6 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 	}
 	// prep the segment for the steppers and adjust the variables for the next iteration
 	(void)ik_kinematics(travel, steps, mr.microseconds);
-	SEGMENT_LOGGER				// conditional DEBUG statement
 	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
 		copy_axis_vector(mr.position, mr.target); 	// update runtime position	
 	}
@@ -1610,16 +1609,7 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
  * _copy_buffer(bf,bp)		Copies the contents of bp into bf - preserves links
  */
 
-uint8_t mp_test_write_buffer(void)
-{
-	if (mb.w->buffer_state == MP_BUFFER_EMPTY) { return (true); }
-	return (false);
-}
-
-uint8_t mp_get_planner_buffers_available(void)
-{
-	return (mb.buffers_available);
-}
+uint8_t mp_get_planner_buffers_available(void) { return (mb.buffers_available);}
 
 static void _init_buffers(void)
 {
@@ -1696,6 +1686,7 @@ static void _free_run_buffer()					// EMPTY current run buf & adv to next
 	}
 	if (mb.w == mb.r) { cm_exec_cycle_end();}	// end the cycle if the queue empties
 	mb.buffers_available++;
+	rpt_request_queue_report();
 }
 
 static mpBuf * _get_first_buffer(void)

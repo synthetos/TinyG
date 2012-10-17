@@ -135,7 +135,8 @@ static void _controller_HSM()
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report
-	DISPATCH(mp_plan_hold_callback());		// plan a feedhold 
+	DISPATCH(rpt_queue_report_callback());	// conditionally send queue report
+	DISPATCH(mp_plan_hold_callback());		// plan a feedhold
 	DISPATCH(mp_end_hold_callback());		// end a feedhold
 	DISPATCH(ar_arc_callback());			// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());			// G28.1 continuation
@@ -191,7 +192,7 @@ static uint8_t _sync_to_tx_buffer()
 
 static uint8_t _sync_to_planner()
 {
-	if (mp_test_write_buffer() == false) { 		// got a buffer you can use?
+	if (mp_get_planner_buffers_available() == 0) { 
 		return (TG_EAGAIN);
 	}
 	return (TG_OK);
@@ -282,7 +283,7 @@ static uint8_t _dispatch()
 void _dispatch_return(uint8_t status, char *buf)
 {
 	if (cfg.communications_mode == TG_JSON_MODE) {
-		cmd_print_list(status, TEXT_INLINE_PAIRS);
+//		cmd_print_list(status, TEXT_INLINE_PAIRS);
 		return;
 	}
 	switch (status) {

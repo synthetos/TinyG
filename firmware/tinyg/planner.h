@@ -118,7 +118,6 @@ void mp_init(void);
 uint8_t mp_isbusy(void);
 void mp_flush_planner(void);
 uint8_t mp_get_planner_buffers_available(void);
-uint8_t mp_test_write_buffer(void);
 double *mp_get_plan_position(double position[]);
 void mp_set_plan_position(const double position[]);
 void mp_set_axes_position(const double position[]);

@@ -882,7 +882,7 @@ void _exec_program_finalize(uint8_t machine_state)
 	cm.hold_state = FEEDHOLD_OFF;		//...and any feedhold is ended
 	cm.cycle_start_flag = false;
 	mp_zero_segment_velocity();			// for reporting purposes
-	rpt_queue_status_report();			// queue final status report (if enabled)
+	rpt_request_status_report();		// request final status report (if enabled)
 	cmd_persist_offsets(cm.g10_flag);	// persist offsets (if any changes made)
 }
 

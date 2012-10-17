@@ -87,7 +87,17 @@ void js_init()
  *	  - returns the status and the JSON response string
  */
 
+uint8_t _json_parser(char *str);
+
 uint8_t js_json_parser(char *str)
+{
+	uint8_t status;
+	status = _json_parser(str);
+	cmd_print_list(status, TEXT_INLINE_PAIRS);
+	return(status);
+}
+
+uint8_t _json_parser(char *str)
 {
 	uint8_t status;
 	int8_t depth = 2;							// starting body depth is 2

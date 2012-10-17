@@ -967,7 +967,7 @@ static uint8_t _set_si(cmdObj *cmd)
  */
 static uint8_t _get_qr(cmdObj *cmd) 
 {
-	rpt_populate_queue_report();
+	rpt_run_queue_report();
 	return (TG_OK);
 }
 
@@ -1650,7 +1650,7 @@ void cmd_clear_list()
 	// setup body objects
 	cmd_clear_body();
 
-	// setup footer objects (2)
+	// setup footer objects
 	cmd = cmd_status;
 	cmd_clear(cmd);								// "sc" element
 	sprintf_P(cmd->token, PSTR("sc"));
@@ -1659,26 +1659,26 @@ void cmd_clear_list()
 	cmd->nx = (cmd+1);
 	cmd->depth = 1;
 
-	cmd_clear(++cmd);							// "sm" element
-	sprintf_P(cmd->token, PSTR("sm"));
-	cmd->type = TYPE_STRING;
-	cmd->pv = (cmd-1);
-	cmd->nx = (cmd+1);
-	cmd->depth = 1;
+//	cmd_clear(++cmd);							// "sm" element
+//	sprintf_P(cmd->token, PSTR("sm"));
+//	cmd->type = TYPE_STRING;
+//	cmd->pv = (cmd-1);
+//	cmd->nx = (cmd+1);
+//	cmd->depth = 1;
 
-	cmd_clear(++cmd);							// "buf" element
-	sprintf_P(cmd->token, PSTR("buf"));
-	cmd->type = TYPE_INTEGER;
-	cmd->pv = (cmd-1);
-	cmd->nx = (cmd+1);
-	cmd->depth = 1;
+//	cmd_clear(++cmd);							// "buf" element
+//	sprintf_P(cmd->token, PSTR("buf"));
+//	cmd->type = TYPE_INTEGER;
+//	cmd->pv = (cmd-1);
+//	cmd->nx = (cmd+1);
+//	cmd->depth = 1;
 
-	cmd_clear(++cmd);							// "ln" element
-	sprintf_P(cmd->token, PSTR("ln"));
-	cmd->type = TYPE_INTEGER;
-	cmd->pv = (cmd-1);
-	cmd->nx = (cmd+1);
-	cmd->depth = 1;
+//	cmd_clear(++cmd);							// "ln" element
+//	sprintf_P(cmd->token, PSTR("ln"));
+//	cmd->type = TYPE_INTEGER;
+//	cmd->pv = (cmd-1);
+//	cmd->nx = (cmd+1);
+//	cmd->depth = 1;
 
 	cmd_clear(++cmd);							// "cks" element
 	sprintf_P(cmd->token, PSTR("cks"));
@@ -1804,9 +1804,9 @@ void cmd_print_list(uint8_t status, uint8_t textmode)
 	if (cfg.communications_mode == TG_JSON_MODE) {
 		cmdObj *cmd = cmd_status;
 		cmd->value = status;								// set status code
-		tg_get_status_message(status, (cmd = cmd->nx)->string); // set status message
-		(cmd = cmd->nx)->value = xio_get_usb_rx_free();		// set buffer available size
-		(cmd = cmd->nx)->value = cm_get_model_linenum();	// set model line number
+//		tg_get_status_message(status, (cmd = cmd->nx)->string); // set status message
+//		(cmd = cmd->nx)->value = xio_get_usb_rx_free();		// set buffer available size
+//		(cmd = cmd->nx)->value = cm_get_model_linenum();	// set model line number
 		uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
 		while (tg.out_buf[strcount] != ':') { strcount--; }	// slice at last colon
 		tg.out_buf[strcount] = NUL;
@@ -1858,7 +1858,7 @@ void _print_text_inline_values()
 		cmd = cmd->nx;
 		if (cmd->type != TYPE_END) {
 			fprintf_P(stderr,PSTR(","));
-		}		
+		}
 	}
 }
 

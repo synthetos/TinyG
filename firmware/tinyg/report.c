@@ -28,7 +28,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-//#include <math.h>
 #include <string.h>
 #include <avr/pgmspace.h>
 
@@ -122,7 +121,7 @@ void rpt_init_status_report(uint8_t persist_flag)
 }
 
 /*	rpt_decr_status_report()  	 - decrement status report counter
- *	rpt_queue_status_report() 	 - force a status report to be sent on next callback
+ *	rpt_request_status_report()  - force a status report to be sent on next callback
  *	rpt_status_report_callback() - main loop callback to send a report if one is ready
  *	rpt_run_multiline_status_report() - generate a status report in multiline format
  *	rpt_run_status_report()	  	 - populate cmdObj body with status values
@@ -132,7 +131,7 @@ void rpt_decr_status_report()
 	if (cm.status_report_counter != 0) cm.status_report_counter--; // stick at zero
 }
 
-void rpt_queue_status_report()
+void rpt_request_status_report()
 {
 	cm.status_report_counter = 0; // report will be called from controller dispatcher
 }
@@ -177,41 +176,77 @@ uint8_t rpt_populate_status_report()
 /*****************************************************************************
  * Queue Reports
  *
- *	rpt_populate_queue_report() - report on planner queue
+ * rpt_request_queue_report()	- request a queue report with current values
+ * rpt_queue_report_callback()	- run the queue report w/stored values
+ * rpt_run_queue_report() 		- run a queue report right now
  *
  *	Queue reports return 
  *		[lix] - line index 
  *		[pba] - planner buffers available 
  */
 
-struct qrIndexes {			// static data for queue repirts
+struct qrIndexes {			// static data for queue reports
+	uint8_t request;		// set to true to request a report
 	INDEX_T qr;				// index for QR parent
 	INDEX_T lix;			// index for line index
 	INDEX_T pba;			// index for planner_buffer_available value
+	uint32_t lineindex;
+	uint8_t buffers_available;
 };
-struct qrIndexes qr_index = { 0,0,0 };
+struct qrIndexes qr = { 0,0,0,0,0,0 };		// init to zeros
 
-uint8_t rpt_populate_queue_report()
+void rpt_request_queue_report() 
+{ 
+	qr.lineindex = mp_get_runtime_lineindex();
+	qr.buffers_available = mp_get_planner_buffers_available();
+	qr.request = true;
+}
+
+uint8_t rpt_queue_report_callback()
+{
+	if (qr.request != true) { return (TG_NOOP);}
+
+	cmdObj *cmd = cmd_body;
+	cmd_clear(cmd);			 				// parent qr object			
+	sprintf_P(cmd->token, PSTR("qr"));
+	cmd->type = TYPE_PARENT;
+
+	cmd = cmd->nx;							// line index
+	sprintf_P(cmd->token, PSTR("lix"));
+	cmd->value = qr.lineindex;
+	cmd->type = TYPE_INTEGER;
+
+	cmd = cmd->nx;							// planner buffers available
+	sprintf_P(cmd->token, PSTR("pba"));
+	cmd->value = qr.buffers_available;
+	cmd->type = TYPE_INTEGER;
+
+	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);// report in JSON or inline text mode
+	qr.request = false;
+	return (TG_OK);
+}
+
+uint8_t rpt_run_queue_report()
 {
 	cmdObj *cmd = cmd_body;
 
-	if (qr_index.qr == 0) {					// cache the report indices
-		qr_index.qr = cmd_get_index("qr");	// this only happens once
-		qr_index.lix = cmd_get_index("lix");
-		qr_index.pba = cmd_get_index("pba");
+	if (qr.qr == 0) {					// cache the report indices
+		qr.qr = cmd_get_index("qr");	// this only happens once
+		qr.lix = cmd_get_index("lix");
+		qr.pba = cmd_get_index("pba");
 	}
 
-	cmd_clear(cmd);			 				// setup the parent object			
+	cmd_clear(cmd);			 			// setup the parent object			
 	cmd->type = TYPE_PARENT;
-	cmd->index = qr_index.qr;
+	cmd->index = qr.qr;
 	sprintf_P(cmd->token, PSTR("qr"));
 
 	cmd = cmd->nx;
-	cmd->index = qr_index.lix;				// line index element
+	cmd->index = qr.lix;				// line index element
 	cmd_get_cmdObj(cmd);
 
 	cmd = cmd->nx;
-	cmd->index = qr_index.pba;				// planner buffers available element
+	cmd->index = qr.pba;				// planner buffers available element
 	cmd_get_cmdObj(cmd);
 
 	return (TG_OK);
