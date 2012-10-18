@@ -417,6 +417,40 @@ void cm_set_gcode_model_endpoint_position(uint8_t status)
  *	  -	time for coordinated move at requested feed rate
  *	  -	time that the slowest axis would require for the move
  */
+/* The following is verbatim text from NIST RS274NGC_v3. As I interpret A for 
+ * moves that combine both linear and rotational movement, the feed rate should
+ * apply to the XYZ movement, with the rotational axis (or axes) timed to start
+ * and end at the same time the linear move is performed. It is possible under 
+ * this case for the rotational move to rate-limit the linear move.
+ *
+ * 	2.1.2.5 Feed Rate
+ *
+ *	The rate at which the controlled point or the axes move is nominally a steady 
+ *	rate which may be set by the user. In the Interpreter, the interpretation of 
+ *	the feed rate is as follows unless inverse time feed rate mode is being used 
+ *	in the RS274/NGC view (see Section 3.5.19). The canonical machining functions 
+ *	view of feed rate, as described in Section 4.3.5.1, has conditions under which 
+ *	the set feed rate is applied differently, but none of these is used in the 
+ *	Interpreter.
+ *
+ *	A. 	For motion involving one or more of the X, Y, and Z axes (with or without 
+ *		simultaneous rotational axis motion), the feed rate means length units 
+ *		per minute along the programmed XYZ path, as if the rotational axes were 
+ *		not moving.
+ *
+ *	B.	For motion of one rotational axis with X, Y, and Z axes not moving, the 
+ *		feed rate means degrees per minute rotation of the rotational axis.
+ *
+ *	C.	For motion of two or three rotational axes with X, Y, and Z axes not moving, 
+ *		the rate is applied as follows. Let dA, dB, and dC be the angles in degrees 
+ *		through which the A, B, and C axes, respectively, must move. 
+ *		Let D = sqrt(dA^2 + dB^2 + dC^2). Conceptually, D is a measure of total 
+ *		angular motion, using the usual Euclidean metric. Let T be the amount of 
+ *		time required to move through D degrees at the current feed rate in degrees 
+ *		per minute. The rotational axes should be moved in coordinated linear motion 
+ *		so that the elapsed time from the start to the end of the motion is T plus 
+ *		any time required for acceleration or deceleration.
+ */
 
 static double _get_move_time()
 {
