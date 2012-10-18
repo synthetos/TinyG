@@ -215,11 +215,13 @@ uint8_t rpt_queue_report_callback()
 	sprintf_P(cmd->token, PSTR("lix"));
 	cmd->value = qr.lineindex;
 	cmd->type = TYPE_INTEGER;
+	cmd->depth++;
 
 	cmd = cmd->nx;							// planner buffers available
 	sprintf_P(cmd->token, PSTR("pba"));
 	cmd->value = qr.buffers_available;
 	cmd->type = TYPE_INTEGER;
+	cmd->depth++;
 
 	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);// report in JSON or inline text mode
 	qr.request = false;
