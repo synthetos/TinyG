@@ -467,11 +467,12 @@ static double _get_move_time()
 		} else {
 			xyz_time = sqrt(square(gm.target[X] - gm.position[X]) + // in mm
 							square(gm.target[Y] - gm.position[Y]) +
-							square(gm.target[Z] - gm.position[Z])) / gm.feed_rate;
-
-			abc_time = sqrt(square(gm.target[A] - gm.position[A]) + // in deg
+							square(gm.target[Z] - gm.position[Z])) / gm.feed_rate; // in linear units
+			if (xyz_time ==0) {
+				abc_time = sqrt(square(gm.target[A] - gm.position[A]) + // in deg
 							square(gm.target[B] - gm.position[B]) +
-							square(gm.target[C] - gm.position[C])) / gm.feed_rate;
+							square(gm.target[C] - gm.position[C])) / gm.feed_rate; // in degree units
+			}
 		}
 	}
  	for (i=0; i<AXES; i++) {
