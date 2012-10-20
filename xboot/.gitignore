@@ -1,0 +1,11 @@
+*~
+*.hex
+*.lst
+*.o
+*.swp
+.dep
+xboot.eep
+xboot.elf
+xboot.lss
+xboot.map
+xboot.sym

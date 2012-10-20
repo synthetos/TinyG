@@ -1,0 +1,642 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+XBoot Extensible AVR Bootloader
+
+xboot.xml
+
+Alex Forencich <alex@alexforencich.com>
+
+Copyright (c) 2010 Alex Forencich
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files(the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-->
+<xboot>
+  <info>
+    <format-version>0.1</format-version>
+    <version>0.1</version>
+    <date>9/10/2010</date>
+  </info>
+  <params>
+    <section name="clock" display="Clock Options" description="Settings related to CPU clock">
+      <param name="cpu-frequency" display="CPU Frequency" type="int" unit="Hz" min="0" max="100000000"
+          default="2000000" description="Frequency of CPU clock">
+      </param>
+      <param name="use-dfll" display="Use DFLL" type="bool" default="0" description="Frequency of CPU clock" />
+      <param name="use-32mhz-rc" display="Use 32MHz RC oscillator" type="string" input="dropdown"
+          description="Use internal 32MHz RC oscillator (if Automatic is selected, this will be enabled automatically depending on CPU frequency selection">
+        <i display="Automatic" value="auto" default="1" />
+        <i display="Yes" value="1" />
+        <i display="No" value="0" />
+      </param>
+    </section>
+    <section name="avr1008" display="AVR1008" description="AVR1008 fixes" hide="1">
+      <param name="use-avr1008-eeprom" display="Use EEPROM workaround" type="bool" default="0"
+          description="Use AVR1008 EEPROM workaround" />
+    </section>
+    <section name="entrance" display="Bootloader Entrance Options" description="Bootloader Entrance Options">
+      <param name="use-bootloader-delay" display="Use bootloader delay" type="bool" default="1"
+          description="Wait a short time to check for entry conditions before starting the main program">
+        <param name="enter-blink-count" display="Blink count" type="int" min="0" max="60000" default="3"
+            description="Number of LED blinks or 2x number of loops" />
+        <param name="enter-blink-wait" display="Blink wait" type="int" min="0" max="60000" default="30000"
+            description="Number of loops to delay" />
+      </param>
+      <param name="use-enter-pin" display="Use enter pin" type="bool" default="1"
+          description="Enter bootloader on IO pin state">
+        <param name="enter-port" display="Enter port" type="string" default="A" class="io-port" input="dropdown"
+            description="Entry pin port selection">
+          <param name="enter-pin" display="Enter pin" type="int" min="0" max="7" default="0" class="pin" input="dropdown"
+              description="Entry pin port pin selection"></param>
+        </param>
+        <param name="enter-pin-state" display="Enter pin state" type="bool" default="1"
+            description="State to check for on IO pin" />
+        <param name="enter-pin-puen" display="Enter pin pull-up enable" type="bool" default="0"
+            description="Enable pull-up resistor on pin" />
+      </param>
+      <param name="use-enter-uart" display="Use enter UART" type="bool" default="1"
+          description="Enter bootloader on UART received char" />
+      <param name="use-enter-i2c" display="Use enter I2C" type="bool" default="0"
+          description="Enter bootloader on I2C received char" />
+    </section>
+    <section name="exit" display="Bootloader Exit Options" description="Bootloader Exit Options">
+      <param name="lock-spm" display="Lock SPM" type="bool" default="0"
+          description="Lock SPM instructions on exit to prevent modification of program memory by application" />
+    </section>
+    <section name="communication" display="Communication Options" description="Communication Options">
+      <param name="use-led" display="Use LED" type="bool" default="1"
+          description="Use LED for communication">
+        <param name="led-port" display="LED port" type="string" default="A" class="io-port" input="dropdown"
+            description="LED pin port selection">
+          <param name="led-pin" display="LED pin" type="int" min="0" max="7" default="1" class="pin" input="dropdown"
+              description="LED pin port pin selection"></param>
+        </param>
+        <param name="led-inv" display="Invert LED pin" type="bool" default="0"
+            description="Invert LED pin" />
+      </param>
+      <param name="use-uart" display="Use UART" type="bool" default="1"
+          description="Use UART for communication">
+        <param name="uart-baud" display="UART Baud Rate" type="int" min="1" max="10000000" default="19200" unit="bps"
+            description="UART Baud Rate" />
+        <param name="uart-port" display="UART port" type="string" default="D" class="uart-port" input="dropdown"
+            description="UART port selection">
+          <param name="uart-number" display="UART" type="int" min="0" max="1" default="1" class="device" input="dropdown"
+              description="UART selection">
+            <param name="uart-tx-pin" display="UART TX pin" type="int" min="0" max="7" default="7" hide="1" />
+          </param>
+        </param>
+        <param name="uart-custom" display="Custom UART Configuration" type="bool" default="0" description="Use a custom baud rate configuration">
+          <param name="uart-bsel" display="UART BSEL value" type="int" min="0" max="255" default="0"
+              description="BSEL value" />
+          <param name="uart-bscale" display="UART BSCALE value" type="int" min="0" max="255" default="0"
+              description="BSCALE value" />
+        </param>
+      </param>
+      <param name="use-i2c" display="Use I2C" type="bool" default="0"
+          description="Use I2C slave for communication">
+        <param name="i2c-port" display="I2C port" type="string" default="E" input="dropdown" description="I2C port" />
+        <param name="i2c-match-any" display="I2C promiscuous mode" type="bool" default="0" class="i2c-port" description="I2C promiscuous mode enable" />
+        <param name="i2c-address" display="I2C address" type="string" default="0x10" description="I2C address" />
+        <param name="i2c-gc-enable" display="I2C GC enable" type="bool" default="1" description="I2C general call enable" />
+        <param name="use-i2c-autoneg" display="Use I2C Autonegotiation" type="bool" default="0"
+            description="Use I2C Address Autonegotiation feature">
+          <param name="i2c-autoneg-dis-promisc" display="Disable promiscuous mode" type="bool" default="1"
+              description="Disable promiscuous mode after autonegotiation complete" />
+          <param name="i2c-autoneg-dis-gc" display="Disable general call" type="bool" default="0"
+              description="Disable general call after autonegotiation complete" />
+          <param name="i2c-autoneg-port" display="Autonegotiation pin port" type="string" default="A"
+              description="Autonegotiation pin port">
+            <param name="i2c-autoneg-pin" display="Autonegotiation pin" type="int" min="0" max="7" default="0"
+                description="Autonegotiation pin" />
+          </param>
+          <param name="use-attach-led" display="Use attach LED" type="bool" default="1"
+              description="Turn on LED when new I2C address is set in autonegotiate mode">
+            <param name="attach-led-port" display="LED port" type="string" default="A" class="io-port" description="LED pin port selection">
+              <param name="attach-led-pin" display="LED pin" type="int" min="0" max="7" default="1" class="pin"
+                  description="LED pin port pin selection"></param>
+            </param>
+            <param name="attach-led-inv" display="Invert LED pin" type="bool" default="0"
+                description="Invert LED pin" />
+          </param>
+        </param>
+      </param>
+    </section>
+    <section name="general" display="General Options" description="General Options">
+      <param name="use-interrupts" display="Use Interrupts" type="bool" default="0"
+          description="Switch bootloader to using interrupts instead of polled I/O" />
+      <param name="use-watchdog" display="Use Watchdog timer" type="bool" default="0"
+          description="Enable watchdog timer to automatically reset bootloader if programming stalls">
+        <param name="watchdog-timeout" display="Watchdog Timeout" type="int" min="8" max="8192" input="dropdown"
+            description="Watchdog timeout in watchdog clock cycles">
+          <i value="8" /><i value="16" /><i value="32" /><i value="64" /><i value="128" /><i value="256" />
+          <i value="512" /><i value="1024" default="1" /><i value="2048" /><i value="4096" /><i value="8192" />
+        </param>
+      </param>
+    </section>
+    <section name="features" display="Bootloader Features" description="Bootloader Features">
+      <param name="enable-block-support" display="Enable block support" type="bool" default="1"
+          description="Enable block access support for faster programming" />
+      <param name="enable-flash-byte-support" display="Enable flash byte support" type="bool" default="1"
+          description="Enable flash byte access support" />
+      <param name="enable-eeprom-byte-support" display="Enable EEPROM byte support" type="bool" default="1"
+          description="Enable EEPROM byte access support" />
+      <param name="enable-lock-bits" display="Enable lock bits" type="bool" default="1"
+          description="Enable programming of lock bits" />
+      <param name="enable-fuse-bits" display="Enable fuse bits" type="bool" default="1"
+          description="Enable programming of fuse bits" />
+    </section>
+    <section name="internal" display="Internal" description="Internal settings" hide="1">
+      <param name="boot-section-start" type="string" default="0x000000" input="none" />
+    </section>
+  </params>
+  <chips>
+    <family name="xmega" display="XMEGA" description="Atmel XMEGA Series">
+      <family name="xmega-a4" display="A4" description="Atmel XMEGA A4 Series">
+        <part name="atxmega16a4" display="ATxmega16A4" description="Atmel ATxmega16A4">
+          <override name="boot-section-start" value="0x004000" />
+        </part>
+        <part name="atxmega32a4" display="ATxmega32A4" description="Atmel ATxmega32A4">
+          <override name="boot-section-start" value="0x008000" />
+        </part>
+        <part name="atxmega64a4" display="ATxmega64A4" description="Atmel ATxmega64A4">
+          <override name="boot-section-start" value="0x010000" />
+        </part>
+        <part name="atxmega128a4" display="ATxmega128A4" description="Atmel ATxmega128A4">
+          <override name="boot-section-start" value="0x020000" />
+        </part>
+        <override class="io-port">
+          <i display="A" value="PORTA"><override class="pin" min="0" max="7" /></i>
+          <i display="B" value="PORTB"><override class="pin" min="0" max="3" /></i>
+          <i display="C" value="PORTC"><override class="pin" min="0" max="7" /></i>
+          <i display="D" value="PORTD"><override class="pin" min="0" max="7" /></i>
+          <i display="E" value="PORTE"><override class="pin" min="0" max="3" /></i>
+          <i display="R" value="PORTR"><override class="pin" min="0" max="1" /></i>
+        </override>
+        <override class="uart-port">
+          <i value="C"><override class="device" min="0" max="1" /></i>
+          <i value="D"><override class="device" min="0" max="1" /></i>
+          <i value="E"><override class="device" min="0" max="0" /></i>
+        </override>
+        <override name="i2c-port">
+          <i value="C" />
+          <i value="E" />
+        </override>
+      </family>
+      <family name="xmega-a3" display="A3" description="Atmel XMEGA A3 Series">
+        <part name="atxmega64a3" display="ATxmega64A3" description="Atmel ATxmega64A3">
+          <override name="boot-section-start" value="0x010000" />
+        </part>
+        <part name="atxmega128a3" display="ATxmega128A3" description="Atmel ATxmega128A3">
+          <override name="boot-section-start" value="0x020000" />
+        </part>
+        <part name="atxmega192a3" display="ATxmega192A3" description="Atmel ATxmega192A3">
+          <override name="boot-section-start" value="0x030000" />
+          <override name="avr1008" hide="0" />
+        </part>
+        <part name="atxmega256a3" display="ATxmega256A3" description="Atmel ATxmega256A3">
+          <override name="boot-section-start" value="0x040000" />
+          <override name="avr1008" hide="0" />
+        </part>
+        <part name="atxmega256a3b" display="ATxmega256A3B" description="Atmel ATxmega256A3B">
+          <override name="boot-section-start" value="0x040000" />
+          <override name="avr1008" hide="0" />
+        </part>
+        <override class="io-port">
+          <i display="A" value="PORTA"><override class="pin" min="0" max="7" /></i>
+          <i display="B" value="PORTB"><override class="pin" min="0" max="7" /></i>
+          <i display="C" value="PORTC"><override class="pin" min="0" max="7" /></i>
+          <i display="D" value="PORTD"><override class="pin" min="0" max="7" /></i>
+          <i display="E" value="PORTE"><override class="pin" min="0" max="7" /></i>
+          <i display="F" value="PORTF"><override class="pin" min="0" max="7" /></i>
+          <i display="R" value="PORTR"><override class="pin" min="0" max="1" /></i>
+        </override>
+        <override class="uart-port">
+          <i value="C"><override class="device" min="0" max="1" /></i>
+          <i value="D"><override class="device" min="0" max="1" /></i>
+          <i value="E"><override class="device" min="0" max="1" /></i>
+          <i value="F"><override class="device" min="0" max="0" /></i>
+        </override>
+        <override name="i2c-port">
+          <i value="C" />
+          <i value="E" />
+        </override>
+      </family>
+      <family name="xmega-a1" display="A1" description="Atmel XMEGA A1 Series">
+        <part name="atxmega64a1" display="ATxmega64A1" description="Atmel ATxmega64A1">
+          <override name="boot-section-start" value="0x010000" />
+        </part>
+        <part name="atxmega128a1" display="ATxmega128A1" description="Atmel ATxmega128A1">
+          <override name="boot-section-start" value="0x020000" />
+        </part>
+        <part name="atxmega192a1" display="ATxmega192A1" description="Atmel ATxmega192A1">
+          <override name="boot-section-start" value="0x030000" />
+        </part>
+        <part name="atxmega256a1" display="ATxmega256A1" description="Atmel ATxmega256A1">
+          <override name="boot-section-start" value="0x040000" />
+        </part>
+        <part name="atxmega384a1" display="ATxmega384A1" description="Atmel ATxmega384A1">
+          <override name="boot-section-start" value="0x060000" />
+        </part>
+        <override class="io-port">
+          <i display="A" value="PORTA"><override class="pin" min="0" max="7" /></i>
+          <i display="B" value="PORTB"><override class="pin" min="0" max="7" /></i>
+          <i display="C" value="PORTC"><override class="pin" min="0" max="7" /></i>
+          <i display="D" value="PORTD"><override class="pin" min="0" max="7" /></i>
+          <i display="E" value="PORTE"><override class="pin" min="0" max="7" /></i>
+          <i display="F" value="PORTF"><override class="pin" min="0" max="7" /></i>
+          <i display="H" value="PORTH"><override class="pin" min="0" max="7" /></i>
+          <i display="J" value="PORTJ"><override class="pin" min="0" max="7" /></i>
+          <i display="K" value="PORTK"><override class="pin" min="0" max="7" /></i>
+          <i display="Q" value="PORTQ"><override class="pin" min="0" max="3" /></i>
+          <i display="R" value="PORTR"><override class="pin" min="0" max="1" /></i>
+        </override>
+        <override class="uart-port">
+          <i value="C"><override class="device" min="0" max="1" /></i>
+          <i value="D"><override class="device" min="0" max="1" /></i>
+          <i value="E"><override class="device" min="0" max="1" /></i>
+          <i value="F"><override class="device" min="0" max="1" /></i>
+        </override>
+        <override name="i2c-port">
+          <i value="C" />
+          <i value="D" />
+          <i value="E" />
+          <i value="F" />
+        </override>
+      </family>
+      <family name="xmega-d4" display="D4" description="Atmel XMEGA D4 Series">
+        <part name="atxmega16d4" display="ATxmega16D4" description="Atmel ATxmega16D4">
+          <override name="boot-section-start" value="0x004000" />
+        </part>
+        <part name="atxmega32d4" display="ATxmega32D4" description="Atmel ATxmega32D4">
+          <override name="boot-section-start" value="0x008000" />
+        </part>
+        <part name="atxmega64d4" display="ATxmega64D4" description="Atmel ATxmega64D4">
+          <override name="boot-section-start" value="0x010000" />
+        </part>
+        <part name="atxmega128d4" display="ATxmega128D4" description="Atmel ATxmega128D4">
+          <override name="boot-section-start" value="0x020000" />
+        </part>
+        <override class="io-port">
+          <i display="A" value="PORTA"><override class="pin" min="0" max="7" /></i>
+          <i display="B" value="PORTB"><override class="pin" min="0" max="3" /></i>
+          <i display="C" value="PORTC"><override class="pin" min="0" max="7" /></i>
+          <i display="D" value="PORTD"><override class="pin" min="0" max="7" /></i>
+          <i display="E" value="PORTE"><override class="pin" min="0" max="3" /></i>
+          <i display="R" value="PORTR"><override class="pin" min="0" max="1" /></i>
+        </override>
+        <override class="uart-port">
+          <i value="C"><override class="device" min="0" max="1" /></i>
+          <i value="D"><override class="device" min="0" max="1" /></i>
+          <i value="E"><override class="device" min="0" max="0" /></i>
+        </override>
+        <override name="i2c-port">
+          <i value="C" />
+          <i value="E" />
+        </override>
+      </family>
+      <family name="xmega-d3" display="D3" description="Atmel XMEGA D3 Series">
+        <part name="atxmega64d3" display="ATxmega64D3" description="Atmel ATxmega64D3">
+          <override name="boot-section-start" value="0x010000" />
+        </part>
+        <part name="atxmega128d3" display="ATxmega128D3" description="Atmel ATxmega128D3">
+          <override name="boot-section-start" value="0x020000" />
+        </part>
+        <part name="atxmega192d3" display="ATxmega192D3" description="Atmel ATxmega192D3">
+          <override name="boot-section-start" value="0x030000" />
+        </part>
+        <part name="atxmega256d3" display="ATxmega256D3" description="Atmel ATxmega256D3">
+          <override name="boot-section-start" value="0x040000" />
+        </part>
+        <override class="io-port">
+          <i display="A" value="PORTA"><override class="pin" min="0" max="7" /></i>
+          <i display="B" value="PORTB"><override class="pin" min="0" max="7" /></i>
+          <i display="C" value="PORTC"><override class="pin" min="0" max="7" /></i>
+          <i display="D" value="PORTD"><override class="pin" min="0" max="7" /></i>
+          <i display="E" value="PORTE"><override class="pin" min="0" max="7" /></i>
+          <i display="F" value="PORTF"><override class="pin" min="0" max="7" /></i>
+          <i display="R" value="PORTR"><override class="pin" min="0" max="1" /></i>
+        </override>
+        <override class="uart-port">
+          <i value="C"><override class="device" min="0" max="1" /></i>
+          <i value="D"><override class="device" min="0" max="1" /></i>
+          <i value="E"><override class="device" min="0" max="1" /></i>
+          <i value="F"><override class="device" min="0" max="0" /></i>
+        </override>
+        <override name="i2c-port">
+          <i value="C" />
+          <i value="E" />
+      </override>
+      </family>
+      <override name="cpu-frequency" input="dropdown">
+        <i display="2000000" value="2000000" default="1" />
+        <i display="32000000" value="32000000" />
+        <i display="Custom" value="?" />
+      </override>
+    </family>
+  </chips>
+  <output>
+    <file name="xboot.h">/************************************************************************/
+/* XBoot Extensible AVR Bootloader                                      */
+/*                                                                      */
+/* tested with ATXMEGA64A3, ATXMEGA128A1, ATXMEGA256A1, ATXMEGA32A4     */
+/*                                                                      */
+/* xboot.h                                                              */
+/*                                                                      */
+/* Alex Forencich &lt;alex@alexforencich.com&gt;                              */
+/*                                                                      */
+/* Copyright (c) 2010 Alex Forencich                                    */
+/*                                                                      */
+/* Permission is hereby granted, free of charge, to any person          */
+/* obtaining a copy of this software and associated documentation       */
+/* files(the "Software"), to deal in the Software without restriction,  */
+/* including without limitation the rights to use, copy, modify, merge, */
+/* publish, distribute, sublicense, and/or sell copies of the Software, */
+/* and to permit persons to whom the Software is furnished to do so,    */
+/* subject to the following conditions:                                 */
+/*                                                                      */
+/* The above copyright notice and this permission notice shall be       */
+/* included in all copies or substantial portions of the Software.      */
+/*                                                                      */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,      */
+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF   */
+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND                */
+/* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS  */
+/* BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN   */
+/* ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN    */
+/* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE     */
+/* SOFTWARE.                                                            */
+/*                                                                      */
+/************************************************************************/
+
+#ifndef __XBOOT_H
+#define __XBOOT_H
+
+#include &lt;avr/io.h&gt;
+#include &lt;util/delay.h&gt;
+#include &lt;avr/interrupt.h&gt;
+
+// token pasting
+#define token_paste2_int(x, y) x ## y
+#define token_paste2(x, y) token_paste2_int(x, y)
+#define token_paste3_int(x, y, z) x ## y ## z
+#define token_paste3(x, y, z) token_paste3_int(x, y, z)
+
+// Configuration
+
+// clock config
+<if parameter="use-dfll" comparison="=" value="0">//</if>#define USE_DFLL
+// use 32MHz osc if makefile calls for it
+<if parameter="use-use-32mhz-rc" comparison="!=" value="auto">//</if>#if (F_CPU == 32000000L)
+// defaults to 2MHz RC oscillator
+// define USE_32MHZ_RC to override
+<if parameter="use-use-32mhz-rc" comparison="=" value="0">//</if>#define USE_32MHZ_RC
+<if parameter="use-use-32mhz-rc" comparison="!=" value="auto">//</if>#endif
+
+// AVR1008 fixes
+// Really only applicable to 256a3 rev A and B devices
+<if parameter="use-avr1008-eeprom" comparison="=" value="0">//</if>#define USE_AVR1008_EEPROM
+
+// bootloader entrace
+<if parameter="use-enter-delay" comparison="=" value="0">//</if>#define USE_ENTER_DELAY
+<if parameter="use-enter-pin" comparison="=" value="0">//</if>#define USE_ENTER_PIN
+<if parameter="use-enter-uart" comparison="=" value="0">//</if>#define USE_ENTER_UART
+<if parameter="use-enter-i2c" comparison="=" value="0">//</if>#define USE_ENTER_I2C
+
+// bootloader exit
+<if parameter="lock-spm" comparison="=" value="0">//</if>#define LOCK_SPM_ON_EXIT
+
+// bootloader communication
+<if parameter="use-led" comparison="=" value="0">//</if>#define USE_LED
+<if parameter="use-uart" comparison="=" value="0">//</if>#define USE_UART
+<if parameter="use-i2c" comparison="=" value="0">//</if>/#define USE_I2C
+<if parameter="use-i2c-autoneg" comparison="=" value="0">//</if>#define USE_I2C_ADDRESS_NEGOTIATION
+<if parameter="use-attach-led" comparison="=" value="0">//</if>#define USE_ATTACH_LED
+
+// General Options
+<if parameter="use-interrupts" comparison="=" value="0">//</if>#define USE_INTERRUPTS
+<if parameter="use-watchdog" comparison="=" value="0">//</if>#define USE_WATCHDOG
+
+// bootloader features
+<if parameter="enable-block-support" comparison="=" value="0">//</if>#define ENABLE_BLOCK_SUPPORT
+<if parameter="enable-flash-byte-support" comparison="=" value="0">//</if>#define ENABLE_FLASH_BYTE_SUPPORT
+<if parameter="enable-eeprom-byte-support" comparison="=" value="0">//</if>#define ENABLE_EEPROM_BYTE_SUPPORT
+<if parameter="enable-lock-bits" comparison="=" value="0">//</if>#define ENABLE_LOCK_BITS
+<if parameter="enable-fuse-bits" comparison="=" value="0">//</if>#define ENABLE_FUSE_BITS
+
+// ENTER_PIN
+#define ENTER_PORT              <print parameter="enter-port" />
+#define ENTER_PIN               <print parameter="enter-pin" />
+#define ENTER_PIN_CTRL          token_paste3(ENTER_PORT.PIN, ENTER_PIN, CTRL)
+#define ENTER_PIN_STATE         <print parameter="enter-pin-state" />
+#define ENTER_PIN_PUEN          <print parameter="enter-puen" />
+
+// ENTER_DELAY
+#define ENTER_BLINK_COUNT       <print parameter="enter-blink-count" />
+#define ENTER_BLINK_WAIT        <print parameter="enter-blink-wait" />
+
+// WATCHDOG
+// Select only one
+<if parameter="watchdog-timeout" comparison="=" value="8">//</if>#define WATCHDOG_TIMEOUT        WDT_PER_8CLK_gc
+<if parameter="watchdog-timeout" comparison="=" value="16">//</if>#define WATCHDOG_TIMEOUT        WDT_PER_16CLK_gc
+<if parameter="watchdog-timeout" comparison="=" value="32">//</if>#define WATCHDOG_TIMEOUT        WDT_PER_32CLK_gc
+<if parameter="watchdog-timeout" comparison="=" value="64">//</if>#define WATCHDOG_TIMEOUT        WDT_PER_64CLK_gc
+<if parameter="watchdog-timeout" comparison="=" value="128">//</if>#define WATCHDOG_TIMEOUT        WDT_PER_128CLK_gc
+<if parameter="watchdog-timeout" comparison="=" value="256">//</if>#define WATCHDOG_TIMEOUT        WDT_PER_256CLK_gc
+<if parameter="watchdog-timeout" comparison="=" value="512">//</if>#define WATCHDOG_TIMEOUT        WDT_PER_512CLK_gc
+<if parameter="watchdog-timeout" comparison="=" value="1024">//</if>#define WATCHDOG_TIMEOUT        WDT_PER_1KCLK_gc
+<if parameter="watchdog-timeout" comparison="=" value="2048">//</if>#define WATCHDOG_TIMEOUT        WDT_PER_2KCLK_gc
+<if parameter="watchdog-timeout" comparison="=" value="4096">//</if>#define WATCHDOG_TIMEOUT        WDT_PER_4KCLK_gc
+<if parameter="watchdog-timeout" comparison="=" value="8192">//</if>#define WATCHDOG_TIMEOUT        WDT_PER_8KCLK_gc
+
+// LED
+#define LED_PORT                <print parameter="led-port" />
+#define LED_PIN                 <print parameter="led-pin" />
+#define LED_INV                 <print parameter="led-inv" />
+
+// UART
+#define UART_BAUD_RATE                  <print parameter="uart-baud" />
+#define UART_PORT_NAME                  <print parameter="uart-port" />
+#define UART_NUMBER                     <print parameter="uart-number" />
+#if (UART_NUMBER == 0)
+#define UART_TX_PIN                     3
+#else
+#define UART_TX_PIN                     7
+#endif
+#define UART_PORT                       token_paste2(PORT, UART_PORT_NAME)
+#define UART_DEVICE_PORT                token_paste2(UART_PORT_NAME, UART_NUMBER)
+#define UART_DEVICE                     token_paste2(USART, UART_DEVICE_PORT)
+#define UART_DEVICE_RXC_ISR             token_paste3(USART, UART_DEVICE_PORT, _RXC_vect)
+#define UART_DEVICE_DRE_ISR             token_paste3(USART, UART_DEVICE_PORT, _DRE_vect)
+#define UART_DEVICE_TXC_ISR             token_paste3(USART, UART_DEVICE_PORT, _TXC_vect)
+
+#ifdef __AVR_XMEGA__
+
+// BAUD Rate Values
+// Known good at 2MHz
+#if (F_CPU == 2000000L) &amp;&amp; (UART_BAUD_RATE == 19200)
+#define UART_BSEL_VALUE         12
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              1
+#elif (F_CPU == 2000000L) &amp;&amp; (UART_BAUD_RATE == 38400)
+#define UART_BSEL_VALUE         22
+#define UART_BSCALE_VALUE       -2
+#define UART_CLK2X              1
+#elif (F_CPU == 2000000L) &amp;&amp; (UART_BAUD_RATE == 57600)
+#define UART_BSEL_VALUE         26
+#define UART_BSCALE_VALUE       -3
+#define UART_CLK2X              1
+#elif (F_CPU == 2000000L) &amp;&amp; (UART_BAUD_RATE == 115200)
+#define UART_BSEL_VALUE         19
+#define UART_BSCALE_VALUE       -4
+#define UART_CLK2X              1
+// Known good at 32MHz
+#elif (F_CPU == 32000000L) &amp;&amp; (UART_BAUD_RATE == 19200)
+#define UART_BSEL_VALUE         103
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              0
+#elif (F_CPU == 32000000L) &amp;&amp; (UART_BAUD_RATE == 38400)
+#define UART_BSEL_VALUE         51
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              0
+#elif (F_CPU == 32000000L) &amp;&amp; (UART_BAUD_RATE == 57600)
+#define UART_BSEL_VALUE         34
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              0
+#elif (F_CPU == 32000000L) &amp;&amp; (UART_BAUD_RATE == 115200)
+#define UART_BSEL_VALUE         16
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              0
+// None of the above, so calculate something
+#else
+#warning Not using predefined BAUD rate, possible BAUD rate error!
+#if (F_CPU == 2000000L)
+#define UART_BSEL_VALUE         ((F_CPU) / ((uint32_t)UART_BAUD_RATE * 8) - 1)
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              1
+#else
+#define UART_BSEL_VALUE         ((F_CPU) / ((uint32_t)UART_BAUD_RATE * 16) - 1)
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              0
+#endif
+#endif
+
+#endif // __AVR_XMEGA__
+
+// I2C
+#ifdef __AVR_XMEGA__
+
+#define I2C_DEVICE_PORT                 <print parameter="i2c-port" />
+#define I2C_DEVICE                      token_paste2(TWI, I2C_DEVICE_PORT)
+#define I2C_DEVICE_ISR                  token_paste3(TWI, I2C_DEVICE_PORT, _TWIS_vect)
+
+#define I2C_MATCH_ANY                   <print parameter="i2c-match-any" />
+#define I2C_ADDRESS                     <print parameter="i2c-address" />
+#define I2C_GC_ENABLE                   <print parameter="i2c-gc-enable" />
+
+#endif // __AVR_XMEGA__
+
+// I2C Address Autonegotiation
+// Note: only works on XMega chips for the time being
+// There is no easy way to get this to work on regular
+// ATMega chips as they have no unique part ID number
+#define I2C_AUTONEG_DIS_PROMISC         <print parameter="i2c-autoneg-dis-promisc" />
+#define I2C_AUTONEG_DIS_GC              <print parameter="i2c-autoneg-dis-gc" />
+#define I2C_AUTONEG_PORT                <print parameter="i2c-autoneg-port" />
+#define I2C_AUTONEG_PIN                 <print parameter="i2c-autoneg-pin" />
+
+// Attach LED
+#define ATTACH_LED_PORT                 <print parameter="attach-led-port" />
+#define ATTACH_LED_PIN                  <print parameter="attach-led-pin" />
+#define ATTACH_LED_INV                  <print parameter="attach-led-inv" />
+
+#ifndef EEPROM_BYTE_ADDRESS_MASK
+#if EEPROM_PAGE_SIZE == 32
+#define EEPROM_BYTE_ADDRESS_MASK 0x1f
+#else
+#error Unknown EEPROM page size!  Please add new byte address value!
+#endif
+#endif
+
+#ifdef USE_INTERRUPTS
+#ifndef NEED_INTERRUPTS
+#define NEED_INTERRUPTS
+#endif // NEED_INTERRUPTS
+#endif // USE_INTERRUPTS
+
+#ifdef USE_AVR1008_EEPROM
+#ifndef NEED_INTERRUPTS
+#define NEED_INTERRUPTS
+#endif // NEED_INTERRUPTS
+#endif // USE_AVR1008_EEPROM
+
+// communication modes
+#define MODE_UNDEF              0
+#define MODE_UART               1
+#define MODE_I2C                2
+
+// types
+typedef uint32_t ADDR_T;
+
+// Includes
+#include "sp_driver.h"
+#include "eeprom_driver.h"
+#include "uart.h"
+#include "i2c.h"
+#include "watchdog.h"
+
+// globals
+#ifdef USE_INTERRUPTS
+extern volatile unsigned char comm_mode;
+
+extern volatile unsigned char rx_buff0;
+extern volatile unsigned char rx_buff1;
+extern volatile unsigned char rx_char_cnt;
+
+extern volatile unsigned char tx_buff0;
+extern volatile unsigned char tx_char_cnt;
+#else
+extern unsigned char comm_mode;
+#endif // USE_INTERRUPTS
+
+// Functions
+unsigned char __attribute__ ((noinline)) ow_slave_read_bit(void);
+void __attribute__ ((noinline)) ow_slave_write_bit(unsigned char b);
+void ow_slave_wait_bit(void);
+
+unsigned char __attribute__ ((noinline)) get_char(void);
+void __attribute__ ((noinline)) send_char(unsigned char c);
+
+unsigned char BlockLoad(unsigned int size, unsigned char mem, ADDR_T *address);
+void BlockRead(unsigned int size, unsigned char mem, ADDR_T *address);
+
+
+#endif // __XBOOT_H
+
+</file>
+    <file name="xboot-config.mk"># xboot automated configuration
+MCU = <print meta="part.name" />
+F_CPU = <print parameter="cpu-frequency" />
+
+</file>
+  </output>
+</xboot>
+

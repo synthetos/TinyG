@@ -92,8 +92,8 @@ void tg_init(uint8_t default_src)
 
 void tg_reset(void)
 {
-	mp_flush_planner();
-	tg_system_reset();
+//	mp_flush_planner();
+//	tg_system_reset();
 	tg_application_reset();
 }
 
@@ -123,7 +123,13 @@ void tg_application_startup(void)
  * Useful reference on state machines:
  * http://johnsantic.com/comp/state.html, "Writing Efficient State Machines in C"
  */
-void tg_controller() { while (true) { _controller_HSM();}}
+void tg_controller() 
+{ 
+	while (true) { 
+		_controller_HSM();
+	}
+}
+
 #define	DISPATCH(func) if (func == TG_EAGAIN) return; 
 static void _controller_HSM()
 {

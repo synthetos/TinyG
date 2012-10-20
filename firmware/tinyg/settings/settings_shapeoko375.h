@@ -47,7 +47,7 @@
 
 #define JUNCTION_ACCELERATION 200000	// centripetal acceleration around corners
 
-#define STATUS_REPORT_INTERVAL_MS	20000	// in milliseconds
+#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
 
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
 #define GCODE_DEFAULT_UNITS			MILLIMETERS
@@ -89,7 +89,7 @@
 
 #define M4_MOTOR_MAP			A
 #define M4_STEP_ANGLE			1.8
-#define M4_TRAVEL_PER_REV		360		// degrees per motor rev - 1:1 gearing
+#define M4_TRAVEL_PER_REV		180		// degrees per motor rev - 1:2 gearing
 #define M4_MICROSTEPS			8
 #define M4_POLARITY				0
 #define M4_POWER_MODE			1
@@ -137,16 +137,16 @@
 #define Z_ZERO_BACKOFF			1
 
 #define A_AXIS_MODE				AXIS_STANDARD
-#define A_VELOCITY_MAX			3600
-#define A_FEEDRATE_MAX			A_VELOCITY_MAX
-#define A_TRAVEL_MAX			-1
-#define A_JERK_MAX				20000000			// 20,000,000
-#define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
-#define A_RADIUS				1
+#define A_VELOCITY_MAX			60000
+#define A_FEEDRATE_MAX			48000
+#define A_TRAVEL_MAX			400					// degrees
+#define A_JERK_MAX				24000000000			// yes, 24 billion
+#define A_JUNCTION_DEVIATION	0.1
+#define A_RADIUS				1.0
 #define A_SWITCH_MODE			2
-#define A_SEARCH_VELOCITY		-600
-#define A_LATCH_VELOCITY		100
-#define A_LATCH_BACKOFF			-5
+#define A_SEARCH_VELOCITY		-6000
+#define A_LATCH_VELOCITY		1000
+#define A_LATCH_BACKOFF			-15
 #define A_ZERO_BACKOFF			2
 
 #define B_AXIS_MODE				AXIS_DISABLED

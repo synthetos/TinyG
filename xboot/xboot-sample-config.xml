@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xboot-config>
+  <info>
+    <name>Sample Configuration</name>
+    <date>9/10/2010</date>
+  </info>
+  <part>atxmega32a4</part>
+  <params>
+    <param name="cpu-frequency" value="2000000" />
+    <param name="use-dfll" value="1" />
+    <param name="use-enter-delay" value="1">
+      <param name="enter-blink-count" value="3" />
+      <param name="enter-blink-wait" value="30000" />
+    </param>
+    <param name="use-enter-uart" value="1" />
+      <param name="led-port" value="PORTA" />
+      <param name="led-pin" value="0" />
+      <param name="led-inv" value="1" />
+    <param name="use-led" value="1">
+    </param>
+    <param name="use-uart" value="1">
+      <param name="uart-baud" value="19200" />
+      <param name="uart-port" value="D" />
+      <param name="uart-number" value="1" />
+    </param>
+    <param name="enable-block-support" value="1" />
+    <param name="enable-flash-byte-support" value="1" />
+    <param name="enable-eeprom-byte-support" value="1" />
+    <param name="enable-lock-bits" value="1" />
+    <param name="enable-fuse-bits" value="1" />
+  </params>
+</xboot-config>
+
