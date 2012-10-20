@@ -1,6 +1,6 @@
 /*
- * ki_slave_328p.c - Open Controller Bus slave driver for Atmega328P 
- * Part of Open Controller Bus project
+ * kinen_slave_328p.c - Kine device slave driver for Atmega328P 
+ * Part of Kinen Motion Control Project
  *
  * Copyright (c) 2012 Alden S. Hart Jr.
  *
@@ -29,7 +29,7 @@
 
 #include "kinen.h"
 #include "kinen_slave_328p.h"
-#include "tmc262.h"				// device file
+#include "tinyg_tc.h"				// device file
 
 static struct KinenSlaveSingleton {
 	uint8_t	phase;				// byte phasing for RX
@@ -40,7 +40,7 @@ static struct KinenSlaveSingleton {
 static uint8_t _ki_slave_write_byte(const uint8_t addr, const uint8_t data);
 
 /*
- * kinen_slave_init() - setup atmega SPI peripheral to be the OCB slave 
+ * ki_slave_init() - setup atmega SPI peripheral to be the OCB slave 
  */
 void ki_slave_init(void)
 {

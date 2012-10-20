@@ -18,8 +18,6 @@
 #ifndef kinen_h
 #define kinen_h
 
-#include "kinen_defs.h"	// Device types and other evolving definitions are isolated here
-
 // function prototypes
 
 void ki_init(void);
@@ -35,6 +33,7 @@ void ki_main_loop(void);
 
 #define KINEN_READ 0		// Command register values
 #define KINEN_WRITE 1
+
 
 enum KINENCommon {  		// all are read-only except as noted
 	KINEN_COMMAND = 0,	// writable
@@ -74,5 +73,20 @@ uint8_t ki_array[16];	// it's here so it can be used by both master and slave
 #define ki_device_uuid_1 	ki_array[KINEN_DEVICE_UUID_1]
 #define ki_device_uuid_2 	ki_array[KINEN_DEVICE_UUID_2]
 #define ki_device_uuid_3 	ki_array[KINEN_DEVICE_UUID_3]
+
+
+// Kinen Device Types
+
+#define KINEN_DEVICE_TYPE_NULL 0
+#define KINEN_DEVICE_TYPE_STEPPER_CONTROLLER 1
+
+// Kinen Status Codes
+
+#define	KINEN_SC_OK 0						// function completed OK
+#define	KINEN_SC_ERROR 1					// generic error return (EPERM)
+#define	KINEN_SC_EAGAIN 2					// call again (for iterators and non-blocking)
+#define	KINEN_SC_INVALID_ADDRESS 3		// address not in range
+#define KINEN_SC_READ_ONLY_ADDRESS 4		// tried to write tot a read-only location
+
 
 #endif
