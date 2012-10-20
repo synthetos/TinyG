@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2012 Alden S Hart Jr.
  *
- * Open Controller Bus (OCB) is licensed under the OSHW 1.0 license
+ * the Kinen Motion Control System is licensed under the OSHW 1.0 license
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -19,19 +19,19 @@
 #include <avr/interrupt.h>
 #include <stdbool.h>
 
-#include "ocb.h"
-#include "ocb_slave_328p.h"
+#include "kinen.h"
+#include "kinen_slave_328p.h"
 #include "tmc262.h"
 
 int main(void)
 {
-	ocb_init();					// initializes any OCB master, slave and devices
+	ki_init();					// initializes any OCB master, slave and devices
 	sei(); 						// enable interrupts
 
 	// you can comment out the unit tests for production
 	device_unit_tests();
 	
 	// go there and never return
-	ocb_main_loop(); 			// handle whatever events pop up
+	ki_main_loop(); 			// handle whatever events pop up
 	return false;   			// never reached
 }

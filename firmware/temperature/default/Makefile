@@ -1,11 +1,11 @@
 ###############################################################################
-# Makefile for the project sharkfin-34
+# Makefile for the project tinyg_tc
 ###############################################################################
 
 ## General Flags
-PROJECT = sharkfin-34
+PROJECT = tinyg_tc
 MCU = atmega328p
-TARGET = sharkfin-34.elf
+TARGET = tinyg_tc.elf
 CC = avr-gcc
 
 CPP = avr-g++
@@ -15,7 +15,7 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
-CFLAGS += -Wall -gdwarf-2 -std=gnu99       -DF_CPU=16000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -Wall -gdwarf-2 -std=gnu99 -DF_CPU=8000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
 
 ## Assembly specific flags
@@ -25,7 +25,7 @@ ASMFLAGS += -x assembler-with-cpp -Wa,-gdwarf2
 
 ## Linker flags
 LDFLAGS = $(COMMON)
-LDFLAGS +=  -Wl,-Map=sharkfin-34.map
+LDFLAGS +=  -Wl,-Map=tinyg_tc.map
 
 
 ## Intel Hex file production flags
@@ -36,26 +36,29 @@ HEX_EEPROM_FLAGS += --set-section-flags=.eeprom="alloc,load"
 HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 
 
+## Libraries
+LIBS = -lm 
+
 ## Objects that must be built in order to link
-OBJECTS = main.o ocb_slave_328p.o tmc262.o ocb.o 
+OBJECTS = tmc262.o main.o kinen.o kinen_slave_328p.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
 
 ## Build
-all: $(TARGET) sharkfin-34.hex sharkfin-34.eep sharkfin-34.lss size
+all: $(TARGET) tinyg_tc.hex tinyg_tc.eep tinyg_tc.lss size
 
 ## Compile
-main.o: ../main.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-ocb_slave_328p.o: ../ocb_slave_328p.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
 tmc262.o: ../tmc262.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-ocb.o: ../ocb.c
+main.o: ../main.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+kinen.o: ../kinen.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+kinen_slave_328p.o: ../kinen_slave_328p.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link
@@ -78,7 +81,7 @@ size: ${TARGET}
 ## Clean target
 .PHONY: clean
 clean:
-	-rm -rf $(OBJECTS) sharkfin-34.elf dep/* sharkfin-34.hex sharkfin-34.eep sharkfin-34.lss sharkfin-34.map
+	-rm -rf $(OBJECTS) tinyg_tc.elf dep/* tinyg_tc.hex tinyg_tc.eep tinyg_tc.lss tinyg_tc.map
 
 
 ## Other dependencies

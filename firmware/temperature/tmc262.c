@@ -5,7 +5,7 @@
  *
  * Copyright (c) 2012 Alden S. Hart Jr.
  *
- * Open Controller Bus (OCB) is licensed under the OSHW 1.0 license
+ * Open Controller Bus (KINEN) is licensed under the OSHW 1.0 license
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -21,7 +21,7 @@
 #include <string.h>				// for memset
 #include <avr/io.h>
 
-#include "ocb.h"
+#include "kinen.h"
 #include "tmc262.h"
 
 // local data structures 
@@ -94,19 +94,19 @@ void device_reset(void)
 
 uint8_t device_read_byte(uint8_t addr, uint8_t *data)
 {
-	addr -= OCB_COMMON_MAX;
-	if (addr >= TMC262_ADDRESS_MAX) return (OCB_SC_INVALID_ADDRESS);
+	addr -= KINEN_COMMON_MAX;
+	if (addr >= TMC262_ADDRESS_MAX) return (KINEN_SC_INVALID_ADDRESS);
 	*data = tmc262_array[addr];
-	return (OCB_SC_OK);
+	return (KINEN_SC_OK);
 }
 
 uint8_t device_write_byte(uint8_t addr, uint8_t data)
 {
-	addr -= OCB_COMMON_MAX;
-	if (addr >= TMC262_ADDRESS_MAX) return (OCB_SC_INVALID_ADDRESS);
+	addr -= KINEN_COMMON_MAX;
+	if (addr >= TMC262_ADDRESS_MAX) return (KINEN_SC_INVALID_ADDRESS);
 	// there are no checks in here for read-only. Assumes all locations are writable.
 	tmc262_array[addr] = data;
-	return (OCB_SC_OK);
+	return (KINEN_SC_OK);
 }
 
 void device_led_on(void) 
