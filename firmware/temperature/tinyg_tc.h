@@ -64,10 +64,9 @@ void pwm_init(void);
 #define RTC_10MS_COUNT 78		// this gets 8 Mhz.1024 close to 100 Hz.
 #define RTC_TCCRxA	TCCR0A		// map the registers into the selected timer
 
-#define PWM_TIMER	TCNT1		// Pulse width modulation timer
-#define PWM_PORT	PORTB		// PWM channel
-#define PWM_OUT0	(1<<PINB1)	// 0C1A timer output bit
-#define PWM_OUT1	(1<<PINB2)	// 0C1B timer output bit (do not use - it's also ~SS)
+#define PWM_TIMER	TCNT2		// Pulse width modulation timer
+#define PWM_PORT	PORTD		// PWM channel
+#define PWM_OUTB	(1<<PIND3)	// 0C2B timer output bit
 
 #define ADC_PORT	PORTC		// Analog to digital converter channels
 #define ADC_CHAN0 	(1<<ADCL0)	// current set ADC line
@@ -77,10 +76,13 @@ void pwm_init(void);
 
 // Atmega328P data direction: 0=input pin, 1=output pin
 // These defines therefore only specify output pins
-#define PORTB_DIR	(SPI_MISO | PWM_OUT1 | PWM_OUT0)// setup for on-board SPI to work
-//#define PORTB_DIR	(SPI_MISO | PWM_OUT0)	// setup for on-board SPI to work
-#define PORTC_DIR	(ADC_CHAN0)				// used for ACD only
-#define PORTD_DIR	(LED_PIN)				// all inputs except LED
+
+#define PORTB_DIR	(SPI_MISO)	// setup for on-board SPI to work
+#define PORTC_DIR	(ADC_CHAN0)	// used for ACD only
+#define PORTD_DIR	(LED_PIN | PWM_OUTB)
+
+//#define PORTB_DIR	(SPI_MISO | PWM_OUTB | PWM_OUTA)// setup for on-board SPI to work
+//#define PORTB_DIR	(SPI_MISO | PWM_OUTB)	// setup for on-board SPI to work
 
 // Device configiuration and communication registers
 

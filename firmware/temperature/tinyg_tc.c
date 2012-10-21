@@ -111,64 +111,37 @@ void device_init(void)
  */
 void pwm_init(void)
 {
-	TCCR1A = 0;					// Initialize
-	TCCR1A = 0;
-/*
-	while(true) {
-		PINB = 0xFF;
-		PINB = 0;
-	}
-*/
-	// set comparator modes
-//	TCCR1A |= 0b00000000;		// COM1A1, COM1A0	enable OCR1A only (reqs WGM mode 15)
-	TCCR1A |= 0b11100000;		// COM1A1, COM1A0
-	TCCR1A |= 0b00000000;		// COM1B1, COM1B0
-	
-	// set Waveform generation mode (WGM13 - WGM10)
-	TCCR1A |= 0b00000011;		// WGM11, WGM 10	MODE 11
-	TCCR1B |= 0b00010000;		// WGM13, WGM 12
-
-//	TCCR1A |= 0b00000011;		// WGM11, WGM 10	MODE 15
-//	TCCR1B |= 0b00011000;		// WGM13, WGM 12
-
-	// set clock and prescaler 
-	TCCR1B |= 0b00000011;		// CS12, CS11, CS10 - Fclk / 64
-
-//    DDRB |= (1 << DDB1)|(1 << DDB2); // PB1 and PB2 is now an output
-
-	// reset and configure timer 1, the Extruder Two PWM timer
+	// Configure timer 2 for extruder heater PWM
 	// Mode: Fast PWM with TOP=0xFF (8bit) (WGM3:0 = 0101), cycle freq= 976 Hz
 	// Prescaler: 1/64 (250 KHz)
-//	TCCR1A = 0b00000001;  
-//	TCCR1B = 0b00001011;		// set to PWM mode
 
-//	ICR1 = 0xFFF;				// set TOP to 16bit
-	OCR1A = 0x400;				// set PWM for 25% duty cycle @ 16bit
-	OCR1B = 0x020;				// set PWM for 75% duty cycle @ 16bit
+	// set comparator modes: OC2A non-inveted mode, OC2B non-inverted mode
+	TCCR2A = 0b10100000;		// COM2A1, COM2A0, COM2B1, COM2B0
 
-//	TCCR1A |= (1 << COM1A1)|(1 << COM1B1); // set non-inverting mode
+	// set Waveform generation to MODE 7 - Fast PWM w/OCR2A setting PWM freq (TOP)
+	TCCR2A |= 0b00000011;		// WGM21, WGM 20
+	TCCR2B  = 0b00001000;		// WGM 22
 
-//	TCCR1A |= (1 << WGM11);
-//	TCCR1B |= (1 << WGM12)|(1 << WGM13);	// set Fast PWM mode using ICR1 as TOP
-//	TCCR1B |= (1 << CS10);		// START the timer with no prescaler
+	// set clock and prescaler
+	TCCR2B |= 0b00000100;		// CS22, CS21, CS20 - Fclk / 64
 
-//	TCCR1A = (0x40 | 0x01);		// enable OCR1A only | fast PWM, 8bits (low bits)
-//	TCCR1B = (0x08 | 0x04);		// fast PWM, 8bits (hi bits) | Clock / 256 prescaler
-//	TCNT1 = (256 - RTC_10MS_COUNT);	// set timer for approx 10 ms overflow
+	// set TOP
+	OCR2A = 0xFF;				// set PWM frequency (TOP value)
+	OCR2B = 0x09;				// set PWM duty cycle as % of TOP value
 
-	TIMSK1 = 0b00000110; 		// no interrupts needed	
+	TIMSK1 = 0b00000000; 		// disable PWM interrupts
 }
-
+/*
 ISR(TIMER1_COMPA_vect)
 {
-	PWM_PORT |= PWM_OUT0;
+	PWM_PORT |= PWM_OUTB;
 }
 
 ISR(TIMER1_COMPB_vect)
 {
-	PWM_PORT &= ~PWM_OUT0;
+	PWM_PORT &= ~PWM_OUTB;
 }
-
+*/
 uint8_t pwm_set_freq(uint8_t chan, double freq)
 {
 	
