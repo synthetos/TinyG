@@ -101,7 +101,25 @@ uint8_t ki_array[16];	// it's here so it can be used by both master and slave
 #define	SC_BUFFER_FULL_FATAL 13 
 #define	SC_BUFFER_FULL_NON_FATAL 14
 
-#define	SC_INVALID_ADDRESS 15			// address not in range
-#define SC_READ_ONLY_ADDRESS 16			// tried to write tot a read-only location
+// System errors (HTTP 500's if you will)
+#define	SC_INTERNAL_ERROR 20			// unrecoverable internal error
+#define	SC_INTERNAL_RANGE_ERROR 21		// number range other than by user input
+#define	SC_FLOATING_POINT_ERROR 22		// number conversion error
+#define	SC_DIVIDE_BY_ZERO 23
+#define	SC_INVALID_ADDRESS 24			// address not in range
+#define SC_READ_ONLY_ADDRESS 25			// tried to write tot a read-only location
+
+// Input errors (HTTP 400's, if you will)
+#define	SC_UNRECOGNIZED_COMMAND 40		// parser didn't recognize the command
+#define	SC_EXPECTED_COMMAND_LETTER 41	// malformed line to parser
+#define	SC_BAD_NUMBER_FORMAT 42			// number format error
+#define	SC_INPUT_EXCEEDS_MAX_LENGTH 43	// input string is too long 
+#define	SC_INPUT_VALUE_TOO_SMALL 44		// input error: value is under minimum
+#define	SC_INPUT_VALUE_TOO_LARGE 45		// input error: value is over maximum
+#define	SC_INPUT_VALUE_RANGE_ERROR 46	// input error: value is out-of-range
+#define	SC_INPUT_VALUE_UNSUPPORTED 47	// input error: value is not supported
+#define	SC_JSON_SYNTAX_ERROR 48			// JSON string is not well formed
+#define	SC_JSON_TOO_MANY_PAIRS 49		// JSON string or has too many JSON pairs
+#define	SC_NO_BUFFER_SPACE 50			// Buffer pool is full and cannot perform this operation
 
 #endif

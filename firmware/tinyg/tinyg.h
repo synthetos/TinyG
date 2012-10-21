@@ -144,8 +144,8 @@ enum tgPWMnum {				// define motor numbers and array indexes
 #define	TG_INTERNAL_RANGE_ERROR 21		// number range other than by user input
 #define	TG_FLOATING_POINT_ERROR 22		// number conversion error
 #define	TG_DIVIDE_BY_ZERO 23
-#define	TG_ERROR_24 24
-#define	TG_ERROR_25 25
+#define	TG_INVALID_ADDRESS 24
+#define	TG_READ_ONLY_ADDRESS 25
 #define	TG_ERROR_26 26
 #define	TG_ERROR_27 27
 #define	TG_ERROR_28 28

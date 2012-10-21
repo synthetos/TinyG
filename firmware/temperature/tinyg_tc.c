@@ -25,7 +25,7 @@
 #include "kinen_core.h"
 #include "tinyg_tc.h"
 
-// static fucntions 
+// static functions 
 static void _controller(void);
 static uint8_t _idle_task(void);
 
@@ -93,32 +93,119 @@ void device_init(void)
 	DDRD = PORTD_DIR;
 
 	rtc_init();
+	pwm_init();
 	led_on();					// put on the red light (Roxanne)
 }
 
-/**** LED Functions ****
- * led_on()
- * led_off()
- * led_toggle()
+
+/**** PWM - Pulse Width Modulation Functions ****
+ * pwm_init() 	  - initialize RTC timers and data
+ * pwm_set_freq() - set PWM channel frequency
+ * pwm_set_duty() - set PWM channel duty cycle 
+ *
+ *	Setting duty cycle to 0 disables the PWM channel with output low
+ *	Setting duty cycle to 100 disables the PWM channel with output high
+ *	Setting duty cycle between 0 and 100 enables PWM channel
+ *
+ *	The frequency must have been set previously
  */
-
-void led_on(void) 
+void pwm_init(void)
 {
-	LED_PORT &= ~(LED_PIN);
-}
-
-void led_off(void) 
-{
-	LED_PORT |= LED_PIN;
-}
-
-void led_toggle(void) 
-{
-	if (LED_PORT && LED_PIN) {
-		led_on();
-	} else {
-		led_off();
+	TCCR1A = 0;					// Initialize
+	TCCR1A = 0;
+/*
+	while(true) {
+		PINB = 0xFF;
+		PINB = 0;
 	}
+*/
+	// set comparator modes
+//	TCCR1A |= 0b00000000;		// COM1A1, COM1A0	enable OCR1A only (reqs WGM mode 15)
+	TCCR1A |= 0b11100000;		// COM1A1, COM1A0
+	TCCR1A |= 0b00000000;		// COM1B1, COM1B0
+	
+	// set Waveform generation mode (WGM13 - WGM10)
+	TCCR1A |= 0b00000011;		// WGM11, WGM 10	MODE 11
+	TCCR1B |= 0b00010000;		// WGM13, WGM 12
+
+//	TCCR1A |= 0b00000011;		// WGM11, WGM 10	MODE 15
+//	TCCR1B |= 0b00011000;		// WGM13, WGM 12
+
+	// set clock and prescaler 
+	TCCR1B |= 0b00000011;		// CS12, CS11, CS10 - Fclk / 64
+
+//    DDRB |= (1 << DDB1)|(1 << DDB2); // PB1 and PB2 is now an output
+
+	// reset and configure timer 1, the Extruder Two PWM timer
+	// Mode: Fast PWM with TOP=0xFF (8bit) (WGM3:0 = 0101), cycle freq= 976 Hz
+	// Prescaler: 1/64 (250 KHz)
+//	TCCR1A = 0b00000001;  
+//	TCCR1B = 0b00001011;		// set to PWM mode
+
+//	ICR1 = 0xFFF;				// set TOP to 16bit
+	OCR1A = 0x400;				// set PWM for 25% duty cycle @ 16bit
+	OCR1B = 0x020;				// set PWM for 75% duty cycle @ 16bit
+
+//	TCCR1A |= (1 << COM1A1)|(1 << COM1B1); // set non-inverting mode
+
+//	TCCR1A |= (1 << WGM11);
+//	TCCR1B |= (1 << WGM12)|(1 << WGM13);	// set Fast PWM mode using ICR1 as TOP
+//	TCCR1B |= (1 << CS10);		// START the timer with no prescaler
+
+//	TCCR1A = (0x40 | 0x01);		// enable OCR1A only | fast PWM, 8bits (low bits)
+//	TCCR1B = (0x08 | 0x04);		// fast PWM, 8bits (hi bits) | Clock / 256 prescaler
+//	TCNT1 = (256 - RTC_10MS_COUNT);	// set timer for approx 10 ms overflow
+
+	TIMSK1 = 0b00000110; 		// no interrupts needed	
+}
+
+ISR(TIMER1_COMPA_vect)
+{
+	PWM_PORT |= PWM_OUT0;
+}
+
+ISR(TIMER1_COMPB_vect)
+{
+	PWM_PORT &= ~PWM_OUT0;
+}
+
+uint8_t pwm_set_freq(uint8_t chan, double freq)
+{
+	
+/*
+	if (chan > PWMS) { return (TG_NO_SUCH_DEVICE);}
+	if (freq > PWM_MAX_FREQ) { return (TG_INPUT_VALUE_TOO_SMALL);}
+	if (freq < PWM_MIN_FREQ) { return (TG_INPUT_VALUE_TOO_LARGE);}
+
+	// set the period and the prescaler
+	double prescale = F_CPU/65536/freq;	// optimal non-integer prescaler value
+	if (prescale <= 1) { 
+		pwm[chan].timer->PER = F_CPU/freq;
+		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV1_gc;
+	} else if (prescale <= 2) { 
+		pwm[chan].timer->PER = F_CPU/2/freq;
+		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV2_gc;
+	} else if (prescale <= 4) { 
+		pwm[chan].timer->PER = F_CPU/4/freq;
+		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV4_gc;
+	} else if (prescale <= 8) { 
+		pwm[chan].timer->PER = F_CPU/8/freq;
+		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV8_gc;
+	} else { 
+		pwm[chan].timer->PER = F_CPU/64/freq;
+		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV64_gc;
+	}
+*/
+	return (SC_OK);
+}
+
+uint8_t pwm_set_duty(uint8_t chan, double duty)
+{
+	if (duty < 0)   { return (SC_INPUT_VALUE_TOO_SMALL);}
+	if (duty > 100) { return (SC_INPUT_VALUE_TOO_LARGE);}
+
+//	pwm[chan].timer->CCB = (uint16_t)(pwm[chan].timer->PER - pwm[chan].timer->PER / (duty/100));
+	return (SC_OK);
 }
 
 /**** RTC - Real Time Clock Functions ****
@@ -165,12 +252,13 @@ uint8_t rtc_callback(void)
 
 void rtc_10ms(void)
 {
+	led_toggle();
 	return;
 }
 
 void rtc_100ms(void)
 {
-	led_toggle();
+//	led_toggle();
 	return;
 }
 
@@ -180,15 +268,30 @@ void rtc_1sec(void)
 	return;
 }
 
-
-/**** PWM - Pulse Width Modulation Functions ****
- * pwm_init() 	  - initialize RTC timers and data
+/**** LED Functions ****
+ * led_on()
+ * led_off()
+ * led_toggle()
  */
-void pwm_init(void)
+
+void led_on(void) 
 {
-	
+	LED_PORT &= ~(LED_PIN);
 }
 
+void led_off(void) 
+{
+	LED_PORT |= LED_PIN;
+}
+
+void led_toggle(void) 
+{
+	if (LED_PORT && LED_PIN) {
+		led_on();
+	} else {
+		led_off();
+	}
+}
 
 /****************************************************************************
  *
