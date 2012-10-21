@@ -27,7 +27,7 @@
 #include <string.h>				// for memset
 #include <avr/interrupt.h>
 
-#include "kinen.h"
+#include "kinen_core.h"
 #include "kinen_slave_328p.h"
 #include "tinyg_tc.h"				// device file
 
@@ -37,12 +37,12 @@ static struct KinenSlaveSingleton {
 	uint8_t data;				// data received from master or to send to master
 } ki_slave;
 
-static uint8_t _ki_slave_write_byte(const uint8_t addr, const uint8_t data);
+static uint8_t _slave_write_byte(const uint8_t addr, const uint8_t data);
 
 /*
- * ki_slave_init() - setup atmega SPI peripheral to be the OCB slave 
+ * kinen_slave_init() - setup atmega SPI peripheral to be the OCB slave 
  */
-void ki_slave_init(void)
+void kinen_slave_init(void)
 {
 	PRR |= 0x07;
 	DDRB &= ~(1<<DDB4);			// Set MISO output, all others unaffected
@@ -60,7 +60,7 @@ void ki_slave_init(void)
 	ki_device_uuid_2 = DEVICE_UUID_2;
 	ki_device_uuid_3 = DEVICE_UUID_3;
 
-	ki_status = KINEN_SC_OK;
+	ki_status = SC_OK;
 	SPDR = ki_status;
 	device_init();				// initialize the device last
 }
@@ -82,7 +82,7 @@ ISR(SPI_STC_vect)
 			if (ki_slave.addr < KINEN_COMMON_MAX) {	// handle OCB address space
 				SPDR = ki_array[ki_slave.addr];
 			} else {								// handle device address space
-				if ((ki_status = device_read_byte(ki_slave.addr, &ki_slave.data)) == KINEN_SC_OK) {
+				if ((ki_status = device_read_byte(ki_slave.addr, &ki_slave.data)) == SC_OK) {
 					SPDR = ki_slave.data;
 				} else {
 					SPDR = KINEN_ERR_BYTE;
@@ -96,7 +96,7 @@ ISR(SPI_STC_vect)
 		ki_slave.data = SPDR;		// read and save the data byte
 		if (ki_command == KINEN_WRITE) {
 			if (ki_slave.addr < KINEN_COMMON_MAX) {
-				ki_status = _ki_slave_write_byte(ki_slave.addr, ki_slave.data);
+				ki_status = _slave_write_byte(ki_slave.addr, ki_slave.data);
 			} else {
 				ki_status = device_write_byte(ki_slave.addr, ki_slave.data);
 			}
@@ -105,9 +105,9 @@ ISR(SPI_STC_vect)
 }
 
 /* 
- * _ki_slave_write_byte() - helper to write byte to an OCB non-device address
+ * _slave_write_byte() - helper to write byte to an OCB non-device address
  */
-static uint8_t _ki_slave_write_byte(const uint8_t addr, const uint8_t data)
+static uint8_t _slave_write_byte(const uint8_t addr, const uint8_t data)
 {
 	if (addr == KINEN_COMMAND) {
 		ki_command = data; 
@@ -116,12 +116,12 @@ static uint8_t _ki_slave_write_byte(const uint8_t addr, const uint8_t data)
 		ki_addr_page = data; 
 
 	} else if (addr == KINEN_RESET) {
-		ki_slave_init();
+		kinen_slave_init();
 		device_reset();
 
 	} else {
-		return (KINEN_SC_READ_ONLY_ADDRESS);
+		return (SC_READ_ONLY_ADDRESS);
 	}
-	return (KINEN_SC_OK);
+	return (SC_OK);
 }
 

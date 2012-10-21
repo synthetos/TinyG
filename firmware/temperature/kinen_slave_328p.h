@@ -1,10 +1,10 @@
 /*
- * ocb_slave_328p - Open Controller Bus slave driver for Atmega328P 
- * Part of Open Controller Bus project
+ * kinen_slave_328p - Open Controller Bus slave driver for Atmega328P 
+ * Part of Kinen Motion Control Project
  *
  * Copyright (c) 2012 Alden S. Hart Jr.
  *
- * Open Controller Bus (OCB) is licensed under the OSHW 1.0 license
+ * The Kinen Motion Control System is licensed under the OSHW 1.0 license
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -22,6 +22,6 @@
 #ifndef kinen_slave_328p_h
 #define kinen_slave_328p_h
 
-void ki_slave_init(void);
+void kinen_slave_init(void);
 
 #endif

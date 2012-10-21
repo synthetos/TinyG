@@ -1,10 +1,8 @@
 /*
- * tmc262.h - Trinamic TMC262 device definitions and settings
- * Part of Sharkfin project
+ * tinyg_tc.h - TinyG temperature controller - Kinen device
+ * Part of TinyG project
  *
  * Copyright (c) 2012 Alden S. Hart Jr.
- *
- * Open Controller Bus (OCB) is licensed under the OSHW 1.0 license
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -15,14 +13,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef tmc262_h
-#define tmc262_h
+#ifndef tinyg_tc_h
+#define tinyg_tc_h
+
+// Device function prototypes
+
+#define __UNIT_TEST_DEVICE	// uncomment to enable unit tests
+
+void device_init(void);
+void device_led_on(void);
+void device_led_off(void);
+void device_reset(void);
+uint8_t device_read_byte(uint8_t addr, uint8_t *data);
+uint8_t device_write_byte(uint8_t addr, uint8_t data);
+
+void rtc_init(void);
+uint8_t rtc_callback(void);
+
+void pwm_init(void);
+//uint8_t rtc_callback(void);
 
 // Device configuration 
 
 #define DEVICE_WAIT_TIME 10		// 10 = 100 uSeconds
 
-#define DEVICE_TYPE 	 KINEN_DEVICE_TYPE_STEPPER_CONTROLLER
+#define DEVICE_TYPE 	 DEVICE_TYPE_TEMPERATURE_CONTROLLER
 #define DEVICE_ID_HI	 0x00
 #define DEVICE_ID_LO	 0x01
 #define DEVICE_REV_MAJOR 0x00
@@ -31,14 +46,77 @@
 #define DEVICE_UUID_2	 0x00	// UUID = 0 means there is no UUID
 #define DEVICE_UUID_3	 0x00	// UUID = 0 means there is no UUID
 
-// atmega328P Port mapping
 
-#define SPI_PORT	PORTB		// Primary SPI is the on-board SPI peripheral
-#define SPI_CLK		(1<<PINB5)	// Primary SPI clock line
-#define SPI_MISO	(1<<PINB4)	// Primary SPI MISO line
-#define SPI_MOSI	(1<<PINB3)	// Primary SPI MOSI line
-#define SPI_SS		(1<<PINB2)	// Primary SPI slave select
+// Device Port Mappings (for atmega328P)
 
+#define SPI_PORT	PORTB		// on-board SPI peripheral
+#define SPI_SCK		(1<<PINB5)	// SPI clock line
+#define SPI_MISO	(1<<PINB4)	// SPI MISO line
+#define SPI_MOSI	(1<<PINB3)	// SPI MOSI line
+#define SPI_SS		(1<<PINB2)	// SPI slave select
+
+#define RTC_TIMER	TCNT0		// Real time clock timer
+
+#define PWM_TIMER	TCNT1		// Pulse width modulation timer
+#define PWM_PORT	PORTB		// PWM channel
+#define PWM_OUT		(1<<PINB0)	// 0C1A timer output bit
+
+#define ADC_PORT	PORTC		// Analog to digital converter channels
+#define ADC_CHAN0 	(1<<ADCL0)	// current set ADC line
+
+#define LED_PORT	PORTD		// LED port
+#define LED_PIN		(1<<PIND2)	// LED indicator
+
+// Atmega328P data direction: 0=input pin, 1=output pin
+// These defines therefore only specify output pins
+#define PORTB_DIR	(SPI_MISO | PWM_OUT)	// setup for on-board SPI to work
+#define PORTC_DIR	(ADC_CHAN0)				// used for ACD only
+#define PORTD_DIR	(LED_PIN)				// all inputs except LED
+
+// Device configiuration and communication registers
+
+// enumerations for the device configuration array
+enum deviceRegisters {
+	DEVICE_TEMP_STATE = 0,		// temperature regulation state. See TEMP_STATE enumerations
+	DEVICE_TEMP_SET_HI,			// temperature set point hi - Celcius 
+	DEVICE_TEMP_SET_LO,			// temperature set point lo - Celcius
+	DEVICE_TEMP_SET_FRACTION,	// temperature set point fractions - Celcius (you wish)
+	DEVICE_TEMP_HI,				// temperature reading hi - Celcius 
+	DEVICE_TEMP_LO,				// temperature reading lo - Celcius
+	DEVICE_TEMP_FRACTION,		// temperature reading fractions - Celcius (you wish)
+	DEVICE_PWM_FREQ_HI,			// device pulse width modulation frequency - hi
+	DEVICE_PWM_FREQ_LO,			// device pulse width modulation frequency - lo
+	DEVICE_PWM_DUTY_CYCLE,		// device pulse width modulation duty cycle - integer part
+	DEVICE_PWM_DUTY_CYCLE_FRACTION,// device pulse width modulation duty cycle - fractional part
+
+	DEVICE_ADDRESS_MAX			// MUST BE LAST
+};
+
+// provide labels for all array elements
+#define device_temp_state device_array[DEVICE_TEMP_STATE]
+#define device_temp_set_hi device_array[DEVICE_TEMP_SET_HI]
+#define device_temp_set_lo device_array[DEVICE_TEMP_SET_LO]
+#define device_temp_set_fraction device_array[DEVICE_TEMP_SET_FRACTION]
+#define device_temp_hi device_array[DEVICE_TEMP_HI]
+#define device_temp_lo device_array[DEVICE_TEMP_LO]
+#define device_temp_fraction device_array[DEVICE_TEMP_FRACTION]
+#define device_pwm_freq_hi device_array[DEVICE_PWM_FREQ_HI]
+#define device_pwm_freq_lo device_array[DEVICE_PWM_FREQ_LO]
+#define device_pwm_freq_fraction device_array[DEVICE_PWM_FREQ_FRACTION]
+#define device_pwm_cuty_cycle device_array[DEVICE_PWM_DUTY_CYCLE]
+
+
+#ifdef __UNIT_TEST_DEVICE
+void device_unit_tests(void);
+#define	DEVICE_UNITS device_unit_tests();
+#else
+#define	DEVICE_UNITS
+#endif // __UNIT_TEST_DEVICE
+
+
+/**** TMC262 specific stuff from here on out ****/
+
+/* Used by tmc262 driver
 #define SPI2_PORT 	PORTD		// Secondary SPI is a bit banger 
 #define SPI2_CLK	(1<<PIND7)	// Secondary SPI SCK line
 #define SPI2_MISO	(1<<PIND6)	// Secondary SPI SDO line
@@ -56,30 +134,9 @@
 #define JUMPER_5	(1<<PIND0)	// Jumper position 5 (atmega328P RX line)
 #define JUMPER_6	(1<<PIND1)	// Jumper position 6 (atmega328P RX line)
 #define JUMPER_SS	(1<<PINB2)	// Primary slave select brought out to jumper 
+*/
 
-#define LED_PORT	PORTC		// LED port
-#define LED_PIN		(1<<PINC0)	// LED indicator
-#define DEV_ACD 	ACD7		// current set ACD line
-
-// Atmega328P data direction: 0=input pin, 1=output pin
-// These defines therefore only specify output pins
-#define PORTB_DIR	(SPI_MISO)	// setup for on-board SPI to work
-#define PORTC_DIR	(LED_PIN)	// All inputs except LED
-#define PORTD_DIR	(SPI2_CLK | SPI2_MOSI | SPI2_SS)
-
-// function prototypes
-
-void device_init(void);
-void device_reset(void);
-uint8_t device_read_byte(uint8_t addr, uint8_t *data);
-uint8_t device_write_byte(uint8_t addr, uint8_t data);
-void device_led_on(void);
-void device_led_off(void);
-void device_unit_tests(void);
-
-/**** TMC262 specific stuff from here on out ****/
-
-								// These are fixed by the chip. DO NOT CHANGE
+/*								// These are fixed by the chip. DO NOT CHANGE
 #define DRVCONF_ADDR  0x07		// DRVCONF register address
 #define DRVCTRL_ADDR  0x00		// DRVCTRL register address - for Step/Dir mode (SDOFF=0)
 #define CHOPCONF_ADDR 0x04		// CHOPCONF register address
@@ -133,67 +190,9 @@ void device_unit_tests(void);
 #define INIT262_SGT		0x0F	// [0x0F]	stallguard threshold (decimal -12 to +63)
 #define INIT262_CS		0x1F	// [11111]	current scale, 11111 = maximum
 
-// enumerations for the config array
-enum tmc262Registers {
-	TMC262_TST = 0,
-	TMC262_SLPH,
-	TMC262_SLPL,
-	TMC262_DISS2G,
-	TMC262_TS2G,
-	TMC262_SDOFF,
-	TMC262_VSENSE,
-	TMC262_RDSEL,
-	TMC262_INTPOL,
-	TMC262_DEDGE,
-	TMC262_MRES,
-	TMC262_TBL,
-	TMC262_CHM,
-	TMC262_RNDTF,
-	TMC262_HDEC,
-	TMC262_HEND,
-	TMC262_HSTRT,
-	TMC262_TOFF,
-	TMC262_SEIMIN,
-	TMC262_SEDN,
-	TMC262_SEMAX,
-	TMC262_SEUP,
-	TMC262_SEMIN,
-	TMC262_SFILT,
-	TMC262_SGT,
-	TMC262_CS,
-	TMC262_ADDRESS_MAX
-};
-
-// provide labels for all array elements
-#define tmc262_tst tmc262_array[TMC262_TST]
-#define tmc262_slph tmc262_array[TMC262_SLPH]
-#define tmc262_slpl tmc262_array[TMC262_SLPL]
-#define tmc262_diss2g tmc262_array[TMC262_DISS2G]
-#define tmc262_ts2g tmc262_array[TMC262_TS2G]
-#define tmc262_sdoff tmc262_array[TMC262_SDOFF]
-#define tmc262_vsense tmc262_array[TMC262_VSENSE]
-#define tmc262_rdsel tmc262_array[TMC262_RDSEL]
-#define tmc262_intpol tmc262_array[TMC262_INTPOL]
-#define tmc262_dedge tmc262_array[TMC262_DEDGE]
-#define tmc262_mres tmc262_array[TMC262_MRES]
-#define tmc262_tbl tmc262_array[TMC262_TBL]
-#define tmc262_chm tmc262_array[TMC262_CHM]
-#define tmc262_rndtf tmc262_array[TMC262_RNDTF]
-#define tmc262_hdec tmc262_array[TMC262_HDEC]
-#define tmc262_hend tmc262_array[TMC262_HEND]
-#define tmc262_hstrt tmc262_array[TMC262_HSTRT]
-#define tmc262_toff tmc262_array[TMC262_TOFF]
-#define tmc262_seimin tmc262_array[TMC262_SEIMIN]
-#define tmc262_sedn tmc262_array[TMC262_SEDN]
-#define tmc262_semax tmc262_array[TMC262_SEMAX]
-#define tmc262_seup tmc262_array[TMC262_SEUP]
-#define tmc262_semin tmc262_array[TMC262_SEMIN]
-#define tmc262_sfilt tmc262_array[TMC262_SFILT]
-#define tmc262_sgt tmc262_array[TMC262_SGT]
-#define tmc262_cs tmc262_array[TMC262_CS]
 
 
-/* INITIALIZATION TEST PATTERNS FOR PACKING FUNCTION UNIT TESTS
+// INITIALIZATION TEST PATTERNS FOR PACKING FUNCTION UNIT TESTS
 
 // DRVCONF settings - driver config (page 24)
 #define INIT262_TST 	0b1		// [0]	0=normal operation (not test mode)

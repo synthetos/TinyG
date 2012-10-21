@@ -1,5 +1,5 @@
 /*
- * kinen_main.c - Kinen Motion Control System main file
+ * kinen_core.c - Kinen Motion Control System main file
  * Part of Kinen Motion Control Project
  *
  * Copyright (c) 2012 Alden S. Hart Jr.
@@ -16,44 +16,27 @@
  */
 #include <stdio.h>
 #include <stdbool.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
 
-#include "kinen.h"
+#include "kinen_core.h"
 #include "kinen_slave_328p.h"
-#include "tinyg_tc.h"
 
 /*
- * ki_init() - set up Kine subsystems; master or slave
+ * kinen_init() - set up Kine subsystems; master or slave
  */
-void ki_init(void)
+void kinen_init(void)
 {
-//	ki_master_init();
-	ki_slave_init();
+//	kinen_master_init();
+	kinen_slave_init();
 }
 
 /*
- * ki_main_loop() - main event handler
+ * kinen_callback() - kinen event handler
+ *
+ *	This function should be called from the main loop at a high-priority level
+ *	Returns OK or error. Returns EAGAIN if function would block
  */
-void ki_main_loop(void)
+uint8_t kinen_callback(void)
 {
-	while (true) {
-		continue;
-	}
+	return (SC_NOOP);
 }
 
-/*
- * main loop - main event handler
- */
-int main(void)
-{
-	ki_init();				// initialize Kinen subsystems
-	sei(); 						// enable interrupts
-
-	// you can comment out the unit tests for production
-	device_unit_tests();
-	
-	// go there and never return
-	ki_main_loop(); 			// handle whatever events pop up
-	return false;   			// never reached
-}

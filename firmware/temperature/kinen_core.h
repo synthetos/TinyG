@@ -1,10 +1,10 @@
 /*
- * ocb.h - Open Controller Bus (OCB) program definitions
- * Part of Open Controller Bus project
+ * kinen_core.h - Kinen core program definitions
+ * Part of Kinen Motion Control Project
  *
  * Copyright (c) 2012 Alden S. Hart Jr.
  *
- * Open Controller Bus (OCB) is licensed under the OSHW 1.0 license
+ * The Kinen Motion Control System is licensed under the OSHW 1.0 license
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -20,8 +20,8 @@
 
 // function prototypes
 
-void ki_init(void);
-void ki_main_loop(void);
+void kinen_init(void);
+uint8_t kinen_callback(void);
 
 // Kinen definitions
 
@@ -77,16 +77,31 @@ uint8_t ki_array[16];	// it's here so it can be used by both master and slave
 
 // Kinen Device Types
 
-#define KINEN_DEVICE_TYPE_NULL 0
-#define KINEN_DEVICE_TYPE_STEPPER_CONTROLLER 1
+#define DEVICE_TYPE_NULL 0
+#define DEVICE_TYPE_DUMB_STEPPER_CONTROLLER 1
+#define DEVICE_TYPE_SMART_STEPPER_CONTROLLER 2
+#define DEVICE_TYPE_EXTRUDER_CONTROLLER 3
+#define DEVICE_TYPE_TEMPERATURE_CONTROLLER 4
 
 // Kinen Status Codes
 
-#define	KINEN_SC_OK 0						// function completed OK
-#define	KINEN_SC_ERROR 1					// generic error return (EPERM)
-#define	KINEN_SC_EAGAIN 2					// call again (for iterators and non-blocking)
-#define	KINEN_SC_INVALID_ADDRESS 3		// address not in range
-#define KINEN_SC_READ_ONLY_ADDRESS 4		// tried to write tot a read-only location
+#define	SC_OK 0							// function completed OK
+#define	SC_ERROR 1						// generic error return (EPERM)
+#define	SC_EAGAIN 2						// function would block here (call again)
+#define	SC_NOOP 3						// function had no-operation
+#define	SC_COMPLETE 4					// operation is complete
+#define SC_TERMINATE 5					// operation terminated (gracefully)
+#define SC_ABORT 6						// operaation aborted
+#define	SC_EOL 7						// function returned end-of-line
+#define	SC_EOF 8						// function returned end-of-file 
+#define	SC_FILE_NOT_OPEN 9
+#define	SC_FILE_SIZE_EXCEEDED 10
+#define	SC_NO_SUCH_DEVICE 11
+#define	SC_BUFFER_EMPTY 12
+#define	SC_BUFFER_FULL_FATAL 13 
+#define	SC_BUFFER_FULL_NON_FATAL 14
 
+#define	SC_INVALID_ADDRESS 15			// address not in range
+#define SC_READ_ONLY_ADDRESS 16			// tried to write tot a read-only location
 
 #endif
