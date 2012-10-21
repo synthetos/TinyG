@@ -25,14 +25,19 @@
 #include "kinen_core.h"
 #include "tinyg_tc.h"
 
-// statics and assorted 
-
+// static fucntions 
 static void _controller(void);
-static uint8_t device_array[DEVICE_ADDRESS_MAX];
+static uint8_t _idle_task(void);
 
+// static data
 static struct DeviceSingleton {
-	uint32_t drvconf;			// word for loading TMC262
+	uint8_t rtc_flag;			// true = the timer interrupt fired
+	uint8_t rtc_100ms_count;	// 100ms down counter
+	uint8_t rtc_1sec_count;		// 1 second down counter
+
 } dev;
+
+static uint8_t device_array[DEVICE_ADDRESS_MAX];
 
 
 /****************************************************************************
@@ -45,10 +50,10 @@ int main(void)
 {
 	cli();						// initializations
 	kinen_init();				// do this first
-	device_init();
+	device_init();				// handles all the device inits
 	sei(); 						// enable interrupts
 
-//	device_unit_tests();		// comment out the unit tests for production
+	device_unit_tests();		// uncomment __UNIT_TEST_DEVICE to enable unit tests
 
 	while (true) {				// go to the controller loop and never return
 		_controller();
@@ -71,13 +76,15 @@ static void _controller()
 {
 	DISPATCH(kinen_callback());	// intercept low-level communication events
 	DISPATCH(rtc_callback());	// real-time clock handler
-//	DISPATCH(_dispatch());		// read and execute next command
+	DISPATCH(_idle_task());
 }
 
-/**** Device Functions ****
- * device_init()  - initialize device
- * device_led_on()
- * device_led_off()
+static uint8_t _idle_task()
+{
+	return (SC_NOOP);
+}
+
+/**** Device Init ****
  */
 void device_init(void)
 {
@@ -85,33 +92,94 @@ void device_init(void)
 	DDRC = PORTC_DIR;
 	DDRD = PORTD_DIR;
 
-	// initialize the chip
-	device_led_on();		// put on the red light (Roxanne)
+	rtc_init();
+	led_on();					// put on the red light (Roxanne)
 }
 
-void device_led_on(void) 
+/**** LED Functions ****
+ * led_on()
+ * led_off()
+ * led_toggle()
+ */
+
+void led_on(void) 
 {
 	LED_PORT &= ~(LED_PIN);
 }
 
-void device_led_off(void) 
+void led_off(void) 
 {
 	LED_PORT |= LED_PIN;
 }
 
+void led_toggle(void) 
+{
+	if (LED_PORT && LED_PIN) {
+		led_on();
+	} else {
+		led_off();
+	}
+}
+
 /**** RTC - Real Time Clock Functions ****
  * rtc_init() 	  - initialize RTC timers and data
+ * ISR()		  - RTC interrupt routine 
  * rtc_callback() - run RTC from dispatch loop
+ * rtc_10ms()	  - tasks that run every 10 ms
+ * rtc_100ms()	  - tasks that run every 100 ms
+ * rtc_1sec()	  - tasks that run every 100 ms
  */
 void rtc_init(void)
 {
-	
+	TCCR0A = 0x00;				// normal mode, no compare values
+	TCCR0B = 0x05;				// normal mode, internal clock / 1024 ~= 7800 Hz
+	TCNT0 = (256 - RTC_10MS_COUNT);	// set timer for approx 10 ms overflow
+	TIMSK0 = (1<<TOIE0);		// enable overflow interrupts
+	dev.rtc_100ms_count = 10;
+	dev.rtc_1sec_count = 10;	
+}
+
+ISR(TIMER0_OVF_vect)
+{
+	TCNT0 = (256 - RTC_10MS_COUNT);	// reset timer for approx 10 ms overflow
+	dev.rtc_flag = true;
 }
 
 uint8_t rtc_callback(void)
 {
-	return (SC_NOOP);
+	if (dev.rtc_flag == false) { return (SC_NOOP);}
+	dev.rtc_flag = false;
+
+	rtc_10ms();
+
+	if (--dev.rtc_100ms_count != 0) { return (SC_OK);}
+	dev.rtc_100ms_count = 10;
+	rtc_100ms();
+
+	if (--dev.rtc_1sec_count != 0) { return (SC_OK);}
+	dev.rtc_1sec_count = 10;
+	rtc_1sec();
+
+	return (SC_OK);
 }
+
+void rtc_10ms(void)
+{
+	return;
+}
+
+void rtc_100ms(void)
+{
+	led_toggle();
+	return;
+}
+
+void rtc_1sec(void)
+{
+//	led_toggle();
+	return;
+}
+
 
 /**** PWM - Pulse Width Modulation Functions ****
  * pwm_init() 	  - initialize RTC timers and data

@@ -18,18 +18,13 @@
  * The slave device takes OCB instructions from the motherboard.
  * A bit-banger master SPI is provided to talk to a downstream device
  */
-//#include <ctype.h>
-//#include <stdlib.h>
-//#include <math.h>
-//#include <avr/pgmspace.h>
-
 #include <stdio.h>
 #include <string.h>				// for memset
 #include <avr/interrupt.h>
 
 #include "kinen_core.h"
 #include "kinen_slave_328p.h"
-#include "tinyg_tc.h"				// device file
+#include "tinyg_tc.h"			// device file
 
 static struct KinenSlaveSingleton {
 	uint8_t	phase;				// byte phasing for RX
@@ -62,7 +57,6 @@ void kinen_slave_init(void)
 
 	ki_status = SC_OK;
 	SPDR = ki_status;
-	device_init();				// initialize the device last
 }
 
 /* 

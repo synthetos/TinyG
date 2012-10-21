@@ -21,17 +21,22 @@
 #define __UNIT_TEST_DEVICE	// uncomment to enable unit tests
 
 void device_init(void);
-void device_led_on(void);
-void device_led_off(void);
 void device_reset(void);
 uint8_t device_read_byte(uint8_t addr, uint8_t *data);
 uint8_t device_write_byte(uint8_t addr, uint8_t data);
 
+void led_on(void);
+void led_off(void);
+void led_toggle(void);
+
 void rtc_init(void);
 uint8_t rtc_callback(void);
+void rtc_10ms(void);
+void rtc_100ms(void);
+void rtc_1sec(void);
 
 void pwm_init(void);
-//uint8_t rtc_callback(void);
+//uint8_t pwm_callback(void);
 
 // Device configuration 
 
@@ -56,6 +61,8 @@ void pwm_init(void);
 #define SPI_SS		(1<<PINB2)	// SPI slave select
 
 #define RTC_TIMER	TCNT0		// Real time clock timer
+#define RTC_10MS_COUNT 78		// this gets 8 Mhz.1024 close to 100 Hz.
+#define RTC_TCCRxA	TCCR0A		// map the registers into the selected timer
 
 #define PWM_TIMER	TCNT1		// Pulse width modulation timer
 #define PWM_PORT	PORTB		// PWM channel
