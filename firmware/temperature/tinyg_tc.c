@@ -88,96 +88,88 @@ static uint8_t _idle_task()
  */
 void device_init(void)
 {
-	DDRB = PORTB_DIR;			// initialize all ports for proper IO
+	DDRB = PORTB_DIR;			// initialize all ports for proper IO function
 	DDRC = PORTC_DIR;
 	DDRD = PORTD_DIR;
 
 	rtc_init();
 	pwm_init();
+	adc_init();
 	led_on();					// put on the red light (Roxanne)
 }
 
+/**** ADC - Analog to Digital Converter for thermocouple reader ****/
+/*
+ * adc_init() - initialize ADC. See tinyg_tc.h for settings used
+ */
+void adc_init(void)
+{
+	ADMUX |= ADC_VREF;					// setup ADC Vref
+	ADCSRA = ADC_ENABLE | ADC_PRESCALE;	// Enable ADC (bit 7)
+}
 
-/**** PWM - Pulse Width Modulation Functions ****
- * pwm_init() 	  - initialize RTC timers and data
- * pwm_set_freq() - set PWM channel frequency
- * pwm_set_duty() - set PWM channel duty cycle 
+double adc_read(uint8_t channel)
+{
+	ADMUX = (ADMUX & 0xF0) | (channel & 0x0F);// set the channel
+	ADCSRA |= ADC_START_CONVERSION;
+	while (ADCSRA & (1<<ADSC));			// this takes about 100 uSec
+	return (ADC);
+}
+
+/**** PWM - Pulse Width Modulation Functions ****/
+/*
+ * pwm_init() - initialize RTC timers and data
  *
- *	Setting duty cycle to 0 disables the PWM channel with output low
- *	Setting duty cycle to 100 disables the PWM channel with output high
- *	Setting duty cycle between 0 and 100 enables PWM channel
- *
- *	The frequency must have been set previously
+ * 	Configure timer 2 for extruder heater PWM
+ *	Mode: 8 bit Fast PWM Fast w/OCR2A setting PWM freq (TOP value)
+ *		  and OCR2B setting the duty cycle as a fraction of OCR2A seeting
  */
 void pwm_init(void)
 {
-	// Configure timer 2 for extruder heater PWM
-	// Mode: Fast PWM with TOP=0xFF (8bit) (WGM3:0 = 0101), cycle freq= 976 Hz
-	// Prescaler: 1/64 (250 KHz)
-
-	// set comparator modes: OC2A non-inveted mode, OC2B non-inverted mode
-	TCCR2A = 0b10100000;		// COM2A1, COM2A0, COM2B1, COM2B0
-
-	// set Waveform generation to MODE 7 - Fast PWM w/OCR2A setting PWM freq (TOP)
-	TCCR2A |= 0b00000011;		// WGM21, WGM 20
-	TCCR2B  = 0b00001000;		// WGM 22
-
-	// set clock and prescaler
-	TCCR2B |= 0b00000100;		// CS22, CS21, CS20 - Fclk / 64
-
-	// set TOP
-	OCR2A = 0xFF;				// set PWM frequency (TOP value)
-	OCR2B = 0x09;				// set PWM duty cycle as % of TOP value
-
-	TIMSK1 = 0b00000000; 		// disable PWM interrupts
+	TCCR2A  = 0b10100000;		// OC2A non-inverted mode, OC2B non-inverted mode
+	TCCR2A |= 0b00000011;		// Waveform generation set to MODE 7 - here...
+	TCCR2B  = 0b00001000;		// ...continued here
+	TCCR2B |= PWM_PRESCALE_SET;	// set clock and prescaler
+	TIMSK1  = 0b00000000; 		// disable PWM interrupts
+	OCR2A = 0;					// clear PWM frequency (TOP value)
+	OCR2B = 0;					// clear PWM duty cycle as % of TOP value
 }
+
 /*
-ISR(TIMER1_COMPA_vect)
-{
-	PWM_PORT |= PWM_OUTB;
-}
+ * pwm_set_freq() - set PWM channel frequency
+ *
+ *	Set PWM frequency. At current sttings range is from about 500 Hz to about 6000 Hz  
+ */
 
-ISR(TIMER1_COMPB_vect)
+uint8_t pwm_set_freq(double freq)
 {
-	PWM_PORT &= ~PWM_OUTB;
-}
-*/
-uint8_t pwm_set_freq(uint8_t chan, double freq)
-{
-	
-/*
-	if (chan > PWMS) { return (TG_NO_SUCH_DEVICE);}
-	if (freq > PWM_MAX_FREQ) { return (TG_INPUT_VALUE_TOO_SMALL);}
-	if (freq < PWM_MIN_FREQ) { return (TG_INPUT_VALUE_TOO_LARGE);}
+	double f_test = F_CPU / PWM_PRESCALE / freq;
 
-	// set the period and the prescaler
-	double prescale = F_CPU/65536/freq;	// optimal non-integer prescaler value
-	if (prescale <= 1) { 
-		pwm[chan].timer->PER = F_CPU/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV1_gc;
-	} else if (prescale <= 2) { 
-		pwm[chan].timer->PER = F_CPU/2/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV2_gc;
-	} else if (prescale <= 4) { 
-		pwm[chan].timer->PER = F_CPU/4/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV4_gc;
-	} else if (prescale <= 8) { 
-		pwm[chan].timer->PER = F_CPU/8/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV8_gc;
-	} else { 
-		pwm[chan].timer->PER = F_CPU/64/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV64_gc;
+	if (f_test < PWM_MIN_RES) {
+		OCR2A = PWM_MIN_RES;
+	} else if (f_test >= PWM_MAX_RES) {
+		OCR2A = PWM_MAX_RES;
+	} else {
+		OCR2A = (uint8_t)f_test;
 	}
-*/
 	return (SC_OK);
 }
 
-uint8_t pwm_set_duty(uint8_t chan, double duty)
+/*
+ * pwm_set_duty() - set PWM channel duty cycle 
+ *
+ *	Setting duty cycle between 0 and 100 enables PWM channel
+ *	Setting duty cycle to 0 disables the PWM channel with output low
+ *	Setting duty cycle to 100 disables the PWM channel with output high
+ *
+ *	The frequency must have been set previously
+ */
+
+uint8_t pwm_set_duty(double duty)
 {
 	if (duty < 0)   { return (SC_INPUT_VALUE_TOO_SMALL);}
 	if (duty > 100) { return (SC_INPUT_VALUE_TOO_LARGE);}
-
-//	pwm[chan].timer->CCB = (uint16_t)(pwm[chan].timer->PER - pwm[chan].timer->PER / (duty/100));
+	OCR2B = (uint8_t)OCR2A * (duty / 100);
 	return (SC_OK);
 }
 
@@ -225,19 +217,17 @@ uint8_t rtc_callback(void)
 
 void rtc_10ms(void)
 {
-	led_toggle();
 	return;
 }
 
 void rtc_100ms(void)
 {
-//	led_toggle();
 	return;
 }
 
 void rtc_1sec(void)
 {
-//	led_toggle();
+	led_toggle();
 	return;
 }
 
@@ -311,8 +301,44 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data)
 void device_unit_tests()
 {
 
-// success cases
+// PWM tests
+	
+	pwm_set_freq(50000);
+	pwm_set_freq(10000);
+	pwm_set_freq(5000);
+	pwm_set_freq(2500);
+	pwm_set_freq(1000);
+	pwm_set_freq(500);
+	pwm_set_freq(250);
+	pwm_set_freq(100);
 
+	pwm_set_freq(1000);
+	pwm_set_duty(1000);
+	pwm_set_duty(100);
+	pwm_set_duty(99);
+	pwm_set_duty(75);
+/*
+	pwm_set_duty(50);
+	pwm_set_duty(20);
+	pwm_set_duty(10);
+	pwm_set_duty(5);
+	pwm_set_duty(2);
+	pwm_set_duty(1);
+	pwm_set_duty(0.1);
+
+	pwm_set_freq(5000);
+	pwm_set_duty(1000);
+	pwm_set_duty(100);
+	pwm_set_duty(99);
+	pwm_set_duty(75);
+	pwm_set_duty(50);
+	pwm_set_duty(20);
+	pwm_set_duty(10);
+	pwm_set_duty(5);
+	pwm_set_duty(2);
+	pwm_set_duty(1);
+	pwm_set_duty(0.1);
+*/
 // exception cases
 
 }

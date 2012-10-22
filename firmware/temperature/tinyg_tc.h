@@ -25,9 +25,12 @@ void device_reset(void);
 uint8_t device_read_byte(uint8_t addr, uint8_t *data);
 uint8_t device_write_byte(uint8_t addr, uint8_t data);
 
-void led_on(void);
-void led_off(void);
-void led_toggle(void);
+void adc_init(void);
+double adc_read(uint8_t channel);
+
+void pwm_init(void);
+uint8_t pwm_set_freq(double freq);
+uint8_t pwm_set_duty(double duty);
 
 void rtc_init(void);
 uint8_t rtc_callback(void);
@@ -35,8 +38,10 @@ void rtc_10ms(void);
 void rtc_100ms(void);
 void rtc_1sec(void);
 
-void pwm_init(void);
-//uint8_t pwm_callback(void);
+void led_on(void);
+void led_off(void);
+void led_toggle(void);
+
 
 // Device configuration 
 
@@ -52,7 +57,7 @@ void pwm_init(void);
 #define DEVICE_UUID_3	 0x00	// UUID = 0 means there is no UUID
 
 
-// Device Port Mappings (for atmega328P)
+// Device mappings and constants (for atmega328P)
 
 #define SPI_PORT	PORTB		// on-board SPI peripheral
 #define SPI_SCK		(1<<PINB5)	// SPI clock line
@@ -60,29 +65,39 @@ void pwm_init(void);
 #define SPI_MOSI	(1<<PINB3)	// SPI MOSI line
 #define SPI_SS		(1<<PINB2)	// SPI slave select
 
-#define RTC_TIMER	TCNT0		// Real time clock timer
-#define RTC_10MS_COUNT 78		// this gets 8 Mhz.1024 close to 100 Hz.
-#define RTC_TCCRxA	TCCR0A		// map the registers into the selected timer
-
+#define PWM_PORT	PORTD		// Pulse width modulation port
 #define PWM_TIMER	TCNT2		// Pulse width modulation timer
-#define PWM_PORT	PORTD		// PWM channel
 #define PWM_OUTB	(1<<PIND3)	// 0C2B timer output bit
+#define PWM_F_CPU	F_CPU		// 8 Mhz, nominally (internal RC oscillator)
+#define PWM_PRESCALE 64			// corresponds to TCCR2B |= 0b00000100;
+#define PWM_PRESCALE_SET 4		// 2=8x, 3=32x, 4=64x, 5=128x, 6=256x
+#define PWM_MIN_RES 20			// minimum allowable resolution (20 = 5% duty cycle resolution)
+#define PWM_MAX_RES 255			// maximum supported resolution
+#define PWM_F_MAX	(F_CPU / PWM_PRESCALE / PWM_MIN_RES)
+#define PWM_F_MIN	(F_CPU / PWM_PRESCALE / 256)
 
 #define ADC_PORT	PORTC		// Analog to digital converter channels
-#define ADC_CHAN0 	(1<<ADCL0)	// current set ADC line
+#define ADC_CHANNEL 0b00000000	// ADC channel 0 / single-ended in this application (write to ADMUX)
+#define ADC_VREF	0b01000000	// AVcc external 5v reference (write to ADMUX)
+#define ADC_ENABLE	0b10000000	// write this to ADCSRA to enable the ADC
+#define ADC_START_CONVERSION 0b01000000 // write to ADCSRA to start conversion
+#define ADC_PRESCALE 6			// 6=64x which is ~125KHz at 8Mhz clock
+
+#define RTC_TIMER	TCNT0		// Real time clock timer
+#define RTC_10MS_COUNT 78		// gets 8 Mhz/1024 close to 100 Hz.
+#define RTC_TCCRxA	TCCR0A		// map the registers into the selected timer
 
 #define LED_PORT	PORTD		// LED port
 #define LED_PIN		(1<<PIND2)	// LED indicator
 
-// Atmega328P data direction: 0=input pin, 1=output pin
+// Atmega328P data direction defines: 0=input pin, 1=output pin
 // These defines therefore only specify output pins
 
 #define PORTB_DIR	(SPI_MISO)	// setup for on-board SPI to work
-#define PORTC_DIR	(ADC_CHAN0)	// used for ACD only
+#define PORTC_DIR	(0)			// no out put bits on C
+//#define PORTC_DIR	(ADC_CHAN0)	// used for ACD only
 #define PORTD_DIR	(LED_PIN | PWM_OUTB)
 
-//#define PORTB_DIR	(SPI_MISO | PWM_OUTB | PWM_OUTA)// setup for on-board SPI to work
-//#define PORTB_DIR	(SPI_MISO | PWM_OUTB)	// setup for on-board SPI to work
 
 // Device configiuration and communication registers
 
