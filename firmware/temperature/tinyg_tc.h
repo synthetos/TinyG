@@ -21,9 +21,8 @@
 #define __UNIT_TEST_DEVICE	// uncomment to enable unit tests
 
 void device_init(void);
-void device_reset(void);
-uint8_t device_read_byte(uint8_t addr, uint8_t *data);
-uint8_t device_write_byte(uint8_t addr, uint8_t data);
+
+uint8_t pid_controller(void);
 
 void adc_init(void);
 double adc_read(uint8_t channel);
@@ -42,6 +41,9 @@ void led_on(void);
 void led_off(void);
 void led_toggle(void);
 
+void device_reset(void);
+uint8_t device_read_byte(uint8_t addr, uint8_t *data);
+uint8_t device_write_byte(uint8_t addr, uint8_t data);
 
 // Device configuration 
 
@@ -55,7 +57,6 @@ void led_toggle(void);
 #define DEVICE_UUID_1	 0x00	// UUID = 0 means there is no UUID
 #define DEVICE_UUID_2	 0x00	// UUID = 0 means there is no UUID
 #define DEVICE_UUID_3	 0x00	// UUID = 0 means there is no UUID
-
 
 // Device mappings and constants (for atmega328P)
 
@@ -78,7 +79,7 @@ void led_toggle(void);
 
 #define ADC_PORT	PORTC		// Analog to digital converter channels
 #define ADC_CHANNEL 0b00000000	// ADC channel 0 / single-ended in this application (write to ADMUX)
-#define ADC_VREF	0b01000000	// AVcc external 5v reference (write to ADMUX)
+#define ADC_REFS	0b01000000	// AVcc external 5v reference (write to ADMUX)
 #define ADC_ENABLE	0b10000000	// write this to ADCSRA to enable the ADC
 #define ADC_START_CONVERSION 0b01000000 // write to ADCSRA to start conversion
 #define ADC_PRESCALE 6			// 6=64x which is ~125KHz at 8Mhz clock

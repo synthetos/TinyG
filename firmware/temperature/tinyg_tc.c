@@ -31,6 +31,9 @@ static uint8_t _idle_task(void);
 
 // static data
 static struct DeviceSingleton {
+	double temperature_reading;
+	double temperature_set_point;
+
 	uint8_t rtc_flag;			// true = the timer interrupt fired
 	uint8_t rtc_100ms_count;	// 100ms down counter
 	uint8_t rtc_1sec_count;		// 1 second down counter
@@ -76,12 +79,30 @@ static void _controller()
 {
 	DISPATCH(kinen_callback());	// intercept low-level communication events
 	DISPATCH(rtc_callback());	// real-time clock handler
+	DISPATCH(pid_controller());	// main controller task
 	DISPATCH(_idle_task());
 }
 
-static uint8_t _idle_task()
+static uint8_t _idle_task() { return (SC_NOOP);}
+
+/**** PID Controller Functions *************************/
+/*
+ * pid_controller()
+ */
+
+uint8_t pid_controller()
 {
-	return (SC_NOOP);
+	uint16_t int_temp = adc_read(ADC_CHANNEL);
+
+	dev.temperature_set_point = 500;
+	dev.temperature_reading = (double)int_temp;
+
+	if (dev.temperature_reading > dev.temperature_set_point) {
+		led_on();
+	} else {
+		led_off();
+	}
+	return (SC_OK);
 }
 
 /**** Device Init ****
@@ -104,7 +125,7 @@ void device_init(void)
  */
 void adc_init(void)
 {
-	ADMUX |= ADC_VREF;					// setup ADC Vref
+	ADMUX = ADC_REFS;					// setup ADC Vref
 	ADCSRA = ADC_ENABLE | ADC_PRESCALE;	// Enable ADC (bit 7)
 }
 
@@ -138,20 +159,15 @@ void pwm_init(void)
 /*
  * pwm_set_freq() - set PWM channel frequency
  *
- *	Set PWM frequency. At current sttings range is from about 500 Hz to about 6000 Hz  
+ *	At current settings the range is from about 500 Hz to about 6000 Hz  
  */
 
 uint8_t pwm_set_freq(double freq)
 {
 	double f_test = F_CPU / PWM_PRESCALE / freq;
-
-	if (f_test < PWM_MIN_RES) {
-		OCR2A = PWM_MIN_RES;
-	} else if (f_test >= PWM_MAX_RES) {
-		OCR2A = PWM_MAX_RES;
-	} else {
-		OCR2A = (uint8_t)f_test;
-	}
+	if (f_test < PWM_MIN_RES) { OCR2A = PWM_MIN_RES;} 
+	else if (f_test >= PWM_MAX_RES) { OCR2A = PWM_MAX_RES;} 
+	else { OCR2A = (uint8_t)f_test;}
 	return (SC_OK);
 }
 
@@ -227,7 +243,7 @@ void rtc_100ms(void)
 
 void rtc_1sec(void)
 {
-	led_toggle();
+//	led_toggle();
 	return;
 }
 
