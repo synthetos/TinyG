@@ -18,7 +18,7 @@
 
 // Device function prototypes
 
-#define __UNIT_TEST_DEVICE	// uncomment to enable unit tests
+//#define __UNIT_TEST_DEVICE	// uncomment to enable unit tests
 
 void device_init(void);
 
@@ -78,10 +78,10 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data);
 #define PWM_F_MIN	(F_CPU / PWM_PRESCALE / 256)
 
 #define ADC_PORT	PORTC		// Analog to digital converter channels
-#define ADC_CHANNEL 0b00000000	// ADC channel 0 / single-ended in this application (write to ADMUX)
+#define ADC_CHANNEL 0			// ADC channel 0 / single-ended in this application (write to ADMUX)
 #define ADC_REFS	0b01000000	// AVcc external 5v reference (write to ADMUX)
-#define ADC_ENABLE	0b10000000	// write this to ADCSRA to enable the ADC
-#define ADC_START_CONVERSION 0b01000000 // write to ADCSRA to start conversion
+#define ADC_ENABLE	(1<<ADEN)	// write this to ADCSRA to enable the ADC
+#define ADC_START_CONVERSION (1<<ADSC) // write to ADCSRA to start conversion
 #define ADC_PRESCALE 6			// 6=64x which is ~125KHz at 8Mhz clock
 
 #define RTC_TIMER	TCNT0		// Real time clock timer

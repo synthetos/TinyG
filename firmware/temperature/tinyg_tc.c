@@ -27,7 +27,6 @@
 
 // static functions 
 static void _controller(void);
-static uint8_t _idle_task(void);
 
 // static data
 static struct DeviceSingleton {
@@ -51,12 +50,50 @@ static uint8_t device_array[DEVICE_ADDRESS_MAX];
  */
 int main(void)
 {
-	cli();						// initializations
-	kinen_init();				// do this first
+/*
+	ADCSRA |= (ADC_ENABLE | ADC_PRESCALE);	// Enable ADC (bit 7) & set prescaler
+//	ADCSRA |= ((1<<ADEN) | 6);	// Enable ADC (bit 7) & set prescaler
+	ADCSRA |= (1 << ADATE); 
+	ADCSRB |= 0;							// free running mode
+	ADMUX |= (ADC_REFS | ADC_CHANNEL);		// setup ADC Vref and channel 0
+*/
+/*
+	ADCSRA = (1 << ADPS2) | (1 << ADPS1); // Set ADC prescalar to 64 - 125KHz sample rate @ 8MHz 
+	ADMUX |= (1 << REFS0); // Set ADC reference to AVCC 
+//	ADMUX |= (1 << ADLAR); // Left adjust ADC result to allow easy 8 bit reading 
+
+   // No MUX values needed to be changed to use ADC0 
+	ADCSRA |= (1 << ADATE);  // Set ADC to Free-Running Mode 
+	ADCSRA |= (1 << ADEN);  // Enable ADC 
+	ADCSRA |= (1 << ADSC);  // Start A2D Conversions 
+
+	DDRD = PORTD_DIR;
+*/
+/*
+	while (true) {
+		if(ADC < 512) {
+			led_off();
+		} else {
+			led_on();
+		}
+	}
+*/
+/*
+	while (true) { 
+		if(ADCH < 128) {
+			led_off();
+		} else {
+			led_on();
+		}
+	}
+*/
+
+ 	cli();						// initializations
+//	kinen_init();				// do this first
 	device_init();				// handles all the device inits
 	sei(); 						// enable interrupts
 
-	device_unit_tests();		// uncomment __UNIT_TEST_DEVICE to enable unit tests
+	DEVICE_UNITS;				// uncomment __UNIT_TEST_DEVICE to enable unit tests
 
 	while (true) {				// go to the controller loop and never return
 		_controller();
@@ -80,10 +117,7 @@ static void _controller()
 	DISPATCH(kinen_callback());	// intercept low-level communication events
 	DISPATCH(rtc_callback());	// real-time clock handler
 	DISPATCH(pid_controller());	// main controller task
-	DISPATCH(_idle_task());
 }
-
-static uint8_t _idle_task() { return (SC_NOOP);}
 
 /**** PID Controller Functions *************************/
 /*
@@ -92,10 +126,13 @@ static uint8_t _idle_task() { return (SC_NOOP);}
 
 uint8_t pid_controller()
 {
-	uint16_t int_temp = adc_read(ADC_CHANNEL);
+//	uint16_t adc_value = adc_read(ADC_CHANNEL);
 
-	dev.temperature_set_point = 500;
-	dev.temperature_reading = (double)int_temp;
+	dev.temperature_set_point = 512;
+	dev.temperature_reading = (double)adc_read(ADC_CHANNEL);
+//	dev.temperature_reading = (double)adc_value;
+
+//	pwm_set_duty(adc_value/11);
 
 	if (dev.temperature_reading > dev.temperature_set_point) {
 		led_on();
@@ -125,17 +162,30 @@ void device_init(void)
  */
 void adc_init(void)
 {
-	ADMUX = ADC_REFS | ADC_CHANNEL;		// setup ADC Vref and channel 0
-	ADCSRA = ADC_ENABLE | ADC_PRESCALE;	// Enable ADC (bit 7) & set prescaler
-	ADCSRB = 0;							// just being careful
+/*
+	ADCSRA |= (1 << ADPS2) | (1 << ADPS1); // Set ADC prescalar to 64 - 125KHz sample rate @ 8MHz 
+	ADMUX |= (1 << REFS0); // Set ADC reference to AVCC 
+	ADMUX |= (1 << ADLAR); // Left adjust ADC result to allow easy 8 bit reading 
+
+   // No MUX values needed to be changed to use ADC0 
+	ADCSRA |= (1 << ADATE);  // Set ADC to Free-Running Mode 
+	ADCSRA |= (1 << ADEN);  // Enable ADC 
+	ADCSRA |= (1 << ADSC);  // Start A2D Conversions 
+*/
+
+	ADCSRA |= (ADC_ENABLE | ADC_PRESCALE);	// Enable ADC (bit 7) & set prescaler
+//	ADCSRA |= ((1<<ADEN) | 6);	// Enable ADC (bit 7) & set prescaler
+	ADCSRA |= (1 << ADATE); 
+	ADCSRB |= 0;							// free running mode
+	ADMUX |= (ADC_REFS | ADC_CHANNEL);		// setup ADC Vref and channel 0
 }
 
 double adc_read(uint8_t channel)
 {
-	ADMUX = (ADMUX & 0xF0) | (channel & 0x0F);// set the channel
-	ADCSRA |= ADC_START_CONVERSION;
-	while (ADCSRA & (1<<ADSC));			// this takes about 100 uSec
-	return ((double)ADCW);
+	ADMUX |= ((ADMUX & 0xF0) | (channel & 0x0F));// set the channel
+	ADCSRA |= (ADC_START_CONVERSION);
+//	while ((ADCSRA && ADC_START_CONVERSION) == true);// this takes about 100 uSec
+	return ((double)ADC);
 }
 
 /**** PWM - Pulse Width Modulation Functions ****/
@@ -186,7 +236,7 @@ uint8_t pwm_set_duty(double duty)
 {
 	if (duty < 0)   { return (SC_INPUT_VALUE_TOO_SMALL);}
 	if (duty > 100) { return (SC_INPUT_VALUE_TOO_LARGE);}
-	OCR2B = (uint8_t)OCR2A * (duty / 100);
+	OCR2B = (uint8_t)((OCR2A * (duty / 100))-1);
 	return (SC_OK);
 }
 

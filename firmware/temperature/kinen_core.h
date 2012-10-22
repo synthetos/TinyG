@@ -18,6 +18,10 @@
 #ifndef kinen_h
 #define kinen_h
 
+#ifndef F_CPU
+#define F_CPU 8000000
+#endif
+
 // function prototypes
 
 void kinen_init(void);
@@ -33,7 +37,6 @@ uint8_t kinen_callback(void);
 
 #define KINEN_READ 0		// Command register values
 #define KINEN_WRITE 1
-
 
 enum KINENCommon {  		// all are read-only except as noted
 	KINEN_COMMAND = 0,	// writable
