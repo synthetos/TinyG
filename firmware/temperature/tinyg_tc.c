@@ -125,9 +125,9 @@ void device_init(void)
  */
 void adc_init(void)
 {
-	ADMUX |= (1<<REFS0);
-	ADMUX = ADC_REFS;					// setup ADC Vref
-	ADCSRA = ADC_ENABLE | ADC_PRESCALE;	// Enable ADC (bit 7)
+	ADMUX = ADC_REFS | ADC_CHANNEL;		// setup ADC Vref and channel 0
+	ADCSRA = ADC_ENABLE | ADC_PRESCALE;	// Enable ADC (bit 7) & set prescaler
+	ADCSRB = 0;							// just being careful
 }
 
 double adc_read(uint8_t channel)
@@ -135,7 +135,7 @@ double adc_read(uint8_t channel)
 	ADMUX = (ADMUX & 0xF0) | (channel & 0x0F);// set the channel
 	ADCSRA |= ADC_START_CONVERSION;
 	while (ADCSRA & (1<<ADSC));			// this takes about 100 uSec
-	return (ADC);
+	return ((double)ADCW);
 }
 
 /**** PWM - Pulse Width Modulation Functions ****/
