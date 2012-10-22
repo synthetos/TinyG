@@ -125,6 +125,7 @@ void device_init(void)
  */
 void adc_init(void)
 {
+	ADMUX |= (1<<REFS0);
 	ADMUX = ADC_REFS;					// setup ADC Vref
 	ADCSRA = ADC_ENABLE | ADC_PRESCALE;	// Enable ADC (bit 7)
 }
