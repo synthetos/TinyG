@@ -150,7 +150,8 @@ double adc_read(uint8_t channel)
  */
 void pwm_init(void)
 {
-	TCCR2A  = PWM_INVERTED;		// set inverted or non-inverted mode
+//	TCCR2A  = PWM_NON_INVERTED;
+	TCCR2A  = PWM_INVERTED;
 	TCCR2A |= 0b00000011;		// Waveform generation set to MODE 7 - here...
 	TCCR2B  = 0b00001000;		// ...continued here
 	TCCR2B |= PWM_PRESCALE_SET;	// set clock and prescaler
@@ -191,10 +192,22 @@ uint8_t pwm_set_freq(double freq)
 
 uint8_t pwm_set_duty(double duty)
 {
-	if (duty <= 0)   { 
-		OCR2A = 255;				// shut down the PWM timer
+	if (duty <= 0) { 
 		OCR2B = 0;
-		PWM_PORT |= PWM_OUTB;
+	} else if (duty > 100) { 
+		OCR2B = 255;
+	} else {
+		OCR2B = (uint8_t)(OCR2A * (duty/100));
+	}
+	OCR2A = (uint8_t)dev.pwm_freq;
+	return (SC_OK);
+
+/*
+
+	if (duty <= 0)   { 
+//		OCR2A = 255;				// shut down the PWM timer
+		OCR2B = 0;
+//		PWM_PORT |= PWM_OUTB;
 		return (SC_INPUT_VALUE_TOO_SMALL);
 	}
 	if (duty > 100) { 
@@ -204,6 +217,7 @@ uint8_t pwm_set_duty(double duty)
 	OCR2A = (uint8_t)dev.pwm_freq;
 	OCR2B = (uint8_t)(OCR2A * (duty/100));
 	return (SC_OK);
+*/
 }
 
 /**** RTC - Real Time Clock Functions ****
