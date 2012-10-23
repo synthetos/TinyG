@@ -50,46 +50,8 @@ static uint8_t device_array[DEVICE_ADDRESS_MAX];
  */
 int main(void)
 {
-/*
-	ADCSRA |= (ADC_ENABLE | ADC_PRESCALE);	// Enable ADC (bit 7) & set prescaler
-//	ADCSRA |= ((1<<ADEN) | 6);	// Enable ADC (bit 7) & set prescaler
-	ADCSRA |= (1 << ADATE); 
-	ADCSRB |= 0;							// free running mode
-	ADMUX |= (ADC_REFS | ADC_CHANNEL);		// setup ADC Vref and channel 0
-*/
-/*
-	ADCSRA = (1 << ADPS2) | (1 << ADPS1); // Set ADC prescalar to 64 - 125KHz sample rate @ 8MHz 
-	ADMUX |= (1 << REFS0); // Set ADC reference to AVCC 
-//	ADMUX |= (1 << ADLAR); // Left adjust ADC result to allow easy 8 bit reading 
-
-   // No MUX values needed to be changed to use ADC0 
-	ADCSRA |= (1 << ADATE);  // Set ADC to Free-Running Mode 
-	ADCSRA |= (1 << ADEN);  // Enable ADC 
-	ADCSRA |= (1 << ADSC);  // Start A2D Conversions 
-
-	DDRD = PORTD_DIR;
-*/
-/*
-	while (true) {
-		if(ADC < 512) {
-			led_off();
-		} else {
-			led_on();
-		}
-	}
-*/
-/*
-	while (true) { 
-		if(ADCH < 128) {
-			led_off();
-		} else {
-			led_on();
-		}
-	}
-*/
-
- 	cli();						// initializations
-//	kinen_init();				// do this first
+	cli();						// initializations
+	kinen_init();				// do this first
 	device_init();				// handles all the device inits
 	sei(); 						// enable interrupts
 
@@ -126,13 +88,8 @@ static void _controller()
 
 uint8_t pid_controller()
 {
-//	uint16_t adc_value = adc_read(ADC_CHANNEL);
-
 	dev.temperature_set_point = 512;
 	dev.temperature_reading = (double)adc_read(ADC_CHANNEL);
-//	dev.temperature_reading = (double)adc_value;
-
-//	pwm_set_duty(adc_value/11);
 
 	if (dev.temperature_reading > dev.temperature_set_point) {
 		led_on();
@@ -162,29 +119,18 @@ void device_init(void)
  */
 void adc_init(void)
 {
-/*
-	ADCSRA |= (1 << ADPS2) | (1 << ADPS1); // Set ADC prescalar to 64 - 125KHz sample rate @ 8MHz 
-	ADMUX |= (1 << REFS0); // Set ADC reference to AVCC 
-	ADMUX |= (1 << ADLAR); // Left adjust ADC result to allow easy 8 bit reading 
-
-   // No MUX values needed to be changed to use ADC0 
-	ADCSRA |= (1 << ADATE);  // Set ADC to Free-Running Mode 
-	ADCSRA |= (1 << ADEN);  // Enable ADC 
-	ADCSRA |= (1 << ADSC);  // Start A2D Conversions 
-*/
-
-	ADCSRA |= (ADC_ENABLE | ADC_PRESCALE);	// Enable ADC (bit 7) & set prescaler
-//	ADCSRA |= ((1<<ADEN) | 6);	// Enable ADC (bit 7) & set prescaler
-	ADCSRA |= (1 << ADATE); 
-	ADCSRB |= 0;							// free running mode
-	ADMUX |= (ADC_REFS | ADC_CHANNEL);		// setup ADC Vref and channel 0
+	ADMUX  = (ADC_REFS | ADC_CHANNEL);	 // setup ADC Vref and channel 0
+	ADCSRA = (ADC_ENABLE | ADC_PRESCALE);// Enable ADC (bit 7) & set prescaler
 }
 
 double adc_read(uint8_t channel)
 {
-	ADMUX |= ((ADMUX & 0xF0) | (channel & 0x0F));// set the channel
-	ADCSRA |= (ADC_START_CONVERSION);
-//	while ((ADCSRA && ADC_START_CONVERSION) == true);// this takes about 100 uSec
+	ADMUX &= 0xF0;						// clobber the channel
+	ADMUX |= 0x0F & channel;			// set the channel
+
+	ADCSRA |= ADC_START_CONVERSION;		// start the conversion
+	while (ADCSRA && (1<<ADIF) == 0);	// wait about 100 uSec
+	ADCSRA |= (1<<ADIF);				// clear the conversion flag
 	return ((double)ADC);
 }
 

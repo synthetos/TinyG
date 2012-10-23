@@ -39,7 +39,8 @@ static uint8_t _slave_write_byte(const uint8_t addr, const uint8_t data);
  */
 void kinen_slave_init(void)
 {
-	PRR |= 0x07;
+
+//	PRR |= 0x07;				// don't screw with the power reduction register
 	DDRB &= ~(1<<DDB4);			// Set MISO output, all others unaffected
 	SPCR = (1<<SPIE | 1<<SPE);	// Enable SPI and its interrupt, set MSB first, slave mode
 	SPCR = (1<<CPOL | 1<<CPHA);	// Uncomment for mode 3 operation, comment for mode 0
