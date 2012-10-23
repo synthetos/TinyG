@@ -33,6 +33,8 @@ static struct DeviceSingleton {
 	double temperature_reading;
 	double temperature_set_point;
 
+	double pwm_freq;			// save it for stopping and starting PWM
+
 	uint8_t rtc_flag;			// true = the timer interrupt fired
 	uint8_t rtc_100ms_count;	// 100ms down counter
 	uint8_t rtc_1sec_count;		// 1 second down counter
@@ -91,6 +93,8 @@ uint8_t pid_controller()
 	dev.temperature_set_point = 512;
 	dev.temperature_reading = (double)adc_read(ADC_CHANNEL);
 
+	pwm_set_duty(dev.temperature_reading / 10.1);
+
 	if (dev.temperature_reading > dev.temperature_set_point) {
 		led_on();
 	} else {
@@ -111,6 +115,8 @@ void device_init(void)
 	pwm_init();
 	adc_init();
 	led_on();					// put on the red light (Roxanne)
+
+	pwm_set_freq(PWM_FREQUENCY);
 }
 
 /**** ADC - Analog to Digital Converter for thermocouple reader ****/
@@ -144,13 +150,14 @@ double adc_read(uint8_t channel)
  */
 void pwm_init(void)
 {
-	TCCR2A  = 0b10100000;		// OC2A non-inverted mode, OC2B non-inverted mode
+	TCCR2A  = PWM_INVERTED;		// set inverted or non-inverted mode
 	TCCR2A |= 0b00000011;		// Waveform generation set to MODE 7 - here...
 	TCCR2B  = 0b00001000;		// ...continued here
 	TCCR2B |= PWM_PRESCALE_SET;	// set clock and prescaler
-	TIMSK1  = 0b00000000; 		// disable PWM interrupts
+	TIMSK1 = 0; 				// disable PWM interrupts
 	OCR2A = 0;					// clear PWM frequency (TOP value)
 	OCR2B = 0;					// clear PWM duty cycle as % of TOP value
+	dev.pwm_freq = 0;
 }
 
 /*
@@ -161,10 +168,14 @@ void pwm_init(void)
 
 uint8_t pwm_set_freq(double freq)
 {
-	double f_test = F_CPU / PWM_PRESCALE / freq;
-	if (f_test < PWM_MIN_RES) { OCR2A = PWM_MIN_RES;} 
-	else if (f_test >= PWM_MAX_RES) { OCR2A = PWM_MAX_RES;} 
-	else { OCR2A = (uint8_t)f_test;}
+	dev.pwm_freq = F_CPU / PWM_PRESCALE / freq;
+	if (dev.pwm_freq < PWM_MIN_RES) { 
+		OCR2A = PWM_MIN_RES;
+	} else if (dev.pwm_freq >= PWM_MAX_RES) { 
+		OCR2A = PWM_MAX_RES;
+	} else { 
+		OCR2A = (uint8_t)dev.pwm_freq;
+	}
 	return (SC_OK);
 }
 
@@ -180,9 +191,18 @@ uint8_t pwm_set_freq(double freq)
 
 uint8_t pwm_set_duty(double duty)
 {
-	if (duty < 0)   { return (SC_INPUT_VALUE_TOO_SMALL);}
-	if (duty > 100) { return (SC_INPUT_VALUE_TOO_LARGE);}
-	OCR2B = (uint8_t)((OCR2A * (duty / 100))-1);
+	if (duty <= 0)   { 
+		OCR2A = 255;				// shut down the PWM timer
+		OCR2B = 0;
+		PWM_PORT |= PWM_OUTB;
+		return (SC_INPUT_VALUE_TOO_SMALL);
+	}
+	if (duty > 100) { 
+		OCR2B = 255;
+		return (SC_INPUT_VALUE_TOO_LARGE);
+	}
+	OCR2A = (uint8_t)dev.pwm_freq;
+	OCR2B = (uint8_t)(OCR2A * (duty/100));
 	return (SC_OK);
 }
 

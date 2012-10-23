@@ -67,8 +67,8 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data);
 #define SPI_SS		(1<<PINB2)	// SPI slave select
 
 #define PWM_PORT	PORTD		// Pulse width modulation port
-#define PWM_TIMER	TCNT2		// Pulse width modulation timer
 #define PWM_OUTB	(1<<PIND3)	// 0C2B timer output bit
+#define PWM_TIMER	TCNT2		// Pulse width modulation timer
 #define PWM_F_CPU	F_CPU		// 8 Mhz, nominally (internal RC oscillator)
 #define PWM_PRESCALE 64			// corresponds to TCCR2B |= 0b00000100;
 #define PWM_PRESCALE_SET 4		// 2=8x, 3=32x, 4=64x, 5=128x, 6=256x
@@ -76,6 +76,9 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data);
 #define PWM_MAX_RES 255			// maximum supported resolution
 #define PWM_F_MAX	(F_CPU / PWM_PRESCALE / PWM_MIN_RES)
 #define PWM_F_MIN	(F_CPU / PWM_PRESCALE / 256)
+#define PWM_FREQUENCY 1000		// set PWM operating frequency
+#define PWM_NON_INVERTED 0xC0	// OC2A non-inverted mode, OC2B non-inverted mode
+#define PWM_INVERTED 0xF0		// OC2A inverted mode, OC2B inverted mode
 
 #define ADC_PORT	PORTC		// Analog to digital converter channels
 #define ADC_CHANNEL 0			// ADC channel 0 / single-ended in this application (write to ADMUX)
@@ -95,10 +98,8 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data);
 // These defines therefore only specify output pins
 
 #define PORTB_DIR	(SPI_MISO)	// setup for on-board SPI to work
-#define PORTC_DIR	(0)			// no out put bits on C
-//#define PORTC_DIR	(ADC_CHAN0)	// used for ACD only
-#define PORTD_DIR	(LED_PIN | PWM_OUTB)
-
+#define PORTC_DIR	(0)			// no output bits on C
+#define PORTD_DIR	(LED_PIN | PWM_OUTB) // LED and PWM out
 
 // Device configiuration and communication registers
 
