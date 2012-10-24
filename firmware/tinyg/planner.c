@@ -592,6 +592,10 @@ static uint8_t _exec_line(mpBuf *bf)
  *
  * 	Note: All math is done in absolute coordinates using "double precision" 
  *	floating point (even though AVRgcc does this as single precision)
+ *
+ *	Note: returning a status that is not TG_OK means the endpoint is NOT
+ *	advanced. So lines that rae too short to move will accumulate and get 
+ *	executed once the accumlated error exceeds the minimums 
  */
 
 uint8_t mp_aline(const double target[], const double minutes)
@@ -599,17 +603,16 @@ uint8_t mp_aline(const double target[], const double minutes)
 	mpBuf *bf; 						// current move pointer
 	double exact_stop = 0;
 	double junction_velocity;
-	double length = get_axis_vector_length(target, mm.position);
-	uint8_t mr_flag = false;
 
 	// trap error conditions
 	if (minutes < EPSILON) { return (TG_ZERO_LENGTH_MOVE);}
+
+	double length = get_axis_vector_length(target, mm.position);
 	if (length < EPSILON) { return (TG_ZERO_LENGTH_MOVE);}
 
 	// get a cleared buffer and setup move variables
-	if ((bf = _get_write_buffer()) == NULL) {	// get buffer or die trying
-		return (TG_BUFFER_FULL_FATAL);			// (not supposed to fail)
-	}
+	if ((bf = _get_write_buffer()) == NULL) { return (TG_BUFFER_FULL_FATAL);} // never supposed to fail
+
 	bf->linenum = cm_get_model_linenum();		// block being planned
 	bf->time = minutes;
 	bf->length = length;
@@ -638,6 +641,7 @@ uint8_t mp_aline(const double target[], const double minutes)
 	bf->exit_vmax = min3(bf->cruise_vmax, (bf->entry_vmax + bf->delta_vmax), exact_stop);
 	bf->braking_velocity = bf->delta_vmax;
 
+	uint8_t mr_flag = false;
 	_plan_block_list(bf, &mr_flag);	// replan the block list and commit the current block
 	copy_axis_vector(mm.position, bf->target);	// update planning position
 	_queue_write_buffer(MOVE_TYPE_ALINE);
