@@ -126,7 +126,6 @@ struct mpBufferPool {			// ring buffer for sub-moves
 };
 
 struct mpMoveMasterSingleton {	// common variables for planning (move master)
-	uint32_t linenum;			// runtime line/block number of BF being planned
 	uint32_t lineindex;			// runtime line index of BF being planned
 	double position[AXES];		// final move position for planning purposes
 #ifdef __UNIT_TEST_PLANNER
@@ -611,9 +610,7 @@ uint8_t mp_aline(const double target[], const double minutes)
 	if ((bf = _get_write_buffer()) == NULL) {	// get buffer or die trying
 		return (TG_BUFFER_FULL_FATAL);			// (not supposed to fail)
 	}
-	mm.linenum = cm_get_model_linenum();		// block being planned
-	bf->linenum = mm.linenum;
-
+	bf->linenum = cm_get_model_linenum();		// block being planned
 	bf->time = minutes;
 	bf->length = length;
 	copy_axis_vector(bf->target, target); 		// set target for runtime
@@ -628,7 +625,6 @@ uint8_t mp_aline(const double target[], const double minutes)
 					square(bf->unit[C] * cfg.a[C].jerk_max));
 	bf->recip_jerk = 1/bf->jerk;				// used by planning
 	bf->cubert_jerk = cubert(bf->jerk);			// used by planning
-//	bf->cubert_jerk = pow(bf->jerk, 0.333333);	// used by planning
 
 	// finish up the current block variables
 	if (cm_get_path_control() != PATH_EXACT_STOP) { // exact stop cases already zeroed
@@ -645,7 +641,6 @@ uint8_t mp_aline(const double target[], const double minutes)
 	_plan_block_list(bf, &mr_flag);	// replan the block list and commit the current block
 	copy_axis_vector(mm.position, bf->target);	// update planning position
 	_queue_write_buffer(MOVE_TYPE_ALINE);
-	mm.linenum = 0;								// indicates no block being planned
 	return (TG_OK);
 }
 
@@ -1638,8 +1633,8 @@ static mpBuf * _get_write_buffer() 				// get & clear a buffer
 		w->nx = nx;								// restore pointers
 		w->pv = pv;
 		w->buffer_state = MP_BUFFER_LOADING;
+		w->lineindex = (++mm.lineindex);		// increment line index and store in buffer
 		mb.w = w->nx;
-		mb.w->lineindex = ++mm.lineindex;		// increment line index and store in buffer
 		mb.buffers_available--;
 		return (w);
 	}
