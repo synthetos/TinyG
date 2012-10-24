@@ -90,7 +90,7 @@ uint8_t cm_get_distance_mode() { return gm.distance_mode;}
 uint8_t cm_get_inverse_feed_rate_mode() { return gm.inverse_feed_rate_mode;}
 uint8_t cm_get_spindle_mode() { return gm.spindle_mode;} 
 uint32_t cm_get_model_linenum() { return gm.linenum;}
-uint32_t cm_get_model_lineindex() { return gm.lineindex;}
+//uint32_t cm_get_model_lineindex() { return gm.lineindex;}
 uint8_t cm_isbusy() { return (mp_isbusy());}
 
 // set parameters in gm struct
@@ -227,7 +227,7 @@ void cm_set_model_linenum(uint32_t linenum)
 		gm.linenum++;			// autoincrement if no line number
 	}
 }
-
+/*
 void cm_set_model_lineindex(uint32_t lineindex)
 {
 	gm.lineindex = lineindex;
@@ -237,6 +237,7 @@ void cm_incr_model_lineindex()
 {
 	gm.lineindex++;
 }
+*/
 
 /* 
  * cm_set_target() - set target vector in GM model

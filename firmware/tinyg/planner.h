@@ -127,6 +127,7 @@ double mp_get_runtime_position(uint8_t axis);
 double mp_get_runtime_velocity(void);
 double mp_get_runtime_linenum(void);
 double mp_get_runtime_lineindex(void);
+void mp_set_planner_lineindex(uint32_t lineindex);
 void mp_zero_segment_velocity(void);
 
 uint8_t mp_exec_move(void);

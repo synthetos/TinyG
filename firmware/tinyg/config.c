@@ -623,7 +623,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 
 	// gcode model attributes for reporting puropses
 	{ str_line,_print_int, _get_line,_set_int, (double *)&gm.linenum, 0 }, // line number - gets runtime line number
-	{ str_lix, _print_int, _get_lix, _set_int, (double *)&gm.lineindex,0 },// line index - gets runtime line index
+	{ str_lix, _print_int, _get_lix, _set_nul, (double *)&tg.null ,0 },	// line index - gets runtime line index
 	{ str_feed,_print_lin, _get_dbu, _set_nul, (double *)&tg.null, 0 },	// feed rate
 	{ str_stat,_print_str, _get_stat,_set_nul, (double *)&tg.null, 0 },	// combined machine state
 	{ str_macs,_print_str, _get_macs,_set_nul, (double *)&tg.null, 0 },	// raw machine state

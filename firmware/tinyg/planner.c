@@ -213,11 +213,11 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag);
 
 // planning buffer routines
 static void _init_buffers(void);
-static void _unget_write_buffer(void);
 static void _clear_buffer(mpBuf *bf); 
 static void _copy_buffer(mpBuf *bf, const mpBuf *bp);
 static void _queue_write_buffer(const uint8_t move_type);
 static void _free_run_buffer(void);
+//static void _unget_write_buffer(void);
 static mpBuf * _get_write_buffer(void); 
 static mpBuf * _get_run_buffer(void);
 static mpBuf * _get_first_buffer(void);
@@ -292,6 +292,7 @@ void mp_flush_planner()
  * mp_get_runtime_velocity()	- returns current velocity (aggregate)
  * mp_get_runtime_linenum()		- returns currently executing line number
  * mp_get_runtime_lineindex()	- returns currently executing line index
+ * mp_set_planner_lineindex()	- set line index in MM struct
  *
  * 	Keeping track of position is complicated by the fact that moves can
  *	require multiple reference frames. The scheme to keep this straight is:
@@ -334,6 +335,11 @@ double mp_get_runtime_position(uint8_t axis) { return (mr.position[axis]);}
 double mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 double mp_get_runtime_linenum(void) { return (mr.linenum);}
 double mp_get_runtime_lineindex(void) { return (mr.lineindex);}
+
+void mp_set_planner_lineindex(uint32_t lineindex)
+{
+	mm.lineindex = lineindex;
+}
 
 /*************************************************************************/
 /* mp_exec_move() - execute runtime functions to prep move for steppers
@@ -539,20 +545,15 @@ static uint8_t _exec_dwell(mpBuf *bf)	// NEW
 uint8_t mp_line(const double target[], const double minutes)
 {
 	mpBuf *bf;
+	double length = get_axis_vector_length(target, mr.position);
 
-	if (minutes < EPSILON) {
-		return (TG_ZERO_LENGTH_MOVE);
-	}
-	if ((bf = _get_write_buffer()) == NULL) {	// get write buffer or fail
-		return (TG_BUFFER_FULL_FATAL);			// (not supposed to fail)
-	}
+	if (minutes < EPSILON) { return (TG_ZERO_LENGTH_MOVE);}
+	if (length < EPSILON) { return (TG_ZERO_LENGTH_MOVE);}
+	if ((bf = _get_write_buffer()) == NULL) { return (TG_BUFFER_FULL_FATAL);} // never supposed to fail
+
 	bf->time = minutes;
+	bf->length = length;
 	copy_axis_vector(bf->target, target);		// target to bf_target
-	bf->length = get_axis_vector_length(target, mr.position);
-	if (bf->length < EPSILON) {
-		_unget_write_buffer();					// free buffer if early exit
-		return (TG_ZERO_LENGTH_MOVE);
-	}
 	bf->cruise_vmax = bf->length / bf->time;	// for yuks
 	_queue_write_buffer(MOVE_TYPE_LINE);
 	copy_axis_vector(mm.position, bf->target);	// update planning position
@@ -610,10 +611,8 @@ uint8_t mp_aline(const double target[], const double minutes)
 	if ((bf = _get_write_buffer()) == NULL) {	// get buffer or die trying
 		return (TG_BUFFER_FULL_FATAL);			// (not supposed to fail)
 	}
-	bf->linenum = cm_get_model_linenum();
-	bf->lineindex = cm_get_model_lineindex();
-	mm.linenum = bf->linenum;					// block being planned
-	mm.lineindex = bf->lineindex;				// block being planned
+	mm.linenum = cm_get_model_linenum();		// block being planned
+	bf->linenum = mm.linenum;
 
 	bf->time = minutes;
 	bf->length = length;
@@ -1640,19 +1639,20 @@ static mpBuf * _get_write_buffer() 				// get & clear a buffer
 		w->pv = pv;
 		w->buffer_state = MP_BUFFER_LOADING;
 		mb.w = w->nx;
+		mb.w->lineindex = ++mm.lineindex;		// increment line index and store in buffer
 		mb.buffers_available--;
 		return (w);
 	}
 	return (NULL);
 }
-
+/* NOT USED
 static void _unget_write_buffer()
 {
 	mb.w = mb.w->pv;							// queued --> write
 	mb.w->buffer_state = MP_BUFFER_EMPTY; 		// not loading anymore
 	mb.buffers_available++;
 }
-
+*/
 static void _queue_write_buffer(const uint8_t move_type)
 {
 	mb.q->move_type = move_type;

@@ -76,7 +76,7 @@ struct GCodeModel {						// Gcode model- meaning depends on context
 										// G82, G83 G84, G85, G86, G87, G88, G89 
 	uint8_t program_flow;				// currently vestigal - captured, but not uses
 	uint32_t linenum;					// N word or autoincrement in the model
-	uint32_t lineindex;					// autoincremented line index
+//	uint32_t lineindex;					// autoincremented line index
 
 	double target[AXES]; 				// XYZABC where the move should go
 	double position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
