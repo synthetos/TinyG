@@ -43,6 +43,33 @@ static struct DeviceSingleton {
 
 static uint8_t device_array[DEVICE_ADDRESS_MAX];
 
+// FROM MightyBoardFirmware:
+// Number of bad sensor readings we need to get in a row before shutting off the heater
+const uint8_t SENSOR_MAX_BAD_READINGS = 15;
+
+// Number of temp readings to be at target value before triggering newTargetReached
+// with bad seating of thermocouples, we sometimes get innacurate reads
+const uint16_t TARGET_CHECK_COUNT = 5;
+
+// If we read a temperature higher than this, shut down the heater
+const uint16_t HEATER_CUTOFF_TEMPERATURE = 300;
+
+// temperatures below setting by this amount will flag as "not heating up"
+const uint16_t HEAT_FAIL_THRESHOLD = 30;
+
+// if the starting temperature is less than this amount, we will check heating progress
+// to get to this temperature, the heater has already been checked.
+const uint16_t HEAT_CHECKED_THRESHOLD = 50;
+
+// timeout for heating all the way up
+const uint32_t HEAT_UP_TIME = 300000000;  //five minutes
+
+// timeout for showing heating progress
+const uint32_t HEAT_PROGRESS_TIME = 90000000; // 90 seconds
+
+// threshold above starting temperature we check for heating progres
+const uint16_t HEAT_PROGRESS_THRESHOLD = 10;
+
 
 /****************************************************************************
  * main
@@ -114,7 +141,7 @@ void device_init(void)
 	rtc_init();
 	pwm_init();
 	adc_init();
-	led_on();					// put on the red light (Roxanne)
+	led_on();					// put on the red light [Sting, 1978]
 
 	pwm_set_freq(PWM_FREQUENCY);
 }
@@ -203,7 +230,7 @@ uint8_t pwm_set_duty(double duty)
 	return (SC_OK);
 
 /*
-
+	Experiments
 	if (duty <= 0)   { 
 //		OCR2A = 255;				// shut down the PWM timer
 		OCR2B = 0;
@@ -308,7 +335,7 @@ void led_toggle(void)
  * Kinen Callback functions - mandatory
  *
  *	These functions are called from Kinen drivers and must be implemented 
- *	for any Kinen device
+ *	at the device level for any Kinen device
  *
  *	device_reset() 		- reset device in response tro Kinen reset command
  *	device_read_byte() 	- read a byte from Kinen channel into device structs

@@ -115,7 +115,8 @@ ISR(USB_TX_ISR_vect)	//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
  *	- High water mark should have about 4 - 8 bytes left in buffer (~95% full) 
  *	- Low water mark about 50% full
  *
- * 	See end notes in xio.h for a discussion of how the circular buffers work
+ *  See https://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Module-Details#Notes_on_Circular_Buffers
+ *  for a discussion of how the circular buffers work
  */
 
 ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int 

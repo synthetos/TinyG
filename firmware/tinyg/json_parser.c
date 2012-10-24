@@ -292,7 +292,7 @@ uint16_t js_serialize_json(char *out_buf)
 		do {  // advance to the next non-empty element
 			cmd = cmd->nx;
 			if (cmd->nx == NULL) break;
-		} while (cmd->type == TYPE_END); // skip over empty elements
+		} while (cmd->type == TYPE_END); 	// skip over empty elements
 
 		while (depth > cmd->depth) {		// write commas or embedded closing curlies
 			str += sprintf(str, "}");

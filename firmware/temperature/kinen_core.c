@@ -21,7 +21,9 @@
 #include "kinen_slave_328p.h"
 
 /*
- * kinen_init() - set up Kine subsystems; master or slave
+ * kinen_init() - set up Kinen subsystems; master or slave
+ *
+ *	Would like some kind of auto-detect here. For now it's just commenting
  */
 void kinen_init(void)
 {
@@ -32,11 +34,19 @@ void kinen_init(void)
 /*
  * kinen_callback() - kinen event handler
  *
- *	This function should be called from the main loop at a high-priority level
- *	Returns OK or error. Returns EAGAIN if function would block
+ *	This function should be called from the main loop at a high-priority level.
+ *	It is used to perform any polling, long-running continuations, or other 
+ *	scheduled tasks
+ *
+ *	Returns SC_OK or error code for normal operations 
+ *	Returns SC_NOOP if no operation was performed
+ *	Returns EAGAIN if the function should block lower-priority functions
+ *	in the main DISPATCH loop
  */
 uint8_t kinen_callback(void)
 {
-	return (SC_NOOP);
+//	return (SC_OK);			// return from a successful operation
+//	return (SC_EAGAIN);		// return if lower priority tasks should be blocked
+	return (SC_NOOP);		// return if no operation was performed 
 }
 

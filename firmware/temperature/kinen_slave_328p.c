@@ -24,7 +24,7 @@
 
 #include "kinen_core.h"
 #include "kinen_slave_328p.h"
-#include "tinyg_tc.h"			// device file
+#include "tinyg_tc.h"			// main device file
 
 static struct KinenSlaveSingleton {
 	uint8_t	phase;				// byte phasing for RX
@@ -44,7 +44,7 @@ void kinen_slave_init(void)
 	DDRB &= ~(1<<DDB4);			// Set MISO output, all others unaffected
 	SPCR = (1<<SPIE | 1<<SPE);	// Enable SPI and its interrupt, set MSB first, slave mode
 	SPCR = (1<<CPOL | 1<<CPHA);	// Uncomment for mode 3 operation, comment for mode 0
-	memset(&ki_array, 0, sizeof(ki_array));
+	memset(&ki.array, 0, sizeof(ki.array));
 
 	ki_wait_time = DEVICE_WAIT_TIME;	// setup read-only values
 	ki_device_type = DEVICE_TYPE;
@@ -75,7 +75,7 @@ ISR(SPI_STC_vect)
 			SPDR = KINEN_OK_BYTE;			// already saved addr, now return an OK
 		} else {
 			if (ki_slave.addr < KINEN_COMMON_MAX) {	// handle OCB address space
-				SPDR = ki_array[ki_slave.addr];
+				SPDR = ki.array[ki_slave.addr];
 			} else {								// handle device address space
 				if ((ki_status = device_read_byte(ki_slave.addr, &ki_slave.data)) == SC_OK) {
 					SPDR = ki_slave.data;
@@ -100,7 +100,7 @@ ISR(SPI_STC_vect)
 }
 
 /* 
- * _slave_write_byte() - helper to write byte to an OCB non-device address
+ * _slave_write_byte() - helper to write byte to a non-device address
  */
 static uint8_t _slave_write_byte(const uint8_t addr, const uint8_t data)
 {

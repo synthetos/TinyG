@@ -184,8 +184,6 @@ BUFFER_T xio_get_rx_bufcount_usart(const struct xioUSART *dx)
 
 uint16_t xio_get_usb_rx_free(void)
 {
-//	char c = USBu.usart->DATA;					// can only read DATA once
-
 	return (RX_BUFFER_SIZE - xio_get_rx_bufcount_usart(&USBu));
 }
 
@@ -247,10 +245,10 @@ int xio_putc_usart(const uint8_t dev, const char c, FILE *stream)
  *  Returns c (may be translated depending on the function)
  */
 
-static int (*const getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLASH
-//static int (*getcFuncs[])(void) = {			// ALTERNATE: put table in SRAM
+static int (*const getcFuncs[])(void) PROGMEM = { // use if you want it in FLASH
+//static int (*getcFuncs[])(void) = {			  // ALTERNATE: put table in SRAM
 							// dec  hex symbol
-		_getc_NEWLINE, 		//	0	00	NUL	(Null char)		(TREATED AS NEWLINE)
+		_getc_NEWLINE, 		//	0	00	NUL	(Null char)	 (TREATED AS NEWLINE)
 		_getc_char, 		//	1	01	SOH	(Start of Header)
 		_getc_char, 		//	2	02	STX	(Start of Text)
 		_getc_char, 	 	//	3	03	ETX (End of Text) ^c
@@ -386,7 +384,8 @@ static int (*const getcFuncs[])(void) PROGMEM = { 	// use if you want it in FLAS
  *	Compatible with stdio system - may be bound to a FILE handle
  *
  *  Get next character from RX buffer.
- *	See "Notes on the circular buffers" at end of xio.h for buffer details.
+ *  See https://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Module-Details#Notes_on_Circular_Buffers
+ *  for a discussion of how the circular buffers work
  *
  *	This routine returns a single character from the RX buffer to the caller.
  *	It's typically called by fgets() and is useful for single-threaded IO cases.

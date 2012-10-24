@@ -12,7 +12,8 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
+/* Special thanks to Adam Mayer and the Replicator project for heater details
+ */
 #ifndef tinyg_tc_h
 #define tinyg_tc_h
 
@@ -58,7 +59,27 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data);
 #define DEVICE_UUID_2	 0x00	// UUID = 0 means there is no UUID
 #define DEVICE_UUID_3	 0x00	// UUID = 0 means there is no UUID
 
-// Device mappings and constants (for atmega328P)
+// Heater values
+
+enum HeaterFailMode{
+	HEATER_FAIL_NONE = 0,
+	HEATER_FAIL_NOT_PLUGGED_IN = 0x02,
+	HEATER_FAIL_SOFTWARE_CUTOFF = 0x04,
+	HEATER_FAIL_NOT_HEATING = 0x08,
+	HEATER_FAIL_DROPPING_TEMP = 0x10,
+	HEATER_FAIL_BAD_READS = 0x20
+};
+
+// FROM MightyBoardFirmware:
+// Offset to compensate for range clipping and bleed-off
+#define HEATER_OFFSET_ADJUSTMENT 0
+
+// PID bypass: If the set point is more than this many degrees over the
+//             current temperature, bypass the PID loop altogether.
+#define PID_BYPASS_DELTA 15
+
+
+// Lower-level device mappings and constants (for atmega328P)
 
 #define SPI_PORT	PORTB		// on-board SPI peripheral
 #define SPI_SCK		(1<<PINB5)	// SPI clock line

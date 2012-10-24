@@ -1659,27 +1659,6 @@ void cmd_clear_list()
 	cmd->nx = (cmd+1);
 	cmd->depth = 1;
 
-//	cmd_clear(++cmd);							// "sm" element
-//	sprintf_P(cmd->token, PSTR("sm"));
-//	cmd->type = TYPE_STRING;
-//	cmd->pv = (cmd-1);
-//	cmd->nx = (cmd+1);
-//	cmd->depth = 1;
-
-//	cmd_clear(++cmd);							// "buf" element
-//	sprintf_P(cmd->token, PSTR("buf"));
-//	cmd->type = TYPE_INTEGER;
-//	cmd->pv = (cmd-1);
-//	cmd->nx = (cmd+1);
-//	cmd->depth = 1;
-
-//	cmd_clear(++cmd);							// "ln" element
-//	sprintf_P(cmd->token, PSTR("ln"));
-//	cmd->type = TYPE_INTEGER;
-//	cmd->pv = (cmd-1);
-//	cmd->nx = (cmd+1);
-//	cmd->depth = 1;
-
 	cmd_clear(++cmd);							// "cks" element
 	sprintf_P(cmd->token, PSTR("cks"));
 	cmd->type = TYPE_STRING;

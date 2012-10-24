@@ -5,6 +5,8 @@
  *	  -	The character array should be derived from the filename (by convention)
  *	  - Comments are not allowed in the char array, but gcode comments are OK e.g. (g0 test)
 
+Search for ********************************* to get to the uncommented code
+
 N4 (S8000)\n\
 N5 (M3)\n\
 N6 G92X0.327Y-33.521Z-1.000\n\
@@ -350,6 +352,12 @@ N342 X-25.472Y-34.259\n\
 N100 G92 X-25.177Y-34.072 Z-1.000 (TEMP, REMOVE LATER)\n\
 
  */
+
+/***************************************************************************/
+/***************************************************************************/
+/***************************************************************************/
+/***************************************************************************/
+
 const char PROGMEM test_braid[] = "\
 N1 T1M6\n\
 N2 G17\n\
@@ -2537,83 +2545,5 @@ N2514 G1X52.084Y-2.585
 N2515 Y6.213
 N2516 X49.011Y0.876
 N2517 G0Z4.000
-
-
-
-
-
-tinyg[mm] ok> N1 T1M6
-tinyg[mm] ok> N2 G17
-tinyg[mm] ok> N3 G21 (mm)
-tinyg[mm] ok> N4 (S8000)
-tinyg[mm] ok> N5 (M3)
-tinyg[mm] ok> N6 G92X0.327Y-33.521Z-1.000
-tinyg[mm] ok> /N7 G0Z4.000
-tinyg[mm] ok> N8 F1800.0
-tinyg[mm] ok> N9 G1X0.327Y-33.521
-Zero length line: N9G1X0.327Y-33.521 
-tinyg[mm] ok> /N10 G1Z-1.000
-tinyg[mm] ok> N11 X0.654Y-33.526
-tinyg[mm] ok> N282 X-6.295Y-25.022
-tinyg[mm] ok> N283 X-6.084Y-25.047
-tinyg[mm] ok> N284 X-5.883Y-25.075
-tinyg[mm] ok> N285 X-5.694Y-25.106
-tinyg[mm] ok> N286 X-5.517Y-25.140
-tinyg[mm] ok> N287 X-5.351Y-25.177
-tinyg[mm] ok> N288 X-5.197Y-25.217
-tinyg[mm] ok> N289 X-5.057Y-25.260
-tinyg[mm] ok> N290 X-4.928Y-25.306
-tinyg[mm] ok> N291 X-4.813Y-25.355
-tinyg[mm] ok> N292 X-4.711Y-25.407
-tinyg[mm] ok> N293 X-4.623Y-25.461
-tinyg[mm] ok> N294 X-4.548Y-25.518
-tinyg[mm] ok> N295 X-4.487Y-25.578
-tinyg[mm] ok> N296 X-4.439Y-25.641
-tinyg[mm] ok> line:296,posx:0.379,posy:-33.522,posz:-1.000,posa:0.000,feed:0.000,vel:92.981,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-N297 X-4.406Y-25.707
-tinyg[mm] ok> N298 X-4.387Y-25.775
-tinyg[mm] ok> N299 X-4.382Y-25.845
-tinyg[mm] ok> N300 X-4.392Y-25.918
-tinpg[mm] ok> N301 X-4.416Y-25.994
-tinyg[mm] ok> N302 X-4.454Y-26.072
-tinyg[mm] ok> N303 X-4.506Y-26.152
-tinyg[mm] ok> N304 X-4.572Y-26.235
-tinyg[mm] ok> line:304,posx:0.602,posy:-33.525,posz:-1.000,posa:0.000,feed:0.000,vel:105.993,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-N305 X-4.653Y-26.320
-tinyg[mm] ok> line:305,posx:0.654,posy:-33.526,posz:-1.000,posa:0.000,feed:0.000,vel:0.323,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-line:305,posx:0.596,posy:-33.455,posz:-1.000,posa:0.000,feed:0.000,vel:142.377,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-line:305,posx:0.249,posy:-33.030,posz:-1.000,posa:0.000,feed:0.000,vel:542.067,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-line:305,posx:-0.533,posy:-32.073,posz:-1.000,posa:0.000,feed:0.000,vel:916.575,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-line:305,posx:-1.554,posy:-30.824,posz:-1.000,posa:0.000,feed:0.000,vel:1033.124,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-line:305,posx:-2.617,posy:-29.523,posz:-1.000,posa:0.000,feed:0.000,vel:1033.124,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-line:305,posx:-3.681,posy:-28.221,posz:-1.000,posa:0.000,feed:0.000,vel:1033.124,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-line:305,posx:-4.750,posy:-26.913,posz:-1.000,posa:0.000,feed:0.000,vel:1021.457,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-line:305,posx:-5.695,posy:-25.756,posz:-1.000,posa:0.000,feed:0.000,vel:741.454,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-lino:305,posx:-6.174,posy:-25.170,posz:-1.000,posa:0.000,feed:0.000,vel:245.849,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-N306 X-4.748Y-26.407
-tinyg[mm] ok> line:306,posx:-6.267,posy:-25.025,posz:-1.000,posa:0.000,feed:0.000,vel:89.001,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-N307 X-4.857Y-26.496
-tinyg[mm] ok> N308 X-4.980Y-26.588
-tinyg[mm] ok> line:308,posx:-5.799,posy:-25.089,posz:-1.000,posa:0.000,feed:0.000,vel:446.318,unit:1,coor:1,dist:0,frmo:0,momo:1,stat:4,mots:1,hold:0
-N309 X-5.117Y-26.681
-tinyg[mm] ok> N310 X-5.267Y-26.777
-tinyg[mm] ok> N311 X-5.431Y-26.874
-tinyg[mm] ok> N312 X-5.798Y-27.074
-tinyg[mm] ok> N313 X-6.001Y-27.177
-tinyg[mm] ok> N314 X-6.216Y-27.282
-tinyg[mm] ok> N315 X-6.683Y-27.496
-tinyg[mm] ok> N316 X-7.755Y-27.942
-*** _exec_head() *** ln:293 uSec:3372.953 seg: 1
-tinyg[mm] ok> N317 X-8.049Y-28.057
-*** _exec_head() *** ln:294 uSec:2908.438 seg: 1
-*** _exec_tail() *** ln:295 uSec:2586.446
-tinyg[mm] ok> N318 X-8.353Y-28.173
-*** _exec_tail() *** ln:298 uSec:2594.613
-tinyg[mm] ok> N319 X-8.990Y-28.409
-tinyg[mm] ok> N320 X-10.362Y-28.891
-tinyg[mm] ok> N321 X-10.753Y-29.024
-tinyg[mm] ok> N322 X-11.151Y-29.158
-tinyg[mm] ok> N323 X-11.968Y-29.428
-tinyg[mm] ok> 
 
 */

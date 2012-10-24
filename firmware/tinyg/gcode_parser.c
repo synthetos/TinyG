@@ -69,6 +69,7 @@ static uint8_t _point(double value);
 
 void gc_init()
 {
+	gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
 	return;
 }
 
