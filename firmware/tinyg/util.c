@@ -156,17 +156,23 @@ uint8_t read_double(char *buf, uint8_t *i, double *double_ptr)
 /* 
  * calculate_hash() - calculate 32-bit hash code for a string
  * 
- * This is the Java hashCode function. See http://en.wikipedia.org/wiki/Java_hashCode()
+ *	Stops calculation on null termination or length value if non-zero.
+ *
+ * 	This is based on the the Java hashCode function. 
+ *	See http://en.wikipedia.org/wiki/Java_hashCode()
  */
-uint32_t calculate_hash(char const *string) 
-{	
+uint16_t calculate_hash(char const *string, const uint16_t length) 
+{
 	uint32_t h = 0;
     uint16_t len = strlen(string);
 
+	if (length != 0) {
+		len = min(len, length);
+	}
     for (uint16_t i=0; i<len; i++) {
 		h = 31 * h + string[i];
     }
-    return h;
+    return (h % HASHMASK);
 }
 
 

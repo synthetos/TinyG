@@ -1631,58 +1631,35 @@ void cmd_clear_list()
 {
 	cmdObj *cmd;
 
-	// setup header objects (2)
-	cmd = cmd_header;
-	cmd_clear(cmd);								// "r" parent
-	sprintf_P(cmd->token, PSTR("r"));
+	cmd = cmd_clear(cmd_header);				// setup "b" body header
+	sprintf_P(cmd->token, PSTR("b"));
 	cmd->type = TYPE_PARENT;
-	cmd->pv = 0;
-	cmd->nx = (cmd+1);
-	cmd->depth = 0;
+	cmd->nx = (cmd_body);
 
-	cmd_clear(++cmd);							// "bd" parent (body)
-	sprintf_P(cmd->token, PSTR("bd"));
-	cmd->type = TYPE_PARENT;
-	cmd->pv = (cmd-1);
-	cmd->nx = cmd_body;
-	cmd->depth = 1;
+	cmd_clear_body(cmd_body);					// setup body objects
 
-	// setup body objects
-	cmd_clear_body();
-
-	// setup footer objects
-	cmd = cmd_status;
-	cmd_clear(cmd);								// "sc" element
-	sprintf_P(cmd->token, PSTR("sc"));
-	cmd->type = TYPE_INTEGER;
+	cmd = cmd_clear(cmd_footer);				// setup "f" footer element
+	sprintf_P(cmd->token, PSTR("f"));
+	cmd->type = TYPE_ARRAY;
 	cmd->pv = &cmd_body[CMD_BODY_LEN-1];
 	cmd->nx = (cmd+1);
-	cmd->depth = 1;
 
-	cmd_clear(++cmd);							// "cks" element
-	sprintf_P(cmd->token, PSTR("cks"));
-	cmd->type = TYPE_STRING;
+	cmd = cmd_clear(cmd+1);						// setup terminating element
 	cmd->pv = (cmd-1);
-	cmd->nx = (cmd+1);
-	cmd->depth = 1;
-
-	cmd_clear(++cmd);							// null last element (unused)
-	cmd->pv = (cmd-1);
-//	cmd->nx = NULL;	  // already = zeroed by cmd_clear. signals the last one. 
 }
 
-void cmd_clear_body()
+void cmd_clear_body(cmdObj *cmd)
 {
-	cmdObj *cmd = cmd_body;
+	cmdObj *cmd_first = cmd;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		cmd_clear(cmd);
 		cmd->pv = (cmd-1);
 		cmd->nx = (cmd+1);
-		cmd->depth = 2;
+		cmd->depth = cmd->pv->depth +1;
 		cmd++;
 	}
-	(--cmd)->nx = cmd_status;					// correct last element
-	cmd = cmd_body;								// correct first element
+	(--cmd)->nx = cmd_footer;					// correct last element
+	cmd = cmd_first;							// correct first element
 	cmd->pv = &cmd_header[CMD_HEADER_LEN-1];
 }
 
@@ -1775,32 +1752,25 @@ uint8_t cmd_add_float(char *token, double value)
  */
 void cmd_print_list(uint8_t status, uint8_t textmode)
 {
-	/* JSON handling 
-	 * First populate the status code and message. Then make the string w/o the checksum
-	 * Slice the string at the last colon (following "cks") and generate the checksum. 
-	 * Then print the whole thing
-	 */
+	// JSON handling. Kind of a hack. Generate the JSON string with a dummy value for 
+	// the checksum hash. Then calculate the checksum and insert it into the JSON string
 	if (cfg.communications_mode == TG_JSON_MODE) {
-		cmdObj *cmd = cmd_status;
-		cmd->value = status;								// set status code
-//		tg_get_status_message(status, (cmd = cmd->nx)->string); // set status message
-//		(cmd = cmd->nx)->value = xio_get_usb_rx_free();		// set buffer available size
-//		(cmd = cmd->nx)->value = cm_get_model_linenum();	// set model line number
+		cmdObj *cmd = cmd_footer;
+	
+		sprintf(cmd->string, "%d,%d,%d,%u",TINYG_JSON_PROTOCOL_REV, status, xio_get_usb_rx_free(), HASHMASK);
 		uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
-		while (tg.out_buf[strcount] != ':') { strcount--; }	// slice at last colon
-		tg.out_buf[strcount] = NUL;
-		cmd = cmd_checksum;									// write checksum
-		sprintf(cmd->string, "%lu", calculate_hash(tg.out_buf));
-		js_serialize_json(tg.out_buf); 						// make JSON string w/checksum
+		while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
+		sprintf(tg.out_buf + strcount + 1, "%u", calculate_hash(tg.out_buf, strcount));
+		tg.out_buf[strcount + HASHLENGTH+1] = ']';	// stomp the nul termination, recover the brace
 		fprintf(stderr, "%s", tg.out_buf);
-	} else {
+		} else {
 			switch (textmode) {
 			case TEXT_INLINE_PAIRS: { _print_text_inline_pairs(); break; }
 			case TEXT_INLINE_VALUES: { _print_text_inline_values(); break; }
 			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted(); break; }
 		}
 	}
-	cmd_clear_body();			// clear the cmd body to get ready for the next use
+	cmd_clear_body(cmd_body);		// clear the cmd body to get ready for the next use
 }
 
 void _print_text_inline_pairs()

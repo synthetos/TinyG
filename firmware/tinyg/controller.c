@@ -148,7 +148,7 @@ static void _controller_HSM()
 	DISPATCH(cm_homing_callback());			// G28.1 continuation
 
 //----- command readers and parsers ------------------------------------//
-	DISPATCH(_sync_to_tx_buffer());			// sync with TX buffer (pseudo-blocking)
+//	DISPATCH(_sync_to_tx_buffer());			// sync with TX buffer (pseudo-blocking)
 	DISPATCH(_sync_to_planner());			// sync with planning queue
 	DISPATCH(_dispatch());					// read and execute next command
 }

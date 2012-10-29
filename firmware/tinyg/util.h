@@ -42,7 +42,7 @@ double vector[AXES];				// vector of axes for passing to subroutines
 
 uint8_t isnumber(char c);
 uint8_t read_double(char *buf, uint8_t *i, double *double_ptr);
-uint32_t calculate_hash(char const *string);
+uint16_t calculate_hash(char const *string, const uint16_t length);
 
 void copy_vector(double dest[], const double src[], uint8_t length);
 void copy_axis_vector(double dest[], const double src[]);
@@ -58,6 +58,9 @@ uint8_t errcode;
 #define ritorno(a) if((errcode=a) != TG_OK) { return(errcode); }
 
 /***** Math Support *****/
+
+#define HASHMASK 9999
+#define HASHLENGTH 4
 
 // side-effect safe forms of min and max
 #ifndef max

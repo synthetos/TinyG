@@ -99,7 +99,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
-	xio_queue_RX_string_usb("$test=51\n");	// run braid
+//	xio_queue_RX_string_usb("$test=51\n");	// run braid
 
 //	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"posa\":true,\"posx\":true,\"gc\":true,\"feed\":true,\"posy\":true,\"line\":true,\"stat\":true,\"posz\":true}}");
 
@@ -125,7 +125,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("^\n");		// abort. Must comment in ^ in controller.c dispatcher
 
 //	xio_queue_RX_string_usb("g00xqwrsdfs\n");
-//	xio_queue_RX_string_usb("g0x10\n");
+	xio_queue_RX_string_usb("g0x10\n");
 
 //	xio_queue_RX_string_usb("g00g17g21g40g49g80g90\n");
 //	xio_queue_RX_string_usb("g2x0y0i1f2000\n");

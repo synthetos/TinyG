@@ -84,10 +84,9 @@
  *	of CMD_NAME_LEN and CMD_VALUE_STRING_LEN which are statically allocated 
  *	and should be as short as possible. 
  */
-#define CMD_HEADER_LEN 2			// contains the "r" and "body" elements
-#define CMD_BODY_LEN 21				// main body
-#define CMD_FOOTER_LEN 3			// status code, msg, buffer count, line num, checksum and termination
-									// if you change this you must also change cmd_status, cmd_bufcount, etc, below
+#define CMD_HEADER_LEN 1			// body header element
+#define CMD_BODY_LEN 21				// body elements
+#define CMD_FOOTER_LEN 2			// footer element (includes terminator element)
 
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 #define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_FOOTER_LEN)
@@ -121,6 +120,7 @@ enum cmdType {						// object / value typing for config and JSON
 	TYPE_INTEGER,					// value is a uint32_t
 	TYPE_FLOAT,						// value is a floating point number
 	TYPE_STRING,					// value is in string field
+	TYPE_ARRAY,						// value is array element count, values are CSV ASCII in string field
 	TYPE_PARENT						// object is a parent to a sub-object
 };
 
@@ -134,10 +134,10 @@ enum cmdTextMode {					// these set the print modes for text output
 };
 
 struct cmdObject {					// depending on use, not all elements may be populated
+	struct cmdObject *pv;			// pointer to previous object or NULL if first object
+	struct cmdObject *nx;			// pointer to next object or NULL if last object
 	INDEX_T index;					// index of tokenized name, or -1 if no token (optional)
 	int8_t depth;					// depth of object in the tree. 0 is root (-1 is invalid)
-	struct cmdObject *nx;			// pointer to next object or NULL if last object
-	struct cmdObject *pv;			// pointer to previous object or NULL if first object
 	int8_t type;					// see cmdType
 	double value;					// numeric value
 	char token[CMD_TOKEN_LEN+1];	// mnemonic token
@@ -153,15 +153,15 @@ typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
 #define friendly_name string			// used here as a friendly name field
 
 // Allocate memory for all objects that may be used in cmdObj lists
-cmdObj cmd_header[CMD_HEADER_LEN];	// header objects for JSON responses
+cmdObj cmd_header[CMD_HEADER_LEN];	// body headxer element
 cmdObj cmd_body[CMD_BODY_LEN];		// cmd_body[0] is the root object
-cmdObj cmd_footer[CMD_FOOTER_LEN];	// allocate footer objects for JSON response
+cmdObj cmd_footer[CMD_FOOTER_LEN];	// footer element
 
-#define cmd_status &cmd_footer[0]	// status code element
-//#define cmd_bufcount &cmd_footer[2]	// buffer available element
+//#define cmd_status &cmd_footer[0]	// status code element
+//#define f &cmd_footer[2]	// buffer available element
 //#define cmd_linenum &cmd_footer[3]	// line number element
-#define cmd_checksum &cmd_footer[1]	// checksum element
-#define cmd_terminal &cmd_footer[2]	// termination element
+//#define cmd_checksum &cmd_footer[1]	// checksum element
+//#define cmd_terminal &cmd_footer[2]	// termination element
 
 /*
  * Global Scope Functions
@@ -182,8 +182,8 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd);
 
 INDEX_T cmd_get_max_index(void);
 cmdObj *cmd_clear(cmdObj *cmd);
+void cmd_clear_body(cmdObj *cmd);
 void cmd_clear_list(void);
-void cmd_clear_body(void);
 uint8_t cmd_add_token(char *token);
 uint8_t cmd_add_string(char *token, char *string);
 uint8_t cmd_add_float(char *token, double value);
