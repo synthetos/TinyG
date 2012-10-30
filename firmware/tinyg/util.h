@@ -42,7 +42,7 @@ double vector[AXES];				// vector of axes for passing to subroutines
 
 uint8_t isnumber(char c);
 uint8_t read_double(char *buf, uint8_t *i, double *double_ptr);
-uint16_t calculate_hash(char const *string, const uint16_t length);
+uint16_t compute_checksum(char const *string, const uint16_t length);
 
 void copy_vector(double dest[], const double src[], uint8_t length);
 void copy_axis_vector(double dest[], const double src[]);

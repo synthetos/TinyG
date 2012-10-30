@@ -1012,11 +1012,13 @@ static uint8_t _get_stat(cmdObj *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_stat, cm_get_combined_state()));
 
-// how to do this w/o calling the helper routine - See 331.09 for original routines
-//	cmd->value = cm_get_machine_state();
-//	cmd->type = TYPE_INTEGER;
-//	strncpy_P(cmd->string_value,(PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN);
-//	return (TG_OK);
+/* how to do this w/o calling the helper routine - See 331.09 for original routines
+
+	cmd->value = cm_get_machine_state();
+	cmd->type = TYPE_INTEGER;
+	strncpy_P(cmd->string_value,(PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN);
+	return (TG_OK);
+ */
 }
 
 static uint8_t _get_macs(cmdObj *cmd)
@@ -1166,17 +1168,19 @@ static uint8_t _set_am(cmdObj *cmd)
 	if (strchr(linear_axes, cmd->token[0]) != NULL) {		// true if it's a linear axis
 		if (cmd->value > AXIS_MAX_LINEAR) {
 			cmd->value = 0;
-
-			cmd_add_string("msg","*** WARNING *** Unsupported linear axis mode. Axis DISABLED");
-		//  Bby way of example, the following method saves RAM at the expense of FLASH size:
-		//	char message[CMD_STRING_LEN];
-		//	sprintf_P(message, PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED\n"));
-		//	cmd_add_string("msg",message);
+			char message[CMD_STRING_LEN]; 
+			sprintf_P(message, PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED"));
+			cmd_add_string("msg",message);
+		//  The following method saves FLASH at the expense of RAM size:
+		//	cmd_add_string("msg","*** WARNING *** Unsupported linear axis mode. Axis DISABLED");
 		}
 	} else {
 		if (cmd->value > AXIS_MAX_ROTARY) {
 			cmd->value = 0;
-			cmd_add_string("msg","*** WARNING *** Unsupported rotary axis mode. Axis DISABLED");
+			char message[CMD_STRING_LEN]; 
+			sprintf_P(message, PSTR("*** WARNING *** Unsupported rotary axis mode. Axis DISABLED"));
+			cmd_add_string("msg",message);
+		//	cmd_add_string("msg","*** WARNING *** Unsupported rotary axis mode. Axis DISABLED");
 		}
 	}
 	_set_ui8(cmd);
@@ -1191,10 +1195,13 @@ static void _print_am(cmdObj *cmd)
 }
 
 static uint8_t _set_sm(cmdObj *cmd)
-{ 
+{
 	if (cmd->value > SW_MODE_ENABLED_NC) {
 		cmd->value = 0;
-		cmd_add_string("msg","*** WARNING *** Unsupported switch mode. Switch DISABLED");
+		char message[CMD_STRING_LEN]; 
+		sprintf_P(message, PSTR("*** WARNING *** Unsupported switch mode. Switch DISABLED"));
+		cmd_add_string("msg",message);
+	//	cmd_add_string("msg","*** WARNING *** Unsupported switch mode. Switch DISABLED");
 	}
 	_set_ui8(cmd);
 	gpio_init();
@@ -1218,7 +1225,10 @@ static uint8_t _set_tr(cmdObj *cmd)
 static uint8_t _set_mi(cmdObj *cmd)
 {
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
-		cmd_add_string("msg","*** WARNING *** Unsupported microstep value");
+		char message[CMD_STRING_LEN]; 
+		sprintf_P(message, PSTR("*** WARNING *** Non-standard microstep value"));
+		cmd_add_string("msg",message);
+	//	cmd_add_string("msg","*** WARNING *** Non-standard microstep value");
 	}
 	_set_ui8(cmd);						// but set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);
@@ -1759,7 +1769,7 @@ void cmd_print_list(uint8_t status, uint8_t textmode)
 		sprintf(cmd->string, "%d,%d,%d,%04d",TINYG_COMM_PROTOCOL_REV, status, xio_get_usb_rx_free(), HASHMASK);
 		uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
 		while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
-		sprintf(tg.out_buf + strcount + 1, "%04d", calculate_hash(tg.out_buf, strcount));
+		sprintf(tg.out_buf + strcount + 1, "%04d", compute_checksum(tg.out_buf, strcount));
 		tg.out_buf[strcount + HASHLENGTH+1] = ']';	// stomp the nul termination, recover the brace
 		fprintf(stderr, "%s", tg.out_buf);
 		} else {

@@ -154,14 +154,14 @@ uint8_t read_double(char *buf, uint8_t *i, double *double_ptr)
 }
 
 /* 
- * calculate_hash() - calculate 32-bit hash code for a string
+ * compute_checksum() - calculate the checksum for a string
  * 
  *	Stops calculation on null termination or length value if non-zero.
  *
  * 	This is based on the the Java hashCode function. 
  *	See http://en.wikipedia.org/wiki/Java_hashCode()
  */
-uint16_t calculate_hash(char const *string, const uint16_t length) 
+uint16_t compute_checksum(char const *string, const uint16_t length) 
 {
 	uint32_t h = 0;
     uint16_t len = strlen(string);
