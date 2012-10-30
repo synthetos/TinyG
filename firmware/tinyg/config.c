@@ -235,16 +235,24 @@ static const char msg_g20[] PROGMEM = "G20 - inches mode";
 static const char msg_g21[] PROGMEM = "G21 - millimeter mode";
 static PGM_P const msg_unit[] PROGMEM = { msg_g20, msg_g21 };
 
-static const char msg_stat0[] PROGMEM = "Initializing";	// both stat and macs use this array
+static const char msg_stat0[] PROGMEM = "Initializing";	// stat uses this array
 static const char msg_stat1[] PROGMEM = "Reset";
-static const char msg_stat2[] PROGMEM = "Cycle";
-static const char msg_stat3[] PROGMEM = "Stop";
-static const char msg_stat4[] PROGMEM = "End";
-static const char msg_stat5[] PROGMEM = "Run";			// stat extensions for combined states
-static const char msg_stat6[] PROGMEM = "Hold";			// ""
-static const char msg_stat7[] PROGMEM = "Homing";		// "" 
-static const char msg_stat8[] PROGMEM = "Jog";			// "" 
-static PGM_P const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3 , msg_stat4 , msg_stat5 , msg_stat6 , msg_stat7, msg_stat8 };
+static const char msg_stat2[] PROGMEM = "Stop";
+static const char msg_stat3[] PROGMEM = "End";
+static const char msg_stat4[] PROGMEM = "Run";
+static const char msg_stat5[] PROGMEM = "Hold";
+static const char msg_stat6[] PROGMEM = "Probe";
+static const char msg_stat7[] PROGMEM = "Cycle";
+static const char msg_stat8[] PROGMEM = "Homing";
+static const char msg_stat9[] PROGMEM = "Jog";
+static PGM_P const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3, msg_stat4, msg_stat5, msg_stat6, msg_stat7, msg_stat8, msg_stat9};
+
+static const char msg_macs0[] PROGMEM = "Initializing";
+static const char msg_macs1[] PROGMEM = "Reset";
+static const char msg_macs2[] PROGMEM = "Cycle";
+static const char msg_macs3[] PROGMEM = "Stop";
+static const char msg_macs4[] PROGMEM = "End";
+static PGM_P const msg_macs[] PROGMEM = { msg_macs0, msg_macs1, msg_macs2, msg_macs3 , msg_macs4};
 
 static const char msg_cycs0[] PROGMEM = "Off";
 static const char msg_cycs1[] PROGMEM = "Started";
@@ -1023,7 +1031,7 @@ static uint8_t _get_stat(cmdObj *cmd)
 
 static uint8_t _get_macs(cmdObj *cmd)
 {
-	return(_get_msg_helper(cmd, (prog_char_ptr)msg_stat, cm_get_machine_state()));
+	return(_get_msg_helper(cmd, (prog_char_ptr)msg_macs, cm_get_machine_state()));
 }
 
 static uint8_t _get_cycs(cmdObj *cmd)

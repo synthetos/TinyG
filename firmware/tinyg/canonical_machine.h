@@ -206,13 +206,13 @@ struct GCodeInput gf;					// gcode input flags
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
 	COMBINED_INITIALIZING = 0,		// machine is initializing
 	COMBINED_RESET,					// machine has been reset or aborted
-	COMBINED_CYCLE,					// machine is running (cycling)
 	COMBINED_PROGRAM_STOP,			// program stop or no more blocks
 	COMBINED_PROGRAM_END,			// program end
 	COMBINED_RUN,					// motion is running
 	COMBINED_HOLD,					// motion is holding
-	COMBINED_HOMING,				// homing cycle active
 	COMBINED_PROBE,					// probe cycle active
+	COMBINED_CYCLE,					// machine is running (cycling)
+	COMBINED_HOMING,				// homing cycle active
 	COMBINED_JOG					// jogging is treated as a cycle
 };
 //#### END CRITICAL REGION ####
