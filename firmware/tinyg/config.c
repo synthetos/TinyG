@@ -167,13 +167,13 @@ static void _print_sr(cmdObj *cmd);		// run status report (as printout)
 static uint8_t _set_sr(cmdObj *cmd);	// set status report specification
 static uint8_t _set_si(cmdObj *cmd);	// set status report interval
 static uint8_t _get_qr(cmdObj *cmd);	// run queue report (as data)
-static uint8_t _get_pba(cmdObj *cmd);	// get planner buffers available
+static uint8_t _get_pb(cmdObj *cmd);	// get planner buffers available
 
 static uint8_t _get_gc(cmdObj *cmd);	// get current gcode block
 static uint8_t _run_gc(cmdObj *cmd);	// run a gcode block
 
 static uint8_t _get_line(cmdObj *cmd);	// get runtime line number
-static uint8_t _get_lix(cmdObj *cmd);	// get runtime line index
+static uint8_t _get_lx(cmdObj *cmd);	// get runtime line index
 static uint8_t _get_stat(cmdObj *cmd);	// get combined machine state as value and string
 static uint8_t _get_macs(cmdObj *cmd);	// get raw machine state as value and string
 static uint8_t _get_cycs(cmdObj *cmd);	// get raw cycle state as value and string
@@ -335,13 +335,12 @@ static const char str_id[] PROGMEM = "id,id,[id]  id_device%16d\n";
 static const char str_si[] PROGMEM = "si,status_i,[si]  status_interval    %10.0f ms [0=off]\n";
 static const char str_sr[] PROGMEM = "sr,status_r,";	// status_report {"sr":""}  and ? command
 static const char str_qr[] PROGMEM = "qr,queue_r,";		// queue_report {"qr":""}
-static const char str_pba[] PROGMEM = "pba,planner_buffer_a,Planner buffers:%8d\n";
-static const char str_pbc[] PROGMEM = "pbc,planner_buffer_c,";
+static const char str_pb[] PROGMEM = "pb,planner_buffer_a,Planner buffers:%8d\n";
 
 // Gcode model values for reporting purposes
 static const char str_vel[]  PROGMEM = "vel,velocity,Velocity:%17.3f%S/min\n";
 static const char str_line[] PROGMEM = "line,line_n,Line number:%10.0f\n";
-static const char str_lix[]  PROGMEM = "lix,line_i,Line index:%13d\n";
+static const char str_lx[]   PROGMEM = "lx,line_i,Line index:%13d\n";
 static const char str_feed[] PROGMEM = "feed,feed,Feed rate:%16.3f%S/min\n";
 static const char str_stat[] PROGMEM = "stat,stat,Machine state:       %s\n"; // combined machine state
 static const char str_macs[] PROGMEM = "macs,macs,Raw machine state:   %s\n"; // raw machine state
@@ -398,6 +397,7 @@ static const char str_ic[] PROGMEM = "ic,ignore_c,[ic]  ignore CR or LF on RX %7
 static const char str_ec[] PROGMEM = "ec,enable_c,[ec]  enable_CR (on TX)%12d [0,1]\n";
 static const char str_ee[] PROGMEM = "ee,enable_e,[ee]  enable_echo      %12d [0,1]\n";
 static const char str_ex[] PROGMEM = "ex,enable_x,[ex]  enable_xon_xoff  %12d [0,1]\n";
+static const char str_eq[] PROGMEM = "eq,enable_q,[eq]  enable_queue_reports%9d [0,1]\n";
 static const char str_ej[] PROGMEM = "ej,enable_j,[ej]  enable_json_mode %12d [0,1]\n";
 
 // Motor strings in program memory 
@@ -618,12 +618,11 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval, STATUS_REPORT_INTERVAL_MS },
 	{ str_sr, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
 	{ str_qr, _print_nul, _get_qr,  _set_nul, (double *)&tg.null, 0 },	// queue report object
-	{ str_pba,_print_int, _get_pba, _set_nul, (double *)&tg.null, 0 },	// planner buffers available
-//	{ str_pbc,_print_nul, _get_pba, _set_nul, (double *)&tg.null, 0 },	// planner buffer clear
+	{ str_pb, _print_int, _get_pb,  _set_nul, (double *)&tg.null, 0 },	// planner buffers available
 
 	// gcode model attributes for reporting puropses
 	{ str_line,_print_int, _get_line,_set_int, (double *)&gm.linenum, 0 }, // line number - gets runtime line number
-	{ str_lix, _print_int, _get_lix, _set_nul, (double *)&tg.null ,0 },	// line index - gets runtime line index
+	{ str_lx,  _print_int, _get_lx,  _set_nul, (double *)&tg.null ,0 },	// line index - gets runtime line index
 	{ str_feed,_print_lin, _get_dbu, _set_nul, (double *)&tg.null, 0 },	// feed rate
 	{ str_stat,_print_str, _get_stat,_set_nul, (double *)&tg.null, 0 },	// combined machine state
 	{ str_macs,_print_str, _get_macs,_set_nul, (double *)&tg.null, 0 },	// raw machine state
@@ -681,7 +680,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,				COM_APPEND_TX_CR },
 	{ str_ee, _print_ui8, _get_ui8, _set_ee,  (double *)&cfg.enable_echo,			COM_ENABLE_ECHO },
 	{ str_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
-	{ str_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.communications_mode,	COM_COMMUNICATIONS_MODE },
+	{ str_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,				COM_ENABLE_QR },
+	{ str_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,				COM_COMMUNICATIONS_MODE },
 
 	{ str_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ str_1sa, _print_rot, _get_dbl ,_set_sa, (double *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
@@ -971,7 +971,7 @@ static uint8_t _get_qr(cmdObj *cmd)
 	return (TG_OK);
 }
 
-static uint8_t _get_pba(cmdObj *cmd)
+static uint8_t _get_pb(cmdObj *cmd)
 {
 	cmd->value = (double)mp_get_planner_buffers_available();
 	cmd->type = TYPE_INTEGER;
@@ -1081,7 +1081,7 @@ static uint8_t _get_line(cmdObj *cmd)
 	return (TG_OK);
 }
 
-static uint8_t _get_lix(cmdObj *cmd)
+static uint8_t _get_lx(cmdObj *cmd)
 {
 	cmd->value = (double)mp_get_runtime_lineindex();
 	cmd->type = TYPE_INTEGER;
@@ -1309,7 +1309,7 @@ void cfg_init()
 	cmdObj cmd;
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
 	cmd_clear_list();				// setup the cmd object lists. Do this first.
-	cfg.communications_mode = TG_JSON_MODE; // initial value until EEPROM is read
+	cfg.comm_mode = TG_JSON_MODE;	// initial value until EEPROM is read
 
 #ifdef __DISABLE_EEPROM_INIT		// cutout for debug simulation
 	// Apply the hard-coded default values from settings.h and exit
@@ -1327,7 +1327,7 @@ void cfg_init()
 	cmd_read_NVM_value(&cmd);
 
 	if (fp_EQ(cmd.value,tg.build)) { // Case (1) NVM is set up and current revision. Load config from NVM
-		tg_print_message_number(1);
+		tg_print_loading_configs_message();
 		for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
 			cmd_read_NVM_value(&cmd);
 			if (strstr(DONT_INITIALIZE, cmd_get_token(cmd.index, cmd.token)) != NULL) continue;
@@ -1353,16 +1353,16 @@ static uint8_t _set_defa(cmdObj *cmd)
 		return (TG_OK);
 	}
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
-	tg_print_configuration_profile();
+	tg_print_initializing_message();
 
 	for (cmd->index=0; _cmd_index_is_single(cmd->index); cmd->index++) {
 		if (strstr(DONT_INITIALIZE, cmd_get_token(cmd->index, cmd->token)) != NULL) continue;
 		cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
 		cmd_set(cmd);
 		cmd_persist(cmd);
-		if (cfg.communications_mode != TG_JSON_MODE) { fprintf_P(stderr,PSTR("."));}
+		if (cfg.comm_mode != TG_JSON_MODE) { fprintf_P(stderr,PSTR("."));}
 	}
-	if (cfg.communications_mode != TG_JSON_MODE) { fprintf_P(stderr,PSTR("\n")); }
+	if (cfg.comm_mode != TG_JSON_MODE) { fprintf_P(stderr,PSTR("\n")); }
 	return (TG_OK);
 }
 
@@ -1747,20 +1747,19 @@ uint8_t cmd_add_float(char *token, double value)
  * 	Use this function for all text and JSON output (dont just printf stuff)
  * 	It generates and prints the JSON and text mode output strings 
  *	It also cleans up the lists and gets ready for the next use
- *	In JSON mode it generates the status code, status message and checksum
+ *	In JSON mode it generates the footer with the status code, buffer count and checksum
  *	In text mode it uses the the textmode variable to set the output format
  */
 void cmd_print_list(uint8_t status, uint8_t textmode)
 {
 	// JSON handling. Kind of a hack. Generate the JSON string with a dummy value for 
 	// the checksum hash. Then calculate the checksum and insert it into the JSON string
-	if (cfg.communications_mode == TG_JSON_MODE) {
+	if (cfg.comm_mode == TG_JSON_MODE) {
 		cmdObj *cmd = cmd_footer;
-	
-		sprintf(cmd->string, "%d,%d,%d,%u",TINYG_JSON_PROTOCOL_REV, status, xio_get_usb_rx_free(), HASHMASK);
+		sprintf(cmd->string, "%d,%d,%d,%04d",TINYG_COMM_PROTOCOL_REV, status, xio_get_usb_rx_free(), HASHMASK);
 		uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
 		while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
-		sprintf(tg.out_buf + strcount + 1, "%u", calculate_hash(tg.out_buf, strcount));
+		sprintf(tg.out_buf + strcount + 1, "%04d", calculate_hash(tg.out_buf, strcount));
 		tg.out_buf[strcount + HASHLENGTH+1] = ']';	// stomp the nul termination, recover the brace
 		fprintf(stderr, "%s", tg.out_buf);
 		} else {

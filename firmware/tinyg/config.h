@@ -103,7 +103,7 @@
 // NOTE: The number of SYSTEM_GROUP or SR_DEFAULTS elements cannot exceed CMD_MAX_OBJECTS
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
 #define GROUP_EXCLUSIONS "cycs,coor"	 // items that are not actually part of the xyzabcuvw0123456789 groups
-#define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ec,ee,ex,ej" // cats and dogs
+#define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ec,ee,ex,eq,ej" // cats and dogs
 #define DONT_INITIALIZE "gc,sr,te,he,de" // commands that should not be initialized
 #define DONT_PERSIST	"gc,te,de"		 // commands that should not be persisted
 #define SR_DEFAULTS 	"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
@@ -264,8 +264,9 @@ struct cfgParameters {
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable echo - also used for gating JSON responses
 	uint8_t enable_xon;				// enable XON/XOFF mode
-	uint8_t communications_mode;	// TEXT or JSON mode
-	
+	uint8_t enable_qr;				// TRUE = queue reports enabled
+	uint8_t comm_mode;				// TEXT or JSON mode
+
 	// status report configs
 	uint32_t status_report_interval;// in MS. set non-zero to enable
 	INDEX_T status_report_spec[CMD_STATUS_REPORT_LEN];

@@ -180,16 +180,19 @@ uint8_t rpt_populate_status_report()
  * rpt_queue_report_callback()	- run the queue report w/stored values
  * rpt_run_queue_report() 		- run a queue report right now
  *
+ *	Queue reports are normally run from the callback function, and is much more
+ *	efficient than rpt_run_queue_report(), which is only used to report manually
+ *
  *	Queue reports return 
- *		[lix] - line index 
- *		[pba] - planner buffers available 
+ *		[lx] - line index 
+ *		[pb] - planner buffers available 
  */
 
 struct qrIndexes {			// static data for queue reports
 	uint8_t request;		// set to true to request a report
 	INDEX_T qr;				// index for QR parent
-	INDEX_T lix;			// index for line index
-	INDEX_T pba;			// index for planner_buffer_available value
+	INDEX_T lx;				// index for line index
+	INDEX_T pb;				// index for planner_buffer_available value
 	uint32_t lineindex;
 	uint8_t buffers_available;
 };
@@ -205,6 +208,7 @@ void rpt_request_queue_report()
 uint8_t rpt_queue_report_callback()
 {
 	if (qr.request != true) { return (TG_NOOP);}
+	if (cfg.enable_qr != true) { return (TG_NOOP);}
 
 	cmdObj *cmd = cmd_body;
 	cmd_clear(cmd);			 				// parent qr object			
@@ -212,12 +216,12 @@ uint8_t rpt_queue_report_callback()
 	cmd->type = TYPE_PARENT;
 
 	cmd = cmd->nx;							// line index
-	sprintf_P(cmd->token, PSTR("lix"));
+	sprintf_P(cmd->token, PSTR("lx"));
 	cmd->value = qr.lineindex;
 	cmd->type = TYPE_INTEGER;
 
 	cmd = cmd->nx;							// planner buffers available
-	sprintf_P(cmd->token, PSTR("pba"));
+	sprintf_P(cmd->token, PSTR("pb"));
 	cmd->value = qr.buffers_available;
 	cmd->type = TYPE_INTEGER;
 
@@ -232,8 +236,8 @@ uint8_t rpt_run_queue_report()
 
 	if (qr.qr == 0) {					// cache the report indices
 		qr.qr = cmd_get_index("qr");	// this only happens once
-		qr.lix = cmd_get_index("lix");
-		qr.pba = cmd_get_index("pba");
+		qr.lx = cmd_get_index("lx");
+		qr.pb = cmd_get_index("pb");
 	}
 
 	cmd_clear(cmd);			 			// setup the parent object			
@@ -242,11 +246,11 @@ uint8_t rpt_run_queue_report()
 	sprintf_P(cmd->token, PSTR("qr"));
 
 	cmd = cmd->nx;
-	cmd->index = qr.lix;				// line index element
+	cmd->index = qr.lx;					// line index element
 	cmd_get_cmdObj(cmd);
 
 	cmd = cmd->nx;
-	cmd->index = qr.pba;				// planner buffers available element
+	cmd->index = qr.pb;					// planner buffers available element
 	cmd_get_cmdObj(cmd);
 
 	return (TG_OK);

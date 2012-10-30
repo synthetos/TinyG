@@ -148,7 +148,7 @@ static void _controller_HSM()
 	DISPATCH(cm_homing_callback());			// G28.1 continuation
 
 //----- command readers and parsers ------------------------------------//
-//	DISPATCH(_sync_to_tx_buffer());			// sync with TX buffer (pseudo-blocking)
+	DISPATCH(_sync_to_tx_buffer());			// sync with TX buffer (pseudo-blocking)
 	DISPATCH(_sync_to_planner());			// sync with planning queue
 	DISPATCH(_dispatch());					// read and execute next command
 }
@@ -220,12 +220,7 @@ void tg_reset_source()
 
 void tg_set_active_source(uint8_t dev)
 {
-	tg.src = dev;							// dev = XIO device #. See xio.h
-	if (tg.src == XIO_DEV_PGM) {
-		tg.prompt_enabled = false;
-	} else {
-		tg.prompt_enabled = true;
-	}
+	tg.src = dev;								// dev = XIO device #. See xio.h
 }
 
 /***************************************************************************** 
@@ -264,18 +259,18 @@ static uint8_t _dispatch()
 			break;
 		}
 		case 'H': { 							// intercept help screens
-			cfg.communications_mode = TG_TEXT_MODE;
+			cfg.comm_mode = TG_TEXT_MODE;
 			help_print_general_help();
 			_dispatch_return(TG_OK, tg.in_buf);
 			break;
 		}
 		case '$': case '?':{ 					// text-mode config and query
-			cfg.communications_mode = TG_TEXT_MODE;
+			cfg.comm_mode = TG_TEXT_MODE;
 			_dispatch_return(cfg_config_parser(tg.in_buf), tg.in_buf);
 			break;
 		}
 		case '{': { 							// JSON input
-			cfg.communications_mode = TG_JSON_MODE;
+			cfg.comm_mode = TG_JSON_MODE;
 			_dispatch_return(js_json_parser(tg.in_buf), tg.out_buf); 
 			break;
 		}
@@ -288,7 +283,7 @@ static uint8_t _dispatch()
 
 void _dispatch_return(uint8_t status, char *buf)
 {
-	if (cfg.communications_mode == TG_JSON_MODE) {
+	if (cfg.comm_mode == TG_JSON_MODE) {
 //		cmd_print_list(status, TEXT_INLINE_PAIRS);
 		return;
 	}
@@ -329,7 +324,7 @@ static const char msg_sc11[] PROGMEM = "No such device";
 static const char msg_sc12[] PROGMEM = "Buffer empty";
 static const char msg_sc13[] PROGMEM = "Buffer full - fatal";
 static const char msg_sc14[] PROGMEM = "Buffer full - non-fatal";
-static const char msg_sc15[] PROGMEM = "#15";
+static const char msg_sc15[] PROGMEM = "Initializing";
 static const char msg_sc16[] PROGMEM = "#16";
 static const char msg_sc17[] PROGMEM = "#17";
 static const char msg_sc18[] PROGMEM = "#18";
@@ -453,13 +448,23 @@ void tg_print_message_number(uint8_t msgnum)
 	tg_print_message(msg);
 }
 
-void tg_print_configuration_profile(void)
+void tg_print_loading_configs_message(void)
 {
-	cmd_add_string("msg", INIT_CONFIGURATION_MESSAGE); // see settings.h & sub-headers
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+	cmd_add_token("fv");
+	cmd_add_token("fb");
+	cmd_add_string("msg", "Loading configs from EEPROM");
+	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED);
 }
 
-void tg_print_system_ready(void)
+void tg_print_initializing_message(void)
+{
+	cmd_add_token("fv");
+	cmd_add_token("fb");
+	cmd_add_string("msg", INIT_CONFIGURATION_MESSAGE); // see settings.h & sub-headers
+	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED);
+}
+
+void tg_print_system_ready_message(void)
 {
 	cmd_add_token("fv");
 	cmd_add_token("fb");

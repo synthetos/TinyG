@@ -33,14 +33,14 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95
-#define TINYG_BUILD_NUMBER   	343.01
+#define TINYG_BUILD_NUMBER   	343.02
 
-#define TINYG_JSON_PROTOCOL_REV 1
+#define TINYG_COMM_PROTOCOL_REV 1	// the communications protocol revision is tracked independently
 
 /****** DEVELOPMENT SETTINGS ******/
 
-#define __CANNED_STARTUP			// run any canned startup moves
-#define __DISABLE_EEPROM_INIT		// disable EEPROM init for faster simulation
+//#define __CANNED_STARTUP			// run any canned startup moves
+//#define __DISABLE_EEPROM_INIT		// disable EEPROM init for faster simulation
 //#define __DISABLE_TRANSMIT		// disable serial tranmission (TX)
 //#define __SEGMENT_LOGGER			// enable segment logging to memory array
 //#define __DEBUG					// enable debug (see util.c /.h)
@@ -135,7 +135,7 @@ enum tgPWMnum {				// define motor numbers and array indexes
 #define	TG_BUFFER_EMPTY 12
 #define	TG_BUFFER_FULL_FATAL 13 
 #define	TG_BUFFER_FULL_NON_FATAL 14		// NOTE: XIO codes align to here
-#define	TG_ERROR_15 15
+#define	TG_INITIALIZING 15				// initializing - not ready for use
 #define	TG_ERROR_16 16
 #define	TG_ERROR_17 17
 #define	TG_ERROR_18 18

@@ -80,7 +80,8 @@ enum xioCodes {
 	XIO_NO_SUCH_DEVICE,		// illegal or unavailable device
 	XIO_BUFFER_EMPTY,		// more of a statement of fact than an error code
 	XIO_BUFFER_FULL_FATAL,
-	XIO_BUFFER_FULL_NON_FATAL
+	XIO_BUFFER_FULL_NON_FATAL,
+	XIO_INITIALIZING		// system initializing, not ready for use
 };
 #define XIO_ERRNO_MAX XIO_BUFFER_FULL_NON_FATAL
 

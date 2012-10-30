@@ -47,7 +47,6 @@ struct controllerSingleton {		// main TG controller struct
 	double build;					// tinyg build number
 	double null;					// dumping ground for items with no target
 	uint8_t test;
-	uint8_t prompt_enabled;			// TRUE = enables prompts
 	uint8_t src;					// active source device
 	uint8_t default_src;			// default source device
 	char in_buf[INPUT_BUFFER_LEN];	// input text buffer
@@ -64,8 +63,9 @@ void tg_reset_source(void);
 char *tg_get_status_message(uint8_t status, char *msg);
 void tg_print_message(char *msg);
 void tg_print_message_number(uint8_t msgnum);
-void tg_print_configuration_profile(void);
-void tg_print_system_ready(void);
+void tg_print_loading_configs_message(void);
+void tg_print_initializing_message(void);
+void tg_print_system_ready_message(void);
 
 #ifdef __DEBUG
 void tg_dump_controller_state(void);

@@ -57,7 +57,7 @@ These commands are active from the command line:\n\
 "));
 _help_status_report_advisory();
 _help_postscript();
-tg_print_system_ready();
+tg_print_system_ready_message();
 }
 
 /*

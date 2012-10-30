@@ -121,7 +121,7 @@ void tg_application_reset(void)
 	PMIC_EnableMediumLevel();
 	PMIC_EnableLowLevel();
 	sei();					// enable global interrupts
-	tg_print_system_ready();// (LAST) announce system is ready
+	tg_print_system_ready_message();// (LAST) announce system is ready
 }
 
 static void _tg_unit_tests(void) // uncomment __UNITS... line in .h file to enable unit tests
