@@ -174,6 +174,7 @@ static uint8_t _run_gc(cmdObj *cmd);	// run a gcode block
 
 static uint8_t _get_line(cmdObj *cmd);	// get runtime line number
 static uint8_t _get_lx(cmdObj *cmd);	// get runtime line index
+static uint8_t _set_lx(cmdObj *cmd);	// set runtime line index
 static uint8_t _get_stat(cmdObj *cmd);	// get combined machine state as value and string
 static uint8_t _get_macs(cmdObj *cmd);	// get raw machine state as value and string
 static uint8_t _get_cycs(cmdObj *cmd);	// get raw cycle state as value and string
@@ -630,7 +631,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 
 	// gcode model attributes for reporting puropses
 	{ str_line,_print_int, _get_line,_set_int, (double *)&gm.linenum, 0 }, // line number - gets runtime line number
-	{ str_lx,  _print_int, _get_lx,  _set_nul, (double *)&tg.null ,0 },	// line index - gets runtime line index
+	{ str_lx,  _print_int, _get_lx,  _set_lx,  (double *)&tg.null ,0 },	// line index - get/set runtime line index
 	{ str_feed,_print_lin, _get_dbu, _set_nul, (double *)&tg.null, 0 },	// feed rate
 	{ str_stat,_print_str, _get_stat,_set_nul, (double *)&tg.null, 0 },	// combined machine state
 	{ str_macs,_print_str, _get_macs,_set_nul, (double *)&tg.null, 0 },	// raw machine state
@@ -1098,6 +1099,13 @@ static uint8_t _get_lx(cmdObj *cmd)
 	return (TG_OK);
 }
 
+static uint8_t _set_lx(cmdObj *cmd)
+{
+	mp_set_planner_lineindex((uint32_t)cmd->value);
+	cmd->type = TYPE_INTEGER;
+	return (TG_OK);
+}
+
 static uint8_t _get_vel(cmdObj *cmd) 
 {
 	cmd->value = mp_get_runtime_velocity();
@@ -1545,9 +1553,10 @@ cmdObj *cmd_clear(cmdObj *cmd)		// clear the cmdObj structure
 	cmd->nx = nx;					// restore pointers
 	cmd->pv = pv;
 	if (cmd->pv != NULL) { 			// set depth correctly
-		cmd->depth = cmd->pv->depth;
 		if (cmd->pv->type == TYPE_PARENT) { 
-			cmd->depth++; 
+			cmd->depth = cmd->pv->depth + 1;
+		} else {
+			cmd->depth = cmd->pv->depth;
 		}
 	}
 	cmd->type = TYPE_END;
@@ -1866,18 +1875,21 @@ static uint8_t _set_nul(cmdObj *cmd) { return (TG_OK);}
 static uint8_t _set_ui8(cmdObj *cmd)
 {
 	*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
+	cmd->type = TYPE_INTEGER;
 	return(TG_OK);
 }
 
 static uint8_t _set_int(cmdObj *cmd)
 {
 	*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
+	cmd->type = TYPE_INTEGER;
 	return(TG_OK);
 }
 
 static uint8_t _set_dbl(cmdObj *cmd)
 {
 	*((double *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
+	cmd->type = TYPE_FLOAT;
 	return(TG_OK);
 }
 
@@ -1888,6 +1900,7 @@ static uint8_t _set_dbu(cmdObj *cmd)
 	} else {
 		*((double *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	}
+	cmd->type = TYPE_FLOAT;
 	return(TG_OK);
 }
 
@@ -2184,7 +2197,7 @@ uint8_t cmd_read_NVM_value(cmdObj *cmd)
 	uint16_t nvm_address = cfg.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
 	(void)EEPROM_ReadBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
 	memcpy(&cmd->value, &nvm_byte_array, NVM_VALUE_LEN);
-	cmd->type = TYPE_FLOAT;
+//	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 

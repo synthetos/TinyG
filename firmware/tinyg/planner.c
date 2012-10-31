@@ -338,6 +338,7 @@ double mp_get_runtime_lineindex(void) { return (mr.lineindex);}
 void mp_set_planner_lineindex(uint32_t lineindex)
 {
 	mm.lineindex = lineindex;
+	mr.lineindex = lineindex;
 }
 
 /*************************************************************************/

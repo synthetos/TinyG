@@ -212,7 +212,7 @@ enum cmCombinedState {				// check alignment with messages in config.c / msg_sta
 	COMBINED_HOLD,					// motion is holding
 	COMBINED_PROBE,					// probe cycle active
 	COMBINED_CYCLE,					// machine is running (cycling)
-	COMBINED_HOMING,				// homing cycle active
+	COMBINED_HOMING,				// homing is treated as a cycle
 	COMBINED_JOG					// jogging is treated as a cycle
 };
 //#### END CRITICAL REGION ####
@@ -228,8 +228,8 @@ enum cmMachineState {
 enum cmCycleState {
 	CYCLE_OFF = 0,					// machine is idle
 	CYCLE_STARTED,					// machine in normal cycle
-	CYCLE_HOMING,					// machine in homing cycle
 	CYCLE_PROBE,					// machine in probe cycle
+	CYCLE_HOMING,					// homing is treated as a specialized cycle
 	CYCLE_JOG						// jogging is treated as a specialized cycle
 };
 
