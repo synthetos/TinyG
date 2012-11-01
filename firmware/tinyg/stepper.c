@@ -167,8 +167,8 @@ static void _exec_move(void);
 static void _load_move(void);
 static void _request_load_move(void);
 
-//#define __ISR_R2				// comment out to use R1 ISR
-//#define __LOAD_MOVE_R2			// comment out to use R1 routine
+#define __ISR_R2				// comment out to use R1 ISR
+#define __LOAD_MOVE_R2			// comment out to use R1 load move routine
 
 static void _set_f_dda(double *f_dda, double *dda_substeps,
 					   const double major_axis_steps, const double microseconds);
@@ -485,7 +485,7 @@ void _load_move()
 		}
 		if (st.m[0].steps != 0) {
 			// For ideal optimizations, only set or clear a bit at a time.
-			if (sp.m[0].dir == 1) {
+			if (sp.m[0].dir == 0) {
 				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm;	// CW motion (bit cleared)
 			} else {
 				PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
@@ -500,7 +500,7 @@ void _load_move()
 		}
 		if (st.m[1].steps != 0) {
 			// For ideal optimizations, only set or clear a bit at a time.
-			if (sp.m[1].dir == 1) {
+			if (sp.m[1].dir == 0) {
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm;	// CW motion (bit cleared)
 			} else {
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
@@ -515,7 +515,7 @@ void _load_move()
 		}
 		if (st.m[2].steps != 0) {
 			// For ideal optimizations, only set or clear a bit at a time.
-			if (sp.m[2].dir == 1) {
+			if (sp.m[2].dir == 0) {
 				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm;	// CW motion (bit cleared)
 			} else {
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
@@ -530,7 +530,7 @@ void _load_move()
 		}
 		if (st.m[3].steps != 0) {
 			// For ideal optimizations, only set or clear a bit at a time.
-			if (sp.m[3].dir == 1) {
+			if (sp.m[3].dir == 0) {
 				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm;	// CW motion (bit cleared)
 			} else {
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
