@@ -167,6 +167,9 @@ static void _exec_move(void);
 static void _load_move(void);
 static void _request_load_move(void);
 
+//#define __ISR_R2				// comment out to use R1 ISR
+//#define __LOAD_MOVE_R2			// comment out to use R1 routine
+
 static void _set_f_dda(double *f_dda, double *dda_substeps,
 					   const double major_axis_steps, const double microseconds);
 
@@ -192,8 +195,6 @@ struct stRunMotor { 				// one per controlled motor
 	int32_t steps;					// total steps in axis
 	int32_t counter;				// DDA counter for axis
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor polarity
-// experimental values:
-//	int8_t step_counter_incr;		// counts positive or negative steps
 };
 
 struct stRunSingleton {				// Stepper static values and axis parameters
@@ -256,8 +257,7 @@ void st_init()
 	for (uint8_t i=0; i<MOTORS; i++) {
 		// setup port. Do this first or st_set_microsteps() can fail
 		device.port[i]->DIR = MOTOR_PORT_DIR_gm;// set inputs & outputs
-		device.port[i]->OUT = 0x00;				// zero port bits
-		device.port[i]->OUTSET = MOTOR_ENABLE_BIT_bm; // disable motor
+		device.port[i]->OUT = MOTOR_ENABLE_BIT_bm;// zero port bits AND disable motor
 
 		st_set_microsteps(i, cfg.m[i].microsteps);
 		// NOTE: st_set_polarity(i, cfg.a[i].polarity);	// motor polarity
@@ -311,7 +311,7 @@ void st_reset()
 
 ISR(TIMER_DDA_ISR_vect)
 {
-
+#ifdef __ISR_R2 
 	if ((st.m[MOTOR_1].counter += st.m[MOTOR_1].steps) > 0) {
 		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;	// turn step bit on
  		st.m[MOTOR_1].counter -= st.timer_ticks_X_substeps;
@@ -349,8 +349,7 @@ ISR(TIMER_DDA_ISR_vect)
 		}
 		_load_move();							// load the next move
 	}
-
-/*
+#else
 	if ((st.m[MOTOR_1].counter += st.m[MOTOR_1].steps) > 0) {
 		PORT_MOTOR_1.OUTSET = STEP_BIT_bm;	// turn step bit on
  		st.m[MOTOR_1].counter -= st.timer_ticks_X_substeps;
@@ -388,7 +387,7 @@ ISR(TIMER_DDA_ISR_vect)
 		}
 		_load_move();							// load the next move
 	}
-*/
+#endif
 }
 
 ISR(TIMER_DWELL_ISR_vect) {				// DWELL timer interupt
@@ -462,12 +461,103 @@ static void _request_load_move()
  */
 
 void _load_move()
+#ifdef __LOAD_MOVE_R2
 {
 	if (st.timer_ticks_downcount != 0) { return;}				 // exit if it's still busy
 	if (sp.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	return;} // if there are no more moves
 
 	// handle line loads first (most common case)
 //	if ((sp.move_type == MOVE_TYPE_ALINE) || (sp.move_type == MOVE_TYPE_LINE)) {
+	if (sp.move_type == MOVE_TYPE_ALINE) {						// no more lines, only alines
+		st.timer_ticks_downcount = sp.timer_ticks;
+		st.timer_ticks_X_substeps = sp.timer_ticks_X_substeps;
+		TIMER_DDA.PER = sp.timer_period;
+ 
+		// This section is somewhat optimized for execution speed 
+		// All axes must set steps and compensate for out-of-range pulse phasing. 
+		// If axis has 0 steps the direction setting can be omitted
+		// If axis has 0 steps enabling motors is req'd to support power mode = 1
+
+#if MOTORS > 0
+		st.m[0].steps = sp.m[0].steps;						// set steps
+		if (sp.counter_reset_flag == true) {				// compensate for pulse phasing
+			st.m[0].counter = -(st.timer_ticks_downcount);
+		}
+		if (st.m[0].steps != 0) {
+			// For ideal optimizations, only set or clear a bit at a time.
+			if (sp.m[0].dir == 1) {
+				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm;	// CW motion (bit cleared)
+			} else {
+				PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
+			}
+			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// enable motor
+		}
+#endif
+#if MOTORS > 1
+		st.m[1].steps = sp.m[1].steps;						// set steps
+		if (sp.counter_reset_flag == true) {				// compensate for pulse phasing
+			st.m[1].counter = -(st.timer_ticks_downcount);
+		}
+		if (st.m[1].steps != 0) {
+			// For ideal optimizations, only set or clear a bit at a time.
+			if (sp.m[1].dir == 1) {
+				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm;	// CW motion (bit cleared)
+			} else {
+				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
+			}
+			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// enable motor
+		}
+#endif
+#if MOTORS > 2
+		st.m[2].steps = sp.m[2].steps;						// set steps
+		if (sp.counter_reset_flag == true) {				// compensate for pulse phasing
+			st.m[2].counter = -(st.timer_ticks_downcount);
+		}
+		if (st.m[2].steps != 0) {
+			// For ideal optimizations, only set or clear a bit at a time.
+			if (sp.m[2].dir == 1) {
+				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm;	// CW motion (bit cleared)
+			} else {
+				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
+			}
+			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// enable motor
+		}
+#endif
+#if MOTORS > 3
+		st.m[3].steps = sp.m[3].steps;						// set steps
+		if (sp.counter_reset_flag == true) {				// compensate for pulse phasing
+			st.m[3].counter = -(st.timer_ticks_downcount);
+		}
+		if (st.m[3].steps != 0) {
+			// For ideal optimizations, only set or clear a bit at a time.
+			if (sp.m[3].dir == 1) {
+				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm;	// CW motion (bit cleared)
+			} else {
+				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
+			}
+			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// enable motor
+		}
+#endif
+
+		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;					// enable the DDA timer
+
+	// handle dwells
+	} else if (sp.move_type == MOVE_TYPE_DWELL) {
+		st.timer_ticks_downcount = sp.timer_ticks;
+		TIMER_DWELL.PER = sp.timer_period;						// load dwell timer period
+ 		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;					// enable the dwell timer
+	}
+
+	// all other cases drop to here (e.g. Null moves after Mcodes skip to here) 
+	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;					// flip it back
+	st_request_exec_move();										// exec and prep next move
+}
+#else
+{
+	if (st.timer_ticks_downcount != 0) { return;}				 // exit if it's still busy
+	if (sp.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	return;} // if there are no more moves
+
+	// handle line loads first (most common case)
 	if (sp.move_type == MOVE_TYPE_ALINE) {						// no more lines, only alines
 		st.timer_ticks_downcount = sp.timer_ticks;
 		st.timer_ticks_X_substeps = sp.timer_ticks_X_substeps;
@@ -504,6 +594,7 @@ void _load_move()
 	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;					// flip it back
 	st_request_exec_move();										// exec and prep next move
 }
+#endif
 
 /*
  * st_prep_line() - Prepare the next move for the loader

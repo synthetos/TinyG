@@ -139,7 +139,7 @@ enum gpio1Inputs {
 // Ports are shared between steppers and GPIO so we need a global struct
 
 struct deviceSingleton {
-	struct PORT_struct *port[MOTORS];	// motor control ports
+	PORT_t *port[MOTORS];	// motor control ports
 };
 struct deviceSingleton device;
 
