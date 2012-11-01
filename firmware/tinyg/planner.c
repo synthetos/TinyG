@@ -67,7 +67,7 @@
 #include "test.h"
 #include "xio/xio.h"			// supports trap and debug statements
 
-//#define __EXEC_R2				// comment out to use R1 aline exec functions
+#define __EXEC_R2				// comment out to use R1 aline exec functions
 
 // All the enums that equal zero must be zero. Don't change this
 
@@ -225,11 +225,11 @@ static void _clear_buffer(mpBuf *bf);
 static void _copy_buffer(mpBuf *bf, const mpBuf *bp);
 static void _queue_write_buffer(const uint8_t move_type);
 static void _free_run_buffer(void);
-//static void _unget_write_buffer(void);
 static mpBuf * _get_write_buffer(void); 
 static mpBuf * _get_run_buffer(void);
 static mpBuf * _get_first_buffer(void);
 static mpBuf * _get_last_buffer(void);
+//static void _unget_write_buffer(void);
 
 #ifdef __DEBUG
 static uint8_t _get_buffer_index(mpBuf *bf); 
@@ -1530,7 +1530,6 @@ static uint8_t _exec_aline_head()
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
 			return(TG_GCODE_BLOCK_SKIPPED);		// exit without advancing position
 		}
-		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 		mr.section_state = MOVE_STATE_RUN1;
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {	// concave part of accel curve (period 1)
@@ -1605,9 +1604,7 @@ static uint8_t _exec_aline_tail()
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
 			return(TG_GCODE_BLOCK_SKIPPED);					// exit without advancing position
 		}
-		
 		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
-		
 		mr.section_state = MOVE_STATE_RUN1;
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {				// convex part (period 4)
@@ -1693,7 +1690,9 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
 		copy_axis_vector(mr.position, mr.target); 	// update runtime position	
 	}
+#ifndef __EXEC_R2
 	mr.elapsed_accel_time += mr.segment_accel_time; // NB: ignored if running the body
+#endif
 	if (--mr.segment_count == 0) {
 		return (TG_COMPLETE);	// this section has run all its segments
 	}
