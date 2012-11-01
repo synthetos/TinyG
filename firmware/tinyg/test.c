@@ -102,10 +102,10 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$test=51\n");	// run braid
 
 //	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"posa\":true,\"posx\":true,\"gc\":true,\"feed\":true,\"posy\":true,\"line\":true,\"stat\":true,\"posz\":true}}\n");
-	xio_queue_RX_string_usb("{\"ej\":1}\n");
+//	xio_queue_RX_string_usb("{\"ej\":1}\n");
 
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x1\"}\n");
-//	xio_queue_RX_string_usb("{\"gc\":\"g0x20y30z40\"}\n");
+	xio_queue_RX_string_usb("{\"gc\":\"g0x20y30z40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x30\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x0\"}\n");

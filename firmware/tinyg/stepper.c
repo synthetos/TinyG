@@ -249,6 +249,10 @@ void st_init()
 	device.port[MOTOR_3] = &PORT_MOTOR_3;
 	device.port[MOTOR_4] = &PORT_MOTOR_4;
 
+	// Configure virtual ports
+	PORTCFG.VPCTRLA = PORTCFG_VP0MAP_PORT_MOTOR_1_gc | PORTCFG_VP1MAP_PORT_MOTOR_2_gc;
+	PORTCFG.VPCTRLB = PORTCFG_VP2MAP_PORT_MOTOR_3_gc | PORTCFG_VP3MAP_PORT_MOTOR_4_gc;
+
 	for (uint8_t i=0; i<MOTORS; i++) {
 		// setup port. Do this first or st_set_microsteps() can fail
 		device.port[i]->DIR = MOTOR_PORT_DIR_gm;// set inputs & outputs
@@ -307,6 +311,46 @@ void st_reset()
 
 ISR(TIMER_DDA_ISR_vect)
 {
+
+	if ((st.m[MOTOR_1].counter += st.m[MOTOR_1].steps) > 0) {
+		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;	// turn step bit on
+ 		st.m[MOTOR_1].counter -= st.timer_ticks_X_substeps;
+		PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;	// turn step bit off in ~1 uSec
+	}
+	if ((st.m[MOTOR_2].counter += st.m[MOTOR_2].steps) > 0) {
+		PORT_MOTOR_2_VPORT.OUT |= STEP_BIT_bm;
+ 		st.m[MOTOR_2].counter -= st.timer_ticks_X_substeps;
+		PORT_MOTOR_2_VPORT.OUT &= ~STEP_BIT_bm;
+	}
+	if ((st.m[MOTOR_3].counter += st.m[MOTOR_3].steps) > 0) {
+		PORT_MOTOR_3_VPORT.OUT |= STEP_BIT_bm;
+ 		st.m[MOTOR_3].counter -= st.timer_ticks_X_substeps;
+		PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;
+	}
+	if ((st.m[MOTOR_4].counter += st.m[MOTOR_4].steps) > 0) {
+		PORT_MOTOR_4_VPORT.OUT |= STEP_BIT_bm;
+ 		st.m[MOTOR_4].counter -= st.timer_ticks_X_substeps;
+		PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
+	}
+	if (--st.timer_ticks_downcount == 0) {			// end move
+ 		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// disable DDA timer
+		// power-down motors if this feature is enabled
+		if (cfg.m[MOTOR_1].power_mode == true) {
+			PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; 
+		}
+		if (cfg.m[MOTOR_2].power_mode == true) {
+			PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; 
+		}
+		if (cfg.m[MOTOR_3].power_mode == true) {
+			PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; 
+		}
+		if (cfg.m[MOTOR_4].power_mode == true) {
+			PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; 
+		}
+		_load_move();							// load the next move
+	}
+
+/*
 	if ((st.m[MOTOR_1].counter += st.m[MOTOR_1].steps) > 0) {
 		PORT_MOTOR_1.OUTSET = STEP_BIT_bm;	// turn step bit on
  		st.m[MOTOR_1].counter -= st.timer_ticks_X_substeps;
@@ -344,6 +388,7 @@ ISR(TIMER_DDA_ISR_vect)
 		}
 		_load_move();							// load the next move
 	}
+*/
 }
 
 ISR(TIMER_DWELL_ISR_vect) {				// DWELL timer interupt

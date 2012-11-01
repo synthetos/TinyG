@@ -61,6 +61,17 @@ void sys_init(void);					// master hardware init
 #define PORT_MOTOR_4		PORTD
 #define PORT_GPIO2_IN		PORTB
 
+// These next four must be changed when the PORT_MOTOR_* definitions change!
+#define PORTCFG_VP0MAP_PORT_MOTOR_1_gc PORTCFG_VP0MAP_PORTA_gc
+#define PORTCFG_VP1MAP_PORT_MOTOR_2_gc PORTCFG_VP1MAP_PORTF_gc
+#define PORTCFG_VP2MAP_PORT_MOTOR_3_gc PORTCFG_VP2MAP_PORTE_gc
+#define PORTCFG_VP3MAP_PORT_MOTOR_4_gc PORTCFG_VP3MAP_PORTD_gc
+
+#define PORT_MOTOR_1_VPORT	VPORT0
+#define PORT_MOTOR_2_VPORT	VPORT1
+#define PORT_MOTOR_3_VPORT	VPORT2
+#define PORT_MOTOR_4_VPORT	VPORT3
+
 /*
  * Port setup - Stepper / Switch Ports:
  *	b0	(out) step			(SET is step,  CLR is rest)

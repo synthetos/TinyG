@@ -78,10 +78,10 @@ enum mpBufferState {			// bf->buffer_state values
 };
 
 struct mpBuffer {				// See Planning Velocity Notes for variable usage
-	uint32_t linenum;			// runtime line number; or line index if not numbered
-	uint32_t lineindex;			// runtime autoincremented line index
 	struct mpBuffer *pv;		// static pointer to previous buffer
 	struct mpBuffer *nx;		// static pointer to next buffer
+	uint32_t linenum;			// runtime line number; or line index if not numbered
+	uint32_t lineindex;			// runtime autoincremented line index
 //	uint8_t (*exec_func)(double parameter); // callback to function to execute w/parameter
 	fptrCallback callback;		// callback to execution function
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
@@ -157,17 +157,20 @@ struct mpMoveRuntimeSingleton {	// persistent runtime variables
 
 	double length;				// length of line in mm
 	double move_time;			// total running time (derived)
-	double accel_time;			// total pseudo-time for acceleration calculation
-	double elapsed_accel_time;	// current running time for accel calculation
+//	double accel_time;			// total pseudo-time for acceleration calculation
+//	double elapsed_accel_time;	// current running time for accel calculation
 	double midpoint_velocity;	// velocity at accel/decel midpoint
-	double midpoint_acceleration;//acceleration at the midpoint
+//	double midpoint_acceleration;//acceleration at the midpoint
 	double jerk;				// max linear jerk
-	double jerk_div2;			// max linear jerk divided by 2
+//	double jerk_div2;			// max linear jerk divided by 2
+
+	double forward_diff_1;      // forward difference level 1 (Acceleration)
+	double forward_diff_2;      // forward difference level 2 (Jerk - constant)
 
 	double segments;			// number of segments in arc or blend
 	uint32_t segment_count;		// count of running segments
 	double segment_move_time;	// actual time increment per aline segment
-	double segment_accel_time;	// time increment for accel computation purposes
+//	double segment_accel_time;	// time increment for accel computation purposes
 	double microseconds;		// line or segment time in microseconds
 	double segment_length;		// computed length for aline segment
 	double segment_velocity;	// computed velocity for aline segment
@@ -205,6 +208,7 @@ static uint8_t _exec_mcode(mpBuf *bf);
 static uint8_t _exec_tool(mpBuf *bf);
 static uint8_t _exec_spindle_speed(mpBuf *bf);
 static uint8_t _exec_aline(mpBuf *bf);
+static void _init_forward_diffs(double t0, double t2);
 static uint8_t _exec_aline_head(void);
 static uint8_t _exec_aline_body(void);
 static uint8_t _exec_aline_tail(void);
@@ -618,7 +622,14 @@ uint8_t mp_aline(const double target[], const double minutes)
 	bf->time = minutes;
 	bf->length = length;
 	copy_axis_vector(bf->target, target); 		// set target for runtime
-	set_unit_vector(bf->unit, bf->target, mm.position);
+//	set_unit_vector(bf->unit, bf->target, mm.position);
+
+	bf->unit[X] = (target[X] - mm.position[X]) / length;	// the compiler would probably do
+	bf->unit[Y] = (target[Y] - mm.position[Y]) / length;	// this for me but what the hey
+	bf->unit[Z] = (target[Z] - mm.position[Z]) / length;
+	bf->unit[A] = (target[A] - mm.position[A]) / length;
+	bf->unit[B] = (target[B] - mm.position[B]) / length;
+	bf->unit[C] = (target[C] - mm.position[C]) / length;
 
 	// initialize jerk terms (these are in sequence)
 	bf->jerk = sqrt(square(bf->unit[X] * cfg.a[X].jerk_max) +
@@ -1344,7 +1355,6 @@ static uint8_t _exec_aline(mpBuf *bf)
 		// initialization to process the new incoming bf buffer
 		bf->replannable = false;
 		if (bf->length < EPSILON) {
-//			fprintf_P(stderr, PSTR("***exec_aline()*** LINE TOO SHORT L:%f\n"),bf->length);
 			mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
 			mr.section_state = MOVE_STATE_OFF;
 			bf->nx->replannable = false;			// prevent overplanning (Note 2)
@@ -1358,7 +1368,7 @@ static uint8_t _exec_aline(mpBuf *bf)
 		mr.linenum = bf->linenum;
 		mr.lineindex = bf->lineindex;
 		mr.jerk = bf->jerk;
-		mr.jerk_div2 = bf->jerk/2;
+		// mr.jerk_div2 = bf->jerk/2;
 		mr.head_length = bf->head_length;
 		mr.body_length = bf->body_length;
 		mr.tail_length = bf->tail_length;
@@ -1410,6 +1420,41 @@ static uint8_t _exec_aline(mpBuf *bf)
 	return (status);
 }
 
+/* Forward difference math explained:
+ * We're using two quadraic curve end-to-end, forming the
+ * concave and convex section of the s-curve.
+ * For each half, we have three points:
+ * T[0] is the start point, or the entro or middle of the "s". This will be one of:
+ *    entry_velocity (acceleration concave),
+ *    cruise_velocity (deceleration concave), or
+ *    midpoint_velocity (convex)
+ * T[1] is the "control point" set to T[0] for concave sections, and T[2] for convex
+ * T[2] is the end point of the quadratic, which will be the midpoint or endpoint of the s.
+ *
+ *  TODO MATH EXPLANATION
+ *  
+ *  A = T[0] - 2*T[1] + T[2]
+ *  B = 2 * (T[1] - T[0])
+ *  C = T[0]
+ *  h = (1/mr.segments)
+
+ *  forward_diff_1 = Ah²+Bh = (T[0] - 2*T[1] + T[2])h*h + (2 * (T[1] - T[0]))h
+ *  forward_diff_2 = 2Ah² = 2*(T[0] - 2*T[1] + T[2])h*h
+ */
+
+// NOTE: t1 will always be == t0, so we don't pass it
+static void _init_forward_diffs(double t0, double t2)
+{
+	double H_squared = square(1/mr.segments);
+	// A = T[0] - 2*T[1] + T[2], if T[0] == T[1], then it becomes - T[0] + T[2]
+	double AH_squared = (t2 - t0) * H_squared;
+	
+	// Ah²+Bh, and B=2 * (T[1] - T[0]), if T[0] == T[1], then it becomes simply Ah²
+	mr.forward_diff_1 = AH_squared;
+	mr.forward_diff_2 = 2*AH_squared;
+	mr.segment_velocity = t0;
+}
+
 /*
  * _exec_aline_head()
  */
@@ -1422,30 +1467,37 @@ static uint8_t _exec_aline_head()
 		}
 		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
 		mr.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
-		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.entry_velocity) / mr.jerk);
-		mr.midpoint_acceleration = 2 * (mr.cruise_velocity - mr.entry_velocity) / mr.accel_time;
+		// mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.entry_velocity) / mr.jerk);
+		// mr.midpoint_acceleration = 2 * (mr.cruise_velocity - mr.entry_velocity) / mr.accel_time;
 		mr.segments = ceil(uSec(mr.move_time) / (2 * cfg.estd_segment_usec)); // # of segments in *each half*
 		mr.segment_move_time = mr.move_time / (2 * mr.segments);
-		mr.segment_accel_time = mr.accel_time / (2 * mr.segments);// time to advance for each segment
-		mr.elapsed_accel_time = mr.segment_accel_time / 2;	// elapsed time starting point (offset)
+		// mr.segment_accel_time = mr.accel_time / (2 * mr.segments);// time to advance for each segment
+		// mr.elapsed_accel_time = mr.segment_accel_time / 2;	// elapsed time starting point (offset)
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
 			return(TG_GCODE_BLOCK_SKIPPED);		// exit without advancing position
 		}
+		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 		mr.section_state = MOVE_STATE_RUN1;
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {	// concave part of accel curve (period 1)
-		mr.segment_velocity = mr.entry_velocity + (square(mr.elapsed_accel_time) * mr.jerk_div2);
+		mr.segment_velocity += mr.forward_diff_1;
 		if (_exec_aline_segment(false) == TG_COMPLETE) { 	  	// set up for second half
-			mr.elapsed_accel_time = mr.segment_accel_time / 2;	// start time from midpoint of segment
+			// mr.elapsed_accel_time = mr.segment_accel_time / 2;	// start time from midpoint of segment
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = MOVE_STATE_RUN2;
+			
+			// Here's a trick: The second half of the S starts at the end of the first,
+			//  And the only thing that changes is the sign of mr.forward_diff_2
+			mr.forward_diff_2 = -mr.forward_diff_2;
+		} else {
+			mr.forward_diff_1 += mr.forward_diff_2;
 		}
 		return(TG_EAGAIN);
 	}
 	if (mr.section_state == MOVE_STATE_RUN2) {	// convex part of accel curve (period 2)
-		mr.segment_velocity = mr.midpoint_velocity + (mr.elapsed_accel_time * mr.midpoint_acceleration) -
-							 (square(mr.elapsed_accel_time) * mr.jerk_div2);
+		mr.segment_velocity += mr.forward_diff_1;
+		mr.forward_diff_1 += mr.forward_diff_2;
 		if (_exec_aline_segment(false) == TG_COMPLETE) {
 			if ((mr.body_length < EPSILON) && (mr.tail_length < EPSILON)) { return(TG_OK);}	// end the move
 			mr.move_state = MOVE_STATE_BODY;
@@ -1476,6 +1528,7 @@ static uint8_t _exec_aline_body()
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
 			return(TG_GCODE_BLOCK_SKIPPED);		// exit without advancing position
 		}
+		
 		mr.section_state = MOVE_STATE_RUN;
 	}
 	if (mr.section_state == MOVE_STATE_RUN) {				// stright part (period 3)
@@ -1491,6 +1544,201 @@ static uint8_t _exec_aline_body()
 /*
  * _exec_aline_tail()
  */
+static uint8_t _exec_aline_tail() 
+{
+	if (mr.section_state == MOVE_STATE_NEW) {
+		if (mr.tail_length < EPSILON) { return(TG_OK);}		// end the move
+		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
+		mr.move_time = mr.tail_length / mr.midpoint_velocity;
+		// mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.exit_velocity) / mr.jerk);
+		// mr.midpoint_acceleration = 2 * (mr.cruise_velocity - mr.exit_velocity) / mr.accel_time;
+		mr.segments = ceil(uSec(mr.move_time) / (2 * cfg.estd_segment_usec));// # of segments in *each half*
+		mr.segment_move_time = mr.move_time / (2 * mr.segments);// time to advance for each segment
+		// mr.segment_accel_time = mr.accel_time / (2 * mr.segments);// time to advance for each segment
+		// mr.elapsed_accel_time = mr.segment_accel_time / 2; //compute time from midpoint of segment
+		mr.segment_count = (uint32_t)mr.segments;
+		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
+			return(TG_GCODE_BLOCK_SKIPPED);					// exit without advancing position
+		}
+		
+		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
+		
+		mr.section_state = MOVE_STATE_RUN1;
+	}
+	if (mr.section_state == MOVE_STATE_RUN1) {				// convex part (period 4)
+		mr.segment_velocity += mr.forward_diff_1;
+		if (_exec_aline_segment(false) == TG_COMPLETE) { 	  	// set up for second half
+			// mr.elapsed_accel_time = mr.segment_accel_time / 2;	// start time from midpoint of segment
+			mr.segment_count = (uint32_t)mr.segments;
+			mr.section_state = MOVE_STATE_RUN2;
+
+			// Here's a trick: The second half of the S starts at the end of the first,
+			//  And the only thing that changes is the sign of mr.forward_diff_2
+			mr.forward_diff_2 = -mr.forward_diff_2;
+		} else {
+			mr.forward_diff_1 += mr.forward_diff_2;
+		}
+		return(TG_EAGAIN);
+	}
+	if (mr.section_state == MOVE_STATE_RUN2) {				// concave part (period 5)
+		mr.segment_velocity += mr.forward_diff_1;
+		mr.forward_diff_1 += mr.forward_diff_2;
+		if (_exec_aline_segment(true) == TG_COMPLETE) { return (TG_OK);}	// end the move
+	}
+	return(TG_EAGAIN);
+}
+
+/*
+ * _exec_aline_segment() - segment runner helper
+ */
+static uint8_t _exec_aline_segment(uint8_t correction_flag)
+{
+	uint8_t i;
+	double travel[AXES];
+	double steps[MOTORS];
+
+	// Multiply computed length by the unit vector to get the contribution for
+	// each axis. Set the target in absolute coords and compute relative steps.
+	for (i=0; i < AXES; i++) {	// don;t do the error correction if you are going into a hold
+		if ((correction_flag == true) && (mr.segment_count == 1) && 
+			(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_STARTED)) {
+			mr.target[i] = mr.endpoint[i];	// rounding error correction for last segment
+		} else {
+			mr.target[i] = mr.position[i] + (mr.unit[i] * mr.segment_velocity * mr.segment_move_time);
+		}
+		travel[i] = mr.target[i] - mr.position[i];
+	}
+	// prep the segment for the steppers and adjust the variables for the next iteration
+	(void)ik_kinematics(travel, steps, mr.microseconds);
+	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
+		copy_axis_vector(mr.position, mr.target); 	// update runtime position	
+	}
+	// mr.elapsed_accel_time += mr.segment_accel_time; // NB: ignored if running the body
+	if (--mr.segment_count == 0) {
+		return (TG_COMPLETE);	// this section has run all its segments
+	}
+	return (TG_EAGAIN);			// this section still has more segments to run
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * _exec_aline_head()
+ *
+static uint8_t _exec_aline_head()
+{
+	if (mr.section_state == MOVE_STATE_NEW) {	// initialize the move singleton (mr)
+		if (mr.head_length < EPSILON) { 
+			mr.move_state = MOVE_STATE_BODY;
+			return(_exec_aline_body());			// skip ahead to the body generator
+		}
+		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
+		mr.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
+//		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.entry_velocity) / mr.jerk);
+//		mr.midpoint_acceleration = 2 * (mr.cruise_velocity - mr.entry_velocity) / mr.accel_time;
+		mr.segments = ceil(uSec(mr.move_time) / (2 * cfg.estd_segment_usec)); // # of segments in *each half*
+		mr.segment_move_time = mr.move_time / (2 * mr.segments);
+//		mr.segment_accel_time = mr.accel_time / (2 * mr.segments);// time to advance for each segment
+//		mr.elapsed_accel_time = mr.segment_accel_time / 2;	// elapsed time starting point (offset)
+		mr.segment_count = (uint32_t)mr.segments;
+		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
+			return(TG_GCODE_BLOCK_SKIPPED);		// exit without advancing position
+		}
+		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
+		mr.section_state = MOVE_STATE_RUN1;
+	}
+	if (mr.section_state == MOVE_STATE_RUN1) {	// concave part of accel curve (period 1)
+		mr.segment_velocity = mr.entry_velocity + (square(mr.elapsed_accel_time) * mr.jerk_div2);
+		if (_exec_aline_segment(false) == TG_COMPLETE) { 	  	// set up for second half
+			mr.elapsed_accel_time = mr.segment_accel_time / 2;	// start time from midpoint of segment
+			mr.segment_count = (uint32_t)mr.segments;
+			mr.section_state = MOVE_STATE_RUN2;
+		}
+		return(TG_EAGAIN);
+	}
+	if (mr.section_state == MOVE_STATE_RUN2) {	// convex part of accel curve (period 2)
+		mr.segment_velocity = mr.midpoint_velocity + (mr.elapsed_accel_time * mr.midpoint_acceleration) -
+							 (square(mr.elapsed_accel_time) * mr.jerk_div2);
+		if (_exec_aline_segment(false) == TG_COMPLETE) {
+			if ((mr.body_length < EPSILON) && (mr.tail_length < EPSILON)) { return(TG_OK);}	// end the move
+			mr.move_state = MOVE_STATE_BODY;
+			mr.section_state = MOVE_STATE_NEW;
+		}
+	}
+	return(TG_EAGAIN);
+}
+*/
+
+/*
+ * _exec_aline_body()
+ *
+ *	The body is broken into little segments even though it is a straight line so that 
+ *	feedholds can happen in the middle of a line with a minimum of latency
+ *
+static uint8_t _exec_aline_body() 
+{
+	if (mr.section_state == MOVE_STATE_NEW) {
+		if (mr.body_length < EPSILON) {
+			mr.move_state = MOVE_STATE_TAIL;
+			return(_exec_aline_tail());			// skip ahead to tail periods
+		}
+		mr.move_time = mr.body_length / mr.cruise_velocity;
+		mr.segments = ceil(uSec(mr.move_time) / cfg.estd_segment_usec);
+		mr.segment_move_time = mr.move_time / mr.segments;
+		mr.segment_velocity = mr.cruise_velocity;
+		mr.segment_count = (uint32_t)mr.segments;
+		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
+			return(TG_GCODE_BLOCK_SKIPPED);		// exit without advancing position
+		}
+		mr.section_state = MOVE_STATE_RUN;
+	}
+	if (mr.section_state == MOVE_STATE_RUN) {				// stright part (period 3)
+		if (_exec_aline_segment(false) == TG_COMPLETE) {
+			if (mr.tail_length < EPSILON) { return(TG_OK);}	// end the move
+			mr.move_state = MOVE_STATE_TAIL;
+			mr.section_state = MOVE_STATE_NEW;
+		}
+	}
+	return(TG_EAGAIN);
+}
+*/
+
+/*
+ * _exec_aline_tail()
+ *
 static uint8_t _exec_aline_tail() 
 {
 	if (mr.section_state == MOVE_STATE_NEW) {
@@ -1526,10 +1774,10 @@ static uint8_t _exec_aline_tail()
 	}
 	return(TG_EAGAIN);
 }
-
+*/
 /*
  * _exec_aline_segment() - segment runner helper
- */
+ *
 static uint8_t _exec_aline_segment(uint8_t correction_flag)
 {
 	uint8_t i;
@@ -1558,7 +1806,7 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 	}
 	return (TG_EAGAIN);			// this section still has more segments to run
 }
-
+*/
 /**** PLANNER BUFFERS - FUNCTIONS *********************************************
  *
  * Planner buffers are used to queue and operate on Gcode blocks. Each buffer 
