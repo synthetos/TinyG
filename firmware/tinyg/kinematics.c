@@ -28,13 +28,15 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
 #include "tinyg.h"
 #include "config.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "kinematics.h"
 
-static uint8_t _cartesian_kinematics(double travel[], double joint[], double microseconds);
+//static uint8_t _cartesian_kinematics(double travel[], double joint[], double microseconds);
 
 /*
  * ik_kinematics() - wrapper routine for inverse kinematics
@@ -53,24 +55,26 @@ static uint8_t _cartesian_kinematics(double travel[], double joint[], double mic
 
 uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
 {
-	uint8_t i,j;
+	uint8_t i;
 	double joint[AXES];
 
 	// inverse kinematics --> insert kinematics transformations here
-	_cartesian_kinematics(travel, joint, microseconds);
+//	_cartesian_kinematics(travel, joint, microseconds);
+	memcpy(joint, travel, sizeof(double)*AXES);	//...or just do this for cartesian machines
 
 	// Map motors to axes and convert length units to steps
 	// Most of the conversion math has already been done in steps_per_unit
 	// which takes axis travel, step angle and microsteps into account.
 	for (i=0; i<AXES; i++) {
-		if (cfg.a[i].axis_mode == AXIS_INHIBITED) {
-			joint[i] = 0;
-		}
-		for (j=0; j<MOTORS; j++) {
-			if (cfg.m[j].motor_map == i) {
-				steps[j] = joint[i] * cfg.m[j].steps_per_unit;
-			}
-		}
+		if (cfg.a[i].axis_mode == AXIS_INHIBITED) { joint[i] = 0;}
+		if (cfg.m[MOTOR_1].motor_map == i) { steps[MOTOR_1] = joint[i] * cfg.m[MOTOR_1].steps_per_unit;}
+		if (cfg.m[MOTOR_2].motor_map == i) { steps[MOTOR_2] = joint[i] * cfg.m[MOTOR_2].steps_per_unit;}
+		if (cfg.m[MOTOR_3].motor_map == i) { steps[MOTOR_3] = joint[i] * cfg.m[MOTOR_3].steps_per_unit;}
+		if (cfg.m[MOTOR_4].motor_map == i) { steps[MOTOR_4] = joint[i] * cfg.m[MOTOR_4].steps_per_unit;}
+	// the above is a loop unrolled version of this:
+	//	for (uint8_t j=0; j<MOTORS; j++) {
+	//		if (cfg.m[j].motor_map == i) { steps[j] = joint[i] * cfg.m[j].steps_per_unit;}
+	//	}
 	}
 	return (TG_OK);
 }
@@ -80,7 +84,7 @@ uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
  *
  *	Provides inverse kinematics for cartesian machines. Which is none.
  */
-
+/*
 static uint8_t _cartesian_kinematics(double travel[], double joint[], double microseconds)
 {
 	for (uint8_t i=0; i<AXES; i++) {
@@ -88,7 +92,7 @@ static uint8_t _cartesian_kinematics(double travel[], double joint[], double mic
 	}	
 	return (TG_OK);
 }
-
+*/
 
 //############## UNIT TESTS ################
 

@@ -27,22 +27,29 @@
  */
 /* --- Planner Notes ----
  *
- *	The planner works below the canonical machine and above the motor mapping and stepper 
- *	execution layers. A rudimentary multitasking capability is implemented for long-running
- *	commands such as lines, arcs, and dwells. These functions are coded as non-blocking 
- *	continuations - which are simple state machines that are re-entered multiple times until 
- *	a particular operation is complete. These functions have 2 parts - the initial call, 
- *	which sets up the local context, and callbacks (continuations) that are called from 
- *	the main loop (in controller.c).
+ *	The planner works below the canonical machine and above the motor mapping 
+ *	and stepper execution layers. A rudimentary multitasking capability is 
+ *	implemented for long-running commands such as lines, arcs, and dwells. 
+ *	These functions are coded as non-blocking continuations - which are simple 
+ *	state machines that are re-entered multiple times until a particular 
+ *	operation is complete. These functions have 2 parts - the initial call, 
+ *	which sets up the local context, and callbacks (continuations) that are 
+ *	called from the main loop (in controller.c).
  *
- *	One important concept is isolation of the Gcode model from the planner runtime model.
- *	Functions that are called from the canonical_machine to set up operations (e.g. mp_aline(), 
- *	mp_dwell()) can get their data from the gcode model, but generally should do this using 
- *	cm_get_xxxx functions. Callbacks (e.g. functions like _exec_aline(), _exec_dwell()) 
- *	should work from the buffer (bf) and their singletons (e.g. mr.) and never call the 
- *	gcode model - which may have changed.
+ *	One important concept is isolation of the three layers of the data model - 
+ *	the Gcode model (gm), planner model (bf queue & mm), and runtime model (mr).
+ *	These are designated as "model", "planner" and "runtime" in function names.
  *
- *	For info on how the planner buffers are handled scan down for PLANNER BUFFERS
+ *	The Gcode model is owned by the canonical machine and should only be accessed
+ *	by cm_xxxx() functions. Data from the Gcode model is transferred to the planner
+ *	by the mp_xxx() functions called by the canonical machine. 
+ *
+ *	The planner should only use data in the planner model. When a move (block) 
+ *	is ready for execution the planner data is transferred to the runtime model, 
+ *	which should also be isolated.
+ *
+ *	Lower-level models should never use data from upper-level models as the data 
+ *	may have changed and lead to unpredictable results.
  */
 
 #include <stdlib.h>
@@ -1670,13 +1677,38 @@ static uint8_t _exec_aline_tail()
  */
 static uint8_t _exec_aline_segment(uint8_t correction_flag)
 {
-	uint8_t i;
 	double travel[AXES];
 	double steps[MOTORS];
 
 	// Multiply computed length by the unit vector to get the contribution for
 	// each axis. Set the target in absolute coords and compute relative steps.
-	for (i=0; i < AXES; i++) {	// don;t do the error correction if you are going into a hold
+
+	if ((correction_flag == true) && (mr.segment_count == 1) && 
+		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_STARTED)) {
+		mr.target[X] = mr.endpoint[X];	// rounding error correction for last segment
+		mr.target[Y] = mr.endpoint[Y];
+		mr.target[Z] = mr.endpoint[Z];
+		mr.target[A] = mr.endpoint[A];
+		mr.target[B] = mr.endpoint[B];
+		mr.target[C] = mr.endpoint[C];
+	} else {
+		double intermediate = mr.segment_velocity * mr.segment_move_time;
+		mr.target[X] = mr.position[X] + (mr.unit[X] * intermediate);
+		mr.target[Y] = mr.position[Y] + (mr.unit[Y] * intermediate);
+		mr.target[Z] = mr.position[Z] + (mr.unit[Z] * intermediate);
+		mr.target[A] = mr.position[A] + (mr.unit[A] * intermediate);
+		mr.target[B] = mr.position[B] + (mr.unit[B] * intermediate);
+		mr.target[C] = mr.position[C] + (mr.unit[C] * intermediate);
+	}
+	travel[X] = mr.target[X] - mr.position[X];
+	travel[Y] = mr.target[Y] - mr.position[Y];
+	travel[Z] = mr.target[Z] - mr.position[Z];
+	travel[A] = mr.target[A] - mr.position[A];
+	travel[B] = mr.target[B] - mr.position[B];
+	travel[C] = mr.target[C] - mr.position[C];
+
+/* The above is a re-arranged and loop unrolled version of this:
+	for (uint8_t i=0; i < AXES; i++) {	// don;t do the error correction if you are going into a hold
 		if ((correction_flag == true) && (mr.segment_count == 1) && 
 			(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_STARTED)) {
 			mr.target[i] = mr.endpoint[i];	// rounding error correction for last segment
@@ -1685,6 +1717,8 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 		}
 		travel[i] = mr.target[i] - mr.position[i];
 	}
+*/
+
 	// prep the segment for the steppers and adjust the variables for the next iteration
 	(void)ik_kinematics(travel, steps, mr.microseconds);
 	if (st_prep_line(steps, mr.microseconds) == TG_OK) {

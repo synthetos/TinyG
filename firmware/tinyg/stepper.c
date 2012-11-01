@@ -466,9 +466,8 @@ void _load_move()
 	if (st.timer_ticks_downcount != 0) { return;}				 // exit if it's still busy
 	if (sp.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	return;} // if there are no more moves
 
-	// handle line loads first (most common case)
-//	if ((sp.move_type == MOVE_TYPE_ALINE) || (sp.move_type == MOVE_TYPE_LINE)) {
-	if (sp.move_type == MOVE_TYPE_ALINE) {						// no more lines, only alines
+	// handle aline loads first (most common case)  NB: there are no more lines, only alines
+	if (sp.move_type == MOVE_TYPE_ALINE) {
 		st.timer_ticks_downcount = sp.timer_ticks;
 		st.timer_ticks_X_substeps = sp.timer_ticks_X_substeps;
 		TIMER_DDA.PER = sp.timer_period;
@@ -478,67 +477,63 @@ void _load_move()
 		// If axis has 0 steps the direction setting can be omitted
 		// If axis has 0 steps enabling motors is req'd to support power mode = 1
 
-#if MOTORS > 0
-		st.m[0].steps = sp.m[0].steps;						// set steps
+#ifdef MOTOR_1
+		st.m[MOTOR_1].steps = sp.m[MOTOR_1].steps;			// set steps
 		if (sp.counter_reset_flag == true) {				// compensate for pulse phasing
-			st.m[0].counter = -(st.timer_ticks_downcount);
+			st.m[MOTOR_1].counter = -(st.timer_ticks_downcount);
 		}
-		if (st.m[0].steps != 0) {
+		if (st.m[MOTOR_1].steps != 0) {
 			// For ideal optimizations, only set or clear a bit at a time.
-			if (sp.m[0].dir == 0) {
-				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm;	// CW motion (bit cleared)
+			if (sp.m[MOTOR_1].dir == 0) {
+				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm;// CW motion (bit cleared)
 			} else {
 				PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
 			}
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// enable motor
 		}
 #endif
-#if MOTORS > 1
-		st.m[1].steps = sp.m[1].steps;						// set steps
-		if (sp.counter_reset_flag == true) {				// compensate for pulse phasing
-			st.m[1].counter = -(st.timer_ticks_downcount);
+#ifdef MOTOR_2
+		st.m[MOTOR_2].steps = sp.m[MOTOR_2].steps;
+		if (sp.counter_reset_flag == true) {
+			st.m[MOTOR_2].counter = -(st.timer_ticks_downcount);
 		}
-		if (st.m[1].steps != 0) {
-			// For ideal optimizations, only set or clear a bit at a time.
-			if (sp.m[1].dir == 0) {
-				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm;	// CW motion (bit cleared)
+		if (st.m[MOTOR_2].steps != 0) {
+			if (sp.m[MOTOR_2].dir == 0) {
+				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm;
 			} else {
-				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
+				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
-			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// enable motor
+			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 		}
 #endif
-#if MOTORS > 2
-		st.m[2].steps = sp.m[2].steps;						// set steps
-		if (sp.counter_reset_flag == true) {				// compensate for pulse phasing
-			st.m[2].counter = -(st.timer_ticks_downcount);
+#ifdef MOTOR_3
+		st.m[MOTOR_3].steps = sp.m[MOTOR_3].steps;
+		if (sp.counter_reset_flag == true) {
+			st.m[MOTOR_3].counter = -(st.timer_ticks_downcount);
 		}
-		if (st.m[2].steps != 0) {
-			// For ideal optimizations, only set or clear a bit at a time.
-			if (sp.m[2].dir == 0) {
-				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm;	// CW motion (bit cleared)
+		if (st.m[MOTOR_3].steps != 0) {
+			if (sp.m[MOTOR_3].dir == 0) {
+				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm;
 			} else {
-				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
+				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
-			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// enable motor
+			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 		}
 #endif
-#if MOTORS > 3
-		st.m[3].steps = sp.m[3].steps;						// set steps
-		if (sp.counter_reset_flag == true) {				// compensate for pulse phasing
-			st.m[3].counter = -(st.timer_ticks_downcount);
+#if MOTOR_4
+		st.m[MOTOR_4].steps = sp.m[MOTOR_4].steps;
+		if (sp.counter_reset_flag == true) {
+			st.m[MOTOR_4].counter = -(st.timer_ticks_downcount);
 		}
-		if (st.m[3].steps != 0) {
-			// For ideal optimizations, only set or clear a bit at a time.
-			if (sp.m[3].dir == 0) {
-				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm;	// CW motion (bit cleared)
+		if (st.m[MOTOR_4].steps != 0) {
+			if (sp.m[MOTOR_4].dir == 0) {
+				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm;
 			} else {
-				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
+				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
-			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// enable motor
+			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 		}
 #endif
-
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;					// enable the DDA timer
 
 	// handle dwells
@@ -557,8 +552,8 @@ void _load_move()
 	if (st.timer_ticks_downcount != 0) { return;}				 // exit if it's still busy
 	if (sp.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	return;} // if there are no more moves
 
-	// handle line loads first (most common case)
-	if (sp.move_type == MOVE_TYPE_ALINE) {						// no more lines, only alines
+	// handle aline loads first (most common case)  NB: there are no more lines, only alines
+	if (sp.move_type == MOVE_TYPE_ALINE) {
 		st.timer_ticks_downcount = sp.timer_ticks;
 		st.timer_ticks_X_substeps = sp.timer_ticks_X_substeps;
 		TIMER_DDA.PER = sp.timer_period;

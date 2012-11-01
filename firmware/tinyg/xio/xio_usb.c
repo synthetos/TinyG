@@ -87,11 +87,12 @@ ISR(USB_TX_ISR_vect)	//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
 		}
 	} else {										// need to send XON or XOFF
 		USBu.usart->DATA = USBu.fc_char;
-		if (USBu.fc_char == XOFF) {
-			gpio_set_bit_on(0x01);					// turn on XOFF LED
-		} else {
-			gpio_set_bit_off(0x01);					// turn off XOFF LED
-		}
+// comment out the XON/XOFF indicator for efficient ISR handling
+//		if (USBu.fc_char == XOFF) {
+//			gpio_set_bit_on(0x01);					// turn on XOFF LED
+//		} else {
+//			gpio_set_bit_off(0x01);					// turn off XOFF LED
+//		}
 		USBu.fc_char = NUL;
 	}
 }
