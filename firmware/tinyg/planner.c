@@ -120,8 +120,8 @@ struct mpBuffer {				// See Planning Velocity Notes for variable usage
 	double braking_velocity;	// current value for braking velocity
 
 	double jerk;				// maximum linear jerk term for this move
-	double recip_jerk;			// 1/Jm used for planning (compute-once term)
-	double cubert_jerk;			// pow(Jm,(1/3)) used for planning (compute-once)
+	double recip_jerk;			// 1/Jm used for planning (compute-once)
+	double cbrt_jerk;			// cube root of Jm used for planning (compute-once)
 };
 typedef struct mpBuffer mpBuf;
 #define spindle_speed time		// alias spindle_speed to the time variable
@@ -138,6 +138,9 @@ struct mpBufferPool {			// ring buffer for sub-moves
 struct mpMoveMasterSingleton {	// common variables for planning (move master)
 	uint32_t lineindex;			// runtime line index of BF being planned
 	double position[AXES];		// final move position for planning purposes
+	double prev_jerk;			// jerk values cached from previous move
+	double prev_recip_jerk;
+	double prev_cbrt_jerk;
 #ifdef __UNIT_TEST_PLANNER
 	double test_case;
 	double test_velocity;
@@ -612,7 +615,7 @@ static uint8_t _exec_line(mpBuf *bf)
  *	floating point (even though AVRgcc does this as single precision)
  *
  *	Note: returning a status that is not TG_OK means the endpoint is NOT
- *	advanced. So lines that rae too short to move will accumulate and get 
+ *	advanced. So lines that are too short to move will accumulate and get 
  *	executed once the accumlated error exceeds the minimums 
  */
 
@@ -644,15 +647,24 @@ uint8_t mp_aline(const double target[], const double minutes)
 	bf->unit[B] = (target[B] - mm.position[B]) / length;
 	bf->unit[C] = (target[C] - mm.position[C]) / length;
 
-	// initialize jerk terms (these are in sequence)
+	// Initialize jerk terms (these code blocks are in sequence - mess with care)
+	// This section attempts to re-use jerk terms computed from previous move if possible 
 	bf->jerk = sqrt(square(bf->unit[X] * cfg.a[X].jerk_max) +
 					square(bf->unit[Y] * cfg.a[Y].jerk_max) +
 					square(bf->unit[Z] * cfg.a[Z].jerk_max) +
 					square(bf->unit[A] * cfg.a[A].jerk_max) +
 					square(bf->unit[B] * cfg.a[B].jerk_max) +
 					square(bf->unit[C] * cfg.a[C].jerk_max));
-	bf->recip_jerk = 1/bf->jerk;				// used by planning
-	bf->cubert_jerk = cubert(bf->jerk);			// used by planning
+	if (fabs(bf->jerk - mm.prev_jerk) < JERK_MATCH_PRECISION) {	// can we re-use jerk terms?
+		bf->cbrt_jerk = mm.prev_cbrt_jerk;
+		bf->recip_jerk = mm.prev_recip_jerk;
+	} else {
+		bf->cbrt_jerk = cbrt(bf->jerk);
+		bf->recip_jerk = 1/bf->jerk;			
+		mm.prev_jerk = bf->jerk;
+		mm.prev_cbrt_jerk = bf->cbrt_jerk;
+		mm.prev_recip_jerk = bf->recip_jerk;
+	}
 
 	// finish up the current block variables
 	if (cm_get_path_control() != PATH_EXACT_STOP) { // exact stop cases already zeroed
@@ -667,7 +679,7 @@ uint8_t mp_aline(const double target[], const double minutes)
 	bf->braking_velocity = bf->delta_vmax;
 
 	uint8_t mr_flag = false;
-	_plan_block_list(bf, &mr_flag);	// replan the block list and commit the current block
+	_plan_block_list(bf, &mr_flag);				// replan block list and commit current block
 	copy_axis_vector(mm.position, bf->target);	// update planning position
 	_queue_write_buffer(MOVE_TYPE_ALINE);
 	return (TG_OK);
@@ -703,7 +715,7 @@ uint8_t mp_aline(const double target[], const double minutes)
  *	  bf->delta_vmax		- used during forward planning to set exit velocity
  *
  *	  bf->recip_jerk		- used during trapezoid generation
- *	  bf->cubert_jerk		- used during trapezoid generation
+ *	  bf->cbrt_jerk			- used during trapezoid generation
  *
  *	Variables that will be set during processing:
  *
@@ -1027,7 +1039,7 @@ static double _get_target_length(const double Vi, const double Vt, const mpBuf *
 
 static double _get_target_velocity(const double Vi, const double L, const mpBuf *bf)
 {
-	return (pow(L, 0.66666666) * bf->cubert_jerk + Vi);
+	return (pow(L, 0.66666666) * bf->cbrt_jerk + Vi);
 }
 
 /*
@@ -2045,9 +2057,9 @@ static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBu
 	bf->exit_velocity = Vx;
 	bf->cruise_vmax = Vt;
 	bf->jerk = JERK_TEST_VALUE;
-	bf->recip_jerk = 1/bf->jerk;				// used by planning
-	bf->cubert_jerk = pow(bf->jerk, 0.333333);	// used by planning
-}
+	bf->recip_jerk = 1/bf->jerk;
+	bf->cbrt_jerk = cbrt(bf->jerk);
+
 	_calculate_trapezoid(bf);
 }
 

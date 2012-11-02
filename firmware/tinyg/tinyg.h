@@ -33,7 +33,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95
-#define TINYG_BUILD_NUMBER   	344.07	// forward differences and stepper optimizations
+#define TINYG_BUILD_NUMBER   	344.08	// forward differences and stepper optimizations
 
 #define TINYG_COMM_PROTOCOL_REV 1	// the communications protocol revision is tracked independently
 
@@ -72,7 +72,7 @@ void tg_system_reset(void);
 void tg_application_reset(void);
 void tg_application_startup(void);
 
-// global typedefs Used for accessing func pointers in PROGMEM & others
+// Global typedefs Used for accessing func pointers in PROGMEM & others
 typedef void (*fptr_void_uint8)(void);	 	// returns void, unit8_t arg (poll_func)
 typedef char (*fptr_char_void)(void); 		// returns char, void args
 typedef int (*fptr_int_uint8)(uint8_t s);	// returns int, unit8_t arg (signal handler) 
@@ -84,32 +84,31 @@ typedef void (*fptr_void_double)(double); 	// returns void, double arg (config b
 #define COORDS 6				// number of supported coordinate systems (1-6)
 #define PWMS 2					// number of supported PWM channels
 
-// if you change COORDS you must adjust the entries in cfgArray table in config.c
+// If you change COORDS you must adjust the entries in cfgArray table in config.c
 
-enum tgAxisNum {				// define axis numbers and array indexes
-		X = 0,					// X = 0
-		Y,
-		Z,
-		A,
-		B,
-		C,
-		U,						// I don't actually intend to implement UVW
-		V,						//...but they are reserved just in case
-		W
-};
+/* Axes, motors & PWM channels must be defines (not enums) so #ifdef <value> can be used
+ * 	 NB: Using defines can have side effects if anythign else in the code uses A, B, X... etc.
+ *   The "side effect safe" min and max routines had this side effect.
+ * Alternate enum is: enum tgAxes { X=0, Y, Z, A, B, C };
+ */
 
-enum tgMotorNum {				// define motor numbers and array indexes
-		MOTOR_1 = 0,
-		MOTOR_2,
-		MOTOR_3,
-		MOTOR_4
-};
+#define X	0
+#define Y	1
+#define Z	2
+#define A	3
+#define B	4
+#define C	5
+//#define U 6					// reserved
+//#define V 7					// reserved
+//#define W 8					// reserved
 
-enum tgPWMnum {				// define motor numbers and array indexes
-		PWM_1 = 0,
-		PWM_2
-};
+#define MOTOR_1	0 				// define motor numbers and array indexes
+#define MOTOR_2	1
+#define MOTOR_3	2
+#define MOTOR_4	3
 
+#define PWM_1	0
+#define PWM_2	1
 
 /* TinyG status codes
  * The first code range (0-19) is aligned with the XIO codes and must be so.

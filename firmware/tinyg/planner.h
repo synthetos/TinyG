@@ -63,6 +63,8 @@ enum moveState {
 #define MIN_LINE_LENGTH 0.08		// Smallest line the system can plan (mm) (0.02)
 #define MIN_SEGMENT_LENGTH 0.05		// Smallest accel/decel segment (mm). Set to produce ~10 ms segments (0.01)
 
+#define JERK_MATCH_PRECISION 1000	// precision to which jerk must match to be considered effectively the same
+
 /* ESTD_SEGMENT_USEC	 Microseconds per planning segment
  *	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
  */
