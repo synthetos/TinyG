@@ -167,8 +167,8 @@ static void _exec_move(void);
 static void _load_move(void);
 static void _request_load_move(void);
 
-#define __ISR_R2				// comment out to use R1 ISR
-#define __LOAD_MOVE_R2			// comment out to use R1 load move routine
+//#define __ISR_R2				// comment out to use R1 ISR
+//#define __LOAD_MOVE_R2			// comment out to use R1 load move routine
 
 static void _set_f_dda(double *f_dda, double *dda_substeps,
 					   const double major_axis_steps, const double microseconds);
