@@ -75,6 +75,7 @@
 #include "xio/xio.h"			// supports trap and debug statements
 
 #define __EXEC_R2				// comment out to use R1 aline exec functions
+#define __JUNCTION_VMAX_R2		// comment out ot use the old code
 
 // All the enums that equal zero must be zero. Don't change this
 
@@ -1016,7 +1017,7 @@ static void _calculate_trapezoid(mpBuf *bf)
  *	 d)	Vt = (sqrt(L)*(L/sqrt(1/Jm))^(1/6)+(1/Jm)^(1/4)*Vi)/(1/Jm)^(1/4)
  *	 e)	Vt = L^(2/3) * Jm^(1/3) + Vi
  *
- * FYI: Here's an expression that returns the jerk for a given deltaV and L:
+ *  FYI: Here's an expression that returns the jerk for a given deltaV and L:
  * 	return(cube(deltaV / (pow(L, 0.66666666))));
  */
 static double _get_target_length(const double Vi, const double Vt, const mpBuf *bf)
@@ -1070,12 +1071,40 @@ static double _get_target_velocity(const double Vi, const double L, const mpBuf 
 
 static double _get_junction_vmax(const double a_unit[], const double b_unit[])
 {
-	double costheta = - a_unit[X] * b_unit[X]
-					  - a_unit[Y] * b_unit[Y]
-					  - a_unit[Z] * b_unit[Z]
-					  - a_unit[A] * b_unit[A]
-					  - a_unit[B] * b_unit[B]
-					  - a_unit[C] * b_unit[C];
+#ifdef __JUNCTION_VMAX_R2
+	double costheta = - (a_unit[X] * b_unit[X]) - (a_unit[Y] * b_unit[Y]) 
+					  - (a_unit[Z] * b_unit[Z]) - (a_unit[A] * b_unit[A]) 
+					  - (a_unit[B] * b_unit[B]) - (a_unit[C] * b_unit[C]);
+
+	if (costheta < -0.99) { return (10000000); } 		// straight line cases
+	if (costheta > 0.99)  { return (0); } 				// reversal cases
+
+	// fuse the junction deviations into a vector sum
+	double a_delta = square(a_unit[X] * cfg.a[X].junction_dev);
+	a_delta += square(a_unit[Y] * cfg.a[Y].junction_dev);
+	a_delta += square(a_unit[Z] * cfg.a[Z].junction_dev);
+	a_delta += square(a_unit[A] * cfg.a[A].junction_dev);
+	a_delta += square(a_unit[B] * cfg.a[B].junction_dev);
+	a_delta += square(a_unit[C] * cfg.a[C].junction_dev);
+
+	double b_delta = square(b_unit[X] * cfg.a[X].junction_dev);
+	b_delta += square(b_unit[Y] * cfg.a[Y].junction_dev);
+	b_delta += square(b_unit[Z] * cfg.a[Z].junction_dev);
+	b_delta += square(b_unit[A] * cfg.a[A].junction_dev);
+	b_delta += square(b_unit[B] * cfg.a[B].junction_dev);
+	b_delta += square(b_unit[C] * cfg.a[C].junction_dev);
+
+	double delta = (sqrt(a_delta) + sqrt(b_delta))/2;
+
+//	double delta = cfg.a[X].junction_deviation;			// without axis compensation
+	double sintheta_over2 = sqrt((1 - costheta)/2);
+	double radius = delta * sintheta_over2 / (1-sintheta_over2);
+	return(sqrt(radius * cfg.junction_acceleration));
+
+#else
+	double costheta = - (a_unit[X] * b_unit[X]) - (a_unit[Y] * b_unit[Y]) 
+					  - (a_unit[Z] * b_unit[Z]) - (a_unit[A] * b_unit[A]) 
+					  - (a_unit[B] * b_unit[B]) - (a_unit[C] * b_unit[C]);
 
 	if (costheta < -0.99) { return (10000000); } 		// straight line cases
 	if (costheta > 0.99)  { return (0); } 				// reversal cases
@@ -1084,6 +1113,7 @@ static double _get_junction_vmax(const double a_unit[], const double b_unit[])
 	double sintheta_over2 = sqrt((1 - costheta)/2);
 	double radius = delta * sintheta_over2 / (1-sintheta_over2);
 	return(sqrt(radius * cfg.junction_acceleration));
+#endif
 }
 
 /*	
@@ -1110,6 +1140,8 @@ static double _get_junction_vmax(const double a_unit[], const double b_unit[])
 
 static double _get_junction_deviation(const double a_unit[], const double b_unit[])
 {
+#ifndef __JUNCTION_VMAX_R2
+
 	double a_delta = 0;
 	double b_delta = 0;
 
@@ -1119,6 +1151,7 @@ static double _get_junction_deviation(const double a_unit[], const double b_unit
 	}
 	double d = (sqrt(a_delta) + sqrt(b_delta))/2;
 	return (d);
+#endif
 }
 
 /*************************************************************************
@@ -1718,7 +1751,6 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 		travel[i] = mr.target[i] - mr.position[i];
 	}
 */
-
 	// prep the segment for the steppers and adjust the variables for the next iteration
 	(void)ik_kinematics(travel, steps, mr.microseconds);
 	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
