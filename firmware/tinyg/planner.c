@@ -212,8 +212,11 @@ static void _calculate_trapezoid(mpBuf *bf);
 static double _get_target_length(const double Vi, const double Vt, const mpBuf *bf);
 static double _get_target_velocity(const double Vi, const double L, const mpBuf *bf);
 static double _get_junction_vmax(const double a_unit[], const double b_unit[]);
-static double _get_junction_deviation(const double a_unit[], const double b_unit[]);
 static void _reset_replannable_list(void);
+
+#ifndef __JUNCTION_VMAX_R2
+static double _get_junction_deviation(const double a_unit[], const double b_unit[]);
+#endif
 
 // execute routines (NB: These are all called from the LO interrupt)
 static uint8_t _exec_null(mpBuf *bf);
@@ -1080,7 +1083,24 @@ static double _get_target_velocity(const double Vi, const double L, const mpBuf 
  *	double theta = acos(costheta);
  *	double radius = delta * sin(theta/2)/(1-sin(theta/2));
  */
-
+/*  This version function extends Chamnit's algorithm by computing a value
+ *	for delta that takes the contributions of the individual axes in the 
+ *	move into account. It allows the radius of curvature to vary by axis.
+ *	This is necessary to support axes that have different dynamics; such 
+ *	as a Z axis that doesn't move as fast as X and Y (such as a screw driven 
+ *	Z axis on machine with a belt driven XY - like a Shapeoko), or rotary 
+ *	axes ABC that have completely different dynamics than their linear 
+ *	counterparts.
+ *
+ *	The function takes the absolute values of the sum of the unit vector
+ *	components as a measure of contribution to the move, then scales the 
+ *	delta values from the non-zero axes into a composite delta to be used
+ *	for the move. Shown for an XY vector:
+ *
+ *	 U[i]	Unit sum of i'th axis	fabs(unit_a[i]) + fabs(unit_b[i])
+ *	 Usum	Length of sums			Ux + Uy
+ *	 d		Delta of sums			(Dx*Ux+DY*UY)/Usum
+ */
 static double _get_junction_vmax(const double a_unit[], const double b_unit[])
 {
 #ifdef __JUNCTION_VMAX_R2
@@ -1107,8 +1127,6 @@ static double _get_junction_vmax(const double a_unit[], const double b_unit[])
 	b_delta += square(b_unit[C] * cfg.a[C].junction_dev);
 
 	double delta = (sqrt(a_delta) + sqrt(b_delta))/2;
-
-//	double delta = cfg.a[X].junction_deviation;			// without axis compensation
 	double sintheta_over2 = sqrt((1 - costheta)/2);
 	double radius = delta * sintheta_over2 / (1-sintheta_over2);
 	return(sqrt(radius * cfg.junction_acceleration));
@@ -1149,11 +1167,10 @@ static double _get_junction_vmax(const double a_unit[], const double b_unit[])
  *	 Usum	Length of sums			Ux + Uy
  *	 d		Delta of sums			(Dx*Ux+DY*UY)/Usum
  */
+#ifndef __JUNCTION_VMAX_R2
 
 static double _get_junction_deviation(const double a_unit[], const double b_unit[])
 {
-#ifndef __JUNCTION_VMAX_R2
-
 	double a_delta = 0;
 	double b_delta = 0;
 
@@ -1163,8 +1180,8 @@ static double _get_junction_deviation(const double a_unit[], const double b_unit
 	}
 	double d = (sqrt(a_delta) + sqrt(b_delta))/2;
 	return (d);
-#endif
 }
+#endif
 
 /*************************************************************************
  * feedholds - functions for performing holds
