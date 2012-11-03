@@ -90,7 +90,6 @@ uint8_t cm_get_distance_mode() { return gm.distance_mode;}
 uint8_t cm_get_inverse_feed_rate_mode() { return gm.inverse_feed_rate_mode;}
 uint8_t cm_get_spindle_mode() { return gm.spindle_mode;} 
 uint32_t cm_get_model_linenum() { return gm.linenum;}
-//uint32_t cm_get_model_lineindex() { return gm.lineindex;}
 uint8_t cm_isbusy() { return (mp_isbusy());}
 
 // set parameters in gm struct
@@ -227,17 +226,6 @@ void cm_set_model_linenum(uint32_t linenum)
 		gm.linenum++;			// autoincrement if no line number
 	}
 }
-/*
-void cm_set_model_lineindex(uint32_t lineindex)
-{
-	gm.lineindex = lineindex;
-}
-
-void cm_incr_model_lineindex()
-{
-	gm.lineindex++;
-}
-*/
 
 /* 
  * cm_set_target() - set target vector in GM model
@@ -273,47 +261,8 @@ void cm_incr_model_lineindex()
  *	Axes that need processing are signaled in flag[]
  *	All that flag checking in the slaves traps erroneous rotary inputs
  */
+static double _calc_ABC(uint8_t i, double target[], double flag[]);
 
-// ESTEE: fix to workaround a gcc compiler bug wherein it runs out of spill registers
-// we move this block into its own function so that we get a fresh stack push
-// ALDEN: This shows up in avr-gcc 4.7.0 and avr-libc 1.8.0
-double cm_calc_ABC( int i, double target[], double flag[] )
-{
-	double tmp = 0;
-	
-	if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
-		tmp = target[i];	// no mm conversion - it's in degrees
-
-	} else if ((cfg.a[i].axis_mode == AXIS_RADIUS) && (flag[i] > EPSILON)) {
-		tmp = _to_millimeters(target[i]) * 360 / (2 * M_PI * cfg.a[i].radius);
-
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_X) && (flag[X] > EPSILON)) {
-		tmp = (target[X] - gm.position[X]) * 360 / (2 * M_PI * cfg.a[i].radius);
-
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_Y) && (flag[Y] > EPSILON)) {
-		tmp = (target[Y] - gm.position[Y]) * 360 / (2 * M_PI * cfg.a[i].radius);
-
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_Z) && (flag[Z] > EPSILON)) {
-		tmp = (target[Z] - gm.position[Z]) * 360 / (2 * M_PI * cfg.a[i].radius);
-
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XY) && ((flag[X] > EPSILON) || (flag[Y] > EPSILON))) {
-		double length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]));
-		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
-
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XZ) && ((flag[X] > EPSILON) || (flag[Z] > EPSILON))) {
-		double length = sqrt(square(target[X] - gm.position[X]) + square(target[Z] - gm.position[Z]));
-		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
-
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_YZ) && ((flag[Y] > EPSILON) || (flag[Z] > EPSILON))) {
-		double length = sqrt(square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
-		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
-
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XYZ) && ((flag[X] > EPSILON) || (flag[Y] > EPSILON) || (flag[Z] > EPSILON))) {
-		double length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
-		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
-	}
-	return tmp;
-}
 void cm_set_target(double target[], double flag[])
 { 
 	uint8_t i;
@@ -331,8 +280,9 @@ void cm_set_target(double target[], double flag[])
 				gm.target[i] += _to_millimeters(target[i]);
 			}
 //		} else if (i<A) {
-//			printf_P(stderr,PSTR("%c axis using unsupported axis mode"), cfg_get_configuration_group_char(i));
-//			cmd_add_string("msg", msg);
+//			char message[CMD_STRING_LEN]; 
+//			sprintf_P(message,PSTR("*** WARNING *** %c axis using unsupported axis mode"), cfg_get_configuration_group_char(i));
+//			cmd_add_string("msg", message);
 		}
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
@@ -373,7 +323,7 @@ void cm_set_target(double target[], double flag[])
 			length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
 			tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
 		} */
-		tmp = cm_calc_ABC(i, target, flag);		
+		tmp = _calc_ABC(i, target, flag);		
 		//..... to here
 		
 		if (gm.distance_mode == ABSOLUTE_MODE) {
@@ -384,6 +334,46 @@ void cm_set_target(double target[], double flag[])
 	}
 }
 
+// ESTEE: fix to workaround a gcc compiler bug wherein it runs out of spill registers
+// we move this block into its own function so that we get a fresh stack push
+// ALDEN: This shows up in avr-gcc 4.7.0 and avr-libc 1.8.0
+static double _calc_ABC(uint8_t i, double target[], double flag[])
+{
+	double tmp = 0;
+	
+	if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
+		tmp = target[i];	// no mm conversion - it's in degrees
+
+	} else if ((cfg.a[i].axis_mode == AXIS_RADIUS) && (flag[i] > EPSILON)) {
+		tmp = _to_millimeters(target[i]) * 360 / (2 * M_PI * cfg.a[i].radius);
+
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_X) && (flag[X] > EPSILON)) {
+		tmp = (target[X] - gm.position[X]) * 360 / (2 * M_PI * cfg.a[i].radius);
+
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_Y) && (flag[Y] > EPSILON)) {
+		tmp = (target[Y] - gm.position[Y]) * 360 / (2 * M_PI * cfg.a[i].radius);
+
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_Z) && (flag[Z] > EPSILON)) {
+		tmp = (target[Z] - gm.position[Z]) * 360 / (2 * M_PI * cfg.a[i].radius);
+
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XY) && ((flag[X] > EPSILON) || (flag[Y] > EPSILON))) {
+		double length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]));
+		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
+
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XZ) && ((flag[X] > EPSILON) || (flag[Z] > EPSILON))) {
+		double length = sqrt(square(target[X] - gm.position[X]) + square(target[Z] - gm.position[Z]));
+		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
+
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_YZ) && ((flag[Y] > EPSILON) || (flag[Z] > EPSILON))) {
+		double length = sqrt(square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
+		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
+
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XYZ) && ((flag[X] > EPSILON) || (flag[Y] > EPSILON) || (flag[Z] > EPSILON))) {
+		double length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
+		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
+	}
+	return tmp;
+}
 /* 
  * cm_set_gcode_model_endpoint_position() - uses internal coordinates only
  *
@@ -649,7 +639,6 @@ uint8_t cm_resume_origin_offsets()		// G92.3
 	return (TG_OK);
 }
 
-
 /* 
  * Free Space Motion (4.3.4)
  *
@@ -900,7 +889,9 @@ void cm_exec_feedhold()
 }
 
 void cm_program_stop() { mp_sync_mcode(SYNC_PROGRAM_STOP);}
+
 void cm_optional_program_stop()	{ mp_sync_mcode(SYNC_PROGRAM_STOP); }
+
 void cm_program_end()				// M2, M30
 {
 	tg_reset_source();				// stop reading from a file (return to std device)
@@ -908,7 +899,9 @@ void cm_program_end()				// M2, M30
 }
 
 void cm_exec_program_stop() { _exec_program_finalize(MACHINE_PROGRAM_STOP);}
+
 void cm_exec_program_end() { _exec_program_finalize(MACHINE_PROGRAM_END);}
+
 void _exec_program_finalize(uint8_t machine_state)
 {
 	cm.machine_state = machine_state;

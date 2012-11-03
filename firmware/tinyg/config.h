@@ -170,7 +170,7 @@ cmdObj cmd_footer[CMD_FOOTER_LEN];	// footer element
 #define ASSERT_CMD_INDEX(a) if ((cmd->index < 0) || (cmd->index >= CMD_INDEX_MAX)) return (a);
 
 void cfg_init(void);
-uint8_t cfg_config_parser(char *str);
+uint8_t cfg_text_parser(char *str);
 void cfg_init_gcode_model(void);
 
 // cmd accessors

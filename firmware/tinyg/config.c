@@ -973,6 +973,7 @@ static uint8_t _set_si(cmdObj *cmd)
 
 /**** QUEUE REPORT FUNCTIONS ****
  * _get_qr() - run queue report
+ * _get_pb() - get planner buffers available
  */
 static uint8_t _get_qr(cmdObj *cmd) 
 {
@@ -987,7 +988,7 @@ static uint8_t _get_pb(cmdObj *cmd)
 	return (TG_OK);
 }
 
-/**** REPORTING FUNCTIONS ****************************************
+/**** STATUS REPORT FUNCTIONS ****************************************
  * _get_msg_helper() - helper to get display message
  * _get_stat() - get combined machine state as value and string
  * _get_macs() - get raw machine state as value and string
@@ -1003,10 +1004,12 @@ static uint8_t _get_pb(cmdObj *cmd)
  * _get_frmo() - get gcode feed rate mode as string
  * _get_feed() - get feed rate 
  * _get_line() - get runtime line number for status reports
+ * _get_lx()   - get runtime line index for queue reports
+ * _set_lx()   - set runtime line index for queue reports
  * _get_vel()  - get runtime velocity
  * _get_pos()  - get runtime work position
  * _get_mpos() - get runtime machine position
- * _print_pos()  - print work or machine position
+ * _print_pos()- print work or machine position
  */
 static uint8_t _get_msg_helper(cmdObj *cmd, prog_char_ptr msg, uint8_t value)
 {
@@ -1022,7 +1025,6 @@ static uint8_t _get_stat(cmdObj *cmd)
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_stat, cm_get_combined_state()));
 
 /* how to do this w/o calling the helper routine - See 331.09 for original routines
-
 	cmd->value = cm_get_machine_state();
 	cmd->type = TYPE_INTEGER;
 	strncpy_P(cmd->string_value,(PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN);
@@ -1266,7 +1268,7 @@ static uint8_t _set_motor_steps_per_unit(cmdObj *cmd)
 	return (TG_OK);
 }
 
-/**** SERIAL IO FUNCTIONS ****
+/**** SERIAL IO SETTINGS ****
  * _set_ic() - ignore CR or LF on RX
  * _set_ec() - enable CRLF on TX
  * _set_ee() - enable character echo
@@ -1317,15 +1319,21 @@ static uint8_t _set_ex(cmdObj *cmd)
 	return(_set_comm_helper(cmd, XIO_XOFF, XIO_NOXOFF));
 }
 
+
+
 /*****************************************************************************
+ *****************************************************************************
+ *****************************************************************************
  *** END SETTING-SPECIFIC REGION *********************************************
  *** Code below should not require changes as parameters are added/updated ***
+ *****************************************************************************
+ *****************************************************************************
  *****************************************************************************/
 
 /****************************************************************************
  * cfg_init() - called once on system init
  *
- *	Will perform one of 2 actions:
+ * Will perform one of 2 actions:
  *	(1) if NVM is set up and at current config version: use NVM data for config
  *	(2) if NVM is set up or out-of-rev: load RAM and NVM with hardwired default settings
  */
@@ -1338,8 +1346,8 @@ void cfg_init()
 	cfg.comm_mode = TG_JSON_MODE;	// initial value until EEPROM is read
 
 #ifdef __DISABLE_EEPROM_INIT		// cutout for debug simulation
-	// Apply the hard-coded default values from settings.h and exit
 
+	// Apply the hard-coded default values from settings.h and exit
 	for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
 		if (strstr(DONT_INITIALIZE, cmd_get_token(cmd.index, cmd.token)) != NULL) continue;
 		cmd.value = (double)pgm_read_float(&cfgArray[cmd.index].def_value);
@@ -1393,7 +1401,7 @@ static uint8_t _set_defa(cmdObj *cmd)
 }
 
 /****************************************************************************
- * cfg_config_parser() - update a config setting from a text block
+ * cfg_text_parser() - update a config setting from a text block (text mode)
  * 
  * Use cases (execution paths handled)
  *	- $xfr=1200	single parameter set is requested
@@ -1401,7 +1409,7 @@ static uint8_t _set_defa(cmdObj *cmd)
  *	- $x		group display is requested
  */
 
-uint8_t cfg_config_parser(char *str)
+uint8_t cfg_text_parser(char *str)
 {
 	cmdObj *cmd = cmd_body;					// point at first object in the body
 
@@ -1425,7 +1433,7 @@ uint8_t cfg_config_parser(char *str)
 }
 
 /****************************************************************************
- * _parse_config_string() - parse a command line
+ * _parse_config_string() - parse a text-mode command line
  */
 static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 {
@@ -1584,6 +1592,27 @@ INDEX_T cmd_get_index_by_token(const char *str)
 
 INDEX_T cmd_get_index(const char *str)
 {
+	uint8_t len;
+	char cmp[CMD_TOKEN_LEN];
+
+	// append a comma so PROGMEM match is exact, and handle string-too-long case
+	snprintf(cmp, CMD_TOKEN_LEN, "%s,", str);
+	if ((len = strlen(cmp)) == CMD_TOKEN_LEN) { 
+		cmp[CMD_TOKEN_LEN-1] = ',';
+	}
+
+	// scan the cfgArray strings for an exact match
+	for (INDEX_T i=0; i<CMD_INDEX_MAX; i++) {
+		if ((strncmp_P(cmp, (PGM_P)pgm_read_word(&cfgArray[i]), len)) == 0) {
+			return (i);						// matched
+		}
+	}
+	return (-1);							// no match
+}
+
+/* OLD CODE FOR ABOVE - w/ FRIENDLY_NAME
+INDEX_T cmd_get_index(const char *str)
+{
 	char *end;
 	char *friendly_name;
 	char token[CMD_NAMES_FIELD_LEN];
@@ -1594,11 +1623,12 @@ INDEX_T cmd_get_index(const char *str)
 		*(friendly_name++) = NUL;			// split token & name strings, terminate token string
 		end = strstr(friendly_name,",");	// find the terminating comma
 		*end = NUL;							// terminate the name string
-		if (strstr(str, token) == str) return(i);
-		if (strstr(str, friendly_name) == str) return(i);
+		if (strcmp(str, token) == 0) { return(i);}
+		if (strcmp(str, friendly_name) == 0) { return(i);}
 	}
 	return (-1);							// no match
 }
+*/
 
 char *cmd_get_token(const INDEX_T i, char *token)
 {

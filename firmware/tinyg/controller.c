@@ -266,7 +266,7 @@ static uint8_t _dispatch()
 		}
 		case '$': case '?':{ 					// text-mode config and query
 			cfg.comm_mode = TG_TEXT_MODE;
-			_dispatch_return(cfg_config_parser(tg.in_buf), tg.in_buf);
+			_dispatch_return(cfg_text_parser(tg.in_buf), tg.in_buf);
 			break;
 		}
 		case '{': { 							// JSON input
