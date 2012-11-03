@@ -90,9 +90,9 @@ enum mpBufferState {			// bf->buffer_state values
 struct mpBuffer {				// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;		// static pointer to previous buffer
 	struct mpBuffer *nx;		// static pointer to next buffer
+//	uint8_t (*exec_func)(double parameter); // callback to function to execute w/parameter
 	uint32_t linenum;			// runtime line number; or line index if not numbered
 	uint32_t lineindex;			// runtime autoincremented line index
-//	uint8_t (*exec_func)(double parameter); // callback to function to execute w/parameter
 	fptrCallback callback;		// callback to execution function
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
 	uint8_t move_type;			// used to dispatch to run routine
@@ -150,9 +150,9 @@ struct mpMoveMasterSingleton {	// common variables for planning (move master)
 };
 
 struct mpMoveRuntimeSingleton {	// persistent runtime variables
+//	uint8_t (*run_move)(struct mpBuffer *m); // currently running move - left in for reference
 	uint32_t linenum;			// runtime line/block number of BF being executed
 	uint32_t lineindex;			// runtime line index of BF being executed
-//	uint8_t (*run_move)(struct mpBuffer *m); // currently running move - left in for reference
 	uint8_t move_state;			// state of the overall move
 	uint8_t section_state;		// state within a move section
 

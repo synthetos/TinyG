@@ -41,7 +41,7 @@
 
 // **** common settings - applied to all axes or motors ****
 
-#define JUNCTION_DEVIATION	0.05		// default value, in mm
+#define JUNCTION_DEVIATION	0.01		// default value, in mm - smaller is faster
 
 // **** system settings ****
 
