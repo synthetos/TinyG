@@ -1,0 +1,91 @@
+m21 (metric)
+(rapids)
+g92 x0 y0 z0
+g0 y80
+g0 x180
+x0
+x180
+x0
+x180
+x0
+y0
+(boxes)
+g0 x0 y0 
+x180
+y180
+x0
+y0
+x140
+y140
+x0
+y0
+x120
+y120
+x0 y0
+x100
+x0
+y100
+y0
+x80
+y80
+x0
+y0
+x40
+y40
+x0
+y0
+x20
+y20
+x0
+y0
+x10
+y10
+x0
+y0
+x5
+y5
+x0
+y0
+x2
+y2
+x0
+y0
+x5
+y5
+x0
+y0
+x10
+y10
+x0
+y0
+x20
+y20
+x0
+y0
+x40
+y40
+x0
+y0
+x80
+y80
+x0
+y0
+x120
+y120
+x0
+y0
+(circles)
+g0 x0 y0 z0
+f15000
+g3 x0 y0 i50 j50 z80
+z0
+g2 f30000 x0 y0 i50 j50 z10
+g3 f24000 x0 y0 i50 j50 z20
+g2 f22000 x0 y0 i40 j40 z30 
+g2 f15000 x0 y0 i30 j30 z40 
+g2 f10000 x0 y0 i20 j20 z50 
+g2 f5000 x0 y0 i10 j10 z60 
+g2 f2000 x0 y0 i5 j5 z70
+g0 x80 y80
+g4 p0.5
+z0
