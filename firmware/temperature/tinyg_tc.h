@@ -23,15 +23,22 @@
 
 void device_init(void);
 
+void heater_init(void);
+uint8_t heater_turn_on(void); 
+uint8_t heater_turn_off(void); 
+uint8_t heater_callback(void);
+
 void sensor_init(void);
 uint8_t sensor_callback(void);
 double sensor_get_temperature(void);
 uint8_t sensor_get_state(void);
 uint8_t sensor_get_code(void);
+void sensor_start_temperature_reading(void);
 
-void heater_init(void);
-uint8_t heater_fast_loop(void);
-uint8_t heater_callback(void);
+void pid_init(void);
+uint8_t pid_on(double set_point);
+uint8_t pid_off(void);
+uint8_t pid_callback(void);
 
 void adc_init(void);
 uint16_t adc_read(uint8_t channel);
@@ -68,6 +75,57 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data);
 #define DEVICE_UUID_3	 0x00	// UUID = 0 means there is no UUID
 
 
+/**** Heater default parameters ***/
+
+#define HEATER_AMBIENT_TEMPERATURE 40	// detect heater not heating if readings stay below this temp
+#define HEATER_OVERHEAT_TEMPERATURE 300	// heater is above max temperature if over this temp. Should shut down
+#define HEATER_AMBIENT_TIMEOUT 90		// time to allow heater to heat above ambinet temperature (seconds)
+#define HEATER_REGULATION_TIMEOUT 300	// time to allow heater to come to temp (seconds)
+#define HEATER_TARGET_CHECK_COUNT 5		// number of successive readings before declaring AT_TEMPERATURE
+#define HEATER_TICK_SECONDS 0.1			// 100 ms
+
+enum tcHeaterState {					// heater state machine
+	HEATER_UNINIT = 0,					// heater is uninitialized - transitions to OFF
+	HEATER_SHUTDOWN,					// heater has been shut down - transitions to OFF via re-initialization
+	HEATER_OFF,							// heater turned off or never turned on - transitions to HEATING or COOLING
+	HEATER_ON,							// heater has been turned on - transitions to HEATING
+	HEATER_HEATING,						// heating to set point - transitions to AT_TEMPERATURE, OFF or SHUTDOWN
+	HEATER_COOLING,						// cooling off from regulation - came from OFF or SHUTDOWN, back to OFF
+	HEATER_AT_TEMPERATURE				// at set point and in temperature regulation - transitions to OFF or SHUTDOWN
+};
+
+enum tcHeaterCode {
+	HEATER_OK = 0,						// heater is OK - no errors reported
+	HEATER_AMBIENT_TIMED_OUT,			// heater failed to get past ambient temperature
+	HEATER_REGULATION_TIMED_OUT,		// heater heated but failed to achieve regulation before timeout
+	HEATER_OVERHEATED,					// heater exceeded maximum temperature cutoff value
+};
+
+enum HeaterFailMode{
+	HEATER_FAIL_NONE = 0,
+	HEATER_FAIL_NOT_PLUGGED_IN = 0x02,
+	HEATER_FAIL_SOFTWARE_CUTOFF = 0x04,
+	HEATER_FAIL_NOT_HEATING = 0x08,
+	HEATER_FAIL_DROPPING_TEMP = 0x10,
+	HEATER_FAIL_BAD_READS = 0x20
+};
+
+/**** PID default parameters ***/
+
+#define PID_PROPORTIONAL_THRESHOLD 20	// degrees within which control switches from full-on to proportional
+
+enum tcPIDState {						// PID state machine
+	PID_UNINIT = 0,						// PID is uninitialized (initial state)
+	PID_OFF,							// PID is off
+	PID_PROPORTIONAL,					// PID is in proportional control mode
+	PID_FULL_ON							// PID is in full-on mode
+};
+
+enum tcPIDCode {						// PID success and failure codes
+	PID_OK = 0,							// PID is OK - no errors reported
+	PID_ERROR
+};
+
 /**** Sensor default parameters ***/
 
 #define SENSOR_SAMPLES_PER_READING 8	// number of sensor samples to take for each reading period
@@ -75,6 +133,7 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data);
 #define SENSOR_VARIANCE_RANGE 20		// reject sample if termperature is GT or LT previous sample by this amount 
 #define SENSOR_NO_POWER_TEMPERATURE 5	// detect thermocouple amplifier disconnected if readings stay below this temp
 #define SENSOR_DISCONNECTED_TEMPERATURE 400	// sensor is DISCONNECTED if over this temp (works w/ both 5v and 3v refs)
+#define SENSOR_TICK_SECONDS 0.01		// 10 ms
 
 #define SENSOR_SLOPE 0.686645508		// emperically determined for AD597 & B&K TP-29 K-type test probe
 #define SENSOR_OFFSET -4.062500			// emperically determined
@@ -98,37 +157,6 @@ enum tcSensorCode {						// success and failure codes. Any failure should cause 
 	SENSOR_NO_POWER,					// detected lack of power to thermocouple amplifier
 	SENSOR_DISCONNECTED,				// thermocouple detected as disconnected
 	SENSOR_BAD_READINGS					// too many number of bad readings
-};
-
-/**** Heater default parameters ***/
-
-#define HEATER_AMBIENT_TEMPERATURE 40	// detect heater not heating if readings stay below this temp
-#define HEATER_OVERHEAT_TEMPERATURE 300	// heater is above max temperature if over this temp. Should shut down
-
-enum tcHeaterState {					// heater state machine
-	HEATER_UNINIT = 0,					// heater is uninitialized - transitions to OFF
-	HEATER_SHUTDOWN,					// heater has been shut down - transitions to OFF via re-initialization
-	HEATER_OFF,							// heater turned off or never turned on - transitions to HEATING or COOLING
-	HEATER_ON,							// heater has been turned on - transitions to HEATING
-	HEATER_HEATING,						// heating to set point - transitions to AT_TEMPERATURE, OFF or SHUTDOWN
-	HEATER_COOLING,						// cooling off from regulation - came from OFF or SHUTDOWN, back to OFF
-	HEATER_AT_TEMPERATURE				// at set point and in temperature regulation - transitions to OFF or SHUTDOWN
-};
-
-enum tcHeaterCode {
-	HEATER_OK = 0,						// heater is OK - no errors reported
-	HEATER_FAILED_AMBIENT,				// heater failed to get past ambient temperature
-	HEATER_HEATING_TIMEOUT,				// heater heated but failed to achieve regulation before timeout
-	HEATER_OVERHEATED,					// heater exceeded maximum temperature cutoff value
-};
-
-enum HeaterFailMode{
-	HEATER_FAIL_NONE = 0,
-	HEATER_FAIL_NOT_PLUGGED_IN = 0x02,
-	HEATER_FAIL_SOFTWARE_CUTOFF = 0x04,
-	HEATER_FAIL_NOT_HEATING = 0x08,
-	HEATER_FAIL_DROPPING_TEMP = 0x10,
-	HEATER_FAIL_BAD_READS = 0x20
 };
 
 
