@@ -39,6 +39,7 @@ void pid_init(void);
 uint8_t pid_on(double set_point);
 uint8_t pid_off(void);
 uint8_t pid_callback(void);
+double pid_calc(double setpoint,double temperature);
 
 void adc_init(void);
 uint16_t adc_read(uint8_t channel);
@@ -113,6 +114,11 @@ enum HeaterFailMode{
 /**** PID default parameters ***/
 
 #define PID_PROPORTIONAL_THRESHOLD 20	// degrees within which control switches from full-on to proportional
+#define PID_MAX_OUTPUT  4				// saturation filter max
+#define PID_MIN_OUTPUT -4				// saturation filter min
+#define PID_Kp 0.1						// proportional
+#define PID_Ki 0.005					// integral
+#define PID_Kd 0.01						// derivative
 
 enum tcPIDState {						// PID state machine
 	PID_UNINIT = 0,						// PID is uninitialized (initial state)
@@ -158,30 +164,6 @@ enum tcSensorCode {						// success and failure codes. Any failure should cause 
 	SENSOR_DISCONNECTED,				// thermocouple detected as disconnected
 	SENSOR_BAD_READINGS					// too many number of bad readings
 };
-
-
-/*
-// FROM MightyBoardFirmware:
-// Offset to compensate for range clipping and bleed-off
-#define HEATER_OFFSET_ADJUSTMENT 0
-
-// PID bypass: If the set point is more than this many degrees over the
-//             current temperature, bypass the PID loop altogether.
-#define PID_BYPASS_DELTA 15
-
-// Number of temp readings to be at target value before triggering newTargetReached
-// with bad seating of thermocouples, we sometimes get innacurate reads
-const uint16_t TARGET_CHECK_COUNT = 5;
-
-// timeout for heating all the way up
-const uint32_t HEAT_UP_TIME = 300000000;  //five minutes
-
-// timeout for showing heating progress
-const uint32_t HEAT_PROGRESS_TIME = 90000000; // 90 seconds
-
-// threshold above starting temperature we check for heating progres
-const uint16_t HEAT_PROGRESS_THRESHOLD = 10;
-*/
 
 // Lower-level device mappings and constants (for atmega328P)
 

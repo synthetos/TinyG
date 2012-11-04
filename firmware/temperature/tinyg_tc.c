@@ -45,7 +45,7 @@ static struct Heater {
 	uint8_t state;				// heater state
 	uint8_t code;				// heater code (more information about heater state)
 	double temperature;			// current heater temperature
-	double set_point;			// set point for regulation
+	double setpoint;			// set point for regulation
 	double regulation_timer;	// time taken so far to get out of ambinet and to to regulation (seconds)
 	double ambient_timeout;		// timeout beyond which regulation has failed (seconds)
 	double regulation_timeout;	// timeout beyond which regulation has failed (seconds)
@@ -53,11 +53,21 @@ static struct Heater {
 	double overheat_temperature;// overheat temperature (cutoff temperature)
 } heater;
 
-static struct HeaterPID {		// PID controller itself
+static struct PIDstruct {		// PID controller itself
 	uint8_t state;				// PID state
 	uint8_t code;				// PID code (more information about PID state)
 	double temperature;			// current PID temperature
-	double set_point;			// temperature set point
+	double setpoint;			// temperature set point
+	double error;
+	double prev_error;
+	double integral;
+	double derivative;
+	double output;
+	double max;					// saturation filter
+	double min;
+	double Kp;
+	double Ki;
+	double Kd;
 } pid;
 
 static struct TemperatureSensor {
@@ -217,7 +227,7 @@ uint8_t heater_callback()
 			return (heater.code);
 		}
 
-		if ((heater.temperature < heater.set_point) &&
+		if ((heater.temperature < heater.setpoint) &&
 			(heater.regulation_timer > heater.regulation_timeout)) {
 			heater.state = HEATER_SHUTDOWN;
 			heater.code = HEATER_REGULATION_TIMED_OUT;
@@ -239,7 +249,12 @@ uint8_t heater_callback()
 
 void pid_init()
 {
-	memset(&pid, 0, sizeof(struct HeaterPID));
+	memset(&pid, 0, sizeof(struct PIDstruct));
+	pid.max = PID_MAX_OUTPUT;		// saturation filter max value
+	pid.min = PID_MIN_OUTPUT;		// saturation filter min value
+	pid.Kp = PID_Kp;
+	pid.Ki = PID_Ki;
+	pid.Kd = PID_Kd;
 	pid.state = PID_OFF;
 }
 
@@ -254,9 +269,42 @@ uint8_t pid_off()
 	return (PID_OK);
 }
 
+//Define parameter
+#define epsilon 0.01
+#define dt 0.01				// 100ms loop time
+#define MAX  4				// For Current Saturation
+#define MIN -4
+
 uint8_t pid_callback() 
 {
+	pid_calc(heater.setpoint, heater.temperature);
 	return (PID_OK);
+}
+
+double pid_calc(double setpoint,double temperature)
+{
+	//Caculate P,I,D
+	pid.error = setpoint - temperature;
+
+	//In case of error too small then stop intergration
+	if(fabs(pid.error) > epsilon)
+	{
+		pid.integral = pid.integral + pid.error*dt;
+	}
+	pid.derivative = (pid.error - pid.prev_error)/dt;
+	pid.output = pid.Kp * pid.error + pid.Ki * pid.integral + pid.Kd * pid.derivative;
+
+	//Saturation Filter
+	if(pid.output > MAX) {
+		pid.output = MAX;
+	} else if(pid.output < MIN) {
+		pid.output = MIN;
+	}
+
+	//Update error
+	pid.prev_error = pid.error;
+
+	return pid.output;
 }
 
 /**** Temperature Sensor and Functions ****/
