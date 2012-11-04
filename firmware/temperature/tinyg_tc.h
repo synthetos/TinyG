@@ -23,20 +23,28 @@
 
 void device_init(void);
 
-uint8_t pid_controller(void);
+void sensor_init(void);
+uint8_t sensor_callback(void);
+double sensor_get_temperature(void);
+uint8_t sensor_get_state(void);
+uint8_t sensor_get_code(void);
+
+void heater_init(void);
+uint8_t heater_fast_loop(void);
+uint8_t heater_callback(void);
 
 void adc_init(void);
-double adc_read(uint8_t channel);
+uint16_t adc_read(uint8_t channel);
 
 void pwm_init(void);
 uint8_t pwm_set_freq(double freq);
 uint8_t pwm_set_duty(double duty);
 
-void rtc_init(void);
-uint8_t rtc_callback(void);
-void rtc_10ms(void);
-void rtc_100ms(void);
-void rtc_1sec(void);
+void tick_init(void);
+uint8_t tick_callback(void);
+void tick_10ms(void);
+void tick_100ms(void);
+void tick_1sec(void);
 
 void led_on(void);
 void led_off(void);
@@ -59,7 +67,60 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data);
 #define DEVICE_UUID_2	 0x00	// UUID = 0 means there is no UUID
 #define DEVICE_UUID_3	 0x00	// UUID = 0 means there is no UUID
 
-// Heater values
+
+/**** Sensor default parameters ***/
+
+#define SENSOR_SAMPLES_PER_READING 8	// number of sensor samples to take for each reading period
+#define SENSOR_RETRIES 4				// number of sequential sensor errors before rejecting sample or shutting down
+#define SENSOR_VARIANCE_RANGE 20		// reject sample if termperature is GT or LT previous sample by this amount 
+#define SENSOR_NO_POWER_TEMPERATURE 5	// detect thermocouple amplifier disconnected if readings stay below this temp
+#define SENSOR_DISCONNECTED_TEMPERATURE 400	// sensor is DISCONNECTED if over this temp (works w/ both 5v and 3v refs)
+
+#define SENSOR_SLOPE 0.686645508		// emperically determined for AD597 & B&K TP-29 K-type test probe
+#define SENSOR_OFFSET -4.062500			// emperically determined
+
+#define SURFACE_OF_THE_SUN 5505			// termperature at the surface of the sun in Celcius
+#define HOTTER_THAN_THE_SUN 10000		// a temperature that is hotter than the surface of the sun
+#define ABSOLUTE_ZERO -273.15			// Celcius
+#define LESS_THAN_ZERO -274				// a value the thermocouple sensor cannot output
+
+enum tcSensorState {					// sensor state machine
+										// sensor values should only be trusted for HAS_DATA
+	SENSOR_UNINIT = 0,					// sensor is uninitialized (initial state)
+	SENSOR_SHUTDOWN,					// sensor is shut down and signalling heater to do the same
+	SENSOR_HAS_NO_DATA,					// sensor has been initialized but there is no data
+	SENSOR_STALE_DATA,					// sensor data is stale (time constant stuff)
+	SENSOR_HAS_DATA						// sensor has valid data (completed a sampling period)
+};
+
+enum tcSensorCode {						// success and failure codes. Any failure should cause heater shutdown
+	SENSOR_OK = 0,						// sensor is OK - no errors reported
+	SENSOR_NO_POWER,					// detected lack of power to thermocouple amplifier
+	SENSOR_DISCONNECTED,				// thermocouple detected as disconnected
+	SENSOR_BAD_READINGS					// too many number of bad readings
+};
+
+/**** Heater default parameters ***/
+
+#define HEATER_AMBIENT_TEMPERATURE 40	// detect heater not heating if readings stay below this temp
+#define HEATER_OVERHEAT_TEMPERATURE 300	// heater is above max temperature if over this temp. Should shut down
+
+enum tcHeaterState {					// heater state machine
+	HEATER_UNINIT = 0,					// heater is uninitialized - transitions to OFF
+	HEATER_SHUTDOWN,					// heater has been shut down - transitions to OFF via re-initialization
+	HEATER_OFF,							// heater turned off or never turned on - transitions to HEATING or COOLING
+	HEATER_ON,							// heater has been turned on - transitions to HEATING
+	HEATER_HEATING,						// heating to set point - transitions to AT_TEMPERATURE, OFF or SHUTDOWN
+	HEATER_COOLING,						// cooling off from regulation - came from OFF or SHUTDOWN, back to OFF
+	HEATER_AT_TEMPERATURE				// at set point and in temperature regulation - transitions to OFF or SHUTDOWN
+};
+
+enum tcHeaterCode {
+	HEATER_OK = 0,						// heater is OK - no errors reported
+	HEATER_FAILED_AMBIENT,				// heater failed to get past ambient temperature
+	HEATER_HEATING_TIMEOUT,				// heater heated but failed to achieve regulation before timeout
+	HEATER_OVERHEATED,					// heater exceeded maximum temperature cutoff value
+};
 
 enum HeaterFailMode{
 	HEATER_FAIL_NONE = 0,
@@ -70,6 +131,8 @@ enum HeaterFailMode{
 	HEATER_FAIL_BAD_READS = 0x20
 };
 
+
+/*
 // FROM MightyBoardFirmware:
 // Offset to compensate for range clipping and bleed-off
 #define HEATER_OFFSET_ADJUSTMENT 0
@@ -78,6 +141,19 @@ enum HeaterFailMode{
 //             current temperature, bypass the PID loop altogether.
 #define PID_BYPASS_DELTA 15
 
+// Number of temp readings to be at target value before triggering newTargetReached
+// with bad seating of thermocouples, we sometimes get innacurate reads
+const uint16_t TARGET_CHECK_COUNT = 5;
+
+// timeout for heating all the way up
+const uint32_t HEAT_UP_TIME = 300000000;  //five minutes
+
+// timeout for showing heating progress
+const uint32_t HEAT_PROGRESS_TIME = 90000000; // 90 seconds
+
+// threshold above starting temperature we check for heating progres
+const uint16_t HEAT_PROGRESS_THRESHOLD = 10;
+*/
 
 // Lower-level device mappings and constants (for atmega328P)
 
@@ -107,10 +183,12 @@ enum HeaterFailMode{
 #define ADC_ENABLE	(1<<ADEN)	// write this to ADCSRA to enable the ADC
 #define ADC_START_CONVERSION (1<<ADSC) // write to ADCSRA to start conversion
 #define ADC_PRESCALE 6			// 6=64x which is ~125KHz at 8Mhz clock
+#define ADC_PRECISION 1024		// change this if you go to 8 bit precision
+#define ADC_VREF 5.00			// change this if the circuit changes. 3v would be about optimal
 
-#define RTC_TIMER	TCNT0		// Real time clock timer
-#define RTC_10MS_COUNT 78		// gets 8 Mhz/1024 close to 100 Hz.
-#define RTC_TCCRxA	TCCR0A		// map the registers into the selected timer
+#define TICK_TIMER	TCNT0		// Tickclock timer
+#define TICK_10MS_COUNT 78		// gets 8 Mhz/1024 close to 100 Hz.
+#define TICK_TCCRxA	TCCR0A		// map the registers into the selected timer
 
 #define LED_PORT	PORTD		// LED port
 #define LED_PIN		(1<<PIND2)	// LED indicator

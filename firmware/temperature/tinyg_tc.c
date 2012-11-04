@@ -21,55 +21,52 @@
 #include <string.h>				// for memset
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <math.h>
 
 #include "kinen_core.h"
 #include "tinyg_tc.h"
 
 // static functions 
 static void _controller(void);
+static double _sensor_sample(uint8_t adc_channel, uint8_t new_period);
 
 // static data
-static struct DeviceSingleton {
-	double temperature_reading;
-	double temperature_set_point;
+static struct Device {
+	// tick counter variables
+	uint8_t tick_flag;			// true = the timer interrupt fired
+	uint8_t tick_100ms_count;	// 100ms down counter
+	uint8_t tick_1sec_count;		// 1 second down counter
 
+	// pwm variables
 	double pwm_freq;			// save it for stopping and starting PWM
+} device;
 
-	uint8_t rtc_flag;			// true = the timer interrupt fired
-	uint8_t rtc_100ms_count;	// 100ms down counter
-	uint8_t rtc_1sec_count;		// 1 second down counter
+static struct TemperatureSensor {
+	uint8_t state;				// sensor state
+	uint8_t code;				// sensor return code (more information about state)
+	uint8_t samples_per_reading;// number of samples to take per reading
+	uint8_t samples;			// number of samples taken. Set to 0 to start a reading 
+	uint8_t retries;			// number of retries on sampling errors or for shutdown 
+	double temperature;			// high confidence temperature reading
+	double previous_temp;		// previous temperature for sampling
+	double accumulator;			// accumulated temperature reading during sampling (divide by samples)
+	double variance;			// range threshold for max allowable change between samples (reject outliers)
+	double disconnect_temperature;// false temperature reading indicating thermocouple is disconnected
+	double no_power_temperature;// false temperature reading indicating there's no power to thermocouple amplifier
+} sensor;
 
-} dev;
+static struct Heater {
+	uint8_t state;				// heater state
+	uint8_t code;				// heater code (more information about heater state)
+	double temperature;			// current heater temperature
+	double set_point;			// set point for regulation
+	double regulation_time;		// time taken so far to get to regulation (in seconds)
+	double regulation_timeout;	// timeout beyond which regulation has failed (seconds)
+	double ambient_temperature;	// temperature below which it's ambient temperature (heater failed)
+	double overheat_temperature;// overheat temperature (cutoff temperature)
+} heater;
 
 static uint8_t device_array[DEVICE_ADDRESS_MAX];
-
-// FROM MightyBoardFirmware:
-// Number of bad sensor readings we need to get in a row before shutting off the heater
-const uint8_t SENSOR_MAX_BAD_READINGS = 15;
-
-// Number of temp readings to be at target value before triggering newTargetReached
-// with bad seating of thermocouples, we sometimes get innacurate reads
-const uint16_t TARGET_CHECK_COUNT = 5;
-
-// If we read a temperature higher than this, shut down the heater
-const uint16_t HEATER_CUTOFF_TEMPERATURE = 300;
-
-// temperatures below setting by this amount will flag as "not heating up"
-const uint16_t HEAT_FAIL_THRESHOLD = 30;
-
-// if the starting temperature is less than this amount, we will check heating progress
-// to get to this temperature, the heater has already been checked.
-const uint16_t HEAT_CHECKED_THRESHOLD = 50;
-
-// timeout for heating all the way up
-const uint32_t HEAT_UP_TIME = 300000000;  //five minutes
-
-// timeout for showing heating progress
-const uint32_t HEAT_PROGRESS_TIME = 90000000; // 90 seconds
-
-// threshold above starting temperature we check for heating progres
-const uint16_t HEAT_PROGRESS_THRESHOLD = 10;
-
 
 /****************************************************************************
  * main
@@ -105,27 +102,200 @@ int main(void)
 #define	DISPATCH(func) if (func == SC_EAGAIN) return; 
 static void _controller()
 {
-	DISPATCH(kinen_callback());	// intercept low-level communication events
-	DISPATCH(rtc_callback());	// real-time clock handler
-	DISPATCH(pid_controller());	// main controller task
+	DISPATCH(kinen_callback());		// intercept low-level communication events
+	DISPATCH(tick_callback());		// regular interval timer clock handler (ticks)
+//	DISPATCH(heater_fast_loop());	// fast response heater conditions like shutdown
 }
 
-/**** PID Controller Functions *************************/
+/**** Temperature Sensor and Functions ****/
 /*
- * pid_controller()
+ * sensor_init()	 		- initialize temperature sensor
+ * sensor_get_temperature()	- return latest temperature reading or LESS _THAN_ZERO
+ * sensor_get_state()		- return current sensor state
+ * sensor_get_code()		- return latest sensor code
+ * sensor_callback() 		- perform sensor sampling
  */
 
-uint8_t pid_controller()
+void sensor_init()
 {
-	dev.temperature_set_point = 512;
-	dev.temperature_reading = (double)adc_read(ADC_CHANNEL);
+	memset(&sensor, 0, sizeof(struct TemperatureSensor));
+	sensor.samples_per_reading = SENSOR_SAMPLES_PER_READING;
+	sensor.temperature = ABSOLUTE_ZERO;
+	sensor.retries = SENSOR_RETRIES;
+	sensor.variance = SENSOR_VARIANCE_RANGE;
+	sensor.disconnect_temperature = SENSOR_DISCONNECTED_TEMPERATURE;
+	sensor.no_power_temperature = SENSOR_NO_POWER_TEMPERATURE;
+	sensor.state = SENSOR_HAS_NO_DATA;
+}
 
-	pwm_set_duty(dev.temperature_reading / 10.1);
-
-	if (dev.temperature_reading > dev.temperature_set_point) {
-		led_on();
+double sensor_get_temperature() { 
+	if (sensor.state == SENSOR_HAS_DATA) { 
+		return (sensor.temperature);
 	} else {
-		led_off();
+		return (LESS_THAN_ZERO);
+	}
+}
+
+uint8_t sensor_get_state() { return (sensor.state);}
+uint8_t sensor_get_code() { return (sensor.code);}
+void sensor_start_sample() { sensor.samples = 0; }
+
+/*
+ * sensor_callback() - perform tick-timer sensor functions (10ms loop)
+ *
+ *	The sensor_callback() is called on 10ms ticks. It collects N samples in a 
+ *	sampling period before updating the sensor.temperature. Since the heater
+ *	runs on 100ms ticks there can be a max of 10 samples in a period.
+ *	(The ticks are synchronized so you can actually get 10, not just 9) 
+ *
+ *	The heater must initate a sample cycle by calling sensor_start_sample()
+ */
+
+uint8_t sensor_callback()
+{
+	// don't execute the callback if the sensor is uninitialized or shut down
+	if ((sensor.state == SENSOR_UNINIT) || (sensor.state == SENSOR_SHUTDOWN)) { 
+		return (SENSOR_OK);
+	}
+
+	// take a temperature sample
+	uint8_t new_period = false;
+	if (sensor.samples == 0) {
+		sensor.accumulator = 0;
+		new_period = true;
+	}
+	double temperature = _sensor_sample(ADC_CHANNEL, new_period);
+	if (temperature > SURFACE_OF_THE_SUN) {
+		sensor.state = SENSOR_SHUTDOWN;
+		return (SENSOR_BAD_READINGS);
+	}
+	sensor.accumulator += temperature;
+
+	// return if still in the sampling period
+	if ((++sensor.samples) < sensor.samples_per_reading) { 
+		return (SENSOR_OK);
+	}
+
+	// set the temperature 
+	sensor.temperature = sensor.accumulator / sensor.samples;
+
+	// process the completed reading for exception cases
+	if (sensor.temperature > SENSOR_DISCONNECTED_TEMPERATURE) {
+		sensor.state = SENSOR_HAS_NO_DATA;
+		return (SENSOR_DISCONNECTED);
+	} 
+	if (sensor.temperature < SENSOR_NO_POWER_TEMPERATURE) {
+		sensor.state = SENSOR_HAS_NO_DATA;
+		return (SENSOR_NO_POWER);
+	}
+	sensor.state = SENSOR_HAS_DATA;
+	return (SENSOR_OK);
+}
+
+/*
+ * _sensor_sample() - take a sample and reject samples showing excessive variance
+ *
+ *	Returns temperature sample if within variance bounds
+ *	Returns ABSOLUTE_ZERO if it cannot get a sample within variance
+ *	Retries sampling if variance is exceeded - reject spurious readings
+ *	To start a new sampling period set 'new_period' true
+ *
+ * Temperature calculation math
+ *
+ *	This setup is using B&K TP-29 K-type test probe (Mouser part #615-TP29, $9.50 ea) 
+ *	coupled to an Analog Devices AD597 (available from Digikey)
+ *
+ *	This combination is very linear between 100 - 300 deg-C outputting 7.4 mV per degree
+ *	The ADC uses a 5v reference (the 1st major source of error), and 10 bit conversion
+ *
+ *	The sample value returned by the ADC is computed by ADCvalue = (1024 / Vref)
+ *	The temperature derived from this is:
+ *
+ *		y = mx + b
+ *		temp = adc_value * slope + offset
+ *
+ *		slope = (adc2 - adc1) / (temp2 - temp1)
+ *		slope = 1.456355556							// from measurements
+ *
+ *		b = temp - (adc_value * slope)
+ *		b = -120.7135972							// from measurements
+ *
+ *		temp = (adc_value * 1.456355556) - -120.7135972
+ */
+
+//#define SAMPLE(a) (((double)adc_read(a) * SENSOR_SLOPE) + SENSOR_OFFSET)
+#define SAMPLE(a) (((double)200 * SENSOR_SLOPE) + SENSOR_OFFSET)	// useful for testing the math
+
+static double _sensor_sample(uint8_t adc_channel, uint8_t new_period)
+{
+	double sample = SAMPLE(adc_channel);
+
+	if (new_period == true) {
+		sensor.previous_temp = sample;
+		return (sample);
+	}
+	for (uint8_t i=sensor.retries; i>0; --i) {
+		if (fabs(sample - sensor.previous_temp) < sensor.variance) { // sample is within variance range
+			sensor.previous_temp = sample;
+			return (sample);
+		}
+		sample = SAMPLE(adc_channel);	// if outside variance range take another sample
+	}
+	// exit if all variance tests failed. Return a value that should cause the heater to shut down
+	return (HOTTER_THAN_THE_SUN);
+}
+
+/**** Heater Functions ****/
+/*
+ * heater_init()
+ * heater_on()
+ * heater_off()
+ * heater_callback() - handle 100ms ticks
+ */
+
+void heater_init()
+{
+	memset(&heater, 0, sizeof(struct Heater));
+	heater.ambient_temperature = HEATER_AMBIENT_TEMPERATURE;
+	heater.overheat_temperature = HEATER_OVERHEAT_TEMPERATURE;
+	heater.state = HEATER_OFF;	
+}
+
+uint8_t heater_turn_on() 
+{ 
+	switch (heater.state) {
+		case HEATER_UNINIT:	return (SC_ERROR);
+		case HEATER_SHUTDOWN: heater_init();	// this will drop through to HEATER_OFF cases
+		case HEATER_OFF: 
+		case HEATER_COOLING: {
+			heater.state = HEATER_ON;
+		}
+	}
+	return (SC_OK);
+}
+
+uint8_t heater_turn_off() 
+{ 
+	switch (heater.state) {
+		case HEATER_UNINIT:	return (SC_ERROR);
+		case HEATER_ON: 
+		case HEATER_HEATING:
+		case HEATER_AT_TEMPERATURE: {
+			heater.state = HEATER_OFF;
+		}
+	}
+	return (SC_OK);
+}
+
+uint8_t heater_callback()
+{
+	if ((heater.state == HEATER_UNINIT) || 
+		(heater.state == HEATER_OFF) || 
+		(heater.state == HEATER_SHUTDOWN)) { 
+		return (HEATER_OK);
+	}
+	if (heater.state == HEATER_COOLING) { 
+		return (HEATER_OK);
 	}
 	return (SC_OK);
 }
@@ -138,9 +308,11 @@ void device_init(void)
 	DDRC = PORTC_DIR;
 	DDRD = PORTD_DIR;
 
-	rtc_init();
+	tick_init();
 	pwm_init();
 	adc_init();
+	sensor_init();
+	heater_init();
 	led_on();					// put on the red light [Sting, 1978]
 
 	pwm_set_freq(PWM_FREQUENCY);
@@ -149,6 +321,7 @@ void device_init(void)
 /**** ADC - Analog to Digital Converter for thermocouple reader ****/
 /*
  * adc_init() - initialize ADC. See tinyg_tc.h for settings used
+ * adc_read() - returns the raw ADC reading. See __sensor_sample notes for explanation
  */
 void adc_init(void)
 {
@@ -156,7 +329,7 @@ void adc_init(void)
 	ADCSRA = (ADC_ENABLE | ADC_PRESCALE);// Enable ADC (bit 7) & set prescaler
 }
 
-double adc_read(uint8_t channel)
+uint16_t adc_read(uint8_t channel)
 {
 	ADMUX &= 0xF0;						// clobber the channel
 	ADMUX |= 0x0F & channel;			// set the channel
@@ -164,7 +337,7 @@ double adc_read(uint8_t channel)
 	ADCSRA |= ADC_START_CONVERSION;		// start the conversion
 	while (ADCSRA && (1<<ADIF) == 0);	// wait about 100 uSec
 	ADCSRA |= (1<<ADIF);				// clear the conversion flag
-	return ((double)ADC);
+	return (ADC);
 }
 
 /**** PWM - Pulse Width Modulation Functions ****/
@@ -184,7 +357,7 @@ void pwm_init(void)
 	TIMSK1 = 0; 				// disable PWM interrupts
 	OCR2A = 0;					// clear PWM frequency (TOP value)
 	OCR2B = 0;					// clear PWM duty cycle as % of TOP value
-	dev.pwm_freq = 0;
+	device.pwm_freq = 0;
 }
 
 /*
@@ -195,13 +368,13 @@ void pwm_init(void)
 
 uint8_t pwm_set_freq(double freq)
 {
-	dev.pwm_freq = F_CPU / PWM_PRESCALE / freq;
-	if (dev.pwm_freq < PWM_MIN_RES) { 
+	device.pwm_freq = F_CPU / PWM_PRESCALE / freq;
+	if (device.pwm_freq < PWM_MIN_RES) { 
 		OCR2A = PWM_MIN_RES;
-	} else if (dev.pwm_freq >= PWM_MAX_RES) { 
+	} else if (device.pwm_freq >= PWM_MAX_RES) { 
 		OCR2A = PWM_MAX_RES;
 	} else { 
-		OCR2A = (uint8_t)dev.pwm_freq;
+		OCR2A = (uint8_t)device.pwm_freq;
 	}
 	return (SC_OK);
 }
@@ -228,63 +401,63 @@ uint8_t pwm_set_duty(double duty)
 	} else {
 		OCR2B = (uint8_t)(OCR2A * (1-(duty/100)));
 	}
-	OCR2A = (uint8_t)dev.pwm_freq;
+	OCR2A = (uint8_t)device.pwm_freq;
 	return (SC_OK);
 }
 
-/**** RTC - Real Time Clock Functions ****
- * rtc_init() 	  - initialize RTC timers and data
- * ISR()		  - RTC interrupt routine 
- * rtc_callback() - run RTC from dispatch loop
- * rtc_10ms()	  - tasks that run every 10 ms
- * rtc_100ms()	  - tasks that run every 100 ms
- * rtc_1sec()	  - tasks that run every 100 ms
+/**** RIT - Regular Interval Timer Clock Functions ****
+ * tick_init() 	  - initialize RIT timers and data
+ * RIT ISR()	  - RIT interrupt routine 
+ * tick_callback() - run RIT from dispatch loop
+ * tick_10ms()	  - tasks that run every 10 ms
+ * tick_100ms()	  - tasks that run every 100 ms
+ * tick_1sec()	  - tasks that run every 100 ms
  */
-void rtc_init(void)
+void tick_init(void)
 {
 	TCCR0A = 0x00;				// normal mode, no compare values
 	TCCR0B = 0x05;				// normal mode, internal clock / 1024 ~= 7800 Hz
-	TCNT0 = (256 - RTC_10MS_COUNT);	// set timer for approx 10 ms overflow
+	TCNT0 = (256 - TICK_10MS_COUNT);	// set timer for approx 10 ms overflow
 	TIMSK0 = (1<<TOIE0);		// enable overflow interrupts
-	dev.rtc_100ms_count = 10;
-	dev.rtc_1sec_count = 10;	
+	device.tick_100ms_count = 10;
+	device.tick_1sec_count = 10;	
 }
 
 ISR(TIMER0_OVF_vect)
 {
-	TCNT0 = (256 - RTC_10MS_COUNT);	// reset timer for approx 10 ms overflow
-	dev.rtc_flag = true;
+	TCNT0 = (256 - TICK_10MS_COUNT);	// reset timer for approx 10 ms overflow
+	device.tick_flag = true;
 }
 
-uint8_t rtc_callback(void)
+uint8_t tick_callback(void)
 {
-	if (dev.rtc_flag == false) { return (SC_NOOP);}
-	dev.rtc_flag = false;
+	if (device.tick_flag == false) { return (SC_NOOP);}
+	device.tick_flag = false;
 
-	rtc_10ms();
+	tick_10ms();
 
-	if (--dev.rtc_100ms_count != 0) { return (SC_OK);}
-	dev.rtc_100ms_count = 10;
-	rtc_100ms();
+	if (--device.tick_100ms_count != 0) { return (SC_OK);}
+	device.tick_100ms_count = 10;
+	tick_100ms();
 
-	if (--dev.rtc_1sec_count != 0) { return (SC_OK);}
-	dev.rtc_1sec_count = 10;
-	rtc_1sec();
+	if (--device.tick_1sec_count != 0) { return (SC_OK);}
+	device.tick_1sec_count = 10;
+	tick_1sec();
 
 	return (SC_OK);
 }
 
-void rtc_10ms(void)
+void tick_10ms(void)
 {
-	return;
+	sensor_callback();			// run the temperature sensor every 10 ms.
 }
 
-void rtc_100ms(void)
+void tick_100ms(void)
 {
-	return;
+	heater_callback();			// run the heater controller every 100 ms.
 }
 
-void rtc_1sec(void)
+void tick_1sec(void)
 {
 //	led_toggle();
 	return;
