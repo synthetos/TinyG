@@ -27,18 +27,18 @@
 #include "tinyg_tc.h"
 
 // static functions 
+
 static void _controller(void);
 static double _sensor_sample(uint8_t adc_channel, uint8_t new_period);
 
 // static data
-static struct Device {
-	// tick counter variables
+
+static struct Device {			// hardware devices that are part of the chip
 	uint8_t tick_flag;			// true = the timer interrupt fired
 	uint8_t tick_100ms_count;	// 100ms down counter
-	uint8_t tick_1sec_count;		// 1 second down counter
-
-	// pwm variables
+	uint8_t tick_1sec_count;	// 1 second down counter
 	double pwm_freq;			// save it for stopping and starting PWM
+	uint8_t array[DEVICE_ADDRESS_MAX]; // byte array for Kinen communications
 } device;
 
 static struct Heater {
@@ -74,8 +74,8 @@ static struct TemperatureSensor {
 	uint8_t state;				// sensor state
 	uint8_t code;				// sensor return code (more information about state)
 	uint8_t samples_per_reading;// number of samples to take per reading
-	uint8_t samples;			// number of samples taken. Set to 0 to start a reading 
-	uint8_t retries;			// number of retries on sampling errors or for shutdown 
+	int8_t samples;				// number of samples taken. Set to 0 to start a reading
+	uint8_t retries;			// numer of retries on sampling errors or for shutdown 
 	double temperature;			// high confidence temperature reading
 	double previous_temp;		// previous temperature for sampling
 	double accumulator;			// accumulated temperature reading during sampling (divide by samples)
@@ -83,8 +83,6 @@ static struct TemperatureSensor {
 	double disconnect_temperature;// false temperature reading indicating thermocouple is disconnected
 	double no_power_temperature;// false temperature reading indicating there's no power to thermocouple amplifier
 } sensor;
-
-static uint8_t device_array[DEVICE_ADDRESS_MAX];
 
 /****************************************************************************
  * main
@@ -97,18 +95,19 @@ int main(void)
 	cli();						// initializations
 	kinen_init();				// do this first
 	device_init();				// handles all the device inits
+	heater_init();				// setup the heater module
+	sensor_init();				// setup the temperature sensor module
 	sei(); 						// enable interrupts
 
 	DEVICE_UNITS;				// uncomment __UNIT_TEST_DEVICE to enable unit tests
 
-	heater_on(200);
+	heater_on(200);				// ++++ turn heater on for testing
 
 	while (true) {				// go to the controller loop and never return
 		_controller();
 	}
 	return (false);				// never returns
 }
-
 
 /*
  * Device Init 
@@ -140,34 +139,36 @@ static void _controller()
 {
 	DISPATCH(kinen_callback());		// intercept low-level communication events
 	DISPATCH(tick_callback());		// regular interval timer clock handler (ticks)
-//	DISPATCH(heater_fast_loop());	// fast response heater conditions like shutdown
 }
 
 /**** Heater Functions ****/
 /*
- * heater_on()
- * heater_off()
- * heater_callback() - handle 100ms ticks
+ * heater_init() - initialize heater with default values
+ * heater_on()	 - turn heater on
+ * heater_off()	 - turn heater off	
+ * heater_callback() - 100ms timed loop for heater control
  */
 
-void heater_on(double setpoint)
+void heater_init()
 { 
-	// no action if heater is already on
-	if ((heater.state == HEATER_HEATING) || (heater.state == HEATER_AT_TARGET)) {
-		return;
-	}
-
-	// initialize heater and start PID
+	// initialize heater, start PID and PWM
 	memset(&heater, 0, sizeof(struct Heater));
-	heater.setpoint = setpoint;
 	heater.ambient_timeout = HEATER_AMBIENT_TIMEOUT;
 	heater.regulation_timeout = HEATER_REGULATION_TIMEOUT;
 	heater.ambient_temperature = HEATER_AMBIENT_TEMPERATURE;
 	heater.overheat_temperature = HEATER_OVERHEAT_TEMPERATURE;
+}
+
+void heater_on(double setpoint)
+{
+	// no action if heater is already on
+	if ((heater.state == HEATER_HEATING) || (heater.state == HEATER_AT_TARGET)) {
+		return;
+	}
 	sensor_on();
-	pid_on(heater.setpoint, sensor.temperature);
-	pwm_set_freq(PWM_FREQUENCY);
-	pwm_set_duty(0);			// turn it off
+	heater.setpoint = setpoint;
+	pid_on(heater.setpoint, sensor.temperature);// initial temp is absolute zero
+	pwm_on(PWM_FREQUENCY, 0);					// duty cycle will be set by PID loop
 	heater.state = HEATER_HEATING;
 }
 
@@ -259,6 +260,7 @@ double pid_calc(double setpoint,double temperature)
 
 /**** Temperature Sensor and Functions ****/
 /*
+ * sensor_init()	 		- initialize temperature sensor and start it running
  * sensor_on()	 			- initialize temperature sensor and start it running
  * sensor_off()	 			- turn temperature sensor off
  * sensor_get_temperature()	- return latest temperature reading or LESS _THAN_ZERO
@@ -267,7 +269,7 @@ double pid_calc(double setpoint,double temperature)
  * sensor_callback() 		- perform sensor sampling
  */
 
-void sensor_on()
+void sensor_init()
 {
 	memset(&sensor, 0, sizeof(struct TemperatureSensor));
 	sensor.samples_per_reading = SENSOR_SAMPLES_PER_READING;
@@ -277,6 +279,11 @@ void sensor_on()
 	sensor.disconnect_temperature = SENSOR_DISCONNECTED_TEMPERATURE;
 	sensor.no_power_temperature = SENSOR_NO_POWER_TEMPERATURE;
 	sensor.state = SENSOR_HAS_NO_DATA;
+}
+
+void sensor_on()
+{
+	// no action actually occurs
 }
 
 void sensor_off()
@@ -309,41 +316,44 @@ void sensor_start_temperature_reading() { sensor.samples = 0; }
 
 void sensor_callback()
 {
-	// don't execute the callback if the sensor is uninitialized or shut down
+	// don't execute the function if the sensor is off or shut down
 	if ((sensor.state == SENSOR_OFF) || (sensor.state == SENSOR_SHUTDOWN)) { 
 		return;
 	}
 
-	// take a temperature sample
+	// see if the reading is done
+	if (sensor.code == SENSOR_READING_COMPLETE) { return;}
+
+	// take a new temperature sample
 	uint8_t new_period = false;
 	if (sensor.samples == 0) {
 		sensor.accumulator = 0;
+		sensor.code = SENSOR_IS_READING;
 		new_period = true;
 	}
 	double temperature = _sensor_sample(ADC_CHANNEL, new_period);
 	if (temperature > SURFACE_OF_THE_SUN) {
+		sensor.code = SENSOR_READING_FAILED_BAD_READINGS;
 		sensor.state = SENSOR_SHUTDOWN;
-		sensor.code = SENSOR_BAD_READINGS;
 		return;
 	}
 	sensor.accumulator += temperature;
 
 	// return if still in the sampling period
-	if ((++sensor.samples) < sensor.samples_per_reading) { 
-		return;
-	}
+	if ((++sensor.samples) < sensor.samples_per_reading) { return;}
 
 	// record the temperature 
 	sensor.temperature = sensor.accumulator / sensor.samples;
 
 	// process the completed reading for exception cases
 	if (sensor.temperature > SENSOR_DISCONNECTED_TEMPERATURE) {
+		sensor.code = SENSOR_READING_FAILED_DISCONNECTED;
 		sensor.state = SENSOR_HAS_NO_DATA;
-		sensor.code = SENSOR_DISCONNECTED;
 	} else if (sensor.temperature < SENSOR_NO_POWER_TEMPERATURE) {
+		sensor.code = SENSOR_READING_FAILED_NO_POWER;
 		sensor.state = SENSOR_HAS_NO_DATA;
-		sensor.code = SENSOR_NO_POWER;
 	} else {
+		sensor.code = SENSOR_READING_COMPLETE;
 		sensor.state = SENSOR_HAS_DATA;
 	}
 }
@@ -405,7 +415,7 @@ static double _sensor_sample(uint8_t adc_channel, uint8_t new_period)
 /**** ADC - Analog to Digital Converter for thermocouple reader ****/
 /*
  * adc_init() - initialize ADC. See tinyg_tc.h for settings used
- * adc_read() - returns the raw ADC reading. See __sensor_sample notes for explanation
+ * adc_read() - returns a single ADC reading (raw). See __sensor_sample notes for more
  */
 void adc_init(void)
 {
@@ -442,6 +452,18 @@ void pwm_init(void)
 	OCR2A = 0;					// clear PWM frequency (TOP value)
 	OCR2B = 0;					// clear PWM duty cycle as % of TOP value
 	device.pwm_freq = 0;
+}
+
+void pwm_on(double freq, double duty)
+{
+	pwm_init();
+	pwm_set_freq(freq);
+	pwm_set_duty(duty);
+}
+
+void pwm_off(void)
+{
+	pwm_on(0,0);
 }
 
 /*
@@ -497,11 +519,12 @@ uint8_t pwm_set_duty(double duty)
  * tick_100ms()	  - tasks that run every 100 ms
  * tick_1sec()	  - tasks that run every 100 ms
  */
+
 void tick_init(void)
 {
 	TCCR0A = 0x00;				// normal mode, no compare values
 	TCCR0B = 0x05;				// normal mode, internal clock / 1024 ~= 7800 Hz
-	TCNT0 = (256 - TICK_10MS_COUNT);	// set timer for approx 10 ms overflow
+	TCNT0 = (256 - TICK_10MS_COUNT);// set timer for approx 10 ms overflow
 	TIMSK0 = (1<<TOIE0);		// enable overflow interrupts
 	device.tick_100ms_count = 10;
 	device.tick_1sec_count = 10;	
@@ -593,7 +616,7 @@ uint8_t device_read_byte(uint8_t addr, uint8_t *data)
 {
 	addr -= KINEN_COMMON_MAX;
 	if (addr >= DEVICE_ADDRESS_MAX) return (SC_INVALID_ADDRESS);
-	*data = device_array[addr];
+	*data = device.array[addr];
 	return (SC_OK);
 }
 
@@ -603,7 +626,7 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data)
 	if (addr >= DEVICE_ADDRESS_MAX) return (SC_INVALID_ADDRESS);
 	// There are no checks in here for read-only locations
 	// Assumes all locations are writable.
-	device_array[addr] = data;
+	device.array[addr] = data;
 	return (SC_OK);
 }
 

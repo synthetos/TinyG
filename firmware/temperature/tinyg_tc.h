@@ -23,11 +23,12 @@
 
 void device_init(void);
 
-//void heater_init(void);
-void heater_on(double setpoint); 
+void heater_init(void);
+void heater_on(double setpoint);
 void heater_off(void); 
 void heater_callback(void);
 
+void sensor_init(void);
 void sensor_on(void);
 void sensor_off(void);
 void sensor_callback(void);
@@ -44,6 +45,8 @@ void adc_init(void);
 uint16_t adc_read(uint8_t channel);
 
 void pwm_init(void);
+void pwm_on(double freq, double duty);
+void pwm_off(void);
 uint8_t pwm_set_freq(double freq);
 uint8_t pwm_set_duty(double duty);
 
@@ -149,10 +152,12 @@ enum tcSensorState {					// sensor state machine
 };
 
 enum tcSensorCode {						// success and failure codes. Any failure should cause heater shutdown
-	SENSOR_OK = 0,						// sensor is OK - no errors reported
-	SENSOR_NO_POWER,					// detected lack of power to thermocouple amplifier
-	SENSOR_DISCONNECTED,				// thermocouple detected as disconnected
-	SENSOR_BAD_READINGS					// too many number of bad readings
+	SENSOR_IDLE = 0,					// sensor is OK - no errors reported
+	SENSOR_IS_READING,					// sensor is in reading period
+	SENSOR_READING_COMPLETE,			// reading is complete.
+	SENSOR_READING_FAILED_NO_POWER,		// detected lack of power to thermocouple amplifier
+	SENSOR_READING_FAILED_DISCONNECTED,	// thermocouple detected as disconnected
+	SENSOR_READING_FAILED_BAD_READINGS	// too many number of bad readings
 };
 
 // Lower-level device mappings and constants (for atmega328P)
