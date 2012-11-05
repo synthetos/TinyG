@@ -23,22 +23,21 @@
 
 void device_init(void);
 
-void heater_init(void);
-uint8_t heater_turn_on(void); 
-uint8_t heater_turn_off(void); 
-uint8_t heater_callback(void);
+//void heater_init(void);
+void heater_on(double setpoint); 
+void heater_off(void); 
+void heater_callback(void);
 
-void sensor_init(void);
-uint8_t sensor_callback(void);
+void sensor_on(void);
+void sensor_off(void);
+void sensor_callback(void);
 double sensor_get_temperature(void);
 uint8_t sensor_get_state(void);
 uint8_t sensor_get_code(void);
 void sensor_start_temperature_reading(void);
 
-void pid_init(void);
-uint8_t pid_on(double set_point);
-uint8_t pid_off(void);
-uint8_t pid_callback(void);
+void pid_off(void);
+void pid_on(double setpoint, double temperature);
 double pid_calc(double setpoint,double temperature);
 
 void adc_init(void);
@@ -86,13 +85,10 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data);
 #define HEATER_TICK_SECONDS 0.1			// 100 ms
 
 enum tcHeaterState {					// heater state machine
-	HEATER_UNINIT = 0,					// heater is uninitialized - transitions to OFF
-	HEATER_SHUTDOWN,					// heater has been shut down - transitions to OFF via re-initialization
-	HEATER_OFF,							// heater turned off or never turned on - transitions to HEATING or COOLING
-	HEATER_ON,							// heater has been turned on - transitions to HEATING
-	HEATER_HEATING,						// heating to set point - transitions to AT_TEMPERATURE, OFF or SHUTDOWN
-	HEATER_COOLING,						// cooling off from regulation - came from OFF or SHUTDOWN, back to OFF
-	HEATER_AT_TEMPERATURE				// at set point and in temperature regulation - transitions to OFF or SHUTDOWN
+	HEATER_OFF = 0,						// heater turned OFF or never turned on - transitions to HEATING
+	HEATER_SHUTDOWN,					// heater has been shut down - transitions to HEATING
+	HEATER_HEATING,						// heating up from OFF or SHUTDOWN - transitions to AT_TAGRGET or SHUTDOWN
+	HEATER_AT_TARGET					// at setpoint and in temperature regulation - transitions to OFF or SHUTDOWN
 };
 
 enum tcHeaterCode {
@@ -113,23 +109,17 @@ enum HeaterFailMode{
 
 /**** PID default parameters ***/
 
-#define PID_PROPORTIONAL_THRESHOLD 20	// degrees within which control switches from full-on to proportional
-#define PID_MAX_OUTPUT  4				// saturation filter max
-#define PID_MIN_OUTPUT -4				// saturation filter min
+#define PID_DT HEATER_TICK_SECONDS		// time constant for computation
+#define PID_MAX_OUTPUT 100				// saturation filter max
+#define PID_MIN_OUTPUT 0				// saturation filter min
 #define PID_Kp 0.1						// proportional
 #define PID_Ki 0.005					// integral
 #define PID_Kd 0.01						// derivative
+#define PID_EPSILON 0.01				// error term precision
 
 enum tcPIDState {						// PID state machine
-	PID_UNINIT = 0,						// PID is uninitialized (initial state)
-	PID_OFF,							// PID is off
-	PID_PROPORTIONAL,					// PID is in proportional control mode
-	PID_FULL_ON							// PID is in full-on mode
-};
-
-enum tcPIDCode {						// PID success and failure codes
-	PID_OK = 0,							// PID is OK - no errors reported
-	PID_ERROR
+	PID_OFF = 0,						// PID is off
+	PID_ON
 };
 
 /**** Sensor default parameters ***/
@@ -151,7 +141,7 @@ enum tcPIDCode {						// PID success and failure codes
 
 enum tcSensorState {					// sensor state machine
 										// sensor values should only be trusted for HAS_DATA
-	SENSOR_UNINIT = 0,					// sensor is uninitialized (initial state)
+	SENSOR_OFF = 0,						// sensor is uninitialized (initial state)
 	SENSOR_SHUTDOWN,					// sensor is shut down and signalling heater to do the same
 	SENSOR_HAS_NO_DATA,					// sensor has been initialized but there is no data
 	SENSOR_STALE_DATA,					// sensor data is stale (time constant stuff)

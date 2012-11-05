@@ -54,20 +54,20 @@ static struct Heater {
 } heater;
 
 static struct PIDstruct {		// PID controller itself
-	uint8_t state;				// PID state
+	uint8_t state;				// PID state (actually very simple)
 	uint8_t code;				// PID code (more information about PID state)
 	double temperature;			// current PID temperature
 	double setpoint;			// temperature set point
-	double error;
-	double prev_error;
-	double integral;
-	double derivative;
-	double output;
+	double error;				// current error term
+	double prev_error;			// error term from previous pass
+	double integral;			// integral term
+	double derivative;			// derivative term
+	double dt;					// pid time constant
+	double Kp;					// proportional gain
+	double Ki;					// integral gain 
+	double Kd;					// derivative gain
 	double max;					// saturation filter
 	double min;
-	double Kp;
-	double Ki;
-	double Kd;
 } pid;
 
 static struct TemperatureSensor {
@@ -101,6 +101,8 @@ int main(void)
 
 	DEVICE_UNITS;				// uncomment __UNIT_TEST_DEVICE to enable unit tests
 
+	heater_on(200);
+
 	while (true) {				// go to the controller loop and never return
 		_controller();
 	}
@@ -120,11 +122,7 @@ void device_init(void)
 	tick_init();
 	pwm_init();
 	adc_init();
-	sensor_init();
-	heater_init();
 	led_on();					// put on the red light [Sting, 1978]
-
-	pwm_set_freq(PWM_FREQUENCY);
 }
 
 /*
@@ -145,78 +143,53 @@ static void _controller()
 //	DISPATCH(heater_fast_loop());	// fast response heater conditions like shutdown
 }
 
-
 /**** Heater Functions ****/
 /*
- * heater_init()
  * heater_on()
  * heater_off()
  * heater_callback() - handle 100ms ticks
  */
 
-void heater_init()
-{
+void heater_on(double setpoint)
+{ 
+	// no action if heater is already on
+	if ((heater.state == HEATER_HEATING) || (heater.state == HEATER_AT_TARGET)) {
+		return;
+	}
+
+	// initialize heater and start PID
 	memset(&heater, 0, sizeof(struct Heater));
+	heater.setpoint = setpoint;
 	heater.ambient_timeout = HEATER_AMBIENT_TIMEOUT;
 	heater.regulation_timeout = HEATER_REGULATION_TIMEOUT;
 	heater.ambient_temperature = HEATER_AMBIENT_TEMPERATURE;
 	heater.overheat_temperature = HEATER_OVERHEAT_TEMPERATURE;
-	heater.state = HEATER_OFF;	
+	sensor_on();
+	pid_on(heater.setpoint, sensor.temperature);
+	pwm_set_freq(PWM_FREQUENCY);
+	pwm_set_duty(0);			// turn it off
+	heater.state = HEATER_HEATING;
 }
 
-uint8_t heater_turn_on() 
-{ 
-	switch (heater.state) {
-		case HEATER_UNINIT:	return (SC_ERROR);
-		case HEATER_SHUTDOWN: heater_init();	// this will drop through to HEATER_OFF cases
-		case HEATER_OFF: 
-		case HEATER_COOLING: {
-			heater.state = HEATER_ON;
-		}
-	}
-	return (SC_OK);
-}
-
-uint8_t heater_turn_off() 
-{ 
-	switch (heater.state) {
-		case HEATER_UNINIT:	return (SC_ERROR);
-		case HEATER_ON: 
-		case HEATER_HEATING:
-		case HEATER_AT_TEMPERATURE: {
-			heater.state = HEATER_OFF;
-		}
-	}
-	return (SC_OK);
-}
-
-uint8_t heater_callback()
+void heater_off() 
 {
-	heater.code = HEATER_OK;
+	pid_off();
+	heater.state = HEATER_OFF;
+}
 
+void heater_callback()
+{
 	// These are the no-op cases
-	if ((heater.state == HEATER_UNINIT) || 
-		(heater.state == HEATER_OFF) || 
-		(heater.state == HEATER_SHUTDOWN)) { 
-		return (heater.code);
-	}
+	if ((heater.state == HEATER_OFF) || (heater.state == HEATER_SHUTDOWN)) { return;}
 
-	// in all other cases get the current temp and start another reading
+	// Get the current temp and start another reading
 	sensor_start_temperature_reading();
-	if (sensor_get_state() != SENSOR_HAS_DATA) { return (heater.code);}
+	if (sensor_get_state() != SENSOR_HAS_DATA) { return;}
 	heater.temperature = sensor_get_temperature();
+	double duty_cycle = pid_calc(heater.setpoint, heater.temperature);
+	pwm_set_duty(duty_cycle);
 	
-	// If it's cooling there's not much you can do, so exit
-	if (heater.state == HEATER_COOLING) { return (heater.code);}
-
-	// HEATER_ON is a transition state to start regulation
-	if (heater.state == HEATER_ON) {
-		heater.regulation_timer = 0;
-		heater.state = HEATER_HEATING;
-		return (heater.code);
-	}
-
-	// HEATER_HEATING to regulation
+	// handle HEATER exceptions
 	if (heater.state == HEATER_HEATING) {
 		heater.regulation_timer += HEATER_TICK_SECONDS;
 
@@ -224,99 +197,77 @@ uint8_t heater_callback()
 			(heater.regulation_timer > heater.ambient_timeout)) {
 			heater.state = HEATER_SHUTDOWN;
 			heater.code = HEATER_AMBIENT_TIMED_OUT;
-			return (heater.code);
+			pid_off();
+			return;
 		}
 
 		if ((heater.temperature < heater.setpoint) &&
 			(heater.regulation_timer > heater.regulation_timeout)) {
 			heater.state = HEATER_SHUTDOWN;
 			heater.code = HEATER_REGULATION_TIMED_OUT;
-			return (heater.code);
+			pid_off();
+			return;
 		}
-		return (heater.code);
 	}
-
-	return (heater.code);
 }
 
 /**** Heater PID Functions ****/
 /*
- * pid_init()
- * pid_on()
- * pid_off()
- * pid_callback()
+ * pid_off()  - turn pid off.
+ * pid_on()	  - turn pid on. Initializez and set setpoint
+ * pid_calc() - derived from: http://www.embeddedheaven.com/pid-control-algorithm-c-language.htm
  */
 
-void pid_init()
+void pid_off() 
+{ 
+	memset(&pid, 0, sizeof(struct PIDstruct));
+}
+
+void pid_on(double setpoint, double temperature) 
 {
 	memset(&pid, 0, sizeof(struct PIDstruct));
-	pid.max = PID_MAX_OUTPUT;		// saturation filter max value
-	pid.min = PID_MIN_OUTPUT;		// saturation filter min value
+	pid.setpoint = setpoint;
+	pid.dt = PID_DT;
 	pid.Kp = PID_Kp;
 	pid.Ki = PID_Ki;
 	pid.Kd = PID_Kd;
-	pid.state = PID_OFF;
-}
-
-uint8_t pid_on(double set_point) 
-{
-	
-	return (PID_OK);
-}
-
-uint8_t pid_off() 
-{ 
-	return (PID_OK);
-}
-
-//Define parameter
-#define epsilon 0.01
-#define dt 0.01				// 100ms loop time
-#define MAX  4				// For Current Saturation
-#define MIN -4
-
-uint8_t pid_callback() 
-{
-	pid_calc(heater.setpoint, heater.temperature);
-	return (PID_OK);
+	pid.max = PID_MAX_OUTPUT;		// saturation filter max value
+	pid.min = PID_MIN_OUTPUT;		// saturation filter min value
+	pid.state = PID_ON;
 }
 
 double pid_calc(double setpoint,double temperature)
 {
-	//Caculate P,I,D
-	pid.error = setpoint - temperature;
+	if (pid.state == PID_OFF) { return (0);}
 
-	//In case of error too small then stop intergration
-	if(fabs(pid.error) > epsilon)
-	{
-		pid.integral = pid.integral + pid.error*dt;
+	pid.error = setpoint - temperature;	// current error term
+
+	if(fabs(pid.error) > PID_EPSILON) {	// stop integration if error term is too small
+		pid.integral = pid.integral + pid.error * pid.dt;
 	}
-	pid.derivative = (pid.error - pid.prev_error)/dt;
-	pid.output = pid.Kp * pid.error + pid.Ki * pid.integral + pid.Kd * pid.derivative;
+	pid.derivative = (pid.error - pid.prev_error) / pid.dt;
+	double output = pid.Kp * pid.error + pid.Ki * pid.integral + pid.Kd * pid.derivative;
 
-	//Saturation Filter
-	if(pid.output > MAX) {
-		pid.output = MAX;
-	} else if(pid.output < MIN) {
-		pid.output = MIN;
+	if(output > pid.max) { 		// run saturation Filter
+		output = pid.max;
+	} else if(output < pid.min) {
+		output = pid.min;
 	}
-
-	//Update error
-	pid.prev_error = pid.error;
-
-	return pid.output;
+	pid.prev_error = pid.error;		// update error term
+	return output;
 }
 
 /**** Temperature Sensor and Functions ****/
 /*
- * sensor_init()	 		- initialize temperature sensor
+ * sensor_on()	 			- initialize temperature sensor and start it running
+ * sensor_off()	 			- turn temperature sensor off
  * sensor_get_temperature()	- return latest temperature reading or LESS _THAN_ZERO
  * sensor_get_state()		- return current sensor state
  * sensor_get_code()		- return latest sensor code
  * sensor_callback() 		- perform sensor sampling
  */
 
-void sensor_init()
+void sensor_on()
 {
 	memset(&sensor, 0, sizeof(struct TemperatureSensor));
 	sensor.samples_per_reading = SENSOR_SAMPLES_PER_READING;
@@ -326,6 +277,11 @@ void sensor_init()
 	sensor.disconnect_temperature = SENSOR_DISCONNECTED_TEMPERATURE;
 	sensor.no_power_temperature = SENSOR_NO_POWER_TEMPERATURE;
 	sensor.state = SENSOR_HAS_NO_DATA;
+}
+
+void sensor_off()
+{
+	sensor.state = SENSOR_OFF;
 }
 
 double sensor_get_temperature() { 
@@ -351,14 +307,11 @@ void sensor_start_temperature_reading() { sensor.samples = 0; }
  *	The heater must initate a sample cycle by calling sensor_start_sample()
  */
 
-uint8_t sensor_callback()
+void sensor_callback()
 {
-	sensor.code = SENSOR_OK;
-
 	// don't execute the callback if the sensor is uninitialized or shut down
-	if ((sensor.state == SENSOR_UNINIT) || 
-		(sensor.state == SENSOR_SHUTDOWN)) { 
-		return (sensor.code);
+	if ((sensor.state == SENSOR_OFF) || (sensor.state == SENSOR_SHUTDOWN)) { 
+		return;
 	}
 
 	// take a temperature sample
@@ -371,13 +324,13 @@ uint8_t sensor_callback()
 	if (temperature > SURFACE_OF_THE_SUN) {
 		sensor.state = SENSOR_SHUTDOWN;
 		sensor.code = SENSOR_BAD_READINGS;
-		return (sensor.code);
+		return;
 	}
 	sensor.accumulator += temperature;
 
 	// return if still in the sampling period
 	if ((++sensor.samples) < sensor.samples_per_reading) { 
-		return (sensor.code);
+		return;
 	}
 
 	// record the temperature 
@@ -393,7 +346,6 @@ uint8_t sensor_callback()
 	} else {
 		sensor.state = SENSOR_HAS_DATA;
 	}
-	return (sensor.code);
 }
 
 /*
@@ -419,10 +371,10 @@ uint8_t sensor_callback()
  *		temp = adc_value * slope + offset
  *
  *		slope = (adc2 - adc1) / (temp2 - temp1)
- *		slope = 1.456355556							// from measurements
+ *		slope = 0.686645508							// from measurements
  *
  *		b = temp - (adc_value * slope)
- *		b = -120.7135972							// from measurements
+ *		b = -4.062500								// from measurements
  *
  *		temp = (adc_value * 1.456355556) - -120.7135972
  */
