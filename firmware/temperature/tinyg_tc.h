@@ -12,20 +12,20 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* Special thanks to Adam Mayer and the Replicator project for heater details
+/* Special thanks to Adam Mayer and the Replicator project for heater guidance
  */
 #ifndef tinyg_tc_h
 #define tinyg_tc_h
 
 // Device function prototypes
 
-//#define __UNIT_TEST_DEVICE	// uncomment to enable unit tests
+#define __UNIT_TEST_TC	// uncomment to enable unit tests
 
 void device_init(void);
 
 void heater_init(void);
 void heater_on(double setpoint);
-void heater_off(void); 
+void heater_off(uint8_t state, uint8_t code);
 void heater_callback(void);
 
 void sensor_init(void);
@@ -37,9 +37,9 @@ uint8_t sensor_get_state(void);
 uint8_t sensor_get_code(void);
 void sensor_start_temperature_reading(void);
 
-void pid_off(void);
-void pid_on(double setpoint, double temperature);
-double pid_calc(double setpoint,double temperature);
+void pid_init();
+void pid_reset();
+double pid_calculate(double setpoint,double temperature);
 
 void adc_init(void);
 uint16_t adc_read(uint8_t channel);
@@ -101,24 +101,20 @@ enum tcHeaterCode {
 	HEATER_OVERHEATED,					// heater exceeded maximum temperature cutoff value
 };
 
-enum HeaterFailMode{
-	HEATER_FAIL_NONE = 0,
-	HEATER_FAIL_NOT_PLUGGED_IN = 0x02,
-	HEATER_FAIL_SOFTWARE_CUTOFF = 0x04,
-	HEATER_FAIL_NOT_HEATING = 0x08,
-	HEATER_FAIL_DROPPING_TEMP = 0x10,
-	HEATER_FAIL_BAD_READS = 0x20
-};
-
 /**** PID default parameters ***/
 
 #define PID_DT HEATER_TICK_SECONDS		// time constant for computation
+#define PID_EPSILON 0.01				// error term precision
 #define PID_MAX_OUTPUT 100				// saturation filter max
 #define PID_MIN_OUTPUT 0				// saturation filter min
-#define PID_Kp 0.1						// proportional
-#define PID_Ki 0.005					// integral
+
+//#define PID_Kp 0.1					// proportional
+//#define PID_Ki 0.005					// integral
+//#define PID_Kd 0.01					// derivative
+
+#define PID_Kp 0.5						// proportional
+#define PID_Ki 0.005						// integral
 #define PID_Kd 0.01						// derivative
-#define PID_EPSILON 0.01				// error term precision
 
 enum tcPIDState {						// PID state machine
 	PID_OFF = 0,						// PID is off
@@ -238,12 +234,12 @@ enum deviceRegisters {
 #define device_pwm_cuty_cycle device_array[DEVICE_PWM_DUTY_CYCLE]
 
 
-#ifdef __UNIT_TEST_DEVICE
+#ifdef __UNIT_TEST_TC
 void device_unit_tests(void);
-#define	DEVICE_UNITS device_unit_tests();
+#define	UNIT_TESTS device_unit_tests();
 #else
-#define	DEVICE_UNITS
-#endif // __UNIT_TEST_DEVICE
+#define	UNIT_TESTS
+#endif // __UNIT_TEST_TC
 
 
 /**** TMC262 specific stuff from here on out ****/

@@ -56,8 +56,6 @@ static struct Heater {
 static struct PIDstruct {		// PID controller itself
 	uint8_t state;				// PID state (actually very simple)
 	uint8_t code;				// PID code (more information about PID state)
-	double temperature;			// current PID temperature
-	double setpoint;			// temperature set point
 	double error;				// current error term
 	double prev_error;			// error term from previous pass
 	double integral;			// integral term
@@ -68,6 +66,10 @@ static struct PIDstruct {		// PID controller itself
 	double Kd;					// derivative gain
 	double max;					// saturation filter
 	double min;
+	// for test only
+	double temperature;			// current PID temperature
+	double setpoint;			// temperature set point
+	double output;
 } pid;
 
 static struct TemperatureSensor {
@@ -94,12 +96,11 @@ int main(void)
 {
 	cli();						// initializations
 	kinen_init();				// do this first
-	device_init();				// handles all the device inits
-	heater_init();				// setup the heater module
-	sensor_init();				// setup the temperature sensor module
+	device_init();				// handles all the low-level device peripheral inits
+	heater_init();				// setup the heater module and subordinate functions
 	sei(); 						// enable interrupts
 
-	DEVICE_UNITS;				// uncomment __UNIT_TEST_DEVICE to enable unit tests
+	UNIT_TESTS;					// uncomment __UNIT_TEST_TC to enable unit tests
 
 	heater_on(200);				// ++++ turn heater on for testing
 
@@ -157,6 +158,11 @@ void heater_init()
 	heater.regulation_timeout = HEATER_REGULATION_TIMEOUT;
 	heater.ambient_temperature = HEATER_AMBIENT_TEMPERATURE;
 	heater.overheat_temperature = HEATER_OVERHEAT_TEMPERATURE;
+
+	// initialize lower-level functions used by heater
+	// note: PWM and ADC are initialized as part of the device init
+	sensor_init();					// setup the temperature sensor module
+	pid_init();
 }
 
 void heater_on(double setpoint)
@@ -165,17 +171,20 @@ void heater_on(double setpoint)
 	if ((heater.state == HEATER_HEATING) || (heater.state == HEATER_AT_TARGET)) {
 		return;
 	}
+	// turn on lower level functions
 	sensor_on();
+	pid_reset();
+	pwm_on(PWM_FREQUENCY, 0);		// duty cycle will be set by PID loop
 	heater.setpoint = setpoint;
-	pid_on(heater.setpoint, sensor.temperature);// initial temp is absolute zero
-	pwm_on(PWM_FREQUENCY, 0);					// duty cycle will be set by PID loop
 	heater.state = HEATER_HEATING;
 }
 
-void heater_off() 
+void heater_off(uint8_t state, uint8_t code) 
 {
-	pid_off();
-	heater.state = HEATER_OFF;
+	pwm_off();						// stop sending current to the heater
+	sensor_off();					// stop taking readings
+	heater.state = state;
+	heater.code = code;
 }
 
 void heater_callback()
@@ -185,9 +194,11 @@ void heater_callback()
 
 	// Get the current temp and start another reading
 	sensor_start_temperature_reading();
-	if (sensor_get_state() != SENSOR_HAS_DATA) { return;}
+	if (sensor_get_state() != SENSOR_HAS_DATA) { // exit if the sensor has no data
+		return;
+	}
 	heater.temperature = sensor_get_temperature();
-	double duty_cycle = pid_calc(heater.setpoint, heater.temperature);
+	double duty_cycle = pid_calculate(heater.setpoint, heater.temperature);
 	pwm_set_duty(duty_cycle);
 	
 	// handle HEATER exceptions
@@ -196,17 +207,12 @@ void heater_callback()
 
 		if ((heater.temperature < heater.ambient_temperature) &&
 			(heater.regulation_timer > heater.ambient_timeout)) {
-			heater.state = HEATER_SHUTDOWN;
-			heater.code = HEATER_AMBIENT_TIMED_OUT;
-			pid_off();
+			heater_off(HEATER_SHUTDOWN, HEATER_AMBIENT_TIMED_OUT);
 			return;
 		}
-
 		if ((heater.temperature < heater.setpoint) &&
 			(heater.regulation_timer > heater.regulation_timeout)) {
-			heater.state = HEATER_SHUTDOWN;
-			heater.code = HEATER_REGULATION_TIMED_OUT;
-			pid_off();
+			heater_off(HEATER_SHUTDOWN, HEATER_REGULATION_TIMED_OUT);
 			return;
 		}
 	}
@@ -214,20 +220,14 @@ void heater_callback()
 
 /**** Heater PID Functions ****/
 /*
- * pid_off()  - turn pid off.
- * pid_on()	  - turn pid on. Initializez and set setpoint
+ * pid_init() - initialize PID with default values
+ * pid_reset() - reset PID values to cold start
  * pid_calc() - derived from: http://www.embeddedheaven.com/pid-control-algorithm-c-language.htm
  */
 
-void pid_off() 
-{ 
-	memset(&pid, 0, sizeof(struct PIDstruct));
-}
-
-void pid_on(double setpoint, double temperature) 
+void pid_init() 
 {
 	memset(&pid, 0, sizeof(struct PIDstruct));
-	pid.setpoint = setpoint;
 	pid.dt = PID_DT;
 	pid.Kp = PID_Kp;
 	pid.Ki = PID_Ki;
@@ -237,23 +237,34 @@ void pid_on(double setpoint, double temperature)
 	pid.state = PID_ON;
 }
 
-double pid_calc(double setpoint,double temperature)
+void pid_reset()
+{
+	pid.integral = 0;
+	pid.prev_error = 0;
+}
+
+double pid_calculate(double setpoint,double temperature)
 {
 	if (pid.state == PID_OFF) { return (0);}
 
+	pid.setpoint = setpoint;		// ++++ test
+	pid.temperature = temperature;	// ++++ test
+
 	pid.error = setpoint - temperature;	// current error term
 
+
 	if(fabs(pid.error) > PID_EPSILON) {	// stop integration if error term is too small
-		pid.integral = pid.integral + pid.error * pid.dt;
+		pid.integral += (pid.error * pid.dt);
 	}
 	pid.derivative = (pid.error - pid.prev_error) / pid.dt;
 	double output = pid.Kp * pid.error + pid.Ki * pid.integral + pid.Kd * pid.derivative;
 
-	if(output > pid.max) { 		// run saturation Filter
-		output = pid.max;
-	} else if(output < pid.min) {
-		output = pid.min;
-	}
+//	if(output > pid.max) { 			// run saturation Filter
+//		output = pid.max;
+//	} else if(output < pid.min) {
+//		output = pid.min;
+//	}
+	pid.output = output;			// ++++ test
 	pid.prev_error = pid.error;		// update error term
 	return output;
 }
@@ -635,13 +646,40 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data)
 //##### UNIT TESTS ##########################################################
 //###########################################################################
 
-#ifdef __UNIT_TEST_DEVICE
+#ifdef __UNIT_TEST_TC
+
+#define SETPOINT 200
 
 void device_unit_tests()
 {
 
+// PID tests
+
+
+	pid_init();
+	pid_calculate(SETPOINT, 0);
+	pid_calculate(SETPOINT, SETPOINT-150);
+	pid_calculate(SETPOINT, SETPOINT-100);
+	pid_calculate(SETPOINT, SETPOINT-66);
+	pid_calculate(SETPOINT, SETPOINT-50);
+	pid_calculate(SETPOINT, SETPOINT-25);
+	pid_calculate(SETPOINT, SETPOINT-20);
+	pid_calculate(SETPOINT, SETPOINT-15);
+	pid_calculate(SETPOINT, SETPOINT-10);
+	pid_calculate(SETPOINT, SETPOINT-5);
+	pid_calculate(SETPOINT, SETPOINT-3);
+	pid_calculate(SETPOINT, SETPOINT-2);
+	pid_calculate(SETPOINT, SETPOINT-1);
+	pid_calculate(SETPOINT, SETPOINT);
+	pid_calculate(SETPOINT, SETPOINT+1);
+	pid_calculate(SETPOINT, SETPOINT+5);
+	pid_calculate(SETPOINT, SETPOINT+10);
+	pid_calculate(SETPOINT, SETPOINT+20);
+	pid_calculate(SETPOINT, SETPOINT+25);
+	pid_calculate(SETPOINT, SETPOINT+50);
+
 // PWM tests
-	
+/*
 	pwm_set_freq(50000);
 	pwm_set_freq(10000);
 	pwm_set_freq(5000);
@@ -656,7 +694,6 @@ void device_unit_tests()
 	pwm_set_duty(100);
 	pwm_set_duty(99);
 	pwm_set_duty(75);
-/*
 	pwm_set_duty(50);
 	pwm_set_duty(20);
 	pwm_set_duty(10);
@@ -682,5 +719,5 @@ void device_unit_tests()
 
 }
 
-#endif // __UNIT_TEST_DEVICE
+#endif // __UNIT_TEST_TC
 
