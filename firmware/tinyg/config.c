@@ -383,10 +383,10 @@ static const char str_g92b[] PROGMEM = "g92b,g92b,B origin offset:%10.3f%S\n";
 static const char str_g92c[] PROGMEM = "g92c,g92c,C origin offset:%10.3f%S\n";
 
 // commands, tests, help, messages 
-static const char str_help[] PROGMEM = "he,help,";	// display configuration help
-static const char str_test[] PROGMEM = "te,test,";	// specialized _print_test() function
-static const char str_defa[] PROGMEM = "de,defa,";	// restore default settings
-static const char str_msg[]  PROGMEM = "msg,msg,%s\n";// generic message (with no formatting)
+static const char str_help[] PROGMEM = "help,help,";	// display configuration help
+static const char str_test[] PROGMEM = "test,test,";	// specialized _print_test() function
+static const char str_defa[] PROGMEM = "defa,defa,";	// restore default settings
+static const char str_msg[]  PROGMEM = "msg,msg,%s\n";	// generic message (with no formatting)
 
 // Gcode model power-on reset default values
 static const char str_gpl[] PROGMEM = "gpl,gcode_pl,[gpl] gcode_select_plane %10d [0,1,2]\n";
@@ -1593,17 +1593,17 @@ INDEX_T cmd_get_index_by_token(const char *str)
 INDEX_T cmd_get_index(const char *str)
 {
 	uint8_t len;
-	char cmp[CMD_TOKEN_LEN];
+	char cmp[CMD_TOKEN_LEN+1];
 
 	// append a comma so PROGMEM match is exact, and handle string-too-long case
-	snprintf(cmp, CMD_TOKEN_LEN, "%s,", str);
-	if ((len = strlen(cmp)) == CMD_TOKEN_LEN) { 
-		cmp[CMD_TOKEN_LEN-1] = ',';
+	snprintf(cmp, CMD_TOKEN_LEN+1, "%s,", str);// copy the token and trailing comma
+	if ((len = strlen(cmp)) > CMD_TOKEN_LEN) {// if the string is too long append a trailing comma 
+		cmp[CMD_TOKEN_LEN] = ',';
 	}
 
 	// scan the cfgArray strings for an exact match
 	for (INDEX_T i=0; i<CMD_INDEX_MAX; i++) {
-		if ((strncmp_P(cmp, (PGM_P)pgm_read_word(&cfgArray[i]), len)) == 0) {
+		if ((strncmp_P(cmp,(PGM_P)pgm_read_word(&cfgArray[i]), len)) == 0) {
 			return (i);						// matched
 		}
 	}
