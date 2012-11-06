@@ -74,7 +74,7 @@
 #include "test.h"
 #include "xio/xio.h"			// supports trap and debug statements
 
-//#define __PLAN_R2
+#define __PLAN_R2
 #define __EXEC_R2				// comment out to use R1 aline exec functions
 #define __JUNCTION_VMAX_R2		// comment out ot use the old code
 
@@ -903,11 +903,11 @@ static void _calculate_trapezoid(mpBuf *bf)
 	bf->tail_length = 0;
 	
 
-//#ifdef __PLAN_R2
+#ifdef __PLAN_R2
 	// precomputed squares of velocities (skip cruise_velocity for now)
 	double entry_velocity_squared  = square(bf->entry_velocity);
 	double exit_velocity_squared   = square(bf->exit_velocity);
-//#endif
+#endif
 	// Combined short cases:
 	//	- H and T requested-fit cases (exact fir cases, to within TRAPEZOID_LENGTH_FIT_TOLERANCE)
 	//	- H" and T" degraded-fit cases
@@ -915,11 +915,11 @@ static void _calculate_trapezoid(mpBuf *bf)
 	//	- no-fit case
 	// Also converts 2 segment heads and tails that would be too short to a body-only move (1 segment)
 	double minimum_length;
-//#ifdef __PLAN_R2
+#ifdef __PLAN_R2
 	minimum_length = _get_target_length(entry_velocity_squared, exit_velocity_squared, bf);
-//#else
+#else
 	minimum_length = _get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
-//#endif
+#endif
 
 	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// Head & tail cases
 		if (bf->entry_velocity > bf->exit_velocity)	{		// Tail cases
@@ -960,18 +960,18 @@ static void _calculate_trapezoid(mpBuf *bf)
 		}
 	}
 
-//#ifdef __PLAN_R2
+#ifdef __PLAN_R2
 	// the final precomputed square of velocities
 	double cruise_velocity_squared = square(bf->cruise_velocity);
-//#endif
+#endif
 	// Set head and tail lengths
-//#ifdef __PLAN_R2
+#ifdef __PLAN_R2
 	bf->head_length = _get_target_length(entry_velocity_squared, cruise_velocity_squared, bf);
 	bf->tail_length = _get_target_length(exit_velocity_squared, cruise_velocity_squared, bf);
-//#else
+#else
 	bf->head_length = _get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
 	bf->tail_length = _get_target_length(bf->exit_velocity, bf->cruise_velocity, bf);
-//#endif
+#endif
 	if (bf->head_length < MIN_HEAD_LENGTH) { bf->head_length = 0;}
 	if (bf->tail_length < MIN_TAIL_LENGTH) { bf->tail_length = 0;}
 
@@ -1117,6 +1117,39 @@ static double _get_intersection_distance(const double Vi_squared, const double V
 
 #else
 
+/*	
+ * _get_target_length()		- derive accel/decel length from delta V and jerk
+ * _get_target_velocity()	- derive velocity achievable from delta V and length
+ *
+ *	This set of functions returns the fourth thing knowing the other three.
+ *	
+ *	_get_target_length() is a convenient function for determining the 
+ *	optimal_length (L) of a line given the inital velocity (Vi), 
+ *	target velocity (Vt) and maximum jerk (Jm).
+ *
+ *	The length (distance) equation is derived from: 
+ *
+ *	 a)	L = (Vt-Vi) * T - (Ar*T^2)/2	... which becomes b) with substitutions for Ar and T
+ *	 b) L = (Vt-Vi) * 2*sqrt((Vt-Vi)/Jm) - (2*sqrt((Vt-Vi)/Jm) * (Vt-Vi))/2
+ *	 c)	L = (Vt-Vi)^(3/2) / sqrt(Jm)	...is an alternate form of b) (see Wolfram Alpha)
+ *	 c')L = (Vt-Vi) * sqrt((Vt-Vi)/Jm) ... second alternate form; requires Vt >= Vi
+ *
+ *	 Notes: Ar = (Jm*T)/4					Ar is ramp acceleration
+ *			T  = 2*sqrt((Vt-Vi)/Jm)			T is time
+ *			Assumes Vt, Vi and L are positive or zero
+ *			Cannot assume Vt>=Vi due to rounding errors and use of PLANNER_VELOCITY_TOLERANCE
+ *			  necessitating the introduction of fabs()
+ *
+ * 	_get_target_velocity() is a convenient function for determining Vt target 
+ *	velocity for a given the initial velocity (Vi), length (L), and maximum jerk (Jm).
+ *	Equation d) is b) solved for Vt. Equation e) is c) solved for Vt. Use e) (obviously)
+ *
+ *	 d)	Vt = (sqrt(L)*(L/sqrt(1/Jm))^(1/6)+(1/Jm)^(1/4)*Vi)/(1/Jm)^(1/4)
+ *	 e)	Vt = L^(2/3) * Jm^(1/3) + Vi
+ *
+ *  FYI: Here's an expression that returns the jerk for a given deltaV and L:
+ * 	return(cube(deltaV / (pow(L, 0.66666666))));
+ */
 static double _get_target_length(const double Vi, const double Vt, const mpBuf *bf)
 {
 	return (fabs(Vi-Vt) * sqrt(fabs(Vi-Vt) * bf->recip_jerk));
