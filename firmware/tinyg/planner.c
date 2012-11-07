@@ -214,10 +214,6 @@ static void _calculate_trapezoid(mpBuf *bf);
 static double _get_target_length(const double Vi, const double Vt, const mpBuf *bf);
 static double _get_target_velocity(const double Vi, const double L, const mpBuf *bf);
 static double _get_intersection_distance(const double Vi_squared, const double Vt_squared, const double L, const mpBuf *bf);
-static inline double _get_target_length_NS(const double Vi, const double Vt, const mpBuf *bf);
-static inline double _get_target_velocity_NS(const double Vi, const double L, const mpBuf *bf);
-static inline double _get_intersection_distance_NS(const double Vi, const double Vt, const double L, const mpBuf *bf);
-
 static double _get_junction_vmax(const double a_unit[], const double b_unit[]);
 static void _reset_replannable_list(void);
 
@@ -651,29 +647,30 @@ uint8_t mp_aline(const double target[], const double minutes)
 
 	// Set unit vector and jerk terms - this is all done together for efficiency 
 	// Ordinarily FP tests are to EPSILON but in this case they actually are zero
-	double jerk_squared;
-	memset(bf->unit, 0, sizeof(double) * AXES);	// clear unit vector
-
-	bf->unit[X] = (target[X] - mm.position[X]) / length;
-	jerk_squared  = square(bf->unit[X] * cfg.a[X].jerk_max);
-	
-	bf->unit[Y] = (target[Y] - mm.position[Y]) / length;
-	jerk_squared += square(bf->unit[Y] * cfg.a[Y].jerk_max);
-	
-	if (target[Z] != 0) {
-		bf->unit[Z] = (target[Z] - mm.position[Z]) / length;
+	double jerk_squared = 0;
+	double diff = target[X] - mm.position[X];
+	if (fp_NOT_ZERO(diff)) { 
+		bf->unit[X] = diff / length;
+		jerk_squared = square(bf->unit[X] * cfg.a[X].jerk_max);
+	}
+	if (fp_NOT_ZERO(diff = target[Y] - mm.position[Y])) { 
+		bf->unit[Y] = diff / length;
+		jerk_squared += square(bf->unit[Y] * cfg.a[Y].jerk_max);
+	}
+	if (fp_NOT_ZERO(diff = target[Z] - mm.position[Z])) { 
+		bf->unit[Z] = diff / length;
 		jerk_squared += square(bf->unit[Z] * cfg.a[Z].jerk_max);
 	}
-	if (target[A] != 0) {
-		bf->unit[A] = (target[A] - mm.position[A]) / length;
+	if (fp_NOT_ZERO(diff = target[A] - mm.position[A])) { 
+		bf->unit[A] = diff / length;
 		jerk_squared += square(bf->unit[A] * cfg.a[A].jerk_max);
 	}
-	if (target[B] != 0) {
-		bf->unit[B] = (target[B] - mm.position[B]) / length;
+	if (fp_NOT_ZERO(diff = target[B] - mm.position[B])) { 
+		bf->unit[B] = diff / length;
 		jerk_squared += square(bf->unit[B] * cfg.a[B].jerk_max);
 	}
-	if (target[C] != 0) {
-		bf->unit[C] = (target[C] - mm.position[C]) / length;
+	if (fp_NOT_ZERO(diff = target[C] - mm.position[C])) { 
+		bf->unit[C] = diff / length;
 		jerk_squared += square(bf->unit[C] * cfg.a[C].jerk_max);
 	}
 	bf->jerk = sqrt(jerk_squared);
@@ -802,6 +799,7 @@ static void _plan_block_list(mpBuf *bf, uint8_t *mr_flag)
 		bp->exit_velocity = min4(bp->exit_vmax, bp->nx->braking_velocity, bp->nx->entry_vmax,
 								(bp->entry_velocity + bp->delta_vmax));
 		_calculate_trapezoid(bp);
+
 		// test for optimally planned trapezoids - only need to check various exit conditions
 		if ((bp->exit_velocity == bp->exit_vmax) || (bp->exit_velocity == bp->nx->entry_vmax) || 
 		   ((bp->pv->replannable == false) && (bp->exit_velocity == bp->entry_velocity + bp->delta_vmax))) {
@@ -917,30 +915,21 @@ static void _calculate_trapezoid(mpBuf *bf)
 	bf->body_length = 0;
 	bf->tail_length = 0;
 	
-#ifdef __SQUARED_R2
 	// precomputed squares of velocities (skip cruise_velocity for now)
 	double entry_velocity_squared  = square(bf->entry_velocity);
 	double exit_velocity_squared   = square(bf->exit_velocity);
-#endif
+
 	// Combined short cases:
 	//	- H and T requested-fit cases (exact fit cases, to within TRAPEZOID_LENGTH_FIT_TOLERANCE)
 	//	- H" and T" degraded-fit cases
 	//	- H' and T' requested-fit cases where the body residual is less than MIN_BODY_LENGTH
 	//	- no-fit case
 	// Also converts 2 segment heads and tails that would be too short to a body-only move (1 segment)
-#ifdef __SQUARED_R2
 	double minimum_length = _get_target_length(entry_velocity_squared, exit_velocity_squared, bf);
-#else
-	double minimum_length = _get_target_length_NS(bf->entry_velocity, bf->exit_velocity, bf);
-#endif
 	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// Head & tail cases
 		if (bf->entry_velocity > bf->exit_velocity)	{		// Tail cases
 			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// T" (degraded case)
-#ifdef __SQUARED_R2
 				bf->entry_velocity = _get_target_velocity(exit_velocity_squared, bf->length, bf);
-#else
-				bf->entry_velocity = _get_target_velocity_NS(bf->exit_velocity, bf->length, bf);
-#endif
 			}
 			bf->cruise_velocity = bf->entry_velocity;
 			if (bf->length >= MIN_TAIL_LENGTH) {			// run this as a 2+ segment tail
@@ -954,11 +943,7 @@ static void _calculate_trapezoid(mpBuf *bf)
 		}
 		if (bf->entry_velocity < bf->exit_velocity)	{		// Head cases
 			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// H" (degraded case)
-#ifdef __SQUARED_R2
 				bf->exit_velocity = _get_target_velocity(entry_velocity_squared, bf->length, bf);
-#else
-				bf->exit_velocity = _get_target_velocity_NS(bf->entry_velocity, bf->length, bf);
-#endif
 			}
 			bf->cruise_velocity = bf->exit_velocity;
 			if (bf->length >= MIN_HEAD_LENGTH) {			// run this as a 2+ segment head
@@ -971,19 +956,11 @@ static void _calculate_trapezoid(mpBuf *bf)
 			return;
 		}
 	}
-#ifdef __SQUARED_R2
-	// the final precomputed square of velocities
-	double cruise_velocity_squared = square(bf->cruise_velocity);
-#endif
 
-	// Set head and tail lengths
-#ifdef __SQUARED_R2
+	// Compute the optimal head and tail lengths
+	double cruise_velocity_squared = square(bf->cruise_velocity);// now pre-compute the cruise velocity square
 	bf->head_length = _get_target_length(entry_velocity_squared, cruise_velocity_squared, bf);
 	bf->tail_length = _get_target_length(exit_velocity_squared, cruise_velocity_squared, bf);
-#else
-	bf->head_length = _get_target_length_NS(bf->entry_velocity, bf->cruise_velocity, bf);
-	bf->tail_length = _get_target_length_NS(bf->exit_velocity, bf->cruise_velocity, bf);
-#endif
 	if (bf->head_length < MIN_HEAD_LENGTH) { bf->head_length = 0;}
 	if (bf->tail_length < MIN_TAIL_LENGTH) { bf->tail_length = 0;}
 
@@ -991,23 +968,19 @@ static void _calculate_trapezoid(mpBuf *bf)
 	if (bf->length < (bf->head_length + bf->tail_length)) { // it's rate limited
 
 		// Rate-limited HT case (symmetric case)
-//		if (fabs(bf->entry_velocity - bf->exit_velocity) < TRAPEZOID_VELOCITY_TOLERANCE) {
-//			bf->head_length = bf->length/2;
-//			bf->tail_length = bf->head_length;
-//			bf->cruise_velocity = min(bf->cruise_vmax, _get_target_velocity(entry_velocity_squared, bf->head_length, bf));
-//			return;
-//		}
-#ifdef __SQUARED_R2
+		if (fabs(bf->entry_velocity - bf->exit_velocity) < TRAPEZOID_VELOCITY_TOLERANCE) {
+			bf->head_length = bf->length/2;
+			bf->tail_length = bf->head_length;
+			bf->cruise_velocity = min(bf->cruise_vmax, _get_target_velocity(entry_velocity_squared, bf->head_length, bf));
+			return;
+		}
 		bf->head_length = _get_intersection_distance(entry_velocity_squared, exit_velocity_squared, bf->length, bf);
 		bf->cruise_velocity = min(bf->cruise_vmax, _get_target_velocity(entry_velocity_squared, bf->head_length, bf));
-#else
-		bf->head_length = _get_intersection_distance_NS(bf->entry_velocity, bf->exit_velocity, bf->length, bf);
-		bf->cruise_velocity = min(bf->cruise_vmax, _get_target_velocity_NS(bf->entry_velocity, bf->head_length, bf));
-#endif
 		bf->tail_length = bf->length - bf->head_length;
+		// Adjust the head and tail lengths for corner cases (lengths < minimums)
 		if (bf->head_length < MIN_HEAD_LENGTH) {
 			bf->tail_length = bf->length;			// adjust the move to be all tail...
-			bf->head_length = 0;					// adjust the jerk to fit to the adjusted length
+			bf->head_length = 0;
 		}
 		if (bf->tail_length < MIN_TAIL_LENGTH) {
 			bf->head_length = bf->length;			//...or all head
@@ -1253,25 +1226,28 @@ static void _calculate_trapezoid(mpBuf *bf)
  *	target velocity (Vt) and maximum jerk (Jm).
  *
  *	The length (distance) equation uses a linear acceleration ramp of rate Ar.
- *	   This works because the distance covered by the convex AND concave
- *     sections combined adds up to the same as a linear acceleration period.
- *	 Jm = the given maximum jerk
- *	 T  = time of the entire move
- *	 T  = 2*sqrt((Vt-Vi)/Jm)
- *	 As = The acceleration at inflection point between convex and concave
- *	      portions of the S-curve.
- *	 As = (Jm*T)/2
- *   Ar = ramp acceleration
- *	 Ar = As/2 = (Jm*T)/4
- *			Assumes Vt, Vi and L are positive or zero
- *			Cannot assume Vt>=Vi due to rounding errors and use of PLANNER_VELOCITY_TOLERANCE
- *			  necessitating the introduction of fabs()
- *	 Linear acceleration formula solved for length:
+ *	This works because the distance covered by the convex AND concave sections 
+ *	combined adds up to the same as a linear acceleration period.
+
+ * 	  Jm = the given maximum jerk
+ *	  T  = time of the entire move
+ *	  T  = 2*sqrt((Vt-Vi)/Jm)
+ *	  As = The acceleration at inflection point between convex and concave portions of the S-curve.
+ *	  As = (Jm*T)/2
+ *    Ar = ramp acceleration
+ *	  Ar = As/2 = (Jm*T)/4
+ *	
+ *	Assumes Vt, Vi and L are positive or zero
+ *	Cannot assume Vt>=Vi due to rounding errors and use of PLANNER_VELOCITY_TOLERANCE
+ *	necessitating the introduction of fabs()
+ *
+ *	Linear acceleration formula solved for length:
+
  *	 a)  L = (Vt^2 - Vi^2)/(2 Ar)
  *	 b)  L = (Vt^2 - Vi^2)/(2 (Jm*T)/4) = (Vt^2 - Vi^2)/((Jm*T)/2)
  *	 c)  L = (Vt^2 - Vi^2)/(Jm/2)     (We can safely assume we need the entire movement, and treat T as 1)
  *
- * 	_get_target_velocity() is a convenient function for determining Vt target 
+ * 	_get_target_velocity() is a convenient function for determining Vt target  
  *	velocity for a given the initial velocity (Vi), length (L), and maximum jerk (Jm).
  *	Equation d) is b) solved for Vt. e) Returns Vt^2, which can delay the sqrt() until needed.
  *
@@ -1279,16 +1255,17 @@ static void _calculate_trapezoid(mpBuf *bf)
  *	 e)	Vt^2 = L*(Jm/2)+Vi^2
  *
  *	When using linear acceleration, we can easily compute what distance (D) to start decelerating
- *	  to Vt at total distance L, after accelerating from Vi without even stopping at a plateau.
- *	  This is case HT' described above.
+ *	to Vt at total distance L, after accelerating from Vi without even stopping at a plateau.
+ *	This is case HT' described above.
  *
- *	f) solve Sqrt[2 (j/2) D + v^2] = Sqrt[2 (j/2) (L-D) + V^2] for D
- *	g) D = (L j - Vi^2 + Vt^2)/(2j)
+ *	 f) solve Sqrt[2 (j/2) D + v^2] = Sqrt[2 (j/2) (L-D) + V^2] for D
+ *	 g) D = (L j - Vi^2 + Vt^2)/(2j)
  *
- *	NOTE that many operations require Vi^2, Vt^2, and Jm/2. These should be precomputed and stored when possible.
+ *	NOTE that many operations require Vi^2, Vt^2, and Jm/2. 
+ *	These should be precomputed and stored when possible.
  *
  *  FYI: Here's an expression that returns the jerk for a given deltaV and L:
- * 	return(cube(deltaV / (pow(L, 0.66666666))));
+ * 	 return(cube(deltaV / (pow(L, 0.66666666))));
  */
 #ifdef __PLAN_R2
 static double _get_target_length(const double Vi_squared, const double Vt_squared, const mpBuf *bf)
@@ -1305,24 +1282,6 @@ static double _get_intersection_distance(const double Vi_squared, const double V
 {
 	return (L * bf->jerk - Vi_squared + Vt_squared)/(2*bf->jerk);
 }
-
-// non-squared versions of the above
-static inline double _get_target_length_NS(const double Vi, const double Vt, const mpBuf *bf)
-{
-	return fabs((square(Vt) - square(Vi)) * bf->recip_half_jerk);
-}
-
-static inline double _get_target_velocity_NS(const double Vi, const double L, const mpBuf *bf)
-{
-	return sqrt(L*bf->half_jerk + square(Vi));
-}
-
-static inline double _get_intersection_distance_NS(const double Vi, const double Vt, const double L, const mpBuf *bf)
-{
-	return (L * bf->jerk - square(Vi) + square(Vt))/(2*bf->jerk);
-}
-
-
 #else
 
 /*	
@@ -1427,7 +1386,6 @@ static double _get_target_velocity(const double Vi, const double L, const mpBuf 
  */
 static double _get_junction_vmax(const double a_unit[], const double b_unit[])
 {
-#ifdef __JUNCTION_VMAX_R2
 	double costheta = - (a_unit[X] * b_unit[X]) - (a_unit[Y] * b_unit[Y]) 
 					  - (a_unit[Z] * b_unit[Z]) - (a_unit[A] * b_unit[A]) 
 					  - (a_unit[B] * b_unit[B]) - (a_unit[C] * b_unit[C]);
@@ -1435,7 +1393,7 @@ static double _get_junction_vmax(const double a_unit[], const double b_unit[])
 	if (costheta < -0.99) { return (10000000); } 		// straight line cases
 	if (costheta > 0.99)  { return (0); } 				// reversal cases
 
-	// fuse the junction deviations into a vector sum
+	// Fuse the junction deviations into a vector sum
 	double a_delta = square(a_unit[X] * cfg.a[X].junction_dev);
 	a_delta += square(a_unit[Y] * cfg.a[Y].junction_dev);
 	a_delta += square(a_unit[Z] * cfg.a[Z].junction_dev);
@@ -1454,58 +1412,7 @@ static double _get_junction_vmax(const double a_unit[], const double b_unit[])
 	double sintheta_over2 = sqrt((1 - costheta)/2);
 	double radius = delta * sintheta_over2 / (1-sintheta_over2);
 	return(sqrt(radius * cfg.junction_acceleration));
-
-#else
-	double costheta = - (a_unit[X] * b_unit[X]) - (a_unit[Y] * b_unit[Y]) 
-					  - (a_unit[Z] * b_unit[Z]) - (a_unit[A] * b_unit[A]) 
-					  - (a_unit[B] * b_unit[B]) - (a_unit[C] * b_unit[C]);
-
-	if (costheta < -0.99) { return (10000000); } 		// straight line cases
-	if (costheta > 0.99)  { return (0); } 				// reversal cases
-	double delta = _get_junction_deviation(a_unit, b_unit);// with axis compensation
-//	double delta = cfg.a[X].junction_deviation;			// without axis compensation
-	double sintheta_over2 = sqrt((1 - costheta)/2);
-	double radius = delta * sintheta_over2 / (1-sintheta_over2);
-	return(sqrt(radius * cfg.junction_acceleration));
-#endif
 }
-
-/*	
- * _get_junction_deviation() - Compute delta for Chamnit's algorithm (Sonny J)
- *
- *  This helper function extends Chamnit's algorithm by computing a value
- *	for delta that takes the contributions of the individual axes in the 
- *	move into account. It allows the radius of curvature to vary by axis.
- *	This is necessary to support axes that have different dynamics; such 
- *	as a Z axis that doesn't move as fast as X and Y (such as a screw driven 
- *	Z axis on machine with a belt driven XY - like a Shapeoko), or rotary 
- *	axes ABC that have completely different dynamics than their linear 
- *	counterparts.
- *
- *	The function takes the absolute values of the sum of the unit vector
- *	components as a measure of contribution to the move, then scales the 
- *	delta values from the non-zero axes into a composite delta to be used
- *	for the move. Shown for an XY vector:
- *
- *	 U[i]	Unit sum of i'th axis	fabs(unit_a[i]) + fabs(unit_b[i])
- *	 Usum	Length of sums			Ux + Uy
- *	 d		Delta of sums			(Dx*Ux+DY*UY)/Usum
- */
-#ifndef __JUNCTION_VMAX_R2
-
-static double _get_junction_deviation(const double a_unit[], const double b_unit[])
-{
-	double a_delta = 0;
-	double b_delta = 0;
-
-	for (uint8_t i=0; i<AXES; i++) {
-		a_delta += square(a_unit[i] * cfg.a[i].junction_dev);
-		b_delta += square(b_unit[i] * cfg.a[i].junction_dev);
-	}
-	double d = (sqrt(a_delta) + sqrt(b_delta))/2;
-	return (d);
-}
-#endif
 
 /*************************************************************************
  * feedholds - functions for performing holds
