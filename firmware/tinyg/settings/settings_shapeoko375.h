@@ -103,7 +103,8 @@
 #define X_VELOCITY_MAX			16000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX			170					// xtm		travel between switches or crashes
-#define X_JERK_MAX				5000000000			// xjm		yes, that's "5 billion" mm/(min^3)
+//#define X_JERK_MAX				5000000000			// xjm		yes, that's "5 billion" mm/(min^3)
+#define X_JERK_MAX				6000000			// xjm		yes, that's "5 billion" mm/(min^3)
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE			2					// xsm		0 = off
 													//			1 = NO homing only
@@ -119,7 +120,8 @@
 #define Y_VELOCITY_MAX			16000
 #define Y_FEEDRATE_MAX			Y_VELOCITY_MAX
 #define Y_TRAVEL_MAX			170
-#define Y_JERK_MAX				5000000000			// 5,000,000,000
+//#define Y_JERK_MAX				5000000000			// 5,000,000,000
+#define Y_JERK_MAX				6000000			// xjm		yes, that's "5 billion" mm/(min^3)
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE			2
 #define Y_SEARCH_VELOCITY		-1000
@@ -131,7 +133,8 @@
 #define Z_VELOCITY_MAX			1200
 #define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX			50
-#define Z_JERK_MAX				50000000			// 50,000,000
+//#define Z_JERK_MAX				50000000			// 50,000,000
+#define Z_JERK_MAX				60000			//
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE			2
 #define Z_SEARCH_VELOCITY		400
