@@ -645,22 +645,35 @@ uint8_t mp_aline(const double target[], const double minutes)
 	bf->length = length;
 	copy_axis_vector(bf->target, target); 		// set target for runtime
 
-	// set unit vector (this used to be a called function but this is more time efficient)
-	bf->unit[X] = (target[X] - mm.position[X]) / length;	// the compiler would probably do
-	bf->unit[Y] = (target[Y] - mm.position[Y]) / length;	// this for me but what the hey
-	bf->unit[Z] = (target[Z] - mm.position[Z]) / length;
-	bf->unit[A] = (target[A] - mm.position[A]) / length;
-	bf->unit[B] = (target[B] - mm.position[B]) / length;
-	bf->unit[C] = (target[C] - mm.position[C]) / length;
+	// set unit vector and jerk terms
+	// this is all mixed together for efficiency 
+	double jerk_squared;
+	memset(bf->unit, 0, sizeof(double) * AXES);	// clear unit vector
 
-	// Initialize jerk terms (these code blocks are in sequence - mess with care)
-	// This section attempts to re-use jerk terms computed from previous move if possible 
-	bf->jerk = sqrt(square(bf->unit[X] * cfg.a[X].jerk_max) +
-					square(bf->unit[Y] * cfg.a[Y].jerk_max) +
-					square(bf->unit[Z] * cfg.a[Z].jerk_max) +
-					square(bf->unit[A] * cfg.a[A].jerk_max) +
-					square(bf->unit[B] * cfg.a[B].jerk_max) +
-					square(bf->unit[C] * cfg.a[C].jerk_max));
+	bf->unit[X] = (target[X] - mm.position[X]) / length;
+	jerk_squared  = square(bf->unit[X] * cfg.a[X].jerk_max);
+	
+	bf->unit[Y] = (target[Y] - mm.position[Y]) / length;
+	jerk_squared += square(bf->unit[Y] * cfg.a[Y].jerk_max);
+	
+	if (target[Z] != 0) {
+		bf->unit[Z] = (target[Z] - mm.position[Z]) / length;
+		jerk_squared += square(bf->unit[Z] * cfg.a[Z].jerk_max);
+	}
+	if (target[A] != 0) {
+		bf->unit[A] = (target[A] - mm.position[A]) / length;
+		jerk_squared += square(bf->unit[A] * cfg.a[A].jerk_max);
+	}
+	if (target[B] != 0) {
+		bf->unit[B] = (target[B] - mm.position[B]) / length;
+		jerk_squared += square(bf->unit[B] * cfg.a[B].jerk_max);
+	}
+	if (target[C] != 0) {
+		bf->unit[C] = (target[C] - mm.position[C]) / length;
+		jerk_squared += square(bf->unit[C] * cfg.a[C].jerk_max);
+	}
+	bf->jerk = sqrt(jerk_squared);
+
 #ifdef __PLAN_R2
 	bf->recip_half_jerk = 2/bf->jerk;			// used by planning
 	bf->half_jerk = bf->jerk/2;				    // used by planning
