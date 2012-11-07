@@ -957,6 +957,31 @@ static void _calculate_trapezoid(mpBuf *bf)
 		}
 	}
 
+	// Compute the optimal head and tail lengths and see if you can satify the move with these
+	double cruise_velocity_squared = square(bf->cruise_velocity);
+	bf->head_length = _get_target_length(entry_velocity_squared, cruise_velocity_squared, bf);
+	bf->tail_length = _get_target_length(exit_velocity_squared, cruise_velocity_squared, bf);
+
+	// Do target velocity cases
+	if (bf->length >= (bf->head_length + bf->tail_length)) {
+		bf->body_length = bf->length - bf->head_length - bf->tail_length;
+	} else { // Do reduced velocity cases
+		bf->head_length = _get_intersection_distance(entry_velocity_squared, exit_velocity_squared, bf->length, bf);
+		bf->cruise_velocity = min(bf->cruise_vmax, _get_target_velocity(entry_velocity_squared, bf->head_length, bf));
+		bf->tail_length = bf->length - bf->head_length;
+		// Adjust the head and tail lengths for corner cases (lengths < minimums)
+		if (bf->head_length < MIN_HEAD_LENGTH) {
+			bf->tail_length = bf->length;			// adjust the move to be all tail...
+			bf->head_length = 0;
+		}
+		if (bf->tail_length < MIN_TAIL_LENGTH) {
+			bf->head_length = bf->length;			//...or all head
+			bf->tail_length = 0;
+		}
+	}
+}
+
+/*
 	// Compute the optimal head and tail lengths
 	double cruise_velocity_squared = square(bf->cruise_velocity);// now pre-compute the cruise velocity square
 	bf->head_length = _get_target_length(entry_velocity_squared, cruise_velocity_squared, bf);
@@ -1014,6 +1039,7 @@ static void _calculate_trapezoid(mpBuf *bf)
 		bf->cruise_velocity = bf->entry_velocity;
 	}
 }
+*/
 
 #else
 
@@ -1242,7 +1268,7 @@ static void _calculate_trapezoid(mpBuf *bf)
  *	necessitating the introduction of fabs()
  *
  *	Linear acceleration formula solved for length:
-
+ *
  *	 a)  L = (Vt^2 - Vi^2)/(2 Ar)
  *	 b)  L = (Vt^2 - Vi^2)/(2 (Jm*T)/4) = (Vt^2 - Vi^2)/((Jm*T)/2)
  *	 c)  L = (Vt^2 - Vi^2)/(Jm/2)     (We can safely assume we need the entire movement, and treat T as 1)
@@ -1270,17 +1296,17 @@ static void _calculate_trapezoid(mpBuf *bf)
 #ifdef __PLAN_R2
 static double _get_target_length(const double Vi_squared, const double Vt_squared, const mpBuf *bf)
 {
-	return fabs((Vt_squared-Vi_squared) * bf->recip_half_jerk);
+	return fabs((Vt_squared - Vi_squared) * bf->recip_half_jerk);
 }
 
 static double _get_target_velocity(const double Vi_squared, const double L, const mpBuf *bf)
 {
-	return sqrt(L*bf->half_jerk+Vi_squared);
+	return sqrt(L * bf->half_jerk + Vi_squared);
 }
 
 static double _get_intersection_distance(const double Vi_squared, const double Vt_squared, const double L, const mpBuf *bf)
 {
-	return (L * bf->jerk - Vi_squared + Vt_squared)/(2*bf->jerk);
+	return (L * bf->jerk - Vi_squared + Vt_squared)/(2 * bf->jerk);
 }
 #else
 

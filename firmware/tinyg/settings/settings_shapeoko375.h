@@ -104,11 +104,11 @@
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX			170					// xtm		travel between switches or crashes
 
-//#ifdef __PLAN_R2
-//#define X_JERK_MAX				6000000				// xjm
-//#else
+#ifdef __PLAN_R2
+#define X_JERK_MAX				6000000				// xjm
+#else
 #define X_JERK_MAX				5000000000			// xjm		yes, that's "5 billion" mm/(min^3)
-//#endif
+#endif
 
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE			2					// xsm		0 = off
@@ -126,11 +126,11 @@
 #define Y_FEEDRATE_MAX			Y_VELOCITY_MAX
 #define Y_TRAVEL_MAX			170
 
-//#ifdef __PLAN_R2
-//#define Y_JERK_MAX				6000000				// xjm		yes, that's "5 billion" mm/(min^3)
-//#else
+#ifdef __PLAN_R2
+#define Y_JERK_MAX				6000000				// xjm		yes, that's "5 billion" mm/(min^3)
+#else
 #define Y_JERK_MAX				5000000000			// 5,000,000,000
-//#endif
+#endif
 
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE			2
@@ -144,11 +144,11 @@
 #define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX			50
 
-//#ifdef __PLAN_R2
-//#define Z_JERK_MAX				600000				//
-//#else
+#ifdef __PLAN_R2
+#define Z_JERK_MAX				600000				//
+#else
 #define Z_JERK_MAX				50000000			// 50,000,000
-//#endif
+#endif
 
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE			2
