@@ -74,10 +74,6 @@
 #include "test.h"
 #include "xio/xio.h"			// supports trap and debug statements
 
-#define __PLAN_R2
-#define __EXEC_R2				// comment out to use R1 aline exec functions
-#define __JUNCTION_VMAX_R2		// comment out ot use the old code
-
 // All the enums that equal zero must be zero. Don't change this
 
 enum mpBufferState {			// bf->buffer_state values 
@@ -1012,6 +1008,7 @@ static void _calculate_trapezoid(mpBuf *bf)
 		bf->head_length = _get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
 #else
 		bf->head_length = _get_intersection_distance(entry_velocity_squared, exit_velocity_squared, bf->length, bf);
+		bf->cruise_velocity = min(bf->cruise_vmax, _get_target_velocity(entry_velocity_squared, bf->head_length, bf));
 #endif
 		bf->tail_length = bf->length - bf->head_length;
 		if (bf->head_length < MIN_HEAD_LENGTH) {
