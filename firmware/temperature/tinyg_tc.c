@@ -5,7 +5,7 @@
  *
  * Copyright (c) 2012 Alden S. Hart Jr.
  *
- * The Kinen Motion Control System is licensed under the OSHW 1.0 license
+ * The Kinen Motion Control System is licensed under the LGPL license
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -56,6 +56,9 @@ static struct Heater {
 static struct PIDstruct {		// PID controller itself
 	uint8_t state;				// PID state (actually very simple)
 	uint8_t code;				// PID code (more information about PID state)
+	double output;				// also used for anti-windup on integral term
+	double output_max;			// saturation filter max
+	double output_min;			// saturation filter min
 	double error;				// current error term
 	double prev_error;			// error term from previous pass
 	double integral;			// integral term
@@ -64,12 +67,9 @@ static struct PIDstruct {		// PID controller itself
 	double Kp;					// proportional gain
 	double Ki;					// integral gain 
 	double Kd;					// derivative gain
-	double max;					// saturation filter
-	double min;
 	// for test only
 	double temperature;			// current PID temperature
 	double setpoint;			// temperature set point
-	double output;
 } pid;
 
 static struct TemperatureSensor {
@@ -102,7 +102,7 @@ int main(void)
 
 	UNIT_TESTS;					// uncomment __UNIT_TEST_TC to enable unit tests
 
-	heater_on(200);				// ++++ turn heater on for testing
+	heater_on(140);				// ++++ turn heater on for testing
 
 	while (true) {				// go to the controller loop and never return
 		_controller();
@@ -232,8 +232,8 @@ void pid_init()
 	pid.Kp = PID_Kp;
 	pid.Ki = PID_Ki;
 	pid.Kd = PID_Kd;
-	pid.max = PID_MAX_OUTPUT;		// saturation filter max value
-	pid.min = PID_MIN_OUTPUT;		// saturation filter min value
+	pid.output_max = PID_MAX_OUTPUT;	// saturation filter max value
+	pid.output_min = PID_MIN_OUTPUT;	// saturation filter min value
 	pid.state = PID_ON;
 }
 
@@ -250,23 +250,23 @@ double pid_calculate(double setpoint,double temperature)
 	pid.setpoint = setpoint;		// ++++ test
 	pid.temperature = temperature;	// ++++ test
 
-	pid.error = setpoint - temperature;	// current error term
+	pid.error = setpoint - temperature;		// current error term
 
-
-	if(fabs(pid.error) > PID_EPSILON) {	// stop integration if error term is too small
+	if (fabs(pid.error) > PID_EPSILON) {	// stop integration if error term is too small
+//	if ((fabs(pid.error) > PID_EPSILON) ||	// stop integration if error term is too small
+//		(fabs(pid.output - pid.output_max) < EPSILON)) {// ...or... anti-windup for integral
 		pid.integral += (pid.error * pid.dt);
 	}
 	pid.derivative = (pid.error - pid.prev_error) / pid.dt;
-	double output = pid.Kp * pid.error + pid.Ki * pid.integral + pid.Kd * pid.derivative;
+	pid.output = pid.Kp * pid.error + pid.Ki * pid.integral + pid.Kd * pid.derivative;
 
-//	if(output > pid.max) { 			// run saturation Filter
-//		output = pid.max;
-//	} else if(output < pid.min) {
-//		output = pid.min;
-//	}
-	pid.output = output;			// ++++ test
-	pid.prev_error = pid.error;		// update error term
-	return output;
+	if(pid.output > pid.output_max) { 		// saturation filter
+		pid.output = pid.output_max;
+	} else if(pid.output < pid.output_min) {
+		pid.output = pid.output_min;
+	}
+	pid.prev_error = pid.error;
+	return pid.output;
 }
 
 /**** Temperature Sensor and Functions ****/
@@ -400,8 +400,8 @@ void sensor_callback()
  *		temp = (adc_value * 1.456355556) - -120.7135972
  */
 
-//#define SAMPLE(a) (((double)adc_read(a) * SENSOR_SLOPE) + SENSOR_OFFSET)
-#define SAMPLE(a) (((double)200 * SENSOR_SLOPE) + SENSOR_OFFSET)	// useful for testing the math
+#define SAMPLE(a) (((double)adc_read(a) * SENSOR_SLOPE) + SENSOR_OFFSET)
+//#define SAMPLE(a) (((double)200 * SENSOR_SLOPE) + SENSOR_OFFSET)	// useful for testing the math
 
 static double _sensor_sample(uint8_t adc_channel, uint8_t new_period)
 {

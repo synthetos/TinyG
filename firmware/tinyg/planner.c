@@ -965,17 +965,24 @@ static void _calculate_trapezoid(mpBuf *bf)
 	// Do target velocity cases
 	if (bf->length >= (bf->head_length + bf->tail_length)) {
 		bf->body_length = bf->length - bf->head_length - bf->tail_length;
+		// If a non-zero body is < minimum length distribute it to the head and/or tail
+		// This will generate small (acceptable) velocity errors in runtime execution
+		// but preserve correct distance, which is more important.
+		if (bf->body_length < MIN_BODY_LENGTH) {
+			bf->head_length += bf->body_length/2;
+			bf->tail_length += bf->body_length/2;
+			bf->body_length = 0;
+		}
 	} else { // Do reduced velocity cases
 		bf->head_length = _get_intersection_distance(entry_velocity_squared, exit_velocity_squared, bf->length, bf);
 		bf->cruise_velocity = min(bf->cruise_vmax, _get_target_velocity(entry_velocity_squared, bf->head_length, bf));
-		bf->tail_length = bf->length - bf->head_length;
-		// Adjust the head and tail lengths for corner cases (lengths < minimums)
-		if (bf->head_length < MIN_HEAD_LENGTH) {
-			bf->tail_length = bf->length;			// adjust the move to be all tail...
+		bf->tail_length = bf->length - bf->head_length;		
+		if (bf->head_length < MIN_HEAD_LENGTH) {	// adjust if head_length < minimum
+			bf->tail_length = bf->length;			// ... to be all tail
 			bf->head_length = 0;
 		}
-		if (bf->tail_length < MIN_TAIL_LENGTH) {
-			bf->head_length = bf->length;			//...or all head
+		if (bf->tail_length < MIN_TAIL_LENGTH) {	// adjust if tail_length < minimum
+			bf->head_length = bf->length;			//... to be all head
 			bf->tail_length = 0;
 		}
 	}

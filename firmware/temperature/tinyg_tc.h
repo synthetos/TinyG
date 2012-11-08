@@ -19,7 +19,8 @@
 
 // Device function prototypes
 
-#define __UNIT_TEST_TC	// uncomment to enable unit tests
+//#define __UNIT_TEST_TC	// uncomment to enable unit tests
+//#define __TEST
 
 void device_init(void);
 
@@ -112,8 +113,8 @@ enum tcHeaterCode {
 //#define PID_Ki 0.005					// integral
 //#define PID_Kd 0.01					// derivative
 
-#define PID_Kp 0.5						// proportional
-#define PID_Ki 0.005						// integral
+#define PID_Kp 0.8						// proportional
+#define PID_Ki 0.005					// integral
 #define PID_Kd 0.01						// derivative
 
 enum tcPIDState {						// PID state machine
@@ -155,6 +156,10 @@ enum tcSensorCode {						// success and failure codes. Any failure should cause 
 	SENSOR_READING_FAILED_DISCONNECTED,	// thermocouple detected as disconnected
 	SENSOR_READING_FAILED_BAD_READINGS	// too many number of bad readings
 };
+
+#ifndef EPSILON
+#define EPSILON 0.000001
+#endif
 
 // Lower-level device mappings and constants (for atmega328P)
 
