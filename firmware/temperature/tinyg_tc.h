@@ -124,16 +124,12 @@ enum tcPIDState {						// PID state machine
 
 /**** Sensor default parameters ***/
 
-#define SENSOR_SAMPLES 8				// number of sensor samples to take for each reading period
-#define SENSOR_REJECT_SAMPLE_DEVIATION 20 // reject a sample if it exceeds this deviation from the mean
-#define SENSOR_REJECT_READING_DEVIATION 50// reject entire reading if std_dev exceeds this threshold
-
-//#define SENSOR_SAMPLES_PER_READING 8	// number of sensor samples to take for each reading period
-//#define SENSOR_RETRIES 4				// number of sequential sensor errors before rejecting sample or shutting down
-//#define SENSOR_VARIANCE_RANGE 20		// reject sample if termperature is GT or LT previous sample by this amount 
-#define SENSOR_NO_POWER_TEMPERATURE 5	// detect thermocouple amplifier disconnected if readings stay below this temp
+#define SENSOR_SAMPLES 9					// number of sensor samples to take for each reading period
+#define SENSOR_REJECT_SAMPLE_DEVIATION 1.25	// number of standard deviations from mean to reject a sample
+#define SENSOR_REJECT_READING_DEVIATION 50	// reject entire reading if std_dev exceeds this threshold
+#define SENSOR_NO_POWER_TEMPERATURE 5		// detect thermocouple amplifier disconnected if readings stay below this temp
 #define SENSOR_DISCONNECTED_TEMPERATURE 400	// sensor is DISCONNECTED if over this temp (works w/ both 5v and 3v refs)
-#define SENSOR_TICK_SECONDS 0.01		// 10 ms
+#define SENSOR_TICK_SECONDS 0.01			// 10 ms
 
 #define SENSOR_SLOPE 0.686645508		// emperically determined for AD597 & B&K TP-29 K-type test probe
 #define SENSOR_OFFSET -4.062500			// emperically determined

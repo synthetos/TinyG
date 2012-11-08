@@ -24,6 +24,14 @@
 
 /**** Math and other general purpose functions ****/
 
+/*
+ * std_dev() - compute mean and standard deviation in a single pass
+ *
+ * 	From http://www.strchr.com/standard_deviation_in_one_pass
+ *
+ *	"A lot of people talk about standard deviation but what is a standard deviant?"
+ */
+
 double std_dev(double a[], uint8_t n, double *mean) 
 {
 	if(n == 0) { return (0);}

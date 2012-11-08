@@ -363,7 +363,7 @@ void sensor_callback()
 	double count = 0;
 	sensor.temperature = 0;
 	for (uint8_t i=0; i<SENSOR_SAMPLES; i++) {
-		if (fabs(sensor.sample[i] - mean) < sensor.reject_reading_deviation) {
+		if (fabs(sensor.sample[i] - mean) < (sensor.reject_sample_deviation * sensor.std_dev)) {
 			sensor.temperature += sensor.sample[i];
 			count++;
 		}
@@ -416,15 +416,8 @@ void sensor_callback()
 static inline double _sensor_sample(uint8_t adc_channel)
 {
 #ifdef __TEST
-//	if (sensor.test == 0) {
-//		sensor.test = 100;
-//	} else {
-//		sensor.test = (random(100) -50);
-//	}
 	double rnum = (rand() /100);
-	sensor.test = rnum;
-	
-	return (((double)sensor.test * SENSOR_SLOPE) + SENSOR_OFFSET);	// useful for testing the math
+	return (((double)rnum * SENSOR_SLOPE) + SENSOR_OFFSET);	// useful for testing the math
 #else
 	return (((double)adc_read(adc_channel) * SENSOR_SLOPE) + SENSOR_OFFSET);
 #endif
