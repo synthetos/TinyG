@@ -1,6 +1,6 @@
 /*
  * tinyg_tc.h - TinyG temperature controller - Kinen device
- * Part of TinyG project
+ * Part of Kinen project
  *
  * Copyright (c) 2012 Alden S. Hart Jr.
  *
@@ -20,7 +20,7 @@
 // Device function prototypes
 
 //#define __UNIT_TEST_TC	// uncomment to enable unit tests
-//#define __TEST
+#define __TEST
 
 void device_init(void);
 
@@ -124,9 +124,13 @@ enum tcPIDState {						// PID state machine
 
 /**** Sensor default parameters ***/
 
-#define SENSOR_SAMPLES_PER_READING 8	// number of sensor samples to take for each reading period
-#define SENSOR_RETRIES 4				// number of sequential sensor errors before rejecting sample or shutting down
-#define SENSOR_VARIANCE_RANGE 20		// reject sample if termperature is GT or LT previous sample by this amount 
+#define SENSOR_SAMPLES 8				// number of sensor samples to take for each reading period
+#define SENSOR_REJECT_SAMPLE_DEVIATION 20 // reject a sample if it exceeds this deviation from the mean
+#define SENSOR_REJECT_READING_DEVIATION 50// reject entire reading if std_dev exceeds this threshold
+
+//#define SENSOR_SAMPLES_PER_READING 8	// number of sensor samples to take for each reading period
+//#define SENSOR_RETRIES 4				// number of sequential sensor errors before rejecting sample or shutting down
+//#define SENSOR_VARIANCE_RANGE 20		// reject sample if termperature is GT or LT previous sample by this amount 
 #define SENSOR_NO_POWER_TEMPERATURE 5	// detect thermocouple amplifier disconnected if readings stay below this temp
 #define SENSOR_DISCONNECTED_TEMPERATURE 400	// sensor is DISCONNECTED if over this temp (works w/ both 5v and 3v refs)
 #define SENSOR_TICK_SECONDS 0.01		// 10 ms
@@ -150,16 +154,12 @@ enum tcSensorState {					// sensor state machine
 
 enum tcSensorCode {						// success and failure codes. Any failure should cause heater shutdown
 	SENSOR_IDLE = 0,					// sensor is OK - no errors reported
-	SENSOR_IS_READING,					// sensor is in reading period
+	SENSOR_TAKING_READING,				// sensor is taking samples for a reading
 	SENSOR_READING_COMPLETE,			// reading is complete.
 	SENSOR_READING_FAILED_NO_POWER,		// detected lack of power to thermocouple amplifier
 	SENSOR_READING_FAILED_DISCONNECTED,	// thermocouple detected as disconnected
 	SENSOR_READING_FAILED_BAD_READINGS	// too many number of bad readings
 };
-
-#ifndef EPSILON
-#define EPSILON 0.000001
-#endif
 
 // Lower-level device mappings and constants (for atmega328P)
 

@@ -1,6 +1,6 @@
 /*
  * Tinyg_tc.c - TinyG temperature controller device
- * Part of TinyG project
+ * Part of Kinen project
  * Based on Kinen Motion Control System 
  *
  * Copyright (c) 2012 Alden S. Hart Jr.
@@ -17,6 +17,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>				// for memset
 #include <avr/io.h>
@@ -25,11 +26,12 @@
 
 #include "kinen_core.h"
 #include "tinyg_tc.h"
+#include "util.h"
 
 // static functions 
 
 static void _controller(void);
-static double _sensor_sample(uint8_t adc_channel, uint8_t new_period);
+static double _sensor_sample(uint8_t adc_channel);
 
 // static data
 
@@ -75,15 +77,15 @@ static struct PIDstruct {		// PID controller itself
 static struct TemperatureSensor {
 	uint8_t state;				// sensor state
 	uint8_t code;				// sensor return code (more information about state)
-	uint8_t samples_per_reading;// number of samples to take per reading
-	int8_t samples;				// number of samples taken. Set to 0 to start a reading
-	uint8_t retries;			// numer of retries on sampling errors or for shutdown 
+	uint8_t sample_idx;			// index into sample array
 	double temperature;			// high confidence temperature reading
-	double previous_temp;		// previous temperature for sampling
-	double accumulator;			// accumulated temperature reading during sampling (divide by samples)
-	double variance;			// range threshold for max allowable change between samples (reject outliers)
-	double disconnect_temperature;// false temperature reading indicating thermocouple is disconnected
-	double no_power_temperature;// false temperature reading indicating there's no power to thermocouple amplifier
+	double std_dev;				// standard deviation of sample array
+	double reject_sample_deviation;	// sample deviation above which to reject a sample
+	double reject_reading_deviation;// standard deviation to reject the entire reading
+	double disconnect_temperature;	// bogus temperature indicates thermocouple is disconnected
+	double no_power_temperature;	// bogus temperature indicates no power to thermocouple amplifier
+	double sample[SENSOR_SAMPLES];	// array of sensor samples in a reading
+	double test;
 } sensor;
 
 /****************************************************************************
@@ -173,6 +175,7 @@ void heater_on(double setpoint)
 	}
 	// turn on lower level functions
 	sensor_on();
+	sensor_start_temperature_reading();
 	pid_reset();
 	pwm_on(PWM_FREQUENCY, 0);		// duty cycle will be set by PID loop
 	heater.setpoint = setpoint;
@@ -239,6 +242,7 @@ void pid_init()
 
 void pid_reset()
 {
+	pid.output = 0;
 	pid.integral = 0;
 	pid.prev_error = 0;
 }
@@ -252,9 +256,9 @@ double pid_calculate(double setpoint,double temperature)
 
 	pid.error = setpoint - temperature;		// current error term
 
-	if (fabs(pid.error) > PID_EPSILON) {	// stop integration if error term is too small
 //	if ((fabs(pid.error) > PID_EPSILON) ||	// stop integration if error term is too small
-//		(fabs(pid.output - pid.output_max) < EPSILON)) {// ...or... anti-windup for integral
+//		(pid.output >= (pid.output_max - EPSILON))) {// ...or output is too large (anti-windup)
+	if (fabs(pid.error) > PID_EPSILON) {	// stop integration if error term is too small
 		pid.integral += (pid.error * pid.dt);
 	}
 	pid.derivative = (pid.error - pid.prev_error) / pid.dt;
@@ -283,10 +287,9 @@ double pid_calculate(double setpoint,double temperature)
 void sensor_init()
 {
 	memset(&sensor, 0, sizeof(struct TemperatureSensor));
-	sensor.samples_per_reading = SENSOR_SAMPLES_PER_READING;
 	sensor.temperature = ABSOLUTE_ZERO;
-	sensor.retries = SENSOR_RETRIES;
-	sensor.variance = SENSOR_VARIANCE_RANGE;
+	sensor.reject_sample_deviation = SENSOR_REJECT_SAMPLE_DEVIATION;
+	sensor.reject_reading_deviation = SENSOR_REJECT_READING_DEVIATION;
 	sensor.disconnect_temperature = SENSOR_DISCONNECTED_TEMPERATURE;
 	sensor.no_power_temperature = SENSOR_NO_POWER_TEMPERATURE;
 	sensor.state = SENSOR_HAS_NO_DATA;
@@ -302,7 +305,11 @@ void sensor_off()
 	sensor.state = SENSOR_OFF;
 }
 
-double sensor_get_temperature() { 
+uint8_t sensor_get_state() { return (sensor.state);}
+uint8_t sensor_get_code() { return (sensor.code);}
+
+double sensor_get_temperature() 
+{ 
 	if (sensor.state == SENSOR_HAS_DATA) { 
 		return (sensor.temperature);
 	} else {
@@ -310,9 +317,11 @@ double sensor_get_temperature() {
 	}
 }
 
-uint8_t sensor_get_state() { return (sensor.state);}
-uint8_t sensor_get_code() { return (sensor.code);}
-void sensor_start_temperature_reading() { sensor.samples = 0; }
+void sensor_start_temperature_reading() 
+{ 
+	sensor.sample_idx = 0;
+	sensor.code = SENSOR_TAKING_READING;
+}
 
 /*
  * sensor_callback() - perform tick-timer sensor functions (10ms loop)
@@ -323,49 +332,53 @@ void sensor_start_temperature_reading() { sensor.samples = 0; }
  *	(The ticks are synchronized so you can actually get 10, not just 9) 
  *
  *	The heater must initate a sample cycle by calling sensor_start_sample()
+ *
+ *	This function uses the standard deviation of the sample set to clean up
+ *	the reading or to reject the reading as being flawed.
  */
 
 void sensor_callback()
 {
-	// don't execute the function if the sensor is off or shut down
-	if ((sensor.state == SENSOR_OFF) || (sensor.state == SENSOR_SHUTDOWN)) { 
+	// cases where you don't execute the callback:
+	if ((sensor.state == SENSOR_OFF) || 
+		(sensor.state == SENSOR_SHUTDOWN) || 
+		(sensor.code != SENSOR_TAKING_READING)) {
 		return;
 	}
 
-	// see if the reading is done
-	if (sensor.code == SENSOR_READING_COMPLETE) { return;}
+	// get a sample and return if still in the reading period
+	sensor.sample[sensor.sample_idx] = _sensor_sample(ADC_CHANNEL);
+	if ((++sensor.sample_idx) < SENSOR_SAMPLES) { return;}
 
-	// take a new temperature sample
-	uint8_t new_period = false;
-	if (sensor.samples == 0) {
-		sensor.accumulator = 0;
-		sensor.code = SENSOR_IS_READING;
-		new_period = true;
-	}
-	double temperature = _sensor_sample(ADC_CHANNEL, new_period);
-	if (temperature > SURFACE_OF_THE_SUN) {
+	// process the array to clean up samples
+	double mean;
+	sensor.std_dev = std_dev(sensor.sample, SENSOR_SAMPLES, &mean);
+	if (sensor.std_dev > sensor.reject_reading_deviation) {
 		sensor.code = SENSOR_READING_FAILED_BAD_READINGS;
-		sensor.state = SENSOR_SHUTDOWN;
+		sensor.state = SENSOR_HAS_NO_DATA;
 		return;
 	}
-	sensor.accumulator += temperature;
 
-	// return if still in the sampling period
-	if ((++sensor.samples) < sensor.samples_per_reading) { return;}
+	// reject the outlier samples and re-compute the average
+	double count = 0;
+	sensor.temperature = 0;
+	for (uint8_t i=0; i<SENSOR_SAMPLES; i++) {
+		if (fabs(sensor.sample[i] - mean) < sensor.reject_reading_deviation) {
+			sensor.temperature += sensor.sample[i];
+			count++;
+		}
+	}
+	sensor.temperature /= count; 
+	sensor.code = SENSOR_READING_COMPLETE;
+	sensor.state = SENSOR_HAS_DATA;
 
-	// record the temperature 
-	sensor.temperature = sensor.accumulator / sensor.samples;
-
-	// process the completed reading for exception cases
+	// process the exception cases
 	if (sensor.temperature > SENSOR_DISCONNECTED_TEMPERATURE) {
 		sensor.code = SENSOR_READING_FAILED_DISCONNECTED;
 		sensor.state = SENSOR_HAS_NO_DATA;
 	} else if (sensor.temperature < SENSOR_NO_POWER_TEMPERATURE) {
 		sensor.code = SENSOR_READING_FAILED_NO_POWER;
 		sensor.state = SENSOR_HAS_NO_DATA;
-	} else {
-		sensor.code = SENSOR_READING_COMPLETE;
-		sensor.state = SENSOR_HAS_DATA;
 	}
 }
 
@@ -400,28 +413,22 @@ void sensor_callback()
  *		temp = (adc_value * 1.456355556) - -120.7135972
  */
 
-#define SAMPLE(a) (((double)adc_read(a) * SENSOR_SLOPE) + SENSOR_OFFSET)
-//#define SAMPLE(a) (((double)200 * SENSOR_SLOPE) + SENSOR_OFFSET)	// useful for testing the math
-
-static double _sensor_sample(uint8_t adc_channel, uint8_t new_period)
+static inline double _sensor_sample(uint8_t adc_channel)
 {
-	double sample = SAMPLE(adc_channel);
-
-	if (new_period == true) {
-		sensor.previous_temp = sample;
-		return (sample);
-	}
-	for (uint8_t i=sensor.retries; i>0; --i) {
-		if (fabs(sample - sensor.previous_temp) < sensor.variance) { // sample is within variance range
-			sensor.previous_temp = sample;
-			return (sample);
-		}
-		sample = SAMPLE(adc_channel);	// if outside variance range take another sample
-	}
-	// exit if all variance tests failed. Return a value that should cause the heater to shut down
-	return (HOTTER_THAN_THE_SUN);
+#ifdef __TEST
+//	if (sensor.test == 0) {
+//		sensor.test = 100;
+//	} else {
+//		sensor.test = (random(100) -50);
+//	}
+	double rnum = (rand() /100);
+	sensor.test = rnum;
+	
+	return (((double)sensor.test * SENSOR_SLOPE) + SENSOR_OFFSET);	// useful for testing the math
+#else
+	return (((double)adc_read(adc_channel) * SENSOR_SLOPE) + SENSOR_OFFSET);
+#endif
 }
-
 
 /**** ADC - Analog to Digital Converter for thermocouple reader ****/
 /*

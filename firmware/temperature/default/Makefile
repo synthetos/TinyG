@@ -15,7 +15,7 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
-CFLAGS += -Wall -gdwarf-2 -std=gnu99         -DF_CPU=8000000UL -O0 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -Wall -gdwarf-2 -std=gnu99           -DF_CPU=8000000UL -O0 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
 
 ## Assembly specific flags
@@ -40,7 +40,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 LIBS = -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = tinyg_tc.o kinen_core.o kinen_slave_328p.o 
+OBJECTS = tinyg_tc.o kinen_core.o kinen_slave_328p.o util.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -56,6 +56,9 @@ kinen_core.o: ../kinen_core.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 kinen_slave_328p.o: ../kinen_slave_328p.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+util.o: ../util.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link
