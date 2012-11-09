@@ -32,11 +32,11 @@ void heater_callback(void);
 void sensor_init(void);
 void sensor_on(void);
 void sensor_off(void);
-void sensor_callback(void);
-double sensor_get_temperature(void);
+void sensor_start_reading(void);
 uint8_t sensor_get_state(void);
 uint8_t sensor_get_code(void);
-void sensor_start_temperature_reading(void);
+double sensor_get_temperature(void);
+void sensor_callback(void);
 
 void pid_init();
 void pid_reset();
@@ -67,16 +67,16 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data);
 
 // Device configuration 
 
-#define DEVICE_WAIT_TIME 10		// 10 = 100 uSeconds
+#define DEVICE_WAIT_TIME 10				// 10 = 100 uSeconds
 
 #define DEVICE_TYPE 	 DEVICE_TYPE_TEMPERATURE_CONTROLLER
 #define DEVICE_ID_HI	 0x00
 #define DEVICE_ID_LO	 0x01
 #define DEVICE_REV_MAJOR 0x00
 #define DEVICE_REV_MINOR 0x01
-#define DEVICE_UUID_1	 0x00	// UUID = 0 means there is no UUID
-#define DEVICE_UUID_2	 0x00	// UUID = 0 means there is no UUID
-#define DEVICE_UUID_3	 0x00	// UUID = 0 means there is no UUID
+#define DEVICE_UUID_1	 0x00			// UUID = 0 means there is no UUID
+#define DEVICE_UUID_2	 0x00			// UUID = 0 means there is no UUID
+#define DEVICE_UUID_3	 0x00			// UUID = 0 means there is no UUID
 
 
 /**** Heater default parameters ***/
@@ -124,12 +124,12 @@ enum tcPIDState {						// PID state machine
 
 /**** Sensor default parameters ***/
 
-#define SENSOR_SAMPLES 9					// number of sensor samples to take for each reading period
-#define SENSOR_REJECT_SAMPLE_DEVIATION 1.25	// number of standard deviations from mean to reject a sample
-#define SENSOR_REJECT_READING_DEVIATION 20	// reject entire reading if std_dev exceeds this threshold
-#define SENSOR_NO_POWER_TEMPERATURE 5		// detect thermocouple amplifier disconnected if readings stay below this temp
+#define SENSOR_SAMPLES 9				// number of sensor samples to take for each reading period
+#define SENSOR_SAMPLE_VARIANCE_MAX 1.25	// number of standard deviations from mean to reject a sample
+#define SENSOR_READING_VARIANCE_MAX 20	// reject entire reading if std_dev exceeds this amount
+#define SENSOR_NO_POWER_TEMPERATURE 5	// detect thermocouple amplifier disconnected if readings stay below this temp
 #define SENSOR_DISCONNECTED_TEMPERATURE 400	// sensor is DISCONNECTED if over this temp (works w/ both 5v and 3v refs)
-#define SENSOR_TICK_SECONDS 0.01			// 10 ms
+#define SENSOR_TICK_SECONDS 0.01		// 10 ms
 
 #define SENSOR_SLOPE 0.489616568		// derived from AD597 chart between 80 deg-C and 300 deg-C
 #define SENSOR_OFFSET -0.419325433		// derived from AD597 chart between 80 deg-C and 300 deg-C
@@ -139,86 +139,82 @@ enum tcPIDState {						// PID state machine
 #define ABSOLUTE_ZERO -273.15			// Celcius
 #define LESS_THAN_ZERO -274				// a value the thermocouple sensor cannot output
 
-enum tcSensorState {					// sensor state machine
-										// sensor values should only be trusted for HAS_DATA
-	SENSOR_OFF = 0,						// sensor is uninitialized (initial state)
-	SENSOR_SHUTDOWN,					// sensor is shut down and signalling heater to do the same
-	SENSOR_HAS_NO_DATA,					// sensor has been initialized but there is no data
-	SENSOR_STALE_DATA,					// sensor data is stale (time constant stuff)
-	SENSOR_HAS_DATA						// sensor has valid data (completed a sampling period)
+enum tcSensorState {					// main state machine
+	SENSOR_OFF = 0,						// sensor is off or uninitialized
+	SENSOR_ERROR,						// a sensor error occurred. Don't use the data
+	SENSOR_HAS_DATA						// sensor has valid data
 };
 
-enum tcSensorCode {						// success and failure codes. Any failure should cause heater shutdown
-	SENSOR_IDLE = 0,					// sensor is OK - no errors reported
+enum tcSensorCode {						// success and failure codes
+	SENSOR_IDLE = 0,					// sensor is idling
 	SENSOR_TAKING_READING,				// sensor is taking samples for a reading
-	SENSOR_READING_COMPLETE,			// reading is complete.
-	SENSOR_READING_FAILED_NO_POWER,		// detected lack of power to thermocouple amplifier
-	SENSOR_READING_FAILED_DISCONNECTED,	// thermocouple detected as disconnected
-	SENSOR_READING_FAILED_BAD_READINGS	// too many number of bad readings
+	SENSOR_BAD_READINGS,				// ERROR: too many number of bad readings
+	SENSOR_DISCONNECTED,				// ERROR: thermocouple detected as disconnected
+	SENSOR_NO_POWER						// ERROR: detected lack of power to thermocouple amplifier
 };
 
 // Lower-level device mappings and constants (for atmega328P)
 
-#define SPI_PORT	PORTB		// on-board SPI peripheral
-#define SPI_SCK		(1<<PINB5)	// SPI clock line
-#define SPI_MISO	(1<<PINB4)	// SPI MISO line
-#define SPI_MOSI	(1<<PINB3)	// SPI MOSI line
-#define SPI_SS		(1<<PINB2)	// SPI slave select
+#define SPI_PORT	PORTB				// on-board SPI peripheral
+#define SPI_SCK		(1<<PINB5)			// SPI clock line
+#define SPI_MISO	(1<<PINB4)			// SPI MISO line
+#define SPI_MOSI	(1<<PINB3)			// SPI MOSI line
+#define SPI_SS		(1<<PINB2)			// SPI slave select
 
-#define PWM_PORT	PORTD		// Pulse width modulation port
-#define PWM_OUTB	(1<<PIND3)	// 0C2B timer output bit
-#define PWM_TIMER	TCNT2		// Pulse width modulation timer
-#define PWM_F_CPU	F_CPU		// 8 Mhz, nominally (internal RC oscillator)
-#define PWM_PRESCALE 64			// corresponds to TCCR2B |= 0b00000100;
-#define PWM_PRESCALE_SET 4		// 2=8x, 3=32x, 4=64x, 5=128x, 6=256x
-#define PWM_MIN_RES 20			// minimum allowable resolution (20 = 5% duty cycle resolution)
-#define PWM_MAX_RES 255			// maximum supported resolution
+#define PWM_PORT	PORTD				// Pulse width modulation port
+#define PWM_OUTB	(1<<PIND3)			// 0C2B timer output bit
+#define PWM_TIMER	TCNT2				// Pulse width modulation timer
+#define PWM_F_CPU	F_CPU				// 8 Mhz, nominally (internal RC oscillator)
+#define PWM_PRESCALE 64					// corresponds to TCCR2B |= 0b00000100;
+#define PWM_PRESCALE_SET 4				// 2=8x, 3=32x, 4=64x, 5=128x, 6=256x
+#define PWM_MIN_RES 20					// minimum allowable resolution (20 = 5% duty cycle resolution)
+#define PWM_MAX_RES 255					// maximum supported resolution
 #define PWM_F_MAX	(F_CPU / PWM_PRESCALE / PWM_MIN_RES)
 #define PWM_F_MIN	(F_CPU / PWM_PRESCALE / 256)
-#define PWM_FREQUENCY 1000		// set PWM operating frequency
-#define PWM_NON_INVERTED 0xC0	// OC2A non-inverted mode, OC2B non-inverted mode
-#define PWM_INVERTED 0xF0		// OC2A inverted mode, OC2B inverted mode
+#define PWM_FREQUENCY 1000				// set PWM operating frequency
+#define PWM_NON_INVERTED 0xC0			// OC2A non-inverted mode, OC2B non-inverted mode
+#define PWM_INVERTED 0xF0				// OC2A inverted mode, OC2B inverted mode
 
-#define ADC_PORT	PORTC		// Analog to digital converter channels
-#define ADC_CHANNEL 0			// ADC channel 0 / single-ended in this application (write to ADMUX)
-#define ADC_REFS	0b01000000	// AVcc external 5v reference (write to ADMUX)
-#define ADC_ENABLE	(1<<ADEN)	// write this to ADCSRA to enable the ADC
-#define ADC_START_CONVERSION (1<<ADSC) // write to ADCSRA to start conversion
-#define ADC_PRESCALE 6			// 6=64x which is ~125KHz at 8Mhz clock
-#define ADC_PRECISION 1024		// change this if you go to 8 bit precision
-#define ADC_VREF 5.00			// change this if the circuit changes. 3v would be about optimal
+#define ADC_PORT	PORTC				// Analog to digital converter channels
+#define ADC_CHANNEL 0					// ADC channel 0 / single-ended in this application (write to ADMUX)
+#define ADC_REFS	0b01000000			// AVcc external 5v reference (write to ADMUX)
+#define ADC_ENABLE	(1<<ADEN)			// write this to ADCSRA to enable the ADC
+#define ADC_START_CONVERSION (1<<ADSC)	// write to ADCSRA to start conversion
+#define ADC_PRESCALE 6					// 6=64x which is ~125KHz at 8Mhz clock
+#define ADC_PRECISION 1024				// change this if you go to 8 bit precision
+#define ADC_VREF 5.00					// change this if the circuit changes. 3v would be about optimal
 
-#define TICK_TIMER	TCNT0		// Tickclock timer
-#define TICK_10MS_COUNT 78		// gets 8 Mhz/1024 close to 100 Hz.
-#define TICK_TCCRxA	TCCR0A		// map the registers into the selected timer
+#define TICK_TIMER	TCNT0				// Tickclock timer
+#define TICK_10MS_COUNT 78				// gets 8 Mhz/1024 close to 100 Hz.
+#define TICK_TCCRxA	TCCR0A				// map the registers into the selected timer
 
-#define LED_PORT	PORTD		// LED port
-#define LED_PIN		(1<<PIND2)	// LED indicator
+#define LED_PORT	PORTD				// LED port
+#define LED_PIN		(1<<PIND2)			// LED indicator
 
 // Atmega328P data direction defines: 0=input pin, 1=output pin
 // These defines therefore only specify output pins
 
-#define PORTB_DIR	(SPI_MISO)	// setup for on-board SPI to work
-#define PORTC_DIR	(0)			// no output bits on C
-#define PORTD_DIR	(LED_PIN | PWM_OUTB) // LED and PWM out
+#define PORTB_DIR	(SPI_MISO)			// setup for on-board SPI to work
+#define PORTC_DIR	(0)					// no output bits on C
+#define PORTD_DIR	(LED_PIN | PWM_OUTB)// LED and PWM out
 
 // Device configiuration and communication registers
 
 // enumerations for the device configuration array
 enum deviceRegisters {
-	DEVICE_TEMP_STATE = 0,		// temperature regulation state. See TEMP_STATE enumerations
-	DEVICE_TEMP_SET_HI,			// temperature set point hi - Celcius 
-	DEVICE_TEMP_SET_LO,			// temperature set point lo - Celcius
-	DEVICE_TEMP_SET_FRACTION,	// temperature set point fractions - Celcius (you wish)
-	DEVICE_TEMP_HI,				// temperature reading hi - Celcius 
-	DEVICE_TEMP_LO,				// temperature reading lo - Celcius
-	DEVICE_TEMP_FRACTION,		// temperature reading fractions - Celcius (you wish)
-	DEVICE_PWM_FREQ_HI,			// device pulse width modulation frequency - hi
-	DEVICE_PWM_FREQ_LO,			// device pulse width modulation frequency - lo
-	DEVICE_PWM_DUTY_CYCLE,		// device pulse width modulation duty cycle - integer part
-	DEVICE_PWM_DUTY_CYCLE_FRACTION,// device pulse width modulation duty cycle - fractional part
+	DEVICE_TEMP_STATE = 0,				// temperature regulation state. See TEMP_STATE enumerations
+	DEVICE_TEMP_SET_HI,					// temperature set point hi - Celcius 
+	DEVICE_TEMP_SET_LO,					// temperature set point lo - Celcius
+	DEVICE_TEMP_SET_FRACTION,			// temperature set point fractions - Celcius (you wish)
+	DEVICE_TEMP_HI,						// temperature reading hi - Celcius 
+	DEVICE_TEMP_LO,						// temperature reading lo - Celcius
+	DEVICE_TEMP_FRACTION,				// temperature reading fractions - Celcius (you wish)
+	DEVICE_PWM_FREQ_HI,					// device pulse width modulation frequency - hi
+	DEVICE_PWM_FREQ_LO,					// device pulse width modulation frequency - lo
+	DEVICE_PWM_DUTY_CYCLE,				// device pulse width modulation duty cycle - integer part
+	DEVICE_PWM_DUTY_CYCLE_FRACTION,		// device pulse width modulation duty cycle - fractional part
 
-	DEVICE_ADDRESS_MAX			// MUST BE LAST
+	DEVICE_ADDRESS_MAX					// MUST BE LAST
 };
 
 // provide labels for all array elements

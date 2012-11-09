@@ -80,8 +80,8 @@ static struct TemperatureSensor {
 	uint8_t sample_idx;			// index into sample array
 	double temperature;			// high confidence temperature reading
 	double std_dev;				// standard deviation of sample array
-	double reject_sample_deviation;	// sample deviation above which to reject a sample
-	double reject_reading_deviation;// standard deviation to reject the entire reading
+	double sample_variance_max;	// sample deviation above which to reject a sample
+	double reading_variance_max;// standard deviation to reject the entire reading
 	double disconnect_temperature;	// bogus temperature indicates thermocouple is disconnected
 	double no_power_temperature;	// bogus temperature indicates no power to thermocouple amplifier
 	double sample[SENSOR_SAMPLES];	// array of sensor samples in a reading
@@ -175,8 +175,8 @@ void heater_on(double setpoint)
 		return;
 	}
 	// turn on lower level functions
-	sensor_on();
-	sensor_start_temperature_reading();
+	sensor_on();					// enable the sensor
+	sensor_start_reading();			// now start a reading
 	pid_reset();
 	pwm_on(PWM_FREQUENCY, 0);		// duty cycle will be set by PID loop
 	heater.setpoint = setpoint;
@@ -199,7 +199,7 @@ void heater_callback()
 	if ((heater.state == HEATER_OFF) || (heater.state == HEATER_SHUTDOWN)) { return;}
 
 	// Get the current temp and start another reading
-	sensor_start_temperature_reading();
+	sensor_start_reading();
 	if (sensor_get_state() != SENSOR_HAS_DATA) { // exit if the sensor has no data
 		return;
 	}
@@ -241,8 +241,8 @@ void pid_init()
 	pid.Kp = PID_Kp;
 	pid.Ki = PID_Ki;
 	pid.Kd = PID_Kd;
-	pid.output_max = PID_MAX_OUTPUT;	// saturation filter max value
-	pid.output_min = PID_MIN_OUTPUT;	// saturation filter min value
+	pid.output_max = PID_MAX_OUTPUT;		// saturation filter max value
+	pid.output_min = PID_MIN_OUTPUT;		// saturation filter min value
 	pid.state = PID_ON;
 }
 
@@ -264,7 +264,7 @@ double pid_calculate(double setpoint,double temperature)
 
 //	if (fabs(pid.error) > PID_EPSILON) {	// stop integration if error term is too small
 	if ((fabs(pid.error) > PID_EPSILON) ||	// stop integration if error term is too small
-		(pid.output >= (pid.output_max - EPSILON))) {// ...or output is too large (anti-windup)
+		(pid.output >= (pid.output_max - EPSILON))) {//...or output is too large (anti-windup)
 		pid.integral += (pid.error * pid.dt);
 	}
 	pid.derivative = (pid.error - pid.prev_error) / pid.dt;
@@ -281,24 +281,24 @@ double pid_calculate(double setpoint,double temperature)
 
 /**** Temperature Sensor and Functions ****/
 /*
- * sensor_init()	 		- initialize temperature sensor and start it running
- * sensor_on()	 			- initialize temperature sensor and start it running
+ * sensor_init()	 		- initialize temperature sensor
+ * sensor_on()	 			- turn temperature sensor on
  * sensor_off()	 			- turn temperature sensor off
+ * sensor_start_reading()	- start a temperature reading
  * sensor_get_temperature()	- return latest temperature reading or LESS _THAN_ZERO
  * sensor_get_state()		- return current sensor state
  * sensor_get_code()		- return latest sensor code
- * sensor_callback() 		- perform sensor sampling
+ * sensor_callback() 		- perform sensor sampling / reading
  */
 
 void sensor_init()
 {
 	memset(&sensor, 0, sizeof(struct TemperatureSensor));
 	sensor.temperature = ABSOLUTE_ZERO;
-	sensor.reject_sample_deviation = SENSOR_REJECT_SAMPLE_DEVIATION;
-	sensor.reject_reading_deviation = SENSOR_REJECT_READING_DEVIATION;
+	sensor.sample_variance_max = SENSOR_SAMPLE_VARIANCE_MAX;
+	sensor.reading_variance_max = SENSOR_READING_VARIANCE_MAX;
 	sensor.disconnect_temperature = SENSOR_DISCONNECTED_TEMPERATURE;
 	sensor.no_power_temperature = SENSOR_NO_POWER_TEMPERATURE;
-	sensor.state = SENSOR_HAS_NO_DATA;
 }
 
 void sensor_on()
@@ -309,6 +309,12 @@ void sensor_on()
 void sensor_off()
 {
 	sensor.state = SENSOR_OFF;
+}
+
+void sensor_start_reading() 
+{ 
+	sensor.sample_idx = 0;
+	sensor.code = SENSOR_TAKING_READING;
 }
 
 uint8_t sensor_get_state() { return (sensor.state);}
@@ -323,32 +329,22 @@ double sensor_get_temperature()
 	}
 }
 
-void sensor_start_temperature_reading() 
-{ 
-	sensor.sample_idx = 0;
-	sensor.code = SENSOR_TAKING_READING;
-}
-
 /*
- * sensor_callback() - perform tick-timer sensor functions (10ms loop)
+ * sensor_callback() - perform tick-timer sensor functions
  *
- *	The sensor_callback() is called on 10ms ticks. It collects N samples in a 
- *	sampling period before updating the sensor.temperature. Since the heater
- *	runs on 100ms ticks there can be a max of 10 samples in a period.
- *	(The ticks are synchronized so you can actually get 10, not just 9) 
+ *	Sensor_callback() reads in an array of sensor readings then processes the 
+ *	array for a clean reading. The function uses the standard deviation of the 
+ *	sample set to clean up the reading or to reject the reading as being flawed.
  *
- *	The heater must initate a sample cycle by calling sensor_start_sample()
- *
- *	This function uses the standard deviation of the sample set to clean up
- *	the reading or to reject the reading as being flawed.
+ *	It's set up to collect 9 samples at 10 ms intervals to serve a 100ms heater 
+ *	loop. Each sampling interval must be requested explicitly by calling 
+ *	sensor_start_sample(). It does not free-run.
  */
 
 void sensor_callback()
 {
 	// cases where you don't execute the callback:
-	if ((sensor.state == SENSOR_OFF) || 
-		(sensor.state == SENSOR_SHUTDOWN) || 
-		(sensor.code != SENSOR_TAKING_READING)) {
+	if ((sensor.state == SENSOR_OFF) || (sensor.code != SENSOR_TAKING_READING)) {
 		return;
 	}
 
@@ -359,9 +355,9 @@ void sensor_callback()
 	// process the array to clean up samples
 	double mean;
 	sensor.std_dev = std_dev(sensor.sample, SENSOR_SAMPLES, &mean);
-	if (sensor.std_dev > sensor.reject_reading_deviation) {
-		sensor.code = SENSOR_READING_FAILED_BAD_READINGS;
-		sensor.state = SENSOR_HAS_NO_DATA;
+	if (sensor.std_dev > sensor.reading_variance_max) {
+		sensor.state = SENSOR_ERROR;
+		sensor.code = SENSOR_BAD_READINGS;
 		return;
 	}
 
@@ -369,22 +365,22 @@ void sensor_callback()
 	double count = 0;
 	sensor.temperature = 0;
 	for (uint8_t i=0; i<SENSOR_SAMPLES; i++) {
-		if (fabs(sensor.sample[i] - mean) < (sensor.reject_sample_deviation * sensor.std_dev)) {
+		if (fabs(sensor.sample[i] - mean) < (sensor.sample_variance_max * sensor.std_dev)) {
 			sensor.temperature += sensor.sample[i];
 			count++;
 		}
 	}
 	sensor.temperature /= count; 
-	sensor.code = SENSOR_READING_COMPLETE;
+	sensor.code = SENSOR_IDLE;			// we are done. Flip it back to idle
 	sensor.state = SENSOR_HAS_DATA;
 
 	// process the exception cases
 	if (sensor.temperature > SENSOR_DISCONNECTED_TEMPERATURE) {
-		sensor.code = SENSOR_READING_FAILED_DISCONNECTED;
-		sensor.state = SENSOR_HAS_NO_DATA;
+		sensor.state = SENSOR_ERROR;
+		sensor.code = SENSOR_DISCONNECTED;
 	} else if (sensor.temperature < SENSOR_NO_POWER_TEMPERATURE) {
-		sensor.code = SENSOR_READING_FAILED_NO_POWER;
-		sensor.state = SENSOR_HAS_NO_DATA;
+		sensor.state = SENSOR_ERROR;
+		sensor.code = SENSOR_NO_POWER;
 	}
 }
 
