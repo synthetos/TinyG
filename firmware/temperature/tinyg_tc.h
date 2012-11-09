@@ -20,7 +20,7 @@
 // Device function prototypes
 
 //#define __UNIT_TEST_TC	// uncomment to enable unit tests
-#define __TEST
+//#define __TEST
 
 void device_init(void);
 
@@ -113,8 +113,8 @@ enum tcHeaterCode {
 //#define PID_Ki 0.005					// integral
 //#define PID_Kd 0.01					// derivative
 
-#define PID_Kp 0.8						// proportional
-#define PID_Ki 0.005					// integral
+#define PID_Kp 0.95						// proportional
+#define PID_Ki 0.01						// integral
 #define PID_Kd 0.01						// derivative
 
 enum tcPIDState {						// PID state machine
@@ -126,13 +126,13 @@ enum tcPIDState {						// PID state machine
 
 #define SENSOR_SAMPLES 9					// number of sensor samples to take for each reading period
 #define SENSOR_REJECT_SAMPLE_DEVIATION 1.25	// number of standard deviations from mean to reject a sample
-#define SENSOR_REJECT_READING_DEVIATION 50	// reject entire reading if std_dev exceeds this threshold
+#define SENSOR_REJECT_READING_DEVIATION 20	// reject entire reading if std_dev exceeds this threshold
 #define SENSOR_NO_POWER_TEMPERATURE 5		// detect thermocouple amplifier disconnected if readings stay below this temp
 #define SENSOR_DISCONNECTED_TEMPERATURE 400	// sensor is DISCONNECTED if over this temp (works w/ both 5v and 3v refs)
 #define SENSOR_TICK_SECONDS 0.01			// 10 ms
 
-#define SENSOR_SLOPE 0.686645508		// emperically determined for AD597 & B&K TP-29 K-type test probe
-#define SENSOR_OFFSET -4.062500			// emperically determined
+#define SENSOR_SLOPE 0.489616568		// derived from AD597 chart between 80 deg-C and 300 deg-C
+#define SENSOR_OFFSET -0.419325433		// derived from AD597 chart between 80 deg-C and 300 deg-C
 
 #define SURFACE_OF_THE_SUN 5505			// termperature at the surface of the sun in Celcius
 #define HOTTER_THAN_THE_SUN 10000		// a temperature that is hotter than the surface of the sun

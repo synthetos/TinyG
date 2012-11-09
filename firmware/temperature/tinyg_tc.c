@@ -104,7 +104,7 @@ int main(void)
 
 	UNIT_TESTS;					// uncomment __UNIT_TEST_TC to enable unit tests
 
-	heater_on(140);				// ++++ turn heater on for testing
+	heater_on(180);				// ++++ turn heater on for testing
 
 	while (true) {				// go to the controller loop and never return
 		_controller();
@@ -124,7 +124,8 @@ void device_init(void)
 	tick_init();
 	pwm_init();
 	adc_init();
-	led_on();					// put on the red light [Sting, 1978]
+
+//	led_on();					// put on the red light [Sting, 1978]
 }
 
 /*
@@ -180,6 +181,7 @@ void heater_on(double setpoint)
 	pwm_on(PWM_FREQUENCY, 0);		// duty cycle will be set by PID loop
 	heater.setpoint = setpoint;
 	heater.state = HEATER_HEATING;
+	led_on();						// put on the red light [Sting, 1978]
 }
 
 void heater_off(uint8_t state, uint8_t code) 
@@ -188,6 +190,7 @@ void heater_off(uint8_t state, uint8_t code)
 	sensor_off();					// stop taking readings
 	heater.state = state;
 	heater.code = code;
+	led_off();
 }
 
 void heater_callback()
@@ -200,7 +203,10 @@ void heater_callback()
 	if (sensor_get_state() != SENSOR_HAS_DATA) { // exit if the sensor has no data
 		return;
 	}
-	heater.temperature = sensor_get_temperature();
+	if ((heater.temperature = sensor_get_temperature()) > heater.overheat_temperature) {
+		heater_off(HEATER_SHUTDOWN, HEATER_OVERHEATED);
+		return;
+	}
 	double duty_cycle = pid_calculate(heater.setpoint, heater.temperature);
 	pwm_set_duty(duty_cycle);
 	
@@ -256,9 +262,9 @@ double pid_calculate(double setpoint,double temperature)
 
 	pid.error = setpoint - temperature;		// current error term
 
-//	if ((fabs(pid.error) > PID_EPSILON) ||	// stop integration if error term is too small
-//		(pid.output >= (pid.output_max - EPSILON))) {// ...or output is too large (anti-windup)
-	if (fabs(pid.error) > PID_EPSILON) {	// stop integration if error term is too small
+//	if (fabs(pid.error) > PID_EPSILON) {	// stop integration if error term is too small
+	if ((fabs(pid.error) > PID_EPSILON) ||	// stop integration if error term is too small
+		(pid.output >= (pid.output_max - EPSILON))) {// ...or output is too large (anti-windup)
 		pid.integral += (pid.error * pid.dt);
 	}
 	pid.derivative = (pid.error - pid.prev_error) / pid.dt;
