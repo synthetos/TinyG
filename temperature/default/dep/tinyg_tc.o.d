@@ -16,8 +16,9 @@ tinyg_tc.o: ../tinyg_tc.c \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/fuse.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h \
+  c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h \
   c:/winavr-20100110/lib/gcc/../../avr/include/math.h ../kinen_core.h \
-  ../tinyg_tc.h ../util.h
+  ../tinyg_tc.h ../serial.h ../print.h ../util.h
 
 c:/winavr-20100110/lib/gcc/../../avr/include/stdio.h:
 
@@ -53,10 +54,16 @@ c:/winavr-20100110/lib/gcc/../../avr/include/avr/lock.h:
 
 c:/winavr-20100110/lib/gcc/../../avr/include/avr/interrupt.h:
 
+c:/winavr-20100110/lib/gcc/../../avr/include/avr/pgmspace.h:
+
 c:/winavr-20100110/lib/gcc/../../avr/include/math.h:
 
 ../kinen_core.h:
 
 ../tinyg_tc.h:
+
+../serial.h:
+
+../print.h:
 
 ../util.h:

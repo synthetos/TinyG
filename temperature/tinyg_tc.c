@@ -22,10 +22,13 @@
 #include <string.h>				// for memset
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <avr/pgmspace.h>
 #include <math.h>
 
 #include "kinen_core.h"
 #include "tinyg_tc.h"
+#include "serial.h"
+#include "print.h"
 #include "util.h"
 
 // static functions 
@@ -46,6 +49,9 @@ static struct Device {			// hardware devices that are part of the chip
 static struct Heater {
 	uint8_t state;				// heater state
 	uint8_t code;				// heater code (more information about heater state)
+	uint8_t led_toggler;
+	int8_t readout;
+	uint8_t regulation_count;	// number of successive readings before heater is declared in regulation
 	double temperature;			// current heater temperature
 	double setpoint;			// set point for regulation
 	double regulation_timer;	// time taken so far to get out of ambinet and to to regulation (seconds)
@@ -99,12 +105,17 @@ int main(void)
 	cli();						// initializations
 	kinen_init();				// do this first
 	device_init();				// handles all the low-level device peripheral inits
+	serial_init(BAUD_RATE);
 	heater_init();				// setup the heater module and subordinate functions
 	sei(); 						// enable interrupts
 
 	UNIT_TESTS;					// uncomment __UNIT_TEST_TC to enable unit tests
 
-	heater_on(180);				// ++++ turn heater on for testing
+	heater_on(140);				// ++++ turn heater on for testing
+
+	printPgmString(PSTR("\nInitialized ")); 
+	printFloat(BAUD_RATE);
+	printPgmString(PSTR(" BAUD\n")); 
 
 	while (true) {				// go to the controller loop and never return
 		_controller();
@@ -125,7 +136,7 @@ void device_init(void)
 	pwm_init();
 	adc_init();
 
-//	led_on();					// put on the red light [Sting, 1978]
+	led_off();					// put off the red light [~Sting, 1978]
 }
 
 /*
@@ -171,7 +182,7 @@ void heater_init()
 void heater_on(double setpoint)
 {
 	// no action if heater is already on
-	if ((heater.state == HEATER_HEATING) || (heater.state == HEATER_AT_TARGET)) {
+	if ((heater.state == HEATER_HEATING) || (heater.state == HEATER_REGULATED)) {
 		return;
 	}
 	// turn on lower level functions
@@ -180,8 +191,8 @@ void heater_on(double setpoint)
 	pid_reset();
 	pwm_on(PWM_FREQUENCY, 0);		// duty cycle will be set by PID loop
 	heater.setpoint = setpoint;
+	heater.regulation_count = HEATER_REGULATION_COUNT;
 	heater.state = HEATER_HEATING;
-	led_on();						// put on the red light [Sting, 1978]
 }
 
 void heater_off(uint8_t state, uint8_t code) 
@@ -195,21 +206,32 @@ void heater_off(uint8_t state, uint8_t code)
 
 void heater_callback()
 {
-	// These are the no-op cases
+	// catch the no-op cases
 	if ((heater.state == HEATER_OFF) || (heater.state == HEATER_SHUTDOWN)) { return;}
 
-	// Get the current temp and start another reading
-	sensor_start_reading();
-	if (sensor_get_state() != SENSOR_HAS_DATA) { // exit if the sensor has no data
+	// get current temp or an error if there is no temperature reading
+	if ((heater.temperature = sensor_get_temperature()) < ABSOLUTE_ZERO) { 
 		return;
 	}
-	if ((heater.temperature = sensor_get_temperature()) > heater.overheat_temperature) {
+	if (heater.temperature > heater.overheat_temperature) {
 		heater_off(HEATER_SHUTDOWN, HEATER_OVERHEATED);
 		return;
 	}
+	sensor_start_reading();		// start next reading
+
+	// calculate the next PWM level via the PID
 	double duty_cycle = pid_calculate(heater.setpoint, heater.temperature);
 	pwm_set_duty(duty_cycle);
-	
+
+	if (--heater.readout < 0) {
+		heater.readout = 5;
+		printPgmString(PSTR("Temp: ")); 
+		printFloat(heater.temperature);
+		printPgmString(PSTR("  PID: ")); 
+		printFloat(pid.output);
+		printPgmString(PSTR("\n")); 
+	}
+
 	// handle HEATER exceptions
 	if (heater.state == HEATER_HEATING) {
 		heater.regulation_timer += HEATER_TICK_SECONDS;
@@ -224,6 +246,17 @@ void heater_callback()
 			heater_off(HEATER_SHUTDOWN, HEATER_REGULATION_TIMED_OUT);
 			return;
 		}
+	}
+	// manage heater state and LED indicator
+	if (heater.regulation_count > 0) {
+		if (--heater.regulation_count <= 0) {
+			heater.state = HEATER_REGULATED;
+		}
+	}
+	if (heater.state == HEATER_REGULATED) {
+		led_on();
+	} else {
+		led_toggle();
 	}
 }
 
@@ -276,6 +309,8 @@ double pid_calculate(double setpoint,double temperature)
 		pid.output = pid.output_min;
 	}
 	pid.prev_error = pid.error;
+	if (pid.output > 50) { led_on();} else { led_off();}
+
 	return pid.output;
 }
 
@@ -303,7 +338,7 @@ void sensor_init()
 
 void sensor_on()
 {
-	// no action actually occurs
+	sensor.state = SENSOR_NO_DATA;
 }
 
 void sensor_off()
@@ -325,7 +360,8 @@ double sensor_get_temperature()
 	if (sensor.state == SENSOR_HAS_DATA) { 
 		return (sensor.temperature);
 	} else {
-		return (SURFACE_OF_THE_SUN);	// a value that should say "Shut me off! Now!"
+		return (_sensor_sample(0));
+//		return (LESS_THAN_ZERO);	// an impossible temperature value
 	}
 }
 
@@ -350,7 +386,9 @@ void sensor_callback()
 
 	// get a sample and return if still in the reading period
 	sensor.sample[sensor.sample_idx] = _sensor_sample(ADC_CHANNEL);
-	if ((++sensor.sample_idx) < SENSOR_SAMPLES) { return;}
+	if ((++sensor.sample_idx) < SENSOR_SAMPLES) { 
+		return;
+	}
 
 	// process the array to clean up samples
 	double mean;
@@ -373,6 +411,8 @@ void sensor_callback()
 	sensor.temperature /= count; 
 	sensor.code = SENSOR_IDLE;			// we are done. Flip it back to idle
 	sensor.state = SENSOR_HAS_DATA;
+
+//	if (sensor.temperature <= -1) led_on();	
 
 	// process the exception cases
 	if (sensor.temperature > SENSOR_DISCONNECTED_TEMPERATURE) {
@@ -418,8 +458,10 @@ void sensor_callback()
 static inline double _sensor_sample(uint8_t adc_channel)
 {
 #ifdef __TEST
-	double rnum = (rand() /100);
-	return (((double)rnum * SENSOR_SLOPE) + SENSOR_OFFSET);	// useful for testing the math
+	double random_gain = 5;
+	double random_variation = ((double)(rand() - RAND_MAX/2) / RAND_MAX/2) * random_gain;
+	double reading = 60 + random_variation;
+	return (((double)reading * SENSOR_SLOPE) + SENSOR_OFFSET);	// useful for testing the math
 #else
 	return (((double)adc_read(adc_channel) * SENSOR_SLOPE) + SENSOR_OFFSET);
 #endif
@@ -457,7 +499,7 @@ uint16_t adc_read(uint8_t channel)
  */
 void pwm_init(void)
 {
-	TCCR2A  = PWM_INVERTED;		// alternative is PWM_NON_INVERTED
+	TCCR2A  = PWM_INVERTED;		// alternative is PWM_NONINVERTED
 	TCCR2A |= 0b00000011;		// Waveform generation set to MODE 7 - here...
 	TCCR2B  = 0b00001000;		// ...continued here
 	TCCR2B |= PWM_PRESCALE_SET;	// set clock and prescaler
@@ -513,9 +555,9 @@ uint8_t pwm_set_freq(double freq)
 
 uint8_t pwm_set_duty(double duty)
 {
-	if (duty <= 0) { 
+	if (duty < 0.01) {				// anything approaching 0% 
 		OCR2B = 255;
-	} else if (duty > 100) { 
+	} else if (duty > 99.9) { 		// anything approaching 100%
 		OCR2B = 0;
 	} else {
 		OCR2B = (uint8_t)(OCR2A * (1-(duty/100)));

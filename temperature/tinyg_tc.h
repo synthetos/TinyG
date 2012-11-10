@@ -81,18 +81,18 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data);
 
 /**** Heater default parameters ***/
 
+#define HEATER_TICK_SECONDS 0.1			// 100 ms
 #define HEATER_AMBIENT_TEMPERATURE 40	// detect heater not heating if readings stay below this temp
 #define HEATER_OVERHEAT_TEMPERATURE 300	// heater is above max temperature if over this temp. Should shut down
 #define HEATER_AMBIENT_TIMEOUT 90		// time to allow heater to heat above ambinet temperature (seconds)
 #define HEATER_REGULATION_TIMEOUT 300	// time to allow heater to come to temp (seconds)
-#define HEATER_TARGET_CHECK_COUNT 5		// number of successive readings before declaring AT_TEMPERATURE
-#define HEATER_TICK_SECONDS 0.1			// 100 ms
+#define HEATER_REGULATION_COUNT 10		// number of successive readings before declaring AT_TARGET
 
 enum tcHeaterState {					// heater state machine
 	HEATER_OFF = 0,						// heater turned OFF or never turned on - transitions to HEATING
 	HEATER_SHUTDOWN,					// heater has been shut down - transitions to HEATING
-	HEATER_HEATING,						// heating up from OFF or SHUTDOWN - transitions to AT_TAGRGET or SHUTDOWN
-	HEATER_AT_TARGET					// at setpoint and in temperature regulation - transitions to OFF or SHUTDOWN
+	HEATER_HEATING,						// heating up from OFF or SHUTDOWN - transitions to REGULATED or SHUTDOWN
+	HEATER_REGULATED					// heater is at setpoint and in regulation - transitions to OFF or SHUTDOWN
 };
 
 enum tcHeaterCode {
@@ -113,8 +113,8 @@ enum tcHeaterCode {
 //#define PID_Ki 0.005					// integral
 //#define PID_Kd 0.01					// derivative
 
-#define PID_Kp 0.95						// proportional
-#define PID_Ki 0.01						// integral
+#define PID_Kp 0.5						// proportional
+#define PID_Ki 0.005					// integral
 #define PID_Kd 0.01						// derivative
 
 enum tcPIDState {						// PID state machine
@@ -127,7 +127,7 @@ enum tcPIDState {						// PID state machine
 #define SENSOR_SAMPLES 9				// number of sensor samples to take for each reading period
 #define SENSOR_SAMPLE_VARIANCE_MAX 1.25	// number of standard deviations from mean to reject a sample
 #define SENSOR_READING_VARIANCE_MAX 20	// reject entire reading if std_dev exceeds this amount
-#define SENSOR_NO_POWER_TEMPERATURE 5	// detect thermocouple amplifier disconnected if readings stay below this temp
+#define SENSOR_NO_POWER_TEMPERATURE -2	// detect thermocouple amplifier disconnected if readings stay below this temp
 #define SENSOR_DISCONNECTED_TEMPERATURE 400	// sensor is DISCONNECTED if over this temp (works w/ both 5v and 3v refs)
 #define SENSOR_TICK_SECONDS 0.01		// 10 ms
 
@@ -137,10 +137,11 @@ enum tcPIDState {						// PID state machine
 #define SURFACE_OF_THE_SUN 5505			// termperature at the surface of the sun in Celcius
 #define HOTTER_THAN_THE_SUN 10000		// a temperature that is hotter than the surface of the sun
 #define ABSOLUTE_ZERO -273.15			// Celcius
-#define LESS_THAN_ZERO -274				// a value the thermocouple sensor cannot output
+#define LESS_THAN_ZERO -274				// Celcius - a value the thermocouple sensor cannot output
 
 enum tcSensorState {					// main state machine
 	SENSOR_OFF = 0,						// sensor is off or uninitialized
+	SENSOR_NO_DATA,						// interim state before first reading is complete
 	SENSOR_ERROR,						// a sensor error occurred. Don't use the data
 	SENSOR_HAS_DATA						// sensor has valid data
 };
@@ -153,43 +154,43 @@ enum tcSensorCode {						// success and failure codes
 	SENSOR_NO_POWER						// ERROR: detected lack of power to thermocouple amplifier
 };
 
-// Lower-level device mappings and constants (for atmega328P)
+/**** Lower-level device mappings and constants (for atmega328P) ****/
 
-#define SPI_PORT	PORTB				// on-board SPI peripheral
-#define SPI_SCK		(1<<PINB5)			// SPI clock line
-#define SPI_MISO	(1<<PINB4)			// SPI MISO line
-#define SPI_MOSI	(1<<PINB3)			// SPI MOSI line
-#define SPI_SS		(1<<PINB2)			// SPI slave select
+#define SPI_PORT		PORTB			// on-board SPI peripheral is hard-wired to PORTB
+#define SPI_SCK			(1<<PINB5)		// SPI clock line
+#define SPI_MISO		(1<<PINB4)		// SPI MISO line
+#define SPI_MOSI		(1<<PINB3)		// SPI MOSI line
+#define SPI_SS			(1<<PINB2)		// SPI slave select
 
-#define PWM_PORT	PORTD				// Pulse width modulation port
-#define PWM_OUTB	(1<<PIND3)			// 0C2B timer output bit
-#define PWM_TIMER	TCNT2				// Pulse width modulation timer
-#define PWM_F_CPU	F_CPU				// 8 Mhz, nominally (internal RC oscillator)
-#define PWM_PRESCALE 64					// corresponds to TCCR2B |= 0b00000100;
+#define PWM_PORT		PORTD			// Pulse width modulation port
+#define PWM_OUTB		(1<<PIND3)		// 0C2B timer output bit
+#define PWM_TIMER		TCNT2			// Pulse width modulation timer
+#define PWM_NONINVERTED	0xC0			// OC2A non-inverted mode, OC2B non-inverted mode
+#define PWM_INVERTED 	0xF0			// OC2A inverted mode, OC2B inverted mode
+#define PWM_PRESCALE 	64				// corresponds to TCCR2B |= 0b00000100;
 #define PWM_PRESCALE_SET 4				// 2=8x, 3=32x, 4=64x, 5=128x, 6=256x
-#define PWM_MIN_RES 20					// minimum allowable resolution (20 = 5% duty cycle resolution)
-#define PWM_MAX_RES 255					// maximum supported resolution
-#define PWM_F_MAX	(F_CPU / PWM_PRESCALE / PWM_MIN_RES)
-#define PWM_F_MIN	(F_CPU / PWM_PRESCALE / 256)
-#define PWM_FREQUENCY 1000				// set PWM operating frequency
-#define PWM_NON_INVERTED 0xC0			// OC2A non-inverted mode, OC2B non-inverted mode
-#define PWM_INVERTED 0xF0				// OC2A inverted mode, OC2B inverted mode
+#define PWM_MIN_RES 	20				// minimum allowable resolution (20 = 5% duty cycle resolution)
+#define PWM_MAX_RES 	255				// maximum supported resolution
+#define PWM_F_CPU		F_CPU			// 8 Mhz, nominally (internal RC oscillator)
+#define PWM_F_MAX		(F_CPU / PWM_PRESCALE / PWM_MIN_RES)
+#define PWM_F_MIN		(F_CPU / PWM_PRESCALE / 256)
+#define PWM_FREQUENCY 	1000			// set PWM operating frequency
 
-#define ADC_PORT	PORTC				// Analog to digital converter channels
-#define ADC_CHANNEL 0					// ADC channel 0 / single-ended in this application (write to ADMUX)
-#define ADC_REFS	0b01000000			// AVcc external 5v reference (write to ADMUX)
-#define ADC_ENABLE	(1<<ADEN)			// write this to ADCSRA to enable the ADC
+#define ADC_PORT		PORTC			// Analog to digital converter channels
+#define ADC_CHANNEL 	0				// ADC channel 0 / single-ended in this application (write to ADMUX)
+#define ADC_REFS		0b01000000		// AVcc external 5v reference (write to ADMUX)
+#define ADC_ENABLE		(1<<ADEN)		// write this to ADCSRA to enable the ADC
 #define ADC_START_CONVERSION (1<<ADSC)	// write to ADCSRA to start conversion
-#define ADC_PRESCALE 6					// 6=64x which is ~125KHz at 8Mhz clock
-#define ADC_PRECISION 1024				// change this if you go to 8 bit precision
-#define ADC_VREF 5.00					// change this if the circuit changes. 3v would be about optimal
+#define ADC_PRESCALE 	6				// 6=64x which is ~125KHz at 8Mhz clock
+#define ADC_PRECISION 	1024			// change this if you go to 8 bit precision
+#define ADC_VREF 		5.00			// change this if the circuit changes. 3v would be about optimal
 
-#define TICK_TIMER	TCNT0				// Tickclock timer
+#define TICK_TIMER		TCNT0			// Tickclock timer
 #define TICK_10MS_COUNT 78				// gets 8 Mhz/1024 close to 100 Hz.
-#define TICK_TCCRxA	TCCR0A				// map the registers into the selected timer
+#define TICK_TCCRxA		TCCR0A			// map the registers into the selected timer
 
-#define LED_PORT	PORTD				// LED port
-#define LED_PIN		(1<<PIND2)			// LED indicator
+#define LED_PORT		PORTD			// LED port
+#define LED_PIN			(1<<PIND2)		// LED indicator
 
 // Atmega328P data direction defines: 0=input pin, 1=output pin
 // These defines therefore only specify output pins

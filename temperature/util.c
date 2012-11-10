@@ -17,8 +17,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
-//#include <string.h>
-//#include <avr/pgmspace.h>		// precursor for xio.h
 
 #include "util.h"
 
