@@ -95,7 +95,7 @@ static void print_uint32_base10(unsigned long n)
     serial_write(buf[i-1]);
 }
 
-void printInteger(long n)
+void printInteger(uint32_t n)
 {
   if (n < 0) {
     serial_write('-');

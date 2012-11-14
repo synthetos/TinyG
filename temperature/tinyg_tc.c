@@ -29,70 +29,17 @@
 #include "tinyg_tc.h"
 #include "serial.h"
 #include "print.h"
+#include "report.h"
 #include "util.h"
 
-// static functions 
+// local functions
 
 static void _controller(void);
 static double _sensor_sample(uint8_t adc_channel);
+static void _pwm_bit_hi(void);
+static void _pwm_bit_lo(void);
 
-// static data
-
-static struct Device {			// hardware devices that are part of the chip
-	uint8_t tick_flag;			// true = the timer interrupt fired
-	uint8_t tick_100ms_count;	// 100ms down counter
-	uint8_t tick_1sec_count;	// 1 second down counter
-	double pwm_freq;			// save it for stopping and starting PWM
-	uint8_t array[DEVICE_ADDRESS_MAX]; // byte array for Kinen communications
-} device;
-
-static struct Heater {
-	uint8_t state;				// heater state
-	uint8_t code;				// heater code (more information about heater state)
-	uint8_t led_toggler;
-	int8_t readout;
-	uint8_t regulation_count;	// number of successive readings before heater is declared in regulation
-	double temperature;			// current heater temperature
-	double setpoint;			// set point for regulation
-	double regulation_timer;	// time taken so far to get out of ambinet and to to regulation (seconds)
-	double ambient_timeout;		// timeout beyond which regulation has failed (seconds)
-	double regulation_timeout;	// timeout beyond which regulation has failed (seconds)
-	double ambient_temperature;	// temperature below which it's ambient temperature (heater failed)
-	double overheat_temperature;// overheat temperature (cutoff temperature)
-} heater;
-
-static struct PIDstruct {		// PID controller itself
-	uint8_t state;				// PID state (actually very simple)
-	uint8_t code;				// PID code (more information about PID state)
-	double output;				// also used for anti-windup on integral term
-	double output_max;			// saturation filter max
-	double output_min;			// saturation filter min
-	double error;				// current error term
-	double prev_error;			// error term from previous pass
-	double integral;			// integral term
-	double derivative;			// derivative term
-	double dt;					// pid time constant
-	double Kp;					// proportional gain
-	double Ki;					// integral gain 
-	double Kd;					// derivative gain
-	// for test only
-	double temperature;			// current PID temperature
-	double setpoint;			// temperature set point
-} pid;
-
-static struct TemperatureSensor {
-	uint8_t state;				// sensor state
-	uint8_t code;				// sensor return code (more information about state)
-	uint8_t sample_idx;			// index into sample array
-	double temperature;			// high confidence temperature reading
-	double std_dev;				// standard deviation of sample array
-	double sample_variance_max;	// sample deviation above which to reject a sample
-	double reading_variance_max;// standard deviation to reject the entire reading
-	double disconnect_temperature;	// bogus temperature indicates thermocouple is disconnected
-	double no_power_temperature;	// bogus temperature indicates no power to thermocouple amplifier
-	double sample[SENSOR_SAMPLES];	// array of sensor samples in a reading
-	double test;
-} sensor;
+// Had to move the struct definitions and declarations to .h file for reporting purposes
 
 /****************************************************************************
  * main
@@ -105,17 +52,30 @@ int main(void)
 	cli();						// initializations
 	kinen_init();				// do this first
 	device_init();				// handles all the low-level device peripheral inits
+
+/* test code to debug FET hardware. Must disable pwm_init() in device_init();
+	while (true) { 
+		_pwm_bit_hi(); 
+		_pwm_bit_hi(); 
+		_pwm_bit_hi(); 
+		_pwm_bit_hi(); 
+		_pwm_bit_hi(); 
+
+		_pwm_bit_lo(); 
+		_pwm_bit_lo(); 
+		_pwm_bit_lo(); 
+		_pwm_bit_lo(); 
+		_pwm_bit_lo(); 
+	}
+*/
 	serial_init(BAUD_RATE);
 	heater_init();				// setup the heater module and subordinate functions
 	sei(); 						// enable interrupts
 
 	UNIT_TESTS;					// uncomment __UNIT_TEST_TC to enable unit tests
 
-	heater_on(140);				// ++++ turn heater on for testing
-
-	printPgmString(PSTR("\nInitialized ")); 
-	printFloat(BAUD_RATE);
-	printPgmString(PSTR(" BAUD\n")); 
+	heater_on(100);				// ++++ turn heater on for testing
+	rpt_initialized();			// send initalization string
 
 	while (true) {				// go to the controller loop and never return
 		_controller();
@@ -137,6 +97,21 @@ void device_init(void)
 	adc_init();
 
 	led_off();					// put off the red light [~Sting, 1978]
+}
+
+/**** PWM Port Functions ****
+ * _pwm_bit_hi()
+ * _pwm_bit_lo()
+ */
+
+void _pwm_bit_hi(void) 
+{
+	PWM_PORT |= PWM_OUTB;
+}
+
+void _pwm_bit_lo(void) 
+{
+	PWM_PORT &= ~(PWM_OUTB);
 }
 
 /*
@@ -167,7 +142,7 @@ static void _controller()
 void heater_init()
 { 
 	// initialize heater, start PID and PWM
-	memset(&heater, 0, sizeof(struct Heater));
+	memset(&heater, 0, sizeof(Heater));
 	heater.ambient_timeout = HEATER_AMBIENT_TIMEOUT;
 	heater.regulation_timeout = HEATER_REGULATION_TIMEOUT;
 	heater.ambient_temperature = HEATER_AMBIENT_TEMPERATURE;
@@ -222,15 +197,7 @@ void heater_callback()
 	// calculate the next PWM level via the PID
 	double duty_cycle = pid_calculate(heater.setpoint, heater.temperature);
 	pwm_set_duty(duty_cycle);
-
-	if (--heater.readout < 0) {
-		heater.readout = 5;
-		printPgmString(PSTR("Temp: ")); 
-		printFloat(heater.temperature);
-		printPgmString(PSTR("  PID: ")); 
-		printFloat(pid.output);
-		printPgmString(PSTR("\n")); 
-	}
+	rpt_heater_readout();
 
 	// handle HEATER exceptions
 	if (heater.state == HEATER_HEATING) {
@@ -328,7 +295,7 @@ double pid_calculate(double setpoint,double temperature)
 
 void sensor_init()
 {
-	memset(&sensor, 0, sizeof(struct TemperatureSensor));
+	memset(&sensor, 0, sizeof(Sensor));
 	sensor.temperature = ABSOLUTE_ZERO;
 	sensor.sample_variance_max = SENSOR_SAMPLE_VARIANCE_MAX;
 	sensor.reading_variance_max = SENSOR_READING_VARIANCE_MAX;
@@ -360,8 +327,7 @@ double sensor_get_temperature()
 	if (sensor.state == SENSOR_HAS_DATA) { 
 		return (sensor.temperature);
 	} else {
-		return (_sensor_sample(0));
-//		return (LESS_THAN_ZERO);	// an impossible temperature value
+		return (LESS_THAN_ZERO);	// an impossible temperature value
 	}
 }
 

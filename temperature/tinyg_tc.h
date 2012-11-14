@@ -23,6 +23,9 @@
 //#define __TEST
 
 void device_init(void);
+void device_reset(void);
+uint8_t device_read_byte(uint8_t addr, uint8_t *data);
+uint8_t device_write_byte(uint8_t addr, uint8_t data);
 
 void heater_init(void);
 void heater_on(double setpoint);
@@ -61,11 +64,7 @@ void led_on(void);
 void led_off(void);
 void led_toggle(void);
 
-void device_reset(void);
-uint8_t device_read_byte(uint8_t addr, uint8_t *data);
-uint8_t device_write_byte(uint8_t addr, uint8_t data);
-
-// Device configuration 
+/**** Device configuration for Kinen (+++this needs to change) ****/
 
 #define DEVICE_WAIT_TIME 10				// 10 = 100 uSeconds
 
@@ -77,7 +76,6 @@ uint8_t device_write_byte(uint8_t addr, uint8_t data);
 #define DEVICE_UUID_1	 0x00			// UUID = 0 means there is no UUID
 #define DEVICE_UUID_2	 0x00			// UUID = 0 means there is no UUID
 #define DEVICE_UUID_3	 0x00			// UUID = 0 means there is no UUID
-
 
 /**** Heater default parameters ***/
 
@@ -100,20 +98,22 @@ enum tcHeaterCode {
 	HEATER_AMBIENT_TIMED_OUT,			// heater failed to get past ambient temperature
 	HEATER_REGULATION_TIMED_OUT,		// heater heated but failed to achieve regulation before timeout
 	HEATER_OVERHEATED,					// heater exceeded maximum temperature cutoff value
+	HEATER_SENSOR_ERROR					// heater encountered a fatal sensor error
 };
 
 /**** PID default parameters ***/
 
 #define PID_DT HEATER_TICK_SECONDS		// time constant for computation
 #define PID_EPSILON 0.01				// error term precision
-#define PID_MAX_OUTPUT 100				// saturation filter max
-#define PID_MIN_OUTPUT 0				// saturation filter min
+#define PID_MAX_OUTPUT 100				// saturation filter max PWM percent
+#define PID_MIN_OUTPUT 0				// saturation filter min PWM percent
 
+										// starting values from example code
 //#define PID_Kp 0.1					// proportional
 //#define PID_Ki 0.005					// integral
 //#define PID_Kd 0.01					// derivative
 
-#define PID_Kp 0.5						// proportional
+#define PID_Kp 0.2						// proportional
 #define PID_Ki 0.005					// integral
 #define PID_Kd 0.01						// derivative
 
@@ -192,14 +192,21 @@ enum tcSensorCode {						// success and failure codes
 #define LED_PORT		PORTD			// LED port
 #define LED_PIN			(1<<PIND2)		// LED indicator
 
+// some defs left over from defining a secondary SPI channel
+//#define SPI2_PORT 	PORTD			// Secondary SPI is a bit banger 
+//#define SPI2_CLK		(1<<PIND7)		// Secondary SPI SCK line
+//#define SPI2_MISO		(1<<PIND6)		// Secondary SPI SDO line
+//#define SPI2_MOSI		(1<<PIND5)		// Secondary SPI SDI line
+//#define SPI2_SS		(1<<PIND4)		// Secondary SPI CSN slave select
+
 // Atmega328P data direction defines: 0=input pin, 1=output pin
 // These defines therefore only specify output pins
 
 #define PORTB_DIR	(SPI_MISO)			// setup for on-board SPI to work
 #define PORTC_DIR	(0)					// no output bits on C
-#define PORTD_DIR	(LED_PIN | PWM_OUTB)// LED and PWM out
+#define PORTD_DIR	(LED_PIN | PWM_OUTB)// set LED and PWM bits as outputs
 
-// Device configiuration and communication registers
+// Device configuration and communication registers
 
 // enumerations for the device configuration array
 enum deviceRegisters {
@@ -232,22 +239,81 @@ enum deviceRegisters {
 #define device_pwm_cuty_cycle device_array[DEVICE_PWM_DUTY_CYCLE]
 
 
+/**** Data structures ****/
+// I prefer these to be static in the main file itself but the scope needs to 
+// be made global to allow the report.c functions to get at the variables
+
+struct DeviceStruct {					// hardware devices that are part of the chip
+	uint8_t tick_flag;			// true = the timer interrupt fired
+	uint8_t tick_100ms_count;	// 100ms down counter
+	uint8_t tick_1sec_count;	// 1 second down counter
+	double pwm_freq;			// save it for stopping and starting PWM
+	uint8_t array[DEVICE_ADDRESS_MAX]; // byte array for Kinen communications
+};
+typedef struct DeviceStruct Device;
+
+struct HeaterStruct {
+	uint8_t state;				// heater state
+	uint8_t code;				// heater code (more information about heater state)
+	uint8_t led_toggler;
+	int8_t readout;
+	uint8_t regulation_count;	// number of successive readings before heater is declared in regulation
+	double temperature;			// current heater temperature
+	double setpoint;			// set point for regulation
+	double regulation_timer;	// time taken so far to get out of ambinet and to to regulation (seconds)
+	double ambient_timeout;		// timeout beyond which regulation has failed (seconds)
+	double regulation_timeout;	// timeout beyond which regulation has failed (seconds)
+	double ambient_temperature;	// temperature below which it's ambient temperature (heater failed)
+	double overheat_temperature;// overheat temperature (cutoff temperature)
+};
+typedef struct HeaterStruct Heater;
+
+struct PIDstruct {				// PID controller itself
+	uint8_t state;				// PID state (actually very simple)
+	uint8_t code;				// PID code (more information about PID state)
+	double output;				// also used for anti-windup on integral term
+	double output_max;			// saturation filter max
+	double output_min;			// saturation filter min
+	double error;				// current error term
+	double prev_error;			// error term from previous pass
+	double integral;			// integral term
+	double derivative;			// derivative term
+	double dt;					// pid time constant
+	double Kp;					// proportional gain
+	double Ki;					// integral gain 
+	double Kd;					// derivative gain
+	// for test only
+	double temperature;			// current PID temperature
+	double setpoint;			// temperature set point
+};
+typedef struct PIDstruct PID;
+
+struct SensorStruct {
+	uint8_t state;				// sensor state
+	uint8_t code;				// sensor return code (more information about state)
+	uint8_t sample_idx;			// index into sample array
+	double temperature;			// high confidence temperature reading
+	double std_dev;				// standard deviation of sample array
+	double sample_variance_max;	// sample deviation above which to reject a sample
+	double reading_variance_max;// standard deviation to reject the entire reading
+	double disconnect_temperature;	// bogus temperature indicates thermocouple is disconnected
+	double no_power_temperature;	// bogus temperature indicates no power to thermocouple amplifier
+	double sample[SENSOR_SAMPLES];	// array of sensor samples in a reading
+	double test;
+};
+typedef struct SensorStruct Sensor;
+
+// structure allocations
+Device device;					// Device is always a singleton (there is only one device)
+Heater heater;					// allocate one heater...
+PID pid;						// ...with one PID channel...
+Sensor sensor;					// ...and one sensor channel
+
 #ifdef __UNIT_TEST_TC
 void device_unit_tests(void);
 #define	UNIT_TESTS device_unit_tests();
 #else
 #define	UNIT_TESTS
 #endif // __UNIT_TEST_TC
-
-
-/**** TMC262 specific stuff from here on out ****/
-
-/* Used by tmc262 driver
-#define SPI2_PORT 	PORTD		// Secondary SPI is a bit banger 
-#define SPI2_CLK	(1<<PIND7)	// Secondary SPI SCK line
-#define SPI2_MISO	(1<<PIND6)	// Secondary SPI SDO line
-#define SPI2_MOSI	(1<<PIND5)	// Secondary SPI SDI line
-#define SPI2_SS		(1<<PIND4)	// Secondary SPI CSN slave select
-*/
 
 #endif

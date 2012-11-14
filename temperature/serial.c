@@ -50,7 +50,7 @@ void serial_init(long baud)
 
 void serial_write(uint8_t data) {
 	uint8_t next_head = tx_buffer_head + 1;	// Calculate next head
-	if (next_head == TX_BUFFER_SIZE) { 
+	if (next_head == TX_BUFFER_SIZE) {
 		next_head = 0; 
 	}
 	// Enable Data Register Empty Interrupt to make sure tx-streaming is running

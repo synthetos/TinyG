@@ -40,7 +40,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 LIBS = -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = tinyg_tc.o kinen_core.o kinen_slave_328p.o util.o serial.o print.o 
+OBJECTS = tinyg_tc.o kinen_core.o kinen_slave_328p.o util.o serial.o print.o report.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -65,6 +65,9 @@ serial.o: ../serial.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 print.o: ../print.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+report.o: ../report.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link
