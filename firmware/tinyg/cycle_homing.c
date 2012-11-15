@@ -38,8 +38,8 @@
 #include "gpio.h"
 
 /**** NOTE: global prototypes and other .h info is located in canonical_machine.h ****/
-
 static uint8_t _homing_axis_start(int8_t axis);
+static uint8_t _homing_axis_initial_backoff(int8_t axis);
 static uint8_t _homing_axis_search(int8_t axis);
 static uint8_t _homing_axis_latch_backoff(int8_t axis);
 static uint8_t _homing_axis_latch(int8_t axis);
@@ -181,12 +181,14 @@ static uint8_t _homing_axis_start(int8_t axis)
 	if ((cfg.a[axis].search_velocity == 0) || (cfg.a[axis].travel_max == 0)) {
 		return (TG_GCODE_INPUT_ERROR);				// requested axis can't be homed
 	}
+
 	hm.axis = axis;
 	hm.search_velocity = fabs(cfg.a[axis].search_velocity); // search velocity is always positive
 	hm.latch_velocity = fabs(cfg.a[axis].latch_velocity); 	// and so is latch velocity
 //	hm.jerk_saved = cfg.a[axis].jerk_max;					// per-axis save
 
 	// if moving to a MIN switch...
+    int axis_switch = axis;
 	if (cfg.a[axis].search_velocity < 0) {					// search velocity is negative
 		hm.search_travel = -cfg.a[axis].travel_max;			// make search travel negative
 		hm.latch_backoff = cfg.a[axis].latch_backoff;		// backoffs move opposite of search
@@ -195,25 +197,38 @@ static uint8_t _homing_axis_start(int8_t axis)
 		hm.search_travel = cfg.a[axis].travel_max;			// make search travel positive
 		hm.latch_backoff = -cfg.a[axis].latch_backoff;		// backoffs move opposite of search
 		hm.zero_backoff = -cfg.a[axis].zero_backoff;
+        axis_switch = axis + SW_OFFSET;                     // check the max switch for backoffs
 	}
+
+    // if homing is disabled for an axis (switch mode == 0) just set the axis position to zero
+    if( cfg.a[axis].switch_mode == SW_MODE_DISABLED )
+        return (_set_hm_func(_homing_axis_set_zero));
 
 	// ---> For now all axes are single - no dual axis detection or invocation
 	// This is where you have to detect and handle dual axes.
 
 	// Handle an initial switch closure by backing off the switch
 	// (NOTE: this gets more complicated if switch pins are shared)
+    gpio_clear_switches();
+    sw.lockout_count = 0;
+    
 	gpio_read_switches();				// sets gp.sw_flags
-	if (gpio_get_switch(axis) == true) {// test if the MIN switch for the axis is thrown
-		_homing_axis_move(axis, hm.latch_backoff, hm.latch_velocity);
-	}
-	gpio_clear_switches();
-	return (_set_hm_func(_homing_axis_search));
+	if (gpio_get_switch(axis_switch) == true) // test if the MIN/MAX switch for the axis is thrown
+		return (_set_hm_func(_homing_axis_initial_backoff));
+    else    
+        return (_set_hm_func(_homing_axis_search));
+}
+
+static uint8_t _homing_axis_initial_backoff(int8_t axis)
+{
+    _homing_axis_move(axis, hm.latch_backoff, hm.latch_velocity);
+    return (_set_hm_func(_homing_axis_search));
 }
 
 static uint8_t _homing_axis_search(int8_t axis)
 {
 	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
-	return (_set_hm_func(_homing_axis_latch_backoff));
+    return (_set_hm_func(_homing_axis_latch_backoff));
 }
 
 static uint8_t _homing_axis_latch_backoff(int8_t axis)
@@ -224,7 +239,7 @@ static uint8_t _homing_axis_latch_backoff(int8_t axis)
 
 static uint8_t _homing_axis_latch(int8_t axis)
 {
-	_homing_axis_move(axis, -2*hm.latch_backoff, hm.latch_velocity);
+	_homing_axis_move(axis, -2*hm.latch_backoff, hm.latch_velocity);    
 	return (_set_hm_func(_homing_axis_zero_backoff)); 
 }
 
