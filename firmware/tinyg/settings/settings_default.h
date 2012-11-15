@@ -57,7 +57,8 @@
 #define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_ENABLE_ECHO				true
 #define COM_ENABLE_XON				true
-#define COM_COMMUNICATIONS_MODE		TG_JSON_MODE	// or TG_TEXT_MODE
+#define COM_ENABLE_QR				false
+#define COM_COMMUNICATIONS_MODE		TG_TEXT_MODE	// or TG_TEXT_MODE
 
 //#define ENABLE_ACCELERATION 1			// *** NOTE: this feature is disabled in 338.11 - always equal to 1 
 
