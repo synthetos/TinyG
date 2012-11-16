@@ -25,7 +25,7 @@
 #ifndef serial_h
 #define serial_h
 
-#define BAUD_RATE 38400
+#define BAUD_RATE 9600
 #define RX_BUFFER_SIZE 256
 #define TX_BUFFER_SIZE 256
 #define SERIAL_NO_DATA 0xFF

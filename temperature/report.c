@@ -33,7 +33,7 @@ void rpt_initialized()
 void rpt_heater_readout()
 {
 	if (--heater.readout < 0) {
-		heater.readout = 10;
+		heater.readout = 5;
 		printPgmString(PSTR("Temp: ")); 
 		printFloat(heater.temperature);
 		printPgmString(PSTR("  PID: ")); 

@@ -36,8 +36,8 @@
 
 static void _controller(void);
 static double _sensor_sample(uint8_t adc_channel);
-static void _pwm_bit_hi(void);
-static void _pwm_bit_lo(void);
+//static void _pwm_bit_hi(void);
+//static void _pwm_bit_lo(void);
 
 // Had to move the struct definitions and declarations to .h file for reporting purposes
 
@@ -53,26 +53,14 @@ int main(void)
 	kinen_init();				// do this first
 	device_init();				// handles all the low-level device peripheral inits
 
-/* test code to debug FET hardware. Must disable pwm_init() in device_init();
-	while (true) { 
-		_pwm_bit_hi(); 
-		_pwm_bit_hi(); 
-		_pwm_bit_hi(); 
-		_pwm_bit_hi(); 
-		_pwm_bit_hi(); 
-
-		_pwm_bit_lo(); 
-		_pwm_bit_lo(); 
-		_pwm_bit_lo(); 
-		_pwm_bit_lo(); 
-		_pwm_bit_lo(); 
-	}
-*/
 	serial_init(BAUD_RATE);
+
 	heater_init();				// setup the heater module and subordinate functions
 	sei(); 						// enable interrupts
 
 	UNIT_TESTS;					// uncomment __UNIT_TEST_TC to enable unit tests
+
+//	while (true) { printPgmString(PSTR("Test..."));}
 
 	heater_on(100);				// ++++ turn heater on for testing
 	rpt_initialized();			// send initalization string
@@ -93,9 +81,8 @@ void device_init(void)
 	DDRD = PORTD_DIR;
 
 	tick_init();
-	pwm_init();
 	adc_init();
-
+	pwm_init();
 	led_off();					// put off the red light [~Sting, 1978]
 }
 
@@ -104,15 +91,8 @@ void device_init(void)
  * _pwm_bit_lo()
  */
 
-void _pwm_bit_hi(void) 
-{
-	PWM_PORT |= PWM_OUTB;
-}
-
-void _pwm_bit_lo(void) 
-{
-	PWM_PORT &= ~(PWM_OUTB);
-}
+//void _pwm_bit_hi(void) { PWM_PORT |= PWM_OUTB;}
+//void _pwm_bit_lo(void) { PWM_PORT &= ~(PWM_OUTB);}
 
 /*
  * Dispatch loop

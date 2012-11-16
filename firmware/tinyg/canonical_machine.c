@@ -79,6 +79,7 @@ uint8_t cm_get_machine_state() { return cm.machine_state;}
 uint8_t cm_get_cycle_state() { return cm.cycle_state;}
 uint8_t cm_get_motion_state() { return cm.motion_state;}
 uint8_t cm_get_hold_state() { return cm.hold_state;}
+uint8_t cm_get_homing_state() { return cm.homing_state;}
 
 // get parameter from gm struct
 uint8_t cm_get_motion_mode() { return gm.motion_mode;}

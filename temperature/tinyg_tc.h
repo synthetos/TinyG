@@ -109,13 +109,13 @@ enum tcHeaterCode {
 #define PID_MIN_OUTPUT 0				// saturation filter min PWM percent
 
 										// starting values from example code
-//#define PID_Kp 0.1					// proportional
-//#define PID_Ki 0.005					// integral
-//#define PID_Kd 0.01					// derivative
+//#define PID_Kp 0.1					// proportional gain term
+//#define PID_Ki 0.005					// integral gain term
+//#define PID_Kd 0.01					// derivative gain term
 
-#define PID_Kp 0.2						// proportional
-#define PID_Ki 0.005					// integral
-#define PID_Kd 0.01						// derivative
+#define PID_Kp 0.5						// proportional gain term
+#define PID_Ki 0.001					// integral gain term
+#define PID_Kd 0.01						// derivative gain term
 
 enum tcPIDState {						// PID state machine
 	PID_OFF = 0,						// PID is off

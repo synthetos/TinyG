@@ -180,6 +180,7 @@ static uint8_t _get_macs(cmdObj *cmd);	// get raw machine state as value and str
 static uint8_t _get_cycs(cmdObj *cmd);	// get raw cycle state as value and string
 static uint8_t _get_mots(cmdObj *cmd);	// get raw motion state as value and string
 static uint8_t _get_hold(cmdObj *cmd);	// get raw hold state as value and string
+static uint8_t _get_home(cmdObj *cmd);	// get raw homing state as value and string
 static uint8_t _get_unit(cmdObj *cmd);	// (all these in this list are similar)
 static uint8_t _get_coor(cmdObj *cmd);
 static uint8_t _get_momo(cmdObj *cmd);
@@ -273,6 +274,10 @@ static const char msg_hold3[] PROGMEM = "Decel";
 static const char msg_hold4[] PROGMEM = "Hold";
 static PGM_P const msg_hold[] PROGMEM = { msg_hold0, msg_hold1, msg_hold2, msg_hold3, msg_hold4 };
 
+static const char msg_home0[] PROGMEM = "Not Homed";
+static const char msg_home1[] PROGMEM = "Homed";
+static PGM_P const msg_home[] PROGMEM = { msg_home0, msg_home1 };
+
 static const char msg_g53[] PROGMEM = "G53 - machine coordinate system";
 static const char msg_g54[] PROGMEM = "G54 - coordinate system 1";
 static const char msg_g55[] PROGMEM = "G55 - coordinate system 2";
@@ -356,6 +361,7 @@ static const char str_macs[] PROGMEM = "macs,macs,Raw machine state:   %s\n"; //
 static const char str_cycs[] PROGMEM = "cycs,cycs,Cycle state:         %s\n";
 static const char str_mots[] PROGMEM = "mots,mots,Motion state:        %s\n";
 static const char str_hold[] PROGMEM = "hold,hold,Feedhold state:      %s\n";
+static const char str_home[] PROGMEM = "home,home,Homing state:        %s\n";
 static const char str_unit[] PROGMEM = "unit,unit,Units:               %s\n"; // units mode as ASCII string
 static const char str_coor[] PROGMEM = "coor,coor,Coordinate system:   %s\n";
 static const char str_momo[] PROGMEM = "momo,momo,Motion mode:         %s\n";
@@ -638,6 +644,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_cycs,_print_str, _get_cycs,_set_nul, (double *)&tg.null, 0 },	// cycle state
 	{ str_mots,_print_str, _get_mots,_set_nul, (double *)&tg.null, 0 },	// motion state
 	{ str_hold,_print_str, _get_hold,_set_nul, (double *)&tg.null, 0 },	// feedhold state
+	{ str_home,_print_str, _get_home,_set_nul, (double *)&tg.null, 0 },	// homing state
 	{ str_vel, _print_lin, _get_vel, _set_nul, (double *)&tg.null, 0 },	// current velocity
 	{ str_unit,_print_str, _get_unit,_set_nul, (double *)&tg.null, 0 },	// units mode
 	{ str_coor,_print_str, _get_coor,_set_nul, (double *)&tg.null, 0 },	// coordinate system
@@ -995,6 +1002,7 @@ static uint8_t _get_pb(cmdObj *cmd)
  * _get_cycs() - get raw cycle state as value and string
  * _get_mots() - get raw motion state as value and string
  * _get_hold() - get raw hold state as value and string
+ * _get_home() - get raw homing state as value and string
  * _get_unit() - get units mode as string
  * _get_coor() - get goodinate system as string
  * _get_momo() - get motion mode as string
@@ -1050,6 +1058,11 @@ static uint8_t _get_mots(cmdObj *cmd)
 static uint8_t _get_hold(cmdObj *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_hold, cm_get_hold_state()));
+}
+
+static uint8_t _get_home(cmdObj *cmd)
+{
+	return(_get_msg_helper(cmd, (prog_char_ptr)msg_home, cm_get_homing_state()));
 }
 
 static uint8_t _get_unit(cmdObj *cmd)
