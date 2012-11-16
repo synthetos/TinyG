@@ -1816,8 +1816,7 @@ void cmd_print_list(uint8_t status, uint8_t textmode)
 		sprintf(cmd->string, "%d,%d,%d,%04d",TINYG_COMM_PROTOCOL_REV, status, xio_get_usb_rx_free(), HASHMASK);
 		uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
 		while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
-		sprintf(tg.out_buf + strcount + 1, "%04d", compute_checksum(tg.out_buf, strcount));
-		tg.out_buf[strcount + HASHLENGTH+1] = ']';	// stomp the nul termination, recover the brace
+		sprintf(tg.out_buf + strcount + 1, "%d]}\n", compute_checksum(tg.out_buf, strcount));
 		fprintf(stderr, "%s", tg.out_buf);
 		} else {
 			switch (textmode) {
