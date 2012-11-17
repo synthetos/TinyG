@@ -36,7 +36,7 @@
 #include "canonical_machine.h"
 #include "kinematics.h"
 
-//static uint8_t _cartesian_kinematics(double travel[], double joint[], double microseconds);
+//static void _inverse_kinematics(double travel[], double joint[], double microseconds);
 
 /*
  * ik_kinematics() - wrapper routine for inverse kinematics
@@ -58,9 +58,8 @@ uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
 	uint8_t i;
 	double joint[AXES];
 
-	// inverse kinematics --> insert kinematics transformations here
-//	_cartesian_kinematics(travel, joint, microseconds);
-	memcpy(joint, travel, sizeof(double)*AXES);	//...or just do this for cartesian machines
+//	_inverse_kinematics(travel, joint, microseconds);// you can insert inverse kinematics transformations here
+	memcpy(joint, travel, sizeof(double)*AXES);		 //...or just do a memcopy for cartesian machines
 
 	// Map motors to axes and convert length units to steps
 	// Most of the conversion math has already been done in steps_per_unit
@@ -80,17 +79,22 @@ uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
 }
 
 /*
- * _cartesian_kinematics() - inverse kinematics for cartesian machines
+ * _inverse_kinematics() - inverse kinematics - example is for a cartesian machine
  *
- *	Provides inverse kinematics for cartesian machines. Which is none.
+ *	You can glue in inverse kinematics here, but be aware of time budget constrants.
+ *	This function is run during the _exec() portion of the cycle and will therefore
+ *	be run once per interpolation segment. The total time for the segment load, 
+ *	including the inverse kinematics transformation cannot exceed the segment time, 
+ *	and ideally should be no more than 25-50% of the segment time. Currently segments 
+ *	run avery 5 ms, but this might be lowered. To profile this time look at the 
+ *	time it takes to complete the mp_exec_move() function.
  */
 /*
-static uint8_t _cartesian_kinematics(double travel[], double joint[], double microseconds)
+static void _inverse_kinematics(double travel[], double joint[], double microseconds)
 {
 	for (uint8_t i=0; i<AXES; i++) {
 		joint[i] = travel[i];
 	}	
-	return (TG_OK);
 }
 */
 

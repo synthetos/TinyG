@@ -646,7 +646,7 @@ uint8_t st_prep_line(double steps[], double microseconds)
 	return (TG_OK);
 }
 // FOOTNOTE: This expression was previously computed as below but floating 
-// point rounding errors caused subtle and nasty position errors:
+// point rounding errors caused subtle and nasty accumulated position errors:
 //	sp.timer_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
 
 /* 
