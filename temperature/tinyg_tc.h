@@ -17,7 +17,7 @@
 #ifndef tinyg_tc_h
 #define tinyg_tc_h
 
-#define BUILD_NUMBER 001.04		// for keeping track of git revisions
+#define BUILD_NUMBER 001.05		// for keeping track of git revisions
 
 // Device function prototypes
 
@@ -58,6 +58,7 @@ uint8_t pwm_set_duty(double duty);
 
 void tick_init(void);
 uint8_t tick_callback(void);
+void tick_1ms(void);
 void tick_10ms(void);
 void tick_100ms(void);
 void tick_1sec(void);
@@ -117,8 +118,8 @@ enum tcHeaterCode {
 //#define PID_Kd 0.01					// derivative gain term
 
 #define PID_Kp 4.00						// proportional gain term
-#define PID_Ki 0.1 					// integral gain term
-#define PID_Kd 0.0						// derivative gain term
+#define PID_Ki 0.1 						// integral gain term
+#define PID_Kd 0.01					// derivative gain term
 
 enum tcPIDState {						// PID state machine
 	PID_OFF = 0,						// PID is off
@@ -127,8 +128,8 @@ enum tcPIDState {						// PID state machine
 
 /**** Sensor default parameters ***/
 
-#define SENSOR_SAMPLES 9				// number of sensor samples to take for each reading period
-#define SENSOR_SAMPLE_VARIANCE_MAX 1.25	// number of standard deviations from mean to reject a sample
+#define SENSOR_SAMPLES 20				// number of sensor samples to take for each reading period
+#define SENSOR_SAMPLE_VARIANCE_MAX 2.00	// number of standard deviations from mean to reject a sample
 #define SENSOR_READING_VARIANCE_MAX 20	// reject entire reading if std_dev exceeds this amount
 #define SENSOR_NO_POWER_TEMPERATURE -2	// detect thermocouple amplifier disconnected if readings stay below this temp
 #define SENSOR_DISCONNECTED_TEMPERATURE 400	// sensor is DISCONNECTED if over this temp (works w/ both 5v and 3v refs)
@@ -189,8 +190,9 @@ enum tcSensorCode {						// success and failure codes
 #define ADC_VREF 		5.00			// change this if the circuit changes. 3v would be about optimal
 
 #define TICK_TIMER		TCNT0			// Tickclock timer
-#define TICK_10MS_COUNT 78				// gets 8 Mhz/1024 close to 100 Hz.
-#define TICK_TCCRxA		TCCR0A			// map the registers into the selected timer
+#define TICK_MODE		0x02			// CTC mode 		(TCCR0A value)
+#define TICK_PRESCALER	0x03			// 64x prescaler  (TCCR0B value)
+#define TICK_COUNT		125				// gets 8 Mhz/64 to 1000 Hz.
 
 #define LED_PORT		PORTD			// LED port
 #define LED_PIN			(1<<PIND2)		// LED indicator
@@ -248,6 +250,8 @@ enum deviceRegisters {
 
 struct DeviceStruct {					// hardware devices that are part of the chip
 	uint8_t tick_flag;			// true = the timer interrupt fired
+//	uint8_t tick_count;			// timer count reload value
+	uint8_t tick_10ms_count;	// 10ms down counter
 	uint8_t tick_100ms_count;	// 100ms down counter
 	uint8_t tick_1sec_count;	// 1 second down counter
 	double pwm_freq;			// save it for stopping and starting PWM
@@ -259,7 +263,6 @@ struct HeaterStruct {
 	uint8_t state;				// heater state
 	uint8_t code;				// heater code (more information about heater state)
 	uint8_t led_toggler;
-//	int8_t readout;
 	uint8_t bad_reading_count;	// number of successive bad readings before declaring an error
 	uint8_t regulation_count;	// number of successive readings before heater is declared in regulation
 	double temperature;			// current heater temperature

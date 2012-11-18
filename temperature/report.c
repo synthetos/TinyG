@@ -50,10 +50,10 @@ void rpt_initialized()
 void rpt_readout()
 {
 	printPgmString(PSTR("Temp: ")); printFloat(sensor.temperature);
+//	printPgmString(PSTR(" s[0]: ")); printFloat(sensor.sample[0]);				//++++++
 	printPgmString(PSTR(" StdDev: ")); printFloat(sensor.std_dev);				//++++++
-	printPgmString(PSTR(" s[0]: ")); printFloat(sensor.sample[0]);				//++++++
+	printPgmString(PSTR(" Error: ")); printFloat(pid.error);				//++++++
 	printPgmString(PSTR(" PWM: ")); printFloat(pid.output);
-//	printPgmString(PSTR(" Error: ")); printFloat(pid.error);				//++++++
 	printPgmString(PSTR("  "));
 	rpt_sensor();
 }

@@ -330,13 +330,7 @@ void sensor_callback()
 
 	// get a sample and return if still in the reading period
 	sensor.sample[sensor.sample_idx] = _sensor_sample(ADC_CHANNEL);
-
-//	printFloat(sensor.sample[sensor.sample_idx]); //++++++++++++++++++++++++
-//	printPgmString(PSTR("\n")); 
-
-	if ((++sensor.sample_idx) < SENSOR_SAMPLES) { 
-		return;
-	}
+	if ((++sensor.sample_idx) < SENSOR_SAMPLES) { return; }
 
 	// process the array to clean up samples
 	double mean;
@@ -438,7 +432,18 @@ uint16_t adc_read()
 		ADCSRA |= ADC_START_CONVERSION; // start the conversion
 		while (ADCSRA && (1<<ADIF) == 0);// wait about 100 uSec
 		ADCSRA |= (1<<ADIF);			// clear the conversion flag
-	} while (ADC == 0);					// try it again if the reading was zero (HACK)
+	} while (ADC == 0);
+	return (ADC);
+
+/*
+	for (uint8_t i=0; i<20; i++) {
+		ADCSRA |= ADC_START_CONVERSION; // start the conversion
+		while (ADCSRA && (1<<ADIF) == 0);// wait about 100 uSec
+		ADCSRA |= (1<<ADIF);			// clear the conversion flag
+
+		if (ADC > 0) break;
+	}
+*/
 	return (ADC);
 }
 
@@ -530,17 +535,17 @@ uint8_t pwm_set_duty(double duty)
 
 void tick_init(void)
 {
-	TCCR0A = 0x00;					// normal mode, no compare values
-	TCCR0B = 0x05;					// normal mode, internal clock / 1024 ~= 7800 Hz
-	TCNT0 = (256 - TICK_10MS_COUNT);// set timer for approx 10 ms overflow
-	TIMSK0 = (1<<TOIE0);			// enable overflow interrupts
+	TCCR0A = TICK_MODE;				// mode_settings
+	TCCR0B = TICK_PRESCALER;		// 1024 ~= 7800 Hz
+	OCR0A = TICK_COUNT;
+	TIMSK0 = (1<<OCIE0A);			// enable compare interrupts
+	device.tick_10ms_count = 10;
 	device.tick_100ms_count = 10;
 	device.tick_1sec_count = 10;	
 }
 
-ISR(TIMER0_OVF_vect)
+ISR(TIMER0_COMPA_vect)
 {
-	TCNT0 = (256 - TICK_10MS_COUNT);// reset timer for approx 10 ms overflow
 	device.tick_flag = true;
 }
 
@@ -549,6 +554,10 @@ uint8_t tick_callback(void)
 	if (device.tick_flag == false) { return (SC_NOOP);}
 
 	device.tick_flag = false;
+	tick_1ms();
+
+	if (--device.tick_10ms_count != 0) { return (SC_OK);}
+	device.tick_10ms_count = 10;
 	tick_10ms();
 
 	if (--device.tick_100ms_count != 0) { return (SC_OK);}
@@ -562,20 +571,24 @@ uint8_t tick_callback(void)
 	return (SC_OK);
 }
 
-void tick_10ms(void)
+void tick_1ms(void)				// 1ms callout
 {
-	sensor_callback();			// run the temperature sensor every 10 ms.
+	sensor_callback();
 }
 
-void tick_100ms(void)
+void tick_10ms(void)			// 10 ms callout
 {
-	heater_callback();			// run the heater controller every 100 ms.
+//	sensor_callback();
 }
 
-void tick_1sec(void)
+void tick_100ms(void)			// 100ms callout
+{
+	heater_callback();
+}
+
+void tick_1sec(void)			// 1 second callout
 {
 //	led_toggle();
-	return;
 }
 
 /**** LED Functions ****
