@@ -52,17 +52,13 @@ int main(void)
 	cli();						// initializations
 	kinen_init();				// do this first
 	device_init();				// handles all the low-level device peripheral inits
-
 	serial_init(BAUD_RATE);
-
 	heater_init();				// setup the heater module and subordinate functions
 	sei(); 						// enable interrupts
 
 	UNIT_TESTS;					// uncomment __UNIT_TEST_TC to enable unit tests
 
-//	while (true) { printPgmString(PSTR("Test..."));}
-
-	heater_on(100);				// ++++ turn heater on for testing
+	heater_on(140);				// turn heater on for testing
 	rpt_initialized();			// send initalization string
 
 	while (true) {				// go to the controller loop and never return
@@ -80,9 +76,9 @@ void device_init(void)
 	DDRC = PORTC_DIR;
 	DDRD = PORTD_DIR;
 
-	tick_init();
 	adc_init();
 	pwm_init();
+	tick_init();
 	led_off();					// put off the red light [~Sting, 1978]
 }
 
@@ -122,14 +118,14 @@ static void _controller()
 void heater_init()
 { 
 	// initialize heater, start PID and PWM
+	// note: PWM and ADC are initialized as part of the device init
 	memset(&heater, 0, sizeof(Heater));
 	heater.ambient_timeout = HEATER_AMBIENT_TIMEOUT;
 	heater.regulation_timeout = HEATER_REGULATION_TIMEOUT;
 	heater.ambient_temperature = HEATER_AMBIENT_TEMPERATURE;
 	heater.overheat_temperature = HEATER_OVERHEAT_TEMPERATURE;
-
-	// initialize lower-level functions used by heater
-	// note: PWM and ADC are initialized as part of the device init
+	heater.bad_reading_count = HEATER_BAD_READING_COUNT;
+	heater.regulation_count = HEATER_REGULATION_COUNT;
 	sensor_init();					// setup the temperature sensor module
 	pid_init();
 }
@@ -146,7 +142,6 @@ void heater_on(double setpoint)
 	pid_reset();
 	pwm_on(PWM_FREQUENCY, 0);		// duty cycle will be set by PID loop
 	heater.setpoint = setpoint;
-	heater.regulation_count = HEATER_REGULATION_COUNT;
 	heater.state = HEATER_HEATING;
 }
 
@@ -164,8 +159,10 @@ void heater_callback()
 	// catch the no-op cases
 	if ((heater.state == HEATER_OFF) || (heater.state == HEATER_SHUTDOWN)) { return;}
 
+	rpt_readout();
+
 	// get current temp or an error if there is no temperature reading
-	if ((heater.temperature = sensor_get_temperature()) < ABSOLUTE_ZERO) { 
+	if ((heater.temperature = sensor_get_temperature()) < ABSOLUTE_ZERO) {
 		return;
 	}
 	if (heater.temperature > heater.overheat_temperature) {
@@ -177,7 +174,7 @@ void heater_callback()
 	// calculate the next PWM level via the PID
 	double duty_cycle = pid_calculate(heater.setpoint, heater.temperature);
 	pwm_set_duty(duty_cycle);
-	rpt_heater_readout();
+
 
 	// handle HEATER exceptions
 	if (heater.state == HEATER_HEATING) {
@@ -296,6 +293,7 @@ void sensor_off()
 void sensor_start_reading() 
 { 
 	sensor.sample_idx = 0;
+//	adc_read(ADC_CHANNEL);
 	sensor.code = SENSOR_TAKING_READING;
 }
 
@@ -332,6 +330,10 @@ void sensor_callback()
 
 	// get a sample and return if still in the reading period
 	sensor.sample[sensor.sample_idx] = _sensor_sample(ADC_CHANNEL);
+
+//	printFloat(sensor.sample[sensor.sample_idx]); //++++++++++++++++++++++++
+//	printPgmString(PSTR("\n")); 
+
 	if ((++sensor.sample_idx) < SENSOR_SAMPLES) { 
 		return;
 	}
@@ -341,7 +343,7 @@ void sensor_callback()
 	sensor.std_dev = std_dev(sensor.sample, SENSOR_SAMPLES, &mean);
 	if (sensor.std_dev > sensor.reading_variance_max) {
 		sensor.state = SENSOR_ERROR;
-		sensor.code = SENSOR_BAD_READINGS;
+		sensor.code = SENSOR_ERROR_BAD_READINGS;
 		return;
 	}
 
@@ -354,19 +356,17 @@ void sensor_callback()
 			count++;
 		}
 	}
-	sensor.temperature /= count; 
-	sensor.code = SENSOR_IDLE;			// we are done. Flip it back to idle
+	sensor.temperature /= count; 		// calculate mean temp w/o the outliers
 	sensor.state = SENSOR_HAS_DATA;
-
-//	if (sensor.temperature <= -1) led_on();	
+	sensor.code = SENSOR_IDLE;			// we are done. Flip it back to idle
 
 	// process the exception cases
 	if (sensor.temperature > SENSOR_DISCONNECTED_TEMPERATURE) {
 		sensor.state = SENSOR_ERROR;
-		sensor.code = SENSOR_DISCONNECTED;
+		sensor.code = SENSOR_ERROR_DISCONNECTED;
 	} else if (sensor.temperature < SENSOR_NO_POWER_TEMPERATURE) {
 		sensor.state = SENSOR_ERROR;
-		sensor.code = SENSOR_NO_POWER;
+		sensor.code = SENSOR_ERROR_NO_POWER;
 	}
 }
 
@@ -422,6 +422,9 @@ void adc_init(void)
 {
 	ADMUX  = (ADC_REFS | ADC_CHANNEL);	 // setup ADC Vref and channel 0
 	ADCSRA = (ADC_ENABLE | ADC_PRESCALE);// Enable ADC (bit 7) & set prescaler
+
+//	ADMUX &= 0xF0;						// clobber the channel
+//	ADMUX |= 0x0F & ADC_CHANNEL;		// set the channel
 }
 
 uint16_t adc_read(uint8_t channel)
@@ -429,6 +432,7 @@ uint16_t adc_read(uint8_t channel)
 	ADMUX &= 0xF0;						// clobber the channel
 	ADMUX |= 0x0F & channel;			// set the channel
 
+	while (ADCSRA && (1<<ADIF) == 0);	// wait if conversion is in progress
 	ADCSRA |= ADC_START_CONVERSION;		// start the conversion
 	while (ADCSRA && (1<<ADIF) == 0);	// wait about 100 uSec
 	ADCSRA |= (1<<ADIF);				// clear the conversion flag
@@ -523,25 +527,25 @@ uint8_t pwm_set_duty(double duty)
 
 void tick_init(void)
 {
-	TCCR0A = 0x00;				// normal mode, no compare values
-	TCCR0B = 0x05;				// normal mode, internal clock / 1024 ~= 7800 Hz
+	TCCR0A = 0x00;					// normal mode, no compare values
+	TCCR0B = 0x05;					// normal mode, internal clock / 1024 ~= 7800 Hz
 	TCNT0 = (256 - TICK_10MS_COUNT);// set timer for approx 10 ms overflow
-	TIMSK0 = (1<<TOIE0);		// enable overflow interrupts
+	TIMSK0 = (1<<TOIE0);			// enable overflow interrupts
 	device.tick_100ms_count = 10;
 	device.tick_1sec_count = 10;	
 }
 
 ISR(TIMER0_OVF_vect)
 {
-	TCNT0 = (256 - TICK_10MS_COUNT);	// reset timer for approx 10 ms overflow
+	TCNT0 = (256 - TICK_10MS_COUNT);// reset timer for approx 10 ms overflow
 	device.tick_flag = true;
 }
 
 uint8_t tick_callback(void)
 {
 	if (device.tick_flag == false) { return (SC_NOOP);}
-	device.tick_flag = false;
 
+	device.tick_flag = false;
 	tick_10ms();
 
 	if (--device.tick_100ms_count != 0) { return (SC_OK);}

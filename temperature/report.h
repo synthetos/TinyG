@@ -19,6 +19,8 @@
 
 void rpt_initialized(void);
 void rpt_heater_readout(void);
+void rpt_readout(void);
+void rpt_sensor(void);
 
 #endif
 

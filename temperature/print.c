@@ -111,38 +111,38 @@ void printInteger(uint32_t n)
 // techniques are actually just slightly slower. Found this out the hard way.
 void printFloat(float n)
 {
-  if (n < 0) {
-    serial_write('-');
-    n = -n;
-  }
+	if (n < 0) {
+		serial_write('-');
+		n = -n;
+	}
 
-  uint8_t decimals = DECIMAL_PLACES;
-  while (decimals >= 2) { // Quickly convert values expected to be E0 to E-4.
-    n *= 100;
-    decimals -= 2;
-  }
-  if (decimals) { n *= 10; }
-  n += 0.5; // Add rounding factor. Ensures carryover through entire value.
+	uint8_t decimals = DECIMAL_PLACES;
+	while (decimals >= 2) { // Quickly convert values expected to be E0 to E-4.
+		n *= 100;
+		decimals -= 2;
+	}
+	if (decimals) { n *= 10; }
+	n += 0.5; // Add rounding factor. Ensures carryover through entire value.
     
-  // Generate digits backwards and store in string.
-  unsigned char buf[10]; 
-  uint8_t i = 0;
-  uint32_t a = (long)n;  
-  buf[DECIMAL_PLACES] = '.'; // Place decimal point, even if decimal places are zero.
-  while(a > 0) {
-    if (i == DECIMAL_PLACES) { i++; } // Skip decimal point location
-    buf[i++] = (a % 10) + '0'; // Get digit
-    a /= 10;
-  }
-  while (i < DECIMAL_PLACES) { 
-     buf[i++] = '0'; // Fill in zeros to decimal point for (n < 1)
-  }
-  if (i == DECIMAL_PLACES) { // Fill in leading zero, if needed.
-    i++;
-    buf[i++] = '0'; 
-  }   
-  
-  // Print the generated string.
-  for (; i > 0; i--)
-    serial_write(buf[i-1]);
+	// Generate digits backwards and store in string.
+	unsigned char buf[10]; 
+	uint8_t i = 0;
+	uint32_t a = (long)n;  
+	buf[DECIMAL_PLACES] = '.'; // Place decimal point, even if decimal places are zero.
+	while(a > 0) {
+		if (i == DECIMAL_PLACES) { i++; } // Skip decimal point location
+		buf[i++] = (a % 10) + '0'; // Get digit
+		a /= 10;
+	}
+	while (i < DECIMAL_PLACES) { 
+		buf[i++] = '0'; // Fill in zeros to decimal point for (n < 1)
+	}
+	if (i == DECIMAL_PLACES) { // Fill in leading zero, if needed.
+		i++;
+		buf[i++] = '0'; 
+	}
+
+	// Print the generated string.
+	for (; i > 0; i--)
+		serial_write(buf[i-1]);
 }

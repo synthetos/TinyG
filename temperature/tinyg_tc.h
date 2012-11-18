@@ -17,6 +17,8 @@
 #ifndef tinyg_tc_h
 #define tinyg_tc_h
 
+#define BUILD_NUMBER 001.03		// for keeping track of git revisions
+
 // Device function prototypes
 
 //#define __UNIT_TEST_TC	// uncomment to enable unit tests
@@ -84,6 +86,7 @@ void led_toggle(void);
 #define HEATER_OVERHEAT_TEMPERATURE 300	// heater is above max temperature if over this temp. Should shut down
 #define HEATER_AMBIENT_TIMEOUT 90		// time to allow heater to heat above ambinet temperature (seconds)
 #define HEATER_REGULATION_TIMEOUT 300	// time to allow heater to come to temp (seconds)
+#define HEATER_BAD_READING_COUNT 10		// number of successive bad readings before erring out
 #define HEATER_REGULATION_COUNT 10		// number of successive readings before declaring AT_TARGET
 
 enum tcHeaterState {					// heater state machine
@@ -113,9 +116,9 @@ enum tcHeaterCode {
 //#define PID_Ki 0.005					// integral gain term
 //#define PID_Kd 0.01					// derivative gain term
 
-#define PID_Kp 0.5						// proportional gain term
-#define PID_Ki 0.001					// integral gain term
-#define PID_Kd 0.01						// derivative gain term
+#define PID_Kp 4.00						// proportional gain term
+#define PID_Ki 0.1 					// integral gain term
+#define PID_Kd 0.0						// derivative gain term
 
 enum tcPIDState {						// PID state machine
 	PID_OFF = 0,						// PID is off
@@ -149,9 +152,9 @@ enum tcSensorState {					// main state machine
 enum tcSensorCode {						// success and failure codes
 	SENSOR_IDLE = 0,					// sensor is idling
 	SENSOR_TAKING_READING,				// sensor is taking samples for a reading
-	SENSOR_BAD_READINGS,				// ERROR: too many number of bad readings
-	SENSOR_DISCONNECTED,				// ERROR: thermocouple detected as disconnected
-	SENSOR_NO_POWER						// ERROR: detected lack of power to thermocouple amplifier
+	SENSOR_ERROR_BAD_READINGS,			// ERROR: too many number of bad readings
+	SENSOR_ERROR_DISCONNECTED,			// ERROR: thermocouple detected as disconnected
+	SENSOR_ERROR_NO_POWER				// ERROR: detected lack of power to thermocouple amplifier
 };
 
 /**** Lower-level device mappings and constants (for atmega328P) ****/
@@ -256,7 +259,8 @@ struct HeaterStruct {
 	uint8_t state;				// heater state
 	uint8_t code;				// heater code (more information about heater state)
 	uint8_t led_toggler;
-	int8_t readout;
+//	int8_t readout;
+	uint8_t bad_reading_count;	// number of successive bad readings before declaring an error
 	uint8_t regulation_count;	// number of successive readings before heater is declared in regulation
 	double temperature;			// current heater temperature
 	double setpoint;			// set point for regulation

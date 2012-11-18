@@ -4,6 +4,7 @@
 
   Copyright (c) 2009-2011 Simen Svale Skogsrud
   Copyright (c) 2011-2012 Sungeun K. Jeon
+  Copyright (c) 2012-2013 Alden Hart
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -105,8 +106,4 @@ ISR(USART_RX_vect)
 void serial_reset_read_buffer() 
 {
   rx_buffer_tail = rx_buffer_head;
-
-  #ifdef ENABLE_XONXOFF
-    flow_ctrl = XON_SENT;
-  #endif
 }
