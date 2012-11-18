@@ -17,7 +17,7 @@
 #ifndef tinyg_tc_h
 #define tinyg_tc_h
 
-#define BUILD_NUMBER 001.05		// for keeping track of git revisions
+#define BUILD_NUMBER 001.06		// for keeping track of git revisions
 
 // Device function prototypes
 
@@ -83,12 +83,13 @@ void led_toggle(void);
 /**** Heater default parameters ***/
 
 #define HEATER_TICK_SECONDS 0.1			// 100 ms
+#define HEATER_HYSTERESIS 10			// number of successive readings before declaring heater at-temp or out of regulation
 #define HEATER_AMBIENT_TEMPERATURE 40	// detect heater not heating if readings stay below this temp
 #define HEATER_OVERHEAT_TEMPERATURE 300	// heater is above max temperature if over this temp. Should shut down
 #define HEATER_AMBIENT_TIMEOUT 90		// time to allow heater to heat above ambinet temperature (seconds)
+#define HEATER_REGULATION_RANGE 3		// +/- degrees to consider heater in regulation
 #define HEATER_REGULATION_TIMEOUT 300	// time to allow heater to come to temp (seconds)
-#define HEATER_BAD_READING_COUNT 10		// number of successive bad readings before erring out
-#define HEATER_REGULATION_COUNT 10		// number of successive readings before declaring AT_TARGET
+#define HEATER_BAD_READING_MAX 5		// maximum successive bad readings before shutting down
 
 enum tcHeaterState {					// heater state machine
 	HEATER_OFF = 0,						// heater turned OFF or never turned on - transitions to HEATING
@@ -107,19 +108,20 @@ enum tcHeaterCode {
 
 /**** PID default parameters ***/
 
-#define PID_DT HEATER_TICK_SECONDS		// time constant for computation
-#define PID_EPSILON 0.01				// error term precision
+#define PID_DT HEATER_TICK_SECONDS		// time constant for PID computation
+#define PID_EPSILON 0.1					// error term precision
 #define PID_MAX_OUTPUT 100				// saturation filter max PWM percent
 #define PID_MIN_OUTPUT 0				// saturation filter min PWM percent
 
-										// starting values from example code
+#define PID_Kp 5.00						// proportional gain term
+#define PID_Ki 0.1 						// integral gain term
+#define PID_Kd 0.1						// derivative gain term
+#define PID_INITIAL_INTEGRAL 200		// initial integral value to speed things along
+
+// some starting values from the example code
 //#define PID_Kp 0.1					// proportional gain term
 //#define PID_Ki 0.005					// integral gain term
 //#define PID_Kd 0.01					// derivative gain term
-
-#define PID_Kp 4.00						// proportional gain term
-#define PID_Ki 0.1 						// integral gain term
-#define PID_Kd 0.01					// derivative gain term
 
 enum tcPIDState {						// PID state machine
 	PID_OFF = 0,						// PID is off
@@ -129,7 +131,7 @@ enum tcPIDState {						// PID state machine
 /**** Sensor default parameters ***/
 
 #define SENSOR_SAMPLES 20				// number of sensor samples to take for each reading period
-#define SENSOR_SAMPLE_VARIANCE_MAX 2.00	// number of standard deviations from mean to reject a sample
+#define SENSOR_SAMPLE_VARIANCE_MAX 1.1	// number of standard deviations from mean to reject a sample
 #define SENSOR_READING_VARIANCE_MAX 20	// reject entire reading if std_dev exceeds this amount
 #define SENSOR_NO_POWER_TEMPERATURE -2	// detect thermocouple amplifier disconnected if readings stay below this temp
 #define SENSOR_DISCONNECTED_TEMPERATURE 400	// sensor is DISCONNECTED if over this temp (works w/ both 5v and 3v refs)
@@ -218,7 +220,6 @@ enum deviceRegisters {
 	DEVICE_TEMP_STATE = 0,				// temperature regulation state. See TEMP_STATE enumerations
 	DEVICE_TEMP_SET_HI,					// temperature set point hi - Celcius 
 	DEVICE_TEMP_SET_LO,					// temperature set point lo - Celcius
-	DEVICE_TEMP_SET_FRACTION,			// temperature set point fractions - Celcius (you wish)
 	DEVICE_TEMP_HI,						// temperature reading hi - Celcius 
 	DEVICE_TEMP_LO,						// temperature reading lo - Celcius
 	DEVICE_TEMP_FRACTION,				// temperature reading fractions - Celcius (you wish)
@@ -234,7 +235,6 @@ enum deviceRegisters {
 #define device_temp_state device_array[DEVICE_TEMP_STATE]
 #define device_temp_set_hi device_array[DEVICE_TEMP_SET_HI]
 #define device_temp_set_lo device_array[DEVICE_TEMP_SET_LO]
-#define device_temp_set_fraction device_array[DEVICE_TEMP_SET_FRACTION]
 #define device_temp_hi device_array[DEVICE_TEMP_HI]
 #define device_temp_lo device_array[DEVICE_TEMP_LO]
 #define device_temp_fraction device_array[DEVICE_TEMP_FRACTION]
@@ -248,9 +248,8 @@ enum deviceRegisters {
 // I prefer these to be static in the main file itself but the scope needs to 
 // be made global to allow the report.c functions to get at the variables
 
-struct DeviceStruct {					// hardware devices that are part of the chip
+struct DeviceStruct {			// hardware devices that are part of the chip
 	uint8_t tick_flag;			// true = the timer interrupt fired
-//	uint8_t tick_count;			// timer count reload value
 	uint8_t tick_10ms_count;	// 10ms down counter
 	uint8_t tick_100ms_count;	// 100ms down counter
 	uint8_t tick_1sec_count;	// 1 second down counter
@@ -262,12 +261,14 @@ typedef struct DeviceStruct Device;
 struct HeaterStruct {
 	uint8_t state;				// heater state
 	uint8_t code;				// heater code (more information about heater state)
-	uint8_t led_toggler;
-	uint8_t bad_reading_count;	// number of successive bad readings before declaring an error
-	uint8_t regulation_count;	// number of successive readings before heater is declared in regulation
+	uint8_t	toggle;
+	int8_t hysteresis;			// number of successive readings in or out or regulation before changing state
+	uint8_t bad_reading_max;	// sets number of successive bad readings before declaring an error
+	uint8_t bad_reading_count;	// count of successive bad readings
 	double temperature;			// current heater temperature
 	double setpoint;			// set point for regulation
-	double regulation_timer;	// time taken so far to get out of ambinet and to to regulation (seconds)
+	double regulation_range;	// +/- range to consider heater in regulation
+	double regulation_timer;	// time taken so far in a HEATING cycle
 	double ambient_timeout;		// timeout beyond which regulation has failed (seconds)
 	double regulation_timeout;	// timeout beyond which regulation has failed (seconds)
 	double ambient_temperature;	// temperature below which it's ambient temperature (heater failed)
@@ -285,13 +286,10 @@ struct PIDstruct {				// PID controller itself
 	double prev_error;			// error term from previous pass
 	double integral;			// integral term
 	double derivative;			// derivative term
-	double dt;					// pid time constant
+//	double dt;					// pid time constant
 	double Kp;					// proportional gain
 	double Ki;					// integral gain 
 	double Kd;					// derivative gain
-	// for test only
-	double temperature;			// current PID temperature
-	double setpoint;			// temperature set point
 };
 typedef struct PIDstruct PID;
 
@@ -299,6 +297,7 @@ struct SensorStruct {
 	uint8_t state;				// sensor state
 	uint8_t code;				// sensor return code (more information about state)
 	uint8_t sample_idx;			// index into sample array
+	uint8_t samples;			// number of samples in final average
 	double temperature;			// high confidence temperature reading
 	double std_dev;				// standard deviation of sample array
 	double sample_variance_max;	// sample deviation above which to reject a sample

@@ -32,12 +32,18 @@ char msg[MSGLEN];
 
 static const char initialized[] PROGMEM = "\nDevice Initialized\n"; 
 
-static const char msg_scode0[] PROGMEM = "Idle";
-static const char msg_scode1[] PROGMEM = "Taking Reading";
-static const char msg_scode2[] PROGMEM = "Bad Reading";
-static const char msg_scode3[] PROGMEM = "Disconnected";
-static const char msg_scode4[] PROGMEM = "No Power";
-static PGM_P const msg_scode[] PROGMEM = { msg_scode0, msg_scode1, msg_scode2, msg_scode3, msg_scode4};
+static const char msg_scode0[] PROGMEM = "";
+static const char msg_scode1[] PROGMEM = "  Taking Reading";
+static const char msg_scode2[] PROGMEM = "  Bad Reading";
+static const char msg_scode3[] PROGMEM = "  Disconnected";
+static const char msg_scode4[] PROGMEM = "  No Power";
+static PGM_P const msg_scode[] PROGMEM = { msg_scode0, msg_scode1, msg_scode2, msg_scode3, msg_scode4 };
+
+static const char msg_hstate0[] PROGMEM = "  OK";
+static const char msg_hstate1[] PROGMEM = "  Shutdown";
+static const char msg_hstate2[] PROGMEM = "  Heating";
+static const char msg_hstate3[] PROGMEM = "  REGULATED";
+static PGM_P const msg_hstate[] PROGMEM = { msg_hstate0, msg_hstate1, msg_hstate2, msg_hstate3 };
 
 /*** Display routines ***/
 
@@ -49,31 +55,20 @@ void rpt_initialized()
 
 void rpt_readout()
 {
-	printPgmString(PSTR("Temp: ")); printFloat(sensor.temperature);
-//	printPgmString(PSTR(" s[0]: ")); printFloat(sensor.sample[0]);				//++++++
-	printPgmString(PSTR(" StdDev: ")); printFloat(sensor.std_dev);				//++++++
-	printPgmString(PSTR(" Error: ")); printFloat(pid.error);				//++++++
-	printPgmString(PSTR(" PWM: ")); printFloat(pid.output);
-	printPgmString(PSTR("  "));
-	rpt_sensor();
-}
+	printPgmString(PSTR("Temp:")); printFloat(sensor.temperature);
+	printPgmString(PSTR("  PWM:")); printFloat(pid.output);
+//	printPgmString(PSTR("  s[0]:")); printFloat(sensor.sample[0]);
+//	printPgmString(PSTR("  StdDev:")); printFloat(sensor.std_dev);
+//	printPgmString(PSTR("  Samples:")); printFloat(sensor.samples);
+	printPgmString(PSTR("  Err:")); printFloat(pid.error);
+	printPgmString(PSTR("  I:")); printFloat(pid.integral);
+//	printPgmString(PSTR("  D:")); printFloat(pid.derivative);
+	printPgmString(PSTR("  Hy:")); printFloat(heater.hysteresis);
 
-void rpt_heater_readout()
-{
-	printPgmString(PSTR("Temp: "));  printFloat(heater.temperature);
-	printPgmString(PSTR("  PID: ")); printFloat(pid.output);
-	printPgmString(PSTR("\n")); 
-}
+	printPgmString((PGM_P)pgm_read_word(&msg_hstate[heater.state]));
+//	printPgmString((PGM_P)pgm_read_word(&msg_scode[sensor.code]));
 
-void rpt_sensor()
-{
-	printPgmString((PGM_P)pgm_read_word(&msg_scode[sensor.code]));
 	printPgmString(PSTR("\n")); 
 
-//	strncpy_P(msg,(PGM_P)pgm_read_word(&msg_scode[sensor.code]), MSGLEN);
-//	printString(msg);
-
-//	printPgmString(PSTR(pgm_read_word(&msg_scode[sensor.code]));
-//	printPgmString(&msg_scode[sensor.code]);
 }
-//	return (msg);
+

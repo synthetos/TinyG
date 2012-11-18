@@ -36,8 +36,6 @@
 
 static void _controller(void);
 static double _sensor_sample(uint8_t adc_channel);
-//static void _pwm_bit_hi(void);
-//static void _pwm_bit_lo(void);
 
 // Had to move the struct definitions and declarations to .h file for reporting purposes
 
@@ -86,7 +84,6 @@ void device_init(void)
  * _pwm_bit_hi()
  * _pwm_bit_lo()
  */
-
 //void _pwm_bit_hi(void) { PWM_PORT |= PWM_OUTB;}
 //void _pwm_bit_lo(void) { PWM_PORT &= ~(PWM_OUTB);}
 
@@ -113,6 +110,9 @@ static void _controller()
  * heater_on()	 - turn heater on
  * heater_off()	 - turn heater off	
  * heater_callback() - 100ms timed loop for heater control
+ *
+ *	heater_init() sets default values that may be overwritten via Kinen communications. 
+ *	heater_on() sets initial values used regardless of any changes made to settings.
  */
 
 void heater_init()
@@ -120,13 +120,13 @@ void heater_init()
 	// initialize heater, start PID and PWM
 	// note: PWM and ADC are initialized as part of the device init
 	memset(&heater, 0, sizeof(Heater));
+	heater.regulation_range = HEATER_REGULATION_RANGE;
 	heater.ambient_timeout = HEATER_AMBIENT_TIMEOUT;
 	heater.regulation_timeout = HEATER_REGULATION_TIMEOUT;
 	heater.ambient_temperature = HEATER_AMBIENT_TEMPERATURE;
 	heater.overheat_temperature = HEATER_OVERHEAT_TEMPERATURE;
-	heater.bad_reading_count = HEATER_BAD_READING_COUNT;
-	heater.regulation_count = HEATER_REGULATION_COUNT;
-	sensor_init();					// setup the temperature sensor module
+	heater.bad_reading_max = HEATER_BAD_READING_MAX;
+	sensor_init();
 	pid_init();
 }
 
@@ -137,18 +137,24 @@ void heater_on(double setpoint)
 		return;
 	}
 	// turn on lower level functions
-	sensor_on();					// enable the sensor
-	sensor_start_reading();			// now start a reading
+	sensor_on();						// enable the sensor
+	sensor_start_reading();				// now start a reading
 	pid_reset();
-	pwm_on(PWM_FREQUENCY, 0);		// duty cycle will be set by PID loop
+	pwm_on(PWM_FREQUENCY, 0);			// duty cycle will be set by PID loop
+
+	// initialize values for a heater cycle
 	heater.setpoint = setpoint;
+	heater.hysteresis = 0;
+	heater.bad_reading_count = 0;
+	heater.regulation_timer = 0;		// reset timeouts
 	heater.state = HEATER_HEATING;
+	led_off();
 }
 
 void heater_off(uint8_t state, uint8_t code) 
 {
-	pwm_off();						// stop sending current to the heater
-	sensor_off();					// stop taking readings
+	pwm_off();							// stop sending current to the heater
+	sensor_off();						// stop taking readings
 	heater.state = state;
 	heater.code = code;
 	led_off();
@@ -158,23 +164,31 @@ void heater_callback()
 {
 	// catch the no-op cases
 	if ((heater.state == HEATER_OFF) || (heater.state == HEATER_SHUTDOWN)) { return;}
-
 	rpt_readout();
 
-	// get current temp or an error if there is no temperature reading
-	if ((heater.temperature = sensor_get_temperature()) < ABSOLUTE_ZERO) {
-		return;
-	}
+	// get current temperature from the sensor
+	heater.temperature = sensor_get_temperature();
+
+	// trap overheat condition
 	if (heater.temperature > heater.overheat_temperature) {
 		heater_off(HEATER_SHUTDOWN, HEATER_OVERHEATED);
 		return;
 	}
-	sensor_start_reading();		// start next reading
 
-	// calculate the next PWM level via the PID
+	sensor_start_reading();				// start reading for the next interval
+
+	// handle bad readings from the sensor
+	if (heater.temperature < ABSOLUTE_ZERO) {
+		if (++heater.bad_reading_count > heater.bad_reading_max) {
+			heater_off(HEATER_SHUTDOWN, HEATER_SENSOR_ERROR);
+			printPgmString(PSTR("Heater Sensor Error Shutdown\n"));	
+		}
+		return;
+	}
+	heater.bad_reading_count = 0;		// reset the bad reading counter
+
 	double duty_cycle = pid_calculate(heater.setpoint, heater.temperature);
 	pwm_set_duty(duty_cycle);
-
 
 	// handle HEATER exceptions
 	if (heater.state == HEATER_HEATING) {
@@ -183,24 +197,41 @@ void heater_callback()
 		if ((heater.temperature < heater.ambient_temperature) &&
 			(heater.regulation_timer > heater.ambient_timeout)) {
 			heater_off(HEATER_SHUTDOWN, HEATER_AMBIENT_TIMED_OUT);
+			printPgmString(PSTR("Heater Ambient Error Shutdown\n"));	
 			return;
 		}
 		if ((heater.temperature < heater.setpoint) &&
 			(heater.regulation_timer > heater.regulation_timeout)) {
 			heater_off(HEATER_SHUTDOWN, HEATER_REGULATION_TIMED_OUT);
+			printPgmString(PSTR("Heater Timeout Error Shutdown\n"));	
 			return;
 		}
 	}
-	// manage heater state and LED indicator
-	if (heater.regulation_count > 0) {
-		if (--heater.regulation_count <= 0) {
+
+	// Manage regulation state and LED indicator
+	// Heater.regulation_count is a hysteresis register that increments if the 
+	// heater is at temp, decrements if not. It pegs at max and min values.
+	// The LED flashes if the heater is not in regulation and goes solid if it is.
+
+	if (fabs(pid.error) <= heater.regulation_range) {
+		if (++heater.hysteresis > HEATER_HYSTERESIS) {
+			heater.hysteresis = HEATER_HYSTERESIS;
 			heater.state = HEATER_REGULATED;
+		}
+	} else {
+		if (--heater.hysteresis <= 0) {
+			heater.hysteresis = 0;
+			heater.regulation_timer = 0;			// reset timeouts
+			heater.state = HEATER_HEATING;
 		}
 	}
 	if (heater.state == HEATER_REGULATED) {
 		led_on();
 	} else {
-		led_toggle();
+		if (++heater.toggle > 3) {
+			heater.toggle = 0;
+			led_toggle();
+		}
 	}
 }
 
@@ -214,7 +245,6 @@ void heater_callback()
 void pid_init() 
 {
 	memset(&pid, 0, sizeof(struct PIDstruct));
-	pid.dt = PID_DT;
 	pid.Kp = PID_Kp;
 	pid.Ki = PID_Ki;
 	pid.Kd = PID_Kd;
@@ -226,34 +256,28 @@ void pid_init()
 void pid_reset()
 {
 	pid.output = 0;
-	pid.integral = 0;
+	pid.integral = PID_INITIAL_INTEGRAL;
 	pid.prev_error = 0;
 }
 
 double pid_calculate(double setpoint,double temperature)
 {
-	if (pid.state == PID_OFF) { return (0);}
-
-	pid.setpoint = setpoint;		// ++++ test
-	pid.temperature = temperature;	// ++++ test
+	if (pid.state == PID_OFF) { return (pid.output_min);}
 
 	pid.error = setpoint - temperature;		// current error term
 
-//	if (fabs(pid.error) > PID_EPSILON) {	// stop integration if error term is too small
-	if ((fabs(pid.error) > PID_EPSILON) ||	// stop integration if error term is too small
-		(pid.output >= (pid.output_max - EPSILON))) {//...or output is too large (anti-windup)
-		pid.integral += (pid.error * pid.dt);
+	// perform integration only if error is GT epsilon, and with anti-windup
+	if ((fabs(pid.error) > PID_EPSILON) && (pid.output < pid.output_max)) {	
+		pid.integral += (pid.error * PID_DT);
 	}
-	pid.derivative = (pid.error - pid.prev_error) / pid.dt;
+	// compute derivative and output
+	pid.derivative = (pid.error - pid.prev_error) / PID_DT;
 	pid.output = pid.Kp * pid.error + pid.Ki * pid.integral + pid.Kd * pid.derivative;
 
-	if(pid.output > pid.output_max) { 		// saturation filter
-		pid.output = pid.output_max;
-	} else if(pid.output < pid.output_min) {
-		pid.output = pid.output_min;
-	}
+	// fix min amd max outputs (saturation filter)
+	if(pid.output > pid.output_max) { pid.output = pid.output_max; } else
+	if(pid.output < pid.output_min) { pid.output = pid.output_min; }
 	pid.prev_error = pid.error;
-	if (pid.output > 50) { led_on();} else { led_off();}
 
 	return pid.output;
 }
@@ -293,7 +317,6 @@ void sensor_off()
 void sensor_start_reading() 
 { 
 	sensor.sample_idx = 0;
-//	adc_read(ADC_CHANNEL);
 	sensor.code = SENSOR_TAKING_READING;
 }
 
@@ -342,15 +365,15 @@ void sensor_callback()
 	}
 
 	// reject the outlier samples and re-compute the average
-	double count = 0;
+	sensor.samples = 0;
 	sensor.temperature = 0;
 	for (uint8_t i=0; i<SENSOR_SAMPLES; i++) {
 		if (fabs(sensor.sample[i] - mean) < (sensor.sample_variance_max * sensor.std_dev)) {
 			sensor.temperature += sensor.sample[i];
-			count++;
+			sensor.samples++;
 		}
 	}
-	sensor.temperature /= count; 		// calculate mean temp w/o the outliers
+	sensor.temperature /= sensor.samples;// calculate mean temp w/o the outliers
 	sensor.state = SENSOR_HAS_DATA;
 	sensor.code = SENSOR_IDLE;			// we are done. Flip it back to idle
 
@@ -433,17 +456,6 @@ uint16_t adc_read()
 		while (ADCSRA && (1<<ADIF) == 0);// wait about 100 uSec
 		ADCSRA |= (1<<ADIF);			// clear the conversion flag
 	} while (ADC == 0);
-	return (ADC);
-
-/*
-	for (uint8_t i=0; i<20; i++) {
-		ADCSRA |= ADC_START_CONVERSION; // start the conversion
-		while (ADCSRA && (1<<ADIF) == 0);// wait about 100 uSec
-		ADCSRA |= (1<<ADIF);			// clear the conversion flag
-
-		if (ADC > 0) break;
-	}
-*/
 	return (ADC);
 }
 
@@ -578,7 +590,6 @@ void tick_1ms(void)				// 1ms callout
 
 void tick_10ms(void)			// 10 ms callout
 {
-//	sensor_callback();
 }
 
 void tick_100ms(void)			// 100ms callout
