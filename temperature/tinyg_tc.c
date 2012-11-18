@@ -76,7 +76,7 @@ void device_init(void)
 	DDRC = PORTC_DIR;
 	DDRD = PORTD_DIR;
 
-	adc_init();
+	adc_init(ADC_CHANNEL);
 	pwm_init();
 	tick_init();
 	led_off();					// put off the red light [~Sting, 1978]
@@ -409,7 +409,7 @@ static inline double _sensor_sample(uint8_t adc_channel)
 	double reading = 60 + random_variation;
 	return (((double)reading * SENSOR_SLOPE) + SENSOR_OFFSET);	// useful for testing the math
 #else
-	return (((double)adc_read(adc_channel) * SENSOR_SLOPE) + SENSOR_OFFSET);
+	return (((double)adc_read() * SENSOR_SLOPE) + SENSOR_OFFSET);
 #endif
 }
 
@@ -417,25 +417,28 @@ static inline double _sensor_sample(uint8_t adc_channel)
 /*
  * adc_init() - initialize ADC. See tinyg_tc.h for settings used
  * adc_read() - returns a single ADC reading (raw). See __sensor_sample notes for more
+ *
+ *	There's a weird bug where somethimes the first conversion returns zero. 
+ *	I need to fund out why this is happening and stop it.
+ *	In the mean time there is a do-while loop in the read function.
  */
-void adc_init(void)
+void adc_init(uint8_t channel)
 {
-	ADMUX  = (ADC_REFS | ADC_CHANNEL);	 // setup ADC Vref and channel 0
+	ADMUX  = (ADC_REFS | channel);	 // setup ADC Vref and channel
 	ADCSRA = (ADC_ENABLE | ADC_PRESCALE);// Enable ADC (bit 7) & set prescaler
 
-//	ADMUX &= 0xF0;						// clobber the channel
-//	ADMUX |= 0x0F & ADC_CHANNEL;		// set the channel
+	ADMUX &= 0xF0;						// clobber the channel
+	ADMUX |= 0x0F & ADC_CHANNEL;		// set the channel
+	DIDR0 = (1<<channel);				// disable digital input
 }
 
-uint16_t adc_read(uint8_t channel)
+uint16_t adc_read()
 {
-	ADMUX &= 0xF0;						// clobber the channel
-	ADMUX |= 0x0F & channel;			// set the channel
-
-	while (ADCSRA && (1<<ADIF) == 0);	// wait if conversion is in progress
-	ADCSRA |= ADC_START_CONVERSION;		// start the conversion
-	while (ADCSRA && (1<<ADIF) == 0);	// wait about 100 uSec
-	ADCSRA |= (1<<ADIF);				// clear the conversion flag
+	do {
+		ADCSRA |= ADC_START_CONVERSION; // start the conversion
+		while (ADCSRA && (1<<ADIF) == 0);// wait about 100 uSec
+		ADCSRA |= (1<<ADIF);			// clear the conversion flag
+	} while (ADC == 0);					// try it again if the reading was zero (HACK)
 	return (ADC);
 }
 

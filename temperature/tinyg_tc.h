@@ -17,7 +17,7 @@
 #ifndef tinyg_tc_h
 #define tinyg_tc_h
 
-#define BUILD_NUMBER 001.03		// for keeping track of git revisions
+#define BUILD_NUMBER 001.04		// for keeping track of git revisions
 
 // Device function prototypes
 
@@ -47,8 +47,8 @@ void pid_init();
 void pid_reset();
 double pid_calculate(double setpoint,double temperature);
 
-void adc_init(void);
-uint16_t adc_read(uint8_t channel);
+void adc_init(uint8_t channel);
+uint16_t adc_read(void);
 
 void pwm_init(void);
 void pwm_on(double freq, double duty);

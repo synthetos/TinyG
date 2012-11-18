@@ -30,6 +30,10 @@
 #define TX_BUFFER_SIZE 256
 #define SERIAL_NO_DATA 0xFF
 
+#ifndef F_CPU
+#define F_CPU 8000000
+#endif
+
 void serial_init(long baud);
 void serial_write(uint8_t data);
 uint8_t serial_read();

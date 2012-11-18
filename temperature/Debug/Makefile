@@ -37,7 +37,11 @@ SUBDIRS :=
 C_SRCS +=  \
 ../kinen_core.c \
 ../kinen_slave_328p.c \
-../tinyg_tc.c
+../print.c \
+../report.c \
+../serial.c \
+../tinyg_tc.c \
+../util.c
 
 
 PREPROCESSING_SRCS += 
@@ -49,25 +53,41 @@ ASM_SRCS +=
 OBJS +=  \
 kinen_core.o \
 kinen_slave_328p.o \
-tinyg_tc.o
+print.o \
+report.o \
+serial.o \
+tinyg_tc.o \
+util.o
 
 
 OBJS_AS_ARGS +=  \
 kinen_core.o \
 kinen_slave_328p.o \
-tinyg_tc.o
+print.o \
+report.o \
+serial.o \
+tinyg_tc.o \
+util.o
 
 
 C_DEPS +=  \
 kinen_core.d \
 kinen_slave_328p.d \
-tinyg_tc.d
+print.d \
+report.d \
+serial.d \
+tinyg_tc.d \
+util.d
 
 
 C_DEPS_AS_ARGS +=  \
 kinen_core.d \
 kinen_slave_328p.d \
-tinyg_tc.d
+print.d \
+report.d \
+serial.d \
+tinyg_tc.d \
+util.d
 
 
 OUTPUT_FILE_PATH +=tinyg_tc.elf
@@ -79,6 +99,14 @@ ADDITIONAL_DEPENDENCIES:=
 OUTPUT_FILE_DEP:= ./makedep.mk
 
 # AVR32/GNU C Compiler
+
+
+
+
+
+
+
+
 
 
 
