@@ -56,7 +56,7 @@ int main(void)
 
 	UNIT_TESTS;					// uncomment __UNIT_TEST_TC to enable unit tests
 
-	heater_on(140);				// turn heater on for testing
+	heater_on(160);				// turn heater on for testing
 	rpt_initialized();			// send initalization string
 
 	while (true) {				// go to the controller loop and never return

@@ -17,7 +17,7 @@
 #ifndef tinyg_tc_h
 #define tinyg_tc_h
 
-#define BUILD_NUMBER 001.06		// for keeping track of git revisions
+#define BUILD_NUMBER 001.07		// for keeping track of git revisions
 
 // Device function prototypes
 
@@ -115,7 +115,7 @@ enum tcHeaterCode {
 
 #define PID_Kp 5.00						// proportional gain term
 #define PID_Ki 0.1 						// integral gain term
-#define PID_Kd 0.1						// derivative gain term
+#define PID_Kd 0.5						// derivative gain term
 #define PID_INITIAL_INTEGRAL 200		// initial integral value to speed things along
 
 // some starting values from the example code

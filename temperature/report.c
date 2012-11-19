@@ -58,12 +58,12 @@ void rpt_readout()
 	printPgmString(PSTR("Temp:")); printFloat(sensor.temperature);
 	printPgmString(PSTR("  PWM:")); printFloat(pid.output);
 //	printPgmString(PSTR("  s[0]:")); printFloat(sensor.sample[0]);
-//	printPgmString(PSTR("  StdDev:")); printFloat(sensor.std_dev);
+	printPgmString(PSTR("  StdDev:")); printFloat(sensor.std_dev);
 //	printPgmString(PSTR("  Samples:")); printFloat(sensor.samples);
 	printPgmString(PSTR("  Err:")); printFloat(pid.error);
 	printPgmString(PSTR("  I:")); printFloat(pid.integral);
 //	printPgmString(PSTR("  D:")); printFloat(pid.derivative);
-	printPgmString(PSTR("  Hy:")); printFloat(heater.hysteresis);
+//	printPgmString(PSTR("  Hy:")); printFloat(heater.hysteresis);
 
 	printPgmString((PGM_P)pgm_read_word(&msg_hstate[heater.state]));
 //	printPgmString((PGM_P)pgm_read_word(&msg_scode[sensor.code]));
