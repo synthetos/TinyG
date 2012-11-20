@@ -417,6 +417,7 @@ uint8_t cm_get_machine_state(void);
 uint8_t cm_get_cycle_state(void);
 uint8_t cm_get_motion_state(void);
 uint8_t cm_get_hold_state(void);
+uint8_t cm_get_homing_state(void);
 
 uint8_t cm_get_motion_mode(void);
 uint8_t cm_get_select_plane(void);

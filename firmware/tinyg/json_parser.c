@@ -69,6 +69,7 @@ void js_init()
  *	  {"name":"value"}
  *	  {"name":12345}
  *	  {"name1":"value1", "n2":"v2", ... "nN":"vN"}
+ *	  {"parent_name":""}
  *	  {"parent_name":{"name":"value"}}
  *	  {"parent_name":{"name1":"value1", "n2":"v2", ... "nN":"vN"}}
  *
@@ -111,6 +112,11 @@ uint8_t _json_parser(char *str)
 		if (--i == 0) { return (TG_JSON_TOO_MANY_PAIRS); }			// length error
 		if ((status = _get_nv_pair(cmd, &str, group, &depth)) > TG_EAGAIN) { // erred out
 			return (status);
+		}
+		if (cmd_is_group(cmd->token)) {			// trap ill-formed groups
+			if ((cmd->type != TYPE_PARENT) && (cmd->type != TYPE_NULL)) {
+				return (TG_UNRECOGNIZED_COMMAND);
+			}
 		}
 		strncpy(group, cmd->group, CMD_GROUP_LEN);// propagate the group ID from previous obj
 		cmd = cmd->nx;

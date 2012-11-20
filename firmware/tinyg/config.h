@@ -104,8 +104,8 @@
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
 #define GROUP_EXCLUSIONS "cycs,coor"	 // items that are not actually part of the xyzabcuvw0123456789 groups
 #define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ec,ee,ex,eq,ej" // cats and dogs
-#define DONT_INITIALIZE "gc,sr,te,he,de" // commands that should not be initialized
-#define DONT_PERSIST	"gc,te,de"		 // commands that should not be persisted
+#define DONT_INITIALIZE "gc,sr,help,test,defa"	// commands that should not be initialized
+#define DONT_PERSIST	"gc,help,test,defa"		// commands that should not be persisted
 #define SR_DEFAULTS 	"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
 #define IGNORE_OFF 0				// accept either CR or LF as termination on RX text line

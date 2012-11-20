@@ -180,6 +180,7 @@ static uint8_t _get_macs(cmdObj *cmd);	// get raw machine state as value and str
 static uint8_t _get_cycs(cmdObj *cmd);	// get raw cycle state as value and string
 static uint8_t _get_mots(cmdObj *cmd);	// get raw motion state as value and string
 static uint8_t _get_hold(cmdObj *cmd);	// get raw hold state as value and string
+static uint8_t _get_home(cmdObj *cmd);	// get raw homing state as value and string
 static uint8_t _get_unit(cmdObj *cmd);	// (all these in this list are similar)
 static uint8_t _get_coor(cmdObj *cmd);
 static uint8_t _get_momo(cmdObj *cmd);
@@ -273,6 +274,10 @@ static const char msg_hold3[] PROGMEM = "Decel";
 static const char msg_hold4[] PROGMEM = "Hold";
 static PGM_P const msg_hold[] PROGMEM = { msg_hold0, msg_hold1, msg_hold2, msg_hold3, msg_hold4 };
 
+static const char msg_home0[] PROGMEM = "Not Homed";
+static const char msg_home1[] PROGMEM = "Homed";
+static PGM_P const msg_home[] PROGMEM = { msg_home0, msg_home1 };
+
 static const char msg_g53[] PROGMEM = "G53 - machine coordinate system";
 static const char msg_g54[] PROGMEM = "G54 - coordinate system 1";
 static const char msg_g55[] PROGMEM = "G55 - coordinate system 2";
@@ -356,6 +361,7 @@ static const char str_macs[] PROGMEM = "macs,macs,Raw machine state:   %s\n"; //
 static const char str_cycs[] PROGMEM = "cycs,cycs,Cycle state:         %s\n";
 static const char str_mots[] PROGMEM = "mots,mots,Motion state:        %s\n";
 static const char str_hold[] PROGMEM = "hold,hold,Feedhold state:      %s\n";
+static const char str_home[] PROGMEM = "home,home,Homing state:        %s\n";
 static const char str_unit[] PROGMEM = "unit,unit,Units:               %s\n"; // units mode as ASCII string
 static const char str_coor[] PROGMEM = "coor,coor,Coordinate system:   %s\n";
 static const char str_momo[] PROGMEM = "momo,momo,Motion mode:         %s\n";
@@ -383,10 +389,10 @@ static const char str_g92b[] PROGMEM = "g92b,g92b,B origin offset:%10.3f%S\n";
 static const char str_g92c[] PROGMEM = "g92c,g92c,C origin offset:%10.3f%S\n";
 
 // commands, tests, help, messages 
-static const char str_help[] PROGMEM = "he,help,";	// display configuration help
-static const char str_test[] PROGMEM = "te,test,";	// specialized _print_test() function
-static const char str_defa[] PROGMEM = "de,defa,";	// restore default settings
-static const char str_msg[]  PROGMEM = "msg,msg,%s\n";// generic message (with no formatting)
+static const char str_help[] PROGMEM = "help,help,";	// display configuration help
+static const char str_test[] PROGMEM = "test,test,";	// specialized _print_test() function
+static const char str_defa[] PROGMEM = "defa,defa,";	// restore default settings
+static const char str_msg[]  PROGMEM = "msg,msg,%s\n";	// generic message (with no formatting)
 
 // Gcode model power-on reset default values
 static const char str_gpl[] PROGMEM = "gpl,gcode_pl,[gpl] gcode_select_plane %10d [0,1,2]\n";
@@ -638,6 +644,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_cycs,_print_str, _get_cycs,_set_nul, (double *)&tg.null, 0 },	// cycle state
 	{ str_mots,_print_str, _get_mots,_set_nul, (double *)&tg.null, 0 },	// motion state
 	{ str_hold,_print_str, _get_hold,_set_nul, (double *)&tg.null, 0 },	// feedhold state
+	{ str_home,_print_str, _get_home,_set_nul, (double *)&tg.null, 0 },	// homing state
 	{ str_vel, _print_lin, _get_vel, _set_nul, (double *)&tg.null, 0 },	// current velocity
 	{ str_unit,_print_str, _get_unit,_set_nul, (double *)&tg.null, 0 },	// units mode
 	{ str_coor,_print_str, _get_coor,_set_nul, (double *)&tg.null, 0 },	// coordinate system
@@ -995,6 +1002,7 @@ static uint8_t _get_pb(cmdObj *cmd)
  * _get_cycs() - get raw cycle state as value and string
  * _get_mots() - get raw motion state as value and string
  * _get_hold() - get raw hold state as value and string
+ * _get_home() - get raw homing state as value and string
  * _get_unit() - get units mode as string
  * _get_coor() - get goodinate system as string
  * _get_momo() - get motion mode as string
@@ -1050,6 +1058,11 @@ static uint8_t _get_mots(cmdObj *cmd)
 static uint8_t _get_hold(cmdObj *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_hold, cm_get_hold_state()));
+}
+
+static uint8_t _get_home(cmdObj *cmd)
+{
+	return(_get_msg_helper(cmd, (prog_char_ptr)msg_home, cm_get_homing_state()));
 }
 
 static uint8_t _get_unit(cmdObj *cmd)
@@ -1593,17 +1606,17 @@ INDEX_T cmd_get_index_by_token(const char *str)
 INDEX_T cmd_get_index(const char *str)
 {
 	uint8_t len;
-	char cmp[CMD_TOKEN_LEN];
+	char cmp[CMD_TOKEN_LEN+1];
 
 	// append a comma so PROGMEM match is exact, and handle string-too-long case
-	snprintf(cmp, CMD_TOKEN_LEN, "%s,", str);
-	if ((len = strlen(cmp)) == CMD_TOKEN_LEN) { 
-		cmp[CMD_TOKEN_LEN-1] = ',';
+	snprintf(cmp, CMD_TOKEN_LEN+1, "%s,", str);// copy the token and trailing comma
+	if ((len = strlen(cmp)) > CMD_TOKEN_LEN) {// if the string is too long append a trailing comma 
+		cmp[CMD_TOKEN_LEN] = ',';
 	}
 
 	// scan the cfgArray strings for an exact match
 	for (INDEX_T i=0; i<CMD_INDEX_MAX; i++) {
-		if ((strncmp_P(cmp, (PGM_P)pgm_read_word(&cfgArray[i]), len)) == 0) {
+		if ((strncmp_P(cmp,(PGM_P)pgm_read_word(&cfgArray[i]), len)) == 0) {
 			return (i);						// matched
 		}
 	}
@@ -2085,8 +2098,12 @@ static int8_t _get_motor(const INDEX_T i)
  *	system group		"sys" - a collection of otherwise unrelated system variables
  *
  *	Groups are carried as parent / child objects, e.g:
- *	{"x":{"am":1,"fr":800,....}}		set all X axis parameters
  *	{"x":""}							get all X axis parameters
+ *	{"x":{"vm":""}}						get X axis velocity max 
+ *	{"x":{"vm":1000}}					set X axis velocity max
+ *	{"x":{"vm":"","fr":""}}				get X axis velocity max and feed rate 
+ *	{"x":{"vm":1000,"fr";900}}			set X axis velocity max and feed rate
+ *	{"x":{"am":1,"fr":800,....}}		set multiple or all X axis parameters
  *
  *	The group prefixes are stripped from the child tokens for better alignment 
  *	with host code. I.e a group object is represented as:
@@ -2097,16 +2114,30 @@ static int8_t _get_motor(const INDEX_T i)
  *	index is used and tokens are ignored once the parameter index is known.
  *	But it's useful to be able to round-trip a group back to the JSON requestor.
  *
- *	NOTE: The 'cmd' arg in many group commands must be the address of the head of a 
- *	cmd struct array (cmd_body), not a single cmd struct. These command expand 
+ *	NOTE: The 'cmd' arg in many group commands must be the address of the head of
+ *	a cmd struct array (cmd_body), not a single cmd struct. These commands expand 
  *	into groups of multiple cmd structs, and assume the array provides the RAM. 
+ */
+/*
+ * _set_grp() - get or set one or more values in a group
+ *
+ *	This functions is called "_set_group()" but technical it's a getter and a setter
+ *	It iterates the group children and either gets the value or sets the value for 
+ *	each depending on the cmd->type. To get an entire group w/o specifying the 
+ *	child elements use _set_grp() 
  */
 static uint8_t _set_grp(cmdObj *cmd)
 {
 	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
-		cmd_set(cmd);
-		cmd_persist(cmd);
+		if (cmd->type == TYPE_END) {
+			break;
+		} else if (cmd->type == TYPE_NULL) {// NULL means GET the value
+			cmd_get(cmd);
+		} else {
+			cmd_set(cmd);
+			cmd_persist(cmd);
+		}
 	}
 	return (TG_OK);
 }
@@ -2118,7 +2149,7 @@ static uint8_t _get_grp(cmdObj *cmd)
 	char token[CMD_TOKEN_LEN+1];			// token retrived from cmdArray list
 	char exclude[] = { GROUP_EXCLUSIONS };	// see config.h
 
-	cmd->type = TYPE_PARENT;				// make first obj the parent 
+	cmd->type = TYPE_PARENT;				// make first object the parent 
 	for (INDEX_T i=0; i<group_index; i++) {	// stop before you recurse
 		cmd_get_token(i,token);
 		if (strstr(token, group) == token) {
