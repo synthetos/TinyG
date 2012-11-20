@@ -2098,8 +2098,12 @@ static int8_t _get_motor(const INDEX_T i)
  *	system group		"sys" - a collection of otherwise unrelated system variables
  *
  *	Groups are carried as parent / child objects, e.g:
- *	{"x":{"am":1,"fr":800,....}}		set all X axis parameters
  *	{"x":""}							get all X axis parameters
+ *	{"x":{"vm":""}}						get X axis velocity max 
+ *	{"x":{"vm":1000}}					set X axis velocity max
+ *	{"x":{"vm":"","fr":""}}				get X axis velocity max and feed rate 
+ *	{"x":{"vm":1000,"fr";900}}			set X axis velocity max and feed rate
+ *	{"x":{"am":1,"fr":800,....}}		set multiple or all X axis parameters
  *
  *	The group prefixes are stripped from the child tokens for better alignment 
  *	with host code. I.e a group object is represented as:
@@ -2110,16 +2114,30 @@ static int8_t _get_motor(const INDEX_T i)
  *	index is used and tokens are ignored once the parameter index is known.
  *	But it's useful to be able to round-trip a group back to the JSON requestor.
  *
- *	NOTE: The 'cmd' arg in many group commands must be the address of the head of a 
- *	cmd struct array (cmd_body), not a single cmd struct. These command expand 
+ *	NOTE: The 'cmd' arg in many group commands must be the address of the head of
+ *	a cmd struct array (cmd_body), not a single cmd struct. These commands expand 
  *	into groups of multiple cmd structs, and assume the array provides the RAM. 
+ */
+/*
+ * _set_grp() - get or set one or more values in a group
+ *
+ *	This functions is called "_set_group()" but technical it's a getter and a setter
+ *	It iterates the group children and either gets the value or sets the value for 
+ *	each depending on the cmd->type. To get an entire group w/o specifying the 
+ *	child elements use _set_grp() 
  */
 static uint8_t _set_grp(cmdObj *cmd)
 {
 	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
-		cmd_set(cmd);
-		cmd_persist(cmd);
+		if (cmd->type == TYPE_END) {
+			break;
+		} else if (cmd->type == TYPE_NULL) {// NULL means GET the value
+			cmd_get(cmd);
+		} else {
+			cmd_set(cmd);
+			cmd_persist(cmd);
+		}
 	}
 	return (TG_OK);
 }
@@ -2131,7 +2149,7 @@ static uint8_t _get_grp(cmdObj *cmd)
 	char token[CMD_TOKEN_LEN+1];			// token retrived from cmdArray list
 	char exclude[] = { GROUP_EXCLUSIONS };	// see config.h
 
-	cmd->type = TYPE_PARENT;				// make first obj the parent 
+	cmd->type = TYPE_PARENT;				// make first object the parent 
 	for (INDEX_T i=0; i<group_index; i++) {	// stop before you recurse
 		cmd_get_token(i,token);
 		if (strstr(token, group) == token) {

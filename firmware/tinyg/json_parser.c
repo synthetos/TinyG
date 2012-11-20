@@ -69,6 +69,7 @@ void js_init()
  *	  {"name":"value"}
  *	  {"name":12345}
  *	  {"name1":"value1", "n2":"v2", ... "nN":"vN"}
+ *	  {"parent_name":""}
  *	  {"parent_name":{"name":"value"}}
  *	  {"parent_name":{"name1":"value1", "n2":"v2", ... "nN":"vN"}}
  *

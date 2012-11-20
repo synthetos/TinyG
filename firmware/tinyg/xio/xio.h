@@ -46,14 +46,6 @@
 
 /* Globals */
 // Note: stdin, stdout and stderr are defined in stdio.h and are used by XIO
-/*
-#ifndef false
-#define false 0
-#endif
-#ifndef true
-#define true 1
-#endif
-*/
 
 #define PGMFILE (const PROGMEM char *)	// extends pgmspace.h
 
