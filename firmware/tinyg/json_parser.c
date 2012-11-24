@@ -113,6 +113,11 @@ uint8_t _json_parser(char *str)
 		if ((status = _get_nv_pair(cmd, &str, group, &depth)) > TG_EAGAIN) { // erred out
 			return (status);
 		}
+		if (cmd_is_group(cmd->token)) {			// trap ill-formed groups
+			if ((cmd->type != TYPE_PARENT) && (cmd->type != TYPE_NULL)) {
+				return (TG_UNRECOGNIZED_COMMAND);
+			}
+		}
 		strncpy(group, cmd->group, CMD_GROUP_LEN);// propagate the group ID from previous obj
 		cmd = cmd->nx;
 	} while (status != TG_OK);					// breaks when parsing is complete
