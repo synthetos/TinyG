@@ -47,7 +47,8 @@
 
 #define JUNCTION_ACCELERATION 200000	// centripetal acceleration around corners
 
-#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
+//#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
+#define STATUS_REPORT_INTERVAL_MS	0	// in milliseconds
 
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
 #define GCODE_DEFAULT_UNITS			MILLIMETERS
@@ -59,6 +60,7 @@
 #define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_ENABLE_XON				true
 #define COM_ENABLE_QR				true
+//#define COM_ENABLE_QR				false
 
 #define COM_COMMUNICATIONS_MODE		TG_JSON_MODE	// alternately: TG_TEXT_MODE
 #define COM_ENABLE_ECHO				false
