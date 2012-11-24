@@ -168,8 +168,14 @@ enum tcSensorCode {						// success and failure codes
 #define SPI_MOSI		(1<<PINB3)		// SPI MOSI line
 #define SPI_SS			(1<<PINB2)		// SPI slave select
 
+#define SPI2_PORT		PORTC			// secondary SPI (bit-bang receive only)
+#define SPI2_SCK		(1<<PINC5)		// SPI2 clock line
+#define SPI2_MISO		(1<<PINC4)		// SPI2 MISO line
+#define SPI2_MOSI		(1<<PINC3)		// SPI2 MOSI line (not used)
+#define SPI2_SS			(1<<PINC2)		// SPI2 slave select
+
 #define PWM_PORT		PORTD			// Pulse width modulation port
-#define PWM_OUTB		(1<<PIND3)		// 0C2B timer output bit
+#define PWM_OUTB		(1<<PIND3)		// OC2B timer output bit
 #define PWM_TIMER		TCNT2			// Pulse width modulation timer
 #define PWM_NONINVERTED	0xC0			// OC2A non-inverted mode, OC2B non-inverted mode
 #define PWM_INVERTED 	0xF0			// OC2A inverted mode, OC2B inverted mode
@@ -181,6 +187,9 @@ enum tcSensorCode {						// success and failure codes
 #define PWM_F_MAX		(F_CPU / PWM_PRESCALE / PWM_MIN_RES)
 #define PWM_F_MIN		(F_CPU / PWM_PRESCALE / 256)
 #define PWM_FREQUENCY 	1000			// set PWM operating frequency
+
+#define PWM2_PORT		PORTD			// secondary PWM channel (on Timer 0)
+#define PWM2_OUT2B		(1<<PIND5)		// OC0B timer output bit
 
 #define ADC_PORT		PORTC			// Analog to digital converter channels
 #define ADC_CHANNEL 	0				// ADC channel 0 / single-ended in this application (write to ADMUX)
