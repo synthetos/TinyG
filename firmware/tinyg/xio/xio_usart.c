@@ -187,7 +187,6 @@ uint16_t xio_get_usb_rx_free(void)
 	return (RX_BUFFER_SIZE - xio_get_rx_bufcount_usart(&USBu));
 }
 
-
 /* 
  * xio_putc_usart() - stdio compatible char writer for usart devices
  *
@@ -215,7 +214,7 @@ int xio_putc_usart(const uint8_t dev, const char c, FILE *stream)
 	struct xioUSART *dx = ((struct xioUSART *)(ds[dev].x));	// USART ptr
 
 	if ((next_tx_buf_head = (dx->tx_buf_head)-1) == 0) { // adv. head & wrap
-		next_tx_buf_head = TX_BUFFER_SIZE-1; // -1 avoids the off-by-one
+		next_tx_buf_head = TX_BUFFER_SIZE-1; 	// -1 avoids the off-by-one
 	}
 	// detect TX buffer full
 	while(next_tx_buf_head == dx->tx_buf_tail) { // sleep or return

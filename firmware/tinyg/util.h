@@ -46,7 +46,7 @@ double max3(double x1, double x2, double x3);
 double max4(double x1, double x2, double x3, double x4);
 uint8_t isnumber(char c);
 uint8_t read_double(char *buf, uint8_t *i, double *double_ptr);
-uint16_t compute_checksum(char const *string, const uint16_t length);
+uint16_t checksum(char const *string, const uint16_t length);
 
 void copy_vector(double dest[], const double src[], uint8_t length);
 void copy_axis_vector(double dest[], const double src[]);

@@ -150,7 +150,7 @@ typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
 
 // NOTE: Be aware: the string field is mainly used to carry string values, 
 // but is used as temp storage for the friendly_name during parsing to save RAM..
-#define friendly_name string			// used here as a friendly name field
+//#define friendly_name string			// used here as a friendly name field
 
 // Allocate memory for all objects that may be used in cmdObj lists
 cmdObj cmd_header[CMD_HEADER_LEN];	// body headxer element

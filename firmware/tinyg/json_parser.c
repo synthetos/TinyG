@@ -198,17 +198,17 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 
 	// copy the token by itself or with a group prefix if it's a prefixed group
 	if (strstr(GROUP_PREFIXES, group) == NULL) {
-		strncpy(cmd->friendly_name, *pstr, CMD_STRING_LEN);	// copy name from string
+		strncpy(cmd->string, *pstr, CMD_STRING_LEN);	// copy name from string
 	} else {
-		strncpy(cmd->friendly_name, group, CMD_GROUP_LEN);// prepend the group
-		strncpy(&cmd->friendly_name[strlen(group)], *pstr, CMD_STRING_LEN);// cat name to group prefix
+		strncpy(cmd->string, group, CMD_GROUP_LEN);	// prepend the group
+		strncpy(&cmd->string[strlen(group)], *pstr, CMD_STRING_LEN);// cat name to group prefix
 	}
 
 	// get the index or return if the token / friendly_name is invalid
-	if ((cmd->index = cmd_get_index(cmd->friendly_name)) == -1) { return (TG_UNRECOGNIZED_COMMAND);}
+	if ((cmd->index = cmd_get_index_by_token(cmd->string)) == -1) { return (TG_UNRECOGNIZED_COMMAND);}
 	cmd_get_token(cmd->index, cmd->token);
 	if (group[0] != NUL) {						// strip group prefix if this is a group
-		strncpy(cmd->token, &cmd->friendly_name[strlen(group)], CMD_TOKEN_LEN);
+		strncpy(cmd->token, &cmd->string[strlen(group)], CMD_TOKEN_LEN);
 		strncpy(cmd->group, group, CMD_GROUP_LEN);// propagate group token to this child
 	}
 	*pstr = ++tmp;
@@ -287,14 +287,14 @@ uint16_t js_serialize_json(char *out_buf)
 			cmd = cmd->nx;
 			depth = cmd->depth;
 			continue;
+		} else if (cmd->type == TYPE_FLOAT)	 { str += sprintf(str, "%0.3f", (double)cmd->value);
+		} else if (cmd->type == TYPE_STRING) { str += sprintf(str, "\"%s\"", cmd->string);
+		} else if (cmd->type == TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
+		} else if (cmd->type == TYPE_ARRAY)  { str += sprintf(str, "[%s]", cmd->string);
 		} else if (cmd->type == TYPE_END)	 { str += sprintf(str, "\"\"");
 		} else if (cmd->type == TYPE_NULL)	 { str += sprintf(str, "\"\"");
 		} else if (cmd->type == TYPE_FALSE)	 { str += sprintf(str, "false");
 		} else if (cmd->type == TYPE_TRUE)	 { str += sprintf(str, "true");
-		} else if (cmd->type == TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
-		} else if (cmd->type == TYPE_FLOAT)	 { str += sprintf(str, "%0.3f", (double)cmd->value);
-		} else if (cmd->type == TYPE_STRING) { str += sprintf(str, "\"%s\"", cmd->string);
-		} else if (cmd->type == TYPE_ARRAY)  { str += sprintf(str, "[%s]", cmd->string);
 		} 
 		do {  // advance to the next non-empty element
 			cmd = cmd->nx;

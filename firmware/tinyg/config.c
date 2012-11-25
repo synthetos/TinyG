@@ -1466,17 +1466,17 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 	// field processing
 	cmd->type = TYPE_NULL;
 	if ((tmp = strpbrk(str, separators)) == NULL) {
-		strncpy(cmd->friendly_name, str, CMD_STRING_LEN);// no value part
+		strncpy(cmd->string, str, CMD_STRING_LEN);// no value part
 	} else {
 		*tmp = NUL;							// terminate at end of name
-		strncpy(cmd->friendly_name, str, CMD_STRING_LEN);
+		strncpy(cmd->string, str, CMD_STRING_LEN);
 		str = ++tmp;
 		cmd->value = strtod(str, &tmp);		// tmp is the end pointer
 		if (tmp != str) {
 			cmd->type = TYPE_FLOAT;
 		}
 	}
-	if ((cmd->index = cmd_get_index(cmd->friendly_name)) == -1) { 
+	if ((cmd->index = cmd_get_index_by_token(cmd->string)) == -1) { 
 		return (TG_UNRECOGNIZED_COMMAND);
 	}
 	cmd_get_token(cmd->index, cmd->token);
@@ -1543,8 +1543,12 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd)
 
 /****************************************************************************
  * cmdObj helper functions and other low-level cmd helpers
- * cmd_get_max_index()		- utility function to return index array size				
+ *
  * cmd_clear() 				- initialize a command object (that you actually passed in)
+ * cmd_clear_body()			- reset cmdObjs in the body
+ * cmd_clear_list()			- reset the entire CmdObj list: headers, body, msg and footers
+ *
+ * cmd_get_max_index()		- utility function to return index array size				
  * cmd_get_index_by_token() - get index from mnenonic token (most efficient scan)
  * cmd_get_index() 			- get index from mnenonic token or friendly name
  * cmd_get_token()			- returns token in arg string & returns pointer to string
@@ -1564,8 +1568,6 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd)
  *	uniqueness. This saves a fair amount of memory and time and is easier to use.
  */
 
-INDEX_T cmd_get_max_index() { return (CMD_INDEX_MAX);}
-
 cmdObj *cmd_clear(cmdObj *cmd)		// clear the cmdObj structure
 {
 	cmdObj *nx = cmd->nx;			// save pointers
@@ -1583,6 +1585,63 @@ cmdObj *cmd_clear(cmdObj *cmd)		// clear the cmdObj structure
 	cmd->type = TYPE_END;
 	return (cmd);
 }
+
+void cmd_clear_body(cmdObj *cmd)
+{
+	cmdObj *cmd_first = cmd;
+
+	memset(cmd, 0, (sizeof(struct cmdObject) * CMD_BODY_LEN));
+	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
+		cmd->pv = (cmd-1);
+		cmd->nx = (cmd+1);
+		cmd->type = TYPE_END;
+//		cmd->depth = cmd->pv->depth +1;
+		cmd++;
+	}
+	(--cmd)->nx = cmd_footer;					// correct last element
+	cmd = cmd_first;							// correct first element
+	cmd->pv = &cmd_header[CMD_HEADER_LEN-1];
+}
+/*
+void cmd_clear_body(cmdObj *cmd)
+{
+	cmdObj *cmd_first = cmd;
+	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
+		cmd_clear(cmd);
+		cmd->pv = (cmd-1);
+		cmd->nx = (cmd+1);
+		cmd->depth = cmd->pv->depth +1;
+		cmd++;
+	}
+	(--cmd)->nx = cmd_footer;					// correct last element
+	cmd = cmd_first;							// correct first element
+	cmd->pv = &cmd_header[CMD_HEADER_LEN-1];
+}
+*/
+
+void cmd_clear_list()
+{
+	cmdObj *cmd;
+
+	cmd = cmd_clear(cmd_header);				// setup "b" body header
+	sprintf_P(cmd->token, PSTR("b"));
+	cmd->type = TYPE_PARENT;
+	cmd->nx = (cmd_body);
+
+	cmd_clear_body(cmd_body);					// setup body objects
+
+	cmd = cmd_clear(cmd_footer);				// setup "f" footer element
+	sprintf_P(cmd->token, PSTR("f"));
+	cmd->type = TYPE_ARRAY;
+	cmd->pv = &cmd_body[CMD_BODY_LEN-1];
+	cmd->nx = (cmd+1);
+
+	cmd = cmd_clear(cmd+1);						// setup terminating element
+	cmd->pv = (cmd-1);
+}
+
+
+INDEX_T cmd_get_max_index() { return (CMD_INDEX_MAX);}
 
 INDEX_T cmd_get_index_by_token(const char *str)
 {
@@ -1691,47 +1750,6 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 	return (TG_OK);
 }
 
-/****************************************************************************
- * cmdObj list methods (or would be methods if this were OO code)
- * cmd_clear_list()	- reset the entire CmdObj list: headers, body, msg and footers
- * cmd_clear_body()	- reset cmdObjs in the body
- */
-
-void cmd_clear_list()
-{
-	cmdObj *cmd;
-
-	cmd = cmd_clear(cmd_header);				// setup "b" body header
-	sprintf_P(cmd->token, PSTR("b"));
-	cmd->type = TYPE_PARENT;
-	cmd->nx = (cmd_body);
-
-	cmd_clear_body(cmd_body);					// setup body objects
-
-	cmd = cmd_clear(cmd_footer);				// setup "f" footer element
-	sprintf_P(cmd->token, PSTR("f"));
-	cmd->type = TYPE_ARRAY;
-	cmd->pv = &cmd_body[CMD_BODY_LEN-1];
-	cmd->nx = (cmd+1);
-
-	cmd = cmd_clear(cmd+1);						// setup terminating element
-	cmd->pv = (cmd-1);
-}
-
-void cmd_clear_body(cmdObj *cmd)
-{
-	cmdObj *cmd_first = cmd;
-	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		cmd_clear(cmd);
-		cmd->pv = (cmd-1);
-		cmd->nx = (cmd+1);
-		cmd->depth = cmd->pv->depth +1;
-		cmd++;
-	}
-	(--cmd)->nx = cmd_footer;					// correct last element
-	cmd = cmd_first;							// correct first element
-	cmd->pv = &cmd_header[CMD_HEADER_LEN-1];
-}
 
 /**** List manipulation methods **** 
  * cmd_add_token()	 - write contents of parameter to  first free object in the body
@@ -1822,17 +1840,16 @@ uint8_t cmd_add_float(char *token, double value)
  */
 void cmd_print_list(uint8_t status, uint8_t textmode)
 {
-	// JSON handling. Kind of a hack. Generate the JSON string with a dummy value for 
-	// the checksum hash. Then calculate the checksum and insert it into the JSON string
+	// JSON handling. Kind of a hack. Generate the JSON string w/o the checksum hash. 
+	// Then calculate the checksum and tack it onto the end of the JSON string
 	if (cfg.comm_mode == TG_JSON_MODE) {
 		cmdObj *cmd = cmd_footer;
-		sprintf(cmd->string, "%d,%d,%d,%04d",TINYG_COMM_PROTOCOL_REV, status, xio_get_usb_rx_free(), HASHMASK);
+		sprintf(cmd->string, "%d,%d,%d",TINYG_COMM_PROTOCOL_REV, status, xio_get_usb_rx_free());
 		uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
-		while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
-		sprintf(tg.out_buf + strcount + 1, "%d]}\n", compute_checksum(tg.out_buf, strcount));
+		sprintf(tg.out_buf+strcount-2,",%d]}\n", checksum(tg.out_buf, strcount));
 		fprintf(stderr, "%s", tg.out_buf);
-		} else {
-			switch (textmode) {
+	} else {
+		switch (textmode) {
 			case TEXT_INLINE_PAIRS: { _print_text_inline_pairs(); break; }
 			case TEXT_INLINE_VALUES: { _print_text_inline_values(); break; }
 			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted(); break; }
