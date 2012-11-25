@@ -103,7 +103,7 @@
 // NOTE: The number of SYSTEM_GROUP or SR_DEFAULTS elements cannot exceed CMD_MAX_OBJECTS
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
 #define GROUP_EXCLUSIONS "cycs,coor"	 // items that are not actually part of the xyzabcuvw0123456789 groups
-#define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ec,ee,ex,eq,ej" // cats and dogs
+#define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ec,ee,ex,eq,ej,je" // cats and dogs
 #define DONT_INITIALIZE "gc,sr,help,test,defa"	// commands that should not be initialized
 #define DONT_PERSIST	"gc,help,test,defa"		// commands that should not be persisted
 #define SR_DEFAULTS 	"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
@@ -150,7 +150,7 @@ typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
 
 // NOTE: Be aware: the string field is mainly used to carry string values, 
 // but is used as temp storage for the friendly_name during parsing to save RAM..
-//#define friendly_name string			// used here as a friendly name field
+#define friendly_name string			// used here as a friendly name field
 
 // Allocate memory for all objects that may be used in cmdObj lists
 cmdObj cmd_header[CMD_HEADER_LEN];	// body headxer element
@@ -262,9 +262,10 @@ struct cfgParameters {
 	// communications settings		// these are shadow settigns for XIO cntrl bits
 	uint8_t ignore_crlf;			// ignore CR or LF on RX
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
-	uint8_t enable_echo;			// enable echo - also used for gating JSON responses
+	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_xon;				// enable XON/XOFF mode
 	uint8_t enable_qr;				// TRUE = queue reports enabled
+	uint8_t enable_json_echo;		// TRUE = enable JSON commands to be echoed
 	uint8_t comm_mode;				// TEXT or JSON mode
 
 	// status report configs

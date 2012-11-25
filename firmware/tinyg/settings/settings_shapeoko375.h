@@ -47,28 +47,6 @@
 
 #define JUNCTION_ACCELERATION 200000	// centripetal acceleration around corners
 
-//#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
-#define STATUS_REPORT_INTERVAL_MS	0	// in milliseconds
-
-#define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
-#define GCODE_DEFAULT_UNITS			MILLIMETERS
-#define GCODE_DEFAULT_COORD_SYSTEM	G54
-#define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
-#define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
-
-#define COM_APPEND_TX_CR			false
-#define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
-#define COM_ENABLE_XON				true
-#define COM_ENABLE_QR				true
-//#define COM_ENABLE_QR				false
-
-#define COM_COMMUNICATIONS_MODE		TG_JSON_MODE	// alternately: TG_TEXT_MODE
-#define COM_ENABLE_ECHO				false
-//#define COM_COMMUNICATIONS_MODE		TG_TEXT_MODE	// alternately: TG_TEXT_MODE
-//#define COM_ENABLE_ECHO				true
-
-//#define ENABLE_ACCELERATION 1			// *** NOTE: this feature is disabled in 338.11 - always equal to 1 
-
 // *** motor settings ***
 
 #define M1_MOTOR_MAP 			X		// 1ma
