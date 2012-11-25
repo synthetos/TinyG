@@ -271,7 +271,7 @@ static uint8_t _dispatch()
 		}
 		case '{': { 							// JSON input
 			cfg.comm_mode = TG_JSON_MODE;
-			fprintf(stderr, "{\"a\":%d}\n", strlen(tg.in_buf));
+			fprintf(stderr, "{\"k\":%d}\n", strlen(tg.in_buf));
 			_dispatch_return(js_json_parser(tg.in_buf), tg.out_buf); 
 			break;
 		}
@@ -279,7 +279,7 @@ static uint8_t _dispatch()
 			if (cfg.comm_mode != TG_JSON_MODE) {
 				_dispatch_return(gc_gcode_parser(tg.in_buf), tg.in_buf);
 			} else {
-				fprintf(stderr, "{\"a\":%d}\n", strlen(tg.in_buf));
+				fprintf(stderr, "{\"k\":%d}\n", strlen(tg.in_buf));
 				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN);	// use output buffer as a temp
 				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);
 				_dispatch_return(js_json_parser(tg.in_buf), tg.out_buf); 

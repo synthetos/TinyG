@@ -168,6 +168,7 @@ static uint8_t _set_sr(cmdObj *cmd);	// set status report specification
 static uint8_t _set_si(cmdObj *cmd);	// set status report interval
 static uint8_t _get_qr(cmdObj *cmd);	// run queue report (as data)
 static uint8_t _get_pb(cmdObj *cmd);	// get planner buffers available
+static uint8_t _get_k(cmdObj *cmd);		// get bytes in RX buffer
 
 static uint8_t _get_gc(cmdObj *cmd);	// get current gcode block
 static uint8_t _run_gc(cmdObj *cmd);	// run a gcode block
@@ -350,6 +351,7 @@ static const char str_si[] PROGMEM = "si,status_i,[si]  status_interval    %10.0
 static const char str_sr[] PROGMEM = "sr,status_r,";	// status_report {"sr":""}  and ? command
 static const char str_qr[] PROGMEM = "qr,queue_r,";		// queue_report {"qr":""}
 static const char str_pb[] PROGMEM = "pb,planner_buffer_a,Planner buffers:%8d\n";
+static const char str_k[] PROGMEM = "k,k,";				// bytes available in RX buffer
 
 // Gcode model values for reporting purposes
 static const char str_vel[]  PROGMEM = "vel,velocity,Velocity:%17.3f%S/min\n";
@@ -635,7 +637,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_sr, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
 	{ str_qr, _print_nul, _get_qr,  _set_nul, (double *)&tg.null, 0 },	// queue report object
 	{ str_pb, _print_int, _get_pb,  _set_nul, (double *)&tg.null, 0 },	// planner buffers available
-
+	{ str_k,  _print_int, _get_k,   _set_nul, (double *)&tg.null, 0 },	// space in RX buffer
+	
 	// gcode model attributes for reporting puropses
 	{ str_line,_print_int, _get_line,_set_int, (double *)&gm.linenum, 0 }, // line number - gets runtime line number
 	{ str_lx,  _print_int, _get_lx,  _set_lx,  (double *)&tg.null ,0 },	// line index - get/set runtime line index
@@ -993,6 +996,17 @@ static uint8_t _get_qr(cmdObj *cmd)
 static uint8_t _get_pb(cmdObj *cmd)
 {
 	cmd->value = (double)mp_get_planner_buffers_available();
+	cmd->type = TYPE_INTEGER;
+	return (TG_OK);
+}
+
+/**** ACK/NAK REPORT FUNCTIONS ****
+ * _get_k()   - run ack/nak report
+ */
+static uint8_t _get_k(cmdObj *cmd)
+{
+//	cmd->value = (double)xio_get_rx_bufcount_usart(&USBu);
+	cmd->value = (double)xio_get_usb_rx_free();
 	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }
