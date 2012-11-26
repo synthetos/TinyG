@@ -61,33 +61,35 @@ void xio_init_usb()	// USB inits
 
 // NOTE: Might later expand setflags() to validate control bits and return errors
 
-/*** xio_putc_usb() - you can use the generic Usart form or use a more efficient, stripped down version below ***/
-//int xio_putc_usb(const char c, FILE *stream) { return xio_putc_usart(XIO_DEV_USB, c, stream);}
+/*
+ * xio_putc_usb() 
+ *
+ * 	Can use the generic Usart form or use a more efficient stripped down 
+ *	version below it. See xio_putc_usart() for the derivation
+ */
+//int xio_putc_usb(const char c, FILE *stream) 
+//{ 
+//	return xio_putc_usart(XIO_DEV_USB, c, stream);
+//}
+
 int xio_putc_usb(const char c, FILE *stream)
 {
-	BUFFER_T next_tx_buf_head;
-	struct xioUSART *dx = ((struct xioUSART *)(ds[XIO_DEV_USB].x));	// USART ptr
-
-	if ((next_tx_buf_head = (dx->tx_buf_head)-1) == 0) { // adv. head & wrap
-		next_tx_buf_head = TX_BUFFER_SIZE-1; 	// -1 avoids the off-by-one
+	if ((USBu.nx_tx_buf_head = (USBu.tx_buf_head)-1) == 0) { // adv. head & wrap
+		USBu.nx_tx_buf_head = TX_BUFFER_SIZE-1;		// -1 avoids the off-by-one
 	}
-	// detect TX buffer full
-	if (next_tx_buf_head == dx->tx_buf_tail) {	// return error
-		gpio_set_bit_on(0x01);					// turn on XOFF LED
-		struct xioDEVICE *d = &ds[XIO_DEV_USB];	// init device struct ptr
-		d->signal = XIO_SIG_EAGAIN;
+	if (USBu.nx_tx_buf_head == USBu.tx_buf_tail) {	// return error if TX buffer full
+		gpio_set_bit_on(0x01);						// turn on LED to indicate error
+		USB.signal = XIO_SIG_EAGAIN;
 		return(_FDEV_ERR);
 	};
-	// write to data register
-	dx->tx_buf_head = next_tx_buf_head;			// accept next buffer head
-	dx->tx_buf[dx->tx_buf_head] = c;			// ...write char to buffer
-	// force an interrupt to attempt to send the char
-	dx->usart->CTRLA = CTRLA_RXON_TXON;			// doesn't work if you just |= it
+	USBu.tx_buf_head = USBu.nx_tx_buf_head;	// accept next buffer head
+	USBu.tx_buf[USBu.tx_buf_head] = c;		// write to data register
+	USBu.usart->CTRLA = CTRLA_RXON_TXON;	// force interrupt to send the char (doesn't work if you just |= it)
 	return (XIO_OK);
 }
 
 /* 
- * USB_TX_ISR - USB transmitter interrupt (TX)
+ * USB_TX_ISR - USB transmitter interrupt (TX) used by xio_usb_putc()
  *
  *	The TX interrupt dilemma: TX interrupts occur when the USART DATA register is 
  *	empty (and the ISR must disable interrupts when nothing's left to read, or they 

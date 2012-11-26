@@ -192,7 +192,7 @@ enum xioDevice {				// device enumerations
  * See signal.h signal flag struct definition
  */
  
-extern struct xioDEVICE ds[XIO_DEV_COUNT];// makes fdev_xxxx descriptors valid
+extern struct xioDEVICE ds[XIO_DEV_COUNT];		// makes fdev_xxxx descriptors valid
 extern struct xioUSART us[XIO_DEV_USART_COUNT];	// USART extended IO structs
 extern struct xioFILE fs[XIO_DEV_FILE_COUNT];	// FILE extended IO structs
 extern struct xioSIGNALS sig;					// signal flags
