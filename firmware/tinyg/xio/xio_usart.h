@@ -235,7 +235,6 @@ struct xioUSART {
 	volatile BUFFER_T rx_buf_head;	// RX buffer write index (written by ISR)
 	volatile BUFFER_T tx_buf_tail;	// TX buffer read index  (written by ISR)
 	volatile BUFFER_T tx_buf_head;	// TX buffer write index
-	volatile BUFFER_T nx_tx_buf_head;// TX buffer temp register
 
 	struct USART_struct *usart;		// USART structure
 	struct PORT_struct *port;		// corresponding port
