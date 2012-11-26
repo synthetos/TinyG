@@ -48,7 +48,6 @@
 /* USB device wrappers for generic USART routines */
 FILE * xio_open_usb() {return(USB.fdev);}
 int xio_cntl_usb(const uint32_t control) {return xio_cntl(XIO_DEV_USB, control);} // SEE NOTE
-int xio_putc_usb(const char c, FILE *stream) {return xio_putc_usart(XIO_DEV_USB, c, stream);}
 int xio_getc_usb(FILE *stream) {return xio_getc_usart(XIO_DEV_USB, stream);}
 int xio_gets_usb(char *buf, const int size) {return xio_gets_usart(XIO_DEV_USB, buf, size);}
 void xio_queue_RX_char_usb(const char c) {xio_queue_RX_char_usart(XIO_DEV_USB, c);}
@@ -62,6 +61,30 @@ void xio_init_usb()	// USB inits
 
 // NOTE: Might later expand setflags() to validate control bits and return errors
 
+/*** xio_putc_usb() - you can use the generic Usart form or use a more efficient, stripped down version below ***/
+//int xio_putc_usb(const char c, FILE *stream) { return xio_putc_usart(XIO_DEV_USB, c, stream);}
+int xio_putc_usb(const char c, FILE *stream)
+{
+	BUFFER_T next_tx_buf_head;
+	struct xioUSART *dx = ((struct xioUSART *)(ds[XIO_DEV_USB].x));	// USART ptr
+
+	if ((next_tx_buf_head = (dx->tx_buf_head)-1) == 0) { // adv. head & wrap
+		next_tx_buf_head = TX_BUFFER_SIZE-1; 	// -1 avoids the off-by-one
+	}
+	// detect TX buffer full
+	if (next_tx_buf_head == dx->tx_buf_tail) {	// return error
+		gpio_set_bit_on(0x01);					// turn on XOFF LED
+		struct xioDEVICE *d = &ds[XIO_DEV_USB];	// init device struct ptr
+		d->signal = XIO_SIG_EAGAIN;
+		return(_FDEV_ERR);
+	};
+	// write to data register
+	dx->tx_buf_head = next_tx_buf_head;			// accept next buffer head
+	dx->tx_buf[dx->tx_buf_head] = c;			// ...write char to buffer
+	// force an interrupt to attempt to send the char
+	dx->usart->CTRLA = CTRLA_RXON_TXON;			// doesn't work if you just |= it
+	return (XIO_OK);
+}
 
 /* 
  * USB_TX_ISR - USB transmitter interrupt (TX)
@@ -74,7 +97,7 @@ void xio_init_usb()	// USB inits
  *	an interrupt.
  */
 
-ISR(USB_TX_ISR_vect)	//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
+ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
 	if (USBu.fc_char == NUL) {						// normal char TX path
 		if (USBu.tx_buf_head != USBu.tx_buf_tail) {	// buffer has data

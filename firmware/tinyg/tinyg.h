@@ -45,8 +45,8 @@
 #define __ISR_R2				// comment out to use R1 ISR
 #define __LOAD_MOVE_R2			// comment out to use R1 load move routine
 
-//#define __CANNED_STARTUP			// run any canned startup moves
-//#define __DISABLE_EEPROM_INIT		// disable EEPROM init for faster simulation
+#define __CANNED_STARTUP			// run any canned startup moves
+#define __DISABLE_EEPROM_INIT		// disable EEPROM init for faster simulation
 //#define __DISABLE_TRANSMIT		// disable serial tranmission (TX)
 //#define __SEGMENT_LOGGER			// enable segment logging to memory array
 //#define __DEBUG					// enable debug (see util.c /.h)
