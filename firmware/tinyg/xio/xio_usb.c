@@ -74,17 +74,20 @@ void xio_init_usb()	// USB inits
 
 int xio_putc_usb(const char c, FILE *stream)
 {
-	if ((USBu.nx_tx_buf_head = (USBu.tx_buf_head)-1) == 0) { // adv. head & wrap
+//	if ((USBu.nx_tx_buf_head = (USBu.tx_buf_head)-1) == 0) { // adv. head & wrap
+	if ((USBu.nx_tx_buf_head = --USBu.tx_buf_head) == 0) { // adv. head & wrap
 		USBu.nx_tx_buf_head = TX_BUFFER_SIZE-1;		// -1 avoids the off-by-one
 	}
+	USBu.usart->CTRLA = CTRLA_RXON_TXOFF;			// disable TX interrupt (mutex region)
 	if (USBu.nx_tx_buf_head == USBu.tx_buf_tail) {	// return error if TX buffer full
 		gpio_set_bit_on(0x01);						// turn on LED to indicate error
 		USB.signal = XIO_SIG_EAGAIN;
+		USBu.usart->CTRLA = CTRLA_RXON_TXON;
 		return(_FDEV_ERR);
 	};
-	USBu.tx_buf_head = USBu.nx_tx_buf_head;	// accept next buffer head
-	USBu.tx_buf[USBu.tx_buf_head] = c;		// write to data register
-	USBu.usart->CTRLA = CTRLA_RXON_TXON;	// force interrupt to send the char (doesn't work if you just |= it)
+	USBu.tx_buf_head = USBu.nx_tx_buf_head;			// accept next buffer head
+	USBu.tx_buf[USBu.tx_buf_head] = c;				// write to data register
+	USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send char (doesn't work if you just |= it)
 	return (XIO_OK);
 }
 
@@ -166,8 +169,8 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		return;
 	}
 	// filter out CRs and LFs if they are to be ignored
-	if ((IGNORECR(USB.flags) == true) && (c == CR)) { return;}
-	if ((IGNORELF(USB.flags) == true) && (c == LF)) { return;}
+	if ((c == CR) && (IGNORECR(USB.flags) == true)) { return;}
+	if ((c == LF) && (IGNORELF(USB.flags) == true)) { return;}
 
 	// normal character path
 	if ((--USBu.rx_buf_head) == 0) { 			// adv buffer head with wrap

@@ -182,7 +182,7 @@ BUFFER_T xio_get_rx_bufcount_usart(const struct xioUSART *dx)
 	}
 }
 
-uint16_t xio_get_usb_rx_free(void)
+BUFFER_T xio_get_usb_rx_free(void)
 {
 	return (RX_BUFFER_SIZE - xio_get_rx_bufcount_usart(&USBu));
 }
