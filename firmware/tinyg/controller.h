@@ -49,6 +49,7 @@ struct controllerSingleton {		// main TG controller struct
 	uint8_t test;
 	uint8_t src;					// active source device
 	uint8_t default_src;			// default source device
+	uint8_t linelen;				// length of currently processing line
 	char in_buf[INPUT_BUFFER_LEN];	// input text buffer
 	char out_buf[OUTPUT_BUFFER_LEN];// output text buffer
 };

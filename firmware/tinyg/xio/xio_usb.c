@@ -77,12 +77,7 @@ void xio_init_usb()	// USB inits
 
 int xio_putc_usb(const char c, FILE *stream)
 {
-//	BUFFER_T next_tx_buf_head.
-//	if ((next_tx_buf_head = (USBu.tx_buf_head)-1) == 0) { // adv. head & wrap
-//		next_tx_buf_head = TX_BUFFER_SIZE-1; 		// -1 avoids the off-by-one
-//	}
-
-	BUFFER_T next_tx_buf_head = --USBu.tx_buf_head;
+	BUFFER_T next_tx_buf_head = USBu.tx_buf_head-1;	// set the next head while leaving the current one alone
 	if (next_tx_buf_head == 0) { 					// detect wrap and afjust if necessary
 		next_tx_buf_head = TX_BUFFER_SIZE-1; 		// -1 avoids the off-by-one
 	}

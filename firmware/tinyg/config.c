@@ -1838,12 +1838,12 @@ uint8_t cmd_add_float(char *token, double value)
  */
 void cmd_print_list(uint8_t status, uint8_t textmode)
 {
-	// JSON handling. Kind of a hack. Generate the JSON string with a dummy value for 
-	// the checksum hash. Then calculate the checksum and insert it into the JSON string
+	// JSON handling. Kind of a hack. Generate the JSON string w/o the checksum hash. 
+	// Then calculate the checksum and add it into the JSON string with proper termination
 	if (cfg.comm_mode == TG_JSON_MODE) {
 		if (cfg.enable_json_echo == true) {
 			cmdObj *cmd = cmd_footer;
-			sprintf(cmd->string, "%d,%d,%d,%04d",TINYG_COMM_PROTOCOL_REV, status, xio_get_usb_rx_free(), HASHMASK);
+			sprintf(cmd->string, "%d,%d,%d,",TINYG_COMM_PROTOCOL_REV, status, tg.linelen);
 			uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
 			while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
 			sprintf(tg.out_buf + strcount + 1, "%d]}\n", compute_checksum(tg.out_buf, strcount));
