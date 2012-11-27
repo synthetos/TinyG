@@ -42,9 +42,6 @@
 #include "../xmega/xmega_interrupts.h"
 #include "../gpio.h"
 
-//#define USB ds[XIO_DEV_USB]			// device struct accessor
-//#define USBu us[XIO_DEV_USB_OFFSET]	// usart extended struct accessor
-
 /* USB device wrappers for generic USART routines */
 FILE * xio_open_usb() {return(USB.fdev);}
 int xio_cntl_usb(const uint32_t control) {return xio_cntl(XIO_DEV_USB, control);} // SEE NOTE
@@ -80,10 +77,14 @@ void xio_init_usb()	// USB inits
 
 int xio_putc_usb(const char c, FILE *stream)
 {
-	BUFFER_T next_tx_buf_head;
+//	BUFFER_T next_tx_buf_head.
+//	if ((next_tx_buf_head = (USBu.tx_buf_head)-1) == 0) { // adv. head & wrap
+//		next_tx_buf_head = TX_BUFFER_SIZE-1; 		// -1 avoids the off-by-one
+//	}
 
-	if ((next_tx_buf_head = (USBu.tx_buf_head)-1) == 0) { // adv. head & wrap
-		next_tx_buf_head = TX_BUFFER_SIZE-1; 	// -1 avoids the off-by-one
+	BUFFER_T next_tx_buf_head = --USBu.tx_buf_head;
+	if (next_tx_buf_head == 0) { 					// detect wrap and afjust if necessary
+		next_tx_buf_head = TX_BUFFER_SIZE-1; 		// -1 avoids the off-by-one
 	}
 	while (next_tx_buf_head == USBu.tx_buf_tail) { sleep_mode();} // sleep until there is space in the buffer
 	USBu.usart->CTRLA = CTRLA_RXON_TXOFF;			// disable TX interrupt (mutex region)
@@ -91,24 +92,13 @@ int xio_putc_usb(const char c, FILE *stream)
 	USBu.tx_buf[USBu.tx_buf_head] = c;				// write char to buffer
 	USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send char - doesn't work if you just |= it
 	return (XIO_OK);
-
-/*
-	USBu.usart->CTRLA = CTRLA_RXON_TXOFF;			// disable TX interrupt (mutex region)
-	if (--USBu.tx_buf_head == 0) { 					// advance the head & wrap
-		USBu.tx_buf_head = TX_BUFFER_SIZE-1;		// -1 avoids the off-by-one
-	}
-	while (USBu.tx_buf_head == USBu.tx_buf_tail) { sleep_mode();} // sleep until there is space in the buffer
-	USBu.tx_buf[USBu.tx_buf_head] = c;				// write to data register
-	USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send char (doesn't work if you just |= it)
-	return (XIO_OK);
-*/
 }
 
 ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
 	if (USBu.fc_char == NUL) {						// normal char TX path
 		if (USBu.tx_buf_head != USBu.tx_buf_tail) {	// buffer has data
-			if (--(USBu.tx_buf_tail) == 0) {		// advance tail and wrap 
+			if (--USBu.tx_buf_tail == 0) {			// advance tail and wrap 
 				USBu.tx_buf_tail = TX_BUFFER_SIZE-1;// -1 avoids OBOE
 			}
 			USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];
@@ -116,13 +106,10 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;	// force another interrupt
 		}
 	} else {										// need to send XON or XOFF
+	// comment out the XON/XOFF indicator for efficient ISR handling
+	//	if (USBu.fc_char == XOFF) { gpio_set_bit_on(0x01);// turn on XOFF LED
+	//	} else { gpio_set_bit_off(0x01);}				// turn off XOFF LED
 		USBu.usart->DATA = USBu.fc_char;
-// comment out the XON/XOFF indicator for efficient ISR handling
-//		if (USBu.fc_char == XOFF) {
-//			gpio_set_bit_on(0x01);					// turn on XOFF LED
-//		} else {
-//			gpio_set_bit_off(0x01);					// turn off XOFF LED
-//		}
 		USBu.fc_char = NUL;
 	}
 }
