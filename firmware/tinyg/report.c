@@ -200,6 +200,7 @@ struct qrIndexes qr = { 0,0,0,0,0,0 };		// init to zeros
 
 void rpt_request_queue_report() 
 { 
+	if (cfg.enable_qr != true) { return;}
 	qr.lineindex = mp_get_runtime_lineindex();
 	qr.buffers_available = mp_get_planner_buffers_available();
 	qr.request = true;
@@ -207,8 +208,9 @@ void rpt_request_queue_report()
 
 uint8_t rpt_queue_report_callback()
 {
-	if (qr.request != true) { return (TG_NOOP);}
 	if (cfg.enable_qr != true) { return (TG_NOOP);}
+	if (qr.request != true) { return (TG_NOOP);}
+	qr.request = false;
 
 	cmdObj *cmd = cmd_body;
 	cmd_clear(cmd);			 				// parent qr object			
@@ -226,7 +228,6 @@ uint8_t rpt_queue_report_callback()
 	cmd->type = TYPE_INTEGER;
 
 	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);// report in JSON or inline text mode
-	qr.request = false;
 	return (TG_OK);
 }
 

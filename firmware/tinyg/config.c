@@ -1844,6 +1844,7 @@ void cmd_print_list(uint8_t status, uint8_t textmode)
 		if (cfg.enable_json_echo == true) {
 			cmdObj *cmd = cmd_footer;
 			sprintf(cmd->string, "%d,%d,%d,",TINYG_COMM_PROTOCOL_REV, status, tg.linelen);
+			tg.linelen = 0;
 			uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
 			while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
 			sprintf(tg.out_buf + strcount + 1, "%d]}\n", compute_checksum(tg.out_buf, strcount));

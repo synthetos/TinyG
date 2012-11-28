@@ -41,8 +41,8 @@
 
 #define STATUS_REPORT_MIN_MS		200		// ms - enforces a viable minimum
 
-//#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
-#define STATUS_REPORT_INTERVAL_MS	0	// in milliseconds
+#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
+//#define STATUS_REPORT_INTERVAL_MS	0	// in milliseconds
 
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
 #define GCODE_DEFAULT_UNITS			MILLIMETERS
@@ -55,13 +55,13 @@
 #define COM_ENABLE_ECHO				false
 #define COM_ENABLE_XON				true
 
-//#define COM_ENABLE_QR				true
-#define COM_ENABLE_QR				false
+#define COM_ENABLE_QR				true
+//#define COM_ENABLE_QR				false
 
 //#define COM_COMMUNICATIONS_MODE	TG_TEXT_MODE	// alternately: TG_TEXT_MODE
 #define COM_COMMUNICATIONS_MODE		TG_JSON_MODE	// alternately: TG_TEXT_MODE
 //#define COM_ENABLE_JSON_ECHO		false
-#define COM_ENABLE_JSON_ECHO		true
+#define COM_ENABLE_JSON_ECHO		1
 
 //#define ENABLE_ACCELERATION 1			// *** NOTE: this feature is disabled in 338.11 - always equal to 1 
 
