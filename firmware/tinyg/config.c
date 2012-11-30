@@ -168,7 +168,7 @@ static uint8_t _set_sr(cmdObj *cmd);	// set status report specification
 static uint8_t _set_si(cmdObj *cmd);	// set status report interval
 static uint8_t _get_qr(cmdObj *cmd);	// run queue report (as data)
 static uint8_t _get_pb(cmdObj *cmd);	// get planner buffers available
-static uint8_t _get_k(cmdObj *cmd);		// get bytes in RX buffer
+static uint8_t _get_rx(cmdObj *cmd);	// get bytes in RX buffer
 
 static uint8_t _get_gc(cmdObj *cmd);	// get current gcode block
 static uint8_t _run_gc(cmdObj *cmd);	// run a gcode block
@@ -351,7 +351,7 @@ static const char str_si[] PROGMEM = "si,status_i,[si]  status_interval    %10.0
 static const char str_sr[] PROGMEM = "sr,status_r,";	// status_report {"sr":""}  and ? command
 static const char str_qr[] PROGMEM = "qr,queue_r,";		// queue_report {"qr":""}
 static const char str_pb[] PROGMEM = "pb,planner_buffer_a,Planner buffers:%8d\n";
-static const char str_k[] PROGMEM = "k,k,";				// bytes available in RX buffer
+static const char str_rx[] PROGMEM = "rx,rx,";			// bytes available in RX buffer
 
 // Gcode model values for reporting purposes
 static const char str_vel[]  PROGMEM = "vel,velocity,Velocity:%17.3f%S/min\n";
@@ -637,7 +637,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_sr, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
 	{ str_qr, _print_nul, _get_qr,  _set_nul, (double *)&tg.null, 0 },	// queue report object
 	{ str_pb, _print_int, _get_pb,  _set_nul, (double *)&tg.null, 0 },	// planner buffers available
-	{ str_k,  _print_int, _get_k,   _set_nul, (double *)&tg.null, 0 },	// space in RX buffer
+	{ str_rx, _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },	// space in RX buffer
 	
 	// gcode model attributes for reporting puropses
 	{ str_line,_print_int, _get_line,_set_int, (double *)&gm.linenum, 0 }, // line number - gets runtime line number
@@ -983,9 +983,10 @@ static uint8_t _set_si(cmdObj *cmd)
 	return(TG_OK);
 }
 
-/**** QUEUE REPORT FUNCTIONS ****
+/**** REPORTING FUNCTIONS ****
  * _get_qr() - run queue report
  * _get_pb() - get planner buffers available
+ * _get_rx() - get bytes available in RX buffer
  */
 static uint8_t _get_qr(cmdObj *cmd) 
 {
@@ -1000,10 +1001,7 @@ static uint8_t _get_pb(cmdObj *cmd)
 	return (TG_OK);
 }
 
-/**** ACK/NAK REPORT FUNCTIONS ****
- * _get_k()   - run ack/nak report
- */
-static uint8_t _get_k(cmdObj *cmd)
+static uint8_t _get_rx(cmdObj *cmd)
 {
 //	cmd->value = (double)xio_get_rx_bufcount_usart(&USBu);
 	cmd->value = (double)xio_get_usb_rx_free();
@@ -1841,15 +1839,16 @@ void cmd_print_list(uint8_t status, uint8_t textmode)
 	// JSON handling. Kind of a hack. Generate the JSON string w/o the checksum hash. 
 	// Then calculate the checksum and add it into the JSON string with proper termination
 	if (cfg.comm_mode == TG_JSON_MODE) {
-		if (cfg.enable_json_echo == true) {
-			cmdObj *cmd = cmd_footer;
-			sprintf(cmd->string, "%d,%d,%d,",TINYG_COMM_PROTOCOL_REV, status, tg.linelen);
-			tg.linelen = 0;
-			uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
-			while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
-			sprintf(tg.out_buf + strcount + 1, "%d]}\n", compute_checksum(tg.out_buf, strcount));
-			fprintf(stderr, "%s", tg.out_buf);
-		}
+		js_print_list(status);
+//		if (cfg.enable_json_echo == true) {
+//			cmdObj *cmd = cmd_footer;
+//			sprintf(cmd->string, "%d,%d,%d,",TINYG_COMM_PROTOCOL_REV, status, tg.linelen);
+//			tg.linelen = 0;
+//			uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
+//			while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
+//			sprintf(tg.out_buf + strcount + 1, "%d]}\n", compute_checksum(tg.out_buf, strcount));
+//			fprintf(stderr, "%s", tg.out_buf);
+//		}
 		} else {
 			switch (textmode) {
 			case TEXT_INLINE_PAIRS: { _print_text_inline_pairs(); break; }

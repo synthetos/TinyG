@@ -316,6 +316,40 @@ uint16_t js_serialize_json(char *out_buf)
 	sprintf(str, "\n");
 	return (str - out_buf);
 }
+/****************************************************************************
+ * js_print_list() - output cmdObj list in JSON format
+ * 
+ *	The $je setting affects the level of response. Asynchronous reports such 
+ *	as status reports and QRs always respond with entire JSON line.
+ *
+ *	A footer is returned for every setting except $je=0
+ *
+ *	$je=0	- No response is provided for any command
+ *	$je=1	- Response contains footer only
+ *	$je=2	- Body returned for configs; omitted for Gcode commands
+ *	$je=3	- Body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+ *	$je=4	- Body returned for configs and Gcode - gcode is truncated by precision & comments removed
+ *	$je=5	- Body returned for configs and Gcode - Gcode comments removed
+ */
+
+
+void js_print_list(uint8_t status)
+{
+	if (cfg.enable_json_echo == 0) { return;}
+
+
+
+	if (cfg.enable_json_echo == true) {
+		cmdObj *cmd = cmd_footer;
+		sprintf(cmd->string, "%d,%d,%d,",TINYG_COMM_PROTOCOL_REV, status, tg.linelen);
+		tg.linelen = 0;
+		uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
+		while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
+		sprintf(tg.out_buf + strcount + 1, "%d]}\n", compute_checksum(tg.out_buf, strcount));
+		fprintf(stderr, "%s", tg.out_buf);
+	}
+}
+
 
 //###########################################################################
 //##### UNIT TESTS ##########################################################

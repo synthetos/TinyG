@@ -33,7 +33,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95
-#define TINYG_BUILD_NUMBER   	346.04	// new planning methods
+#define TINYG_BUILD_NUMBER   	346.05
 
 #define TINYG_COMM_PROTOCOL_REV 1	// the communications protocol revision is tracked independently
 
