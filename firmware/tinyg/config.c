@@ -1558,7 +1558,6 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd)
 /****************************************************************************
  * cmdObj helper functions and other low-level cmd helpers
  * cmd_get_max_index()		- utility function to return index array size				
- * cmd_clear() 				- initialize a command object (that you actually passed in)
  * cmd_get_index_by_token() - get index from mnenonic token (most efficient scan)
  * cmd_get_index() 			- get index from mnenonic token or friendly name
  * cmd_get_token()			- returns token in arg string & returns pointer to string
@@ -1579,24 +1578,6 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd)
  */
 
 INDEX_T cmd_get_max_index() { return (CMD_INDEX_MAX);}
-
-cmdObj *cmd_clear(cmdObj *cmd)		// clear the cmdObj structure
-{
-	cmdObj *nx = cmd->nx;			// save pointers
-	cmdObj *pv = cmd->pv;
-	memset(cmd, 0, sizeof(struct cmdObject));
-	cmd->nx = nx;					// restore pointers
-	cmd->pv = pv;
-	if (cmd->pv != NULL) { 			// set depth correctly
-		if (cmd->pv->type == TYPE_PARENT) { 
-			cmd->depth = cmd->pv->depth + 1;
-		} else {
-			cmd->depth = cmd->pv->depth;
-		}
-	}
-	cmd->type = TYPE_END;
-	return (cmd);
-}
 
 INDEX_T cmd_get_index_by_token(const char *str)
 {
@@ -1706,45 +1687,80 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 }
 
 /****************************************************************************
- * cmdObj list methods (or would be methods if this were OO code)
- * cmd_clear_list()	- reset the entire CmdObj list: headers, body, msg and footers
- * cmd_clear_body()	- reset cmdObjs in the body
+ * cmdObj init methods (or would be methods if this were OO code)
+ * cmd_clear() 			- initialize a command object (that you actually passed in)
+ * cmd_clear_list()		- clear body and footer
+ * cmd_clear_body()		- clear body leaving only the parent 'b'
+ * cmd_clear_footer()	- clear footer leaving only the footer array 'f'
+ * cmd_omit_body()		- clear body so it gets skipped during serialization
  */
+
+cmdObj *cmd_clear(cmdObj *cmd)		// clear the cmdObj structure
+{
+	cmdObj *nx = cmd->nx;			// save pointers
+	cmdObj *pv = cmd->pv;
+	memset(cmd, 0, CMD_OBJ_CORE);	// don't waste time clearing the string
+	cmd->nx = nx;					// restore pointers
+	cmd->pv = pv;
+	if (cmd->pv != NULL) { 			// set depth correctly
+		if (cmd->pv->type == TYPE_PARENT) { 
+			cmd->depth = cmd->pv->depth + 1;
+		} else {
+			cmd->depth = cmd->pv->depth;
+		}
+	}
+	cmd->type = TYPE_EMPTY;
+	return (cmd);
+}
 
 void cmd_clear_list()
 {
-	cmdObj *cmd;
-
-	cmd = cmd_clear(cmd_header);				// setup "b" body header
-	sprintf_P(cmd->token, PSTR("b"));
-	cmd->type = TYPE_PARENT;
-	cmd->nx = (cmd_body);
-
-	cmd_clear_body(cmd_body);					// setup body objects
-
-	cmd = cmd_clear(cmd_footer);				// setup "f" footer element
-	sprintf_P(cmd->token, PSTR("f"));
-	cmd->type = TYPE_ARRAY;
-	cmd->pv = &cmd_body[CMD_BODY_LEN-1];
-	cmd->nx = (cmd+1);
-
-	cmd = cmd_clear(cmd+1);						// setup terminating element
-	cmd->pv = (cmd-1);
+	cmd_clear_body(cmd_body);
+	cmd_clear_footer(cmd_footer);
+	return;
 }
 
 void cmd_clear_body(cmdObj *cmd)
 {
-	cmdObj *cmd_first = cmd;
-	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		cmd_clear(cmd);
+	// setup "b" parent
+	cmd->pv = 0;
+	cmd->nx = (cmd+1);
+	cmd->index = 0;
+	cmd->depth = 0;
+	cmd->type = TYPE_PARENT;
+	cmd->token[0] = 'b';
+	cmd++;
+
+	// setup remaining body elements
+	for (uint8_t i=1; i<CMD_BODY_LEN; i++) {
 		cmd->pv = (cmd-1);
 		cmd->nx = (cmd+1);
-		cmd->depth = cmd->pv->depth +1;
+		cmd->index = 0;
+		cmd->depth = 1;
+		cmd->type = TYPE_EMPTY;
 		cmd++;
 	}
 	(--cmd)->nx = cmd_footer;					// correct last element
-	cmd = cmd_first;							// correct first element
-	cmd->pv = &cmd_header[CMD_HEADER_LEN-1];
+}
+
+void cmd_clear_footer(cmdObj *cmd)
+{
+	cmd->pv = &cmd_body[CMD_BODY_LEN-1];
+	cmd->nx = (cmd+1);
+	cmd->token[0] = 'f';
+	cmd->token[1] = NUL;
+	cmd->depth = 0;
+	cmd->type = TYPE_ARRAY;
+
+	cmd->nx->type = TYPE_EMPTY;					// setup terminating element
+	cmd->nx->pv = (cmd-1);
+	cmd->nx->nx = 0;
+}
+
+void cmd_omit_body(cmdObj *cmd)
+{
+	cmd_clear_body(cmd_body);
+	cmd->type = TYPE_EMPTY;
 }
 
 /**** List manipulation methods **** 
@@ -1761,7 +1777,7 @@ uint8_t cmd_add_token(char *token)
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->type != TYPE_END) {
+		if (cmd->type != TYPE_EMPTY) {
 			cmd = cmd->nx;
 			continue;
 		}
@@ -1779,7 +1795,7 @@ uint8_t cmd_add_string(char *token, char *string)
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->type != TYPE_END) {
+		if (cmd->type != TYPE_EMPTY) {
 			cmd = cmd->nx;
 			continue;
 		}
@@ -1797,7 +1813,7 @@ uint8_t cmd_add_integer(char *token, uint32_t value)
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->type != TYPE_END) {
+		if (cmd->type != TYPE_EMPTY) {
 			cmd = cmd->nx;
 			continue;
 		}
@@ -1814,7 +1830,7 @@ uint8_t cmd_add_float(char *token, double value)
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->type != TYPE_END) {
+		if (cmd->type != TYPE_EMPTY) {
 			cmd = cmd->nx;
 			continue;
 		}
@@ -1840,17 +1856,8 @@ void cmd_print_list(uint8_t status, uint8_t textmode)
 	// Then calculate the checksum and add it into the JSON string with proper termination
 	if (cfg.comm_mode == TG_JSON_MODE) {
 		js_print_list(status);
-//		if (cfg.enable_json_echo == true) {
-//			cmdObj *cmd = cmd_footer;
-//			sprintf(cmd->string, "%d,%d,%d,",TINYG_COMM_PROTOCOL_REV, status, tg.linelen);
-//			tg.linelen = 0;
-//			uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
-//			while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
-//			sprintf(tg.out_buf + strcount + 1, "%d]}\n", compute_checksum(tg.out_buf, strcount));
-//			fprintf(stderr, "%s", tg.out_buf);
-//		}
-		} else {
-			switch (textmode) {
+	} else {
+		switch (textmode) {
 			case TEXT_INLINE_PAIRS: { _print_text_inline_pairs(); break; }
 			case TEXT_INLINE_VALUES: { _print_text_inline_values(); break; }
 			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted(); break; }
@@ -1869,10 +1876,10 @@ void _print_text_inline_pairs()
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), cmd->token, cmd->string); break;}
-			case TYPE_END:		{ fprintf_P(stderr,PSTR("\n")); return; }
+			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
-		if (cmd->type != TYPE_END) {
+		if (cmd->type != TYPE_EMPTY) {
 			fprintf_P(stderr,PSTR(","));
 		}		
 	}
@@ -1888,10 +1895,10 @@ void _print_text_inline_values()
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%1.3f"), cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), cmd->value); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), cmd->string); break;}
-			case TYPE_END:		{ fprintf_P(stderr,PSTR("\n")); return; }
+			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
-		if (cmd->type != TYPE_END) {
+		if (cmd->type != TYPE_EMPTY) {
 			fprintf_P(stderr,PSTR(","));
 		}
 	}
@@ -1904,7 +1911,7 @@ void _print_text_multiline_formatted()
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		cmd_formatted_print(cmd);
 		cmd = cmd->nx;
-		if (cmd->type == TYPE_END) { break;}
+		if (cmd->type == TYPE_EMPTY) { break;}
 	}
 }
 
@@ -2148,7 +2155,7 @@ static uint8_t _set_grp(cmdObj *cmd)
 {
 	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
-		if (cmd->type == TYPE_END) {
+		if (cmd->type == TYPE_EMPTY) {
 			break;
 		} else if (cmd->type == TYPE_NULL) {// NULL means GET the value
 			cmd_get(cmd);

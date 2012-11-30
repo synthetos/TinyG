@@ -274,12 +274,17 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 
 uint16_t js_serialize_json(char *out_buf)
 {
-	cmdObj *cmd = cmd_header;
+	cmdObj *cmd = cmd_body;
 	char *str = out_buf;						// set working string pointer 
 	int8_t depth = 0;
 
 	strcpy(str++, "{"); 						// write opening curly
-	do {	// serialize the current element (assumes the first element is not empty)
+	while (cmd->nx != NULL) {					// null signals last object
+		if (cmd->type == TYPE_EMPTY) { 			// skip over empty elements
+			cmd = cmd->nx;
+			continue;
+		}
+ 		// serialize the current element (assumes the first element is not empty)
 		str += sprintf(str, "\"%s\":", cmd->token);
 
 		if (cmd->type == TYPE_PARENT) {
@@ -291,15 +296,15 @@ uint16_t js_serialize_json(char *out_buf)
 		} else if (cmd->type == TYPE_STRING) { str += sprintf(str, "\"%s\"", cmd->string);
 		} else if (cmd->type == TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
 		} else if (cmd->type == TYPE_ARRAY)  { str += sprintf(str, "[%s]", cmd->string);
-		} else if (cmd->type == TYPE_END)	 { str += sprintf(str, "\"\"");
+		} else if (cmd->type == TYPE_EMPTY)	 { str += sprintf(str, "\"\"");
 		} else if (cmd->type == TYPE_NULL)	 { str += sprintf(str, "\"\"");
 		} else if (cmd->type == TYPE_FALSE)	 { str += sprintf(str, "false");
 		} else if (cmd->type == TYPE_TRUE)	 { str += sprintf(str, "true");
-		} 
-		do {  // advance to the next non-empty element
+		}
+		do {  								// advance to the next non-empty element
 			cmd = cmd->nx;
 			if (cmd->nx == NULL) break;
-		} while (cmd->type == TYPE_END); 	// skip over empty elements
+		} while (cmd->type == TYPE_EMPTY); 	// skip over empty elements
 
 		while (depth > cmd->depth) {		// write commas or embedded closing curlies
 			str += sprintf(str, "}");
@@ -308,8 +313,7 @@ uint16_t js_serialize_json(char *out_buf)
 		if (cmd->nx != NULL) {
 			str += sprintf(str, ",");
 		}
-	} while (cmd->nx != NULL);
-
+	}
 	do { // handle closing curlies and NEWLINE
 		str += sprintf(str, "}");
 	} while (depth-- > 0);
@@ -337,17 +341,18 @@ void js_print_list(uint8_t status)
 {
 	if (cfg.enable_json_echo == 0) { return;}
 
-
-
-	if (cfg.enable_json_echo == true) {
-		cmdObj *cmd = cmd_footer;
-		sprintf(cmd->string, "%d,%d,%d,",TINYG_COMM_PROTOCOL_REV, status, tg.linelen);
-		tg.linelen = 0;
-		uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
-		while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
-		sprintf(tg.out_buf + strcount + 1, "%d]}\n", compute_checksum(tg.out_buf, strcount));
-		fprintf(stderr, "%s", tg.out_buf);
+	if (cfg.enable_json_echo == 1) { 
+		cmd_omit_body(cmd_body);
 	}
+
+	// prepare the footer and print the result
+	cmdObj *cmd = cmd_footer;
+	sprintf(cmd->string, "%d,%d,%d,",TINYG_COMM_PROTOCOL_REV, status, tg.linelen);
+	tg.linelen = 0;
+	uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
+	while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
+	sprintf(tg.out_buf + strcount + 1, "%d]}\n", compute_checksum(tg.out_buf, strcount));
+	fprintf(stderr, "%s", tg.out_buf);
 }
 
 
