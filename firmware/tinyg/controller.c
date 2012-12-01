@@ -149,6 +149,7 @@ static void _controller_HSM()
 
 //----- command readers and parsers ------------------------------------//
 	DISPATCH(_sync_to_tx_buffer());			// sync with TX buffer (pseudo-blocking)
+	DISPATCH(cfg_set_baud_callback());		// perform baud rate update (must be after TX sync)
 	DISPATCH(_sync_to_planner());			// sync with planning queue
 	DISPATCH(_dispatch());					// read and execute next command
 }
@@ -247,6 +248,7 @@ static uint8_t _dispatch()
 		// Note that TG_EAGAIN, TG_NOOP etc. will just flow through
 		return (status);
 	}
+	tg.linelen = strlen(tg.in_buf)+1;
 
 	// dispatch the new text line
 	switch (toupper(tg.in_buf[0])) {
@@ -275,7 +277,13 @@ static uint8_t _dispatch()
 			break;
 		}
 		default: {								// anything else must be Gcode
-			_dispatch_return(gc_gcode_parser(tg.in_buf), tg.in_buf);
+			if (cfg.comm_mode != TG_JSON_MODE) {
+				_dispatch_return(gc_gcode_parser(tg.in_buf), tg.in_buf);
+			} else {
+				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN);	// use output buffer as a temp
+				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);
+				_dispatch_return(js_json_parser(tg.in_buf), tg.out_buf); 
+			}
 		}
 	}
 	return (TG_OK);

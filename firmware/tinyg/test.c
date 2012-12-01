@@ -100,20 +100,37 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 #ifdef __CANNED_STARTUP
 
 //	xio_queue_RX_string_usb("$xvm\n");// match
+<<<<<<< HEAD
 	xio_queue_RX_string_usb("$xasasas=42\n");// bad command
+=======
+//	xio_queue_RX_string_usb("$xasasas=42\n");// bad command
+>>>>>>> dev
 //	xio_queue_RX_string_usb("$test=51\n");	// run braid fragment to test short-line handling
 
 //	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"posa\":true,\"posx\":true,\"gc\":true,\"feed\":true,\"posy\":true,\"line\":true,\"stat\":true,\"posz\":true}}\n");
 //	xio_queue_RX_string_usb("{\"ej\":1}\n");
 
+<<<<<<< HEAD
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x1\"}\n");
+=======
+//	xio_queue_RX_string_usb("{\"rx\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"x\":20}\n");
+//	xio_queue_RX_string_usb("{\"1\":{\"po\":\"\"}}\n");
+
+	xio_queue_RX_string_usb("{\"baud\":6}\n");
+//	xio_queue_RX_string_usb("{\"gc\":\"n20g0x1y1.1\"}\n");
+>>>>>>> dev
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x20y30z40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x30\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x0\"}\n");
 //	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
 
+<<<<<<< HEAD
 //	xio_queue_RX_string_usb("g0a2\n");
+=======
+//	xio_queue_RX_string_usb("g0x2\n");
+>>>>>>> dev
 //	xio_queue_RX_string_usb("g92a0\n");
 //	xio_queue_RX_string_usb("g0a3\n");	// should be a=3. Instead it's a=1
 

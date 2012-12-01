@@ -33,33 +33,18 @@
  */
 
 /***********************************************************************/
-/**** Shapoko 375mm profile ********************************************/
+/**** Ultimaker profile ************************************************/
 /***********************************************************************/
 
 #define TINYG_CONFIGURATION_PROFILE "Ultimaker"	// displays base config profile
 #define INIT_CONFIGURATION_MESSAGE "Initializing configs to Ultimaker profile"
 
-// **** common settings - applied to all axes or motors ****
-
 #define JUNCTION_DEVIATION	0.05		// default value, in mm
-
-// **** system settings ****
-
 #define JUNCTION_ACCELERATION 400000	// centripetal acceleration around corners
 
-#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
+// *** settings.h overrides ***
 
-#define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
-#define GCODE_DEFAULT_UNITS			MILLIMETERS
-#define GCODE_DEFAULT_COORD_SYSTEM	G54
-#define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
-#define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
-
-#define COM_APPEND_TX_CR			false
-#define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
-#define COM_ENABLE_XON				true
-#define COM_ENABLE_ECHO				true
-#define COM_ENABLE_QR				true
+#undef	COM_COMMUNICATIONS_MODE
 #define COM_COMMUNICATIONS_MODE		TG_JSON_MODE	// alternately: TG_TEXT_MODE
 
 // *** motor settings ***

@@ -36,19 +36,15 @@
 #include <stdbool.h>					// true and false
 #include <avr/pgmspace.h>				// precursor for xio.h
 #include <avr/interrupt.h>
-//#include <avr/sleep.h>				// needed if blocking reads & writes are used
+#include <avr/sleep.h>					// needed for blocking TX
 
 #include "xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
 #include "../gpio.h"
 
-//#define USB ds[XIO_DEV_USB]			// device struct accessor
-//#define USBu us[XIO_DEV_USB_OFFSET]	// usart extended struct accessor
-
 /* USB device wrappers for generic USART routines */
 FILE * xio_open_usb() {return(USB.fdev);}
 int xio_cntl_usb(const uint32_t control) {return xio_cntl(XIO_DEV_USB, control);} // SEE NOTE
-int xio_putc_usb(const char c, FILE *stream) {return xio_putc_usart(XIO_DEV_USB, c, stream);}
 int xio_getc_usb(FILE *stream) {return xio_getc_usart(XIO_DEV_USB, stream);}
 int xio_gets_usb(char *buf, const int size) {return xio_gets_usart(XIO_DEV_USB, buf, size);}
 void xio_queue_RX_char_usb(const char c) {xio_queue_RX_char_usart(XIO_DEV_USB, c);}
@@ -62,10 +58,13 @@ void xio_init_usb()	// USB inits
 
 // NOTE: Might later expand setflags() to validate control bits and return errors
 
-
-/* 
- * USB_TX_ISR - USB transmitter interrupt (TX)
+/*
+ * xio_putc_usb() 
+ * USB_TX_ISR - USB transmitter interrupt (TX) used by xio_usb_putc()
  *
+ * 	These are co-routines that work in tandem.
+ * 	xio_putc_usb() is a more efficient form derived from xio_putc_usart()
+ * 
  *	The TX interrupt dilemma: TX interrupts occur when the USART DATA register is 
  *	empty (and the ISR must disable interrupts when nothing's left to read, or they 
  *	keep firing). If the TX buffer is completely empty (TXCIF is set) then enabling
@@ -73,12 +72,28 @@ void xio_init_usb()	// USB inits
  *	never empties. So the routine that puts chars in the TX buffer must always force
  *	an interrupt.
  */
+// alternate form:
+//int xio_putc_usb(const char c, FILE *stream) { return xio_putc_usart(XIO_DEV_USB, c, stream);}
 
-ISR(USB_TX_ISR_vect)	//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
+int xio_putc_usb(const char c, FILE *stream)
+{
+	BUFFER_T next_tx_buf_head = USBu.tx_buf_head-1;	// set the next head while leaving the current one alone
+	if (next_tx_buf_head == 0) { 					// detect wrap and afjust if necessary
+		next_tx_buf_head = TX_BUFFER_SIZE-1; 		// -1 avoids the off-by-one
+	}
+	while (next_tx_buf_head == USBu.tx_buf_tail) { sleep_mode();} // sleep until there is space in the buffer
+	USBu.usart->CTRLA = CTRLA_RXON_TXOFF;			// disable TX interrupt (mutex region)
+	USBu.tx_buf_head = next_tx_buf_head;			// accept next buffer head
+	USBu.tx_buf[USBu.tx_buf_head] = c;				// write char to buffer
+	USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send char - doesn't work if you just |= it
+	return (XIO_OK);
+}
+
+ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
 	if (USBu.fc_char == NUL) {						// normal char TX path
 		if (USBu.tx_buf_head != USBu.tx_buf_tail) {	// buffer has data
-			if (--(USBu.tx_buf_tail) == 0) {		// advance tail and wrap 
+			if (--USBu.tx_buf_tail == 0) {			// advance tail and wrap 
 				USBu.tx_buf_tail = TX_BUFFER_SIZE-1;// -1 avoids OBOE
 			}
 			USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];
@@ -86,13 +101,10 @@ ISR(USB_TX_ISR_vect)	//ISR(USARTC0_DRE_vect)	// USARTC0 data register empty
 			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;	// force another interrupt
 		}
 	} else {										// need to send XON or XOFF
+	// comment out the XON/XOFF indicator for efficient ISR handling
+	//	if (USBu.fc_char == XOFF) { gpio_set_bit_on(0x01);// turn on XOFF LED
+	//	} else { gpio_set_bit_off(0x01);}				// turn off XOFF LED
 		USBu.usart->DATA = USBu.fc_char;
-// comment out the XON/XOFF indicator for efficient ISR handling
-//		if (USBu.fc_char == XOFF) {
-//			gpio_set_bit_on(0x01);					// turn on XOFF LED
-//		} else {
-//			gpio_set_bit_off(0x01);					// turn off XOFF LED
-//		}
 		USBu.fc_char = NUL;
 	}
 }
@@ -141,8 +153,8 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		return;
 	}
 	// filter out CRs and LFs if they are to be ignored
-	if ((IGNORECR(USB.flags) == true) && (c == CR)) { return;}
-	if ((IGNORELF(USB.flags) == true) && (c == LF)) { return;}
+	if ((c == CR) && (IGNORECR(USB.flags) == true)) { return;}
+	if ((c == LF) && (IGNORELF(USB.flags) == true)) { return;}
 
 	// normal character path
 	if ((--USBu.rx_buf_head) == 0) { 			// adv buffer head with wrap

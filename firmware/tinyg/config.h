@@ -84,13 +84,13 @@
  *	of CMD_NAME_LEN and CMD_VALUE_STRING_LEN which are statically allocated 
  *	and should be as short as possible. 
  */
-#define CMD_HEADER_LEN 1			// body header element
-#define CMD_BODY_LEN 21				// body elements
+#define CMD_HEADER_LEN 1			// "b" header
+#define CMD_BODY_LEN 21				// body elements - includes one terminator
 #define CMD_FOOTER_LEN 2			// footer element (includes terminator element)
 
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 #define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_FOOTER_LEN)
-#define CMD_STATUS_REPORT_LEN CMD_BODY_LEN	// max elements in a status report
+#define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS	// max elements in a status report
 
 #define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
 #define CMD_STRING_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN + CMD_FORMAT_LEN +3)
@@ -103,25 +103,40 @@
 // NOTE: The number of SYSTEM_GROUP or SR_DEFAULTS elements cannot exceed CMD_MAX_OBJECTS
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
 #define GROUP_EXCLUSIONS "cycs,coor"	 // items that are not actually part of the xyzabcuvw0123456789 groups
-#define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ec,ee,ex,eq,ej" // cats and dogs
-#define DONT_INITIALIZE "gc,sr,help,test,defa"	// commands that should not be initialized
-#define DONT_PERSIST	"gc,help,test,defa"		// commands that should not be persisted
-#define SR_DEFAULTS 	"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+#define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ec,ee,ex,eq,ej,je" // cats and dogs
+#define DONT_INITIALIZE "gc,sr,help,test,defa,baud"	// commands that should not be initialized
+#define DONT_PERSIST	"gc,help,test,defa"			// commands that should not be persisted
+//See settings.h for SR_DEFAULTS
 
 #define IGNORE_OFF 0				// accept either CR or LF as termination on RX text line
 #define IGNORE_CR 1					// ignore CR on RX
 #define IGNORE_LF 2					// ignore LF on RX
 
-enum cmdType {						// object / value typing for config and JSON
-	TYPE_END = -2,					// object terminates the list
-	TYPE_NULL = -1,					// value is 'null' (meaning the JSON null value)
-	TYPE_FALSE = false,				// value is 'false' (0)
-	TYPE_TRUE = true,				// value is 'true' (1)
+enum objType {						// object / value typing for config and JSON
+	TYPE_EMPTY = 0,					// object has no value (which is not the same as "NULL")
+	TYPE_NULL,						// value is 'null' (meaning the JSON null value)
+	TYPE_BOOL,						// value is "true" (1) or "false"(0)
 	TYPE_INTEGER,					// value is a uint32_t
 	TYPE_FLOAT,						// value is a floating point number
 	TYPE_STRING,					// value is in string field
 	TYPE_ARRAY,						// value is array element count, values are CSV ASCII in string field
 	TYPE_PARENT						// object is a parent to a sub-object
+};
+
+enum cmdType {						// classification of commands
+	CMD_TYPE_NULL = 0,
+	CMD_TYPE_CONFIG,				// configuration commands
+	CMD_TYPE_GCODE,					// gcode
+	CMD_TYPE_REPORT					// SR, QR and any other report
+};
+
+enum jsonEcho {
+	JE_SILENT = 0,					// No response is provided for any command
+	JE_OMIT_BODY,					// Response contains no body - footer only
+	JE_OMIT_GCODE_BODY,				// Body returned for configs; omitted for Gcode commands
+	JE_GCODE_LINENUM_ONLY,			// Body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+//	JE_GCODE_TRUNCATED,				// Body returned for configs and Gcode - gcode is truncated by precision & comments removed
+	JE_FULL_ECHO					// Body returned for configs and Gcode - Gcode comments removed
 };
 
 enum cmdTextMode {					// these set the print modes for text output
@@ -147,21 +162,16 @@ struct cmdObject {					// depending on use, not all elements may be populated
 typedef struct cmdObject cmdObj;	// handy typedef for command onjects
 typedef uint8_t (*fptrCmd)(cmdObj *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
+#define CMD_OBJ_CORE (sizeof(cmdObj) - (CMD_STRING_LEN+1))
 
 // NOTE: Be aware: the string field is mainly used to carry string values, 
 // but is used as temp storage for the friendly_name during parsing to save RAM..
 #define friendly_name string			// used here as a friendly name field
 
-// Allocate memory for all objects that may be used in cmdObj lists
-cmdObj cmd_header[CMD_HEADER_LEN];	// body headxer element
+// Allocate cmdObj lists
+cmdObj cmd_header[CMD_HEADER_LEN];	// JSON header element
 cmdObj cmd_body[CMD_BODY_LEN];		// cmd_body[0] is the root object
-cmdObj cmd_footer[CMD_FOOTER_LEN];	// footer element
-
-//#define cmd_status &cmd_footer[0]	// status code element
-//#define f &cmd_footer[2]	// buffer available element
-//#define cmd_linenum &cmd_footer[3]	// line number element
-//#define cmd_checksum &cmd_footer[1]	// checksum element
-//#define cmd_terminal &cmd_footer[2]	// termination element
+cmdObj cmd_footer[CMD_FOOTER_LEN];	// JSON footer element
 
 /*
  * Global Scope Functions
@@ -172,6 +182,7 @@ cmdObj cmd_footer[CMD_FOOTER_LEN];	// footer element
 void cfg_init(void);
 uint8_t cfg_text_parser(char *str);
 void cfg_init_gcode_model(void);
+uint8_t cfg_set_baud_callback(void);
 
 // cmd accessors
 uint8_t cmd_get(cmdObj *cmd);		// entry point for GETs
@@ -180,23 +191,23 @@ void cmd_formatted_print(cmdObj *cmd);// entry point for formatted print
 void cmd_persist(cmdObj *cmd);		// entry point for persistence
 uint8_t cmd_get_cmdObj(cmdObj *cmd);
 
-INDEX_T cmd_get_max_index(void);
-cmdObj *cmd_clear(cmdObj *cmd);
-void cmd_clear_body(cmdObj *cmd);
+cmdObj *cmd_clear_obj(cmdObj *cmd);
 void cmd_clear_list(void);
+void cmd_clear_body(cmdObj *cmd);
+
 uint8_t cmd_add_token(char *token);
 uint8_t cmd_add_string(char *token, char *string);
 uint8_t cmd_add_float(char *token, double value);
 uint8_t cmd_add_integer(char *token, uint32_t value);
 void cmd_print_list(uint8_t status, uint8_t textmode);
-//uint8_t cmd_is_header(cmdObj *cmd);
-//uint8_t cmd_is_body(cmdObj *cmd);
 
+INDEX_T cmd_get_max_index(void);
 INDEX_T cmd_get_index_by_token(const char *str);
 INDEX_T cmd_get_index(const char *str);
 char *cmd_get_token(const INDEX_T i, char *string);
 //char cmd_get_group(const INDEX_T i);
 uint8_t cmd_is_group(const char *str);
+uint8_t cmd_get_type(cmdObj *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 
 //uint8_t cmd_read_NVM_record(cmdObj *cmd);
@@ -262,10 +273,13 @@ struct cfgParameters {
 	// communications settings		// these are shadow settigns for XIO cntrl bits
 	uint8_t ignore_crlf;			// ignore CR or LF on RX
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
-	uint8_t enable_echo;			// enable echo - also used for gating JSON responses
+	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_xon;				// enable XON/XOFF mode
 	uint8_t enable_qr;				// TRUE = queue reports enabled
-	uint8_t comm_mode;				// TEXT or JSON mode
+	uint8_t json_echo_mode;			// See jsonEcho enum (in config.h) for JSON echo modes
+	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
+	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
+	uint8_t usb_baud_flag;
 
 	// status report configs
 	uint32_t status_report_interval;// in MS. set non-zero to enable

@@ -113,7 +113,7 @@ static void _xio_enable_rs485_rx()
  *
  *	Lastly, the system must detect the end of transmission (TX complete)
  *	to know when to revert the RS485 driver to RX mode. So there are 2 TX 
- *	interrupt conditions and handlers, not 1 like all the other USART TXs.
+ *	interrupt conditions and handlers, not 1 like other USART TXs.
  *
  *	NOTE: Finding a buffer empty condition on the first byte of a string 
  *		  is common as the TX byte is often written by the task itself.

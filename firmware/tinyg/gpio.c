@@ -276,10 +276,8 @@ void gpio_set_switch(uint8_t sw_flag)
 
 uint8_t gpio_switch_handler(void)
 {
-	if (sw.thrown == false) {			// leave if no switches are thrown
-		return (TG_NOOP);
-	}
-	gpio_clear_switches();					// reset the switches last, not before
+	if (sw.thrown == false) { return (TG_NOOP);}// leave if no switches are thrown
+	gpio_clear_switches();						// reset the switches last, not before
 	return (TG_OK);
 }
 

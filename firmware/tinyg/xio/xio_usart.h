@@ -96,21 +96,20 @@ void xio_dump_RX_queue_usart(void);
 #define USART_RX_DATA_READY_bm USART_RXCIF_bm
 
 //**** Serial IO Interrupt levels are mapped to MED level here ****
-
+/*
 #define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_MED_gc)
 #define CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
 #define CTRLA_RXON_TXOFF_TXCON (USART_RXCINTLVL_MED_gc | USART_TXCINTLVL_MED_gc)
 #define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_MED_gc | USART_TXCINTLVL_MED_gc)
 #define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_MED_gc)
-
+*/
 // **** Same as above, but with TX in LO interrupt ****
-/*
+
 #define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc)
 #define CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
 #define CTRLA_RXON_TXOFF_TXCON (USART_RXCINTLVL_MED_gc | USART_TXCINTLVL_LO_gc)
 #define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_LO_gc | USART_TXCINTLVL_LO_gc)
 #define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_LO_gc)
-*/
 
 // **** RS485 device configuration (no echo or CRLF) ****
 #define RS485_INIT_bm (XIO_RDWR | XIO_NOBLOCK | XIO_NOECHO | XIO_LINEMODE | XIO_BAUD_115200)
@@ -178,6 +177,7 @@ void xio_dump_RX_queue_usart(void);
 #define RX_BUFFER_SIZE (BUFFER_T)255	// BUFFER_T can be 8 bits
 //#define RX_BUFFER_SIZE (BUFFER_T)512	// BUFFER_T must be 16 bits if >255
 //#define RX_BUFFER_SIZE (BUFFER_T)1024	// 2048 is the practical upper limit
+
 #define TX_BUFFER_SIZE (BUFFER_T)255	// BUFFER_T can be 8 bits
 //#define TX_BUFFER_SIZE (BUFFER_T)512	// BUFFER_T must be 16 bits if >255
 //#define TX_BUFFER_SIZE (BUFFER_T)1024	// 2048 is practical upper limit given RAM
@@ -231,10 +231,10 @@ struct xioUSART {
 //	uint16_t uflags;				// usart sub-system flags (UNUSED)
 	uint8_t fc_char;	 			// flow control character to send
 	volatile uint8_t fc_state;		// flow control state
-	BUFFER_T rx_buf_tail;			// RX buffer read index  (not VOLATILE)
+	volatile BUFFER_T rx_buf_tail;	// RX buffer read index
 	volatile BUFFER_T rx_buf_head;	// RX buffer write index (written by ISR)
 	volatile BUFFER_T tx_buf_tail;	// TX buffer read index  (written by ISR)
-	BUFFER_T tx_buf_head;			// TX buffer write index (not VOLATILE)
+	volatile BUFFER_T tx_buf_head;	// TX buffer write index
 
 	struct USART_struct *usart;		// USART structure
 	struct PORT_struct *port;		// corresponding port
@@ -246,6 +246,6 @@ struct xioUSART {
 // down here by their lonesome because they need xioUSART defined
 BUFFER_T xio_get_rx_bufcount_usart(const struct xioUSART *dx);
 BUFFER_T xio_get_tx_bufcount_usart(const struct xioUSART *dx);
-uint16_t xio_get_usb_rx_free(void);
+BUFFER_T xio_get_usb_rx_free(void);
 
 #endif

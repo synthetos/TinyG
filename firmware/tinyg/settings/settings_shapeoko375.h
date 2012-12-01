@@ -39,33 +39,20 @@
 #define TINYG_CONFIGURATION_PROFILE "Shapeoko 375mm"	// displays base config profile
 #define INIT_CONFIGURATION_MESSAGE "Initializing configs to Shapeoko 375mm profile"
 
-// **** common settings - applied to all axes or motors ****
-
 #define JUNCTION_DEVIATION	0.01		// default value, in mm - smaller is faster
-
-// **** system settings ****
-
 #define JUNCTION_ACCELERATION 200000	// centripetal acceleration around corners
 
-#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
+// *** settings.h overrides ***
 
-#define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
-#define GCODE_DEFAULT_UNITS			MILLIMETERS
-#define GCODE_DEFAULT_COORD_SYSTEM	G54
-#define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
-#define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
-
-#define COM_APPEND_TX_CR			false
-#define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
-#define COM_ENABLE_XON				true
-#define COM_ENABLE_QR				true
-
+#undef	COM_COMMUNICATIONS_MODE
 #define COM_COMMUNICATIONS_MODE		TG_JSON_MODE	// alternately: TG_TEXT_MODE
-#define COM_ENABLE_ECHO				false
-//#define COM_COMMUNICATIONS_MODE		TG_TEXT_MODE	// alternately: TG_TEXT_MODE
-//#define COM_ENABLE_ECHO				true
 
-//#define ENABLE_ACCELERATION 1			// *** NOTE: this feature is disabled in 338.11 - always equal to 1 
+#undef COM_JSON_ECHO_MODE
+//#define COM_JSON_ECHO_MODE		JE_OMIT_BODY
+//#define COM_JSON_ECHO_MODE		JE_OMIT_GCODE_BODY
+#define COM_JSON_ECHO_MODE			JE_GCODE_LINENUM_ONLY
+//#define COM_JSON_ECHO_MODE		JE_GCODE_TRUNCATED
+//#define COM_JSON_ECHO_MODE		JE_FULL_ECHO
 
 // *** motor settings ***
 
@@ -103,7 +90,13 @@
 #define X_VELOCITY_MAX			16000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX			170					// xtm		travel between switches or crashes
+
+#ifdef __PLAN_R2
+#define X_JERK_MAX				6000000				// xjm
+#else
 #define X_JERK_MAX				5000000000			// xjm		yes, that's "5 billion" mm/(min^3)
+#endif
+
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE			2					// xsm		0 = off
 													//			1 = NO homing only
@@ -119,7 +112,13 @@
 #define Y_VELOCITY_MAX			16000
 #define Y_FEEDRATE_MAX			Y_VELOCITY_MAX
 #define Y_TRAVEL_MAX			170
+
+#ifdef __PLAN_R2
+#define Y_JERK_MAX				6000000				// xjm		yes, that's "5 billion" mm/(min^3)
+#else
 #define Y_JERK_MAX				5000000000			// 5,000,000,000
+#endif
+
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE			2
 #define Y_SEARCH_VELOCITY		-1000
@@ -131,7 +130,13 @@
 #define Z_VELOCITY_MAX			1200
 #define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX			50
+
+#ifdef __PLAN_R2
+#define Z_JERK_MAX				600000				//
+#else
 #define Z_JERK_MAX				50000000			// 50,000,000
+#endif
+
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE			2
 #define Z_SEARCH_VELOCITY		400

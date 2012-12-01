@@ -168,6 +168,7 @@ static uint8_t _set_sr(cmdObj *cmd);	// set status report specification
 static uint8_t _set_si(cmdObj *cmd);	// set status report interval
 static uint8_t _get_qr(cmdObj *cmd);	// run queue report (as data)
 static uint8_t _get_pb(cmdObj *cmd);	// get planner buffers available
+static uint8_t _get_rx(cmdObj *cmd);	// get bytes in RX buffer
 
 static uint8_t _get_gc(cmdObj *cmd);	// get current gcode block
 static uint8_t _run_gc(cmdObj *cmd);	// run a gcode block
@@ -200,6 +201,7 @@ static uint8_t _set_ic(cmdObj *cmd);	// ignore CR or LF on RX input
 static uint8_t _set_ec(cmdObj *cmd);	// expand CRLF on TX outout
 static uint8_t _set_ee(cmdObj *cmd);	// enable character echo
 static uint8_t _set_ex(cmdObj *cmd);	// enable XON/XOFF
+static uint8_t _set_baud(cmdObj *cmd);	// set USB baud rate
 
 static uint8_t _set_sa(cmdObj *cmd);	// set motor step angle
 static uint8_t _set_tr(cmdObj *cmd);	// set motor travel per revolution
@@ -278,6 +280,15 @@ static const char msg_home0[] PROGMEM = "Not Homed";
 static const char msg_home1[] PROGMEM = "Homed";
 static PGM_P const msg_home[] PROGMEM = { msg_home0, msg_home1 };
 
+static const char msg_baud0[] PROGMEM = "0";
+static const char msg_baud1[] PROGMEM = "9600";
+static const char msg_baud2[] PROGMEM = "19200";
+static const char msg_baud3[] PROGMEM = "38400";
+static const char msg_baud4[] PROGMEM = "57600";
+static const char msg_baud5[] PROGMEM = "115200";
+static const char msg_baud6[] PROGMEM = "230400";
+static PGM_P const msg_baud[] PROGMEM = { msg_baud0, msg_baud1, msg_baud2, msg_baud3, msg_baud4, msg_baud5, msg_baud6 };
+
 static const char msg_g53[] PROGMEM = "G53 - machine coordinate system";
 static const char msg_g54[] PROGMEM = "G54 - coordinate system 1";
 static const char msg_g55[] PROGMEM = "G55 - coordinate system 2";
@@ -350,6 +361,7 @@ static const char str_si[] PROGMEM = "si,status_i,[si]  status_interval    %10.0
 static const char str_sr[] PROGMEM = "sr,status_r,";	// status_report {"sr":""}  and ? command
 static const char str_qr[] PROGMEM = "qr,queue_r,";		// queue_report {"qr":""}
 static const char str_pb[] PROGMEM = "pb,planner_buffer_a,Planner buffers:%8d\n";
+static const char str_rx[] PROGMEM = "rx,rx,";			// bytes available in RX buffer
 
 // Gcode model values for reporting purposes
 static const char str_vel[]  PROGMEM = "vel,velocity,Velocity:%17.3f%S/min\n";
@@ -414,6 +426,8 @@ static const char str_ee[] PROGMEM = "ee,enable_e,[ee]  enable_echo      %12d [0
 static const char str_ex[] PROGMEM = "ex,enable_x,[ex]  enable_xon_xoff  %12d [0,1]\n";
 static const char str_eq[] PROGMEM = "eq,enable_q,[eq]  enable_queue_reports%9d [0,1]\n";
 static const char str_ej[] PROGMEM = "ej,enable_j,[ej]  enable_json_mode %12d [0,1]\n";
+static const char str_je[] PROGMEM = "je,je,[je]  json_echo_mode %14d [0-4]\n";
+static const char str_baud[] PROGMEM = "baud,baud,[baud]  USB baud rate %12d [0-6]\n";
 
 // Motor strings in program memory 
 static const char str_1ma[] PROGMEM = "1ma,m1_ma, [1ma] m1_map_to_axis%15d [0=X, 1=Y...]\n";
@@ -634,7 +648,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_sr, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
 	{ str_qr, _print_nul, _get_qr,  _set_nul, (double *)&tg.null, 0 },	// queue report object
 	{ str_pb, _print_int, _get_pb,  _set_nul, (double *)&tg.null, 0 },	// planner buffers available
-
+	{ str_rx, _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },	// space in RX buffer
+	
 	// gcode model attributes for reporting puropses
 	{ str_line,_print_int, _get_line,_set_int, (double *)&gm.linenum, 0 }, // line number - gets runtime line number
 	{ str_lx,  _print_int, _get_lx,  _set_lx,  (double *)&tg.null ,0 },	// line index - get/set runtime line index
@@ -698,6 +713,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
 	{ str_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,				COM_ENABLE_QR },
 	{ str_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,				COM_COMMUNICATIONS_MODE },
+	{ str_je, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.json_echo_mode,		COM_JSON_ECHO_MODE },
+	{ str_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,			XIO_BAUD_115200 },
 
 	{ str_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ str_1sa, _print_rot, _get_dbl ,_set_sa, (double *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
@@ -937,7 +954,6 @@ static uint8_t _get_id(cmdObj *cmd)
  * _get_sr()   - run status report
  * _print_sr() - run status report
  * _set_sr()   - set status report specification
- * _get_si()   - get status report interval
  * _set_si()   - set status report interval
  *
  *	Note: _set_sr() is called during initialization and during reset when 
@@ -978,9 +994,10 @@ static uint8_t _set_si(cmdObj *cmd)
 	return(TG_OK);
 }
 
-/**** QUEUE REPORT FUNCTIONS ****
+/**** REPORTING FUNCTIONS ****
  * _get_qr() - run queue report
  * _get_pb() - get planner buffers available
+ * _get_rx() - get bytes available in RX buffer
  */
 static uint8_t _get_qr(cmdObj *cmd) 
 {
@@ -991,6 +1008,13 @@ static uint8_t _get_qr(cmdObj *cmd)
 static uint8_t _get_pb(cmdObj *cmd)
 {
 	cmd->value = (double)mp_get_planner_buffers_available();
+	cmd->type = TYPE_INTEGER;
+	return (TG_OK);
+}
+
+static uint8_t _get_rx(cmdObj *cmd)
+{
+	cmd->value = (double)xio_get_usb_rx_free();
 	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }
@@ -1286,7 +1310,7 @@ static uint8_t _set_motor_steps_per_unit(cmdObj *cmd)
  * _set_ec() - enable CRLF on TX
  * _set_ee() - enable character echo
  * _set_ex() - enable XON/XOFF
- *
+ * _set_baud() - set USB baud rate
  *	The above assume USB is the std device
  */
 
@@ -1297,7 +1321,7 @@ static uint8_t _set_comm_helper(cmdObj *cmd, uint32_t yes, uint32_t no)
 	} else { 
 		(void)xio_cntl(XIO_DEV_USB, no);
 	}
-	return(cmd_write_NVM_value(cmd));
+	return (TG_OK);
 }
 
 static uint8_t _set_ic(cmdObj *cmd) 
@@ -1311,7 +1335,7 @@ static uint8_t _set_ic(cmdObj *cmd)
 	} else if (cfg.ignore_crlf == IGNORE_LF) {
 		(void)xio_cntl(XIO_DEV_USB, XIO_IGNORELF);
 	}
-	return(cmd_write_NVM_value(cmd));				// persist the setting
+	return (TG_OK);
 }
 
 static uint8_t _set_ec(cmdObj *cmd) 
@@ -1332,7 +1356,39 @@ static uint8_t _set_ex(cmdObj *cmd)
 	return(_set_comm_helper(cmd, XIO_XOFF, XIO_NOXOFF));
 }
 
+/*
+ * _set_baud() - set USB baud rate
+ *
+ *	See xio_usart.h for valid values. Works as a callback.
+ *	The initial routine changes the baud config setting and sets a flag
+ *	Then it sends a message, 
+ *	Then it waits for the callback before applying the new baud rate
+ */
 
+static uint8_t _set_baud(cmdObj *cmd)
+{
+	uint8_t baud = (uint8_t)cmd->value;
+	if ((baud < 1) || (baud > 6)) {
+		char message[CMD_STRING_LEN]; 
+		sprintf_P(message, PSTR("*** WARNING *** Illegal baud rate specified"));
+		cmd_add_string("msg",message);
+		return (TG_INPUT_VALUE_UNSUPPORTED);
+	}
+	cfg.usb_baud_rate = baud;
+	cfg.usb_baud_flag = true;
+	char message[CMD_STRING_LEN]; 
+	sprintf_P(message, PSTR("*** NOTICE *** Restting baud rate to %S"),(PGM_P)pgm_read_word(&msg_baud[baud]));
+	cmd_add_string("msg",message);
+	return (TG_OK);
+}
+
+uint8_t cfg_set_baud_callback(void) 
+{
+	if (cfg.usb_baud_flag == false) { return(TG_NOOP);}
+	cfg.usb_baud_flag = false;
+	xio_set_baud_usart(XIO_DEV_USB, cfg.usb_baud_rate);
+	return (TG_OK);
+}
 
 /*****************************************************************************
  *****************************************************************************
@@ -1454,7 +1510,7 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 	char separators[] = {" =:|\t"};			// anything someone might use
 
 	// pre-processing
-	cmd_clear(cmd);							// initialize config object
+	cmd_clear_obj(cmd);						// initialize config object
 	if (*str == '$') str++;					// ignore leading $
 	tmp = str;
 	if (*tmp==NUL) *tmp='s';				// make $ behave as a system listing
@@ -1534,7 +1590,7 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd)
 {
 	ASSERT_CMD_INDEX(TG_UNRECOGNIZED_COMMAND);
 	INDEX_T tmp = cmd->index;
-	cmd_clear(cmd);
+	cmd_clear_obj(cmd);
 	cmd_get_token((cmd->index = tmp), cmd->token);
 	if (_cmd_index_is_group(cmd->index)) { strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);}
 	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);
@@ -1544,12 +1600,12 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd)
 /****************************************************************************
  * cmdObj helper functions and other low-level cmd helpers
  * cmd_get_max_index()		- utility function to return index array size				
- * cmd_clear() 				- initialize a command object (that you actually passed in)
  * cmd_get_index_by_token() - get index from mnenonic token (most efficient scan)
  * cmd_get_index() 			- get index from mnenonic token or friendly name
  * cmd_get_token()			- returns token in arg string & returns pointer to string
  * cmd_get_group() 			- returns the axis prefix, motor prefix, or 's' for system
  * cmd_is_group()			- returns true if the command is a group
+ * cmd_get_type()			- returns command type as a CMD_TYPE enum
  * cmd_persist_offsets()	- write any changed G54 (et al) offsets back to NVM
  *
  *	cmd_get_index() and cmd_get_index_by_token() are the most expensive routines 
@@ -1565,24 +1621,6 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd)
  */
 
 INDEX_T cmd_get_max_index() { return (CMD_INDEX_MAX);}
-
-cmdObj *cmd_clear(cmdObj *cmd)		// clear the cmdObj structure
-{
-	cmdObj *nx = cmd->nx;			// save pointers
-	cmdObj *pv = cmd->pv;
-	memset(cmd, 0, sizeof(struct cmdObject));
-	cmd->nx = nx;					// restore pointers
-	cmd->pv = pv;
-	if (cmd->pv != NULL) { 			// set depth correctly
-		if (cmd->pv->type == TYPE_PARENT) { 
-			cmd->depth = cmd->pv->depth + 1;
-		} else {
-			cmd->depth = cmd->pv->depth;
-		}
-	}
-	cmd->type = TYPE_END;
-	return (cmd);
-}
 
 INDEX_T cmd_get_index_by_token(const char *str)
 {
@@ -1669,10 +1707,22 @@ char cmd_get_group(const INDEX_T i)
 	return (*ptr);
 }
 */
+
 uint8_t cmd_is_group(const char *str)
 {
 	if (strstr(GROUP_PREFIXES, str) != NULL) return (true);
 	return (false);
+}
+
+uint8_t cmd_get_type(cmdObj *cmd)
+{
+	if (strstr("gc", cmd->token) != NULL) {
+		return (CMD_TYPE_GCODE);
+	}
+	if (strstr("sr,qr", cmd->token) != NULL) {
+		return (CMD_TYPE_REPORT);
+	}
+	return (CMD_TYPE_CONFIG);
 }
 
 uint8_t cmd_persist_offsets(uint8_t flag)
@@ -1691,46 +1741,79 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 	return (TG_OK);
 }
 
+
 /****************************************************************************
- * cmdObj list methods (or would be methods if this were OO code)
- * cmd_clear_list()	- reset the entire CmdObj list: headers, body, msg and footers
- * cmd_clear_body()	- reset cmdObjs in the body
+ * cmdObj init methods (or would be methods if this were OO code)
+ * cmd_clear_obj() 		- clear a command object (that you actually passed in)
+ * cmd_clear_list()		- clear entire header, body and footer
+ * cmd_clear_body()		- clear body 
  */
+
+cmdObj *cmd_clear_obj(cmdObj *cmd)		// clear the cmdObj structure
+{
+	cmd->type = TYPE_EMPTY;			// much faster than calling memset
+	cmd->index = 0;
+	cmd->value = 0;
+	cmd->token[0] = NUL;
+	cmd->group[0] = NUL;
+	cmd->string[0] = NUL;
+
+	if (cmd->pv != NULL) { 			// set depth correctly
+		if (cmd->pv->type == TYPE_PARENT) { 
+			cmd->depth = cmd->pv->depth + 1;
+		} else {
+			cmd->depth = cmd->pv->depth;
+		}
+	}
+	return (cmd);
+}
 
 void cmd_clear_list()
 {
-	cmdObj *cmd;
-
-	cmd = cmd_clear(cmd_header);				// setup "b" body header
-	sprintf_P(cmd->token, PSTR("b"));
+	// setup header ("b" parent)
+	cmdObj *cmd = cmd_header;
+	cmd->pv = 0;
+	cmd->nx = cmd_body;
+	cmd->index = 0;
+	cmd->depth = 0;
 	cmd->type = TYPE_PARENT;
-	cmd->nx = (cmd_body);
+	cmd->token[0] = 'b';
+	cmd++;
 
-	cmd_clear_body(cmd_body);					// setup body objects
+	// setup body
+	cmd_clear_body(cmd_body);
 
-	cmd = cmd_clear(cmd_footer);				// setup "f" footer element
-	sprintf_P(cmd->token, PSTR("f"));
-	cmd->type = TYPE_ARRAY;
+	// setup footer
+	cmd = cmd_footer;
 	cmd->pv = &cmd_body[CMD_BODY_LEN-1];
 	cmd->nx = (cmd+1);
+	cmd->token[0] = 'f';
+	cmd->token[1] = NUL;
+	cmd->depth = 0;
+	cmd->type = TYPE_ARRAY;
 
-	cmd = cmd_clear(cmd+1);						// setup terminating element
-	cmd->pv = (cmd-1);
+	cmd->nx->type = TYPE_EMPTY;					// setup terminating element
+	cmd->nx->pv = (cmd-1);
+	cmd->nx->nx = 0;
+	return;
 }
 
 void cmd_clear_body(cmdObj *cmd)
 {
-	cmdObj *cmd_first = cmd;
+	// setup body elements
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		cmd_clear(cmd);
-		cmd->pv = (cmd-1);
+		if (i == 0) {
+			cmd->pv = cmd_header;
+		} else {
+			cmd->pv = (cmd-1);
+		}
 		cmd->nx = (cmd+1);
-		cmd->depth = cmd->pv->depth +1;
+		cmd->index = 0;
+		cmd->depth = 1;
+		cmd->type = TYPE_EMPTY;
 		cmd++;
 	}
 	(--cmd)->nx = cmd_footer;					// correct last element
-	cmd = cmd_first;							// correct first element
-	cmd->pv = &cmd_header[CMD_HEADER_LEN-1];
 }
 
 /**** List manipulation methods **** 
@@ -1747,7 +1830,7 @@ uint8_t cmd_add_token(char *token)
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->type != TYPE_END) {
+		if (cmd->type != TYPE_EMPTY) {
 			cmd = cmd->nx;
 			continue;
 		}
@@ -1765,7 +1848,7 @@ uint8_t cmd_add_string(char *token, char *string)
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->type != TYPE_END) {
+		if (cmd->type != TYPE_EMPTY) {
 			cmd = cmd->nx;
 			continue;
 		}
@@ -1783,7 +1866,7 @@ uint8_t cmd_add_integer(char *token, uint32_t value)
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->type != TYPE_END) {
+		if (cmd->type != TYPE_EMPTY) {
 			cmd = cmd->nx;
 			continue;
 		}
@@ -1800,7 +1883,7 @@ uint8_t cmd_add_float(char *token, double value)
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->type != TYPE_END) {
+		if (cmd->type != TYPE_EMPTY) {
 			cmd = cmd->nx;
 			continue;
 		}
@@ -1822,17 +1905,12 @@ uint8_t cmd_add_float(char *token, double value)
  */
 void cmd_print_list(uint8_t status, uint8_t textmode)
 {
-	// JSON handling. Kind of a hack. Generate the JSON string with a dummy value for 
-	// the checksum hash. Then calculate the checksum and insert it into the JSON string
+	// JSON handling. Kind of a hack. Generate the JSON string w/o the checksum hash. 
+	// Then calculate the checksum and add it into the JSON string with proper termination
 	if (cfg.comm_mode == TG_JSON_MODE) {
-		cmdObj *cmd = cmd_footer;
-		sprintf(cmd->string, "%d,%d,%d,%04d",TINYG_COMM_PROTOCOL_REV, status, xio_get_usb_rx_free(), HASHMASK);
-		uint16_t strcount = js_serialize_json(tg.out_buf);	// make JSON string w/o checksum
-		while (tg.out_buf[strcount] != ',') { strcount--; }	// slice at last comma
-		sprintf(tg.out_buf + strcount + 1, "%d]}\n", compute_checksum(tg.out_buf, strcount));
-		fprintf(stderr, "%s", tg.out_buf);
-		} else {
-			switch (textmode) {
+		js_print_list(status);
+	} else {
+		switch (textmode) {
 			case TEXT_INLINE_PAIRS: { _print_text_inline_pairs(); break; }
 			case TEXT_INLINE_VALUES: { _print_text_inline_values(); break; }
 			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted(); break; }
@@ -1851,10 +1929,10 @@ void _print_text_inline_pairs()
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), cmd->token, cmd->string); break;}
-			case TYPE_END:		{ fprintf_P(stderr,PSTR("\n")); return; }
+			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
-		if (cmd->type != TYPE_END) {
+		if (cmd->type != TYPE_EMPTY) {
 			fprintf_P(stderr,PSTR(","));
 		}		
 	}
@@ -1870,10 +1948,10 @@ void _print_text_inline_values()
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%1.3f"), cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), cmd->value); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), cmd->string); break;}
-			case TYPE_END:		{ fprintf_P(stderr,PSTR("\n")); return; }
+			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
-		if (cmd->type != TYPE_END) {
+		if (cmd->type != TYPE_EMPTY) {
 			fprintf_P(stderr,PSTR(","));
 		}
 	}
@@ -1886,7 +1964,7 @@ void _print_text_multiline_formatted()
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		cmd_formatted_print(cmd);
 		cmd = cmd->nx;
-		if (cmd->type == TYPE_END) { break;}
+		if (cmd->type == TYPE_EMPTY) { break;}
 	}
 }
 
@@ -2130,7 +2208,7 @@ static uint8_t _set_grp(cmdObj *cmd)
 {
 	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
-		if (cmd->type == TYPE_END) {
+		if (cmd->type == TYPE_EMPTY) {
 			break;
 		} else if (cmd->type == TYPE_NULL) {// NULL means GET the value
 			cmd_get(cmd);

@@ -33,17 +33,23 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95
-#define TINYG_BUILD_NUMBER   	344.14	// forward differences and stepper optimizations
+#define TINYG_BUILD_NUMBER   	346.08
 
 #define TINYG_COMM_PROTOCOL_REV 1	// the communications protocol revision is tracked independently
 
 /****** DEVELOPMENT SETTINGS ******/
 
-//#define __CANNED_STARTUP			// run any canned startup moves
-//#define __DISABLE_EEPROM_INIT		// disable EEPROM init for faster simulation
-//#define __DISABLE_TRANSMIT		// disable serial tranmission (TX)
-//#define __SEGMENT_LOGGER			// enable segment logging to memory array
-//#define __DEBUG					// enable debug (see util.c /.h)
+//#define __PLAN_R2				// comment out to use R1 planner functions
+#define __EXEC_R2				// comment out to use R1 aline exec functions
+#define __JUNCTION_VMAX_R2		// comment out ot use the old code
+#define __ISR_R2				// comment out to use R1 ISR
+#define __LOAD_MOVE_R2			// comment out to use R1 load move routine
+
+//#define __CANNED_STARTUP		// run any canned startup moves
+//#define __DISABLE_EEPROM_INIT	// disable EEPROM init for faster simulation
+//#define __DISABLE_TRANSMIT	// disable serial tranmission (TX)
+//#define __SEGMENT_LOGGER		// enable segment logging to memory array
+//#define __DEBUG				// enable debug (see util.c /.h)
 // See the end of module header files to enable UNIT_TESTS
 
 /****** OPERATING SETTINGS *******/

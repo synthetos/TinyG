@@ -167,9 +167,6 @@ static void _exec_move(void);
 static void _load_move(void);
 static void _request_load_move(void);
 
-#define __ISR_R2				// comment out to use R1 ISR
-#define __LOAD_MOVE_R2			// comment out to use R1 load move routine
-
 static void _set_f_dda(double *f_dda, double *dda_substeps,
 					   const double major_axis_steps, const double microseconds);
 
@@ -649,7 +646,7 @@ uint8_t st_prep_line(double steps[], double microseconds)
 	return (TG_OK);
 }
 // FOOTNOTE: This expression was previously computed as below but floating 
-// point rounding errors caused subtle and nasty position errors:
+// point rounding errors caused subtle and nasty accumulated position errors:
 //	sp.timer_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
 
 /* 

@@ -15,35 +15,26 @@
 /***********************************************************************/
 
 #define TINYG_CONFIGURATION_PROFILE "Otherlab Cutter"	// displays base config profile
-
-#define INIT_CONFIGURATION_MESSAGE "\n#### Initializing configs to Othercutter settings ####\n"
-
-// **** common settings - applied to all axes or motors ****
+#define INIT_CONFIGURATION_MESSAGE "#### Initializing configs to Othercutter settings ####"
 
 #define JERK_MAX 			900000000	// yes, that's "900,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION	0.01		// default value, in mm
-
-// **** system settings ****
-
 #define JUNCTION_ACCELERATION 100000	// centripetal acceleration around corners
 
-#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
+// *** settings.h overrides ***
 
-#define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
-#define GCODE_DEFAULT_UNITS			MILLIMETERS
-#define GCODE_DEFAULT_COORD_SYSTEM	G54
-#define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
-#define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
-
-#define COM_APPEND_TX_CR			false
-#define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
-#define COM_ENABLE_XON				true
+#undef	COM_ENABLE_QR
 #define COM_ENABLE_QR				true
 
+#undef	COM_COMMUNICATIONS_MODE
 #define COM_COMMUNICATIONS_MODE		TG_JSON_MODE	// alternately: TG_TEXT_MODE
-#define COM_ENABLE_ECHO				false
 
-#define ENABLE_ACCELERATION 1			// *** NOTE: this feature is disabled in 338.11 - always equal to 1 
+//#undef COM_JSON_ECHO_MODE
+//#define COM_JSON_ECHO_MODE		JE_SILENT
+//#define COM_JSON_ECHO_MODE		JE_OMIT_BODY
+//#define COM_JSON_ECHO_MODE		JE_OMIT_GCODE_BODY
+//#define COM_JSON_ECHO_MODE		JE_GCODE_LINENUM_ONLY
+//#define COM_JSON_ECHO_MODE		JE_FULL_ECHO
 
 // *** motor settings ***
 

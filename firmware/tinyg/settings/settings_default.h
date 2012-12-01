@@ -33,34 +33,19 @@
  *		 are in system.h  Application settings that also shouldn't need 
  *		 to be changed are in tinyg.h
  */
+/***********************************************************************/
+/**** Default profile for screw driven machines ************************/
+/***********************************************************************/
+// NOTE: Non-machine specific systems settings have been moved to settings.h
+// These may be overridden using undefs
 
 #define INIT_CONFIGURATION_MESSAGE "Initializing configs to default settings"
 
-// **** common settings - applied to all axes or motors ****
-
 #define JERK_MAX 			20000000	// yes, that's "20,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION	0.05		// default value, in mm
-
-// **** system settings ****
-
 #define JUNCTION_ACCELERATION 100000	// centripetal acceleration around corners
 
-#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
-
-#define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
-#define GCODE_DEFAULT_UNITS			MILLIMETERS
-#define GCODE_DEFAULT_COORD_SYSTEM	G54
-#define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
-#define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
-
-#define COM_APPEND_TX_CR			false
-#define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
-#define COM_ENABLE_ECHO				true
-#define COM_ENABLE_XON				true
-#define COM_ENABLE_QR				false
-#define COM_COMMUNICATIONS_MODE		TG_TEXT_MODE	// or TG_TEXT_MODE
-
-//#define ENABLE_ACCELERATION 1			// *** NOTE: this feature is disabled in 338.11 - always equal to 1 
+// **** settings.h overrides ****
 
 // *** motor settings ***
 

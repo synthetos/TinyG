@@ -46,6 +46,12 @@
  *	  struct xioDEVICE *d = &ds[dev];					// setup device struct ptr
  *    struct xioUSART *dx = (struct xioUSART *)ds[dev].x; // setup USART struct ptr
  *
+ *  What's most efficient is to use a static reference to the structures, 
+ *	but this only works if the routine is not general (i.e. only handles one device)
+ *
+ *	  #define USB ds[XIO_DEV_USB]			// device struct accessor
+ *	  #define USBu us[XIO_DEV_USB_OFFSET]	// usart extended struct accessor
+ *
  *	There are other examples of this approach as well (e.g. xio_set_baud_usart())
  */
 
@@ -182,7 +188,7 @@ BUFFER_T xio_get_rx_bufcount_usart(const struct xioUSART *dx)
 	}
 }
 
-uint16_t xio_get_usb_rx_free(void)
+BUFFER_T xio_get_usb_rx_free(void)
 {
 	return (RX_BUFFER_SIZE - xio_get_rx_bufcount_usart(&USBu));
 }
@@ -193,8 +199,9 @@ uint16_t xio_get_usb_rx_free(void)
  *
  *	Supports both blocking and non-blocking write behaviors
  *
- *	Note: This driver does not support RS485 operation. You need to use
- *		  the specialized RS485 driver for that.
+ *	Note: This is a generic driver that is not used for either USB or RS-485.
+ *		  These use optimized versions that can be found in the respective files.
+ *		  This one is here for reference only.
  *
  *	Note: Originally this routine advanced the buffer head and compared it
  *		  against the buffer tail to detect buffer full (it would sleep if 
@@ -206,16 +213,12 @@ uint16_t xio_get_usb_rx_free(void)
 
 int xio_putc_usart(const uint8_t dev, const char c, FILE *stream)
 {
-#ifdef __DISABLE_TRANSMIT
-	return (XIO_OK);
-#endif	
-
 	BUFFER_T next_tx_buf_head;
 	struct xioDEVICE *d = &ds[dev];				// init device struct ptr
 	struct xioUSART *dx = ((struct xioUSART *)(ds[dev].x));	// USART ptr
 
 	if ((next_tx_buf_head = (dx->tx_buf_head)-1) == 0) { // adv. head & wrap
-		next_tx_buf_head = TX_BUFFER_SIZE-1; // -1 avoids the off-by-one
+		next_tx_buf_head = TX_BUFFER_SIZE-1; 	// -1 avoids the off-by-one
 	}
 	// detect TX buffer full
 	while(next_tx_buf_head == dx->tx_buf_tail) { // sleep or return
@@ -230,7 +233,7 @@ int xio_putc_usart(const uint8_t dev, const char c, FILE *stream)
 	dx->tx_buf_head = next_tx_buf_head;			// accept next buffer head
 	dx->tx_buf[dx->tx_buf_head] = c;			// ...write char to buffer
 
-	if ((CRLF(d->flags) != 0) && (c == '\n')) {	// detect LF & add CR
+	if ((c == '\n') && (CRLF(d->flags) != 0)) {	// detect LF & add CR
 		return d->x_putc('\r', stream);			// recurse
 	}
 	// force an interrupt to attempt to send the char

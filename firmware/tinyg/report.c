@@ -40,6 +40,7 @@
 #include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "report.h"
+#include "settings.h"
 #include "xio/xio.h"
 #include "xmega/xmega_rtc.h"
 
@@ -138,14 +139,15 @@ void rpt_request_status_report()
 
 uint8_t rpt_status_report_callback() // called by controller dispatcher
 {
-	if ((cm.machine_state != MACHINE_RESET) && 
-		(cfg.status_report_interval > 0) && (cm.status_report_counter == 0)) {
-		rpt_populate_status_report();
-		cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);	// will report in JSON or inline text modes
-		cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
-		return (TG_OK);
+	if ((cfg.status_report_interval == 0) ||
+		(cm.status_report_counter != 0) ||
+		(cm.machine_state == MACHINE_RESET)) {
+		return (TG_NOOP);
 	}
-	return (TG_NOOP);
+	rpt_populate_status_report();
+	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);	// will report in JSON or inline text modes
+	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
+	return (TG_OK);
 }
 
 void rpt_run_multiline_status_report()		// multiple line status report
@@ -158,7 +160,7 @@ uint8_t rpt_populate_status_report()
 {
 	cmdObj *cmd = cmd_body;
 
-	cmd_clear(cmd);							// wipe it first
+	cmd_clear_obj(cmd);						// wipe it first
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	sprintf_P(cmd->token, PSTR("sr"));
 //	strcpy(cmd->token, "sr");				// alternate form of above: more RAM, less FLASH & cycles
@@ -200,6 +202,7 @@ struct qrIndexes qr = { 0,0,0,0,0,0 };		// init to zeros
 
 void rpt_request_queue_report() 
 { 
+	if (cfg.enable_qr != true) { return;}
 	qr.lineindex = mp_get_runtime_lineindex();
 	qr.buffers_available = mp_get_planner_buffers_available();
 	qr.request = true;
@@ -207,11 +210,11 @@ void rpt_request_queue_report()
 
 uint8_t rpt_queue_report_callback()
 {
-	if (qr.request != true) { return (TG_NOOP);}
-	if (cfg.enable_qr != true) { return (TG_NOOP);}
+	if ((cfg.enable_qr == false) || (qr.request == false)) { return (TG_NOOP);}
+	qr.request = false;
 
 	cmdObj *cmd = cmd_body;
-	cmd_clear(cmd);			 				// parent qr object			
+	cmd_clear_obj(cmd);						// parent qr object			
 	sprintf_P(cmd->token, PSTR("qr"));
 	cmd->type = TYPE_PARENT;
 
@@ -226,7 +229,6 @@ uint8_t rpt_queue_report_callback()
 	cmd->type = TYPE_INTEGER;
 
 	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);// report in JSON or inline text mode
-	qr.request = false;
 	return (TG_OK);
 }
 
@@ -240,7 +242,7 @@ uint8_t rpt_run_queue_report()
 		qr.pb = cmd_get_index("pb");
 	}
 
-	cmd_clear(cmd);			 			// setup the parent object			
+	cmd_clear_obj(cmd);			 		// setup the parent object			
 	cmd->type = TYPE_PARENT;
 	cmd->index = qr.qr;
 	sprintf_P(cmd->token, PSTR("qr"));

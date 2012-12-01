@@ -41,6 +41,7 @@
 #include "config.h"					// JSON sits on top of the config system
 #include "controller.h"
 #include "json_parser.h"
+#include "canonical_machine.h"
 #include "report.h"
 #include "util.h"
 #include "xio/xio.h"				// for char definitions
@@ -187,7 +188,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	char *tmp;
 	char terminators[] = {"},"};
 
-	cmd_clear(cmd);								// wipe the object and set the depth
+	cmd_clear_obj(cmd);							// wipe the object and set the depth
 
 	// process name element
 	// find leading and trailing name quotes and set pointers accordingly
@@ -198,17 +199,17 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 
 	// copy the token by itself or with a group prefix if it's a prefixed group
 	if (strstr(GROUP_PREFIXES, group) == NULL) {
-		strncpy(cmd->friendly_name, *pstr, CMD_STRING_LEN);	// copy name from string
+		strncpy(cmd->string, *pstr, CMD_STRING_LEN);// copy name from string
 	} else {
-		strncpy(cmd->friendly_name, group, CMD_GROUP_LEN);// prepend the group
-		strncpy(&cmd->friendly_name[strlen(group)], *pstr, CMD_STRING_LEN);// cat name to group prefix
+		strncpy(cmd->string, group, CMD_GROUP_LEN);	// prepend the group
+		strncpy(&cmd->string[strlen(group)], *pstr, CMD_STRING_LEN);// cat name to group prefix
 	}
 
 	// get the index or return if the token / friendly_name is invalid
-	if ((cmd->index = cmd_get_index(cmd->friendly_name)) == -1) { return (TG_UNRECOGNIZED_COMMAND);}
+	if ((cmd->index = cmd_get_index_by_token(cmd->string)) == -1) { return (TG_UNRECOGNIZED_COMMAND);}
 	cmd_get_token(cmd->index, cmd->token);
 	if (group[0] != NUL) {						// strip group prefix if this is a group
-		strncpy(cmd->token, &cmd->friendly_name[strlen(group)], CMD_TOKEN_LEN);
+		strncpy(cmd->token, &cmd->string[strlen(group)], CMD_TOKEN_LEN);
 		strncpy(cmd->group, group, CMD_GROUP_LEN);// propagate group token to this child
 	}
 	*pstr = ++tmp;
@@ -223,10 +224,10 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 			strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);// record the group token
 		}
 	} else if (**pstr == 'f') { 
-		cmd->type = TYPE_FALSE;
+		cmd->type = TYPE_BOOL;
 		cmd->value = false;						// (technically not necessary due to the init)
 	} else if (**pstr == 't') { 
-		cmd->type = TYPE_TRUE;
+		cmd->type = TYPE_BOOL;
 		cmd->value = true;
 	} else if (isdigit(**pstr) || (**pstr == '-')) { // value is a number
 		cmd->value = strtod(*pstr, &tmp);		// tmp is the end pointer
@@ -272,14 +273,18 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
  *	Returns the character count of the resulting string
  */
 
-uint16_t js_serialize_json(char *out_buf)
+uint16_t js_serialize_json(cmdObj *cmd, char *out_buf)
 {
-	cmdObj *cmd = cmd_header;
 	char *str = out_buf;						// set working string pointer 
 	int8_t depth = 0;
 
 	strcpy(str++, "{"); 						// write opening curly
-	do {	// serialize the current element (assumes the first element is not empty)
+	while (cmd->nx != NULL) {					// null signals last object
+		if (cmd->type == TYPE_EMPTY) { 			// skip over empty elements
+			cmd = cmd->nx;
+			continue;
+		}
+ 		// serialize the current element (assumes the first element is not empty)
 		str += sprintf(str, "\"%s\":", cmd->token);
 
 		if (cmd->type == TYPE_PARENT) {
@@ -287,19 +292,23 @@ uint16_t js_serialize_json(char *out_buf)
 			cmd = cmd->nx;
 			depth = cmd->depth;
 			continue;
-		} else if (cmd->type == TYPE_END)	 { str += sprintf(str, "\"\"");
-		} else if (cmd->type == TYPE_NULL)	 { str += sprintf(str, "\"\"");
-		} else if (cmd->type == TYPE_FALSE)	 { str += sprintf(str, "false");
-		} else if (cmd->type == TYPE_TRUE)	 { str += sprintf(str, "true");
-		} else if (cmd->type == TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
 		} else if (cmd->type == TYPE_FLOAT)	 { str += sprintf(str, "%0.3f", (double)cmd->value);
 		} else if (cmd->type == TYPE_STRING) { str += sprintf(str, "\"%s\"", cmd->string);
+		} else if (cmd->type == TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
 		} else if (cmd->type == TYPE_ARRAY)  { str += sprintf(str, "[%s]", cmd->string);
-		} 
-		do {  // advance to the next non-empty element
+		} else if (cmd->type == TYPE_EMPTY)	 { str += sprintf(str, "\"\"");
+		} else if (cmd->type == TYPE_NULL)	 { str += sprintf(str, "\"\"");
+		} else if (cmd->type == TYPE_BOOL)	 { 
+			if (cmd->value == false) {
+				str += sprintf(str, "false");
+			} else {
+				str += sprintf(str, "true");
+			}
+		}
+		do {  								// advance to the next non-empty element
 			cmd = cmd->nx;
 			if (cmd->nx == NULL) break;
-		} while (cmd->type == TYPE_END); 	// skip over empty elements
+		} while (cmd->type == TYPE_EMPTY); 	// skip over empty elements
 
 		while (depth > cmd->depth) {		// write commas or embedded closing curlies
 			str += sprintf(str, "}");
@@ -308,14 +317,71 @@ uint16_t js_serialize_json(char *out_buf)
 		if (cmd->nx != NULL) {
 			str += sprintf(str, ",");
 		}
-	} while (cmd->nx != NULL);
-
+	}
 	do { // handle closing curlies and NEWLINE
 		str += sprintf(str, "}");
 	} while (depth-- > 0);
 	sprintf(str, "\n");
 	return (str - out_buf);
 }
+
+/****************************************************************************
+ * js_print_list() - output cmdObj list in JSON format
+ * 
+ *	The $je setting affects the level of response. Asynchronous reports such 
+ *	as status reports and QRs always respond with entire JSON line.
+ *
+ *	A footer is returned for every setting except $je=0
+ *
+ *	JE_SILENT = 0,			// No response is provided for any command
+ *	JE_OMIT_BODY,			// Gcode and config responses have footer only
+ *	JE_OMIT_GCODE_BODY,		// Body returned for configs; omitted for Gcode commands
+ *	JE_GCODE_LINENUM_ONLY,	// Body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+ *	JE_FULL_ECHO			// Body returned for configs and Gcode - Gcode comments removed
+ */
+void js_print_list(uint8_t status)
+{
+	if (cfg.json_echo_mode == JE_SILENT) { return;}
+
+	cmdObj *cmd = cmd_header;		// default starting point
+	uint8_t cmd_type = cmd_get_type(cmd_body);
+
+	if (cfg.json_echo_mode == JE_OMIT_BODY) { 
+		if (cmd_type != CMD_TYPE_REPORT) {
+			cmd = cmd_footer;
+		}
+	} else if (cmd_type == CMD_TYPE_GCODE) {
+		if (cfg.json_echo_mode == JE_OMIT_GCODE_BODY) { 
+			cmd = cmd_footer;
+		} else if (cfg.json_echo_mode == JE_GCODE_LINENUM_ONLY) { 
+			uint32_t linenum = cm_get_model_linenum();
+			if (linenum == 0) {
+				cmd = cmd_footer;
+			} else {
+				cmd_clear_body(cmd_body);
+				sprintf(cmd_body->token, "n");
+				sprintf(cmd_body->string, "%lu", linenum);
+				cmd_body->type = TYPE_STRING;
+			}
+		}
+	}
+	// serialize body and footer - do not generate a footer for reports
+	if (cmd_type != CMD_TYPE_REPORT) {
+		cmd_footer->type = TYPE_ARRAY;
+		sprintf(cmd_footer->string, "%d,%d,%d,",TINYG_COMM_PROTOCOL_REV, status, tg.linelen);
+		tg.linelen = 0;											// reset it so it's only reported once
+		uint16_t strcount = js_serialize_json(cmd, tg.out_buf);	// make JSON string w/o checksum
+		while (tg.out_buf[strcount] != ',') { strcount--; }		// slice at last comma
+		sprintf(tg.out_buf + strcount + 1, "%d]}\n", compute_checksum(tg.out_buf, strcount));
+	} else {
+		cmd_footer->type = TYPE_EMPTY;
+		js_serialize_json(cmd, tg.out_buf);						// make JSON string w/o footer
+	}
+
+	// output the result
+	fprintf(stderr, "%s", tg.out_buf);
+}
+
 
 //###########################################################################
 //##### UNIT TESTS ##########################################################
