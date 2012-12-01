@@ -55,13 +55,18 @@
 #define COM_ENABLE_ECHO				false
 #define COM_ENABLE_XON				true
 
-#define COM_ENABLE_QR				true
-//#define COM_ENABLE_QR				false
+//#define COM_ENABLE_QR				true
+#define COM_ENABLE_QR				false
 
-//#define COM_COMMUNICATIONS_MODE	TG_TEXT_MODE	// alternately: TG_TEXT_MODE
-#define COM_COMMUNICATIONS_MODE		TG_JSON_MODE	// alternately: TG_TEXT_MODE
-//#define COM_ENABLE_JSON_ECHO		false
-#define COM_ENABLE_JSON_ECHO		1
+#define COM_COMMUNICATIONS_MODE		TG_JSON_MODE
+//#define COM_COMMUNICATIONS_MODE	TG_TEXT_MODE
+
+//#define COM_ENABLE_JSON_ECHO		JE_SILENT
+//#define COM_ENABLE_JSON_ECHO		JE_OMIT_BODY
+//#define COM_ENABLE_JSON_ECHO		JE_OMIT_GCODE_BODY
+#define COM_ENABLE_JSON_ECHO		JE_GCODE_LINENUM_ONLY
+//#define COM_ENABLE_JSON_ECHO		JE_GCODE_TRUNCATED
+//#define COM_ENABLE_JSON_ECHO		JE_FULL_ECHO
 
 //#define ENABLE_ACCELERATION 1			// *** NOTE: this feature is disabled in 338.11 - always equal to 1 
 

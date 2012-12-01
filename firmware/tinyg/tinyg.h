@@ -11,7 +11,7 @@
  * or (at your option) any later version.
  *
  * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of7
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
  * See the GNU General Public License for details.
  *
@@ -33,7 +33,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95
-#define TINYG_BUILD_NUMBER   	346.06
+#define TINYG_BUILD_NUMBER   	346.07
 
 #define TINYG_COMM_PROTOCOL_REV 1	// the communications protocol revision is tracked independently
 
@@ -45,8 +45,8 @@
 #define __ISR_R2				// comment out to use R1 ISR
 #define __LOAD_MOVE_R2			// comment out to use R1 load move routine
 
-//#define __CANNED_STARTUP		// run any canned startup moves
-//#define __DISABLE_EEPROM_INIT	// disable EEPROM init for faster simulation
+#define __CANNED_STARTUP		// run any canned startup moves
+#define __DISABLE_EEPROM_INIT	// disable EEPROM init for faster simulation
 //#define __DISABLE_TRANSMIT		// disable serial tranmission (TX)
 //#define __SEGMENT_LOGGER			// enable segment logging to memory array
 //#define __DEBUG					// enable debug (see util.c /.h)

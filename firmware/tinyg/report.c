@@ -158,7 +158,7 @@ uint8_t rpt_populate_status_report()
 {
 	cmdObj *cmd = cmd_body;
 
-	cmd_clear(cmd);							// wipe it first
+	cmd_clear_obj(cmd);						// wipe it first
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	sprintf_P(cmd->token, PSTR("sr"));
 //	strcpy(cmd->token, "sr");				// alternate form of above: more RAM, less FLASH & cycles
@@ -213,7 +213,7 @@ uint8_t rpt_queue_report_callback()
 	qr.request = false;
 
 	cmdObj *cmd = cmd_body;
-	cmd_clear(cmd);			 				// parent qr object			
+	cmd_clear_obj(cmd);						// parent qr object			
 	sprintf_P(cmd->token, PSTR("qr"));
 	cmd->type = TYPE_PARENT;
 
@@ -241,7 +241,7 @@ uint8_t rpt_run_queue_report()
 		qr.pb = cmd_get_index("pb");
 	}
 
-	cmd_clear(cmd);			 			// setup the parent object			
+	cmd_clear_obj(cmd);			 		// setup the parent object			
 	cmd->type = TYPE_PARENT;
 	cmd->index = qr.qr;
 	sprintf_P(cmd->token, PSTR("qr"));

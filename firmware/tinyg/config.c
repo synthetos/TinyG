@@ -1468,7 +1468,7 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 	char separators[] = {" =:|\t"};			// anything someone might use
 
 	// pre-processing
-	cmd_clear(cmd);							// initialize config object
+	cmd_clear_obj(cmd);						// initialize config object
 	if (*str == '$') str++;					// ignore leading $
 	tmp = str;
 	if (*tmp==NUL) *tmp='s';				// make $ behave as a system listing
@@ -1548,7 +1548,7 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd)
 {
 	ASSERT_CMD_INDEX(TG_UNRECOGNIZED_COMMAND);
 	INDEX_T tmp = cmd->index;
-	cmd_clear(cmd);
+	cmd_clear_obj(cmd);
 	cmd_get_token((cmd->index = tmp), cmd->token);
 	if (_cmd_index_is_group(cmd->index)) { strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);}
 	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);
@@ -1563,6 +1563,7 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd)
  * cmd_get_token()			- returns token in arg string & returns pointer to string
  * cmd_get_group() 			- returns the axis prefix, motor prefix, or 's' for system
  * cmd_is_group()			- returns true if the command is a group
+ * cmd_type()				- returns command type as a CMD_TYPE enum
  * cmd_persist_offsets()	- write any changed G54 (et al) offsets back to NVM
  *
  *	cmd_get_index() and cmd_get_index_by_token() are the most expensive routines 
@@ -1664,10 +1665,22 @@ char cmd_get_group(const INDEX_T i)
 	return (*ptr);
 }
 */
+
 uint8_t cmd_is_group(const char *str)
 {
 	if (strstr(GROUP_PREFIXES, str) != NULL) return (true);
 	return (false);
+}
+
+uint8_t cmd_type(cmdObj *cmd)
+{
+	if (strstr("gc", cmd->token) != NULL) {
+		return (CMD_TYPE_GCODE);
+	}
+	if (strstr("sr,qr", cmd->token) != NULL) {
+		return (CMD_TYPE_REPORT);
+	}
+	return (CMD_TYPE_CONFIG);
 }
 
 uint8_t cmd_persist_offsets(uint8_t flag)
@@ -1686,22 +1699,23 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 	return (TG_OK);
 }
 
+
 /****************************************************************************
  * cmdObj init methods (or would be methods if this were OO code)
- * cmd_clear() 			- initialize a command object (that you actually passed in)
- * cmd_clear_list()		- clear body and footer
- * cmd_clear_body()		- clear body leaving only the parent 'b'
- * cmd_clear_footer()	- clear footer leaving only the footer array 'f'
- * cmd_omit_body()		- clear body so it gets skipped during serialization
+ * cmd_clear_obj() 		- clear a command object (that you actually passed in)
+ * cmd_clear_list()		- clear entire header, body and footer
+ * cmd_clear_body()		- clear body 
  */
 
-cmdObj *cmd_clear(cmdObj *cmd)		// clear the cmdObj structure
+cmdObj *cmd_clear_obj(cmdObj *cmd)		// clear the cmdObj structure
 {
-	cmdObj *nx = cmd->nx;			// save pointers
-	cmdObj *pv = cmd->pv;
-	memset(cmd, 0, CMD_OBJ_CORE);	// don't waste time clearing the string
-	cmd->nx = nx;					// restore pointers
-	cmd->pv = pv;
+	cmd->type = TYPE_EMPTY;			// much faster than calling memset
+	cmd->index = 0;
+	cmd->value = 0;
+	cmd->token[0] = NUL;
+	cmd->group[0] = NUL;
+	cmd->string[0] = NUL;
+
 	if (cmd->pv != NULL) { 			// set depth correctly
 		if (cmd->pv->type == TYPE_PARENT) { 
 			cmd->depth = cmd->pv->depth + 1;
@@ -1709,42 +1723,26 @@ cmdObj *cmd_clear(cmdObj *cmd)		// clear the cmdObj structure
 			cmd->depth = cmd->pv->depth;
 		}
 	}
-	cmd->type = TYPE_EMPTY;
 	return (cmd);
 }
 
 void cmd_clear_list()
 {
-	cmd_clear_body(cmd_body);
-	cmd_clear_footer(cmd_footer);
-	return;
-}
-
-void cmd_clear_body(cmdObj *cmd)
-{
-	// setup "b" parent
+	// setup header ("b" parent)
+	cmdObj *cmd = cmd_header;
 	cmd->pv = 0;
-	cmd->nx = (cmd+1);
+	cmd->nx = cmd_body;
 	cmd->index = 0;
 	cmd->depth = 0;
 	cmd->type = TYPE_PARENT;
 	cmd->token[0] = 'b';
 	cmd++;
 
-	// setup remaining body elements
-	for (uint8_t i=1; i<CMD_BODY_LEN; i++) {
-		cmd->pv = (cmd-1);
-		cmd->nx = (cmd+1);
-		cmd->index = 0;
-		cmd->depth = 1;
-		cmd->type = TYPE_EMPTY;
-		cmd++;
-	}
-	(--cmd)->nx = cmd_footer;					// correct last element
-}
+	// setup body
+	cmd_clear_body(cmd_body);
 
-void cmd_clear_footer(cmdObj *cmd)
-{
+	// setup footer
+	cmd = cmd_footer;
 	cmd->pv = &cmd_body[CMD_BODY_LEN-1];
 	cmd->nx = (cmd+1);
 	cmd->token[0] = 'f';
@@ -1755,12 +1753,25 @@ void cmd_clear_footer(cmdObj *cmd)
 	cmd->nx->type = TYPE_EMPTY;					// setup terminating element
 	cmd->nx->pv = (cmd-1);
 	cmd->nx->nx = 0;
+	return;
 }
 
-void cmd_omit_body(cmdObj *cmd)
+void cmd_clear_body(cmdObj *cmd)
 {
-	cmd_clear_body(cmd_body);
-	cmd->type = TYPE_EMPTY;
+	// setup body elements
+	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
+		if (i == 0) {
+			cmd->pv = cmd_header;
+		} else {
+			cmd->pv = (cmd-1);
+		}
+		cmd->nx = (cmd+1);
+		cmd->index = 0;
+		cmd->depth = 1;
+		cmd->type = TYPE_EMPTY;
+		cmd++;
+	}
+	(--cmd)->nx = cmd_footer;					// correct last element
 }
 
 /**** List manipulation methods **** 
