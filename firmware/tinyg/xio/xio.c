@@ -106,7 +106,7 @@ void xio_init()
 void xio_init_dev(uint8_t dev, 					// device number
 	FILE *(*x_open)(const char *addr),			// device open routine
 	int (*x_cntl)(const uint32_t control),		// set device control flags
-//	int (*x_rctl)(uint32_t *control),			// get device control flags
+//	int (*x_gctl)(uint32_t *control),			// get device control flags
 	int (*x_putc)(char, struct __file *),		// write char (stdio compat)
 	int (*x_getc)(struct __file *),				// read char (stdio compat)
 	int (*x_gets)(char *buf, int size)			// specialized line reader
@@ -118,7 +118,7 @@ void xio_init_dev(uint8_t dev, 					// device number
 	// bind functions to device structure
 	ds[dev].x_open = x_open;	
 	ds[dev].x_cntl = x_cntl;
-//	ds[dev].x_rctl = x_rctl;
+//	ds[dev].x_gctl = x_gctl;
 	ds[dev].x_putc = x_putc;
 	ds[dev].x_getc = x_getc;
 	ds[dev].x_gets = x_gets;
@@ -173,10 +173,12 @@ int xio_cntl(const uint8_t dev, uint32_t control)
 }
 
 /*
- * xio_rctl() - Note: this is not ioctl() Calling conventions differ.
+ * xio_gctl() - get control flags
+ *
+ *	Note: this is not ioctl() Calling conventions differ.
  */
 /*
-int xio_rctl(const uint8_t dev, uint32_t *control)
+int xio_gctl(const uint8_t dev, uint32_t *control)
 {
 	struct xioDEVICE *d = &ds[dev];
 	control = d->flags;

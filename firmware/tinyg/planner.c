@@ -1505,15 +1505,15 @@ static double _get_junction_vmax(const double a_unit[], const double b_unit[])
 
 uint8_t mp_plan_hold_callback()
 {
-	mpBuf *bp; 					// working buffer pointer
-	uint8_t mr_flag = true;		// used to tell replan to account for mr buffer Vx
+	if (cm.hold_state != FEEDHOLD_PLAN) { return (TG_NOOP);}	// not planning a feedhold
 
+	mpBuf *bp; 					// working buffer pointer
+	if ((bp = _get_run_buffer()) == NULL) { return (TG_NOOP);}	// Oops! nothing's running
+
+	uint8_t mr_flag = true;		// used to tell replan to account for mr buffer Vx
 	double mr_available_length; // available length left in mr buffer for deceleration
 	double braking_velocity;	// velocity left to shed to brake to zero
 	double braking_length;		// distance required to brake to zero from braking_velocity
-
-	if (cm.hold_state != FEEDHOLD_PLAN) { return (TG_NOOP);}	// not planning a feedhold
-	if ((bp = _get_run_buffer()) == NULL) { return (TG_NOOP);}	// Oops! nothing's running
 
 	// examine and process mr buffer
 	mr_available_length = get_axis_vector_length(mr.endpoint, mr.position); 

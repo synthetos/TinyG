@@ -104,8 +104,8 @@
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
 #define GROUP_EXCLUSIONS "cycs,coor"	 // items that are not actually part of the xyzabcuvw0123456789 groups
 #define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ec,ee,ex,eq,ej,je" // cats and dogs
-#define DONT_INITIALIZE "gc,sr,help,test,defa"	// commands that should not be initialized
-#define DONT_PERSIST	"gc,help,test,defa"		// commands that should not be persisted
+#define DONT_INITIALIZE "gc,sr,help,test,defa,baud"	// commands that should not be initialized
+#define DONT_PERSIST	"gc,help,test,defa"			// commands that should not be persisted
 #define SR_DEFAULTS 	"line","posx","posy","posz","vel","stat"
 
 #define IGNORE_OFF 0				// accept either CR or LF as termination on RX text line
@@ -182,6 +182,7 @@ cmdObj cmd_footer[CMD_FOOTER_LEN];	// JSON footer element
 void cfg_init(void);
 uint8_t cfg_text_parser(char *str);
 void cfg_init_gcode_model(void);
+uint8_t cfg_set_baud_callback(void);
 
 // cmd accessors
 uint8_t cmd_get(cmdObj *cmd);		// entry point for GETs
@@ -206,7 +207,7 @@ INDEX_T cmd_get_index(const char *str);
 char *cmd_get_token(const INDEX_T i, char *string);
 //char cmd_get_group(const INDEX_T i);
 uint8_t cmd_is_group(const char *str);
-uint8_t cmd_type(cmdObj *cmd);
+uint8_t cmd_get_type(cmdObj *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 
 //uint8_t cmd_read_NVM_record(cmdObj *cmd);
@@ -277,6 +278,8 @@ struct cfgParameters {
 	uint8_t enable_qr;				// TRUE = queue reports enabled
 	uint8_t enable_json_echo;		// TRUE = enable JSON commands to be echoed
 	uint8_t comm_mode;				// TEXT or JSON mode
+	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
+	uint8_t usb_baud_flag;
 
 	// status report configs
 	uint32_t status_report_interval;// in MS. set non-zero to enable

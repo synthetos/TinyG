@@ -333,22 +333,24 @@ uint16_t js_serialize_json(cmdObj *cmd, char *out_buf)
  *
  *	A footer is returned for every setting except $je=0
  *
- *	JE_SILENT = 0,					// No response is provided for any command
- *	JE_OMIT_BODY,					// Response contains no body - footer only
- *	JE_OMIT_GCODE_BODY,				// Body returned for configs; omitted for Gcode commands
- *	JE_GCODE_LINENUM_ONLY,			// Body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
- *	JE_FULL_ECHO					// Body returned for configs and Gcode - Gcode comments removed
+ *	JE_SILENT = 0,			// No response is provided for any command
+ *	JE_OMIT_BODY,			// Gcode and config responses have footer only
+ *	JE_OMIT_GCODE_BODY,		// Body returned for configs; omitted for Gcode commands
+ *	JE_GCODE_LINENUM_ONLY,	// Body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+ *	JE_FULL_ECHO			// Body returned for configs and Gcode - Gcode comments removed
  */
 void js_print_list(uint8_t status)
 {
-	cmdObj *cmd = cmd_header;		// default starting point
-
 	if (cfg.enable_json_echo == JE_SILENT) { return;}
 
-	if (cfg.enable_json_echo == JE_OMIT_BODY) { 
-		cmd = cmd_footer;
+	cmdObj *cmd = cmd_header;		// default starting point
+	uint8_t cmd_type = cmd_get_type(cmd_body);
 
-	} else if (cmd_type(cmd_body) == CMD_TYPE_GCODE) {
+	if (cfg.enable_json_echo == JE_OMIT_BODY) { 
+		if (cmd_type != CMD_TYPE_REPORT) {
+			cmd = cmd_footer;
+		}
+	} else if (cmd_type == CMD_TYPE_GCODE) {
 		if (cfg.enable_json_echo == JE_OMIT_GCODE_BODY) { 
 			cmd = cmd_footer;
 		} else if (cfg.enable_json_echo == JE_GCODE_LINENUM_ONLY) { 
@@ -363,9 +365,8 @@ void js_print_list(uint8_t status)
 			}
 		}
 	}
-
-	// prepare the footer
-	if (cmd_type(cmd_body) != CMD_TYPE_REPORT) {
+	// serialize body and footer - do not generate a footer for reports
+	if (cmd_type != CMD_TYPE_REPORT) {
 		cmd_footer->type = TYPE_ARRAY;
 		sprintf(cmd_footer->string, "%d,%d,%d,",TINYG_COMM_PROTOCOL_REV, status, tg.linelen);
 		tg.linelen = 0;											// reset it so it's only reported once

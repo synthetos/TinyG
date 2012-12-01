@@ -201,6 +201,7 @@ static uint8_t _set_ic(cmdObj *cmd);	// ignore CR or LF on RX input
 static uint8_t _set_ec(cmdObj *cmd);	// expand CRLF on TX outout
 static uint8_t _set_ee(cmdObj *cmd);	// enable character echo
 static uint8_t _set_ex(cmdObj *cmd);	// enable XON/XOFF
+static uint8_t _set_baud(cmdObj *cmd);	// set USB baud rate
 
 static uint8_t _set_sa(cmdObj *cmd);	// set motor step angle
 static uint8_t _set_tr(cmdObj *cmd);	// set motor travel per revolution
@@ -278,6 +279,15 @@ static PGM_P const msg_hold[] PROGMEM = { msg_hold0, msg_hold1, msg_hold2, msg_h
 static const char msg_home0[] PROGMEM = "Not Homed";
 static const char msg_home1[] PROGMEM = "Homed";
 static PGM_P const msg_home[] PROGMEM = { msg_home0, msg_home1 };
+
+static const char msg_baud0[] PROGMEM = "0";
+static const char msg_baud1[] PROGMEM = "9600";
+static const char msg_baud2[] PROGMEM = "19200";
+static const char msg_baud3[] PROGMEM = "38400";
+static const char msg_baud4[] PROGMEM = "57600";
+static const char msg_baud5[] PROGMEM = "115200";
+static const char msg_baud6[] PROGMEM = "230400";
+static PGM_P const msg_baud[] PROGMEM = { msg_baud0, msg_baud1, msg_baud2, msg_baud3, msg_baud4, msg_baud5, msg_baud6 };
 
 static const char msg_g53[] PROGMEM = "G53 - machine coordinate system";
 static const char msg_g54[] PROGMEM = "G54 - coordinate system 1";
@@ -416,7 +426,8 @@ static const char str_ee[] PROGMEM = "ee,enable_e,[ee]  enable_echo      %12d [0
 static const char str_ex[] PROGMEM = "ex,enable_x,[ex]  enable_xon_xoff  %12d [0,1]\n";
 static const char str_eq[] PROGMEM = "eq,enable_q,[eq]  enable_queue_reports%9d [0,1]\n";
 static const char str_ej[] PROGMEM = "ej,enable_j,[ej]  enable_json_mode %12d [0,1]\n";
-static const char str_je[] PROGMEM = "je,je,[je]  enable_json_echo %12d [0,1]\n";
+static const char str_je[] PROGMEM = "je,je,[je]  json_echo_mode %14d [0-4]\n";
+static const char str_baud[] PROGMEM = "baud,baud,[baud]  USB baud rate %12d [0-6]\n";
 
 // Motor strings in program memory 
 static const char str_1ma[] PROGMEM = "1ma,m1_ma, [1ma] m1_map_to_axis%15d [0=X, 1=Y...]\n";
@@ -703,6 +714,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,				COM_ENABLE_QR },
 	{ str_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,				COM_COMMUNICATIONS_MODE },
 	{ str_je, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_json_echo,		COM_ENABLE_JSON_ECHO },
+	{ str_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,			XIO_BAUD_115200 },
 
 	{ str_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ str_1sa, _print_rot, _get_dbl ,_set_sa, (double *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
@@ -942,7 +954,6 @@ static uint8_t _get_id(cmdObj *cmd)
  * _get_sr()   - run status report
  * _print_sr() - run status report
  * _set_sr()   - set status report specification
- * _get_si()   - get status report interval
  * _set_si()   - set status report interval
  *
  *	Note: _set_sr() is called during initialization and during reset when 
@@ -1003,7 +1014,6 @@ static uint8_t _get_pb(cmdObj *cmd)
 
 static uint8_t _get_rx(cmdObj *cmd)
 {
-//	cmd->value = (double)xio_get_rx_bufcount_usart(&USBu);
 	cmd->value = (double)xio_get_usb_rx_free();
 	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
@@ -1300,7 +1310,7 @@ static uint8_t _set_motor_steps_per_unit(cmdObj *cmd)
  * _set_ec() - enable CRLF on TX
  * _set_ee() - enable character echo
  * _set_ex() - enable XON/XOFF
- *
+ * _set_baud() - set USB baud rate
  *	The above assume USB is the std device
  */
 
@@ -1311,7 +1321,7 @@ static uint8_t _set_comm_helper(cmdObj *cmd, uint32_t yes, uint32_t no)
 	} else { 
 		(void)xio_cntl(XIO_DEV_USB, no);
 	}
-	return(cmd_write_NVM_value(cmd));
+	return (TG_OK);
 }
 
 static uint8_t _set_ic(cmdObj *cmd) 
@@ -1325,7 +1335,7 @@ static uint8_t _set_ic(cmdObj *cmd)
 	} else if (cfg.ignore_crlf == IGNORE_LF) {
 		(void)xio_cntl(XIO_DEV_USB, XIO_IGNORELF);
 	}
-	return(cmd_write_NVM_value(cmd));				// persist the setting
+	return (TG_OK);
 }
 
 static uint8_t _set_ec(cmdObj *cmd) 
@@ -1346,7 +1356,39 @@ static uint8_t _set_ex(cmdObj *cmd)
 	return(_set_comm_helper(cmd, XIO_XOFF, XIO_NOXOFF));
 }
 
+/*
+ * _set_baud() - set USB baud rate
+ *
+ *	See xio_usart.h for valid values. Works as a callback.
+ *	The initial routine changes the baud config setting and sets a flag
+ *	Then it sends a message, 
+ *	Then it waits for the callback before applying the new baud rate
+ */
 
+static uint8_t _set_baud(cmdObj *cmd)
+{
+	uint8_t baud = (uint8_t)cmd->value;
+	if ((baud < 1) || (baud > 6)) {
+		char message[CMD_STRING_LEN]; 
+		sprintf_P(message, PSTR("*** WARNING *** Illegal baud rate specified"));
+		cmd_add_string("msg",message);
+		return (TG_INPUT_VALUE_UNSUPPORTED);
+	}
+	cfg.usb_baud_rate = baud;
+	cfg.usb_baud_flag = true;
+	char message[CMD_STRING_LEN]; 
+	sprintf_P(message, PSTR("*** NOTICE *** Restting baud rate to %S"),(PGM_P)pgm_read_word(&msg_baud[baud]));
+	cmd_add_string("msg",message);
+	return (TG_OK);
+}
+
+uint8_t cfg_set_baud_callback(void) 
+{
+	if (cfg.usb_baud_flag == false) { return(TG_NOOP);}
+	cfg.usb_baud_flag = false;
+	xio_set_baud_usart(XIO_DEV_USB, cfg.usb_baud_rate);
+	return (TG_OK);
+}
 
 /*****************************************************************************
  *****************************************************************************
@@ -1563,7 +1605,7 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd)
  * cmd_get_token()			- returns token in arg string & returns pointer to string
  * cmd_get_group() 			- returns the axis prefix, motor prefix, or 's' for system
  * cmd_is_group()			- returns true if the command is a group
- * cmd_type()				- returns command type as a CMD_TYPE enum
+ * cmd_get_type()			- returns command type as a CMD_TYPE enum
  * cmd_persist_offsets()	- write any changed G54 (et al) offsets back to NVM
  *
  *	cmd_get_index() and cmd_get_index_by_token() are the most expensive routines 
@@ -1672,7 +1714,7 @@ uint8_t cmd_is_group(const char *str)
 	return (false);
 }
 
-uint8_t cmd_type(cmdObj *cmd)
+uint8_t cmd_get_type(cmdObj *cmd)
 {
 	if (strstr("gc", cmd->token) != NULL) {
 		return (CMD_TYPE_GCODE);

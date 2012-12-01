@@ -138,14 +138,15 @@ void rpt_request_status_report()
 
 uint8_t rpt_status_report_callback() // called by controller dispatcher
 {
-	if ((cm.machine_state != MACHINE_RESET) && 
-		(cfg.status_report_interval > 0) && (cm.status_report_counter == 0)) {
-		rpt_populate_status_report();
-		cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);	// will report in JSON or inline text modes
-		cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
-		return (TG_OK);
+	if ((cfg.status_report_interval == 0) ||
+		(cm.status_report_counter != 0) ||
+		(cm.machine_state == MACHINE_RESET)) {
+		return (TG_NOOP);
 	}
-	return (TG_NOOP);
+	rpt_populate_status_report();
+	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);	// will report in JSON or inline text modes
+	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
+	return (TG_OK);
 }
 
 void rpt_run_multiline_status_report()		// multiple line status report
@@ -208,8 +209,7 @@ void rpt_request_queue_report()
 
 uint8_t rpt_queue_report_callback()
 {
-	if (cfg.enable_qr != true) { return (TG_NOOP);}
-	if (qr.request != true) { return (TG_NOOP);}
+	if ((cfg.enable_qr == false) || (qr.request == false)) { return (TG_NOOP);}
 	qr.request = false;
 
 	cmdObj *cmd = cmd_body;
