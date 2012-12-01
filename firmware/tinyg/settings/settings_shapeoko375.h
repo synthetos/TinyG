@@ -39,13 +39,20 @@
 #define TINYG_CONFIGURATION_PROFILE "Shapeoko 375mm"	// displays base config profile
 #define INIT_CONFIGURATION_MESSAGE "Initializing configs to Shapeoko 375mm profile"
 
-// **** common settings - applied to all axes or motors ****
-
 #define JUNCTION_DEVIATION	0.01		// default value, in mm - smaller is faster
-
-// **** system settings ****
-
 #define JUNCTION_ACCELERATION 200000	// centripetal acceleration around corners
+
+// *** settings.h overrides ***
+
+#undef	COM_COMMUNICATIONS_MODE
+#define COM_COMMUNICATIONS_MODE		TG_JSON_MODE	// alternately: TG_TEXT_MODE
+
+#undef COM_JSON_ECHO_MODE
+//#define COM_JSON_ECHO_MODE		JE_OMIT_BODY
+//#define COM_JSON_ECHO_MODE		JE_OMIT_GCODE_BODY
+#define COM_JSON_ECHO_MODE			JE_GCODE_LINENUM_ONLY
+//#define COM_JSON_ECHO_MODE		JE_GCODE_TRUNCATED
+//#define COM_JSON_ECHO_MODE		JE_FULL_ECHO
 
 // *** motor settings ***
 

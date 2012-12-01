@@ -106,7 +106,7 @@
 #define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ec,ee,ex,eq,ej,je" // cats and dogs
 #define DONT_INITIALIZE "gc,sr,help,test,defa,baud"	// commands that should not be initialized
 #define DONT_PERSIST	"gc,help,test,defa"			// commands that should not be persisted
-#define SR_DEFAULTS 	"line","posx","posy","posz","vel","stat"
+//See settings.h for SR_DEFAULTS
 
 #define IGNORE_OFF 0				// accept either CR or LF as termination on RX text line
 #define IGNORE_CR 1					// ignore CR on RX
@@ -276,8 +276,8 @@ struct cfgParameters {
 	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_xon;				// enable XON/XOFF mode
 	uint8_t enable_qr;				// TRUE = queue reports enabled
-	uint8_t enable_json_echo;		// TRUE = enable JSON commands to be echoed
-	uint8_t comm_mode;				// TEXT or JSON mode
+	uint8_t json_echo_mode;			// See jsonEcho enum (in config.h) for JSON echo modes
+	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
 	uint8_t usb_baud_flag;
 

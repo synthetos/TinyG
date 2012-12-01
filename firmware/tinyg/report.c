@@ -40,6 +40,7 @@
 #include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "report.h"
+#include "settings.h"
 #include "xio/xio.h"
 #include "xmega/xmega_rtc.h"
 

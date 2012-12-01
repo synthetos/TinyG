@@ -41,29 +41,9 @@
 #define TINYG_CONFIGURATION_PROFILE "Probotix Fireball V90" // displays base config profile
 #define INIT_CONFIGURATION_MESSAGE "Initializing configs to Probotix Fireball V90 profile"
 
-// **** common settings - applied to all axes or motors ****
-
 #define JERK_MAX 			100000000	// yes, that's "100,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION	0.05		// default value, in mm
-
-// **** system settings ****
-
 #define JUNCTION_ACCELERATION 200000	// centripetal acceleration around corners
-
-#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
-
-#define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
-#define GCODE_DEFAULT_UNITS			MILLIMETERS
-#define GCODE_DEFAULT_COORD_SYSTEM	G54
-#define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
-#define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
-
-#define COM_APPEND_TX_CR			false
-#define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
-#define COM_ENABLE_XON				true
-#define COM_ENABLE_ECHO				true
-#define COM_ENABLE_QR				true
-#define COM_COMMUNICATIONS_MODE		TG_JSON_MODE	// alternately: TG_TEXT_MODE
 
 // *** motor settings ***
 

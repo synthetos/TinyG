@@ -341,19 +341,19 @@ uint16_t js_serialize_json(cmdObj *cmd, char *out_buf)
  */
 void js_print_list(uint8_t status)
 {
-	if (cfg.enable_json_echo == JE_SILENT) { return;}
+	if (cfg.json_echo_mode == JE_SILENT) { return;}
 
 	cmdObj *cmd = cmd_header;		// default starting point
 	uint8_t cmd_type = cmd_get_type(cmd_body);
 
-	if (cfg.enable_json_echo == JE_OMIT_BODY) { 
+	if (cfg.json_echo_mode == JE_OMIT_BODY) { 
 		if (cmd_type != CMD_TYPE_REPORT) {
 			cmd = cmd_footer;
 		}
 	} else if (cmd_type == CMD_TYPE_GCODE) {
-		if (cfg.enable_json_echo == JE_OMIT_GCODE_BODY) { 
+		if (cfg.json_echo_mode == JE_OMIT_GCODE_BODY) { 
 			cmd = cmd_footer;
-		} else if (cfg.enable_json_echo == JE_GCODE_LINENUM_ONLY) { 
+		} else if (cfg.json_echo_mode == JE_GCODE_LINENUM_ONLY) { 
 			uint32_t linenum = cm_get_model_linenum();
 			if (linenum == 0) {
 				cmd = cmd_footer;

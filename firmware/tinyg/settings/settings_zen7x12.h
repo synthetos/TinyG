@@ -41,31 +41,23 @@
 #define TINYG_CONFIGURATION_PROFILE "Zen Toolworks 7x12" // displays base config profile
 #define INIT_CONFIGURATION_MESSAGE "Initializing configs to Zen Toolworks 7x12 profile"
 
-// **** common settings - applied to all axes or motors ****
-
 #define JERK_MAX_LINEAR 			100000000	// yes, that's "100,000,000" mm/(min^3)
 #define JERK_MAX_ROTARY 			10000000000	// yes, that's "10 billion" mm/(min^3)
 
 #define JUNCTION_DEVIATION	0.05		// default value, in mm
-
-// **** system settings ****
-
 #define JUNCTION_ACCELERATION 100000	// centripetal acceleration around corners
 
-#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
+// *** settings.h overrides ***
 
-#define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
-#define GCODE_DEFAULT_UNITS			MILLIMETERS
-#define GCODE_DEFAULT_COORD_SYSTEM	G54
-#define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
-#define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
-
-#define COM_APPEND_TX_CR			false
-#define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
-#define COM_ENABLE_XON				true
-#define COM_ENABLE_ECHO				true
-#define COM_ENABLE_QR				true
+#undef	COM_COMMUNICATIONS_MODE
 #define COM_COMMUNICATIONS_MODE		TG_JSON_MODE	// alternately: TG_TEXT_MODE
+
+//#undef COM_JSON_ECHO_MODE
+//#define COM_JSON_ECHO_MODE		JE_SILENT
+//#define COM_JSON_ECHO_MODE		JE_OMIT_BODY
+//#define COM_JSON_ECHO_MODE		JE_OMIT_GCODE_BODY
+//#define COM_JSON_ECHO_MODE		JE_GCODE_LINENUM_ONLY
+//#define COM_JSON_ECHO_MODE		JE_FULL_ECHO
 
 // *** motor settings ***
 
@@ -103,7 +95,7 @@
 #define X_VELOCITY_MAX 600 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX X_VELOCITY_MAX	// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX 475				// travel between switches or crashes
-#define X_JERK_MAX JERK_MAX_LINEAR			// xjm
+#define X_JERK_MAX JERK_MAX_LINEAR		// xjm
 #define X_JUNCTION_DEVIATION JUNCTION_DEVIATION	 // xjd
 #define X_SWITCH_MODE 1					// xsm		1=switches enabled for homing only
 #define X_SEARCH_VELOCITY -500			// xsv		move in negative direction

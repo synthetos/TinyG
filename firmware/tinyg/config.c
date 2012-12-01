@@ -713,7 +713,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
 	{ str_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,				COM_ENABLE_QR },
 	{ str_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,				COM_COMMUNICATIONS_MODE },
-	{ str_je, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_json_echo,		COM_ENABLE_JSON_ECHO },
+	{ str_je, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.json_echo_mode,		COM_JSON_ECHO_MODE },
 	{ str_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,			XIO_BAUD_115200 },
 
 	{ str_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },

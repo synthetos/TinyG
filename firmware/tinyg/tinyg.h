@@ -33,13 +33,13 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95
-#define TINYG_BUILD_NUMBER   	346.08
+#define TINYG_BUILD_NUMBER   	347.01
 
 #define TINYG_COMM_PROTOCOL_REV 1	// the communications protocol revision is tracked independently
 
 /****** DEVELOPMENT SETTINGS ******/
 
-#define __PLAN_R2				// comment out to use R1 planner functions
+//#define __PLAN_R2				// comment out to use R1 planner functions
 #define __EXEC_R2				// comment out to use R1 aline exec functions
 #define __JUNCTION_VMAX_R2		// comment out ot use the old code
 #define __ISR_R2				// comment out to use R1 ISR

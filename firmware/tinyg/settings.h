@@ -38,11 +38,11 @@
 #define settings_h
 
 /**** GENERAL SETTINGS ******************************************************/
+// These can be overridden in machine profiles by using #undef
 
-#define STATUS_REPORT_MIN_MS		200		// ms - enforces a viable minimum
-
-#define STATUS_REPORT_INTERVAL_MS	200	// in milliseconds
-//#define STATUS_REPORT_INTERVAL_MS	0	// in milliseconds
+#define STATUS_REPORT_MIN_MS		200		// milliseconds - enforces a viable minimum
+#define STATUS_REPORT_INTERVAL_MS	200		// milliseconds - set to 0 to disable
+#define SR_DEFAULTS "line","posx","posy","posz","vel","stat"
 
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
 #define GCODE_DEFAULT_UNITS			MILLIMETERS
@@ -54,34 +54,22 @@
 #define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_ENABLE_ECHO				false
 #define COM_ENABLE_XON				true
-
-//#define COM_ENABLE_QR				true
 #define COM_ENABLE_QR				false
 
-#define COM_COMMUNICATIONS_MODE		TG_JSON_MODE
-//#define COM_COMMUNICATIONS_MODE	TG_TEXT_MODE
-
-//#define COM_ENABLE_JSON_ECHO		JE_SILENT
-//#define COM_ENABLE_JSON_ECHO		JE_OMIT_BODY
-//#define COM_ENABLE_JSON_ECHO		JE_OMIT_GCODE_BODY
-#define COM_ENABLE_JSON_ECHO		JE_GCODE_LINENUM_ONLY
-//#define COM_ENABLE_JSON_ECHO		JE_GCODE_TRUNCATED
-//#define COM_ENABLE_JSON_ECHO		JE_FULL_ECHO
-
-//#define ENABLE_ACCELERATION 1			// *** NOTE: this feature is disabled in 338.11 - always equal to 1 
-
+#define COM_COMMUNICATIONS_MODE		TG_TEXT_MODE
+#define COM_JSON_ECHO_MODE			JE_GCODE_LINENUM_ONLY
 
 /**** MACHINE PROFILES ******************************************************/
 
 // default machine profiles - chose only one:
 
 //#include "settings/settings_default.h"			// Default settings for shipment
-//#include "settings/settings_zen7x12.h"			// Zen Toolworks 7x12
-#include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
-//#include "settings/settings_Ultimaker.h"			// Ultimaker 3D printer
-//#include "settings/settings_probotixV90.h"		// Probotix FireballV90
 //#include "settings/settings_lumenlabMicRoV3.h"	// Lumenlabs micRo v3
+//#include "settings/settings_otherlab.h"			// Otherlab Othercutter
+//#include "settings/settings_probotixV90.h"		// Probotix FireballV90
 //#include "settings/settings_sacidu93.h"			// related to Issue #12
-//#include "settings/settings_otherlab.h"			// Othwrlab Cardboard cutter
+#include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
+//#include "settings/settings_ultimaker.h"			// Ultimaker 3D printer
+//#include "settings/settings_zen7x12.h"			// Zen Toolworks 7x12
 
 #endif
