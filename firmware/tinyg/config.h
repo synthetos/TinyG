@@ -230,7 +230,8 @@ struct cfgAxisParameters {
 	double jerk_max;				// max jerk (Jm) in mm/min^3
 	double junction_dev;			// aka cornering delta
 	double radius;					// radius in mm for rotary axis modes
-	uint8_t switch_mode;			// 0=disabled, 1=enabled NO for homing only, 2=enabled NO for homing & limits
+	uint8_t switch_mode_min;		// 0=disabled, 1=enabled NO for homing only, 2=enabled NO for homing & limits
+	uint8_t switch_mode_max;		// 0=disabled, 1=enabled NO for homing only, 2=enabled NO for homing & limits
 	double search_velocity;			// homing search velocity
 	double latch_velocity;			// homing latch velocity
 	double latch_backoff;			// backoff from switches prior to homing latch movement
@@ -262,6 +263,7 @@ struct cfgParameters {
 	double junction_acceleration;	// centripetal acceleration max for cornering
 	uint8_t enable_acceleration;	// enable acceleration control
 //	double max_spindle_speed;		// in RPM
+	uint8_t switch_type;			// 0=NO, 1=NC
 
 	// gcode power-on default settings - defaults are not the same as the gm state
 	uint8_t coord_system;			// G10 active coordinate system default
