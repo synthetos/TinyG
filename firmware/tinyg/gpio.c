@@ -62,7 +62,7 @@
  */
 
 //#include <stdio.h>						// precursor to xio.h
-//#include <avr/pgmspace.h>					// precursor to xio.h
+#include <avr/pgmspace.h>					// precursor to xio.h
 #include <avr/interrupt.h>
 
 #include "tinyg.h"
@@ -218,19 +218,19 @@ void gpio_reset_lockout()
  *	This function is made ugly by the fact that the motor ports and the switch ports 
  *	don't line up. Otherwise it would be possible to run a simple for() loop
  */
-
+/*
 void gpio_read_switches()
 {
 	// this little bit of ugliness compnsates for the motor and switch assignments not lining up
 	uint8_t fix[NUM_SWITCHES];
-	fix[0] = 0x01 && (device.port[SW_PORT_X]->IN >> SW_MIN_BIT_bp);
-	fix[1] = 0x01 && (device.port[SW_PORT_X]->IN >> SW_MAX_BIT_bp);
-	fix[2] = 0x01 && (device.port[SW_PORT_Y]->IN >> SW_MIN_BIT_bp);
-	fix[3] = 0x01 && (device.port[SW_PORT_Y]->IN >> SW_MAX_BIT_bp);
-	fix[4] = 0x01 && (device.port[SW_PORT_Z]->IN >> SW_MIN_BIT_bp);
-	fix[5] = 0x01 && (device.port[SW_PORT_Z]->IN >> SW_MAX_BIT_bp);
-	fix[6] = 0x01 && (device.port[SW_PORT_A]->IN >> SW_MIN_BIT_bp);
-	fix[7] = 0x01 && (device.port[SW_PORT_A]->IN >> SW_MAX_BIT_bp);
+	fix[0] = 0x01 & (device.port[SW_PORT_X]->IN >> SW_MIN_BIT_bp);
+	fix[1] = 0x01 & (device.port[SW_PORT_X]->IN >> SW_MAX_BIT_bp);
+	fix[2] = 0x01 & (device.port[SW_PORT_Y]->IN >> SW_MIN_BIT_bp);
+	fix[3] = 0x01 & (device.port[SW_PORT_Y]->IN >> SW_MAX_BIT_bp);
+	fix[4] = 0x01 & (device.port[SW_PORT_Z]->IN >> SW_MIN_BIT_bp);
+	fix[5] = 0x01 & (device.port[SW_PORT_Z]->IN >> SW_MAX_BIT_bp);
+	fix[6] = 0x01 & (device.port[SW_PORT_A]->IN >> SW_MIN_BIT_bp);
+	fix[7] = 0x01 & (device.port[SW_PORT_A]->IN >> SW_MAX_BIT_bp);
 
 	// interpret them as NO or NC closures
 	
@@ -243,13 +243,35 @@ void gpio_read_switches()
 			sw.thrown = true;
 		}
 	}
+	sw_show_switch(); //++++++++++++++++++
 }
+*/
 
 /*
  * gpio_get_switch() 	  - return TRUE if switch is thrown
  * gpio_get_switch_mode() - return switch setting
  * gpio_set_switch() 	  - diagnostic function for emulating a switch closure
  */
+uint8_t gpio_read_switch(uint8_t sw_num)
+{
+	uint8_t read;
+	switch (sw_num) {
+		case SW_MIN_X: { read = device.port[SW_PORT_X]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_X: { read = device.port[SW_PORT_X]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Y: { read = device.port[SW_PORT_Y]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Y: { read = device.port[SW_PORT_Y]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Z: { read = device.port[SW_PORT_Z]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Z: { read = device.port[SW_PORT_Z]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_A: { read = device.port[SW_PORT_A]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_A: { read = device.port[SW_PORT_A]->IN & SW_MAX_BIT_bm; break;}
+	}
+	if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
+		if (read == 0) { return (true);}
+		return (false);	
+	}
+	if (read != 0) { return (true);}
+	return (false);	
+}
 
 uint8_t gpio_get_switch(uint8_t sw_num) { return (sw.flag[sw_num]);}
 uint8_t gpio_get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
@@ -365,9 +387,8 @@ void gpio_toggle_port(uint8_t b)
  * _show_switch() - simple display routine
  */
 
-#ifdef __dbSHOW_LIMIT_SWITCH
-static void _show_switch(void);
-static void _show_switch(void)
+//#ifdef __dbSHOW_LIMIT_SWITCH
+void sw_show_switch(void)
 {
 	fprintf_P(stderr, PSTR("Limit Switch Thrown %d %d %d %d   %d %d %d %d\n"), 
 		sw.flag[SW_MIN_X], sw.flag[SW_MAX_X], 
@@ -375,7 +396,7 @@ static void _show_switch(void)
 		sw.flag[SW_MIN_Z], sw.flag[SW_MAX_Z], 
 		sw.flag[SW_MIN_A], sw.flag[SW_MAX_A]);
 }
-#endif
+//#endif
 
 
 //###########################################################################
