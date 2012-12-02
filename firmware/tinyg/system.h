@@ -65,6 +65,11 @@ void sys_init(void);					// master hardware init
 #define GPIO2_Z_MIN_MAX		PORTE
 #define GPIO2_A_MIN_MAX		PORTF
 
+#define SW_PORT_X 0						// port mapping looked at the other way
+#define SW_PORT_Y 3
+#define SW_PORT_Z 2
+#define SW_PORT_A 1
+
 // These next four must be changed when the PORT_MOTOR_* definitions change!
 #define PORTCFG_VP0MAP_PORT_MOTOR_1_gc PORTCFG_VP0MAP_PORTA_gc
 #define PORTCFG_VP1MAP_PORT_MOTOR_2_gc PORTCFG_VP1MAP_PORTF_gc

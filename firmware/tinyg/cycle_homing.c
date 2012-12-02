@@ -56,10 +56,11 @@ struct hmHomingSingleton {		// persistent G28 and G30 runtime variables
 	// controls for homing cycle
 	int8_t axis;				// axis currently being homed
 	int8_t axis2;				// second axis if dual axis
-	uint8_t axis_switch;		// honing switch index of current axis
+	int8_t homing_switch;		// homing switch for current axis (index into switch flag table)
+	int8_t limit_switch;		// limit switch for current axis, or -1 if none
 	uint8_t (*func)(int8_t axis);// binding for current processing function
 
-	// convenience copies of config parameters - somewhat wasteful, but makes coding simpler 
+	double direction;			// set to 1 for positive (max), -1 for negative (to min);
 	double search_travel;
 	double search_velocity;
 	double latch_velocity;
@@ -166,6 +167,7 @@ uint8_t cm_homing_callback(void)
  *	_homing_axis_final()	- backoff from latch 
  *	_homing_axis_move()		- helper that actually executes the above moves
  */
+
 static uint8_t _homing_axis_start(int8_t axis)
 {
 	// get first or next axis
@@ -185,25 +187,29 @@ static uint8_t _homing_axis_start(int8_t axis)
 	}
 
 	hm.axis = axis;
+//	hm.jerk_saved = cfg.a[axis].jerk_max;					// per-axis save
 	hm.search_velocity = fabs(cfg.a[axis].search_velocity); // search velocity is always positive
 	hm.latch_velocity = fabs(cfg.a[axis].latch_velocity); 	// and so is latch velocity
-//	hm.jerk_saved = cfg.a[axis].jerk_max;					// per-axis save
 
-	// if moving to a MIN switch...
-    hm.axis_switch = axis;
-	if (cfg.a[axis].search_velocity < 0) {					// search velocity is negative
+	// setup parameters for negative travel (homing to the minimum switch)
+	if (cfg.a[axis].search_velocity < 0) {
+		hm.homing_switch = MIN_SWITCH(axis);
+		hm.limit_switch = MAX_SWITCH(axis);
 		hm.search_travel = -cfg.a[axis].travel_max;			// make search travel negative
 		hm.latch_backoff = cfg.a[axis].latch_backoff;		// backoffs move opposite of search
 		hm.zero_backoff = cfg.a[axis].zero_backoff;
-	} else { // if moving to a MAX switch...				// search velocity is positive
+
+	// setup parameters for positive travel (homing to the maximum switch)
+	} else {
+		hm.homing_switch = MAX_SWITCH(axis);
+		hm.limit_switch = MIN_SWITCH(axis);
 		hm.search_travel = cfg.a[axis].travel_max;			// make search travel positive
 		hm.latch_backoff = -cfg.a[axis].latch_backoff;		// backoffs move opposite of search
 		hm.zero_backoff = -cfg.a[axis].zero_backoff;
-        hm.axis_switch += SW_OFFSET;						// will check the max switch for backoffs
 	}
 
     // if homing is disabled for an axis (switch mode == 0) just set the axis position to zero
-	if (gpio_get_switch_mode(hm.axis_switch) == SW_MODE_DISABLED) {
+	if (gpio_get_switch_mode(hm.homing_switch) == SW_MODE_DISABLED) {
 		return (_set_hm_func(_homing_axis_set_zero));
 	}
 	// ---> For now all axes are single - no dual axis detection or invocation
@@ -219,7 +225,7 @@ static uint8_t _homing_axis_clear(int8_t axis)
     gpio_clear_switches();
 	gpio_reset_lockout();
 	gpio_read_switches();							// sets gp.sw_flags
-	if (gpio_get_switch(hm.axis_switch) == true) {	// test if switch for the axis is thrown
+	if (gpio_get_switch(hm.homing_switch) == true) {// test if switch for the axis is thrown
  	   _homing_axis_move(hm.axis, hm.latch_backoff, hm.latch_velocity);
 		return (_set_hm_func(_homing_axis_clear));	// do it again
 	} else {

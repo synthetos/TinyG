@@ -113,7 +113,7 @@ void gpio_init(void)
 		device.port[i]->OUTSET = SW_MAX_BIT_bm;	// max bit off
 
 		// set interrupt mode for NO or NC switches
-		if (cfg.switch_type == SW_TYPE_NORMALLY_OPEN) {
+		if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
 			int_mode = PORT_ISC_FALLING_gc;
 		} else {
 			int_mode = PORT_ISC_RISING_gc;
@@ -137,11 +137,7 @@ void gpio_init(void)
 
 /*
  * ISRs - Switch interrupt handler routine and vectors
- *
- *	sw_flag is the index into the flag table. 
- *	axis is the switch axis
  */
-
 ISR(X_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_X);}
 ISR(Y_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Y);}
 ISR(Z_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Z);}
@@ -158,20 +154,19 @@ static void _switch_isr_helper(uint8_t sw_num)
 	gpio_led_on(0);
 	printf("%d",sw_num);
 
-	uint8_t sw_mode = gpio_get_switch_mode(sw_num);
-	if (sw_mode == SW_MODE_DISABLED) return;
+	if (gpio_get_switch_mode(sw_num) == SW_MODE_DISABLED) return;
 
 	gpio_led_on(1);
 
 	sw.lockout_count = SW_LOCKOUT_TICKS;	// start the debounce lockout down-counter
-	sw.flags[sw_num] = true;				// set the flag for this switch
+	sw.flag[sw_num] = true;					// set the flag for this switch
 	sw.thrown = true;						// triggers the switch handler tasks
 
 	if (cm.cycle_state == CYCLE_HOMING) {
 		sig_feedhold();
 		return;
 	}
-	if (sw_mode == SW_MODE_ENABLED) {		// only fire abort if enabled for limits
+	if (gpio_get_switch_mode(sw_num) >= SW_MODE_HOMING_LIMIT) {	// only fire abort if enabled for limits
 		sig_abort();
 	}
 }
@@ -199,7 +194,7 @@ void gpio_clear_switches()
 {
 	sw.thrown = false;
 	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
-		sw.flags[i] = false; 
+		sw.flag[i] = false; 
 	}
 }
 
@@ -219,72 +214,50 @@ void gpio_reset_lockout()
  *	This routine relies on SW_FLAG array being in order of:
  *		MIN_X, MIN_Y, MIN_Z, MIN_A, MAX_X, MAX_Y, MAX_Z, MAX_A
  *	and there being 2 groups of 4 flags.
+ *
+ *	This function is made ugly by the fact that the motor ports and the switch ports 
+ *	don't line up. Otherwise it would be possible to run a simple for() loop
  */
 
 void gpio_read_switches()
 {
-	gpio_clear_switches();								// clear flags and thrown bit
+	// this little bit of ugliness compnsates for the motor and switch assignments not lining up
+	uint8_t fix[NUM_SWITCHES];
+	fix[0] = 0x01 && (device.port[SW_PORT_X]->IN >> SW_MIN_BIT_bp);
+	fix[1] = 0x01 && (device.port[SW_PORT_X]->IN >> SW_MAX_BIT_bp);
+	fix[2] = 0x01 && (device.port[SW_PORT_Y]->IN >> SW_MIN_BIT_bp);
+	fix[3] = 0x01 && (device.port[SW_PORT_Y]->IN >> SW_MAX_BIT_bp);
+	fix[4] = 0x01 && (device.port[SW_PORT_Z]->IN >> SW_MIN_BIT_bp);
+	fix[5] = 0x01 && (device.port[SW_PORT_Z]->IN >> SW_MAX_BIT_bp);
+	fix[6] = 0x01 && (device.port[SW_PORT_A]->IN >> SW_MIN_BIT_bp);
+	fix[7] = 0x01 && (device.port[SW_PORT_A]->IN >> SW_MAX_BIT_bp);
 
+	// interpret them as NO or NC closures
+	
+	gpio_clear_switches();						// clear flags and thrown bit
 	for (uint8_t i=0; i<NUM_SWITCHES; i++) {
-		if (!(device.port[i]->IN & SW_MIN_BIT_bm)) { 	// min
-			sw.flags[i] = true;
-			sw.thrown = true;
-		}
-		if (!(device.port[i]->IN & SW_MAX_BIT_bm)) { 	// max
-			sw.flags[i + SW_OFFSET] = true;
+		if (sw.mode[i] == SW_MODE_DISABLED) { continue;}
+		if (((sw.switch_type == SW_TYPE_NORMALLY_OPEN) && (fix[i] == 0)) ||
+			((sw.switch_type == SW_TYPE_NORMALLY_CLOSED) && (fix[i] == 1))) {
+			sw.flag[i] = true;
 			sw.thrown = true;
 		}
 	}
-
-/*
-	for (uint8_t i=0; i<NUM_SWITCHES; i++) {
-		if ((cfg.a[i].switch_mode == SW_MODE_ENABLED_NO) || (cfg.a[i].switch_mode == SW_MODE_HOMING_NO)) {
-			if ((device.port[i]->IN & SW_MIN_BIT_bm) == 0) { 	// NO switch MIN bit
-				sw.flags[i] = true;
-				sw.thrown = true;
-			}
-			if ((device.port[i]->IN & SW_MAX_BIT_bm) == 0) { 	// NO switch MAX bit
-				sw.flags[i+SW_OFFSET] = true;
-				sw.thrown = true;
-			}			
-		}
-		if ((cfg.a[i].switch_mode == SW_MODE_ENABLED_NC) || (cfg.a[i].switch_mode == SW_MODE_HOMING_NC)) {
-			if ((device.port[i]->IN & SW_MIN_BIT_bm) == 1) { 	// NC switch MIN bit
-				sw.flags[i] = true;
-				sw.thrown = true;
-			}
-			if ((device.port[i]->IN & SW_MAX_BIT_bm) == 1) { 	// NC switch MAX bit
-				sw.flags[i+SW_OFFSET] = true;
-				sw.thrown = true;
-			}			
-		}
-	}
-*/
 }
 
 /*
  * gpio_get_switch() 	  - return TRUE if switch is thrown
+ * gpio_get_switch_mode() - return switch setting
  * gpio_set_switch() 	  - diagnostic function for emulating a switch closure
- * gpio_get_switch_mode() - return the switch mode given the switch number
  */
 
-uint8_t gpio_get_switch(uint8_t sw_num) 
-{
-	return (sw.flags[sw_num]);
-}
+uint8_t gpio_get_switch(uint8_t sw_num) { return (sw.flag[sw_num]);}
+uint8_t gpio_get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
 
 void gpio_set_switch(uint8_t sw_num)
 {
 	sw.thrown = true;
-	sw.flags[sw_num] = true;
-}
-
-uint8_t gpio_get_switch_mode(uint8_t sw_num)
-{
-	if (sw_num > NUM_SWITCH_PAIRS) {
-		return (cfg.a[sw_num-NUM_SWITCH_PAIRS].switch_mode_max);
-	}
-	return (cfg.a[sw_num].switch_mode_min);
+	sw.flag[sw_num] = true;
 }
 
 /*

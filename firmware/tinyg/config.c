@@ -726,7 +726,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_ml, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.min_segment_len,		MIN_LINE_LENGTH },
 	{ str_ma, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.arc_segment_len,		ARC_SEGMENT_LENGTH },
 	{ str_mt, _print_lin, _get_dbl, _set_dbl, (double *)&cfg.estd_segment_usec,		NOM_SEGMENT_USEC },
-	{ str_st, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.switch_type,			SWITCH_TYPE },
+	{ str_st, _print_ui8, _get_ui8, _set_ui8, (double *)&sw.switch_type,			SWITCH_TYPE },
 
 	{ str_ic, _print_ui8, _get_ui8, _set_ic,  (double *)&cfg.ignore_crlf,			COM_IGNORE_CRLF },
 //	{ str_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,				COM_APPEND_TX_CR },
@@ -771,8 +771,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_xtm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].travel_max,		X_TRAVEL_MAX },
 	{ str_xjm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].jerk_max,			X_JERK_MAX },
 	{ str_xjd, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].junction_dev,		X_JUNCTION_DEVIATION },
-	{ str_xsn, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[X].switch_mode_min,	X_SWITCH_MODE_MIN },
-	{ str_xsx, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[X].switch_mode_max,	X_SWITCH_MODE_MAX },
+	{ str_xsn, _print_ui8, _get_ui8, _set_sm, (double *)&sw.mode[0],				X_SWITCH_MODE_MIN },
+	{ str_xsx, _print_ui8, _get_ui8, _set_sm, (double *)&sw.mode[1],				X_SWITCH_MODE_MAX },
 	{ str_xsv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].search_velocity,	X_SEARCH_VELOCITY },
 	{ str_xlv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_velocity,	X_LATCH_VELOCITY },
 	{ str_xlb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_backoff,	X_LATCH_BACKOFF },
@@ -785,8 +785,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_yjm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].jerk_max,			Y_JERK_MAX },
 	{ str_yjd, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].junction_dev,		Y_JUNCTION_DEVIATION },
 //	{ str_ysm, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[Y].switch_mode,		Y_SWITCH_MODE },
-	{ str_ysn, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[Y].switch_mode_min,	Y_SWITCH_MODE_MIN },
-	{ str_ysx, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[Y].switch_mode_max,	Y_SWITCH_MODE_MAX },
+	{ str_ysn, _print_ui8, _get_ui8, _set_sm, (double *)&sw.mode[2],				Y_SWITCH_MODE_MIN },
+	{ str_ysx, _print_ui8, _get_ui8, _set_sm, (double *)&sw.mode[3],				Y_SWITCH_MODE_MAX },
 	{ str_ysv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].search_velocity,	Y_SEARCH_VELOCITY },
 	{ str_ylv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_velocity,	Y_LATCH_VELOCITY },
 	{ str_ylb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_backoff,	Y_LATCH_BACKOFF },
@@ -799,8 +799,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_zjm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].jerk_max,			Z_JERK_MAX },
 	{ str_zjd, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].junction_dev, 	Z_JUNCTION_DEVIATION },
 //	{ str_zsm, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[Z].switch_mode,		Z_SWITCH_MODE },
-	{ str_zsn, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[Z].switch_mode_min,	Z_SWITCH_MODE_MIN },
-	{ str_zsx, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[Z].switch_mode_max,	Z_SWITCH_MODE_MAX },
+	{ str_zsn, _print_ui8, _get_ui8, _set_sm, (double *)&sw.mode[4],				Z_SWITCH_MODE_MIN },
+	{ str_zsx, _print_ui8, _get_ui8, _set_sm, (double *)&sw.mode[5],				Z_SWITCH_MODE_MAX },
 	{ str_zsv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].search_velocity,	Z_SEARCH_VELOCITY },
 	{ str_zlv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_velocity,	Z_LATCH_VELOCITY },
 	{ str_zlb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_backoff,	Z_LATCH_BACKOFF },
@@ -814,8 +814,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_ajd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].junction_dev, 	A_JUNCTION_DEVIATION },
 	{ str_ara, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].radius,			A_RADIUS},
 //	{ str_asm, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[A].switch_mode,		A_SWITCH_MODE },
-	{ str_asn, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[A].switch_mode_min,	A_SWITCH_MODE_MIN },
-	{ str_asx, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[A].switch_mode_max,	A_SWITCH_MODE_MAX },
+	{ str_asn, _print_ui8, _get_ui8, _set_sm, (double *)&sw.mode[6],				A_SWITCH_MODE_MIN },
+	{ str_asx, _print_ui8, _get_ui8, _set_sm, (double *)&sw.mode[7],				A_SWITCH_MODE_MAX },
 	{ str_asv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].search_velocity,	A_SEARCH_VELOCITY },
 	{ str_alv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_velocity,	A_LATCH_VELOCITY },
 	{ str_alb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_backoff,	A_LATCH_BACKOFF },
@@ -829,8 +829,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_bjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].junction_dev, 	B_JUNCTION_DEVIATION },
 	{ str_bra, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].radius,			B_RADIUS },
 //	{ str_bsm, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[B].switch_mode,		B_SWITCH_MODE },
-	{ str_bsn, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[B].switch_mode_min,	B_SWITCH_MODE_MIN },
-	{ str_bsx, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[B].switch_mode_max,	B_SWITCH_MODE_MAX },
+	{ str_bsn, _print_ui8, _get_ui8, _set_sm, (double *)&tg.null,					B_SWITCH_MODE_MIN },
+	{ str_bsx, _print_ui8, _get_ui8, _set_sm, (double *)&tg.null,					B_SWITCH_MODE_MAX },
 	{ str_bsv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].search_velocity,	B_SEARCH_VELOCITY },
 	{ str_blv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_velocity,	B_LATCH_VELOCITY },
 	{ str_blb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_backoff,	B_LATCH_BACKOFF },
@@ -844,8 +844,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_cjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].junction_dev,		C_JUNCTION_DEVIATION },
 	{ str_cra, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].radius,			C_RADIUS },
 //	{ str_csm, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[C].switch_mode,		C_SWITCH_MODE },
-	{ str_csn, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[C].switch_mode_min,	C_SWITCH_MODE_MIN },
-	{ str_csx, _print_ui8, _get_ui8, _set_sm, (double *)&cfg.a[C].switch_mode_max,	C_SWITCH_MODE_MAX },
+	{ str_csn, _print_ui8, _get_ui8, _set_sm, (double *)&tg.null,					C_SWITCH_MODE_MIN },
+	{ str_csx, _print_ui8, _get_ui8, _set_sm, (double *)&tg.null,					C_SWITCH_MODE_MAX },
 	{ str_csv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].search_velocity,	C_SEARCH_VELOCITY },
 	{ str_clv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_velocity,	C_LATCH_VELOCITY },
 	{ str_clb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_backoff,	C_LATCH_BACKOFF },
@@ -1291,7 +1291,6 @@ static uint8_t _set_sm(cmdObj *cmd)
 	//	cmd_add_string("msg","*** WARNING *** Unsupported switch mode. Switch DISABLED");
 	}
 	_set_ui8(cmd);
-//	gpio_init();
 	return (TG_OK);
 }
 

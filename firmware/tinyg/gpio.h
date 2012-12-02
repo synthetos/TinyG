@@ -49,28 +49,17 @@
 #define A_MAX_ISR_vect PORTF_INT1_vect
 
 /*
-#define X_MIN_ISR_vect PORTA_INT0_vect
-#define Y_MIN_ISR_vect PORTF_INT0_vect
-#define Z_MIN_ISR_vect PORTE_INT0_vect
-#define A_MIN_ISR_vect PORTD_INT0_vect
-#define X_MAX_ISR_vect PORTA_INT1_vect
-#define Y_MAX_ISR_vect PORTF_INT1_vect
-#define Z_MAX_ISR_vect PORTE_INT1_vect
-#define A_MAX_ISR_vect PORTD_INT1_vect
-*/
-
-/*
  * Global Scope Definitions, Functions and Data
  */
 
-enum swFlags {	 			// indexes into sw_flag array
-	SW_MIN_X = 0,			// this group corresponds to XYZA values
-	SW_MIN_Y, 
-	SW_MIN_Z, 
-	SW_MIN_A,
-	SW_MAX_X,				// this group corresponds to XYZA + SW_OFFSET
+enum swNums {	 			// indexes into switch arrays
+	SW_MIN_X = 0,
+	SW_MAX_X,
+	SW_MIN_Y,
 	SW_MAX_Y,
+	SW_MIN_Z, 
 	SW_MAX_Z,
+	SW_MIN_A,
 	SW_MAX_A,
 	NUM_SWITCHES 			// must be last one. Used for array sizing and for loops
 };
@@ -85,9 +74,10 @@ enum swType {
 enum swMode {				// switch operation modes
 	SW_MODE_DISABLED = 0,	// disabled for all operations
 	SW_MODE_HOMING,			// enable switch for homing only
-	SW_MODE_ENABLED,		// enable switch for homing and limits
+	SW_MODE_HOMING_LIMIT,	// enable switch for homing and limits
+	SW_MODE_LIMIT			// enable switch for limits only
 };
-#define SW_MODE_MAX_VALUE SW_MODE_ENABLED
+#define SW_MODE_MAX_VALUE SW_MODE_LIMIT
 
 enum swSense {
 	SW_SENSE_DISABLED = 0,	// not enabled
@@ -96,12 +86,18 @@ enum swSense {
 };
 
 struct swStruct {						// switch state
+	uint8_t switch_type;				// 0=NO, 1=NC - applies to all switches
 	volatile uint8_t thrown;			// 1=thrown (Note 1)
 	volatile uint8_t lockout_count;		// switch lockout counter (debouncing)
-	volatile uint8_t flags[NUM_SWITCHES];// switch flag array
-	uint8_t detect[NUM_SWITCHES];		// switch state detected on initialization
+	volatile uint8_t flag[NUM_SWITCHES];// switch flag array
+	volatile uint8_t mode[NUM_SWITCHES];// 0=disabled, 1=homing, 2=homing+limit, 3=limit
+//	uint8_t detect[NUM_SWITCHES];		// switch state detected on initialization
 };
 struct swStruct sw;
+
+// macros for finding the index into the switch table give the axis number
+#define MIN_SWITCH(axis) (axis*2)
+#define MAX_SWITCH(axis) (axis*2+1)
 
 // Note 1: The term "thrown" is used because switches could be normally-open 
 //		   or normally-closed. "Thrown" means activated or hit.
