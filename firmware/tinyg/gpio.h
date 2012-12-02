@@ -105,7 +105,7 @@ struct swStruct sw;
 void gpio_init(void);
 void gpio_clear_switches(void);
 void gpio_reset_lockout(void);
-void gpio_read_switches(void);
+//void gpio_read_switches(void);
 void gpio_set_switch(uint8_t sw_num);
 uint8_t gpio_read_switch(uint8_t sw_num);
 uint8_t gpio_get_switch(uint8_t sw_num);
@@ -120,7 +120,7 @@ void gpio_set_bit_off(uint8_t b);
 void gpio_write_port(uint8_t b);
 void gpio_toggle_port(uint8_t b);
 
-void sw_show_switch(void);
+//void sw_show_switch(void);
 
 /* unit test setup */
 

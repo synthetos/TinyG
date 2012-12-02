@@ -138,6 +138,7 @@ void gpio_init(void)
 /*
  * ISRs - Switch interrupt handler routine and vectors
  */
+
 ISR(X_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_X);}
 ISR(Y_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Y);}
 ISR(Z_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Z);}
@@ -150,25 +151,28 @@ ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
 static void _switch_isr_helper(uint8_t sw_num)
 {
 	if (sw.lockout_count != 0) return;		// exit if you are in a debounce lockout
-
-	gpio_led_on(0);
-	printf("%d",sw_num);
+//	gpio_led_on(0);
+//	printf("%d",sw_num);
 
 	if (gpio_get_switch_mode(sw_num) == SW_MODE_DISABLED) return;
-
-	gpio_led_on(1);
+//	gpio_led_on(1);
 
 	sw.lockout_count = SW_LOCKOUT_TICKS;	// start the debounce lockout down-counter
 	sw.flag[sw_num] = true;					// set the flag for this switch
 	sw.thrown = true;						// triggers the switch handler tasks
+	if (cm.cycle_state == CYCLE_HOMING) { sig_feedhold(); return; }
+	if (gpio_get_switch_mode(sw_num) >= SW_MODE_HOMING_LIMIT) {	sig_abort();} // Only fire if limits enabled
+}
 
-	if (cm.cycle_state == CYCLE_HOMING) {
-		sig_feedhold();
-		return;
-	}
-	if (gpio_get_switch_mode(sw_num) >= SW_MODE_HOMING_LIMIT) {	// only fire abort if enabled for limits
-		sig_abort();
-	}
+/*
+ * gpio_switch_handler() - main limit switch handler; called from controller loop
+ */
+
+uint8_t gpio_switch_handler(void)
+{
+	if (sw.thrown == false) { return (TG_NOOP);}// leave if no switches are thrown
+	gpio_clear_switches();						// reset the switches last, not before
+	return (TG_OK);
 }
 
 /*
@@ -210,18 +214,12 @@ void gpio_reset_lockout()
  *	Read Normally Open switches as active LO, Normally Closed as active HI.
  *	Ignore switches that are disabled.
  *	This function does not care about cycles (e.g. homing), it just reads the switches.
- *
- *	This routine relies on SW_FLAG array being in order of:
- *		MIN_X, MIN_Y, MIN_Z, MIN_A, MAX_X, MAX_Y, MAX_Z, MAX_A
- *	and there being 2 groups of 4 flags.
- *
  *	This function is made ugly by the fact that the motor ports and the switch ports 
  *	don't line up. Otherwise it would be possible to run a simple for() loop
  */
 /*
 void gpio_read_switches()
 {
-	// this little bit of ugliness compnsates for the motor and switch assignments not lining up
 	uint8_t fix[NUM_SWITCHES];
 	fix[0] = 0x01 & (device.port[SW_PORT_X]->IN >> SW_MIN_BIT_bp);
 	fix[1] = 0x01 & (device.port[SW_PORT_X]->IN >> SW_MAX_BIT_bp);
@@ -233,7 +231,6 @@ void gpio_read_switches()
 	fix[7] = 0x01 & (device.port[SW_PORT_A]->IN >> SW_MAX_BIT_bp);
 
 	// interpret them as NO or NC closures
-	
 	gpio_clear_switches();						// clear flags and thrown bit
 	for (uint8_t i=0; i<NUM_SWITCHES; i++) {
 		if (sw.mode[i] == SW_MODE_DISABLED) { continue;}
@@ -243,7 +240,6 @@ void gpio_read_switches()
 			sw.thrown = true;
 		}
 	}
-	sw_show_switch(); //++++++++++++++++++
 }
 */
 
@@ -280,17 +276,6 @@ void gpio_set_switch(uint8_t sw_num)
 {
 	sw.thrown = true;
 	sw.flag[sw_num] = true;
-}
-
-/*
- * gpio_switch_handler() - main limit switch handler; called from controller loop
- */
-
-uint8_t gpio_switch_handler(void)
-{
-	if (sw.thrown == false) { return (TG_NOOP);}// leave if no switches are thrown
-	gpio_clear_switches();						// reset the switches last, not before
-	return (TG_OK);
 }
 
 /*
@@ -386,8 +371,7 @@ void gpio_toggle_port(uint8_t b)
 /*
  * _show_switch() - simple display routine
  */
-
-//#ifdef __dbSHOW_LIMIT_SWITCH
+/*
 void sw_show_switch(void)
 {
 	fprintf_P(stderr, PSTR("Limit Switch Thrown %d %d %d %d   %d %d %d %d\n"), 
@@ -396,8 +380,7 @@ void sw_show_switch(void)
 		sw.flag[SW_MIN_Z], sw.flag[SW_MAX_Z], 
 		sw.flag[SW_MIN_A], sw.flag[SW_MAX_A]);
 }
-//#endif
-
+*/
 
 //###########################################################################
 //##### UNIT TESTS ##########################################################

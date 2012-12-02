@@ -224,27 +224,13 @@ static uint8_t _homing_axis_clear(int8_t axis)
 	// NOTE: Relies on independent switches per axis (not shared)
 
 	if (gpio_read_switch(hm.homing_switch) == true) {	// test if switch for the axis is thrown
- 	   	_homing_axis_move(axis, hm.latch_backoff, hm.latch_velocity);
+ 	   	_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
 		return (_set_hm_func(_homing_axis_clear));		// do it again
 	} else {
 		return (_set_hm_func(_homing_axis_search));
 	}
 }
 
-
-
-/*
-	gpio_reset_lockout();
-	gpio_read_switches();							// sets gp.sw_flags
-	if (gpio_get_switch(hm.homing_switch) == true) {// test if switch for the axis is thrown
- 		printf("%d, %f, %f\n",axis, hm.latch_backoff, hm.latch_velocity); //++++++++++
- 	   	_homing_axis_move(axis, hm.latch_backoff, hm.latch_velocity);
-		return (_set_hm_func(_homing_axis_clear));	// do it again
-	} else {
-		return (_set_hm_func(_homing_axis_search));
-	}
-}
-*/
 static uint8_t _homing_axis_search(int8_t axis)
 {
 	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
