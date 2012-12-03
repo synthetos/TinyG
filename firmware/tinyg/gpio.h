@@ -109,7 +109,7 @@ void gpio_set_switch(uint8_t sw_num);
 uint8_t gpio_read_switch(uint8_t sw_num);
 uint8_t gpio_get_switch(uint8_t sw_num);
 uint8_t gpio_get_switch_mode(uint8_t sw_num);
-uint8_t gpio_switch_handler(void);
+uint8_t gpio_switch_callback(void);
 void gpio_switch_timer_callback(void);
 
 void gpio_led_on(uint8_t led);

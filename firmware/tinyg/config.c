@@ -214,12 +214,6 @@ static void _print_pos(cmdObj *cmd);	// print runtime work position
 
 static uint8_t _set_defa(cmdObj *cmd);	// reset config to defaults
 
-static uint8_t _set_ic(cmdObj *cmd);	// ignore CR or LF on RX input
-//static uint8_t _set_ec(cmdObj *cmd);	// expand CRLF on TX outout
-static uint8_t _set_ee(cmdObj *cmd);	// enable character echo
-static uint8_t _set_ex(cmdObj *cmd);	// enable XON/XOFF
-static uint8_t _set_baud(cmdObj *cmd);	// set USB baud rate
-
 static uint8_t _set_sa(cmdObj *cmd);	// set motor step angle
 static uint8_t _set_tr(cmdObj *cmd);	// set motor travel per revolution
 static uint8_t _set_mi(cmdObj *cmd);	// set microsteps
@@ -229,7 +223,13 @@ static uint8_t _set_motor_steps_per_unit(cmdObj *cmd);
 static uint8_t _get_am(cmdObj *cmd);	// get axis mode
 static uint8_t _set_am(cmdObj *cmd);	// set axis mode
 static void _print_am(cmdObj *cmd);		// print axis mode
-//static uint8_t _set_sm(cmdObj *cmd);	// set switch mode
+static uint8_t _set_sw(cmdObj *cmd);	// must run any time you change a switch setting
+
+static uint8_t _set_ic(cmdObj *cmd);	// ignore CR or LF on RX input
+//static uint8_t _set_ec(cmdObj *cmd);	// expand CRLF on TX outout
+static uint8_t _set_ee(cmdObj *cmd);	// enable character echo
+static uint8_t _set_ex(cmdObj *cmd);	// enable XON/XOFF
+static uint8_t _set_baud(cmdObj *cmd);	// set USB baud rate
 
 /***** PROGMEM Strings ******************************************************/
 
@@ -355,9 +355,7 @@ static PGM_P const msg_am[] PROGMEM = {
  *	Use accessors to get at elements in these combined strings.
  *
  *	NOTE: DO NOT USE TABS IN FORMAT STRINGS
- *
  *	NOTE: LEAVE NO SPACE BEFORE OR AFTER COMMAS (TOKEN,NAME)
- *
  *	NOTE: In general, any mnemonic that starts with a group character will be 
  *		  returned when that group is retrieved. Groups are 1 2 3 4 x y z a b c. 
  *		  For example, xam, xfr, xvm etc will all be returned when the 'x' group is queried.
@@ -726,7 +724,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_ml, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.min_segment_len,		MIN_LINE_LENGTH },
 	{ str_ma, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.arc_segment_len,		ARC_SEGMENT_LENGTH },
 	{ str_mt, _print_lin, _get_dbl, _set_dbl, (double *)&cfg.estd_segment_usec,		NOM_SEGMENT_USEC },
-	{ str_st, _print_ui8, _get_ui8, _set_ui8, (double *)&sw.switch_type,			SWITCH_TYPE },
+	{ str_st, _print_ui8, _get_ui8, _set_sw,  (double *)&sw.switch_type,			SWITCH_TYPE },
 
 	{ str_ic, _print_ui8, _get_ui8, _set_ic,  (double *)&cfg.ignore_crlf,			COM_IGNORE_CRLF },
 //	{ str_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,				COM_APPEND_TX_CR },
@@ -774,8 +772,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_xtm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].travel_max,		X_TRAVEL_MAX },
 	{ str_xjm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].jerk_max,			X_JERK_MAX },
 	{ str_xjd, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].junction_dev,		X_JUNCTION_DEVIATION },
-	{ str_xsn, _print_ui8, _get_ui8, _set_ui8,(double *)&sw.mode[0],				X_SWITCH_MODE_MIN },
-	{ str_xsx, _print_ui8, _get_ui8, _set_ui8,(double *)&sw.mode[1],				X_SWITCH_MODE_MAX },
+	{ str_xsn, _print_ui8, _get_ui8, _set_sw, (double *)&sw.mode[0],				X_SWITCH_MODE_MIN },
+	{ str_xsx, _print_ui8, _get_ui8, _set_sw, (double *)&sw.mode[1],				X_SWITCH_MODE_MAX },
 	{ str_xsv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].search_velocity,	X_SEARCH_VELOCITY },
 	{ str_xlv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_velocity,	X_LATCH_VELOCITY },
 	{ str_xlb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_backoff,	X_LATCH_BACKOFF },
@@ -787,8 +785,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_ytm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].travel_max,		Y_TRAVEL_MAX },
 	{ str_yjm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].jerk_max,			Y_JERK_MAX },
 	{ str_yjd, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].junction_dev,		Y_JUNCTION_DEVIATION },
-	{ str_ysn, _print_ui8, _get_ui8, _set_ui8,(double *)&sw.mode[2],				Y_SWITCH_MODE_MIN },
-	{ str_ysx, _print_ui8, _get_ui8, _set_ui8,(double *)&sw.mode[3],				Y_SWITCH_MODE_MAX },
+	{ str_ysn, _print_ui8, _get_ui8, _set_sw, (double *)&sw.mode[2],				Y_SWITCH_MODE_MIN },
+	{ str_ysx, _print_ui8, _get_ui8, _set_sw, (double *)&sw.mode[3],				Y_SWITCH_MODE_MAX },
 	{ str_ysv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].search_velocity,	Y_SEARCH_VELOCITY },
 	{ str_ylv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_velocity,	Y_LATCH_VELOCITY },
 	{ str_ylb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_backoff,	Y_LATCH_BACKOFF },
@@ -800,8 +798,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_ztm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].travel_max,		Z_TRAVEL_MAX },
 	{ str_zjm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].jerk_max,			Z_JERK_MAX },
 	{ str_zjd, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].junction_dev, 	Z_JUNCTION_DEVIATION },
-	{ str_zsn, _print_ui8, _get_ui8, _set_ui8,(double *)&sw.mode[4],				Z_SWITCH_MODE_MIN },
-	{ str_zsx, _print_ui8, _get_ui8, _set_ui8,(double *)&sw.mode[5],				Z_SWITCH_MODE_MAX },
+	{ str_zsn, _print_ui8, _get_ui8, _set_sw, (double *)&sw.mode[4],				Z_SWITCH_MODE_MIN },
+	{ str_zsx, _print_ui8, _get_ui8, _set_sw, (double *)&sw.mode[5],				Z_SWITCH_MODE_MAX },
 	{ str_zsv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].search_velocity,	Z_SEARCH_VELOCITY },
 	{ str_zlv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_velocity,	Z_LATCH_VELOCITY },
 	{ str_zlb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_backoff,	Z_LATCH_BACKOFF },
@@ -814,8 +812,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_ajm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].jerk_max,			A_JERK_MAX },
 	{ str_ajd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].junction_dev, 	A_JUNCTION_DEVIATION },
 	{ str_ara, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].radius,			A_RADIUS},
-	{ str_asn, _print_ui8, _get_ui8, _set_ui8,(double *)&sw.mode[6],				A_SWITCH_MODE_MIN },
-	{ str_asx, _print_ui8, _get_ui8, _set_ui8,(double *)&sw.mode[7],				A_SWITCH_MODE_MAX },
+	{ str_asn, _print_ui8, _get_ui8, _set_sw, (double *)&sw.mode[6],				A_SWITCH_MODE_MIN },
+	{ str_asx, _print_ui8, _get_ui8, _set_sw, (double *)&sw.mode[7],				A_SWITCH_MODE_MAX },
 	{ str_asv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].search_velocity,	A_SEARCH_VELOCITY },
 	{ str_alv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_velocity,	A_LATCH_VELOCITY },
 	{ str_alb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_backoff,	A_LATCH_BACKOFF },
@@ -1228,6 +1226,7 @@ static uint8_t _run_gc(cmdObj *cmd)
  * _get_am() - get axis mode w/enumeration string
  * _set_am() - set axis mode w/exception handling for axis type
  * _print_am() - print axis mode w/enumeration string
+ * _set_sw() - run this any time you change a switch setting	
  * _set_sa() - set motor step_angle & recompute steps_per_unit
  * _set_tr() - set motor travel_per_rev & recompute steps_per_unit
  * _set_mi() - set microsteps & recompute steps_per_unit
@@ -1272,6 +1271,13 @@ static void _print_am(cmdObj *cmd)		// axis mode
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, _get_format(cmd->index, format), (uint8_t)cmd->value, (PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
+}
+
+static uint8_t _set_sw(cmdObj *cmd)		// switch setting
+{ 
+	_set_ui8(cmd);
+	gpio_init();
+	return (TG_OK);
 }
 
 static uint8_t _set_sa(cmdObj *cmd)		// motor step angle

@@ -516,7 +516,7 @@ uint8_t cm_arc_feed(double target[], double flags[], double i, double j, double 
 uint8_t cm_return_to_home(void);					// G28
 uint8_t cm_return_to_home_callback(void);			// G28 main loop callback
 
-uint8_t cm_homing_cycle(void);						// G28.1
+uint8_t cm_homing_cycle_start(void);				// G28.1
 uint8_t cm_homing_callback(void);					// G28.1 main loop callback
 
 #endif

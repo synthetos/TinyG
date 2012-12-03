@@ -134,7 +134,7 @@ void tg_controller()
 static void _controller_HSM()
 {
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
-	DISPATCH(gpio_switch_handler());		// limit and homing switch handler
+//	DISPATCH(gpio_switch_callback());		// limit and homing switch handler
 	DISPATCH(_abort_handler());				// abort signal
 	DISPATCH(_feedhold_handler());			// feedhold signal
 	DISPATCH(_cycle_start_handler());		// cycle start signal
