@@ -104,7 +104,7 @@
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
 #define GROUP_EXCLUSIONS "cycs,coor,baud"	 		// items that are not actually part of the xyzabcuvw0123456789 groups
 #define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ee,ex,eq,ej,je,baud,st" // cats and dogs
-#define DONT_INITIALIZE "gc|sr|help|test|defa|baud"	// commands that should not be initialized
+#define DONT_INITIALIZE "gc,sr,help,test,defa,baud"	// commands that should not be initialized
 #define DONT_PERSIST	"gc,help,test,defa"			// commands that should not be persisted
 //See settings.h for SR_DEFAULTS
 

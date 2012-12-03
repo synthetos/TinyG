@@ -145,6 +145,7 @@ static uint8_t _cmd_index_is_group(uint8_t index);
 static uint8_t _cmd_index_is_uber_group(uint8_t index);
 
 // helpers
+static uint8_t _dont_initialize(cmdObj *cmd);
 static char *_get_format(const INDEX_T i, char *format);
 //static int8_t _get_axis(const INDEX_T i);
 static int8_t _get_position_axis(const INDEX_T i);
@@ -364,16 +365,10 @@ static PGM_P const msg_am[] PROGMEM = {
 static const char str_fv[] PROGMEM = "fv,[fv]  firmware_version%16.2f\n";
 static const char str_fb[] PROGMEM = "fb,[fb]  firmware_build%18.2f\n";
 static const char str_id[] PROGMEM = "id,[id]  id_device%16d\n";
-static const char str_si[] PROGMEM = "si,[si]  status_interval    %10.0f ms [0=off]\n";
-static const char str_sr[] PROGMEM = "sr,";	// status_report {"sr":""}  and ? command
-static const char str_qr[] PROGMEM = "qr,";		// queue_report {"qr":""}
-static const char str_pb[] PROGMEM = "pb,Planner buffers:%8d\n";
-static const char str_rx[] PROGMEM = "rx,";			// bytes available in RX buffer
 
 // Gcode model values for reporting purposes
 static const char str_vel[]  PROGMEM = "vel,Velocity:%17.3f%S/min\n";
 static const char str_line[] PROGMEM = "line,Line number:%10.0f\n";
-static const char str_lx[]   PROGMEM = "lx,Line index:%13d\n";
 static const char str_feed[] PROGMEM = "feed,Feed rate:%16.3f%S/min\n";
 static const char str_stat[] PROGMEM = "stat,Machine state:       %s\n"; // combined machine state
 static const char str_macs[] PROGMEM = "macs,Raw machine state:   %s\n"; // raw machine state
@@ -406,27 +401,34 @@ static const char str_g92z[] PROGMEM = "g92z,Z origin offset:%10.3f%S\n";
 static const char str_g92a[] PROGMEM = "g92a,A origin offset:%10.3f%S\n";
 static const char str_g92b[] PROGMEM = "g92b,B origin offset:%10.3f%S\n";
 static const char str_g92c[] PROGMEM = "g92c,C origin offset:%10.3f%S\n";
+static const char str_lx[]   PROGMEM = "lx,Line index:%13d\n";
+static const char str_pb[]   PROGMEM = "pb,Planner buffers:%8d\n";
+static const char str_rx[]   PROGMEM = "rx,";		// bytes available in RX buffer
 
-// commands, tests, help, messages 
-static const char str_help[] PROGMEM = "help,";	// display configuration help
-static const char str_test[] PROGMEM = "test,";	// specialized _print_test() function
-static const char str_defa[] PROGMEM = "defa,";	// restore default settings
+// Reports, tests, help, messages 
+static const char str_help[] PROGMEM = "help,";		// display configuration help
+static const char str_test[] PROGMEM = "test,";		// specialized _print_test() function
+static const char str_defa[] PROGMEM = "defa,";		// restore default settings
 static const char str_msg[]  PROGMEM = "msg,%s\n";	// generic message (with no formatting)
+static const char str_sr[]   PROGMEM = "sr,";		// status_report {"sr":""}  and ? command
+static const char str_qr[]   PROGMEM = "qr,";		// queue_report {"qr":""}
 
-// Gcode model power-on reset default values
+// Gcode model power-on reset default value strings
 static const char str_gpl[] PROGMEM = "gpl,[gpl] gcode_select_plane %10d [0,1,2]\n";
 static const char str_gun[] PROGMEM = "gun,[gun] gcode_units_mode   %10d [0,1]\n";
 static const char str_gco[] PROGMEM = "gco,[gco] gcode_coord_system %10d [1-6]\n";
 static const char str_gpa[] PROGMEM = "gpa,[gpa] gcode_path_control %10d [0,1,2]\n";
 static const char str_gdi[] PROGMEM = "gdi,[gdi] gcode_distance_mode%10d [0,1]\n";
-static const char str_gc[] PROGMEM = "gc,[gc]";
+static const char str_gc[]  PROGMEM = "gc,[gc]";
 
+// System settings strings
 //static const char str_ea[] PROGMEM = "ea,enable_a,[ea]  enable_acceleration%10d [0,1]\n";
 static const char str_ja[] PROGMEM = "ja,[ja]  junction_acceleration%8.0f%S\n";
 static const char str_ml[] PROGMEM = "ml,[ml]  min_line_segment%17.3f%S\n";
 static const char str_ma[] PROGMEM = "ma,[ma]  min_arc_segment%18.3f%S\n";
 static const char str_mt[] PROGMEM = "mt,[mt]  min_segment_time%13.0f uSec\n";
 static const char str_st[] PROGMEM = "st,[st]  switch_type%18d [0,1]\n";
+static const char str_si[] PROGMEM = "si,[si]  status_interval    %10.0f ms [0=off]\n";
 
 static const char str_ic[] PROGMEM = "ic,[ic]  ignore CR or LF on RX %7d [0,1=CR,2=LF]\n";
 //static const char str_ec[] PROGMEM = "ec,[ec]  enable_CR on TX%14d [0,1]\n";
@@ -437,7 +439,7 @@ static const char str_ej[] PROGMEM = "ej,[ej]  enable_json_mode %12d [0,1]\n";
 static const char str_je[] PROGMEM = "je,[je]  json_echo_mode %14d [0-4]\n";
 static const char str_baud[] PROGMEM = "baud,[baud] USB baud rate%15d [0-6]\n";
 
-// Motor strings in program memory 
+// Motor strings 
 static const char str_1ma[] PROGMEM = "1ma,[1ma] m1_map_to_axis%15d [0=X, 1=Y...]\n";
 static const char str_1sa[] PROGMEM = "1sa,[1sa] m1_step_angle%20.3f%S\n";
 static const char str_1tr[] PROGMEM = "1tr,[1tr] m1_travel_per_revolution%9.3f%S\n";
@@ -466,7 +468,7 @@ static const char str_4mi[] PROGMEM = "4mi,[4mi] m4_microsteps %15d [1,2,4,8]\n"
 static const char str_4po[] PROGMEM = "4po,[4po] m4_polarity   %15d [0,1]\n";
 static const char str_4pm[] PROGMEM = "4pm,[4pm] m4_power_management%10d [0,1]\n";
 
-// Axis strings in program memory
+// Axis strings
 static const char str_xam[] PROGMEM = "xam,[xam] x_axis_mode%18d %S\n";
 static const char str_xfr[] PROGMEM = "xfr,[xfr] x_feedrate_maximum%15.3f%S/min\n";
 static const char str_xvm[] PROGMEM = "xvm,[xvm] x_velocity_maximum%15.3f%S/min\n";
@@ -636,13 +638,13 @@ static const char str_s[] PROGMEM = "s,";			// system group alias
 static const char str_pos[] PROGMEM = "pos,";		// work position group
 static const char str_mpo[] PROGMEM = "mpo,";		// machine position group
 
-// groups of groups (for text-mode display only)
+// Groups of groups (for text-mode display only)
 static const char str_moto[] PROGMEM = "m,";		// display all motor groups
 static const char str_axes[] PROGMEM = "n,";		// display all axis groups
-static const char str_ofs[] PROGMEM = "o,";		// display all offsets
-static const char str_all[] PROGMEM = "$,";		// display all parameters
+static const char str_ofs[] PROGMEM = "o,";			// display all offsets
+static const char str_all[] PROGMEM = "$,";			// display all parameters
 
-// help screen
+// Help screen
 static const char str_h[] PROGMEM = "h,";			// help screen
 
 /***** PROGMEM config array **************************************************
@@ -658,15 +660,9 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_fb, _print_dbl, _get_dbl, _set_nul, (double *)&tg.build,   TINYG_BUILD_NUMBER }, // MUST BE FIRST!
 	{ str_fv, _print_dbl, _get_dbl, _set_nul, (double *)&tg.version, TINYG_VERSION_NUMBER },
 	{ str_id, _print_int, _get_id,  _set_nul, (double *)&tg.null, 0},	// device ID (signature)
-	{ str_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval, STATUS_REPORT_INTERVAL_MS },
-	{ str_sr, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
-	{ str_qr, _print_nul, _get_qr,  _set_nul, (double *)&tg.null, 0 },	// queue report object
-	{ str_pb, _print_int, _get_pb,  _set_nul, (double *)&tg.null, 0 },	// planner buffers available
-	{ str_rx, _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },	// space in RX buffer
 
-	// gcode model attributes for reporting puropses
+	// dynamic model attributes for reporting puropses
 	{ str_line,_print_int, _get_line,_set_int, (double *)&gm.linenum, 0 }, // line number - gets runtime line number
-	{ str_lx,  _print_int, _get_lx,  _set_lx,  (double *)&tg.null ,0 },	// line index - get/set runtime line index
 	{ str_feed,_print_lin, _get_dbu, _set_nul, (double *)&tg.null, 0 },	// feed rate
 	{ str_stat,_print_str, _get_stat,_set_nul, (double *)&tg.null, 0 },	// combined machine state
 	{ str_macs,_print_str, _get_macs,_set_nul, (double *)&tg.null, 0 },	// raw machine state
@@ -700,14 +696,21 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_g92a,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[A], 0 },
 	{ str_g92b,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[B], 0 },
 	{ str_g92c,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[C], 0 },
+	{ str_lx,  _print_int, _get_lx,  _set_lx,  (double *)&tg.null ,0 },	// line index - get/set runtime line index
+	{ str_pb,  _print_int, _get_pb,  _set_nul, (double *)&tg.null, 0 },	// planner buffers available
+	{ str_rx,  _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },	// space in RX buffer
 
-	// commands, tests, help, messages
-	{ str_test,help_print_test_help,_get_ui8, tg_test, (double *)&tg.test, 0 },		// prints help screen with null input
-	{ str_help,help_print_config_help,_get_nul,_set_nul,(double *)&tg.null,0 },		// prints help screen with null input
-	{ str_defa,help_print_defaults_help,_get_nul,_set_defa,(double *)&tg.null,0 },	// prints help screen with null input
-	{ str_msg, _print_str,_get_nul,_set_nul,(double *)&tg.null,0 },					// string for generic messages
+	{ str_sr, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
+	{ str_qr, _print_nul, _get_qr,  _set_nul, (double *)&tg.null, 0 },	// queue report object
 
-	// NOTE: The ordering within the gcode group is important for token resolution
+	// Reports, tests, help, and messages
+	{ str_test,help_print_test_help,    _get_ui8, tg_test, (double *)&tg.test,0 },// prints test help screen
+	{ str_help,help_print_config_help,  _get_nul,_set_nul, (double *)&tg.null,0 },// prints config help screen
+	{ str_defa,help_print_defaults_help,_get_nul,_set_defa,(double *)&tg.null,0 },// prints defaults help screen
+	{ str_msg, _print_str,              _get_nul,_set_nul, (double *)&tg.null,0 },// string for generic messages
+
+	// System parameters
+	// NOTE: The ordering within the gcode defaults is important for token resolution
 	{ str_gpl, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.select_plane,			GCODE_DEFAULT_PLANE },
 	{ str_gun, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.units_mode,			GCODE_DEFAULT_UNITS },
 	{ str_gco, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.coord_system,			GCODE_DEFAULT_COORD_SYSTEM },
@@ -729,8 +732,10 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,				COM_ENABLE_QR },
 	{ str_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,				COM_COMMUNICATIONS_MODE },
 	{ str_je, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.json_echo_mode,		COM_JSON_ECHO_MODE },
+	{ str_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
 	{ str_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,			XIO_BAUD_115200 },
 
+	// Motor parameters
 	{ str_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ str_1sa, _print_rot, _get_dbl ,_set_sa, (double *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
 	{ str_1tr, _print_lin, _get_dbu ,_set_tr, (double *)&cfg.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
@@ -759,6 +764,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_4po, _print_ui8, _get_ui8, _set_po, (double *)&cfg.m[MOTOR_4].polarity,	M4_POLARITY },
 	{ str_4pm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_4].power_mode,	M4_POWER_MODE },
 
+	// Axis parameters
 	{ str_xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[X].axis_mode,		X_AXIS_MODE },
 	{ str_xvm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].velocity_max,		X_VELOCITY_MAX },
 	{ str_xfr, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].feedrate_max,		X_FEEDRATE_MAX },
@@ -819,8 +825,6 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_bjm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].jerk_max,			B_JERK_MAX },
 	{ str_bjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].junction_dev, 	B_JUNCTION_DEVIATION },
 	{ str_bra, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].radius,			B_RADIUS },
-//	{ str_bsn, _print_ui8, _get_ui8, _set_nul,(double *)&tg.null,					B_SWITCH_MODE_MIN },
-//	{ str_bsx, _print_ui8, _get_ui8, _set_nul,(double *)&tg.null,					B_SWITCH_MODE_MAX },
 	{ str_bsv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].search_velocity,	B_SEARCH_VELOCITY },
 	{ str_blv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_velocity,	B_LATCH_VELOCITY },
 	{ str_blb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_backoff,	B_LATCH_BACKOFF },
@@ -833,14 +837,12 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_cjm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].jerk_max,			C_JERK_MAX },
 	{ str_cjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].junction_dev,		C_JUNCTION_DEVIATION },
 	{ str_cra, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].radius,			C_RADIUS },
-//	{ str_csn, _print_ui8, _get_ui8, _set_nul,(double *)&tg.null,					C_SWITCH_MODE_MIN },
-//	{ str_csx, _print_ui8, _get_ui8, _set_nul,(double *)&tg.null,					C_SWITCH_MODE_MAX },
 	{ str_csv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].search_velocity,	C_SEARCH_VELOCITY },
 	{ str_clv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_velocity,	C_LATCH_VELOCITY },
 	{ str_clb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_backoff,	C_LATCH_BACKOFF },
 	{ str_czb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].zero_backoff,		C_ZERO_BACKOFF },
 
-	// coordinate system offsets
+	// Coordinate system offsets
 	{ str_g54x, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G54][X], G54_X_OFFSET },
 	{ str_g54y, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G54][Y], G54_Y_OFFSET },
 	{ str_g54z, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G54][Z], G54_Z_OFFSET },
@@ -883,7 +885,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_g59b, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G59][B], G59_B_OFFSET },
 	{ str_g59c, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G59][C], G59_C_OFFSET },
 
-	// persistence for status report - must be in sequence
+	// Persistence for status report - must be in sequence
 	{ str_sr00, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[0],0 },
 	{ str_sr01, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[1],0 },
 	{ str_sr02, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[2],0 },
@@ -905,7 +907,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_sr18, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[18],0 },
 	{ str_sr19, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[19],0 },
 	
-	// group lookups - must follow the single-valued entries for proper sub-string matching
+	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	{ str_sys, _print_nul, _get_sys, _set_grp,(double *)&tg.null,0 },	// system group 	   (must be 1st)
 	{ str_s, _print_nul, _get_sys, _set_grp,(double *)&tg.null,0 },		// alias for sys group (must be 2nd)
 	{ str_1, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },		// motor groups
@@ -928,13 +930,13 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_pos, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// work position group
 	{ str_mpo, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// machine position group
 
-	// uber-group (groups of groups, for text-mode displays only)
+	// Uber-group (groups of groups, for text-mode displays only)
 	{ str_moto, _print_nul, _do_motors, _set_nul,(double *)&tg.null,0 },
 	{ str_axes, _print_nul, _do_axes,   _set_nul,(double *)&tg.null,0 },
 	{ str_ofs,  _print_nul, _do_offsets,_set_nul,(double *)&tg.null,0 },
 	{ str_all,  _print_nul, _do_all,    _set_nul,(double *)&tg.null,0 },
 
-	// help display
+	// Help display
 	{ str_h, help_print_config_help, _get_nul, _set_nul,(double *)&tg.null,0 }
 
 // *** REMEMBER TO UPDATE CMD_COUNT_GROUPS, BELOW ****
@@ -1223,21 +1225,20 @@ static uint8_t _run_gc(cmdObj *cmd)
  * _get_am() - get axis mode w/enumeration string
  * _set_am() - set axis mode w/exception handling for axis type
  * _print_am() - print axis mode w/enumeration string
- * _set_sm() - set switch mode
- * _set_tr() - set motor travel_per_rev & recompute steps_per_unit
  * _set_sa() - set motor step_angle & recompute steps_per_unit
+ * _set_tr() - set motor travel_per_rev & recompute steps_per_unit
  * _set_mi() - set microsteps & recompute steps_per_unit
  * _set_po() - set polarity and update stepper structs
  * _set_motor_steps_per_unit() - update this derived value
- *		This function will need to be rethought if microstep morphing is implemented, 
+ *	 This function will need to be rethought if microstep morphing is implemented
  */
 static uint8_t _get_am(cmdObj *cmd)
 {
 	_get_ui8(cmd);
-	return(_get_msg_helper(cmd, (prog_char_ptr)msg_am, cmd->value));// see 331.09 for old method
+	return(_get_msg_helper(cmd, (prog_char_ptr)msg_am, cmd->value)); // see 331.09 for old method
 }
 
-static uint8_t _set_am(cmdObj *cmd)
+static uint8_t _set_am(cmdObj *cmd)		// axis mode
 {
 	char linear_axes[] = {"xyz"};
 
@@ -1263,28 +1264,28 @@ static uint8_t _set_am(cmdObj *cmd)
 	return(TG_OK);
 }
 
-static void _print_am(cmdObj *cmd)
+static void _print_am(cmdObj *cmd)		// axis mode
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, _get_format(cmd->index, format), (uint8_t)cmd->value, (PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
 }
 
-static uint8_t _set_sa(cmdObj *cmd)
+static uint8_t _set_sa(cmdObj *cmd)		// motor step angle
 { 
 	_set_dbl(cmd);
 	_set_motor_steps_per_unit(cmd); 
 	return (TG_OK);
 }
 
-static uint8_t _set_tr(cmdObj *cmd)
+static uint8_t _set_tr(cmdObj *cmd)		// motor travel per revolution
 { 
 	_set_dbu(cmd);
 	_set_motor_steps_per_unit(cmd); 
 	return (TG_OK);
 }
 
-static uint8_t _set_mi(cmdObj *cmd)
+static uint8_t _set_mi(cmdObj *cmd)		// motor microsteps
 {
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
 		char message[CMD_STRING_LEN]; 
@@ -1298,7 +1299,7 @@ static uint8_t _set_mi(cmdObj *cmd)
 	return (TG_OK);
 }
 
-static uint8_t _set_po(cmdObj *cmd)
+static uint8_t _set_po(cmdObj *cmd)		// motor polarity
 { 
 	_set_ui8(cmd);
 	st_set_polarity(_get_motor(cmd->index), (uint8_t)cmd->value);
@@ -1331,7 +1332,7 @@ static uint8_t _set_comm_helper(cmdObj *cmd, uint32_t yes, uint32_t no)
 	return (TG_OK);
 }
 
-static uint8_t _set_ic(cmdObj *cmd) 
+static uint8_t _set_ic(cmdObj *cmd) 	// ignore CR or LF on RX
 {
 	cfg.ignore_crlf = (uint8_t)cmd->value;
 	(void)xio_cntl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
@@ -1345,19 +1346,19 @@ static uint8_t _set_ic(cmdObj *cmd)
 	return (TG_OK);
 }
 /*
-static uint8_t _set_ec(cmdObj *cmd) 
+static uint8_t _set_ec(cmdObj *cmd) 	// expand CR to CRLF on TX
 {
 	cfg.enable_cr = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_CRLF, XIO_NOCRLF));
 }
 */
-static uint8_t _set_ee(cmdObj *cmd) 
+static uint8_t _set_ee(cmdObj *cmd) 	// enable character echo
 {
 	cfg.enable_echo = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_ECHO, XIO_NOECHO));
 }
 
-static uint8_t _set_ex(cmdObj *cmd)
+static uint8_t _set_ex(cmdObj *cmd)		// enable XON/XOFF
 {
 	cfg.enable_xon = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_XOFF, XIO_NOXOFF));
@@ -1368,8 +1369,9 @@ static uint8_t _set_ex(cmdObj *cmd)
  *
  *	See xio_usart.h for valid values. Works as a callback.
  *	The initial routine changes the baud config setting and sets a flag
- *	Then it sends a message, 
- *	Then it waits for the callback before applying the new baud rate
+ *	Then it sends a message indicating the new baud rate
+ *	Then it waits for the TX buffer to empty (so the message is sent)
+ *	Then it performs the callback to apply the new baud rate
  */
 
 static uint8_t _set_baud(cmdObj *cmd)
@@ -1414,13 +1416,6 @@ uint8_t cfg_set_baud_callback(void)
  *	(2) if NVM is set up or out-of-rev: load RAM and NVM with hardwired default settings
  */
 
-static uint8_t _dont_initialize(cmdObj *cmd) 
-{
-	if (strstr("st", cmd->token) != NULL) return (false);
-	if (strstr(DONT_INITIALIZE, cmd->token) != NULL) return (true);
-	return (false);
-}
-
 void cfg_init()
 {
 	cmdObj cmd;
@@ -1434,7 +1429,6 @@ void cfg_init()
 	for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
 		cmd_get_token(cmd.index, cmd.token);
 		if (_dont_initialize(&cmd) == true) continue;
-//		if (strstr(DONT_INITIALIZE, cmd_get_token(cmd.index, cmd.token)) != NULL) continue;
 		cmd.value = (double)pgm_read_float(&cfgArray[cmd.index].def_value);
 		cmd_set(&cmd);
 	}
@@ -1451,7 +1445,6 @@ void cfg_init()
 			cmd_read_NVM_value(&cmd);
 			cmd_get_token(cmd.index, cmd.token);
 			if (_dont_initialize(&cmd) == true) continue;
-//			if (strstr(DONT_INITIALIZE, cmd_get_token(cmd.index, cmd.token)) != NULL) continue;
 			cmd_set(&cmd);
 			cmd_persist(&cmd);
 		}
@@ -1469,7 +1462,7 @@ void cfg_init()
 
 static uint8_t _set_defa(cmdObj *cmd) 
 {
-	if (cmd->value != true) {
+	if (cmd->value != true) {		// failsafe. Must set true or no action occurs
 		help_print_defaults_help(cmd);
 		return (TG_OK);
 	}
@@ -1484,6 +1477,18 @@ static uint8_t _set_defa(cmdObj *cmd)
 		cmd_persist(cmd);
 	}
 	return (TG_OK);
+}
+
+/*
+ * _dont_initialize() - replaces this:
+ *	if (strstr(DONT_INITIALIZE, cmd_get_token(cmd.index, cmd.token)) != NULL) continue;
+ *	See config.h for DONT_INITIALIZE string
+ */
+static uint8_t _dont_initialize(cmdObj *cmd) 
+{
+	if (strstr("st", cmd->token) != NULL) return (false);
+	if (strstr(DONT_INITIALIZE, cmd->token) != NULL) return (true);
+	return (false);
 }
 
 /****************************************************************************
