@@ -206,7 +206,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	}
 
 	// get the index or return if the token / friendly_name is invalid
-	if ((cmd->index = cmd_get_index_by_token(cmd->string)) == -1) { return (TG_UNRECOGNIZED_COMMAND);}
+	if ((cmd->index = cmd_get_index(cmd->string)) == -1) { return (TG_UNRECOGNIZED_COMMAND);}
 	cmd_get_token(cmd->index, cmd->token);
 	if (group[0] != NUL) {						// strip group prefix if this is a group
 		strncpy(cmd->token, &cmd->string[strlen(group)], CMD_TOKEN_LEN);

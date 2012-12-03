@@ -149,7 +149,7 @@ static void _controller_HSM()
 
 //----- command readers and parsers ------------------------------------//
 	DISPATCH(_sync_to_tx_buffer());			// sync with TX buffer (pseudo-blocking)
-	DISPATCH(cfg_set_baud_callback());		// perform baud rate update (must be after TX sync)
+	DISPATCH(cfg_baud_rate_callback());		// perform baud rate update (must be after TX sync)
 	DISPATCH(_sync_to_planner());			// sync with planning queue
 	DISPATCH(_dispatch());					// read and execute next command
 }

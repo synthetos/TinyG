@@ -101,9 +101,9 @@ void rpt_init_status_report(uint8_t persist_flag)
 	uint8_t i=0;
 	char sr_defaults[][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see config.h
 
-	cmd.index = cmd_get_index_by_token("sr00");		// find first persistence index
+	cmd.index = cmd_get_index("sr00");				// find first persistence index
 	for (; i < (sizeof(sr_defaults)/(CMD_TOKEN_LEN+1)); i++) {
-		cmd.value = cmd_get_index_by_token(sr_defaults[i]);
+		cmd.value = cmd_get_index(sr_defaults[i]);
 		cfg.status_report_spec[i] = cmd.value;
 		if (persist_flag == true) {
 			cmd_write_NVM_value(&cmd);

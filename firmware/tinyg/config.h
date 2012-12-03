@@ -181,34 +181,30 @@ cmdObj cmd_footer[CMD_FOOTER_LEN];	// JSON footer element
 
 void cfg_init(void);
 uint8_t cfg_text_parser(char *str);
-void cfg_init_gcode_model(void);
-uint8_t cfg_set_baud_callback(void);
+uint8_t cfg_baud_rate_callback(void);
 
-// cmd accessors
-uint8_t cmd_get(cmdObj *cmd);		// entry point for GETs
-uint8_t cmd_set(cmdObj *cmd);		// entry point for SETs
-void cmd_formatted_print(cmdObj *cmd);// entry point for formatted print
-void cmd_persist(cmdObj *cmd);		// entry point for persistence
+uint8_t cmd_get(cmdObj *cmd);			// main entry point for GETs
+uint8_t cmd_set(cmdObj *cmd);			// main entry point for SETs
+void cmd_formatted_print(cmdObj *cmd);	// main entry point for formatted print
+void cmd_persist(cmdObj *cmd);			// main entry point for persistence
 uint8_t cmd_get_cmdObj(cmdObj *cmd);
 
-cmdObj *cmd_clear_obj(cmdObj *cmd);
-void cmd_clear_list(void);
-void cmd_clear_body(cmdObj *cmd);
-
-uint8_t cmd_add_token(char *token);
-uint8_t cmd_add_string(char *token, char *string);
-uint8_t cmd_add_float(char *token, double value);
-uint8_t cmd_add_integer(char *token, uint32_t value);
-void cmd_print_list(uint8_t status, uint8_t textmode);
-
-INDEX_T cmd_get_max_index(void);
-INDEX_T cmd_get_index_by_token(const char *str);
+//INDEX_T cmd_get_max_index(void);
 INDEX_T cmd_get_index(const char *str);
 char *cmd_get_token(const INDEX_T i, char *string);
 //char cmd_get_group(const INDEX_T i);
 uint8_t cmd_is_group(const char *str);
 uint8_t cmd_get_type(cmdObj *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
+
+cmdObj *cmd_clear_obj(cmdObj *cmd);
+void cmd_clear_list(void);
+void cmd_clear_body(cmdObj *cmd);
+uint8_t cmd_add_token(char *token);
+uint8_t cmd_add_string(char *token, char *string);
+uint8_t cmd_add_float(char *token, double value);
+uint8_t cmd_add_integer(char *token, uint32_t value);
+void cmd_print_list(uint8_t status, uint8_t textmode);
 
 //uint8_t cmd_read_NVM_record(cmdObj *cmd);
 //uint8_t cmd_write_NVM_record(const cmdObj *cmd);
@@ -299,7 +295,7 @@ struct cfgParameters cfg; 			// declared in the header to make it global
 									// e.g: CFG(X_AXIS).steps_per_mm
 
 /* unit test setup */
-//#define __UNIT_TEST_CONFIG		// uncomment to enable config unit tests
+#define __UNIT_TEST_CONFIG		// uncomment to enable config unit tests
 #ifdef __UNIT_TEST_CONFIG
 void cfg_unit_tests(void);
 #define	CONFIG_UNITS cfg_unit_tests();
