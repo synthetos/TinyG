@@ -41,7 +41,7 @@
 
 #define JUNCTION_DEVIATION	0.01		// default value, in mm - smaller is faster
 #define JUNCTION_ACCELERATION 200000	// centripetal acceleration around corners
-#define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN
+#define SWITCH_TYPE SW_TYPE_NORMALLY_OPEN
 
 // *** settings.h overrides ***
 
@@ -99,7 +99,7 @@
 
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
-#define X_SWITCH_MODE_MAX		SW_MODE_LIMIT		// xsx		0=off, 1=NO homing only, 2=NO homing and limits
+#define X_SWITCH_MODE_MAX		SW_MODE_LIMIT		// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
 #define X_SEARCH_VELOCITY		-3000				// xsv		minus means move to minimum switch
 #define X_LATCH_VELOCITY		100					// xlv		mm/min
 #define X_LATCH_BACKOFF			5					// xlb		mm
