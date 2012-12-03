@@ -220,15 +220,20 @@ static uint8_t _homing_axis_start(int8_t axis)
 
 static uint8_t _homing_axis_clear(int8_t axis)
 {
-	// Handle an initial switch closure by backing off the switch
+	// Handle an initial switch closure by backing off switches
 	// NOTE: Relies on independent switches per axis (not shared)
 
-	if (gpio_read_switch(hm.homing_switch) == true) {	// test if switch for the axis is thrown
+	if (gpio_read_switch(hm.homing_switch) == true) {	// test if homing switch is thrown
  	   	_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
 		return (_set_hm_func(_homing_axis_clear));		// do it again
-	} else {
-		return (_set_hm_func(_homing_axis_search));
 	}
+	if (hm.limit_switch != -1) {
+		if (gpio_read_switch(hm.limit_switch) == true) {// test if limit switch is thrown
+	 	   	_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
+			return (_set_hm_func(_homing_axis_clear));	// do it again
+		}
+	}
+	return (_set_hm_func(_homing_axis_search));			// start the search
 }
 
 static uint8_t _homing_axis_search(int8_t axis)

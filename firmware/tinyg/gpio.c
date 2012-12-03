@@ -250,6 +250,8 @@ void gpio_read_switches()
  */
 uint8_t gpio_read_switch(uint8_t sw_num)
 {
+	if (sw_num < 0) return (-1);
+
 	uint8_t read;
 	switch (sw_num) {
 		case SW_MIN_X: { read = device.port[SW_PORT_X]->IN & SW_MIN_BIT_bm; break;}
