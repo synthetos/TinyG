@@ -102,15 +102,15 @@ struct swStruct sw;
 //		   or normally-closed. "Thrown" means activated or hit.
 
 void gpio_init(void);
+void gpio_switch_timer_callback(void);
 void gpio_clear_switches(void);
 void gpio_reset_lockout(void);
-//void gpio_read_switches(void);
 void gpio_set_switch(uint8_t sw_num);
 uint8_t gpio_read_switch(uint8_t sw_num);
 uint8_t gpio_get_switch(uint8_t sw_num);
 uint8_t gpio_get_switch_mode(uint8_t sw_num);
-uint8_t gpio_switch_callback(void);
-void gpio_switch_timer_callback(void);
+//void gpio_read_switches(void);
+//uint8_t gpio_switch_callback(void);
 
 void gpio_led_on(uint8_t led);
 void gpio_led_off(uint8_t led);

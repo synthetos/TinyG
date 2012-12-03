@@ -226,6 +226,15 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g4 p0.1\n");
 //	xio_queue_RX_string_usb("g0 x10 y10 z-10\n");
 
+/* G28 and G30 homing tests */
+//	xio_queue_RX_string_usb("g28.1x0y0z0\n");
+//	xio_queue_RX_string_usb("g28.1x0y0\n");
+	xio_queue_RX_string_usb("g28.1y0\n");
+//	xio_queue_RX_string_usb("g28.1x0y0z0a0\n");
+//	xio_queue_RX_string_usb("g28.1 z0\n");
+//	xio_queue_RX_string_usb("g30x0y0z0\n");
+//	xio_queue_RX_string_usb("g30x42\n");
+
 /* G53 tests */
 //	xio_queue_RX_string_usb("g56\n");			// assumes G55 is different than machine coords
 //	xio_queue_RX_string_usb("g0 x0 y0\n");		// move to zero in G55
@@ -243,13 +252,6 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0 x0 y0\n");		// should move NW back to original coordinates
 //	xio_queue_RX_string_usb("g92.2\n");
 //	xio_queue_RX_string_usb("g92.3\n");
-
-/* G28 and G30 homing tests */
-	xio_queue_RX_string_usb("g28.1x0y0z0\n");
-//	xio_queue_RX_string_usb("g28.1x0y0z0a0\n");
-//	xio_queue_RX_string_usb("g28.1 z0\n");
-//	xio_queue_RX_string_usb("g30x0y0z0\n");
-//	xio_queue_RX_string_usb("g30x42\n");
 
 /* Other Gcode tests */
 //	xio_queue_RX_string_usb("g20\n");			// inch mode

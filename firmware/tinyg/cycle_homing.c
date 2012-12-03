@@ -49,11 +49,12 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 
 	// per-axis parameters
 	double direction;			// set to 1 for positive (max), -1 for negative (to min);
-	double search_travel;
-	double search_velocity;
-	double latch_velocity;
-	double latch_backoff;
-	double zero_backoff;
+	double search_travel;		// signed distance to travel in search
+	double search_velocity;		// search speed as positive number
+	double latch_velocity;		// latch speed as positive number
+	double latch_backoff;		// distance to back off switch before performing latch
+	double zero_backoff;		// distance to back off switch before setting zero
+	double max_backoff;			// maximum distance of switch clearing backoffs before erring out
 
 	// state saved from gcode model
 	double saved_feed_rate;		// F setting
@@ -202,8 +203,8 @@ static uint8_t _homing_axis_start(int8_t axis)
 
 	hm.axis = axis;											// persist the axis
 //	hm.saved_jerk = cfg.a[axis].jerk_max;					// per-axis save
-	hm.search_velocity = fabs(cfg.a[axis].search_velocity); // search velocity is always positive
-	hm.latch_velocity = fabs(cfg.a[axis].latch_velocity); 	// ...and so is latch velocity
+	hm.search_velocity = fabs(cfg.a[axis].search_velocity); // make search velocity positive
+	hm.latch_velocity = fabs(cfg.a[axis].latch_velocity); 	// make latch velocity positive
 
 	// setup parameters for negative travel (homing to the minimum switch)
 	if (cfg.a[axis].search_velocity < 0) {
@@ -227,9 +228,10 @@ static uint8_t _homing_axis_start(int8_t axis)
 		return (_set_hm_func(_homing_axis_set_zero));
 	}
 	// disable the limit switch parameter if there is no limit switch
-	if (gpio_get_switch_mode(hm.limit_switch) != SW_MODE_LIMIT) {
+	if (gpio_get_switch_mode(hm.limit_switch) == SW_MODE_DISABLED) {
 		hm.limit_switch = -1;
 	}
+	hm.max_backoff = cfg.a[axis].travel_max;
 	return (_set_hm_func(_homing_axis_clear));
 }
 
@@ -237,7 +239,10 @@ static uint8_t _homing_axis_clear(int8_t axis)
 {
 	// Handle an initial switch closure by backing off switches
 	// NOTE: Relies on independent switches per axis (not shared)
-
+	
+	if ((hm.max_backoff -= hm.latch_backoff) < 0) {		// limit number of times clear is attempted
+		return (TG_HOMING_CYCLE_FAILED);				// homing state remains HOMING_NOT_HOMED
+	}
 	if (gpio_read_switch(hm.homing_switch) == true) {	// test if homing switch is thrown
  	   	_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity); // latch backoff at search velocity
 		return (_set_hm_func(_homing_axis_clear));		// repeat until no longer on switch
