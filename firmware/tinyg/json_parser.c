@@ -341,6 +341,10 @@ uint16_t js_serialize_json(cmdObj *cmd, char *out_buf)
  */
 void js_print_list(uint8_t status)
 {
+	if (cm.machine_state == MACHINE_INITIALIZING) {
+		fprintf(stderr,"\n");
+		cfg.json_echo_mode = JE_FULL_ECHO;
+	}
 	if (cfg.json_echo_mode == JE_SILENT) { return;}
 
 	cmdObj *cmd = cmd_header;		// default starting point

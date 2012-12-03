@@ -435,7 +435,7 @@ static const char str_ex[] PROGMEM = "ex,[ex]  enable_xon_xoff  %12d [0,1]\n";
 static const char str_eq[] PROGMEM = "eq,[eq]  enable_queue_reports%9d [0,1]\n";
 static const char str_ej[] PROGMEM = "ej,[ej]  enable_json_mode %12d [0,1]\n";
 static const char str_je[] PROGMEM = "je,[je]  json_echo_mode %14d [0-4]\n";
-static const char str_baud[] PROGMEM = "baud,[baud]  USB baud rate %12d [0-6]\n";
+static const char str_baud[] PROGMEM = "baud,[baud] USB baud rate%15d [0-6]\n";
 
 // Motor strings in program memory 
 static const char str_1ma[] PROGMEM = "1ma,[1ma] m1_map_to_axis%15d [0=X, 1=Y...]\n";
@@ -663,7 +663,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_qr, _print_nul, _get_qr,  _set_nul, (double *)&tg.null, 0 },	// queue report object
 	{ str_pb, _print_int, _get_pb,  _set_nul, (double *)&tg.null, 0 },	// planner buffers available
 	{ str_rx, _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },	// space in RX buffer
-	
+
 	// gcode model attributes for reporting puropses
 	{ str_line,_print_int, _get_line,_set_int, (double *)&gm.linenum, 0 }, // line number - gets runtime line number
 	{ str_lx,  _print_int, _get_lx,  _set_lx,  (double *)&tg.null ,0 },	// line index - get/set runtime line index
@@ -1414,7 +1414,14 @@ uint8_t cfg_set_baud_callback(void)
  *	(2) if NVM is set up or out-of-rev: load RAM and NVM with hardwired default settings
  */
 
-void cfg_init() 
+static uint8_t _dont_initialize(cmdObj *cmd) 
+{
+	if (strstr("st", cmd->token) != NULL) return (false);
+	if (strstr(DONT_INITIALIZE, cmd->token) != NULL) return (true);
+	return (false);
+}
+
+void cfg_init()
 {
 	cmdObj cmd;
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
@@ -1425,7 +1432,9 @@ void cfg_init()
 
 	// Apply the hard-coded default values from settings.h and exit
 	for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
-		if (strstr(DONT_INITIALIZE, cmd_get_token(cmd.index, cmd.token)) != NULL) continue;
+		cmd_get_token(cmd.index, cmd.token);
+		if (_dont_initialize(&cmd) == true) continue;
+//		if (strstr(DONT_INITIALIZE, cmd_get_token(cmd.index, cmd.token)) != NULL) continue;
 		cmd.value = (double)pgm_read_float(&cfgArray[cmd.index].def_value);
 		cmd_set(&cmd);
 	}
@@ -1440,13 +1449,15 @@ void cfg_init()
 		tg_print_loading_configs_message();
 		for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
 			cmd_read_NVM_value(&cmd);
-			if (strstr(DONT_INITIALIZE, cmd_get_token(cmd.index, cmd.token)) != NULL) continue;
+			cmd_get_token(cmd.index, cmd.token);
+			if (_dont_initialize(&cmd) == true) continue;
+//			if (strstr(DONT_INITIALIZE, cmd_get_token(cmd.index, cmd.token)) != NULL) continue;
 			cmd_set(&cmd);
 			cmd_persist(&cmd);
 		}
 	} else {  // Case (2) NVM is out-of-rev or not set up. Use the defaults and set up NVM
 		cmd.value = true;
-		_set_defa(&cmd);// this subroutune runs from here and also from the $defaults=1 command
+		_set_defa(&cmd);// this subroutune runs from here and also from the $defa=1 command
 	}
 	rpt_init_status_report(true);// requires special treatment (persist = true)
 #endif
@@ -1466,13 +1477,12 @@ static uint8_t _set_defa(cmdObj *cmd)
 	tg_print_initializing_message();
 
 	for (cmd->index=0; _cmd_index_is_single(cmd->index); cmd->index++) {
-		if (strstr(DONT_INITIALIZE, cmd_get_token(cmd->index, cmd->token)) != NULL) continue;
+		cmd_get_token(cmd->index, cmd->token);
+		if (_dont_initialize(cmd) == true) continue;
 		cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
-		cmd_set(cmd);
+		if (cmd_set(cmd) == TG_NOOP) continue;
 		cmd_persist(cmd);
-		if (cfg.comm_mode != TG_JSON_MODE) { fprintf_P(stderr,PSTR("."));}
 	}
-	if (cfg.comm_mode != TG_JSON_MODE) { fprintf_P(stderr,PSTR("\n")); }
 	return (TG_OK);
 }
 
@@ -1996,7 +2006,7 @@ void _print_text_multiline_formatted()
  * _print_rot() - print rotary value with units
  */
 
-static uint8_t _set_nul(cmdObj *cmd) { return (TG_OK);}
+static uint8_t _set_nul(cmdObj *cmd) { return (TG_NOOP);}
 
 static uint8_t _set_ui8(cmdObj *cmd)
 {
@@ -2033,7 +2043,7 @@ static uint8_t _set_dbu(cmdObj *cmd)
 static uint8_t _get_nul(cmdObj *cmd) 
 { 
 	cmd->type = TYPE_NULL;
-	return (TG_OK);
+	return (TG_NOOP);
 }
 
 static uint8_t _get_ui8(cmdObj *cmd)

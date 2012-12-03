@@ -48,6 +48,10 @@
 #define Z_MAX_ISR_vect PORTE_INT1_vect
 #define A_MAX_ISR_vect PORTF_INT1_vect
 
+// macros for finding the index into the switch table give the axis number
+#define MIN_SWITCH(axis) (axis*2)
+#define MAX_SWITCH(axis) (axis*2+1)
+
 /*
  * Global Scope Definitions, Functions and Data
  */
@@ -91,13 +95,8 @@ struct swStruct {						// switch state
 	volatile uint8_t lockout_count;		// switch lockout counter (debouncing)
 	volatile uint8_t flag[NUM_SWITCHES];// switch flag array
 	volatile uint8_t mode[NUM_SWITCHES];// 0=disabled, 1=homing, 2=homing+limit, 3=limit
-//	uint8_t detect[NUM_SWITCHES];		// switch state detected on initialization
 };
 struct swStruct sw;
-
-// macros for finding the index into the switch table give the axis number
-#define MIN_SWITCH(axis) (axis*2)
-#define MAX_SWITCH(axis) (axis*2+1)
 
 // Note 1: The term "thrown" is used because switches could be normally-open 
 //		   or normally-closed. "Thrown" means activated or hit.
