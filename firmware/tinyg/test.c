@@ -414,7 +414,7 @@ void print_vector(const char *label, double vector[], uint8_t count)
 {
 	fprintf_P(stderr,PSTR("%S"),label); 
 	for (uint8_t i=0; i<count; i++) {
-		fprintf_P(stderr,PSTR("  %4.2f"),vector[i]);
+		fprintf_P(stderr,PSTR("  %5.4f"),vector[i]);
 	} 	
 	fprintf_P(stderr,PSTR("\n"));
 }

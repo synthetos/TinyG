@@ -164,9 +164,9 @@ int main(void)
 void _tg_debug_init(void)	// inits for the debug system
 {
 #ifdef dbCONFIG_DEBUG_ENABLED
-	dbCONFIG_DEBUG_ENABLED = TRUE;
+	dbCONFIG_DEBUG_ENABLED = true;
 #else
-	dbCONFIG_DEBUG_ENABLED = FALSE;
+	dbCONFIG_DEBUG_ENABLED = false;
 #endif
 }
 #endif

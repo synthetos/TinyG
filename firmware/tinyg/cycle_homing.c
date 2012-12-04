@@ -240,7 +240,9 @@ static uint8_t _homing_axis_clear(int8_t axis)
 	// Handle an initial switch closure by backing off switches
 	// NOTE: Relies on independent switches per axis (not shared)
 	
+//	printf("Entering clear %d\n", axis); 	//+++++++++++++++++++++++
 	if ((hm.max_backoff -= hm.latch_backoff) < 0) {		// limit number of times clear is attempted
+//		printf("Homing failed %f\n", hm.max_backoff); 	//+++++++++++++++++++++++
 		return (TG_HOMING_CYCLE_FAILED);				// homing state remains HOMING_NOT_HOMED
 	}
 	if (gpio_read_switch(hm.homing_switch) == true) {	// test if homing switch is thrown

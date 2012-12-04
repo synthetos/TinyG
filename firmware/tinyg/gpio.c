@@ -148,45 +148,38 @@ ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
 
 static void _switch_isr_helper(uint8_t sw_num)
 {
+//	printf("Int1 %d\n", sw_num);		//++++++++++++++++++++++++++++
+
 	if (sw.lockout_count != 0) return;					// exit if you are in a debounce lockout
+//	printf("Int2 %d\n", sw_num);		//++++++++++++++++++++++++++++
+
 	if (sw.mode[sw_num] == SW_MODE_DISABLED) return;	// this is not supposed to happen
 	sw.lockout_count = SW_LOCKOUT_TICKS;				// start the debounce lockout down-counter
 	sw.flag[sw_num] = true;								// set the flag for this switch
 	sw.thrown = true;									// triggers the switch handler tasks
 	if (cm.cycle_state == CYCLE_HOMING) { 				// initiate a feedhold if in homing cycle
+//		printf("Int3 %d\n", sw_num);		//++++++++++++++++++++++++++++
 		sig_feedhold(); 
 		return; 
 	}
 	if (sw.mode[sw_num] >= SW_MODE_HOMING_LIMIT) {		// signal an abort if limits are enabled
+//		printf("Int4 %d\n", sw_num);		//++++++++++++++++++++++++++++
 		sig_abort();
 	} 
 }
 
 /*
  * gpio_switch_timer_callback() - called from RTC for each RTC tick.
+ * gpio_reset_lockout() 		- end any debounce lockout that may be in progress 
  */
-
-inline void gpio_switch_timer_callback(void)
-{
-	if (sw.lockout_count != 0) { --sw.lockout_count;}	// counts down to zero and sticks on zero
-}
-
-/*
- * gp_clear_switches() - clear all limit switches but not lockout count
- * Note: Can't use memset on the flag array because it is marked Volatile
- */
-
-void gpio_clear_switches() 
-{
-	sw.thrown = false;
-	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
-		sw.flag[i] = false; 
-	}
-}
-
 void gpio_reset_lockout() 
 {
     sw.lockout_count = 0;
+}
+
+void gpio_switch_timer_callback(void)
+{
+	if (sw.lockout_count != 0) { --sw.lockout_count;}	// counts down to zero and sticks on zero
 }
 
 /*
@@ -194,6 +187,7 @@ void gpio_reset_lockout()
  * gpio_get_switch_mode() - return switch setting for sw_num
  * gpio_set_switch() 	  - diagnostic function for emulating a switch closure
  * gpio_read_switch()	  - read a switch directly with no interrupts or debouncing
+ * gpio_clear_switches() 		- clear all limit switches but not lockout count
  */
 uint8_t gpio_get_switch(uint8_t sw_num) { return (sw.flag[sw_num]);}
 uint8_t gpio_get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
@@ -214,14 +208,22 @@ uint8_t gpio_read_switch(uint8_t sw_num)
 		case SW_MIN_A: { read = device.port[SW_PORT_A]->IN & SW_MIN_BIT_bm; break;}
 		case SW_MAX_A: { read = device.port[SW_PORT_A]->IN & SW_MAX_BIT_bm; break;}
 	}
+//	printf ("Read %d %d\n", sw_num, read); //++++++++++++++++++++++
 	if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
-		if (read == 0) { return (true);}
-		return (false);	
+		return ((read == 0) ? true : false);
 	} else {
-		if (read != 0) { return (true);}
-		return (false);	
+		return ((read != 0) ? true : false);
 	}
 }
+
+void gpio_clear_switches() 
+{
+	sw.thrown = false;	//  Can't use memset on the flag array because it is Volatile
+	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
+		sw.flag[i] = false; 
+	}
+}
+
 
 /*
  * gpio_read_switches() - read the switches into the switch flag array
