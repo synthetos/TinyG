@@ -1808,13 +1808,13 @@ char *cmd_get_token(const INDEX_T i, char *token)
 		*token = NUL;
 		return (token);
 	}
-	strcpy_P(token,(PGM_P)pgm_read_word(&cfgArray[i].token));
-	return (token);
-
-//	strncpy_P(token,(PGM_P)pgm_read_word(&cfgArray[i].string), CMD_TOKEN_LEN+1);
-//	char *ptr = strstr(token,",");			// find the first separating comma
-//	*ptr = NUL;								// terminate the string after the token
+//	strcpy_P(token,(PGM_P)pgm_read_word(&cfgArray[i].token));
 //	return (token);
+
+	strncpy_P(token,(PGM_P)pgm_read_word(&cfgArray[i].string), CMD_TOKEN_LEN+1);
+	char *ptr = strstr(token,",");			// find the first separating comma
+	*ptr = NUL;								// terminate the string after the token
+	return (token);
 }
 /*
 char cmd_get_group(const INDEX_T i)
@@ -1905,7 +1905,7 @@ INDEX_T cmd_get_index(const char *str)
 	const char *Ptr;
 
 	for (INDEX_T i=0; i<CMD_INDEX_MAX; i++) {
-		Ptr = (const char *)pgm_read_word(&cfgArray[i]);
+		Ptr = (const char *)pgm_read_word(&cfgArray[i].string);
 		if ((char)pgm_read_byte(Ptr++) != str[0]) continue;			// 1st char mis-match
 		if ((tmp = (char)pgm_read_byte(Ptr++)) == ',') return (i);	// single character match
 		if (tmp != str[1]) continue;								// 2nd char mis-match
