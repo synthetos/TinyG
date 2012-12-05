@@ -32,10 +32,10 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_VERSION_NUMBER	0.95
-#define TINYG_BUILD_NUMBER   	348.07		// Work on NC switches
+#define TINYG_VERSION_NUMBER	0.95		// major version
+#define TINYG_BUILD_NUMBER   	349.01		// Merge Otherlab spindle code
 
-#define TINYG_COMM_PROTOCOL_REV 1	// the communications protocol revision is tracked independently
+#define TINYG_COMM_PROTOCOL_REV 1			// communications protocol revision is tracked independently
 
 /****** DEVELOPMENT SETTINGS ******/
 

@@ -65,11 +65,29 @@
 
 //#include "settings/settings_default.h"			// Default settings for shipment
 //#include "settings/settings_lumenlabMicRoV3.h"	// Lumenlabs micRo v3
-//#include "settings/settings_otherlab.h"			// Otherlab Othercutter
+#include "settings/settings_otherlab.h"			// Otherlab Othercutter
 //#include "settings/settings_probotixV90.h"		// Probotix FireballV90
 //#include "settings/settings_sacidu93.h"			// related to Issue #12
-#include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
+//#include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
 //#include "settings/settings_ultimaker.h"			// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"			// Zen Toolworks 7x12
+
+
+
+/*** Handle optional modules that may not be in every machine ***/
+
+// If PWM_1 is not defined fill it with dummy values
+#ifndef	P1_PWM_FREQUENCY
+#define P1_PWM_FREQUENCY	0	// Hz
+#define P1_CW_SPEED_LO		0	// in RPM (arbitrary units)
+#define P1_CW_SPEED_HI		0
+#define P1_CW_PHASE_LO		0	// phase [0..1]
+#define P1_CW_PHASE_HI		0
+#define P1_CCW_SPEED_LO		0
+#define P1_CCW_SPEED_HI		0
+#define P1_CCW_PHASE_LO		0
+#define P1_CCW_PHASE_HI		0
+#define P1_PWM_PHASE_OFF	0
+#endif//P1_PWM_FREQUENCY
 
 #endif

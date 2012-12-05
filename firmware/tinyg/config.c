@@ -551,6 +551,18 @@ static const char str_clv[] PROGMEM = "clv,[clv] c_latch_velocity%17.3f%S/min\n"
 static const char str_clb[] PROGMEM = "clb,[clb] c_latch_backoff%18.3f%S\n";
 static const char str_czb[] PROGMEM = "czb,[czb] c_zero_backoff%19.3f%S\n";
 
+// PWM strings
+static const char str_pwmf[] PROGMEM = "pwmf,[pwmf] pwm_frequency   %15.3fHz\n";
+static const char str_p3sl[] PROGMEM = "p3sl,[p3sl] pwm_cw_speed_lo %15.3fRPM\n";
+static const char str_p3sh[] PROGMEM = "p3sh,[p3sh] pwm_cw_speed_hi %15.3fRPM\n";
+static const char str_p3pl[] PROGMEM = "p3pl,[p3pl] pwm_cw_phase_lo %13.3f [0..1]\n";
+static const char str_p3ph[] PROGMEM = "p3ph,[p3ph] pwm_cw_phase_hi %13.3f [0..1]\n";
+static const char str_p4sl[] PROGMEM = "p4sl,[p4sl] pwm_ccw_speed_lo%15.3fRPM\n";
+static const char str_p4sh[] PROGMEM = "p4sh,[p4sh] pwm_ccw_speed_hi%15.3fRPM\n";
+static const char str_p4pl[] PROGMEM = "p4pl,[p4pl] pwm_ccw_phase_lo%13.3f [0..1]\n";
+static const char str_p4ph[] PROGMEM = "p4ph,[p4ph] pwm_ccw_phase_hi%13.3f [0..1]\n";
+static const char str_p5of[] PROGMEM = "p5of,[p5of] pwm_phase_off   %13.3f [0..1]\n";
+
 // Coordinate system offset groups
 static const char str_g54x[] PROGMEM = "g54x,[g54x] g54_x_offset%20.3f%S\n";
 static const char str_g54y[] PROGMEM = "g54y,[g54y] g54_y_offset%20.3f%S\n";
@@ -842,6 +854,18 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ str_clv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_velocity,	C_LATCH_VELOCITY },
 	{ str_clb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_backoff,	C_LATCH_BACKOFF },
 	{ str_czb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].zero_backoff,		C_ZERO_BACKOFF },
+
+    // PWM settings
+    { str_pwmf, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.frequency,			P1_PWM_FREQUENCY },
+    { str_p3sl, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.cw_speed_lo,        P1_CW_SPEED_LO },
+    { str_p3sh, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.cw_speed_hi,        P1_CW_SPEED_HI },
+    { str_p3pl, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.cw_phase_lo,        P1_CW_PHASE_LO },
+    { str_p3ph, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.cw_phase_hi,        P1_CW_PHASE_HI },
+    { str_p4sl, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_speed_lo,       P1_CCW_SPEED_LO },
+    { str_p4sh, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_speed_hi,       P1_CCW_SPEED_HI },
+    { str_p4pl, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_phase_lo,       P1_CCW_PHASE_LO },
+    { str_p4ph, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_phase_hi,       P1_CCW_PHASE_HI },
+    { str_p5of, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.phase_off,          P1_PWM_PHASE_OFF },
 
 	// Coordinate system offsets
 	{ str_g54x, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G54][X], G54_X_OFFSET },

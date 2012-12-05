@@ -147,19 +147,18 @@
 #define C_LATCH_BACKOFF 				-5
 #define C_ZERO_BACKOFF 					2
 
-
 // *** PWM SPINDLE CONTROL ***
 
-#define C_PWM_FREQUENCY                 100     // in Hz
-#define C_CW_SPEED_LO                   1000    // arbitrary units
-#define C_CW_SPEED_HI                   2000
-#define C_CW_PHASE_LO                   .125      // phase [0..1]
-#define C_CW_PHASE_HI                   .2
-#define C_CCW_SPEED_LO                  1000
-#define C_CCW_SPEED_HI                  2000
-#define C_CCW_PHASE_LO                  .125
-#define C_CCW_PHASE_HI                  .2
-#define C_PWM_PHASE_OFF                 .1
+#define P1_PWM_FREQUENCY                100     // in Hz
+#define P1_CW_SPEED_LO                  1000    // in RPM (arbitrary units)
+#define P1_CW_SPEED_HI                  2000
+#define P1_CW_PHASE_LO                  0.125   // phase [0..1]
+#define P1_CW_PHASE_HI                  0.2
+#define P1_CCW_SPEED_LO                 1000
+#define P1_CCW_SPEED_HI                 2000
+#define P1_CCW_PHASE_LO                 0.125
+#define P1_CCW_PHASE_HI                 0.2
+#define P1_PWM_PHASE_OFF                0.1
 
 // *** DEFAULT COORDINATE SYSTEM OFFSETS ***
 

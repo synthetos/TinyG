@@ -244,6 +244,19 @@ struct cfgMotorParameters {
 	double steps_per_unit;			// steps (usteps)/mm or deg of travel
 };
 
+struct cfgPWMParameters {
+  	double frequency;				// base frequency for PWM driver, in Hz
+	double cw_speed_lo;             // M03 minimum spindle speed [0..N]
+    double cw_speed_hi;             // maximum spindle speed
+    double cw_phase_lo;             // pwm phase at minimum spindle speed, clamped [0..1]
+    double cw_phase_hi;             // pwm phase at maximum spindle speed, clamped [0..1]
+	double ccw_speed_lo;            // M04 for ccw settings
+    double ccw_speed_hi;
+    double ccw_phase_lo;
+    double ccw_phase_hi;
+    double phase_off;               // M05 pwm phase when spindle is disabled
+};
+
 struct cfgParameters {
 	uint8_t state;					// configuration state: 1=initialized, 0=not
 	double profile;					// configuration profile in effect
@@ -259,7 +272,6 @@ struct cfgParameters {
 	double junction_acceleration;	// centripetal acceleration max for cornering
 	uint8_t enable_acceleration;	// enable acceleration control
 //	double max_spindle_speed;		// in RPM
-//	uint8_t switch_type;			// 0=NO, 1=NC
 
 	// gcode power-on default settings - defaults are not the same as the gm state
 	uint8_t coord_system;			// G10 active coordinate system default
@@ -289,6 +301,7 @@ struct cfgParameters {
 	// motor and axis structs
 	struct cfgMotorParameters m[MOTORS];// settings for motors 1-4
 	struct cfgAxisParameters a[AXES];	// settings for axes X,Y,Z,A B,C
+	struct cfgPWMParameters p;			// settings for PWM p
 };
 struct cfgParameters cfg; 			// declared in the header to make it global
 #define CFG(x) cfg.a[x]				// handy macro for referencing axis values,

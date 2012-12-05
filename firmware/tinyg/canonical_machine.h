@@ -438,7 +438,7 @@ void cm_set_absolute_override(uint8_t absolute_override);
 //void cm_sync_spindle_speed_parameter(double speed);
 
 double cm_get_model_work_position(uint8_t axis);
-double *cm_get_model_work_position_vector(double position[]);
+//double *cm_get_model_work_position_vector(double position[]);
 double cm_get_model_canonical_target(uint8_t axis);
 double *cm_get_model_canonical_position_vector(double position[]);
 double cm_get_runtime_machine_position(uint8_t axis);
