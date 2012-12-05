@@ -35,8 +35,8 @@
 #define INDEX_T int16_t				// default setting for > 127 indexed objects
 //#define INDEX_T int8_t			// OK as long as there are less than 127 records - which there are most certainly not at this point
 
-#define CMD_TOKEN_LEN 4				// mnemonic token string
 #define CMD_GROUP_LEN 3				// max length of group prefix
+#define CMD_TOKEN_LEN 4				// mnemonic token string
 #define CMD_STRING_LEN 64			// original value string or value as a string
 #define CMD_FORMAT_LEN 64			// print formatting string
 
