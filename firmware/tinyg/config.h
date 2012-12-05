@@ -164,10 +164,6 @@ typedef uint8_t (*fptrCmd)(cmdObj *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
 #define CMD_OBJ_CORE (sizeof(cmdObj) - (CMD_STRING_LEN+1))
 
-// NOTE: Be aware: the string field is mainly used to carry string values, 
-// but is used as temp storage for the friendly_name during parsing to save RAM..
-#define friendly_name string			// used here as a friendly name field
-
 // Allocate cmdObj lists
 cmdObj cmd_header[CMD_HEADER_LEN];	// JSON header element
 cmdObj cmd_body[CMD_BODY_LEN];		// cmd_body[0] is the root object
