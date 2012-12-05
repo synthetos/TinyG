@@ -61,7 +61,6 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 	uint8_t saved_units_mode;	// G20,G21 global setting
 	uint8_t saved_coord_system;	// G54 - G59 setting
 	uint8_t saved_distance_mode;// G90,G91 global setting
-//	uint8_t saved_path_control;	// G61,G61.1,G64 global setting
 //	double saved_jerk;			// saved and restored for each axis homed
 };
 static struct hmHomingSingleton hm;
@@ -83,8 +82,7 @@ static int8_t _get_next_axis(int8_t axis);
 //static int8_t _get_next_axes(int8_t axis);
 
 /*****************************************************************************
- * cm_return_to_home() - G28 cycle
- * cm_return_to_home_callback() - main loop callback for the above
+ * cm_return_to_home() - G28 command
  */
 
 uint8_t cm_return_to_home(void)
@@ -93,6 +91,25 @@ uint8_t cm_return_to_home(void)
 	double flags[] = {1,1,1,1,1,1};
 	ritorno(cm_straight_traverse(zero, flags));
 	return (TG_OK);
+}
+
+/*****************************************************************************
+ * cm_return_to_home_through_point() - G30 command
+ * cm_G30_callback()
+ */
+
+uint8_t cm_return_to_home_through_point(void)
+{
+	ritorno(cm_straight_traverse(gn.target, gf.target));
+	cm.g30_flag = true;
+	return (TG_OK);
+}
+
+uint8_t cm_G30_callback()
+{
+	if (cm.g30_flag == false) return (TG_NOOP);
+//	if (cm_isbusy() == true) { return (TG_EAGAIN);}	 // sync to planner move ends
+	return (cm_return_to_home());
 }
 
 /*****************************************************************************

@@ -223,18 +223,19 @@ static double _get_junction_deviation(const double a_unit[], const double b_unit
 
 // execute routines (NB: These are all called from the LO interrupt)
 static uint8_t _exec_null(mpBuf *bf);
-static uint8_t _exec_line(mpBuf *bf);
+//static uint8_t _exec_line(mpBuf *bf);
 static uint8_t _exec_dwell(mpBuf *bf);
 static uint8_t _exec_mcode(mpBuf *bf);
 //static uint8_t _exec_command(mpBuf *bf);
 static uint8_t _exec_tool(mpBuf *bf);
 static uint8_t _exec_spindle_speed(mpBuf *bf);
 static uint8_t _exec_aline(mpBuf *bf);
-static void _init_forward_diffs(double t0, double t2);
 static uint8_t _exec_aline_head(void);
 static uint8_t _exec_aline_body(void);
 static uint8_t _exec_aline_tail(void);
 static uint8_t _exec_aline_segment(uint8_t correction_flag);
+static void _init_forward_diffs(double t0, double t2);
+static double _compute_next_segment_velocity(void);
 
 // planning buffer routines
 static void _init_buffers(void);
@@ -246,7 +247,6 @@ static mpBuf * _get_write_buffer(void);
 static mpBuf * _get_run_buffer(void);
 static mpBuf * _get_first_buffer(void);
 static mpBuf * _get_last_buffer(void);
-//static void _unget_write_buffer(void);
 
 #ifdef __DEBUG
 static uint8_t _get_buffer_index(mpBuf *bf); 
@@ -287,9 +287,9 @@ uint8_t mp_isbusy()
 /* 
  * mp_zero_segment_velocity() - correct velocity in last segment for reporting purposes
  */
-void mp_zero_segment_velocity()
-{
-	mr.segment_velocity = 0;		// for reporting purposes
+void mp_zero_segment_velocity() 
+{ 
+	mr.segment_velocity = 0;
 }
 
 /* 
@@ -385,7 +385,7 @@ uint8_t mp_exec_move()
 	}
 	switch (bf->move_type) {									// dispatch the move
 		case MOVE_TYPE_NULL: { return (_exec_null(bf));}
-		case MOVE_TYPE_LINE: { return (_exec_line(bf));}
+//		case MOVE_TYPE_LINE: { return (_exec_line(bf));}
 		case MOVE_TYPE_ALINE: { return (_exec_aline(bf));}
 		case MOVE_TYPE_DWELL: { return (_exec_dwell(bf));}
 		case MOVE_TYPE_MCODE: { return (_exec_mcode(bf));}
@@ -567,7 +567,7 @@ static uint8_t _exec_dwell(mpBuf *bf)	// NEW
  * The run_line routine is a continuation and can be called multiple times 
  * until it can successfully load the line into the move buffer.
  */
-
+/*
 uint8_t mp_line(const double target[], const double minutes)
 {
 	mpBuf *bf;
@@ -603,7 +603,7 @@ static uint8_t _exec_line(mpBuf *bf)
 	_free_run_buffer();
 	return (TG_OK);
 }
-
+*/
 /**************************************************************************
  * mp_aline() - plan a line with acceleration / deceleration
  *
@@ -1521,14 +1521,15 @@ uint8_t mp_plan_hold_callback()
 	mr_available_length = get_axis_vector_length(mr.endpoint, mr.position);
 
 /*	mr_available_length = 
-				  (sqrt(square(mr.endpoint[X] - mr.position[X]) +
-						square(mr.endpoint[Y] - mr.position[Y]) +
-						square(mr.endpoint[Z] - mr.position[Z]) +
-						square(mr.endpoint[A] - mr.position[A]) +
-						square(mr.endpoint[B] - mr.position[B]) +
-						square(mr.endpoint[C] - mr.position[C])));
+		(sqrt(square(mr.endpoint[X] - mr.position[X]) +
+			  square(mr.endpoint[Y] - mr.position[Y]) +
+			  square(mr.endpoint[Z] - mr.position[Z]) +
+			  square(mr.endpoint[A] - mr.position[A]) +
+			  square(mr.endpoint[B] - mr.position[B]) +
+			  square(mr.endpoint[C] - mr.position[C])));
 */
-	braking_velocity = mr.segment_velocity;
+//	braking_velocity = mr.segment_velocity;
+	braking_velocity = _compute_next_segment_velocity();
 
 #ifdef __PLAN_R2
 	braking_length = _get_target_length(square(braking_velocity), 0, bp); // bp is OK to use here
@@ -1621,8 +1622,15 @@ uint8_t mp_plan_hold_callback()
 	_reset_replannable_list();					// make it replan all the blocks
 	_plan_block_list(_get_last_buffer(), &mr_flag);
 	cm.hold_state = FEEDHOLD_DECEL;				// set state to decelerate and exit
-//	printf("Feedhold case 2 exit\n"); 	//+++++++++++++++++++++++
 	return (TG_OK);
+}
+
+double _compute_next_segment_velocity()
+{
+	if (mr.move_state == MOVE_STATE_BODY) {
+		return (mr.segment_velocity);
+	}
+	return (mr.segment_velocity + mr.forward_diff_1);
 }
 
 /* 
@@ -1636,7 +1644,6 @@ uint8_t mp_end_hold_callback()
 {
 	mpBuf *bf;
 	if ((cm.hold_state == FEEDHOLD_HOLD) && (cm.cycle_start_flag == true)) { 
-		printf("End hold [%d]\n", cm.hold_state); 	//+++++++++++++++++++++++
 		cm.cycle_start_flag = false;
 		cm.hold_state = FEEDHOLD_OFF;
 		if ((bf = _get_run_buffer()) == NULL) {	// NULL means nothing's running
@@ -1861,7 +1868,7 @@ static uint8_t _exec_aline_head()
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {	// concave part of accel curve (period 1)
 		mr.segment_velocity += mr.forward_diff_1;
-		if (_exec_aline_segment(false) == TG_COMPLETE) { 	  	// set up for second half
+		if (_exec_aline_segment(false) == TG_COMPLETE) { // set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = MOVE_STATE_RUN2;
 

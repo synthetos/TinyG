@@ -45,6 +45,7 @@ struct canonicalMachineSingleton {	// struct to manage cm globals and cycles
 	uint8_t homing_state;			// homing cycle sub-state machine
 	uint32_t status_report_counter;
 	uint8_t	g10_flag;				// true=write offsets to NVM after stop
+	uint8_t	g30_flag;				// true=complete a G30 move
 }; struct canonicalMachineSingleton cm;
 
 /* GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
@@ -76,7 +77,6 @@ struct GCodeModel {						// Gcode model- meaning depends on context
 										// G82, G83 G84, G85, G86, G87, G88, G89 
 	uint8_t program_flow;				// currently vestigal - captured, but not uses
 	uint32_t linenum;					// N word or autoincrement in the model
-//	uint32_t lineindex;					// autoincremented line index
 
 	double target[AXES]; 				// XYZABC where the move should go
 	double position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
@@ -514,7 +514,8 @@ uint8_t cm_arc_feed(double target[], double flags[], double i, double j, double 
 /*--- canned cycles ---*/
 
 uint8_t cm_return_to_home(void);					// G28
-uint8_t cm_return_to_home_callback(void);			// G28 main loop callback
+uint8_t cm_return_to_home_through_point(void);		// G30
+uint8_t cm_G30_callback(void);						// G30 main loop callback
 
 uint8_t cm_homing_cycle_start(void);				// G28.1
 uint8_t cm_homing_callback(void);					// G28.1 main loop callback

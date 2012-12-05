@@ -134,7 +134,6 @@ void tg_controller()
 static void _controller_HSM()
 {
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
-//	DISPATCH(gpio_switch_callback());		// limit and homing switch handler
 	DISPATCH(_abort_handler());				// abort signal
 	DISPATCH(_feedhold_handler());			// feedhold signal
 	DISPATCH(_cycle_start_handler());		// cycle start signal
@@ -146,6 +145,7 @@ static void _controller_HSM()
 	DISPATCH(mp_end_hold_callback());		// end a feedhold
 	DISPATCH(ar_arc_callback());			// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());			// G28.1 continuation
+	DISPATCH(cm_G30_callback());			// G30 continuation
 
 //----- command readers and parsers ------------------------------------//
 	DISPATCH(_sync_to_tx_buffer());			// sync with TX buffer (pseudo-blocking)
