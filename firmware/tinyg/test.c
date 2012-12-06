@@ -120,7 +120,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x0\"}\n");
 //	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
-	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("g0x2\n");
 //	xio_queue_RX_string_usb("g92a0\n");
@@ -287,12 +287,11 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 // If you want to use all these you need to set RX buffer to 1024 in xio_usart.h
 //	xio_queue_RX_string_usb("{\"gc\":\"g0 x3 y4 z5.5 (comment line)\"}\n");
 //	xio_queue_RX_string_usb("{\"xfr\":1200}\n");
-//	xio_queue_RX_string_usb("{\"x_feedrate\":1200}\n");
 //	xio_queue_RX_string_usb("{\"xfr\":1200, \"yfr\":1201, \"zfr\":600}\n");
 //	xio_queue_RX_string_usb("{\"err_1\":36000}\n");
 //	xio_queue_RX_string_usb("{\"1sa\":3.6.000}\n");
 //	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");				// invoke a status report
-//	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sm\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
+	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sm\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
 
 //	xio_queue_RX_string_usb("{\"gc\":{\"sr\":{\"momo\":\"null\"},\"x\":0,\"y\":\"OK\",\"z\":123}}\n");
 /*	xio_queue_RX_string_usb("{\"config_version\":null}\n");	// simple null test

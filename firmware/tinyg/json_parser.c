@@ -188,17 +188,32 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	char *tmp;
 	char terminators[] = {"},"};
 
-	cmd_clear_obj(cmd);							// wipe the object and set the depth
+	cmd_clear_obj(cmd);								// wipe the object and set the depth
 
-	// process name element
-	// find leading and trailing name quotes and set pointers accordingly
-	// accommodate groups by looking up index by full name but stripping group from token
+	// --- Process name part ---
+	// find leading and trailing name quotes and set pointers.
 	if ((*pstr = strchr(*pstr, '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	if ((tmp = strchr(++(*pstr), '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	*tmp = NUL;
 
 	// copy the token by itself or with a group prefix if it's a prefixed group
-	if (strstr(GROUP_PREFIXES, group) == NULL) {
+	// grouped variables are looked up index using the full token string, e.g. "xvm"
+	if (cmd_is_group(group) == true) {
+		strncpy(cmd->group, group, CMD_GROUP_LEN);	// propagate parent's group to this child
+		strncpy(cmd->token, group, CMD_GROUP_LEN);	// prepend the group string to the token
+		uint8_t len = strlen(group);
+		strncpy(&cmd->token[len], *pstr, CMD_TOKEN_LEN+1-len);// cat token to group prefix
+	} else {
+		strncpy(cmd->token, *pstr, CMD_TOKEN_LEN+1);// copy token from string
+	}
+	// validate the token and get the index
+	if ((cmd->index = cmd_get_index(cmd->token)) == NO_INDEX) { return (TG_UNRECOGNIZED_COMMAND);}
+	*pstr = ++tmp;
+
+/*
+	// copy the token by itself or with a group prefix if it's a prefixed group
+//	if (strstr(GROUP_PREFIXES, group) == NULL) {	+++++++++++++++++++++++++++++++++
+	if (cmd_is_group(group) == false) {
 		strncpy(cmd->string, *pstr, CMD_STRING_LEN);// copy name from string
 	} else {
 		strncpy(cmd->string, group, CMD_GROUP_LEN);	// prepend the group
@@ -206,15 +221,16 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	}
 
 	// get the index or return if the token / friendly_name is invalid
-	if ((cmd->index = cmd_get_index(cmd->string)) == -1) { return (TG_UNRECOGNIZED_COMMAND);}
+	if ((cmd->index = cmd_get_index(cmd->string)) == NO_INDEX) { return (TG_UNRECOGNIZED_COMMAND);}
 	cmd_get_token(cmd->index, cmd->token);
-	if (group[0] != NUL) {						// strip group prefix if this is a group
+	if (group[0] != NUL) {							// strip group prefix if this is a group
 		strncpy(cmd->token, &cmd->string[strlen(group)], CMD_TOKEN_LEN);
-		strncpy(cmd->group, group, CMD_GROUP_LEN);// propagate group token to this child
+		strncpy(cmd->group, group, CMD_GROUP_LEN);	// propagate group token to this child
 	}
 	*pstr = ++tmp;
+*/
 
-	// process value element
+	// --- Process value part ---
 	if ((*pstr = strchr(*pstr, ':')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	(*pstr)++;									// advance to start of value field
 	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { 
@@ -250,7 +266,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 		 return (TG_JSON_SYNTAX_ERROR);			// ill-formed JSON
 	}
 
-	// process pair transitions and end conditions
+	// process comma separators and end curlies
 	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { // advance to terminator or err out
 		return (TG_JSON_SYNTAX_ERROR);
 	}

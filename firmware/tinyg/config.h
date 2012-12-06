@@ -32,8 +32,14 @@
 /**** Command definitions and objects (used by config and JSON) ****/
 
 // Choose one: This sets the index size into the cmdArray
-#define INDEX_T int16_t				// default setting for > 127 indexed objects
-//#define INDEX_T int8_t			// OK as long as there are less than 127 records - which there are most certainly not at this point
+
+#define INDEX_T int16_t				// use this if there are  > 127 indexed objects
+//#define INDEX_T int8_t			// use this if there are < 127 indexed objects
+#define NO_INDEX	-1				// defined as no match
+
+// TRY THIS: ++++++++++++++++++++++++++++++++++++++
+//#define INDEX_T uint8_t				// use this if there are < 255 indexed objects
+//#define NO_INDEX	0xFF			// defined as no match
 
 #define CMD_GROUP_LEN 3				// max length of group prefix
 #define CMD_TOKEN_LEN 4				// mnemonic token string
@@ -100,9 +106,9 @@
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
 
 // Here are all the exceptions to the display and config rules, as neat little lists
-#define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
-#define DONT_INITIALIZE "gc,sr,help,test,defa,baud"	// commands that should not be initialized
-#define DONT_PERSIST	"gc,help,test,defa"			// commands that should not be persisted
+//#define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
+//#define DONT_INITIALIZE "gc,sr,help,test,defa,baud"	// commands that should not be initialized
+//#define DONT_PERSIST	"gc,help,test,defa"			// commands that should not be persisted
 //See settings.h for SR_DEFAULTS
 
 #define IGNORE_OFF 0				// accept either CR or LF as termination on RX text line
@@ -132,7 +138,6 @@ enum jsonEcho {
 	JE_OMIT_BODY,					// Response contains no body - footer only
 	JE_OMIT_GCODE_BODY,				// Body returned for configs; omitted for Gcode commands
 	JE_GCODE_LINENUM_ONLY,			// Body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
-//	JE_GCODE_TRUNCATED,				// Body returned for configs and Gcode - gcode is truncated by precision & comments removed
 	JE_FULL_ECHO					// Body returned for configs and Gcode - Gcode comments removed
 };
 
@@ -199,8 +204,6 @@ uint8_t cmd_add_float(char *token, double value);
 uint8_t cmd_add_integer(char *token, uint32_t value);
 void cmd_print_list(uint8_t status, uint8_t textmode);
 
-//uint8_t cmd_read_NVM_record(cmdObj *cmd);
-//uint8_t cmd_write_NVM_record(const cmdObj *cmd);
 uint8_t cmd_read_NVM_value(cmdObj *cmd);
 uint8_t cmd_write_NVM_value(cmdObj *cmd);
 
@@ -299,7 +302,7 @@ struct cfgParameters cfg; 			// declared in the header to make it global
 									// e.g: CFG(X_AXIS).steps_per_mm
 
 /* unit test setup */
-#define __UNIT_TEST_CONFIG		// uncomment to enable config unit tests
+//#define __UNIT_TEST_CONFIG		// uncomment to enable config unit tests
 #ifdef __UNIT_TEST_CONFIG
 void cfg_unit_tests(void);
 #define	CONFIG_UNITS cfg_unit_tests();
