@@ -33,7 +33,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95		// major version
-#define TINYG_BUILD_NUMBER   	350.03		// Group and token changes to config
+#define TINYG_BUILD_NUMBER   	350.04		// Group and token changes to config
 
 #define TINYG_COMM_PROTOCOL_REV 1			// communications protocol revision is tracked independently
 

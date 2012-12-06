@@ -85,7 +85,7 @@
  *	and should be as short as possible. 
  */
 #define CMD_HEADER_LEN 1			// "b" header
-#define CMD_BODY_LEN 21				// body elements - includes one terminator
+#define CMD_BODY_LEN 25				// body elements - includes one terminator
 #define CMD_FOOTER_LEN 2			// footer element (includes terminator element)
 
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
@@ -100,10 +100,7 @@
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
 
 // Here are all the exceptions to the display and config rules, as neat little lists
-// NOTE: The number of SYSTEM_GROUP or SR_DEFAULTS elements cannot exceed CMD_MAX_OBJECTS
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
-#define GROUP_EXCLUSIONS "cycs,coor,baud"	 		// items that are not actually part of the xyzabcuvw0123456789 groups
-#define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ee,ex,eq,ej,je,baud,st" // cats and dogs
 #define DONT_INITIALIZE "gc,sr,help,test,defa,baud"	// commands that should not be initialized
 #define DONT_PERSIST	"gc,help,test,defa"			// commands that should not be persisted
 //See settings.h for SR_DEFAULTS
@@ -187,8 +184,8 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd);
 
 //INDEX_T cmd_get_max_index(void);
 INDEX_T cmd_get_index(const char *str);
-char *cmd_get_token(const INDEX_T i, char *string);
-//char cmd_get_group(const INDEX_T i);
+char *cmd_get_token(const INDEX_T i, char *token);
+char *cmd_get_group(const INDEX_T i, char *group);
 uint8_t cmd_is_group(const char *str);
 uint8_t cmd_get_type(cmdObj *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
@@ -222,8 +219,6 @@ struct cfgAxisParameters {
 	double jerk_max;				// max jerk (Jm) in mm/min^3
 	double junction_dev;			// aka cornering delta
 	double radius;					// radius in mm for rotary axis modes
-//	uint8_t switch_mode_min;		// 0=disabled, 1=enabled NO for homing only, 2=enabled NO for homing & limits
-//	uint8_t switch_mode_max;		// 0=disabled, 1=enabled NO for homing only, 2=enabled NO for homing & limits
 	double search_velocity;			// homing search velocity
 	double latch_velocity;			// homing latch velocity
 	double latch_backoff;			// backoff from switches prior to homing latch movement

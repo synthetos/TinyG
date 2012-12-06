@@ -99,9 +99,10 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
-	xio_queue_RX_string_usb("$$\n");// match
-//	xio_queue_RX_string_usb("$x\n");// match
-//	xio_queue_RX_string_usb("$xvm\n");// match
+//	xio_queue_RX_string_usb("$$\n");
+//	xio_queue_RX_string_usb("$x\n");
+//	xio_queue_RX_string_usb("$sys\n");
+//	xio_queue_RX_string_usb("$xvm\n");
 //	xio_queue_RX_string_usb("$xasasas=42\n");// bad command
 //	xio_queue_RX_string_usb("$test=51\n");	// run braid fragment to test short-line handling
 
@@ -119,6 +120,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x0\"}\n");
 //	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
+	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("g0x2\n");
 //	xio_queue_RX_string_usb("g92a0\n");
