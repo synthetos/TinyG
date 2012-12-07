@@ -42,7 +42,7 @@
 
 #define STATUS_REPORT_MIN_MS		200		// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	200		// milliseconds - set to 0 to disable
-#define SR_DEFAULTS "line","posx","posy","posz","vel","stat"
+#define SR_DEFAULTS "line","posx","posy","posz","posa","vel","momo","stat"
 
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
 #define GCODE_DEFAULT_UNITS			MILLIMETERS

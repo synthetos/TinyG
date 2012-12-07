@@ -549,16 +549,16 @@ static const char fmt_clb[] PROGMEM = "[clb] c_latch_backoff%18.3f%S\n";
 static const char fmt_czb[] PROGMEM = "[czb] c_zero_backoff%19.3f%S\n";
 
 // PWM strings
-static const char fmt_pwmf[] PROGMEM = "[pwmf] pwm_frequency   %15.3fHz\n";
-static const char fmt_p3sl[] PROGMEM = "[p3sl] pwm_cw_speed_lo %15.3fRPM\n";
-static const char fmt_p3sh[] PROGMEM = "[p3sh] pwm_cw_speed_hi %15.3fRPM\n";
-static const char fmt_p3pl[] PROGMEM = "[p3pl] pwm_cw_phase_lo %13.3f [0..1]\n";
-static const char fmt_p3ph[] PROGMEM = "[p3ph] pwm_cw_phase_hi %13.3f [0..1]\n";
-static const char fmt_p4sl[] PROGMEM = "[p4sl] pwm_ccw_speed_lo%15.3fRPM\n";
-static const char fmt_p4sh[] PROGMEM = "[p4sh] pwm_ccw_speed_hi%15.3fRPM\n";
-static const char fmt_p4pl[] PROGMEM = "[p4pl] pwm_ccw_phase_lo%13.3f [0..1]\n";
-static const char fmt_p4ph[] PROGMEM = "[p4ph] pwm_ccw_phase_hi%13.3f [0..1]\n";
-static const char fmt_p5of[] PROGMEM = "[p5of] pwm_phase_off   %13.3f [0..1]\n";
+static const char fmt_p1frq[] PROGMEM = "[p1frq] pwm_frequency   %15.3f Hz\n";
+static const char fmt_p1csl[] PROGMEM = "[p1csl] pwm_cw_speed_lo %15.3f RPM\n";
+static const char fmt_p1csh[] PROGMEM = "[p1csh] pwm_cw_speed_hi %15.3f RPM\n";
+static const char fmt_p1cpl[] PROGMEM = "[p1cpl] pwm_cw_phase_lo %15.3f [0..1]\n";
+static const char fmt_p1cph[] PROGMEM = "[p1cph] pwm_cw_phase_hi %15.3f [0..1]\n";
+static const char fmt_p1wsl[] PROGMEM = "[p1wsl] pwm_ccw_speed_lo%15.3f RPM\n";
+static const char fmt_p1wsh[] PROGMEM = "[p1wsh] pwm_ccw_speed_hi%15.3f RPM\n";
+static const char fmt_p1wpl[] PROGMEM = "[p1wpl] pwm_ccw_phase_lo%15.3f [0..1]\n";
+static const char fmt_p1wph[] PROGMEM = "[p1wph] pwm_ccw_phase_hi%15.3f [0..1]\n";
+static const char fmt_p1pof[] PROGMEM = "[p1pof] pwm_phase_off   %15.3f [0..1]\n";
 
 // Coordinate system offset groups
 static const char fmt_g54x[] PROGMEM = "[g54x] g54_x_offset%20.3f%S\n";
@@ -681,7 +681,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "sys","ej",  _fip, fmt_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,			COM_COMMUNICATIONS_MODE },
 	{ "sys","je",  _fip, fmt_je, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.json_echo_mode,		COM_JSON_ECHO_MODE },
 	{ "sys","si",  _fip, fmt_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
-	{ "sys","baud",_fip, fmt_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
+	{ "sys","baud",_f00, fmt_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
 
 	// Motor parameters
 	{ "1","1ma",_fip, fmt_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
@@ -790,17 +790,17 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "c","clb",_fip, fmt_clb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_backoff,	C_LATCH_BACKOFF },
 	{ "c","czb",_fip, fmt_czb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].zero_backoff,		C_ZERO_BACKOFF },
 
-    // PWM settings
-    { "p1","pfre",_fip, fmt_pwmf, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.frequency,		P1_PWM_FREQUENCY },
-    { "p1","pcsl",_fip, fmt_p3sl, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.cw_speed_lo,		P1_CW_SPEED_LO },
-    { "p1","pcsh",_fip, fmt_p3sh, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.cw_speed_hi,		P1_CW_SPEED_HI },
-    { "p1","pcpl",_fip, fmt_p3pl, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.cw_phase_lo,		P1_CW_PHASE_LO },
-    { "p1","pcph",_fip, fmt_p3ph, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.cw_phase_hi,		P1_CW_PHASE_HI },
-    { "p1","pwsl",_fip, fmt_p4sl, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_speed_lo,		P1_CCW_SPEED_LO },
-    { "p1","pwsh",_fip, fmt_p4sh, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_speed_hi,		P1_CCW_SPEED_HI },
-    { "p1","pwpl",_fip, fmt_p4pl, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_phase_lo,		P1_CCW_PHASE_LO },
-    { "p1","pwph",_fip, fmt_p4ph, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_phase_hi,		P1_CCW_PHASE_HI },
-    { "p1","ppof",_fip, fmt_p5of, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.phase_off,		P1_PWM_PHASE_OFF },
+	// PWM settings
+    { "p1","p1frq",_fip, fmt_p1frq, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.frequency,		P1_PWM_FREQUENCY },
+    { "p1","p1csl",_fip, fmt_p1csl, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.cw_speed_lo,	P1_CW_SPEED_LO },
+    { "p1","p1csh",_fip, fmt_p1csh, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.cw_speed_hi,	P1_CW_SPEED_HI },
+    { "p1","p1cpl",_fip, fmt_p1cpl, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.cw_phase_lo,	P1_CW_PHASE_LO },
+    { "p1","p1cph",_fip, fmt_p1cph, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.cw_phase_hi,	P1_CW_PHASE_HI },
+    { "p1","p1wsl",_fip, fmt_p1wsl, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_speed_lo,	P1_CCW_SPEED_LO },
+    { "p1","p1wsh",_fip, fmt_p1wsh, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_speed_hi,	P1_CCW_SPEED_HI },
+    { "p1","p1wpl",_fip, fmt_p1wpl, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_phase_lo,	P1_CCW_PHASE_LO },
+    { "p1","p1wph",_fip, fmt_p1wph, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_phase_hi,	P1_CCW_PHASE_HI },
+    { "p1","p1pof",_fip, fmt_p1pof, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.phase_off,		P1_PWM_PHASE_OFF },
 
 	// Coordinate system offsets (G54-G59 and G92)
 	{ "g54","g54x",_fip, fmt_g54x, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G54][X],	G54_X_OFFSET },
@@ -875,8 +875,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "srs","sr19",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[19],0 },
 	
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
-	{ "sys","sys",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// system group 	   (must be 1st)
-	{ "s",  "s",  _f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// alias for sys group (must be 2nd)
+	{ "sys","sys",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// system group
+	{ "p1", "p1", _f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// PWM 1 group
 	{ "1",  "1",  _f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// motor groups
 	{ "2",  "2",  _f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },
 	{ "3",  "3",  _f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },
@@ -909,7 +909,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 // *** REMEMBER TO UPDATE CMD_COUNT_GROUPS (BELOW) IF YOU CHANGE THE GROUPS ****
 };
 #define CMD_INDEX_MAX (sizeof cfgArray / sizeof(struct cfgItem))
-#define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"	// used by cmd_is_group()
+#define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59,p1"	// used by cmd_is_group()
 //#define GROUP_PREFIXES	"sys,s,x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59,pos,mpo"
 
 // hack alert. Find a better way to do this
@@ -947,10 +947,6 @@ static uint8_t _get_id(cmdObj *cmd)
  * _print_sr() - run status report
  * _set_sr()   - set status report specification
  * _set_si()   - set status report interval
- *
- *	Note: _set_sr() is called during initialization and during reset when 
- *	there's actually nothing to do. So it rejects all get requests except 
- *	those where cmd->type == true and cmd->value == true.
  */
 static uint8_t _get_sr(cmdObj *cmd)
 {
@@ -968,11 +964,9 @@ static uint8_t _set_sr(cmdObj *cmd)
 	memset(cfg.status_report_spec, -1 , sizeof(cfg.status_report_spec));
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
-		if ((cmd->type == true) && (cmd->value == true)) { // see function header note ++++++++++++++++++++++++
-			cfg.status_report_spec[i] = cmd->index;
-			cmd->value = cmd->index;	// you want to persist the index as the value
-			cmd_write_NVM_value(cmd);	// persist the value
-		}
+		cfg.status_report_spec[i] = cmd->index;
+		cmd->value = cmd->index;	// you want to persist the index as the value
+		cmd_write_NVM_value(cmd);	// persist the value
 	}
 	return (TG_OK);
 }
@@ -1385,18 +1379,6 @@ uint8_t cfg_baud_rate_callback(void)
  *****************************************************************************
  *****************************************************************************/
 
-/* _dont_initialize() - replaces this:
- *	if (strstr(DONT_INITIALIZE, cmd_get_token(cmd.index, cmd.token)) != NULL) continue;
- *	See config.h for DONT_INITIALIZE string
- */
- /*
-static uint8_t _dont_initialize(cmdObj *cmd) 
-{
-	if (strstr("st", cmd->token) != NULL) return (false);
-	if (strstr(DONT_INITIALIZE, cmd->token) != NULL) return (true);
-	return (false);
-}
-*/
 /****************************************************************************
  * cfg_init() - called once on system init
  *
@@ -1411,19 +1393,13 @@ void cfg_init()
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
 	cmd_clear_list();				// setup the cmd object lists. Do this first.
 	cfg.comm_mode = TG_JSON_MODE;	// initial value until EEPROM is read
-//	uint8_t flags;
 
 #ifdef __DISABLE_EEPROM_INIT		// cutout for debug simulation
 
 	// Apply the hard-coded default values from settings.h and exit
 	for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
 		cmd_get_token(cmd.index, cmd.token);
-
-//		if (_dont_initialize(&cmd) == true) continue; ++++++++++++++++++++++++++++++++++++
-//		flags = pgm_read_byte(&cfgArray[cmd.index].flags);
-//		if (!(flags && F_INITIALIZE)) continue;
 		if (!(pgm_read_byte(&cfgArray[cmd.index].flags) && F_INITIALIZE)) continue;	// don't initialize
-
 		cmd.value = (double)pgm_read_float(&cfgArray[cmd.index].def_value);
 		cmd_set(&cmd);
 	}
@@ -1439,9 +1415,6 @@ void cfg_init()
 		for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
 			cmd_read_NVM_value(&cmd);
 			cmd_get_token(cmd.index, cmd.token);
-//			if (_dont_initialize(&cmd) == true) continue; +++++++++++++++++++++++++++++++++++
-//			flags = pgm_read_byte(&cfgArray[cmd.index].flags);
-//			if (!(flags && F_INITIALIZE)) continue;
 			if (!(pgm_read_byte(&cfgArray[cmd.index].flags) && F_INITIALIZE)) continue;	// don't initialize
 			cmd_set(&cmd);
 			cmd_persist(&cmd);
@@ -1469,7 +1442,6 @@ static uint8_t _set_defa(cmdObj *cmd)
 
 	for (cmd->index=0; _cmd_index_is_single(cmd->index); cmd->index++) {
 		cmd_get_token(cmd->index, cmd->token);
-//		if (_dont_initialize(cmd) == true) continue; ++++++++++++++++++++++++++++++++++++++
 		if (!(pgm_read_byte(&cfgArray[cmd->index].flags) && F_INITIALIZE)) continue;	// don't initialize
 		cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
 		if (cmd_set(cmd) == TG_NOOP) continue;
@@ -1595,7 +1567,6 @@ void cmd_formatted_print(cmdObj *cmd)
 void cmd_persist(cmdObj *cmd)
 {
 	if ((cmd->index < 0) || (_cmd_index_is_single(cmd->index) == false)) return;
-//	if (strstr(DONT_PERSIST, cmd->token) != NULL) return; +++++++++++++++++++++++++++++
 	if (!(pgm_read_byte(&cfgArray[cmd->index].flags) && F_PERSIST)) return;
 	cmd_write_NVM_value(cmd);
 }
@@ -2010,6 +1981,12 @@ static uint8_t _do_all(cmdObj *cmd)		// print all parameters
 	_do_offsets(cmd);
 	_do_motors(cmd);
 	_do_axes(cmd);
+
+	// print PWM group
+	strcpy(cmd->token,"p1");
+	_get_grp(cmd);
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+
 	return (TG_COMPLETE);
 }
 

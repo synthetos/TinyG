@@ -35,14 +35,13 @@
 
 #define INDEX_T int16_t				// use this if there are  > 127 indexed objects
 //#define INDEX_T int8_t			// use this if there are < 127 indexed objects
-#define NO_INDEX	-1				// defined as no match
-
-// TRY THIS: ++++++++++++++++++++++++++++++++++++++
+#define NO_INDEX -1					// defined as no match
+//alternate
 //#define INDEX_T uint8_t				// use this if there are < 255 indexed objects
-//#define NO_INDEX	0xFF			// defined as no match
+//#define NO_INDEX 0xFF				// defined as no match
 
 #define CMD_GROUP_LEN 3				// max length of group prefix
-#define CMD_TOKEN_LEN 4				// mnemonic token string
+#define CMD_TOKEN_LEN 5				// mnemonic token string
 #define CMD_STRING_LEN 64			// original value string or value as a string
 #define CMD_FORMAT_LEN 64			// print formatting string
 
@@ -104,12 +103,6 @@
 
 #define NVM_VALUE_LEN 4				// NVM value length (double, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
-
-// Here are all the exceptions to the display and config rules, as neat little lists
-//#define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
-//#define DONT_INITIALIZE "gc,sr,help,test,defa,baud"	// commands that should not be initialized
-//#define DONT_PERSIST	"gc,help,test,defa"			// commands that should not be persisted
-//See settings.h for SR_DEFAULTS
 
 #define IGNORE_OFF 0				// accept either CR or LF as termination on RX text line
 #define IGNORE_CR 1					// ignore CR on RX
@@ -240,15 +233,15 @@ struct cfgMotorParameters {
 
 struct cfgPWMParameters {
   	double frequency;				// base frequency for PWM driver, in Hz
-	double cw_speed_lo;             // M03 minimum spindle speed [0..N]
-    double cw_speed_hi;             // maximum spindle speed
-    double cw_phase_lo;             // pwm phase at minimum spindle speed, clamped [0..1]
-    double cw_phase_hi;             // pwm phase at maximum spindle speed, clamped [0..1]
-	double ccw_speed_lo;            // M04 for ccw settings
-    double ccw_speed_hi;
-    double ccw_phase_lo;
-    double ccw_phase_hi;
-    double phase_off;               // M05 pwm phase when spindle is disabled
+	double cw_speed_lo;             // minimum clockwise spindle speed [0..N]
+    double cw_speed_hi;             // maximum clockwise spindle speed
+    double cw_phase_lo;             // pwm phase at minimum CW spindle speed, clamped [0..1]
+    double cw_phase_hi;             // pwm phase at maximum CW spindle speed, clamped [0..1]
+	double ccw_speed_lo;            // minimum counter-clockwise spindle speed [0..N]
+    double ccw_speed_hi;			// maximum counter-clockwise spindle speed
+    double ccw_phase_lo;			// pwm phase at minimum CCW spindle speed, clamped [0..1]
+    double ccw_phase_hi;			// pwm phase at maximum CCW spindle speed, clamped
+    double phase_off;               // pwm phase when spindle is disabled
 };
 
 struct cfgParameters {
@@ -302,7 +295,7 @@ struct cfgParameters cfg; 			// declared in the header to make it global
 									// e.g: CFG(X_AXIS).steps_per_mm
 
 /* unit test setup */
-//#define __UNIT_TEST_CONFIG		// uncomment to enable config unit tests
+#define __UNIT_TEST_CONFIG		// uncomment to enable config unit tests
 #ifdef __UNIT_TEST_CONFIG
 void cfg_unit_tests(void);
 #define	CONFIG_UNITS cfg_unit_tests();

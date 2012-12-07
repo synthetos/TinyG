@@ -210,26 +210,6 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	if ((cmd->index = cmd_get_index(cmd->token)) == NO_INDEX) { return (TG_UNRECOGNIZED_COMMAND);}
 	*pstr = ++tmp;
 
-/*
-	// copy the token by itself or with a group prefix if it's a prefixed group
-//	if (strstr(GROUP_PREFIXES, group) == NULL) {	+++++++++++++++++++++++++++++++++
-	if (cmd_is_group(group) == false) {
-		strncpy(cmd->string, *pstr, CMD_STRING_LEN);// copy name from string
-	} else {
-		strncpy(cmd->string, group, CMD_GROUP_LEN);	// prepend the group
-		strncpy(&cmd->string[strlen(group)], *pstr, CMD_STRING_LEN);// cat name to group prefix
-	}
-
-	// get the index or return if the token / friendly_name is invalid
-	if ((cmd->index = cmd_get_index(cmd->string)) == NO_INDEX) { return (TG_UNRECOGNIZED_COMMAND);}
-	cmd_get_token(cmd->index, cmd->token);
-	if (group[0] != NUL) {							// strip group prefix if this is a group
-		strncpy(cmd->token, &cmd->string[strlen(group)], CMD_TOKEN_LEN);
-		strncpy(cmd->group, group, CMD_GROUP_LEN);	// propagate group token to this child
-	}
-	*pstr = ++tmp;
-*/
-
 	// --- Process value part ---
 	if ((*pstr = strchr(*pstr, ':')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	(*pstr)++;									// advance to start of value field

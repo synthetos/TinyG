@@ -1575,9 +1575,9 @@ uint8_t mp_plan_hold_callback()
 	// First, replan mr to minimum (but non-zero) exit velocity
 
 	printf("Feedhold case 2 [%d]\n", cm.hold_state); 			  //+++++++++++++++++++++
-	mp_dump_runtime_state();	// turn on __DEBUG if you need this +++++++++++++++++++++
-	_dump_plan_buffer(bp); 		// turn on __DEBUG if you need this +++++++++++++++++++++
-	_dump_plan_buffer(bp->nx);	// turn on __DEBUG if you need this +++++++++++++++++++++
+//	mp_dump_runtime_state();	// turn on __DEBUG if you need this +++++++++++++++++++++
+//	_dump_plan_buffer(bp); 		// turn on __DEBUG if you need this +++++++++++++++++++++
+//	_dump_plan_buffer(bp->nx);	// turn on __DEBUG if you need this +++++++++++++++++++++
 
 	mr.move_state = MOVE_STATE_TAIL;
 	mr.section_state = MOVE_STATE_NEW;
