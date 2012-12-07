@@ -1809,7 +1809,9 @@ INDEX_T cmd_get_index(const char *str)
 		if (tmp != str[2]) continue;												// 3rd character mismatch
 		if ((tmp = (char)pgm_read_byte(&cfgArray[i].token[3])) == NUL) return(i);	// three character match
 		if (tmp != str[3]) continue;												// 4th character mismatch
-		return (i);																	// four character match
+		if ((tmp = (char)pgm_read_byte(&cfgArray[i].token[4])) == NUL) return(i);	// four character match
+		if (tmp != str[4]) continue;												// 5th character mismatch
+		return (i);																	// five character match
 	}
 	return (NO_INDEX);	// no match
 }
@@ -1915,6 +1917,7 @@ static uint8_t _get_grp(cmdObj *cmd)
 		if (strstr(parent_group, child_group) == parent_group) {
 			(++cmd)->index = i;
 			cmd_get_cmdObj(cmd);
+			strcpy(cmd->group, parent_group);
 			if (strstr(child_group, "sys") != child_group) { // strip group prefixes from token
 				strncpy(cmd->token, &cmd->token[strlen(child_group)], CMD_TOKEN_LEN+1);
 			}
