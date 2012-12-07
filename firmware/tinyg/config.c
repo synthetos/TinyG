@@ -614,7 +614,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	// grp  token  flags format*, print_func, get_func, set_func  target for get/set,   default value
 	{ "sys","fb",  _fip, fmt_fb, _print_dbl, _get_dbl, _set_nul, (double *)&tg.build,   TINYG_BUILD_NUMBER }, // MUST BE FIRST!
 	{ "sys","fv",  _fip, fmt_fv, _print_dbl, _get_dbl, _set_nul, (double *)&tg.version, TINYG_VERSION_NUMBER },
-	{ "nul","id",  _fip, fmt_id, _print_int, _get_id,  _set_nul, (double *)&tg.null, 0},	// device ID (signature)
+	{ "nul","id",  _f00, fmt_id, _print_int, _get_id,  _set_nul, (double *)&tg.null, 0},	// device ID (signature)
 
 	// dynamic model attributes for reporting puropses (see also G92 offsets)
 	{ "sr", "line",_fin, fmt_line,_print_int, _get_line,_set_int, (double *)&gm.linenum,0 },// line number - gets runtime line number
@@ -1395,7 +1395,6 @@ void cfg_init()
 	cfg.comm_mode = TG_JSON_MODE;	// initial value until EEPROM is read
 
 #ifdef __DISABLE_EEPROM_INIT		// cutout for debug simulation
-
 	// Apply the hard-coded default values from settings.h and exit
 	for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
 		cmd_get_token(cmd.index, cmd.token);
@@ -1415,7 +1414,8 @@ void cfg_init()
 		for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
 			cmd_read_NVM_value(&cmd);
 			cmd_get_token(cmd.index, cmd.token);
-			if (!(pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE)) continue;	// don't initialize
+//			if (!(pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE)) continue;	// don't initialize
+			if ((pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE) == false) continue;	// don't initialize
 			cmd_set(&cmd);
 			cmd_persist(&cmd);
 		}
@@ -1442,7 +1442,8 @@ static uint8_t _set_defa(cmdObj *cmd)
 
 	for (cmd->index=0; _cmd_index_is_single(cmd->index); cmd->index++) {
 		cmd_get_token(cmd->index, cmd->token);
-		if (!(pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE)) continue;	// don't initialize
+		if ((pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) == false) continue;	// don't initialize
+//		if (!(pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE)) continue;	// don't initialize
 		cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
 		cmd_set(cmd);
 		cmd_persist(cmd);

@@ -122,6 +122,15 @@ void tg_application_reset(void)
 	PMIC_EnableLowLevel();
 	sei();					// enable global interrupts
 	tg_print_system_ready_message();// (LAST) announce system is ready
+
+	// readout ++++++++++++++++++++++++++++++++++++++++++++++++
+	cmdObj cmd;
+	for (uint8_t i=0; i<12; i++) {
+		cmd_read_NVM_value(&cmd);
+		cmd_get_token(cmd.index, cmd.token);
+		printf("%s:%f\n", cmd.token, cmd.value);
+	}
+
 }
 
 static void _tg_unit_tests(void) // uncomment __UNITS... line in .h file to enable unit tests

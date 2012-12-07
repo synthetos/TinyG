@@ -437,27 +437,35 @@ static void _prompt_error(uint8_t status, char *buf)
  * Messages are collected in this one place to manage alternate display options
  * such as text mode or JSON mode.
  */
-
+/*
 static const char msg_ap00[] PROGMEM = "<null message>";	// in case caller didn't provide a message #
 static const char msg_ap01[] PROGMEM = "Loading configs from EEPROM";
 
 PGM_P const msgApplicationMessage[] PROGMEM = {
 	msg_ap00, msg_ap01
 };
-
+*/
 void tg_print_message(char *msg)
 {
 	cmd_add_string("msg", msg);
 	cmd_print_list(TG_OK, TEXT_INLINE_VALUES);
 }
-
+/*
+void tg_print_message_value(char *msg, double value)
+{
+	cmd_add_string("msg", msg);
+	cmd_add_float("v", value);
+	cmd_print_list(TG_OK, TEXT_INLINE_VALUES);
+}
+*/
+/*
 void tg_print_message_number(uint8_t msgnum) 
 {
 	char msg[APPLICATION_MESSAGE_LEN];
 	strncpy_P(msg,(PGM_P)pgm_read_word(&msgApplicationMessage[msgnum]), APPLICATION_MESSAGE_LEN);
 	tg_print_message(msg);
 }
-
+*/
 void tg_print_loading_configs_message(void)
 {
 	cmd_add_token("fv");
