@@ -1399,7 +1399,7 @@ void cfg_init()
 	// Apply the hard-coded default values from settings.h and exit
 	for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
 		cmd_get_token(cmd.index, cmd.token);
-		if (!(pgm_read_byte(&cfgArray[cmd.index].flags) && F_INITIALIZE)) continue;	// don't initialize
+		if (!(pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE)) continue;	// don't initialize
 		cmd.value = (double)pgm_read_float(&cfgArray[cmd.index].def_value);
 		cmd_set(&cmd);
 	}
@@ -1410,12 +1410,12 @@ void cfg_init()
 	cmd.index = 0;					// this will read the first record in NVM
 	cmd_read_NVM_value(&cmd);
 
-	if (fp_EQ(cmd.value,tg.build)) { // Case (1) NVM is set up and current revision. Load config from NVM
+	if (fp_EQ(cmd.value, tg.build)) { // Case (1) NVM is set up and current revision. Load config from NVM
 		tg_print_loading_configs_message();
 		for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
 			cmd_read_NVM_value(&cmd);
 			cmd_get_token(cmd.index, cmd.token);
-			if (!(pgm_read_byte(&cfgArray[cmd.index].flags) && F_INITIALIZE)) continue;	// don't initialize
+			if (!(pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE)) continue;	// don't initialize
 			cmd_set(&cmd);
 			cmd_persist(&cmd);
 		}
@@ -1442,9 +1442,9 @@ static uint8_t _set_defa(cmdObj *cmd)
 
 	for (cmd->index=0; _cmd_index_is_single(cmd->index); cmd->index++) {
 		cmd_get_token(cmd->index, cmd->token);
-		if (!(pgm_read_byte(&cfgArray[cmd->index].flags) && F_INITIALIZE)) continue;	// don't initialize
+		if (!(pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE)) continue;	// don't initialize
 		cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
-		if (cmd_set(cmd) == TG_NOOP) continue;
+		cmd_set(cmd);
 		cmd_persist(cmd);
 	}
 	return (TG_OK);
@@ -1567,7 +1567,7 @@ void cmd_formatted_print(cmdObj *cmd)
 void cmd_persist(cmdObj *cmd)
 {
 	if ((cmd->index < 0) || (_cmd_index_is_single(cmd->index) == false)) return;
-	if (!(pgm_read_byte(&cfgArray[cmd->index].flags) && F_PERSIST)) return;
+	if (!(pgm_read_byte(&cfgArray[cmd->index].flags) & F_PERSIST)) return;
 	cmd_write_NVM_value(cmd);
 }
 
