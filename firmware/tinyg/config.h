@@ -33,17 +33,18 @@
 
 // Choose one: This sets the index size into the cmdArray
 
-#define INDEX_T int16_t				// use this if there are  > 127 indexed objects
+//#define INDEX_T int16_t				// use this if there are  > 127 indexed objects
 //#define INDEX_T int8_t			// use this if there are < 127 indexed objects
-#define NO_INDEX -1					// defined as no match
+//#define NO_INDEX -1					// defined as no match
 //alternate
-//#define INDEX_T uint8_t				// use this if there are < 255 indexed objects
-//#define NO_INDEX 0xFF				// defined as no match
+#define INDEX_T uint8_t				// use this if there are < 255 indexed objects
+#define NO_INDEX 0xFF				// defined as no match
 
 #define CMD_GROUP_LEN 3				// max length of group prefix
 #define CMD_TOKEN_LEN 5				// mnemonic token string
 #define CMD_STRING_LEN 64			// original value string or value as a string
 #define CMD_FORMAT_LEN 64			// print formatting string
+#define CMD_STATUS_REPORT_LEN 20	// number of status report persistence elements - see cfgArray
 
 /**** cmdObj lists ****
  *
@@ -95,7 +96,7 @@
 
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 #define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_FOOTER_LEN)
-#define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS	// max elements in a status report
+//#define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS	// max elements in a status report
 
 #define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
 #define CMD_STRING_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN + CMD_FORMAT_LEN +3)
@@ -168,11 +169,10 @@ cmdObj cmd_footer[CMD_FOOTER_LEN];	// JSON footer element
  * Global Scope Functions
  */
 
-#define ASSERT_CMD_INDEX(a) if ((cmd->index < 0) || (cmd->index >= CMD_INDEX_MAX)) return (a);
-
 void cfg_init(void);
 uint8_t cfg_text_parser(char *str);
 uint8_t cfg_baud_rate_callback(void);
+void cfg_preset(void);
 
 uint8_t cmd_get(cmdObj *cmd);			// main entry point for GETs
 uint8_t cmd_set(cmdObj *cmd);			// main entry point for SETs
@@ -280,7 +280,7 @@ struct cfgParameters {
 
 	// status report configs
 	uint32_t status_report_interval;// in MS. set non-zero to enable
-	INDEX_T status_report_spec[CMD_STATUS_REPORT_LEN];
+	INDEX_T status_report_list[CMD_STATUS_REPORT_LEN];
 
 	// coordinate systems and offsets
 	double offset[COORDS+1][AXES];	// absolute + G54,G55,G56,G57,G58,G59

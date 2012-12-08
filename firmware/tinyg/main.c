@@ -104,6 +104,7 @@ void tg_system_reset(void)
 
 	PMIC_EnableMediumLevel();// enable TX interrupts for init reporting 
 	sei();					// enable global interrupts
+//	cfg_preset();	//+++++++++++++++++++++++++++++++
 	cfg_init();				// (10) get config record from eeprom (reqs xio)
 	gpio_init();			// (7) switches and parallel IO
 }
@@ -124,13 +125,12 @@ void tg_application_reset(void)
 	tg_print_system_ready_message();// (LAST) announce system is ready
 
 	// readout ++++++++++++++++++++++++++++++++++++++++++++++++
-	cmdObj cmd;
-	for (uint8_t i=0; i<12; i++) {
-		cmd_read_NVM_value(&cmd);
-		cmd_get_token(cmd.index, cmd.token);
-		printf("%s:%f\n", cmd.token, cmd.value);
-	}
-
+//	cmdObj cmd;
+//	for (cmd.index=0; cmd.index<12; cmd.index++) {
+//		cmd_read_NVM_value(&cmd);
+//		cmd_get_token(cmd.index, cmd.token);
+//		printf("%s:%f\n", cmd.token, cmd.value);
+//	}
 }
 
 static void _tg_unit_tests(void) // uncomment __UNITS... line in .h file to enable unit tests

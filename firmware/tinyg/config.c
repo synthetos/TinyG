@@ -162,6 +162,7 @@ static void _print_lin(cmdObj *cmd);	// print linear values
 static void _print_rot(cmdObj *cmd);	// print rotary values
 
 static uint8_t _cmd_index_is_single(uint8_t index);
+static uint8_t _cmd_index_lt_groups(uint8_t index);
 static uint8_t _cmd_index_is_group(uint8_t index);
 static uint8_t _cmd_index_is_uber_group(uint8_t index);
 
@@ -853,26 +854,27 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "g92","g92c",_fin, fmt_g92c,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[C], 0 },
 
 	// Persistence for status report - must be in sequence
-	{ "srs","sr00",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[0],0 },
-	{ "srs","sr01",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[1],0 },
-	{ "srs","sr02",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[2],0 },
-	{ "srs","sr03",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[3],0 },
-	{ "srs","sr04",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[4],0 },
-	{ "srs","sr05",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[5],0 },
-	{ "srs","sr06",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[6],0 },
-	{ "srs","sr07",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[7],0 },
-	{ "srs","sr08",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[8],0 },
-	{ "srs","sr09",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[9],0 },
-	{ "srs","sr10",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[10],0 },
-	{ "srs","sr11",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[11],0 },
-	{ "srs","sr12",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[12],0 },
-	{ "srs","sr13",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[13],0 },
-	{ "srs","sr14",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[14],0 },
-	{ "srs","sr15",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[15],0 },
-	{ "srs","sr16",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[16],0 },
-	{ "srs","sr17",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[17],0 },
-	{ "srs","sr18",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[18],0 },
-	{ "srs","sr19",_fip, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_spec[19],0 },
+	// Count must agree with CMD_COUNT_STATUS in config.h
+	{ "sl","sl00",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[0],0 },
+	{ "sl","sl01",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[1],0 },
+	{ "sl","sl02",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[2],0 },
+	{ "sl","sl03",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[3],0 },
+	{ "sl","sl04",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[4],0 },
+	{ "sl","sl05",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[5],0 },
+	{ "sl","sl06",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[6],0 },
+	{ "sl","sl07",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[7],0 },
+	{ "sl","sl08",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[8],0 },
+	{ "sl","sl09",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[9],0 },
+	{ "sl","sl10",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[10],0 },
+	{ "sl","sl11",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[11],0 },
+	{ "sl","sl12",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[12],0 },
+	{ "sl","sl13",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[13],0 },
+	{ "sl","sl14",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[14],0 },
+	{ "sl","sl15",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[15],0 },
+	{ "sl","sl16",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[16],0 },
+	{ "sl","sl17",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[17],0 },
+	{ "sl","sl18",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[18],0 },
+	{ "sl","sl19",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[19],0 },
 	
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	{ "sys","sys",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// system group
@@ -908,28 +910,36 @@ struct cfgItem const cfgArray[] PROGMEM = {
 
 // *** REMEMBER TO UPDATE CMD_COUNT_GROUPS (BELOW) IF YOU CHANGE THE GROUPS ****
 };
-#define CMD_INDEX_MAX (sizeof cfgArray / sizeof(struct cfgItem))
 #define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59,p1"	// used by cmd_is_group()
 //#define GROUP_PREFIXES	"sys,s,x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59,pos,mpo"
 
 // hack alert. Find a better way to do this
-#define CMD_COUNT_STATUS 20		// number of status report persistence elements - see final array [index]
-#define CMD_COUNT_GROUPS 22		// count of simple groups
-#define CMD_COUNT_UBER_GROUPS 4 // count of uber-groups
+#define CMD_INDEX_MAX (sizeof cfgArray / sizeof(struct cfgItem))
+#define CMD_COUNT_GROUPS 		22								// count of simple groups
+#define CMD_COUNT_UBER_GROUPS 	4 								// count of uber-groups
 
-#define CMD_INDEX_END_SINGLES (CMD_INDEX_MAX - CMD_COUNT_STATUS - CMD_COUNT_GROUPS - CMD_COUNT_UBER_GROUPS)
-#define CMD_INDEX_START_GROUPS (CMD_INDEX_MAX - CMD_COUNT_GROUPS - CMD_COUNT_UBER_GROUPS)
+#define CMD_INDEX_END_SINGLES		(CMD_INDEX_MAX - CMD_COUNT_UBER_GROUPS - CMD_COUNT_GROUPS - CMD_STATUS_REPORT_LEN)
+#define CMD_INDEX_START_GROUPS		(CMD_INDEX_MAX - CMD_COUNT_UBER_GROUPS - CMD_COUNT_GROUPS)
 #define CMD_INDEX_START_UBER_GROUPS (CMD_INDEX_MAX - CMD_COUNT_UBER_GROUPS)
 
 // Evaluators for the above:
-static uint8_t _cmd_index_is_single(uint8_t index) {
-	if (index <= CMD_INDEX_END_SINGLES) { return (true);} return (false);
+static uint8_t _cmd_index_is_single(uint8_t index)
+{
+	return ((index <= CMD_INDEX_END_SINGLES) ? true : false);
 }
-static uint8_t _cmd_index_is_group(uint8_t index) {
-	if ((index >= CMD_INDEX_START_GROUPS) && (index < CMD_INDEX_START_UBER_GROUPS)) { return (true);} return (false);
+
+static uint8_t _cmd_index_lt_groups(uint8_t index)
+{
+	return ((index <= CMD_INDEX_START_GROUPS) ? true : false);
 }
-static uint8_t _cmd_index_is_uber_group(uint8_t index) {
-	if (index >= CMD_INDEX_START_UBER_GROUPS) { return (true);} return (false);
+
+static uint8_t _cmd_index_is_group(uint8_t index) 
+{
+	return (((index >= CMD_INDEX_START_GROUPS) && (index < CMD_INDEX_START_UBER_GROUPS)) ? true : false);
+}
+static uint8_t _cmd_index_is_uber_group(uint8_t index) 
+{
+	return ((index >= CMD_INDEX_START_UBER_GROUPS) ? true : false);
 }
 
 /**** DEVICE ID ****
@@ -961,12 +971,12 @@ static void _print_sr(cmdObj *cmd)
 
 static uint8_t _set_sr(cmdObj *cmd)
 {
-	memset(cfg.status_report_spec, -1 , sizeof(cfg.status_report_spec));
+	memset(cfg.status_report_list, 0 , sizeof(cfg.status_report_list));
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
-		cfg.status_report_spec[i] = cmd->index;
+		cfg.status_report_list[i] = cmd->index;
 		cmd->value = cmd->index;	// you want to persist the index as the value
-		cmd_write_NVM_value(cmd);	// persist the value
+		cmd_persist(cmd);
 	}
 	return (TG_OK);
 }
@@ -1162,7 +1172,7 @@ static void _print_pos(cmdObj *cmd)
 	if (axis < A) { 
 		units = cm_get_units_mode();
 	}
-	fprintf(stderr, _get_format(cmd->index,format), cmd->value, (PGM_P)pgm_read_word(&msg_units[units]));
+	fprintf(stderr, _get_format(cmd->index,format), cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
 }
 
 /**** GCODE FUNCTIONS ****************************************/
@@ -1383,8 +1393,8 @@ uint8_t cfg_baud_rate_callback(void)
  * cfg_init() - called once on system init
  *
  * Will perform one of 2 actions:
- *	(1) if NVM is set up and at current config version: use NVM data for config
- *	(2) if NVM is set up or out-of-rev: load RAM and NVM with hardwired default settings
+ *	(1) if NVM is set up or out-of-rev: load RAM and NVM with hardwired default settings
+ *	(2) if NVM is set up and at current config version: use NVM data for config
  */
 
 void cfg_init()
@@ -1393,38 +1403,29 @@ void cfg_init()
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
 	cmd_clear_list();				// setup the cmd object lists. Do this first.
 	cfg.comm_mode = TG_JSON_MODE;	// initial value until EEPROM is read
-
-#ifdef __DISABLE_EEPROM_INIT		// cutout for debug simulation
-	// Apply the hard-coded default values from settings.h and exit
-	for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
-		cmd_get_token(cmd.index, cmd.token);
-		if (!(pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE)) continue;	// don't initialize
-		cmd.value = (double)pgm_read_float(&cfgArray[cmd.index].def_value);
-		cmd_set(&cmd);
-	}
-	rpt_init_status_report(false);	// requires special treatment (persist = false)
-#else
 	cfg.nvm_base_addr = NVM_BASE_ADDR;
 	cfg.nvm_profile_base = cfg.nvm_base_addr;
 	cmd.index = 0;					// this will read the first record in NVM
 	cmd_read_NVM_value(&cmd);
 
-	if (fp_EQ(cmd.value, tg.build)) { // Case (1) NVM is set up and current revision. Load config from NVM
+	// Case (1) NVM is not setup or not in revision
+	if (cmd.value != tg.build) {
+		cmd.value = true;
+		_set_defa(&cmd);			// this subroutine called from here and from the $defa=1 command
+
+	// Case (2) NVM is setup and in revision
+	} else {
 		tg_print_loading_configs_message();
 		for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
-			cmd_read_NVM_value(&cmd);
-			cmd_get_token(cmd.index, cmd.token);
-//			if (!(pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE)) continue;	// don't initialize
-			if ((pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE) == false) continue;	// don't initialize
-			cmd_set(&cmd);
-			cmd_persist(&cmd);
+			if (pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE) {
+				cmd_get_token(cmd.index, cmd.token);
+				cmd_read_NVM_value(&cmd);
+				cmd_set(&cmd);
+				cmd_persist(&cmd);
+			}
 		}
-	} else {  // Case (2) NVM is out-of-rev or not set up. Use the defaults and set up NVM
-		cmd.value = true;
-		_set_defa(&cmd);// this subroutune runs from here and also from the $defa=1 command
 	}
 	rpt_init_status_report(true);// requires special treatment (persist = true)
-#endif
 }
 
 /*
@@ -1441,17 +1442,68 @@ static uint8_t _set_defa(cmdObj *cmd)
 	tg_print_initializing_message();
 
 	for (cmd->index=0; _cmd_index_is_single(cmd->index); cmd->index++) {
-		cmd_get_token(cmd->index, cmd->token);
-		if ((pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) == false) continue;	// don't initialize
-//		if (!(pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE)) continue;	// don't initialize
-		cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
-		cmd_set(cmd);
-		cmd_persist(cmd);
+		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
+			cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
+			cmd_get_token(cmd->index, cmd->token);
+			cmd_set(cmd);
+			cmd_persist(cmd);
+		}
 	}
 	return (TG_OK);
 }
 
+/*
+#ifdef __DISABLE_EEPROM_INIT		// cutout for debug simulation
+	// Apply the default values from the settings.h profile and exit w/o persisting
+	for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
+		if (pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE) {
+			cmd_get_token(cmd.index, cmd.token);
+			cmd.value = (double)pgm_read_float(&cfgArray[cmd.index].def_value);
+			cmd_set(&cmd);
+		}
+	}
+	rpt_init_status_report(false);	// requires special treatment (persist = false)
+#else
+	cfg.nvm_base_addr = NVM_BASE_ADDR;
+	cfg.nvm_profile_base = cfg.nvm_base_addr;
+	cmd.index = 0;					// this will read the first record in NVM
+	cmd_read_NVM_value(&cmd);
 
+	// Case (1) NVM is not setup or not in revision
+	if (cmd.value != tg.build) {
+		cmd.value = true;
+		_set_defa(&cmd);			// this subroutine called from here and from the $defa=1 command
+
+	// Case (2) NVM is setup and in revision
+	} else {
+		tg_print_loading_configs_message();
+		for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
+			if (pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE) {
+				cmd_get_token(cmd.index, cmd.token);
+				cmd_read_NVM_value(&cmd);
+				cmd_set(&cmd);
+				cmd_persist(&cmd);
+			}
+		}
+	}
+//	rpt_init_status_report(true);// requires special treatment (persist = true)
+#endif
+}
+*/
+/*
+void cfg_preset()
+{
+	cmdObj *cmd = cmd_body;
+	for (cmd->index=0; _cmd_index_is_single(cmd->index); cmd->index++) {
+		cmd_get_token(cmd->index, cmd->token);
+		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
+			cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
+			cmd_set(cmd);
+			cmd_persist(cmd);
+		}
+	}
+}
+*/
 /****************************************************************************
  * cfg_text_parser() - update a config setting from a text block (text mode)
  * _parse_config_string() - parse a text-mode command line
@@ -1525,7 +1577,7 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 }
 
 /****************************************************************************/
-/**** CMD FUNCTIONS *********************************************************/
+/**** CMD FUNCTION ENTRY POINTS *********************************************/
 /****************************************************************************/
 /* These are the primary access points to cmd functions
  * cmd_set() - Write a value or invoke a function - operates on single valued elements or groups
@@ -1534,7 +1586,12 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
  * cmd_get_cmdObj() - like cmd_get but returns cmdObj pointer instead of the value
  * cmd_formatted_print() - Output a formatted string for the value.
  * cmd_persist() - persist value to NVM. Takes special cases into account
+ *
+ * These are the gatekeeper functions that check index ranges so others don't have to
  */
+
+//#define ASSERT_CMD_INDEX(a) if ((cmd->index < 0) || (cmd->index >= CMD_INDEX_MAX)) return (a);
+#define ASSERT_CMD_INDEX(a) if (cmd->index >= CMD_INDEX_MAX) return (a);
 
 uint8_t cmd_set(cmdObj *cmd)
 {
@@ -1561,15 +1618,19 @@ uint8_t cmd_get_cmdObj(cmdObj *cmd)
 
 void cmd_formatted_print(cmdObj *cmd)
 {
-	if ((cmd->index < 0) || (cmd->index >= CMD_INDEX_MAX)) return;
+	if (cmd->index >= CMD_INDEX_MAX) return;
 	((fptrPrint)(pgm_read_word(&cfgArray[cmd->index].print)))(cmd);
 }
 
 void cmd_persist(cmdObj *cmd)
 {
-	if ((cmd->index < 0) || (_cmd_index_is_single(cmd->index) == false)) return;
-	if (!(pgm_read_byte(&cfgArray[cmd->index].flags) & F_PERSIST)) return;
-	cmd_write_NVM_value(cmd);
+#ifdef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
+	return;
+#endif
+	if (_cmd_index_lt_groups(cmd->index) == false) return;
+	if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_PERSIST) {
+		cmd_write_NVM_value(cmd);
+	}
 }
 
 /***** Generic Internal Functions *******************************************
@@ -1763,10 +1824,10 @@ static int8_t _get_motor(const INDEX_T i)
 static int8_t _get_axis(const INDEX_T i)
 {
 	char *ptr;
-	char tmp[CMD_TOKEN_LEN];
+	char tmp[CMD_TOKEN_LEN+1];
 	char axes[] = {"xyzabc"};
 
-	strcpy_P(tmp, cfgArray[i].group);
+	strcpy_P(tmp, cfgArray[i].token);
 	if ((ptr = strchr(axes, tmp[0])) == NULL) { return (-1);}
 	return (ptr - axes);
 }
@@ -1775,10 +1836,10 @@ static int8_t _get_axis(const INDEX_T i)
 static int8_t _get_pos_axis(const INDEX_T i)
 {
 	char *ptr;
-	char tmp[CMD_TOKEN_LEN];
+	char tmp[CMD_TOKEN_LEN+1];
 	char axes[] = {"xyzabc"};
 
-	strcpy_P(tmp, cfgArray[i].group);
+	strcpy_P(tmp, cfgArray[i].token);
 	if ((ptr = strchr(axes, tmp[3])) == NULL) { return (-1);}
 	return (ptr - axes);
 }
@@ -1786,11 +1847,11 @@ static int8_t _get_pos_axis(const INDEX_T i)
 
 /****************************************************************************
  * cmdObj helper functions and other low-level cmd helpers
- * cmd_get_max_index()		- utility function to return index array size				
- * cmd_get_index() 			- get index from mnenonic token
- * cmd_is_group()			- returns true if the command is a group
- * cmd_get_type()			- returns command type as a CMD_TYPE enum
- * cmd_persist_offsets()	- write any changed G54 (et al) offsets back to NVM
+ * cmd_get_max_index()	 - utility function to return index array size				
+ * cmd_get_index() 		 - get index from mnenonic token
+ * cmd_is_group()		 - returns true if the command is a group
+ * cmd_get_type()		 - returns command type as a CMD_TYPE enum
+ * cmd_persist_offsets() - write any changed G54 (et al) offsets back to NVM
  *
  *	cmd_get_index() is the most expensive routine in the whole config. It does a 
  *	linear table scan of the PROGMEM strings, which of course could be further 
@@ -1843,7 +1904,8 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
 				cmd.index = cmd_get_index(cmd.token);
 				cmd.value = cfg.offset[i][j];
-				cmd_write_NVM_value(&cmd);	// only writes changed values
+				cmd_persist(&cmd);				// only writes changed values
+//				cmd_write_NVM_value(&cmd);	
 			}
 		}
 	}
@@ -2227,46 +2289,31 @@ void _print_text_multiline_formatted()
  * cmd_read_NVM_value()	 - return value (as double) by index
  * cmd_write_NVM_value() - write to NVM by index, but only if the value has changed
  * (see 331.09 or earlier for token/value record-oriented routines)
+ *
+ *	It's the responsibility of the caller to make sure the index does not exceed range
  */
 uint8_t cmd_read_NVM_value(cmdObj *cmd)
 {
-	ASSERT_CMD_INDEX(TG_INTERNAL_ERROR);
 	int8_t nvm_byte_array[NVM_VALUE_LEN];
 	uint16_t nvm_address = cfg.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
 	(void)EEPROM_ReadBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
 	memcpy(&cmd->value, &nvm_byte_array, NVM_VALUE_LEN);
-//	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 
 uint8_t cmd_write_NVM_value(cmdObj *cmd)
 {
-	double original_value = cmd->value;
+	double tmp = cmd->value;
 	ritorno(cmd_read_NVM_value(cmd));
-	if (cmd->value != original_value) {
-		cmd->value = original_value;
+	if (cmd->value != tmp) {		// catches the isnan() case as well
+		cmd->value = tmp;
 		int8_t nvm_byte_array[NVM_VALUE_LEN];
-		memcpy(&nvm_byte_array, &original_value, NVM_VALUE_LEN);
+		memcpy(&nvm_byte_array, &tmp, NVM_VALUE_LEN);
 		uint16_t nvm_address = cfg.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
 		(void)EEPROM_WriteBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
 	}
 	return (TG_OK);
 }
-
-/*
-	ASSERT_CMD_INDEX(TG_INTERNAL_ERROR);
-	int8_t nvm_byte_array[NVM_VALUE_LEN];
-	double nvm_value;
-	uint16_t nvm_address = cfg.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
-	(void)EEPROM_ReadBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
-	memcpy(&nvm_value, &nvm_byte_array, sizeof(double));
-	if (cmd->value != nvm_value) {
-		memcpy(&nvm_byte_array, &cmd->value, sizeof(double));
-		(void)EEPROM_WriteBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
-	}
-	return(TG_OK);
-}
-*/
 
 /****************************************************************************
  ***** Config Unit Tests ****************************************************
@@ -2274,22 +2321,31 @@ uint8_t cmd_write_NVM_value(cmdObj *cmd)
 
 #ifdef __UNIT_TEST_CONFIG
 
+#define NVMwr(i,v) { cmd.index=i; cmd.value=v; cmd_write_NVM_value(&cmd);}
+#define NVMrd(i)   { cmd.index=i; cmd_read_NVM_value(&cmd); printf("%f\n",cmd.value);}
+
 void cfg_unit_tests()
 {
-//	cmdObj cmd;
 
 // NVM tests
-/*
-	strcpy(cmd.token, "fc");
-	cmd.value = 329.01;
+/*	cmdObj cmd;
+	NVMwr(0, 329.01)
+	NVMwr(1, 111.01)
+	NVMwr(2, 222.02)
+	NVMwr(3, 333.03)
+	NVMwr(4, 444.04)
+	NVMwr(10, 10.10)
+	NVMwr(100, 100.100)
+	NVMwr(479, 479.479)
 
-	cmd_write_NVM(0, &cmd);
-	cmd.value = 0;
-	cmd_read_NVM(0, &cmd);
-	cmd.value = 0;
-	cmd_read_NVM(0, &cmd);
-	cmd.nesting_level = 0;
-// 	cfg_dump_NVM(0,10,PSTR("NVM dump"));
+	NVMrd(0)
+	NVMrd(1)
+	NVMrd(2)
+	NVMrd(3)
+	NVMrd(4)
+	NVMrd(10)
+	NVMrd(100)
+	NVMrd(479)
 */
 
 // config table tests
