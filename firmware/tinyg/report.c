@@ -102,7 +102,7 @@ void rpt_init_status_report(uint8_t persist_flag)
 
 	cm.status_report_counter = cfg.status_report_interval;
 
-	cmd.index = cmd_get_index("sl00");				// set first SR persistence index
+	cmd.index = cmd_get_index("se00");				// set first SR persistence index
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
 		if (sr_defaults[i][0] == NUL) break;		// quit on first blank array entry
 		cmd.value = cmd_get_index(sr_defaults[i]);	// load the index for the SR element

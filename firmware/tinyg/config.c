@@ -650,8 +650,9 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "nul","rx",  _f00, fmt_nul, _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },	// space in RX buffer
 	{ "nul","msg", _f00, fmt_msg, _print_str, _get_nul, _set_nul, (double *)&tg.null, 0 },	// string for generic messages
 	{ "nul","test",_f00, fmt_nul, help_print_test_help,    _get_ui8, tg_test, (double *)&tg.test,0 },// prints test help screen
-	{ "nul","help",_f00, fmt_nul, help_print_config_help,  _get_nul,_set_nul, (double *)&tg.null,0 },// prints config help screen
 	{ "nul","defa",_f00, fmt_nul, help_print_defaults_help,_get_nul,_set_defa,(double *)&tg.null,0 },// prints defaults help screen
+	{ "nul","help",_f00, fmt_nul, help_print_config_help,  _get_nul,_set_nul, (double *)&tg.null,0 },// prints config help screen
+	{ "nul","h",   _f00, fmt_nul, help_print_config_help,  _get_nul,_set_nul, (double *)&tg.null,0 },
 
 	// System parameters
 	// NOTE: The ordering within the gcode defaults is important for token resolution
@@ -682,7 +683,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	// Motor parameters
 	{ "1","1ma",_fip, fmt_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ "1","1sa",_fip, fmt_1sa, _print_rot, _get_dbl ,_set_sa, (double *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
-	{ "1","1fr",_fip, fmt_1tr, _print_lin, _get_dbu ,_set_tr, (double *)&cfg.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
+	{ "1","1tr",_fip, fmt_1tr, _print_lin, _get_dbu ,_set_tr, (double *)&cfg.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
 	{ "1","1mi",_fip, fmt_1mi, _print_ui8, _get_ui8, _set_mi, (double *)&cfg.m[MOTOR_1].microsteps,	M1_MICROSTEPS },
 	{ "1","1po",_fip, fmt_1po, _print_ui8, _get_ui8, _set_po, (double *)&cfg.m[MOTOR_1].polarity,	M1_POLARITY },
 	{ "1","1pm",_fip, fmt_1pm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].power_mode,	M1_POWER_MODE },
@@ -849,29 +850,22 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "g92","g92c",_fin, fmt_g92c,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[C], 0 },
 
 	// Persistence for status report - must be in sequence
-	// Count must agree with CMD_COUNT_STATUS in config.h
-	{ "nul","sl00",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[0],0 },
-	{ "nul","sl01",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[1],0 },
-	{ "nul","sl02",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[2],0 },
-	{ "nul","sl03",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[3],0 },
-	{ "nul","sl04",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[4],0 },
-	{ "nul","sl05",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[5],0 },
-	{ "nul","sl06",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[6],0 },
-	{ "nul","sl07",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[7],0 },
-	{ "nul","sl08",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[8],0 },
-	{ "nul","sl09",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[9],0 },
-	{ "nul","sl10",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[10],0 },
-	{ "nul","sl11",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[11],0 },
-	{ "nul","sl12",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[12],0 },
-	{ "nul","sl13",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[13],0 },
-	{ "nul","sl14",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[14],0 },
-	{ "nul","sl15",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[15],0 },
-	{ "nul","sl16",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[16],0 },
-	{ "nul","sl17",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[17],0 },
-	{ "nul","sl18",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[18],0 },
-	{ "nul","sl19",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[19],0 },
+	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
+	{ "nul","se00",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[0],0 },
+	{ "nul","se01",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[1],0 },
+	{ "nul","se02",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[2],0 },
+	{ "nul","se03",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[3],0 },
+	{ "nul","se04",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[4],0 },
+	{ "nul","se05",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[5],0 },
+	{ "nul","se06",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[6],0 },
+	{ "nul","se07",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[7],0 },
+	{ "nul","se08",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[8],0 },
+	{ "nul","se09",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[9],0 },
+	{ "nul","se10",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[10],0 },
+	{ "nul","se11",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[11],0 },
 	
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
+	// *** Must agree with GROUP_PREFIXES and CMD_COUNT_GROUPS below ****
 	{ "sys","sys",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// system group
 	{ "p1", "p1", _f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// PWM 1 group
 	{ "1",  "1",  _f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// motor groups
@@ -895,33 +889,26 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "mpo","mpo",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// machine position group
 
 	// Uber-group (groups of groups, for text-mode displays only)
+	// *** Must agree with CMD_COUNT_UBER_GROUPS below ****
 	{ "m",  "m",  _f00, fmt_nul, _print_nul, _do_motors, _set_nul,(double *)&tg.null,0 },
 	{ "n",  "n",  _f00, fmt_nul, _print_nul, _do_axes,   _set_nul,(double *)&tg.null,0 },
 	{ "o",  "o",  _f00, fmt_nul, _print_nul, _do_offsets,_set_nul,(double *)&tg.null,0 },
-	{ "$",  "$",  _f00, fmt_nul, _print_nul, _do_all,    _set_nul,(double *)&tg.null,0 },
-
-	// Help display
-	{ "h",  "h",  _f00, fmt_nul, help_print_config_help, _get_nul, _set_nul,(double *)&tg.null,0 }
-
-// *** REMEMBER TO UPDATE CMD_COUNT_GROUPS (BELOW) IF YOU CHANGE THE GROUPS ****
+	{ "$",  "$",  _f00, fmt_nul, _print_nul, _do_all,    _set_nul,(double *)&tg.null,0 }
 };
-//#define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59,p1"	// used by cmd_is_group()
-#define GROUP_PREFIXES	"sys,p1,x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"	// used by cmd_is_group()
+#define GROUP_PREFIXES	"sys,p1,x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"// used by cmd_is_group()
+#define CMD_COUNT_GROUPS 		21											// count of simple groups
+#define CMD_COUNT_UBER_GROUPS 	4 											// count of uber-groups
 
-// hack alert. Find a better way to do this
 #define CMD_INDEX_MAX (sizeof cfgArray / sizeof(struct cfgItem))
-#define CMD_COUNT_GROUPS 		22								// count of simple groups
-#define CMD_COUNT_UBER_GROUPS 	4 								// count of uber-groups
-
 #define CMD_INDEX_END_SINGLES		(CMD_INDEX_MAX - CMD_COUNT_UBER_GROUPS - CMD_COUNT_GROUPS - CMD_STATUS_REPORT_LEN)
 #define CMD_INDEX_START_GROUPS		(CMD_INDEX_MAX - CMD_COUNT_UBER_GROUPS - CMD_COUNT_GROUPS)
 #define CMD_INDEX_START_UBER_GROUPS (CMD_INDEX_MAX - CMD_COUNT_UBER_GROUPS)
 
-// Evaluators for the above:
-#define _cmd_index_is_single(i) ((i <= CMD_INDEX_END_SINGLES) ? true : false)
-#define _cmd_index_lt_groups(i) ((i <= CMD_INDEX_START_GROUPS) ? true : false)
-#define _cmd_index_is_group(i) (((i >= CMD_INDEX_START_GROUPS) && (i < CMD_INDEX_START_UBER_GROUPS)) ? true : false)
-#define _cmd_index_is_uber_group(i) ((i >= CMD_INDEX_START_UBER_GROUPS) ? true : false)
+#define _index_is_single(i) ((i <= CMD_INDEX_END_SINGLES) ? true : false)	// Evaluators
+#define _index_lt_groups(i) ((i <= CMD_INDEX_START_GROUPS) ? true : false)
+#define _index_is_group(i) (((i >= CMD_INDEX_START_GROUPS) && (i < CMD_INDEX_START_UBER_GROUPS)) ? true : false)
+#define _index_is_uber(i)   ((i >= CMD_INDEX_START_UBER_GROUPS) ? true : false)
+#define _index_is_group_or_uber(i) ((i >= CMD_INDEX_START_GROUPS) ? true : false)
 
 /**** DEVICE ID ****
  * _get_id() - get device ID (signature)
@@ -1397,7 +1384,7 @@ void cfg_init()
 	// Case (2) NVM is setup and in revision
 	} else {
 		tg_print_loading_configs_message();
-		for (cmd.index=0; _cmd_index_is_single(cmd.index); cmd.index++) {
+		for (cmd.index=0; _index_is_single(cmd.index); cmd.index++) {
 			if (pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE) {
 				cmd_get_token(cmd.index, cmd.token);
 				cmd_read_NVM_value(&cmd);
@@ -1422,7 +1409,7 @@ static uint8_t _set_defa(cmdObj *cmd)
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
 	tg_print_initializing_message();
 
-	for (cmd->index=0; _cmd_index_is_single(cmd->index); cmd->index++) {
+	for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
 		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
 			cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
 			cmd_get_token(cmd->index, cmd->token);
@@ -1498,7 +1485,8 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 		return (TG_UNRECOGNIZED_COMMAND);
 	}
 	cmd_get_token(cmd->index, cmd->token);
-	if ((_cmd_index_is_group(cmd->index)) || (_cmd_index_is_uber_group(cmd->index))) {
+//	if ((_index_is_group(cmd->index)) || (_index_is_uber_group(cmd->index))) {
+	if (_index_is_group_or_uber(cmd->index)) {
 		cmd->type = TYPE_PARENT;	// indicating it's a group token
 		strncpy(cmd->group, cmd->token, CMD_TOKEN_LEN+1);	// copy group token into string field
 	}
@@ -1545,7 +1533,7 @@ void cmd_persist(cmdObj *cmd)
 #ifdef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
 	return;
 #endif
-	if (_cmd_index_lt_groups(cmd->index) == false) return;
+	if (_index_lt_groups(cmd->index) == false) return;
 	if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_PERSIST) {
 		cmd_write_NVM_value(cmd);
 	}
@@ -1557,7 +1545,7 @@ void cmd_get_cmdObj(cmdObj *cmd)
 	INDEX_T tmp = cmd->index;
 	cmd_clear_obj(cmd);
 	cmd_get_token((cmd->index = tmp), cmd->token);
-	if (_cmd_index_is_group(cmd->index)) { strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);}
+	if (_index_is_group(cmd->index)) { strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);}
 	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);
 }
 

@@ -44,7 +44,8 @@
 #define CMD_TOKEN_LEN 5				// mnemonic token string
 #define CMD_STRING_LEN 64			// original value string or value as a string
 #define CMD_FORMAT_LEN 64			// print formatting string
-#define CMD_STATUS_REPORT_LEN 20	// number of status report persistence elements - see cfgArray
+#define CMD_STATUS_REPORT_LEN 12	// max number of status report elements - see cfgArray
+									// must also line up in cfgArray, se00 - seXX
 
 /**** cmdObj lists ****
  *
