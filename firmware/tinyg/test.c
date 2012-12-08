@@ -131,9 +131,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$h\n");
 //	xio_queue_RX_string_usb("$m\n");
 //	xio_queue_RX_string_usb("$$\n");
-//	xio_queue_RX_string_usb("?\n");
+	xio_queue_RX_string_usb("?\n");
+//	xio_queue_RX_string_usb("$sr\n");
 //	xio_queue_RX_string_usb("$x\n");
-	xio_queue_RX_string_usb("$sr\n");
 //	xio_queue_RX_string_usb("\n");
 //	xio_queue_RX_string_usb("^\n");		// abort. Must comment in ^ in controller.c dispatcher
 
@@ -378,8 +378,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 /* Note: these dump routines pack a lot of characters into the USART TX buffer
  * and can kill the running instance. I'll have to figure out how to prevent that,
- * but in the mean time if you want to use them you should go into xio_usart.h and 
- * temporarily change to the following settings:
+ * but in the mean time if you might want to use them you should go into xio_usart.h 
+ * and temporarily change to the following settings:
  * 
  *	//#define BUFFER_T uint8_t		// faster, but limits buffer to 255 char max
  *	#define BUFFER_T uint16_t		// slower, but larger buffers
@@ -392,6 +392,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
  *	//#define TX_BUFFER_SIZE (BUFFER_T)1024
  *	#define TX_BUFFER_SIZE (BUFFER_T)2048
  */
+
 void dump_everything()
 {
 //	tg_dump_controller_state();
@@ -423,38 +424,5 @@ void print_vector(const char *label, double vector[], uint8_t count)
 	} 	
 	fprintf_P(stderr,PSTR("\n"));
 }
+
 #endif	// __DEBUG
-
-/*
- * segment_logger() - diagnostic function
- */
-#ifdef __SEGMENT_LOGGER
-void segment_logger(uint8_t move_state, 
-					uint32_t linenum,
-					uint32_t segments, 
-					uint32_t segment_count, 
-					double velocity,
-					double microseconds,
-//					double position_x, 
-//					double target_x,
-//					double step_x, 
-//					double move_time,
-//					double accel_time
-					)
-
-{
-	if (sl_index < SEGMENT_LOGGER_MAX) {
-		sl[sl_index].move_state = move_state;
-		sl[sl_index].linenum = linenum;
-		sl[sl_index].segments = (double)segments + (double)segment_count*0.001 + 0.0000002;
-		sl[sl_index].velocity = velocity;
-		sl[sl_index].microseconds = microseconds;
-//		sl[sl_index].position_x = position_x;
-//		sl[sl_index].target_x = target_x;
-//		sl[sl_index].step_x = step_x;
-//		sl[sl_index].move_time = move_time;
-//		sl[sl_index].accel_time = accel_time;
-		sl_index++;
-	}
-}
-#endif // __SEGMENT_LOGGER

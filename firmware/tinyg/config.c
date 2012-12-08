@@ -2192,7 +2192,7 @@ void _print_text_multiline_formatted()
 	cmdObj *cmd = cmd_body;
 
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		cmd_formatted_print(cmd);
+		if (cmd->type != TYPE_PARENT) { cmd_formatted_print(cmd);}
 		cmd = cmd->nx;
 		if (cmd->type == TYPE_EMPTY) { break;}
 	}

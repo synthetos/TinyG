@@ -1542,15 +1542,15 @@ uint8_t mp_plan_hold_callback()
 	// is the velocity of the last segment, not the one that's going to be executed next.
 	// The braking_velocity needs to be the velocity of the next segment that has not yet 
 	// been computed. In the eman time, this hack will work. 
-//	if ((braking_length > mr_available_length) && (bp->exit_velocity < EPSILON)) {
-//		braking_length = mr_available_length;
-//	}
+	if ((braking_length > mr_available_length) && (bp->exit_velocity < EPSILON)) {
+		braking_length = mr_available_length;
+	}
 
-	printf("end:%f pos:%f avail:%f brake:%f\n", mr.endpoint[X], mr.position[X], mr_available_length, braking_length);	//+++++++++++++++++++++++++++
+//	printf("end:%f pos:%f avail:%f brake:%f\n", mr.endpoint[X], mr.position[X], mr_available_length, braking_length);	//+++++++++++++++++++++++++++
 
 	// Case 1: deceleration fits entirely in mr
 	if (braking_length <= mr_available_length) {
-		printf("Feedhold case 1 [%d]\n", cm.hold_state); //+++++++++++++++++++++++
+//		printf("Feedhold case 1 [%d]\n", cm.hold_state); //+++++++++++++++++++++++
 		// set mr to a tail to perform the deceleration
 		mr.exit_velocity = 0;
 		mr.tail_length = braking_length;
@@ -1567,14 +1567,13 @@ uint8_t mp_plan_hold_callback()
 		_reset_replannable_list();				// make it replan all the blocks
 		_plan_block_list(_get_last_buffer(), &mr_flag);
 		cm.hold_state = FEEDHOLD_DECEL;			// set state to decelerate and exit
-//		printf("Feedhold case 1 exit\n"); 	//+++++++++++++++++++++++
 		return (TG_OK);
 	}
 
 	// Case 2: deceleration exceeds available length in mr buffer
 	// First, replan mr to minimum (but non-zero) exit velocity
 
-	printf("Feedhold case 2 [%d]\n", cm.hold_state); 			  //+++++++++++++++++++++
+//	printf("Feedhold case 2 [%d]\n", cm.hold_state); 			  //+++++++++++++++++++++
 //	mp_dump_runtime_state();	// turn on __DEBUG if you need this +++++++++++++++++++++
 //	_dump_plan_buffer(bp); 		// turn on __DEBUG if you need this +++++++++++++++++++++
 //	_dump_plan_buffer(bp->nx);	// turn on __DEBUG if you need this +++++++++++++++++++++
