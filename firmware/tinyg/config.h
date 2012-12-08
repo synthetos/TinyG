@@ -96,8 +96,6 @@
 
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 #define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_FOOTER_LEN)
-//#define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS	// max elements in a status report
-
 #define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
 #define CMD_STRING_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN + CMD_FORMAT_LEN +3)
 #define JSON_OUTPUT_STRING_MAX (OUTPUT_BUFFER_LEN)
@@ -172,13 +170,12 @@ cmdObj cmd_footer[CMD_FOOTER_LEN];	// JSON footer element
 void cfg_init(void);
 uint8_t cfg_text_parser(char *str);
 uint8_t cfg_baud_rate_callback(void);
-void cfg_preset(void);
 
 uint8_t cmd_get(cmdObj *cmd);			// main entry point for GETs
 uint8_t cmd_set(cmdObj *cmd);			// main entry point for SETs
 void cmd_formatted_print(cmdObj *cmd);	// main entry point for formatted print
 void cmd_persist(cmdObj *cmd);			// main entry point for persistence
-uint8_t cmd_get_cmdObj(cmdObj *cmd);
+void cmd_get_cmdObj(cmdObj *cmd);
 
 //INDEX_T cmd_get_max_index(void);
 INDEX_T cmd_get_index(const char *str);
@@ -295,7 +292,7 @@ struct cfgParameters cfg; 			// declared in the header to make it global
 									// e.g: CFG(X_AXIS).steps_per_mm
 
 /* unit test setup */
-#define __UNIT_TEST_CONFIG		// uncomment to enable config unit tests
+//#define __UNIT_TEST_CONFIG		// uncomment to enable config unit tests
 #ifdef __UNIT_TEST_CONFIG
 void cfg_unit_tests(void);
 #define	CONFIG_UNITS cfg_unit_tests();
