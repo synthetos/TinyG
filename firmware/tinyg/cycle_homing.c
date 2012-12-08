@@ -45,6 +45,8 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 //	int8_t axis2;				// second axis if dual axis
 	int8_t homing_switch;		// homing switch for current axis (index into switch flag table)
 	int8_t limit_switch;		// limit switch for current axis, or -1 if none
+	uint8_t homing_closed;		// 0=open, 1=closed
+	uint8_t limit_closed;		// 0=open, 1=closed
 	uint8_t (*func)(int8_t axis);// binding for current processing function
 
 	// per-axis parameters
@@ -52,9 +54,9 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 	double search_travel;		// signed distance to travel in search
 	double search_velocity;		// search speed as positive number
 	double latch_velocity;		// latch speed as positive number
-	double latch_backoff;		// distance to back off switch before performing latch
+	double latch_backoff;		// max distance to back off switch during latch phase 
 	double zero_backoff;		// distance to back off switch before setting zero
-	double max_backoff;			// maximum distance of switch clearing backoffs before erring out
+	double max_clear_backoff;	// maximum distance of switch clearing backoffs before erring out
 
 	// state saved from gcode model
 	double saved_feed_rate;		// F setting
@@ -65,12 +67,14 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 };
 static struct hmHomingSingleton hm;
 
+
 /**** NOTE: global prototypes and other .h info is located in canonical_machine.h ****/
 
 static uint8_t _homing_axis_start(int8_t axis);
 static uint8_t _homing_axis_clear(int8_t axis);
+static uint8_t _homing_axis_backoff_home(int8_t axis);
+static uint8_t _homing_axis_backoff_limit(int8_t axis);
 static uint8_t _homing_axis_search(int8_t axis);
-static uint8_t _homing_axis_latch_backoff(int8_t axis);
 static uint8_t _homing_axis_latch(int8_t axis);
 static uint8_t _homing_axis_zero_backoff(int8_t axis);
 static uint8_t _homing_axis_set_zero(int8_t axis);
@@ -191,13 +195,14 @@ static uint8_t _homing_finalize(int8_t axis)	// third part of return to home
 }
 
 /* Homing axis moves - these execute in sequence for each axis
- *	_homing_axis_start()	- get next axis, initialize variables, call the clear
- *	_homing_axis_clear()	- clear off any switches that are thrown at the start
- *	_homing_axis_search()	- initial search for switch
- *	_homing_axis_backoff()	- backoff when switch is hit
- *	_homing_axis_latch()	- slow search for switch
- *	_homing_axis_final()	- backoff from latch 
- *	_homing_axis_move()		- helper that actually executes the above moves
+ *	_homing_axis_start()		- get next axis, initialize variables, call the clear
+ *	_homing_axis_clear()		- initiate a clear to move off a switch that is thrown at the start
+ *	_homing_axis_backoff_home()	- back off the cleared home switch
+ *	_homing_axis_backoff_limit()- back off the cleared limit switch
+ *	_homing_axis_search()		- fast search for switch, closes switch
+ *	_homing_axis_latch()		- slow reverse until switch opens again
+ *	_homing_axis_final()		- backoff from latch location to zero position 
+ *	_homing_axis_move()			- helper that actually executes the above moves
  */
 
 static uint8_t _homing_axis_start(int8_t axis)
@@ -228,7 +233,7 @@ static uint8_t _homing_axis_start(int8_t axis)
 		hm.homing_switch = MIN_SWITCH(axis);				// the min is the homing switch
 		hm.limit_switch = MAX_SWITCH(axis);					// the max would be the limit switch
 		hm.search_travel = -cfg.a[axis].travel_max;			// search travels in negative direction
-		hm.latch_backoff = cfg.a[axis].latch_backoff;		// backoffs travel in positive direction
+		hm.latch_backoff = cfg.a[axis].latch_backoff;		// latch travels in positive direction
 		hm.zero_backoff = cfg.a[axis].zero_backoff;
 
 	// setup parameters for positive travel (homing to the maximum switch)
@@ -236,70 +241,72 @@ static uint8_t _homing_axis_start(int8_t axis)
 		hm.homing_switch = MAX_SWITCH(axis);				// the max is the homing switch
 		hm.limit_switch = MIN_SWITCH(axis);					// the min would be the limit switch
 		hm.search_travel = cfg.a[axis].travel_max;			// search travels in positive direction
-		hm.latch_backoff = -cfg.a[axis].latch_backoff;		// backoffs travel in negative direction
+		hm.latch_backoff = -cfg.a[axis].latch_backoff;		// latch travels in negative direction
 		hm.zero_backoff = -cfg.a[axis].zero_backoff;
 	}
-    // if homing is disabled for an axis just set the axis position to zero
+    // if homing is disabled for the axis then skip to the next axis
 	uint8_t sw_mode = gpio_get_switch_mode(hm.homing_switch);
 	if ((sw_mode != SW_MODE_HOMING) && (sw_mode != SW_MODE_HOMING_LIMIT)) {
-		return (_set_hm_func(_homing_axis_set_zero));
+		return (_set_hm_func(_homing_axis_start));
 	}
 	// disable the limit switch parameter if there is no limit switch
 	if (gpio_get_switch_mode(hm.limit_switch) == SW_MODE_DISABLED) {
 		hm.limit_switch = -1;
 	}
-	hm.max_backoff = cfg.a[axis].travel_max;
-	return (_set_hm_func(_homing_axis_clear));
+	return (_set_hm_func(_homing_axis_clear));			//...and start the clear
 }
 
-static uint8_t _homing_axis_clear(int8_t axis)
+static uint8_t _homing_axis_clear(int8_t axis)			// first clear move
 {
 	// Handle an initial switch closure by backing off switches
 	// NOTE: Relies on independent switches per axis (not shared)
-	
-//	printf("Entering clear %d\n", axis); 	//+++++++++++++++++++++++
-	if ((hm.max_backoff -= hm.latch_backoff) < 0) {		// limit number of times clear is attempted
-//		printf("Homing failed %f\n", hm.max_backoff); 	//+++++++++++++++++++++++
-		return (TG_HOMING_CYCLE_FAILED);				// homing state remains HOMING_NOT_HOMED
+
+	int8_t homing = gpio_read_switch(hm.homing_switch);
+	int8_t limit = gpio_read_switch(hm.limit_switch);
+
+	if (homing == SW_DISABLED) { return (TG_HOMING_CYCLE_FAILED);} // switch mis-configuration	
+	if ((homing == SW_OPEN) && (limit != SW_CLOSED)) {
+ 		return (_set_hm_func(_homing_axis_search));		// OK to start the search
 	}
-	if (gpio_read_switch(hm.homing_switch) == true) {	// test if homing switch is thrown
- 	   	_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity); // latch backoff at search velocity
-		return (_set_hm_func(_homing_axis_clear));		// repeat until no longer on switch
+	if (homing == SW_CLOSED) {
+		_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
+ 		return (_set_hm_func(_homing_axis_backoff_home));// backoff homing switch some more
 	}
-	if (hm.limit_switch != -1) {						// -1 means thre is no limit configured
-		if (gpio_read_switch(hm.limit_switch) == true) {// test if limit switch is thrown
-	 	   	_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
-			return (_set_hm_func(_homing_axis_clear));	// repeat until no longer on switch
-		}
-	}
-	return (_set_hm_func(_homing_axis_search));			// we are clear. Ready to start the search
+	_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
+ 	return (_set_hm_func(_homing_axis_backoff_limit));	// backoff limit switch some more
 }
 
-static uint8_t _homing_axis_search(int8_t axis)
-{
-	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
-    return (_set_hm_func(_homing_axis_latch_backoff));
-}
-
-static uint8_t _homing_axis_latch_backoff(int8_t axis)
+static uint8_t _homing_axis_backoff_home(int8_t axis)	// back off cleared homing switch
 {
 	_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
-	return (_set_hm_func(_homing_axis_latch));
+    return (_set_hm_func(_homing_axis_search));
 }
 
-static uint8_t _homing_axis_latch(int8_t axis)
+static uint8_t _homing_axis_backoff_limit(int8_t axis)	// back off cleared limit switch
 {
-	_homing_axis_move(axis, -2*hm.latch_backoff, hm.latch_velocity);    
+	_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
+    return (_set_hm_func(_homing_axis_search));
+}
+
+static uint8_t _homing_axis_search(int8_t axis)			// start the search
+{
+	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
+    return (_set_hm_func(_homing_axis_latch));
+}
+
+static uint8_t _homing_axis_latch(int8_t axis)			// latch to switch open
+{
+	_homing_axis_move(axis, hm.latch_backoff, hm.latch_velocity);    
 	return (_set_hm_func(_homing_axis_zero_backoff)); 
 }
 
-static uint8_t _homing_axis_zero_backoff(int8_t axis)
+static uint8_t _homing_axis_zero_backoff(int8_t axis)	// backoff to zero position
 {
 	_homing_axis_move(axis, hm.zero_backoff, hm.search_velocity);
 	return (_set_hm_func(_homing_axis_set_zero));
 }
 
-static uint8_t _homing_axis_set_zero(int8_t axis)
+static uint8_t _homing_axis_set_zero(int8_t axis)		// set zero and finish up
 {
 	cm_set_machine_axis_position(axis, 0);
 	return (_set_hm_func(_homing_axis_start));

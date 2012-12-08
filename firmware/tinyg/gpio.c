@@ -81,7 +81,7 @@
 #define SW_LOCKOUT_TICKS 20					// 20=200ms. RTC ticks are ~10ms each
 
 static uint8_t gpio_port_value;				// global for synthetic port read value
-void _gpio_init_helper(uint8_t swit, uint8_t port, uint8_t int_mode);
+void _gpio_init_helper(uint8_t swit, uint8_t port);
 static void _switch_isr_helper(uint8_t sw_num);
 
 /*
@@ -103,28 +103,30 @@ static void _switch_isr_helper(uint8_t sw_num);
 
 void gpio_init(void)
 {
-	uint8_t int_mode = (sw.switch_type == SW_TYPE_NORMALLY_OPEN) ? PORT_ISC_FALLING_gc : PORT_ISC_RISING_gc;
-	_gpio_init_helper(SW_PORT_X, MOTOR_1, int_mode);
-	_gpio_init_helper(SW_PORT_Y, MOTOR_2, int_mode);
-	_gpio_init_helper(SW_PORT_Z, MOTOR_3, int_mode);
-	_gpio_init_helper(SW_PORT_A, MOTOR_4, int_mode);
+	_gpio_init_helper(SW_PORT_X, MOTOR_1);
+	_gpio_init_helper(SW_PORT_Y, MOTOR_2);
+	_gpio_init_helper(SW_PORT_Z, MOTOR_3);
+	_gpio_init_helper(SW_PORT_A, MOTOR_4);
 	gpio_clear_switches();
 	gpio_reset_lockout();
 }
 
-void _gpio_init_helper(uint8_t swit, uint8_t port, uint8_t int_mode)
+void _gpio_init_helper(uint8_t swit, uint8_t port)
 {
+//	uint8_t int_mode = (sw.switch_type == SW_TYPE_NORMALLY_OPEN) ? PORT_ISC_FALLING_gc : PORT_ISC_RISING_gc;
+//	uint8_t int_mode = PORT_ISC_BOTHEDGES_gc;
+
 	// setup port input bits and interrupts (previously set to inputs by st_init())
 	if (sw.mode[MIN_SWITCH(swit)] != SW_MODE_DISABLED) {
 		device.port[port]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input - see 13.14.14
-		device.port[port]->PIN6CTRL = (PIN_MODE | int_mode);
+		device.port[port]->PIN6CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
 		device.port[port]->INT0MASK = SW_MIN_BIT_bm;	 	// interrupt on min switch
 	} else {
 		device.port[port]->INT0MASK = 0;	 				// disable interrupt
 	}
 	if (sw.mode[MAX_SWITCH(swit)] != SW_MODE_DISABLED) {
 		device.port[port]->DIRCLR = SW_MAX_BIT_bm;		 	// set max input - see 13.14.14
-		device.port[port]->PIN7CTRL = (PIN_MODE | int_mode);
+		device.port[port]->PIN7CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
 		device.port[port]->INT1MASK = SW_MAX_BIT_bm;		// max on INT1
 	} else {
 		device.port[port]->INT1MASK = 0;
@@ -148,22 +150,17 @@ ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
 
 static void _switch_isr_helper(uint8_t sw_num)
 {
-//	printf("Int1 %d\n", sw_num);		//++++++++++++++++++++++++++++
-
 	if (sw.lockout_count != 0) return;					// exit if you are in a debounce lockout
-//	printf("Int2 %d\n", sw_num);		//++++++++++++++++++++++++++++
 
 	if (sw.mode[sw_num] == SW_MODE_DISABLED) return;	// this is not supposed to happen
 	sw.lockout_count = SW_LOCKOUT_TICKS;				// start the debounce lockout down-counter
 	sw.flag[sw_num] = true;								// set the flag for this switch
 	sw.thrown = true;									// triggers the switch handler tasks
 	if (cm.cycle_state == CYCLE_HOMING) { 				// initiate a feedhold if in homing cycle
-//		printf("Int3 %d\n", sw_num);		//++++++++++++++++++++++++++++
 		sig_feedhold(); 
 		return; 
 	}
 	if (sw.mode[sw_num] >= SW_MODE_HOMING_LIMIT) {		// signal an abort if limits are enabled
-//		printf("Int4 %d\n", sw_num);		//++++++++++++++++++++++++++++
 		sig_abort();
 	} 
 }
@@ -195,7 +192,7 @@ void gpio_set_switch(uint8_t sw_num) { sw.thrown = true; sw.flag[sw_num] = true;
 
 uint8_t gpio_read_switch(uint8_t sw_num)
 {
-	if ((sw_num < 0) || (sw_num >= NUM_SWITCHES)) return (-1);
+	if ((sw_num < 0) || (sw_num >= NUM_SWITCHES)) return (SW_DISABLED);
 
 	uint8_t read = 0;
 	switch (sw_num) {
@@ -208,11 +205,10 @@ uint8_t gpio_read_switch(uint8_t sw_num)
 		case SW_MIN_A: { read = device.port[SW_PORT_A]->IN & SW_MIN_BIT_bm; break;}
 		case SW_MAX_A: { read = device.port[SW_PORT_A]->IN & SW_MAX_BIT_bm; break;}
 	}
-//	printf ("Read %d %d\n", sw_num, read); //++++++++++++++++++++++
 	if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
-		return ((read == 0) ? true : false);
+		return ((read == 0) ? SW_CLOSED : SW_OPEN);		// confusing. An NO switch drives the pin LO when thrown
 	} else {
-		return ((read != 0) ? true : false);
+		return ((read != 0) ? SW_CLOSED : SW_OPEN);
 	}
 }
 
@@ -354,7 +350,7 @@ void gpio_toggle_port(uint8_t b)
 /*
  * _show_switch() - simple display routine
  */
-/*
+#ifdef __DEBUG
 void sw_show_switch(void)
 {
 	fprintf_P(stderr, PSTR("Limit Switch Thrown %d %d %d %d   %d %d %d %d\n"), 
@@ -363,7 +359,7 @@ void sw_show_switch(void)
 		sw.flag[SW_MIN_Z], sw.flag[SW_MAX_Z], 
 		sw.flag[SW_MIN_A], sw.flag[SW_MAX_A]);
 }
-*/
+#endif
 
 //###########################################################################
 //##### UNIT TESTS ##########################################################

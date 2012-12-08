@@ -70,6 +70,10 @@ enum swNums {	 			// indexes into switch arrays
 #define SW_OFFSET SW_MAX_X	// offset between MIN and MAX switches
 #define NUM_SWITCH_PAIRS (NUM_SWITCHES/2)
 
+#define SW_DISABLED -1
+#define SW_OPEN 	 0
+#define SW_CLOSED	 1
+
 enum swType {
 	SW_TYPE_NORMALLY_OPEN = 0,
 	SW_TYPE_NORMALLY_CLOSED
@@ -82,12 +86,6 @@ enum swMode {				// switch operation modes
 	SW_MODE_LIMIT			// enable switch for limits only
 };
 #define SW_MODE_MAX_VALUE SW_MODE_LIMIT
-
-enum swSense {
-	SW_SENSE_DISABLED = 0,	// not enabled
-	SW_SENSE_NO,			// Normally open switch
-	SW_SENSE_NC				// Normally closed switch
-};
 
 struct swStruct {						// switch state
 	uint8_t switch_type;				// 0=NO, 1=NC - applies to all switches
