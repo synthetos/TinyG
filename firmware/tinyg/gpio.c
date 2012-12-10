@@ -220,7 +220,6 @@ void gpio_clear_switches()
 	}
 }
 
-
 /*
  * gpio_read_switches() - read the switches into the switch flag array
  *

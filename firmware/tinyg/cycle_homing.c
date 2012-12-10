@@ -43,13 +43,13 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 	// controls for homing cycle
 	int8_t axis;				// axis currently being homed
 //	int8_t axis2;				// second axis if dual axis
-	uint8_t min_switch_mode;	// mode for min switch fo this axis
-	uint8_t max_switch_mode;	// mode for max switch fo this axis
+	uint8_t min_mode;			// mode for min switch fo this axis
+	uint8_t max_mode;			// mode for max switch fo this axis
 	int8_t homing_switch;		// homing switch for current axis (index into switch flag table)
 	int8_t limit_switch;		// limit switch for current axis, or -1 if none
 	uint8_t homing_closed;		// 0=open, 1=closed
 	uint8_t limit_closed;		// 0=open, 1=closed
-	uint8_t (*func)(int8_t axis);// binding for current processing function
+	uint8_t (*func)(int8_t axis);// binding for callback function state machine
 
 	// per-axis parameters
 	double direction;			// set to 1 for positive (max), -1 for negative (to min);
@@ -82,6 +82,7 @@ static uint8_t _homing_axis_zero_backoff(int8_t axis);
 static uint8_t _homing_axis_set_zero(int8_t axis);
 static uint8_t _homing_axis_move(int8_t axis, double target, double velocity);
 static uint8_t _homing_finalize(int8_t axis);
+static uint8_t _homing_error(int8_t axis);
 
 static uint8_t _set_hm_func(uint8_t (*func)(int8_t axis));
 static int8_t _get_next_axis(int8_t axis);
@@ -123,28 +124,42 @@ uint8_t cm_G30_callback()
  * cm_homing_callback() 	- main loop callback for running the homing cycle
  *
  * Homing works from a G28.1 according to the following writeup: 
- *  https://github.com/synthetos/TinyG/wiki/TinyG-Homing-planned-for-version-0.95
+ *	https://github.com/synthetos/TinyG/wiki/TinyG-Homing-(version-0.95-and-above)
  *
  *	--- How does this work? ---
  *
- *	When a homing cycle is intiated the cycle state is set to CYCLE_HOMING.
+ *	Homing is invoked using a G28.1 command with 1 or more axes specified in the
+ *	command: e.g. g28.1 x0 y0 z0     (FYI: the number after each axis is irrelevant)
+ *
+ *	Homing is always run in the following order - for each enabeled axis:
+ *	  Z,X,Y,A			Note: B and C cannot be homed
+ *
  *	At the start of a homing cycle those switches configured for homing 
- *	(or for loming andf limits) are treated as homing switches (they are modal).
+ *	(or for homing and limits) are treated as homing switches (they are modal).
  *
- *	After some initialization and backing off any closed switches, a series of 
- *	search and latch moves are run for each axis specified in the G28.1 command.
- *	The cm_homing_callback() function is a dispatcher that vectors to the homing
- *	move currently active. Each move must clear the planner and any previous 
- *	feedhold state before it can be run.
+ *	After initialization the following sequence is run for each axis to be homed:
  *
- *	Each move runs until either it is done or a switch is hit. The switch interrupt 
- *	causes a feedhold to be executed and the hold state to become HOLD. This then 
- *	causes the machine to become "not busy" so cm_isbusy() returns false, allowing 
- *	the next move to be run. 
+ *	  0. If a homing or limit switch is closed on invocation, clear off the switch
+ *	  1. Drive towards the homing switch at search velocity until switch is hit
+ *	  2. Drive away from the homing switch at latch velocity until switch opens
+ *	  3. Back off switch by the zero backoff distance and set zero for that axis
  *
- *	The act of finishing the last axis resets the machine to machine zero. 
+ *	Homing works as a state machine that is driven by registering a callback 
+ *	function at hm.func() for the next state to be run. Once the axis is 
+ *	initialized each callback basically does two things (1) start the move 
+ *	for the current function, and (2) register the next state with hm.func(). 
+ *	When a move is started it will either be interrupted if the homing switch 
+ *	changes state, This will cause the move to stop with a feedhold. The other 
+ *	thing that can happen is the move will run to its full length if no switch 
+ *	change is detected (hit or open),
  *
- *	--- Some further details ---
+ *	Once all moves for an axis are complete the next axis in the sequence is homed
+ *
+ *	When a homing cycle is intiated the homing state is set to HOMING_NOT_HOMED
+ *	When homing comples successfully this si set to HOMING_HOMED, otherwise it
+ *	remains HOMING_NOT_HOMED.	
+ */
+/*	--- Some further details ---
  *
  *	Note: When coding a cycle (like this one) you get to perform one queued 
  *	move per entry into the continuation, then you must exit. 
@@ -153,7 +168,8 @@ uint8_t cm_G30_callback()
  *	the last move has actually been queued (or has finished) before declaring
  *	the cycle to be done. Otherwise there is a nasty race condition in the 
  *	tg_controller() that will accept the next command before the position of 
- *	the final move has been recorded in the Gcode model.
+ *	the final move has been recorded in the Gcode model. That's what the call
+ *	to cm_isbusy() is about.
  */
 
 uint8_t cm_homing_cycle_start(void)
@@ -180,7 +196,7 @@ uint8_t cm_homing_callback(void)
 {
 	if (cm.cycle_state != CYCLE_HOMING) { return (TG_NOOP);} // exit if not in a homing cycle
 	if (cm_isbusy() == true) { return (TG_EAGAIN);}	 // sync to planner move ends
-	return (hm.func(hm.axis));				// execute the current homing move
+	return (hm.func(hm.axis));					// execute the current homing move
 }
 
 static uint8_t _homing_finalize(int8_t axis)	// third part of return to home
@@ -196,8 +212,11 @@ static uint8_t _homing_finalize(int8_t axis)	// third part of return to home
 	return (TG_OK);
 }
 
-static uint8_t _homing_config_error(int8_t axis)
+static uint8_t _homing_error(int8_t axis)
 {
+	char message[CMD_STRING_LEN]; 
+	sprintf_P(message, PSTR("*** WARNING *** Axis %d mis-configured for homing"), axis);
+	cmd_add_string("msg",message);
 	return (TG_HOMING_CYCLE_FAILED);		// homing state remains HOMING_NOT_HOMED
 }
 
@@ -223,30 +242,31 @@ static uint8_t _homing_axis_start(int8_t axis)
 			cm_set_distance_mode(hm.saved_distance_mode);
 			cm.cycle_state = CYCLE_STARTED;
 			cm_exec_cycle_end();
-			return (_homing_config_error(-2));
+			return (_homing_error(-2));
 		}
 	}
-	// determine the switch setup and direction of travel, and that config is OK
-	if ((cfg.a[axis].search_velocity == 0) || (cfg.a[axis].travel_max == 0)) {
-		return (_homing_config_error(axis));
+	// trap gross mis-configurations
+	if ((cfg.a[axis].search_velocity == 0) || (cfg.a[axis].latch_velocity == 0)) {
+		return (_homing_error(axis));
+	}
+	if ((cfg.a[axis].travel_max <= 0) || (cfg.a[axis].latch_backoff <= 0)) {
+		return (_homing_error(axis));
 	}
 
-	hm.min_switch_mode = gpio_get_switch_mode(MIN_SWITCH(axis));
-	hm.max_switch_mode = gpio_get_switch_mode(MAX_SWITCH(axis));
-	
-//	if () {
-//		
-//	}
+	// determine the switch setup and that config is OK
+	hm.min_mode = gpio_get_switch_mode(MIN_SWITCH(axis));
+	hm.max_mode = gpio_get_switch_mode(MAX_SWITCH(axis));
 
-
-
+	if ( ((hm.min_mode & SW_HOMING) ^ (hm.max_mode & SW_HOMING)) == 0) {	// one or the other must be homing
+		return (_homing_error(axis));						// axis cannot be homed
+	}
 	hm.axis = axis;											// persist the axis
 //	hm.saved_jerk = cfg.a[axis].jerk_max;					// per-axis save
-	hm.search_velocity = fabs(cfg.a[axis].search_velocity); // make search velocity positive
-	hm.latch_velocity = fabs(cfg.a[axis].latch_velocity); 	// make latch velocity positive
+	hm.search_velocity = fabs(cfg.a[axis].search_velocity); // search velocity is always positive
+	hm.latch_velocity = fabs(cfg.a[axis].latch_velocity); 	// latch velocity is always positive
 
-	// setup parameters for negative travel (homing to the minimum switch)
-	if (cfg.a[axis].search_velocity < 0) {
+	// setup parameters homing to the minimum switch
+	if (hm.min_mode & SW_HOMING) {
 		hm.homing_switch = MIN_SWITCH(axis);				// the min is the homing switch
 		hm.limit_switch = MAX_SWITCH(axis);					// the max would be the limit switch
 		hm.search_travel = -cfg.a[axis].travel_max;			// search travels in negative direction
@@ -273,24 +293,22 @@ static uint8_t _homing_axis_start(int8_t axis)
 	return (_set_hm_func(_homing_axis_clear));			//...and start the clear
 }
 
+// Handle an initial switch closure by backing off switches
+// NOTE: Relies on independent switches per axis (not shared)
 static uint8_t _homing_axis_clear(int8_t axis)			// first clear move
 {
-	// Handle an initial switch closure by backing off switches
-	// NOTE: Relies on independent switches per axis (not shared)
-
 	int8_t homing = gpio_read_switch(hm.homing_switch);
 	int8_t limit = gpio_read_switch(hm.limit_switch);
 
-	if (homing == SW_DISABLED) { return (TG_HOMING_CYCLE_FAILED);} // switch mis-configuration	
 	if ((homing == SW_OPEN) && (limit != SW_CLOSED)) {
  		return (_set_hm_func(_homing_axis_search));		// OK to start the search
 	}
 	if (homing == SW_CLOSED) {
 		_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
- 		return (_set_hm_func(_homing_axis_backoff_home));// backoff homing switch some more
+ 		return (_set_hm_func(_homing_axis_backoff_home));// will backoff homing switch some more
 	}
 	_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
- 	return (_set_hm_func(_homing_axis_backoff_limit));	// backoff limit switch some more
+ 	return (_set_hm_func(_homing_axis_backoff_limit));	// will backoff limit switch some more
 }
 
 static uint8_t _homing_axis_backoff_home(int8_t axis)	// back off cleared homing switch
