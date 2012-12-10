@@ -41,8 +41,8 @@
 
 #define JUNCTION_DEVIATION	0.01		// default value, in mm - smaller is faster
 #define JUNCTION_ACCELERATION 200000	// centripetal acceleration around corners
-//#define SWITCH_TYPE SW_TYPE_NORMALLY_OPEN
-#define SWITCH_TYPE SW_TYPE_NORMALLY_CLOSED
+#define SWITCH_TYPE SW_TYPE_NORMALLY_OPEN
+//#define SWITCH_TYPE SW_TYPE_NORMALLY_CLOSED
 
 // *** settings.h overrides ***
 

@@ -43,6 +43,8 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 	// controls for homing cycle
 	int8_t axis;				// axis currently being homed
 //	int8_t axis2;				// second axis if dual axis
+	uint8_t min_switch_mode;	// mode for min switch fo this axis
+	uint8_t max_switch_mode;	// mode for max switch fo this axis
 	int8_t homing_switch;		// homing switch for current axis (index into switch flag table)
 	int8_t limit_switch;		// limit switch for current axis, or -1 if none
 	uint8_t homing_closed;		// 0=open, 1=closed
@@ -194,6 +196,11 @@ static uint8_t _homing_finalize(int8_t axis)	// third part of return to home
 	return (TG_OK);
 }
 
+static uint8_t _homing_config_error(int8_t axis)
+{
+	return (TG_HOMING_CYCLE_FAILED);		// homing state remains HOMING_NOT_HOMED
+}
+
 /* Homing axis moves - these execute in sequence for each axis
  *	_homing_axis_start()		- get next axis, initialize variables, call the clear
  *	_homing_axis_clear()		- initiate a clear to move off a switch that is thrown at the start
@@ -207,7 +214,7 @@ static uint8_t _homing_finalize(int8_t axis)	// third part of return to home
 
 static uint8_t _homing_axis_start(int8_t axis)
 {
-	// get first or next axis
+	// get the first or next axis
 	if ((axis = _get_next_axis(axis)) < 0) { 		// axes are done or error
 		if (axis == -1) {							// -1 is done
 			return (_set_hm_func(_homing_finalize));
@@ -216,12 +223,22 @@ static uint8_t _homing_axis_start(int8_t axis)
 			cm_set_distance_mode(hm.saved_distance_mode);
 			cm.cycle_state = CYCLE_STARTED;
 			cm_exec_cycle_end();
-			return (TG_HOMING_CYCLE_FAILED);		// homing state remains HOMING_NOT_HOMED
+			return (_homing_config_error(-2));
 		}
 	}
+	// determine the switch setup and direction of travel, and that config is OK
 	if ((cfg.a[axis].search_velocity == 0) || (cfg.a[axis].travel_max == 0)) {
-		return (TG_GCODE_INPUT_ERROR);				// requested axis can't be homed
+		return (_homing_config_error(axis));
 	}
+
+	hm.min_switch_mode = gpio_get_switch_mode(MIN_SWITCH(axis));
+	hm.max_switch_mode = gpio_get_switch_mode(MAX_SWITCH(axis));
+	
+//	if () {
+//		
+//	}
+
+
 
 	hm.axis = axis;											// persist the axis
 //	hm.saved_jerk = cfg.a[axis].jerk_max;					// per-axis save
