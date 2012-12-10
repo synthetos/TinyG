@@ -81,8 +81,8 @@ static uint8_t _homing_axis_latch(int8_t axis);
 static uint8_t _homing_axis_zero_backoff(int8_t axis);
 static uint8_t _homing_axis_set_zero(int8_t axis);
 static uint8_t _homing_axis_move(int8_t axis, double target, double velocity);
-static uint8_t _homing_finalize(int8_t axis);
-static uint8_t _homing_error(int8_t axis);
+static uint8_t _homing_finalize_exit(int8_t axis);
+static uint8_t _homing_error_exit(int8_t axis);
 
 static uint8_t _set_hm_func(uint8_t (*func)(int8_t axis));
 static int8_t _get_next_axis(int8_t axis);
@@ -199,7 +199,7 @@ uint8_t cm_homing_callback(void)
 	return (hm.func(hm.axis));					// execute the current homing move
 }
 
-static uint8_t _homing_finalize(int8_t axis)	// third part of return to home
+static uint8_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 {
 	mp_flush_planner(); 						// should be stopped, but in case of switch closure
 	cm_set_coord_system(hm.saved_coord_system);	// restore to work coordinate system
@@ -212,11 +212,29 @@ static uint8_t _homing_finalize(int8_t axis)	// third part of return to home
 	return (TG_OK);
 }
 
-static uint8_t _homing_error(int8_t axis)
+static const char msg_axis0[] PROGMEM = "X";
+static const char msg_axis1[] PROGMEM = "Y";
+static const char msg_axis2[] PROGMEM = "Z";
+static const char msg_axis3[] PROGMEM = "A";
+static PGM_P const msg_axis[] PROGMEM = { msg_axis0, msg_axis1, msg_axis2, msg_axis3};
+
+static uint8_t _homing_error_exit(int8_t axis)
 {
 	char message[CMD_STRING_LEN]; 
-	sprintf_P(message, PSTR("*** WARNING *** Axis %d mis-configured for homing"), axis);
+	if (axis == -2) {
+		sprintf_P(message, PSTR("*** WARNING *** Homing error: Specified axis(es) cannot be homed"));
+	} else {
+		sprintf_P(message, PSTR("*** WARNING *** Homing error: %S axis settings incorrect"), (PGM_P)pgm_read_word(&msg_axis[axis]));
+	}
 	cmd_add_string("msg",message);
+	cmd_print_list(TG_HOMING_CYCLE_FAILED, TEXT_INLINE_PAIRS);
+
+	mp_flush_planner(); 						// should be stopped, but in case of switch closure
+	cm_set_coord_system(hm.saved_coord_system);	// restore to work coordinate system
+	cm_set_units_mode(hm.saved_units_mode);
+	cm_set_distance_mode(hm.saved_distance_mode);
+	cm_set_feed_rate(hm.saved_feed_rate);
+	cm.cycle_state = CYCLE_OFF;
 	return (TG_HOMING_CYCLE_FAILED);		// homing state remains HOMING_NOT_HOMED
 }
 
@@ -236,29 +254,29 @@ static uint8_t _homing_axis_start(int8_t axis)
 	// get the first or next axis
 	if ((axis = _get_next_axis(axis)) < 0) { 		// axes are done or error
 		if (axis == -1) {							// -1 is done
-			return (_set_hm_func(_homing_finalize));
+			return (_set_hm_func(_homing_finalize_exit));
 		} else if (axis == -2) { 					// -2 is error
 			cm_set_units_mode(hm.saved_units_mode);
 			cm_set_distance_mode(hm.saved_distance_mode);
 			cm.cycle_state = CYCLE_STARTED;
 			cm_exec_cycle_end();
-			return (_homing_error(-2));
+			return (_homing_error_exit(-2));
 		}
 	}
 	// trap gross mis-configurations
 	if ((cfg.a[axis].search_velocity == 0) || (cfg.a[axis].latch_velocity == 0)) {
-		return (_homing_error(axis));
+		return (_homing_error_exit(axis));
 	}
 	if ((cfg.a[axis].travel_max <= 0) || (cfg.a[axis].latch_backoff <= 0)) {
-		return (_homing_error(axis));
+		return (_homing_error_exit(axis));
 	}
 
 	// determine the switch setup and that config is OK
 	hm.min_mode = gpio_get_switch_mode(MIN_SWITCH(axis));
 	hm.max_mode = gpio_get_switch_mode(MAX_SWITCH(axis));
 
-	if ( ((hm.min_mode & SW_HOMING) ^ (hm.max_mode & SW_HOMING)) == 0) {	// one or the other must be homing
-		return (_homing_error(axis));						// axis cannot be homed
+	if ( ((hm.min_mode & SW_HOMING) ^ (hm.max_mode & SW_HOMING)) == 0) {// one or the other must be homing
+		return (_homing_error_exit(axis));						// axis cannot be homed
 	}
 	hm.axis = axis;											// persist the axis
 //	hm.saved_jerk = cfg.a[axis].jerk_max;					// per-axis save
@@ -391,29 +409,29 @@ int8_t _get_next_axis(int8_t axis)
 		if (gf.target[X] == true) return (X);
 		if (gf.target[Y] == true) return (Y);
 		if (gf.target[A] == true) return (A);
-		if (gf.target[B] == true) return (B);
-		if (gf.target[C] == true) return (C);
+//		if (gf.target[B] == true) return (B);
+//		if (gf.target[C] == true) return (C);
 		return (-2);	// error
 	} else if (axis == Z) {
 		if (gf.target[X] == true) return (X);
 		if (gf.target[Y] == true) return (Y);
 		if (gf.target[A] == true) return (A);
-		if (gf.target[B] == true) return (B);
-		if (gf.target[C] == true) return (C);
+//		if (gf.target[B] == true) return (B);
+//		if (gf.target[C] == true) return (C);
 	} else if (axis == X) {
 		if (gf.target[Y] == true) return (Y);
 		if (gf.target[A] == true) return (A);
-		if (gf.target[B] == true) return (B);
-		if (gf.target[C] == true) return (C);
+//		if (gf.target[B] == true) return (B);
+//		if (gf.target[C] == true) return (C);
 	} else if (axis == Y) {
 		if (gf.target[A] == true) return (A);
-		if (gf.target[B] == true) return (B);
-		if (gf.target[C] == true) return (C);
-	} else if (axis == A) {
-		if (gf.target[B] == true) return (B);
-		if (gf.target[C] == true) return (C);
-	} else if (axis == B) {
-		if (gf.target[C] == true) return (C);
+//		if (gf.target[B] == true) return (B);
+//		if (gf.target[C] == true) return (C);
+//	} else if (axis == A) {
+//		if (gf.target[B] == true) return (B);
+//		if (gf.target[C] == true) return (C);
+//	} else if (axis == B) {
+//		if (gf.target[C] == true) return (C);
 	}
 	return (-1);	// done
 }
