@@ -523,12 +523,12 @@ static const char fmt_btm[] PROGMEM = "[btm] b_travel_maximum%17.3f%S\n";
 static const char fmt_bjm[] PROGMEM = "[bjm] b_jerk_maximum%15.0f%S/min^3\n";
 static const char fmt_bjd[] PROGMEM = "[bjd] b_junction_deviation%14.4f%S\n";
 static const char fmt_bra[] PROGMEM = "[bra] b_radius_value%20.4f%S\n";
-static const char fmt_bsn[] PROGMEM = "[bsn] b_switch_min%17d [0-4]\n";
-static const char fmt_bsx[] PROGMEM = "[bsx] b_switch_max%17d [0-4]\n";
-static const char fmt_bsv[] PROGMEM = "[bsv] b_search_velocity%16.3f%S/min\n";
-static const char fmt_blv[] PROGMEM = "[blv] b_latch_velocity%17.3f%S/min\n";
-static const char fmt_blb[] PROGMEM = "[blb] b_latch_backoff%18.3f%S\n";
-static const char fmt_bzb[] PROGMEM = "[bzb] b_zero_backoff%19.3f%S\n";
+//static const char fmt_bsn[] PROGMEM = "[bsn] b_switch_min%17d [0-4]\n";
+//static const char fmt_bsx[] PROGMEM = "[bsx] b_switch_max%17d [0-4]\n";
+//static const char fmt_bsv[] PROGMEM = "[bsv] b_search_velocity%16.3f%S/min\n";
+//static const char fmt_blv[] PROGMEM = "[blv] b_latch_velocity%17.3f%S/min\n";
+//static const char fmt_blb[] PROGMEM = "[blb] b_latch_backoff%18.3f%S\n";
+//static const char fmt_bzb[] PROGMEM = "[bzb] b_zero_backoff%19.3f%S\n";
 
 static const char fmt_cam[] PROGMEM = "[cam] c_axis_mode%18d %S\n";
 static const char fmt_cfr[] PROGMEM = "[cfr] c_feedrate_maximum%15.3f%S/min\n";
@@ -537,12 +537,12 @@ static const char fmt_ctm[] PROGMEM = "[ctm] c_travel_maximum%17.3f%S\n";
 static const char fmt_cjm[] PROGMEM = "[cjm] c_jerk_maximum%15.0f%S/min^3\n";
 static const char fmt_cjd[] PROGMEM = "[cjd] c_junction_deviation%14.4f%S\n";
 static const char fmt_cra[] PROGMEM = "[cra] c_radius_value%20.4f%S\n";
-static const char fmt_csn[] PROGMEM = "[csn] c_switch_min%17d [0-4]\n";
-static const char fmt_csx[] PROGMEM = "[csx] c_switch_max%17d [0-4]\n";
-static const char fmt_csv[] PROGMEM = "[csv] c_search_velocity%16.3f%S/min\n";
-static const char fmt_clv[] PROGMEM = "[clv] c_latch_velocity%17.3f%S/min\n";
-static const char fmt_clb[] PROGMEM = "[clb] c_latch_backoff%18.3f%S\n";
-static const char fmt_czb[] PROGMEM = "[czb] c_zero_backoff%19.3f%S\n";
+//static const char fmt_csn[] PROGMEM = "[csn] c_switch_min%17d [0-4]\n";
+//static const char fmt_csx[] PROGMEM = "[csx] c_switch_max%17d [0-4]\n";
+//static const char fmt_csv[] PROGMEM = "[csv] c_search_velocity%16.3f%S/min\n";
+//static const char fmt_clv[] PROGMEM = "[clv] c_latch_velocity%17.3f%S/min\n";
+//static const char fmt_clb[] PROGMEM = "[clb] c_latch_backoff%18.3f%S\n";
+//static const char fmt_czb[] PROGMEM = "[czb] c_zero_backoff%19.3f%S\n";
 
 // PWM strings
 static const char fmt_p1frq[] PROGMEM = "[p1frq] pwm_frequency   %15.3f Hz\n";
@@ -770,10 +770,10 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "b","bjm",_fip, fmt_bjm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].jerk_max,			B_JERK_MAX },
 	{ "b","bjd",_fip, fmt_bjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].junction_dev,	 	B_JUNCTION_DEVIATION },
 	{ "b","bra",_fip, fmt_bra, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].radius,			B_RADIUS },
-	{ "b","bsv",_fip, fmt_bsv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].search_velocity,	B_SEARCH_VELOCITY },
-	{ "b","blv",_fip, fmt_blv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_velocity,	B_LATCH_VELOCITY },
-	{ "b","blb",_fip, fmt_blb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_backoff,	B_LATCH_BACKOFF },
-	{ "b","bzb",_fip, fmt_bzb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].zero_backoff,		B_ZERO_BACKOFF },
+//	{ "b","bsv",_fip, fmt_bsv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].search_velocity,	B_SEARCH_VELOCITY },
+//	{ "b","blv",_fip, fmt_blv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_velocity,	B_LATCH_VELOCITY },
+//	{ "b","blb",_fip, fmt_blb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_backoff,	B_LATCH_BACKOFF },
+//	{ "b","bzb",_fip, fmt_bzb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].zero_backoff,		B_ZERO_BACKOFF },
 
 	{ "c","cam",_fip, fmt_cam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[C].axis_mode,		C_AXIS_MODE },
 	{ "c","cvm",_fip, fmt_cvm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].velocity_max,	 	C_VELOCITY_MAX },
@@ -782,10 +782,10 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "c","cjm",_fip, fmt_cjm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].jerk_max,			C_JERK_MAX },
 	{ "c","cjd",_fip, fmt_cjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].junction_dev,		C_JUNCTION_DEVIATION },
 	{ "c","cra",_fip, fmt_cra, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].radius,			C_RADIUS },
-	{ "c","csv",_fip, fmt_csv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].search_velocity,	C_SEARCH_VELOCITY },
-	{ "c","clv",_fip, fmt_clv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_velocity,	C_LATCH_VELOCITY },
-	{ "c","clb",_fip, fmt_clb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_backoff,	C_LATCH_BACKOFF },
-	{ "c","czb",_fip, fmt_czb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].zero_backoff,		C_ZERO_BACKOFF },
+//	{ "c","csv",_fip, fmt_csv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].search_velocity,	C_SEARCH_VELOCITY },
+//	{ "c","clv",_fip, fmt_clv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_velocity,	C_LATCH_VELOCITY },
+//	{ "c","clb",_fip, fmt_clb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_backoff,	C_LATCH_BACKOFF },
+//	{ "c","czb",_fip, fmt_czb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].zero_backoff,		C_ZERO_BACKOFF },
 
 	// PWM settings
     { "p1","p1frq",_fip, fmt_p1frq, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.frequency,		P1_PWM_FREQUENCY },
