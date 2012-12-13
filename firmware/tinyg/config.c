@@ -1472,8 +1472,6 @@ static uint8_t _text_parser(char *str, cmdObj *cmd)
 	if (*tmp==NUL) *tmp='s';				// make $ behave as a system listing
 	for (; *tmp!=NUL; tmp++) {
 		*tmp = tolower(*tmp);				// convert string to lower case
-		// todo: put comma tolerance in here
-		// todo: insert separator for xfr1000 case in here
 	}
 	// field processing
 	cmd->type = TYPE_NULL;
@@ -1491,10 +1489,11 @@ static uint8_t _text_parser(char *str, cmdObj *cmd)
 	if ((cmd->index = cmd_get_index("",cmd->string)) == NO_INDEX) { 
 		return (TG_UNRECOGNIZED_COMMAND);
 	}
-	cmd_get_token(cmd->index, cmd->token);
-	if (_index_is_group_or_uber(cmd->index)) {			//##################### work to do ###########################
-		cmd->type = TYPE_PARENT;							// indicating it's a group token
-		strncpy(cmd->group, cmd->token, CMD_TOKEN_LEN+1);	// copy group token into string field
+	if (_index_is_group_or_uber(cmd->index)) {
+		cmd->type = TYPE_PARENT;			// indicating it's a group token
+		strcpy(cmd->group, cmd->string);	// the string is a group 
+	} else {
+		strcpy(cmd->token, cmd->string);	// the string is a token
 	}
 	return (TG_OK);
 }
@@ -1831,7 +1830,7 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 		for (uint8_t i=1; i<=COORDS; i++) {
 			for (uint8_t j=0; j<AXES; j++) {
 				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
-				cmd.index = cmd_get_index("", cmd.token); //########################
+				cmd.index = cmd_get_index("", cmd.token);
 				cmd.value = cfg.offset[i][j];
 				cmd_persist(&cmd);				// only writes changed values
 			}
@@ -1899,7 +1898,7 @@ static uint8_t _set_grp(cmdObj *cmd)
 
 static uint8_t _get_grp(cmdObj *cmd)
 {
-	char *parent_group = cmd->token;		// token in the parent cmd object is the group
+	char *parent_group = cmd->group;		// token in the parent cmd object is the group
 	char child_group[CMD_GROUP_LEN+1];		// group string retrieved from cfgArray child
 
 	cmd->type = TYPE_PARENT;				// make first object the parent 
@@ -2076,7 +2075,7 @@ uint8_t cmd_add_token(char *token)			// add an object to the body using a token
 			continue;
 		}
 		// load the index from the token or die trying
-		if ((cmd->index = cmd_get_index("",token)) == NO_INDEX) {	//#################
+		if ((cmd->index = cmd_get_index("",token)) == NO_INDEX) {
 			return (TG_UNRECOGNIZED_COMMAND);
 		}
 		cmd_get_cmdObj(cmd);				// populate the object from the index
