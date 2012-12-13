@@ -33,7 +33,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95		// major version
-#define TINYG_BUILD_NUMBER   	351.06		// Back to working on Homing
+#define TINYG_BUILD_NUMBER   	351.07		// Back to working on Homing
 #define TINYG_COMM_PROTOCOL_REV 1			// communications protocol revision is tracked independently
 
 /****** DEVELOPMENT SETTINGS ******/

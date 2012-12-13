@@ -1805,10 +1805,7 @@ uint8_t cmd_get_type(cmdObj *cmd)
 	if (strstr(cmd->token, "gc") != NULL) {
 		return (CMD_TYPE_GCODE);
 	}
-//	if (strstr("sr,qr", cmd->token) != NULL) {
-//		return (CMD_TYPE_REPORT);
-//	}
-	if (strstr(cmd->token, "sr") != NULL) {
+	if (strstr(cmd->token, "sr") != NULL) {		// Note: it's not more efficient to combine these
 		return (CMD_TYPE_REPORT);
 	}
 	if (strstr(cmd->token, "qr") != NULL) {

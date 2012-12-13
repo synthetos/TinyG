@@ -60,12 +60,10 @@ static void _controller_HSM(void);
 static uint8_t _sync_to_tx_buffer(void);
 static uint8_t _sync_to_planner(void);
 static uint8_t _dispatch(void);
-static void _dispatch_return(uint8_t status, char *buf);
-static void _prompt_ok(void);
-static void _prompt_error(uint8_t status, char *buf);
 static uint8_t _abort_handler(void);
 static uint8_t _feedhold_handler(void);
 static uint8_t _cycle_start_handler(void);
+static uint8_t _text_mode_prompt(uint8_t status, char *buf);
 
 /*
  * tg_init() - controller init
@@ -257,53 +255,29 @@ static uint8_t _dispatch()
 //		case '#': { sig_cycle_start(); break;}	// debug char for cycle start tests
 
 		case NUL: { 							// blank line (just a CR)
-			_dispatch_return(TG_OK, tg.in_buf); 
-			break;
+			return(_text_mode_prompt(TG_OK, tg.in_buf));
 		}
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TG_TEXT_MODE;
 			help_print_general_help();
-			_dispatch_return(TG_OK, tg.in_buf);
-			break;
+			return(_text_mode_prompt(TG_OK, tg.in_buf));
 		}
 		case '$': case '?':{ 					// text-mode config and query
 			cfg.comm_mode = TG_TEXT_MODE;
-			_dispatch_return(cfg_text_parser(tg.in_buf), tg.in_buf);
-			break;
+			return(_text_mode_prompt(cfg_text_parser(tg.in_buf), tg.in_buf));
 		}
 		case '{': { 							// JSON input
 			cfg.comm_mode = TG_JSON_MODE;
-//			fprintf(stderr, "{\"k\":%d}\n", tg.linelen);
-			_dispatch_return(js_json_parser(tg.in_buf), tg.out_buf); 
-			break;
+			return(js_json_parser(tg.in_buf)); 
 		}
 		default: {								// anything else must be Gcode
 			if (cfg.comm_mode != TG_JSON_MODE) {
-				_dispatch_return(gc_gcode_parser(tg.in_buf), tg.in_buf);
+				return(_text_mode_prompt(gc_gcode_parser(tg.in_buf), tg.in_buf));
 			} else {
-//				fprintf(stderr, "{\"k\":%d}\n", tg.linelen);
 				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN);	// use output buffer as a temp
 				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);
-				_dispatch_return(js_json_parser(tg.in_buf), tg.out_buf); 
+				return(js_json_parser(tg.in_buf)); 
 			}
-		}
-	}
-	return (TG_OK);
-}
-
-void _dispatch_return(uint8_t status, char *buf)
-{
-	if (cfg.comm_mode == TG_JSON_MODE) {
-//		cmd_print_list(status, TEXT_INLINE_PAIRS);
-		return;
-	}
-	switch (status) {
-		case TG_OK: case TG_EAGAIN: case TG_NOOP: case TG_ZERO_LENGTH_MOVE:{ 
-			_prompt_ok(); 
-			break;
-		}
-		default: {
-			_prompt_error(status, buf);
 		}
 	}
 }
@@ -403,9 +377,6 @@ PGM_P const msgStatusMessage[] PROGMEM = {
 	msg_sc60, msg_sc61, msg_sc62, msg_sc63, msg_sc64, msg_sc65, msg_sc66, msg_sc67, msg_sc68, msg_sc69
 };
 
-static const char prompt1[] PROGMEM = "tinyg";
-static const char prompt_inch[] PROGMEM = "[inch] ok> ";
-static const char prompt_mm[] PROGMEM = "[mm] ok> ";
 
 char *tg_get_status_message(uint8_t status, char *msg) 
 {
@@ -413,18 +384,26 @@ char *tg_get_status_message(uint8_t status, char *msg)
 	return (msg);
 }
 
-static void _prompt_ok()
-{
-	if (cm_get_units_mode() == INCHES) {
-		fprintf_P(stderr, PSTR("%S%S"), prompt1, prompt_inch);
-	} else {
-		fprintf_P(stderr, PSTR("%S%S"), prompt1, prompt_mm);
-	}
-}
+static const char prompt_mm[] PROGMEM = "mm";
+static const char prompt_in[] PROGMEM = "inch";
+static const char prompt_ok[] PROGMEM = "tinyg [%S] ok> ";
+static const char prompt_err[] PROGMEM = "tinyg [%S] error: %S %s\n";
 
-static void _prompt_error(uint8_t status, char *buf)
+static uint8_t _text_mode_prompt(uint8_t status, char *buf)
 {
-	fprintf_P(stderr, PSTR("error: %S: %s \n"),(PGM_P)pgm_read_word(&msgStatusMessage[status]),buf);
+	const char *Units;	// becomes pointer to progmem string
+
+	if (cm_get_units_mode() != INCHES) {
+		Units = (PGM_P)&prompt_mm;
+	} else {
+		Units = (PGM_P)&prompt_in;
+	}
+	if ((status == TG_OK) || (status == TG_EAGAIN) || (status == TG_NOOP) || (status == TG_ZERO_LENGTH_MOVE)) {
+		fprintf_P(stderr, (PGM_P)&prompt_ok, Units);
+	} else {
+		fprintf_P(stderr, (PGM_P)prompt_err, Units, (PGM_P)pgm_read_word(&msgStatusMessage[status]), buf);
+	}
+	return (TG_OK);
 }
 
 /**** Application Messages *********************************************************
