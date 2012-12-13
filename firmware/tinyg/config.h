@@ -41,7 +41,8 @@
 #define NO_INDEX 0xFF				// defined as no match
 
 #define CMD_GROUP_LEN 3				// max length of group prefix
-#define CMD_TOKEN_LEN 5				// mnemonic token string
+#define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
+//#define CMD_INFIX_LEN 4				// token minus group prefix
 #define CMD_STRING_LEN 64			// original value string or value as a string
 #define CMD_FORMAT_LEN 64			// print formatting string
 #define CMD_STATUS_REPORT_LEN 12	// max number of status report elements - see cfgArray
@@ -90,6 +91,24 @@
  *	the possible exception of the planner queue. It is dominated by the size 
  *	of CMD_NAME_LEN and CMD_VALUE_STRING_LEN which are statically allocated 
  *	and should be as short as possible. 
+ */
+/*  Tokens, grousp and infixes 
+ *
+ * 	These 3 short strings are kept in the cmdObj:
+ *	  - token
+ *	  - group
+ *	  - infix
+ *
+ *	The token is the full mnemonic token used for cmdArray lookup. It is either 
+ *	taken directly from the input or assembled from group+token during input
+ *	in parent/child JSON cases.
+ *	
+ *	The group is the group prefix - e.g. xyzabc, 1-4, p1, g54-g59. It may also 
+ *	be "sys", but this is a special case. Whereas other group prefixes can be pre-
+ *	pended to the infix to make the token, sys is the exception.
+ *
+ *	The infix is the characters remaining in the token once the group has been stripped.
+ *	The infix is used for serializing JSON responses in parent/child cases.
  */
 #define CMD_HEADER_LEN 1			// "b" header
 #define CMD_BODY_LEN 25				// body elements - includes one terminator
@@ -150,8 +169,9 @@ struct cmdObject {					// depending on use, not all elements may be populated
 	int8_t depth;					// depth of object in the tree. 0 is root (-1 is invalid)
 	int8_t type;					// see cmdType
 	double value;					// numeric value
-	char token[CMD_TOKEN_LEN+1];	// mnemonic token
-	char group[CMD_GROUP_LEN+1];	// group token or NUL if not in a group
+	char token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
+	char group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group
+//	char infix[CMD_INFIX_LEN+1];	// token minus group prefix
 	char string[CMD_STRING_LEN+1];	// string storage (See note below)
 }; 									// OK, so it's not REALLY an object
 typedef struct cmdObject cmdObj;	// handy typedef for command onjects
@@ -179,10 +199,10 @@ void cmd_persist(cmdObj *cmd);			// main entry point for persistence
 void cmd_get_cmdObj(cmdObj *cmd);
 
 //INDEX_T cmd_get_max_index(void);
-INDEX_T cmd_get_index(const char *str);
+INDEX_T cmd_get_index(const char *group, const char *token);
 char *cmd_get_token(const INDEX_T i, char *token);
 char *cmd_get_group(const INDEX_T i, char *group);
-uint8_t cmd_is_group(const char *str);
+uint8_t cmd_is_prefixed(const char *str);
 uint8_t cmd_get_type(cmdObj *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 

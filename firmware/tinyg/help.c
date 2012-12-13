@@ -98,7 +98,7 @@ fprintf_P(stderr, PSTR("#### TinyG SELF TEST Help ####\n"));
 fprintf_P(stderr, PSTR("\
 Invoke self test by entering $test=N where N is one of:\n\
   $test=1  smoke test\n\
-  $test=2  motion test   (a series of square and circle moves)\n\
+  $test=2  square test   (a series of squares)\n\
   $test=3  arc test      (some large circles)\n\
   $test=4  dwell test    (moves spaced by 1 second dwells)\n\
   $test=5  homing test   (you must trip homing switches)\n\
@@ -107,6 +107,7 @@ Invoke self test by entering $test=N where N is one of:\n\
   $test=8  JSON test     (motion test run using JSON commands)\n\
   $test=9  inverse time test\n\
   $test=10 rotary motion test\n\
+  $test=11 small moves test\n\
 "));
 _help_postscript();
 }

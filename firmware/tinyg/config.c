@@ -91,6 +91,12 @@
  *	   Note that matching will occur from the most specific to the least specific, meaning that
  *	   if tokens overlap the longer one should be earlier in the array: "gco" should precede "gc".
  */
+/*  --- Rules, guidelines and random stuff
+ *
+ *	It's the responsibility of the object creator to set the index. Downstream functions
+ *	all expect a valid index. Set the index by calling cmd_get_index(). This also validates
+ *	the token and group if no lookup exists.
+ */
 #include <ctype.h>
 #include <stdlib.h>
 #include <math.h>
@@ -166,7 +172,7 @@ static char *_get_format(const INDEX_T i, char *format);
 static int8_t _get_motor(const INDEX_T i);
 //static int8_t _get_axis(const INDEX_T i);
 static int8_t _get_pos_axis(const INDEX_T i);
-static uint8_t _parse_config_string(char *str, struct cmdObject *c);
+static uint8_t _text_parser(char *str, struct cmdObject *c);
 static uint8_t _get_msg_helper(cmdObj *cmd, prog_char_ptr msg, uint8_t value);
 static void _print_text_inline_pairs();
 static void _print_text_inline_values();
@@ -895,7 +901,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "o",  "o",  _f00, fmt_nul, _print_nul, _do_offsets,_set_nul,(double *)&tg.null,0 },
 	{ "$",  "$",  _f00, fmt_nul, _print_nul, _do_all,    _set_nul,(double *)&tg.null,0 }
 };
-#define GROUP_PREFIXES	"sys,p1,x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"// used by cmd_is_group()
+#define GROUP_PREFIXES	"p1,x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"	// used by cmd_is_prefixed()
 #define CMD_COUNT_GROUPS 		21											// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 											// count of uber-groups
 
@@ -1184,7 +1190,8 @@ static uint8_t _set_am(cmdObj *cmd)		// axis mode
 {
 	char linear_axes[] = {"xyz"};
 
-	if (strchr(linear_axes, cmd->token[0]) != NULL) {		// true if it's a linear axis
+//	if (strchr(linear_axes, cmd->token[0]) != NULL) {		// true if it's a linear axis
+	if (strchr(linear_axes, cmd->group[0]) != NULL) {		// true if it's a linear axis
 		if (cmd->value > AXIS_MAX_LINEAR) {
 			cmd->value = 0;
 			char message[CMD_STRING_LEN]; 
@@ -1422,7 +1429,7 @@ static uint8_t _set_defa(cmdObj *cmd)
 
 /****************************************************************************
  * cfg_text_parser() - update a config setting from a text block (text mode)
- * _parse_config_string() - parse a text-mode command line
+ *_text_parser() 	 - parse a text-mode command line
  * 
  * Use cases (execution paths handled)
  *	- $xfr=1200	single parameter set is requested
@@ -1440,7 +1447,7 @@ uint8_t cfg_text_parser(char *str)
 		return (TG_OK);
 	}
 	// single-unit parser processing
-	ritorno(_parse_config_string(str, cmd));// decode the first object
+	ritorno(_text_parser(str, cmd));		// decode the first object
 	if ((cmd->type == TYPE_PARENT) || (cmd->type == TYPE_NULL)) {
 		if (cmd_get(cmd) == TG_COMPLETE) {	// populate value, group values, or run uber-group displays
 			return (TG_OK);					// return for uber-group displays so they don't print twice
@@ -1453,7 +1460,7 @@ uint8_t cfg_text_parser(char *str)
 	return (TG_OK);
 }
 
-static uint8_t _parse_config_string(char *str, cmdObj *cmd)
+static uint8_t _text_parser(char *str, cmdObj *cmd)
 {
 	char *tmp;
 	char separators[] = {" =:|\t"};			// anything someone might use
@@ -1481,13 +1488,12 @@ static uint8_t _parse_config_string(char *str, cmdObj *cmd)
 			cmd->type = TYPE_FLOAT;
 		}
 	}
-	if ((cmd->index = cmd_get_index(cmd->string)) == NO_INDEX) { 
+	if ((cmd->index = cmd_get_index("",cmd->string)) == NO_INDEX) { 
 		return (TG_UNRECOGNIZED_COMMAND);
 	}
 	cmd_get_token(cmd->index, cmd->token);
-//	if ((_index_is_group(cmd->index)) || (_index_is_uber_group(cmd->index))) {
-	if (_index_is_group_or_uber(cmd->index)) {
-		cmd->type = TYPE_PARENT;	// indicating it's a group token
+	if (_index_is_group_or_uber(cmd->index)) {			//##################### work to do ###########################
+		cmd->type = TYPE_PARENT;							// indicating it's a group token
 		strncpy(cmd->group, cmd->token, CMD_TOKEN_LEN+1);	// copy group token into string field
 	}
 	return (TG_OK);
@@ -1765,7 +1771,7 @@ static int8_t _get_pos_axis(const INDEX_T i)
  * cmdObj helper functions and other low-level cmd helpers
  * cmd_get_max_index()	 - utility function to return index array size				
  * cmd_get_index() 		 - get index from mnenonic token
- * cmd_is_group()		 - returns true if the command is a group
+ * cmd_is_prefixed()	 - returns true if the command is a prefixed group
  * cmd_get_type()		 - returns command type as a CMD_TYPE enum
  * cmd_persist_offsets() - write any changed G54 (et al) offsets back to NVM
  *
@@ -1776,8 +1782,12 @@ static int8_t _get_pos_axis(const INDEX_T i)
 
 //INDEX_T cmd_get_max_index() { return (CMD_INDEX_MAX);}
 
-INDEX_T cmd_get_index(const char *str)
+INDEX_T cmd_get_index(const char *group, const char *token)
 {
+	char str[CMD_TOKEN_LEN+1];
+	strcpy(str, group);
+	strcat(str, token);
+
 	char tmp;
 	for (INDEX_T i=0; i<CMD_INDEX_MAX; i++) {
 		if ((tmp = (char)pgm_read_byte(&cfgArray[i].token[0])) != str[0]) continue; // 1st character mismatch
@@ -1794,7 +1804,7 @@ INDEX_T cmd_get_index(const char *str)
 	return (NO_INDEX);	// no match
 }
 
-uint8_t cmd_is_group(const char *str)
+uint8_t cmd_is_prefixed(const char *str)
 {
 	if (strstr(GROUP_PREFIXES, str) != NULL) return (true);
 	return (false);
@@ -1821,7 +1831,7 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 		for (uint8_t i=1; i<=COORDS; i++) {
 			for (uint8_t j=0; j<AXES; j++) {
 				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
-				cmd.index = cmd_get_index(cmd.token);
+				cmd.index = cmd_get_index("", cmd.token); //########################
 				cmd.value = cfg.offset[i][j];
 				cmd_persist(&cmd);				// only writes changed values
 			}
@@ -1927,7 +1937,7 @@ static void _do_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]) // helper 
 		if (list[i][0] == NUL) return;
 		cmd = cmd_body;
 		strncpy(cmd->group, list[i], CMD_TOKEN_LEN);
-		cmd->index = cmd_get_index(cmd->group);
+		cmd->index = cmd_get_index(cmd->group, "");
 //		cmd->type = TYPE_PARENT;
 		cmd_get_cmdObj(cmd);
 		cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
@@ -2066,7 +2076,7 @@ uint8_t cmd_add_token(char *token)			// add an object to the body using a token
 			continue;
 		}
 		// load the index from the token or die trying
-		if ((cmd->index = cmd_get_index(token)) == NO_INDEX) {
+		if ((cmd->index = cmd_get_index("",token)) == NO_INDEX) {	//#################
 			return (TG_UNRECOGNIZED_COMMAND);
 		}
 		cmd_get_cmdObj(cmd);				// populate the object from the index
@@ -2086,7 +2096,7 @@ uint8_t cmd_add_string(char *token, char *string)	// add a string object to the 
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		cmd->token[CMD_TOKEN_LEN-1] = NUL;	// safety measure
 		strncpy(cmd->string, string, CMD_STRING_LEN);
-		cmd->index = cmd_get_index(cmd->token);
+		cmd->index = cmd_get_index("", cmd->token);	//#######################
 		cmd->type = TYPE_STRING;
 		return (TG_OK);
 	}
@@ -2138,15 +2148,13 @@ uint8_t cmd_add_float(char *token, double value)	// add a float object to the bo
 
 void cmd_print_list(uint8_t status, uint8_t textmode)
 {
-	// JSON handling. Kind of a hack. Generate the JSON string w/o the checksum hash. 
-	// Then calculate the checksum and add it into the JSON string with proper termination
 	if (cfg.comm_mode == TG_JSON_MODE) {
 		js_print_list(status);
 	} else {
 		switch (textmode) {
 			case TEXT_INLINE_PAIRS: { _print_text_inline_pairs(); break; }
 			case TEXT_INLINE_VALUES: { _print_text_inline_values(); break; }
-			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted(); break; }
+			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted();}
 		}
 	}
 	cmd_clear_body(cmd_body);		// clear the cmd body to get ready for the next use

@@ -102,10 +102,10 @@ void rpt_init_status_report(uint8_t persist_flag)
 
 	cm.status_report_counter = cfg.status_report_interval;
 
-	cmd.index = cmd_get_index("se00");				// set first SR persistence index
+	cmd.index = cmd_get_index("","se00");				// set first SR persistence index
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
-		if (sr_defaults[i][0] == NUL) break;		// quit on first blank array entry
-		cmd.value = cmd_get_index(sr_defaults[i]);	// load the index for the SR element
+		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
+		cmd.value = cmd_get_index("", sr_defaults[i]);	// load the index for the SR element
 		cmd_set(&cmd);
 		cmd_persist(&cmd);
 		cmd.index++;
@@ -227,9 +227,9 @@ uint8_t rpt_run_queue_report()
 	cmdObj *cmd = cmd_body;
 
 	if (qr.qr == 0) {					// cache the report indices
-		qr.qr = cmd_get_index("qr");	// this only happens once
-		qr.lx = cmd_get_index("lx");
-		qr.pb = cmd_get_index("pb");
+		qr.qr = cmd_get_index("","qr");	// this only happens once
+		qr.lx = cmd_get_index("","lx");
+		qr.pb = cmd_get_index("","pb");
 	}
 
 	cmd_clear_obj(cmd);			 		// setup the parent object			

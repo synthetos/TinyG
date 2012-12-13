@@ -255,7 +255,10 @@ static uint8_t _dispatch()
 //		case '#': { sig_cycle_start(); break;}	// debug char for cycle start tests
 
 		case NUL: { 							// blank line (just a CR)
-			return(_text_mode_prompt(TG_OK, tg.in_buf));
+			if (cfg.comm_mode != TG_JSON_MODE) {
+				_text_mode_prompt(TG_OK, tg.in_buf);
+			}
+			return (TG_OK);
 		}
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TG_TEXT_MODE;

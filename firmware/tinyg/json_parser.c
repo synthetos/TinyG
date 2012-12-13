@@ -114,7 +114,7 @@ uint8_t _json_parser(char *str)
 		if ((status = _get_nv_pair(cmd, &str, group, &depth)) > TG_EAGAIN) { // erred out
 			return (status);
 		}
-		if (cmd_is_group(cmd->token)) {			// trap ill-formed groups
+		if (cmd_is_prefixed(cmd->token)) {		// trap ill-formed groups
 			if ((cmd->type != TYPE_PARENT) && (cmd->type != TYPE_NULL)) {
 				return (TG_UNRECOGNIZED_COMMAND);
 			}
@@ -196,18 +196,16 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	if ((tmp = strchr(++(*pstr), '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	*tmp = NUL;
 
-	// copy the token by itself or with a group prefix if it's a prefixed group
-	// grouped variables are looked up index using the full token string, e.g. "xvm"
-	if (cmd_is_group(group) == true) {
-		strncpy(cmd->group, group, CMD_GROUP_LEN);	// propagate parent's group to this child
-		strncpy(cmd->token, group, CMD_GROUP_LEN);	// prepend the group string to the token
-		uint8_t len = strlen(group);
-		strncpy(&cmd->token[len], *pstr, CMD_TOKEN_LEN+1-len);// cat token to group prefix
-	} else {
-		strncpy(cmd->token, *pstr, CMD_TOKEN_LEN+1);// copy token from string
+	// process the token and group strings
+	strncpy(cmd->token, *pstr, CMD_TOKEN_LEN+1);	// copy the string to the token
+	if (group[0] != NUL) {							// if NV pair is part of a group
+		strncpy(cmd->group, group, CMD_GROUP_LEN);	// copy the parent's group to this child
 	}
+
 	// validate the token and get the index
-	if ((cmd->index = cmd_get_index(cmd->token)) == NO_INDEX) { return (TG_UNRECOGNIZED_COMMAND);}
+	if ((cmd->index = cmd_get_index(cmd->group, cmd->token)) == NO_INDEX) { 
+		return (TG_UNRECOGNIZED_COMMAND);
+	}
 	*pstr = ++tmp;
 
 	// --- Process value part ---
@@ -216,7 +214,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { 
 		cmd->type = TYPE_NULL;
 		cmd->value = TYPE_NULL;
-		if (cmd_is_group(cmd->token) == true) { 
+		if (cmd_is_prefixed(cmd->token) == true) { 
 			strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);// record the group token
 		}
 	} else if (**pstr == 'f') { 
@@ -377,7 +375,6 @@ void js_print_list(uint8_t status)
 		cmd_footer->type = TYPE_EMPTY;
 		js_serialize_json(cmd, tg.out_buf);						// make JSON string w/o footer
 	}
-
 	// output the result
 	fprintf(stderr, "%s", tg.out_buf);
 }
