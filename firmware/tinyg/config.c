@@ -1473,10 +1473,12 @@ uint8_t cfg_text_parser(char *str)
 {
 	cmdObj *cmd = cmd_body;					// point at first object in the body
 
-	// handle status report case
-	if (str[0] == '?') {
+	if (str[0] == '?') {					// handle status report case
 		rpt_run_multiline_status_report();
 		return (TG_OK);
+	}
+	if ((str[0] == '$') && (str[1] == NUL)) {  // treat a lone $ as a sys request
+		strcat(str,"sys");
 	}
 	// single-unit parser processing
 	ritorno(_text_parser(str, cmd));		// decode the request or return if error
@@ -1494,34 +1496,36 @@ uint8_t cfg_text_parser(char *str)
 
 static uint8_t _text_parser(char *str, cmdObj *cmd)
 {
-	char *tmp;
-	char separators[] = {" =:|\t"};			// anything someone might use
+	char *ptr_rd, *ptr_wr;					// read and write pointers
+	char separators[] = {" =:|\t"};			// any separator someone might use
 
-	// pre-processing
+	// string pre-processing
 	cmd_clear_obj(cmd);						// initialize config object
 	if (*str == '$') str++;					// ignore leading $
-	tmp = str;
-	if (*tmp==NUL) *tmp='s';				// make $ behave as a system listing
-	for (; *tmp!=NUL; tmp++) {
-		*tmp = tolower(*tmp);				// convert string to lower case
+	for (ptr_rd = ptr_wr = str; *ptr_rd!=NUL; ptr_rd++, ptr_wr++) {
+		*ptr_wr = tolower(*ptr_rd);			// convert string to lower case
+		if (*ptr_rd==',') {
+			*ptr_wr = *(++ptr_rd);			// skip over comma
+		}
 	}
+	*ptr_wr = NUL;
+
 	// field processing
 	cmd->type = TYPE_NULL;
-	if ((tmp = strpbrk(str, separators)) == NULL) { // no value part
+	if ((ptr_rd = strpbrk(str, separators)) == NULL) { // no value part
 		strncpy(cmd->token, str, CMD_TOKEN_LEN);
 	} else {
-		*tmp = NUL;							// terminate at end of name
+		*ptr_rd = NUL;						// terminate at end of name
 		strncpy(cmd->token, str, CMD_TOKEN_LEN);
-		str = ++tmp;
-		cmd->value = strtod(str, &tmp);		// tmp is the end pointer
-		if (tmp != str) {
+		str = ++ptr_rd;
+		cmd->value = strtod(str, &ptr_rd);	// ptr_rd used as end pointer
+		if (ptr_rd != str) {
 			cmd->type = TYPE_FLOAT;
 		}
 	}
 	if ((cmd->index = cmd_get_index("",cmd->token)) == NO_INDEX) { 
 		return (TG_UNRECOGNIZED_COMMAND);
 	}
-//	strncpy(cmd->token, cmd->string, CMD_TOKEN_LEN); // the string is a token
 	return (TG_OK);
 }
 
@@ -1671,7 +1675,7 @@ static void _print_rot(cmdObj *cmd)
 
 static char *_get_format(const INDEX_T i, char *format)
 {
-	strncpy_P(format, (PGM_P)pgm_read_word(&cfgArray[i].format), CMD_FORMAT_LEN+1);
+	strncpy_P(format, (PGM_P)pgm_read_word(&cfgArray[i].format), CMD_FORMAT_LEN);
 	return (format);
 }
 
@@ -1763,22 +1767,32 @@ void cmd_get_cmdObj(cmdObj *cmd)
 
 INDEX_T cmd_get_index(const char *group, const char *token)
 {
+	char c;
 	char str[CMD_TOKEN_LEN+1];
 	strcpy(str, group);
 	strcat(str, token);
 
-	char tmp;
 	for (INDEX_T i=0; i<CMD_INDEX_MAX; i++) {
-		if ((tmp = (char)pgm_read_byte(&cfgArray[i].token[0])) != str[0]) continue; // 1st character mismatch
-		if ((tmp = (char)pgm_read_byte(&cfgArray[i].token[1])) == NUL) return(i);	// one character match
-		if (tmp != str[1]) continue;												// 2nd character mismatch
-		if ((tmp = (char)pgm_read_byte(&cfgArray[i].token[2])) == NUL) return(i);	// two character match
-		if (tmp != str[2]) continue;												// 3rd character mismatch
-		if ((tmp = (char)pgm_read_byte(&cfgArray[i].token[3])) == NUL) return(i);	// three character match
-		if (tmp != str[3]) continue;												// 4th character mismatch
-		if ((tmp = (char)pgm_read_byte(&cfgArray[i].token[4])) == NUL) return(i);	// four character match
-		if (tmp != str[4]) continue;												// 5th character mismatch
-		return (i);																	// five character match
+		if ((c = (char)pgm_read_byte(&cfgArray[i].token[0])) != str[0]) {	// 1st character mismatch 
+			continue;
+		}
+		if ((c = (char)pgm_read_byte(&cfgArray[i].token[1])) == NUL) {
+			if (str[1] == NUL) return(i);									// one character match
+		}
+		if (c != str[1]) continue;											// 2nd character mismatch
+		if ((c = (char)pgm_read_byte(&cfgArray[i].token[2])) == NUL) {
+			if (str[2] == NUL) return(i);									// two character match
+		}
+		if (c != str[2]) continue;											// 3rd character mismatch
+		if ((c = (char)pgm_read_byte(&cfgArray[i].token[3])) == NUL) {
+			if (str[3] == NUL) return(i);									// three character match
+		}
+		if (c != str[3]) continue;											// 4th character mismatch
+		if ((c = (char)pgm_read_byte(&cfgArray[i].token[4])) == NUL) {
+			if (str[4] == NUL) return(i);									// four character match
+		}
+		if (c != str[4]) continue;											// 5th character mismatch
+		return (i);															// five character match
 	}
 	return (NO_INDEX);	// no match
 }
@@ -1874,11 +1888,12 @@ static uint8_t _get_grp(cmdObj *cmd)
  *	a setter. It iterates the group children and either gets the value or sets
  *	the value for each depending on the cmd->type.
  *
- *	This function serves JSON mode only as text mode doesn;t call it.
+ *	This function serves JSON mode only as text mode shouldn't call it.
  */
 
 static uint8_t _set_grp(cmdObj *cmd)
 {
+	if (cfg.comm_mode == TG_TEXT_MODE) return (TG_UNRECOGNIZED_COMMAND);
 	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
 		if (cmd->type == TYPE_EMPTY) break;

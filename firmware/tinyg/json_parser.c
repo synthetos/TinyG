@@ -193,7 +193,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	*tmp = NUL;
 
 	// process the token and group strings
-	strncpy(cmd->token, *pstr, CMD_TOKEN_LEN+1);	// copy the string to the token
+	strncpy(cmd->token, *pstr, CMD_TOKEN_LEN);		// copy the string to the token
 	if (group[0] != NUL) {							// if NV pair is part of a group
 		strncpy(cmd->group, group, CMD_GROUP_LEN);	// copy the parent's group to this child
 	}
@@ -210,9 +210,6 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { // process null value
 		cmd->type = TYPE_NULL;
 		cmd->value = TYPE_NULL;
-//		if (cmd_is_prefixed(cmd->token) == true) { 
-//			strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);// record the group token
-//		}
 	} else if (**pstr == 'f') { 
 		cmd->type = TYPE_BOOL;
 		cmd->value = false;						// (technically not necessary due to the init)
@@ -371,8 +368,7 @@ void js_print_list(uint8_t status)
 		cmd_footer->type = TYPE_EMPTY;
 		js_serialize_json(cmd, tg.out_buf);						// make JSON string w/o footer
 	}
-	// output the result
-	fprintf(stderr, "%s", tg.out_buf);
+	fprintf(stderr, "%s", tg.out_buf);	// output the result
 }
 
 

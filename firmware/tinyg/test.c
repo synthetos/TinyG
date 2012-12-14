@@ -99,9 +99,15 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
+	// text parser test cases
+//	xio_queue_RX_string_usb("$\n");				// sys request
+//	xio_queue_RX_string_usb("$xvm=16,000\n");	// comma skipping
+//	xio_queue_RX_string_usb("$a\n");			// match a group
+//	xio_queue_RX_string_usb("$xabcdefghij\n");	// overrun
+//	xio_queue_RX_string_usb("$x=1\n");			// trying to set a group
+
 //	xio_queue_RX_string_usb("$ted=1\n");
 //	xio_queue_RX_string_usb("$$\n");
-	xio_queue_RX_string_usb("$xabcdefghij\n");
 //	xio_queue_RX_string_usb("$sys\n");
 //	xio_queue_RX_string_usb("$xvm\n");
 //	xio_queue_RX_string_usb("$xasasas=42\n");// bad command
@@ -288,8 +294,13 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0 y5\n");
 //	See 331.19 or earlier for some more lengthy feedhold tests
 
-/* JSON tests */
-// If you want to use all these you need to set RX buffer to 1024 in xio_usart.h
+/* JSON TEST CASES */
+// If you want to run multi-line cases you need to set RX buffer to 1024 in xio_usart.h
+
+// JSON parser tests
+	xio_queue_RX_string_usb("{\"x\":\"\"}\n");		// retrieve a group
+//	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sm\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
+
 //	xio_queue_RX_string_usb("{\"gc\":\"g0 x3 y4 z5.5 (comment line)\"}\n");
 //	xio_queue_RX_string_usb("{\"xfr\":1200}\n");
 //	xio_queue_RX_string_usb("{\"xfr\":1200, \"yfr\":1201, \"zfr\":600}\n");
@@ -299,28 +310,6 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"sr\":{\"line\":true,\"posx\":true,\"posy\":true}}\n");	// set status report
 //	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sm\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
 
-//	xio_queue_RX_string_usb("{\"gc\":{\"sr\":{\"momo\":\"null\"},\"x\":0,\"y\":\"OK\",\"z\":123}}\n");
-/*	xio_queue_RX_string_usb("{\"config_version\":null}\n");	// simple null test
-	xio_queue_RX_string_usb("{\"config_profile\":true}\n");	// simple true test
-	xio_queue_RX_string_usb("{\"prompt\":false}\n");		// simple false test
-	xio_queue_RX_string_usb("{\"gcode\":\"g0 x3 y4 z5.5 (comment line)\"}\n");// string test w/comment
-	xio_queue_RX_string_usb("{\"x_feedrate\":1200}\n");		// numeric test
-	xio_queue_RX_string_usb("{\"y_feedrate\":-1456}\n");	// numeric test
-	xio_queue_RX_string_usb("{\"Z_velocity_maximum\":null}\n");// axis w/null
-	xio_queue_RX_string_usb("{\"m1_microsteps\":null}\n");	// motor w/null
-	xio_queue_RX_string_usb("{\"2mi\":8}\n");				// motor token w/null
-	xio_queue_RX_string_usb("{\"no-token\":12345}\n");		// non-token w/number
-	xio_queue_RX_string_usb("{\"firmware_version\":329.26,		\"config_version\":0.93}\n");
-	xio_queue_RX_string_usb("{\"1mi\":8, \"2mi\":8,\"3mi\":8,\"4mi\":8}\n");	// 4 elements
-	xio_queue_RX_string_usb("{\"status_report\":{\"ln\":true, \"x_pos\":true, \"y_pos\":true, \"z_pos\":true}}\n");
-	xio_queue_RX_string_usb("{\"parent_case1\":{\"child_null\":null}}\n");	// parent w/single child
-	xio_queue_RX_string_usb("{\"parent_case2\":{\"child_num\":23456}}\n");	// parent w/single child
-	xio_queue_RX_string_usb("{\"parent_case3\":{\"child_str\":\"stringdata\"}}\n");// parent w/single child
-	xio_queue_RX_string_usb("{\"err_1\":36000x\n}");		// illegal number 
-	xio_queue_RX_string_usb("{\"err_2\":\"text\n}");		// no string termination
-	xio_queue_RX_string_usb("{\"err_3\":\"12345\",}\n");	// bad } termination
-	xio_queue_RX_string_usb("{\"err_4\":\"12345\"\n");		// no } termination
-*/
 //	xio_queue_RX_string_usb("{\"x\":\"\"}\n");				// x axis group display
 //	xio_queue_RX_string_usb("{\"c\":\"\"}\n");				// c axis group display
 //	xio_queue_RX_string_usb("{\"1\":\"\"}\n");				// motor 1 group display

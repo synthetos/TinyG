@@ -171,7 +171,6 @@ struct cmdObject {					// depending on use, not all elements may be populated
 	double value;					// numeric value
 	char token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
 	char group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group
-//	char infix[CMD_INFIX_LEN+1];	// token minus group prefix
 	char string[CMD_STRING_LEN+1];	// string storage (See note below)
 }; 									// OK, so it's not REALLY an object
 typedef struct cmdObject cmdObj;	// handy typedef for command onjects
