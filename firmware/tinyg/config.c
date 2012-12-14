@@ -1757,13 +1757,20 @@ void cmd_get_cmdObj(cmdObj *cmd)
 	INDEX_T tmp = cmd->index;
 	cmd_clear_obj(cmd);
 	cmd->index = tmp;
-	strcpy_P(cmd->token, cfgArray[cmd->index].token); // token field is always terminated
+
 	strcpy_P(cmd->group, cfgArray[cmd->index].group); // group field is always terminated
+	strcpy_P(cmd->token, cfgArray[cmd->index].token); // token field is always terminated
 
-	if (strstr(cmd->group, "sys") != NULL) { cmd->group[0] = NUL;}
-	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);
+	// special processing for system groups and stripping tokens for groups
+	if (cmd->group[0] != NUL) {
+		if (strstr(cmd->group, "sys") != NULL) { 
+			cmd->group[0] = NUL;
+		} else {
+			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
+		}
+	}
+	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);	// populate the value
 }
-
 
 INDEX_T cmd_get_index(const char *group, const char *token)
 {
@@ -1873,7 +1880,7 @@ static uint8_t _get_grp(cmdObj *cmd)
 	char group[CMD_GROUP_LEN+1];			// group string retrieved from cfgArray child
 	cmd->type = TYPE_PARENT;				// make first object the parent 
 	for (INDEX_T i=0; i<=CMD_INDEX_END_SINGLES; i++) {
-		strcpy_P(group, cfgArray[i].group);  // don't need strncpy as group is always terminated
+		strcpy_P(group, cfgArray[i].group);  // don't need strncpy as it's always terminated
 		if (strstr(parent_group, group) != parent_group) continue;
 		(++cmd)->index = i;
 		cmd_get_cmdObj(cmd);
