@@ -40,11 +40,11 @@
 #include "xio/xio.h"
 
 // regression test files
-#include "tests/test_001_smoke.h" 	// basic functionality
-#include "tests/test_002_squares.h"	// square moves
-#include "tests/test_003_arcs.h"	// arc moves
-#include "tests/test_004_dwell.h"	// dwells embedded in move sequences
-#include "tests/test_005_homing.h"	// G28.1 homing cycles
+#include "tests/test_001_homing.h"	// G28.1 homing cycles
+#include "tests/test_002_smoke.h" 	// basic functionality
+#include "tests/test_003_squares.h"	// square moves
+#include "tests/test_004_arcs.h"	// arc moves
+#include "tests/test_005_dwell.h"	// dwells embedded in move sequences
 #include "tests/test_006_feedhold.h"// feedhold - requires manual ! and ~ entry
 #include "tests/test_007_Mcodes.h"	// M codes synchronized w/moves (planner queue)
 #include "tests/test_008_json.h"	// JSON parser and IO
@@ -65,11 +65,11 @@ uint8_t tg_test(cmdObj *cmd)
 {
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (TG_OK);}
-		case 1: { xio_open_pgm(PGMFILE(&test_smoke)); break;}
-		case 2: { xio_open_pgm(PGMFILE(&test_squares)); break;}
-		case 3: { xio_open_pgm(PGMFILE(&test_arcs)); break;}
-		case 4: { xio_open_pgm(PGMFILE(&test_dwell)); break;}
-		case 5: { xio_open_pgm(PGMFILE(&test_homing)); break;}
+		case 1: { xio_open_pgm(PGMFILE(&test_homing)); break;}
+		case 2: { xio_open_pgm(PGMFILE(&test_smoke)); break;}
+		case 3: { xio_open_pgm(PGMFILE(&test_squares)); break;}
+		case 4: { xio_open_pgm(PGMFILE(&test_arcs)); break;}
+		case 5: { xio_open_pgm(PGMFILE(&test_dwell)); break;}
 		case 6: { xio_open_pgm(PGMFILE(&test_feedhold)); break;}
 		case 7: { xio_open_pgm(PGMFILE(&test_Mcodes)); break;}
 		case 8: { xio_open_pgm(PGMFILE(&test_json)); break;}
