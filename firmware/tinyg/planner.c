@@ -87,10 +87,11 @@ enum mpBufferState {			// bf->buffer_state values
 struct mpBuffer {				// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;		// static pointer to previous buffer
 	struct mpBuffer *nx;		// static pointer to next buffer
+//	fptrCallback callback;		// callback to execution function
 //	uint8_t (*exec_func)(double parameter); // callback to function to execute w/parameter
+	uint8_t (*exec_func)(struct mpBuffer *bf); // callback to function to execute - passes *bf
 	uint32_t linenum;			// runtime line number; or line index if not numbered
 	uint32_t lineindex;			// runtime autoincremented line index
-	fptrCallback callback;		// callback to execution function
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
 	uint8_t move_type;			// used to dispatch to run routine
 	uint8_t move_code;			// M code or T code
@@ -118,8 +119,8 @@ struct mpBuffer {				// See Planning Velocity Notes for variable usage
 
 	double jerk;				// maximum linear jerk term for this move
 #ifdef __PLAN_R2
-	double recip_half_jerk;			// used by planning
-	double half_jerk;				    // used by planning
+	double recip_half_jerk;		// used by planning
+	double half_jerk;			// used by planning
 #else
 	double recip_jerk;			// 1/Jm used for planning (compute-once)
 	double cbrt_jerk;			// cube root of Jm used for planning (compute-once)
@@ -128,6 +129,8 @@ struct mpBuffer {				// See Planning Velocity Notes for variable usage
 typedef struct mpBuffer mpBuf;
 #define spindle_speed time		// alias spindle_speed to the time variable
 #define parameter time			// alias parameter to the time variable
+#define offset target			// use target array for coordinate offsets
+#define flag unit				// use unit vector for axis flags for offsets
 
 struct mpBufferPool {			// ring buffer for sub-moves
 	uint8_t buffers_available;	// running count of available buffers
@@ -152,7 +155,7 @@ struct mpMoveMasterSingleton {	// common variables for planning (move master)
 };
 
 struct mpMoveRuntimeSingleton {	// persistent runtime variables
-//	uint8_t (*run_move)(struct mpBuffer *m); // currently running move - left in for reference
+//	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
 	uint32_t linenum;			// runtime line/block number of BF being executed
 	uint32_t lineindex;			// runtime line index of BF being executed
 	uint8_t move_state;			// state of the overall move
@@ -223,12 +226,12 @@ static double _get_junction_deviation(const double a_unit[], const double b_unit
 
 // execute routines (NB: These are all called from the LO interrupt)
 static uint8_t _exec_null(mpBuf *bf);
-//static uint8_t _exec_line(mpBuf *bf);
 static uint8_t _exec_dwell(mpBuf *bf);
-static uint8_t _exec_mcode(mpBuf *bf);
 //static uint8_t _exec_command(mpBuf *bf);
+static uint8_t _exec_mcode(mpBuf *bf);
 static uint8_t _exec_tool(mpBuf *bf);
 static uint8_t _exec_spindle_speed(mpBuf *bf);
+
 static uint8_t _exec_aline(mpBuf *bf);
 static uint8_t _exec_aline_head(void);
 static uint8_t _exec_aline_body(void);
@@ -384,13 +387,13 @@ uint8_t mp_exec_move()
 		cm.motion_state = MOTION_RUN;							// auto state-change
 	}
 	switch (bf->move_type) {									// dispatch the move
-		case MOVE_TYPE_NULL: { return (_exec_null(bf));}
-//		case MOVE_TYPE_LINE: { return (_exec_line(bf));}
-		case MOVE_TYPE_ALINE: { return (_exec_aline(bf));}
-		case MOVE_TYPE_DWELL: { return (_exec_dwell(bf));}
-		case MOVE_TYPE_MCODE: { return (_exec_mcode(bf));}
+		case MOVE_TYPE_NULL: 	{ return (_exec_null(bf));}
+//		case MOVE_TYPE_LINE:	{ return (_exec_line(bf));}
+		case MOVE_TYPE_ALINE:	{ return (_exec_aline(bf));}
+		case MOVE_TYPE_DWELL:	{ return (_exec_dwell(bf));}
 //		case MOVE_TYPE_COMMAND: { return (_exec_command(bf));}
-		case MOVE_TYPE_TOOL: { return (_exec_tool(bf));}
+		case MOVE_TYPE_MCODE:	{ return (_exec_mcode(bf));}
+		case MOVE_TYPE_TOOL:	{ return (_exec_tool(bf));}
 		case MOVE_TYPE_SPINDLE_SPEED: { return (_exec_spindle_speed(bf));}
 	}
 	return (TG_INTERNAL_ERROR);		// never supposed to get here

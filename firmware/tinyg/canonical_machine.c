@@ -371,6 +371,7 @@ static double _calc_ABC(uint8_t i, double target[], double flag[])
 	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XYZ) && ((flag[X] > EPSILON) || (flag[Y] > EPSILON) || (flag[Z] > EPSILON))) {
 		double length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
 		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
+
 	}
 	return tmp;
 }
@@ -582,7 +583,13 @@ uint8_t cm_set_units_mode(uint8_t mode)		// G20, G21
 	return (TG_OK);
 }
 
-uint8_t	cm_set_coord_system(uint8_t coord_system)
+uint8_t cm_set_distance_mode(uint8_t mode)	// G90, G91
+{
+	gm.distance_mode = mode;				// 0 = absolute mode, 1 = incremental
+	return (TG_OK);
+}
+
+uint8_t	cm_set_coord_system(uint8_t coord_system)	// G54 - G59
 {
 	gm.coord_system = coord_system;	
 	return (TG_OK);
@@ -603,12 +610,6 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
 	if (cm.machine_state != MACHINE_CYCLE) {
 		cmd_persist_offsets(cm.g10_flag);
 	}
-	return (TG_OK);
-}
-
-uint8_t cm_set_distance_mode(uint8_t mode)	// G90, G91
-{
-	gm.distance_mode = mode;				// 0 = absolute mode, 1 = incremental
 	return (TG_OK);
 }
 
