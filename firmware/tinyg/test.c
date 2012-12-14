@@ -118,13 +118,13 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"c\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("{\"baud\":6}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"n20g0x1y1.1\"}\n");
+//	xio_queue_RX_string_usb("{\"gc\":\"n20g0x1y1.1\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x20y30z40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x30\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x0\"}\n");
 //	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
-//	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
+	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("g0x2\n");
 //	xio_queue_RX_string_usb("g92a0\n");

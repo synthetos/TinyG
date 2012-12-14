@@ -109,21 +109,17 @@ uint8_t _json_parser(char *str)
 
 	// parse the JSON command into the cmd body
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
+
 	do {
 		if (--i == 0) { return (TG_JSON_TOO_MANY_PAIRS); }			// length error
 		if ((status = _get_nv_pair(cmd, &str, group, &depth)) > TG_EAGAIN) { // erred out
 			return (status);
 		}
-		if (cmd_is_prefixed(cmd->token)) {		// trap ill-formed groups
-			if ((cmd->type != TYPE_PARENT) && (cmd->type != TYPE_NULL)) {
-				return (TG_UNRECOGNIZED_COMMAND);
-			}
-		}
 		strncpy(group, cmd->group, CMD_GROUP_LEN);// propagate the group ID from previous obj
 		cmd = cmd->nx;
 	} while (status != TG_OK);					// breaks when parsing is complete
 
-	// execute the command - iterate through all commands in the body
+	// execute the command
 	cmd = cmd_body;
 	if (cmd->type == TYPE_NULL){				// means GET the value
 		ritorno(cmd_get(cmd));					// ritorno returns w/status on any errors
@@ -211,12 +207,12 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	// --- Process value part ---
 	if ((*pstr = strchr(*pstr, ':')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	(*pstr)++;									// advance to start of value field
-	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { 
+	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { // process null value
 		cmd->type = TYPE_NULL;
 		cmd->value = TYPE_NULL;
-		if (cmd_is_prefixed(cmd->token) == true) { 
-			strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);// record the group token
-		}
+//		if (cmd_is_prefixed(cmd->token) == true) { 
+//			strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);// record the group token
+//		}
 	} else if (**pstr == 'f') { 
 		cmd->type = TYPE_BOOL;
 		cmd->value = false;						// (technically not necessary due to the init)

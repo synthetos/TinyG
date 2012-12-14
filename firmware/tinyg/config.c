@@ -1489,12 +1489,7 @@ static uint8_t _text_parser(char *str, cmdObj *cmd)
 	if ((cmd->index = cmd_get_index("",cmd->string)) == NO_INDEX) { 
 		return (TG_UNRECOGNIZED_COMMAND);
 	}
-	if (_index_is_group_or_uber(cmd->index)) {
-		cmd->type = TYPE_PARENT;			// indicating it's a group token
-		strcpy(cmd->group, cmd->string);	// the string is a group 
-	} else {
-		strcpy(cmd->token, cmd->string);	// the string is a token
-	}
+	strncpy(cmd->token, cmd->string, CMD_TOKEN_LEN); // the string is a token
 	return (TG_OK);
 }
 
@@ -1507,7 +1502,6 @@ static uint8_t _text_parser(char *str, cmdObj *cmd)
  * 			   Populate cmd body with single valued elements or groups (iterates)
  * cmd_formatted_print() - Output a formatted string for the value.
  * cmd_persist() - persist value to NVM. Takes special cases into account
- * cmd_get_cmdObj() - like cmd_get but returns cmdObj pointer instead of the value
  *
  * These are the gatekeeper functions that check index ranges so others don't have to
  */
@@ -1542,16 +1536,6 @@ void cmd_persist(cmdObj *cmd)
 	if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_PERSIST) {
 		cmd_write_NVM_value(cmd);
 	}
-}
-
-void cmd_get_cmdObj(cmdObj *cmd)
-{
-	if (cmd->index >= CMD_INDEX_MAX) return;
-	INDEX_T tmp = cmd->index;
-	cmd_clear_obj(cmd);
-	cmd_get_token((cmd->index = tmp), cmd->token);
-	if (_index_is_group(cmd->index)) { strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);}
-	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);
 }
 
 /***** Generic Internal Functions *******************************************
@@ -1717,7 +1701,7 @@ char *cmd_get_group(const INDEX_T i, char *group)
 	if ((i < 0) || (i >= CMD_INDEX_MAX)) { 
 		*group = NUL;
 	} else {
-		strcpy_P(group, cfgArray[i].group);  	// token field is always terminated
+		strcpy_P(group, cfgArray[i].group);  	// group field is always terminated
 	}
 	return (group);
 }
@@ -1769,6 +1753,8 @@ static int8_t _get_pos_axis(const INDEX_T i)
 /****************************************************************************
  * cmdObj helper functions and other low-level cmd helpers
  * cmd_get_max_index()	 - utility function to return index array size				
+ * cmd_clear_obj() 	 	 - clear a command object (that you actually passed in)
+ * cmd_get_cmdObj() 	 - make a new cmd object
  * cmd_get_index() 		 - get index from mnenonic token
  * cmd_is_prefixed()	 - returns true if the command is a prefixed group
  * cmd_get_type()		 - returns command type as a CMD_TYPE enum
@@ -1780,6 +1766,38 @@ static int8_t _get_pos_axis(const INDEX_T i)
  */
 
 //INDEX_T cmd_get_max_index() { return (CMD_INDEX_MAX);}
+
+cmdObj *cmd_clear_obj(cmdObj *cmd)			// clear a single cmdObj structure
+{
+	cmd->type = TYPE_EMPTY;					// much faster than calling memset
+	cmd->index = 0;
+	cmd->value = 0;
+	cmd->token[0] = NUL;
+	cmd->group[0] = NUL;
+	cmd->string[0] = NUL;
+
+	if (cmd->pv != NULL) { 			// set depth correctly
+		if (cmd->pv->type == TYPE_PARENT) { 
+			cmd->depth = cmd->pv->depth + 1;
+		} else {
+			cmd->depth = cmd->pv->depth;
+		}
+	}
+	return (cmd);
+}
+
+void cmd_get_cmdObj(cmdObj *cmd)
+{
+	if (cmd->index >= CMD_INDEX_MAX) return;
+	INDEX_T tmp = cmd->index;
+	cmd_clear_obj(cmd);
+	cmd->index = tmp;
+	cmd_get_token(cmd->index, cmd->token);
+	cmd_get_group(cmd->index, cmd->group);
+	if (strstr(cmd->group, "sys") != NULL) { cmd->group[0] = NUL;}
+	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);
+}
+
 
 INDEX_T cmd_get_index(const char *group, const char *token)
 {
@@ -1802,13 +1820,13 @@ INDEX_T cmd_get_index(const char *group, const char *token)
 	}
 	return (NO_INDEX);	// no match
 }
-
+/*
 uint8_t cmd_is_prefixed(const char *str)
 {
 	if (strstr(GROUP_PREFIXES, str) != NULL) return (true);
 	return (false);
 }
-
+*/
 uint8_t cmd_get_type(cmdObj *cmd)
 {
 	if (strstr(cmd->token, "gc") != NULL) {
@@ -1842,13 +1860,11 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 /********************************************************************************
  ***** Group operations *********************************************************
  ********************************************************************************
- * _set_grp() - write data to axis, motor, system or other group
- * _get_grp() - read data from axis, motor, system or other group
- *
  *	Group operations work on parent/child groups where the parent object is 
  *	one of the following groups:
  *	axis group 			x,y,z,a,b,c
  *	motor group			1,2,3,4
+ *	PWM group			p1
  *	coordinate group	g54,g55,g56,g57,g58,g59
  *	system group		"sys" - a collection of otherwise unrelated system variables
  *
@@ -1859,58 +1875,56 @@ uint8_t cmd_persist_offsets(uint8_t flag)
  *	{"x":{"vm":"","fr":""}}				get X axis velocity max and feed rate 
  *	{"x":{"vm":1000,"fr";900}}			set X axis velocity max and feed rate
  *	{"x":{"am":1,"fr":800,....}}		set multiple or all X axis parameters
- *
- *	The group prefixes are stripped from the child tokens for better alignment 
- *	with host code. I.e a group object is represented as:
- *	{"x":{"am":1,"fr":800,....}}, 	not: {"x":{"xam":1,"xfr":800,....}},
- *
- *	This strip makes no difference for subsequent internal operations as the 
- *	index is used and tokens are ignored once the parameter index is known.
- *	But it's useful to be able to round-trip a group back to the JSON requestor.
- *
- *	NOTE: The 'cmd' arg in many group commands must be the address of the head of
- *	a cmd struct array (cmd_body), not a single cmd struct. These commands expand 
- *	into groups of multiple cmd structs, and assume the array provides the RAM. 
  */
+
 /*
- * _set_grp() - get or set one or more values in a group
+ * _get_grp() - read data from axis, motor, system or other group
  *
- *	This functions is called "_set_group()" but technically it's a getter and a setter
- *	It iterates the group children and either gets the value or sets the value for 
- *	each depending on the cmd->type. To get an entire group w/o specifying the 
- *	child elements use _set_grp() 
+ *	_get_grp() is a group expansion function that expands the parent group and 
+ *	returns the values of all the children in that group. It expects the first 
+ *	cmdObj in the cmdBody to have a valid group name in the token field. This 
+ *	first object will be set to a TYPE_PARENT. The group field is left nul, 
+ *	as the group field refers to a parent group, which this group has none. 
+ *
+ *	All subsequent cmdObjs in the body will be populated with their values, 
+ *	and with their token in the token field and the parent name in the group field. 
+ *
+ *	The sys group is an exception where the childern carry a nul group field, even 
+ *	though the sys parent is labeled as a TYPE_PARENT.
  */
-static uint8_t _set_grp(cmdObj *cmd)
+
+static uint8_t _get_grp(cmdObj *cmd)
 {
-	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
-		if ((cmd = cmd->nx) == NULL) break;
-		if (cmd->type == TYPE_EMPTY) {
-			break;
-		} else if (cmd->type == TYPE_NULL) {// NULL means GET the value
-			cmd_get(cmd);
-		} else {
-			cmd_set(cmd);
-			cmd_persist(cmd);
-		}
+	char *parent_group = cmd->token;		// token in the parent cmd object is the group
+	char group[CMD_GROUP_LEN+1];			// group string retrieved from cfgArray child
+	cmd->type = TYPE_PARENT;				// make first object the parent 
+	for (INDEX_T i=0; i<=CMD_INDEX_END_SINGLES; i++) {
+		strcpy_P(group, cfgArray[i].group);  // don't need strncpy as group is always terminated
+		if (strstr(parent_group, group) != parent_group) continue;
+		(++cmd)->index = i;
+		cmd_get_cmdObj(cmd);
 	}
 	return (TG_OK);
 }
 
-static uint8_t _get_grp(cmdObj *cmd)
-{
-	char *parent_group = cmd->group;		// token in the parent cmd object is the group
-	char child_group[CMD_GROUP_LEN+1];		// group string retrieved from cfgArray child
+/*
+ * _set_grp() - get or set one or more values in a group
+ *
+ *	This functions is called "_set_group()" but technically it's a getter and 
+ *	a setter. It iterates the group children and either gets the value or sets
+ *	the value for each depending on the cmd->type.
+ */
 
-	cmd->type = TYPE_PARENT;				// make first object the parent 
-	for (INDEX_T i=0; i<=CMD_INDEX_END_SINGLES; i++) {
-		cmd_get_group(i, child_group);
-		if (strstr(parent_group, child_group) == parent_group) {
-			(++cmd)->index = i;
-			cmd_get_cmdObj(cmd);
-			strcpy(cmd->group, parent_group);
-			if (strstr(child_group, "sys") != child_group) { // strip group prefixes from token
-				strncpy(cmd->token, &cmd->token[strlen(child_group)], CMD_TOKEN_LEN+1);
-			}
+static uint8_t _set_grp(cmdObj *cmd)
+{
+	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
+		if ((cmd = cmd->nx) == NULL) break;
+		if (cmd->type == TYPE_EMPTY) { break;
+		} else if (cmd->type == TYPE_NULL) {	// NULL means GET the value
+			cmd_get(cmd);
+		} else {
+			cmd_set(cmd);
+			cmd_persist(cmd);
 		}
 	}
 	return (TG_OK);
@@ -1986,7 +2000,6 @@ static uint8_t _do_all(cmdObj *cmd)		// print all parameters
 /********************************************************************************
  ***** cmdObj list initialization and manipulation ******************************
  ********************************************************************************
- * cmd_clear_obj() 	 - clear a command object (that you actually passed in)
  * cmd_clear_list()	 - clear entire header, body and footer
  * cmd_clear_body()	 - clear body 
  * cmd_add_token()	 - write contents of parameter to  first free object in the body
@@ -1998,25 +2011,6 @@ static uint8_t _do_all(cmdObj *cmd)		// print all parameters
  *	precision due to the cast to a double. Sometimes it's better to load an 
  *	integer as a string if all you want to do is display it.
  */
-
-cmdObj *cmd_clear_obj(cmdObj *cmd)			// clear a single cmdObj structure
-{
-	cmd->type = TYPE_EMPTY;					// much faster than calling memset
-	cmd->index = 0;
-	cmd->value = 0;
-	cmd->token[0] = NUL;
-	cmd->group[0] = NUL;
-	cmd->string[0] = NUL;
-
-	if (cmd->pv != NULL) { 			// set depth correctly
-		if (cmd->pv->type == TYPE_PARENT) { 
-			cmd->depth = cmd->pv->depth + 1;
-		} else {
-			cmd->depth = cmd->pv->depth;
-		}
-	}
-	return (cmd);
-}
 
 void cmd_clear_list()						// clear the header, body and footer
 {
