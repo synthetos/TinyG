@@ -101,7 +101,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 //	xio_queue_RX_string_usb("$ted=1\n");
 //	xio_queue_RX_string_usb("$$\n");
-	xio_queue_RX_string_usb("$x\n");
+	xio_queue_RX_string_usb("$xabcdefghij\n");
 //	xio_queue_RX_string_usb("$sys\n");
 //	xio_queue_RX_string_usb("$xvm\n");
 //	xio_queue_RX_string_usb("$xasasas=42\n");// bad command

@@ -192,18 +192,14 @@ void cfg_init(void);
 uint8_t cfg_text_parser(char *str);
 uint8_t cfg_baud_rate_callback(void);
 
-uint8_t cmd_get(cmdObj *cmd);			// main entry point for GETs
-uint8_t cmd_set(cmdObj *cmd);			// main entry point for SETs
-void cmd_formatted_print(cmdObj *cmd);	// main entry point for formatted print
-void cmd_persist(cmdObj *cmd);			// main entry point for persistence
+uint8_t cmd_get(cmdObj *cmd);		// main entry point for GETs
+uint8_t cmd_set(cmdObj *cmd);		// main entry point for SETs
+void cmd_print(cmdObj *cmd);		// main entry point for formatted print
+void cmd_persist(cmdObj *cmd);		// main entry point for persistence
 
-char *cmd_get_token(const INDEX_T i, char *token);
-char *cmd_get_group(const INDEX_T i, char *group);
-//INDEX_T cmd_get_max_index(void);
 cmdObj *cmd_clear_obj(cmdObj *cmd);
 void cmd_get_cmdObj(cmdObj *cmd);
 INDEX_T cmd_get_index(const char *group, const char *token);
-//uint8_t cmd_is_prefixed(const char *str);
 uint8_t cmd_get_type(cmdObj *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 

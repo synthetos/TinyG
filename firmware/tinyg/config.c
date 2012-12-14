@@ -529,12 +529,6 @@ static const char fmt_btm[] PROGMEM = "[btm] b_travel_maximum%17.3f%S\n";
 static const char fmt_bjm[] PROGMEM = "[bjm] b_jerk_maximum%15.0f%S/min^3\n";
 static const char fmt_bjd[] PROGMEM = "[bjd] b_junction_deviation%14.4f%S\n";
 static const char fmt_bra[] PROGMEM = "[bra] b_radius_value%20.4f%S\n";
-//static const char fmt_bsn[] PROGMEM = "[bsn] b_switch_min%17d [0-4]\n";
-//static const char fmt_bsx[] PROGMEM = "[bsx] b_switch_max%17d [0-4]\n";
-//static const char fmt_bsv[] PROGMEM = "[bsv] b_search_velocity%16.3f%S/min\n";
-//static const char fmt_blv[] PROGMEM = "[blv] b_latch_velocity%17.3f%S/min\n";
-//static const char fmt_blb[] PROGMEM = "[blb] b_latch_backoff%18.3f%S\n";
-//static const char fmt_bzb[] PROGMEM = "[bzb] b_zero_backoff%19.3f%S\n";
 
 static const char fmt_cam[] PROGMEM = "[cam] c_axis_mode%18d %S\n";
 static const char fmt_cfr[] PROGMEM = "[cfr] c_feedrate_maximum%15.3f%S/min\n";
@@ -543,12 +537,6 @@ static const char fmt_ctm[] PROGMEM = "[ctm] c_travel_maximum%17.3f%S\n";
 static const char fmt_cjm[] PROGMEM = "[cjm] c_jerk_maximum%15.0f%S/min^3\n";
 static const char fmt_cjd[] PROGMEM = "[cjd] c_junction_deviation%14.4f%S\n";
 static const char fmt_cra[] PROGMEM = "[cra] c_radius_value%20.4f%S\n";
-//static const char fmt_csn[] PROGMEM = "[csn] c_switch_min%17d [0-4]\n";
-//static const char fmt_csx[] PROGMEM = "[csx] c_switch_max%17d [0-4]\n";
-//static const char fmt_csv[] PROGMEM = "[csv] c_search_velocity%16.3f%S/min\n";
-//static const char fmt_clv[] PROGMEM = "[clv] c_latch_velocity%17.3f%S/min\n";
-//static const char fmt_clb[] PROGMEM = "[clb] c_latch_backoff%18.3f%S\n";
-//static const char fmt_czb[] PROGMEM = "[czb] c_zero_backoff%19.3f%S\n";
 
 // PWM strings
 static const char fmt_p1frq[] PROGMEM = "[p1frq] pwm_frequency   %15.3f Hz\n";
@@ -607,9 +595,13 @@ static const char fmt_g59c[] PROGMEM = "[g59c] g59_c_offset%20.3f%S\n";
 
 /***** PROGMEM config array **************************************************
  *
- *	NOTE: Token matching occurs from the most specific to the least specific.
- *		  This means that if shorter tokens overlap longer ones the longer one
- *		  must precede the shorter one. E.g. "gco" needs to comes before "gc"
+ *	NOTES: 
+ *
+ *	- Token matching occurs from the most specific to the least specific.
+ *	  This means that if shorter tokens overlap longer ones the longer one
+ *	  must precede the shorter one. E.g. "gco" needs to comes before "gc"
+ *
+ *	- Mark entries that have no group as "nul". Using "" doesn't work. 
  */
 
 struct cfgItem const cfgArray[] PROGMEM = {
@@ -669,7 +661,6 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "sys","gdi", _fip, fmt_gdi, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.distance_mode,		GCODE_DEFAULT_DISTANCE_MODE },
 	{ "nul","gc",  _f00, fmt_gc,  _print_nul, _get_gc, _run_gc,  (double *)&tg.null, 0 }, // gcode block - must be last in this group
 
-//	{ "sys","ea",  _fip, fmt_ea, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_acceleration,ENABLE_ACCELERATION },
 	{ "sys","ja",  _fip, fmt_ja, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.junction_acceleration,JUNCTION_ACCELERATION },
 	{ "sys","ml",  _fip, fmt_ml, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.min_segment_len,	MIN_LINE_LENGTH },
 	{ "sys","ma",  _fip, fmt_ma, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.arc_segment_len,	ARC_SEGMENT_LENGTH },
@@ -776,10 +767,6 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "b","bjm",_fip, fmt_bjm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].jerk_max,			B_JERK_MAX },
 	{ "b","bjd",_fip, fmt_bjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].junction_dev,	 	B_JUNCTION_DEVIATION },
 	{ "b","bra",_fip, fmt_bra, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].radius,			B_RADIUS },
-//	{ "b","bsv",_fip, fmt_bsv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].search_velocity,	B_SEARCH_VELOCITY },
-//	{ "b","blv",_fip, fmt_blv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_velocity,	B_LATCH_VELOCITY },
-//	{ "b","blb",_fip, fmt_blb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].latch_backoff,	B_LATCH_BACKOFF },
-//	{ "b","bzb",_fip, fmt_bzb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].zero_backoff,		B_ZERO_BACKOFF },
 
 	{ "c","cam",_fip, fmt_cam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[C].axis_mode,		C_AXIS_MODE },
 	{ "c","cvm",_fip, fmt_cvm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].velocity_max,	 	C_VELOCITY_MAX },
@@ -788,10 +775,6 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "c","cjm",_fip, fmt_cjm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].jerk_max,			C_JERK_MAX },
 	{ "c","cjd",_fip, fmt_cjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].junction_dev,		C_JUNCTION_DEVIATION },
 	{ "c","cra",_fip, fmt_cra, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].radius,			C_RADIUS },
-//	{ "c","csv",_fip, fmt_csv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].search_velocity,	C_SEARCH_VELOCITY },
-//	{ "c","clv",_fip, fmt_clv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_velocity,	C_LATCH_VELOCITY },
-//	{ "c","clb",_fip, fmt_clb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].latch_backoff,	C_LATCH_BACKOFF },
-//	{ "c","czb",_fip, fmt_czb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].zero_backoff,		C_ZERO_BACKOFF },
 
 	// PWM settings
     { "p1","p1frq",_fip, fmt_p1frq, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.frequency,		P1_PWM_FREQUENCY },
@@ -901,7 +884,6 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "o",  "o",  _f00, fmt_nul, _print_nul, _do_offsets,_set_nul,(double *)&tg.null,0 },
 	{ "$",  "$",  _f00, fmt_nul, _print_nul, _do_all,    _set_nul,(double *)&tg.null,0 }
 };
-#define GROUP_PREFIXES	"p1,x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"	// used by cmd_is_prefixed()
 #define CMD_COUNT_GROUPS 		21											// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 											// count of uber-groups
 
@@ -1190,7 +1172,6 @@ static uint8_t _set_am(cmdObj *cmd)		// axis mode
 {
 	char linear_axes[] = {"xyz"};
 
-//	if (strchr(linear_axes, cmd->token[0]) != NULL) {		// true if it's a linear axis
 	if (strchr(linear_axes, cmd->group[0]) != NULL) {		// true if it's a linear axis
 		if (cmd->value > AXIS_MAX_LINEAR) {
 			cmd->value = 0;
@@ -1364,6 +1345,57 @@ uint8_t cfg_baud_rate_callback(void)
  *****************************************************************************
  *****************************************************************************/
 
+/****************************************************************************/
+/**** CMD FUNCTION ENTRY POINTS *********************************************/
+/****************************************************************************/
+/* These are the primary access points to cmd functions
+ * These are the gatekeeper functions that check index ranges so others don't have to
+ */
+
+#define ASSERT_CMD_INDEX(a) if (cmd->index >= CMD_INDEX_MAX) return (a);
+
+/*
+ * cmd_set() - Write a value or invoke a function - operates on single valued elements or groups
+ */
+uint8_t cmd_set(cmdObj *cmd)
+{
+	ASSERT_CMD_INDEX(TG_UNRECOGNIZED_COMMAND);
+	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].set)))(cmd));
+}
+
+/*
+ * cmd_get() - Build a cmdObj with the values from the target & return the value
+ *			   Populate cmd body with single valued elements or groups (iterates)
+ */
+uint8_t cmd_get(cmdObj *cmd)
+{
+	ASSERT_CMD_INDEX(TG_UNRECOGNIZED_COMMAND);
+	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd));
+}
+
+/*
+ * cmd_print()	- Output a formatted string for the value.
+ */
+void cmd_print(cmdObj *cmd)
+{
+	if (cmd->index >= CMD_INDEX_MAX) return;
+	((fptrPrint)(pgm_read_word(&cfgArray[cmd->index].print)))(cmd);
+}
+
+/*
+ * cmd_persist()- persist value to NVM. Takes special cases into account
+ */
+void cmd_persist(cmdObj *cmd)
+{
+#ifdef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
+	return;
+#endif
+	if (_index_lt_groups(cmd->index) == false) return;
+	if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_PERSIST) {
+		cmd_write_NVM_value(cmd);
+	}
+}
+
 /****************************************************************************
  * cfg_init() - called once on system init
  *
@@ -1393,10 +1425,9 @@ void cfg_init()
 		tg_print_loading_configs_message();
 		for (cmd.index=0; _index_is_single(cmd.index); cmd.index++) {
 			if (pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE) {
-				cmd_get_token(cmd.index, cmd.token);
+				strcpy_P(cmd.token, cfgArray[cmd.index].token);		// read the token from the array
 				cmd_read_NVM_value(&cmd);
 				cmd_set(&cmd);
-				cmd_persist(&cmd);
 			}
 		}
 	}
@@ -1419,7 +1450,7 @@ static uint8_t _set_defa(cmdObj *cmd)
 	for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
 		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
 			cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
-			cmd_get_token(cmd->index, cmd->token);
+			strcpy_P(cmd->token, cfgArray[cmd->index].token);
 			cmd_set(cmd);
 			cmd_persist(cmd);
 		}
@@ -1429,12 +1460,13 @@ static uint8_t _set_defa(cmdObj *cmd)
 
 /****************************************************************************
  * cfg_text_parser() - update a config setting from a text block (text mode)
- *_text_parser() 	 - parse a text-mode command line
+ *_text_parser() 	 - helper for above
  * 
- * Use cases (execution paths handled)
- *	- $xfr=1200	single parameter set is requested
- *	- $xfr		single parameter display is requested
- *	- $x		group display is requested
+ * Use cases handled:
+ *	- $xfr=1200	set a parameter
+ *	- $xfr		display a parameter
+ *	- $x		display a group
+ *	- ?			generate a status report (multiline format)
  */
 
 uint8_t cfg_text_parser(char *str)
@@ -1447,7 +1479,7 @@ uint8_t cfg_text_parser(char *str)
 		return (TG_OK);
 	}
 	// single-unit parser processing
-	ritorno(_text_parser(str, cmd));		// decode the first object
+	ritorno(_text_parser(str, cmd));		// decode the request or return if error
 	if ((cmd->type == TYPE_PARENT) || (cmd->type == TYPE_NULL)) {
 		if (cmd_get(cmd) == TG_COMPLETE) {	// populate value, group values, or run uber-group displays
 			return (TG_OK);					// return for uber-group displays so they don't print twice
@@ -1475,67 +1507,22 @@ static uint8_t _text_parser(char *str, cmdObj *cmd)
 	}
 	// field processing
 	cmd->type = TYPE_NULL;
-	if ((tmp = strpbrk(str, separators)) == NULL) {
-		strncpy(cmd->string, str, CMD_STRING_LEN);// no value part
+	if ((tmp = strpbrk(str, separators)) == NULL) { // no value part
+		strncpy(cmd->token, str, CMD_TOKEN_LEN);
 	} else {
 		*tmp = NUL;							// terminate at end of name
-		strncpy(cmd->string, str, CMD_STRING_LEN);
+		strncpy(cmd->token, str, CMD_TOKEN_LEN);
 		str = ++tmp;
 		cmd->value = strtod(str, &tmp);		// tmp is the end pointer
 		if (tmp != str) {
 			cmd->type = TYPE_FLOAT;
 		}
 	}
-	if ((cmd->index = cmd_get_index("",cmd->string)) == NO_INDEX) { 
+	if ((cmd->index = cmd_get_index("",cmd->token)) == NO_INDEX) { 
 		return (TG_UNRECOGNIZED_COMMAND);
 	}
-	strncpy(cmd->token, cmd->string, CMD_TOKEN_LEN); // the string is a token
+//	strncpy(cmd->token, cmd->string, CMD_TOKEN_LEN); // the string is a token
 	return (TG_OK);
-}
-
-/****************************************************************************/
-/**** CMD FUNCTION ENTRY POINTS *********************************************/
-/****************************************************************************/
-/* These are the primary access points to cmd functions
- * cmd_set() - Write a value or invoke a function - operates on single valued elements or groups
- * cmd_get() - Build a cmdObj with the values from the target & return the value
- * 			   Populate cmd body with single valued elements or groups (iterates)
- * cmd_formatted_print() - Output a formatted string for the value.
- * cmd_persist() - persist value to NVM. Takes special cases into account
- *
- * These are the gatekeeper functions that check index ranges so others don't have to
- */
-
-//#define ASSERT_CMD_INDEX(a) if ((cmd->index < 0) || (cmd->index >= CMD_INDEX_MAX)) return (a);
-#define ASSERT_CMD_INDEX(a) if (cmd->index >= CMD_INDEX_MAX) return (a);
-
-uint8_t cmd_set(cmdObj *cmd)
-{
-	ASSERT_CMD_INDEX(TG_UNRECOGNIZED_COMMAND);
-	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].set)))(cmd));
-}
-
-uint8_t cmd_get(cmdObj *cmd)
-{
-	ASSERT_CMD_INDEX(TG_UNRECOGNIZED_COMMAND);
-	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd));
-}
-
-void cmd_formatted_print(cmdObj *cmd)
-{
-	if (cmd->index >= CMD_INDEX_MAX) return;
-	((fptrPrint)(pgm_read_word(&cfgArray[cmd->index].print)))(cmd);
-}
-
-void cmd_persist(cmdObj *cmd)
-{
-#ifdef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
-	return;
-#endif
-	if (_index_lt_groups(cmd->index) == false) return;
-	if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_PERSIST) {
-		cmd_write_NVM_value(cmd);
-	}
 }
 
 /***** Generic Internal Functions *******************************************
@@ -1676,35 +1663,11 @@ static void _print_rot(cmdObj *cmd)
 
 /***************************************************************************** 
  * Accessors - get various data from an object given the index
- * cmd_get_token()	- return token in &arg and return pointer to token string
- * cmd_get_group() 	- return the axis prefix, motor prefix, or 's' for system
- * _get_format() 	- return format string as above
+ * _get_format() 	- return format string for an index
  * _get_motor()		- return the axis an index applies to or -1 if na
  * _get_axis()		- return axis for a group variable or -1 if na - e.g. xvm
  * _get_pos_axis()	- return axis number for pos values or -1 if none - e.g. posx
- *
- *  NOTE: Axis and motor functions rely on the token naming conventions
  */
-
-char *cmd_get_token(const INDEX_T i, char *token)
-{
-	if ((i < 0) || (i >= CMD_INDEX_MAX)) { 
-		*token = NUL;
-	} else {
-		strcpy_P(token, cfgArray[i].token);  	// token field is always terminated
-	}
-	return (token);
-}
-
-char *cmd_get_group(const INDEX_T i, char *group)
-{
-	if ((i < 0) || (i >= CMD_INDEX_MAX)) { 
-		*group = NUL;
-	} else {
-		strcpy_P(group, cfgArray[i].group);  	// group field is always terminated
-	}
-	return (group);
-}
 
 static char *_get_format(const INDEX_T i, char *format)
 {
@@ -1749,14 +1712,12 @@ static int8_t _get_pos_axis(const INDEX_T i)
 	return (ptr - axes);
 }
 
-
 /****************************************************************************
- * cmdObj helper functions and other low-level cmd helpers
+ * Exposed cmdObj helper functions and other low-level cmd helpers
  * cmd_get_max_index()	 - utility function to return index array size				
- * cmd_clear_obj() 	 	 - clear a command object (that you actually passed in)
- * cmd_get_cmdObj() 	 - make a new cmd object
- * cmd_get_index() 		 - get index from mnenonic token
- * cmd_is_prefixed()	 - returns true if the command is a prefixed group
+ * cmd_clear_obj() 	 	 - quick clear for a cmd object
+ * cmd_get_cmdObj() 	 - setup a cmd object by providing the index
+ * cmd_get_index() 		 - get index from mnenonic token + group
  * cmd_get_type()		 - returns command type as a CMD_TYPE enum
  * cmd_persist_offsets() - write any changed G54 (et al) offsets back to NVM
  *
@@ -1792,8 +1753,9 @@ void cmd_get_cmdObj(cmdObj *cmd)
 	INDEX_T tmp = cmd->index;
 	cmd_clear_obj(cmd);
 	cmd->index = tmp;
-	cmd_get_token(cmd->index, cmd->token);
-	cmd_get_group(cmd->index, cmd->group);
+	strcpy_P(cmd->token, cfgArray[cmd->index].token); // token field is always terminated
+	strcpy_P(cmd->group, cfgArray[cmd->index].group); // group field is always terminated
+
 	if (strstr(cmd->group, "sys") != NULL) { cmd->group[0] = NUL;}
 	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);
 }
@@ -1820,13 +1782,7 @@ INDEX_T cmd_get_index(const char *group, const char *token)
 	}
 	return (NO_INDEX);	// no match
 }
-/*
-uint8_t cmd_is_prefixed(const char *str)
-{
-	if (strstr(GROUP_PREFIXES, str) != NULL) return (true);
-	return (false);
-}
-*/
+
 uint8_t cmd_get_type(cmdObj *cmd)
 {
 	if (strstr(cmd->token, "gc") != NULL) {
@@ -1841,7 +1797,7 @@ uint8_t cmd_get_type(cmdObj *cmd)
 	return (CMD_TYPE_CONFIG);
 }
 
-uint8_t cmd_persist_offsets(uint8_t flag)
+uint8_t cmd_persist_offsets(uint8_t flag)		//####################### validate
 {
 	if (flag == true) {
 		cmdObj cmd;
@@ -1860,21 +1816,25 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 /********************************************************************************
  ***** Group operations *********************************************************
  ********************************************************************************
- *	Group operations work on parent/child groups where the parent object is 
- *	one of the following groups:
- *	axis group 			x,y,z,a,b,c
- *	motor group			1,2,3,4
- *	PWM group			p1
- *	coordinate group	g54,g55,g56,g57,g58,g59
- *	system group		"sys" - a collection of otherwise unrelated system variables
+ *	Group operations work on parent/child groups where the parent is one of:
+ *	  axis group 			x,y,z,a,b,c
+ *	  motor group			1,2,3,4
+ *	  PWM group				p1
+ *	  coordinate group		g54,g55,g56,g57,g58,g59,g92
+ *	  system group			"sys" - a collection of otherwise unrelated variables
  *
- *	Groups are carried as parent / child objects, e.g:
- *	{"x":""}							get all X axis parameters
- *	{"x":{"vm":""}}						get X axis velocity max 
- *	{"x":{"vm":1000}}					set X axis velocity max
- *	{"x":{"vm":"","fr":""}}				get X axis velocity max and feed rate 
- *	{"x":{"vm":1000,"fr";900}}			set X axis velocity max and feed rate
- *	{"x":{"am":1,"fr":800,....}}		set multiple or all X axis parameters
+ *	Text mode can only GET groups. For example:
+ *	  $x					get all members of an axis group
+ *	  $1					get all members of a motor group
+ *	  $<grp>				get any named group from the above lists
+ *
+ *	In JSON groups are carried as parent / child objects & can get and set elements:
+ *	  {"x":""}						get all X axis parameters
+ *	  {"x":{"vm":""}}				get X axis velocity max 
+ *	  {"x":{"vm":1000}}				set X axis velocity max
+ *	  {"x":{"vm":"","fr":""}}		get X axis velocity max and feed rate 
+ *	  {"x":{"vm":1000,"fr";900}}	set X axis velocity max and feed rate
+ *	  {"x":{"am":1,"fr":800,....}}	set multiple or all X axis parameters
  */
 
 /*
@@ -1883,14 +1843,14 @@ uint8_t cmd_persist_offsets(uint8_t flag)
  *	_get_grp() is a group expansion function that expands the parent group and 
  *	returns the values of all the children in that group. It expects the first 
  *	cmdObj in the cmdBody to have a valid group name in the token field. This 
- *	first object will be set to a TYPE_PARENT. The group field is left nul, 
- *	as the group field refers to a parent group, which this group has none. 
+ *	first object will be set to a TYPE_PARENT. The group field is left nul -  
+ *	as the group field refers to a parent group, which this group has none.
  *
- *	All subsequent cmdObjs in the body will be populated with their values, 
- *	and with their token in the token field and the parent name in the group field. 
+ *	All subsequent cmdObjs in the body will be populated with their values.
+ *	The token field will be populated as will the parent name in the group field. 
  *
- *	The sys group is an exception where the childern carry a nul group field, even 
- *	though the sys parent is labeled as a TYPE_PARENT.
+ *	The sys group is an exception where the childern carry a blank group field, 
+ *	even though the sys parent is labeled as a TYPE_PARENT.
  */
 
 static uint8_t _get_grp(cmdObj *cmd)
@@ -1913,16 +1873,18 @@ static uint8_t _get_grp(cmdObj *cmd)
  *	This functions is called "_set_group()" but technically it's a getter and 
  *	a setter. It iterates the group children and either gets the value or sets
  *	the value for each depending on the cmd->type.
+ *
+ *	This function serves JSON mode only as text mode doesn;t call it.
  */
 
 static uint8_t _set_grp(cmdObj *cmd)
 {
 	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
-		if (cmd->type == TYPE_EMPTY) { break;
-		} else if (cmd->type == TYPE_NULL) {	// NULL means GET the value
+		if (cmd->type == TYPE_EMPTY) break;
+		else if (cmd->type == TYPE_NULL)	// NULL means GET the value
 			cmd_get(cmd);
-		} else {
+		else {
 			cmd_set(cmd);
 			cmd_persist(cmd);
 		}
@@ -2196,7 +2158,7 @@ void _print_text_multiline_formatted()
 	cmdObj *cmd = cmd_body;
 
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		if (cmd->type != TYPE_PARENT) { cmd_formatted_print(cmd);}
+		if (cmd->type != TYPE_PARENT) { cmd_print(cmd);}
 		cmd = cmd->nx;
 		if (cmd->type == TYPE_EMPTY) { break;}
 	}
