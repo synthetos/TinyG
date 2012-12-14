@@ -113,7 +113,13 @@ enum moveState {
  * Global Scope Functions
  */
 
-typedef uint8_t (*fptrCallback)(double parameter);	// for planner callbacks
+//                      int val, FP val, offsets,  flags 
+typedef uint8_t (*exec)(uint8_t, double, double[], double[]);	// callback to execution function
+
+//typedef uint8_t (*exec_func)(uint8_t, double, double[], double[]);	// callback to execution function
+//typedef uint8_t (*fptrCallback)(double parameter);	// for planner callbacks
+//typedef uint8_t (*exec_func)(uint8_t ui8, double dbl, double ofs[], double flg[]);
+//typedef uint8_t (*exec_func)(uint8_t ui8);
 
 void mp_init(void);
 
@@ -134,7 +140,18 @@ void mp_zero_segment_velocity(void);
 
 uint8_t mp_exec_move(void);
 void mp_sync_mcode(uint8_t mcode);
-void mp_sync_command(uint8_t command, double parameter);
+
+void mp_queue_command(uint8_t(*exec)(uint8_t, double, double[], double[]), uint8_t ui8, double dbl, double ofs[], double flg[]);
+//void mp_queue_command(uint8_t(*exec_func)(uint8_t, double, double[], double[]), uint8_t ui8, double dbl, double ofs[], double flg[]);
+//void mp_queue_command(uint8_t(*exec_func)(uint8_t),uint8_t ui8, double dbl, double ofs[], double flg[]);
+//void mp_queue_command(uint8_t(*exec_func)(uint8_t ui8),uint8_t ui8, double dbl, double ofs[], double flg[]);
+//void mp_queue_command((*exec_func)(uint8_t ui8), uint8_t ui8, double dbl, double ofs[], double flg[]);
+//void mp_queue_command(uint8_t (*exec_func)(uint8_t ui8, double dbl, double ofs[], double flg[]),
+//		uint8_t ui8, double dbl, double ofs[], double flg[]);
+//void mp_queue_command((*exec_func)(), uint8_t param_ui8, double param_dbl, double offset[], double flag[]);
+//void mp_queue_command(exec_func callback, uint8_t param_ui8, double param_dbl, double offset[], double flag[]);
+//void mp_queue_command(uint8_t param_ui8, double param_dbl, double offset[], double flag[]);
+//void mp_queue_command(uint8_t command, double parameter);
 
 uint8_t mp_plan_hold_callback(void);
 uint8_t mp_end_hold_callback(void);

@@ -87,9 +87,10 @@ enum mpBufferState {			// bf->buffer_state values
 struct mpBuffer {				// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;		// static pointer to previous buffer
 	struct mpBuffer *nx;		// static pointer to next buffer
+	exec callback;				// callback to execution function - see typedef in planner.h
 //	fptrCallback callback;		// callback to execution function
 //	uint8_t (*exec_func)(double parameter); // callback to function to execute w/parameter
-	uint8_t (*exec_func)(struct mpBuffer *bf); // callback to function to execute - passes *bf
+//	uint8_t (*exec_func)(struct mpBuffer *bf); // callback to function to execute - passes *bf
 	uint32_t linenum;			// runtime line number; or line index if not numbered
 	uint32_t lineindex;			// runtime autoincremented line index
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
@@ -128,7 +129,8 @@ struct mpBuffer {				// See Planning Velocity Notes for variable usage
 };
 typedef struct mpBuffer mpBuf;
 #define spindle_speed time		// alias spindle_speed to the time variable
-#define parameter time			// alias parameter to the time variable
+#define int_val move_code		// alias the uint8_t to the move_code
+#define dbl_val time			// alias the double to the time variable
 #define offset target			// use target array for coordinate offsets
 #define flag unit				// use unit vector for axis flags for offsets
 
@@ -227,7 +229,7 @@ static double _get_junction_deviation(const double a_unit[], const double b_unit
 // execute routines (NB: These are all called from the LO interrupt)
 static uint8_t _exec_null(mpBuf *bf);
 static uint8_t _exec_dwell(mpBuf *bf);
-//static uint8_t _exec_command(mpBuf *bf);
+static uint8_t _exec_command(mpBuf *bf);
 static uint8_t _exec_mcode(mpBuf *bf);
 static uint8_t _exec_tool(mpBuf *bf);
 static uint8_t _exec_spindle_speed(mpBuf *bf);
@@ -391,7 +393,7 @@ uint8_t mp_exec_move()
 //		case MOVE_TYPE_LINE:	{ return (_exec_line(bf));}
 		case MOVE_TYPE_ALINE:	{ return (_exec_aline(bf));}
 		case MOVE_TYPE_DWELL:	{ return (_exec_dwell(bf));}
-//		case MOVE_TYPE_COMMAND: { return (_exec_command(bf));}
+		case MOVE_TYPE_COMMAND: { return (_exec_command(bf));}
 		case MOVE_TYPE_MCODE:	{ return (_exec_mcode(bf));}
 		case MOVE_TYPE_TOOL:	{ return (_exec_tool(bf));}
 		case MOVE_TYPE_SPINDLE_SPEED: { return (_exec_spindle_speed(bf));}
@@ -410,8 +412,7 @@ static uint8_t _exec_null(mpBuf *bf)
 }
 
 /*************************************************************************
- * mp_sync_command() - queue a synchronous command to the planner queue 
- * _exec_command()	 - execute a synchronous command from planner queue (from stepper _exec call)
+ * mp_queue_command() - queue a synchronous command to the planner queue 
  *
  *	This works like:
  *	  - The command is called by the Gcode interpreter (cm_<command>, e.g. an M code)
@@ -424,31 +425,38 @@ static uint8_t _exec_null(mpBuf *bf)
  *	Doing it this way instead of synchronizing on queue empty simplifies the
  *	handling of feedholds, feed overrides, buffer flushes, and thread blocking.
  */
-/*
-void mp_sync_command(uint8_t command, double parameter)
+
+void mp_queue_command(uint8_t(*exec)(uint8_t, double, double[], double[]), uint8_t ui8, double dbl, double ofs[], double flg[])
+//void mp_queue_command(uint8_t(*exec_func)(uint8_t, double, double[], double[]), uint8_t ui8, double dbl, double ofs[], double flg[])
+//void mp_queue_command(uint8_t(*exec_func)(uint8_t), uint8_t ui8, double dbl, double ofs[], double flg[])
+//void mp_queue_command(uint8_t(*exec_func)(uint8_t ui8), uint8_t ui8, double dbl, double ofs[], double flg[])
+//void mp_queue_command((*exec_func)(uint8_t ui8, double dbl, double ofs[], double flg[]), uint8_t ui8, double dbl, double ofs[], double flg[])
+//void mp_queue_command((*exec_func)(), uint8_t ui8, double dbl, double ofs[], double flg[])
 {
 	mpBuf *bf;
 
 	if ((bf = _get_write_buffer()) == NULL) { return;}
-	bf->move_code = command;
-	bf->parameter = parameter;
+	bf->move_code = MOVE_TYPE_COMMAND;
+	bf->callback = exec;
+	bf->int_val = ui8;
+	bf->dbl_val = dbl;
+//	if 
 	_queue_write_buffer(MOVE_TYPE_COMMAND);
 }
 
 static uint8_t _exec_command(mpBuf *bf)
 {
 	uint8_t status = TG_OK;
-	switch(bf->move_code) {
-		case SYNC_TOOL_NUMBER: { cm_set_tool_number(bf->parameter); break;}
-		case SYNC_SPINDLE_SPEED: { cm_set_spindle_speed_parameter(bf->parameter); break;}
-	}
+//	switch(bf->move_code) {
+//		case SYNC_TOOL_NUMBER: { cm_set_tool_number(bf->parameter); break;}
+//		case SYNC_SPINDLE_SPEED: { cm_set_spindle_speed_parameter(bf->parameter); break;}
+//	}
 	// Must call a prep to keep the loader happy. See Move Execution in:
 	// http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Module-Details#planner.c.2F.h
 	st_prep_null();
 	_free_run_buffer();
 	return (status);
 }
-*/
 
 /*************************************************************************
  * mp_sync_mcode() - queue a synchronous mcode to the planner queue 

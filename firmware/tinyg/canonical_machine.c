@@ -595,7 +595,31 @@ uint8_t	cm_set_coord_system(uint8_t coord_system)	// G54 - G59
 	return (TG_OK);
 }
 
+uint8_t	cm_exec_coord_offsets(uint8_t coord_system, double dummy, double offset[], double flag[]);
+
 uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[])
+{
+	mp_queue_command(cm_exec_coord_offsets, coord_system, 0, offset, flag);
+
+/*
+	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
+		return (TG_INTERNAL_RANGE_ERROR);
+	}
+	for (uint8_t i=0; i<AXES; i++) {
+		if (flag[i] > EPSILON) {
+			cfg.offset[coord_system][i] = offset[i];
+			cm.g10_flag = true;	// this will persist offsets to NVM once move has stopped
+		}
+	}
+	// see if it's OK to write them now, or if they need to wait until STOP
+	if (cm.machine_state != MACHINE_CYCLE) {
+		cmd_persist_offsets(cm.g10_flag);
+	}
+*/
+	return (TG_OK);
+}
+
+uint8_t	cm_exec_coord_offsets(uint8_t coord_system, double dummy, double offset[], double flag[])
 {
 	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
 		return (TG_INTERNAL_RANGE_ERROR);
