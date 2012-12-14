@@ -11,7 +11,7 @@
  * or (at your option) any later version.
  *
  * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of7
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
  * See the GNU General Public License for details.
  *
@@ -32,25 +32,25 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_VERSION_NUMBER	0.95
-#define TINYG_BUILD_NUMBER   	346.08
-
-#define TINYG_COMM_PROTOCOL_REV 1	// the communications protocol revision is tracked independently
+#define TINYG_VERSION_NUMBER	0.95		// major version
+#define TINYG_BUILD_NUMBER   	352.07		// JSON and text mode checkpoint
+//#define TINYG_BUILD_NUMBER   	353.01		// Working on synchronizing commands - coords
+#define TINYG_COMM_PROTOCOL_REV 1			// communications protocol revision is tracked independently
 
 /****** DEVELOPMENT SETTINGS ******/
 
+//#define __CANNED_STARTUP		// run any canned startup moves
+//#define __DISABLE_PERSISTENCE	// disable EEPROM writes for faster simulation
+//#define __DEBUG				// complies debug functions found in test.c
+
+// UNIT_TESTS exist for various modules are can be enabled at the end of their .h files
+
+// bringing in new functionality
 //#define __PLAN_R2				// comment out to use R1 planner functions
 #define __EXEC_R2				// comment out to use R1 aline exec functions
 #define __JUNCTION_VMAX_R2		// comment out ot use the old code
 #define __ISR_R2				// comment out to use R1 ISR
 #define __LOAD_MOVE_R2			// comment out to use R1 load move routine
-
-//#define __CANNED_STARTUP		// run any canned startup moves
-//#define __DISABLE_EEPROM_INIT	// disable EEPROM init for faster simulation
-//#define __DISABLE_TRANSMIT	// disable serial tranmission (TX)
-//#define __SEGMENT_LOGGER		// enable segment logging to memory array
-//#define __DEBUG				// enable debug (see util.c /.h)
-// See the end of module header files to enable UNIT_TESTS
 
 /****** OPERATING SETTINGS *******/
 
@@ -98,15 +98,15 @@ typedef void (*fptr_void_double)(double); 	// returns void, double arg (config b
  * Alternate enum is: enum tgAxes { X=0, Y, Z, A, B, C };
  */
 
-#define X	0
-#define Y	1
-#define Z	2
-#define A	3
-#define B	4
-#define C	5
-//#define U 6					// reserved
-//#define V 7					// reserved
-//#define W 8					// reserved
+#define X		0
+#define Y		1
+#define Z		2
+#define A		3
+#define B		4
+#define C		5
+//#define U 	6				// reserved
+//#define V 	7				// reserved
+//#define W 	8				// reserved
 
 #define MOTOR_1	0 				// define motor numbers and array indexes
 #define MOTOR_2	1
@@ -201,51 +201,5 @@ typedef void (*fptr_void_double)(double); 	// returns void, double arg (config b
 #define	TG_MAX_TRAVEL_EXCEEDED 67
 #define	TG_MAX_SPINDLE_SPEED_EXCEEDED 68
 #define	TG_ARC_SPECIFICATION_ERROR 69	// arc specification error
-
-
-/* Version value and strings */
-
-//#define TINYG_VERSION_NAME	  	"Argyle Socks"	// 0.911 build 324.15
-//#define TINYG_VERSION_NAME	  	"Butt Slogan"	// 0.911 build 325.07
-//#define TINYG_VERSION_NAME	  	"Crocs"			// 0.92	build 326.06
-//#define TINYG_VERSION_NAME	  	"Daisy Dukes"
-//#define TINYG_VERSION_NAME	  	"Elastic Belt"
-//#define TINYG_VERSION_NAME	  	"Fanny Pack"
-//#define TINYG_VERSION_NAME	  	"GoGo Boots"
-#define TINYG_VERSION_NAME	  	"Hoodie"
-//#define TINYG_VERSION_NAME	  	"Ironic Hipster Fashion"
-//#define TINYG_VERSION_NAME	  	"Jumpsuit"
-//#define TINYG_VERSION_NAME	  	"Kulats"
-//#define TINYG_VERSION_NAME	  	"Leisure Suit"
-//#define TINYG_VERSION_NAME	  	"Mullet"
-//#define TINYG_VERSION_NAME	  	"Nehru Jacket"
-//#define TINYG_VERSION_NAME	  	"Overalls"
-//#define TINYG_VERSION_NAME	  	"Platform SHoes"
-//#define TINYG_VERSION_NAME	  	"Qu"
-//#define TINYG_VERSION_NAME	  	"Romper"
-//#define TINYG_VERSION_NAME	  	"Speedo"
-//#define TINYG_VERSION_NAME	  	"Track Suit"
-//#define TINYG_VERSION_NAME	  	"Ugg Boots"
-//#define TINYG_VERSION_NAME	  	"Visible Thong"
-
-/*
-http://www.badfads.com/pages/fashion.html
-http://www.divinecaroline.com/22255/107557-fashion-fails-twelve-styles-decade
-
- Add-a-Bead Necklace
- Burka
- Chate, Coonskin Cap
- Ed Hardy - by Christian Audigier 
- Fedoras
- Grecian Draping, Grills
- Harem Pants
- Ironed Hair
- Jellies, Juicy Tracksuit
- Man-from-Atlantis Sunglasses
- PVC Dress, Platform Sneakers, Parachute Pants
- Stretch Pants, Spandex Bodysuit
- Trucker Hat
- Zoot Suit, Zubaz
-*/
 
 #endif

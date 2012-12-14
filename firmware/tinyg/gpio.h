@@ -39,54 +39,70 @@
 //#define GPIO1_INTLVL (PORT_INT0LVL_LO_gc|PORT_INT1LVL_LO_gc)	// shouldn;t be low
 
 // port assignments for vectors
-#define X_MIN_ISR_vect PORTA_INT0_vect
-#define Y_MIN_ISR_vect PORTF_INT0_vect
+#define X_MIN_ISR_vect PORTA_INT0_vect		// these line up with the gpoi assignments in system.h
+#define Y_MIN_ISR_vect PORTD_INT0_vect
 #define Z_MIN_ISR_vect PORTE_INT0_vect
-#define A_MIN_ISR_vect PORTD_INT0_vect
-
+#define A_MIN_ISR_vect PORTF_INT0_vect
 #define X_MAX_ISR_vect PORTA_INT1_vect
-#define Y_MAX_ISR_vect PORTF_INT1_vect
+#define Y_MAX_ISR_vect PORTD_INT1_vect
 #define Z_MAX_ISR_vect PORTE_INT1_vect
-#define A_MAX_ISR_vect PORTD_INT1_vect
+#define A_MAX_ISR_vect PORTF_INT1_vect
+
+// macros for finding the index into the switch table give the axis number
+#define MIN_SWITCH(axis) (axis*2)
+#define MAX_SWITCH(axis) (axis*2+1)
 
 /*
  * Global Scope Definitions, Functions and Data
  */
 
-enum swFlags {	 			// indexes into sw_flag array
-	SW_MIN_X = 0,			// this group corresponds to XYZA values
-	SW_MIN_Y, 
-	SW_MIN_Z, 
-	SW_MIN_A,
-	SW_MAX_X,				// this group corresponds to XYZA + SW_OFFSET
+enum swNums {	 			// indexes into switch arrays
+	SW_MIN_X = 0,
+	SW_MAX_X,
+	SW_MIN_Y,
 	SW_MAX_Y,
+	SW_MIN_Z, 
 	SW_MAX_Z,
+	SW_MIN_A,
 	SW_MAX_A,
-	SW_ARRAY_SIZE 			// must be last one. Used for array sizing and for loops
+	NUM_SWITCHES 			// must be last one. Used for array sizing and for loops
 };
 #define SW_OFFSET SW_MAX_X	// offset between MIN and MAX switches
-#define SW_PAIRS (SW_ARRAY_SIZE/2)
+#define NUM_SWITCH_PAIRS (NUM_SWITCHES/2)
 
-enum swMode {				// limit switch operation modes
+#define SW_DISABLED -1
+#define SW_OPEN 	 0
+#define SW_CLOSED	 1
+
+// switch mode settings
+#define SW_HOMING 0x01
+#define SW_LIMIT 0x02
+#define SW_MODE_DISABLED 0			// disabled for all operations
+#define SW_MODE_HOMING SW_HOMING	// enable switch for homing only
+#define SW_MODE_LIMIT SW_LIMIT		// enable switch for limits only
+#define SW_MODE_HOMING_LIMIT (SW_HOMING | SW_LIMIT)	// homing and limits
+#define SW_MODE_MAX_VALUE SW_MODE_LIMIT
+
+/*
+enum swMode {				// switch operation modes
 	SW_MODE_DISABLED = 0,	// disabled for all operations
-	SW_MODE_HOMING_NO,		// enable NO switch for homing only
-	SW_MODE_ENABLED_NO,		// enable NO switch for homing and limits
-	SW_MODE_HOMING_NC,		// enable NC switch for homing only
-	SW_MODE_ENABLED_NC		// enable NC switch for homing and limits
+	SW_MODE_HOMING,			// enable switch for homing only
+	SW_MODE_HOMING_LIMIT,	// enable switch for homing and limits
+	SW_MODE_LIMIT			// enable switch for limits only
 };
+*/
 
-enum swSense {
-	SW_SENSE_DISABLED = 0,	// not enabled
-	SW_SENSE_NO,			// Normally open switch
-	SW_SENSE_NC				// Normally closed switch
+enum swType {
+	SW_TYPE_NORMALLY_OPEN = 0,
+	SW_TYPE_NORMALLY_CLOSED
 };
 
 struct swStruct {						// switch state
+	uint8_t switch_type;				// 0=NO, 1=NC - applies to all switches
 	volatile uint8_t thrown;			// 1=thrown (Note 1)
 	volatile uint8_t lockout_count;		// switch lockout counter (debouncing)
-	volatile uint8_t flags[SW_ARRAY_SIZE];// switch flag array
-	volatile uint8_t sense[SW_ARRAY_SIZE];// 0=NO, 1=NC
-	uint8_t detect[SW_ARRAY_SIZE];		// switch state detected on initialization
+	volatile uint8_t flag[NUM_SWITCHES];// switch flag array
+	volatile uint8_t mode[NUM_SWITCHES];// 0=disabled, 1=homing, 2=homing+limit, 3=limit
 };
 struct swStruct sw;
 
@@ -94,17 +110,24 @@ struct swStruct sw;
 //		   or normally-closed. "Thrown" means activated or hit.
 
 void gpio_init(void);
-void gpio_clear_switches(void);
-void gpio_read_switches(void);
-void gpio_set_switch(uint8_t sw_flag);
-uint8_t gpio_get_switch(uint8_t sw_flag);		// test specific switch by arg
-uint8_t gpio_switch_handler(void);
 void gpio_switch_timer_callback(void);
+void gpio_clear_switches(void);
+void gpio_reset_lockout(void);
+void gpio_set_switch(uint8_t sw_num);
+uint8_t gpio_read_switch(uint8_t sw_num);
+uint8_t gpio_get_switch(uint8_t sw_num);
+uint8_t gpio_get_switch_mode(uint8_t sw_num);
+//void gpio_read_switches(void);
+//uint8_t gpio_switch_callback(void);
 
+void gpio_led_on(uint8_t led);
+void gpio_led_off(uint8_t led);
 void gpio_set_bit_on(uint8_t b);
 void gpio_set_bit_off(uint8_t b);
 void gpio_write_port(uint8_t b);
 void gpio_toggle_port(uint8_t b);
+
+//void sw_show_switch(void);
 
 /* unit test setup */
 

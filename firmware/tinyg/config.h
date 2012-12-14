@@ -32,13 +32,21 @@
 /**** Command definitions and objects (used by config and JSON) ****/
 
 // Choose one: This sets the index size into the cmdArray
-#define INDEX_T int16_t				// default setting for > 127 indexed objects
-//#define INDEX_T int8_t			// OK as long as there are less than 127 records - which there are most certainly not at this point
 
-#define CMD_TOKEN_LEN 4				// mnemonic token string
+//#define INDEX_T int16_t				// use this if there are  > 127 indexed objects
+//#define INDEX_T int8_t			// use this if there are < 127 indexed objects
+//#define NO_INDEX -1					// defined as no match
+//alternate
+#define INDEX_T uint8_t				// use this if there are < 255 indexed objects
+#define NO_INDEX 0xFF				// defined as no match
+
 #define CMD_GROUP_LEN 3				// max length of group prefix
+#define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
+//#define CMD_INFIX_LEN 4				// token minus group prefix
 #define CMD_STRING_LEN 64			// original value string or value as a string
 #define CMD_FORMAT_LEN 64			// print formatting string
+#define CMD_STATUS_REPORT_LEN 12	// max number of status report elements - see cfgArray
+									// must also line up in cfgArray, se00 - seXX
 
 /**** cmdObj lists ****
  *
@@ -84,29 +92,36 @@
  *	of CMD_NAME_LEN and CMD_VALUE_STRING_LEN which are statically allocated 
  *	and should be as short as possible. 
  */
+/*  Tokens, grousp and infixes 
+ *
+ * 	These 3 short strings are kept in the cmdObj:
+ *	  - token
+ *	  - group
+ *	  - infix
+ *
+ *	The token is the full mnemonic token used for cmdArray lookup. It is either 
+ *	taken directly from the input or assembled from group+token during input
+ *	in parent/child JSON cases.
+ *	
+ *	The group is the group prefix - e.g. xyzabc, 1-4, p1, g54-g59. It may also 
+ *	be "sys", but this is a special case. Whereas other group prefixes can be pre-
+ *	pended to the infix to make the token, sys is the exception.
+ *
+ *	The infix is the characters remaining in the token once the group has been stripped.
+ *	The infix is used for serializing JSON responses in parent/child cases.
+ */
 #define CMD_HEADER_LEN 1			// "b" header
-#define CMD_BODY_LEN 21				// body elements - includes one terminator
+#define CMD_BODY_LEN 25				// body elements - includes one terminator
 #define CMD_FOOTER_LEN 2			// footer element (includes terminator element)
 
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 #define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_FOOTER_LEN)
-#define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS	// max elements in a status report
-
 #define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
 #define CMD_STRING_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN + CMD_FORMAT_LEN +3)
 #define JSON_OUTPUT_STRING_MAX (OUTPUT_BUFFER_LEN)
 
 #define NVM_VALUE_LEN 4				// NVM value length (double, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
-
-// Here are all the exceptions to the display and config rules, as neat little lists
-// NOTE: The number of SYSTEM_GROUP or SR_DEFAULTS elements cannot exceed CMD_MAX_OBJECTS
-#define GROUP_PREFIXES	"x,y,z,a,b,c,1,2,3,4,g54,g55,g56,g57,g58,g59"
-#define GROUP_EXCLUSIONS "cycs,coor"	 // items that are not actually part of the xyzabcuvw0123456789 groups
-#define SYSTEM_GROUP 	"fv,fb,si,gpl,gun,gco,gpa,gdi,ja,ml,ma,mt,ic,il,ec,ee,ex,eq,ej,je" // cats and dogs
-#define DONT_INITIALIZE "gc,sr,help,test,defa,baud"	// commands that should not be initialized
-#define DONT_PERSIST	"gc,help,test,defa"			// commands that should not be persisted
-//See settings.h for SR_DEFAULTS
 
 #define IGNORE_OFF 0				// accept either CR or LF as termination on RX text line
 #define IGNORE_CR 1					// ignore CR on RX
@@ -135,7 +150,6 @@ enum jsonEcho {
 	JE_OMIT_BODY,					// Response contains no body - footer only
 	JE_OMIT_GCODE_BODY,				// Body returned for configs; omitted for Gcode commands
 	JE_GCODE_LINENUM_ONLY,			// Body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
-//	JE_GCODE_TRUNCATED,				// Body returned for configs and Gcode - gcode is truncated by precision & comments removed
 	JE_FULL_ECHO					// Body returned for configs and Gcode - Gcode comments removed
 };
 
@@ -155,18 +169,14 @@ struct cmdObject {					// depending on use, not all elements may be populated
 	int8_t depth;					// depth of object in the tree. 0 is root (-1 is invalid)
 	int8_t type;					// see cmdType
 	double value;					// numeric value
-	char token[CMD_TOKEN_LEN+1];	// mnemonic token
-	char group[CMD_GROUP_LEN+1];	// group token or NUL if not in a group
+	char token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
+	char group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group
 	char string[CMD_STRING_LEN+1];	// string storage (See note below)
 }; 									// OK, so it's not REALLY an object
 typedef struct cmdObject cmdObj;	// handy typedef for command onjects
 typedef uint8_t (*fptrCmd)(cmdObj *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
 #define CMD_OBJ_CORE (sizeof(cmdObj) - (CMD_STRING_LEN+1))
-
-// NOTE: Be aware: the string field is mainly used to carry string values, 
-// but is used as temp storage for the friendly_name during parsing to save RAM..
-#define friendly_name string			// used here as a friendly name field
 
 // Allocate cmdObj lists
 cmdObj cmd_header[CMD_HEADER_LEN];	// JSON header element
@@ -177,41 +187,29 @@ cmdObj cmd_footer[CMD_FOOTER_LEN];	// JSON footer element
  * Global Scope Functions
  */
 
-#define ASSERT_CMD_INDEX(a) if ((cmd->index < 0) || (cmd->index >= CMD_INDEX_MAX)) return (a);
-
 void cfg_init(void);
 uint8_t cfg_text_parser(char *str);
-void cfg_init_gcode_model(void);
-uint8_t cfg_set_baud_callback(void);
+uint8_t cfg_baud_rate_callback(void);
 
-// cmd accessors
-uint8_t cmd_get(cmdObj *cmd);		// entry point for GETs
-uint8_t cmd_set(cmdObj *cmd);		// entry point for SETs
-void cmd_formatted_print(cmdObj *cmd);// entry point for formatted print
-void cmd_persist(cmdObj *cmd);		// entry point for persistence
-uint8_t cmd_get_cmdObj(cmdObj *cmd);
+uint8_t cmd_get(cmdObj *cmd);		// main entry point for GETs
+uint8_t cmd_set(cmdObj *cmd);		// main entry point for SETs
+void cmd_print(cmdObj *cmd);		// main entry point for formatted print
+void cmd_persist(cmdObj *cmd);		// main entry point for persistence
 
 cmdObj *cmd_clear_obj(cmdObj *cmd);
+void cmd_get_cmdObj(cmdObj *cmd);
+INDEX_T cmd_get_index(const char *group, const char *token);
+uint8_t cmd_get_type(cmdObj *cmd);
+uint8_t cmd_persist_offsets(uint8_t flag);
+
 void cmd_clear_list(void);
 void cmd_clear_body(cmdObj *cmd);
-
 uint8_t cmd_add_token(char *token);
 uint8_t cmd_add_string(char *token, char *string);
 uint8_t cmd_add_float(char *token, double value);
 uint8_t cmd_add_integer(char *token, uint32_t value);
 void cmd_print_list(uint8_t status, uint8_t textmode);
 
-INDEX_T cmd_get_max_index(void);
-INDEX_T cmd_get_index_by_token(const char *str);
-INDEX_T cmd_get_index(const char *str);
-char *cmd_get_token(const INDEX_T i, char *string);
-//char cmd_get_group(const INDEX_T i);
-uint8_t cmd_is_group(const char *str);
-uint8_t cmd_get_type(cmdObj *cmd);
-uint8_t cmd_persist_offsets(uint8_t flag);
-
-//uint8_t cmd_read_NVM_record(cmdObj *cmd);
-//uint8_t cmd_write_NVM_record(const cmdObj *cmd);
 uint8_t cmd_read_NVM_value(cmdObj *cmd);
 uint8_t cmd_write_NVM_value(cmdObj *cmd);
 
@@ -230,7 +228,6 @@ struct cfgAxisParameters {
 	double jerk_max;				// max jerk (Jm) in mm/min^3
 	double junction_dev;			// aka cornering delta
 	double radius;					// radius in mm for rotary axis modes
-	uint8_t switch_mode;			// 0=disabled, 1=enabled NO for homing only, 2=enabled NO for homing & limits
 	double search_velocity;			// homing search velocity
 	double latch_velocity;			// homing latch velocity
 	double latch_backoff;			// backoff from switches prior to homing latch movement
@@ -245,6 +242,19 @@ struct cfgMotorParameters {
 	double step_angle;				// degrees per whole step (ex: 1.8)
 	double travel_rev;				// mm or deg of travel per motor revolution
 	double steps_per_unit;			// steps (usteps)/mm or deg of travel
+};
+
+struct cfgPWMParameters {
+  	double frequency;				// base frequency for PWM driver, in Hz
+	double cw_speed_lo;             // minimum clockwise spindle speed [0..N]
+    double cw_speed_hi;             // maximum clockwise spindle speed
+    double cw_phase_lo;             // pwm phase at minimum CW spindle speed, clamped [0..1]
+    double cw_phase_hi;             // pwm phase at maximum CW spindle speed, clamped [0..1]
+	double ccw_speed_lo;            // minimum counter-clockwise spindle speed [0..N]
+    double ccw_speed_hi;			// maximum counter-clockwise spindle speed
+    double ccw_phase_lo;			// pwm phase at minimum CCW spindle speed, clamped [0..1]
+    double ccw_phase_hi;			// pwm phase at maximum CCW spindle speed, clamped
+    double phase_off;               // pwm phase when spindle is disabled
 };
 
 struct cfgParameters {
@@ -283,7 +293,7 @@ struct cfgParameters {
 
 	// status report configs
 	uint32_t status_report_interval;// in MS. set non-zero to enable
-	INDEX_T status_report_spec[CMD_STATUS_REPORT_LEN];
+	INDEX_T status_report_list[CMD_STATUS_REPORT_LEN];
 
 	// coordinate systems and offsets
 	double offset[COORDS+1][AXES];	// absolute + G54,G55,G56,G57,G58,G59
@@ -291,6 +301,7 @@ struct cfgParameters {
 	// motor and axis structs
 	struct cfgMotorParameters m[MOTORS];// settings for motors 1-4
 	struct cfgAxisParameters a[AXES];	// settings for axes X,Y,Z,A B,C
+	struct cfgPWMParameters p;			// settings for PWM p
 };
 struct cfgParameters cfg; 			// declared in the header to make it global
 #define CFG(x) cfg.a[x]				// handy macro for referencing axis values,

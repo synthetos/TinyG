@@ -40,11 +40,11 @@
 #include "xio/xio.h"
 
 // regression test files
-#include "tests/test_001_smoke.h" 	// basic functionality
-#include "tests/test_002_squares.h"	// square moves
-#include "tests/test_003_arcs.h"	// arc moves
-#include "tests/test_004_dwell.h"	// dwells embedded in move sequences
-#include "tests/test_005_homing.h"	// G28.1 homing cycles
+#include "tests/test_001_homing.h"	// G28.1 homing cycles
+#include "tests/test_002_smoke.h" 	// basic functionality
+#include "tests/test_003_squares.h"	// square moves
+#include "tests/test_004_arcs.h"	// arc moves
+#include "tests/test_005_dwell.h"	// dwells embedded in move sequences
 #include "tests/test_006_feedhold.h"// feedhold - requires manual ! and ~ entry
 #include "tests/test_007_Mcodes.h"	// M codes synchronized w/moves (planner queue)
 #include "tests/test_008_json.h"	// JSON parser and IO
@@ -65,11 +65,11 @@ uint8_t tg_test(cmdObj *cmd)
 {
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (TG_OK);}
-		case 1: { xio_open_pgm(PGMFILE(&test_smoke)); break;}
-		case 2: { xio_open_pgm(PGMFILE(&test_squares)); break;}
-		case 3: { xio_open_pgm(PGMFILE(&test_arcs)); break;}
-		case 4: { xio_open_pgm(PGMFILE(&test_dwell)); break;}
-		case 5: { xio_open_pgm(PGMFILE(&test_homing)); break;}
+		case 1: { xio_open_pgm(PGMFILE(&test_homing)); break;}
+		case 2: { xio_open_pgm(PGMFILE(&test_smoke)); break;}
+		case 3: { xio_open_pgm(PGMFILE(&test_squares)); break;}
+		case 4: { xio_open_pgm(PGMFILE(&test_arcs)); break;}
+		case 5: { xio_open_pgm(PGMFILE(&test_dwell)); break;}
 		case 6: { xio_open_pgm(PGMFILE(&test_feedhold)); break;}
 		case 7: { xio_open_pgm(PGMFILE(&test_Mcodes)); break;}
 		case 8: { xio_open_pgm(PGMFILE(&test_json)); break;}
@@ -99,38 +99,40 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
-//	xio_queue_RX_string_usb("$xvm\n");// match
-<<<<<<< HEAD
-	xio_queue_RX_string_usb("$xasasas=42\n");// bad command
-=======
+	// text parser test cases
+//	xio_queue_RX_string_usb("$\n");				// sys request
+//	xio_queue_RX_string_usb("$xvm=16,000\n");	// comma skipping
+//	xio_queue_RX_string_usb("$a\n");			// match a group
+//	xio_queue_RX_string_usb("$xabcdefghij\n");	// overrun
+//	xio_queue_RX_string_usb("$x=1\n");			// trying to set a group
+
+//	xio_queue_RX_string_usb("$ted=1\n");
+//	xio_queue_RX_string_usb("$$\n");
+//	xio_queue_RX_string_usb("$sys\n");
+//	xio_queue_RX_string_usb("$xvm\n");
 //	xio_queue_RX_string_usb("$xasasas=42\n");// bad command
->>>>>>> dev
 //	xio_queue_RX_string_usb("$test=51\n");	// run braid fragment to test short-line handling
 
 //	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"posa\":true,\"posx\":true,\"gc\":true,\"feed\":true,\"posy\":true,\"line\":true,\"stat\":true,\"posz\":true}}\n");
 //	xio_queue_RX_string_usb("{\"ej\":1}\n");
+//	xio_queue_RX_string_usb("{\"z\":{\"sn\":1}}\n");
+//	xio_queue_RX_string_usb("{\"zsn\":1}\n");
 
-<<<<<<< HEAD
-//	xio_queue_RX_string_usb("{\"gc\":\"g0x1\"}\n");
-=======
 //	xio_queue_RX_string_usb("{\"rx\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"x\":20}\n");
 //	xio_queue_RX_string_usb("{\"1\":{\"po\":\"\"}}\n");
+	xio_queue_RX_string_usb("{\"c\":\"\"}\n");
 
-	xio_queue_RX_string_usb("{\"baud\":6}\n");
+//	xio_queue_RX_string_usb("{\"baud\":6}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"n20g0x1y1.1\"}\n");
->>>>>>> dev
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x20y30z40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x30\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x0\"}\n");
 //	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
+	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 
-<<<<<<< HEAD
-//	xio_queue_RX_string_usb("g0a2\n");
-=======
 //	xio_queue_RX_string_usb("g0x2\n");
->>>>>>> dev
 //	xio_queue_RX_string_usb("g92a0\n");
 //	xio_queue_RX_string_usb("g0a3\n");	// should be a=3. Instead it's a=1
 
@@ -140,6 +142,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$m\n");
 //	xio_queue_RX_string_usb("$$\n");
 //	xio_queue_RX_string_usb("?\n");
+//	xio_queue_RX_string_usb("$sr\n");
 //	xio_queue_RX_string_usb("$x\n");
 //	xio_queue_RX_string_usb("\n");
 //	xio_queue_RX_string_usb("^\n");		// abort. Must comment in ^ in controller.c dispatcher
@@ -238,6 +241,15 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g4 p0.1\n");
 //	xio_queue_RX_string_usb("g0 x10 y10 z-10\n");
 
+/* G28 and G30 homing tests */
+//	xio_queue_RX_string_usb("g28.1x0y0z0\n");
+//	xio_queue_RX_string_usb("g28.1x0y0\n");
+//	xio_queue_RX_string_usb("g28.1y0\n");
+//	xio_queue_RX_string_usb("g28.1x0y0z0a0\n");
+//	xio_queue_RX_string_usb("g28.1 z0\n");
+//	xio_queue_RX_string_usb("g30x0y0z0\n");
+//	xio_queue_RX_string_usb("g30x42\n");
+
 /* G53 tests */
 //	xio_queue_RX_string_usb("g56\n");			// assumes G55 is different than machine coords
 //	xio_queue_RX_string_usb("g0 x0 y0\n");		// move to zero in G55
@@ -255,13 +267,6 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0 x0 y0\n");		// should move NW back to original coordinates
 //	xio_queue_RX_string_usb("g92.2\n");
 //	xio_queue_RX_string_usb("g92.3\n");
-
-/* G28 and G30 homing tests */
-//	xio_queue_RX_string_usb("g28.1x0y0z0\n");
-//	xio_queue_RX_string_usb("g28.1x0y0z0a0\n");
-//	xio_queue_RX_string_usb("g28.1 z0\n");
-//	xio_queue_RX_string_usb("g30x0y0z0\n");
-//	xio_queue_RX_string_usb("g30x42\n");
 
 /* Other Gcode tests */
 //	xio_queue_RX_string_usb("g20\n");			// inch mode
@@ -289,39 +294,22 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0 y5\n");
 //	See 331.19 or earlier for some more lengthy feedhold tests
 
-/* JSON tests */
-// If you want to use all these you need to set RX buffer to 1024 in xio_usart.h
+/* JSON TEST CASES */
+// If you want to run multi-line cases you need to set RX buffer to 1024 in xio_usart.h
+
+// JSON parser tests
+	xio_queue_RX_string_usb("{\"x\":\"\"}\n");		// retrieve a group
+//	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sm\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
+
 //	xio_queue_RX_string_usb("{\"gc\":\"g0 x3 y4 z5.5 (comment line)\"}\n");
 //	xio_queue_RX_string_usb("{\"xfr\":1200}\n");
-//	xio_queue_RX_string_usb("{\"x_feedrate\":1200}\n");
 //	xio_queue_RX_string_usb("{\"xfr\":1200, \"yfr\":1201, \"zfr\":600}\n");
 //	xio_queue_RX_string_usb("{\"err_1\":36000}\n");
 //	xio_queue_RX_string_usb("{\"1sa\":3.6.000}\n");
 //	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");				// invoke a status report
+//	xio_queue_RX_string_usb("{\"sr\":{\"line\":true,\"posx\":true,\"posy\":true}}\n");	// set status report
 //	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sm\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
 
-//	xio_queue_RX_string_usb("{\"gc\":{\"sr\":{\"momo\":\"null\"},\"x\":0,\"y\":\"OK\",\"z\":123}}\n");
-/*	xio_queue_RX_string_usb("{\"config_version\":null}\n");	// simple null test
-	xio_queue_RX_string_usb("{\"config_profile\":true}\n");	// simple true test
-	xio_queue_RX_string_usb("{\"prompt\":false}\n");		// simple false test
-	xio_queue_RX_string_usb("{\"gcode\":\"g0 x3 y4 z5.5 (comment line)\"}\n");// string test w/comment
-	xio_queue_RX_string_usb("{\"x_feedrate\":1200}\n");		// numeric test
-	xio_queue_RX_string_usb("{\"y_feedrate\":-1456}\n");	// numeric test
-	xio_queue_RX_string_usb("{\"Z_velocity_maximum\":null}\n");// axis w/null
-	xio_queue_RX_string_usb("{\"m1_microsteps\":null}\n");	// motor w/null
-	xio_queue_RX_string_usb("{\"2mi\":8}\n");				// motor token w/null
-	xio_queue_RX_string_usb("{\"no-token\":12345}\n");		// non-token w/number
-	xio_queue_RX_string_usb("{\"firmware_version\":329.26,		\"config_version\":0.93}\n");
-	xio_queue_RX_string_usb("{\"1mi\":8, \"2mi\":8,\"3mi\":8,\"4mi\":8}\n");	// 4 elements
-	xio_queue_RX_string_usb("{\"status_report\":{\"ln\":true, \"x_pos\":true, \"y_pos\":true, \"z_pos\":true}}\n");
-	xio_queue_RX_string_usb("{\"parent_case1\":{\"child_null\":null}}\n");	// parent w/single child
-	xio_queue_RX_string_usb("{\"parent_case2\":{\"child_num\":23456}}\n");	// parent w/single child
-	xio_queue_RX_string_usb("{\"parent_case3\":{\"child_str\":\"stringdata\"}}\n");// parent w/single child
-	xio_queue_RX_string_usb("{\"err_1\":36000x\n}");		// illegal number 
-	xio_queue_RX_string_usb("{\"err_2\":\"text\n}");		// no string termination
-	xio_queue_RX_string_usb("{\"err_3\":\"12345\",}\n");	// bad } termination
-	xio_queue_RX_string_usb("{\"err_4\":\"12345\"\n");		// no } termination
-*/
 //	xio_queue_RX_string_usb("{\"x\":\"\"}\n");				// x axis group display
 //	xio_queue_RX_string_usb("{\"c\":\"\"}\n");				// c axis group display
 //	xio_queue_RX_string_usb("{\"1\":\"\"}\n");				// motor 1 group display
@@ -383,8 +371,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 /* Note: these dump routines pack a lot of characters into the USART TX buffer
  * and can kill the running instance. I'll have to figure out how to prevent that,
- * but in the mean time if you want to use them you should go into xio_usart.h and 
- * temporarily change to the following settings:
+ * but in the mean time if you might want to use them you should go into xio_usart.h 
+ * and temporarily change to the following settings:
  * 
  *	//#define BUFFER_T uint8_t		// faster, but limits buffer to 255 char max
  *	#define BUFFER_T uint16_t		// slower, but larger buffers
@@ -397,6 +385,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
  *	//#define TX_BUFFER_SIZE (BUFFER_T)1024
  *	#define TX_BUFFER_SIZE (BUFFER_T)2048
  */
+
 void dump_everything()
 {
 //	tg_dump_controller_state();
@@ -424,42 +413,9 @@ void print_vector(const char *label, double vector[], uint8_t count)
 {
 	fprintf_P(stderr,PSTR("%S"),label); 
 	for (uint8_t i=0; i<count; i++) {
-		fprintf_P(stderr,PSTR("  %4.2f"),vector[i]);
+		fprintf_P(stderr,PSTR("  %5.4f"),vector[i]);
 	} 	
 	fprintf_P(stderr,PSTR("\n"));
 }
+
 #endif	// __DEBUG
-
-/*
- * segment_logger() - diagnostic function
- */
-#ifdef __SEGMENT_LOGGER
-void segment_logger(uint8_t move_state, 
-					uint32_t linenum,
-					uint32_t segments, 
-					uint32_t segment_count, 
-					double velocity,
-					double microseconds,
-//					double position_x, 
-//					double target_x,
-//					double step_x, 
-//					double move_time,
-//					double accel_time
-					)
-
-{
-	if (sl_index < SEGMENT_LOGGER_MAX) {
-		sl[sl_index].move_state = move_state;
-		sl[sl_index].linenum = linenum;
-		sl[sl_index].segments = (double)segments + (double)segment_count*0.001 + 0.0000002;
-		sl[sl_index].velocity = velocity;
-		sl[sl_index].microseconds = microseconds;
-//		sl[sl_index].position_x = position_x;
-//		sl[sl_index].target_x = target_x;
-//		sl[sl_index].step_x = step_x;
-//		sl[sl_index].move_time = move_time;
-//		sl[sl_index].accel_time = accel_time;
-		sl_index++;
-	}
-}
-#endif // __SEGMENT_LOGGER

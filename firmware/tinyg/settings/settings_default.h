@@ -44,6 +44,7 @@
 #define JERK_MAX 			20000000	// yes, that's "20,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION	0.05		// default value, in mm
 #define JUNCTION_ACCELERATION 100000	// centripetal acceleration around corners
+#define SWITCH_TYPE SW_TYPE_NORMALLY_OPEN
 
 // **** settings.h overrides ****
 
@@ -84,8 +85,9 @@
 #define X_FEEDRATE_MAX X_VELOCITY_MAX	// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX 475				// travel between switches or crashes
 #define X_JERK_MAX JERK_MAX				// xjm
-#define X_JUNCTION_DEVIATION JUNCTION_DEVIATION		// xjd
-#define X_SWITCH_MODE 1					// xsm		1=switches enabled for homing only
+#define X_JUNCTION_DEVIATION JUNCTION_DEVIATION	// xjd
+#define X_SWITCH_MODE_MIN SW_MODE_HOMING // xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
+#define X_SWITCH_MODE_MAX SW_MODE_LIMIT	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
 #define X_SEARCH_VELOCITY -500			// xsv		move in negative direction
 #define X_LATCH_VELOCITY 100			// xlv		mm/min
 #define X_LATCH_BACKOFF 2				// xlb		mm
@@ -97,7 +99,8 @@
 #define Y_TRAVEL_MAX 200
 #define Y_JERK_MAX JERK_MAX
 #define Y_JUNCTION_DEVIATION JUNCTION_DEVIATION
-#define Y_SWITCH_MODE 1
+#define Y_SWITCH_MODE_MIN SW_MODE_HOMING
+#define Y_SWITCH_MODE_MAX SW_MODE_LIMIT
 #define Y_SEARCH_VELOCITY -500
 #define Y_LATCH_VELOCITY 100
 #define Y_LATCH_BACKOFF 2
@@ -109,7 +112,8 @@
 #define Z_TRAVEL_MAX 75
 #define Z_JERK_MAX JERK_MAX
 #define Z_JUNCTION_DEVIATION JUNCTION_DEVIATION
-#define Z_SWITCH_MODE 1
+#define Z_SWITCH_MODE_MIN SW_MODE_HOMING
+#define Z_SWITCH_MODE_MAX SW_MODE_LIMIT
 #define Z_SEARCH_VELOCITY -400
 #define Z_LATCH_VELOCITY 100
 #define Z_LATCH_BACKOFF 2
@@ -122,7 +126,8 @@
 #define A_JERK_MAX JERK_MAX
 #define A_JUNCTION_DEVIATION JUNCTION_DEVIATION
 #define A_RADIUS 1
-#define A_SWITCH_MODE 1
+#define A_SWITCH_MODE_MIN SW_MODE_HOMING
+#define A_SWITCH_MODE_MAX SW_MODE_LIMIT
 #define A_SEARCH_VELOCITY -600
 #define A_LATCH_VELOCITY 100
 #define A_LATCH_BACKOFF -5
@@ -135,7 +140,6 @@
 #define B_JERK_MAX JERK_MAX
 #define B_JUNCTION_DEVIATION JUNCTION_DEVIATION
 #define B_RADIUS 1
-#define B_SWITCH_MODE 1
 #define B_SEARCH_VELOCITY -600
 #define B_LATCH_VELOCITY 100
 #define B_LATCH_BACKOFF -5
@@ -148,7 +152,6 @@
 #define C_JERK_MAX JERK_MAX
 #define C_JUNCTION_DEVIATION JUNCTION_DEVIATION
 #define C_RADIUS 1
-#define C_SWITCH_MODE 1
 #define C_SEARCH_VELOCITY -600
 #define C_LATCH_VELOCITY 100
 #define C_LATCH_BACKOFF -5

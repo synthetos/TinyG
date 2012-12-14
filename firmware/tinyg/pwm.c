@@ -158,6 +158,21 @@ uint8_t pwm_set_freq(uint8_t chan, double freq)
  *
  *	The frequency must have been set previously
  */
+
+uint8_t pwm_set_duty(uint8_t chan, double duty)
+{
+    if (duty < 0.0) { return (TG_INPUT_VALUE_TOO_SMALL);}
+    if (duty > 1.0) { return (TG_INPUT_VALUE_TOO_LARGE);}
+    
+	// Ffrq = Fper/(2N(CCA+1))
+	// Fpwm = Fper/((N(PER+1))
+	
+    double period_scalar = pwm[chan].timer->PER;
+	pwm[chan].timer->CCB = (uint16_t)(period_scalar * duty) + 1;
+	return (TG_OK);
+}
+
+/*
 uint8_t pwm_set_duty(uint8_t chan, double duty)
 {
 	if (duty < 0)   { return (TG_INPUT_VALUE_TOO_SMALL);}
@@ -166,7 +181,7 @@ uint8_t pwm_set_duty(uint8_t chan, double duty)
 	pwm[chan].timer->CCB = (uint16_t)(pwm[chan].timer->PER - pwm[chan].timer->PER / (duty/100));
 	return (TG_OK);
 }
-
+*/
 //###########################################################################
 //##### UNIT TESTS ##########################################################
 //###########################################################################

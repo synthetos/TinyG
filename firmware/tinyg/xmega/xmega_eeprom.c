@@ -82,6 +82,7 @@
  * Modifications Copyright (c) 2010 Alden S. Hart, Jr.
  */
 
+#include <stdbool.h>
 #include "xmega_eeprom.h"
 #include <string.h>
 #include <avr/interrupt.h>
@@ -261,7 +262,7 @@ void NNVM_ReadBytes(const uint16_t address, int8_t *buf, const uint16_t size)
 uint16_t EEPROM_WriteString(const uint16_t address, const char *buf, const uint8_t terminate)
 {
 #ifdef __NNVM
-	NNVM_WriteString(address, buf, TRUE);
+	NNVM_WriteString(address, buf, true);
 	return (address);
 #else
 	uint16_t addr = address;	// local copy

@@ -67,7 +67,7 @@
 
 #ifndef MAPPED_EEPROM_START
 #define MAPPED_EEPROM_START 0x1000
-#endif
+#endif //__NNVM
 
 #define EEPROM_PAGESIZE 32				// if this changes ...change below:
 #define EEPROM_BYTE_ADDR_MASK_gm 0x1F	// range of valid byte addrs in page

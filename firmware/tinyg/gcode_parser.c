@@ -366,7 +366,7 @@ static uint8_t _execute_gcode_block()
 
 	switch (gn.next_action) {
 		case NEXT_ACTION_GO_HOME: { status = cm_return_to_home(); break;}
-		case NEXT_ACTION_SEARCH_HOME: { status = cm_homing_cycle(); break;}
+		case NEXT_ACTION_SEARCH_HOME: { status = cm_homing_cycle_start(); break;}
 		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(coord_select, gn.target, gf.target); break;}
 
 		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(gn.target, gf.target); break;}

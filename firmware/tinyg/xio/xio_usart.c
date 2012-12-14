@@ -193,7 +193,6 @@ BUFFER_T xio_get_usb_rx_free(void)
 	return (RX_BUFFER_SIZE - xio_get_rx_bufcount_usart(&USBu));
 }
 
-
 /* 
  * xio_putc_usart() - stdio compatible char writer for usart devices
  *

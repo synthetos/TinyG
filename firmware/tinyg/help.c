@@ -97,16 +97,17 @@ void help_print_test_help(cmdObj *cmd)
 fprintf_P(stderr, PSTR("#### TinyG SELF TEST Help ####\n"));
 fprintf_P(stderr, PSTR("\
 Invoke self test by entering $test=N where N is one of:\n\
-  $test=1  smoke test\n\
-  $test=2  motion test   (a series of square and circle moves)\n\
-  $test=3  arc test      (some large circles)\n\
-  $test=4  dwell test    (moves spaced by 1 second dwells)\n\
-  $test=5  homing test   (you must trip homing switches)\n\
+  $test=1  homing test   (you must trip homing switches)\n\
+  $test=2  smoke test\n\
+  $test=3  square test   (a series of squares)\n\
+  $test=4  arc test      (some large circles)\n\
+  $test=5  dwell test    (moves spaced by 1 second dwells)\n\
   $test=6  feedhold test (enter ! and ~ to hold and restart, respectively)\n\
   $test=7  M codes test  (M codes intermingled with moves)\n\
   $test=8  JSON test     (motion test run using JSON commands)\n\
   $test=9  inverse time test\n\
   $test=10 rotary motion test\n\
+  $test=11 small moves test\n\
 "));
 _help_postscript();
 }

@@ -55,11 +55,20 @@ void sys_init(void);					// master hardware init
 
 /* Motor & switch port assignments */
 
-#define PORT_MOTOR_1		PORTA
+#define PORT_MOTOR_1		PORTA		// Note: motor and GPIO2 mappings are not the same
 #define PORT_MOTOR_2 		PORTF
 #define PORT_MOTOR_3		PORTE
 #define PORT_MOTOR_4		PORTD
-#define PORT_GPIO2_IN		PORTB
+
+#define GPIO2_X_MIN_MAX		PORTA		// lines up with ISR vector assignments in gpio.h
+#define GPIO2_Y_MIN_MAX		PORTD
+#define GPIO2_Z_MIN_MAX		PORTE
+#define GPIO2_A_MIN_MAX		PORTF
+
+#define SW_PORT_X 0						// port mapping looked at the other way
+#define SW_PORT_Y 3
+#define SW_PORT_Z 2
+#define SW_PORT_A 1
 
 // These next four must be changed when the PORT_MOTOR_* definitions change!
 #define PORTCFG_VP0MAP_PORT_MOTOR_1_gc PORTCFG_VP0MAP_PORTA_gc
@@ -80,8 +89,8 @@ void sys_init(void);					// master hardware init
  *	b3	(out) microstep 0 
  *	b4	(out) microstep 1
  *	b5	(out) output bit for GPIO port1
- *	b6	(in) min limit switch on GPIO 2
- *	b7	(in) max limit switch on GPIO 2
+ *	b6	(in) min limit switch on GPIO 2 (note: motor controls and GPIO2 port mappings are not the same)
+ *	b7	(in) max limit switch on GPIO 2 (note: motor controls and GPIO2 port mappings are not the same)
  */
 #define MOTOR_PORT_DIR_gm 0x3F	// dir settings: lower 6 out, upper 2 in
 
@@ -118,21 +127,21 @@ enum gpio1Inputs {
 
 /* Bit assignments for GPIO1_OUTs for spindle, PWM and coolant */
 
-#define SPINDLE_BIT	0x08	// spindle on/off
-#define SPINDLE_DIR	0x04	// spindle direction, 1=CW, 0=CCW
-#define SPINDLE_PWM	0x02	// spindle PWN port
-#define MIST_COOLANT_BIT	0x01	// coolant on/off - these are the same due to limited ports
-#define FLOOD_COOLANT_BIT	0x01	// coolant on/off
+#define SPINDLE_BIT			0x08		// spindle on/off
+#define SPINDLE_DIR			0x04		// spindle direction, 1=CW, 0=CCW
+#define SPINDLE_PWM			0x02		// spindle PWN port
+#define MIST_COOLANT_BIT	0x01		// coolant on/off - these are the same due to limited ports
+#define FLOOD_COOLANT_BIT	0x01		// coolant on/off
 
 /* Timer assignments - see specific modules for details) */
 
-#define TIMER_DDA				TCC0			// DDA timer 	(see stepper.h)
-#define TIMER_DWELL	 			TCD0			// Dwell timer	(see stepper.h)
-#define TIMER_LOAD				TCE0			// Loader timer	(see stepper.h)
-#define TIMER_EXEC				TCF0			// Exec timer	(see stepper.h)
-#define TIMER_5					TCC1			// unallocated timer
-#define TIMER_PWM1				TCD1			// PWM timer #1 (see pwm.c)
-#define TIMER_PWM2				TCE1			// PWM timer #2	(see pwm.c)
+#define TIMER_DDA			TCC0		// DDA timer 	(see stepper.h)
+#define TIMER_DWELL	 		TCD0		// Dwell timer	(see stepper.h)
+#define TIMER_LOAD			TCE0		// Loader timer	(see stepper.h)
+#define TIMER_EXEC			TCF0		// Exec timer	(see stepper.h)
+#define TIMER_5				TCC1		// unallocated timer
+#define TIMER_PWM1			TCD1		// PWM timer #1 (see pwm.c)
+#define TIMER_PWM2			TCE1		// PWM timer #2	(see pwm.c)
 
 
 /**** Device singleton - global structure to allow iteration through similar devices ****/

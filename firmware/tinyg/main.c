@@ -104,6 +104,7 @@ void tg_system_reset(void)
 
 	PMIC_EnableMediumLevel();// enable TX interrupts for init reporting 
 	sei();					// enable global interrupts
+//	cfg_preset();	//+++++++++++++++++++++++++++++++
 	cfg_init();				// (10) get config record from eeprom (reqs xio)
 	gpio_init();			// (7) switches and parallel IO
 }
@@ -164,9 +165,9 @@ int main(void)
 void _tg_debug_init(void)	// inits for the debug system
 {
 #ifdef dbCONFIG_DEBUG_ENABLED
-	dbCONFIG_DEBUG_ENABLED = TRUE;
+	dbCONFIG_DEBUG_ENABLED = true;
 #else
-	dbCONFIG_DEBUG_ENABLED = FALSE;
+	dbCONFIG_DEBUG_ENABLED = false;
 #endif
 }
 #endif

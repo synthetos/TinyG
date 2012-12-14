@@ -152,8 +152,7 @@ double cm_get_model_work_position(uint8_t axis)
 		return (gm.position[axis] - cm_get_coord_offset(axis));
 	}
 }
-
-
+/*
 double *cm_get_model_work_position_vector(double position[]) 
 {
 	for (uint8_t i=0; i<AXES; i++) {
@@ -161,7 +160,7 @@ double *cm_get_model_work_position_vector(double position[])
 	}
 	return (position);
 }
-
+*/
 double cm_get_model_canonical_target(uint8_t axis) 
 {
 	return (gm.target[axis]);
@@ -293,7 +292,8 @@ void cm_set_target(double target[], double flag[])
 			continue;
 
 		// spill register bug workaround in avr-gcc 4.7.0 and avr-libc 1.8.0 --- from here.....
-		} else /* if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
+		} else tmp = _calc_ABC(i, target, flag);		
+		/* if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
 			tmp = target[i];	// no mm conversion - it's in degrees
 
 		} else if ((cfg.a[i].axis_mode == AXIS_RADIUS) && (flag[i] > EPSILON)) {
@@ -324,7 +324,6 @@ void cm_set_target(double target[], double flag[])
 			length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
 			tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
 		} */
-		tmp = _calc_ABC(i, target, flag);		
 		//..... to here
 		
 		if (gm.distance_mode == ABSOLUTE_MODE) {
@@ -372,9 +371,11 @@ static double _calc_ABC(uint8_t i, double target[], double flag[])
 	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XYZ) && ((flag[X] > EPSILON) || (flag[Y] > EPSILON) || (flag[Z] > EPSILON))) {
 		double length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
 		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
+
 	}
 	return tmp;
 }
+
 /* 
  * cm_set_gcode_model_endpoint_position() - uses internal coordinates only
  *
@@ -502,13 +503,17 @@ void cm_init()
 	memset(&gf, 0, sizeof(gf));
 	memset(&gm, 0, sizeof(gm));
 
+	cm_spindle_init();					// init spindle PWM and variables
+
 	// set gcode defaults
 	cm_set_units_mode(cfg.units_mode);
 	cm_set_coord_system(cfg.coord_system);
 	cm_select_plane(cfg.select_plane);
 	cm_set_path_control(cfg.path_control);
 	cm_set_distance_mode(cfg.distance_mode);
-	cm.machine_state = MACHINE_RESET;	// signal that the machine is ready for action
+	
+	// signal that the machine is ready for action
+	cm.machine_state = MACHINE_RESET;	
 	cm.combined_state = COMBINED_RESET;
 }
 
@@ -574,11 +579,17 @@ uint8_t cm_select_plane(uint8_t plane)
 
 uint8_t cm_set_units_mode(uint8_t mode)		// G20, G21
 {
-	gm.units_mode = mode;		// 0 = inches, 1 = mm.
+	gm.units_mode = mode;					// 0 = inches, 1 = mm.
 	return (TG_OK);
 }
 
-uint8_t	cm_set_coord_system(uint8_t coord_system)
+uint8_t cm_set_distance_mode(uint8_t mode)	// G90, G91
+{
+	gm.distance_mode = mode;				// 0 = absolute mode, 1 = incremental
+	return (TG_OK);
+}
+
+uint8_t	cm_set_coord_system(uint8_t coord_system)	// G54 - G59
 {
 	gm.coord_system = coord_system;	
 	return (TG_OK);
@@ -602,24 +613,18 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
 	return (TG_OK);
 }
 
-uint8_t cm_set_distance_mode(uint8_t mode)	// G90, G91
-{
-	gm.distance_mode = mode;			// 0 = absolute mode, 1 = incremental
-	return (TG_OK);
-}
-
 uint8_t cm_set_origin_offsets(double offset[], double flag[])	// G92
 {
 	gm.origin_offset_mode = true;
 	for (uint8_t i=0; i<AXES; i++) {
-		if (flag[i] > EPSILON) {	 	// behaves according to NIST 3.5.18
+		if (flag[i] > EPSILON) {	 		// behaves according to NIST 3.5.18
 			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] - _to_millimeters(offset[i]);
 		}
 	}
 	return (TG_OK);
 }
 
-uint8_t cm_reset_origin_offsets() 		// G92.1
+uint8_t cm_reset_origin_offsets() 			// G92.1
 {
 	gm.origin_offset_mode = false;
 	for (uint8_t i=0; i<AXES; i++) {
@@ -628,13 +633,13 @@ uint8_t cm_reset_origin_offsets() 		// G92.1
 	return (TG_OK);
 }
 
-uint8_t cm_suspend_origin_offsets()		// G92.2
+uint8_t cm_suspend_origin_offsets()			// G92.2
 {
 	gm.origin_offset_mode = true;
 	return (TG_OK);
 }
 
-uint8_t cm_resume_origin_offsets()		// G92.3
+uint8_t cm_resume_origin_offsets()			// G92.3
 {
 	gm.origin_offset_mode = false;
 	return (TG_OK);
@@ -643,7 +648,7 @@ uint8_t cm_resume_origin_offsets()		// G92.3
 /* 
  * Free Space Motion (4.3.4)
  *
- * cm_straight_traverse() - G0 linear seek
+ * cm_straight_traverse() - G0 linear rapid
  */
 
 uint8_t cm_straight_traverse(double target[], double flags[])
@@ -742,7 +747,7 @@ uint8_t cm_straight_feed(double target[], double flags[])
 }
 
 /* 
- * Spindle Functions (4.3.7) - see canonical_spindle.c/.h
+ * Spindle Functions (4.3.7) - see spindle.c, spindle.h
  * Tool Functions (4.3.8)
  *
  * cm_change_tool() - M6 (This might become a complete tool change cycle)

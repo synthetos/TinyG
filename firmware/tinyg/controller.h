@@ -63,7 +63,7 @@ void tg_set_active_source(uint8_t dev);
 void tg_reset_source(void);
 char *tg_get_status_message(uint8_t status, char *msg);
 void tg_print_message(char *msg);
-void tg_print_message_number(uint8_t msgnum);
+//void tg_print_message_number(uint8_t msgnum);
 void tg_print_loading_configs_message(void);
 void tg_print_initializing_message(void);
 void tg_print_system_ready_message(void);

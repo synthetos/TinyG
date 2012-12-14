@@ -97,28 +97,19 @@
  */
 void rpt_init_status_report(uint8_t persist_flag)
 {
-	cmdObj cmd;
-	uint8_t i=0;
-	char sr_defaults[][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see config.h
+	cmdObj cmd;		// used for status report persistence locations
+	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
 
-	cmd.index = cmd_get_index_by_token("sr00");		// find first persistence index
-	for (; i < (sizeof(sr_defaults)/(CMD_TOKEN_LEN+1)); i++) {
-		cmd.value = cmd_get_index_by_token(sr_defaults[i]);
-		cfg.status_report_spec[i] = cmd.value;
-		if (persist_flag == true) {
-			cmd_write_NVM_value(&cmd);
-			cmd.index++;
-		}
-	}
-	for (; i < CMD_STATUS_REPORT_LEN; i++) {		// fill rest of spec with -1
-		cmd.value = -1;
-		cfg.status_report_spec[i] = cmd.value;
-		if (persist_flag == true) {
-			cmd_write_NVM_value(&cmd);
-			cmd.index++;
-		}
-	}
 	cm.status_report_counter = cfg.status_report_interval;
+
+	cmd.index = cmd_get_index("","se00");				// set first SR persistence index
+	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
+		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
+		cmd.value = cmd_get_index("", sr_defaults[i]);	// load the index for the SR element
+		cmd_set(&cmd);
+		cmd_persist(&cmd);
+		cmd.index++;
+	}
 }
 
 /*	rpt_decr_status_report()  	 - decrement status report counter
@@ -162,13 +153,12 @@ uint8_t rpt_populate_status_report()
 
 	cmd_clear_obj(cmd);						// wipe it first
 	cmd->type = TYPE_PARENT; 				// setup the parent object
-	sprintf_P(cmd->token, PSTR("sr"));
-//	strcpy(cmd->token, "sr");				// alternate form of above: more RAM, less FLASH & cycles
+	strcpy(cmd->token, "sr");
+//	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
 	cmd = cmd->nx;
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if ((cmd->index = cfg.status_report_spec[i]) == -1) { continue;}
-		if (cmd->index == 0) { break;}
+		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
 		cmd_get_cmdObj(cmd);
 		cmd = cmd->nx;
 	}
@@ -237,9 +227,9 @@ uint8_t rpt_run_queue_report()
 	cmdObj *cmd = cmd_body;
 
 	if (qr.qr == 0) {					// cache the report indices
-		qr.qr = cmd_get_index("qr");	// this only happens once
-		qr.lx = cmd_get_index("lx");
-		qr.pb = cmd_get_index("pb");
+		qr.qr = cmd_get_index("","qr");	// this only happens once
+		qr.lx = cmd_get_index("","lx");
+		qr.pb = cmd_get_index("","pb");
 	}
 
 	cmd_clear_obj(cmd);			 		// setup the parent object			

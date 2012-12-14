@@ -109,21 +109,17 @@ uint8_t _json_parser(char *str)
 
 	// parse the JSON command into the cmd body
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
+
 	do {
 		if (--i == 0) { return (TG_JSON_TOO_MANY_PAIRS); }			// length error
 		if ((status = _get_nv_pair(cmd, &str, group, &depth)) > TG_EAGAIN) { // erred out
 			return (status);
 		}
-		if (cmd_is_group(cmd->token)) {			// trap ill-formed groups
-			if ((cmd->type != TYPE_PARENT) && (cmd->type != TYPE_NULL)) {
-				return (TG_UNRECOGNIZED_COMMAND);
-			}
-		}
 		strncpy(group, cmd->group, CMD_GROUP_LEN);// propagate the group ID from previous obj
 		cmd = cmd->nx;
 	} while (status != TG_OK);					// breaks when parsing is complete
 
-	// execute the command - iterate through all commands in the body
+	// execute the command
 	cmd = cmd_body;
 	if (cmd->type == TYPE_NULL){				// means GET the value
 		ritorno(cmd_get(cmd));					// ritorno returns w/status on any errors
@@ -188,41 +184,32 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	char *tmp;
 	char terminators[] = {"},"};
 
-	cmd_clear_obj(cmd);							// wipe the object and set the depth
+	cmd_clear_obj(cmd);								// wipe the object and set the depth
 
-	// process name element
-	// find leading and trailing name quotes and set pointers accordingly
-	// accommodate groups by looking up index by full name but stripping group from token
+	// --- Process name part ---
+	// find leading and trailing name quotes and set pointers.
 	if ((*pstr = strchr(*pstr, '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	if ((tmp = strchr(++(*pstr), '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	*tmp = NUL;
 
-	// copy the token by itself or with a group prefix if it's a prefixed group
-	if (strstr(GROUP_PREFIXES, group) == NULL) {
-		strncpy(cmd->string, *pstr, CMD_STRING_LEN);// copy name from string
-	} else {
-		strncpy(cmd->string, group, CMD_GROUP_LEN);	// prepend the group
-		strncpy(&cmd->string[strlen(group)], *pstr, CMD_STRING_LEN);// cat name to group prefix
+	// process the token and group strings
+	strncpy(cmd->token, *pstr, CMD_TOKEN_LEN);		// copy the string to the token
+	if (group[0] != NUL) {							// if NV pair is part of a group
+		strncpy(cmd->group, group, CMD_GROUP_LEN);	// copy the parent's group to this child
 	}
 
-	// get the index or return if the token / friendly_name is invalid
-	if ((cmd->index = cmd_get_index_by_token(cmd->string)) == -1) { return (TG_UNRECOGNIZED_COMMAND);}
-	cmd_get_token(cmd->index, cmd->token);
-	if (group[0] != NUL) {						// strip group prefix if this is a group
-		strncpy(cmd->token, &cmd->string[strlen(group)], CMD_TOKEN_LEN);
-		strncpy(cmd->group, group, CMD_GROUP_LEN);// propagate group token to this child
+	// validate the token and get the index
+	if ((cmd->index = cmd_get_index(cmd->group, cmd->token)) == NO_INDEX) { 
+		return (TG_UNRECOGNIZED_COMMAND);
 	}
 	*pstr = ++tmp;
 
-	// process value element
+	// --- Process value part ---
 	if ((*pstr = strchr(*pstr, ':')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	(*pstr)++;									// advance to start of value field
-	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { 
+	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { // process null value
 		cmd->type = TYPE_NULL;
 		cmd->value = TYPE_NULL;
-		if (cmd_is_group(cmd->token) == true) { 
-			strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);// record the group token
-		}
 	} else if (**pstr == 'f') { 
 		cmd->type = TYPE_BOOL;
 		cmd->value = false;						// (technically not necessary due to the init)
@@ -250,7 +237,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 		 return (TG_JSON_SYNTAX_ERROR);			// ill-formed JSON
 	}
 
-	// process pair transitions and end conditions
+	// process comma separators and end curlies
 	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { // advance to terminator or err out
 		return (TG_JSON_SYNTAX_ERROR);
 	}
@@ -341,6 +328,10 @@ uint16_t js_serialize_json(cmdObj *cmd, char *out_buf)
  */
 void js_print_list(uint8_t status)
 {
+	if (cm.machine_state == MACHINE_INITIALIZING) {
+		fprintf(stderr,"\n");
+		cfg.json_echo_mode = JE_FULL_ECHO;
+	}
 	if (cfg.json_echo_mode == JE_SILENT) { return;}
 
 	cmdObj *cmd = cmd_header;		// default starting point
@@ -377,9 +368,7 @@ void js_print_list(uint8_t status)
 		cmd_footer->type = TYPE_EMPTY;
 		js_serialize_json(cmd, tg.out_buf);						// make JSON string w/o footer
 	}
-
-	// output the result
-	fprintf(stderr, "%s", tg.out_buf);
+	fprintf(stderr, "%s", tg.out_buf);	// output the result
 }
 
 

@@ -20,6 +20,7 @@
 #define JERK_MAX 			900000000	// yes, that's "900,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION	0.01		// default value, in mm
 #define JUNCTION_ACCELERATION 100000	// centripetal acceleration around corners
+#define SWITCH_TYPE SW_TYPE_NORMALLY_OPEN
 
 // *** settings.h overrides ***
 
@@ -74,7 +75,8 @@
 #define X_TRAVEL_MAX 					320					// travel between switches or crashes
 #define X_JERK_MAX 						JERK_MAX			// xjm
 #define X_JUNCTION_DEVIATION			JUNCTION_DEVIATION	// xjd
-#define X_SWITCH_MODE 					1					// xsm		1=switches enabled for homing only
+#define X_SWITCH_MODE_MIN				SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
+#define X_SWITCH_MODE_MAX				SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
 #define X_SEARCH_VELOCITY 				-2000				// xsv		move in negative direction
 #define X_LATCH_VELOCITY 				500					// xlv		mm/min
 #define X_LATCH_BACKOFF 				12					// xlb		mm
@@ -83,10 +85,11 @@
 #define Y_AXIS_MODE 					AXIS_STANDARD
 #define Y_VELOCITY_MAX 					15000
 #define Y_FEEDRATE_MAX 					1000
-#define Y_TRAVEL_MAX 					-1			// Y-axis is infinite
+#define Y_TRAVEL_MAX 					-1					// Y-axis is infinite
 #define Y_JERK_MAX 						JERK_MAX
 #define Y_JUNCTION_DEVIATION 			JUNCTION_DEVIATION
-#define Y_SWITCH_MODE 					0			// Y-axis is infinite
+#define Y_SWITCH_MODE_MIN				SW_MODE_DISABLED	// Y-axis is infinite
+#define Y_SWITCH_MODE_MAX				SW_MODE_DISABLED
 #define Y_SEARCH_VELOCITY 				-1000
 #define Y_LATCH_VELOCITY 				1000
 #define Y_LATCH_BACKOFF 				1
@@ -98,7 +101,8 @@
 #define Z_TRAVEL_MAX 					25
 #define Z_JERK_MAX 						JERK_MAX	// 200 Million
 #define Z_JUNCTION_DEVIATION 			JUNCTION_DEVIATION
-#define Z_SWITCH_MODE 					1
+#define Z_SWITCH_MODE_MIN				SW_MODE_HOMING
+#define Z_SWITCH_MODE_MAX				SW_MODE_DISABLED
 #define Z_SEARCH_VELOCITY 				1000.0
 #define Z_LATCH_VELOCITY 				500.0
 #define Z_LATCH_BACKOFF 				12
@@ -110,8 +114,9 @@
 #define A_TRAVEL_MAX 					375.0
 #define A_JERK_MAX 						24000000000	// yes, 24 Billion
 #define A_JUNCTION_DEVIATION 			0.1
-#define A_RADIUS 						1.0			// deg
-#define A_SWITCH_MODE 					1			// disable limit switch halt
+#define A_RADIUS 						1.0				// deg
+#define A_SWITCH_MODE_MIN				SW_MODE_HOMING	// disable limit switch halt
+#define A_SWITCH_MODE_MAX				SW_MODE_DISABLED
 #define A_SEARCH_VELOCITY 				6000.0		// deg/min
 #define A_LATCH_VELOCITY 				600.0		// deg/min
 #define A_LATCH_BACKOFF 				15.0		// deg
@@ -125,7 +130,6 @@
 #define B_JERK_MAX 						JERK_MAX
 #define B_JUNCTION_DEVIATION 			JUNCTION_DEVIATION
 #define B_RADIUS 						1
-#define B_SWITCH_MODE 					1
 #define B_SEARCH_VELOCITY 				-600
 #define B_LATCH_VELOCITY 				100
 #define B_LATCH_BACKOFF 				-5
@@ -138,25 +142,23 @@
 #define C_JERK_MAX 						JERK_MAX
 #define C_JUNCTION_DEVIATION 			JUNCTION_DEVIATION
 #define C_RADIUS 						1
-#define C_SWITCH_MODE 					1
 #define C_SEARCH_VELOCITY 				-600
 #define C_LATCH_VELOCITY 				100
 #define C_LATCH_BACKOFF 				-5
 #define C_ZERO_BACKOFF 					2
 
-
 // *** PWM SPINDLE CONTROL ***
 
-#define C_PWM_FREQUENCY                 100     // in Hz
-#define C_CW_SPEED_LO                   1000    // arbitrary units
-#define C_CW_SPEED_HI                   2000
-#define C_CW_PHASE_LO                   .125      // phase [0..1]
-#define C_CW_PHASE_HI                   .2
-#define C_CCW_SPEED_LO                  1000
-#define C_CCW_SPEED_HI                  2000
-#define C_CCW_PHASE_LO                  .125
-#define C_CCW_PHASE_HI                  .2
-#define C_PWM_PHASE_OFF                 .1
+#define P1_PWM_FREQUENCY                100     // in Hz
+#define P1_CW_SPEED_LO                  1000    // in RPM (arbitrary units)
+#define P1_CW_SPEED_HI                  2000
+#define P1_CW_PHASE_LO                  0.125   // phase [0..1]
+#define P1_CW_PHASE_HI                  0.2
+#define P1_CCW_SPEED_LO                 1000
+#define P1_CCW_SPEED_HI                 2000
+#define P1_CCW_PHASE_LO                 0.125
+#define P1_CCW_PHASE_HI                 0.2
+#define P1_PWM_PHASE_OFF                0.1
 
 // *** DEFAULT COORDINATE SYSTEM OFFSETS ***
 

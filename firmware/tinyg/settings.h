@@ -42,7 +42,7 @@
 
 #define STATUS_REPORT_MIN_MS		200		// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	200		// milliseconds - set to 0 to disable
-#define SR_DEFAULTS "line","posx","posy","posz","vel","stat"
+#define SR_DEFAULTS "line","posx","posy","posz","posa","vel","momo","stat"
 
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
 #define GCODE_DEFAULT_UNITS			MILLIMETERS
@@ -71,5 +71,21 @@
 #include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
 //#include "settings/settings_ultimaker.h"			// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"			// Zen Toolworks 7x12
+
+/*** Handle optional modules that may not be in every machine ***/
+
+// If PWM_1 is not defined fill it with dummy values
+#ifndef	P1_PWM_FREQUENCY
+#define P1_PWM_FREQUENCY	0	// Hz
+#define P1_CW_SPEED_LO		0	// in RPM (arbitrary units)
+#define P1_CW_SPEED_HI		0
+#define P1_CW_PHASE_LO		0	// phase [0..1]
+#define P1_CW_PHASE_HI		0
+#define P1_CCW_SPEED_LO		0
+#define P1_CCW_SPEED_HI		0
+#define P1_CCW_PHASE_LO		0
+#define P1_CCW_PHASE_HI		0
+#define P1_PWM_PHASE_OFF	0
+#endif//P1_PWM_FREQUENCY
 
 #endif
