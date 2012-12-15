@@ -101,8 +101,10 @@ struct mpBuffer {				// See Planning Velocity Notes for variable usage
 
 	double target[AXES];		// target position in floating point
 	double unit[AXES];			// unit vector for axis scaling & planning
+	double work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
 	double time;				// line, helix or dwell time in minutes
+	double min_time;			// minimum time for the move - for rate override replanning
 	double head_length;
 	double body_length;
 	double tail_length;
@@ -167,6 +169,7 @@ struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	double position[AXES];		// current move position
 	double target[AXES];		// target move position
 	double unit[AXES];			// unit vector for axis scaling & planning
+	double work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
 	double head_length;			// copies of bf variables of same name
 	double body_length;
@@ -318,7 +321,10 @@ void mp_flush_planner()
  * mp_get_plan_position() 		- returns planning position
  * mp_set_axis_position() 		- sets both planning and runtime positions (for G2/G3)
  *
- * mp_get_runtime_position()	- returns current position of queried axis
+ * mp_get_runtime_work_position() - returns current axis position in work coordinates
+ *									that were in effect at move planning time
+ *
+ * mp_get_runtime_machine_position() - returns current axis position in machine coordinates
  * mp_get_runtime_velocity()	- returns current velocity (aggregate)
  * mp_get_runtime_linenum()		- returns currently executing line number
  * mp_get_runtime_lineindex()	- returns currently executing line index
@@ -361,7 +367,14 @@ void mp_set_axis_position(uint8_t axis, const double position)
 	mr.position[axis] = position;
 }
 
-double mp_get_runtime_position(uint8_t axis) { return (mr.position[axis]);}
+double mp_get_runtime_work_position(uint8_t axis) { 
+	return (mr.position[axis]);
+}
+
+double mp_get_runtime_machine_position(uint8_t axis) { 
+	return (mr.position[axis]);
+}
+
 double mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 double mp_get_runtime_linenum(void) { return (mr.linenum);}
 double mp_get_runtime_lineindex(void) { return (mr.lineindex);}
@@ -562,6 +575,7 @@ static uint8_t _exec_dwell(mpBuf *bf)	// NEW
 }
 
 /*************************************************************************
+ * The non-acceleration line is left in for illustration purposes
  * mp_line() 	- queue a linear move (simple version - no accel/decel)
  * _exec_line() - run a line to generate and load a linear move
  *
@@ -610,6 +624,7 @@ static uint8_t _exec_line(mpBuf *bf)
 	return (TG_OK);
 }
 */
+
 /**************************************************************************
  * mp_aline() - plan a line with acceleration / deceleration
  *
@@ -626,12 +641,12 @@ static uint8_t _exec_line(mpBuf *bf)
  * 	Note: All math is done in absolute coordinates using "double precision" 
  *	floating point (even though AVRgcc does this as single precision)
  *
- *	Note: returning a status that is not TG_OK means the endpoint is NOT
+ *	Note: Returning a status that is not TG_OK means the endpoint is NOT
  *	advanced. So lines that are too short to move will accumulate and get 
  *	executed once the accumlated error exceeds the minimums 
  */
 
-uint8_t mp_aline(const double target[], const double minutes)
+uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time)
 {
 	mpBuf *bf; 						// current move pointer
 	double exact_stop = 0;

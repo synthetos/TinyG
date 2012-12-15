@@ -106,8 +106,8 @@ enum moveState {
  *	Useful macros
  */
 
-//#define MP_LINE(t,m) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m) : mp_line(t,m))
-#define MP_LINE(t,m) (mp_aline(t,m))	// non-planned lines are disabled
+//#define MP_LINE(t,m,o,n) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m,o,n) : mp_line(t,m))
+#define MP_LINE(t,m,o,n) (mp_aline(t,m,o,n))	// non-planned lines are disabled
 
 /*
  * Global Scope Functions
@@ -126,7 +126,8 @@ void mp_set_plan_position(const double position[]);
 void mp_set_axes_position(const double position[]);
 void mp_set_axis_position(uint8_t axis, const double position);
 
-double mp_get_runtime_position(uint8_t axis);
+double mp_get_runtime_machine_position(uint8_t axis);
+double mp_get_runtime_work_position(uint8_t axis);
 double mp_get_runtime_velocity(void);
 double mp_get_runtime_linenum(void);
 double mp_get_runtime_lineindex(void);
@@ -141,7 +142,8 @@ uint8_t mp_plan_hold_callback(void);
 uint8_t mp_end_hold_callback(void);
 uint8_t mp_dwell(const double seconds);
 uint8_t mp_line(const double target[], const double minutes);
-uint8_t mp_aline(const double target[], const double minutes);
+//uint8_t mp_aline(const double target[], const double minutes);
+uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time);
 uint8_t mp_go_home_cycle(void);
 
 #ifdef __DEBUG

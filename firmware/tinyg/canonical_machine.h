@@ -81,7 +81,9 @@ struct GCodeModel {						// Gcode model- meaning depends on context
 	double target[AXES]; 				// XYZABC where the move should go
 	double position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
 	double origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
+	double work_offset[AXES];			// XYZABC work offset to be forwarded to planner
 
+	double min_time;					// minimum time possible for the move given axis constraints
 	double feed_rate; 					// F - normalized to millimeters/minute
 	double inverse_feed_rate; 			// ignored if inverse_feed_rate not active
 	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)

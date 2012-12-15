@@ -108,6 +108,8 @@ Invoke self test by entering $test=N where N is one of:\n\
   $test=9  inverse time test\n\
   $test=10 rotary motion test\n\
   $test=11 small moves test\n\
+  $test=12 slow moves test\n\
+  $test=13 g92 offsets test\n\
 "));
 _help_postscript();
 }

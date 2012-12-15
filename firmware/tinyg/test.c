@@ -52,6 +52,7 @@
 #include "tests/test_010_rotary.h"	// ABC axes
 #include "tests/test_011_small_moves.h"	// small move test
 #include "tests/test_012_slow_moves.h"	// slow move test
+#include "tests/test_013_g92_offsets.h"	// what it says
 #include "tests/test_050_mudflap.h"	// mudflap test - entire drawing
 #include "tests/test_051_braid.h"	// braid test - partial drawing
 
@@ -77,6 +78,7 @@ uint8_t tg_test(cmdObj *cmd)
 		case 10: { xio_open_pgm(PGMFILE(&test_rotary)); break;}
 		case 11: { xio_open_pgm(PGMFILE(&test_small_moves)); break;}
 		case 12: { xio_open_pgm(PGMFILE(&test_slow_moves)); break;}
+		case 13: { xio_open_pgm(PGMFILE(&test_g92_offsets)); break;}
 		case 50: { xio_open_pgm(PGMFILE(&test_mudflap)); break;}
 		case 51: { xio_open_pgm(PGMFILE(&test_braid)); break;}
 		default: {

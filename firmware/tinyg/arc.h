@@ -33,16 +33,19 @@
 // See planner.h for MM_PER_ARC_SEGMENT setting
 
 // function prototypes
-uint8_t ar_arc(const double target[],
-			   const double i, const double j, const double k, 
-			   const double theta, 
-			   const double radius, 
-		   	   const double angular_travel, 
-			   const double linear_travel, 
-		   	   const uint8_t axis_1, 
-			   const uint8_t axis_2, 
-			   const uint8_t axis_linear,
-			   const double minutes);
+uint8_t ar_arc(	const double target[],
+				const double i, const double j, const double k, 
+				const double theta, 
+				const double radius, 
+		   		const double angular_travel, 
+				const double linear_travel, 
+		   		const uint8_t axis_1, 
+				const uint8_t axis_2, 
+				const uint8_t axis_linear,
+				const double minutes,
+				const double work_offset[],
+				const double min_time);
+
 uint8_t ar_arc_callback(void);
 void ar_abort_arc(void);
 
