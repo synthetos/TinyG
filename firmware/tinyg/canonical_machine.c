@@ -127,6 +127,24 @@ static void _exec_program_finalize(uint8_t machine_state);
  *
  ************************************************************************/
 
+/* 
+ * cm_get_combined_state() - combines raw states into something a user might want to see
+ */
+
+uint8_t cm_get_combined_state() 
+{
+	if (cm.machine_state == MACHINE_CYCLE) {
+		if (cm.motion_state == MOTION_RUN) cm.combined_state = COMBINED_RUN;
+		if (cm.motion_state == MOTION_HOLD) cm.combined_state = COMBINED_HOLD;
+		if (cm.cycle_state == CYCLE_HOMING) cm.combined_state = COMBINED_HOMING;
+		if (cm.cycle_state == CYCLE_PROBE) cm.combined_state = COMBINED_PROBE;
+		if (cm.cycle_state == CYCLE_JOG) cm.combined_state = COMBINED_JOG;
+	} else {
+		cm.combined_state = cm.machine_state;
+	}
+	return cm.combined_state;
+}
+
 /*
  * Low-level Getters and Setters (work directly on the Gcode model struct)
  */
@@ -153,33 +171,16 @@ uint8_t cm_isbusy() { return (mp_isbusy());}
 
 void cm_set_absolute_override(uint8_t absolute_override) { gm.absolute_override = absolute_override;}
 void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
-void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
 void cm_set_spindle_speed_parameter(double speed) { gm.spindle_speed = speed;}
+void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
 
 //void cm_sync_tool_number(uint8_t tool) { mp_sync_command(SYNC_TOOL_NUMBER, (double)tool);}
 //void cm_sync_spindle_speed_parameter(double speed) { mp_sync_command(SYNC_SPINDLE_SPEED, speed);}
 
-/* 
- * cm_get_combined_state() - combines raw states into something a user might want to see
- */
-
-uint8_t cm_get_combined_state() 
-{
-	if (cm.machine_state == MACHINE_CYCLE) {
-		if (cm.motion_state == MOTION_RUN) cm.combined_state = COMBINED_RUN;
-		if (cm.motion_state == MOTION_HOLD) cm.combined_state = COMBINED_HOLD;
-		if (cm.cycle_state == CYCLE_HOMING) cm.combined_state = COMBINED_HOMING;
-		if (cm.cycle_state == CYCLE_PROBE) cm.combined_state = COMBINED_PROBE;
-		if (cm.cycle_state == CYCLE_JOG) cm.combined_state = COMBINED_JOG;
-	} else {
-		cm.combined_state = cm.machine_state;
-	}
-	return cm.combined_state;
-}
-
 /* Position and Offset getters
  *
  * cm_get_coord_offset() - return the currently active coordinate offset for an axis
+ * cm_get_coord_offset_vector() - return currently active coordinate offsets as a vector
  * cm_get_model_work_position() - return position from the gm struct into gn struct form (external form)
  * cm_get_model_work_position_vector() - return model position vector in externalized form
  * cm_get_model_canonical_target() - return model target in internal canonical form
@@ -200,6 +201,14 @@ double cm_get_coord_offset(uint8_t axis)
 	}
 }
 
+double *cm_get_coord_offset_vector(double vector[])
+{
+	for (uint8_t i=0; i<AXES; i++) {
+		vector[i] = cm_get_coord_offset(i);
+	}
+	return (vector);
+}
+
 double cm_get_model_work_position(uint8_t axis) 
 {
 	if (gm.units_mode == INCHES) {
@@ -209,12 +218,12 @@ double cm_get_model_work_position(uint8_t axis)
 	}
 }
 /*
-double *cm_get_model_work_position_vector(double position[]) 
+double *cm_get_model_work_position_vector(double vector[]) 
 {
 	for (uint8_t i=0; i<AXES; i++) {
-		position[i] = cm_get_model_work_position(i);
+		vector[i] = cm_get_model_work_position(i);
 	}
-	return (position);
+	return (vector);
 }
 */
 double cm_get_model_canonical_target(uint8_t axis) 
@@ -767,7 +776,10 @@ uint8_t cm_straight_traverse(double target[], double flags[])
 	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_target(target,flags);
 	cm_exec_cycle_start();					//required for homing & other cycles
-	uint8_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), gm.work_offset, gm.min_time);
+	uint8_t status = MP_LINE(gm.target, 
+							_get_move_times(&gm.min_time), 
+							cm_get_coord_offset_vector(gm.work_offset), 
+							gm.min_time);
 	cm_set_gcode_model_endpoint_position(status);
 	return (status);
 }
@@ -845,7 +857,7 @@ uint8_t cm_dwell(double seconds)
 
 uint8_t cm_straight_feed(double target[], double flags[])
 {
-	uint8_t status;
+//	uint8_t status;
 
 	gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 
@@ -862,7 +874,11 @@ uint8_t cm_straight_feed(double target[], double flags[])
 
 	cm_set_target(target, flags);
 	cm_exec_cycle_start();					//required for homing & other cycles
-	status = MP_LINE(gm.target, _get_move_times(&gm.min_time), gm.work_offset, gm.min_time);
+//	status = MP_LINE(gm.target, _get_move_times(&gm.min_time), gm.work_offset, gm.min_time);
+	uint8_t status = MP_LINE(gm.target, 
+							_get_move_times(&gm.min_time), 
+							cm_get_coord_offset_vector(gm.work_offset), 
+							gm.min_time);
 
 	cm_set_gcode_model_endpoint_position(status);
 	return (status);

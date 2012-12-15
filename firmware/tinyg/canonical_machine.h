@@ -422,36 +422,40 @@ uint8_t cm_get_hold_state(void);
 uint8_t cm_get_homing_state(void);
 
 uint8_t cm_get_motion_mode(void);
-uint8_t cm_get_select_plane(void);
-uint8_t cm_get_path_control(void);
 uint8_t cm_get_coord_system(void);
 uint8_t cm_get_units_mode(void);
+uint8_t cm_get_select_plane(void);
+uint8_t cm_get_path_control(void);
 uint8_t cm_get_distance_mode(void);
+uint8_t cm_get_inverse_feed_rate_mode(void);
+uint8_t cm_get_spindle_mode(void);
 uint32_t cm_get_model_linenum(void);
-uint32_t cm_get_model_lineindex(void);
+//uint32_t cm_get_model_lineindex(void);
 uint8_t cm_isbusy(void);
 
-void cm_set_tool_number(uint8_t tool);
+void cm_set_absolute_override(uint8_t absolute_override);
 void cm_set_spindle_mode(uint8_t spindle_mode);
 void cm_set_spindle_speed_parameter(double speed);
-void cm_set_absolute_override(uint8_t absolute_override);
+void cm_set_tool_number(uint8_t tool);
 
 //void cm_sync_tool_number(uint8_t tool);
 //void cm_sync_spindle_speed_parameter(double speed);
 
+double cm_get_coord_offset(uint8_t axis);
+double *cm_get_coord_offset_vector(double vector[]);
 double cm_get_model_work_position(uint8_t axis);
 //double *cm_get_model_work_position_vector(double position[]);
 double cm_get_model_canonical_target(uint8_t axis);
-double *cm_get_model_canonical_position_vector(double position[]);
+double *cm_get_model_canonical_position_vector(double vector[]);
 double cm_get_runtime_machine_position(uint8_t axis);
 double cm_get_runtime_work_position(uint8_t axis);
-double cm_get_coord_offset(uint8_t axis);
-void cm_set_gcode_model_endpoint_position(uint8_t status);
 
-double *cm_set_vector(double x, double y, double z, double a, double b, double c);
-void cm_set_target(double target[], double flag[]);
 void cm_set_arc_offset(double i, double j, double k);
 void cm_set_arc_radius(double r);
+void cm_set_target(double target[], double flag[]);
+void cm_set_gcode_model_endpoint_position(uint8_t status);
+
+//double *cm_set_vector(double x, double y, double z, double a, double b, double c);
 //void cm_set_absolute_override(uint8_t absolute_override);
 void cm_set_model_linenum(uint32_t linenum);
 void cm_set_model_lineindex(uint32_t lineindex);
@@ -474,7 +478,6 @@ uint8_t cm_set_origin_offsets(double offset[], double flag[]); 		// G92
 uint8_t cm_reset_origin_offsets(void); 				// G92.1
 uint8_t cm_suspend_origin_offsets(void); 			// G92.2
 uint8_t cm_resume_origin_offsets(void); 			// G92.3
-uint8_t cm_get_inverse_feed_rate_mode(void);		// G93,G94
 
 uint8_t cm_straight_traverse(double target[], double flags[]);
 uint8_t cm_set_feed_rate(double feed_rate);			// F parameter

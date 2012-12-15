@@ -54,6 +54,7 @@ struct arArcSingleton {			// persistent planner and runtime variables
 
 	double length;				// length of line or helix in mm
 	double time;				// total running time (derived)
+	double min_time;			// not sure this is needed
 	double theta;				// total angle specified by arc
 	double radius;				// computed via offsets
 	double angular_travel;		// travel along the arc
@@ -119,7 +120,9 @@ uint8_t ar_arc( const double target[],
 	// load the move struct for an arc
 	cm_get_model_canonical_position_vector(ar.position);// set initial arc position
 	copy_axis_vector(ar.endpoint, target);				// save the arc endpoint
+	copy_axis_vector(ar.work_offset, work_offset);		// propagate the work offset
 	ar.time = minutes;
+	ar.min_time = min_time;
 	ar.theta = theta;
 	ar.radius = radius;
 	ar.axis_1 = axis_1;

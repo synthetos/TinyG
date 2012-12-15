@@ -368,7 +368,7 @@ void mp_set_axis_position(uint8_t axis, const double position)
 }
 
 double mp_get_runtime_work_position(uint8_t axis) { 
-	return (mr.position[axis]);
+	return (mr.position[axis] - mr.work_offset[axis]);
 }
 
 double mp_get_runtime_machine_position(uint8_t axis) { 
@@ -663,8 +663,10 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
 
 	bf->linenum = cm_get_model_linenum();		// block being planned
 	bf->time = minutes;
+	bf->min_time = min_time;
 	bf->length = length;
 	copy_axis_vector(bf->target, target); 		// set target for runtime
+	copy_axis_vector(bf->work_offset, work_offset);// propagate offset
 
 	// Set unit vector and jerk terms - this is all done together for efficiency 
 	// Ordinarily FP tests are to EPSILON but in this case they actually are zero
@@ -1784,6 +1786,7 @@ static uint8_t _exec_aline(mpBuf *bf)
 		mr.exit_velocity = bf->exit_velocity;
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.endpoint, bf->target);	// save the final target of the move
+		copy_axis_vector(mr.work_offset, bf->work_offset);// propagate offset
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
