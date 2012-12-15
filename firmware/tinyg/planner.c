@@ -411,51 +411,46 @@ static uint8_t _exec_null(mpBuf *bf)
 	return (TG_OK);
 }
 
-/*************************************************************************
+/************************************************************************************
  * mp_queue_command() - queue a synchronous command to the planner queue 
  *
- *	This works like:
+ *	How this works:
  *	  - The command is called by the Gcode interpreter (cm_<command>, e.g. an M code)
- *	  - cm_sync_ function calls mp_sync_command which puts it in the planning queue
- *		and optionally writes a parameter to bf->parameter
+ *	  - cm_ function calls mp_queue_command which puts it in the planning queue.
+ *		THis involves setting some parameters and registering a callback to the 
+ *		execution function in the canonical machine
  *	  - the planning queue gets to the function and calls _exec_command()
- *	  - ...which is typically a callback to a cm_set_<command> function, or possibly 
- *		   a cm_exec_<command> function
+ *	  - ...which passes the saved parameters to the callback function
+ *	  - To finish up _exec_command() needs to run a null pre and free the planner buffer
  *
  *	Doing it this way instead of synchronizing on queue empty simplifies the
- *	handling of feedholds, feed overrides, buffer flushes, and thread blocking.
+ *	handling of feedholds, feed overrides, buffer flushes, and thread blocking,
+ *	and makes keeping the queue full much easier - therefore avoiding Q starvation
  */
 
-void mp_queue_command(uint8_t(*exec)(uint8_t, double, double[], double[]), uint8_t ui8, double dbl, double ofs[], double flg[])
-//void mp_queue_command(uint8_t(*exec_func)(uint8_t, double, double[], double[]), uint8_t ui8, double dbl, double ofs[], double flg[])
-//void mp_queue_command(uint8_t(*exec_func)(uint8_t), uint8_t ui8, double dbl, double ofs[], double flg[])
-//void mp_queue_command(uint8_t(*exec_func)(uint8_t ui8), uint8_t ui8, double dbl, double ofs[], double flg[])
-//void mp_queue_command((*exec_func)(uint8_t ui8, double dbl, double ofs[], double flg[]), uint8_t ui8, double dbl, double ofs[], double flg[])
-//void mp_queue_command((*exec_func)(), uint8_t ui8, double dbl, double ofs[], double flg[])
+uint8_t mp_queue_command(void(*exec)(uint8_t, double, double[], double[]), uint8_t ui8, double dbl, double ofs[], double flg[])
 {
 	mpBuf *bf;
 
-	if ((bf = _get_write_buffer()) == NULL) { return;}
-	bf->move_code = MOVE_TYPE_COMMAND;
+	if ((bf = _get_write_buffer()) == NULL) { return (TG_BUFFER_FULL_FATAL);}
+	bf->move_type = MOVE_TYPE_COMMAND;
 	bf->callback = exec;
 	bf->int_val = ui8;
 	bf->dbl_val = dbl;
-//	if 
+	if (ofs != NULL) {
+		copy_axis_vector(bf->target, ofs);
+		copy_axis_vector(bf->unit, flg);
+	}
 	_queue_write_buffer(MOVE_TYPE_COMMAND);
+	return (TG_OK);
 }
 
 static uint8_t _exec_command(mpBuf *bf)
 {
-	uint8_t status = TG_OK;
-//	switch(bf->move_code) {
-//		case SYNC_TOOL_NUMBER: { cm_set_tool_number(bf->parameter); break;}
-//		case SYNC_SPINDLE_SPEED: { cm_set_spindle_speed_parameter(bf->parameter); break;}
-//	}
-	// Must call a prep to keep the loader happy. See Move Execution in:
-	// http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Module-Details#planner.c.2F.h
-	st_prep_null();
+	bf->callback(bf->int_val, bf->dbl_val, bf->offset, bf->flag);
+	st_prep_null();			// Must call a prep to keep the loader happy. 
 	_free_run_buffer();
-	return (status);
+	return (TG_OK);
 }
 
 /*************************************************************************

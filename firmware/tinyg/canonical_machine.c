@@ -59,6 +59,18 @@
 // but it's also used by cycles so it's in canonical_machine.h instead.
 
 static double _get_move_time(void);
+
+// callbacks
+static void _exec_set_coord_offsets(uint8_t coord_system, double d, double offset[], double flag[]);
+static void _exec_set_origin_offsets(uint8_t u, double d, double offset[], double flag[]);
+static void _exec_modify_origin_offsets(uint8_t dot, double d, double o[], double f[]);
+static void _exec_set_machine_axis_position(uint8_t axis, double position, double o[], double f[]);
+static void _exec_select_plane(uint8_t plane, double d, double o[], double f[]);
+static void _exec_set_units_mode(uint8_t mode, double d, double o[], double f[]);
+static void _exec_set_distance_mode(uint8_t mode, double d, double o[], double f[]);
+static void _exec_set_coord_system(uint8_t coord_system, double d, double o[], double f[]);
+
+
 static void _exec_program_finalize(uint8_t machine_state);
 
 #define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
@@ -506,11 +518,17 @@ void cm_init()
 	cm_spindle_init();					// init spindle PWM and variables
 
 	// set gcode defaults
-	cm_set_units_mode(cfg.units_mode);
-	cm_set_coord_system(cfg.coord_system);
-	cm_select_plane(cfg.select_plane);
+	_exec_set_units_mode(cfg.units_mode,0,0,0);
+	_exec_set_coord_system(cfg.coord_system,0,0,0);
+	_exec_select_plane(cfg.select_plane,0,0,0);
+//	_exec_set_path_control(cfg.path_control,0,0,0);
+	_exec_set_distance_mode(cfg.distance_mode,0,0,0);
+
+//	cm_set_units_mode(cfg.units_mode);
+//	cm_set_coord_system(cfg.coord_system);
+//	cm_select_plane(cfg.select_plane);
 	cm_set_path_control(cfg.path_control);
-	cm_set_distance_mode(cfg.distance_mode);
+//	cm_set_distance_mode(cfg.distance_mode);
 	
 	// signal that the machine is ready for action
 	cm.machine_state = MACHINE_RESET;	
@@ -522,12 +540,12 @@ void cm_init()
  *
  * cm_set_machine_coords() - update machine coordinates
  * cm_set_machine_zero() - set machine coordinates to zero
- * cm_set_machine_axis_position() - ste the position of a single axis
+ * cm_set_machine_axis_position() - set the position of a single axis
  * cm_select_plane() - G17,G18,G19 select axis plane
  * cm_set_units_mode()  - G20, G21
+ * cm_set_distance_mode() - G90, G91
  * cm_set_coord_system() - G54-G59
  * cm_set_coord_system_offsets() - G10
- * cm_set_distance_mode() - G90, G91
  * cm_set_origin_offsets() - G92
  * cm_reset_origin_offsets() - G92.1
  * cm_suspend_origin_offsets() - G92.2
@@ -550,15 +568,29 @@ uint8_t cm_set_machine_zero()
 	return (TG_OK);
 }
 */
+
+/*
+ * cm_set_machine_axis_position() - set the position of a single axis
+ */
 uint8_t cm_set_machine_axis_position(uint8_t axis, const double position)
+{
+	return(mp_queue_command(_exec_set_machine_axis_position, axis, position,0,0));
+}
+static void _exec_set_machine_axis_position(uint8_t axis, double position, double o[], double f[])
 {
 	gm.position[axis] = position;
 	gm.target[axis] = position;
 	mp_set_axis_position(axis, position);
-	return (TG_OK);
 }
 
+/*
+ * cm_select_plane() - G17,G18,G19 select axis plane
+ */
 uint8_t cm_select_plane(uint8_t plane) 
+{
+	return(mp_queue_command(_exec_select_plane, plane,0,0,0));
+}
+static void _exec_select_plane(uint8_t plane, double d, double o[], double f[])
 {
 	gm.select_plane = plane;
 	if (plane == CANON_PLANE_YZ) {
@@ -574,56 +606,60 @@ uint8_t cm_select_plane(uint8_t plane)
 		gm.plane_axis_1 = Y;
 		gm.plane_axis_2 = Z;
 	}
-	return (TG_OK);
 }
-
-uint8_t cm_set_units_mode(uint8_t mode)		// G20, G21
-{
-	gm.units_mode = mode;					// 0 = inches, 1 = mm.
-	return (TG_OK);
-}
-
-uint8_t cm_set_distance_mode(uint8_t mode)	// G90, G91
-{
-	gm.distance_mode = mode;				// 0 = absolute mode, 1 = incremental
-	return (TG_OK);
-}
-
-uint8_t	cm_set_coord_system(uint8_t coord_system)	// G54 - G59
-{
-	gm.coord_system = coord_system;	
-	return (TG_OK);
-}
-
-uint8_t	cm_exec_coord_offsets(uint8_t coord_system, double dummy, double offset[], double flag[]);
-
-uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[])
-{
-	mp_queue_command(cm_exec_coord_offsets, coord_system, 0, offset, flag);
 
 /*
-	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
-		return (TG_INTERNAL_RANGE_ERROR);
-	}
-	for (uint8_t i=0; i<AXES; i++) {
-		if (flag[i] > EPSILON) {
-			cfg.offset[coord_system][i] = offset[i];
-			cm.g10_flag = true;	// this will persist offsets to NVM once move has stopped
-		}
-	}
-	// see if it's OK to write them now, or if they need to wait until STOP
-	if (cm.machine_state != MACHINE_CYCLE) {
-		cmd_persist_offsets(cm.g10_flag);
-	}
-*/
-	return (TG_OK);
+ * cm_set_units_mode() - G20, G21
+ */
+uint8_t cm_set_units_mode(uint8_t mode)
+{
+	return(mp_queue_command(_exec_set_units_mode, mode,0,0,0));
+}
+static void _exec_set_units_mode(uint8_t mode, double d, double o[], double f[])
+{
+	gm.units_mode = mode;	// 0 = inches, 1 = mm.
+}
+uint8_t cm_set_units_now(uint8_t mode)
+{
+	gm.units_mode = mode;	// 0 = inches, 1 = mm.
 }
 
-uint8_t	cm_exec_coord_offsets(uint8_t coord_system, double dummy, double offset[], double flag[])
+/*
+ * cm_set_distance_mode() - G90, G91
+ */
+uint8_t cm_set_distance_mode(uint8_t mode)
+{
+	return(mp_queue_command(_exec_set_distance_mode, mode,0,0,0));
+}
+static void _exec_set_distance_mode(uint8_t mode, double d, double o[], double f[])
+{
+	gm.distance_mode = mode;	// 0 = absolute mode, 1 = incremental
+}
+
+/*
+ * cm_set_coord_system() - G54-G59
+ */
+uint8_t	cm_set_coord_system(uint8_t coord_system)
+{
+	return(mp_queue_command(_exec_set_coord_system, coord_system,0,0,0));
+}
+static void _exec_set_coord_system(uint8_t coord_system, double d, double o[], double f[])
+{
+	gm.coord_system = coord_system;	
+}
+
+/*
+ * cm_set_coord_system_offsets() - G10 L2 Pn
+ */
+uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[])
 {
 	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
 		return (TG_INTERNAL_RANGE_ERROR);
 	}
+	return(mp_queue_command(_exec_set_coord_offsets, coord_system, 0, offset, flag));
+}
+static void _exec_set_coord_offsets(uint8_t coord_system, double d, double offset[], double flag[])
+{
 	for (uint8_t i=0; i<AXES; i++) {
 		if (flag[i] > EPSILON) {
 			cfg.offset[coord_system][i] = offset[i];
@@ -634,10 +670,16 @@ uint8_t	cm_exec_coord_offsets(uint8_t coord_system, double dummy, double offset[
 	if (cm.machine_state != MACHINE_CYCLE) {
 		cmd_persist_offsets(cm.g10_flag);
 	}
-	return (TG_OK);
 }
 
-uint8_t cm_set_origin_offsets(double offset[], double flag[])	// G92
+/*
+ * cm_set_origin_offsets() - G92
+ */
+uint8_t cm_set_origin_offsets(double offset[], double flag[])
+{
+	return(mp_queue_command(_exec_set_origin_offsets, 0, 0, offset, flag));
+}
+static void _exec_set_origin_offsets(uint8_t u, double d, double offset[], double flag[])
 {
 	gm.origin_offset_mode = true;
 	for (uint8_t i=0; i<AXES; i++) {
@@ -645,28 +687,35 @@ uint8_t cm_set_origin_offsets(double offset[], double flag[])	// G92
 			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] - _to_millimeters(offset[i]);
 		}
 	}
-	return (TG_OK);
 }
 
-uint8_t cm_reset_origin_offsets() 			// G92.1
+/*
+ * cm_reset_origin_offsets() - G92.1
+ * cm_suspend_origin_offsets() - G92.2
+ * cm_resume_origin_offsets() - G92.3
+ */
+uint8_t cm_reset_origin_offsets()
 {
-	gm.origin_offset_mode = false;
-	for (uint8_t i=0; i<AXES; i++) {
-		gm.origin_offset[i] = 0;
-	}
-	return (TG_OK);
+	return(mp_queue_command(_exec_modify_origin_offsets, 1,0,0,0));
 }
-
-uint8_t cm_suspend_origin_offsets()			// G92.2
+uint8_t cm_suspend_origin_offsets()
 {
-	gm.origin_offset_mode = true;
-	return (TG_OK);
+	return(mp_queue_command(_exec_modify_origin_offsets, 2,0,0,0));
 }
-
-uint8_t cm_resume_origin_offsets()			// G92.3
+uint8_t cm_resume_origin_offsets()
 {
-	gm.origin_offset_mode = false;
-	return (TG_OK);
+	return(mp_queue_command(_exec_modify_origin_offsets, 3,0,0,0));
+}
+static void _exec_modify_origin_offsets(uint8_t dot, double d, double o[], double f[])
+{
+	if (dot == 1) {							// reset offsets
+		gm.origin_offset_mode = false;
+		for (uint8_t i=0; i<AXES; i++) 
+			gm.origin_offset[i] = 0;
+	} else if (dot == 2)					// suspend offsets
+		gm.origin_offset_mode = true;
+	else									// resume offsets
+		gm.origin_offset_mode = false;
 }
 
 /* 

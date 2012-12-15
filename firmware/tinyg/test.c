@@ -121,7 +121,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"rx\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"x\":20}\n");
 //	xio_queue_RX_string_usb("{\"1\":{\"po\":\"\"}}\n");
-	xio_queue_RX_string_usb("{\"c\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"c\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("{\"baud\":6}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"n20g0x1y1.1\"}\n");
@@ -130,7 +130,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x0\"}\n");
 //	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
-	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("g0x2\n");
 //	xio_queue_RX_string_usb("g92a0\n");
@@ -240,6 +240,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0 x20 y23 z10\n");
 //	xio_queue_RX_string_usb("g4 p0.1\n");
 //	xio_queue_RX_string_usb("g0 x10 y10 z-10\n");
+
+/* G10 coordinate offsets */
+	xio_queue_RX_string_usb("g10 L2 p2 x10 y11 z12\n");
 
 /* G28 and G30 homing tests */
 //	xio_queue_RX_string_usb("g28.1x0y0z0\n");
