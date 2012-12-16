@@ -30,12 +30,6 @@
 
 #include <stdio.h>					// needed for FILE def'n
 
-enum tgCommunicationsMode {
-	TG_TEXT_MODE = 0,				// default
-	TG_JSON_MODE
-//	TG_GRBL_MODE
-};
-
 #define TG_FLAG_PROMPTS_bm (1<<0)	// prompt enabled if set
 #define INPUT_BUFFER_LEN 255		// text buffer size (255 max)
 #define OUTPUT_BUFFER_LEN 255		// text buffer size (255 max)

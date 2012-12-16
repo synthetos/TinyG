@@ -145,15 +145,32 @@ enum cmdType {						// classification of commands
 	CMD_TYPE_REPORT					// SR, QR and any other report
 };
 
-enum jsonEcho {
+enum tgCommunicationsMode {
+	TG_TEXT_MODE = 0,				// default
+	TG_JSON_MODE
+//	TG_GRBL_MODE
+};
+
+enum jsonEcho {						// JSON echo modes
 	JE_SILENT = 0,					// No response is provided for any command
 	JE_OMIT_BODY,					// Response contains no body - footer only
 	JE_OMIT_GCODE_BODY,				// Body returned for configs; omitted for Gcode commands
 	JE_GCODE_LINENUM_ONLY,			// Body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+	JE_GCODE_MESSAGES,				// Body returned for configs; Gcode returns line numbers and messages only
 	JE_FULL_ECHO					// Body returned for configs and Gcode - Gcode comments removed
 };
 
-enum cmdTextMode {					// these set the print modes for text output
+enum textEcho {						// text mode echo modes
+	TE_SILENT = 0,					// No response is provided for any command
+	TE_FULL_ECHO					// Everything returned
+};
+
+enum qrEcho {						// QR command echo modes
+	QE_SILENT = 0,					// No response is provided for any command
+	QE_FULL_ECHO					// Everything returned
+};
+
+enum textReports {					// these set the print modes for text output
 //	TEXT_INLINE_RAW,				// print values without separators
 	TEXT_INLINE_PAIRS,				// print key:value pairs as comma separated pairs
 	TEXT_INLINE_VALUES,				// print values as commas separated values
@@ -204,10 +221,10 @@ uint8_t cmd_persist_offsets(uint8_t flag);
 
 void cmd_clear_list(void);
 void cmd_clear_body(cmdObj *cmd);
-uint8_t cmd_add_token(char *token);
+uint8_t cmd_add_object(char *token);
 uint8_t cmd_add_string(char *token, char *string);
-uint8_t cmd_add_float(char *token, double value);
 uint8_t cmd_add_integer(char *token, uint32_t value);
+uint8_t cmd_add_float(char *token, double value);
 void cmd_print_list(uint8_t status, uint8_t textmode);
 
 uint8_t cmd_read_NVM_value(cmdObj *cmd);

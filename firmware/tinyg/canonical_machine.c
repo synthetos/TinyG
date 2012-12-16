@@ -114,7 +114,6 @@ static void _exec_select_tool(uint8_t tool, double d, double o[], double f[]);
 static void _exec_mist_coolant_control(uint8_t mist_coolant, double d, double o[], double f[]);
 static void _exec_flood_coolant_control(uint8_t flood_coolant, double d, double o[], double f[]);
 
-
 static void _exec_program_finalize(uint8_t machine_state);
 
 #define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
@@ -290,11 +289,14 @@ void cm_set_arc_radius(double r)
 
 void cm_set_model_linenum(uint32_t linenum)
 {
+	gm.linenum = linenum;
 	if (linenum != 0) {
-		gm.linenum = linenum;
-	} else {
-		gm.linenum++;			// autoincrement if no line number
+		cmd_add_object("n");	// add model line number object for later display
 	}
+//	if (linenum != 0) {
+//	} else {
+//		gm.linenum++;			// autoincrement if no line number
+//	}
 }
 
 /* 

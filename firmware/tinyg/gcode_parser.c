@@ -50,7 +50,7 @@ struct gcodeParserSingleton {	 	  // struct to manage globals
 }; struct gcodeParserSingleton gp;
 
 /* local helper functions and macros */
-static void _normalize_gcode_block(char *block);
+static uint8_t _normalize_gcode_block(char *block);
 static uint8_t _parse_gcode_block(char *line);	// Parse the block into structs
 static uint8_t _execute_gcode_block(void);		// Execute the gcode block
 static uint8_t _check_gcode_block(void);		// check the block for correctness
@@ -81,9 +81,12 @@ void gc_init()
 
 uint8_t gc_gcode_parser(char *block)
 {
-	_normalize_gcode_block(block);			// get block ready for parsing
-	if (block[0] == NUL) return (TG_NOOP); 	// ignore comments (stripped)
-	return(_parse_gcode_block(block));		// parse block & return status
+	uint8_t msg_flag = _normalize_gcode_block(block);	// get block ready for parsing
+	if (block[0] == NUL) {
+		if (msg_flag == true) return (TG_OK);			// queues messages for display
+		return (TG_NOOP); 
+	}
+	return(_parse_gcode_block(block));					// parse block & return status
 }
 
 /*
@@ -116,10 +119,12 @@ uint8_t gc_gcode_parser(char *block)
  *	MSG specifier in comment can have mixed case but cannot cannot have 
  *	embedded white spaces
  *
+ *	Returns true if there was a message to display, false otherwise
+ *
  *	++++ todo: Support leading and trailing spaces around the MSG specifier
  */
 
-static void _normalize_gcode_block(char *block) 
+static uint8_t _normalize_gcode_block(char *block) 
 {
 	char c;
 	char *comment=0;	// comment pointer - first char past opening paren
@@ -128,10 +133,10 @@ static void _normalize_gcode_block(char *block)
 
 	if (block[0] == '/') {					// discard deleted blocks
 		block[0] = NUL;
-		return;
+		return (false);
 	}
 	if (block[0] == '?') {					// trap and return ? command
-		return;
+		return (false);
 	}
 	// normalize the command block & mark the comment(if any)
 	while ((c = toupper(block[i++])) != NUL) {
@@ -163,8 +168,10 @@ static void _normalize_gcode_block(char *block)
 				}
 			}
 			(void)cm_message(comment+3);
+			return (true);
 		}
 	}
+	return (false);
 }
 
 /*

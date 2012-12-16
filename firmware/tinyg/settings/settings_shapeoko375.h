@@ -50,11 +50,12 @@
 #define COM_COMMUNICATIONS_MODE		TG_JSON_MODE	// alternately: TG_TEXT_MODE
 
 #undef COM_JSON_ECHO_MODE
-//#define COM_JSON_ECHO_MODE		JE_OMIT_BODY
-//#define COM_JSON_ECHO_MODE		JE_OMIT_GCODE_BODY
-#define COM_JSON_ECHO_MODE			JE_GCODE_LINENUM_ONLY
-//#define COM_JSON_ECHO_MODE		JE_GCODE_TRUNCATED
-//#define COM_JSON_ECHO_MODE		JE_FULL_ECHO
+//#define COM_JSON_ECHO_MODE		JE_SILENT			// No response is provided for any command
+//#define COM_JSON_ECHO_MODE		JE_OMIT_BODY		// Response contains no body - footer only
+//#define COM_JSON_ECHO_MODE		JE_OMIT_GCODE_BODY	// Body returned for configs; omitted for Gcode commands
+//#define COM_JSON_ECHO_MODE		JE_GCODE_LINENUM_ONLY// Body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+//#define COM_JSON_ECHO_MODE		JE_GCODE_MESSAGES	// Body returned for configs; Gcode returns line numbers and messages only
+#define COM_JSON_ECHO_MODE			JE_FULL_ECHO		// Body returned for configs and Gcode - Gcode comments removed
 
 // *** motor settings ***
 
@@ -127,7 +128,7 @@
 #define Y_ZERO_BACKOFF			3
 
 #define Z_AXIS_MODE				AXIS_STANDARD
-#define Z_VELOCITY_MAX			1200
+#define Z_VELOCITY_MAX			1000
 #define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX			100
 #ifdef __PLAN_R2
@@ -142,7 +143,7 @@
 #define Z_SEARCH_VELOCITY		Z_VELOCITY_MAX
 #define Z_LATCH_VELOCITY		100
 #define Z_LATCH_BACKOFF			10
-#define Z_ZERO_BACKOFF			3
+#define Z_ZERO_BACKOFF			10
 
 #define A_AXIS_MODE				AXIS_STANDARD
 #define A_VELOCITY_MAX			60000
@@ -187,6 +188,10 @@
 #define C_ZERO_BACKOFF			2
 
 // *** DEFAULT COORDINATE SYSTEM OFFSETS ***
+// Our convention is:
+//	- leave G54 in machine coordinates to act as a persistent absolute coordinate system
+//	- set G55 to be a zero in the middle of the table
+//	- no action for the others
 
 #define G54_X_OFFSET 0			// G54 is traditionally set to all zeros
 #define G54_Y_OFFSET 0
@@ -195,8 +200,8 @@
 #define G54_B_OFFSET 0
 #define G54_C_OFFSET 0
 
-#define G55_X_OFFSET 0			// but the again, so is everyting else (at least for start)
-#define G55_Y_OFFSET 0
+#define G55_X_OFFSET 90			// set G55 to be a zero in the middle of the table
+#define G55_Y_OFFSET 90
 #define G55_Z_OFFSET 0
 #define G55_A_OFFSET 0
 #define G55_B_OFFSET 0

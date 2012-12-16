@@ -33,13 +33,14 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95		// major version
-#define TINYG_BUILD_NUMBER   	353.04		// Working on synchronizing commands - coords
+#define TINYG_BUILD_NUMBER   	353.05		// Working on synchronizing commands - coords
 #define TINYG_COMM_PROTOCOL_REV 1			// communications protocol revision is tracked independently
 
 /****** DEVELOPMENT SETTINGS ******/
 
 //#define __CANNED_STARTUP		// run any canned startup moves
 //#define __DISABLE_PERSISTENCE	// disable EEPROM writes for faster simulation
+//#define __SUPPRESS_STARTUP_MESSAGES // what it says
 //#define __DEBUG				// complies debug functions found in test.c
 
 // UNIT_TESTS exist for various modules are can be enabled at the end of their .h files

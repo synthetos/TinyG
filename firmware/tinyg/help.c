@@ -34,15 +34,15 @@
 #include "controller.h"
 #include "help.h"
 
-static void _help_postscript(void);
-static void _help_status_report_advisory(void);
+static void _status_report_advisory(void);
+static void _postscript(void);
 
 /*
- * help_print_general_help() - help invoked as h from the command line
+ * print_general_help() - help invoked as h from the command line
  */
-void help_print_general_help()
+uint8_t print_general_help()
 {
-fprintf_P(stderr, PSTR("#### TinyG Help ####\n"));
+fprintf_P(stderr, PSTR("\n\n\n#### TinyG Help ####\n"));
 fprintf_P(stderr, PSTR("\
 These commands are active from the command line:\n\
  ^x     Abort (control x) - resets EVERYTHING!\n\
@@ -55,17 +55,18 @@ These commands are active from the command line:\n\
   $test List self-tests\n\
   $defaults=1 Restore all settings to \"factory\" defaults\n\
 "));
-_help_status_report_advisory();
-_help_postscript();
+_status_report_advisory();
+_postscript();
 tg_print_system_ready_message();
+return(TG_OK);
 }
 
 /*
- * help_print_config_help() - help invoked as $h
+ * print_config_help() - help invoked as $h
  */
-void help_print_config_help(cmdObj *cmd)
+uint8_t print_config_help(cmdObj *cmd)
 {
-fprintf_P(stderr, PSTR("#### TinyG CONFIGURATION Help ####\n"));
+fprintf_P(stderr, PSTR("\n\n\n#### TinyG CONFIGURATION Help ####\n"));
 fprintf_P(stderr, PSTR("\
 These commands are active for configuration:\n\
   $sys Show system (general) settings\n\
@@ -84,17 +85,19 @@ For example $yfr to display the Y max feed rate\n\n\
 To update settings enter token equals value:\n\n\
   $<token>=<value>\n\n\
 For example $yfr=800 to set the Y max feed rate to 800 mm/minute\n\
+For configuration details see: https://github.com/synthetos/TinyG/wiki/TinyG-Configuration\n\
 "));
-_help_status_report_advisory();
-_help_postscript();
+_status_report_advisory();
+_postscript();
+return(TG_OK);
 }
 
 /*
- * help_print_test_help() - help invoked for tests
+ * print_test_help() - help invoked for tests
  */
-void help_print_test_help(cmdObj *cmd)
+uint8_t print_test_help(cmdObj *cmd)
 {
-fprintf_P(stderr, PSTR("#### TinyG SELF TEST Help ####\n"));
+fprintf_P(stderr, PSTR("\n\n\n#### TinyG SELF TEST Help ####\n"));
 fprintf_P(stderr, PSTR("\
 Invoke self test by entering $test=N where N is one of:\n\
   $test=1  homing test   (you must trip homing switches)\n\
@@ -109,26 +112,28 @@ Invoke self test by entering $test=N where N is one of:\n\
   $test=10 rotary motion test\n\
   $test=11 small moves test\n\
   $test=12 slow moves test\n\
-  $test=13 g92 offsets test\n\
+  $test=13 coordinate system offset test (G92, G54-G59)\n\
 "));
-_help_postscript();
+_postscript();
+return(TG_OK);
 }
 
 /*
- * help_print_defaults_help() - help invoked for defaults
+ * print_defaults_help() - help invoked for defaults
  */
-void help_print_defaults_help(cmdObj *cmd)
+uint8_t print_defaults_help(cmdObj *cmd)
 {
-fprintf_P(stderr, PSTR("#### TinyG RESTORE DEFAULTS Help ####\n"));
+fprintf_P(stderr, PSTR("\n\n\n#### TinyG RESTORE DEFAULTS Help ####\n"));
 fprintf_P(stderr, PSTR("\
 Enter $defaults=1 to reset the system to the factory default values.\n\
 This will overwrite any changes you have made.\n"));
-_help_postscript();
+_postscript();
+return(TG_OK);
 }
 
 // help helper functions (snicker)
 
-static void _help_status_report_advisory()
+static void _status_report_advisory()
 {
 fprintf_P(stderr, PSTR("\n\
 Note: TinyG generates automatic status reports by default\n\
@@ -137,10 +142,10 @@ See the wiki below for more details.\n\
 "));
 }
 
-static void _help_postscript()
+static void _postscript()
 {
 fprintf_P(stderr, PSTR("\n\
-For detailed TinyG info see: http://www.synthetos.com/wiki/index.php?title=Projects:TinyG\n\
+For detailed TinyG info see: https://github.com/synthetos/TinyG/wiki/\n\
 For the latest firmware see: https://github.com/synthetos/TinyG\n\
 Please log any issues at http://www.synthetos.com/forums\n\
 Have fun\n"));

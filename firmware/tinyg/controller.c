@@ -262,10 +262,10 @@ static uint8_t _dispatch()
 		}
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TG_TEXT_MODE;
-			help_print_general_help();
+			print_general_help();
 			return(_text_mode_prompt(TG_OK, tg.in_buf));
 		}
-		case '$': case '?':{ 					// text-mode config and query
+		case '$': case '?':{ 					// text-mode configs
 			cfg.comm_mode = TG_TEXT_MODE;
 			return(_text_mode_prompt(cfg_text_parser(tg.in_buf), tg.in_buf));
 		}
@@ -450,24 +450,30 @@ void tg_print_message_number(uint8_t msgnum)
 */
 void tg_print_loading_configs_message(void)
 {
-	cmd_add_token("fv");
-	cmd_add_token("fb");
+#ifndef __SUPPRESS_STARTUP_MESSAGES
+	cmd_add_object("fv");
+	cmd_add_object("fb");
 	cmd_add_string("msg", "Loading configs from EEPROM");
 	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED);
+#endif
 }
 
 void tg_print_initializing_message(void)
 {
-	cmd_add_token("fv");
-	cmd_add_token("fb");
+#ifndef __SUPPRESS_STARTUP_MESSAGES
+	cmd_add_object("fv");
+	cmd_add_object("fb");
 	cmd_add_string("msg", INIT_CONFIGURATION_MESSAGE); // see settings.h & sub-headers
 	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED);
+#endif
 }
 
 void tg_print_system_ready_message(void)
 {
-	cmd_add_token("fv");
-	cmd_add_token("fb");
+#ifndef __SUPPRESS_STARTUP_MESSAGES
+	cmd_add_object("fv");
+	cmd_add_object("fb");
 	cmd_add_string("msg", "SYSTEM READY");
 	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+#endif
 }
