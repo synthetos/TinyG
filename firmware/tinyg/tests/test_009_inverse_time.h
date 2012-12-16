@@ -8,6 +8,8 @@
 const char PROGMEM test_inverse_time[] = "\
 (MSG**** Inverse Time Motion Test [v1] ****)\n\
 g00g17g21g40g49g80g90\n\
+g55\n\
+g28\n\
 g93\n\
 f0.01\n\
 g1x10\n\
@@ -18,20 +20,22 @@ x0\n\
 y0\n\
 z0\n\
 a0\n\
-g1x10y10z10a10\n\
+g1x10y10z-10a10\n\
 g0x0y0z0a0\n\
 f0.1\n\
-g2x10y-10z20i10\n\
+g2x10y-10z-20i10\n\
 g0x0y0z0\n\
-g3x10y-10z20i10\n\
+g3x10y-10z-20i10\n\
 g0x0y0z0\n\
-g2x20y0z20i10\n\
+g2x20y0z-20i10\n\
 g0x0y0z0\n\
 g3x20y0i10\n\
 g0x0y0z0\n\
-g2x0y0z30i10\n\
+g2x0y0z-30i10\n\
 g3x0y0z0i10\n\
 g94\n\
+g54\n\
+g28\n\
 m30";
 
 
