@@ -428,44 +428,45 @@ static const char fmt_ml[] PROGMEM = "[ml]  min_line_segment%17.3f%S\n";
 static const char fmt_ma[] PROGMEM = "[ma]  min_arc_segment%18.3f%S\n";
 static const char fmt_mt[] PROGMEM = "[mt]  min_segment_time%13.0f uSec\n";
 static const char fmt_st[] PROGMEM = "[st]  switch_type%18d [0,1]\n";
-static const char fmt_si[] PROGMEM = "[si]  status_interval    %10.0f ms [0=off]\n";
+static const char fmt_si[] PROGMEM = "[si]  status_interval%14.0f ms [0=off]\n";
 
 static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX %7d [0,1=CR,2=LF]\n";
 //static const char fmt_ec[] PROGMEM = "[ec]  enable_CR on TX%14d [0,1]\n";
-static const char fmt_ee[] PROGMEM = "[ee]  enable_echo      %12d [0,1]\n";
-static const char fmt_ex[] PROGMEM = "[ex]  enable_xon_xoff  %12d [0,1]\n";
+static const char fmt_ee[] PROGMEM = "[ee]  enable_echo%18d [0,1]\n";
+static const char fmt_ex[] PROGMEM = "[ex]  enable_xon_xoff%14d [0,1]\n";
 static const char fmt_eq[] PROGMEM = "[eq]  enable_queue_reports%9d [0,1]\n";
 static const char fmt_ej[] PROGMEM = "[ej]  enable_json_mode %12d [0,1]\n";
-static const char fmt_je[] PROGMEM = "[je]  json_echo_mode %14d [0-4]\n";
+static const char fmt_jv[] PROGMEM = "[jv]  json_verbosity%15d [0-5]\n";
+static const char fmt_tv[] PROGMEM = "[tv]  text_verbosity%15d [0-3]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [0-6]\n";
 
 // Motor strings
 static const char fmt_1ma[] PROGMEM = "[1ma] m1_map_to_axis%15d [0=X, 1=Y...]\n";
 static const char fmt_1sa[] PROGMEM = "[1sa] m1_step_angle%20.3f%S\n";
 static const char fmt_1tr[] PROGMEM = "[1tr] m1_travel_per_revolution%9.3f%S\n";
-static const char fmt_1mi[] PROGMEM = "[1mi] m1_microsteps %15d [1,2,4,8]\n";
-static const char fmt_1po[] PROGMEM = "[1po] m1_polarity   %15d [0,1]\n";
+static const char fmt_1mi[] PROGMEM = "[1mi] m1_microsteps%16d [1,2,4,8]\n";
+static const char fmt_1po[] PROGMEM = "[1po] m1_polarity%18d [0,1]\n";
 static const char fmt_1pm[] PROGMEM = "[1pm] m1_power_management%10d [0,1]\n";
 
 static const char fmt_2ma[] PROGMEM = "[2ma] m2_map_to_axis%15d [0=X, 1=Y...]\n";
 static const char fmt_2sa[] PROGMEM = "[2sa] m2_step_angle%20.3f%S\n";
 static const char fmt_2tr[] PROGMEM = "[2tr] m2_travel_per_revolution%9.3f%S\n";
-static const char fmt_2mi[] PROGMEM = "[2mi] m2_microsteps %15d [1,2,4,8]\n";
-static const char fmt_2po[] PROGMEM = "[2po] m2_polarity   %15d [0,1]\n";
+static const char fmt_2mi[] PROGMEM = "[2mi] m2_microsteps%16d [1,2,4,8]\n";
+static const char fmt_2po[] PROGMEM = "[2po] m2_polarity%18d [0,1]\n";
 static const char fmt_2pm[] PROGMEM = "[2pm] m2_power_management%10d [0,1]\n";
 
 static const char fmt_3ma[] PROGMEM = "[3ma] m3_map_to_axis%15d [0=X, 1=Y...]\n";
 static const char fmt_3sa[] PROGMEM = "[3sa] m3_step_angle%20.3f%S\n";
 static const char fmt_3tr[] PROGMEM = "[3tr] m3_travel_per_revolution%9.3f%S\n";
-static const char fmt_3mi[] PROGMEM = "[3mi] m3_microsteps %15d [1,2,4,8]\n";
-static const char fmt_3po[] PROGMEM = "[3po] m3_polarity   %15d [0,1]\n";
+static const char fmt_3mi[] PROGMEM = "[3mi] m3_microsteps%16d [1,2,4,8]\n";
+static const char fmt_3po[] PROGMEM = "[3po] m3_polarity%18d [0,1]\n";
 static const char fmt_3pm[] PROGMEM = "[3pm] m3_power_management%10d [0,1]\n";
 
 static const char fmt_4ma[] PROGMEM = "[4ma] m4_map_to_axis%15d [0=X, 1=Y...]\n";
 static const char fmt_4sa[] PROGMEM = "[4sa] m4_step_angle%20.3f%S\n";
 static const char fmt_4tr[] PROGMEM = "[4tr] m4_travel_per_revolution%9.3f%S\n";
-static const char fmt_4mi[] PROGMEM = "[4mi] m4_microsteps %15d [1,2,4,8]\n";
-static const char fmt_4po[] PROGMEM = "[4po] m4_polarity   %15d [0,1]\n";
+static const char fmt_4mi[] PROGMEM = "[4mi] m4_microsteps%16d [1,2,4,8]\n";
+static const char fmt_4po[] PROGMEM = "[4po] m4_polarity%18d [0,1]\n";
 static const char fmt_4pm[] PROGMEM = "[4pm] m4_power_management%10d [0,1]\n";
 
 // Axis strings
@@ -676,8 +677,9 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "sys","ee",  _fip, fmt_ee, _print_ui8, _get_ui8, _set_ee,  (double *)&cfg.enable_echo,		COM_ENABLE_ECHO },
 	{ "sys","ex",  _fip, fmt_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
 	{ "sys","eq",  _fip, fmt_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,			COM_ENABLE_QR },
-	{ "sys","ej",  _fip, fmt_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,			COM_COMMUNICATIONS_MODE },
-	{ "sys","je",  _fip, fmt_je, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.json_echo_mode,		COM_JSON_ECHO_MODE },
+	{ "sys","ej",  _fip, fmt_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,			COM_COMM_MODE },
+	{ "sys","jv",  _fip, fmt_jv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.json_verbosity,		COM_JSON_VERBOSITY },
+	{ "sys","tv",  _fip, fmt_tv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.text_verbosity,		COM_TEXT_VERBOSITY },
 	{ "sys","si",  _fip, fmt_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
 	{ "sys","baud",_f00, fmt_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
 
@@ -2037,6 +2039,7 @@ void cmd_clear_body(cmdObj *cmd)			// clear the body list
 		}
 		cmd->nx = (cmd+1);
 		cmd->index = 0;
+		cmd->token[0] = NUL;
 		cmd->depth = 1;
 		cmd->type = TYPE_EMPTY;
 		cmd++;

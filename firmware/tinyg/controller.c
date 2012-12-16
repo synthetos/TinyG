@@ -63,7 +63,7 @@ static uint8_t _dispatch(void);
 static uint8_t _abort_handler(void);
 static uint8_t _feedhold_handler(void);
 static uint8_t _cycle_start_handler(void);
-static uint8_t _text_mode_prompt(uint8_t status, char *buf);
+static void _text_mode_response(const uint8_t status, const char *buf);
 
 /*
  * tg_init() - controller init
@@ -247,6 +247,7 @@ static uint8_t _dispatch()
 		return (status);
 	}
 	tg.linelen = strlen(tg.in_buf)+1;
+	cmd_clear_body(cmd_body);					// clear the cmd body to get ready for use
 
 	// dispatch the new text line
 	switch (toupper(tg.in_buf[0])) {
@@ -256,33 +257,37 @@ static uint8_t _dispatch()
 
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != TG_JSON_MODE) {
-				_text_mode_prompt(TG_OK, tg.in_buf);
+				_text_mode_response(TG_OK, tg.in_buf);
 			}
-			return (TG_OK);
+			break;
 		}
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TG_TEXT_MODE;
 			print_general_help();
-			return(_text_mode_prompt(TG_OK, tg.in_buf));
+			_text_mode_response(TG_OK, tg.in_buf);
+			break;
 		}
 		case '$': case '?':{ 					// text-mode configs
 			cfg.comm_mode = TG_TEXT_MODE;
-			return(_text_mode_prompt(cfg_text_parser(tg.in_buf), tg.in_buf));
+			_text_mode_response(cfg_text_parser(tg.in_buf), tg.in_buf);
+			break;
 		}
 		case '{': { 							// JSON input
 			cfg.comm_mode = TG_JSON_MODE;
-			return(js_json_parser(tg.in_buf)); 
+			js_json_parser(tg.in_buf);
+			break;
 		}
 		default: {								// anything else must be Gcode
 			if (cfg.comm_mode != TG_JSON_MODE) {
-				return(_text_mode_prompt(gc_gcode_parser(tg.in_buf), tg.in_buf));
+				_text_mode_response(gc_gcode_parser(tg.in_buf), tg.in_buf);
 			} else {
 				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN);	// use output buffer as a temp
 				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);
-				return(js_json_parser(tg.in_buf)); 
+				js_json_parser(tg.in_buf); 
 			}
 		}
 	}
+	return (TG_OK);
 }
 
 /**** System Prompts **************************************************************
@@ -387,46 +392,47 @@ char *tg_get_status_message(uint8_t status, char *msg)
 	return (msg);
 }
 
+/************************************************************************************
+ * _text_mode_response() - text mode responses
+ *
+ *	Outputs prompt, status and message strings
+ */
 static const char prompt_mm[] PROGMEM = "mm";
 static const char prompt_in[] PROGMEM = "inch";
-static const char prompt_ok[] PROGMEM = "tinyg [%S] ok> ";
-static const char prompt_err[] PROGMEM = "tinyg [%S] error: %S %s\n";
+static const char prompt_ok[] PROGMEM = 	"tinyg [%S] ok> ";
+static const char prompt_err[] PROGMEM = 	"tinyg [%S] error: %S %s\n";
 
-static uint8_t _text_mode_prompt(uint8_t status, char *buf)
+static void _text_mode_response(const uint8_t status, const char *buf)
 {
-	const char *Units;	// becomes pointer to progmem string
+	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
 
-	if (cm_get_units_mode() != INCHES) {
-		Units = (PGM_P)&prompt_mm;
-	} else {
-		Units = (PGM_P)&prompt_in;
-	}
+	// deliver the prompt
+	const char *Units;		// becomes pointer to progmem string
+	if (cm_get_units_mode() != INCHES) Units = (PGM_P)&prompt_mm;
+	else Units = (PGM_P)&prompt_in;
 	if ((status == TG_OK) || (status == TG_EAGAIN) || (status == TG_NOOP) || (status == TG_ZERO_LENGTH_MOVE)) {
 		fprintf_P(stderr, (PGM_P)&prompt_ok, Units);
 	} else {
 		fprintf_P(stderr, (PGM_P)prompt_err, Units, (PGM_P)pgm_read_word(&msgStatusMessage[status]), buf);
 	}
-	return (TG_OK);
+
+	// deliver echo and messages
+	cmdObj *cmd = cmd_body;		// if there is a message it will aways be in the second object
+	if ((cfg.text_verbosity >= TV_MESSAGES) && (cmd->token[0] == 'm')) {
+		fprintf(stderr, "%s\n", cmd->string);
+	}
 }
 
 /**** Application Messages *********************************************************
- * tg_get_message() 		 - returns a canned application message in a pre-allocated string
  * tg_print_message()        - print a character string passed as argument
+ * tg_print_message_value()  - print a message with a value
  * tg_print_message_number() - print a canned message by number
- * tg_print_configuration_profile()
- * tg_print_system_ready()
  *
- * Messages are collected in this one place to manage alternate display options
- * such as text mode or JSON mode.
+ * tg_print_loading_configs_message()
+ * tg_print_initializing_message()
+ * tg_print_system_ready_message()
  */
-/*
-static const char msg_ap00[] PROGMEM = "<null message>";	// in case caller didn't provide a message #
-static const char msg_ap01[] PROGMEM = "Loading configs from EEPROM";
 
-PGM_P const msgApplicationMessage[] PROGMEM = {
-	msg_ap00, msg_ap01
-};
-*/
 void tg_print_message(char *msg)
 {
 	cmd_add_string("msg", msg);
@@ -448,6 +454,7 @@ void tg_print_message_number(uint8_t msgnum)
 	tg_print_message(msg);
 }
 */
+
 void tg_print_loading_configs_message(void)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
@@ -475,5 +482,6 @@ void tg_print_system_ready_message(void)
 	cmd_add_object("fb");
 	cmd_add_string("msg", "SYSTEM READY");
 	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+	_text_mode_response(TG_OK, "");				// prompt
 #endif
 }

@@ -151,32 +151,32 @@ enum tgCommunicationsMode {
 //	TG_GRBL_MODE
 };
 
-enum jsonEcho {						// JSON echo modes
-	JE_SILENT = 0,					// No response is provided for any command
-	JE_OMIT_BODY,					// Response contains no body - footer only
-	JE_OMIT_GCODE_BODY,				// Body returned for configs; omitted for Gcode commands
-	JE_GCODE_LINENUM_ONLY,			// Body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
-	JE_GCODE_MESSAGES,				// Body returned for configs; Gcode returns line numbers and messages only
-	JE_FULL_ECHO					// Body returned for configs and Gcode - Gcode comments removed
+enum jsonVerbosity {
+	JV_SILENT = 0,					// no response is provided for any command
+	JV_OMIT_BODY,					// response contains no body - footer only
+	JV_OMIT_GCODE_BODY,				// body returned for configs; omitted for Gcode commands
+	JV_GCODE_LINENUM_ONLY,			// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+	JV_GCODE_MESSAGES,				// body returned for configs; Gcode returns line numbers and messages only
+	JV_VERBOSE						// body returned for configs and Gcode - Gcode comments removed
 };
 
-enum textEcho {						// text mode echo modes
-	TE_SILENT = 0,					// No response is provided for any command
-	TE_FULL_ECHO					// Everything returned
+enum textVerbosity {
+	TV_SILENT = 0,					// no response is provided
+	TV_PROMPT,						// returns prompt only and exception messages
+	TV_MESSAGES,					// returns prompt and all messages
+	TV_VERBOSE						// returns prompt, echos command and all messages
 };
 
-enum qrEcho {						// QR command echo modes
-	QE_SILENT = 0,					// No response is provided for any command
-	QE_FULL_ECHO					// Everything returned
+enum qrEnable {						// planner queue enable and verbosity
+	QR_OFF = 0,						// no response is provided
+	QR_SPARSE,						// queue depth is returned  
+	QR_VERBOSE						// queue depth and line index returned
 };
 
-enum textReports {					// these set the print modes for text output
-//	TEXT_INLINE_RAW,				// print values without separators
+enum textReports {					// text output print modes
 	TEXT_INLINE_PAIRS,				// print key:value pairs as comma separated pairs
 	TEXT_INLINE_VALUES,				// print values as commas separated values
-//	TEXT_MULTILINE_PAIRS,			// print key_value pairs on separate lines
-//	TEXT_MULTILINE_VALUES,			// print values on separate lines
-	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines
+	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines with formatted print per line
 };
 
 struct cmdObject {					// depending on use, not all elements may be populated
@@ -297,16 +297,18 @@ struct cfgParameters {
 	uint8_t path_control;			// G61,G61.1,G64 reset default
 	uint8_t distance_mode;			// G90,G91 reset default
 
-	// communications settings		// these are shadow settigns for XIO cntrl bits
+	// communications settings		// these first 4 are shadow settigns for XIO cntrl bits
 	uint8_t ignore_crlf;			// ignore CR or LF on RX
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_xon;				// enable XON/XOFF mode
-	uint8_t enable_qr;				// TRUE = queue reports enabled
-	uint8_t json_echo_mode;			// See jsonEcho enum (in config.h) for JSON echo modes
+
+	uint8_t enable_qr;				// queue reports enabled and verbosity level
 	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
+	uint8_t json_verbosity;			// see enum in this file for settings
+	uint8_t text_verbosity;			// see enum in this file for settings
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
-	uint8_t usb_baud_flag;
+	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
 
 	// status report configs
 	uint32_t status_report_interval;// in MS. set non-zero to enable

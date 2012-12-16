@@ -37,6 +37,8 @@
  */
 /* --- Synchronous and immediate commands ---
  *
+ *	Useful reference for doing C callbacks http://www.newty.de/fpt/fpt.html
+ *
  *	Some commands in the canonical machine need to be executed immediately and 
  *	some need to be synchronized with movement (the planner queue). In general,
  *	commands that only affect the gcode model are done immediately whereas 
@@ -704,12 +706,12 @@ static void _exec_set_coord_offsets(uint8_t coord_system, double d, double offse
 	for (uint8_t i=0; i<AXES; i++) {
 		if (flag[i] > EPSILON) {
 			cfg.offset[coord_system][i] = offset[i];
-			cm.g10_flag = true;	// this will persist offsets to NVM once move has stopped
+			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
 		}
 	}
 	// ########################################see if it's OK to write them now, or if they need to wait until STOP
 	if (cm.machine_state != MACHINE_CYCLE) {
-		cmd_persist_offsets(cm.g10_flag);
+		cmd_persist_offsets(cm.g10_persist_flag);
 	}
 }
 
@@ -1108,7 +1110,7 @@ void _exec_program_finalize(uint8_t machine_state)
 	cm.cycle_start_flag = false;
 	mp_zero_segment_velocity();			// for reporting purposes
 	rpt_request_status_report();		// request final status report (if enabled)
-	cmd_persist_offsets(cm.g10_flag);	// persist offsets (if any changes made)
+	cmd_persist_offsets(cm.g10_persist_flag); // persist offsets (if any changes made)
 }
 
 

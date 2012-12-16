@@ -57,14 +57,16 @@
 #define COM_ENABLE_XON				true
 #define COM_ENABLE_QR				false
 
+// communications mode and echo levels
 // CAUTION: These values are often overridden in the machine-specific profiles
-#define COM_COMMUNICATIONS_MODE		TG_TEXT_MODE		// communications mode and echo levels
-//#define COM_JSON_ECHO_MODE		JE_SILENT			// No response is provided for any command
-//#define COM_JSON_ECHO_MODE		JE_OMIT_BODY		// Response contains no body - footer only
-//#define COM_JSON_ECHO_MODE		JE_OMIT_GCODE_BODY	// Body returned for configs; omitted for Gcode commands
-//#define COM_JSON_ECHO_MODE		JE_GCODE_LINENUM_ONLY// Body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
-//#define COM_JSON_ECHO_MODE		JE_GCODE_MESSAGES	// Body returned for configs; Gcode returns line numbers and messages only
-#define COM_JSON_ECHO_MODE			JE_FULL_ECHO		// Body returned for configs and Gcode - Gcode comments removed
+#define COM_COMM_MODE				TG_TEXT_MODE
+#define COM_TEXT_VERBOSITY			TV_VERBOSE
+//#define COM_JSON_VERBOSITY		JV_SILENT			// no response is provided for any command
+//#define COM_JSON_VERBOSITY		JV_OMIT_BODY		// response contains no body - footer only
+//#define COM_JSON_VERBOSITY		JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
+//#define COM_JSON_VERBOSITY		JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+//#define COM_JSON_VERBOSITY		JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
+#define COM_JSON_VERBOSITY			JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
 
 /**** MACHINE PROFILES ******************************************************/
 

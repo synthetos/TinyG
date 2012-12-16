@@ -44,7 +44,7 @@ struct canonicalMachineSingleton {	// struct to manage cm globals and cycles
 	uint8_t cycle_start_flag;		// flag to end feedhold
 	uint8_t homing_state;			// homing cycle sub-state machine
 	uint32_t status_report_counter;
-	uint8_t	g10_flag;				// true=write offsets to NVM after stop
+	uint8_t	g10_persist_flag;		// true=write offsets to NVM after stop
 	uint8_t	g30_flag;				// true=complete a G30 move
 }; struct canonicalMachineSingleton cm;
 

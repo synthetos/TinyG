@@ -116,9 +116,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("(MSG*** message test with no line number or gcode command ***)\n");
 //	xio_queue_RX_string_usb("N100\n");			// just the line number
 //	xio_queue_RX_string_usb("N100 g0 x1\n");	// line number and command
-	xio_queue_RX_string_usb("N100 g0x1 (MSG*** message test with gcode command and line number ***)\n");
+//	xio_queue_RX_string_usb("N100 g0x1 (MSG*** message test with gcode command and line number ***)\n");
 
-//	xio_queue_RX_string_usb("$test=1\n");
+	xio_queue_RX_string_usb("$test=13\n");
 //	xio_queue_RX_string_usb("$$\n");
 //	xio_queue_RX_string_usb("$sys\n");
 //	xio_queue_RX_string_usb("$xvm\n");

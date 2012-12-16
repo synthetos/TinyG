@@ -50,8 +50,8 @@
 
 // *** settings.h overrides ***
 
-#undef	COM_COMMUNICATIONS_MODE
-#define COM_COMMUNICATIONS_MODE		TG_JSON_MODE	// alternately: TG_TEXT_MODE
+#undef	COM_COMM_MODE
+#define COM_COMM_MODE				TG_JSON_MODE	// alternately: TG_TEXT_MODE
 
 //#undef COM_JSON_ECHO_MODE
 //#define COM_JSON_ECHO_MODE		JE_SILENT

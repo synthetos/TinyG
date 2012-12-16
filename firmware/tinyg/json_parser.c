@@ -48,6 +48,7 @@
 
 // local scope stuff
 
+uint8_t _json_parser_kernal(char *str);
 static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t *depth);
 static uint8_t _normalize_json_string(char *str, uint16_t size);
 static uint8_t _gcode_comment_overrun_hack(cmdObj *cmd);
@@ -90,17 +91,14 @@ void js_init()
  *	  - returns the status and the JSON response string
  */
 
-uint8_t _json_parser(char *str);
-
-uint8_t js_json_parser(char *str)
+void js_json_parser(char *str)
 {
 	uint8_t status;
-	status = _json_parser(str);
+	status = _json_parser_kernal(str);
 	cmd_print_list(status, TEXT_INLINE_PAIRS);
-	return(status);
 }
 
-uint8_t _json_parser(char *str)
+uint8_t _json_parser_kernal(char *str)
 {
 	uint8_t status;
 	int8_t depth = 2;							// starting body depth is 2
@@ -371,14 +369,14 @@ void js_print_list(uint8_t status)
 {
 	if (cm.machine_state == MACHINE_INITIALIZING) {		// always do full echo during startup
 		fprintf(stderr,"\n");
-		cfg.json_echo_mode = JE_FULL_ECHO;
+		cfg.json_verbosity = JV_VERBOSE;
 	}
-	if (cfg.json_echo_mode == JE_SILENT) { return;}
+	if (cfg.json_verbosity == JV_SILENT) { return;}
 
 	cmdObj *cmd = cmd_header;							// the header is default starting point
 	uint8_t cmd_type = cmd_get_type(cmd_body);
 
-	if (cfg.json_echo_mode == JE_OMIT_BODY) { 
+	if (cfg.json_verbosity == JV_OMIT_BODY) { 
 		if (cmd_type != CMD_TYPE_REPORT) {
 			cmd = cmd_footer;
 		}
@@ -386,13 +384,13 @@ void js_print_list(uint8_t status)
 	// Special processing for Gcode responses
 	// Assumes the objects are ordered in the body as "gc", "msg", "n".
 	// "msg" and "n" may or may not be present in the body depending on conditions
-	} else if ((cmd_type == CMD_TYPE_GCODE) && (cfg.json_echo_mode != JE_FULL_ECHO)) {
-		if (cfg.json_echo_mode == JE_OMIT_GCODE_BODY) { 
+	} else if ((cmd_type == CMD_TYPE_GCODE) && (cfg.json_verbosity < JV_VERBOSE)) {	// < makes it more resilient
+		if (cfg.json_verbosity == JV_OMIT_GCODE_BODY) { 
 			cmd = cmd_footer;
 		} else {
 			cmdObj *tmp = cmd_body;
 			tmp->type = TYPE_EMPTY;								// omit the body from the display
-			if (cfg.json_echo_mode == JE_GCODE_LINENUM_ONLY) { 	// returns line number but no message
+			if (cfg.json_verbosity == JV_GCODE_LINENUM_ONLY) { 	// returns line number but no message
 				tmp = tmp->nx;
 				if (tmp->token[0] == 'm') {
 					tmp->type = TYPE_EMPTY;						// omit the message from the display
@@ -404,7 +402,7 @@ void js_print_list(uint8_t status)
 	// Footer processing (Note: footers omitted for reports)
 	if (cmd_type != CMD_TYPE_REPORT) {
 		cmd_footer->type = TYPE_ARRAY;
-		sprintf(cmd_footer->string, "%d,%d,%d,",TINYG_COMM_PROTOCOL_REV, status, tg.linelen);
+		sprintf(cmd_footer->string, "%d,%d,%d,",JSON_ARRAY_REVISION_FOOTER, status, tg.linelen);
 		tg.linelen = 0;											// reset it so it's only reported once
 		uint16_t strcount = js_serialize_json(cmd, tg.out_buf);	// make JSON string w/o checksum
 		while (tg.out_buf[strcount] != ',') { strcount--; }		// slice at last comma

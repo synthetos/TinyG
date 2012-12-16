@@ -33,8 +33,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95		// major version
-#define TINYG_BUILD_NUMBER   	353.05		// Working on synchronizing commands - coords
-#define TINYG_COMM_PROTOCOL_REV 1			// communications protocol revision is tracked independently
+#define TINYG_BUILD_NUMBER   	353.06		// Working on synchronizing commands - coords
 
 /****** DEVELOPMENT SETTINGS ******/
 
