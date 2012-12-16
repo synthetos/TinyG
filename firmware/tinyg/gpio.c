@@ -51,7 +51,7 @@
  *	The switches are considered to be homing switches when machine_state is
  *	MACHINE_HOMING. At all other times they are treated as limit switches:
  *	  - Hitting a homing switch puts the current move into feedhold
- *	  - Hitting a limit switch causes the machine to abort and go into reset
+ *	  - Hitting a limit switch causes the machine to shut down and go into lockdown until reset
  *
  * 	The normally open switch modes (NO) trigger an interrupt on the falling edge 
  *	and lockout subsequent interrupts for the defined lockout period. This approach 
@@ -113,8 +113,8 @@ void gpio_init(void)
 
 void _gpio_init_helper(uint8_t swit, uint8_t port)
 {
+// old code from when switches fired on one edge or the other:
 //	uint8_t int_mode = (sw.switch_type == SW_TYPE_NORMALLY_OPEN) ? PORT_ISC_FALLING_gc : PORT_ISC_RISING_gc;
-//	uint8_t int_mode = PORT_ISC_BOTHEDGES_gc;
 
 	// setup port input bits and interrupts (previously set to inputs by st_init())
 	if (sw.mode[MIN_SWITCH(swit)] != SW_MODE_DISABLED) {
@@ -153,16 +153,19 @@ static void _switch_isr_helper(uint8_t sw_num)
 	if (sw.lockout_count != 0) return;					// exit if you are in a debounce lockout
 
 	if (sw.mode[sw_num] == SW_MODE_DISABLED) return;	// this is not supposed to happen
+
 	sw.lockout_count = SW_LOCKOUT_TICKS;				// start the debounce lockout down-counter
 	sw.flag[sw_num] = true;								// set the flag for this switch
 	sw.thrown = true;									// triggers the switch handler tasks
+
 	if (cm.cycle_state == CYCLE_HOMING) { 				// initiate a feedhold if in homing cycle
-		sig_feedhold(); 
-		return; 
+		if (sw.mode[sw_num] & SW_HOMING) {
+			sig_feedhold(); 
+			return;
+		}
 	}
-	if (sw.mode[sw_num] >= SW_MODE_HOMING_LIMIT) {		// signal an abort if limits are enabled
-		sig_abort();
-	} 
+	// must be a limit switch, so fire it.
+	sw.limit_thrown = true;								// lock up machine if limit switch fired
 }
 
 /*

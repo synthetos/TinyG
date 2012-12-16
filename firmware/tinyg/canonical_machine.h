@@ -207,7 +207,7 @@ struct GCodeInput gf;					// gcode input flags
 // #### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT #### 
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
 	COMBINED_INITIALIZING = 0,		// machine is initializing
-	COMBINED_RESET,					// machine has been reset or aborted
+	COMBINED_RESET,					// machine has been reset
 	COMBINED_PROGRAM_STOP,			// program stop or no more blocks
 	COMBINED_PROGRAM_END,			// program end
 	COMBINED_RUN,					// motion is running
@@ -221,7 +221,7 @@ enum cmCombinedState {				// check alignment with messages in config.c / msg_sta
 
 enum cmMachineState {
 	MACHINE_INITIALIZING = 0,		// machine is initializing
-	MACHINE_RESET,					// machine has been reset or aborted
+	MACHINE_RESET,					// machine has been reset
 	MACHINE_CYCLE,					// machine is running (cycling)
 	MACHINE_PROGRAM_STOP,			// program stop or no more blocks
 	MACHINE_PROGRAM_END,			// program end
@@ -463,6 +463,7 @@ void cm_incr_model_lineindex(void);
 
 /*--- canonical machining functions ---*/
 void cm_init(void);									// init canonical machine
+void cm_shutdown(void);								// emergency shutdown
 
 //uint8_t cm_set_machine_coords(double offset[]);
 //uint8_t cm_set_machine_zero(void);					// set absolute zero point

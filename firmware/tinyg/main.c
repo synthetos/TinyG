@@ -38,6 +38,7 @@
 #include <stdio.h>				// precursor for xio.h
 #include <avr/pgmspace.h>		// precursor for xio.h
 #include <avr/interrupt.h>
+#include <avr/wdt.h>			// watchdog is used for software reset
 
 #include "xmega/xmega_interrupts.h"
 //#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
@@ -87,6 +88,12 @@ static void _tg_unit_tests(void);
  *	power-on actions like homing cycles and any pre-loaded commands to the 
  *	input buffer.
  */
+
+void tg_reset(void)			// hard reset using the watchdog timer
+{
+	wdt_enable(WDTO_15MS);
+	while (true);
+}
 
 void tg_system_reset(void)
 {
@@ -171,3 +178,15 @@ void _tg_debug_init(void)	// inits for the debug system
 #endif
 }
 #endif
+
+/*
+ * watchdog time software reset
+ */
+/*
+void tg_reset(void)
+{
+//	wdt_disable();  
+	wdt_enable(WDTO_15MS);
+	while (true);
+}
+*/

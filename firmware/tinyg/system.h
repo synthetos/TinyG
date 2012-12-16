@@ -132,6 +132,7 @@ enum gpio1Inputs {
 #define SPINDLE_PWM			0x02		// spindle PWN port
 #define MIST_COOLANT_BIT	0x01		// coolant on/off - these are the same due to limited ports
 #define FLOOD_COOLANT_BIT	0x01		// coolant on/off
+#define INDICATOR_LED		1			// can use the spindle direction as an indicator LED
 
 /* Timer assignments - see specific modules for details) */
 

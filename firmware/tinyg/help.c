@@ -45,7 +45,7 @@ uint8_t print_general_help()
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG Help ####\n"));
 fprintf_P(stderr, PSTR("\
 These commands are active from the command line:\n\
- ^x     Abort (control x) - resets EVERYTHING!\n\
+ ^x     Reset (control x) - software reset\n\
   ?     Machine position and gcode model state\n\
   $     Show and set configuration settings\n\
   !     Feedhold - stop motion without losing position\n\

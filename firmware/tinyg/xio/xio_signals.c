@@ -39,21 +39,21 @@
 
 /*
  * sig_init()			init signals
- * sig_abort()			end program (hard)
+ * sig_reset()			end program (hard)
  * sig_feedhold()		stop motion
  * sig_cycle_start()	start or resume motion
  */
 
 void sig_init()
 {
-	sig.sig_abort = false;
+	sig.sig_reset = false;
 	sig.sig_feedhold = false;
 	sig.sig_cycle_start = false;
 }
 
-inline void sig_abort()					// reset
+inline void sig_reset()					// reset
 {
-	sig.sig_abort = true;
+	sig.sig_reset = true;
 }
 
 inline void sig_feedhold()				// pause

@@ -64,7 +64,7 @@ enum xioCodes {
 	XIO_NOOP,				// function had no-operation	
 	XIO_COMPLETE,			// operation complete
 	XIO_TERMINATE,			// operation terminated (gracefully)
-	XIO_ABORT,				// operation aborted
+	XIO_RESET,				// operation reset (ungraceful)
 	XIO_EOL,				// function returned end-of-line
 	XIO_EOF,				// function returned end-of-file 
 	XIO_FILE_NOT_OPEN,		// file is not open
@@ -262,7 +262,7 @@ enum xioSignals {
 	XIO_SIG_EAGAIN,			// would block
 	XIO_SIG_EOL,			// end-of-line encountered (string has data)
 	XIO_SIG_EOF,			// end-of-file encountered (string has no data)
-	XIO_SIG_ABORT,			// cancel operation immediately
+	XIO_SIG_RESET,			// cancel operation immediately
 	XIO_SIG_FEEDHOLD,		// pause operation
 	XIO_SIG_CYCLE_START,	// start or resume operation
 	XIO_SIG_DELETE,			// backspace or delete character (BS, DEL)
@@ -288,7 +288,7 @@ enum xioSignals {
 
 /* Signal character mappings */
 
-#define CHAR_ABORT CAN
+#define CHAR_RESET CAN
 #define CHAR_FEEDHOLD (char)'!'
 #define CHAR_CYCLE_START (char)'~'
 
@@ -322,7 +322,7 @@ enum xioSignals {
 	0x15	NAK		ctl-U
 	0x16	SYN		ctl-V
 	0x17	ETB		ctl-W
-	0x18	CAN		ctl-X		abort
+	0x18	CAN		ctl-X		software reset
 	0x19	EM		ctl-Y
 	0x1A	SUB		ctl-Z
 	0x1B	ESC		ctl-[

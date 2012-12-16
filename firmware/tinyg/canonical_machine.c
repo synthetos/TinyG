@@ -565,6 +565,19 @@ void cm_init()
 	cm.combined_state = COMBINED_RESET;
 }
 
+/*
+ * cm_shutdown() - shut down machine
+ */
+
+void cm_shutdown()
+{
+	gpio_set_bit_off(SPINDLE_BIT);			//###### this current stuff is temporary
+	gpio_set_bit_off(SPINDLE_DIR);
+	gpio_set_bit_off(SPINDLE_PWM);
+	gpio_set_bit_off(MIST_COOLANT_BIT);
+	gpio_set_bit_off(FLOOD_COOLANT_BIT);
+}
+
 /* 
  * Representation (4.3.3)
  *

@@ -731,9 +731,9 @@ void xio_queue_RX_char_usart(const uint8_t dev, const char c)
 	struct xioUSART *dx = ((struct xioUSART *)(ds[dev].x));// init USART pointer
 
 	// trap signals - do not insert into RX queue
-	if (c == CHAR_ABORT) {	 				// trap Kill signal
-		d->signal = XIO_SIG_ABORT;			// set signal value
-		sig_abort();						// call app-specific sig handler
+	if (c == CHAR_RESET) {	 				// trap Kill signal
+		d->signal = XIO_SIG_RESET;			// set signal value
+		sig_reset();						// call app-specific sig handler
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {				// trap feedhold signal

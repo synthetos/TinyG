@@ -53,6 +53,7 @@
 #include "help.h"
 #include "xio/xio.h"
 
+
 #include <util/delay.h>			// debug
 
 // local helpers
@@ -60,14 +61,14 @@ static void _controller_HSM(void);
 static uint8_t _sync_to_tx_buffer(void);
 static uint8_t _sync_to_planner(void);
 static uint8_t _dispatch(void);
-static uint8_t _abort_handler(void);
+static uint8_t _reset_handler(void);
 static uint8_t _feedhold_handler(void);
 static uint8_t _cycle_start_handler(void);
+static uint8_t _limit_switch_handler(void);
 static void _text_mode_response(const uint8_t status, const char *buf);
 
 /*
  * tg_init() - controller init
- * tg_reset() - application-level reset
  * tg_announce() - announce that TinyG is alive
  * tg_ready() - final part of announcement - syste is ready fo input
  * tg_application_startup() - application start and restart
@@ -86,13 +87,6 @@ void tg_init(uint8_t default_src)
 	xio_set_stdout(tg.default_src);
 	xio_set_stderr(STD_ERROR);
 	tg_set_active_source(tg.default_src);	// set initial active source
-}
-
-void tg_reset(void)
-{
-//	mp_flush_planner();
-//	tg_system_reset();
-	tg_application_reset();
 }
 
 void tg_application_startup(void)
@@ -132,9 +126,10 @@ void tg_controller()
 static void _controller_HSM()
 {
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
-	DISPATCH(_abort_handler());				// abort signal
+	DISPATCH(_reset_handler());				// reset signal
 	DISPATCH(_feedhold_handler());			// feedhold signal
 	DISPATCH(_cycle_start_handler());		// cycle start signal
+	DISPATCH(_limit_switch_handler());		// limit switch has been thrown
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report
@@ -153,15 +148,16 @@ static void _controller_HSM()
 }
 
 /**** Signal handlers ****
- * _abort_handler()
+ * _reset_handler()
  * _feedhold_handler()
  * _cycle_start_handler()
+ * _limit_switch_handler()
  */
 
-static uint8_t _abort_handler(void)
+static uint8_t _reset_handler(void)
 {
-	if (sig.sig_abort == false) { return (TG_NOOP);}
-	sig.sig_abort = false;
+	if (sig.sig_reset == false) { return (TG_NOOP);}
+	sig.sig_reset = false;
 	tg_reset();							// stop all activity and reset
 	return (TG_EAGAIN);					// best to restart the control loop
 }
@@ -180,6 +176,33 @@ static uint8_t _cycle_start_handler(void)
 	sig.sig_cycle_start = false;
 	cm_exec_cycle_start();
 	return (TG_EAGAIN);
+}
+
+#define LED_COUNTER 100000
+
+static uint8_t _limit_switch_handler(void)
+{
+	if (sw.limit_thrown == false) return (TG_NOOP);
+
+	// first time through perform the shutdown
+	if (tg.lockout == false) {
+		cm_shutdown();
+		tg.lockout = true;
+
+	// after that just flash the LED
+	} else {
+		if (--tg.led_counter < 0) {
+			tg.led_counter = LED_COUNTER;
+			if (tg.led_state == 0) {
+				gpio_led_on(INDICATOR_LED);
+				tg.led_state = 1;
+			} else {
+				gpio_led_off(INDICATOR_LED);
+				tg.led_state = 0;
+			}
+		}
+	}
+	return (TG_EAGAIN);	 // EAGAIN prevents any other actions from occurring
 }
 
 /**** Sync routines ****
@@ -251,7 +274,7 @@ static uint8_t _dispatch()
 
 	// dispatch the new text line
 	switch (toupper(tg.in_buf[0])) {
-//		case '^': { sig_abort(); break; }		// debug char for abort tests
+//		case '^': { sig_reset(); break; }		// debug char for reset tests
 //		case '@': { sig_feedhold(); break;}		// debug char for feedhold tests
 //		case '#': { sig_cycle_start(); break;}	// debug char for cycle start tests
 
@@ -307,7 +330,7 @@ static const char msg_sc02[] PROGMEM = "Eagain";
 static const char msg_sc03[] PROGMEM = "Noop";
 static const char msg_sc04[] PROGMEM = "Complete";
 static const char msg_sc05[] PROGMEM = "Terminated";
-static const char msg_sc06[] PROGMEM = "Aborted";
+static const char msg_sc06[] PROGMEM = "Hard reset";
 static const char msg_sc07[] PROGMEM = "End of line";
 static const char msg_sc08[] PROGMEM = "End of file";
 static const char msg_sc09[] PROGMEM = "File not open";

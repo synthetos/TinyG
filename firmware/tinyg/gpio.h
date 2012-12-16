@@ -83,15 +83,6 @@ enum swNums {	 			// indexes into switch arrays
 #define SW_MODE_HOMING_LIMIT (SW_HOMING | SW_LIMIT)	// homing and limits
 #define SW_MODE_MAX_VALUE SW_MODE_LIMIT
 
-/*
-enum swMode {				// switch operation modes
-	SW_MODE_DISABLED = 0,	// disabled for all operations
-	SW_MODE_HOMING,			// enable switch for homing only
-	SW_MODE_HOMING_LIMIT,	// enable switch for homing and limits
-	SW_MODE_LIMIT			// enable switch for limits only
-};
-*/
-
 enum swType {
 	SW_TYPE_NORMALLY_OPEN = 0,
 	SW_TYPE_NORMALLY_CLOSED
@@ -100,6 +91,7 @@ enum swType {
 struct swStruct {						// switch state
 	uint8_t switch_type;				// 0=NO, 1=NC - applies to all switches
 	volatile uint8_t thrown;			// 1=thrown (Note 1)
+	volatile uint8_t limit_thrown;		// 1= limit switch thrown - do a lockout
 	volatile uint8_t lockout_count;		// switch lockout counter (debouncing)
 	volatile uint8_t flag[NUM_SWITCHES];// switch flag array
 	volatile uint8_t mode[NUM_SWITCHES];// 0=disabled, 1=homing, 2=homing+limit, 3=limit

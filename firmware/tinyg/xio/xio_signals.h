@@ -35,13 +35,13 @@
  *	See xio.c/.h for static allocation of signal struct 
  */
 struct xioSIGNALS {				// signal signalton
-	uint8_t	sig_abort;
+	uint8_t	sig_reset;
 	uint8_t	sig_feedhold;
 	uint8_t	sig_cycle_start;
 }; // sig struct is declared in xio.c and EXTERN in xio.h
 
 void sig_init(void);			// initial signal flags
-void sig_abort(void);			// end program (hard)
+void sig_reset(void);			// end program (hard reset)
 void sig_feedhold(void);		// pause motion
 void sig_cycle_start(void);		// resume motion
 

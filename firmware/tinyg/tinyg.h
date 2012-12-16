@@ -33,7 +33,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95		// major version
-#define TINYG_BUILD_NUMBER   	353.07		// Working on synchronizing commands - coords
+#define TINYG_BUILD_NUMBER   	353.08		// Working on synchronizing commands - coords
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -130,7 +130,7 @@ typedef void (*fptr_void_double)(double); 	// returns void, double arg (config b
 #define	TG_NOOP 3						// function had no-operation
 #define	TG_COMPLETE 4					// operation is complete
 #define TG_TERMINATE 5					// operation terminated (gracefully)
-#define TG_ABORT 6						// operaation aborted
+#define TG_RESET 6						// operation was hard reset (sig kill)
 #define	TG_EOL 7						// function returned end-of-line
 #define	TG_EOF 8						// function returned end-of-file 
 #define	TG_FILE_NOT_OPEN 9
