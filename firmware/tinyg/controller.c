@@ -62,9 +62,9 @@ static uint8_t _sync_to_tx_buffer(void);
 static uint8_t _sync_to_planner(void);
 static uint8_t _dispatch(void);
 static uint8_t _reset_handler(void);
+static uint8_t _shutdown_handler(void);
 static uint8_t _feedhold_handler(void);
 static uint8_t _cycle_start_handler(void);
-static uint8_t _limit_switch_handler(void);
 static void _text_mode_response(const uint8_t status, const char *buf);
 
 /*
@@ -126,10 +126,11 @@ void tg_controller()
 static void _controller_HSM()
 {
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
-	DISPATCH(_reset_handler());				// reset signal
-	DISPATCH(_feedhold_handler());			// feedhold signal
-	DISPATCH(_cycle_start_handler());		// cycle start signal
-	DISPATCH(_limit_switch_handler());		// limit switch has been thrown
+											// Order is important:
+	DISPATCH(_reset_handler());				// 1. reset signal
+	DISPATCH(_shutdown_handler());			// 2. limit switch has been thrown
+	DISPATCH(_feedhold_handler());			// 3. feedhold signal
+	DISPATCH(_cycle_start_handler());		// 4. cycle start signal
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report
@@ -180,7 +181,7 @@ static uint8_t _cycle_start_handler(void)
 
 #define LED_COUNTER 100000
 
-static uint8_t _limit_switch_handler(void)
+static uint8_t _shutdown_handler(void)
 {
 	if (sw.limit_thrown == false) return (TG_NOOP);
 

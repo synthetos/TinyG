@@ -89,10 +89,10 @@ static void _tg_unit_tests(void);
  *	input buffer.
  */
 
-void tg_reset(void)			// hard reset using the watchdog timer
+void tg_reset(void)			// software hard reset using the watchdog timer
 {
 	wdt_enable(WDTO_15MS);
-	while (true);
+	while (true);			// loops for about 15ms then resets
 }
 
 void tg_system_reset(void)
