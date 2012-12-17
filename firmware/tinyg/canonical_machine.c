@@ -571,6 +571,14 @@ void cm_init()
 
 void cm_shutdown()
 {
+	if (cfg.comm_mode == TG_JSON_MODE) {
+		printf_P(PSTR("{\"er\":\"Emergency shut down\"}\n"));
+	} else {
+		printf_P(PSTR("EMERGENCY SHUTDOWN\n"));
+	}
+
+	cm_spindle_control(SPINDLE_OFF);
+
 	gpio_set_bit_off(SPINDLE_BIT);			//###### this current stuff is temporary
 	gpio_set_bit_off(SPINDLE_DIR);
 	gpio_set_bit_off(SPINDLE_PWM);
