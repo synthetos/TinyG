@@ -132,7 +132,7 @@ uint8_t rpt_status_report_callback() // called by controller dispatcher
 {
 	if ((cfg.status_report_interval == 0) ||
 		(cm.status_report_counter != 0) ||
-		(cm.machine_state == MACHINE_RESET)) {
+		(cm.machine_state == MACHINE_READY)) {
 		return (TG_NOOP);
 	}
 	rpt_populate_status_report();

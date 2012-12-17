@@ -229,7 +229,7 @@ static struct stPrepSingleton sp;
 
 /* 
  * st_init() - initialize stepper motor subsystem 
- * st_reset() - reset and start stepper motor subsystem 
+ * st_reset() - reset and start stepper motor subsystem
  *
  *	Notes: 
  *	  - High level interrupts must be enabled in main()
@@ -282,13 +282,19 @@ void st_init()
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
-	st_reset();
+	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
+//	st_reset();
 }
-
+/*
 void st_reset()
 {
-	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
-	return;
+//	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
+}
+*/
+
+void st_disable()
+{
+	st_init();
 }
 
 /*

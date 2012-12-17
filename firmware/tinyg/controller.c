@@ -152,15 +152,14 @@ static void _controller_HSM()
  * _reset_handler()
  * _feedhold_handler()
  * _cycle_start_handler()
- * _limit_switch_handler()
  */
 
 static uint8_t _reset_handler(void)
 {
 	if (sig.sig_reset == false) { return (TG_NOOP);}
-	sig.sig_reset = false;
-	tg_reset();							// stop all activity and reset
-	return (TG_EAGAIN);					// best to restart the control loop
+//	sig.sig_reset = false;				// why bother?
+	tg_reset();							// hard reset - identical to hitting RESET button
+	return (TG_EAGAIN);
 }
 
 static uint8_t _feedhold_handler(void)
@@ -168,7 +167,7 @@ static uint8_t _feedhold_handler(void)
 	if (sig.sig_feedhold == false) { return (TG_NOOP);}
 	sig.sig_feedhold = false;
 	cm_exec_feedhold();
-	return (TG_EAGAIN);
+	return (TG_EAGAIN);					// best to restart the control loop
 }
 
 static uint8_t _cycle_start_handler(void)
@@ -176,8 +175,24 @@ static uint8_t _cycle_start_handler(void)
 	if (sig.sig_cycle_start == false) { return (TG_NOOP);}
 	sig.sig_cycle_start = false;
 	cm_exec_cycle_start();
-	return (TG_EAGAIN);
+	return (TG_EAGAIN);					// best to restart the control loop
 }
+
+
+/*
+ * _shutdown_handler()
+ *
+ *	Shutdown is triggered by an active limit switch firing. This causes the 
+ *	canonical machine to run the shutdown functions and set the machine state 
+ *	to MACHINE_SHUTDOWN.
+ *
+ *	Once shutdown occurs the only thing this handler does is blink an LED 
+ *	(spindle CW/CCW LED). The system can only be cleared by performing a reset.
+ *
+ *	This function returns EAGAIN causing the control loop to never advance beyond
+ *	this point. It's important that the reset handler is still called so a SW reset
+ *	(ctrl-x) can be processed.
+ */
 
 #define LED_COUNTER 100000
 
@@ -186,9 +201,8 @@ static uint8_t _shutdown_handler(void)
 	if (sw.limit_thrown == false) return (TG_NOOP);
 
 	// first time through perform the shutdown
-	if (tg.lockout == false) {
+	if (cm_get_machine_state() != MACHINE_SHUTDOWN) {
 		cm_shutdown();
-		tg.lockout = true;
 
 	// after that just flash the LED
 	} else {
@@ -203,7 +217,7 @@ static uint8_t _shutdown_handler(void)
 			}
 		}
 	}
-	return (TG_EAGAIN);	 // EAGAIN prevents any other actions from occurring
+	return (TG_EAGAIN);	 // EAGAIN prevents any other actions from running
 }
 
 /**** Sync routines ****

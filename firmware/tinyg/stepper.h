@@ -66,7 +66,8 @@
 #define stepper_h
 
 void st_init(void);			// initialize stepper subsystem
-void st_reset(void);		// reset stepper subsystem
+//void st_reset(void);		// reset stepper subsystem
+void st_disable(void);		// stop the steppers (step the stoppers)
 uint8_t st_isbusy(void);	// return TRUE is any axis is running (F=idle)
 void st_set_polarity(const uint8_t motor, const uint8_t polarity);
 void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode);

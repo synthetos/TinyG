@@ -44,7 +44,7 @@ struct controllerSingleton {		// main TG controller struct
 	uint8_t src;					// active source device
 	uint8_t default_src;			// default source device
 	uint8_t linelen;				// length of currently processing line
-	uint8_t lockout;				// set true if in lockout
+//	uint8_t shutdown;				// set true if in lockout
 	uint8_t led_state;				// 0=off, 1=on
 	int32_t led_counter;			// a convenience for flashing an LED
 	char in_buf[INPUT_BUFFER_LEN];	// input text buffer

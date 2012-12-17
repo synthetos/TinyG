@@ -61,7 +61,7 @@
  *		args.  Take careful note that the callback executes under an interrupt, 
  *		so beware of variables that may need to be Volatile.
  *
- *	For a list of the synchronous commands see the static function profotoypes
+ *	For a list of the synchronous commands see the static function prototypes
  *	for the planner queue callbacks. Some other notes:
  *
  *	  - All getters are immediate. These just return values from the Gcode model (gm).
@@ -561,8 +561,8 @@ void cm_init()
 //	cm_set_distance_mode(cfg.distance_mode);
 	
 	// signal that the machine is ready for action
-	cm.machine_state = MACHINE_RESET;	
-	cm.combined_state = COMBINED_RESET;
+	cm.machine_state = MACHINE_READY;	
+	cm.combined_state = COMBINED_READY;
 }
 
 /*
@@ -571,19 +571,25 @@ void cm_init()
 
 void cm_shutdown()
 {
+	// stop the steppers and the spindle
+	st_disable();
+	cm_spindle_control(SPINDLE_OFF);
+
+	// disable all MCode functions
+//	gpio_set_bit_off(SPINDLE_BIT);			//###### this current stuff is temporary
+//	gpio_set_bit_off(SPINDLE_DIR);
+//	gpio_set_bit_off(SPINDLE_PWM);
+	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
+	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
+
+	// send out an emergency shutdown message
 	if (cfg.comm_mode == TG_JSON_MODE) {
 		printf_P(PSTR("{\"er\":\"Emergency shut down\"}\n"));
 	} else {
 		printf_P(PSTR("EMERGENCY SHUTDOWN\n"));
 	}
 
-	cm_spindle_control(SPINDLE_OFF);
-
-	gpio_set_bit_off(SPINDLE_BIT);			//###### this current stuff is temporary
-	gpio_set_bit_off(SPINDLE_DIR);
-	gpio_set_bit_off(SPINDLE_PWM);
-	gpio_set_bit_off(MIST_COOLANT_BIT);
-	gpio_set_bit_off(FLOOD_COOLANT_BIT);
+	cm.machine_state = MACHINE_SHUTDOWN;
 }
 
 /* 

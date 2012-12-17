@@ -187,7 +187,7 @@ struct GCodeInput gf;					// gcode input flags
  *	MACHINE STATE		CYCLE STATE		MOTION_STATE		COMBINED_STATE (FYI)
  *	-------------		------------	-------------		--------------------
  *	MACHINE_UNINIT		na				na					(U)
- *	MACHINE_RESET		CYCLE_OFF		MOTION_STOP			(ROS) RESET-OFF-STOP
+ *	MACHINE_READY		CYCLE_OFF		MOTION_STOP			(ROS) RESET-OFF-STOP
  *	MACHINE_PROG_STOP	CYCLE_OFF		MOTION_STOP			(SOS) STOP-OFF-STOP
  *	MACHINE_PROG_END	CYCLE_OFF		MOTION_STOP			(EOS) END-OFF-STOP
  *
@@ -207,7 +207,8 @@ struct GCodeInput gf;					// gcode input flags
 // #### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT #### 
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
 	COMBINED_INITIALIZING = 0,		// machine is initializing
-	COMBINED_RESET,					// machine has been reset
+	COMBINED_READY,					// machine is ready for use
+	COMBINED_SHUTDOWN,				// machine is shut down
 	COMBINED_PROGRAM_STOP,			// program stop or no more blocks
 	COMBINED_PROGRAM_END,			// program end
 	COMBINED_RUN,					// motion is running
@@ -221,10 +222,11 @@ enum cmCombinedState {				// check alignment with messages in config.c / msg_sta
 
 enum cmMachineState {
 	MACHINE_INITIALIZING = 0,		// machine is initializing
-	MACHINE_RESET,					// machine has been reset
-	MACHINE_CYCLE,					// machine is running (cycling)
+	MACHINE_READY,					// machine is ready for use
+	MACHINE_SHUTDOWN,				// machine is in shutdown state
 	MACHINE_PROGRAM_STOP,			// program stop or no more blocks
 	MACHINE_PROGRAM_END,			// program end
+	MACHINE_CYCLE,					// machine is running (cycling)
 };
 
 enum cmCycleState {

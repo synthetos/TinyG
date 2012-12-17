@@ -111,7 +111,6 @@ void tg_system_reset(void)
 
 	PMIC_EnableMediumLevel();// enable TX interrupts for init reporting 
 	sei();					// enable global interrupts
-//	cfg_preset();	//+++++++++++++++++++++++++++++++
 	cfg_init();				// (10) get config record from eeprom (reqs xio)
 	gpio_init();			// (7) switches and parallel IO
 }
@@ -119,7 +118,7 @@ void tg_system_reset(void)
 void tg_application_reset(void) 
 {
 	cli();					// disable global interrupts
-	st_reset(); 			// reset stepper subsystem
+//	st_init(); 				// initializes stepper subsystem
 	mp_init();				// motion planning subsystem
 	cm_init();				// canonical machine
 	gc_init();				// gcode-parser
@@ -179,14 +178,3 @@ void _tg_debug_init(void)	// inits for the debug system
 }
 #endif
 
-/*
- * watchdog time software reset
- */
-/*
-void tg_reset(void)
-{
-//	wdt_disable();  
-	wdt_enable(WDTO_15MS);
-	while (true);
-}
-*/
