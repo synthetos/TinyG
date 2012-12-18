@@ -93,7 +93,7 @@ struct mpBuffer {				// See Planning Velocity Notes for variable usage
 	uint32_t lineindex;			// runtime autoincremented line index
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
 	uint8_t move_type;			// used to dispatch to run routine
-	uint8_t move_code;			// M code or T code
+	uint8_t move_code;			// byte that can be used by used exec functions
 	uint8_t move_state;			// move state machine sequence
 	uint8_t replannable;		// TRUE if move can be replanned
 
@@ -144,6 +144,7 @@ struct mpBufferPool {			// ring buffer for sub-moves
 struct mpMoveMasterSingleton {	// common variables for planning (move master)
 	uint32_t lineindex;			// runtime line index of BF being planned
 	double position[AXES];		// final move position for planning purposes
+	double ms_in_queue;			// total ms of movement & dwell in planner queue
 	double prev_jerk;			// jerk values cached from previous move
 	double prev_recip_jerk;
 	double prev_cbrt_jerk;
@@ -282,6 +283,31 @@ uint8_t mp_isbusy()
 		return (true);
 	}
 	return (false);
+}
+
+/* 
+ * mp_load_ms_in_queue() - set MS of execution in planning queue
+ * mp_decr_ms_in_queue() - decrement MS in queue by some amount
+ */
+
+void mp_load_ms_in_queue()
+{
+	mpBuf *bf = mb.r;
+	mpBuf *bp = bf;
+	mm.ms_in_queue = 0;
+
+	// do the planning queue
+	do {
+		mm.ms_in_queue += bf->time;
+	} while ((bp = _get_prev_buffer(bp)) != bf);
+
+	// does not account for the runtime queue
+	mm.ms_in_queue *= 60000;	// convert minutes to ms.
+}
+
+void mp_decr_ms_in_queue(double ms)
+{
+	mm.ms_in_queue -= ms;
 }
 
 /* 

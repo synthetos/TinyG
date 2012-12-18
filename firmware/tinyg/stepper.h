@@ -66,7 +66,6 @@
 #define stepper_h
 
 void st_init(void);			// initialize stepper subsystem
-//void st_reset(void);		// reset stepper subsystem
 void st_disable(void);		// stop the steppers (step the stoppers)
 uint8_t st_isbusy(void);	// return TRUE is any axis is running (F=idle)
 void st_set_polarity(const uint8_t motor, const uint8_t polarity);
@@ -139,7 +138,7 @@ void st_dump_stepper_state(void);
 
 /* Timer settings for stepper module. See system.h for timer assignments
  */
-#define F_DDA 		(double)50000	// Max DDA frequency in hz.
+#define F_DDA 		(double)50000	// DDA frequency in hz.
 #define F_DWELL		(double)10000	// Dwell count frequency in hz.
 #define SWI_PERIOD 	100				// cycles you have to shut off SW interrupt
 #define TIMER_PERIOD_MIN (20)		// used to trap bad timer loads

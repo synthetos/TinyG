@@ -54,7 +54,7 @@ enum moveState {
 };
 #define MOVE_STATE_RUN1 MOVE_STATE_RUN // a convenience
 
-/***	Most of these factors are the result of a lot of tweaking. Change with caution.***/
+/*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
 /* The following must apply:
  *	  MM_PER_ARC_SEGMENT >= MIN_LINE_LENGTH >= MIN_SEGMENT_LENGTH 

@@ -188,7 +188,7 @@ struct qrIndexes {			// static data for queue reports
 	uint32_t lineindex;
 	uint8_t buffers_available;
 };
-struct qrIndexes qr = { 0,0,0,0,0,0 };		// init to zeros
+static struct qrIndexes qr = { 0,0,0,0,0,0 };		// init to zeros
 
 void rpt_request_queue_report() 
 { 

@@ -169,8 +169,9 @@ enum textVerbosity {
 
 enum qrEnable {						// planner queue enable and verbosity
 	QR_OFF = 0,						// no response is provided
-	QR_SPARSE,						// queue depth is returned  
-	QR_VERBOSE						// queue depth and line index returned
+	QR_SPARSE,						// queue depth reported above hi-water mark and below lo-water mark  
+	QR_FREQUENT,					// queue depth reported for all planner queue depths
+	QR_VERBOSE						// queue depth and line index returned for all depths
 };
 
 enum textReports {					// text output print modes
@@ -304,6 +305,8 @@ struct cfgParameters {
 	uint8_t enable_xon;				// enable XON/XOFF mode
 
 	uint8_t enable_qr;				// queue reports enabled and verbosity level
+	uint8_t qr_hi_water;
+	uint8_t qr_lo_water;
 	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
 	uint8_t json_verbosity;			// see enum in this file for settings
 	uint8_t text_verbosity;			// see enum in this file for settings

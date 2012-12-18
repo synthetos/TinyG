@@ -33,7 +33,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95		// major version
-#define TINYG_BUILD_NUMBER   	354.02		// Working on Planner changes and queue reports
+#define TINYG_BUILD_NUMBER   	354.03		// Working on Planner changes and queue reports
 
 /****** DEVELOPMENT SETTINGS ******/
 

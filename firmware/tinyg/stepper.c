@@ -283,14 +283,7 @@ void st_init()
 	TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
 	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
-//	st_reset();
 }
-/*
-void st_reset()
-{
-//	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
-}
-*/
 
 void st_disable()
 {
@@ -393,20 +386,20 @@ ISR(TIMER_DDA_ISR_vect)
 #endif
 }
 
-ISR(TIMER_DWELL_ISR_vect) {				// DWELL timer interupt
+ISR(TIMER_DWELL_ISR_vect) {						// DWELL timer interupt
 	if (--st.timer_ticks_downcount == 0) {
- 		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;// disable DWELL timer
+ 		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;	// disable DWELL timer
 		_load_move();
 	}
 }
 
-ISR(TIMER_LOAD_ISR_vect) {				// load steppers SW interrupt
- 	TIMER_LOAD.CTRLA = STEP_TIMER_DISABLE;	// disable SW interrupt timer
+ISR(TIMER_LOAD_ISR_vect) {						// load steppers SW interrupt
+ 	TIMER_LOAD.CTRLA = STEP_TIMER_DISABLE;		// disable SW interrupt timer
 	_load_move();
 }
 
-ISR(TIMER_EXEC_ISR_vect) {				// exec move SW interrupt
- 	TIMER_EXEC.CTRLA = STEP_TIMER_DISABLE;	// disable SW interrupt timer
+ISR(TIMER_EXEC_ISR_vect) {						// exec move SW interrupt
+ 	TIMER_EXEC.CTRLA = STEP_TIMER_DISABLE;		// disable SW interrupt timer
 	_exec_move();
 }
 

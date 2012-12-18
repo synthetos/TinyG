@@ -68,6 +68,10 @@
 //#define COM_JSON_VERBOSITY		JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
 #define COM_JSON_VERBOSITY			JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
 
+#define COM_QR_HI_WATER				23
+#define COM_QR_LO_WATER				6
+
+
 /**** MACHINE PROFILES ******************************************************/
 
 // default machine profiles - chose only one:
