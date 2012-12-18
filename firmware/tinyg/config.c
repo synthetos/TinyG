@@ -1098,7 +1098,7 @@ static uint8_t _get_lx(cmdObj *cmd)
 
 static uint8_t _set_lx(cmdObj *cmd)
 {
-	mp_set_planner_lineindex((uint32_t)cmd->value);
+	mp_set_plan_lineindex((uint32_t)cmd->value);
 	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }

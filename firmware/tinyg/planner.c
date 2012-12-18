@@ -309,9 +309,10 @@ void mp_flush_planner()
 }
 
 /*
- * mp_set_plan_position() 		- sets planning position (for G92)
- * mp_get_plan_position() 		- returns planning position
- * mp_set_axis_position() 		- sets both planning and runtime positions (for G2/G3)
+ * mp_set_plan_position() 	- sets planning position (for G92)
+ * mp_get_plan_position() 	- returns planning position
+ * mp_set_axis_position() 	- sets both planning and runtime positions (for G2/G3)
+ * mp_set_plan_lineindex()	- set line index in MM struct
  *
  * mp_get_runtime_work_position() - returns current axis position in work coordinates
  *									that were in effect at move planning time
@@ -320,7 +321,6 @@ void mp_flush_planner()
  * mp_get_runtime_velocity()	- returns current velocity (aggregate)
  * mp_get_runtime_linenum()		- returns currently executing line number
  * mp_get_runtime_lineindex()	- returns currently executing line index
- * mp_set_planner_lineindex()	- set line index in MM struct
  *
  * 	Keeping track of position is complicated by the fact that moves can
  *	require multiple reference frames. The scheme to keep this straight is:
@@ -347,6 +347,12 @@ void mp_set_plan_position(const double position[])
 	copy_axis_vector(mm.position, position);
 }
 
+void mp_set_plan_lineindex(uint32_t lineindex)
+{
+	mm.lineindex = lineindex;
+	mr.lineindex = lineindex;
+}
+
 void mp_set_axes_position(const double position[])
 {
 	copy_axis_vector(mm.position, position);
@@ -371,11 +377,6 @@ double mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 double mp_get_runtime_linenum(void) { return (mr.linenum);}
 double mp_get_runtime_lineindex(void) { return (mr.lineindex);}
 
-void mp_set_planner_lineindex(uint32_t lineindex)
-{
-	mm.lineindex = lineindex;
-	mr.lineindex = lineindex;
-}
 
 /*************************************************************************/
 /* mp_exec_move() - execute runtime functions to prep move for steppers
@@ -399,30 +400,8 @@ uint8_t mp_exec_move()
 		return (bf->bf_func(bf));
 	}
 	return (TG_INTERNAL_ERROR);		// never supposed to get here
-
-/* REPLACED BY CALLBACK MECHANISM
-	switch (bf->move_type) {									// dispatch the move
-		case MOVE_TYPE_NULL: 	{ return (_exec_null(bf));}
-//		case MOVE_TYPE_LINE:	{ return (_exec_line(bf));}
-		case MOVE_TYPE_ALINE:	{ return (_exec_aline(bf));}
-		case MOVE_TYPE_DWELL:	{ return (_exec_dwell(bf));}
-		case MOVE_TYPE_COMMAND: { return (_exec_command(bf));}
-	}
-	return (TG_INTERNAL_ERROR);		// never supposed to get here
-*/
 }
 
-/*
- * _exec_null() - execute a null move
- */
-/*
-static uint8_t _exec_null(mpBuf *bf) 
-{ 
-	st_prep_null();		// must call this to leep the loader happy
-	_free_run_buffer();
-	return (TG_OK);
-}
-*/
 /************************************************************************************
  * mp_queue_command() - queue a synchronous Mcode, program control, or other command
  *

@@ -258,6 +258,7 @@ static uint8_t _parse_gcode_block(char *buf)
 							case 1: SET_NON_MODAL (next_action, NEXT_ACTION_RESET_ORIGIN_OFFSETS);
 							case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS);
 							case 3: SET_NON_MODAL (next_action, NEXT_ACTION_RESUME_ORIGIN_OFFSETS); 
+							case 4: SET_NON_MODAL (next_action, NEXT_ACTION_SET_MACHINE_ORIGINS);
 							default: status = TG_UNRECOGNIZED_COMMAND;
 						}
 						break;
@@ -384,6 +385,7 @@ static uint8_t _execute_gcode_block()
 //		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_probe_cycle_start(); break;}
 		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(coord_select, gn.target, gf.target); break;}
 
+		case NEXT_ACTION_SET_MACHINE_ORIGINS: { status = cm_set_machine_origins(gn.target, gf.target); break;}
 		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(gn.target, gf.target); break;}
 		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}

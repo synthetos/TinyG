@@ -122,6 +122,7 @@ void mp_flush_planner(void);
 uint8_t mp_get_planner_buffers_available(void);
 double *mp_get_plan_position(double position[]);
 void mp_set_plan_position(const double position[]);
+void mp_set_plan_lineindex(uint32_t lineindex);
 void mp_set_axes_position(const double position[]);
 void mp_set_axis_position(uint8_t axis, const double position);
 
@@ -130,7 +131,6 @@ double mp_get_runtime_work_position(uint8_t axis);
 double mp_get_runtime_velocity(void);
 double mp_get_runtime_linenum(void);
 double mp_get_runtime_lineindex(void);
-void mp_set_planner_lineindex(uint32_t lineindex);
 void mp_zero_segment_velocity(void);
 
 uint8_t mp_exec_move(void);
