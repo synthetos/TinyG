@@ -166,7 +166,7 @@ static uint8_t _feedhold_handler(void)
 {
 	if (sig.sig_feedhold == false) { return (TG_NOOP);}
 	sig.sig_feedhold = false;
-	cm_exec_feedhold();
+	cm_feedhold();
 	return (TG_EAGAIN);					// best to restart the control loop
 }
 
@@ -174,7 +174,7 @@ static uint8_t _cycle_start_handler(void)
 {
 	if (sig.sig_cycle_start == false) { return (TG_NOOP);}
 	sig.sig_cycle_start = false;
-	cm_exec_cycle_start();
+	cm_cycle_start();
 	return (TG_EAGAIN);					// best to restart the control loop
 }
 

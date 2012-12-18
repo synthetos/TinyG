@@ -272,6 +272,7 @@ enum cmNextAction {					// these are in order to optimized CASE statement
 	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,// G92.2
 	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,// G92.3
 	NEXT_ACTION_DWELL,				// G4
+	NEXT_ACTION_STRAIGHT_PROBE		// G38.2
 };
 
 enum cmMotionMode {					// G Modal Group 1
@@ -313,6 +314,7 @@ enum cmModalGroup {					// Used for detecting gcode errors. See NIST section 3.4
 #define MODAL_GROUP_COUNT (MODAL_GROUP_M9+1)
 // Note 1: Our G0 omits G4,G30,G53,G92.1,G92.2,G92.3 as these have no axis components to error check
 
+/*
 enum cmSyncCommand {				// M Codes and other synchronized commands
 	SYNC_PROGRAM_STOP = 0,			// M0
 	SYNC_OPTIONAL_STOP,				// M1
@@ -330,7 +332,7 @@ enum cmSyncCommand {				// M Codes and other synchronized commands
 	SYNC_SPINDLE_SPEED				// S command
 };
 #define SYNC_MAX SYNC_SPINDLE_SPEED
-
+*/
 enum cmCanonicalPlane {				// canonical plane - translates to:
 									// 		axis_0	axis_1	axis_2
 	CANON_PLANE_XY = 0,				// G17    X		  Y		  Z
@@ -473,7 +475,6 @@ uint8_t cm_set_machine_axis_position(uint8_t axis, const double position);	// se
 
 uint8_t cm_select_plane(uint8_t plane);				// G17, G18, G19
 uint8_t cm_set_units_mode(uint8_t mode);			// G20, G21
-uint8_t cm_set_units_now(uint8_t mode);				// G20, G21 - immediate effect
 uint8_t	cm_set_coord_system(uint8_t coord_system);	// G10 (G54...G59)
 uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[]);
 uint8_t cm_set_distance_mode(uint8_t mode);			// G90, G91
@@ -509,9 +510,9 @@ uint8_t cm_select_tool(uint8_t tool);				// T parameter
 void cm_comment(char *comment);						// comment handler
 void cm_message(char *message);						// msg to console
 
-void cm_exec_cycle_start(void);						// (no Gcode)
-void cm_exec_cycle_end(void); 						// (no Gcode)
-void cm_exec_feedhold(void);						// (no Gcode)
+void cm_cycle_start(void);							// (no Gcode)
+void cm_cycle_end(void); 							// (no Gcode)
+void cm_feedhold(void);								// (no Gcode)
 void cm_program_stop(void);							// M0
 void cm_optional_program_stop(void);				// M1
 void cm_program_end(void);							// M2

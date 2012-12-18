@@ -1413,7 +1413,7 @@ void cmd_persist(cmdObj *cmd)
 void cfg_init()
 {
 	cmdObj cmd;
-	cm_set_units_now(MILLIMETERS);	// must do init in MM mode
+	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
 	cmd_clear_list();				// setup the cmd object lists. Do this first.
 	cfg.comm_mode = TG_JSON_MODE;	// initial value until EEPROM is read
 	cfg.nvm_base_addr = NVM_BASE_ADDR;
@@ -1450,7 +1450,7 @@ static uint8_t _set_defa(cmdObj *cmd)
 		print_defaults_help(cmd);
 		return (TG_OK);
 	}
-	cm_set_units_now(MILLIMETERS);	// must do init in MM mode
+	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
 	tg_print_initializing_message();
 
 	for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {

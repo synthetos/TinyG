@@ -87,10 +87,8 @@ enum mpBufferState {			// bf->buffer_state values
 struct mpBuffer {				// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;		// static pointer to previous buffer
 	struct mpBuffer *nx;		// static pointer to next buffer
-	exec callback;				// callback to execution function - see typedef in planner.h
-//	fptrCallback callback;		// callback to execution function
-//	uint8_t (*exec_func)(double parameter); // callback to function to execute w/parameter
-//	uint8_t (*exec_func)(struct mpBuffer *bf); // callback to function to execute - passes *bf
+	uint8_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function - passes *bf, returns uint8_t
+	cm_exec cm_func;			// callback to canonical machine execution function
 	uint32_t linenum;			// runtime line number; or line index if not numbered
 	uint32_t lineindex;			// runtime autoincremented line index
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
@@ -130,11 +128,10 @@ struct mpBuffer {				// See Planning Velocity Notes for variable usage
 #endif
 };
 typedef struct mpBuffer mpBuf;
+
 #define spindle_speed time		// alias spindle_speed to the time variable
 #define int_val move_code		// alias the uint8_t to the move_code
 #define dbl_val time			// alias the double to the time variable
-#define offset target			// use target array for coordinate offsets
-#define flag unit				// use unit vector for axis flags for offsets
 
 struct mpBufferPool {			// ring buffer for sub-moves
 	uint8_t buffers_available;	// running count of available buffers
@@ -230,13 +227,8 @@ static double _get_junction_deviation(const double a_unit[], const double b_unit
 #endif
 
 // execute routines (NB: These are all called from the LO interrupt)
-static uint8_t _exec_null(mpBuf *bf);
 static uint8_t _exec_dwell(mpBuf *bf);
 static uint8_t _exec_command(mpBuf *bf);
-static uint8_t _exec_mcode(mpBuf *bf);
-static uint8_t _exec_tool(mpBuf *bf);
-static uint8_t _exec_spindle_speed(mpBuf *bf);
-
 static uint8_t _exec_aline(mpBuf *bf);
 static uint8_t _exec_aline_head(void);
 static uint8_t _exec_aline_body(void);
@@ -396,41 +388,48 @@ uint8_t mp_exec_move()
 {
 	mpBuf *bf;
 
-	if ((bf = _get_run_buffer()) == NULL) { return (TG_NOOP);}	// NULL means nothing's running
-	if (cm.cycle_state == CYCLE_OFF) { cm_exec_cycle_start();}	// cycle state management
+	if ((bf = _get_run_buffer()) == NULL) return (TG_NOOP);		// NULL means nothing's running
+
+	if (cm.cycle_state == CYCLE_OFF) cm_cycle_start();			// cycle state management
+
 	if ((cm.motion_state == MOTION_STOP) && (bf->move_type == MOVE_TYPE_ALINE)) {
 		cm.motion_state = MOTION_RUN;							// auto state-change
 	}
+	if (bf->bf_func != NULL) {		// run the callback - should be set up
+		return (bf->bf_func(bf));
+	}
+	return (TG_INTERNAL_ERROR);		// never supposed to get here
+
+/* REPLACED BY CALLBACK MECHANISM
 	switch (bf->move_type) {									// dispatch the move
 		case MOVE_TYPE_NULL: 	{ return (_exec_null(bf));}
 //		case MOVE_TYPE_LINE:	{ return (_exec_line(bf));}
 		case MOVE_TYPE_ALINE:	{ return (_exec_aline(bf));}
 		case MOVE_TYPE_DWELL:	{ return (_exec_dwell(bf));}
 		case MOVE_TYPE_COMMAND: { return (_exec_command(bf));}
-		case MOVE_TYPE_MCODE:	{ return (_exec_mcode(bf));}
-		case MOVE_TYPE_TOOL:	{ return (_exec_tool(bf));}
-		case MOVE_TYPE_SPINDLE_SPEED: { return (_exec_spindle_speed(bf));}
 	}
 	return (TG_INTERNAL_ERROR);		// never supposed to get here
+*/
 }
 
 /*
  * _exec_null() - execute a null move
  */
+/*
 static uint8_t _exec_null(mpBuf *bf) 
 { 
 	st_prep_null();		// must call this to leep the loader happy
 	_free_run_buffer();
 	return (TG_OK);
 }
-
+*/
 /************************************************************************************
- * mp_queue_command() - queue a synchronous command to the planner queue 
+ * mp_queue_command() - queue a synchronous Mcode, program control, or other command
  *
  *	How this works:
  *	  - The command is called by the Gcode interpreter (cm_<command>, e.g. an M code)
  *	  - cm_ function calls mp_queue_command which puts it in the planning queue.
- *		THis involves setting some parameters and registering a callback to the 
+ *		This involves setting some parameters and registering a callback to the 
  *		execution function in the canonical machine
  *	  - the planning queue gets to the function and calls _exec_command()
  *	  - ...which passes the saved parameters to the callback function
@@ -441,109 +440,28 @@ static uint8_t _exec_null(mpBuf *bf)
  *	and makes keeping the queue full much easier - therefore avoiding Q starvation
  */
 
-uint8_t mp_queue_command(void(*exec)(uint8_t, double, double[], double[]), uint8_t ui8, double dbl, double ofs[], double flg[])
+void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f)
 {
 	mpBuf *bf;
 
-	if ((bf = _get_write_buffer()) == NULL) { return (TG_BUFFER_FULL_FATAL);}
+	// this error is not reported as buffer availability was checked upstream in the controller
+	if ((bf = _get_write_buffer()) == NULL) return;
+
 	bf->move_type = MOVE_TYPE_COMMAND;
-	bf->callback = exec;
-	bf->int_val = ui8;
-	bf->dbl_val = dbl;
-	if (ofs != NULL) {
-		copy_axis_vector(bf->target, ofs);
-		copy_axis_vector(bf->unit, flg);
-	}
+	bf->bf_func = _exec_command;		// callback to planner queue exec function
+	bf->cm_func = cm_exec;				// callback to canonical machine exec function
+	bf->int_val = i;
+	bf->dbl_val = f;
 	_queue_write_buffer(MOVE_TYPE_COMMAND);
-	return (TG_OK);
+	return;
 }
 
 static uint8_t _exec_command(mpBuf *bf)
 {
-	bf->callback(bf->int_val, bf->dbl_val, bf->offset, bf->flag);
-	st_prep_null();			// Must call a prep to keep the loader happy. 
+	bf->cm_func(bf->int_val, bf->dbl_val);
+	st_prep_null();			// Must call a null prep to keep the loader happy. 
 	_free_run_buffer();
 	return (TG_OK);
-}
-
-/*************************************************************************
- * mp_sync_mcode() - queue a synchronous mcode to the planner queue 
- * _exec_mcode()   - execute a synchronous mcode from planner queue (from stepper _exec call)
- */
-
-void mp_sync_mcode(uint8_t mcode) 
-{
-	mpBuf *bf;
-
-	if ((bf = _get_write_buffer()) == NULL) { return;}
-	bf->move_code = mcode;
-	_queue_write_buffer(MOVE_TYPE_MCODE);
-}
-
-static uint8_t _exec_mcode(mpBuf *bf)
-{
-	uint8_t status = TG_OK;
-	switch(bf->move_code) {
-		case SYNC_PROGRAM_STOP: case SYNC_OPTIONAL_STOP: { cm_exec_program_stop(); break;}
-		case SYNC_PROGRAM_END: { cm_exec_program_end(); break;}
-		case SYNC_SPINDLE_CW: { cm_exec_spindle_control(SPINDLE_CW); break;}	
-		case SYNC_SPINDLE_CCW: { cm_exec_spindle_control(SPINDLE_CCW); break;}
-		case SYNC_SPINDLE_OFF: { cm_exec_spindle_control(SPINDLE_OFF); break;}
-//		case SYNC_CHANGE_TOOL:	 // M6 - not yet implemented
-		case SYNC_MIST_COOLANT_ON:	{ cm_exec_mist_coolant_control(true); break;}
-		case SYNC_FLOOD_COOLANT_ON: { cm_exec_flood_coolant_control(true); break;}
-		case SYNC_FLOOD_COOLANT_OFF: { cm_exec_flood_coolant_control(false); break;}
-		case SYNC_FEED_OVERRIDE_ON: { cm_exec_feed_override_enable(true); break;}
-		case SYNC_FEED_OVERRIDE_OFF: { cm_exec_feed_override_enable(false); break;}
-		default: { 
-			status = TG_INTERNAL_ERROR;
-		}
-	}
-	// Must call a prep to keep the loader happy. See Move Execution in:
-	// http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Module-Details#planner.c.2F.h
-	st_prep_null();
-	_free_run_buffer();
-	return (status);
-}
-
-/*************************************************************************
- * mp_queue_tool() - queue a T word to the planner queue 
- * _exec_tool()    - execute T from planner queue (STUBBED IN FOR NOW)
- */
-void mp_queue_tool(uint8_t tool) 
-{
-	mpBuf *bf;
-
-	if ((bf = _get_write_buffer()) == NULL) { return;}
-	bf->move_code = tool;
-	_queue_write_buffer(MOVE_TYPE_TOOL);
-}
-static uint8_t _exec_tool(mpBuf *bf) 
-{ 
-	uint8_t status = TG_OK;
-	st_prep_null();		// must call this to leep the loader happy
-	_free_run_buffer();
-	return (status);
-}
-
-/*************************************************************************
- * mp_queue_spindle_speed() - queue an S word to the planner queue 
- * _exec_spindle_speed()    - execute S from planner queue (STUBBED IN FOR NOW)
- */
-void mp_queue_spindle_speed(double speed) 
-{
-	mpBuf *bf;
-
-	if ((bf = _get_write_buffer()) == NULL) { return;}
-	bf->spindle_speed = speed;		//NB: this is an alias to cruise_velocity
-	_queue_write_buffer(MOVE_TYPE_SPINDLE_SPEED);
-}
-static uint8_t _exec_spindle_speed(mpBuf *bf)
-{ 
-	uint8_t status = TG_OK;
-	st_prep_null();		// must call this to leep the loader happy
-	_free_run_buffer();
-	return (status);
 }
 
 /*************************************************************************
@@ -560,9 +478,10 @@ uint8_t mp_dwell(double seconds)
 	mpBuf *bf; 
 
 	if ((bf = _get_write_buffer()) == NULL) {	// get write buffer or fail
-		return (TG_BUFFER_FULL_FATAL);		   // (not supposed to fail)
+		return (TG_BUFFER_FULL_FATAL);		  	// (not supposed to fail)
 	}
-	bf->time = seconds;						   // in seconds, not minutes
+	bf->bf_func = _exec_dwell;					// register the callback to the exec function
+	bf->time = seconds;						  	// in seconds, not minutes
 	_queue_write_buffer(MOVE_TYPE_DWELL);
 	return (TG_OK);
 }
@@ -597,6 +516,7 @@ uint8_t mp_line(const double target[], const double minutes)
 	if (length < EPSILON) { return (TG_ZERO_LENGTH_MOVE);}
 	if ((bf = _get_write_buffer()) == NULL) { return (TG_BUFFER_FULL_FATAL);} // never supposed to fail
 
+	bf->bf_func = _exec_line;					// register the callback to the exec function
 	bf->time = minutes;
 	bf->length = length;
 	copy_axis_vector(bf->target, target);		// target to bf_target
@@ -661,6 +581,7 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
 	// get a cleared buffer and setup move variables
 	if ((bf = _get_write_buffer()) == NULL) { return (TG_BUFFER_FULL_FATAL);} // never supposed to fail
 
+	bf->bf_func = _exec_aline;					// register the callback to the exec function
 	bf->linenum = cm_get_model_linenum();		// block being planned
 	bf->time = minutes;
 	bf->min_time = min_time;
@@ -2261,7 +2182,7 @@ static void _free_run_buffer()					// EMPTY current run buf & adv to next
 	if (mb.r->buffer_state == MP_BUFFER_QUEUED) {// only if queued...
 		mb.r->buffer_state = MP_BUFFER_PENDING;  // pend next buffer
 	}
-	if (mb.w == mb.r) { cm_exec_cycle_end();}	// end the cycle if the queue empties
+	if (mb.w == mb.r) cm_cycle_end();			// end the cycle if the queue empties
 	mb.buffers_available++;
 	rpt_request_queue_report();
 }

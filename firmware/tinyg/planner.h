@@ -113,8 +113,7 @@ enum moveState {
  * Global Scope Functions
  */
 
-//                      int val, FP val, offsets,  flags 
-typedef void (*exec)(uint8_t, double, double[], double[]);	// callback to execution function
+typedef void (*cm_exec)(uint8_t, double);	// callback to canonical_machine execution function
 
 void mp_init(void);
 
@@ -135,14 +134,13 @@ void mp_set_planner_lineindex(uint32_t lineindex);
 void mp_zero_segment_velocity(void);
 
 uint8_t mp_exec_move(void);
-uint8_t mp_queue_command(void(*exec)(uint8_t, double, double[], double[]), uint8_t ui8, double dbl, double ofs[], double flg[]);
+void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f);
 void mp_sync_mcode(uint8_t mcode);
 
 uint8_t mp_plan_hold_callback(void);
 uint8_t mp_end_hold_callback(void);
 uint8_t mp_dwell(const double seconds);
 uint8_t mp_line(const double target[], const double minutes);
-//uint8_t mp_aline(const double target[], const double minutes);
 uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time);
 uint8_t mp_go_home_cycle(void);
 

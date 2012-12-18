@@ -224,6 +224,13 @@ static uint8_t _parse_gcode_block(char *buf)
 						}
 						break;
 					}
+//					case 38: 
+//						switch (_point(value)) {
+//							case 2: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_STRAIGHT_PROBE); 
+//							default: status = TG_UNRECOGNIZED_COMMAND;
+//						}
+//						break;
+//					}
 					case 40: break;	// ignore cancel cutter radius compensation
 					case 49: break;	// ignore cancel tool length offset comp.
 					case 53: SET_NON_MODAL (absolute_override, true);
@@ -374,6 +381,7 @@ static uint8_t _execute_gcode_block()
 	switch (gn.next_action) {
 		case NEXT_ACTION_GO_HOME: { status = cm_return_to_home(); break;}
 		case NEXT_ACTION_SEARCH_HOME: { status = cm_homing_cycle_start(); break;}
+//		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_probe_cycle_start(); break;}
 		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(coord_select, gn.target, gf.target); break;}
 
 		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(gn.target, gf.target); break;}

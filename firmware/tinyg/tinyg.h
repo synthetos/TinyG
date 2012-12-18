@@ -33,7 +33,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95		// major version
-#define TINYG_BUILD_NUMBER   	353.11		// Working on synchronizing commands - coords
+#define TINYG_BUILD_NUMBER   	354.01		// Working on Planner changes and queue reports
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -77,13 +77,6 @@ void tg_system_reset(void);
 void tg_application_reset(void);
 void tg_application_startup(void);
 
-// Global typedefs Used for accessing func pointers in PROGMEM & others
-typedef void (*fptr_void_uint8)(void);	 	// returns void, unit8_t arg (poll_func)
-typedef char (*fptr_char_void)(void); 		// returns char, void args
-typedef int (*fptr_int_uint8)(uint8_t s);	// returns int, unit8_t arg (signal handler) 
-typedef int (*fptr_int_char_p)(char *b);	// returns int, character pointer (line handler)
-typedef void (*fptr_void_double)(double); 	// returns void, double arg (config bindings)
-
 #define AXES 6					// number of axes supported in this version
 #define MOTORS 4				// number of motors on the board
 #define COORDS 6				// number of supported coordinate systems (1-6)
@@ -97,18 +90,18 @@ typedef void (*fptr_void_double)(double); 	// returns void, double arg (config b
  * Alternate enum is: enum tgAxes { X=0, Y, Z, A, B, C };
  */
 
-#define X		0
-#define Y		1
-#define Z		2
-#define A		3
-#define B		4
-#define C		5
-//#define U 	6				// reserved
-//#define V 	7				// reserved
-//#define W 	8				// reserved
+#define X	0
+#define Y	1
+#define Z	2
+#define A	3
+#define B	4
+#define C	5
+#define U 	6				// reserved
+#define V 	7				// reserved
+#define W 	8				// reserved
 
-#define MOTOR_1	0 				// define motor numbers and array indexes
-#define MOTOR_2	1
+#define MOTOR_1	0 			// define motor numbers and array indexes
+#define MOTOR_2	1			// must be defines. enums don't work
 #define MOTOR_3	2
 #define MOTOR_4	3
 

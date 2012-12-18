@@ -118,7 +118,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("N100 g0 x1\n");	// line number and command
 //	xio_queue_RX_string_usb("N100 g0x1 (MSG*** message test with gcode command and line number ***)\n");
 
-	xio_queue_RX_string_usb("$test=13\n");
+//	xio_queue_RX_string_usb("$test=13\n");
 //	xio_queue_RX_string_usb("$$\n");
 //	xio_queue_RX_string_usb("$sys\n");
 //	xio_queue_RX_string_usb("$xvm\n");
@@ -287,6 +287,14 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g21\n");			// mm mode
 //	xio_queue_RX_string_usb("g18\n");			// plane select
 //	xio_queue_RX_string_usb("g10 l2 p4 x20 y20 z-10\n"); // test G10
+
+/* M code tests */
+//	xio_queue_RX_string_usb("m3\n");			// spindle CW
+//	xio_queue_RX_string_usb("m4\n");			// spindle CCW
+//	xio_queue_RX_string_usb("m5\n");			// spindle off
+	xio_queue_RX_string_usb("m7\n");			// mist coolant on
+	xio_queue_RX_string_usb("m8\n");			// flood coolant on
+	xio_queue_RX_string_usb("m9\n");			// all coolant off
 
 /* Feedhold tests */
 // Consider dropping PLANNER_BUFFER_POOL_SIZE down to something like 4 for these tests
