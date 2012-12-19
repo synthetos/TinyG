@@ -103,10 +103,11 @@ static void _switch_isr_helper(uint8_t sw_num);
 
 void gpio_init(void)
 {
-	_gpio_init_helper(SW_PORT_X, MOTOR_1);
-	_gpio_init_helper(SW_PORT_Y, MOTOR_2);
-	_gpio_init_helper(SW_PORT_Z, MOTOR_3);
-	_gpio_init_helper(SW_PORT_A, MOTOR_4);
+	// Assumes all port directions previously set to 0x3F in st_init()
+	_gpio_init_helper(PORT_SWITCH_X, MOTOR_1);
+	_gpio_init_helper(PORT_SWITCH_Y, MOTOR_2);
+	_gpio_init_helper(PORT_SWITCH_Z, MOTOR_3);
+	_gpio_init_helper(PORT_SWITCH_A, MOTOR_4);
 	gpio_clear_switches();
 	gpio_reset_lockout();
 }
@@ -158,14 +159,12 @@ static void _switch_isr_helper(uint8_t sw_num)
 	sw.flag[sw_num] = true;								// set the flag for this switch
 	sw.thrown = true;									// triggers the switch handler tasks
 
-	if (cm.cycle_state == CYCLE_HOMING) { 				// initiate a feedhold if in homing cycle
-		if (sw.mode[sw_num] & SW_HOMING) {
-			sig_feedhold(); 
-			return;
-		}
+	if (cm.cycle_state == CYCLE_HOMING) { 				// initiate a feedhold if in homing cycle...
+		sig_feedhold(); 								// ...regardless of homing or limit switch type
+		return;											
 	}
 	// must be a limit switch, so fire it.
-	sw.limit_thrown = true;								// lock up machine if limit switch fired
+	sw.limit_thrown = true;								// triggers an emergency shutdown
 }
 
 /*
@@ -199,14 +198,14 @@ uint8_t gpio_read_switch(uint8_t sw_num)
 
 	uint8_t read = 0;
 	switch (sw_num) {
-		case SW_MIN_X: { read = device.port[SW_PORT_X]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_X: { read = device.port[SW_PORT_X]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Y: { read = device.port[SW_PORT_Y]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Y: { read = device.port[SW_PORT_Y]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Z: { read = device.port[SW_PORT_Z]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Z: { read = device.port[SW_PORT_Z]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_A: { read = device.port[SW_PORT_A]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_A: { read = device.port[SW_PORT_A]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_X: { read = device.port[PORT_SWITCH_X]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_X: { read = device.port[PORT_SWITCH_X]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Y: { read = device.port[PORT_SWITCH_Y]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Y: { read = device.port[PORT_SWITCH_Y]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Z: { read = device.port[PORT_SWITCH_Z]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Z: { read = device.port[PORT_SWITCH_Z]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_A: { read = device.port[PORT_SWITCH_A]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_A: { read = device.port[PORT_SWITCH_A]->IN & SW_MAX_BIT_bm; break;}
 	}
 	if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
 		return ((read == 0) ? SW_CLOSED : SW_OPEN);		// confusing. An NO switch drives the pin LO when thrown

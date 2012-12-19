@@ -58,23 +58,18 @@
 
 // local helpers
 static void _controller_HSM(void);
-static uint8_t _sync_to_tx_buffer(void);
-static uint8_t _sync_to_planner(void);
 static uint8_t _dispatch(void);
-static uint8_t _reset_handler(void);
+static void _text_mode_response(const uint8_t status, const char *buf);
+
 static uint8_t _shutdown_handler(void);
+static uint8_t _reset_handler(void);
 static uint8_t _feedhold_handler(void);
 static uint8_t _cycle_start_handler(void);
-static void _text_mode_response(const uint8_t status, const char *buf);
+static uint8_t _sync_to_tx_buffer(void);
+static uint8_t _sync_to_planner(void);
 
 /*
  * tg_init() - controller init
- * tg_announce() - announce that TinyG is alive
- * tg_ready() - final part of announcement - syste is ready fo input
- * tg_application_startup() - application start and restart
- *
- *	The controller init is split in two: the actual init, and tg_alive()
- *	which should be issued once the rest of the application is initialized.
  */
 
 void tg_init(uint8_t default_src) 
@@ -89,13 +84,8 @@ void tg_init(uint8_t default_src)
 	tg_set_active_source(tg.default_src);	// set initial active source
 }
 
-void tg_application_startup(void)
-{
-	tg_canned_startup();			// pre-load input buffers (for test)
-}
-
 /* 
- * tg_controller() - top-level controller
+ * tg_controller() - MAIN LOOP - top-level controller
  *
  * The order of the dispatched tasks is very important. 
  * Tasks are ordered by increasing dependency (blocking hierarchy).
@@ -115,6 +105,7 @@ void tg_application_startup(void)
  * Useful reference on state machines:
  * http://johnsantic.com/comp/state.html, "Writing Efficient State Machines in C"
  */
+
 void tg_controller() 
 { 
 	while (true) { 
@@ -148,37 +139,6 @@ static void _controller_HSM()
 	DISPATCH(_dispatch());					// read and execute next command
 }
 
-/**** Signal handlers ****
- * _reset_handler()
- * _feedhold_handler()
- * _cycle_start_handler()
- */
-
-static uint8_t _reset_handler(void)
-{
-	if (sig.sig_reset == false) { return (TG_NOOP);}
-//	sig.sig_reset = false;				// why bother?
-	tg_reset();							// hard reset - identical to hitting RESET button
-	return (TG_EAGAIN);
-}
-
-static uint8_t _feedhold_handler(void)
-{
-	if (sig.sig_feedhold == false) { return (TG_NOOP);}
-	sig.sig_feedhold = false;
-	cm_feedhold();
-	return (TG_EAGAIN);					// best to restart the control loop
-}
-
-static uint8_t _cycle_start_handler(void)
-{
-	if (sig.sig_cycle_start == false) { return (TG_NOOP);}
-	sig.sig_cycle_start = false;
-	cm_cycle_start();
-	return (TG_EAGAIN);					// best to restart the control loop
-}
-
-
 /*
  * _shutdown_handler()
  *
@@ -209,10 +169,12 @@ static uint8_t _shutdown_handler(void)
 		if (--tg.led_counter < 0) {
 			tg.led_counter = LED_COUNTER;
 			if (tg.led_state == 0) {
-				gpio_led_on(INDICATOR_LED);
+//				gpio_led_on(INDICATOR_LED);
+				gpio_led_on(COOLANT_ON_LED);
 				tg.led_state = 1;
 			} else {
-				gpio_led_off(INDICATOR_LED);
+//				gpio_led_off(INDICATOR_LED);
+				gpio_led_off(COOLANT_ON_LED);
 				tg.led_state = 0;
 			}
 		}
@@ -220,45 +182,6 @@ static uint8_t _shutdown_handler(void)
 	return (TG_EAGAIN);	 // EAGAIN prevents any other actions from running
 }
 
-/**** Sync routines ****
- * _sync_to_tx_buffer() - return eagain if TX queue is backed up
- * _sync_to_planner() - return eagain if planner is not ready for a new command
- */
-
-static uint8_t _sync_to_tx_buffer()
-{
-	if ((xio_get_tx_bufcount_usart(ds[XIO_DEV_USB].x) >= XOFF_TX_LO_WATER_MARK)) {
-		return (TG_EAGAIN);
-	}
-	return (TG_OK);
-}
-
-static uint8_t _sync_to_planner()
-{
-	if (mp_get_planner_buffers_available() == 0) { 
-		return (TG_EAGAIN);
-	}
-	return (TG_OK);
-}
-
-/**** Input source controls ****
- * tg_reset_source() - reset source to default input device (see note)
- * tg_set_active_source() - set current input source
- *
- * Note: Once multiple serial devices are supported reset_source() should
- *	be expanded to also set the stdout/stderr console device so the prompt
- *	and other messages are sent to the active device.
- */
-
-void tg_reset_source()
-{
-	tg_set_active_source(tg.default_src);
-}
-
-void tg_set_active_source(uint8_t dev)
-{
-	tg.src = dev;								// dev = XIO device #. See xio.h
-}
 
 /***************************************************************************** 
  * _dispatch() 			- dispatch line read from active input device
@@ -285,7 +208,7 @@ static uint8_t _dispatch()
 		return (status);
 	}
 	tg.linelen = strlen(tg.in_buf)+1;
-	cmd_clear_body(cmd_body);					// clear the cmd body to get ready for use
+	cmd_new_body(cmd_body);					// clear the cmd body to get ready for use
 
 	// dispatch the new text line
 	switch (toupper(tg.in_buf[0])) {
@@ -522,4 +445,72 @@ void tg_print_system_ready_message(void)
 	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
 	_text_mode_response(TG_OK, "");				// prompt
 #endif
+}
+
+
+/**** Utilities ****
+ * _sync_to_tx_buffer() - return eagain if TX queue is backed up
+ * _sync_to_planner() - return eagain if planner is not ready for a new command
+ * tg_reset_source() - reset source to default input device (see note)
+ * tg_set_active_source() - set current input source
+ *
+ * Note: Once multiple serial devices are supported reset_source() should
+ *	be expanded to also set the stdout/stderr console device so the prompt
+ *	and other messages are sent to the active device.
+ */
+
+static uint8_t _sync_to_tx_buffer()
+{
+	if ((xio_get_tx_bufcount_usart(ds[XIO_DEV_USB].x) >= XOFF_TX_LO_WATER_MARK)) {
+		return (TG_EAGAIN);
+	}
+	return (TG_OK);
+}
+
+static uint8_t _sync_to_planner()
+{
+	if (mp_get_planner_buffers_available() == 0) { 
+		return (TG_EAGAIN);
+	}
+	return (TG_OK);
+}
+
+void tg_reset_source()
+{
+	tg_set_active_source(tg.default_src);
+}
+
+void tg_set_active_source(uint8_t dev)
+{
+	tg.src = dev;						// dev = XIO device #. See xio.h
+}
+
+/**** Signal handlers ****
+ * _reset_handler()
+ * _feedhold_handler()
+ * _cycle_start_handler()
+ */
+
+static uint8_t _reset_handler(void)
+{
+	if (sig.sig_reset == false) { return (TG_NOOP);}
+//	sig.sig_reset = false;				// why bother?
+	tg_reset();							// hard reset - identical to hitting RESET button
+	return (TG_EAGAIN);
+}
+
+static uint8_t _feedhold_handler(void)
+{
+	if (sig.sig_feedhold == false) { return (TG_NOOP);}
+	sig.sig_feedhold = false;
+	cm_feedhold();
+	return (TG_EAGAIN);					// best to restart the control loop
+}
+
+static uint8_t _cycle_start_handler(void)
+{
+	if (sig.sig_cycle_start == false) { return (TG_NOOP);}
+	sig.sig_cycle_start = false;
+	cm_cycle_start();
+	return (TG_EAGAIN);					// best to restart the control loop
 }

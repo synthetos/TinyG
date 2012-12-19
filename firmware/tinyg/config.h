@@ -213,14 +213,14 @@ uint8_t cmd_set(cmdObj *cmd);		// main entry point for SETs
 void cmd_print(cmdObj *cmd);		// main entry point for formatted print
 void cmd_persist(cmdObj *cmd);		// main entry point for persistence
 
-cmdObj *cmd_clear_obj(cmdObj *cmd);
+cmdObj *cmd_new_obj(cmdObj *cmd);
 void cmd_get_cmdObj(cmdObj *cmd);
 INDEX_T cmd_get_index(const char *group, const char *token);
 uint8_t cmd_get_type(cmdObj *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 
-void cmd_clear_list(void);
-void cmd_clear_body(cmdObj *cmd);
+void cmd_new_list(void);
+void cmd_new_body(cmdObj *cmd);
 uint8_t cmd_add_object(char *token);
 uint8_t cmd_add_string(char *token, char *string);
 uint8_t cmd_add_integer(char *token, uint32_t value);

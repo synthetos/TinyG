@@ -33,7 +33,7 @@
 // NOTE: This header requires <stdio.h> be included previously
 
 #define TINYG_VERSION_NUMBER	0.95		// major version
-#define TINYG_BUILD_NUMBER   	354.04		// Working on Planner changes and queue reports
+#define TINYG_BUILD_NUMBER   	354.05		// Working on Planner changes and queue reports
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -72,10 +72,6 @@
 /*************************************************************************
  * TinyG application-specific prototypes, defines and globals
  */
-
-void tg_system_reset(void);
-void tg_application_reset(void);
-void tg_application_startup(void);
 
 #define AXES 6					// number of axes supported in this version
 #define MOTORS 4				// number of motors on the board

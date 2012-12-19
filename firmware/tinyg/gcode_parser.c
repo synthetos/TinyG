@@ -63,16 +63,6 @@ static uint8_t _point(double value);
 #define SET_NON_MODAL(parm,val) ({gn.parm=val; gf.parm=1; break;})
 #define EXEC_FUNC(f,v) if((uint8_t)gf.v != false) { status = f(gn.v);}
 
-/* 
- * gc_init() 
- */
-
-void gc_init()
-{
-	gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
-	return;
-}
-
 /*
  * gc_gcode_parser() - parse a block (line) of gcode
  *
@@ -224,6 +214,7 @@ static uint8_t _parse_gcode_block(char *buf)
 						}
 						break;
 					}
+					case 30: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_GO_HOME_THROUGH_POINT);
 //					case 38: 
 //						switch (_point(value)) {
 //							case 2: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_STRAIGHT_PROBE); 
@@ -381,6 +372,7 @@ static uint8_t _execute_gcode_block()
 
 	switch (gn.next_action) {
 		case NEXT_ACTION_GO_HOME: { status = cm_return_to_home(); break;}
+		case NEXT_ACTION_GO_HOME_THROUGH_POINT: { status = cm_return_to_home_through_point(); break;}
 		case NEXT_ACTION_SEARCH_HOME: { status = cm_homing_cycle_start(); break;}
 //		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_probe_cycle_start(); break;}
 		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(coord_select, gn.target, gf.target); break;}

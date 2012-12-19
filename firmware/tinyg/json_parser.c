@@ -53,14 +53,6 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 static uint8_t _normalize_json_string(char *str, uint16_t size);
 static uint8_t _gcode_comment_overrun_hack(cmdObj *cmd);
 
-/****************************************************************************
- * js_init() 
- */
-
-void js_init() 
-{
-	return;
-}
 
 /****************************************************************************
  * js_json_parser() - parse a JSON string
@@ -183,7 +175,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	char *tmp;
 	char terminators[] = {"},"};
 
-	cmd_clear_obj(cmd);								// wipe the object and set the depth
+	cmd_new_obj(cmd);								// wipe the object and set the depth
 
 	// --- Process name part ---
 	// find leading and trailing name quotes and set pointers.

@@ -39,7 +39,6 @@
  * Global Scope Functions
  */
 
-void js_init(void);						// Initialize the parser
 void js_json_parser(char *str);
 uint16_t js_serialize_json(cmdObj *cmd, char *out_buf);
 void js_print_list(uint8_t status);

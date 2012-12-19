@@ -39,7 +39,7 @@
 //#define GPIO1_INTLVL (PORT_INT0LVL_LO_gc|PORT_INT1LVL_LO_gc)	// shouldn;t be low
 
 // port assignments for vectors
-#define X_MIN_ISR_vect PORTA_INT0_vect		// these line up with the gpoi assignments in system.h
+#define X_MIN_ISR_vect PORTA_INT0_vect	// these must line up with the SWITCH assignments in system.h
 #define Y_MIN_ISR_vect PORTD_INT0_vect
 #define Z_MIN_ISR_vect PORTE_INT0_vect
 #define A_MIN_ISR_vect PORTF_INT0_vect

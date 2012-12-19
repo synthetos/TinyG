@@ -55,20 +55,17 @@ void sys_init(void);					// master hardware init
 
 /* Motor & switch port assignments */
 
-#define PORT_MOTOR_1		PORTA		// Note: motor and GPIO2 mappings are not the same
-#define PORT_MOTOR_2 		PORTF
-#define PORT_MOTOR_3		PORTE
-#define PORT_MOTOR_4		PORTD
+#define PORT_MOTOR_1	PORTA	// Note: motor and switch port mappings are not the same
+#define PORT_MOTOR_2 	PORTF
+#define PORT_MOTOR_3	PORTE
+#define PORT_MOTOR_4	PORTD
 
-#define GPIO2_X_MIN_MAX		PORTA		// lines up with ISR vector assignments in gpio.h
-#define GPIO2_Y_MIN_MAX		PORTD
-#define GPIO2_Z_MIN_MAX		PORTE
-#define GPIO2_A_MIN_MAX		PORTF
-
-#define SW_PORT_X 0						// port mapping looked at the other way
-#define SW_PORT_Y 3
-#define SW_PORT_Z 2
-#define SW_PORT_A 1
+// Switch axes mapped to motor ports
+// *** These must line up with the ISR vector assignments in gpio.h ***
+#define PORT_SWITCH_X 	MOTOR_1	// SWITCH_X maps to PORTA
+#define PORT_SWITCH_Y 	MOTOR_4	// PORTD  (sorry if this is confusing - it's a board routing issue)
+#define PORT_SWITCH_Z 	MOTOR_3	// PORTE
+#define PORT_SWITCH_A 	MOTOR_2	// PORTF
 
 // These next four must be changed when the PORT_MOTOR_* definitions change!
 #define PORTCFG_VP0MAP_PORT_MOTOR_1_gc PORTCFG_VP0MAP_PORTA_gc
@@ -101,8 +98,8 @@ enum cfgPortBits {			// motor control port bit positions
 	MICROSTEP_BIT_0_bp,		// bit 3
 	MICROSTEP_BIT_1_bp,		// bit 4
 	GPIO1_OUT_BIT_bp,		// bit 5 (4 gpio1 output bits; 1 from each axis)
-	SW_MIN_BIT_bp,			// bit 6 (4 input bits for switch closures)
-	SW_MAX_BIT_bp			// bit 7 (4 input bits for switch closures)
+	SW_MIN_BIT_bp,			// bit 6 (4 input bits for homing/limit switches)
+	SW_MAX_BIT_bp			// bit 7 (4 input bits for homing/limit switches)
 };
 
 #define STEP_BIT_bm			(1<<STEP_BIT_bp)
@@ -110,29 +107,24 @@ enum cfgPortBits {			// motor control port bit positions
 #define MOTOR_ENABLE_BIT_bm (1<<MOTOR_ENABLE_BIT_bp)
 #define MICROSTEP_BIT_0_bm	(1<<MICROSTEP_BIT_0_bp)
 #define MICROSTEP_BIT_1_bm	(1<<MICROSTEP_BIT_1_bp)
-#define GPIO1_OUT_BIT_bm	(1<<GPIO1_OUT_BIT_bp)
-#define SW_MIN_BIT_bm		(1<<SW_MIN_BIT_bp)
-#define SW_MAX_BIT_bm		(1<<SW_MAX_BIT_bp) // motor control port bit masks
-
-enum gpio1Inputs {
-	GPIO1_IN_BIT_0_bp = 0,	// gpio1 input bit 0
-	GPIO1_IN_BIT_1_bp,		// gpio1 input bit 1
-	GPIO1_IN_BIT_2_bp,		// gpio1 input bit 2
-	GPIO1_IN_BIT_3_bp		// gpio1 input bit 3
-};
-#define GPIO1_IN_BIT_0_bm	(1<<GPIO1_IN_BIT_0_bp)
-#define GPIO1_IN_BIT_1_bm	(1<<GPIO1_IN_BIT_1_bp)
-#define GPIO1_IN_BIT_2_bm	(1<<GPIO1_IN_BIT_2_bp)
-#define GPIO1_IN_BIT_3_bm	(1<<GPIO1_IN_BIT_3_bp)
+#define GPIO1_OUT_BIT_bm	(1<<GPIO1_OUT_BIT_bp)	// spindle and coolant output bits
+#define SW_MIN_BIT_bm		(1<<SW_MIN_BIT_bp)		// minimum switch inputs
+#define SW_MAX_BIT_bm		(1<<SW_MAX_BIT_bp)		// maximum switch inputs
 
 /* Bit assignments for GPIO1_OUTs for spindle, PWM and coolant */
 
 #define SPINDLE_BIT			0x08		// spindle on/off
 #define SPINDLE_DIR			0x04		// spindle direction, 1=CW, 0=CCW
-#define SPINDLE_PWM			0x02		// spindle PWN port
+#define SPINDLE_PWM			0x02		// spindle PWMs output bit
 #define MIST_COOLANT_BIT	0x01		// coolant on/off - these are the same due to limited ports
 #define FLOOD_COOLANT_BIT	0x01		// coolant on/off
-#define INDICATOR_LED		1			// can use the spindle direction as an indicator LED
+
+#define SPINDLE_ON_LED		0
+#define SPINDLE_DIR_LED		1
+#define SPINDLE_PWM_LED		2
+#define COOLANT_ON_LED		3
+
+#define INDICATOR_LED		SPINDLE_DIR_LED	// can use the spindle direction as an indicator LED
 
 /* Timer assignments - see specific modules for details) */
 

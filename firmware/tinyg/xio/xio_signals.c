@@ -38,10 +38,10 @@
 #include "xio.h"
 
 /*
- * sig_init()			init signals
- * sig_reset()			end program (hard)
- * sig_feedhold()		stop motion
- * sig_cycle_start()	start or resume motion
+ * sig_init()		 - init signals
+ * sig_reset()		 - end program (hard)
+ * sig_feedhold()	 - stop motion
+ * sig_cycle_start() - start or resume motion
  */
 
 void sig_init()

@@ -519,12 +519,11 @@ static double _get_move_times(double *min_time)
 
 void cm_init()
 {
-	memset(&cm, 0, sizeof(cm));			// reset canonicalMachineSingleton
-	memset(&gn, 0, sizeof(gn));			// clear all values, pointers and status
-	memset(&gf, 0, sizeof(gf));
-	memset(&gm, 0, sizeof(gm));
-
-	cm_spindle_init();					// init spindle PWM and variables
+// You can assume all memory has been zeroed by a hard reset. If not, use this code:
+//	memset(&cm, 0, sizeof(cm));			// reset canonicalMachineSingleton
+//	memset(&gn, 0, sizeof(gn));			// clear all values, pointers and status
+//	memset(&gf, 0, sizeof(gf));
+//	memset(&gm, 0, sizeof(gm));
 
 	// set gcode defaults
 	cm_set_units_mode(cfg.units_mode);
@@ -532,7 +531,10 @@ void cm_init()
 	cm_select_plane(cfg.select_plane);
 	cm_set_path_control(cfg.path_control);
 	cm_set_distance_mode(cfg.distance_mode);
-	
+
+	// never start a machine in a motion mode	
+	gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
+
 	// signal that the machine is ready for action
 	cm.machine_state = MACHINE_READY;	
 	cm.combined_state = COMBINED_READY;
@@ -552,8 +554,8 @@ void cm_shutdown()
 //	gpio_set_bit_off(SPINDLE_BIT);			//###### this current stuff is temporary
 //	gpio_set_bit_off(SPINDLE_DIR);
 //	gpio_set_bit_off(SPINDLE_PWM);
-	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
-	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
+//	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
+//	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
 	// send out an emergency shutdown message
 	if (cfg.comm_mode == TG_JSON_MODE) {
@@ -561,7 +563,6 @@ void cm_shutdown()
 	} else {
 		printf_P(PSTR("EMERGENCY SHUTDOWN\n"));
 	}
-
 	cm.machine_state = MACHINE_SHUTDOWN;
 }
 
@@ -702,8 +703,8 @@ uint8_t cm_set_machine_origins(double origin[], double flag[])
 {
 	for (uint8_t i=0; i<AXES; i++) {
 		if (flag[i] > EPSILON) {
-//			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] - _to_millimeters(offset[i]);
-			cm_set_machine_axis_position(i, gm.position[i] - cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
+//			cm_set_machine_axis_position(i, gm.position[i] + cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
+			cm_set_machine_axis_position(i, gm.position[i] + _to_millimeters(origin[i]));
 		}
 	}
 	return (TG_OK);

@@ -4,41 +4,28 @@
  *
  * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * TinyG is free software: you can redistribute it and/or modify it under the terms of the 
+ * GNU General Public License as published by the Free Software Foundation, either version 3 
+ * of the License, or (at your option) any later version.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
- * for details. You should have received a copy of the GNU General Public 
- * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without 
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+ * GNU General Public License for details. You should have received a copy of the GNU General 
+ * Public License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING 
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* See tinyg_docs.txt for general notes. 
- * See tinyg_docs_developers.txt for coding details, and how to set up this project in AVRstudio
- * See also: http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info:
- * 	(the trailing ':' is required!)
- *
- *---- Notes on comments ----
-.* Yes, this code is probably over-commented. I do this to remind 
- * myself in 6 months on what I was thinking - however unlikely
+/* See github.coom/Synthetos/tinyg for code and docs on the wiki 
  */
-
-/**************************************************************************/
 
 #include <stdio.h>				// precursor for xio.h
 #include <avr/pgmspace.h>		// precursor for xio.h
 #include <avr/interrupt.h>
-#include <avr/wdt.h>			// watchdog is used for software reset
+#include <avr/wdt.h>			// used for software reset
 
 #include "xmega/xmega_interrupts.h"
 //#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
@@ -62,97 +49,52 @@
 #include "test.h"
 #include "pwm.h"
 
-// local function prototypes (global prototypes are in tinyg.h)
-#ifdef __DEBUG
-static void _tg_debug_init(void);
-#else
-#define _tg_debug_init()
-#endif
-
-static void _tg_unit_tests(void);
+static void _unit_tests(void);
 
 /*
- * Init structure
- *
- *	System startup proceeds through the following levels:
- *
- *	  tg_system_init() 			- called first (on reset) and only once
- *	  tg_application_init()		- typically only called at startup
- *	  tg_unit_tests() 			- called at startup only if unit tests enabled
- *	  tg_application_startup()	- called last; may be called again at any point
- *
- * 	The first three are managed in main.c
- *
- *	tg_application_startup() is provided by controller.c. It is used for 
- *	application starts and restarts (like for limit switches). It manages 
- *	power-on actions like homing cycles and any pre-loaded commands to the 
- *	input buffer.
- */
-
-void tg_reset(void)			// software hard reset using the watchdog timer
-{
-	wdt_enable(WDTO_15MS);
-	while (true);			// loops for about 15ms then resets
-}
-
-void tg_system_reset(void)
-{
-	cli();					// These inits are order dependent:
-	_tg_debug_init();		// (0) inits for the debug system
-	sys_init();				// (1) system hardware setup
-	xio_init();				// (2) xmega io subsystem
-	tg_init(STD_INPUT);		// (3) tinyg controller (arg is std devices)
-
-	sig_init();				// (4) signal flags
-	rtc_init();				// (5) real time counter
-	st_init(); 				// (6) stepper subsystem (must run before gp_init())
-	pwm_init();				// (8) pulse width modulation drivers
-	js_init();				// (9) JSON parser & etc.
-
-	PMIC_EnableMediumLevel();// enable TX interrupts for init reporting 
-	sei();					// enable global interrupts
-	cfg_init();				// (10) get config record from eeprom (reqs xio)
-	gpio_init();			// (7) switches and parallel IO
-}
-
-void tg_application_reset(void) 
-{
-	cli();					// disable global interrupts
-//	st_init(); 				// initializes stepper subsystem
-	mp_init();				// motion planning subsystem
-	cm_init();				// canonical machine
-	gc_init();				// gcode-parser
-
-	PMIC_SetVectorLocationToApplication();  // as opposed to boot ROM
-	PMIC_EnableHighLevel();	// all levels are used, so don't bother to abstract them
-	PMIC_EnableMediumLevel();
-	PMIC_EnableLowLevel();
-	sei();					// enable global interrupts
-	tg_print_system_ready_message();// (LAST) announce system is ready
-}
-
-static void _tg_unit_tests(void) // uncomment __UNITS... line in .h file to enable unit tests
-{
-	XIO_UNITS;				// conditional unit tests for xio sub-system
-//	EEPROM_UNITS;			// if you want this you must include the .h file in this file
-	CONFIG_UNITS;
-	JSON_UNITS;
-	GPIO_UNITS;
-	REPORT_UNITS;
-	PLANNER_UNITS;
-	PWM_UNITS;
-}
-
-/*
- * MAIN
+ * Inits and MAIN
  */
 
 int main(void)
 {
-	tg_system_reset();
-	tg_application_reset();
-	_tg_unit_tests();
-	tg_application_startup();
+	// There are a lot of dependencies in the order of these inits.
+	// Don't change the ordering unless you understand this.
+	// Inits can assume that all memory has been zeroed by either 
+	// a hardware reset or a watchdog timer reset.
+
+	cli();
+
+	// system and drivers
+	sys_init();			// system hardware setup 			- must be first
+	rtc_init();			// real time counter
+	xio_init();			// xmega io subsystem
+	sig_init();			// signal flags
+	st_init(); 			// stepper subsystem 				- must precede gpio_init()
+	gpio_init();		// switches and parallel IO
+	pwm_init();			// pulse width modulation drivers	- must follow gpio_init()
+
+	// application structures
+	tg_init(STD_INPUT);	// tinyg controller (controller.c)	- must be first app init; reqs xio_init()
+	cfg_init();			// config records from eeprom 		- must be next app init
+	mp_init();			// motion planning subsystem
+	cm_init();			// canonical machine				- must follow cfg_init()
+	sp_init();			// spindle PWM and variables
+
+	// now bring up the interupts and get started
+	PMIC_SetVectorLocationToApplication(); // as opposed to boot ROM
+	PMIC_EnableHighLevel();			// all levels are used, so don't bother to abstract them
+	PMIC_EnableMediumLevel();
+	PMIC_EnableLowLevel();
+	sei();							// enable global interrupts
+	tg_print_system_ready_message();// (LAST) announce system is ready
+
+//	gpio_led_on(SPINDLE_ON_LED);
+//	gpio_led_on(SPINDLE_DIR_LED);
+//	gpio_led_on(SPINDLE_PWM_LED);
+//	gpio_led_on(COOLANT_ON_LED);
+
+	_unit_tests();					// run any unit tests that are enabled
+	tg_canned_startup();			// run any pre-loaded commands
 
 #ifdef __STANDALONE_MODE
 	while(true){ tg_controller();}	// this mode executes gcode blocks received via USB
@@ -167,14 +109,28 @@ int main(void)
 #endif
 }
 
-#ifdef __DEBUG
-void _tg_debug_init(void)	// inits for the debug system
-{
-#ifdef dbCONFIG_DEBUG_ENABLED
-	dbCONFIG_DEBUG_ENABLED = true;
-#else
-	dbCONFIG_DEBUG_ENABLED = false;
-#endif
-}
-#endif
+/*
+ * tg_reset() - software hard reset using watchdog timer
+ */
 
+void tg_reset(void)			// software hard reset using the watchdog timer
+{
+	wdt_enable(WDTO_15MS);
+	while (true);			// loops for about 15ms then resets
+}
+
+/*
+ * _unit_tests() - uncomment __UNITS... line in .h files to enable unit tests
+ */
+
+static void _unit_tests(void) 
+{
+	XIO_UNITS;				// conditional unit tests for xio sub-system
+//	EEPROM_UNITS;			// if you want this you must include the .h file in this file
+	CONFIG_UNITS;
+	JSON_UNITS;
+	GPIO_UNITS;
+	REPORT_UNITS;
+	PLANNER_UNITS;
+	PWM_UNITS;
+}

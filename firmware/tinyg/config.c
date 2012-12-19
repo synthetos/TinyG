@@ -1409,7 +1409,7 @@ void cmd_persist(cmdObj *cmd)
 }
 
 /****************************************************************************
- * cfg_init() - called once on system init
+ * cfg_init() - called once on hard reset
  *
  * Will perform one of 2 actions:
  *	(1) if NVM is set up or out-of-rev: load RAM and NVM with hardwired default settings
@@ -1418,9 +1418,12 @@ void cmd_persist(cmdObj *cmd)
 
 void cfg_init()
 {
+// You can assume all memory has been zeroed by a hard reset. If not, use this code:
+//	memset(&cfg, 0, sizeof(cfg));
+
 	cmdObj cmd;
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
-	cmd_clear_list();				// setup the cmd object lists. Do this first.
+	cmd_new_list();					// setup the cmd object lists. Do this first.
 	cfg.comm_mode = TG_JSON_MODE;	// initial value until EEPROM is read
 	cfg.nvm_base_addr = NVM_BASE_ADDR;
 	cfg.nvm_profile_base = cfg.nvm_base_addr;
@@ -1513,7 +1516,7 @@ static uint8_t _text_parser(char *str, cmdObj *cmd)
 	char separators[] = {" =:|\t"};			// any separator someone might use
 
 	// string pre-processing
-	cmd_clear_obj(cmd);						// initialize config object
+	cmd_new_obj(cmd);						// initialize config object
 	if (*str == '$') str++;					// ignore leading $
 	for (ptr_rd = ptr_wr = str; *ptr_rd!=NUL; ptr_rd++, ptr_wr++) {
 		*ptr_wr = tolower(*ptr_rd);			// convert string to lower case
@@ -1732,7 +1735,7 @@ static int8_t _get_pos_axis(const INDEX_T i)
 /****************************************************************************
  * Exposed cmdObj helper functions and other low-level cmd helpers
  * cmd_get_max_index()	 - utility function to return index array size				
- * cmd_clear_obj() 	 	 - quick clear for a cmd object
+ * cmd_new_obj() 	 	 - quick clear for a new cmd object
  * cmd_get_cmdObj() 	 - setup a cmd object by providing the index
  * cmd_get_index() 		 - get index from mnenonic token + group
  * cmd_get_type()		 - returns command type as a CMD_TYPE enum
@@ -1745,7 +1748,7 @@ static int8_t _get_pos_axis(const INDEX_T i)
 
 //INDEX_T cmd_get_max_index() { return (CMD_INDEX_MAX);}
 
-cmdObj *cmd_clear_obj(cmdObj *cmd)			// clear a single cmdObj structure
+cmdObj *cmd_new_obj(cmdObj *cmd)			// clear a single cmdObj structure
 {
 	cmd->type = TYPE_EMPTY;					// much faster than calling memset
 	cmd->index = 0;
@@ -1768,7 +1771,7 @@ void cmd_get_cmdObj(cmdObj *cmd)
 {
 	if (cmd->index >= CMD_INDEX_MAX) return;
 	INDEX_T tmp = cmd->index;
-	cmd_clear_obj(cmd);
+	cmd_new_obj(cmd);
 	cmd->index = tmp;
 
 	strcpy_P(cmd->group, cfgArray[cmd->index].group); // group field is always terminated
@@ -1992,8 +1995,8 @@ static uint8_t _do_all(cmdObj *cmd)		// print all parameters
 /********************************************************************************
  ***** cmdObj list initialization and manipulation ******************************
  ********************************************************************************
- * cmd_clear_list()	 - clear entire header, body and footer
- * cmd_clear_body()	 - clear body 
+ * cmd_new_list()	 - clear entire header, body and footer for a new use
+ * cmd_new_body()	 - clear the body for a new use 
  * cmd_add_object()	 - write contents of parameter to  first free object in the body
  * cmd_add_string()	 - add a string object to end of cmd body
  * cmd_add_integer() - add an integer value to end of cmd body (Note 1)
@@ -2004,7 +2007,7 @@ static uint8_t _do_all(cmdObj *cmd)		// print all parameters
  *	integer as a string if all you want to do is display it.
  */
 
-void cmd_clear_list()						// clear the header, response body and footer
+void cmd_new_list()						// clear the header, response body and footer
 {
 	// setup header ("r" parent)
 	cmdObj *cmd = cmd_header;
@@ -2017,7 +2020,7 @@ void cmd_clear_list()						// clear the header, response body and footer
 	cmd++;
 
 	// setup body
-	cmd_clear_body(cmd_body);
+	cmd_new_body(cmd_body);
 
 	// setup footer
 	cmd = cmd_footer;
@@ -2034,7 +2037,7 @@ void cmd_clear_list()						// clear the header, response body and footer
 	return;
 }
 
-void cmd_clear_body(cmdObj *cmd)			// clear the body list
+void cmd_new_body(cmdObj *cmd)			// clear the body list
 {
 	// setup body elements
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
@@ -2143,7 +2146,7 @@ void cmd_print_list(uint8_t status, uint8_t textmode)
 			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted();}
 		}
 	}
-	cmd_clear_body(cmd_body);		// clear the cmd body to get ready for the next use
+	cmd_new_body(cmd_body);		// clear the cmd body to get ready for the next use
 }
 
 void _print_text_inline_pairs()

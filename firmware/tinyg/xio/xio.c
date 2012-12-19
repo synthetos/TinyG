@@ -4,26 +4,20 @@
  *
  * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * TinyG is free software: you can redistribute it and/or modify it under the terms of the 
+ * GNU General Public License as published by the Free Software Foundation, either version 3 
+ * of the License, or (at your option) any later version.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
+ * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without 
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+ * GNU General Public License for details. You should have received a copy of the GNU General 
+ * Public License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING 
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* ----- XIO - Xmega Device System ----
  *
@@ -48,18 +42,15 @@
  *		- Arduino connection (derived from USART)
  *		- Program memory "files" (read only)
  *		- EEPROM "files" (limited read/write capabilities)
- *		- GPIO ports
  *		- (other devices will be added as needed)
  *	- Stdio FILE streams are managed as bindings to the above devices
  *	- Additional functions provided include:
  *		- open file (initialize address and other parameters)
  *		- gets (non-blocking input line reader - extends fgets)
- *		- ctl (ioctl-like knockoff for setting device parameters)
- *		- signal handling - captures ^c, pause, resume, etc. as interrupts
+ *		- control (ioctl-like knockoff for setting device parameters)
+ *		- signal handling: interrupt on: feedhold, cycle_start, ctrl-x software reset
  *		- interrupt buffered RX and TX functions 
- *		- XON/XOFF software flow control implemented
- *
- *	For further notes see the end of xio.h
+ *		- XON/XOFF software flow control
  */
 
 #include <string.h>					// for memset()
@@ -91,8 +82,6 @@ void xio_init()
 	xio_init_rs485();
 	xio_init_usb();
 	xio_init_pgm();						// program memory file device
-//	xio_init_eep();						// EEPROM memory file device
-//	xio_init_ram();						// RAM memory file device
 }
 
 /*

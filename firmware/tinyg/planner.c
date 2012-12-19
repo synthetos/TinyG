@@ -265,8 +265,10 @@ static void _dump_plan_buffer(mpBuf *bf);
 
 void mp_init()
 {
-	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
-	memset(&mm, 0, sizeof(mm));	// clear all values, pointers and status
+// You can assume all memory has been zeroed by a hard reset. If not, use this code:
+//	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
+//	memset(&mm, 0, sizeof(mm));	// clear all values, pointers and status
+
 	_init_buffers();
 }
  
@@ -283,31 +285,6 @@ uint8_t mp_isbusy()
 		return (true);
 	}
 	return (false);
-}
-
-/* 
- * mp_get_ms_in_queue() - get milliseconds of execution in planning queue
- * mp_decr_ms_in_queue() - decrement ms in queue value by some amount
- */
-
-void mp_get_ms_in_queue()
-{
-	mpBuf *bf = mb.r;
-	mpBuf *bp = bf;
-	mm.ms_in_queue = 0;
-
-	// do the planning queue
-	do {
-		mm.ms_in_queue += bf->time;
-	} while ((bp = _get_prev_buffer(bp)) != bf);
-
-	// does not account for the runtime queue
-	mm.ms_in_queue *= 60000;	// convert minutes to ms.
-}
-
-void mp_decr_ms_in_queue(double ms)
-{
-	mm.ms_in_queue -= ms;
 }
 
 /* 

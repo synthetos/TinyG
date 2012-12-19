@@ -262,55 +262,56 @@ enum cmHomingState {				// applies to cm.homing_state
  * MotionMode persists across blocks (as G modal group 1)
  */
 
-enum cmNextAction {					// these are in order to optimized CASE statement
-	NEXT_ACTION_DEFAULT = 0,		// Must be zero (invokes motion modes)
-	NEXT_ACTION_GO_HOME,			// G28
-	NEXT_ACTION_SEARCH_HOME,		// G28.1 homing cycle
-	NEXT_ACTION_SET_COORD_DATA,		// G10
-	NEXT_ACTION_SET_ORIGIN_OFFSETS,	// G92
-	NEXT_ACTION_RESET_ORIGIN_OFFSETS,// G92.1
+enum cmNextAction {						// these are in order to optimized CASE statement
+	NEXT_ACTION_DEFAULT = 0,			// Must be zero (invokes motion modes)
+	NEXT_ACTION_GO_HOME,				// G28
+	NEXT_ACTION_SEARCH_HOME,			// G28.1 homing cycle
+	NEXT_ACTION_GO_HOME_THROUGH_POINT,	// G30
+	NEXT_ACTION_SET_COORD_DATA,			// G10
+	NEXT_ACTION_SET_ORIGIN_OFFSETS,		// G92
+	NEXT_ACTION_RESET_ORIGIN_OFFSETS,	// G92.1
 	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,	// G92.2
 	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,	// G92.3
 	NEXT_ACTION_SET_MACHINE_ORIGINS,	// G92.4
-	NEXT_ACTION_DWELL,				// G4
-	NEXT_ACTION_STRAIGHT_PROBE		// G38.2
+	NEXT_ACTION_DWELL,					// G4
+	NEXT_ACTION_STRAIGHT_PROBE			// G38.2
 };
 
-enum cmMotionMode {					// G Modal Group 1
-	MOTION_MODE_STRAIGHT_TRAVERSE=0,// G0 - seek
-	MOTION_MODE_STRAIGHT_FEED,		// G1 - feed
-	MOTION_MODE_CW_ARC,				// G2 - arc feed
-	MOTION_MODE_CCW_ARC,			// G3 - arc feed
-	MOTION_MODE_CANCEL_MOTION_MODE,	// G80
-	MOTION_MODE_STRAIGHT_PROBE,		// G38.2
-	MOTION_MODE_CANNED_CYCLE_81,	// G81 - drilling
-	MOTION_MODE_CANNED_CYCLE_82,	// G82 - drilling with dwell
-	MOTION_MODE_CANNED_CYCLE_83,	// G83 - peck drilling
-	MOTION_MODE_CANNED_CYCLE_84,	// G84 - right hand tapping
-	MOTION_MODE_CANNED_CYCLE_85,	// G85 - boring, no dwell, feed out
-	MOTION_MODE_CANNED_CYCLE_86,	// G86 - boring, spindle stop, rapid out
-	MOTION_MODE_CANNED_CYCLE_87,	// G87 - back boring
-	MOTION_MODE_CANNED_CYCLE_88,	// G88 - boring, spindle stop, manual out
-	MOTION_MODE_CANNED_CYCLE_89		// G89 - boring, dwell, feed out
+enum cmMotionMode {						// G Modal Group 1
+	MOTION_MODE_STRAIGHT_TRAVERSE=0,	// G0 - seek
+	MOTION_MODE_STRAIGHT_FEED,			// G1 - feed
+	MOTION_MODE_CW_ARC,					// G2 - arc feed
+	MOTION_MODE_CCW_ARC,				// G3 - arc feed
+	MOTION_MODE_CANCEL_MOTION_MODE,		// G80
+	MOTION_MODE_STRAIGHT_PROBE,			// G38.2
+	MOTION_MODE_CANNED_CYCLE_81,		// G81 - drilling
+	MOTION_MODE_CANNED_CYCLE_82,		// G82 - drilling with dwell
+	MOTION_MODE_CANNED_CYCLE_83,		// G83 - peck drilling
+	MOTION_MODE_CANNED_CYCLE_84,		// G84 - right hand tapping
+	MOTION_MODE_CANNED_CYCLE_85,		// G85 - boring, no dwell, feed out
+	MOTION_MODE_CANNED_CYCLE_86,		// G86 - boring, spindle stop, rapid out
+	MOTION_MODE_CANNED_CYCLE_87,		// G87 - back boring
+	MOTION_MODE_CANNED_CYCLE_88,		// G88 - boring, spindle stop, manual out
+	MOTION_MODE_CANNED_CYCLE_89			// G89 - boring, dwell, feed out
 };
 
-enum cmModalGroup {					// Used for detecting gcode errors. See NIST section 3.4
-	MODAL_GROUP_G0 = 0, 			// {G10,G28,G28.1,G92} 	non-modal axis commands (note 1)
-	MODAL_GROUP_G1,					// {G0,G1,G2,G3,G80}	motion
-	MODAL_GROUP_G2,					// {G17,G18,G19}		plane selection
-	MODAL_GROUP_G3,					// {G90,G91}			distance mode
-	MODAL_GROUP_G5,					// {G93,G94}			feed rate mode
-	MODAL_GROUP_G6,					// {G20,G21}			units
-	MODAL_GROUP_G7,					// {G40,G41,G42}		cutter radius compensation
-	MODAL_GROUP_G8,					// {G43,G49}			tool length offset
-	MODAL_GROUP_G9,					// {G98,G99}			return mode in canned cycles
-	MODAL_GROUP_G12,				// {G54,G55,G56,G57,G58,G59} coordinate system selection
-	MODAL_GROUP_G13,				// {G61,G61.1,G64}		path control mode
-	MODAL_GROUP_M4,					// {M0,M1,M2,M30,M60}	stopping
-	MODAL_GROUP_M6,					// {M6}					tool change
-	MODAL_GROUP_M7,					// {M3,M4,M5}			spindle turning
-	MODAL_GROUP_M8,					// {M7,M8,M9}			coolant (M7 & M8 may be active together)
-	MODAL_GROUP_M9					// {M48,M49}			speed/feed override switches
+enum cmModalGroup {						// Used for detecting gcode errors. See NIST section 3.4
+	MODAL_GROUP_G0 = 0, 				// {G10,G28,G28.1,G92} 	non-modal axis commands (note 1)
+	MODAL_GROUP_G1,						// {G0,G1,G2,G3,G80}	motion
+	MODAL_GROUP_G2,						// {G17,G18,G19}		plane selection
+	MODAL_GROUP_G3,						// {G90,G91}			distance mode
+	MODAL_GROUP_G5,						// {G93,G94}			feed rate mode
+	MODAL_GROUP_G6,						// {G20,G21}			units
+	MODAL_GROUP_G7,						// {G40,G41,G42}		cutter radius compensation
+	MODAL_GROUP_G8,						// {G43,G49}			tool length offset
+	MODAL_GROUP_G9,						// {G98,G99}			return mode in canned cycles
+	MODAL_GROUP_G12,					// {G54,G55,G56,G57,G58,G59} coordinate system selection
+	MODAL_GROUP_G13,					// {G61,G61.1,G64}		path control mode
+	MODAL_GROUP_M4,						// {M0,M1,M2,M30,M60}	stopping
+	MODAL_GROUP_M6,						// {M6}					tool change
+	MODAL_GROUP_M7,						// {M3,M4,M5}			spindle turning
+	MODAL_GROUP_M8,						// {M7,M8,M9}			coolant (M7 & M8 may be active together)
+	MODAL_GROUP_M9						// {M48,M49}			speed/feed override switches
 };
 #define MODAL_GROUP_COUNT (MODAL_GROUP_M9+1)
 // Note 1: Our G0 omits G4,G30,G53,G92.1,G92.2,G92.3 as these have no axis components to error check

@@ -33,7 +33,7 @@
 
 /* Note: See system.h for spindle port assignments and bit positions */
 
-void cm_spindle_init();
+void sp_init();
 uint8_t cm_spindle_control(uint8_t spindle_mode);
 void cm_exec_spindle_control(uint8_t spindle_mode);
 uint8_t cm_set_spindle_speed(double speed);

@@ -40,16 +40,15 @@ static void _exec_spindle_control(uint8_t spindle_mode, double f);
 static void _exec_spindle_speed(uint8_t i, double speed);
 
 /* 
- * cm_spindle_init()
+ * sp_init()
  */
-void cm_spindle_init()
+void sp_init()
 {
     if( cfg.p.frequency < 0 )
         cfg.p.frequency = 0;
     
     pwm_set_freq(PWM_1, cfg.p.frequency);
     pwm_set_duty(PWM_1, cfg.p.phase_off);
-	return;
 }
 
 /*

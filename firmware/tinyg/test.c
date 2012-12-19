@@ -93,7 +93,7 @@ uint8_t tg_test(cmdObj *cmd)
 }
 
 /*
- * _canned_startup() - run a string on startup
+ * tg_canned_startup() - run a string on startup
  *
  *	Pre-load the USB RX (input) buffer with some test strings that will be called 
  *	on startup. Be mindful of the char limit on the read buffer (RX_BUFFER_SIZE).
