@@ -359,8 +359,8 @@ char *tg_get_status_message(uint8_t status, char *msg)
  */
 static const char prompt_mm[] PROGMEM = "mm";
 static const char prompt_in[] PROGMEM = "inch";
-static const char prompt_ok[] PROGMEM = 	"tinyg [%S] ok> ";
-static const char prompt_err[] PROGMEM = 	"tinyg [%S] error: %S %s\n";
+static const char prompt_ok[] PROGMEM = "tinyg [%S] ok> ";
+static const char prompt_err[] PROGMEM = "tinyg [%S] error: %S %s\n";
 
 static void _text_response(const uint8_t status, const char *buf)
 {

@@ -185,14 +185,21 @@ static struct qrIndexes qr = { 0,0,0 };		// init to zeros
 
 void rpt_request_queue_report() 
 { 
-	if (cfg.enable_qr != true) { return;}
+	if (cfg.enable_qr == QR_OFF) return;
+
 	qr.buffers_available = mp_get_planner_buffers_available();
+
+	if (cfg.enable_qr == QR_FILTERED) {
+		if ((qr.buffers_available > cfg.qr_lo_water) && (qr.buffers_available < cfg.qr_hi_water)) {
+			return;
+		}
+	}
 	qr.request = true;
 }
 
 uint8_t rpt_queue_report_callback()
 {
-	if ((cfg.enable_qr == false) || (qr.request == false)) { return (TG_NOOP);}
+	if (qr.request == false) { return (TG_NOOP);}
 	qr.request = false;
 
 	cmdObj *cmd = cmd_body;
