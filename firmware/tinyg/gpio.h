@@ -39,7 +39,7 @@
 //#define GPIO1_INTLVL (PORT_INT0LVL_LO_gc|PORT_INT1LVL_LO_gc)	// shouldn;t be low
 
 // port assignments for vectors
-#define X_MIN_ISR_vect PORTA_INT0_vect		// these line up with the gpoi assignments in system.h
+#define X_MIN_ISR_vect PORTA_INT0_vect	// these must line up with the SWITCH assignments in system.h
 #define Y_MIN_ISR_vect PORTD_INT0_vect
 #define Z_MIN_ISR_vect PORTE_INT0_vect
 #define A_MIN_ISR_vect PORTF_INT0_vect
@@ -83,15 +83,6 @@ enum swNums {	 			// indexes into switch arrays
 #define SW_MODE_HOMING_LIMIT (SW_HOMING | SW_LIMIT)	// homing and limits
 #define SW_MODE_MAX_VALUE SW_MODE_LIMIT
 
-/*
-enum swMode {				// switch operation modes
-	SW_MODE_DISABLED = 0,	// disabled for all operations
-	SW_MODE_HOMING,			// enable switch for homing only
-	SW_MODE_HOMING_LIMIT,	// enable switch for homing and limits
-	SW_MODE_LIMIT			// enable switch for limits only
-};
-*/
-
 enum swType {
 	SW_TYPE_NORMALLY_OPEN = 0,
 	SW_TYPE_NORMALLY_CLOSED
@@ -100,6 +91,7 @@ enum swType {
 struct swStruct {						// switch state
 	uint8_t switch_type;				// 0=NO, 1=NC - applies to all switches
 	volatile uint8_t thrown;			// 1=thrown (Note 1)
+	volatile uint8_t limit_thrown;		// 1= limit switch thrown - do a lockout
 	volatile uint8_t lockout_count;		// switch lockout counter (debouncing)
 	volatile uint8_t flag[NUM_SWITCHES];// switch flag array
 	volatile uint8_t mode[NUM_SWITCHES];// 0=disabled, 1=homing, 2=homing+limit, 3=limit
@@ -110,6 +102,7 @@ struct swStruct sw;
 //		   or normally-closed. "Thrown" means activated or hit.
 
 void gpio_init(void);
+void gpio_out_map(double hw_version);
 void gpio_switch_timer_callback(void);
 void gpio_clear_switches(void);
 void gpio_reset_lockout(void);
@@ -124,8 +117,8 @@ void gpio_led_on(uint8_t led);
 void gpio_led_off(uint8_t led);
 void gpio_set_bit_on(uint8_t b);
 void gpio_set_bit_off(uint8_t b);
-void gpio_write_port(uint8_t b);
-void gpio_toggle_port(uint8_t b);
+//void gpio_write_port(uint8_t b);
+//void gpio_toggle_port(uint8_t b);
 
 //void sw_show_switch(void);
 

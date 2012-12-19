@@ -9,6 +9,8 @@ const char PROGMEM test_rotary[] = "\
 (MSG**** Rotary Axis Motion Test [v1] ****)\n\
 g00g17g21g40g49g80g90\n\
 g0x0y0z0a0b0c0\n\
+g55\n\
+g28\n\
 f36000\n\
 g0a360\n\
 b360\n\
@@ -24,10 +26,12 @@ b0\n\
 c0\n\
 g1a1440b720c360\n\
 x0y0z0a0b0c0\n\
-g1x100a1440b720c360\n\
+g1x60a1440b720c360\n\
 x0y0z0a0b0c0\n\
-g1x100y50a1440b720c360\n\
+g1x60y50a1440b720c360\n\
 x0y0z0a0b0c0\n\
-g1x100y50x25a1440b720c360\n\
+g1x60y50x25a1440b720c360\n\
 x0y0z0a0b0c0\n\
+g54\n\
+g28\n\
 m30";

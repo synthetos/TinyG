@@ -30,12 +30,6 @@
 
 #include <stdio.h>					// needed for FILE def'n
 
-enum tgCommunicationsMode {
-	TG_TEXT_MODE = 0,				// default
-	TG_JSON_MODE
-//	TG_GRBL_MODE
-};
-
 #define TG_FLAG_PROMPTS_bm (1<<0)	// prompt enabled if set
 #define INPUT_BUFFER_LEN 255		// text buffer size (255 max)
 #define OUTPUT_BUFFER_LEN 255		// text buffer size (255 max)
@@ -43,13 +37,15 @@ enum tgCommunicationsMode {
 #define APPLICATION_MESSAGE_LEN 64	// application message string storage allocation
 
 struct controllerSingleton {		// main TG controller struct
-	double version;					// tinyg version number
-	double build;					// tinyg build number
+//	double version;					// tinyg version number
+//	double build;					// tinyg build number
 	double null;					// dumping ground for items with no target
 	uint8_t test;
 	uint8_t src;					// active source device
 	uint8_t default_src;			// default source device
 	uint8_t linelen;				// length of currently processing line
+	uint8_t led_state;				// 0=off, 1=on
+	int32_t led_counter;			// a convenience for flashing an LED
 	char in_buf[INPUT_BUFFER_LEN];	// input text buffer
 	char out_buf[OUTPUT_BUFFER_LEN];// output text buffer
 };
@@ -63,7 +59,6 @@ void tg_set_active_source(uint8_t dev);
 void tg_reset_source(void);
 char *tg_get_status_message(uint8_t status, char *msg);
 void tg_print_message(char *msg);
-//void tg_print_message_number(uint8_t msgnum);
 void tg_print_loading_configs_message(void);
 void tg_print_initializing_message(void);
 void tg_print_system_ready_message(void);

@@ -34,7 +34,6 @@
  * Global Scope Functions
  */
 
-void gc_init(void);
 uint8_t gc_gcode_parser(char *block);
 
 #endif

@@ -12,4 +12,11 @@ y0";
 
 const char PROGMEM test_slow_moves[] = "\
 (MSG**** Test accuracy of slow moves [v1] ****)\n\
-g1z-5f22";
+g55\n\
+g28\n\
+g4p0.5\n\
+g4p0.5\n\
+g1x10f22\n\
+g54\n\
+g28\n\
+m30";

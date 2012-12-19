@@ -66,14 +66,6 @@ void roll_over_and_die(void);
 void print_scalar(const char *label, double value);
 void print_vector(const char *label, double vector[], uint8_t length);
 
-#define __dbECHO_GCODE_BLOCK	// echos input to Gcode interpreter	(gcode.c)
-//#define __dbALINE_CALLED		// shows call to mp_aline() 		(planner.c)
-//#define __dbSHOW_QUEUED_LINE	// shows line being queued 			(motor_queue.c)
-//#define __dbSHOW_LIMIT_SWITCH	// shows switch closures 			(limit_switches.c)
-//#define __dbSHOW_CONFIG_STATE	// shows config settings			(config.c)
-//#define __dbCONFIG_DEBUG_ENABLED// enable config.c debug statements
-//#define __dbSHOW_LOAD_MOVE	// shows move being loaded 
-
 // global allocation of debug control variables
 	uint8_t dbECHO_GCODE_BLOCK;
 	uint8_t dbALINE_CALLED;

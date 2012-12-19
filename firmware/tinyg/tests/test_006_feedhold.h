@@ -8,9 +8,13 @@
 const char PROGMEM test_feedhold[] = "\
 (MSG**** Feedhold Test [v1] ****)\n\
 (MSG**** Manually enter ! and ~ during movement to test ****)\n\
+g55\n\
+g28\n\
 g4p3\n\
 g00g17g21g40g49g80g90\n\
 f600\n\
 g0x100v76.765\n\
 x0y0\n\
+g54\n\
+g28\n\
 m30";

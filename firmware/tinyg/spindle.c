@@ -36,32 +36,19 @@
 #include "config.h"
 #include "pwm.h"
 
+static void _exec_spindle_control(uint8_t spindle_mode, double f);
+static void _exec_spindle_speed(uint8_t i, double speed);
+
 /* 
- * cm_spindle_init()
+ * sp_init()
  */
-void cm_spindle_init()
+void sp_init()
 {
     if( cfg.p.frequency < 0 )
         cfg.p.frequency = 0;
     
     pwm_set_freq(PWM_1, cfg.p.frequency);
     pwm_set_duty(PWM_1, cfg.p.phase_off);
-	return;
-}
-
-/*
- * cm_spindle_control() -  queue the spindle command to the planner buffer
- */
-uint8_t cm_spindle_control(uint8_t spindle_mode)
-{
-	if (spindle_mode == SPINDLE_CW) {
-		mp_sync_mcode(SYNC_SPINDLE_CW);
-	} else if (spindle_mode == SPINDLE_CCW) {
-		mp_sync_mcode(SYNC_SPINDLE_CCW);
-	} else {
-		mp_sync_mcode(SYNC_SPINDLE_OFF);	// failsafe operation
-	}
-	return(TG_OK);
 }
 
 /*
@@ -96,9 +83,16 @@ double cm_get_spindle_pwm( uint8_t spindle_mode )
 }
 
 /*
+ * cm_spindle_control() -  queue the spindle command to the planner buffer
  * cm_exec_spindle_control() - execute the spindle command (called from planner)
  */
-void cm_exec_spindle_control(uint8_t spindle_mode)
+
+uint8_t cm_spindle_control(uint8_t spindle_mode)
+{
+	mp_queue_command(_exec_spindle_control, spindle_mode, 0);
+	return(TG_OK);
+}
+static void _exec_spindle_control(uint8_t spindle_mode, double f)
 {
 	cm_set_spindle_mode(spindle_mode);
  	if (spindle_mode == SPINDLE_CW) {
@@ -124,18 +118,22 @@ uint8_t cm_set_spindle_speed(double speed)
 //	if (speed > cfg.max_spindle speed) {
 //		return (TG_MAX_SPINDLE_SPEED_EXCEEDED);
 //	}
-	cm_set_spindle_speed_parameter(speed);
+	mp_queue_command(_exec_spindle_speed, 0, speed);
+    	return (TG_OK);
+}
+static void _exec_spindle_speed(uint8_t i, double speed)
+{
+//	cm_set_spindle_speed_parameter(speed);
     
     // update spindle speed if we're running
     pwm_set_duty(PWM_1, cm_get_spindle_pwm(gm.spindle_mode) );
-    
-	return (TG_OK);
 }
+
 
 /*
  * cm_exec_spindle_speed() - execute the S command (called from the planner buffer)
  */
 void cm_exec_spindle_speed(double speed)
 {
-	// TODO: Link in S commend and calibrations to allow dynamic spindle speed setting 
+	// TODO: Link in S command and calibrations to allow dynamic spindle speed setting 
 }

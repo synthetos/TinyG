@@ -75,7 +75,7 @@ void tg_repeater()
 		} else {
 			xio_putc(XIO_DEV_USB, tx);	// write TX to USB port
 		}	
-		gpio_toggle_port(1);
+//		gpio_toggle_port(1);
 //		_delay_ms(10);
 	}
 }
@@ -97,7 +97,7 @@ void tg_receiver()
 		while ((rx = xio_getc(XIO_DEV_RS485)) == -1);
 //		xio_putc(XIO_DEV_USB, rx);		// write to USB port
 		xio_putc_rs485(rx, fdev_rs485);	// alternate form of above
-		gpio_toggle_port(1);
+//		gpio_toggle_port(1);
 	}
 }
 

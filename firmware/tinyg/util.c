@@ -78,18 +78,7 @@ double get_axis_vector_length(const double a[], const double b[])
 				 square(a[B] - b[B]) +
 				 square(a[C] - b[C])));
 }
-/*
-void set_unit_vector(double unit[], double target[], double position[])
-{
-	double recip_length = 1/get_axis_vector_length(target, position);
-	unit[X] = (target[X] - position[X]) * recip_length;	// the compiler would
-	unit[Y] = (target[Y] - position[Y]) * recip_length; // probably do this
-	unit[Z] = (target[Z] - position[Z]) * recip_length; // for me but what
-	unit[A] = (target[A] - position[A]) * recip_length; // the hey
-	unit[B] = (target[B] - position[B]) * recip_length;
-	unit[C] = (target[C] - position[C]) * recip_length;
-}
-*/
+
 double *set_vector(double x, double y, double z, double a, double b, double c)
 {
 	vector[X] = x;

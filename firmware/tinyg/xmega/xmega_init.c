@@ -30,13 +30,10 @@
  *	- add full interrupt tables and dummy interrupt routine (maybe)
  *	- add crystal oscillator failover
  *	- add watchdog timer functions
- *
  */
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-
-//#include "../system.h"
 
 #include "../tinyg.h"
 #include "../system.h"

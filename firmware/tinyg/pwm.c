@@ -77,6 +77,7 @@ static struct pwmStruct pwm[PWMS];	// array of PWMs (usually 2, see system.h)
  *	Notes: 
  *	  - Whatever level interrupts you use must be enabled in main()
  *	  - init assumes PWM1 output bit (D5) has been set to output previously (stepper.c)
+ *	  - See system.h for timer and port assignments
  */
 void pwm_init()
 {
@@ -89,7 +90,7 @@ void pwm_init()
 	pwm[PWM_1].timer->INTCTRLB = PWM1_INTCTRLB;// set interrupt level	
 
 	// setup PWM channel 2
-	memset(&pwm[PWM_2], 0, sizeof(struct pwmStruct));	// clear all values, pointers and status
+	memset(&pwm[PWM_2], 0, sizeof(struct pwmStruct));			// clear all values, pointers and status
 	memset(&pwm[PWM_2].timer, 0, sizeof(struct PWM_TIMER_TYPE));// zero out the timer registers
 	pwm[PWM_2].timer = &TIMER_PWM2;
 	pwm[PWM_2].ctrla = PWM2_CTRLA_CLKSEL;
@@ -100,6 +101,7 @@ void pwm_init()
 /*
  * ISRs for PWM timers
  */
+
 ISR(PWM1_ISR_vect) 
 {
 	return;
@@ -119,6 +121,7 @@ ISR(PWM2_ISR_vect)
  *	Assumes 32MHz clock.
  *	Doesn't turn time on until duty cycle is set
  */
+
 uint8_t pwm_set_freq(uint8_t chan, double freq)
 {
 	if (chan > PWMS) { return (TG_NO_SUCH_DEVICE);}

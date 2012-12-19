@@ -54,7 +54,7 @@ enum moveState {
 };
 #define MOVE_STATE_RUN1 MOVE_STATE_RUN // a convenience
 
-/***	Most of these factors are the result of a lot of tweaking. Change with caution.***/
+/*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
 /* The following must apply:
  *	  MM_PER_ARC_SEGMENT >= MIN_LINE_LENGTH >= MIN_SEGMENT_LENGTH 
@@ -106,14 +106,14 @@ enum moveState {
  *	Useful macros
  */
 
-//#define MP_LINE(t,m) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m) : mp_line(t,m))
-#define MP_LINE(t,m) (mp_aline(t,m))	// non-planned lines are disabled
+//#define MP_LINE(t,m,o,n) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m,o,n) : mp_line(t,m))
+#define MP_LINE(t,m,o,n) (mp_aline(t,m,o,n))	// non-planned lines are disabled
 
 /*
  * Global Scope Functions
  */
 
-typedef uint8_t (*fptrCallback)(double parameter);	// for planner callbacks
+typedef void (*cm_exec)(uint8_t, double);	// callback to canonical_machine execution function
 
 void mp_init(void);
 
@@ -122,25 +122,26 @@ void mp_flush_planner(void);
 uint8_t mp_get_planner_buffers_available(void);
 double *mp_get_plan_position(double position[]);
 void mp_set_plan_position(const double position[]);
+void mp_set_plan_lineindex(uint32_t lineindex);
 void mp_set_axes_position(const double position[]);
 void mp_set_axis_position(uint8_t axis, const double position);
 
-double mp_get_runtime_position(uint8_t axis);
+double mp_get_runtime_machine_position(uint8_t axis);
+double mp_get_runtime_work_position(uint8_t axis);
 double mp_get_runtime_velocity(void);
 double mp_get_runtime_linenum(void);
 double mp_get_runtime_lineindex(void);
-void mp_set_planner_lineindex(uint32_t lineindex);
 void mp_zero_segment_velocity(void);
 
 uint8_t mp_exec_move(void);
+void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f);
 void mp_sync_mcode(uint8_t mcode);
-void mp_sync_command(uint8_t command, double parameter);
 
 uint8_t mp_plan_hold_callback(void);
 uint8_t mp_end_hold_callback(void);
 uint8_t mp_dwell(const double seconds);
 uint8_t mp_line(const double target[], const double minutes);
-uint8_t mp_aline(const double target[], const double minutes);
+uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time);
 uint8_t mp_go_home_cycle(void);
 
 #ifdef __DEBUG

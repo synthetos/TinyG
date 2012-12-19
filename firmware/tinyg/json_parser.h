@@ -29,12 +29,17 @@
 #ifndef json_parser_h
 #define json_parser_h
 
+/* JSON array definitions / revisions */
+// for now there is only one JSON array in use - the footer
+// if you add these make sure there are no collisions w/present or past numbers
+
+#define JSON_ARRAY_REVISION_FOOTER 1
+
 /*
  * Global Scope Functions
  */
 
-void js_init(void);						// Initialize the parser
-uint8_t js_json_parser(char *str);
+void js_json_parser(char *str);
 uint16_t js_serialize_json(cmdObj *cmd, char *out_buf);
 void js_print_list(uint8_t status);
 

@@ -32,14 +32,15 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
+#define TINYG_BUILD_NUMBER   	354.07		// Working on Planner changes and queue reports
 #define TINYG_VERSION_NUMBER	0.95		// major version
-#define TINYG_BUILD_NUMBER   	352.08		// JSON and text mode checkpoint
-#define TINYG_COMM_PROTOCOL_REV 1			// communications protocol revision is tracked independently
+#define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
 /****** DEVELOPMENT SETTINGS ******/
 
 //#define __CANNED_STARTUP		// run any canned startup moves
 //#define __DISABLE_PERSISTENCE	// disable EEPROM writes for faster simulation
+//#define __SUPPRESS_STARTUP_MESSAGES // what it says
 //#define __DEBUG				// complies debug functions found in test.c
 
 // UNIT_TESTS exist for various modules are can be enabled at the end of their .h files
@@ -73,17 +74,6 @@
  * TinyG application-specific prototypes, defines and globals
  */
 
-void tg_system_reset(void);
-void tg_application_reset(void);
-void tg_application_startup(void);
-
-// Global typedefs Used for accessing func pointers in PROGMEM & others
-typedef void (*fptr_void_uint8)(void);	 	// returns void, unit8_t arg (poll_func)
-typedef char (*fptr_char_void)(void); 		// returns char, void args
-typedef int (*fptr_int_uint8)(uint8_t s);	// returns int, unit8_t arg (signal handler) 
-typedef int (*fptr_int_char_p)(char *b);	// returns int, character pointer (line handler)
-typedef void (*fptr_void_double)(double); 	// returns void, double arg (config bindings)
-
 #define AXES 6					// number of axes supported in this version
 #define MOTORS 4				// number of motors on the board
 #define COORDS 6				// number of supported coordinate systems (1-6)
@@ -97,18 +87,18 @@ typedef void (*fptr_void_double)(double); 	// returns void, double arg (config b
  * Alternate enum is: enum tgAxes { X=0, Y, Z, A, B, C };
  */
 
-#define X		0
-#define Y		1
-#define Z		2
-#define A		3
-#define B		4
-#define C		5
-//#define U 	6				// reserved
-//#define V 	7				// reserved
-//#define W 	8				// reserved
+#define X	0
+#define Y	1
+#define Z	2
+#define A	3
+#define B	4
+#define C	5
+#define U 	6				// reserved
+#define V 	7				// reserved
+#define W 	8				// reserved
 
-#define MOTOR_1	0 				// define motor numbers and array indexes
-#define MOTOR_2	1
+#define MOTOR_1	0 			// define motor numbers and array indexes
+#define MOTOR_2	1			// must be defines. enums don't work
 #define MOTOR_3	2
 #define MOTOR_4	3
 
@@ -130,7 +120,7 @@ typedef void (*fptr_void_double)(double); 	// returns void, double arg (config b
 #define	TG_NOOP 3						// function had no-operation
 #define	TG_COMPLETE 4					// operation is complete
 #define TG_TERMINATE 5					// operation terminated (gracefully)
-#define TG_ABORT 6						// operaation aborted
+#define TG_RESET 6						// operation was hard reset (sig kill)
 #define	TG_EOL 7						// function returned end-of-line
 #define	TG_EOF 8						// function returned end-of-file 
 #define	TG_FILE_NOT_OPEN 9

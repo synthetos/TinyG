@@ -50,7 +50,7 @@ struct gcodeParserSingleton {	 	  // struct to manage globals
 }; struct gcodeParserSingleton gp;
 
 /* local helper functions and macros */
-static void _normalize_gcode_block(char *block);
+static uint8_t _normalize_gcode_block(char *block);
 static uint8_t _parse_gcode_block(char *line);	// Parse the block into structs
 static uint8_t _execute_gcode_block(void);		// Execute the gcode block
 static uint8_t _check_gcode_block(void);		// check the block for correctness
@@ -63,16 +63,6 @@ static uint8_t _point(double value);
 #define SET_NON_MODAL(parm,val) ({gn.parm=val; gf.parm=1; break;})
 #define EXEC_FUNC(f,v) if((uint8_t)gf.v != false) { status = f(gn.v);}
 
-/* 
- * gc_init() 
- */
-
-void gc_init()
-{
-	gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
-	return;
-}
-
 /*
  * gc_gcode_parser() - parse a block (line) of gcode
  *
@@ -81,9 +71,12 @@ void gc_init()
 
 uint8_t gc_gcode_parser(char *block)
 {
-	_normalize_gcode_block(block);			// get block ready for parsing
-	if (block[0] == NUL) return (TG_NOOP); 	// ignore comments (stripped)
-	return(_parse_gcode_block(block));		// parse block & return status
+	uint8_t msg_flag = _normalize_gcode_block(block);	// get block ready for parsing
+	if (block[0] == NUL) {
+		if (msg_flag == true) return (TG_OK);			// queues messages for display
+		return (TG_NOOP); 
+	}
+	return(_parse_gcode_block(block));					// parse block & return status
 }
 
 /*
@@ -116,10 +109,12 @@ uint8_t gc_gcode_parser(char *block)
  *	MSG specifier in comment can have mixed case but cannot cannot have 
  *	embedded white spaces
  *
+ *	Returns true if there was a message to display, false otherwise
+ *
  *	++++ todo: Support leading and trailing spaces around the MSG specifier
  */
 
-static void _normalize_gcode_block(char *block) 
+static uint8_t _normalize_gcode_block(char *block) 
 {
 	char c;
 	char *comment=0;	// comment pointer - first char past opening paren
@@ -128,10 +123,10 @@ static void _normalize_gcode_block(char *block)
 
 	if (block[0] == '/') {					// discard deleted blocks
 		block[0] = NUL;
-		return;
+		return (false);
 	}
 	if (block[0] == '?') {					// trap and return ? command
-		return;
+		return (false);
 	}
 	// normalize the command block & mark the comment(if any)
 	while ((c = toupper(block[i++])) != NUL) {
@@ -163,8 +158,10 @@ static void _normalize_gcode_block(char *block)
 				}
 			}
 			(void)cm_message(comment+3);
+			return (true);
 		}
 	}
+	return (false);
 }
 
 /*
@@ -217,6 +214,14 @@ static uint8_t _parse_gcode_block(char *buf)
 						}
 						break;
 					}
+					case 30: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_GO_HOME_THROUGH_POINT);
+//					case 38: 
+//						switch (_point(value)) {
+//							case 2: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_STRAIGHT_PROBE); 
+//							default: status = TG_UNRECOGNIZED_COMMAND;
+//						}
+//						break;
+//					}
 					case 40: break;	// ignore cancel cutter radius compensation
 					case 49: break;	// ignore cancel tool length offset comp.
 					case 53: SET_NON_MODAL (absolute_override, true);
@@ -244,6 +249,7 @@ static uint8_t _parse_gcode_block(char *buf)
 							case 1: SET_NON_MODAL (next_action, NEXT_ACTION_RESET_ORIGIN_OFFSETS);
 							case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS);
 							case 3: SET_NON_MODAL (next_action, NEXT_ACTION_RESUME_ORIGIN_OFFSETS); 
+							case 4: SET_NON_MODAL (next_action, NEXT_ACTION_SET_MACHINE_ORIGINS);
 							default: status = TG_UNRECOGNIZED_COMMAND;
 						}
 						break;
@@ -366,9 +372,12 @@ static uint8_t _execute_gcode_block()
 
 	switch (gn.next_action) {
 		case NEXT_ACTION_GO_HOME: { status = cm_return_to_home(); break;}
+		case NEXT_ACTION_GO_HOME_THROUGH_POINT: { status = cm_return_to_home_through_point(); break;}
 		case NEXT_ACTION_SEARCH_HOME: { status = cm_homing_cycle_start(); break;}
+//		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_probe_cycle_start(); break;}
 		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(coord_select, gn.target, gf.target); break;}
 
+		case NEXT_ACTION_SET_MACHINE_ORIGINS: { status = cm_set_machine_origins(gn.target, gf.target); break;}
 		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(gn.target, gf.target); break;}
 		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}

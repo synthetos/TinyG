@@ -51,7 +51,7 @@
  *	The switches are considered to be homing switches when machine_state is
  *	MACHINE_HOMING. At all other times they are treated as limit switches:
  *	  - Hitting a homing switch puts the current move into feedhold
- *	  - Hitting a limit switch causes the machine to abort and go into reset
+ *	  - Hitting a limit switch causes the machine to shut down and go into lockdown until reset
  *
  * 	The normally open switch modes (NO) trigger an interrupt on the falling edge 
  *	and lockout subsequent interrupts for the defined lockout period. This approach 
@@ -78,11 +78,11 @@
  * variables and settings 
  */
 											// timer for debouncing switches
-#define SW_LOCKOUT_TICKS 20					// 20=200ms. RTC ticks are ~10ms each
+#define SW_LOCKOUT_TICKS 25					// 25=250ms. RTC ticks are ~10ms each
 
-static uint8_t gpio_port_value;				// global for synthetic port read value
-void _gpio_init_helper(uint8_t swit, uint8_t port);
-static void _switch_isr_helper(uint8_t sw_num);
+//static uint8_t gpio_port_value;			// global for synthetic port read value
+static void _init_helper(uint8_t swit, uint8_t port);
+static void _isr_helper(uint8_t sw_num);
 
 /*
  * gpio_init() - initialize homing/limit switches
@@ -103,20 +103,21 @@ static void _switch_isr_helper(uint8_t sw_num);
 
 void gpio_init(void)
 {
-	_gpio_init_helper(SW_PORT_X, MOTOR_1);
-	_gpio_init_helper(SW_PORT_Y, MOTOR_2);
-	_gpio_init_helper(SW_PORT_Z, MOTOR_3);
-	_gpio_init_helper(SW_PORT_A, MOTOR_4);
+	// Assumes all port directions previously set to 0x3F in st_init()
+	_init_helper(SWITCH_X, MOTOR_1);
+	_init_helper(SWITCH_Y, MOTOR_2);
+	_init_helper(SWITCH_Z, MOTOR_3);
+	_init_helper(SWITCH_A, MOTOR_4);
 	gpio_clear_switches();
 	gpio_reset_lockout();
 }
 
-void _gpio_init_helper(uint8_t swit, uint8_t port)
+static void _init_helper(uint8_t swit, uint8_t port)
 {
+// old code from when switches fired on one edge or the other:
 //	uint8_t int_mode = (sw.switch_type == SW_TYPE_NORMALLY_OPEN) ? PORT_ISC_FALLING_gc : PORT_ISC_RISING_gc;
-//	uint8_t int_mode = PORT_ISC_BOTHEDGES_gc;
 
-	// setup port input bits and interrupts (previously set to inputs by st_init())
+	// setup input bits and interrupts (previously set to inputs by st_init())
 	if (sw.mode[MIN_SWITCH(swit)] != SW_MODE_DISABLED) {
 		device.port[port]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input - see 13.14.14
 		device.port[port]->PIN6CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
@@ -135,34 +136,48 @@ void _gpio_init_helper(uint8_t swit, uint8_t port)
 	device.port[port]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
 }
 
+void gpio_out_map(double hw_version)		// hack to correct for routing differences
+{
+	cfg.outmap[X] = MOTOR_1;
+	cfg.outmap[Y] =	MOTOR_2;
+	if (hw_version >= 6.9) {				// version 7 or above
+		cfg.outmap[Z] =	MOTOR_4;
+		cfg.outmap[A] =	MOTOR_3;
+	} else {
+		cfg.outmap[Z] =	MOTOR_3;
+		cfg.outmap[A] =	MOTOR_4;
+	}	
+}
+
 /*
  * ISRs - Switch interrupt handler routine and vectors
  */
 
-ISR(X_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_X);}
-ISR(Y_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Y);}
-ISR(Z_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Z);}
-ISR(A_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_A);}
-ISR(X_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_X);}
-ISR(Y_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Y);}
-ISR(Z_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Z);}
-ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
+ISR(X_MIN_ISR_vect)	{ _isr_helper(SW_MIN_X);}
+ISR(Y_MIN_ISR_vect)	{ _isr_helper(SW_MIN_Y);}
+ISR(Z_MIN_ISR_vect)	{ _isr_helper(SW_MIN_Z);}
+ISR(A_MIN_ISR_vect)	{ _isr_helper(SW_MIN_A);}
+ISR(X_MAX_ISR_vect)	{ _isr_helper(SW_MAX_X);}
+ISR(Y_MAX_ISR_vect)	{ _isr_helper(SW_MAX_Y);}
+ISR(Z_MAX_ISR_vect)	{ _isr_helper(SW_MAX_Z);}
+ISR(A_MAX_ISR_vect)	{ _isr_helper(SW_MAX_A);}
 
-static void _switch_isr_helper(uint8_t sw_num)
+static void _isr_helper(uint8_t sw_num)
 {
 	if (sw.lockout_count != 0) return;					// exit if you are in a debounce lockout
 
 	if (sw.mode[sw_num] == SW_MODE_DISABLED) return;	// this is not supposed to happen
+
 	sw.lockout_count = SW_LOCKOUT_TICKS;				// start the debounce lockout down-counter
 	sw.flag[sw_num] = true;								// set the flag for this switch
 	sw.thrown = true;									// triggers the switch handler tasks
-	if (cm.cycle_state == CYCLE_HOMING) { 				// initiate a feedhold if in homing cycle
-		sig_feedhold(); 
-		return; 
+
+	if (cm.cycle_state == CYCLE_HOMING) { 				// initiate a feedhold if in homing cycle...
+		sig_feedhold(); 								// ...regardless of homing or limit switch type
+		return;											
 	}
-	if (sw.mode[sw_num] >= SW_MODE_HOMING_LIMIT) {		// signal an abort if limits are enabled
-		sig_abort();
-	} 
+	// must be a limit switch, so fire it.
+	sw.limit_thrown = true;								// triggers an emergency shutdown
 }
 
 /*
@@ -196,14 +211,14 @@ uint8_t gpio_read_switch(uint8_t sw_num)
 
 	uint8_t read = 0;
 	switch (sw_num) {
-		case SW_MIN_X: { read = device.port[SW_PORT_X]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_X: { read = device.port[SW_PORT_X]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Y: { read = device.port[SW_PORT_Y]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Y: { read = device.port[SW_PORT_Y]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Z: { read = device.port[SW_PORT_Z]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Z: { read = device.port[SW_PORT_Z]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_A: { read = device.port[SW_PORT_A]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_A: { read = device.port[SW_PORT_A]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_X: { read = device.port[SWITCH_X]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_X: { read = device.port[SWITCH_X]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Y: { read = device.port[SWITCH_Y]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Y: { read = device.port[SWITCH_Y]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Z: { read = device.port[SWITCH_Z]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Z: { read = device.port[SWITCH_Z]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_A: { read = device.port[SWITCH_A]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_A: { read = device.port[SWITCH_A]->IN & SW_MAX_BIT_bm; break;}
 	}
 	if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
 		return ((read == 0) ? SW_CLOSED : SW_OPEN);		// confusing. An NO switch drives the pin LO when thrown
@@ -219,42 +234,6 @@ void gpio_clear_switches()
 		sw.flag[i] = false; 
 	}
 }
-
-/*
- * gpio_read_switches() - read the switches into the switch flag array
- *
- *	Read the switch states into the switch array as an array of true/false bytes
- *	Read Normally Open switches as active LO, Normally Closed as active HI.
- *	Ignore switches that are disabled.
- *	This function does not care about cycles (e.g. homing), it just reads the switches.
- *	This function is made ugly by the fact that the motor ports and the switch ports 
- *	don't line up. Otherwise it would be possible to run a simple for() loop
- */
-/*
-void gpio_read_switches()
-{
-	uint8_t fix[NUM_SWITCHES];
-	fix[0] = 0x01 & (device.port[SW_PORT_X]->IN >> SW_MIN_BIT_bp);
-	fix[1] = 0x01 & (device.port[SW_PORT_X]->IN >> SW_MAX_BIT_bp);
-	fix[2] = 0x01 & (device.port[SW_PORT_Y]->IN >> SW_MIN_BIT_bp);
-	fix[3] = 0x01 & (device.port[SW_PORT_Y]->IN >> SW_MAX_BIT_bp);
-	fix[4] = 0x01 & (device.port[SW_PORT_Z]->IN >> SW_MIN_BIT_bp);
-	fix[5] = 0x01 & (device.port[SW_PORT_Z]->IN >> SW_MAX_BIT_bp);
-	fix[6] = 0x01 & (device.port[SW_PORT_A]->IN >> SW_MIN_BIT_bp);
-	fix[7] = 0x01 & (device.port[SW_PORT_A]->IN >> SW_MAX_BIT_bp);
-
-	// interpret them as NO or NC closures
-	gpio_clear_switches();						// clear flags and thrown bit
-	for (uint8_t i=0; i<NUM_SWITCHES; i++) {
-		if (sw.mode[i] == SW_MODE_DISABLED) { continue;}
-		if (((sw.switch_type == SW_TYPE_NORMALLY_OPEN) && (fix[i] == 0)) ||
-			((sw.switch_type == SW_TYPE_NORMALLY_CLOSED) && (fix[i] == 1))) {
-			sw.flag[i] = true;
-			sw.thrown = true;
-		}
-	}
-}
-*/
 
 /*
  * gpio_led_on() - turn led on - assumes TinyG LED mapping
@@ -280,83 +259,123 @@ void gpio_led_off(uint8_t led)
 /*
  * gpio_set_bit_on() - turn bit on
  * gpio_set_bit_off() - turn bit on
+ *
+ *	These functions have an inner remap depending on what hardware is running
  */
 
 void gpio_set_bit_on(uint8_t b)
 {
-	if (b & 0x01) { PORT_MOTOR_4.OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x02) { PORT_MOTOR_3.OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x04) { PORT_MOTOR_2.OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x08) { PORT_MOTOR_1.OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x08) { device.port[cfg.outmap[X]]->OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x04) { device.port[cfg.outmap[Y]]->OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x02) { device.port[cfg.outmap[Z]]->OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x01) { device.port[cfg.outmap[A]]->OUTSET = GPIO1_OUT_BIT_bm;}
 }
 
 void gpio_set_bit_off(uint8_t b)
 {
-	if (b & 0x01) { PORT_MOTOR_4.OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x02) { PORT_MOTOR_3.OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x04) { PORT_MOTOR_2.OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x08) { PORT_MOTOR_1.OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x08) { device.port[cfg.outmap[X]]->OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x04) { device.port[cfg.outmap[Y]]->OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x02) { device.port[cfg.outmap[Z]]->OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x01) { device.port[cfg.outmap[A]]->OUTCLR = GPIO1_OUT_BIT_bm;}
 }
+
+// DEPRECATED CODE THAT MIGHT STILL BE USEFUL
+/*
+ * gpio_read_switches() - read the switches into the switch flag array
+ *
+ *	Read the switch states into the switch array as an array of true/false bytes
+ *	Read Normally Open switches as active LO, Normally Closed as active HI.
+ *	Ignore switches that are disabled.
+ *	This function does not care about cycles (e.g. homing), it just reads the switches.
+ *	This function is made ugly by the fact that the motor ports and the switch ports 
+ *	don't line up. Otherwise it would be possible to run a simple for() loop
+ */
+/*
+void gpio_read_switches()
+{
+	uint8_t fix[NUM_SWITCHES];
+	fix[0] = 0x01 & (device.port[SWITCH_X]->IN >> SW_MIN_BIT_bp);
+	fix[1] = 0x01 & (device.port[SWITCH_X]->IN >> SW_MAX_BIT_bp);
+	fix[2] = 0x01 & (device.port[SWITCH_Y]->IN >> SW_MIN_BIT_bp);
+	fix[3] = 0x01 & (device.port[SWITCH_Y]->IN >> SW_MAX_BIT_bp);
+	fix[4] = 0x01 & (device.port[SWITCH_Z]->IN >> SW_MIN_BIT_bp);
+	fix[5] = 0x01 & (device.port[SWITCH_Z]->IN >> SW_MAX_BIT_bp);
+	fix[6] = 0x01 & (device.port[SWITCH_A]->IN >> SW_MIN_BIT_bp);
+	fix[7] = 0x01 & (device.port[SWITCH_A]->IN >> SW_MAX_BIT_bp);
+
+	// interpret them as NO or NC closures
+	gpio_clear_switches();						// clear flags and thrown bit
+	for (uint8_t i=0; i<NUM_SWITCHES; i++) {
+		if (sw.mode[i] == SW_MODE_DISABLED) { continue;}
+		if (((sw.switch_type == SW_TYPE_NORMALLY_OPEN) && (fix[i] == 0)) ||
+			((sw.switch_type == SW_TYPE_NORMALLY_CLOSED) && (fix[i] == 1))) {
+			sw.flag[i] = true;
+			sw.thrown = true;
+		}
+	}
+}
+*/
+
 
 /*
  * gpio_write_port() - write lowest 4 bits of a byte to GPIO 1 output port
  *
  * This is a hack to hide the fact that we've scattered the output bits all
- * over the place becuase we have no more contiguous ports left!
+ * over the place because we have no more contiguous ports left!
  */
-
+/*
 void gpio_write_port(uint8_t b)
 {
 	gpio_port_value = b;
 
-	if (b & 0x01) { // b0 is on MOTOR_4 (A axis)
-		PORT_MOTOR_4.OUTSET = GPIO1_OUT_BIT_bm;
-	} else {
-		PORT_MOTOR_4.OUTCLR = GPIO1_OUT_BIT_bm;
-	}
+	// b0 is on OUT_4 (A axis)
+	if (b & 0x01)
+		PORT_OUT_A.OUTSET = GPIO1_OUT_BIT_bm;
+	else
+		PORT_OUT_A.OUTCLR = GPIO1_OUT_BIT_bm;
 
-	if (b & 0x02) { // b1 is on MOTOR_3 (Z axis)
-		PORT_MOTOR_3.OUTSET = GPIO1_OUT_BIT_bm;
-	} else {
-		PORT_MOTOR_3.OUTCLR = GPIO1_OUT_BIT_bm;
-	}
+	// b1 is on OUT_3 (Z axis)
+	if (b & 0x02)
+		PORT_OUT_Z.OUTSET = GPIO1_OUT_BIT_bm;
+	else
+		PORT_OUT_Z.OUTCLR = GPIO1_OUT_BIT_bm;
 
-	if (b & 0x04) { // b2 is on MOTOR_2 (Y axis)
-		PORT_MOTOR_2.OUTSET = GPIO1_OUT_BIT_bm;
-	} else {
-		PORT_MOTOR_2.OUTCLR = GPIO1_OUT_BIT_bm;
-	}
+	// b2 is on OUT_2 (Y axis)
+	if (b & 0x04)
+		PORT_OUT_Y.OUTSET = GPIO1_OUT_BIT_bm;
+	else
+		PORT_OUT_Y.OUTCLR = GPIO1_OUT_BIT_bm;
 
-	if (b & 0x08) { // b3 is on MOTOR_1 (X axis)
-		PORT_MOTOR_1.OUTSET = GPIO1_OUT_BIT_bm;
-	} else {
-		PORT_MOTOR_1.OUTCLR = GPIO1_OUT_BIT_bm;
-	}
+	// b3 is on OUT_1 (X axis)
+	if (b & 0x08)
+		PORT_OUT_X.OUTSET = GPIO1_OUT_BIT_bm;
+	else
+		PORT_OUT_X.OUTCLR = GPIO1_OUT_BIT_bm;
 }
-
+*/
 /*
  * gpio_toggle_port() - toggle lowest 4 bits of a byte to output port
  *
  *	Note: doesn't take transitions from bit_on / bit_off into account
  */
-
+/*
 void gpio_toggle_port(uint8_t b)
 {
 	gpio_port_value ^= b;	// xor the stored port value with b
 	gpio_write_port(gpio_port_value);
 }
-
+*/
 /*
  * _show_switch() - simple display routine
  */
 #ifdef __DEBUG
 void sw_show_switch(void)
 {
-	fprintf_P(stderr, PSTR("Limit Switch Thrown %d %d %d %d   %d %d %d %d\n"), 
-		sw.flag[SW_MIN_X], sw.flag[SW_MAX_X], 
-		sw.flag[SW_MIN_Y], sw.flag[SW_MAX_Y], 
-		sw.flag[SW_MIN_Z], sw.flag[SW_MAX_Z], 
-		sw.flag[SW_MIN_A], sw.flag[SW_MAX_A]);
+	fprintf_P(stderr, PSTR("Limit Switch Thrown %d %d  %d %d   %d %d  %d %d\n"), 
+		sw.flag[MIN_SWITCH(X)], sw.flag[MAX_SWITCH(X)], 
+		sw.flag[MIN_SWITCH(Y)], sw.flag[MAX_SWITCH(Y)], 
+		sw.flag[MIN_SWITCH(Z)], sw.flag[MAX_SWITCH(Z)], 
+		sw.flag[MIN_SWITCH(A)], sw.flag[MAX_SWITCH(A)]);
 }
 #endif
 
@@ -368,7 +387,7 @@ void sw_show_switch(void)
 
 void gpio_unit_tests()
 {
-	_switch_isr_helper(SW_MIN_X, X);
+	_isr_helper(SW_MIN_X, X);
 }
 
 #endif // __UNIT_TEST_GPIO

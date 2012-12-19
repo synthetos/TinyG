@@ -52,6 +52,7 @@
 #include "tests/test_010_rotary.h"	// ABC axes
 #include "tests/test_011_small_moves.h"	// small move test
 #include "tests/test_012_slow_moves.h"	// slow move test
+#include "tests/test_013_coordinate_offsets.h"	// what it says
 #include "tests/test_050_mudflap.h"	// mudflap test - entire drawing
 #include "tests/test_051_braid.h"	// braid test - partial drawing
 
@@ -63,6 +64,8 @@
  */
 uint8_t tg_test(cmdObj *cmd)
 {
+	cfg.comm_mode = TG_TEXT_MODE;	// all tests run in text mode only
+
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (TG_OK);}
 		case 1: { xio_open_pgm(PGMFILE(&test_homing)); break;}
@@ -77,6 +80,7 @@ uint8_t tg_test(cmdObj *cmd)
 		case 10: { xio_open_pgm(PGMFILE(&test_rotary)); break;}
 		case 11: { xio_open_pgm(PGMFILE(&test_small_moves)); break;}
 		case 12: { xio_open_pgm(PGMFILE(&test_slow_moves)); break;}
+		case 13: { xio_open_pgm(PGMFILE(&test_coordinate_offsets)); break;}
 		case 50: { xio_open_pgm(PGMFILE(&test_mudflap)); break;}
 		case 51: { xio_open_pgm(PGMFILE(&test_braid)); break;}
 		default: {
@@ -89,7 +93,7 @@ uint8_t tg_test(cmdObj *cmd)
 }
 
 /*
- * _canned_startup() - run a string on startup
+ * tg_canned_startup() - run a string on startup
  *
  *	Pre-load the USB RX (input) buffer with some test strings that will be called 
  *	on startup. Be mindful of the char limit on the read buffer (RX_BUFFER_SIZE).
@@ -101,12 +105,21 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 	// text parser test cases
 //	xio_queue_RX_string_usb("$\n");				// sys request
+//	xio_queue_RX_string_usb("$n\n");			// ubergroup request
 //	xio_queue_RX_string_usb("$xvm=16,000\n");	// comma skipping
 //	xio_queue_RX_string_usb("$a\n");			// match a group
 //	xio_queue_RX_string_usb("$xabcdefghij\n");	// overrun
 //	xio_queue_RX_string_usb("$x=1\n");			// trying to set a group
 
-//	xio_queue_RX_string_usb("$ted=1\n");
+	xio_queue_RX_string_usb("$hv=6\n");				// set to text mode
+	xio_queue_RX_string_usb("$hv=7\n");				// set to text mode
+//	xio_queue_RX_string_usb("N100 (MSG*** message test with line number and gcode command ***)\n");
+//	xio_queue_RX_string_usb("(MSG*** message test with no line number or gcode command ***)\n");
+//	xio_queue_RX_string_usb("N100\n");			// just the line number
+//	xio_queue_RX_string_usb("N100 g0 x1\n");	// line number and command
+//	xio_queue_RX_string_usb("N100 g0x1 (MSG*** message test with gcode command and line number ***)\n");
+
+//	xio_queue_RX_string_usb("$test=13\n");
 //	xio_queue_RX_string_usb("$$\n");
 //	xio_queue_RX_string_usb("$sys\n");
 //	xio_queue_RX_string_usb("$xvm\n");
@@ -121,7 +134,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"rx\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"x\":20}\n");
 //	xio_queue_RX_string_usb("{\"1\":{\"po\":\"\"}}\n");
-	xio_queue_RX_string_usb("{\"c\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"c\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("{\"baud\":6}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"n20g0x1y1.1\"}\n");
@@ -130,7 +143,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x0\"}\n");
 //	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
-	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("g0x2\n");
 //	xio_queue_RX_string_usb("g92a0\n");
@@ -145,7 +158,6 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$sr\n");
 //	xio_queue_RX_string_usb("$x\n");
 //	xio_queue_RX_string_usb("\n");
-//	xio_queue_RX_string_usb("^\n");		// abort. Must comment in ^ in controller.c dispatcher
 
 //	xio_queue_RX_string_usb("g00xqwrsdfs\n");
 //	xio_queue_RX_string_usb("g0x10\n");
@@ -183,7 +195,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$\n");				// display general group
 //	xio_queue_RX_string_usb("?\n");				// report
 //	Test signals - Note: requires test chars to be enabled
-//	xio_queue_RX_string_usb("^\n");				// abort 
+//	xio_queue_RX_string_usb("^\n");				// reset 
 //	xio_queue_RX_string_usb("!\n");				// feedhold
 //	xio_queue_RX_string_usb("~\n");				// cycle start
 
@@ -241,6 +253,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g4 p0.1\n");
 //	xio_queue_RX_string_usb("g0 x10 y10 z-10\n");
 
+/* G10 coordinate offsets */
+//	xio_queue_RX_string_usb("g10 L2 p2 x10 y11 z12\n");
+
 /* G28 and G30 homing tests */
 //	xio_queue_RX_string_usb("g28.1x0y0z0\n");
 //	xio_queue_RX_string_usb("g28.1x0y0\n");
@@ -274,6 +289,14 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g18\n");			// plane select
 //	xio_queue_RX_string_usb("g10 l2 p4 x20 y20 z-10\n"); // test G10
 
+/* M code tests */
+//	xio_queue_RX_string_usb("m3\n");			// spindle CW
+//	xio_queue_RX_string_usb("m4\n");			// spindle CCW
+//	xio_queue_RX_string_usb("m5\n");			// spindle off
+	xio_queue_RX_string_usb("m7\n");			// mist coolant on
+	xio_queue_RX_string_usb("m8\n");			// flood coolant on
+	xio_queue_RX_string_usb("m9\n");			// all coolant off
+
 /* Feedhold tests */
 // Consider dropping PLANNER_BUFFER_POOL_SIZE down to something like 4 for these tests
 //	xio_queue_RX_string_usb("g0 x3 y4 z5.5\n");
@@ -298,7 +321,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 // If you want to run multi-line cases you need to set RX buffer to 1024 in xio_usart.h
 
 // JSON parser tests
-	xio_queue_RX_string_usb("{\"x\":\"\"}\n");		// retrieve a group
+//	xio_queue_RX_string_usb("{\"x\":\"\"}\n");		// retrieve a group
 //	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sm\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
 
 //	xio_queue_RX_string_usb("{\"gc\":\"g0 x3 y4 z5.5 (comment line)\"}\n");

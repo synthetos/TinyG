@@ -44,7 +44,7 @@ struct canonicalMachineSingleton {	// struct to manage cm globals and cycles
 	uint8_t cycle_start_flag;		// flag to end feedhold
 	uint8_t homing_state;			// homing cycle sub-state machine
 	uint32_t status_report_counter;
-	uint8_t	g10_flag;				// true=write offsets to NVM after stop
+	uint8_t	g10_persist_flag;		// true=write offsets to NVM after stop
 	uint8_t	g30_flag;				// true=complete a G30 move
 }; struct canonicalMachineSingleton cm;
 
@@ -81,7 +81,9 @@ struct GCodeModel {						// Gcode model- meaning depends on context
 	double target[AXES]; 				// XYZABC where the move should go
 	double position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
 	double origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
+	double work_offset[AXES];			// XYZABC work offset to be forwarded to planner
 
+	double min_time;					// minimum time possible for the move given axis constraints
 	double feed_rate; 					// F - normalized to millimeters/minute
 	double inverse_feed_rate; 			// ignored if inverse_feed_rate not active
 	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
@@ -185,7 +187,7 @@ struct GCodeInput gf;					// gcode input flags
  *	MACHINE STATE		CYCLE STATE		MOTION_STATE		COMBINED_STATE (FYI)
  *	-------------		------------	-------------		--------------------
  *	MACHINE_UNINIT		na				na					(U)
- *	MACHINE_RESET		CYCLE_OFF		MOTION_STOP			(ROS) RESET-OFF-STOP
+ *	MACHINE_READY		CYCLE_OFF		MOTION_STOP			(ROS) RESET-OFF-STOP
  *	MACHINE_PROG_STOP	CYCLE_OFF		MOTION_STOP			(SOS) STOP-OFF-STOP
  *	MACHINE_PROG_END	CYCLE_OFF		MOTION_STOP			(EOS) END-OFF-STOP
  *
@@ -205,7 +207,8 @@ struct GCodeInput gf;					// gcode input flags
 // #### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT #### 
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
 	COMBINED_INITIALIZING = 0,		// machine is initializing
-	COMBINED_RESET,					// machine has been reset or aborted
+	COMBINED_READY,					// machine is ready for use
+	COMBINED_SHUTDOWN,				// machine is shut down
 	COMBINED_PROGRAM_STOP,			// program stop or no more blocks
 	COMBINED_PROGRAM_END,			// program end
 	COMBINED_RUN,					// motion is running
@@ -219,10 +222,11 @@ enum cmCombinedState {				// check alignment with messages in config.c / msg_sta
 
 enum cmMachineState {
 	MACHINE_INITIALIZING = 0,		// machine is initializing
-	MACHINE_RESET,					// machine has been reset or aborted
-	MACHINE_CYCLE,					// machine is running (cycling)
+	MACHINE_READY,					// machine is ready for use
+	MACHINE_SHUTDOWN,				// machine is in shutdown state
 	MACHINE_PROGRAM_STOP,			// program stop or no more blocks
 	MACHINE_PROGRAM_END,			// program end
+	MACHINE_CYCLE,					// machine is running (cycling)
 };
 
 enum cmCycleState {
@@ -258,74 +262,59 @@ enum cmHomingState {				// applies to cm.homing_state
  * MotionMode persists across blocks (as G modal group 1)
  */
 
-enum cmNextAction {					// these are in order to optimized CASE statement
-	NEXT_ACTION_DEFAULT = 0,		// Must be zero (invokes motion modes)
-	NEXT_ACTION_GO_HOME,			// G28
-	NEXT_ACTION_SEARCH_HOME,		// G28.1 homing cycle
-	NEXT_ACTION_SET_COORD_DATA,		// G10
-	NEXT_ACTION_SET_ORIGIN_OFFSETS,	// G92
-	NEXT_ACTION_RESET_ORIGIN_OFFSETS,// G92.1
-	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,// G92.2
-	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,// G92.3
-	NEXT_ACTION_DWELL,				// G4
+enum cmNextAction {						// these are in order to optimized CASE statement
+	NEXT_ACTION_DEFAULT = 0,			// Must be zero (invokes motion modes)
+	NEXT_ACTION_GO_HOME,				// G28
+	NEXT_ACTION_SEARCH_HOME,			// G28.1 homing cycle
+	NEXT_ACTION_GO_HOME_THROUGH_POINT,	// G30
+	NEXT_ACTION_SET_COORD_DATA,			// G10
+	NEXT_ACTION_SET_ORIGIN_OFFSETS,		// G92
+	NEXT_ACTION_RESET_ORIGIN_OFFSETS,	// G92.1
+	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,	// G92.2
+	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,	// G92.3
+	NEXT_ACTION_SET_MACHINE_ORIGINS,	// G92.4
+	NEXT_ACTION_DWELL,					// G4
+	NEXT_ACTION_STRAIGHT_PROBE			// G38.2
 };
 
-enum cmMotionMode {					// G Modal Group 1
-	MOTION_MODE_STRAIGHT_TRAVERSE=0,// G0 - seek
-	MOTION_MODE_STRAIGHT_FEED,		// G1 - feed
-	MOTION_MODE_CW_ARC,				// G2 - arc feed
-	MOTION_MODE_CCW_ARC,			// G3 - arc feed
-	MOTION_MODE_CANCEL_MOTION_MODE,	// G80
-	MOTION_MODE_STRAIGHT_PROBE,		// G38.2
-	MOTION_MODE_CANNED_CYCLE_81,	// G81 - drilling
-	MOTION_MODE_CANNED_CYCLE_82,	// G82 - drilling with dwell
-	MOTION_MODE_CANNED_CYCLE_83,	// G83 - peck drilling
-	MOTION_MODE_CANNED_CYCLE_84,	// G84 - right hand tapping
-	MOTION_MODE_CANNED_CYCLE_85,	// G85 - boring, no dwell, feed out
-	MOTION_MODE_CANNED_CYCLE_86,	// G86 - boring, spindle stop, rapid out
-	MOTION_MODE_CANNED_CYCLE_87,	// G87 - back boring
-	MOTION_MODE_CANNED_CYCLE_88,	// G88 - boring, spindle stop, manual out
-	MOTION_MODE_CANNED_CYCLE_89		// G89 - boring, dwell, feed out
+enum cmMotionMode {						// G Modal Group 1
+	MOTION_MODE_STRAIGHT_TRAVERSE=0,	// G0 - seek
+	MOTION_MODE_STRAIGHT_FEED,			// G1 - feed
+	MOTION_MODE_CW_ARC,					// G2 - arc feed
+	MOTION_MODE_CCW_ARC,				// G3 - arc feed
+	MOTION_MODE_CANCEL_MOTION_MODE,		// G80
+	MOTION_MODE_STRAIGHT_PROBE,			// G38.2
+	MOTION_MODE_CANNED_CYCLE_81,		// G81 - drilling
+	MOTION_MODE_CANNED_CYCLE_82,		// G82 - drilling with dwell
+	MOTION_MODE_CANNED_CYCLE_83,		// G83 - peck drilling
+	MOTION_MODE_CANNED_CYCLE_84,		// G84 - right hand tapping
+	MOTION_MODE_CANNED_CYCLE_85,		// G85 - boring, no dwell, feed out
+	MOTION_MODE_CANNED_CYCLE_86,		// G86 - boring, spindle stop, rapid out
+	MOTION_MODE_CANNED_CYCLE_87,		// G87 - back boring
+	MOTION_MODE_CANNED_CYCLE_88,		// G88 - boring, spindle stop, manual out
+	MOTION_MODE_CANNED_CYCLE_89			// G89 - boring, dwell, feed out
 };
 
-enum cmModalGroup {					// Used for detecting gcode errors. See NIST section 3.4
-	MODAL_GROUP_G0 = 0, 			// {G10,G28,G28.1,G92} 	non-modal axis commands (note 1)
-	MODAL_GROUP_G1,					// {G0,G1,G2,G3,G80}	motion
-	MODAL_GROUP_G2,					// {G17,G18,G19}		plane selection
-	MODAL_GROUP_G3,					// {G90,G91}			distance mode
-	MODAL_GROUP_G5,					// {G93,G94}			feed rate mode
-	MODAL_GROUP_G6,					// {G20,G21}			units
-	MODAL_GROUP_G7,					// {G40,G41,G42}		cutter radius compensation
-	MODAL_GROUP_G8,					// {G43,G49}			tool length offset
-	MODAL_GROUP_G9,					// {G98,G99}			return mode in canned cycles
-	MODAL_GROUP_G12,				// {G54,G55,G56,G57,G58,G59} coordinate system selection
-	MODAL_GROUP_G13,				// {G61,G61.1,G64}		path control mode
-	MODAL_GROUP_M4,					// {M0,M1,M2,M30,M60}	stopping
-	MODAL_GROUP_M6,					// {M6}					tool change
-	MODAL_GROUP_M7,					// {M3,M4,M5}			spindle turning
-	MODAL_GROUP_M8,					// {M7,M8,M9}			coolant (M7 & M8 may be active together)
-	MODAL_GROUP_M9					// {M48,M49}			speed/feed override switches
+enum cmModalGroup {						// Used for detecting gcode errors. See NIST section 3.4
+	MODAL_GROUP_G0 = 0, 				// {G10,G28,G28.1,G92} 	non-modal axis commands (note 1)
+	MODAL_GROUP_G1,						// {G0,G1,G2,G3,G80}	motion
+	MODAL_GROUP_G2,						// {G17,G18,G19}		plane selection
+	MODAL_GROUP_G3,						// {G90,G91}			distance mode
+	MODAL_GROUP_G5,						// {G93,G94}			feed rate mode
+	MODAL_GROUP_G6,						// {G20,G21}			units
+	MODAL_GROUP_G7,						// {G40,G41,G42}		cutter radius compensation
+	MODAL_GROUP_G8,						// {G43,G49}			tool length offset
+	MODAL_GROUP_G9,						// {G98,G99}			return mode in canned cycles
+	MODAL_GROUP_G12,					// {G54,G55,G56,G57,G58,G59} coordinate system selection
+	MODAL_GROUP_G13,					// {G61,G61.1,G64}		path control mode
+	MODAL_GROUP_M4,						// {M0,M1,M2,M30,M60}	stopping
+	MODAL_GROUP_M6,						// {M6}					tool change
+	MODAL_GROUP_M7,						// {M3,M4,M5}			spindle turning
+	MODAL_GROUP_M8,						// {M7,M8,M9}			coolant (M7 & M8 may be active together)
+	MODAL_GROUP_M9						// {M48,M49}			speed/feed override switches
 };
 #define MODAL_GROUP_COUNT (MODAL_GROUP_M9+1)
 // Note 1: Our G0 omits G4,G30,G53,G92.1,G92.2,G92.3 as these have no axis components to error check
-
-enum cmSyncCommand {				// M Codes and other synchronized commands
-	SYNC_PROGRAM_STOP = 0,			// M0
-	SYNC_OPTIONAL_STOP,				// M1
-	SYNC_PROGRAM_END,				// M2
-	SYNC_SPINDLE_CW,				// M3			
-	SYNC_SPINDLE_CCW,				// M4
-	SYNC_SPINDLE_OFF,				// M5
-	SYNC_CHANGE_TOOL,				// M6
-	SYNC_MIST_COOLANT_ON,			// M7
-	SYNC_FLOOD_COOLANT_ON,			// M8
-	SYNC_FLOOD_COOLANT_OFF,			// M9 - also turns off mist coolant
-	SYNC_FEED_OVERRIDE_ON,			// M48
-	SYNC_FEED_OVERRIDE_OFF,			// M49
-	SYNC_TOOL_NUMBER,				// T command
-	SYNC_SPINDLE_SPEED				// S command
-};
-#define SYNC_MAX SYNC_SPINDLE_SPEED
 
 enum cmCanonicalPlane {				// canonical plane - translates to:
 									// 		axis_0	axis_1	axis_2
@@ -420,36 +409,40 @@ uint8_t cm_get_hold_state(void);
 uint8_t cm_get_homing_state(void);
 
 uint8_t cm_get_motion_mode(void);
-uint8_t cm_get_select_plane(void);
-uint8_t cm_get_path_control(void);
 uint8_t cm_get_coord_system(void);
 uint8_t cm_get_units_mode(void);
+uint8_t cm_get_select_plane(void);
+uint8_t cm_get_path_control(void);
 uint8_t cm_get_distance_mode(void);
+uint8_t cm_get_inverse_feed_rate_mode(void);
+uint8_t cm_get_spindle_mode(void);
 uint32_t cm_get_model_linenum(void);
-uint32_t cm_get_model_lineindex(void);
+//uint32_t cm_get_model_lineindex(void);
 uint8_t cm_isbusy(void);
 
-void cm_set_tool_number(uint8_t tool);
+void cm_set_absolute_override(uint8_t absolute_override);
 void cm_set_spindle_mode(uint8_t spindle_mode);
 void cm_set_spindle_speed_parameter(double speed);
-void cm_set_absolute_override(uint8_t absolute_override);
+void cm_set_tool_number(uint8_t tool);
 
 //void cm_sync_tool_number(uint8_t tool);
 //void cm_sync_spindle_speed_parameter(double speed);
 
+double cm_get_coord_offset(uint8_t axis);
+double *cm_get_coord_offset_vector(double vector[]);
 double cm_get_model_work_position(uint8_t axis);
 //double *cm_get_model_work_position_vector(double position[]);
 double cm_get_model_canonical_target(uint8_t axis);
-double *cm_get_model_canonical_position_vector(double position[]);
+double *cm_get_model_canonical_position_vector(double vector[]);
 double cm_get_runtime_machine_position(uint8_t axis);
 double cm_get_runtime_work_position(uint8_t axis);
-double cm_get_coord_offset(uint8_t axis);
-void cm_set_gcode_model_endpoint_position(uint8_t status);
 
-double *cm_set_vector(double x, double y, double z, double a, double b, double c);
-void cm_set_target(double target[], double flag[]);
 void cm_set_arc_offset(double i, double j, double k);
 void cm_set_arc_radius(double r);
+void cm_set_target(double target[], double flag[]);
+void cm_set_gcode_model_endpoint_position(uint8_t status);
+
+//double *cm_set_vector(double x, double y, double z, double a, double b, double c);
 //void cm_set_absolute_override(uint8_t absolute_override);
 void cm_set_model_linenum(uint32_t linenum);
 void cm_set_model_lineindex(uint32_t lineindex);
@@ -457,6 +450,7 @@ void cm_incr_model_lineindex(void);
 
 /*--- canonical machining functions ---*/
 void cm_init(void);									// init canonical machine
+void cm_shutdown(void);								// emergency shutdown
 
 //uint8_t cm_set_machine_coords(double offset[]);
 //uint8_t cm_set_machine_zero(void);					// set absolute zero point
@@ -467,11 +461,11 @@ uint8_t cm_set_units_mode(uint8_t mode);			// G20, G21
 uint8_t	cm_set_coord_system(uint8_t coord_system);	// G10 (G54...G59)
 uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[]);
 uint8_t cm_set_distance_mode(uint8_t mode);			// G90, G91
-uint8_t cm_set_origin_offsets(double offset[], double flag[]); 		// G92
+uint8_t cm_set_origin_offsets(double offset[], double flag[]); 	// G92
 uint8_t cm_reset_origin_offsets(void); 				// G92.1
 uint8_t cm_suspend_origin_offsets(void); 			// G92.2
 uint8_t cm_resume_origin_offsets(void); 			// G92.3
-uint8_t cm_get_inverse_feed_rate_mode(void);		// G93,G94
+uint8_t cm_set_machine_origins(double origin[], double flag[]);// G92.4  (special function)
 
 uint8_t cm_straight_traverse(double target[], double flags[]);
 uint8_t cm_set_feed_rate(double feed_rate);			// F parameter
@@ -500,9 +494,9 @@ uint8_t cm_select_tool(uint8_t tool);				// T parameter
 void cm_comment(char *comment);						// comment handler
 void cm_message(char *message);						// msg to console
 
-void cm_exec_cycle_start(void);						// (no Gcode)
-void cm_exec_cycle_end(void); 						// (no Gcode)
-void cm_exec_feedhold(void);						// (no Gcode)
+void cm_cycle_start(void);							// (no Gcode)
+void cm_cycle_end(void); 							// (no Gcode)
+void cm_feedhold(void);								// (no Gcode)
 void cm_program_stop(void);							// M0
 void cm_optional_program_stop(void);				// M1
 void cm_program_end(void);							// M2

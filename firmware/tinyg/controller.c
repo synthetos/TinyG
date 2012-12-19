@@ -53,33 +53,30 @@
 #include "help.h"
 #include "xio/xio.h"
 
+
 #include <util/delay.h>			// debug
 
 // local helpers
 static void _controller_HSM(void);
-static uint8_t _sync_to_tx_buffer(void);
-static uint8_t _sync_to_planner(void);
 static uint8_t _dispatch(void);
-static uint8_t _abort_handler(void);
+static void _text_response(const uint8_t status, const char *buf);
+
+static uint8_t _shutdown_handler(void);
+static uint8_t _reset_handler(void);
 static uint8_t _feedhold_handler(void);
 static uint8_t _cycle_start_handler(void);
-static uint8_t _text_mode_prompt(uint8_t status, char *buf);
+static uint8_t _sync_to_tx_buffer(void);
+static uint8_t _sync_to_planner(void);
 
 /*
  * tg_init() - controller init
- * tg_reset() - application-level reset
- * tg_announce() - announce that TinyG is alive
- * tg_ready() - final part of announcement - syste is ready fo input
- * tg_application_startup() - application start and restart
- *
- *	The controller init is split in two: the actual init, and tg_alive()
- *	which should be issued once the rest of the application is initialized.
  */
 
 void tg_init(uint8_t default_src) 
 {
-	tg.version = TINYG_VERSION_NUMBER;
-	tg.build = TINYG_BUILD_NUMBER;
+	cfg.fw_build = TINYG_BUILD_NUMBER;
+	cfg.fw_version = TINYG_VERSION_NUMBER;
+	cfg.hw_version = TINYG_HARDWARE_VERSION;
 
 	tg.default_src = default_src;
 	xio_set_stdin(tg.default_src);
@@ -88,20 +85,8 @@ void tg_init(uint8_t default_src)
 	tg_set_active_source(tg.default_src);	// set initial active source
 }
 
-void tg_reset(void)
-{
-//	mp_flush_planner();
-//	tg_system_reset();
-	tg_application_reset();
-}
-
-void tg_application_startup(void)
-{
-	tg_canned_startup();			// pre-load input buffers (for test)
-}
-
 /* 
- * tg_controller() - top-level controller
+ * tg_controller() - MAIN LOOP - top-level controller
  *
  * The order of the dispatched tasks is very important. 
  * Tasks are ordered by increasing dependency (blocking hierarchy).
@@ -121,6 +106,7 @@ void tg_application_startup(void)
  * Useful reference on state machines:
  * http://johnsantic.com/comp/state.html, "Writing Efficient State Machines in C"
  */
+
 void tg_controller() 
 { 
 	while (true) { 
@@ -132,9 +118,11 @@ void tg_controller()
 static void _controller_HSM()
 {
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
-	DISPATCH(_abort_handler());				// abort signal
-	DISPATCH(_feedhold_handler());			// feedhold signal
-	DISPATCH(_cycle_start_handler());		// cycle start signal
+											// Order is important:
+	DISPATCH(_reset_handler());				// 1. reset signal
+	DISPATCH(_shutdown_handler());			// 2. limit switch has been thrown
+	DISPATCH(_feedhold_handler());			// 3. feedhold signal
+	DISPATCH(_cycle_start_handler());		// 4. cycle start signal
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report
@@ -152,75 +140,47 @@ static void _controller_HSM()
 	DISPATCH(_dispatch());					// read and execute next command
 }
 
-/**** Signal handlers ****
- * _abort_handler()
- * _feedhold_handler()
- * _cycle_start_handler()
- */
-
-static uint8_t _abort_handler(void)
-{
-	if (sig.sig_abort == false) { return (TG_NOOP);}
-	sig.sig_abort = false;
-	tg_reset();							// stop all activity and reset
-	return (TG_EAGAIN);					// best to restart the control loop
-}
-
-static uint8_t _feedhold_handler(void)
-{
-	if (sig.sig_feedhold == false) { return (TG_NOOP);}
-	sig.sig_feedhold = false;
-	cm_exec_feedhold();
-	return (TG_EAGAIN);
-}
-
-static uint8_t _cycle_start_handler(void)
-{
-	if (sig.sig_cycle_start == false) { return (TG_NOOP);}
-	sig.sig_cycle_start = false;
-	cm_exec_cycle_start();
-	return (TG_EAGAIN);
-}
-
-/**** Sync routines ****
- * _sync_to_tx_buffer() - return eagain if TX queue is backed up
- * _sync_to_planner() - return eagain if planner is not ready for a new command
- */
-
-static uint8_t _sync_to_tx_buffer()
-{
-	if ((xio_get_tx_bufcount_usart(ds[XIO_DEV_USB].x) >= XOFF_TX_LO_WATER_MARK)) {
-		return (TG_EAGAIN);
-	}
-	return (TG_OK);
-}
-
-static uint8_t _sync_to_planner()
-{
-	if (mp_get_planner_buffers_available() == 0) { 
-		return (TG_EAGAIN);
-	}
-	return (TG_OK);
-}
-
-/**** Input source controls ****
- * tg_reset_source() - reset source to default input device (see note)
- * tg_set_active_source() - set current input source
+/*
+ * _shutdown_handler()
  *
- * Note: Once multiple serial devices are supported reset_source() should
- *	be expanded to also set the stdout/stderr console device so the prompt
- *	and other messages are sent to the active device.
+ *	Shutdown is triggered by an active limit switch firing. This causes the 
+ *	canonical machine to run the shutdown functions and set the machine state 
+ *	to MACHINE_SHUTDOWN.
+ *
+ *	Once shutdown occurs the only thing this handler does is blink an LED 
+ *	(spindle CW/CCW LED). The system can only be cleared by performing a reset.
+ *
+ *	This function returns EAGAIN causing the control loop to never advance beyond
+ *	this point. It's important that the reset handler is still called so a SW reset
+ *	(ctrl-x) can be processed.
  */
 
-void tg_reset_source()
+#define LED_COUNTER 100000
+
+static uint8_t _shutdown_handler(void)
 {
-	tg_set_active_source(tg.default_src);
+	if (sw.limit_thrown == false) return (TG_NOOP);
+
+	// first time through perform the shutdown
+	if (cm_get_machine_state() != MACHINE_SHUTDOWN) {
+		cm_shutdown();
+
+	// after that just flash the LED
+	} else {
+		if (--tg.led_counter < 0) {
+			tg.led_counter = LED_COUNTER;
+			if (tg.led_state == 0) {
+				gpio_led_on(INDICATOR_LED);
+				tg.led_state = 1;
+			} else {
+				gpio_led_off(INDICATOR_LED);
+				tg.led_state = 0;
+			}
+		}
+	}
+	return (TG_EAGAIN);	 // EAGAIN prevents any other actions from running
 }
 
-void tg_set_active_source(uint8_t dev)
-{
-	tg.src = dev;								// dev = XIO device #. See xio.h
-}
 
 /***************************************************************************** 
  * _dispatch() 			- dispatch line read from active input device
@@ -247,42 +207,47 @@ static uint8_t _dispatch()
 		return (status);
 	}
 	tg.linelen = strlen(tg.in_buf)+1;
+	cmd_new_body(cmd_body);					// clear the cmd body to get ready for use
 
 	// dispatch the new text line
 	switch (toupper(tg.in_buf[0])) {
-//		case '^': { sig_abort(); break; }		// debug char for abort tests
+//		case '^': { sig_reset(); break; }		// debug char for reset tests
 //		case '@': { sig_feedhold(); break;}		// debug char for feedhold tests
 //		case '#': { sig_cycle_start(); break;}	// debug char for cycle start tests
 
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != TG_JSON_MODE) {
-				_text_mode_prompt(TG_OK, tg.in_buf);
+				_text_response(TG_OK, tg.in_buf);
 			}
-			return (TG_OK);
+			break;
 		}
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TG_TEXT_MODE;
-			help_print_general_help();
-			return(_text_mode_prompt(TG_OK, tg.in_buf));
+			print_general_help();
+			_text_response(TG_OK, tg.in_buf);
+			break;
 		}
-		case '$': case '?':{ 					// text-mode config and query
+		case '$': case '?':{ 					// text-mode configs
 			cfg.comm_mode = TG_TEXT_MODE;
-			return(_text_mode_prompt(cfg_text_parser(tg.in_buf), tg.in_buf));
+			_text_response(cfg_text_parser(tg.in_buf), tg.in_buf);
+			break;
 		}
 		case '{': { 							// JSON input
 			cfg.comm_mode = TG_JSON_MODE;
-			return(js_json_parser(tg.in_buf)); 
+			js_json_parser(tg.in_buf);
+			break;
 		}
 		default: {								// anything else must be Gcode
 			if (cfg.comm_mode != TG_JSON_MODE) {
-				return(_text_mode_prompt(gc_gcode_parser(tg.in_buf), tg.in_buf));
+				_text_response(gc_gcode_parser(tg.in_buf), tg.in_buf);
 			} else {
 				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN);	// use output buffer as a temp
 				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);
-				return(js_json_parser(tg.in_buf)); 
+				js_json_parser(tg.in_buf); 
 			}
 		}
 	}
+	return (TG_OK);
 }
 
 /**** System Prompts **************************************************************
@@ -302,7 +267,7 @@ static const char msg_sc02[] PROGMEM = "Eagain";
 static const char msg_sc03[] PROGMEM = "Noop";
 static const char msg_sc04[] PROGMEM = "Complete";
 static const char msg_sc05[] PROGMEM = "Terminated";
-static const char msg_sc06[] PROGMEM = "Aborted";
+static const char msg_sc06[] PROGMEM = "Hard reset";
 static const char msg_sc07[] PROGMEM = "End of line";
 static const char msg_sc08[] PROGMEM = "End of file";
 static const char msg_sc09[] PROGMEM = "File not open";
@@ -387,46 +352,47 @@ char *tg_get_status_message(uint8_t status, char *msg)
 	return (msg);
 }
 
+/************************************************************************************
+ * _text_response() - text mode responses
+ *
+ *	Outputs prompt, status and message strings
+ */
 static const char prompt_mm[] PROGMEM = "mm";
 static const char prompt_in[] PROGMEM = "inch";
-static const char prompt_ok[] PROGMEM = "tinyg [%S] ok> ";
-static const char prompt_err[] PROGMEM = "tinyg [%S] error: %S %s\n";
+static const char prompt_ok[] PROGMEM = 	"tinyg [%S] ok> ";
+static const char prompt_err[] PROGMEM = 	"tinyg [%S] error: %S %s\n";
 
-static uint8_t _text_mode_prompt(uint8_t status, char *buf)
+static void _text_response(const uint8_t status, const char *buf)
 {
-	const char *Units;	// becomes pointer to progmem string
+	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
 
-	if (cm_get_units_mode() != INCHES) {
-		Units = (PGM_P)&prompt_mm;
-	} else {
-		Units = (PGM_P)&prompt_in;
-	}
+	// deliver the prompt
+	const char *Units;		// becomes pointer to progmem string
+	if (cm_get_units_mode() != INCHES) Units = (PGM_P)&prompt_mm;
+	else Units = (PGM_P)&prompt_in;
 	if ((status == TG_OK) || (status == TG_EAGAIN) || (status == TG_NOOP) || (status == TG_ZERO_LENGTH_MOVE)) {
 		fprintf_P(stderr, (PGM_P)&prompt_ok, Units);
 	} else {
 		fprintf_P(stderr, (PGM_P)prompt_err, Units, (PGM_P)pgm_read_word(&msgStatusMessage[status]), buf);
 	}
-	return (TG_OK);
+
+	// deliver echo and messages
+	cmdObj *cmd = cmd_body;		// if there is a message it will aways be in the second object
+	if ((cfg.text_verbosity >= TV_MESSAGES) && (cmd->token[0] == 'm')) {
+		fprintf(stderr, "%s\n", cmd->string);
+	}
 }
 
 /**** Application Messages *********************************************************
- * tg_get_message() 		 - returns a canned application message in a pre-allocated string
  * tg_print_message()        - print a character string passed as argument
+ * tg_print_message_value()  - print a message with a value
  * tg_print_message_number() - print a canned message by number
- * tg_print_configuration_profile()
- * tg_print_system_ready()
  *
- * Messages are collected in this one place to manage alternate display options
- * such as text mode or JSON mode.
+ * tg_print_loading_configs_message()
+ * tg_print_initializing_message()
+ * tg_print_system_ready_message()
  */
-/*
-static const char msg_ap00[] PROGMEM = "<null message>";	// in case caller didn't provide a message #
-static const char msg_ap01[] PROGMEM = "Loading configs from EEPROM";
 
-PGM_P const msgApplicationMessage[] PROGMEM = {
-	msg_ap00, msg_ap01
-};
-*/
 void tg_print_message(char *msg)
 {
 	cmd_add_string("msg", msg);
@@ -448,26 +414,102 @@ void tg_print_message_number(uint8_t msgnum)
 	tg_print_message(msg);
 }
 */
+
 void tg_print_loading_configs_message(void)
 {
-	cmd_add_token("fv");
-	cmd_add_token("fb");
+#ifndef __SUPPRESS_STARTUP_MESSAGES
+	cmd_add_object("fv");
+	cmd_add_object("fb");
 	cmd_add_string("msg", "Loading configs from EEPROM");
 	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED);
+#endif
 }
 
 void tg_print_initializing_message(void)
 {
-	cmd_add_token("fv");
-	cmd_add_token("fb");
+#ifndef __SUPPRESS_STARTUP_MESSAGES
+	cmd_add_object("fv");
+	cmd_add_object("fb");
 	cmd_add_string("msg", INIT_CONFIGURATION_MESSAGE); // see settings.h & sub-headers
 	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED);
+#endif
 }
 
 void tg_print_system_ready_message(void)
 {
-	cmd_add_token("fv");
-	cmd_add_token("fb");
+#ifndef __SUPPRESS_STARTUP_MESSAGES
+	cmd_add_object("fv");
+	cmd_add_object("fb");
 	cmd_add_string("msg", "SYSTEM READY");
 	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+	_text_response(TG_OK, "");				// prompt
+#endif
+}
+
+
+/**** Utilities ****
+ * _sync_to_tx_buffer() - return eagain if TX queue is backed up
+ * _sync_to_planner() - return eagain if planner is not ready for a new command
+ * tg_reset_source() - reset source to default input device (see note)
+ * tg_set_active_source() - set current input source
+ *
+ * Note: Once multiple serial devices are supported reset_source() should
+ *	be expanded to also set the stdout/stderr console device so the prompt
+ *	and other messages are sent to the active device.
+ */
+
+static uint8_t _sync_to_tx_buffer()
+{
+	if ((xio_get_tx_bufcount_usart(ds[XIO_DEV_USB].x) >= XOFF_TX_LO_WATER_MARK)) {
+		return (TG_EAGAIN);
+	}
+	return (TG_OK);
+}
+
+static uint8_t _sync_to_planner()
+{
+	if (mp_get_planner_buffers_available() == 0) { 
+		return (TG_EAGAIN);
+	}
+	return (TG_OK);
+}
+
+void tg_reset_source()
+{
+	tg_set_active_source(tg.default_src);
+}
+
+void tg_set_active_source(uint8_t dev)
+{
+	tg.src = dev;						// dev = XIO device #. See xio.h
+}
+
+/**** Signal handlers ****
+ * _reset_handler()
+ * _feedhold_handler()
+ * _cycle_start_handler()
+ */
+
+static uint8_t _reset_handler(void)
+{
+	if (sig.sig_reset == false) { return (TG_NOOP);}
+//	sig.sig_reset = false;				// why bother?
+	tg_reset();							// hard reset - identical to hitting RESET button
+	return (TG_EAGAIN);
+}
+
+static uint8_t _feedhold_handler(void)
+{
+	if (sig.sig_feedhold == false) { return (TG_NOOP);}
+	sig.sig_feedhold = false;
+	cm_feedhold();
+	return (TG_EAGAIN);					// best to restart the control loop
+}
+
+static uint8_t _cycle_start_handler(void)
+{
+	if (sig.sig_cycle_start == false) { return (TG_NOOP);}
+	sig.sig_cycle_start = false;
+	cm_cycle_start();
+	return (TG_EAGAIN);					// best to restart the control loop
 }

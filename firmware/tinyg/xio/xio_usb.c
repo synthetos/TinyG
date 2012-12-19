@@ -137,9 +137,9 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 	char c = USBu.usart->DATA;					// can only read DATA once
 
 	// trap signals - do not insert character into RX queue
-	if (c == CHAR_ABORT) {	 					// trap Kill signal
-		USB.signal = XIO_SIG_ABORT;				// set signal value
-		sig_abort();							// call sig handler
+	if (c == CHAR_RESET) {	 					// trap Kill signal
+		USB.signal = XIO_SIG_RESET;				// set signal value
+		sig_reset();							// call sig handler
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal

@@ -132,7 +132,7 @@ uint8_t rpt_status_report_callback() // called by controller dispatcher
 {
 	if ((cfg.status_report_interval == 0) ||
 		(cm.status_report_counter != 0) ||
-		(cm.machine_state == MACHINE_RESET)) {
+		(cm.machine_state == MACHINE_READY)) {
 		return (TG_NOOP);
 	}
 	rpt_populate_status_report();
@@ -151,7 +151,7 @@ uint8_t rpt_populate_status_report()
 {
 	cmdObj *cmd = cmd_body;
 
-	cmd_clear_obj(cmd);						// wipe it first
+	cmd_new_obj(cmd);						// wipe it first
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
@@ -174,26 +174,18 @@ uint8_t rpt_populate_status_report()
  *
  *	Queue reports are normally run from the callback function, and is much more
  *	efficient than rpt_run_queue_report(), which is only used to report manually
- *
- *	Queue reports return 
- *		[lx] - line index 
- *		[pb] - planner buffers available 
  */
 
 struct qrIndexes {			// static data for queue reports
 	uint8_t request;		// set to true to request a report
-	INDEX_T qr;				// index for QR parent
-	INDEX_T lx;				// index for line index
-	INDEX_T pb;				// index for planner_buffer_available value
-	uint32_t lineindex;
+	INDEX_T qr;				// index for QR element
 	uint8_t buffers_available;
 };
-struct qrIndexes qr = { 0,0,0,0,0,0 };		// init to zeros
+static struct qrIndexes qr = { 0,0,0 };		// init to zeros
 
 void rpt_request_queue_report() 
 { 
 	if (cfg.enable_qr != true) { return;}
-	qr.lineindex = mp_get_runtime_lineindex();
 	qr.buffers_available = mp_get_planner_buffers_available();
 	qr.request = true;
 }
@@ -204,20 +196,10 @@ uint8_t rpt_queue_report_callback()
 	qr.request = false;
 
 	cmdObj *cmd = cmd_body;
-	cmd_clear_obj(cmd);						// parent qr object			
+	cmd_new_obj(cmd);						// make a qr object
 	sprintf_P(cmd->token, PSTR("qr"));
-	cmd->type = TYPE_PARENT;
-
-	cmd = cmd->nx;							// line index
-	sprintf_P(cmd->token, PSTR("lx"));
-	cmd->value = qr.lineindex;
-	cmd->type = TYPE_INTEGER;
-
-	cmd = cmd->nx;							// planner buffers available
-	sprintf_P(cmd->token, PSTR("pb"));
 	cmd->value = qr.buffers_available;
 	cmd->type = TYPE_INTEGER;
-
 	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);// report in JSON or inline text mode
 	return (TG_OK);
 }
@@ -226,25 +208,12 @@ uint8_t rpt_run_queue_report()
 {
 	cmdObj *cmd = cmd_body;
 
-	if (qr.qr == 0) {					// cache the report indices
+	if (qr.qr == 0) {					// cache the report index
 		qr.qr = cmd_get_index("","qr");	// this only happens once
-		qr.lx = cmd_get_index("","lx");
-		qr.pb = cmd_get_index("","pb");
 	}
-
-	cmd_clear_obj(cmd);			 		// setup the parent object			
-	cmd->type = TYPE_PARENT;
+	cmd_new_obj(cmd);			 		// build the object
 	cmd->index = qr.qr;
-	sprintf_P(cmd->token, PSTR("qr"));
-
-	cmd = cmd->nx;
-	cmd->index = qr.lx;					// line index element
 	cmd_get_cmdObj(cmd);
-
-	cmd = cmd->nx;
-	cmd->index = qr.pb;					// planner buffers available element
-	cmd_get_cmdObj(cmd);
-
 	return (TG_OK);
 }
 

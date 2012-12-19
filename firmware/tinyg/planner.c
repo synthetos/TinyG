@@ -87,21 +87,22 @@ enum mpBufferState {			// bf->buffer_state values
 struct mpBuffer {				// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;		// static pointer to previous buffer
 	struct mpBuffer *nx;		// static pointer to next buffer
-//	fptrCallback callback;		// callback to execution function
-//	uint8_t (*exec_func)(double parameter); // callback to function to execute w/parameter
-	uint8_t (*exec_func)(struct mpBuffer *bf); // callback to function to execute - passes *bf
+	uint8_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function - passes *bf, returns uint8_t
+	cm_exec cm_func;			// callback to canonical machine execution function
 	uint32_t linenum;			// runtime line number; or line index if not numbered
 	uint32_t lineindex;			// runtime autoincremented line index
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
 	uint8_t move_type;			// used to dispatch to run routine
-	uint8_t move_code;			// M code or T code
+	uint8_t move_code;			// byte that can be used by used exec functions
 	uint8_t move_state;			// move state machine sequence
 	uint8_t replannable;		// TRUE if move can be replanned
 
 	double target[AXES];		// target position in floating point
 	double unit[AXES];			// unit vector for axis scaling & planning
+	double work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
 	double time;				// line, helix or dwell time in minutes
+	double min_time;			// minimum time for the move - for rate override replanning
 	double head_length;
 	double body_length;
 	double tail_length;
@@ -127,10 +128,10 @@ struct mpBuffer {				// See Planning Velocity Notes for variable usage
 #endif
 };
 typedef struct mpBuffer mpBuf;
+
 #define spindle_speed time		// alias spindle_speed to the time variable
-#define parameter time			// alias parameter to the time variable
-#define offset target			// use target array for coordinate offsets
-#define flag unit				// use unit vector for axis flags for offsets
+#define int_val move_code		// alias the uint8_t to the move_code
+#define dbl_val time			// alias the double to the time variable
 
 struct mpBufferPool {			// ring buffer for sub-moves
 	uint8_t buffers_available;	// running count of available buffers
@@ -143,6 +144,7 @@ struct mpBufferPool {			// ring buffer for sub-moves
 struct mpMoveMasterSingleton {	// common variables for planning (move master)
 	uint32_t lineindex;			// runtime line index of BF being planned
 	double position[AXES];		// final move position for planning purposes
+	double ms_in_queue;			// total ms of movement & dwell in planner queue
 	double prev_jerk;			// jerk values cached from previous move
 	double prev_recip_jerk;
 	double prev_cbrt_jerk;
@@ -165,6 +167,7 @@ struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	double position[AXES];		// current move position
 	double target[AXES];		// target move position
 	double unit[AXES];			// unit vector for axis scaling & planning
+	double work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
 	double head_length;			// copies of bf variables of same name
 	double body_length;
@@ -225,13 +228,8 @@ static double _get_junction_deviation(const double a_unit[], const double b_unit
 #endif
 
 // execute routines (NB: These are all called from the LO interrupt)
-static uint8_t _exec_null(mpBuf *bf);
 static uint8_t _exec_dwell(mpBuf *bf);
-//static uint8_t _exec_command(mpBuf *bf);
-static uint8_t _exec_mcode(mpBuf *bf);
-static uint8_t _exec_tool(mpBuf *bf);
-static uint8_t _exec_spindle_speed(mpBuf *bf);
-
+static uint8_t _exec_command(mpBuf *bf);
 static uint8_t _exec_aline(mpBuf *bf);
 static uint8_t _exec_aline_head(void);
 static uint8_t _exec_aline_body(void);
@@ -267,8 +265,10 @@ static void _dump_plan_buffer(mpBuf *bf);
 
 void mp_init()
 {
-	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
-	memset(&mm, 0, sizeof(mm));	// clear all values, pointers and status
+// You can assume all memory has been zeroed by a hard reset. If not, use this code:
+//	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
+//	memset(&mm, 0, sizeof(mm));	// clear all values, pointers and status
+
 	_init_buffers();
 }
  
@@ -312,15 +312,18 @@ void mp_flush_planner()
 }
 
 /*
- * mp_set_plan_position() 		- sets planning position (for G92)
- * mp_get_plan_position() 		- returns planning position
- * mp_set_axis_position() 		- sets both planning and runtime positions (for G2/G3)
+ * mp_set_plan_position() 	- sets planning position (for G92)
+ * mp_get_plan_position() 	- returns planning position
+ * mp_set_axis_position() 	- sets both planning and runtime positions (for G2/G3)
+ * mp_set_plan_lineindex()	- set line index in MM struct
  *
- * mp_get_runtime_position()	- returns current position of queried axis
+ * mp_get_runtime_work_position() - returns current axis position in work coordinates
+ *									that were in effect at move planning time
+ *
+ * mp_get_runtime_machine_position() - returns current axis position in machine coordinates
  * mp_get_runtime_velocity()	- returns current velocity (aggregate)
  * mp_get_runtime_linenum()		- returns currently executing line number
  * mp_get_runtime_lineindex()	- returns currently executing line index
- * mp_set_planner_lineindex()	- set line index in MM struct
  *
  * 	Keeping track of position is complicated by the fact that moves can
  *	require multiple reference frames. The scheme to keep this straight is:
@@ -347,6 +350,12 @@ void mp_set_plan_position(const double position[])
 	copy_axis_vector(mm.position, position);
 }
 
+void mp_set_plan_lineindex(uint32_t lineindex)
+{
+	mm.lineindex = lineindex;
+	mr.lineindex = lineindex;
+}
+
 void mp_set_axes_position(const double position[])
 {
 	copy_axis_vector(mm.position, position);
@@ -359,16 +368,18 @@ void mp_set_axis_position(uint8_t axis, const double position)
 	mr.position[axis] = position;
 }
 
-double mp_get_runtime_position(uint8_t axis) { return (mr.position[axis]);}
+double mp_get_runtime_work_position(uint8_t axis) { 
+	return (mr.position[axis] - mr.work_offset[axis]);
+}
+
+double mp_get_runtime_machine_position(uint8_t axis) { 
+	return (mr.position[axis]);
+}
+
 double mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 double mp_get_runtime_linenum(void) { return (mr.linenum);}
 double mp_get_runtime_lineindex(void) { return (mr.lineindex);}
 
-void mp_set_planner_lineindex(uint32_t lineindex)
-{
-	mm.lineindex = lineindex;
-	mr.lineindex = lineindex;
-}
 
 /*************************************************************************/
 /* mp_exec_move() - execute runtime functions to prep move for steppers
@@ -381,153 +392,58 @@ uint8_t mp_exec_move()
 {
 	mpBuf *bf;
 
-	if ((bf = _get_run_buffer()) == NULL) { return (TG_NOOP);}	// NULL means nothing's running
-	if (cm.cycle_state == CYCLE_OFF) { cm_exec_cycle_start();}	// cycle state management
+	if ((bf = _get_run_buffer()) == NULL) return (TG_NOOP);		// NULL means nothing's running
+
+	if (cm.cycle_state == CYCLE_OFF) cm_cycle_start();			// cycle state management
+
 	if ((cm.motion_state == MOTION_STOP) && (bf->move_type == MOVE_TYPE_ALINE)) {
 		cm.motion_state = MOTION_RUN;							// auto state-change
 	}
-	switch (bf->move_type) {									// dispatch the move
-		case MOVE_TYPE_NULL: 	{ return (_exec_null(bf));}
-//		case MOVE_TYPE_LINE:	{ return (_exec_line(bf));}
-		case MOVE_TYPE_ALINE:	{ return (_exec_aline(bf));}
-		case MOVE_TYPE_DWELL:	{ return (_exec_dwell(bf));}
-//		case MOVE_TYPE_COMMAND: { return (_exec_command(bf));}
-		case MOVE_TYPE_MCODE:	{ return (_exec_mcode(bf));}
-		case MOVE_TYPE_TOOL:	{ return (_exec_tool(bf));}
-		case MOVE_TYPE_SPINDLE_SPEED: { return (_exec_spindle_speed(bf));}
+	if (bf->bf_func != NULL) {		// run the callback - should be set up
+		return (bf->bf_func(bf));
 	}
 	return (TG_INTERNAL_ERROR);		// never supposed to get here
 }
 
-/*
- * _exec_null() - execute a null move
- */
-static uint8_t _exec_null(mpBuf *bf) 
-{ 
-	st_prep_null();		// must call this to leep the loader happy
-	_free_run_buffer();
-	return (TG_OK);
-}
-
-/*************************************************************************
- * mp_sync_command() - queue a synchronous command to the planner queue 
- * _exec_command()	 - execute a synchronous command from planner queue (from stepper _exec call)
+/************************************************************************************
+ * mp_queue_command() - queue a synchronous Mcode, program control, or other command
  *
- *	This works like:
+ *	How this works:
  *	  - The command is called by the Gcode interpreter (cm_<command>, e.g. an M code)
- *	  - cm_sync_ function calls mp_sync_command which puts it in the planning queue
- *		and optionally writes a parameter to bf->parameter
+ *	  - cm_ function calls mp_queue_command which puts it in the planning queue.
+ *		This involves setting some parameters and registering a callback to the 
+ *		execution function in the canonical machine
  *	  - the planning queue gets to the function and calls _exec_command()
- *	  - ...which is typically a callback to a cm_set_<command> function, or possibly 
- *		   a cm_exec_<command> function
+ *	  - ...which passes the saved parameters to the callback function
+ *	  - To finish up _exec_command() needs to run a null pre and free the planner buffer
  *
  *	Doing it this way instead of synchronizing on queue empty simplifies the
- *	handling of feedholds, feed overrides, buffer flushes, and thread blocking.
+ *	handling of feedholds, feed overrides, buffer flushes, and thread blocking,
+ *	and makes keeping the queue full much easier - therefore avoiding Q starvation
  */
-/*
-void mp_sync_command(uint8_t command, double parameter)
+
+void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f)
 {
 	mpBuf *bf;
 
-	if ((bf = _get_write_buffer()) == NULL) { return;}
-	bf->move_code = command;
-	bf->parameter = parameter;
+	// this error is not reported as buffer availability was checked upstream in the controller
+	if ((bf = _get_write_buffer()) == NULL) return;
+
+	bf->move_type = MOVE_TYPE_COMMAND;
+	bf->bf_func = _exec_command;		// callback to planner queue exec function
+	bf->cm_func = cm_exec;				// callback to canonical machine exec function
+	bf->int_val = i;
+	bf->dbl_val = f;
 	_queue_write_buffer(MOVE_TYPE_COMMAND);
+	return;
 }
 
 static uint8_t _exec_command(mpBuf *bf)
 {
-	uint8_t status = TG_OK;
-	switch(bf->move_code) {
-		case SYNC_TOOL_NUMBER: { cm_set_tool_number(bf->parameter); break;}
-		case SYNC_SPINDLE_SPEED: { cm_set_spindle_speed_parameter(bf->parameter); break;}
-	}
-	// Must call a prep to keep the loader happy. See Move Execution in:
-	// http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Module-Details#planner.c.2F.h
-	st_prep_null();
+	bf->cm_func(bf->int_val, bf->dbl_val);
+	st_prep_null();			// Must call a null prep to keep the loader happy. 
 	_free_run_buffer();
-	return (status);
-}
-*/
-
-/*************************************************************************
- * mp_sync_mcode() - queue a synchronous mcode to the planner queue 
- * _exec_mcode()   - execute a synchronous mcode from planner queue (from stepper _exec call)
- */
-
-void mp_sync_mcode(uint8_t mcode) 
-{
-	mpBuf *bf;
-
-	if ((bf = _get_write_buffer()) == NULL) { return;}
-	bf->move_code = mcode;
-	_queue_write_buffer(MOVE_TYPE_MCODE);
-}
-
-static uint8_t _exec_mcode(mpBuf *bf)
-{
-	uint8_t status = TG_OK;
-	switch(bf->move_code) {
-		case SYNC_PROGRAM_STOP: case SYNC_OPTIONAL_STOP: { cm_exec_program_stop(); break;}
-		case SYNC_PROGRAM_END: { cm_exec_program_end(); break;}
-		case SYNC_SPINDLE_CW: { cm_exec_spindle_control(SPINDLE_CW); break;}	
-		case SYNC_SPINDLE_CCW: { cm_exec_spindle_control(SPINDLE_CCW); break;}
-		case SYNC_SPINDLE_OFF: { cm_exec_spindle_control(SPINDLE_OFF); break;}
-//		case SYNC_CHANGE_TOOL:	 // M6 - not yet implemented
-		case SYNC_MIST_COOLANT_ON:	{ cm_exec_mist_coolant_control(true); break;}
-		case SYNC_FLOOD_COOLANT_ON: { cm_exec_flood_coolant_control(true); break;}
-		case SYNC_FLOOD_COOLANT_OFF: { cm_exec_flood_coolant_control(false); break;}
-		case SYNC_FEED_OVERRIDE_ON: { cm_exec_feed_override_enable(true); break;}
-		case SYNC_FEED_OVERRIDE_OFF: { cm_exec_feed_override_enable(false); break;}
-		default: { 
-			status = TG_INTERNAL_ERROR;
-		}
-	}
-	// Must call a prep to keep the loader happy. See Move Execution in:
-	// http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Module-Details#planner.c.2F.h
-	st_prep_null();
-	_free_run_buffer();
-	return (status);
-}
-
-/*************************************************************************
- * mp_queue_tool() - queue a T word to the planner queue 
- * _exec_tool()    - execute T from planner queue (STUBBED IN FOR NOW)
- */
-void mp_queue_tool(uint8_t tool) 
-{
-	mpBuf *bf;
-
-	if ((bf = _get_write_buffer()) == NULL) { return;}
-	bf->move_code = tool;
-	_queue_write_buffer(MOVE_TYPE_TOOL);
-}
-static uint8_t _exec_tool(mpBuf *bf) 
-{ 
-	uint8_t status = TG_OK;
-	st_prep_null();		// must call this to leep the loader happy
-	_free_run_buffer();
-	return (status);
-}
-
-/*************************************************************************
- * mp_queue_spindle_speed() - queue an S word to the planner queue 
- * _exec_spindle_speed()    - execute S from planner queue (STUBBED IN FOR NOW)
- */
-void mp_queue_spindle_speed(double speed) 
-{
-	mpBuf *bf;
-
-	if ((bf = _get_write_buffer()) == NULL) { return;}
-	bf->spindle_speed = speed;		//NB: this is an alias to cruise_velocity
-	_queue_write_buffer(MOVE_TYPE_SPINDLE_SPEED);
-}
-static uint8_t _exec_spindle_speed(mpBuf *bf)
-{ 
-	uint8_t status = TG_OK;
-	st_prep_null();		// must call this to leep the loader happy
-	_free_run_buffer();
-	return (status);
+	return (TG_OK);
 }
 
 /*************************************************************************
@@ -544,9 +460,10 @@ uint8_t mp_dwell(double seconds)
 	mpBuf *bf; 
 
 	if ((bf = _get_write_buffer()) == NULL) {	// get write buffer or fail
-		return (TG_BUFFER_FULL_FATAL);		   // (not supposed to fail)
+		return (TG_BUFFER_FULL_FATAL);		  	// (not supposed to fail)
 	}
-	bf->time = seconds;						   // in seconds, not minutes
+	bf->bf_func = _exec_dwell;					// register the callback to the exec function
+	bf->time = seconds;						  	// in seconds, not minutes
 	_queue_write_buffer(MOVE_TYPE_DWELL);
 	return (TG_OK);
 }
@@ -559,6 +476,7 @@ static uint8_t _exec_dwell(mpBuf *bf)	// NEW
 }
 
 /*************************************************************************
+ * The non-acceleration line is left in for illustration purposes
  * mp_line() 	- queue a linear move (simple version - no accel/decel)
  * _exec_line() - run a line to generate and load a linear move
  *
@@ -580,6 +498,7 @@ uint8_t mp_line(const double target[], const double minutes)
 	if (length < EPSILON) { return (TG_ZERO_LENGTH_MOVE);}
 	if ((bf = _get_write_buffer()) == NULL) { return (TG_BUFFER_FULL_FATAL);} // never supposed to fail
 
+	bf->bf_func = _exec_line;					// register the callback to the exec function
 	bf->time = minutes;
 	bf->length = length;
 	copy_axis_vector(bf->target, target);		// target to bf_target
@@ -607,6 +526,7 @@ static uint8_t _exec_line(mpBuf *bf)
 	return (TG_OK);
 }
 */
+
 /**************************************************************************
  * mp_aline() - plan a line with acceleration / deceleration
  *
@@ -623,12 +543,12 @@ static uint8_t _exec_line(mpBuf *bf)
  * 	Note: All math is done in absolute coordinates using "double precision" 
  *	floating point (even though AVRgcc does this as single precision)
  *
- *	Note: returning a status that is not TG_OK means the endpoint is NOT
+ *	Note: Returning a status that is not TG_OK means the endpoint is NOT
  *	advanced. So lines that are too short to move will accumulate and get 
  *	executed once the accumlated error exceeds the minimums 
  */
 
-uint8_t mp_aline(const double target[], const double minutes)
+uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time)
 {
 	mpBuf *bf; 						// current move pointer
 	double exact_stop = 0;
@@ -643,10 +563,13 @@ uint8_t mp_aline(const double target[], const double minutes)
 	// get a cleared buffer and setup move variables
 	if ((bf = _get_write_buffer()) == NULL) { return (TG_BUFFER_FULL_FATAL);} // never supposed to fail
 
+	bf->bf_func = _exec_aline;					// register the callback to the exec function
 	bf->linenum = cm_get_model_linenum();		// block being planned
 	bf->time = minutes;
+	bf->min_time = min_time;
 	bf->length = length;
 	copy_axis_vector(bf->target, target); 		// set target for runtime
+	copy_axis_vector(bf->work_offset, work_offset);// propagate offset
 
 	// Set unit vector and jerk terms - this is all done together for efficiency 
 	// Ordinarily FP tests are to EPSILON but in this case they actually are zero
@@ -1766,6 +1689,7 @@ static uint8_t _exec_aline(mpBuf *bf)
 		mr.exit_velocity = bf->exit_velocity;
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.endpoint, bf->target);	// save the final target of the move
+		copy_axis_vector(mr.work_offset, bf->work_offset);// propagate offset
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -2240,7 +2164,7 @@ static void _free_run_buffer()					// EMPTY current run buf & adv to next
 	if (mb.r->buffer_state == MP_BUFFER_QUEUED) {// only if queued...
 		mb.r->buffer_state = MP_BUFFER_PENDING;  // pend next buffer
 	}
-	if (mb.w == mb.r) { cm_exec_cycle_end();}	// end the cycle if the queue empties
+	if (mb.w == mb.r) cm_cycle_end();			// end the cycle if the queue empties
 	mb.buffers_available++;
 	rpt_request_queue_report();
 }

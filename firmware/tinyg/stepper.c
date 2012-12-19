@@ -229,19 +229,20 @@ static struct stPrepSingleton sp;
 
 /* 
  * st_init() - initialize stepper motor subsystem 
- * st_reset() - reset and start stepper motor subsystem 
  *
- *	Notes: 
- *	  - High level interrupts must be enabled in main()
- *	  - ls_init() in limit_switches.c is dependent on st_init() as they 
- *		use the same ports. gpio.c also uses the same ports.
+ *	Notes:
+ * 	  - microsteps are setup during cfg_init()
+ *	  - motor polarity is setup during cfg_init()
+ *	  - switch ports and interrupts are setup in gpio_init() but st_init() is a precursor
+ *	  - high level interrupts must be enabled in main()
  */
 
 void st_init()
 {
-	memset(&st, 0, sizeof(st));	// clear all values, pointers and status
+//	You can assume all values are zeroed. If not, use the next line:
+//	memset(&st, 0, sizeof(st));	// clear all values, pointers and status
 
-	// Note: these defines and the device struct are found in system.h
+	// These defines and the device struct are found in system.h
 	device.port[MOTOR_1] = &PORT_MOTOR_1;		// bind PORTs to struct
 	device.port[MOTOR_2] = &PORT_MOTOR_2;
 	device.port[MOTOR_3] = &PORT_MOTOR_3;
@@ -251,14 +252,10 @@ void st_init()
 	PORTCFG.VPCTRLA = PORTCFG_VP0MAP_PORT_MOTOR_1_gc | PORTCFG_VP1MAP_PORT_MOTOR_2_gc;
 	PORTCFG.VPCTRLB = PORTCFG_VP2MAP_PORT_MOTOR_3_gc | PORTCFG_VP3MAP_PORT_MOTOR_4_gc;
 
+	// setup ports
 	for (uint8_t i=0; i<MOTORS; i++) {
-		// setup port. Do this first or st_set_microsteps() can fail
-		device.port[i]->DIR = MOTOR_PORT_DIR_gm;// set inputs & outputs
+		device.port[i]->DIR = MOTOR_PORT_DIR_gm;// sets outputs for motors & GPIO1, and GPIO2 inputs
 		device.port[i]->OUT = MOTOR_ENABLE_BIT_bm;// zero port bits AND disable motor
-
-		st_set_microsteps(i, cfg.m[i].microsteps);
-		// NOTE: st_set_polarity(i, cfg.a[i].polarity);	// motor polarity
-		// NOTE: switch ports and interrupts are setup in gpio_init()
 	}
 	// setup DDA timer
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// turn timer off
@@ -282,13 +279,16 @@ void st_init()
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
-	st_reset();
+	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
 }
 
-void st_reset()
+/* 
+ * st_disable() - stop the steppers. Requires re-init
+ */
+
+void st_disable()
 {
-	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
-	return;
+	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// turn timer off
 }
 
 /*
@@ -387,20 +387,20 @@ ISR(TIMER_DDA_ISR_vect)
 #endif
 }
 
-ISR(TIMER_DWELL_ISR_vect) {				// DWELL timer interupt
+ISR(TIMER_DWELL_ISR_vect) {						// DWELL timer interupt
 	if (--st.timer_ticks_downcount == 0) {
- 		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;// disable DWELL timer
+ 		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;	// disable DWELL timer
 		_load_move();
 	}
 }
 
-ISR(TIMER_LOAD_ISR_vect) {				// load steppers SW interrupt
- 	TIMER_LOAD.CTRLA = STEP_TIMER_DISABLE;	// disable SW interrupt timer
+ISR(TIMER_LOAD_ISR_vect) {						// load steppers SW interrupt
+ 	TIMER_LOAD.CTRLA = STEP_TIMER_DISABLE;		// disable SW interrupt timer
 	_load_move();
 }
 
-ISR(TIMER_EXEC_ISR_vect) {				// exec move SW interrupt
- 	TIMER_EXEC.CTRLA = STEP_TIMER_DISABLE;	// disable SW interrupt timer
+ISR(TIMER_EXEC_ISR_vect) {						// exec move SW interrupt
+ 	TIMER_EXEC.CTRLA = STEP_TIMER_DISABLE;		// disable SW interrupt timer
 	_exec_move();
 }
 

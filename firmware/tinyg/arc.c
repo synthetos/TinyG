@@ -50,9 +50,11 @@ struct arArcSingleton {			// persistent planner and runtime variables
 	double endpoint[AXES];		// endpoint position
 	double position[AXES];		// accumulating runtime position
 	double target[AXES];		// runtime target position
+	double work_offset[AXES];	// offset from machine coord system for reporting
 
 	double length;				// length of line or helix in mm
 	double time;				// total running time (derived)
+	double min_time;			// not sure this is needed
 	double theta;				// total angle specified by arc
 	double radius;				// computed via offsets
 	double angular_travel;		// travel along the arc
@@ -99,7 +101,9 @@ uint8_t ar_arc( const double target[],
 				const uint8_t axis_1, 		// circle plane in tool space
 				const uint8_t axis_2,  		// circle plane in tool space
 				const uint8_t axis_linear,	// linear travel if helical motion
-				const double minutes)		// time to complete the move
+				const double minutes,		// time to complete the move
+				const double work_offset[],	// offset from work coordinate system
+				const double min_time)		// minimum time for arc for replanning purposes
 {
 	if (ar.run_state != MOVE_STATE_OFF) {
 		return (TG_INTERNAL_ERROR);			// (not supposed to fail)
@@ -116,7 +120,9 @@ uint8_t ar_arc( const double target[],
 	// load the move struct for an arc
 	cm_get_model_canonical_position_vector(ar.position);// set initial arc position
 	copy_axis_vector(ar.endpoint, target);				// save the arc endpoint
+	copy_axis_vector(ar.work_offset, work_offset);		// propagate the work offset
 	ar.time = minutes;
+	ar.min_time = min_time;
 	ar.theta = theta;
 	ar.radius = radius;
 	ar.axis_1 = axis_1;
@@ -162,11 +168,11 @@ uint8_t ar_arc_callback()
 			ar.target[ar.axis_1] = ar.center_1 + sin(ar.theta) * ar.radius;
 			ar.target[ar.axis_2] = ar.center_2 + cos(ar.theta) * ar.radius;
 			ar.target[ar.axis_linear] += ar.segment_linear_travel;
-			(void)MP_LINE(ar.target, ar.segment_time);
+			(void)MP_LINE(ar.target, ar.segment_time, ar.work_offset, 0);
 			copy_axis_vector(ar.position, ar.target);	// update runtime position	
 			return (TG_EAGAIN);
 		} else {
-			(void)MP_LINE(ar.endpoint, ar.segment_time);// do last segment to the exact endpoint
+			(void)MP_LINE(ar.endpoint, ar.segment_time, ar.work_offset,0);// do last segment to the exact endpoint
 		}
 	}
 	ar.run_state = MOVE_STATE_OFF;
@@ -303,7 +309,8 @@ uint8_t _compute_center_arc()
 				  gm.arc_offset[gm.plane_axis_1],
 				  gm.arc_offset[gm.plane_axis_2],
 				  theta_start, radius_tmp, angular_travel, linear_travel, 
-				  gm.plane_axis_0, gm.plane_axis_1, gm.plane_axis_2, move_time));
+				  gm.plane_axis_0, gm.plane_axis_1, gm.plane_axis_2, 
+				  move_time, gm.work_offset, gm.min_time));
 }
 
 /* 

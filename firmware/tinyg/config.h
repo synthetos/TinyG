@@ -145,21 +145,38 @@ enum cmdType {						// classification of commands
 	CMD_TYPE_REPORT					// SR, QR and any other report
 };
 
-enum jsonEcho {
-	JE_SILENT = 0,					// No response is provided for any command
-	JE_OMIT_BODY,					// Response contains no body - footer only
-	JE_OMIT_GCODE_BODY,				// Body returned for configs; omitted for Gcode commands
-	JE_GCODE_LINENUM_ONLY,			// Body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
-	JE_FULL_ECHO					// Body returned for configs and Gcode - Gcode comments removed
+enum tgCommunicationsMode {
+	TG_TEXT_MODE = 0,				// default
+	TG_JSON_MODE
+//	TG_GRBL_MODE
 };
 
-enum cmdTextMode {					// these set the print modes for text output
-//	TEXT_INLINE_RAW,				// print values without separators
+enum jsonVerbosity {
+	JV_SILENT = 0,					// no response is provided for any command
+	JV_OMIT_BODY,					// response contains no body - footer only
+	JV_OMIT_GCODE_BODY,				// body returned for configs; omitted for Gcode commands
+	JV_GCODE_LINENUM_ONLY,			// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+	JV_GCODE_MESSAGES,				// body returned for configs; Gcode returns line numbers and messages only
+	JV_VERBOSE						// body returned for configs and Gcode - Gcode comments removed
+};
+
+enum textVerbosity {
+	TV_SILENT = 0,					// no response is provided
+	TV_PROMPT,						// returns prompt only and exception messages
+	TV_MESSAGES,					// returns prompt and all messages
+	TV_VERBOSE						// returns prompt, echos command and all messages
+};
+
+enum qrEnable {						// planner queue enable and verbosity
+	QR_OFF = 0,						// no response is provided
+	QR_FILTERED,					// queue depth reported only above hi-water mark and below lo-water mark  
+	QR_VERBOSE						// queue depth reported for all buffers
+};
+
+enum textReports {					// text output print modes
 	TEXT_INLINE_PAIRS,				// print key:value pairs as comma separated pairs
 	TEXT_INLINE_VALUES,				// print values as commas separated values
-//	TEXT_MULTILINE_PAIRS,			// print key_value pairs on separate lines
-//	TEXT_MULTILINE_VALUES,			// print values on separate lines
-	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines
+	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines with formatted print per line
 };
 
 struct cmdObject {					// depending on use, not all elements may be populated
@@ -196,18 +213,18 @@ uint8_t cmd_set(cmdObj *cmd);		// main entry point for SETs
 void cmd_print(cmdObj *cmd);		// main entry point for formatted print
 void cmd_persist(cmdObj *cmd);		// main entry point for persistence
 
-cmdObj *cmd_clear_obj(cmdObj *cmd);
+cmdObj *cmd_new_obj(cmdObj *cmd);
 void cmd_get_cmdObj(cmdObj *cmd);
 INDEX_T cmd_get_index(const char *group, const char *token);
 uint8_t cmd_get_type(cmdObj *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 
-void cmd_clear_list(void);
-void cmd_clear_body(cmdObj *cmd);
-uint8_t cmd_add_token(char *token);
+void cmd_new_list(void);
+void cmd_new_body(cmdObj *cmd);
+uint8_t cmd_add_object(char *token);
 uint8_t cmd_add_string(char *token, char *string);
-uint8_t cmd_add_float(char *token, double value);
 uint8_t cmd_add_integer(char *token, uint32_t value);
+uint8_t cmd_add_float(char *token, double value);
 void cmd_print_list(uint8_t status, uint8_t textmode);
 
 uint8_t cmd_read_NVM_value(cmdObj *cmd);
@@ -259,8 +276,10 @@ struct cfgPWMParameters {
 
 struct cfgParameters {
 	uint8_t state;					// configuration state: 1=initialized, 0=not
-	double profile;					// configuration profile in effect
-	double version;					// configuration version for migration
+//	double profile;					// configuration profile in effect
+	double fw_build;				// tinyg firmware build number
+	double fw_version;				// tinyg firmware version number
+	double hw_version;				// tinyg hardware compatibility
 
 	uint16_t nvm_base_addr;			// NVM base address
 	uint16_t nvm_profile_base;		// NVM base address of current profile
@@ -271,6 +290,7 @@ struct cfgParameters {
 	double estd_segment_usec;		// approximate segment time in microseconds
 	double junction_acceleration;	// centripetal acceleration max for cornering
 	uint8_t enable_acceleration;	// enable acceleration control
+	uint8_t outmap[MOTORS];			// array for mapping output bits
 //	double max_spindle_speed;		// in RPM
 
 	// gcode power-on default settings - defaults are not the same as the gm state
@@ -280,16 +300,20 @@ struct cfgParameters {
 	uint8_t path_control;			// G61,G61.1,G64 reset default
 	uint8_t distance_mode;			// G90,G91 reset default
 
-	// communications settings		// these are shadow settigns for XIO cntrl bits
+	// communications settings		// these first 4 are shadow settigns for XIO cntrl bits
 	uint8_t ignore_crlf;			// ignore CR or LF on RX
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_xon;				// enable XON/XOFF mode
-	uint8_t enable_qr;				// TRUE = queue reports enabled
-	uint8_t json_echo_mode;			// See jsonEcho enum (in config.h) for JSON echo modes
+
+	uint8_t enable_qr;				// queue reports enabled and verbosity level
+	uint8_t qr_hi_water;
+	uint8_t qr_lo_water;
 	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
+	uint8_t json_verbosity;			// see enum in this file for settings
+	uint8_t text_verbosity;			// see enum in this file for settings
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
-	uint8_t usb_baud_flag;
+	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
 
 	// status report configs
 	uint32_t status_report_interval;// in MS. set non-zero to enable

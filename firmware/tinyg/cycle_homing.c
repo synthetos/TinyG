@@ -208,7 +208,7 @@ static uint8_t _homing_finalize_exit(int8_t axis)	// third part of return to hom
 	cm_set_feed_rate(hm.saved_feed_rate);
 	cm.homing_state = HOMING_HOMED;
 	cm.cycle_state = CYCLE_STARTED;
-	cm_exec_cycle_end();
+	cm_cycle_end();
 	return (TG_OK);
 }
 
@@ -259,7 +259,7 @@ static uint8_t _homing_axis_start(int8_t axis)
 			cm_set_units_mode(hm.saved_units_mode);
 			cm_set_distance_mode(hm.saved_distance_mode);
 			cm.cycle_state = CYCLE_STARTED;
-			cm_exec_cycle_end();
+			cm_cycle_end();
 			return (_homing_error_exit(-2));
 		}
 	}
