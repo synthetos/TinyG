@@ -682,6 +682,10 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
 
 /*
  * cm_set_origin_offsets() - G92
+ * cm_set_machine_origins() - G92.4
+ * cm_reset_origin_offsets() - G92.1
+ * cm_suspend_origin_offsets() - G92.2
+ * cm_resume_origin_offsets() - G92.3
  */
 uint8_t cm_set_origin_offsets(double offset[], double flag[])
 {
@@ -694,12 +698,17 @@ uint8_t cm_set_origin_offsets(double offset[], double flag[])
 	return (TG_OK);
 }
 
-/*
- * cm_reset_origin_offsets() - G92.1
- * cm_suspend_origin_offsets() - G92.2
- * cm_resume_origin_offsets() - G92.3
- * cm_reset_origins() - G92.4
- */
+uint8_t cm_set_machine_origins(double origin[], double flag[])
+{
+	for (uint8_t i=0; i<AXES; i++) {
+		if (flag[i] > EPSILON) {
+//			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] - _to_millimeters(offset[i]);
+			cm_set_machine_axis_position(i, gm.position[i] - cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
+		}
+	}
+	return (TG_OK);
+}
+
 uint8_t cm_reset_origin_offsets()
 {
 	gm.origin_offset_mode = false;
@@ -717,16 +726,6 @@ uint8_t cm_suspend_origin_offsets()
 uint8_t cm_resume_origin_offsets()
 {
 	gm.origin_offset_mode = true;
-	return (TG_OK);
-}
-
-uint8_t cm_set_machine_origins(double origin[], double flag[])
-{
-	for (uint8_t i=0; i<AXES; i++) {
-		if (flag[i] > EPSILON) {
-			cm_set_machine_axis_position(i, origin[i]);
-		}
-	}
 	return (TG_OK);
 }
 

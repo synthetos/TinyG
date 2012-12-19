@@ -55,7 +55,7 @@
 #define COM_IGNORE_CRLF				IGNORE_OFF			// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_ENABLE_ECHO				false
 #define COM_ENABLE_XON				true
-#define COM_ENABLE_QR				false
+#define COM_ENABLE_QR				true
 
 // communications mode and echo levels
 // CAUTION: These values are often overridden in the machine-specific profiles

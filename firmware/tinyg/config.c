@@ -198,9 +198,9 @@ static void _print_sr(cmdObj *cmd);		// run status report (as printout)
 static uint8_t _set_sr(cmdObj *cmd);	// set status report specification
 static uint8_t _set_si(cmdObj *cmd);	// set status report interval
 static uint8_t _get_qr(cmdObj *cmd);	// run queue report (as data)
-static uint8_t _get_pb(cmdObj *cmd);	// get planner buffers available
-static uint8_t _get_lx(cmdObj *cmd);	// get runtime line index
-static uint8_t _set_lx(cmdObj *cmd);	// set runtime line index
+//static uint8_t _get_pb(cmdObj *cmd);	// get planner buffers available
+//static uint8_t _get_lx(cmdObj *cmd);	// get runtime line index
+//static uint8_t _set_lx(cmdObj *cmd);	// set runtime line index
 static uint8_t _get_rx(cmdObj *cmd);	// get bytes in RX buffer
 
 static uint8_t _get_gc(cmdObj *cmd);	// get current gcode block
@@ -369,12 +369,13 @@ static PGM_P const msg_am[] PROGMEM = {
  * NOTE: DO NOT USE TABS IN FORMAT STRINGS
  */
 static const char fmt_nul[] PROGMEM = "";
-static const char fmt_ui8[] PROGMEM = "%d\n";						// generic format for ui8s
-static const char fmt_dbl[] PROGMEM = "%f\n";						// generic format for doubles
+static const char fmt_ui8[] PROGMEM = "%d\n";	// generic format for ui8s
+static const char fmt_dbl[] PROGMEM = "%f\n";	// generic format for doubles
+static const char fmt_str[] PROGMEM = "%s\n";	// generic format for string message (with no formatting)
 
 static const char fmt_fv[] PROGMEM = "[fv]  firmware_version%16.2f\n";
 static const char fmt_fb[] PROGMEM = "[fb]  firmware_build%18.2f\n";
-static const char fmt_id[] PROGMEM = "[id]  id_device%16d\n";
+//static const char fmt_id[] PROGMEM = "[id]  id_device%16d\n";
 
 // Gcode model values for reporting purposes
 static const char fmt_vel[]  PROGMEM = "Velocity:%17.3f%S/min\n";
@@ -411,10 +412,10 @@ static const char fmt_g92z[] PROGMEM = "Z origin offset:%10.3f%S\n";
 static const char fmt_g92a[] PROGMEM = "A origin offset:%10.3f%S\n";
 static const char fmt_g92b[] PROGMEM = "B origin offset:%10.3f%S\n";
 static const char fmt_g92c[] PROGMEM = "C origin offset:%10.3f%S\n";
-static const char fmt_lx[]   PROGMEM = "Line index:%13d\n";
-static const char fmt_pb[]   PROGMEM = "Planner buffers:%8d\n";
-static const char fmt_rx[]   PROGMEM = "%d\n";	// bytes available in RX buffer
-static const char fmt_msg[]  PROGMEM = "%s\n";	// generic message (with no formatting)
+//static const char fmt_lx[]   PROGMEM = "Line index:%13d\n";
+//static const char fmt_pb[]   PROGMEM = "Planner buffers:%8d\n";
+//static const char fmt_rx[]   PROGMEM = "%d\n";	// bytes available in RX buffer
+//static const char fmt_msg[]  PROGMEM = "%s\n";	// generic message (with no formatting)
 
 // Gcode model power-on reset default values
 static const char fmt_gpl[] PROGMEM = "[gpl] gcode_select_plane %10d [0,1,2]\n";
@@ -651,10 +652,10 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
 	{ "", "qr",  _f00, fmt_nul, _print_nul, _get_qr,  _set_nul, (double *)&tg.null, 0 },	// queue report setting
-	{ "", "lx",  _f00, fmt_lx,  _print_int, _get_lx,  _set_lx,  (double *)&tg.null ,0 },	// line index - get/set runtime line index
-	{ "", "pb",  _f00, fmt_pb,  _print_int, _get_pb,  _set_nul, (double *)&tg.null, 0 },	// planner buffers available
+//	{ "", "lx",  _f00, fmt_lx,  _print_int, _get_lx,  _set_lx,  (double *)&tg.null ,0 },	// line index - get/set runtime line index
+//	{ "", "pb",  _f00, fmt_pb,  _print_int, _get_pb,  _set_nul, (double *)&tg.null, 0 },	// planner buffers available
 	{ "", "rx",  _f00, fmt_nul, _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },	// space in RX buffer
-	{ "", "msg", _f00, fmt_msg, _print_str, _get_nul, _set_nul, (double *)&tg.null, 0 },	// string for generic messages
+	{ "", "msg", _f00, fmt_str, _print_str, _get_nul, _set_nul, (double *)&tg.null, 0 },	// string for generic messages
 	{ "", "test",_f00, fmt_nul, _print_nul, print_test_help, tg_test, (double *)&tg.test,0 },// prints test help screen
 	{ "", "defa",_f00, fmt_nul, _print_nul, print_defaults_help,_set_defa,(double *)&tg.null,0},// prints defaults help screen
 	{ "", "help",_f00, fmt_nul, _print_nul, print_config_help,_set_nul, (double *)&tg.null,0 },// prints config help screen
@@ -968,13 +969,14 @@ static uint8_t _get_qr(cmdObj *cmd)
 	rpt_run_queue_report();
 	return (TG_OK);
 }
-
+/*
 static uint8_t _get_pb(cmdObj *cmd)
 {
 	cmd->value = (double)mp_get_planner_buffers_available();
 	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }
+*/
 
 static uint8_t _get_rx(cmdObj *cmd)
 {
@@ -1000,8 +1002,6 @@ static uint8_t _get_rx(cmdObj *cmd)
  * _get_frmo() - get gcode feed rate mode as string
  * _get_feed() - get feed rate 
  * _get_line() - get runtime line number for status reports
- * _get_lx()   - get runtime line index for queue reports
- * _set_lx()   - set runtime line index for queue reports
  * _get_vel()  - get runtime velocity
  * _get_pos()  - get runtime work position
  * _get_mpos() - get runtime machine position
@@ -1094,7 +1094,7 @@ static uint8_t _get_line(cmdObj *cmd)
 	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }
-
+/*
 static uint8_t _get_lx(cmdObj *cmd)
 {
 	cmd->value = (double)mp_get_runtime_lineindex();
@@ -1108,7 +1108,7 @@ static uint8_t _set_lx(cmdObj *cmd)
 	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }
-
+*/
 static uint8_t _get_vel(cmdObj *cmd) 
 {
 	cmd->value = mp_get_runtime_velocity();

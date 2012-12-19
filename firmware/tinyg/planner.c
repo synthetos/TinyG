@@ -286,11 +286,11 @@ uint8_t mp_isbusy()
 }
 
 /* 
- * mp_load_ms_in_queue() - set MS of execution in planning queue
- * mp_decr_ms_in_queue() - decrement MS in queue by some amount
+ * mp_get_ms_in_queue() - get milliseconds of execution in planning queue
+ * mp_decr_ms_in_queue() - decrement ms in queue value by some amount
  */
 
-void mp_load_ms_in_queue()
+void mp_get_ms_in_queue()
 {
 	mpBuf *bf = mb.r;
 	mpBuf *bp = bf;

@@ -169,9 +169,8 @@ enum textVerbosity {
 
 enum qrEnable {						// planner queue enable and verbosity
 	QR_OFF = 0,						// no response is provided
-	QR_SPARSE,						// queue depth reported above hi-water mark and below lo-water mark  
-	QR_FREQUENT,					// queue depth reported for all planner queue depths
-	QR_VERBOSE						// queue depth and line index returned for all depths
+	QR_HI_LO,						// queue depth reported above hi-water mark and below lo-water mark  
+	QR_VERBOSE						// queue depth reported for all buffers
 };
 
 enum textReports {					// text output print modes
