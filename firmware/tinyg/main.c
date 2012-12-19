@@ -88,11 +88,6 @@ int main(void)
 	sei();							// enable global interrupts
 	tg_print_system_ready_message();// (LAST) announce system is ready
 
-//	gpio_led_on(SPINDLE_ON_LED);
-//	gpio_led_on(SPINDLE_DIR_LED);
-//	gpio_led_on(SPINDLE_PWM_LED);
-//	gpio_led_on(COOLANT_ON_LED);
-
 	_unit_tests();					// run any unit tests that are enabled
 	tg_canned_startup();			// run any pre-loaded commands
 

@@ -116,8 +116,8 @@ void gpio_led_on(uint8_t led);
 void gpio_led_off(uint8_t led);
 void gpio_set_bit_on(uint8_t b);
 void gpio_set_bit_off(uint8_t b);
-void gpio_write_port(uint8_t b);
-void gpio_toggle_port(uint8_t b);
+//void gpio_write_port(uint8_t b);
+//void gpio_toggle_port(uint8_t b);
 
 //void sw_show_switch(void);
 

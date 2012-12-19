@@ -53,19 +53,31 @@ void sys_init(void);					// master hardware init
 //#define __CLOCK_EXTERNAL_8MHZ	TRUE	// uses PLL to provide 32 MHz system clock
 #define __CLOCK_EXTERNAL_16MHZ TRUE		// uses PLL to provide 32 MHz system clock
 
-/* Motor & switch port assignments */
-
-#define PORT_MOTOR_1	PORTA	// Note: motor and switch port mappings are not the same
+/* Motor, output bit & switch port assignments
+ *** These are not all the same, and must line up in multiple places in gpio.h ***
+ * Sorry if this is confusing - it's a board routing issue
+ */
+#define PORT_MOTOR_1	PORTA			// motors mapped to ports
 #define PORT_MOTOR_2 	PORTF
 #define PORT_MOTOR_3	PORTE
 #define PORT_MOTOR_4	PORTD
 
-// Switch axes mapped to motor ports
-// *** These must line up with the ISR vector assignments in gpio.h ***
-#define PORT_SWITCH_X 	MOTOR_1	// SWITCH_X maps to PORTA
-#define PORT_SWITCH_Y 	MOTOR_4	// PORTD  (sorry if this is confusing - it's a board routing issue)
-#define PORT_SWITCH_Z 	MOTOR_3	// PORTE
-#define PORT_SWITCH_A 	MOTOR_2	// PORTF
+#define PORT_OUT_X		PORTA			// v7 mapping - output bits mapped to ports
+#define PORT_OUT_Y 		PORTF
+#define PORT_OUT_Z		PORTD
+#define PORT_OUT_A		PORTE
+
+/*
+#define PORT_OUT_X		PORTA			// v6 mapping - output bits mapped to ports
+#define PORT_OUT_Y 		PORTF
+#define PORT_OUT_Z		PORTE
+#define PORT_OUT_A		PORTD
+*/
+
+#define SWITCH_X 		MOTOR_1			// Switch axes mapped to motor numbers
+#define SWITCH_Y 		MOTOR_4
+#define SWITCH_Z 		MOTOR_3
+#define SWITCH_A 		MOTOR_2
 
 // These next four must be changed when the PORT_MOTOR_* definitions change!
 #define PORTCFG_VP0MAP_PORT_MOTOR_1_gc PORTCFG_VP0MAP_PORTA_gc
@@ -119,10 +131,10 @@ enum cfgPortBits {			// motor control port bit positions
 #define MIST_COOLANT_BIT	0x01		// coolant on/off - these are the same due to limited ports
 #define FLOOD_COOLANT_BIT	0x01		// coolant on/off
 
-#define SPINDLE_ON_LED		0
+#define SPINDLE_LED			0
 #define SPINDLE_DIR_LED		1
 #define SPINDLE_PWM_LED		2
-#define COOLANT_ON_LED		3
+#define COOLANT_LED			3
 
 #define INDICATOR_LED		SPINDLE_DIR_LED	// can use the spindle direction as an indicator LED
 

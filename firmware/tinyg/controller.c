@@ -59,7 +59,7 @@
 // local helpers
 static void _controller_HSM(void);
 static uint8_t _dispatch(void);
-static void _text_mode_response(const uint8_t status, const char *buf);
+static void _text_response(const uint8_t status, const char *buf);
 
 static uint8_t _shutdown_handler(void);
 static uint8_t _reset_handler(void);
@@ -169,12 +169,10 @@ static uint8_t _shutdown_handler(void)
 		if (--tg.led_counter < 0) {
 			tg.led_counter = LED_COUNTER;
 			if (tg.led_state == 0) {
-//				gpio_led_on(INDICATOR_LED);
-				gpio_led_on(COOLANT_ON_LED);
+				gpio_led_on(INDICATOR_LED);
 				tg.led_state = 1;
 			} else {
-//				gpio_led_off(INDICATOR_LED);
-				gpio_led_off(COOLANT_ON_LED);
+				gpio_led_off(INDICATOR_LED);
 				tg.led_state = 0;
 			}
 		}
@@ -218,19 +216,19 @@ static uint8_t _dispatch()
 
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != TG_JSON_MODE) {
-				_text_mode_response(TG_OK, tg.in_buf);
+				_text_response(TG_OK, tg.in_buf);
 			}
 			break;
 		}
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TG_TEXT_MODE;
 			print_general_help();
-			_text_mode_response(TG_OK, tg.in_buf);
+			_text_response(TG_OK, tg.in_buf);
 			break;
 		}
 		case '$': case '?':{ 					// text-mode configs
 			cfg.comm_mode = TG_TEXT_MODE;
-			_text_mode_response(cfg_text_parser(tg.in_buf), tg.in_buf);
+			_text_response(cfg_text_parser(tg.in_buf), tg.in_buf);
 			break;
 		}
 		case '{': { 							// JSON input
@@ -240,7 +238,7 @@ static uint8_t _dispatch()
 		}
 		default: {								// anything else must be Gcode
 			if (cfg.comm_mode != TG_JSON_MODE) {
-				_text_mode_response(gc_gcode_parser(tg.in_buf), tg.in_buf);
+				_text_response(gc_gcode_parser(tg.in_buf), tg.in_buf);
 			} else {
 				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN);	// use output buffer as a temp
 				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);
@@ -354,7 +352,7 @@ char *tg_get_status_message(uint8_t status, char *msg)
 }
 
 /************************************************************************************
- * _text_mode_response() - text mode responses
+ * _text_response() - text mode responses
  *
  *	Outputs prompt, status and message strings
  */
@@ -363,7 +361,7 @@ static const char prompt_in[] PROGMEM = "inch";
 static const char prompt_ok[] PROGMEM = 	"tinyg [%S] ok> ";
 static const char prompt_err[] PROGMEM = 	"tinyg [%S] error: %S %s\n";
 
-static void _text_mode_response(const uint8_t status, const char *buf)
+static void _text_response(const uint8_t status, const char *buf)
 {
 	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
 
@@ -443,7 +441,7 @@ void tg_print_system_ready_message(void)
 	cmd_add_object("fb");
 	cmd_add_string("msg", "SYSTEM READY");
 	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
-	_text_mode_response(TG_OK, "");				// prompt
+	_text_response(TG_OK, "");				// prompt
 #endif
 }
 
