@@ -102,6 +102,7 @@ struct swStruct sw;
 //		   or normally-closed. "Thrown" means activated or hit.
 
 void gpio_init(void);
+void gpio_out_map(double hw_version);
 void gpio_switch_timer_callback(void);
 void gpio_clear_switches(void);
 void gpio_reset_lockout(void);

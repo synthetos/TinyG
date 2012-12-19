@@ -74,8 +74,9 @@ static uint8_t _sync_to_planner(void);
 
 void tg_init(uint8_t default_src) 
 {
-	tg.version = TINYG_VERSION_NUMBER;
-	tg.build = TINYG_BUILD_NUMBER;
+	cfg.fw_build = TINYG_BUILD_NUMBER;
+	cfg.fw_version = TINYG_VERSION_NUMBER;
+	cfg.hw_version = TINYG_HARDWARE_VERSION;
 
 	tg.default_src = default_src;
 	xio_set_stdin(tg.default_src);

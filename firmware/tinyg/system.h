@@ -53,7 +53,7 @@ void sys_init(void);					// master hardware init
 //#define __CLOCK_EXTERNAL_8MHZ	TRUE	// uses PLL to provide 32 MHz system clock
 #define __CLOCK_EXTERNAL_16MHZ TRUE		// uses PLL to provide 32 MHz system clock
 
-/* Motor, output bit & switch port assignments
+/*** Motor, output bit & switch port assignments ***
  *** These are not all the same, and must line up in multiple places in gpio.h ***
  * Sorry if this is confusing - it's a board routing issue
  */
@@ -62,22 +62,26 @@ void sys_init(void);					// master hardware init
 #define PORT_MOTOR_3	PORTE
 #define PORT_MOTOR_4	PORTD
 
-#define PORT_OUT_X		PORTA			// v7 mapping - output bits mapped to ports
-#define PORT_OUT_Y 		PORTF
-#define PORT_OUT_Z		PORTD
-#define PORT_OUT_A		PORTE
-
-/*
-#define PORT_OUT_X		PORTA			// v6 mapping - output bits mapped to ports
-#define PORT_OUT_Y 		PORTF
-#define PORT_OUT_Z		PORTE
-#define PORT_OUT_A		PORTD
-*/
-
 #define SWITCH_X 		MOTOR_1			// Switch axes mapped to motor numbers
 #define SWITCH_Y 		MOTOR_4
 #define SWITCH_Z 		MOTOR_3
 #define SWITCH_A 		MOTOR_2
+
+#define PORT_OUT_X		PORTA			// v7 mapping - Output bits mapped to ports
+#define PORT_OUT_Y 		PORTF
+#define PORT_OUT_Z		PORTD
+#define PORT_OUT_A		PORTE
+
+#define OUTPUT_X		MOTOR_1			// v7 mapping - Output bits mapped to ports
+#define OUTPUT_Y 		MOTOR_2
+#define OUTPUT_Z		MOTOR_4
+#define OUTPUT_A		MOTOR_3
+/*
+#define OUTPUT_X		MOTOR_1			// v6 mapping - output bits mapped to ports
+#define OUTPUT_Y 		MOTOR_2
+#define OUTPUT_Z		MOTOR_3
+#define OUTPUT_A		MOTOR_4
+*/
 
 // These next four must be changed when the PORT_MOTOR_* definitions change!
 #define PORTCFG_VP0MAP_PORT_MOTOR_1_gc PORTCFG_VP0MAP_PORTA_gc

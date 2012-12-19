@@ -193,14 +193,12 @@ static void _do_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]); // helper
 
 // parameter-specific internal functions
 //static uint8_t _get_id(cmdObj *cmd);	// get device ID (signature)
+static uint8_t _set_hv(cmdObj *cmd);	// set hardware version
 static uint8_t _get_sr(cmdObj *cmd);	// run status report (as data)
 static void _print_sr(cmdObj *cmd);		// run status report (as printout)
 static uint8_t _set_sr(cmdObj *cmd);	// set status report specification
 static uint8_t _set_si(cmdObj *cmd);	// set status report interval
 static uint8_t _get_qr(cmdObj *cmd);	// run queue report (as data)
-//static uint8_t _get_pb(cmdObj *cmd);	// get planner buffers available
-//static uint8_t _get_lx(cmdObj *cmd);	// get runtime line index
-//static uint8_t _set_lx(cmdObj *cmd);	// set runtime line index
 static uint8_t _get_rx(cmdObj *cmd);	// get bytes in RX buffer
 
 static uint8_t _get_gc(cmdObj *cmd);	// get current gcode block
@@ -375,6 +373,7 @@ static const char fmt_str[] PROGMEM = "%s\n";	// generic format for string messa
 
 static const char fmt_fv[] PROGMEM = "[fv]  firmware_version%16.2f\n";
 static const char fmt_fb[] PROGMEM = "[fb]  firmware_build%18.2f\n";
+static const char fmt_hv[] PROGMEM = "[hv]  hardware_version%16.2f\n";
 //static const char fmt_id[] PROGMEM = "[id]  id_device%16d\n";
 
 // Gcode model values for reporting purposes
@@ -412,10 +411,6 @@ static const char fmt_g92z[] PROGMEM = "Z origin offset:%10.3f%S\n";
 static const char fmt_g92a[] PROGMEM = "A origin offset:%10.3f%S\n";
 static const char fmt_g92b[] PROGMEM = "B origin offset:%10.3f%S\n";
 static const char fmt_g92c[] PROGMEM = "C origin offset:%10.3f%S\n";
-//static const char fmt_lx[]   PROGMEM = "Line index:%13d\n";
-//static const char fmt_pb[]   PROGMEM = "Planner buffers:%8d\n";
-//static const char fmt_rx[]   PROGMEM = "%d\n";	// bytes available in RX buffer
-//static const char fmt_msg[]  PROGMEM = "%s\n";	// generic message (with no formatting)
 
 // Gcode model power-on reset default values
 static const char fmt_gpl[] PROGMEM = "[gpl] gcode_select_plane %10d [0,1,2]\n";
@@ -614,8 +609,9 @@ static const char fmt_g59c[] PROGMEM = "[g59c] g59_c_offset%20.3f%S\n";
 
 struct cfgItem const cfgArray[] PROGMEM = {
 	// grp  token flags format*, print_func, get_func, set_func  target for get/set,   default value
-	{ "sys","fb", _fip, fmt_fb, _print_dbl, _get_dbl, _set_nul, (double *)&tg.build,   TINYG_BUILD_NUMBER }, // MUST BE FIRST!
-	{ "sys","fv", _fip, fmt_fv, _print_dbl, _get_dbl, _set_nul, (double *)&tg.version, TINYG_VERSION_NUMBER },
+	{ "sys","fb", _fip, fmt_fb, _print_dbl, _get_dbl, _set_nul, (double *)&cfg.fw_build,   TINYG_BUILD_NUMBER }, // MUST BE FIRST!
+	{ "sys","fv", _fip, fmt_fv, _print_dbl, _get_dbl, _set_nul, (double *)&cfg.fw_version, TINYG_VERSION_NUMBER },
+	{ "sys","hv", _fip, fmt_hv, _print_dbl, _get_dbl, _set_hv,  (double *)&cfg.hw_version, TINYG_HARDWARE_VERSION },
 //	{ "",   "id", _f00, fmt_id, _print_int, _get_id,  _set_nul, (double *)&tg.null, 0},		// device ID (signature)
 
 	// dynamic model attributes for reporting puropses (see also G92 offsets)
@@ -909,9 +905,17 @@ struct cfgItem const cfgArray[] PROGMEM = {
 #define _index_is_uber(i)   ((i >= CMD_INDEX_START_UBER_GROUPS) ? true : false)
 #define _index_is_group_or_uber(i) ((i >= CMD_INDEX_START_GROUPS) ? true : false)
 
-/**** DEVICE ID ****
+/**** VERSIONS AND IDs ****
+ * _set_hv() - set hardweare version number
  * _get_id() - get device ID (signature)
  */
+static uint8_t _set_hv(cmdObj *cmd) 
+{
+	_set_dbl(cmd);				// record the hardware version
+	gpio_out_map(cmd->value);	// now do the mappings that implies
+	return (TG_OK);
+}
+
 /*
 static uint8_t _get_id(cmdObj *cmd) 
 {
@@ -1418,8 +1422,8 @@ void cmd_persist(cmdObj *cmd)
 
 void cfg_init()
 {
-// You can assume all memory has been zeroed by a hard reset. If not, use this code:
-//	memset(&cfg, 0, sizeof(cfg));
+//	You can assume the cfg struct has been zeroed by a hard reset. 
+//	Do not clear as the version and build numbers have already been set by tg_init()
 
 	cmdObj cmd;
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
@@ -1431,7 +1435,7 @@ void cfg_init()
 	cmd_read_NVM_value(&cmd);
 
 	// Case (1) NVM is not setup or not in revision
-	if (cmd.value != tg.build) {
+	if (cmd.value != cfg.fw_build) {
 		cmd.value = true;
 		_set_defa(&cmd);			// this subroutine called from here and from the $defa=1 command
 

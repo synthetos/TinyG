@@ -276,8 +276,10 @@ struct cfgPWMParameters {
 
 struct cfgParameters {
 	uint8_t state;					// configuration state: 1=initialized, 0=not
-	double profile;					// configuration profile in effect
-	double version;					// configuration version for migration
+//	double profile;					// configuration profile in effect
+	double fw_build;				// tinyg firmware build number
+	double fw_version;				// tinyg firmware version number
+	double hw_version;				// tinyg hardware compatibility
 
 	uint16_t nvm_base_addr;			// NVM base address
 	uint16_t nvm_profile_base;		// NVM base address of current profile
@@ -288,6 +290,7 @@ struct cfgParameters {
 	double estd_segment_usec;		// approximate segment time in microseconds
 	double junction_acceleration;	// centripetal acceleration max for cornering
 	uint8_t enable_acceleration;	// enable acceleration control
+	uint8_t outmap[MOTORS];			// array for mapping output bits
 //	double max_spindle_speed;		// in RPM
 
 	// gcode power-on default settings - defaults are not the same as the gm state

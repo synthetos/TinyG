@@ -37,8 +37,8 @@
 #define APPLICATION_MESSAGE_LEN 64	// application message string storage allocation
 
 struct controllerSingleton {		// main TG controller struct
-	double version;					// tinyg version number
-	double build;					// tinyg build number
+//	double version;					// tinyg version number
+//	double build;					// tinyg build number
 	double null;					// dumping ground for items with no target
 	uint8_t test;
 	uint8_t src;					// active source device

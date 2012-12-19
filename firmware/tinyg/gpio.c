@@ -80,7 +80,7 @@
 											// timer for debouncing switches
 #define SW_LOCKOUT_TICKS 25					// 25=250ms. RTC ticks are ~10ms each
 
-static uint8_t gpio_port_value;				// global for synthetic port read value
+//static uint8_t gpio_port_value;			// global for synthetic port read value
 static void _init_helper(uint8_t swit, uint8_t port);
 static void _isr_helper(uint8_t sw_num);
 
@@ -117,7 +117,7 @@ static void _init_helper(uint8_t swit, uint8_t port)
 // old code from when switches fired on one edge or the other:
 //	uint8_t int_mode = (sw.switch_type == SW_TYPE_NORMALLY_OPEN) ? PORT_ISC_FALLING_gc : PORT_ISC_RISING_gc;
 
-	// setup port input bits and interrupts (previously set to inputs by st_init())
+	// setup input bits and interrupts (previously set to inputs by st_init())
 	if (sw.mode[MIN_SWITCH(swit)] != SW_MODE_DISABLED) {
 		device.port[port]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input - see 13.14.14
 		device.port[port]->PIN6CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
@@ -134,6 +134,19 @@ static void _init_helper(uint8_t swit, uint8_t port)
 	}
 	// set interrupt levels. Interrupts must be enabled in main()
 	device.port[port]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
+}
+
+void gpio_out_map(double hw_version)		// hack to correct for routing differences
+{
+	cfg.outmap[X] = MOTOR_1;
+	cfg.outmap[Y] =	MOTOR_2;
+	if (hw_version >= 6.9) {				// version 7 or above
+		cfg.outmap[Z] =	MOTOR_4;
+		cfg.outmap[A] =	MOTOR_3;
+	} else {
+		cfg.outmap[Z] =	MOTOR_3;
+		cfg.outmap[A] =	MOTOR_4;
+	}	
 }
 
 /*
@@ -223,6 +236,51 @@ void gpio_clear_switches()
 }
 
 /*
+ * gpio_led_on() - turn led on - assumes TinyG LED mapping
+ * gpio_led_off() - turn led on - assumes TinyG LED mapping
+ */
+
+void gpio_led_on(uint8_t led)
+{
+	if (led == 0) return (gpio_set_bit_on(0x08));
+	if (led == 1) return (gpio_set_bit_on(0x04));
+	if (led == 2) return (gpio_set_bit_on(0x02));
+	if (led == 3) return (gpio_set_bit_on(0x01));
+}
+
+void gpio_led_off(uint8_t led)
+{
+	if (led == 0) return (gpio_set_bit_off(0x08));
+	if (led == 1) return (gpio_set_bit_off(0x04));
+	if (led == 2) return (gpio_set_bit_off(0x02));
+	if (led == 3) return (gpio_set_bit_off(0x01));
+}
+
+/*
+ * gpio_set_bit_on() - turn bit on
+ * gpio_set_bit_off() - turn bit on
+ *
+ *	These functions have an inner remap depending on what hardware is running
+ */
+
+void gpio_set_bit_on(uint8_t b)
+{
+	if (b & 0x08) { device.port[cfg.outmap[X]]->OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x04) { device.port[cfg.outmap[Y]]->OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x02) { device.port[cfg.outmap[Z]]->OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x01) { device.port[cfg.outmap[A]]->OUTSET = GPIO1_OUT_BIT_bm;}
+}
+
+void gpio_set_bit_off(uint8_t b)
+{
+	if (b & 0x08) { device.port[cfg.outmap[X]]->OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x04) { device.port[cfg.outmap[Y]]->OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x02) { device.port[cfg.outmap[Z]]->OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x01) { device.port[cfg.outmap[A]]->OUTCLR = GPIO1_OUT_BIT_bm;}
+}
+
+// DEPRECATED CODE THAT MIGHT STILL BE USEFUL
+/*
  * gpio_read_switches() - read the switches into the switch flag array
  *
  *	Read the switch states into the switch array as an array of true/false bytes
@@ -258,47 +316,6 @@ void gpio_read_switches()
 }
 */
 
-/*
- * gpio_led_on() - turn led on - assumes TinyG LED mapping
- * gpio_led_off() - turn led on - assumes TinyG LED mapping
- */
-
-void gpio_led_on(uint8_t led)
-{
-	if (led == 0) return (gpio_set_bit_on(0x08));
-	if (led == 1) return (gpio_set_bit_on(0x04));
-	if (led == 2) return (gpio_set_bit_on(0x02));
-	if (led == 3) return (gpio_set_bit_on(0x01));
-}
-
-void gpio_led_off(uint8_t led)
-{
-	if (led == 0) return (gpio_set_bit_off(0x08));
-	if (led == 1) return (gpio_set_bit_off(0x04));
-	if (led == 2) return (gpio_set_bit_off(0x02));
-	if (led == 3) return (gpio_set_bit_off(0x01));
-}
-
-/*
- * gpio_set_bit_on() - turn bit on
- * gpio_set_bit_off() - turn bit on
- */
-
-void gpio_set_bit_on(uint8_t b)
-{
-	if (b & 0x08) { PORT_OUT_X.OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x04) { PORT_OUT_Y.OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x02) { PORT_OUT_Z.OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x01) { PORT_OUT_A.OUTSET = GPIO1_OUT_BIT_bm;}
-}
-
-void gpio_set_bit_off(uint8_t b)
-{
-	if (b & 0x08) { PORT_OUT_X.OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x04) { PORT_OUT_Y.OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x02) { PORT_OUT_Z.OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x01) { PORT_OUT_A.OUTCLR = GPIO1_OUT_BIT_bm;}
-}
 
 /*
  * gpio_write_port() - write lowest 4 bits of a byte to GPIO 1 output port
