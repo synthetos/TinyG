@@ -230,22 +230,17 @@ static struct stPrepSingleton sp;
  * st_init() - initialize stepper motor subsystem 
  *
  *	Notes:
+ *	  - This init requires sys_init() to be run beforehand
+ *		This init is a precursor for gpio_init()
  * 	  - microsteps are setup during cfg_init()
  *	  - motor polarity is setup during cfg_init()
- *	  - switch ports and interrupts are setup in gpio_init() but st_init() is a precursor
- *	  - high level interrupts must be enabled in main()
+ *	  - high level interrupts must be enabled in main() once all inits are complete
  */
 
 void st_init()
 {
-//	You can assume all values are zeroed. If not, use the next line:
+//	You can assume all values are zeroed. If not, use this:
 //	memset(&st, 0, sizeof(st));	// clear all values, pointers and status
-
-	// These defines and the device struct are found in system.h
-//	device.port[MOTOR_1] = &PORT_MOTOR_1;		// bind PORTs to struct
-//	device.port[MOTOR_2] = &PORT_MOTOR_2;
-//	device.port[MOTOR_3] = &PORT_MOTOR_3;
-//	device.port[MOTOR_4] = &PORT_MOTOR_4;
 
 	// Configure virtual ports
 	PORTCFG.VPCTRLA = PORTCFG_VP0MAP_PORT_MOTOR_1_gc | PORTCFG_VP1MAP_PORT_MOTOR_2_gc;
@@ -282,7 +277,7 @@ void st_init()
 }
 
 /* 
- * st_disable() - stop the steppers. Requires re-init
+ * st_disable() - stop the steppers. Requires re-init to recover
  */
 
 void st_disable()

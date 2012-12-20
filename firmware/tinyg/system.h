@@ -175,8 +175,8 @@ enum cfgPortBits {			// motor control port bit positions
 		- st_init() 	sets IO directions and stepper specific functions
 		- gpio_init()	sets up input and output functions and required interrupts	
 
-	Care needs to be taken in routines that use these do not to write to bits that are 
-	not assigned to the designated function. The core setup affecting all ports occurs in 
+	Care needs to be taken in routines that use these not to write to bits that are 
+	not assigned to the designated function.
 */
 
 struct deviceSingleton {

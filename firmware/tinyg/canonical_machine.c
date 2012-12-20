@@ -185,7 +185,7 @@ double cm_get_coord_offset(uint8_t axis)
 	if (gm.absolute_override == true) {
 		return (0);						// no work offset if in abs override mode
 	}
-	if (gm.origin_offset_mode == true) {
+	if (gm.origin_offset_enable == 1) {
 		return (cfg.offset[gm.coord_system][axis] + gm.origin_offset[axis]);
 	} else {
 		return (cfg.offset[gm.coord_system][axis]);
@@ -209,12 +209,12 @@ double cm_get_model_work_position(uint8_t axis)
 	}
 }
 /*
-double *cm_get_model_work_position_vector(double vector[]) 
+double *cm_get_model_work_position_vector(double position[]) 
 {
 	for (uint8_t i=0; i<AXES; i++) {
-		vector[i] = cm_get_model_work_position(i);
+		position[i] = cm_get_model_work_position(i);
 	}
-	return (vector);
+	return (position);
 }
 */
 double cm_get_model_canonical_target(uint8_t axis) 
@@ -578,16 +578,16 @@ void cm_shutdown()
  * Representation (4.3.3)
  *
  * cm_set_machine_axis_position()- set the position of a single axis
- * cm_set_machine_origins()		- G92.4 set absolute coordinate system origins
  * cm_select_plane()			- G17,G18,G19 select axis plane
  * cm_set_units_mode()			- G20, G21
  * cm_set_distance_mode()		- G90, G91
  * cm_set_coord_system()		- G54-G59
- * cm_set_coord_system_offsets()- G10
+ * cm_set_coord_system_offsets()- G10 (does not persist)
  * cm_set_origin_offsets()		- G92
  * cm_reset_origin_offsets()	- G92.1
  * cm_suspend_origin_offsets()	- G92.2
  * cm_resume_origin_offsets()	- G92.3
+ * cm_set_machine_origins()		- G92.4 set absolute coordinate system origins
  */
 
 /*
@@ -598,23 +598,6 @@ uint8_t cm_set_machine_axis_position(uint8_t axis, const double position)
 	gm.position[axis] = position;
 	gm.target[axis] = position;
 	mp_set_axis_position(axis, position);
-	return (TG_OK);
-}
-/*
- * cm_set_machine_origins() - G92.4
- *
- *	This is an "unofficial gcode" command to allow arbitrarily setting an axis 
- *	to an absolute position. This is needed to support the Otherlab infinite 
- *	Y axis. USE: With the axis(or axes) where you want it, issue g92.4 y0 
- *	(for example). The Y axis will now be set to 0 (or whatever value provided)
- */
-uint8_t cm_set_machine_origins(double origin[], double flag[])
-{
-	for (uint8_t i=0; i<AXES; i++) {
-		if (flag[i] > EPSILON) {
-			cm_set_machine_axis_position(i, cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
-		}
-	}
 	return (TG_OK);
 }
 
@@ -669,11 +652,20 @@ uint8_t	cm_set_coord_system(uint8_t coord_system)
 }
 static void _exec_offset(uint8_t coord_system, double f)
 {
-	mp_set_runtime_work_offset(cfg.offset[coord_system]);
+	double offsets[AXES];
+	for (uint8_t i=0; i<AXES; i++) {
+		offsets[i] = cfg.offset[coord_system][i] - (gm.origin_offset[i] * gm.origin_offset_enable);
+	}
+	mp_set_runtime_work_offset(offsets);
+//	mp_set_runtime_work_offset(cfg.offset[coord_system]);
 }
 
 /*
  * cm_set_coord_system_offsets() - G10 L2 Pn
+ *
+ *	Note: This function appies the offset to the GM model but does not persist
+ *	the offsets (as Gcode expects). If you want to persist coordinate system 
+ *	offsets use $g54x - $g59c config functions instead.
  */
 uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[])
 {
@@ -683,15 +675,9 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
 	for (uint8_t i=0; i<AXES; i++) {
 		if (flag[i] > EPSILON) {
 			cfg.offset[coord_system][i] = offset[i];
-			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
+//			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
 		}
 	}
-//	cm.g10_persist_flag = true;				// set flag so offsets will be persisted
-
-	// ########################################see if it's OK to write them now, or if they need to wait until STOP
-//	if (cm.machine_state != MACHINE_CYCLE) {
-//		cmd_persist_offsets(cm.g10_persist_flag);
-//	}
 	return (TG_OK);
 }
 
@@ -703,32 +689,54 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
  */
 uint8_t cm_set_origin_offsets(double offset[], double flag[])
 {
-	gm.origin_offset_mode = true;
+	gm.origin_offset_enable = 1;
 	for (uint8_t i=0; i<AXES; i++) {
 		if (flag[i] > EPSILON) {	 		// behaves according to NIST 3.5.18
 			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] - _to_millimeters(offset[i]);
 		}
 	}
+	mp_queue_command(_exec_offset, gm.coord_system,0);
 	return (TG_OK);
 }
 
 uint8_t cm_reset_origin_offsets()
 {
-	gm.origin_offset_mode = false;
+	gm.origin_offset_enable = 0;
 	for (uint8_t i=0; i<AXES; i++) 
 		gm.origin_offset[i] = 0;
+	mp_queue_command(_exec_offset, gm.coord_system,0);
 	return (TG_OK);
 }
 
 uint8_t cm_suspend_origin_offsets()
 {
-	gm.origin_offset_mode = false;
+	gm.origin_offset_enable = 0;
+	mp_queue_command(_exec_offset, gm.coord_system,0);
 	return (TG_OK);
 }
 
 uint8_t cm_resume_origin_offsets()
 {
-	gm.origin_offset_mode = true;
+	gm.origin_offset_enable = 1;
+	mp_queue_command(_exec_offset, gm.coord_system,0);
+	return (TG_OK);
+}
+
+/*
+ * cm_set_machine_origins() - G92.4
+ *
+ *	This is an "unofficial gcode" command to allow arbitrarily setting an axis 
+ *	to an absolute position. This is needed to support the Otherlab infinite 
+ *	Y axis. USE: With the axis(or axes) where you want it, issue g92.4 y0 
+ *	(for example). The Y axis will now be set to 0 (or whatever value provided)
+ */
+uint8_t cm_set_machine_origins(double origin[], double flag[])
+{
+	for (uint8_t i=0; i<AXES; i++) {
+		if (flag[i] > EPSILON) {
+			cm_set_machine_axis_position(i, cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
+		}
+	}
 	return (TG_OK);
 }
 

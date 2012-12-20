@@ -53,12 +53,6 @@ void sys_init()
 
 void sys_port_bindings(double hw_version)
 {
-	// setup port bindings
-//	device.port[MOTOR_1] = &PORT_MOTOR_1;
-//	device.port[MOTOR_2] = &PORT_MOTOR_2;
-//	device.port[MOTOR_3] = &PORT_MOTOR_3;
-//	device.port[MOTOR_4] = &PORT_MOTOR_4;
-
 	device.st_port[0] = &PORT_MOTOR_1;
 	device.st_port[1] = &PORT_MOTOR_2;
 	device.st_port[2] = &PORT_MOTOR_3;

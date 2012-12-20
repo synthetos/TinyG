@@ -44,7 +44,7 @@ struct canonicalMachineSingleton {	// struct to manage cm globals and cycles
 	uint8_t cycle_start_flag;		// flag to end feedhold
 	uint8_t homing_state;			// homing cycle sub-state machine
 	uint32_t status_report_counter;
-	uint8_t	g10_persist_flag;		// true=write offsets to NVM after stop
+//	uint8_t	g10_persist_flag;		// true=write offsets to NVM after stop
 	uint8_t	g30_flag;				// true=complete a G30 move
 }; struct canonicalMachineSingleton cm;
 
@@ -96,7 +96,7 @@ struct GCodeModel {						// Gcode model- meaning depends on context
 	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
 	uint8_t coord_system;				// G54-G59 - select coordinate system 1-9
 	uint8_t absolute_override;			// G53 TRUE = move using machine coordinates - this block only (G53)
-	uint8_t origin_offset_mode;			// G92...TRUE=in origin offset mode
+	uint8_t origin_offset_enable;		// G92 offsets enabled/disabled.  0=disabled, 1=enabled
 
 	uint8_t path_control;				// G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
 	uint8_t distance_mode;				// G91   0=use absolute coords(G90), 1=incremental movement

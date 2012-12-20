@@ -99,7 +99,7 @@ static void _isr_helper(uint8_t sw_num);
 
 void gpio_init(void)
 {
-	for (uint8_t i=X; i<A; i++) {
+	for (uint8_t i=0; i<NUM_SWITCH_PAIRS; i++) {
 		// old code from when switches fired on one edge or the other:
 		//	uint8_t int_mode = (sw.switch_type == SW_TYPE_NORMALLY_OPEN) ? PORT_ISC_FALLING_gc : PORT_ISC_RISING_gc;
 
