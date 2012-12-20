@@ -101,6 +101,7 @@
 static double _get_move_times(double *min_time);
 
 // planner queue callbacks
+static void _exec_offset(uint8_t coord_system, double f);
 static void _exec_change_tool(uint8_t tool, double f);
 static void _exec_select_tool(uint8_t tool, double f);
 static void _exec_mist_coolant_control(uint8_t mist_coolant, double f);
@@ -159,7 +160,6 @@ uint32_t cm_get_model_linenum() { return gm.linenum;}
 uint8_t cm_isbusy() { return (mp_isbusy());}
 
 // set parameters in gm struct
-
 void cm_set_absolute_override(uint8_t absolute_override) { gm.absolute_override = absolute_override;}
 void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
 void cm_set_spindle_speed_parameter(double speed) { gm.spindle_speed = speed;}
@@ -254,12 +254,9 @@ double cm_get_runtime_work_position(uint8_t axis)
  *	The setters take care of coordinate system, units, and 
  *	distance mode conversions and normalizations.
  *
- * cm_set_arc_offset()	- set all IJK offsets
- * cm_set_radius()		- set radius value
- * cm_set_model_linenum() - set line number in the model (this is NOT the runtime line number)
- * cm_set_model_lineindex() - set line index in the model (this is NOT the runtime line index)
- * cm_incr_model_lineindex() - increment line index in the model (this is NOT the runtime line index)
- * cm_set_target()		- set all XYZABC targets
+ * cm_set_arc_offset()	  - set all IJK offsets
+ * cm_set_radius()		  - set radius value
+ * cm_set_model_linenum() - set line number in the model
  */
 
 void cm_set_arc_offset(double i, double j, double k)
@@ -394,40 +391,51 @@ static double _calc_ABC(uint8_t i, double target[], double flag[])
 }
 
 /* 
- * cm_set_gcode_model_endpoint_position() - uses internal coordinates only
+ * cm_set_gcode_model_endpoint_position() - uses internal canonical coordinates only
  *
- * 	This routine sets the endpoint position in the gccode model if the move
- *	was is successfully completed (no errors). Leaving the endpoint position
- *	alone for errors allows too-short-lines to accumulate into longer lines.
+ * 	This routine sets the endpoint position in the gccode model if the move was
+ *	successfully completed (no errors). Leaving the endpoint position alone for 
+ *	errors allows too-short-lines to accumulate into longer lines (line interpolation).
  *
- * 	Note: As far as the canonical machine is concerned the final position 
- *	is achieved as soon at the move is executed and the position is now 
- *	the target. In reality the planner(s) and steppers will still be 
- *	processing the action and the real tool position is still close to 
- *	the starting point. 
+ * 	Note: As far as the canonical machine is concerned the final position is achieved 
+ *	as soon at the move is executed and the position is now the target. In reality 
+ *	the planner(s) and steppers will still be processing the action and the real tool 
+ *	position is still close to the starting point. 
  */
 
 void cm_set_gcode_model_endpoint_position(uint8_t status) 
 {
-	if (status == TG_OK) { copy_axis_vector(gm.position, gm.target);}
+	if (status == TG_OK) copy_axis_vector(gm.position, gm.target);
 }
 
 /* 
- * _get_move_times() - get required time for move and minimum time for move
+ * _get_move_times() - get minimum and optimal move times
  *
- *	Compute the optimum time for the move. This will either be the 
- *	length / rate (feedrate or traverse rate), or just time specified by inverse
- *	feed rate if G93 is active. Then test the move against the maximum feed
- *	feed or traverse rates for each axis in the move and increase the time to 
- *	accommodate the rate limiting axis. Axis modes are taken into account
- *	by having cm_set_target load the targets before calling this function.
+ *	The minimum time is the fastest the move can be performed given the velocity 
+ *	constraints on each particpating axis - regardless of the feedrate requested. 
+ *	The minimum time is the time limited by the rate-limiting axis. The minimum 
+ *	time is needed to compute the optimal time and is recorded for possible 
+ *	feed override computation..
+ *
+ *	The optimal time is either the time resulting from the requested feedrate or 
+ *	the minimum time if the requested feedrate is not achievable. Optimal times for 
+ *	traverses are always the minimum time.
+ *
+ *	Axis modes are taken into account by having cm_set_target() load the targets 
+ *	before calling this function.
  *
  *	The following times are compared and the longest is returned:
  *	  -	G93 inverse time (if G93 is active)
  *	  -	time for coordinated move at requested feed rate
  *	  -	time that the slowest axis would require for the move
+ *
+ *	Returns:
+ *	  - Optimal time returned as the function return
+ *	  - Minimum time is set via the function argument
  */
-/* The following is verbatim text from NIST RS274NGC_v3. As I interpret A for 
+/* --- NIST RS274NGC_v3 Guidance ---
+ *
+ * The following is verbatim text from NIST RS274NGC_v3. As I interpret A for 
  * moves that combine both linear and rotational movement, the feed rate should
  * apply to the XYZ movement, with the rotational axis (or axes) timed to start
  * and end at the same time the linear move is performed. It is possible under 
@@ -569,36 +577,18 @@ void cm_shutdown()
 /* 
  * Representation (4.3.3)
  *
- * cm_set_machine_coords() - update machine coordinates
- * cm_set_machine_zero() - set machine coordinates to zero
- * cm_set_machine_axis_position() - set the position of a single axis
- * cm_select_plane() - G17,G18,G19 select axis plane
- * cm_set_units_mode()  - G20, G21
- * cm_set_distance_mode() - G90, G91
- * cm_set_coord_system() - G54-G59
- * cm_set_coord_system_offsets() - G10
- * cm_set_origin_offsets() - G92
- * cm_reset_origin_offsets() - G92.1
- * cm_suspend_origin_offsets() - G92.2
- * cm_resume_origin_offsets() - G92.3
+ * cm_set_machine_axis_position()- set the position of a single axis
+ * cm_set_machine_origins()		- G92.4 set absolute coordinate system origins
+ * cm_select_plane()			- G17,G18,G19 select axis plane
+ * cm_set_units_mode()			- G20, G21
+ * cm_set_distance_mode()		- G90, G91
+ * cm_set_coord_system()		- G54-G59
+ * cm_set_coord_system_offsets()- G10
+ * cm_set_origin_offsets()		- G92
+ * cm_reset_origin_offsets()	- G92.1
+ * cm_suspend_origin_offsets()	- G92.2
+ * cm_resume_origin_offsets()	- G92.3
  */
-/*
-uint8_t cm_set_machine_coords(double offset[])
-{
-	copy_axis_vector(gm.position, offset);
-	copy_axis_vector(gm.target, gm.position);
-	mp_set_axis_position(gm.position);
-	return (TG_OK);
-}
-
-uint8_t cm_set_machine_zero()
-{
-	copy_axis_vector(gm.position, set_vector(0,0,0,0,0,0));
-	copy_axis_vector(gm.target, gm.position);
-	mp_set_axes_position(gm.position);
-	return (TG_OK);
-}
-*/
 
 /*
  * cm_set_machine_axis_position() - set the position of a single axis
@@ -608,6 +598,23 @@ uint8_t cm_set_machine_axis_position(uint8_t axis, const double position)
 	gm.position[axis] = position;
 	gm.target[axis] = position;
 	mp_set_axis_position(axis, position);
+	return (TG_OK);
+}
+/*
+ * cm_set_machine_origins() - G92.4
+ *
+ *	This is an "unofficial gcode" command to allow arbitrarily setting an axis 
+ *	to an absolute position. This is needed to support the Otherlab infinite 
+ *	Y axis. USE: With the axis(or axes) where you want it, issue g92.4 y0 
+ *	(for example). The Y axis will now be set to 0 (or whatever value provided)
+ */
+uint8_t cm_set_machine_origins(double origin[], double flag[])
+{
+	for (uint8_t i=0; i<AXES; i++) {
+		if (flag[i] > EPSILON) {
+			cm_set_machine_axis_position(i, cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
+		}
+	}
 	return (TG_OK);
 }
 
@@ -657,11 +664,17 @@ uint8_t cm_set_distance_mode(uint8_t mode)
 uint8_t	cm_set_coord_system(uint8_t coord_system)
 {
 	gm.coord_system = coord_system;	
+	mp_queue_command(_exec_offset, coord_system,0);
 	return (TG_OK);
+}
+static void _exec_offset(uint8_t coord_system, double f)
+{
+	mp_set_runtime_work_offset(cfg.offset[coord_system]);
 }
 
 /*
  * cm_set_coord_system_offsets() - G10 L2 Pn
+ * cm_G10_persist_callback()	 - main loop callback to write offsets to NVM
  */
 uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[])
 {
@@ -674,16 +687,27 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
 			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
 		}
 	}
+	cm.g10_persist_flag = true;				// set flag so offsets will be persisted
+
 	// ########################################see if it's OK to write them now, or if they need to wait until STOP
-	if (cm.machine_state != MACHINE_CYCLE) {
-		cmd_persist_offsets(cm.g10_persist_flag);
+//	if (cm.machine_state != MACHINE_CYCLE) {
+//		cmd_persist_offsets(cm.g10_persist_flag);
+//	}
+	return (TG_OK);
+}
+
+uint8_t cm_G10_persist_callback()
+{
+	if ((cm.g10_persist_flag == false) || (cm.machine_state != MACHINE_CYCLE)) {
+		return (TG_NOOP);
 	}
+	cm.g10_persist_flag == false;
+	cmd_persist_offsets(cm.g10_persist_flag);
 	return (TG_OK);
 }
 
 /*
  * cm_set_origin_offsets() - G92
- * cm_set_machine_origins() - G92.4
  * cm_reset_origin_offsets() - G92.1
  * cm_suspend_origin_offsets() - G92.2
  * cm_resume_origin_offsets() - G92.3
@@ -694,17 +718,6 @@ uint8_t cm_set_origin_offsets(double offset[], double flag[])
 	for (uint8_t i=0; i<AXES; i++) {
 		if (flag[i] > EPSILON) {	 		// behaves according to NIST 3.5.18
 			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] - _to_millimeters(offset[i]);
-		}
-	}
-	return (TG_OK);
-}
-
-uint8_t cm_set_machine_origins(double origin[], double flag[])
-{
-	for (uint8_t i=0; i<AXES; i++) {
-		if (flag[i] > EPSILON) {
-//			cm_set_machine_axis_position(i, gm.position[i] + cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
-			cm_set_machine_axis_position(i, gm.position[i] + _to_millimeters(origin[i]));
 		}
 	}
 	return (TG_OK);
@@ -835,7 +848,11 @@ uint8_t cm_straight_feed(double target[], double flags[])
 }
 
 /* 
- * Spindle Functions (4.3.7) - see spindle.c, spindle.h
+ * Spindle Functions (4.3.7)
+ */
+// see spindle.c, spindle.h
+
+/*
  * Tool Functions (4.3.8)
  *
  * cm_change_tool() - M6 (This might become a complete tool change cycle)
@@ -1001,10 +1018,10 @@ static void _exec_program_finalize(uint8_t machine_state, double f)
 	cm.machine_state = machine_state;
 	cm.cycle_state = CYCLE_OFF;
 	cm.motion_state = MOTION_STOP;
-	cm.hold_state = FEEDHOLD_OFF;		//...and any feedhold is ended
+	cm.hold_state = FEEDHOLD_OFF;			//...and any feedhold is ended
 	cm.cycle_start_flag = false;
-	mp_zero_segment_velocity();			// for reporting purposes
-	rpt_request_status_report();		// request final status report (if enabled)
+	mp_zero_segment_velocity();				// for reporting purposes
+	rpt_request_status_report();			// request final status report (if enabled)
 	cmd_persist_offsets(cm.g10_persist_flag); // persist offsets (if any changes made)
 }
 

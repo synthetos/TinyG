@@ -316,7 +316,6 @@ void gpio_read_switches()
 }
 */
 
-
 /*
  * gpio_write_port() - write lowest 4 bits of a byte to GPIO 1 output port
  *

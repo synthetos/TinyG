@@ -72,11 +72,12 @@ void sys_init(void);					// master hardware init
 #define PORT_OUT_Z		PORTD
 #define PORT_OUT_A		PORTE
 
+/*
 #define OUTPUT_X		MOTOR_1			// v7 mapping - Output bits mapped to ports
 #define OUTPUT_Y 		MOTOR_2
 #define OUTPUT_Z		MOTOR_4
 #define OUTPUT_A		MOTOR_3
-/*
+
 #define OUTPUT_X		MOTOR_1			// v6 mapping - output bits mapped to ports
 #define OUTPUT_Y 		MOTOR_2
 #define OUTPUT_Z		MOTOR_3

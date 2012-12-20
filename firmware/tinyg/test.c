@@ -111,8 +111,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$xabcdefghij\n");	// overrun
 //	xio_queue_RX_string_usb("$x=1\n");			// trying to set a group
 
-	xio_queue_RX_string_usb("$hv=6\n");				// set to text mode
-	xio_queue_RX_string_usb("$hv=7\n");				// set to text mode
+//	xio_queue_RX_string_usb("$hv=6\n");				// set to text mode
+//	xio_queue_RX_string_usb("$hv=7\n");				// set to text mode
 //	xio_queue_RX_string_usb("N100 (MSG*** message test with line number and gcode command ***)\n");
 //	xio_queue_RX_string_usb("(MSG*** message test with no line number or gcode command ***)\n");
 //	xio_queue_RX_string_usb("N100\n");			// just the line number
@@ -121,6 +121,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 //	xio_queue_RX_string_usb("$test=13\n");
 //	xio_queue_RX_string_usb("$$\n");
+	xio_queue_RX_string_usb("m3\n");
 //	xio_queue_RX_string_usb("$sys\n");
 //	xio_queue_RX_string_usb("$xvm\n");
 //	xio_queue_RX_string_usb("$xasasas=42\n");// bad command

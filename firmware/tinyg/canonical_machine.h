@@ -452,16 +452,15 @@ void cm_incr_model_lineindex(void);
 void cm_init(void);									// init canonical machine
 void cm_shutdown(void);								// emergency shutdown
 
-//uint8_t cm_set_machine_coords(double offset[]);
-//uint8_t cm_set_machine_zero(void);					// set absolute zero point
 uint8_t cm_set_machine_axis_position(uint8_t axis, const double position);	// set absolute position
 
 uint8_t cm_select_plane(uint8_t plane);				// G17, G18, G19
 uint8_t cm_set_units_mode(uint8_t mode);			// G20, G21
-uint8_t	cm_set_coord_system(uint8_t coord_system);	// G10 (G54...G59)
-uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[]);
+uint8_t	cm_set_coord_system(uint8_t coord_system);	// G54...G59
+uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[]); // G10 L2
+uint8_t cm_G10_persist_callback(void);				
 uint8_t cm_set_distance_mode(uint8_t mode);			// G90, G91
-uint8_t cm_set_origin_offsets(double offset[], double flag[]); 	// G92
+uint8_t cm_set_origin_offsets(double offset[], double flag[]); // G92
 uint8_t cm_reset_origin_offsets(void); 				// G92.1
 uint8_t cm_suspend_origin_offsets(void); 			// G92.2
 uint8_t cm_resume_origin_offsets(void); 			// G92.3

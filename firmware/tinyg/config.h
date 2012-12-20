@@ -275,8 +275,6 @@ struct cfgPWMParameters {
 };
 
 struct cfgParameters {
-	uint8_t state;					// configuration state: 1=initialized, 0=not
-//	double profile;					// configuration profile in effect
 	double fw_build;				// tinyg firmware build number
 	double fw_version;				// tinyg firmware version number
 	double hw_version;				// tinyg hardware compatibility
@@ -284,13 +282,15 @@ struct cfgParameters {
 	uint16_t nvm_base_addr;			// NVM base address
 	uint16_t nvm_profile_base;		// NVM base address of current profile
 
-	// system settings / globals
+	// hidden settings				// not part of system group, but still accessible
 	double min_segment_len;			// line drawing resolution in mm
 	double arc_segment_len;			// arc drawing resolution in mm
 	double estd_segment_usec;		// approximate segment time in microseconds
-	double junction_acceleration;	// centripetal acceleration max for cornering
-	uint8_t enable_acceleration;	// enable acceleration control
+//	uint8_t enable_acceleration;	// enable acceleration control
 	uint8_t outmap[MOTORS];			// array for mapping output bits
+
+	// system group settings
+	double junction_acceleration;	// centripetal acceleration max for cornering
 //	double max_spindle_speed;		// in RPM
 
 	// gcode power-on default settings - defaults are not the same as the gm state
@@ -305,11 +305,11 @@ struct cfgParameters {
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_xon;				// enable XON/XOFF mode
+	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
 
 	uint8_t enable_qr;				// queue reports enabled and verbosity level
 	uint8_t qr_hi_water;
 	uint8_t qr_lo_water;
-	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
 	uint8_t json_verbosity;			// see enum in this file for settings
 	uint8_t text_verbosity;			// see enum in this file for settings
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values

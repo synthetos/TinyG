@@ -314,7 +314,7 @@ static uint8_t _parse_gcode_block(char *buf)
  *	machining functions in order of execution as per RS274NGC_3 table 8 
  *  (below, with modifications):
  *
- *	    0. apply the line number or auto-increment if there are none
+ *	    0. record the line number
  *		1. comment (includes message) [handled during block normalization]
  *		2. set feed rate mode (G93, G94 - inverse time or per minute)
  *		3. set feed rate (F)
