@@ -47,7 +47,39 @@
 
 void sys_init() 
 {
-	xmega_init();
+	xmega_init();		// set system clock
+	sys_port_bindings(TINYG_HARDWARE_VERSION);
+}
+
+void sys_port_bindings(double hw_version)
+{
+	// setup port bindings
+//	device.port[MOTOR_1] = &PORT_MOTOR_1;
+//	device.port[MOTOR_2] = &PORT_MOTOR_2;
+//	device.port[MOTOR_3] = &PORT_MOTOR_3;
+//	device.port[MOTOR_4] = &PORT_MOTOR_4;
+
+	device.st_port[0] = &PORT_MOTOR_1;
+	device.st_port[1] = &PORT_MOTOR_2;
+	device.st_port[2] = &PORT_MOTOR_3;
+	device.st_port[3] = &PORT_MOTOR_4;
+
+	device.sw_port[0] = &PORT_SWITCH_X;
+	device.sw_port[1] = &PORT_SWITCH_Y;
+	device.sw_port[2] = &PORT_SWITCH_Z;
+	device.sw_port[3] = &PORT_SWITCH_A;
+
+	if (hw_version > 6.9) {
+		device.out_port[0] = &PORT_OUT_V7_X;
+		device.out_port[1] = &PORT_OUT_V7_Y;
+		device.out_port[2] = &PORT_OUT_V7_Z;
+		device.out_port[3] = &PORT_OUT_V7_A;
+	} else {
+		device.out_port[0] = &PORT_OUT_V6_X;
+		device.out_port[1] = &PORT_OUT_V6_Y;
+		device.out_port[2] = &PORT_OUT_V6_Z;
+		device.out_port[3] = &PORT_OUT_V6_A;
+	}
 }
 
 /*

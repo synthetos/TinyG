@@ -132,7 +132,6 @@ static void _controller_HSM()
 	DISPATCH(ar_arc_callback());			// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());			// G28.1 continuation
 	DISPATCH(cm_G30_callback());			// G30 continuation
-	DISPATCH(cm_G10_persist_callback());	// G10 offset persistence
 
 //----- command readers and parsers ------------------------------------//
 	DISPATCH(_sync_to_tx_buffer());			// sync with TX buffer (pseudo-blocking)

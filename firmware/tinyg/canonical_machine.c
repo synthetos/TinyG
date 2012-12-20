@@ -674,7 +674,6 @@ static void _exec_offset(uint8_t coord_system, double f)
 
 /*
  * cm_set_coord_system_offsets() - G10 L2 Pn
- * cm_G10_persist_callback()	 - main loop callback to write offsets to NVM
  */
 uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[])
 {
@@ -687,22 +686,12 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
 			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
 		}
 	}
-	cm.g10_persist_flag = true;				// set flag so offsets will be persisted
+//	cm.g10_persist_flag = true;				// set flag so offsets will be persisted
 
 	// ########################################see if it's OK to write them now, or if they need to wait until STOP
 //	if (cm.machine_state != MACHINE_CYCLE) {
 //		cmd_persist_offsets(cm.g10_persist_flag);
 //	}
-	return (TG_OK);
-}
-
-uint8_t cm_G10_persist_callback()
-{
-	if ((cm.g10_persist_flag == false) || (cm.machine_state != MACHINE_CYCLE)) {
-		return (TG_NOOP);
-	}
-	cm.g10_persist_flag == false;
-	cmd_persist_offsets(cm.g10_persist_flag);
 	return (TG_OK);
 }
 
@@ -1022,6 +1011,5 @@ static void _exec_program_finalize(uint8_t machine_state, double f)
 	cm.cycle_start_flag = false;
 	mp_zero_segment_velocity();				// for reporting purposes
 	rpt_request_status_report();			// request final status report (if enabled)
-	cmd_persist_offsets(cm.g10_persist_flag); // persist offsets (if any changes made)
 }
 

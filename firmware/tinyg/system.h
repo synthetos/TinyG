@@ -41,6 +41,7 @@
 #define system_h
 
 void sys_init(void);					// master hardware init
+void sys_port_bindings(double hw_version);
 //uint8_t sys_read_signature(uint8_t index);
 
 /* CPU clock */	
@@ -62,15 +63,25 @@ void sys_init(void);					// master hardware init
 #define PORT_MOTOR_3	PORTE
 #define PORT_MOTOR_4	PORTD
 
+#define PORT_SWITCH_X 	PORTA			// Switch axes mapped to ports
+#define PORT_SWITCH_Y 	PORTD
+#define PORT_SWITCH_Z 	PORTE
+#define PORT_SWITCH_A 	PORTF
+
+#define PORT_OUT_V7_X	PORTA			// v7 mapping - Output bits mapped to ports
+#define PORT_OUT_V7_Y 	PORTF
+#define PORT_OUT_V7_Z	PORTD
+#define PORT_OUT_V7_A	PORTE
+
+#define PORT_OUT_V6_X	PORTA			// v6 and earlier mapping - Output bits mapped to ports
+#define PORT_OUT_V6_Y 	PORTF
+#define PORT_OUT_V6_Z	PORTE
+#define PORT_OUT_V6_A	PORTD
+
 #define SWITCH_X 		MOTOR_1			// Switch axes mapped to motor numbers
 #define SWITCH_Y 		MOTOR_4
 #define SWITCH_Z 		MOTOR_3
 #define SWITCH_A 		MOTOR_2
-
-#define PORT_OUT_X		PORTA			// v7 mapping - Output bits mapped to ports
-#define PORT_OUT_Y 		PORTF
-#define PORT_OUT_Z		PORTD
-#define PORT_OUT_A		PORTE
 
 /*
 #define OUTPUT_X		MOTOR_1			// v7 mapping - Output bits mapped to ports
@@ -155,10 +166,24 @@ enum cfgPortBits {			// motor control port bit positions
 
 
 /**** Device singleton - global structure to allow iteration through similar devices ****/
-// Ports are shared between steppers and GPIO so we need a global struct
+/*
+	Ports are shared between steppers and GPIO so we need a global struct.
+	Each xmega port is bound 3 times; for the motors, switches and the output bit
+
+	The initialization sequence is important. the order is:
+		- sys_init()	binds all ports to the device struct
+		- st_init() 	sets IO directions and stepper specific functions
+		- gpio_init()	sets up input and output functions and required interrupts	
+
+	Care needs to be taken in routines that use these do not to write to bits that are 
+	not assigned to the designated function. The core setup affecting all ports occurs in 
+*/
 
 struct deviceSingleton {
-	PORT_t *port[MOTORS];	// motor control ports
+//	PORT_t *port[MOTORS];		// bindings for motor control ports + bits
+	PORT_t *st_port[MOTORS];	// bindings for motor control ports + bits
+	PORT_t *sw_port[MOTORS];	// bindings for switch ports (GPIO2)
+	PORT_t *out_port[MOTORS];	// bindings for output ports (GPIO1)
 };
 struct deviceSingleton device;
 

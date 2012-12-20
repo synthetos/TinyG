@@ -458,7 +458,6 @@ uint8_t cm_select_plane(uint8_t plane);				// G17, G18, G19
 uint8_t cm_set_units_mode(uint8_t mode);			// G20, G21
 uint8_t	cm_set_coord_system(uint8_t coord_system);	// G54...G59
 uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[]); // G10 L2
-uint8_t cm_G10_persist_callback(void);				
 uint8_t cm_set_distance_mode(uint8_t mode);			// G90, G91
 uint8_t cm_set_origin_offsets(double offset[], double flag[]); // G92
 uint8_t cm_reset_origin_offsets(void); 				// G92.1

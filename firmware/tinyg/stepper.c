@@ -166,7 +166,6 @@
 static void _exec_move(void);
 static void _load_move(void);
 static void _request_load_move(void);
-
 static void _set_f_dda(double *f_dda, double *dda_substeps,
 					   const double major_axis_steps, const double microseconds);
 
@@ -243,10 +242,10 @@ void st_init()
 //	memset(&st, 0, sizeof(st));	// clear all values, pointers and status
 
 	// These defines and the device struct are found in system.h
-	device.port[MOTOR_1] = &PORT_MOTOR_1;		// bind PORTs to struct
-	device.port[MOTOR_2] = &PORT_MOTOR_2;
-	device.port[MOTOR_3] = &PORT_MOTOR_3;
-	device.port[MOTOR_4] = &PORT_MOTOR_4;
+//	device.port[MOTOR_1] = &PORT_MOTOR_1;		// bind PORTs to struct
+//	device.port[MOTOR_2] = &PORT_MOTOR_2;
+//	device.port[MOTOR_3] = &PORT_MOTOR_3;
+//	device.port[MOTOR_4] = &PORT_MOTOR_4;
 
 	// Configure virtual ports
 	PORTCFG.VPCTRLA = PORTCFG_VP0MAP_PORT_MOTOR_1_gc | PORTCFG_VP1MAP_PORT_MOTOR_2_gc;
@@ -254,8 +253,8 @@ void st_init()
 
 	// setup ports
 	for (uint8_t i=0; i<MOTORS; i++) {
-		device.port[i]->DIR = MOTOR_PORT_DIR_gm;// sets outputs for motors & GPIO1, and GPIO2 inputs
-		device.port[i]->OUT = MOTOR_ENABLE_BIT_bm;// zero port bits AND disable motor
+		device.st_port[i]->DIR = MOTOR_PORT_DIR_gm;  // sets outputs for motors & GPIO1, and GPIO2 inputs
+		device.st_port[i]->OUT = MOTOR_ENABLE_BIT_bm;// zero port bits AND disable motor
 	}
 	// setup DDA timer
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// turn timer off
@@ -749,17 +748,17 @@ void st_set_polarity(const uint8_t motor, const uint8_t polarity)
 void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode)
 {
 	if (microstep_mode == 8) {
-		device.port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
-		device.port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
+		device.st_port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
+		device.st_port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
 	} else if (microstep_mode == 4) {
-		device.port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
-		device.port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
+		device.st_port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
+		device.st_port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
 	} else if (microstep_mode == 2) {
-		device.port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
-		device.port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
+		device.st_port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
+		device.st_port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
 	} else if (microstep_mode == 1) {
-		device.port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
-		device.port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
+		device.st_port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
+		device.st_port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
 	}
 }
 

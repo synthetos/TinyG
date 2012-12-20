@@ -287,7 +287,7 @@ struct cfgParameters {
 	double arc_segment_len;			// arc drawing resolution in mm
 	double estd_segment_usec;		// approximate segment time in microseconds
 //	uint8_t enable_acceleration;	// enable acceleration control
-	uint8_t outmap[MOTORS];			// array for mapping output bits
+//	uint8_t outmap[MOTORS];			// array for mapping output bits
 
 	// system group settings
 	double junction_acceleration;	// centripetal acceleration max for cornering

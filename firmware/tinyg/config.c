@@ -909,8 +909,10 @@ struct cfgItem const cfgArray[] PROGMEM = {
  */
 static uint8_t _set_hv(cmdObj *cmd) 
 {
-	_set_dbl(cmd);				// record the hardware version
-	gpio_out_map(cmd->value);	// now do the mappings that implies
+	_set_dbl(cmd);					// record the hardware version
+	sys_port_bindings(cmd->value);	// reset port bindings
+	gpio_init();					// re-initialize the GPIO ports
+//	gpio_out_map(cmd->value);	// now do the mappings that implies
 	return (TG_OK);
 }
 
@@ -1741,7 +1743,6 @@ static int8_t _get_pos_axis(const INDEX_T i)
  * cmd_get_cmdObj() 	 - setup a cmd object by providing the index
  * cmd_get_index() 		 - get index from mnenonic token + group
  * cmd_get_type()		 - returns command type as a CMD_TYPE enum
- * cmd_persist_offsets() - write any changed G54 (et al) offsets back to NVM
  *
  *	cmd_get_index() is the most expensive routine in the whole config. It does a 
  *	linear table scan of the PROGMEM strings, which of course could be further 
@@ -1824,13 +1825,13 @@ INDEX_T cmd_get_index(const char *group, const char *token)
 
 uint8_t cmd_get_type(cmdObj *cmd)
 {
-//	if (strstr(cmd->token, "gc") != NULL) {
 	if (strcmp("gc", cmd->token) == 0) return (CMD_TYPE_GCODE);
 	if (strcmp("sr", cmd->token) == 0) return (CMD_TYPE_REPORT);
 	if (strcmp("qr", cmd->token) == 0) return (CMD_TYPE_REPORT);
 	return (CMD_TYPE_CONFIG);
 }
 
+/*
 uint8_t cmd_persist_offsets(uint8_t flag)		//####################### validate
 {
 	if (flag == true) {
@@ -1846,6 +1847,7 @@ uint8_t cmd_persist_offsets(uint8_t flag)		//####################### validate
 	}
 	return (TG_OK);
 }
+*/
 
 /********************************************************************************
  ***** Group operations *********************************************************

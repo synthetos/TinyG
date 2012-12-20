@@ -81,26 +81,51 @@
 #define SW_LOCKOUT_TICKS 25					// 25=250ms. RTC ticks are ~10ms each
 
 //static uint8_t gpio_port_value;			// global for synthetic port read value
-static void _init_helper(uint8_t swit, uint8_t port);
+//static void _init_helper(uint8_t swit, uint8_t port);
 static void _isr_helper(uint8_t sw_num);
 
 /*
  * gpio_init() - initialize homing/limit switches
  *
- *	This function assumes st_init() has been run previously to bind the ports
- *	to the device structure and to set GPIO1 and GPIO2 bit IO directions 
- *	(see system.h for the mappings and stepper.c for the inits)
- *
- *	Note: the reason this is not a simple for() loop is that the motor port 
- *	and switch port assignments do not line up. Damn.
+ *	This function assumes sys_init() and st_init() have been run previously to 
+ *	bind the ports and set bit IO directions, repsectively. See system.h for details
  */
 /* Note: v7 boards have external strong pullups on GPIO2 pins (2.7K ohm). 
- *	v6 and earlier use internal upllups only. Internal pullups are set 
+ *	v6 and earlier use internal pullups only. Internal pullups are set 
  *	regardless of board type but are extraneous for v7 boards.
  */
 #define PIN_MODE PORT_OPC_PULLUP_gc				// pin mode. see iox192a3.h for details
 //#define PIN_MODE PORT_OPC_TOTEM_gc			// alternate pin mode for v7 boards
 
+void gpio_init(void)
+{
+	for (uint8_t i=X; i<A; i++) {
+		// old code from when switches fired on one edge or the other:
+		//	uint8_t int_mode = (sw.switch_type == SW_TYPE_NORMALLY_OPEN) ? PORT_ISC_FALLING_gc : PORT_ISC_RISING_gc;
+
+		// setup input bits and interrupts (previously set to inputs by st_init())
+		if (sw.mode[MIN_SWITCH(i)] != SW_MODE_DISABLED) {
+			device.sw_port[i]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input - see 13.14.14
+			device.sw_port[i]->PIN6CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
+			device.sw_port[i]->INT0MASK = SW_MIN_BIT_bm;	 	// interrupt on min switch
+		} else {
+			device.sw_port[i]->INT0MASK = 0;	 				// disable interrupt
+		}
+		if (sw.mode[MAX_SWITCH(i)] != SW_MODE_DISABLED) {
+			device.sw_port[i]->DIRCLR = SW_MAX_BIT_bm;		 	// set max input - see 13.14.14
+			device.sw_port[i]->PIN7CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
+			device.sw_port[i]->INT1MASK = SW_MAX_BIT_bm;		// max on INT1
+		} else {
+			device.sw_port[i]->INT1MASK = 0;
+		}
+		// set interrupt levels. Interrupts must be enabled in main()
+		device.sw_port[i]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
+	}
+	gpio_clear_switches();
+	gpio_reset_lockout();
+}
+
+/*
 void gpio_init(void)
 {
 	// Assumes all port directions previously set to 0x3F in st_init()
@@ -148,6 +173,7 @@ void gpio_out_map(double hw_version)		// hack to correct for routing differences
 		cfg.outmap[A] =	MOTOR_4;
 	}	
 }
+*/
 
 /*
  * ISRs - Switch interrupt handler routine and vectors
@@ -211,14 +237,14 @@ uint8_t gpio_read_switch(uint8_t sw_num)
 
 	uint8_t read = 0;
 	switch (sw_num) {
-		case SW_MIN_X: { read = device.port[SWITCH_X]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_X: { read = device.port[SWITCH_X]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Y: { read = device.port[SWITCH_Y]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Y: { read = device.port[SWITCH_Y]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Z: { read = device.port[SWITCH_Z]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Z: { read = device.port[SWITCH_Z]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_A: { read = device.port[SWITCH_A]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_A: { read = device.port[SWITCH_A]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_X: { read = device.sw_port[X]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_X: { read = device.sw_port[X]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Y: { read = device.sw_port[Y]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Y: { read = device.sw_port[Y]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Z: { read = device.sw_port[Z]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Z: { read = device.sw_port[Z]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_A: { read = device.sw_port[A]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_A: { read = device.sw_port[A]->IN & SW_MAX_BIT_bm; break;}
 	}
 	if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
 		return ((read == 0) ? SW_CLOSED : SW_OPEN);		// confusing. An NO switch drives the pin LO when thrown
@@ -265,18 +291,28 @@ void gpio_led_off(uint8_t led)
 
 void gpio_set_bit_on(uint8_t b)
 {
-	if (b & 0x08) { device.port[cfg.outmap[X]]->OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x04) { device.port[cfg.outmap[Y]]->OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x02) { device.port[cfg.outmap[Z]]->OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x01) { device.port[cfg.outmap[A]]->OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x08) { device.out_port[0]->OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x04) { device.out_port[1]->OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x02) { device.out_port[2]->OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x01) { device.out_port[3]->OUTSET = GPIO1_OUT_BIT_bm;}
+
+//	if (b & 0x08) { device.port[cfg.outmap[X]]->OUTSET = GPIO1_OUT_BIT_bm;}
+//	if (b & 0x04) { device.port[cfg.outmap[Y]]->OUTSET = GPIO1_OUT_BIT_bm;}
+//	if (b & 0x02) { device.port[cfg.outmap[Z]]->OUTSET = GPIO1_OUT_BIT_bm;}
+//	if (b & 0x01) { device.port[cfg.outmap[A]]->OUTSET = GPIO1_OUT_BIT_bm;}
 }
 
 void gpio_set_bit_off(uint8_t b)
 {
-	if (b & 0x08) { device.port[cfg.outmap[X]]->OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x04) { device.port[cfg.outmap[Y]]->OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x02) { device.port[cfg.outmap[Z]]->OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x01) { device.port[cfg.outmap[A]]->OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x08) { device.out_port[0]->OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x04) { device.out_port[1]->OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x02) { device.out_port[2]->OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x01) { device.out_port[3]->OUTCLR = GPIO1_OUT_BIT_bm;}
+
+//	if (b & 0x08) { device.port[cfg.outmap[X]]->OUTCLR = GPIO1_OUT_BIT_bm;}
+//	if (b & 0x04) { device.port[cfg.outmap[Y]]->OUTCLR = GPIO1_OUT_BIT_bm;}
+//	if (b & 0x02) { device.port[cfg.outmap[Z]]->OUTCLR = GPIO1_OUT_BIT_bm;}
+//	if (b & 0x01) { device.port[cfg.outmap[A]]->OUTCLR = GPIO1_OUT_BIT_bm;}
 }
 
 // DEPRECATED CODE THAT MIGHT STILL BE USEFUL
@@ -294,14 +330,14 @@ void gpio_set_bit_off(uint8_t b)
 void gpio_read_switches()
 {
 	uint8_t fix[NUM_SWITCHES];
-	fix[0] = 0x01 & (device.port[SWITCH_X]->IN >> SW_MIN_BIT_bp);
-	fix[1] = 0x01 & (device.port[SWITCH_X]->IN >> SW_MAX_BIT_bp);
-	fix[2] = 0x01 & (device.port[SWITCH_Y]->IN >> SW_MIN_BIT_bp);
-	fix[3] = 0x01 & (device.port[SWITCH_Y]->IN >> SW_MAX_BIT_bp);
-	fix[4] = 0x01 & (device.port[SWITCH_Z]->IN >> SW_MIN_BIT_bp);
-	fix[5] = 0x01 & (device.port[SWITCH_Z]->IN >> SW_MAX_BIT_bp);
-	fix[6] = 0x01 & (device.port[SWITCH_A]->IN >> SW_MIN_BIT_bp);
-	fix[7] = 0x01 & (device.port[SWITCH_A]->IN >> SW_MAX_BIT_bp);
+	fix[0] = 0x01 & (device.sw_port[X]->IN >> SW_MIN_BIT_bp);
+	fix[1] = 0x01 & (device.sw_port[X]->IN >> SW_MAX_BIT_bp);
+	fix[2] = 0x01 & (device.sw_port[Y]->IN >> SW_MIN_BIT_bp);
+	fix[3] = 0x01 & (device.sw_port[Y]->IN >> SW_MAX_BIT_bp);
+	fix[4] = 0x01 & (device.sw_port[Z]->IN >> SW_MIN_BIT_bp);
+	fix[5] = 0x01 & (device.sw_port[Z]->IN >> SW_MAX_BIT_bp);
+	fix[6] = 0x01 & (device.sw_port[A]->IN >> SW_MIN_BIT_bp);
+	fix[7] = 0x01 & (device.sw_port[A]->IN >> SW_MAX_BIT_bp);
 
 	// interpret them as NO or NC closures
 	gpio_clear_switches();						// clear flags and thrown bit
@@ -323,6 +359,7 @@ void gpio_read_switches()
  * over the place because we have no more contiguous ports left!
  */
 /*
+!!!!! This needs a complete rewrite to use out_port bindings if it's to be used again !!!!
 void gpio_write_port(uint8_t b)
 {
 	gpio_port_value = b;
