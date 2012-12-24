@@ -122,12 +122,11 @@ static void _controller_HSM()
 	DISPATCH(rpt_queue_report_callback());	// conditionally send queue report
 	DISPATCH(mp_plan_hold_callback());		// plan a feedhold
 	DISPATCH(mp_end_hold_callback());		// end a feedhold
-
-	DISPATCH(_sync_to_planner());			// ensure there is at least one free buffer in planning queue
 	DISPATCH(ar_arc_callback());			// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());			// G28.2 continuation
 
 //----- command readers and parsers ------------------------------------//
+	DISPATCH(_sync_to_planner());			// ensure there is at least one free buffer in planning queue
 	DISPATCH(_sync_to_tx_buffer());			// sync with TX buffer (pseudo-blocking)
 	DISPATCH(cfg_baud_rate_callback());		// perform baud rate update (must be after TX sync)
 	DISPATCH(_dispatch());					// read and execute next command

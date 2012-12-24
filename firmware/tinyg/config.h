@@ -285,6 +285,7 @@ struct cfgParameters {
 	// hidden settings				// not part of system group, but still accessible
 	double min_segment_len;			// line drawing resolution in mm
 	double arc_segment_len;			// arc drawing resolution in mm
+	double chordal_tolerance;		// arc chordal accuracy setting in mm
 	double estd_segment_usec;		// approximate segment time in microseconds
 //	uint8_t enable_acceleration;	// enable acceleration control
 //	uint8_t outmap[MOTORS];			// array for mapping output bits

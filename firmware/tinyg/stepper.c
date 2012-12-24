@@ -282,6 +282,10 @@ void st_init()
 
 void st_disable()
 {
+	for (uint8_t i=0; i<MOTORS; i++) {
+		device.st_port[i]->DIR = MOTOR_PORT_DIR_gm;  // sets outputs for motors & GPIO1, and GPIO2 inputs
+		device.st_port[i]->OUT = MOTOR_ENABLE_BIT_bm;// zero port bits AND disable motor
+	}
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// turn timer off
 }
 

@@ -71,7 +71,7 @@ enum moveState {
  */
 #define NOM_SEGMENT_USEC ((double)5000)			// nominal segment time
 #define MIN_SEGMENT_USEC ((double)2500)			// minimum segment time
-#define MIN_ARC_SEGMENT_USEC ((double)20000)	// minimum arc segment time
+#define MIN_ARC_SEGMENT_USEC ((double)10000)	// minimum arc segment time
 #define NOM_SEGMENT_TIME (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME (MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
@@ -90,7 +90,6 @@ enum moveState {
  *	Suggest 12 min. Limit is 255
  */
 #define PLANNER_BUFFER_POOL_SIZE 24
-//#define PLANNER_BUFFER_POOL_SIZE 8
 
 /* Some parameters for _generate_trapezoid()
  * TRAPEZOID_ITERATION_MAX	 			Max iterations for convergence in the HT asymmetric case.

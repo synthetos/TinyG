@@ -131,7 +131,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"ej\":1}\n");
 //	xio_queue_RX_string_usb("{\"z\":{\"sn\":1}}\n");
 //	xio_queue_RX_string_usb("{\"zsn\":1}\n");
-	xio_queue_RX_string_usb("{\"hom\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"hom\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("{\"rx\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"x\":20}\n");
@@ -241,8 +241,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g1 f0 x10\n");
 
 /* G2/G3's */
-//	xio_queue_RX_string_usb("g3 f500 x100 y100 z25 i50 j50\n");	// arcs
-//	xio_queue_RX_string_usb("g2 f2000 x50 y50 z2 i25 j25\n");	// arcs
+//	xio_queue_RX_string_usb("g3 f500 x100 y100 z25 i50 j50\n");
+	xio_queue_RX_string_usb("g2 x0 y0 i30 j30 f2000\n");
+//	xio_queue_RX_string_usb("g2 f2000 x50 y50 z2 i25 j25\n");
 //	xio_queue_RX_string_usb("g2 f300 x10 y10 i8 j8\n");
 //	xio_queue_RX_string_usb("g2 f300 x10 y10 i5 j5\n");
 //	xio_queue_RX_string_usb("g2 f300 x3 y3 i1.5 j1.5\n");
