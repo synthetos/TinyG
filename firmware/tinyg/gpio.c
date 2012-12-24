@@ -126,56 +126,6 @@ void gpio_init(void)
 }
 
 /*
-void gpio_init(void)
-{
-	// Assumes all port directions previously set to 0x3F in st_init()
-	_init_helper(SWITCH_X, MOTOR_1);
-	_init_helper(SWITCH_Y, MOTOR_2);
-	_init_helper(SWITCH_Z, MOTOR_3);
-	_init_helper(SWITCH_A, MOTOR_4);
-	gpio_clear_switches();
-	gpio_reset_lockout();
-}
-
-static void _init_helper(uint8_t swit, uint8_t port)
-{
-// old code from when switches fired on one edge or the other:
-//	uint8_t int_mode = (sw.switch_type == SW_TYPE_NORMALLY_OPEN) ? PORT_ISC_FALLING_gc : PORT_ISC_RISING_gc;
-
-	// setup input bits and interrupts (previously set to inputs by st_init())
-	if (sw.mode[MIN_SWITCH(swit)] != SW_MODE_DISABLED) {
-		device.port[port]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input - see 13.14.14
-		device.port[port]->PIN6CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
-		device.port[port]->INT0MASK = SW_MIN_BIT_bm;	 	// interrupt on min switch
-	} else {
-		device.port[port]->INT0MASK = 0;	 				// disable interrupt
-	}
-	if (sw.mode[MAX_SWITCH(swit)] != SW_MODE_DISABLED) {
-		device.port[port]->DIRCLR = SW_MAX_BIT_bm;		 	// set max input - see 13.14.14
-		device.port[port]->PIN7CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
-		device.port[port]->INT1MASK = SW_MAX_BIT_bm;		// max on INT1
-	} else {
-		device.port[port]->INT1MASK = 0;
-	}
-	// set interrupt levels. Interrupts must be enabled in main()
-	device.port[port]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
-}
-
-void gpio_out_map(double hw_version)		// hack to correct for routing differences
-{
-	cfg.outmap[X] = MOTOR_1;
-	cfg.outmap[Y] =	MOTOR_2;
-	if (hw_version >= 6.9) {				// version 7 or above
-		cfg.outmap[Z] =	MOTOR_4;
-		cfg.outmap[A] =	MOTOR_3;
-	} else {
-		cfg.outmap[Z] =	MOTOR_3;
-		cfg.outmap[A] =	MOTOR_4;
-	}	
-}
-*/
-
-/*
  * ISRs - Switch interrupt handler routine and vectors
  */
 
@@ -295,11 +245,6 @@ void gpio_set_bit_on(uint8_t b)
 	if (b & 0x04) { device.out_port[1]->OUTSET = GPIO1_OUT_BIT_bm;}
 	if (b & 0x02) { device.out_port[2]->OUTSET = GPIO1_OUT_BIT_bm;}
 	if (b & 0x01) { device.out_port[3]->OUTSET = GPIO1_OUT_BIT_bm;}
-
-//	if (b & 0x08) { device.port[cfg.outmap[X]]->OUTSET = GPIO1_OUT_BIT_bm;}
-//	if (b & 0x04) { device.port[cfg.outmap[Y]]->OUTSET = GPIO1_OUT_BIT_bm;}
-//	if (b & 0x02) { device.port[cfg.outmap[Z]]->OUTSET = GPIO1_OUT_BIT_bm;}
-//	if (b & 0x01) { device.port[cfg.outmap[A]]->OUTSET = GPIO1_OUT_BIT_bm;}
 }
 
 void gpio_set_bit_off(uint8_t b)
@@ -308,11 +253,6 @@ void gpio_set_bit_off(uint8_t b)
 	if (b & 0x04) { device.out_port[1]->OUTCLR = GPIO1_OUT_BIT_bm;}
 	if (b & 0x02) { device.out_port[2]->OUTCLR = GPIO1_OUT_BIT_bm;}
 	if (b & 0x01) { device.out_port[3]->OUTCLR = GPIO1_OUT_BIT_bm;}
-
-//	if (b & 0x08) { device.port[cfg.outmap[X]]->OUTCLR = GPIO1_OUT_BIT_bm;}
-//	if (b & 0x04) { device.port[cfg.outmap[Y]]->OUTCLR = GPIO1_OUT_BIT_bm;}
-//	if (b & 0x02) { device.port[cfg.outmap[Z]]->OUTCLR = GPIO1_OUT_BIT_bm;}
-//	if (b & 0x01) { device.port[cfg.outmap[A]]->OUTCLR = GPIO1_OUT_BIT_bm;}
 }
 
 // DEPRECATED CODE THAT MIGHT STILL BE USEFUL

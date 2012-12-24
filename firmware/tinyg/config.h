@@ -43,7 +43,7 @@
 #define CMD_GROUP_LEN 3				// max length of group prefix
 #define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
 //#define CMD_INFIX_LEN 4				// token minus group prefix
-#define CMD_STRING_LEN 64			// original value string or value as a string
+#define CMD_STRING_LEN 80			// original value string or value as a string
 #define CMD_FORMAT_LEN 64			// print formatting string
 #define CMD_STATUS_REPORT_LEN 12	// max number of status report elements - see cfgArray
 									// must also line up in cfgArray, se00 - seXX
@@ -153,7 +153,7 @@ enum tgCommunicationsMode {
 
 enum jsonVerbosity {
 	JV_SILENT = 0,					// no response is provided for any command
-	JV_OMIT_BODY,					// response contains no body - footer only
+	JV_FOOTER_ONLY,					// response contains no body - footer only
 	JV_OMIT_GCODE_BODY,				// body returned for configs; omitted for Gcode commands
 	JV_GCODE_LINENUM_ONLY,			// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
 	JV_GCODE_MESSAGES,				// body returned for configs; Gcode returns line numbers and messages only
@@ -320,7 +320,7 @@ struct cfgParameters {
 	INDEX_T status_report_list[CMD_STATUS_REPORT_LEN];
 
 	// coordinate systems and offsets
-	double offset[COORDS+1][AXES];	// absolute + G54,G55,G56,G57,G58,G59
+	double offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute + G54,G55,G56,G57,G58,G59
 
 	// motor and axis structs
 	struct cfgMotorParameters m[MOTORS];// settings for motors 1-4

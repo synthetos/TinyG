@@ -160,6 +160,7 @@ uint32_t cm_get_model_linenum() { return gm.linenum;}
 uint8_t cm_isbusy() { return (mp_isbusy());}
 
 // set parameters in gm struct
+void cm_set_motion_mode(uint8_t motion_mode) {gm.motion_mode = motion_mode;} 
 void cm_set_absolute_override(uint8_t absolute_override) { gm.absolute_override = absolute_override;}
 void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
 void cm_set_spindle_speed_parameter(double speed) { gm.spindle_speed = speed;}
@@ -587,7 +588,6 @@ void cm_shutdown()
  * cm_reset_origin_offsets()	- G92.1
  * cm_suspend_origin_offsets()	- G92.2
  * cm_resume_origin_offsets()	- G92.3
- * cm_set_machine_origins()		- G92.4 set absolute coordinate system origins
  */
 
 /*
@@ -657,7 +657,6 @@ static void _exec_offset(uint8_t coord_system, double f)
 		offsets[i] = cfg.offset[coord_system][i] - (gm.origin_offset[i] * gm.origin_offset_enable);
 	}
 	mp_set_runtime_work_offset(offsets);
-//	mp_set_runtime_work_offset(cfg.offset[coord_system]);
 }
 
 /*
@@ -675,7 +674,25 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
 	for (uint8_t i=0; i<AXES; i++) {
 		if (flag[i] > EPSILON) {
 			cfg.offset[coord_system][i] = offset[i];
-//			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
+			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
+		}
+	}
+	return (TG_OK);
+}
+
+/*
+ * cm_set_absolute_origin() - G28.3
+ *
+ *	This is an "unofficial gcode" command to allow arbitrarily setting an axis 
+ *	to an absolute position. This is needed to support the Otherlab infinite 
+ *	Y axis. USE: With the axis(or axes) where you want it, issue g92.4 y0 
+ *	(for example). The Y axis will now be set to 0 (or whatever value provided)
+ */
+uint8_t cm_set_absolute_origin(double origin[], double flag[])
+{
+	for (uint8_t i=0; i<AXES; i++) {
+		if (flag[i] > EPSILON) {
+			cm_set_machine_axis_position(i, cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
 		}
 	}
 	return (TG_OK);
@@ -722,24 +739,6 @@ uint8_t cm_resume_origin_offsets()
 	return (TG_OK);
 }
 
-/*
- * cm_set_machine_origins() - G92.4
- *
- *	This is an "unofficial gcode" command to allow arbitrarily setting an axis 
- *	to an absolute position. This is needed to support the Otherlab infinite 
- *	Y axis. USE: With the axis(or axes) where you want it, issue g92.4 y0 
- *	(for example). The Y axis will now be set to 0 (or whatever value provided)
- */
-uint8_t cm_set_machine_origins(double origin[], double flag[])
-{
-	for (uint8_t i=0; i<AXES; i++) {
-		if (flag[i] > EPSILON) {
-			cm_set_machine_axis_position(i, cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
-		}
-	}
-	return (TG_OK);
-}
-
 /* 
  * Free Space Motion (4.3.4)
  *
@@ -757,6 +756,41 @@ uint8_t cm_straight_traverse(double target[], double flags[])
 							gm.min_time);
 	cm_set_gcode_model_endpoint_position(status);
 	return (status);
+}
+
+/*
+ * cm_set_g28_position()  - G28.1
+ * cm_goto_g28_position() - G28
+ * cm_set_g30_position()  - G30.1
+ * cm_goto_g30_position() - G30
+ */
+
+uint8_t cm_set_g28_position(void)
+{
+	copy_axis_vector(gm.g28_position, gm.position);
+	return (TG_OK);
+}
+
+uint8_t cm_goto_g28_position(double target[], double flags[])
+{
+	cm_straight_traverse(target, flags);
+	while (mp_get_planner_buffers_available() == 0); 	// make sure you have an available buffer
+	double fl[] = {1,1,1,1,1,1};
+	return(cm_straight_traverse(gm.g28_position, fl));
+}
+
+uint8_t cm_set_g30_position(void)
+{
+	copy_axis_vector(gm.g30_position, gm.position);
+	return (TG_OK);
+}
+
+uint8_t cm_goto_g30_position(double target[], double flags[])
+{
+	cm_straight_traverse(target, flags);
+	while (mp_get_planner_buffers_available() == 0); 	// make sure you have an available buffer
+	double fl[] = {1,1,1,1,1,1};
+	return(cm_straight_traverse(gm.g28_position, fl));
 }
 
 /* 
@@ -1019,5 +1053,6 @@ static void _exec_program_finalize(uint8_t machine_state, double f)
 	cm.cycle_start_flag = false;
 	mp_zero_segment_velocity();				// for reporting purposes
 	rpt_request_status_report();			// request final status report (if enabled)
+	cmd_persist_offsets(cm.g10_persist_flag); // persist offsets if any changes made
 }
 

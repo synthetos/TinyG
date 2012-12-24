@@ -30,31 +30,24 @@
  */
 
 #include <ctype.h>				// for parsing
-#include <string.h>				// for memset
+#include <string.h>
 #include <stdio.h>				// precursor for xio.h
 #include <avr/pgmspace.h>		// precursor for xio.h
 
 #include "tinyg.h"				// #1 unfortunately, there are some dependencies
-#include "util.h"				// #2
-#include "config.h"				// #3
+#include "config.h"				// #2
 #include "controller.h"
 #include "settings.h"
 #include "json_parser.h"
 #include "gcode_parser.h"
-#include "canonical_machine.h"	// uses homing cycle
+#include "canonical_machine.h"
 #include "arc.h"
 #include "planner.h"
-#include "stepper.h"			// needed for stepper kill and terminate
 #include "report.h"
-#include "test.h"
-
 #include "system.h"
 #include "gpio.h"
 #include "help.h"
 #include "xio/xio.h"
-
-
-#include <util/delay.h>			// debug
 
 // local helpers
 static void _controller_HSM(void);
@@ -129,14 +122,14 @@ static void _controller_HSM()
 	DISPATCH(rpt_queue_report_callback());	// conditionally send queue report
 	DISPATCH(mp_plan_hold_callback());		// plan a feedhold
 	DISPATCH(mp_end_hold_callback());		// end a feedhold
+
+	DISPATCH(_sync_to_planner());			// ensure there is at least one free buffer in planning queue
 	DISPATCH(ar_arc_callback());			// arc generation runs behind lines
-	DISPATCH(cm_homing_callback());			// G28.1 continuation
-	DISPATCH(cm_G30_callback());			// G30 continuation
+	DISPATCH(cm_homing_callback());			// G28.2 continuation
 
 //----- command readers and parsers ------------------------------------//
 	DISPATCH(_sync_to_tx_buffer());			// sync with TX buffer (pseudo-blocking)
 	DISPATCH(cfg_baud_rate_callback());		// perform baud rate update (must be after TX sync)
-	DISPATCH(_sync_to_planner());			// sync with planning queue
 	DISPATCH(_dispatch());					// read and execute next command
 }
 

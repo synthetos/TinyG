@@ -28,7 +28,7 @@
  *
  *	--- Config objects and the config list ---
  *
- *	The config system provides a formatted way to access and set configuration variables.
+ *	The config system provides a structured way to access and set configuration variables.
  *	It also provides a way to get an arbitrary variable for reporting. Config operates
  *	as a collection of "objects" (OK, so they are not really objects) that encapsulate
  *	each variable. The objects are collected into a list (the body), which also has  
@@ -58,28 +58,32 @@
  *	Additionally an NVM array contains values persisted to EEPROM as doubles; indexed by cfgArray index
  *
  *	The following rules apply to mnemonic tokens
- *	 - are up to 4 alphnuneric characters and cannot contain whitespace or separators
+ *	 - are up to 5 alphnuneric characters and cannot contain whitespace or separators
  *	 - must be unique (non colliding).
  *	 - axis tokens start with the axis letter and are typically 3 characters including the axis letter
  *	 - motor tokens start with the motor digit and are typically 3 characters including the motor digit
- *	 - non-axis or non-motor tokens are 2-4 characters and should not start with: xyzabcuvw0123456789
+ *	 - non-axis or non-motor tokens are 2-5 characters and by convention generally should not start 
+ *		with: xyzabcuvw0123456789 (but there can be exceptions)
  *
  *  "Groups" are collections of values that mimic REST resources. Groups include:
  *	 - axis groups prefixed by "xyzabc"		("uvw" are reserved)
  *	 - motor groups prefixed by "1234"		("56789" are reserved)
  *	 - PWM groups prefixed by p1, p2 	    (p3 - p9 are reserved)
  *	 - coordinate system groups prefixed by g54, g55, g56, g57, g59, g92
- *	 - system groups identified by "sys" and containing a random collection of otherwise unrelated values
+ *	 - a system group is identified by "sys" and contains a collection of otherwise unrelated values
  *
  *	"Uber-groups" are groups of groups that are only used for text-mode printing - e.g.
  *	 - group of all axes groups
  *	 - group of all motor groups
- *	 - group of all other groups
+ *	 - group of all offset groups
+ *	 - group of all groups
  */
 /*  --- Making changes and adding new values
  *
  *	Adding a new value to config (or changing an existing one) involves touching the following places:
- *	 - Add a formatting string to fmt_XXX strings. Not needed if there is no text-mode print function.
+ *
+ *	 - Add a formatting string to fmt_XXX strings. Not needed if there is no text-mode print function
+ *	   of you are using one of the generic print strings.
  * 
  *	 - Create a new record in cfgArray[]. Use existing ones for examples. You can usually use existing
  *	   functions for get and set; or create a new one if you need a specialized function.
@@ -861,7 +865,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "","se11",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[11],0 },
 	
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
-	// *** Must agree with GROUP_PREFIXES and CMD_COUNT_GROUPS below ****
+	// *** Must agree with CMD_COUNT_GROUPS below ****
 	{ "","sys",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// system group
 	{ "","p1", _f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// PWM 1 group
 	{ "","1",  _f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// motor groups
@@ -885,7 +889,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	// Uber-group (groups of groups, for text-mode displays only)
 	// *** Must agree with CMD_COUNT_UBER_GROUPS below ****
 	{ "", "m", _f00, fmt_nul, _print_nul, _do_motors, _set_nul,(double *)&tg.null,0 },
-	{ "", "n", _f00, fmt_nul, _print_nul, _do_axes,   _set_nul,(double *)&tg.null,0 },
+	{ "", "q", _f00, fmt_nul, _print_nul, _do_axes,   _set_nul,(double *)&tg.null,0 },
 	{ "", "o", _f00, fmt_nul, _print_nul, _do_offsets,_set_nul,(double *)&tg.null,0 },
 	{ "", "$", _f00, fmt_nul, _print_nul, _do_all,    _set_nul,(double *)&tg.null,0 }
 };
@@ -912,14 +916,13 @@ static uint8_t _set_hv(cmdObj *cmd)
 	_set_dbl(cmd);					// record the hardware version
 	sys_port_bindings(cmd->value);	// reset port bindings
 	gpio_init();					// re-initialize the GPIO ports
-//	gpio_out_map(cmd->value);	// now do the mappings that implies
 	return (TG_OK);
 }
 
 /*
 static uint8_t _get_id(cmdObj *cmd) 
 {
-//	uint8_t sig[11];
+ *	 - group of all other groups
 //	sys_read_signature(sig);
 	return (TG_OK);
 }
@@ -965,7 +968,6 @@ static uint8_t _set_si(cmdObj *cmd)
 
 /**** REPORTING FUNCTIONS ****
  * _get_qr() - run queue report
- * _get_pb() - get planner buffers available
  * _get_rx() - get bytes available in RX buffer
  */
 static uint8_t _get_qr(cmdObj *cmd) 
@@ -973,14 +975,6 @@ static uint8_t _get_qr(cmdObj *cmd)
 	rpt_run_queue_report();
 	return (TG_OK);
 }
-/*
-static uint8_t _get_pb(cmdObj *cmd)
-{
-	cmd->value = (double)mp_get_planner_buffers_available();
-	cmd->type = TYPE_INTEGER;
-	return (TG_OK);
-}
-*/
 
 static uint8_t _get_rx(cmdObj *cmd)
 {
@@ -1098,21 +1092,7 @@ static uint8_t _get_line(cmdObj *cmd)
 	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }
-/*
-static uint8_t _get_lx(cmdObj *cmd)
-{
-	cmd->value = (double)mp_get_runtime_lineindex();
-	cmd->type = TYPE_INTEGER;
-	return (TG_OK);
-}
 
-static uint8_t _set_lx(cmdObj *cmd)
-{
-	mp_set_plan_lineindex((uint32_t)cmd->value);
-	cmd->type = TYPE_INTEGER;
-	return (TG_OK);
-}
-*/
 static uint8_t _get_vel(cmdObj *cmd) 
 {
 	cmd->value = mp_get_runtime_velocity();
@@ -1743,6 +1723,7 @@ static int8_t _get_pos_axis(const INDEX_T i)
  * cmd_get_cmdObj() 	 - setup a cmd object by providing the index
  * cmd_get_index() 		 - get index from mnenonic token + group
  * cmd_get_type()		 - returns command type as a CMD_TYPE enum
+ * cmd_persist_offsets() - write any changed G54 (et al) offsets back to NVM
  *
  *	cmd_get_index() is the most expensive routine in the whole config. It does a 
  *	linear table scan of the PROGMEM strings, which of course could be further 
@@ -1831,8 +1812,7 @@ uint8_t cmd_get_type(cmdObj *cmd)
 	return (CMD_TYPE_CONFIG);
 }
 
-/*
-uint8_t cmd_persist_offsets(uint8_t flag)		//####################### validate
+uint8_t cmd_persist_offsets(uint8_t flag)
 {
 	if (flag == true) {
 		cmdObj cmd;
@@ -1847,7 +1827,6 @@ uint8_t cmd_persist_offsets(uint8_t flag)		//####################### validate
 	}
 	return (TG_OK);
 }
-*/
 
 /********************************************************************************
  ***** Group operations *********************************************************
@@ -1972,7 +1951,7 @@ static uint8_t _do_axes(cmdObj *cmd)	// print parameters for all axis groups
 
 static uint8_t _do_offsets(cmdObj *cmd)	// print offset parameters for G54-G59,G92
 {
-	char list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92",""}; // must have a terminating element
+	char list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59",""}; // must have a terminating element
 	_do_group_list(cmd, list);
 	return (TG_COMPLETE);
 }

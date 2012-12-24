@@ -78,23 +78,6 @@ void sys_port_bindings(double hw_version);
 #define PORT_OUT_V6_Z	PORTE
 #define PORT_OUT_V6_A	PORTD
 
-#define SWITCH_X 		MOTOR_1			// Switch axes mapped to motor numbers
-#define SWITCH_Y 		MOTOR_4
-#define SWITCH_Z 		MOTOR_3
-#define SWITCH_A 		MOTOR_2
-
-/*
-#define OUTPUT_X		MOTOR_1			// v7 mapping - Output bits mapped to ports
-#define OUTPUT_Y 		MOTOR_2
-#define OUTPUT_Z		MOTOR_4
-#define OUTPUT_A		MOTOR_3
-
-#define OUTPUT_X		MOTOR_1			// v6 mapping - output bits mapped to ports
-#define OUTPUT_Y 		MOTOR_2
-#define OUTPUT_Z		MOTOR_3
-#define OUTPUT_A		MOTOR_4
-*/
-
 // These next four must be changed when the PORT_MOTOR_* definitions change!
 #define PORTCFG_VP0MAP_PORT_MOTOR_1_gc PORTCFG_VP0MAP_PORTA_gc
 #define PORTCFG_VP1MAP_PORT_MOTOR_2_gc PORTCFG_VP1MAP_PORTF_gc
@@ -168,20 +151,19 @@ enum cfgPortBits {			// motor control port bit positions
 /**** Device singleton - global structure to allow iteration through similar devices ****/
 /*
 	Ports are shared between steppers and GPIO so we need a global struct.
-	Each xmega port is bound 3 times; for the motors, switches and the output bit
+	Each xmega port has 3 bindings; motors, switches and the output bit
 
 	The initialization sequence is important. the order is:
 		- sys_init()	binds all ports to the device struct
-		- st_init() 	sets IO directions and stepper specific functions
+		- st_init() 	sets IO directions and sets stepper VPORTS and stepper specific functions
 		- gpio_init()	sets up input and output functions and required interrupts	
 
-	Care needs to be taken in routines that use these not to write to bits that are 
-	not assigned to the designated function.
+	Care needs to be taken in routines that use ports not to write to bits that are 
+	not assigned to the designated function - ur unpredicatable results will occur
 */
 
 struct deviceSingleton {
-//	PORT_t *port[MOTORS];		// bindings for motor control ports + bits
-	PORT_t *st_port[MOTORS];	// bindings for motor control ports + bits
+	PORT_t *st_port[MOTORS];	// bindings for stepper motor ports (stepper.c)
 	PORT_t *sw_port[MOTORS];	// bindings for switch ports (GPIO2)
 	PORT_t *out_port[MOTORS];	// bindings for output ports (GPIO1)
 };

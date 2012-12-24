@@ -368,7 +368,7 @@ void js_print_list(uint8_t status)
 	cmdObj *cmd = cmd_header;							// the header is default starting point
 	uint8_t cmd_type = cmd_get_type(cmd_body);
 
-	if (cfg.json_verbosity == JV_OMIT_BODY) { 
+	if (cfg.json_verbosity == JV_FOOTER_ONLY) { 
 		if (cmd_type != CMD_TYPE_REPORT) {
 			cmd = cmd_footer;
 		}

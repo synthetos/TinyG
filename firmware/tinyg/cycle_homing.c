@@ -88,36 +88,6 @@ static uint8_t _set_hm_func(uint8_t (*func)(int8_t axis));
 static int8_t _get_next_axis(int8_t axis);
 //static int8_t _get_next_axes(int8_t axis);
 
-/*****************************************************************************
- * cm_return_to_home() - G28 command
- */
-
-uint8_t cm_return_to_home(void)
-{
-	double zero[] = {0,0,0,0,0,0};
-	double flags[] = {1,1,1,1,1,1};
-	ritorno(cm_straight_traverse(zero, flags));
-	return (TG_OK);
-}
-
-/*****************************************************************************
- * cm_return_to_home_through_point() - G30 command
- * cm_G30_callback()
- */
-
-uint8_t cm_return_to_home_through_point(void)
-{
-	ritorno(cm_straight_traverse(gn.target, gf.target));
-	cm.g30_flag = true;
-	return (TG_OK);
-}
-
-uint8_t cm_G30_callback()
-{
-	if (cm.g30_flag == false) return (TG_NOOP);
-//	if (cm_isbusy() == true) { return (TG_EAGAIN);}	 // sync to planner move ends
-	return (cm_return_to_home());
-}
 
 /*****************************************************************************
  * cm_homing_cycle_start()	- G28.1 homing cycle using limit switches
@@ -206,6 +176,7 @@ static uint8_t _homing_finalize_exit(int8_t axis)	// third part of return to hom
 	cm_set_units_mode(hm.saved_units_mode);
 	cm_set_distance_mode(hm.saved_distance_mode);
 	cm_set_feed_rate(hm.saved_feed_rate);
+	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.homing_state = HOMING_HOMED;
 	cm.cycle_state = CYCLE_STARTED;
 	cm_cycle_end();
@@ -234,6 +205,7 @@ static uint8_t _homing_error_exit(int8_t axis)
 	cm_set_units_mode(hm.saved_units_mode);
 	cm_set_distance_mode(hm.saved_distance_mode);
 	cm_set_feed_rate(hm.saved_feed_rate);
+	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;
 	return (TG_HOMING_CYCLE_FAILED);		// homing state remains HOMING_NOT_HOMED
 }
