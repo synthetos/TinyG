@@ -334,6 +334,7 @@ static uint8_t _homing_axis_zero_backoff(int8_t axis)	// backoff to zero positio
 static uint8_t _homing_axis_set_zero(int8_t axis)		// set zero and finish up
 {
 	cm_set_machine_axis_position(axis, 0);
+	cm.homed[axis] = true;
 	return (_set_hm_func(_homing_axis_start));
 }
 

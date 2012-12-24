@@ -627,7 +627,6 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "", "cycs",_f00, fmt_cycs,_print_str, _get_cycs,_set_nul, (double *)&tg.null, 0 },	// cycle state
 	{ "", "mots",_f00, fmt_mots,_print_str, _get_mots,_set_nul, (double *)&tg.null, 0 },	// motion state
 	{ "", "hold",_f00, fmt_hold,_print_str, _get_hold,_set_nul, (double *)&tg.null, 0 },	// feedhold state
-	{ "", "home",_f00, fmt_home,_print_str, _get_home,_set_nul, (double *)&tg.null, 0 },	// homing state
 	{ "", "vel", _f00, fmt_vel, _print_lin, _get_vel, _set_nul, (double *)&tg.null, 0 },	// current velocity
 	{ "", "unit",_f00, fmt_unit,_print_str, _get_unit,_set_nul, (double *)&tg.null, 0 },	// units mode
 	{ "", "coor",_f00, fmt_coor,_print_str, _get_coor,_set_nul, (double *)&tg.null, 0 },	// coordinate system
@@ -648,7 +647,14 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "", "mpoa",_f00, fmt_mpoa,_print_pos, _get_mpos,_set_nul, (double *)&tg.null, 0 },	// A machine position
 	{ "", "mpob",_f00, fmt_mpob,_print_pos, _get_mpos,_set_nul, (double *)&tg.null, 0 },	// B machine position
 	{ "", "mpoc",_f00, fmt_mpoc,_print_pos, _get_mpos,_set_nul, (double *)&tg.null, 0 },	// C machine position
-
+	{ "", "home",_f00, fmt_home,_print_str, _get_home,_set_nul, (double *)&tg.null, 0 },	// homing state
+	{ "hom","homx",_f00, fmt_ui8, _print_pos, _get_ui8, _set_nul, (double *)&cm.homed[X], false }, // X homed
+	{ "hom","homy",_f00, fmt_ui8, _print_pos, _get_ui8, _set_nul, (double *)&cm.homed[Y], false },	// Y homed
+	{ "hom","homz",_f00, fmt_ui8, _print_pos, _get_ui8, _set_nul, (double *)&cm.homed[Z], false },	// Z homed
+	{ "hom","homa",_f00, fmt_ui8, _print_pos, _get_ui8, _set_nul, (double *)&cm.homed[A], false },	// A homed
+	{ "hom","homb",_f00, fmt_ui8, _print_pos, _get_ui8, _set_nul, (double *)&cm.homed[B], false },	// B homed
+	{ "hom","homc",_f00, fmt_ui8, _print_pos, _get_ui8, _set_nul, (double *)&cm.homed[C], false },	// C homed
+// 38
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
 	{ "", "qr",  _f00, fmt_nul, _print_nul, _get_qr,  _set_nul, (double *)&tg.null, 0 },	// queue report setting
@@ -658,7 +664,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "", "defa",_f00, fmt_nul, _print_nul, print_defaults_help,_set_defa,(double *)&tg.null,0},// prints defaults help screen
 	{ "", "help",_f00, fmt_nul, _print_nul, print_config_help,_set_nul, (double *)&tg.null,0 },// prints config help screen
 	{ "", "h",   _f00, fmt_nul, _print_nul, print_config_help,_set_nul, (double *)&tg.null,0 },
-
+// 46
 	// System parameters
 	// NOTE: The ordering within the gcode defaults is important for token resolution
 	// NOTE: Some values have been removed from the group display but are still accessible as individual elements
@@ -687,7 +693,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "sys","tv",  _fip, fmt_tv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.text_verbosity,		COM_TEXT_VERBOSITY },
 	{ "sys","si",  _fip, fmt_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
 	{ "sys","baud",_f00, fmt_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
-
+// 68
 	// Motor parameters
 	{ "1","1ma",_fip, fmt_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ "1","1sa",_fip, fmt_1sa, _print_rot, _get_dbl ,_set_sa, (double *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
@@ -716,7 +722,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "4","4mi",_fip, fmt_4mi, _print_ui8, _get_ui8, _set_mi, (double *)&cfg.m[MOTOR_4].microsteps,	M4_MICROSTEPS },
 	{ "4","4po",_fip, fmt_4po, _print_ui8, _get_ui8, _set_po, (double *)&cfg.m[MOTOR_4].polarity,	M4_POLARITY },
 	{ "4","4pm",_fip, fmt_4pm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_4].power_mode,	M4_POWER_MODE },
-
+// 92
 	// Axis parameters
 	{ "x","xam",_fip, fmt_xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[X].axis_mode,		X_AXIS_MODE },
 	{ "x","xvm",_fip, fmt_xvm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].velocity_max,		X_VELOCITY_MAX },
@@ -756,7 +762,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "z","zlv",_fip, fmt_zlv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_velocity,	Z_LATCH_VELOCITY },
 	{ "z","zlb",_fip, fmt_zlb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_backoff,	Z_LATCH_BACKOFF },
 	{ "z","zzb",_fip, fmt_zzb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].zero_backoff,		Z_ZERO_BACKOFF },
-
+// 128
 	{ "a","aam",_fip, fmt_aam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[A].axis_mode,		A_AXIS_MODE },
 	{ "a","avm",_fip, fmt_avm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].velocity_max,	 	A_VELOCITY_MAX },
 	{ "a","afr",_fip, fmt_afr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].feedrate_max, 	A_FEEDRATE_MAX },
@@ -770,7 +776,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "a","alv",_fip, fmt_alv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_velocity,	A_LATCH_VELOCITY },
 	{ "a","alb",_fip, fmt_alb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_backoff,	A_LATCH_BACKOFF },
 	{ "a","azb",_fip, fmt_azb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].zero_backoff,		A_ZERO_BACKOFF },
-
+// 141
 	{ "b","bam",_fip, fmt_bam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[B].axis_mode,		B_AXIS_MODE },
 	{ "b","bvm",_fip, fmt_bvm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].velocity_max,	 	B_VELOCITY_MAX },
 	{ "b","bfr",_fip, fmt_bfr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].feedrate_max, 	B_FEEDRATE_MAX },
@@ -786,7 +792,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "c","cjm",_fip, fmt_cjm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].jerk_max,			C_JERK_MAX },
 	{ "c","cjd",_fip, fmt_cjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].junction_dev,		C_JUNCTION_DEVIATION },
 	{ "c","cra",_fip, fmt_cra, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].radius,			C_RADIUS },
-
+// 155
 	// PWM settings
     { "p1","p1frq",_fip, fmt_p1frq, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.frequency,		P1_PWM_FREQUENCY },
     { "p1","p1csl",_fip, fmt_p1csl, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.cw_speed_lo,	P1_CW_SPEED_LO },
@@ -798,7 +804,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
     { "p1","p1wpl",_fip, fmt_p1wpl, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_phase_lo,	P1_CCW_PHASE_LO },
     { "p1","p1wph",_fip, fmt_p1wph, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_phase_hi,	P1_CCW_PHASE_HI },
     { "p1","p1pof",_fip, fmt_p1pof, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.phase_off,		P1_PWM_PHASE_OFF },
-
+// 165
 	// Coordinate system offsets (G54-G59 and G92)
 	{ "g54","g54x",_fip, fmt_g54x, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G54][X],	G54_X_OFFSET },
 	{ "g54","g54y",_fip, fmt_g54y, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G54][Y],	G54_Y_OFFSET },
@@ -848,7 +854,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "g92","g92a",_fin, fmt_g92a,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[A], 0 },
 	{ "g92","g92b",_fin, fmt_g92b,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[B], 0 },
 	{ "g92","g92c",_fin, fmt_g92c,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[C], 0 },
-
+// 205
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
 	{ "","se00",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[0],0 },
@@ -863,7 +869,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "","se09",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[9],0 },
 	{ "","se10",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[10],0 },
 	{ "","se11",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[11],0 },
-	
+// 217
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with CMD_COUNT_GROUPS below ****
 	{ "","sys",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// system group
@@ -885,7 +891,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "","g58",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },
 	{ "","g59",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },
 	{ "","g92",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// origin offsets
-
+	{ "","hom",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// axis homing state
+// 236
 	// Uber-group (groups of groups, for text-mode displays only)
 	// *** Must agree with CMD_COUNT_UBER_GROUPS below ****
 	{ "", "m", _f00, fmt_nul, _print_nul, _do_motors, _set_nul,(double *)&tg.null,0 },
@@ -893,7 +900,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "", "o", _f00, fmt_nul, _print_nul, _do_offsets,_set_nul,(double *)&tg.null,0 },
 	{ "", "$", _f00, fmt_nul, _print_nul, _do_all,    _set_nul,(double *)&tg.null,0 }
 };
-#define CMD_COUNT_GROUPS 		19											// count of simple groups
+// 240
+#define CMD_COUNT_GROUPS 		20											// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 											// count of uber-groups
 
 #define CMD_INDEX_MAX (sizeof cfgArray / sizeof(struct cfgItem))

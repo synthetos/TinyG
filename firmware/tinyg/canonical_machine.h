@@ -43,6 +43,7 @@ struct canonicalMachineSingleton {	// struct to manage cm globals and cycles
 	uint8_t hold_state;				// feedhold sub-state machine
 	uint8_t cycle_start_flag;		// flag to end feedhold
 	uint8_t homing_state;			// homing cycle sub-state machine
+	uint8_t homed[AXES];			// individual axis homing flags
 	uint32_t status_report_counter;
 	uint8_t	g28_flag;				// true = complete a G28 move
 	uint8_t	g30_flag;				// true = complete a G30 move

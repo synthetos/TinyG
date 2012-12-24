@@ -121,7 +121,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 //	xio_queue_RX_string_usb("$test=13\n");
 //	xio_queue_RX_string_usb("$$\n");
-	xio_queue_RX_string_usb("m3\n");
+//	xio_queue_RX_string_usb("m3\n");
 //	xio_queue_RX_string_usb("$sys\n");
 //	xio_queue_RX_string_usb("$xvm\n");
 //	xio_queue_RX_string_usb("$xasasas=42\n");// bad command
@@ -131,6 +131,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"ej\":1}\n");
 //	xio_queue_RX_string_usb("{\"z\":{\"sn\":1}}\n");
 //	xio_queue_RX_string_usb("{\"zsn\":1}\n");
+	xio_queue_RX_string_usb("{\"hom\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("{\"rx\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"x\":20}\n");
@@ -294,9 +295,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("m3\n");			// spindle CW
 //	xio_queue_RX_string_usb("m4\n");			// spindle CCW
 //	xio_queue_RX_string_usb("m5\n");			// spindle off
-	xio_queue_RX_string_usb("m7\n");			// mist coolant on
-	xio_queue_RX_string_usb("m8\n");			// flood coolant on
-	xio_queue_RX_string_usb("m9\n");			// all coolant off
+//	xio_queue_RX_string_usb("m7\n");			// mist coolant on
+//	xio_queue_RX_string_usb("m8\n");			// flood coolant on
+//	xio_queue_RX_string_usb("m9\n");			// all coolant off
 
 /* Feedhold tests */
 // Consider dropping PLANNER_BUFFER_POOL_SIZE down to something like 4 for these tests

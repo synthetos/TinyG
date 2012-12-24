@@ -693,6 +693,7 @@ uint8_t cm_set_absolute_origin(double origin[], double flag[])
 	for (uint8_t i=0; i<AXES; i++) {
 		if (flag[i] > EPSILON) {
 			cm_set_machine_axis_position(i, cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
+			cm.homed[i] = true;
 		}
 	}
 	return (TG_OK);
