@@ -409,6 +409,12 @@ static const char fmt_mpoz[] PROGMEM = "Z machine posn:%11.3f%S\n";
 static const char fmt_mpoa[] PROGMEM = "A machine posn:%11.3f%S\n";
 static const char fmt_mpob[] PROGMEM = "B machine posn:%11.3f%S\n";
 static const char fmt_mpoc[] PROGMEM = "C machine posn:%11.3f%S\n";
+static const char fmt_homx[] PROGMEM = "X axis homed:%4d\n";
+static const char fmt_homy[] PROGMEM = "Y axis homed:%4d\n";
+static const char fmt_homz[] PROGMEM = "Z axis homed:%4d\n";
+static const char fmt_homa[] PROGMEM = "A axis homed:%4d\n";
+static const char fmt_homb[] PROGMEM = "B axis homed:%4d\n";
+static const char fmt_homc[] PROGMEM = "C axis homed:%4d\n";
 static const char fmt_g92x[] PROGMEM = "X origin offset:%10.3f%S\n";
 static const char fmt_g92y[] PROGMEM = "Y origin offset:%10.3f%S\n";
 static const char fmt_g92z[] PROGMEM = "Z origin offset:%10.3f%S\n";
@@ -648,12 +654,12 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "", "mpob",_f00, fmt_mpob,_print_pos, _get_mpos,_set_nul, (double *)&tg.null, 0 },	// B machine position
 	{ "", "mpoc",_f00, fmt_mpoc,_print_pos, _get_mpos,_set_nul, (double *)&tg.null, 0 },	// C machine position
 	{ "", "home",_f00, fmt_home,_print_str, _get_home,_set_nul, (double *)&tg.null, 0 },	// homing state
-	{ "hom","homx",_f00, fmt_ui8, _print_pos, _get_ui8, _set_nul, (double *)&cm.homed[X], false }, // X homed
-	{ "hom","homy",_f00, fmt_ui8, _print_pos, _get_ui8, _set_nul, (double *)&cm.homed[Y], false },	// Y homed
-	{ "hom","homz",_f00, fmt_ui8, _print_pos, _get_ui8, _set_nul, (double *)&cm.homed[Z], false },	// Z homed
-	{ "hom","homa",_f00, fmt_ui8, _print_pos, _get_ui8, _set_nul, (double *)&cm.homed[A], false },	// A homed
-	{ "hom","homb",_f00, fmt_ui8, _print_pos, _get_ui8, _set_nul, (double *)&cm.homed[B], false },	// B homed
-	{ "hom","homc",_f00, fmt_ui8, _print_pos, _get_ui8, _set_nul, (double *)&cm.homed[C], false },	// C homed
+	{ "hom","homx",_f00,fmt_homx,_print_int,_get_ui8, _set_nul, (double *)&cm.homed[X], false }, // X homed
+	{ "hom","homy",_f00,fmt_homy,_print_int,_get_ui8, _set_nul, (double *)&cm.homed[Y], false },	// Y homed
+	{ "hom","homz",_f00,fmt_homz,_print_int,_get_ui8, _set_nul, (double *)&cm.homed[Z], false },	// Z homed
+	{ "hom","homa",_f00,fmt_homa,_print_int,_get_ui8, _set_nul, (double *)&cm.homed[A], false },	// A homed
+	{ "hom","homb",_f00,fmt_homb,_print_int,_get_ui8, _set_nul, (double *)&cm.homed[B], false },	// B homed
+	{ "hom","homc",_f00,fmt_homc,_print_int,_get_ui8, _set_nul, (double *)&cm.homed[C], false },	// C homed
 // 38
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
