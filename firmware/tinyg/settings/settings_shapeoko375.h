@@ -40,7 +40,7 @@
 #define INIT_CONFIGURATION_MESSAGE "Initializing configs to Shapeoko 375mm profile"
 
 #define JUNCTION_DEVIATION	0.01		// default value, in mm - smaller is faster
-#define JUNCTION_ACCELERATION 200000	// centripetal acceleration around corners
+#define JUNCTION_ACCELERATION 2000000	// 2 million - centripetal acceleration around corners
 //#define SWITCH_TYPE SW_TYPE_NORMALLY_OPEN
 #define SWITCH_TYPE SW_TYPE_NORMALLY_CLOSED
 

@@ -301,21 +301,14 @@ void cm_set_model_linenum(uint32_t linenum)
  * 		RADIUS
  *		  - ABC axis value is provided in Gcode block in linear units
  *		  - Target is set to degrees based on axis' Radius value
- *
- *		SLAVE MODES (X, Y, Z, XY, XZ, YZ, XYZ spaces)
- *		  - Axis value is computed from path length of specified space
- *		  - Target is set to degrees based on axis' Radius value
- *		  - Any value input for that axis is ignored 
- *
- *	  Radius and slave modes are only processed for ABC axes.
- *	  Attempts to apply them for XYZ are ignored.
+ *		  - Radius mode is only processed for ABC axes. Application to XYZ is ignored.
  *
  *	Target coordinates are provided in target[]
  *	Axes that need processing are signaled in flag[]
- *	All that flag checking in the slaves traps erroneous rotary inputs
  */
 static double _calc_ABC(uint8_t i, double target[], double flag[]);
 
+//void cm_set_target(double target[], double flag[], uint8_t machine_coords)
 void cm_set_target(double target[], double flag[])
 { 
 	uint8_t i;
@@ -774,10 +767,11 @@ uint8_t cm_set_g28_position(void)
 
 uint8_t cm_goto_g28_position(double target[], double flags[])
 {
+	cm_set_absolute_override(true);
 	cm_straight_traverse(target, flags);
 	while (mp_get_planner_buffers_available() == 0); 	// make sure you have an available buffer
-	double fl[] = {1,1,1,1,1,1};
-	return(cm_straight_traverse(gm.g28_position, fl));
+	double f[] = {1,1,1,1,1,1};
+	return(cm_straight_traverse(gm.g28_position, f));
 }
 
 uint8_t cm_set_g30_position(void)
@@ -788,10 +782,11 @@ uint8_t cm_set_g30_position(void)
 
 uint8_t cm_goto_g30_position(double target[], double flags[])
 {
+	cm_set_absolute_override(true);
 	cm_straight_traverse(target, flags);
 	while (mp_get_planner_buffers_available() == 0); 	// make sure you have an available buffer
-	double fl[] = {1,1,1,1,1,1};
-	return(cm_straight_traverse(gm.g28_position, fl));
+	double f[] = {1,1,1,1,1,1};
+	return(cm_straight_traverse(gm.g30_position, f));
 }
 
 /* 

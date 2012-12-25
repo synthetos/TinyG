@@ -404,9 +404,9 @@ static uint8_t _execute_gcode_block()
 					{ status = cm_arc_feed(gn.target, gf.target, gn.arc_offset[0], gn.arc_offset[1],
 								gn.arc_offset[2], gn.arc_radius, gn.motion_mode); break;}
 			}
-			cm_set_absolute_override(false);		// now un-set it (for reporting purposes) 
 		}
 	}
+	cm_set_absolute_override(false);		// un-set abs overrride (for reporting purposes) 
 	if (gf.program_flow == true) {
 		// do the M stops: M0, M1, M2, M30, M60
 	}
