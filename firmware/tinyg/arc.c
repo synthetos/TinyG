@@ -109,7 +109,6 @@ uint8_t ar_arc( const double target[],
 		return (TG_INTERNAL_ERROR);			// (not supposed to fail)
 	}
 	ar.linenum = cm_get_model_linenum();	// get gcode model line number as debugging convenience
-//	ar.lineindex = cm_get_model_lineindex();// get gcode model line index as debugging convenience
 
 	// "move_length" is the total mm of travel of the helix (or just arc)
 	ar.length = hypot(angular_travel * radius, fabs(linear_travel));	
@@ -131,11 +130,13 @@ uint8_t ar_arc( const double target[],
 	ar.angular_travel = angular_travel;
 	ar.linear_travel = linear_travel;
 	
-	// find the minimum segments by time and by distance as the segments
-	// can't be shorter than the min update interval or the min seg length
-	ar.segments = ceil(min(
-					(ar.time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC),
-					(ar.length / cfg.arc_segment_len)));
+	// Find the number of segments. Find minimum number of segments needed to:
+	//	(1) achieve chordal tolerance, 
+	//	(2) stay above the minimum arc segment time.
+	//	(3) stay above the minimum arc segment length, 
+	ar.segments = floor(min3( (ar.length / sqrt(4*cfg.chordal_tolerance * (2 * radius - cfg.chordal_tolerance))),
+							  (ar.time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC),
+							  (ar.length / cfg.arc_segment_len) ));
 
 	ar.segment_count = (uint32_t)ar.segments;
 	ar.segment_theta = ar.angular_travel / ar.segments;

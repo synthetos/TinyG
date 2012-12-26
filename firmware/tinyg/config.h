@@ -43,7 +43,7 @@
 #define CMD_GROUP_LEN 3				// max length of group prefix
 #define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
 //#define CMD_INFIX_LEN 4				// token minus group prefix
-#define CMD_STRING_LEN 64			// original value string or value as a string
+#define CMD_STRING_LEN 80			// original value string or value as a string
 #define CMD_FORMAT_LEN 64			// print formatting string
 #define CMD_STATUS_REPORT_LEN 12	// max number of status report elements - see cfgArray
 									// must also line up in cfgArray, se00 - seXX
@@ -153,7 +153,7 @@ enum tgCommunicationsMode {
 
 enum jsonVerbosity {
 	JV_SILENT = 0,					// no response is provided for any command
-	JV_OMIT_BODY,					// response contains no body - footer only
+	JV_FOOTER_ONLY,					// response contains no body - footer only
 	JV_OMIT_GCODE_BODY,				// body returned for configs; omitted for Gcode commands
 	JV_GCODE_LINENUM_ONLY,			// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
 	JV_GCODE_MESSAGES,				// body returned for configs; Gcode returns line numbers and messages only
@@ -275,8 +275,6 @@ struct cfgPWMParameters {
 };
 
 struct cfgParameters {
-	uint8_t state;					// configuration state: 1=initialized, 0=not
-//	double profile;					// configuration profile in effect
 	double fw_build;				// tinyg firmware build number
 	double fw_version;				// tinyg firmware version number
 	double hw_version;				// tinyg hardware compatibility
@@ -284,13 +282,16 @@ struct cfgParameters {
 	uint16_t nvm_base_addr;			// NVM base address
 	uint16_t nvm_profile_base;		// NVM base address of current profile
 
-	// system settings / globals
+	// hidden settings				// not part of system group, but still accessible
 	double min_segment_len;			// line drawing resolution in mm
 	double arc_segment_len;			// arc drawing resolution in mm
+	double chordal_tolerance;		// arc chordal accuracy setting in mm
 	double estd_segment_usec;		// approximate segment time in microseconds
+//	uint8_t enable_acceleration;	// enable acceleration control
+//	uint8_t outmap[MOTORS];			// array for mapping output bits
+
+	// system group settings
 	double junction_acceleration;	// centripetal acceleration max for cornering
-	uint8_t enable_acceleration;	// enable acceleration control
-	uint8_t outmap[MOTORS];			// array for mapping output bits
 //	double max_spindle_speed;		// in RPM
 
 	// gcode power-on default settings - defaults are not the same as the gm state
@@ -305,11 +306,11 @@ struct cfgParameters {
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_xon;				// enable XON/XOFF mode
+	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
 
 	uint8_t enable_qr;				// queue reports enabled and verbosity level
 	uint8_t qr_hi_water;
 	uint8_t qr_lo_water;
-	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
 	uint8_t json_verbosity;			// see enum in this file for settings
 	uint8_t text_verbosity;			// see enum in this file for settings
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
@@ -320,7 +321,7 @@ struct cfgParameters {
 	INDEX_T status_report_list[CMD_STATUS_REPORT_LEN];
 
 	// coordinate systems and offsets
-	double offset[COORDS+1][AXES];	// absolute + G54,G55,G56,G57,G58,G59
+	double offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute + G54,G55,G56,G57,G58,G59
 
 	// motor and axis structs
 	struct cfgMotorParameters m[MOTORS];// settings for motors 1-4

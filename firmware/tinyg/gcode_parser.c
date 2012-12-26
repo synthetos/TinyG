@@ -49,7 +49,7 @@ struct gcodeParserSingleton {	 	  // struct to manage globals
 	uint8_t modals[MODAL_GROUP_COUNT];// collects modal groups in a block
 }; struct gcodeParserSingleton gp;
 
-/* local helper functions and macros */
+// local helper functions and macros
 static uint8_t _normalize_gcode_block(char *block);
 static uint8_t _parse_gcode_block(char *line);	// Parse the block into structs
 static uint8_t _execute_gcode_block(void);		// Execute the gcode block
@@ -208,21 +208,30 @@ static uint8_t _parse_gcode_block(char *buf)
 					case 21: SET_MODAL (MODAL_GROUP_G6, units_mode, MILLIMETERS);
 					case 28: {
 						switch (_point(value)) {
-							case 0: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_GO_HOME);
-							case 1: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SEARCH_HOME); 
+							case 0: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_GOTO_G28_POSITION);
+							case 1: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_G28_POSITION); 
+							case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SEARCH_HOME); 
+							case 3: SET_NON_MODAL (next_action, NEXT_ACTION_SET_ABSOLUTE_ORIGIN);
 							default: status = TG_UNRECOGNIZED_COMMAND;
 						}
 						break;
 					}
-					case 30: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_GO_HOME_THROUGH_POINT);
-//					case 38: 
-//						switch (_point(value)) {
-//							case 2: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_STRAIGHT_PROBE); 
-//							default: status = TG_UNRECOGNIZED_COMMAND;
-//						}
-//						break;
-//					}
-					case 40: break;	// ignore cancel cutter radius compensation
+					case 30: {
+						switch (_point(value)) {
+							case 0: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_GOTO_G30_POSITION);
+							case 1: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_G30_POSITION); 
+							default: status = TG_UNRECOGNIZED_COMMAND;
+						}
+						break;
+					}
+/*					case 38: 
+						switch (_point(value)) {
+							case 2: SET_NON_MODAL (next_action, NEXT_ACTION_STRAIGHT_PROBE); 
+							default: status = TG_UNRECOGNIZED_COMMAND;
+						}
+						break;
+					}
+*/					case 40: break;	// ignore cancel cutter radius compensation
 					case 49: break;	// ignore cancel tool length offset comp.
 					case 53: SET_NON_MODAL (absolute_override, true);
 					case 54: SET_MODAL (MODAL_GROUP_G12, coord_system, G54);
@@ -249,7 +258,6 @@ static uint8_t _parse_gcode_block(char *buf)
 							case 1: SET_NON_MODAL (next_action, NEXT_ACTION_RESET_ORIGIN_OFFSETS);
 							case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS);
 							case 3: SET_NON_MODAL (next_action, NEXT_ACTION_RESUME_ORIGIN_OFFSETS); 
-							case 4: SET_NON_MODAL (next_action, NEXT_ACTION_SET_MACHINE_ORIGINS);
 							default: status = TG_UNRECOGNIZED_COMMAND;
 						}
 						break;
@@ -314,7 +322,7 @@ static uint8_t _parse_gcode_block(char *buf)
  *	machining functions in order of execution as per RS274NGC_3 table 8 
  *  (below, with modifications):
  *
- *	    0. apply the line number or auto-increment if there are none
+ *	    0. record the line number
  *		1. comment (includes message) [handled during block normalization]
  *		2. set feed rate mode (G93, G94 - inverse time or per minute)
  *		3. set feed rate (F)
@@ -333,11 +341,11 @@ static uint8_t _parse_gcode_block(char *buf)
  *		16. set path control mode (G61, G61.1, G64)
  *		17. set distance mode (G90, G91)
  *		18. set retract mode (G98, G99)
- *		19a. home (G28, G30) or
- *		19b. change coordinate system data (G10) or
+ *		19a. homing functions (G28.2, G28.3, G28.1, G28, G30)
+ *		19b. change coordinate system data (G10)
  *		19c. set axis offsets (G92, G92.1, G92.2, G92.3)
  *		20. perform motion (G0 to G3, G80-G89) as modified (possibly) by G53
- *		21. stop (M0, M1, M2, M30, M60)
+ *		21. stop and end (M0, M1, M2, M30, M60)
  *
  *	Values in gn are in original units and should not be unit converted prior 
  *	to calling the canonical functions (which do the unit conversions)
@@ -371,13 +379,15 @@ static uint8_t _execute_gcode_block()
 	//--> set retract mode goes here
 
 	switch (gn.next_action) {
-		case NEXT_ACTION_GO_HOME: { status = cm_return_to_home(); break;}
-		case NEXT_ACTION_GO_HOME_THROUGH_POINT: { status = cm_return_to_home_through_point(); break;}
-		case NEXT_ACTION_SEARCH_HOME: { status = cm_homing_cycle_start(); break;}
+		case NEXT_ACTION_SEARCH_HOME: { status = cm_homing_cycle_start(); break;}								// G28.2
 //		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_probe_cycle_start(); break;}
-		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(coord_select, gn.target, gf.target); break;}
+		case NEXT_ACTION_SET_ABSOLUTE_ORIGIN: { status = cm_set_absolute_origin(gn.target, gf.target); break;}	// G28.3
+		case NEXT_ACTION_SET_G28_POSITION: { status = cm_set_g28_position(); break;}							// G28.1
+		case NEXT_ACTION_GOTO_G28_POSITION: { status = cm_goto_g28_position(gn.target, gf.target); break;}		// G28
+		case NEXT_ACTION_SET_G30_POSITION: { status = cm_set_g30_position(); break;}							// G30.1
+		case NEXT_ACTION_GOTO_G30_POSITION: { status = cm_goto_g30_position(gn.target, gf.target); break;}		// G30	
 
-		case NEXT_ACTION_SET_MACHINE_ORIGINS: { status = cm_set_machine_origins(gn.target, gf.target); break;}
+		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(coord_select, gn.target, gf.target); break;}
 		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(gn.target, gf.target); break;}
 		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}
@@ -394,9 +404,9 @@ static uint8_t _execute_gcode_block()
 					{ status = cm_arc_feed(gn.target, gf.target, gn.arc_offset[0], gn.arc_offset[1],
 								gn.arc_offset[2], gn.arc_radius, gn.motion_mode); break;}
 			}
-			cm_set_absolute_override(false);		// now un-set it (for reporting purposes) 
 		}
 	}
+	cm_set_absolute_override(false);		// un-set abs overrride (for reporting purposes) 
 	if (gf.program_flow == true) {
 		// do the M stops: M0, M1, M2, M30, M60
 	}

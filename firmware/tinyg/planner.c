@@ -90,7 +90,6 @@ struct mpBuffer {				// See Planning Velocity Notes for variable usage
 	uint8_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function - passes *bf, returns uint8_t
 	cm_exec cm_func;			// callback to canonical machine execution function
 	uint32_t linenum;			// runtime line number; or line index if not numbered
-	uint32_t lineindex;			// runtime autoincremented line index
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
 	uint8_t move_type;			// used to dispatch to run routine
 	uint8_t move_code;			// byte that can be used by used exec functions
@@ -142,7 +141,6 @@ struct mpBufferPool {			// ring buffer for sub-moves
 };
 
 struct mpMoveMasterSingleton {	// common variables for planning (move master)
-	uint32_t lineindex;			// runtime line index of BF being planned
 	double position[AXES];		// final move position for planning purposes
 	double ms_in_queue;			// total ms of movement & dwell in planner queue
 	double prev_jerk;			// jerk values cached from previous move
@@ -159,7 +157,6 @@ struct mpMoveMasterSingleton {	// common variables for planning (move master)
 struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
 	uint32_t linenum;			// runtime line/block number of BF being executed
-	uint32_t lineindex;			// runtime line index of BF being executed
 	uint8_t move_state;			// state of the overall move
 	uint8_t section_state;		// state within a move section
 
@@ -315,7 +312,6 @@ void mp_flush_planner()
  * mp_set_plan_position() 	- sets planning position (for G92)
  * mp_get_plan_position() 	- returns planning position
  * mp_set_axis_position() 	- sets both planning and runtime positions (for G2/G3)
- * mp_set_plan_lineindex()	- set line index in MM struct
  *
  * mp_get_runtime_work_position() - returns current axis position in work coordinates
  *									that were in effect at move planning time
@@ -323,7 +319,6 @@ void mp_flush_planner()
  * mp_get_runtime_machine_position() - returns current axis position in machine coordinates
  * mp_get_runtime_velocity()	- returns current velocity (aggregate)
  * mp_get_runtime_linenum()		- returns currently executing line number
- * mp_get_runtime_lineindex()	- returns currently executing line index
  *
  * 	Keeping track of position is complicated by the fact that moves can
  *	require multiple reference frames. The scheme to keep this straight is:
@@ -350,12 +345,6 @@ void mp_set_plan_position(const double position[])
 	copy_axis_vector(mm.position, position);
 }
 
-void mp_set_plan_lineindex(uint32_t lineindex)
-{
-	mm.lineindex = lineindex;
-	mr.lineindex = lineindex;
-}
-
 void mp_set_axes_position(const double position[])
 {
 	copy_axis_vector(mm.position, position);
@@ -376,10 +365,12 @@ double mp_get_runtime_machine_position(uint8_t axis) {
 	return (mr.position[axis]);
 }
 
+void mp_set_runtime_work_offset(double offset[]) { 
+	copy_axis_vector(mr.work_offset, offset);
+}
+
 double mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 double mp_get_runtime_linenum(void) { return (mr.linenum);}
-double mp_get_runtime_lineindex(void) { return (mr.lineindex);}
-
 
 /*************************************************************************/
 /* mp_exec_move() - execute runtime functions to prep move for steppers
@@ -392,14 +383,19 @@ uint8_t mp_exec_move()
 {
 	mpBuf *bf;
 
-	if ((bf = _get_run_buffer()) == NULL) return (TG_NOOP);		// NULL means nothing's running
+	if ((bf = _get_run_buffer()) == NULL) return (TG_NOOP);	// NULL means nothing's running
 
-	if (cm.cycle_state == CYCLE_OFF) cm_cycle_start();			// cycle state management
-
-	if ((cm.motion_state == MOTION_STOP) && (bf->move_type == MOVE_TYPE_ALINE)) {
-		cm.motion_state = MOTION_RUN;							// auto state-change
+	// Manage cycle and motion state transitions
+	// cycle auto-start for lines only. Add other move types as appropriate.
+	if (bf->move_type == MOVE_TYPE_ALINE) {
+		if (cm.cycle_state == CYCLE_OFF) cm_cycle_start();
 	}
-	if (bf->bf_func != NULL) {		// run the callback - should be set up
+	if ((cm.motion_state == MOTION_STOP) && (bf->move_type == MOVE_TYPE_ALINE)) {
+		cm.motion_state = MOTION_RUN;
+	}
+
+	// run the move callback in the buffer
+	if (bf->bf_func != NULL) {
 		return (bf->bf_func(bf));
 	}
 	return (TG_INTERNAL_ERROR);		// never supposed to get here
@@ -468,7 +464,7 @@ uint8_t mp_dwell(double seconds)
 	return (TG_OK);
 }
 
-static uint8_t _exec_dwell(mpBuf *bf)	// NEW
+static uint8_t _exec_dwell(mpBuf *bf)
 {
 	st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
 	_free_run_buffer();
@@ -1676,7 +1672,6 @@ static uint8_t _exec_aline(mpBuf *bf)
 		mr.move_state = MOVE_STATE_HEAD;
 		mr.section_state = MOVE_STATE_NEW;
 		mr.linenum = bf->linenum;
-		mr.lineindex = bf->lineindex;
 		mr.jerk = bf->jerk;
 #ifndef __EXEC_R2
 		mr.jerk_div2 = bf->jerk/2;
@@ -2118,7 +2113,6 @@ static mpBuf * _get_write_buffer() 				// get & clear a buffer
 		w->nx = nx;								// restore pointers
 		w->pv = pv;
 		w->buffer_state = MP_BUFFER_LOADING;
-		w->lineindex = (++mm.lineindex);		// increment line index and store in buffer
 		mb.buffers_available--;
 		mb.w = w->nx;
 		return (w);
@@ -2246,7 +2240,6 @@ static void _dump_plan_buffer(mpBuf *bf)
 			bf->replannable);
 
 	print_scalar(PSTR("line number:     "), bf->linenum);
-	print_scalar(PSTR("line index:      "), bf->lineindex);
 	print_vector(PSTR("position:        "), mm.position, AXES);
 	print_vector(PSTR("target:          "), bf->target, AXES);
 	print_vector(PSTR("unit:            "), bf->unit, AXES);
@@ -2270,7 +2263,6 @@ void mp_dump_runtime_state(void)
 {
 	fprintf_P(stderr, PSTR("***Runtime Singleton (mr)\n"));
 	print_scalar(PSTR("line number:       "), mr.linenum);
-	print_scalar(PSTR("line index:        "), mr.lineindex);
 	print_vector(PSTR("position:          "), mr.position, AXES);
 	print_vector(PSTR("target:            "), mr.target, AXES);
 	print_scalar(PSTR("length:            "), mr.length);

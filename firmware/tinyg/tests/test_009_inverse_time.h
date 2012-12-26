@@ -9,7 +9,7 @@ const char PROGMEM test_inverse_time[] = "\
 (MSG**** Inverse Time Motion Test [v1] ****)\n\
 g00g17g21g40g49g80g90\n\
 g55\n\
-g28\n\
+g0x0y0\n\
 g93\n\
 f0.01\n\
 g1x10\n\
@@ -33,9 +33,12 @@ g3x20y0i10\n\
 g0x0y0z0\n\
 g2x0y0z-30i10\n\
 g3x0y0z0i10\n\
+g0x0y0z0\n\
+g2x0y0i20 (CW 360 degrees)\n\
+g3x0y0i20 (CCW 360 degrees)\n\
 g94\n\
 g54\n\
-g28\n\
+g0x0y0\n\
 m30";
 
 

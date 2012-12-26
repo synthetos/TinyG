@@ -32,7 +32,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	355.01		// Working on Planner changes and queue reports
+#define TINYG_BUILD_NUMBER   	357.01		// Deglitching limit switches
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
@@ -66,9 +66,6 @@
 #define STD_INPUT XIO_DEV_USB
 #define STD_ERROR XIO_DEV_USB
 #endif
-
-// RUNTIME SETTINGS
-#define __UNFORGIVING			// fail hard versus introducing motion errors
 
 /*************************************************************************
  * TinyG application-specific prototypes, defines and globals

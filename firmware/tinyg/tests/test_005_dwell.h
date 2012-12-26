@@ -11,7 +11,7 @@ const char PROGMEM test_dwell[] = "\
 (MSG**** Dwell Test [v1] ****)\n\
 g00g17g21g90\n\
 g55\n\
-g28\n\
+g0x0y0\n\
 f500\n\
 g0x10\n\
 g4p1\n\
@@ -23,5 +23,5 @@ g0x00\n\
 g4p1\n\
 y5\n\
 g54\n\
-g28\n\
+g0x0y0\n\
 m30";

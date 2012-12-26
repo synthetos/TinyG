@@ -31,9 +31,25 @@ g10L2p2x50y50\n\
 g55\n\
 g0x0y0\n\
 g4p0.5\n\
+(MSG**** test G53 absolute overrides ****)\n\
+(msgStep 1: Run a square in G55 system)\n\
+(msgStep 2: Run a square w/G53 override)\n\
+g0x0y0\n\
+g0x20y0\n\
+g0x20y20\n\
+g0x0y20\n\
+g0x0y0\n\
+g4p0.5\n\
+g53g0x0y0\n\
+g53g0x20y0\n\
+g53g0x20y20\n\
+g53g0x0y20\n\
+g53g0x0y0\n\
+g0x0y0\n\
+g4p0.5\n\
 (MSG**** test Return to home ****)\n\
-(msgStep 1: Reset to G54 coordinate system)\n\
-(msgStep 2: Return to home using G28)\n\
-g54\n\
+(msgStep 1: Return to home using G28)\n\
+(msgStep 2: Reset to G54 coord system)\n\
 g28\n\
+g54\n\
 m30";

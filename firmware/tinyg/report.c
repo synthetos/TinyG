@@ -178,8 +178,9 @@ uint8_t rpt_populate_status_report()
 
 struct qrIndexes {			// static data for queue reports
 	uint8_t request;		// set to true to request a report
-	INDEX_T qr;				// index for QR element
 	uint8_t buffers_available;
+	uint8_t prev_available;	// used to filter reports
+	INDEX_T qr;				// index for QR element
 };
 static struct qrIndexes qr = { 0,0,0 };		// init to zeros
 
@@ -189,11 +190,16 @@ void rpt_request_queue_report()
 
 	qr.buffers_available = mp_get_planner_buffers_available();
 
+	// perform filtration for QR_FILTERED reports
 	if (cfg.enable_qr == QR_FILTERED) {
+		if (qr.buffers_available == qr.prev_available) {
+			return;
+		}
 		if ((qr.buffers_available > cfg.qr_lo_water) && (qr.buffers_available < cfg.qr_hi_water)) {
 			return;
 		}
 	}
+	qr.prev_available = qr.buffers_available;
 	qr.request = true;
 }
 

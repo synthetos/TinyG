@@ -51,6 +51,8 @@
 #define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
 
+#define CHORDAL_TOLERANCE 0.01		// chord accuracy for arc drawing
+
 #define COM_APPEND_TX_CR			false
 #define COM_IGNORE_CRLF				IGNORE_OFF			// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_ENABLE_ECHO				false

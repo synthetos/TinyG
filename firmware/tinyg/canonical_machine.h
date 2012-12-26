@@ -43,9 +43,11 @@ struct canonicalMachineSingleton {	// struct to manage cm globals and cycles
 	uint8_t hold_state;				// feedhold sub-state machine
 	uint8_t cycle_start_flag;		// flag to end feedhold
 	uint8_t homing_state;			// homing cycle sub-state machine
+	uint8_t homed[AXES];			// individual axis homing flags
 	uint32_t status_report_counter;
-	uint8_t	g10_persist_flag;		// true=write offsets to NVM after stop
-	uint8_t	g30_flag;				// true=complete a G30 move
+	uint8_t	g28_flag;				// true = complete a G28 move
+	uint8_t	g30_flag;				// true = complete a G30 move
+	uint8_t g10_persist_flag;		//.G10 changed offsets - persist them
 }; struct canonicalMachineSingleton cm;
 
 /* GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
@@ -76,12 +78,14 @@ struct GCodeModel {						// Gcode model- meaning depends on context
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
 										// G82, G83 G84, G85, G86, G87, G88, G89 
 	uint8_t program_flow;				// currently vestigal - captured, but not uses
-	uint32_t linenum;					// N word or autoincrement in the model
+	uint32_t linenum;					// N word
 
 	double target[AXES]; 				// XYZABC where the move should go
 	double position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
 	double origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
 	double work_offset[AXES];			// XYZABC work offset to be forwarded to planner
+	double g28_position[AXES];			// XYZABC stored machine position for G28
+	double g30_position[AXES];			// XYZABC stored machine position for G30
 
 	double min_time;					// minimum time possible for the move given axis constraints
 	double feed_rate; 					// F - normalized to millimeters/minute
@@ -96,7 +100,7 @@ struct GCodeModel {						// Gcode model- meaning depends on context
 	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
 	uint8_t coord_system;				// G54-G59 - select coordinate system 1-9
 	uint8_t absolute_override;			// G53 TRUE = move using machine coordinates - this block only (G53)
-	uint8_t origin_offset_mode;			// G92...TRUE=in origin offset mode
+	uint8_t origin_offset_enable;		// G92 offsets enabled/disabled.  0=disabled, 1=enabled
 
 	uint8_t path_control;				// G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
 	uint8_t distance_mode;				// G91   0=use absolute coords(G90), 1=incremental movement
@@ -264,15 +268,17 @@ enum cmHomingState {				// applies to cm.homing_state
 
 enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_DEFAULT = 0,			// Must be zero (invokes motion modes)
-	NEXT_ACTION_GO_HOME,				// G28
-	NEXT_ACTION_SEARCH_HOME,			// G28.1 homing cycle
-	NEXT_ACTION_GO_HOME_THROUGH_POINT,	// G30
+	NEXT_ACTION_SEARCH_HOME,			// G28.2 homing cycle
+	NEXT_ACTION_SET_ABSOLUTE_ORIGIN,	// G28.3 origin set
+	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordingates 
+	NEXT_ACTION_GOTO_G28_POSITION,		// G28 go to machine position
+	NEXT_ACTION_SET_G30_POSITION,		// G30.1
+	NEXT_ACTION_GOTO_G30_POSITION,		// G30
 	NEXT_ACTION_SET_COORD_DATA,			// G10
 	NEXT_ACTION_SET_ORIGIN_OFFSETS,		// G92
 	NEXT_ACTION_RESET_ORIGIN_OFFSETS,	// G92.1
 	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,	// G92.2
 	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,	// G92.3
-	NEXT_ACTION_SET_MACHINE_ORIGINS,	// G92.4
 	NEXT_ACTION_DWELL,					// G4
 	NEXT_ACTION_STRAIGHT_PROBE			// G38.2
 };
@@ -386,16 +392,16 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 	AXIS_STANDARD,					// axis in coordinated motion w/standard behaviors
 	AXIS_INHIBITED,					// axis is computed but not activated
 	AXIS_RADIUS,					// rotary axis calibrated to circumference
-	AXIS_SLAVE_X,					// rotary axis slaved to X axis
-	AXIS_SLAVE_Y,					// rotary axis slaved to Y axis
-	AXIS_SLAVE_Z,					// rotary axis slaved to Z axis
-	AXIS_SLAVE_XY,					// rotary axis slaved to XY plane
-	AXIS_SLAVE_XZ,					// rotary axis slaved to XZ plane
-	AXIS_SLAVE_YZ,					// rotary axis slaved to YZ plane
-	AXIS_SLAVE_XYZ					// rotary axis slaved to XYZ movement
+//	AXIS_SLAVE_X,					// rotary axis slaved to X axis
+//	AXIS_SLAVE_Y,					// rotary axis slaved to Y axis
+//	AXIS_SLAVE_Z,					// rotary axis slaved to Z axis
+//	AXIS_SLAVE_XY,					// rotary axis slaved to XY plane
+//	AXIS_SLAVE_XZ,					// rotary axis slaved to XZ plane
+//	AXIS_SLAVE_YZ,					// rotary axis slaved to YZ plane
+//	AXIS_SLAVE_XYZ					// rotary axis slaved to XYZ movement
 };	// ordering must be preserved. See _cm_get_feed_time() and seek time()
 #define AXIS_MAX_LINEAR AXIS_INHIBITED
-#define AXIS_MAX_ROTARY AXIS_SLAVE_XYZ
+#define AXIS_MAX_ROTARY AXIS_RADIUS
 
 /*****************************************************************************
  * FUNCTION PROTOTYPES
@@ -417,9 +423,9 @@ uint8_t cm_get_distance_mode(void);
 uint8_t cm_get_inverse_feed_rate_mode(void);
 uint8_t cm_get_spindle_mode(void);
 uint32_t cm_get_model_linenum(void);
-//uint32_t cm_get_model_lineindex(void);
 uint8_t cm_isbusy(void);
 
+void cm_set_motion_mode(uint8_t motion_mode);
 void cm_set_absolute_override(uint8_t absolute_override);
 void cm_set_spindle_mode(uint8_t spindle_mode);
 void cm_set_spindle_speed_parameter(double speed);
@@ -441,39 +447,40 @@ void cm_set_arc_offset(double i, double j, double k);
 void cm_set_arc_radius(double r);
 void cm_set_target(double target[], double flag[]);
 void cm_set_gcode_model_endpoint_position(uint8_t status);
-
-//double *cm_set_vector(double x, double y, double z, double a, double b, double c);
-//void cm_set_absolute_override(uint8_t absolute_override);
 void cm_set_model_linenum(uint32_t linenum);
-void cm_set_model_lineindex(uint32_t lineindex);
-void cm_incr_model_lineindex(void);
 
 /*--- canonical machining functions ---*/
 void cm_init(void);									// init canonical machine
 void cm_shutdown(void);								// emergency shutdown
 
-//uint8_t cm_set_machine_coords(double offset[]);
-//uint8_t cm_set_machine_zero(void);					// set absolute zero point
 uint8_t cm_set_machine_axis_position(uint8_t axis, const double position);	// set absolute position
 
 uint8_t cm_select_plane(uint8_t plane);				// G17, G18, G19
 uint8_t cm_set_units_mode(uint8_t mode);			// G20, G21
-uint8_t	cm_set_coord_system(uint8_t coord_system);	// G10 (G54...G59)
-uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[]);
+
+uint8_t cm_homing_cycle_start(void);							// G28.2
+uint8_t cm_homing_callback(void);								// G28.2 main loop callback
+uint8_t cm_set_absolute_origin(double origin[], double flags[]);// G28.3  (special function)
+
+uint8_t cm_set_g28_position(void);								// G28.1
+uint8_t cm_goto_g28_position(double target[], double flags[]); 	// G28
+uint8_t cm_set_g30_position(void);								// G30.1
+uint8_t cm_goto_g30_position(double target[], double flags[]);	// G30
+
+uint8_t	cm_set_coord_system(uint8_t coord_system);	// G54...G59
+uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[]); // G10 L2
 uint8_t cm_set_distance_mode(uint8_t mode);			// G90, G91
-uint8_t cm_set_origin_offsets(double offset[], double flag[]); 	// G92
+uint8_t cm_set_origin_offsets(double offset[], double flag[]); // G92
 uint8_t cm_reset_origin_offsets(void); 				// G92.1
 uint8_t cm_suspend_origin_offsets(void); 			// G92.2
 uint8_t cm_resume_origin_offsets(void); 			// G92.3
-uint8_t cm_set_machine_origins(double origin[], double flag[]);// G92.4  (special function)
 
 uint8_t cm_straight_traverse(double target[], double flags[]);
 uint8_t cm_set_feed_rate(double feed_rate);			// F parameter
 uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode);// True= inv mode
 uint8_t cm_set_path_control(uint8_t mode);			// G61, G61.1, G64
 uint8_t cm_dwell(double seconds);					// G4, P parameter
-uint8_t cm_straight_feed(double target[], double flags[]); 
-
+uint8_t cm_straight_feed(double target[], double flags[]);
 uint8_t cm_set_spindle_speed(double speed);			// S parameter
 uint8_t cm_start_spindle_clockwise(void);			// M3
 uint8_t cm_start_spindle_counterclockwise(void);	// M4
@@ -504,14 +511,5 @@ void cm_exec_program_stop(void);
 void cm_exec_program_end(void);
 													// G2, G3
 uint8_t cm_arc_feed(double target[], double flags[], double i, double j, double k, double radius, uint8_t motion_mode);
-
-/*--- canned cycles ---*/
-
-uint8_t cm_return_to_home(void);					// G28
-uint8_t cm_return_to_home_through_point(void);		// G30
-uint8_t cm_G30_callback(void);						// G30 main loop callback
-
-uint8_t cm_homing_cycle_start(void);				// G28.1
-uint8_t cm_homing_callback(void);					// G28.1 main loop callback
 
 #endif

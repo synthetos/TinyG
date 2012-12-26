@@ -73,7 +73,8 @@ These commands are active for configuration:\n\
   $1   Show motor 1 settings (or whatever motor you want 1,2,3,4)\n\
   $x   Show X axis settings (or whatever axis you want x,y,z,a,b,c)\n\
   $m   Show all motor settings\n\
-  $n   Show all axis settings\n\
+  $q   Show all axis settings\n\
+  $o   Show all offset settings\n\
   $$   Show all settings\n\
   $h   Show this help screen\n\n\
 "));

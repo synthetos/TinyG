@@ -10,7 +10,7 @@
 const char PROGMEM test_Mcodes[] = "\
 (MSG**** Mcodes test [v1] ****)\n\
 g55\n\
-g28\n\
+g0x0y0\n\
 m3\n\
 g4p1\n\
 m5\n\
@@ -58,5 +58,5 @@ g0x0y0\n\
 g2x0y0i10\n\
 g3x0y0i10\n\
 g54\n\
-g28\n\
+g0x0y0\n\
 m30";

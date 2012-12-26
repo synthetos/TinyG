@@ -81,7 +81,7 @@ void rtc_init()
 ISR(RTC_COMP_vect)
 {
 	// callbacks to whatever you need to happen on each RTC tick go here:
-	gpio_switch_timer_callback();		// switch debouncing
+	gpio_rtc_callback();					// switch debouncing
 
 	// here's the default RTC timer clock
 	++rtc.clock_ticks;					// increment real time clock (unused)

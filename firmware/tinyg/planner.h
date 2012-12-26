@@ -34,6 +34,7 @@ enum moveType {				// bf->move_type values
 	MOVE_TYPE_LINE,			// simple line
 	MOVE_TYPE_ALINE,		// acceleration planned line
 	MOVE_TYPE_DWELL,		// delay with no movement
+	MOVE_TYPE_OFFSET,		// coordinate system offset
 	MOVE_TYPE_MCODE,		// M code or other synchrouous command execution
 	MOVE_TYPE_COMMAND,		// general command
 	MOVE_TYPE_TOOL,			// T command
@@ -70,7 +71,7 @@ enum moveState {
  */
 #define NOM_SEGMENT_USEC ((double)5000)			// nominal segment time
 #define MIN_SEGMENT_USEC ((double)2500)			// minimum segment time
-#define MIN_ARC_SEGMENT_USEC ((double)20000)	// minimum arc segment time
+#define MIN_ARC_SEGMENT_USEC ((double)10000)	// minimum arc segment time
 #define NOM_SEGMENT_TIME (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME (MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
@@ -89,7 +90,6 @@ enum moveState {
  *	Suggest 12 min. Limit is 255
  */
 #define PLANNER_BUFFER_POOL_SIZE 24
-//#define PLANNER_BUFFER_POOL_SIZE 8
 
 /* Some parameters for _generate_trapezoid()
  * TRAPEZOID_ITERATION_MAX	 			Max iterations for convergence in the HT asymmetric case.
@@ -122,24 +122,25 @@ void mp_flush_planner(void);
 uint8_t mp_get_planner_buffers_available(void);
 double *mp_get_plan_position(double position[]);
 void mp_set_plan_position(const double position[]);
-void mp_set_plan_lineindex(uint32_t lineindex);
+//void mp_set_plan_lineindex(uint32_t lineindex);
 void mp_set_axes_position(const double position[]);
 void mp_set_axis_position(uint8_t axis, const double position);
+void mp_set_runtime_work_offset(double offset[]); 
 
 double mp_get_runtime_machine_position(uint8_t axis);
 double mp_get_runtime_work_position(uint8_t axis);
 double mp_get_runtime_velocity(void);
 double mp_get_runtime_linenum(void);
-double mp_get_runtime_lineindex(void);
 void mp_zero_segment_velocity(void);
 
 uint8_t mp_exec_move(void);
 void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f);
-void mp_sync_mcode(uint8_t mcode);
+//void mp_sync_mcode(uint8_t mcode);
 
 uint8_t mp_plan_hold_callback(void);
 uint8_t mp_end_hold_callback(void);
 uint8_t mp_dwell(const double seconds);
+uint8_t mp_offset(const uint8_t coord_system);
 uint8_t mp_line(const double target[], const double minutes);
 uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time);
 uint8_t mp_go_home_cycle(void);

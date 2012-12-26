@@ -9,7 +9,7 @@ const char PROGMEM test_arcs[] = "\
 (MSG**** Arc Test [v1] ****)\n\
 g00g17g21g40g49g80g90\n\
 g55\n\
-g28\n\
+g0x0y0\n\
 f500\n\
 g2x10y-10i10 (CW 270 degrees)\n\
 g0x0y0\n\
@@ -32,7 +32,7 @@ g3x0y0i20 (CCW 360 3rd time)\n\
 g3x0y0i20 (CCW 360 4th time)\n\
 g80\n\
 g54\n\
-g28\n\
+g0x0y0\n\
 m30";
 
 /*
