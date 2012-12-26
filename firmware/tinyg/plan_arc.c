@@ -38,7 +38,7 @@
 #include "controller.h"			// only needed for line number
 #include "canonical_machine.h"
 #include "util.h"
-#include "arc.h"
+#include "plan_arc.h"
 #include "planner.h"
 #include "kinematics.h"
 

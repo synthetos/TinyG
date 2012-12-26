@@ -40,7 +40,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 LIBS = -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = util.o arc.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o network.o planner.o report.o spindle.o stepper.o system.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio.o xio_pgm.o xio_rs485.o xio_signals.o xio_usart.o pwm.o 
+OBJECTS = util.o plan_arc.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o network.o planner.o report.o spindle.o stepper.o system.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio.o xio_pgm.o xio_rs485.o xio_signals.o xio_usart.o pwm.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -52,7 +52,7 @@ all: $(TARGET) tinyg.hex tinyg.eep tinyg.lss size
 util.o: ../util.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-arc.o: ../arc.c
+plan_arc.o: ../plan_arc.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 canonical_machine.o: ../canonical_machine.c

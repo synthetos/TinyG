@@ -41,7 +41,7 @@
 #include "json_parser.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
-#include "arc.h"
+#include "plan_arc.h"
 #include "planner.h"
 #include "report.h"
 #include "system.h"

@@ -64,7 +64,7 @@
 #include "controller.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
-#include "arc.h"
+#include "plan_arc.h"
 #include "planner.h"
 #include "spindle.h"
 #include "kinematics.h"
