@@ -74,85 +74,8 @@
 #include "test.h"
 #include "xio/xio.h"			// supports trap and debug statements
 
-// All the enums that equal zero must be zero. Don't change this
 
-enum mpBufferState {			// bf->buffer_state values 
-	MP_BUFFER_EMPTY = 0,		// struct is available for use (MUST BE 0)
-	MP_BUFFER_LOADING,			// being written ("checked out")
-	MP_BUFFER_QUEUED,			// in queue
-	MP_BUFFER_PENDING,			// marked as the next buffer to run
-	MP_BUFFER_RUNNING			// current running buffer
-};
-
-struct mpBuffer {				// See Planning Velocity Notes for variable usage
-	struct mpBuffer *pv;		// static pointer to previous buffer
-	struct mpBuffer *nx;		// static pointer to next buffer
-	uint8_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function - passes *bf, returns uint8_t
-	cm_exec cm_func;			// callback to canonical machine execution function
-	uint32_t linenum;			// runtime line number; or line index if not numbered
-	uint8_t buffer_state;		// used to manage queueing/dequeueing
-	uint8_t move_type;			// used to dispatch to run routine
-	uint8_t move_code;			// byte that can be used by used exec functions
-	uint8_t move_state;			// move state machine sequence
-	uint8_t replannable;		// TRUE if move can be replanned
-
-	double target[AXES];		// target position in floating point
-	double unit[AXES];			// unit vector for axis scaling & planning
-	double work_offset[AXES];	// offset from the work coordinate system (for reporting only)
-
-	double time;				// line, helix or dwell time in minutes
-	double min_time;			// minimum time for the move - for rate override replanning
-	double head_length;
-	double body_length;
-	double tail_length;
-	double length;				// total length of line or helix in mm
-								// *** SEE NOTES ON THESE VARIABLES, in aline() ***
-	double entry_velocity;		// entry velocity requested for the move
-	double cruise_velocity;		// cruise velocity requested & achieved
-	double exit_velocity;		// exit velocity requested for the move
-
-	double entry_vmax;			// max junction velocity at entry of this move
-	double cruise_vmax;			// max cruise velocity requested for move
-	double exit_vmax;			// max exit velocity possible (redundant)
-	double delta_vmax;			// max velocity difference for this move
-	double braking_velocity;	// current value for braking velocity
-
-	double jerk;				// maximum linear jerk term for this move
-#ifdef __PLAN_R2
-	double recip_half_jerk;		// used by planning
-	double half_jerk;			// used by planning
-#else
-	double recip_jerk;			// 1/Jm used for planning (compute-once)
-	double cbrt_jerk;			// cube root of Jm used for planning (compute-once)
-#endif
-};
-typedef struct mpBuffer mpBuf;
-
-#define spindle_speed time		// alias spindle_speed to the time variable
-#define int_val move_code		// alias the uint8_t to the move_code
-#define dbl_val time			// alias the double to the time variable
-
-struct mpBufferPool {			// ring buffer for sub-moves
-	uint8_t buffers_available;	// running count of available buffers
-	struct mpBuffer *w;			// get_write_buffer pointer
-	struct mpBuffer *q;			// queue_write_buffer pointer
-	struct mpBuffer *r;			// get/end_run_buffer pointer
-	struct mpBuffer bf[PLANNER_BUFFER_POOL_SIZE];// buffer storage
-};
-
-struct mpMoveMasterSingleton {	// common variables for planning (move master)
-	double position[AXES];		// final move position for planning purposes
-	double ms_in_queue;			// total ms of movement & dwell in planner queue
-	double prev_jerk;			// jerk values cached from previous move
-	double prev_recip_jerk;
-	double prev_cbrt_jerk;
-#ifdef __UNIT_TEST_PLANNER
-	double test_case;
-	double test_velocity;
-	double a_unit[AXES];
-	double b_unit[AXES];
-#endif
-};
+// Line execution struct
 
 struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
@@ -184,17 +107,13 @@ struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	double microseconds;		// line or segment time in microseconds
 	double segment_length;		// computed length for aline segment
 	double segment_velocity;	// computed velocity for aline segment
-
-#ifdef __EXEC_R2
 	double forward_diff_1;      // forward difference level 1 (Acceleration)
 	double forward_diff_2;      // forward difference level 2 (Jerk - constant)
-#else
-	double accel_time;			// total pseudo-time for acceleration calculation
-	double elapsed_accel_time;	// current running time for accel calculation
-	double midpoint_acceleration;//acceleration at the midpoint
-	double jerk_div2;			// max linear jerk divided by 2
-	double segment_accel_time;	// time increment for accel computation purposes
-#endif
+//	double accel_time;			// total pseudo-time for acceleration calculation
+//	double elapsed_accel_time;	// current running time for accel calculation
+//	double midpoint_acceleration;//acceleration at the midpoint
+//	double jerk_div2;			// max linear jerk divided by 2
+//	double segment_accel_time;	// time increment for accel computation purposes
 };
 
 static struct mpBufferPool mb;			// move buffer queue
@@ -205,6 +124,11 @@ static struct mpMoveRuntimeSingleton mr;// static context for runtime
  * Local Scope Data and Functions
  */
 #define _bump(a) ((a<PLANNER_BUFFER_POOL_SIZE-1)?(a+1):0) // buffer incr & wrap
+
+// defined locally only
+#define spindle_speed time		// alias spindle_speed to the time variable
+#define int_val move_code		// alias the uint8_t to the move_code
+#define dbl_val time			// alias the double to the time variable
 
 //static mpBuf * _get_prev_buffer(const mpBuf *bf);	// use the defines below instead
 //static mpBuf * _get_next_buffer(const mpBuf *bf);
@@ -219,10 +143,6 @@ static double _get_target_velocity(const double Vi, const double L, const mpBuf 
 static double _get_intersection_distance(const double Vi_squared, const double Vt_squared, const double L, const mpBuf *bf);
 static double _get_junction_vmax(const double a_unit[], const double b_unit[]);
 static void _reset_replannable_list(void);
-
-#ifndef __JUNCTION_VMAX_R2
-static double _get_junction_deviation(const double a_unit[], const double b_unit[]);
-#endif
 
 // execute routines (NB: These are all called from the LO interrupt)
 static uint8_t _exec_dwell(mpBuf *bf);
@@ -471,58 +391,6 @@ static uint8_t _exec_dwell(mpBuf *bf)
 	return (TG_OK);
 }
 
-/*************************************************************************
- * The non-acceleration line is left in for illustration purposes
- * mp_line() 	- queue a linear move (simple version - no accel/decel)
- * _exec_line() - run a line to generate and load a linear move
- *
- * Compute and queue a line segment to the move buffer.
- * Executes linear motion in absolute millimeter coordinates. 
- * Feed rate has already been converted to time (minutes).
- * Zero length lines are skipped at this level. 
- * 
- * The run_line routine is a continuation and can be called multiple times 
- * until it can successfully load the line into the move buffer.
- */
-/*
-uint8_t mp_line(const double target[], const double minutes)
-{
-	mpBuf *bf;
-	double length = get_axis_vector_length(target, mr.position);
-
-	if (minutes < EPSILON) { return (TG_ZERO_LENGTH_MOVE);}
-	if (length < EPSILON) { return (TG_ZERO_LENGTH_MOVE);}
-	if ((bf = _get_write_buffer()) == NULL) { return (TG_BUFFER_FULL_FATAL);} // never supposed to fail
-
-	bf->bf_func = _exec_line;					// register the callback to the exec function
-	bf->time = minutes;
-	bf->length = length;
-	copy_axis_vector(bf->target, target);		// target to bf_target
-	bf->cruise_vmax = bf->length / bf->time;	// for yuks
-	_queue_write_buffer(MOVE_TYPE_LINE);
-	copy_axis_vector(mm.position, bf->target);	// update planning position
-	return(TG_OK);
-}
-
-static uint8_t _exec_line(mpBuf *bf) 
-{
-	uint8_t i;
-	double travel[AXES];
-	double steps[MOTORS];
-
-	for (i=0; i < AXES; i++) {
-		travel[i] = bf->target[i] - mr.position[i];
-	}
-	mr.microseconds = uSec(bf->time);
-	(void)ik_kinematics(travel, steps, mr.microseconds);
-	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
-		copy_axis_vector(mr.position, bf->target);	// update runtime position
-	}
-	_free_run_buffer();
-	return (TG_OK);
-}
-*/
-
 /**************************************************************************
  * mp_aline() - plan a line with acceleration / deceleration
  *
@@ -638,7 +506,6 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
  * _get_target_length()
  * _get_target_velocity()
  * _get_junction_vmax()
- * _get_junction_deviation()
  * _reset_replannable_list()
  */
 
@@ -1649,6 +1516,9 @@ uint8_t mp_end_hold_callback()
  *	 _NEW - trigger initialization
  *	 _RUN1 - run the first part
  *	 _RUN2 - run the second part 
+ *
+ *	Note: For a direct math implementation see build 357.xx or earlier
+ *		  Builds 358 onward have only forward difference code
  */
 static uint8_t _exec_aline(mpBuf *bf)
 {
@@ -1673,9 +1543,6 @@ static uint8_t _exec_aline(mpBuf *bf)
 		mr.section_state = MOVE_STATE_NEW;
 		mr.linenum = bf->linenum;
 		mr.jerk = bf->jerk;
-#ifndef __EXEC_R2
-		mr.jerk_div2 = bf->jerk/2;
-#endif
 		mr.head_length = bf->head_length;
 		mr.body_length = bf->body_length;
 		mr.tail_length = bf->tail_length;
@@ -1753,7 +1620,6 @@ static uint8_t _exec_aline(mpBuf *bf)
 // NOTE: t1 will always be == t0, so we don't pass it
 static void _init_forward_diffs(double t0, double t2)
 {
-#ifdef __EXEC_R2
 	double H_squared = square(1/mr.segments);
 	// A = T[0] - 2*T[1] + T[2], if T[0] == T[1], then it becomes - T[0] + T[2]
 	double AH_squared = (t2 - t0) * H_squared;
@@ -1762,14 +1628,12 @@ static void _init_forward_diffs(double t0, double t2)
 	mr.forward_diff_1 = AH_squared;
 	mr.forward_diff_2 = 2*AH_squared;
 	mr.segment_velocity = t0;
-#endif
 }
 
 /*
  * _exec_aline_head()
  */
 static uint8_t _exec_aline_head()
-#ifdef __EXEC_R2
 {
 	if (mr.section_state == MOVE_STATE_NEW) {	// initialize the move singleton (mr)
 		if (mr.head_length < EPSILON) { 
@@ -1812,48 +1676,6 @@ static uint8_t _exec_aline_head()
 	}
 	return(TG_EAGAIN);
 }
-#else
-{
-	if (mr.section_state == MOVE_STATE_NEW) {	// initialize the move singleton (mr)
-		if (mr.head_length < EPSILON) { 
-			mr.move_state = MOVE_STATE_BODY;
-			return(_exec_aline_body());			// skip ahead to the body generator
-		}
-		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
-		mr.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
-		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.entry_velocity) / mr.jerk);
-		mr.midpoint_acceleration = 2 * (mr.cruise_velocity - mr.entry_velocity) / mr.accel_time;
-		mr.segments = ceil(uSec(mr.move_time) / (2 * cfg.estd_segment_usec)); // # of segments in *each half*
-		mr.segment_move_time = mr.move_time / (2 * mr.segments);
-		mr.segment_accel_time = mr.accel_time / (2 * mr.segments);// time to advance for each segment
-		mr.elapsed_accel_time = mr.segment_accel_time / 2;	// elapsed time starting point (offset)
-		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-			return(TG_GCODE_BLOCK_SKIPPED);		// exit without advancing position
-		}
-		mr.section_state = MOVE_STATE_RUN1;
-	}
-	if (mr.section_state == MOVE_STATE_RUN1) {	// concave part of accel curve (period 1)
-		mr.segment_velocity = mr.entry_velocity + (square(mr.elapsed_accel_time) * mr.jerk_div2);
-		if (_exec_aline_segment(false) == TG_COMPLETE) { 	  	// set up for second half
-			mr.elapsed_accel_time = mr.segment_accel_time / 2;	// start time from midpoint of segment
-			mr.segment_count = (uint32_t)mr.segments;
-			mr.section_state = MOVE_STATE_RUN2;
-		}
-		return(TG_EAGAIN);
-	}
-	if (mr.section_state == MOVE_STATE_RUN2) {	// convex part of accel curve (period 2)
-		mr.segment_velocity = mr.midpoint_velocity + (mr.elapsed_accel_time * mr.midpoint_acceleration) -
-							 (square(mr.elapsed_accel_time) * mr.jerk_div2);
-		if (_exec_aline_segment(false) == TG_COMPLETE) {
-			if ((mr.body_length < EPSILON) && (mr.tail_length < EPSILON)) { return(TG_OK);}	// end the move
-			mr.move_state = MOVE_STATE_BODY;
-			mr.section_state = MOVE_STATE_NEW;
-		}
-	}
-	return(TG_EAGAIN);
-}
-#endif
 
 /*
  * _exec_aline_body()
@@ -1893,7 +1715,6 @@ static uint8_t _exec_aline_body()
  * _exec_aline_tail()
  */
 static uint8_t _exec_aline_tail()
-#ifdef __EXEC_R2
 {
 	if (mr.section_state == MOVE_STATE_NEW) {
 		if (mr.tail_length < EPSILON) { return(TG_OK);}		// end the move
@@ -1929,43 +1750,7 @@ static uint8_t _exec_aline_tail()
 	}
 	return(TG_EAGAIN);
 }
-#else
-{
-	if (mr.section_state == MOVE_STATE_NEW) {
-		if (mr.tail_length < EPSILON) { return(TG_OK);}		// end the move
-		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
-		mr.move_time = mr.tail_length / mr.midpoint_velocity;
-		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.exit_velocity) / mr.jerk);
-		mr.midpoint_acceleration = 2 * (mr.cruise_velocity - mr.exit_velocity) / mr.accel_time;
-		mr.segments = ceil(uSec(mr.move_time) / (2 * cfg.estd_segment_usec));// # of segments in *each half*
-		mr.segment_move_time = mr.move_time / (2 * mr.segments);// time to advance for each segment
-		mr.segment_accel_time = mr.accel_time / (2 * mr.segments);// time to advance for each segment
-		mr.elapsed_accel_time = mr.segment_accel_time / 2; //compute time from midpoint of segment
-		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-			return(TG_GCODE_BLOCK_SKIPPED);					// exit without advancing position
-		}
-		mr.section_state = MOVE_STATE_RUN1;
-	}
-	if (mr.section_state == MOVE_STATE_RUN1) {				// convex part (period 4)
-		mr.segment_velocity = mr.cruise_velocity - (square(mr.elapsed_accel_time) * mr.jerk_div2);
-		if (_exec_aline_segment(false) == TG_COMPLETE) { 	  	// set up for second half
-			mr.elapsed_accel_time = mr.segment_accel_time / 2;	// start time from midpoint of segment
-			mr.segment_count = (uint32_t)mr.segments;
-			mr.section_state = MOVE_STATE_RUN2;
-		}
-		return(TG_EAGAIN);
-	}
-	if (mr.section_state == MOVE_STATE_RUN2) {				// concave part (period 5)
-		mr.segment_velocity = mr.midpoint_velocity - 
-							 (mr.elapsed_accel_time * mr.midpoint_acceleration) +
-							 (square(mr.elapsed_accel_time) * mr.jerk_div2);
-		if (_exec_aline_segment(true) == TG_COMPLETE) { return (TG_OK);}	// end the move
-	}
-	return(TG_EAGAIN);
-}
 
-#endif
 /*
  * _exec_aline_segment() - segment runner helper
  */
@@ -2025,9 +1810,6 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 		mr.position[C] = mr.target[C];	
 */	
 	}
-#ifndef __EXEC_R2
-	mr.elapsed_accel_time += mr.segment_accel_time; // NB: ignored if running the body
-#endif
 	if (--mr.segment_count == 0) {
 		return (TG_COMPLETE);	// this section has run all its segments
 	}

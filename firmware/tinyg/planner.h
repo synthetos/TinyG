@@ -109,6 +109,9 @@ enum moveState {
 //#define MP_LINE(t,m,o,n) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m,o,n) : mp_line(t,m))
 #define MP_LINE(t,m,o,n) (mp_aline(t,m,o,n))	// non-planned lines are disabled
 
+
+
+
 /*
  * Global Scope Functions
  */
@@ -150,6 +153,95 @@ void mp_dump_running_plan_buffer(void);
 void mp_dump_plan_buffer_by_index(uint8_t index);
 void mp_dump_runtime_state(void);
 #endif
+
+
+/*
+ *	Planner structures
+ */
+
+// All the enums that equal zero must be zero. Don't change this
+
+enum mpBufferState {			// bf->buffer_state values 
+	MP_BUFFER_EMPTY = 0,		// struct is available for use (MUST BE 0)
+	MP_BUFFER_LOADING,			// being written ("checked out")
+	MP_BUFFER_QUEUED,			// in queue
+	MP_BUFFER_PENDING,			// marked as the next buffer to run
+	MP_BUFFER_RUNNING			// current running buffer
+};
+
+struct mpBuffer {				// See Planning Velocity Notes for variable usage
+	struct mpBuffer *pv;		// static pointer to previous buffer
+	struct mpBuffer *nx;		// static pointer to next buffer
+	uint8_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function - passes *bf, returns uint8_t
+	cm_exec cm_func;			// callback to canonical machine execution function
+	uint32_t linenum;			// runtime line number; or line index if not numbered
+	uint8_t buffer_state;		// used to manage queueing/dequeueing
+	uint8_t move_type;			// used to dispatch to run routine
+	uint8_t move_code;			// byte that can be used by used exec functions
+	uint8_t move_state;			// move state machine sequence
+	uint8_t replannable;		// TRUE if move can be replanned
+
+	double target[AXES];		// target position in floating point
+	double unit[AXES];			// unit vector for axis scaling & planning
+	double work_offset[AXES];	// offset from the work coordinate system (for reporting only)
+
+	double time;				// line, helix or dwell time in minutes
+	double min_time;			// minimum time for the move - for rate override replanning
+	double head_length;
+	double body_length;
+	double tail_length;
+	double length;				// total length of line or helix in mm
+								// *** SEE NOTES ON THESE VARIABLES, in aline() ***
+	double entry_velocity;		// entry velocity requested for the move
+	double cruise_velocity;		// cruise velocity requested & achieved
+	double exit_velocity;		// exit velocity requested for the move
+
+	double entry_vmax;			// max junction velocity at entry of this move
+	double cruise_vmax;			// max cruise velocity requested for move
+	double exit_vmax;			// max exit velocity possible (redundant)
+	double delta_vmax;			// max velocity difference for this move
+	double braking_velocity;	// current value for braking velocity
+
+	double jerk;				// maximum linear jerk term for this move
+#ifdef __PLAN_R2
+	double recip_half_jerk;		// used by planning
+	double half_jerk;			// used by planning
+#else
+	double recip_jerk;			// 1/Jm used for planning (compute-once)
+	double cbrt_jerk;			// cube root of Jm used for planning (compute-once)
+#endif
+};
+typedef struct mpBuffer mpBuf;
+
+struct mpBufferPool {			// ring buffer for sub-moves
+	uint8_t buffers_available;	// running count of available buffers
+	struct mpBuffer *w;			// get_write_buffer pointer
+	struct mpBuffer *q;			// queue_write_buffer pointer
+	struct mpBuffer *r;			// get/end_run_buffer pointer
+	struct mpBuffer bf[PLANNER_BUFFER_POOL_SIZE];// buffer storage
+};
+
+struct mpMoveMasterSingleton {	// common variables for planning (move master)
+	double position[AXES];		// final move position for planning purposes
+	double ms_in_queue;			// total ms of movement & dwell in planner queue
+	double prev_jerk;			// jerk values cached from previous move
+	double prev_recip_jerk;
+	double prev_cbrt_jerk;
+#ifdef __UNIT_TEST_PLANNER
+	double test_case;
+	double test_velocity;
+	double a_unit[AXES];
+	double b_unit[AXES];
+#endif
+};
+
+// Global scope structs
+
+//static struct mpBufferPool mb;			// move buffer queue
+//static struct mpMoveMasterSingleton mm;	// static context for planning
+
+
+/*** Unit tests ***/
 
 //#define __UNIT_TEST_PLANNER	// start __UNIT_TEST_PLANNER
 #ifdef __UNIT_TEST_PLANNER

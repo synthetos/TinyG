@@ -306,7 +306,6 @@ void st_disable()
 
 ISR(TIMER_DDA_ISR_vect)
 {
-#ifdef __ISR_R2 
 	if ((st.m[MOTOR_1].counter += st.m[MOTOR_1].steps) > 0) {
 		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;	// turn step bit on
  		st.m[MOTOR_1].counter -= st.timer_ticks_X_substeps;
@@ -344,45 +343,6 @@ ISR(TIMER_DDA_ISR_vect)
 		}
 		_load_move();							// load the next move
 	}
-#else
-	if ((st.m[MOTOR_1].counter += st.m[MOTOR_1].steps) > 0) {
-		PORT_MOTOR_1.OUTSET = STEP_BIT_bm;	// turn step bit on
- 		st.m[MOTOR_1].counter -= st.timer_ticks_X_substeps;
-		PORT_MOTOR_1.OUTCLR = STEP_BIT_bm;	// turn step bit off in ~1 uSec
-	}
-	if ((st.m[MOTOR_2].counter += st.m[MOTOR_2].steps) > 0) {
-		PORT_MOTOR_2.OUTSET = STEP_BIT_bm;
- 		st.m[MOTOR_2].counter -= st.timer_ticks_X_substeps;
-		PORT_MOTOR_2.OUTCLR = STEP_BIT_bm;
-	}
-	if ((st.m[MOTOR_3].counter += st.m[MOTOR_3].steps) > 0) {
-		PORT_MOTOR_3.OUTSET = STEP_BIT_bm;
- 		st.m[MOTOR_3].counter -= st.timer_ticks_X_substeps;
-		PORT_MOTOR_3.OUTCLR = STEP_BIT_bm;
-	}
-	if ((st.m[MOTOR_4].counter += st.m[MOTOR_4].steps) > 0) {
-		PORT_MOTOR_4.OUTSET = STEP_BIT_bm;
- 		st.m[MOTOR_4].counter -= st.timer_ticks_X_substeps;
-		PORT_MOTOR_4.OUTCLR = STEP_BIT_bm;
-	}
-	if (--st.timer_ticks_downcount == 0) {			// end move
- 		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// disable DDA timer
-		// power-down motors if this feature is enabled
-		if (cfg.m[MOTOR_1].power_mode == true) {
-			PORT_MOTOR_1.OUTSET = MOTOR_ENABLE_BIT_bm; 
-		}
-		if (cfg.m[MOTOR_2].power_mode == true) {
-			PORT_MOTOR_2.OUTSET = MOTOR_ENABLE_BIT_bm; 
-		}
-		if (cfg.m[MOTOR_3].power_mode == true) {
-			PORT_MOTOR_3.OUTSET = MOTOR_ENABLE_BIT_bm; 
-		}
-		if (cfg.m[MOTOR_4].power_mode == true) {
-			PORT_MOTOR_4.OUTSET = MOTOR_ENABLE_BIT_bm; 
-		}
-		_load_move();							// load the next move
-	}
-#endif
 }
 
 ISR(TIMER_DWELL_ISR_vect) {						// DWELL timer interupt
@@ -456,7 +416,6 @@ static void _request_load_move()
  */
 
 void _load_move()
-#ifdef __LOAD_MOVE_R2
 {
 	if (st.timer_ticks_downcount != 0) { return;}				 // exit if it's still busy
 	if (sp.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	return;} // if there are no more moves
@@ -542,49 +501,6 @@ void _load_move()
 	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;					// flip it back
 	st_request_exec_move();										// exec and prep next move
 }
-#else
-{
-	if (st.timer_ticks_downcount != 0) { return;}				 // exit if it's still busy
-	if (sp.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	return;} // if there are no more moves
-
-	// handle aline loads first (most common case)  NB: there are no more lines, only alines
-	if (sp.move_type == MOVE_TYPE_ALINE) {
-		st.timer_ticks_downcount = sp.timer_ticks;
-		st.timer_ticks_X_substeps = sp.timer_ticks_X_substeps;
-		TIMER_DDA.PER = sp.timer_period;
- 
-		// This section is somewhat optimized for execution speed 
-		// All axes must set steps and compensate for out-of-range pulse phasing. 
-		// If axis has 0 steps the direction setting can be omitted
-		// If axis has 0 steps enabling motors is req'd to support power mode = 1
-		for (uint8_t i=0; i < MOTORS; i++) {
-			st.m[i].steps = sp.m[i].steps;						// set steps
-			if (sp.counter_reset_flag == true) {				// compensate for pulse phasing
-				st.m[i].counter = -(st.timer_ticks_downcount);
-			}
-			if (st.m[i].steps != 0) {
-				if (sp.m[i].dir == 0) {							// set direction
-					device.port[i]->OUTCLR = DIRECTION_BIT_bm;	// CW motion
-				} else {
-					device.port[i]->OUTSET = DIRECTION_BIT_bm;	// CCW motion
-				}
-				device.port[i]->OUTCLR = MOTOR_ENABLE_BIT_bm;	// enable motor
-			}
-		}
-		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;					// enable the DDA timer
-
-	// handle dwells
-	} else if (sp.move_type == MOVE_TYPE_DWELL) {
-		st.timer_ticks_downcount = sp.timer_ticks;
-		TIMER_DWELL.PER = sp.timer_period;						// load dwell timer period
- 		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;					// enable the dwell timer
-	}
-
-	// all other cases drop to here (e.g. Null moves after Mcodes skip to here) 
-	sp.exec_state = PREP_BUFFER_OWNED_BY_EXEC;					// flip it back
-	st_request_exec_move();										// exec and prep next move
-}
-#endif
 
 /*
  * st_prep_line() - Prepare the next move for the loader

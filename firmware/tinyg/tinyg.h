@@ -32,7 +32,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	358.01		// Deglitching limit switches
+#define TINYG_BUILD_NUMBER   	358.01		// Reorganizing planner for feed overrides 
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
@@ -47,10 +47,6 @@
 
 // bringing in new functionality
 //#define __PLAN_R2				// comment out to use R1 planner functions
-#define __EXEC_R2				// comment out to use R1 aline exec functions
-#define __JUNCTION_VMAX_R2		// comment out ot use the old code
-#define __ISR_R2				// comment out to use R1 ISR
-#define __LOAD_MOVE_R2			// comment out to use R1 load move routine
 
 /****** OPERATING SETTINGS *******/
 
