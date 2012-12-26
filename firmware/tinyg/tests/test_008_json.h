@@ -8,7 +8,7 @@
 const char PROGMEM test_json[] = "\
 {\"gc\":\"g00g17g21g40g49g80g90\"}\n\
 {\"gc\":\"g55\"}\n\
-{\"gc\":\"g28\"}\n\
+{\"gc\":\"g0x0y0\"}\n\
 {\"gc\":\"f500\"}\n\
 {\"gc\":\"(MSGsquares)\"}\n\
 {\"gc\":\"g0x20\"}\n\
@@ -31,5 +31,5 @@ const char PROGMEM test_json[] = "\
 {\"gc\":\"g2x0y0i10\"}\n\
 {\"gc\":\"g3x0y0i10\"}\n\
 {\"gc\":\"g54\"}\n\
-{\"gc\":\"g28\"}\n\
+{\"gc\":\"g0x0y0\"}\n\
 {\"gc\":\"m30\"}";

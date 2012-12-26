@@ -151,7 +151,8 @@ static void _controller_HSM()
 
 static uint8_t _shutdown_handler(void)
 {
-	if (sw.limit_thrown == false) return (TG_NOOP);
+//	if (sw.limit_thrown == false) return (TG_NOOP);
+	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
 
 	// first time through perform the shutdown
 	if (cm_get_machine_state() != MACHINE_SHUTDOWN) {

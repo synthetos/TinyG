@@ -46,7 +46,6 @@ g53g0x20y20\n\
 g53g0x0y20\n\
 g53g0x0y0\n\
 g0x0y0\n\
-g28\n\
 g4p0.5\n\
 (MSG**** test Return to home ****)\n\
 (msgStep 1: Return to home using G28)\n\

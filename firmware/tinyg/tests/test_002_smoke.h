@@ -9,7 +9,7 @@ const char PROGMEM test_smoke[] = "\
 (MSG**** Smoke Test [v1] ****)\n\
 G00 G17 G21 G40 G49 G80 G90\n\
 g55\n\
-g28\n\
+g0x0y0\n\
 G00 x20\n\
 x0\n\
 y20\n\
@@ -25,5 +25,5 @@ y7\n\
 z-7\n\
 a3\n\
 g54\n\
-g28\n\
+g0x0y0\n\
 m30";

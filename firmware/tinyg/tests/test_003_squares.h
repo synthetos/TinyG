@@ -9,7 +9,7 @@ const char PROGMEM test_squares[] = "\
 (MSG**** Squares Motion Test [v1] ****)\n\
 g00g17g21g40g49g80g90\n\
 g55\n\
-g28\n\
+g0x0y0\n\
 g0x20 (traverse a 20mm square in X and Y)\n\
 y20\n\
 x0\n\
@@ -34,7 +34,7 @@ x40y0z-40\n\
 x0y0z0\n\
 g80\n\
 g54\n\
-g28\n\
+g0x0y0\n\
 m30";
 
 
