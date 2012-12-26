@@ -103,57 +103,13 @@ enum moveState {
 #define TRAPEZOID_VELOCITY_TOLERANCE (max(2,bf->entry_velocity/100))
 
 /*
- *	Useful macros
+ *	Macros and typedefs
  */
 
 //#define MP_LINE(t,m,o,n) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m,o,n) : mp_line(t,m))
 #define MP_LINE(t,m,o,n) (mp_aline(t,m,o,n))	// non-planned lines are disabled
 
-
-
-
-/*
- * Global Scope Functions
- */
-
 typedef void (*cm_exec)(uint8_t, double);	// callback to canonical_machine execution function
-
-void mp_init(void);
-
-uint8_t mp_isbusy(void);
-void mp_flush_planner(void);
-uint8_t mp_get_planner_buffers_available(void);
-double *mp_get_plan_position(double position[]);
-void mp_set_plan_position(const double position[]);
-//void mp_set_plan_lineindex(uint32_t lineindex);
-void mp_set_axes_position(const double position[]);
-void mp_set_axis_position(uint8_t axis, const double position);
-void mp_set_runtime_work_offset(double offset[]); 
-
-double mp_get_runtime_machine_position(uint8_t axis);
-double mp_get_runtime_work_position(uint8_t axis);
-double mp_get_runtime_velocity(void);
-double mp_get_runtime_linenum(void);
-void mp_zero_segment_velocity(void);
-
-uint8_t mp_exec_move(void);
-void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f);
-//void mp_sync_mcode(uint8_t mcode);
-
-uint8_t mp_plan_hold_callback(void);
-uint8_t mp_end_hold_callback(void);
-uint8_t mp_dwell(const double seconds);
-uint8_t mp_offset(const uint8_t coord_system);
-uint8_t mp_line(const double target[], const double minutes);
-uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time);
-uint8_t mp_go_home_cycle(void);
-
-#ifdef __DEBUG
-void mp_dump_running_plan_buffer(void);
-void mp_dump_plan_buffer_by_index(uint8_t index);
-void mp_dump_runtime_state(void);
-#endif
-
 
 /*
  *	Planner structures
@@ -237,9 +193,62 @@ struct mpMoveMasterSingleton {	// common variables for planning (move master)
 
 // Global scope structs
 
-//static struct mpBufferPool mb;			// move buffer queue
-//static struct mpMoveMasterSingleton mm;	// static context for planning
+struct mpBufferPool mb;			// move buffer queue
+struct mpMoveMasterSingleton mm;	// static context for planning
 
+
+/*
+ * Global Scope Functions
+ */
+
+void mp_init(void);
+
+#define mp_get_prev_buffer(b) ((mpBuf *)(b->pv))
+#define mp_get_next_buffer(b) ((mpBuf *)(b->nx))
+
+void mp_init_buffers(void);
+void mp_clear_buffer(mpBuf *bf); 
+void mp_copy_buffer(mpBuf *bf, const mpBuf *bp);
+void mp_queue_write_buffer(const uint8_t move_type);
+void mp_free_run_buffer(void);
+mpBuf * mp_get_write_buffer(void); 
+mpBuf * mp_get_run_buffer(void);
+mpBuf * mp_get_first_buffer(void);
+mpBuf * mp_get_last_buffer(void);
+
+uint8_t mp_isbusy(void);
+void mp_flush_planner(void);
+uint8_t mp_get_planner_buffers_available(void);
+double *mp_get_plan_position(double position[]);
+void mp_set_plan_position(const double position[]);
+//void mp_set_plan_lineindex(uint32_t lineindex);
+void mp_set_axes_position(const double position[]);
+void mp_set_axis_position(uint8_t axis, const double position);
+void mp_set_runtime_work_offset(double offset[]); 
+
+double mp_get_runtime_machine_position(uint8_t axis);
+double mp_get_runtime_work_position(uint8_t axis);
+double mp_get_runtime_velocity(void);
+double mp_get_runtime_linenum(void);
+void mp_zero_segment_velocity(void);
+
+uint8_t mp_exec_move(void);
+void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f);
+//void mp_sync_mcode(uint8_t mcode);
+
+uint8_t mp_plan_hold_callback(void);
+uint8_t mp_end_hold_callback(void);
+uint8_t mp_dwell(const double seconds);
+uint8_t mp_offset(const uint8_t coord_system);
+uint8_t mp_line(const double target[], const double minutes);
+uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time);
+uint8_t mp_go_home_cycle(void);
+
+#ifdef __DEBUG
+void mp_dump_running_plan_buffer(void);
+void mp_dump_plan_buffer_by_index(uint8_t index);
+void mp_dump_runtime_state(void);
+#endif
 
 /*** Unit tests ***/
 
@@ -253,3 +262,4 @@ void mp_plan_arc_unit_tests(void);
 #endif // end __UNIT_TEST_PLANNER
 
 #endif
+

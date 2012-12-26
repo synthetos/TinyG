@@ -32,28 +32,28 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	358.01		// Reorganizing planner for feed overrides 
+#define TINYG_BUILD_NUMBER   	358.02		// Reorganizing planner for feed overrides 
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
 /****** DEVELOPMENT SETTINGS ******/
 
-//#define __CANNED_STARTUP		// run any canned startup moves
-//#define __DISABLE_PERSISTENCE	// disable EEPROM writes for faster simulation
-//#define __SUPPRESS_STARTUP_MESSAGES // what it says
-//#define __DEBUG				// complies debug functions found in test.c
+//#define __CANNED_STARTUP					// run any canned startup moves
+//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+//#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+//#define __DEBUG							// complies debug functions found in test.c
 
 // UNIT_TESTS exist for various modules are can be enabled at the end of their .h files
 
 // bringing in new functionality
-//#define __PLAN_R2				// comment out to use R1 planner functions
+//#define __PLAN_R2							// comment out to use R1 planner functions
 
 /****** OPERATING SETTINGS *******/
 
 // Operating Mode: (chose only one)
-#define __STANDALONE_MODE		// normal operation - receive from USB
-//#define __MASTER_MODE			// receive from USB, relay to rs485
-//#define __SLAVE_MODE			// receive from rs485
+#define __STANDALONE_MODE					// normal operation - receive from USB
+//#define __MASTER_MODE						// receive from USB, relay to rs485
+//#define __SLAVE_MODE						// receive from rs485
 
 #ifdef __SLAVE_MODE
 #define STD_INPUT XIO_DEV_RS485

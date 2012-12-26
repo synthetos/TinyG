@@ -226,7 +226,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 /* G0's */
 //	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
 //	xio_queue_RX_string_usb("g0 x0\n");
-//	xio_queue_RX_string_usb("g0 x2\n");
+	xio_queue_RX_string_usb("g0 x2\n");
 //	xio_queue_RX_string_usb("g0 x3\n");
 //	xio_queue_RX_string_usb("g0 y3\n");
 //	xio_queue_RX_string_usb("g0 x3 y4 z5.5\n");
@@ -261,7 +261,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 /* G28 and G30 homing tests */
 //	xio_queue_RX_string_usb("g28.1\n");			// G28.1 OK
-	xio_queue_RX_string_usb("g28.1x10y10\n");	// G28.1 specification error
+//	xio_queue_RX_string_usb("g28.1x10y10\n");	// G28.1 specification error
 //	xio_queue_RX_string_usb("g28.2x0y0z0\n");
 //	xio_queue_RX_string_usb("g28.2y0\n");
 //	xio_queue_RX_string_usb("g28.2x0y0z0a0\n");
