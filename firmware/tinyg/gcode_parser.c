@@ -32,17 +32,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <string.h>				// needed for memcpy, memset
-#include <avr/pgmspace.h>		// precursor for xio.h
+#include <string.h>					// needed for memcpy, memset
+#include <avr/pgmspace.h>			// precursor for xio.h
 
 #include "tinyg.h"
 #include "util.h"
 #include "config.h"
-#include "controller.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
-#include "planner.h"
-#include "help.h"
 #include "xio/xio.h"				// for char definitions
 
 struct gcodeParserSingleton {	 	  // struct to manage globals
@@ -56,8 +53,6 @@ static uint8_t _execute_gcode_block(void);		// Execute the gcode block
 static uint8_t _check_gcode_block(void);		// check the block for correctness
 static uint8_t _get_next_statement(char *letter, double *value, char *buf, uint8_t *i);
 static uint8_t _point(double value);
-
-#define coord_select ((uint8_t)gn.dwell_time)	// alias for P which is shared by both dwells and G10s
 
 #define SET_MODAL(m,parm,val) ({gn.parm=val; gf.parm=1; gp.modals[m]+=1; break;})
 #define SET_NON_MODAL(parm,val) ({gn.parm=val; gf.parm=1; break;})
@@ -281,15 +276,33 @@ static uint8_t _parse_gcode_block(char *buf)
 					case 7: SET_MODAL (MODAL_GROUP_M8, mist_coolant, true);
 					case 8: SET_MODAL (MODAL_GROUP_M8, flood_coolant, true);
 					case 9: SET_MODAL (MODAL_GROUP_M8, flood_coolant, false);
-					case 48: SET_MODAL (MODAL_GROUP_M9, feed_override_enable, true);
-					case 49: SET_MODAL (MODAL_GROUP_M9, feed_override_enable, false);
+					case 48: SET_MODAL (MODAL_GROUP_M9, override_enables, true);
+					case 49: SET_MODAL (MODAL_GROUP_M9, override_enables, false);
+					case 50: {
+						switch (_point(value)) {
+							case 0: SET_MODAL (MODAL_GROUP_M9, feed_rate_override_enable, true);// conditionally true
+							case 1: SET_MODAL (MODAL_GROUP_M9, feed_rate_override_factor, 1.00);// default value
+							case 2: SET_MODAL (MODAL_GROUP_M9, traverse_override_enable, true); // conditionally true
+							case 3: SET_MODAL (MODAL_GROUP_M9, traverse_override_factor, 1.00);	// default value
+							default: status = TG_UNRECOGNIZED_COMMAND;
+						}
+						break;
+					}
+					case 51: {
+						switch (_point(value)) {
+							case 0: SET_MODAL (MODAL_GROUP_M9, spindle_override_enable, true);
+							case 1: SET_MODAL (MODAL_GROUP_M9, spindle_override_factor, 1.00);
+							default: status = TG_UNRECOGNIZED_COMMAND;
+						}
+						break;
+					}
 					default: status = TG_UNRECOGNIZED_COMMAND;
 				}
 				break;
 
 			case 'T': SET_NON_MODAL (tool, (uint8_t)trunc(value));
 			case 'F': SET_NON_MODAL (feed_rate, value);
-			case 'P': SET_NON_MODAL (dwell_time, value); 	// also used as G10 coord system select
+			case 'P': SET_NON_MODAL (parameter, value); 	// used for dwell time, G10 coord select
 			case 'S': SET_NON_MODAL (spindle_speed, value); 
 			case 'X': SET_NON_MODAL (target[X], value);
 			case 'Y': SET_NON_MODAL (target[Y], value);
@@ -326,12 +339,15 @@ static uint8_t _parse_gcode_block(char *buf)
  *		1. comment (includes message) [handled during block normalization]
  *		2. set feed rate mode (G93, G94 - inverse time or per minute)
  *		3. set feed rate (F)
+ *		3a. set feed override rate (M50.1)
+ *		3a. set traverse override rate (M50.2)
  *		4. set spindle speed (S)
+ *		4a. set spindle override rate (M51.1)
  *		5. select tool (T)
  *		6. change tool (M6)
  *		7. spindle on or off (M3, M4, M5)
  *		8. coolant on or off (M7, M8, M9)
- *		9. enable or disable overrides (M48, M49)
+ *		9. enable or disable overrides (M48, M49, M50, M51)
  *		10. dwell (G4)
  *		11. set active plane (G17, G18, G19)
  *		12. set length units (G20, G21)
@@ -358,16 +374,22 @@ static uint8_t _execute_gcode_block()
 	cm_set_model_linenum(gn.linenum);
 	EXEC_FUNC(cm_set_inverse_feed_rate_mode, inverse_feed_rate_mode);
 	EXEC_FUNC(cm_set_feed_rate, feed_rate);
+	EXEC_FUNC(cm_feed_rate_override_factor, feed_rate_override_factor);
+	EXEC_FUNC(cm_traverse_override_factor, traverse_override_factor);
 	EXEC_FUNC(cm_set_spindle_speed, spindle_speed);
+	EXEC_FUNC(cm_spindle_override_factor, spindle_override_factor);
 	EXEC_FUNC(cm_select_tool, tool);
 	EXEC_FUNC(cm_change_tool, tool);
 	EXEC_FUNC(cm_spindle_control, spindle_mode); 	// spindle on or off
 	EXEC_FUNC(cm_mist_coolant_control, mist_coolant); 
 	EXEC_FUNC(cm_flood_coolant_control, flood_coolant);	// also disables mist coolant if OFF 
-	EXEC_FUNC(cm_feed_override_enable, feed_override_enable);
+	EXEC_FUNC(cm_feed_rate_override_enable, feed_rate_override_enable);
+	EXEC_FUNC(cm_traverse_override_enable, traverse_override_enable);
+	EXEC_FUNC(cm_spindle_override_enable, spindle_override_enable);
+	EXEC_FUNC(cm_override_enables, override_enables);
 
 	if (gn.next_action == NEXT_ACTION_DWELL) { 		// G4 - dwell
-		ritorno(cm_dwell(gn.dwell_time));			// return if error, otherwise complete the block
+		ritorno(cm_dwell(gn.parameter));			// return if error, otherwise complete the block
 	}
 	EXEC_FUNC(cm_select_plane, select_plane);
 	EXEC_FUNC(cm_set_units_mode, units_mode);
@@ -387,7 +409,7 @@ static uint8_t _execute_gcode_block()
 		case NEXT_ACTION_SET_G30_POSITION: { status = cm_set_g30_position(); break;}							// G30.1
 		case NEXT_ACTION_GOTO_G30_POSITION: { status = cm_goto_g30_position(gn.target, gf.target); break;}		// G30	
 
-		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(coord_select, gn.target, gf.target); break;}
+		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(gn.parameter, gn.target, gf.target); break;}
 		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(gn.target, gf.target); break;}
 		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}

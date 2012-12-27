@@ -32,7 +32,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	358.02		// Reorganizing planner for feed overrides 
+#define TINYG_BUILD_NUMBER   	358.03		// Roughing in feed rate overrides 
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 

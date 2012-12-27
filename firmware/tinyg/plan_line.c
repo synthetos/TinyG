@@ -27,29 +27,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
+//#include <stdlib.h>
 #include <math.h>
-#include <string.h>
-#include <stdio.h>				// precursor for xio.h
+//#include <stdio.h>			// uncomment for debugging
 #include <avr/pgmspace.h>		// precursor for xio.h
-#include <string.h>
 
 #include "tinyg.h"
 #include "config.h"
 #include "controller.h"
-#include "gcode_parser.h"
 #include "canonical_machine.h"
-#include "plan_arc.h"
 #include "plan_line.h"
 #include "planner.h"
-#include "spindle.h"
 #include "kinematics.h"
 #include "stepper.h"
 #include "report.h"
 #include "util.h"
-#include "test.h"
-#include "xio/xio.h"			// supports trap and debug statements
-
+//#include "xio/xio.h"			// uncomment for debugging
 
 // aline planner routines / feedhold planning
 static void _plan_block_list(mpBuf *bf, uint8_t *mr_flag);
@@ -69,6 +62,29 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag);
 static void _init_forward_diffs(double t0, double t2);
 static double _compute_next_segment_velocity(void);
 
+/* 
+ * mp_isbusy() - return TRUE if motion control busy (i.e. robot is moving)
+ *
+ *	Use this function to sync to the queue. If you wait until it returns
+ *	FALSE you know the queue is empty and the motors have stopped.
+ */
+
+uint8_t mp_isbusy()
+{
+	if ((st_isbusy() == true) || (mr.move_state > MOVE_STATE_NEW)) {
+		return (true);
+	}
+	return (false);
+}
+
+/* 
+ * mp_zero_segment_velocity() - correct velocity in last segment for reporting purposes
+ */
+void mp_zero_segment_velocity() 
+{ 
+	mr.segment_velocity = 0;
+}
+
 /*
  * mp_get_runtime_work_position() - returns current axis position in work coordinates
  *									that were in effect at move planning time
@@ -85,6 +101,7 @@ double mp_get_runtime_machine_position(uint8_t axis) {
 	return (mr.position[axis]);
 }
 
+
 void mp_set_runtime_work_offset(double offset[]) { 
 	copy_axis_vector(mr.work_offset, offset);
 }
@@ -92,28 +109,6 @@ void mp_set_runtime_work_offset(double offset[]) {
 double mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 double mp_get_runtime_linenum(void) { return (mr.linenum);}
 
-/* 
- * mp_zero_segment_velocity() - correct velocity in last segment for reporting purposes
- */
-void mp_zero_segment_velocity() 
-{ 
-	mr.segment_velocity = 0;
-}
-
-/* 
- * mp_isbusy() - return TRUE if motion control busy (i.e. robot is moving)
- *
- *	Use this function to sync to the queue. If you wait until it returns
- *	FALSE you know the queue is empty and the motors have stopped.
- */
-
-uint8_t mp_isbusy()
-{
-	if ((st_isbusy() == true) || (mr.move_state > MOVE_STATE_NEW)) {
-		return (true);
-	}
-	return (false);
-}
 
 /**************************************************************************
  * mp_aline() - plan a line with acceleration / deceleration
@@ -877,58 +872,56 @@ static double _get_target_velocity(const double Vi, const double L, const mpBuf 
 /*
  * _get_junction_vmax() - Chamnit's algorithm - simple
  *
- *  Computes the maximum allowable junction speed by finding the velocity
- *	that will yield the centripetal acceleration in the corner_acceleration 
- *	value. The value of delta sets the effective radius of curvature.
- *	Here's Chamnit's (Sungeun K. Jeon's) explanation of what's going on:
+ *  Computes the maximum allowable junction speed by finding the velocity that will yield 
+ *	the centripetal acceleration in the corner_acceleration value. The value of delta sets 
+ *	the effective radius of curvature. Here's Chamnit's (Sungeun K. Jeon's) explanation 
+ *	of what's going on:
  *
- *	"First let's assume that at a junction we only look a centripetal 
- *	acceleration to simply things. At a junction of two lines, let's place 
- *	a circle such that both lines are tangent to the circle. The circular 
- *	segment joining the lines represents the path for constant centripetal 
- *	acceleration. This creates a deviation from the path (let's call this 
- *	delta), which is the distance from the junction to the edge of the 
- *	circular segment. Delta needs to be defined, so let's replace the 
- *	term max_jerk with max_junction_deviation( or delta). This indirectly 
- *	sets the radius of the circle, and hence limits the velocity by the 
- *	centripetal acceleration. Think of the this as widening the race track.
- *	If a race car is driving on a track only as wide as a car, it'll have 
- *	to slow down a lot to turn corners. If we widen the track a bit, the 
- *	car can start to use the track to go into the turn. The wider it is, 
- *	the faster through the corner it can go.
+ *	"First let's assume that at a junction we only look a centripetal acceleration to simply 
+ *	things. At a junction of two lines, let's place a circle such that both lines are tangent 
+ *	to the circle. The circular segment joining the lines represents the path for constant 
+ *	centripetal acceleration. This creates a deviation from the path (let's call this delta), 
+ *	which is the distance from the junction to the edge of the circular segment. Delta needs 
+ *	to be defined, so let's replace the term max_jerk with max_junction_deviation( or delta). 
+ *	This indirectly sets the radius of the circle, and hence limits the velocity by the 
+ *	centripetal acceleration. Think of the this as widening the race track. If a race car is 
+ *	driving on a track only as wide as a car, it'll have to slow down a lot to turn corners. 
+ *	If we widen the track a bit, the car can start to use the track to go into the turn. 
+ *	The wider it is, the faster through the corner it can go.
  *
  *	If you do the geometry in terms of the known variables, you get:
- *	sin(theta/2) = R/(R+delta)  Re-arranging in terms of circle radius (R)
- *	R = delta*sin(theta/2)/(1-sin(theta/2). Theta is the angle between 
- *	line segments given by: cos(theta) = dot(a,b)/(norm(a)*norm(b)). 
- *	Most of these calculations are already done in the planner. To remove 
- *	the acos() and sin() computations, use the trig half angle identity: 
- *	sin(theta/2) = +/- sqrt((1-cos(theta))/2). For our applications, this 
- *	should always be positive. Now just plug and chug the equations into 
- *	the centripetal acceleration equation: v_c = sqrt(a_max*R). You'll see
- *	that there are only two sqrt computations and no sine/cosines."
+ *		sin(theta/2) = R/(R+delta)  Re-arranging in terms of circle radius (R)
+ *		R = delta*sin(theta/2)/(1-sin(theta/2). 
+ *
+ *	Theta is the angle between line segments given by: 
+ *		cos(theta) = dot(a,b)/(norm(a)*norm(b)). 
+ *
+ *	Most of these calculations are already done in the planner. To remove the acos() 
+ *	and sin() computations, use the trig half angle identity: 
+ *		sin(theta/2) = +/- sqrt((1-cos(theta))/2). 
+ *
+ *	For our applications, this should always be positive. Now just plug the equations into 
+ *	the centripetal acceleration equation: v_c = sqrt(a_max*R). You'll see that there are 
+ *	only two sqrt computations and no sine/cosines."
  *
  *	How to compute the radius using brute-force trig:
- *	double theta = acos(costheta);
- *	double radius = delta * sin(theta/2)/(1-sin(theta/2));
+ *		double theta = acos(costheta);
+ *		double radius = delta * sin(theta/2)/(1-sin(theta/2));
  */
-/*  This version function extends Chamnit's algorithm by computing a value
- *	for delta that takes the contributions of the individual axes in the 
- *	move into account. It allows the radius of curvature to vary by axis.
- *	This is necessary to support axes that have different dynamics; such 
- *	as a Z axis that doesn't move as fast as X and Y (such as a screw driven 
- *	Z axis on machine with a belt driven XY - like a Shapeoko), or rotary 
- *	axes ABC that have completely different dynamics than their linear 
- *	counterparts.
+/*  This version function extends Chamnit's algorithm by computing a value for delta that 
+ *	takes the contributions of the individual axes in the move into account. It allows 
+ *	the radius of curvature to vary by axis. This is necessary to support axes that have 
+ *	different dynamics; such as a Z axis that doesn't move as fast as X and Y (such as a 
+ *	screw driven Z axis on machine with a belt driven XY - like a Shapeoko), or rotary 
+ *	axes ABC that have completely different dynamics than their linear counterparts.
  *
- *	The function takes the absolute values of the sum of the unit vector
- *	components as a measure of contribution to the move, then scales the 
- *	delta values from the non-zero axes into a composite delta to be used
- *	for the move. Shown for an XY vector:
+ *	The function takes the absolute values of the sum of the unit vector components as 
+ *	a measure of contribution to the move, then scales the delta values from the non-zero 
+ *	axes into a composite delta to be used for the move. Shown for an XY vector:
  *
- *	 U[i]	Unit sum of i'th axis	fabs(unit_a[i]) + fabs(unit_b[i])
- *	 Usum	Length of sums			Ux + Uy
- *	 d		Delta of sums			(Dx*Ux+DY*UY)/Usum
+ *	 	U[i]	Unit sum of i'th axis	fabs(unit_a[i]) + fabs(unit_b[i])
+ *	 	Usum	Length of sums			Ux + Uy
+ *	 	d		Delta of sums			(Dx*Ux+DY*UY)/Usum
  */
 static double _get_junction_vmax(const double a_unit[], const double b_unit[])
 {
@@ -1020,8 +1013,6 @@ uint8_t mp_plan_hold_callback()
 {
 	if (cm.hold_state != FEEDHOLD_PLAN) { return (TG_NOOP);}	// not planning a feedhold
 
-//	printf("Enter feedhold [%d]\n", cm.hold_state); 	//+++++++++++++++++++++++
-
 	mpBuf *bp; 					// working buffer pointer
 	if ((bp = mp_get_run_buffer()) == NULL) { return (TG_NOOP);}	// Oops! nothing's running
 
@@ -1059,11 +1050,8 @@ uint8_t mp_plan_hold_callback()
 		braking_length = mr_available_length;
 	}
 
-//	printf("end:%f pos:%f avail:%f brake:%f\n", mr.endpoint[X], mr.position[X], mr_available_length, braking_length);	//+++++++++++++++++++++++++++
-
 	// Case 1: deceleration fits entirely in mr
 	if (braking_length <= mr_available_length) {
-//		printf("Feedhold case 1 [%d]\n", cm.hold_state); //+++++++++++++++++++++++
 		// set mr to a tail to perform the deceleration
 		mr.exit_velocity = 0;
 		mr.tail_length = braking_length;
@@ -1085,11 +1073,6 @@ uint8_t mp_plan_hold_callback()
 
 	// Case 2: deceleration exceeds available length in mr buffer
 	// First, replan mr to minimum (but non-zero) exit velocity
-
-//	printf("Feedhold case 2 [%d]\n", cm.hold_state); 			  //+++++++++++++++++++++
-//	mp_dump_runtime_state();	// turn on __DEBUG if you need this +++++++++++++++++++++
-//	_dump_plan_buffer(bp); 		// turn on __DEBUG if you need this +++++++++++++++++++++
-//	_dump_plan_buffer(bp->nx);	// turn on __DEBUG if you need this +++++++++++++++++++++
 
 	mr.move_state = MOVE_STATE_TAIL;
 	mr.section_state = MOVE_STATE_NEW;
@@ -1539,3 +1522,234 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 	}
 	return (TG_EAGAIN);			// this section still has more segments to run
 }
+
+
+
+/****** UNIT TESTS ******/
+
+#ifdef __UNIT_TEST_PLANNER
+
+//#define JERK_TEST_VALUE (double)50000000	// set this to the value in the profile you are running
+#define JERK_TEST_VALUE (double)100000000	// set this to the value in the profile you are running
+
+static void _test_calculate_trapezoid(void);
+static void _test_get_junction_vmax(void);
+static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBuf *bf);
+static void _make_unit_vector(double unit[], double x, double y, double z, double a, double b, double c);
+//static void _set_jerk(const double jerk, mpBuf *bf);
+
+void mp_unit_tests()
+{
+	_test_calculate_trapezoid();
+//	_test_get_junction_vmax();
+}
+
+static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBuf *bf)
+{
+	bf->length = length;
+	bf->entry_velocity = Ve;
+	bf->cruise_velocity = Vt;
+	bf->exit_velocity = Vx;
+	bf->cruise_vmax = Vt;
+	bf->jerk = JERK_TEST_VALUE;
+#ifdef __PLAN_R2
+	TODO_make_this_work();
+#else
+	bf->recip_jerk = 1/bf->jerk;
+	bf->cbrt_jerk = cbrt(bf->jerk);
+#endif
+	_calculate_trapezoid(bf);
+}
+
+static void _test_calculate_trapezoid()
+{
+	mpBuf *bf = _get_write_buffer();
+
+// these tests are calibrated the following parameters:
+//	jerk_max 				50 000 000		(all axes)
+//	jerk_corner_offset		   		 0.1	(all exes)
+//	jerk_corner_acceleration   200 000		(global)
+
+/*
+// no-fit cases: line below minimum velocity or length
+//				   	L	 Ve  	Vt		Vx
+	_test_trapezoid(1.0, 0,		0.001,	0,	bf);
+	_test_trapezoid(0.0, 0,		100,	0,	bf);
+	_test_trapezoid(0.01, 0,	100,	0,	bf);
+
+// requested-fit cases
+//				   	L  	 Ve  	Vt		Vx
+	_test_trapezoid(0.8, 400,	400, 	0, 	 bf);
+	_test_trapezoid(0.8, 600,	600, 	200, bf);
+	_test_trapezoid(0.8, 0,		400, 	400, bf);
+	_test_trapezoid(0.8, 200,	600, 	600, bf);
+
+// HBT - 3 section cases
+//				   	L    Ve  	Vt		Vx
+	_test_trapezoid(0.8, 0,		190, 	0, bf);
+	_test_trapezoid(2.0, 200,	400, 	0, bf);
+
+// 2 section cases (HT)
+//				   	L   Ve  	Vt		Vx
+	_test_trapezoid(0.8, 0,		200, 	0, bf);		// requested fit HT case (exact fit)
+	_test_trapezoid(0.8, 0,		400, 	0, bf);		// symmetric rate-limited HT case
+	_test_trapezoid(0.8, 200,	400, 	0, bf);		// asymmetric rate-limited HT case
+	_test_trapezoid(2.0, 400,	400, 	0, bf);
+	_test_trapezoid(0.8, 0,		400, 	200,bf);
+
+// 1 section cases (H,B and T)
+//				   	L	 Ve  	Vt		Vx
+	_test_trapezoid(1.0, 800,	800, 	800,bf);	// B case
+	_test_trapezoid(0.8, 0,		400, 	0, bf);		// B case
+	_test_trapezoid(0.8, 200,	400, 	0, bf);
+	_test_trapezoid(2.0, 400,	400, 	0, bf);
+	_test_trapezoid(0.8, 0,		400, 	200,bf);
+*/
+// test cases drawn from Mudflap
+//				   	L		Ve  	  Vt		Vx
+//	_test_trapezoid(0.6604, 000.000,  800.000,  000.000, bf);	// line 50
+//	_test_trapezoid(0.8443, 000.000,  805.855,  000.000, bf);	// line 55
+	_test_trapezoid(0.8443, 000.000,  805.855,  393.806, bf);	// line 55'
+	_test_trapezoid(0.7890, 393.805,  955.829,  000.000, bf);	// line 60
+	_test_trapezoid(0.7890, 393.806,  955.829,  390.294, bf);	// line 60'
+	_test_trapezoid(0.9002, 390.294,  833.884,  000.000, bf);	// line 65
+
+	_test_trapezoid(0.9002, 390.294,  833.884,  455.925, bf);	// line 65'
+	_test_trapezoid(0.9002, 390.294,  833.884,  806.895, bf);	// line 65"
+	_test_trapezoid(0.9735, 455.925,  806.895,  000.000, bf);	// line 70
+	_test_trapezoid(0.9735, 455.925,  806.895,  462.101, bf);	// line 70'
+
+	_test_trapezoid(0.9735, 806.895,  806.895,  802.363, bf);	// line 70"
+
+	_test_trapezoid(0.9935, 462.101,  802.363,  000.000, bf);	// line 75
+	_test_trapezoid(0.9935, 462.101,  802.363,  000.000, bf);	// line 75'
+	_test_trapezoid(0.9935, 802.363,  802.363,  477.729, bf);	// line 75"
+	_test_trapezoid(0.9935, 802.363,  802.363,  802.363, bf);	// line 75"
+	_test_trapezoid(1.0441, 477.729,  843.274,  000.000, bf);	// line 80
+	_test_trapezoid(1.0441, 802.363,  843.274,  388.515, bf);	// line 80'
+	_test_trapezoid(1.0441, 802.363,  843.274,  803.990, bf);	// line 80"
+	_test_trapezoid(0.7658, 388.515,  803.990,  000.000, bf);	// line 85
+	_test_trapezoid(0.7658, 803.990,  803.990,  733.618, bf);	// line 85'
+	_test_trapezoid(0.7658, 803.990,  803.990,  802.363, bf);	// line 85"
+	_test_trapezoid(1.9870, 733.618,  802.363,  000.000, bf);	// line 90
+	_test_trapezoid(1.9870, 802.363,  802.363,  727.371, bf);	// line 90'
+	_test_trapezoid(1.9870, 802.363,  802.363,  802.363, bf);	// line 90'
+	_test_trapezoid(1.9617, 727.371,  802.425,  000.000, bf);	// line 95
+	_test_trapezoid(1.9617, 727.371,  802.425,  000.000, bf);	// line 95'
+	_test_trapezoid(1.9617, 802.363,  802.425,  641.920, bf);	// line 95"
+	_test_trapezoid(1.9617, 802.363,  802.425,  802.425, bf);	// line 95"'
+	_test_trapezoid(1.6264, 641.920,  826.209,  000.000, bf);	// line 100
+	_test_trapezoid(1.6264, 802.425,  826.209,  266.384, bf);	// line 100'
+	_test_trapezoid(1.6264, 802.425,  826.209,  658.149, bf);	// line 100"
+	_test_trapezoid(1.6264, 802.425,  826.209,  679.360, bf);	// line 100"'
+	_test_trapezoid(0.4348, 266.384,  805.517,  000.000, bf);	// line 105
+	_test_trapezoid(0.4348, 658.149,  805.517,  391.765, bf);	// line 105'
+	_test_trapezoid(0.4348, 679.360,  805.517,  412.976, bf);	// line 105"
+	_test_trapezoid(0.7754, 391.765,  939.343,  000.000, bf);	// line 110
+	_test_trapezoid(0.7754, 412.976,  939.343,  376.765, bf);	// line 110'
+	_test_trapezoid(0.7754, 802.425,  826.209,  679.360, bf);	// line 110"
+	_test_trapezoid(0.7754, 412.976,  939.343,  804.740, bf);	// line 110"'
+	_test_trapezoid(0.7313, 376.765,  853.107,  000.000, bf);	// line 115
+	_test_trapezoid(0.7313, 804.740,  853.107,  437.724, bf);	// line 115'
+	_test_trapezoid(0.7313, 804.740,  853.107,  683.099, bf);	// line 115"
+	_test_trapezoid(0.7313, 804.740,  853.107,  801.234, bf);	// line 115"'
+	_test_trapezoid(0.9158, 437.724,  801.233,  000.000, bf);	// line 120
+	_test_trapezoid(0.9158, 683.099,  801.233,  245.375, bf);	// line 120'
+	_test_trapezoid(0.9158, 801.233,  801.233,  617.229, bf);	// line 120"
+	_test_trapezoid(0.3843, 245.375,  807.080,  000.000, bf);	// line 125
+	_test_trapezoid(0.3843, 617.229,  807.080,  371.854, bf);	// line 125'  6,382,804 cycles
+
+
+
+	_test_trapezoid(0.8, 0,	400, 400, bf);
+
+
+// test cases drawn from braid_600mm					 		// expected results
+//				   	L   	Ve  		Vt		Vx
+	_test_trapezoid(0.327,	000.000,	600,	000.000, bf); // Ve=0 	   	Vc=110.155
+	_test_trapezoid(0.327,	000.000,	600,	174.538, bf); // Ve=0, 	   	Vc=174.744	Vx=174.537
+	_test_trapezoid(0.327,	174.873,	600,	173.867, bf); // Ve=174.873	Vc=185.356	Vx=173.867
+	_test_trapezoid(0.327,	173.593,	600,	000.000, bf); // Ve=174.873	Vc=185.356	Vx=173.867
+	_test_trapezoid(0.327,	347.082,	600,	173.214, bf); // Ve=174.873	Vc=185.356	Vx=173.867
+
+}
+
+static void _make_unit_vector(double unit[], double x, double y, double z, double a, double b, double c)
+{
+	double length = sqrt(x*x + y*y + z*z + a*a + b*b + c*c);
+	unit[X] = x/length;
+	unit[Y] = y/length;
+	unit[Z] = z/length;
+	unit[A] = a/length;
+	unit[B] = b/length;
+	unit[C] = c/length;
+}
+
+static void _test_get_junction_vmax()
+{
+//	cfg.a[X].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[Y].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[Z].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[A].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[B].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[C].jerk_max = JERK_TEST_VALUE;
+//	mm.jerk_transition_size = 0.5;
+//	mm.jerk_limit_max = 184.2;
+
+	mm.test_case = 1;				// straight line along X axis
+	_make_unit_vector(mm.a_unit, 1.0000, 0.0000, 0, 0, 0, 0);
+	_make_unit_vector(mm.b_unit, 1.0000, 0.0000, 0, 0, 0, 0);
+	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
+
+	mm.test_case = 2;				// angled straight line
+	_make_unit_vector(mm.a_unit, 0.7071, 0.7071, 0, 0, 0, 0);
+	_make_unit_vector(mm.b_unit, 0.7071, 0.7071, 0, 0, 0, 0);
+	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
+
+	mm.test_case = 3;				// 5 degree bend
+	_make_unit_vector(mm.a_unit, 1.0000, 0.0000, 0, 0, 0, 0);
+	_make_unit_vector(mm.b_unit, 0.9962, 0.0872, 0, 0, 0, 0);
+	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
+
+	mm.test_case = 4;				// 30 degrees
+	_make_unit_vector(mm.a_unit, 1.0000, 0.0000, 0, 0, 0, 0);
+	_make_unit_vector(mm.b_unit, 0.8660, 0.5000, 0, 0, 0, 0);
+	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
+
+	mm.test_case = 5;				// 45 degrees
+	_make_unit_vector(mm.a_unit, 0.8660,	0.5000, 0, 0, 0, 0);
+	_make_unit_vector(mm.b_unit, 0.2588,	0.9659, 0, 0, 0, 0);
+	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
+
+	mm.test_case = 6;				// 60 degrees
+	_make_unit_vector(mm.a_unit, 1.0000,	0.0000, 0, 0, 0, 0);
+	_make_unit_vector(mm.b_unit, 0.5000,	0.8660, 0, 0, 0, 0);
+	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
+
+	mm.test_case = 7;				// 90 degrees
+	_make_unit_vector(mm.a_unit, 1.0000,	0.0000, 0, 0, 0, 0);
+	_make_unit_vector(mm.b_unit, 0.0000,	1.0000, 0, 0, 0, 0);
+	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
+
+	mm.test_case = 8;				// 90 degrees rotated 45 degrees
+	_make_unit_vector(mm.a_unit, 0.7071, 0.7071, 0, 0, 0, 0);
+	_make_unit_vector(mm.b_unit,-0.7071, 0.7071, 0, 0, 0, 0);
+	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
+
+	mm.test_case = 9;				// 120 degrees
+	_make_unit_vector(mm.a_unit, 1.0000,	0.0000, 0, 0, 0, 0);
+	_make_unit_vector(mm.b_unit,-0.5000,	0.8660, 0, 0, 0, 0);
+	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
+
+	mm.test_case = 10;				// 150 degrees
+	_make_unit_vector(mm.a_unit, 1.0000,	0.0000, 0, 0, 0, 0);
+	_make_unit_vector(mm.b_unit,-0.8660,	0.5000, 0, 0, 0, 0);
+	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
+
+	mm.test_case = 11;				// 180 degrees
+	_make_unit_vector(mm.a_unit, 0.7071, 0.7071, 0, 0, 0, 0);
+	_make_unit_vector(mm.b_unit,-0.7071,-0.7071, 0, 0, 0, 0);
+	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
+}
+
+#endif // __UNIT_TEST_PLANNER

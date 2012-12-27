@@ -30,6 +30,7 @@
 #ifndef plan_line_h
 #define plan_line_h 
 
+// NOTE: function prototypes are in planner.h for ease of access by external files
 
 struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference

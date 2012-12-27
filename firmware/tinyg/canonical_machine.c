@@ -84,8 +84,6 @@
 #include "tinyg.h"
 #include "util.h"
 #include "config.h"
-#include "controller.h"
-#include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "plan_arc.h"
 #include "planner.h"
@@ -106,7 +104,7 @@ static void _exec_change_tool(uint8_t tool, double f);
 static void _exec_select_tool(uint8_t tool, double f);
 static void _exec_mist_coolant_control(uint8_t mist_coolant, double f);
 static void _exec_flood_coolant_control(uint8_t flood_coolant, double f);
-static void _exec_feed_override_enable(uint8_t feed_override, double f);
+//static void _exec_feed_override_enable(uint8_t feed_override, double f);
 static void _exec_program_finalize(uint8_t machine_state, double f);
 
 #define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
@@ -845,7 +843,7 @@ uint8_t cm_set_path_control(uint8_t mode)
 
 uint8_t cm_dwell(double seconds)
 {
-	gm.dwell_time = seconds;
+	gm.parameter = seconds;
 	(void)mp_dwell(seconds);
 	return (TG_OK);
 }
@@ -949,17 +947,78 @@ static void _exec_flood_coolant_control(uint8_t flood_coolant, double f)
 }
 
 /*
- * cm_feed_override_enable() - M48, M49
+ * cm_override_enables() - M48, M49
+ * cm_feed_rate_override_enable() - M50
+ * cm_feed_rate_override_factor() - M50.1
+ * cm_traverse_override_enable() - M50.2
+ * cm_traverse_override_factor() - M50.3
+ * cm_spindle_override_enable() - M51
+ * cm_spindle_override_factor() - M51.1
+ *
+ *	Override enables are kind of a mess in Gcode. This is an attempt to sort them out.
+ *	See http://www.linuxcnc.org/docs/2.4/html/gcode_main.html#sec:M50:-Feed-Override
  */
- 
-uint8_t cm_feed_override_enable(uint8_t feed_override)
+
+uint8_t cm_override_enables(uint8_t flag)			// M48, M49
 {
-	mp_queue_command(_exec_feed_override_enable, feed_override, 0);
+	gm.feed_rate_override_enable = flag;
+	gm.traverse_override_enable = flag;
+	gm.spindle_override_enable = flag;
 	return (TG_OK);
 }
-static void _exec_feed_override_enable(uint8_t feed_override, double f)
+
+uint8_t cm_feed_rate_override_enable(uint8_t flag)	// M50
 {
-	gm.feed_override_enable = feed_override;
+	if ((gf.parameter == true) && (gn.parameter == 0)) {
+		gm.feed_rate_override_enable = false;
+	} else {
+		gm.feed_rate_override_enable = true;
+	}
+	return (TG_OK);
+}
+
+uint8_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
+{
+	gm.feed_rate_override_enable = flag;
+	gm.feed_rate_override_factor = gn.parameter;
+//	mp_feed_rate_override(flag, gn.parameter);		// replan the queue for new feed rate
+	return (TG_OK);
+}
+
+uint8_t cm_traverse_override_enable(uint8_t flag)	// M50.2
+{
+	if ((gf.parameter == true) && (gn.parameter == 0)) {
+		gm.traverse_override_enable = false;
+	} else {
+		gm.traverse_override_enable = true;
+	}
+	return (TG_OK);
+}
+
+uint8_t cm_traverse_override_factor(uint8_t flag)	// M51
+{
+	gm.traverse_override_enable = flag;
+	gm.traverse_override_factor = gn.parameter;
+//	mp_feed_rate_override(flag, gn.parameter);		// replan the queue for new feed rate
+	return (TG_OK);
+}
+
+uint8_t cm_spindle_override_enable(uint8_t flag)	// M51.1
+{
+	if ((gf.parameter == true) && (gn.parameter == 0)) {
+		gm.spindle_override_enable = false;
+	} else {
+		gm.spindle_override_enable = true;
+	}
+	return (TG_OK);
+}
+
+uint8_t cm_spindle_override_factor(uint8_t flag)	// M50.1
+{
+	gm.spindle_override_enable = flag;
+	gm.spindle_override_factor = gn.parameter;
+//	change spindle speed
+	return (TG_OK);
 }
 
 /*
@@ -1036,7 +1095,6 @@ void cm_optional_program_stop()
 
 void cm_program_end()				// M2, M30
 {
-	tg_reset_source();	// stop reading from a file (return to std device)
 	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_END,0);
 }
 

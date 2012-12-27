@@ -31,16 +31,13 @@
 
 enum moveType {				// bf->move_type values 
 	MOVE_TYPE_NULL = 0,		// null move - does a no-op
-	MOVE_TYPE_LINE,			// simple line
 	MOVE_TYPE_ALINE,		// acceleration planned line
 	MOVE_TYPE_DWELL,		// delay with no movement
-	MOVE_TYPE_OFFSET,		// coordinate system offset
-	MOVE_TYPE_MCODE,		// M code or other synchrouous command execution
 	MOVE_TYPE_COMMAND,		// general command
 	MOVE_TYPE_TOOL,			// T command
 	MOVE_TYPE_SPINDLE_SPEED,// S command
-	MOVE_TYPE_STOP,			// stop motors
-	MOVE_TYPE_END			// stop motors and end program
+	MOVE_TYPE_STOP,			// program stop
+	MOVE_TYPE_END			// program end
 };
 
 enum moveState {
@@ -193,7 +190,7 @@ struct mpMoveMasterSingleton {	// common variables for planning (move master)
 
 // Global scope structs
 
-struct mpBufferPool mb;			// move buffer queue
+struct mpBufferPool mb;				// move buffer queue
 struct mpMoveMasterSingleton mm;	// static context for planning
 
 
@@ -203,10 +200,24 @@ struct mpMoveMasterSingleton mm;	// static context for planning
 
 void mp_init(void);
 
-#define mp_get_prev_buffer(b) ((mpBuf *)(b->pv))
-#define mp_get_next_buffer(b) ((mpBuf *)(b->nx))
-
 void mp_init_buffers(void);
+
+void mp_flush_planner(void);
+double *mp_get_plan_position(double position[]);
+void mp_set_plan_position(const double position[]);
+void mp_set_axes_position(const double position[]);
+void mp_set_axis_position(uint8_t axis, const double position);
+
+uint8_t mp_exec_move(void);
+void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f);
+uint8_t mp_dwell(const double seconds);
+uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time);
+uint8_t mp_plan_hold_callback(void);
+uint8_t mp_end_hold_callback(void);
+uint8_t mp_feed_rate_override(uint8_t flag, double parameter);
+
+// planner buffer handlers
+uint8_t mp_get_planner_buffers_available(void);
 void mp_clear_buffer(mpBuf *bf); 
 void mp_copy_buffer(mpBuf *bf, const mpBuf *bp);
 void mp_queue_write_buffer(const uint8_t move_type);
@@ -215,34 +226,17 @@ mpBuf * mp_get_write_buffer(void);
 mpBuf * mp_get_run_buffer(void);
 mpBuf * mp_get_first_buffer(void);
 mpBuf * mp_get_last_buffer(void);
+#define mp_get_prev_buffer(b) ((mpBuf *)(b->pv))
+#define mp_get_next_buffer(b) ((mpBuf *)(b->nx))
 
+// plan_line.c functions
 uint8_t mp_isbusy(void);
-void mp_flush_planner(void);
-uint8_t mp_get_planner_buffers_available(void);
-double *mp_get_plan_position(double position[]);
-void mp_set_plan_position(const double position[]);
-//void mp_set_plan_lineindex(uint32_t lineindex);
-void mp_set_axes_position(const double position[]);
-void mp_set_axis_position(uint8_t axis, const double position);
+void mp_zero_segment_velocity(void);
 void mp_set_runtime_work_offset(double offset[]); 
-
-double mp_get_runtime_machine_position(uint8_t axis);
 double mp_get_runtime_work_position(uint8_t axis);
+double mp_get_runtime_machine_position(uint8_t axis);
 double mp_get_runtime_velocity(void);
 double mp_get_runtime_linenum(void);
-void mp_zero_segment_velocity(void);
-
-uint8_t mp_exec_move(void);
-void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f);
-//void mp_sync_mcode(uint8_t mcode);
-
-uint8_t mp_plan_hold_callback(void);
-uint8_t mp_end_hold_callback(void);
-uint8_t mp_dwell(const double seconds);
-uint8_t mp_offset(const uint8_t coord_system);
-uint8_t mp_line(const double target[], const double minutes);
-uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time);
-uint8_t mp_go_home_cycle(void);
 
 #ifdef __DEBUG
 void mp_dump_running_plan_buffer(void);
