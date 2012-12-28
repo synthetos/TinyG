@@ -132,6 +132,18 @@ _postscript();
 return(TG_OK);
 }
 
+/*
+ * print_boot_loader_help()
+ */
+uint8_t print_boot_loader_help(cmdObj *cmd)
+{
+fprintf_P(stderr, PSTR("\n\n\n#### TinyG BOOT LOADER Help ####\n"));
+fprintf_P(stderr, PSTR("\
+Enter $boot=1 to enter the boot loader.\n"));
+_postscript();
+return(TG_OK);
+}
+
 // help helper functions (snicker)
 
 static void _status_report_advisory()

@@ -105,6 +105,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 	// text parser test cases
 //	xio_queue_RX_string_usb("$\n");				// sys request
+	xio_queue_RX_string_usb("$ec=1\n");			// tuen CR expansion on
 //	xio_queue_RX_string_usb("$n\n");			// ubergroup request
 //	xio_queue_RX_string_usb("$xvm=16,000\n");	// comma skipping
 //	xio_queue_RX_string_usb("$a\n");			// match a group

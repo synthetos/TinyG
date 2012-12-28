@@ -2,8 +2,6 @@
 # Automatically-generated file. Do not edit or delete the file
 ################################################################################
 
-arc.c
-
 canonical_machine.c
 
 config.c
@@ -27,6 +25,10 @@ main.c
 network.c
 
 planner.c
+
+plan_arc.c
+
+plan_line.c
 
 pwm.c
 

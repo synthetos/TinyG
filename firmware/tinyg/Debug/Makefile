@@ -39,7 +39,6 @@ SUBDIRS :=  \
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
-../arc.c \
 ../canonical_machine.c \
 ../config.c \
 ../controller.c \
@@ -52,6 +51,8 @@ C_SRCS +=  \
 ../main.c \
 ../network.c \
 ../planner.c \
+../plan_arc.c \
+../plan_line.c \
 ../pwm.c \
 ../report.c \
 ../spindle.c \
@@ -78,7 +79,6 @@ ASM_SRCS +=
 
 
 OBJS +=  \
-arc.o \
 canonical_machine.o \
 config.o \
 controller.o \
@@ -91,6 +91,8 @@ kinematics.o \
 main.o \
 network.o \
 planner.o \
+plan_arc.o \
+plan_line.o \
 pwm.o \
 report.o \
 spindle.o \
@@ -111,7 +113,6 @@ xmega/xmega_rtc.o
 
 
 OBJS_AS_ARGS +=  \
-arc.o \
 canonical_machine.o \
 config.o \
 controller.o \
@@ -124,6 +125,8 @@ kinematics.o \
 main.o \
 network.o \
 planner.o \
+plan_arc.o \
+plan_line.o \
 pwm.o \
 report.o \
 spindle.o \
@@ -144,7 +147,6 @@ xmega/xmega_rtc.o
 
 
 C_DEPS +=  \
-arc.d \
 canonical_machine.d \
 config.d \
 controller.d \
@@ -157,6 +159,8 @@ kinematics.d \
 main.d \
 network.d \
 planner.d \
+plan_arc.d \
+plan_line.d \
 pwm.d \
 report.d \
 spindle.d \
@@ -177,7 +181,6 @@ xmega/xmega_rtc.d
 
 
 C_DEPS_AS_ARGS +=  \
-arc.d \
 canonical_machine.d \
 config.d \
 controller.d \
@@ -190,6 +193,8 @@ kinematics.d \
 main.d \
 network.d \
 planner.d \
+plan_arc.d \
+plan_line.d \
 pwm.d \
 report.d \
 spindle.d \
@@ -218,6 +223,8 @@ ADDITIONAL_DEPENDENCIES:=
 OUTPUT_FILE_DEP:= ./makedep.mk
 
 # AVR32/GNU C Compiler
+
+
 
 
 

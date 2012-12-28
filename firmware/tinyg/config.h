@@ -33,21 +33,17 @@
 
 // Choose one: This sets the index size into the cmdArray
 
-//#define INDEX_T int16_t				// use this if there are  > 127 indexed objects
-//#define INDEX_T int8_t			// use this if there are < 127 indexed objects
-//#define NO_INDEX -1					// defined as no match
-//alternate
-#define INDEX_T uint8_t				// use this if there are < 255 indexed objects
-#define NO_INDEX 0xFF				// defined as no match
+//#define INDEX_T uint8_t			// use this if there are < 255 indexed objects
+//#define NO_INDEX 0xFF				// defined as no match
+#define INDEX_T uint16_t			// use this if there are > 255 indexed objects
+#define NO_INDEX 0xFFFF				// defined as no match
 
 #define CMD_GROUP_LEN 3				// max length of group prefix
 #define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
-//#define CMD_INFIX_LEN 4				// token minus group prefix
 #define CMD_STRING_LEN 80			// original value string or value as a string
 #define CMD_FORMAT_LEN 64			// print formatting string
 #define CMD_STATUS_REPORT_LEN 12	// max number of status report elements - see cfgArray
 									// must also line up in cfgArray, se00 - seXX
-
 /**** cmdObj lists ****
  *
  * 	Commands and groups of commands are processed internally as lists of cmdObj's.
@@ -148,7 +144,6 @@ enum cmdType {						// classification of commands
 enum tgCommunicationsMode {
 	TG_TEXT_MODE = 0,				// default
 	TG_JSON_MODE
-//	TG_GRBL_MODE
 };
 
 enum jsonVerbosity {
@@ -223,6 +218,7 @@ void cmd_new_list(void);
 void cmd_new_body(cmdObj *cmd);
 uint8_t cmd_add_object(char *token);
 uint8_t cmd_add_string(char *token, char *string);
+uint8_t cmd_add_string_P(char *token, char *string);
 uint8_t cmd_add_integer(char *token, uint32_t value);
 uint8_t cmd_add_float(char *token, double value);
 void cmd_print_list(uint8_t status, uint8_t textmode);
@@ -288,7 +284,6 @@ struct cfgParameters {
 	double chordal_tolerance;		// arc chordal accuracy setting in mm
 	double estd_segment_usec;		// approximate segment time in microseconds
 //	uint8_t enable_acceleration;	// enable acceleration control
-//	uint8_t outmap[MOTORS];			// array for mapping output bits
 
 	// system group settings
 	double junction_acceleration;	// centripetal acceleration max for cornering

@@ -413,7 +413,7 @@ void tg_print_loading_configs_message(void)
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	cmd_add_object("fv");
 	cmd_add_object("fb");
-	cmd_add_string("msg", "Loading configs from EEPROM");
+	cmd_add_string_P("msg", PSTR("Loading configs from EEPROM"));
 	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED);
 #endif
 }
@@ -423,7 +423,7 @@ void tg_print_initializing_message(void)
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	cmd_add_object("fv");
 	cmd_add_object("fb");
-	cmd_add_string("msg", INIT_CONFIGURATION_MESSAGE); // see settings.h & sub-headers
+	cmd_add_string_P("msg", PSTR(INIT_CONFIGURATION_MESSAGE)); // see settings.h & sub-headers
 	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED);
 #endif
 }
@@ -433,7 +433,7 @@ void tg_print_system_ready_message(void)
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	cmd_add_object("fv");
 	cmd_add_object("fb");
-	cmd_add_string("msg", "SYSTEM READY");
+	cmd_add_string_P("msg", PSTR("SYSTEM READY"));
 	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
 	_text_response(TG_OK, "");				// prompt
 #endif

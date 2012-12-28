@@ -36,7 +36,7 @@
 
 #include <avr/io.h>
 #include <util/delay.h>
-#include <avr/interrupt.h>
+#include <avr/interrupt.h> 
 
 // token pasting
 #define token_paste2_int(x, y) x ## y
@@ -59,10 +59,10 @@
 // Really only applicable to 256a3 rev A and B devices
 #define USE_AVR1008_EEPROM
 
-// bootloader entrace
+// bootloader entrance
 #define USE_ENTER_DELAY
 //#define USE_ENTER_PIN
-#define USE_ENTER_UART
+//#define USE_ENTER_UART
 //#define USE_ENTER_I2C
 //#define USE_ENTER_FIFO
 
@@ -73,9 +73,9 @@
 #define USE_LED
 #define USE_UART
 //#define USE_I2C
+//#define USE_FIFO
 //#define USE_I2C_ADDRESS_NEGOTIATION
 //#define USE_ATTACH_LED
-//#define USE_FIFO
 
 // General Options
 //#define USE_INTERRUPTS
@@ -87,14 +87,13 @@
 #define ENABLE_EEPROM_BYTE_SUPPORT
 #define ENABLE_LOCK_BITS
 #define ENABLE_FUSE_BITS
-#define ENABLE_FLASH_ERASE_WRITE
 
 // ENTER_PIN
 #define ENTER_PORT              PORTC
 #define ENTER_PIN               0
 #define ENTER_PIN_CTRL          token_paste3(ENTER_PORT.PIN, ENTER_PIN, CTRL)
-#define ENTER_PIN_STATE         0
-#define ENTER_PIN_PUEN          1
+#define ENTER_PIN_STATE         1
+#define ENTER_PIN_PUEN          0
 
 // ENTER_DELAY
 #define ENTER_BLINK_COUNT       3
@@ -102,45 +101,44 @@
 
 // ENTER_UART
 //#define ENTER_UART_NEED_SYNC
-
 // ENTER_FIFO
 //#define ENTER_FIFO_NEED_SYNC
-
 // WATCHDOG
 // Select only one
-//#define WATCHDOG_TIMEOUT		WDT_PER_8CLK_gc
-//#define WATCHDOG_TIMEOUT		WDT_PER_16CLK_gc
-//#define WATCHDOG_TIMEOUT		WDT_PER_32CLK_gc
-//#define WATCHDOG_TIMEOUT		WDT_PER_64CLK_gc
-//#define WATCHDOG_TIMEOUT		WDT_PER_128CLK_gc
-//#define WATCHDOG_TIMEOUT		WDT_PER_256CLK_gc
-//#define WATCHDOG_TIMEOUT		WDT_PER_512CLK_gc
-#define WATCHDOG_TIMEOUT		WDT_PER_1KCLK_gc
-//#define WATCHDOG_TIMEOUT		WDT_PER_2KCLK_gc
-//#define WATCHDOG_TIMEOUT		WDT_PER_4KCLK_gc
-//#define WATCHDOG_TIMEOUT		WDT_PER_8KCLK_gc
+//#define WATCHDOG_TIMEOUT        WDT_PER_8CLK_gc
+//#define WATCHDOG_TIMEOUT        WDT_PER_16CLK_gc
+//#define WATCHDOG_TIMEOUT        WDT_PER_32CLK_gc
+//#define WATCHDOG_TIMEOUT        WDT_PER_64CLK_gc
+//#define WATCHDOG_TIMEOUT        WDT_PER_128CLK_gc
+//#define WATCHDOG_TIMEOUT        WDT_PER_256CLK_gc
+//#define WATCHDOG_TIMEOUT        WDT_PER_512CLK_gc
+//#define WATCHDOG_TIMEOUT        WDT_PER_1KCLK_gc
+//#define WATCHDOG_TIMEOUT        WDT_PER_2KCLK_gc
+//#define WATCHDOG_TIMEOUT        WDT_PER_4KCLK_gc
+//#define WATCHDOG_TIMEOUT        WDT_PER_8KCLK_gc
+#define WATCHDOG_TIMEOUT        WDT_PER_1KCLK_gc
 
 // LED
-#define LED_PORT				PORTA
-#define LED_PIN					5
-#define LED_INV					1
+#define LED_PORT                PORTA
+#define LED_PIN                 5
+#define LED_INV                 1
 
 // UART
-#define UART_BAUD_RATE			115200
-#define UART_PORT_NAME          C
-#define UART_NUMBER             0
+//#define UART_BAUD_RATE                  38400
+#define UART_BAUD_RATE                  115200
+#define UART_PORT_NAME                  C
+#define UART_NUMBER                     0
 #if (UART_NUMBER == 0)
-#define UART_TX_PIN				3
+#define UART_TX_PIN                     3
 #else
-#define UART_TX_PIN				7
+#define UART_TX_PIN                     7
 #endif
-#define UART_PORT               token_paste2(PORT, UART_PORT_NAME)
-#define UART_DEVICE_PORT        token_paste2(UART_PORT_NAME, UART_NUMBER)
-#define UART_DEVICE             token_paste2(USART, UART_DEVICE_PORT)
-#define UART_DEVICE_RXC_ISR     token_paste3(USART, UART_DEVICE_PORT, _RXC_vect)
-#define UART_DEVICE_DRE_ISR     token_paste3(USART, UART_DEVICE_PORT, _DRE_vect)
-#define UART_DEVICE_TXC_ISR     token_paste3(USART, UART_DEVICE_PORT, _TXC_vect)
-
+#define UART_PORT                       token_paste2(PORT, UART_PORT_NAME)
+#define UART_DEVICE_PORT                token_paste2(UART_PORT_NAME, UART_NUMBER)
+#define UART_DEVICE                     token_paste2(USART, UART_DEVICE_PORT)
+#define UART_DEVICE_RXC_ISR             token_paste3(USART, UART_DEVICE_PORT, _RXC_vect)
+#define UART_DEVICE_DRE_ISR             token_paste3(USART, UART_DEVICE_PORT, _DRE_vect)
+#define UART_DEVICE_TXC_ISR             token_paste3(USART, UART_DEVICE_PORT, _TXC_vect)
 
 // FIFO
 #define FIFO_DATA_PORT  PORTC
@@ -156,49 +154,49 @@
 // BAUD Rate Values
 // Known good at 2MHz
 #if (F_CPU == 2000000L) && (UART_BAUD_RATE == 19200)
-#define UART_BSEL_VALUE			12
-#define UART_BSCALE_VALUE		0
-#define UART_CLK2X				1
+#define UART_BSEL_VALUE         12
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              1
 #elif (F_CPU == 2000000L) && (UART_BAUD_RATE == 38400)
-#define UART_BSEL_VALUE			22
-#define UART_BSCALE_VALUE		-2
-#define UART_CLK2X				1
+#define UART_BSEL_VALUE         22
+#define UART_BSCALE_VALUE       -2
+#define UART_CLK2X              1
 #elif (F_CPU == 2000000L) && (UART_BAUD_RATE == 57600)
-#define UART_BSEL_VALUE			26
-#define UART_BSCALE_VALUE		-3
-#define UART_CLK2X				1
+#define UART_BSEL_VALUE         26
+#define UART_BSCALE_VALUE       -3
+#define UART_CLK2X              1
 #elif (F_CPU == 2000000L) && (UART_BAUD_RATE == 115200)
-#define UART_BSEL_VALUE			19
-#define UART_BSCALE_VALUE		-4
-#define UART_CLK2X				1
+#define UART_BSEL_VALUE         19
+#define UART_BSCALE_VALUE       -4
+#define UART_CLK2X              1
 // Known good at 32MHz
 #elif (F_CPU == 32000000L) && (UART_BAUD_RATE == 19200)
-#define UART_BSEL_VALUE			103
-#define UART_BSCALE_VALUE		0
-#define UART_CLK2X				0
+#define UART_BSEL_VALUE         103
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              0
 #elif (F_CPU == 32000000L) && (UART_BAUD_RATE == 38400)
-#define UART_BSEL_VALUE			51
-#define UART_BSCALE_VALUE		0
-#define UART_CLK2X				0
+#define UART_BSEL_VALUE         51
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              0
 #elif (F_CPU == 32000000L) && (UART_BAUD_RATE == 57600)
-#define UART_BSEL_VALUE			34
-#define UART_BSCALE_VALUE		0
-#define UART_CLK2X				0
+#define UART_BSEL_VALUE         34
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              0
 #elif (F_CPU == 32000000L) && (UART_BAUD_RATE == 115200)
-#define UART_BSEL_VALUE			16
-#define UART_BSCALE_VALUE		0
-#define UART_CLK2X				0
+#define UART_BSEL_VALUE         16
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              0
 // None of the above, so calculate something
 #else
 #warning Not using predefined BAUD rate, possible BAUD rate error!
 #if (F_CPU == 2000000L)
-#define UART_BSEL_VALUE			((F_CPU) / ((uint32_t)UART_BAUD_RATE * 8) - 1)
-#define UART_BSCALE_VALUE		0
-#define UART_CLK2X				1
+#define UART_BSEL_VALUE         ((F_CPU) / ((uint32_t)UART_BAUD_RATE * 8) - 1)
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              1
 #else
-#define UART_BSEL_VALUE			((F_CPU) / ((uint32_t)UART_BAUD_RATE * 16) - 1)
-#define UART_BSCALE_VALUE		0
-#define UART_CLK2X				0
+#define UART_BSEL_VALUE         ((F_CPU) / ((uint32_t)UART_BAUD_RATE * 16) - 1)
+#define UART_BSCALE_VALUE       0
+#define UART_CLK2X              0
 #endif
 #endif
 
@@ -207,13 +205,13 @@
 // I2C
 #ifdef __AVR_XMEGA__
 
-#define I2C_DEVICE_PORT			E
-#define I2C_DEVICE				token_paste2(TWI, I2C_DEVICE_PORT)
-#define I2C_DEVICE_ISR			token_paste3(TWI, I2C_DEVICE_PORT, _TWIS_vect)
+#define I2C_DEVICE_PORT                 E
+#define I2C_DEVICE                      token_paste2(TWI, I2C_DEVICE_PORT)
+#define I2C_DEVICE_ISR                  token_paste3(TWI, I2C_DEVICE_PORT, _TWIS_vect)
 
-#define I2C_MATCH_ANY			1
-#define I2C_ADDRESS				0x10
-#define I2C_GC_ENABLE			1
+#define I2C_MATCH_ANY                   0
+#define I2C_ADDRESS                     0x10
+#define I2C_GC_ENABLE                   0
 
 #endif // __AVR_XMEGA__
 
@@ -221,15 +219,15 @@
 // Note: only works on XMega chips for the time being
 // There is no easy way to get this to work on regular
 // ATMega chips as they have no unique part ID number
-#define I2C_AUTONEG_DIS_PROMISC	1
-#define I2C_AUTONEG_DIS_GC		0
-#define I2C_AUTONEG_PORT		PORTA
-#define I2C_AUTONEG_PIN			2
+#define I2C_AUTONEG_DIS_PROMISC         0
+#define I2C_AUTONEG_DIS_GC              0
+#define I2C_AUTONEG_PORT                PORTC
+#define I2C_AUTONEG_PIN                 0
 
 // Attach LED
-#define ATTACH_LED_PORT			PORTA
-#define ATTACH_LED_PIN			1
-#define ATTACH_LED_INV			1
+#define ATTACH_LED_PORT                 PORTC
+#define ATTACH_LED_PIN                  0
+#define ATTACH_LED_INV                  0
 
 #ifndef EEPROM_BYTE_ADDRESS_MASK
 #if EEPROM_PAGE_SIZE == 32
@@ -252,10 +250,10 @@
 #endif // USE_AVR1008_EEPROM
 
 // communication modes
-#define MODE_UNDEF				0
-#define MODE_UART				1
-#define MODE_I2C				2
-#define MODE_FIFO				3
+#define MODE_UNDEF              0
+#define MODE_UART               1
+#define MODE_I2C                2
+#define MODE_FIFO               3
 
 // types
 typedef uint32_t ADDR_T;
@@ -266,7 +264,6 @@ typedef uint32_t ADDR_T;
 #include "eeprom_driver.h"
 #include "uart.h"
 #include "i2c.h"
-#include "fifo.h"
 #include "watchdog.h"
 
 // globals
@@ -297,3 +294,4 @@ void BlockRead(unsigned int size, unsigned char mem, ADDR_T *address);
 
 
 #endif // __XBOOT_H
+

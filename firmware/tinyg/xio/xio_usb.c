@@ -72,20 +72,35 @@ void xio_init_usb()	// USB inits
  *	never empties. So the routine that puts chars in the TX buffer must always force
  *	an interrupt.
  */
-// alternate form:
-//int xio_putc_usb(const char c, FILE *stream) { return xio_putc_usart(XIO_DEV_USB, c, stream);}
 
 int xio_putc_usb(const char c, FILE *stream)
 {
-	BUFFER_T next_tx_buf_head = USBu.tx_buf_head-1;	// set the next head while leaving the current one alone
-	if (next_tx_buf_head == 0) { 					// detect wrap and afjust if necessary
-		next_tx_buf_head = TX_BUFFER_SIZE-1; 		// -1 avoids the off-by-one
+	BUFFER_T next_tx_buf_head = USBu.tx_buf_head-1;		// set next head while leaving current one alone
+	if (next_tx_buf_head == 0)
+		next_tx_buf_head = TX_BUFFER_SIZE-1; 			// detect wrap and adjust; -1 avoids off-by-one
+	while (next_tx_buf_head == USBu.tx_buf_tail) 
+		sleep_mode(); 									// sleep until there is space in the buffer
+	USBu.usart->CTRLA = CTRLA_RXON_TXOFF;				// disable TX interrupt (mutex region)
+	USBu.tx_buf_head = next_tx_buf_head;				// accept next buffer head
+	USBu.tx_buf[USBu.tx_buf_head] = c;					// write char to buffer
+
+	// expand <LF> to <LF><CR> if $ec is set
+	if (c == '\n') {
+		if ((USB.flags & XIO_FLAG_CRLF_bm) != 0) {
+			USBu.usart->CTRLA = CTRLA_RXON_TXON;		// force interrupt to send the queued <CR>
+			BUFFER_T next_tx_buf_head = USBu.tx_buf_head-1;
+			if (next_tx_buf_head == 0) 
+				next_tx_buf_head = TX_BUFFER_SIZE-1;
+			while (next_tx_buf_head == USBu.tx_buf_tail) 
+				sleep_mode();
+			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// MUTEX region
+			USBu.tx_buf_head = next_tx_buf_head;
+			USBu.tx_buf[USBu.tx_buf_head] = CR;
+		}
 	}
-	while (next_tx_buf_head == USBu.tx_buf_tail) { sleep_mode();} // sleep until there is space in the buffer
-	USBu.usart->CTRLA = CTRLA_RXON_TXOFF;			// disable TX interrupt (mutex region)
-	USBu.tx_buf_head = next_tx_buf_head;			// accept next buffer head
-	USBu.tx_buf[USBu.tx_buf_head] = c;				// write char to buffer
-	USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send char - doesn't work if you just |= it
+
+	// finish up
+	USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send char(s) - doesn't work if you just |= it
 	return (XIO_OK);
 }
 
