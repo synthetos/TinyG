@@ -202,6 +202,7 @@ static uint8_t _get_sr(cmdObj *cmd);	// run status report (as data)
 static void _print_sr(cmdObj *cmd);		// run status report (as printout)
 static uint8_t _set_sr(cmdObj *cmd);	// set status report specification
 static uint8_t _set_si(cmdObj *cmd);	// set status report interval
+static uint8_t _get_id(cmdObj *cmd);	// get device ID
 static uint8_t _get_qr(cmdObj *cmd);	// run queue report (as data)
 static uint8_t _get_rx(cmdObj *cmd);	// get bytes in RX buffer
 
@@ -378,7 +379,9 @@ static const char fmt_str[] PROGMEM = "%s\n";	// generic format for string messa
 static const char fmt_fv[] PROGMEM = "[fv]  firmware version%16.2f\n";
 static const char fmt_fb[] PROGMEM = "[fb]  firmware build%18.2f\n";
 static const char fmt_hv[] PROGMEM = "[hv]  hardware version%16.2f\n";
-//static const char fmt_id[] PROGMEM = "[id]  id_device%16d\n";
+static const char fmt_id[] PROGMEM = "[id]  TinyG ID%30s\n";
+static const char fmt_qr[] PROGMEM = "qr:%d\n";
+static const char fmt_rx[] PROGMEM = "rx:%d\n";
 
 // Gcode model values for reporting purposes
 static const char fmt_vel[]  PROGMEM = "Velocity:%17.3f%S/min\n";
@@ -622,56 +625,56 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "sys","fb", _fip, fmt_fb, _print_dbl, _get_dbl, _set_nul, (double *)&cfg.fw_build,   TINYG_BUILD_NUMBER }, // MUST BE FIRST!
 	{ "sys","fv", _fip, fmt_fv, _print_dbl, _get_dbl, _set_nul, (double *)&cfg.fw_version, TINYG_VERSION_NUMBER },
 	{ "sys","hv", _fip, fmt_hv, _print_dbl, _get_dbl, _set_hv,  (double *)&cfg.hw_version, TINYG_HARDWARE_VERSION },
-//	{ "",   "id", _f00, fmt_id, _print_int, _get_id,  _set_nul, (double *)&tg.null, 0},		// device ID (signature)
+	{ "sys","id", _f00, fmt_id, _print_str, _get_id,  _set_nul, (double *)&tg.null, 0 },		// device ID (ASCII signature)
 
 	// dynamic model attributes for reporting puropses (up front for speed)
-	{ "", "n",   _fin, fmt_line,_print_int, _get_int, _set_int, (double *)&gm.linenum,0 },	// Gcode line number - gets model line number
-	{ "", "line",_fin, fmt_line,_print_int, _get_line,_set_int, (double *)&gm.linenum,0 },	// Gcode line number - gets runtime line number
-	{ "", "feed",_f00, fmt_feed,_print_lin, _get_dbu, _set_nul, (double *)&tg.null, 0 },	// feed rate
-	{ "", "stat",_f00, fmt_stat,_print_str, _get_stat,_set_nul, (double *)&tg.null, 0 },	// combined machine state
-	{ "", "macs",_f00, fmt_macs,_print_str, _get_macs,_set_nul, (double *)&tg.null, 0 },	// raw machine state
-	{ "", "cycs",_f00, fmt_cycs,_print_str, _get_cycs,_set_nul, (double *)&tg.null, 0 },	// cycle state
-	{ "", "mots",_f00, fmt_mots,_print_str, _get_mots,_set_nul, (double *)&tg.null, 0 },	// motion state
-	{ "", "hold",_f00, fmt_hold,_print_str, _get_hold,_set_nul, (double *)&tg.null, 0 },	// feedhold state
-	{ "", "vel", _f00, fmt_vel, _print_lin, _get_vel, _set_nul, (double *)&tg.null, 0 },	// current velocity
-	{ "", "unit",_f00, fmt_unit,_print_str, _get_unit,_set_nul, (double *)&tg.null, 0 },	// units mode
-	{ "", "coor",_f00, fmt_coor,_print_str, _get_coor,_set_nul, (double *)&tg.null, 0 },	// coordinate system
-	{ "", "momo",_f00, fmt_momo,_print_str, _get_momo,_set_nul, (double *)&tg.null, 0 },	// motion mode
-	{ "", "plan",_f00, fmt_plan,_print_str, _get_plan,_set_nul, (double *)&tg.null, 0 },	// plane select
-	{ "", "path",_f00, fmt_path,_print_str, _get_path,_set_nul, (double *)&tg.null, 0 },	// path control mode
-	{ "", "dist",_f00, fmt_dist,_print_str, _get_dist,_set_nul, (double *)&tg.null, 0 },	// distance mode
-	{ "", "frmo",_f00, fmt_frmo,_print_str, _get_frmo,_set_nul, (double *)&tg.null, 0 },	// feed rate mode
-	{ "", "posx",_f00, fmt_posx,_print_pos, _get_pos, _set_nul, (double *)&tg.null, 0 },	// X position
-	{ "", "posy",_f00, fmt_posy,_print_pos, _get_pos, _set_nul, (double *)&tg.null, 0 },	// Y position
-	{ "", "posz",_f00, fmt_posz,_print_pos, _get_pos, _set_nul, (double *)&tg.null, 0 },	// Z position
-	{ "", "posa",_f00, fmt_posa,_print_pos, _get_pos, _set_nul, (double *)&tg.null, 0 },	// A position
-	{ "", "posb",_f00, fmt_posb,_print_pos, _get_pos, _set_nul, (double *)&tg.null, 0 },	// B position
-	{ "", "posc",_f00, fmt_posc,_print_pos, _get_pos, _set_nul, (double *)&tg.null, 0 },	// C position
-	{ "", "mpox",_f00, fmt_mpox,_print_pos, _get_mpos,_set_nul, (double *)&tg.null, 0 },	// X machine position
-	{ "", "mpoy",_f00, fmt_mpoy,_print_pos, _get_mpos,_set_nul, (double *)&tg.null, 0 },	// Y machine position
-	{ "", "mpoz",_f00, fmt_mpoz,_print_pos, _get_mpos,_set_nul, (double *)&tg.null, 0 },	// Z machine position
-	{ "", "mpoa",_f00, fmt_mpoa,_print_pos, _get_mpos,_set_nul, (double *)&tg.null, 0 },	// A machine position
-	{ "", "mpob",_f00, fmt_mpob,_print_pos, _get_mpos,_set_nul, (double *)&tg.null, 0 },	// B machine position
-	{ "", "mpoc",_f00, fmt_mpoc,_print_pos, _get_mpos,_set_nul, (double *)&tg.null, 0 },	// C machine position
-	{ "", "home",_f00, fmt_home,_print_str, _get_home,_set_nul, (double *)&tg.null, 0 },	// homing state
-	{ "hom","homx",_f00,fmt_homx,_print_int,_get_ui8, _set_nul, (double *)&cm.homed[X], false },// X homed - Homing status group
-	{ "hom","homy",_f00,fmt_homy,_print_int,_get_ui8, _set_nul, (double *)&cm.homed[Y], false },// Y homed
-	{ "hom","homz",_f00,fmt_homz,_print_int,_get_ui8, _set_nul, (double *)&cm.homed[Z], false },// Z homed
-	{ "hom","homa",_f00,fmt_homa,_print_int,_get_ui8, _set_nul, (double *)&cm.homed[A], false },// A homed
-	{ "hom","homb",_f00,fmt_homb,_print_int,_get_ui8, _set_nul, (double *)&cm.homed[B], false },// B homed
-	{ "hom","homc",_f00,fmt_homc,_print_int,_get_ui8, _set_nul, (double *)&cm.homed[C], false },// C homed
-// 38
-	// Reports, tests, help, and messages (up front for speed)
-	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },	// status report object
-	{ "", "qr",  _f00, fmt_nul, _print_nul, _get_qr,  _set_nul, (double *)&tg.null, 0 },	// queue report setting
-	{ "", "rx",  _f00, fmt_nul, _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },	// space in RX buffer
-	{ "", "msg", _f00, fmt_str, _print_str, _get_nul, _set_nul, (double *)&tg.null, 0 },	// string for generic messages
-	{ "", "test",_f00, fmt_nul, _print_nul, print_test_help, tg_test, (double *)&tg.test,0 },// prints test help screen
+	{ "",   "n",   _fin,fmt_line,_print_int, _get_int, _set_int,(double *)&gm.linenum,0 },		// Gcode line number - gets model line number
+	{ "",   "line",_fin,fmt_line,_print_int, _get_line,_set_int,(double *)&gm.linenum,0 },		// Gcode line number - gets runtime line number
+	{ "",   "feed",_f00,fmt_feed,_print_lin, _get_dbu, _set_nul,(double *)&tg.null, 0 },		// feed rate
+	{ "",   "stat",_f00,fmt_stat,_print_str, _get_stat,_set_nul,(double *)&tg.null, 0 },		// combined machine state
+	{ "",   "macs",_f00,fmt_macs,_print_str, _get_macs,_set_nul,(double *)&tg.null, 0 },		// raw machine state
+	{ "",   "cycs",_f00,fmt_cycs,_print_str, _get_cycs,_set_nul,(double *)&tg.null, 0 },		// cycle state
+	{ "",   "mots",_f00,fmt_mots,_print_str, _get_mots,_set_nul,(double *)&tg.null, 0 },		// motion state
+	{ "",   "hold",_f00,fmt_hold,_print_str, _get_hold,_set_nul,(double *)&tg.null, 0 },		// feedhold state
+	{ "",   "vel", _f00,fmt_vel, _print_lin, _get_vel, _set_nul,(double *)&tg.null, 0 },		// current velocity
+	{ "",   "unit",_f00,fmt_unit,_print_str, _get_unit,_set_nul,(double *)&tg.null, 0 },		// units mode
+	{ "",   "coor",_f00,fmt_coor,_print_str, _get_coor,_set_nul,(double *)&tg.null, 0 },		// coordinate system
+	{ "",   "momo",_f00,fmt_momo,_print_str, _get_momo,_set_nul,(double *)&tg.null, 0 },		// motion mode
+	{ "",   "plan",_f00,fmt_plan,_print_str, _get_plan,_set_nul,(double *)&tg.null, 0 },		// plane select
+	{ "",   "path",_f00,fmt_path,_print_str, _get_path,_set_nul,(double *)&tg.null, 0 },		// path control mode
+	{ "",   "dist",_f00,fmt_dist,_print_str, _get_dist,_set_nul,(double *)&tg.null, 0 },		// distance mode
+	{ "",   "frmo",_f00,fmt_frmo,_print_str, _get_frmo,_set_nul,(double *)&tg.null, 0 },		// feed rate mode
+	{ "pos","posx",_f00,fmt_posx,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// X position
+	{ "pos","posy",_f00,fmt_posy,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Y position
+	{ "pos","posz",_f00,fmt_posz,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Z position
+	{ "pos","posa",_f00,fmt_posa,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// A position
+	{ "pos","posb",_f00,fmt_posb,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// B position
+	{ "pos","posc",_f00,fmt_posc,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// C position
+	{ "mpo","mpox",_f00,fmt_mpox,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// X machine position
+	{ "mpo","mpoy",_f00,fmt_mpoy,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Y machine position
+	{ "mpo","mpoz",_f00,fmt_mpoz,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Z machine position
+	{ "mpo","mpoa",_f00,fmt_mpoa,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// A machine position
+	{ "mpo","mpob",_f00,fmt_mpob,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// B machine position
+	{ "mpo","mpoc",_f00,fmt_mpoc,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// C machine position
+	{ "hom","home",_f00,fmt_home,_print_str, _get_home,_set_nul,(double *)&tg.null, 0 },		// homing state
+	{ "hom","homx",_f00,fmt_homx,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[X], false },// X homed - Homing status group
+	{ "hom","homy",_f00,fmt_homy,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[Y], false },// Y homed
+	{ "hom","homz",_f00,fmt_homz,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[Z], false },// Z homed
+	{ "hom","homa",_f00,fmt_homa,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[A], false },// A homed
+	{ "hom","homb",_f00,fmt_homb,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[B], false },// B homed
+	{ "hom","homc",_f00,fmt_homc,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[C], false },// C homed
+
+	// Reports, tests, help, and messages
+	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },		// status report object
+	{ "", "qr",  _f00, fmt_qr,  _print_int, _get_qr,  _set_nul, (double *)&tg.null, 0 },		// queue report setting
+	{ "", "rx",  _f00, fmt_rx,  _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },		// space in RX buffer
+	{ "", "msg", _f00, fmt_str, _print_str, _get_nul, _set_nul, (double *)&tg.null, 0 },		// string for generic messages
+	{ "", "test",_f00, fmt_nul, _print_nul, print_test_help, tg_test, (double *)&tg.test,0 },	// prints test help screen
 	{ "", "defa",_f00, fmt_nul, _print_nul, print_defaults_help,_set_defa,(double *)&tg.null,0},// prints defaults help screen
-	{ "", "help",_f00, fmt_nul, _print_nul, print_config_help,_set_nul, (double *)&tg.null,0 },// prints config help screen
 	{ "", "boot",_f00, fmt_nul, _print_nul, print_boot_loader_help,_set_nul, (double *)&tg.null,0 },
-	{ "", "h",   _f00, fmt_nul, _print_nul, print_config_help,_set_nul, (double *)&tg.null,0 },
-// 47
+	{ "", "help",_f00, fmt_nul, _print_nul, print_config_help,_set_nul, (double *)&tg.null,0 },	// prints config help screen
+	{ "", "h",   _f00, fmt_nul, _print_nul, print_config_help,_set_nul, (double *)&tg.null,0 },	// alias for "help"
+
 	// Motor parameters
 	{ "1","1ma",_fip, fmt_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ "1","1sa",_fip, fmt_1sa, _print_rot, _get_dbl ,_set_sa, (double *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
@@ -700,7 +703,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "4","4mi",_fip, fmt_4mi, _print_ui8, _get_ui8, _set_mi, (double *)&cfg.m[MOTOR_4].microsteps,	M4_MICROSTEPS },
 	{ "4","4po",_fip, fmt_4po, _print_ui8, _get_ui8, _set_po, (double *)&cfg.m[MOTOR_4].polarity,	M4_POLARITY },
 	{ "4","4pm",_fip, fmt_4pm, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_4].power_mode,	M4_POWER_MODE },
-// 71
+
 	// Axis parameters
 	{ "x","xam",_fip, fmt_xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[X].axis_mode,		X_AXIS_MODE },
 	{ "x","xvm",_fip, fmt_xvm, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].velocity_max,		X_VELOCITY_MAX },
@@ -740,7 +743,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "z","zlv",_fip, fmt_zlv, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_velocity,	Z_LATCH_VELOCITY },
 	{ "z","zlb",_fip, fmt_zlb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_backoff,	Z_LATCH_BACKOFF },
 	{ "z","zzb",_fip, fmt_zzb, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].zero_backoff,		Z_ZERO_BACKOFF },
-// 107
+
 	{ "a","aam",_fip, fmt_aam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[A].axis_mode,		A_AXIS_MODE },
 	{ "a","avm",_fip, fmt_avm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].velocity_max,	 	A_VELOCITY_MAX },
 	{ "a","afr",_fip, fmt_afr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].feedrate_max, 	A_FEEDRATE_MAX },
@@ -754,7 +757,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "a","alv",_fip, fmt_alv, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_velocity,	A_LATCH_VELOCITY },
 	{ "a","alb",_fip, fmt_alb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_backoff,	A_LATCH_BACKOFF },
 	{ "a","azb",_fip, fmt_azb, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].zero_backoff,		A_ZERO_BACKOFF },
-// 120
+
 	{ "b","bam",_fip, fmt_bam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[B].axis_mode,		B_AXIS_MODE },
 	{ "b","bvm",_fip, fmt_bvm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].velocity_max,	 	B_VELOCITY_MAX },
 	{ "b","bfr",_fip, fmt_bfr, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].feedrate_max, 	B_FEEDRATE_MAX },
@@ -770,7 +773,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "c","cjm",_fip, fmt_cjm, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].jerk_max,			C_JERK_MAX },
 	{ "c","cjd",_fip, fmt_cjd, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].junction_dev,		C_JUNCTION_DEVIATION },
 	{ "c","cra",_fip, fmt_cra, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.a[C].radius,			C_RADIUS },
-// 134
+
 	// PWM settings
     { "p1","p1frq",_fip, fmt_p1frq, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.frequency,		P1_PWM_FREQUENCY },
     { "p1","p1csl",_fip, fmt_p1csl, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.cw_speed_lo,	P1_CW_SPEED_LO },
@@ -782,7 +785,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
     { "p1","p1wpl",_fip, fmt_p1wpl, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_phase_lo,	P1_CCW_PHASE_LO },
     { "p1","p1wph",_fip, fmt_p1wph, _print_dbl, _get_dbl, _set_dbl,(double *)&cfg.p.ccw_phase_hi,	P1_CCW_PHASE_HI },
     { "p1","p1pof",_fip, fmt_p1pof, _print_rot, _get_dbl, _set_dbl,(double *)&cfg.p.phase_off,		P1_PWM_PHASE_OFF },
-// 144
+
 	// Coordinate system offsets (G54-G59 and G92)
 	{ "g54","g54x",_fip, fmt_g54x, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G54][X],	G54_X_OFFSET },
 	{ "g54","g54y",_fip, fmt_g54y, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G54][Y],	G54_Y_OFFSET },
@@ -832,7 +835,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "g92","g92a",_fin, fmt_g92a,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[A], 0 },
 	{ "g92","g92b",_fin, fmt_g92b,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[B], 0 },
 	{ "g92","g92c",_fin, fmt_g92c,_print_rot, _get_dbl, _set_nul, (double *)&gm.origin_offset[C], 0 },
-// 186
+
 	// System parameters
 	// NOTE: The ordering within the gcode defaults is important for token resolution
 	// NOTE: Some values have been removed from the system group but are still accessible as individual elements
@@ -848,7 +851,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "sys","st",  _fip, fmt_st, _print_ui8, _get_ui8, _set_sw,  (double *)&sw.switch_type,			SWITCH_TYPE },
 
 	{ "sys","ic",  _fip, fmt_ic, _print_ui8, _get_ui8, _set_ic,  (double *)&cfg.ignore_crlf,		COM_IGNORE_CRLF },
-	{ "sys","ec",  _fip, fmt_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,			COM_APPEND_TX_CR },
+	{ "sys","ec",  _fip, fmt_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,			COM_EXPAND_CR },
 	{ "sys","ee",  _fip, fmt_ee, _print_ui8, _get_ui8, _set_ee,  (double *)&cfg.enable_echo,		COM_ENABLE_ECHO },
 	{ "sys","ex",  _fip, fmt_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
 	{ "sys","eq",  _fip, fmt_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,			COM_ENABLE_QR },
@@ -864,7 +867,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "",   "ma",  _fip, fmt_ma, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.arc_segment_len,	ARC_SEGMENT_LENGTH },
 	{ "",   "eqh", _fip, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.qr_hi_water, 		COM_QR_HI_WATER },
 	{ "",   "eql", _fip, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.qr_lo_water, 		COM_QR_LO_WATER },
-// 210
+
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
 	{ "","se00",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[0],0 },
@@ -879,7 +882,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "","se09",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[9],0 },
 	{ "","se10",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[10],0 },
 	{ "","se11",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[11],0 },
-// 222
+
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with CMD_COUNT_GROUPS below ****
 	{ "","sys",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// system group
@@ -901,8 +904,10 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "","g58",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },
 	{ "","g59",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },
 	{ "","g92",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// origin offsets
+	{ "","pos",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// work position group
+	{ "","mpo",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// machine pposition group
 	{ "","hom",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// axis homing state
-// 242
+
 	// Uber-group (groups of groups, for text-mode displays only)
 	// *** Must agree with CMD_COUNT_UBER_GROUPS below ****
 	{ "", "m", _f00, fmt_nul, _print_nul, _do_motors, _set_nul,(double *)&tg.null,0 },
@@ -910,8 +915,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "", "o", _f00, fmt_nul, _print_nul, _do_offsets,_set_nul,(double *)&tg.null,0 },
 	{ "", "$", _f00, fmt_nul, _print_nul, _do_all,    _set_nul,(double *)&tg.null,0 }
 };
-// 246
-#define CMD_COUNT_GROUPS 		20											// count of simple groups
+
+#define CMD_COUNT_GROUPS 		22											// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 											// count of uber-groups
 
 #define CMD_INDEX_MAX (sizeof cfgArray / sizeof(struct cfgItem))
@@ -925,9 +930,11 @@ struct cfgItem const cfgArray[] PROGMEM = {
 #define _index_is_uber(i)   ((i >= CMD_INDEX_START_UBER_GROUPS) ? true : false)
 #define _index_is_group_or_uber(i) ((i >= CMD_INDEX_START_GROUPS) ? true : false)
 
-/**** VERSIONS AND IDs ****
+/**** Versions, IDs, and simple reports  ****
  * _set_hv() - set hardweare version number
  * _get_id() - get device ID (signature)
+ * _get_qr() - run queue report
+ * _get_rx() - get bytes available in RX buffer
  */
 static uint8_t _set_hv(cmdObj *cmd) 
 {
@@ -937,14 +944,26 @@ static uint8_t _set_hv(cmdObj *cmd)
 	return (TG_OK);
 }
 
-/*
 static uint8_t _get_id(cmdObj *cmd) 
 {
-	cmd->value = (double)sys_get_id();
+	sys_get_id(cmd->string);
+	cmd->type = TYPE_STRING;
+	return (TG_OK);
+}
+
+static uint8_t _get_qr(cmdObj *cmd) 
+{
+	cmd->value = (double)mp_get_planner_buffers_available();
 	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }
-*/
+
+static uint8_t _get_rx(cmdObj *cmd)
+{
+	cmd->value = (double)xio_get_usb_rx_free();
+	cmd->type = TYPE_INTEGER;
+	return (TG_OK);
+}
 
 /**** STATUS REPORT REPORT FUNCTIONS ****
  * _get_sr()   - run status report
@@ -984,22 +1003,6 @@ static uint8_t _set_si(cmdObj *cmd)
 	return(TG_OK);
 }
 
-/**** REPORTING FUNCTIONS ****
- * _get_qr() - run queue report
- * _get_rx() - get bytes available in RX buffer
- */
-static uint8_t _get_qr(cmdObj *cmd) 
-{
-	rpt_run_queue_report();
-	return (TG_OK);
-}
-
-static uint8_t _get_rx(cmdObj *cmd)
-{
-	cmd->value = (double)xio_get_usb_rx_free();
-	cmd->type = TYPE_INTEGER;
-	return (TG_OK);
-}
 
 /**** STATUS REPORT FUNCTIONS ****************************************
  * _get_msg_helper() - helper to get display message
@@ -1279,9 +1282,9 @@ static uint8_t _set_ic(cmdObj *cmd) 	// ignore CR or LF on RX
 	(void)xio_cntl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
 	(void)xio_cntl(XIO_DEV_USB, XIO_NOIGNORELF);
 
-	if (cfg.ignore_crlf == IGNORE_CR) {
+	if (cfg.ignore_crlf == IGNORE_CR) {				// $ic=1
 		(void)xio_cntl(XIO_DEV_USB, XIO_IGNORECR);
-	} else if (cfg.ignore_crlf == IGNORE_LF) {
+	} else if (cfg.ignore_crlf == IGNORE_LF) {		// $ic=2
 		(void)xio_cntl(XIO_DEV_USB, XIO_IGNORELF);
 	}
 	return (TG_OK);

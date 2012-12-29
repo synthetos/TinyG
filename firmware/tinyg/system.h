@@ -42,7 +42,7 @@
 
 void sys_init(void);					// master hardware init
 void sys_port_bindings(double hw_version);
-//uint8_t sys_read_signature(uint8_t index);
+void sys_get_id(char *id);
 
 /* CPU clock */	
 

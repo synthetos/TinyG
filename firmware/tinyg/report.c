@@ -167,22 +167,16 @@ uint8_t rpt_populate_status_report()
 
 /*****************************************************************************
  * Queue Reports
- *
  * rpt_request_queue_report()	- request a queue report with current values
  * rpt_queue_report_callback()	- run the queue report w/stored values
- * rpt_run_queue_report() 		- run a queue report right now
- *
- *	Queue reports are normally run from the callback function, and is much more
- *	efficient than rpt_run_queue_report(), which is only used to report manually
  */
 
-struct qrIndexes {			// static data for queue reports
-	uint8_t request;		// set to true to request a report
-	uint8_t buffers_available;
-	uint8_t prev_available;	// used to filter reports
-	INDEX_T qr;				// index for QR element
+struct qrIndexes {				// static data for queue reports
+	uint8_t request;			// set to true to request a report
+	uint8_t buffers_available;	// stored value used by callback
+	uint8_t prev_available;		// used to filter reports
 };
-static struct qrIndexes qr = { 0,0,0 };		// init to zeros
+static struct qrIndexes qr;
 
 void rpt_request_queue_report() 
 { 
@@ -205,7 +199,7 @@ void rpt_request_queue_report()
 
 uint8_t rpt_queue_report_callback()
 {
-	if (qr.request == false) { return (TG_NOOP);}
+	if (qr.request == false) return (TG_NOOP);
 	qr.request = false;
 
 	cmdObj *cmd = cmd_body;
@@ -214,19 +208,6 @@ uint8_t rpt_queue_report_callback()
 	cmd->value = qr.buffers_available;
 	cmd->type = TYPE_INTEGER;
 	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);// report in JSON or inline text mode
-	return (TG_OK);
-}
-
-uint8_t rpt_run_queue_report()
-{
-	cmdObj *cmd = cmd_body;
-
-	if (qr.qr == 0) {					// cache the report index
-		qr.qr = cmd_get_index("","qr");	// this only happens once
-	}
-	cmd_new_obj(cmd);			 		// build the object
-	cmd->index = qr.qr;
-	cmd_get_cmdObj(cmd);
 	return (TG_OK);
 }
 
