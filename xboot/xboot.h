@@ -89,11 +89,11 @@
 #define ENABLE_FUSE_BITS
 
 // ENTER_PIN
-#define ENTER_PORT              PORTC
-#define ENTER_PIN               0
-#define ENTER_PIN_CTRL          token_paste3(ENTER_PORT.PIN, ENTER_PIN, CTRL)
-#define ENTER_PIN_STATE         1
-#define ENTER_PIN_PUEN          0
+#define ENTER_PORT				PORTC
+#define ENTER_PIN				0
+#define ENTER_PIN_CTRL			token_paste3(ENTER_PORT.PIN, ENTER_PIN, CTRL)
+#define ENTER_PIN_STATE			1
+#define ENTER_PIN_PUEN			0
 
 // ENTER_DELAY
 #define ENTER_BLINK_COUNT       3
@@ -119,34 +119,34 @@
 #define WATCHDOG_TIMEOUT        WDT_PER_1KCLK_gc
 
 // LED
-#define LED_PORT                PORTA
-#define LED_PIN                 5
-#define LED_INV                 1
+#define LED_PORT				PORTF
+#define LED_PIN					5
+#define LED_INV					1
 
 // UART
-//#define UART_BAUD_RATE                  38400
-#define UART_BAUD_RATE                  115200
-#define UART_PORT_NAME                  C
-#define UART_NUMBER                     0
+//#define UART_BAUD_RATE		38400
+#define UART_BAUD_RATE			115200
+#define UART_PORT_NAME			C
+#define UART_NUMBER				0
 #if (UART_NUMBER == 0)
-#define UART_TX_PIN                     3
+#define UART_TX_PIN				3
 #else
-#define UART_TX_PIN                     7
+#define UART_TX_PIN				7
 #endif
-#define UART_PORT                       token_paste2(PORT, UART_PORT_NAME)
-#define UART_DEVICE_PORT                token_paste2(UART_PORT_NAME, UART_NUMBER)
-#define UART_DEVICE                     token_paste2(USART, UART_DEVICE_PORT)
-#define UART_DEVICE_RXC_ISR             token_paste3(USART, UART_DEVICE_PORT, _RXC_vect)
-#define UART_DEVICE_DRE_ISR             token_paste3(USART, UART_DEVICE_PORT, _DRE_vect)
-#define UART_DEVICE_TXC_ISR             token_paste3(USART, UART_DEVICE_PORT, _TXC_vect)
+#define UART_PORT				token_paste2(PORT, UART_PORT_NAME)
+#define UART_DEVICE_PORT		token_paste2(UART_PORT_NAME, UART_NUMBER)
+#define UART_DEVICE				token_paste2(USART, UART_DEVICE_PORT)
+#define UART_DEVICE_RXC_ISR		token_paste3(USART, UART_DEVICE_PORT, _RXC_vect)
+#define UART_DEVICE_DRE_ISR		token_paste3(USART, UART_DEVICE_PORT, _DRE_vect)
+#define UART_DEVICE_TXC_ISR		token_paste3(USART, UART_DEVICE_PORT, _TXC_vect)
 
 // FIFO
-#define FIFO_DATA_PORT  PORTC
-#define FIFO_CTL_PORT   PORTD
-#define FIFO_RXF_N_bm   1<<3
-#define FIFO_TXE_N_bm   1<<2
-#define FIFO_RD_N_bm    1<<1
-#define FIFO_WR_N_bm    1<<0
+#define FIFO_DATA_PORT			PORTC
+#define FIFO_CTL_PORT			PORTD
+#define FIFO_RXF_N_bm			1<<3
+#define FIFO_TXE_N_bm			1<<2
+#define FIFO_RD_N_bm			1<<1
+#define FIFO_WR_N_bm			1<<0
 #define FIFO_BIT_REVERSE
 
 #ifdef __AVR_XMEGA__
@@ -157,35 +157,45 @@
 #define UART_BSEL_VALUE         12
 #define UART_BSCALE_VALUE       0
 #define UART_CLK2X              1
+
 #elif (F_CPU == 2000000L) && (UART_BAUD_RATE == 38400)
 #define UART_BSEL_VALUE         22
 #define UART_BSCALE_VALUE       -2
 #define UART_CLK2X              1
+
 #elif (F_CPU == 2000000L) && (UART_BAUD_RATE == 57600)
 #define UART_BSEL_VALUE         26
 #define UART_BSCALE_VALUE       -3
 #define UART_CLK2X              1
+
 #elif (F_CPU == 2000000L) && (UART_BAUD_RATE == 115200)
 #define UART_BSEL_VALUE         19
 #define UART_BSCALE_VALUE       -4
 #define UART_CLK2X              1
+
 // Known good at 32MHz
 #elif (F_CPU == 32000000L) && (UART_BAUD_RATE == 19200)
 #define UART_BSEL_VALUE         103
 #define UART_BSCALE_VALUE       0
 #define UART_CLK2X              0
+
 #elif (F_CPU == 32000000L) && (UART_BAUD_RATE == 38400)
 #define UART_BSEL_VALUE         51
 #define UART_BSCALE_VALUE       0
 #define UART_CLK2X              0
+
 #elif (F_CPU == 32000000L) && (UART_BAUD_RATE == 57600)
 #define UART_BSEL_VALUE         34
 #define UART_BSCALE_VALUE       0
 #define UART_CLK2X              0
+
 #elif (F_CPU == 32000000L) && (UART_BAUD_RATE == 115200)
+//#define UART_BSEL_VALUE         33
+//#define UART_BSCALE_VALUE       -1
 #define UART_BSEL_VALUE         16
 #define UART_BSCALE_VALUE       0
 #define UART_CLK2X              0
+
 // None of the above, so calculate something
 #else
 #warning Not using predefined BAUD rate, possible BAUD rate error!
@@ -194,9 +204,9 @@
 #define UART_BSCALE_VALUE       0
 #define UART_CLK2X              1
 #else
-#define UART_BSEL_VALUE         ((F_CPU) / ((uint32_t)UART_BAUD_RATE * 16) - 1)
-#define UART_BSCALE_VALUE       0
-#define UART_CLK2X              0
+#define UART_BSEL_VALUE			((F_CPU) / ((uint32_t)UART_BAUD_RATE * 16) - 1)
+#define UART_BSCALE_VALUE		0
+#define UART_CLK2X				0
 #endif
 #endif
 
@@ -205,13 +215,13 @@
 // I2C
 #ifdef __AVR_XMEGA__
 
-#define I2C_DEVICE_PORT                 E
-#define I2C_DEVICE                      token_paste2(TWI, I2C_DEVICE_PORT)
-#define I2C_DEVICE_ISR                  token_paste3(TWI, I2C_DEVICE_PORT, _TWIS_vect)
+#define I2C_DEVICE_PORT			E
+#define I2C_DEVICE				token_paste2(TWI, I2C_DEVICE_PORT)
+#define I2C_DEVICE_ISR			token_paste3(TWI, I2C_DEVICE_PORT, _TWIS_vect)
 
-#define I2C_MATCH_ANY                   0
-#define I2C_ADDRESS                     0x10
-#define I2C_GC_ENABLE                   0
+#define I2C_MATCH_ANY			0
+#define I2C_ADDRESS				0x10
+#define I2C_GC_ENABLE			0
 
 #endif // __AVR_XMEGA__
 

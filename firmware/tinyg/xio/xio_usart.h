@@ -195,7 +195,8 @@ void xio_dump_RX_queue_usart(void);
  *
  * 	Serial config settings are here because various modules will be opening devices
  *	The BSEL / BSCALE values provided below assume a 32 Mhz clock
- *	These are carried in the bsel and bscale tables in xmega_io.c
+ *	Assumes CTRLB CLK2X bit (0x04) is not enabled
+ *	These are carried in the bsel and bscale tables in xio_usart.c
  */
 
 // Baud rate configuration

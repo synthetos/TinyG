@@ -71,7 +71,8 @@
 static uint8_t gdev;					// global device # variable (yuk)
 										// used by helper routines
 
-// baud rate lookup tables - indexed by enum xioBAUDRATES (see xio_usart.h)
+// baud rate lookup tables - indexed by enum xioBAUDRATES (line up with values in xio_usart.h)
+// Assumes CTRLB CLK2X bit (0x04) is not enabled
 static const uint8_t bsel[] PROGMEM = { 0, 207, 103, 51, 34, 33, 31, 27, 19, 1, 1 };
 static const uint8_t bscale[] PROGMEM = { 0, 0, 0, 0, 0, (-1<<4), (-2<<4), (-3<<4), (-4<<4), (1<<4), 1 };
 
