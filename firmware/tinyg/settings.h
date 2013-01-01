@@ -55,7 +55,7 @@
 
 // Comm mode and echo levels - CAUTION: may be overridden by machine profiles
 #define COM_IGNORE_CRLF				IGNORE_OFF			// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
-#define COM_EXPAND_CR				true
+#define COM_EXPAND_CR				false
 #define COM_ENABLE_ECHO				false
 #define COM_ENABLE_XON				true
 
