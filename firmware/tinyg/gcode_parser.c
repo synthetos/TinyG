@@ -278,7 +278,10 @@ static uint8_t _parse_gcode_block(char *buf)
 					case 9: SET_MODAL (MODAL_GROUP_M8, flood_coolant, false);
 					case 48: SET_MODAL (MODAL_GROUP_M9, override_enables, true);
 					case 49: SET_MODAL (MODAL_GROUP_M9, override_enables, false);
-					case 50: {
+					case 50: SET_MODAL (MODAL_GROUP_M9, feed_rate_override_enable, true); // conditionally true
+					case 51: SET_MODAL (MODAL_GROUP_M9, spindle_override_enable, true);	  // conditionally true
+
+/*					case 50: {
 						switch (_point(value)) {
 							case 0: SET_MODAL (MODAL_GROUP_M9, feed_rate_override_enable, true);// conditionally true
 							case 1: SET_MODAL (MODAL_GROUP_M9, feed_rate_override_factor, 1.00);// default value
@@ -296,6 +299,7 @@ static uint8_t _parse_gcode_block(char *buf)
 						}
 						break;
 					}
+*/
 					default: status = TG_UNRECOGNIZED_COMMAND;
 				}
 				break;

@@ -2,7 +2,7 @@
  * config.c - configuration handling and persistence
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -158,11 +158,13 @@ static uint8_t _set_ui8(cmdObj *cmd);	// set a uint8_t value
 static uint8_t _set_int(cmdObj *cmd);	// set an integer value
 static uint8_t _set_dbl(cmdObj *cmd);	// set a double value
 static uint8_t _set_dbu(cmdObj *cmd);	// set a double with unit conversion
+
 static uint8_t _get_nul(cmdObj *cmd);	// get null value type
 static uint8_t _get_ui8(cmdObj *cmd);	// get uint8_t value
 static uint8_t _get_int(cmdObj *cmd);	// get uint32_t integer value
 static uint8_t _get_dbl(cmdObj *cmd);	// get double value
 static uint8_t _get_dbu(cmdObj *cmd);	// get double with unit conversion
+
 static void _print_nul(cmdObj *cmd);	// print nothing
 static void _print_str(cmdObj *cmd);	// print a string value
 static void _print_ui8(cmdObj *cmd);	// print unit8_t value w/no units
@@ -170,6 +172,13 @@ static void _print_int(cmdObj *cmd);	// print integer value w/no units
 static void _print_dbl(cmdObj *cmd);	// print double value w/no units
 static void _print_lin(cmdObj *cmd);	// print linear values
 static void _print_rot(cmdObj *cmd);	// print rotary values
+
+//static void _pr_ma_str(cmdObj *cmd);	// generic print functions for motors and axes
+static void _pr_ma_ui8(cmdObj *cmd);
+//static void _pr_ma_int(cmdObj *cmd);
+//static void _pr_ma_dbl(cmdObj *cmd);
+//static void _pr_ma_lin(cmdObj *cmd);
+//static void _pr_ma_rot(cmdObj *cmd);
 
 // helpers for generic functions
 static char *_get_format(const INDEX_T i, char *format);
@@ -208,6 +217,7 @@ static uint8_t _get_rx(cmdObj *cmd);	// get bytes in RX buffer
 
 static uint8_t _get_gc(cmdObj *cmd);	// get current gcode block
 static uint8_t _run_gc(cmdObj *cmd);	// run a gcode block
+static uint8_t _run_home(cmdObj *cmd);	// invoke a homing cycle
 
 static uint8_t _get_line(cmdObj *cmd);	// get runtime line number
 static uint8_t _get_stat(cmdObj *cmd);	// get combined machine state as value and string
@@ -418,15 +428,11 @@ static const char fmt_homz[] PROGMEM = "Z axis homed:%4d\n";
 static const char fmt_homa[] PROGMEM = "A axis homed:%4d\n";
 static const char fmt_homb[] PROGMEM = "B axis homed:%4d\n";
 static const char fmt_homc[] PROGMEM = "C axis homed:%4d\n";
-static const char fmt_g92x[] PROGMEM = "X origin offset:%10.3f%S\n";
-static const char fmt_g92y[] PROGMEM = "Y origin offset:%10.3f%S\n";
-static const char fmt_g92z[] PROGMEM = "Z origin offset:%10.3f%S\n";
-static const char fmt_g92a[] PROGMEM = "A origin offset:%10.3f%S\n";
-static const char fmt_g92b[] PROGMEM = "B origin offset:%10.3f%S\n";
-static const char fmt_g92c[] PROGMEM = "C origin offset:%10.3f%S\n";
 
 // Motor strings
-static const char fmt_1ma[] PROGMEM = "[1ma] m1 map to axis%15d [0=X, 1=Y...]\n";
+static const char fmt_0ma[] PROGMEM = "Motor %s - map to axis%15d (%s%s, 0=X, 1=Y...)\n";
+
+static const char fmt_1ma[] PROGMEM = "[1ma] m1 map to axis%15d (1ma, 0=X, 1=Y...)\n";
 static const char fmt_1sa[] PROGMEM = "[1sa] m1 step angle%20.3f%S\n";
 static const char fmt_1tr[] PROGMEM = "[1tr] m1 travel per revolution%9.3f%S\n";
 static const char fmt_1mi[] PROGMEM = "[1mi] m1 microsteps%16d [1,2,4,8]\n";
@@ -455,6 +461,8 @@ static const char fmt_4po[] PROGMEM = "[4po] m4 polarity%18d [0,1]\n";
 static const char fmt_4pm[] PROGMEM = "[4pm] m4 power management%10d [0,1]\n";
 
 // Axis strings
+static const char fmt_Xam[] PROGMEM = "Axis %s - axis mode%18d %S (%s%s)\n";
+
 static const char fmt_xam[] PROGMEM = "[xam] x axis mode%18d %S\n";
 static const char fmt_xfr[] PROGMEM = "[xfr] x feedrate maximum%15.3f%S/min\n";
 static const char fmt_xvm[] PROGMEM = "[xvm] x velocity maximum%15.3f%S/min\n";
@@ -537,47 +545,68 @@ static const char fmt_p1wph[] PROGMEM = "[p1wph] pwm ccw phase hi%15.3f [0..1]\n
 static const char fmt_p1pof[] PROGMEM = "[p1pof] pwm phase off   %15.3f [0..1]\n";
 
 // Coordinate system offset groups
-static const char fmt_g54x[] PROGMEM = "[g54x] g54 x offset%20.3f%S\n";
-static const char fmt_g54y[] PROGMEM = "[g54y] g54 y offset%20.3f%S\n";
-static const char fmt_g54z[] PROGMEM = "[g54z] g54 z offset%20.3f%S\n";
-static const char fmt_g54a[] PROGMEM = "[g54a] g54 a offset%20.3f%S\n";
-static const char fmt_g54b[] PROGMEM = "[g54b] g54 b offset%20.3f%S\n";
-static const char fmt_g54c[] PROGMEM = "[g54c] g54 c offset%20.3f%S\n";
+static const char fmt_g54x[] PROGMEM = "[g54x] g54 X offset%20.3f%S\n";
+static const char fmt_g54y[] PROGMEM = "[g54y] g54 Y offset%20.3f%S\n";
+static const char fmt_g54z[] PROGMEM = "[g54z] g54 Z offset%20.3f%S\n";
+static const char fmt_g54a[] PROGMEM = "[g54a] g54 A offset%20.3f%S\n";
+static const char fmt_g54b[] PROGMEM = "[g54b] g54 B offset%20.3f%S\n";
+static const char fmt_g54c[] PROGMEM = "[g54c] g54 C offset%20.3f%S\n";
 
-static const char fmt_g55x[] PROGMEM = "[g55x] g55 x offset%20.3f%S\n";
-static const char fmt_g55y[] PROGMEM = "[g55y] g55 y offset%20.3f%S\n";
-static const char fmt_g55z[] PROGMEM = "[g55z] g55 z offset%20.3f%S\n";
-static const char fmt_g55a[] PROGMEM = "[g55a] g55 a offset%20.3f%S\n";
-static const char fmt_g55b[] PROGMEM = "[g55b] g55 b offset%20.3f%S\n";
-static const char fmt_g55c[] PROGMEM = "[g55c] g55 c offset%20.3f%S\n";
+static const char fmt_g55x[] PROGMEM = "[g55x] g55 X offset%20.3f%S\n";
+static const char fmt_g55y[] PROGMEM = "[g55y] g55 Y offset%20.3f%S\n";
+static const char fmt_g55z[] PROGMEM = "[g55z] g55 Z offset%20.3f%S\n";
+static const char fmt_g55a[] PROGMEM = "[g55a] g55 A offset%20.3f%S\n";
+static const char fmt_g55b[] PROGMEM = "[g55b] g55 B offset%20.3f%S\n";
+static const char fmt_g55c[] PROGMEM = "[g55c] g55 C offset%20.3f%S\n";
 
-static const char fmt_g56x[] PROGMEM = "[g56x] g56 x offset%20.3f%S\n";
-static const char fmt_g56y[] PROGMEM = "[g56y] g56 y offset%20.3f%S\n";
-static const char fmt_g56z[] PROGMEM = "[g56z] g56 z offset%20.3f%S\n";
-static const char fmt_g56a[] PROGMEM = "[g56a] g56 a offset%20.3f%S\n";
-static const char fmt_g56b[] PROGMEM = "[g56b] g56 b offset%20.3f%S\n";
-static const char fmt_g56c[] PROGMEM = "[g56c] g56 c offset%20.3f%S\n";
+static const char fmt_g56x[] PROGMEM = "[g56x] g56 X offset%20.3f%S\n";
+static const char fmt_g56y[] PROGMEM = "[g56y] g56 Y offset%20.3f%S\n";
+static const char fmt_g56z[] PROGMEM = "[g56z] g56 Z offset%20.3f%S\n";
+static const char fmt_g56a[] PROGMEM = "[g56a] g56 A offset%20.3f%S\n";
+static const char fmt_g56b[] PROGMEM = "[g56b] g56 B offset%20.3f%S\n";
+static const char fmt_g56c[] PROGMEM = "[g56c] g56 C offset%20.3f%S\n";
 
-static const char fmt_g57x[] PROGMEM = "[g57x] g57 x offset%20.3f%S\n";
-static const char fmt_g57y[] PROGMEM = "[g57y] g57 y offset%20.3f%S\n";
-static const char fmt_g57z[] PROGMEM = "[g57z] g57 z offset%20.3f%S\n";
-static const char fmt_g57a[] PROGMEM = "[g57a] g57 a offset%20.3f%S\n";
-static const char fmt_g57b[] PROGMEM = "[g57b] g57 b offset%20.3f%S\n";
-static const char fmt_g57c[] PROGMEM = "[g57c] g57 c offset%20.3f%S\n";
+static const char fmt_g57x[] PROGMEM = "[g57x] g57 X offset%20.3f%S\n";
+static const char fmt_g57y[] PROGMEM = "[g57y] g57 Y offset%20.3f%S\n";
+static const char fmt_g57z[] PROGMEM = "[g57z] g57 Z offset%20.3f%S\n";
+static const char fmt_g57a[] PROGMEM = "[g57a] g57 A offset%20.3f%S\n";
+static const char fmt_g57b[] PROGMEM = "[g57b] g57 B offset%20.3f%S\n";
+static const char fmt_g57c[] PROGMEM = "[g57c] g57 C offset%20.3f%S\n";
 
-static const char fmt_g58x[] PROGMEM = "[g58x] g58 x offset%20.3f%S\n";
-static const char fmt_g58y[] PROGMEM = "[g58y] g58 y offset%20.3f%S\n";
-static const char fmt_g58z[] PROGMEM = "[g58z] g58 z offset%20.3f%S\n";
-static const char fmt_g58a[] PROGMEM = "[g58a] g58 a offset%20.3f%S\n";
-static const char fmt_g58b[] PROGMEM = "[g58b] g58 b offset%20.3f%S\n";
-static const char fmt_g58c[] PROGMEM = "[g58c] g58 c offset%20.3f%S\n";
+static const char fmt_g58x[] PROGMEM = "[g58x] g58 X offset%20.3f%S\n";
+static const char fmt_g58y[] PROGMEM = "[g58y] g58 Y offset%20.3f%S\n";
+static const char fmt_g58z[] PROGMEM = "[g58z] g58 Z offset%20.3f%S\n";
+static const char fmt_g58a[] PROGMEM = "[g58a] g58 A offset%20.3f%S\n";
+static const char fmt_g58b[] PROGMEM = "[g58b] g58 B offset%20.3f%S\n";
+static const char fmt_g58c[] PROGMEM = "[g58c] g58 C offset%20.3f%S\n";
 
-static const char fmt_g59x[] PROGMEM = "[g59x] g59 x offset%20.3f%S\n";
-static const char fmt_g59y[] PROGMEM = "[g59y] g59 y offset%20.3f%S\n";
-static const char fmt_g59z[] PROGMEM = "[g59z] g59 z offset%20.3f%S\n";
-static const char fmt_g59a[] PROGMEM = "[g59a] g59 a offset%20.3f%S\n";
-static const char fmt_g59b[] PROGMEM = "[g59b] g59 b offset%20.3f%S\n";
-static const char fmt_g59c[] PROGMEM = "[g59c] g59 c offset%20.3f%S\n";
+static const char fmt_g59x[] PROGMEM = "[g59x] g59 X offset%20.3f%S\n";
+static const char fmt_g59y[] PROGMEM = "[g59y] g59 Y offset%20.3f%S\n";
+static const char fmt_g59z[] PROGMEM = "[g59z] g59 Z offset%20.3f%S\n";
+static const char fmt_g59a[] PROGMEM = "[g59a] g59 A offset%20.3f%S\n";
+static const char fmt_g59b[] PROGMEM = "[g59b] g59 B offset%20.3f%S\n";
+static const char fmt_g59c[] PROGMEM = "[g59c] g59 C offset%20.3f%S\n";
+
+static const char fmt_g28x[] PROGMEM = "[g28x] g28 x location%18.3f%S\n";
+static const char fmt_g28y[] PROGMEM = "[g28y] g28 y location%18.3f%S\n";
+static const char fmt_g28z[] PROGMEM = "[g28z] g28 z location%18.3f%S\n";
+static const char fmt_g28a[] PROGMEM = "[g28a] g28 a location%18.3f%S\n";
+static const char fmt_g28b[] PROGMEM = "[g28b] g28 b location%18.3f%S\n";
+static const char fmt_g28c[] PROGMEM = "[g28c] g28 c location%18.3f%S\n";
+
+static const char fmt_g30x[] PROGMEM = "[g30x] g30 x location%18.3f%S\n";
+static const char fmt_g30y[] PROGMEM = "[g30y] g30 y location%18.3f%S\n";
+static const char fmt_g30z[] PROGMEM = "[g30z] g30 z location%18.3f%S\n";
+static const char fmt_g30a[] PROGMEM = "[g30a] g30 a location%18.3f%S\n";
+static const char fmt_g30b[] PROGMEM = "[g30b] g30 b location%18.3f%S\n";
+static const char fmt_g30c[] PROGMEM = "[g30c] g30 c location%18.3f%S\n";
+
+static const char fmt_g92x[] PROGMEM = "[g92x] g92 X offset%20.3f%S\n";
+static const char fmt_g92y[] PROGMEM = "[g92y] g92 Y offset%20.3f%S\n";
+static const char fmt_g92z[] PROGMEM = "[g92z] g92 Z offset%20.3f%S\n";
+static const char fmt_g92a[] PROGMEM = "[g92a] g92 A offset%20.3f%S\n";
+static const char fmt_g92b[] PROGMEM = "[g92b] g92 B offset%20.3f%S\n";
+static const char fmt_g92c[] PROGMEM = "[g92c] g92 C offset%20.3f%S\n";
 
 // Gcode model power-on reset default values
 static const char fmt_gpl[] PROGMEM = "[gpl] default gcode plane%10d [0=G17,1=G18,2=G19]\n";
@@ -656,7 +685,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "mpo","mpoa",_f00,fmt_mpoa,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// A machine position
 	{ "mpo","mpob",_f00,fmt_mpob,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// B machine position
 	{ "mpo","mpoc",_f00,fmt_mpoc,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// C machine position
-	{ "hom","home",_f00,fmt_home,_print_str, _get_home,_set_nul,(double *)&tg.null, 0 },		// homing state
+	{ "hom","home",_f00,fmt_home,_print_str, _get_home,_run_home,(double *)&tg.null, 0 },		// homing state, invoke homing cycle
 	{ "hom","homx",_f00,fmt_homx,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[X], false },// X homed - Homing status group
 	{ "hom","homy",_f00,fmt_homy,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[Y], false },// Y homed
 	{ "hom","homz",_f00,fmt_homz,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[Z], false },// Z homed
@@ -676,7 +705,8 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "", "h",   _f00, fmt_nul, _print_nul, print_config_help,_set_nul, (double *)&tg.null,0 },	// alias for "help"
 
 	// Motor parameters
-	{ "1","1ma",_fip, fmt_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
+	{ "1","1ma",_fip, fmt_0ma, _pr_ma_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
+//	{ "1","1ma",_fip, fmt_1ma, _print_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ "1","1sa",_fip, fmt_1sa, _print_rot, _get_dbl ,_set_sa, (double *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
 	{ "1","1tr",_fip, fmt_1tr, _print_lin, _get_dbu ,_set_tr, (double *)&cfg.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
 	{ "1","1mi",_fip, fmt_1mi, _print_ui8, _get_ui8, _set_mi, (double *)&cfg.m[MOTOR_1].microsteps,	M1_MICROSTEPS },
@@ -828,6 +858,20 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "g59","g59a",_fip, fmt_g59a, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G59][A],	G59_A_OFFSET },
 	{ "g59","g59b",_fip, fmt_g59b, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G59][B],	G59_B_OFFSET },
 	{ "g59","g59c",_fip, fmt_g59c, _print_lin, _get_dbu, _set_dbu,(double *)&cfg.offset[G59][C],	G59_C_OFFSET },
+
+	{ "g28","g28x",_fin, fmt_g28x,_print_lin, _get_dbu, _set_nul, (double *)&gm.g28_position[X], 0 },// g28 handled differently
+	{ "g28","g28y",_fin, fmt_g28y,_print_lin, _get_dbu, _set_nul, (double *)&gm.g28_position[Y], 0 },
+	{ "g28","g28z",_fin, fmt_g28z,_print_lin, _get_dbu, _set_nul, (double *)&gm.g28_position[Z], 0 },
+	{ "g28","g28a",_fin, fmt_g28a,_print_rot, _get_dbl, _set_nul, (double *)&gm.g28_position[A], 0 },
+	{ "g28","g28b",_fin, fmt_g28b,_print_rot, _get_dbl, _set_nul, (double *)&gm.g28_position[B], 0 },
+	{ "g28","g28c",_fin, fmt_g28c,_print_rot, _get_dbl, _set_nul, (double *)&gm.g28_position[C], 0 },
+
+	{ "g30","g30x",_fin, fmt_g30x,_print_lin, _get_dbu, _set_nul, (double *)&gm.g30_position[X], 0 },// g30 handled differently
+	{ "g30","g30y",_fin, fmt_g30y,_print_lin, _get_dbu, _set_nul, (double *)&gm.g30_position[Y], 0 },
+	{ "g30","g30z",_fin, fmt_g30z,_print_lin, _get_dbu, _set_nul, (double *)&gm.g30_position[Z], 0 },
+	{ "g30","g30a",_fin, fmt_g30a,_print_rot, _get_dbl, _set_nul, (double *)&gm.g30_position[A], 0 },
+	{ "g30","g30b",_fin, fmt_g30b,_print_rot, _get_dbl, _set_nul, (double *)&gm.g30_position[B], 0 },
+	{ "g30","g30c",_fin, fmt_g30c,_print_rot, _get_dbl, _set_nul, (double *)&gm.g30_position[C], 0 },
 
 	{ "g92","g92x",_fin, fmt_g92x,_print_lin, _get_dbu, _set_nul, (double *)&gm.origin_offset[X], 0 },// G92 handled differently
 	{ "g92","g92y",_fin, fmt_g92y,_print_lin, _get_dbu, _set_nul, (double *)&gm.origin_offset[Y], 0 },
@@ -1148,9 +1192,10 @@ static void _print_pos(cmdObj *cmd)
 	fprintf(stderr, _get_format(cmd->index,format), cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
 }
 
-/**** GCODE FUNCTIONS ****************************************/
-/* _get_gc() - get gcode block
- * _run_gc() - launch the gcode parser on a block of gcode
+/**** GCODE AND RELATED FUNCTIONS ****************************************/
+/* _get_gc()	- get gcode block
+ * _run_gc()	- launch the gcode parser on a block of gcode
+ * _run_home()	- invoke a homing cycle
  */
 
 static uint8_t _get_gc(cmdObj *cmd)
@@ -1165,6 +1210,16 @@ static uint8_t _run_gc(cmdObj *cmd)
 	strncpy(tg.in_buf, cmd->string, INPUT_BUFFER_LEN);
 	uint8_t status = gc_gcode_parser(tg.in_buf);
 	return (status);
+}
+
+static uint8_t _run_home(cmdObj *cmd)
+{
+	if (cmd->value == true) {
+		cm_homing_cycle_start();
+	} else {
+		
+	}
+	return (TG_OK);
 }
 
 /**** AXIS AND MOTOR FUNCTIONS ****
@@ -1544,22 +1599,7 @@ static uint8_t _text_parser(char *str, cmdObj *cmd)
  * _set_int() - set value as integer w/o unit conversion
  * _set_dbl() - set value as double w/o unit conversion
  * _set_dbu() - set value as double w/unit conversion
- *
- * _get_nul() - get nothing (returns TG_NOOP)
- * _get_ui8() - get value as uint8_t w/o unit conversion
- * _get_int() - get value as integer w/o unit conversion
- * _get_dbl() - get value as double w/o unit conversion
- * _get_dbu() - get value as double w/unit conversion
- *
- * _print_nul() - print nothing
- * _print_str() - print string value
- * _print_ui8() - print uint8_t value w/no units or unit conversion
- * _print_int() - print integer value w/no units or unit conversion
- * _print_dbl() - print double value w/no units or unit conversion
- * _print_lin() - print linear value with units and in/mm unit conversion
- * _print_rot() - print rotary value with units
  */
-
 static uint8_t _set_nul(cmdObj *cmd) { return (TG_NOOP);}
 
 static uint8_t _set_ui8(cmdObj *cmd)
@@ -1594,6 +1634,12 @@ static uint8_t _set_dbu(cmdObj *cmd)
 	return(TG_OK);
 }
 
+/* _get_nul() - get nothing (returns TG_NOOP)
+ * _get_ui8() - get value as uint8_t w/o unit conversion
+ * _get_int() - get value as integer w/o unit conversion
+ * _get_dbl() - get value as double w/o unit conversion
+ * _get_dbu() - get value as double w/unit conversion
+ */
 static uint8_t _get_nul(cmdObj *cmd) 
 { 
 	cmd->type = TYPE_NULL;
@@ -1630,6 +1676,16 @@ static uint8_t _get_dbu(cmdObj *cmd)
 	return (TG_OK);
 }
 
+/* _print_nul() - print nothing
+ * _print_str() - print string value
+ * _print_ui8() - print uint8_t value w/no units or unit conversion
+ * _print_int() - print integer value w/no units or unit conversion
+ * _print_dbl() - print double value w/no units or unit conversion
+ * _print_lin() - print linear value with units and in/mm unit conversion
+ * _print_rot() - print rotary value with units
+ *
+ * _pr_ma_ui8() - print motor OR AXIS uint8_t value w/no units or unit conversion
+ */
 static void _print_nul(cmdObj *cmd) {}
 
 static void _print_str(cmdObj *cmd)
@@ -1637,6 +1693,13 @@ static void _print_str(cmdObj *cmd)
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, _get_format(cmd->index, format), cmd->string);
+}
+
+static void _pr_ma_ui8(cmdObj *cmd)
+{
+	cmd_get(cmd);
+	char format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, _get_format(cmd->index, format), cmd->group, (uint8_t)cmd->value, cmd->group, cmd->token);
 }
 
 static void _print_ui8(cmdObj *cmd)
@@ -1677,8 +1740,8 @@ static void _print_rot(cmdObj *cmd)
 /***************************************************************************** 
  * Accessors - get various data from an object given the index
  * _get_format() 	- return format string for an index
- * _get_motor()		- return the axis an index applies to or -1 if na
- * _get_axis()		- return axis for a group variable or -1 if na - e.g. xvm
+ * _get_motor()		- return the motor number as an index or -1 if na
+ * _get_axis()		- return the axis as an index or -1 if na 
  * _get_pos_axis()	- return axis number for pos values or -1 if none - e.g. posx
  */
 
@@ -1700,7 +1763,6 @@ static int8_t _get_motor(const INDEX_T i)
 	}
 	return (ptr - motors);
 }
-
 /*
 static int8_t _get_axis(const INDEX_T i)
 {
@@ -1713,7 +1775,6 @@ static int8_t _get_axis(const INDEX_T i)
 	return (ptr - axes);
 }
 */
-
 static int8_t _get_pos_axis(const INDEX_T i)
 {
 	char *ptr;
@@ -1921,13 +1982,13 @@ static uint8_t _set_grp(cmdObj *cmd)
  * Uber groups are groups of groups organized for convenience:
  *	- motors	- group of all motor groups
  *	- axes		- group of all axis groups
- *	- offsets	- group of all offset groups
+ *	- offsets	- group of all offsets and stored positions
  *	- all		- group of all groups
  *
  * _do_group_list()	- get and print all groups in the list (iteration)
  * _do_motors()		- get and print motor uber group 1-4
  * _do_axes()		- get and print axis uber group XYZABC
- * _do_offsets()	- get and print offset uber group G54-G59
+ * _do_offsets()	- get and print offset uber group G54-G59, G28, G30, G92
  * _do_all()		- get and print all groups uber group
  */
 
@@ -1960,7 +2021,7 @@ static uint8_t _do_axes(cmdObj *cmd)	// print parameters for all axis groups
 
 static uint8_t _do_offsets(cmdObj *cmd)	// print offset parameters for G54-G59,G92
 {
-	char list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59",""}; // must have a terminating element
+	char list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g28","g30","g92",""}; // must have a terminating element
 	_do_group_list(cmd, list);
 	return (TG_COMPLETE);
 }

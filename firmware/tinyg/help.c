@@ -45,15 +45,17 @@ uint8_t print_general_help()
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG Help ####\n"));
 fprintf_P(stderr, PSTR("\
 These commands are active from the command line:\n\
- ^x     Reset (control x) - software reset\n\
-  ?     Machine position and gcode model state\n\
-  $     Show and set configuration settings\n\
-  !     Feedhold - stop motion without losing position\n\
-  ~     Cycle Start - restart from feedhold\n\
-  h     Show this help screen\n\
-  $h    Show configuration help screen\n\
-  $test List self-tests\n\
-  $defaults=1 Restore all settings to \"factory\" defaults\n\
+ ^x             Reset (control x) - software reset\n\
+  ?             Machine position and gcode model state\n\
+  $             Show and set configuration settings\n\
+  !             Feedhold - stop motion without losing position\n\
+  ~             Cycle Start - restart from feedhold\n\
+  h             Show this help screen\n\
+  $h            Show configuration help screen\n\
+  $test         List self-tests\n\
+  $test-N       Run self-test N\n\
+  $home=1       Run a homing cycle\n\
+  $defaults=1   Restore all settings to \"factory\" defaults\n\
 "));
 _status_report_advisory();
 _postscript();

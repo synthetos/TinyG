@@ -95,6 +95,7 @@ struct GCodeModel {						// Gcode model- meaning depends on context
 	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
+	uint8_t l_word;						// L word - used by G10s
 
 	uint8_t select_plane;				// G17,G18,G19 - values to set plane to
 	uint8_t plane_axis_0;		 		// actual axes of the selected plane
@@ -146,6 +147,7 @@ struct GCodeInput {						// Gcode model- meaning depends on context
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
 	uint8_t override_enables;			// enables for feed and spoindle (GN/GF only)
+	uint8_t l_word;						// L word - used by G10s
 
 	uint8_t select_plane;				// G17,G18,G19 - values to set plane to
 	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
