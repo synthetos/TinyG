@@ -42,8 +42,8 @@
 void xio_init_pgm()
 {
 	// Program memory file device setup
-	xio_init_dev(XIO_DEV_PGM, xio_cntl_pgm, xio_putc_pgm, xio_getc_pgm, xio_gets_pgm);
-	xio_init_file(XIO_DEV_PGM, xio_open_pgm, PGM_INIT_bm);
+	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_cntl_pgm, xio_gets_pgm, xio_putc_pgm, xio_getc_pgm);
+	xio_init_file(XIO_DEV_PGM, PGM_INIT_bm);
 }
 
 /*	
@@ -53,7 +53,7 @@ void xio_init_pgm()
  *  Returns a pointer to the stdio FILE struct or -1 on error
  */
 
-FILE * xio_open_pgm(const char *addr)
+FILE * xio_open_pgm(const uint8_t dev, const char *addr)
 {
 	PGM.flags &= XIO_FLAG_RESET_gm;					// reset flag signaling bits
 	PGM.signal = 0;									// reset signal
@@ -68,7 +68,7 @@ FILE * xio_open_pgm(const char *addr)
  *	xio_cntl_pgm() - check and set control flags for device
  */
 
-int xio_cntl_pgm(const uint32_t control)
+int xio_cntl_pgm(const uint8_t dev, const uint32_t control)
 {
 	xio_cntl(XIO_DEV_PGM, control);
 	return (XIO_OK);						// for now it's always OK
@@ -148,7 +148,7 @@ int xio_getc_pgm(FILE *stream)
  *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
  */
 
-int xio_gets_pgm(char *buf, const int size)
+int xio_gets_pgm(const uint8_t dev, char *buf, const int size)
 {
 	if ((PGMf.filebase_P) == 0) {		// return error if no file is open
 		return (XIO_FILE_NOT_OPEN);

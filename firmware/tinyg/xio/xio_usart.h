@@ -25,13 +25,35 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+/*
+ * Rob: The usart.h and .c files can be considered the parent class for the 
+ * USB and RS485 devices which are derived from them. The usart.h file acts 
+ * as the header file for all three classes: usart.c, usb.c and rs485.c
+ */
 
 #ifndef xio_usart_h
 #define xio_usart_h
 
-/* 
- * USART DEVICE CONSTANTS AND PARAMETERS
- */
+/******************************************************************************
+ * USART DEVICE CONFIGS (applied during device-specific inits)
+ ******************************************************************************/
+
+//**** General ****
+#define USB ds[XIO_DEV_USB]			// device struct accessor
+#define USBu us[XIO_DEV_USB - XIO_DEV_USART_OFFSET]	// usart extended struct accessor
+
+#define USART_TX_REGISTER_READY_bm USART_DREIF_bm
+#define USART_RX_DATA_READY_bm USART_RXCIF_bm
+
+//**** Serial IO Interrupt levels ****
+#define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc)
+#define CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
+#define CTRLA_RXON_TXOFF_TXCON (USART_RXCINTLVL_MED_gc | USART_TXCINTLVL_LO_gc)
+#define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_LO_gc | USART_TXCINTLVL_LO_gc)
+#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_LO_gc)
+// alternate: map TX to MED interrupt levels
+//#define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_MED_gc | USART_TXCINTLVL_MED_gc)
+//#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_MED_gc)
 
 // Buffer sizing
 #define BUFFER_T uint_fast8_t				// fast, but limits buffer to 255 char max
@@ -52,132 +74,10 @@
 #define XOFF_TX_HI_WATER_MARK (TX_BUFFER_SIZE * 0.9)	// % to issue XOFF
 #define XOFF_TX_LO_WATER_MARK (TX_BUFFER_SIZE * 0.05)	// % to issue XON
 
-/* 
- * USART extended control structure 
- * Note: As defined this struct won't do buffers larger than 256 chars - 
- *	     or a max of 254 characters usable
- */
-struct xioUSART {
-	uint8_t fc_char;			 			// flow control character to send
-	volatile uint8_t fc_state;				// flow control state
-	volatile BUFFER_T rx_buf_tail;			// RX buffer read index
-	volatile BUFFER_T rx_buf_head;			// RX buffer write index (written by ISR)
-	volatile BUFFER_T tx_buf_tail;			// TX buffer read index  (written by ISR)
-	volatile BUFFER_T tx_buf_head;			// TX buffer write index
-
-	struct USART_struct *usart;				// USART structure
-	struct PORT_struct *port;				// corresponding port
-
-	volatile char rx_buf[RX_BUFFER_SIZE];  // (written by ISR)
-	volatile char tx_buf[TX_BUFFER_SIZE];
-};
-
-// handy helpers
-BUFFER_T xio_get_rx_bufcount_usart(const struct xioUSART *dx);
-BUFFER_T xio_get_tx_bufcount_usart(const struct xioUSART *dx);
-BUFFER_T xio_get_usb_rx_free(void);
-
-/*
- * USART DEVICE FUNCTION PROTOTYPES AND ALIASES
- */
-
-//#define xio_gets_usb(buf, siz) xio_gets_usart(XIO_DEV_USB, buf, siz)
-
-// Common functions (common to all USART devices)
-void xio_init_usart(const uint8_t dev, 
-//					const uint8_t index,
-					const uint32_t control,
-					const struct USART_struct *usart_addr,
-					const struct PORT_struct *port_addr,
-					const uint8_t dirclr, 
-					const uint8_t dirset, 
-					const uint8_t outclr, 
-					const uint8_t outset);
-
-void xio_set_baud_usart(const uint8_t dev, const uint8_t baud);
-void xio_xoff_usart(const uint8_t dev);
-void xio_xon_usart(const uint8_t dev);
-void xio_deassert_rts_usart(const uint8_t dev);
-void xio_assert_rts_usart(const uint8_t dev);
-int xio_putc_usart(const uint8_t dev, const char c, FILE *stream);
-int xio_getc_usart(const uint8_t dev, FILE *stream);
-int xio_gets_usart(const uint8_t dev, char *buf, const int size);
-void xio_queue_RX_char_usart(const uint8_t dev, const char c);
-void xio_queue_RX_string_usart(const uint8_t dev, const char *buf);
-
-
-// RS485 specific functions
-void xio_init_rs485(void);
-int xio_cntl_rs485(const uint32_t control);		// set control flags w/validation
-int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
-int xio_getc_rs485(FILE *stream);				// stdio compatible get character
-int xio_gets_rs485(char *buf, const int size);	// non-blocking read line function
-void xio_queue_RX_char_rs485(const char c);		// simulate char rcvd into RX buffer
-void xio_queue_RX_string_rs485(const char *buf);// simulate rec'ving a whole string
-
-// USB specific functions
-void xio_init_usb(void);
-int xio_cntl_usb(const uint32_t control);		// set control flags w/validation
-int xio_putc_usb(const char c, FILE *stream);	// stdio compatible put character
-int xio_getc_usb(FILE *stream);					// stdio compatible get character
-int xio_gets_usb(char *buf, const int size);	// non-blocking read line function
-void xio_queue_RX_char_usb(const char c);		// simulate char rcvd into RX buffer
-void xio_queue_RX_string_usb(const char *buf);	// simulate receving a whole string
-void xio_dump_RX_queue_usart(void);
-
-// TTL usart specific functions (Arduino)
-
-/* 
- * USART DEVICE CONFIGS (applied during device-specific inits)
- *
- *	NOTE: XIO_BLOCK / XIO_NOBLOCK affects reads only (see xio.h)
- */
-
-// general USART defines
-
-#define USB ds[XIO_DEV_USB]			// device struct accessor
-#define USBu us[XIO_DEV_USB - XIO_DEV_USART_OFFSET]	// usart extended struct accessor
-
-#define USART_TX_REGISTER_READY_bm USART_DREIF_bm
-#define USART_RX_DATA_READY_bm USART_RXCIF_bm
-
-//**** Serial IO Interrupt levels are mapped to MED level here ****
-/*
-#define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_MED_gc)
-#define CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
-#define CTRLA_RXON_TXOFF_TXCON (USART_RXCINTLVL_MED_gc | USART_TXCINTLVL_MED_gc)
-#define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_MED_gc | USART_TXCINTLVL_MED_gc)
-#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_MED_gc)
-*/
-// **** Same as above, but with TX in LO interrupt ****
-
-#define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc)
-#define CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
-#define CTRLA_RXON_TXOFF_TXCON (USART_RXCINTLVL_MED_gc | USART_TXCINTLVL_LO_gc)
-#define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_LO_gc | USART_TXCINTLVL_LO_gc)
-#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_LO_gc)
-
-// **** RS485 device configuration (no echo or CRLF) ****
-#define RS485_INIT_bm (XIO_RDWR | XIO_NOBLOCK | XIO_NOECHO | XIO_LINEMODE | XIO_BAUD_115200)
-
-#define RS485_USART USARTC1					// RS485 usart
-#define RS485_RX_ISR_vect USARTC1_RXC_vect 	// (RX) reception complete IRQ
-#define RS485_TX_ISR_vect USARTC1_DRE_vect	// (TX) data register empty IRQ
-#define RS485_TXC_ISR_vect USARTC1_TXC_vect	// (TX) transmission complete IRQ
-
-#define RS485_PORT PORTC					// port where USART is located
-#define RS485_RE_bm (1<<4)					// RE (Receive Enable) pin - active lo
-#define RS485_DE_bm (1<<5)					// DE (Data Enable)(TX) - active hi
-#define RS485_RX_bm (1<<6)					// RX pin
-#define RS485_TX_bm (1<<7)					// TX pin
-
-#define RS485_DIRCLR_bm (RS485_RX_bm)							 // input bits
-#define RS485_DIRSET_bm (RS485_RE_bm | RS485_DE_bm | RS485_TX_bm)// output bits
-
-#define RS485_OUTCLR_bm (RS485_RE_bm| RS485_DE_bm)	// outputs init'd to 0
-#define RS485_OUTSET_bm (RS485_TX_bm)				// outputs init'd to 1
 
 //**** USB device configuration ****
+//NOTE: XIO_BLOCK / XIO_NOBLOCK affects reads only. Writes always block. (see xio.h)
+
 #define USB_INIT_bm (XIO_RDWR | XIO_BLOCK |  XIO_ECHO | XIO_XOFF | XIO_LINEMODE | XIO_BAUD_115200)
 
 #define USB_USART USARTC0					// USB usart
@@ -197,20 +97,26 @@ void xio_dump_RX_queue_usart(void);
 #define USB_OUTCLR_bm (0)						// outputs init'd to 0
 #define USB_OUTSET_bm (USB_RTS_bm | USB_TX_bm)	// outputs init'd to 1
 
-//**** TTL device (Arduino) ****  (not used. Arduino piggybacks, USB serial inputs)
-#define TTL_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE | XIO_BAUD_115200)
 
-#define TTL_USART USARTC0					// Arduino usart
-#define TTL_PORT PORTC						// port where the USART is located
-#define TTL_CTS_bm (1<<0)					// CTS bit mask
-#define TTL_RTS_bm (1<<1)					// RTS bit mask
-#define TTL_RX_bm (1<<2)					// RX pin bit mask
-#define TTL_TX_bm (1<<3)					// TX pin bit mask
+//**** RS485 device configuration (no echo or CRLF) ****
+#define RS485_INIT_bm (XIO_RDWR | XIO_NOBLOCK | XIO_NOECHO | XIO_LINEMODE | XIO_BAUD_115200)
 
-#define TTL_DIRCLR_bm (USB_RX_bm)
-#define TTL_DIRSET_bm (USB_TX_bm)
-#define TTL_OUTCLR_bm (0)
-#define TTL_OUTSET_bm (USB_TX_bm)
+#define RS485_USART USARTC1					// RS485 usart
+#define RS485_RX_ISR_vect USARTC1_RXC_vect 	// (RX) reception complete IRQ
+#define RS485_TX_ISR_vect USARTC1_DRE_vect	// (TX) data register empty IRQ
+#define RS485_TXC_ISR_vect USARTC1_TXC_vect	// (TX) transmission complete IRQ
+
+#define RS485_PORT PORTC					// port where USART is located
+#define RS485_RE_bm (1<<4)					// RE (Receive Enable) pin - active lo
+#define RS485_DE_bm (1<<5)					// DE (Data Enable)(TX) - active hi
+#define RS485_RX_bm (1<<6)					// RX pin
+#define RS485_TX_bm (1<<7)					// TX pin
+
+#define RS485_DIRCLR_bm (RS485_RX_bm)							 // input bits
+#define RS485_DIRSET_bm (RS485_RE_bm | RS485_DE_bm | RS485_TX_bm)// output bits
+
+#define RS485_OUTCLR_bm (RS485_RE_bm| RS485_DE_bm)	// outputs init'd to 0
+#define RS485_OUTSET_bm (RS485_TX_bm)				// outputs init'd to 1
 
 /* 
  * Serial Configuration Settings
@@ -243,5 +149,80 @@ enum xioFCState {
 		FC_IN_XON,					// normal, un-flow-controlled state
 		FC_IN_XOFF					// flow controlled state
 };
+
+/******************************************************************************
+ * STRUCTURES 
+ ******************************************************************************/
+/* 
+ * USART extended control structure 
+ * Note: As defined this struct won't do buffers larger than 256 chars - 
+ *	     or a max of 254 characters usable
+ */
+struct xioUSART {
+	uint8_t fc_char;			 			// flow control character to send
+	volatile uint8_t fc_state;				// flow control state
+	volatile BUFFER_T rx_buf_tail;			// RX buffer read index
+	volatile BUFFER_T rx_buf_head;			// RX buffer write index (written by ISR)
+	volatile BUFFER_T tx_buf_tail;			// TX buffer read index  (written by ISR)
+	volatile BUFFER_T tx_buf_head;			// TX buffer write index
+
+	struct USART_struct *usart;				// USART structure
+	struct PORT_struct *port;				// corresponding port
+
+	volatile char rx_buf[RX_BUFFER_SIZE];  // (written by ISR)
+	volatile char tx_buf[TX_BUFFER_SIZE];
+};
+
+/******************************************************************************
+ * USART DEVICE FUNCTION PROTOTYPES AND ALIASES
+ ******************************************************************************/
+
+//#define xio_gets_usb(buf, siz) xio_gets_usart(XIO_DEV_USB, buf, siz)
+
+// Common functions (common to all USART devices)
+void xio_init_usart(const uint8_t dev, 
+					const uint32_t control,
+					const struct USART_struct *usart_addr,
+					const struct PORT_struct *port_addr,
+					const uint8_t dirclr, 
+					const uint8_t dirset, 
+					const uint8_t outclr, 
+					const uint8_t outset);
+
+void xio_set_baud_usart(const uint8_t dev, const uint8_t baud);
+void xio_xoff_usart(const uint8_t dev);
+void xio_xon_usart(const uint8_t dev);
+void xio_deassert_rts_usart(const uint8_t dev);
+void xio_assert_rts_usart(const uint8_t dev);
+int xio_putc_usart(const uint8_t dev, const char c, FILE *stream);
+int xio_getc_usart(const uint8_t dev, FILE *stream);
+int xio_gets_usart(const uint8_t dev, char *buf, const int size);
+void xio_queue_RX_char_usart(const uint8_t dev, const char c);
+void xio_queue_RX_string_usart(const uint8_t dev, const char *buf);
+
+// handy helpers
+BUFFER_T xio_get_rx_bufcount_usart(const struct xioUSART *dx);
+BUFFER_T xio_get_tx_bufcount_usart(const struct xioUSART *dx);
+BUFFER_T xio_get_usb_rx_free(void);
+
+// RS485 specific functions
+void xio_init_rs485(void);
+int xio_cntl_rs485(const uint8_t dev, const uint32_t control);		// set control flags w/validation
+int xio_gets_rs485(const uint8_t dev, char *buf, const int size);	// non-blocking read line function
+int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
+int xio_getc_rs485(FILE *stream);				// stdio compatible get character
+void xio_queue_RX_char_rs485(const char c);		// simulate char rcvd into RX buffer
+void xio_queue_RX_string_rs485(const char *buf);// simulate rec'ving a whole string
+
+// USB specific functions
+void xio_init_usb(void);
+int xio_cntl_usb(const uint8_t dev, const uint32_t control);	// set control flags w/validation
+int xio_gets_usb(const uint8_t dev, char *buf, const int size);	// non-blocking read line function
+int xio_putc_usb(const char c, FILE *stream);	// stdio compatible put character
+int xio_getc_usb(FILE *stream);					// stdio compatible get character
+void xio_queue_RX_char_usb(const char c);		// simulate char rcvd into RX buffer
+void xio_queue_RX_string_usb(const char *buf);	// simulate receving a whole string
+void xio_dump_RX_queue_usart(void);
+
 
 #endif

@@ -105,17 +105,15 @@ struct xioFILE {
  * FILE DEVICE FUNCTION PROTOTYPES
  */
 // Generic file device functions
-void xio_init_file(	const uint8_t dev, 
-					FILE *(*x_open)(const char *addr), 	// device open routine
-					const uint32_t control);
+void xio_init_file(const uint8_t dev, const uint32_t control);
 
 // PGM functions
 void xio_init_pgm(void);
-FILE * xio_open_pgm(const char * addr);			// open memory string read only
-int xio_cntl_pgm(const uint32_t control);		// validate & set dev flags
-int xio_putc_pgm(const char c, FILE *stream);	// always returns ERROR
-int xio_getc_pgm(FILE *stream);					// get a character
-int xio_gets_pgm(char *buf, const int size);	// read string from program memory
+FILE * xio_open_pgm(const uint8_t dev, const char * addr);		// open memory string read only
+int xio_cntl_pgm(const uint8_t dev, const uint32_t control);	// validate & set dev flags
+int xio_gets_pgm(const uint8_t dev, char *buf, const int size);	// read string from program memory
+int xio_putc_pgm(const char c, FILE *stream);					// always returns ERROR
+int xio_getc_pgm(FILE *stream);									// get a character from PROGMEM
 
 // EEPROM functions
 /*

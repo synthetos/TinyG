@@ -45,28 +45,28 @@
 void xio_init_spi(void)
 {
 	// setup SPI1
-	xio_init_dev(XIO_DEV_SPI1, xio_cntl_spi, xio_putc_spi, xio_getc_spi, xio_gets_spi);
-	xio_init_spi_dev(XIO_DEV_SPI1, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
+	xio_init_dev(XIO_DEV_SPI1, xio_open, xio_cntl_spi, xio_gets_spi, xio_putc_spi, xio_getc_spi);
+	xio_init_spi_dev(XIO_DEV_SPI1, SPI_INIT_bm, 0, &SPI_PORT, SPI_INBITS_bm, SPI_OUTBITS_bm, SPI_OUTCLR_bm, SPI_OUTSET_bm);
 }
 
 /*
  *	xio_init_spi()
  */
 
-void xio_init_spi_dev(const uint8_t dev, 				// index into device array (ds)
+void xio_init_spi_dev(const uint8_t dev, 			// index into device array (ds)
 					const uint32_t control,			// control bits
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,
-					const uint8_t dirclr, 
-					const uint8_t dirset, 
+					const uint8_t inbits, 
+					const uint8_t outbits, 
 					const uint8_t outclr, 
 					const uint8_t outset) 
 {
-	uint8_t channel = (dev - XIO_DEV_SPI1);			// remove the offset of any other devices
-
+	uint8_t channel = (dev - XIO_DEV_SPI_OFFSET);	// get the index into the SPI struct array
+	
 	// do all the bindings first (and in this order)
 	struct xioDEVICE *d = &ds[dev];					// setup device struct pointer
-	d->x = &sp[channel-1];							// bind SPI struct to device
+	d->x = &sp[channel];							// bind SPI struct to device
 	struct xioSPI *dx = (struct xioSPI *)d->x;		// setup SPI struct pointer
 	dx->index = channel-1;							// used as fdev.udata
 	dx->usart = (struct USART_struct *)usart_addr;	// bind USART used for SPI 
@@ -89,8 +89,8 @@ void xio_init_spi_dev(const uint8_t dev, 				// index into device array (ds)
 //	dx->usart->CTRLB = (USART_TXEN_bm | USART_RXEN_bm);// enable tx and rx
 //	dx->usart->CTRLA = CTRLA_RXON_TXON;	// enable tx and rx IRQs
 
-	dx->port->DIRCLR = dirclr;
-	dx->port->DIRSET = dirset;
+	dx->port->DIRCLR = inbits;		// setup input bits on port
+	dx->port->DIRSET = outbits;		// setup output bits on port
 	dx->port->OUTCLR = outclr;
 	dx->port->OUTSET = outset;
 
@@ -100,10 +100,15 @@ void xio_init_spi_dev(const uint8_t dev, 				// index into device array (ds)
 
 FILE * xio_open_spi(uint8_t dev)
 {
-	return(SPI.fdev);
+	return(SPI1.fdev);
 }
 
-int xio_cntl_spi(const uint32_t control)
+int xio_cntl_spi(const uint8_t dev, const uint32_t control)
+{
+	return (NUL);
+}
+
+int xio_gets_spi(const uint8_t dev, char *buf, const int size)
 {
 	return (NUL);
 }
@@ -119,9 +124,6 @@ int xio_getc_spi(FILE *stream)
 	return (NUL);
 }
 
-int xio_gets_spi(char *buf, const int size)
-{
-	return (NUL);
-}
+
 
 

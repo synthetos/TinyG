@@ -43,15 +43,15 @@
 #include "../gpio.h"
 
 /* USB device wrappers for generic USART routines */
-int xio_cntl_usb(const uint32_t control) { return(xio_cntl(XIO_DEV_USB, control)); } // SEE NOTE
+int xio_cntl_usb(const uint8_t dev, const uint32_t control) { return(xio_cntl(XIO_DEV_USB, control)); } // SEE NOTE
+int xio_gets_usb(const uint8_t dev, char *buf, const int size) { return(xio_gets_usart(XIO_DEV_USB, buf, size)); }
 int xio_getc_usb(FILE *stream) { return(xio_getc_usart(XIO_DEV_USB, stream)); }
-int xio_gets_usb(char *buf, const int size) { return(xio_gets_usart(XIO_DEV_USB, buf, size)); }
 void xio_queue_RX_char_usb(const char c) { xio_queue_RX_char_usart(XIO_DEV_USB, c); }
 void xio_queue_RX_string_usb(const char *buf) { xio_queue_RX_string_usart(XIO_DEV_USB, buf); }
 
 void xio_init_usb()	// USB inits
 {
-	xio_init_dev(XIO_DEV_USB, xio_cntl_usb, xio_putc_usb, xio_getc_usb, xio_gets_usb);
+	xio_init_dev(XIO_DEV_USB, xio_open, xio_cntl_usb, xio_gets_usb, xio_putc_usb, xio_getc_usb);
 	xio_init_usart(XIO_DEV_USB, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
 }
 

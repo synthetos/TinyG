@@ -67,8 +67,8 @@
  */
 void xio_init()
 {
-	xio_init_usb();					// setup USB device
-	xio_init_rs485();				// setup RS485 device
+	xio_init_usb();					// setup USB usart device
+	xio_init_rs485();				// setup RS485 usart device
 	xio_init_spi();					// setup SPI devices
 	xio_init_pgm();					// setup file reader
 }
@@ -81,18 +81,19 @@ void xio_init()
  *	device-specific init so validation can be performed.
  */
 void xio_init_dev(uint8_t dev, 				// device number
-	int (*x_cntl)(const uint32_t control),	// set device control flags
-//	int (*x_rctl)(uint32_t *control),		// get device control flags
+	FILE *(*x_open)(const uint8_t dev, const char *addr), 		// device open routine
+	int (*x_cntl)(const uint8_t dev, const uint32_t control),	// set device control flags
+//	int (*x_rctl)(const uint8_t dev, uint32_t *control),		// get device control flags
+	int (*x_gets)(const uint8_t dev, char *buf, int size),		// specialized line reader
 	int (*x_putc)(char, FILE *),			// write char (stdio compat)
-	int (*x_getc)(FILE *),					// read char (stdio compat)
-	int (*x_gets)(char *buf, int size)		// specialized line reader
+	int (*x_getc)(FILE *)					// read char (stdio compat)
 	) 
 {
 	// clear device struct
 	memset (&ds[dev], 0, sizeof(struct xioDEVICE));	
 
 	// bind functions to device structure
-//	ds[dev].x_open = NULL;
+	ds[dev].x_open = x_open;		// bind the open function to the PGM struct
 	ds[dev].x_cntl = x_cntl;
 //	ds[dev].x_rctl = x_rctl;
 	ds[dev].x_putc = x_putc;
@@ -110,11 +111,9 @@ void xio_init_dev(uint8_t dev, 				// device number
  *	that file just for this one function - so it's here.
  */
 
-void xio_init_file(	const uint8_t dev, 
-					FILE *(*x_open)(const char *addr), 	// device open routine
-					const uint32_t control)
+void xio_init_file(const uint8_t dev, const uint32_t control)
 {
-	ds[dev].x_open = x_open;
+//	ds[dev].x_open = x_open;		// bind the open function to the PGM struct
 	uint8_t index = dev - XIO_DEV_FILE_OFFSET;
 
 	// bind file struct to extended device parameters
@@ -126,13 +125,14 @@ void xio_init_file(	const uint8_t dev,
 }
 
 /*
- * xio_open_null() - Null open function for non-file devices
+ * xio_open() - Generic open function 
  */
-//FILE * xio_open_pgm(const char *addr)
-FILE *xio_open_null(void)
+FILE *xio_open(uint8_t dev, const char *addr)
 {
-	return (NULL);
-//	return(ds[dev].fdev);
+	if (dev == XIO_DEV_PGM) {
+		return (xio_open_pgm (dev, addr));	// take some action
+	}
+	return(ds[dev].fdev);					// otherwise just parrot the fdev
 }
 
 /*
@@ -166,12 +166,12 @@ int xio_cntl(const uint8_t dev, uint32_t control)
 }
 
 /*
- * xio_gctl() - get control flags
+ * xio_rctl() - get control flags
  *
  *	Note: this is not ioctl() Calling conventions differ.
  */
 /*
-int xio_gctl(const uint8_t dev, uint32_t *control)
+int xio_rctl(const uint8_t dev, uint32_t *control)
 {
 	struct xioDEVICE *d = &ds[dev];
 	control = d->flags;
@@ -244,7 +244,7 @@ int xio_getc(const uint8_t dev)
 int xio_gets(const uint8_t dev, char *buf, const int size)
 {
 	if (dev < XIO_DEV_COUNT) {
-		return ds[dev].x_gets(buf, size);
+		return ds[dev].x_gets(dev, buf, size);
 	} else {
 		return (_FDEV_ERR);	// XIO_NO_SUCH_DEVICE
 	}		
@@ -262,11 +262,11 @@ void xio_unit_tests()
 {
 	FILE * fdev;
 
-	fdev = xio_open_spi(0);
+	fdev = xio_open(XIO_DEV_SPI1, 0);
 	xio_getc_pgm(fdev);
 	
 
-	fdev = xio_open_pgm(0);
+	fdev = xio_open(XIO_DEV_PGM, 0);
 //	xio_puts_pgm("ABCDEFGHIJKLMNOP\n", fdev);
 	xio_putc_pgm('A', fdev);
 	xio_putc_pgm('B', fdev);

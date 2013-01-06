@@ -55,9 +55,9 @@ static void _xio_enable_rs485_tx(void);	// enable rs485 TX mode (no RX)
 static void _xio_enable_rs485_rx(void);	// enable rs485 RX mode (no TX)
 
 // RS485 device wrappers for generic USART routines
-int xio_cntl_rs485(const uint32_t control) { return(xio_cntl(XIO_DEV_RS485, control)); }
+int xio_cntl_rs485(const uint8_t dev, const uint32_t control) { return(xio_cntl(XIO_DEV_RS485, control)); }
+int xio_gets_rs485(const uint8_t dev, char *buf, const int size) { return(xio_gets_usart(XIO_DEV_RS485, buf, size)); }
 int xio_getc_rs485(FILE *stream) { return(xio_getc_usart(XIO_DEV_RS485, stream)); }
-int xio_gets_rs485(char *buf, const int size) { return(xio_gets_usart(XIO_DEV_RS485, buf, size)); }
 void xio_queue_RX_char_rs485(const char c) { xio_queue_RX_char_usart(XIO_DEV_RS485, c); }
 void xio_queue_RX_string_rs485(const char *buf) { xio_queue_RX_string_usart(XIO_DEV_RS485, buf); }
 
@@ -68,7 +68,7 @@ void xio_queue_RX_string_rs485(const char *buf) { xio_queue_RX_string_usart(XIO_
  */
 void xio_init_rs485()	// RS485 init
 {
-	xio_init_dev(XIO_DEV_RS485, xio_cntl_rs485, xio_putc_rs485, xio_getc_rs485, xio_gets_rs485);
+	xio_init_dev(XIO_DEV_RS485, xio_open, xio_cntl_rs485, xio_gets_rs485, xio_putc_rs485, xio_getc_rs485);
 	xio_init_usart(XIO_DEV_RS485, RS485_INIT_bm, &RS485_USART, &RS485_PORT, RS485_DIRCLR_bm, RS485_DIRSET_bm, RS485_OUTCLR_bm, RS485_OUTSET_bm);
 	_xio_enable_rs485_rx(); // set initially for RX mode
 }
