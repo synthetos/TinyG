@@ -95,8 +95,8 @@ void tg_receiver()
 
 	while (true) {
 		while ((rx = xio_getc(XIO_DEV_RS485)) == -1);
-//		xio_putc(XIO_DEV_USB, rx);		// write to USB port
-		xio_putc_rs485(rx, fdev_rs485);	// alternate form of above
+		xio_putc(XIO_DEV_RS485, rx);	// write to RS485 port
+//		xio_putc_rs485(rx, fdev_rs485);	// alternate form of above
 //		gpio_toggle_port(1);
 	}
 }

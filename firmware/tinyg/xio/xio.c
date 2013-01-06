@@ -69,7 +69,7 @@ void xio_init()
 {	
 	xio_init_rs485();
 	xio_init_usb();
-	xio_init_spi();
+	xio_init_spis();
 	xio_init_pgm();
 }
 
@@ -80,43 +80,59 @@ void xio_init()
  *	Could technically do controls (flags) here, but controls are set in 
  *	device-specific init so validation can be performed.
  */
-void xio_init_dev(uint8_t dev, 					// device number
-	FILE *(*x_open)(const char *addr),			// device open routine
-	int (*x_cntl)(const uint32_t control),		// set device control flags
-//	int (*x_gctl)(uint32_t *control),			// get device control flags
-	int (*x_putc)(char, struct __file *),		// write char (stdio compat)
-	int (*x_getc)(struct __file *),				// read char (stdio compat)
-	int (*x_gets)(char *buf, int size)			// specialized line reader
+void xio_init_dev(uint8_t dev, 				// device number
+	int (*x_cntl)(const uint32_t control),	// set device control flags
+//	int (*x_rctl)(uint32_t *control),		// get device control flags
+	int (*x_putc)(char, FILE *),			// write char (stdio compat)
+	int (*x_getc)(FILE *),					// read char (stdio compat)
+	int (*x_gets)(char *buf, int size)		// specialized line reader
 	) 
 {
 	// clear device struct
 	memset (&ds[dev], 0, sizeof(struct xioDEVICE));	
 
 	// bind functions to device structure
-	ds[dev].x_open = x_open;	
+//	ds[dev].x_open = NULL;
 	ds[dev].x_cntl = x_cntl;
-//	ds[dev].x_gctl = x_gctl;
+//	ds[dev].x_rctl = x_rctl;
 	ds[dev].x_putc = x_putc;
 	ds[dev].x_getc = x_getc;
 	ds[dev].x_gets = x_gets;
 
 	// bind and setup stdio struct
-	ds[dev].fdev = &ss[dev];					
+	ds[dev].fdev = &ss[dev];
 	fdev_setup_stream(ds[dev].fdev, x_putc, x_getc, _FDEV_SETUP_RW);
 }
-
 /* 
  *	xio_init_file() - generic init for file devices
+ *
+ *	This should really go in xio_file.c but it seemed excessive to create 
+ *	that file just for this one function - so it's here.
  */
 
-void xio_init_file(const uint8_t dev, const uint8_t offset, const uint32_t control)
+void xio_init_file(	const uint8_t dev, 
+					FILE *(*x_open)(const char *addr), 	// device open routine
+					const uint8_t index, 
+					const uint32_t control)
 {
+	ds[dev].x_open = x_open;
+
 	// bind file struct to extended device parameters
-	ds[dev].x = &fs[offset];		// bind pgm FILE struct
+	ds[dev].x = &fs[index];		// bind pgm FILE struct
 	// might be useful to sanity check the control bits before calling set flags
 	//	- RD and BLOCK are mandatory
 	// 	- WR and NOBLOCK are restricted
 	(void)xio_cntl(dev, control);
+}
+
+/*
+ * xio_open_null() - Null open function for non-file devices
+ */
+//FILE * xio_open_pgm(const char *addr)
+FILE *xio_open_null(void)
+{
+	return (NULL);
+//	return(ds[dev].fdev);
 }
 
 /*
@@ -130,22 +146,22 @@ int xio_cntl(const uint8_t dev, uint32_t control)
 {
 	struct xioDEVICE *d = &ds[dev];
 
-	SETFLAG(XIO_RD, XIO_FLAG_RD_bm);
-	SETFLAG(XIO_WR, XIO_FLAG_WR_bm);
-	SETFLAG(XIO_BLOCK, XIO_FLAG_BLOCK_bm);
-	CLRFLAG(XIO_NOBLOCK, XIO_FLAG_BLOCK_bm);
-	SETFLAG(XIO_XOFF, XIO_FLAG_XOFF_bm);
-	CLRFLAG(XIO_NOXOFF, XIO_FLAG_XOFF_bm);
-	SETFLAG(XIO_ECHO, XIO_FLAG_ECHO_bm);
-	CLRFLAG(XIO_NOECHO, XIO_FLAG_ECHO_bm);
-	SETFLAG(XIO_CRLF, XIO_FLAG_CRLF_bm);
-	CLRFLAG(XIO_NOCRLF, XIO_FLAG_CRLF_bm);
-	SETFLAG(XIO_IGNORECR, XIO_FLAG_IGNORECR_bm);
-	CLRFLAG(XIO_NOIGNORECR, XIO_FLAG_IGNORECR_bm);
-	SETFLAG(XIO_IGNORELF, XIO_FLAG_IGNORELF_bm);
-	CLRFLAG(XIO_NOIGNORELF, XIO_FLAG_IGNORELF_bm);
-	SETFLAG(XIO_LINEMODE, XIO_FLAG_LINEMODE_bm);
-	CLRFLAG(XIO_NOLINEMODE, XIO_FLAG_LINEMODE_bm);
+	SETFLAG(XIO_RD,			XIO_FLAG_RD_bm);
+	SETFLAG(XIO_WR,			XIO_FLAG_WR_bm);
+	SETFLAG(XIO_BLOCK,		XIO_FLAG_BLOCK_bm);
+	CLRFLAG(XIO_NOBLOCK,	XIO_FLAG_BLOCK_bm);
+	SETFLAG(XIO_XOFF,		XIO_FLAG_XOFF_bm);
+	CLRFLAG(XIO_NOXOFF,		XIO_FLAG_XOFF_bm);
+	SETFLAG(XIO_ECHO,		XIO_FLAG_ECHO_bm);
+	CLRFLAG(XIO_NOECHO,		XIO_FLAG_ECHO_bm);
+	SETFLAG(XIO_CRLF,		XIO_FLAG_CRLF_bm);
+	CLRFLAG(XIO_NOCRLF,		XIO_FLAG_CRLF_bm);
+	SETFLAG(XIO_IGNORECR,	XIO_FLAG_IGNORECR_bm);
+	CLRFLAG(XIO_NOIGNORECR,	XIO_FLAG_IGNORECR_bm);
+	SETFLAG(XIO_IGNORELF,	XIO_FLAG_IGNORELF_bm);
+	CLRFLAG(XIO_NOIGNORELF,	XIO_FLAG_IGNORELF_bm);
+	SETFLAG(XIO_LINEMODE,	XIO_FLAG_LINEMODE_bm);
+	CLRFLAG(XIO_NOLINEMODE,	XIO_FLAG_LINEMODE_bm);
 	return (XIO_OK);
 }
 
@@ -190,11 +206,14 @@ void xio_set_stderr(const uint8_t dev)
 
 int xio_putc(const uint8_t dev, const char c)
 {
-	if (dev < XIO_DEV_COUNT) {
+	return ds[dev].x_putc(c, ds[dev].fdev);
+
+/*	The safe way to do this, but it sacrifices speed
+	if (dev < XIO_DEV_COUNT) {		
 		return ds[dev].x_putc(c, ds[dev].fdev);
 	} else {
 		return (_FDEV_ERR);	// XIO_NO_SUCH_DEVICE
-	}
+	} */
 }
 
 /*
@@ -203,11 +222,14 @@ int xio_putc(const uint8_t dev, const char c)
 
 int xio_getc(const uint8_t dev)
 {
+	return ds[dev].x_getc(ds[dev].fdev);
+
+/*	The safe way to do this, but it sacrifices speed
 	if (dev < XIO_DEV_COUNT) {
 		return ds[dev].x_getc(ds[dev].fdev);
 	} else {
 		return (_FDEV_ERR);	// XIO_NO_SUCH_DEVICE
-	}		
+	} */
 }
 
 /*
@@ -239,6 +261,10 @@ int xio_gets(const uint8_t dev, char *buf, const int size)
 void xio_unit_tests()
 {
 	FILE * fdev;
+
+	fdev = xio_open_spi(0);
+	xio_getc_pgm(fdev);
+	
 
 	fdev = xio_open_pgm(0);
 //	xio_puts_pgm("ABCDEFGHIJKLMNOP\n", fdev);

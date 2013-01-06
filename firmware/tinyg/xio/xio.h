@@ -55,11 +55,10 @@ typedef int (*fptr_int_void) (void); 	// returns int, void args
  *************************************************************************/
 
 void xio_init(void);					// xio system general init
-void xio_init_file(const uint8_t dev, const uint8_t offset, const uint32_t control);
 void xio_init_stdio(void);				// set std devs & do startup prompt
 void xio_init_rs485(void);				// device-specific inits
 void xio_init_usb(void);
-void xio_init_spi(void);
+void xio_init_spis(void);
 void xio_init_pgm(void);
 void xio_init_eep(void);
 
@@ -75,17 +74,17 @@ int xio_putc(const uint8_t dev, const char c);
 int xio_gets(const uint8_t dev, char *buf, const int size);
 
 void xio_init_dev(uint8_t dev,				// device number
-	FILE *(*dev_open)(const char *addr),	// device open routine
 	int (*dev_cntl)(const uint32_t control),// set device control flags
 //	int (*dev_rctl)(uint32_t *control),		// get device control flags
-	int (*dev_putc)(char, struct __file *),	// write char (stdio compatible)
-	int (*dev_getc)(struct __file *),		// read char (stdio compatible)
+	int (*dev_putc)(char, FILE *),			// write char (stdio compatible)
+	int (*dev_getc)(FILE *),				// read char (stdio compatible)
 	int (*dev_gets)(char *buf, int size)	// specialized line reader
 	); 
 
 /*************************************************************************
  *	Device structures
  *************************************************************************/
+// NOTE" "FILE *" is another way of saying "struct __file *"
 
 struct xioDEVICE {							// common device struct (one per dev)
 	uint8_t status;							// completion status 
@@ -97,10 +96,11 @@ struct xioDEVICE {							// common device struct (one per dev)
 	FILE *(*x_open)(const char *addr);		// device open routine
 	int (*x_cntl)(const uint32_t control);	// set device control flags
 //	int (*x_rctl)(uint32_t *control);		// get device control flags
-	int (*x_putc)(char, struct __file *);	// write char (stdio compatible)
-	int (*x_getc)(struct __file *);			// read char (stdio compatible)
+	int (*x_putc)(char, FILE *);			// write char (stdio compatible)
+	int (*x_getc)(FILE *);					// read char (stdio compatible)
 	int (*x_gets)(char *buf, const int size);// specialized line reader
 
+	uint8_t channel;						// channel = index into device void *x array
 	void *x;								// device-specific struct binding (static)
 	FILE *fdev;								// stdio fdev binding (static)
 	char *buf;								// text buffer binding (dynamic)
@@ -134,26 +134,26 @@ enum xioDevice {		// device enumerations
 // If your change these ^, check these v
 
 #define XIO_DEV_USART_COUNT 	2 				// # of USART devices
-#define XIO_DEV_USB_INDEX 		0				// index into USART structures
-#define XIO_DEV_RS485_INDEX 	1				// (needed only for inits)
+#define XIO_DEV_USB_INDEX 		XIO_DEV_USB		// index into USART structures
+#define XIO_DEV_RS485_INDEX 	XIO_DEV_RS485
 
 #define XIO_DEV_SPI_COUNT 		2 				// # of SPI devices
-#define XIO_DEV_SPI1_INDEX 		0				// index into SPI channels 
-#define XIO_DEV_SPI2_INDEX 		1				// (needed only for inits)
-//#define XIO_DEV_SPI3_INDEX 	2
-//#define XIO_DEV_SPI4_INDEX 	3
-//#define XIO_DEV_SPI5_INDEX 	4
-//#define XIO_DEV_SPI6_INDEX 	5
+#define XIO_DEV_SPI1_CHANNEL 	0				// index into SPI channels 
+#define XIO_DEV_SPI2_CHANNEL 	1				// (needed only for inits)
+//#define XIO_DEV_SPI3_CHANNEL	2
+//#define XIO_DEV_SPI4_CHANNEL	3
+//#define XIO_DEV_SPI5_CHANNEL	4
+//#define XIO_DEV_SPI6_CHANNEL	5
 
-#define XIO_DEV_FILE_COUNT 		1				// # of FILE devices
-#define XIO_DEV_PGM_INDEX 		0				// index into FILES
+#define XIO_DEV_FILE_COUNT		1				// # of FILE devices
+#define XIO_DEV_PGM_INDEX		0				// index into FILES
 
 // aliases for stdio devices (aka pointers, streams)
-#define fdev_rs485	(ds[XIO_DEV_RS485].fdev)	// RS485 device for stdio functions
-#define fdev_usb	(ds[XIO_DEV_USB].fdev)		// USB device for stdio functions
-#define fdev_spi1	(ds[XIO_DEV_SPI1].fdev)		// SPI channel #1
-#define fdev_spi2	(ds[XIO_DEV_SPI2].fdev)		// SPI channel #2
-#define fdev_pgm	(ds[XIO_DEV_PGM].fdev)		// Program memory device
+//#define fdev_rs485	(ds[XIO_DEV_RS485].fdev)	// RS485 device for stdio functions
+//#define fdev_usb	(ds[XIO_DEV_USB].fdev)		// USB device for stdio functions
+//#define fdev_spi1	(ds[XIO_DEV_SPI1].fdev)		// SPI channel #1
+//#define fdev_spi2	(ds[XIO_DEV_SPI2].fdev)		// SPI channel #2
+//#define fdev_pgm	(ds[XIO_DEV_PGM].fdev)		// Program memory device
 
 /*
  * Static structure allocations for XIO 
@@ -369,7 +369,7 @@ enum xioCodes {
 	0x7F	DEL	
 */
 
-//#define __UNIT_TEST_XIO			// include and run xio unit tests
+#define __UNIT_TEST_XIO			// include and run xio unit tests
 #ifdef __UNIT_TEST_XIO
 void xio_unit_tests(void);
 #define	XIO_UNITS xio_unit_tests();

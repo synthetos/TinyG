@@ -43,7 +43,9 @@
 #include "../gpio.h"
 
 /* USB device wrappers for generic USART routines */
-FILE *xio_open_usb() { return(USB.fdev); }
+//FILE *xio_open_usb(uint8_t dev) { return(USB.fdev); }
+//FILE *xio_open_usb(uint8_t dev) { return(ds[dev].fdev); }
+
 int xio_cntl_usb(const uint32_t control) { return(xio_cntl(XIO_DEV_USB, control)); } // SEE NOTE
 int xio_getc_usb(FILE *stream) { return(xio_getc_usart(XIO_DEV_USB, stream)); }
 int xio_gets_usb(char *buf, const int size) { return(xio_gets_usart(XIO_DEV_USB, buf, size)); }
@@ -52,7 +54,7 @@ void xio_queue_RX_string_usb(const char *buf) { xio_queue_RX_string_usart(XIO_DE
 
 void xio_init_usb()	// USB inits
 {
-	xio_init_dev(XIO_DEV_USB, xio_open_usb, xio_cntl_usb, xio_putc_usb, xio_getc_usb, xio_gets_usb);
+	xio_init_dev(XIO_DEV_USB, xio_cntl_usb, xio_putc_usb, xio_getc_usb, xio_gets_usb);
 	xio_init_usart(XIO_DEV_USB, XIO_DEV_USB_INDEX, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
 }
 

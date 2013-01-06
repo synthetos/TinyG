@@ -104,26 +104,31 @@ struct xioFILE {
 /* 
  * FILE DEVICE FUNCTION PROTOTYPES
  */
+// Generic file device functions
+void xio_init_file(	const uint8_t dev, 
+					FILE *(*x_open)(const char *addr), 	// device open routine
+					const uint8_t index, 
+					const uint32_t control);
 
 // PGM functions
 void xio_init_pgm(void);
-FILE * xio_open_pgm(const char * addr);		// open memory string read only
-int xio_cntl_pgm(const uint32_t control);	// validate & set dev flags
-int xio_putc_pgm(const char c, struct __file *stream);// always returns ERROR
-int xio_getc_pgm(struct __file *stream);	// get a character
-int xio_gets_pgm(char *buf, const int size);// read string from program memory
+FILE * xio_open_pgm(const char * addr);			// open memory string read only
+int xio_cntl_pgm(const uint32_t control);		// validate & set dev flags
+int xio_putc_pgm(const char c, FILE *stream);	// always returns ERROR
+int xio_getc_pgm(FILE *stream);					// get a character
+int xio_gets_pgm(char *buf, const int size);	// read string from program memory
 
 // EEPROM functions
 /*
 void xio_init_eep(void);
-FILE * xio_open_eep(const prog_char *addr);			// open EEPROM string
-int xio_cntl_eep(const uint32_t control);			// validate & set dev flags
-int xio_putc_eep(const char c, struct __file *stream);// unoptimized EEPROM write
-int xio_getc_eep(struct __file *stream);			// get a character from EEPROM
+FILE * xio_open_eep(const prog_char *addr);		// open EEPROM string
+int xio_cntl_eep(const uint32_t control);		// validate & set dev flags
+int xio_putc_eep(const char c, FILE *stream);	// unoptimized EEPROM write
+int xio_getc_eep(FILE *stream);					// get a character from EEPROM
 int xio_gets_eep(char *buf, const int size);	// read string from EEPROM
 int xio_seek_eep(uint32_t offset);
 int xio_rewind_eep();
-//int xio_puts_eep(const char *buf, struct __file *stream);
+//int xio_puts_eep(const char *buf, FILE *stream);
 */
 
 // RAM Card functions

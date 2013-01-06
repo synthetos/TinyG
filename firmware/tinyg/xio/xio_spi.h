@@ -54,13 +54,14 @@
  */
 
 struct xioSPI {
+	uint8_t index;							// index into sp array - first is zero
 	volatile SPIBUF_T rx_buf_tail;			// RX buffer read index
 	volatile SPIBUF_T rx_buf_head;			// RX buffer write index (written by ISR)
 	volatile SPIBUF_T tx_buf_tail;			// TX buffer read index  (written by ISR)
 	volatile SPIBUF_T tx_buf_head;			// TX buffer write index
 
-//	struct USART_struct *usart;				// USART structure
-//	struct PORT_struct *port;				// corresponding port
+	struct USART_struct *usart;				// USART used for SPI 
+	struct PORT_struct *port;				// corresponding port
 
 	volatile char rx_buf[SPI_RX_BUFFER_SIZE];	// (written by ISR)
 	volatile char tx_buf[SPI_TX_BUFFER_SIZE];
@@ -74,9 +75,9 @@ struct xioSPI {
 /*
  * SPI FUNCTION PROTOTYPES
  */
-/*
-void xio_init_spi_chan(const uint8_t dev, 
-					const uint8_t index,
+
+void xio_init_spis(void);
+void xio_init_spi(	const uint8_t dev, 
 					const uint32_t control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,
@@ -84,7 +85,7 @@ void xio_init_spi_chan(const uint8_t dev,
 					const uint8_t dirset, 
 					const uint8_t outclr, 
 					const uint8_t outset);
-*/
+FILE * xio_open_spi(uint8_t dev);			// returns stdio fdev handle
 int xio_cntl_spi(const uint32_t control);
 int xio_putc_spi(const char c, FILE *stream);
 int xio_getc_spi(FILE *stream);

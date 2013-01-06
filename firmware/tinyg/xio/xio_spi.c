@@ -44,7 +44,6 @@
 
 /* SPI device wrappers for generic SPI routines */
 
-FILE * xio_open_spi() { return(SPI.fdev); }
 //int xio_cntl_usb(const uint32_t control) return xio_cntl(XIO_DEV_USB, control); // SEE NOTE
 //int xio_getc_usb(FILE *stream) return xio_getc_usart(XIO_DEV_USB, stream);
 //int xio_gets_usb(char *buf, const int size) return xio_gets_usart(XIO_DEV_USB, buf, size);
@@ -57,20 +56,19 @@ FILE * xio_open_spi() { return(SPI.fdev); }
 //	xio_init_usart(XIO_DEV_USB, XIO_DEV_USB_OFFSET, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
 //}
 
-void xio_init_spi(void)
+void xio_init_spis(void)
 {
-	xio_init_dev(XIO_DEV_SPI1, xio_open_spi, xio_cntl_spi, xio_putc_spi, xio_getc_spi, xio_gets_spi);
+	xio_init_dev(XIO_DEV_SPI1, xio_cntl_spi, xio_putc_spi, xio_getc_spi, xio_gets_spi);
 //	for ()
 //	xio_init_spi_chan(XIO_DEV_SPI1, XIO_DEV_USB_OFFSET, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
 }
 
 /*
- *	xio_init_spi_chan()
+ *	xio_init_spi()
  */
 
-void xio_init_spi_chan(const uint8_t dev, 			// index into device array (ds)
-					const uint8_t offset,			// index into SPI array (sp)
-					const uint32_t control,
+void xio_init_spi(const uint8_t dev, 				// index into device array (ds)
+					const uint32_t control,			// control bits
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,
 					const uint8_t dirclr, 
@@ -78,18 +76,18 @@ void xio_init_spi_chan(const uint8_t dev, 			// index into device array (ds)
 					const uint8_t outclr, 
 					const uint8_t outset) 
 {
+	uint8_t channel = (dev - XIO_DEV_SPI1);			// remove the offset of any other devices
+
 	// do all the bindings first (and in this order)
 	struct xioDEVICE *d = &ds[dev];					// setup device struct pointer
-	d->x = &us[offset];								// bind USART struct to device
-	struct xioUSART *dx = (struct xioUSART *)d->x;	// setup USART struct pointer
-	dx->usart = (struct USART_struct *)usart_addr;	// bind USART 
-	dx->port = (struct PORT_struct *)port_addr;		// bind PORT
+	d->x = &sp[channel-1];							// bind SPI struct to device
+	struct xioSPI *dx = (struct xioSPI *)d->x;		// setup SPI struct pointer
+	dx->index = channel-1;							// used as fdev.udata
+	dx->usart = (struct USART_struct *)usart_addr;	// bind USART used for SPI 
+	dx->port = (struct PORT_struct *)port_addr;		// bind PORT used for SPI
 
-	// set flags
-	(void)xio_cntl(dev, control);// generic setflags -doesn't validate flags
-	if (EN_XOFF(d->flags) == true) {				// transfer flow control setting 
-		dx->fc_state = FC_IN_XON;					// resting state 
-	}
+	// set control flags
+	(void)xio_cntl(dev, control);					// generic setflags -doesn't validate flags
 
 	// setup internal RX/TX buffers
 	dx->rx_buf_head = 1;		// can't use location 0 in circular buffer
@@ -98,17 +96,25 @@ void xio_init_spi_chan(const uint8_t dev, 			// index into device array (ds)
 	dx->tx_buf_tail = 1;
 
 	// baud rate and USART setup
-	uint8_t baud = (uint8_t)(control & XIO_BAUD_gm);
-	if (baud == XIO_BAUD_UNSPECIFIED) { baud = XIO_BAUD_DEFAULT; }
-	xio_set_baud_usart(dev, baud);		// usart must be bound first
+//	uint8_t baud = (uint8_t)(control & XIO_BAUD_gm);
+//	if (baud == XIO_BAUD_UNSPECIFIED) { baud = XIO_BAUD_DEFAULT; }
+//	xio_set_baud_usart(dev, baud);		// usart must be bound first
 
-	dx->usart->CTRLB = (USART_TXEN_bm | USART_RXEN_bm);// enable tx and rx
-	dx->usart->CTRLA = CTRLA_RXON_TXON;	// enable tx and rx IRQs
+//	dx->usart->CTRLB = (USART_TXEN_bm | USART_RXEN_bm);// enable tx and rx
+//	dx->usart->CTRLA = CTRLA_RXON_TXON;	// enable tx and rx IRQs
 
 	dx->port->DIRCLR = dirclr;
 	dx->port->DIRSET = dirset;
 	dx->port->OUTCLR = outclr;
 	dx->port->OUTSET = outset;
+
+	// bind channel index into fdev as udata
+	fdev_set_udata(d->fdev, &dx->index);
+}
+
+FILE * xio_open_spi(uint8_t dev)
+{
+	return(SPI.fdev);
 }
 
 int xio_cntl_spi(const uint32_t control)
@@ -118,6 +124,7 @@ int xio_cntl_spi(const uint32_t control)
 
 int xio_putc_spi(const char c, FILE *stream)
 {
+	uint8_t *channel = fdev_get_udata(stream);
 	return (NUL);
 }
 

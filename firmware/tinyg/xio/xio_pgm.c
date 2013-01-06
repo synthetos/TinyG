@@ -42,8 +42,8 @@
 void xio_init_pgm()
 {
 	// Program memory file device setup
-	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_cntl_pgm, xio_putc_pgm, xio_getc_pgm, xio_gets_pgm);
-	xio_init_file(XIO_DEV_PGM, XIO_DEV_PGM_INDEX, PGM_INIT_bm);
+	xio_init_dev(XIO_DEV_PGM, xio_cntl_pgm, xio_putc_pgm, xio_getc_pgm, xio_gets_pgm);
+	xio_init_file(XIO_DEV_PGM, xio_open_pgm, XIO_DEV_PGM_INDEX, PGM_INIT_bm);
 }
 
 /*	
@@ -53,16 +53,15 @@ void xio_init_pgm()
  *  Returns a pointer to the stdio FILE struct or -1 on error
  */
 
-struct __file * xio_open_pgm(const char *addr)
+FILE * xio_open_pgm(const char *addr)
 {
-	PGM.flags &= XIO_FLAG_RESET_gm;	// reset flag signaling bits
-	PGM.signal = 0;					// reset signal
-//	PGMf.filebase_P = (PROGMEM char *)addr;	// might want to range check this
-	PGMf.filebase_P = (PROGMEM const char *)addr;	// might want to range check this  +++++++++++++++++++++
-	PGMf.rd_offset = 0;				// initialize read buffer pointer
-	PGMf.wr_offset = 0;				// initialize write buffer pointer
+	PGM.flags &= XIO_FLAG_RESET_gm;					// reset flag signaling bits
+	PGM.signal = 0;									// reset signal
+	PGMf.filebase_P = (PROGMEM const char *)addr;	// might want to range check this
+	PGMf.rd_offset = 0;								// initialize read buffer pointer
+	PGMf.wr_offset = 0;								// initialize write buffer pointer
 	PGMf.max_offset = PGM_ADDR_MAX;
-	return(PGM.fdev);				// return pointer to the fdev stream
+	return(PGM.fdev);								// return pointer to the fdev stream
 }
 
 /*
@@ -81,7 +80,7 @@ int xio_cntl_pgm(const uint32_t control)
  *  Always returns error. You cannot write to program memory
  */
 
-int xio_putc_pgm(const char c, struct __file *stream)
+int xio_putc_pgm(const char c, FILE *stream)
 {
 	return -1;			// always returns an error. Big surprise.
 }
@@ -112,7 +111,7 @@ int xio_putc_pgm(const char c, struct __file *stream)
  *		- Note: putc should expand newlines to <cr><lf>
  */
 
-int xio_getc_pgm(struct __file *stream)
+int xio_getc_pgm(FILE *stream)
 {
 	if ((PGM.flags & XIO_FLAG_EOF_bm) != 0) {
 		PGM.signal = XIO_SIG_EOF;
