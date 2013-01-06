@@ -90,22 +90,15 @@ static int _gets_DELETE(void);
 /*
  *	xio_init_usart() - general purpose USART initialization (shared)
  */
-
 void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 					const uint32_t control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,
-					const uint8_t dirclr, 
-					const uint8_t dirset, 
-					const uint8_t outclr, 
-					const uint8_t outset) 
+					const uint8_t inbits, const uint8_t outbits, const uint8_t outclr, const uint8_t outset) 
 {
-	// determine the index into the USART device array
-	uint8_t channel = dev - XIO_DEV_USART_OFFSET;	// quite simple in this case.
-
 	// do all the bindings first (and in this order)
 	struct xioDEVICE *d = &ds[dev];					// setup device struct pointer
-	d->x = &us[channel];							// bind USART struct to device
+	d->x = &us[dev - XIO_DEV_USART_OFFSET];			// bind USART struct to device extended struct
 	struct xioUSART *dx = (struct xioUSART *)d->x;	// setup USART struct pointer
 	dx->usart = (struct USART_struct *)usart_addr;	// bind USART 
 	dx->port = (struct PORT_struct *)port_addr;		// bind PORT
@@ -130,8 +123,8 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 	dx->usart->CTRLB = (USART_TXEN_bm | USART_RXEN_bm);// enable tx and rx
 	dx->usart->CTRLA = CTRLA_RXON_TXON;	// enable tx and rx IRQs
 
-	dx->port->DIRCLR = dirclr;
-	dx->port->DIRSET = dirset;
+	dx->port->DIRCLR = inbits;
+	dx->port->DIRSET = outbits;
 	dx->port->OUTCLR = outclr;
 	dx->port->OUTSET = outset;
 }
@@ -213,12 +206,13 @@ BUFFER_T xio_get_usb_rx_free(void)
  *		  next_tx_buffer_head prevents this.
  */
 
-int xio_putc_usart(const uint8_t dev, const char c, FILE *stream)
+int xio_putc_usart(const char c, FILE *stream)
 {
-	BUFFER_T next_tx_buf_head;
-	struct xioDEVICE *d = &ds[dev];				// init device struct ptr
-	struct xioUSART *dx = ((struct xioUSART *)(ds[dev].x));	// USART ptr
+/**** unused and has an ISR mutex bug. See xio_putc_usb() for a more up-to-date version)
+	struct xioDEVICE *d = ((struct xioDEVICE *)((stream)->udata))->d;	// get device struct pointer
+	struct xioUSART *dx = ((struct xioDEVICE *)((stream)->udata))->x;	// get USART pointer
 
+	BUFFER_T next_tx_buf_head;
 	if ((next_tx_buf_head = (dx->tx_buf_head)-1) == 0) { // adv. head & wrap
 		next_tx_buf_head = TX_BUFFER_SIZE-1; 	// -1 avoids the off-by-one
 	}
@@ -240,6 +234,7 @@ int xio_putc_usart(const uint8_t dev, const char c, FILE *stream)
 	}
 	// force an interrupt to attempt to send the char
 	dx->usart->CTRLA = CTRLA_RXON_TXON;			// doesn't work if you just |= it
+*/
 	return (XIO_OK);
 }
 
@@ -414,12 +409,11 @@ static int (*const getcFuncs[])(void) PROGMEM = { // use if you want it in FLASH
  *		  character helper routines. See them for behaviors
  */
 
-int xio_getc_usart(const uint8_t dev, FILE *stream)
+int xio_getc_usart(FILE *stream)
 {
-	struct xioDEVICE *d = &ds[dev];					// init device struct pointer
-	struct xioUSART *dx = ((struct xioUSART *)(ds[dev].x));	// init USART pointer
-
-	gdev = dev;										// set dev number global var
+	struct xioDEVICE *d = ((struct xioDEVICE *)((stream)->udata))->d;	// get device struct pointer
+	struct xioUSART *dx = ((struct xioDEVICE *)((stream)->udata))->x;	// get USART pointer
+	gdev = ((struct xioDEVICE *)((stream)->udata))->dev;				// get device number
 
 	while (dx->rx_buf_head == dx->rx_buf_tail) {	// RX ISR buffer empty
 		if (BLOCKING(d->flags) != 0) {
@@ -433,7 +427,7 @@ int xio_getc_usart(const uint8_t dev, FILE *stream)
 		dx->rx_buf_tail = RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
 	}
 	// flow control only for USB device
-	if ((dev == XIO_DEV_USB) && (xio_get_rx_bufcount_usart(dx) < XOFF_RX_LO_WATER_MARK)) {
+	if ((gdev == XIO_DEV_USB) && (xio_get_rx_bufcount_usart(dx) < XOFF_RX_LO_WATER_MARK)) {
 		xio_xon_usart(XIO_DEV_USB);
 	}
 	// get char from RX buf & mask MSB, then dispatch on character value
@@ -776,6 +770,15 @@ void xio_queue_RX_string_usart(const uint8_t dev, const char *buf)
 		xio_queue_RX_char_usart(dev, buf[i++]);
 	}
 }
+
+/* USB device wrappers for generic USART routines */
+void xio_queue_RX_char_usb(const char c) { xio_queue_RX_char_usart(XIO_DEV_USB, c); }
+void xio_queue_RX_string_usb(const char *buf) { xio_queue_RX_string_usart(XIO_DEV_USB, buf); }
+
+// RS485 device wrappers for generic USART routines
+void xio_queue_RX_char_rs485(const char c) { xio_queue_RX_char_usart(XIO_DEV_RS485, c); }
+void xio_queue_RX_string_rs485(const char *buf) { xio_queue_RX_string_usart(XIO_DEV_RS485, buf); }
+
 /*
 void xio_dump_RX_queue_usart(void)
 {

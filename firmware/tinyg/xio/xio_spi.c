@@ -94,18 +94,13 @@ void xio_init_spi_dev(const uint8_t dev, 			// index into device array (ds)
 	dx->port->OUTCLR = outclr;
 	dx->port->OUTSET = outset;
 }
-/*
-FILE * xio_open_spi(uint8_t dev)
-{
-	return(SPI1.fdev);
-}
 
-int xio_cntl_spi(const uint8_t dev, const uint32_t control)
+int xio_gets_spi(const uint8_t dev, char *buf, const int size)
 {
 	return (NUL);
 }
-*/
-int xio_gets_spi(const uint8_t dev, char *buf, const int size)
+
+int xio_getc_spi(FILE *stream)
 {
 	return (NUL);
 }
@@ -113,11 +108,6 @@ int xio_gets_spi(const uint8_t dev, char *buf, const int size)
 int xio_putc_spi(const char c, FILE *stream)
 {
 //	uint8_t *channel = fdev_get_udata(stream);
-	return (NUL);
-}
-
-int xio_getc_spi(FILE *stream)
-{
 	return (NUL);
 }
 

@@ -249,10 +249,10 @@ void xio_unit_tests()
 {
 	FILE * fdev;
 
-	fdev = xio_open(XIO_DEV_SPI1, 0);
-	xio_getc_pgm(fdev);
+	fdev = xio_open(XIO_DEV_USB, 0);
+	xio_getc_usart(fdev);
 	
-
+/*
 	fdev = xio_open(XIO_DEV_PGM, 0);
 //	xio_puts_pgm("ABCDEFGHIJKLMNOP\n", fdev);
 	xio_putc_pgm('A', fdev);
@@ -261,6 +261,7 @@ void xio_unit_tests()
 	xio_getc_pgm(fdev);
 	xio_getc_pgm(fdev);
 	xio_getc_pgm(fdev);
+*/
 }
 
 #endif

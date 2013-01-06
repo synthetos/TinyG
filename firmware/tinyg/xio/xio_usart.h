@@ -184,10 +184,7 @@ void xio_init_usart(const uint8_t dev,
 					const uint32_t control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,
-					const uint8_t dirclr, 
-					const uint8_t dirset, 
-					const uint8_t outclr, 
-					const uint8_t outset);
+					const uint8_t inbits, const uint8_t outbits, const uint8_t outclr, const uint8_t outset);
 
 void xio_set_baud_usart(const uint8_t dev, const uint8_t baud);
 void xio_xoff_usart(const uint8_t dev);
@@ -195,36 +192,26 @@ void xio_xon_usart(const uint8_t dev);
 void xio_deassert_rts_usart(const uint8_t dev);
 void xio_assert_rts_usart(const uint8_t dev);
 int xio_gets_usart(const uint8_t dev, char *buf, const int size);
-int xio_getc_usart(const uint8_t dev, FILE *stream);
-int xio_putc_usart(const uint8_t dev, const char c, FILE *stream);
+int xio_getc_usart(FILE *stream);
+int xio_putc_usart(const char c, FILE *stream);
 
-void xio_queue_RX_char_usart(const uint8_t dev, const char c);
-void xio_queue_RX_string_usart(const uint8_t dev, const char *buf);
+void xio_init_rs485(void);						// RS485 specific functions (subclassing usart.c versions)
+int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
+
+void xio_init_usb(void);						// USB specific functions (subclassing usart.c versions)
+int xio_putc_usb(const char c, FILE *stream);	// stdio compatible put character
 
 // handy helpers
 BUFFER_T xio_get_rx_bufcount_usart(const struct xioUSART *dx);
 BUFFER_T xio_get_tx_bufcount_usart(const struct xioUSART *dx);
 BUFFER_T xio_get_usb_rx_free(void);
 
-// RS485 specific functions
-void xio_init_rs485(void);
-int xio_cntl_rs485(const uint8_t dev, const uint32_t control);		// set control flags w/validation
-int xio_gets_rs485(const uint8_t dev, char *buf, const int size);	// non-blocking read line function
-int xio_getc_rs485(FILE *stream);				// stdio compatible get character
-int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
-
-//void xio_queue_RX_char_rs485(const char c);		// simulate char rcvd into RX buffer
-//void xio_queue_RX_string_rs485(const char *buf);// simulate rec'ving a whole string
-
-// USB specific functions
-void xio_init_usb(void);
-int xio_cntl_usb(const uint8_t dev, const uint32_t control);	// set control flags w/validation
-int xio_gets_usb(const uint8_t dev, char *buf, const int size);	// non-blocking read line function
-int xio_getc_usb(FILE *stream);					// stdio compatible get character
-int xio_putc_usb(const char c, FILE *stream);	// stdio compatible put character
-
-//void xio_queue_RX_char_usb(const char c);		// simulate char rcvd into RX buffer
-//void xio_queue_RX_string_usb(const char *buf);	// simulate receving a whole string
+void xio_queue_RX_char_usart(const uint8_t dev, const char c);
+void xio_queue_RX_string_usart(const uint8_t dev, const char *buf);
+void xio_queue_RX_char_usb(const char c);		// simulate char rcvd into RX buffer
+void xio_queue_RX_string_usb(const char *buf);	// simulate receving a whole string
+void xio_queue_RX_char_rs485(const char c);		// simulate char rcvd into RX buffer
+void xio_queue_RX_string_rs485(const char *buf);// simulate rec'ving a whole string
 //void xio_dump_RX_queue_usart(void);
 
 #endif
