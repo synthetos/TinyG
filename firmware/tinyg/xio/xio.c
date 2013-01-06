@@ -89,21 +89,25 @@ void xio_init_dev(uint8_t dev, 									// device number
 	int (*x_putc)(char, FILE *)									// write char (stdio compat)
 	) 
 {
+	struct xioDEVICE *d = &ds[dev];
+
 	// clear device struct
-	memset (&ds[dev], 0, sizeof(struct xioDEVICE));	
+	memset (d, 0, sizeof(struct xioDEVICE));	
+	d->d = (struct xioDEVICE *)d;				// setup self reference
+	d->dev = dev;								//  (note: 'x' is set by device-sspecific routine)
+	d->fdev = &ss[dev];							// bind stdio stream struct
+	fdev_setup_stream(d->fdev, x_putc, x_getc, _FDEV_SETUP_RW);
+	fdev_set_udata(d->fdev, d);					// reference self for udata 
 
 	// bind functions to device structure
-	ds[dev].x_open = x_open;		// bind the open function to the PGM struct
-	ds[dev].x_cntl = x_cntl;
-//	ds[dev].x_rctl = x_rctl;
-	ds[dev].x_putc = x_putc;
-	ds[dev].x_getc = x_getc;
-	ds[dev].x_gets = x_gets;
-
-	// bind and setup stdio struct
-	ds[dev].fdev = &ss[dev];
-	fdev_setup_stream(ds[dev].fdev, x_putc, x_getc, _FDEV_SETUP_RW);
+	d->x_open = x_open;		// bind the open function to the PGM struct
+	d->x_cntl = x_cntl;
+//	d->x_rctl = x_rctl;
+	d->x_gets = x_gets;
+	d->x_getc = x_getc;		// you don't need to bind these unless you are going to use them directly
+	d->x_putc = x_putc;		// they are bound into the fdev stream struct
 }
+
 /*
  *	xio_init_file() - generic init for file devices
  *
@@ -113,14 +117,7 @@ void xio_init_dev(uint8_t dev, 									// device number
 
 void xio_init_file(const uint8_t dev, const uint32_t control)
 {
-//	ds[dev].x_open = x_open;		// bind the open function to the PGM struct
-	uint8_t index = dev - XIO_DEV_FILE_OFFSET;
-
-	// bind file struct to extended device parameters
-	ds[dev].x = &fs[index];		// bind pgm FILE struct
-	// might be useful to sanity check the control bits before calling set flags
-	//	- RD and BLOCK are mandatory
-	// 	- WR and NOBLOCK are restricted
+	ds[dev].x = &fs[dev - XIO_DEV_FILE_OFFSET];	// bind pgm FILE struct
 	(void)xio_cntl(dev, control);
 }
 
@@ -185,61 +182,50 @@ int xio_rctl(const uint8_t dev, uint32_t *control)
  * xio_set_stderr() - set stderr from device number
  */
 
-void xio_set_stdin(const uint8_t dev)
-{
-	stdin = ds[dev].fdev;
-}
-
-void xio_set_stdout(const uint8_t dev)
-{
-	stdout = ds[dev].fdev;
-}
-
-void xio_set_stderr(const uint8_t dev)
-{
-	stderr = ds[dev].fdev;
-}
+void xio_set_stdin(const uint8_t dev)  { stdin  = ds[dev].fdev; }
+void xio_set_stdout(const uint8_t dev) { stdout = ds[dev].fdev; }
+void xio_set_stderr(const uint8_t dev) { stderr = ds[dev].fdev; }
 
 /*
  * xio_putc() - common entry point for putc
+ * xio_getc() - common entry point for getc
+ * xio_gets() - common entry point for non-blocking get line function
  */
 
 int xio_putc(const uint8_t dev, const char c)
 {
-	return ds[dev].x_putc(c, ds[dev].fdev);
+	return ds[dev].x_putc(c, ds[dev].fdev); 
+}
 
-/*	The safe way to do this, but it sacrifices speed
+int xio_getc(const uint8_t dev) 
+{ 
+	return ds[dev].x_getc(ds[dev].fdev); 
+}
+
+int xio_gets(const uint8_t dev, char *buf, const int size) 
+{
+	return ds[dev].x_gets(dev, buf, size); 
+}
+
+/* The safe way to do the above functions, but it sacrifices speed in a critical region
+
+int xio_putc(const uint8_t dev, const char c)
+{
 	if (dev < XIO_DEV_COUNT) {		
 		return ds[dev].x_putc(c, ds[dev].fdev);
 	} else {
 		return (_FDEV_ERR);	// XIO_NO_SUCH_DEVICE
-	} */
+	}
 }
-
-/*
- * xio_getc() - common entry point for getc
- */
 
 int xio_getc(const uint8_t dev)
 {
-	return ds[dev].x_getc(ds[dev].fdev);
-
-/*	The safe way to do this, but it sacrifices speed
 	if (dev < XIO_DEV_COUNT) {
 		return ds[dev].x_getc(ds[dev].fdev);
 	} else {
 		return (_FDEV_ERR);	// XIO_NO_SUCH_DEVICE
-	} */
+	}
 }
-
-/*
- * xio_gets() - common entry point for non-blocking receive line functions
- *
- * Arguments
- *	dev		XIO device enumeration
- *	buf		text buffer to read into
- *	size	size of text buffer in 1 offset form: e.g. use 80 instead of 79
- */
 
 int xio_gets(const uint8_t dev, char *buf, const int size)
 {
@@ -247,8 +233,9 @@ int xio_gets(const uint8_t dev, char *buf, const int size)
 		return ds[dev].x_gets(dev, buf, size);
 	} else {
 		return (_FDEV_ERR);	// XIO_NO_SUCH_DEVICE
-	}		
+	}
 }
+*/
 
 //########################################################################
 

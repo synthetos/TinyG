@@ -41,18 +41,19 @@
 #include "../gpio.h"					// needed for XON/XOFF LED indicator
 #include "../util.h"					// needed to pick up __debug defines
 
-
+/*
+ *	xio_init_spi() - init entire SPI system
+ */
 void xio_init_spi(void)
 {
 	// setup SPI1
-	xio_init_dev(XIO_DEV_SPI1, xio_open, xio_cntl_spi, xio_gets_spi, xio_getc_spi, xio_putc_spi);
+	xio_init_dev(XIO_DEV_SPI1, xio_open, xio_cntl, xio_gets, xio_getc_spi, xio_putc_spi);
 	xio_init_spi_dev(XIO_DEV_SPI1, SPI_INIT_bm, 0, &SPI_PORT, SPI_INBITS_bm, SPI_OUTBITS_bm, SPI_OUTCLR_bm, SPI_OUTSET_bm);
 }
 
 /*
- *	xio_init_spi()
+ *	xio_init_spi_dev() - init a single SPI device
  */
-
 void xio_init_spi_dev(const uint8_t dev, 			// index into device array (ds)
 					const uint32_t control,			// control bits
 					const struct USART_struct *usart_addr,
@@ -68,12 +69,11 @@ void xio_init_spi_dev(const uint8_t dev, 			// index into device array (ds)
 	struct xioDEVICE *d = &ds[dev];					// setup device struct pointer
 	d->x = &sp[channel];							// bind SPI struct to device
 	struct xioSPI *dx = (struct xioSPI *)d->x;		// setup SPI struct pointer
-	dx->index = channel-1;							// used as fdev.udata
 	dx->usart = (struct USART_struct *)usart_addr;	// bind USART used for SPI 
 	dx->port = (struct PORT_struct *)port_addr;		// bind PORT used for SPI
 
 	// set control flags
-	(void)xio_cntl(dev, control);					// generic setflags -doesn't validate flags
+	(void)xio_cntl(dev, control);					// generic setflags - doesn't validate flags
 
 	// setup internal RX/TX buffers
 	dx->rx_buf_head = 1;		// can't use location 0 in circular buffer
@@ -93,11 +93,8 @@ void xio_init_spi_dev(const uint8_t dev, 			// index into device array (ds)
 	dx->port->DIRSET = outbits;		// setup output bits on port
 	dx->port->OUTCLR = outclr;
 	dx->port->OUTSET = outset;
-
-	// bind channel index into fdev as udata
-	fdev_set_udata(d->fdev, &dx->index);
 }
-
+/*
 FILE * xio_open_spi(uint8_t dev)
 {
 	return(SPI1.fdev);
@@ -107,7 +104,7 @@ int xio_cntl_spi(const uint8_t dev, const uint32_t control)
 {
 	return (NUL);
 }
-
+*/
 int xio_gets_spi(const uint8_t dev, char *buf, const int size)
 {
 	return (NUL);
@@ -115,7 +112,7 @@ int xio_gets_spi(const uint8_t dev, char *buf, const int size)
 
 int xio_putc_spi(const char c, FILE *stream)
 {
-	uint8_t *channel = fdev_get_udata(stream);
+//	uint8_t *channel = fdev_get_udata(stream);
 	return (NUL);
 }
 

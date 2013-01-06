@@ -104,8 +104,8 @@ void xio_init_dev(uint8_t dev,									// device number
 	FILE *(*x_open)(const uint8_t dev, const char *addr), 		// device open routine
 	int (*dev_cntl)(const uint8_t dev, const uint32_t control),	// set device control flags
 //	int (*dev_rctl)(const uint8_t dev, uint32_t *control),		// get device control flags
-	int (*dev_gets)(const uint8_t dev, char *buf, int size),	// specialized line reader
-	int (*dev_getc)(FILE *),										// read char (stdio compatible)
+	int (*dev_gets)(const uint8_t dev, char *buf, int size),	// non-blocking line getter
+	int (*dev_getc)(FILE *),									// read char (stdio compatible)
 	int (*dev_putc)(char, FILE *)								// write char (stdio compatible)
 	);
 
@@ -119,14 +119,23 @@ void xio_set_stderr(const uint8_t dev);
  *	Device structures
  *************************************************************************/
 // NOTE" "FILE *" is another way of saying "struct __file *"
+/*
+struct fdevRefs {							// carries backwards pointers to device structs
+	void *d;								// device structure
+	void *dx;								// device extended structure
+	uint8_t dev;							// device number
+};
+typedef struct fdevRefs refs;
+*/
 
 struct xioDEVICE {							// common device struct (one per dev)
-	uint8_t status;							// completion status 
-	uint8_t signal;							// signal value
-	char c;									// char temp
-	uint8_t len;							// chars read so far (buf array index)
-	int size;								// text buffer length (dynamic)
-	uint32_t flags;							// common control flags
+	// references and self references
+	uint8_t dev;							// self referential device number
+	void *d;								// reference to self for fdev.udata binding
+	void *x;								// device-specific struct binding (static)
+	FILE *fdev;								// stdio fdev binding (static)
+
+	// function bindings
 	FILE *(*x_open)(const uint8_t dev, const char *addr);		// device open routine
 	int (*x_cntl)(const uint8_t dev, const uint32_t control);	// set device control flags
 //	int (*x_rctl)(const uint8_t dev, uint32_t *control);		// get device control flags
@@ -134,8 +143,13 @@ struct xioDEVICE {							// common device struct (one per dev)
 	int (*x_getc)(FILE *);					// read char (stdio compatible)
 	int (*x_putc)(char, FILE *);			// write char (stdio compatible)
 
-	void *x;								// device-specific struct binding (static)
-	FILE *fdev;								// stdio fdev binding (static)
+	// private working data
+	uint8_t status;							// completion status 
+	uint8_t signal;							// signal value
+	char c;									// char temp
+	uint8_t len;							// chars read so far (buf array index)
+	int size;								// text buffer length (dynamic)
+	uint32_t flags;							// common control flags
 	char *buf;								// text buffer binding (can be dynamic)
 };
 
