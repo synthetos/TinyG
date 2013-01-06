@@ -30,6 +30,54 @@
 #define xio_usart_h
 
 /* 
+ * USART DEVICE CONSTANTS AND PARAMETERS
+ */
+
+// Buffer sizing
+#define BUFFER_T uint_fast8_t				// fast, but limits buffer to 255 char max
+#define RX_BUFFER_SIZE (BUFFER_T)255		// BUFFER_T can be 8 bits
+#define TX_BUFFER_SIZE (BUFFER_T)255		// BUFFER_T can be 8 bits
+
+// Alternates for larger buffers - mostly for debugging
+//#define BUFFER_T uint16_t					// slower, but larger buffers
+//#define RX_BUFFER_SIZE (BUFFER_T)512		// BUFFER_T must be 16 bits if >255
+//#define TX_BUFFER_SIZE (BUFFER_T)512		// BUFFER_T must be 16 bits if >255
+//#define RX_BUFFER_SIZE (BUFFER_T)1024		// 2048 is the practical upper limit
+//#define TX_BUFFER_SIZE (BUFFER_T)1024		// 2048 is practical upper limit given RAM
+
+// XON/XOFF hi and lo watermarks. At 115.200 the host has approx. 100 uSec per char 
+// to react to an XOFF. 90% (0.9) of 255 chars gives 25 chars to react, or about 2.5 ms.  
+#define XOFF_RX_HI_WATER_MARK (RX_BUFFER_SIZE * 0.8)	// % to issue XOFF
+#define XOFF_RX_LO_WATER_MARK (RX_BUFFER_SIZE * 0.1)	// % to issue XON
+#define XOFF_TX_HI_WATER_MARK (TX_BUFFER_SIZE * 0.9)	// % to issue XOFF
+#define XOFF_TX_LO_WATER_MARK (TX_BUFFER_SIZE * 0.05)	// % to issue XON
+
+/* 
+ * USART extended control structure 
+ * Note: As defined this struct won't do buffers larger than 256 chars - 
+ *	     or a max of 254 characters usable
+ */
+struct xioUSART {
+	uint8_t fc_char;			 			// flow control character to send
+	volatile uint8_t fc_state;				// flow control state
+	volatile BUFFER_T rx_buf_tail;			// RX buffer read index
+	volatile BUFFER_T rx_buf_head;			// RX buffer write index (written by ISR)
+	volatile BUFFER_T tx_buf_tail;			// TX buffer read index  (written by ISR)
+	volatile BUFFER_T tx_buf_head;			// TX buffer write index
+
+	struct USART_struct *usart;				// USART structure
+	struct PORT_struct *port;				// corresponding port
+
+	volatile char rx_buf[RX_BUFFER_SIZE];  // (written by ISR)
+	volatile char tx_buf[TX_BUFFER_SIZE];
+};
+
+// handy helpers
+BUFFER_T xio_get_rx_bufcount_usart(const struct xioUSART *dx);
+BUFFER_T xio_get_tx_bufcount_usart(const struct xioUSART *dx);
+BUFFER_T xio_get_usb_rx_free(void);
+
+/*
  * USART DEVICE FUNCTION PROTOTYPES AND ALIASES
  */
 
@@ -37,7 +85,7 @@
 
 // Common functions (common to all USART devices)
 void xio_init_usart(const uint8_t dev, 
-					const uint8_t offset,
+					const uint8_t index,
 					const uint32_t control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,
@@ -90,7 +138,7 @@ void xio_dump_RX_queue_usart(void);
 // general USART defines
 
 #define USB ds[XIO_DEV_USB]			// device struct accessor
-#define USBu us[XIO_DEV_USB_OFFSET]	// usart extended struct accessor
+#define USBu us[XIO_DEV_USB_INDEX]	// usart extended struct accessor
 
 #define USART_TX_REGISTER_READY_bm USART_DREIF_bm
 #define USART_RX_DATA_READY_bm USART_RXCIF_bm
@@ -167,30 +215,6 @@ void xio_dump_RX_queue_usart(void);
 #define TTL_OUTSET_bm (USB_TX_bm)
 
 /* 
- * USART DEVICE CONSTANTS AND PARAMETERS
- */
-
-//Choose one: (this define sets the data type in all places that need it)
-#define BUFFER_T uint_fast8_t	// faster, but limits buffer to 255 char max
-//#define BUFFER_T uint16_t		// slower, but larger buffers
-
-#define RX_BUFFER_SIZE (BUFFER_T)255	// BUFFER_T can be 8 bits
-//#define RX_BUFFER_SIZE (BUFFER_T)512	// BUFFER_T must be 16 bits if >255
-//#define RX_BUFFER_SIZE (BUFFER_T)1024	// 2048 is the practical upper limit
-
-#define TX_BUFFER_SIZE (BUFFER_T)255	// BUFFER_T can be 8 bits
-//#define TX_BUFFER_SIZE (BUFFER_T)512	// BUFFER_T must be 16 bits if >255
-//#define TX_BUFFER_SIZE (BUFFER_T)1024	// 2048 is practical upper limit given RAM
-
-// XON/XOFF hi and lo watermarks. At 115.200 the host has approx. 100 uSec
-// per character to react to an XOFF. 90% (0.9) of 255 chars gives 25 chars
-// to react, or about 2.5 ms.  
-#define XOFF_RX_HI_WATER_MARK (RX_BUFFER_SIZE * 0.8)	// % to issue XOFF
-#define XOFF_RX_LO_WATER_MARK (RX_BUFFER_SIZE * 0.1)	// % to issue XON
-#define XOFF_TX_HI_WATER_MARK (TX_BUFFER_SIZE * 0.9)	// % to issue XOFF
-#define XOFF_TX_LO_WATER_MARK (TX_BUFFER_SIZE * 0.05)	// % to issue XON
-
-/* 
  * Serial Configuration Settings
  *
  * 	Serial config settings are here because various modules will be opening devices
@@ -221,32 +245,5 @@ enum xioFCState {
 		FC_IN_XON,					// normal, un-flow-controlled state
 		FC_IN_XOFF					// flow controlled state
 };
-
-/* 
- * USART extended control structure 
- * Note: As defined this struct won't do buffers larger than 256 chars - 
- *	     or a max of 254 characters usable
- */
-
-struct xioUSART {
-//	uint16_t uflags;				// usart sub-system flags (UNUSED)
-	uint8_t fc_char;	 			// flow control character to send
-	volatile uint8_t fc_state;		// flow control state
-	volatile BUFFER_T rx_buf_tail;	// RX buffer read index
-	volatile BUFFER_T rx_buf_head;	// RX buffer write index (written by ISR)
-	volatile BUFFER_T tx_buf_tail;	// TX buffer read index  (written by ISR)
-	volatile BUFFER_T tx_buf_head;	// TX buffer write index
-
-	struct USART_struct *usart;		// USART structure
-	struct PORT_struct *port;		// corresponding port
-
-	volatile char rx_buf[RX_BUFFER_SIZE];  // (written by ISR)
-	volatile char tx_buf[TX_BUFFER_SIZE];
-};
-
-// down here by their lonesome because they need xioUSART defined
-BUFFER_T xio_get_rx_bufcount_usart(const struct xioUSART *dx);
-BUFFER_T xio_get_tx_bufcount_usart(const struct xioUSART *dx);
-BUFFER_T xio_get_usb_rx_free(void);
 
 #endif

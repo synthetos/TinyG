@@ -63,35 +63,23 @@
 #include "../controller.h"			// needed by init() for default source
 
 /*
- * Static allocations for XIO 
- * See xio.h for device struct definition
- * See xio_usart.h for usart device struct definition
- * See xio_file.h for file device struct definition
- * See xio_signal.h for signal flag struct definition
+ * xio_init() - initialize entire xio sub-system
  */
-struct xioDEVICE ds[XIO_DEV_COUNT];		// allocate top-level dev structs
-struct xioUSART us[XIO_DEV_USART_COUNT];// ...USART extended IO structs
-struct xioFILE fs[XIO_DEV_FILE_COUNT];	// ...FILE extended IO structs
-struct __file ss[XIO_DEV_COUNT];		// ...stdio stream for each dev
-struct xioSIGNALS sig;					// ...signal flags
-extern struct controllerSingleton tg;	// needed by init() for default source
-
 void xio_init()
 {	
-	// call device inits
 	xio_init_rs485();
 	xio_init_usb();
-	xio_init_pgm();						// program memory file device
+	xio_init_spi();
+	xio_init_pgm();
 }
 
 /*
- * xio_init_dev() - generic (and partial) initialization for device
+ * xio_init_dev() - generic (and partial) initialization for any device
  *
  *	Requires device specific init to be run afterward.
  *	Could technically do controls (flags) here, but controls are set in 
  *	device-specific init so validation can be performed.
  */
-
 void xio_init_dev(uint8_t dev, 					// device number
 	FILE *(*x_open)(const char *addr),			// device open routine
 	int (*x_cntl)(const uint32_t control),		// set device control flags

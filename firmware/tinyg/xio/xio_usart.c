@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -92,7 +92,7 @@ static int _gets_DELETE(void);
  */
 
 void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
-					const uint8_t offset,		// index into USART array (us)
+					const uint8_t index,		// index into USART array (us)
 					const uint32_t control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,
@@ -103,7 +103,7 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 {
 	// do all the bindings first (and in this order)
 	struct xioDEVICE *d = &ds[dev];					// setup device struct pointer
-	d->x = &us[offset];								// bind USART struct to device
+	d->x = &us[index];								// bind USART struct to device
 	struct xioUSART *dx = (struct xioUSART *)d->x;	// setup USART struct pointer
 	dx->usart = (struct USART_struct *)usart_addr;	// bind USART 
 	dx->port = (struct PORT_struct *)port_addr;		// bind PORT

@@ -48,7 +48,7 @@
 #include "../xmega/xmega_interrupts.h"
 
 #define RS ds[XIO_DEV_RS485]			// device struct accessoor
-#define RSu us[XIO_DEV_RS485_OFFSET]	// usart extended struct accessor
+#define RSu us[XIO_DEV_RS485_INDEX]		// usart extended struct accessor
 
 // local helper functions
 static void _xio_enable_rs485_tx(void);	// enable rs485 TX mode (no RX)
@@ -56,11 +56,11 @@ static void _xio_enable_rs485_rx(void);	// enable rs485 RX mode (no TX)
 
 // RS485 device wrappers for generic USART routines
 struct __file * xio_open_rs485() { return(RS.fdev); }
-int xio_cntl_rs485(const uint32_t control) {return xio_cntl(XIO_DEV_RS485, control);}
-int xio_getc_rs485(FILE *stream) {return xio_getc_usart(XIO_DEV_RS485, stream);}
-int xio_gets_rs485(char *buf, const int size) {return xio_gets_usart(XIO_DEV_RS485, buf, size);}
-void xio_queue_RX_char_rs485(const char c) {xio_queue_RX_char_usart(XIO_DEV_RS485, c);}
-void xio_queue_RX_string_rs485(const char *buf) {xio_queue_RX_string_usart(XIO_DEV_RS485, buf);}
+int xio_cntl_rs485(const uint32_t control) { return(xio_cntl(XIO_DEV_RS485, control)); }
+int xio_getc_rs485(FILE *stream) { return(xio_getc_usart(XIO_DEV_RS485, stream)); }
+int xio_gets_rs485(char *buf, const int size) { return(xio_gets_usart(XIO_DEV_RS485, buf, size)); }
+void xio_queue_RX_char_rs485(const char c) { xio_queue_RX_char_usart(XIO_DEV_RS485, c); }
+void xio_queue_RX_string_rs485(const char *buf) { xio_queue_RX_string_usart(XIO_DEV_RS485, buf); }
 
 // RS485 device-specifc drivers 
 
@@ -70,7 +70,7 @@ void xio_queue_RX_string_rs485(const char *buf) {xio_queue_RX_string_usart(XIO_D
 void xio_init_rs485()	// RS485 init
 {
 	xio_init_dev(XIO_DEV_RS485, xio_open_rs485, xio_cntl_rs485, xio_putc_rs485, xio_getc_rs485, xio_gets_rs485);
-	xio_init_usart(XIO_DEV_RS485, XIO_DEV_RS485_OFFSET, RS485_INIT_bm, &RS485_USART, &RS485_PORT, RS485_DIRCLR_bm, RS485_DIRSET_bm, RS485_OUTCLR_bm, RS485_OUTSET_bm);
+	xio_init_usart(XIO_DEV_RS485, XIO_DEV_RS485_INDEX, RS485_INIT_bm, &RS485_USART, &RS485_PORT, RS485_DIRCLR_bm, RS485_DIRSET_bm, RS485_OUTCLR_bm, RS485_OUTSET_bm);
 	_xio_enable_rs485_rx(); // set initially for RX mode
 }
 
@@ -149,8 +149,7 @@ int xio_putc_rs485(const char c, FILE *stream)
 
 /* 
  * RS485_TX_ISR - RS485 transmitter interrupt (TX)
- * RS485_TXC_ISR - RS485 transmission complete
- *	(See notes in xio_putc_rs485)
+ * RS485_TXC_ISR - RS485 transmission complete (See notes in xio_putc_rs485)
  */
 
 ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC1 data register empty
