@@ -80,13 +80,13 @@ void xio_init()
  *	Could technically do controls (flags) here, but controls are set in 
  *	device-specific init so validation can be performed.
  */
-void xio_init_dev(uint8_t dev, 				// device number
+void xio_init_dev(uint8_t dev, 									// device number
 	FILE *(*x_open)(const uint8_t dev, const char *addr), 		// device open routine
 	int (*x_cntl)(const uint8_t dev, const uint32_t control),	// set device control flags
 //	int (*x_rctl)(const uint8_t dev, uint32_t *control),		// get device control flags
 	int (*x_gets)(const uint8_t dev, char *buf, int size),		// specialized line reader
-	int (*x_putc)(char, FILE *),			// write char (stdio compat)
-	int (*x_getc)(FILE *)					// read char (stdio compat)
+	int (*x_getc)(FILE *),										// read char (stdio compat)
+	int (*x_putc)(char, FILE *)									// write char (stdio compat)
 	) 
 {
 	// clear device struct

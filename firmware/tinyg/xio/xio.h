@@ -95,9 +95,9 @@ void xio_init(void);									// xio system general init
 FILE *xio_open(const uint8_t dev, const char *addr);	// generic open function
 int xio_cntl(const uint8_t dev, const uint32_t control);
 //int xio_rctl(const uint8_t dev, uint32_t *control);
+int xio_gets(const uint8_t dev, char *buf, const int size);
 int xio_getc(const uint8_t dev);
 int xio_putc(const uint8_t dev, const char c);
-int xio_gets(const uint8_t dev, char *buf, const int size);
 
 // generic device init (must be followed by device-specific init
 void xio_init_dev(uint8_t dev,									// device number
@@ -105,9 +105,9 @@ void xio_init_dev(uint8_t dev,									// device number
 	int (*dev_cntl)(const uint8_t dev, const uint32_t control),	// set device control flags
 //	int (*dev_rctl)(const uint8_t dev, uint32_t *control),		// get device control flags
 	int (*dev_gets)(const uint8_t dev, char *buf, int size),	// specialized line reader
-	int (*dev_putc)(char, FILE *),								// write char (stdio compatible)
-	int (*dev_getc)(FILE *)										// read char (stdio compatible)
-	); 
+	int (*dev_getc)(FILE *),										// read char (stdio compatible)
+	int (*dev_putc)(char, FILE *)								// write char (stdio compatible)
+	);
 
 // std devices
 void xio_init_stdio(void);						// set std devs & do startup prompt
@@ -131,8 +131,8 @@ struct xioDEVICE {							// common device struct (one per dev)
 	int (*x_cntl)(const uint8_t dev, const uint32_t control);	// set device control flags
 //	int (*x_rctl)(const uint8_t dev, uint32_t *control);		// get device control flags
 	int (*x_gets)(const uint8_t dev, char *buf, const int size);// specialized line reader
-	int (*x_putc)(char, FILE *);			// write char (stdio compatible)
 	int (*x_getc)(FILE *);					// read char (stdio compatible)
+	int (*x_putc)(char, FILE *);			// write char (stdio compatible)
 
 	void *x;								// device-specific struct binding (static)
 	FILE *fdev;								// stdio fdev binding (static)

@@ -91,7 +91,7 @@ void tg_receiver()
 //	int	getc_code = 0;
 	int rx;
 
-	xio_queue_RX_string_rs485("Z");		// simulate an RX char
+	xio_queue_RX_string_usart(XIO_DEV_RS485, "Z");		// simulate an RX char
 
 	while (true) {
 		while ((rx = xio_getc(XIO_DEV_RS485)) == -1);

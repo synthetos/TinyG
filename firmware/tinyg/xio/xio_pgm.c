@@ -42,7 +42,7 @@
 void xio_init_pgm()
 {
 	// Program memory file device setup
-	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_cntl_pgm, xio_gets_pgm, xio_putc_pgm, xio_getc_pgm);
+	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_cntl_pgm, xio_gets_pgm, xio_getc_pgm, xio_putc_pgm);
 	xio_init_file(XIO_DEV_PGM, PGM_INIT_bm);
 }
 

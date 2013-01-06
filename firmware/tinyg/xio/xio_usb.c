@@ -42,20 +42,23 @@
 #include "../xmega/xmega_interrupts.h"
 #include "../gpio.h"
 
-/* USB device wrappers for generic USART routines */
-int xio_cntl_usb(const uint8_t dev, const uint32_t control) { return(xio_cntl(XIO_DEV_USB, control)); } // SEE NOTE
-int xio_gets_usb(const uint8_t dev, char *buf, const int size) { return(xio_gets_usart(XIO_DEV_USB, buf, size)); }
-int xio_getc_usb(FILE *stream) { return(xio_getc_usart(XIO_DEV_USB, stream)); }
-void xio_queue_RX_char_usb(const char c) { xio_queue_RX_char_usart(XIO_DEV_USB, c); }
-void xio_queue_RX_string_usb(const char *buf) { xio_queue_RX_string_usart(XIO_DEV_USB, buf); }
 
-void xio_init_usb()	// USB inits
+/*
+ * xio_init_usb() - initialization
+ */
+void xio_init_usb()
 {
-	xio_init_dev(XIO_DEV_USB, xio_open, xio_cntl_usb, xio_gets_usb, xio_putc_usb, xio_getc_usb);
+	xio_init_dev(XIO_DEV_USB, xio_open, xio_cntl, xio_gets_usart, xio_getc_usb, xio_putc_usb);
 	xio_init_usart(XIO_DEV_USB, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
 }
 
-// NOTE: Might later expand setflags() to validate control bits and return errors
+/*
+ * xio_getc_usb() - simple wrapper to tell the USART getc what device to read from
+ */
+int xio_getc_usb(FILE *stream) 
+{ 
+	return(xio_getc_usart(XIO_DEV_USB, stream)); 
+}
 
 /*
  * xio_putc_usb() 
@@ -185,3 +188,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		}
 	}
 }
+
+/* USB device wrappers for generic USART routines */
+//void xio_queue_RX_char_usb(const char c) { xio_queue_RX_char_usart(XIO_DEV_USB, c); }
+//void xio_queue_RX_string_usb(const char *buf) { xio_queue_RX_string_usart(XIO_DEV_USB, buf); }

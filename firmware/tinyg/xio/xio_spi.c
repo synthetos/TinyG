@@ -45,7 +45,7 @@
 void xio_init_spi(void)
 {
 	// setup SPI1
-	xio_init_dev(XIO_DEV_SPI1, xio_open, xio_cntl_spi, xio_gets_spi, xio_putc_spi, xio_getc_spi);
+	xio_init_dev(XIO_DEV_SPI1, xio_open, xio_cntl_spi, xio_gets_spi, xio_getc_spi, xio_putc_spi);
 	xio_init_spi_dev(XIO_DEV_SPI1, SPI_INIT_bm, 0, &SPI_PORT, SPI_INBITS_bm, SPI_OUTBITS_bm, SPI_OUTCLR_bm, SPI_OUTSET_bm);
 }
 
