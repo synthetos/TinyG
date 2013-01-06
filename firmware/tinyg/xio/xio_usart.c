@@ -92,7 +92,7 @@ static int _gets_DELETE(void);
  */
 
 void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
-					const uint8_t index,		// index into USART array (us)
+//					const uint8_t index,		// index into USART array (us)
 					const uint32_t control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,
@@ -101,9 +101,12 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 					const uint8_t outclr, 
 					const uint8_t outset) 
 {
+	// determine the index into the USART device array
+	uint8_t channel = dev;	// quite simple in this case.
+
 	// do all the bindings first (and in this order)
 	struct xioDEVICE *d = &ds[dev];					// setup device struct pointer
-	d->x = &us[index];								// bind USART struct to device
+	d->x = &us[channel];							// bind USART struct to device
 	struct xioUSART *dx = (struct xioUSART *)d->x;	// setup USART struct pointer
 	dx->usart = (struct USART_struct *)usart_addr;	// bind USART 
 	dx->port = (struct PORT_struct *)port_addr;		// bind PORT

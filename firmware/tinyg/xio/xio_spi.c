@@ -42,32 +42,18 @@
 #include "../util.h"					// needed to pick up __debug defines
 
 
-/* SPI device wrappers for generic SPI routines */
-
-//int xio_cntl_usb(const uint32_t control) return xio_cntl(XIO_DEV_USB, control); // SEE NOTE
-//int xio_getc_usb(FILE *stream) return xio_getc_usart(XIO_DEV_USB, stream);
-//int xio_gets_usb(char *buf, const int size) return xio_gets_usart(XIO_DEV_USB, buf, size);
-//void xio_queue_RX_char_usb(const char c) xio_queue_RX_char_usart(XIO_DEV_USB, c);
-//void xio_queue_RX_string_usb(const char *buf) xio_queue_RX_string_usart(XIO_DEV_USB, buf);
-
-//void xio_init_usb()	// USB inits
-//{
-//	xio_init_dev(XIO_DEV_USB, xio_open_usb, xio_cntl_usb, xio_putc_usb, xio_getc_usb, xio_gets_usb);
-//	xio_init_usart(XIO_DEV_USB, XIO_DEV_USB_OFFSET, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
-//}
-
-void xio_init_spis(void)
+void xio_init_spi(void)
 {
+	// setup SPI1
 	xio_init_dev(XIO_DEV_SPI1, xio_cntl_spi, xio_putc_spi, xio_getc_spi, xio_gets_spi);
-//	for ()
-//	xio_init_spi_chan(XIO_DEV_SPI1, XIO_DEV_USB_OFFSET, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
+	xio_init_spi_dev(XIO_DEV_SPI1, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
 }
 
 /*
  *	xio_init_spi()
  */
 
-void xio_init_spi(const uint8_t dev, 				// index into device array (ds)
+void xio_init_spi_dev(const uint8_t dev, 				// index into device array (ds)
 					const uint32_t control,			// control bits
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,

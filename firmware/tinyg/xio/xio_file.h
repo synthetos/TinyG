@@ -107,7 +107,6 @@ struct xioFILE {
 // Generic file device functions
 void xio_init_file(	const uint8_t dev, 
 					FILE *(*x_open)(const char *addr), 	// device open routine
-					const uint8_t index, 
 					const uint32_t control);
 
 // PGM functions

@@ -76,8 +76,8 @@ struct xioSPI {
  * SPI FUNCTION PROTOTYPES
  */
 
-void xio_init_spis(void);
-void xio_init_spi(	const uint8_t dev, 
+void xio_init_spi(void);
+void xio_init_spi_dev(	const uint8_t dev, 
 					const uint32_t control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,

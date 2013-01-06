@@ -55,24 +55,13 @@ typedef int (*fptr_int_void) (void); 	// returns int, void args
  *************************************************************************/
 
 void xio_init(void);					// xio system general init
-void xio_init_stdio(void);				// set std devs & do startup prompt
-void xio_init_rs485(void);				// device-specific inits
-void xio_init_usb(void);
-void xio_init_spis(void);
-void xio_init_pgm(void);
-void xio_init_eep(void);
-
 int xio_cntl(const uint8_t dev, const uint32_t control);
 //int xio_rctl(const uint8_t dev, uint32_t *control);
-
-void xio_set_stdin(const uint8_t dev);
-void xio_set_stdout(const uint8_t dev);
-void xio_set_stderr(const uint8_t dev);
-
 int xio_getc(const uint8_t dev);
 int xio_putc(const uint8_t dev, const char c);
 int xio_gets(const uint8_t dev, char *buf, const int size);
 
+// generic device init (must be followed by device-specific init
 void xio_init_dev(uint8_t dev,				// device number
 	int (*dev_cntl)(const uint32_t control),// set device control flags
 //	int (*dev_rctl)(uint32_t *control),		// get device control flags
@@ -80,6 +69,12 @@ void xio_init_dev(uint8_t dev,				// device number
 	int (*dev_getc)(FILE *),				// read char (stdio compatible)
 	int (*dev_gets)(char *buf, int size)	// specialized line reader
 	); 
+
+// std devices
+void xio_init_stdio(void);					// set std devs & do startup prompt
+void xio_set_stdin(const uint8_t dev);
+void xio_set_stdout(const uint8_t dev);
+void xio_set_stderr(const uint8_t dev);
 
 /*************************************************************************
  *	Device structures
@@ -134,22 +129,16 @@ enum xioDevice {		// device enumerations
 // If your change these ^, check these v
 
 #define XIO_DEV_USART_COUNT 	2 				// # of USART devices
-#define XIO_DEV_USB_INDEX 		XIO_DEV_USB		// index into USART structures
-#define XIO_DEV_RS485_INDEX 	XIO_DEV_RS485
+#define XIO_DEV_USART_OFFSET	0				// offset for computing index into extended device struct array
 
 #define XIO_DEV_SPI_COUNT 		2 				// # of SPI devices
-#define XIO_DEV_SPI1_CHANNEL 	0				// index into SPI channels 
-#define XIO_DEV_SPI2_CHANNEL 	1				// (needed only for inits)
-//#define XIO_DEV_SPI3_CHANNEL	2
-//#define XIO_DEV_SPI4_CHANNEL	3
-//#define XIO_DEV_SPI5_CHANNEL	4
-//#define XIO_DEV_SPI6_CHANNEL	5
+#define XIO_DEV_SPI_OFFSET		XIO_DEV_USART_COUNT	// offset for computing index into extended device struct array
 
 #define XIO_DEV_FILE_COUNT		1				// # of FILE devices
-#define XIO_DEV_PGM_INDEX		0				// index into FILES
+#define XIO_DEV_FILE_OFFSET		(XIO_DEV_USART_COUNT + XIO_DEV_SPI_COUNT) // index into FILES
 
 // aliases for stdio devices (aka pointers, streams)
-//#define fdev_rs485	(ds[XIO_DEV_RS485].fdev)	// RS485 device for stdio functions
+//#define fdev_rs485 (ds[XIO_DEV_RS485].fdev)	// RS485 device for stdio functions
 //#define fdev_usb	(ds[XIO_DEV_USB].fdev)		// USB device for stdio functions
 //#define fdev_spi1	(ds[XIO_DEV_SPI1].fdev)		// SPI channel #1
 //#define fdev_spi2	(ds[XIO_DEV_SPI2].fdev)		// SPI channel #2

@@ -66,11 +66,11 @@
  * xio_init() - initialize entire xio sub-system
  */
 void xio_init()
-{	
-	xio_init_rs485();
-	xio_init_usb();
-	xio_init_spis();
-	xio_init_pgm();
+{
+	xio_init_usb();					// setup USB device
+	xio_init_rs485();				// setup RS485 device
+	xio_init_spi();					// setup SPI devices
+	xio_init_pgm();					// setup file reader
 }
 
 /*
@@ -103,7 +103,7 @@ void xio_init_dev(uint8_t dev, 				// device number
 	ds[dev].fdev = &ss[dev];
 	fdev_setup_stream(ds[dev].fdev, x_putc, x_getc, _FDEV_SETUP_RW);
 }
-/* 
+/*
  *	xio_init_file() - generic init for file devices
  *
  *	This should really go in xio_file.c but it seemed excessive to create 
@@ -112,10 +112,10 @@ void xio_init_dev(uint8_t dev, 				// device number
 
 void xio_init_file(	const uint8_t dev, 
 					FILE *(*x_open)(const char *addr), 	// device open routine
-					const uint8_t index, 
 					const uint32_t control)
 {
 	ds[dev].x_open = x_open;
+	uint8_t index = dev - XIO_DEV_FILE_OFFSET;
 
 	// bind file struct to extended device parameters
 	ds[dev].x = &fs[index];		// bind pgm FILE struct

@@ -85,7 +85,7 @@ BUFFER_T xio_get_usb_rx_free(void);
 
 // Common functions (common to all USART devices)
 void xio_init_usart(const uint8_t dev, 
-					const uint8_t index,
+//					const uint8_t index,
 					const uint32_t control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,
@@ -107,7 +107,7 @@ void xio_queue_RX_string_usart(const uint8_t dev, const char *buf);
 
 
 // RS485 specific functions
-FILE * xio_open_rs485(uint8_t dev);				// returns stdio fdev handle (note)
+void xio_init_rs485(void);
 int xio_cntl_rs485(const uint32_t control);		// set control flags w/validation
 int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
 int xio_getc_rs485(FILE *stream);				// stdio compatible get character
@@ -116,7 +116,7 @@ void xio_queue_RX_char_rs485(const char c);		// simulate char rcvd into RX buffe
 void xio_queue_RX_string_rs485(const char *buf);// simulate rec'ving a whole string
 
 // USB specific functions
-FILE * xio_open_usb(uint8_t dev);				// returns stdio fdev handle
+void xio_init_usb(void);
 int xio_cntl_usb(const uint32_t control);		// set control flags w/validation
 int xio_putc_usb(const char c, FILE *stream);	// stdio compatible put character
 int xio_getc_usb(FILE *stream);					// stdio compatible get character
@@ -124,8 +124,6 @@ int xio_gets_usb(char *buf, const int size);	// non-blocking read line function
 void xio_queue_RX_char_usb(const char c);		// simulate char rcvd into RX buffer
 void xio_queue_RX_string_usb(const char *buf);	// simulate receving a whole string
 void xio_dump_RX_queue_usart(void);
-
-// Note: don't put void in the open() prototypes- it conflicts with the file open()s
 
 // TTL usart specific functions (Arduino)
 
@@ -138,7 +136,7 @@ void xio_dump_RX_queue_usart(void);
 // general USART defines
 
 #define USB ds[XIO_DEV_USB]			// device struct accessor
-#define USBu us[XIO_DEV_USB_INDEX]	// usart extended struct accessor
+#define USBu us[XIO_DEV_USB - XIO_DEV_USART_OFFSET]	// usart extended struct accessor
 
 #define USART_TX_REGISTER_READY_bm USART_DREIF_bm
 #define USART_RX_DATA_READY_bm USART_RXCIF_bm
