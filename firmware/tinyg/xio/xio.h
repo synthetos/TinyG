@@ -76,13 +76,6 @@ enum xioDevice {		// device enumerations
 #define XIO_DEV_FILE_COUNT		1				// # of FILE devices
 #define XIO_DEV_FILE_OFFSET		(XIO_DEV_USART_COUNT + XIO_DEV_SPI_COUNT) // index into FILES
 
-//aliases for stdio devices (aka pointers, streams)
-//#define fdev_rs485 (ds[XIO_DEV_RS485].fdev)	// RS485 device for stdio functions
-//#define fdev_usb	(ds[XIO_DEV_USB].fdev)		// USB device for stdio functions
-//#define fdev_spi1	(ds[XIO_DEV_SPI1].fdev)		// SPI channel #1
-//#define fdev_spi2	(ds[XIO_DEV_SPI2].fdev)		// SPI channel #2
-//#define fdev_pgm	(ds[XIO_DEV_PGM].fdev)		// Program memory device
-
 /*************************************************************************
  *	Device structures
  *************************************************************************/
@@ -111,9 +104,9 @@ struct xioDEVICE {							// common device struct (one per dev)
 	char *buf;								// text buffer binding (can be dynamic)
 	uint8_t len;							// chars read so far (buf array index)
 	uint8_t signal;							// signal value
-	uint32_t flags;							// bitfield control flags
-	uint8_t flag_read;						// expanded flags: less space efficient but way faster
-	uint8_t flag_write;
+//	uint32_t flags;							// bitfield control flags
+//	uint8_t flag_read;						// expanded flags: less space efficient but way faster
+//	uint8_t flag_write;
 	uint8_t flag_block;
 	uint8_t flag_xoff;						// xon/xoff enabled
 	uint8_t flag_echo;
@@ -136,7 +129,6 @@ typedef struct xioDEVICE xioDevice;
  * See xio_signal.h for signal flag struct definition
  */
 xioDevice 	ds[XIO_DEV_COUNT];			// allocate top-level dev structs
-//struct __file 		ss[XIO_DEV_COUNT];		// ...stdio stream for each dev
 FILE 		ss[XIO_DEV_COUNT];			// ...stdio stream for each dev
 xioUsart 	us[XIO_DEV_USART_COUNT];	// ...USART extended IO structs
 xioSpi 		sp[XIO_DEV_SPI_COUNT];		// ...SPI extended IO structs
@@ -222,38 +214,6 @@ void xio_set_stderr(const uint8_t dev);
 #define XIO_NOLINEMODE	((uint16_t)1<<13)		// no special <CR><LF> read handling
 */
 
-/*
-// internal control flags (which are NOT the similar bits in the control word, above)
-// static configuration states
-#define XIO_FLAG_RD_bm		((uint32_t)1<<0)	// enabled for read
-#define XIO_FLAG_WR_bm		((uint32_t)1<<1)	// enabled for write
-#define XIO_FLAG_BLOCK_bm	((uint32_t)1<<2)	// enable blocking RD and WR
-#define XIO_FLAG_XOFF_bm 	((uint32_t)1<<3)	// XOFF flow control enabled
-#define XIO_FLAG_ECHO_bm 	((uint32_t)1<<4)	// echo received chars to stderr
-#define XIO_FLAG_CRLF_bm 	((uint32_t)1<<5)	// convert <LF> to <CR><LF> on writes
-#define XIO_FLAG_IGNORECR_bm ((uint32_t)1<<6)	// ignore <LF> on reads
-#define XIO_FLAG_IGNORELF_bm ((uint32_t)1<<7)	// ignore <LF> on reads
-#define XIO_FLAG_LINEMODE_bm ((uint32_t)1<<8)	// special handling for line-oriented text
-// transient states
-//#define XIO_FLAG_EOL_bm		((uint32_t)1<<9)	// detected EOL (/n, /r, ;)
-#define XIO_FLAG_EOF_bm 	((uint32_t)1<<10)	// detected EOF (NUL)
-#define XIO_FLAG_IN_LINE_bm	((uint32_t)1<<11)	// partial line is in buffer
-#define XIO_FLAG_RESET_gm	(0x01FF)			// used to clear the transient state bits
-
-// Bit evaluations that return actual TRUE and FALSE
-// Just using the (a & blahblah) returns FALSE and not_FALSE 
-// ...but not actually TRUE (which = 1)
-//#define READ(a) 		((a & XIO_FLAG_RD_bm) ? true : false)
-//#define WRITE(a)	 	((a & XIO_FLAG_WR_bm) ? true : false)
-#define BLOCKING(a) 	((a & XIO_FLAG_BLOCK_bm) ? true : false)
-//#define EN_XOFF(a)		((a & XIO_FLAG_XOFF_bm) ? true : false)
-#define ECHO(a)		 	((a & XIO_FLAG_ECHO_bm) ? true : false)
-//#define CRLF(a) 		((a & XIO_FLAG_CRLF_bm) ? true : false)
-//#define IGNORECR(a) 	((a & XIO_FLAG_IGNORECR_bm) ? true : false)
-//#define IGNORELF(a) 	((a & XIO_FLAG_IGNORELF_bm) ? true : false)
-#define LINEMODE(a)		((a & XIO_FLAG_LINEMODE_bm) ? true : false)
-#define IN_LINE(a)		((a & XIO_FLAG_IN_LINE_bm) ? true : false)
-*/
 /*
  * Generic XIO signals and error conditions. 
  * See signals.h for application specific signal defs and routines.

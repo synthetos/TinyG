@@ -117,7 +117,6 @@ int xio_putc_rs485(const char c, FILE *stream)
 		next_tx_buf_head = TX_BUFFER_SIZE-1;	 // -1 avoids the off-by-one
 	}
 	while(next_tx_buf_head == RSu.tx_buf_tail) { // buf full. sleep or ret
-//		if (BLOCKING(RS.flags) != 0) {				//++++++++++++++++++++++++
 		if (RS.flag_block) {
 			sleep_mode();
 		} else {
@@ -130,12 +129,11 @@ int xio_putc_rs485(const char c, FILE *stream)
 	RSu.tx_buf_head = next_tx_buf_head;				// accept next buffer head
 	RSu.tx_buf[RSu.tx_buf_head] = c;				// ...write char to buffer
 
-//	if ((CRLF(RS.flags) != 0) && (c == '\n')) {		// detect LF & add CR +++++++++++++++
 	if ((c == '\n') && (RS.flag_crlf)) {			// detect LF & add CR
 		return RS.x_putc('\r', stream);				// recurse
 	}
 	// force a TX interupt to attempt to send the character
-	RSu.usart->CTRLA = CTRLA_RXON_TXON;	// doesn't work if you just |= it
+	RSu.usart->CTRLA = CTRLA_RXON_TXON;				// doesn't work if you just |= it
 	return (XIO_OK);
 }
 

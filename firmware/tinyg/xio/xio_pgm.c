@@ -55,7 +55,6 @@ void xio_init_pgm()
 
 FILE * xio_open_pgm(const uint8_t dev, const char *addr)
 {
-//	PGM.flags &= XIO_FLAG_RESET_gm;					// reset flag signaling bits +++++++++++++++++
 	PGM.flag_in_line = false;
 	PGM.flag_eol = false;
 	PGM.flag_eof = false;
@@ -108,14 +107,11 @@ int xio_getc_pgm(FILE *stream)
 {
 	char c;
 
-//	if ((PGM.flags & XIO_FLAG_EOF_bm) != 0) {	//+++++++++++++++++++++++++++
 	if (PGM.flag_eof ) {
 		PGM.signal = XIO_SIG_EOF;
 		return (_FDEV_EOF);
 	}
-//	if ((PGM.c = pgm_read_byte(&PGMf.filebase_P[PGMf.rd_offset])) == NUL) {
 	if ((c = pgm_read_byte(&PGMf.filebase_P[PGMf.rd_offset])) == NUL) {
-//		PGM.flags |= XIO_FLAG_EOF_bm;
 		PGM.flag_eof = true;
 	}
 	++PGMf.rd_offset;
@@ -134,25 +130,6 @@ int xio_getc_pgm(FILE *stream)
 	}
 	if (PGM.flag_echo) putchar(c);			// conditional echo
 	return (c);
-
-/* WAS:
-	if (LINEMODE(PGM.flags) == 0) {	// processing is simple if not LINEMODE
-		if (ECHO(PGM.flags) != 0) {
-			putchar(PGM.c);
-		}
-		return (PGM.c);
-	}
-
-	if (PGM.c == NUL) {				// perform newline substitutions
-		PGM.c = '\n';
-	} else if (PGM.c == '\r') {
-		PGM.c = '\n';
-	}
-	if (ECHO(PGM.flags) != 0) {
-		putchar(PGM.c);
-	}
-	return (PGM.c);
-*/
 }
 
 /* 

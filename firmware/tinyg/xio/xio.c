@@ -138,16 +138,12 @@ FILE *xio_open(uint8_t dev, const char *addr)
  * xio_cntl() - Note: this is not ioctl() Calling conventions differ.
  */
 
-//#define SETFLAG(t,f) if ((control & t) != 0) { d->flags |= f; }
-//#define CLRFLAG(t,f) if ((control & t) != 0) { d->flags &= ~f; }
-
 #define SETFLAG(t,f) if ((control & t) != 0) { d->f = true; }
 #define CLRFLAG(t,f) if ((control & t) != 0) { d->f = false; }
 
 int xio_ctrl(const uint8_t dev, uint32_t control)
 {
 	xioDevice *d = &ds[dev];
-
 	SETFLAG(XIO_BLOCK,		flag_block);
 	CLRFLAG(XIO_NOBLOCK,	flag_block);
 	SETFLAG(XIO_XOFF,		flag_xoff);
@@ -162,36 +158,6 @@ int xio_ctrl(const uint8_t dev, uint32_t control)
 	CLRFLAG(XIO_NOIGNORELF,	flag_ignorelf);
 	SETFLAG(XIO_LINEMODE,	flag_linemode);
 	CLRFLAG(XIO_NOLINEMODE,	flag_linemode);
-
-/*
-	SETFLAG(XIO_RD,			XIO_FLAG_RD_bm);
-	SETFLAG(XIO_WR,			XIO_FLAG_WR_bm);
-	SETFLAG(XIO_BLOCK,		XIO_FLAG_BLOCK_bm);
-	CLRFLAG(XIO_NOBLOCK,	XIO_FLAG_BLOCK_bm);
-	SETFLAG(XIO_XOFF,		XIO_FLAG_XOFF_bm);
-	CLRFLAG(XIO_NOXOFF,		XIO_FLAG_XOFF_bm);
-	SETFLAG(XIO_ECHO,		XIO_FLAG_ECHO_bm);
-	CLRFLAG(XIO_NOECHO,		XIO_FLAG_ECHO_bm);
-	SETFLAG(XIO_CRLF,		XIO_FLAG_CRLF_bm);
-	CLRFLAG(XIO_NOCRLF,		XIO_FLAG_CRLF_bm);
-	SETFLAG(XIO_IGNORECR,	XIO_FLAG_IGNORECR_bm);
-	CLRFLAG(XIO_NOIGNORECR,	XIO_FLAG_IGNORECR_bm);
-	SETFLAG(XIO_IGNORELF,	XIO_FLAG_IGNORELF_bm);
-	CLRFLAG(XIO_NOIGNORELF,	XIO_FLAG_IGNORELF_bm);
-	SETFLAG(XIO_LINEMODE,	XIO_FLAG_LINEMODE_bm);
-	CLRFLAG(XIO_NOLINEMODE,	XIO_FLAG_LINEMODE_bm);
-
-	d->flag_read 	 = ((d->flags & XIO_FLAG_RD_bm) ? true : false);
-	d->flag_write 	 = ((d->flags & XIO_FLAG_WR_bm) ? true : false);
-	d->flag_blocking = ((d->flags & XIO_FLAG_BLOCK_bm) ? true : false);
-	d->flag_xoff 	 = ((d->flags & XIO_FLAG_XOFF_bm) ? true : false);
-	d->flag_echo 	 = ((d->flags & XIO_FLAG_ECHO_bm) ? true : false);
-	d->flag_crlf 	 = ((d->flags & XIO_FLAG_CRLF_bm) ? true : false);
-	d->flag_ignorecr = ((d->flags & XIO_FLAG_IGNORECR_bm) ? true : false);
-	d->flag_ignorelf = ((d->flags & XIO_FLAG_IGNORELF_bm) ? true : false);
-	d->flag_linemode = ((d->flags & XIO_FLAG_LINEMODE_bm) ? true : false);
-*/
-
 	return (XIO_OK);
 }
 

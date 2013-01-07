@@ -197,15 +197,9 @@ void xio_init_usart(const uint8_t dev,
 					const uint8_t outclr, 
 					const uint8_t outset);
 
-//void xio_set_baud_usart(const uint8_t dev, const uint8_t baud);
 void xio_set_baud_usart(xioUsart *dx, const uint8_t baud);
-//void xio_xoff_usart(const uint8_t dev);
-//void xio_xon_usart(const uint8_t dev);
 void xio_xoff_usart(xioUsart *dx);
 void xio_xon_usart(xioUsart *dx);
-
-void xio_deassert_rts_usart(const uint8_t dev);
-void xio_assert_rts_usart(const uint8_t dev);
 int xio_gets_usart(const uint8_t dev, char *buf, const int size);
 int xio_getc_usart(FILE *stream);
 int xio_putc_usart(const char c, FILE *stream);
@@ -217,8 +211,8 @@ void xio_init_rs485(void);						// RS485 specific functions (subclassing usart.c
 int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
 
 // handy helpers
-BUFFER_T xio_get_rx_bufcount_usart(const struct xioUSART *dx);
-BUFFER_T xio_get_tx_bufcount_usart(const struct xioUSART *dx);
+BUFFER_T xio_get_rx_bufcount_usart(const xioUsart *dx);
+BUFFER_T xio_get_tx_bufcount_usart(const xioUsart *dx);
 BUFFER_T xio_get_usb_rx_free(void);
 
 void xio_queue_RX_char_usart(const uint8_t dev, const char c);

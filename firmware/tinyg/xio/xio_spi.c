@@ -141,22 +141,6 @@ int xio_putc_spi(const char c, FILE *stream)
 	return (XIO_OK);
 }
 
-/*
-	while (1) {
-		dx->data_port->DIRSET = 0xff;		// setup output bits on port
-//		dx->data_port->OUTCLR = 0xFF;
-//		dx->data_port->OUTSET = 0xFF;
-		dx->data_port->OUT = 0x00;
-		dx->data_port->OUT = 0xFF;
-
-		dx->data_port->DIRSET = 0x00;		// setup output bits on port
-		PORTB.OUT = 0x00;
-		PORTB.OUT = 0xFF;
-//		PORTD.OUT = 0x00;
-//		PORTD.OUT = 0xFF;
-	}
-*/
-
 /* 
  *	xio_gets_spi() - read a complete line from an SPI device
  *

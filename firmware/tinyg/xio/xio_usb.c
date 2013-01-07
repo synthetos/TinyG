@@ -77,19 +77,14 @@ int xio_putc_usb(const char c, FILE *stream)
 	USBu.tx_buf[USBu.tx_buf_head] = c;					// write char to buffer
 
 	// expand <LF> to <LF><CR> if $ec is set
-	if (c == '\n') {
-//		if ((USB.flags & XIO_FLAG_CRLF_bm) != 0) { ++++++++++++++++++++++++
-		if (USB.flag_crlf) {
-			USBu.usart->CTRLA = CTRLA_RXON_TXON;		// force interrupt to send the queued <CR>
-			BUFFER_T next_tx_buf_head = USBu.tx_buf_head-1;
-			if (next_tx_buf_head == 0) 
-				next_tx_buf_head = TX_BUFFER_SIZE-1;
-			while (next_tx_buf_head == USBu.tx_buf_tail) 
-				sleep_mode();
-			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// MUTEX region
-			USBu.tx_buf_head = next_tx_buf_head;
-			USBu.tx_buf[USBu.tx_buf_head] = CR;
-		}
+	if ((c == '\n') && (USB.flag_crlf)) {
+		USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send the queued <CR>
+		BUFFER_T next_tx_buf_head = USBu.tx_buf_head-1;
+		if (next_tx_buf_head == 0) next_tx_buf_head = TX_BUFFER_SIZE-1;
+		while (next_tx_buf_head == USBu.tx_buf_tail) sleep_mode();
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;			// MUTEX region
+		USBu.tx_buf_head = next_tx_buf_head;
+		USBu.tx_buf[USBu.tx_buf_head] = CR;
 	}
 	// finish up
 	USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send char(s) - doesn't work if you just |= it
@@ -162,8 +157,6 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 	// filter out CRs and LFs if they are to be ignored
 	if ((c == CR) && (USB.flag_ignorecr)) return;
 	if ((c == LF) && (USB.flag_ignorelf)) return;
-//	if ((c == CR) && (IGNORECR(USB.flags) == true)) { return;} +++++++++++++++++++
-//	if ((c == LF) && (IGNORELF(USB.flags) == true)) { return;}
 
 	// normal character path
 	if ((--USBu.rx_buf_head) == 0) { 			// adv buffer head with wrap
@@ -173,8 +166,6 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		USBu.rx_buf[USBu.rx_buf_head] = c;		// write char unless full
 		USBu.rx_buf_count++;
 		if ((USB.flag_xoff) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
-//		if ((EN_XOFF(USB.flags) == true) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
-//			xio_xoff_usart(XIO_DEV_USB);
 			xio_xoff_usart(&USBu);
 		}
 	} else { // buffer-full - toss the incoming character
