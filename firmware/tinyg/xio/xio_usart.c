@@ -37,20 +37,20 @@
  *
  *	Originally structures were accessed using "floating" accessor macros - e.g:
  *
- *    #define DEV (ds[dev])							// device struct accessor
- *    #define DEVx ((struct xioUSART *)(ds[dev].x))	// USART extended struct accessor
+ *    #define DEV (ds[dev])						// device struct accessor
+ *    #define DEVx ((xioUsart *)(ds[dev].x))	// USART extended struct accessor
  *
  *	It turned out to be more efficient to initialize pointers in each routine and 
  *	use them instead - e.g:
  *
- *	  struct xioDEVICE *d = &ds[dev];					// setup device struct ptr
- *    struct xioUSART *dx = (struct xioUSART *)ds[dev].x; // setup USART struct ptr
+ *	  xioDevice *d = &ds[dev];					// setup device struct ptr
+ *    xioUsart *dx = (xioUsart *)ds[dev].x; 	// setup USART struct ptr
  *
  *  What's most efficient is to use a static reference to the structures, 
  *	but this only works if the routine is not general (i.e. only handles one device)
  *
- *	  #define USB ds[XIO_DEV_USB]			// device struct accessor
- *	  #define USBu us[XIO_DEV_USB_OFFSET]	// usart extended struct accessor
+ *	  #define USB ds[XIO_DEV_USB]				// device struct accessor
+ *	  #define USBu us[XIO_DEV_USB_OFFSET]		// usart extended struct accessor
  *
  *	There are other examples of this approach as well (e.g. xio_set_baud_usart())
  */
@@ -77,15 +77,15 @@ static const uint8_t bsel[] PROGMEM = { 0, 207, 103, 51, 34, 33, 31, 27, 19, 1, 
 static const uint8_t bscale[] PROGMEM = { 0, 0, 0, 0, 0, (-1<<4), (-2<<4), (-3<<4), (-4<<4), (1<<4), 1 };
 
 // local function prototypes
+#ifndef __USART_R2
 static int _xio_readc_usart(const uint8_t dev, const char *buf);
-
 static int _getc_char(void);		// getc character dispatch routines
 static int _getc_NEWLINE(void);
 static int _getc_DELETE(void);
-
 static int _gets_char(void);		// gets character dispatch routines
 static int _gets_NEWLINE(void);
 static int _gets_DELETE(void);
+#endif
 
 /*
  *	xio_init_usart() - general purpose USART initialization (shared)
@@ -97,17 +97,18 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 					const uint8_t inbits, const uint8_t outbits, const uint8_t outclr, const uint8_t outset) 
 {
 	// do all the bindings first (and in this order)
-	struct xioDEVICE *d = &ds[dev];					// setup device struct pointer
+	xioDevice *d = &ds[dev];						// setup device struct pointer
 	d->x = &us[dev - XIO_DEV_USART_OFFSET];			// bind USART struct to device extended struct
-	struct xioUSART *dx = (struct xioUSART *)d->x;	// setup USART struct pointer
+	xioUsart *dx = (xioUsart *)d->x;				// setup USART struct pointer
 	dx->usart = (struct USART_struct *)usart_addr;	// bind USART 
 	dx->port = (struct PORT_struct *)port_addr;		// bind PORT
 
 	// set flags
 	(void)xio_ctrl(dev, control);// generic setflags -doesn't validate flags
-	if (EN_XOFF(d->flags) == true) {				// transfer flow control setting 
-		dx->fc_state = FC_IN_XON;					// resting state 
-	}
+	if (d->flag_xoff) dx->fc_state = FC_IN_XON;		// transfer flow control setting 
+//	if (EN_XOFF(d->flags) == true) {				// transfer flow control setting 
+//		dx->fc_state = FC_IN_XON;					// resting state 
+//	}
 
 	// setup internal RX/TX buffers
 	dx->rx_buf_head = 1;		// can't use location 0 in circular buffer
@@ -131,8 +132,8 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 
 void xio_set_baud_usart(const uint8_t dev, const uint8_t baud)
 {
-	((struct xioUSART *)(ds[dev].x))->usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
-	((struct xioUSART *)(ds[dev].x))->usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
+	((xioUsart *)(ds[dev].x))->usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
+	((xioUsart *)(ds[dev].x))->usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
 }
 
 /* 
@@ -141,7 +142,7 @@ void xio_set_baud_usart(const uint8_t dev, const uint8_t baud)
  */
 void xio_xoff_usart(const uint8_t dev)
 {
-	struct xioUSART *dx = (struct xioUSART *)(ds[dev].x);
+	xioUsart *dx = (xioUsart *)(ds[dev].x);
 	if (dx->fc_state == FC_IN_XON) {
 		dx->fc_char = XOFF; 
 		dx->fc_state = FC_IN_XOFF;
@@ -151,7 +152,7 @@ void xio_xoff_usart(const uint8_t dev)
 
 void xio_xon_usart(const uint8_t dev)
 {
-	struct xioUSART *dx = (struct xioUSART *)(ds[dev].x);
+	xioUsart *dx = (xioUsart *)(ds[dev].x);
 	if (dx->fc_state == FC_IN_XOFF) {
 		dx->fc_char = XON; 
 		dx->fc_state = FC_IN_XON;
@@ -166,7 +167,7 @@ void xio_xon_usart(const uint8_t dev)
  *
  *	Remember: The queues fill from top to bottom, w/0 being the wrap location
  */
-BUFFER_T xio_get_tx_bufcount_usart(const struct xioUSART *dx)
+BUFFER_T xio_get_tx_bufcount_usart(const xioUsart *dx)
 {
 	if (dx->tx_buf_head <= dx->tx_buf_tail) {
 		return (dx->tx_buf_tail - dx->tx_buf_head);
@@ -175,7 +176,7 @@ BUFFER_T xio_get_tx_bufcount_usart(const struct xioUSART *dx)
 	}
 }
 
-BUFFER_T xio_get_rx_bufcount_usart(const struct xioUSART *dx)
+BUFFER_T xio_get_rx_bufcount_usart(const xioUsart *dx)
 {
 	if (dx->rx_buf_head <= dx->rx_buf_tail) {
 		return (dx->rx_buf_tail - dx->rx_buf_head);
@@ -191,50 +192,109 @@ BUFFER_T xio_get_usb_rx_free(void)
 
 /* 
  * xio_putc_usart() - stdio compatible char writer for usart devices
- *
- *	Supports both blocking and non-blocking write behaviors
- *
- *	Note: This is a generic driver that is not used for either USB or RS-485.
- *		  These use optimized versions that can be found in the respective files.
- *		  This one is here for reference only.
- *
- *	Note: Originally this routine advanced the buffer head and compared it
- *		  against the buffer tail to detect buffer full (it would sleep if 
- *		  the buffer was full). This unfortunately collides with the 
- *		  buffer empty detection in the dequeue routine - causing the 
- *		  dequeuing ISR to lock up when the buffer was full. Using a local 
- *		  next_tx_buffer_head prevents this.
  */
-
 int xio_putc_usart(const char c, FILE *stream)
 {
-/**** unused and has an ISR mutex bug. See xio_putc_usb() for a more up-to-date version)
-	struct xioDEVICE *d = ((struct xioDEVICE *)((stream)->udata))->d;	// get device struct pointer
-	struct xioUSART *dx = ((struct xioDEVICE *)((stream)->udata))->x;	// get USART pointer
+// NULL routine. See xio_putc_usb() for an example
+	return (XIO_OK);
+}
 
-	BUFFER_T next_tx_buf_head;
-	if ((next_tx_buf_head = (dx->tx_buf_head)-1) == 0) { // adv. head & wrap
-		next_tx_buf_head = TX_BUFFER_SIZE-1; 	// -1 avoids the off-by-one
+/*
+ * xio_queue_RX_char_usart() - fake ISR to put a char in the RX buffer
+ */
+void xio_queue_RX_char_usart(const uint8_t dev, const char c)
+{
+	xioDevice *d = &ds[dev];			// init device struct pointer
+	xioUsart *dx = ((xioUsart *)(ds[dev].x));// init USART pointer
+
+	// trap signals - do not insert into RX queue
+	if (c == CHAR_RESET) {	 				// trap Kill signal
+		d->signal = XIO_SIG_RESET;			// set signal value
+		sig_reset();						// call app-specific sig handler
+		return;
 	}
-	// detect TX buffer full
-	while(next_tx_buf_head == dx->tx_buf_tail) { // sleep or return
-		if (BLOCKING(d->flags) != 0) {
-			sleep_mode();
-		} else {
-			d->signal = XIO_SIG_EAGAIN;
-			return(_FDEV_ERR);
+	if (c == CHAR_FEEDHOLD) {				// trap feedhold signal
+		d->signal = XIO_SIG_FEEDHOLD;
+		sig_feedhold();
+		return;
+	}
+	if (c == CHAR_CYCLE_START) {			// trap cycle start signal
+		d->signal = XIO_SIG_CYCLE_START;
+		sig_cycle_start();
+		return;
+	}
+	// normal path
+	if ((--dx->rx_buf_head) == 0) { 		// wrap condition
+		dx->rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids the off-by-one err
+	}
+	if (dx->rx_buf_head != dx->rx_buf_tail) {// write char unless buffer full
+		dx->rx_buf[dx->rx_buf_head] = c;	// FAKE INPUT DATA
+		return;
+	}
+	// buffer-full handling
+	if ((++dx->rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+		dx->rx_buf_head = 1;
+	}
+}
+
+/*
+ * xio_queue_RX_string_usart() - fake ISR to put a string in the RX buffer
+ *
+ *	String must be NUL terminated but doesn't require a CR or LF
+ */
+void xio_queue_RX_string_usart(const uint8_t dev, const char *buf)
+{
+	uint8_t i=0;
+	while (buf[i] != NUL) {
+		xio_queue_RX_char_usart(dev, buf[i++]);
+	}
+}
+
+/* USB device wrappers for generic USART routines */
+void xio_queue_RX_char_usb(const char c) { xio_queue_RX_char_usart(XIO_DEV_USB, c); }
+void xio_queue_RX_string_usb(const char *buf) { xio_queue_RX_string_usart(XIO_DEV_USB, buf); }
+
+// RS485 device wrappers for generic USART routines
+void xio_queue_RX_char_rs485(const char c) { xio_queue_RX_char_usart(XIO_DEV_RS485, c); }
+void xio_queue_RX_string_rs485(const char *buf) { xio_queue_RX_string_usart(XIO_DEV_RS485, buf); }
+
+
+/***** Fast but big - table driven version ***************************************************/
+#ifndef __USART_R2
+
+/* 
+ *	xio_gets_usart() - read a complete line from the usart device
+ *
+ *	Retains line context across calls - so it can be called multiple times.
+ *	Reads as many characters as it can until any of the following is true:
+ *
+ *	  - RX buffer is empty on entry (return XIO_EAGAIN)
+ *	  - no more chars to read from RX buffer (return XIO_EAGAIN)
+ *	  - read would cause output buffer overflow (return XIO_BUFFER_FULL)
+ *	  - read returns complete line (returns XIO_OK)
+ *
+ *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
+ */
+int xio_gets_usart(const uint8_t dev, char *buf, const int size)
+{
+	xioDevice *d = &ds[dev];					// init device struct pointer
+	gdev = dev;									// set the global device number
+
+	if (IN_LINE(d->flags) == 0) {				// first time thru initializations
+		d->len = 0;								// zero buffer
+		d->buf = buf;
+		d->size = size;
+		d->signal = XIO_SIG_OK;					// reset signal register
+		d->flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
+	}
+	while (true) {
+		switch (_xio_readc_usart(dev, d->buf)) {
+			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN);		// empty condition
+			case (XIO_BUFFER_FULL_NON_FATAL): return (XIO_BUFFER_FULL_NON_FATAL);// overrun err
+			case (XIO_EOL): return (XIO_OK);					// got complete line
+			case (XIO_EAGAIN): break;							// loop
 		}
-	};
-	// write to data register
-	dx->tx_buf_head = next_tx_buf_head;			// accept next buffer head
-	dx->tx_buf[dx->tx_buf_head] = c;			// ...write char to buffer
-
-	if ((c == '\n') && (CRLF(d->flags) != 0)) {	// detect LF & add CR
-		return d->x_putc('\r', stream);			// recurse
 	}
-	// force an interrupt to attempt to send the char
-	dx->usart->CTRLA = CTRLA_RXON_TXON;			// doesn't work if you just |= it
-*/
 	return (XIO_OK);
 }
 
@@ -244,7 +304,6 @@ int xio_putc_usart(const char c, FILE *stream)
  *  Helper functions take no input but use global gdev to resolve variables.
  *  Returns c (may be translated depending on the function)
  */
-
 static int (*const getcFuncs[])(void) PROGMEM = { // use if you want it in FLASH
 //static int (*getcFuncs[])(void) = {			  // ALTERNATE: put table in SRAM
 							// dec  hex symbol
@@ -408,14 +467,15 @@ static int (*const getcFuncs[])(void) PROGMEM = { // use if you want it in FLASH
  *		- special characters such as EOL and control chars are handled by the
  *		  character helper routines. See them for behaviors
  */
-
 int xio_getc_usart(FILE *stream)
 {
-	struct xioDEVICE *d = ((struct xioDEVICE *)((stream)->udata))->d;	// get device struct pointer
-	struct xioUSART *dx = ((struct xioDEVICE *)((stream)->udata))->x;	// get USART pointer
-	gdev = ((struct xioDEVICE *)((stream)->udata))->dev;				// get device number
+//	xioDevice *d = ((xioDevice *)((stream)->udata))->d;	// get device struct pointer
+//	xioUsart *dx = ((xioDevice *)((stream)->udata))->x;	// get USART pointer
+	xioDevice *d = (xioDevice *)stream->udata;			// get device struct pointer
+	xioUsart *dx = d->x;								// get USART pointer
+	gdev = ((xioDevice *)((stream)->udata))->dev;		// get device number
 
-	while (dx->rx_buf_head == dx->rx_buf_tail) {	// RX ISR buffer empty
+	while (dx->rx_buf_head == dx->rx_buf_tail) {		// RX ISR buffer empty
 		if (BLOCKING(d->flags) != 0) {
 			sleep_mode();
 		} else {
@@ -477,9 +537,8 @@ static int _getc_DELETE(void)				// can't handle a delete very well
  *	NOTE: The gets and getc character handlers are different enough that 
  *	I just paid the penalty and set up separate dispatch tables
  */
-
 static int (*const getsFuncs[])(void) PROGMEM = { // use if you want it in FLASH
-//static int (*getsFuncs[])(void) = {		// ALTERNATE: put table in SRAM
+//static int (*getsFuncs[])(void) = {			  // ALTERNATE: put table in SRAM
 
 							// dec  hex symbol
 		_gets_NEWLINE,	 	//	0	00	NUL	(Null char)  	(TREAT AS NEWLINE)
@@ -615,11 +674,10 @@ static int (*const getsFuncs[])(void) PROGMEM = { // use if you want it in FLASH
 /*
  * _xio_readc_usart() - non-blocking character getter for getc and gets
  */
-
 static int _xio_readc_usart(const uint8_t dev, const char *buf)
 {
-	struct xioDEVICE *d = &ds[dev];				// init device struct ptr
-	struct xioUSART *dx = ((struct xioUSART *)(ds[dev].x));	//  USART ptr
+	xioDevice *d = &ds[dev];				// init device struct ptr
+	xioUsart *dx = ((xioUsart *)(ds[dev].x));	//  USART ptr
 
 	gdev = dev;					// set global dev number used by helpers
 
@@ -677,6 +735,10 @@ static int _gets_DELETE(void)
 	return (XIO_EAGAIN);					// line is still in process
 }
 
+/***** Smaller but slower *********************************************************************/
+#else 
+static int _gets_helper(xioDevice *d, xioUsart *dx);
+
 /* 
  *	xio_gets_usart() - read a complete line from the usart device
  *
@@ -689,103 +751,133 @@ static int _gets_DELETE(void)
  *	  - read returns complete line (returns XIO_OK)
  *
  *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
+ *	Note: This function assumes ignore CR and ignore LF handled upstream before the RX buffer
  */
-
 int xio_gets_usart(const uint8_t dev, char *buf, const int size)
 {
-	struct xioDEVICE *d = &ds[dev];				// init device struct pointer
-	
-	gdev = dev;									// set the global device number
+	xioDevice *d = &ds[dev];					// device struct pointer
+	xioUsart *dx = d->x;						// USART pointer
 
-	if (IN_LINE(d->flags) == 0) {				// first time thru initializations
+	if (d->flag_in_line == false) {				// first time thru initializations
+		d->flag_in_line = true;					// yes, we are busy getting a line
 		d->len = 0;								// zero buffer
-		d->status = 0;
-		d->size = size;
 		d->buf = buf;
+		d->size = size;
 		d->signal = XIO_SIG_OK;					// reset signal register
-		d->flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
 	}
 	while (true) {
-		switch (d->status = _xio_readc_usart(dev, d->buf)) {
-			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN);		// empty condition
-			case (XIO_BUFFER_FULL_NON_FATAL): return (d->status);// overrun err
-			case (XIO_EOL): return (XIO_OK);					// got complete line
-			case (XIO_EAGAIN): break;							// loop
+		switch (_gets_helper(d,dx)) {
+			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN); // empty condition
+			case (XIO_BUFFER_FULL_NON_FATAL): return (XIO_BUFFER_FULL_NON_FATAL);// overrun err
+			case (XIO_EOL): return (XIO_OK);			  // got complete line
+			case (XIO_EAGAIN): break;					  // loop for next character
 		}
-		// +++ put a size check here or buffers can overrun.
 	}
 	return (XIO_OK);
 }
 
-
 /*
- * xio_queue_RX_char_usart() - fake ISR to put a char in the RX buffer
+ * _gets_helper() - non-blocking character getter for gets
  */
-
-void xio_queue_RX_char_usart(const uint8_t dev, const char c)
+static int _gets_helper(xioDevice *d, xioUsart *dx)
 {
-	struct xioDEVICE *d = &ds[dev];			// init device struct pointer
-	struct xioUSART *dx = ((struct xioUSART *)(ds[dev].x));// init USART pointer
+	char c = NUL;
 
-	// trap signals - do not insert into RX queue
-	if (c == CHAR_RESET) {	 				// trap Kill signal
-		d->signal = XIO_SIG_RESET;			// set signal value
-		sig_reset();						// call app-specific sig handler
-		return;
+	if (dx->rx_buf_head == dx->rx_buf_tail) {// RX ISR buffer empty
+		return(XIO_BUFFER_EMPTY);			// stop reading
 	}
-	if (c == CHAR_FEEDHOLD) {				// trap feedhold signal
-		d->signal = XIO_SIG_FEEDHOLD;
-		sig_feedhold();
-		return;
+	if (--(dx->rx_buf_tail) == 0) {			// advance RX tail (RX q read ptr)
+		dx->rx_buf_tail = RX_BUFFER_SIZE-1;	// -1 avoids off-by-one (OBOE)
 	}
-	if (c == CHAR_CYCLE_START) {			// trap cycle start signal
-		d->signal = XIO_SIG_CYCLE_START;
-		sig_cycle_start();
-		return;
+	// flow control only for USB device		// (do this as a callback)
+	if ((d->dev == XIO_DEV_USB) && (xio_get_rx_bufcount_usart(dx) < XOFF_RX_LO_WATER_MARK)) {
+		xio_xon_usart(XIO_DEV_USB);
 	}
-	// normal path
-	if ((--dx->rx_buf_head) == 0) { 		// wrap condition
-		dx->rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids the off-by-one err
+	c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
+	if (d->flag_echo) d->x_putc(c, stdout);	// conditional echo regardless of character
+
+	if (++(d->len) > d->size) {				// handle buffer overruns
+		d->buf[d->size] = NUL;				// terminate line (d->size is zero based)
+		d->signal = XIO_SIG_EOL;
+		return (XIO_BUFFER_FULL_NON_FATAL);
 	}
-	if (dx->rx_buf_head != dx->rx_buf_tail) {// write char unless buffer full
-		dx->rx_buf[dx->rx_buf_head] = c;	// FAKE INPUT DATA
-		return;
+	if ((c == CR) || (c == LF)) {			// handle CR, LF termination
+		d->buf[d->len] = NUL;
+		d->signal = XIO_SIG_EOL;
+		d->flag_in_line = false;			// clear in-line state (reset)
+		return (XIO_EOL);					// return for end-of-line
 	}
-	// buffer-full handling
-	if ((++dx->rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
-		dx->rx_buf_head = 1;
-	}
+	return (XIO_EAGAIN);
 }
 
 /*
- * xio_queue_RX_string_usart() - fake ISR to put a string in the RX buffer
+ *  xio_getc_usart() - generic char reader for USART devices
  *
- *	String must be NUL terminated but doesn't require a CR or LF
+ *	Compatible with stdio system - may be bound to a FILE handle
+ *
+ *  Get next character from RX buffer.
+ *  See https://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Module-Details#Notes_on_Circular_Buffers
+ *  for a discussion of how the circular buffers work
+ *
+ *	This routine returns a single character from the RX buffer to the caller.
+ *	It's typically called by fgets() and is useful for single-threaded IO cases.
+ *	Cases with multiple concurrent IO streams may want to use the gets() function
+ *	which is incompatible with the stdio system. 
+ *
+ *  Flags that affect behavior:
+ *
+ *  BLOCKING behaviors
+ *	 	- execute blocking or non-blocking read depending on controls
+ *		- return character or -1 & XIO_SIG_WOULDBLOCK if non-blocking
+ *		- return character or sleep() if blocking
+ *
+ *  ECHO behaviors
+ *		- if ECHO is enabled echo character to stdout
+ *		- echo all line termination chars as newlines ('\n')
+ *		- Note: putc is responsible for expanding newlines to <cr><lf> if needed
  */
-
-void xio_queue_RX_string_usart(const uint8_t dev, const char *buf)
+int xio_getc_usart(FILE *stream)
 {
-	uint8_t i=0;
-	while (buf[i] != NUL) {
-		xio_queue_RX_char_usart(dev, buf[i++]);
+	xioDevice *d = (xioDevice *)stream->udata;		// get device struct pointer
+	xioUsart *dx = d->x;							// get USART pointer
+	char c;
+
+	while (dx->rx_buf_head == dx->rx_buf_tail) {	// RX ISR buffer empty
+		if (d->flag_blocking) {
+			sleep_mode();
+		} else {
+			d->signal = XIO_SIG_EAGAIN;
+			return(_FDEV_ERR);
+		}
 	}
+	if (--(dx->rx_buf_tail) == 0) {			// advance RX tail (RXQ read ptr)
+		dx->rx_buf_tail = RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
+	}
+	// flow control only for USB device
+	if ((gdev == XIO_DEV_USB) && (xio_get_rx_bufcount_usart(dx) < XOFF_RX_LO_WATER_MARK)) {
+		xio_xon_usart(XIO_DEV_USB);
+	}
+	c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX buf & mask MSB
+
+	// Triage the input character for handling. This code does not handle deletes
+	if (d->flag_echo) d->x_putc(c, stdout);		// conditional echo regardless of character
+	if (c > CR) return(c); 						// fast cutout for majority cases
+	if ((c == CR) || (c == LF)) {
+		if (d->flag_linemode) return('\n');
+	}
+	return(c);
 }
 
-/* USB device wrappers for generic USART routines */
-void xio_queue_RX_char_usb(const char c) { xio_queue_RX_char_usart(XIO_DEV_USB, c); }
-void xio_queue_RX_string_usb(const char *buf) { xio_queue_RX_string_usart(XIO_DEV_USB, buf); }
+#endif // __USART_R2
 
-// RS485 device wrappers for generic USART routines
-void xio_queue_RX_char_rs485(const char c) { xio_queue_RX_char_usart(XIO_DEV_RS485, c); }
-void xio_queue_RX_string_rs485(const char *buf) { xio_queue_RX_string_usart(XIO_DEV_RS485, buf); }
 
 /*
 void xio_dump_RX_queue_usart(void)
 {
 	char c;
 	uint8_t dev = XIO_DEV_USB;
-	struct xioDEVICE *d = &ds[dev];			// init device struct pointer
-	struct xioUSART *dx = ((struct xioUSART *)(ds[dev].x));// init USART pointer
+	xioDevice *d = &ds[dev];			// init device struct pointer
+	xioUsart *dx = ((xioUsart *)(ds[dev].x));// init USART pointer
 
 	uint8_t i = dx->rx_buf_tail;
 	for (uint8_t j=RX_BUFFER_SIZE; j>0; j--) {

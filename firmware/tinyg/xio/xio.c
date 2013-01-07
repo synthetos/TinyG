@@ -69,7 +69,7 @@ void xio_init()
 {
 	xio_init_usb();					// setup USB usart device
 	xio_init_rs485();				// setup RS485 usart device
-	xio_init_spi();					// setup SPI devices
+	xio_init_spi_devices();			// setup all SPI devices
 	xio_init_pgm();					// setup file reader
 }
 
@@ -89,15 +89,15 @@ void xio_init_dev(uint8_t dev, 									// device number
 	int (*x_putc)(char, FILE *)									// write char (stdio compat)
 	) 
 {
-	struct xioDEVICE *d = &ds[dev];
+	xioDevice *d = &ds[dev];
 
 	// clear device struct
-	memset (d, 0, sizeof(struct xioDEVICE));	
-	d->d = (struct xioDEVICE *)d;				// setup self reference
-	d->dev = dev;								//  (note: 'x' is set by device-sspecific routine)
-	d->fdev = &ss[dev];							// bind stdio stream struct
+	memset (d, 0, sizeof(xioDevice));		// (Note: 'x' binding is set by device-specific init)
+
+	d->dev = dev;
+	d->fdev = &ss[dev];						// bind pre-allocated stdio stream struct
 	fdev_setup_stream(d->fdev, x_putc, x_getc, _FDEV_SETUP_RW);
-	fdev_set_udata(d->fdev, d);					// reference self for udata 
+	fdev_set_udata(d->fdev, d);				// reference self for udata 
 
 	// bind functions to device structure
 	d->x_open = x_open;		// bind the open function to the PGM struct
@@ -141,7 +141,7 @@ FILE *xio_open(uint8_t dev, const char *addr)
 
 int xio_ctrl(const uint8_t dev, uint32_t control)
 {
-	struct xioDEVICE *d = &ds[dev];
+	xioDevice *d = &ds[dev];
 
 	SETFLAG(XIO_RD,			XIO_FLAG_RD_bm);
 	SETFLAG(XIO_WR,			XIO_FLAG_WR_bm);
@@ -159,6 +159,18 @@ int xio_ctrl(const uint8_t dev, uint32_t control)
 	CLRFLAG(XIO_NOIGNORELF,	XIO_FLAG_IGNORELF_bm);
 	SETFLAG(XIO_LINEMODE,	XIO_FLAG_LINEMODE_bm);
 	CLRFLAG(XIO_NOLINEMODE,	XIO_FLAG_LINEMODE_bm);
+
+	// expand flags for more efficient evaluation
+	d->flag_read 	 = ((d->flags & XIO_FLAG_RD_bm) ? true : false);
+	d->flag_write 	 = ((d->flags & XIO_FLAG_WR_bm) ? true : false);
+	d->flag_blocking = ((d->flags & XIO_FLAG_BLOCK_bm) ? true : false);
+	d->flag_xoff 	 = ((d->flags & XIO_FLAG_XOFF_bm) ? true : false);
+	d->flag_echo 	 = ((d->flags & XIO_FLAG_ECHO_bm) ? true : false);
+	d->flag_crlf 	 = ((d->flags & XIO_FLAG_CRLF_bm) ? true : false);
+	d->flag_ignorecr = ((d->flags & XIO_FLAG_IGNORECR_bm) ? true : false);
+	d->flag_ignorelf = ((d->flags & XIO_FLAG_IGNORELF_bm) ? true : false);
+	d->flag_linemode = ((d->flags & XIO_FLAG_LINEMODE_bm) ? true : false);
+
 	return (XIO_OK);
 }
 
@@ -170,7 +182,7 @@ int xio_ctrl(const uint8_t dev, uint32_t control)
 /*
 int xio_rctl(const uint8_t dev, uint32_t *control)
 {
-	struct xioDEVICE *d = &ds[dev];
+	xioDevice *d = &ds[dev];
 	control = d->flags;
 	return (XIO_OK);
 }
@@ -190,8 +202,14 @@ void xio_set_stderr(const uint8_t dev) { stderr = ds[dev].fdev; }
  * xio_putc() - common entry point for putc
  * xio_getc() - common entry point for getc
  * xio_gets() - common entry point for non-blocking get line function
+ *
+ * It would be prudent to run an assertion such as below, but we trust the callers:
+ * 	if (dev < XIO_DEV_COUNT) {		
+ *		return ds[dev].x_putc(c, ds[dev].fdev);
+ *	} else {
+ *		return (_FDEV_ERR);	// XIO_NO_SUCH_DEVICE
+ *	}
  */
-
 int xio_putc(const uint8_t dev, const char c)
 {
 	return ds[dev].x_putc(c, ds[dev].fdev); 
@@ -207,36 +225,6 @@ int xio_gets(const uint8_t dev, char *buf, const int size)
 	return ds[dev].x_gets(dev, buf, size); 
 }
 
-/* The safe way to do the above functions, but it sacrifices speed in a critical region
-
-int xio_putc(const uint8_t dev, const char c)
-{
-	if (dev < XIO_DEV_COUNT) {		
-		return ds[dev].x_putc(c, ds[dev].fdev);
-	} else {
-		return (_FDEV_ERR);	// XIO_NO_SUCH_DEVICE
-	}
-}
-
-int xio_getc(const uint8_t dev)
-{
-	if (dev < XIO_DEV_COUNT) {
-		return ds[dev].x_getc(ds[dev].fdev);
-	} else {
-		return (_FDEV_ERR);	// XIO_NO_SUCH_DEVICE
-	}
-}
-
-int xio_gets(const uint8_t dev, char *buf, const int size)
-{
-	if (dev < XIO_DEV_COUNT) {
-		return ds[dev].x_gets(dev, buf, size);
-	} else {
-		return (_FDEV_ERR);	// XIO_NO_SUCH_DEVICE
-	}
-}
-*/
-
 //########################################################################
 
 #ifdef __UNIT_TEST_XIO
@@ -249,9 +237,9 @@ void xio_unit_tests()
 {
 	FILE * fdev;
 
-//	fdev = xio_open(XIO_DEV_SPI1, 0);
+	fdev = xio_open(XIO_DEV_SPI1, 0);
 //	while (1) {
-//		xio_putc_spi(0x55, fdev);
+		xio_putc_spi(0x55, fdev);
 //	}
 	
 //	fdev = xio_open(XIO_DEV_USB, 0);

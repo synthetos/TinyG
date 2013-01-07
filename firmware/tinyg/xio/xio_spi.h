@@ -60,20 +60,24 @@
 
 #define SPI_INIT_bm (XIO_RDWR | XIO_BLOCK |  XIO_ECHO | XIO_LINEMODE)
 
-#define BIT_BANG 0							// use this value if no USART is being used
-#define SPI_USART BIT_BANG					// USB usart - set to NULL to make a bitbanged master
-#define SPI_RX_ISR_vect BIT_BANG		 	// (RX) reception complete IRQ
-#define SPI_TX_ISR_vect BIT_BANG			// (TX) data register empty IRQ
-//#define SPI_USART USARTC0					// USB usart
+#define BIT_BANG 		0					// use this value if no USART is being used
+#define SPI_USART 		BIT_BANG			// USB usart or BIT_BANG value
+#define SPI_RX_ISR_vect	BIT_BANG		 	// (RX) reception complete IRQ
+#define SPI_TX_ISR_vect	BIT_BANG			// (TX) data register empty IRQ
+//#define SPI_USART USARTC1					// USB usart
 //#define SPI_RX_ISR_vect USARTC0_RXC_vect 	// (RX) reception complete IRQ
 //#define SPI_TX_ISR_vect USARTC0_DRE_vect	// (TX) data register empty IRQ
 
-#define SPI_PORT PORTB						// port where the SPI is located
+// The bit mappings for SCK / MISO / MOSI / SS1 map to the xmega SPI device pinouts
+#define SPI_DATA_PORT PORTC					// port for SPI data lines
 #define SPI_SCK_bp  	7					// SCK - clock bit position (pin is wired on board)
 #define SPI_MISO_bp 	6					// MISO - bit position (pin is wired on board)
 #define SPI_MOSI_bp 	5					// MOSI - bit position (pin is wired on board)
+#define SPI_SS1_PORT	SPI_DATA_PORT		// slave select assignments
 #define SPI_SS1_bp  	4					// SS1 - slave select #1
-#define SPI_SS2_bp  	3					// SS1 - slave select #1
+// additional slave selects
+#define SPI_SS2_PORT	PORTB
+#define SPI_SS2_bp  	3					// SS1 - slave select #2
 
 #define SPI_MOSI_bm 	(1<<SPI_MOSI_bp)	// bit masks for the above
 #define SPI_MISO_bm 	(1<<SPI_MISO_bp)
@@ -106,30 +110,31 @@ struct xioSPI {
 
 	struct USART_struct *usart;				// USART used for SPI (unless it's bit banged)
 	struct PORT_struct *data_port;			// port used for data transmission (MOSI, MOSI, SCK)
-	struct PORT_struct *ss_port;			// port used for slave select
-	uint8_t slave_select;					// slave select bit used for this device
+	struct PORT_struct *ssel_port;			// port used for slave select
+	uint8_t ssbit;							// slave select bit used for this device
 
 	volatile char rx_buf[SPI_RX_BUFFER_SIZE];	// (written by ISR)
 	volatile char tx_buf[SPI_TX_BUFFER_SIZE];
 };
+typedef struct xioSPI xioSpi;
 
 /******************************************************************************
  * SPI FUNCTION PROTOTYPES AND ALIASES
  ******************************************************************************/
 
-void xio_init_spi(void);
-void xio_init_spi_dev(const uint8_t dev, 
+void xio_init_spi_devices(void);
+void xio_init_spi(	const uint8_t dev, 
 					const uint32_t control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *data_port,
-					const struct PORT_struct *ss_port,
-					const uint8_t ss_bit,
+					const struct PORT_struct *ssel_port,
+					const uint8_t ssbit,
 					const uint8_t inbits, 
 					const uint8_t outbits, 
 					const uint8_t outclr, 
 					const uint8_t outset);
 
-FILE * xio_open_spi(uint8_t dev);			// returns stdio fdev handle
+FILE * xio_open_spi(uint8_t dev);
 int xio_gets_spi(const uint8_t dev, char *buf, const int size);
 int xio_putc_spi(const char c, FILE *stream);
 int xio_getc_spi(FILE *stream);

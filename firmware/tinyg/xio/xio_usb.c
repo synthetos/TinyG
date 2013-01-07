@@ -160,8 +160,12 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		return;
 	}
 	// filter out CRs and LFs if they are to be ignored
-	if ((c == CR) && (IGNORECR(USB.flags) == true)) { return;}
-	if ((c == LF) && (IGNORELF(USB.flags) == true)) { return;}
+	if ((c == CR) && (USB.flag_ignorecr)) return;
+	if ((c == LF) && (USB.flag_ignorelf)) return;
+
+//	if ((c == CR) && (IGNORECR(USB.flags) == true)) { return;} +++++++++++++++++++
+//	if ((c == LF) && (IGNORELF(USB.flags) == true)) { return;}
+
 
 	// normal character path
 	if ((--USBu.rx_buf_head) == 0) { 			// adv buffer head with wrap
@@ -169,7 +173,8 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 	}
 	if (USBu.rx_buf_head != USBu.rx_buf_tail) {	// buffer is not full
 		USBu.rx_buf[USBu.rx_buf_head] = c;		// write char unless full
-		if ((EN_XOFF(USB.flags) == true) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
+		if ((USB.flag_xoff) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
+//		if ((EN_XOFF(USB.flags) == true) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
 			xio_xoff_usart(XIO_DEV_USB);
 		}
 	} else { // buffer-full - toss the incoming character

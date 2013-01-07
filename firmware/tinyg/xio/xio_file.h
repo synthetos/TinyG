@@ -100,6 +100,7 @@ struct xioFILE {
 	uint32_t max_offset;				// max size of file
 	const char * filebase_P;			// base location in program memory (PROGMEM)
 };
+typedef struct xioFILE xioFile;
 
 /* 
  * FILE DEVICE FUNCTION PROTOTYPES

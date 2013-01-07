@@ -38,7 +38,8 @@ struct xioSIGNALS {				// signal signalton
 	uint8_t	sig_reset;
 	uint8_t	sig_feedhold;
 	uint8_t	sig_cycle_start;
-}; // sig struct is declared in xio.c and EXTERN in xio.h
+};
+typedef struct xioSIGNALS xioSignals;
 
 void sig_init(void);			// initial signal flags
 void sig_reset(void);			// end program (hard reset)

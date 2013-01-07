@@ -171,7 +171,6 @@ struct GCodeInput {						// Gcode model- meaning depends on context
 //	double cutter_radius;				// D - cutter radius compensation (0 is off)
 //	double cutter_length;				// H - cutter length compensation (0 is off)
 
-//	double dwell_time;					// P - dwell time in seconds
 	double parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 	double arc_radius;					// R - radius value in arc radius mode
 	double arc_offset[3];  				// IJK - used by arc commands

@@ -103,32 +103,51 @@ int xio_putc_pgm(const char c, FILE *stream)
 
 int xio_getc_pgm(FILE *stream)
 {
+	char c;
+
 	if ((PGM.flags & XIO_FLAG_EOF_bm) != 0) {
 		PGM.signal = XIO_SIG_EOF;
 		return (_FDEV_EOF);
 	}
-	if ((PGM.c = pgm_read_byte(&PGMf.filebase_P[PGMf.rd_offset])) == NUL) {
+//	if ((PGM.c = pgm_read_byte(&PGMf.filebase_P[PGMf.rd_offset])) == NUL) {
+	if ((c = pgm_read_byte(&PGMf.filebase_P[PGMf.rd_offset])) == NUL) {
 		PGM.flags |= XIO_FLAG_EOF_bm;
 	}
 	++PGMf.rd_offset;
+
+	// processing is simple if not in LINEMODE
+	if (PGM.flag_linemode == false) {
+		if (PGM.flag_echo) putchar(c);		// conditional echo
+		return (c);
+	}
+
+	// now do the LINEMODE stuff
+	if (c == NUL) {							// perform newline substitutions
+		c = '\n';
+	} else if (c == '\r') {
+		c = '\n';
+	}
+	if (PGM.flag_echo) putchar(c);			// conditional echo
+	return (c);
+
+/* WAS:
 	if (LINEMODE(PGM.flags) == 0) {	// processing is simple if not LINEMODE
 		if (ECHO(PGM.flags) != 0) {
 			putchar(PGM.c);
 		}
 		return (PGM.c);
 	}
-	// now do the LINEMODE stuff
+
 	if (PGM.c == NUL) {				// perform newline substitutions
 		PGM.c = '\n';
 	} else if (PGM.c == '\r') {
 		PGM.c = '\n';
-//	} else if ((SEMICOLONS(PGM.flags) != 0) && (PGM.c == ';')) {
-//		PGM.c = '\n';
 	}
 	if (ECHO(PGM.flags) != 0) {
 		putchar(PGM.c);
 	}
 	return (PGM.c);
+*/
 }
 
 /* 

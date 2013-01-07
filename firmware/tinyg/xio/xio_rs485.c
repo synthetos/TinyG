@@ -47,9 +47,8 @@
 #include "xio.h"
 #include "../xmega/xmega_interrupts.h"
 
-#define RS ds[XIO_DEV_RS485]					// device struct accessoor
+#define RS ds[XIO_DEV_RS485]					// device struct accessor
 #define RSu us[XIO_DEV_RS485 - XIO_DEV_USART_OFFSET]// usart extended struct accessor
-
 
 // local helper functions
 static void _xio_enable_rs485_tx(void);	// enable rs485 TX mode (no RX)
@@ -130,7 +129,8 @@ int xio_putc_rs485(const char c, FILE *stream)
 	RSu.tx_buf_head = next_tx_buf_head;				// accept next buffer head
 	RSu.tx_buf[RSu.tx_buf_head] = c;				// ...write char to buffer
 
-	if ((CRLF(RS.flags) != 0) && (c == '\n')) {		// detect LF & add CR
+//	if ((CRLF(RS.flags) != 0) && (c == '\n')) {		// detect LF & add CR +++++++++++++++
+	if ((c == '\n') && (RS.flag_crlf)) {			// detect LF & add CR
 		return RS.x_putc('\r', stream);				// recurse
 	}
 	// force a TX interupt to attempt to send the character

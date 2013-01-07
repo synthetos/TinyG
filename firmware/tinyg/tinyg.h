@@ -32,13 +32,13 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	359.08		// SPI controls
+#define TINYG_BUILD_NUMBER   	359.09		// SPI controls
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
 /****** DEVELOPMENT SETTINGS ******/
 
-//#define __CANNED_STARTUP					// run any canned startup moves
+#define __CANNED_STARTUP					// run any canned startup moves
 #define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
 #define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 //#define __DEBUG							// complies debug functions found in test.c
@@ -47,6 +47,7 @@
 
 // bringing in new functionality
 //#define __PLAN_R2							// comment out to use R1 planner functions
+//#define __USART_R2							// comment out to use older USART getc/gets functions
 
 /****** OPERATING SETTINGS *******/
 

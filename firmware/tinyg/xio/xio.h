@@ -118,40 +118,43 @@ void xio_set_stderr(const uint8_t dev);
 /*************************************************************************
  *	Device structures
  *************************************************************************/
-// NOTE" "FILE *" is another way of saying "struct __file *"
-/*
-struct fdevRefs {							// carries backwards pointers to device structs
-	void *d;								// device structure
-	void *dx;								// device extended structure
-	uint8_t dev;							// device number
-};
-typedef struct fdevRefs refs;
-*/
+// NOTE" "FILE *" is another way of saying "struct __file"
 
 struct xioDEVICE {							// common device struct (one per dev)
 	// references and self references
-	uint8_t dev;							// self referential device number
-	void *d;								// reference to self for fdev.udata binding
-	void *x;								// device-specific struct binding (static)
 	FILE *fdev;								// stdio fdev binding (static)
+	uint8_t dev;							// self referential device number
+	void *x;								// extended device struct binding (static)
 
 	// function bindings
 	FILE *(*x_open)(const uint8_t dev, const char *addr);		// device open routine
 	int (*x_ctrl)(const uint8_t dev, const uint32_t control);	// set device control flags
 //	int (*x_rctl)(const uint8_t dev, uint32_t *control);		// get device control flags
-	int (*x_gets)(const uint8_t dev, char *buf, const int size);// specialized line reader
+	int (*x_gets)(const uint8_t dev, char *buf, const int size);// non-blocking line reader
 	int (*x_getc)(FILE *);					// read char (stdio compatible)
 	int (*x_putc)(char, FILE *);			// write char (stdio compatible)
 
 	// private working data
-	uint8_t status;							// completion status 
-	uint8_t signal;							// signal value
+#ifndef __USART_R2
 	char c;									// char temp
-	uint8_t len;							// chars read so far (buf array index)
+#endif
 	int size;								// text buffer length (dynamic)
-	uint32_t flags;							// common control flags
 	char *buf;								// text buffer binding (can be dynamic)
+	uint8_t len;							// chars read so far (buf array index)
+	uint8_t signal;							// signal value
+	uint32_t flags;							// bitfield control flags
+	uint8_t flag_read;						// expanded flags: less space efficient but way faster
+	uint8_t flag_write;
+	uint8_t flag_blocking;
+	uint8_t flag_xoff;						// xon/xoff enabled
+	uint8_t flag_echo;
+	uint8_t flag_crlf;
+	uint8_t flag_ignorecr;
+	uint8_t flag_ignorelf;
+	uint8_t flag_linemode;
+	uint8_t flag_in_line;					// used as a state variable for line reads
 };
+typedef struct xioDEVICE xioDevice;
 
 /*
  * Static structure allocations for XIO 
@@ -160,13 +163,14 @@ struct xioDEVICE {							// common device struct (one per dev)
  * See xio_file.h for file device struct definition
  * See xio_signal.h for signal flag struct definition
  */
-struct xioDEVICE 	ds[XIO_DEV_COUNT];		// allocate top-level dev structs
-struct __file 		ss[XIO_DEV_COUNT];		// ...stdio stream for each dev
-struct xioUSART 	us[XIO_DEV_USART_COUNT];// ...USART extended IO structs
-struct xioSPI 		sp[XIO_DEV_SPI_COUNT];	// ...SPI extended IO structs
-struct xioFILE 		fs[XIO_DEV_FILE_COUNT];	// ...FILE extended IO structs
-struct xioSIGNALS	sig;					// ...signal flags
-extern struct controllerSingleton tg;		// needed by init() for default source
+xioDevice 	ds[XIO_DEV_COUNT];			// allocate top-level dev structs
+//struct __file 		ss[XIO_DEV_COUNT];		// ...stdio stream for each dev
+FILE 		ss[XIO_DEV_COUNT];			// ...stdio stream for each dev
+xioUsart 	us[XIO_DEV_USART_COUNT];	// ...USART extended IO structs
+xioSpi 		sp[XIO_DEV_SPI_COUNT];		// ...SPI extended IO structs
+xioFile 	fs[XIO_DEV_FILE_COUNT];		// ...FILE extended IO structs
+xioSignals	sig;						// ...signal flags
+extern struct controllerSingleton tg;	// needed by init() for default source
 
 /*************************************************************************
  * SUPPORTING DEFINTIONS - SHOULD NOT NEED TO CHANGE
@@ -206,7 +210,7 @@ extern struct controllerSingleton tg;		// needed by init() for default source
 #define XIO_FLAG_IGNORELF_bm ((uint32_t)1<<7)	// ignore <LF> on reads
 #define XIO_FLAG_LINEMODE_bm ((uint32_t)1<<8)	// special handling for line-oriented text
 // transient states
-#define XIO_FLAG_EOL_bm		((uint32_t)1<<9)	// detected EOL (/n, /r, ;)
+//#define XIO_FLAG_EOL_bm		((uint32_t)1<<9)	// detected EOL (/n, /r, ;)
 #define XIO_FLAG_EOF_bm 	((uint32_t)1<<10)	// detected EOF (NUL)
 #define XIO_FLAG_IN_LINE_bm	((uint32_t)1<<11)	// partial line is in buffer
 #define XIO_FLAG_RESET_gm	(0x01FF)			// used to clear the transient state bits
@@ -214,14 +218,14 @@ extern struct controllerSingleton tg;		// needed by init() for default source
 // Bit evaluations that return actual TRUE and FALSE
 // Just using the (a & blahblah) returns FALSE and not_FALSE 
 // ...but not actually TRUE (which = 1)
-#define READ(a) 		((a & XIO_FLAG_RD_bm) ? true : false)
-#define WRITE(a)	 	((a & XIO_FLAG_WR_bm) ? true : false)
+//#define READ(a) 		((a & XIO_FLAG_RD_bm) ? true : false)
+//#define WRITE(a)	 	((a & XIO_FLAG_WR_bm) ? true : false)
 #define BLOCKING(a) 	((a & XIO_FLAG_BLOCK_bm) ? true : false)
-#define EN_XOFF(a)		((a & XIO_FLAG_XOFF_bm) ? true : false)
+//#define EN_XOFF(a)		((a & XIO_FLAG_XOFF_bm) ? true : false)
 #define ECHO(a)		 	((a & XIO_FLAG_ECHO_bm) ? true : false)
-#define CRLF(a) 		((a & XIO_FLAG_CRLF_bm) ? true : false)
-#define IGNORECR(a) 	((a & XIO_FLAG_IGNORECR_bm) ? true : false)
-#define IGNORELF(a) 	((a & XIO_FLAG_IGNORELF_bm) ? true : false)
+//#define CRLF(a) 		((a & XIO_FLAG_CRLF_bm) ? true : false)
+//#define IGNORECR(a) 	((a & XIO_FLAG_IGNORECR_bm) ? true : false)
+//#define IGNORELF(a) 	((a & XIO_FLAG_IGNORELF_bm) ? true : false)
 #define LINEMODE(a)		((a & XIO_FLAG_LINEMODE_bm) ? true : false)
 #define IN_LINE(a)		((a & XIO_FLAG_IN_LINE_bm) ? true : false)
 

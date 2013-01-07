@@ -172,6 +172,7 @@ struct xioUSART {
 	volatile char rx_buf[RX_BUFFER_SIZE];  // (written by ISR)
 	volatile char tx_buf[TX_BUFFER_SIZE];
 };
+typedef struct xioUSART xioUsart;
 
 /******************************************************************************
  * USART DEVICE FUNCTION PROTOTYPES AND ALIASES
