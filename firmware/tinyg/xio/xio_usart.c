@@ -836,17 +836,18 @@ static int _gets_helper(xioDevice *d, xioUsart *dx)
 	c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
 	if (d->flag_echo) d->x_putc(c, stdout);		// conditional echo regardless of character
 
-	if (++(d->len) > d->size) {					// handle buffer overruns
+	if (d->len >= d->size) {					// handle buffer overruns
 		d->buf[d->size] = NUL;					// terminate line (d->size is zero based)
 		d->signal = XIO_SIG_EOL;
 		return (XIO_BUFFER_FULL_NON_FATAL);
 	}
 	if ((c == CR) || (c == LF)) {				// handle CR, LF termination
-		d->buf[d->len] = NUL;
+		d->buf[(d->len)++] = NUL;
 		d->signal = XIO_SIG_EOL;
 		d->flag_in_line = false;				// clear in-line state (reset)
 		return (XIO_EOL);						// return for end-of-line
 	}
+	d->buf[(d->len)++] = c;					// write character to buffer ##################################################
 	return (XIO_EAGAIN);
 }
 
