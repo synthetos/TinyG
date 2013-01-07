@@ -189,7 +189,7 @@ typedef struct xioUSART xioUsart;
 // Common functions (common to all USART devices)
 void xio_init_usart(const uint8_t dev, 
 					uint8_t baud, 
-					const uint32_t control,
+					const CONTROL control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,
 					const uint8_t inbits, 

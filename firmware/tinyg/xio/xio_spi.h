@@ -125,7 +125,7 @@ typedef struct xioSPI xioSpi;
 
 void xio_init_spi_devices(void);
 void xio_init_spi(	const uint8_t dev, 
-					const uint32_t control,
+					const CONTROL control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *data_port,
 					const struct PORT_struct *ssel_port,
