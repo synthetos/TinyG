@@ -91,10 +91,14 @@ static int _gets_DELETE(void);
  *	xio_init_usart() - general purpose USART initialization (shared)
  */
 void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
+					uint8_t baud,
 					const uint32_t control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,
-					const uint8_t inbits, const uint8_t outbits, const uint8_t outclr, const uint8_t outset) 
+					const uint8_t inbits, 
+					const uint8_t outbits, 
+					const uint8_t outclr, 
+					const uint8_t outset) 
 {
 	// do all the bindings first (and in this order)
 	xioDevice *d = &ds[dev];						// setup device struct pointer
@@ -103,8 +107,7 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 	dx->usart = (struct USART_struct *)usart_addr;	// bind USART 
 	dx->port = (struct PORT_struct *)port_addr;		// bind PORT
 
-	// set flags
-	(void)xio_ctrl(dev, control);// generic setflags -doesn't validate flags
+	(void)xio_ctrl(dev, control);					// set flags - doesn't validate flags
 	if (d->flag_xoff) dx->fc_state = FC_IN_XON;		// transfer flow control setting 
 //	if (EN_XOFF(d->flags) == true) {				// transfer flow control setting 
 //		dx->fc_state = FC_IN_XON;					// resting state 
@@ -113,13 +116,17 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 	// setup internal RX/TX buffers
 	dx->rx_buf_head = 1;		// can't use location 0 in circular buffer
 	dx->rx_buf_tail = 1;
+	dx->rx_buf_count = 0;
+
 	dx->tx_buf_head = 1;
 	dx->tx_buf_tail = 1;
+	dx->tx_buf_count = 0;
 
 	// baud rate and USART setup
-	uint8_t baud = (uint8_t)(control & XIO_BAUD_gm);
+//	uint8_t baud = (uint8_t)(control & XIO_BAUD_gm);
 	if (baud == XIO_BAUD_UNSPECIFIED) { baud = XIO_BAUD_DEFAULT; }
-	xio_set_baud_usart(dev, baud);						// usart must be bound first
+//	xio_set_baud_usart(dev, baud);						// usart must be bound first
+	xio_set_baud_usart(dx, baud);						// usart must be bound first
 
 	dx->usart->CTRLB = (USART_TXEN_bm | USART_RXEN_bm);	// enable tx and rx
 	dx->usart->CTRLA = CTRLA_RXON_TXON;					// enable tx and rx IRQs
@@ -130,19 +137,37 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 	dx->port->OUTSET = outset;
 }
 
-void xio_set_baud_usart(const uint8_t dev, const uint8_t baud)
+void xio_set_baud_usart(xioUsart *dx, const uint8_t baud)
+//void xio_set_baud_usart(const uint8_t dev, const uint8_t baud)
 {
-	((xioUsart *)(ds[dev].x))->usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
-	((xioUsart *)(ds[dev].x))->usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
+//	((xioUsart *)(ds[dev].x))->usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
+//	((xioUsart *)(ds[dev].x))->usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
+	dx->usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
+	dx->usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
+}
+
+/*
+ * xio_fc_usart() - Usart device flow control function
+ *
+ * 	Called as a callback from the usart handlers
+ */
+
+void xio_fc_usart(xioDevice *d)
+{
+	xioUsart *dx = d->x;
+	if (xio_get_rx_bufcount_usart(dx) < XOFF_RX_LO_WATER_MARK) {
+		xio_xon_usart(dx);
+	}
 }
 
 /* 
  * xio_xoff_usart() - send XOFF flow control for USART devices
  * xio_xon_usart()  - send XON flow control for USART devices
  */
-void xio_xoff_usart(const uint8_t dev)
+//void xio_xoff_usart(const uint8_t dev)
+void xio_xoff_usart(xioUsart *dx)
 {
-	xioUsart *dx = (xioUsart *)(ds[dev].x);
+//	xioUsart *dx = (xioUsart *)(ds[dev].x);
 	if (dx->fc_state == FC_IN_XON) {
 		dx->fc_char = XOFF; 
 		dx->fc_state = FC_IN_XOFF;
@@ -150,9 +175,10 @@ void xio_xoff_usart(const uint8_t dev)
 	}
 }
 
-void xio_xon_usart(const uint8_t dev)
+//void xio_xon_usart(const uint8_t dev)
+void xio_xon_usart(xioUsart *dx)
 {
-	xioUsart *dx = (xioUsart *)(ds[dev].x);
+//	xioUsart *dx = (xioUsart *)(ds[dev].x);
 	if (dx->fc_state == FC_IN_XOFF) {
 		dx->fc_char = XON; 
 		dx->fc_state = FC_IN_XON;
@@ -178,11 +204,12 @@ BUFFER_T xio_get_tx_bufcount_usart(const xioUsart *dx)
 
 BUFFER_T xio_get_rx_bufcount_usart(const xioUsart *dx)
 {
-	if (dx->rx_buf_head <= dx->rx_buf_tail) {
-		return (dx->rx_buf_tail - dx->rx_buf_head);
-	} else {
-		return (RX_BUFFER_SIZE - (dx->rx_buf_head - dx->rx_buf_tail));
-	}
+	return (dx->rx_buf_count);
+//	if (dx->rx_buf_head <= dx->rx_buf_tail) {
+//		return (dx->rx_buf_tail - dx->rx_buf_head);
+//	} else {
+//		return (RX_BUFFER_SIZE - (dx->rx_buf_head - dx->rx_buf_tail));
+//	}
 }
 
 BUFFER_T xio_get_usb_rx_free(void)
@@ -205,7 +232,8 @@ int xio_putc_usart(const char c, FILE *stream)
 void xio_queue_RX_char_usart(const uint8_t dev, const char c)
 {
 	xioDevice *d = &ds[dev];			// init device struct pointer
-	xioUsart *dx = ((xioUsart *)(ds[dev].x));// init USART pointer
+//	xioUsart *dx = ((xioUsart *)(ds[dev].x));// init USART pointer
+	xioUsart *dx = d->x;
 
 	// trap signals - do not insert into RX queue
 	if (c == CHAR_RESET) {	 				// trap Kill signal
@@ -229,10 +257,12 @@ void xio_queue_RX_char_usart(const uint8_t dev, const char c)
 	}
 	if (dx->rx_buf_head != dx->rx_buf_tail) {// write char unless buffer full
 		dx->rx_buf[dx->rx_buf_head] = c;	// FAKE INPUT DATA
+		dx->rx_buf_count++;
 		return;
 	}
 	// buffer-full handling
 	if ((++dx->rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+//		dx->rx_buf_count = RX_BUFFER_SIZE-1;
 		dx->rx_buf_head = 1;
 	}
 }
@@ -280,12 +310,13 @@ int xio_gets_usart(const uint8_t dev, char *buf, const int size)
 	xioDevice *d = &ds[dev];					// init device struct pointer
 	gdev = dev;									// set the global device number
 
-	if (IN_LINE(d->flags) == 0) {				// first time thru initializations
+//	if (IN_LINE(d->flags) == 0) {				// first time thru initializations
+	if (d->flag_in_line == false) {				// first time thru initializations
+		d->flag_in_line = true;					// yes, we are busy getting a line
+		d->signal = XIO_SIG_OK;					// reset signal register
 		d->len = 0;								// zero buffer
 		d->buf = buf;
 		d->size = size;
-		d->signal = XIO_SIG_OK;					// reset signal register
-		d->flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
 	}
 	while (true) {
 		switch (_xio_readc_usart(dev, d->buf)) {
@@ -476,7 +507,8 @@ int xio_getc_usart(FILE *stream)
 	gdev = ((xioDevice *)((stream)->udata))->dev;		// get device number
 
 	while (dx->rx_buf_head == dx->rx_buf_tail) {		// RX ISR buffer empty
-		if (BLOCKING(d->flags) != 0) {
+//		if (BLOCKING(d->flags) != 0) {				//+++++++++++++++++++++
+		if (d->flag_block) {
 			sleep_mode();
 		} else {
 			d->signal = XIO_SIG_EAGAIN;
@@ -492,6 +524,7 @@ int xio_getc_usart(FILE *stream)
 	}
 	// get char from RX buf & mask MSB, then dispatch on character value
 	// call action procedure from FLASH table (see xio.h for typedef)
+	dx->rx_buf_count--;
 	d->c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);
 	return (((fptr_int_void)(pgm_read_word(&getcFuncs[(uint8_t)d->c])))());
 	//return (getcFuncs[c]()); // how to call if dispatch table is in RAM
@@ -501,7 +534,8 @@ int xio_getc_usart(FILE *stream)
 
 static int _getc_char(void)
 {
-	if (ECHO(ds[gdev].flags) != 0) {
+//	if (ECHO(ds[gdev].flags) != 0) {		//+++++++++++++++++++
+	if (ds[gdev].flag_echo) {
 		ds[gdev].x_putc(ds[gdev].c, stdout);
 	}
 	return(ds[gdev].c);
@@ -509,10 +543,12 @@ static int _getc_char(void)
 
 static int _getc_NEWLINE(void)	// convert CRs and LFs to newlines if line mode
 {
-	if (LINEMODE(ds[gdev].flags) != 0) {
+//	if (LINEMODE(ds[gdev].flags) != 0) {+++++++++++++++++++++++++++++
+	if (ds[gdev].flag_linemode) {
 		ds[gdev].c = '\n';
 	}
-	if (ECHO(ds[gdev].flags) != 0) {
+//	if (ECHO(ds[gdev].flags) != 0) {
+	if (ds[gdev].flag_echo) {
 		ds[gdev].x_putc(ds[gdev].c, stdout);
 	}
 	return(ds[gdev].c);
@@ -692,6 +728,7 @@ static int _xio_readc_usart(const uint8_t dev, const char *buf)
 		xio_xon_usart(XIO_DEV_USB);
 	}
 	// get char from RX Q & mask MSB then dispatch on character value
+	dx->rx_buf_count--;
 	d->c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);
 	return (((fptr_int_void)(pgm_read_word(&getsFuncs[(uint8_t)d->c])))());
 }
@@ -706,7 +743,8 @@ static int _gets_char(void)
 		return (XIO_BUFFER_FULL_NON_FATAL);
 	}
 	ds[gdev].buf[ds[gdev].len++] = ds[gdev].c;
-	if (ECHO(ds[gdev].flags) != 0) {
+//	if (ECHO(ds[gdev].flags) != 0) {+++++++++++++++++++++++++++++++
+	if (ds[gdev].flag_echo) {
 		ds[gdev].x_putc(ds[gdev].c, stdout);// conditional echo
 	}
 	return (XIO_EAGAIN);					// line is still in process
@@ -716,8 +754,10 @@ static int _gets_NEWLINE(void)				// handles any newline char
 {
 	ds[gdev].signal = XIO_SIG_EOL;
 	ds[gdev].buf[ds[gdev].len] = NUL;
-	ds[gdev].flags &= ~XIO_FLAG_IN_LINE_bm;	// clear in-line state (reset)
-	if (ECHO(ds[gdev].flags) != 0) {
+//	ds[gdev].flags &= ~XIO_FLAG_IN_LINE_bm;	// clear in-line state (reset)+++++++++++++++++++++
+	ds[gdev].flag_in_line = false;			// clear in-line state (reset)
+//	if (ECHO(ds[gdev].flags) != 0) {+++++++++++++++++++++++++++
+	if (ds[gdev].flag_echo) {
 		ds[gdev].x_putc('\n',stdout);		// echo a newline
 	}
 	return (XIO_EOL);						// return for end-of-line
@@ -726,7 +766,8 @@ static int _gets_NEWLINE(void)				// handles any newline char
 static int _gets_DELETE(void)
 {
 	if (--ds[gdev].len >= 0) {
-		if (ECHO(ds[gdev].flags) != 0) {
+//		if (ECHO(ds[gdev].flags) != 0) {++++++++++++++++++++++
+		if (ds[gdev].flag_echo) {
 			ds[gdev].x_putc(ds[gdev].c, stdout);
 		}
 	} else {
@@ -783,29 +824,28 @@ static int _gets_helper(xioDevice *d, xioUsart *dx)
 {
 	char c = NUL;
 
-	if (dx->rx_buf_head == dx->rx_buf_tail) {// RX ISR buffer empty
-		return(XIO_BUFFER_EMPTY);			// stop reading
+	if (dx->rx_buf_head == dx->rx_buf_tail) {	// RX ISR buffer empty
+		dx->rx_buf_count = 0;					// reset count for good measure
+		return(XIO_BUFFER_EMPTY);				// stop reading
 	}
-	if (--(dx->rx_buf_tail) == 0) {			// advance RX tail (RX q read ptr)
-		dx->rx_buf_tail = RX_BUFFER_SIZE-1;	// -1 avoids off-by-one (OBOE)
+	if (--(dx->rx_buf_tail) == 0) {				// advance RX tail (RX q read ptr)
+		dx->rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one (OBOE)
 	}
-	// flow control only for USB device		// (do this as a callback)
-	if ((d->dev == XIO_DEV_USB) && (xio_get_rx_bufcount_usart(dx) < XOFF_RX_LO_WATER_MARK)) {
-		xio_xon_usart(XIO_DEV_USB);
-	}
+	dx->rx_buf_count--;
+	d->fc_func(d);								// run the flow control function (USB only)
 	c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
-	if (d->flag_echo) d->x_putc(c, stdout);	// conditional echo regardless of character
+	if (d->flag_echo) d->x_putc(c, stdout);		// conditional echo regardless of character
 
-	if (++(d->len) > d->size) {				// handle buffer overruns
-		d->buf[d->size] = NUL;				// terminate line (d->size is zero based)
+	if (++(d->len) > d->size) {					// handle buffer overruns
+		d->buf[d->size] = NUL;					// terminate line (d->size is zero based)
 		d->signal = XIO_SIG_EOL;
 		return (XIO_BUFFER_FULL_NON_FATAL);
 	}
-	if ((c == CR) || (c == LF)) {			// handle CR, LF termination
+	if ((c == CR) || (c == LF)) {				// handle CR, LF termination
 		d->buf[d->len] = NUL;
 		d->signal = XIO_SIG_EOL;
-		d->flag_in_line = false;			// clear in-line state (reset)
-		return (XIO_EOL);					// return for end-of-line
+		d->flag_in_line = false;				// clear in-line state (reset)
+		return (XIO_EOL);						// return for end-of-line
 	}
 	return (XIO_EAGAIN);
 }
@@ -843,25 +883,27 @@ int xio_getc_usart(FILE *stream)
 	char c;
 
 	while (dx->rx_buf_head == dx->rx_buf_tail) {	// RX ISR buffer empty
-		if (d->flag_blocking) {
+		dx->rx_buf_count = 0;						// reset count for good measure
+		if (d->flag_block) {
 			sleep_mode();
 		} else {
 			d->signal = XIO_SIG_EAGAIN;
 			return(_FDEV_ERR);
 		}
 	}
-	if (--(dx->rx_buf_tail) == 0) {			// advance RX tail (RXQ read ptr)
-		dx->rx_buf_tail = RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
+	if (--(dx->rx_buf_tail) == 0) {					// advance RX tail (RXQ read ptr)
+		dx->rx_buf_tail = RX_BUFFER_SIZE-1;			// -1 avoids off-by-one error (OBOE)
 	}
-	// flow control only for USB device
-	if ((gdev == XIO_DEV_USB) && (xio_get_rx_bufcount_usart(dx) < XOFF_RX_LO_WATER_MARK)) {
-		xio_xon_usart(XIO_DEV_USB);
-	}
-	c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX buf & mask MSB
+	dx->rx_buf_count--;
+	d->fc_func(d);									// run the flow control function (USB only)
+//	if ((gdev == XIO_DEV_USB) && (xio_get_rx_bufcount_usart(dx) < XOFF_RX_LO_WATER_MARK)) {
+//		xio_xon_usart(XIO_DEV_USB);
+//	}
+	c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);		// get char from RX buf & mask MSB
 
 	// Triage the input character for handling. This code does not handle deletes
-	if (d->flag_echo) d->x_putc(c, stdout);		// conditional echo regardless of character
-	if (c > CR) return(c); 						// fast cutout for majority cases
+	if (d->flag_echo) d->x_putc(c, stdout);			// conditional echo regardless of character
+	if (c > CR) return(c); 							// fast cutout for majority cases
 	if ((c == CR) || (c == LF)) {
 		if (d->flag_linemode) return('\n');
 	}

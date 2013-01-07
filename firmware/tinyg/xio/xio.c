@@ -2,7 +2,7 @@
  * xio.c - Xmega IO devices - common code file
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it under the terms of the 
  * GNU General Public License as published by the Free Software Foundation, either version 3 
@@ -86,8 +86,9 @@ void xio_init_dev(uint8_t dev, 									// device number
 //	int (*x_rctl)(const uint8_t dev, uint32_t *control),		// get device control flags
 	int (*x_gets)(const uint8_t dev, char *buf, int size),		// specialized line reader
 	int (*x_getc)(FILE *),										// read char (stdio compat)
-	int (*x_putc)(char, FILE *)									// write char (stdio compat)
-	) 
+	int (*x_putc)(char, FILE *),								// write char (stdio compat)
+	void (*fc_func)(xioDevice *)								// flow control callback function
+	)
 {
 	xioDevice *d = &ds[dev];
 
@@ -100,12 +101,13 @@ void xio_init_dev(uint8_t dev, 									// device number
 	fdev_set_udata(d->fdev, d);				// reference self for udata 
 
 	// bind functions to device structure
-	d->x_open = x_open;		// bind the open function to the PGM struct
+	d->x_open = x_open;			// bind the open function to the PGM struct
 	d->x_ctrl = x_ctrl;
 //	d->x_rctl = x_rctl;
 	d->x_gets = x_gets;
 	d->x_getc = x_getc;		// you don't need to bind these unless you are going to use them directly
 	d->x_putc = x_putc;		// they are bound into the fdev stream struct
+	d->fc_func = fc_func;	// flow control function or null FC function
 }
 
 /*
@@ -136,13 +138,32 @@ FILE *xio_open(uint8_t dev, const char *addr)
  * xio_cntl() - Note: this is not ioctl() Calling conventions differ.
  */
 
-#define SETFLAG(t,f) if ((control & t) != 0) { d->flags |= f; }
-#define CLRFLAG(t,f) if ((control & t) != 0) { d->flags &= ~f; }
+//#define SETFLAG(t,f) if ((control & t) != 0) { d->flags |= f; }
+//#define CLRFLAG(t,f) if ((control & t) != 0) { d->flags &= ~f; }
+
+#define SETFLAG(t,f) if ((control & t) != 0) { d->f = true; }
+#define CLRFLAG(t,f) if ((control & t) != 0) { d->f = false; }
 
 int xio_ctrl(const uint8_t dev, uint32_t control)
 {
 	xioDevice *d = &ds[dev];
 
+	SETFLAG(XIO_BLOCK,		flag_block);
+	CLRFLAG(XIO_NOBLOCK,	flag_block);
+	SETFLAG(XIO_XOFF,		flag_xoff);
+	CLRFLAG(XIO_NOXOFF,		flag_xoff);
+	SETFLAG(XIO_ECHO,		flag_echo);
+	CLRFLAG(XIO_NOECHO,		flag_echo);
+	SETFLAG(XIO_CRLF,		flag_crlf);
+	CLRFLAG(XIO_NOCRLF,		flag_crlf);
+	SETFLAG(XIO_IGNORECR,	flag_ignorecr);
+	CLRFLAG(XIO_NOIGNORECR,	flag_ignorecr);
+	SETFLAG(XIO_IGNORELF,	flag_ignorelf);
+	CLRFLAG(XIO_NOIGNORELF,	flag_ignorelf);
+	SETFLAG(XIO_LINEMODE,	flag_linemode);
+	CLRFLAG(XIO_NOLINEMODE,	flag_linemode);
+
+/*
 	SETFLAG(XIO_RD,			XIO_FLAG_RD_bm);
 	SETFLAG(XIO_WR,			XIO_FLAG_WR_bm);
 	SETFLAG(XIO_BLOCK,		XIO_FLAG_BLOCK_bm);
@@ -160,7 +181,6 @@ int xio_ctrl(const uint8_t dev, uint32_t control)
 	SETFLAG(XIO_LINEMODE,	XIO_FLAG_LINEMODE_bm);
 	CLRFLAG(XIO_NOLINEMODE,	XIO_FLAG_LINEMODE_bm);
 
-	// expand flags for more efficient evaluation
 	d->flag_read 	 = ((d->flags & XIO_FLAG_RD_bm) ? true : false);
 	d->flag_write 	 = ((d->flags & XIO_FLAG_WR_bm) ? true : false);
 	d->flag_blocking = ((d->flags & XIO_FLAG_BLOCK_bm) ? true : false);
@@ -170,6 +190,7 @@ int xio_ctrl(const uint8_t dev, uint32_t control)
 	d->flag_ignorecr = ((d->flags & XIO_FLAG_IGNORECR_bm) ? true : false);
 	d->flag_ignorelf = ((d->flags & XIO_FLAG_IGNORELF_bm) ? true : false);
 	d->flag_linemode = ((d->flags & XIO_FLAG_LINEMODE_bm) ? true : false);
+*/
 
 	return (XIO_OK);
 }
@@ -187,6 +208,14 @@ int xio_rctl(const uint8_t dev, uint32_t *control)
 	return (XIO_OK);
 }
 */
+
+/*
+ * xio_fc_null() - flow control null function
+ */
+void xio_fc_null(xioDevice *d)
+{
+	return;
+}
 
 /*
  * xio_set_stdin()  - set stdin from device number

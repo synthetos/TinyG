@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2011 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2011 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -69,22 +69,10 @@
  * FILE DEVICE CONFIGS 
  */
 
-#define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_CRLF | XIO_LINEMODE)
+#define PGM_INIT_bm (XIO_BLOCK | XIO_CRLF | XIO_LINEMODE)
+#define PGM_ADDR_MAX (0x4000)			// 16K
+//#define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_CRLF | XIO_LINEMODE)
 //#define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
-
-#define EEP_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_LINEMODE)
-#define TBL_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_LINEMODE)
-#define RAM_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_LINEMODE)
-
-//#define EEP_ADDR_BASE (0x1000)		// needed to support memory mapped mode
-#define EEP_ADDR_BASE (0x0000)		// needed to support memory mapped mode
-#define TBL_ADDR_BASE (0x1000)
-#define RAM_ADDR_BASE (0x1000)
-
-#define PGM_ADDR_MAX (0x4000)		// 16K
-#define EEP_ADDR_MAX (0x1000)		// 4K
-#define TBL_ADDR_MAX (0x2000)		// 8K
-#define RAM_ADDR_MAX (0x4000)		// 8K
 
 /* 
  * FILE device extended control structure 

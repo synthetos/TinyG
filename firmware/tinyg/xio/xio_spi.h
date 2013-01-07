@@ -58,7 +58,8 @@
 //**** SPI device configuration ****
 //NOTE: XIO_BLOCK / XIO_NOBLOCK affects reads only. Writes always block. (see xio.h)
 
-#define SPI_INIT_bm (XIO_RDWR | XIO_BLOCK |  XIO_ECHO | XIO_LINEMODE)
+#define SPI_INIT_bm (XIO_BLOCK |  XIO_ECHO | XIO_LINEMODE)
+//#define SPI_INIT_bm (XIO_RDWR | XIO_BLOCK |  XIO_ECHO | XIO_LINEMODE)
 
 #define BIT_BANG 		0					// use this value if no USART is being used
 #define SPI_USART 		BIT_BANG			// USB usart or BIT_BANG value

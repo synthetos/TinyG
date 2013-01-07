@@ -44,11 +44,11 @@
 void xio_init_spi_devices(void)
 {
 	// init SPI1
-	xio_init_dev(XIO_DEV_SPI1, xio_open, xio_ctrl, xio_gets_spi, xio_getc_spi, xio_putc_spi);
+	xio_init_dev(XIO_DEV_SPI1, xio_open, xio_ctrl, xio_gets_spi, xio_getc_spi, xio_putc_spi, xio_fc_null);
 	xio_init_spi(XIO_DEV_SPI1, SPI_INIT_bm, BIT_BANG, &SPI_DATA_PORT, &SPI_SS1_PORT, SPI_SS1_bm,
 				 SPI_INBITS_bm, SPI_OUTBITS_bm, SPI_OUTCLR_bm, SPI_OUTSET_bm);
 	// init SPI2
-	xio_init_dev(XIO_DEV_SPI2, xio_open, xio_ctrl, xio_gets_spi, xio_getc_spi, xio_putc_spi);
+	xio_init_dev(XIO_DEV_SPI2, xio_open, xio_ctrl, xio_gets_spi, xio_getc_spi, xio_putc_spi, xio_fc_null);
 	xio_init_spi(XIO_DEV_SPI2, SPI_INIT_bm, BIT_BANG, &SPI_DATA_PORT, &SPI_SS2_PORT, SPI_SS2_bm,
 				 SPI_INBITS_bm, SPI_OUTBITS_bm, SPI_OUTCLR_bm, SPI_OUTSET_bm);
 }
@@ -56,7 +56,7 @@ void xio_init_spi_devices(void)
 /*
  *	xio_init_spi() - init a single SPI device
  */
-void xio_init_spi(	const uint8_t dev, 			// index into device array (ds)
+void xio_init_spi(	const uint8_t dev, 				// index into device array (ds)
 					const uint32_t control,			// control bits
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *data_port,
@@ -113,8 +113,6 @@ int xio_getc_spi(FILE *stream)
  */
 int xio_putc_spi(const char c, FILE *stream)
 {
-//	struct xioDEVICE *d = (struct xioDEVICE *)stream->udata;// get SPI device struct pointer
-//	struct xioDEVICE *d = stream->udata;			// get SPI device struct pointer
 	xioDevice *d = (xioDevice *)stream->udata;		// get SPI device struct pointer
 	xioSpi *dx = (xioSpi *)d->x;					// get SPI extended struct pointer
 	char outc = 0;

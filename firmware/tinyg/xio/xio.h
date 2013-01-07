@@ -2,7 +2,7 @@
  * xio.h - Xmega IO devices - common header file
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -76,44 +76,12 @@ enum xioDevice {		// device enumerations
 #define XIO_DEV_FILE_COUNT		1				// # of FILE devices
 #define XIO_DEV_FILE_OFFSET		(XIO_DEV_USART_COUNT + XIO_DEV_SPI_COUNT) // index into FILES
 
-// aliases for stdio devices (aka pointers, streams)
+//aliases for stdio devices (aka pointers, streams)
 //#define fdev_rs485 (ds[XIO_DEV_RS485].fdev)	// RS485 device for stdio functions
 //#define fdev_usb	(ds[XIO_DEV_USB].fdev)		// USB device for stdio functions
 //#define fdev_spi1	(ds[XIO_DEV_SPI1].fdev)		// SPI channel #1
 //#define fdev_spi2	(ds[XIO_DEV_SPI2].fdev)		// SPI channel #2
 //#define fdev_pgm	(ds[XIO_DEV_PGM].fdev)		// Program memory device
-
-/*************************************************************************
- *	Function Prototypes
- *************************************************************************/
-
-#define PGMFILE (const PROGMEM char *)			// extends pgmspace.h
-typedef void (*fptr_void_void) (void); 			// returns void, void args
-typedef int (*fptr_int_void) (void); 			// returns int, void args
-
-void xio_init(void);									// xio system general init
-FILE *xio_open(const uint8_t dev, const char *addr);	// generic open function
-int xio_ctrl(const uint8_t dev, const uint32_t control);
-//int xio_rctl(const uint8_t dev, uint32_t *control);
-int xio_gets(const uint8_t dev, char *buf, const int size);
-int xio_getc(const uint8_t dev);
-int xio_putc(const uint8_t dev, const char c);
-
-// generic device init (must be followed by device-specific init
-void xio_init_dev(uint8_t dev,									// device number
-	FILE *(*x_open)(const uint8_t dev, const char *addr), 		// device open routine
-	int (*dev_ctrl)(const uint8_t dev, const uint32_t control),	// set device control flags
-//	int (*dev_rctl)(const uint8_t dev, uint32_t *control),		// get device control flags
-	int (*dev_gets)(const uint8_t dev, char *buf, int size),	// non-blocking line getter
-	int (*dev_getc)(FILE *),									// read char (stdio compatible)
-	int (*dev_putc)(char, FILE *)								// write char (stdio compatible)
-	);
-
-// std devices
-void xio_init_stdio(void);						// set std devs & do startup prompt
-void xio_set_stdin(const uint8_t dev);
-void xio_set_stdout(const uint8_t dev);
-void xio_set_stderr(const uint8_t dev);
 
 /*************************************************************************
  *	Device structures
@@ -133,6 +101,7 @@ struct xioDEVICE {							// common device struct (one per dev)
 	int (*x_gets)(const uint8_t dev, char *buf, const int size);// non-blocking line reader
 	int (*x_getc)(FILE *);					// read char (stdio compatible)
 	int (*x_putc)(char, FILE *);			// write char (stdio compatible)
+	void (*fc_func)(struct xioDEVICE *d);	// flow control callback function
 
 	// private working data
 #ifndef __USART_R2
@@ -145,14 +114,17 @@ struct xioDEVICE {							// common device struct (one per dev)
 	uint32_t flags;							// bitfield control flags
 	uint8_t flag_read;						// expanded flags: less space efficient but way faster
 	uint8_t flag_write;
-	uint8_t flag_blocking;
+	uint8_t flag_block;
 	uint8_t flag_xoff;						// xon/xoff enabled
 	uint8_t flag_echo;
 	uint8_t flag_crlf;
 	uint8_t flag_ignorecr;
 	uint8_t flag_ignorelf;
 	uint8_t flag_linemode;
+
 	uint8_t flag_in_line;					// used as a state variable for line reads
+	uint8_t flag_eol;						// end of line detected
+	uint8_t flag_eof;						// end of file detected
 };
 typedef struct xioDEVICE xioDevice;
 
@@ -173,16 +145,51 @@ xioSignals	sig;						// ...signal flags
 extern struct controllerSingleton tg;	// needed by init() for default source
 
 /*************************************************************************
+ *	Function Prototypes
+ *************************************************************************/
+
+#define PGMFILE (const PROGMEM char *)			// extends pgmspace.h
+typedef void (*fptr_void_void) (void); 			// returns void, void args
+typedef int (*fptr_int_void) (void); 			// returns int, void args
+
+void xio_init(void);									// xio system general init
+FILE *xio_open(const uint8_t dev, const char *addr);	// generic open function
+int xio_ctrl(const uint8_t dev, const uint32_t control);
+//int xio_rctl(const uint8_t dev, uint32_t *control);
+int xio_gets(const uint8_t dev, char *buf, const int size);
+int xio_getc(const uint8_t dev);
+int xio_putc(const uint8_t dev, const char c);
+void xio_fc_null(xioDevice *d);
+void xio_fc_usart(xioDevice *d);				// XON/XOFF flow control callback
+
+// generic device init (must be followed by device-specific init
+void xio_init_dev(uint8_t dev,									// device number
+	FILE *(*x_open)(const uint8_t dev, const char *addr), 		// device open routine
+	int (*x_ctrl)(const uint8_t dev, const uint32_t control),	// set device control flags
+//	int (*x_rctl)(const uint8_t dev, uint32_t *control),		// get device control flags
+	int (*x_gets)(const uint8_t dev, char *buf, int size),		// non-blocking line getter
+	int (*x_getc)(FILE *),										// read char (stdio compatible))
+	int (*x_putc)(char, FILE *),								// write char (stdio compat)
+	void (*fc_func)(xioDevice *)									// flow control callback function
+	);
+
+// std devices
+void xio_init_stdio(void);						// set std devs & do startup prompt
+void xio_set_stdin(const uint8_t dev);
+void xio_set_stdout(const uint8_t dev);
+void xio_set_stderr(const uint8_t dev);
+
+/*************************************************************************
  * SUPPORTING DEFINTIONS - SHOULD NOT NEED TO CHANGE
  *************************************************************************/
 /*
  * xio control flag values
  */
 // must cast 1 to uint32_t for bit evaluations to work correctly
-#define XIO_BAUD_gm		0x0000000F				// baud rate enum mask (keep in LSdigit)
-#define XIO_RD			((uint32_t)1<<4) 		// read enable bit
-#define XIO_WR			((uint32_t)1<<5)		// write enable only
-#define XIO_RDWR		(XIO_RD | XIO_WR) 		// read & write
+//#define XIO_BAUD_gm		0x0000000F				// baud rate enum mask (keep in LSdigit)
+//#define XIO_RD			((uint32_t)1<<4) 		// read enable bit
+//#define XIO_WR			((uint32_t)1<<5)		// write enable only
+//#define XIO_RDWR		(XIO_RD | XIO_WR) 		// read & write
 #define XIO_BLOCK		((uint32_t)1<<6)		// enable blocking reads
 #define XIO_NOBLOCK		((uint32_t)1<<7)		// disable blocking reads
 #define XIO_XOFF 		((uint32_t)1<<8)		// enable XON/OFF flow control
@@ -198,6 +205,24 @@ extern struct controllerSingleton tg;	// needed by init() for default source
 #define XIO_LINEMODE	((uint32_t)1<<18)		// special <CR><LF> read handling
 #define XIO_NOLINEMODE	((uint32_t)1<<19)		// no special <CR><LF> read handling
 
+/*
+#define XIO_BLOCK		((uint16_t)1<<0)		// enable blocking reads
+#define XIO_NOBLOCK		((uint16_t)1<<1)		// disable blocking reads
+#define XIO_XOFF 		((uint16_t)1<<2)		// enable XON/OFF flow control
+#define XIO_NOXOFF 		((uint16_t)1<<3)		// disable XON/XOFF flow control
+#define XIO_ECHO		((uint16_t)1<<4)		// echo reads from device to stdio
+#define XIO_NOECHO		((uint16_t)1<<5)		// disable echo
+#define XIO_CRLF		((uint16_t)1<<6)		// convert <LF> to <CR><LF> on writes
+#define XIO_NOCRLF		((uint16_t)1<<7)		// do not convert <LF> to <CR><LF> on writes
+#define XIO_IGNORECR	((uint16_t)1<<8)		// ignore <CR> on reads
+#define XIO_NOIGNORECR	((uint16_t)1<<9)		// don't ignore <CR> on reads
+#define XIO_IGNORELF	((uint16_t)1<<10)		// ignore <LF> on reads
+#define XIO_NOIGNORELF	((uint16_t)1<<11)		// don't ignore <LF> on reads
+#define XIO_LINEMODE	((uint16_t)1<<12)		// special <CR><LF> read handling
+#define XIO_NOLINEMODE	((uint16_t)1<<13)		// no special <CR><LF> read handling
+*/
+
+/*
 // internal control flags (which are NOT the similar bits in the control word, above)
 // static configuration states
 #define XIO_FLAG_RD_bm		((uint32_t)1<<0)	// enabled for read
@@ -228,7 +253,7 @@ extern struct controllerSingleton tg;	// needed by init() for default source
 //#define IGNORELF(a) 	((a & XIO_FLAG_IGNORELF_bm) ? true : false)
 #define LINEMODE(a)		((a & XIO_FLAG_LINEMODE_bm) ? true : false)
 #define IN_LINE(a)		((a & XIO_FLAG_IN_LINE_bm) ? true : false)
-
+*/
 /*
  * Generic XIO signals and error conditions. 
  * See signals.h for application specific signal defs and routines.

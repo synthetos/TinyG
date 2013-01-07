@@ -2,7 +2,7 @@
  * xio_usart.h - Common USART definitions 
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -78,7 +78,9 @@
 //**** USB device configuration ****
 //NOTE: XIO_BLOCK / XIO_NOBLOCK affects reads only. Writes always block. (see xio.h)
 
-#define USB_INIT_bm (XIO_RDWR | XIO_BLOCK |  XIO_ECHO | XIO_XOFF | XIO_LINEMODE | XIO_BAUD_115200)
+#define USB_BAUD	 XIO_BAUD_115200
+#define USB_INIT_bm (XIO_BLOCK |  XIO_ECHO | XIO_XOFF | XIO_LINEMODE )
+//#define USB_INIT_bm (XIO_RDWR | XIO_BLOCK |  XIO_ECHO | XIO_XOFF | XIO_LINEMODE )
 
 #define USB_USART USARTC0					// USB usart
 #define USB_RX_ISR_vect USARTC0_RXC_vect 	// (RX) reception complete IRQ
@@ -99,7 +101,9 @@
 
 
 //**** RS485 device configuration (no echo or CRLF) ****
-#define RS485_INIT_bm (XIO_RDWR | XIO_NOBLOCK | XIO_NOECHO | XIO_LINEMODE | XIO_BAUD_115200)
+#define RS485_BAUD	   XIO_BAUD_115200
+#define RS485_INIT_bm (XIO_NOBLOCK | XIO_NOECHO | XIO_LINEMODE)
+//#define RS485_INIT_bm (XIO_RDWR | XIO_NOBLOCK | XIO_NOECHO | XIO_LINEMODE)
 
 #define RS485_USART USARTC1					// RS485 usart
 #define RS485_RX_ISR_vect USARTC1_RXC_vect 	// (RX) reception complete IRQ
@@ -161,15 +165,19 @@ enum xioFCState {
 struct xioUSART {
 	uint8_t fc_char;			 			// flow control character to send
 	volatile uint8_t fc_state;				// flow control state
+
 	volatile BUFFER_T rx_buf_tail;			// RX buffer read index
 	volatile BUFFER_T rx_buf_head;			// RX buffer write index (written by ISR)
+	volatile BUFFER_T rx_buf_count;			// RX buffer counter for flow control
+
 	volatile BUFFER_T tx_buf_tail;			// TX buffer read index  (written by ISR)
 	volatile BUFFER_T tx_buf_head;			// TX buffer write index
+	volatile BUFFER_T tx_buf_count;
 
 	struct USART_struct *usart;				// USART structure
 	struct PORT_struct *port;				// corresponding port
 
-	volatile char rx_buf[RX_BUFFER_SIZE];  // (written by ISR)
+	volatile char rx_buf[RX_BUFFER_SIZE];	// (written by ISR)
 	volatile char tx_buf[TX_BUFFER_SIZE];
 };
 typedef struct xioUSART xioUsart;
@@ -178,29 +186,35 @@ typedef struct xioUSART xioUsart;
  * USART DEVICE FUNCTION PROTOTYPES AND ALIASES
  ******************************************************************************/
 
-//#define xio_gets_usb(buf, siz) xio_gets_usart(XIO_DEV_USB, buf, siz)
-
 // Common functions (common to all USART devices)
 void xio_init_usart(const uint8_t dev, 
+					uint8_t baud, 
 					const uint32_t control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,
-					const uint8_t inbits, const uint8_t outbits, const uint8_t outclr, const uint8_t outset);
+					const uint8_t inbits, 
+					const uint8_t outbits, 
+					const uint8_t outclr, 
+					const uint8_t outset);
 
-void xio_set_baud_usart(const uint8_t dev, const uint8_t baud);
-void xio_xoff_usart(const uint8_t dev);
-void xio_xon_usart(const uint8_t dev);
+//void xio_set_baud_usart(const uint8_t dev, const uint8_t baud);
+void xio_set_baud_usart(xioUsart *dx, const uint8_t baud);
+//void xio_xoff_usart(const uint8_t dev);
+//void xio_xon_usart(const uint8_t dev);
+void xio_xoff_usart(xioUsart *dx);
+void xio_xon_usart(xioUsart *dx);
+
 void xio_deassert_rts_usart(const uint8_t dev);
 void xio_assert_rts_usart(const uint8_t dev);
 int xio_gets_usart(const uint8_t dev, char *buf, const int size);
 int xio_getc_usart(FILE *stream);
 int xio_putc_usart(const char c, FILE *stream);
 
-void xio_init_rs485(void);						// RS485 specific functions (subclassing usart.c versions)
-int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
-
 void xio_init_usb(void);						// USB specific functions (subclassing usart.c versions)
 int xio_putc_usb(const char c, FILE *stream);	// stdio compatible put character
+
+void xio_init_rs485(void);						// RS485 specific functions (subclassing usart.c versions)
+int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
 
 // handy helpers
 BUFFER_T xio_get_rx_bufcount_usart(const struct xioUSART *dx);

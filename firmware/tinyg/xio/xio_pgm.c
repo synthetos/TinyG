@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2011 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2011 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -42,7 +42,7 @@
 void xio_init_pgm()
 {
 	// Program memory file device setup
-	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_ctrl, xio_gets_pgm, xio_getc_pgm, xio_putc_pgm);
+	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_ctrl, xio_gets_pgm, xio_getc_pgm, xio_putc_pgm, xio_fc_null);
 	xio_init_file(XIO_DEV_PGM, PGM_INIT_bm);
 }
 
@@ -55,7 +55,10 @@ void xio_init_pgm()
 
 FILE * xio_open_pgm(const uint8_t dev, const char *addr)
 {
-	PGM.flags &= XIO_FLAG_RESET_gm;					// reset flag signaling bits
+//	PGM.flags &= XIO_FLAG_RESET_gm;					// reset flag signaling bits +++++++++++++++++
+	PGM.flag_in_line = false;
+	PGM.flag_eol = false;
+	PGM.flag_eof = false;
 	PGM.signal = 0;									// reset signal
 	PGMf.filebase_P = (PROGMEM const char *)addr;	// might want to range check this
 	PGMf.rd_offset = 0;								// initialize read buffer pointer
@@ -105,13 +108,15 @@ int xio_getc_pgm(FILE *stream)
 {
 	char c;
 
-	if ((PGM.flags & XIO_FLAG_EOF_bm) != 0) {
+//	if ((PGM.flags & XIO_FLAG_EOF_bm) != 0) {	//+++++++++++++++++++++++++++
+	if (PGM.flag_eof ) {
 		PGM.signal = XIO_SIG_EOF;
 		return (_FDEV_EOF);
 	}
 //	if ((PGM.c = pgm_read_byte(&PGMf.filebase_P[PGMf.rd_offset])) == NUL) {
 	if ((c = pgm_read_byte(&PGMf.filebase_P[PGMf.rd_offset])) == NUL) {
-		PGM.flags |= XIO_FLAG_EOF_bm;
+//		PGM.flags |= XIO_FLAG_EOF_bm;
+		PGM.flag_eof = true;
 	}
 	++PGMf.rd_offset;
 

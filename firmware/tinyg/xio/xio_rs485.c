@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -59,8 +59,8 @@ static void _xio_enable_rs485_rx(void);	// enable rs485 RX mode (no TX)
  */
 void xio_init_rs485()	// RS485 init
 {
-	xio_init_dev(XIO_DEV_RS485, xio_open, xio_ctrl, xio_gets_usart, xio_getc_usart, xio_putc_rs485);
-	xio_init_usart(XIO_DEV_RS485, RS485_INIT_bm, &RS485_USART, &RS485_PORT, RS485_DIRCLR_bm, RS485_DIRSET_bm, RS485_OUTCLR_bm, RS485_OUTSET_bm);
+	xio_init_dev(XIO_DEV_RS485, xio_open, xio_ctrl, xio_gets_usart, xio_getc_usart, xio_putc_rs485, xio_fc_null);
+	xio_init_usart(XIO_DEV_RS485, RS485_BAUD, RS485_INIT_bm, &RS485_USART, &RS485_PORT, RS485_DIRCLR_bm, RS485_DIRSET_bm, RS485_OUTCLR_bm, RS485_OUTSET_bm);
 	_xio_enable_rs485_rx(); // set initially for RX mode
 }
 
@@ -117,7 +117,8 @@ int xio_putc_rs485(const char c, FILE *stream)
 		next_tx_buf_head = TX_BUFFER_SIZE-1;	 // -1 avoids the off-by-one
 	}
 	while(next_tx_buf_head == RSu.tx_buf_tail) { // buf full. sleep or ret
-		if (BLOCKING(RS.flags) != 0) {
+//		if (BLOCKING(RS.flags) != 0) {				//++++++++++++++++++++++++
+		if (RS.flag_block) {
 			sleep_mode();
 		} else {
 			RS.signal = XIO_SIG_EAGAIN;
@@ -172,37 +173,42 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)		// serial port C0 RX isr
 	if ((RSu.usart->STATUS & USART_RX_DATA_READY_bm) != 0) {
 		c = RSu.usart->DATA;						// can only read DATA once
 	} else {
-		return;			// shouldn't ever happen; bit of a fail-safe here
+		return;										// shouldn't ever happen; bit of a fail-safe here
 	}
 
 	// trap signals - do not insert into RX queue
-	if (c == CHAR_RESET) {	 					// trap Kill signal
-		RS.signal = XIO_SIG_RESET;				// set signal value
-		sig_reset();							// call app-specific sig handler
+	if (c == CHAR_RESET) {	 						// trap Kill signal
+		RS.signal = XIO_SIG_RESET;					// set signal value
+		sig_reset();								// call app-specific sig handler
 		return;
 	}
-	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal
+	if (c == CHAR_FEEDHOLD) {						// trap feedhold signal
 		RS.signal = XIO_SIG_FEEDHOLD;
 		sig_feedhold();
 		return;
 	}
-	if (c == CHAR_CYCLE_START) {				// trap end_feedhold signal
+	if (c == CHAR_CYCLE_START) {					// trap end_feedhold signal
 		RS.signal = XIO_SIG_CYCLE_START;
 		sig_cycle_start();
 		return;
 	}
+	// filter out CRs and LFs if they are to be ignored
+	if ((c == CR) && (RS.flag_ignorecr)) return;
+	if ((c == LF) && (RS.flag_ignorelf)) return;
 
-	// normal path
-	if ((--RSu.rx_buf_head) == 0) { 			// advance buffer head with wrap
-		RSu.rx_buf_head = RX_BUFFER_SIZE -1;// -1 avoids the off-by-one error
+	// normal character path
+	if ((--RSu.rx_buf_head) == 0) { 				// advance buffer head with wrap
+		RSu.rx_buf_head = RX_BUFFER_SIZE -1;		// -1 avoids the off-by-one error
 	}
-	if (RSu.rx_buf_head != RSu.rx_buf_tail) {	// write char unless buffer full
-		RSu.rx_buf[RSu.rx_buf_head] = c;		// (= USARTC1.DATA;)
+	if (RSu.rx_buf_head != RSu.rx_buf_tail) {		// write char unless buffer full
+		RSu.rx_buf[RSu.rx_buf_head] = c;			// (= USARTC1.DATA;)
+		RSu.rx_buf_count++;
+		// flow control detection goes here - should it be necessary
 		return;
 	}
 	// buffer-full handling
-	if ((++RSu.rx_buf_head) > RX_BUFFER_SIZE -1) { // reset the head
+	if ((++RSu.rx_buf_head) > RX_BUFFER_SIZE -1) {	// reset the head
+		RSu.rx_buf_count = RX_BUFFER_SIZE-1;		// reset count for good measure
 		RSu.rx_buf_head = 1;
 	}
-	// activate flow control here or before it gets to this level
 }
