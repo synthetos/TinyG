@@ -1170,9 +1170,9 @@ static uint8_t _set_motor_steps_per_unit(cmdObj *cmd)
 static uint8_t _set_comm_helper(cmdObj *cmd, uint32_t yes, uint32_t no)
 {
 	if (fp_NOT_ZERO(cmd->value)) { 
-		(void)xio_cntl(XIO_DEV_USB, yes);
+		(void)xio_ctrl(XIO_DEV_USB, yes);
 	} else { 
-		(void)xio_cntl(XIO_DEV_USB, no);
+		(void)xio_ctrl(XIO_DEV_USB, no);
 	}
 	return (TG_OK);
 }
@@ -1180,13 +1180,13 @@ static uint8_t _set_comm_helper(cmdObj *cmd, uint32_t yes, uint32_t no)
 static uint8_t _set_ic(cmdObj *cmd) 	// ignore CR or LF on RX
 {
 	cfg.ignore_crlf = (uint8_t)cmd->value;
-	(void)xio_cntl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
-	(void)xio_cntl(XIO_DEV_USB, XIO_NOIGNORELF);
+	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
+	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORELF);
 
 	if (cfg.ignore_crlf == IGNORE_CR) {				// $ic=1
-		(void)xio_cntl(XIO_DEV_USB, XIO_IGNORECR);
+		(void)xio_ctrl(XIO_DEV_USB, XIO_IGNORECR);
 	} else if (cfg.ignore_crlf == IGNORE_LF) {		// $ic=2
-		(void)xio_cntl(XIO_DEV_USB, XIO_IGNORELF);
+		(void)xio_ctrl(XIO_DEV_USB, XIO_IGNORELF);
 	}
 	return (TG_OK);
 }

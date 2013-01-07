@@ -93,7 +93,7 @@ typedef int (*fptr_int_void) (void); 			// returns int, void args
 
 void xio_init(void);									// xio system general init
 FILE *xio_open(const uint8_t dev, const char *addr);	// generic open function
-int xio_cntl(const uint8_t dev, const uint32_t control);
+int xio_ctrl(const uint8_t dev, const uint32_t control);
 //int xio_rctl(const uint8_t dev, uint32_t *control);
 int xio_gets(const uint8_t dev, char *buf, const int size);
 int xio_getc(const uint8_t dev);
@@ -102,7 +102,7 @@ int xio_putc(const uint8_t dev, const char c);
 // generic device init (must be followed by device-specific init
 void xio_init_dev(uint8_t dev,									// device number
 	FILE *(*x_open)(const uint8_t dev, const char *addr), 		// device open routine
-	int (*dev_cntl)(const uint8_t dev, const uint32_t control),	// set device control flags
+	int (*dev_ctrl)(const uint8_t dev, const uint32_t control),	// set device control flags
 //	int (*dev_rctl)(const uint8_t dev, uint32_t *control),		// get device control flags
 	int (*dev_gets)(const uint8_t dev, char *buf, int size),	// non-blocking line getter
 	int (*dev_getc)(FILE *),									// read char (stdio compatible)
@@ -137,7 +137,7 @@ struct xioDEVICE {							// common device struct (one per dev)
 
 	// function bindings
 	FILE *(*x_open)(const uint8_t dev, const char *addr);		// device open routine
-	int (*x_cntl)(const uint8_t dev, const uint32_t control);	// set device control flags
+	int (*x_ctrl)(const uint8_t dev, const uint32_t control);	// set device control flags
 //	int (*x_rctl)(const uint8_t dev, uint32_t *control);		// get device control flags
 	int (*x_gets)(const uint8_t dev, char *buf, const int size);// specialized line reader
 	int (*x_getc)(FILE *);					// read char (stdio compatible)
@@ -370,7 +370,7 @@ enum xioCodes {
 	0x7F	DEL	
 */
 
-//#define __UNIT_TEST_XIO			// include and run xio unit tests
+#define __UNIT_TEST_XIO			// include and run xio unit tests
 #ifdef __UNIT_TEST_XIO
 void xio_unit_tests(void);
 #define	XIO_UNITS xio_unit_tests();

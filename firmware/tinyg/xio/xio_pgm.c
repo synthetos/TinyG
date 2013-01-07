@@ -42,7 +42,7 @@
 void xio_init_pgm()
 {
 	// Program memory file device setup
-	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_cntl_pgm, xio_gets_pgm, xio_getc_pgm, xio_putc_pgm);
+	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_ctrl, xio_gets_pgm, xio_getc_pgm, xio_putc_pgm);
 	xio_init_file(XIO_DEV_PGM, PGM_INIT_bm);
 }
 
@@ -62,16 +62,6 @@ FILE * xio_open_pgm(const uint8_t dev, const char *addr)
 	PGMf.wr_offset = 0;								// initialize write buffer pointer
 	PGMf.max_offset = PGM_ADDR_MAX;
 	return(PGM.fdev);								// return pointer to the fdev stream
-}
-
-/*
- *	xio_cntl_pgm() - check and set control flags for device
- */
-
-int xio_cntl_pgm(const uint8_t dev, const uint32_t control)
-{
-	xio_cntl(XIO_DEV_PGM, control);
-	return (XIO_OK);						// for now it's always OK
 }
 
 /* 

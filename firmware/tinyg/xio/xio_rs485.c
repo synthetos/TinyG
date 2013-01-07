@@ -50,6 +50,7 @@
 #define RS ds[XIO_DEV_RS485]					// device struct accessoor
 #define RSu us[XIO_DEV_RS485 - XIO_DEV_USART_OFFSET]// usart extended struct accessor
 
+
 // local helper functions
 static void _xio_enable_rs485_tx(void);	// enable rs485 TX mode (no RX)
 static void _xio_enable_rs485_rx(void);	// enable rs485 RX mode (no TX)
@@ -59,7 +60,7 @@ static void _xio_enable_rs485_rx(void);	// enable rs485 RX mode (no TX)
  */
 void xio_init_rs485()	// RS485 init
 {
-	xio_init_dev(XIO_DEV_RS485, xio_open, xio_cntl, xio_gets_usart, xio_getc_usart, xio_putc_rs485);
+	xio_init_dev(XIO_DEV_RS485, xio_open, xio_ctrl, xio_gets_usart, xio_getc_usart, xio_putc_rs485);
 	xio_init_usart(XIO_DEV_RS485, RS485_INIT_bm, &RS485_USART, &RS485_PORT, RS485_DIRCLR_bm, RS485_DIRSET_bm, RS485_OUTCLR_bm, RS485_OUTSET_bm);
 	_xio_enable_rs485_rx(); // set initially for RX mode
 }

@@ -104,7 +104,7 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 	dx->port = (struct PORT_struct *)port_addr;		// bind PORT
 
 	// set flags
-	(void)xio_cntl(dev, control);// generic setflags -doesn't validate flags
+	(void)xio_ctrl(dev, control);// generic setflags -doesn't validate flags
 	if (EN_XOFF(d->flags) == true) {				// transfer flow control setting 
 		dx->fc_state = FC_IN_XON;					// resting state 
 	}
@@ -118,10 +118,10 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 	// baud rate and USART setup
 	uint8_t baud = (uint8_t)(control & XIO_BAUD_gm);
 	if (baud == XIO_BAUD_UNSPECIFIED) { baud = XIO_BAUD_DEFAULT; }
-	xio_set_baud_usart(dev, baud);		// usart must be bound first
+	xio_set_baud_usart(dev, baud);						// usart must be bound first
 
-	dx->usart->CTRLB = (USART_TXEN_bm | USART_RXEN_bm);// enable tx and rx
-	dx->usart->CTRLA = CTRLA_RXON_TXON;	// enable tx and rx IRQs
+	dx->usart->CTRLB = (USART_TXEN_bm | USART_RXEN_bm);	// enable tx and rx
+	dx->usart->CTRLA = CTRLA_RXON_TXON;					// enable tx and rx IRQs
 
 	dx->port->DIRCLR = inbits;
 	dx->port->DIRSET = outbits;

@@ -40,15 +40,13 @@
 
 #include "xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
-#include "../gpio.h"
-
 
 /*
  * xio_init_usb() - initialization
  */
 void xio_init_usb()
 {
-	xio_init_dev(XIO_DEV_USB, xio_open, xio_cntl, xio_gets_usart, xio_getc_usart, xio_putc_usb);
+	xio_init_dev(XIO_DEV_USB, xio_open, xio_ctrl, xio_gets_usart, xio_getc_usart, xio_putc_usb);
 	xio_init_usart(XIO_DEV_USB, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
 }
 
