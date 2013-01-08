@@ -69,7 +69,7 @@ static const uint8_t bsel[] PROGMEM = { 0, 207, 103, 51, 34, 33, 31, 27, 19, 1, 
 static const uint8_t bscale[] PROGMEM = { 0, 0, 0, 0, 0, (-1<<4), (-2<<4), (-3<<4), (-4<<4), (1<<4), 1 };
 
 // local function prototypes
-static int _gets_helper(xioDevice *d, xioUsart *dx);
+static int _gets_helper(xioDev *d, xioUsart *dx);
 
 /*
  *	xio_init_usart() - general purpose USART initialization (shared)
@@ -85,7 +85,7 @@ void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 					const uint8_t outset) 
 {
 	// do all the bindings first (and in this order)
-	xioDevice *d = &ds[dev];						// setup device struct pointer
+	xioDev *d = &ds[dev];							// setup device struct pointer
 	d->x = &us[dev - XIO_DEV_USART_OFFSET];			// bind USART struct to device extended struct
 	xioUsart *dx = (xioUsart *)d->x;				// setup USART struct pointer
 	dx->usart = (struct USART_struct *)usart_addr;	// bind USART 
@@ -128,7 +128,7 @@ void xio_set_baud_usart(xioUsart *dx, const uint8_t baud)
  * 	Called as a callback from the usart handlers
  */
 
-void xio_fc_usart(xioDevice *d)
+void xio_fc_usart(xioDev *d)
 {
 	xioUsart *dx = d->x;
 	if (xio_get_rx_bufcount_usart(dx) < XOFF_RX_LO_WATER_MARK) {
@@ -203,31 +203,31 @@ int xio_putc_usart(const char c, FILE *stream)
  */
 void xio_queue_RX_char_usart(const uint8_t dev, const char c)
 {
-	xioDevice *d = &ds[dev];			// init device struct pointer
+	xioDev *d = &ds[dev];						// init device struct pointer
 	xioUsart *dx = d->x;
 
 	// trap signals - do not insert into RX queue
-	if (c == CHAR_RESET) {	 				// trap Kill signal
-		d->signal = XIO_SIG_RESET;			// set signal value
-		sig_reset();						// call app-specific sig handler
+	if (c == CHAR_RESET) {	 					// trap Kill signal
+		d->signal = XIO_SIG_RESET;				// set signal value
+		sig_reset();							// call app-specific sig handler
 		return;
 	}
-	if (c == CHAR_FEEDHOLD) {				// trap feedhold signal
+	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal
 		d->signal = XIO_SIG_FEEDHOLD;
 		sig_feedhold();
 		return;
 	}
-	if (c == CHAR_CYCLE_START) {			// trap cycle start signal
+	if (c == CHAR_CYCLE_START) {				// trap cycle start signal
 		d->signal = XIO_SIG_CYCLE_START;
 		sig_cycle_start();
 		return;
 	}
 	// normal path
-	if ((--dx->rx_buf_head) == 0) { 		// wrap condition
-		dx->rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids the off-by-one err
+	if ((--dx->rx_buf_head) == 0) { 			// wrap condition
+		dx->rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one err
 	}
-	if (dx->rx_buf_head != dx->rx_buf_tail) {// write char unless buffer full
-		dx->rx_buf[dx->rx_buf_head] = c;	// FAKE INPUT DATA
+	if (dx->rx_buf_head != dx->rx_buf_tail) {	// write char unless buffer full
+		dx->rx_buf[dx->rx_buf_head] = c;		// FAKE INPUT DATA
 		dx->rx_buf_count++;
 		return;
 	}
@@ -276,7 +276,7 @@ void xio_queue_RX_string_rs485(const char *buf) { xio_queue_RX_string_usart(XIO_
  */
 int xio_gets_usart(const uint8_t dev, char *buf, const int size)
 {
-	xioDevice *d = &ds[dev];					// device struct pointer
+	xioDev *d = &ds[dev];						// device struct pointer
 	xioUsart *dx = d->x;						// USART pointer
 
 	if (d->flag_in_line == false) {				// first time thru initializations
@@ -300,7 +300,7 @@ int xio_gets_usart(const uint8_t dev, char *buf, const int size)
 /*
  * _gets_helper() - non-blocking character getter for gets
  */
-static int _gets_helper(xioDevice *d, xioUsart *dx)
+static int _gets_helper(xioDev *d, xioUsart *dx)
 {
 	char c = NUL;
 
@@ -359,7 +359,7 @@ static int _gets_helper(xioDevice *d, xioUsart *dx)
  */
 int xio_getc_usart(FILE *stream)
 {
-	xioDevice *d = (xioDevice *)stream->udata;		// get device struct pointer
+	xioDev *d = (xioDev *)stream->udata;			// get device struct pointer
 	xioUsart *dx = d->x;							// get USART pointer
 	char c;
 

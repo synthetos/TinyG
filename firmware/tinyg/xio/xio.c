@@ -23,7 +23,7 @@
  *
  * XIO provides common access to native and derived xmega devices 
  * (see table below) XIO devices are compatible with avr-gcc stdio 
- * and also provide some special functions that extend stdio.
+ * and also provide some special functions that are not found in stdio.
  *
  * Stdio support:
  *	- http://www.nongnu.org/avr-libc/user-manual/group__avr__stdio.html
@@ -39,10 +39,8 @@
  *	- Supported devices include:
  *		- USB (derived from USART)
  *		- RS485 (derived from USART)
- *		- Arduino connection (derived from USART)
+ *		- SPI devices and slave channels
  *		- Program memory "files" (read only)
- *		- EEPROM "files" (limited read/write capabilities)
- *		- (other devices will be added as needed)
  *	- Stdio FILE streams are managed as bindings to the above devices
  *	- Additional functions provided include:
  *		- open file (initialize address and other parameters)
@@ -87,18 +85,21 @@ void xio_init_dev(uint8_t dev, 									// device number
 	int (*x_gets)(const uint8_t dev, char *buf, int size),		// specialized line reader
 	int (*x_getc)(FILE *),										// read char (stdio compat)
 	int (*x_putc)(char, FILE *),								// write char (stdio compat)
-	void (*fc_func)(xioDevice *)								// flow control callback function
+	void (*fc_func)(xioDev *)									// flow control callback function
 	)
 {
-	xioDevice *d = &ds[dev];
+	xioDev *d = &ds[dev];
 
 	// clear device struct
-	memset (d, 0, sizeof(xioDevice));		// (Note: 'x' binding is set by device-specific init)
+	memset (d, 0, sizeof(xioDev));		// (Note: 'x' binding is set by device-specific init)
 
 	d->dev = dev;
-	d->fdev = &ss[dev];						// bind pre-allocated stdio stream struct
-	fdev_setup_stream(d->fdev, x_putc, x_getc, _FDEV_SETUP_RW);
-	fdev_set_udata(d->fdev, d);				// reference self for udata 
+
+	fdev_setup_stream(&d->file, x_putc, x_getc, _FDEV_SETUP_RW);
+	fdev_set_udata(&d->file, d);		// reference self for udata 
+//	d->fdev = &ss[dev];					// bind pre-allocated stdio stream struct
+//	fdev_setup_stream(d->fdev, x_putc, x_getc, _FDEV_SETUP_RW);
+//	fdev_set_udata(d->fdev, d);			// reference self for udata 
 
 	// bind functions to device structure
 	d->x_open = x_open;			// bind the open function to the PGM struct
@@ -131,7 +132,7 @@ FILE *xio_open(uint8_t dev, const char *addr)
 	if (dev == XIO_DEV_PGM) {
 		return (xio_open_pgm (dev, addr));	// take some action
 	}
-	return(ds[dev].fdev);					// otherwise just parrot the fdev
+	return(&(ds[dev].file));				// otherwise just parrot the file pointer
 }
 
 /*
@@ -143,7 +144,7 @@ FILE *xio_open(uint8_t dev, const char *addr)
 
 int xio_ctrl(const uint8_t dev, const CONTROL_T control)
 {
-	xioDevice *d = &ds[dev];
+	xioDev *d = &ds[dev];
 	SETFLAG(XIO_BLOCK,		flag_block);
 	CLRFLAG(XIO_NOBLOCK,	flag_block);
 	SETFLAG(XIO_XOFF,		flag_xoff);
@@ -178,7 +179,7 @@ int xio_rctl(const uint8_t dev, CONTROL_T *control)
 /*
  * xio_fc_null() - flow control null function
  */
-void xio_fc_null(xioDevice *d)
+void xio_fc_null(xioDev *d)
 {
 	return;
 }
@@ -189,9 +190,9 @@ void xio_fc_null(xioDevice *d)
  * xio_set_stderr() - set stderr from device number
  */
 
-void xio_set_stdin(const uint8_t dev)  { stdin  = ds[dev].fdev; }
-void xio_set_stdout(const uint8_t dev) { stdout = ds[dev].fdev; }
-void xio_set_stderr(const uint8_t dev) { stderr = ds[dev].fdev; }
+void xio_set_stdin(const uint8_t dev)  { stdin  = &ds[dev].file; }
+void xio_set_stdout(const uint8_t dev) { stdout = &ds[dev].file; }
+void xio_set_stderr(const uint8_t dev) { stderr = &ds[dev].file; }
 
 /*
  * xio_putc() - common entry point for putc
@@ -207,12 +208,12 @@ void xio_set_stderr(const uint8_t dev) { stderr = ds[dev].fdev; }
  */
 int xio_putc(const uint8_t dev, const char c)
 {
-	return ds[dev].x_putc(c, ds[dev].fdev); 
+	return ds[dev].x_putc(c, &ds[dev].file); 
 }
 
 int xio_getc(const uint8_t dev) 
 { 
-	return ds[dev].x_getc(ds[dev].fdev); 
+	return ds[dev].x_getc(&ds[dev].file); 
 }
 
 int xio_gets(const uint8_t dev, char *buf, const int size) 

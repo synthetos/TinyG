@@ -32,7 +32,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	359.14		// SPI controls
+#define TINYG_BUILD_NUMBER   	359.15		// SPI controls
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
@@ -47,7 +47,6 @@
 
 // bringing in new functionality
 //#define __PLAN_R2							// comment out to use R1 planner functions
-#define __USART_R2							// comment out to use older USART getc/gets functions
 
 /****** OPERATING SETTINGS *******/
 

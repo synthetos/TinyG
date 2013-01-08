@@ -68,7 +68,7 @@ void xio_init_spi(	const uint8_t dev, 				// index into device array (ds)
 					const uint8_t outset) 
 {
 	// do all bindings first (and in this order)
-	xioDevice *d = &ds[dev];						// setup device struct pointer
+	xioDev *d = &ds[dev];							// setup device struct pointer
 	d->x = &sp[dev - XIO_DEV_SPI_OFFSET];			// bind SPI struct to device
 	xioSpi *dx = (xioSpi *)d->x;					// setup SPI struct pointer
 	dx->usart = (struct USART_struct *)usart_addr;	// bind USART used for SPI 
@@ -113,7 +113,7 @@ int xio_getc_spi(FILE *stream)
  */
 int xio_putc_spi(const char c, FILE *stream)
 {
-	xioDevice *d = (xioDevice *)stream->udata;		// get SPI device struct pointer
+	xioDev *d = (xioDev *)stream->udata;			// get SPI device struct pointer
 	xioSpi *dx = (xioSpi *)d->x;					// get SPI extended struct pointer
 	char outc = 0;
 

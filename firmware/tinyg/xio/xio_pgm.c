@@ -63,7 +63,7 @@ FILE * xio_open_pgm(const uint8_t dev, const char *addr)
 	PGMf.rd_offset = 0;								// initialize read buffer pointer
 	PGMf.wr_offset = 0;								// initialize write buffer pointer
 	PGMf.max_offset = PGM_ADDR_MAX;
-	return(PGM.fdev);								// return pointer to the fdev stream
+	return(&PGM.file);								// return pointer to the FILE stream
 }
 
 /* 
@@ -145,9 +145,9 @@ int xio_gets_pgm(const uint8_t dev, char *buf, const int size)
 		return (XIO_FILE_NOT_OPEN);
 	}
 	PGM.signal = XIO_SIG_OK;			// initialize signal
-	if (fgets(buf, size, PGM.fdev) == NULL) {
+	if (fgets(buf, size, &PGM.file) == NULL) {
 		PGMf.filebase_P = NULL;
-		clearerr(PGM.fdev);
+		clearerr(&PGM.file);
 		return (XIO_EOF);
 	}
 	return (XIO_OK);

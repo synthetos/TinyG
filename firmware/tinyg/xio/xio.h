@@ -53,7 +53,7 @@
 // Pre-allocated XIO devices (configured devices)
 // Unused devices are commented out. All this needs to line up.
 
-enum xioDevice {		// device enumerations
+enum xioDev {		// device enumerations
 						// TYPE:	DEVICE:
 	XIO_DEV_USB,		// USART	USB device
 	XIO_DEV_RS485,		// USART	RS485 device
@@ -85,8 +85,9 @@ enum xioDevice {		// device enumerations
 
 struct xioDEVICE {							// common device struct (one per dev)
 	// references and self references
-	FILE *fdev;								// stdio fdev binding (static)
 	uint8_t dev;							// self referential device number
+//	FILE *fdev;								// stdio fdev binding (static)
+	FILE file;								// stdio FILE stream structure
 	void *x;								// extended device struct binding (static)
 
 	// function bindings
@@ -98,15 +99,7 @@ struct xioDEVICE {							// common device struct (one per dev)
 	int (*x_putc)(char, FILE *);			// write char (stdio compatible)
 	void (*fc_func)(struct xioDEVICE *d);	// flow control callback function
 
-	// private working data
-#ifndef __USART_R2
-	char c;									// char temp
-#endif
-	int size;								// text buffer length (dynamic)
-	char *buf;								// text buffer binding (can be dynamic)
-	uint8_t len;							// chars read so far (buf array index)
-	uint8_t signal;							// signal value
-
+	// device configuration flags
 	uint8_t flag_block;
 	uint8_t flag_xoff;						// xon/xoff enabled
 	uint8_t flag_echo;
@@ -115,17 +108,24 @@ struct xioDEVICE {							// common device struct (one per dev)
 	uint8_t flag_ignorelf;
 	uint8_t flag_linemode;
 
+	// runtime working flags
 	uint8_t flag_in_line;					// used as a state variable for line reads
 	uint8_t flag_eol;						// end of line detected
 	uint8_t flag_eof;						// end of file detected
+
+	// private working data
+	int size;								// text buffer length (dynamic)
+	uint8_t len;							// chars read so far (buf array index)
+	uint8_t signal;							// signal value
+	char *buf;								// text buffer binding (can be dynamic)
 };
-typedef struct xioDEVICE xioDevice;
+typedef struct xioDEVICE xioDev;
 
 /*
  * Static structure allocations for XIO
  */
-xioDevice 	ds[XIO_DEV_COUNT];			// allocate top-level dev structs
-FILE 		ss[XIO_DEV_COUNT];			// stdio stream for each dev
+xioDev 		ds[XIO_DEV_COUNT];			// allocate top-level dev structs
+//FILE 		ss[XIO_DEV_COUNT];			// stdio stream for each dev
 xioUsart 	us[XIO_DEV_USART_COUNT];	// USART extended IO structs
 xioSpi 		sp[XIO_DEV_SPI_COUNT];		// SPI extended IO structs
 xioFile 	fs[XIO_DEV_FILE_COUNT];		// FILE extended IO structs
@@ -147,8 +147,8 @@ int xio_ctrl(const uint8_t dev, const CONTROL_T control);
 int xio_gets(const uint8_t dev, char *buf, const int size);
 int xio_getc(const uint8_t dev);
 int xio_putc(const uint8_t dev, const char c);
-void xio_fc_null(xioDevice *d);
-void xio_fc_usart(xioDevice *d);				// XON/XOFF flow control callback
+void xio_fc_null(xioDev *d);
+void xio_fc_usart(xioDev *d);				// XON/XOFF flow control callback
 
 // generic device init (must be followed by device-specific init
 void xio_init_dev(uint8_t dev,									// device number
@@ -158,7 +158,7 @@ void xio_init_dev(uint8_t dev,									// device number
 	int (*x_gets)(const uint8_t dev, char *buf, int size),		// non-blocking line getter
 	int (*x_getc)(FILE *),										// read char (stdio compatible))
 	int (*x_putc)(char, FILE *),								// write char (stdio compat)
-	void (*fc_func)(xioDevice *)									// flow control callback function
+	void (*fc_func)(xioDev *)									// flow control callback function
 	);
 
 // std devices
