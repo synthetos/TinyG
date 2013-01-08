@@ -151,14 +151,7 @@ int xio_putc(const uint8_t dev, const char c);
 
 // generic functions (private, but at virtual level)
 int xio_ctrl_generic(xioDev *d, const CONTROL_T flags);
-void xio_open_generic(uint8_t dev,
-	FILE *(*x_open)(const uint8_t dev, const char *addr, const CONTROL_T flags),
-	int (*x_ctrl)(xioDev *, const CONTROL_T flags),
-	int (*x_gets)(xioDev *, char *buf, int size),
-	int (*x_getc)(FILE *),
-	int (*x_putc)(char, FILE *),
-	void (*fc_func)(xioDev *));
-
+void xio_open_generic(uint8_t dev, x_open x_open, x_ctrl x_ctrl, x_gets x_gets, x_getc x_getc, x_putc x_putc, fc_func fc_func);
 void xio_fc_null(xioDev *d);			// NULL flow control callback
 void xio_fc_usart(xioDev *d);			// XON/XOFF flow control callback
 

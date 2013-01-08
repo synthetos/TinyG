@@ -42,13 +42,13 @@
  * SPI CONFIGURATION RECORDS
  ******************************************************************************/
 
-struct cfgSPI {								// SPI device configuration record 
-	FILE *(*x_open)(const uint8_t dev, const char *addr, const CONTROL_T flags);
-	int (*x_ctrl)(struct xioDEVICE *d, const CONTROL_T flags);
-	int (*x_gets)(struct xioDEVICE *d, char *buf, const int size);
-	int (*x_getc)(FILE *);					// read char (stdio compatible)
-	int (*x_putc)(char, FILE *);			// write char (stdio compatible)
-	void (*fc_func)(struct xioDEVICE *d);	// flow control callback function
+struct cfgSPI {
+	x_open x_open;			// see xio.h for typedefs
+	x_ctrl x_ctrl;
+	x_gets x_gets;
+	x_getc x_getc;
+	x_putc x_putc;
+	fc_func fc_func;
 	struct USART_struct *usart;				// USART if it uses one
 	struct PORT_struct *comm_port;			// port for SCK, MISO and MOSI
 	struct PORT_struct *ssel_port;			// port for slave select line
@@ -60,39 +60,38 @@ struct cfgSPI {								// SPI device configuration record
 };
 
 static struct cfgSPI const cfgSpi[] PROGMEM = {
-	{
-		// SPI#1 config
-		xio_open_spi,			// open function
-		xio_ctrl_generic, 		// ctrl function
-		xio_gets_spi,			// get string function
-		xio_getc_spi,			// stdio getc function
-		xio_putc_spi,			// stdio putc function
-		xio_fc_null,			// flow control callback
-		BIT_BANG,				// usart structure
-		&SPI_DATA_PORT,			// SPI comm port
-		&SPI_SS1_PORT,			// SPI slave select port
-		SPI_SS1_bm,				// slave select bit bitmask
-		SPI_INBITS_bm,
-		SPI_OUTBITS_bm,
-		SPI_OUTCLR_bm,
-		SPI_OUTSET_bm,
-	},
-	{ // SPI#2 config
-		xio_open_spi,			// open function
-		xio_ctrl_generic, 		// ctrl function
-		xio_gets_spi,			// get string function
-		xio_getc_spi,			// stdio getc function
-		xio_putc_spi,			// stdio putc function
-		xio_fc_null,			// flow control callback
-		BIT_BANG,				// usart structure
-		&SPI_DATA_PORT,			// SPI comm port
-		&SPI_SS2_PORT,			// SPI slave select port
-		SPI_SS2_bm,				// slave select bit bitmask
-		SPI_INBITS_bm,
-		SPI_OUTBITS_bm,
-		SPI_OUTCLR_bm,
-		SPI_OUTSET_bm,
-	}
+{	// SPI#1 config
+	xio_open_spi,			// open function
+	xio_ctrl_generic, 		// ctrl function
+	xio_gets_spi,			// get string function
+	xio_getc_spi,			// stdio getc function
+	xio_putc_spi,			// stdio putc function
+	xio_fc_null,			// flow control callback
+	BIT_BANG,				// usart structure or BIT_BANG if none
+	&SPI_DATA_PORT,			// SPI comm port
+	&SPI_SS1_PORT,			// SPI slave select port
+	SPI_SS1_bm,				// slave select bit bitmask
+	SPI_INBITS_bm,
+	SPI_OUTBITS_bm,
+	SPI_OUTCLR_bm,
+	SPI_OUTSET_bm,
+},
+{	// SPI#2 config
+	xio_open_spi,			// open function
+	xio_ctrl_generic, 		// ctrl function
+	xio_gets_spi,			// get string function
+	xio_getc_spi,			// stdio getc function
+	xio_putc_spi,			// stdio putc function
+	xio_fc_null,			// flow control callback
+	BIT_BANG,				// usart structure
+	&SPI_DATA_PORT,			// SPI comm port
+	&SPI_SS2_PORT,			// SPI slave select port
+	SPI_SS2_bm,				// slave select bit bitmask
+	SPI_INBITS_bm,
+	SPI_OUTBITS_bm,
+	SPI_OUTCLR_bm,
+	SPI_OUTSET_bm,
+}
 };
 
 /******************************************************************************

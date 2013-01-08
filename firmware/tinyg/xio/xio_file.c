@@ -28,34 +28,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>						// precursor for xio.h
-#include <stdbool.h>					// true and false
-#include <avr/pgmspace.h>				// precursor for xio.h
-#include "xio.h"						// includes for all devices are in here
+#include <stdio.h>			// precursor for xio.h
+#include <stdbool.h>		// true and false
+#include <avr/pgmspace.h>	// precursor for xio.h
+#include "xio.h"			// includes for all devices are in here
 
 /******************************************************************************
  * FILE CONFIGURATION RECORDS
  ******************************************************************************/
 
 struct cfgFILE {
-	FILE *(*x_open)(const uint8_t dev, const char *addr, const CONTROL_T flags);
-	int (*x_ctrl)(struct xioDEVICE *d, const CONTROL_T flags);
-	int (*x_gets)(struct xioDEVICE *d, char *buf, const int size);
-	int (*x_getc)(FILE *);
-	int (*x_putc)(char, FILE *);
-	void (*fc_func)(struct xioDEVICE *d);
+	x_open x_open;			// see xio.h for typedefs
+	x_ctrl x_ctrl;
+	x_gets x_gets;
+	x_getc x_getc;
+	x_putc x_putc;
+	fc_func fc_func;
 };
 
 static struct cfgFILE const cfgFile[] PROGMEM = {
-	{ 
-		// PGM config
-		xio_open_file,			// open function
-		xio_ctrl_generic, 		// ctrl function
-		xio_gets_pgm,			// get string function
-		xio_getc_pgm,			// stdio getc function
-		xio_putc_pgm,			// stdio putc function
-		xio_fc_null,			// flow control callback
-	}
+{	// PGM config
+	xio_open_file,			// open function
+	xio_ctrl_generic, 		// ctrl function
+	xio_gets_pgm,			// get string function
+	xio_getc_pgm,			// stdio getc function
+	xio_putc_pgm,			// stdio putc function
+	xio_fc_null,			// flow control callback
+}
 };
 /******************************************************************************
  * FUNCTIONS

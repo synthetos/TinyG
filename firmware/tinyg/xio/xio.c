@@ -114,7 +114,6 @@ void xio_init()
 	xio_open_usart(XIO_DEV_RS485, 0, RS485_FLAGS);
 	xio_open_spi(XIO_DEV_SPI1, 0, SPI_FLAGS);
 	xio_open_spi(XIO_DEV_SPI2, 0, SPI_FLAGS);
-//	xio_init_pgm(XIO_DEV_PGM, <address>, PGM_FLAGS);	// don't do files until you need them
 }
 
 /*
@@ -126,14 +125,7 @@ void xio_init()
  *
  *	Requires device specific open() to be run afterward to complete the setup
  */
-void xio_open_generic(uint8_t dev, 
-	FILE *(*x_open)(const uint8_t dev, const char *addr, const CONTROL_T flags),
-	int (*x_ctrl)(xioDev *d, const CONTROL_T flags),
-	int (*x_gets)(xioDev *d, char *buf, int size),
-	int (*x_getc)(FILE *),
-	int (*x_putc)(char, FILE *),
-	void (*fc_func)(xioDev *)
-	)
+void xio_open_generic(uint8_t dev, x_open x_open, x_ctrl x_ctrl, x_gets x_gets, x_getc x_getc, x_putc x_putc, fc_func fc_func)
 {
 	xioDev *d = &ds[dev];
 	memset (d, 0, sizeof(xioDev));
