@@ -33,48 +33,29 @@
 #include <avr/pgmspace.h>				// precursor for xio.h
 #include "xio.h"						// includes for all devices are in here
 
+// Fast accessors (cheating)
 #define PGM ds[XIO_DEV_PGM]				// device struct accessor
 #define PGMf fs[XIO_DEV_PGM - XIO_DEV_FILE_OFFSET]	// file extended struct accessor
 
 /* 
- *	xio_init_pgm() - initialize and set controls for program memory device 
- */
-void xio_init_pgm()
-{
-	// Program memory file device setup
-	xio_init_dev(XIO_DEV_PGM, xio_open_pgm, xio_ctrl, xio_gets_pgm, xio_getc_pgm, xio_putc_pgm, xio_fc_null);
-	xio_init_file(XIO_DEV_PGM, PGM_INIT_bm);
-}
-
-/*	
- *	xio_open_pgm() - provide a string address to the program memory device
+ *	xio_gets_pgm() - main loop task for program memory device
  *
- *	OK, so this is not really a UNIX open() except for its moral equivalent
- *  Returns a pointer to the stdio FILE struct or -1 on error
+ *	Non-blocking, run-to-completion return a line from memory
+ *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
  */
 
-FILE * xio_open_pgm(const uint8_t dev, const char *addr)
+int xio_gets_pgm(xioDev *d, char *buf, const int size)
 {
-	PGM.flag_in_line = false;
-	PGM.flag_eol = false;
-	PGM.flag_eof = false;
-	PGM.signal = 0;									// reset signal
-	PGMf.filebase_P = (PROGMEM const char *)addr;	// might want to range check this
-	PGMf.rd_offset = 0;								// initialize read buffer pointer
-	PGMf.wr_offset = 0;								// initialize write buffer pointer
-	PGMf.max_offset = PGM_ADDR_MAX;
-	return(&PGM.file);								// return pointer to the FILE stream
-}
-
-/* 
- *	xio_putc_pgm() - write character to to program memory device
- *
- *  Always returns error. You cannot write to program memory
- */
-
-int xio_putc_pgm(const char c, FILE *stream)
-{
-	return -1;			// always returns an error. Big surprise.
+	if ((PGMf.filebase_P) == 0) {		// return error if no file is open
+		return (XIO_FILE_NOT_OPEN);
+	}
+	PGM.signal = XIO_SIG_OK;			// initialize signal
+	if (fgets(buf, size, &PGM.file) == NULL) {
+		PGMf.filebase_P = NULL;
+		clearerr(&PGM.file);
+		return (XIO_EOF);
+	}
+	return (XIO_OK);
 }
 
 /*
@@ -133,22 +114,14 @@ int xio_getc_pgm(FILE *stream)
 }
 
 /* 
- *	xio_gets_pgm() - main loop task for program memory device
+ *	xio_putc_pgm() - write character to to program memory device
  *
- *	Non-blocking, run-to-completion return a line from memory
- *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
+ *  Always returns error. You cannot write to program memory
  */
 
-int xio_gets_pgm(const uint8_t dev, char *buf, const int size)
+int xio_putc_pgm(const char c, FILE *stream)
 {
-	if ((PGMf.filebase_P) == 0) {		// return error if no file is open
-		return (XIO_FILE_NOT_OPEN);
-	}
-	PGM.signal = XIO_SIG_OK;			// initialize signal
-	if (fgets(buf, size, &PGM.file) == NULL) {
-		PGMf.filebase_P = NULL;
-		clearerr(&PGM.file);
-		return (XIO_EOF);
-	}
-	return (XIO_OK);
+	return -1;			// always returns an error. Big surprise.
 }
+
+

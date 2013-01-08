@@ -38,14 +38,7 @@
  * USART DEVICE CONFIGS (applied during device-specific inits)
  ******************************************************************************/
 
-//**** General ****
-#define USB ds[XIO_DEV_USB]			// device struct accessor
-#define USBu us[XIO_DEV_USB - XIO_DEV_USART_OFFSET]	// usart extended struct accessor
-
-#define USART_TX_REGISTER_READY_bm USART_DREIF_bm
-#define USART_RX_DATA_READY_bm USART_RXCIF_bm
-
-//**** Serial IO Interrupt levels ****
+// Serial IO Interrupt levels
 #define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc)
 #define CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
 #define CTRLA_RXON_TXOFF_TXCON (USART_RXCINTLVL_MED_gc | USART_TXCINTLVL_LO_gc)
@@ -56,16 +49,16 @@
 //#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_MED_gc)
 
 // Buffer sizing
-#define BUFFER_T uint_fast8_t				// fast, but limits buffer to 255 char max
-#define RX_BUFFER_SIZE (BUFFER_T)255		// BUFFER_T can be 8 bits
-#define TX_BUFFER_SIZE (BUFFER_T)255		// BUFFER_T can be 8 bits
+#define BUFFER_T uint_fast8_t					// fast, but limits buffer to 255 char max
+#define RX_BUFFER_SIZE (BUFFER_T)255			// BUFFER_T can be 8 bits
+#define TX_BUFFER_SIZE (BUFFER_T)255			// BUFFER_T can be 8 bits
 
 // Alternates for larger buffers - mostly for debugging
-//#define BUFFER_T uint16_t					// slower, but larger buffers
-//#define RX_BUFFER_SIZE (BUFFER_T)512		// BUFFER_T must be 16 bits if >255
-//#define TX_BUFFER_SIZE (BUFFER_T)512		// BUFFER_T must be 16 bits if >255
-//#define RX_BUFFER_SIZE (BUFFER_T)1024		// 2048 is the practical upper limit
-//#define TX_BUFFER_SIZE (BUFFER_T)1024		// 2048 is practical upper limit given RAM
+//#define BUFFER_T uint16_t						// slower, but larger buffers
+//#define RX_BUFFER_SIZE (BUFFER_T)512			// BUFFER_T must be 16 bits if >255
+//#define TX_BUFFER_SIZE (BUFFER_T)512			// BUFFER_T must be 16 bits if >255
+//#define RX_BUFFER_SIZE (BUFFER_T)1024			// 2048 is the practical upper limit
+//#define TX_BUFFER_SIZE (BUFFER_T)1024			// 2048 is practical upper limit given RAM
 
 // XON/XOFF hi and lo watermarks. At 115.200 the host has approx. 100 uSec per char 
 // to react to an XOFF. 90% (0.9) of 255 chars gives 25 chars to react, or about 2.5 ms.  
@@ -74,51 +67,50 @@
 #define XOFF_TX_HI_WATER_MARK (TX_BUFFER_SIZE * 0.9)	// % to issue XOFF
 #define XOFF_TX_LO_WATER_MARK (TX_BUFFER_SIZE * 0.05)	// % to issue XON
 
+// General
+#define USART_TX_REGISTER_READY_bm USART_DREIF_bm
+#define USART_RX_DATA_READY_bm USART_RXCIF_bm
 
 //**** USB device configuration ****
 //NOTE: XIO_BLOCK / XIO_NOBLOCK affects reads only. Writes always block. (see xio.h)
 
 #define USB_BAUD	 XIO_BAUD_115200
-#define USB_INIT_bm (XIO_BLOCK |  XIO_ECHO | XIO_XOFF | XIO_LINEMODE )
-//#define USB_INIT_bm (XIO_RDWR | XIO_BLOCK |  XIO_ECHO | XIO_XOFF | XIO_LINEMODE )
+#define USB_FLAGS (XIO_BLOCK |  XIO_ECHO | XIO_XOFF | XIO_LINEMODE )
 
-#define USB_USART USARTC0					// USB usart
-#define USB_RX_ISR_vect USARTC0_RXC_vect 	// (RX) reception complete IRQ
-#define USB_TX_ISR_vect USARTC0_DRE_vect	// (TX) data register empty IRQ
+#define USB_USART USARTC0						// USB usart
+#define USB_RX_ISR_vect USARTC0_RXC_vect	 	// (RX) reception complete IRQ
+#define USB_TX_ISR_vect USARTC0_DRE_vect		// (TX) data register empty IRQ
 
-#define USB_PORT PORTC						// port where the USART is located
-#define USB_CTS_bp (0)						// CTS - bit position (pin is wired on board)
-#define USB_CTS_bm (1<<USB_CTS_bp)			// CTS - bit mask
-#define USB_RTS_bp (1)						// RTS - bit position (pin is wired on board)
-#define USB_RTS_bm (1<<USB_RTS_bp)			// RTS - bit mask
-#define USB_RX_bm (1<<2)					// RX pin bit mask
-#define USB_TX_bm (1<<3)					// TX pin bit mask
+#define USB_PORT PORTC							// port where the USART is located
+#define USB_CTS_bp (0)							// CTS - bit position (pin is wired on board)
+#define USB_CTS_bm (1<<USB_CTS_bp)				// CTS - bit mask
+#define USB_RTS_bp (1)							// RTS - bit position (pin is wired on board)
+#define USB_RTS_bm (1<<USB_RTS_bp)				// RTS - bit mask
+#define USB_RX_bm (1<<2)						// RX pin bit mask
+#define USB_TX_bm (1<<3)						// TX pin bit mask
 
-#define USB_DIRCLR_bm (USB_CTS_bm | USB_RX_bm)	// input bits
-#define USB_DIRSET_bm (USB_RTS_bm | USB_TX_bm)	// output bits
+#define USB_INBITS_bm (USB_CTS_bm | USB_RX_bm)	// input bits
+#define USB_OUTBITS_bm (USB_RTS_bm | USB_TX_bm)	// output bits
 #define USB_OUTCLR_bm (0)						// outputs init'd to 0
 #define USB_OUTSET_bm (USB_RTS_bm | USB_TX_bm)	// outputs init'd to 1
 
-
 //**** RS485 device configuration (no echo or CRLF) ****
 #define RS485_BAUD	   XIO_BAUD_115200
-#define RS485_INIT_bm (XIO_NOBLOCK | XIO_NOECHO | XIO_LINEMODE)
-//#define RS485_INIT_bm (XIO_RDWR | XIO_NOBLOCK | XIO_NOECHO | XIO_LINEMODE)
+#define RS485_FLAGS (XIO_NOBLOCK | XIO_NOECHO | XIO_LINEMODE)
 
-#define RS485_USART USARTC1					// RS485 usart
-#define RS485_RX_ISR_vect USARTC1_RXC_vect 	// (RX) reception complete IRQ
-#define RS485_TX_ISR_vect USARTC1_DRE_vect	// (TX) data register empty IRQ
-#define RS485_TXC_ISR_vect USARTC1_TXC_vect	// (TX) transmission complete IRQ
+#define RS485_USART USARTC1						// RS485 usart
+#define RS485_RX_ISR_vect USARTC1_RXC_vect 		// (RX) reception complete IRQ
+#define RS485_TX_ISR_vect USARTC1_DRE_vect		// (TX) data register empty IRQ
+#define RS485_TXC_ISR_vect USARTC1_TXC_vect		// (TX) transmission complete IRQ
 
-#define RS485_PORT PORTC					// port where USART is located
-#define RS485_RE_bm (1<<4)					// RE (Receive Enable) pin - active lo
-#define RS485_DE_bm (1<<5)					// DE (Data Enable)(TX) - active hi
-#define RS485_RX_bm (1<<6)					// RX pin
-#define RS485_TX_bm (1<<7)					// TX pin
+#define RS485_PORT PORTC						// port where USART is located
+#define RS485_RE_bm (1<<4)						// RE (Receive Enable) pin - active lo
+#define RS485_DE_bm (1<<5)						// DE (Data Enable)(TX) - active hi
+#define RS485_RX_bm (1<<6)						// RX pin
+#define RS485_TX_bm (1<<7)						// TX pin
 
-#define RS485_DIRCLR_bm (RS485_RX_bm)							 // input bits
-#define RS485_DIRSET_bm (RS485_RE_bm | RS485_DE_bm | RS485_TX_bm)// output bits
-
+#define RS485_INBITS_bm (RS485_RX_bm)			// input bits
+#define RS485_OUTBITS_bm (RS485_RE_bm | RS485_DE_bm | RS485_TX_bm)// output bits
 #define RS485_OUTCLR_bm (RS485_RE_bm| RS485_DE_bm)	// outputs init'd to 0
 #define RS485_OUTSET_bm (RS485_TX_bm)				// outputs init'd to 1
 
@@ -146,7 +138,7 @@ enum xioBAUDRATES {         		// BSEL	  BSCALE
 		XIO_BAUD_921600,			//	19		(-4<<4)
 		XIO_BAUD_500000,			//	1		(1<<4)
 		XIO_BAUD_1000000			//	1		0
-};	// Note: cannot have more than 16 without changing XIO_BAUD_gm, below
+};
 
 enum xioFCState { 
 		FC_DISABLED = 0,			// flo control is disabled
@@ -183,31 +175,18 @@ struct xioUSART {
 typedef struct xioUSART xioUsart;
 
 /******************************************************************************
- * USART DEVICE FUNCTION PROTOTYPES AND ALIASES
+ * USART CLASS AND DEVICE FUNCTION PROTOTYPES AND ALIASES
  ******************************************************************************/
 
-// Common functions (common to all USART devices)
-void xio_init_usart(const uint8_t dev, 
-					uint8_t baud, 
-					const CONTROL_T control,
-					const struct USART_struct *usart_addr,
-					const struct PORT_struct *port_addr,
-					const uint8_t inbits, 
-					const uint8_t outbits, 
-					const uint8_t outclr, 
-					const uint8_t outset);
-
+void xio_init_usart(void);
+FILE *xio_open_usart(const uint8_t dev, const char *addr, const CONTROL_T flags);
 void xio_set_baud_usart(xioUsart *dx, const uint8_t baud);
 void xio_xoff_usart(xioUsart *dx);
 void xio_xon_usart(xioUsart *dx);
-int xio_gets_usart(const uint8_t dev, char *buf, const int size);
+int xio_gets_usart(xioDev *d, char *buf, const int size);
 int xio_getc_usart(FILE *stream);
 int xio_putc_usart(const char c, FILE *stream);
-
-void xio_init_usb(void);						// USB specific functions (subclassing usart.c versions)
 int xio_putc_usb(const char c, FILE *stream);	// stdio compatible put character
-
-void xio_init_rs485(void);						// RS485 specific functions (subclassing usart.c versions)
 int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
 
 // handy helpers
@@ -221,6 +200,5 @@ void xio_queue_RX_char_usb(const char c);		// simulate char rcvd into RX buffer
 void xio_queue_RX_string_usb(const char *buf);	// simulate receving a whole string
 void xio_queue_RX_char_rs485(const char c);		// simulate char rcvd into RX buffer
 void xio_queue_RX_string_rs485(const char *buf);// simulate rec'ving a whole string
-//void xio_dump_RX_queue_usart(void);
 
 #endif

@@ -26,8 +26,8 @@
  * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
----- How to setup and use program memory "files" ----
+ */
+/*--- How to setup and use program memory "files" ----
 
   Setup a memory file (OK, it's really just a string)
   should be declared as so:
@@ -65,14 +65,14 @@
 #ifndef xio_file_h
 #define xio_file_h
 
+#define PGMFILE (const PROGMEM char *)		// extends pgmspace.h
+
 /* 
  * FILE DEVICE CONFIGS 
  */
 
-#define PGM_INIT_bm (XIO_BLOCK | XIO_CRLF | XIO_LINEMODE)
-#define PGM_ADDR_MAX (0x4000)			// 16K
-//#define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_CRLF | XIO_LINEMODE)
-//#define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
+#define PGM_FLAGS (XIO_BLOCK | XIO_CRLF | XIO_LINEMODE)
+#define PGM_ADDR_MAX (0x4000)		// 16K
 
 /* 
  * FILE device extended control structure 
@@ -82,7 +82,6 @@
 
 // file-type device control struct
 struct xioFILE {
-	uint16_t fflags;					// file sub-system flags
 	uint32_t rd_offset;					// read index into file
 	uint32_t wr_offset;					// write index into file
 	uint32_t max_offset;				// max size of file
@@ -93,13 +92,9 @@ typedef struct xioFILE xioFile;
 /* 
  * FILE DEVICE FUNCTION PROTOTYPES
  */
-// Generic file device functions
-void xio_init_file(const uint8_t dev, const CONTROL_T control);
-
-// PGM functions
-void xio_init_pgm(void);
-FILE * xio_open_pgm(const uint8_t dev, const char * addr);		// open memory string read only
-int xio_gets_pgm(const uint8_t dev, char *buf, const int size);	// read string from program memory
+void xio_init_file(void);
+FILE *xio_open_file(const uint8_t dev, const char *addr, const CONTROL_T flags);
+int xio_gets_pgm(xioDev *d, char *buf, const int size);			// read string from program memory
 int xio_getc_pgm(FILE *stream);									// get a character from PROGMEM
 int xio_putc_pgm(const char c, FILE *stream);					// always returns ERROR
 

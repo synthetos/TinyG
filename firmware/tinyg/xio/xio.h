@@ -34,18 +34,16 @@
  *	#include <stdbool.h>			// needed for true and false 
  *	#include <avr/pgmspace.h>		// defines prog_char, PSTR
  */
+/* Note: This file contains load of sub-includes near the middle
+ *	#include "xio_file.h"
+ *	#include "xio_usart.h"
+ *	#include "xio_spi.h"
+ *	#include "xio_signals.h"
+ *	(possibly more)
+ */
 
 #ifndef xio_h
 #define xio_h
-
-#define CONTROL_T uint32_t
-
-// put all sub-includes here so only xio.h is needed elsewhere
-#include "xio_file.h"
-#include "xio_usart.h"
-#include "xio_spi.h"
-#include "xio_signals.h"
-// Note: stdin, stdout and stderr are defined in stdio.h and are used by XIO
 
 /*************************************************************************
  *	Device configurations
@@ -53,16 +51,13 @@
 // Pre-allocated XIO devices (configured devices)
 // Unused devices are commented out. All this needs to line up.
 
-enum xioDev {		// device enumerations
-						// TYPE:	DEVICE:
+enum xioDev {			// TYPE:	DEVICE:
 	XIO_DEV_USB,		// USART	USB device
 	XIO_DEV_RS485,		// USART	RS485 device
 	XIO_DEV_SPI1,		// SPI		SPI channel #1
 	XIO_DEV_SPI2,		// SPI		SPI channel #2
 //	XIO_DEV_SPI3,		// SPI		SPI channel #3
 //	XIO_DEV_SPI4,		// SPI		SPI channel #4
-//	XIO_DEV_SPI5,		// SPI		SPI channel #5
-//	XIO_DEV_SPI6,		// SPI		SPI channel #6
 	XIO_DEV_PGM,		// FILE		Program memory file  (read only)
 //	XIO_DEV_SD,			// FILE		SD card (not implemented)
 	XIO_DEV_COUNT		// total device count (must be last entry)
@@ -70,10 +65,10 @@ enum xioDev {		// device enumerations
 // If your change these ^, check these v
 
 #define XIO_DEV_USART_COUNT 	2 				// # of USART devices
-#define XIO_DEV_USART_OFFSET	0				// offset for computing index into extended device struct array
+#define XIO_DEV_USART_OFFSET	0				// offset for computing indices
 
 #define XIO_DEV_SPI_COUNT 		2 				// # of SPI devices
-#define XIO_DEV_SPI_OFFSET		XIO_DEV_USART_COUNT	// offset for computing index into extended device struct array
+#define XIO_DEV_SPI_OFFSET		XIO_DEV_USART_COUNT	// offset for computing indicies
 
 #define XIO_DEV_FILE_COUNT		1				// # of FILE devices
 #define XIO_DEV_FILE_OFFSET		(XIO_DEV_USART_COUNT + XIO_DEV_SPI_COUNT) // index into FILES
@@ -81,51 +76,61 @@ enum xioDev {		// device enumerations
 /*************************************************************************
  *	Device structures
  *************************************************************************/
-// NOTE" "FILE *" is another way of saying "struct __file"
+// NOTE" "FILE *" is another way of saying "struct __file *"
+
+#define CONTROL_T uint32_t
 
 struct xioDEVICE {							// common device struct (one per dev)
 	// references and self references
 	uint8_t dev;							// self referential device number
-//	FILE *fdev;								// stdio fdev binding (static)
 	FILE file;								// stdio FILE stream structure
 	void *x;								// extended device struct binding (static)
 
 	// function bindings
-	FILE *(*x_open)(const uint8_t dev, const char *addr);		// device open routine
-	int (*x_ctrl)(const uint8_t dev, const uint32_t control);	// set device control flags
-//	int (*x_rctl)(const uint8_t dev, uint32_t *control);		// get device control flags
-	int (*x_gets)(const uint8_t dev, char *buf, const int size);// non-blocking line reader
+	FILE *(*x_open)(const uint8_t dev, const char *addr, const CONTROL_T flags);
+	int (*x_ctrl)(struct xioDEVICE *d, const CONTROL_T flags);		// set device control flags
+	int (*x_gets)(struct xioDEVICE *d, char *buf, const int size);	// non-blocking line reader
 	int (*x_getc)(FILE *);					// read char (stdio compatible)
 	int (*x_putc)(char, FILE *);			// write char (stdio compatible)
 	void (*fc_func)(struct xioDEVICE *d);	// flow control callback function
 
 	// device configuration flags
 	uint8_t flag_block;
-	uint8_t flag_xoff;						// xon/xoff enabled
 	uint8_t flag_echo;
 	uint8_t flag_crlf;
 	uint8_t flag_ignorecr;
 	uint8_t flag_ignorelf;
 	uint8_t flag_linemode;
+	uint8_t flag_xoff;						// xon/xoff enabled
 
-	// runtime working flags
-	uint8_t flag_in_line;					// used as a state variable for line reads
-	uint8_t flag_eol;						// end of line detected
-	uint8_t flag_eof;						// end of file detected
-
-	// private working data
+	// private working data and runtime flags
 	int size;								// text buffer length (dynamic)
 	uint8_t len;							// chars read so far (buf array index)
 	uint8_t signal;							// signal value
+	uint8_t flag_in_line;					// used as a state variable for line reads
+	uint8_t flag_eol;						// end of line detected
+	uint8_t flag_eof;						// end of file detected
 	char *buf;								// text buffer binding (can be dynamic)
 };
 typedef struct xioDEVICE xioDev;
+typedef FILE *(*x_open)(const uint8_t dev, const char *addr, const CONTROL_T flags);
+typedef int (*x_ctrl)(xioDev *d, const CONTROL_T flags);
+typedef int (*x_gets)(xioDev *d, char *buf, const int size);
+typedef int (*x_getc)(FILE *);
+typedef int (*x_putc)(char, FILE *);
+typedef void (*fc_func)(xioDev *d);
 
-/*
- * Static structure allocations for XIO
- */
+/*************************************************************************
+ *	Sub-Includes and static allocations
+ *************************************************************************/
+// Put all sub-includes here so only xio.h is needed elsewhere
+#include "xio_file.h"
+#include "xio_usart.h"
+#include "xio_spi.h"
+#include "xio_signals.h"
+
+// Static structure allocations
 xioDev 		ds[XIO_DEV_COUNT];			// allocate top-level dev structs
-//FILE 		ss[XIO_DEV_COUNT];			// stdio stream for each dev
 xioUsart 	us[XIO_DEV_USART_COUNT];	// USART extended IO structs
 xioSpi 		sp[XIO_DEV_SPI_COUNT];		// SPI extended IO structs
 xioFile 	fs[XIO_DEV_FILE_COUNT];		// FILE extended IO structs
@@ -136,33 +141,29 @@ extern struct controllerSingleton tg;	// needed by init() for default source
  *	Function Prototypes
  *************************************************************************/
 
-#define PGMFILE (const PROGMEM char *)			// extends pgmspace.h
-typedef void (*fptr_void_void) (void); 			// returns void, void args
-typedef int (*fptr_int_void) (void); 			// returns int, void args
-
-void xio_init(void);									// xio system general init
-FILE *xio_open(const uint8_t dev, const char *addr);	// generic open function
-int xio_ctrl(const uint8_t dev, const CONTROL_T control);
-//int xio_rctl(const uint8_t dev, CONTROL_T *control);
+// public functions (virtual class) 
+void xio_init(void);
+FILE *xio_open(const uint8_t dev, const char *addr, const CONTROL_T flags);
+int xio_ctrl(const uint8_t dev, const CONTROL_T flags);
 int xio_gets(const uint8_t dev, char *buf, const int size);
 int xio_getc(const uint8_t dev);
 int xio_putc(const uint8_t dev, const char c);
-void xio_fc_null(xioDev *d);
-void xio_fc_usart(xioDev *d);				// XON/XOFF flow control callback
 
-// generic device init (must be followed by device-specific init
-void xio_init_dev(uint8_t dev,									// device number
-	FILE *(*x_open)(const uint8_t dev, const char *addr), 		// device open routine
-	int (*x_ctrl)(const uint8_t dev, const CONTROL_T control),	// set device control flags
-//	int (*x_rctl)(const uint8_t dev, CONTROL_T *control),		// get device control flags
-	int (*x_gets)(const uint8_t dev, char *buf, int size),		// non-blocking line getter
-	int (*x_getc)(FILE *),										// read char (stdio compatible))
-	int (*x_putc)(char, FILE *),								// write char (stdio compat)
-	void (*fc_func)(xioDev *)									// flow control callback function
-	);
+// generic functions (private, but at virtual level)
+int xio_ctrl_generic(xioDev *d, const CONTROL_T flags);
+void xio_open_generic(uint8_t dev,
+	FILE *(*x_open)(const uint8_t dev, const char *addr, const CONTROL_T flags),
+	int (*x_ctrl)(xioDev *, const CONTROL_T flags),
+	int (*x_gets)(xioDev *, char *buf, int size),
+	int (*x_getc)(FILE *),
+	int (*x_putc)(char, FILE *),
+	void (*fc_func)(xioDev *));
+
+void xio_fc_null(xioDev *d);			// NULL flow control callback
+void xio_fc_usart(xioDev *d);			// XON/XOFF flow control callback
 
 // std devices
-void xio_init_stdio(void);						// set std devs & do startup prompt
+void xio_init_stdio(void);				// set std devs & do startup prompt
 void xio_set_stdin(const uint8_t dev);
 void xio_set_stdout(const uint8_t dev);
 void xio_set_stderr(const uint8_t dev);
@@ -174,10 +175,6 @@ void xio_set_stderr(const uint8_t dev);
  * xio control flag values
  */
 // must cast 1 to uint32_t for bit evaluations to work correctly
-//#define XIO_BAUD_gm		0x0000000F				// baud rate enum mask (keep in LSdigit)
-//#define XIO_RD			((uint32_t)1<<4) 		// read enable bit
-//#define XIO_WR			((uint32_t)1<<5)		// write enable only
-//#define XIO_RDWR		(XIO_RD | XIO_WR) 		// read & write
 #define XIO_BLOCK		((uint32_t)1<<6)		// enable blocking reads
 #define XIO_NOBLOCK		((uint32_t)1<<7)		// disable blocking reads
 #define XIO_XOFF 		((uint32_t)1<<8)		// enable XON/OFF flow control
@@ -278,6 +275,8 @@ enum xioCodes {
 };
 #define XIO_ERRNO_MAX XIO_BUFFER_FULL_NON_FATAL
 
+
+
 /* ASCII characters used by Gcode or otherwise unavailable for special use. 
 	See NIST sections 3.3.2.2, 3.3.2.3 and Appendix E for Gcode uses.
 	See http://www.json.org/ for JSON notation
@@ -355,7 +354,7 @@ enum xioCodes {
 	0x7F	DEL	
 */
 
-#define __UNIT_TEST_XIO			// include and run xio unit tests
+//#define __UNIT_TEST_XIO			// include and run xio unit tests
 #ifdef __UNIT_TEST_XIO
 void xio_unit_tests(void);
 #define	XIO_UNITS xio_unit_tests();

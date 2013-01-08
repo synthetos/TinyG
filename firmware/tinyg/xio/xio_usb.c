@@ -26,10 +26,9 @@
  * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *------
- *
- *	This version implements signal capture at the ISR level
+ */
+/*------
+ *	This version implements signal character capture at the ISR level
  */
 
 #include <stdio.h>						// precursor for xio.h
@@ -41,14 +40,9 @@
 #include "xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
 
-/*
- * xio_init_usb() - initialization
- */
-void xio_init_usb()
-{
-	xio_init_dev(XIO_DEV_USB, xio_open, xio_ctrl, xio_gets_usart, xio_getc_usart, xio_putc_usb, xio_fc_usart);
-	xio_init_usart(XIO_DEV_USB, USB_BAUD, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
-}
+// Fast accessors
+#define USB ds[XIO_DEV_USB]
+#define USBu us[XIO_DEV_USB - XIO_DEV_USART_OFFSET]
 
 /*
  * xio_putc_usb() 
@@ -174,4 +168,14 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 			USBu.rx_buf_head = 1;
 		}
 	}
+}
+
+/*
+ * xio_get_usb_rx_free() - returns free space in the USB RX buffer
+ *
+ *	Remember: The queues fill from top to bottom, w/0 being the wrap location
+ */
+BUFFER_T xio_get_usb_rx_free(void)
+{
+	return (RX_BUFFER_SIZE - xio_get_rx_bufcount_usart(&USBu));
 }

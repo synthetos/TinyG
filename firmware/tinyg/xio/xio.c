@@ -50,6 +50,45 @@
  *		- interrupt buffered RX and TX functions 
  *		- XON/XOFF software flow control
  */
+/* ----- XIO - Some Internals ----
+ *
+ * XIO layers are: (1) xio virtual device (root), (2) xio device classes, (3) xio devices
+ *
+ * The virtual device has the following methods:
+ *	xio_init()	- initialize the entire xio system
+ *	xio_open()	- open a device indicated by the XIO_DEV number
+ *	xio_ctrl()	- set control flags for XIO_DEV device
+ *	xio_gets()	- get a string from the XIO_DEV device (non blocking line reader)
+ *	xio_getc()	- read a character from the XIO_DEV device (not stdio compatible)
+ *	xio_putc()	- write a character to the XIO_DEV device (not stdio compatible)
+ *
+ * The device class layer currently knows about USARTS, SPI, and File devices. Methods are:
+ *	xio_init_<class>()	- initializes the device class 	
+ *
+ * The device layer currently supports: USB, RS485, SPI channels, PGM file reading. methods:
+ *	xio_open<device>()	- set up the device for use or reset the device
+ *	xio_ctrl<device>()	- change device flag controls
+ *	xio_gets<device>()	- get a string from the device (non-blocking)
+ *	xio_getc<device>()	- read a character from the device (stdio compatible)
+ *	xio_putc<device>()	- write a character to the device (stdio compatible)
+ *
+ * The virtual level uses XIO_DEV_xxx numeric device IDs for reference. 
+ * Lower layers are called using the device structure pointer xioDev *d
+ * The stdio compatible functions use pointers to the stdio FILE structs.
+ */
+/* ---- Efficiency Hack ----
+ *
+ * Device and extended structs are usually referenced via their pointers. E.g:
+ *
+ *	  xioDev *d = &ds[dev];						// setup device struct ptr
+ *    xioUsart *dx = (xioUsart *)d->x; 	// setup USART struct ptr
+ *
+ * In some cases a static reference is used for time critical regions like raw 
+ * character IO. This is measurably faster even under -Os. For example:
+ *
+ *    #define USB (ds[dev])						// USB device struct accessor
+ *    #define USBu ((xioUsart *)(ds[dev].x))	// USB extended struct accessor
+ */
 
 #include <string.h>					// for memset()
 #include <stdio.h>					// precursor for xio.h
@@ -65,86 +104,99 @@
  */
 void xio_init()
 {
-	xio_init_usb();					// setup USB usart device
-	xio_init_rs485();				// setup RS485 usart device
-	xio_init_spi_devices();			// setup all SPI devices
-	xio_init_pgm();					// setup file reader
+	// setup device classes
+	xio_init_usart();
+	xio_init_spi();
+	xio_init_file();
+
+	// open individual devices
+	xio_open_usart(XIO_DEV_USB,   0, USB_FLAGS);
+	xio_open_usart(XIO_DEV_RS485, 0, RS485_FLAGS);
+	xio_open_spi(XIO_DEV_SPI1, 0, SPI_FLAGS);
+	xio_open_spi(XIO_DEV_SPI2, 0, SPI_FLAGS);
+//	xio_init_pgm(XIO_DEV_PGM, <address>, PGM_FLAGS);	// don't do files until you need them
 }
 
 /*
- * xio_init_dev() - generic (and partial) initialization for any device
+ * xio_open_generic() - generic (and partial) open function for any device
  *
- *	Requires device specific init to be run afterward.
- *	Could technically do controls (flags) here, but controls are set in 
- *	device-specific init so validation can be performed.
+ *	This binds the main fucntions and sets up the stdio FILE structure
+ *	udata is used to point back to the device struct so it can be gotten 
+ *	from getc() and putc() functions. 
+ *
+ *	Requires device specific open() to be run afterward to complete the setup
  */
-void xio_init_dev(uint8_t dev, 									// device number
-	FILE *(*x_open)(const uint8_t dev, const char *addr), 		// device open routine
-	int (*x_ctrl)(const uint8_t dev, const CONTROL_T control),	// set device control flags
-//	int (*x_rctl)(const uint8_t dev, CONTROL_T *control),		// get device control flags
-	int (*x_gets)(const uint8_t dev, char *buf, int size),		// specialized line reader
-	int (*x_getc)(FILE *),										// read char (stdio compat)
-	int (*x_putc)(char, FILE *),								// write char (stdio compat)
-	void (*fc_func)(xioDev *)									// flow control callback function
+void xio_open_generic(uint8_t dev, 
+	FILE *(*x_open)(const uint8_t dev, const char *addr, const CONTROL_T flags),
+	int (*x_ctrl)(xioDev *d, const CONTROL_T flags),
+	int (*x_gets)(xioDev *d, char *buf, int size),
+	int (*x_getc)(FILE *),
+	int (*x_putc)(char, FILE *),
+	void (*fc_func)(xioDev *)
 	)
 {
 	xioDev *d = &ds[dev];
-
-	// clear device struct
-	memset (d, 0, sizeof(xioDev));		// (Note: 'x' binding is set by device-specific init)
-
+	memset (d, 0, sizeof(xioDev));
 	d->dev = dev;
 
-	fdev_setup_stream(&d->file, x_putc, x_getc, _FDEV_SETUP_RW);
-	fdev_set_udata(&d->file, d);		// reference self for udata 
-//	d->fdev = &ss[dev];					// bind pre-allocated stdio stream struct
-//	fdev_setup_stream(d->fdev, x_putc, x_getc, _FDEV_SETUP_RW);
-//	fdev_set_udata(d->fdev, d);			// reference self for udata 
-
 	// bind functions to device structure
-	d->x_open = x_open;			// bind the open function to the PGM struct
+	d->x_open = x_open;
 	d->x_ctrl = x_ctrl;
-//	d->x_rctl = x_rctl;
 	d->x_gets = x_gets;
 	d->x_getc = x_getc;		// you don't need to bind these unless you are going to use them directly
 	d->x_putc = x_putc;		// they are bound into the fdev stream struct
 	d->fc_func = fc_func;	// flow control function or null FC function
+
+	// setup the stdio FILE struct and link udata back to the device struct
+	fdev_setup_stream(&d->file, x_putc, x_getc, _FDEV_SETUP_RW);
+	fdev_set_udata(&d->file, d);		// reference self for udata 
 }
 
-/*
- *	xio_init_file() - generic init for file devices
+/* 
+ * PUBLIC ENTRY POINTS - acces the functions via the XIO_DEV number
+ * xio_open() - open function 
+ * xio_gets() - entry point for non-blocking get line function
+ * xio_getc() - entry point for getc (not stdio compatible)
+ * xio_putc() - entry point for putc (not stdio compatible)
  *
- *	This should really go in xio_file.c but it seemed excessive to create 
- *	that file just for this one function - so it's here.
+ * It might be prudent to run an assertion such as below, but we trust the callers:
+ * 	if (dev < XIO_DEV_COUNT) blah blah blah
+ *	else  return (_FDEV_ERR);	// XIO_NO_SUCH_DEVICE
  */
-
-void xio_init_file(const uint8_t dev, const CONTROL_T control)
+FILE *xio_open(uint8_t dev, const char *addr, CONTROL_T flags)
 {
-	ds[dev].x = &fs[dev - XIO_DEV_FILE_OFFSET];	// bind pgm FILE struct
-	(void)xio_ctrl(dev, control);
+	return (ds[dev].x_open(dev, addr, flags));
+}
+
+int xio_gets(const uint8_t dev, char *buf, const int size) 
+{
+	return (ds[dev].x_gets(&ds[dev], buf, size));
+}
+
+int xio_getc(const uint8_t dev) 
+{ 
+	return (ds[dev].x_getc(&ds[dev].file)); 
+}
+
+int xio_putc(const uint8_t dev, const char c)
+{
+	return (ds[dev].x_putc(c, &ds[dev].file)); 
 }
 
 /*
- * xio_open() - Generic open function 
+ * xio_ctrl() - PUBLIC set control flags (top-level XIO_DEV access)
+ * xio_ctrl_generic() - PRIVATE but generic set-control-flags
  */
-FILE *xio_open(uint8_t dev, const char *addr)
+int xio_ctrl(const uint8_t dev, const CONTROL_T flags)
 {
-	if (dev == XIO_DEV_PGM) {
-		return (xio_open_pgm (dev, addr));	// take some action
-	}
-	return(&(ds[dev].file));				// otherwise just parrot the file pointer
+	return (xio_ctrl_generic(&ds[dev], flags));
 }
 
-/*
- * xio_cntl() - Note: this is not ioctl() Calling conventions differ.
- */
+#define SETFLAG(t,f) if ((flags & t) != 0) { d->f = true; }
+#define CLRFLAG(t,f) if ((flags & t) != 0) { d->f = false; }
 
-#define SETFLAG(t,f) if ((control & t) != 0) { d->f = true; }
-#define CLRFLAG(t,f) if ((control & t) != 0) { d->f = false; }
-
-int xio_ctrl(const uint8_t dev, const CONTROL_T control)
+int xio_ctrl_generic(xioDev *d, const CONTROL_T flags)
 {
-	xioDev *d = &ds[dev];
 	SETFLAG(XIO_BLOCK,		flag_block);
 	CLRFLAG(XIO_NOBLOCK,	flag_block);
 	SETFLAG(XIO_XOFF,		flag_xoff);
@@ -161,20 +213,6 @@ int xio_ctrl(const uint8_t dev, const CONTROL_T control)
 	CLRFLAG(XIO_NOLINEMODE,	flag_linemode);
 	return (XIO_OK);
 }
-
-/*
- * xio_rctl() - get control flags
- *
- *	Note: this is not ioctl() Calling conventions differ.
- */
-/*
-int xio_rctl(const uint8_t dev, CONTROL_T *control)
-{
-	xioDevice *d = &ds[dev];
-	control = d->flags;
-	return (XIO_OK);
-}
-*/
 
 /*
  * xio_fc_null() - flow control null function
@@ -194,32 +232,6 @@ void xio_set_stdin(const uint8_t dev)  { stdin  = &ds[dev].file; }
 void xio_set_stdout(const uint8_t dev) { stdout = &ds[dev].file; }
 void xio_set_stderr(const uint8_t dev) { stderr = &ds[dev].file; }
 
-/*
- * xio_putc() - common entry point for putc
- * xio_getc() - common entry point for getc
- * xio_gets() - common entry point for non-blocking get line function
- *
- * It would be prudent to run an assertion such as below, but we trust the callers:
- * 	if (dev < XIO_DEV_COUNT) {		
- *		return ds[dev].x_putc(c, ds[dev].fdev);
- *	} else {
- *		return (_FDEV_ERR);	// XIO_NO_SUCH_DEVICE
- *	}
- */
-int xio_putc(const uint8_t dev, const char c)
-{
-	return ds[dev].x_putc(c, &ds[dev].file); 
-}
-
-int xio_getc(const uint8_t dev) 
-{ 
-	return ds[dev].x_getc(&ds[dev].file); 
-}
-
-int xio_gets(const uint8_t dev, char *buf, const int size) 
-{
-	return ds[dev].x_gets(dev, buf, size); 
-}
 
 //########################################################################
 
@@ -233,16 +245,16 @@ void xio_unit_tests()
 {
 	FILE * fdev;
 
-	fdev = xio_open(XIO_DEV_SPI1, 0);
+	fdev = xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
 //	while (1) {
 		xio_putc_spi(0x55, fdev);
 //	}
 	
-//	fdev = xio_open(XIO_DEV_USB, 0);
+//	fdev = xio_open(XIO_DEV_USB, 0, USB_FLAGS);
 //	xio_getc_usart(fdev);
 	
 /*
-	fdev = xio_open(XIO_DEV_PGM, 0);
+	fdev = xio_open(XIO_DEV_PGM, 0, PGM_FLAGS);
 //	xio_puts_pgm("ABCDEFGHIJKLMNOP\n", fdev);
 	xio_putc_pgm('A', fdev);
 	xio_putc_pgm('B', fdev);

@@ -58,7 +58,8 @@
 //**** SPI device configuration ****
 //NOTE: XIO_BLOCK / XIO_NOBLOCK affects reads only. Writes always block. (see xio.h)
 
-#define SPI_INIT_bm (XIO_BLOCK |  XIO_ECHO | XIO_LINEMODE)
+#define SPI_FLAGS (XIO_BLOCK |  XIO_ECHO | XIO_LINEMODE)
+//#define SPI_INIT_bm (XIO_BLOCK |  XIO_ECHO | XIO_LINEMODE)
 //#define SPI_INIT_bm (XIO_RDWR | XIO_BLOCK |  XIO_ECHO | XIO_LINEMODE)
 
 #define BIT_BANG 		0					// use this value if no USART is being used
@@ -123,20 +124,9 @@ typedef struct xioSPI xioSpi;
  * SPI FUNCTION PROTOTYPES AND ALIASES
  ******************************************************************************/
 
-void xio_init_spi_devices(void);
-void xio_init_spi(	const uint8_t dev, 
-					const CONTROL_T control,
-					const struct USART_struct *usart_addr,
-					const struct PORT_struct *data_port,
-					const struct PORT_struct *ssel_port,
-					const uint8_t ssbit,
-					const uint8_t inbits, 
-					const uint8_t outbits, 
-					const uint8_t outclr, 
-					const uint8_t outset);
-
-FILE * xio_open_spi(uint8_t dev);
-int xio_gets_spi(const uint8_t dev, char *buf, const int size);
+void xio_init_spi(void);
+FILE *xio_open_spi(const uint8_t dev, const char *addr, const CONTROL_T flags);
+int xio_gets_spi(xioDev *d, char *buf, const int size);
 int xio_putc_spi(const char c, FILE *stream);
 int xio_getc_spi(FILE *stream);
 

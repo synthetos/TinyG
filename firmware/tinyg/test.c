@@ -68,21 +68,21 @@ uint8_t tg_test(cmdObj *cmd)
 
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (TG_OK);}
-		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing)); break;}
-		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke)); break;}
-		case 3: { xio_open(XIO_DEV_PGM, PGMFILE(&test_squares)); break;}
-		case 4: { xio_open(XIO_DEV_PGM, PGMFILE(&test_arcs)); break;}
-		case 5: { xio_open(XIO_DEV_PGM, PGMFILE(&test_dwell)); break;}
-		case 6: { xio_open(XIO_DEV_PGM, PGMFILE(&test_feedhold)); break;}
-		case 7: { xio_open(XIO_DEV_PGM, PGMFILE(&test_Mcodes)); break;}
-		case 8: { xio_open(XIO_DEV_PGM, PGMFILE(&test_json)); break;}
-		case 9: { xio_open(XIO_DEV_PGM, PGMFILE(&test_inverse_time)); break;}
-		case 10: { xio_open(XIO_DEV_PGM, PGMFILE(&test_rotary)); break;}
-		case 11: { xio_open(XIO_DEV_PGM, PGMFILE(&test_small_moves)); break;}
-		case 12: { xio_open(XIO_DEV_PGM, PGMFILE(&test_slow_moves)); break;}
-		case 13: { xio_open(XIO_DEV_PGM, PGMFILE(&test_coordinate_offsets)); break;}
-		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap)); break;}
-		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid)); break;}
+		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
+		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke),PGM_FLAGS); break;}
+		case 3: { xio_open(XIO_DEV_PGM, PGMFILE(&test_squares),PGM_FLAGS); break;}
+		case 4: { xio_open(XIO_DEV_PGM, PGMFILE(&test_arcs),PGM_FLAGS); break;}
+		case 5: { xio_open(XIO_DEV_PGM, PGMFILE(&test_dwell),PGM_FLAGS); break;}
+		case 6: { xio_open(XIO_DEV_PGM, PGMFILE(&test_feedhold),PGM_FLAGS); break;}
+		case 7: { xio_open(XIO_DEV_PGM, PGMFILE(&test_Mcodes),PGM_FLAGS); break;}
+		case 8: { xio_open(XIO_DEV_PGM, PGMFILE(&test_json),PGM_FLAGS); break;}
+		case 9: { xio_open(XIO_DEV_PGM, PGMFILE(&test_inverse_time),PGM_FLAGS); break;}
+		case 10: { xio_open(XIO_DEV_PGM, PGMFILE(&test_rotary),PGM_FLAGS); break;}
+		case 11: { xio_open(XIO_DEV_PGM, PGMFILE(&test_small_moves),PGM_FLAGS); break;}
+		case 12: { xio_open(XIO_DEV_PGM, PGMFILE(&test_slow_moves),PGM_FLAGS); break;}
+		case 13: { xio_open(XIO_DEV_PGM, PGMFILE(&test_coordinate_offsets),PGM_FLAGS); break;}
+		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
+		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 		default: {
 			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
 			return (TG_ERROR);
@@ -121,7 +121,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("N100 g0 x1\n");	// line number and command
 //	xio_queue_RX_string_usb("N100 g0x1 (MSG*** message test with gcode command and line number ***)\n");
 
-	xio_queue_RX_string_usb("$test=13\n");
+	xio_queue_RX_string_usb("$test=2\n");
 //	xio_queue_RX_string_usb("$$\n");
 //	xio_queue_RX_string_usb("m3\n");
 //	xio_queue_RX_string_usb("$sys\n");

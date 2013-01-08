@@ -47,24 +47,12 @@
 #include "xio.h"
 #include "../xmega/xmega_interrupts.h"
 
-#define RS ds[XIO_DEV_RS485]					// device struct accessor
-#define RSu us[XIO_DEV_RS485 - XIO_DEV_USART_OFFSET]// usart extended struct accessor
-
-// local helper functions
-static void _xio_enable_rs485_tx(void);	// enable rs485 TX mode (no RX)
-static void _xio_enable_rs485_rx(void);	// enable rs485 RX mode (no TX)
+// Fast accessors
+#define RS ds[XIO_DEV_RS485]
+#define RSu us[XIO_DEV_RS485 - XIO_DEV_USART_OFFSET]
 
 /*
- * xio_init_rs485() - initialization
- */
-void xio_init_rs485()	// RS485 init
-{
-	xio_init_dev(XIO_DEV_RS485, xio_open, xio_ctrl, xio_gets_usart, xio_getc_usart, xio_putc_rs485, xio_fc_null);
-	xio_init_usart(XIO_DEV_RS485, RS485_BAUD, RS485_INIT_bm, &RS485_USART, &RS485_PORT, RS485_DIRCLR_bm, RS485_DIRSET_bm, RS485_OUTCLR_bm, RS485_OUTSET_bm);
-	_xio_enable_rs485_rx(); // set initially for RX mode
-}
-
-/*
+ * Local helper functions
  *	_xio_enable_rs485_tx() - specialized routine to enable rs488 TX mode
  *	_xio_enable_rs485_rx() - specialized routine to enable rs488 RX mode
  *
@@ -108,7 +96,6 @@ static void _xio_enable_rs485_rx()
  *	NOTE: Finding a buffer empty condition on the first byte of a string 
  *		  is common as the TX byte is often written by the task itself.
  */
-
 int xio_putc_rs485(const char c, FILE *stream)
 {
 	BUFFER_T next_tx_buf_head;

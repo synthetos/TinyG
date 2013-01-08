@@ -38,63 +38,145 @@
 #include "../xmega/xmega_interrupts.h"
 #include "../tinyg.h"					// needed for AXES definition
 
+/******************************************************************************
+ * SPI CONFIGURATION RECORDS
+ ******************************************************************************/
+
+struct cfgSPI {								// SPI device configuration record 
+	FILE *(*x_open)(const uint8_t dev, const char *addr, const CONTROL_T flags);
+	int (*x_ctrl)(struct xioDEVICE *d, const CONTROL_T flags);
+	int (*x_gets)(struct xioDEVICE *d, char *buf, const int size);
+	int (*x_getc)(FILE *);					// read char (stdio compatible)
+	int (*x_putc)(char, FILE *);			// write char (stdio compatible)
+	void (*fc_func)(struct xioDEVICE *d);	// flow control callback function
+	struct USART_struct *usart;				// USART if it uses one
+	struct PORT_struct *comm_port;			// port for SCK, MISO and MOSI
+	struct PORT_struct *ssel_port;			// port for slave select line
+	uint8_t ssbit;							// slave select bit on ssel_port
+	uint8_t inbits; 
+	uint8_t outbits; 
+	uint8_t outclr;
+	uint8_t outset; 
+};
+
+static struct cfgSPI const cfgSpi[] PROGMEM = {
+	{
+		// SPI#1 config
+		xio_open_spi,			// open function
+		xio_ctrl_generic, 		// ctrl function
+		xio_gets_spi,			// get string function
+		xio_getc_spi,			// stdio getc function
+		xio_putc_spi,			// stdio putc function
+		xio_fc_null,			// flow control callback
+		BIT_BANG,				// usart structure
+		&SPI_DATA_PORT,			// SPI comm port
+		&SPI_SS1_PORT,			// SPI slave select port
+		SPI_SS1_bm,				// slave select bit bitmask
+		SPI_INBITS_bm,
+		SPI_OUTBITS_bm,
+		SPI_OUTCLR_bm,
+		SPI_OUTSET_bm,
+	},
+	{ // SPI#2 config
+		xio_open_spi,			// open function
+		xio_ctrl_generic, 		// ctrl function
+		xio_gets_spi,			// get string function
+		xio_getc_spi,			// stdio getc function
+		xio_putc_spi,			// stdio putc function
+		xio_fc_null,			// flow control callback
+		BIT_BANG,				// usart structure
+		&SPI_DATA_PORT,			// SPI comm port
+		&SPI_SS2_PORT,			// SPI slave select port
+		SPI_SS2_bm,				// slave select bit bitmask
+		SPI_INBITS_bm,
+		SPI_OUTBITS_bm,
+		SPI_OUTCLR_bm,
+		SPI_OUTSET_bm,
+	}
+};
+
+/******************************************************************************
+ * FUNCTIONS
+ ******************************************************************************/
+
 /*
- *	xio_init_spi_devices() - init entire SPI system
+ *	xio_init_spi() - init entire SPI system
  */
-void xio_init_spi_devices(void)
+void xio_init_spi(void)
 {
-	// init SPI1
-	xio_init_dev(XIO_DEV_SPI1, xio_open, xio_ctrl, xio_gets_spi, xio_getc_spi, xio_putc_spi, xio_fc_null);
-	xio_init_spi(XIO_DEV_SPI1, SPI_INIT_bm, BIT_BANG, &SPI_DATA_PORT, &SPI_SS1_PORT, SPI_SS1_bm,
-				 SPI_INBITS_bm, SPI_OUTBITS_bm, SPI_OUTCLR_bm, SPI_OUTSET_bm);
-	// init SPI2
-	xio_init_dev(XIO_DEV_SPI2, xio_open, xio_ctrl, xio_gets_spi, xio_getc_spi, xio_putc_spi, xio_fc_null);
-	xio_init_spi(XIO_DEV_SPI2, SPI_INIT_bm, BIT_BANG, &SPI_DATA_PORT, &SPI_SS2_PORT, SPI_SS2_bm,
-				 SPI_INBITS_bm, SPI_OUTBITS_bm, SPI_OUTCLR_bm, SPI_OUTSET_bm);
+	return;
 }
 
 /*
- *	xio_init_spi() - init a single SPI device
+ *	xio_open_spi() - open a specific SPI device
  */
-void xio_init_spi(	const uint8_t dev, 				// index into device array (ds)
-					const CONTROL_T control,		// control bits
-					const struct USART_struct *usart_addr,
-					const struct PORT_struct *data_port,
-					const struct PORT_struct *ssel_port,
-					const uint8_t ssbit,
-					const uint8_t inbits, 
-					const uint8_t outbits, 
-					const uint8_t outclr, 
-					const uint8_t outset) 
+FILE *xio_open_spi(const uint8_t dev, const char *addr, const CONTROL_T flags)
 {
-	// do all bindings first (and in this order)
-	xioDev *d = &ds[dev];							// setup device struct pointer
-	d->x = &sp[dev - XIO_DEV_SPI_OFFSET];			// bind SPI struct to device
-	xioSpi *dx = (xioSpi *)d->x;					// setup SPI struct pointer
-	dx->usart = (struct USART_struct *)usart_addr;	// bind USART used for SPI 
-	dx->data_port = (struct PORT_struct *)data_port;// bind PORT used for SPI data transmission
-	dx->ssel_port = (struct PORT_struct *)ssel_port;// bind port used for slave select for this device
+	xioDev *d = &ds[dev];						// setup device struct pointer
+	uint8_t idx = (dev - XIO_DEV_SPI_OFFSET);
 
-	// other data
-	dx->ssbit = ssbit;								// save bit used to select this slave
-	dx->data_port->DIRCLR = inbits;					// setup input bits on port
-	dx->data_port->DIRSET = outbits;				// setup output bits on port
-	dx->data_port->OUTCLR = outclr;					// initial state for output bits
-	dx->data_port->OUTSET = outset;					// initial state for output bits
-	(void)xio_ctrl(dev, control);					// generic setflags - doesn't validate flags
+	xio_open_generic(dev,
+					(x_open)pgm_read_word(&cfgSpi[idx].x_open),
+					(x_ctrl)pgm_read_word(&cfgSpi[idx].x_ctrl),
+					(x_gets)pgm_read_word(&cfgSpi[idx].x_gets),
+					(x_getc)pgm_read_word(&cfgSpi[idx].x_getc),
+					(x_putc)pgm_read_word(&cfgSpi[idx].x_putc),
+					(fc_func)pgm_read_word(&cfgSpi[idx].fc_func));
 
-	// setup internal RX/TX buffers
-//	dx->rx_buf_head = 1;		// can't use location 0 in circular buffer
-//	dx->rx_buf_tail = 1;
-//	dx->tx_buf_head = 1;
-//	dx->tx_buf_tail = 1;
+	// structure and device bindings
+	d->x = &sp[idx];							// setup extended struct pointer
+	xioSpi *dx = (xioSpi *)d->x;
+	dx->usart = (struct USART_struct *)pgm_read_word(&cfgSpi[idx].usart); 
+	dx->data_port = (struct PORT_struct *)pgm_read_word(&cfgSpi[idx].comm_port);
+	dx->ssel_port = (struct PORT_struct *)pgm_read_word(&cfgSpi[idx].ssel_port);
 
-	// baud rate and USART setup
-//	uint8_t baud = (uint8_t)(control & XIO_BAUD_gm);
-//	if (baud == XIO_BAUD_UNSPECIFIED) { baud = XIO_BAUD_DEFAULT; }
-//	xio_set_baud_usart(dev, baud);		// usart must be bound first
-//	dx->usart->CTRLB = (USART_TXEN_bm | USART_RXEN_bm);// enable tx and rx
-//	dx->usart->CTRLA = CTRLA_RXON_TXON;	// enable tx and rx IRQs
+	dx->ssbit = (uint8_t)pgm_read_byte(&cfgSpi[idx].ssbit);
+	dx->data_port->DIRCLR = (uint8_t)pgm_read_byte(&cfgSpi[idx].inbits);
+	dx->data_port->DIRSET = (uint8_t)pgm_read_byte(&cfgSpi[idx].outbits);
+	dx->data_port->OUTCLR = (uint8_t)pgm_read_byte(&cfgSpi[idx].outclr);
+	dx->data_port->OUTSET = (uint8_t)pgm_read_byte(&cfgSpi[idx].outset);
+
+	xio_ctrl_generic(d, flags);
+	return (&d->file);							// return FILE reference
+}
+
+/* 
+ *	xio_gets_spi() - read a complete line from an SPI device
+ *
+ *	Retains line context across calls - so it can be called multiple times.
+ *	Reads as many characters as it can until any of the following is true:
+ *
+ *	  - RX buffer is empty on entry (return XIO_EAGAIN)
+ *	  - no more chars to read from RX buffer (return XIO_EAGAIN)
+ *	  - read would cause output buffer overflow (return XIO_BUFFER_FULL)
+ *	  - read returns complete line (returns XIO_OK)
+ *
+ *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
+ */
+int xio_gets_spi(xioDev *d, char *buf, const int size)
+{
+//	xioDevice *d = &ds[dev];					// init device struct pointer
+
+/*
+	if (IN_LINE(d->flags) == 0) {				// first time thru initializations
+		d->len = 0;								// zero buffer
+		d->status = 0;
+		d->size = size;
+		d->buf = buf;
+		d->signal = XIO_SIG_OK;					// reset signal register
+		d->flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
+	}
+	while (true) {
+		switch (d->status = _xio_readc_usart(dev, d->buf)) {
+			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN);		// empty condition
+			case (XIO_BUFFER_FULL_NON_FATAL): return (d->status);// overrun err
+			case (XIO_EOL): return (XIO_OK);					// got complete line
+			case (XIO_EAGAIN): break;							// loop
+		}
+		// +++ put a size check here or buffers can overrun.
+	}
+*/
+	return (XIO_OK);
 }
 
 /*
@@ -102,7 +184,7 @@ void xio_init_spi(	const uint8_t dev, 				// index into device array (ds)
  */
 int xio_getc_spi(FILE *stream)
 {
-	return (XIO_OK);
+	return (0);
 }
 
 /*
@@ -135,47 +217,5 @@ int xio_putc_spi(const char c, FILE *stream)
 	}
 	dx->ssel_port->OUTCLR = dx->ssbit;				// drive slave select hi
 
-	// finish up
-	// write output char into RX buffer
-
-	return (XIO_OK);
-}
-
-/* 
- *	xio_gets_spi() - read a complete line from an SPI device
- *
- *	Retains line context across calls - so it can be called multiple times.
- *	Reads as many characters as it can until any of the following is true:
- *
- *	  - RX buffer is empty on entry (return XIO_EAGAIN)
- *	  - no more chars to read from RX buffer (return XIO_EAGAIN)
- *	  - read would cause output buffer overflow (return XIO_BUFFER_FULL)
- *	  - read returns complete line (returns XIO_OK)
- *
- *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
- */
-int xio_gets_spi(const uint8_t dev, char *buf, const int size)
-{
-//	xioDevice *d = &ds[dev];					// init device struct pointer
-
-/*
-	if (IN_LINE(d->flags) == 0) {				// first time thru initializations
-		d->len = 0;								// zero buffer
-		d->status = 0;
-		d->size = size;
-		d->buf = buf;
-		d->signal = XIO_SIG_OK;					// reset signal register
-		d->flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
-	}
-	while (true) {
-		switch (d->status = _xio_readc_usart(dev, d->buf)) {
-			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN);		// empty condition
-			case (XIO_BUFFER_FULL_NON_FATAL): return (d->status);// overrun err
-			case (XIO_EOL): return (XIO_OK);					// got complete line
-			case (XIO_EAGAIN): break;							// loop
-		}
-		// +++ put a size check here or buffers can overrun.
-	}
-*/
 	return (XIO_OK);
 }
