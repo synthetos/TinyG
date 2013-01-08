@@ -82,8 +82,8 @@ void xio_init()
  */
 void xio_init_dev(uint8_t dev, 									// device number
 	FILE *(*x_open)(const uint8_t dev, const char *addr), 		// device open routine
-	int (*x_ctrl)(const uint8_t dev, const CONTROL control),	// set device control flags
-//	int (*x_rctl)(const uint8_t dev, CONTROL *control),			// get device control flags
+	int (*x_ctrl)(const uint8_t dev, const CONTROL_T control),	// set device control flags
+//	int (*x_rctl)(const uint8_t dev, CONTROL_T *control),		// get device control flags
 	int (*x_gets)(const uint8_t dev, char *buf, int size),		// specialized line reader
 	int (*x_getc)(FILE *),										// read char (stdio compat)
 	int (*x_putc)(char, FILE *),								// write char (stdio compat)
@@ -117,7 +117,7 @@ void xio_init_dev(uint8_t dev, 									// device number
  *	that file just for this one function - so it's here.
  */
 
-void xio_init_file(const uint8_t dev, const CONTROL control)
+void xio_init_file(const uint8_t dev, const CONTROL_T control)
 {
 	ds[dev].x = &fs[dev - XIO_DEV_FILE_OFFSET];	// bind pgm FILE struct
 	(void)xio_ctrl(dev, control);
@@ -141,7 +141,7 @@ FILE *xio_open(uint8_t dev, const char *addr)
 #define SETFLAG(t,f) if ((control & t) != 0) { d->f = true; }
 #define CLRFLAG(t,f) if ((control & t) != 0) { d->f = false; }
 
-int xio_ctrl(const uint8_t dev, CONTROL control)
+int xio_ctrl(const uint8_t dev, const CONTROL_T control)
 {
 	xioDevice *d = &ds[dev];
 	SETFLAG(XIO_BLOCK,		flag_block);
@@ -167,7 +167,7 @@ int xio_ctrl(const uint8_t dev, CONTROL control)
  *	Note: this is not ioctl() Calling conventions differ.
  */
 /*
-int xio_rctl(const uint8_t dev, CONTROL *control)
+int xio_rctl(const uint8_t dev, CONTROL_T *control)
 {
 	xioDevice *d = &ds[dev];
 	control = d->flags;

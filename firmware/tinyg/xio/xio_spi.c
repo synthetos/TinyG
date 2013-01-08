@@ -57,7 +57,7 @@ void xio_init_spi_devices(void)
  *	xio_init_spi() - init a single SPI device
  */
 void xio_init_spi(	const uint8_t dev, 				// index into device array (ds)
-					const CONTROL control,			// control bits
+					const CONTROL_T control,		// control bits
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *data_port,
 					const struct PORT_struct *ssel_port,

@@ -76,7 +76,7 @@ static int _gets_helper(xioDevice *d, xioUsart *dx);
  */
 void xio_init_usart(const uint8_t dev, 			// index into device array (ds)
 					uint8_t baud,
-					const CONTROL control,
+					const CONTROL_T control,
 					const struct USART_struct *usart_addr,
 					const struct PORT_struct *port_addr,
 					const uint8_t inbits, 

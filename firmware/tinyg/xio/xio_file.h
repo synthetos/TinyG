@@ -94,7 +94,7 @@ typedef struct xioFILE xioFile;
  * FILE DEVICE FUNCTION PROTOTYPES
  */
 // Generic file device functions
-void xio_init_file(const uint8_t dev, const CONTROL control);
+void xio_init_file(const uint8_t dev, const CONTROL_T control);
 
 // PGM functions
 void xio_init_pgm(void);
