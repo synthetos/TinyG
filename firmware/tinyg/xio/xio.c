@@ -238,9 +238,9 @@ void xio_unit_tests()
 	FILE * fdev;
 
 	fdev = xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
-//	while (1) {
+	while (1) {
 		xio_putc_spi(0x55, fdev);
-//	}
+	}
 	
 //	fdev = xio_open(XIO_DEV_USB, 0, USB_FLAGS);
 //	xio_getc_usart(fdev);

@@ -267,7 +267,7 @@ enum xioCodes {
 	0x02	STX		ctl-B
 	0x03	ETX		ctl-C
 	0x04	EOT		ctl-D
-	0x05	ENQ		ctl-E		Status query
+	0x05	ENQ		ctl-E		
 	0x06	ACK		ctl-F
 	0x07	BEL		ctl-G
 	0x08	BS		ctl-H
@@ -280,9 +280,9 @@ enum xioCodes {
 	0x0F	SI		ctl-O
 	0x10	DLE		ctl-P
 	0x11	DC1		ctl-Q		XOFF
-	0x12	DC2		ctl-R		feedhold
+	0x12	DC2		ctl-R		
 	0x13	DC3		ctl-S		XON
-	0x14	DC4		ctl-T		end feedhold
+	0x14	DC4		ctl-T		
 	0x15	NAK		ctl-U
 	0x16	SYN		ctl-V
 	0x17	ETB		ctl-W
@@ -296,7 +296,7 @@ enum xioCodes {
 	0x1F	US		ctl-_
 
 	0x20	<space>				Gcode blocks
-	0x21	!		excl point	Kill, Terminate signals
+	0x21	!		excl point	TinyG feedhold
 	0x22	"		quote		JSON notation
 	0x23	#		number		Gcode parameter prefix
 	0x24	$		dollar		TinyG / grbl settings prefix
@@ -317,12 +317,12 @@ enum xioCodes {
 	0x3D	=		equals		Gcode expressions
 	0x3E	>		greaterthan	Gcode expressions
 	0x3F	?		question mk	TinyG / grbl query prefix
-	0x40	@		at symbol	TinyG feedhold
+	0x40	@		at symbol	
 
 	0x5B	[		open bracketGcode expressions
 	0x5C	\		backslash	JSON notation (escape)
 	0x5D	]		close brack	Gcode expressions
-	0x5E	^		caret
+	0x5E	^		caret		TinyG in-cycle command
 	0x5F	_		underscore
 
 	0x60	`		grave accnt	
@@ -333,7 +333,7 @@ enum xioCodes {
 	0x7F	DEL	
 */
 
-//#define __UNIT_TEST_XIO			// include and run xio unit tests
+#define __UNIT_TEST_XIO			// include and run xio unit tests
 #ifdef __UNIT_TEST_XIO
 void xio_unit_tests(void);
 #define	XIO_UNITS xio_unit_tests();
