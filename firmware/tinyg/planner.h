@@ -122,7 +122,7 @@ enum mpBufferState {			// bf->buffer_state values
 	MP_BUFFER_RUNNING			// current running buffer
 };
 
-struct mpBuffer {				// See Planning Velocity Notes for variable usage
+typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;		// static pointer to previous buffer
 	struct mpBuffer *nx;		// static pointer to next buffer
 	uint8_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function - passes *bf, returns uint8_t
@@ -163,8 +163,7 @@ struct mpBuffer {				// See Planning Velocity Notes for variable usage
 	double recip_jerk;			// 1/Jm used for planning (compute-once)
 	double cbrt_jerk;			// cube root of Jm used for planning (compute-once)
 #endif
-};
-typedef struct mpBuffer mpBuf;
+} mpBuf;
 
 struct mpBufferPool {			// ring buffer for sub-moves
 	uint8_t buffers_available;	// running count of available buffers

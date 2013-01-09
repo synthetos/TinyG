@@ -55,8 +55,8 @@ struct cfgUSART {
 	x_getc x_getc;
 	x_putc x_putc;
 	fc_func fc_func;
-	struct USART_struct *usart;
-	struct PORT_struct *port;
+	USART_t *usart;
+	PORT_t *port;
 	uint8_t baud; 
 	uint8_t inbits; 
 	uint8_t outbits; 
@@ -140,8 +140,8 @@ FILE *xio_open_usart(const uint8_t dev, const char *addr, const CONTROL_T flags)
 	dx->tx_buf_tail = 1;
 
 	// baud rate and USART setup (do this last)
-	dx->usart = (struct USART_struct *)pgm_read_word(&cfgUsart[idx].usart); 
-	dx->port = (struct PORT_struct *)pgm_read_word(&cfgUsart[idx].port);
+	dx->usart = (USART_t *)pgm_read_word(&cfgUsart[idx].usart); 
+	dx->port = (PORT_t *)pgm_read_word(&cfgUsart[idx].port);
 	uint8_t baud = (uint8_t)pgm_read_byte(&cfgUsart[idx].baud);
 	if (baud == XIO_BAUD_UNSPECIFIED) { baud = XIO_BAUD_DEFAULT; }
 	xio_set_baud_usart(dx, baud);						// usart must be bound first

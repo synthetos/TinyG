@@ -62,7 +62,7 @@
 // bootloader entrance
 #define USE_ENTER_DELAY
 //#define USE_ENTER_PIN
-//#define USE_ENTER_UART
+#define USE_ENTER_UART
 //#define USE_ENTER_I2C
 //#define USE_ENTER_FIFO
 
@@ -97,7 +97,8 @@
 
 // ENTER_DELAY
 #define ENTER_BLINK_COUNT       3
-#define ENTER_BLINK_WAIT        30000
+//#define ENTER_BLINK_WAIT        30000		++++++++++++++++++++++++++++++++++++++++++++
+#define ENTER_BLINK_WAIT        3
 
 // ENTER_UART
 //#define ENTER_UART_NEED_SYNC

@@ -81,13 +81,12 @@
  */
 
 // file-type device control struct
-struct xioFILE {
+typedef struct xioFILE {
 	uint32_t rd_offset;					// read index into file
 	uint32_t wr_offset;					// write index into file
 	uint32_t max_offset;				// max size of file
 	const char * filebase_P;			// base location in program memory (PROGMEM)
-};
-typedef struct xioFILE xioFile;
+} xioFile;
 
 /* 
  * FILE DEVICE FUNCTION PROTOTYPES

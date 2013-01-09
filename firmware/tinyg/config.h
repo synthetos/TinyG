@@ -174,7 +174,7 @@ enum textReports {					// text output print modes
 	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines with formatted print per line
 };
 
-struct cmdObject {					// depending on use, not all elements may be populated
+typedef struct cmdObject {			// depending on use, not all elements may be populated
 	struct cmdObject *pv;			// pointer to previous object or NULL if first object
 	struct cmdObject *nx;			// pointer to next object or NULL if last object
 	INDEX_T index;					// index of tokenized name, or -1 if no token (optional)
@@ -184,8 +184,8 @@ struct cmdObject {					// depending on use, not all elements may be populated
 	char token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
 	char group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group
 	char string[CMD_STRING_LEN+1];	// string storage (See note below)
-}; 									// OK, so it's not REALLY an object
-typedef struct cmdObject cmdObj;	// handy typedef for command onjects
+} cmdObj; 							// OK, so it's not REALLY an object
+
 typedef uint8_t (*fptrCmd)(cmdObj *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
 #define CMD_OBJ_CORE (sizeof(cmdObj) - (CMD_STRING_LEN+1))

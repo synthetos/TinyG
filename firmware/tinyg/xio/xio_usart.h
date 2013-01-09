@@ -154,7 +154,7 @@ enum xioFCState {
  * Note: As defined this struct won't do buffers larger than 256 chars - 
  *	     or a max of 254 characters usable
  */
-struct xioUSART {
+typedef struct xioUSART {
 	uint8_t fc_char;			 			// flow control character to send
 	volatile uint8_t fc_state;				// flow control state
 
@@ -166,13 +166,12 @@ struct xioUSART {
 	volatile BUFFER_T tx_buf_head;			// TX buffer write index
 	volatile BUFFER_T tx_buf_count;
 
-	struct USART_struct *usart;				// USART structure
-	struct PORT_struct *port;				// corresponding port
+	USART_t *usart;							// xmega USART structure
+	PORT_t	*port;							// corresponding port
 
 	volatile char rx_buf[RX_BUFFER_SIZE];	// (written by ISR)
 	volatile char tx_buf[TX_BUFFER_SIZE];
-};
-typedef struct xioUSART xioUsart;
+} xioUsart;
 
 /******************************************************************************
  * USART CLASS AND DEVICE FUNCTION PROTOTYPES AND ALIASES

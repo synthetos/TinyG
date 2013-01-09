@@ -197,7 +197,7 @@ int main(void)
                 // Set in_bootloader here to enter the bootloader
                 // Checked when USE_ENTER_DELAY is selected
                 // --------------------------------------------------
-                
+        		        
                 #ifdef USE_ENTER_PIN
                 // Check entry pin state
                 if ((ENTER_PORT.IN & (1 << ENTER_PIN)) == (ENTER_PIN_STATE ? (1 << ENTER_PIN) : 0))

@@ -34,12 +34,11 @@
  *	See xio.h for character mappings to signals
  *	See xio.c/.h for static allocation of signal struct 
  */
-struct xioSIGNALS {				// signal signalton
+typedef struct xioSIGNALS {		// signal signalton
 	uint8_t	sig_reset;
 	uint8_t	sig_feedhold;
 	uint8_t	sig_cycle_start;
-};
-typedef struct xioSIGNALS xioSignals;
+} xioSignals;
 
 void sig_init(void);			// initial signal flags
 void sig_reset(void);			// end program (hard reset)

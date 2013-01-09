@@ -88,7 +88,7 @@ enum xioDev {			// TYPE:	DEVICE:
 
 #define CONTROL_T uint16_t
 
-struct xioDEVICE {							// common device struct (one per dev)
+typedef struct xioDEVICE {							// common device struct (one per dev)
 	// references and self references
 	uint8_t dev;							// self referential device number
 	FILE file;								// stdio FILE stream structure
@@ -119,8 +119,8 @@ struct xioDEVICE {							// common device struct (one per dev)
 	uint8_t flag_eol;						// end of line detected
 	uint8_t flag_eof;						// end of file detected
 	char *buf;								// text buffer binding (can be dynamic)
-};
-typedef struct xioDEVICE xioDev;
+} xioDev;
+
 typedef FILE *(*x_open)(const uint8_t dev, const char *addr, const CONTROL_T flags);
 typedef int (*x_ctrl)(xioDev *d, const CONTROL_T flags);
 typedef int (*x_gets)(xioDev *d, char *buf, const int size);
@@ -342,7 +342,7 @@ enum xioCodes {
     0x7F    DEL	
 */
 
-//#define __UNIT_TEST_XIO			// include and run xio unit tests
+#define __UNIT_TEST_XIO			// include and run xio unit tests
 #ifdef __UNIT_TEST_XIO
 void xio_unit_tests(void);
 #define	XIO_UNITS xio_unit_tests();

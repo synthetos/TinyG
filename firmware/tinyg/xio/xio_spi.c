@@ -50,10 +50,10 @@ struct cfgSPI {
 	x_getc x_getc;
 	x_putc x_putc;
 	fc_func fc_func;
-	struct USART_struct *usart;				// USART if it uses one
-	struct PORT_struct *comm_port;			// port for SCK, MISO and MOSI
-	struct PORT_struct *ssel_port;			// port for slave select line
-	uint8_t ssbit;							// slave select bit on ssel_port
+	USART_t *usart;
+	PORT_t *comm_port;		// port for SCK, MISO and MOSI
+	PORT_t *ssel_port;		// port for slave select line
+	uint8_t ssbit;			// slave select bit on ssel_port
 	uint8_t inbits; 
 	uint8_t outbits; 
 	uint8_t outclr;
@@ -129,9 +129,9 @@ FILE *xio_open_spi(const uint8_t dev, const char *addr, const CONTROL_T flags)
 	xio_ctrl_generic(d, flags);					// setup flags
 
 	// structure and device bindings and setup
-	dx->usart = (struct USART_struct *)pgm_read_word(&cfgSpi[idx].usart); 
-	dx->data_port = (struct PORT_struct *)pgm_read_word(&cfgSpi[idx].comm_port);
-	dx->ssel_port = (struct PORT_struct *)pgm_read_word(&cfgSpi[idx].ssel_port);
+	dx->usart = (USART_t *)pgm_read_word(&cfgSpi[idx].usart); 
+	dx->data_port = (PORT_t *)pgm_read_word(&cfgSpi[idx].comm_port);
+	dx->ssel_port = (PORT_t *)pgm_read_word(&cfgSpi[idx].ssel_port);
 
 	dx->ssbit = (uint8_t)pgm_read_byte(&cfgSpi[idx].ssbit);
 	dx->data_port->DIRCLR = (uint8_t)pgm_read_byte(&cfgSpi[idx].inbits);
@@ -198,9 +198,10 @@ int xio_putc_spi(const char c, FILE *stream)
 {
 	xioDev *d = (xioDev *)stream->udata;			// get SPI device struct pointer
 	xioSpi *dx = (xioSpi *)d->x;					// get SPI extended struct pointer
-	char outc = 0;
+	char incoming = 0;								// incoming data from MISO
 
 	// transmit character
+/*
 	dx->ssel_port->OUTCLR = dx->ssbit;				// drive slave select lo (active)
 
 	for (int8_t i=7; i>=0; i--) {
@@ -212,11 +213,28 @@ int xio_putc_spi(const char c, FILE *stream)
 		}
 		dx->data_port->OUTSET = SPI_SCK_bm; 		// drive clock hi (take data / read data)
 
-		if ((dx->data_port->IN & SPI_MISO_bm) != 0) {
-			outc |= (1<<i); 
+		if (dx->data_port->IN & SPI_MISO_bm) {		// collect incoming data bits
+			incoming |= (1<<i); 
 		}
 	}
-	dx->ssel_port->OUTCLR = dx->ssbit;				// drive slave select hi
+*/
+	dx->data_port->OUTCLR = SPI_SCK_bm; 				// drive clock lo
 
+	if (c & 1<<0) 
+		dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
+	else dx->data_port->OUTCLR = SPI_MOSI_bm;	 	// set data bit hi 
+	if (dx->data_port->IN & SPI_MISO_bm)			// collect incoming data bit
+		incoming |= (1<<0); 
+
+
+
+
+
+
+
+
+
+
+	dx->ssel_port->OUTSET = dx->ssbit;				// drive slave select hi
 	return (XIO_OK);
 }

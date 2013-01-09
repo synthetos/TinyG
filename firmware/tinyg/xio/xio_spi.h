@@ -101,23 +101,20 @@
  *	     or a max of 254 characters usable
  */
 
-struct xioSPI {
-//	uint8_t index;							// index into sp array - first is zero
-	
+typedef struct xioSPI {
 //	volatile SPIBUF_T rx_buf_tail;			// RX buffer read index
 //	volatile SPIBUF_T rx_buf_head;			// RX buffer write index (written by ISR)
 //	volatile SPIBUF_T tx_buf_tail;			// TX buffer read index  (written by ISR)
 //	volatile SPIBUF_T tx_buf_head;			// TX buffer write index
 
-	struct USART_struct *usart;				// USART used for SPI (unless it's bit banged)
-	struct PORT_struct *data_port;			// port used for data transmission (MOSI, MOSI, SCK)
-	struct PORT_struct *ssel_port;			// port used for slave select
+	USART_t *usart;				// USART used for SPI (unless it's bit banged)
+	PORT_t *data_port;			// port used for data transmission (MOSI, MOSI, SCK)
+	PORT_t *ssel_port;			// port used for slave select
 	uint8_t ssbit;							// slave select bit used for this device
 
 	volatile char rx_buf[SPI_RX_BUFFER_SIZE];	// (written by ISR)
 	volatile char tx_buf[SPI_TX_BUFFER_SIZE];
-};
-typedef struct xioSPI xioSpi;
+} xioSpi;
 
 /******************************************************************************
  * SPI FUNCTION PROTOTYPES AND ALIASES
