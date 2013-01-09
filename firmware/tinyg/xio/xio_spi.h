@@ -59,13 +59,12 @@
 //NOTE: XIO_BLOCK / XIO_NOBLOCK affects reads only. Writes always block. (see xio.h)
 
 #define SPI_FLAGS (XIO_BLOCK |  XIO_ECHO | XIO_LINEMODE)
-//#define SPI_INIT_bm (XIO_BLOCK |  XIO_ECHO | XIO_LINEMODE)
-//#define SPI_INIT_bm (XIO_RDWR | XIO_BLOCK |  XIO_ECHO | XIO_LINEMODE)
 
 #define BIT_BANG 		0					// use this value if no USART is being used
 #define SPI_USART 		BIT_BANG			// USB usart or BIT_BANG value
 #define SPI_RX_ISR_vect	BIT_BANG		 	// (RX) reception complete IRQ
 #define SPI_TX_ISR_vect	BIT_BANG			// (TX) data register empty IRQ
+
 //#define SPI_USART USARTC1					// USB usart
 //#define SPI_RX_ISR_vect USARTC0_RXC_vect 	// (RX) reception complete IRQ
 //#define SPI_TX_ISR_vect USARTC0_DRE_vect	// (TX) data register empty IRQ

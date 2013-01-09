@@ -78,7 +78,7 @@ enum xioDev {			// TYPE:	DEVICE:
  *************************************************************************/
 // NOTE" "FILE *" is another way of saying "struct __file *"
 
-#define CONTROL_T uint32_t
+#define CONTROL_T uint16_t
 
 struct xioDEVICE {							// common device struct (one per dev)
 	// references and self references
@@ -166,24 +166,11 @@ void xio_set_stderr(const uint8_t dev);
  *************************************************************************/
 /*
  * xio control flag values
+ *
+ * if using 32 bits must cast 1 to uint32_t for bit evaluations to work correctly
+ * #define XIO_BLOCK	((uint32_t)1<<1)		// 32 bit example. Change CONTROL_T to uint32_t
  */
-// must cast 1 to uint32_t for bit evaluations to work correctly
-#define XIO_BLOCK		((uint32_t)1<<6)		// enable blocking reads
-#define XIO_NOBLOCK		((uint32_t)1<<7)		// disable blocking reads
-#define XIO_XOFF 		((uint32_t)1<<8)		// enable XON/OFF flow control
-#define XIO_NOXOFF 		((uint32_t)1<<9)		// disable XON/XOFF flow control
-#define XIO_ECHO		((uint32_t)1<<10)		// echo reads from device to stdio
-#define XIO_NOECHO		((uint32_t)1<<11)		// disable echo
-#define XIO_CRLF		((uint32_t)1<<12)		// convert <LF> to <CR><LF> on writes
-#define XIO_NOCRLF		((uint32_t)1<<13)		// do not convert <LF> to <CR><LF> on writes
-#define XIO_IGNORECR	((uint32_t)1<<14)		// ignore <CR> on reads
-#define XIO_NOIGNORECR	((uint32_t)1<<15)		// don't ignore <CR> on reads
-#define XIO_IGNORELF	((uint32_t)1<<16)		// ignore <LF> on reads
-#define XIO_NOIGNORELF	((uint32_t)1<<17)		// don't ignore <LF> on reads
-#define XIO_LINEMODE	((uint32_t)1<<18)		// special <CR><LF> read handling
-#define XIO_NOLINEMODE	((uint32_t)1<<19)		// no special <CR><LF> read handling
 
-/*
 #define XIO_BLOCK		((uint16_t)1<<0)		// enable blocking reads
 #define XIO_NOBLOCK		((uint16_t)1<<1)		// disable blocking reads
 #define XIO_XOFF 		((uint16_t)1<<2)		// enable XON/OFF flow control
@@ -198,7 +185,6 @@ void xio_set_stderr(const uint8_t dev);
 #define XIO_NOIGNORELF	((uint16_t)1<<11)		// don't ignore <LF> on reads
 #define XIO_LINEMODE	((uint16_t)1<<12)		// special <CR><LF> read handling
 #define XIO_NOLINEMODE	((uint16_t)1<<13)		// no special <CR><LF> read handling
-*/
 
 /*
  * Generic XIO signals and error conditions. 
