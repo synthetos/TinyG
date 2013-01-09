@@ -1527,6 +1527,7 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 
 /****** UNIT TESTS ******/
 
+#ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_PLANNER
 
 //#define JERK_TEST_VALUE (double)50000000	// set this to the value in the profile you are running
@@ -1753,3 +1754,4 @@ static void _test_get_junction_vmax()
 }
 
 #endif // __UNIT_TEST_PLANNER
+#endif

@@ -21,9 +21,9 @@
  */
 /* ----- XIO - Xmega Device System ----
  *
- * XIO provides common access to native and derived xmega devices 
- * (see table below) XIO devices are compatible with avr-gcc stdio 
- * and also provide some special functions that are not found in stdio.
+ * XIO provides common access to native and derived xmega devices (see table below) 
+ * XIO devices are compatible with avr-gcc stdio and also provide some special functions 
+ * that are not found in stdio.
  *
  * Stdio support:
  *	- http://www.nongnu.org/avr-libc/user-manual/group__avr__stdio.html
@@ -35,7 +35,6 @@
  *		for things that should't go over RS485 in SLAVE mode 
  *
  * Facilities provided beyond stdio:
- *	- Devices are managed as an enumerated array of derived devices
  *	- Supported devices include:
  *		- USB (derived from USART)
  *		- RS485 (derived from USART)
@@ -43,34 +42,35 @@
  *		- Program memory "files" (read only)
  *	- Stdio FILE streams are managed as bindings to the above devices
  *	- Additional functions provided include:
- *		- open file (initialize address and other parameters)
- *		- gets (non-blocking input line reader - extends fgets)
- *		- control (ioctl-like knockoff for setting device parameters)
+ *		- open() - initialize parameters, addresses and flags
+ *		- gets() - non-blocking input line reader - extends fgets
+ *		- ctrl() - ioctl-like knockoff for setting device parameters (flags)
  *		- signal handling: interrupt on: feedhold, cycle_start, ctrl-x software reset
  *		- interrupt buffered RX and TX functions 
  *		- XON/XOFF software flow control
  */
 /* ----- XIO - Some Internals ----
  *
- * XIO layers are: (1) xio virtual device (root), (2) xio device classes, (3) xio devices
+ * XIO layers are: (1) xio virtual device (root), (2) xio device type, (3) xio devices
  *
  * The virtual device has the following methods:
- *	xio_init()	- initialize the entire xio system
- *	xio_open()	- open a device indicated by the XIO_DEV number
- *	xio_ctrl()	- set control flags for XIO_DEV device
- *	xio_gets()	- get a string from the XIO_DEV device (non blocking line reader)
- *	xio_getc()	- read a character from the XIO_DEV device (not stdio compatible)
- *	xio_putc()	- write a character to the XIO_DEV device (not stdio compatible)
+ *	xio_init() - initialize the entire xio system
+ *	xio_open() - open a device indicated by the XIO_DEV number
+ *	xio_ctrl() - set control flags for XIO_DEV device
+ *	xio_gets() - get a string from the XIO_DEV device (non blocking line reader)
+ *	xio_getc() - read a character from the XIO_DEV device (not stdio compatible)
+ *	xio_putc() - write a character to the XIO_DEV device (not stdio compatible)
+ *  xio_set_baud() - set baud rates for devices for which this is meaningful
  *
- * The device class layer currently knows about USARTS, SPI, and File devices. Methods are:
- *	xio_init_<class>()	- initializes the device class 	
+ * The device type layer currently knows about USARTS, SPI, and File devices. Methods are:
+ *	xio_init_<type>() - initializes the devices of that type
  *
  * The device layer currently supports: USB, RS485, SPI channels, PGM file reading. methods:
- *	xio_open<device>()	- set up the device for use or reset the device
- *	xio_ctrl<device>()	- change device flag controls
- *	xio_gets<device>()	- get a string from the device (non-blocking)
- *	xio_getc<device>()	- read a character from the device (stdio compatible)
- *	xio_putc<device>()	- write a character to the device (stdio compatible)
+ *	xio_open<device>() - set up the device for use or reset the device
+ *	xio_ctrl<device>() - change device flag controls
+ *	xio_gets<device>() - get a string from the device (non-blocking)
+ *	xio_getc<device>() - read a character from the device (stdio compatible)
+ *	xio_putc<device>() - write a character to the device (stdio compatible)
  *
  * The virtual level uses XIO_DEV_xxx numeric device IDs for reference. 
  * Lower layers are called using the device structure pointer xioDev *d
@@ -81,7 +81,7 @@
  * Device and extended structs are usually referenced via their pointers. E.g:
  *
  *	  xioDev *d = &ds[dev];						// setup device struct ptr
- *    xioUsart *dx = (xioUsart *)d->x; 	// setup USART struct ptr
+ *    xioUsart *dx = (xioUsart *)d->x; 			// setup USART struct ptr
  *
  * In some cases a static reference is used for time critical regions like raw 
  * character IO. This is measurably faster even under -Os. For example:
@@ -104,16 +104,16 @@
  */
 void xio_init()
 {
-	// setup device classes
+	// setup device types
 	xio_init_usart();
 	xio_init_spi();
 	xio_init_file();
 
-	// open individual devices
-	xio_open_usart(XIO_DEV_USB,   0, USB_FLAGS);
-	xio_open_usart(XIO_DEV_RS485, 0, RS485_FLAGS);
-	xio_open_spi(XIO_DEV_SPI1, 0, SPI_FLAGS);
-	xio_open_spi(XIO_DEV_SPI2, 0, SPI_FLAGS);
+	// open individual devices (file device opens occur at time-of-use)
+	xio_open(XIO_DEV_USB,  0, USB_FLAGS);
+	xio_open(XIO_DEV_RS485,0, RS485_FLAGS);
+	xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
+	xio_open(XIO_DEV_SPI2, 0, SPI_FLAGS);
 }
 
 /*
@@ -207,6 +207,17 @@ int xio_ctrl_generic(xioDev *d, const CONTROL_T flags)
 }
 
 /*
+ * xio_set_baud() - PUBLIC entry to set baud rate
+ *	Currently this only works on USART devices
+ */
+int xio_set_baud(const uint8_t dev, const uint8_t baud)
+{
+	xioUsart *dx = (xioUsart *)&us[dev - XIO_DEV_USART_OFFSET];
+	xio_set_baud_usart(dx, baud);
+	return (XIO_OK);
+}
+
+/*
  * xio_fc_null() - flow control null function
  */
 void xio_fc_null(xioDev *d)
@@ -227,6 +238,7 @@ void xio_set_stderr(const uint8_t dev) { stderr = &ds[dev].file; }
 
 //########################################################################
 
+#ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_XIO
 
 /*
@@ -257,4 +269,5 @@ void xio_unit_tests()
 */
 }
 
+#endif
 #endif

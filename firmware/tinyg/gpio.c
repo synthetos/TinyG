@@ -331,6 +331,7 @@ void sw_show_switch(void)
 //##### UNIT TESTS ##########################################################
 //###########################################################################
 
+#ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_GPIO
 
 void gpio_unit_tests()
@@ -339,4 +340,4 @@ void gpio_unit_tests()
 }
 
 #endif // __UNIT_TEST_GPIO
-
+#endif

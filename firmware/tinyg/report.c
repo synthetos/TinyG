@@ -215,6 +215,7 @@ uint8_t rpt_queue_report_callback()
  ***** Report Unit Tests ****************************************************
  ****************************************************************************/
 
+#ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_REPORT
 
 void sr_unit_tests(void)
@@ -224,4 +225,5 @@ void sr_unit_tests(void)
 	sr_run_status_report();
 }
 
+#endif
 #endif

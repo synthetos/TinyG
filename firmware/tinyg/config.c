@@ -1238,7 +1238,7 @@ uint8_t cfg_baud_rate_callback(void)
 {
 	if (cfg.usb_baud_flag == false) { return(TG_NOOP);}
 	cfg.usb_baud_flag = false;
-	xio_set_baud_usart(XIO_DEV_USB, cfg.usb_baud_rate);
+	xio_set_baud(XIO_DEV_USB, cfg.usb_baud_rate);
 	return (TG_OK);
 }
 
@@ -2184,6 +2184,7 @@ uint8_t cmd_write_NVM_value(cmdObj *cmd)
  ***** Config Unit Tests ****************************************************
  ****************************************************************************/
 
+#ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_CONFIG
 
 #define NVMwr(i,v) { cmd.index=i; cmd.value=v; cmd_write_NVM_value(&cmd);}
@@ -2267,5 +2268,6 @@ void cfg_unit_tests()
 */
 }
 
+#endif
 #endif
 

@@ -29,6 +29,7 @@
  */
 #include <stdio.h>						// precursor for xio.h
 #include <stdbool.h>					// true and false
+#include <string.h>						// for memset
 #include <avr/pgmspace.h>				// precursor for xio.h
 #include <avr/interrupt.h>
 #include <avr/sleep.h>					// needed for blocking character writes
@@ -107,7 +108,15 @@ static int _gets_helper(xioDev *d, xioUsart *dx);
  */
 void xio_init_usart(void)
 {
-	return;
+	for (uint8_t i=0; i<XIO_DEV_USART_COUNT; i++) {
+		xio_open_generic(XIO_DEV_USART_OFFSET + i,
+						(x_open)pgm_read_word(&cfgUsart[i].x_open),
+						(x_ctrl)pgm_read_word(&cfgUsart[i].x_ctrl),
+						(x_gets)pgm_read_word(&cfgUsart[i].x_gets),
+						(x_getc)pgm_read_word(&cfgUsart[i].x_getc),
+						(x_putc)pgm_read_word(&cfgUsart[i].x_putc),
+						(fc_func)pgm_read_word(&cfgUsart[i].fc_func));
+	}
 }
 
 /*
@@ -115,46 +124,33 @@ void xio_init_usart(void)
  */
 FILE *xio_open_usart(const uint8_t dev, const char *addr, const CONTROL_T flags)
 {
-	xioDev *d = &ds[dev];						// setup device struct pointer
-	uint8_t idx = (dev - XIO_DEV_USART_OFFSET);
-
-	xio_open_generic(dev,
-					(x_open)pgm_read_word(&cfgUsart[idx].x_open),
-					(x_ctrl)pgm_read_word(&cfgUsart[idx].x_ctrl),
-					(x_gets)pgm_read_word(&cfgUsart[idx].x_gets),
-					(x_getc)pgm_read_word(&cfgUsart[idx].x_getc),
-					(x_putc)pgm_read_word(&cfgUsart[idx].x_putc),
-					(fc_func)pgm_read_word(&cfgUsart[idx].fc_func));
-
-	// structure and device bindings
-	d->x = &us[idx];							// bind extended struct to device
+	xioDev *d = &ds[dev];							// setup device struct pointer
+	uint8_t idx = dev - XIO_DEV_USART_OFFSET;
+	d->x = &us[idx];								// bind extended struct to device
 	xioUsart *dx = (xioUsart *)d->x;
-	dx->usart = (struct USART_struct *)pgm_read_word(&cfgUsart[idx].usart); 
-	dx->port = (struct PORT_struct *)pgm_read_word(&cfgUsart[idx].port);
 
-	// control flags	
-	xio_ctrl_generic(d, flags);
+	memset (dx, 0, sizeof(xioUsart));				// clear all values
+	xio_ctrl_generic(d, flags);						// setup control flags	
 	if (d->flag_xoff) dx->fc_state = FC_IN_XON;		// transfer flow control setting 
 
 	// setup internal RX/TX control buffers
 	dx->rx_buf_head = 1;		// can't use location 0 in circular buffer
 	dx->rx_buf_tail = 1;
-	dx->rx_buf_count = 0;
 	dx->tx_buf_head = 1;
 	dx->tx_buf_tail = 1;
-	dx->tx_buf_count = 0;
 
 	// baud rate and USART setup (do this last)
+	dx->usart = (struct USART_struct *)pgm_read_word(&cfgUsart[idx].usart); 
+	dx->port = (struct PORT_struct *)pgm_read_word(&cfgUsart[idx].port);
 	uint8_t baud = (uint8_t)pgm_read_byte(&cfgUsart[idx].baud);
 	if (baud == XIO_BAUD_UNSPECIFIED) { baud = XIO_BAUD_DEFAULT; }
 	xio_set_baud_usart(dx, baud);						// usart must be bound first
-	dx->usart->CTRLB = (USART_TXEN_bm | USART_RXEN_bm);	// enable tx and rx
-	dx->usart->CTRLA = CTRLA_RXON_TXON;					// enable tx and rx IRQs
 	dx->port->DIRCLR = (uint8_t)pgm_read_byte(&cfgUsart[idx].inbits);
 	dx->port->DIRSET = (uint8_t)pgm_read_byte(&cfgUsart[idx].outbits);
 	dx->port->OUTCLR = (uint8_t)pgm_read_byte(&cfgUsart[idx].outclr);
 	dx->port->OUTSET = (uint8_t)pgm_read_byte(&cfgUsart[idx].outset);
-
+	dx->usart->CTRLB = (USART_TXEN_bm | USART_RXEN_bm);	// enable tx and rx
+	dx->usart->CTRLA = CTRLA_RXON_TXON;					// enable tx and rx IRQs
 	return (&d->file);		// return FILE reference
 }
 

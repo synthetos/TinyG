@@ -272,7 +272,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g30x42\n");
 
 /* G48-G51 override tests */
-	xio_queue_RX_string_usb("m50 P1\n");		// enable feed override
+//	xio_queue_RX_string_usb("m50 P1\n");		// enable feed override
 
 /* G53 tests */
 //	xio_queue_RX_string_usb("g56\n");			// assumes G55 is different than machine coords

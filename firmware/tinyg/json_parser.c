@@ -411,6 +411,7 @@ void js_print_list(uint8_t status)
 //##### UNIT TESTS ##########################################################
 //###########################################################################
 
+#ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_JSON
 
 void js_unit_tests()
@@ -452,3 +453,4 @@ void js_unit_tests()
 }
 
 #endif // __UNIT_TEST_JSON
+#endif

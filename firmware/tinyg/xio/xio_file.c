@@ -28,17 +28,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>			// precursor for xio.h
-#include <stdbool.h>		// true and false
-#include <avr/pgmspace.h>	// precursor for xio.h
-#include "xio.h"			// includes for all devices are in here
+#include <stdio.h>				// precursor for xio.h
+#include <stdbool.h>			// true and false
+#include <string.h>				// for memset
+#include <avr/pgmspace.h>		// precursor for xio.h
+#include "xio.h"				// includes for all devices are in here
 
 /******************************************************************************
  * FILE CONFIGURATION RECORDS
  ******************************************************************************/
 
 struct cfgFILE {
-	x_open x_open;			// see xio.h for typedefs
+	x_open x_open;				// see xio.h for typedefs
 	x_ctrl x_ctrl;
 	x_gets x_gets;
 	x_getc x_getc;
@@ -48,12 +49,12 @@ struct cfgFILE {
 
 static struct cfgFILE const cfgFile[] PROGMEM = {
 {	// PGM config
-	xio_open_file,			// open function
-	xio_ctrl_generic, 		// ctrl function
-	xio_gets_pgm,			// get string function
-	xio_getc_pgm,			// stdio getc function
-	xio_putc_pgm,			// stdio putc function
-	xio_fc_null,			// flow control callback
+	xio_open_file,				// open function
+	xio_ctrl_generic, 			// ctrl function
+	xio_gets_pgm,				// get string function
+	xio_getc_pgm,				// stdio getc function
+	xio_putc_pgm,				// stdio putc function
+	xio_fc_null,				// flow control callback
 }
 };
 /******************************************************************************
@@ -63,22 +64,20 @@ static struct cfgFILE const cfgFile[] PROGMEM = {
 /* 
  *	xio_init_file() - initialize and set controls for file IO
  *
- *	Need to setup the open function or a cold open will fail
+ *	Need to bind the open function or a subsequent opens will fail
  */
 
 void xio_init_file()
 {
-	uint8_t idx = (XIO_DEV_PGM - XIO_DEV_FILE_OFFSET);
-	xio_open_generic(XIO_DEV_PGM,
-					(x_open)pgm_read_word(&cfgFile[idx].x_open),
-					(x_ctrl)pgm_read_word(&cfgFile[idx].x_ctrl),
-					(x_gets)pgm_read_word(&cfgFile[idx].x_gets),
-					(x_getc)pgm_read_word(&cfgFile[idx].x_getc),
-					(x_putc)pgm_read_word(&cfgFile[idx].x_putc),
-					(fc_func)pgm_read_word(&cfgFile[idx].fc_func));
-
-	ds[XIO_DEV_PGM].x = &fs[idx];					// bind extended struct to device
-	return;
+	for (uint8_t i=0; i<XIO_DEV_FILE_COUNT; i++) {
+		xio_open_generic(XIO_DEV_FILE_OFFSET + i,
+						(x_open)pgm_read_word(&cfgFile[i].x_open),
+						(x_ctrl)pgm_read_word(&cfgFile[i].x_ctrl),
+						(x_gets)pgm_read_word(&cfgFile[i].x_gets),
+						(x_getc)pgm_read_word(&cfgFile[i].x_getc),
+						(x_putc)pgm_read_word(&cfgFile[i].x_putc),
+						(fc_func)pgm_read_word(&cfgFile[i].fc_func));
+	}
 }
 
 /*	
@@ -89,18 +88,13 @@ void xio_init_file()
  */
 FILE * xio_open_file(const uint8_t dev, const char *addr, const CONTROL_T flags)
 {
-	xioDev *d = (xioDev *)&ds[dev];
+	xioDev *d = (xioDev *)&ds[dev];					// set device structure pointer
+	d->x = &fs[dev - XIO_DEV_FILE_OFFSET];			// bind extended struct to device
 	xioFile *dx = (xioFile *)d->x;
 
-	xio_ctrl_generic(d, flags);
-
-	d->flag_in_line = false;
-	d->flag_eol = false;
-	d->flag_eof = false;
-	d->signal = 0;									// reset signal
+	memset (dx, 0, sizeof(xioFile));				// clear all values
+	xio_ctrl_generic(d, flags);						// setup control flags
 	dx->filebase_P = (PROGMEM const char *)addr;	// might want to range check this
-	dx->rd_offset = 0;								// initialize read buffer pointer
-	dx->wr_offset = 0;								// initialize write buffer pointer
 	dx->max_offset = PGM_ADDR_MAX;
-	return(&(d->file));								// return pointer to the FILE stream
+	return(&d->file);								// return pointer to the FILE stream
 }

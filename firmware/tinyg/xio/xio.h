@@ -73,9 +73,17 @@ enum xioDev {			// TYPE:	DEVICE:
 #define XIO_DEV_FILE_COUNT		1				// # of FILE devices
 #define XIO_DEV_FILE_OFFSET		(XIO_DEV_USART_COUNT + XIO_DEV_SPI_COUNT) // index into FILES
 
-/*************************************************************************
- *	Device structures
- *************************************************************************/
+/******************************************************************************
+ * Device structures
+ *
+ * Each device has 3 structs. The generic device struct is declared below.
+ * It embeds a stdio stream struct "FILE". The FILE struct uses the udata
+ * field to back-reference the generic struct so getc & putc can get at it.
+ * Lastly there's an 'x' struct which contains data specific to each dev type.
+ *
+ * The generic open() function sets up the generic struct and the FILE stream. 
+ * the device opens() set up the extended struct and bind it ot the generic.
+ ******************************************************************************/
 // NOTE" "FILE *" is another way of saying "struct __file *"
 
 #define CONTROL_T uint16_t
@@ -148,6 +156,7 @@ int xio_ctrl(const uint8_t dev, const CONTROL_T flags);
 int xio_gets(const uint8_t dev, char *buf, const int size);
 int xio_getc(const uint8_t dev);
 int xio_putc(const uint8_t dev, const char c);
+int xio_set_baud(const uint8_t dev, const uint8_t baud_rate);
 
 // generic functions (private, but at virtual level)
 int xio_ctrl_generic(xioDev *d, const CONTROL_T flags);
@@ -257,83 +266,83 @@ enum xioCodes {
 
 
 /* ASCII characters used by Gcode or otherwise unavailable for special use. 
-	See NIST sections 3.3.2.2, 3.3.2.3 and Appendix E for Gcode uses.
-	See http://www.json.org/ for JSON notation
+    See NIST sections 3.3.2.2, 3.3.2.3 and Appendix E for Gcode uses.
+    See http://www.json.org/ for JSON notation
 
-	hex		char	name		used by:
-	----	----	----------	--------------------
-	0x00	NUL	 	null		everything
-	0x01	SOH		ctl-A
-	0x02	STX		ctl-B
-	0x03	ETX		ctl-C
-	0x04	EOT		ctl-D
-	0x05	ENQ		ctl-E		
-	0x06	ACK		ctl-F
-	0x07	BEL		ctl-G
-	0x08	BS		ctl-H
-	0x09	HT		ctl-I
-	0x0A	LF		ctl-J
-	0x0B	VT		ctl-K
-	0x0C	FF		ctl-L
-	0x0D	CR		ctl-M
-	0x0E	SO		ctl-N
-	0x0F	SI		ctl-O
-	0x10	DLE		ctl-P
-	0x11	DC1		ctl-Q		XOFF
-	0x12	DC2		ctl-R		
-	0x13	DC3		ctl-S		XON
-	0x14	DC4		ctl-T		
-	0x15	NAK		ctl-U
-	0x16	SYN		ctl-V
-	0x17	ETB		ctl-W
-	0x18	CAN		ctl-X		software reset
-	0x19	EM		ctl-Y
-	0x1A	SUB		ctl-Z
-	0x1B	ESC		ctl-[
-	0x1C	FS		ctl-\
-	0x1D	GS		ctl-]
-	0x1E	RS		ctl-^
-	0x1F	US		ctl-_
+    hex	    char    name        used by:
+    ----    ----    ----------  --------------------
+    0x00    NUL	    null        everything
+    0x01    SOH     ctl-A
+    0x02    STX     ctl-B
+    0x03    ETX     ctl-C
+    0x04    EOT     ctl-D
+    0x05    ENQ     ctl-E		
+    0x06    ACK     ctl-F
+    0x07    BEL     ctl-G
+    0x08    BS      ctl-H
+    0x09    HT      ctl-I
+    0x0A    LF      ctl-J
+    0x0B    VT      ctl-K
+    0x0C    FF      ctl-L
+    0x0D    CR      ctl-M
+    0x0E    SO      ctl-N
+    0x0F    SI      ctl-O
+    0x10    DLE     ctl-P
+    0x11    DC1     ctl-Q       XOFF
+    0x12    DC2     ctl-R		
+    0x13    DC3     ctl-S       XON
+    0x14    DC4     ctl-T		
+    0x15    NAK     ctl-U
+    0x16    SYN     ctl-V
+    0x17    ETB     ctl-W    
+    0x18    CAN     ctl-X       TinyG / grbl software reset
+    0x19    EM      ctl-Y
+    0x1A    SUB     ctl-Z
+    0x1B    ESC     ctl-[
+    0x1C    FS      ctl-\
+    0x1D    GS      ctl-]
+    0x1E    RS      ctl-^
+    0x1F    US      ctl-_
 
-	0x20	<space>				Gcode blocks
-	0x21	!		excl point	TinyG feedhold
-	0x22	"		quote		JSON notation
-	0x23	#		number		Gcode parameter prefix
-	0x24	$		dollar		TinyG / grbl settings prefix
-	0x25	&		ampersand	universal symbol for logical AND (not used here)
-	0x26	%		percent		Reserved for in-cycle command escape character
-	0x27	'		single quot	
-	0x28	(		open paren	Gcode comments
-	0x29	)		close paren	Gcode comments
-	0x2A	*		asterisk	Gcode expressions
-	0x2B	+		plus		Gcode numbers, parameters and expressions
-	0x2C	,		comma		JSON notation
-	0x2D	-		minus		Gcode numbers, parameters and expressions
-	0x2E	.		period		Gcode numbers, parameters and expressions
-	0x2F	/		fwd slash	Gcode expressions & block delete char
-	0x3A	:		colon		JSON notation
-	0x3B	;		semicolon
-	0x3C	<		less than	Gcode expressions
-	0x3D	=		equals		Gcode expressions
-	0x3E	>		greaterthan	Gcode expressions
-	0x3F	?		question mk	TinyG / grbl query prefix
-	0x40	@		at symbol	
+    0x20    <space>             Gcode blocks
+    0x21    !       excl point  TinyG feedhold
+    0x22    "       quote       JSON notation
+    0x23    #       number      Gcode parameter prefix
+    0x24    $       dollar      TinyG / grbl out-of-cycle settings prefix
+    0x25    &       ampersand   universal symbol for logical AND (not used here)    
+    0x26    %       percent		
+    0x27    '       single quote	
+    0x28    (       open paren  Gcode comments
+    0x29    )       close paren Gcode comments
+    0x2A    *       asterisk    Gcode expressions
+    0x2B    +       plus        Gcode numbers, parameters and expressions
+    0x2C    ,       comma       JSON notation
+    0x2D    -       minus       Gcode numbers, parameters and expressions
+    0x2E    .       period      Gcode numbers, parameters and expressions
+    0x2F    /       fwd slash   Gcode expressions & block delete char
+    0x3A    :       colon       JSON notation
+    0x3B    ;       semicolon
+    0x3C    <       less than   Gcode expressions
+    0x3D    =       equals      Gcode expressions
+    0x3E    >       greaterthan Gcode expressions
+    0x3F    ?       question mk TinyG / grbl query
+    0x40    @       at symbol	
 
-	0x5B	[		open bracketGcode expressions
-	0x5C	\		backslash	JSON notation (escape)
-	0x5D	]		close brack	Gcode expressions
-	0x5E	^		caret		TinyG in-cycle command
-	0x5F	_		underscore
+    0x5B    [       open bracketGcode expressions
+    0x5C    \       backslash   JSON notation (escape)
+    0x5D    ]       close brack Gcode expressions
+    0x5E    ^       caret       Reserved for TinyG in-cycle command prefix
+    0x5F    _       underscore
 
-	0x60	`		grave accnt	
-	0x7B	{					JSON notation
-	0x7C	|					universal symbol for logical OR (not used here)
-	0x7D	}					JSON notation
-	0x7E	~		tilde		TinyG cycle start
-	0x7F	DEL	
+    0x60    `       grave accnt	
+    0x7B    {       open curly  JSON notation
+    0x7C    |       pipe        universal symbol for logical OR (not used here)
+    0x7D    }       close curly JSON notation
+    0x7E    ~       tilde       TinyG cycle start
+    0x7F    DEL	
 */
 
-#define __UNIT_TEST_XIO			// include and run xio unit tests
+//#define __UNIT_TEST_XIO			// include and run xio unit tests
 #ifdef __UNIT_TEST_XIO
 void xio_unit_tests(void);
 #define	XIO_UNITS xio_unit_tests();

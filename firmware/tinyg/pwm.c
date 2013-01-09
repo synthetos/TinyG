@@ -189,6 +189,7 @@ uint8_t pwm_set_duty(uint8_t chan, double duty)
 //##### UNIT TESTS ##########################################################
 //###########################################################################
 
+#ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_PWM
 
 void pwm_unit_tests()
@@ -219,4 +220,4 @@ void pwm_unit_tests()
 }
 
 #endif // __UNIT_TEST_PWM
-
+#endif

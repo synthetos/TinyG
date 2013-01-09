@@ -30,6 +30,7 @@
 
 #include <stdio.h>						// precursor for xio.h
 #include <stdbool.h>					// true and false
+#include <string.h>						// for memset
 #include <avr/pgmspace.h>				// precursor for xio.h
 #include <avr/interrupt.h>
 #include <avr/sleep.h>					// needed for blocking TX
@@ -103,7 +104,15 @@ static struct cfgSPI const cfgSpi[] PROGMEM = {
  */
 void xio_init_spi(void)
 {
-	return;
+	for (uint8_t i=0; i<XIO_DEV_SPI_COUNT; i++) {
+		xio_open_generic(XIO_DEV_SPI_OFFSET + i,
+						(x_open)pgm_read_word(&cfgSpi[i].x_open),
+						(x_ctrl)pgm_read_word(&cfgSpi[i].x_ctrl),
+						(x_gets)pgm_read_word(&cfgSpi[i].x_gets),
+						(x_getc)pgm_read_word(&cfgSpi[i].x_getc),
+						(x_putc)pgm_read_word(&cfgSpi[i].x_putc),
+						(fc_func)pgm_read_word(&cfgSpi[i].fc_func));
+	}
 }
 
 /*
@@ -112,19 +121,14 @@ void xio_init_spi(void)
 FILE *xio_open_spi(const uint8_t dev, const char *addr, const CONTROL_T flags)
 {
 	xioDev *d = &ds[dev];						// setup device struct pointer
-	uint8_t idx = (dev - XIO_DEV_SPI_OFFSET);
-
-	xio_open_generic(dev,
-					(x_open)pgm_read_word(&cfgSpi[idx].x_open),
-					(x_ctrl)pgm_read_word(&cfgSpi[idx].x_ctrl),
-					(x_gets)pgm_read_word(&cfgSpi[idx].x_gets),
-					(x_getc)pgm_read_word(&cfgSpi[idx].x_getc),
-					(x_putc)pgm_read_word(&cfgSpi[idx].x_putc),
-					(fc_func)pgm_read_word(&cfgSpi[idx].fc_func));
-
-	// structure and device bindings
+	uint8_t idx = dev - XIO_DEV_SPI_OFFSET;
 	d->x = &sp[idx];							// setup extended struct pointer
 	xioSpi *dx = (xioSpi *)d->x;
+
+	memset (dx, 0, sizeof(xioSpi));				// clear all values
+	xio_ctrl_generic(d, flags);					// setup flags
+
+	// structure and device bindings and setup
 	dx->usart = (struct USART_struct *)pgm_read_word(&cfgSpi[idx].usart); 
 	dx->data_port = (struct PORT_struct *)pgm_read_word(&cfgSpi[idx].comm_port);
 	dx->ssel_port = (struct PORT_struct *)pgm_read_word(&cfgSpi[idx].ssel_port);
@@ -134,8 +138,6 @@ FILE *xio_open_spi(const uint8_t dev, const char *addr, const CONTROL_T flags)
 	dx->data_port->DIRSET = (uint8_t)pgm_read_byte(&cfgSpi[idx].outbits);
 	dx->data_port->OUTCLR = (uint8_t)pgm_read_byte(&cfgSpi[idx].outclr);
 	dx->data_port->OUTSET = (uint8_t)pgm_read_byte(&cfgSpi[idx].outset);
-
-	xio_ctrl_generic(d, flags);
 	return (&d->file);							// return FILE reference
 }
 
