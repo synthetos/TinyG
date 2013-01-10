@@ -272,37 +272,37 @@ enum xioCodes {
     hex	    char    name        used by:
     ----    ----    ----------  --------------------
     0x00    NUL	    null        everything
-    0x01    SOH     ctl-A
-    0x02    STX     ctl-B
-    0x03    ETX     ctl-C
-    0x04    EOT     ctl-D
-    0x05    ENQ     ctl-E		
-    0x06    ACK     ctl-F
-    0x07    BEL     ctl-G
-    0x08    BS      ctl-H
-    0x09    HT      ctl-I
-    0x0A    LF      ctl-J
-    0x0B    VT      ctl-K
-    0x0C    FF      ctl-L
-    0x0D    CR      ctl-M
-    0x0E    SO      ctl-N
-    0x0F    SI      ctl-O
-    0x10    DLE     ctl-P
-    0x11    DC1     ctl-Q       XOFF
-    0x12    DC2     ctl-R		
-    0x13    DC3     ctl-S       XON
-    0x14    DC4     ctl-T		
-    0x15    NAK     ctl-U
-    0x16    SYN     ctl-V
-    0x17    ETB     ctl-W    
-    0x18    CAN     ctl-X       TinyG / grbl software reset
-    0x19    EM      ctl-Y
-    0x1A    SUB     ctl-Z
-    0x1B    ESC     ctl-[
-    0x1C    FS      ctl-\
-    0x1D    GS      ctl-]
-    0x1E    RS      ctl-^
-    0x1F    US      ctl-_
+    0x01    SOH     ctrl-A
+    0x02    STX     ctrl-B      Kinen SPI protocol
+    0x03    ETX     ctrl-C      Kinen SPI protocol
+    0x04    EOT     ctrl-D
+    0x05    ENQ     ctrl-E
+    0x06    ACK     ctrl-F
+    0x07    BEL     ctrl-G
+    0x08    BS      ctrl-H
+    0x09    HT      ctrl-I
+    0x0A    LF      ctrl-J
+    0x0B    VT      ctrl-K
+    0x0C    FF      ctrl-L
+    0x0D    CR      ctrl-M
+    0x0E    SO      ctrl-N
+    0x0F    SI      ctrl-O
+    0x10    DLE     ctrl-P
+    0x11    DC1     ctrl-Q      XOFF
+    0x12    DC2     ctrl-R		
+    0x13    DC3     ctrl-S      XON
+    0x14    DC4     ctrl-T		
+    0x15    NAK     ctrl-U
+    0x16    SYN     ctrl-V
+    0x17    ETB     ctrl-W    
+    0x18    CAN     ctrl-X      TinyG / grbl software reset
+    0x19    EM      ctrl-Y
+    0x1A    SUB     ctrl-Z
+    0x1B    ESC     ctrl-[
+    0x1C    FS      ctrl-\
+    0x1D    GS      ctrl-]
+    0x1E    RS      ctrl-^
+    0x1F    US      ctrl-_
 
     0x20    <space>             Gcode blocks
     0x21    !       excl point  TinyG feedhold

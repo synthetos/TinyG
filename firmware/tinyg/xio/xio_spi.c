@@ -27,7 +27,57 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
+/* The SPI slave protocol is:
+ *
+ *	- A "message" is a line of text. Examples of messages are requests from the 
+ *		master to a slave, responses to these requests, and asynchronous messages 
+ *		(from a slave) that are not tied to a request.
+ *
+ *		Messages are terminated with a newline (aka LF, line-feed). The terminating 
+ *		LF is considered part of the message and is transmitted in each direction.
+ *
+ *	- A slave is always in RX state - it must always be able to receive MOSI data.
+ *
+ *	- A slave may be in TXON or TXOFF state -
+ *
+ *	  While in TXON the slave responds to any MISO by sending the next character 
+ *	    in its currently queued message on the MISO line synchronous with receiving 
+ *		the incoming MOSI data.
+ *
+ *	  While in TXOFF the slave always returns ETX on the MISO line for all incoming 
+ *		MOSI characters.
+ *
+ *	  Receiving STX on MOSI sets the slave to TXON. If the slave has no data or 
+ *		does not have a complete message it immediately transitions to TXOFF.
+ *		(NOTE: Incomplete message behavior may be revisited). Also, once a 
+ *		slave has transmitted its las message if it reverts to TXOFF.
+ *
+ *	  Receiving ETX on MOSI sets the slave to TXOFF - regardless of whether it
+ *		has data to transmit or not.
+ */
+/* The SPI master protocol to send / receive data to / from a slave is:
+ *
+ *	- To send data to a slave the master simply sends the ASCII message terminated
+ *		with a LF. What comes back on MISO is dependent on the slave TX state, but
+ *		in most cases the slave will have been set to TXOFF and will return a series
+ *		of ETX's.
+ *
+ *	- The master initiates a read from the slave by first sending STX on MOSI. 
+ *		This puts the slave in TXON mode, assuming that it has data to send. 
+ *		The synchronous MISO response to this STX may be an ETX or STX depending 
+ *		on the previous state of the slave.
+ *
+ *	- The master then drives transfer by sending a series of STX's on MOSI (Note 1).
+ *		The slave responds with character data in MISO. The master continues to
+ *		send STX's to retrieve the entire message The master will typically stop
+ *		polling once a LF has been received or it receives an ETX. Optionally, the
+ *		master can continue to read from the slave until all messages are transferred.
+ *
+ *	- The above slave read operation can be done for one char only by using  getc(), 
+ *		or for an entire message by using gets(). Gets() is much more efficient.
+ * *
+ * Note (1): Really any character other than an ETX can be used, but STX is safest.
+ */
 #include <stdio.h>						// precursor for xio.h
 #include <stdbool.h>					// true and false
 #include <string.h>						// for memset
@@ -183,9 +233,34 @@ int xio_gets_spi(xioDev *d, char *buf, const int size)
 /*
  * xio_getc_spi() - stdio compatible character RX routine
  */
+
+#define TXREQ ENQ
+#define bitin(mask, txreq) \
+	dx->data_port->OUTCLR = SPI_SCK_bm; \
+	if ((mask & txreq) == 0) { dx->data_port->OUTCLR = SPI_MOSI_bm; } \
+	else { dx->data_port->OUTSET = SPI_MOSI_bm; } \
+	if (dx->data_port->IN & SPI_MISO_bm) miso_data |= (mask); \
+	dx->data_port->OUTSET = SPI_SCK_bm;	
+
 int xio_getc_spi(FILE *stream)
 {
-	return (0);
+	uint8_t miso_data = 0;
+	xioSpi *dx = ((xioDev *)stream->udata)->x;		// get SPI device struct pointer
+
+	do {
+		dx->ssel_port->OUTCLR = dx->ssbit;			// drive slave select lo (active)
+		bitin(0x80, TXREQ);
+		bitin(0x40, TXREQ);
+		bitin(0x20, TXREQ);
+		bitin(0x10, TXREQ);
+		bitin(0x08, TXREQ);
+		bitin(0x04, TXREQ);
+		bitin(0x02, TXREQ);
+		bitin(0x01, TXREQ); 
+		dx->ssel_port->OUTSET = dx->ssbit;			// drive slave select hi
+	} while (miso_data == NUL);
+
+	return (XIO_OK);
 }
 
 /*
@@ -194,105 +269,67 @@ int xio_getc_spi(FILE *stream)
  *	Use xio_puts_spi() for more efficient string transmission
  *	Uses Mode3, MSB first. See Atmel Xmega A 8077.doc, page 231
  */
+
+#define bitout(mask) \
+	dx->data_port->OUTCLR = SPI_SCK_bm; \
+	if ((c & mask) == 0) { dx->data_port->OUTCLR = SPI_MOSI_bm; }\
+	else { dx->data_port->OUTSET = SPI_MOSI_bm; }\
+	dx->data_port->OUTSET = SPI_SCK_bm;	
+
 int xio_putc_spi(const char c, FILE *stream)
 {
-//	xioDev *d = (xioDev *)stream->udata;			// get SPI device struct pointer
-//	xioSpi *dx = (xioSpi *)d->x;					// get SPI extended struct pointer
-	xioSpi *dx = ((xioDev *)stream->udata)->x;			// get SPI device struct pointer
-//	char incoming = 0;								// incoming data from MISO
+	xioSpi *dx = ((xioDev *)stream->udata)->x;		// get SPI device struct pointer
+	dx->ssel_port->OUTCLR = dx->ssbit;				// drive slave select lo (active)
+
+	// inline version - 10.5 uSec per byte (-Os) is > 750Kbps
+	bitout(0x80);
+	bitout(0x40);
+	bitout(0x20);
+	bitout(0x10);
+	bitout(0x08);
+	bitout(0x04);
+	bitout(0x02);
+	bitout(0x01); 
+
+	dx->ssel_port->OUTSET = dx->ssbit;				// drive slave select hi
+	return (XIO_OK);
+}
+// Looping version - about 18 uS per byte (-Os)
 
 /*
-	// transmit character
-	dx->ssel_port->OUTCLR = dx->ssbit;				// drive slave select lo (active)
-
+	char miso_data = 0;								// for incoming data from MISO
 	for (int8_t i=7; i>=0; i--) {
-		dx->data_port->OUTCLR = SPI_SCK_bm; 		// drive clock lo
+		dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
 		if (c & (1<<i))  dx->data_port->OUTSET = SPI_MOSI_bm; 	// set data bit hi 
 					else dx->data_port->OUTCLR = SPI_MOSI_bm; 	// set data bit lo
-
-		dx->data_port->OUTSET = SPI_SCK_bm; 		// drive clock hi (take data / read data)
-		if (dx->data_port->IN & SPI_MISO_bm) incoming |= (1<<i); // collect incoming data bits 
-	}
-//	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
-	dx->ssel_port->OUTSET = dx->ssbit;				// drive slave select hi
+		dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi (take data / read data)
+//		if (dx->data_port->IN & SPI_MISO_bm) miso_data |= (1<<i);// how to collect incoming data bits 
+	} 
 */
 
-	dx->ssel_port->OUTCLR = dx->ssbit;				// drive slave select lo (active)
+/* Ultimate speed test with no branches or masks - 8.25 uSec ber byte
 	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
 	dx->data_port->OUTSET = SPI_MOSI_bm;			// set data bit lo
 	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
 	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
 	dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
-	dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
+	dx->data_port->OUTSET = SPI_MOSI_bm;			// set data bit lo
+	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
 	dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
-	dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
+	dx->data_port->OUTSET = SPI_MOSI_bm;			// set data bit lo
+	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
 	dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
-	dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
+	dx->data_port->OUTSET = SPI_MOSI_bm;			// set data bit lo
+	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
 	dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-	dx->ssel_port->OUTSET = dx->ssbit;				// drive slave select hi
-
-/*
-	dx->ssel_port->OUTCLR = dx->ssbit;				// drive slave select lo (active)
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
-
-//	dx->data_port->OUT = (dx->data_port->OUT & ~SPI_MOSI_bm) | (c>>2 & SPI_MOSI_bm);
-
-	if (c & 0x80) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
-			else  dx->data_port->OUTCLR = SPI_MOSI_bm;	 	// set data bit hi 
-//	if (dx->data_port->IN & SPI_MISO_bm) incoming |= (1<<0);  // collect incoming data bit
-
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
-
-	dx->data_port->OUT &= (c>>1 | ~SPI_MOSI_bm);			// set data bit
-	if (c & 0x40) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
-			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
-	if (c & 0x20) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
-			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
-	if (c & 0x10) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
-			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
-	if (c & 0x08) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
-			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
-	if (c & 0x04) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
-			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
-	if (c & 0x02) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
-			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-
-	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
-	if (c & 0x01) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
-			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
-
-	dx->ssel_port->OUTSET = dx->ssbit;				// drive slave select hi
+	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
 */
-	return (XIO_OK);
-}
