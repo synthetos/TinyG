@@ -250,7 +250,7 @@ void xio_unit_tests()
 	FILE * fdev;
 
 	fdev = xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
-	while (1) {
+	while (true) {
 		xio_putc_spi(0x55, fdev);
 	}
 	

@@ -196,45 +196,103 @@ int xio_getc_spi(FILE *stream)
  */
 int xio_putc_spi(const char c, FILE *stream)
 {
-	xioDev *d = (xioDev *)stream->udata;			// get SPI device struct pointer
-	xioSpi *dx = (xioSpi *)d->x;					// get SPI extended struct pointer
-	char incoming = 0;								// incoming data from MISO
+//	xioDev *d = (xioDev *)stream->udata;			// get SPI device struct pointer
+//	xioSpi *dx = (xioSpi *)d->x;					// get SPI extended struct pointer
+	xioSpi *dx = ((xioDev *)stream->udata)->x;			// get SPI device struct pointer
+//	char incoming = 0;								// incoming data from MISO
 
-	// transmit character
 /*
+	// transmit character
 	dx->ssel_port->OUTCLR = dx->ssbit;				// drive slave select lo (active)
 
 	for (int8_t i=7; i>=0; i--) {
 		dx->data_port->OUTCLR = SPI_SCK_bm; 		// drive clock lo
-		if ((c & (1<<i)) == 0) {
-			dx->data_port->OUTCLR = SPI_MOSI_bm; 	// set data bit lo
-		} else {
-			dx->data_port->OUTSET = SPI_MOSI_bm; 	// set data bit hi 
-		}
+		if (c & (1<<i))  dx->data_port->OUTSET = SPI_MOSI_bm; 	// set data bit hi 
+					else dx->data_port->OUTCLR = SPI_MOSI_bm; 	// set data bit lo
+
 		dx->data_port->OUTSET = SPI_SCK_bm; 		// drive clock hi (take data / read data)
-
-		if (dx->data_port->IN & SPI_MISO_bm) {		// collect incoming data bits
-			incoming |= (1<<i); 
-		}
+		if (dx->data_port->IN & SPI_MISO_bm) incoming |= (1<<i); // collect incoming data bits 
 	}
+//	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
+	dx->ssel_port->OUTSET = dx->ssbit;				// drive slave select hi
 */
-	dx->data_port->OUTCLR = SPI_SCK_bm; 				// drive clock lo
 
-	if (c & 1<<0) 
-		dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
-	else dx->data_port->OUTCLR = SPI_MOSI_bm;	 	// set data bit hi 
-	if (dx->data_port->IN & SPI_MISO_bm)			// collect incoming data bit
-		incoming |= (1<<0); 
+	dx->ssel_port->OUTCLR = dx->ssbit;				// drive slave select lo (active)
+	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
+	dx->data_port->OUTSET = SPI_MOSI_bm;			// set data bit lo
+	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
+	dx->data_port->OUTCLR = SPI_MOSI_bm;
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	dx->data_port->OUTCLR = SPI_MOSI_bm;
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	dx->data_port->OUTCLR = SPI_MOSI_bm;
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	dx->data_port->OUTCLR = SPI_MOSI_bm;
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
+	dx->ssel_port->OUTSET = dx->ssbit;				// drive slave select hi
 
+/*
+	dx->ssel_port->OUTCLR = dx->ssbit;				// drive slave select lo (active)
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
 
+//	dx->data_port->OUT = (dx->data_port->OUT & ~SPI_MOSI_bm) | (c>>2 & SPI_MOSI_bm);
 
+	if (c & 0x80) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
+			else  dx->data_port->OUTCLR = SPI_MOSI_bm;	 	// set data bit hi 
+//	if (dx->data_port->IN & SPI_MISO_bm) incoming |= (1<<0);  // collect incoming data bit
 
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
 
+	dx->data_port->OUT &= (c>>1 | ~SPI_MOSI_bm);			// set data bit
+	if (c & 0x40) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
+			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
 
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	if (c & 0x20) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
+			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
 
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	if (c & 0x10) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
+			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
 
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	if (c & 0x08) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
+			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
 
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	if (c & 0x04) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
+			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
+
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	if (c & 0x02) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
+			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
+
+	dx->data_port->OUTCLR = SPI_SCK_bm; 					// drive clock lo
+	if (c & 0x01) dx->data_port->OUTSET = SPI_MOSI_bm;		// set data bit lo
+			else  dx->data_port->OUTCLR = SPI_MOSI_bm;
+	dx->data_port->OUTSET = SPI_SCK_bm; 					// drive clock hi
 
 	dx->ssel_port->OUTSET = dx->ssbit;				// drive slave select hi
+*/
 	return (XIO_OK);
 }
