@@ -27,57 +27,47 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* ---- SPI slave protocol ----
+/* ---- SPI Protocol ----
+ *
+ * The SPI master/slave protocol is designed to be as simple as possible. 
+ * In short, the master transmits whenever it wants to and the slave returns
+ * the next character in its output buffer whenever there's an SPI transfer.
+ * No flow control is needed as the master initiates and drives all transfers.
+ *
+ * More details:
  *
  *	- A "message" is a line of text. Examples of messages are requests from the 
  *		master to a slave, responses to these requests, and asynchronous messages 
  *		(from a slave) that are not tied to a request.
  *
- *		Messages are terminated with a newline (aka LF, line-feed). The terminating 
- *		LF is considered part of the message and is transmitted in each direction.
+ *		Messages are terminated with a newline (aka NL, LF, line-feed). The 
+ *		terminating NL is considered part of the message and should be transmitted.
  *
- *	- A slave is always in RX state - it must always be able to receive MOSI data.
+ *		If multiple NLs are transmitted each trailing NL is interpreted as a blank
+ *		message. This is generally not good practice - so watch it.
  *
- *	- A slave may be in TXON or TXOFF state -
+ *		Carriage return (CR) is not recognized as a newline. A CR in a message is
+ *		treated as any other non-special ASCII character.
  *
- *	  While in TXON the slave responds to any MISO by sending the next character 
- *	    in its currently queued message on the MISO line synchronous with receiving 
- *		the incoming MOSI data.
+ *		NULs (0x00) are not transmitted in either direction (e.g. string terminations).
+ *		Depending on the master or slave internals, it may convert NULs to NLs. 
  *
- *	  While in TXOFF the slave will return either ETX or STX on the MISO line for 
- *		any incoming MOSI characters. STX indicates that it has a message to send,
- *		ETX indicates that it does not.
+ *	- A slave is always in RX state - it must always be able to receive message data (MOSI).
  *
- *	  Receiving STX on MOSI sets the slave to TXON. If the slave has no data or 
- *		does not have a complete message it immediately transitions to TXOFF.
- *		(NOTE: Incomplete message behavior may be revisited). Also, once a 
- *		slave has transmitted its las message if it reverts to TXOFF.
+ *	- All SPI transmissions are initiated by the master and are 8 bits long. As the 
+ *		slave is receiving the byte on MOSI it should be returning the next character 
+ *		in its output buffer on MISO. Note that there is no inherent correlation between
+ *		the char (or message) being received from the master and transmitted from the
+ *		slave. It's just IO.
  *
- *	  Receiving ETX on MOSI sets the slave to TXOFF - regardless of whether it
- *		has data to transmit or not.
- */
-/* ---- SPI master protocol to send / receive data to / from a slave ----
+ *		If the slave has no data to send it should return ETX (0x03) on MISO. This is 
+ *		useful to distinghuish between an "empty" slave and an unpopulated or non-
+ *		responsive SPI slave - which would return NULs or possibly 0xFF.
  *
- *	- To send data to a slave the master simply sends the ASCII message terminated
- *		with a LF. What comes back on MISO is dependent on the slave TX state, but
- *		in most cases the slave will have been set to TXOFF and will return a series
- *		of ETX's.
- *
- *	- The master initiates a read from the slave by first sending STX on MOSI. 
- *		This puts the slave in TXON mode, assuming that it has data to send. 
- *		The synchronous MISO response to this STX may be an ETX or STX depending 
- *		on the previous state of the slave.
- *
- *	- The master then drives transfer by sending a series of STX's on MOSI (Note 1).
- *		The slave responds with character data in MISO. The master continues to
- *		send STX's to retrieve the entire message The master will typically stop
- *		polling once a LF has been received or it receives an ETX. Optionally, the
- *		master can continue to read from the slave until all messages are transferred.
- *
- *	- The above slave read operation can be done for one char only by using  getc(), 
- *		or for an entire message by using gets(). Gets() is much more efficient.
- * *
- * Note (1): Really any character other than an ETX can be used, but STX is safest.
+ *	- The master may poll for more message data from the slave by sending STX chars to
+ *		the slave. The slave discards all STXs and simply returns output data on these
+ *		transfers. Presumably the master would stop polling once it receives an ETX 
+ *		from the slave.
  */
 /* ---- Low level SPI stuff ----
  *
@@ -96,8 +86,7 @@
 
 // statics
 static int _gets_helper(xioDev *d, xioSpi *dx);
-static void _xfer_char_no_MISO(xioSpi *dx, const char c);
-static char _xfer_char_with_MISO(xioSpi *dx, char c);
+static char _xfer_char(xioSpi *dx, char c_out);
 
 /******************************************************************************
  * SPI CONFIGURATION RECORDS
@@ -189,10 +178,8 @@ FILE *xio_open_spi(const uint8_t dev, const char *addr, const CONTROL_T flags)
 	xio_ctrl_generic(d, flags);					// setup flags
 
 	// setup internal RX/TX control buffers
-//	dx->rx_buf_head = 1;		// can't use location 0 in circular buffer
-//	dx->rx_buf_tail = 1;
-//	dx->tx_buf_head = 1;
-//	dx->tx_buf_tail = 1;
+	dx->rx_buf_head = 1;		// can't use location 0 in circular buffer
+	dx->rx_buf_tail = 1;
 
 	// structure and device bindings and setup
 	dx->usart = (USART_t *)pgm_read_word(&cfgSpi[idx].usart); 
@@ -265,76 +252,87 @@ static int _gets_helper(xioDev *d, xioSpi *dx)
 /*
  * xio_getc_spi() - stdio compatible character RX routine
  *
- *	Raw IO - unbuffered
+ *	This fucntion attempts to poll a character from the slave then 
+ *	returns the latest character in the RX buffer.
+ *
+ *	It's always non-blocking or it would create a deadlock.
  */
 int xio_getc_spi(FILE *stream)
 {
-	xioSpi *dx = ((xioDev *)stream->udata)->x;	// get SPI device struct pointer
-	char c = _xfer_char_with_MISO(dx, STX);		// enable slave for TX
-	if (c == ETX) {
-		c = _xfer_char_with_MISO(dx, STX);		// get a char or another ETX
-		if (c == ETX) return (_FDEV_ERR);		// indicates no char returned
+	xioDev *d = (xioDev *)stream->udata;		// get device struct pointer
+	xioSpi *dx = (xioSpi *)d->x;				// get SPI device struct pointer
+	char c_in;
+
+	xio_putc_spi(STX, stream);					// poll a char into the RX buffer
+
+	while (dx->rx_buf_head == dx->rx_buf_tail) {// RX buffer empty
+		d->signal = XIO_SIG_EAGAIN;
+		return(_FDEV_ERR);
 	}
-	return (c);
+	if (--(dx->rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
+		dx->rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error (OBOE)
+	}
+	c_in = dx->rx_buf[dx->rx_buf_tail];			// get char from RX buf
+	return(c_in);
 }
 
 /*
  * xio_putc_spi() - stdio compatible character TX routine
+ * _xfer_char() - helper written as inline bit-banger
  *
- *	Raw IO - unbuffered
+ *	This sends a char to the slave and receives a byte on MISO in return.
+ *	This routine clocks out to about 600 Kbps bi-directional transfer rates
  */
-int xio_putc_spi(const char c, FILE *stream)
+int xio_putc_spi(const char c_out, FILE *stream)
 {
-	xioSpi *dx = ((xioDev *)stream->udata)->x;		// get SPI device struct pointer
-	_xfer_char_no_MISO(dx, c);
+	xioSpi *dx = ((xioDev *)stream->udata)->x;	// cache SPI device struct pointer
+	char c_in = _xfer_char(dx, c_out);
+
+	// trap special characters - do not insert character into RX queue
+	if (c_in == ETX) {	 						// no data received
+		((xioDev *)stream->udata)->signal = XIO_SIG_EOF;
+		return (XIO_OK);
+	}
+//	if (c_in == NUL) {	 						// slave is not present or unresponsive
+//		return (XIO_OK);
+//	}
+
+	// write c_in into the RX buffer (or not)
+	if ((--(dx->rx_buf_head)) == 0) { 			// adv buffer head with wrap
+		dx->rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one error
+	}
+	if (dx->rx_buf_head != dx->rx_buf_tail) {	// buffer is not full
+		dx->rx_buf[dx->rx_buf_head] = c_in;		// write char to buffer
+	} else { 									// buffer-full - toss the incoming character
+		if ((++(dx->rx_buf_head)) > RX_BUFFER_SIZE-1) {	// reset the head
+			dx->rx_buf_head = 1;
+		}
+		((xioDev *)stream->udata)->signal = XIO_SIG_OVERRUN; // signal a buffer overflow
+	}
 	return (XIO_OK);
 }
 
-/*
- * helpers
- */
-
-#define xfer_bit_no_MISO(mask) \
+#define xfer_bit(mask, c_out, c_in) \
 	dx->data_port->OUTCLR = SPI_SCK_bm; \
-	if ((c & mask) == 0) { dx->data_port->OUTCLR = SPI_MOSI_bm; }\
-	else { dx->data_port->OUTSET = SPI_MOSI_bm; }\
-	dx->data_port->OUTSET = SPI_SCK_bm;	
-
-#define xfer_STX_with_MISO(mask) \
-	dx->data_port->OUTCLR = SPI_SCK_bm; \
-	if ((STX & mask) == 0) { dx->data_port->OUTCLR = SPI_MOSI_bm; } \
+	if ((c_out & mask) == 0) { dx->data_port->OUTCLR = SPI_MOSI_bm; } \
 	else { dx->data_port->OUTSET = SPI_MOSI_bm; } \
-	if (dx->data_port->IN & SPI_MISO_bm) c |= (mask); \
+	if (dx->data_port->IN & SPI_MISO_bm) c_in |= (mask); \
 	dx->data_port->OUTSET = SPI_SCK_bm;	
 
-static void _xfer_char_no_MISO(xioSpi *dx, const char c)
+static char _xfer_char(xioSpi *dx, char c_out)
 {
-	dx->ssel_port->OUTCLR = dx->ssbit;				// drive slave select lo (active)
-	xfer_bit_no_MISO(0x80);
-	xfer_bit_no_MISO(0x40);
-	xfer_bit_no_MISO(0x20);
-	xfer_bit_no_MISO(0x10);
-	xfer_bit_no_MISO(0x08);
-	xfer_bit_no_MISO(0x04);
-	xfer_bit_no_MISO(0x02);
-	xfer_bit_no_MISO(0x01); 
-	dx->ssel_port->OUTSET = dx->ssbit;
-}
-
-static char _xfer_char_with_MISO(xioSpi *dx, char c)
-{
-	c = 0;										// c is used to collect returning MISO data
+	char c_in = 0;
 	dx->ssel_port->OUTCLR = dx->ssbit;			// drive slave select lo (active)
-	xfer_STX_with_MISO(0x80);
-	xfer_STX_with_MISO(0x40);
-	xfer_STX_with_MISO(0x20);
-	xfer_STX_with_MISO(0x10);
-	xfer_STX_with_MISO(0x08);
-	xfer_STX_with_MISO(0x04);
-	xfer_STX_with_MISO(0x02);
-	xfer_STX_with_MISO(0x01); 
+	xfer_bit(0x80, c_out, c_in);
+	xfer_bit(0x40, c_out, c_in);
+	xfer_bit(0x20, c_out, c_in);
+	xfer_bit(0x10, c_out, c_in);
+	xfer_bit(0x08, c_out, c_in);
+	xfer_bit(0x04, c_out, c_in);
+	xfer_bit(0x02, c_out, c_in);
+	xfer_bit(0x01, c_out, c_in);
 	dx->ssel_port->OUTSET = dx->ssbit;
-	return (c);
+	return (c_in);
 }
 
 
@@ -377,3 +375,56 @@ static char _xfer_char_with_MISO(xioSpi *dx, char c)
 	dx->data_port->OUTCLR = SPI_MOSI_bm;
 	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
 */
+
+/* ---- SPI slave protocol ----
+ *
+ *	- A "message" is a line of text. Examples of messages are requests from the 
+ *		master to a slave, responses to these requests, and asynchronous messages 
+ *		(from a slave) that are not tied to a request.
+ *
+ *		Messages are terminated with a newline (aka LF, line-feed). The terminating 
+ *		LF is considered part of the message and is transmitted in each direction.
+ *
+ *	- A slave is always in RX state - it must always be able to receive MOSI data.
+ *
+ *	- A slave may be in TXON or TXOFF state -
+ *
+ *	  While in TXON the slave responds to any MISO by sending the next character 
+ *	    in its currently queued message on the MISO line synchronous with receiving 
+ *		the incoming MOSI data.
+ *
+ *	  While in TXOFF the slave will return either ETX or STX on the MISO line for 
+ *		any incoming MOSI characters. STX indicates that it has a message to send,
+ *		ETX indicates that it does not.
+ *
+ *	  Receiving STX on MOSI sets the slave to TXON. If the slave has no data or 
+ *		does not have a complete message it immediately transitions to TXOFF.
+ *		(NOTE: Incomplete message behavior may be revisited). Also, once a 
+ *		slave has transmitted its las message if it reverts to TXOFF.
+ *
+ *	  Receiving ETX on MOSI sets the slave to TXOFF - regardless of whether it
+ *		has data to transmit or not.
+ */
+/* ---- SPI master protocol to send / receive data to / from a slave ----
+ *
+ *	- To send data to a slave the master simply sends the ASCII message terminated
+ *		with a LF. What comes back on MISO is dependent on the slave TX state, but
+ *		in most cases the slave will have been set to TXOFF and will return a series
+ *		of ETX's.
+ *
+ *	- The master initiates a read from the slave by first sending STX on MOSI. 
+ *		This puts the slave in TXON mode, assuming that it has data to send. 
+ *		The synchronous MISO response to this STX may be an ETX or STX depending 
+ *		on the previous state of the slave.
+ *
+ *	- The master then drives transfer by sending a series of STX's on MOSI (Note 1).
+ *		The slave responds with character data in MISO. The master continues to
+ *		send STX's to retrieve the entire message The master will typically stop
+ *		polling once a LF has been received or it receives an ETX. Optionally, the
+ *		master can continue to read from the slave until all messages are transferred.
+ *
+ *	- The above slave read operation can be done for one char only by using  getc(), 
+ *		or for an entire message by using gets(). Gets() is much more efficient.
+ * *
+ * Note (1): Really any character other than an ETX can be used, but STX is safest.
+ */

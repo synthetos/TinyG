@@ -106,20 +106,11 @@ typedef struct xioSPI {
 	PORT_t *data_port;				// port used for data transmission (MOSI, MOSI, SCK)
 	PORT_t *ssel_port;				// port used for slave select
 	uint8_t ssbit;					// slave select bit used for this device
-//	uint8_t slave_tx_state;			// Set to STX or ETX for TXON or TXOFF
 
-//	BUFFER_T rx_buf_tail;			// RX buffer read index
-//	BUFFER_T rx_buf_head;			// RX buffer write index (written by ISR)
-//	BUFFER_T rx_buf_count;			// RX buffer counter for flow control
+	volatile BUFFER_T rx_buf_tail;	// RX buffer read index
+	volatile BUFFER_T rx_buf_head;	// RX buffer write index (written by ISR)
 
-//	BUFFER_T tx_buf_tail;			// TX buffer read index  (written by ISR)
-//	BUFFER_T tx_buf_head;			// TX buffer write index
-//	BUFFER_T tx_buf_count;
-
-//	char rx_buf[SPI_RX_BUFFER_SIZE];// (written by ISR)
-//	char tx_buf[SPI_TX_BUFFER_SIZE];
-//	volatile char rx_buf[SPI_RX_BUFFER_SIZE];	// (written by ISR)
-//	volatile char tx_buf[SPI_TX_BUFFER_SIZE];
+	volatile char rx_buf[SPI_RX_BUFFER_SIZE];	// (may be written by an ISR)
 } xioSpi;
 
 /******************************************************************************

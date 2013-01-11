@@ -205,6 +205,7 @@ enum xioSignals {
 	XIO_SIG_EAGAIN,			// would block
 	XIO_SIG_EOL,			// end-of-line encountered (string has data)
 	XIO_SIG_EOF,			// end-of-file encountered (string has no data)
+	XIO_SIG_OVERRUN,		// buffer overrun
 	XIO_SIG_RESET,			// cancel operation immediately
 	XIO_SIG_FEEDHOLD,		// pause operation
 	XIO_SIG_CYCLE_START,	// start or resume operation
