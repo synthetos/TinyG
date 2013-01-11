@@ -267,7 +267,8 @@ static int _gets_helper(xioDev *d, xioUsart *dx)
 		dx->rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one (OBOE)
 	}
 	dx->rx_buf_count--;
-	d->fc_func(d);								// run the flow control function (USB only)
+	d->fc_func(d);								// run the flow control callback
+//	c = dx->rx_buf[dx->rx_buf_tail];			// get char from RX Q
 	c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
 	if (d->flag_echo) d->x_putc(c, stdout);		// conditional echo regardless of character
 

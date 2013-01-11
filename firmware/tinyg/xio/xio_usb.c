@@ -162,7 +162,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		if ((USB.flag_xoff) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
 			xio_xoff_usart(&USBu);
 		}
-	} else { // buffer-full - toss the incoming character
+	} else { 									// buffer-full - toss the incoming character
 		if ((++USBu.rx_buf_head) > RX_BUFFER_SIZE-1) {	// reset the head
 			USBu.rx_buf_count = RX_BUFFER_SIZE-1;		// reset count for good measure
 			USBu.rx_buf_head = 1;
