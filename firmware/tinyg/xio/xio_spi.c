@@ -27,7 +27,7 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* The SPI slave protocol is:
+/* ---- SPI slave protocol ----
  *
  *	- A "message" is a line of text. Examples of messages are requests from the 
  *		master to a slave, responses to these requests, and asynchronous messages 
@@ -44,8 +44,9 @@
  *	    in its currently queued message on the MISO line synchronous with receiving 
  *		the incoming MOSI data.
  *
- *	  While in TXOFF the slave always returns ETX on the MISO line for all incoming 
- *		MOSI characters.
+ *	  While in TXOFF the slave will return either ETX or STX on the MISO line for 
+ *		any incoming MOSI characters. STX indicates that it has a message to send,
+ *		ETX indicates that it does not.
  *
  *	  Receiving STX on MOSI sets the slave to TXON. If the slave has no data or 
  *		does not have a complete message it immediately transitions to TXOFF.
@@ -55,7 +56,7 @@
  *	  Receiving ETX on MOSI sets the slave to TXOFF - regardless of whether it
  *		has data to transmit or not.
  */
-/* The SPI master protocol to send / receive data to / from a slave is:
+/* ---- SPI master protocol to send / receive data to / from a slave ----
  *
  *	- To send data to a slave the master simply sends the ASCII message terminated
  *		with a LF. What comes back on MISO is dependent on the slave TX state, but
@@ -78,6 +79,10 @@
  * *
  * Note (1): Really any character other than an ETX can be used, but STX is safest.
  */
+/* ---- Low level SPI stuff ----
+ *
+ *	Uses Mode3, MSB first. See Atmel Xmega A 8077.doc, page 231
+ */
 #include <stdio.h>						// precursor for xio.h
 #include <stdbool.h>					// true and false
 #include <string.h>						// for memset
@@ -88,6 +93,9 @@
 #include "xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
 #include "../tinyg.h"					// needed for AXES definition
+
+static void _xfer_char_no_MISO(xioSpi *dx, const char c);
+static char _xfer_char_with_MISO(xioSpi *dx, char c);
 
 /******************************************************************************
  * SPI CONFIGURATION RECORDS
@@ -234,66 +242,76 @@ int xio_gets_spi(xioDev *d, char *buf, const int size)
  * xio_getc_spi() - stdio compatible character RX routine
  */
 
-#define TXREQ ENQ
-#define bitin(mask, txreq) \
-	dx->data_port->OUTCLR = SPI_SCK_bm; \
-	if ((mask & txreq) == 0) { dx->data_port->OUTCLR = SPI_MOSI_bm; } \
-	else { dx->data_port->OUTSET = SPI_MOSI_bm; } \
-	if (dx->data_port->IN & SPI_MISO_bm) miso_data |= (mask); \
-	dx->data_port->OUTSET = SPI_SCK_bm;	
-
 int xio_getc_spi(FILE *stream)
 {
-	uint8_t miso_data = 0;
-	xioSpi *dx = ((xioDev *)stream->udata)->x;		// get SPI device struct pointer
-
-	do {
-		dx->ssel_port->OUTCLR = dx->ssbit;			// drive slave select lo (active)
-		bitin(0x80, TXREQ);
-		bitin(0x40, TXREQ);
-		bitin(0x20, TXREQ);
-		bitin(0x10, TXREQ);
-		bitin(0x08, TXREQ);
-		bitin(0x04, TXREQ);
-		bitin(0x02, TXREQ);
-		bitin(0x01, TXREQ); 
-		dx->ssel_port->OUTSET = dx->ssbit;			// drive slave select hi
-	} while (miso_data == NUL);
-
-	return (XIO_OK);
+	xioSpi *dx = ((xioDev *)stream->udata)->x;	// get SPI device struct pointer
+	char c = _xfer_char_with_MISO(dx, STX);		// enable slave for TX
+	if (c == ETX) {
+		c = _xfer_char_with_MISO(dx, STX);		// get a char or another ETX
+		if (c == ETX) return (_FDEV_ERR);		// indicates no char returned
+	}
+	return (c);
 }
 
 /*
  * xio_putc_spi() - stdio compatible character TX routine
- *
- *	Use xio_puts_spi() for more efficient string transmission
- *	Uses Mode3, MSB first. See Atmel Xmega A 8077.doc, page 231
  */
 
-#define bitout(mask) \
+int xio_putc_spi(const char c, FILE *stream)
+{
+	xioSpi *dx = ((xioDev *)stream->udata)->x;		// get SPI device struct pointer
+	_xfer_char_no_MISO(dx, c);
+	return (XIO_OK);
+}
+
+/*
+ * helpers
+ */
+
+#define xfer_bit_no_MISO(mask) \
 	dx->data_port->OUTCLR = SPI_SCK_bm; \
 	if ((c & mask) == 0) { dx->data_port->OUTCLR = SPI_MOSI_bm; }\
 	else { dx->data_port->OUTSET = SPI_MOSI_bm; }\
 	dx->data_port->OUTSET = SPI_SCK_bm;	
 
-int xio_putc_spi(const char c, FILE *stream)
+#define xfer_STX_with_MISO(mask) \
+	dx->data_port->OUTCLR = SPI_SCK_bm; \
+	if ((STX & mask) == 0) { dx->data_port->OUTCLR = SPI_MOSI_bm; } \
+	else { dx->data_port->OUTSET = SPI_MOSI_bm; } \
+	if (dx->data_port->IN & SPI_MISO_bm) c |= (mask); \
+	dx->data_port->OUTSET = SPI_SCK_bm;	
+
+static void _xfer_char_no_MISO(xioSpi *dx, const char c)
 {
-	xioSpi *dx = ((xioDev *)stream->udata)->x;		// get SPI device struct pointer
 	dx->ssel_port->OUTCLR = dx->ssbit;				// drive slave select lo (active)
-
-	// inline version - 10.5 uSec per byte (-Os) is > 750Kbps
-	bitout(0x80);
-	bitout(0x40);
-	bitout(0x20);
-	bitout(0x10);
-	bitout(0x08);
-	bitout(0x04);
-	bitout(0x02);
-	bitout(0x01); 
-
-	dx->ssel_port->OUTSET = dx->ssbit;				// drive slave select hi
-	return (XIO_OK);
+	xfer_bit_no_MISO(0x80);
+	xfer_bit_no_MISO(0x40);
+	xfer_bit_no_MISO(0x20);
+	xfer_bit_no_MISO(0x10);
+	xfer_bit_no_MISO(0x08);
+	xfer_bit_no_MISO(0x04);
+	xfer_bit_no_MISO(0x02);
+	xfer_bit_no_MISO(0x01); 
+	dx->ssel_port->OUTSET = dx->ssbit;
 }
+
+static char _xfer_char_with_MISO(xioSpi *dx, char c)
+{
+	c = 0;										// c is used to collect returning MISO data
+	dx->ssel_port->OUTCLR = dx->ssbit;			// drive slave select lo (active)
+	xfer_STX_with_MISO(0x80);
+	xfer_STX_with_MISO(0x40);
+	xfer_STX_with_MISO(0x20);
+	xfer_STX_with_MISO(0x10);
+	xfer_STX_with_MISO(0x08);
+	xfer_STX_with_MISO(0x04);
+	xfer_STX_with_MISO(0x02);
+	xfer_STX_with_MISO(0x01); 
+	dx->ssel_port->OUTSET = dx->ssbit;
+	return (c);
+}
+
+
 // Looping version - about 18 uS per byte (-Os)
 
 /*

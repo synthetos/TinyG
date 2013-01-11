@@ -215,8 +215,9 @@ enum xioSignals {
 /* Some useful ASCII definitions */
 
 #define NUL (char)0x00		//  ASCII NUL char (0) (not "NULL" which is a pointer)
+#define STX (char)0x02		// ^b - STX
 #define ETX (char)0x03		// ^c - ETX
-#define ENQ (char)0x05		// ^e - ENQuire status report
+#define ENQ (char)0x05		// ^e - ENQuire
 #define BEL (char)0x07		// ^g - BEL
 #define BS  (char)0x08		// ^h - backspace 
 #define TAB (char)0x09		// ^i - character
