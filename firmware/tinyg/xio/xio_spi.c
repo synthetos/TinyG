@@ -94,6 +94,8 @@
 #include "../xmega/xmega_interrupts.h"
 #include "../tinyg.h"					// needed for AXES definition
 
+// statics
+static int _gets_helper(xioDev *d, xioSpi *dx);
 static void _xfer_char_no_MISO(xioSpi *dx, const char c);
 static char _xfer_char_with_MISO(xioSpi *dx, char c);
 
@@ -186,6 +188,12 @@ FILE *xio_open_spi(const uint8_t dev, const char *addr, const CONTROL_T flags)
 	memset (dx, 0, sizeof(xioSpi));				// clear all values
 	xio_ctrl_generic(d, flags);					// setup flags
 
+	// setup internal RX/TX control buffers
+//	dx->rx_buf_head = 1;		// can't use location 0 in circular buffer
+//	dx->rx_buf_tail = 1;
+//	dx->tx_buf_head = 1;
+//	dx->tx_buf_tail = 1;
+
 	// structure and device bindings and setup
 	dx->usart = (USART_t *)pgm_read_word(&cfgSpi[idx].usart); 
 	dx->data_port = (PORT_t *)pgm_read_word(&cfgSpi[idx].comm_port);
@@ -201,47 +209,64 @@ FILE *xio_open_spi(const uint8_t dev, const char *addr, const CONTROL_T flags)
 
 /* 
  *	xio_gets_spi() - read a complete line from an SPI device
+ * _gets_helper() 	 - non-blocking character getter for gets
  *
  *	Retains line context across calls - so it can be called multiple times.
  *	Reads as many characters as it can until any of the following is true:
  *
- *	  - RX buffer is empty on entry (return XIO_EAGAIN)
- *	  - no more chars to read from RX buffer (return XIO_EAGAIN)
+ *	  - SPI read returns newline indicating a complete line (returns XIO_OK)
+ *	  - SPI read returns ETX indicating there is no data to xfer (return XIO_EAGAIN)
  *	  - read would cause output buffer overflow (return XIO_BUFFER_FULL)
- *	  - read returns complete line (returns XIO_OK)
  *
  *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
+ *	Note: CRs are not recognized as NL chars - this function assumes slaves never send CRs. 
  */
 int xio_gets_spi(xioDev *d, char *buf, const int size)
 {
-//	xioDevice *d = &ds[dev];					// init device struct pointer
+	xioSpi *dx = (xioSpi *)d->x;				// get SPI device struct pointer
 
-/*
-	if (IN_LINE(d->flags) == 0) {				// first time thru initializations
+	if (d->flag_in_line == false) {				// first time thru initializations
+		d->flag_in_line = true;					// yes, we are busy getting a line
 		d->len = 0;								// zero buffer
-		d->status = 0;
-		d->size = size;
 		d->buf = buf;
+		d->size = size;
 		d->signal = XIO_SIG_OK;					// reset signal register
-		d->flags |= XIO_FLAG_IN_LINE_bm;		// yes, we are busy getting a line
 	}
 	while (true) {
-		switch (d->status = _xio_readc_usart(dev, d->buf)) {
-			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN);		// empty condition
-			case (XIO_BUFFER_FULL_NON_FATAL): return (d->status);// overrun err
-			case (XIO_EOL): return (XIO_OK);					// got complete line
-			case (XIO_EAGAIN): break;							// loop
+		switch (_gets_helper(d,dx)) {
+//			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN); // empty condition
+			case (XIO_BUFFER_FULL_NON_FATAL): return (XIO_BUFFER_FULL_NON_FATAL);// overrun err
+			case (XIO_EOL): return (XIO_OK);			  // got complete line
+			case (XIO_EAGAIN): break;					  // loop for next character
 		}
-		// +++ put a size check here or buffers can overrun.
 	}
-*/
 	return (XIO_OK);
+}
+
+static int _gets_helper(xioDev *d, xioSpi *dx)
+{
+	char c = NUL;
+
+	if (d->len >= d->size) {					// handle buffer overruns
+		d->buf[d->size] = NUL;					// terminate line (d->size is zero based)
+		d->signal = XIO_SIG_EOL;
+		return (XIO_BUFFER_FULL_NON_FATAL);
+	}
+	if ((c == CR) || (c == LF)) {				// handle CR, LF termination
+		d->buf[(d->len)++] = NUL;
+		d->signal = XIO_SIG_EOL;
+		d->flag_in_line = false;				// clear in-line state (reset)
+		return (XIO_EOL);						// return for end-of-line
+	}
+	d->buf[(d->len)++] = c;						// write character to buffer
+	return (XIO_EAGAIN);
 }
 
 /*
  * xio_getc_spi() - stdio compatible character RX routine
+ *
+ *	Raw IO - unbuffered
  */
-
 int xio_getc_spi(FILE *stream)
 {
 	xioSpi *dx = ((xioDev *)stream->udata)->x;	// get SPI device struct pointer
@@ -255,8 +280,9 @@ int xio_getc_spi(FILE *stream)
 
 /*
  * xio_putc_spi() - stdio compatible character TX routine
+ *
+ *	Raw IO - unbuffered
  */
-
 int xio_putc_spi(const char c, FILE *stream)
 {
 	xioSpi *dx = ((xioDev *)stream->udata)->x;		// get SPI device struct pointer

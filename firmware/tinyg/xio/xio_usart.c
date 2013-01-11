@@ -121,6 +121,7 @@ void xio_init_usart(void)
 
 /*
  *	xio_open_usart() - general purpose USART open (shared)
+ *	xio_set_baud_usart() - baud rate setting routine
  */
 FILE *xio_open_usart(const uint8_t dev, const char *addr, const CONTROL_T flags)
 {
@@ -161,23 +162,17 @@ void xio_set_baud_usart(xioUsart *dx, const uint8_t baud)
 }
 
 /*
- * xio_fc_usart() - Usart device flow control function
+ * USART flow control functions and helpers
  *
- * 	Called as a callback from the usart handlers
- */
-
-void xio_fc_usart(xioDev *d)
-{
-	xioUsart *dx = d->x;
-	if (xio_get_rx_bufcount_usart(dx) < XOFF_RX_LO_WATER_MARK) {
-		xio_xon_usart(dx);
-	}
-}
-
-/* 
  * xio_xoff_usart() - send XOFF flow control for USART devices
  * xio_xon_usart()  - send XON flow control for USART devices
+ * xio_fc_usart() - Usart device flow control callback
+ * xio_get_tx_bufcount_usart() - returns number of chars in TX buffer
+ * xio_get_rx_bufcount_usart() - returns number of chars in RX buffer
+ *
+ *	Reminder: tx/rx queues fill from top to bottom, w/0 being the wrap location
  */
+
 void xio_xoff_usart(xioUsart *dx)
 {
 	if (dx->fc_state == FC_IN_XON) {
@@ -196,12 +191,14 @@ void xio_xon_usart(xioUsart *dx)
 	}
 }
 
-/*
- * xio_get_tx_bufcount_usart() - returns number of chars in TX buffer
- * xio_get_rx_bufcount_usart() - returns number of chars in RX buffer
- *
- *	Remember: The queues fill from top to bottom, w/0 being the wrap location
- */
+void xio_fc_usart(xioDev *d)		// callback from the usart handlers
+{
+	xioUsart *dx = d->x;
+	if (xio_get_rx_bufcount_usart(dx) < XOFF_RX_LO_WATER_MARK) {
+		xio_xon_usart(dx);
+	}
+}
+
 BUFFER_T xio_get_tx_bufcount_usart(const xioUsart *dx)
 {
 	if (dx->tx_buf_head <= dx->tx_buf_tail) {
