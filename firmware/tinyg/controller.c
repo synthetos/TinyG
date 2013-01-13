@@ -208,29 +208,29 @@ static uint8_t _dispatch()
 //		case '#': { sig_cycle_start(); break;}	// debug char for cycle start tests
 
 		case NUL: { 							// blank line (just a CR)
-			if (cfg.comm_mode != TG_JSON_MODE) {
+			if (cfg.comm_mode != JSON_MODE) {
 				_text_response(TG_OK, tg.in_buf);
 			}
 			break;
 		}
 		case 'H': { 							// intercept help screens
-			cfg.comm_mode = TG_TEXT_MODE;
+			cfg.comm_mode = TEXT_MODE;
 			print_general_help();
 			_text_response(TG_OK, tg.in_buf);
 			break;
 		}
 		case '$': case '?':{ 					// text-mode configs
-			cfg.comm_mode = TG_TEXT_MODE;
+			cfg.comm_mode = TEXT_MODE;
 			_text_response(cfg_text_parser(tg.in_buf), tg.in_buf);
 			break;
 		}
 		case '{': { 							// JSON input
-			cfg.comm_mode = TG_JSON_MODE;
+			cfg.comm_mode = JSON_MODE;
 			js_json_parser(tg.in_buf);
 			break;
 		}
 		default: {								// anything else must be Gcode
-			if (cfg.comm_mode != TG_JSON_MODE) {
+			if (cfg.comm_mode != JSON_MODE) {
 				_text_response(gc_gcode_parser(tg.in_buf), tg.in_buf);
 			} else {
 				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN);	// use output buffer as a temp

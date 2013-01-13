@@ -64,7 +64,7 @@
  */
 uint8_t tg_test(cmdObj *cmd)
 {
-	cfg.comm_mode = TG_TEXT_MODE;	// all tests run in text mode only
+	cfg.comm_mode = TEXT_MODE;	// all tests run in text mode only
 
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (TG_OK);}
@@ -121,7 +121,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("N100 g0 x1\n");	// line number and command
 //	xio_queue_RX_string_usb("N100 g0x1 (MSG*** message test with gcode command and line number ***)\n");
 
-	xio_queue_RX_string_usb("$test=2\n");
+//	xio_queue_RX_string_usb("$test=2\n");
 //	xio_queue_RX_string_usb("$$\n");
 //	xio_queue_RX_string_usb("m3\n");
 //	xio_queue_RX_string_usb("$sys\n");
@@ -140,6 +140,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"1\":{\"po\":\"\"}}\n");
 //	xio_queue_RX_string_usb("{\"c\":\"\"}\n");
 
+//	xio_queue_RX_string_usb("{\"sr\":{\"posx\":true}}\n");
 //	xio_queue_RX_string_usb("{\"baud\":6}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"n20g0x1y1.1\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x20y30z40\"}\n");
@@ -164,7 +165,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("\n");
 
 //	xio_queue_RX_string_usb("g00xqwrsdfs\n");
-//	xio_queue_RX_string_usb("g0x10\n");
+	xio_queue_RX_string_usb("g0x1000\n");
 
 //	xio_queue_RX_string_usb("g00g17g21g40g49g80g90\n");
 //	xio_queue_RX_string_usb("g2x0y0i1f2000\n");

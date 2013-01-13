@@ -61,9 +61,11 @@ C_SRCS +=  \
 ../test.c \
 ../util.c \
 ../xio/xio.c \
+../xio/xio_file.c \
 ../xio/xio_pgm.c \
 ../xio/xio_rs485.c \
 ../xio/xio_signals.c \
+../xio/xio_spi.c \
 ../xio/xio_usart.c \
 ../xio/xio_usb.c \
 ../xmega/xmega_eeprom.c \
@@ -101,9 +103,11 @@ system.o \
 test.o \
 util.o \
 xio/xio.o \
+xio/xio_file.o \
 xio/xio_pgm.o \
 xio/xio_rs485.o \
 xio/xio_signals.o \
+xio/xio_spi.o \
 xio/xio_usart.o \
 xio/xio_usb.o \
 xmega/xmega_eeprom.o \
@@ -135,9 +139,11 @@ system.o \
 test.o \
 util.o \
 xio/xio.o \
+xio/xio_file.o \
 xio/xio_pgm.o \
 xio/xio_rs485.o \
 xio/xio_signals.o \
+xio/xio_spi.o \
 xio/xio_usart.o \
 xio/xio_usb.o \
 xmega/xmega_eeprom.o \
@@ -169,9 +175,11 @@ system.d \
 test.d \
 util.d \
 xio/xio.d \
+xio/xio_file.d \
 xio/xio_pgm.d \
 xio/xio_rs485.d \
 xio/xio_signals.d \
+xio/xio_spi.d \
 xio/xio_usart.d \
 xio/xio_usb.d \
 xmega/xmega_eeprom.d \
@@ -203,9 +211,11 @@ system.d \
 test.d \
 util.d \
 xio/xio.d \
+xio/xio_file.d \
 xio/xio_pgm.d \
 xio/xio_rs485.d \
 xio/xio_signals.d \
+xio/xio_spi.d \
 xio/xio_usart.d \
 xio/xio_usb.d \
 xmega/xmega_eeprom.d \
@@ -223,6 +233,10 @@ ADDITIONAL_DEPENDENCIES:=
 OUTPUT_FILE_DEP:= ./makedep.mk
 
 # AVR32/GNU C Compiler
+
+
+
+
 
 
 

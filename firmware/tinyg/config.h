@@ -142,8 +142,8 @@ enum cmdType {						// classification of commands
 };
 
 enum tgCommunicationsMode {
-	TG_TEXT_MODE = 0,				// default
-	TG_JSON_MODE
+	TEXT_MODE = 0,					// default
+	JSON_MODE
 };
 
 enum jsonVerbosity {
@@ -162,10 +162,16 @@ enum textVerbosity {
 	TV_VERBOSE						// returns prompt, echos command and all messages
 };
 
-enum qrEnable {						// planner queue enable and verbosity
+enum qrVerbosity {					// planner queue enable and verbosity
 	QR_OFF = 0,						// no response is provided
 	QR_FILTERED,					// queue depth reported only above hi-water mark and below lo-water mark  
 	QR_VERBOSE						// queue depth reported for all buffers
+};
+
+enum srVerbosity {					// status report enable and verbosity
+	SR_OFF = 0,						// no reports
+	SR_FILTERED,					// reports only values that have changed from the last report
+	SR_VERBOSE						// reports all values specified
 };
 
 enum textReports {					// text output print modes
@@ -217,11 +223,12 @@ uint8_t cmd_persist_offsets(uint8_t flag);
 void cmd_new_list(void);
 void cmd_new_body(cmdObj *cmd);
 uint8_t cmd_add_object(char *token);
-uint8_t cmd_add_string(char *token, char *string);
-uint8_t cmd_add_string_P(char *token, char *string);
-uint8_t cmd_add_integer(char *token, uint32_t value);
-uint8_t cmd_add_float(char *token, double value);
+uint8_t cmd_add_string(char *token, const char *string);
+uint8_t cmd_add_string_P(char *token, const char *string);
+uint8_t cmd_add_integer(char *token, const uint32_t value);
+uint8_t cmd_add_float(char *token, const double value);
 void cmd_print_list(uint8_t status, uint8_t textmode);
+uint8_t cmd_group_is_prefixed(char *group);
 
 uint8_t cmd_read_NVM_value(cmdObj *cmd);
 uint8_t cmd_write_NVM_value(cmdObj *cmd);
@@ -312,8 +319,10 @@ struct cfgParameters {
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
 
 	// status report configs
+	uint8_t status_report_verbosity;// see enum in this file for settings
 	uint32_t status_report_interval;// in MS. set non-zero to enable
-	INDEX_T status_report_list[CMD_STATUS_REPORT_LEN];
+	INDEX_T status_report_list[CMD_STATUS_REPORT_LEN];	// status report elements to report
+	double status_report_value[CMD_STATUS_REPORT_LEN];	// previous values for filtered reporting
 
 	// coordinate systems and offsets
 	double offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute + G54,G55,G56,G57,G58,G59

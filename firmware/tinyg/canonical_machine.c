@@ -558,7 +558,7 @@ void cm_shutdown()
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
 	// send out an emergency shutdown message
-	if (cfg.comm_mode == TG_JSON_MODE) {
+	if (cfg.comm_mode == JSON_MODE) {
 		printf_P(PSTR("{\"er\":\"Emergency shut down\"}\n"));
 	} else {
 		printf_P(PSTR("EMERGENCY SHUTDOWN\n"));

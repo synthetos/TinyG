@@ -47,8 +47,8 @@
 // *** settings.h overrides ***
 
 #undef	COM_COMM_MODE
-//#define COM_COMM_MODE				TG_JSON_MODE
-#define COM_COMM_MODE				TG_TEXT_MODE
+#define COM_COMM_MODE				JSON_MODE
+//#define COM_COMM_MODE				TEXT_MODE
 
 #undef COM_JSON_VERBOSITY
 //#define COM_JSON_VERBOSITY		JV_SILENT			// no response is provided for any command

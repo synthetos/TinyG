@@ -106,7 +106,9 @@ uint8_t _json_parser_kernal(char *str)
 		if ((status = _get_nv_pair(cmd, &str, group, &depth)) > TG_EAGAIN) { // erred out
 			return (status);
 		}
-		strncpy(group, cmd->group, CMD_GROUP_LEN);// propagate the group ID from previous obj
+		if (cmd_group_is_prefixed(cmd->group)) {
+			strncpy(group, cmd->group, CMD_GROUP_LEN);// propagate the group ID from previous obj
+		}
 		cmd = cmd->nx;
 	} while (status != TG_OK);					// breaks when parsing is complete
 
@@ -197,7 +199,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 
 	// --- Process value part ---  (organized from most to least encountered)
 	if ((*pstr = strchr(*pstr, ':')) == NULL) return (TG_JSON_SYNTAX_ERROR);
-	(*pstr)++;									// advance to start of value field
+	(*pstr)++;										// advance to start of value field
 
 	// nulls (gets)
 	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { // process null value
@@ -206,19 +208,19 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
 	
 	// numbers
 	} else if (isdigit(**pstr) || (**pstr == '-')) { // value is a number
-		cmd->value = strtod(*pstr, &tmp);		// tmp is the end pointer
+		cmd->value = strtod(*pstr, &tmp);			// tmp is the end pointer
 		if(tmp == *pstr) return (TG_BAD_NUMBER_FORMAT);
 		cmd->type = TYPE_FLOAT;
 
 	// parents
 	} else if (**pstr == '{') { cmd->type = TYPE_PARENT;
 		strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);// record the group token
-//		*depth += 1;							// will set the next object down one level
+//		*depth += 1;								// will set the next object down one level
 		(*pstr)++;
-		return(TG_EAGAIN);						// signal that there is more to parse
+		return(TG_EAGAIN);							// signal that there is more to parse
 
 	// strings
-	} else if (**pstr == '\"') { 				// value is a string
+	} else if (**pstr == '\"') { 					// value is a string
 		(*pstr)++;
 		cmd->type = TYPE_STRING;
 		if ((tmp = strchr(*pstr, '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR); // find the end of the string

@@ -41,9 +41,13 @@
 // These can be overridden in machine profiles by using #undef
 // ADVICE: Check your machine profile before continuing
 
-#define STATUS_REPORT_MIN_MS		200		// milliseconds - enforces a viable minimum
-#define STATUS_REPORT_INTERVAL_MS	200		// milliseconds - set to 0 to disable
-#define SR_DEFAULTS "line","posx","posy","posz","posa","vel","momo","stat"
+#define STATUS_REPORT_MIN_MS		50		// milliseconds - enforces a viable minimum
+#define STATUS_REPORT_INTERVAL_MS	50		// milliseconds - set to 0 to disable
+#define SR_DEFAULTS "line","posx","posy","posz","posa","vel","unit","momo","stat"
+//#define SR_VERBOSITY				SR_OFF
+#define SR_VERBOSITY				SR_FILTERED
+//#define SR_VERBOSITY				SR_VERBOSE
+
 #define CHORDAL_TOLERANCE 0.01		// chord accuracy for arc drawing
 
 // Gcode defaults
@@ -59,21 +63,21 @@
 #define COM_ENABLE_ECHO				false
 #define COM_ENABLE_XON				true
 
-#define COM_COMM_MODE				TG_TEXT_MODE
-#define COM_TEXT_VERBOSITY			TV_VERBOSE
-//#define COM_JSON_VERBOSITY		JV_SILENT			// no response is provided for any command
-//#define COM_JSON_VERBOSITY		JV_OMIT_BODY		// response contains no body - footer only
-//#define COM_JSON_VERBOSITY		JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
-//#define COM_JSON_VERBOSITY		JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
-//#define COM_JSON_VERBOSITY		JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
-#define COM_JSON_VERBOSITY			JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
+#define COMM_MODE					JSON_MODE
+#define TEXT_VERBOSITY				TV_VERBOSE
+//#define JSON_VERBOSITY			JV_SILENT			// no response is provided for any command
+//#define JSON_VERBOSITY			JV_OMIT_BODY		// response contains no body - footer only
+//#define JSON_VERBOSITY			JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
+//#define JSON_VERBOSITY			JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+//#define JSON_VERBOSITY			JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
+#define JSON_VERBOSITY				JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
 
 // Queue report settings
-#define COM_ENABLE_QR				QR_OFF
-//#define COM_ENABLE_QR				QR_FILTERED
-//#define COM_ENABLE_QR				QR_VERBOSE
-#define COM_QR_HI_WATER				20
-#define COM_QR_LO_WATER				2
+#define QR_VERBOSITY				QR_OFF
+//#define QR_VERBOSITY				QR_FILTERED
+//#define QR_VERBOSITY				QR_VERBOSE
+#define QR_HI_WATER					20
+#define QR_LO_WATER					2
 
 /**** MACHINE PROFILES ******************************************************/
 

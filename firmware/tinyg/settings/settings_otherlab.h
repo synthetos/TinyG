@@ -24,19 +24,19 @@
 
 // *** settings.h overrides ***
 
-#undef	COM_ENABLE_QR
-#define COM_ENABLE_QR				true
+#undef	QR_VERBOSITY
+#define QR_VERBOSITY				QR_FILTERED
 
-#undef	COM_COMM_MODE
-#define COM_COMM_MODE				TG_JSON_MODE	// alternately: TG_TEXT_MODE
+#undef	COMM_MODE
+#define COMM_MODE					JSON_MODE			// alternately: TEXT_MODE
 
-//#undef COM_JSON_VERBOSITY
-//#define COM_JSON_VERBOSITY		JV_SILENT			// no response is provided for any command
-//#define COM_JSON_VERBOSITY		JV_OMIT_BODY		// response contains no body - footer only
-//#define COM_JSON_VERBOSITY		JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
-//#define COM_JSON_VERBOSITY		JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
-//#define COM_JSON_VERBOSITY		JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
-//#define COM_JSON_VERBOSITY		JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
+//#undef JSON_VERBOSITY
+//#define JSON_VERBOSITY			JV_SILENT			// no response is provided for any command
+//#define JSON_VERBOSITY			JV_OMIT_BODY		// response contains no body - footer only
+//#define JSON_VERBOSITY			JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
+//#define JSON_VERBOSITY			JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+//#define JSON_VERBOSITY			JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
+//#define JSON_VERBOSITY			JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
 
 // *** motor settings ***
 

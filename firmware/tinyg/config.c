@@ -392,14 +392,15 @@ static const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%16.3f%S\n";
 static const char fmt_mt[] PROGMEM = "[mt]  min segment time%13.0f uSec\n";
 static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0,1]\n";
 static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms [0=off]\n";
-static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX %7d [0,1=CR,2=LF]\n";
+static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX%8d [0,1=CR,2=LF]\n";
 static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%5d [0,1]\n";
 static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0,1]\n";
 static const char fmt_ex[] PROGMEM = "[ex]  enable xon xoff%14d [0,1]\n";
-static const char fmt_eq[] PROGMEM = "[eq]  enable queue reports%9d [0-2]\n";
-static const char fmt_ej[] PROGMEM = "[ej]  enable json mode %12d [0,1]\n";
+static const char fmt_eq[] PROGMEM = "[eq]  queue report verbosity%7d [0-2]\n";
+static const char fmt_ej[] PROGMEM = "[ej]  enable json mode%13d [0,1]\n";
 static const char fmt_jv[] PROGMEM = "[jv]  json verbosity%15d [0-5]\n";
 static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0-3]\n";
+static const char fmt_sv[] PROGMEM = "[sv]  status verbosity%13d [0-2]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [0-6]\n";
 
 static const char fmt_qr[] PROGMEM = "qr:%d\n";
@@ -749,19 +750,20 @@ struct cfgItem const cfgArray[] PROGMEM = {
 	{ "sys","ec",  _fip, fmt_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,			COM_EXPAND_CR },
 	{ "sys","ee",  _fip, fmt_ee, _print_ui8, _get_ui8, _set_ee,  (double *)&cfg.enable_echo,		COM_ENABLE_ECHO },
 	{ "sys","ex",  _fip, fmt_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
-	{ "sys","eq",  _fip, fmt_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,			COM_ENABLE_QR },
-	{ "sys","ej",  _fip, fmt_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,			COM_COMM_MODE },
-	{ "sys","jv",  _fip, fmt_jv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.json_verbosity,		COM_JSON_VERBOSITY },
-	{ "sys","tv",  _fip, fmt_tv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.text_verbosity,		COM_TEXT_VERBOSITY },
+	{ "sys","eq",  _fip, fmt_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,			QR_VERBOSITY },
+	{ "sys","ej",  _fip, fmt_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,			COMM_MODE },
+	{ "sys","jv",  _fip, fmt_jv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.json_verbosity,		JSON_VERBOSITY },
+	{ "sys","tv",  _fip, fmt_tv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.text_verbosity,		TEXT_VERBOSITY },
 	{ "sys","si",  _fip, fmt_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
+	{ "sys","sv",  _fip, fmt_sv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.status_report_verbosity,SR_VERBOSITY },
 	{ "sys","baud",_f00, fmt_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
 
 	// removed from system group as "hidden" parameters
 	{ "",   "mt",  _fip, fmt_mt, _print_lin, _get_dbl, _set_dbl, (double *)&cfg.estd_segment_usec,	NOM_SEGMENT_USEC },
 	{ "",   "ml",  _fip, fmt_ml, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.min_segment_len,	MIN_LINE_LENGTH },
 	{ "",   "ma",  _fip, fmt_ma, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.arc_segment_len,	ARC_SEGMENT_LENGTH },
-	{ "",   "eqh", _fip, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.qr_hi_water, 		COM_QR_HI_WATER },
-	{ "",   "eql", _fip, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.qr_lo_water, 		COM_QR_LO_WATER },
+	{ "",   "eqh", _fip, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.qr_hi_water, 		QR_HI_WATER },
+	{ "",   "eql", _fip, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.qr_lo_water, 		QR_LO_WATER },
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
@@ -1100,12 +1102,12 @@ static uint8_t _set_am(cmdObj *cmd)		// axis mode
 	if (strchr(linear_axes, cmd->group[0]) != NULL) {		// true if it's a linear axis
 		if (cmd->value > AXIS_MAX_LINEAR) {
 			cmd->value = 0;
-			cmd_add_string_P("msg",PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED"));
+			cmd_add_string_P("msg", PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED"));
 		}
 	} else {
 		if (cmd->value > AXIS_MAX_ROTARY) {
 			cmd->value = 0;
-			cmd_add_string_P("msg",PSTR("*** WARNING *** Unsupported rotary axis mode. Axis DISABLED"));
+			cmd_add_string_P("msg", PSTR("*** WARNING *** Unsupported rotary axis mode. Axis DISABLED"));
 		}
 	}
 	_set_ui8(cmd);
@@ -1136,7 +1138,7 @@ static uint8_t _set_tr(cmdObj *cmd)		// motor travel per revolution
 static uint8_t _set_mi(cmdObj *cmd)		// motor microsteps
 {
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
-		cmd_add_string_P("msg",PSTR("*** WARNING *** Non-standard microstep value"));
+		cmd_add_string_P("msg", PSTR("*** WARNING *** Non-standard microstep value"));
 	}
 	_set_ui8(cmd);						// but set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);
@@ -1223,7 +1225,7 @@ static uint8_t _set_baud(cmdObj *cmd)
 {
 	uint8_t baud = (uint8_t)cmd->value;
 	if ((baud < 1) || (baud > 6)) {
-		cmd_add_string_P("msg",PSTR("*** WARNING *** Illegal baud rate specified"));
+		cmd_add_string_P("msg", PSTR("*** WARNING *** Illegal baud rate specified"));
 		return (TG_INPUT_VALUE_UNSUPPORTED);
 	}
 	cfg.usb_baud_rate = baud;
@@ -1318,7 +1320,7 @@ void cfg_init()
 	cmdObj cmd;
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
 	cmd_new_list();					// setup the cmd object lists. Do this first.
-	cfg.comm_mode = TG_JSON_MODE;	// initial value until EEPROM is read
+	cfg.comm_mode = JSON_MODE;		// initial value until EEPROM is read
 	cfg.nvm_base_addr = NVM_BASE_ADDR;
 	cfg.nvm_profile_base = cfg.nvm_base_addr;
 	cmd.index = 0;					// this will read the first record in NVM
@@ -1853,7 +1855,7 @@ static uint8_t _get_grp(cmdObj *cmd)
 
 static uint8_t _set_grp(cmdObj *cmd)
 {
-	if (cfg.comm_mode == TG_TEXT_MODE) return (TG_UNRECOGNIZED_COMMAND);
+	if (cfg.comm_mode == TEXT_MODE) return (TG_UNRECOGNIZED_COMMAND);
 	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
 		if (cmd->type == TYPE_EMPTY) break;
@@ -1866,6 +1868,21 @@ static uint8_t _set_grp(cmdObj *cmd)
 	}
 	return (TG_OK);
 }
+
+/*
+ * cmd_group_is_prefixed() - hack
+ *
+ *	This little function deals with the fact that some groups don't use the parent 
+ *	token as a prefix to the child elements; SR being a good example.
+ */
+uint8_t cmd_group_is_prefixed(char *group)
+{
+	if (strstr("sr",group) != NULL) {	// you can extend like this: "sr,sys,xyzzy"
+		return (false);
+	}
+	return (true);
+}
+
 
 /**** UberGroup Operations ****
  * Uber groups are groups of groups organized for convenience:
@@ -2017,7 +2034,7 @@ uint8_t cmd_add_object(char *token)			// add an object to the body using a token
 	return (TG_NO_BUFFER_SPACE);
 }
 
-uint8_t cmd_add_string(char *token, char *string)	// add a string object to the body
+uint8_t cmd_add_string(char *token, const char *string)	// add a string object to the body
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
@@ -2035,14 +2052,14 @@ uint8_t cmd_add_string(char *token, char *string)	// add a string object to the 
 	return (TG_NO_BUFFER_SPACE);
 }
 
-uint8_t cmd_add_string_P(char *token, char *string)
+uint8_t cmd_add_string_P(char *token, const char *string)
 {
 	char message[CMD_STRING_LEN]; 
 	sprintf_P(message, string);
 	return(cmd_add_string(token, message));
 }
 
-uint8_t cmd_add_integer(char *token, uint32_t value)// add an integer object to the body
+uint8_t cmd_add_integer(char *token, const uint32_t value)// add an integer object to the body
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
@@ -2059,7 +2076,7 @@ uint8_t cmd_add_integer(char *token, uint32_t value)// add an integer object to 
 	return (TG_NO_BUFFER_SPACE);
 }
 
-uint8_t cmd_add_float(char *token, double value)	// add a float object to the body
+uint8_t cmd_add_float(char *token, const double value)	// add a float object to the body
 {
 	cmdObj *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
@@ -2087,7 +2104,7 @@ uint8_t cmd_add_float(char *token, double value)	// add a float object to the bo
 
 void cmd_print_list(uint8_t status, uint8_t textmode)
 {
-	if (cfg.comm_mode == TG_JSON_MODE) {
+	if (cfg.comm_mode == JSON_MODE) {
 		js_print_list(status);
 	} else {
 		switch (textmode) {

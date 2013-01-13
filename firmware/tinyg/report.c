@@ -105,6 +105,7 @@ void rpt_init_status_report(uint8_t persist_flag)
 	cmd.index = cmd_get_index("","se00");				// set first SR persistence index
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
 		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
+		cfg.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
 		cmd.value = cmd_get_index("", sr_defaults[i]);	// load the index for the SR element
 		cmd_set(&cmd);
 		cmd_persist(&cmd);
@@ -116,7 +117,7 @@ void rpt_init_status_report(uint8_t persist_flag)
  *	rpt_request_status_report()  - force a status report to be sent on next callback
  *	rpt_status_report_callback() - main loop callback to send a report if one is ready
  *	rpt_run_multiline_status_report() - generate a status report in multiline format
- *	rpt_run_status_report()	  	 - populate cmdObj body with status values
+ *	rpt_populate_status_report() - populate cmdObj body with status values
  */
 void rpt_decr_status_report() 
 {
@@ -160,6 +161,15 @@ uint8_t rpt_populate_status_report()
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
 		cmd_get_cmdObj(cmd);
+		if (cfg.comm_mode == JSON_MODE) {
+			if (cfg.status_report_verbosity == SR_FILTERED) {
+				if (cfg.status_report_value[i] == cmd->value) {
+					cmd->type = TYPE_EMPTY;
+				} else {
+					cfg.status_report_value[i] = cmd->value;
+				}
+			}
+		}
 		cmd = cmd->nx;
 	}
 	return (TG_OK);
