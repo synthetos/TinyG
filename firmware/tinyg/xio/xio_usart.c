@@ -263,9 +263,10 @@ static int _gets_helper(xioDev *d, xioUsart *dx)
 		dx->rx_buf_count = 0;					// reset count for good measure
 		return(XIO_BUFFER_EMPTY);				// stop reading
 	}
-	if (--(dx->rx_buf_tail) == 0) {				// advance RX tail (RX q read ptr)
-		dx->rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one (OBOE)
-	}
+	advance(dx->rx_buf_tail, RX_BUFFER_SIZE);
+//	if (--(dx->rx_buf_tail) == 0) {				// advance RX tail (RX q read ptr)
+//		dx->rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one (OBOE)
+//	}
 	dx->rx_buf_count--;
 	d->fc_func(d);								// run the flow control callback
 //	c = dx->rx_buf[dx->rx_buf_tail];			// get char from RX Q
@@ -328,9 +329,10 @@ int xio_getc_usart(FILE *stream)
 			return(_FDEV_ERR);
 		}
 	}
-	if (--(dx->rx_buf_tail) == 0) {					// advance RX tail (RXQ read ptr)
-		dx->rx_buf_tail = RX_BUFFER_SIZE-1;			// -1 avoids off-by-one error (OBOE)
-	}
+	advance(dx->rx_buf_tail, RX_BUFFER_SIZE);
+//	if (--(dx->rx_buf_tail) == 0) {					// advance RX tail (RXQ read ptr)
+//		dx->rx_buf_tail = RX_BUFFER_SIZE-1;			// -1 avoids off-by-one error (OBOE)
+//	}
 	dx->rx_buf_count--;
 	d->fc_func(d);									// run the flow control function (USB only)
 	c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);		// get char from RX buf & mask MSB
@@ -397,9 +399,10 @@ void xio_queue_RX_char_usart(const uint8_t dev, const char c)
 		return;
 	}
 	// normal path
-	if ((--dx->rx_buf_head) == 0) { 			// wrap condition
-		dx->rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one err
-	}
+	advance(dx->rx_buf_head, RX_BUFFER_SIZE);
+//	if ((--dx->rx_buf_head) == 0) { 			// wrap condition
+//		dx->rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one err
+//	}
 	if (dx->rx_buf_head != dx->rx_buf_tail) {	// write char unless buffer full
 		dx->rx_buf[dx->rx_buf_head] = c;		// FAKE INPUT DATA
 		dx->rx_buf_count++;
@@ -412,27 +415,3 @@ void xio_queue_RX_char_usart(const uint8_t dev, const char c)
 	}
 }
 
-/*
-void xio_dump_RX_queue_usart(void)
-{
-	char c;
-	uint8_t dev = XIO_DEV_USB;
-	xioDevice *d = &ds[dev];			// init device struct pointer
-	xioUsart *dx = ((xioUsart *)(ds[dev].x));// init USART pointer
-
-	uint8_t i = dx->rx_buf_tail;
-	for (uint8_t j=RX_BUFFER_SIZE; j>0; j--) {
-
-		c = dx->rx_buf[i];
-		if (c == NUL) { c = '_';}
-		if (c == TAB) { c = '|';}
-		if (c == CR)  { c = '/';}
-		if (c == LF)  { c = '\\';}
-		
-		d->x_putc(c, stdout);
-		if (--(i) == 0) {
-			i = RX_BUFFER_SIZE-1;
-		}
-	}
-}
-*/

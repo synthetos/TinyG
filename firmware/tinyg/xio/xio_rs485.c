@@ -182,9 +182,10 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)		// serial port C0 RX isr
 	if ((c == LF) && (RS.flag_ignorelf)) return;
 
 	// normal character path
-	if ((--RSu.rx_buf_head) == 0) { 				// advance buffer head with wrap
-		RSu.rx_buf_head = RX_BUFFER_SIZE -1;		// -1 avoids the off-by-one error
-	}
+	advance(RSu.rx_buf_head, RX_BUFFER_SIZE);
+//	if ((--RSu.rx_buf_head) == 0) { 				// advance buffer head with wrap
+//		RSu.rx_buf_head = RX_BUFFER_SIZE -1;		// -1 avoids the off-by-one error
+//	}
 	if (RSu.rx_buf_head != RSu.rx_buf_tail) {		// write char unless buffer full
 		RSu.rx_buf[RSu.rx_buf_head] = c;			// (= USARTC1.DATA;)
 		RSu.rx_buf_count++;

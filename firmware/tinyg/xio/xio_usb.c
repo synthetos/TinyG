@@ -89,9 +89,10 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
 	if (USBu.fc_char == NUL) {						// normal char TX path
 		if (USBu.tx_buf_head != USBu.tx_buf_tail) {	// buffer has data
-			if (--USBu.tx_buf_tail == 0) {			// advance tail and wrap 
-				USBu.tx_buf_tail = TX_BUFFER_SIZE-1;// -1 avoids OBOE
-			}
+			advance(USBu.tx_buf_tail, TX_BUFFER_SIZE);
+//			if (--USBu.tx_buf_tail == 0) {			// advance tail and wrap 
+//				USBu.tx_buf_tail = TX_BUFFER_SIZE-1;// -1 avoids OBOE
+//			}
 			USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];
 		} else {
 			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;	// force another interrupt
@@ -153,9 +154,10 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 	if ((c == LF) && (USB.flag_ignorelf)) return;
 
 	// normal character path
-	if ((--USBu.rx_buf_head) == 0) { 			// adv buffer head with wrap
-		USBu.rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error
-	}
+	advance(USBu.rx_buf_head, RX_BUFFER_SIZE);
+//	if ((--USBu.rx_buf_head) == 0) { 			// adv buffer head with wrap
+//		USBu.rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error
+//	}
 	if (USBu.rx_buf_head != USBu.rx_buf_tail) {	// buffer is not full
 		USBu.rx_buf[USBu.rx_buf_head] = c;		// write char unless full
 		USBu.rx_buf_count++;

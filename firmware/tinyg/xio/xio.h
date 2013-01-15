@@ -146,8 +146,12 @@ xioSignals	sig;						// signal flags
 extern struct controllerSingleton tg;	// needed by init() for default source
 
 /*************************************************************************
- *	Function Prototypes
+ *	Function Prototypes and Macros
  *************************************************************************/
+
+// Advance RX or TX head or tail. Buffers count down, so advance is a decrement.
+// The zero condition is the wrap that sets the index back to the top.
+#define advance(buf,len) { if ((--(buf)) == 0) buf = len-1;}
 
 // public functions (virtual class) 
 void xio_init(void);

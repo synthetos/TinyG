@@ -85,58 +85,58 @@
 #include "../tinyg.h"					// needed for AXES definition
 
 // statics
-static int _gets_helper(xioDev *d, xioSpi *dx);
 static char _xfer_char(xioSpi *dx, char c_out);
+static char _read_char(xioSpi *dx);
 
 /******************************************************************************
  * SPI CONFIGURATION RECORDS
  ******************************************************************************/
 
-struct cfgSPI {
-		x_open x_open;			// see xio.h for typedefs
-		x_ctrl x_ctrl;
-		x_gets x_gets;
-		x_getc x_getc;
-		x_putc x_putc;
-		fc_func fc_func;
-		USART_t *usart;
+struct cfgSPI {					// see xio.h for typedefs
+		x_open x_open;			// open function
+		x_ctrl x_ctrl;			// ctrl function
+		x_gets x_gets;			// get string function
+		x_getc x_getc;			// stdio getc function
+		x_putc x_putc;			// stdio putc function
+		fc_func fc_func;		// flow control callback
+		USART_t *usart;			// usart binding or BIT_BANG if no usart used
 		PORT_t *comm_port;		// port for SCK, MISO and MOSI
 		PORT_t *ssel_port;		// port for slave select line
 		uint8_t ssbit;			// slave select bit on ssel_port
-		uint8_t inbits; 
-		uint8_t outbits; 
-		uint8_t outclr;
-		uint8_t outset; 
+		uint8_t inbits; 		// bits to set as inputs
+		uint8_t outbits; 		// bits to set as outputs
+		uint8_t outclr;			// output bits to initialize as CLRd
+		uint8_t outset; 		// output bits to initialize as SET
 };
 
 static struct cfgSPI const cfgSpi[] PROGMEM = {
-	{	// SPI#1 config
-		xio_open_spi,			// open function
-		xio_ctrl_generic, 		// ctrl function
-		xio_gets_spi,			// get string function
-		xio_getc_spi,			// stdio getc function
-		xio_putc_spi,			// stdio putc function
-		xio_fc_null,			// flow control callback
-		BIT_BANG,				// usart structure or BIT_BANG if none
-		&SPI_DATA_PORT,			// SPI comm port
-		&SPI_SS1_PORT,			// SPI slave select port
-		SPI_SS1_bm,				// slave select bit bitmask
+	{
+		xio_open_spi,			// SPI #1 configs
+		xio_ctrl_generic,
+		xio_gets_spi,
+		xio_getc_spi,
+		xio_putc_spi,
+		xio_fc_null,
+		BIT_BANG,
+		&SPI_DATA_PORT,
+		&SPI_SS1_PORT,
+		SPI_SS1_bm,	
 		SPI_INBITS_bm,
 		SPI_OUTBITS_bm,
 		SPI_OUTCLR_bm,
 		SPI_OUTSET_bm,
 	},
-	{	// SPI#2 config
-		xio_open_spi,			// open function
-		xio_ctrl_generic, 		// ctrl function
-		xio_gets_spi,			// get string function
-		xio_getc_spi,			// stdio getc function
-		xio_putc_spi,			// stdio putc function
-		xio_fc_null,			// flow control callback
-		BIT_BANG,				// usart structure
-		&SPI_DATA_PORT,			// SPI comm port
-		&SPI_SS2_PORT,			// SPI slave select port
-		SPI_SS2_bm,				// slave select bit bitmask
+	{
+		xio_open_spi,			// SPI #2 configs
+		xio_ctrl_generic, 
+		xio_gets_spi,
+		xio_getc_spi,
+		xio_putc_spi,
+		xio_fc_null,
+		BIT_BANG,
+		&SPI_DATA_PORT,
+		&SPI_SS2_PORT,
+		SPI_SS2_bm,
 		SPI_INBITS_bm,
 		SPI_OUTBITS_bm,
 		SPI_OUTCLR_bm,
@@ -174,11 +174,11 @@ FILE *xio_open_spi(const uint8_t dev, const char *addr, const CONTROL_T flags)
 	d->x = &sp[idx];							// setup extended struct pointer
 	xioSpi *dx = (xioSpi *)d->x;
 
-	memset (dx, 0, sizeof(xioSpi));				// clear all values
-	xio_ctrl_generic(d, flags);					// setup flags
+	memset (dx, 0, sizeof(xioSpi));
+	xio_ctrl_generic(d, flags);
 
 	// setup internal RX/TX control buffers
-	dx->rx_buf_head = 1;		// can't use location 0 in circular buffer
+	dx->rx_buf_head = 1;			// can't use location 0 in circular buffer
 	dx->rx_buf_tail = 1;
 
 	// structure and device bindings and setup
@@ -196,81 +196,82 @@ FILE *xio_open_spi(const uint8_t dev, const char *addr, const CONTROL_T flags)
 
 /* 
  *	xio_gets_spi() - read a complete line from an SPI device
- * _gets_helper() 	 - non-blocking character getter for gets
  *
  *	Retains line context across calls - so it can be called multiple times.
  *	Reads as many characters as it can until any of the following is true:
  *
  *	  - Encounters newline indicating a complete line (returns XIO_OK)
- *	  - Encounters and empty buffer and SPI returns ETX indicating there is no data to xfer (return XIO_EAGAIN)
+ *	  - Encounters and empty buffer and no more data in the salve (return XIO_EAGAIN)
  *	  - Read would cause output buffer overflow (return XIO_BUFFER_FULL)
  *
+ *	gets() runs an optimized buffer transfer relative to getc() as it can keep 
+ *	slave state. It reads from the local RX buffer and replenishes it with chars 
+ *	read from the slave as it reads. Once the local RX buffer empties it reads 
+ *	directly from the slave until the line is complete or the slave is exhausted.
+ *
  *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
- *	Note: CRs are not recognized as NL chars - this function assumes slaves never send CRs. 
+ *	Note: CRs are not recognized as NL chars - slaves must send LF to terminate a line
  */
 int xio_gets_spi(xioDev *d, char *buf, const int size)
 {
 	xioSpi *dx = (xioSpi *)d->x;				// get SPI device struct pointer
+	uint8_t read_flag = true;					// read from slave until no chars available
+	char c_out, c_spi;
 
 	// first time thru initializations
 	if (d->flag_in_line == false) {
 		d->flag_in_line = true;					// yes, we are busy getting a line
-		d->len = 0;								// zero buffer
-		d->buf = buf;
-		d->size = size;
-		d->signal = XIO_SIG_OK;					// reset signal register
+		d->buf = buf;							// bind the output buffer
+		d->len = 0;								// zero the buffer count
+		d->size = size;							// set the max size of the message
+//		d->signal = XIO_SIG_OK;					// reset signal register
 	}
 
 	// process chars until done or blocked
 	while (true) {
-		switch (_gets_helper(d,dx)) {
-			case (XIO_BUFFER_EMPTY): 
-				return (XIO_EAGAIN); 			// empty condition
-			case (XIO_BUFFER_FULL_NON_FATAL): 
-				return (XIO_BUFFER_FULL_NON_FATAL);// overrun err
-			case (XIO_EOL): 
-				return (XIO_OK);				// got complete line
-//			case (XIO_EAGAIN): 
-//				break;							// break the switch; loop for next character
+		if (d->len >= d->size) {				// trap buffer overrun
+			d->buf[d->size] = NUL;				// terminate line (d->size is zero based)
+			d->signal = XIO_SIG_EOL;
+			return (XIO_BUFFER_FULL_NON_FATAL);
 		}
+		// if RX buffer has data read the RX buffer and & replenish from slave, if possible
+		if (dx->rx_buf_head != dx->rx_buf_tail) {
+			advance(dx->rx_buf_head, SPI_RX_BUFFER_SIZE);
+			c_out = dx->rx_buf[dx->rx_buf_tail];
+			if (read_flag) {
+				if ((c_spi = _read_char(dx)) != ETX) {	// get a char from the slave
+					advance(dx->rx_buf_head, SPI_RX_BUFFER_SIZE);
+					dx->rx_buf[dx->rx_buf_head] = c_spi; // write char into the buffer
+				} else {
+					read_flag = false;
+				}
+			}
+		} else {	// RX buffer is empty - try reading from the slave directly
+			if ((read_flag == false) || ((c_out = _read_char(dx)) == ETX)) {
+				return (XIO_EAGAIN);			// return with an incomplete line
+			} 
+		}
+		// test for end-of-line
+		if (c_out == LF) {
+			d->buf[(d->len)++] = NUL;
+//			d->signal = XIO_SIG_EOL;
+			d->flag_in_line = false;			// clear in-line state (reset)
+			return (XIO_OK);					// return for end-of-line
+		}
+		d->buf[(d->len)++] = c_out;				// write character to buffer
 	}
-	return (XIO_ERR);							// never supposed to get here
-}
-
-static int _gets_helper(xioDev *d, xioSpi *dx)
-{
-	if (d->len >= d->size) {					// handle buffer overruns
-		d->buf[d->size] = NUL;					// terminate line (d->size is zero based)
-		d->signal = XIO_SIG_EOL;
-		return (XIO_BUFFER_FULL_NON_FATAL);
-	}
-	char c = xio_getc_spi(&d->file);			// get a character or ETX
-
-	if (c == LF) {								// end-of-line condition
-		d->buf[(d->len)++] = NUL;
-		d->signal = XIO_SIG_EOL;
-		d->flag_in_line = false;				// clear in-line state (reset)
-		return (XIO_EOL);						// return for end-of-line
-	}
-	if (c == ETX) {
-		return (XIO_BUFFER_EMPTY);				// nothing more to read
-	}
-	d->buf[(d->len)++] = c;						// write character to buffer
-	return (XIO_EAGAIN);
 }
 
 /*
  * xio_getc_spi() - stdio compatible character RX routine
  *
- *	What are the cases?
+ *	There are actually 2 queues involved in this function - the local RX queue
+ *	on the master, and the slave's TX queue. This function is not optimized for 
+ *	transfer, as it returns a single character and has no state information
+ *	about the slave.
  *
- *	(a) RX buffer is empty. Read a char from the slave. If you get a valid
- *		char return it directly. Don't bother to mess with the buffer. If you 
- *		get ETX back then return _FDEV_ERR and signal EOL.
- *
- *	(b) RX buffer has data or is full. Read a char from the slave and return
- *		the next char in the RX buffer. Must remove the char from RX buffer
- *		before you read from the slave and insert to the buffer.
+ *	If there are no characters in the local RX buffer it will poll the slave for
+ *	the next character.
  *
  *	This function is always non-blocking or it would create a deadlock.
  */
@@ -278,35 +279,29 @@ int xio_getc_spi(FILE *stream)
 {
 	xioDev *d = (xioDev *)stream->udata;		// get device struct pointer
 	xioSpi *dx = (xioSpi *)d->x;				// get SPI device struct pointer
-	
+
 	// handle the empty buffer case
 	if (dx->rx_buf_head == dx->rx_buf_tail) {	// RX buffer empty
-		char c_spi = _xfer_char(dx, STX);		// get a char from the SPI port
+//		char c_spi = _xfer_char(dx, STX);		// get a char from the SPI port
+		char c_spi = _read_char(dx);			// get a char from the SPI port
 		if (c_spi != ETX) {						// no character received
 			return (c_spi);
 		}
-		d->signal = XIO_SIG_EOL;
+//		d->signal = XIO_SIG_EOL;
 		return(_FDEV_ERR);
 	}
 
 	// handle the case where the buffer has data
-	if (--(dx->rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
-		dx->rx_buf_tail = SPI_RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
-	}
-	char c_buf = dx->rx_buf[dx->rx_buf_tail];	// get char from RX buf
-//	char c_spi = _xfer_char(dx, STX);			// get a char from the SPI port
-//	if (c_spi != ETX) {							// character received
-//		if ((--(dx->rx_buf_head)) == 0) { 		// adv buffer head with wrap (RXQ write ptr)
-//			dx->rx_buf_head = SPI_RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error
-//		}
-//		dx->rx_buf[dx->rx_buf_head] = c_spi;	// write SPI char into the buffer	
+	advance(dx->rx_buf_tail, SPI_RX_BUFFER_SIZE);
+//	if (--(dx->rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
+//		dx->rx_buf_tail = SPI_RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
 //	}
+	char c_buf = dx->rx_buf[dx->rx_buf_tail];	// get char from RX buf
 	return (c_buf);
 }
 
 /*
  * xio_putc_spi() - stdio compatible character TX routine
- * _xfer_char() - helper written as inline bit-banger
  *
  *	This sends a char to the slave and receives a byte on MISO in return.
  *	This routine clocks out to about 600 Kbps bi-directional transfer rates
@@ -327,9 +322,10 @@ int xio_putc_spi(const char c_out, FILE *stream)
 //	}
 
 	// write c_in into the RX buffer (or not)
-	if ((--(dx->rx_buf_head)) == 0) { 			// adv buffer head with wrap
-		dx->rx_buf_head = SPI_RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error
-	}
+	advance(dx->rx_buf_head, SPI_RX_BUFFER_SIZE);
+//	if ((--(dx->rx_buf_head)) == 0) { 			// adv buffer head with wrap
+//		dx->rx_buf_head = SPI_RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error
+//	}
 	if (dx->rx_buf_head != dx->rx_buf_tail) {	// buffer is not full
 		dx->rx_buf[dx->rx_buf_head] = c_in;		// write char to buffer
 	} else { 									// buffer-full - toss the incoming character
@@ -341,10 +337,28 @@ int xio_putc_spi(const char c_out, FILE *stream)
 	return (XIO_OK);
 }
 
+/*
+ * Bitbangers used by the SPI routines
+ * _xfer_char() - send a character on MOSI and receive incoming char on MISO
+ * _read_char() - send an STX on MOSI and receive incoming char on MISO
+ */
+
 #define xfer_bit(mask, c_out, c_in) \
 	dx->data_port->OUTCLR = SPI_SCK_bm; \
 	if ((c_out & mask) == 0) { dx->data_port->OUTCLR = SPI_MOSI_bm; } \
 	else { dx->data_port->OUTSET = SPI_MOSI_bm; } \
+	if (dx->data_port->IN & SPI_MISO_bm) c_in |= (mask); \
+	dx->data_port->OUTSET = SPI_SCK_bm;	
+
+#define read_bit_clr(mask, c_in) \
+	dx->data_port->OUTCLR = SPI_SCK_bm; \
+	dx->data_port->OUTCLR = SPI_MOSI_bm; \
+	if (dx->data_port->IN & SPI_MISO_bm) c_in |= (mask); \
+	dx->data_port->OUTSET = SPI_SCK_bm;	
+
+#define read_bit_set(mask, c_in) \
+	dx->data_port->OUTCLR = SPI_SCK_bm; \
+	dx->data_port->OUTSET = SPI_MOSI_bm; \
 	if (dx->data_port->IN & SPI_MISO_bm) c_in |= (mask); \
 	dx->data_port->OUTSET = SPI_SCK_bm;	
 
@@ -364,31 +378,18 @@ static char _xfer_char(xioSpi *dx, char c_out)
 	return (c_in);
 }
 
-
-/* Ultimate speed test with no branches or masks - 8.25 uSec ber byte
-	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
-	dx->data_port->OUTSET = SPI_MOSI_bm;			// set data bit lo
-	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
-	dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
-	dx->data_port->OUTSET = SPI_MOSI_bm;			// set data bit lo
-	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
-	dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
-	dx->data_port->OUTSET = SPI_MOSI_bm;			// set data bit lo
-	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
-	dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
-	dx->data_port->OUTSET = SPI_MOSI_bm;			// set data bit lo
-	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
-	dx->data_port->OUTCLR = SPI_SCK_bm; 			// drive clock lo
-	dx->data_port->OUTCLR = SPI_MOSI_bm;
-	dx->data_port->OUTSET = SPI_SCK_bm; 			// drive clock hi
-*/
-
+static char _read_char(xioSpi *dx)
+{
+	char c_in = 0;
+	dx->ssel_port->OUTCLR = dx->ssbit;			// drive slave select lo (active)
+	read_bit_clr(0x80, c_in);					// hard coded to send STX
+	read_bit_clr(0x40, c_in);
+	read_bit_clr(0x20, c_in);
+	read_bit_clr(0x10, c_in);
+	read_bit_clr(0x08, c_in);
+	read_bit_clr(0x04, c_in);
+	read_bit_set(0x02, c_in);
+	read_bit_clr(0x01, c_in);
+	dx->ssel_port->OUTSET = dx->ssbit;
+	return (c_in);
+}
