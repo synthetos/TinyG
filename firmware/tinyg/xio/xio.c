@@ -236,11 +236,11 @@ void xio_set_stdout(const uint8_t dev) { stdout = &ds[dev].file; }
 void xio_set_stderr(const uint8_t dev) { stderr = &ds[dev].file; }
 
 
-//########################################################################
+/*****************************************************************************
+ * UNIT TESTS 
+ *****************************************************************************/
 
-#ifdef __UNIT_TESTS
-#ifdef __UNIT_TEST_XIO
-
+#if defined (__UNIT_TESTS) && defined (__UNIT_TEST_XIO)
 /*
  * xio_tests() - a collection of tests for xio
  */
@@ -248,12 +248,19 @@ void xio_set_stderr(const uint8_t dev) { stderr = &ds[dev].file; }
 void xio_unit_tests()
 {
 	FILE * fdev;
+	char c;
+	char str[10] = "tester ";
 
 	fdev = xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
 	while (true) {
-		xio_putc_spi(0x55, fdev);
+//		xio_putc_spi(0x55, fdev);
+		for (uint8_t i=0; i<7; i++) { 
+			xio_putc_spi(str[i], fdev);
+			c = xio_getc(XIO_DEV_SPI1);
+			xio_putc(XIO_DEV_USB, c);
+		}
 	}
-	
+
 //	fdev = xio_open(XIO_DEV_USB, 0, USB_FLAGS);
 //	xio_getc_usart(fdev);
 	
@@ -269,5 +276,4 @@ void xio_unit_tests()
 */
 }
 
-#endif
 #endif

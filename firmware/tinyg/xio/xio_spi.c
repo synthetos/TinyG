@@ -93,55 +93,55 @@ static char _xfer_char(xioSpi *dx, char c_out);
  ******************************************************************************/
 
 struct cfgSPI {
-	x_open x_open;			// see xio.h for typedefs
-	x_ctrl x_ctrl;
-	x_gets x_gets;
-	x_getc x_getc;
-	x_putc x_putc;
-	fc_func fc_func;
-	USART_t *usart;
-	PORT_t *comm_port;		// port for SCK, MISO and MOSI
-	PORT_t *ssel_port;		// port for slave select line
-	uint8_t ssbit;			// slave select bit on ssel_port
-	uint8_t inbits; 
-	uint8_t outbits; 
-	uint8_t outclr;
-	uint8_t outset; 
+		x_open x_open;			// see xio.h for typedefs
+		x_ctrl x_ctrl;
+		x_gets x_gets;
+		x_getc x_getc;
+		x_putc x_putc;
+		fc_func fc_func;
+		USART_t *usart;
+		PORT_t *comm_port;		// port for SCK, MISO and MOSI
+		PORT_t *ssel_port;		// port for slave select line
+		uint8_t ssbit;			// slave select bit on ssel_port
+		uint8_t inbits; 
+		uint8_t outbits; 
+		uint8_t outclr;
+		uint8_t outset; 
 };
 
 static struct cfgSPI const cfgSpi[] PROGMEM = {
-{	// SPI#1 config
-	xio_open_spi,			// open function
-	xio_ctrl_generic, 		// ctrl function
-	xio_gets_spi,			// get string function
-	xio_getc_spi,			// stdio getc function
-	xio_putc_spi,			// stdio putc function
-	xio_fc_null,			// flow control callback
-	BIT_BANG,				// usart structure or BIT_BANG if none
-	&SPI_DATA_PORT,			// SPI comm port
-	&SPI_SS1_PORT,			// SPI slave select port
-	SPI_SS1_bm,				// slave select bit bitmask
-	SPI_INBITS_bm,
-	SPI_OUTBITS_bm,
-	SPI_OUTCLR_bm,
-	SPI_OUTSET_bm,
-},
-{	// SPI#2 config
-	xio_open_spi,			// open function
-	xio_ctrl_generic, 		// ctrl function
-	xio_gets_spi,			// get string function
-	xio_getc_spi,			// stdio getc function
-	xio_putc_spi,			// stdio putc function
-	xio_fc_null,			// flow control callback
-	BIT_BANG,				// usart structure
-	&SPI_DATA_PORT,			// SPI comm port
-	&SPI_SS2_PORT,			// SPI slave select port
-	SPI_SS2_bm,				// slave select bit bitmask
-	SPI_INBITS_bm,
-	SPI_OUTBITS_bm,
-	SPI_OUTCLR_bm,
-	SPI_OUTSET_bm,
-}
+	{	// SPI#1 config
+		xio_open_spi,			// open function
+		xio_ctrl_generic, 		// ctrl function
+		xio_gets_spi,			// get string function
+		xio_getc_spi,			// stdio getc function
+		xio_putc_spi,			// stdio putc function
+		xio_fc_null,			// flow control callback
+		BIT_BANG,				// usart structure or BIT_BANG if none
+		&SPI_DATA_PORT,			// SPI comm port
+		&SPI_SS1_PORT,			// SPI slave select port
+		SPI_SS1_bm,				// slave select bit bitmask
+		SPI_INBITS_bm,
+		SPI_OUTBITS_bm,
+		SPI_OUTCLR_bm,
+		SPI_OUTSET_bm,
+	},
+	{	// SPI#2 config
+		xio_open_spi,			// open function
+		xio_ctrl_generic, 		// ctrl function
+		xio_gets_spi,			// get string function
+		xio_getc_spi,			// stdio getc function
+		xio_putc_spi,			// stdio putc function
+		xio_fc_null,			// flow control callback
+		BIT_BANG,				// usart structure
+		&SPI_DATA_PORT,			// SPI comm port
+		&SPI_SS2_PORT,			// SPI slave select port
+		SPI_SS2_bm,				// slave select bit bitmask
+		SPI_INBITS_bm,
+		SPI_OUTBITS_bm,
+		SPI_OUTCLR_bm,
+		SPI_OUTSET_bm,
+	}
 };
 
 /******************************************************************************
@@ -294,13 +294,13 @@ int xio_getc_spi(FILE *stream)
 		dx->rx_buf_tail = SPI_RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
 	}
 	char c_buf = dx->rx_buf[dx->rx_buf_tail];	// get char from RX buf
-	char c_spi = _xfer_char(dx, STX);			// get a char from the SPI port
-	if (c_spi != ETX) {							// character received
-		if ((--(dx->rx_buf_head)) == 0) { 		// adv buffer head with wrap (RXQ write ptr)
-			dx->rx_buf_head = SPI_RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error
-		}
-		dx->rx_buf[dx->rx_buf_head] = c_spi;	// write SPI char into the buffer	
-	}
+//	char c_spi = _xfer_char(dx, STX);			// get a char from the SPI port
+//	if (c_spi != ETX) {							// character received
+//		if ((--(dx->rx_buf_head)) == 0) { 		// adv buffer head with wrap (RXQ write ptr)
+//			dx->rx_buf_head = SPI_RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error
+//		}
+//		dx->rx_buf[dx->rx_buf_head] = c_spi;	// write SPI char into the buffer	
+//	}
 	return (c_buf);
 }
 

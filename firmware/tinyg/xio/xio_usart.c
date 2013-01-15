@@ -49,52 +49,52 @@ static const uint8_t bsel[] PROGMEM = { 0, 207, 103, 51, 34, 33, 31, 27, 19, 1, 
 static const uint8_t bscale[] PROGMEM = { 0, 0, 0, 0, 0, (-1<<4), (-2<<4), (-3<<4), (-4<<4), (1<<4), 1 };
 
 struct cfgUSART {
-	x_open x_open;			// see xio.h for typedefs
-	x_ctrl x_ctrl;
-	x_gets x_gets;
-	x_getc x_getc;
-	x_putc x_putc;
-	fc_func fc_func;
-	USART_t *usart;
-	PORT_t *port;
-	uint8_t baud; 
-	uint8_t inbits; 
-	uint8_t outbits; 
-	uint8_t outclr;
-	uint8_t outset; 
+		x_open x_open;			// see xio.h for typedefs
+		x_ctrl x_ctrl;
+		x_gets x_gets;
+		x_getc x_getc;
+		x_putc x_putc;
+		fc_func fc_func;
+		USART_t *usart;
+		PORT_t *port;
+		uint8_t baud; 
+		uint8_t inbits; 
+		uint8_t outbits; 
+		uint8_t outclr;
+		uint8_t outset; 
 };
 
 static struct cfgUSART const cfgUsart[] PROGMEM = {
-{	// USB config
-	xio_open_usart,			// open function
-	xio_ctrl_generic, 		// ctrl function
-	xio_gets_usart,			// get string function
-	xio_getc_usart,			// stdio getc function
-	xio_putc_usb,			// stdio putc function
-	xio_fc_usart,			// flow control callback
-	&USB_USART,				// usart structure
-	&USB_PORT,				// usart port
-	USB_BAUD,
-	USB_INBITS_bm,
-	USB_OUTBITS_bm,
-	USB_OUTCLR_bm,
-	USB_OUTSET_bm
-},
-{	// RS485 config 
-	xio_open_spi,			// open function
-	xio_ctrl_generic, 		// ctrl function
-	xio_gets_usart,			// get string function
-	xio_getc_usart,			// stdio getc function
-	xio_putc_rs485,			// stdio putc function
-	xio_fc_null,			// flow control callback
-	&RS485_USART,
-	&RS485_PORT,
-	RS485_BAUD,
-	RS485_INBITS_bm,
-	RS485_OUTBITS_bm,
-	RS485_OUTCLR_bm,
-	RS485_OUTSET_bm
-}
+	{	// USB config
+		xio_open_usart,			// open function
+		xio_ctrl_generic, 		// ctrl function
+		xio_gets_usart,			// get string function
+		xio_getc_usart,			// stdio getc function
+		xio_putc_usb,			// stdio putc function
+		xio_fc_usart,			// flow control callback
+		&USB_USART,				// usart structure
+		&USB_PORT,				// usart port
+		USB_BAUD,
+		USB_INBITS_bm,
+		USB_OUTBITS_bm,
+		USB_OUTCLR_bm,
+		USB_OUTSET_bm
+	},
+	{	// RS485 config 
+		xio_open_spi,			// open function
+		xio_ctrl_generic, 		// ctrl function
+		xio_gets_usart,			// get string function
+		xio_getc_usart,			// stdio getc function
+		xio_putc_rs485,			// stdio putc function
+		xio_fc_null,			// flow control callback
+		&RS485_USART,
+		&RS485_PORT,
+		RS485_BAUD,
+		RS485_INBITS_bm,
+		RS485_OUTBITS_bm,
+		RS485_OUTCLR_bm,
+		RS485_OUTSET_bm
+	}
 };
 
 /******************************************************************************
