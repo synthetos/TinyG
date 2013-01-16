@@ -183,10 +183,10 @@ static void _print_coor(cmdObj *cmd);	// print coordinate offsets with linear un
 static void _print_corr(cmdObj *cmd);	// print coordinate offsets with rotary units
 
 // helpers for generic functions
-static char *_get_format(const INDEX_T i, char *format);
-static int8_t _get_motor(const INDEX_T i);
-//static int8_t _get_axis(const INDEX_T i);
-static int8_t _get_pos_axis(const INDEX_T i);
+static char *_get_format(const index_t i, char *format);
+static int8_t _get_motor(const index_t i);
+//static int8_t _get_axis(const index_t i);
+static int8_t _get_pos_axis(const index_t i);
 static uint8_t _text_parser(char *str, struct cmdObject *c);
 static uint8_t _get_msg_helper(cmdObj *cmd, prog_char_ptr msg, uint8_t value);
 static void _print_text_inline_pairs();
@@ -1636,13 +1636,13 @@ static void _print_rot(cmdObj *cmd)
  * _get_pos_axis()	- return axis number for pos values or -1 if none - e.g. posx
  */
 
-static char *_get_format(const INDEX_T i, char *format)
+static char *_get_format(const index_t i, char *format)
 {
 	strncpy_P(format, (PGM_P)pgm_read_word(&cfgArray[i].format), CMD_FORMAT_LEN);
 	return (format);
 }
 
-static int8_t _get_motor(const INDEX_T i)
+static int8_t _get_motor(const index_t i)
 {
 	char *ptr;
 	char motors[] = {"1234"};
@@ -1655,7 +1655,7 @@ static int8_t _get_motor(const INDEX_T i)
 	return (ptr - motors);
 }
 /*
-static int8_t _get_axis(const INDEX_T i)
+static int8_t _get_axis(const index_t i)
 {
 	char *ptr;
 	char tmp[CMD_TOKEN_LEN+1];
@@ -1666,7 +1666,7 @@ static int8_t _get_axis(const INDEX_T i)
 	return (ptr - axes);
 }
 */
-static int8_t _get_pos_axis(const INDEX_T i)
+static int8_t _get_pos_axis(const index_t i)
 {
 	char *ptr;
 	char tmp[CMD_TOKEN_LEN+1];
@@ -1691,7 +1691,7 @@ static int8_t _get_pos_axis(const INDEX_T i)
  *	optimized with indexes or hashing.
  */
 
-//INDEX_T cmd_get_max_index() { return (CMD_INDEX_MAX);}
+//index_t cmd_get_max_index() { return (CMD_INDEX_MAX);}
 
 cmdObj *cmd_new_obj(cmdObj *cmd)			// clear a single cmdObj structure
 {
@@ -1715,7 +1715,7 @@ cmdObj *cmd_new_obj(cmdObj *cmd)			// clear a single cmdObj structure
 void cmd_get_cmdObj(cmdObj *cmd)
 {
 	if (cmd->index >= CMD_INDEX_MAX) return;
-	INDEX_T tmp = cmd->index;
+	index_t tmp = cmd->index;
 	cmd_new_obj(cmd);
 	cmd->index = tmp;
 
@@ -1733,14 +1733,14 @@ void cmd_get_cmdObj(cmdObj *cmd)
 	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);	// populate the value
 }
 
-INDEX_T cmd_get_index(const char *group, const char *token)
+index_t cmd_get_index(const char *group, const char *token)
 {
 	char c;
 	char str[CMD_TOKEN_LEN+1];
 	strcpy(str, group);
 	strcat(str, token);
 
-	for (INDEX_T i=0; i<CMD_INDEX_MAX; i++) {
+	for (index_t i=0; i<CMD_INDEX_MAX; i++) {
 		if ((c = (char)pgm_read_byte(&cfgArray[i].token[0])) != str[0]) {	// 1st character mismatch 
 			continue;
 		}
@@ -1834,7 +1834,7 @@ static uint8_t _get_grp(cmdObj *cmd)
 	char *parent_group = cmd->token;		// token in the parent cmd object is the group
 	char group[CMD_GROUP_LEN+1];			// group string retrieved from cfgArray child
 	cmd->type = TYPE_PARENT;				// make first object the parent 
-	for (INDEX_T i=0; i<=CMD_INDEX_END_SINGLES; i++) {
+	for (index_t i=0; i<=CMD_INDEX_END_SINGLES; i++) {
 		strcpy_P(group, cfgArray[i].group);  // don't need strncpy as it's always terminated
 		if (strcmp(parent_group, group) != 0) continue;
 		(++cmd)->index = i;
@@ -2233,7 +2233,7 @@ void cfg_unit_tests()
 
 // config table tests
 
-	INDEX_T i;
+	index_t i;
 //	double val;
 
 //	_print_configs("$", NUL);					// no filter (show all)

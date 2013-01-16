@@ -33,9 +33,9 @@
 
 // Choose one: This sets the index size into the cmdArray
 
-//#define INDEX_T uint8_t			// use this if there are < 255 indexed objects
+//#define index_t uint8_t			// use this if there are < 255 indexed objects
 //#define NO_INDEX 0xFF				// defined as no match
-#define INDEX_T uint16_t			// use this if there are > 255 indexed objects
+#define index_t uint16_t			// use this if there are > 255 indexed objects
 #define NO_INDEX 0xFFFF				// defined as no match
 
 #define CMD_GROUP_LEN 3				// max length of group prefix
@@ -183,7 +183,7 @@ enum textReports {					// text output print modes
 typedef struct cmdObject {			// depending on use, not all elements may be populated
 	struct cmdObject *pv;			// pointer to previous object or NULL if first object
 	struct cmdObject *nx;			// pointer to next object or NULL if last object
-	INDEX_T index;					// index of tokenized name, or -1 if no token (optional)
+	index_t index;					// index of tokenized name, or -1 if no token (optional)
 	int8_t depth;					// depth of object in the tree. 0 is root (-1 is invalid)
 	int8_t type;					// see cmdType
 	double value;					// numeric value
@@ -216,7 +216,7 @@ void cmd_persist(cmdObj *cmd);		// main entry point for persistence
 
 cmdObj *cmd_new_obj(cmdObj *cmd);
 void cmd_get_cmdObj(cmdObj *cmd);
-INDEX_T cmd_get_index(const char *group, const char *token);
+index_t cmd_get_index(const char *group, const char *token);
 uint8_t cmd_get_type(cmdObj *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 
@@ -321,7 +321,7 @@ struct cfgParameters {
 	// status report configs
 	uint8_t status_report_verbosity;// see enum in this file for settings
 	uint32_t status_report_interval;// in MS. set non-zero to enable
-	INDEX_T status_report_list[CMD_STATUS_REPORT_LEN];	// status report elements to report
+	index_t status_report_list[CMD_STATUS_REPORT_LEN];	// status report elements to report
 	double status_report_value[CMD_STATUS_REPORT_LEN];	// previous values for filtered reporting
 
 	// coordinate systems and offsets

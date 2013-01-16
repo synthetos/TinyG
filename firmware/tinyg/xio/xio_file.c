@@ -39,12 +39,12 @@
  ******************************************************************************/
 
 struct cfgFILE {
-	x_open x_open;				// see xio.h for typedefs
-	x_ctrl x_ctrl;
-	x_gets x_gets;
-	x_getc x_getc;
-	x_putc x_putc;
-	fc_func fc_func;
+	x_open_t x_open;			// see xio.h for typedefs
+	x_ctrl_t x_ctrl;
+	x_gets_t x_gets;
+	x_getc_t x_getc;
+	x_putc_t x_putc;
+	x_flow_t x_flow;
 };
 
 static struct cfgFILE const cfgFile[] PROGMEM = {
@@ -71,12 +71,12 @@ void xio_init_file()
 {
 	for (uint8_t i=0; i<XIO_DEV_FILE_COUNT; i++) {
 		xio_open_generic(XIO_DEV_FILE_OFFSET + i,
-						(x_open)pgm_read_word(&cfgFile[i].x_open),
-						(x_ctrl)pgm_read_word(&cfgFile[i].x_ctrl),
-						(x_gets)pgm_read_word(&cfgFile[i].x_gets),
-						(x_getc)pgm_read_word(&cfgFile[i].x_getc),
-						(x_putc)pgm_read_word(&cfgFile[i].x_putc),
-						(fc_func)pgm_read_word(&cfgFile[i].fc_func));
+						(x_open_t)pgm_read_word(&cfgFile[i].x_open),
+						(x_ctrl_t)pgm_read_word(&cfgFile[i].x_ctrl),
+						(x_gets_t)pgm_read_word(&cfgFile[i].x_gets),
+						(x_getc_t)pgm_read_word(&cfgFile[i].x_getc),
+						(x_putc_t)pgm_read_word(&cfgFile[i].x_putc),
+						(x_flow_t)pgm_read_word(&cfgFile[i].x_flow));
 	}
 }
 
@@ -86,13 +86,13 @@ void xio_init_file()
  *	OK, so this is not really a UNIX open() except for its moral equivalent
  *  Returns a pointer to the stdio FILE struct or -1 on error
  */
-FILE * xio_open_file(const uint8_t dev, const char *addr, const CONTROL_T flags)
+FILE * xio_open_file(const uint8_t dev, const char *addr, const flags_t flags)
 {
-	xioDev *d = (xioDev *)&ds[dev];					// set device structure pointer
+	xioDev_t *d = (xioDev_t *)&ds[dev];
 	d->x = &fs[dev - XIO_DEV_FILE_OFFSET];			// bind extended struct to device
-	xioFile *dx = (xioFile *)d->x;
+	xioFile_t *dx = (xioFile_t *)d->x;
 
-	memset (dx, 0, sizeof(xioFile));				// clear all values
+	memset (dx, 0, sizeof(xioFile_t));				// clear all values
 	xio_ctrl_generic(d, flags);						// setup control flags
 	dx->filebase_P = (PROGMEM const char *)addr;	// might want to range check this
 	dx->max_offset = PGM_ADDR_MAX;

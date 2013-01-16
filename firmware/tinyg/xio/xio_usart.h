@@ -49,16 +49,16 @@
 //#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_MED_gc)
 
 // Buffer sizing
-#define BUFFER_T uint_fast8_t					// fast, but limits buffer to 255 char max
-#define RX_BUFFER_SIZE (BUFFER_T)255			// BUFFER_T can be 8 bits
-#define TX_BUFFER_SIZE (BUFFER_T)255			// BUFFER_T can be 8 bits
+#define buffer_t uint_fast8_t					// fast, but limits buffer to 255 char max
+#define RX_BUFFER_SIZE (buffer_t)255			// buffer_t can be 8 bits
+#define TX_BUFFER_SIZE (buffer_t)255			// buffer_t can be 8 bits
 
 // Alternates for larger buffers - mostly for debugging
-//#define BUFFER_T uint16_t						// slower, but larger buffers
-//#define RX_BUFFER_SIZE (BUFFER_T)512			// BUFFER_T must be 16 bits if >255
-//#define TX_BUFFER_SIZE (BUFFER_T)512			// BUFFER_T must be 16 bits if >255
-//#define RX_BUFFER_SIZE (BUFFER_T)1024			// 2048 is the practical upper limit
-//#define TX_BUFFER_SIZE (BUFFER_T)1024			// 2048 is practical upper limit given RAM
+//#define buffer_t uint16_t						// slower, but larger buffers
+//#define RX_BUFFER_SIZE (buffer_t)512			// buffer_t must be 16 bits if >255
+//#define TX_BUFFER_SIZE (buffer_t)512			// buffer_t must be 16 bits if >255
+//#define RX_BUFFER_SIZE (buffer_t)1024			// 2048 is the practical upper limit
+//#define TX_BUFFER_SIZE (buffer_t)1024			// 2048 is practical upper limit given RAM
 
 // XON/XOFF hi and lo watermarks. At 115.200 the host has approx. 100 uSec per char 
 // to react to an XOFF. 90% (0.9) of 255 chars gives 25 chars to react, or about 2.5 ms.  
@@ -158,40 +158,40 @@ typedef struct xioUSART {
 	uint8_t fc_char;			 			// flow control character to send
 	volatile uint8_t fc_state;				// flow control state
 
-	volatile BUFFER_T rx_buf_tail;			// RX buffer read index
-	volatile BUFFER_T rx_buf_head;			// RX buffer write index (written by ISR)
-	volatile BUFFER_T rx_buf_count;			// RX buffer counter for flow control
+	volatile buffer_t rx_buf_tail;			// RX buffer read index
+	volatile buffer_t rx_buf_head;			// RX buffer write index (written by ISR)
+	volatile buffer_t rx_buf_count;			// RX buffer counter for flow control
 
-	volatile BUFFER_T tx_buf_tail;			// TX buffer read index  (written by ISR)
-	volatile BUFFER_T tx_buf_head;			// TX buffer write index
-	volatile BUFFER_T tx_buf_count;
+	volatile buffer_t tx_buf_tail;			// TX buffer read index  (written by ISR)
+	volatile buffer_t tx_buf_head;			// TX buffer write index
+	volatile buffer_t tx_buf_count;
 
 	USART_t *usart;							// xmega USART structure
 	PORT_t	*port;							// corresponding port
 
 	volatile char rx_buf[RX_BUFFER_SIZE];	// (written by ISR)
 	volatile char tx_buf[TX_BUFFER_SIZE];
-} xioUsart;
+} xioUsart_t;
 
 /******************************************************************************
  * USART CLASS AND DEVICE FUNCTION PROTOTYPES AND ALIASES
  ******************************************************************************/
 
 void xio_init_usart(void);
-FILE *xio_open_usart(const uint8_t dev, const char *addr, const CONTROL_T flags);
-void xio_set_baud_usart(xioUsart *dx, const uint8_t baud);
-void xio_xoff_usart(xioUsart *dx);
-void xio_xon_usart(xioUsart *dx);
-int xio_gets_usart(xioDev *d, char *buf, const int size);
+FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags);
+void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud);
+void xio_xoff_usart(xioUsart_t *dx);
+void xio_xon_usart(xioUsart_t *dx);
+int xio_gets_usart(xioDev_t *d, char *buf, const int size);
 int xio_getc_usart(FILE *stream);
 int xio_putc_usart(const char c, FILE *stream);
 int xio_putc_usb(const char c, FILE *stream);	// stdio compatible put character
 int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
 
 // handy helpers
-BUFFER_T xio_get_rx_bufcount_usart(const xioUsart *dx);
-BUFFER_T xio_get_tx_bufcount_usart(const xioUsart *dx);
-BUFFER_T xio_get_usb_rx_free(void);
+buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx);
+buffer_t xio_get_tx_bufcount_usart(const xioUsart_t *dx);
+buffer_t xio_get_usb_rx_free(void);
 
 void xio_queue_RX_char_usart(const uint8_t dev, const char c);
 void xio_queue_RX_string_usart(const uint8_t dev, const char *buf);

@@ -98,7 +98,7 @@ static void _xio_enable_rs485_rx()
  */
 int xio_putc_rs485(const char c, FILE *stream)
 {
-	BUFFER_T next_tx_buf_head;
+	buffer_t next_tx_buf_head;
 
 	if ((next_tx_buf_head = (RSu.tx_buf_head)-1) == 0) { // adv. head & wrap
 		next_tx_buf_head = TX_BUFFER_SIZE-1;	 // -1 avoids the off-by-one

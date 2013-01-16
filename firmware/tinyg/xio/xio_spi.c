@@ -85,20 +85,20 @@
 #include "../tinyg.h"					// needed for AXES definition
 
 // statics
-static char _xfer_char(xioSpi *dx, char c_out);
-static char _read_char(xioSpi *dx);
+static char _xfer_char(xioSpi_t *dx, char c_out);
+static char _read_char(xioSpi_t *dx);
 
 /******************************************************************************
  * SPI CONFIGURATION RECORDS
  ******************************************************************************/
 
-struct cfgSPI {					// see xio.h for typedefs
-		x_open x_open;			// open function
-		x_ctrl x_ctrl;			// ctrl function
-		x_gets x_gets;			// get string function
-		x_getc x_getc;			// stdio getc function
-		x_putc x_putc;			// stdio putc function
-		fc_func fc_func;		// flow control callback
+typedef struct cfgSPI {	
+		x_open_t x_open;		// see xio.h for typedefs
+		x_ctrl_t x_ctrl;
+		x_gets_t x_gets;
+		x_getc_t x_getc;
+		x_putc_t x_putc;
+		x_flow_t x_flow;
 		USART_t *usart;			// usart binding or BIT_BANG if no usart used
 		PORT_t *comm_port;		// port for SCK, MISO and MOSI
 		PORT_t *ssel_port;		// port for slave select line
@@ -107,9 +107,9 @@ struct cfgSPI {					// see xio.h for typedefs
 		uint8_t outbits; 		// bits to set as outputs
 		uint8_t outclr;			// output bits to initialize as CLRd
 		uint8_t outset; 		// output bits to initialize as SET
-};
+} cfgSpi_t;
 
-static struct cfgSPI const cfgSpi[] PROGMEM = {
+static cfgSpi_t const cfgSpi[] PROGMEM = {
 	{
 		xio_open_spi,			// SPI #1 configs
 		xio_ctrl_generic,
@@ -155,26 +155,26 @@ void xio_init_spi(void)
 {
 	for (uint8_t i=0; i<XIO_DEV_SPI_COUNT; i++) {
 		xio_open_generic(XIO_DEV_SPI_OFFSET + i,
-						(x_open)pgm_read_word(&cfgSpi[i].x_open),
-						(x_ctrl)pgm_read_word(&cfgSpi[i].x_ctrl),
-						(x_gets)pgm_read_word(&cfgSpi[i].x_gets),
-						(x_getc)pgm_read_word(&cfgSpi[i].x_getc),
-						(x_putc)pgm_read_word(&cfgSpi[i].x_putc),
-						(fc_func)pgm_read_word(&cfgSpi[i].fc_func));
+						(x_open_t)pgm_read_word(&cfgSpi[i].x_open),
+						(x_ctrl_t)pgm_read_word(&cfgSpi[i].x_ctrl),
+						(x_gets_t)pgm_read_word(&cfgSpi[i].x_gets),
+						(x_getc_t)pgm_read_word(&cfgSpi[i].x_getc),
+						(x_putc_t)pgm_read_word(&cfgSpi[i].x_putc),
+						(x_flow_t)pgm_read_word(&cfgSpi[i].x_flow));
 	}
 }
 
 /*
  *	xio_open_spi() - open a specific SPI device
  */
-FILE *xio_open_spi(const uint8_t dev, const char *addr, const CONTROL_T flags)
+FILE *xio_open_spi(const uint8_t dev, const char *addr, const flags_t flags)
 {
-	xioDev *d = &ds[dev];						// setup device struct pointer
+	xioDev_t *d = &ds[dev];						// setup device struct pointer
 	uint8_t idx = dev - XIO_DEV_SPI_OFFSET;
 	d->x = &sp[idx];							// setup extended struct pointer
-	xioSpi *dx = (xioSpi *)d->x;
+	xioSpi_t *dx = (xioSpi_t *)d->x;
 
-	memset (dx, 0, sizeof(xioSpi));
+	memset (dx, 0, sizeof(xioSpi_t));
 	xio_ctrl_generic(d, flags);
 
 	// setup internal RX/TX control buffers
@@ -212,9 +212,9 @@ FILE *xio_open_spi(const uint8_t dev, const char *addr, const CONTROL_T flags)
  *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
  *	Note: CRs are not recognized as NL chars - slaves must send LF to terminate a line
  */
-int xio_gets_spi(xioDev *d, char *buf, const int size)
+int xio_gets_spi(xioDev_t *d, char *buf, const int size)
 {
-	xioSpi *dx = (xioSpi *)d->x;				// get SPI device struct pointer
+	xioSpi_t *dx = (xioSpi_t *)d->x;				// get SPI device struct pointer
 	uint8_t read_flag = true;					// read from slave until no chars available
 	char c_out, c_spi;
 
@@ -277,8 +277,8 @@ int xio_gets_spi(xioDev *d, char *buf, const int size)
  */
 int xio_getc_spi(FILE *stream)
 {
-	xioDev *d = (xioDev *)stream->udata;		// get device struct pointer
-	xioSpi *dx = (xioSpi *)d->x;				// get SPI device struct pointer
+	xioDev_t *d = (xioDev_t *)stream->udata;		// get device struct pointer
+	xioSpi_t *dx = (xioSpi_t *)d->x;				// get SPI device struct pointer
 
 	// handle the empty buffer case
 	if (dx->rx_buf_head == dx->rx_buf_tail) {	// RX buffer empty
@@ -308,13 +308,13 @@ int xio_getc_spi(FILE *stream)
  */
 int xio_putc_spi(const char c_out, FILE *stream)
 {
-	xioSpi *dx = ((xioDev *)stream->udata)->x;	// cache SPI device struct pointer
+	xioSpi_t *dx = ((xioDev_t *)stream->udata)->x;	// cache SPI device struct pointer
 
 	char c_in = _xfer_char(dx, c_out);
 
 	// trap special characters - do not insert character into RX queue
 	if (c_in == ETX) {	 						// no data received
-		((xioDev *)stream->udata)->signal = XIO_SIG_EOF;
+		((xioDev_t *)stream->udata)->signal = XIO_SIG_EOF;
 		return (XIO_OK);
 	}
 //	if (c_in == NUL) {	 						// slave is not present or unresponsive
@@ -332,7 +332,7 @@ int xio_putc_spi(const char c_out, FILE *stream)
 		if ((++(dx->rx_buf_head)) > SPI_RX_BUFFER_SIZE-1) {	// reset the head
 			dx->rx_buf_head = 1;
 		}
-		((xioDev *)stream->udata)->signal = XIO_SIG_OVERRUN; // signal a buffer overflow
+		((xioDev_t *)stream->udata)->signal = XIO_SIG_OVERRUN; // signal a buffer overflow
 	}
 	return (XIO_OK);
 }
@@ -362,7 +362,7 @@ int xio_putc_spi(const char c_out, FILE *stream)
 	if (dx->data_port->IN & SPI_MISO_bm) c_in |= (mask); \
 	dx->data_port->OUTSET = SPI_SCK_bm;	
 
-static char _xfer_char(xioSpi *dx, char c_out)
+static char _xfer_char(xioSpi_t *dx, char c_out)
 {
 	char c_in = 0;
 	dx->ssel_port->OUTCLR = dx->ssbit;			// drive slave select lo (active)
@@ -378,7 +378,7 @@ static char _xfer_char(xioSpi *dx, char c_out)
 	return (c_in);
 }
 
-static char _read_char(xioSpi *dx)
+static char _read_char(xioSpi_t *dx)
 {
 	char c_in = 0;
 	dx->ssel_port->OUTCLR = dx->ssbit;			// drive slave select lo (active)

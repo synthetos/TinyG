@@ -45,16 +45,16 @@
 //#include "xio/xio.h"			// uncomment for debugging
 
 // aline planner routines / feedhold planning
-static void _plan_block_list(mpBuf *bf, uint8_t *mr_flag);
-static void _calculate_trapezoid(mpBuf *bf);
-static double _get_target_length(const double Vi, const double Vt, const mpBuf *bf);
-static double _get_target_velocity(const double Vi, const double L, const mpBuf *bf);
-static double _get_intersection_distance(const double Vi_squared, const double Vt_squared, const double L, const mpBuf *bf);
+static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
+static void _calculate_trapezoid(mpBuf_t *bf);
+static double _get_target_length(const double Vi, const double Vt, const mpBuf_t *bf);
+static double _get_target_velocity(const double Vi, const double L, const mpBuf_t *bf);
+static double _get_intersection_distance(const double Vi_squared, const double Vt_squared, const double L, const mpBuf_t *bf);
 static double _get_junction_vmax(const double a_unit[], const double b_unit[]);
 static void _reset_replannable_list(void);
 
 // execute routines (NB: These are all called from the LO interrupt)
-static uint8_t _exec_aline(mpBuf *bf);
+static uint8_t _exec_aline(mpBuf_t *bf);
 static uint8_t _exec_aline_head(void);
 static uint8_t _exec_aline_body(void);
 static uint8_t _exec_aline_tail(void);
@@ -133,7 +133,7 @@ double mp_get_runtime_linenum(void) { return (mr.linenum);}
 
 uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time)
 {
-	mpBuf *bf; 						// current move pointer
+	mpBuf_t *bf; 						// current move pointer
 	double exact_stop = 0;
 	double junction_velocity;
 
@@ -284,9 +284,9 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
  *		list can be recomputed regardless of exact stops and previous replanning 
  *		optimizations.
  */
-static void _plan_block_list(mpBuf *bf, uint8_t *mr_flag)
+static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 {
-	mpBuf *bp = bf;
+	mpBuf_t *bp = bf;
 
 	// Backward planning pass. Find beginning of the list and update the braking velocities.
 	// At the end *bp points to the first buffer before the list.
@@ -326,9 +326,9 @@ static void _plan_block_list(mpBuf *bf, uint8_t *mr_flag)
  */	
 void _reset_replannable_list()
 {
-	mpBuf *bf = mp_get_first_buffer();
+	mpBuf_t *bf = mp_get_first_buffer();
 	if (bf == NULL) { return;}
-	mpBuf *bp = bf;
+	mpBuf_t *bp = bf;
 	do {
 		bp->replannable = true;
 	} while (((bp = mp_get_next_buffer(bp)) != bf) && (bp->move_state != MOVE_STATE_OFF));
@@ -417,7 +417,7 @@ void _reset_replannable_list()
 #define MIN_TAIL_LENGTH (MIN_SEGMENT_TIME * (bf->cruise_velocity + bf->exit_velocity))
 #define MIN_BODY_LENGTH (MIN_SEGMENT_TIME * bf->cruise_velocity)
 
-static void _calculate_trapezoid(mpBuf *bf) 
+static void _calculate_trapezoid(mpBuf_t *bf) 
 {
 	bf->head_length = 0;		// inialize the lengths
 	bf->body_length = 0;
@@ -639,7 +639,7 @@ static void _calculate_trapezoid(mpBuf *bf)
 #define MIN_TAIL_LENGTH (MIN_SEGMENT_TIME * (bf->cruise_velocity + bf->exit_velocity))
 #define MIN_BODY_LENGTH (MIN_SEGMENT_TIME * bf->cruise_velocity)
 
-static void _calculate_trapezoid(mpBuf *bf) 
+static void _calculate_trapezoid(mpBuf_t *bf) 
 {
 	bf->head_length = 0;		// inialize the lengths
 	bf->body_length = 0;
@@ -809,17 +809,17 @@ static void _calculate_trapezoid(mpBuf *bf)
  * 	 return(cube(deltaV / (pow(L, 0.66666666))));
  */
 #ifdef __PLAN_R2
-static double _get_target_length(const double Vi_squared, const double Vt_squared, const mpBuf *bf)
+static double _get_target_length(const double Vi_squared, const double Vt_squared, const mpBuf_t *bf)
 {
 	return fabs((Vt_squared - Vi_squared) * bf->recip_half_jerk);
 }
 
-static double _get_target_velocity(const double Vi_squared, const double L, const mpBuf *bf)
+static double _get_target_velocity(const double Vi_squared, const double L, const mpBuf_t *bf)
 {
 	return sqrt(L * bf->half_jerk + Vi_squared);
 }
 
-static double _get_intersection_distance(const double Vi_squared, const double Vt_squared, const double L, const mpBuf *bf)
+static double _get_intersection_distance(const double Vi_squared, const double Vt_squared, const double L, const mpBuf_t *bf)
 {
 	return (L * bf->jerk - Vi_squared + Vt_squared)/(2 * bf->jerk);
 }
@@ -858,12 +858,12 @@ static double _get_intersection_distance(const double Vi_squared, const double V
  *  FYI: Here's an expression that returns the jerk for a given deltaV and L:
  * 	return(cube(deltaV / (pow(L, 0.66666666))));
  */
-static double _get_target_length(const double Vi, const double Vt, const mpBuf *bf)
+static double _get_target_length(const double Vi, const double Vt, const mpBuf_t *bf)
 {
 	return (fabs(Vi-Vt) * sqrt(fabs(Vi-Vt) * bf->recip_jerk));
 }
 
-static double _get_target_velocity(const double Vi, const double L, const mpBuf *bf)
+static double _get_target_velocity(const double Vi, const double L, const mpBuf_t *bf)
 {
 	return (pow(L, 0.66666666) * bf->cbrt_jerk + Vi);
 }
@@ -1013,7 +1013,7 @@ uint8_t mp_plan_hold_callback()
 {
 	if (cm.hold_state != FEEDHOLD_PLAN) { return (TG_NOOP);}	// not planning a feedhold
 
-	mpBuf *bp; 					// working buffer pointer
+	mpBuf_t *bp; 					// working buffer pointer
 	if ((bp = mp_get_run_buffer()) == NULL) { return (TG_NOOP);}	// Oops! nothing's running
 
 	uint8_t mr_flag = true;		// used to tell replan to account for mr buffer Vx
@@ -1137,7 +1137,7 @@ double _compute_next_segment_velocity()
 
 uint8_t mp_end_hold_callback()
 {
-	mpBuf *bf;
+	mpBuf_t *bf;
 	if ((cm.hold_state == FEEDHOLD_HOLD) && (cm.cycle_start_flag == true)) { 
 		cm.cycle_start_flag = false;
 		cm.hold_state = FEEDHOLD_OFF;
@@ -1227,7 +1227,7 @@ uint8_t mp_end_hold_callback()
  *	Note: For a direct math implementation see build 357.xx or earlier
  *		  Builds 358 onward have only forward difference code
  */
-static uint8_t _exec_aline(mpBuf *bf)
+static uint8_t _exec_aline(mpBuf_t *bf)
 {
 	uint8_t status = TG_OK;
 
@@ -1535,9 +1535,9 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 
 static void _test_calculate_trapezoid(void);
 static void _test_get_junction_vmax(void);
-static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBuf *bf);
+static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBuf_t *bf);
 static void _make_unit_vector(double unit[], double x, double y, double z, double a, double b, double c);
-//static void _set_jerk(const double jerk, mpBuf *bf);
+//static void _set_jerk(const double jerk, mpBuf_t *bf);
 
 void mp_unit_tests()
 {
@@ -1545,7 +1545,7 @@ void mp_unit_tests()
 //	_test_get_junction_vmax();
 }
 
-static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBuf *bf)
+static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBuf_t *bf)
 {
 	bf->length = length;
 	bf->entry_velocity = Ve;
@@ -1564,7 +1564,7 @@ static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBu
 
 static void _test_calculate_trapezoid()
 {
-	mpBuf *bf = _get_write_buffer();
+	mpBuf_t *bf = _get_write_buffer();
 
 // these tests are calibrated the following parameters:
 //	jerk_max 				50 000 000		(all axes)

@@ -73,14 +73,14 @@
  *	xio_putc<device>() - write a character to the device (stdio compatible)
  *
  * The virtual level uses XIO_DEV_xxx numeric device IDs for reference. 
- * Lower layers are called using the device structure pointer xioDev *d
+ * Lower layers are called using the device structure pointer xioDev_t *d
  * The stdio compatible functions use pointers to the stdio FILE structs.
  */
 /* ---- Efficiency Hack ----
  *
  * Device and extended structs are usually referenced via their pointers. E.g:
  *
- *	  xioDev *d = &ds[dev];						// setup device struct ptr
+ *	  xioDev_t *d = &ds[dev];						// setup device struct ptr
  *    xioUsart *dx = (xioUsart *)d->x; 			// setup USART struct ptr
  *
  * In some cases a static reference is used for time critical regions like raw 
@@ -125,23 +125,28 @@ void xio_init()
  *
  *	Requires device specific open() to be run afterward to complete the setup
  */
-void xio_open_generic(uint8_t dev, x_open x_open, x_ctrl x_ctrl, x_gets x_gets, x_getc x_getc, x_putc x_putc, fc_func fc_func)
+void xio_open_generic(uint8_t dev, x_open_t x_open, 
+								   x_ctrl_t x_ctrl, 
+								   x_gets_t x_gets, 
+								   x_getc_t x_getc, 
+								   x_putc_t x_putc, 
+								   x_flow_t x_flow)
 {
-	xioDev *d = &ds[dev];
-	memset (d, 0, sizeof(xioDev));
+	xioDev_t *d = &ds[dev];
+	memset (d, 0, sizeof(xioDev_t));
 	d->dev = dev;
 
 	// bind functions to device structure
 	d->x_open = x_open;
 	d->x_ctrl = x_ctrl;
 	d->x_gets = x_gets;
-	d->x_getc = x_getc;		// you don't need to bind these unless you are going to use them directly
-	d->x_putc = x_putc;		// they are bound into the fdev stream struct
-	d->fc_func = fc_func;	// flow control function or null FC function
+	d->x_getc = x_getc;	// you don't need to bind getc & putc unless you are going to use them directly
+	d->x_putc = x_putc;	// they are bound into the fdev stream struct
+	d->x_flow = x_flow;
 
 	// setup the stdio FILE struct and link udata back to the device struct
 	fdev_setup_stream(&d->file, x_putc, x_getc, _FDEV_SETUP_RW);
-	fdev_set_udata(&d->file, d);		// reference self for udata 
+	fdev_set_udata(&d->file, d);		// reference yourself for udata 
 }
 
 /* 
@@ -155,7 +160,7 @@ void xio_open_generic(uint8_t dev, x_open x_open, x_ctrl x_ctrl, x_gets x_gets, 
  * 	if (dev < XIO_DEV_COUNT) blah blah blah
  *	else  return (_FDEV_ERR);	// XIO_NO_SUCH_DEVICE
  */
-FILE *xio_open(uint8_t dev, const char *addr, CONTROL_T flags)
+FILE *xio_open(uint8_t dev, const char *addr, flags_t flags)
 {
 	return (ds[dev].x_open(dev, addr, flags));
 }
@@ -179,7 +184,7 @@ int xio_putc(const uint8_t dev, const char c)
  * xio_ctrl() - PUBLIC set control flags (top-level XIO_DEV access)
  * xio_ctrl_generic() - PRIVATE but generic set-control-flags
  */
-int xio_ctrl(const uint8_t dev, const CONTROL_T flags)
+int xio_ctrl(const uint8_t dev, const flags_t flags)
 {
 	return (xio_ctrl_generic(&ds[dev], flags));
 }
@@ -187,7 +192,7 @@ int xio_ctrl(const uint8_t dev, const CONTROL_T flags)
 #define SETFLAG(t,f) if ((flags & t) != 0) { d->f = true; }
 #define CLRFLAG(t,f) if ((flags & t) != 0) { d->f = false; }
 
-int xio_ctrl_generic(xioDev *d, const CONTROL_T flags)
+int xio_ctrl_generic(xioDev_t *d, const flags_t flags)
 {
 	SETFLAG(XIO_BLOCK,		flag_block);
 	CLRFLAG(XIO_NOBLOCK,	flag_block);
@@ -212,7 +217,7 @@ int xio_ctrl_generic(xioDev *d, const CONTROL_T flags)
  */
 int xio_set_baud(const uint8_t dev, const uint8_t baud)
 {
-	xioUsart *dx = (xioUsart *)&us[dev - XIO_DEV_USART_OFFSET];
+	xioUsart_t *dx = (xioUsart_t *)&us[dev - XIO_DEV_USART_OFFSET];
 	xio_set_baud_usart(dx, baud);
 	return (XIO_OK);
 }
@@ -220,7 +225,7 @@ int xio_set_baud(const uint8_t dev, const uint8_t baud)
 /*
  * xio_fc_null() - flow control null function
  */
-void xio_fc_null(xioDev *d)
+void xio_fc_null(xioDev_t *d)
 {
 	return;
 }
@@ -264,7 +269,6 @@ static void _spi_putc()
 //		xio_putc_spi(0x55, fdev);
 //		c = xio_getc_spi(fdev);
 		xio_gets(XIO_DEV_SPI1, buf, 12);
-
 	}
 }
 

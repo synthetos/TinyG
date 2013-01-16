@@ -61,7 +61,7 @@
 
 int xio_putc_usb(const char c, FILE *stream)
 {
-	BUFFER_T next_tx_buf_head = USBu.tx_buf_head-1;		// set next head while leaving current one alone
+	buffer_t next_tx_buf_head = USBu.tx_buf_head-1;		// set next head while leaving current one alone
 	if (next_tx_buf_head == 0)
 		next_tx_buf_head = TX_BUFFER_SIZE-1; 			// detect wrap and adjust; -1 avoids off-by-one
 	while (next_tx_buf_head == USBu.tx_buf_tail) 
@@ -73,7 +73,7 @@ int xio_putc_usb(const char c, FILE *stream)
 	// expand <LF> to <LF><CR> if $ec is set
 	if ((c == '\n') && (USB.flag_crlf)) {
 		USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send the queued <CR>
-		BUFFER_T next_tx_buf_head = USBu.tx_buf_head-1;
+		buffer_t next_tx_buf_head = USBu.tx_buf_head-1;
 		if (next_tx_buf_head == 0) next_tx_buf_head = TX_BUFFER_SIZE-1;
 		while (next_tx_buf_head == USBu.tx_buf_tail) sleep_mode();
 		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;			// MUTEX region
@@ -177,7 +177,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
  *
  *	Remember: The queues fill from top to bottom, w/0 being the wrap location
  */
-BUFFER_T xio_get_usb_rx_free(void)
+buffer_t xio_get_usb_rx_free(void)
 {
 	return (RX_BUFFER_SIZE - xio_get_rx_bufcount_usart(&USBu));
 }
