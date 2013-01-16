@@ -49,9 +49,9 @@
 // local scope stuff
 
 uint8_t _json_parser_kernal(char *str);
-static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t *depth);
+static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_t *depth);
 static uint8_t _normalize_json_string(char *str, uint16_t size);
-static uint8_t _gcode_comment_overrun_hack(cmdObj *cmd);
+static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd);
 
 
 /****************************************************************************
@@ -94,7 +94,7 @@ uint8_t _json_parser_kernal(char *str)
 {
 	uint8_t status;
 	int8_t depth = 2;							// starting body depth is 2
-	cmdObj *cmd = cmd_body;						// point at first struct in the body
+	cmdObj_t *cmd = cmd_body;						// point at first struct in the body
 	char group[CMD_GROUP_LEN+1] = {""};			// group identifier - starts as NUL
 	int8_t i = CMD_BODY_LEN;
 
@@ -172,7 +172,7 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
  *	cfgArray.
  */
 
-static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t *depth)
+static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_t *depth)
 {
 	char *tmp;
 	char terminators[] = {"},"};
@@ -276,7 +276,7 @@ static uint8_t _get_nv_pair(cmdObj *cmd, char **pstr, const char *group, int8_t 
  *	comment happens to be a message, well tough noogies, bucko.
  */
 
-static uint8_t _gcode_comment_overrun_hack(cmdObj *cmd)
+static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
 {
 	if (strstr(cmd->string,"(") == NULL) {
 		return (false);
@@ -293,7 +293,7 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj *cmd)
  *	Returns the character count of the resulting string
  */
 
-uint16_t js_serialize_json(cmdObj *cmd, char *out_buf)
+uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 {
 	char *str = out_buf;						// set working string pointer 
 	int8_t depth = 0;
@@ -367,7 +367,7 @@ void js_print_list(uint8_t status)
 	}
 	if (cfg.json_verbosity == JV_SILENT) { return;}
 
-	cmdObj *cmd = cmd_header;							// the header is default starting point
+	cmdObj_t *cmd = cmd_header;							// the header is default starting point
 	uint8_t cmd_type = cmd_get_type(cmd_body);
 
 	if (cfg.json_verbosity == JV_FOOTER_ONLY) { 
@@ -382,7 +382,7 @@ void js_print_list(uint8_t status)
 		if (cfg.json_verbosity == JV_OMIT_GCODE_BODY) { 
 			cmd = cmd_footer;
 		} else {
-			cmdObj *tmp = cmd_body;
+			cmdObj_t *tmp = cmd_body;
 			tmp->type = TYPE_EMPTY;								// omit the body from the display
 			if (cfg.json_verbosity == JV_GCODE_LINENUM_ONLY) { 	// returns line number but no message
 				tmp = tmp->nx;
@@ -396,7 +396,7 @@ void js_print_list(uint8_t status)
 	// Footer processing (Note: footers omitted for reports)
 	if (cmd_type != CMD_TYPE_REPORT) {
 		cmd_footer->type = TYPE_ARRAY;
-		sprintf(cmd_footer->string, "%d,%d,%d,",JSON_ARRAY_REVISION_FOOTER, status, tg.linelen);
+		sprintf(cmd_footer->string, "%d,%d,%d,",FOOTER_REVISION, status, tg.linelen);
 		tg.linelen = 0;											// reset it so it's only reported once
 		uint16_t strcount = js_serialize_json(cmd, tg.out_buf);	// make JSON string w/o checksum
 		while (tg.out_buf[strcount] != ',') { strcount--; }		// slice at last comma

@@ -28,10 +28,10 @@
 #define help_h
 
 uint8_t print_general_help(void);
-uint8_t print_config_help(cmdObj *cmd);
-uint8_t print_test_help(cmdObj *cmd);
-uint8_t print_defaults_help(cmdObj *cmd);
-uint8_t print_boot_loader_help(cmdObj *cmd);
+uint8_t print_config_help(cmdObj_t *cmd);
+uint8_t print_test_help(cmdObj_t *cmd);
+uint8_t print_defaults_help(cmdObj_t *cmd);
+uint8_t print_boot_loader_help(cmdObj_t *cmd);
 
 void dump_set_f_dda(double f_dda, double dda_substeps, 
 					double major_axis_steps, 

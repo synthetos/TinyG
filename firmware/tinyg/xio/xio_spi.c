@@ -236,11 +236,11 @@ int xio_gets_spi(xioDev_t *d, char *buf, const int size)
 		}
 		// if RX buffer has data read the RX buffer and & replenish from slave, if possible
 		if (dx->rx_buf_head != dx->rx_buf_tail) {
-			advance(dx->rx_buf_head, SPI_RX_BUFFER_SIZE);
+			advance_buffer(dx->rx_buf_head, SPI_RX_BUFFER_SIZE);
 			c_out = dx->rx_buf[dx->rx_buf_tail];
 			if (read_flag) {
 				if ((c_spi = _read_char(dx)) != ETX) {	// get a char from the slave
-					advance(dx->rx_buf_head, SPI_RX_BUFFER_SIZE);
+					advance_buffer(dx->rx_buf_head, SPI_RX_BUFFER_SIZE);
 					dx->rx_buf[dx->rx_buf_head] = c_spi; // write char into the buffer
 				} else {
 					read_flag = false;
@@ -292,10 +292,7 @@ int xio_getc_spi(FILE *stream)
 	}
 
 	// handle the case where the buffer has data
-	advance(dx->rx_buf_tail, SPI_RX_BUFFER_SIZE);
-//	if (--(dx->rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
-//		dx->rx_buf_tail = SPI_RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
-//	}
+	advance_buffer(dx->rx_buf_tail, SPI_RX_BUFFER_SIZE);
 	char c_buf = dx->rx_buf[dx->rx_buf_tail];	// get char from RX buf
 	return (c_buf);
 }
@@ -322,10 +319,7 @@ int xio_putc_spi(const char c_out, FILE *stream)
 //	}
 
 	// write c_in into the RX buffer (or not)
-	advance(dx->rx_buf_head, SPI_RX_BUFFER_SIZE);
-//	if ((--(dx->rx_buf_head)) == 0) { 			// adv buffer head with wrap
-//		dx->rx_buf_head = SPI_RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error
-//	}
+	advance_buffer(dx->rx_buf_head, SPI_RX_BUFFER_SIZE);
 	if (dx->rx_buf_head != dx->rx_buf_tail) {	// buffer is not full
 		dx->rx_buf[dx->rx_buf_head] = c_in;		// write char to buffer
 	} else { 									// buffer-full - toss the incoming character

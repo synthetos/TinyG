@@ -130,17 +130,17 @@ typedef char PROGMEM *prog_char_ptr;	// access to PROGMEM arrays of PROGMEM stri
 
 //*** STATIC STUFF ***********************************************************
 
-struct cfgItem {						// structs for pgmArray
+typedef struct cfgItem {
 	char group[CMD_GROUP_LEN+1];		// group prefix (with NUL termination)
 	char token[CMD_TOKEN_LEN+1];		// token - stripped of group prefix (w/NUL termination)
 	uint8_t flags;						// operations flags - see defines below
 	const char *format;					// pointer to formatted print string
-	fptrPrint print;					// print binding: aka void (*print)(cmdObj *cmd);
-	fptrCmd get;						// GET binding aka uint8_t (*get)(cmdObj *cmd)
-	fptrCmd set;						// SET binding aka uint8_t (*set)(cmdObj *cmd)
+	fptrPrint print;					// print binding: aka void (*print)(cmdObj_t *cmd);
+	fptrCmd get;						// GET binding aka uint8_t (*get)(cmdObj_t *cmd)
+	fptrCmd set;						// SET binding aka uint8_t (*set)(cmdObj_t *cmd)
 	double *target;						// target for writing config value
 	double def_value;					// default value for config item
-};
+} cfgItem_t;
 
 // operations flags and shorthand
 #define F_INITIALIZE	0x01
@@ -153,53 +153,53 @@ struct cfgItem {						// structs for pgmArray
 // prototypes are divided into generic functions and parameter-specific functions
 
 // generic internal functions
-static uint8_t _set_nul(cmdObj *cmd);	// noop
-static uint8_t _set_ui8(cmdObj *cmd);	// set a uint8_t value
-static uint8_t _set_int(cmdObj *cmd);	// set an integer value
-static uint8_t _set_dbl(cmdObj *cmd);	// set a double value
-static uint8_t _set_dbu(cmdObj *cmd);	// set a double with unit conversion
+static uint8_t _set_nul(cmdObj_t *cmd);	// noop
+static uint8_t _set_ui8(cmdObj_t *cmd);	// set a uint8_t value
+static uint8_t _set_int(cmdObj_t *cmd);	// set an integer value
+static uint8_t _set_dbl(cmdObj_t *cmd);	// set a double value
+static uint8_t _set_dbu(cmdObj_t *cmd);	// set a double with unit conversion
 
-static uint8_t _get_nul(cmdObj *cmd);	// get null value type
-static uint8_t _get_ui8(cmdObj *cmd);	// get uint8_t value
-static uint8_t _get_int(cmdObj *cmd);	// get uint32_t integer value
-static uint8_t _get_dbl(cmdObj *cmd);	// get double value
-static uint8_t _get_dbu(cmdObj *cmd);	// get double with unit conversion
+static uint8_t _get_nul(cmdObj_t *cmd);	// get null value type
+static uint8_t _get_ui8(cmdObj_t *cmd);	// get uint8_t value
+static uint8_t _get_int(cmdObj_t *cmd);	// get uint32_t integer value
+static uint8_t _get_dbl(cmdObj_t *cmd);	// get double value
+static uint8_t _get_dbu(cmdObj_t *cmd);	// get double with unit conversion
 
-static void _print_nul(cmdObj *cmd);	// print nothing
-static void _print_str(cmdObj *cmd);	// print a string value
-static void _print_ui8(cmdObj *cmd);	// print unit8_t value w/no units
-static void _print_int(cmdObj *cmd);	// print integer value w/no units
-static void _print_dbl(cmdObj *cmd);	// print double value w/no units
-static void _print_lin(cmdObj *cmd);	// print linear values
-static void _print_rot(cmdObj *cmd);	// print rotary values
+static void _print_nul(cmdObj_t *cmd);	// print nothing
+static void _print_str(cmdObj_t *cmd);	// print a string value
+static void _print_ui8(cmdObj_t *cmd);	// print unit8_t value w/no units
+static void _print_int(cmdObj_t *cmd);	// print integer value w/no units
+static void _print_dbl(cmdObj_t *cmd);	// print double value w/no units
+static void _print_lin(cmdObj_t *cmd);	// print linear values
+static void _print_rot(cmdObj_t *cmd);	// print rotary values
 
-//static void _pr_ma_str(cmdObj *cmd);	// generic print functions for motors and axes
-static void _pr_ma_ui8(cmdObj *cmd);
-//static void _pr_ma_int(cmdObj *cmd);
-//static void _pr_ma_dbl(cmdObj *cmd);
-static void _pr_ma_lin(cmdObj *cmd);
-static void _pr_ma_rot(cmdObj *cmd);
-static void _print_coor(cmdObj *cmd);	// print coordinate offsets with linear units
-static void _print_corr(cmdObj *cmd);	// print coordinate offsets with rotary units
+//static void _pr_ma_str(cmdObj_t *cmd);	// generic print functions for motors and axes
+static void _pr_ma_ui8(cmdObj_t *cmd);
+//static void _pr_ma_int(cmdObj_t *cmd);
+//static void _pr_ma_dbl(cmdObj_t *cmd);
+static void _pr_ma_lin(cmdObj_t *cmd);
+static void _pr_ma_rot(cmdObj_t *cmd);
+static void _print_coor(cmdObj_t *cmd);	// print coordinate offsets with linear units
+static void _print_corr(cmdObj_t *cmd);	// print coordinate offsets with rotary units
 
 // helpers for generic functions
 static char *_get_format(const index_t i, char *format);
 static int8_t _get_motor(const index_t i);
 //static int8_t _get_axis(const index_t i);
 static int8_t _get_pos_axis(const index_t i);
-static uint8_t _text_parser(char *str, struct cmdObject *c);
-static uint8_t _get_msg_helper(cmdObj *cmd, prog_char_ptr msg, uint8_t value);
+static uint8_t _text_parser(char *str, cmdObj_t *c);
+static uint8_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value);
 static void _print_text_inline_pairs();
 static void _print_text_inline_values();
 static void _print_text_multiline_formatted();
 
-static uint8_t _set_grp(cmdObj *cmd);	// set data for a group
-static uint8_t _get_grp(cmdObj *cmd);	// get data for a group
-static uint8_t _do_motors(cmdObj *cmd);	// print parameters for all motor groups
-static uint8_t _do_axes(cmdObj *cmd);	// print parameters for all axis groups
-static uint8_t _do_offsets(cmdObj *cmd);// print offsets for G54-G59, G92
-static uint8_t _do_all(cmdObj *cmd);	// print all parameters
-static void _do_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]); // helper to print multiple groups in a list
+static uint8_t _set_grp(cmdObj_t *cmd);	// set data for a group
+static uint8_t _get_grp(cmdObj_t *cmd);	// get data for a group
+static uint8_t _do_motors(cmdObj_t *cmd);	// print parameters for all motor groups
+static uint8_t _do_axes(cmdObj_t *cmd);	// print parameters for all axis groups
+static uint8_t _do_offsets(cmdObj_t *cmd);// print offsets for G54-G59, G92
+static uint8_t _do_all(cmdObj_t *cmd);	// print all parameters
+static void _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]); // helper to print multiple groups in a list
 
 /*****************************************************************************
  **** PARAMETER-SPECIFIC CODE REGION *****************************************
@@ -207,57 +207,57 @@ static void _do_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]); // helper
  *****************************************************************************/
 
 // parameter-specific internal functions
-//static uint8_t _get_id(cmdObj *cmd);	// get device ID (signature)
-static uint8_t _set_hv(cmdObj *cmd);	// set hardware version
-static uint8_t _get_sr(cmdObj *cmd);	// run status report (as data)
-static void _print_sr(cmdObj *cmd);		// run status report (as printout)
-static uint8_t _set_sr(cmdObj *cmd);	// set status report specification
-static uint8_t _set_si(cmdObj *cmd);	// set status report interval
-static uint8_t _get_id(cmdObj *cmd);	// get device ID
-static uint8_t _get_qr(cmdObj *cmd);	// run queue report (as data)
-static uint8_t _get_rx(cmdObj *cmd);	// get bytes in RX buffer
+//static uint8_t _get_id(cmdObj_t *cmd);	// get device ID (signature)
+static uint8_t _set_hv(cmdObj_t *cmd);	// set hardware version
+static uint8_t _get_sr(cmdObj_t *cmd);	// run status report (as data)
+static void _print_sr(cmdObj_t *cmd);		// run status report (as printout)
+static uint8_t _set_sr(cmdObj_t *cmd);	// set status report specification
+static uint8_t _set_si(cmdObj_t *cmd);	// set status report interval
+static uint8_t _get_id(cmdObj_t *cmd);	// get device ID
+static uint8_t _get_qr(cmdObj_t *cmd);	// run queue report (as data)
+static uint8_t _get_rx(cmdObj_t *cmd);	// get bytes in RX buffer
 
-static uint8_t _get_gc(cmdObj *cmd);	// get current gcode block
-static uint8_t _run_gc(cmdObj *cmd);	// run a gcode block
-static uint8_t _run_home(cmdObj *cmd);	// invoke a homing cycle
+static uint8_t _get_gc(cmdObj_t *cmd);	// get current gcode block
+static uint8_t _run_gc(cmdObj_t *cmd);	// run a gcode block
+static uint8_t _run_home(cmdObj_t *cmd);	// invoke a homing cycle
 
-static uint8_t _get_line(cmdObj *cmd);	// get runtime line number
-static uint8_t _get_stat(cmdObj *cmd);	// get combined machine state as value and string
-static uint8_t _get_macs(cmdObj *cmd);	// get raw machine state as value and string
-static uint8_t _get_cycs(cmdObj *cmd);	// get raw cycle state (etc etc)...
-static uint8_t _get_mots(cmdObj *cmd);	// get raw motion state...
-static uint8_t _get_hold(cmdObj *cmd);	// get raw hold state...
-static uint8_t _get_home(cmdObj *cmd);	// get raw homing state...
-static uint8_t _get_unit(cmdObj *cmd);	// get unit mode...
-static uint8_t _get_coor(cmdObj *cmd);	// get coordinate system in effect...
-static uint8_t _get_momo(cmdObj *cmd);	// get motion mode...
-static uint8_t _get_plan(cmdObj *cmd);	// get active plane...
-static uint8_t _get_path(cmdObj *cmd);	// get patch control mode...
-static uint8_t _get_dist(cmdObj *cmd);	// get distance mode...
-static uint8_t _get_frmo(cmdObj *cmd);	// get feedrate mode...
-static uint8_t _get_vel(cmdObj *cmd);	// get runtime velocity...
-static uint8_t _get_pos(cmdObj *cmd);	// get runtime work position...
-static uint8_t _get_mpos(cmdObj *cmd);	// get runtime machine position...
-static void _print_pos(cmdObj *cmd);	// print runtime work position...
+static uint8_t _get_line(cmdObj_t *cmd);	// get runtime line number
+static uint8_t _get_stat(cmdObj_t *cmd);	// get combined machine state as value and string
+static uint8_t _get_macs(cmdObj_t *cmd);	// get raw machine state as value and string
+static uint8_t _get_cycs(cmdObj_t *cmd);	// get raw cycle state (etc etc)...
+static uint8_t _get_mots(cmdObj_t *cmd);	// get raw motion state...
+static uint8_t _get_hold(cmdObj_t *cmd);	// get raw hold state...
+static uint8_t _get_home(cmdObj_t *cmd);	// get raw homing state...
+static uint8_t _get_unit(cmdObj_t *cmd);	// get unit mode...
+static uint8_t _get_coor(cmdObj_t *cmd);	// get coordinate system in effect...
+static uint8_t _get_momo(cmdObj_t *cmd);	// get motion mode...
+static uint8_t _get_plan(cmdObj_t *cmd);	// get active plane...
+static uint8_t _get_path(cmdObj_t *cmd);	// get patch control mode...
+static uint8_t _get_dist(cmdObj_t *cmd);	// get distance mode...
+static uint8_t _get_frmo(cmdObj_t *cmd);	// get feedrate mode...
+static uint8_t _get_vel(cmdObj_t *cmd);	// get runtime velocity...
+static uint8_t _get_pos(cmdObj_t *cmd);	// get runtime work position...
+static uint8_t _get_mpos(cmdObj_t *cmd);	// get runtime machine position...
+static void _print_pos(cmdObj_t *cmd);	// print runtime work position...
 
-static uint8_t _set_defa(cmdObj *cmd);	// reset config to default values
+static uint8_t _set_defa(cmdObj_t *cmd);	// reset config to default values
 
-static uint8_t _set_sa(cmdObj *cmd);	// set motor step angle
-static uint8_t _set_tr(cmdObj *cmd);	// set motor travel per revolution
-static uint8_t _set_mi(cmdObj *cmd);	// set microsteps
-static uint8_t _set_po(cmdObj *cmd);	// set motor polarity
-static uint8_t _set_motor_steps_per_unit(cmdObj *cmd);
+static uint8_t _set_sa(cmdObj_t *cmd);	// set motor step angle
+static uint8_t _set_tr(cmdObj_t *cmd);	// set motor travel per revolution
+static uint8_t _set_mi(cmdObj_t *cmd);	// set microsteps
+static uint8_t _set_po(cmdObj_t *cmd);	// set motor polarity
+static uint8_t _set_motor_steps_per_unit(cmdObj_t *cmd);
 
-static uint8_t _get_am(cmdObj *cmd);	// get axis mode
-static uint8_t _set_am(cmdObj *cmd);	// set axis mode
-static void _print_am(cmdObj *cmd);		// print axis mode
-static uint8_t _set_sw(cmdObj *cmd);	// must run any time you change a switch setting
+static uint8_t _get_am(cmdObj_t *cmd);	// get axis mode
+static uint8_t _set_am(cmdObj_t *cmd);	// set axis mode
+static void _print_am(cmdObj_t *cmd);		// print axis mode
+static uint8_t _set_sw(cmdObj_t *cmd);	// must run any time you change a switch setting
 
-static uint8_t _set_ic(cmdObj *cmd);	// ignore CR or LF on RX input
-static uint8_t _set_ec(cmdObj *cmd);	// expand CRLF on TX outout
-static uint8_t _set_ee(cmdObj *cmd);	// enable character echo
-static uint8_t _set_ex(cmdObj *cmd);	// enable XON/XOFF
-static uint8_t _set_baud(cmdObj *cmd);	// set USB baud rate
+static uint8_t _set_ic(cmdObj_t *cmd);	// ignore CR or LF on RX input
+static uint8_t _set_ec(cmdObj_t *cmd);	// expand CRLF on TX outout
+static uint8_t _set_ee(cmdObj_t *cmd);	// enable character echo
+static uint8_t _set_ex(cmdObj_t *cmd);	// enable XON/XOFF
+static uint8_t _set_baud(cmdObj_t *cmd);	// set USB baud rate
 
 /***** PROGMEM Strings ******************************************************/
 
@@ -502,7 +502,7 @@ static const char fmt_gdi[] PROGMEM = "[gdi] default gcode distance mode%2d [0=G
  *	  'x' is --> { "", "x",  	and 'm' is --> { "", "m",  
  */
 
-struct cfgItem const cfgArray[] PROGMEM = {
+const cfgItem_t cfgArray[] PROGMEM = {
 	// grp  token flags format*, print_func, get_func, set_func  target for get/set,   default value
 	{ "sys","fb", _fip, fmt_fb, _print_dbl, _get_dbl, _set_nul, (double *)&cfg.fw_build,   TINYG_BUILD_NUMBER }, // MUST BE FIRST!
 	{ "sys","fv", _fip, fmt_fv, _print_dbl, _get_dbl, _set_nul, (double *)&cfg.fw_version, TINYG_VERSION_NUMBER },
@@ -818,7 +818,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
 #define CMD_COUNT_GROUPS 		24											// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 											// count of uber-groups
 
-#define CMD_INDEX_MAX (sizeof cfgArray / sizeof(struct cfgItem))
+#define CMD_INDEX_MAX (sizeof cfgArray / sizeof(cfgItem_t))
 #define CMD_INDEX_END_SINGLES		(CMD_INDEX_MAX - CMD_COUNT_UBER_GROUPS - CMD_COUNT_GROUPS - CMD_STATUS_REPORT_LEN)
 #define CMD_INDEX_START_GROUPS		(CMD_INDEX_MAX - CMD_COUNT_UBER_GROUPS - CMD_COUNT_GROUPS)
 #define CMD_INDEX_START_UBER_GROUPS (CMD_INDEX_MAX - CMD_COUNT_UBER_GROUPS)
@@ -835,7 +835,7 @@ struct cfgItem const cfgArray[] PROGMEM = {
  * _get_qr() - run queue report
  * _get_rx() - get bytes available in RX buffer
  */
-static uint8_t _set_hv(cmdObj *cmd) 
+static uint8_t _set_hv(cmdObj_t *cmd) 
 {
 	_set_dbl(cmd);					// record the hardware version
 	sys_port_bindings(cmd->value);	// reset port bindings
@@ -843,21 +843,21 @@ static uint8_t _set_hv(cmdObj *cmd)
 	return (TG_OK);
 }
 
-static uint8_t _get_id(cmdObj *cmd) 
+static uint8_t _get_id(cmdObj_t *cmd) 
 {
 	sys_get_id(cmd->string);
 	cmd->type = TYPE_STRING;
 	return (TG_OK);
 }
 
-static uint8_t _get_qr(cmdObj *cmd) 
+static uint8_t _get_qr(cmdObj_t *cmd) 
 {
 	cmd->value = (double)mp_get_planner_buffers_available();
 	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }
 
-static uint8_t _get_rx(cmdObj *cmd)
+static uint8_t _get_rx(cmdObj_t *cmd)
 {
 	cmd->value = (double)xio_get_usb_rx_free();
 	cmd->type = TYPE_INTEGER;
@@ -870,18 +870,18 @@ static uint8_t _get_rx(cmdObj *cmd)
  * _set_sr()   - set status report specification
  * _set_si()   - set status report interval
  */
-static uint8_t _get_sr(cmdObj *cmd)
+static uint8_t _get_sr(cmdObj_t *cmd)
 {
 	rpt_populate_status_report();
 	return (TG_OK);
 }
 
-static void _print_sr(cmdObj *cmd)
+static void _print_sr(cmdObj_t *cmd)
 {
 	rpt_populate_status_report();
 }
 
-static uint8_t _set_sr(cmdObj *cmd)
+static uint8_t _set_sr(cmdObj_t *cmd)
 {
 	memset(cfg.status_report_list, 0 , sizeof(cfg.status_report_list));
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
@@ -893,7 +893,7 @@ static uint8_t _set_sr(cmdObj *cmd)
 	return (TG_OK);
 }
 
-static uint8_t _set_si(cmdObj *cmd) 
+static uint8_t _set_si(cmdObj_t *cmd) 
 {
 	if ((cmd->value < STATUS_REPORT_MIN_MS) && (cmd->value!=0)) {
 		cmd->value = STATUS_REPORT_MIN_MS;
@@ -925,7 +925,7 @@ static uint8_t _set_si(cmdObj *cmd)
  * _get_mpos() - get runtime machine position
  * _print_pos()- print work or machine position
  */
-static uint8_t _get_msg_helper(cmdObj *cmd, prog_char_ptr msg, uint8_t value)
+static uint8_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value)
 {
 	cmd->value = (double)value;
 	cmd->type = TYPE_INTEGER;
@@ -934,7 +934,7 @@ static uint8_t _get_msg_helper(cmdObj *cmd, prog_char_ptr msg, uint8_t value)
 //	return((char *)pgm_read_word(&msg[(uint8_t)value]));
 }
 
-static uint8_t _get_stat(cmdObj *cmd)
+static uint8_t _get_stat(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_stat, cm_get_combined_state()));
 
@@ -946,74 +946,74 @@ static uint8_t _get_stat(cmdObj *cmd)
  */
 }
 
-static uint8_t _get_macs(cmdObj *cmd)
+static uint8_t _get_macs(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_macs, cm_get_machine_state()));
 }
 
-static uint8_t _get_cycs(cmdObj *cmd)
+static uint8_t _get_cycs(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_cycs, cm_get_cycle_state()));
 }
 
-static uint8_t _get_mots(cmdObj *cmd)
+static uint8_t _get_mots(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_mots, cm_get_motion_state()));
 }
 
-static uint8_t _get_hold(cmdObj *cmd)
+static uint8_t _get_hold(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_hold, cm_get_hold_state()));
 }
 
-static uint8_t _get_home(cmdObj *cmd)
+static uint8_t _get_home(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_home, cm_get_homing_state()));
 }
 
-static uint8_t _get_unit(cmdObj *cmd)
+static uint8_t _get_unit(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_unit, cm_get_units_mode()));
 }
 
-static uint8_t _get_coor(cmdObj *cmd)
+static uint8_t _get_coor(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_coor, cm_get_coord_system()));
 }
 
-static uint8_t _get_momo(cmdObj *cmd)
+static uint8_t _get_momo(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_momo, cm_get_motion_mode()));
 }
 
-static uint8_t _get_plan(cmdObj *cmd)
+static uint8_t _get_plan(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_plan, cm_get_select_plane()));
 }
 
-static uint8_t _get_path(cmdObj *cmd)
+static uint8_t _get_path(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_path, cm_get_path_control()));
 }
 
-static uint8_t _get_dist(cmdObj *cmd)
+static uint8_t _get_dist(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_dist, cm_get_distance_mode()));
 }
 
-static uint8_t _get_frmo(cmdObj *cmd)
+static uint8_t _get_frmo(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_frmo, cm_get_inverse_feed_rate_mode()));
 }
 
-static uint8_t _get_line(cmdObj *cmd)
+static uint8_t _get_line(cmdObj_t *cmd)
 {
 	cmd->value = (double)mp_get_runtime_linenum();
 	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }
 
-static uint8_t _get_vel(cmdObj *cmd) 
+static uint8_t _get_vel(cmdObj_t *cmd) 
 {
 	cmd->value = mp_get_runtime_velocity();
 	if (cm_get_units_mode() == INCHES) cmd->value *= INCH_PER_MM;
@@ -1021,21 +1021,21 @@ static uint8_t _get_vel(cmdObj *cmd)
 	return (TG_OK);
 }
 
-static uint8_t _get_pos(cmdObj *cmd) 
+static uint8_t _get_pos(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_runtime_work_position(_get_pos_axis(cmd->index));
 	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 
-static uint8_t _get_mpos(cmdObj *cmd) 
+static uint8_t _get_mpos(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_runtime_machine_position(_get_pos_axis(cmd->index));
 	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 
-static void _print_pos(cmdObj *cmd)
+static void _print_pos(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
 	uint8_t axis = _get_pos_axis(cmd->index);
@@ -1053,21 +1053,21 @@ static void _print_pos(cmdObj *cmd)
  * _run_home()	- invoke a homing cycle
  */
 
-static uint8_t _get_gc(cmdObj *cmd)
+static uint8_t _get_gc(cmdObj_t *cmd)
 {
 	strncpy(cmd->string, tg.in_buf, CMD_STRING_LEN);
 	cmd->type = TYPE_STRING;
 	return (TG_OK);
 }
 
-static uint8_t _run_gc(cmdObj *cmd)
+static uint8_t _run_gc(cmdObj_t *cmd)
 {
 	strncpy(tg.in_buf, cmd->string, INPUT_BUFFER_LEN);
 	uint8_t status = gc_gcode_parser(tg.in_buf);
 	return (status);
 }
 
-static uint8_t _run_home(cmdObj *cmd)
+static uint8_t _run_home(cmdObj_t *cmd)
 {
 	if (cmd->value == true) {
 		cm_homing_cycle_start();
@@ -1089,13 +1089,13 @@ static uint8_t _run_home(cmdObj *cmd)
  * _set_motor_steps_per_unit() - update this derived value
  *	 This function will need to be rethought if microstep morphing is implemented
  */
-static uint8_t _get_am(cmdObj *cmd)
+static uint8_t _get_am(cmdObj_t *cmd)
 {
 	_get_ui8(cmd);
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_am, cmd->value)); // see 331.09 for old method
 }
 
-static uint8_t _set_am(cmdObj *cmd)		// axis mode
+static uint8_t _set_am(cmdObj_t *cmd)		// axis mode
 {
 	char linear_axes[] = {"xyz"};
 
@@ -1114,28 +1114,28 @@ static uint8_t _set_am(cmdObj *cmd)		// axis mode
 	return(TG_OK);
 }
 
-static uint8_t _set_sw(cmdObj *cmd)		// switch setting
+static uint8_t _set_sw(cmdObj_t *cmd)		// switch setting
 { 
 	_set_ui8(cmd);
 	gpio_init();
 	return (TG_OK);
 }
 
-static uint8_t _set_sa(cmdObj *cmd)		// motor step angle
+static uint8_t _set_sa(cmdObj_t *cmd)		// motor step angle
 { 
 	_set_dbl(cmd);
 	_set_motor_steps_per_unit(cmd); 
 	return (TG_OK);
 }
 
-static uint8_t _set_tr(cmdObj *cmd)		// motor travel per revolution
+static uint8_t _set_tr(cmdObj_t *cmd)		// motor travel per revolution
 { 
 	_set_dbu(cmd);
 	_set_motor_steps_per_unit(cmd); 
 	return (TG_OK);
 }
 
-static uint8_t _set_mi(cmdObj *cmd)		// motor microsteps
+static uint8_t _set_mi(cmdObj_t *cmd)		// motor microsteps
 {
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
 		cmd_add_string_P("msg", PSTR("*** WARNING *** Non-standard microstep value"));
@@ -1146,14 +1146,14 @@ static uint8_t _set_mi(cmdObj *cmd)		// motor microsteps
 	return (TG_OK);
 }
 
-static uint8_t _set_po(cmdObj *cmd)		// motor polarity
+static uint8_t _set_po(cmdObj_t *cmd)		// motor polarity
 { 
 	_set_ui8(cmd);
 	st_set_polarity(_get_motor(cmd->index), (uint8_t)cmd->value);
 	return (TG_OK);
 }
 
-static uint8_t _set_motor_steps_per_unit(cmdObj *cmd)
+static uint8_t _set_motor_steps_per_unit(cmdObj_t *cmd)
 {
 	uint8_t m = _get_motor(cmd->index);
 	cfg.m[m].steps_per_unit = (360 / (cfg.m[m].step_angle / cfg.m[m].microsteps) / cfg.m[m].travel_rev);
@@ -1169,7 +1169,7 @@ static uint8_t _set_motor_steps_per_unit(cmdObj *cmd)
  *	The above assume USB is the std device
  */
 
-static uint8_t _set_comm_helper(cmdObj *cmd, uint32_t yes, uint32_t no)
+static uint8_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
 {
 	if (fp_NOT_ZERO(cmd->value)) { 
 		(void)xio_ctrl(XIO_DEV_USB, yes);
@@ -1179,7 +1179,7 @@ static uint8_t _set_comm_helper(cmdObj *cmd, uint32_t yes, uint32_t no)
 	return (TG_OK);
 }
 
-static uint8_t _set_ic(cmdObj *cmd) 	// ignore CR or LF on RX
+static uint8_t _set_ic(cmdObj_t *cmd) 	// ignore CR or LF on RX
 {
 	cfg.ignore_crlf = (uint8_t)cmd->value;
 	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
@@ -1193,19 +1193,19 @@ static uint8_t _set_ic(cmdObj *cmd) 	// ignore CR or LF on RX
 	return (TG_OK);
 }
 
-static uint8_t _set_ec(cmdObj *cmd) 	// expand CR to CRLF on TX
+static uint8_t _set_ec(cmdObj_t *cmd) 	// expand CR to CRLF on TX
 {
 	cfg.enable_cr = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_CRLF, XIO_NOCRLF));
 }
 
-static uint8_t _set_ee(cmdObj *cmd) 	// enable character echo
+static uint8_t _set_ee(cmdObj_t *cmd) 	// enable character echo
 {
 	cfg.enable_echo = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_ECHO, XIO_NOECHO));
 }
 
-static uint8_t _set_ex(cmdObj *cmd)		// enable XON/XOFF
+static uint8_t _set_ex(cmdObj_t *cmd)		// enable XON/XOFF
 {
 	cfg.enable_xon = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_XOFF, XIO_NOXOFF));
@@ -1221,7 +1221,7 @@ static uint8_t _set_ex(cmdObj *cmd)		// enable XON/XOFF
  *	Then it performs the callback to apply the new baud rate
  */
 
-static uint8_t _set_baud(cmdObj *cmd)
+static uint8_t _set_baud(cmdObj_t *cmd)
 {
 	uint8_t baud = (uint8_t)cmd->value;
 	if ((baud < 1) || (baud > 6)) {
@@ -1265,7 +1265,7 @@ uint8_t cfg_baud_rate_callback(void)
 /*
  * cmd_set() - Write a value or invoke a function - operates on single valued elements or groups
  */
-uint8_t cmd_set(cmdObj *cmd)
+uint8_t cmd_set(cmdObj_t *cmd)
 {
 	ASSERT_CMD_INDEX(TG_UNRECOGNIZED_COMMAND);
 	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].set)))(cmd));
@@ -1275,7 +1275,7 @@ uint8_t cmd_set(cmdObj *cmd)
  * cmd_get() - Build a cmdObj with the values from the target & return the value
  *			   Populate cmd body with single valued elements or groups (iterates)
  */
-uint8_t cmd_get(cmdObj *cmd)
+uint8_t cmd_get(cmdObj_t *cmd)
 {
 	ASSERT_CMD_INDEX(TG_UNRECOGNIZED_COMMAND);
 	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd));
@@ -1284,7 +1284,7 @@ uint8_t cmd_get(cmdObj *cmd)
 /*
  * cmd_print()	- Output a formatted string for the value.
  */
-void cmd_print(cmdObj *cmd)
+void cmd_print(cmdObj_t *cmd)
 {
 	if (cmd->index >= CMD_INDEX_MAX) return;
 	((fptrPrint)(pgm_read_word(&cfgArray[cmd->index].print)))(cmd);
@@ -1293,7 +1293,7 @@ void cmd_print(cmdObj *cmd)
 /*
  * cmd_persist()- persist value to NVM. Takes special cases into account
  */
-void cmd_persist(cmdObj *cmd)
+void cmd_persist(cmdObj_t *cmd)
 {
 #ifdef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
 	return;
@@ -1317,7 +1317,7 @@ void cfg_init()
 //	You can assume the cfg struct has been zeroed by a hard reset. 
 //	Do not clear as the version and build numbers have already been set by tg_init()
 
-	cmdObj cmd;
+	cmdObj_t cmd;
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
 	cmd_new_list();					// setup the cmd object lists. Do this first.
 	cfg.comm_mode = JSON_MODE;		// initial value until EEPROM is read
@@ -1349,7 +1349,7 @@ void cfg_init()
  * _set_defa() - reset NVM with default values for active profile
  */ 
 
-static uint8_t _set_defa(cmdObj *cmd) 
+static uint8_t _set_defa(cmdObj_t *cmd) 
 {
 	if (cmd->value != true) {		// failsafe. Must set true or no action occurs
 		print_defaults_help(cmd);
@@ -1382,7 +1382,7 @@ static uint8_t _set_defa(cmdObj *cmd)
 
 uint8_t cfg_text_parser(char *str)
 {
-	cmdObj *cmd = cmd_body;					// point at first object in the body
+	cmdObj_t *cmd = cmd_body;					// point at first object in the body
 	uint8_t status = TG_OK;
 
 	if (str[0] == '?') {					// handle status report case
@@ -1406,7 +1406,7 @@ uint8_t cfg_text_parser(char *str)
 	return (status);
 }
 
-static uint8_t _text_parser(char *str, cmdObj *cmd)
+static uint8_t _text_parser(char *str, cmdObj_t *cmd)
 {
 	char *ptr_rd, *ptr_wr;					// read and write pointers
 	char separators[] = {" =:|\t"};			// any separator someone might use
@@ -1448,30 +1448,30 @@ static uint8_t _text_parser(char *str, cmdObj *cmd)
  * _set_dbl() - set value as double w/o unit conversion
  * _set_dbu() - set value as double w/unit conversion
  */
-static uint8_t _set_nul(cmdObj *cmd) { return (TG_NOOP);}
+static uint8_t _set_nul(cmdObj_t *cmd) { return (TG_NOOP);}
 
-static uint8_t _set_ui8(cmdObj *cmd)
+static uint8_t _set_ui8(cmdObj_t *cmd)
 {
 	*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->type = TYPE_INTEGER;
 	return(TG_OK);
 }
 
-static uint8_t _set_int(cmdObj *cmd)
+static uint8_t _set_int(cmdObj_t *cmd)
 {
 	*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->type = TYPE_INTEGER;
 	return(TG_OK);
 }
 
-static uint8_t _set_dbl(cmdObj *cmd)
+static uint8_t _set_dbl(cmdObj_t *cmd)
 {
 	*((double *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->type = TYPE_FLOAT;
 	return(TG_OK);
 }
 
-static uint8_t _set_dbu(cmdObj *cmd)
+static uint8_t _set_dbu(cmdObj_t *cmd)
 {
 	if (cm_get_units_mode() == INCHES) {
 		*((double *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value * MM_PER_INCH;
@@ -1488,34 +1488,34 @@ static uint8_t _set_dbu(cmdObj *cmd)
  * _get_dbl() - get value as double w/o unit conversion
  * _get_dbu() - get value as double w/unit conversion
  */
-static uint8_t _get_nul(cmdObj *cmd) 
+static uint8_t _get_nul(cmdObj_t *cmd) 
 { 
 	cmd->type = TYPE_NULL;
 	return (TG_NOOP);
 }
 
-static uint8_t _get_ui8(cmdObj *cmd)
+static uint8_t _get_ui8(cmdObj_t *cmd)
 {
 	cmd->value = (double)*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target));
 	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }
 
-static uint8_t _get_int(cmdObj *cmd)
+static uint8_t _get_int(cmdObj_t *cmd)
 {
 	cmd->value = (double)*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target));
 	cmd->type = TYPE_INTEGER;
 	return (TG_OK);
 }
 
-static uint8_t _get_dbl(cmdObj *cmd)
+static uint8_t _get_dbl(cmdObj_t *cmd)
 {
 	cmd->value = *((double *)pgm_read_word(&cfgArray[cmd->index].target));
 	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 
-static uint8_t _get_dbu(cmdObj *cmd)
+static uint8_t _get_dbu(cmdObj_t *cmd)
 {
 	_get_dbl(cmd);
 	if (cm_get_units_mode() == INCHES) {
@@ -1536,16 +1536,16 @@ static uint8_t _get_dbu(cmdObj *cmd)
  * _pr_ma_lin() - print linear value with units and in/mm unit conversion
  * _pr_ma_rot() - print rotary value with units
  */
-static void _print_nul(cmdObj *cmd) {}
+static void _print_nul(cmdObj_t *cmd) {}
 
-static void _pr_ma_ui8(cmdObj *cmd)		// print uint8_t value
+static void _pr_ma_ui8(cmdObj_t *cmd)		// print uint8_t value
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, _get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value);
 }
 
-static void _pr_ma_lin(cmdObj *cmd)		// print a linear value in prevailing units
+static void _pr_ma_lin(cmdObj_t *cmd)		// print a linear value in prevailing units
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
@@ -1553,7 +1553,7 @@ static void _pr_ma_lin(cmdObj *cmd)		// print a linear value in prevailing units
 					(PGM_P)pgm_read_word(&msg_units[cm_get_units_mode()]));
 }
 
-static void _pr_ma_rot(cmdObj *cmd)		// print a rotary value in degrees units
+static void _pr_ma_rot(cmdObj_t *cmd)		// print a rotary value in degrees units
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
@@ -1561,7 +1561,7 @@ static void _pr_ma_rot(cmdObj *cmd)		// print a rotary value in degrees units
 					(PGM_P)pgm_read_word(&msg_units[F_DEG]));
 }
 
-static void _print_am(cmdObj *cmd)		// print axis mode with enumeration string
+static void _print_am(cmdObj_t *cmd)		// print axis mode with enumeration string
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
@@ -1569,7 +1569,7 @@ static void _print_am(cmdObj *cmd)		// print axis mode with enumeration string
 					(PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
 }
 
-static void _print_coor(cmdObj *cmd)	// print coordinate offsets with linear units
+static void _print_coor(cmdObj_t *cmd)	// print coordinate offsets with linear units
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
@@ -1577,7 +1577,7 @@ static void _print_coor(cmdObj *cmd)	// print coordinate offsets with linear uni
 					(PGM_P)pgm_read_word(&msg_units[cm_get_units_mode()]));
 }
 
-static void _print_corr(cmdObj *cmd)	// print coordinate offsets with rotary units
+static void _print_corr(cmdObj_t *cmd)	// print coordinate offsets with rotary units
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
@@ -1585,7 +1585,7 @@ static void _print_corr(cmdObj *cmd)	// print coordinate offsets with rotary uni
 					(PGM_P)pgm_read_word(&msg_units[F_DEG]));
 }
 
-static void _print_str(cmdObj *cmd)
+static void _print_str(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
@@ -1593,35 +1593,35 @@ static void _print_str(cmdObj *cmd)
 }
 
 
-static void _print_ui8(cmdObj *cmd)
+static void _print_ui8(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, _get_format(cmd->index, format), (uint8_t)cmd->value);
 }
 
-static void _print_int(cmdObj *cmd)
+static void _print_int(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, _get_format(cmd->index, format), (uint32_t)cmd->value);
 }
 
-static void _print_dbl(cmdObj *cmd)
+static void _print_dbl(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, _get_format(cmd->index, format), cmd->value);
 }
 
-static void _print_lin(cmdObj *cmd)
+static void _print_lin(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, _get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode()]));
 }
 
-static void _print_rot(cmdObj *cmd)
+static void _print_rot(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
@@ -1693,7 +1693,7 @@ static int8_t _get_pos_axis(const index_t i)
 
 //index_t cmd_get_max_index() { return (CMD_INDEX_MAX);}
 
-cmdObj *cmd_new_obj(cmdObj *cmd)			// clear a single cmdObj structure
+cmdObj_t *cmd_new_obj(cmdObj_t *cmd)			// clear a single cmdObj structure
 {
 	cmd->type = TYPE_EMPTY;					// much faster than calling memset
 	cmd->index = 0;
@@ -1712,7 +1712,7 @@ cmdObj *cmd_new_obj(cmdObj *cmd)			// clear a single cmdObj structure
 	return (cmd);
 }
 
-void cmd_get_cmdObj(cmdObj *cmd)
+void cmd_get_cmdObj(cmdObj_t *cmd)
 {
 	if (cmd->index >= CMD_INDEX_MAX) return;
 	index_t tmp = cmd->index;
@@ -1765,7 +1765,7 @@ index_t cmd_get_index(const char *group, const char *token)
 	return (NO_INDEX);	// no match
 }
 
-uint8_t cmd_get_type(cmdObj *cmd)
+uint8_t cmd_get_type(cmdObj_t *cmd)
 {
 	if (strcmp("gc", cmd->token) == 0) return (CMD_TYPE_GCODE);
 	if (strcmp("sr", cmd->token) == 0) return (CMD_TYPE_REPORT);
@@ -1776,7 +1776,7 @@ uint8_t cmd_get_type(cmdObj *cmd)
 uint8_t cmd_persist_offsets(uint8_t flag)
 {
 	if (flag == true) {
-		cmdObj cmd;
+		cmdObj_t cmd;
 		for (uint8_t i=1; i<=COORDS; i++) {
 			for (uint8_t j=0; j<AXES; j++) {
 				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
@@ -1829,7 +1829,7 @@ uint8_t cmd_persist_offsets(uint8_t flag)
  *	even though the sys parent is labeled as a TYPE_PARENT.
  */
 
-static uint8_t _get_grp(cmdObj *cmd)
+static uint8_t _get_grp(cmdObj_t *cmd)
 {
 	char *parent_group = cmd->token;		// token in the parent cmd object is the group
 	char group[CMD_GROUP_LEN+1];			// group string retrieved from cfgArray child
@@ -1853,7 +1853,7 @@ static uint8_t _get_grp(cmdObj *cmd)
  *	This function serves JSON mode only as text mode shouldn't call it.
  */
 
-static uint8_t _set_grp(cmdObj *cmd)
+static uint8_t _set_grp(cmdObj_t *cmd)
 {
 	if (cfg.comm_mode == TEXT_MODE) return (TG_UNRECOGNIZED_COMMAND);
 	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
@@ -1898,7 +1898,7 @@ uint8_t cmd_group_is_prefixed(char *group)
  * _do_all()		- get and print all groups uber group
  */
 
-static void _do_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
+static void _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
 {
 	for (uint8_t i=0; i < CMD_MAX_OBJECTS; i++) {
 		if (list[i][0] == NUL) return;
@@ -1911,28 +1911,28 @@ static void _do_group_list(cmdObj *cmd, char list[][CMD_TOKEN_LEN+1]) // helper 
 	}
 }
 
-static uint8_t _do_motors(cmdObj *cmd)	// print parameters for all motor groups
+static uint8_t _do_motors(cmdObj_t *cmd)	// print parameters for all motor groups
 {
 	char list[][CMD_TOKEN_LEN+1] = {"1","2","3","4",""}; // must have a terminating element
 	_do_group_list(cmd, list);
 	return (TG_COMPLETE);
 }
 
-static uint8_t _do_axes(cmdObj *cmd)	// print parameters for all axis groups
+static uint8_t _do_axes(cmdObj_t *cmd)	// print parameters for all axis groups
 {
 	char list[][CMD_TOKEN_LEN+1] = {"x","y","z","a","b","c",""}; // must have a terminating element
 	_do_group_list(cmd, list);
 	return (TG_COMPLETE);
 }
 
-static uint8_t _do_offsets(cmdObj *cmd)	// print offset parameters for G54-G59,G92, G28, G30
+static uint8_t _do_offsets(cmdObj_t *cmd)	// print offset parameters for G54-G59,G92, G28, G30
 {
 	char list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92","g28","g30",""}; // must have a terminating element
 	_do_group_list(cmd, list);
 	return (TG_COMPLETE);
 }
 
-static uint8_t _do_all(cmdObj *cmd)		// print all parameters
+static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
 {
 	// print system group
 	strcpy(cmd->token,"sys");
@@ -1970,7 +1970,7 @@ static uint8_t _do_all(cmdObj *cmd)		// print all parameters
 void cmd_new_list()						// clear the header, response body and footer
 {
 	// setup header ("r" parent)
-	cmdObj *cmd = cmd_header;
+	cmdObj_t *cmd = cmd_header;
 	cmd->pv = 0;
 	cmd->nx = cmd_body;
 	cmd->index = 0;
@@ -1997,7 +1997,7 @@ void cmd_new_list()						// clear the header, response body and footer
 	return;
 }
 
-void cmd_new_body(cmdObj *cmd)			// clear the body list
+void cmd_new_body(cmdObj_t *cmd)			// clear the body list
 {
 	// setup body elements
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
@@ -2018,7 +2018,7 @@ void cmd_new_body(cmdObj *cmd)			// clear the body list
 
 uint8_t cmd_add_object(char *token)			// add an object to the body using a token
 {
-	cmdObj *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		if (cmd->type != TYPE_EMPTY) {
 			cmd = cmd->nx;
@@ -2036,7 +2036,7 @@ uint8_t cmd_add_object(char *token)			// add an object to the body using a token
 
 uint8_t cmd_add_string(char *token, const char *string)	// add a string object to the body
 {
-	cmdObj *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		if (cmd->type != TYPE_EMPTY) {
 			cmd = cmd->nx;
@@ -2061,7 +2061,7 @@ uint8_t cmd_add_string_P(char *token, const char *string)
 
 uint8_t cmd_add_integer(char *token, const uint32_t value)// add an integer object to the body
 {
-	cmdObj *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		if (cmd->type != TYPE_EMPTY) {
 			cmd = cmd->nx;
@@ -2078,7 +2078,7 @@ uint8_t cmd_add_integer(char *token, const uint32_t value)// add an integer obje
 
 uint8_t cmd_add_float(char *token, const double value)	// add a float object to the body
 {
-	cmdObj *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		if (cmd->type != TYPE_EMPTY) {
 			cmd = cmd->nx;
@@ -2118,7 +2118,7 @@ void cmd_print_list(uint8_t status, uint8_t textmode)
 
 void _print_text_inline_pairs()
 {
-	cmdObj *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_body;
 
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		switch (cmd->type) {
@@ -2137,7 +2137,7 @@ void _print_text_inline_pairs()
 
 void _print_text_inline_values()
 {
-	cmdObj *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_body;
 
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		switch (cmd->type) {
@@ -2156,7 +2156,7 @@ void _print_text_inline_values()
 
 void _print_text_multiline_formatted()
 {
-	cmdObj *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_body;
 
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		if (cmd->type != TYPE_PARENT) { cmd_print(cmd);}
@@ -2174,7 +2174,7 @@ void _print_text_multiline_formatted()
  *
  *	It's the responsibility of the caller to make sure the index does not exceed range
  */
-uint8_t cmd_read_NVM_value(cmdObj *cmd)
+uint8_t cmd_read_NVM_value(cmdObj_t *cmd)
 {
 	int8_t nvm_byte_array[NVM_VALUE_LEN];
 	uint16_t nvm_address = cfg.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
@@ -2183,7 +2183,7 @@ uint8_t cmd_read_NVM_value(cmdObj *cmd)
 	return (TG_OK);
 }
 
-uint8_t cmd_write_NVM_value(cmdObj *cmd)
+uint8_t cmd_write_NVM_value(cmdObj_t *cmd)
 {
 	double tmp = cmd->value;
 	ritorno(cmd_read_NVM_value(cmd));
@@ -2211,7 +2211,7 @@ void cfg_unit_tests()
 {
 
 // NVM tests
-/*	cmdObj cmd;
+/*	cmdObj_t cmd;
 	NVMwr(0, 329.01)
 	NVMwr(1, 111.01)
 	NVMwr(2, 222.02)

@@ -30,7 +30,7 @@
 
 //#include <stdio.h>					// needed for FILE def'n
 
-uint8_t tg_test(cmdObj *cmd);
+uint8_t tg_test(cmdObj_t *cmd);
 void tg_canned_startup(void);
 
 /***** DEBUG support ******
