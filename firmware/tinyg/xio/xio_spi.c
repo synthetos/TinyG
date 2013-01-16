@@ -280,22 +280,18 @@ int xio_getc_spi(FILE *stream)
 	xioDev *d = (xioDev *)stream->udata;		// get device struct pointer
 	xioSpi *dx = (xioSpi *)d->x;				// get SPI device struct pointer
 
-	// handle the empty buffer case
+	// empty buffer case
 	if (dx->rx_buf_head == dx->rx_buf_tail) {	// RX buffer empty
-//		char c_spi = _xfer_char(dx, STX);		// get a char from the SPI port
-		char c_spi = _read_char(dx);			// get a char from the SPI port
-		if (c_spi != ETX) {						// no character received
-			return (c_spi);
-		}
-//		d->signal = XIO_SIG_EOL;
+//		char c_spi = _read_char(dx);			// get a char from the SPI port
+//		if (c_spi != ETX) {						// no character received
+//			return (c_spi);
+//		}
+////		d->signal = XIO_SIG_EOL;
 		return(_FDEV_ERR);
 	}
 
-	// handle the case where the buffer has data
+	// buffer has data
 	advance(dx->rx_buf_tail, SPI_RX_BUFFER_SIZE);
-//	if (--(dx->rx_buf_tail) == 0) {				// advance RX tail (RXQ read ptr)
-//		dx->rx_buf_tail = SPI_RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error (OBOE)
-//	}
 	char c_buf = dx->rx_buf[dx->rx_buf_tail];	// get char from RX buf
 	return (c_buf);
 }
@@ -314,7 +310,7 @@ int xio_putc_spi(const char c_out, FILE *stream)
 
 	// trap special characters - do not insert character into RX queue
 	if (c_in == ETX) {	 						// no data received
-		((xioDev *)stream->udata)->signal = XIO_SIG_EOF;
+//		((xioDev *)stream->udata)->signal = XIO_SIG_EOF;
 		return (XIO_OK);
 	}
 //	if (c_in == NUL) {	 						// slave is not present or unresponsive
@@ -323,9 +319,6 @@ int xio_putc_spi(const char c_out, FILE *stream)
 
 	// write c_in into the RX buffer (or not)
 	advance(dx->rx_buf_head, SPI_RX_BUFFER_SIZE);
-//	if ((--(dx->rx_buf_head)) == 0) { 			// adv buffer head with wrap
-//		dx->rx_buf_head = SPI_RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error
-//	}
 	if (dx->rx_buf_head != dx->rx_buf_tail) {	// buffer is not full
 		dx->rx_buf[dx->rx_buf_head] = c_in;		// write char to buffer
 	} else { 									// buffer-full - toss the incoming character

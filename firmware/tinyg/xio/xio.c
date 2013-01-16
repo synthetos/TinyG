@@ -248,8 +248,8 @@ static void _pgm_test(void);
 
 void xio_unit_tests()
 {
-	_spi_putc();
-//	_spi_loopback();
+//	_spi_putc();
+	_spi_loopback();
 //	_pgm_test();
 }
 
@@ -264,7 +264,6 @@ static void _spi_putc()
 //		xio_putc_spi(0x55, fdev);
 //		c = xio_getc_spi(fdev);
 		xio_gets(XIO_DEV_SPI1, buf, 12);
-
 	}
 }
 
