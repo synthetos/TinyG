@@ -62,7 +62,7 @@
  * 	By convention the character array containing the test must have the same 
  *	name as the file name.
  */
-uint8_t tg_test(cmdObj *cmd)
+uint8_t tg_test(cmdObj_t *cmd)
 {
 	cfg.comm_mode = TEXT_MODE;	// all tests run in text mode only
 

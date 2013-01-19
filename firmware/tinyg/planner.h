@@ -163,14 +163,14 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 	double recip_jerk;			// 1/Jm used for planning (compute-once)
 	double cbrt_jerk;			// cube root of Jm used for planning (compute-once)
 #endif
-} mpBuf;
+} mpBuf_t;
 
 struct mpBufferPool {			// ring buffer for sub-moves
 	uint8_t buffers_available;	// running count of available buffers
-	struct mpBuffer *w;			// get_write_buffer pointer
-	struct mpBuffer *q;			// queue_write_buffer pointer
-	struct mpBuffer *r;			// get/end_run_buffer pointer
-	struct mpBuffer bf[PLANNER_BUFFER_POOL_SIZE];// buffer storage
+	mpBuf_t *w;			// get_write_buffer pointer
+	mpBuf_t *q;			// queue_write_buffer pointer
+	mpBuf_t *r;			// get/end_run_buffer pointer
+	mpBuf_t bf[PLANNER_BUFFER_POOL_SIZE];// buffer storage
 };
 
 struct mpMoveMasterSingleton {	// common variables for planning (move master)
@@ -217,16 +217,16 @@ uint8_t mp_feed_rate_override(uint8_t flag, double parameter);
 
 // planner buffer handlers
 uint8_t mp_get_planner_buffers_available(void);
-void mp_clear_buffer(mpBuf *bf); 
-void mp_copy_buffer(mpBuf *bf, const mpBuf *bp);
+void mp_clear_buffer(mpBuf_t *bf); 
+void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp);
 void mp_queue_write_buffer(const uint8_t move_type);
 void mp_free_run_buffer(void);
-mpBuf * mp_get_write_buffer(void); 
-mpBuf * mp_get_run_buffer(void);
-mpBuf * mp_get_first_buffer(void);
-mpBuf * mp_get_last_buffer(void);
-#define mp_get_prev_buffer(b) ((mpBuf *)(b->pv))
-#define mp_get_next_buffer(b) ((mpBuf *)(b->nx))
+mpBuf_t * mp_get_write_buffer(void); 
+mpBuf_t * mp_get_run_buffer(void);
+mpBuf_t * mp_get_first_buffer(void);
+mpBuf_t * mp_get_last_buffer(void);
+#define mp_get_prev_buffer(b) ((mpBuf_t *)(b->pv))
+#define mp_get_next_buffer(b) ((mpBuf_t *)(b->nx))
 
 // plan_line.c functions
 uint8_t mp_isbusy(void);

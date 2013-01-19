@@ -35,7 +35,7 @@
 /*****************************************************************************
  * CANONICAL MACHINE STRUCTURES
  */
-struct canonicalMachineSingleton {	// struct to manage cm globals and cycles
+typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint8_t combined_state;			// combination of states for display purposes
 	uint8_t machine_state;			// machine/cycle/motion is the actual machine state
 	uint8_t cycle_state;
@@ -48,7 +48,8 @@ struct canonicalMachineSingleton {	// struct to manage cm globals and cycles
 	uint8_t	g28_flag;				// true = complete a G28 move
 	uint8_t	g30_flag;				// true = complete a G30 move
 	uint8_t g10_persist_flag;		//.G10 changed offsets - persist them
-}; struct canonicalMachineSingleton cm;
+} cmSingleton_t;
+cmSingleton_t cm;
 
 /* GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
  *
@@ -73,7 +74,7 @@ struct canonicalMachineSingleton {	// struct to manage cm globals and cycles
  *	 G92 offsets. cfg has the power-on / reset gcode default values, but gm has
  *	 the operating state for the values (which may have changed).
  */
-struct GCodeModel {						// Gcode model- meaning depends on context
+typedef struct GCodeModel {				// Gcode dynamic model
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
 										// G82, G83 G84, G85, G86, G87, G88, G89 
@@ -127,9 +128,9 @@ struct GCodeModel {						// Gcode model- meaning depends on context
 	double parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 	double arc_radius;					// R - radius value in arc radius mode
 	double arc_offset[3];  				// IJK - used by arc commands
-};
+}  GCodeModel_t;
 
-struct GCodeInput {						// Gcode model- meaning depends on context
+typedef struct GCodeInput {				// Gcode model inputs - meaning depends on context
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
 										// G82, G83 G84, G85, G86, G87, G88, G89 
@@ -174,10 +175,12 @@ struct GCodeInput {						// Gcode model- meaning depends on context
 	double parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 	double arc_radius;					// R - radius value in arc radius mode
 	double arc_offset[3];  				// IJK - used by arc commands
-};
-struct GCodeModel gm;					// active gcode model
-struct GCodeInput gn;					// gcode input values
-struct GCodeInput gf;					// gcode input flags
+} GCodeInput_t;
+
+// Allocation
+GCodeModel_t gm;		// active gcode model
+GCodeInput_t gn;		// gcode input values
+GCodeInput_t gf;		// gcode input flags
 
 /*****************************************************************************
  * 

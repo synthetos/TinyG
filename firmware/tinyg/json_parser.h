@@ -33,14 +33,14 @@
 // for now there is only one JSON array in use - the footer
 // if you add these make sure there are no collisions w/present or past numbers
 
-#define JSON_ARRAY_REVISION_FOOTER 1
+#define FOOTER_REVISION 1
 
 /*
  * Global Scope Functions
  */
 
 void js_json_parser(char *str);
-uint16_t js_serialize_json(cmdObj *cmd, char *out_buf);
+uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf);
 void js_print_list(uint8_t status);
 
 /* unit test setup */

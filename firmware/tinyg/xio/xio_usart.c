@@ -49,14 +49,14 @@ static const uint8_t bsel[] PROGMEM = { 0, 207, 103, 51, 34, 33, 31, 27, 19, 1, 
 static const uint8_t bscale[] PROGMEM = { 0, 0, 0, 0, 0, (-1<<4), (-2<<4), (-3<<4), (-4<<4), (1<<4), 1 };
 
 struct cfgUSART {
-		x_open x_open;			// see xio.h for typedefs
-		x_ctrl x_ctrl;
-		x_gets x_gets;
-		x_getc x_getc;
-		x_putc x_putc;
-		fc_func fc_func;
-		USART_t *usart;
-		PORT_t *port;
+		x_open_t x_open;
+		x_ctrl_t x_ctrl;
+		x_gets_t x_gets;
+		x_getc_t x_getc;
+		x_putc_t x_putc;
+		x_flow_t x_flow;
+		USART_t *usart;			// usart binding
+		PORT_t *port;			// port binding
 		uint8_t baud; 
 		uint8_t inbits; 
 		uint8_t outbits; 
@@ -65,28 +65,28 @@ struct cfgUSART {
 };
 
 static struct cfgUSART const cfgUsart[] PROGMEM = {
-	{	// USB config
-		xio_open_usart,			// open function
-		xio_ctrl_generic, 		// ctrl function
-		xio_gets_usart,			// get string function
-		xio_getc_usart,			// stdio getc function
-		xio_putc_usb,			// stdio putc function
-		xio_fc_usart,			// flow control callback
-		&USB_USART,				// usart structure
-		&USB_PORT,				// usart port
+	{
+		xio_open_usart,			// USB config record
+		xio_ctrl_generic,
+		xio_gets_usart,
+		xio_getc_usart,
+		xio_putc_usb,
+		xio_fc_usart,
+		&USB_USART,	
+		&USB_PORT,
 		USB_BAUD,
 		USB_INBITS_bm,
 		USB_OUTBITS_bm,
 		USB_OUTCLR_bm,
 		USB_OUTSET_bm
 	},
-	{	// RS485 config 
-		xio_open_spi,			// open function
-		xio_ctrl_generic, 		// ctrl function
-		xio_gets_usart,			// get string function
-		xio_getc_usart,			// stdio getc function
-		xio_putc_rs485,			// stdio putc function
-		xio_fc_null,			// flow control callback
+	{
+		xio_open_usart,			// RS485 config record
+		xio_ctrl_generic,
+		xio_gets_usart,
+		xio_getc_usart,
+		xio_putc_rs485,
+		xio_fc_null,
 		&RS485_USART,
 		&RS485_PORT,
 		RS485_BAUD,
@@ -101,7 +101,7 @@ static struct cfgUSART const cfgUsart[] PROGMEM = {
  * FUNCTIONS
  ******************************************************************************/
 
-static int _gets_helper(xioDev *d, xioUsart *dx);
+static int _gets_helper(xioDev_t *d, xioUsart_t *dx);
 
 /*
  *	xio_init_usart() - general purpose USART initialization (shared)
@@ -110,12 +110,12 @@ void xio_init_usart(void)
 {
 	for (uint8_t i=0; i<XIO_DEV_USART_COUNT; i++) {
 		xio_open_generic(XIO_DEV_USART_OFFSET + i,
-						(x_open)pgm_read_word(&cfgUsart[i].x_open),
-						(x_ctrl)pgm_read_word(&cfgUsart[i].x_ctrl),
-						(x_gets)pgm_read_word(&cfgUsart[i].x_gets),
-						(x_getc)pgm_read_word(&cfgUsart[i].x_getc),
-						(x_putc)pgm_read_word(&cfgUsart[i].x_putc),
-						(fc_func)pgm_read_word(&cfgUsart[i].fc_func));
+						(x_open_t)pgm_read_word(&cfgUsart[i].x_open),
+						(x_ctrl_t)pgm_read_word(&cfgUsart[i].x_ctrl),
+						(x_gets_t)pgm_read_word(&cfgUsart[i].x_gets),
+						(x_getc_t)pgm_read_word(&cfgUsart[i].x_getc),
+						(x_putc_t)pgm_read_word(&cfgUsart[i].x_putc),
+						(x_flow_t)pgm_read_word(&cfgUsart[i].x_flow));
 	}
 }
 
@@ -123,14 +123,14 @@ void xio_init_usart(void)
  *	xio_open_usart() - general purpose USART open (shared)
  *	xio_set_baud_usart() - baud rate setting routine
  */
-FILE *xio_open_usart(const uint8_t dev, const char *addr, const CONTROL_T flags)
+FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags)
 {
-	xioDev *d = &ds[dev];							// setup device struct pointer
+	xioDev_t *d = &ds[dev];							// setup device struct pointer
 	uint8_t idx = dev - XIO_DEV_USART_OFFSET;
 	d->x = &us[idx];								// bind extended struct to device
-	xioUsart *dx = (xioUsart *)d->x;
+	xioUsart_t *dx = (xioUsart_t *)d->x;
 
-	memset (dx, 0, sizeof(xioUsart));				// clear all values
+	memset (dx, 0, sizeof(xioUsart_t));				// clear all values
 	xio_ctrl_generic(d, flags);						// setup control flags	
 	if (d->flag_xoff) dx->fc_state = FC_IN_XON;		// transfer flow control setting 
 
@@ -155,7 +155,7 @@ FILE *xio_open_usart(const uint8_t dev, const char *addr, const CONTROL_T flags)
 	return (&d->file);		// return FILE reference
 }
 
-void xio_set_baud_usart(xioUsart *dx, const uint8_t baud)
+void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
 {
 	dx->usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
 	dx->usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
@@ -173,7 +173,7 @@ void xio_set_baud_usart(xioUsart *dx, const uint8_t baud)
  *	Reminder: tx/rx queues fill from top to bottom, w/0 being the wrap location
  */
 
-void xio_xoff_usart(xioUsart *dx)
+void xio_xoff_usart(xioUsart_t *dx)
 {
 	if (dx->fc_state == FC_IN_XON) {
 		dx->fc_char = XOFF; 
@@ -182,7 +182,7 @@ void xio_xoff_usart(xioUsart *dx)
 	}
 }
 
-void xio_xon_usart(xioUsart *dx)
+void xio_xon_usart(xioUsart_t *dx)
 {
 	if (dx->fc_state == FC_IN_XOFF) {
 		dx->fc_char = XON; 
@@ -191,15 +191,15 @@ void xio_xon_usart(xioUsart *dx)
 	}
 }
 
-void xio_fc_usart(xioDev *d)		// callback from the usart handlers
+void xio_fc_usart(xioDev_t *d)		// callback from the usart handlers
 {
-	xioUsart *dx = d->x;
+	xioUsart_t *dx = d->x;
 	if (xio_get_rx_bufcount_usart(dx) < XOFF_RX_LO_WATER_MARK) {
 		xio_xon_usart(dx);
 	}
 }
 
-BUFFER_T xio_get_tx_bufcount_usart(const xioUsart *dx)
+buffer_t xio_get_tx_bufcount_usart(const xioUsart_t *dx)
 {
 	if (dx->tx_buf_head <= dx->tx_buf_tail) {
 		return (dx->tx_buf_tail - dx->tx_buf_head);
@@ -208,7 +208,7 @@ BUFFER_T xio_get_tx_bufcount_usart(const xioUsart *dx)
 	}
 }
 
-BUFFER_T xio_get_rx_bufcount_usart(const xioUsart *dx)
+buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx)
 {
 //	return (dx->rx_buf_count);
 	if (dx->rx_buf_head <= dx->rx_buf_tail) {
@@ -233,9 +233,9 @@ BUFFER_T xio_get_rx_bufcount_usart(const xioUsart *dx)
  *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
  *	Note: This function assumes ignore CR and ignore LF handled upstream before the RX buffer
  */
-int xio_gets_usart(xioDev *d, char *buf, const int size)
+int xio_gets_usart(xioDev_t *d, char *buf, const int size)
 {
-	xioUsart *dx = d->x;						// USART pointer
+	xioUsart_t *dx = d->x;						// USART pointer
 
 	if (d->flag_in_line == false) {				// first time thru initializations
 		d->flag_in_line = true;					// yes, we are busy getting a line
@@ -255,7 +255,7 @@ int xio_gets_usart(xioDev *d, char *buf, const int size)
 	return (XIO_OK);
 }
 
-static int _gets_helper(xioDev *d, xioUsart *dx)
+static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 {
 	char c = NUL;
 
@@ -263,12 +263,9 @@ static int _gets_helper(xioDev *d, xioUsart *dx)
 		dx->rx_buf_count = 0;					// reset count for good measure
 		return(XIO_BUFFER_EMPTY);				// stop reading
 	}
-	advance(dx->rx_buf_tail, RX_BUFFER_SIZE);
-//	if (--(dx->rx_buf_tail) == 0) {				// advance RX tail (RX q read ptr)
-//		dx->rx_buf_tail = RX_BUFFER_SIZE-1;		// -1 avoids off-by-one (OBOE)
-//	}
+	advance_buffer(dx->rx_buf_tail, RX_BUFFER_SIZE);
 	dx->rx_buf_count--;
-	d->fc_func(d);								// run the flow control callback
+	d->x_flow(d);								// run flow control
 //	c = dx->rx_buf[dx->rx_buf_tail];			// get char from RX Q
 	c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
 	if (d->flag_echo) d->x_putc(c, stdout);		// conditional echo regardless of character
@@ -316,8 +313,9 @@ static int _gets_helper(xioDev *d, xioUsart *dx)
  */
 int xio_getc_usart(FILE *stream)
 {
-	xioDev *d = (xioDev *)stream->udata;			// get device struct pointer
-	xioUsart *dx = d->x;							// get USART pointer
+	// these convenience pointers optimize faster than resolving the references each time
+	xioDev_t *d = (xioDev_t *)stream->udata;		
+	xioUsart_t *dx = d->x;
 	char c;
 
 	while (dx->rx_buf_head == dx->rx_buf_tail) {	// RX ISR buffer empty
@@ -329,12 +327,9 @@ int xio_getc_usart(FILE *stream)
 			return(_FDEV_ERR);
 		}
 	}
-	advance(dx->rx_buf_tail, RX_BUFFER_SIZE);
-//	if (--(dx->rx_buf_tail) == 0) {					// advance RX tail (RXQ read ptr)
-//		dx->rx_buf_tail = RX_BUFFER_SIZE-1;			// -1 avoids off-by-one error (OBOE)
-//	}
+	advance_buffer(dx->rx_buf_tail, RX_BUFFER_SIZE);
 	dx->rx_buf_count--;
-	d->fc_func(d);									// run the flow control function (USB only)
+	d->x_flow(d);									// flow control callback
 	c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);		// get char from RX buf & mask MSB
 
 	// Triage the input character for handling. This code does not handle deletes
@@ -379,8 +374,8 @@ void xio_queue_RX_string_usart(const uint8_t dev, const char *buf)
 
 void xio_queue_RX_char_usart(const uint8_t dev, const char c)
 {
-	xioDev *d = &ds[dev];						// init device struct pointer
-	xioUsart *dx = d->x;
+	xioDev_t *d = &ds[dev];
+	xioUsart_t *dx = d->x;
 
 	// trap signals - do not insert into RX queue
 	if (c == CHAR_RESET) {	 					// trap Kill signal
@@ -399,10 +394,7 @@ void xio_queue_RX_char_usart(const uint8_t dev, const char c)
 		return;
 	}
 	// normal path
-	advance(dx->rx_buf_head, RX_BUFFER_SIZE);
-//	if ((--dx->rx_buf_head) == 0) { 			// wrap condition
-//		dx->rx_buf_head = RX_BUFFER_SIZE-1;		// -1 avoids the off-by-one err
-//	}
+	advance_buffer(dx->rx_buf_head, RX_BUFFER_SIZE);
 	if (dx->rx_buf_head != dx->rx_buf_tail) {	// write char unless buffer full
 		dx->rx_buf[dx->rx_buf_head] = c;		// FAKE INPUT DATA
 		dx->rx_buf_count++;

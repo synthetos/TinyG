@@ -44,7 +44,7 @@
  *	Note: LINEMODE flag is ignored. It's ALWAYS LINEMODE here.
  */
 
-int xio_gets_pgm(xioDev *d, char *buf, const int size)
+int xio_gets_pgm(xioDev_t *d, char *buf, const int size)
 {
 	if ((PGMf.filebase_P) == 0) {		// return error if no file is open
 		return (XIO_FILE_NOT_OPEN);

@@ -369,7 +369,7 @@ static void _text_response(const uint8_t status, const char *buf)
 	}
 
 	// deliver echo and messages
-	cmdObj *cmd = cmd_body;		// if there is a message it will aways be in the second object
+	cmdObj_t *cmd = cmd_body;		// if there is a message it will aways be in the second object
 	if ((cfg.text_verbosity >= TV_MESSAGES) && (cmd->token[0] == 'm')) {
 		fprintf(stderr, "%s\n", cmd->string);
 	}

@@ -43,16 +43,16 @@
 #define SPI2u sp[XIO_DEV_SPI2 - XIO_DEV_SPI_OFFSET]	// usart extended struct accessor
 
 // Buffer sizing
-#define SPIBUF_T uint_fast8_t				// fast, but limits SPI buffers to 255 char max
-#define SPI_RX_BUFFER_SIZE (SPIBUF_T)64		// BUFFER_T can be 8 bits
-#define SPI_TX_BUFFER_SIZE (SPIBUF_T)64		// BUFFER_T can be 8 bits
+#define spibuf_t uint_fast8_t				// fast, but limits SPI buffers to 255 char max
+#define SPI_RX_BUFFER_SIZE (spibuf_t)64
+#define SPI_TX_BUFFER_SIZE (spibuf_t)64
 
 // Alternates for larger buffers - mostly for debugging
-//#define SPIBUF_T uint16_t					// slower, but supports larger buffers
-//#define SPI_RX_BUFFER_SIZE (SPIBUF_T)512	// BUFFER_T must be 16 bits if >255
-//#define SPI_TX_BUFFER_SIZE (SPIBUF_T)512	// BUFFER_T must be 16 bits if >255
-//#define SPI_RX_BUFFER_SIZE (SPIBUF_T)1024	// 2048 is the practical upper limit
-//#define SPI_TX_BUFFER_SIZE (SPIBUF_T)1024	// 2048 is practical upper limit given RAM
+//#define spibuf_t uint16_t					// slower, but supports larger buffers
+//#define SPI_RX_BUFFER_SIZE (spibuf_t)512
+//#define SPI_TX_BUFFER_SIZE (spibuf_t)512
+//#define SPI_RX_BUFFER_SIZE (spibuf_t)1024
+//#define SPI_TX_BUFFER_SIZE (spibuf_t)1024
 
 
 //**** SPI device configuration ****
@@ -107,19 +107,19 @@ typedef struct xioSPI {
 	PORT_t *ssel_port;				// port used for slave select
 	uint8_t ssbit;					// slave select bit used for this device
 
-	volatile BUFFER_T rx_buf_tail;	// RX buffer read index
-	volatile BUFFER_T rx_buf_head;	// RX buffer write index (written by ISR)
+	volatile buffer_t rx_buf_tail;	// RX buffer read index
+	volatile buffer_t rx_buf_head;	// RX buffer write index (written by ISR)
 
 	volatile char rx_buf[SPI_RX_BUFFER_SIZE];	// (may be written by an ISR)
-} xioSpi;
+} xioSpi_t;
 
 /******************************************************************************
  * SPI FUNCTION PROTOTYPES AND ALIASES
  ******************************************************************************/
 
 void xio_init_spi(void);
-FILE *xio_open_spi(const uint8_t dev, const char *addr, const CONTROL_T flags);
-int xio_gets_spi(xioDev *d, char *buf, const int size);
+FILE *xio_open_spi(const uint8_t dev, const char *addr, const flags_t flags);
+int xio_gets_spi(xioDev_t *d, char *buf, const int size);
 int xio_putc_spi(const char c, FILE *stream);
 int xio_getc_spi(FILE *stream);
 

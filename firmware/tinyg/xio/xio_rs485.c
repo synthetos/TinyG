@@ -98,7 +98,7 @@ static void _xio_enable_rs485_rx()
  */
 int xio_putc_rs485(const char c, FILE *stream)
 {
-	BUFFER_T next_tx_buf_head;
+	buffer_t next_tx_buf_head;
 
 	if ((next_tx_buf_head = (RSu.tx_buf_head)-1) == 0) { // adv. head & wrap
 		next_tx_buf_head = TX_BUFFER_SIZE-1;	 // -1 avoids the off-by-one
@@ -182,10 +182,7 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)		// serial port C0 RX isr
 	if ((c == LF) && (RS.flag_ignorelf)) return;
 
 	// normal character path
-	advance(RSu.rx_buf_head, RX_BUFFER_SIZE);
-//	if ((--RSu.rx_buf_head) == 0) { 				// advance buffer head with wrap
-//		RSu.rx_buf_head = RX_BUFFER_SIZE -1;		// -1 avoids the off-by-one error
-//	}
+	advance_buffer(RSu.rx_buf_head, RX_BUFFER_SIZE);
 	if (RSu.rx_buf_head != RSu.rx_buf_tail) {		// write char unless buffer full
 		RSu.rx_buf[RSu.rx_buf_head] = c;			// (= USARTC1.DATA;)
 		RSu.rx_buf_count++;

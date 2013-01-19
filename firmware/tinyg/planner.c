@@ -79,12 +79,12 @@
 #define dbl_val time			// local alias for double to the time variable
 
 // execution routines (NB: These are all called from the LO interrupt)
-static uint8_t _exec_dwell(mpBuf *bf);
-static uint8_t _exec_command(mpBuf *bf);
+static uint8_t _exec_dwell(mpBuf_t *bf);
+static uint8_t _exec_command(mpBuf_t *bf);
 
 #ifdef __DEBUG
-static uint8_t _get_buffer_index(mpBuf *bf); 
-static void _dump_plan_buffer(mpBuf *bf);
+static uint8_t _get_buffer_index(mpBuf_t *bf); 
+static void _dump_plan_buffer(mpBuf_t *bf);
 #endif
 
 /* 
@@ -166,7 +166,7 @@ void mp_set_axis_position(uint8_t axis, const double position)
 
 uint8_t mp_exec_move() 
 {
-	mpBuf *bf;
+	mpBuf_t *bf;
 
 	if ((bf = mp_get_run_buffer()) == NULL) return (TG_NOOP);	// NULL means nothing's running
 
@@ -205,7 +205,7 @@ uint8_t mp_exec_move()
 
 void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f)
 {
-	mpBuf *bf;
+	mpBuf_t *bf;
 
 	// this error is not reported as buffer availability was checked upstream in the controller
 	if ((bf = mp_get_write_buffer()) == NULL) return;
@@ -219,7 +219,7 @@ void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f)
 	return;
 }
 
-static uint8_t _exec_command(mpBuf *bf)
+static uint8_t _exec_command(mpBuf_t *bf)
 {
 	bf->cm_func(bf->int_val, bf->dbl_val);
 	st_prep_null();			// Must call a null prep to keep the loader happy. 
@@ -238,7 +238,7 @@ static uint8_t _exec_command(mpBuf *bf)
 
 uint8_t mp_dwell(double seconds) 
 {
-	mpBuf *bf; 
+	mpBuf_t *bf; 
 
 	if ((bf = mp_get_write_buffer()) == NULL) {	// get write buffer or fail
 		return (TG_BUFFER_FULL_FATAL);		  	// (not supposed to fail)
@@ -249,7 +249,7 @@ uint8_t mp_dwell(double seconds)
 	return (TG_OK);
 }
 
-static uint8_t _exec_dwell(mpBuf *bf)
+static uint8_t _exec_dwell(mpBuf_t *bf)
 {
 	st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
 	mp_free_run_buffer();
@@ -309,7 +309,7 @@ uint8_t mp_get_planner_buffers_available(void) { return (mb.buffers_available);}
 
 void mp_init_buffers(void)
 {
-	mpBuf *pv;
+	mpBuf_t *pv;
 	uint8_t i;
 
 	memset(&mb, 0, sizeof(mb));		// clear all values, pointers and status
@@ -325,13 +325,13 @@ void mp_init_buffers(void)
 	mb.buffers_available = PLANNER_BUFFER_POOL_SIZE;
 }
 
-mpBuf * mp_get_write_buffer() 				// get & clear a buffer
+mpBuf_t * mp_get_write_buffer() 				// get & clear a buffer
 {
 	if (mb.w->buffer_state == MP_BUFFER_EMPTY) {
-		mpBuf *w = mb.w;
-		mpBuf *nx = mb.w->nx;					// save pointers
-		mpBuf *pv = mb.w->pv;
-		memset(mb.w, 0, sizeof(mpBuf));
+		mpBuf_t *w = mb.w;
+		mpBuf_t *nx = mb.w->nx;					// save pointers
+		mpBuf_t *pv = mb.w->pv;
+		memset(mb.w, 0, sizeof(mpBuf_t));
 		w->nx = nx;								// restore pointers
 		w->pv = pv;
 		w->buffer_state = MP_BUFFER_LOADING;
@@ -358,7 +358,7 @@ void mp_queue_write_buffer(const uint8_t move_type)
 	st_request_exec_move();						// request a move exec if not busy
 }
 
-mpBuf * mp_get_run_buffer() 
+mpBuf_t * mp_get_run_buffer() 
 {
 	// condition: fresh buffer; becomes running if queued or pending
 	if ((mb.r->buffer_state == MP_BUFFER_QUEUED) || 
@@ -385,15 +385,15 @@ void mp_free_run_buffer()					// EMPTY current run buf & adv to next
 	rpt_request_queue_report();
 }
 
-mpBuf * mp_get_first_buffer(void)
+mpBuf_t * mp_get_first_buffer(void)
 {
 	return(mp_get_run_buffer());	// returns buffer or NULL if nothing's running
 }
 
-mpBuf * mp_get_last_buffer(void)
+mpBuf_t * mp_get_last_buffer(void)
 {
-	mpBuf *bf = mp_get_run_buffer();
-	mpBuf *bp = bf;
+	mpBuf_t *bf = mp_get_run_buffer();
+	mpBuf_t *bp = bf;
 
 	if (bf == NULL) { return(NULL);}
 
@@ -406,31 +406,31 @@ mpBuf * mp_get_last_buffer(void)
 }
 
 // Use the macro instead
-//mpBuf * mp_get_prev_buffer(const mpBuf *bf) { return (bf->pv);}
-//mpBuf * mp_get_next_buffer(const mpBuf *bf) { return (bf->nx);}
+//mpBuf_t * mp_get_prev_buffer(const mpBuf_t *bf) { return (bf->pv);}
+//mpBuf_t * mp_get_next_buffer(const mpBuf_t *bf) { return (bf->nx);}
 
-void mp_clear_buffer(mpBuf *bf) 
+void mp_clear_buffer(mpBuf_t *bf) 
 {
-	mpBuf *nx = bf->nx;	// save pointers
-	mpBuf *pv = bf->pv;
-	memset(bf, 0, sizeof(mpBuf));
+	mpBuf_t *nx = bf->nx;	// save pointers
+	mpBuf_t *pv = bf->pv;
+	memset(bf, 0, sizeof(mpBuf_t));
 	bf->nx = nx;					// restore pointers
 	bf->pv = pv;
 }
 
-void mp_copy_buffer(mpBuf *bf, const mpBuf *bp)
+void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp)
 {
-	mpBuf *nx = bf->nx;	// save pointers
-	mpBuf *pv = bf->pv;
- 	memcpy(bf, bp, sizeof(mpBuf));
+	mpBuf_t *nx = bf->nx;	// save pointers
+	mpBuf_t *pv = bf->pv;
+ 	memcpy(bf, bp, sizeof(mpBuf_t));
 	bf->nx = nx;					// restore pointers
 	bf->pv = pv;
 }
 
 #ifdef __DEBUG	// currently this routine is only used by debug routines
-uint8_t mp_get_buffer_index(mpBuf *bf) 
+uint8_t mp_get_buffer_index(mpBuf_t *bf) 
 {
-	mpBuf *b = bf;		// temp buffer pointer
+	mpBuf_t *b = bf;		// temp buffer pointer
 
 	for (uint8_t i=0; i < PLANNER_BUFFER_POOL_SIZE; i++) {
 		if (b->pv > b) {
@@ -452,7 +452,7 @@ uint8_t mp_get_buffer_index(mpBuf *bf)
 void mp_dump_running_plan_buffer() { _dump_plan_buffer(mb.r);}
 void mp_dump_plan_buffer_by_index(uint8_t index) { _dump_plan_buffer(&mb.bf[index]);	}
 
-static void _dump_plan_buffer(mpBuf *bf)
+static void _dump_plan_buffer(mpBuf_t *bf)
 {
 	fprintf_P(stderr, PSTR("***Runtime Buffer[%d] bstate:%d  mtype:%d  mstate:%d  replan:%d\n"),
 			_get_buffer_index(bf),

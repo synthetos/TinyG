@@ -97,7 +97,7 @@
  */
 void rpt_init_status_report(uint8_t persist_flag)
 {
-	cmdObj cmd;		// used for status report persistence locations
+	cmdObj_t cmd;		// used for status report persistence locations
 	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
 
 	cm.status_report_counter = cfg.status_report_interval;
@@ -150,7 +150,7 @@ void rpt_run_multiline_status_report()		// multiple line status report
 
 uint8_t rpt_populate_status_report()
 {
-	cmdObj *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_body;
 
 	cmd_new_obj(cmd);						// wipe it first
 	cmd->type = TYPE_PARENT; 				// setup the parent object
@@ -212,7 +212,7 @@ uint8_t rpt_queue_report_callback()
 	if (qr.request == false) return (TG_NOOP);
 	qr.request = false;
 
-	cmdObj *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_body;
 	cmd_new_obj(cmd);						// make a qr object
 	sprintf_P(cmd->token, PSTR("qr"));
 	cmd->value = qr.buffers_available;
