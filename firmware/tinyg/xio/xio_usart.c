@@ -247,7 +247,7 @@ int xio_gets_usart(xioDev_t *d, char *buf, const int size)
 	while (true) {
 		switch (_gets_helper(d,dx)) {
 			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN); // empty condition
-			case (XIO_BUFFER_FULL_NON_FATAL): return (XIO_BUFFER_FULL_NON_FATAL);// overrun err
+			case (XIO_BUFFER_FULL): return (XIO_BUFFER_FULL);// overrun err
 			case (XIO_EOL): return (XIO_OK);			  // got complete line
 			case (XIO_EAGAIN): break;					  // loop for next character
 		}
@@ -273,7 +273,7 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 	if (d->len >= d->size) {					// handle buffer overruns
 		d->buf[d->size] = NUL;					// terminate line (d->size is zero based)
 		d->signal = XIO_SIG_EOL;
-		return (XIO_BUFFER_FULL_NON_FATAL);
+		return (XIO_BUFFER_FULL);
 	}
 	if ((c == CR) || (c == LF)) {				// handle CR, LF termination
 		d->buf[(d->len)++] = NUL;

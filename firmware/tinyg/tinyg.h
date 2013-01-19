@@ -32,7 +32,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	362.06		// SPI development
+#define TINYG_BUILD_NUMBER   	362.07		// SPI development
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
@@ -121,13 +121,13 @@
 #define	TG_FILE_SIZE_EXCEEDED 10
 #define	TG_NO_SUCH_DEVICE 11
 #define	TG_BUFFER_EMPTY 12
-#define	TG_BUFFER_FULL_FATAL 13 
-#define	TG_BUFFER_FULL_NON_FATAL 14		// NOTE: XIO codes align to here
+#define	TG_BUFFER_FULL 13
+#define	TG_BUFFER_FULL_FATAL 14
 #define	TG_INITIALIZING 15				// initializing - not ready for use
 #define	TG_ERROR_16 16
 #define	TG_ERROR_17 17
 #define	TG_ERROR_18 18
-#define	TG_ERROR_19 19
+#define	TG_ERROR_19 19					// NOTE: XIO codes align to here
 
 // Internal errors and startup messages
 #define	TG_INTERNAL_ERROR 20			// unrecoverable internal error

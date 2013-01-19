@@ -107,10 +107,13 @@ typedef struct xioSPI {
 	PORT_t *ssel_port;				// port used for slave select
 	uint8_t ssbit;					// slave select bit used for this device
 
-	volatile buffer_t rx_buf_tail;	// RX buffer read index
-	volatile buffer_t rx_buf_head;	// RX buffer write index (written by ISR)
-
-	volatile char rx_buf[SPI_RX_BUFFER_SIZE];	// (may be written by an ISR)
+	volatile buffer_t rx_buf_tail;
+	volatile buffer_t rx_buf_head;
+	volatile buffer_t tx_buf_tail;
+	volatile buffer_t tx_buf_head;
+	
+	volatile char rx_buf[SPI_RX_BUFFER_SIZE];
+	volatile char tx_buf[SPI_TX_BUFFER_SIZE];
 } xioSpi_t;
 
 /******************************************************************************

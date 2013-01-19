@@ -243,6 +243,8 @@ enum xioSignals {
 #define ESC (char)0x1B		// ^[ - ESC(ape)
 #define DEL (char)0x7F		//  DEL(ete)
 
+#define Q_EMPTY (char)0xFF	// signal no character
+
 /* Signal character mappings */
 
 #define CHAR_RESET CAN
@@ -271,9 +273,13 @@ enum xioCodes {
 	XIO_FILE_SIZE_EXCEEDED, // maximum file size exceeded
 	XIO_NO_SUCH_DEVICE,		// illegal or unavailable device
 	XIO_BUFFER_EMPTY,		// more of a statement of fact than an error code
+	XIO_BUFFER_FULL,
 	XIO_BUFFER_FULL_FATAL,
-	XIO_BUFFER_FULL_NON_FATAL,
-	XIO_INITIALIZING		// system initializing, not ready for use
+	XIO_INITIALIZING,		// system initializing, not ready for use
+	XIO_ERROR_16,			// reserved
+	XIO_ERROR_17,			// reserved
+	XIO_ERROR_18,			// reserved
+	XIO_ERROR_19			// NOTE: XIO codes align to here
 };
 #define XIO_ERRNO_MAX XIO_BUFFER_FULL_NON_FATAL
 
