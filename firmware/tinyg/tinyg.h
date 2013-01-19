@@ -39,9 +39,9 @@
 /****** DEVELOPMENT SETTINGS ******/
 
 //#define __CANNED_STARTUP					// run any canned startup moves
-#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
-#define __UNIT_TESTS						// master enable for unit tests
+//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+//#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+//#define __UNIT_TESTS						// master enable for unit tests
 //#define __DEBUG							// complies debug functions found in test.c
 
 // UNIT_TESTS exist for various modules are can be enabled at the end of their .h files
