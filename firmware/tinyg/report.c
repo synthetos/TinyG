@@ -113,42 +113,55 @@ void rpt_init_status_report(uint8_t persist_flag)
 	}
 }
 
-/*	rpt_decr_status_report()  	 - decrement status report counter
- *	rpt_request_status_report()  - force a status report to be sent on next callback
- *	rpt_status_report_callback() - main loop callback to send a report if one is ready
- *	rpt_run_multiline_status_report() - generate a status report in multiline format
- *	rpt_populate_status_report() - populate cmdObj body with status values
+/* 
+ * rpt_decr_status_report()		- decrement status report counter
+ * rpt_request_status_report()	- force a status report to be sent on next callback
+ * rpt_status_report_callback()	- main loop callback to send a report if one is ready
+ * rpt_run_text_status_report()	- generate a text mode status report in multiline format
  */
 void rpt_decr_status_report() 
 {
-	if (cm.status_report_counter != 0) cm.status_report_counter--; // stick at zero
+	if (cm.status_report_counter != 0) { cm.status_report_counter--;} // stick at zero
 }
 
 void rpt_request_status_report()
 {
-	cm.status_report_counter = 0; // report will be called from controller dispatcher
+	cm.status_report_counter = 0; 			// report will be called from controller dispatcher
 }
 
-uint8_t rpt_status_report_callback() // called by controller dispatcher
+void rpt_run_text_status_report()			// multiple line status report
 {
-	if ((cfg.status_report_interval == 0) ||
-		(cm.status_report_counter != 0) ||
-		(cm.machine_state == MACHINE_READY)) {
+	rpt_populate_unfiltered_status_report();
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+}
+
+uint8_t rpt_status_report_callback() 		// called by controller dispatcher
+{
+	if ((cfg.status_report_interval == 0) || (cm.status_report_counter != 0)) {
 		return (TG_NOOP);
 	}
-	rpt_populate_status_report();
-	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);	// will report in JSON or inline text modes
+	if ((cfg.comm_mode == JSON_MODE) && (cfg.status_report_verbosity == SR_FILTERED)) {
+		if (rpt_populate_filtered_status_report() == true) {
+			cmd_print_list(TG_OK, 0);
+		}
+	} else {
+		rpt_populate_unfiltered_status_report();
+		cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);	// will report in JSON or inline text modes
+	}
 	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
 	return (TG_OK);
 }
 
-void rpt_run_multiline_status_report()		// multiple line status report
-{
-	rpt_populate_status_report();
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
-}
 
-uint8_t rpt_populate_status_report()
+/*
+ * rpt_populate_unfiltered_status_report() - populate cmdObj body with status values
+ * rpt_populate_filtered_status_report() - populate cmdObj body with status values
+ *
+ *	The filtered report returns 'true' if the report has new data, 'false' if there 
+ *	is nothing to report.
+ */
+
+void rpt_populate_unfiltered_status_report()
 {
 	cmdObj_t *cmd = cmd_body;
 
@@ -161,18 +174,33 @@ uint8_t rpt_populate_status_report()
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
 		cmd_get_cmdObj(cmd);
-		if (cfg.comm_mode == JSON_MODE) {
-			if (cfg.status_report_verbosity == SR_FILTERED) {
-				if (cfg.status_report_value[i] == cmd->value) {
-					cmd->type = TYPE_EMPTY;
-				} else {
-					cfg.status_report_value[i] = cmd->value;
-				}
-			}
+		cmd = cmd->nx;
+	}
+}
+
+uint8_t rpt_populate_filtered_status_report()
+{
+	cmdObj_t *cmd = cmd_body;
+	uint8_t has_data = false;
+
+	cmd_new_obj(cmd);						// wipe it first
+	cmd->type = TYPE_PARENT; 				// setup the parent object
+	strcpy(cmd->token, "sr");
+//	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
+	cmd = cmd->nx;
+
+	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
+		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
+		cmd_get_cmdObj(cmd);
+		if (cfg.status_report_value[i] == cmd->value) {
+			cmd->type = TYPE_EMPTY;
+		} else {
+			cfg.status_report_value[i] = cmd->value;
+			has_data = true;
 		}
 		cmd = cmd->nx;
 	}
-	return (TG_OK);
+	return (has_data);
 }
 
 /*****************************************************************************

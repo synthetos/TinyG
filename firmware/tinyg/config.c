@@ -875,13 +875,13 @@ static uint8_t _get_rx(cmdObj_t *cmd)
  */
 static uint8_t _get_sr(cmdObj_t *cmd)
 {
-	rpt_populate_status_report();
+	rpt_populate_unfiltered_status_report();
 	return (TG_OK);
 }
 
 static void _print_sr(cmdObj_t *cmd)
 {
-	rpt_populate_status_report();
+	rpt_populate_unfiltered_status_report();
 }
 
 static uint8_t _set_sr(cmdObj_t *cmd)
@@ -1322,7 +1322,7 @@ void cfg_init()
 
 	cmdObj_t cmd;
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
-	cmd_new_list();					// setup the cmd object lists. Do this first.
+	cmd_reset_list();					// setup the cmd object lists. Do this first.
 	cfg.comm_mode = JSON_MODE;		// initial value until EEPROM is read
 	cfg.nvm_base_addr = NVM_BASE_ADDR;
 	cfg.nvm_profile_base = cfg.nvm_base_addr;
@@ -1389,7 +1389,7 @@ uint8_t cfg_text_parser(char *str)
 	uint8_t status = TG_OK;
 
 	if (str[0] == '?') {					// handle status report case
-		rpt_run_multiline_status_report();
+		rpt_run_text_status_report();
 		return (TG_OK);
 	}
 	if ((str[0] == '$') && (str[1] == NUL)) {  // treat a lone $ as a sys request
@@ -1971,7 +1971,7 @@ static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
  *	integer as a string if all you want to do is display it.
  */
 
-void cmd_new_list()							// clear the header, response body and footer
+void cmd_reset_list()							// clear the header, response body and footer
 {
 	// setup header ("r" parent)
 	cmdObj_t *cmd = cmd_header;
@@ -1984,7 +1984,7 @@ void cmd_new_list()							// clear the header, response body and footer
 	cmd++;
 
 	// setup body
-	cmd_new_body(cmd_body);
+	cmd_reset_body();
 
 	// setup footer
 	cmd = cmd_footer;
@@ -2001,9 +2001,11 @@ void cmd_new_list()							// clear the header, response body and footer
 	return;
 }
 
-void cmd_new_body(cmdObj_t *cmd)			// clear the body list
+//void cmd_reset_body(cmdObj_t *cmd)			// clear the body list
+void cmd_reset_body()
 {
-	// setup body elements
+	cmdObj_t *cmd = cmd_body;
+
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		if (i == 0) {
 			cmd->pv = cmd_header;
@@ -2117,7 +2119,7 @@ void cmd_print_list(uint8_t status, uint8_t textmode)
 			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted();}
 		}
 	}
-	cmd_new_body(cmd_body);		// clear the cmd body to get ready for the next use
+//	cmd_reset_body(cmd_body);		// clear the cmd body to get ready for the next use
 }
 
 void _print_text_inline_pairs()

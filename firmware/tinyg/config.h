@@ -197,8 +197,8 @@ index_t cmd_get_index(const char *group, const char *token);
 uint8_t cmd_get_type(cmdObj_t *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 
-void cmd_new_list(void);
-void cmd_new_body(cmdObj_t *cmd);
+void cmd_reset_list(void);
+void cmd_reset_body(void);
 uint8_t cmd_add_object(char *token);
 uint8_t cmd_add_string(char *token, const char *string);
 uint8_t cmd_add_string_P(char *token, const char *string);
@@ -296,8 +296,8 @@ struct cfgParameters {
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
 
 	// status report configs
-	uint8_t status_report_verbosity;// see enum in this file for settings
-	uint32_t status_report_interval;// in MS. set non-zero to enable
+	uint8_t status_report_verbosity;					// see enum in this file for settings
+	uint32_t status_report_interval;					// in MS. set non-zero to enable
 	index_t status_report_list[CMD_STATUS_REPORT_LEN];	// status report elements to report
 	double status_report_value[CMD_STATUS_REPORT_LEN];	// previous values for filtered reporting
 

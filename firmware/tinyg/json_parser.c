@@ -88,6 +88,7 @@ void js_json_parser(char *str)
 	uint8_t status;
 	status = _json_parser_kernal(str);
 	cmd_print_list(status, TEXT_INLINE_PAIRS);
+	rpt_request_status_report();	// generate an incremental status report if there are gcode model changes
 }
 
 uint8_t _json_parser_kernal(char *str)
