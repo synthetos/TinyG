@@ -69,8 +69,8 @@
 //#define JSON_VERBOSITY			JV_OMIT_BODY		// response contains no body - footer only
 //#define JSON_VERBOSITY			JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
 //#define JSON_VERBOSITY			JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
-//#define JSON_VERBOSITY			JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
-#define JSON_VERBOSITY				JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
+#define JSON_VERBOSITY			JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
+//#define JSON_VERBOSITY				JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
 
 // Queue report settings
 #define QR_VERBOSITY				QR_OFF
@@ -86,9 +86,9 @@
 //#include "settings/settings_default.h"			// Default settings for shipment
 //#include "settings/settings_lumenlabMicRoV3.h"	// Lumenlabs micRo v3
 //#include "settings/settings_otherlab.h"			// Otherlab Othercutter
-#include "settings/settings_probotixV90.h"		// Probotix FireballV90
+//#include "settings/settings_probotixV90.h"		// Probotix FireballV90
 //#include "settings/settings_sacidu93.h"			// related to Issue #12
-//#include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
+#include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
 //#include "settings/settings_ultimaker.h"			// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"			// Zen Toolworks 7x12
 

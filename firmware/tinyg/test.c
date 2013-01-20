@@ -147,6 +147,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x30\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x0\"}\n");
+	xio_queue_RX_string_usb("{\"gc\":\"g20\"}\n");
 //	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 
@@ -165,7 +166,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("\n");
 
 //	xio_queue_RX_string_usb("g00xqwrsdfs\n");
-	xio_queue_RX_string_usb("g0x1000\n");
+//	xio_queue_RX_string_usb("g0x1000\n");
 
 //	xio_queue_RX_string_usb("g00g17g21g40g49g80g90\n");
 //	xio_queue_RX_string_usb("g2x0y0i1f2000\n");

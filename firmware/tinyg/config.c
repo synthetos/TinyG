@@ -392,8 +392,8 @@ static const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%16.3f%S\n";
 static const char fmt_mt[] PROGMEM = "[mt]  min segment time%13.0f uSec\n";
 static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0=NO,1=NC]\n";
 static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms [0=off]\n";
-static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX%9d [0,1=CR,2=LF]\n";
-static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%5d [0,1]\n";
+static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX%8d [0,1=CR,2=LF]\n";
+static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0,1]\n";
 static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0,1]\n";
 static const char fmt_ex[] PROGMEM = "[ex]  enable xon xoff%14d [0,1]\n";
 static const char fmt_eq[] PROGMEM = "[eq]  queue report verbosity%7d [0-2]\n";
@@ -1967,11 +1967,11 @@ static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
  *	integer as a string if all you want to do is display it.
  */
 
-void cmd_new_list()						// clear the header, response body and footer
+void cmd_new_list()							// clear the header, response body and footer
 {
 	// setup header ("r" parent)
 	cmdObj_t *cmd = cmd_header;
-	cmd->pv = 0;
+	cmd->pv = NULL;
 	cmd->nx = cmd_body;
 	cmd->index = 0;
 	cmd->depth = 0;
@@ -1988,12 +1988,12 @@ void cmd_new_list()						// clear the header, response body and footer
 	cmd->nx = (cmd+1);
 	cmd->token[0] = 'f';
 	cmd->token[1] = NUL;
-	cmd->depth = 0;
+	cmd->depth = 0;							// THIS MAY NEED TO CHANGE TO ONE
 	cmd->type = TYPE_ARRAY;
 
 	cmd->nx->type = TYPE_EMPTY;				// setup terminating element
 	cmd->nx->pv = (cmd-1);
-	cmd->nx->nx = 0;
+	cmd->nx->nx = NULL;
 	return;
 }
 
