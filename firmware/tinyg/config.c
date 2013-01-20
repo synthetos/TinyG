@@ -143,12 +143,15 @@ typedef struct cfgItem {
 } cfgItem_t;
 
 // operations flags and shorthand
-#define F_INITIALIZE	0x01
-#define F_PERSIST 		0x02
+#define F_INITIALIZE	0x01			// initialize this item (run set during initialization)
+#define F_PERSIST 		0x02			// persist this item when set is run
+#define F_NOSTRIP		0x04			// do not strip to group from the token
 #define _f00			0x00
 #define _fin			F_INITIALIZE
 #define _fpe			F_PERSIST
 #define _fip			(F_INITIALIZE | F_PERSIST)
+#define _fns			F_NOSTRIP
+#define _f07			(F_INITIALIZE | F_PERSIST | F_NOSTRIP)
 
 // prototypes are divided into generic functions and parameter-specific functions
 
@@ -208,17 +211,17 @@ static void _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]); // help
 
 // parameter-specific internal functions
 //static uint8_t _get_id(cmdObj_t *cmd);	// get device ID (signature)
-static uint8_t _set_hv(cmdObj_t *cmd);	// set hardware version
-static uint8_t _get_sr(cmdObj_t *cmd);	// run status report (as data)
+static uint8_t _set_hv(cmdObj_t *cmd);		// set hardware version
+static uint8_t _get_sr(cmdObj_t *cmd);		// run status report (as data)
 static void _print_sr(cmdObj_t *cmd);		// run status report (as printout)
-static uint8_t _set_sr(cmdObj_t *cmd);	// set status report specification
-static uint8_t _set_si(cmdObj_t *cmd);	// set status report interval
-static uint8_t _get_id(cmdObj_t *cmd);	// get device ID
-static uint8_t _get_qr(cmdObj_t *cmd);	// run queue report (as data)
-static uint8_t _get_rx(cmdObj_t *cmd);	// get bytes in RX buffer
+static uint8_t _set_sr(cmdObj_t *cmd);		// set status report specification
+static uint8_t _set_si(cmdObj_t *cmd);		// set status report interval
+static uint8_t _get_id(cmdObj_t *cmd);		// get device ID
+static uint8_t _get_qr(cmdObj_t *cmd);		// run queue report (as data)
+static uint8_t _get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 
-static uint8_t _get_gc(cmdObj_t *cmd);	// get current gcode block
-static uint8_t _run_gc(cmdObj_t *cmd);	// run a gcode block
+static uint8_t _get_gc(cmdObj_t *cmd);		// get current gcode block
+static uint8_t _run_gc(cmdObj_t *cmd);		// run a gcode block
 static uint8_t _run_home(cmdObj_t *cmd);	// invoke a homing cycle
 
 static uint8_t _get_line(cmdObj_t *cmd);	// get runtime line number
@@ -235,28 +238,28 @@ static uint8_t _get_plan(cmdObj_t *cmd);	// get active plane...
 static uint8_t _get_path(cmdObj_t *cmd);	// get patch control mode...
 static uint8_t _get_dist(cmdObj_t *cmd);	// get distance mode...
 static uint8_t _get_frmo(cmdObj_t *cmd);	// get feedrate mode...
-static uint8_t _get_vel(cmdObj_t *cmd);	// get runtime velocity...
-static uint8_t _get_pos(cmdObj_t *cmd);	// get runtime work position...
+static uint8_t _get_vel(cmdObj_t *cmd);		// get runtime velocity...
+static uint8_t _get_pos(cmdObj_t *cmd);		// get runtime work position...
 static uint8_t _get_mpos(cmdObj_t *cmd);	// get runtime machine position...
-static void _print_pos(cmdObj_t *cmd);	// print runtime work position...
+static void _print_pos(cmdObj_t *cmd);		// print runtime work position...
 
 static uint8_t _set_defa(cmdObj_t *cmd);	// reset config to default values
 
-static uint8_t _set_sa(cmdObj_t *cmd);	// set motor step angle
-static uint8_t _set_tr(cmdObj_t *cmd);	// set motor travel per revolution
-static uint8_t _set_mi(cmdObj_t *cmd);	// set microsteps
-static uint8_t _set_po(cmdObj_t *cmd);	// set motor polarity
+static uint8_t _set_sa(cmdObj_t *cmd);		// set motor step angle
+static uint8_t _set_tr(cmdObj_t *cmd);		// set motor travel per revolution
+static uint8_t _set_mi(cmdObj_t *cmd);		// set microsteps
+static uint8_t _set_po(cmdObj_t *cmd);		// set motor polarity
 static uint8_t _set_motor_steps_per_unit(cmdObj_t *cmd);
 
-static uint8_t _get_am(cmdObj_t *cmd);	// get axis mode
-static uint8_t _set_am(cmdObj_t *cmd);	// set axis mode
+static uint8_t _get_am(cmdObj_t *cmd);		// get axis mode
+static uint8_t _set_am(cmdObj_t *cmd);		// set axis mode
 static void _print_am(cmdObj_t *cmd);		// print axis mode
-static uint8_t _set_sw(cmdObj_t *cmd);	// must run any time you change a switch setting
+static uint8_t _set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
 
-static uint8_t _set_ic(cmdObj_t *cmd);	// ignore CR or LF on RX input
-static uint8_t _set_ec(cmdObj_t *cmd);	// expand CRLF on TX outout
-static uint8_t _set_ee(cmdObj_t *cmd);	// enable character echo
-static uint8_t _set_ex(cmdObj_t *cmd);	// enable XON/XOFF
+static uint8_t _set_ic(cmdObj_t *cmd);		// ignore CR or LF on RX input
+static uint8_t _set_ec(cmdObj_t *cmd);		// expand CRLF on TX outout
+static uint8_t _set_ee(cmdObj_t *cmd);		// enable character echo
+static uint8_t _set_ex(cmdObj_t *cmd);		// enable XON/XOFF
 static uint8_t _set_baud(cmdObj_t *cmd);	// set USB baud rate
 
 /***** PROGMEM Strings ******************************************************/
@@ -504,10 +507,10 @@ static const char fmt_gdi[] PROGMEM = "[gdi] default gcode distance mode%2d [0=G
 
 const cfgItem_t cfgArray[] PROGMEM = {
 	// grp  token flags format*, print_func, get_func, set_func  target for get/set,   default value
-	{ "sys","fb", _fip, fmt_fb, _print_dbl, _get_dbl, _set_nul, (double *)&cfg.fw_build,   TINYG_BUILD_NUMBER }, // MUST BE FIRST!
-	{ "sys","fv", _fip, fmt_fv, _print_dbl, _get_dbl, _set_nul, (double *)&cfg.fw_version, TINYG_VERSION_NUMBER },
-	{ "sys","hv", _fip, fmt_hv, _print_dbl, _get_dbl, _set_hv,  (double *)&cfg.hw_version, TINYG_HARDWARE_VERSION },
-	{ "sys","id", _f00, fmt_id, _print_str, _get_id,  _set_nul, (double *)&tg.null, 0 },		// device ID (ASCII signature)
+	{ "sys","fb", _f07, fmt_fb, _print_dbl, _get_dbl, _set_nul, (double *)&cfg.fw_build,   TINYG_BUILD_NUMBER }, // MUST BE FIRST!
+	{ "sys","fv", _f07, fmt_fv, _print_dbl, _get_dbl, _set_nul, (double *)&cfg.fw_version, TINYG_VERSION_NUMBER },
+	{ "sys","hv", _f07, fmt_hv, _print_dbl, _get_dbl, _set_hv,  (double *)&cfg.hw_version, TINYG_HARDWARE_VERSION },
+	{ "sys","id", _fns, fmt_id, _print_str, _get_id,  _set_nul, (double *)&tg.null, 0 },		// device ID (ASCII signature)
 
 	// dynamic model attributes for reporting puropses (up front for speed)
 	{ "",   "n",   _fin,fmt_line,_print_int, _get_int, _set_int,(double *)&gm.linenum,0 },		// Gcode line number - gets model line number
@@ -526,25 +529,25 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "path",_f00,fmt_path,_print_str, _get_path,_set_nul,(double *)&tg.null, 0 },		// path control mode
 	{ "",   "dist",_f00,fmt_dist,_print_str, _get_dist,_set_nul,(double *)&tg.null, 0 },		// distance mode
 	{ "",   "frmo",_f00,fmt_frmo,_print_str, _get_frmo,_set_nul,(double *)&tg.null, 0 },		// feed rate mode
-	{ "pos","posx",_f00,fmt_posx,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// X position
-	{ "pos","posy",_f00,fmt_posy,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Y position
-	{ "pos","posz",_f00,fmt_posz,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Z position
-	{ "pos","posa",_f00,fmt_posa,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// A position
-	{ "pos","posb",_f00,fmt_posb,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// B position
-	{ "pos","posc",_f00,fmt_posc,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// C position
-	{ "mpo","mpox",_f00,fmt_mpox,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// X machine position
-	{ "mpo","mpoy",_f00,fmt_mpoy,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Y machine position
-	{ "mpo","mpoz",_f00,fmt_mpoz,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Z machine position
-	{ "mpo","mpoa",_f00,fmt_mpoa,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// A machine position
-	{ "mpo","mpob",_f00,fmt_mpob,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// B machine position
-	{ "mpo","mpoc",_f00,fmt_mpoc,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// C machine position
-	{ "hom","home",_f00,fmt_home,_print_str, _get_home,_run_home,(double *)&tg.null, 0 },		// homing state, invoke homing cycle
-	{ "hom","homx",_f00,fmt_homx,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[X], false },// X homed - Homing status group
-	{ "hom","homy",_f00,fmt_homy,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[Y], false },// Y homed
-	{ "hom","homz",_f00,fmt_homz,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[Z], false },// Z homed
-	{ "hom","homa",_f00,fmt_homa,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[A], false },// A homed
-	{ "hom","homb",_f00,fmt_homb,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[B], false },// B homed
-	{ "hom","homc",_f00,fmt_homc,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[C], false },// C homed
+	{ "pos","posx",_fns,fmt_posx,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// X position
+	{ "pos","posy",_fns,fmt_posy,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Y position
+	{ "pos","posz",_fns,fmt_posz,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Z position
+	{ "pos","posa",_fns,fmt_posa,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// A position
+	{ "pos","posb",_fns,fmt_posb,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// B position
+	{ "pos","posc",_fns,fmt_posc,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// C position
+	{ "mpo","mpox",_fns,fmt_mpox,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// X machine position
+	{ "mpo","mpoy",_fns,fmt_mpoy,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Y machine position
+	{ "mpo","mpoz",_fns,fmt_mpoz,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Z machine position
+	{ "mpo","mpoa",_fns,fmt_mpoa,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// A machine position
+	{ "mpo","mpob",_fns,fmt_mpob,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// B machine position
+	{ "mpo","mpoc",_fns,fmt_mpoc,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// C machine position
+	{ "hom","home",_fns,fmt_home,_print_str, _get_home,_run_home,(double *)&tg.null, 0 },		// homing state, invoke homing cycle
+	{ "hom","homx",_fns,fmt_homx,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[X], false },// X homed - Homing status group
+	{ "hom","homy",_fns,fmt_homy,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[Y], false },// Y homed
+	{ "hom","homz",_fns,fmt_homz,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[Z], false },// Z homed
+	{ "hom","homa",_fns,fmt_homa,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[A], false },// A homed
+	{ "hom","homb",_fns,fmt_homb,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[B], false },// B homed
+	{ "hom","homc",_fns,fmt_homc,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[C], false },// C homed
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },		// status report object
@@ -735,28 +738,28 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	// System parameters
 	// NOTE: The ordering within the gcode defaults is important for token resolution
 	// NOTE: Some values have been removed from the system group but are still accessible as individual elements
-	{ "sys","gpl", _fip, fmt_gpl, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.select_plane,		GCODE_DEFAULT_PLANE },
-	{ "sys","gun", _fip, fmt_gun, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.units_mode,			GCODE_DEFAULT_UNITS },
-	{ "sys","gco", _fip, fmt_gco, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.coord_system,		GCODE_DEFAULT_COORD_SYSTEM },
-	{ "sys","gpa", _fip, fmt_gpa, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.path_control,		GCODE_DEFAULT_PATH_CONTROL },
-	{ "sys","gdi", _fip, fmt_gdi, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.distance_mode,		GCODE_DEFAULT_DISTANCE_MODE },
+	{ "sys","gpl", _f07, fmt_gpl, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.select_plane,		GCODE_DEFAULT_PLANE },
+	{ "sys","gun", _f07, fmt_gun, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.units_mode,			GCODE_DEFAULT_UNITS },
+	{ "sys","gco", _f07, fmt_gco, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.coord_system,		GCODE_DEFAULT_COORD_SYSTEM },
+	{ "sys","gpa", _f07, fmt_gpa, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.path_control,		GCODE_DEFAULT_PATH_CONTROL },
+	{ "sys","gdi", _f07, fmt_gdi, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.distance_mode,		GCODE_DEFAULT_DISTANCE_MODE },
 	{ "",   "gc",  _f00, fmt_nul, _print_nul, _get_gc, _run_gc,  (double *)&tg.null, 0 }, // gcode block - must be last in this group
 
-	{ "sys","ja",  _fip, fmt_ja, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.junction_acceleration,JUNCTION_ACCELERATION },
-	{ "sys","ct",  _fip, fmt_ct, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.chordal_tolerance,	CHORDAL_TOLERANCE },
-	{ "sys","st",  _fip, fmt_st, _print_ui8, _get_ui8, _set_sw,  (double *)&sw.switch_type,			SWITCH_TYPE },
+	{ "sys","ja",  _f07, fmt_ja, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.junction_acceleration,JUNCTION_ACCELERATION },
+	{ "sys","ct",  _f07, fmt_ct, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.chordal_tolerance,	CHORDAL_TOLERANCE },
+	{ "sys","st",  _f07, fmt_st, _print_ui8, _get_ui8, _set_sw,  (double *)&sw.switch_type,			SWITCH_TYPE },
 
-	{ "sys","ic",  _fip, fmt_ic, _print_ui8, _get_ui8, _set_ic,  (double *)&cfg.ignore_crlf,		COM_IGNORE_CRLF },
-	{ "sys","ec",  _fip, fmt_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,			COM_EXPAND_CR },
-	{ "sys","ee",  _fip, fmt_ee, _print_ui8, _get_ui8, _set_ee,  (double *)&cfg.enable_echo,		COM_ENABLE_ECHO },
-	{ "sys","ex",  _fip, fmt_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
-	{ "sys","eq",  _fip, fmt_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,			QR_VERBOSITY },
-	{ "sys","ej",  _fip, fmt_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,			COMM_MODE },
-	{ "sys","jv",  _fip, fmt_jv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.json_verbosity,		JSON_VERBOSITY },
-	{ "sys","tv",  _fip, fmt_tv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.text_verbosity,		TEXT_VERBOSITY },
-	{ "sys","si",  _fip, fmt_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
-	{ "sys","sv",  _fip, fmt_sv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.status_report_verbosity,SR_VERBOSITY },
-	{ "sys","baud",_f00, fmt_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
+	{ "sys","ic",  _f07, fmt_ic, _print_ui8, _get_ui8, _set_ic,  (double *)&cfg.ignore_crlf,		COM_IGNORE_CRLF },
+	{ "sys","ec",  _f07, fmt_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,			COM_EXPAND_CR },
+	{ "sys","ee",  _f07, fmt_ee, _print_ui8, _get_ui8, _set_ee,  (double *)&cfg.enable_echo,		COM_ENABLE_ECHO },
+	{ "sys","ex",  _f07, fmt_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
+	{ "sys","eq",  _f07, fmt_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,			QR_VERBOSITY },
+	{ "sys","ej",  _f07, fmt_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,			COMM_MODE },
+	{ "sys","jv",  _f07, fmt_jv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.json_verbosity,		JSON_VERBOSITY },
+	{ "sys","tv",  _f07, fmt_tv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.text_verbosity,		TEXT_VERBOSITY },
+	{ "sys","si",  _f07, fmt_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
+	{ "sys","sv",  _f07, fmt_sv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.status_report_verbosity,SR_VERBOSITY },
+	{ "sys","baud",_fns, fmt_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
 
 	// removed from system group as "hidden" parameters
 	{ "",   "mt",  _fip, fmt_mt, _print_lin, _get_dbl, _set_dbl, (double *)&cfg.estd_segment_usec,	NOM_SEGMENT_USEC },
@@ -1724,7 +1727,8 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 
 	// special processing for system groups and stripping tokens for groups
 	if (cmd->group[0] != NUL) {
-		if (strstr(cmd->group, "sys") != NULL) { 
+//		if (strstr(cmd->group, "sys") != NULL) { 
+		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_NOSTRIP) {
 			cmd->group[0] = NUL;
 		} else {
 			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
