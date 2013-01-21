@@ -32,7 +32,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	362.11		// Edge prep 
+#define TINYG_BUILD_NUMBER   	362.12		// Edge prep 
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
