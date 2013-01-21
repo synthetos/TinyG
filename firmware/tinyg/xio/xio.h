@@ -141,7 +141,7 @@ typedef void (*x_flow_t)(xioDev_t *d);
 // Static structure allocations
 xioDev_t 		ds[XIO_DEV_COUNT];			// allocate top-level dev structs
 xioUsart_t 		us[XIO_DEV_USART_COUNT];	// USART extended IO structs
-xioSpi_t 		sp[XIO_DEV_SPI_COUNT];		// SPI extended IO structs
+xioSpi_t 		spi[XIO_DEV_SPI_COUNT];		// SPI extended IO structs
 xioFile_t 		fs[XIO_DEV_FILE_COUNT];		// FILE extended IO structs
 xioSignals_t	sig;						// signal flags
 extern struct controllerSingleton tg;	// needed by init() for default source

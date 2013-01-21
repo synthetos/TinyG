@@ -99,13 +99,13 @@
 static double _get_move_times(double *min_time);
 
 // planner queue callbacks
-static void _exec_offset(uint8_t coord_system, double f);
-static void _exec_change_tool(uint8_t tool, double f);
-static void _exec_select_tool(uint8_t tool, double f);
-static void _exec_mist_coolant_control(uint8_t mist_coolant, double f);
-static void _exec_flood_coolant_control(uint8_t flood_coolant, double f);
-//static void _exec_feed_override_enable(uint8_t feed_override, double f);
-static void _exec_program_finalize(uint8_t machine_state, double f);
+static void _exec_offset(uint8_t coord_system, double float_val);
+static void _exec_change_tool(uint8_t tool, double float_val);
+static void _exec_select_tool(uint8_t tool, double float_val);
+static void _exec_mist_coolant_control(uint8_t mist_coolant, double float_val);
+static void _exec_flood_coolant_control(uint8_t flood_coolant, double float_val);
+//static void _exec_feed_override_enable(uint8_t feed_override, double float_val);
+static void _exec_program_finalize(uint8_t machine_state, double float_val);
 
 #define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
@@ -185,9 +185,9 @@ double cm_get_coord_offset(uint8_t axis)
 		return (0);						// no work offset if in abs override mode
 	}
 	if (gm.origin_offset_enable == 1) {
-		return (cfg.offset[gm.coord_system][axis] + gm.origin_offset[axis]);
+		return (cfg.offset[gm.coord_system][axis] + gm.origin_offset[axis]); // includes G5x and G92 compoenents
 	} else {
-		return (cfg.offset[gm.coord_system][axis]);
+		return (cfg.offset[gm.coord_system][axis]);		// just the g5x coordinate system components
 	}
 }
 
@@ -642,11 +642,11 @@ uint8_t	cm_set_coord_system(uint8_t coord_system)
 	mp_queue_command(_exec_offset, coord_system,0);
 	return (TG_OK);
 }
-static void _exec_offset(uint8_t coord_system, double f)
+static void _exec_offset(uint8_t coord_system, double float_val)
 {
 	double offsets[AXES];
 	for (uint8_t i=0; i<AXES; i++) {
-		offsets[i] = cfg.offset[coord_system][i] - (gm.origin_offset[i] * gm.origin_offset_enable);
+		offsets[i] = cfg.offset[coord_system][i] + (gm.origin_offset[i] * gm.origin_offset_enable);
 	}
 	mp_set_runtime_work_offset(offsets);
 }
@@ -691,17 +691,20 @@ uint8_t cm_set_absolute_origin(double origin[], double flag[])
 	return (TG_OK);
 }
 
-/*
+/* 
  * cm_set_origin_offsets() - G92
  * cm_reset_origin_offsets() - G92.1
  * cm_suspend_origin_offsets() - G92.2
  * cm_resume_origin_offsets() - G92.3
+ *
+ * G92's behave according to NIST 3.5.18 & LinuxCNC G92
+ * http://linuxcnc.org/docs/html/gcode/gcode.html#sec:G92-G92.1-G92.2-G92.3
  */
 uint8_t cm_set_origin_offsets(double offset[], double flag[])
 {
 	gm.origin_offset_enable = 1;
 	for (uint8_t i=0; i<AXES; i++) {
-		if (flag[i] > EPSILON) {	 		// behaves according to NIST 3.5.18
+		if (flag[i] > EPSILON) {
 			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] - _to_millimeters(offset[i]);
 		}
 	}
@@ -866,8 +869,10 @@ uint8_t cm_straight_feed(double target[], double flags[])
 
 	cm_set_target(target, flags);
 	cm_cycle_start();						// required for homing & other cycles
-	uint8_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), 
-							 cm_get_coord_offset_vector(gm.work_offset), gm.min_time);
+	uint8_t status = MP_LINE(gm.target, 
+							 _get_move_times(&gm.min_time), 
+							 cm_get_coord_offset_vector(gm.work_offset), 
+							 gm.min_time);
 
 	cm_set_gcode_model_endpoint_position(status);
 	return (status);
@@ -892,7 +897,7 @@ uint8_t cm_change_tool(uint8_t tool)
 	mp_queue_command(_exec_change_tool, tool, 0);
 	return (TG_OK);
 }
-static void _exec_change_tool(uint8_t tool, double f)
+static void _exec_change_tool(uint8_t tool, double float_val)
 {
 	gm.tool = tool;
 }
@@ -902,7 +907,7 @@ uint8_t cm_select_tool(uint8_t tool)
 	mp_queue_command(_exec_select_tool, tool, 0);
 	return (TG_OK);
 }
-static void _exec_select_tool(uint8_t tool, double f)
+static void _exec_select_tool(uint8_t tool, double float_val)
 {
 	gm.tool = tool;
 }
@@ -926,7 +931,7 @@ uint8_t cm_flood_coolant_control(uint8_t flood_coolant)
 	return (TG_OK);
 }
 
-static void _exec_mist_coolant_control(uint8_t mist_coolant, double f)
+static void _exec_mist_coolant_control(uint8_t mist_coolant, double float_val)
 {
 	gm.mist_coolant = mist_coolant;
 	if (mist_coolant == true) {
@@ -936,7 +941,7 @@ static void _exec_mist_coolant_control(uint8_t mist_coolant, double f)
 	}
 }
 
-static void _exec_flood_coolant_control(uint8_t flood_coolant, double f)
+static void _exec_flood_coolant_control(uint8_t flood_coolant, double float_val)
 {
 	gm.flood_coolant = flood_coolant;
 	if (flood_coolant == true) {

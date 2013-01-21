@@ -246,7 +246,7 @@ void mp_set_axes_position(const double position[]);
 void mp_set_axis_position(uint8_t axis, const double position);
 
 uint8_t mp_exec_move(void);
-void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f);
+void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t int_val, double float_val);
 uint8_t mp_dwell(const double seconds);
 uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time);
 uint8_t mp_plan_hold_callback(void);

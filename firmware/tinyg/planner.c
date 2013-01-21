@@ -203,7 +203,7 @@ uint8_t mp_exec_move()
  *	and makes keeping the queue full much easier - therefore avoiding Q starvation
  */
 
-void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f)
+void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t int_val, double float_val)
 {
 	mpBuf_t *bf;
 
@@ -213,8 +213,8 @@ void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t i, double f)
 	bf->move_type = MOVE_TYPE_COMMAND;
 	bf->bf_func = _exec_command;		// callback to planner queue exec function
 	bf->cm_func = cm_exec;				// callback to canonical machine exec function
-	bf->int_val = i;
-	bf->dbl_val = f;
+	bf->int_val = int_val;
+	bf->dbl_val = float_val;
 	mp_queue_write_buffer(MOVE_TYPE_COMMAND);
 	return;
 }

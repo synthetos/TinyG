@@ -103,6 +103,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
+//	xio_queue_RX_string_usb("g0x2\n");			// G0 smoke test
+
 	// text parser test cases
 //	xio_queue_RX_string_usb("$\n");				// sys request
 //	xio_queue_RX_string_usb("$ec=1\n");			// turn CR expansion on
@@ -153,11 +155,10 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 
-//	xio_queue_RX_string_usb("g0x2\n");
 //	xio_queue_RX_string_usb("g92a0\n");
-//	xio_queue_RX_string_usb("g0a3\n");	// should be a=3. Instead it's a=1
+//	xio_queue_RX_string_usb("g0a3\n");			// should be a=3. Instead it's a=1
 
-//	xio_queue_RX_string_usb("t3\n");	// change tool
+//	xio_queue_RX_string_usb("t3\n");			// change tool
 
 //	xio_queue_RX_string_usb("$h\n");
 //	xio_queue_RX_string_usb("$m\n");
@@ -266,7 +267,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g10 L2 p2 x10 y11 z12\n");
 
 /* G28 and G30 homing tests */
-	xio_queue_RX_string_usb("g28.2x0\n");
+//	xio_queue_RX_string_usb("g28.2x0\n");
 //	xio_queue_RX_string_usb("g28.1\n");			// G28.1 OK
 //	xio_queue_RX_string_usb("g28.1x10y10\n");	// G28.1 specification error
 //	xio_queue_RX_string_usb("g28.2x0y0z0\n");
@@ -290,7 +291,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g10 p2 l2 x10 y10 z-10\n");
 
 /* G92 tests */
-//	xio_queue_RX_string_usb("g92 x20 y20\n");	// apply offsets
+	xio_queue_RX_string_usb("g92 x20 y20\n");	// apply offsets
 //	xio_queue_RX_string_usb("g0 x0 y0\n");		// should move diagonally to SouthWest
 //	xio_queue_RX_string_usb("g92.1\n");			// cancel offsets
 //	xio_queue_RX_string_usb("g0 x0 y0\n");		// should move NW back to original coordinates
