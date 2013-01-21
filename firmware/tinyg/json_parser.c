@@ -285,7 +285,6 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
 	return (true);
 }
 
-
 /****************************************************************************
  * js_serialize_json() - make a JSON object string from JSON object array
  *
@@ -293,9 +292,86 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  *	*str is a pointer to the output string - usually what was the input string
  *	Returns the character count of the resulting string
  *
- *	Serializer will skip empty elements (TYPE_EMPTY) in a list. 
- *	If an entire level is empty it will issue a {}
+ * 	Operation:
+ *	  - The cmdObj list is processed start to finish with no recursion
+ *	  - Assume the first element is depth 0
+ *	  - Assume remaining depths have been set correctly; but might not achieve closure;
+ *		e.g. list starts on 0, and ends on 3, in which case provide correct closing curlies
+ *	  - Assume depth is no greater than MAX_DEPTH
+ *	  - Assume there can be multiple, independent, non-contiguous elements or sequences 
+ *		at a given depth value. These are processed independently - e.g. 0,1,1,0,1,1,0,1,1
+ *	  - Assume the list has a termianting element where cmd->nx == NULL. 
+ *		The terminator may or may not have data (empty or not empty).
+ *
+ *	Desired behaviors:
+ *	  - Skip empty elements (TYPE_EMPTY)
+ *	  - If an entire depth level is empty omit the level altogether (no curlies)
+ *	  - If a parent has no children report back null - e.g. "parent":"" (but no curlies)
+ *	  - Allow self-referential elements that would otherwise cause a recursive loop
  */
+
+uint8_t _serialize_level(cmdObj_t *cmd, char *str);
+
+#define MAX_DEPTH 4
+#define IS_EMPTY 0
+#define IS_PARTIAL 1
+#define IS_CLOSED 2
+/*
+uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
+{
+	char *str = out_buf;
+	int8_t prev_depth = 0;
+	uint8_t level_state[MAX_DEPTH] = { IS_EMPTY };	// rest of array automatically initialized to zero
+
+//	uint8_t level_has_data = false;	// set true once you know a level has data (is not empty)
+
+	strcpy(str++, "{"); 						// write opening curly
+	while (cmd->nx != NULL) {					// null signals last object
+		if (cmd->type == TYPE_EMPTY) {
+//			if ((cmd = cmd->nx) == NULL) { break;}
+			if (cmd->depth < prev_depth) { 		// close the level
+				str += sprintf(str, "}");
+				level_has_data = false;
+			}
+			prev_depth = cmd->depth;
+			continue;
+		}
+		if (level_has_data == false) { level_has_data = true;}
+		else { str += sprintf(str, ",");}
+
+		if (cmd->type == TYPE_PARENT) {
+			str += sprintf(str, "\"%s\":{", cmd->token);
+			level_has_data = false;
+		} else {
+			str += sprintf(str, "\"%s\":", cmd->token);
+			if (cmd->type == TYPE_NULL)	 { str += sprintf(str, "\"\"");
+			} else if (cmd->type == TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
+			} else if (cmd->type == TYPE_FLOAT)	 { str += sprintf(str, "%0.3f", cmd->value);
+			} else if (cmd->type == TYPE_STRING) { str += sprintf(str, "\"%s\"",cmd->string);
+			} else if (cmd->type == TYPE_ARRAY)  { str += sprintf(str, "[%s]",  cmd->string);
+			} else if (cmd->type == TYPE_BOOL)	 {
+				if (cmd->value == false) {
+					str += sprintf(str, "false");
+				} else {
+					str += sprintf(str, "true");
+				}
+			}
+		}
+		if ((cmd = cmd->nx) == NULL) { break;}						// end of the list
+		if (cmd->depth < prev_depth) { str += sprintf(str, "}");}	// close the level
+		prev_depth = cmd->depth;
+	}
+	while (prev_depth-- > 0) { str += sprintf(str, "}");}			// closing curlies and NEWLINE
+	sprintf(str, "}\n");
+	return (str - out_buf);
+}
+
+uint8_t _serialize_level(cmdObj_t *cmd, char *str) 
+{
+	return (TG_OK);
+}
+*/
+
 
 uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 {
@@ -344,6 +420,8 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 	return (str - out_buf);
 }
 
+
+
 /****************************************************************************
  * js_print_list() - output cmdObj list in JSON format
  * 
@@ -352,11 +430,12 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
  *
  *	A footer is returned for every setting except $je=0
  *
- *	JE_SILENT = 0,			// No response is provided for any command
- *	JE_OMIT_BODY,			// Gcode and config responses have footer only
- *	JE_OMIT_GCODE_BODY,		// Body returned for configs; omitted for Gcode commands
- *	JE_GCODE_LINENUM_ONLY,	// Body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
- *	JE_FULL_ECHO			// Body returned for configs and Gcode - Gcode comments removed
+ *	JV_SILENT = 0,			// no response is provided for any command
+ *	JV_FOOTER_ONLY,			// response contains no body - footer only
+ *	JV_OMIT_GCODE_BODY,		// body returned for configs; omitted for Gcode commands
+ *	JV_GCODE_LINENUM_ONLY,	// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+ *	JV_GCODE_MESSAGES,		// body returned for configs; Gcode returns line numbers and messages only
+ *	JV_VERBOSE				// body returned for configs and Gcode - Gcode comments removed
  */
 void js_print_list(uint8_t status)
 {
