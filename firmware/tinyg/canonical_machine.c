@@ -176,7 +176,7 @@ void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
  * cm_get_model_canonical_target() - return model target in internal canonical form
  * cm_get_model_canonical_position_vector() - return model position vector in internal canonical form
  * cm_get_runtime_machine_position() - return current machine position in external form 
- * cm_get_runtime runtome_position() - return current work coordinate position in external form 
+ * cm_get_runtime work_position() - return current work coordinate position in external form 
  */
 
 double cm_get_coord_offset(uint8_t axis)
@@ -229,6 +229,7 @@ double *cm_get_model_canonical_position_vector(double position[])
 
 double cm_get_runtime_machine_position(uint8_t axis) 
 {
+	// NB: This form takes 20 bytes less than calling first then deciding later
 	if (gm.units_mode == INCHES) {
 		return (mp_get_runtime_machine_position(axis) / MM_PER_INCH);
 	} else {

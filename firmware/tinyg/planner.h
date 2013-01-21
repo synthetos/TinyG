@@ -165,15 +165,15 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 #endif
 } mpBuf_t;
 
-struct mpBufferPool {			// ring buffer for sub-moves
+typedef struct mpBufferPool {	// ring buffer for sub-moves
 	uint8_t buffers_available;	// running count of available buffers
-	mpBuf_t *w;			// get_write_buffer pointer
-	mpBuf_t *q;			// queue_write_buffer pointer
-	mpBuf_t *r;			// get/end_run_buffer pointer
+	mpBuf_t *w;					// get_write_buffer pointer
+	mpBuf_t *q;					// queue_write_buffer pointer
+	mpBuf_t *r;					// get/end_run_buffer pointer
 	mpBuf_t bf[PLANNER_BUFFER_POOL_SIZE];// buffer storage
-};
+} mpBufferPool_t;
 
-struct mpMoveMasterSingleton {	// common variables for planning (move master)
+typedef struct mpMoveMasterSingleton {	// common variables for planning (move master)
 	double position[AXES];		// final move position for planning purposes
 	double ms_in_queue;			// total ms of movement & dwell in planner queue
 	double prev_jerk;			// jerk values cached from previous move
@@ -185,20 +185,58 @@ struct mpMoveMasterSingleton {	// common variables for planning (move master)
 	double a_unit[AXES];
 	double b_unit[AXES];
 #endif
-};
+} mpMoveMasterSingleton_t;
 
-// Global scope structs
+typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
+//	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
+	uint32_t linenum;			// runtime line/block number of BF being executed
+	uint8_t move_state;			// state of the overall move
+	uint8_t section_state;		// state within a move section
 
-struct mpBufferPool mb;				// move buffer queue
-struct mpMoveMasterSingleton mm;	// static context for planning
+	double endpoint[AXES];		// final target for bf (used to correct rounding errors)
+	double position[AXES];		// current move position
+	double target[AXES];		// target move position
+	double unit[AXES];			// unit vector for axis scaling & planning
+	double work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
+	double head_length;			// copies of bf variables of same name
+	double body_length;
+	double tail_length;
+	double entry_velocity;
+	double cruise_velocity;
+	double exit_velocity;
+
+	double length;				// length of line in mm
+	double move_time;			// total running time (derived)
+	double midpoint_velocity;	// velocity at accel/decel midpoint
+	double jerk;				// max linear jerk
+
+	double segments;			// number of segments in arc or blend
+	uint32_t segment_count;		// count of running segments
+	double segment_move_time;	// actual time increment per aline segment
+	double microseconds;		// line or segment time in microseconds
+	double segment_length;		// computed length for aline segment
+	double segment_velocity;	// computed velocity for aline segment
+	double forward_diff_1;      // forward difference level 1 (Acceleration)
+	double forward_diff_2;      // forward difference level 2 (Jerk - constant)
+//	double accel_time;			// total pseudo-time for acceleration calculation
+//	double elapsed_accel_time;	// current running time for accel calculation
+//	double midpoint_acceleration;//acceleration at the midpoint
+//	double jerk_div2;			// max linear jerk divided by 2
+//	double segment_accel_time;	// time increment for accel computation purposes
+} mpMoveRuntimeSingleton_t;
+
+
+// Allocate global scope structs
+mpBufferPool_t mb;				// move buffer queue
+mpMoveMasterSingleton_t mm;		// context for line planning
+mpMoveRuntimeSingleton_t mr;	// context for line runtime
 
 /*
  * Global Scope Functions
  */
 
 void mp_init(void);
-
 void mp_init_buffers(void);
 
 void mp_flush_planner(void);
@@ -230,12 +268,12 @@ mpBuf_t * mp_get_last_buffer(void);
 
 // plan_line.c functions
 uint8_t mp_isbusy(void);
-void mp_zero_segment_velocity(void);
-void mp_set_runtime_work_offset(double offset[]); 
+double mp_get_runtime_linenum(void);
+double mp_get_runtime_velocity(void);
 double mp_get_runtime_work_position(uint8_t axis);
 double mp_get_runtime_machine_position(uint8_t axis);
-double mp_get_runtime_velocity(void);
-double mp_get_runtime_linenum(void);
+void mp_set_runtime_work_offset(double offset[]); 
+void mp_zero_segment_velocity(void);
 
 #ifdef __DEBUG
 void mp_dump_running_plan_buffer(void);
@@ -245,7 +283,7 @@ void mp_dump_runtime_state(void);
 
 /*** Unit tests ***/
 
-//#define __UNIT_TEST_PLANNER	// start __UNIT_TEST_PLANNER
+//#define __UNIT_TEST_PLANNER	// uncomment to compile in planner unit tests
 #ifdef __UNIT_TEST_PLANNER
 void mp_unit_tests(void);
 void mp_plan_arc_unit_tests(void);

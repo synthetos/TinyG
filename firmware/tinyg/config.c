@@ -782,6 +782,18 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","se09",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[9],0 },
 	{ "","se10",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[10],0 },
 	{ "","se11",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[11],0 },
+	{ "","se12",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[12],0 },
+	{ "","se13",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[13],0 },
+	{ "","se14",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[14],0 },
+	{ "","se15",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[15],0 },
+	{ "","se16",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[16],0 },
+	{ "","se17",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[17],0 },
+	{ "","se18",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[18],0 },
+	{ "","se19",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[19],0 },
+	{ "","se20",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[20],0 },
+	{ "","se21",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[21],0 },
+	{ "","se22",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[22],0 },
+	{ "","se23",_fpe, fmt_nul, _print_nul, _get_int, _set_int,(double *)&cfg.status_report_list[23],0 },
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with CMD_COUNT_GROUPS below ****

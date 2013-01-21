@@ -45,8 +45,7 @@ typedef uint16_t index_t;			// if there are > 255 indexed objects
 #define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
 #define CMD_STRING_LEN 80			// original value string or value as a string
 #define CMD_FORMAT_LEN 64			// print formatting string
-#define CMD_STATUS_REPORT_LEN 12	// max number of status report elements - see cfgArray
-									// must also line up in cfgArray, se00 - seXX
+
 /**** cmdObj lists ****
  *
  * 	Commands and groups of commands are processed internally as lists of cmdObj's.
@@ -92,6 +91,9 @@ typedef uint16_t index_t;			// if there are > 255 indexed objects
 #define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
 #define CMD_STRING_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN + CMD_FORMAT_LEN +3)
 #define JSON_OUTPUT_STRING_MAX (OUTPUT_BUFFER_LEN)
+
+#define CMD_STATUS_REPORT_LEN 24	// max number of status report elements - see cfgArray
+									// must also line up in cfgArray, se00 - seXX
 
 #define NVM_VALUE_LEN 4				// NVM value length (double, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM

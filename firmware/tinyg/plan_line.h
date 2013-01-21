@@ -32,6 +32,7 @@
 
 // NOTE: function prototypes are in planner.h for ease of access by external files
 
+/*
 struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
 	uint32_t linenum;			// runtime line/block number of BF being executed
@@ -72,5 +73,6 @@ struct mpMoveRuntimeSingleton {	// persistent runtime variables
 };
 
 static struct mpMoveRuntimeSingleton mr;// static context for runtime
+*/
 
 #endif

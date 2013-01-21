@@ -2,8 +2,7 @@
  * plan_line.c - acceleration managed line planning and motion execution
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
- * Portions copyright (c) 2009 Simen Svale Skogsrud
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -77,38 +76,35 @@ uint8_t mp_isbusy()
 	return (false);
 }
 
-/* 
- * mp_zero_segment_velocity() - correct velocity in last segment for reporting purposes
- */
-void mp_zero_segment_velocity() 
-{ 
-	mr.segment_velocity = 0;
-}
-
 /*
+ * mp_get_runtime_linenum()	 - returns currently executing line number
+ * mp_get_runtime_velocity() - returns current velocity (aggregate)
+ * mp_get_runtime_machine_position() - returns current axis position in machine coordinates
  * mp_get_runtime_work_position() - returns current axis position in work coordinates
  *									that were in effect at move planning time
- * mp_get_runtime_machine_position() - returns current axis position in machine coordinates
- * mp_get_runtime_velocity() - returns current velocity (aggregate)
- * mp_get_runtime_linenum()	 - returns currently executing line number
+ * mp_set_runtime_work_offset()
+ * mp_zero_segment_velocity() - correct velocity in last segment for reporting purposes
  */
 
-double mp_get_runtime_work_position(uint8_t axis) { 
-	return (mr.position[axis] - mr.work_offset[axis]);
-}
+double mp_get_runtime_linenum(void) { return (mr.linenum);}
+double mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 
 double mp_get_runtime_machine_position(uint8_t axis) { 
 	return (mr.position[axis]);
 }
 
+double mp_get_runtime_work_position(uint8_t axis) { 
+	return (mr.position[axis] - mr.work_offset[axis]);
+}
 
 void mp_set_runtime_work_offset(double offset[]) { 
 	copy_axis_vector(mr.work_offset, offset);
 }
 
-double mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
-double mp_get_runtime_linenum(void) { return (mr.linenum);}
-
+void mp_zero_segment_velocity() 
+{
+	mr.segment_velocity = 0;
+}
 
 /**************************************************************************
  * mp_aline() - plan a line with acceleration / deceleration
@@ -1262,7 +1258,6 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
-
 	//**** main dispatcher to process segments ***
 	switch (mr.move_state) {
 		case (MOVE_STATE_HEAD): { status = _exec_aline_head(); break;}
@@ -1272,9 +1267,7 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	}
 
 	// feed hold post-processing
-	if (cm.hold_state == FEEDHOLD_SYNC) { 
-		cm.hold_state = FEEDHOLD_PLAN;
-	}
+	if (cm.hold_state == FEEDHOLD_SYNC) { cm.hold_state = FEEDHOLD_PLAN;}
 
 	// initiate the hold - look for the end of the decel move
 	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == TG_OK)) {
@@ -1296,7 +1289,7 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 		mr.section_state = MOVE_STATE_OFF;
 		bf->nx->replannable = false;			// prevent overplanning (Note 2)
 		if (bf->move_state == MOVE_STATE_RUN) {
-			mp_free_run_buffer();					// free bf if it's actually done
+			mp_free_run_buffer();				// free bf if it's actually done
 		}
 	}
 	return (status);

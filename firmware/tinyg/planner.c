@@ -372,7 +372,7 @@ mpBuf_t * mp_get_run_buffer()
 	return (NULL);								// condition: no queued buffers. fail it.
 }
 
-void mp_free_run_buffer()					// EMPTY current run buf & adv to next
+void mp_free_run_buffer()						// EMPTY current run buf & adv to next
 {
 	mp_clear_buffer(mb.r);						// clear it out (& reset replannable)
 	mb.r->buffer_state = MP_BUFFER_EMPTY;
