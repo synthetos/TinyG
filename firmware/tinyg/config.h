@@ -90,7 +90,6 @@ typedef uint16_t index_t;			// if there are > 255 indexed objects
 #define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_FOOTER_LEN)
 #define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
 #define CMD_STRING_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN + CMD_FORMAT_LEN +3)
-#define JSON_OUTPUT_STRING_MAX (OUTPUT_BUFFER_LEN)
 
 #define CMD_STATUS_REPORT_LEN 24	// max number of status report elements - see cfgArray
 									// must also line up in cfgArray, se00 - seXX
@@ -153,7 +152,13 @@ enum srVerbosity {					// status report enable and verbosity
 	SR_VERBOSE						// reports all values specified
 };
 
-enum textReports {					// text output print modes
+
+enum jsonFormats {					// json output print modes
+	JSON_OBJECT_FORMAT,				// print just rthe bost as a json object
+	JSON_RESPONSE_FORMAT			// print the header/body/footer as a response object
+};
+
+enum textFormats {					// text output print modes
 	TEXT_INLINE_PAIRS,				// print key:value pairs as comma separated pairs
 	TEXT_INLINE_VALUES,				// print values as commas separated values
 	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines with formatted print per line
@@ -206,7 +211,7 @@ uint8_t cmd_add_string(char *token, const char *string);
 uint8_t cmd_add_string_P(char *token, const char *string);
 uint8_t cmd_add_integer(char *token, const uint32_t value);
 uint8_t cmd_add_float(char *token, const double value);
-void cmd_print_list(uint8_t status, uint8_t textmode);
+void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags);
 uint8_t cmd_group_is_prefixed(char *group);
 
 uint8_t cmd_read_NVM_value(cmdObj_t *cmd);

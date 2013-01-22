@@ -1417,7 +1417,7 @@ uint8_t cfg_text_parser(char *str)
 		status = cmd_set(cmd);				// set single value
 		cmd_persist(cmd);
 	}
-	cmd_print_list(status, TEXT_MULTILINE_FORMATTED); // print the results
+	cmd_print_list(status, TEXT_MULTILINE_FORMATTED, 0); // print the results
 	return (status);
 }
 
@@ -1923,7 +1923,7 @@ static void _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // helpe
 		cmd->index = cmd_get_index("", cmd->token);
 //		cmd->type = TYPE_PARENT;
 		cmd_get_cmdObj(cmd);
-		cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+		cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 	}
 }
 
@@ -1953,7 +1953,7 @@ static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
 	// print system group
 	strcpy(cmd->token,"sys");
 	_get_grp(cmd);
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED,  JSON_RESPONSE_FORMAT);
 
 	_do_offsets(cmd);
 	_do_motors(cmd);
@@ -1962,7 +1962,7 @@ static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
 	// print PWM group
 	strcpy(cmd->token,"p1");
 	_get_grp(cmd);
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 
 	return (TG_COMPLETE);
 }
@@ -2111,25 +2111,31 @@ uint8_t cmd_add_float(char *token, const double value)	// add a float object to 
 	return (TG_NO_BUFFER_SPACE);
 }
 
-/**** cmd_print_list() - print cmd_array in JSON mode or one of the text modes ****
+/**** cmd_print_list() - print cmd_array as JSON or text ****
  *
- * 	Use this function for all text and JSON output (don't just printf stuff)
+ * 	Use this function for all text and JSON output that wants to be in a response header
+ *	(don't just printf stuff)
  * 	It generates and prints the JSON and text mode output strings 
- *	It also cleans up the lists and gets ready for the next use
  *	In JSON mode it generates the footer with the status code, buffer count and checksum
  *	In text mode it uses the the textmode variable to set the output format
+ *
+ *	Inputs:
+ *	  json_flags = JSON_OBJECT_FORMAT - print just the body w/o header or footer
+ *	  json_flags = JSON_RESPONSE_FORMAT - print a full "r" object with footer
+ *
+ *	  text_flags = TEXT_INLINE_PAIRS - print text as name/value pairs on a single line
+ *	  text_flags = TEXT_INLINE_VALUES - print text as comma separated values on a single line
+ *	  text_flags = TEXT_MULTILINE_FORMATTED - print text one value per line with formatting string
  */
-
-void cmd_print_list(uint8_t status, uint8_t textmode)
+void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags)
 {
 	if (cfg.comm_mode == JSON_MODE) {
-		if (cmd_get_type(cmd_body) == CMD_TYPE_REPORT) {
-			js_print_json_object(cmd_body);
-		} else {
-			js_print_response(cmd_header, status);
+		switch (json_flags) {
+			case JSON_OBJECT_FORMAT: { js_print_json_object(cmd_body); break; }
+			case JSON_RESPONSE_FORMAT: { js_print_json_response(cmd_header, status); break; }
 		}
 	} else {
-		switch (textmode) {
+		switch (text_flags) {
 			case TEXT_INLINE_PAIRS: { _print_text_inline_pairs(); break; }
 			case TEXT_INLINE_VALUES: { _print_text_inline_values(); break; }
 			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted();}

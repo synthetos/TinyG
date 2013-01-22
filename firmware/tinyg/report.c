@@ -132,7 +132,7 @@ void rpt_request_status_report()
 void rpt_run_text_status_report()			// multiple line status report
 {
 	rpt_populate_unfiltered_status_report();
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 }
 
 uint8_t rpt_status_report_callback() 		// called by controller dispatcher
@@ -142,16 +142,15 @@ uint8_t rpt_status_report_callback() 		// called by controller dispatcher
 	}
 	if ((cfg.comm_mode == JSON_MODE) && (cfg.status_report_verbosity == SR_FILTERED)) {
 		if (rpt_populate_filtered_status_report() == true) {
-			cmd_print_list(TG_OK, 0);
+			cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 		}
 	} else {
 		rpt_populate_unfiltered_status_report();
-		cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);	// will report in JSON or inline text modes
+		cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	}
 	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
 	return (TG_OK);
 }
-
 
 /*
  * rpt_populate_unfiltered_status_report() - populate cmdObj body with status values
@@ -245,7 +244,7 @@ uint8_t rpt_queue_report_callback()
 	sprintf_P(cmd->token, PSTR("qr"));
 	cmd->value = qr.buffers_available;
 	cmd->type = TYPE_INTEGER;
-	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);// report in JSON or inline text mode
+	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (TG_OK);
 }
 

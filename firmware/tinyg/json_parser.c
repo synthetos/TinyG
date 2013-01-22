@@ -87,7 +87,7 @@ void js_json_parser(char *str)
 {
 	uint8_t status;
 	status = _json_parser_kernal(str);
-	cmd_print_list(status, TEXT_INLINE_PAIRS);
+	cmd_print_list(status, TEXT_INLINE_PAIRS, JSON_RESPONSE_FORMAT);
 	rpt_request_status_report();	// generate an incremental status report if there are gcode model changes
 }
 
@@ -312,105 +312,43 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  *	  - If a JSON object is empty omit the object altogether (no curlies)
  */
 
-#define MAX_DEPTH 4
-
 uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 {
 	char *str = out_buf;
 	int8_t initial_depth = cmd->depth;
 	int8_t prev_depth = 0;
-	uint8_t count[MAX_DEPTH] = { 0 };			// number of elements at the current level
+	uint8_t count[JSON_MAX_DEPTH] = { 0 };		// number of elements at the current level
 												// rest of array automatically initialized to zero
 //	for (uint8_t i=0; i<250; i++) { out_buf[i] = 0;}
 
-	strcpy(str++, "{"); 						// write opening curly
-	while (cmd->nx != NULL) {					// null signals last object
-		if (cmd->type == TYPE_EMPTY) {
-			cmd = cmd->nx;
-			continue;
-		}
-		if (++(count[cmd->depth]) > 1) { str += sprintf(str, ",");}
-
-		if (cmd->type == TYPE_PARENT) {
-			str += sprintf(str, "\"%s\":{", cmd->token);
-		} else {
+	*str++ = '{'; 								// write opening curly
+	while (true) {
+		if (cmd->type != TYPE_EMPTY) {
+			if ((count[cmd->depth] +=1) > 1) { *str++ = ',';}
 			str += sprintf(str, "\"%s\":", cmd->token);
-			if (cmd->type == TYPE_NULL)	 { str += sprintf(str, "\"\"");
-			} else if (cmd->type == TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
-			} else if (cmd->type == TYPE_FLOAT)	 { str += sprintf(str, "%0.3f", cmd->value);
-//			} else if (cmd->type == TYPE_FLOAT2) { str += sprintf(str, "%0.2f", cmd->value);
-//			} else if (cmd->type == TYPE_FLOAT0) { str += sprintf(str, "%0.0f", cmd->value);
-			} else if (cmd->type == TYPE_STRING) { str += sprintf(str, "\"%s\"",cmd->string);
-			} else if (cmd->type == TYPE_ARRAY)  { str += sprintf(str, "[%s]",  cmd->string);
-			} else if (cmd->type == TYPE_BOOL)	 {
-				if (cmd->value == false) {
-					str += sprintf(str, "false");
-				} else {
-					str += sprintf(str, "true");
-				}
+			if (cmd->type == TYPE_PARENT) { *str++ = '{';}
+			else if (cmd->type == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
+			else if (cmd->type == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", cmd->value);}
+			else if (cmd->type == TYPE_FLOAT)	{ str += sprintf(str, "%0.3f", cmd->value);}
+			else if (cmd->type == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",cmd->string);}
+			else if (cmd->type == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  cmd->string);}
+			else if (cmd->type == TYPE_BOOL) 	{
+				if (cmd->value == false) { str += sprintf(str, "false");}
+				else { str += sprintf(str, "true"); }
 			}
 		}
 		if ((cmd = cmd->nx) == NULL) { break;}	// end of the list
-		if (cmd->depth < prev_depth) {			// close the level
-			str += sprintf(str, "}");
+		if (cmd->depth < prev_depth) {
+			count[cmd->depth] = 0;				// reset the element counter
+			*str++ = '}';						// and close the level
 		}
 		prev_depth = cmd->depth;
 	}
 	// closing curlies and NEWLINE
 	while (prev_depth-- > initial_depth) { str += sprintf(str, "}");}
-	sprintf(str, "}\n");
+	str += sprintf(str, "}\n");
 	return (str - out_buf);
 }
-
-/*
-uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
-{
-	char *str = out_buf;
-	int8_t prev_depth = 0;
-	uint8_t first_element = true;				// true if element is the first in a level
-
-	strcpy(str++, "{"); 						// write opening curly
-	while (cmd->nx != NULL) {					// null signals last object
-		if (cmd->type == TYPE_EMPTY) {
-			if ((cmd = cmd->nx) == NULL) { break;}
-			if (cmd->depth < prev_depth) { 		// close the level
-				str += sprintf(str, "}");
-				first_element = false;
-			}
-			prev_depth = cmd->depth;
-			continue;
-		}
-		if (first_element == true) { first_element = false;}
-		else { str += sprintf(str, ",");}
-
-		if (cmd->type == TYPE_PARENT) {
-			str += sprintf(str, "\"%s\":{", cmd->token);
-			first_element = true;
-		} else {
-			str += sprintf(str, "\"%s\":", cmd->token);
-			if (cmd->type == TYPE_NULL)	 { str += sprintf(str, "\"\"");
-			} else if (cmd->type == TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
-			} else if (cmd->type == TYPE_FLOAT)	 { str += sprintf(str, "%0.3f", cmd->value);
-			} else if (cmd->type == TYPE_STRING) { str += sprintf(str, "\"%s\"",cmd->string);
-			} else if (cmd->type == TYPE_ARRAY)  { str += sprintf(str, "[%s]",  cmd->string);
-			} else if (cmd->type == TYPE_BOOL)	 {
-				if (cmd->value == false) {
-					str += sprintf(str, "false");
-				} else {
-					str += sprintf(str, "true");
-				}
-			}
-		}
-		if ((cmd = cmd->nx) == NULL) { break;}						// end of the list
-		if (cmd->depth < prev_depth) { str += sprintf(str, "}");}	// close the level
-		prev_depth = cmd->depth;
-	}
-	while (prev_depth-- > 0) { str += sprintf(str, "}");}			// closing curlies and NEWLINE
-	sprintf(str, "}\n");
-	return (str - out_buf);
-}
-*/
-
 
 /****************************************************************************
  * js_print_list() - output cmdObj list in JSON format
@@ -491,7 +429,7 @@ void js_print_json_object(cmdObj_t *cmd)
 }
 
 /*
- * js_print_response() - JSON responses with headers, footers and JSON verbosity 
+ * js_print_json_response() - JSON responses with headers, footers and JSON verbosity 
  *
  *	A footer is returned for every setting except $jv=0
  *
@@ -504,7 +442,7 @@ void js_print_json_object(cmdObj_t *cmd)
  */
 #define MAX_TAIL_LEN 8
 
-void js_print_response(cmdObj_t *cmd, uint8_t status)
+void js_print_json_response(cmdObj_t *cmd, uint8_t status)
 {
 	uint8_t verbosity = cfg.json_verbosity;
 
@@ -563,6 +501,7 @@ cmdObj_t * _add_integer(cmdObj_t *cmd, char *token, uint32_t integer);
 cmdObj_t * _add_empty(cmdObj_t *cmd);
 cmdObj_t * _add_array(cmdObj_t *cmd, char *footer);
 char * _clr(char *buf);
+void _printit(void);
 
 #define ARRAY_LEN 8
 	cmdObj_t cmd_array[ARRAY_LEN];
@@ -577,30 +516,30 @@ void _test_serialize()
 {
 	cmdObj_t *cmd = cmd_array;
 //	printf("\n\nJSON serialization tests\n");
-/*
+
 	// null list
 	_reset_array();
 	js_serialize_json(cmd_array, tg.out_buf);
-//	printf("%s", tg.out_buf);
+	_printit();
 
 	// parent with a null child
 	cmd = _reset_array();
 	cmd = _add_parent(cmd, "r");
 	js_serialize_json(cmd_array, tg.out_buf);
-//	printf("%s", tg.out_buf);
+	_printit();
 
 	// single string element (message)
 	cmd = _reset_array();
 	cmd = _add_string(cmd, "msg", "test message");
 	js_serialize_json(cmd_array, tg.out_buf);
-//	printf("%s", tg.out_buf);
+	_printit();
 
 	// string element and an integer element
 	cmd = _reset_array();
 	cmd = _add_string(cmd, "msg", "test message");
 	cmd = _add_integer(cmd, "answer", 42);
 	js_serialize_json(cmd_array, tg.out_buf);
-//	printf("%s", tg.out_buf);
+	_printit();
 
 	// parent with a string and an integer element
 	cmd = _reset_array();
@@ -608,7 +547,7 @@ void _test_serialize()
 	cmd = _add_string(cmd, "msg", "test message");
 	cmd = _add_integer(cmd, "answer", 42);
 	js_serialize_json(cmd_array, tg.out_buf);
-//	printf("%s", tg.out_buf);
+	_printit();
 
 	// parent with a null child followed by a final level 0 element (footer)
 	cmd = _reset_array();
@@ -617,7 +556,7 @@ void _test_serialize()
 	cmd = _add_string(cmd, "f", "[1,0,12,1234]");	// fake out a footer
 	cmd->pv->depth = 0;
 	js_serialize_json(cmd_array, tg.out_buf);
-//	printf("%s", tg.out_buf);
+	_printit();
 
 	// parent with a single element child followed by empties folowed by a final level 0 element
 	cmd = _reset_array();
@@ -628,20 +567,20 @@ void _test_serialize()
 	cmd = _add_string(cmd, "f", "[1,0,12,1234]");	// fake out a footer
 	cmd->pv->depth = 0;
 	js_serialize_json(cmd_array, tg.out_buf);
-//	printf("%s", tg.out_buf);
+	_printit();
 
 	// response object parent with no children w/footer
 	cmd_reset_list();								// works with the header/body/footer list
 	_add_array(cmd_footer, "1,0,12,1234");			// fake out a footer
 	js_serialize_json(cmd_header, tg.out_buf);
-//	printf("%s", tg.out_buf);
-*/
+	_printit();
+
 	// response parent with one element w/footer
 	cmd_reset_list();								// works with the header/body/footer list
 	cmd_add_string("msg", "test message");
 	_add_array(cmd_footer, "1,0,12,1234");			// fake out a footer
 	js_serialize_json(cmd_header, tg.out_buf);
-//	printf("%s", tg.out_buf);
+	_printit();
 }
 
 char * _clr(char *buf)
@@ -650,6 +589,11 @@ char * _clr(char *buf)
 		buf[i] = 0;
 	}
 	return (buf);
+}
+
+void _printit(void)
+{
+//	printf("%s", tg.out_buf);	
 }
 
 cmdObj_t * _reset_array()

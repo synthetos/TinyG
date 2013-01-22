@@ -198,7 +198,7 @@ static uint8_t _homing_error_exit(int8_t axis)
 		sprintf_P(message, PSTR("*** WARNING *** Homing error: %S axis settings incorrect"), (PGM_P)pgm_read_word(&msg_axis[axis]));
 	}
 	cmd_add_string("msg",message);
-	cmd_print_list(TG_HOMING_CYCLE_FAILED, TEXT_INLINE_PAIRS);
+	cmd_print_list(TG_HOMING_CYCLE_FAILED, TEXT_INLINE_PAIRS, JSON_RESPONSE_FORMAT);
 
 	mp_flush_planner(); 						// should be stopped, but in case of switch closure
 	cm_set_coord_system(hm.saved_coord_system);	// restore to work coordinate system

@@ -388,14 +388,14 @@ static void _text_response(const uint8_t status, const char *buf)
 void tg_print_message(char *msg)
 {
 	cmd_add_string("msg", msg);
-	cmd_print_list(TG_OK, TEXT_INLINE_VALUES);
+	cmd_print_list(TG_OK, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 }
 /*
 void tg_print_message_value(char *msg, double value)
 {
 	cmd_add_string("msg", msg);
 	cmd_add_float("v", value);
-	cmd_print_list(TG_OK, TEXT_INLINE_VALUES);
+	cmd_print_list(TG_OK, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 }
 */
 /*
@@ -414,7 +414,7 @@ void tg_print_loading_configs_message(void)
 	cmd_add_object("fv");
 	cmd_add_object("fb");
 	cmd_add_string_P("msg", PSTR("Loading configs from EEPROM"));
-	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED);
+	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 #endif
 }
 
@@ -425,7 +425,7 @@ void tg_print_initializing_message(void)
 	cmd_add_object("fv");
 	cmd_add_object("fb");
 	cmd_add_string_P("msg", PSTR(INIT_CONFIGURATION_MESSAGE)); // see settings.h & sub-headers
-	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED);
+	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 #endif
 }
 
@@ -436,7 +436,7 @@ void tg_print_system_ready_message(void)
 	cmd_add_object("fv");
 	cmd_add_object("fb");
 	cmd_add_string_P("msg", PSTR("SYSTEM READY"));
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 	_text_response(TG_OK, "");				// prompt
 #endif
 }
