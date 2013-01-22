@@ -2004,7 +2004,7 @@ void cmd_reset_list()							// clear the header, response body and footer
 	cmd->nx = (cmd+1);
 	cmd->token[0] = 'f';
 	cmd->token[1] = NUL;
-	cmd->depth = 0;							// THIS MAY NEED TO CHANGE TO ONE
+	cmd->depth = 1;							// THIS MAY NEED TO CHANGE TO ONE
 	cmd->type = TYPE_ARRAY;
 
 	cmd->nx->type = TYPE_EMPTY;				// setup terminating element

@@ -244,11 +244,11 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_
 		cmd->type = TYPE_BOOL;
 		cmd->value = false;
 
-	// arrays (the parser doesn't do input arrays yet)
+	// arrays
 	} else if (**pstr == '[') {
 		cmd->type = TYPE_ARRAY;
 		strncpy(cmd->string, *pstr, CMD_STRING_LEN);// copy array into string for error displays
-		return (TG_INPUT_VALUE_UNSUPPORTED);
+		return (TG_INPUT_VALUE_UNSUPPORTED);		// return error as the parser doesn't do input arrays yet
 
 	// general error condition
 	} else {
@@ -359,6 +359,7 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 	sprintf(str, "}\n");
 	return (str - out_buf);
 }
+
 /*
 uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 {
