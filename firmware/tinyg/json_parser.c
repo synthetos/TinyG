@@ -2,7 +2,7 @@
  * json_parser.c - JSON parser for rs274/ngc parser.
  * Part of TinyG project
  *
- * Copyright (c) 2012 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2013 Alden S. Hart, Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -182,8 +182,8 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_
 
 	// --- Process name part ---
 	// find leading and trailing name quotes and set pointers.
-	if ((*pstr = strchr(*pstr, '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR);
-	if ((tmp = strchr(++(*pstr), '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR);
+	if ((*pstr = strchr(*pstr, '\"')) == NULL) { return (TG_JSON_SYNTAX_ERROR);}
+	if ((tmp = strchr(++(*pstr), '\"')) == NULL) { return (TG_JSON_SYNTAX_ERROR);}
 	*tmp = NUL;
 
 	// process the token and group strings
@@ -196,9 +196,9 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_
 	if ((cmd->index = cmd_get_index(cmd->group, cmd->token)) == NO_INDEX) { 
 		return (TG_UNRECOGNIZED_COMMAND);
 	}
-	*pstr = ++tmp;
 
 	// --- Process value part ---  (organized from most to least encountered)
+	*pstr = ++tmp;
 	if ((*pstr = strchr(*pstr, ':')) == NULL) return (TG_JSON_SYNTAX_ERROR);
 	(*pstr)++;										// advance to start of value field
 
@@ -208,13 +208,14 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_
 		cmd->value = TYPE_NULL;
 	
 	// numbers
-	} else if (isdigit(**pstr) || (**pstr == '-')) { // value is a number
+	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
 		cmd->value = strtod(*pstr, &tmp);			// tmp is the end pointer
-		if(tmp == *pstr) return (TG_BAD_NUMBER_FORMAT);
+		if(tmp == *pstr) { return (TG_BAD_NUMBER_FORMAT);}
 		cmd->type = TYPE_FLOAT;
 
-	// parents
-	} else if (**pstr == '{') { cmd->type = TYPE_PARENT;
+	// object parent
+	} else if (**pstr == '{') { 
+		cmd->type = TYPE_PARENT;
 		strncpy(cmd->group, cmd->token, CMD_GROUP_LEN);// record the group token
 //		*depth += 1;								// will set the next object down one level
 		(*pstr)++;
@@ -224,7 +225,7 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_
 	} else if (**pstr == '\"') { 					// value is a string
 		(*pstr)++;
 		cmd->type = TYPE_STRING;
-		if ((tmp = strchr(*pstr, '\"')) == NULL) return (TG_JSON_SYNTAX_ERROR); // find the end of the string
+		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (TG_JSON_SYNTAX_ERROR);} // find the end of the string
 		*tmp = NUL;
 		strncpy(cmd->string, *pstr, CMD_STRING_LEN);// copy it regardless of length
 		if (strlen(*pstr) >= CMD_STRING_LEN) {
@@ -294,59 +295,50 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  *
  * 	Operation:
  *	  - The cmdObj list is processed start to finish with no recursion
- *	  - Assume the first element is depth 0
+ *	  - Assume the first object is depth 0 (the opening curly)
  *	  - Assume remaining depths have been set correctly; but might not achieve closure;
  *		e.g. list starts on 0, and ends on 3, in which case provide correct closing curlies
- *	  - Assume depth is no greater than MAX_DEPTH
- *	  - Assume there can be multiple, independent, non-contiguous elements or sequences 
- *		at a given depth value. These are processed independently - e.g. 0,1,1,0,1,1,0,1,1
- *	  - Assume the list has a termianting element where cmd->nx == NULL. 
+ *	  - Assume object depth is no greater than MAX_DEPTH
+ *	  - Assume there can be multiple, independent, non-contiguous JSON objects at a 
+ *		given depth value. These are processed independently - e.g. 0,1,1,0,1,1,0,1,1
+ *	  - Assume the list has a terminating cmdObj where cmd->nx == NULL. 
  *		The terminator may or may not have data (empty or not empty).
  *
  *	Desired behaviors:
- *	  - Skip empty elements (TYPE_EMPTY)
- *	  - If an entire depth level is empty omit the level altogether (no curlies)
- *	  - If a parent has no children report back null - e.g. "parent":"" (but no curlies)
+ *	  - Skip over empty objects (TYPE_EMPTY)
  *	  - Allow self-referential elements that would otherwise cause a recursive loop
+ *	  - If a JSON object is empty represent it as {}
+ *	    --- OR ---
+ *	  - If a JSON object is empty omit the object altogether (no curlies)
  */
 
-uint8_t _serialize_level(cmdObj_t *cmd, char *str);
-
 #define MAX_DEPTH 4
-#define IS_EMPTY 0
-#define IS_PARTIAL 1
-#define IS_CLOSED 2
-/*
+
 uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 {
 	char *str = out_buf;
 	int8_t prev_depth = 0;
-	uint8_t level_state[MAX_DEPTH] = { IS_EMPTY };	// rest of array automatically initialized to zero
-
-//	uint8_t level_has_data = false;	// set true once you know a level has data (is not empty)
+	uint8_t count[MAX_DEPTH] = { 0 };			// number of elements at the current level
+												// rest of array automatically initialized to zero
+//	for (uint8_t i=0; i<250; i++) { out_buf[i] = 0;}
 
 	strcpy(str++, "{"); 						// write opening curly
 	while (cmd->nx != NULL) {					// null signals last object
 		if (cmd->type == TYPE_EMPTY) {
-//			if ((cmd = cmd->nx) == NULL) { break;}
-			if (cmd->depth < prev_depth) { 		// close the level
-				str += sprintf(str, "}");
-				level_has_data = false;
-			}
-			prev_depth = cmd->depth;
+			cmd = cmd->nx;
 			continue;
 		}
-		if (level_has_data == false) { level_has_data = true;}
-		else { str += sprintf(str, ",");}
+		if (++(count[cmd->depth]) > 1) { str += sprintf(str, ",");}
 
 		if (cmd->type == TYPE_PARENT) {
 			str += sprintf(str, "\"%s\":{", cmd->token);
-			level_has_data = false;
 		} else {
 			str += sprintf(str, "\"%s\":", cmd->token);
 			if (cmd->type == TYPE_NULL)	 { str += sprintf(str, "\"\"");
 			} else if (cmd->type == TYPE_INTEGER){ str += sprintf(str, "%1.0f", cmd->value);
 			} else if (cmd->type == TYPE_FLOAT)	 { str += sprintf(str, "%0.3f", cmd->value);
+//			} else if (cmd->type == TYPE_FLOAT2) { str += sprintf(str, "%0.2f", cmd->value);
+//			} else if (cmd->type == TYPE_FLOAT0) { str += sprintf(str, "%0.0f", cmd->value);
 			} else if (cmd->type == TYPE_STRING) { str += sprintf(str, "\"%s\"",cmd->string);
 			} else if (cmd->type == TYPE_ARRAY)  { str += sprintf(str, "[%s]",  cmd->string);
 			} else if (cmd->type == TYPE_BOOL)	 {
@@ -357,22 +349,17 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 				}
 			}
 		}
-		if ((cmd = cmd->nx) == NULL) { break;}						// end of the list
-		if (cmd->depth < prev_depth) { str += sprintf(str, "}");}	// close the level
+		if ((cmd = cmd->nx) == NULL) { break;}	// end of the list
+		if (cmd->depth < prev_depth) {			// close the level
+			str += sprintf(str, "}");
+		}
 		prev_depth = cmd->depth;
 	}
-	while (prev_depth-- > 0) { str += sprintf(str, "}");}			// closing curlies and NEWLINE
+	while (prev_depth-- > 0) { str += sprintf(str, "}");}// closing curlies and NEWLINE
 	sprintf(str, "}\n");
 	return (str - out_buf);
 }
-
-uint8_t _serialize_level(cmdObj_t *cmd, char *str) 
-{
-	return (TG_OK);
-}
-*/
-
-
+/*
 uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 {
 	char *str = out_buf;
@@ -419,7 +406,7 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 	sprintf(str, "}\n");
 	return (str - out_buf);
 }
-
+*/
 
 
 /****************************************************************************
@@ -500,6 +487,7 @@ cmdObj_t * _add_parent(cmdObj_t *cmd, char *token);
 cmdObj_t * _add_string(cmdObj_t *cmd, char *token, char *string);
 cmdObj_t * _add_integer(cmdObj_t *cmd, char *token, uint32_t integer);
 cmdObj_t * _add_empty(cmdObj_t *cmd);
+char * _clr(char *buf);
 
 #define ARRAY_LEN 8
 	cmdObj_t cmd_array[ARRAY_LEN];
@@ -518,26 +506,26 @@ void _test_serialize()
 	// null list
 	_reset_array();
 	js_serialize_json(cmd_array, tg.out_buf);
-	printf("%s", tg.out_buf);
+//	printf("%s", tg.out_buf);
 
 	// parent with a null child
 	cmd = _reset_array();
 	cmd = _add_parent(cmd, "r");
 	js_serialize_json(cmd_array, tg.out_buf);
-	printf("%s", tg.out_buf);
+//	printf("%s", tg.out_buf);
 
 	// single string element (message)
 	cmd = _reset_array();
 	cmd = _add_string(cmd, "msg", "test message");
 	js_serialize_json(cmd_array, tg.out_buf);
-	printf("%s", tg.out_buf);
+//	printf("%s", tg.out_buf);
 
 	// string element and an integer element
 	cmd = _reset_array();
 	cmd = _add_string(cmd, "msg", "test message");
 	cmd = _add_integer(cmd, "answer", 42);
 	js_serialize_json(cmd_array, tg.out_buf);
-	printf("%s", tg.out_buf);
+//	printf("%s", tg.out_buf);
 
 	// parent with a string and an integer element
 	cmd = _reset_array();
@@ -545,7 +533,7 @@ void _test_serialize()
 	cmd = _add_string(cmd, "msg", "test message");
 	cmd = _add_integer(cmd, "answer", 42);
 	js_serialize_json(cmd_array, tg.out_buf);
-	printf("%s", tg.out_buf);
+//	printf("%s", tg.out_buf);
 
 	// parent with a null child followed by a final level 0 element (footer)
 	cmd = _reset_array();
@@ -554,7 +542,7 @@ void _test_serialize()
 	cmd = _add_string(cmd, "f", "[1,0,12,1234]");	// fake out a footer
 	cmd->pv->depth = 0;
 	js_serialize_json(cmd_array, tg.out_buf);
-	printf("%s", tg.out_buf);
+//	printf("%s", tg.out_buf);
 
 	// parent with a single element child followed by empties folowed by a final level 0 element
 	cmd = _reset_array();
@@ -565,12 +553,20 @@ void _test_serialize()
 	cmd = _add_string(cmd, "f", "[1,0,12,1234]");	// fake out a footer
 	cmd->pv->depth = 0;
 	js_serialize_json(cmd_array, tg.out_buf);
-	printf("%s", tg.out_buf);
+//	printf("%s", tg.out_buf);
 
 	// parent with no children + a footer
-	cmd_new_list();									// works with the header/body/footer list
+	cmd_reset_list();								// works with the header/body/footer list
 	js_serialize_json(cmd_header, tg.out_buf);
-	printf("%s", tg.out_buf);
+//	printf("%s", tg.out_buf);
+}
+
+char * _clr(char *buf)
+{
+	for (uint8_t i=0; i<250; i++) {
+		buf[i] = 0;
+	}
+	return (buf);
 }
 
 cmdObj_t * _reset_array()
