@@ -2123,7 +2123,11 @@ uint8_t cmd_add_float(char *token, const double value)	// add a float object to 
 void cmd_print_list(uint8_t status, uint8_t textmode)
 {
 	if (cfg.comm_mode == JSON_MODE) {
-		js_print_list(status);
+		if (cmd_get_type(cmd_body) == CMD_TYPE_REPORT) {
+			js_print_json_object(cmd_body);
+		} else {
+			js_print_response(cmd_header, status);
+		}
 	} else {
 		switch (textmode) {
 			case TEXT_INLINE_PAIRS: { _print_text_inline_pairs(); break; }

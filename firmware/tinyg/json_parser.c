@@ -427,6 +427,7 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
  *	JV_GCODE_MESSAGES,		// body returned for configs; Gcode returns line numbers and messages only
  *	JV_VERBOSE				// body returned for configs and Gcode - Gcode comments removed
  */
+ /*
 void js_print_list(uint8_t status)
 {
 	if (cm.machine_state == MACHINE_INITIALIZING) {		// always do full echo during startup
@@ -475,6 +476,7 @@ void js_print_list(uint8_t status)
 	}
 	fprintf(stderr, "%s", tg.out_buf);	// output the result
 }
+*/
 
 /*
  * js_print_json_object() - serialize and print the cmdObj array as a report w/o header & footer
@@ -522,7 +524,6 @@ void js_print_response(cmdObj_t *cmd, uint8_t status)
 	// Special processing for Gcode responses
 	// Assumes cmdObjs are ordered in the body as "gc", "msg", "n" in positions 0,1,2
 	// "msg" and "n" may or may not be present in the body depending on conditions
-//	uint8_t cmd_type = cmd_get_type(cmd_body);
 	if ((cmd_get_type(cmd_body) == CMD_TYPE_GCODE) && (verbosity < JV_VERBOSE)) {
 		if (verbosity >= JV_OMIT_GCODE_BODY) { cmd->type = TYPE_EMPTY;}
 		if (verbosity >= JV_GCODE_LINENUM_ONLY) { cmd->nx->nx->type = TYPE_EMPTY;}
