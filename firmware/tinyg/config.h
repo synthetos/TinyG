@@ -154,11 +154,13 @@ enum srVerbosity {					// status report enable and verbosity
 
 
 enum jsonFormats {					// json output print modes
-	JSON_OBJECT_FORMAT,				// print just rthe bost as a json object
+	JSON_NO_PRINT = 0,				// don't print anything if you find yourself in JSON mode
+	JSON_OBJECT_FORMAT,				// print just the body as a json object
 	JSON_RESPONSE_FORMAT			// print the header/body/footer as a response object
 };
 
 enum textFormats {					// text output print modes
+	TEXT_NO_PRINT = 0,				// don't print anything if you find yourself in TEXT mode
 	TEXT_INLINE_PAIRS,				// print key:value pairs as comma separated pairs
 	TEXT_INLINE_VALUES,				// print values as commas separated values
 	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines with formatted print per line
@@ -213,6 +215,7 @@ uint8_t cmd_add_integer(char *token, const uint32_t value);
 uint8_t cmd_add_float(char *token, const double value);
 void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags);
 uint8_t cmd_group_is_prefixed(char *group);
+uint8_t cmd_index_is_group(index_t index);
 
 uint8_t cmd_read_NVM_value(cmdObj_t *cmd);
 uint8_t cmd_write_NVM_value(cmdObj_t *cmd);

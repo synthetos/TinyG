@@ -844,6 +844,11 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #define _index_is_uber(i)   ((i >= CMD_INDEX_START_UBER_GROUPS) ? true : false)
 #define _index_is_group_or_uber(i) ((i >= CMD_INDEX_START_GROUPS) ? true : false)
 
+uint8_t cmd_index_is_group(index_t index)
+{
+	return _index_is_group(index);
+}
+
 /**** Versions, IDs, and simple reports  ****
  * _set_hv() - set hardweare version number
  * _get_id() - get device ID (signature)
@@ -1708,16 +1713,18 @@ static int8_t _get_pos_axis(const index_t i)
 
 //index_t cmd_get_max_index() { return (CMD_INDEX_MAX);}
 
-cmdObj_t *cmd_new_obj(cmdObj_t *cmd)			// clear a single cmdObj structure
+cmdObj_t *cmd_new_obj(cmdObj_t *cmd)	// clear a single cmdObj structure
 {
-	cmd->type = TYPE_EMPTY;					// much faster than calling memset
+	cmd->type = TYPE_EMPTY;				// selective clear is much faster than calling memset
 	cmd->index = 0;
 	cmd->value = 0;
 	cmd->token[0] = NUL;
 	cmd->group[0] = NUL;
 	cmd->string[0] = NUL;
 
-	if (cmd->pv != NULL) { 			// set depth correctly
+	if (cmd->pv == NULL) { 				// set depth correctly
+		cmd->depth = 0;
+	} else {
 		if (cmd->pv->type == TYPE_PARENT) { 
 			cmd->depth = cmd->pv->depth + 1;
 		} else {
@@ -2131,11 +2138,13 @@ void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags)
 {
 	if (cfg.comm_mode == JSON_MODE) {
 		switch (json_flags) {
+			case JSON_NO_PRINT: { break; } 
 			case JSON_OBJECT_FORMAT: { js_print_json_object(cmd_body); break; }
 			case JSON_RESPONSE_FORMAT: { js_print_json_response(cmd_header, status); break; }
 		}
 	} else {
 		switch (text_flags) {
+			case TEXT_NO_PRINT: { break; } 
 			case TEXT_INLINE_PAIRS: { _print_text_inline_pairs(); break; }
 			case TEXT_INLINE_VALUES: { _print_text_inline_values(); break; }
 			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted();}

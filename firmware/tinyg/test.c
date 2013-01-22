@@ -104,7 +104,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 #ifdef __CANNED_STARTUP
 
 //	xio_queue_RX_string_usb("g0x2\n");			// G0 smoke test
-	xio_queue_RX_string_usb("{\"gc\":\"g2\"}\n");// G0 smoke test in JSON
+//	xio_queue_RX_string_usb("{\"gc\":\"g2\"}\n");// G0 smoke test in JSON
 
 	// text parser test cases
 //	xio_queue_RX_string_usb("$\n");				// sys request
@@ -291,7 +291,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g10 p2 l2 x10 y10 z-10\n");
 
 /* G92 tests */
-	xio_queue_RX_string_usb("g92 x20 y20\n");	// apply offsets
+//	xio_queue_RX_string_usb("g92 x20 y20\n");	// apply offsets
 //	xio_queue_RX_string_usb("g0 x0 y0\n");		// should move diagonally to SouthWest
 //	xio_queue_RX_string_usb("g92.1\n");			// cancel offsets
 //	xio_queue_RX_string_usb("g0 x0 y0\n");		// should move NW back to original coordinates
@@ -335,9 +335,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 /* JSON TEST CASES */
 // If you want to run multi-line cases you need to set RX buffer to 1024 in xio_usart.h
 
-// JSON parser tests
-//	xio_queue_RX_string_usb("{\"x\":\"\"}\n");		// retrieve a group
-//	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sm\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
+// JSON parser tests		  // set a group
+	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sn\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
+	xio_queue_RX_string_usb("{\"x\":\"\"}\n"); // retrieve a group
 
 //	xio_queue_RX_string_usb("{\"gc\":\"g0 x3 y4 z5.5 (comment line)\"}\n");
 //	xio_queue_RX_string_usb("{\"xfr\":1200}\n");
