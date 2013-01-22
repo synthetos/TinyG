@@ -104,6 +104,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 #ifdef __CANNED_STARTUP
 
 //	xio_queue_RX_string_usb("g0x2\n");			// G0 smoke test
+	xio_queue_RX_string_usb("{\"gc\":\"g2\"}\n");// G0 smoke test in JSON
 
 	// text parser test cases
 //	xio_queue_RX_string_usb("$\n");				// sys request
@@ -137,7 +138,6 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"z\":{\"sn\":1}}\n");
 //	xio_queue_RX_string_usb("{\"zsn\":1}\n");
 //	xio_queue_RX_string_usb("{\"hom\":\"\"}\n");
-//	xio_queue_RX_string_usb("{\"gc\":\"g20\"}\n");
 
 //	xio_queue_RX_string_usb("{\"rx\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"x\":20}\n");
