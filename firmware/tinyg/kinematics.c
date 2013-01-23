@@ -101,6 +101,7 @@ static void _inverse_kinematics(double travel[], double joint[], double microsec
 //############## UNIT TESTS ################
 
 //#define __UNIT_TEST_KINEMATICS
+#ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_KINEMATICS
 
 void _ik_test_inverse_kinematics(void);
@@ -115,4 +116,5 @@ void _ik_test_inverse_kinematics(void)
 	return;
 }
 
+#endif
 #endif

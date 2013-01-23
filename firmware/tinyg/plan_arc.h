@@ -1,5 +1,5 @@
 /*
- * [lan_arc.h - arc planning and motion execution
+ * plan_arc.h - arc planning and motion execution
  * Part of TinyG project
  *
  * Copyright (c) 2011 - 2012 Alden S. Hart Jr.
@@ -27,8 +27,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef arc_h
-#define arc_h 
+#ifndef plan_arc_h
+#define plan_arc_h 
 
 // See planner.h for MM_PER_ARC_SEGMENT setting
 

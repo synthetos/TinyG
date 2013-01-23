@@ -120,6 +120,7 @@ void tg_reset(void)			// software hard reset using the watchdog timer
 
 static void _unit_tests(void) 
 {
+#ifdef __UNIT_TESTS
 	XIO_UNITS;				// conditional unit tests for xio sub-system
 //	EEPROM_UNITS;			// if you want this you must include the .h file in this file
 	CONFIG_UNITS;
@@ -128,4 +129,5 @@ static void _unit_tests(void)
 	REPORT_UNITS;
 	PLANNER_UNITS;
 	PWM_UNITS;
+#endif
 }

@@ -50,7 +50,6 @@ uint16_t compute_checksum(char const *string, const uint16_t length);
 
 void copy_vector(double dest[], const double src[], uint8_t length);
 void copy_axis_vector(double dest[], const double src[]);
-//void set_unit_vector(double unit[], double target[], double position[]);
 double get_axis_vector_length(const double a[], const double b[]);
 double *set_vector(double x, double y, double z, double a, double b, double c);
 double *set_vector_by_axis(double value, uint8_t axis);
@@ -62,9 +61,6 @@ uint8_t errcode;
 #define ritorno(a) if((errcode=a) != TG_OK) { return(errcode); }
 
 /***** Math Support *****/
-
-#define HASHMASK 9999
-#define HASHLENGTH 4
 
 // side-effect safe forms of min and max
 #ifndef max

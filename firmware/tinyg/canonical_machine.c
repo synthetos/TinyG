@@ -84,10 +84,8 @@
 #include "tinyg.h"
 #include "util.h"
 #include "config.h"
-#include "controller.h"
-#include "gcode_parser.h"
 #include "canonical_machine.h"
-#include "arc.h"
+#include "plan_arc.h"
 #include "planner.h"
 #include "stepper.h"
 #include "spindle.h"
@@ -101,13 +99,13 @@
 static double _get_move_times(double *min_time);
 
 // planner queue callbacks
-static void _exec_offset(uint8_t coord_system, double f);
-static void _exec_change_tool(uint8_t tool, double f);
-static void _exec_select_tool(uint8_t tool, double f);
-static void _exec_mist_coolant_control(uint8_t mist_coolant, double f);
-static void _exec_flood_coolant_control(uint8_t flood_coolant, double f);
-static void _exec_feed_override_enable(uint8_t feed_override, double f);
-static void _exec_program_finalize(uint8_t machine_state, double f);
+static void _exec_offset(uint8_t coord_system, double float_val);
+static void _exec_change_tool(uint8_t tool, double float_val);
+static void _exec_select_tool(uint8_t tool, double float_val);
+static void _exec_mist_coolant_control(uint8_t mist_coolant, double float_val);
+static void _exec_flood_coolant_control(uint8_t flood_coolant, double float_val);
+//static void _exec_feed_override_enable(uint8_t feed_override, double float_val);
+static void _exec_program_finalize(uint8_t machine_state, double float_val);
 
 #define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
@@ -178,7 +176,7 @@ void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
  * cm_get_model_canonical_target() - return model target in internal canonical form
  * cm_get_model_canonical_position_vector() - return model position vector in internal canonical form
  * cm_get_runtime_machine_position() - return current machine position in external form 
- * cm_get_runtime runtome_position() - return current work coordinate position in external form 
+ * cm_get_runtime work_position() - return current work coordinate position in external form 
  */
 
 double cm_get_coord_offset(uint8_t axis)
@@ -187,9 +185,9 @@ double cm_get_coord_offset(uint8_t axis)
 		return (0);						// no work offset if in abs override mode
 	}
 	if (gm.origin_offset_enable == 1) {
-		return (cfg.offset[gm.coord_system][axis] + gm.origin_offset[axis]);
+		return (cfg.offset[gm.coord_system][axis] + gm.origin_offset[axis]); // includes G5x and G92 compoenents
 	} else {
-		return (cfg.offset[gm.coord_system][axis]);
+		return (cfg.offset[gm.coord_system][axis]);		// just the g5x coordinate system components
 	}
 }
 
@@ -231,6 +229,7 @@ double *cm_get_model_canonical_position_vector(double position[])
 
 double cm_get_runtime_machine_position(uint8_t axis) 
 {
+	// NB: This form takes 20 bytes less than calling first then deciding later
 	if (gm.units_mode == INCHES) {
 		return (mp_get_runtime_machine_position(axis) / MM_PER_INCH);
 	} else {
@@ -560,7 +559,7 @@ void cm_shutdown()
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
 	// send out an emergency shutdown message
-	if (cfg.comm_mode == TG_JSON_MODE) {
+	if (cfg.comm_mode == JSON_MODE) {
 		printf_P(PSTR("{\"er\":\"Emergency shut down\"}\n"));
 	} else {
 		printf_P(PSTR("EMERGENCY SHUTDOWN\n"));
@@ -643,11 +642,11 @@ uint8_t	cm_set_coord_system(uint8_t coord_system)
 	mp_queue_command(_exec_offset, coord_system,0);
 	return (TG_OK);
 }
-static void _exec_offset(uint8_t coord_system, double f)
+static void _exec_offset(uint8_t coord_system, double float_val)
 {
 	double offsets[AXES];
 	for (uint8_t i=0; i<AXES; i++) {
-		offsets[i] = cfg.offset[coord_system][i] - (gm.origin_offset[i] * gm.origin_offset_enable);
+		offsets[i] = cfg.offset[coord_system][i] + (gm.origin_offset[i] * gm.origin_offset_enable);
 	}
 	mp_set_runtime_work_offset(offsets);
 }
@@ -692,17 +691,20 @@ uint8_t cm_set_absolute_origin(double origin[], double flag[])
 	return (TG_OK);
 }
 
-/*
+/* 
  * cm_set_origin_offsets() - G92
  * cm_reset_origin_offsets() - G92.1
  * cm_suspend_origin_offsets() - G92.2
  * cm_resume_origin_offsets() - G92.3
+ *
+ * G92's behave according to NIST 3.5.18 & LinuxCNC G92
+ * http://linuxcnc.org/docs/html/gcode/gcode.html#sec:G92-G92.1-G92.2-G92.3
  */
 uint8_t cm_set_origin_offsets(double offset[], double flag[])
 {
 	gm.origin_offset_enable = 1;
 	for (uint8_t i=0; i<AXES; i++) {
-		if (flag[i] > EPSILON) {	 		// behaves according to NIST 3.5.18
+		if (flag[i] > EPSILON) {
 			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] - _to_millimeters(offset[i]);
 		}
 	}
@@ -845,7 +847,7 @@ uint8_t cm_set_path_control(uint8_t mode)
 
 uint8_t cm_dwell(double seconds)
 {
-	gm.dwell_time = seconds;
+	gm.parameter = seconds;
 	(void)mp_dwell(seconds);
 	return (TG_OK);
 }
@@ -867,8 +869,10 @@ uint8_t cm_straight_feed(double target[], double flags[])
 
 	cm_set_target(target, flags);
 	cm_cycle_start();						// required for homing & other cycles
-	uint8_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), 
-							 cm_get_coord_offset_vector(gm.work_offset), gm.min_time);
+	uint8_t status = MP_LINE(gm.target, 
+							 _get_move_times(&gm.min_time), 
+							 cm_get_coord_offset_vector(gm.work_offset), 
+							 gm.min_time);
 
 	cm_set_gcode_model_endpoint_position(status);
 	return (status);
@@ -893,7 +897,7 @@ uint8_t cm_change_tool(uint8_t tool)
 	mp_queue_command(_exec_change_tool, tool, 0);
 	return (TG_OK);
 }
-static void _exec_change_tool(uint8_t tool, double f)
+static void _exec_change_tool(uint8_t tool, double float_val)
 {
 	gm.tool = tool;
 }
@@ -903,7 +907,7 @@ uint8_t cm_select_tool(uint8_t tool)
 	mp_queue_command(_exec_select_tool, tool, 0);
 	return (TG_OK);
 }
-static void _exec_select_tool(uint8_t tool, double f)
+static void _exec_select_tool(uint8_t tool, double float_val)
 {
 	gm.tool = tool;
 }
@@ -927,7 +931,7 @@ uint8_t cm_flood_coolant_control(uint8_t flood_coolant)
 	return (TG_OK);
 }
 
-static void _exec_mist_coolant_control(uint8_t mist_coolant, double f)
+static void _exec_mist_coolant_control(uint8_t mist_coolant, double float_val)
 {
 	gm.mist_coolant = mist_coolant;
 	if (mist_coolant == true) {
@@ -937,7 +941,7 @@ static void _exec_mist_coolant_control(uint8_t mist_coolant, double f)
 	}
 }
 
-static void _exec_flood_coolant_control(uint8_t flood_coolant, double f)
+static void _exec_flood_coolant_control(uint8_t flood_coolant, double float_val)
 {
 	gm.flood_coolant = flood_coolant;
 	if (flood_coolant == true) {
@@ -949,17 +953,78 @@ static void _exec_flood_coolant_control(uint8_t flood_coolant, double f)
 }
 
 /*
- * cm_feed_override_enable() - M48, M49
+ * cm_override_enables() - M48, M49
+ * cm_feed_rate_override_enable() - M50
+ * cm_feed_rate_override_factor() - M50.1
+ * cm_traverse_override_enable() - M50.2
+ * cm_traverse_override_factor() - M50.3
+ * cm_spindle_override_enable() - M51
+ * cm_spindle_override_factor() - M51.1
+ *
+ *	Override enables are kind of a mess in Gcode. This is an attempt to sort them out.
+ *	See http://www.linuxcnc.org/docs/2.4/html/gcode_main.html#sec:M50:-Feed-Override
  */
- 
-uint8_t cm_feed_override_enable(uint8_t feed_override)
+
+uint8_t cm_override_enables(uint8_t flag)			// M48, M49
 {
-	mp_queue_command(_exec_feed_override_enable, feed_override, 0);
+	gm.feed_rate_override_enable = flag;
+	gm.traverse_override_enable = flag;
+	gm.spindle_override_enable = flag;
 	return (TG_OK);
 }
-static void _exec_feed_override_enable(uint8_t feed_override, double f)
+
+uint8_t cm_feed_rate_override_enable(uint8_t flag)	// M50
 {
-	gm.feed_override_enable = feed_override;
+	if ((gf.parameter == true) && (gn.parameter == 0)) {
+		gm.feed_rate_override_enable = false;
+	} else {
+		gm.feed_rate_override_enable = true;
+	}
+	return (TG_OK);
+}
+
+uint8_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
+{
+	gm.feed_rate_override_enable = flag;
+	gm.feed_rate_override_factor = gn.parameter;
+//	mp_feed_rate_override(flag, gn.parameter);		// replan the queue for new feed rate
+	return (TG_OK);
+}
+
+uint8_t cm_traverse_override_enable(uint8_t flag)	// M50.2
+{
+	if ((gf.parameter == true) && (gn.parameter == 0)) {
+		gm.traverse_override_enable = false;
+	} else {
+		gm.traverse_override_enable = true;
+	}
+	return (TG_OK);
+}
+
+uint8_t cm_traverse_override_factor(uint8_t flag)	// M51
+{
+	gm.traverse_override_enable = flag;
+	gm.traverse_override_factor = gn.parameter;
+//	mp_feed_rate_override(flag, gn.parameter);		// replan the queue for new feed rate
+	return (TG_OK);
+}
+
+uint8_t cm_spindle_override_enable(uint8_t flag)	// M51.1
+{
+	if ((gf.parameter == true) && (gn.parameter == 0)) {
+		gm.spindle_override_enable = false;
+	} else {
+		gm.spindle_override_enable = true;
+	}
+	return (TG_OK);
+}
+
+uint8_t cm_spindle_override_factor(uint8_t flag)	// M50.1
+{
+	gm.spindle_override_enable = flag;
+	gm.spindle_override_factor = gn.parameter;
+//	change spindle speed
+	return (TG_OK);
 }
 
 /*
@@ -1036,7 +1101,7 @@ void cm_optional_program_stop()
 
 void cm_program_end()				// M2, M30
 {
-	tg_reset_source();	// stop reading from a file (return to std device)
+//	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
 	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_END,0);
 }
 
@@ -1048,7 +1113,7 @@ static void _exec_program_finalize(uint8_t machine_state, double f)
 	cm.hold_state = FEEDHOLD_OFF;			//...and any feedhold is ended
 	cm.cycle_start_flag = false;
 	mp_zero_segment_velocity();				// for reporting purposes
-	rpt_request_status_report();			// request final status report (if enabled)
+	rpt_request_status_report();			// request final status report (not unfiltered)
 	cmd_persist_offsets(cm.g10_persist_flag); // persist offsets if any changes made
 }
 

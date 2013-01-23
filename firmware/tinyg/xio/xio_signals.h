@@ -2,7 +2,7 @@
  * xio_signals.h - signal handlers
  * Part of TinyG project
  *
- * Copyright (c) 2011 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2011 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -34,11 +34,11 @@
  *	See xio.h for character mappings to signals
  *	See xio.c/.h for static allocation of signal struct 
  */
-struct xioSIGNALS {				// signal signalton
+typedef struct xioSIGNALS {		// signal signalton
 	uint8_t	sig_reset;
 	uint8_t	sig_feedhold;
 	uint8_t	sig_cycle_start;
-}; // sig struct is declared in xio.c and EXTERN in xio.h
+} xioSignals_t;
 
 void sig_init(void);			// initial signal flags
 void sig_reset(void);			// end program (hard reset)

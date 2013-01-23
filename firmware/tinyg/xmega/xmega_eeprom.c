@@ -670,6 +670,7 @@ inline void EEPROM_EraseAll( void )
  *************************/
 
 //#define __UNIT_TEST_EEPROM
+#ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_EEPROM
 
 #ifndef FALSE
@@ -723,3 +724,5 @@ void _EEPROM_test_write()
 }
 
 #endif
+#endif
+

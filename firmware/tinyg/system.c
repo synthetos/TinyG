@@ -76,69 +76,55 @@ void sys_port_bindings(double hw_version)
 	}
 }
 
-/*
- * sys_read_calibration_byte() - low-level read for system parameters
- *
- *	(from Boston Android xmega-adc-wcal.c)
- */
-/*
 uint8_t sys_read_calibration_byte(uint8_t index)
 { 
-	NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc; // Load NVM Command register to read the calibration row
-	uint8_t result = pgm_read_byte(index); 		 // Clean up NVM Command register 
-	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 
+	NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc; 	// Load NVM Command register to read the calibration row
+	uint8_t result = pgm_read_byte(index); 
+	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 	 	// Clean up NVM Command register 
 	return(result); 
 }
-*/
+
 /*
- * sys_read_signature() - return the 11 byte signature row as an array
+ * sys_get_id() - get a human readable signature
+ *
+ *	Produces a unique deviceID based on the factory calibration data. Format is:
+ *		123456-ABC
+ *
+ *	The number part is a direct readout of the 6 digit lot number
+ *	The alpha is the lo 5 bits of wafer number and XY coords in printable ASCII
+ *	Refer to NVM_PROD_SIGNATURES_t in iox192a3.h for details.
  */
-/*
-
-uint8_t ReadSignatureByte(uint16_t Address) { 
-  NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc; 
-  uint8_t Result; 
-  __asm__ ("lpm %0, Z\n" : "=r" (Result) : "z" (Address)); 
-//  __asm__ ("lpm \n  mov %0, r0 \n" : "=r" (Result) : "z" (Address) : "r0"); 
-  NVM_CMD = NVM_CMD_NO_OPERATION_gc; 
-  return Result; 
-} 
-
-void sys_read_signature(uint8_t sig[])
-{
-	NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc; // Load NVM Command register to read the calibration row
-	uint8_t result = pgm_read_byte(index); 		
-	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 	// Clean up NVM Command register 
-
-
-	return
-}
-*/
-/*
-void NVM_GetGUID() { 
 enum { 
-  LOTNUM0=8,  // Lot Number Byte 0, ASCII 
-  LOTNUM1,    // Lot Number Byte 1, ASCII 
-  LOTNUM2,    // Lot Number Byte 2, ASCII 
-  LOTNUM3,    // Lot Number Byte 3, ASCII 
-  LOTNUM4,    // Lot Number Byte 4, ASCII 
-  LOTNUM5,    // Lot Number Byte 5, ASCII 
-  WAFNUM =16, // Wafer Number 
-  COORDX0=18, // Wafer Coordinate X Byte 0 
-  COORDX1,    // Wafer Coordinate X Byte 1 
-  COORDY0,    // Wafer Coordinate Y Byte 0 
-  COORDY1,    // Wafer Coordinate Y Byte 1 
+	LOTNUM0=8,  // Lot Number Byte 0, ASCII 
+	LOTNUM1,    // Lot Number Byte 1, ASCII 
+	LOTNUM2,    // Lot Number Byte 2, ASCII 
+	LOTNUM3,    // Lot Number Byte 3, ASCII 
+	LOTNUM4,    // Lot Number Byte 4, ASCII 
+	LOTNUM5,    // Lot Number Byte 5, ASCII 
+	WAFNUM =16, // Wafer Number 
+	COORDX0=18, // Wafer Coordinate X Byte 0 
+	COORDX1,    // Wafer Coordinate X Byte 1 
+	COORDY0,    // Wafer Coordinate Y Byte 0 
+	COORDY1,    // Wafer Coordinate Y Byte 1 
 }; 
-  byte b[11]; 
-  b[ 0]=ReadSignatureByte(LOTNUM0); 
-  b[ 1]=ReadSignatureByte(LOTNUM1); 
-  b[ 2]=ReadSignatureByte(LOTNUM2); 
-  b[ 3]=ReadSignatureByte(LOTNUM3); 
-  b[ 4]=ReadSignatureByte(LOTNUM4); 
-  b[ 5]=ReadSignatureByte(LOTNUM5); 
-  b[ 6]=ReadSignatureByte(WAFNUM ); 
-  b[ 7]=ReadSignatureByte(COORDX0); 
-  b[ 8]=ReadSignatureByte(COORDX1); 
-  b[ 9]=ReadSignatureByte(COORDY0); 
-  b[10]=ReadSignatureByte(COORDY1); 
-*/
+
+void sys_get_id(char *id)
+{
+	char printable[33] = {"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"};
+	uint8_t i;
+
+	NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc; 	// Load NVM Command register to read the calibration row
+
+	for (i=0; i<6; i++) {
+		id[i] = pgm_read_byte(LOTNUM0 + i);
+	}
+	id[i++] = '-';
+	id[i++] = printable[(pgm_read_byte(WAFNUM) & 0x1F)];
+	id[i++] = printable[(pgm_read_byte(COORDX0) & 0x1F)];
+//	id[i++] = printable[(pgm_read_byte(COORDX1) & 0x1F)];
+	id[i++] = printable[(pgm_read_byte(COORDY0) & 0x1F)];
+//	id[i++] = printable[(pgm_read_byte(COORDY1) & 0x1F)];
+	id[i] = 0;
+
+	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 	 	// Clean up NVM Command register 
+}

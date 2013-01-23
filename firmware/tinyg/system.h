@@ -42,7 +42,7 @@
 
 void sys_init(void);					// master hardware init
 void sys_port_bindings(double hw_version);
-//uint8_t sys_read_signature(uint8_t index);
+void sys_get_id(char *id);
 
 /* CPU clock */	
 
@@ -162,11 +162,11 @@ enum cfgPortBits {			// motor control port bit positions
 	not assigned to the designated function - ur unpredicatable results will occur
 */
 
-struct deviceSingleton {
+typedef struct deviceSingleton {
 	PORT_t *st_port[MOTORS];	// bindings for stepper motor ports (stepper.c)
 	PORT_t *sw_port[MOTORS];	// bindings for switch ports (GPIO2)
 	PORT_t *out_port[MOTORS];	// bindings for output ports (GPIO1)
-};
-struct deviceSingleton device;
+} deviceSingleton_t;
+deviceSingleton_t device;
 
 #endif

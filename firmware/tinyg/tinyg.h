@@ -32,32 +32,29 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	357.01		// Deglitching limit switches
+#define TINYG_BUILD_NUMBER   	363.08		// JSON cleanup
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
 /****** DEVELOPMENT SETTINGS ******/
 
-//#define __CANNED_STARTUP		// run any canned startup moves
-//#define __DISABLE_PERSISTENCE	// disable EEPROM writes for faster simulation
-//#define __SUPPRESS_STARTUP_MESSAGES // what it says
-//#define __DEBUG				// complies debug functions found in test.c
+//#define __CANNED_STARTUP					// run any canned startup moves
+//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+//#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+//#define __UNIT_TESTS						// master enable for unit tests; uncomment modules in .h files
+//#define __DEBUG							// complies debug functions found in test.c
 
 // UNIT_TESTS exist for various modules are can be enabled at the end of their .h files
 
 // bringing in new functionality
-//#define __PLAN_R2				// comment out to use R1 planner functions
-#define __EXEC_R2				// comment out to use R1 aline exec functions
-#define __JUNCTION_VMAX_R2		// comment out ot use the old code
-#define __ISR_R2				// comment out to use R1 ISR
-#define __LOAD_MOVE_R2			// comment out to use R1 load move routine
+//#define __PLAN_R2							// comment out to use R1 planner functions
 
 /****** OPERATING SETTINGS *******/
 
 // Operating Mode: (chose only one)
-#define __STANDALONE_MODE		// normal operation - receive from USB
-//#define __MASTER_MODE			// receive from USB, relay to rs485
-//#define __SLAVE_MODE			// receive from rs485
+#define __STANDALONE_MODE					// normal operation - receive from USB
+//#define __MASTER_MODE						// receive from USB, relay to rs485
+//#define __SLAVE_MODE						// receive from rs485
 
 #ifdef __SLAVE_MODE
 #define STD_INPUT XIO_DEV_RS485
@@ -124,13 +121,13 @@
 #define	TG_FILE_SIZE_EXCEEDED 10
 #define	TG_NO_SUCH_DEVICE 11
 #define	TG_BUFFER_EMPTY 12
-#define	TG_BUFFER_FULL_FATAL 13 
-#define	TG_BUFFER_FULL_NON_FATAL 14		// NOTE: XIO codes align to here
+#define	TG_BUFFER_FULL 13
+#define	TG_BUFFER_FULL_FATAL 14
 #define	TG_INITIALIZING 15				// initializing - not ready for use
 #define	TG_ERROR_16 16
 #define	TG_ERROR_17 17
 #define	TG_ERROR_18 18
-#define	TG_ERROR_19 19
+#define	TG_ERROR_19 19					// NOTE: XIO codes align to here
 
 // Internal errors and startup messages
 #define	TG_INTERNAL_ERROR 20			// unrecoverable internal error
@@ -187,5 +184,5 @@
 #define	TG_MAX_TRAVEL_EXCEEDED 67
 #define	TG_MAX_SPINDLE_SPEED_EXCEEDED 68
 #define	TG_ARC_SPECIFICATION_ERROR 69	// arc specification error
-
+	
 #endif

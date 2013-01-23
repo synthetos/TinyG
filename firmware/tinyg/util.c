@@ -199,6 +199,8 @@ uint8_t read_double(char *buf, uint8_t *i, double *double_ptr)
  * 	This is based on the the Java hashCode function. 
  *	See http://en.wikipedia.org/wiki/Java_hashCode()
  */
+#define HASHMASK 9999
+
 uint16_t compute_checksum(char const *string, const uint16_t length) 
 {
 	uint32_t h = 0;

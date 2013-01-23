@@ -2,7 +2,7 @@
  * controller.c - tinyg controller and top level parser
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -41,7 +41,7 @@
 #include "json_parser.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
-#include "arc.h"
+#include "plan_arc.h"
 #include "planner.h"
 #include "report.h"
 #include "system.h"
@@ -151,7 +151,6 @@ static void _controller_HSM()
 
 static uint8_t _shutdown_handler(void)
 {
-//	if (sw.limit_thrown == false) return (TG_NOOP);
 	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
 
 	// first time through perform the shutdown
@@ -200,7 +199,7 @@ static uint8_t _dispatch()
 		return (status);
 	}
 	tg.linelen = strlen(tg.in_buf)+1;
-	cmd_new_body(cmd_body);					// clear the cmd body to get ready for use
+	cmd_reset_list();							// clear the cmd body to get ready for use
 
 	// dispatch the new text line
 	switch (toupper(tg.in_buf[0])) {
@@ -209,34 +208,34 @@ static uint8_t _dispatch()
 //		case '#': { sig_cycle_start(); break;}	// debug char for cycle start tests
 
 		case NUL: { 							// blank line (just a CR)
-			if (cfg.comm_mode != TG_JSON_MODE) {
+			if (cfg.comm_mode != JSON_MODE) {
 				_text_response(TG_OK, tg.in_buf);
 			}
 			break;
 		}
 		case 'H': { 							// intercept help screens
-			cfg.comm_mode = TG_TEXT_MODE;
+			cfg.comm_mode = TEXT_MODE;
 			print_general_help();
 			_text_response(TG_OK, tg.in_buf);
 			break;
 		}
 		case '$': case '?':{ 					// text-mode configs
-			cfg.comm_mode = TG_TEXT_MODE;
+			cfg.comm_mode = TEXT_MODE;
 			_text_response(cfg_text_parser(tg.in_buf), tg.in_buf);
 			break;
 		}
 		case '{': { 							// JSON input
-			cfg.comm_mode = TG_JSON_MODE;
+			cfg.comm_mode = JSON_MODE;
 			js_json_parser(tg.in_buf);
 			break;
 		}
 		default: {								// anything else must be Gcode
-			if (cfg.comm_mode != TG_JSON_MODE) {
-				_text_response(gc_gcode_parser(tg.in_buf), tg.in_buf);
-			} else {
+			if (cfg.comm_mode == JSON_MODE) {
 				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN);	// use output buffer as a temp
 				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);
-				js_json_parser(tg.in_buf); 
+				js_json_parser(tg.in_buf);
+			} else {
+				_text_response(gc_gcode_parser(tg.in_buf), tg.in_buf);
 			}
 		}
 	}
@@ -267,8 +266,8 @@ static const char msg_sc09[] PROGMEM = "File not open";
 static const char msg_sc10[] PROGMEM = "Max file size exceeded";
 static const char msg_sc11[] PROGMEM = "No such device";
 static const char msg_sc12[] PROGMEM = "Buffer empty";
-static const char msg_sc13[] PROGMEM = "Buffer full - fatal";
-static const char msg_sc14[] PROGMEM = "Buffer full - non-fatal";
+static const char msg_sc13[] PROGMEM = "Buffer full";
+static const char msg_sc14[] PROGMEM = "Buffer full - fatal";
 static const char msg_sc15[] PROGMEM = "Initializing";
 static const char msg_sc16[] PROGMEM = "#16";
 static const char msg_sc17[] PROGMEM = "#17";
@@ -370,7 +369,7 @@ static void _text_response(const uint8_t status, const char *buf)
 	}
 
 	// deliver echo and messages
-	cmdObj *cmd = cmd_body;		// if there is a message it will aways be in the second object
+	cmdObj_t *cmd = cmd_body;		// if there is a message it will aways be in the second object
 	if ((cfg.text_verbosity >= TV_MESSAGES) && (cmd->token[0] == 'm')) {
 		fprintf(stderr, "%s\n", cmd->string);
 	}
@@ -389,14 +388,14 @@ static void _text_response(const uint8_t status, const char *buf)
 void tg_print_message(char *msg)
 {
 	cmd_add_string("msg", msg);
-	cmd_print_list(TG_OK, TEXT_INLINE_VALUES);
+	cmd_print_list(TG_OK, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 }
 /*
 void tg_print_message_value(char *msg, double value)
 {
 	cmd_add_string("msg", msg);
 	cmd_add_float("v", value);
-	cmd_print_list(TG_OK, TEXT_INLINE_VALUES);
+	cmd_print_list(TG_OK, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 }
 */
 /*
@@ -411,30 +410,33 @@ void tg_print_message_number(uint8_t msgnum)
 void tg_print_loading_configs_message(void)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
+	cmd_reset_list();
 	cmd_add_object("fv");
 	cmd_add_object("fb");
-	cmd_add_string("msg", "Loading configs from EEPROM");
-	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED);
+	cmd_add_string_P("msg", PSTR("Loading configs from EEPROM"));
+	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 #endif
 }
 
 void tg_print_initializing_message(void)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
+	cmd_reset_list();
 	cmd_add_object("fv");
 	cmd_add_object("fb");
-	cmd_add_string("msg", INIT_CONFIGURATION_MESSAGE); // see settings.h & sub-headers
-	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED);
+	cmd_add_string_P("msg", PSTR(INIT_CONFIGURATION_MESSAGE)); // see settings.h & sub-headers
+	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 #endif
 }
 
 void tg_print_system_ready_message(void)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
+	cmd_reset_list();
 	cmd_add_object("fv");
 	cmd_add_object("fb");
-	cmd_add_string("msg", "SYSTEM READY");
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
+	cmd_add_string_P("msg", PSTR("SYSTEM READY"));
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 	_text_response(TG_OK, "");				// prompt
 #endif
 }

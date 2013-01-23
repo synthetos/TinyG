@@ -38,7 +38,7 @@
 #include "controller.h"			// only needed for line number
 #include "canonical_machine.h"
 #include "util.h"
-#include "arc.h"
+#include "plan_arc.h"
 #include "planner.h"
 #include "kinematics.h"
 
@@ -490,6 +490,7 @@ static double _get_theta(const double x, const double y)
 //############## UNIT TESTS ################
 //##########################################
 
+#ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_PLANNER
 
 void mp_plan_arc_unit_tests()
@@ -497,4 +498,5 @@ void mp_plan_arc_unit_tests()
 //	_mp_test_buffers();
 }
 
+#endif
 #endif

@@ -2,8 +2,6 @@
 # Automatically-generated file. Do not edit or delete the file
 ################################################################################
 
-arc.c
-
 canonical_machine.c
 
 config.c
@@ -28,6 +26,10 @@ network.c
 
 planner.c
 
+plan_arc.c
+
+plan_line.c
+
 pwm.c
 
 report.c
@@ -44,11 +46,15 @@ util.c
 
 xio\xio.c
 
+xio\xio_file.c
+
 xio\xio_pgm.c
 
 xio\xio_rs485.c
 
 xio\xio_signals.c
+
+xio\xio_spi.c
 
 xio\xio_usart.c
 

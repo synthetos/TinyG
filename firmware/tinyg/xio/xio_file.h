@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2011 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2011 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -26,8 +26,8 @@
  * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
----- How to setup and use program memory "files" ----
+ */
+/*--- How to setup and use program memory "files" ----
 
   Setup a memory file (OK, it's really just a string)
   should be declared as so:
@@ -65,26 +65,14 @@
 #ifndef xio_file_h
 #define xio_file_h
 
+#define PGMFILE (const PROGMEM char *)		// extends pgmspace.h
+
 /* 
  * FILE DEVICE CONFIGS 
  */
 
-#define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_CRLF | XIO_LINEMODE)
-//#define PGM_INIT_bm (XIO_RD | XIO_BLOCK | XIO_ECHO | XIO_CRLF | XIO_LINEMODE)
-
-#define EEP_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_LINEMODE)
-#define TBL_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_LINEMODE)
-#define RAM_INIT_bm (XIO_RDWR | XIO_BLOCK | XIO_LINEMODE)
-
-//#define EEP_ADDR_BASE (0x1000)		// needed to support memory mapped mode
-#define EEP_ADDR_BASE (0x0000)		// needed to support memory mapped mode
-#define TBL_ADDR_BASE (0x1000)
-#define RAM_ADDR_BASE (0x1000)
-
+#define PGM_FLAGS (XIO_BLOCK | XIO_CRLF | XIO_LINEMODE)
 #define PGM_ADDR_MAX (0x4000)		// 16K
-#define EEP_ADDR_MAX (0x1000)		// 4K
-#define TBL_ADDR_MAX (0x2000)		// 8K
-#define RAM_ADDR_MAX (0x4000)		// 8K
 
 /* 
  * FILE device extended control structure 
@@ -93,42 +81,22 @@
  */
 
 // file-type device control struct
-struct xioFILE {
-	uint16_t fflags;					// file sub-system flags
+typedef struct xioFILE {
 	uint32_t rd_offset;					// read index into file
 	uint32_t wr_offset;					// write index into file
 	uint32_t max_offset;				// max size of file
 	const char * filebase_P;			// base location in program memory (PROGMEM)
-};
+} xioFile_t;
 
 /* 
  * FILE DEVICE FUNCTION PROTOTYPES
  */
-
-// PGM functions
-void xio_init_pgm(void);
-FILE * xio_open_pgm(const char * addr);		// open memory string read only
-int xio_cntl_pgm(const uint32_t control);	// validate & set dev flags
-int xio_putc_pgm(const char c, struct __file *stream);// always returns ERROR
-int xio_getc_pgm(struct __file *stream);	// get a character
-int xio_gets_pgm(char *buf, const int size);// read string from program memory
-
-// EEPROM functions
-/*
-void xio_init_eep(void);
-FILE * xio_open_eep(const prog_char *addr);			// open EEPROM string
-int xio_cntl_eep(const uint32_t control);			// validate & set dev flags
-int xio_putc_eep(const char c, struct __file *stream);// unoptimized EEPROM write
-int xio_getc_eep(struct __file *stream);			// get a character from EEPROM
-int xio_gets_eep(char *buf, const int size);	// read string from EEPROM
-int xio_seek_eep(uint32_t offset);
-int xio_rewind_eep();
-//int xio_puts_eep(const char *buf, struct __file *stream);
-*/
-
-// RAM Card functions
+void xio_init_file(void);
+FILE *xio_open_file(const uint8_t dev, const char *addr, const flags_t flags);
+int xio_gets_pgm(xioDev_t *d, char *buf, const int size);			// read string from program memory
+int xio_getc_pgm(FILE *stream);									// get a character from PROGMEM
+int xio_putc_pgm(const char c, FILE *stream);					// always returns ERROR
 
 // SD Card functions
-
 
 #endif

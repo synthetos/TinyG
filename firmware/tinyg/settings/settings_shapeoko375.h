@@ -47,16 +47,16 @@
 // *** settings.h overrides ***
 
 #undef	COM_COMM_MODE
-//#define COM_COMM_MODE				TG_JSON_MODE
-#define COM_COMM_MODE				TG_TEXT_MODE
+#define COM_COMM_MODE				JSON_MODE
+//#define COM_COMM_MODE				TEXT_MODE
 
 #undef COM_JSON_VERBOSITY
 //#define COM_JSON_VERBOSITY		JV_SILENT			// no response is provided for any command
 //#define COM_JSON_VERBOSITY		JV_OMIT_BODY		// response contains no body - footer only
 //#define COM_JSON_VERBOSITY		JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
-//#define COM_JSON_VERBOSITY		JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+#define COM_JSON_VERBOSITY		JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
 //#define COM_JSON_VERBOSITY		JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
-#define COM_JSON_VERBOSITY			JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
+//#define COM_JSON_VERBOSITY		JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
 
 // *** motor settings ***
 
@@ -101,10 +101,10 @@
 #endif
 
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
-//#define X_SWITCH_MODE_MIN		SW_MODE_DISABLED
-//#define X_SWITCH_MODE_MAX		SW_MODE_DISABLED
-#define X_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
-#define X_SWITCH_MODE_MAX		SW_MODE_LIMIT		// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
+#define X_SWITCH_MODE_MIN		SW_MODE_HOMING
+#define X_SWITCH_MODE_MAX		SW_MODE_DISABLED
+//#define X_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
+//#define X_SWITCH_MODE_MAX		SW_MODE_LIMIT		// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
 #define X_SEARCH_VELOCITY		3000				// xsv		minus means move to minimum switch
 #define X_LATCH_VELOCITY		100					// xlv		mm/min
 #define X_LATCH_BACKOFF			20					// xlb		mm
@@ -121,15 +121,17 @@
 #endif
 
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
-#define Y_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT
-#define Y_SWITCH_MODE_MAX		SW_MODE_LIMIT		//SW_MODE_DISABLED
+#define Y_SWITCH_MODE_MIN		SW_MODE_HOMING
+#define Y_SWITCH_MODE_MAX		SW_MODE_DISABLED
+//#define Y_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT
+//#define Y_SWITCH_MODE_MAX		SW_MODE_LIMIT		//SW_MODE_DISABLED
 #define Y_SEARCH_VELOCITY		3000
 #define Y_LATCH_VELOCITY		100
 #define Y_LATCH_BACKOFF			20
 #define Y_ZERO_BACKOFF			3
 
 #define Z_AXIS_MODE				AXIS_STANDARD
-#define Z_VELOCITY_MAX			1000
+#define Z_VELOCITY_MAX			800
 #define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX			100
 #ifdef __PLAN_R2
@@ -140,7 +142,8 @@
 
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
-#define Z_SWITCH_MODE_MAX		SW_MODE_HOMING_LIMIT
+//#define Z_SWITCH_MODE_MAX		SW_MODE_HOMING_LIMIT
+#define Z_SWITCH_MODE_MAX		SW_MODE_HOMING
 #define Z_SEARCH_VELOCITY		Z_VELOCITY_MAX
 #define Z_LATCH_VELOCITY		100
 #define Z_LATCH_BACKOFF			20

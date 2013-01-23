@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -26,10 +26,9 @@
  * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *------
- *
- *	This version implements signal capture at the ISR level
+ */
+/*------
+ *	This version implements signal character capture at the ISR level
  */
 
 #include <stdio.h>						// precursor for xio.h
@@ -40,23 +39,10 @@
 
 #include "xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
-#include "../gpio.h"
 
-/* USB device wrappers for generic USART routines */
-FILE * xio_open_usb() {return(USB.fdev);}
-int xio_cntl_usb(const uint32_t control) {return xio_cntl(XIO_DEV_USB, control);} // SEE NOTE
-int xio_getc_usb(FILE *stream) {return xio_getc_usart(XIO_DEV_USB, stream);}
-int xio_gets_usb(char *buf, const int size) {return xio_gets_usart(XIO_DEV_USB, buf, size);}
-void xio_queue_RX_char_usb(const char c) {xio_queue_RX_char_usart(XIO_DEV_USB, c);}
-void xio_queue_RX_string_usb(const char *buf) {xio_queue_RX_string_usart(XIO_DEV_USB, buf);}
-
-void xio_init_usb()	// USB inits
-{
-	xio_init_dev(XIO_DEV_USB, xio_open_usb, xio_cntl_usb, xio_putc_usb, xio_getc_usb, xio_gets_usb);
-	xio_init_usart(XIO_DEV_USB, XIO_DEV_USB_OFFSET, USB_INIT_bm, &USB_USART, &USB_PORT, USB_DIRCLR_bm, USB_DIRSET_bm, USB_OUTCLR_bm, USB_OUTSET_bm);
-}
-
-// NOTE: Might later expand setflags() to validate control bits and return errors
+// Fast accessors
+#define USB ds[XIO_DEV_USB]
+#define USBu us[XIO_DEV_USB - XIO_DEV_USART_OFFSET]
 
 /*
  * xio_putc_usb() 
@@ -72,20 +58,30 @@ void xio_init_usb()	// USB inits
  *	never empties. So the routine that puts chars in the TX buffer must always force
  *	an interrupt.
  */
-// alternate form:
-//int xio_putc_usb(const char c, FILE *stream) { return xio_putc_usart(XIO_DEV_USB, c, stream);}
 
 int xio_putc_usb(const char c, FILE *stream)
 {
-	BUFFER_T next_tx_buf_head = USBu.tx_buf_head-1;	// set the next head while leaving the current one alone
-	if (next_tx_buf_head == 0) { 					// detect wrap and afjust if necessary
-		next_tx_buf_head = TX_BUFFER_SIZE-1; 		// -1 avoids the off-by-one
+	buffer_t next_tx_buf_head = USBu.tx_buf_head-1;		// set next head while leaving current one alone
+	if (next_tx_buf_head == 0)
+		next_tx_buf_head = TX_BUFFER_SIZE-1; 			// detect wrap and adjust; -1 avoids off-by-one
+	while (next_tx_buf_head == USBu.tx_buf_tail) 
+		sleep_mode(); 									// sleep until there is space in the buffer
+	USBu.usart->CTRLA = CTRLA_RXON_TXOFF;				// disable TX interrupt (mutex region)
+	USBu.tx_buf_head = next_tx_buf_head;				// accept next buffer head
+	USBu.tx_buf[USBu.tx_buf_head] = c;					// write char to buffer
+
+	// expand <LF> to <LF><CR> if $ec is set
+	if ((c == '\n') && (USB.flag_crlf)) {
+		USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send the queued <CR>
+		buffer_t next_tx_buf_head = USBu.tx_buf_head-1;
+		if (next_tx_buf_head == 0) next_tx_buf_head = TX_BUFFER_SIZE-1;
+		while (next_tx_buf_head == USBu.tx_buf_tail) sleep_mode();
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;			// MUTEX region
+		USBu.tx_buf_head = next_tx_buf_head;
+		USBu.tx_buf[USBu.tx_buf_head] = CR;
 	}
-	while (next_tx_buf_head == USBu.tx_buf_tail) { sleep_mode();} // sleep until there is space in the buffer
-	USBu.usart->CTRLA = CTRLA_RXON_TXOFF;			// disable TX interrupt (mutex region)
-	USBu.tx_buf_head = next_tx_buf_head;			// accept next buffer head
-	USBu.tx_buf[USBu.tx_buf_head] = c;				// write char to buffer
-	USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send char - doesn't work if you just |= it
+	// finish up
+	USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send char(s) - doesn't work if you just |= it
 	return (XIO_OK);
 }
 
@@ -93,9 +89,7 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
 	if (USBu.fc_char == NUL) {						// normal char TX path
 		if (USBu.tx_buf_head != USBu.tx_buf_tail) {	// buffer has data
-			if (--USBu.tx_buf_tail == 0) {			// advance tail and wrap 
-				USBu.tx_buf_tail = TX_BUFFER_SIZE-1;// -1 avoids OBOE
-			}
+			advance_buffer(USBu.tx_buf_tail, TX_BUFFER_SIZE);
 			USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];
 		} else {
 			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;	// force another interrupt
@@ -153,21 +147,31 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		return;
 	}
 	// filter out CRs and LFs if they are to be ignored
-	if ((c == CR) && (IGNORECR(USB.flags) == true)) { return;}
-	if ((c == LF) && (IGNORELF(USB.flags) == true)) { return;}
+	if ((c == CR) && (USB.flag_ignorecr)) return;
+	if ((c == LF) && (USB.flag_ignorelf)) return;
 
 	// normal character path
-	if ((--USBu.rx_buf_head) == 0) { 			// adv buffer head with wrap
-		USBu.rx_buf_head = RX_BUFFER_SIZE-1;	// -1 avoids off-by-one error
-	}
+	advance_buffer(USBu.rx_buf_head, RX_BUFFER_SIZE);
 	if (USBu.rx_buf_head != USBu.rx_buf_tail) {	// buffer is not full
 		USBu.rx_buf[USBu.rx_buf_head] = c;		// write char unless full
-		if ((EN_XOFF(USB.flags) == true) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
-			xio_xoff_usart(XIO_DEV_USB);
+		USBu.rx_buf_count++;
+		if ((USB.flag_xoff) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
+			xio_xoff_usart(&USBu);
 		}
-	} else { // buffer-full - toss the incoming character
-		if ((++USBu.rx_buf_head) > RX_BUFFER_SIZE-1) { // reset the head
+	} else { 									// buffer-full - toss the incoming character
+		if ((++USBu.rx_buf_head) > RX_BUFFER_SIZE-1) {	// reset the head
+			USBu.rx_buf_count = RX_BUFFER_SIZE-1;		// reset count for good measure
 			USBu.rx_buf_head = 1;
 		}
 	}
+}
+
+/*
+ * xio_get_usb_rx_free() - returns free space in the USB RX buffer
+ *
+ *	Remember: The queues fill from top to bottom, w/0 being the wrap location
+ */
+buffer_t xio_get_usb_rx_free(void)
+{
+	return (RX_BUFFER_SIZE - xio_get_rx_bufcount_usart(&USBu));
 }

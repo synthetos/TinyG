@@ -62,27 +62,27 @@
  * 	By convention the character array containing the test must have the same 
  *	name as the file name.
  */
-uint8_t tg_test(cmdObj *cmd)
+uint8_t tg_test(cmdObj_t *cmd)
 {
-	cfg.comm_mode = TG_TEXT_MODE;	// all tests run in text mode only
+	cfg.comm_mode = TEXT_MODE;	// all tests run in text mode only
 
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (TG_OK);}
-		case 1: { xio_open_pgm(PGMFILE(&test_homing)); break;}
-		case 2: { xio_open_pgm(PGMFILE(&test_smoke)); break;}
-		case 3: { xio_open_pgm(PGMFILE(&test_squares)); break;}
-		case 4: { xio_open_pgm(PGMFILE(&test_arcs)); break;}
-		case 5: { xio_open_pgm(PGMFILE(&test_dwell)); break;}
-		case 6: { xio_open_pgm(PGMFILE(&test_feedhold)); break;}
-		case 7: { xio_open_pgm(PGMFILE(&test_Mcodes)); break;}
-		case 8: { xio_open_pgm(PGMFILE(&test_json)); break;}
-		case 9: { xio_open_pgm(PGMFILE(&test_inverse_time)); break;}
-		case 10: { xio_open_pgm(PGMFILE(&test_rotary)); break;}
-		case 11: { xio_open_pgm(PGMFILE(&test_small_moves)); break;}
-		case 12: { xio_open_pgm(PGMFILE(&test_slow_moves)); break;}
-		case 13: { xio_open_pgm(PGMFILE(&test_coordinate_offsets)); break;}
-		case 50: { xio_open_pgm(PGMFILE(&test_mudflap)); break;}
-		case 51: { xio_open_pgm(PGMFILE(&test_braid)); break;}
+		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
+		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke),PGM_FLAGS); break;}
+		case 3: { xio_open(XIO_DEV_PGM, PGMFILE(&test_squares),PGM_FLAGS); break;}
+		case 4: { xio_open(XIO_DEV_PGM, PGMFILE(&test_arcs),PGM_FLAGS); break;}
+		case 5: { xio_open(XIO_DEV_PGM, PGMFILE(&test_dwell),PGM_FLAGS); break;}
+		case 6: { xio_open(XIO_DEV_PGM, PGMFILE(&test_feedhold),PGM_FLAGS); break;}
+		case 7: { xio_open(XIO_DEV_PGM, PGMFILE(&test_Mcodes),PGM_FLAGS); break;}
+		case 8: { xio_open(XIO_DEV_PGM, PGMFILE(&test_json),PGM_FLAGS); break;}
+		case 9: { xio_open(XIO_DEV_PGM, PGMFILE(&test_inverse_time),PGM_FLAGS); break;}
+		case 10: { xio_open(XIO_DEV_PGM, PGMFILE(&test_rotary),PGM_FLAGS); break;}
+		case 11: { xio_open(XIO_DEV_PGM, PGMFILE(&test_small_moves),PGM_FLAGS); break;}
+		case 12: { xio_open(XIO_DEV_PGM, PGMFILE(&test_slow_moves),PGM_FLAGS); break;}
+		case 13: { xio_open(XIO_DEV_PGM, PGMFILE(&test_coordinate_offsets),PGM_FLAGS); break;}
+		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
+		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 		default: {
 			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
 			return (TG_ERROR);
@@ -103,8 +103,15 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
+//	xio_queue_RX_string_usb("g0x2\n");			// G0 smoke test
+//	xio_queue_RX_string_usb("{\"gc\":\"g2\"}\n");// G0 smoke test in JSON
+
 	// text parser test cases
-//	xio_queue_RX_string_usb("$\n");				// sys request
+//	xio_queue_RX_string_usb("?\n");				// text mode status report
+//	xio_queue_RX_string_usb("$$\n");			// sys request
+//	xio_queue_RX_string_usb("$ec=1\n");			// turn CR expansion on
+//	xio_queue_RX_string_usb("$qr\n");			// invoke QR report
+	xio_queue_RX_string_usb("$ej=1\n");			// enable JSON mode
 //	xio_queue_RX_string_usb("$n\n");			// ubergroup request
 //	xio_queue_RX_string_usb("$xvm=16,000\n");	// comma skipping
 //	xio_queue_RX_string_usb("$a\n");			// match a group
@@ -119,7 +126,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("N100 g0 x1\n");	// line number and command
 //	xio_queue_RX_string_usb("N100 g0x1 (MSG*** message test with gcode command and line number ***)\n");
 
-//	xio_queue_RX_string_usb("$test=13\n");
+//	xio_queue_RX_string_usb("$test=2\n");
 //	xio_queue_RX_string_usb("$$\n");
 //	xio_queue_RX_string_usb("m3\n");
 //	xio_queue_RX_string_usb("$sys\n");
@@ -128,6 +135,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$test=51\n");	// run braid fragment to test short-line handling
 
 //	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"posa\":true,\"posx\":true,\"gc\":true,\"feed\":true,\"posy\":true,\"line\":true,\"stat\":true,\"posz\":true}}\n");
+//	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"ej\":1}\n");
 //	xio_queue_RX_string_usb("{\"z\":{\"sn\":1}}\n");
 //	xio_queue_RX_string_usb("{\"zsn\":1}\n");
@@ -138,20 +146,21 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"1\":{\"po\":\"\"}}\n");
 //	xio_queue_RX_string_usb("{\"c\":\"\"}\n");
 
+//	xio_queue_RX_string_usb("{\"sr\":{\"posx\":true}}\n");
 //	xio_queue_RX_string_usb("{\"baud\":6}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"n20g0x1y1.1\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x20y30z40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x30\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x40\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"g0x0\"}\n");
+//	xio_queue_RX_string_usb("{\"gc\":\"g20\"}\n");
 //	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 
-//	xio_queue_RX_string_usb("g0x2\n");
 //	xio_queue_RX_string_usb("g92a0\n");
-//	xio_queue_RX_string_usb("g0a3\n");	// should be a=3. Instead it's a=1
+//	xio_queue_RX_string_usb("g0a3\n");			// should be a=3. Instead it's a=1
 
-//	xio_queue_RX_string_usb("t3\n");	// change tool
+//	xio_queue_RX_string_usb("t3\n");			// change tool
 
 //	xio_queue_RX_string_usb("$h\n");
 //	xio_queue_RX_string_usb("$m\n");
@@ -162,7 +171,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("\n");
 
 //	xio_queue_RX_string_usb("g00xqwrsdfs\n");
-//	xio_queue_RX_string_usb("g0x10\n");
+//	xio_queue_RX_string_usb("g0x1000\n");
 
 //	xio_queue_RX_string_usb("g00g17g21g40g49g80g90\n");
 //	xio_queue_RX_string_usb("g2x0y0i1f2000\n");
@@ -260,14 +269,18 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g10 L2 p2 x10 y11 z12\n");
 
 /* G28 and G30 homing tests */
+//	xio_queue_RX_string_usb("g28.2x0\n");
 //	xio_queue_RX_string_usb("g28.1\n");			// G28.1 OK
-	xio_queue_RX_string_usb("g28.1x10y10\n");	// G28.1 specification error
+//	xio_queue_RX_string_usb("g28.1x10y10\n");	// G28.1 specification error
 //	xio_queue_RX_string_usb("g28.2x0y0z0\n");
 //	xio_queue_RX_string_usb("g28.2y0\n");
 //	xio_queue_RX_string_usb("g28.2x0y0z0a0\n");
 //	xio_queue_RX_string_usb("g28.2 z0\n");
 //	xio_queue_RX_string_usb("g30x0y0z0\n");
 //	xio_queue_RX_string_usb("g30x42\n");
+
+/* G48-G51 override tests */
+//	xio_queue_RX_string_usb("m50 P1\n");		// enable feed override
 
 /* G53 tests */
 //	xio_queue_RX_string_usb("g56\n");			// assumes G55 is different than machine coords
@@ -324,9 +337,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 /* JSON TEST CASES */
 // If you want to run multi-line cases you need to set RX buffer to 1024 in xio_usart.h
 
-// JSON parser tests
-//	xio_queue_RX_string_usb("{\"x\":\"\"}\n");		// retrieve a group
-//	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sm\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
+// JSON parser tests		  // set a group
+//	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sn\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
+//	xio_queue_RX_string_usb("{\"x\":\"\"}\n"); // retrieve a group
 
 //	xio_queue_RX_string_usb("{\"gc\":\"g0 x3 y4 z5.5 (comment line)\"}\n");
 //	xio_queue_RX_string_usb("{\"xfr\":1200}\n");

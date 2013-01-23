@@ -39,7 +39,6 @@ SUBDIRS :=  \
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
-../arc.c \
 ../canonical_machine.c \
 ../config.c \
 ../controller.c \
@@ -52,6 +51,8 @@ C_SRCS +=  \
 ../main.c \
 ../network.c \
 ../planner.c \
+../plan_arc.c \
+../plan_line.c \
 ../pwm.c \
 ../report.c \
 ../spindle.c \
@@ -60,9 +61,11 @@ C_SRCS +=  \
 ../test.c \
 ../util.c \
 ../xio/xio.c \
+../xio/xio_file.c \
 ../xio/xio_pgm.c \
 ../xio/xio_rs485.c \
 ../xio/xio_signals.c \
+../xio/xio_spi.c \
 ../xio/xio_usart.c \
 ../xio/xio_usb.c \
 ../xmega/xmega_eeprom.c \
@@ -78,7 +81,6 @@ ASM_SRCS +=
 
 
 OBJS +=  \
-arc.o \
 canonical_machine.o \
 config.o \
 controller.o \
@@ -91,6 +93,8 @@ kinematics.o \
 main.o \
 network.o \
 planner.o \
+plan_arc.o \
+plan_line.o \
 pwm.o \
 report.o \
 spindle.o \
@@ -99,9 +103,11 @@ system.o \
 test.o \
 util.o \
 xio/xio.o \
+xio/xio_file.o \
 xio/xio_pgm.o \
 xio/xio_rs485.o \
 xio/xio_signals.o \
+xio/xio_spi.o \
 xio/xio_usart.o \
 xio/xio_usb.o \
 xmega/xmega_eeprom.o \
@@ -111,7 +117,6 @@ xmega/xmega_rtc.o
 
 
 OBJS_AS_ARGS +=  \
-arc.o \
 canonical_machine.o \
 config.o \
 controller.o \
@@ -124,6 +129,8 @@ kinematics.o \
 main.o \
 network.o \
 planner.o \
+plan_arc.o \
+plan_line.o \
 pwm.o \
 report.o \
 spindle.o \
@@ -132,9 +139,11 @@ system.o \
 test.o \
 util.o \
 xio/xio.o \
+xio/xio_file.o \
 xio/xio_pgm.o \
 xio/xio_rs485.o \
 xio/xio_signals.o \
+xio/xio_spi.o \
 xio/xio_usart.o \
 xio/xio_usb.o \
 xmega/xmega_eeprom.o \
@@ -144,7 +153,6 @@ xmega/xmega_rtc.o
 
 
 C_DEPS +=  \
-arc.d \
 canonical_machine.d \
 config.d \
 controller.d \
@@ -157,6 +165,8 @@ kinematics.d \
 main.d \
 network.d \
 planner.d \
+plan_arc.d \
+plan_line.d \
 pwm.d \
 report.d \
 spindle.d \
@@ -165,9 +175,11 @@ system.d \
 test.d \
 util.d \
 xio/xio.d \
+xio/xio_file.d \
 xio/xio_pgm.d \
 xio/xio_rs485.d \
 xio/xio_signals.d \
+xio/xio_spi.d \
 xio/xio_usart.d \
 xio/xio_usb.d \
 xmega/xmega_eeprom.d \
@@ -177,7 +189,6 @@ xmega/xmega_rtc.d
 
 
 C_DEPS_AS_ARGS +=  \
-arc.d \
 canonical_machine.d \
 config.d \
 controller.d \
@@ -190,6 +201,8 @@ kinematics.d \
 main.d \
 network.d \
 planner.d \
+plan_arc.d \
+plan_line.d \
 pwm.d \
 report.d \
 spindle.d \
@@ -198,9 +211,11 @@ system.d \
 test.d \
 util.d \
 xio/xio.d \
+xio/xio_file.d \
 xio/xio_pgm.d \
 xio/xio_rs485.d \
 xio/xio_signals.d \
+xio/xio_spi.d \
 xio/xio_usart.d \
 xio/xio_usb.d \
 xmega/xmega_eeprom.d \
@@ -218,6 +233,12 @@ ADDITIONAL_DEPENDENCIES:=
 OUTPUT_FILE_DEP:= ./makedep.mk
 
 # AVR32/GNU C Compiler
+
+
+
+
+
+
 
 
 

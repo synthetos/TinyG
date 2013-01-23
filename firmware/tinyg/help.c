@@ -45,15 +45,17 @@ uint8_t print_general_help()
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG Help ####\n"));
 fprintf_P(stderr, PSTR("\
 These commands are active from the command line:\n\
- ^x     Reset (control x) - software reset\n\
-  ?     Machine position and gcode model state\n\
-  $     Show and set configuration settings\n\
-  !     Feedhold - stop motion without losing position\n\
-  ~     Cycle Start - restart from feedhold\n\
-  h     Show this help screen\n\
-  $h    Show configuration help screen\n\
-  $test List self-tests\n\
-  $defaults=1 Restore all settings to \"factory\" defaults\n\
+ ^x             Reset (control x) - software reset\n\
+  ?             Machine position and gcode model state\n\
+  $             Show and set configuration settings\n\
+  !             Feedhold - stop motion without losing position\n\
+  ~             Cycle Start - restart from feedhold\n\
+  h             Show this help screen\n\
+  $h            Show configuration help screen\n\
+  $test         List self-tests\n\
+  $test-N       Run self-test N\n\
+  $home=1       Run a homing cycle\n\
+  $defaults=1   Restore all settings to \"factory\" defaults\n\
 "));
 _status_report_advisory();
 _postscript();
@@ -64,7 +66,7 @@ return(TG_OK);
 /*
  * print_config_help() - help invoked as $h
  */
-uint8_t print_config_help(cmdObj *cmd)
+uint8_t print_config_help(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG CONFIGURATION Help ####\n"));
 fprintf_P(stderr, PSTR("\
@@ -96,7 +98,7 @@ return(TG_OK);
 /*
  * print_test_help() - help invoked for tests
  */
-uint8_t print_test_help(cmdObj *cmd)
+uint8_t print_test_help(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG SELF TEST Help ####\n"));
 fprintf_P(stderr, PSTR("\
@@ -122,12 +124,24 @@ return(TG_OK);
 /*
  * print_defaults_help() - help invoked for defaults
  */
-uint8_t print_defaults_help(cmdObj *cmd)
+uint8_t print_defaults_help(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG RESTORE DEFAULTS Help ####\n"));
 fprintf_P(stderr, PSTR("\
 Enter $defaults=1 to reset the system to the factory default values.\n\
 This will overwrite any changes you have made.\n"));
+_postscript();
+return(TG_OK);
+}
+
+/*
+ * print_boot_loader_help()
+ */
+uint8_t print_boot_loader_help(cmdObj_t *cmd)
+{
+fprintf_P(stderr, PSTR("\n\n\n#### TinyG BOOT LOADER Help ####\n"));
+fprintf_P(stderr, PSTR("\
+Enter $boot=1 to enter the boot loader.\n"));
 _postscript();
 return(TG_OK);
 }

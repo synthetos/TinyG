@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -47,34 +47,12 @@
 #include "xio.h"
 #include "../xmega/xmega_interrupts.h"
 
-#define RS ds[XIO_DEV_RS485]			// device struct accessoor
-#define RSu us[XIO_DEV_RS485_OFFSET]	// usart extended struct accessor
-
-// local helper functions
-static void _xio_enable_rs485_tx(void);	// enable rs485 TX mode (no RX)
-static void _xio_enable_rs485_rx(void);	// enable rs485 RX mode (no TX)
-
-// RS485 device wrappers for generic USART routines
-struct __file * xio_open_rs485() { return(RS.fdev); }
-int xio_cntl_rs485(const uint32_t control) {return xio_cntl(XIO_DEV_RS485, control);}
-int xio_getc_rs485(FILE *stream) {return xio_getc_usart(XIO_DEV_RS485, stream);}
-int xio_gets_rs485(char *buf, const int size) {return xio_gets_usart(XIO_DEV_RS485, buf, size);}
-void xio_queue_RX_char_rs485(const char c) {xio_queue_RX_char_usart(XIO_DEV_RS485, c);}
-void xio_queue_RX_string_rs485(const char *buf) {xio_queue_RX_string_usart(XIO_DEV_RS485, buf);}
-
-// RS485 device-specifc drivers 
+// Fast accessors
+#define RS ds[XIO_DEV_RS485]
+#define RSu us[XIO_DEV_RS485 - XIO_DEV_USART_OFFSET]
 
 /*
- * xio_init_rs485() - initialization
- */
-void xio_init_rs485()	// RS485 init
-{
-	xio_init_dev(XIO_DEV_RS485, xio_open_rs485, xio_cntl_rs485, xio_putc_rs485, xio_getc_rs485, xio_gets_rs485);
-	xio_init_usart(XIO_DEV_RS485, XIO_DEV_RS485_OFFSET, RS485_INIT_bm, &RS485_USART, &RS485_PORT, RS485_DIRCLR_bm, RS485_DIRSET_bm, RS485_OUTCLR_bm, RS485_OUTSET_bm);
-	_xio_enable_rs485_rx(); // set initially for RX mode
-}
-
-/*
+ * Local helper functions
  *	_xio_enable_rs485_tx() - specialized routine to enable rs488 TX mode
  *	_xio_enable_rs485_rx() - specialized routine to enable rs488 RX mode
  *
@@ -118,16 +96,15 @@ static void _xio_enable_rs485_rx()
  *	NOTE: Finding a buffer empty condition on the first byte of a string 
  *		  is common as the TX byte is often written by the task itself.
  */
-
 int xio_putc_rs485(const char c, FILE *stream)
 {
-	BUFFER_T next_tx_buf_head;
+	buffer_t next_tx_buf_head;
 
 	if ((next_tx_buf_head = (RSu.tx_buf_head)-1) == 0) { // adv. head & wrap
 		next_tx_buf_head = TX_BUFFER_SIZE-1;	 // -1 avoids the off-by-one
 	}
 	while(next_tx_buf_head == RSu.tx_buf_tail) { // buf full. sleep or ret
-		if (BLOCKING(RS.flags) != 0) {
+		if (RS.flag_block) {
 			sleep_mode();
 		} else {
 			RS.signal = XIO_SIG_EAGAIN;
@@ -139,18 +116,17 @@ int xio_putc_rs485(const char c, FILE *stream)
 	RSu.tx_buf_head = next_tx_buf_head;				// accept next buffer head
 	RSu.tx_buf[RSu.tx_buf_head] = c;				// ...write char to buffer
 
-	if ((CRLF(RS.flags) != 0) && (c == '\n')) {		// detect LF & add CR
+	if ((c == '\n') && (RS.flag_crlf)) {			// detect LF & add CR
 		return RS.x_putc('\r', stream);				// recurse
 	}
 	// force a TX interupt to attempt to send the character
-	RSu.usart->CTRLA = CTRLA_RXON_TXON;	// doesn't work if you just |= it
+	RSu.usart->CTRLA = CTRLA_RXON_TXON;				// doesn't work if you just |= it
 	return (XIO_OK);
 }
 
 /* 
  * RS485_TX_ISR - RS485 transmitter interrupt (TX)
- * RS485_TXC_ISR - RS485 transmission complete
- *	(See notes in xio_putc_rs485)
+ * RS485_TXC_ISR - RS485 transmission complete (See notes in xio_putc_rs485)
  */
 
 ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC1 data register empty
@@ -182,37 +158,40 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)		// serial port C0 RX isr
 	if ((RSu.usart->STATUS & USART_RX_DATA_READY_bm) != 0) {
 		c = RSu.usart->DATA;						// can only read DATA once
 	} else {
-		return;			// shouldn't ever happen; bit of a fail-safe here
+		return;										// shouldn't ever happen; bit of a fail-safe here
 	}
 
 	// trap signals - do not insert into RX queue
-	if (c == CHAR_RESET) {	 					// trap Kill signal
-		RS.signal = XIO_SIG_RESET;				// set signal value
-		sig_reset();							// call app-specific sig handler
+	if (c == CHAR_RESET) {	 						// trap Kill signal
+		RS.signal = XIO_SIG_RESET;					// set signal value
+		sig_reset();								// call app-specific sig handler
 		return;
 	}
-	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal
+	if (c == CHAR_FEEDHOLD) {						// trap feedhold signal
 		RS.signal = XIO_SIG_FEEDHOLD;
 		sig_feedhold();
 		return;
 	}
-	if (c == CHAR_CYCLE_START) {				// trap end_feedhold signal
+	if (c == CHAR_CYCLE_START) {					// trap end_feedhold signal
 		RS.signal = XIO_SIG_CYCLE_START;
 		sig_cycle_start();
 		return;
 	}
+	// filter out CRs and LFs if they are to be ignored
+	if ((c == CR) && (RS.flag_ignorecr)) return;
+	if ((c == LF) && (RS.flag_ignorelf)) return;
 
-	// normal path
-	if ((--RSu.rx_buf_head) == 0) { 			// advance buffer head with wrap
-		RSu.rx_buf_head = RX_BUFFER_SIZE -1;// -1 avoids the off-by-one error
-	}
-	if (RSu.rx_buf_head != RSu.rx_buf_tail) {	// write char unless buffer full
-		RSu.rx_buf[RSu.rx_buf_head] = c;		// (= USARTC1.DATA;)
+	// normal character path
+	advance_buffer(RSu.rx_buf_head, RX_BUFFER_SIZE);
+	if (RSu.rx_buf_head != RSu.rx_buf_tail) {		// write char unless buffer full
+		RSu.rx_buf[RSu.rx_buf_head] = c;			// (= USARTC1.DATA;)
+		RSu.rx_buf_count++;
+		// flow control detection goes here - should it be necessary
 		return;
 	}
 	// buffer-full handling
-	if ((++RSu.rx_buf_head) > RX_BUFFER_SIZE -1) { // reset the head
+	if ((++RSu.rx_buf_head) > RX_BUFFER_SIZE -1) {	// reset the head
+		RSu.rx_buf_count = RX_BUFFER_SIZE-1;		// reset count for good measure
 		RSu.rx_buf_head = 1;
 	}
-	// activate flow control here or before it gets to this level
 }

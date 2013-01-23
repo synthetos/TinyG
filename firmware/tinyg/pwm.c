@@ -38,10 +38,11 @@
 /***** PWM defines, structures and memory allocation *****/
 
 // defines common to all PWM channels
-#define PWM_TIMER_TYPE	TC1_struct	// PWM uses TC1's
-#define PWM_TIMER_DISABLE 0			// turn timer off (clock = 0 Hz)
-#define PWM_MAX_FREQ (F_CPU/256)	// max frequency with 8-bits duty cycle precision
-#define PWM_MIN_FREQ (F_CPU/64/65536)// min frequency with supported prescaling
+//#define PWM_TIMER_TYPE	TC1_struct	// PWM uses TC1's
+#define PWM_TIMER_t	TC1_t				// PWM uses TC1's
+#define PWM_TIMER_DISABLE 0				// turn timer off (clock = 0 Hz)
+#define PWM_MAX_FREQ (F_CPU/256)		// max frequency with 8-bits duty cycle precision
+#define PWM_MIN_FREQ (F_CPU/64/65536)	// min frequency with supported prescaling
 
 // channel specific defines
 /* CLKSEL is used to configure default PWM clock operating ranges
@@ -64,11 +65,11 @@
 #define PWM2_ISR_vect TCE1_CCB_vect	// must match timer assignments in system.h
 #define PWM2_INTCTRLB		0		// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
 
-struct pwmStruct { 					// one per PWM channel
+typedef struct pwmStruct { 			// one per PWM channel
 	uint8_t ctrla;					// byte needed to active CTRLA (it's dynamic - rest are static)
-	struct TC1_struct *timer;		// assumes TC1 flavor timers used for PWM channels
-};
-static struct pwmStruct pwm[PWMS];	// array of PWMs (usually 2, see system.h)
+	TC1_t *timer;		// assumes TC1 flavor timers used for PWM channels
+} pwmStruct_t;
+static pwmStruct_t pwm[PWMS];		// array of PWMs (usually 2, see system.h)
 
 /***** PWM code *****/
 /* 
@@ -82,16 +83,16 @@ static struct pwmStruct pwm[PWMS];	// array of PWMs (usually 2, see system.h)
 void pwm_init()
 {
 	// setup PWM channel 1
-	memset(&pwm[PWM_1], 0, sizeof(struct pwmStruct));			// clear parent structure 
-	memset(&pwm[PWM_1].timer, 0, sizeof(struct PWM_TIMER_TYPE));// zero out the timer registers
-	pwm[PWM_1].timer = &TIMER_PWM1;			// bind timer structs to PWM struct array
-	pwm[PWM_1].ctrla = PWM1_CTRLA_CLKSEL;	// initialize starting clock operating range
+	memset(&pwm[PWM_1], 0, sizeof(pwmStruct_t));		// clear parent structure 
+	memset(&TIMER_PWM1, 0, sizeof(PWM_TIMER_t));		// zero out the timer registers
+	pwm[PWM_1].timer = &TIMER_PWM1;						// bind timer struct to PWM struct array
+	pwm[PWM_1].ctrla = PWM1_CTRLA_CLKSEL;				// initialize starting clock operating range
 	pwm[PWM_1].timer->CTRLB = PWM1_CTRLB;
-	pwm[PWM_1].timer->INTCTRLB = PWM1_INTCTRLB;// set interrupt level	
+	pwm[PWM_1].timer->INTCTRLB = PWM1_INTCTRLB;			// set interrupt level	
 
 	// setup PWM channel 2
-	memset(&pwm[PWM_2], 0, sizeof(struct pwmStruct));			// clear all values, pointers and status
-	memset(&pwm[PWM_2].timer, 0, sizeof(struct PWM_TIMER_TYPE));// zero out the timer registers
+	memset(&pwm[PWM_2], 0, sizeof(pwmStruct_t));		// clear all values, pointers and status
+	memset(&TIMER_PWM2, 0, sizeof(PWM_TIMER_t));
 	pwm[PWM_2].timer = &TIMER_PWM2;
 	pwm[PWM_2].ctrla = PWM2_CTRLA_CLKSEL;
 	pwm[PWM_2].timer->CTRLB = PWM2_CTRLB;
@@ -189,6 +190,7 @@ uint8_t pwm_set_duty(uint8_t chan, double duty)
 //##### UNIT TESTS ##########################################################
 //###########################################################################
 
+#ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_PWM
 
 void pwm_unit_tests()
@@ -219,4 +221,4 @@ void pwm_unit_tests()
 }
 
 #endif // __UNIT_TEST_PWM
-
+#endif

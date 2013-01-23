@@ -33,35 +33,26 @@
 
 // Choose one: This sets the index size into the cmdArray
 
-//#define INDEX_T int16_t				// use this if there are  > 127 indexed objects
-//#define INDEX_T int8_t			// use this if there are < 127 indexed objects
-//#define NO_INDEX -1					// defined as no match
-//alternate
-#define INDEX_T uint8_t				// use this if there are < 255 indexed objects
-#define NO_INDEX 0xFF				// defined as no match
+//#define index_t uint8_t			// use this if there are < 255 indexed objects
+//#define NO_INDEX 0xFF				// defined as no match
+//#define index_t uint16_t			// use this if there are > 255 indexed objects
+
+//typedef uint8_t index_t;			// if there are < 255 indexed objects
+typedef uint16_t index_t;			// if there are > 255 indexed objects
+#define NO_INDEX (index_t)0xFFFF	// defined as no match
 
 #define CMD_GROUP_LEN 3				// max length of group prefix
 #define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
-//#define CMD_INFIX_LEN 4				// token minus group prefix
 #define CMD_STRING_LEN 80			// original value string or value as a string
 #define CMD_FORMAT_LEN 64			// print formatting string
-#define CMD_STATUS_REPORT_LEN 12	// max number of status report elements - see cfgArray
-									// must also line up in cfgArray, se00 - seXX
 
 /**** cmdObj lists ****
  *
  * 	Commands and groups of commands are processed internally as lists of cmdObj's.
  * 	This isolates the command and config internals from the details of text mode, 
  *	JSON mode and other communications issues. Commands live as an array of 
- *	objects in the body. The body is wrapped by a header that vuagely resembles
- *	an HTTP response header. Structure is:
- *	 - header	(depth 0 - contains the response parent ("r") and body parent ("body")
- *	 - body		(depth 2 - contains the meat of the command / config item(s)
- *	 - status	(depth 1 - contains the response status code and status message
- *	 - checksum	(depth 1 - contains checksum of all previous elements and a terminating object
- *
- *	Depending on the operation, a list will be processed for a variety of starting
- *	points: The header start, the body start, status or checksum elements.
+ *	objects in the body. The body is wrapped by a header that vaguely resembles
+ *	an HTTP response header, and a footer that contains housekeeping information.
  *
  *	Lists are linked together as doubly linked list (although I have yet to find 
  *	a use for the backwards pointer and may remove it). The last element of the list 
@@ -72,10 +63,9 @@
  * 	Because we don't have recursion parent/child nesting relationships are 
  *	captured in a 'depth' variable, This must remain consistent if the curlies 
  *	are to work out. In general you should not have to track depth explicitly 
- *	if you use cmd_clear_cmdObj or functions that call it (including cmd_get_cmdObj(), 
- *	cmd_clear_body(), cmd_clear_message() and some other low-level routines. 
- *	cmd_clear_cmdObj sets depth correctly based on the object's predecessor. 
- *	If you see problems with curlies check the depth values in the lists.
+ *	if you use cmd_new_obj() or functions that call it (e.g. cmd_get_obj()) 
+ *	sets depth correctly based on the object's predecessor. If you see problems 
+ *	with curlies check the depth values in the lists.
  *
  *	Use cmd_print_list() for all JSON and text output. Do not simply run these
  *	through printf. This function does some housekeeping including clearing the 
@@ -92,24 +82,6 @@
  *	of CMD_NAME_LEN and CMD_VALUE_STRING_LEN which are statically allocated 
  *	and should be as short as possible. 
  */
-/*  Tokens, grousp and infixes 
- *
- * 	These 3 short strings are kept in the cmdObj:
- *	  - token
- *	  - group
- *	  - infix
- *
- *	The token is the full mnemonic token used for cmdArray lookup. It is either 
- *	taken directly from the input or assembled from group+token during input
- *	in parent/child JSON cases.
- *	
- *	The group is the group prefix - e.g. xyzabc, 1-4, p1, g54-g59. It may also 
- *	be "sys", but this is a special case. Whereas other group prefixes can be pre-
- *	pended to the infix to make the token, sys is the exception.
- *
- *	The infix is the characters remaining in the token once the group has been stripped.
- *	The infix is used for serializing JSON responses in parent/child cases.
- */
 #define CMD_HEADER_LEN 1			// "b" header
 #define CMD_BODY_LEN 25				// body elements - includes one terminator
 #define CMD_FOOTER_LEN 2			// footer element (includes terminator element)
@@ -118,7 +90,9 @@
 #define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_FOOTER_LEN)
 #define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
 #define CMD_STRING_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN + CMD_FORMAT_LEN +3)
-#define JSON_OUTPUT_STRING_MAX (OUTPUT_BUFFER_LEN)
+
+#define CMD_STATUS_REPORT_LEN 24	// max number of status report elements - see cfgArray
+									// must also line up in cfgArray, se00 - seXX
 
 #define NVM_VALUE_LEN 4				// NVM value length (double, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
@@ -146,9 +120,8 @@ enum cmdType {						// classification of commands
 };
 
 enum tgCommunicationsMode {
-	TG_TEXT_MODE = 0,				// default
-	TG_JSON_MODE
-//	TG_GRBL_MODE
+	TEXT_MODE = 0,					// default
+	JSON_MODE
 };
 
 enum jsonVerbosity {
@@ -167,38 +140,51 @@ enum textVerbosity {
 	TV_VERBOSE						// returns prompt, echos command and all messages
 };
 
-enum qrEnable {						// planner queue enable and verbosity
+enum qrVerbosity {					// planner queue enable and verbosity
 	QR_OFF = 0,						// no response is provided
 	QR_FILTERED,					// queue depth reported only above hi-water mark and below lo-water mark  
 	QR_VERBOSE						// queue depth reported for all buffers
 };
 
-enum textReports {					// text output print modes
+enum srVerbosity {					// status report enable and verbosity
+	SR_OFF = 0,						// no reports
+	SR_FILTERED,					// reports only values that have changed from the last report
+	SR_VERBOSE						// reports all values specified
+};
+
+enum jsonFormats {					// json output print modes
+	JSON_NO_PRINT = 0,				// don't print anything if you find yourself in JSON mode
+	JSON_OBJECT_FORMAT,				// print just the body as a json object
+	JSON_RESPONSE_FORMAT			// print the header/body/footer as a response object
+};
+
+enum textFormats {					// text output print modes
+	TEXT_NO_PRINT = 0,				// don't print anything if you find yourself in TEXT mode
 	TEXT_INLINE_PAIRS,				// print key:value pairs as comma separated pairs
 	TEXT_INLINE_VALUES,				// print values as commas separated values
 	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines with formatted print per line
 };
 
-struct cmdObject {					// depending on use, not all elements may be populated
+typedef struct cmdObject {			// depending on use, not all elements may be populated
 	struct cmdObject *pv;			// pointer to previous object or NULL if first object
 	struct cmdObject *nx;			// pointer to next object or NULL if last object
-	INDEX_T index;					// index of tokenized name, or -1 if no token (optional)
+	index_t index;					// index of tokenized name, or -1 if no token (optional)
 	int8_t depth;					// depth of object in the tree. 0 is root (-1 is invalid)
 	int8_t type;					// see cmdType
 	double value;					// numeric value
 	char token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
 	char group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group
 	char string[CMD_STRING_LEN+1];	// string storage (See note below)
-}; 									// OK, so it's not REALLY an object
-typedef struct cmdObject cmdObj;	// handy typedef for command onjects
-typedef uint8_t (*fptrCmd)(cmdObj *cmd);// required for cmd table access
-typedef void (*fptrPrint)(cmdObj *cmd);	// required for PROGMEM access
-#define CMD_OBJ_CORE (sizeof(cmdObj) - (CMD_STRING_LEN+1))
+} cmdObj_t; 						// OK, so it's not REALLY an object
+
+typedef uint8_t (*fptrCmd)(cmdObj_t *cmd);// required for cmd table access
+typedef void (*fptrPrint)(cmdObj_t *cmd);	// required for PROGMEM access
+#define CMD_OBJ_CORE (sizeof(cmdObj_t) - (CMD_STRING_LEN+1))
 
 // Allocate cmdObj lists
-cmdObj cmd_header[CMD_HEADER_LEN];	// JSON header element
-cmdObj cmd_body[CMD_BODY_LEN];		// cmd_body[0] is the root object
-cmdObj cmd_footer[CMD_FOOTER_LEN];	// JSON footer element
+cmdObj_t cmd_header[CMD_HEADER_LEN];	// JSON header element
+cmdObj_t cmd_body[CMD_BODY_LEN];		// cmd_body[0] is the root object
+cmdObj_t cmd_footer[CMD_FOOTER_LEN];	// JSON footer element
 
 /*
  * Global Scope Functions
@@ -208,27 +194,30 @@ void cfg_init(void);
 uint8_t cfg_text_parser(char *str);
 uint8_t cfg_baud_rate_callback(void);
 
-uint8_t cmd_get(cmdObj *cmd);		// main entry point for GETs
-uint8_t cmd_set(cmdObj *cmd);		// main entry point for SETs
-void cmd_print(cmdObj *cmd);		// main entry point for formatted print
-void cmd_persist(cmdObj *cmd);		// main entry point for persistence
+uint8_t cmd_get(cmdObj_t *cmd);		// main entry point for GETs
+uint8_t cmd_set(cmdObj_t *cmd);		// main entry point for SETs
+void cmd_print(cmdObj_t *cmd);		// main entry point for formatted print
+void cmd_persist(cmdObj_t *cmd);		// main entry point for persistence
 
-cmdObj *cmd_new_obj(cmdObj *cmd);
-void cmd_get_cmdObj(cmdObj *cmd);
-INDEX_T cmd_get_index(const char *group, const char *token);
-uint8_t cmd_get_type(cmdObj *cmd);
+cmdObj_t *cmd_new_obj(cmdObj_t *cmd);
+void cmd_get_cmdObj(cmdObj_t *cmd);
+index_t cmd_get_index(const char *group, const char *token);
+uint8_t cmd_get_type(cmdObj_t *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 
-void cmd_new_list(void);
-void cmd_new_body(cmdObj *cmd);
+void cmd_reset_list(void);
+void cmd_reset_body(void);
 uint8_t cmd_add_object(char *token);
-uint8_t cmd_add_string(char *token, char *string);
-uint8_t cmd_add_integer(char *token, uint32_t value);
-uint8_t cmd_add_float(char *token, double value);
-void cmd_print_list(uint8_t status, uint8_t textmode);
+uint8_t cmd_add_string(char *token, const char *string);
+uint8_t cmd_add_string_P(char *token, const char *string);
+uint8_t cmd_add_integer(char *token, const uint32_t value);
+uint8_t cmd_add_float(char *token, const double value);
+void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags);
+uint8_t cmd_group_is_prefixed(char *group);
+uint8_t cmd_index_is_group(index_t index);
 
-uint8_t cmd_read_NVM_value(cmdObj *cmd);
-uint8_t cmd_write_NVM_value(cmdObj *cmd);
+uint8_t cmd_read_NVM_value(cmdObj_t *cmd);
+uint8_t cmd_write_NVM_value(cmdObj_t *cmd);
 
 #ifdef __DEBUG
 void cfg_dump_NVM(const uint16_t start_record, const uint16_t end_record, char *label);
@@ -288,7 +277,6 @@ struct cfgParameters {
 	double chordal_tolerance;		// arc chordal accuracy setting in mm
 	double estd_segment_usec;		// approximate segment time in microseconds
 //	uint8_t enable_acceleration;	// enable acceleration control
-//	uint8_t outmap[MOTORS];			// array for mapping output bits
 
 	// system group settings
 	double junction_acceleration;	// centripetal acceleration max for cornering
@@ -317,8 +305,10 @@ struct cfgParameters {
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
 
 	// status report configs
-	uint32_t status_report_interval;// in MS. set non-zero to enable
-	INDEX_T status_report_list[CMD_STATUS_REPORT_LEN];
+	uint8_t status_report_verbosity;					// see enum in this file for settings
+	uint32_t status_report_interval;					// in MS. set non-zero to enable
+	index_t status_report_list[CMD_STATUS_REPORT_LEN];	// status report elements to report
+	double status_report_value[CMD_STATUS_REPORT_LEN];	// previous values for filtered reporting
 
 	// coordinate systems and offsets
 	double offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute + G54,G55,G56,G57,G58,G59

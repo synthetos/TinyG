@@ -97,7 +97,7 @@
  */
 void rpt_init_status_report(uint8_t persist_flag)
 {
-	cmdObj cmd;		// used for status report persistence locations
+	cmdObj_t cmd;		// used for status report persistence locations
 	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
 
 	cm.status_report_counter = cfg.status_report_interval;
@@ -105,51 +105,82 @@ void rpt_init_status_report(uint8_t persist_flag)
 	cmd.index = cmd_get_index("","se00");				// set first SR persistence index
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
 		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
+		cfg.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
 		cmd.value = cmd_get_index("", sr_defaults[i]);	// load the index for the SR element
 		cmd_set(&cmd);
 		cmd_persist(&cmd);
 		cmd.index++;
 	}
+	cm.status_report_request = false;
 }
 
-/*	rpt_decr_status_report()  	 - decrement status report counter
- *	rpt_request_status_report()  - force a status report to be sent on next callback
- *	rpt_status_report_callback() - main loop callback to send a report if one is ready
- *	rpt_run_multiline_status_report() - generate a status report in multiline format
- *	rpt_run_status_report()	  	 - populate cmdObj body with status values
+/* 
+ * rpt_run_text_status_report()	- generate a text mode status report in multiline format
+ * rpt_request_status_report()	- request a status report to run after minimum interval
+ * rpt_status_report_rtc_callback()	- real-time clock downcount for minimum reporting interval
+ * rpt_status_report_callback()	- main loop callback to send a report if one is ready
+ *
+ *	Status reports can be request from a number of sources including:
+ *	  - direct request from command line in the form of ? or {"sr:""}
+ *	  - timed requests during machining cycle
+ *	  - filtered request after each Gcode block
+ *
+ *	Status reports are generally returned with minimal delay (from the controller callback), 
+ *	but will not be provided more frequently than the status report interval
  */
+/*
 void rpt_decr_status_report() 
 {
-	if (cm.status_report_counter != 0) cm.status_report_counter--; // stick at zero
+	cm.status_report_request = true;
+//	if (cm.status_report_counter != 0) { cm.status_report_counter--;} // stick at zero
+}
+*/
+void rpt_run_text_status_report()			// multiple line status report
+{
+	rpt_populate_unfiltered_status_report();
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 }
 
 void rpt_request_status_report()
 {
-	cm.status_report_counter = 0; // report will be called from controller dispatcher
+	cm.status_report_request = true;
+//	cm.status_report_counter = 0; 			// report will be called from controller dispatcher
 }
 
-uint8_t rpt_status_report_callback() // called by controller dispatcher
+void rpt_status_report_rtc_callback() 
 {
-	if ((cfg.status_report_interval == 0) ||
+	if (cm.status_report_counter != 0) { cm.status_report_counter--;} // stick at zero
+}
+
+uint8_t rpt_status_report_callback() 		// called by controller dispatcher
+{
+	if ((cfg.status_report_verbosity == SR_OFF) || 
 		(cm.status_report_counter != 0) ||
-		(cm.machine_state == MACHINE_READY)) {
+		(cm.status_report_request == false)) {
 		return (TG_NOOP);
 	}
-	rpt_populate_status_report();
-	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);	// will report in JSON or inline text modes
+	if ((cfg.comm_mode == JSON_MODE) && (cfg.status_report_verbosity == SR_FILTERED)) {
+		if (rpt_populate_filtered_status_report() == true) {
+			cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
+		}
+	} else {
+		rpt_populate_unfiltered_status_report();
+		cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
+	}
+	cm.status_report_request = false;
 	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
 	return (TG_OK);
 }
 
-void rpt_run_multiline_status_report()		// multiple line status report
-{
-	rpt_populate_status_report();
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED);
-}
+/*
+ * rpt_populate_unfiltered_status_report() - populate cmdObj body with status values
+ *
+ *	Designed to be run as a response; i.e. have a "r" header and a footer.
+ */
 
-uint8_t rpt_populate_status_report()
+void rpt_populate_unfiltered_status_report()
 {
-	cmdObj *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_body;
 
 	cmd_new_obj(cmd);						// wipe it first
 	cmd->type = TYPE_PARENT; 				// setup the parent object
@@ -162,27 +193,66 @@ uint8_t rpt_populate_status_report()
 		cmd_get_cmdObj(cmd);
 		cmd = cmd->nx;
 	}
-	return (TG_OK);
+}
+
+/*
+ * rpt_populate_filtered_status_report() - populate cmdObj body with status values
+ *
+ *	Designed to be displayed as a JSON object; i;e; no footer or header
+ *	Returns 'true' if the report has new data, 'false' if there is nothing to report.
+ */
+
+uint8_t rpt_populate_filtered_status_report()
+{
+	cmdObj_t *cmd = cmd_body;
+	uint8_t has_data = false;
+
+	cmd_new_obj(cmd);						// wipe it first
+	cmd->type = TYPE_PARENT; 				// setup the parent object
+	strcpy(cmd->token, "sr");
+//	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
+	cmd = cmd->nx;
+
+	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
+		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
+		cmd_get_cmdObj(cmd);
+		if (cfg.status_report_value[i] == cmd->value) {
+			continue;
+		} else {
+			cfg.status_report_value[i] = cmd->value;
+			cmd = cmd->nx;
+			has_data = true;
+		}
+	}
+	cmd->nx = NULL;							// terminate the body
+/*
+	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
+		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
+		cmd_get_cmdObj(cmd);
+		if (cfg.status_report_value[i] == cmd->value) {
+			cmd->type = TYPE_EMPTY;
+		} else {
+			cfg.status_report_value[i] = cmd->value;
+			has_data = true;
+		}
+		cmd = cmd->nx;
+	}
+*/
+	return (has_data);
 }
 
 /*****************************************************************************
  * Queue Reports
- *
  * rpt_request_queue_report()	- request a queue report with current values
  * rpt_queue_report_callback()	- run the queue report w/stored values
- * rpt_run_queue_report() 		- run a queue report right now
- *
- *	Queue reports are normally run from the callback function, and is much more
- *	efficient than rpt_run_queue_report(), which is only used to report manually
  */
 
-struct qrIndexes {			// static data for queue reports
-	uint8_t request;		// set to true to request a report
-	uint8_t buffers_available;
-	uint8_t prev_available;	// used to filter reports
-	INDEX_T qr;				// index for QR element
+struct qrIndexes {				// static data for queue reports
+	uint8_t request;			// set to true to request a report
+	uint8_t buffers_available;	// stored value used by callback
+	uint8_t prev_available;		// used to filter reports
 };
-static struct qrIndexes qr = { 0,0,0 };		// init to zeros
+static struct qrIndexes qr;
 
 void rpt_request_queue_report() 
 { 
@@ -205,28 +275,15 @@ void rpt_request_queue_report()
 
 uint8_t rpt_queue_report_callback()
 {
-	if (qr.request == false) { return (TG_NOOP);}
+	if (qr.request == false) return (TG_NOOP);
 	qr.request = false;
 
-	cmdObj *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_body;
 	cmd_new_obj(cmd);						// make a qr object
 	sprintf_P(cmd->token, PSTR("qr"));
 	cmd->value = qr.buffers_available;
 	cmd->type = TYPE_INTEGER;
-	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS);// report in JSON or inline text mode
-	return (TG_OK);
-}
-
-uint8_t rpt_run_queue_report()
-{
-	cmdObj *cmd = cmd_body;
-
-	if (qr.qr == 0) {					// cache the report index
-		qr.qr = cmd_get_index("","qr");	// this only happens once
-	}
-	cmd_new_obj(cmd);			 		// build the object
-	cmd->index = qr.qr;
-	cmd_get_cmdObj(cmd);
+	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (TG_OK);
 }
 
@@ -234,6 +291,7 @@ uint8_t rpt_run_queue_report()
  ***** Report Unit Tests ****************************************************
  ****************************************************************************/
 
+#ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_REPORT
 
 void sr_unit_tests(void)
@@ -243,4 +301,5 @@ void sr_unit_tests(void)
 	sr_run_status_report();
 }
 
+#endif
 #endif
