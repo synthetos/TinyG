@@ -1422,7 +1422,7 @@ uint8_t cfg_text_parser(char *str)
 		status = cmd_set(cmd);				// set single value
 		cmd_persist(cmd);
 	}
-	cmd_print_list(status, TEXT_MULTILINE_FORMATTED, 0); // print the results
+	cmd_print_list(status, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT); // print the results
 	return (status);
 }
 
