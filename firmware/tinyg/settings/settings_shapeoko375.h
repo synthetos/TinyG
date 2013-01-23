@@ -54,9 +54,9 @@
 //#define COM_JSON_VERBOSITY		JV_SILENT			// no response is provided for any command
 //#define COM_JSON_VERBOSITY		JV_OMIT_BODY		// response contains no body - footer only
 //#define COM_JSON_VERBOSITY		JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
-//#define COM_JSON_VERBOSITY		JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+#define COM_JSON_VERBOSITY		JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
 //#define COM_JSON_VERBOSITY		JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
-#define COM_JSON_VERBOSITY			JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
+//#define COM_JSON_VERBOSITY		JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
 
 // *** motor settings ***
 

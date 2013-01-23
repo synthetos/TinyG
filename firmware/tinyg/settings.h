@@ -41,8 +41,8 @@
 // These can be overridden in machine profiles by using #undef
 // ADVICE: Check your machine profile before continuing
 
-#define STATUS_REPORT_MIN_MS		200		// milliseconds - enforces a viable minimum
-#define STATUS_REPORT_INTERVAL_MS	200		// milliseconds - set to 0 to disable
+#define STATUS_REPORT_MIN_MS		50		// milliseconds - enforces a viable minimum
+#define STATUS_REPORT_INTERVAL_MS	50		// milliseconds - set to 0 to disable
 #define SR_DEFAULTS "line","posx","posy","posz","posa","vel","unit","momo","stat"
 //#define SR_VERBOSITY				SR_OFF
 #define SR_VERBOSITY				SR_FILTERED
@@ -68,9 +68,9 @@
 //#define JSON_VERBOSITY			JV_SILENT			// no response is provided for any command
 //#define JSON_VERBOSITY			JV_OMIT_BODY		// response contains no body - footer only
 //#define JSON_VERBOSITY			JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
-//#define JSON_VERBOSITY			JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
+#define JSON_VERBOSITY			JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
 //#define JSON_VERBOSITY			JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
-#define JSON_VERBOSITY				JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
+//#define JSON_VERBOSITY			JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
 
 // Queue report settings
 #define QR_VERBOSITY				QR_OFF

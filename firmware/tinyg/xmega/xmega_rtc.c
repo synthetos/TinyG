@@ -31,6 +31,7 @@
 
 #include "../tinyg.h"
 #include "../gpio.h"
+#include "../report.h"
 #include "xmega_rtc.h"
 
 /* 
@@ -82,6 +83,7 @@ ISR(RTC_COMP_vect)
 {
 	// callbacks to whatever you need to happen on each RTC tick go here:
 	gpio_rtc_callback();					// switch debouncing
+	rpt_status_report_rtc_callback();		// status report timing
 
 	// here's the default RTC timer clock
 	++rtc.clock_ticks;					// increment real time clock (unused)

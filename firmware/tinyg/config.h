@@ -152,7 +152,6 @@ enum srVerbosity {					// status report enable and verbosity
 	SR_VERBOSE						// reports all values specified
 };
 
-
 enum jsonFormats {					// json output print modes
 	JSON_NO_PRINT = 0,				// don't print anything if you find yourself in JSON mode
 	JSON_OBJECT_FORMAT,				// print just the body as a json object

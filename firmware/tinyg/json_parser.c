@@ -322,17 +322,15 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 	char *str = out_buf;
 	int8_t initial_depth = cmd->depth;
 	int8_t prev_depth = 0;
-	uint8_t count[JSON_MAX_DEPTH] = { 0 };		// number of elements at the current level
-												// rest of array automatically initialized to zero
-//	for (uint8_t i=0; i<250; i++) { out_buf[i] = 0;}
+	uint8_t need_a_comma = false;
 
 	*str++ = '{'; 								// write opening curly
 	while (true) {
 		if (cmd->type != TYPE_EMPTY) {
-			if ((count[cmd->depth] +=1) > 1) { *str++ = ',';}
+			if (need_a_comma) { *str++ = ',';}
+			need_a_comma = true;
 			str += sprintf(str, "\"%s\":", cmd->token);
-			if (cmd->type == TYPE_PARENT) { *str++ = '{';}
-			else if (cmd->type == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
+			if (cmd->type == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
 			else if (cmd->type == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", cmd->value);}
 			else if (cmd->type == TYPE_FLOAT)	{ str += sprintf(str, "%0.3f", cmd->value);}
 			else if (cmd->type == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",cmd->string);}
@@ -341,17 +339,21 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 				if (cmd->value == false) { str += sprintf(str, "false");}
 				else { str += sprintf(str, "true"); }
 			}
+			if (cmd->type == TYPE_PARENT) { 
+				*str++ = '{';
+				need_a_comma = false;
+			}
 		}
 		if ((cmd = cmd->nx) == NULL) { break;}	// end of the list
 		if (cmd->depth < prev_depth) {
-			count[cmd->depth] = 0;				// reset the element counter
+			need_a_comma = true;
 			*str++ = '}';						// and close the level
 		}
 		prev_depth = cmd->depth;
 	}
 	// closing curlies and NEWLINE
-	while (prev_depth-- > initial_depth) { str += sprintf(str, "}");}
-	str += sprintf(str, "}\n");
+	while (prev_depth-- > initial_depth) { *str++ = '}';}
+	str += sprintf(str, "}\n");	// using sprintf for this last one ensures a NUL termination
 	return (str - out_buf);
 }
 
@@ -359,7 +361,8 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
  * js_print_json_object() - serialize and print the cmdObj array as a report w/o header & footer
  *
  *	Ignores JSON verbosity settings and everything else - just serializes the list & prints
- *	Useful for reports and other simple output
+ *	Useful for reports and other simple output.
+ *	Object list should be terminated by cmd->nx == NULL (or the body will print the previous footer)
  */
 void js_print_json_object(cmdObj_t *cmd)
 {
@@ -402,9 +405,9 @@ void js_print_json_response(cmdObj_t *cmd, uint8_t status)
 	// Assumes cmdObjs are ordered in the body as "gc", "msg", "n" in positions 0,1,2
 	// "msg" and "n" may or may not be present in the body depending on conditions
 	if ((cmd_get_type(cmd_body) == CMD_TYPE_GCODE) && (verbosity < JV_VERBOSE)) {
-		if (verbosity >= JV_OMIT_GCODE_BODY) { cmd->type = TYPE_EMPTY;}
-		if (verbosity >= JV_GCODE_LINENUM_ONLY) { cmd->nx->nx->type = TYPE_EMPTY;}
-		if (verbosity >= JV_GCODE_MESSAGES) { cmd->nx->type = TYPE_EMPTY;}
+		if (verbosity >= JV_OMIT_GCODE_BODY) { cmd_body->type = TYPE_EMPTY;}
+		if (verbosity >= JV_GCODE_LINENUM_ONLY) { cmd_body->nx->nx->type = TYPE_EMPTY;}
+		if (verbosity >= JV_GCODE_MESSAGES) { cmd_body->nx->type = TYPE_EMPTY;}
 	}
 
 	// Footer processing

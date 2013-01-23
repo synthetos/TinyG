@@ -2020,7 +2020,6 @@ void cmd_reset_list()							// clear the header, response body and footer
 	return;
 }
 
-//void cmd_reset_body(cmdObj_t *cmd)			// clear the body list
 void cmd_reset_body()
 {
 	cmdObj_t *cmd = cmd_body;
@@ -2150,7 +2149,7 @@ void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags)
 			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted();}
 		}
 	}
-//	cmd_reset_body(cmd_body);		// clear the cmd body to get ready for the next use
+	cmd_reset_list();		// clear the cmd body to get ready for the next use
 }
 
 void _print_text_inline_pairs()

@@ -44,7 +44,8 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint8_t cycle_start_flag;		// flag to end feedhold
 	uint8_t homing_state;			// homing cycle sub-state machine
 	uint8_t homed[AXES];			// individual axis homing flags
-	uint32_t status_report_counter;
+	uint8_t status_report_request;	// set true to request a sr
+	uint32_t status_report_counter;	// status report RTC counter for minimum timing
 	uint8_t	g28_flag;				// true = complete a G28 move
 	uint8_t	g30_flag;				// true = complete a G30 move
 	uint8_t g10_persist_flag;		//.G10 changed offsets - persist them

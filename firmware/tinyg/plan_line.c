@@ -1283,7 +1283,8 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	//	  TG_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
 
 	if (status == TG_EAGAIN) { 
-		rpt_decr_status_report(); 				// continue running mr buffer
+//		rpt_decr_status_report(); 				// continue running mr buffer
+		rpt_request_status_report(); 			// continue reporting mr buffer
 	} else {
 		mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
 		mr.section_state = MOVE_STATE_OFF;

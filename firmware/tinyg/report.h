@@ -32,6 +32,7 @@
 void rpt_init_status_report(uint8_t persist_flag);
 void rpt_decr_status_report(void);
 void rpt_request_status_report(void);
+void rpt_status_report_rtc_callback(void);
 uint8_t rpt_status_report_callback(void);
 void rpt_run_text_status_report(void);
 void rpt_populate_unfiltered_status_report(void);

@@ -199,7 +199,7 @@ static uint8_t _dispatch()
 		return (status);
 	}
 	tg.linelen = strlen(tg.in_buf)+1;
-	cmd_reset_body();							// clear the cmd body to get ready for use
+	cmd_reset_list();							// clear the cmd body to get ready for use
 
 	// dispatch the new text line
 	switch (toupper(tg.in_buf[0])) {
@@ -410,7 +410,7 @@ void tg_print_message_number(uint8_t msgnum)
 void tg_print_loading_configs_message(void)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
-	cmd_reset_body();
+	cmd_reset_list();
 	cmd_add_object("fv");
 	cmd_add_object("fb");
 	cmd_add_string_P("msg", PSTR("Loading configs from EEPROM"));
@@ -421,7 +421,7 @@ void tg_print_loading_configs_message(void)
 void tg_print_initializing_message(void)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
-	cmd_reset_body();
+	cmd_reset_list();
 	cmd_add_object("fv");
 	cmd_add_object("fb");
 	cmd_add_string_P("msg", PSTR(INIT_CONFIGURATION_MESSAGE)); // see settings.h & sub-headers
@@ -432,7 +432,7 @@ void tg_print_initializing_message(void)
 void tg_print_system_ready_message(void)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
-	cmd_reset_body();
+	cmd_reset_list();
 	cmd_add_object("fv");
 	cmd_add_object("fb");
 	cmd_add_string_P("msg", PSTR("SYSTEM READY"));

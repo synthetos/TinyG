@@ -107,7 +107,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"gc\":\"g2\"}\n");// G0 smoke test in JSON
 
 	// text parser test cases
-//	xio_queue_RX_string_usb("$\n");				// sys request
+//	xio_queue_RX_string_usb("?\n");				// text mode status report
+	xio_queue_RX_string_usb("$$\n");			// sys request
 //	xio_queue_RX_string_usb("$ec=1\n");			// turn CR expansion on
 //	xio_queue_RX_string_usb("$qr\n");			// invoke QR report
 //	xio_queue_RX_string_usb("$n\n");			// ubergroup request
@@ -336,8 +337,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 // If you want to run multi-line cases you need to set RX buffer to 1024 in xio_usart.h
 
 // JSON parser tests		  // set a group
-	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sn\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
-	xio_queue_RX_string_usb("{\"x\":\"\"}\n"); // retrieve a group
+//	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sn\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
+//	xio_queue_RX_string_usb("{\"x\":\"\"}\n"); // retrieve a group
 
 //	xio_queue_RX_string_usb("{\"gc\":\"g0 x3 y4 z5.5 (comment line)\"}\n");
 //	xio_queue_RX_string_usb("{\"xfr\":1200}\n");
