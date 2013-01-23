@@ -128,13 +128,6 @@ void rpt_init_status_report(uint8_t persist_flag)
  *	Status reports are generally returned with minimal delay (from the controller callback), 
  *	but will not be provided more frequently than the status report interval
  */
-/*
-void rpt_decr_status_report() 
-{
-	cm.status_report_request = true;
-//	if (cm.status_report_counter != 0) { cm.status_report_counter--;} // stick at zero
-}
-*/
 void rpt_run_text_status_report()			// multiple line status report
 {
 	rpt_populate_unfiltered_status_report();
@@ -144,7 +137,6 @@ void rpt_run_text_status_report()			// multiple line status report
 void rpt_request_status_report()
 {
 	cm.status_report_request = true;
-//	cm.status_report_counter = 0; 			// report will be called from controller dispatcher
 }
 
 void rpt_status_report_rtc_callback() 
@@ -225,19 +217,6 @@ uint8_t rpt_populate_filtered_status_report()
 		}
 	}
 	cmd->nx = NULL;							// terminate the body
-/*
-	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
-		cmd_get_cmdObj(cmd);
-		if (cfg.status_report_value[i] == cmd->value) {
-			cmd->type = TYPE_EMPTY;
-		} else {
-			cfg.status_report_value[i] = cmd->value;
-			has_data = true;
-		}
-		cmd = cmd->nx;
-	}
-*/
 	return (has_data);
 }
 
@@ -283,6 +262,7 @@ uint8_t rpt_queue_report_callback()
 	sprintf_P(cmd->token, PSTR("qr"));
 	cmd->value = qr.buffers_available;
 	cmd->type = TYPE_INTEGER;
+	cmd->nx = NULL;							// terminate the list
 	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (TG_OK);
 }
