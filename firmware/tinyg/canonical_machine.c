@@ -1101,6 +1101,7 @@ void cm_optional_program_stop()
 
 void cm_program_end()				// M2, M30
 {
+//	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
 	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_END,0);
 }
 
