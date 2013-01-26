@@ -2149,6 +2149,7 @@ void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags)
 			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted();}
 		}
 	}
+//	prinf("resetting cmd list");
 	cmd_reset_list();		// clear the cmd body to get ready for the next use
 }
 
@@ -2165,9 +2166,7 @@ void _print_text_inline_pairs()
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
-		if (cmd->type != TYPE_EMPTY) {
-			fprintf_P(stderr,PSTR(","));
-		}		
+		if (cmd->type != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}		
 	}
 }
 
@@ -2184,9 +2183,7 @@ void _print_text_inline_values()
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
-		if (cmd->type != TYPE_EMPTY) {
-			fprintf_P(stderr,PSTR(","));
-		}
+		if (cmd->type != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
 	}
 }
 

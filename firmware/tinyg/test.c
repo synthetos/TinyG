@@ -106,12 +106,16 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0x2\n");			// G0 smoke test
 //	xio_queue_RX_string_usb("{\"gc\":\"g2\"}\n");// G0 smoke test in JSON
 
+//	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");
+	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");// small homing - set minimal profile parameters)
+	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");// small homing - set minimal profile parameters)
+
 	// text parser test cases
 //	xio_queue_RX_string_usb("?\n");				// text mode status report
 //	xio_queue_RX_string_usb("$$\n");			// sys request
 //	xio_queue_RX_string_usb("$ec=1\n");			// turn CR expansion on
 //	xio_queue_RX_string_usb("$qr\n");			// invoke QR report
-	xio_queue_RX_string_usb("$ej=1\n");			// enable JSON mode
+//	xio_queue_RX_string_usb("$ej=1\n");			// enable JSON mode
 //	xio_queue_RX_string_usb("$n\n");			// ubergroup request
 //	xio_queue_RX_string_usb("$xvm=16,000\n");	// comma skipping
 //	xio_queue_RX_string_usb("$a\n");			// match a group
@@ -269,6 +273,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g10 L2 p2 x10 y11 z12\n");
 
 /* G28 and G30 homing tests */
+//	xio_queue_RX_string_usb("{\"hom\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");// small homing - set minimal profile parameters)
+//	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");// small homing - set minimal profile parameters)
 //	xio_queue_RX_string_usb("g28.2x0\n");
 //	xio_queue_RX_string_usb("g28.1\n");			// G28.1 OK
 //	xio_queue_RX_string_usb("g28.1x10y10\n");	// G28.1 specification error

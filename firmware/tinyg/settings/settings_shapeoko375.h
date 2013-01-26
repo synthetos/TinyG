@@ -41,8 +41,8 @@
 
 #define JUNCTION_DEVIATION	0.01		// default value, in mm - smaller is faster
 #define JUNCTION_ACCELERATION 2000000	// 2 million - centripetal acceleration around corners
-//#define SWITCH_TYPE SW_TYPE_NORMALLY_OPEN
-#define SWITCH_TYPE SW_TYPE_NORMALLY_CLOSED
+#define SWITCH_TYPE SW_TYPE_NORMALLY_OPEN
+//#define SWITCH_TYPE SW_TYPE_NORMALLY_CLOSED
 
 // *** settings.h overrides ***
 
@@ -94,6 +94,8 @@
 #define X_VELOCITY_MAX			16000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX			220					// xtm		travel between switches or crashes
+//#define X_TRAVEL_MAX			0.1		//+++++++++++++++++++++++++++++++++++
+
 #ifdef __PLAN_R2
 #define X_JERK_MAX				6000000				// xjm
 #else
@@ -106,9 +108,16 @@
 //#define X_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
 //#define X_SWITCH_MODE_MAX		SW_MODE_LIMIT		// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
 #define X_SEARCH_VELOCITY		3000				// xsv		minus means move to minimum switch
+
 #define X_LATCH_VELOCITY		100					// xlv		mm/min
 #define X_LATCH_BACKOFF			20					// xlb		mm
 #define X_ZERO_BACKOFF			3					// xzb		mm
+
+//+++++++++++++++++++++++++++++++
+//#define X_LATCH_VELOCITY		3000 					// xlv		mm/min
+//#define X_LATCH_BACKOFF			0.1					// xlb		mm
+//#define X_ZERO_BACKOFF			0.1					// xzb		mm
+//++++++++++++++++++++++++++++++++
 
 #define Y_AXIS_MODE				AXIS_STANDARD
 #define Y_VELOCITY_MAX			16000
