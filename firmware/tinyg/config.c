@@ -1338,18 +1338,18 @@ void cfg_init()
 //	Do not clear as the version and build numbers have already been set by tg_init()
 
 	cmdObj_t cmd;
-	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
-	cmd_reset_list();					// setup the cmd object lists. Do this first.
-	cfg.comm_mode = JSON_MODE;		// initial value until EEPROM is read
+	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
+	cmd_reset_list();						// setup the cmd object lists. Do this first.
+	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
 	cfg.nvm_base_addr = NVM_BASE_ADDR;
 	cfg.nvm_profile_base = cfg.nvm_base_addr;
-	cmd.index = 0;					// this will read the first record in NVM
+	cmd.index = 0;							// this will read the first record in NVM
 	cmd_read_NVM_value(&cmd);
 
 	// Case (1) NVM is not setup or not in revision
 	if (cmd.value != cfg.fw_build) {
 		cmd.value = true;
-		_set_defa(&cmd);			// this subroutine called from here and from the $defa=1 command
+		_set_defa(&cmd);		// this subroutine called from here and from the $defa=1 command
 
 	// Case (2) NVM is setup and in revision
 	} else {
@@ -1402,7 +1402,8 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 
 uint8_t cfg_text_parser(char *str)
 {
-	cmdObj_t *cmd = cmd_body;					// point at first object in the body
+//	cmd_reset_list();						//+++++++++++++
+	cmdObj_t *cmd = cmd_body;				// point at first object in the body
 	uint8_t status = TG_OK;
 
 	if (str[0] == '?') {					// handle status report case

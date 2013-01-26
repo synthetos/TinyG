@@ -56,6 +56,9 @@
 #include "tests/test_050_mudflap.h"	// mudflap test - entire drawing
 #include "tests/test_051_braid.h"	// braid test - partial drawing
 
+const char PROGMEM test_file_open_in[] = "g20";
+const char PROGMEM test_file_open_mm[] = "g21";
+
 /*
  * tg_test() - system tests from FLASH invoked by $test=n command
  *
@@ -83,6 +86,8 @@ uint8_t tg_test(cmdObj_t *cmd)
 		case 13: { xio_open(XIO_DEV_PGM, PGMFILE(&test_coordinate_offsets),PGM_FLAGS); break;}
 		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
+		case 100: { xio_open(XIO_DEV_PGM, PGMFILE(&test_file_open_in),PGM_FLAGS); break;}
+		case 101: { xio_open(XIO_DEV_PGM, PGMFILE(&test_file_open_mm),PGM_FLAGS); break;}
 		default: {
 			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
 			return (TG_ERROR);
@@ -106,9 +111,12 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0x2\n");			// G0 smoke test
 //	xio_queue_RX_string_usb("{\"gc\":\"g2\"}\n");// G0 smoke test in JSON
 
+//	xio_queue_RX_string_usb("$test=100\n");
+//	xio_queue_RX_string_usb("$test=101\n");
+
 //	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");// small homing - set minimal profile parameters)
-	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");// small homing - set minimal profile parameters)
+//	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");// small homing - set minimal profile parameters)
+//	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");// small homing - set minimal profile parameters)
 
 	// text parser test cases
 //	xio_queue_RX_string_usb("?\n");				// text mode status report
