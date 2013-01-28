@@ -207,7 +207,7 @@ double cm_get_model_work_position(uint8_t axis)
 		return (gm.position[axis] - cm_get_coord_offset(axis));
 	}
 }
-/*
+
 double *cm_get_model_work_position_vector(double position[]) 
 {
 	for (uint8_t i=0; i<AXES; i++) {
@@ -215,7 +215,7 @@ double *cm_get_model_work_position_vector(double position[])
 	}
 	return (position);
 }
-*/
+
 double cm_get_model_canonical_target(uint8_t axis) 
 {
 	return (gm.target[axis]);

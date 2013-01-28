@@ -448,7 +448,7 @@ void cm_set_tool_number(uint8_t tool);
 double cm_get_coord_offset(uint8_t axis);
 double *cm_get_coord_offset_vector(double vector[]);
 double cm_get_model_work_position(uint8_t axis);
-//double *cm_get_model_work_position_vector(double position[]);
+double *cm_get_model_work_position_vector(double position[]);
 double cm_get_model_canonical_target(uint8_t axis);
 double *cm_get_model_canonical_position_vector(double vector[]);
 double cm_get_runtime_machine_position(uint8_t axis);
