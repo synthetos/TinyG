@@ -1335,7 +1335,7 @@ void cmd_persist(cmdObj_t *cmd)
 void cfg_init()
 {
 //	You can assume the cfg struct has been zeroed by a hard reset. 
-//	Do not clear as the version and build numbers have already been set by tg_init()
+//	Do not clear it as the version and build numbers have already been set by tg_init()
 
 	cmdObj_t *cmd = cmd_reset_list();
 	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
@@ -1363,35 +1363,6 @@ void cfg_init()
 	}
 	rpt_init_status_report(true);// requires special treatment (persist = true)
 }
-/*
-	cmdObj_t cmd;
-	cmd_reset_list();						// setup the cmd object lists. Do this first.
-	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
-	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
-	cfg.nvm_base_addr = NVM_BASE_ADDR;
-	cfg.nvm_profile_base = cfg.nvm_base_addr;
-	cmd.index = 0;							// this will read the first record in NVM
-	cmd_read_NVM_value(&cmd);
-
-	// Case (1) NVM is not setup or not in revision
-	if (cmd.value != cfg.fw_build) {
-		cmd.value = true;
-		_set_defa(&cmd);		// this subroutine called from here and from the $defa=1 command
-
-	// Case (2) NVM is setup and in revision
-	} else {
-		tg_print_loading_configs_message();
-		for (cmd.index=0; _index_is_single(cmd.index); cmd.index++) {
-			if (pgm_read_byte(&cfgArray[cmd.index].flags) & F_INITIALIZE) {
-				strcpy_P(cmd.token, cfgArray[cmd.index].token);		// read the token from the array
-				cmd_read_NVM_value(&cmd);
-				cmd_set(&cmd);
-			}
-		}
-	}
-	rpt_init_status_report(true);// requires special treatment (persist = true)
-*/
-
 
 /*
  * _set_defa() - reset NVM with default values for active profile
@@ -1776,7 +1747,6 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 
 	// special processing for system groups and stripping tokens for groups
 	if (cmd->group[0] != NUL) {
-//		if (strstr(cmd->group, "sys") != NULL) { 
 		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_NOSTRIP) {
 			cmd->group[0] = NUL;
 		} else {
@@ -2033,7 +2003,7 @@ cmdObj_t *cmd_reset_list()							// clear the header, response body and footer
 	cmd++;
 
 	// setup body
-//	cmd_reset_body();
+	cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		if (i == 0) { cmd->pv = cmd_header;} 
 		else { cmd->pv = (cmd-1);}
@@ -2061,27 +2031,6 @@ cmdObj_t *cmd_reset_list()							// clear the header, response body and footer
 	cmd->nx->nx = NULL;
 	return (cmd_body);
 }
-/*
-void cmd_reset_body()
-{
-	cmdObj_t *cmd = cmd_body;
-
-	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (i == 0) {
-			cmd->pv = cmd_header;
-		} else {
-			cmd->pv = (cmd-1);
-		}
-		cmd->nx = (cmd+1);
-		cmd->index = 0;
-		cmd->token[0] = NUL;
-		cmd->depth = 1;
-		cmd->type = TYPE_EMPTY;
-		cmd++;
-	}
-	(--cmd)->nx = cmd_footer;				// correct last element
-}
-*/
 
 uint8_t cmd_add_object(char *token)			// add an object to the body using a token
 {
