@@ -109,7 +109,6 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 #ifdef __CANNED_STARTUP
 
 /* partkam arc failure part_copy.nc
-*/
 	xio_queue_RX_string_usb("G0 Z5\n");
 	xio_queue_RX_string_usb("T0 M6\n");
 	xio_queue_RX_string_usb("G17\n");
@@ -118,7 +117,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 	xio_queue_RX_string_usb("G92 X40.30203045685279 Y40.38553299492386\n");
 //	xio_queue_RX_string_usb("G1 Z-0.25 F200\n");
 	xio_queue_RX_string_usb("G3 X40.21319796954315 Y40.472081218274106 I-2.5 J-2.5 F1500\n");
-
+*/
 
 //	xio_queue_RX_string_usb("g0x2\n");			// G0 smoke test
 //	xio_queue_RX_string_usb("{\"gc\":\"g2\"}\n");// G0 smoke test in JSON
@@ -127,8 +126,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$test=101\n");
 
 //	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");
-//	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");// small homing - set minimal profile parameters)
-//	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");// small homing - set minimal profile parameters)
+	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");
+//	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");
 
 	// text parser test cases
 //	xio_queue_RX_string_usb("?\n");				// text mode status report

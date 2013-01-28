@@ -173,10 +173,8 @@ uint8_t rpt_status_report_callback() 		// called by controller dispatcher
 
 void rpt_populate_unfiltered_status_report()
 {
-	cmd_reset_list();
 	cmdObj_t *cmd = cmd_body;
-//	cmd_new_obj(cmd);						// wipe it first
-
+	cmd_reset_list();
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
@@ -201,29 +199,11 @@ uint8_t rpt_populate_filtered_status_report()
 
 	cmd_reset_list();
 	cmdObj_t *cmd = cmd_body;
-//	cmd_new_obj(cmd);						// wipe it first
 
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
 	cmd = cmd->nx;
-/*
-	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
-		cmd_get_cmdObj(cmd);
-		if (cfg.status_report_value[i] == cmd->value) {	// float == comparison runs the risk of overreporting. So be it
-			cmd->type = TYPE_EMPTY;
-		} else {
-			cfg.status_report_value[i] = cmd->value;
-			has_data = true;
-		}
-		if (cmd == cmd_footer) {
-			cmd->pv->nx = NULL;						// back up one and terminate the body
-		}
-		cmd = cmd->nx;
-	}
-*/
-
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
 		cmd_get_cmdObj(cmd);
@@ -232,43 +212,11 @@ uint8_t rpt_populate_filtered_status_report()
 		} else {
 			cfg.status_report_value[i] = cmd->value;
 			cmd = cmd->nx;
-
-			 //++++++++++++++++++++ patch
-			if (cmd == NULL) {
-/*				printf("\n**** NULL cmd pointer - bug in 363.09 revision\n");
-				cmdObj_t *tmp = cmd_body;
-				printf("  %s\n", (tmp)++->token);
-				printf("  %s\n", (tmp)++->token);
-				printf("  %s\n", (tmp)++->token);
-				printf("  %s\n", (tmp)++->token);
-				printf("  %s\n", (tmp)++->token);
-				printf("  %s\n", (tmp)++->token);
-				printf("  %s\n", (tmp)++->token);
-				printf("  %s\n", (tmp)++->token);
-				printf("  %s\n", (tmp)++->token);
-				printf("  %s\n", (tmp)++->token);
-				printf("  %s\n", (tmp)++->token);
-*/
-				return (false);
-			}
+//			if (cmd == NULL) { return (false);}	// This is never supposed to happen
 			has_data = true;
 		}
 	}
 	cmd->pv->nx = NULL;						// back up one and terminate the body
-
-/*
-	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
-		cmd_get_cmdObj(cmd);
-		if (cfg.status_report_value[i] == cmd->value) {
-			cmd->type = TYPE_EMPTY;
-		} else {
-			cfg.status_report_value[i] = cmd->value;
-			has_data = true;
-		}
-		cmd = cmd->nx;
-	}
-*/
 	return (has_data);
 }
 

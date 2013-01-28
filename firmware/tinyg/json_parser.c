@@ -93,9 +93,8 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd);
 
 void js_json_parser(char *str)
 {
-	uint8_t status;
-//	cmd_reset_list();					// get a fresh cmdObj list
-	status = _json_parser_kernal(str);
+	cmd_reset_list();					// get a fresh cmdObj list
+	uint8_t status = _json_parser_kernal(str);
 	cmd_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	rpt_request_status_report();	// generate an incremental status report if there are gcode model changes
 }
@@ -369,7 +368,7 @@ void js_print_json_object(cmdObj_t *cmd)
 {
 	js_serialize_json(cmd, tg.out_buf);
 	fprintf(stderr, "%s", tg.out_buf);
-//	cmd_reset_list();							// +++++++++++++++++++++++++++ clear the cmd body to get ready for use
+//	cmd_reset_list();					//++++++++++++++++++++ REMOVE AFTER TESTING
 }
 
 /*
@@ -428,7 +427,7 @@ void js_print_json_response(cmdObj_t *cmd, uint8_t status)
 	while (tg.out_buf[strcount2] != ',') { strcount2--; }	// find start of checksum
 	sprintf(tg.out_buf + strcount2 + 1, "%d%s", compute_checksum(tg.out_buf, strcount2), tail);
 	fprintf(stderr, "%s", tg.out_buf);
-//	cmd_reset_list();							// +++++++++++++++++++++++++++ clear the cmd body to get ready for use
+//	cmd_reset_list();							// REMOVE AFTER TESTING +++++++++++++++++++++++++++ 
 }
 
 //###########################################################################

@@ -94,7 +94,6 @@
 #define X_VELOCITY_MAX			16000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX			220					// xtm		travel between switches or crashes
-//#define X_TRAVEL_MAX			0.1		//+++++++++++++++++++++++++++++++++++
 
 #ifdef __PLAN_R2
 #define X_JERK_MAX				6000000				// xjm
@@ -112,12 +111,6 @@
 #define X_LATCH_VELOCITY		100					// xlv		mm/min
 #define X_LATCH_BACKOFF			20					// xlb		mm
 #define X_ZERO_BACKOFF			3					// xzb		mm
-
-//+++++++++++++++++++++++++++++++
-//#define X_LATCH_VELOCITY		3000 					// xlv		mm/min
-//#define X_LATCH_BACKOFF			0.1					// xlb		mm
-//#define X_ZERO_BACKOFF			0.1					// xzb		mm
-//++++++++++++++++++++++++++++++++
 
 #define Y_AXIS_MODE				AXIS_STANDARD
 #define Y_VELOCITY_MAX			16000

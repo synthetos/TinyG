@@ -117,8 +117,7 @@ uint8_t ar_arc( const double target[],
 	}
 
 	// load the move struct for an arc
-	cm_get_model_canonical_position_vector(ar.position);// set initial arc position +++++++++++++++++++++++
-//	cm_get_model_work_position_vector(ar.position);		// set initial arc position including any active coord system and offsets
+	cm_get_model_canonical_position_vector(ar.position);// set initial arc position
 	copy_axis_vector(ar.endpoint, target);				// save the arc endpoint
 	copy_axis_vector(ar.work_offset, work_offset);		// propagate the work offset
 	ar.time = minutes;
@@ -131,22 +130,14 @@ uint8_t ar_arc( const double target[],
 	ar.angular_travel = angular_travel;
 	ar.linear_travel = linear_travel;
 	
-	// Find the number of segments. Find minimum number of segments needed to:
-	//	(1) achieve chordal tolerance, 
-	//	(2) stay above the minimum arc segment time.
-	//	(3) stay above the minimum arc segment length, 
-//	ar.segments = floor(min3( (ar.length / sqrt(4*cfg.chordal_tolerance * (2 * radius - cfg.chordal_tolerance))), // thank you, Sonny
-//							  (ar.time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC),
-//							  (ar.length / cfg.arc_segment_len) ));
-//
-
+	// Find the minimum number of segments that meets these constraints...
 	double segments_required_for_chordal_accuracy = ar.length / sqrt(4*cfg.chordal_tolerance * (2 * radius - cfg.chordal_tolerance));
 	double segments_required_for_minimum_distance = ar.length / cfg.arc_segment_len;
 	double segments_required_for_minimum_time = ar.time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
 	ar.segments = floor(min3(segments_required_for_chordal_accuracy,
 							 segments_required_for_minimum_distance,
 							 segments_required_for_minimum_time));
-	ar.segments = max(ar.segments,1);
+	ar.segments = max(ar.segments,1);		//...but it at least 1 segment
 
 	ar.segment_count = (uint32_t)ar.segments;
 	ar.segment_theta = ar.angular_travel / ar.segments;

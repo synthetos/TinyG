@@ -1338,8 +1338,8 @@ void cfg_init()
 //	Do not clear as the version and build numbers have already been set by tg_init()
 
 	cmdObj_t cmd;
-	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
 	cmd_reset_list();						// setup the cmd object lists. Do this first.
+	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
 	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
 	cfg.nvm_base_addr = NVM_BASE_ADDR;
 	cfg.nvm_profile_base = cfg.nvm_base_addr;
@@ -1402,7 +1402,7 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 
 uint8_t cfg_text_parser(char *str)
 {
-//	cmd_reset_list();						//+++++++++++++
+	cmd_reset_list();
 	cmdObj_t *cmd = cmd_body;				// point at first object in the body
 	uint8_t status = TG_OK;
 
@@ -2150,8 +2150,7 @@ void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags)
 			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted();}
 		}
 	}
-//	prinf("resetting cmd list");
-	cmd_reset_list();		// clear the cmd body to get ready for the next use
+//	cmd_reset_list();		// REMOVE AFTER TESTING ++++++++++++++++++++++
 }
 
 void _print_text_inline_pairs()
