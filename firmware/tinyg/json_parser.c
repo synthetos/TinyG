@@ -93,8 +93,8 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd);
 
 void js_json_parser(char *str)
 {
-	uint8_t status;
-	status = _json_parser_kernal(str);
+	cmd_reset_list();					// get a fresh cmdObj list
+	uint8_t status = _json_parser_kernal(str);
 	cmd_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	rpt_request_status_report();	// generate an incremental status report if there are gcode model changes
 }

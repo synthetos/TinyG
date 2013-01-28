@@ -101,6 +101,7 @@
 
 /*
  * xio_init() - initialize entire xio sub-system
+ * xio_reset_working_flags()
  */
 void xio_init()
 {
@@ -115,6 +116,15 @@ void xio_init()
 	xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
 	xio_open(XIO_DEV_SPI2, 0, SPI_FLAGS);
 }
+
+void xio_reset_working_flags(xioDev_t *d)
+{
+	d->signal = 0;
+	d->flag_in_line = 0;
+	d->flag_eol = 0;
+	d->flag_eof = 0;
+}
+
 
 /*
  * xio_open_generic() - generic (and partial) open function for any device

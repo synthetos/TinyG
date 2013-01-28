@@ -199,7 +199,6 @@ static uint8_t _dispatch()
 		return (status);
 	}
 	tg.linelen = strlen(tg.in_buf)+1;
-	cmd_reset_list();							// clear the cmd body to get ready for use
 
 	// dispatch the new text line
 	switch (toupper(tg.in_buf[0])) {

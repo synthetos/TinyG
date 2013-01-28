@@ -179,6 +179,7 @@ FILE *xio_open_spi(const uint8_t dev, const char *addr, const flags_t flags)
 	xioSpi_t *dx = (xioSpi_t *)d->x;
 
 	memset (dx, 0, sizeof(xioSpi_t));
+	xio_reset_working_flags(d);
 	xio_ctrl_generic(d, flags);
 
 	// setup internal RX/TX control buffers

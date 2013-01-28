@@ -131,6 +131,7 @@ FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags)
 	xioUsart_t *dx = (xioUsart_t *)d->x;
 
 	memset (dx, 0, sizeof(xioUsart_t));				// clear all values
+	xio_reset_working_flags(d);
 	xio_ctrl_generic(d, flags);						// setup control flags	
 	if (d->flag_xoff) dx->fc_state = FC_IN_XON;		// transfer flow control setting 
 

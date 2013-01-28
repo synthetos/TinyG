@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <avr/pgmspace.h>
 
 #include "tinyg.h"
@@ -93,14 +94,28 @@
 /* rpt_init_status_report()
  *
  *	Call this function to completely re-initialze the status report
- *	Sets SR to hard-coded default and re-initializes sr values in NVM
+ *	Sets SR list to hard-coded defaults and re-initializes sr values in NVM
  */
 void rpt_init_status_report(uint8_t persist_flag)
 {
+	cmdObj_t *cmd = cmd_reset_list();	// used for status report persistence locations
+	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
+	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
+
+	cmd->index = cmd_get_index("","se00");				// set first SR persistence index
+	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
+		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
+		cfg.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
+		cmd->value = cmd_get_index("", sr_defaults[i]);	// load the index for the SR element
+		cmd_set(cmd);
+		cmd_persist(cmd);
+		cmd->index++;
+	}
+	cm.status_report_request = false;
+/*
 	cmdObj_t cmd;		// used for status report persistence locations
 	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
-
-	cm.status_report_counter = cfg.status_report_interval;
+	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
 
 	cmd.index = cmd_get_index("","se00");				// set first SR persistence index
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
@@ -112,6 +127,7 @@ void rpt_init_status_report(uint8_t persist_flag)
 		cmd.index++;
 	}
 	cm.status_report_request = false;
+*/
 }
 
 /* 
@@ -128,6 +144,7 @@ void rpt_init_status_report(uint8_t persist_flag)
  *	Status reports are generally returned with minimal delay (from the controller callback), 
  *	but will not be provided more frequently than the status report interval
  */
+
 void rpt_run_text_status_report()			// multiple line status report
 {
 	rpt_populate_unfiltered_status_report();
@@ -172,9 +189,9 @@ uint8_t rpt_status_report_callback() 		// called by controller dispatcher
 
 void rpt_populate_unfiltered_status_report()
 {
-	cmdObj_t *cmd = cmd_body;
-
-	cmd_new_obj(cmd);						// wipe it first
+//	cmdObj_t *cmd = cmd_body;
+//	cmd_reset_list();
+	cmdObj_t *cmd = cmd_reset_list();
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
@@ -193,30 +210,31 @@ void rpt_populate_unfiltered_status_report()
  *	Designed to be displayed as a JSON object; i;e; no footer or header
  *	Returns 'true' if the report has new data, 'false' if there is nothing to report.
  */
-
 uint8_t rpt_populate_filtered_status_report()
 {
-	cmdObj_t *cmd = cmd_body;
 	uint8_t has_data = false;
 
-	cmd_new_obj(cmd);						// wipe it first
+//	cmd_reset_list();
+//	cmdObj_t *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_reset_list();
+
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
 	cmd = cmd->nx;
-
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
 		cmd_get_cmdObj(cmd);
-		if (cfg.status_report_value[i] == cmd->value) {
+		if (cfg.status_report_value[i] == cmd->value) {	// float == comparison runs the risk of overreporting. So be it
 			continue;
 		} else {
 			cfg.status_report_value[i] = cmd->value;
 			cmd = cmd->nx;
+//			if (cmd == NULL) { return (false);}	// This is never supposed to happen
 			has_data = true;
 		}
 	}
-	cmd->nx = NULL;							// terminate the body
+	cmd->pv->nx = NULL;						// back up one and terminate the body
 	return (has_data);
 }
 
@@ -262,7 +280,6 @@ uint8_t rpt_queue_report_callback()
 	sprintf_P(cmd->token, PSTR("qr"));
 	cmd->value = qr.buffers_available;
 	cmd->type = TYPE_INTEGER;
-	cmd->nx = NULL;							// terminate the list
 	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (TG_OK);
 }

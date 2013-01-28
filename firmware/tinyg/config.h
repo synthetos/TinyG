@@ -205,8 +205,9 @@ index_t cmd_get_index(const char *group, const char *token);
 uint8_t cmd_get_type(cmdObj_t *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 
-void cmd_reset_list(void);
-void cmd_reset_body(void);
+//void cmd_reset_list(void);
+//void cmd_reset_body(void);
+cmdObj_t *cmd_reset_list(void);
 uint8_t cmd_add_object(char *token);
 uint8_t cmd_add_string(char *token, const char *string);
 uint8_t cmd_add_string_P(char *token, const char *string);

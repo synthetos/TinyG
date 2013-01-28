@@ -130,13 +130,14 @@ uint8_t ar_arc( const double target[],
 	ar.angular_travel = angular_travel;
 	ar.linear_travel = linear_travel;
 	
-	// Find the number of segments. Find minimum number of segments needed to:
-	//	(1) achieve chordal tolerance, 
-	//	(2) stay above the minimum arc segment time.
-	//	(3) stay above the minimum arc segment length, 
-	ar.segments = floor(min3( (ar.length / sqrt(4*cfg.chordal_tolerance * (2 * radius - cfg.chordal_tolerance))),
-							  (ar.time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC),
-							  (ar.length / cfg.arc_segment_len) ));
+	// Find the minimum number of segments that meets these constraints...
+	double segments_required_for_chordal_accuracy = ar.length / sqrt(4*cfg.chordal_tolerance * (2 * radius - cfg.chordal_tolerance));
+	double segments_required_for_minimum_distance = ar.length / cfg.arc_segment_len;
+	double segments_required_for_minimum_time = ar.time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
+	ar.segments = floor(min3(segments_required_for_chordal_accuracy,
+							 segments_required_for_minimum_distance,
+							 segments_required_for_minimum_time));
+	ar.segments = max(ar.segments,1);		//...but is at least 1 segment
 
 	ar.segment_count = (uint32_t)ar.segments;
 	ar.segment_theta = ar.angular_travel / ar.segments;
@@ -440,8 +441,8 @@ uint8_t _get_arc_radius()
  */
 
 static double _get_arc_time (const double linear_travel, 	// in mm
-								const double angular_travel, 	// in radians
-								const double radius)			// in mm
+							 const double angular_travel, 	// in radians
+							 const double radius)			// in mm
 {
 	double tmp;
 	double move_time=0;	// picks through the times and retains the slowest

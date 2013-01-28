@@ -1337,19 +1337,46 @@ void cfg_init()
 //	You can assume the cfg struct has been zeroed by a hard reset. 
 //	Do not clear as the version and build numbers have already been set by tg_init()
 
-	cmdObj_t cmd;
-	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
-	cmd_reset_list();					// setup the cmd object lists. Do this first.
-	cfg.comm_mode = JSON_MODE;		// initial value until EEPROM is read
+	cmdObj_t *cmd = cmd_reset_list();
+	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
+	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
 	cfg.nvm_base_addr = NVM_BASE_ADDR;
 	cfg.nvm_profile_base = cfg.nvm_base_addr;
-	cmd.index = 0;					// this will read the first record in NVM
+	cmd->index = 0;							// this will read the first record in NVM
+	cmd_read_NVM_value(cmd);
+
+	// Case (1) NVM is not setup or not in revision
+	if (cmd->value != cfg.fw_build) {
+		cmd->value = true;
+		_set_defa(cmd);		// this subroutine called from here and from the $defa=1 command
+
+	// Case (2) NVM is setup and in revision
+	} else {
+		tg_print_loading_configs_message();
+		for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
+			if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
+				strcpy_P(cmd->token, cfgArray[cmd->index].token);	// read the token from the array
+				cmd_read_NVM_value(cmd);
+				cmd_set(cmd);
+			}
+		}
+	}
+	rpt_init_status_report(true);// requires special treatment (persist = true)
+}
+/*
+	cmdObj_t cmd;
+	cmd_reset_list();						// setup the cmd object lists. Do this first.
+	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
+	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
+	cfg.nvm_base_addr = NVM_BASE_ADDR;
+	cfg.nvm_profile_base = cfg.nvm_base_addr;
+	cmd.index = 0;							// this will read the first record in NVM
 	cmd_read_NVM_value(&cmd);
 
 	// Case (1) NVM is not setup or not in revision
 	if (cmd.value != cfg.fw_build) {
 		cmd.value = true;
-		_set_defa(&cmd);			// this subroutine called from here and from the $defa=1 command
+		_set_defa(&cmd);		// this subroutine called from here and from the $defa=1 command
 
 	// Case (2) NVM is setup and in revision
 	} else {
@@ -1363,7 +1390,8 @@ void cfg_init()
 		}
 	}
 	rpt_init_status_report(true);// requires special treatment (persist = true)
-}
+*/
+
 
 /*
  * _set_defa() - reset NVM with default values for active profile
@@ -1402,7 +1430,9 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 
 uint8_t cfg_text_parser(char *str)
 {
-	cmdObj_t *cmd = cmd_body;					// point at first object in the body
+//	cmd_reset_list();
+//	cmdObj_t *cmd = cmd_body;				// point at first object in the body
+	cmdObj_t *cmd = cmd_reset_list();		// returns first object in the body
 	uint8_t status = TG_OK;
 
 	if (str[0] == '?') {					// handle status report case
@@ -1977,8 +2007,8 @@ static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
 /********************************************************************************
  ***** cmdObj list initialization and manipulation ******************************
  ********************************************************************************
- * cmd_new_list()	 - clear entire header, body and footer for a new use
- * cmd_new_body()	 - clear the body for a new use 
+ * cmd_reset_list()	 - clear entire header, body and footer for a new use
+ * cmd_reset_body()	 - clear the body for a new use 
  * cmd_add_object()	 - write contents of parameter to  first free object in the body
  * cmd_add_string()	 - add a string object to end of cmd body
  * cmd_add_string_P()- add a program memory string as a string object to end of cmd body
@@ -1990,7 +2020,7 @@ static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
  *	integer as a string if all you want to do is display it.
  */
 
-void cmd_reset_list()							// clear the header, response body and footer
+cmdObj_t *cmd_reset_list()							// clear the header, response body and footer
 {
 	// setup header ("r" parent)
 	cmdObj_t *cmd = cmd_header;
@@ -2003,7 +2033,19 @@ void cmd_reset_list()							// clear the header, response body and footer
 	cmd++;
 
 	// setup body
-	cmd_reset_body();
+//	cmd_reset_body();
+	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
+		if (i == 0) { cmd->pv = cmd_header;} 
+		else { cmd->pv = (cmd-1);}
+
+		cmd->nx = (cmd+1);
+		cmd->index = 0;
+		cmd->token[0] = NUL;
+		cmd->depth = 1;
+		cmd->type = TYPE_EMPTY;
+		cmd++;
+	}
+	(--cmd)->nx = cmd_footer;				// correct last element
 
 	// setup footer
 	cmd = cmd_footer;
@@ -2017,9 +2059,9 @@ void cmd_reset_list()							// clear the header, response body and footer
 	cmd->nx->type = TYPE_EMPTY;				// setup terminating element
 	cmd->nx->pv = (cmd-1);
 	cmd->nx->nx = NULL;
-	return;
+	return (cmd_body);
 }
-
+/*
 void cmd_reset_body()
 {
 	cmdObj_t *cmd = cmd_body;
@@ -2039,6 +2081,7 @@ void cmd_reset_body()
 	}
 	(--cmd)->nx = cmd_footer;				// correct last element
 }
+*/
 
 uint8_t cmd_add_object(char *token)			// add an object to the body using a token
 {
@@ -2149,7 +2192,6 @@ void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags)
 			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted();}
 		}
 	}
-	cmd_reset_list();		// clear the cmd body to get ready for the next use
 }
 
 void _print_text_inline_pairs()
@@ -2165,9 +2207,7 @@ void _print_text_inline_pairs()
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
-		if (cmd->type != TYPE_EMPTY) {
-			fprintf_P(stderr,PSTR(","));
-		}		
+		if (cmd->type != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}		
 	}
 }
 
@@ -2184,9 +2224,7 @@ void _print_text_inline_values()
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
-		if (cmd->type != TYPE_EMPTY) {
-			fprintf_P(stderr,PSTR(","));
-		}
+		if (cmd->type != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
 	}
 }
 

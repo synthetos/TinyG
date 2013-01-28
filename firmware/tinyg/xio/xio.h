@@ -156,6 +156,7 @@ extern struct controllerSingleton tg;	// needed by init() for default source
 
 // public functions (virtual class) 
 void xio_init(void);
+void xio_reset_working_flags(xioDev_t *d);
 FILE *xio_open(const uint8_t dev, const char *addr, const flags_t flags);
 int xio_ctrl(const uint8_t dev, const flags_t flags);
 int xio_gets(const uint8_t dev, char *buf, const int size);

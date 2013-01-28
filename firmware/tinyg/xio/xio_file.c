@@ -93,6 +93,7 @@ FILE * xio_open_file(const uint8_t dev, const char *addr, const flags_t flags)
 	xioFile_t *dx = (xioFile_t *)d->x;
 
 	memset (dx, 0, sizeof(xioFile_t));				// clear all values
+	xio_reset_working_flags(d);
 	xio_ctrl_generic(d, flags);						// setup control flags
 	dx->filebase_P = (PROGMEM const char *)addr;	// might want to range check this
 	dx->max_offset = PGM_ADDR_MAX;
