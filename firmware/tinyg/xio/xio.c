@@ -125,7 +125,6 @@ void xio_reset_working_flags(xioDev_t *d)
 	d->flag_eof = 0;
 }
 
-
 /*
  * xio_open_generic() - generic (and partial) open function for any device
  *

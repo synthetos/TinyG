@@ -865,7 +865,7 @@ static uint8_t _set_hv(cmdObj_t *cmd)
 
 static uint8_t _get_id(cmdObj_t *cmd) 
 {
-	sys_get_id(cmd->string);
+	sys_get_id(cmd->string);		//+++++++++++++++++++++++
 	cmd->type = TYPE_STRING;
 	return (TG_OK);
 }
@@ -1401,8 +1401,6 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 
 uint8_t cfg_text_parser(char *str)
 {
-//	cmd_reset_list();
-//	cmdObj_t *cmd = cmd_body;				// point at first object in the body
 	cmdObj_t *cmd = cmd_reset_list();		// returns first object in the body
 	uint8_t status = TG_OK;
 
@@ -1656,7 +1654,6 @@ static void _print_rot(cmdObj_t *cmd)
  * _get_axis()		- return the axis as an index or -1 if na 
  * _get_pos_axis()	- return axis number for pos values or -1 if none - e.g. posx
  */
-
 static char *_get_format(const index_t i, char *format)
 {
 	strncpy_P(format, (PGM_P)pgm_read_word(&cfgArray[i].format), CMD_FORMAT_LEN);
@@ -1711,7 +1708,6 @@ static int8_t _get_pos_axis(const index_t i)
  *	linear table scan of the PROGMEM strings, which of course could be further 
  *	optimized with indexes or hashing.
  */
-
 //index_t cmd_get_max_index() { return (CMD_INDEX_MAX);}
 
 cmdObj_t *cmd_new_obj(cmdObj_t *cmd)	// clear a single cmdObj structure
@@ -1906,7 +1902,6 @@ uint8_t cmd_group_is_prefixed(char *group)
 	return (true);
 }
 
-
 /**** UberGroup Operations ****
  * Uber groups are groups of groups organized for convenience:
  *	- motors	- group of all motor groups
@@ -1989,11 +1984,11 @@ static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
  *	precision due to the cast to a double. Sometimes it's better to load an 
  *	integer as a string if all you want to do is display it.
  */
-
-cmdObj_t *cmd_reset_list()							// clear the header, response body and footer
+cmdObj_t *cmd_reset_list()					// clear the header, response body and footer
 {
-	// setup header ("r" parent)
-	cmdObj_t *cmd = cmd_header;
+//	cmdStr.p = cmdStr.str;					// reset the shared string
+	cmdStr.i = 0;							// reset the shared string
+	cmdObj_t *cmd = cmd_header;				// setup header ("r" parent)
 	cmd->pv = NULL;
 	cmd->nx = cmd_body;
 	cmd->index = 0;
@@ -2002,12 +1997,10 @@ cmdObj_t *cmd_reset_list()							// clear the header, response body and footer
 	cmd->token[0] = 'r';
 	cmd++;
 
-	// setup body
-	cmd = cmd_body;
+	cmd = cmd_body;							// setup body
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		if (i == 0) { cmd->pv = cmd_header;} 
 		else { cmd->pv = (cmd-1);}
-
 		cmd->nx = (cmd+1);
 		cmd->index = 0;
 		cmd->token[0] = NUL;
@@ -2017,19 +2010,26 @@ cmdObj_t *cmd_reset_list()							// clear the header, response body and footer
 	}
 	(--cmd)->nx = cmd_footer;				// correct last element
 
-	// setup footer
-	cmd = cmd_footer;
+	cmd = cmd_footer;						// setup footer
 	cmd->pv = &cmd_body[CMD_BODY_LEN-1];
 	cmd->nx = (cmd+1);
 	cmd->token[0] = 'f';
 	cmd->token[1] = NUL;
-	cmd->depth = 1;							// THIS MAY NEED TO CHANGE TO ONE
+	cmd->depth = 1;
 	cmd->type = TYPE_ARRAY;
 
 	cmd->nx->type = TYPE_EMPTY;				// setup terminating element
 	cmd->nx->pv = (cmd-1);
 	cmd->nx->nx = NULL;
 	return (cmd_body);
+}
+
+char *strcpy_sh(char *in_string)
+{
+	if ((cmdStr.i + strlen(in_string)) > CMD_SHARED_STRING_LEN) { return (NULL);}
+	char *tmp = &cmdStr.str[cmdStr.i];		// 
+	cmdStr.i += strlen(in_string);
+	return (strcpy(tmp, in_string));
 }
 
 uint8_t cmd_add_object(char *token)			// add an object to the body using a token

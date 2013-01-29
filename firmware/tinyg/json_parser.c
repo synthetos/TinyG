@@ -233,6 +233,7 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_
 		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (TG_JSON_SYNTAX_ERROR);} // find the end of the string
 		*tmp = NUL;
 		strncpy(cmd->string, *pstr, CMD_STRING_LEN);// copy it regardless of length
+		cmd->pstr = strcpy_sh(*pstr);							// +++++++++++++++++++++++++++
 		if (strlen(*pstr) >= CMD_STRING_LEN) {
 			*((*pstr) + CMD_STRING_LEN) = NUL;		// terminate for error display purposes
 			if (_gcode_comment_overrun_hack(cmd) == false) {

@@ -43,8 +43,9 @@ typedef uint16_t index_t;			// if there are > 255 indexed objects
 
 #define CMD_GROUP_LEN 3				// max length of group prefix
 #define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
-#define CMD_STRING_LEN 80			// original value string or value as a string
+#define CMD_STRING_LEN 128			// original value string or value as a string
 #define CMD_FORMAT_LEN 64			// print formatting string
+#define CMD_SHARED_STRING_LEN 256	// shared string for string values
 
 /**** cmdObj lists ****
  *
@@ -74,23 +75,17 @@ typedef uint16_t index_t;			// if there are > 255 indexed objects
  *	Notes:
  *
  *	CMD_BODY_LEN needs to allow for one parent JSON object and enough children
- *	to complete the largest possible operation. Right now this is the axis group 
- *	query which has 20 elements for the rotary axes. 
+ *	to complete the largest possible operation - usually the status report.
  *
  *	CMD_TOTAL_LEN - this is the biggest memory hog in the whole system with 
  *	the possible exception of the planner queue. It is dominated by the size 
  *	of CMD_NAME_LEN and CMD_VALUE_STRING_LEN which are statically allocated 
  *	and should be as short as possible. 
  */
-#define CMD_HEADER_LEN 1			// "b" header
+#define CMD_HEADER_LEN 1			// "r" header
 #define CMD_BODY_LEN 25				// body elements - includes one terminator
 #define CMD_FOOTER_LEN 2			// footer element (includes terminator element)
-
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
-#define CMD_TOTAL_LEN (CMD_HEADER_LEN + CMD_BODY_LEN + CMD_FOOTER_LEN)
-#define CMD_NAMES_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN +2)
-#define CMD_STRING_FIELD_LEN (CMD_TOKEN_LEN + CMD_STRING_LEN + CMD_FORMAT_LEN +3)
-
 #define CMD_STATUS_REPORT_LEN 24	// max number of status report elements - see cfgArray
 									// must also line up in cfgArray, se00 - seXX
 
@@ -175,16 +170,23 @@ typedef struct cmdObject {			// depending on use, not all elements may be popula
 	char token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
 	char group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group
 	char string[CMD_STRING_LEN+1];	// string storage (See note below)
+	char *pstr;						// pointer to shared allocation string
 } cmdObj_t; 						// OK, so it's not REALLY an object
+
+typedef struct cmdString {			// shared string object
+//	char *p;
+	uint8_t i;						// current string array index
+	char str[CMD_SHARED_STRING_LEN];
+} cmdStr_t;
 
 typedef uint8_t (*fptrCmd)(cmdObj_t *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj_t *cmd);	// required for PROGMEM access
-#define CMD_OBJ_CORE (sizeof(cmdObj_t) - (CMD_STRING_LEN+1))
 
-// Allocate cmdObj lists
+// Allocate cmdObj lists and shared string storage
 cmdObj_t cmd_header[CMD_HEADER_LEN];	// JSON header element
 cmdObj_t cmd_body[CMD_BODY_LEN];		// cmd_body[0] is the root object
 cmdObj_t cmd_footer[CMD_FOOTER_LEN];	// JSON footer element
+cmdStr_t cmdStr;
 
 /*
  * Global Scope Functions
@@ -205,9 +207,8 @@ index_t cmd_get_index(const char *group, const char *token);
 uint8_t cmd_get_type(cmdObj_t *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 
-//void cmd_reset_list(void);
-//void cmd_reset_body(void);
 cmdObj_t *cmd_reset_list(void);
+char *strcpy_sh(char *instr);
 uint8_t cmd_add_object(char *token);
 uint8_t cmd_add_string(char *token, const char *string);
 uint8_t cmd_add_string_P(char *token, const char *string);
