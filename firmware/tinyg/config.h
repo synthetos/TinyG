@@ -169,11 +169,8 @@ typedef struct cmdObject {			// depending on use, not all elements may be popula
 	double value;					// numeric value
 	char token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
 	char group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group
-	char string[CMD_STRING_LEN+1];	// string storage (See note below)
+//	char string[CMD_STRING_LEN+1];	// string storage (See note below)
 	char (*stringp)[];				// pointer to array of characters from shared character array
-//	char **pstr;					// pointer to shared character array
-//	char (*pstr)[];					// pointer to shared allocation string
-//	char *pstr[];					// pointer to shared allocation string
 } cmdObj_t; 						// OK, so it's not REALLY an object
 
 typedef struct cmdString {			// shared string object
@@ -182,7 +179,7 @@ typedef struct cmdString {			// shared string object
 } cmdStr_t;
 
 typedef uint8_t (*fptrCmd)(cmdObj_t *cmd);// required for cmd table access
-typedef void (*fptrPrint)(cmdObj_t *cmd);	// required for PROGMEM access
+typedef void (*fptrPrint)(cmdObj_t *cmd);// required for PROGMEM access
 
 // Allocate cmdObj lists and shared string storage
 cmdObj_t cmd_header[CMD_HEADER_LEN];	// JSON header element
@@ -210,8 +207,11 @@ uint8_t cmd_get_type(cmdObj_t *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 
 cmdObj_t *cmd_reset_list(void);
-uint8_t cmd_copy_string(char (**stringp)[], const char *src);
-uint8_t cmd_copy_string_P(char (**stringp)[], const char *src_P);
+uint8_t cmd_copy_string(cmdObj_t *cmd, const char *src);
+uint8_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P);
+
+//uint8_t cmd_copy_string(char (**stringp)[], const char *src);
+//uint8_t cmd_copy_string_P(char (**stringp)[], const char *src_P);
 
 uint8_t cmd_add_object(char *token);
 uint8_t cmd_add_string(char *token, const char *string);

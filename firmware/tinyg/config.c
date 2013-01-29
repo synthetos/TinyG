@@ -866,7 +866,9 @@ static uint8_t _set_hv(cmdObj_t *cmd)
 static uint8_t _get_id(cmdObj_t *cmd) 
 {
 //	sys_get_id(cmd->string);		//+++++++++++++++++++
-	sys_get_id(*(cmd->stringp));
+	char tmp[SYS_ID_LEN];
+	sys_get_id(tmp);
+	ritorno(cmd_copy_string(cmd, tmp));
 	cmd->type = TYPE_STRING;
 	return (TG_OK);
 }
@@ -951,8 +953,8 @@ static uint8_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value)
 	cmd->value = (double)value;
 	cmd->type = TYPE_INTEGER;
 //+++++++++++++++++++++++++++++
-	strncpy_P(cmd->string, (PGM_P)pgm_read_word(&msg[value*2]), CMD_STRING_LEN); // hack alert: direct computation of index
-//	cmd->pstr = cmd_copy_string_P((PGM_P)pgm_read_word(&msg[value*2])); // hack alert: direct computation of index
+//	strncpy_P(cmd->string, (PGM_P)pgm_read_word(&msg[value*2]), CMD_STRING_LEN); // hack alert: direct computation of index
+	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg[value*2]))); // hack alert: direct computation of index
 	return (TG_OK);
 //	return((char *)pgm_read_word(&msg[(uint8_t)value]));
 }
@@ -964,9 +966,10 @@ static uint8_t _get_stat(cmdObj_t *cmd)
 /* how to do this w/o calling the helper routine - See 331.09 for original routines
 	cmd->value = cm_get_machine_state();
 	cmd->type = TYPE_INTEGER;
-	strncpy_P(cmd->string_value,(PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN);
+	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN));
 	return (TG_OK);
  */
+//	strncpy_P(cmd->string_value,(PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN);
 }
 
 static uint8_t _get_macs(cmdObj_t *cmd)
@@ -1078,19 +1081,20 @@ static void _print_pos(cmdObj_t *cmd)
 
 static uint8_t _get_gc(cmdObj_t *cmd)
 {
-	strncpy(cmd->string, tg.in_buf, CMD_STRING_LEN);	//++++++++++++++++++++++
-//	if ((cmd->pstr = cmd_copy_string(tg.in_buf)) == NULL) { return (TG_INPUT_EXCEEDS_MAX_LENGTH);}
+//	strncpy(cmd->string, tg.in_buf, CMD_STRING_LEN);	//++++++++++++++++++++++
+	ritorno(cmd_copy_string(cmd, tg.in_buf));
 	cmd->type = TYPE_STRING;
 	return (TG_OK);
 }
 
 static uint8_t _run_gc(cmdObj_t *cmd)
 {
-	strncpy(tg.in_buf, cmd->string, INPUT_BUFFER_LEN);	//++++++++++++++++++++++++
-	return(gc_gcode_parser(cmd->string));
-//	uint8_t status = gc_gcode_parser(cmd->string);
-//	uint8_t status = gc_gcode_parser(*cmd->pstr);
-//	return (status);
+//	strncpy(tg.in_buf, cmd->string, INPUT_BUFFER_LEN);	//++++++++++++++++++++++++
+
+//	strncpy(tg.in_buf, *cmd->stringp, INPUT_BUFFER_LEN);	//++++++++++++++++++++++++
+//	return(gc_gcode_parser(cmd->string));
+
+	return(gc_gcode_parser(*cmd->stringp));
 }
 
 static uint8_t _run_home(cmdObj_t *cmd)
@@ -1614,7 +1618,8 @@ static void _print_str(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, _get_format(cmd->index, format), cmd->string);
+//	fprintf(stderr, _get_format(cmd->index, format), cmd->string); ++++++++++++++++++++++++++
+	fprintf(stderr, _get_format(cmd->index, format), *cmd->stringp);
 }
 
 
@@ -1723,7 +1728,7 @@ cmdObj_t *cmd_new_obj(cmdObj_t *cmd)	// clear a single cmdObj structure
 	cmd->value = 0;
 	cmd->token[0] = NUL;
 	cmd->group[0] = NUL;
-	cmd->string[0] = NUL;
+//	cmd->string[0] = NUL;++++++++++++++++++++++++++
 
 	if (cmd->pv == NULL) { 				// set depth correctly
 		cmd->depth = 0;
@@ -2030,6 +2035,16 @@ cmdObj_t *cmd_reset_list()					// clear the header, response body and footer
 	return (cmd_body);
 }
 
+uint8_t cmd_copy_string(cmdObj_t *cmd, const char *src)
+{
+	if ((cmdStr.i + strlen(src)) > CMD_SHARED_STRING_LEN) { return (TG_BUFFER_FULL);}
+	char *dst = &cmdStr.string[cmdStr.i];
+	strcpy(dst, src);						// copy string to current head position
+	cmdStr.i += strlen(src);				// advance head for next string
+	cmd->stringp = (char (*)[])dst;
+	return (TG_OK);
+}
+/*
 uint8_t cmd_copy_string(char (**stringp)[], const char *src)
 {
 	if ((cmdStr.i + strlen(src)) > CMD_SHARED_STRING_LEN) { return (TG_BUFFER_FULL);}
@@ -2039,12 +2054,13 @@ uint8_t cmd_copy_string(char (**stringp)[], const char *src)
 	*stringp = (char (*)[])dst;
 	return (TG_OK);
 }
+*/
 
-uint8_t cmd_copy_string_P(char (**stringp)[], const char *src_P)
+uint8_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P)
 {
-	char buf[CMD_SHARED_STRING_LEN]; 
+	char buf[CMD_SHARED_STRING_LEN];
 	strncpy_P(buf, src_P, CMD_SHARED_STRING_LEN);
-	return (cmd_copy_string(stringp, buf));
+	return (cmd_copy_string(cmd, buf));
 }
 
 uint8_t cmd_add_object(char *token)			// add an object to the body using a token
@@ -2074,8 +2090,8 @@ uint8_t cmd_add_string(char *token, const char *string)	// add a string object t
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
-//		cmd->token[CMD_TOKEN_LEN-1] = NUL;	// safety measure
-		strncpy(cmd->string, string, CMD_STRING_LEN);
+//		strncpy(cmd->string, string, CMD_STRING_LEN);++++++++++++++++++++++++++
+		ritorno(cmd_copy_string(cmd, string));
 		cmd->index = cmd_get_index("", cmd->token);
 		cmd->type = TYPE_STRING;
 		return (TG_OK);
@@ -2167,7 +2183,7 @@ void _print_text_inline_pairs()
 			case TYPE_PARENT:	{ cmd = cmd->nx; continue; }
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
-			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), cmd->token, cmd->string); break;}
+			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), cmd->token, *cmd->stringp); break;} //++++++++++++++++++++++++++
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
@@ -2184,7 +2200,7 @@ void _print_text_inline_values()
 			case TYPE_PARENT:	{ cmd = cmd->nx; continue; }
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%1.3f"), cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), cmd->value); break;}
-			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), cmd->string); break;}
+			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *cmd->stringp); break;}//++++++++++++++++++++++++++
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
