@@ -170,13 +170,15 @@ typedef struct cmdObject {			// depending on use, not all elements may be popula
 	char token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
 	char group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group
 	char string[CMD_STRING_LEN+1];	// string storage (See note below)
-	char *pstr;						// pointer to shared allocation string
+	char (*stringp)[];				// pointer to array of characters from shared character array
+//	char **pstr;					// pointer to shared character array
+//	char (*pstr)[];					// pointer to shared allocation string
+//	char *pstr[];					// pointer to shared allocation string
 } cmdObj_t; 						// OK, so it's not REALLY an object
 
 typedef struct cmdString {			// shared string object
-//	char *p;
 	uint8_t i;						// current string array index
-	char str[CMD_SHARED_STRING_LEN];
+	char string[CMD_SHARED_STRING_LEN];
 } cmdStr_t;
 
 typedef uint8_t (*fptrCmd)(cmdObj_t *cmd);// required for cmd table access
@@ -208,7 +210,9 @@ uint8_t cmd_get_type(cmdObj_t *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 
 cmdObj_t *cmd_reset_list(void);
-char *strcpy_sh(char *instr);
+uint8_t cmd_copy_string(char (**stringp)[], const char *src);
+uint8_t cmd_copy_string_P(char (**stringp)[], const char *src_P);
+
 uint8_t cmd_add_object(char *token);
 uint8_t cmd_add_string(char *token, const char *string);
 uint8_t cmd_add_string_P(char *token, const char *string);

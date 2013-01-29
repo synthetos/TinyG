@@ -49,9 +49,10 @@
 // local scope stuff
 
 uint8_t _json_parser_kernal(char *str);
-static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_t *depth);
+//static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_t *depth);
+static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth);
 static uint8_t _normalize_json_string(char *str, uint16_t size);
-static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd);
+//static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd);
 
 /****************************************************************************
  * js_json_parser() - exposed part of JSON parser
@@ -112,7 +113,8 @@ uint8_t _json_parser_kernal(char *str)
 	// parse the JSON command into the cmd body
 	do {
 		if (--i == 0) { return (TG_JSON_TOO_MANY_PAIRS); }			// length error
-		if ((status = _get_nv_pair(cmd, &str, group, &depth)) > TG_EAGAIN) { // erred out
+//		if ((status = _get_nv_pair(cmd, &str, group, &depth)) > TG_EAGAIN) { // erred out
+		if ((status = _get_nv_pair(cmd, &str, &depth)) > TG_EAGAIN) { // erred out
 			return (status);
 		}
 		// propagate the group from previous NV pair (if relevant)
@@ -189,7 +191,8 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
  *	cfgArray.
  */
 
-static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_t *depth)
+//static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_t *depth)
+static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
 {
 	char *tmp;
 	char terminators[] = {"},"};
@@ -233,13 +236,14 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_
 		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (TG_JSON_SYNTAX_ERROR);} // find the end of the string
 		*tmp = NUL;
 		strncpy(cmd->string, *pstr, CMD_STRING_LEN);// copy it regardless of length
-		cmd->pstr = strcpy_sh(*pstr);							// +++++++++++++++++++++++++++
-		if (strlen(*pstr) >= CMD_STRING_LEN) {
-			*((*pstr) + CMD_STRING_LEN) = NUL;		// terminate for error display purposes
-			if (_gcode_comment_overrun_hack(cmd) == false) {
-				return (TG_INPUT_EXCEEDS_MAX_LENGTH);
-			}
-		}
+//		if (strlen(*pstr) >= CMD_STRING_LEN) {
+//			*((*pstr) + CMD_STRING_LEN) = NUL;		// terminate for error display purposes
+//			if (_gcode_comment_overrun_hack(cmd) == false) {
+//				return (TG_INPUT_EXCEEDS_MAX_LENGTH);
+//			}
+//		}
+		ritorno(cmd_copy_string(&(cmd->stringp), *pstr));
+		printf("%s\n", *cmd->stringp);				// ++++++++++++++++++++++++
 		*pstr = ++tmp;
 
 	// boolean true/false
@@ -283,7 +287,7 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_
  *	overrun is cuased by as comment. The comment will be truncated. If the 
  *	comment happens to be a message, well tough noogies, bucko.
  */
-
+/*
 static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
 {
 	if (strstr(cmd->string,"(") == NULL) {
@@ -291,7 +295,7 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
 	}
 	return (true);
 }
-
+*/
 /****************************************************************************
  * js_serialize_json() - make a JSON object string from JSON object array
  *

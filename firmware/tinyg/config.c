@@ -865,7 +865,8 @@ static uint8_t _set_hv(cmdObj_t *cmd)
 
 static uint8_t _get_id(cmdObj_t *cmd) 
 {
-	sys_get_id(cmd->string);		//+++++++++++++++++++++++
+//	sys_get_id(cmd->string);		//+++++++++++++++++++
+	sys_get_id(*(cmd->stringp));
 	cmd->type = TYPE_STRING;
 	return (TG_OK);
 }
@@ -949,7 +950,9 @@ static uint8_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value)
 {
 	cmd->value = (double)value;
 	cmd->type = TYPE_INTEGER;
+//+++++++++++++++++++++++++++++
 	strncpy_P(cmd->string, (PGM_P)pgm_read_word(&msg[value*2]), CMD_STRING_LEN); // hack alert: direct computation of index
+//	cmd->pstr = cmd_copy_string_P((PGM_P)pgm_read_word(&msg[value*2])); // hack alert: direct computation of index
 	return (TG_OK);
 //	return((char *)pgm_read_word(&msg[(uint8_t)value]));
 }
@@ -1075,16 +1078,19 @@ static void _print_pos(cmdObj_t *cmd)
 
 static uint8_t _get_gc(cmdObj_t *cmd)
 {
-	strncpy(cmd->string, tg.in_buf, CMD_STRING_LEN);
+	strncpy(cmd->string, tg.in_buf, CMD_STRING_LEN);	//++++++++++++++++++++++
+//	if ((cmd->pstr = cmd_copy_string(tg.in_buf)) == NULL) { return (TG_INPUT_EXCEEDS_MAX_LENGTH);}
 	cmd->type = TYPE_STRING;
 	return (TG_OK);
 }
 
 static uint8_t _run_gc(cmdObj_t *cmd)
 {
-	strncpy(tg.in_buf, cmd->string, INPUT_BUFFER_LEN);
-	uint8_t status = gc_gcode_parser(tg.in_buf);
-	return (status);
+	strncpy(tg.in_buf, cmd->string, INPUT_BUFFER_LEN);	//++++++++++++++++++++++++
+	return(gc_gcode_parser(cmd->string));
+//	uint8_t status = gc_gcode_parser(cmd->string);
+//	uint8_t status = gc_gcode_parser(*cmd->pstr);
+//	return (status);
 }
 
 static uint8_t _run_home(cmdObj_t *cmd)
@@ -2024,12 +2030,21 @@ cmdObj_t *cmd_reset_list()					// clear the header, response body and footer
 	return (cmd_body);
 }
 
-char *strcpy_sh(char *in_string)
+uint8_t cmd_copy_string(char (**stringp)[], const char *src)
 {
-	if ((cmdStr.i + strlen(in_string)) > CMD_SHARED_STRING_LEN) { return (NULL);}
-	char *tmp = &cmdStr.str[cmdStr.i];		// 
-	cmdStr.i += strlen(in_string);
-	return (strcpy(tmp, in_string));
+	if ((cmdStr.i + strlen(src)) > CMD_SHARED_STRING_LEN) { return (TG_BUFFER_FULL);}
+	char *dst = &cmdStr.string[cmdStr.i];
+	strcpy(dst, src);						// copy string to current head position
+	cmdStr.i += strlen(src);				// advance head for next string
+	*stringp = (char (*)[])dst;
+	return (TG_OK);
+}
+
+uint8_t cmd_copy_string_P(char (**stringp)[], const char *src_P)
+{
+	char buf[CMD_SHARED_STRING_LEN]; 
+	strncpy_P(buf, src_P, CMD_SHARED_STRING_LEN);
+	return (cmd_copy_string(stringp, buf));
 }
 
 uint8_t cmd_add_object(char *token)			// add an object to the body using a token
