@@ -1265,6 +1265,74 @@ uint8_t cfg_baud_rate_callback(void)
 	return (TG_OK);
 }
 
+
+/**** UberGroup Operations ****
+ * Uber groups are groups of groups organized for convenience:
+ *	- motors	- group of all motor groups
+ *	- axes		- group of all axis groups
+ *	- offsets	- group of all offsets and stored positions
+ *	- all		- group of all groups
+ *
+ * _do_group_list()	- get and print all groups in the list (iteration)
+ * _do_motors()		- get and print motor uber group 1-4
+ * _do_axes()		- get and print axis uber group XYZABC
+ * _do_offsets()	- get and print offset uber group G54-G59, G28, G30, G92
+ * _do_all()		- get and print all groups uber group
+ */
+
+static void _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
+{
+	for (uint8_t i=0; i < CMD_MAX_OBJECTS; i++) {
+		if (list[i][0] == NUL) return;
+		cmd = cmd_body;
+		strncpy(cmd->token, list[i], CMD_TOKEN_LEN);
+		cmd->index = cmd_get_index("", cmd->token);
+//		cmd->type = TYPE_PARENT;
+		cmd_get_cmdObj(cmd);
+		cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
+	}
+}
+
+static uint8_t _do_motors(cmdObj_t *cmd)	// print parameters for all motor groups
+{
+	char list[][CMD_TOKEN_LEN+1] = {"1","2","3","4",""}; // must have a terminating element
+	_do_group_list(cmd, list);
+	return (TG_COMPLETE);
+}
+
+static uint8_t _do_axes(cmdObj_t *cmd)	// print parameters for all axis groups
+{
+	char list[][CMD_TOKEN_LEN+1] = {"x","y","z","a","b","c",""}; // must have a terminating element
+	_do_group_list(cmd, list);
+	return (TG_COMPLETE);
+}
+
+static uint8_t _do_offsets(cmdObj_t *cmd)	// print offset parameters for G54-G59,G92, G28, G30
+{
+	char list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92","g28","g30",""}; // must have a terminating element
+	_do_group_list(cmd, list);
+	return (TG_COMPLETE);
+}
+
+static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
+{
+	// print system group
+	strcpy(cmd->token,"sys");
+	_get_grp(cmd);
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED,  JSON_RESPONSE_FORMAT);
+
+	_do_offsets(cmd);
+	_do_motors(cmd);
+	_do_axes(cmd);
+
+	// print PWM group
+	strcpy(cmd->token,"p1");
+	_get_grp(cmd);
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
+
+	return (TG_COMPLETE);
+}
+
 /*****************************************************************************
  *****************************************************************************
  *****************************************************************************
@@ -1696,122 +1764,9 @@ static int8_t _get_pos_axis(const index_t i)
 	return (ptr - axes);
 }
 
-/****************************************************************************
- * Exposed cmdObj helper functions and other low-level cmd helpers
- * cmd_get_max_index()	 - utility function to return index array size				
- * cmd_new_obj() 	 	 - quick clear for a new cmd object
- * cmd_get_cmdObj() 	 - setup a cmd object by providing the index
- * cmd_get_index() 		 - get index from mnenonic token + group
- * cmd_get_type()		 - returns command type as a CMD_TYPE enum
- * cmd_persist_offsets() - write any changed G54 (et al) offsets back to NVM
- *
- *	cmd_get_index() is the most expensive routine in the whole config. It does a 
- *	linear table scan of the PROGMEM strings, which of course could be further 
- *	optimized with indexes or hashing.
- */
-//index_t cmd_get_max_index() { return (CMD_INDEX_MAX);}
-
-cmdObj_t *cmd_new_obj(cmdObj_t *cmd)	// clear a single cmdObj structure
-{
-	cmd->type = TYPE_EMPTY;				// selective clear is much faster than calling memset
-	cmd->index = 0;
-	cmd->value = 0;
-	cmd->token[0] = NUL;
-	cmd->group[0] = NUL;
-	cmd->stringp = NULL;
-
-	if (cmd->pv == NULL) { 				// set depth correctly
-		cmd->depth = 0;
-	} else {
-		if (cmd->pv->type == TYPE_PARENT) { 
-			cmd->depth = cmd->pv->depth + 1;
-		} else {
-			cmd->depth = cmd->pv->depth;
-		}
-	}
-	return (cmd);
-}
-
-void cmd_get_cmdObj(cmdObj_t *cmd)
-{
-	if (cmd->index >= CMD_INDEX_MAX) return;
-	index_t tmp = cmd->index;
-	cmd_new_obj(cmd);
-	cmd->index = tmp;
-
-	strcpy_P(cmd->group, cfgArray[cmd->index].group); // group field is always terminated
-	strcpy_P(cmd->token, cfgArray[cmd->index].token); // token field is always terminated
-
-	// special processing for system groups and stripping tokens for groups
-	if (cmd->group[0] != NUL) {
-		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_NOSTRIP) {
-			cmd->group[0] = NUL;
-		} else {
-			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
-		}
-	}
-	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);	// populate the value
-}
-
-index_t cmd_get_index(const char *group, const char *token)
-{
-	char c;
-	char str[CMD_TOKEN_LEN+1];
-	strcpy(str, group);
-	strcat(str, token);
-
-	for (index_t i=0; i<CMD_INDEX_MAX; i++) {
-		if ((c = (char)pgm_read_byte(&cfgArray[i].token[0])) != str[0]) {	// 1st character mismatch 
-			continue;
-		}
-		if ((c = (char)pgm_read_byte(&cfgArray[i].token[1])) == NUL) {
-			if (str[1] == NUL) return(i);									// one character match
-		}
-		if (c != str[1]) continue;											// 2nd character mismatch
-		if ((c = (char)pgm_read_byte(&cfgArray[i].token[2])) == NUL) {
-			if (str[2] == NUL) return(i);									// two character match
-		}
-		if (c != str[2]) continue;											// 3rd character mismatch
-		if ((c = (char)pgm_read_byte(&cfgArray[i].token[3])) == NUL) {
-			if (str[3] == NUL) return(i);									// three character match
-		}
-		if (c != str[3]) continue;											// 4th character mismatch
-		if ((c = (char)pgm_read_byte(&cfgArray[i].token[4])) == NUL) {
-			if (str[4] == NUL) return(i);									// four character match
-		}
-		if (c != str[4]) continue;											// 5th character mismatch
-		return (i);															// five character match
-	}
-	return (NO_INDEX);	// no match
-}
-
-uint8_t cmd_get_type(cmdObj_t *cmd)
-{
-	if (strcmp("gc", cmd->token) == 0) return (CMD_TYPE_GCODE);
-	if (strcmp("sr", cmd->token) == 0) return (CMD_TYPE_REPORT);
-	if (strcmp("qr", cmd->token) == 0) return (CMD_TYPE_REPORT);
-	return (CMD_TYPE_CONFIG);
-}
-
-uint8_t cmd_persist_offsets(uint8_t flag)
-{
-	if (flag == true) {
-		cmdObj_t cmd;
-		for (uint8_t i=1; i<=COORDS; i++) {
-			for (uint8_t j=0; j<AXES; j++) {
-				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
-				cmd.index = cmd_get_index("", cmd.token);
-				cmd.value = cfg.offset[i][j];
-				cmd_persist(&cmd);				// only writes changed values
-			}
-		}
-	}
-	return (TG_OK);
-}
-
 /********************************************************************************
- ***** Group operations *********************************************************
- ********************************************************************************
+ * Group operations
+ *
  *	Group operations work on parent/child groups where the parent is one of:
  *	  axis group 			x,y,z,a,b,c
  *	  motor group			1,2,3,4
@@ -1903,78 +1858,129 @@ uint8_t cmd_group_is_prefixed(char *group)
 	return (true);
 }
 
-/**** UberGroup Operations ****
- * Uber groups are groups of groups organized for convenience:
- *	- motors	- group of all motor groups
- *	- axes		- group of all axis groups
- *	- offsets	- group of all offsets and stored positions
- *	- all		- group of all groups
- *
- * _do_group_list()	- get and print all groups in the list (iteration)
- * _do_motors()		- get and print motor uber group 1-4
- * _do_axes()		- get and print axis uber group XYZABC
- * _do_offsets()	- get and print offset uber group G54-G59, G28, G30, G92
- * _do_all()		- get and print all groups uber group
+
+/*****************************************************************************
+ ***** cmdObj functions ******************************************************
+ *****************************************************************************/
+
+/*****************************************************************************
+ * cmdObj helper functions and other low-level cmd helpers
+ * cmd_get_max_index()	 - utility function to return index array size				
+ * cmd_new_obj() 	 	 - quick clear for a new cmd object
+ * cmd_get_cmdObj() 	 - setup a cmd object by providing the index
+ * cmd_get_index() 		 - get index from mnenonic token + group
+ * cmd_get_type()		 - returns command type as a CMD_TYPE enum
+ * cmd_persist_offsets() - write any changed G54 (et al) offsets back to NVM
  */
+//index_t cmd_get_max_index() { return (CMD_INDEX_MAX);}
 
-static void _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
+cmdObj_t *cmd_new_obj(cmdObj_t *cmd)	// clear a single cmdObj structure
 {
-	for (uint8_t i=0; i < CMD_MAX_OBJECTS; i++) {
-		if (list[i][0] == NUL) return;
-		cmd = cmd_body;
-		strncpy(cmd->token, list[i], CMD_TOKEN_LEN);
-		cmd->index = cmd_get_index("", cmd->token);
-//		cmd->type = TYPE_PARENT;
-		cmd_get_cmdObj(cmd);
-		cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
+	cmd->type = TYPE_EMPTY;				// selective clear is much faster than calling memset
+	cmd->index = 0;
+	cmd->value = 0;
+	cmd->token[0] = NUL;
+	cmd->group[0] = NUL;
+	cmd->stringp = NULL;
+
+	if (cmd->pv == NULL) { 				// set depth correctly
+		cmd->depth = 0;
+	} else {
+		if (cmd->pv->type == TYPE_PARENT) { 
+			cmd->depth = cmd->pv->depth + 1;
+		} else {
+			cmd->depth = cmd->pv->depth;
+		}
 	}
+	return (cmd);
 }
 
-static uint8_t _do_motors(cmdObj_t *cmd)	// print parameters for all motor groups
+void cmd_get_cmdObj(cmdObj_t *cmd)
 {
-	char list[][CMD_TOKEN_LEN+1] = {"1","2","3","4",""}; // must have a terminating element
-	_do_group_list(cmd, list);
-	return (TG_COMPLETE);
+	if (cmd->index >= CMD_INDEX_MAX) return;
+	index_t tmp = cmd->index;
+	cmd_new_obj(cmd);
+	cmd->index = tmp;
+
+	strcpy_P(cmd->group, cfgArray[cmd->index].group); // group field is always terminated
+	strcpy_P(cmd->token, cfgArray[cmd->index].token); // token field is always terminated
+
+	// special processing for system groups and stripping tokens for groups
+	if (cmd->group[0] != NUL) {
+		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_NOSTRIP) {
+			cmd->group[0] = NUL;
+		} else {
+			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
+		}
+	}
+	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);	// populate the value
 }
 
-static uint8_t _do_axes(cmdObj_t *cmd)	// print parameters for all axis groups
+/* 
+ * cmd_get_index() is the most expensive routine in the whole config. It does a linear table scan 
+ * of the PROGMEM strings, which of course could be further optimized with indexes or hashing.
+ */
+index_t cmd_get_index(const char *group, const char *token)
 {
-	char list[][CMD_TOKEN_LEN+1] = {"x","y","z","a","b","c",""}; // must have a terminating element
-	_do_group_list(cmd, list);
-	return (TG_COMPLETE);
+	char c;
+	char str[CMD_TOKEN_LEN+1];
+	strcpy(str, group);
+	strcat(str, token);
+
+	for (index_t i=0; i<CMD_INDEX_MAX; i++) {
+		if ((c = (char)pgm_read_byte(&cfgArray[i].token[0])) != str[0]) {	// 1st character mismatch 
+			continue;
+		}
+		if ((c = (char)pgm_read_byte(&cfgArray[i].token[1])) == NUL) {
+			if (str[1] == NUL) return(i);									// one character match
+		}
+		if (c != str[1]) continue;											// 2nd character mismatch
+		if ((c = (char)pgm_read_byte(&cfgArray[i].token[2])) == NUL) {
+			if (str[2] == NUL) return(i);									// two character match
+		}
+		if (c != str[2]) continue;											// 3rd character mismatch
+		if ((c = (char)pgm_read_byte(&cfgArray[i].token[3])) == NUL) {
+			if (str[3] == NUL) return(i);									// three character match
+		}
+		if (c != str[3]) continue;											// 4th character mismatch
+		if ((c = (char)pgm_read_byte(&cfgArray[i].token[4])) == NUL) {
+			if (str[4] == NUL) return(i);									// four character match
+		}
+		if (c != str[4]) continue;											// 5th character mismatch
+		return (i);															// five character match
+	}
+	return (NO_INDEX);	// no match
 }
 
-static uint8_t _do_offsets(cmdObj_t *cmd)	// print offset parameters for G54-G59,G92, G28, G30
+uint8_t cmd_get_type(cmdObj_t *cmd)
 {
-	char list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92","g28","g30",""}; // must have a terminating element
-	_do_group_list(cmd, list);
-	return (TG_COMPLETE);
+	if (strcmp("gc", cmd->token) == 0) return (CMD_TYPE_GCODE);
+	if (strcmp("sr", cmd->token) == 0) return (CMD_TYPE_REPORT);
+	if (strcmp("qr", cmd->token) == 0) return (CMD_TYPE_REPORT);
+	return (CMD_TYPE_CONFIG);
 }
 
-static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
+uint8_t cmd_persist_offsets(uint8_t flag)
 {
-	// print system group
-	strcpy(cmd->token,"sys");
-	_get_grp(cmd);
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED,  JSON_RESPONSE_FORMAT);
-
-	_do_offsets(cmd);
-	_do_motors(cmd);
-	_do_axes(cmd);
-
-	// print PWM group
-	strcpy(cmd->token,"p1");
-	_get_grp(cmd);
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
-
-	return (TG_COMPLETE);
+	if (flag == true) {
+		cmdObj_t cmd;
+		for (uint8_t i=1; i<=COORDS; i++) {
+			for (uint8_t j=0; j<AXES; j++) {
+				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
+				cmd.index = cmd_get_index("", cmd.token);
+				cmd.value = cfg.offset[i][j];
+				cmd_persist(&cmd);				// only writes changed values
+			}
+		}
+	}
+	return (TG_OK);
 }
 
 /********************************************************************************
- ***** cmdObj list initialization and manipulation ******************************
- ********************************************************************************
+ * cmdObj list operations
  * cmd_reset_list()	 - clear entire header, body and footer for a new use
- * cmd_reset_body()	 - clear the body for a new use 
+ * cmd_copy_string() - used to write a string to shared string storage and link it
+ * cmd_copy_string_P() - same, but for progmem string sources
  * cmd_add_object()	 - write contents of parameter to  first free object in the body
  * cmd_add_string()	 - add a string object to end of cmd body
  * cmd_add_string_P()- add a program memory string as a string object to end of cmd body
@@ -2009,7 +2015,6 @@ cmdObj_t *cmd_reset_list()					// clear the header, response body and footer
 	cmd->type = TYPE_PARENT;
 	cmd->token[0] = 'r';
 	cmd->token[1] = NUL;
-	cmd++;
 
 	// setup response footer element ('f')
 	cmd = cmd_footer;
@@ -2026,7 +2031,7 @@ uint8_t cmd_copy_string(cmdObj_t *cmd, const char *src)
 	if ((cmdStr.wp + strlen(src)) > CMD_SHARED_STRING_LEN) { return (TG_BUFFER_FULL);}
 	char *dst = &cmdStr.string[cmdStr.wp];
 	strcpy(dst, src);						// copy string to current head position
-	cmdStr.wp += strlen(src);				// advance head for next string
+	cmdStr.wp += strlen(src)+1;				// advance head for next string
 	cmd->stringp = (char (*)[])dst;
 	return (TG_OK);
 }
