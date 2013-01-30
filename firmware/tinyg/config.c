@@ -1500,7 +1500,7 @@ static uint8_t _text_parser(char *str, cmdObj_t *cmd)
 	char separators[] = {" =:|\t"};			// any separator someone might use
 
 	// string pre-processing
-	cmd_new_obj(cmd);						// initialize config object
+	cmd_reset_obj(cmd);						// initialize config object
 	if (*str == '$') str++;					// ignore leading $
 	for (ptr_rd = ptr_wr = str; *ptr_rd!=NUL; ptr_rd++, ptr_wr++) {
 		*ptr_wr = tolower(*ptr_rd);			// convert string to lower case
@@ -1866,56 +1866,11 @@ uint8_t cmd_group_is_prefixed(char *group)
 /*****************************************************************************
  * cmdObj helper functions and other low-level cmd helpers
  * cmd_get_max_index()	 - utility function to return index array size				
- * cmd_new_obj() 	 	 - quick clear for a new cmd object
- * cmd_get_cmdObj() 	 - setup a cmd object by providing the index
  * cmd_get_index() 		 - get index from mnenonic token + group
  * cmd_get_type()		 - returns command type as a CMD_TYPE enum
  * cmd_persist_offsets() - write any changed G54 (et al) offsets back to NVM
  */
 //index_t cmd_get_max_index() { return (CMD_INDEX_MAX);}
-
-cmdObj_t *cmd_new_obj(cmdObj_t *cmd)	// clear a single cmdObj structure
-{
-	cmd->type = TYPE_EMPTY;				// selective clear is much faster than calling memset
-	cmd->index = 0;
-	cmd->value = 0;
-	cmd->token[0] = NUL;
-	cmd->group[0] = NUL;
-	cmd->stringp = NULL;
-
-	if (cmd->pv == NULL) { 				// set depth correctly
-		cmd->depth = 0;
-	} else {
-		if (cmd->pv->type == TYPE_PARENT) { 
-			cmd->depth = cmd->pv->depth + 1;
-		} else {
-			cmd->depth = cmd->pv->depth;
-		}
-	}
-	return (cmd);
-}
-
-void cmd_get_cmdObj(cmdObj_t *cmd)
-{
-	if (cmd->index >= CMD_INDEX_MAX) return;
-	index_t tmp = cmd->index;
-	cmd_new_obj(cmd);
-	cmd->index = tmp;
-
-	strcpy_P(cmd->group, cfgArray[cmd->index].group); // group field is always terminated
-	strcpy_P(cmd->token, cfgArray[cmd->index].token); // token field is always terminated
-
-	// special processing for system groups and stripping tokens for groups
-	if (cmd->group[0] != NUL) {
-		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_NOSTRIP) {
-			cmd->group[0] = NUL;
-		} else {
-			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
-		}
-	}
-	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);	// populate the value
-}
-
 /* 
  * cmd_get_index() is the most expensive routine in the whole config. It does a linear table scan 
  * of the PROGMEM strings, which of course could be further optimized with indexes or hashing.
@@ -1977,7 +1932,9 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 }
 
 /********************************************************************************
- * cmdObj list operations
+ * cmdObj low-level object and list operations
+ * cmd_get_cmdObj()  - setup a cmd object by providing the index
+ * cmd_reset_obj() 	 - quick clear for a new cmd object
  * cmd_reset_list()	 - clear entire header, body and footer for a new use
  * cmd_copy_string() - used to write a string to shared string storage and link it
  * cmd_copy_string_P() - same, but for progmem string sources
@@ -1991,6 +1948,49 @@ uint8_t cmd_persist_offsets(uint8_t flag)
  *	precision due to the cast to a double. Sometimes it's better to load an 
  *	integer as a string if all you want to do is display it.
  */
+
+void cmd_get_cmdObj(cmdObj_t *cmd)
+{
+	if (cmd->index >= CMD_INDEX_MAX) return;
+	index_t tmp = cmd->index;
+	cmd_reset_obj(cmd);
+	cmd->index = tmp;
+
+	strcpy_P(cmd->group, cfgArray[cmd->index].group); // group field is always terminated
+	strcpy_P(cmd->token, cfgArray[cmd->index].token); // token field is always terminated
+
+	// special processing for system groups and stripping tokens for groups
+	if (cmd->group[0] != NUL) {
+		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_NOSTRIP) {
+			cmd->group[0] = NUL;
+		} else {
+			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
+		}
+	}
+	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);	// populate the value
+}
+ 
+cmdObj_t *cmd_reset_obj(cmdObj_t *cmd)	// clear a single cmdObj structure
+{
+	cmd->type = TYPE_EMPTY;				// selective clear is much faster than calling memset
+	cmd->index = 0;
+	cmd->value = 0;
+	cmd->token[0] = NUL;
+	cmd->group[0] = NUL;
+	cmd->stringp = NULL;
+
+	if (cmd->pv == NULL) { 				// set depth correctly
+		cmd->depth = 0;
+	} else {
+		if (cmd->pv->type == TYPE_PARENT) { 
+			cmd->depth = cmd->pv->depth + 1;
+		} else {
+			cmd->depth = cmd->pv->depth;
+		}
+	}
+	return (cmd);
+}
+
 cmdObj_t *cmd_reset_list()					// clear the header, response body and footer
 {
 	// reset the shared string

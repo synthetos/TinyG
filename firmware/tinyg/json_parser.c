@@ -193,7 +193,7 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
 	char *tmp;
 	char terminators[] = {"},"};
 
-	cmd_new_obj(cmd);								// wipe the object and set the depth
+	cmd_reset_obj(cmd);								// wipes the object and sets the depth
 
 	// --- Process name part ---
 	// find leading and trailing name quotes and set pointers.
@@ -221,7 +221,7 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
 	// object parent
 	} else if (**pstr == '{') { 
 		cmd->type = TYPE_PARENT;
-//		*depth += 1;								// cmd_new_obj() sets the next object's level so this is redundant
+//		*depth += 1;								// cmd_reset_obj() sets the next object's level so this is redundant
 		(*pstr)++;
 		return(TG_EAGAIN);							// signal that there is more to parse
 

@@ -197,17 +197,20 @@ void cfg_init(void);
 uint8_t cfg_text_parser(char *str);
 uint8_t cfg_baud_rate_callback(void);
 
-uint8_t cmd_get(cmdObj_t *cmd);		// main entry point for GETs
-uint8_t cmd_set(cmdObj_t *cmd);		// main entry point for SETs
-void cmd_print(cmdObj_t *cmd);		// main entry point for formatted print
-void cmd_persist(cmdObj_t *cmd);		// main entry point for persistence
+// main entry popints for core access functions
+uint8_t cmd_get(cmdObj_t *cmd);		// get value
+uint8_t cmd_set(cmdObj_t *cmd);		// set value
+void cmd_print(cmdObj_t *cmd);		// formatted print
+void cmd_persist(cmdObj_t *cmd);	// persistence
 
-cmdObj_t *cmd_new_obj(cmdObj_t *cmd);
-void cmd_get_cmdObj(cmdObj_t *cmd);
+// helpers
 index_t cmd_get_index(const char *group, const char *token);
 uint8_t cmd_get_type(cmdObj_t *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 
+// object and list functions
+void cmd_get_cmdObj(cmdObj_t *cmd);
+cmdObj_t *cmd_reset_obj(cmdObj_t *cmd);
 cmdObj_t *cmd_reset_list(void);
 uint8_t cmd_copy_string(cmdObj_t *cmd, const char *src);
 uint8_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P);
