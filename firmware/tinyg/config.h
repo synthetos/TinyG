@@ -82,10 +82,12 @@ typedef uint16_t index_t;			// if there are > 255 indexed objects
  *	of CMD_NAME_LEN and CMD_VALUE_STRING_LEN which are statically allocated 
  *	and should be as short as possible. 
  */
-#define CMD_HEADER_LEN 1			// "r" header
+//#define CMD_HEADER_LEN 1			// "r" header
 #define CMD_BODY_LEN 25				// body elements - includes one terminator
-#define CMD_FOOTER_LEN 2			// footer element (includes terminator element)
+//#define CMD_FOOTER_LEN 2			// footer element (includes terminator element)
+#define CMD_LIST_LEN (CMD_BODY_LEN+2)
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
+
 #define CMD_STATUS_REPORT_LEN 24	// max number of status report elements - see cfgArray
 									// must also line up in cfgArray, se00 - seXX
 
@@ -160,6 +162,11 @@ enum textFormats {					// text output print modes
 	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines with formatted print per line
 };
 
+typedef struct cmdString {			// shared string object
+	uint8_t wp;						// current string array index
+	char string[CMD_SHARED_STRING_LEN];
+} cmdStr_t;
+
 typedef struct cmdObject {			// depending on use, not all elements may be populated
 	struct cmdObject *pv;			// pointer to previous object or NULL if first object
 	struct cmdObject *nx;			// pointer to next object or NULL if last object
@@ -169,23 +176,18 @@ typedef struct cmdObject {			// depending on use, not all elements may be popula
 	double value;					// numeric value
 	char token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
 	char group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group
-//	char string[CMD_STRING_LEN+1];	// string storage (See note below)
 	char (*stringp)[];				// pointer to array of characters from shared character array
 } cmdObj_t; 						// OK, so it's not REALLY an object
-
-typedef struct cmdString {			// shared string object
-	uint8_t i;						// current string array index
-	char string[CMD_SHARED_STRING_LEN];
-} cmdStr_t;
 
 typedef uint8_t (*fptrCmd)(cmdObj_t *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj_t *cmd);// required for PROGMEM access
 
-// Allocate cmdObj lists and shared string storage
-cmdObj_t cmd_header[CMD_HEADER_LEN];	// JSON header element
-cmdObj_t cmd_body[CMD_BODY_LEN];		// cmd_body[0] is the root object
-cmdObj_t cmd_footer[CMD_FOOTER_LEN];	// JSON footer element
+// static allocation and definitions
 cmdStr_t cmdStr;
+cmdObj_t cmd_list[CMD_LIST_LEN];// JSON header element
+#define cmd_header cmd_list
+#define cmd_body (cmd_list +1)
+#define cmd_footer (cmd_list + CMD_LIST_LEN)
 
 /*
  * Global Scope Functions
@@ -209,10 +211,6 @@ uint8_t cmd_persist_offsets(uint8_t flag);
 cmdObj_t *cmd_reset_list(void);
 uint8_t cmd_copy_string(cmdObj_t *cmd, const char *src);
 uint8_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P);
-
-//uint8_t cmd_copy_string(char (**stringp)[], const char *src);
-//uint8_t cmd_copy_string_P(char (**stringp)[], const char *src_P);
-
 uint8_t cmd_add_object(char *token);
 uint8_t cmd_add_string(char *token, const char *string);
 uint8_t cmd_add_string_P(char *token, const char *string);

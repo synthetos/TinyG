@@ -1987,64 +1987,49 @@ static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
  */
 cmdObj_t *cmd_reset_list()					// clear the header, response body and footer
 {
-//	cmdStr.p = cmdStr.str;					// reset the shared string
-	cmdStr.i = 0;							// reset the shared string
-	cmdObj_t *cmd = cmd_header;				// setup header ("r" parent)
+	// reset the shared string
+	cmdStr.wp = 0;
+
+	// set up linked list and initialize elements	
+	cmdObj_t *cmd = cmd_list;
+	for (uint8_t i=0; i<CMD_LIST_LEN; i++) {
+		cmd->pv = (cmd-1);					// the ends are bogus & corrected later
+		cmd->nx = (cmd+1);
+		cmd->index = 0;
+		cmd->depth = 1;						// header and footer are corrected later
+		cmd->type = TYPE_EMPTY;
+		cmd->token[0] = NUL;
+		cmd++;
+	}
+
+	// setup response header element ('r')
+	cmd = cmd_list;
 	cmd->pv = NULL;
-	cmd->nx = cmd_body;
-	cmd->index = 0;
 	cmd->depth = 0;
 	cmd->type = TYPE_PARENT;
 	cmd->token[0] = 'r';
+	cmd->token[1] = NUL;
 	cmd++;
 
-	cmd = cmd_body;							// setup body
-	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (i == 0) { cmd->pv = cmd_header;} 
-		else { cmd->pv = (cmd-1);}
-		cmd->nx = (cmd+1);
-		cmd->index = 0;
-		cmd->token[0] = NUL;
-		cmd->depth = 1;
-		cmd->type = TYPE_EMPTY;
-		cmd++;
-	}
-	(--cmd)->nx = cmd_footer;				// correct last element
-
-	cmd = cmd_footer;						// setup footer
-	cmd->pv = &cmd_body[CMD_BODY_LEN-1];
-	cmd->nx = (cmd+1);
-	cmd->token[0] = 'f';
-	cmd->token[1] = NUL;
+	// setup response footer element ('f')
+	cmd = cmd_footer;
+	cmd->nx = NULL;
 	cmd->depth = 1;
 	cmd->type = TYPE_ARRAY;
-
-	cmd->nx->type = TYPE_EMPTY;				// setup terminating element
-	cmd->nx->pv = (cmd-1);
-	cmd->nx->nx = NULL;
+	cmd->token[0] = 'f';
+	cmd->token[1] = NUL;
 	return (cmd_body);
 }
 
 uint8_t cmd_copy_string(cmdObj_t *cmd, const char *src)
 {
-	if ((cmdStr.i + strlen(src)) > CMD_SHARED_STRING_LEN) { return (TG_BUFFER_FULL);}
-	char *dst = &cmdStr.string[cmdStr.i];
+	if ((cmdStr.wp + strlen(src)) > CMD_SHARED_STRING_LEN) { return (TG_BUFFER_FULL);}
+	char *dst = &cmdStr.string[cmdStr.wp];
 	strcpy(dst, src);						// copy string to current head position
-	cmdStr.i += strlen(src);				// advance head for next string
+	cmdStr.wp += strlen(src);				// advance head for next string
 	cmd->stringp = (char (*)[])dst;
 	return (TG_OK);
 }
-/*
-uint8_t cmd_copy_string(char (**stringp)[], const char *src)
-{
-	if ((cmdStr.i + strlen(src)) > CMD_SHARED_STRING_LEN) { return (TG_BUFFER_FULL);}
-	char *dst = &cmdStr.string[cmdStr.i];
-	strcpy(dst, src);						// copy string to current head position
-	cmdStr.i += strlen(src);				// advance head for next string
-	*stringp = (char (*)[])dst;
-	return (TG_OK);
-}
-*/
 
 uint8_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P)
 {
@@ -2104,7 +2089,6 @@ uint8_t cmd_add_integer(char *token, const uint32_t value)// add an integer obje
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
-//		cmd->token[CMD_TOKEN_LEN-1] = NUL;	// safety measure
 		cmd->value = (double) value;
 		cmd->type = TYPE_INTEGER;
 		return (TG_OK);
@@ -2121,7 +2105,6 @@ uint8_t cmd_add_float(char *token, const double value)	// add a float object to 
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
-//		cmd->token[CMD_TOKEN_LEN-1] = NUL;	// safety measure
 		cmd->value = value;
 		cmd->type = TYPE_FLOAT;
 		return (TG_OK);
