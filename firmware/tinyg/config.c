@@ -865,7 +865,6 @@ static uint8_t _set_hv(cmdObj_t *cmd)
 
 static uint8_t _get_id(cmdObj_t *cmd) 
 {
-//	sys_get_id(cmd->string);		//+++++++++++++++++++
 	char tmp[SYS_ID_LEN];
 	sys_get_id(tmp);
 	ritorno(cmd_copy_string(cmd, tmp));
@@ -952,8 +951,6 @@ static uint8_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value)
 {
 	cmd->value = (double)value;
 	cmd->type = TYPE_INTEGER;
-//+++++++++++++++++++++++++++++
-//	strncpy_P(cmd->string, (PGM_P)pgm_read_word(&msg[value*2]), CMD_STRING_LEN); // hack alert: direct computation of index
 	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg[value*2]))); // hack alert: direct computation of index
 	return (TG_OK);
 //	return((char *)pgm_read_word(&msg[(uint8_t)value]));
@@ -1081,7 +1078,6 @@ static void _print_pos(cmdObj_t *cmd)
 
 static uint8_t _get_gc(cmdObj_t *cmd)
 {
-//	strncpy(cmd->string, tg.in_buf, CMD_STRING_LEN);	//++++++++++++++++++++++
 	ritorno(cmd_copy_string(cmd, tg.in_buf));
 	cmd->type = TYPE_STRING;
 	return (TG_OK);
@@ -1089,11 +1085,6 @@ static uint8_t _get_gc(cmdObj_t *cmd)
 
 static uint8_t _run_gc(cmdObj_t *cmd)
 {
-//	strncpy(tg.in_buf, cmd->string, INPUT_BUFFER_LEN);	//++++++++++++++++++++++++
-
-//	strncpy(tg.in_buf, *cmd->stringp, INPUT_BUFFER_LEN);	//++++++++++++++++++++++++
-//	return(gc_gcode_parser(cmd->string));
-
 	return(gc_gcode_parser(*cmd->stringp));
 }
 
@@ -1260,7 +1251,7 @@ static uint8_t _set_baud(cmdObj_t *cmd)
 	}
 	cfg.usb_baud_rate = baud;
 	cfg.usb_baud_flag = true;
-	char message[CMD_STRING_LEN]; 
+	char message[CMD_MESSAGE_LEN]; 
 	sprintf_P(message, PSTR("*** NOTICE *** Restting baud rate to %S"),(PGM_P)pgm_read_word(&msg_baud[baud]));
 	cmd_add_string("msg",message);
 	return (TG_OK);
@@ -1618,7 +1609,6 @@ static void _print_str(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
-//	fprintf(stderr, _get_format(cmd->index, format), cmd->string); ++++++++++++++++++++++++++
 	fprintf(stderr, _get_format(cmd->index, format), *cmd->stringp);
 }
 
@@ -1728,7 +1718,7 @@ cmdObj_t *cmd_new_obj(cmdObj_t *cmd)	// clear a single cmdObj structure
 	cmd->value = 0;
 	cmd->token[0] = NUL;
 	cmd->group[0] = NUL;
-//	cmd->string[0] = NUL;++++++++++++++++++++++++++
+	cmd->stringp = NULL;
 
 	if (cmd->pv == NULL) { 				// set depth correctly
 		cmd->depth = 0;
@@ -2090,7 +2080,6 @@ uint8_t cmd_add_string(char *token, const char *string)	// add a string object t
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
-//		strncpy(cmd->string, string, CMD_STRING_LEN);++++++++++++++++++++++++++
 		ritorno(cmd_copy_string(cmd, string));
 		cmd->index = cmd_get_index("", cmd->token);
 		cmd->type = TYPE_STRING;
@@ -2101,7 +2090,7 @@ uint8_t cmd_add_string(char *token, const char *string)	// add a string object t
 
 uint8_t cmd_add_string_P(char *token, const char *string)
 {
-	char message[CMD_STRING_LEN]; 
+	char message[CMD_MESSAGE_LEN]; 
 	sprintf_P(message, string);
 	return(cmd_add_string(token, message));
 }
@@ -2183,7 +2172,7 @@ void _print_text_inline_pairs()
 			case TYPE_PARENT:	{ cmd = cmd->nx; continue; }
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
-			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), cmd->token, *cmd->stringp); break;} //++++++++++++++++++++++++++
+			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), cmd->token, *cmd->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
@@ -2200,7 +2189,7 @@ void _print_text_inline_values()
 			case TYPE_PARENT:	{ cmd = cmd->nx; continue; }
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%1.3f"), cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), cmd->value); break;}
-			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *cmd->stringp); break;}//++++++++++++++++++++++++++
+			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *cmd->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;

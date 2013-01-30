@@ -49,7 +49,6 @@
 // local scope stuff
 
 uint8_t _json_parser_kernal(char *str);
-//static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_t *depth);
 static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth);
 static uint8_t _normalize_json_string(char *str, uint16_t size);
 //static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd);
@@ -113,7 +112,6 @@ uint8_t _json_parser_kernal(char *str)
 	// parse the JSON command into the cmd body
 	do {
 		if (--i == 0) { return (TG_JSON_TOO_MANY_PAIRS); }			// length error
-//		if ((status = _get_nv_pair(cmd, &str, group, &depth)) > TG_EAGAIN) { // erred out
 		if ((status = _get_nv_pair(cmd, &str, &depth)) > TG_EAGAIN) { // erred out
 			return (status);
 		}
@@ -190,8 +188,6 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
  *	"fr" is found in the name string the parser will search for "xfr"in the 
  *	cfgArray.
  */
-
-//static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_t *depth)
 static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
 {
 	char *tmp;
@@ -225,7 +221,7 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
 	// object parent
 	} else if (**pstr == '{') { 
 		cmd->type = TYPE_PARENT;
-//		*depth += 1;								// cmd_new_obj() will set the next object's level
+//		*depth += 1;								// cmd_new_obj() sets the next object's level so this is redundant
 		(*pstr)++;
 		return(TG_EAGAIN);							// signal that there is more to parse
 
@@ -235,16 +231,7 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
 		cmd->type = TYPE_STRING;
 		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (TG_JSON_SYNTAX_ERROR);} // find the end of the string
 		*tmp = NUL;
-//		strncpy(cmd->string, *pstr, CMD_STRING_LEN);// copy it regardless of length
-//		if (strlen(*pstr) >= CMD_STRING_LEN) {
-//			*((*pstr) + CMD_STRING_LEN) = NUL;		// terminate for error display purposes
-//			if (_gcode_comment_overrun_hack(cmd) == false) {
-//				return (TG_INPUT_EXCEEDS_MAX_LENGTH);
-//			}
-//		}
-
 		ritorno(cmd_copy_string(cmd, *pstr));
-		printf("%s\n", *cmd->stringp);				// ++++++++++++++++++++++++
 		*pstr = ++tmp;
 
 	// boolean true/false
@@ -258,7 +245,6 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
 	// arrays
 	} else if (**pstr == '[') {
 		cmd->type = TYPE_ARRAY;
-//		strncpy(cmd->string, *pstr, CMD_STRING_LEN);	// ++++++++++++++++++++++++
 		ritorno(cmd_copy_string(cmd, *pstr));		// copy array into string for error displays
 		return (TG_INPUT_VALUE_UNSUPPORTED);		// return error as the parser doesn't do input arrays yet
 
@@ -340,8 +326,6 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 			if (cmd->type == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
 			else if (cmd->type == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", cmd->value);}
 			else if (cmd->type == TYPE_FLOAT)	{ str += sprintf(str, "%0.3f", cmd->value);}
-//			else if (cmd->type == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",cmd->string);}
-//			else if (cmd->type == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  cmd->string);}
 			else if (cmd->type == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
 			else if (cmd->type == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  *cmd->stringp);}
 			else if (cmd->type == TYPE_BOOL) 	{
@@ -403,11 +387,10 @@ void js_print_json_response(cmdObj_t *cmd, uint8_t status)
 	}
 	if (verbosity == JV_SILENT) { return;}
 
-	char tmp[18];
+	char footer[18];
+	sprintf(footer, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
 	if (verbosity == JV_FOOTER_ONLY) { 					// footer only has null checksum
-//		sprintf(cmd_footer->string, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
-		sprintf(tmp, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
-		cmd_copy_string(cmd_footer, tmp);
+		cmd_copy_string(cmd_footer, footer);
 		tg.linelen = 0;									// reset it so it's only reported once
 		cmd_footer->type = TYPE_ARRAY;
 		js_print_json_object(cmd_footer); 
@@ -424,9 +407,7 @@ void js_print_json_response(cmdObj_t *cmd, uint8_t status)
 
 	// Footer processing
 	cmd_footer->type = TYPE_ARRAY;
-//	sprintf(cmd_footer->string, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
-	sprintf(tmp, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
-	cmd_copy_string(cmd_footer, tmp);
+	cmd_copy_string(cmd_footer, footer);
 	tg.linelen = 0;											// reset it so it's only reported once
 
 	// do all this to avoid having to serialize it twice
@@ -580,7 +561,6 @@ cmdObj_t * _add_parent(cmdObj_t *cmd, char *token)
 cmdObj_t * _add_string(cmdObj_t *cmd, char *token, char *string)
 {
 	strncpy(cmd->token, token, CMD_TOKEN_LEN);
-//	strncpy(cmd->string, string, CMD_STRING_LEN);		//++++++++++++++++++
 	cmd_copy_string(cmd, string);
 	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
 	cmd->type = TYPE_STRING;

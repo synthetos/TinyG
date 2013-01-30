@@ -43,9 +43,9 @@ typedef uint16_t index_t;			// if there are > 255 indexed objects
 
 #define CMD_GROUP_LEN 3				// max length of group prefix
 #define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
-#define CMD_STRING_LEN 128			// original value string or value as a string
-#define CMD_FORMAT_LEN 64			// print formatting string
-#define CMD_SHARED_STRING_LEN 256	// shared string for string values
+#define CMD_FORMAT_LEN 80			// print formatting string
+#define CMD_MESSAGE_LEN 80			// sufficient space to contain end-user messages
+#define CMD_SHARED_STRING_LEN 200	// shared string for string values
 
 /**** cmdObj lists ****
  *
