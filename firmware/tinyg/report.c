@@ -1,8 +1,8 @@
 /*
- * canonical_machine.c - rs274/ngc status report and other reporting functions.
+ * report.c - TinyG status report and other reporting functions.
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S Hart, Jr.
+ * Copyright (c) 2010 - 2013 Alden S Hart, Jr.
  */
 /* TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -98,18 +98,18 @@
  */
 void rpt_init_status_report(uint8_t persist_flag)
 {
-	cmdObj_t cmd;		// used for status report persistence locations
+	cmdObj_t *cmd = cmd_reset_list();	// used for status report persistence locations
 	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
 	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
 
-	cmd.index = cmd_get_index("","se00");				// set first SR persistence index
+	cmd->index = cmd_get_index("","se00");				// set first SR persistence index
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
 		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
 		cfg.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
-		cmd.value = cmd_get_index("", sr_defaults[i]);	// load the index for the SR element
-		cmd_set(&cmd);
-		cmd_persist(&cmd);
-		cmd.index++;
+		cmd->value = cmd_get_index("", sr_defaults[i]);	// load the index for the SR element
+		cmd_set(cmd);
+		cmd_persist(cmd);
+		cmd->index++;
 	}
 	cm.status_report_request = false;
 }
@@ -128,8 +128,7 @@ void rpt_init_status_report(uint8_t persist_flag)
  *	Status reports are generally returned with minimal delay (from the controller callback), 
  *	but will not be provided more frequently than the status report interval
  */
-
-void rpt_run_text_status_report()			// multiple line status report
+void rpt_run_text_status_report()
 {
 	rpt_populate_unfiltered_status_report();
 	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
@@ -140,7 +139,7 @@ void rpt_request_status_report()
 	cm.status_report_request = true;
 }
 
-void rpt_status_report_rtc_callback() 
+void rpt_status_report_rtc_callback() 		// called by 10ms real-time clock
 {
 	if (cm.status_report_counter != 0) { cm.status_report_counter--;} // stick at zero
 }
@@ -152,6 +151,7 @@ uint8_t rpt_status_report_callback() 		// called by controller dispatcher
 		(cm.status_report_request == false)) {
 		return (TG_NOOP);
 	}
+	// the following could be re-organized but -Os is actually most efficient with this code:
 	if ((cfg.comm_mode == JSON_MODE) && (cfg.status_report_verbosity == SR_FILTERED)) {
 		if (rpt_populate_filtered_status_report() == true) {
 			cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
@@ -160,8 +160,8 @@ uint8_t rpt_status_report_callback() 		// called by controller dispatcher
 		rpt_populate_unfiltered_status_report();
 		cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	}
+	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// reset minimum interval
 	cm.status_report_request = false;
-	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
 	return (TG_OK);
 }
 
@@ -173,8 +173,7 @@ uint8_t rpt_status_report_callback() 		// called by controller dispatcher
 
 void rpt_populate_unfiltered_status_report()
 {
-	cmdObj_t *cmd = cmd_body;
-	cmd_reset_list();
+	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
@@ -196,9 +195,7 @@ void rpt_populate_unfiltered_status_report()
 uint8_t rpt_populate_filtered_status_report()
 {
 	uint8_t has_data = false;
-
-	cmd_reset_list();
-	cmdObj_t *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
 
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	strcpy(cmd->token, "sr");
@@ -254,11 +251,16 @@ void rpt_request_queue_report()
 
 uint8_t rpt_queue_report_callback()
 {
-	if (qr.request == false) return (TG_NOOP);
+	if (qr.request == false) { return (TG_NOOP);}
 	qr.request = false;
 
+	// cget a clean cmd object
+//	cmdObj_t *cmd = cmd_reset_list();		// normally you do a list reset but the following is more time efficient
 	cmdObj_t *cmd = cmd_body;
-	cmd_new_obj(cmd);						// make a qr object
+	cmd_reset_obj(cmd);
+	cmd->nx = NULL;							// terminate the list
+
+	// make a qr object and print it
 	sprintf_P(cmd->token, PSTR("qr"));
 	cmd->value = qr.buffers_available;
 	cmd->type = TYPE_INTEGER;

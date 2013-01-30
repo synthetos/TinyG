@@ -137,7 +137,7 @@ uint8_t ar_arc( const double target[],
 	ar.segments = floor(min3(segments_required_for_chordal_accuracy,
 							 segments_required_for_minimum_distance,
 							 segments_required_for_minimum_time));
-	ar.segments = max(ar.segments,1);		//...but it at least 1 segment
+	ar.segments = max(ar.segments,1);		//...but is at least 1 segment
 
 	ar.segment_count = (uint32_t)ar.segments;
 	ar.segment_theta = ar.angular_travel / ar.segments;

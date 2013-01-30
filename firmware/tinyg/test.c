@@ -56,9 +56,6 @@
 #include "tests/test_050_mudflap.h"	// mudflap test - entire drawing
 #include "tests/test_051_braid.h"	// braid test - partial drawing
 
-const char PROGMEM test_file_open_in[] = "g20";
-const char PROGMEM test_file_open_mm[] = "g21";
-
 /*
  * tg_test() - system tests from FLASH invoked by $test=n command
  *
@@ -86,8 +83,6 @@ uint8_t tg_test(cmdObj_t *cmd)
 		case 13: { xio_open(XIO_DEV_PGM, PGMFILE(&test_coordinate_offsets),PGM_FLAGS); break;}
 		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
-		case 100: { xio_open(XIO_DEV_PGM, PGMFILE(&test_file_open_in),PGM_FLAGS); break;}
-		case 101: { xio_open(XIO_DEV_PGM, PGMFILE(&test_file_open_mm),PGM_FLAGS); break;}
 		default: {
 			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
 			return (TG_ERROR);
@@ -108,33 +103,19 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
-/* partkam arc failure part_copy.nc
-	xio_queue_RX_string_usb("G0 Z5\n");
-	xio_queue_RX_string_usb("T0 M6\n");
-	xio_queue_RX_string_usb("G17\n");
-	xio_queue_RX_string_usb("M3\n");
-//	xio_queue_RX_string_usb("G0 X40.30203045685279 Y40.38553299492386\n");
-	xio_queue_RX_string_usb("G92 X40.30203045685279 Y40.38553299492386\n");
-//	xio_queue_RX_string_usb("G1 Z-0.25 F200\n");
-	xio_queue_RX_string_usb("G3 X40.21319796954315 Y40.472081218274106 I-2.5 J-2.5 F1500\n");
-*/
+	xio_queue_RX_string_usb("$id\n");
+//	xio_queue_RX_string_usb("{\n");
+//	xio_queue_RX_string_usb("G3 X28.949238578680202 Y33.51776649746193 I2.1091370558375635 J-2.1091370558375635 F1524\n");
 
 //	xio_queue_RX_string_usb("g0x2\n");			// G0 smoke test
 //	xio_queue_RX_string_usb("{\"gc\":\"g2\"}\n");// G0 smoke test in JSON
-
-//	xio_queue_RX_string_usb("$test=100\n");
-//	xio_queue_RX_string_usb("$test=101\n");
-
-//	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");
-//	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");
 
 	// text parser test cases
 //	xio_queue_RX_string_usb("?\n");				// text mode status report
 //	xio_queue_RX_string_usb("$$\n");			// sys request
 //	xio_queue_RX_string_usb("$ec=1\n");			// turn CR expansion on
 //	xio_queue_RX_string_usb("$qr\n");			// invoke QR report
-//	xio_queue_RX_string_usb("$ej=1\n");			// enable JSON mode
+	xio_queue_RX_string_usb("$ej=1\n");			// enable JSON mode
 //	xio_queue_RX_string_usb("$n\n");			// ubergroup request
 //	xio_queue_RX_string_usb("$xvm=16,000\n");	// comma skipping
 //	xio_queue_RX_string_usb("$a\n");			// match a group
@@ -292,9 +273,6 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g10 L2 p2 x10 y11 z12\n");
 
 /* G28 and G30 homing tests */
-//	xio_queue_RX_string_usb("{\"hom\":\"\"}\n");
-//	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");// small homing - set minimal profile parameters)
-//	xio_queue_RX_string_usb("{\"gc\":\"g28.2x0\"}\n");// small homing - set minimal profile parameters)
 //	xio_queue_RX_string_usb("g28.2x0\n");
 //	xio_queue_RX_string_usb("g28.1\n");			// G28.1 OK
 //	xio_queue_RX_string_usb("g28.1x10y10\n");	// G28.1 specification error

@@ -55,10 +55,9 @@ double *set_vector(double x, double y, double z, double a, double b, double c);
 double *set_vector_by_axis(double value, uint8_t axis);
 #define clear_vector(a) memset(a,0,sizeof(a))
 
-// ritorno is a handy way to provide exception returns - it returns only 
-// if an error occurred. (ritorno is Italian for return) 
-uint8_t errcode;
-#define ritorno(a) if((errcode=a) != TG_OK) { return(errcode); }
+// ritorno is a handy way to provide exception returns - it returns only if an error occurred
+// (ritorno is Italian for return) 
+#define ritorno(a) { uint8_t status; if((status = a) != TG_OK) return(status);}
 
 /***** Math Support *****/
 

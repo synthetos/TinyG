@@ -2,7 +2,7 @@
  * cycle_homing - homing cycle extension to canonical_machine.c
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S Hart, Jr.
+ * Copyright (c) 2010 - 2013 Alden S Hart, Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -191,7 +191,7 @@ static PGM_P const msg_axis[] PROGMEM = { msg_axis0, msg_axis1, msg_axis2, msg_a
 
 static uint8_t _homing_error_exit(int8_t axis)
 {
-	char message[CMD_STRING_LEN]; 
+	char message[CMD_MESSAGE_LEN]; 
 	if (axis == -2) {
 		sprintf_P(message, PSTR("*** WARNING *** Homing error: Specified axis(es) cannot be homed"));
 	} else {

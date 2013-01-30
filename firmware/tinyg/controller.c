@@ -199,7 +199,6 @@ static uint8_t _dispatch()
 		return (status);
 	}
 	tg.linelen = strlen(tg.in_buf)+1;
-//	cmd_reset_list();							// REMOVE AFTER TESTING ++++++++++++++++++++++++++
 
 	// dispatch the new text line
 	switch (toupper(tg.in_buf[0])) {
@@ -371,7 +370,7 @@ static void _text_response(const uint8_t status, const char *buf)
 	// deliver echo and messages
 	cmdObj_t *cmd = cmd_body;		// if there is a message it will aways be in the second object
 	if ((cfg.text_verbosity >= TV_MESSAGES) && (cmd->token[0] == 'm')) {
-		fprintf(stderr, "%s\n", cmd->string);
+		fprintf(stderr, "%s\n", *cmd->stringp);
 	}
 }
 

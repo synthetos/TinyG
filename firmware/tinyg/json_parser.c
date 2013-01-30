@@ -49,9 +49,9 @@
 // local scope stuff
 
 uint8_t _json_parser_kernal(char *str);
-static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_t *depth);
+static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth);
 static uint8_t _normalize_json_string(char *str, uint16_t size);
-static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd);
+//static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd);
 
 /****************************************************************************
  * js_json_parser() - exposed part of JSON parser
@@ -112,7 +112,7 @@ uint8_t _json_parser_kernal(char *str)
 	// parse the JSON command into the cmd body
 	do {
 		if (--i == 0) { return (TG_JSON_TOO_MANY_PAIRS); }			// length error
-		if ((status = _get_nv_pair(cmd, &str, group, &depth)) > TG_EAGAIN) { // erred out
+		if ((status = _get_nv_pair(cmd, &str, &depth)) > TG_EAGAIN) { // erred out
 			return (status);
 		}
 		// propagate the group from previous NV pair (if relevant)
@@ -188,13 +188,12 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
  *	"fr" is found in the name string the parser will search for "xfr"in the 
  *	cfgArray.
  */
-
-static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_t *depth)
+static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
 {
 	char *tmp;
 	char terminators[] = {"},"};
 
-	cmd_new_obj(cmd);								// wipe the object and set the depth
+	cmd_reset_obj(cmd);								// wipes the object and sets the depth
 
 	// --- Process name part ---
 	// find leading and trailing name quotes and set pointers.
@@ -222,7 +221,7 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_
 	// object parent
 	} else if (**pstr == '{') { 
 		cmd->type = TYPE_PARENT;
-//		*depth += 1;								// cmd_new_obj() will set the next object's level
+//		*depth += 1;								// cmd_reset_obj() sets the next object's level so this is redundant
 		(*pstr)++;
 		return(TG_EAGAIN);							// signal that there is more to parse
 
@@ -232,13 +231,7 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_
 		cmd->type = TYPE_STRING;
 		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (TG_JSON_SYNTAX_ERROR);} // find the end of the string
 		*tmp = NUL;
-		strncpy(cmd->string, *pstr, CMD_STRING_LEN);// copy it regardless of length
-		if (strlen(*pstr) >= CMD_STRING_LEN) {
-			*((*pstr) + CMD_STRING_LEN) = NUL;		// terminate for error display purposes
-			if (_gcode_comment_overrun_hack(cmd) == false) {
-				return (TG_INPUT_EXCEEDS_MAX_LENGTH);
-			}
-		}
+		ritorno(cmd_copy_string(cmd, *pstr));
 		*pstr = ++tmp;
 
 	// boolean true/false
@@ -252,7 +245,7 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_
 	// arrays
 	} else if (**pstr == '[') {
 		cmd->type = TYPE_ARRAY;
-		strncpy(cmd->string, *pstr, CMD_STRING_LEN);// copy array into string for error displays
+		ritorno(cmd_copy_string(cmd, *pstr));		// copy array into string for error displays
 		return (TG_INPUT_VALUE_UNSUPPORTED);		// return error as the parser doesn't do input arrays yet
 
 	// general error condition
@@ -282,7 +275,7 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, const char *group, int8_
  *	overrun is cuased by as comment. The comment will be truncated. If the 
  *	comment happens to be a message, well tough noogies, bucko.
  */
-
+/*
 static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
 {
 	if (strstr(cmd->string,"(") == NULL) {
@@ -290,7 +283,7 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
 	}
 	return (true);
 }
-
+*/
 /****************************************************************************
  * js_serialize_json() - make a JSON object string from JSON object array
  *
@@ -333,8 +326,8 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 			if (cmd->type == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
 			else if (cmd->type == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", cmd->value);}
 			else if (cmd->type == TYPE_FLOAT)	{ str += sprintf(str, "%0.3f", cmd->value);}
-			else if (cmd->type == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",cmd->string);}
-			else if (cmd->type == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  cmd->string);}
+			else if (cmd->type == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
+			else if (cmd->type == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  *cmd->stringp);}
 			else if (cmd->type == TYPE_BOOL) 	{
 				if (cmd->value == false) { str += sprintf(str, "false");}
 				else { str += sprintf(str, "true"); }
@@ -368,7 +361,6 @@ void js_print_json_object(cmdObj_t *cmd)
 {
 	js_serialize_json(cmd, tg.out_buf);
 	fprintf(stderr, "%s", tg.out_buf);
-//	cmd_reset_list();					//++++++++++++++++++++ REMOVE AFTER TESTING
 }
 
 /*
@@ -395,10 +387,12 @@ void js_print_json_response(cmdObj_t *cmd, uint8_t status)
 	}
 	if (verbosity == JV_SILENT) { return;}
 
+	char footer[18];
+	sprintf(footer, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
 	if (verbosity == JV_FOOTER_ONLY) { 					// footer only has null checksum
-		cmd_footer->type = TYPE_ARRAY;
-		sprintf(cmd_footer->string, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
+		cmd_copy_string(cmd_footer, footer);
 		tg.linelen = 0;									// reset it so it's only reported once
+		cmd_footer->type = TYPE_ARRAY;
 		js_print_json_object(cmd_footer); 
 		return; 
 	}
@@ -413,7 +407,7 @@ void js_print_json_response(cmdObj_t *cmd, uint8_t status)
 
 	// Footer processing
 	cmd_footer->type = TYPE_ARRAY;
-	sprintf(cmd_footer->string, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
+	cmd_copy_string(cmd_footer, footer);
 	tg.linelen = 0;											// reset it so it's only reported once
 
 	// do all this to avoid having to serialize it twice
@@ -427,7 +421,6 @@ void js_print_json_response(cmdObj_t *cmd, uint8_t status)
 	while (tg.out_buf[strcount2] != ',') { strcount2--; }	// find start of checksum
 	sprintf(tg.out_buf + strcount2 + 1, "%d%s", compute_checksum(tg.out_buf, strcount2), tail);
 	fprintf(stderr, "%s", tg.out_buf);
-//	cmd_reset_list();							// REMOVE AFTER TESTING +++++++++++++++++++++++++++ 
 }
 
 //###########################################################################
@@ -568,7 +561,7 @@ cmdObj_t * _add_parent(cmdObj_t *cmd, char *token)
 cmdObj_t * _add_string(cmdObj_t *cmd, char *token, char *string)
 {
 	strncpy(cmd->token, token, CMD_TOKEN_LEN);
-	strncpy(cmd->string, string, CMD_STRING_LEN);
+	cmd_copy_string(cmd, string);
 	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
 	cmd->type = TYPE_STRING;
 	return (cmd->nx);
@@ -590,10 +583,11 @@ cmdObj_t * _add_empty(cmdObj_t *cmd)
 	return (cmd->nx);
 }
 
-cmdObj_t * _add_array(cmdObj_t *cmd, char *footer)
+cmdObj_t * _add_array(cmdObj_t *cmd, char *array_string)
 {
 	cmd->type = TYPE_ARRAY;
-	strncpy(cmd->string, footer, CMD_STRING_LEN);
+//	strncpy(cmd->string, array_string, CMD_STRING_LEN);
+	cmd_copy_string(cmd, array_string);
 	return (cmd->nx);
 }
 

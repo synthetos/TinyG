@@ -2,7 +2,7 @@
  * xmega_init.c - general init and support functions for xmega family
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -71,34 +71,34 @@ void xmega_init(void) {
 
 void xmega_init_clocks(void) 
 { 
-#ifdef __CLOCK_EXTERNAL_8MHZ // external 8 Mhx Xtal with 4x PLL = 32 Mhz
-	OSC.XOSCCTRL = 0x4B;	// 2-9 MHz crystal; 0.4-16 MHz XTAL w/16K CLK startup
-	OSC.CTRL = 0x08;        // enable external crystal oscillator 
-	while(!(OSC.STATUS & OSC_XOSCRDY_bm));		// wait for oscillator ready
-	OSC.PLLCTRL = 0xC4;		// XOSC is PLL Source; 4x Factor (32 MHz sys clock) 
-	OSC.CTRL = 0x18;        // Enable PLL & External Oscillator 
-	while(!(OSC.STATUS & OSC_PLLRDY_bm));		// wait for PLL ready
-	CCPWrite(&CLK.CTRL, CLK_SCLKSEL_PLL_gc);    // switch to PLL clock
-	OSC.CTRL &= ~OSC_RC2MEN_bm;					// disable internal 2 MHz clock
+#ifdef __CLOCK_EXTERNAL_8MHZ 				// external 8 Mhx Xtal with 4x PLL = 32 Mhz
+	OSC.XOSCCTRL = 0x4B;					// 2-9 MHz crystal; 0.4-16 MHz XTAL w/16K CLK startup
+	OSC.CTRL = 0x08;       					// enable external crystal oscillator 
+	while(!(OSC.STATUS & OSC_XOSCRDY_bm));	// wait for oscillator ready
+	OSC.PLLCTRL = 0xC4;						// XOSC is PLL Source; 4x Factor (32 MHz sys clock) 
+	OSC.CTRL = 0x18;        				// Enable PLL & External Oscillator 
+	while(!(OSC.STATUS & OSC_PLLRDY_bm));	// wait for PLL ready
+	CCPWrite(&CLK.CTRL, CLK_SCLKSEL_PLL_gc);// switch to PLL clock
+	OSC.CTRL &= ~OSC_RC2MEN_bm;				// disable internal 2 MHz clock
 #endif
 
-#ifdef __CLOCK_EXTERNAL_16MHZ // external 16 Mhx Xtal with 2x PLL = 32 Mhz
-	OSC.XOSCCTRL = 0xCB;	// 12-16 MHz crystal; 0.4-16 MHz XTAL w/16K CLK startup
-	OSC.CTRL = 0x08;        // enable external crystal oscillator 
-	while(!(OSC.STATUS & OSC_XOSCRDY_bm));		// wait for oscillator ready
-	OSC.PLLCTRL = 0xC2;		// XOSC is PLL Source; 2x Factor (32 MHz sys clock)
-	OSC.CTRL = 0x18;        // Enable PLL & External Oscillator 
-	while(!(OSC.STATUS & OSC_PLLRDY_bm));		// wait for PLL ready
-	CCPWrite(&CLK.CTRL, CLK_SCLKSEL_PLL_gc);    // switch to PLL clock
-	OSC.CTRL &= ~OSC_RC2MEN_bm;					// disable internal 2 MHz clock
+#ifdef __CLOCK_EXTERNAL_16MHZ				// external 16 Mhx Xtal with 2x PLL = 32 Mhz
+	OSC.XOSCCTRL = 0xCB;					// 12-16 MHz crystal; 0.4-16 MHz XTAL w/16K CLK startup
+	OSC.CTRL = 0x08;						// enable external crystal oscillator 
+	while(!(OSC.STATUS & OSC_XOSCRDY_bm));	// wait for oscillator ready
+	OSC.PLLCTRL = 0xC2;						// XOSC is PLL Source; 2x Factor (32 MHz sys clock)
+	OSC.CTRL = 0x18;						// Enable PLL & External Oscillator 
+	while(!(OSC.STATUS & OSC_PLLRDY_bm));	// wait for PLL ready
+	CCPWrite(&CLK.CTRL, CLK_SCLKSEL_PLL_gc);// switch to PLL clock
+	OSC.CTRL &= ~OSC_RC2MEN_bm;				// disable internal 2 MHz clock
 #endif
 
-#ifdef __CLOCK_INTERNAL_32MHZ // 32 MHz internal clock (Boston Android code)
-	CCP = CCP_IOREG_gc; 						// Security Signature to modify clk
-	OSC.CTRL = OSC_RC32MEN_bm; 					// enable internal 32MHz oscillator
-	while(!(OSC.STATUS & OSC_RC32MRDY_bm)); 	// wait for oscillator ready
-	CCP = CCP_IOREG_gc; 						// Security Signature to modify clk
-	CLK.CTRL = 0x01; 							// select sysclock 32MHz osc
+#ifdef __CLOCK_INTERNAL_32MHZ 				// 32 MHz internal clock (Boston Android code)
+	CCP = CCP_IOREG_gc; 					// Security Signature to modify clk
+	OSC.CTRL = OSC_RC32MEN_bm; 				// enable internal 32MHz oscillator
+	while(!(OSC.STATUS & OSC_RC32MRDY_bm)); // wait for oscillator ready
+	CCP = CCP_IOREG_gc; 					// Security Signature to modify clk
+	CLK.CTRL = 0x01; 						// select sysclock 32MHz osc
 #endif
 }
 
