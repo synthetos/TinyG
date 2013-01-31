@@ -216,6 +216,8 @@ static uint8_t _get_sr(cmdObj_t *cmd);		// run status report (as data)
 static void _print_sr(cmdObj_t *cmd);		// run status report (as printout)
 static uint8_t _set_sr(cmdObj_t *cmd);		// set status report specification
 static uint8_t _set_si(cmdObj_t *cmd);		// set status report interval
+//static uint8_t _set_tv(cmdObj_t *cmd);		// set text verbosity
+//static uint8_t _set_jv(cmdObj_t *cmd);		// set json verbosity
 static uint8_t _get_id(cmdObj_t *cmd);		// get device ID
 static uint8_t _get_qr(cmdObj_t *cmd);		// run queue report (as data)
 static uint8_t _get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
@@ -755,8 +757,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","ex",  _f07, fmt_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
 	{ "sys","eq",  _f07, fmt_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,			QR_VERBOSITY },
 	{ "sys","ej",  _f07, fmt_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,			COMM_MODE },
-	{ "sys","jv",  _f07, fmt_jv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.json_verbosity,		JSON_VERBOSITY },
-	{ "sys","tv",  _f07, fmt_tv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.text_verbosity,		TEXT_VERBOSITY },
+	{ "sys","jv",  _f07, fmt_jv, _print_ui8, _get_ui8, cmd_set_jv,(double *)&cfg.json_verbosity,	JSON_VERBOSITY },
+	{ "sys","tv",  _f07, fmt_tv, _print_ui8, _get_ui8, cmd_set_tv,(double *)&cfg.text_verbosity,	TEXT_VERBOSITY },
 	{ "sys","si",  _f07, fmt_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
 	{ "sys","sv",  _f07, fmt_sv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.status_report_verbosity,SR_VERBOSITY },
 	{ "sys","baud",_fns, fmt_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
@@ -886,11 +888,13 @@ static uint8_t _get_rx(cmdObj_t *cmd)
 	return (TG_OK);
 }
 
-/**** STATUS REPORT REPORT FUNCTIONS ****
+/**** REPORTING FUNCTIONS ****
  * _get_sr()   - run status report
  * _print_sr() - run status report
  * _set_sr()   - set status report specification
  * _set_si()   - set status report interval
+ * _set_jv()   - set JSON verbosity level - for details see jsonVerbosity in config.h
+ * _set_tv()   - set text verbosity level - for details see textVerbosity in config.h
  */
 static uint8_t _get_sr(cmdObj_t *cmd)
 {
@@ -924,6 +928,41 @@ static uint8_t _set_si(cmdObj_t *cmd)
 	return(TG_OK);
 }
 
+uint8_t cmd_set_jv(cmdObj_t *cmd) 
+{
+	cfg.json_verbosity = cmd->value;
+
+	cfg.echo_json_footer = false;
+	cfg.echo_json_configs = false;
+	cfg.echo_json_messages = false;
+	cfg.echo_json_linenum = false;
+	cfg.echo_json_gcode_block = false;
+
+	if (cmd->value >= JV_FOOTER) 	{ cfg.echo_json_footer = true;}
+	if (cmd->value >= JV_CONFIGS)	{ cfg.echo_json_configs = true;}
+	if (cmd->value >= JV_MESSAGES)	{ cfg.echo_json_messages = true;}
+	if (cmd->value >= JV_LINENUM)	{ cfg.echo_json_linenum = true;}
+	if (cmd->value >= JV_VERBOSE)	{ cfg.echo_json_gcode_block = true;}
+
+	return(TG_OK);
+}
+
+uint8_t cmd_set_tv(cmdObj_t *cmd) 
+{
+	cfg.text_verbosity = cmd->value;
+
+	cfg.echo_text_prompt = false;
+	cfg.echo_text_messages = false;
+	cfg.echo_text_configs = false;
+	cfg.echo_text_gcode_block = false;
+
+	if (cmd->value >= TV_PROMPT)	{ cfg.echo_text_prompt = true;} 
+	if (cmd->value >= TV_MESSAGES)	{ cfg.echo_text_messages = true;}
+	if (cmd->value >= TV_CONFIGS)	{ cfg.echo_text_configs = true;}
+	if (cmd->value >= TV_VERBOSE)	{ cfg.echo_text_gcode_block = true;}
+
+	return(TG_OK);
+}
 
 /**** STATUS REPORT FUNCTIONS ****************************************
  * _get_msg_helper() - helper to get display message
@@ -1123,12 +1162,14 @@ static uint8_t _set_am(cmdObj_t *cmd)		// axis mode
 	if (strchr(linear_axes, cmd->group[0]) != NULL) {		// true if it's a linear axis
 		if (cmd->value > AXIS_MAX_LINEAR) {
 			cmd->value = 0;
-			cmd_add_string_P("msg", PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED"));
+//			cmd_add_string_P("msg", PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED"));
+			cmd_add_message_P(PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED"));
 		}
 	} else {
 		if (cmd->value > AXIS_MAX_ROTARY) {
 			cmd->value = 0;
-			cmd_add_string_P("msg", PSTR("*** WARNING *** Unsupported rotary axis mode. Axis DISABLED"));
+//			cmd_add_string_P("msg", PSTR("*** WARNING *** Unsupported rotary axis mode. Axis DISABLED"));
+			cmd_add_message_P(PSTR("*** WARNING *** Unsupported rotary axis mode. Axis DISABLED"));
 		}
 	}
 	_set_ui8(cmd);
@@ -1159,7 +1200,8 @@ static uint8_t _set_tr(cmdObj_t *cmd)		// motor travel per revolution
 static uint8_t _set_mi(cmdObj_t *cmd)		// motor microsteps
 {
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
-		cmd_add_string_P("msg", PSTR("*** WARNING *** Non-standard microstep value"));
+//		cmd_add_string_P("msg", PSTR("*** WARNING *** Non-standard microstep value"));
+		cmd_add_message_P(PSTR("*** WARNING *** Non-standard microstep value"));
 	}
 	_set_ui8(cmd);						// but set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);
@@ -1246,14 +1288,16 @@ static uint8_t _set_baud(cmdObj_t *cmd)
 {
 	uint8_t baud = (uint8_t)cmd->value;
 	if ((baud < 1) || (baud > 6)) {
-		cmd_add_string_P("msg", PSTR("*** WARNING *** Illegal baud rate specified"));
+//		cmd_add_string_P("msg", PSTR("*** WARNING *** Illegal baud rate specified"));
+		cmd_add_message_P(PSTR("*** WARNING *** Illegal baud rate specified"));
 		return (TG_INPUT_VALUE_UNSUPPORTED);
 	}
 	cfg.usb_baud_rate = baud;
 	cfg.usb_baud_flag = true;
 	char message[CMD_MESSAGE_LEN]; 
 	sprintf_P(message, PSTR("*** NOTICE *** Restting baud rate to %S"),(PGM_P)pgm_read_word(&msg_baud[baud]));
-	cmd_add_string("msg",message);
+//	cmd_add_string("msg",message);
+	cmd_add_message(message);
 	return (TG_OK);
 }
 
@@ -1933,20 +1977,25 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 
 /********************************************************************************
  * cmdObj low-level object and list operations
- * cmd_get_cmdObj()  - setup a cmd object by providing the index
- * cmd_reset_obj() 	 - quick clear for a new cmd object
- * cmd_reset_list()	 - clear entire header, body and footer for a new use
- * cmd_copy_string() - used to write a string to shared string storage and link it
- * cmd_copy_string_P() - same, but for progmem string sources
- * cmd_add_object()	 - write contents of parameter to  first free object in the body
- * cmd_add_string()	 - add a string object to end of cmd body
- * cmd_add_string_P()- add a program memory string as a string object to end of cmd body
- * cmd_add_integer() - add an integer value to end of cmd body (Note 1)
- * cmd_add_float()	 - add a floating point value to end of cmd body
+ * cmd_get_cmdObj()		- setup a cmd object by providing the index
+ * cmd_reset_obj()		- quick clear for a new cmd object
+ * cmd_reset_list()		- clear entire header, body and footer for a new use
+ * cmd_copy_string()	- used to write a string to shared string storage and link it
+ * cmd_copy_string_P()	- same, but for progmem string sources
+ * cmd_add_object()		- write contents of parameter to  first free object in the body
+ * cmd_add_integer()	- add an integer value to end of cmd body (Note 1)
+ * cmd_add_float()		- add a floating point value to end of cmd body
+ * cmd_add_string()		- add a string object to end of cmd body
+ * cmd_add_string_P()	- add a program memory string as a string object to end of cmd body
+ * cmd_add_message()	- add a mesasge to cmd body
+ * cmd_add_message_P()	- add a program memory message the the cmd body
  *
- *	Note 1: adding a really large integer (like a checksum value) may lose 
- *	precision due to the cast to a double. Sometimes it's better to load an 
- *	integer as a string if all you want to do is display it.
+ *	Note: Functions that return a cmd pointer point to the object that was modified
+ *	or a NULL pointer if there was an error
+ *
+ *	Note Adding a really large integer (like a checksum value) may lose precision 
+ *	due to the cast to a double. Sometimes it's better to load an integer as a 
+ *	string if all you want to do is display it.
  */
 
 void cmd_get_cmdObj(cmdObj_t *cmd)
@@ -1991,39 +2040,25 @@ cmdObj_t *cmd_reset_obj(cmdObj_t *cmd)	// clear a single cmdObj structure
 	return (cmd);
 }
 
-cmdObj_t *cmd_reset_list()					// clear the header, response body and footer
+cmdObj_t *cmd_reset_list()					// clear the header and response body
 {
-	// reset the shared string
-	cmdStr.wp = 0;
-
-	// set up linked list and initialize elements	
-	cmdObj_t *cmd = cmd_list;
-	for (uint8_t i=0; i<CMD_LIST_LEN; i++) {
+	cmdStr.wp = 0;							// reset the shared string
+	cmdObj_t *cmd = cmd_list;				// set up linked list and initialize elements	
+	for (uint8_t i=0; i<CMD_LIST_LEN; i++, cmd++) {
 		cmd->pv = (cmd-1);					// the ends are bogus & corrected later
 		cmd->nx = (cmd+1);
 		cmd->index = 0;
 		cmd->depth = 1;						// header and footer are corrected later
 		cmd->type = TYPE_EMPTY;
 		cmd->token[0] = NUL;
-		cmd++;
 	}
-
-	// setup response header element ('r')
-	cmd = cmd_list;
+	(--cmd)->nx = NULL;
+	cmd = cmd_list;							// setup response header element ('r')
 	cmd->pv = NULL;
 	cmd->depth = 0;
 	cmd->type = TYPE_PARENT;
-	cmd->token[0] = 'r';
-	cmd->token[1] = NUL;
-
-	// setup response footer element ('f')
-	cmd = cmd_footer;
-	cmd->nx = NULL;
-	cmd->depth = 1;
-	cmd->type = TYPE_ARRAY;
-	cmd->token[0] = 'f';
-	cmd->token[1] = NUL;
-	return (cmd_body);
+	strcpy(cmd->token, "r");
+	return (cmd_body);						// this is a convenience for calling routines
 }
 
 uint8_t cmd_copy_string(cmdObj_t *cmd, const char *src)
@@ -2043,7 +2078,7 @@ uint8_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P)
 	return (cmd_copy_string(cmd, buf));
 }
 
-uint8_t cmd_add_object(char *token)			// add an object to the body using a token
+cmdObj_t *cmd_add_object(char *token)		// add an object to the body using a token
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
@@ -2052,40 +2087,14 @@ uint8_t cmd_add_object(char *token)			// add an object to the body using a token
 			continue;
 		}
 		// load the index from the token or die trying
-		if ((cmd->index = cmd_get_index("",token)) == NO_INDEX) {
-			return (TG_UNRECOGNIZED_COMMAND);
-		}
+		if ((cmd->index = cmd_get_index("",token)) == NO_INDEX) { return (NULL);}
 		cmd_get_cmdObj(cmd);				// populate the object from the index
-		return (TG_OK);		
+		return (cmd);
 	}
-	return (TG_NO_BUFFER_SPACE);
+	return (NULL);
 }
 
-uint8_t cmd_add_string(char *token, const char *string)	// add a string object to the body
-{
-	cmdObj_t *cmd = cmd_body;
-	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->type != TYPE_EMPTY) {
-			cmd = cmd->nx;
-			continue;
-		}
-		strncpy(cmd->token, token, CMD_TOKEN_LEN);
-		ritorno(cmd_copy_string(cmd, string));
-		cmd->index = cmd_get_index("", cmd->token);
-		cmd->type = TYPE_STRING;
-		return (TG_OK);
-	}
-	return (TG_NO_BUFFER_SPACE);
-}
-
-uint8_t cmd_add_string_P(char *token, const char *string)
-{
-	char message[CMD_MESSAGE_LEN]; 
-	sprintf_P(message, string);
-	return(cmd_add_string(token, message));
-}
-
-uint8_t cmd_add_integer(char *token, const uint32_t value)// add an integer object to the body
+cmdObj_t *cmd_add_integer(char *token, const uint32_t value)// add an integer object to the body
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
@@ -2096,12 +2105,12 @@ uint8_t cmd_add_integer(char *token, const uint32_t value)// add an integer obje
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		cmd->value = (double) value;
 		cmd->type = TYPE_INTEGER;
-		return (TG_OK);
+		return (cmd);
 	}
-	return (TG_NO_BUFFER_SPACE);
+	return (NULL);
 }
 
-uint8_t cmd_add_float(char *token, const double value)	// add a float object to the body
+cmdObj_t *cmd_add_float(char *token, const double value)	// add a float object to the body
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
@@ -2112,9 +2121,53 @@ uint8_t cmd_add_float(char *token, const double value)	// add a float object to 
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		cmd->value = value;
 		cmd->type = TYPE_FLOAT;
-		return (TG_OK);
+		return (cmd);
 	}
-	return (TG_NO_BUFFER_SPACE);
+	return (NULL);
+}
+
+cmdObj_t *cmd_add_string(char *token, const char *string)	// add a string object to the body
+{
+	cmdObj_t *cmd = cmd_body;
+	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
+		if (cmd->type != TYPE_EMPTY) {
+			cmd = cmd->nx;
+			continue;
+		}
+		strncpy(cmd->token, token, CMD_TOKEN_LEN);
+		if (cmd_copy_string(cmd, string) != TG_OK) { return (NULL);}
+		cmd->index = cmd_get_index("", cmd->token);
+		cmd->type = TYPE_STRING;
+		return (cmd);
+	}
+	return (NULL);
+}
+
+cmdObj_t *cmd_add_string_P(char *token, const char *string)
+{
+	char message[CMD_MESSAGE_LEN]; 
+	sprintf_P(message, string);
+	return(cmd_add_string(token, message));
+}
+
+cmdObj_t *cmd_add_message(const char *string)	// conditionally add a message object to the body
+{
+	if (((cfg.comm_mode == JSON_MODE) && (cfg.echo_json_messages == true)) ||
+	  	((cfg.comm_mode == TEXT_MODE) && (cfg.echo_text_messages == true))) {
+		return(cmd_add_string("msg", string));
+	}
+	return (NULL);
+}
+
+cmdObj_t *cmd_add_message_P(const char *string)	// conditionally add a message object to the body
+{
+	if (((cfg.comm_mode == JSON_MODE) && (cfg.echo_json_messages == true)) ||
+	  	((cfg.comm_mode == TEXT_MODE) && (cfg.echo_text_messages == true))) {
+		char message[CMD_MESSAGE_LEN]; 
+		sprintf_P(message, string);
+		return(cmd_add_string("msg", message));
+	}
+	return (NULL);
 }
 
 /**** cmd_print_list() - print cmd_array as JSON or text ****
@@ -2139,7 +2192,7 @@ void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags)
 		switch (json_flags) {
 			case JSON_NO_PRINT: { break; } 
 			case JSON_OBJECT_FORMAT: { js_print_json_object(cmd_body); break; }
-			case JSON_RESPONSE_FORMAT: { js_print_json_response(cmd_header, status); break; }
+			case JSON_RESPONSE_FORMAT: { js_print_json_response(status); break; }
 		}
 	} else {
 		switch (text_flags) {

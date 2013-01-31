@@ -45,6 +45,7 @@ typedef uint16_t index_t;			// if there are > 255 indexed objects
 #define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
 #define CMD_FORMAT_LEN 80			// print formatting string
 #define CMD_MESSAGE_LEN 80			// sufficient space to contain end-user messages
+#define CMD_FOOTER_LEN 18			// sufficient space to contain a JSON footer element
 #define CMD_SHARED_STRING_LEN 200	// shared string for string values
 
 /**** cmdObj lists ****
@@ -82,9 +83,7 @@ typedef uint16_t index_t;			// if there are > 255 indexed objects
  *	of CMD_NAME_LEN and CMD_VALUE_STRING_LEN which are statically allocated 
  *	and should be as short as possible. 
  */
-//#define CMD_HEADER_LEN 1			// "r" header
 #define CMD_BODY_LEN 25				// body elements - includes one terminator
-//#define CMD_FOOTER_LEN 2			// footer element (includes terminator element)
 #define CMD_LIST_LEN (CMD_BODY_LEN+2)
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 
@@ -121,20 +120,21 @@ enum tgCommunicationsMode {
 	JSON_MODE
 };
 
-enum jsonVerbosity {
-	JV_SILENT = 0,					// no response is provided for any command
-	JV_FOOTER_ONLY,					// response contains no body - footer only
-	JV_OMIT_GCODE_BODY,				// body returned for configs; omitted for Gcode commands
-	JV_GCODE_LINENUM_ONLY,			// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
-	JV_GCODE_MESSAGES,				// body returned for configs; Gcode returns line numbers and messages only
-	JV_VERBOSE						// body returned for configs and Gcode - Gcode comments removed
-};
-
 enum textVerbosity {
 	TV_SILENT = 0,					// no response is provided
 	TV_PROMPT,						// returns prompt only and exception messages
-	TV_MESSAGES,					// returns prompt and all messages
-	TV_VERBOSE						// returns prompt, echos command and all messages
+	TV_MESSAGES,					// returns prompt only and exception messages
+	TV_CONFIGS,						// returns prompt, messages and echo config commands. Gcode blocks are not echoed 
+	TV_VERBOSE						// returns all prompts, messages, configs and gcode blocks
+};
+
+enum jsonVerbosity {
+	JV_SILENT = 0,					// no response is provided for any command
+	JV_FOOTER,						// responses contain  footer only; no command echo, gcode blocks or messages
+	JV_CONFIGS,						// echo configs; gcode blocks are not echoed; messages are not echoed
+	JV_MESSAGES,					// echo configs; gcode messages only (if present); no block echo or line numbers
+	JV_LINENUM,						// echo configs; gcode blocks return messages and line numbers as present
+	JV_VERBOSE						// echos all configs and gcode blocks, line numbers and messages
 };
 
 enum qrVerbosity {					// planner queue enable and verbosity
@@ -184,10 +184,9 @@ typedef void (*fptrPrint)(cmdObj_t *cmd);// required for PROGMEM access
 
 // static allocation and definitions
 cmdStr_t cmdStr;
-cmdObj_t cmd_list[CMD_LIST_LEN];// JSON header element
+cmdObj_t cmd_list[CMD_LIST_LEN];	// JSON header element
 #define cmd_header cmd_list
-#define cmd_body (cmd_list +1)
-#define cmd_footer (cmd_list + CMD_LIST_LEN)
+#define cmd_body  (cmd_list+1)
 
 /*
  * Global Scope Functions
@@ -197,7 +196,7 @@ void cfg_init(void);
 uint8_t cfg_text_parser(char *str);
 uint8_t cfg_baud_rate_callback(void);
 
-// main entry popints for core access functions
+// main entry points for core access functions
 uint8_t cmd_get(cmdObj_t *cmd);		// get value
 uint8_t cmd_set(cmdObj_t *cmd);		// set value
 void cmd_print(cmdObj_t *cmd);		// formatted print
@@ -206,6 +205,8 @@ void cmd_persist(cmdObj_t *cmd);	// persistence
 // helpers
 index_t cmd_get_index(const char *group, const char *token);
 uint8_t cmd_get_type(cmdObj_t *cmd);
+uint8_t cmd_set_jv(cmdObj_t *cmd);
+uint8_t cmd_set_tv(cmdObj_t *cmd);
 uint8_t cmd_persist_offsets(uint8_t flag);
 
 // object and list functions
@@ -214,11 +215,14 @@ cmdObj_t *cmd_reset_obj(cmdObj_t *cmd);
 cmdObj_t *cmd_reset_list(void);
 uint8_t cmd_copy_string(cmdObj_t *cmd, const char *src);
 uint8_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P);
-uint8_t cmd_add_object(char *token);
-uint8_t cmd_add_string(char *token, const char *string);
-uint8_t cmd_add_string_P(char *token, const char *string);
-uint8_t cmd_add_integer(char *token, const uint32_t value);
-uint8_t cmd_add_float(char *token, const double value);
+cmdObj_t *cmd_add_object(char *token);
+cmdObj_t *cmd_add_integer(char *token, const uint32_t value);
+cmdObj_t *cmd_add_float(char *token, const double value);
+cmdObj_t *cmd_add_string(char *token, const char *string);
+cmdObj_t *cmd_add_string_P(char *token, const char *string);
+cmdObj_t *cmd_add_message(const char *string);
+cmdObj_t *cmd_add_message_P(const char *string);
+
 void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags);
 uint8_t cmd_group_is_prefixed(char *group);
 uint8_t cmd_index_is_group(index_t index);
@@ -310,6 +314,17 @@ struct cfgParameters {
 	uint8_t text_verbosity;			// see enum in this file for settings
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
+
+	uint8_t echo_json_footer;			// switches for responses
+	uint8_t echo_json_configs;
+	uint8_t echo_json_messages;
+	uint8_t echo_json_linenum;
+	uint8_t echo_json_gcode_block;
+
+	uint8_t echo_text_prompt;
+	uint8_t echo_text_messages;
+	uint8_t echo_text_configs;
+	uint8_t echo_text_gcode_block;
 
 	// status report configs
 	uint8_t status_report_verbosity;					// see enum in this file for settings

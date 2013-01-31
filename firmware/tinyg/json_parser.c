@@ -368,57 +368,66 @@ void js_print_json_object(cmdObj_t *cmd)
  *
  *	A footer is returned for every setting except $jv=0
  *
- *	  JV_SILENT = 0,		// no response is provided for any command
- *    JV_FOOTER_ONLY		// response contains no body - footer only - footer has 0 checksum
- *	  JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
- *	  JV_GCODE_LINENUM_ONLY	// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
- *	  JV_GCODE_MESSAGES		// body returned for configs; Gcode returns line numbers and messages only
- *	  JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
+ *	JV_SILENT = 0,	// no response is provided for any command
+ *	JV_FOOTER,		// responses contain  footer only; no command echo, gcode blocks or messages
+ *	JV_CONFIGS,		// echo configs; gcode blocks are not echoed; messages are not echoed
+ *	JV_MESSAGES,	// echo configs; gcode messages only (if present); no block echo or line numbers
+ *	JV_LINENUM,		// echo configs; gcode blocks return messages and line numbers as present
+ *	JV_VERBOSE		// echos all configs and gcode blocks, line numbers and messages
+ *
+ *	This gets a bit complicated. The first cmdObj is the header, which must be set by reset_list().
+ *	The first object in the body will always have the gcode block or config command in it, 
+ *	which you may or may not want to display. This is followed by zero or more displayable objects. 
+ *	Then if you want a gcode line number you add that here to the end. Finally, a footer goes 
+ *	on all the (non-silent) responses.
  */
 #define MAX_TAIL_LEN 8
 
-void js_print_json_response(cmdObj_t *cmd, uint8_t status)
+void js_print_json_response(uint8_t status)
 {
-	uint8_t verbosity = cfg.json_verbosity;
-
 	if (cm.machine_state == MACHINE_INITIALIZING) {		// always do full echo during startup
 		fprintf(stderr,"\n");
-		verbosity = JV_VERBOSE;
+		cmdObj_t tmp;
+		tmp.value = JV_VERBOSE;
+		cmd_set_jv(&tmp);
 	}
-	if (verbosity == JV_SILENT) { return;}
+	if (cfg.json_verbosity == JV_SILENT) { return;}		// silent responses
 
-	char footer[18];
-	sprintf(footer, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
-	if (verbosity == JV_FOOTER_ONLY) { 					// footer only has null checksum
-		cmd_copy_string(cmd_footer, footer);
-		tg.linelen = 0;									// reset it so it's only reported once
-		cmd_footer->type = TYPE_ARRAY;
-		js_print_json_object(cmd_footer); 
-		return; 
-	}
-	// Special processing for Gcode responses
-	// Assumes cmdObjs are ordered in the body as "gc", "msg", "n" in positions 0,1,2
-	// "msg" and "n" may or may not be present in the body depending on conditions
-	if ((cmd_get_type(cmd_body) == CMD_TYPE_GCODE) && (verbosity < JV_VERBOSE)) {
-		if (verbosity >= JV_OMIT_GCODE_BODY) { cmd_body->type = TYPE_EMPTY;}
-		if (verbosity >= JV_GCODE_LINENUM_ONLY) { cmd_body->nx->nx->type = TYPE_EMPTY;}
-		if (verbosity >= JV_GCODE_MESSAGES) { cmd_body->nx->type = TYPE_EMPTY;}
+	// Body processing
+	cmdObj_t *cmd = cmd_body;
+	if (cmd_get_type(cmd) == CMD_TYPE_GCODE) {
+		if (cfg.echo_json_gcode_block == false) {
+			cmd->type = TYPE_EMPTY;						// skip gcode block if no echo
+		}
+		if ((cfg.echo_json_linenum == true) && (cm_get_model_linenum() != 0)) {
+			cmd = cmd_add_object("n");
+		}
+	} else {
+		if (cfg.echo_json_configs == false) {
+			cmd->type = TYPE_EMPTY;						// skip config if no echo
+		}
 	}
 
 	// Footer processing
-	cmd_footer->type = TYPE_ARRAY;
-	cmd_copy_string(cmd_footer, footer);
-	tg.linelen = 0;											// reset it so it's only reported once
+	while(cmd->type != TYPE_EMPTY) { cmd = cmd->nx;}	// advance to first free object
+	char footer_string[CMD_FOOTER_LEN];
+	sprintf(footer_string, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
+	tg.linelen = 0;										// reset linelen so it's only reported once
+
+	cmd_copy_string(cmd, footer_string);				// link string to cmd object
+	cmd->type = TYPE_ARRAY;
+	strcpy(cmd->token, "f");
+	cmd->nx = NULL;
 
 	// do all this to avoid having to serialize it twice
-	uint16_t strcount = js_serialize_json(cmd, tg.out_buf);	// make JSON string w/o checksum
+	uint16_t strcount = js_serialize_json(cmd_header, tg.out_buf);// make JSON string w/o checksum
 	uint16_t strcount2 = strcount;
 	char tail[MAX_TAIL_LEN];
 
-	while (tg.out_buf[strcount] != '0') { strcount--; }		// find end of checksum
-	strcpy(tail, tg.out_buf + strcount + 1);				// save the json termination
+	while (tg.out_buf[strcount] != '0') { strcount--; }	// find end of checksum
+	strcpy(tail, tg.out_buf + strcount + 1);			// save the json termination
 
-	while (tg.out_buf[strcount2] != ',') { strcount2--; }	// find start of checksum
+	while (tg.out_buf[strcount2] != ',') { strcount2--; }// find start of checksum
 	sprintf(tg.out_buf + strcount2 + 1, "%d%s", compute_checksum(tg.out_buf, strcount2), tail);
 	fprintf(stderr, "%s", tg.out_buf);
 }
