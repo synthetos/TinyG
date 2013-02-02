@@ -1,7 +1,7 @@
 TinyG Introduction
 ========
 
-![TinyG v6 Board](http://farm9.staticflickr.com/8043/8106490677_06e1e4f1e9_z.jpg)
+![TinyG v6 Board](http://farm9.staticflickr.com/8186/8436183471_6b3708cd0d_c.jpg)
 
 TinyG is a port of grbl to the Atmel xmega that runs on the TinyG hardware. Some differences are:
 
