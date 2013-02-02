@@ -29,62 +29,58 @@
 
 #include <stdbool.h>
 
-/**** Command definitions and objects (used by config and JSON) ****/
-
-// Choose one: This sets the index size into the cmdArray
-
-//#define index_t uint8_t			// use this if there are < 255 indexed objects
-//#define NO_INDEX 0xFF				// defined as no match
-//#define index_t uint16_t			// use this if there are > 255 indexed objects
-
-//typedef uint8_t index_t;			// if there are < 255 indexed objects
-typedef uint16_t index_t;			// if there are > 255 indexed objects
-#define NO_INDEX (index_t)0xFFFF	// defined as no match
-
-#define CMD_GROUP_LEN 3				// max length of group prefix
-#define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
-#define CMD_FORMAT_LEN 80			// print formatting string
-#define CMD_MESSAGE_LEN 80			// sufficient space to contain end-user messages
-#define CMD_FOOTER_LEN 18			// sufficient space to contain a JSON footer element
-#define CMD_SHARED_STRING_LEN 200	// shared string for string values
-
 /**** cmdObj lists ****
  *
- * 	Commands and groups of commands are processed internally as lists of cmdObj's.
- * 	This isolates the command and config internals from the details of text mode, 
- *	JSON mode and other communications issues. Commands live as an array of 
- *	objects in the body. The body is wrapped by a header that vaguely resembles
- *	an HTTP response header, and a footer that contains housekeeping information.
+ * 	Commands and groups of commands are processed internally a doubly linked list
+ *	cmdObj_t structures. This isolates the command and config internals from the 
+ *	details of communications, parsing and display in text mode and JSON mode.
+ *	The first element of the list is designated the response header element ("r") 
+ *	but the list can also be serialized as a simple object by skipping over the header
  *
- *	Lists are linked together as doubly linked list (although I have yet to find 
- *	a use for the backwards pointer and may remove it). The last element of the list 
- *	has a null "next" pointer.
+ *	To use the cmd list first reset it by calling cmd_reset_list(). This initializes
+ *	the header, marks the the objects as TYPE_EMPTY, resets the shared string, and 
+ *	terminates the last element by setting its NX pointer to NULL. When you use the 
+ *	list you can terminate your own last element, or just leave the EMPTY elements 
+ *	to be skipped over during outpout serialization.
  * 
- *	List objects that are unused carry a value type of CMD_TYPE_EMPTY. 
+ * 	We don;t use recursion so parent/child nesting relationships are captured in a 
+ *	'depth' variable, This must remain consistent if the curlies  are to work out. 
+ *	In general you should not have to track depth explicitly if you use cmd_reset_list()
+ *	or the accessor functions like cmd_add_integer() or cmd_add_message(). 
+ *	If you see problems with curlies check the depth values in the lists.
  *
- * 	Because we don't have recursion parent/child nesting relationships are 
- *	captured in a 'depth' variable, This must remain consistent if the curlies 
- *	are to work out. In general you should not have to track depth explicitly 
- *	if you use cmd_new_obj() or functions that call it (e.g. cmd_get_obj()) 
- *	sets depth correctly based on the object's predecessor. If you see problems 
- *	with curlies check the depth values in the lists.
+ *	Use the cmd_print_list() dispatcher for all JSON and text output. Do not simply 
+ *	run through printf.
+ */
+/*	Cmd object string handling
  *
- *	Use cmd_print_list() for all JSON and text output. Do not simply run these
- *	through printf. This function does some housekeeping including clearing the 
- *	body and message after the output string is queued.
- *
- *	Notes:
+ *	It's very expensive to allocate sufficient string space to each cmdObj, so cmds 
+ *	use a cheater's malloc. A single string of length CMD_SHARED_STRING_LEN is shared
+ *	by all cmdObjs for all strings. The observation is that the total rendered output
+ *	in JSON or text mode cannot exceed the size of the output buffer (typ 256 bytes),
+ *	So some number less than that is sufficient for shared strings. This is all mediated 
+ *	through cmd_copy_string() and cmd_copy_string_P(), and cmd_reset_list().
+ */
+/*	Other Notes:
  *
  *	CMD_BODY_LEN needs to allow for one parent JSON object and enough children
  *	to complete the largest possible operation - usually the status report.
- *
- *	CMD_TOTAL_LEN - this is the biggest memory hog in the whole system with 
- *	the possible exception of the planner queue. It is dominated by the size 
- *	of CMD_NAME_LEN and CMD_VALUE_STRING_LEN which are statically allocated 
- *	and should be as short as possible. 
  */
-#define CMD_BODY_LEN 25				// body elements - includes one terminator
-#define CMD_LIST_LEN (CMD_BODY_LEN+2)
+									// chose one based on # of elements in cmdArray
+//typedef uint8_t index_t;			// use this if there are < 255 indexed objects
+typedef uint16_t index_t;			// use this if there are > 255 indexed objects
+#define NO_MATCH (index_t)0xFFFF
+									// cmdObj defines
+#define CMD_GROUP_LEN 3				// max length of group prefix
+#define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
+#define CMD_FORMAT_LEN 80			// print formatting string max length
+#define CMD_MESSAGE_LEN 80			// sufficient space to contain end-user messages
+#define CMD_FOOTER_LEN 18			// sufficient space to contain a JSON footer array
+#define CMD_SHARED_STRING_LEN 200	// shared string for string values
+
+									// cmdObj list defines
+#define CMD_BODY_LEN 25				// body elements - allow for 1 parent + N children 
+#define CMD_LIST_LEN (CMD_BODY_LEN+2)// +2 allows for a header and a footer
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 
 #define CMD_STATUS_REPORT_LEN 24	// max number of status report elements - see cfgArray
@@ -116,8 +112,9 @@ enum cmdType {						// classification of commands
 };
 
 enum tgCommunicationsMode {
-	TEXT_MODE = 0,					// default
-	JSON_MODE
+	TEXT_MODE = 0,					// text command line mode
+	JSON_MODE,						// strict JSON construction
+	JSON_MODE_RELAXED				// relaxed JSON construction (future)
 };
 
 enum textVerbosity {
@@ -315,13 +312,13 @@ struct cfgParameters {
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
 
-	uint8_t echo_json_footer;			// switches for responses
+	uint8_t echo_json_footer;		// flags for JSON responses serialization
 	uint8_t echo_json_configs;
 	uint8_t echo_json_messages;
 	uint8_t echo_json_linenum;
 	uint8_t echo_json_gcode_block;
 
-	uint8_t echo_text_prompt;
+	uint8_t echo_text_prompt;		// flags for text mode response construction
 	uint8_t echo_text_messages;
 	uint8_t echo_text_configs;
 	uint8_t echo_text_gcode_block;

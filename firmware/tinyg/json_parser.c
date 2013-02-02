@@ -1,5 +1,5 @@
 /*
- * json_parser.c - JSON parser for rs274/ngc parser.
+ * json_parser.c - JSON parser for TinyG
  * Part of TinyG project
  *
  * Copyright (c) 2012 - 2013 Alden S. Hart, Jr.
@@ -120,7 +120,7 @@ uint8_t _json_parser_kernal(char *str)
 			strncpy(cmd->group, group, CMD_GROUP_LEN);// copy the parent's group to this child
 		}
 		// validate the token and get the index
-		if ((cmd->index = cmd_get_index(cmd->group, cmd->token)) == NO_INDEX) { 
+		if ((cmd->index = cmd_get_index(cmd->group, cmd->token)) == NO_MATCH) { 
 			return (TG_UNRECOGNIZED_COMMAND);
 		}
 		if ((cmd_index_is_group(cmd->index)) && (cmd_group_is_prefixed(cmd->token))) {
@@ -249,9 +249,7 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
 		return (TG_INPUT_VALUE_UNSUPPORTED);		// return error as the parser doesn't do input arrays yet
 
 	// general error condition
-	} else {
-		 return (TG_JSON_SYNTAX_ERROR);			// ill-formed JSON
-	}
+	} else { return (TG_JSON_SYNTAX_ERROR); }			// ill-formed JSON
 
 	// process comma separators and end curlies
 	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { // advance to terminator or err out
@@ -261,9 +259,8 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
 		*depth -= 1;							// pop up a nesting level
 		(*pstr)++;								// advance to comma or whatever follows
 	}
-	if (**pstr == ',') { 
-		return (TG_EAGAIN);						// signal that there is more to parse
-	}
+	if (**pstr == ',') { return (TG_EAGAIN);}	// signal that there is more to parse
+
 	(*pstr)++;
 	return (TG_OK);								// signal that parsing is complete
 }
@@ -272,8 +269,8 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
  * _gcode_comment_overrun_hack() - gcode overrun exception
  *
  *	Make an exception for string buffer overrun if the string is Gcode and the
- *	overrun is cuased by as comment. The comment will be truncated. If the 
- *	comment happens to be a message, well tough noogies, bucko.
+ *	overrun is caused by as comment. The comment will be truncated. 
+ *	If the comment happens to be a message, well tough noogies, bucko.
  */
 /*
 static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
@@ -288,7 +285,7 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  * js_serialize_json() - make a JSON object string from JSON object array
  *
  *	*cmd is a pointer to the first element in the cmd list to serialize
- *	*str is a pointer to the output string - usually what was the input string
+ *	*out_buf is a pointer to the output string - usually what was the input string
  *	Returns the character count of the resulting string
  *
  * 	Operation:
@@ -296,20 +293,18 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  *	  - Assume the first object is depth 0 or greater (the opening curly)
  *	  - Assume remaining depths have been set correctly; but might not achieve closure;
  *		e.g. list starts on 0, and ends on 3, in which case provide correct closing curlies
- *	  - Assume object depth is no greater than MAX_DEPTH
  *	  - Assume there can be multiple, independent, non-contiguous JSON objects at a 
- *		given depth value. These are processed independently - e.g. 0,1,1,0,1,1,0,1,1
- *	  - Assume the list has a terminating cmdObj where cmd->nx == NULL. 
- *		The terminator may or may not have data (empty or not empty).
+ *		given depth value. These are processed correctly - e.g. 0,1,1,0,1,1,0,1,1
+ *	  - The list must have a terminating cmdObj where cmd->nx == NULL. 
+ *		The terminating object may or may not have data (empty or not empty).
  *
  *	Desired behaviors:
- *	  - Skip over empty objects (TYPE_EMPTY)
  *	  - Allow self-referential elements that would otherwise cause a recursive loop
+ *	  - Skip over empty objects (TYPE_EMPTY)
  *	  - If a JSON object is empty represent it as {}
  *	    --- OR ---
  *	  - If a JSON object is empty omit the object altogether (no curlies)
  */
-
 uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 {
 	char *str = out_buf;
@@ -351,11 +346,11 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 }
 
 /*
- * js_print_json_object() - serialize and print the cmdObj array as a report w/o header & footer
+ * js_print_json_object() - serialize and print the cmdObj array directly (w/o header & footer)
  *
  *	Ignores JSON verbosity settings and everything else - just serializes the list & prints
  *	Useful for reports and other simple output.
- *	Object list should be terminated by cmd->nx == NULL (or the body will print the previous footer)
+ *	Object list should be terminated by cmd->nx == NULL
  */
 void js_print_json_object(cmdObj_t *cmd)
 {
@@ -364,7 +359,7 @@ void js_print_json_object(cmdObj_t *cmd)
 }
 
 /*
- * js_print_json_response() - JSON responses with headers, footers and JSON verbosity 
+ * js_print_json_response() - JSON responses with headers, footers and observes JSON verbosity 
  *
  *	A footer is returned for every setting except $jv=0
  *

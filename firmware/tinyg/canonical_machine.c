@@ -518,8 +518,8 @@ static double _get_move_times(double *min_time)
 void cm_init()
 {
 // You can assume all memory has been zeroed by a hard reset. If not, use this code:
-//	memset(&cm, 0, sizeof(cm));			// reset canonicalMachineSingleton
-//	memset(&gn, 0, sizeof(gn));			// clear all values, pointers and status
+//	memset(&cm, 0, sizeof(cm));		// reset canonicalMachineSingleton
+//	memset(&gn, 0, sizeof(gn));		// clear all values, pointers and status
 //	memset(&gf, 0, sizeof(gf));
 //	memset(&gm, 0, sizeof(gm));
 
