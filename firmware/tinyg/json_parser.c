@@ -49,7 +49,7 @@
 // local scope stuff
 
 uint8_t _json_parser_kernal(char *str);
-static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth);
+static uint8_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth);
 static uint8_t _normalize_json_string(char *str, uint16_t size);
 //static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd);
 
@@ -57,7 +57,7 @@ static uint8_t _normalize_json_string(char *str, uint16_t size);
  * js_json_parser() - exposed part of JSON parser
  * _json_parser_kernal()
  * _normalize_json_string()
- * _get_nv_pair()
+ * _get_nv_pair_strict()
  *
  *	This is a dumbed down JSON parser to fit in limited memory with no malloc
  *	or practical way to do recursion ("depth" tracks parent/child levels).
@@ -112,7 +112,7 @@ uint8_t _json_parser_kernal(char *str)
 	// parse the JSON command into the cmd body
 	do {
 		if (--i == 0) { return (TG_JSON_TOO_MANY_PAIRS); }			// length error
-		if ((status = _get_nv_pair(cmd, &str, &depth)) > TG_EAGAIN) { // erred out
+		if ((status = _get_nv_pair_strict(cmd, &str, &depth)) > TG_EAGAIN) { // erred out
 			return (status);
 		}
 		// propagate the group from previous NV pair (if relevant)
@@ -169,7 +169,7 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
 }
 
 /*
- * _get_nv_pair() - get the next name-value pair
+ * _get_nv_pair_strict() - get the next name-value pair w/strict JSON rules
  *
  *	Parse the next statement and populate the command object (cmdObj).
  *
@@ -188,7 +188,7 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
  *	"fr" is found in the name string the parser will search for "xfr"in the 
  *	cfgArray.
  */
-static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
+static uint8_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 {
 	char *tmp;
 	char terminators[] = {"},"};
@@ -512,14 +512,14 @@ void _test_serialize()
 
 	// response object parent with no children w/footer
 	cmd_reset_list();								// works with the header/body/footer list
-	_add_array(cmd_footer, "1,0,12,1234");			// fake out a footer
+	_add_array(cmd, "1,0,12,1234");					// fake out a footer
 	js_serialize_json(cmd_header, tg.out_buf);
 	_printit();
 
 	// response parent with one element w/footer
 	cmd_reset_list();								// works with the header/body/footer list
 	cmd_add_string("msg", "test message");
-	_add_array(cmd_footer, "1,0,12,1234");			// fake out a footer
+	_add_array(cmd, "1,0,12,1234");					// fake out a footer
 	js_serialize_json(cmd_header, tg.out_buf);
 	_printit();
 }

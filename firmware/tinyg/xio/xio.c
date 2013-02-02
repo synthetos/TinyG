@@ -112,7 +112,7 @@ void xio_init()
 
 	// open individual devices (file device opens occur at time-of-use)
 	xio_open(XIO_DEV_USB,  0, USB_FLAGS);
-	xio_open(XIO_DEV_RS485,0, RS485_FLAGS);
+//	xio_open(XIO_DEV_RS485,0, RS485_FLAGS);
 	xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
 	xio_open(XIO_DEV_SPI2, 0, SPI_FLAGS);
 }
@@ -270,8 +270,9 @@ void xio_unit_tests()
 static void _spi_putc()
 {
 	FILE * fdev;
-	char c;
 	char buf[12];
+//	char c;
+
 
 	fdev = xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
 	while (true) {
@@ -284,16 +285,16 @@ static void _spi_putc()
 static void _spi_loopback()
 {
 	FILE * fdev;
-	char c;
-	char str[10] = "tester ";
+	char buf[10] = "tester\n";
+//	char c;
 
 	fdev = xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
 	while (true) {
 //		xio_putc_spi(0x55, fdev);
 		for (uint8_t i=0; i<7; i++) { 
-			xio_putc_spi(str[i], fdev);
-			c = xio_getc(XIO_DEV_SPI1);
-			xio_putc(XIO_DEV_USB, c);
+			xio_putc_spi(buf[i], fdev);
+//			c = xio_getc(XIO_DEV_SPI1);
+//			xio_putc(XIO_DEV_USB, c);
 		}
 	}
 }

@@ -50,7 +50,7 @@ void js_print_json_response(uint8_t status);
 
 /* unit test setup */
 
-#define __UNIT_TEST_JSON				// uncomment to enable JSON unit tests
+//#define __UNIT_TEST_JSON				// uncomment to enable JSON unit tests
 #ifdef __UNIT_TEST_JSON
 void js_unit_tests(void);
 #define	JSON_UNITS js_unit_tests();

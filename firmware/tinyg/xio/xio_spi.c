@@ -153,7 +153,7 @@ static cfgSpi_t const cfgSpi[] PROGMEM = {
  ******************************************************************************/
 
 /*
- *	xio_init_spi() - init entire SPI system
+ *	xio_init_spi() - top-level init for SPI sub-system
  */
 void xio_init_spi(void)
 {
@@ -183,10 +183,10 @@ FILE *xio_open_spi(const uint8_t dev, const char *addr, const flags_t flags)
 	xio_ctrl_generic(d, flags);
 
 	// setup internal RX/TX control buffers
-	dx->rx_buf_head = SPI_RX_BUFFER_SIZE-1;
-	dx->rx_buf_tail = SPI_RX_BUFFER_SIZE-1;
-	dx->tx_buf_head = SPI_TX_BUFFER_SIZE-1;
-	dx->tx_buf_tail = SPI_TX_BUFFER_SIZE-1;
+	dx->rx_buf_head = 1;
+	dx->rx_buf_tail = 1;
+	dx->tx_buf_head = 1;
+	dx->tx_buf_tail = 1;
 
 	// structure and device bindings and setup
 	dx->usart = (USART_t *)pgm_read_word(&cfgSpi[idx].usart); 
@@ -202,19 +202,20 @@ FILE *xio_open_spi(const uint8_t dev, const char *addr, const flags_t flags)
 }
 
 /* 
- *	xio_gets_spi() - read a complete line from an SPI device
+ *	xio_gets_spi() - read a complete line (message) from an SPI device
  *
- *	Retains line context across calls - so it can be called multiple times.
- *	Reads as many characters as it can until any of the following is true:
+ *	Reads from the local RX buffer until it's empty, then reads from the 
+ *	slave until the line is complete or the slave is exhausted. Retains line 
+ *	context across calls - so it can be called multiple times. Reads as many 
+ *	characters as it can until any of the following is true:
  *
- *	  - Encounters newline indicating a complete line (returns XIO_OK)
- *	  - Encounters and empty buffer and no more data in the salve (return XIO_EAGAIN)
- *	  - Read would cause output buffer overflow (return XIO_BUFFER_FULL)
+ *	  - Encounters newline indicating a complete line. Terminate the buffer
+ *		but do not write the newlinw into the buffer. Reset line flag. Return XIO_OK.
  *
- *	gets() runs an optimized buffer transfer relative to getc() as it can keep 
- *	slave state. It reads from the local RX buffer and replenishes it with chars 
- *	read from the slave as it reads. Once the local RX buffer empties it reads 
- *	directly from the slave until the line is complete or the slave is exhausted.
+ *	  - Encounters an empty buffer and no more data in the slave. Leave in_line
+ *		Return XIO_EAGAIN.
+ *
+ *	  - A successful read would cause output buffer overflow. Return XIO_BUFFER_FULL
  *
  *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
  *	Note: CRs are not recognized as NL chars - slaves must send LF to terminate a line
@@ -222,8 +223,7 @@ FILE *xio_open_spi(const uint8_t dev, const char *addr, const flags_t flags)
 int xio_gets_spi(xioDev_t *d, char *buf, const int size)
 {
 	xioSpi_t *dx = (xioSpi_t *)d->x;			// get SPI device struct pointer
-	uint8_t read_spi_flag = true;				// read from slave until no chars available
-	char c_out, c_spi;
+	char c_out;
 
 	// first time thru initializations
 	if (d->flag_in_line == false) {
@@ -233,33 +233,18 @@ int xio_gets_spi(xioDev_t *d, char *buf, const int size)
 		d->size = size;							// set the max size of the message
 //		d->signal = XIO_SIG_OK;					// reset signal register
 	}
-
-	// process chars until done or blocked
 	while (true) {
-		// test for string output buffer overrun
 		if (d->len >= (d->size)-1) {			// size is total count - aka 'num' in fgets()
 			d->buf[d->size] = NUL;				// string termination preserves latest char
-			d->signal = XIO_SIG_EOL;
 			return (XIO_BUFFER_FULL);
 		}
-		// if RX buffer has data read the RX buffer and & replenish from slave, if possible
-		if ((c_out = _read_rx_buffer(dx)) != Q_EMPTY) {
-			if (read_spi_flag == true) {
-				if ((c_spi = _read_spi_char(dx)) == ETX) { // get a char from slave
-					read_spi_flag = false;
-				} else {
-					_write_rx_buffer(dx, c_spi);
-				}
+		if ((c_out = _read_rx_buffer(dx)) == Q_EMPTY) {
+			if ((c_out = _read_spi_char(dx)) == ETX) { // get a char from slave
+				return (XIO_EAGAIN);
 			}
-		} else {	// RX buffer is empty - try reading from the slave directly
-			if ((read_spi_flag == false) || ((c_out = _read_spi_char(dx)) == ETX)) {
-				return (XIO_EAGAIN);			// return with an incomplete line
-			} 
 		}
-		// test for end-of-line
 		if (c_out == LF) {
 			d->buf[(d->len)++] = NUL;
-//			d->signal = XIO_SIG_EOL;
 			d->flag_in_line = false;			// clear in-line state (reset)
 			return (XIO_OK);					// return for end-of-line
 		}
@@ -270,15 +255,15 @@ int xio_gets_spi(xioDev_t *d, char *buf, const int size)
 /*
  * xio_getc_spi() - stdio compatible character RX routine
  *
- *	There are actually 2 queues involved in this function - the local RX queue
- *	on the master, and the slave's TX queue. This function is not optimized for 
- *	transfer, as it returns a single character and has no state information
- *	about the slave.
+ *	This function first tries to return a character from the master's RX queue
+ *	and if that fails it tries to get the next character from the slave.
  *
- *	If there are no characters in the local RX buffer it will poll the slave for
- *	the next character.
+ *	This function is always non-blocking or it would create a deadlock as the 
+ *	bit-banger SPI transmitter is not interrupt driven
  *
- *	This function is always non-blocking or it would create a deadlock.
+ *	This function is not optimized for transfer rate, as it returns a single 
+ *	character and has no state information about the slave. gets() is much more
+ *	efficient.
  */
 int xio_getc_spi(FILE *stream)
 {
@@ -295,6 +280,8 @@ int xio_getc_spi(FILE *stream)
 	return (c);
 }
 
+//void _xio_tx_spi_dx(xioSpi_t *dx);
+
 /*
  * xio_putc_spi() - stdio compatible character TX routine
  *
@@ -305,10 +292,33 @@ int xio_getc_spi(FILE *stream)
  */
 int xio_putc_spi(const char c, FILE *stream)
 {
-	xioSpi_t *dx = ((xioDev_t *)stream->udata)->x;	// cache SPI device struct pointer
-	char status = _write_tx_buffer(dx, c); 
-	return ((int)status);
+	// Native SPI device version
+	// write to TX queue  - char TX occurs via SPI interrupt
+//	return ((int)_write_tx_buffer(((xioDev_t *)stream->udata)->x,c));
+
+	// bit banger version - unbuffered IO
+	xioSpi_t *dx = ((xioDev_t *)stream->udata)->x;
+	char c_in;
+
+	if ((c_in = _xfer_spi_char(dx,c)) != ETX) {
+		if ((c_in == 0x00) || (c_in == 0xFF)) {
+			return (XIO_NO_SUCH_DEVICE);
+		}
+		_write_rx_buffer(dx, c_in);
+	}
+	return (XIO_OK);
 }
+/*
+	int status = _write_tx_buffer(dx,c);
+	if (status != XIO_OK) { return (status);}
+	char c_out, c_in;
+	if ((c_out = _read_tx_buffer(dx)) == Q_EMPTY) { return ();}
+	if ((c_in = _xfer_spi_char(dx, c_out)) != ETX) {
+		_write_rx_buffer(dx, c_in);
+	}
+	return (XIO_OK);
+}
+*/
 
 /*
  * xio_tx_spi() - send a character trom the TX buffer to the slave
@@ -327,7 +337,16 @@ void xio_tx_spi(uint8_t dev)
 		_write_rx_buffer(dx, c_in);
 	}
 }
-
+/*
+void _xio_tx_spi_dx(xioSpi_t *dx)
+{
+	char c_out, c_in;
+	if ((c_out = _read_tx_buffer(dx)) == Q_EMPTY) { return;}
+	if ((c_in = _xfer_spi_char(dx, c_out)) != ETX) {
+		_write_rx_buffer(dx, c_in);
+	}
+}
+*/
 /* 
  * Buffer read and write helpers
  * 
@@ -347,32 +366,36 @@ void xio_tx_spi(uint8_t dev)
  *	while() waiting for something other than Q_EMPTY to be returned.
  */
 
-static char _read_rx_buffer(xioSpi_t *dx) {
+static char _read_rx_buffer(xioSpi_t *dx) 
+{
 	if (dx->rx_buf_head == dx->rx_buf_tail) { return (Q_EMPTY);}
 	char c = dx->rx_buf[dx->rx_buf_tail];
 	if ((--(dx->rx_buf_tail)) == 0) { dx->rx_buf_tail = SPI_RX_BUFFER_SIZE-1;}
 	return (c);
 }
 
-static char _write_rx_buffer(xioSpi_t *dx, char c) {
+static char _write_rx_buffer(xioSpi_t *dx, char c) 
+{
 	spibuf_t next_buf_head = --(dx->rx_buf_head);
-	if (next_buf_head == 0) { dx->rx_buf_head = SPI_RX_BUFFER_SIZE-1;}
+	if (next_buf_head == 0) { next_buf_head = SPI_RX_BUFFER_SIZE-1;}
 	if (next_buf_head == dx->rx_buf_tail) { return (Q_EMPTY);}
 	dx->rx_buf[next_buf_head] = c;
 	dx->rx_buf_head = next_buf_head;
 	return (XIO_OK);
 }
 
-static char _read_tx_buffer(xioSpi_t *dx) {
+static char _read_tx_buffer(xioSpi_t *dx) 
+{
 	if (dx->tx_buf_head == dx->tx_buf_tail) { return (Q_EMPTY);}
 	char c = dx->tx_buf[dx->tx_buf_tail];
 	if ((--(dx->tx_buf_tail)) == 0) { dx->tx_buf_tail = SPI_TX_BUFFER_SIZE-1;}
 	return (c);
 }
 
-static char _write_tx_buffer(xioSpi_t *dx, char c) {
+static char _write_tx_buffer(xioSpi_t *dx, char c) 
+{
 	spibuf_t next_buf_head = --(dx->tx_buf_head);
-	if (next_buf_head == 0) { dx->tx_buf_head = SPI_TX_BUFFER_SIZE-1;}
+	if (next_buf_head == 0) { next_buf_head = SPI_TX_BUFFER_SIZE-1;}
 	if (next_buf_head == dx->tx_buf_tail) { return (Q_EMPTY);}
 	dx->tx_buf[next_buf_head] = c;
 	dx->tx_buf_head = next_buf_head;
@@ -381,8 +404,8 @@ static char _write_tx_buffer(xioSpi_t *dx, char c) {
 
 /*
  * Bitbangers used by the SPI routines
- * _xfer_char() - send a character on MOSI and receive incoming char on MISO
- * _read_char() - send an STX on MOSI and receive incoming char on MISO
+ * _xfer_spi_char() - send a character on MOSI and receive incoming char on MISO
+ * _read_spi_char() - send an STX on MOSI and receive incoming char on MISO
  */
 
 #define xfer_bit(mask, c_out, c_in) \
