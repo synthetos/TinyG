@@ -126,13 +126,13 @@ void xio_reset_working_flags(xioDev_t *d)
 }
 
 /*
- * xio_open_generic() - generic (and partial) open function for any device
+ * xio_init_device() - generic initialization function for any device
  *
  *	This binds the main fucntions and sets up the stdio FILE structure
  *	udata is used to point back to the device struct so it can be gotten 
  *	from getc() and putc() functions. 
  *
- *	Requires device specific open() to be run afterward to complete the setup
+ *	Requires device open() to be run prior to using the device
  */
 void xio_open_generic(uint8_t dev, x_open_t x_open, 
 								   x_ctrl_t x_ctrl, 

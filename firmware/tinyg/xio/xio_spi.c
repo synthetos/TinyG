@@ -376,7 +376,7 @@ static char _read_rx_buffer(xioSpi_t *dx)
 
 static char _write_rx_buffer(xioSpi_t *dx, char c) 
 {
-	spibuf_t next_buf_head = --(dx->rx_buf_head);
+	spibuf_t next_buf_head = dx->rx_buf_head-1;
 	if (next_buf_head == 0) { next_buf_head = SPI_RX_BUFFER_SIZE-1;}
 	if (next_buf_head == dx->rx_buf_tail) { return (Q_EMPTY);}
 	dx->rx_buf[next_buf_head] = c;
@@ -394,7 +394,7 @@ static char _read_tx_buffer(xioSpi_t *dx)
 
 static char _write_tx_buffer(xioSpi_t *dx, char c) 
 {
-	spibuf_t next_buf_head = --(dx->tx_buf_head);
+	spibuf_t next_buf_head = dx->tx_buf_head-1;
 	if (next_buf_head == 0) { next_buf_head = SPI_TX_BUFFER_SIZE-1;}
 	if (next_buf_head == dx->tx_buf_tail) { return (Q_EMPTY);}
 	dx->tx_buf[next_buf_head] = c;
