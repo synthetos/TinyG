@@ -282,20 +282,21 @@ static void _spi_putc()
 	}
 }
 
+#define DELAY 44						// 44 is about 60 uSec in -O0 mode
+
 static void _spi_loopback()
 {
 	FILE * fdev;
 	char buf[10] = "tester\n";
-//	char c;
+	uint8_t i=0;
+	uint32_t j=0;
 
 	fdev = xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
 	while (true) {
-//		xio_putc_spi(0x55, fdev);
-		for (uint8_t i=0; i<7; i++) { 
+		for (i=0; i<7; i++) { 
 			xio_putc_spi(buf[i], fdev);
-//			c = xio_getc(XIO_DEV_SPI1);
-//			xio_putc(XIO_DEV_USB, c);
 		}
+		for (j=0; j<DELAY; j++) { }
 	}
 }
 
