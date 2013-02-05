@@ -282,7 +282,7 @@ static void _spi_putc()
 	}
 }
 
-#define DELAY 44						// 44 is about 60 uSec in -O0 mode
+#define DELAY 10		// approx delay in uSec in -O0 mode
 
 static void _spi_loopback()
 {
@@ -296,7 +296,8 @@ static void _spi_loopback()
 		for (i=0; i<7; i++) { 
 			xio_putc_spi(buf[i], fdev);
 		}
-		for (j=0; j<DELAY; j++) { }
+//		for (j=0; j<(DELAY*0.24); j++);
+		for (j=(DELAY*0.76); j>0; j--);
 	}
 }
 
