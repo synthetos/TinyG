@@ -282,21 +282,20 @@ static void _spi_putc()
 	}
 }
 
-#define DELAY 10		// approx delay in uSec in -O0 mode
+#define DELAY 1000		// approx delay in uSec in -O0 mode
 
 static void _spi_loopback()
 {
 	FILE * fdev;
 	char buf[10] = "tester\n";
-	uint8_t i=0;
+//	uint8_t i=0;
 	uint32_t j=0;
 
 	fdev = xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
+	xio_set_stdout(XIO_DEV_SPI1);
 	while (true) {
-		for (i=0; i<7; i++) { 
-			xio_putc_spi(buf[i], fdev);
-		}
-//		for (j=0; j<(DELAY*0.24); j++);
+//		for (i=0; i<7; i++) { xio_putc_spi(buf[i], fdev);}
+		printf("%s",buf);
 		for (j=(DELAY*0.76); j>0; j--);
 	}
 }
