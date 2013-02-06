@@ -39,6 +39,8 @@
 // Globals
 
 // Defines
+#ifdef __AVR_XMEGA__
+
 // nonzero if character has been received
 #define uart_char_received() (UART_DEVICE.STATUS & USART_RXCIF_bm)
 // current character in UART receive buffer
@@ -50,8 +52,24 @@
     while (!(UART_DEVICE.STATUS & USART_TXCIF_bm)) { } \
     UART_DEVICE.STATUS |= USART_TXCIF_bm; } while (0)
 
+#else // __AVR_XMEGA__
+
+// nonzero if character has been received
+#define uart_char_received() (UART_UCSRA & _BV(RXC0))
+// current character in UART receive buffer
+#define uart_cur_char() UART_UDR
+// send character
+#define uart_send_char(c) UART_UDR = (c)
+// send character, block until it is completely sent
+#define uart_send_char_blocking(c) do {uart_send_char(c); \
+    while (!(UART_UCSRA & _BV(TXC0))) { } \
+    UART_UCSRA |= _BV(TXC0); } while (0)
+
+#endif // __AVR_XMEGA__
+
 // Prototypes
-extern void __attribute__ ((always_inline)) uart_init(void);
-extern void __attribute__ ((always_inline)) uart_deinit(void);
+extern void uart_init(void);
+extern void uart_deinit(void);
 
 #endif // __UART_H
+

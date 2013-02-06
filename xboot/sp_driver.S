@@ -382,7 +382,7 @@ SP_LoadFlashWord:
 ;     Nothing.
 ; ---
 		
-.section .BOOT, "ax"
+.section .text
 .global SP_LoadFlashPage
 
 SP_LoadFlashPage:
@@ -777,7 +777,7 @@ SP_CommonLPM:
 ;     Nothing.
 ; ---
 
-.section .BOOT, "ax"
+.section .text
 
 SP_CommonSPM:
 	movw	ZL, r24          ; Load R25:R24 into Z.

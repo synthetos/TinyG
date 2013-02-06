@@ -33,7 +33,9 @@
 
 #include "watchdog.h"
 
-void __attribute__ ((always_inline)) WDT_EnableAndSetTimeout( void )
+#ifdef __AVR_XMEGA__
+
+void WDT_EnableAndSetTimeout( void )
 {
         uint8_t temp = WDT_ENABLE_bm | WDT_CEN_bm | WATCHDOG_TIMEOUT;
         CCP = CCP_IOREG_gc;
@@ -43,12 +45,14 @@ void __attribute__ ((always_inline)) WDT_EnableAndSetTimeout( void )
         while(WDT_IsSyncBusy());
 }
 
-void __attribute__ ((always_inline)) WDT_Disable( void )
+void WDT_Disable( void )
 {
         uint8_t temp = (WDT.CTRL & ~WDT_ENABLE_bm) | WDT_CEN_bm;
         CCP = CCP_IOREG_gc;
         WDT.CTRL = temp;
 }
+
+#endif // __AVR_XMEGA__
 
 
 

@@ -1,133 +1,79 @@
-/* This file has been prepared for Doxygen automatic documentation generation.*/
-/*! \file *********************************************************************
- *
- * \brief  XMEGA EEPROM driver header file.
- *
- *      This file contains the function prototypes and enumerator definitions
- *      for various configuration parameters for the XMEGA EEPROM driver.
- *
- *      The driver is not intended for size and/or speed critical code, since
- *      most functions are just a few lines of code, and the function call
- *      overhead would decrease code performance. The driver is intended for
- *      rapid prototyping and documentation purposes for getting started with
- *      the XMEGA EEPROM module.
- *
- *      For size and/or speed critical code, it is recommended to copy the
- *      function contents directly into your application instead of making
- *      a function call.
- *
- * \par Application note:
- *      AVR1315: Accessing the XMEGA EEPROM
- *
- * \par Documentation
- *      For comprehensive code documentation, supported compilers, compiler
- *      settings and supported devices see readme.html
- *
- * \author
- *      Atmel Corporation: http://www.atmel.com \n
- *      Support email: avr@atmel.com
- *
- * $Revision: 1 $
- * $Date: 2009-04-22 13:03:43 +0200 (ti, 22 apr 2009) $  \n
- *
- * Copyright (c) 2009, Atmel Corporation All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * 3. The name of ATMEL may not be used to endorse or promote products derived
- * from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY ATMEL "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE EXPRESSLY AND
- * SPECIFICALLY DISCLAIMED. IN NO EVENT SHALL ATMEL BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
-#ifndef EEPROM_DRIVER_H
-#define EEPROM_DRIVER_H
+/************************************************************************/
+/* XMEGA EEPROM Driver                                                  */
+/*                                                                      */
+/* eeprom.h                                                             */
+/*                                                                      */
+/* Alex Forencich <alex@alexforencich.com>                              */
+/*                                                                      */
+/* Copyright (c) 2011 Alex Forencich                                    */
+/*                                                                      */
+/* Permission is hereby granted, free of charge, to any person          */
+/* obtaining a copy of this software and associated documentation       */
+/* files(the "Software"), to deal in the Software without restriction,  */
+/* including without limitation the rights to use, copy, modify, merge, */
+/* publish, distribute, sublicense, and/or sell copies of the Software, */
+/* and to permit persons to whom the Software is furnished to do so,    */
+/* subject to the following conditions:                                 */
+/*                                                                      */
+/* The above copyright notice and this permission notice shall be       */
+/* included in all copies or substantial portions of the Software.      */
+/*                                                                      */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,      */
+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF   */
+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND                */
+/* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS  */
+/* BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN   */
+/* ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN    */
+/* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE     */
+/* SOFTWARE.                                                            */
+/*                                                                      */
+/************************************************************************/
+
+#ifndef __EEPROM_DRIVER_H
+#define __EEPROM_DRIVER_H
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/sleep.h>
+
+#ifndef __AVR_XMEGA__
+#include <avr/eeprom.h>
+#endif // __AVR_XMEGA__
+
 #include "xboot.h"
 
-/* Definitions of macros. */
-
-/*! \brief Defining EEPROM Start address and Page Size.
- *
- *  This macro defines the starting address of EEPROM along with the Page Size for further pagewise updation of EEPROM.
- */
-#ifndef MAPPED_EEPROM_START
-    #define MAPPED_EEPROM_START 0x1000
-#endif
-
 #ifndef EEPROM_PAGE_SIZE
-#define EEPROM_PAGE_SIZE 32
+#define EEPROM_PAGE_SIZE E2PAGESIZE
 #endif
 
-#define EEPROM(_pageAddr, _byteAddr) \
-	((uint8_t *) MAPPED_EEPROM_START)[_pageAddr*EEPROM_PAGE_SIZE + _byteAddr]
+#ifdef __AVR_XMEGA__
+// AVR1008 fix
+//#define USE_AVR1008_EEPROM
+#endif // __AVR_XMEGA__
+
+// Prototypes
+
+#ifdef __AVR_XMEGA__
+
+uint8_t EEPROM_read_byte(uint16_t addr);
+void EEPROM_write_byte(uint16_t addr, uint8_t byte);
+uint16_t EEPROM_read_block(uint16_t addr, uint8_t *dest, uint16_t len);
+uint16_t EEPROM_write_block(uint16_t addr, const uint8_t *src, uint16_t len);
+
+void EEPROM_erase_page(uint16_t addr);
+
+#else // __AVR_XMEGA__
+
+#define EEPROM_read_byte(addr) eeprom_read_byte((const uint8_t *)((uint16_t)(addr)))
+#define EEPROM_write_byte(addr, value) eeprom_write_byte((uint8_t *)((uint16_t)(addr)), (value))
+#define EEPROM_read_block(addr, dest, len) eeprom_read_block((dest), (void *)((uint16_t)(addr)), (len))
+#define EEPROM_write_block(addr, src, len) eeprom_write_block((src), (void *)((uint16_t)(addr)), (len))
+
+#endif // __AVR_XMEGA__
+
+void EEPROM_erase_all(void);
+
+
+#endif // __EEPROM_DRIVER_H
 
 
 
-/* Definitions of macros. */
-
-/*! \brief Enable EEPROM block sleep-when-not-used mode.
- *
- *  This macro enables power reduction mode for EEPROM.
- *  It means that the EEPROM block is disabled when not used.
- *  Note that there will be a penalty of 6 CPU cycles if EEPROM
- *  is accessed.
- */
-#define EEPROM_EnablePowerReduction() ( NVM.CTRLB |= NVM_EPRM_bm )
-
-/*! \brief Disable EEPROM block sleep-when-not-used mode.
- *
- *  This macro disables power reduction mode for EEPROM.
- */
-#define EEPROM_DisablePowerReduction() ( NVM.CTRLB &= ~NVM_EPRM_bm )
-
-/*! \brief Enable EEPROM mapping into data space.
- *
- *  This macro enables mapping of EEPROM into data space.
- *  EEPROM starts at EEPROM_START in data memory. Read access
- *  can be done similar to ordinary SRAM access.
- *
- *  \note This disables IO-mapped access to EEPROM, although page erase and
- *        write operations still needs to be done through IO register.
- */
-#define EEPROM_EnableMapping() ( NVM.CTRLB |= NVM_EEMAPEN_bm )
-
-/*! \brief Disable EEPROM mapping into data space.
- *
- *  This macro disables mapping of EEPROM into data space.
- *  IO mapped access is now enabled.
- */
-#define EEPROM_DisableMapping() ( NVM.CTRLB &= ~NVM_EEMAPEN_bm )
-
-/* Prototyping of functions. */
-void EEPROM_WriteByte( uint8_t pageAddr, uint8_t byteAddr, uint8_t value );
-uint8_t EEPROM_ReadByte( uint8_t pageAddr, uint8_t byteAddr );
-void EEPROM_WaitForNVM( void );
-void EEPROM_FlushBuffer( void );
-void EEPROM_LoadByte( uint8_t byteAddr, uint8_t value );
-void EEPROM_LoadPage( const uint8_t * values );
-void EEPROM_AtomicWritePage( uint8_t pageAddr );
-void EEPROM_ErasePage( uint8_t pageAddress );
-void EEPROM_SplitWritePage( uint8_t pageAddr );
-void EEPROM_EraseAll( void );
-
-#endif

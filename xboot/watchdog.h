@@ -45,7 +45,7 @@
 #define WDT_Reset()     asm("wdr")
 
 // Prototypes
-extern void __attribute__ ((always_inline)) WDT_EnableAndSetTimeout( void );
-extern void __attribute__ ((always_inline)) WDT_Disable( void );
+extern void WDT_EnableAndSetTimeout( void );
+extern void WDT_Disable( void );
 
 #endif // __WATCHDOG_H

@@ -1,24 +1,49 @@
 #!/bin/bash
 
-cd ..
+files="README.md
+Makefile
+config.h.mk
+conf/x64a3.conf.mk
+conf/x32a4.conf.mk
+conf/akafuino32a4.conf.mk
+conf/arduino328p.conf.mk
+conf/mongoose.conf.mk
+xboot.c
+xboot.h
+flash.c
+flash.h
+eeprom_driver.c
+eeprom_driver.h
+protocol.h
+sp_driver.S
+sp_driver.h
+uart.c
+uart.h
+i2c.c
+i2c.h
+fifo.c
+fifo.h
+watchdog.c
+watchdog.h
+api.c
+api.h
+xbootapi.c
+xbootapi.h"
 
-output=xboot/xboot-$(date +%Y%m%d).tar.gz
+name=xboot
 
-tar -cvzf $output \
-xboot/README \
-xboot/Makefile \
-xboot/xboot.c \
-xboot/xboot.h \
-xboot/eeprom_driver.c \
-xboot/eeprom_driver.h \
-xboot/fifo.c \
-xboot/fifo.h \
-xboot/i2c.c \
-xboot/i2c.h \
-xboot/protocol.h \
-xboot/sp_driver.S \
-xboot/sp_driver.h \
-xboot/uart.c \
-xboot/uart.h \
-xboot/watchdog.c \
-xboot/watchdog.h
+output=$name-$(date +%Y%m%d).tar.gz
+
+pkg=pkg/$name
+
+mkdir -p $pkg
+rm -rf $pkg/*
+for f in $files
+do
+  mkdir -p $pkg/$(dirname $f)
+  cp $f $pkg/$f
+done
+
+cd pkg
+tar -cvzf ../$output $name
+
