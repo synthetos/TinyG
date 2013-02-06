@@ -381,7 +381,7 @@ void js_print_json_object(cmdObj_t *cmd)
 void js_print_json_response(uint8_t status)
 {
 	if (cm.machine_state == MACHINE_INITIALIZING) {		// always do full echo during startup
-		fprintf(stderr,"\n");
+//		fprintf(stderr,"\n");							//+++++++++++++++++++++++++++
 		cmdObj_t tmp;
 		tmp.value = JV_VERBOSE;
 		cmd_set_jv(&tmp);

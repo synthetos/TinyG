@@ -906,12 +906,23 @@ static void _print_sr(cmdObj_t *cmd)
 static uint8_t _set_sr(cmdObj_t *cmd)
 {
 	memset(cfg.status_report_list, 0 , sizeof(cfg.status_report_list));
+
+	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
+		if (((cmd = cmd->nx) == NULL) || (cmd->type == TYPE_EMPTY)) break;
+		if ((cmd->type == TYPE_BOOL) && (cmd->value == true)) {
+			cfg.status_report_list[i] = cmd->index;
+			cmd->value = cmd->index;	// persist the index as the value
+			cmd_persist(cmd);
+		}
+	}
+/*
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
 		cfg.status_report_list[i] = cmd->index;
 		cmd->value = cmd->index;	// you want to persist the index as the value
 		cmd_persist(cmd);
 	}
+*/
 	return (TG_OK);
 }
 

@@ -103,7 +103,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
-	xio_queue_RX_string_usb("$id\n");
+//	xio_queue_RX_string_usb("$id\n");
 //	xio_queue_RX_string_usb("{\n");
 //	xio_queue_RX_string_usb("G3 X28.949238578680202 Y33.51776649746193 I2.1091370558375635 J-2.1091370558375635 F1524\n");
 
@@ -115,7 +115,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$$\n");			// sys request
 //	xio_queue_RX_string_usb("$ec=1\n");			// turn CR expansion on
 //	xio_queue_RX_string_usb("$qr\n");			// invoke QR report
-	xio_queue_RX_string_usb("$ej=1\n");			// enable JSON mode
+//	xio_queue_RX_string_usb("$ej=1\n");			// enable JSON mode
 //	xio_queue_RX_string_usb("$n\n");			// ubergroup request
 //	xio_queue_RX_string_usb("$xvm=16,000\n");	// comma skipping
 //	xio_queue_RX_string_usb("$a\n");			// match a group
@@ -351,7 +351,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"err_1\":36000}\n");
 //	xio_queue_RX_string_usb("{\"1sa\":3.6.000}\n");
 //	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");				// invoke a status report
-//	xio_queue_RX_string_usb("{\"sr\":{\"line\":true,\"posx\":true,\"posy\":true}}\n");	// set status report
+	xio_queue_RX_string_usb("{\"sr\":{\"line\":true,\"posx\":true,\"posy\":true}}\n");	// set status report
+	xio_queue_RX_string_usb("{\"sr\":{\"line\":null,\"posx\":null,\"posy\":null}}\n");	// set status report
 //	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sm\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
 
 //	xio_queue_RX_string_usb("{\"x\":\"\"}\n");				// x axis group display
