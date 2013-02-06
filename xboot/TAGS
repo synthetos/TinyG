@@ -1,0 +1,501 @@
+
+api.c,295
+uint8_t xboot_get_version(85,3773
+uint8_t xboot_spm_wrapper(92,3939
+uint8_t xboot_erase_application_page(97,4009
+uint8_t xboot_write_application_page(121,4550
+uint8_t xboot_write_user_signature_row(141,5036
+uint8_t xboot_app_temp_erase(160,5508
+uint8_t xboot_app_temp_write_page(183,6053
+
+eeprom_driver.c,426
+static inline void NVM_EXEC(46,2459
+ISR(63,2905
+static inline void NVM_EXEC_WRAPPER(70,3035
+#define NVM_EXEC_WRAPPER 108,4350
+void wait_for_nvm(113,4416
+void flush_buffer(118,4494
+uint8_t EEPROM_read_byte(129,4702
+void EEPROM_write_byte(144,4983
+uint16_t EEPROM_read_block(160,5345
+uint16_t EEPROM_write_block(184,5881
+void EEPROM_erase_page(229,7172
+void EEPROM_erase_all(242,7430
+void EEPROM_erase_all(252,7591
+
+fifo.c,175
+#define REVERSE(42,2720
+void fifo_init(50,2971
+void fifo_deinit(64,3400
+uint8_t fifo_cur_char(79,3889
+void fifo_send_char(100,4415
+void fifo_send_char_blocking(131,5421
+
+flash.c,222
+void Flash_ProgramPage(39,2336
+void Flash_EraseApplicationSection(59,2693
+void Flash_EraseWriteApplicationPage(69,2942
+void Flash_LoadFlashPage(77,3121
+void Flash_ReadFlashPage(89,3376
+void Flash_ProgramPage(97,3557
+
+i2c.c,97
+unsigned char first_byte;38,2445
+ISR(44,2530
+void i2c_init(104,4675
+void i2c_deinit(130,5473
+
+uart.c,76
+ISR(39,2472
+ISR(63,3064
+void uart_init(71,3182
+void uart_deinit(98,4114
+
+watchdog.c,64
+void WDT_EnableAndSetTimeout(38,2446
+void WDT_Disable(48,2713
+
+xboot.c,1281
+volatile unsigned char comm_mode;37,2443
+volatile unsigned char rx_buff0;39,2478
+volatile unsigned char rx_buff1;40,2511
+volatile unsigned char rx_char_cnt;41,2544
+volatile unsigned char tx_buff0;43,2581
+volatile unsigned char tx_char_cnt;44,2614
+unsigned char comm_mode;47,2677
+unsigned char comm_mode 52,2846
+unsigned char buffer[buffer56,2925
+unsigned char protected;59,2990
+int main(63,3060
+#define ow_assert(1026,39450
+#define ow_deassert(1027,39531
+#define ow_read(1028,39612
+#define ow_is_asserted(1029,39691
+#define ow_assert(1031,39742
+#define ow_deassert(1032,39807
+#define ow_read(1033,39873
+#define ow_is_asserted(1034,39939
+unsigned char __attribute__ ((noinline)) ow_slave_read_bit(1037,40009
+void __attribute__ ((noinline)) ow_slave_write_bit(1047,40225
+void ow_slave_wait_bit(1058,40438
+unsigned char __attribute__ ((noinline)) get_char(1066,40564
+void __attribute__ ((noinline)) send_char(1083,40861
+unsigned char __attribute__ ((noinline)) get_char(1122,41982
+void __attribute__ ((noinline)) send_char(1197,44712
+unsigned int __attribute__ ((noinline)) get_2bytes(1300,48221
+void clear_buffer(1315,48633
+unsigned char BlockLoad(1324,48800
+void BlockRead(1403,51134
+uint16_t crc16_block(1481,53748
+void install_firmware(1504,54294
+
+xbootapi.c,862
+#define NEED_EIND36,2313
+#define PGM_READ_BYTE 40,2367
+#define PGM_READ_WORD 41,2407
+#define PGM_READ_DWORD 42,2447
+#define PGM_READ_BYTE 44,2495
+#define PGM_READ_WORD 45,2536
+#define PGM_READ_DWORD 46,2577
+uint8_t api_version 50,2639
+uint8_t init_api(52,2665
+uint8_t xboot_get_version(71,3116
+uint8_t xboot_get_api_version(106,4039
+uint8_t xboot_spm_wrapper(118,4272
+uint8_t xboot_erase_application_page(123,4342
+uint8_t xboot_write_application_page(158,5281
+uint8_t xboot_write_user_signature_row(194,6304
+uint8_t xboot_app_temp_erase(232,7307
+uint8_t xboot_app_temp_write_page(275,8576
+uint8_t xboot_app_temp_crc16_block(313,9691
+uint8_t xboot_app_temp_crc16(318,9857
+uint8_t xboot_app_crc16_block(323,9975
+uint8_t xboot_app_crc16(339,10336
+uint8_t xboot_install_firmware(344,10439
+void __attribute__ ((noreturn)) xboot_reset(363,11061
+
+api.h,710
+#define __API_H33,2267
+#define PROGMEM_SIZE 41,2387
+#define BOOT_SECTION_START 49,2532
+#define APP_SECTION_START 53,2628
+#define APP_SECTION_SIZE 57,2689
+#define APP_SECTION_END 61,2781
+#define JUMP_TABLE_LOCATION 64,2858
+#define JUMP_TABLE_INDEX(65,2923
+#define XB_APP_START 67,2988
+#define XB_APP_SIZE 68,3027
+#define XB_APP_END 69,3070
+#define XB_APP_TEMP_START 70,3124
+#define XB_APP_TEMP_SIZE 71,3169
+#define XB_APP_TEMP_END 72,3206
+#define XB_SUCCESS 75,3292
+#define XB_ERR_NO_API 76,3313
+#define XB_ERR_NOT_FOUND 77,3337
+#define XB_INVALID_ADDRESS 78,3364
+struct xboot_jump_table_s 81,3415
+        uint8_t id[id82,3443
+        uint8_t ver;83,3466
+        uint16_t ptr[ptr84,3487
+
+config.h,1638
+#define ATTACH_LED_INV 5,69
+#define ATTACH_LED_PIN 6,94
+#define ATTACH_LED_PORT_NAME 7,119
+#define ENABLE_API8,150
+#define ENABLE_API_FIRMWARE_UPDATE9,169
+#define ENABLE_API_LOW_LEVEL_FLASH10,204
+#define ENABLE_API_SPM_WRAPPER11,239
+#define ENABLE_BLOCK_SUPPORT12,270
+#define ENABLE_CRC_SUPPORT13,299
+#define ENABLE_EEPROM_BYTE_SUPPORT14,326
+#define ENABLE_FLASH_BYTE_SUPPORT15,361
+#define ENABLE_FLASH_ERASE_WRITE16,395
+#define ENABLE_FUSE_BITS17,428
+#define ENABLE_LOCK_BITS18,453
+#define ENTER_BLINK_COUNT 19,478
+#define ENTER_BLINK_WAIT 20,506
+#define ENTER_PIN 21,537
+#define ENTER_PIN_PUEN 22,557
+#define ENTER_PIN_STATE 23,582
+#define ENTER_PORT_NAME 24,608
+#define FIFO_BIT_REVERSE25,634
+#define FIFO_CTL_PORT_NAME 26,659
+#define FIFO_DATA_PORT_NAME 27,688
+#define FIFO_RD_N 28,718
+#define FIFO_RXF_N 29,738
+#define FIFO_TXE_N 30,759
+#define FIFO_WR_N 31,780
+#define I2C_ADDRESS 32,800
+#define I2C_AUTONEG_DIS_GC 33,825
+#define I2C_AUTONEG_DIS_PROMISC 34,854
+#define I2C_AUTONEG_PIN 35,888
+#define I2C_AUTONEG_PORT_NAME 36,914
+#define I2C_DEVICE_PORT 37,946
+#define I2C_GC_ENABLE 38,972
+#define I2C_MATCH_ANY 39,996
+#define LED_INV 40,1020
+#define LED_PIN 41,1038
+#define LED_PORT_NAME 42,1056
+#define UART_BAUD_RATE 43,1080
+#define UART_EN_PIN 44,1110
+#define UART_EN_PIN_INV 45,1132
+#define UART_EN_PORT_NAME 46,1158
+#define UART_NUMBER 47,1186
+#define UART_PORT_NAME 48,1208
+#define UART_RX_PUEN49,1233
+#define USE_API_VERSION 50,1254
+#define USE_ENTER_DELAY51,1280
+#define USE_ENTER_UART52,1304
+#define USE_LED53,1327
+#define USE_UART54,1343
+#define WATCHDOG_TIMEOUT 55,1360
+
+eeprom_driver.h,208
+#define __EEPROM_DRIVER_H33,2277
+#define EEPROM_PAGE_SIZE 45,2468
+#define EEPROM_read_byte(66,2948
+#define EEPROM_write_byte(67,3033
+#define EEPROM_read_block(68,3130
+#define EEPROM_write_block(69,3234
+
+fifo.h,97
+#define __FIFO_H35,2418
+#define fifo_char_received(45,2543
+#define fifo_char_received(48,2695
+
+flash.h,1094
+#define __FLASH_H33,2269
+#define PROGMEM_SIZE 48,2516
+#define BOOT_SECTION_START 56,2661
+#define APP_SECTION_START 60,2757
+#define APP_SECTION_SIZE 64,2818
+#define APP_SECTION_END 68,2910
+#define PGM_READ_BYTE 72,3015
+#define PGM_READ_WORD 73,3055
+#define PGM_READ_DWORD 74,3095
+#define PGM_READ_BYTE 76,3143
+#define PGM_READ_WORD 77,3184
+#define PGM_READ_DWORD 78,3225
+#define Flash_ReadByte 88,3343
+#define Flash_ReadWord 89,3378
+#define Flash_LoadFlashWord 90,3413
+#define Flash_EraseApplicationSection 91,3458
+#define Flash_EraseApplicationPage 92,3523
+#define Flash_EraseWriteApplicationPage 93,3582
+#define Flash_WriteApplicationPage 94,3651
+#define Flash_EraseUserSignatureRow 95,3710
+#define Flash_WriteUserSignatureRow 96,3771
+#define Flash_LoadFlashPage 97,3832
+#define Flash_ReadFlashPage 98,3877
+#define Flash_WaitForSPM 99,3922
+#define Flash_ReadByte 105,3990
+#define Flash_ReadWord 106,4027
+#define Flash_LoadFlashWord 107,4064
+#define Flash_EraseApplicationPage 109,4149
+#define Flash_WriteApplicationPage 111,4253
+#define Flash_WaitForSPM 114,4401
+
+i2c.h,314
+#define __I2C_H35,2417
+#define i2c_address_match(45,2532
+#define i2c_char_received(47,2665
+#define i2c_ready_data(49,2799
+#define i2c_got_ack(51,2929
+#define i2c_send_ack(52,2998
+#define i2c_send_nak(53,3057
+#define i2c_end_transmission(54,3116
+#define i2c_cur_char(55,3183
+#define i2c_send_char(56,3228
+
+protocol.h,1537
+#define __PROTOCOL_H35,2422
+#define CMD_SYNC 42,2496
+#define CMD_CHECK_AUTOINCREMENT 45,2562
+#define CMD_CHECK_BLOCK_SUPPORT 46,2598
+#define CMD_PROGRAMMER_TYPE 47,2634
+#define CMD_DEVICE_CODE 48,2670
+#define CMD_PROGRAM_ID 49,2706
+#define CMD_VERSION 50,2742
+#define CMD_READ_SIGNATURE 51,2778
+#define CMD_SET_ADDRESS 54,2829
+#define CMD_SET_EXT_ADDRESS 55,2865
+#define CMD_CHIP_ERASE 58,2911
+#define CMD_BLOCK_LOAD 61,2964
+#define CMD_BLOCK_READ 62,3000
+#define CMD_READ_BYTE 65,3052
+#define CMD_WRITE_LOW_BYTE 66,3088
+#define CMD_WRITE_HIGH_BYTE 67,3124
+#define CMD_WRITE_PAGE 68,3160
+#define CMD_WRITE_EEPROM_BYTE 69,3196
+#define CMD_READ_EEPROM_BYTE 70,3232
+#define CMD_WRITE_LOCK_BITS 73,3291
+#define CMD_READ_LOCK_BITS 74,3327
+#define CMD_READ_LOW_FUSE_BITS 75,3363
+#define CMD_READ_HIGH_FUSE_BITS 76,3399
+#define CMD_READ_EXT_FUSE_BITS 77,3435
+#define CMD_ENTER_PROG_MODE 80,3495
+#define CMD_LEAVE_PROG_MODE 81,3531
+#define CMD_EXIT_BOOTLOADER 82,3567
+#define CMD_SET_LED 83,3603
+#define CMD_CLEAR_LED 84,3639
+#define CMD_SET_TYPE 85,3675
+#define CMD_CRC 87,3712
+#define CMD_AUTONEG_START 90,3789
+#define CMD_AUTONEG_DONE 91,3825
+#define MEM_EEPROM 94,3895
+#define MEM_FLASH 95,3931
+#define MEM_USERSIG 96,3967
+#define MEM_PRODSIG 97,4003
+#define SECTION_FLASH 100,4067
+#define SECTION_APPLICATION 101,4103
+#define SECTION_BOOT 102,4139
+#define SECTION_APP 103,4175
+#define SECTION_APP_TEMP 104,4211
+#define REPLY_ACK 107,4269
+#define REPLY_YES 108,4306
+#define REPLY_ERROR 109,4342
+
+sp_driver.h,28
+#define SP_DRIVER_H63,3074
+
+uart.h,305
+#define __UART_H35,2418
+#define uart_char_received(45,2543
+#define uart_cur_char(47,2654
+#define uart_send_char(49,2713
+#define uart_send_char_blocking(51,2815
+#define uart_char_received(58,3053
+#define uart_cur_char(60,3151
+#define uart_send_char(62,3202
+#define uart_send_char_blocking(64,3296
+
+watchdog.h,88
+#define __WATCHDOG_H35,2422
+#define WDT_IsSyncBusy(44,2545
+#define WDT_Reset(45,2603
+
+xboot.h,5293
+#define __XBOOT_H35,2419
+#define token_paste2_int(43,2551
+#define token_paste2(44,2589
+#define token_paste3_int(45,2639
+#define token_paste3(46,2685
+#define XBOOT_VERSION_MAJOR 49,2753
+#define XBOOT_VERSION_MINOR 50,2783
+#define USE_DFLL62,2974
+#define USE_32MHZ_RC67,3127
+#define USE_ENTER_DELAY84,3481
+#define USE_ENTER_UART86,3529
+#define USE_LED94,3677
+#define USE_UART95,3693
+#define ENABLE_BLOCK_SUPPORT107,3928
+#define ENABLE_FLASH_BYTE_SUPPORT108,3957
+#define ENABLE_EEPROM_BYTE_SUPPORT109,3991
+#define ENABLE_LOCK_BITS110,4026
+#define ENABLE_FUSE_BITS111,4051
+#define ENABLE_FLASH_ERASE_WRITE112,4076
+#define ENABLE_CRC_SUPPORT113,4109
+#define ENABLE_API116,4144
+#define USE_API_VERSION 117,4163
+#define ENABLE_API_LOW_LEVEL_FLASH118,4189
+#define ENABLE_API_SPM_WRAPPER119,4224
+#define ENABLE_API_FIRMWARE_UPDATE120,4255
+#define ENABLE_CODE_PROTECTION123,4310
+#define ENABLE_EEPROM_PROTECTION124,4341
+#define ENABLE_BOOTLOADER_PROTECTION125,4374
+#define ENTER_PORT_NAME 128,4425
+#define ENTER_PIN 129,4459
+#define ENTER_PIN_STATE 130,4493
+#define ENTER_PIN_PUEN 131,4527
+#define ENTER_BLINK_COUNT 134,4577
+#define ENTER_BLINK_WAIT 135,4611
+#define WATCHDOG_TIMEOUT 152,5132
+#define LED_PORT_NAME 158,5342
+#define LED_PIN 159,5376
+#define LED_INV 160,5410
+#define UART_BAUD_RATE 168,5648
+#define UART_PORT_NAME 169,5687
+#define UART_NUMBER 170,5721
+#define UART_U2X171,5755
+#define UART_RX_PUEN172,5772
+#define UART_EN_PORT_NAME 175,5822
+#define UART_EN_PIN 176,5856
+#define UART_EN_PIN_INV 177,5890
+#define FIFO_DATA_PORT_NAME 180,5933
+#define FIFO_CTL_PORT_NAME 181,5967
+#define FIFO_RXF_N 182,6001
+#define FIFO_TXE_N 183,6035
+#define FIFO_RD_N 184,6069
+#define FIFO_WR_N 185,6103
+#define FIFO_BIT_REVERSE186,6137
+#define I2C_DEVICE_PORT 189,6170
+#define I2C_MATCH_ANY 191,6205
+#define I2C_ADDRESS 192,6239
+#define I2C_GC_ENABLE 193,6276
+#define I2C_AUTONEG_DIS_PROMISC 199,6505
+#define I2C_AUTONEG_DIS_GC 200,6547
+#define I2C_AUTONEG_PORT_NAME 201,6589
+#define I2C_AUTONEG_PIN 202,6631
+#define ATTACH_LED_PORT_NAME 205,6688
+#define ATTACH_LED_PIN 206,6730
+#define ATTACH_LED_INV 207,6772
+#define ENTER_PORT 215,6944
+#define ENTER_PIN_CTRL 218,7034
+#define ENTER_PORT_DDR 220,7135
+#define ENTER_PORT_PIN 221,7202
+#define LED_PORT 225,7301
+#define LED_PORT_DDR 228,7390
+#define LED_PORT_PIN 229,7455
+#define UART_EN_PORT 233,7573
+#define UART_EN_PORT_DDR 236,7666
+#define UART_EN_PORT_PIN 237,7735
+#define UART_RX_PIN 243,7874
+#define UART_TX_PIN 244,7908
+#define UART_RX_PIN 246,7948
+#define UART_TX_PIN 247,7982
+#define UART_PORT 249,8023
+#define UART_DEVICE_PORT 250,8090
+#define UART_DEVICE 251,8164
+#define UART_DEVICE_RXC_ISR 252,8234
+#define UART_DEVICE_DRE_ISR 253,8315
+#define UART_DEVICE_TXC_ISR 254,8396
+#define UART_RX_PIN_CTRL 255,8477
+#define UART_TX_PIN_CTRL 256,8556
+#define UART_BSEL_VALUE 261,8731
+#define UART_BSCALE_VALUE 262,8766
+#define UART_CLK2X 263,8800
+#define UART_BSEL_VALUE 265,8889
+#define UART_BSCALE_VALUE 266,8924
+#define UART_CLK2X 267,8959
+#define UART_BSEL_VALUE 269,9048
+#define UART_BSCALE_VALUE 270,9083
+#define UART_CLK2X 271,9118
+#define UART_BSEL_VALUE 273,9208
+#define UART_BSCALE_VALUE 274,9243
+#define UART_CLK2X 275,9278
+#define UART_BSEL_VALUE 278,9391
+#define UART_BSCALE_VALUE 279,9427
+#define UART_CLK2X 280,9461
+#define UART_BSEL_VALUE 282,9551
+#define UART_BSCALE_VALUE 283,9586
+#define UART_CLK2X 284,9620
+#define UART_BSEL_VALUE 286,9710
+#define UART_BSCALE_VALUE 287,9745
+#define UART_CLK2X 288,9779
+#define UART_BSEL_VALUE 290,9870
+#define UART_BSCALE_VALUE 291,9905
+#define UART_CLK2X 292,9939
+#define UART_BSEL_VALUE 297,10115
+#define UART_BSCALE_VALUE 298,10194
+#define UART_CLK2X 299,10228
+#define UART_BSEL_VALUE 301,10268
+#define UART_BSCALE_VALUE 302,10348
+#define UART_CLK2X 303,10382
+#define UART_UDR 309,10455
+#define UART_UCSRA 310,10518
+#define UART_UCSRB 311,10585
+#define UART_UCSRC 312,10652
+#define UART_UBRR 313,10719
+#define UART_UBRRL 314,10783
+#define UART_UBRRH 315,10850
+#define UART_RX_PIN 319,10942
+#define UART_TX_PIN 320,10976
+#define UART_PORT 324,11025
+#define UART_DDR 325,11063
+#define UART_PORT 329,11117
+#define UART_DDR 330,11155
+#define UART_RX_PIN 336,11223
+#define UART_TX_PIN 337,11257
+#define UART_PORT 338,11291
+#define UART_DDR 339,11329
+#define UART_BRV 344,11406
+#define UART_BRV 346,11544
+#define FIFO_DATA_PORT 352,11718
+#define FIFO_CTL_PORT 353,11790
+#define FIFO_DATA_PORT_DDR 356,11884
+#define FIFO_DATA_PORT_PIN 357,11955
+#define FIFO_CTL_PORT_DDR 358,12026
+#define FIFO_CTL_PORT_PIN 359,12096
+#define I2C_DEVICE 363,12198
+#define I2C_DEVICE_ISR 364,12265
+#define I2C_AUTONEG_PORT 367,12376
+#define ATTACH_LED_PORT 370,12474
+#define EEPROM_PAGE_SIZE 374,12582
+#define EEPROM_BYTE_ADDRESS_MASK 379,12686
+#define EEPROM_BYTE_ADDRESS_MASK 381,12753
+#define EEPROM_BYTE_ADDRESS_MASK 383,12821
+#define EEPROM_BYTE_ADDRESS_MASK 385,12889
+#define NEED_INTERRUPTS393,13065
+#define NEED_INTERRUPTS399,13191
+#define NEED_CODE_PROTECTION405,13330
+#define NEED_CODE_PROTECTION411,13485
+#define MODE_UNDEF 416,13604
+#define MODE_UART 417,13638
+#define MODE_I2C 418,13672
+#define MODE_FIFO 419,13706
+typedef uint32_t ADDR_T;422,13750
+
+xbootapi.h,715
+#define __XBOOTAPI_H33,2272
+#define PROGMEM_SIZE 52,2540
+#define BOOT_SECTION_START 60,2685
+#define APP_SECTION_START 64,2781
+#define APP_SECTION_SIZE 68,2842
+#define APP_SECTION_END 72,2934
+#define JUMP_TABLE_LOCATION 75,3011
+#define JUMP_TABLE_INDEX(76,3076
+#define XB_APP_START 78,3145
+#define XB_APP_SIZE 79,3184
+#define XB_APP_END 80,3229
+#define XB_APP_TEMP_START 81,3283
+#define XB_APP_TEMP_SIZE 82,3328
+#define XB_APP_TEMP_END 83,3365
+#define XB_SUCCESS 86,3451
+#define XB_ERR_NO_API 87,3472
+#define XB_ERR_NOT_FOUND 88,3496
+#define XB_INVALID_ADDRESS 89,3523
+struct xboot_jump_table_s 92,3574
+        uint8_t id[id93,3602
+        uint8_t ver;94,3625
+        uint16_t ptr[ptr95,3646
