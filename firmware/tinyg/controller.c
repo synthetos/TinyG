@@ -437,7 +437,7 @@ void tg_print_system_ready_message(void)
 	cmd_add_string_P("msg", PSTR("SYSTEM READY"));
 	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 #endif
-	if (cfg.comm_mode = TEXT_MODE) { _text_response(TG_OK, "");}// prompt
+	if (cfg.comm_mode == TEXT_MODE) { _text_response(TG_OK, "");}// prompt
 }
 
 /**** Utilities ****

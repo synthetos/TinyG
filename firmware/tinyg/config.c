@@ -913,6 +913,7 @@ static uint8_t _set_sr(cmdObj_t *cmd)
 			cfg.status_report_list[i] = cmd->index;
 			cmd->value = cmd->index;	// persist the index as the value
 			cmd_persist(cmd);
+			cmd_get_cmdObj(cmd);		// this get will return the current value		
 		}
 	}
 /*
