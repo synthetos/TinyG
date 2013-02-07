@@ -1,7 +1,3 @@
-# PREAMBLE
-This is the orignal readme from Alex Forencich's xboot project. For notes about it's application in tinyg see this github wiki page
-https://github.com/synthetos/TinyG/wiki/TinyG-Boot-Loader
-
 # XBoot Readme
 
 See the XBoot wiki for the latest version of this information:
