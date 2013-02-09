@@ -1,9 +1,9 @@
 TinyG Introduction
 ========
 
-![TinyG v6 Board](http://farm9.staticflickr.com/8186/8436183471_6b3708cd0d_c.jpg)
+![TinyG v7 Board](http://farm9.staticflickr.com/8186/8436183471_6b3708cd0d_c.jpg)
 
-TinyG is a port of grbl to the Atmel xmega that runs on the TinyG hardware. Some differences are:
+TinyG is a 6 axis motion control system designed for high performance on small to mid-sized machines. Some features are:
 
 * 6 axis motion (XYXABC axes)
 * jerk controlled motion for acceleration planning (3rd order motion planning)
