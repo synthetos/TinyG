@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+XBoot Extensible AVR Bootloader
+
+xboot.xml
+
+Alex Forencich <alex@alexforencich.com>
+
+Copyright (c) 2012 Alex Forencich
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files(the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-->
+<xboot>
+  <info>
+    <format-version>1.0</format-version>
+    <version>0.1</version>
+    <date>4/25/2012</date>
+  </info>
+  <devices>
+    <device name="xmega" display="XMEGA" description="Atmel XMEGA Series">
+      <device name="xmega-a" display="A" description="Atmel XMEGA A Series">
+        <device name="xmega-a4" display="A4" description="Atmel XMEGA A4 Series">
+          <device name="atxmega16a4"  alias="x16a4"  display="ATxmega16A4"  description="Atmel ATxmega16A4" />
+          <device name="atxmega32a4"  alias="x32a4"  display="ATxmega32A4"  description="Atmel ATxmega32A4" />
+          <device name="atxmega64a4"  alias="x64a4"  display="ATxmega64A4"  description="Atmel ATxmega64A4" />
+           <device name="atxmega128a4" alias="x128a4" display="ATxmega128A4" description="Atmel ATxmega128A4" />
+        </device>
+          <device name="xmega-a3" display="A3" description="Atmel XMEGA A3 Series">
+          <device name="atxmega64a3"   alias="x64a3"   display="ATxmega64A3"   description="Atmel ATxmega64A3" />
+          <device name="atxmega128a3"  alias="x128a3"  display="ATxmega128A3"  description="Atmel ATxmega128A3" />
+          <device name="atxmega192a3"  alias="x192a3"  display="ATxmega192A3"  description="Atmel ATxmega192A3" />
+          <device name="atxmega256a3"  alias="x256a3"  display="ATxmega256A3"  description="Atmel ATxmega256A3" />
+          <device name="atxmega256a3b" alias="x256a3b" display="ATxmega256A3B" description="Atmel ATxmega256A3B" />
+        </device>
+        <device name="xmega-a1" display="A1" description="Atmel XMEGA A1 Series">
+          <device name="atxmega64a1"   alias="x64a1"   display="ATxmega64A1"   description="Atmel ATxmega64A1" />
+          <device name="atxmega64a1U"  alias="x64a1U"  display="ATxmega64A1U"  description="Atmel ATxmega64A1U" />
+          <device name="atxmega128a1"  alias="x128a1"  display="ATxmega128A1"  description="Atmel ATxmega128A1" />
+           <device name="atxmega128a1u" alias="x128a1u" display="ATxmega128A1U" description="Atmel ATxmega128A1U" />
+          <device name="atxmega192a1"  alias="x192a1"  display="ATxmega192A1"  description="Atmel ATxmega192A1" />
+          <device name="atxmega256a1"  alias="x256a1"  display="ATxmega256A1"  description="Atmel ATxmega256A1" />
+          <device name="atxmega384a1"  alias="x384a1"  display="ATxmega384A1"  description="Atmel ATxmega384A1" />
+        </device>
+      </device>
+      <device name="xmega-d" display="D" description="Atmel XMEGA D Series">
+        <device name="xmega-d4" display="D4" description="Atmel XMEGA D4 Series">
+          <device name="atxmega16d4"  alias="x16d4"  display="ATxmega16D4"  description="Atmel ATxmega16D4" />
+          <device name="atxmega32d4"  alias="x32d4"  display="ATxmega32D4"  description="Atmel ATxmega32D4" />
+          <device name="atxmega64d4"  alias="x64d4"  display="ATxmega64D4"  description="Atmel ATxmega64D4" />
+          <device name="atxmega128d4" alias="x128d4" display="ATxmega128D4" description="Atmel ATxmega128D4" />
+        </device>
+        <device name="xmega-d3" display="D3" description="Atmel XMEGA D3 Series">
+          <device name="atxmega64d3"  alias="x64d3"  display="ATxmega64D3"  description="Atmel ATxmega64D3" />
+          <device name="atxmega128d3" alias="x128d3" display="ATxmega128D3" description="Atmel ATxmega128D3" />
+          <device name="atxmega192d3" alias="x192d3" display="ATxmega192D3" description="Atmel ATxmega192D3" />
+          <device name="atxmega256d3" alias="x256d3" display="ATxmega256D3" description="Atmel ATxmega256D3" />
+        </device>
+      </device>
+    </device>
+    <device name="atmega" display="ATMEGA" description="Atmel ATMEGA Series">
+      <device name="atmega88"    alias="m88"    display="ATmega88"     description="Atmel ATxmega88" />
+      <device name="atmega88p"   alias="m88p"   display="ATmega88P"    description="Atmel ATxmega88P" />
+      <device name="atmega88pa"  alias="m88pa"  display="ATmega88PA"   description="Atmel ATxmega88PA" />
+      <device name="atmega164"   alias="m164"   display="ATmega164"    description="Atmel ATxmega164" />
+      <device name="atmega168"   alias="m168"   display="ATmega168"    description="Atmel ATxmega168" />
+      <device name="atmega168p"  alias="m168p"  display="ATmega168P"   description="Atmel ATxmega168P" />
+      <device name="atmega328p"  alias="m328p"  display="ATmega328PA"  description="Atmel ATxmega328PA" />
+      <device name="atmega169"   alias="m169"   display="ATmega169"    description="Atmel ATxmega169" />
+      <device name="atmega169p"  alias="m169p"  display="ATmega169P"   description="Atmel ATxmega169P" />
+      <device name="atmega169pa" alias="m169pa" display="ATmega169PA"  description="Atmel ATxmega169PA" />
+      <device name="atmega324"   alias="m324"   display="ATmega324"    description="Atmel ATxmega324" />
+      <device name="atmega324pa" alias="m324pa" display="ATmega324PA"  description="Atmel ATxmega324PA" />
+      <device name="atmega325"   alias="m325"   display="ATmega325"    description="Atmel ATxmega325" />
+      <device name="atmega3250"  alias="m3250"  display="ATmega3250"   description="Atmel ATxmega3250" />
+      <device name="atmega328p"  alias="m328p"  display="ATmega328P"   description="Atmel ATxmega328P" />
+      <device name="atmega329"   alias="m329"   display="ATmega329"    description="Atmel ATxmega329" />
+      <device name="atmega3290"  alias="m3290"  display="ATmega3290"   description="Atmel ATxmega3290" />
+      <device name="atmega64"    alias="m64"    display="ATmega64"     description="Atmel ATxmega64" />
+      <device name="atmega644"   alias="m644"   display="ATmega644"    description="Atmel ATxmega644" />
+      <device name="atmega644p"  alias="m644p"  display="ATmega644P"   description="Atmel ATxmega644P" />
+      <device name="atmega644pa" alias="m644pa" display="ATmega644PA"  description="Atmel ATxmega644PA" />
+      <device name="atmega645"   alias="m645"   display="ATmega645"    description="Atmel ATxmega645" />
+      <device name="atmega6450"  alias="m6450"  display="ATmega6450"   description="Atmel ATxmega6450" />
+      <device name="atmega649"   alias="m649"   display="ATmega649"    description="Atmel ATxmega649" />
+      <device name="atmega649p"  alias="m649p"  display="ATmega649P"   description="Atmel ATxmega649P" />
+      <device name="atmega6490"  alias="m6490"  display="ATmega6490"   description="Atmel ATxmega6490" />
+      <device name="atmega128"   alias="m128"   display="ATmega128"    description="Atmel ATxmega128" />
+      <device name="atmega1280"  alias="m1280"  display="ATmega1280"   description="Atmel ATxmega1280" />
+      <device name="atmega1281"  alias="m1281"  display="ATmega1281"   description="Atmel ATxmega1281" />
+      <device name="atmega1284p" alias="m1284p" display="ATmega1284p"  description="Atmel ATxmega1284P" />
+      <device name="atmega2560"  alias="m2560"  display="ATmega2560"   description="Atmel ATxmega2560" />
+      <device name="atmega2561"  alias="m2561"  display="ATmega2561"   description="Atmel ATxmega2561" />
+    </device>
+  </devices>
+</xboot>
