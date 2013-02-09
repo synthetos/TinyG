@@ -160,7 +160,7 @@ void gpio_rtc_callback(void)
 		}
 		if (sw.count[i] == 0) {							// trigger point
 			sw.state[i] = SW_LOCKOUT;
-			sw_show_switch();							// only called if __DEBUG enabled
+//			sw_show_switch();							// only called if __DEBUG enabled
 			if (cm.cycle_state == CYCLE_HOMING) {		// regardless of switch type
 				sig_feedhold();
 			} else if (sw.mode[i] & SW_LIMIT) {			// should be a limit switch, so fire it.

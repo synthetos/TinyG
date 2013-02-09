@@ -54,8 +54,9 @@ static void _controller_HSM(void);
 static uint8_t _dispatch(void);
 static void _text_response(const uint8_t status, const char *buf);
 
-static uint8_t _shutdown_handler(void);
 static uint8_t _reset_handler(void);
+static uint8_t _bootloader_handler(void);
+static uint8_t _shutdown_handler(void);
 static uint8_t _feedhold_handler(void);
 static uint8_t _cycle_start_handler(void);
 static uint8_t _sync_to_tx_buffer(void);
@@ -112,10 +113,11 @@ static void _controller_HSM()
 {
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
 											// Order is important:
-	DISPATCH(_reset_handler());				// 1. reset signal
-	DISPATCH(_shutdown_handler());			// 2. limit switch has been thrown
-	DISPATCH(_feedhold_handler());			// 3. feedhold signal
-	DISPATCH(_cycle_start_handler());		// 4. cycle start signal
+	DISPATCH(_reset_handler());				// 1. software reset received
+	DISPATCH(_bootloader_handler());		// 2. received ESC char to start bootloader
+	DISPATCH(_shutdown_handler());			// 3. limit switch has been thrown
+	DISPATCH(_feedhold_handler());			// 4. feedhold requested
+	DISPATCH(_cycle_start_handler());		// 5. cycle start requested
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report
@@ -479,6 +481,7 @@ void tg_set_active_source(uint8_t dev)
 
 /**** Signal handlers ****
  * _reset_handler()
+ * _bootloader_handler()
  * _feedhold_handler()
  * _cycle_start_handler()
  */
@@ -488,6 +491,16 @@ static uint8_t _reset_handler(void)
 	if (sig.sig_reset == false) { return (TG_NOOP);}
 //	sig.sig_reset = false;				// why bother?
 	tg_reset();							// hard reset - identical to hitting RESET button
+	return (TG_EAGAIN);
+}
+
+static uint8_t _bootloader_handler(void)
+{
+	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
+	sig.sig_request_bootloader = false;
+	CCPWrite( &RST.CTRL, RST_SWRST_bm );
+//	CCP = CCP_IOREG_gc;
+//	RST.CTRL = RST_SWRST_bm;
 	return (TG_EAGAIN);
 }
 

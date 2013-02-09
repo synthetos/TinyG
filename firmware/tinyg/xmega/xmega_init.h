@@ -34,5 +34,6 @@
  */
 
 void xmega_init(void);
+void CCPWrite( volatile uint8_t * address, uint8_t value );
 
 #endif

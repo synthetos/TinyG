@@ -146,6 +146,11 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		sig_cycle_start();
 		return;
 	}
+	if (c == CHAR_BOOTLOADER) {					// trap ESC to start boot loader
+		USB.signal = XIO_SIG_BOOTLOADER;
+		sig_request_bootloader();
+		return;
+	}
 	// filter out CRs and LFs if they are to be ignored
 	if ((c == CR) && (USB.flag_ignorecr)) return;
 	if ((c == LF) && (USB.flag_ignorelf)) return;

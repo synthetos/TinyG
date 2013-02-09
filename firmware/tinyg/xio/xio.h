@@ -223,7 +223,8 @@ enum xioSignals {
 	XIO_SIG_FEEDHOLD,		// pause operation
 	XIO_SIG_CYCLE_START,	// start or resume operation
 	XIO_SIG_DELETE,			// backspace or delete character (BS, DEL)
-	XIO_SIG_BELL			// BELL character (BEL, ^g)
+	XIO_SIG_BELL,			// BELL character (BEL, ^g)
+	XIO_SIG_BOOTLOADER		// ESC character - start bootloader
 };
 
 /* Some useful ASCII definitions */
@@ -251,6 +252,7 @@ enum xioSignals {
 #define CHAR_RESET CAN
 #define CHAR_FEEDHOLD (char)'!'
 #define CHAR_CYCLE_START (char)'~'
+#define CHAR_BOOTLOADER (char)ESC
 
 /* XIO return codes
  * These codes are the "inner nest" for the TG_ return codes. 
