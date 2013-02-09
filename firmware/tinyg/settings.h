@@ -43,7 +43,8 @@
 
 #define STATUS_REPORT_MIN_MS		50		// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	50		// milliseconds - set to 0 to disable
-#define SR_DEFAULTS "line","posx","posy","posz","posa","vel","unit","momo","stat"
+#define SR_DEFAULTS "line","posx","posy","posz","posa","vel","unit","momo","stat","homx","homy","homz","homa","coor"
+
 //#define SR_VERBOSITY				SR_OFF
 #define SR_VERBOSITY				SR_FILTERED
 //#define SR_VERBOSITY				SR_VERBOSE

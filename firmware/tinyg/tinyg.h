@@ -26,13 +26,17 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
+/*
+ * Is this code over documented? Possibly. 
+ * We try to follow this (at least we are evolving to it). It's worth a read.
+ * ftp://ftp.idsoftware.com/idstuff/doom3/source/CodeStyleConventions.doc
+ */
 #ifndef tinyg_h
 #define tinyg_h
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	364.11		// Post edge push (363.xx)
+#define TINYG_BUILD_NUMBER   	367.04		// Working through Riley's tgFX issues
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 

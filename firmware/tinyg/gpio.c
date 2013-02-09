@@ -1,8 +1,8 @@
 /*
- * gpio.c - geberal purpose IO bits - including limit switches, inputs, outputs
+ * gpio.c - general purpose IO bits - including limit switches, inputs, outputs
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2011 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -60,9 +60,6 @@
  * 	The normally closed switch modes (NC) trigger an interrupt on the rising edge 
  *	and lockout subsequent interrupts for the defined lockout period. Ditto on the method.
  */
-
-//#include <stdio.h>						// precursor to xio.h
-#include <avr/pgmspace.h>					// precursor to xio.h
 #include <avr/interrupt.h>
 
 #include "tinyg.h"
@@ -163,6 +160,7 @@ void gpio_rtc_callback(void)
 		}
 		if (sw.count[i] == 0) {							// trigger point
 			sw.state[i] = SW_LOCKOUT;
+			sw_show_switch();							// only called if __DEBUG enabled
 			if (cm.cycle_state == CYCLE_HOMING) {		// regardless of switch type
 				sig_feedhold();
 			} else if (sw.mode[i] & SW_LIMIT) {			// should be a limit switch, so fire it.
@@ -319,12 +317,15 @@ void gpio_toggle_port(uint8_t b)
 #ifdef __DEBUG
 void sw_show_switch(void)
 {
-	fprintf_P(stderr, PSTR("Limit Switch Thrown %d %d  %d %d   %d %d  %d %d\n"), 
-		sw.flag[MIN_SWITCH(X)], sw.flag[MAX_SWITCH(X)], 
-		sw.flag[MIN_SWITCH(Y)], sw.flag[MAX_SWITCH(Y)], 
-		sw.flag[MIN_SWITCH(Z)], sw.flag[MAX_SWITCH(Z)], 
-		sw.flag[MIN_SWITCH(A)], sw.flag[MAX_SWITCH(A)]);
+	fprintf_P(stderr, PSTR("Limit Switch Thrown Xmin %d Xmax %d  Ymin %d Ymax %d  \
+		Zmin %d Zmax %d Amin %d Amax %d\n"), 
+		sw.state[SW_MIN_X], sw.state[SW_MAX_X],
+		sw.state[SW_MIN_Y], sw.state[SW_MAX_Y],
+		sw.state[SW_MIN_Z], sw.state[SW_MAX_Z],
+		sw.state[SW_MIN_A], sw.state[SW_MAX_A]);
 }
+#else
+void sw_show_switch(void) {}
 #endif
 
 //###########################################################################

@@ -358,7 +358,7 @@ static void _text_response(const uint8_t status, const char *buf)
 	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
 
 	// deliver the prompt
-	const char *Units;		// becomes pointer to progmem string
+	const char *Units;			// becomes pointer to progmem string
 	if (cm_get_units_mode() != INCHES) Units = (PGM_P)&prompt_mm;
 	else Units = (PGM_P)&prompt_in;
 	if ((status == TG_OK) || (status == TG_EAGAIN) || (status == TG_NOOP) || (status == TG_ZERO_LENGTH_MOVE)) {
@@ -368,7 +368,7 @@ static void _text_response(const uint8_t status, const char *buf)
 	}
 
 	// deliver echo and messages
-	cmdObj_t *cmd = cmd_body;		// if there is a message it will aways be in the second object
+	cmdObj_t *cmd = cmd_body;	// if there is a message it will aways be in the second object
 	if ((cfg.text_verbosity >= TV_MESSAGES) && (cmd->token[0] == 'm')) {
 		fprintf(stderr, "%s\n", *cmd->stringp);
 	}
@@ -436,8 +436,8 @@ void tg_print_system_ready_message(void)
 	cmd_add_object("fb");
 	cmd_add_string_P("msg", PSTR("SYSTEM READY"));
 	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
-	_text_response(TG_OK, "");				// prompt
 #endif
+	if (cfg.comm_mode == TEXT_MODE) { _text_response(TG_OK, "");}// prompt
 }
 
 /**** Utilities ****

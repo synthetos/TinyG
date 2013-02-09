@@ -112,7 +112,7 @@ void xio_init()
 
 	// open individual devices (file device opens occur at time-of-use)
 	xio_open(XIO_DEV_USB,  0, USB_FLAGS);
-	xio_open(XIO_DEV_RS485,0, RS485_FLAGS);
+//	xio_open(XIO_DEV_RS485,0, RS485_FLAGS);
 	xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
 	xio_open(XIO_DEV_SPI2, 0, SPI_FLAGS);
 }
@@ -126,13 +126,13 @@ void xio_reset_working_flags(xioDev_t *d)
 }
 
 /*
- * xio_open_generic() - generic (and partial) open function for any device
+ * xio_init_device() - generic initialization function for any device
  *
  *	This binds the main fucntions and sets up the stdio FILE structure
  *	udata is used to point back to the device struct so it can be gotten 
  *	from getc() and putc() functions. 
  *
- *	Requires device specific open() to be run afterward to complete the setup
+ *	Requires device open() to be run prior to using the device
  */
 void xio_open_generic(uint8_t dev, x_open_t x_open, 
 								   x_ctrl_t x_ctrl, 
@@ -270,8 +270,9 @@ void xio_unit_tests()
 static void _spi_putc()
 {
 	FILE * fdev;
-	char c;
 	char buf[12];
+//	char c;
+
 
 	fdev = xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
 	while (true) {
@@ -281,20 +282,21 @@ static void _spi_putc()
 	}
 }
 
+#define DELAY 1000		// approx delay in uSec in -O0 mode
+
 static void _spi_loopback()
 {
 	FILE * fdev;
-	char c;
-	char str[10] = "tester ";
+	char buf[10] = "tester\n";
+//	uint8_t i=0;
+	uint32_t j=0;
 
 	fdev = xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
+	xio_set_stdout(XIO_DEV_SPI1);
 	while (true) {
-//		xio_putc_spi(0x55, fdev);
-		for (uint8_t i=0; i<7; i++) { 
-			xio_putc_spi(str[i], fdev);
-			c = xio_getc(XIO_DEV_SPI1);
-			xio_putc(XIO_DEV_USB, c);
-		}
+//		for (i=0; i<7; i++) { xio_putc_spi(buf[i], fdev);}
+		printf("%s",buf);
+		for (j=(DELAY*0.76); j>0; j--);
 	}
 }
 

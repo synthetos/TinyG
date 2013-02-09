@@ -68,10 +68,10 @@ uint8_t gc_gcode_parser(char *block)
 {
 	uint8_t msg_flag = _normalize_gcode_block(block);	// get block ready for parsing
 	if (block[0] == NUL) {
-		if (msg_flag == true) return (TG_OK);			// queues messages for display
+		if (msg_flag == true) return (TG_OK);	// queues messages for display
 		return (TG_NOOP); 
 	}
-	return(_parse_gcode_block(block));					// parse block & return status
+	return(_parse_gcode_block(block));			// parse block & return if error
 }
 
 /*

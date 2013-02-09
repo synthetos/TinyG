@@ -1,5 +1,5 @@
 /*
- * json_parser.c - JSON parser for rs274/ngc parser.
+ * json_parser.c - JSON parser for TinyG
  * Part of TinyG project
  *
  * Copyright (c) 2012 - 2013 Alden S. Hart, Jr.
@@ -49,7 +49,7 @@
 // local scope stuff
 
 uint8_t _json_parser_kernal(char *str);
-static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth);
+static uint8_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth);
 static uint8_t _normalize_json_string(char *str, uint16_t size);
 //static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd);
 
@@ -57,7 +57,7 @@ static uint8_t _normalize_json_string(char *str, uint16_t size);
  * js_json_parser() - exposed part of JSON parser
  * _json_parser_kernal()
  * _normalize_json_string()
- * _get_nv_pair()
+ * _get_nv_pair_strict()
  *
  *	This is a dumbed down JSON parser to fit in limited memory with no malloc
  *	or practical way to do recursion ("depth" tracks parent/child levels).
@@ -112,7 +112,7 @@ uint8_t _json_parser_kernal(char *str)
 	// parse the JSON command into the cmd body
 	do {
 		if (--i == 0) { return (TG_JSON_TOO_MANY_PAIRS); }			// length error
-		if ((status = _get_nv_pair(cmd, &str, &depth)) > TG_EAGAIN) { // erred out
+		if ((status = _get_nv_pair_strict(cmd, &str, &depth)) > TG_EAGAIN) { // erred out
 			return (status);
 		}
 		// propagate the group from previous NV pair (if relevant)
@@ -120,7 +120,7 @@ uint8_t _json_parser_kernal(char *str)
 			strncpy(cmd->group, group, CMD_GROUP_LEN);// copy the parent's group to this child
 		}
 		// validate the token and get the index
-		if ((cmd->index = cmd_get_index(cmd->group, cmd->token)) == NO_INDEX) { 
+		if ((cmd->index = cmd_get_index(cmd->group, cmd->token)) == NO_MATCH) { 
 			return (TG_UNRECOGNIZED_COMMAND);
 		}
 		if ((cmd_index_is_group(cmd->index)) && (cmd_group_is_prefixed(cmd->token))) {
@@ -169,7 +169,7 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
 }
 
 /*
- * _get_nv_pair() - get the next name-value pair
+ * _get_nv_pair_strict() - get the next name-value pair w/strict JSON rules
  *
  *	Parse the next statement and populate the command object (cmdObj).
  *
@@ -188,7 +188,7 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
  *	"fr" is found in the name string the parser will search for "xfr"in the 
  *	cfgArray.
  */
-static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
+static uint8_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 {
 	char *tmp;
 	char terminators[] = {"},"};
@@ -249,9 +249,7 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
 		return (TG_INPUT_VALUE_UNSUPPORTED);		// return error as the parser doesn't do input arrays yet
 
 	// general error condition
-	} else {
-		 return (TG_JSON_SYNTAX_ERROR);			// ill-formed JSON
-	}
+	} else { return (TG_JSON_SYNTAX_ERROR); }			// ill-formed JSON
 
 	// process comma separators and end curlies
 	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { // advance to terminator or err out
@@ -261,9 +259,8 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
 		*depth -= 1;							// pop up a nesting level
 		(*pstr)++;								// advance to comma or whatever follows
 	}
-	if (**pstr == ',') { 
-		return (TG_EAGAIN);						// signal that there is more to parse
-	}
+	if (**pstr == ',') { return (TG_EAGAIN);}	// signal that there is more to parse
+
 	(*pstr)++;
 	return (TG_OK);								// signal that parsing is complete
 }
@@ -272,8 +269,8 @@ static uint8_t _get_nv_pair(cmdObj_t *cmd, char **pstr, int8_t *depth)
  * _gcode_comment_overrun_hack() - gcode overrun exception
  *
  *	Make an exception for string buffer overrun if the string is Gcode and the
- *	overrun is cuased by as comment. The comment will be truncated. If the 
- *	comment happens to be a message, well tough noogies, bucko.
+ *	overrun is caused by as comment. The comment will be truncated. 
+ *	If the comment happens to be a message, well tough noogies, bucko.
  */
 /*
 static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
@@ -288,7 +285,7 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  * js_serialize_json() - make a JSON object string from JSON object array
  *
  *	*cmd is a pointer to the first element in the cmd list to serialize
- *	*str is a pointer to the output string - usually what was the input string
+ *	*out_buf is a pointer to the output string - usually what was the input string
  *	Returns the character count of the resulting string
  *
  * 	Operation:
@@ -296,20 +293,18 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  *	  - Assume the first object is depth 0 or greater (the opening curly)
  *	  - Assume remaining depths have been set correctly; but might not achieve closure;
  *		e.g. list starts on 0, and ends on 3, in which case provide correct closing curlies
- *	  - Assume object depth is no greater than MAX_DEPTH
  *	  - Assume there can be multiple, independent, non-contiguous JSON objects at a 
- *		given depth value. These are processed independently - e.g. 0,1,1,0,1,1,0,1,1
- *	  - Assume the list has a terminating cmdObj where cmd->nx == NULL. 
- *		The terminator may or may not have data (empty or not empty).
+ *		given depth value. These are processed correctly - e.g. 0,1,1,0,1,1,0,1,1
+ *	  - The list must have a terminating cmdObj where cmd->nx == NULL. 
+ *		The terminating object may or may not have data (empty or not empty).
  *
  *	Desired behaviors:
- *	  - Skip over empty objects (TYPE_EMPTY)
  *	  - Allow self-referential elements that would otherwise cause a recursive loop
+ *	  - Skip over empty objects (TYPE_EMPTY)
  *	  - If a JSON object is empty represent it as {}
  *	    --- OR ---
  *	  - If a JSON object is empty omit the object altogether (no curlies)
  */
-
 uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 {
 	char *str = out_buf;
@@ -351,11 +346,11 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf)
 }
 
 /*
- * js_print_json_object() - serialize and print the cmdObj array as a report w/o header & footer
+ * js_print_json_object() - serialize and print the cmdObj array directly (w/o header & footer)
  *
  *	Ignores JSON verbosity settings and everything else - just serializes the list & prints
  *	Useful for reports and other simple output.
- *	Object list should be terminated by cmd->nx == NULL (or the body will print the previous footer)
+ *	Object list should be terminated by cmd->nx == NULL
  */
 void js_print_json_object(cmdObj_t *cmd)
 {
@@ -364,61 +359,70 @@ void js_print_json_object(cmdObj_t *cmd)
 }
 
 /*
- * js_print_json_response() - JSON responses with headers, footers and JSON verbosity 
+ * js_print_json_response() - JSON responses with headers, footers and observes JSON verbosity 
  *
  *	A footer is returned for every setting except $jv=0
  *
- *	  JV_SILENT = 0,		// no response is provided for any command
- *    JV_FOOTER_ONLY		// response contains no body - footer only - footer has 0 checksum
- *	  JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
- *	  JV_GCODE_LINENUM_ONLY	// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
- *	  JV_GCODE_MESSAGES		// body returned for configs; Gcode returns line numbers and messages only
- *	  JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
+ *	JV_SILENT = 0,	// no response is provided for any command
+ *	JV_FOOTER,		// responses contain  footer only; no command echo, gcode blocks or messages
+ *	JV_CONFIGS,		// echo configs; gcode blocks are not echoed; messages are not echoed
+ *	JV_MESSAGES,	// echo configs; gcode messages only (if present); no block echo or line numbers
+ *	JV_LINENUM,		// echo configs; gcode blocks return messages and line numbers as present
+ *	JV_VERBOSE		// echos all configs and gcode blocks, line numbers and messages
+ *
+ *	This gets a bit complicated. The first cmdObj is the header, which must be set by reset_list().
+ *	The first object in the body will always have the gcode block or config command in it, 
+ *	which you may or may not want to display. This is followed by zero or more displayable objects. 
+ *	Then if you want a gcode line number you add that here to the end. Finally, a footer goes 
+ *	on all the (non-silent) responses.
  */
 #define MAX_TAIL_LEN 8
 
-void js_print_json_response(cmdObj_t *cmd, uint8_t status)
+void js_print_json_response(uint8_t status)
 {
-	uint8_t verbosity = cfg.json_verbosity;
-
 	if (cm.machine_state == MACHINE_INITIALIZING) {		// always do full echo during startup
-		fprintf(stderr,"\n");
-		verbosity = JV_VERBOSE;
+//		fprintf(stderr,"\n");							//+++++++++++++++++++++++++++
+		cmdObj_t tmp;
+		tmp.value = JV_VERBOSE;
+		cmd_set_jv(&tmp);
 	}
-	if (verbosity == JV_SILENT) { return;}
+	if (cfg.json_verbosity == JV_SILENT) { return;}		// silent responses
 
-	char footer[18];
-	sprintf(footer, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
-	if (verbosity == JV_FOOTER_ONLY) { 					// footer only has null checksum
-		cmd_copy_string(cmd_footer, footer);
-		tg.linelen = 0;									// reset it so it's only reported once
-		cmd_footer->type = TYPE_ARRAY;
-		js_print_json_object(cmd_footer); 
-		return; 
-	}
-	// Special processing for Gcode responses
-	// Assumes cmdObjs are ordered in the body as "gc", "msg", "n" in positions 0,1,2
-	// "msg" and "n" may or may not be present in the body depending on conditions
-	if ((cmd_get_type(cmd_body) == CMD_TYPE_GCODE) && (verbosity < JV_VERBOSE)) {
-		if (verbosity >= JV_OMIT_GCODE_BODY) { cmd_body->type = TYPE_EMPTY;}
-		if (verbosity >= JV_GCODE_LINENUM_ONLY) { cmd_body->nx->nx->type = TYPE_EMPTY;}
-		if (verbosity >= JV_GCODE_MESSAGES) { cmd_body->nx->type = TYPE_EMPTY;}
+	// Body processing
+	cmdObj_t *cmd = cmd_body;
+	if (cmd_get_type(cmd) == CMD_TYPE_GCODE) {
+		if (cfg.echo_json_gcode_block == false) {
+			cmd->type = TYPE_EMPTY;						// skip gcode block if no echo
+		}
+		if ((cfg.echo_json_linenum == true) && (cm_get_model_linenum() != 0)) {
+			cmd = cmd_add_object("n");
+		}
+	} else {
+		if (cfg.echo_json_configs == false) {
+			cmd->type = TYPE_EMPTY;						// skip config if no echo
+		}
 	}
 
 	// Footer processing
-	cmd_footer->type = TYPE_ARRAY;
-	cmd_copy_string(cmd_footer, footer);
-	tg.linelen = 0;											// reset it so it's only reported once
+	while(cmd->type != TYPE_EMPTY) { cmd = cmd->nx;}	// advance to first free object
+	char footer_string[CMD_FOOTER_LEN];
+	sprintf(footer_string, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
+	tg.linelen = 0;										// reset linelen so it's only reported once
+
+	cmd_copy_string(cmd, footer_string);				// link string to cmd object
+	cmd->type = TYPE_ARRAY;
+	strcpy(cmd->token, "f");
+	cmd->nx = NULL;
 
 	// do all this to avoid having to serialize it twice
-	uint16_t strcount = js_serialize_json(cmd, tg.out_buf);	// make JSON string w/o checksum
+	uint16_t strcount = js_serialize_json(cmd_header, tg.out_buf);// make JSON string w/o checksum
 	uint16_t strcount2 = strcount;
 	char tail[MAX_TAIL_LEN];
 
-	while (tg.out_buf[strcount] != '0') { strcount--; }		// find end of checksum
-	strcpy(tail, tg.out_buf + strcount + 1);				// save the json termination
+	while (tg.out_buf[strcount] != '0') { strcount--; }	// find end of checksum
+	strcpy(tail, tg.out_buf + strcount + 1);			// save the json termination
 
-	while (tg.out_buf[strcount2] != ',') { strcount2--; }	// find start of checksum
+	while (tg.out_buf[strcount2] != ',') { strcount2--; }// find start of checksum
 	sprintf(tg.out_buf + strcount2 + 1, "%d%s", compute_checksum(tg.out_buf, strcount2), tail);
 	fprintf(stderr, "%s", tg.out_buf);
 }
@@ -508,14 +512,14 @@ void _test_serialize()
 
 	// response object parent with no children w/footer
 	cmd_reset_list();								// works with the header/body/footer list
-	_add_array(cmd_footer, "1,0,12,1234");			// fake out a footer
+	_add_array(cmd, "1,0,12,1234");					// fake out a footer
 	js_serialize_json(cmd_header, tg.out_buf);
 	_printit();
 
 	// response parent with one element w/footer
 	cmd_reset_list();								// works with the header/body/footer list
 	cmd_add_string("msg", "test message");
-	_add_array(cmd_footer, "1,0,12,1234");			// fake out a footer
+	_add_array(cmd, "1,0,12,1234");					// fake out a footer
 	js_serialize_json(cmd_header, tg.out_buf);
 	_printit();
 }

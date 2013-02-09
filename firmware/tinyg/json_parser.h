@@ -44,13 +44,13 @@
 
 void js_json_parser(char *str);
 uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf);
-//void js_print_list(uint8_t status);
 void js_print_json_object(cmdObj_t *cmd);
-void js_print_json_response(cmdObj_t *cmd, uint8_t status);
+void js_print_json_response(uint8_t status);
+//void js_print_json_response(cmdObj_t *cmd, uint8_t status);
 
 /* unit test setup */
 
-#define __UNIT_TEST_JSON				// uncomment to enable JSON unit tests
+//#define __UNIT_TEST_JSON				// uncomment to enable JSON unit tests
 #ifdef __UNIT_TEST_JSON
 void js_unit_tests(void);
 #define	JSON_UNITS js_unit_tests();

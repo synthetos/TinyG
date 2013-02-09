@@ -274,9 +274,6 @@ void cm_set_arc_radius(double r)
 void cm_set_model_linenum(uint32_t linenum)
 {
 	gm.linenum = linenum;
-	if (linenum != 0) {
-		cmd_add_object("n");	// add model line number object for later display
-	}
 }
 
 /* 
@@ -521,8 +518,8 @@ static double _get_move_times(double *min_time)
 void cm_init()
 {
 // You can assume all memory has been zeroed by a hard reset. If not, use this code:
-//	memset(&cm, 0, sizeof(cm));			// reset canonicalMachineSingleton
-//	memset(&gn, 0, sizeof(gn));			// clear all values, pointers and status
+//	memset(&cm, 0, sizeof(cm));		// reset canonicalMachineSingleton
+//	memset(&gn, 0, sizeof(gn));		// clear all values, pointers and status
 //	memset(&gf, 0, sizeof(gf));
 //	memset(&gm, 0, sizeof(gm));
 
@@ -1038,7 +1035,8 @@ void cm_comment(char *comment)
 
 void cm_message(char *message)
 {
-	cmd_add_string("msg", message);		// adds the message to the response object
+	cmd_add_message(message);			// conditionally adds the message to the response object
+//	cmd_add_string("msg", message);		// adds the message to the response object
 }
 
 /*
