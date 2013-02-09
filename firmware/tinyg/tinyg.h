@@ -36,9 +36,9 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	367.04		// Working through Riley's tgFX issues
+#define TINYG_BUILD_NUMBER   	367.05		// Working through Riley's tgFX issues
 #define TINYG_VERSION_NUMBER	0.95		// major version
-#define TINYG_HARDWARE_VERSION	7.01		// board revision number
+#define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
 /****** DEVELOPMENT SETTINGS ******/
 

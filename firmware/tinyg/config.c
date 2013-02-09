@@ -438,12 +438,12 @@ static const char fmt_mpoz[] PROGMEM = "Z machine posn:%11.3f%S\n";
 static const char fmt_mpoa[] PROGMEM = "A machine posn:%11.3f%S\n";
 static const char fmt_mpob[] PROGMEM = "B machine posn:%11.3f%S\n";
 static const char fmt_mpoc[] PROGMEM = "C machine posn:%11.3f%S\n";
-static const char fmt_homx[] PROGMEM = "X axis homed:%4d\n";
-static const char fmt_homy[] PROGMEM = "Y axis homed:%4d\n";
-static const char fmt_homz[] PROGMEM = "Z axis homed:%4d\n";
-static const char fmt_homa[] PROGMEM = "A axis homed:%4d\n";
-static const char fmt_homb[] PROGMEM = "B axis homed:%4d\n";
-static const char fmt_homc[] PROGMEM = "C axis homed:%4d\n";
+static const char fmt_homx[] PROGMEM = "X axis homed:%9d\n";
+static const char fmt_homy[] PROGMEM = "Y axis homed:%9d\n";
+static const char fmt_homz[] PROGMEM = "Z axis homed:%9d\n";
+static const char fmt_homa[] PROGMEM = "A axis homed:%9d\n";
+static const char fmt_homb[] PROGMEM = "B axis homed:%9d\n";
+static const char fmt_homc[] PROGMEM = "C axis homed:%9d\n";
 
 // Motor print formatting strings
 static const char fmt_0ma[] PROGMEM = "[%s%s] m%s map to axis%15d [0=X, 1=Y...]\n";
