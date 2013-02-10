@@ -31,7 +31,6 @@
 
 #include <ctype.h>				// for parsing
 #include <string.h>
-#include <stdio.h>				// precursor for xio.h
 #include <avr/pgmspace.h>		// precursor for xio.h
 
 #include "tinyg.h"				// #1 unfortunately, there are some dependencies
@@ -48,6 +47,7 @@
 #include "gpio.h"
 #include "help.h"
 #include "xio/xio.h"
+#include "xmega/xmega_init.h"
 
 // local helpers
 static void _controller_HSM(void);

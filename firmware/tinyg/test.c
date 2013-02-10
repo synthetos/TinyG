@@ -64,7 +64,7 @@
  */
 uint8_t tg_test(cmdObj_t *cmd)
 {
-	cfg.comm_mode = TEXT_MODE;	// all tests run in text mode only
+//	cfg.comm_mode = TEXT_MODE;	// all tests run in text mode only
 
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (TG_OK);}
