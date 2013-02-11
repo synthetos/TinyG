@@ -32,6 +32,7 @@
 #include <ctype.h>				// for parsing
 #include <string.h>
 #include <avr/pgmspace.h>		// precursor for xio.h
+#include <avr/interrupt.h>
 
 #include "tinyg.h"				// #1 unfortunately, there are some dependencies
 #include "config.h"				// #2
@@ -497,6 +498,7 @@ static uint8_t _reset_handler(void)
 static uint8_t _bootloader_handler(void)
 {
 	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
+	cli();
 	asm("jmp 0x030000");
 	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
 }
