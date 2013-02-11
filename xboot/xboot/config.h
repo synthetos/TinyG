@@ -22,6 +22,7 @@
 #define ENTER_PIN_PUEN 1
 #define ENTER_PIN_STATE 0
 #define ENTER_PORT_NAME C
+#define ENTER_UART_NEED_SYNC
 #define FIFO_BIT_REVERSE
 #define FIFO_CTL_PORT_NAME D
 #define FIFO_DATA_PORT_NAME C
@@ -37,8 +38,8 @@
 #define I2C_DEVICE_PORT C
 #define I2C_GC_ENABLE 1
 #define I2C_MATCH_ANY 1
-#define LED_INV 1
-#define LED_PIN 7
+#define LED_INV 0
+#define LED_PIN 5
 #define LED_PORT_NAME A
 #define UART_BAUD_RATE 115200
 #define UART_EN_PIN 4
