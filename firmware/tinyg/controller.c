@@ -497,12 +497,22 @@ static uint8_t _reset_handler(void)
 static uint8_t _bootloader_handler(void)
 {
 	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
-	sig.sig_request_bootloader = false;
-	CCPWrite( &RST.CTRL, RST_SWRST_bm );
+	asm("jmp 0x030000");
+	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
+}
+
+/*
+static uint8_t _bootloader_handler(void)
+{
+	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
+//	sig.sig_request_bootloader = false;
+	asm("jmp 0x030000");
+//	CCPWrite( &RST.CTRL, RST_SWRST_bm );
 //	CCP = CCP_IOREG_gc;
 //	RST.CTRL = RST_SWRST_bm;
-	return (TG_EAGAIN);
+	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
 }
+*/
 
 static uint8_t _feedhold_handler(void)
 {

@@ -40,21 +40,21 @@
 #include "xio/xio.h"
 
 // regression test files
-#include "tests/test_001_homing.h"	// G28.1 homing cycles
-#include "tests/test_002_smoke.h" 	// basic functionality
-#include "tests/test_003_squares.h"	// square moves
-#include "tests/test_004_arcs.h"	// arc moves
-#include "tests/test_005_dwell.h"	// dwells embedded in move sequences
-#include "tests/test_006_feedhold.h"// feedhold - requires manual ! and ~ entry
-#include "tests/test_007_Mcodes.h"	// M codes synchronized w/moves (planner queue)
-#include "tests/test_008_json.h"	// JSON parser and IO
-#include "tests/test_009_inverse_time.h"// inverse time mode
-#include "tests/test_010_rotary.h"	// ABC axes
-#include "tests/test_011_small_moves.h"	// small move test
-#include "tests/test_012_slow_moves.h"	// slow move test
+#include "tests/test_001_homing.h"			// G28.1 homing cycles
+#include "tests/test_002_smoke.h" 			// basic functionality
+#include "tests/test_003_squares.h"			// square moves
+#include "tests/test_004_arcs.h"			// arc moves
+#include "tests/test_005_dwell.h"			// dwells embedded in move sequences
+#include "tests/test_006_feedhold.h"		// feedhold - requires manual ! and ~ entry
+#include "tests/test_007_Mcodes.h"			// M codes synchronized w/moves (planner queue)
+#include "tests/test_008_json.h"			// JSON parser and IO
+#include "tests/test_009_inverse_time.h"	// inverse time mode
+#include "tests/test_010_rotary.h"			// ABC axes
+#include "tests/test_011_small_moves.h"		// small move test
+#include "tests/test_012_slow_moves.h"		// slow move test
 #include "tests/test_013_coordinate_offsets.h"	// what it says
-#include "tests/test_050_mudflap.h"	// mudflap test - entire drawing
-#include "tests/test_051_braid.h"	// braid test - partial drawing
+#include "tests/test_050_mudflap.h"			// mudflap test - entire drawing
+#include "tests/test_051_braid.h"			// braid test - partial drawing
 
 /*
  * tg_test() - system tests from FLASH invoked by $test=n command
@@ -64,8 +64,6 @@
  */
 uint8_t tg_test(cmdObj_t *cmd)
 {
-//	cfg.comm_mode = TEXT_MODE;	// all tests run in text mode only
-
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (TG_OK);}
 		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
@@ -102,6 +100,9 @@ uint8_t tg_test(cmdObj_t *cmd)
 void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
+
+// avrdude -p x192a3 -c avr109 -b 115200 -P COM19
+// avrdude -e -p atxmega192a3 -c avrispmkii -P usb -U boot:w:xboot-boot.hex
 
 //	xio_queue_RX_string_usb("$id\n");
 //	xio_queue_RX_string_usb("{\n");
