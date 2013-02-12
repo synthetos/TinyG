@@ -272,6 +272,8 @@ double mp_get_runtime_linenum(void);
 double mp_get_runtime_velocity(void);
 double mp_get_runtime_work_position(uint8_t axis);
 double mp_get_runtime_machine_position(uint8_t axis);
+double mp_get_runtime_work_offset(uint8_t axis);
+double mp_get_runtime_work_scaling(uint8_t axis);
 void mp_set_runtime_work_offset(double offset[]); 
 void mp_zero_segment_velocity(void);
 

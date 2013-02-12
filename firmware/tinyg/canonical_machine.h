@@ -86,6 +86,7 @@ typedef struct GCodeModel {				// Gcode dynamic model
 	double position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
 	double origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
 	double work_offset[AXES];			// XYZABC work offset to be forwarded to planner
+	double work_scaling[AXES];			// XYZABC scale factor to get to work coordinates
 	double g28_position[AXES];			// XYZABC stored machine position for G28
 	double g30_position[AXES];			// XYZABC stored machine position for G30
 
@@ -453,6 +454,7 @@ double cm_get_model_canonical_target(uint8_t axis);
 double *cm_get_model_canonical_position_vector(double vector[]);
 double cm_get_runtime_machine_position(uint8_t axis);
 double cm_get_runtime_work_position(uint8_t axis);
+double cm_get_runtime_work_offset(uint8_t axis);
 
 void cm_set_arc_offset(double i, double j, double k);
 void cm_set_arc_radius(double r);

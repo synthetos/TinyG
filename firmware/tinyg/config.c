@@ -241,6 +241,7 @@ static uint8_t _get_frmo(cmdObj_t *cmd);	// get feedrate mode...
 static uint8_t _get_vel(cmdObj_t *cmd);		// get runtime velocity...
 static uint8_t _get_pos(cmdObj_t *cmd);		// get runtime work position...
 static uint8_t _get_mpos(cmdObj_t *cmd);	// get runtime machine position...
+static uint8_t _get_ofs(cmdObj_t *cmd);		// get runtime work offset...
 static void _print_pos(cmdObj_t *cmd);		// print runtime work position...
 
 static uint8_t _set_defa(cmdObj_t *cmd);	// reset config to default values
@@ -426,25 +427,41 @@ static const char fmt_plan[] PROGMEM = "Plane:               %s\n";
 static const char fmt_path[] PROGMEM = "Path Mode:           %s\n";
 static const char fmt_dist[] PROGMEM = "Distance mode:       %s\n";
 static const char fmt_frmo[] PROGMEM = "Feed rate mode:      %s\n";
+
+static const char fmt_pos[]  PROGMEM = "%s position:%15.3f%S\n";
+static const char fmt_mpos[] PROGMEM = "%s machine posn:%11.3f%S\n";
+static const char fmt_ofs[]  PROGMEM = "%s work offset:%12.3f%S\n";
+static const char fmt_hom[]  PROGMEM = "%s axis homed:%9d\n";
+
+/*
 static const char fmt_posx[] PROGMEM = "X position:%15.3f%S\n";
 static const char fmt_posy[] PROGMEM = "Y position:%15.3f%S\n";
 static const char fmt_posz[] PROGMEM = "Z position:%15.3f%S\n";
 static const char fmt_posa[] PROGMEM = "A position:%15.3f%S\n";
 static const char fmt_posb[] PROGMEM = "B position:%15.3f%S\n";
 static const char fmt_posc[] PROGMEM = "C position:%15.3f%S\n";
+
 static const char fmt_mpox[] PROGMEM = "X machine posn:%11.3f%S\n";
 static const char fmt_mpoy[] PROGMEM = "Y machine posn:%11.3f%S\n";
 static const char fmt_mpoz[] PROGMEM = "Z machine posn:%11.3f%S\n";
 static const char fmt_mpoa[] PROGMEM = "A machine posn:%11.3f%S\n";
 static const char fmt_mpob[] PROGMEM = "B machine posn:%11.3f%S\n";
 static const char fmt_mpoc[] PROGMEM = "C machine posn:%11.3f%S\n";
+
+static const char fmt_ofsx[] PROGMEM = "X work offset:%12.3f%S\n";
+static const char fmt_ofsy[] PROGMEM = "Y work offset:%12.3f%S\n";
+static const char fmt_ofsz[] PROGMEM = "Z work offset:%12.3f%S\n";
+static const char fmt_ofsa[] PROGMEM = "A work offset:%12.3f%S\n";
+static const char fmt_ofsb[] PROGMEM = "B work offset:%12.3f%S\n";
+static const char fmt_ofsc[] PROGMEM = "C work offset:%12.3f%S\n";
+
 static const char fmt_homx[] PROGMEM = "X axis homed:%9d\n";
 static const char fmt_homy[] PROGMEM = "Y axis homed:%9d\n";
 static const char fmt_homz[] PROGMEM = "Z axis homed:%9d\n";
 static const char fmt_homa[] PROGMEM = "A axis homed:%9d\n";
 static const char fmt_homb[] PROGMEM = "B axis homed:%9d\n";
 static const char fmt_homc[] PROGMEM = "C axis homed:%9d\n";
-
+*/
 // Motor print formatting strings
 static const char fmt_0ma[] PROGMEM = "[%s%s] m%s map to axis%15d [0=X, 1=Y...]\n";
 static const char fmt_0sa[] PROGMEM = "[%s%s] m%s step angle%20.3f%S\n";
@@ -529,18 +546,28 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "path",_f00,fmt_path,_print_str, _get_path,_set_nul,(double *)&tg.null, 0 },		// path control mode
 	{ "",   "dist",_f00,fmt_dist,_print_str, _get_dist,_set_nul,(double *)&tg.null, 0 },		// distance mode
 	{ "",   "frmo",_f00,fmt_frmo,_print_str, _get_frmo,_set_nul,(double *)&tg.null, 0 },		// feed rate mode
+/*
 	{ "pos","posx",_fns,fmt_posx,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// X position
 	{ "pos","posy",_fns,fmt_posy,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Y position
 	{ "pos","posz",_fns,fmt_posz,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Z position
 	{ "pos","posa",_fns,fmt_posa,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// A position
 	{ "pos","posb",_fns,fmt_posb,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// B position
 	{ "pos","posc",_fns,fmt_posc,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// C position
+
 	{ "mpo","mpox",_fns,fmt_mpox,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// X machine position
 	{ "mpo","mpoy",_fns,fmt_mpoy,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Y machine position
 	{ "mpo","mpoz",_fns,fmt_mpoz,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Z machine position
 	{ "mpo","mpoa",_fns,fmt_mpoa,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// A machine position
 	{ "mpo","mpob",_fns,fmt_mpob,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// B machine position
 	{ "mpo","mpoc",_fns,fmt_mpoc,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// C machine position
+
+	{ "ofs","mpox",_fns,fmt_ofsx,_print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// X work offset
+	{ "ofs","mpoy",_fns,fmt_ofsy,_print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// Y work offset
+	{ "ofs","mpoz",_fns,fmt_ofsz,_print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// Z work offset
+	{ "ofs","mpoa",_fns,fmt_ofsa,_print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// A work offset 
+	{ "ofs","mpob",_fns,fmt_ofsb,_print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// B work offset 
+	{ "ofs","mpoc",_fns,fmt_ofsc,_print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// C work offset
+
 	{ "hom","home",_fns,fmt_home,_print_str, _get_home,_run_home,(double *)&tg.null, 0 },		// homing state, invoke homing cycle
 	{ "hom","homx",_fns,fmt_homx,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[X], false },// X homed - Homing status group
 	{ "hom","homy",_fns,fmt_homy,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[Y], false },// Y homed
@@ -548,6 +575,36 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "hom","homa",_fns,fmt_homa,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[A], false },// A homed
 	{ "hom","homb",_fns,fmt_homb,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[B], false },// B homed
 	{ "hom","homc",_fns,fmt_homc,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[C], false },// C homed
+*/
+
+	{ "pos","posx",_fns,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// X position
+	{ "pos","posy",_fns,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Y position
+	{ "pos","posz",_fns,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Z position
+	{ "pos","posa",_fns,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// A position
+	{ "pos","posb",_fns,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// B position
+	{ "pos","posc",_fns,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// C position
+
+	{ "mpo","mpox",_fns,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// X machine position
+	{ "mpo","mpoy",_fns,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Y machine position
+	{ "mpo","mpoz",_fns,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Z machine position
+	{ "mpo","mpoa",_fns,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// A machine position
+	{ "mpo","mpob",_fns,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// B machine position
+	{ "mpo","mpoc",_fns,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// C machine position
+
+	{ "ofs","mpox",_fns,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// X work offset
+	{ "ofs","mpoy",_fns,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// Y work offset
+	{ "ofs","mpoz",_fns,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// Z work offset
+	{ "ofs","mpoa",_fns,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// A work offset 
+	{ "ofs","mpob",_fns,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// B work offset 
+	{ "ofs","mpoc",_fns,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// C work offset
+
+	{ "hom","home",_fns,fmt_hom, _print_str, _get_home,_run_home,(double *)&tg.null, 0 },		// homing state, invoke homing cycle
+	{ "hom","homx",_fns,fmt_hom, _print_int, _get_ui8, _set_nul,(double *)&cm.homed[X], false },// X homed - Homing status group
+	{ "hom","homy",_fns,fmt_hom, _print_int, _get_ui8, _set_nul,(double *)&cm.homed[Y], false },// Y homed
+	{ "hom","homz",_fns,fmt_hom, _print_int, _get_ui8, _set_nul,(double *)&cm.homed[Z], false },// Z homed
+	{ "hom","homa",_fns,fmt_hom, _print_int, _get_ui8, _set_nul,(double *)&cm.homed[A], false },// A homed
+	{ "hom","homb",_fns,fmt_hom, _print_int, _get_ui8, _set_nul,(double *)&cm.homed[B], false },// B homed
+	{ "hom","homc",_fns,fmt_hom, _print_int, _get_ui8, _set_nul,(double *)&cm.homed[C], false },// C homed
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },		// status report object
@@ -992,6 +1049,7 @@ uint8_t cmd_set_tv(cmdObj_t *cmd)
  * _get_vel()  - get runtime velocity
  * _get_pos()  - get runtime work position
  * _get_mpos() - get runtime machine position
+ * _get_ofs()  - get runtime work offset
  * _print_pos()- print work or machine position
  */
 static uint8_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value)
@@ -1105,6 +1163,13 @@ static uint8_t _get_mpos(cmdObj_t *cmd)
 	return (TG_OK);
 }
 
+static uint8_t _get_ofs(cmdObj_t *cmd) 
+{
+	cmd->value = cm_get_runtime_work_offset(_get_pos_axis(cmd->index));
+	cmd->type = TYPE_FLOAT;
+	return (TG_OK);
+}
+
 static void _print_pos(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
@@ -1112,7 +1177,8 @@ static void _print_pos(cmdObj_t *cmd)
 	uint8_t units = DEGREES;	// rotary
 	char format[CMD_FORMAT_LEN+1];
 	if (axis < A) { units = cm_get_units_mode();}
-	fprintf(stderr, _get_format(cmd->index,format), cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
+//	fprintf(stderr, _get_format(cmd->index,format), cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
+	fprintf(stderr, _get_format(cmd->index,format), axis, cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
 }
 
 /**** GCODE AND RELATED FUNCTIONS ****************************************/

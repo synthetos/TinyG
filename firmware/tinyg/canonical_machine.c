@@ -177,6 +177,8 @@ void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
  * cm_get_model_canonical_position_vector() - return model position vector in internal canonical form
  * cm_get_runtime_machine_position() - return current machine position in external form 
  * cm_get_runtime work_position() - return current work coordinate position in external form 
+ * cm_get_runtime work_offset() - return current work offset
+ * cm_get_runtime work_scaling() - return current work scaling factor
  */
 
 double cm_get_coord_offset(uint8_t axis)
@@ -244,6 +246,11 @@ double cm_get_runtime_work_position(uint8_t axis)
 	} else {
 		return (mp_get_runtime_work_position(axis));
 	}
+}
+
+double cm_get_runtime_work_offset(uint8_t axis) 
+{
+	return (mp_get_runtime_work_offset(axis));
 }
 
 /*

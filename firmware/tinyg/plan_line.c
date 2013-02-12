@@ -97,6 +97,11 @@ double mp_get_runtime_work_position(uint8_t axis) {
 	return (mr.position[axis] - mr.work_offset[axis]);
 }
 
+double mp_get_runtime_work_offset(uint8_t axis) { 
+	return (mr.work_offset[axis]);
+}
+//double mp_get_runtime_work_scaling(uint8_t axis);
+
 void mp_set_runtime_work_offset(double offset[]) { 
 	copy_axis_vector(mr.work_offset, offset);
 }
