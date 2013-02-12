@@ -41,7 +41,6 @@
  *	#include "xio_signals.h"
  *	(possibly more)
  */
-
 #ifndef xio_h
 #define xio_h
 
