@@ -232,11 +232,11 @@ double *cm_get_model_canonical_position_vector(double position[])
 double cm_get_runtime_machine_position(uint8_t axis) 
 {
 	// NB: This form takes 20 bytes less than calling first then deciding later
-	if (gm.units_mode == INCHES) {
-		return (mp_get_runtime_machine_position(axis) / MM_PER_INCH);
-	} else {
+//	if (gm.units_mode == INCHES) {
+//		return (mp_get_runtime_machine_position(axis) / MM_PER_INCH);
+//	} else {
 		return (mp_get_runtime_machine_position(axis));
-	}
+//	}
 }
 
 double cm_get_runtime_work_position(uint8_t axis) 
