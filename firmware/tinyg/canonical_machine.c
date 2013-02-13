@@ -44,8 +44,8 @@
  *	commands that only affect the gcode model are done immediately whereas 
  *	commands that have a physcial effect must be synchronized.
  *
- *	Immediate commands are obvious - just write to the GM struct. Synchronous
- *	commands work like this:
+ *	Immediate commands are obvious - just write to the GM struct. 
+ *	Synchronous commands work like this:
  *
  *	  - Call the cm_xxx_xxx() function which will do any input validation and 
  *		return an error if it detects one.
@@ -231,11 +231,13 @@ double *cm_get_model_canonical_position_vector(double position[])
 
 double cm_get_runtime_machine_position(uint8_t axis) 
 {
-	// NB: This form takes 20 bytes less than calling first then deciding later
+	return (mp_get_runtime_machine_position(axis));
+
+// deprecated behavior
 //	if (gm.units_mode == INCHES) {
 //		return (mp_get_runtime_machine_position(axis) / MM_PER_INCH);
 //	} else {
-		return (mp_get_runtime_machine_position(axis));
+//		return (mp_get_runtime_machine_position(axis));
 //	}
 }
 
