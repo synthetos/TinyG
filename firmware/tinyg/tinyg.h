@@ -36,15 +36,15 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	368.10		// Added offsets to status
+#define TINYG_BUILD_NUMBER   	368.11		// Added offsets to status
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
 /****** DEVELOPMENT SETTINGS ******/
 
-#define __CANNED_STARTUP					// run any canned startup moves
-#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+//#define __CANNED_STARTUP					// run any canned startup moves
+//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+//#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 //#define __UNIT_TESTS						// master enable for unit tests; uncomment modules in .h files
 //#define __DEBUG							// complies debug functions found in test.c
 
@@ -188,5 +188,17 @@
 #define	TG_MAX_TRAVEL_EXCEEDED 67
 #define	TG_MAX_SPINDLE_SPEED_EXCEEDED 68
 #define	TG_ARC_SPECIFICATION_ERROR 69	// arc specification error
-	
+
+// Fatal errors and assertion traps - very application specific
+#define	TG_ERROR_100 100				// JSON serializer buffer overrun detected
+#define	TG_ERROR_101 101				// 
+#define	TG_ERROR_102 102				// 
+#define	TG_ERROR_103 103				// 
+#define	TG_ERROR_104 104				// 
+#define	TG_ERROR_105 105				// 
+#define	TG_ERROR_106 106				// 
+#define	TG_ERROR_107 107				// 
+#define	TG_ERROR_108 108				// 
+#define	TG_ERROR_109 109				// 
+
 #endif

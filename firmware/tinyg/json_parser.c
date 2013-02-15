@@ -333,7 +333,8 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 			}
 		}
 		if ((str - out_buf) >= size) { 
-			printf_P("Internal Error #124: JSON output buffer overrun\n");
+			rpt_fatal_error(TG_ERROR_100);
+			return (0);
 		}
 		if ((cmd = cmd->nx) == NULL) { break;}	// end of the list
 		if (cmd->depth < prev_depth) {
@@ -345,9 +346,7 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 	// closing curlies and NEWLINE
 	while (prev_depth-- > initial_depth) { *str++ = '}';}
 	str += sprintf(str, "}\n");	// using sprintf for this last one ensures a NUL termination
-	if ((str - out_buf) >= size) { 
-		printf_P("Internal Error #125: JSON output buffer overrun\n");
-	}
+	if ((str - out_buf) >= size) { rpt_fatal_error(TG_ERROR_100);}
 	return (str - out_buf);
 }
 

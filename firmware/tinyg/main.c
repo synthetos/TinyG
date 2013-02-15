@@ -86,7 +86,7 @@ int main(void)
 	PMIC_EnableMediumLevel();
 	PMIC_EnableLowLevel();
 	sei();							// enable global interrupts
-	tg_print_system_ready_message();// (LAST) announce system is ready
+	rpt_print_system_ready_message();// (LAST) announce system is ready
 
 	_unit_tests();					// run any unit tests that are enabled
 	tg_canned_startup();			// run any pre-loaded commands

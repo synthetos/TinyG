@@ -1514,7 +1514,7 @@ void cfg_init()
 
 	// Case (2) NVM is setup and in revision
 	} else {
-		tg_print_loading_configs_message();
+		rpt_print_loading_configs_message();
 		for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
 			if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
 				strcpy_P(cmd->token, cfgArray[cmd->index].token);	// read the token from the array
@@ -1533,7 +1533,7 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 		return (TG_OK);
 	}
 	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
-	tg_print_initializing_message();
+	rpt_print_initializing_message();
 
 	for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
 		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
