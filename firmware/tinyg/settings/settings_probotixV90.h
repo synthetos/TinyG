@@ -38,8 +38,8 @@
 /**** Probotix Fireball V90 profile ************************************/
 /***********************************************************************/
 
-#define TINYG_CONFIGURATION_PROFILE "Probotix Fireball V90" // displays base config profile
-#define INIT_CONFIGURATION_MESSAGE "Initializing configs to Probotix Fireball V90 profile"
+// ***> NOTE: The init message must be a single line with no CRs or LFs 
+#define INIT_MESSAGE "Initializing configs to Probotix Fireball V90 profile"
 
 #define JERK_MAX 			100000000	// yes, that's "100,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION	0.05		// default value, in mm

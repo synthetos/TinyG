@@ -115,8 +115,9 @@ static void _controller_HSM()
 	DISPATCH(_reset_handler());				// 1. software reset received
 	DISPATCH(_bootloader_handler());		// 2. received ESC char to start bootloader
 	DISPATCH(_shutdown_handler());			// 3. limit switch has been thrown
-	DISPATCH(_feedhold_handler());			// 4. feedhold requested
-	DISPATCH(_cycle_start_handler());		// 5. cycle start requested
+//	DISPATCH( validate_memory_integrity());	// 4. run memory integrity assertions
+	DISPATCH(_feedhold_handler());			// 5. feedhold requested
+	DISPATCH(_cycle_start_handler());		// 6. cycle start requested
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report
@@ -133,51 +134,8 @@ static void _controller_HSM()
 	DISPATCH(_dispatch());					// read and execute next command
 }
 
-/*
- * _shutdown_handler()
- *
- *	Shutdown is triggered by an active limit switch firing. This causes the 
- *	canonical machine to run the shutdown functions and set the machine state 
- *	to MACHINE_SHUTDOWN.
- *
- *	Once shutdown occurs the only thing this handler does is blink an LED 
- *	(spindle CW/CCW LED). The system can only be cleared by performing a reset.
- *
- *	This function returns EAGAIN causing the control loop to never advance beyond
- *	this point. It's important that the reset handler is still called so a SW reset
- *	(ctrl-x) can be processed.
- */
-
-#define LED_COUNTER 100000
-
-static uint8_t _shutdown_handler(void)
-{
-	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
-
-	// first time through perform the shutdown
-	if (cm_get_machine_state() != MACHINE_SHUTDOWN) {
-		cm_shutdown();
-
-	// after that just flash the LED
-	} else {
-		if (--tg.led_counter < 0) {
-			tg.led_counter = LED_COUNTER;
-			if (tg.led_state == 0) {
-				gpio_led_on(INDICATOR_LED);
-				tg.led_state = 1;
-			} else {
-				gpio_led_off(INDICATOR_LED);
-				tg.led_state = 0;
-			}
-		}
-	}
-	return (TG_EAGAIN);	 // EAGAIN prevents any other actions from running
-}
-
-
 /***************************************************************************** 
- * _dispatch() 			- dispatch line read from active input device
- * _dispatch_return()	- perform returns and prompting for commands
+ * _dispatch() - dispatch line received from active input device
  *
  *	Reads next command line and dispatches to relevant parser or action
  *	Accepts commands if the move queue has room - EAGAINS if it doesn't
@@ -231,8 +189,8 @@ static uint8_t _dispatch()
 		}
 		default: {								// anything else must be Gcode
 			if (cfg.comm_mode == JSON_MODE) {
-				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN-8);	// use out_buf as temp
-				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);	// these characters explain '-8', above
+				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN -8);	// use out_buf as temp
+				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);		// '-8' is used for JSON chars
 				js_json_parser(tg.in_buf);
 			} else {
 				tg_text_response(gc_gcode_parser(tg.in_buf), tg.in_buf);
@@ -241,7 +199,6 @@ static uint8_t _dispatch()
 	}
 	return (TG_OK);
 }
-
 
 /************************************************************************************
  * tg_text_response() - text mode responses
@@ -266,7 +223,6 @@ void tg_text_response(const uint8_t status, const char *buf)
 	} else {
 		char status_message[STATUS_MESSAGE_LEN];
 		fprintf_P(stderr, (PGM_P)prompt_err, Units, rpt_get_status_message(status, status_message), buf);
-//		fprintf_P(stderr, (PGM_P)prompt_err, Units, (PGM_P)pgm_read_word(&msgStatusMessage[status]), buf);
 	}
 
 	// deliver echo and messages
@@ -275,7 +231,6 @@ void tg_text_response(const uint8_t status, const char *buf)
 		fprintf(stderr, "%s\n", *cmd->stringp);
 	}
 }
-
 
 /**** Utilities ****
  * _sync_to_tx_buffer() - return eagain if TX queue is backed up
@@ -364,4 +319,45 @@ static uint8_t _cycle_start_handler(void)
 	sig.sig_cycle_start = false;
 	cm_cycle_start();
 	return (TG_EAGAIN);					// best to restart the control loop
+}
+
+/*
+ * _shutdown_handler()
+ *
+ *	Shutdown is triggered by an active limit switch firing. This causes the 
+ *	canonical machine to run the shutdown functions and set the machine state 
+ *	to MACHINE_SHUTDOWN.
+ *
+ *	Once shutdown occurs the only thing this handler does is blink an LED 
+ *	(spindle CW/CCW LED). The system can only be cleared by performing a reset.
+ *
+ *	This function returns EAGAIN causing the control loop to never advance beyond
+ *	this point. It's important that the reset handler is still called so a SW reset
+ *	(ctrl-x) can be processed.
+ */
+
+#define LED_COUNTER 100000
+
+static uint8_t _shutdown_handler(void)
+{
+	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
+
+	// first time through perform the shutdown
+	if (cm_get_machine_state() != MACHINE_SHUTDOWN) {
+		cm_shutdown();
+
+	// after that just flash the LED
+	} else {
+		if (--tg.led_counter < 0) {
+			tg.led_counter = LED_COUNTER;
+			if (tg.led_state == 0) {
+				gpio_led_on(INDICATOR_LED);
+				tg.led_state = 1;
+			} else {
+				gpio_led_off(INDICATOR_LED);
+				tg.led_state = 0;
+			}
+		}
+	}
+	return (TG_EAGAIN);	 // EAGAIN prevents any other actions from running
 }

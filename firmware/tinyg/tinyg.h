@@ -103,6 +103,9 @@
 #define PWM_1	0
 #define PWM_2	1
 
+typedef uint16_t magicNum_t;
+#define MAGICNUM 0x12EF		// used for memory integrity assertions
+
 /* TinyG status codes
  * The first code range (0-19) is aligned with the XIO codes and must be so.
  * Please don't change them without checking the corresponding values in xio.h
@@ -190,15 +193,15 @@
 #define	TG_ARC_SPECIFICATION_ERROR 69	// arc specification error
 
 // Fatal errors and assertion traps - very application specific
-#define	TG_ERROR_100 100				// JSON serializer buffer overrun detected
-#define	TG_ERROR_101 101				// 
-#define	TG_ERROR_102 102				// 
-#define	TG_ERROR_103 103				// 
-#define	TG_ERROR_104 104				// 
-#define	TG_ERROR_105 105				// 
-#define	TG_ERROR_106 106				// 
-#define	TG_ERROR_107 107				// 
-#define	TG_ERROR_108 108				// 
-#define	TG_ERROR_109 109				// 
+#define	FATAL_100 100					// JSON serializer buffer overrun
+#define	FATAL_101 101					// JSON report buffer overrun
+#define	FATAL_102 102					// 
+#define	FATAL_103 103					// 
+#define	FATAL_104 104					// 
+#define	FATAL_105 105					// 
+#define	FATAL_106 106					// 
+#define	FATAL_107 107					// 
+#define	FATAL_108 108					// 
+#define	FATAL_109 109					// 
 
 #endif

@@ -144,15 +144,13 @@ char *rpt_get_status_message(uint8_t status, char *msg)
 	return (msg);
 }
 
-/**** Fatal Errors *****************************************************************
- * tg_print_message()        - print a character string passed as argument
- * tg_print_message_value()  - print a message with a value
- * tg_print_message_number() - print a canned message by number
+/**** Exception Report *************************************************************
+ * rpt_exception() - send a JSON exception report
  */
-
-void rpt_fatal_error(uint8_t errno)
+void rpt_exception(uint8_t status)
 {
-	printf_P(PSTR("{\"st\":100,\"msg\":\"JSON serializer buffer overrun\"}\n"));
+	char msg[STATUS_MESSAGE_LEN] = "JSON serializer buffer overrun";
+	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\"}}\n"), TINYG_BUILD_NUMBER, status, msg);
 }
 
 /**** Message Primitives ***********************************************************
@@ -191,8 +189,8 @@ void rpt_print_loading_configs_message(void)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	cmd_reset_list();
-	cmd_add_object("fv");
 	cmd_add_object("fb");
+	cmd_add_object("fv");
 	cmd_add_string_P("msg", PSTR("Loading configs from EEPROM"));
 	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 #endif
@@ -202,9 +200,9 @@ void rpt_print_initializing_message(void)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	cmd_reset_list();
-	cmd_add_object("fv");
 	cmd_add_object("fb");
-	cmd_add_string_P("msg", PSTR(INIT_CONFIGURATION_MESSAGE)); // see settings.h & sub-headers
+	cmd_add_object("fv");
+	cmd_add_string_P("msg", PSTR(INIT_MESSAGE)); // see settings.h & sub-headers
 	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 #endif
 }
@@ -213,8 +211,8 @@ void rpt_print_system_ready_message(void)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	cmd_reset_list();
-	cmd_add_object("fv");
 	cmd_add_object("fb");
+	cmd_add_object("fv");
 	cmd_add_string_P("msg", PSTR("SYSTEM READY"));
 	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 #endif

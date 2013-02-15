@@ -31,7 +31,7 @@
 
 char *rpt_get_status_message(uint8_t status, char *msg);
 void rpt_print_message(char *msg);
-void rpt_fatal_error(uint8_t errno);
+void rpt_exception(uint8_t status);
 void rpt_print_loading_configs_message(void);
 void rpt_print_initializing_message(void);
 void rpt_print_system_ready_message(void);

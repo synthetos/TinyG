@@ -38,8 +38,8 @@
 /**** Zen Toolworks 7x12 profile ***************************************/
 /***********************************************************************/
 
-#define TINYG_CONFIGURATION_PROFILE "Zen Toolworks 7x12" // displays base config profile
-#define INIT_CONFIGURATION_MESSAGE "Initializing configs to Zen Toolworks 7x12 profile"
+// ***> NOTE: The init message must be a single line with no CRs or LFs 
+#define INIT_MESSAGE "Initializing configs to Zen Toolworks 7x12 profile"
 
 #define JERK_MAX_LINEAR 			100000000	// yes, that's "100,000,000" mm/(min^3)
 #define JERK_MAX_ROTARY 			10000000000	// yes, that's "10 billion" mm/(min^3)

@@ -41,8 +41,8 @@
 /**** Lumenlabs micRo v3 profile ***************************************/
 /***********************************************************************/
 
-#define TINYG_CONFIGURATION_PROFILE "Lumenlabs micRo v3" // displays base config profile
-#define INIT_CONFIGURATION_MESSAGE "Initializing configs to Lumenlabs Micro v3 profile"
+// ***> NOTE: The init message must be a single line with no CRs or LFs 
+#define INIT_MESSAGE "Initializing configs to Lumenlabs Micro v3 profile"
 
 #define JERK_MAX 			50000000	// yes, that's "50,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION	0.05		// default value, in mm

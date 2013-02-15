@@ -14,8 +14,8 @@
 /**** Otherlab profile *************************************************/
 /***********************************************************************/
 
-#define TINYG_CONFIGURATION_PROFILE "Otherlab Cutter"	// displays base config profile
-#define INIT_CONFIGURATION_MESSAGE "#### Initializing configs to Othercutter settings ####"
+// ***> NOTE: The init message must be a single line with no CRs or LFs 
+#define INIT_MESSAGE "#### Initializing configs to Othercutter settings ####"
 
 #define JERK_MAX 			900000000	// yes, that's "900,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION	0.01		// default value, in mm

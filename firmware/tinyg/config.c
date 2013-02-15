@@ -1500,6 +1500,8 @@ void cmd_persist(cmdObj_t *cmd)
 void cfg_init()
 {
 	cmdObj_t *cmd = cmd_reset_list();
+	cfg.magic_start = MAGICNUM;
+	cfg.magic_end = MAGICNUM;
 	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
 	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
 	cfg.nvm_base_addr = NVM_BASE_ADDR;

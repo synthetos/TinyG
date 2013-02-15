@@ -34,8 +34,8 @@
  *		 to be changed are in tinyg.h
  */
 
-#define TINYG_CONFIGURATION_PROFILE "Sacidu93" // displays base config profile
-#define INIT_CONFIGURATION_MESSAGE "Initializing configs to Sacidu93 profile"
+// ***> NOTE: The init message must be a single line with no CRs or LFs 
+#define INIT_MESSAGE "Initializing configs to Sacidu93 profile"
 
 #undef	STATUS_REPORT_INTERVAL_MS
 #define STATUS_REPORT_INTERVAL_MS	0	// in milliseconds - 0=off

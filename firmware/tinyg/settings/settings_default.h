@@ -39,7 +39,8 @@
 // NOTE: Non-machine specific systems settings have been moved to settings.h
 // These may be overridden using undefs
 
-#define INIT_CONFIGURATION_MESSAGE "Initializing configs to default settings"
+// ***> NOTE: The init message must be a single line with no CRs or LFs 
+#define INIT_MESSAGE "Initializing configs to default settings"
 
 #define JERK_MAX 			20000000	// yes, that's "20,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION	0.05		// default value, in mm

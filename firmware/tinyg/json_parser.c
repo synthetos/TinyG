@@ -308,6 +308,7 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
 uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 {
 	char *str = out_buf;
+	uint16_t len = 0;
 	int8_t initial_depth = cmd->depth;
 	int8_t prev_depth = 0;
 	uint8_t need_a_comma = false;
@@ -332,10 +333,8 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 				need_a_comma = false;
 			}
 		}
-		if ((str - out_buf) >= size) { 
-			rpt_fatal_error(TG_ERROR_100);
-			return (0);
-		}
+		len = str - out_buf;
+		assert_abort( (len < size), FATAL_100 );
 		if ((cmd = cmd->nx) == NULL) { break;}	// end of the list
 		if (cmd->depth < prev_depth) {
 			need_a_comma = true;
@@ -346,8 +345,9 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 	// closing curlies and NEWLINE
 	while (prev_depth-- > initial_depth) { *str++ = '}';}
 	str += sprintf(str, "}\n");	// using sprintf for this last one ensures a NUL termination
-	if ((str - out_buf) >= size) { rpt_fatal_error(TG_ERROR_100);}
-	return (str - out_buf);
+	len = str - out_buf;
+	assert_continue( (len < size), FATAL_100 );
+	return (len);
 }
 
 /*
@@ -420,6 +420,8 @@ void js_print_json_response(uint8_t status)
 
 	// do all this to avoid having to serialize it twice
 	uint16_t strcount = js_serialize_json(cmd_header, tg.out_buf, sizeof(tg.out_buf));// make JSON string w/o checksum
+//	if (strcount+8 >= OUTPUT_BUFFER_LEN) { rpt_exception(101);}						// trap if checksum would cause buffer overrun
+	assert_continue( (strcount < OUTPUT_BUFFER_LEN-8), FATAL_101);
 	uint16_t strcount2 = strcount;
 	char tail[MAX_TAIL_LEN];
 
