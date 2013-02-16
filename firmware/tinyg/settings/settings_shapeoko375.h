@@ -96,17 +96,22 @@
 #define X_JERK_MAX				6000000				// xjm
 #else
 #define X_JERK_MAX				5000000000			// xjm		yes, that's "5 billion" mm/(min^3)
+//#define X_JERK_MAX				50000000			// xjm		yes, that's "5 billion" mm/(min^3)
 #endif
 
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
-//#define X_SWITCH_MODE_MIN		SW_MODE_HOMING
+#define X_SWITCH_MODE_MIN		SW_MODE_HOMING
 #define X_SWITCH_MODE_MAX		SW_MODE_DISABLED
-#define X_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
+//#define X_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
 //#define X_SWITCH_MODE_MAX		SW_MODE_LIMIT		// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
 #define X_SEARCH_VELOCITY		3000				// xsv		minus means move to minimum switch
 #define X_LATCH_VELOCITY		100					// xlv		mm/min
 #define X_LATCH_BACKOFF			20					// xlb		mm
 #define X_ZERO_BACKOFF			3					// xzb		mm
+#define X_JERK_HOMING			X_JERK_MAX			// xjh
+//#define X_JERK_HOMING			10000000000			// xjh
+
+
 
 #define Y_AXIS_MODE				AXIS_STANDARD
 #define Y_VELOCITY_MAX			16000
@@ -127,6 +132,7 @@
 #define Y_LATCH_VELOCITY		100
 #define Y_LATCH_BACKOFF			20
 #define Y_ZERO_BACKOFF			3
+#define Y_JERK_HOMING			Y_JERK_MAX
 
 #define Z_AXIS_MODE				AXIS_STANDARD
 #define Z_VELOCITY_MAX			800
@@ -146,6 +152,7 @@
 #define Z_LATCH_VELOCITY		100
 #define Z_LATCH_BACKOFF			20
 #define Z_ZERO_BACKOFF			10
+#define Z_JERK_HOMING			Z_JERK_MAX
 
 #define A_AXIS_MODE				AXIS_STANDARD
 #define A_VELOCITY_MAX			60000
@@ -160,6 +167,7 @@
 #define A_LATCH_VELOCITY		1000
 #define A_LATCH_BACKOFF			5
 #define A_ZERO_BACKOFF			2
+#define A_JERK_HOMING			A_JERK_MAX
 
 #define B_AXIS_MODE				AXIS_DISABLED
 #define B_VELOCITY_MAX			3600
@@ -168,12 +176,12 @@
 #define B_JERK_MAX				20000000
 #define B_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define B_RADIUS				1
-#define B_SWITCH_MODE_MIN		SW_MODE_DISABLED
-#define B_SWITCH_MODE_MAX		SW_MODE_DISABLED
-#define B_SEARCH_VELOCITY		-600
-#define B_LATCH_VELOCITY		100
-#define B_LATCH_BACKOFF			-5
-#define B_ZERO_BACKOFF			2
+//#define B_SWITCH_MODE_MIN		SW_MODE_DISABLED
+//#define B_SWITCH_MODE_MAX		SW_MODE_DISABLED
+//#define B_SEARCH_VELOCITY		-600
+//#define B_LATCH_VELOCITY		100
+//#define B_LATCH_BACKOFF			-5
+//#define B_ZERO_BACKOFF			2
 
 #define C_AXIS_MODE				AXIS_DISABLED
 #define C_VELOCITY_MAX			3600
@@ -182,12 +190,12 @@
 #define C_JERK_MAX				20000000
 #define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define C_RADIUS				1
-#define C_SWITCH_MODE_MIN		SW_MODE_DISABLED
-#define C_SWITCH_MODE_MAX		SW_MODE_DISABLED
-#define C_SEARCH_VELOCITY		-600
-#define C_LATCH_VELOCITY		100
-#define C_LATCH_BACKOFF			-5
-#define C_ZERO_BACKOFF			2
+//#define C_SWITCH_MODE_MIN		SW_MODE_DISABLED
+//#define C_SWITCH_MODE_MAX		SW_MODE_DISABLED
+//#define C_SEARCH_VELOCITY		-600
+//#define C_LATCH_VELOCITY		100
+//#define C_LATCH_BACKOFF			-5
+//#define C_ZERO_BACKOFF			2
 
 // *** DEFAULT COORDINATE SYSTEM OFFSETS ***
 // Our convention is:
@@ -202,14 +210,14 @@
 #define G54_B_OFFSET 0
 #define G54_C_OFFSET 0
 
-#define G55_X_OFFSET 90			// set G55 to be a zero in the middle of the table
-#define G55_Y_OFFSET 90
+#define G55_X_OFFSET 100		// set G55 to be a zero in the middle of the table
+#define G55_Y_OFFSET 100
 #define G55_Z_OFFSET 0
 #define G55_A_OFFSET 0
 #define G55_B_OFFSET 0
 #define G55_C_OFFSET 0
 
-#define G56_X_OFFSET 90			// special settings for running braid
+#define G56_X_OFFSET 100		// special settings for running braid
 #define G56_Y_OFFSET 20
 #define G56_Z_OFFSET -10
 #define G56_A_OFFSET 0

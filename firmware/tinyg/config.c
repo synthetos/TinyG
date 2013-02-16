@@ -454,6 +454,7 @@ static const char fmt_Xsv[] PROGMEM = "[%s%s] %s search velocity%16.3f%S/min\n";
 static const char fmt_Xlv[] PROGMEM = "[%s%s] %s latch velocity%17.3f%S/min\n";
 static const char fmt_Xlb[] PROGMEM = "[%s%s] %s latch backoff%18.3f%S\n";
 static const char fmt_Xzb[] PROGMEM = "[%s%s] %s zero backoff%19.3f%S\n";
+static const char fmt_Xjh[] PROGMEM = "[%s%s] %s jerk homing%16.0f%S/min^3\n";
 
 // PWM strings
 static const char fmt_p1frq[] PROGMEM = "[p1frq] pwm frequency   %15.3f Hz\n";
@@ -599,6 +600,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "x","xlv",_fip, fmt_Xlv, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_velocity,	X_LATCH_VELOCITY },
 	{ "x","xlb",_fip, fmt_Xlb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_backoff,	X_LATCH_BACKOFF },
 	{ "x","xzb",_fip, fmt_Xzb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].zero_backoff,		X_ZERO_BACKOFF },
+	{ "x","xjh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].jerk_homing,		X_JERK_HOMING },
 
 	{ "y","yam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[Y].axis_mode,		Y_AXIS_MODE },
 	{ "y","yvm",_fip, fmt_Xvm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].velocity_max,		Y_VELOCITY_MAX },
@@ -612,6 +614,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "y","ylv",_fip, fmt_Xlv, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_velocity,	Y_LATCH_VELOCITY },
 	{ "y","ylb",_fip, fmt_Xlb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_backoff,	Y_LATCH_BACKOFF },
 	{ "y","yzb",_fip, fmt_Xzb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].zero_backoff,		Y_ZERO_BACKOFF },
+	{ "y","yjh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].jerk_homing,		Y_JERK_HOMING },
 
 	{ "z","zam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[Z].axis_mode,		Z_AXIS_MODE },
 	{ "z","zvm",_fip, fmt_Xvm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].velocity_max,	 	Z_VELOCITY_MAX },
@@ -625,6 +628,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "z","zlv",_fip, fmt_Xlv, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_velocity,	Z_LATCH_VELOCITY },
 	{ "z","zlb",_fip, fmt_Xlb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_backoff,	Z_LATCH_BACKOFF },
 	{ "z","zzb",_fip, fmt_Xzb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].zero_backoff,		Z_ZERO_BACKOFF },
+	{ "z","zjh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].jerk_homing,		Z_JERK_HOMING },
 
 	{ "a","aam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[A].axis_mode,		A_AXIS_MODE },
 	{ "a","avm",_fip, fmt_Xvm, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].velocity_max,	 	A_VELOCITY_MAX },
@@ -639,6 +643,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "a","alv",_fip, fmt_Xlv, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_velocity,	A_LATCH_VELOCITY },
 	{ "a","alb",_fip, fmt_Xlb, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_backoff,	A_LATCH_BACKOFF },
 	{ "a","azb",_fip, fmt_Xzb, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].zero_backoff,		A_ZERO_BACKOFF },
+	{ "a","ajh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[A].jerk_homing,		A_JERK_HOMING },
 
 	{ "b","bam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[B].axis_mode,		B_AXIS_MODE },
 	{ "b","bvm",_fip, fmt_Xvm, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].velocity_max,	 	B_VELOCITY_MAX },

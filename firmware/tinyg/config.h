@@ -248,6 +248,7 @@ typedef struct cfgAxisParameters {
 	double latch_velocity;			// homing latch velocity
 	double latch_backoff;			// backoff from switches prior to homing latch movement
 	double zero_backoff;			// backoff from switches for machine zero
+	double jerk_homing;				// homing jerk (Jh) in mm/min^3
 } cfgAxis_t;
 
 typedef struct cfgMotorParameters {
