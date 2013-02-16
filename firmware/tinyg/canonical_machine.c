@@ -535,10 +535,6 @@ void cm_init()
 	// setup magic numbers
 	cm.magic_start = MAGICNUM;
 	cm.magic_end = MAGICNUM;
-	gn.magic_start = MAGICNUM;
-	gn.magic_end = MAGICNUM;
-	gf.magic_start = MAGICNUM;
-	gf.magic_end = MAGICNUM;
 	gm.magic_start = MAGICNUM;
 	gm.magic_end = MAGICNUM;
 

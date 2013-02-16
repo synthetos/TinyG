@@ -162,7 +162,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
-	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("g92a0\n");
 //	xio_queue_RX_string_usb("g0a3\n");			// should be a=3. Instead it's a=1
@@ -274,6 +274,10 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 /* G10 coordinate offsets */
 //	xio_queue_RX_string_usb("g10 L2 p2 x10 y11 z12\n");
+
+/* G20 / G21 units */
+//	xio_queue_RX_string_usb("g20\n");
+//	xio_queue_RX_string_usb("g21\n");
 
 /* G28 and G30 homing tests */
 //	xio_queue_RX_string_usb("g28.2x0\n");

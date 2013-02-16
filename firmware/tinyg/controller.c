@@ -43,9 +43,10 @@
 #include "canonical_machine.h"
 #include "plan_arc.h"
 #include "planner.h"
-#include "report.h"
+#include "stepper.h"
 #include "system.h"
 #include "gpio.h"
+#include "report.h"
 #include "util.h"
 #include "help.h"
 #include "xio/xio.h"
@@ -376,16 +377,18 @@ uint8_t _system_assertions()
 	if (tg.magic_end		!= MAGICNUM) { value = 2; }
 	if (cm.magic_start 		!= MAGICNUM) { value = 3; }
 	if (cm.magic_end		!= MAGICNUM) { value = 4; }
-	if (cfg.magic_start		!= MAGICNUM) { value = 5; }
-	if (cfg.magic_end		!= MAGICNUM) { value = 6; }
-	if (cmdStr.magic_start	!= MAGICNUM) { value = 7; }
-	if (cmdStr.magic_end	!= MAGICNUM) { value = 8; }
-	if (gm.magic_start		!= MAGICNUM) { value = 9; }
-	if (gm.magic_end 		!= MAGICNUM) { value = 10; }
-	if (gn.magic_start		!= MAGICNUM) { value = 11; }
-	if (gn.magic_end		!= MAGICNUM) { value = 12; }
-	if (gf.magic_start		!= MAGICNUM) { value = 13; }
-	if (gf.magic_end		!= MAGICNUM) { value = 14; }
+	if (gm.magic_start		!= MAGICNUM) { value = 5; }
+	if (gm.magic_end 		!= MAGICNUM) { value = 6; }
+	if (cfg.magic_start		!= MAGICNUM) { value = 7; }
+	if (cfg.magic_end		!= MAGICNUM) { value = 8; }
+	if (cmdStr.magic_start	!= MAGICNUM) { value = 9; }
+	if (cmdStr.magic_end	!= MAGICNUM) { value = 10; }
+	if (mb.magic_start		!= MAGICNUM) { value = 11; }
+	if (mb.magic_end		!= MAGICNUM) { value = 12; }
+	if (mr.magic_start		!= MAGICNUM) { value = 13; }
+	if (mr.magic_end		!= MAGICNUM) { value = 14; }
+	if (st_get_st_magic()	!= MAGICNUM) { value = 15; }
+	if (st_get_sps_magic()	!= MAGICNUM) { value = 16; }
 
 	if (value == 0) { return (TG_OK);}
 

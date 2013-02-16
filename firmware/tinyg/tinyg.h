@@ -36,7 +36,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	368.12		// Added offsets to status
+#define TINYG_BUILD_NUMBER   	368.13		// Strip pos, mpo and ofs groups
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
