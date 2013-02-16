@@ -36,7 +36,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	368.11		// Added offsets to status
+#define TINYG_BUILD_NUMBER   	368.12		// Added offsets to status
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
@@ -143,9 +143,9 @@ typedef uint16_t magicNum_t;
 #define	TG_DIVIDE_BY_ZERO 23
 #define	TG_INVALID_ADDRESS 24
 #define	TG_READ_ONLY_ADDRESS 25
-#define	TG_ERROR_26 26
-#define	TG_ERROR_27 27
-#define	TG_ERROR_28 28
+#define	TG_INIT_FAIL 26
+#define	TG_SHUTDOWN 27
+#define	TG_MEMORY_CORRUPTION 28
 #define	TG_ERROR_29 29
 #define	TG_ERROR_30 30
 #define	TG_ERROR_31 31
@@ -167,10 +167,10 @@ typedef uint16_t magicNum_t;
 #define	TG_INPUT_VALUE_TOO_LARGE 45		// input error: value is over maximum
 #define	TG_INPUT_VALUE_RANGE_ERROR 46	// input error: value is out-of-range
 #define	TG_INPUT_VALUE_UNSUPPORTED 47	// input error: value is not supported
-#define	TG_JSON_SYNTAX_ERROR 48			// JSON string is not well formed
-#define	TG_JSON_TOO_MANY_PAIRS 49		// JSON string or has too many JSON pairs
-#define	TG_NO_BUFFER_SPACE 50			// Buffer pool is full and cannot perform this operation
-#define	TG_ERROR_51 51
+#define	TG_JSON_SYNTAX_ERROR 48			// JSON input string is not well formed
+#define	TG_JSON_TOO_MANY_PAIRS 49		// JSON input string has too many JSON pairs
+#define	TG_JSON_TOO_LONG 50				// JSON output exceeds buffer size
+#define	TG_NO_BUFFER_SPACE 51			// Buffer pool is full and cannot perform this operation
 #define	TG_ERROR_52 52
 #define	TG_ERROR_53 53
 #define	TG_ERROR_54 54
@@ -191,17 +191,5 @@ typedef uint16_t magicNum_t;
 #define	TG_MAX_TRAVEL_EXCEEDED 67
 #define	TG_MAX_SPINDLE_SPEED_EXCEEDED 68
 #define	TG_ARC_SPECIFICATION_ERROR 69	// arc specification error
-
-// Fatal errors and assertion traps - very application specific
-#define	FATAL_100 100					// JSON serializer buffer overrun
-#define	FATAL_101 101					// JSON report buffer overrun
-#define	FATAL_102 102					// 
-#define	FATAL_103 103					// 
-#define	FATAL_104 104					// 
-#define	FATAL_105 105					// 
-#define	FATAL_106 106					// 
-#define	FATAL_107 107					// 
-#define	FATAL_108 108					// 
-#define	FATAL_109 109					// 
 
 #endif

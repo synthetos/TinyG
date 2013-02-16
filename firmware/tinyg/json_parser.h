@@ -43,7 +43,7 @@
  */
 
 void js_json_parser(char *str);
-uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size);
+int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size);
 void js_print_json_object(cmdObj_t *cmd);
 void js_print_json_response(uint8_t status);
 

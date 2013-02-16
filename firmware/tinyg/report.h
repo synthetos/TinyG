@@ -31,7 +31,7 @@
 
 char *rpt_get_status_message(uint8_t status, char *msg);
 void rpt_print_message(char *msg);
-void rpt_exception(uint8_t status);
+void rpt_exception(uint8_t status, int16_t value);
 void rpt_print_loading_configs_message(void);
 void rpt_print_initializing_message(void);
 void rpt_print_system_ready_message(void);
@@ -47,7 +47,6 @@ uint8_t rpt_populate_filtered_status_report(void);
 
 void rpt_request_queue_report(void);
 uint8_t rpt_queue_report_callback(void);
-//uint8_t rpt_run_queue_report(void);
 
 // If you are looking for the defaults for the status report see config.h
 

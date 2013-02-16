@@ -45,6 +45,9 @@
 #define STATUS_REPORT_INTERVAL_MS	50		// milliseconds - set to 0 to disable
 #define SR_DEFAULTS "line","vel","posx","posy","posz","posa","mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","momo","coor","stat","homx","homy","homz","homa"
 
+#define SWITCH_TYPE SW_TYPE_NORMALLY_OPEN
+//#define SWITCH_TYPE SW_TYPE_NORMALLY_CLOSED
+
 //#define SR_VERBOSITY				SR_OFF
 #define SR_VERBOSITY				SR_FILTERED
 //#define SR_VERBOSITY				SR_VERBOSE

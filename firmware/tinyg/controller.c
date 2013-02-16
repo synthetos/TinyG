@@ -46,6 +46,7 @@
 #include "report.h"
 #include "system.h"
 #include "gpio.h"
+#include "util.h"
 #include "help.h"
 #include "xio/xio.h"
 #include "xmega/xmega_init.h"
@@ -55,7 +56,9 @@ static void _controller_HSM(void);
 static uint8_t _dispatch(void);
 static uint8_t _reset_handler(void);
 static uint8_t _bootloader_handler(void);
-static uint8_t _shutdown_handler(void);
+static uint8_t _limit_switch_handler(void);
+static uint8_t _shutdown_idler(void);
+static uint8_t _system_assertions(void);
 static uint8_t _feedhold_handler(void);
 static uint8_t _cycle_start_handler(void);
 static uint8_t _sync_to_tx_buffer(void);
@@ -70,6 +73,9 @@ void tg_init(uint8_t default_src)
 	cfg.fw_build = TINYG_BUILD_NUMBER;
 	cfg.fw_version = TINYG_VERSION_NUMBER;
 	cfg.hw_version = TINYG_HARDWARE_VERSION;
+
+	tg.magic_start = MAGICNUM;
+	tg.magic_end = MAGICNUM;
 
 	tg.default_src = default_src;
 	xio_set_stdin(tg.default_src);
@@ -114,10 +120,11 @@ static void _controller_HSM()
 											// Order is important:
 	DISPATCH(_reset_handler());				// 1. software reset received
 	DISPATCH(_bootloader_handler());		// 2. received ESC char to start bootloader
-	DISPATCH(_shutdown_handler());			// 3. limit switch has been thrown
-//	DISPATCH( validate_memory_integrity());	// 4. run memory integrity assertions
-	DISPATCH(_feedhold_handler());			// 5. feedhold requested
-	DISPATCH(_cycle_start_handler());		// 6. cycle start requested
+	DISPATCH(_limit_switch_handler());		// 3. limit switch has been thrown
+	DISPATCH(_shutdown_idler());			// 4. idle in shutdown state
+	DISPATCH(_system_assertions());			// 5. system integrity assertions
+	DISPATCH(_feedhold_handler());			// 6. feedhold requested
+	DISPATCH(_cycle_start_handler());		// 7. cycle start requested
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report
@@ -322,42 +329,67 @@ static uint8_t _cycle_start_handler(void)
 }
 
 /*
- * _shutdown_handler()
- *
- *	Shutdown is triggered by an active limit switch firing. This causes the 
- *	canonical machine to run the shutdown functions and set the machine state 
- *	to MACHINE_SHUTDOWN.
- *
- *	Once shutdown occurs the only thing this handler does is blink an LED 
- *	(spindle CW/CCW LED). The system can only be cleared by performing a reset.
+ * _limit_switch_handler() - shut down system if limit switch fired
+ */
+static uint8_t _limit_switch_handler(void)
+{
+	if (cm_get_machine_state() == MACHINE_SHUTDOWN) { return (TG_NOOP);}
+	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
+	cm_shutdown();
+	return (TG_OK);
+}
+
+/* 
+ * _shutdown_idler() - revent any further activity form occurring if shut down
  *
  *	This function returns EAGAIN causing the control loop to never advance beyond
  *	this point. It's important that the reset handler is still called so a SW reset
  *	(ctrl-x) can be processed.
  */
-
 #define LED_COUNTER 100000
 
-static uint8_t _shutdown_handler(void)
+static uint8_t _shutdown_idler(void)
 {
-	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
+	if (cm_get_machine_state() != MACHINE_SHUTDOWN) { return (TG_OK);}
 
-	// first time through perform the shutdown
-	if (cm_get_machine_state() != MACHINE_SHUTDOWN) {
-		cm_shutdown();
-
-	// after that just flash the LED
-	} else {
-		if (--tg.led_counter < 0) {
-			tg.led_counter = LED_COUNTER;
-			if (tg.led_state == 0) {
-				gpio_led_on(INDICATOR_LED);
-				tg.led_state = 1;
-			} else {
-				gpio_led_off(INDICATOR_LED);
-				tg.led_state = 0;
-			}
+	if (--tg.led_counter < 0) {
+		tg.led_counter = LED_COUNTER;
+		if (tg.led_state == 0) {
+			gpio_led_on(INDICATOR_LED);
+			tg.led_state = 1;
+		} else {
+			gpio_led_off(INDICATOR_LED);
+			tg.led_state = 0;
 		}
 	}
 	return (TG_EAGAIN);	 // EAGAIN prevents any other actions from running
+}
+
+/* 
+ * _system_assertions() - check memory integrity and other assertions
+ */
+uint8_t _system_assertions()
+{
+	uint8_t value = 0;
+
+	if (tg.magic_start		!= MAGICNUM) { value = 1; }
+	if (tg.magic_end		!= MAGICNUM) { value = 2; }
+	if (cm.magic_start 		!= MAGICNUM) { value = 3; }
+	if (cm.magic_end		!= MAGICNUM) { value = 4; }
+	if (cfg.magic_start		!= MAGICNUM) { value = 5; }
+	if (cfg.magic_end		!= MAGICNUM) { value = 6; }
+	if (cmdStr.magic_start	!= MAGICNUM) { value = 7; }
+	if (cmdStr.magic_end	!= MAGICNUM) { value = 8; }
+	if (gm.magic_start		!= MAGICNUM) { value = 9; }
+	if (gm.magic_end 		!= MAGICNUM) { value = 10; }
+	if (gn.magic_start		!= MAGICNUM) { value = 11; }
+	if (gn.magic_end		!= MAGICNUM) { value = 12; }
+	if (gf.magic_start		!= MAGICNUM) { value = 13; }
+	if (gf.magic_end		!= MAGICNUM) { value = 14; }
+
+	if (value == 0) { return (TG_OK);}
+
+	rpt_exception(TG_MEMORY_CORRUPTION, value);
+	cm_shutdown();
+	return (TG_EAGAIN);
 }

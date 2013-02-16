@@ -47,7 +47,6 @@ double max4(double x1, double x2, double x3, double x4);
 uint8_t isnumber(char c);
 uint8_t read_double(char *buf, uint8_t *i, double *double_ptr);
 uint16_t compute_checksum(char const *string, const uint16_t length);
-uint8_t validate_memory_integrity(void);
 
 void copy_vector(double dest[], const double src[], uint8_t length);
 void copy_axis_vector(double dest[], const double src[]);
@@ -61,9 +60,9 @@ double *set_vector_by_axis(double value, uint8_t axis);
 #define ritorno(a) { uint8_t status; if((status = a) != TG_OK) return(status);}
 
 // support for assertions
-#define assert_abort( condition, status ) { if ( condition == false ) { rpt_exception( status ); cm_shutdown();} }
-#define assert_return( condition, status ) { if ( condition == false ) { rpt_exception( status ); return (status);} }
-#define assert_continue( condition, status ) { if ( condition == false ) { rpt_exception( status );} }
+//#define assert_abort( condition, status ) { if ( condition == false ) { rpt_exception( status ); cm_shutdown();} }
+//#define assert_return( condition, status ) { if ( condition == false ) { rpt_exception( status ); return (status);} }
+//#define assert_continue( condition, status ) { if ( condition == false ) { rpt_exception( status );} }
 
 /***** Math Support *****/
 

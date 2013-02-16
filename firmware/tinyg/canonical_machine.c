@@ -532,6 +532,16 @@ void cm_init()
 //	memset(&gf, 0, sizeof(gf));
 //	memset(&gm, 0, sizeof(gm));
 
+	// setup magic numbers
+	cm.magic_start = MAGICNUM;
+	cm.magic_end = MAGICNUM;
+	gn.magic_start = MAGICNUM;
+	gn.magic_end = MAGICNUM;
+	gf.magic_start = MAGICNUM;
+	gf.magic_end = MAGICNUM;
+	gm.magic_start = MAGICNUM;
+	gm.magic_end = MAGICNUM;
+
 	// set gcode defaults
 	cm_set_units_mode(cfg.units_mode);
 	cm_set_coord_system(cfg.coord_system);
@@ -564,12 +574,7 @@ void cm_shutdown()
 //	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
-	// send out an emergency shutdown message
-	if (cfg.comm_mode == JSON_MODE) {
-		printf_P(PSTR("{\"er\":\"Emergency shut down\"}\n"));
-	} else {
-		printf_P(PSTR("EMERGENCY SHUTDOWN\n"));
-	}
+	rpt_exception(TG_SHUTDOWN,1);			// send an emergency shutdown message
 	cm.machine_state = MACHINE_SHUTDOWN;
 }
 

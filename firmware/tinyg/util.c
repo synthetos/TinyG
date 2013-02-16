@@ -216,13 +216,3 @@ uint16_t compute_checksum(char const *string, const uint16_t length)
     return (h % HASHMASK);
 }
 
-/* 
- * validate_memory_integrity() - check memory integrity assertions
- * 
- */
-uint8_t validate_memory_integrity()
-{
-	assert_abort ( (cfg.magic_start == MAGICNUM), FATAL_102);
-	assert_abort ( (cfg.magic_end == MAGICNUM), FATAL_103);
-	return (TG_OK);
-}

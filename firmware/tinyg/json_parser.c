@@ -298,6 +298,9 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  *	  - The list must have a terminating cmdObj where cmd->nx == NULL. 
  *		The terminating object may or may not have data (empty or not empty).
  *
+ *	Returns:
+ *		Returns length of string
+ *
  *	Desired behaviors:
  *	  - Allow self-referential elements that would otherwise cause a recursive loop
  *	  - Skip over empty objects (TYPE_EMPTY)
@@ -305,10 +308,13 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  *	    --- OR ---
  *	  - If a JSON object is empty omit the object altogether (no curlies)
  */
-uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
+
+#define BUFFER_MARGIN 8			// safety margin to avoibd buffer overruns
+
+int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 {
 	char *str = out_buf;
-	uint16_t len = 0;
+	char *str_max = out_buf + size - BUFFER_MARGIN;
 	int8_t initial_depth = cmd->depth;
 	int8_t prev_depth = 0;
 	uint8_t need_a_comma = false;
@@ -333,8 +339,7 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 				need_a_comma = false;
 			}
 		}
-		len = str - out_buf;
-		assert_abort( (len < size), FATAL_100 );
+		if (str >= str_max) { return (-1);}		// signal buffer overrun
 		if ((cmd = cmd->nx) == NULL) { break;}	// end of the list
 		if (cmd->depth < prev_depth) {
 			need_a_comma = true;
@@ -345,9 +350,8 @@ uint16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 	// closing curlies and NEWLINE
 	while (prev_depth-- > initial_depth) { *str++ = '}';}
 	str += sprintf(str, "}\n");	// using sprintf for this last one ensures a NUL termination
-	len = str - out_buf;
-	assert_continue( (len < size), FATAL_100 );
-	return (len);
+	if (str > out_buf + size) { return (-1);}
+	return (str - out_buf);
 }
 
 /*
@@ -419,10 +423,10 @@ void js_print_json_response(uint8_t status)
 	cmd->nx = NULL;
 
 	// do all this to avoid having to serialize it twice
-	uint16_t strcount = js_serialize_json(cmd_header, tg.out_buf, sizeof(tg.out_buf));// make JSON string w/o checksum
-//	if (strcount+8 >= OUTPUT_BUFFER_LEN) { rpt_exception(101);}						// trap if checksum would cause buffer overrun
-	assert_continue( (strcount < OUTPUT_BUFFER_LEN-8), FATAL_101);
-	uint16_t strcount2 = strcount;
+	int16_t strcount = js_serialize_json(cmd_header, tg.out_buf, sizeof(tg.out_buf));// make JSON string w/o checksum
+	if (strcount < 0) { return;}						// encountered an overrun during serialization
+	if (strcount > OUTPUT_BUFFER_LEN - MAX_TAIL_LEN) { return;}	// would overrun during checksum generation
+	int16_t strcount2 = strcount;
 	char tail[MAX_TAIL_LEN];
 
 	while (tg.out_buf[strcount] != '0') { strcount--; }	// find end of checksum

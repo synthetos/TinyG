@@ -1500,8 +1500,11 @@ void cmd_persist(cmdObj_t *cmd)
 void cfg_init()
 {
 	cmdObj_t *cmd = cmd_reset_list();
+	cmdStr.magic_start = MAGICNUM;
+	cmdStr.magic_end = MAGICNUM;
 	cfg.magic_start = MAGICNUM;
 	cfg.magic_end = MAGICNUM;
+
 	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
 	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
 	cfg.nvm_base_addr = NVM_BASE_ADDR;
@@ -2001,14 +2004,15 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 	cmd_reset_obj(cmd);
 	cmd->index = tmp;
 
-	strcpy_P(cmd->group, cfgArray[cmd->index].group); // group field is always terminated
 	strcpy_P(cmd->token, cfgArray[cmd->index].token); // token field is always terminated
+//	strcpy_P(cmd->group, cfgArray[cmd->index].group); 	 // group field is always terminated
 
 	// special processing for system groups and stripping tokens for groups
 	if (cmd->group[0] != NUL) {
 		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_NOSTRIP) {
 			cmd->group[0] = NUL;
 		} else {
+			strcpy_P(cmd->group, cfgArray[cmd->index].group); 	 // group field is always terminated
 			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
 		}
 	}

@@ -45,11 +45,11 @@
 #include "xio/xio.h"
 #include "xmega/xmega_rtc.h"
 
-/**** System Messages **************************************************************
- * tg_get_status_message()
- */
-
-/* These strings must align with the status codes in tinyg.h
+/**** Status and Exception Messages **************************************************
+ * rpt_get_status_message() - return the status message
+ * rpt_exception() - send an exception report (JSON formatted)
+ *
+ * These strings must align with the status codes in tinyg.h
  * The number of elements in the indexing array must match the # of strings
  * Reference for putting display strings and string arrays in program memory:
  * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
@@ -70,31 +70,31 @@ static const char msg_sc12[] PROGMEM = "Buffer empty";
 static const char msg_sc13[] PROGMEM = "Buffer full";
 static const char msg_sc14[] PROGMEM = "Buffer full - fatal";
 static const char msg_sc15[] PROGMEM = "Initializing";
-static const char msg_sc16[] PROGMEM = "#16";
-static const char msg_sc17[] PROGMEM = "#17";
-static const char msg_sc18[] PROGMEM = "#18";
-static const char msg_sc19[] PROGMEM = "#19";
+static const char msg_sc16[] PROGMEM = "16";
+static const char msg_sc17[] PROGMEM = "17";
+static const char msg_sc18[] PROGMEM = "18";
+static const char msg_sc19[] PROGMEM = "19";
 
 static const char msg_sc20[] PROGMEM = "Internal error";
 static const char msg_sc21[] PROGMEM = "Internal range error";
 static const char msg_sc22[] PROGMEM = "Floating point error";
 static const char msg_sc23[] PROGMEM = "Divide by zero";
-static const char msg_sc24[] PROGMEM = "#24";
-static const char msg_sc25[] PROGMEM = "#25";
-static const char msg_sc26[] PROGMEM = "#26";
-static const char msg_sc27[] PROGMEM = "#27";
-static const char msg_sc28[] PROGMEM = "#28";
-static const char msg_sc29[] PROGMEM = "#29";
-static const char msg_sc30[] PROGMEM = "#30";
-static const char msg_sc31[] PROGMEM = "#31";
-static const char msg_sc32[] PROGMEM = "#32";
-static const char msg_sc33[] PROGMEM = "#33";
-static const char msg_sc34[] PROGMEM = "#34";
-static const char msg_sc35[] PROGMEM = "#35";
-static const char msg_sc36[] PROGMEM = "#36";
-static const char msg_sc37[] PROGMEM = "#37";
-static const char msg_sc38[] PROGMEM = "#38";
-static const char msg_sc39[] PROGMEM = "#39";
+static const char msg_sc24[] PROGMEM = "Invalid Address";
+static const char msg_sc25[] PROGMEM = "Read-only address";
+static const char msg_sc26[] PROGMEM = "Initialization failure";
+static const char msg_sc27[] PROGMEM = "System shutdown";
+static const char msg_sc28[] PROGMEM = "Memory corruption";
+static const char msg_sc29[] PROGMEM = "29";
+static const char msg_sc30[] PROGMEM = "30";
+static const char msg_sc31[] PROGMEM = "31";
+static const char msg_sc32[] PROGMEM = "32";
+static const char msg_sc33[] PROGMEM = "33";
+static const char msg_sc34[] PROGMEM = "34";
+static const char msg_sc35[] PROGMEM = "35";
+static const char msg_sc36[] PROGMEM = "36";
+static const char msg_sc37[] PROGMEM = "37";
+static const char msg_sc38[] PROGMEM = "38";
+static const char msg_sc39[] PROGMEM = "39";
 
 static const char msg_sc40[] PROGMEM = "Unrecognized command";
 static const char msg_sc41[] PROGMEM = "Expected command letter";
@@ -106,16 +106,16 @@ static const char msg_sc46[] PROGMEM = "Input value range error";
 static const char msg_sc47[] PROGMEM = "Input value unsupported";
 static const char msg_sc48[] PROGMEM = "JSON syntax error";
 static const char msg_sc49[] PROGMEM = "JSON input has too many pairs";
-static const char msg_sc50[] PROGMEM = "Out of buffer space";
-static const char msg_sc51[] PROGMEM = "#51";
-static const char msg_sc52[] PROGMEM = "#52";
-static const char msg_sc53[] PROGMEM = "#53";
-static const char msg_sc54[] PROGMEM = "#54";
-static const char msg_sc55[] PROGMEM = "#55";
-static const char msg_sc56[] PROGMEM = "#56";
-static const char msg_sc57[] PROGMEM = "#57";
-static const char msg_sc58[] PROGMEM = "#58";
-static const char msg_sc59[] PROGMEM = "#59";
+static const char msg_sc50[] PROGMEM = "JSON output too long";
+static const char msg_sc51[] PROGMEM = "Out of buffer space";
+static const char msg_sc52[] PROGMEM = "52";
+static const char msg_sc53[] PROGMEM = "53";
+static const char msg_sc54[] PROGMEM = "54";
+static const char msg_sc55[] PROGMEM = "55";
+static const char msg_sc56[] PROGMEM = "56";
+static const char msg_sc57[] PROGMEM = "57";
+static const char msg_sc58[] PROGMEM = "58";
+static const char msg_sc59[] PROGMEM = "59";
 
 static const char msg_sc60[] PROGMEM = "Zero length move";
 static const char msg_sc61[] PROGMEM = "Gcode block skipped";
@@ -144,13 +144,11 @@ char *rpt_get_status_message(uint8_t status, char *msg)
 	return (msg);
 }
 
-/**** Exception Report *************************************************************
- * rpt_exception() - send a JSON exception report
- */
-void rpt_exception(uint8_t status)
+void rpt_exception(uint8_t status, int16_t value)
 {
-	char msg[STATUS_MESSAGE_LEN] = "JSON serializer buffer overrun";
-	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\"}}\n"), TINYG_BUILD_NUMBER, status, msg);
+	char msg[STATUS_MESSAGE_LEN];
+	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\",\"val\":%d}}\n"), 
+		TINYG_BUILD_NUMBER, status, rpt_get_status_message(status, msg), value);
 }
 
 /**** Message Primitives ***********************************************************

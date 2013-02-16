@@ -160,8 +160,10 @@ enum textFormats {					// text output print modes
 };
 
 typedef struct cmdString {			// shared string object
+	magicNum_t magic_start;
 	uint8_t wp;						// current string array index
 	char string[CMD_SHARED_STRING_LEN];
+	magicNum_t magic_end;
 } cmdStr_t;
 
 typedef struct cmdObject {			// depending on use, not all elements may be populated
@@ -272,7 +274,7 @@ typedef struct cfgPWMParameters {
 } cfgPWM_t;
 
 typedef struct cfgParameters {
-	magicNum_t magic_start;			// magc number to test memor integity
+	magicNum_t magic_start;			// magic number to test memory integity
 	double fw_build;				// tinyg firmware build number
 	double fw_version;				// tinyg firmware version number
 	double hw_version;				// tinyg hardware compatibility
