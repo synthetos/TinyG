@@ -518,34 +518,34 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "dist",_f00,fmt_dist,_print_str, _get_dist,_set_nul,(double *)&tg.null, 0 },		// distance mode
 	{ "",   "frmo",_f00,fmt_frmo,_print_str, _get_frmo,_set_nul,(double *)&tg.null, 0 },		// feed rate mode
 
-	{ "mpo","mpox",_fns,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// X machine position
-	{ "mpo","mpoy",_fns,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Y machine position
-	{ "mpo","mpoz",_fns,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Z machine position
-	{ "mpo","mpoa",_fns,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// A machine position
-	{ "mpo","mpob",_fns,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// B machine position
-	{ "mpo","mpoc",_fns,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// C machine position
+	{ "mpo","mpox",_f00,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// X machine position
+	{ "mpo","mpoy",_f00,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Y machine position
+	{ "mpo","mpoz",_f00,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Z machine position
+	{ "mpo","mpoa",_f00,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// A machine position
+	{ "mpo","mpob",_f00,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// B machine position
+	{ "mpo","mpoc",_f00,fmt_mpos,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// C machine position
 
-	{ "pos","posx",_fns,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// X work position
-	{ "pos","posy",_fns,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Y work position
-	{ "pos","posz",_fns,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Z work position
-	{ "pos","posa",_fns,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// A work position
-	{ "pos","posb",_fns,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// B work position
-	{ "pos","posc",_fns,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// C work position
+	{ "pos","posx",_f00,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// X work position
+	{ "pos","posy",_f00,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Y work position
+	{ "pos","posz",_f00,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Z work position
+	{ "pos","posa",_f00,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// A work position
+	{ "pos","posb",_f00,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// B work position
+	{ "pos","posc",_f00,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// C work position
 
-	{ "ofs","ofsx",_fns,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// X work offset
-	{ "ofs","ofsy",_fns,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// Y work offset
-	{ "ofs","ofsz",_fns,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// Z work offset
-	{ "ofs","ofsa",_fns,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// A work offset 
-	{ "ofs","ofsb",_fns,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// B work offset 
-	{ "ofs","ofsc",_fns,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// C work offset
+	{ "ofs","ofsx",_f00,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// X work offset
+	{ "ofs","ofsy",_f00,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// Y work offset
+	{ "ofs","ofsz",_f00,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// Z work offset
+	{ "ofs","ofsa",_f00,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// A work offset 
+	{ "ofs","ofsb",_f00,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// B work offset 
+	{ "ofs","ofsc",_f00,fmt_ofs, _print_pos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// C work offset
 
-	{ "hom","home",_fns,fmt_hom, _print_str, _get_home,_run_home,(double *)&tg.null, 0 },		// homing state, invoke homing cycle
-	{ "hom","homx",_fns,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[X], false },// X homed - Homing status group
-	{ "hom","homy",_fns,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[Y], false },// Y homed
-	{ "hom","homz",_fns,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[Z], false },// Z homed
-	{ "hom","homa",_fns,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[A], false },// A homed
-	{ "hom","homb",_fns,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[B], false },// B homed
-	{ "hom","homc",_fns,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[C], false },// C homed
+	{ "hom","home",_f00,fmt_hom, _print_str, _get_home,_run_home,(double *)&tg.null, 0 },		// homing state, invoke homing cycle
+	{ "hom","homx",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[X], false },// X homed - Homing status group
+	{ "hom","homy",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[Y], false },// Y homed
+	{ "hom","homz",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[Z], false },// Z homed
+	{ "hom","homa",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[A], false },// A homed
+	{ "hom","homb",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[B], false },// B homed
+	{ "hom","homc",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[C], false },// C homed
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },		// status report object
@@ -2009,15 +2009,15 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 	cmd_reset_obj(cmd);
 	cmd->index = tmp;
 
-	strcpy_P(cmd->token, cfgArray[cmd->index].token); // token field is always terminated
-//	strcpy_P(cmd->group, cfgArray[cmd->index].group); 	 // group field is always terminated
+	strcpy_P(cmd->token, cfgArray[cmd->index].token);	// token field is always terminated
+	strcpy_P(cmd->group, cfgArray[cmd->index].group);	// group field is always terminated
 
 	// special processing for system groups and stripping tokens for groups
 	if (cmd->group[0] != NUL) {
 		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_NOSTRIP) {
 			cmd->group[0] = NUL;
 		} else {
-			strcpy_P(cmd->group, cfgArray[cmd->index].group); 	 // group field is always terminated
+//			strcpy_P(cmd->group, cfgArray[cmd->index].group); 	 // group field is always terminated
 			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
 		}
 	}

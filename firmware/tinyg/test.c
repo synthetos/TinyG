@@ -163,9 +163,10 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"mpo\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("g92a0\n");
-//	xio_queue_RX_string_usb("g0a3\n");			// should be a=3. Instead it's a=1
+	xio_queue_RX_string_usb("g0a3\n");			// should be a=3. Instead it's a=1
 
 //	xio_queue_RX_string_usb("t3\n");			// change tool
 
@@ -358,8 +359,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"err_1\":36000}\n");
 //	xio_queue_RX_string_usb("{\"1sa\":3.6.000}\n");
 //	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");				// invoke a status report
-	xio_queue_RX_string_usb("{\"sr\":{\"line\":true,\"posx\":true,\"posy\":true}}\n");	// set status report
-	xio_queue_RX_string_usb("{\"sr\":{\"line\":null,\"posx\":null,\"posy\":null}}\n");	// set status report
+//	xio_queue_RX_string_usb("{\"sr\":{\"line\":true,\"posx\":true,\"posy\":true}}\n");	// set status report
+//	xio_queue_RX_string_usb("{\"sr\":{\"line\":null,\"posx\":null,\"posy\":null}}\n");	// set status report
 //	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sm\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
 
 //	xio_queue_RX_string_usb("{\"x\":\"\"}\n");				// x axis group display

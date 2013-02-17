@@ -189,6 +189,8 @@ void rpt_print_loading_configs_message(void)
 	cmd_reset_list();
 	cmd_add_object("fb");
 	cmd_add_object("fv");
+	cmd_add_object("hv");
+	cmd_add_object("id");
 	cmd_add_string_P("msg", PSTR("Loading configs from EEPROM"));
 	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 #endif
@@ -200,6 +202,8 @@ void rpt_print_initializing_message(void)
 	cmd_reset_list();
 	cmd_add_object("fb");
 	cmd_add_object("fv");
+	cmd_add_object("hv");
+	cmd_add_object("id");
 	cmd_add_string_P("msg", PSTR(INIT_MESSAGE)); // see settings.h & sub-headers
 	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 #endif
@@ -211,6 +215,8 @@ void rpt_print_system_ready_message(void)
 	cmd_reset_list();
 	cmd_add_object("fb");
 	cmd_add_object("fv");
+	cmd_add_object("hv");
+	cmd_add_object("id");
 	cmd_add_string_P("msg", PSTR("SYSTEM READY"));
 	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 #endif
@@ -344,6 +350,7 @@ uint8_t rpt_status_report_callback() 		// called by controller dispatcher
 
 void rpt_populate_unfiltered_status_report()
 {
+	char tmp[CMD_TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	strcpy(cmd->token, "sr");
@@ -353,6 +360,9 @@ void rpt_populate_unfiltered_status_report()
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
 		cmd_get_cmdObj(cmd);
+		strcpy(tmp, cmd->group);			// flatten out groups
+		strcat(tmp, cmd->token);
+		strcpy(cmd->token, tmp);
 		cmd = cmd->nx;
 	}
 }
@@ -366,6 +376,7 @@ void rpt_populate_unfiltered_status_report()
 uint8_t rpt_populate_filtered_status_report()
 {
 	uint8_t has_data = false;
+	char tmp[CMD_TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
 
 	cmd->type = TYPE_PARENT; 				// setup the parent object
@@ -375,6 +386,10 @@ uint8_t rpt_populate_filtered_status_report()
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
 		cmd_get_cmdObj(cmd);
+		strcpy(tmp, cmd->group);			// flatten out groups
+		strcat(tmp, cmd->token);
+		strcpy(cmd->token, tmp);
+
 		if (cfg.status_report_value[i] == cmd->value) {	// float == comparison runs the risk of overreporting. So be it
 			continue;
 		} else {
