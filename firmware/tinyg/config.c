@@ -217,6 +217,7 @@ static uint8_t _set_sr(cmdObj_t *cmd);		// set status report specification
 static uint8_t _set_si(cmdObj_t *cmd);		// set status report interval
 static uint8_t _get_id(cmdObj_t *cmd);		// get device ID
 static uint8_t _get_qr(cmdObj_t *cmd);		// run queue report (as data)
+static uint8_t _get_er(cmdObj_t *cmd);		// invoke a bogus exception report for testing purposes
 static uint8_t _get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 
 static uint8_t _get_gc(cmdObj_t *cmd);		// get current gcode block
@@ -394,7 +395,7 @@ static const char fmt_ma[] PROGMEM = "[ma]  min arc segment%18.3f%S\n";
 static const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%16.3f%S\n";
 static const char fmt_mt[] PROGMEM = "[mt]  min segment time%13.0f uSec\n";
 static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0=NO,1=NC]\n";
-static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms [0=off]\n";
+static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms\n";
 static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX%8d [0,1=CR,2=LF]\n";
 static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0,1]\n";
 static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0,1]\n";
@@ -550,6 +551,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },		// status report object
 	{ "", "qr",  _f00, fmt_qr,  _print_int, _get_qr,  _set_nul, (double *)&tg.null, 0 },		// queue report setting
+	{ "", "er",  _f00, fmt_nul, _print_nul, _get_er,  _set_nul, (double *)&tg.null, 0 },		// invoke bogus exception report for testing
 	{ "", "rx",  _f00, fmt_rx,  _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },		// space in RX buffer
 	{ "", "msg", _f00, fmt_str, _print_str, _get_nul, _set_nul, (double *)&tg.null, 0 },		// string for generic messages
 	{ "", "test",_f00, fmt_nul, _print_nul, print_test_help, tg_test, (double *)&tg.test,0 },	// prints test help screen
@@ -854,6 +856,7 @@ uint8_t cmd_index_is_group(index_t index) { return _index_is_group(index);}
  * _set_hv() - set hardweare version number
  * _get_id() - get device ID (signature)
  * _get_qr() - run queue report
+ * _get_er() - invoke a bogus exception report for testing purposes (it's not real)
  * _get_rx() - get bytes available in RX buffer
  */
 static uint8_t _set_hv(cmdObj_t *cmd) 
@@ -877,6 +880,12 @@ static uint8_t _get_qr(cmdObj_t *cmd)
 {
 	cmd->value = (double)mp_get_planner_buffers_available();
 	cmd->type = TYPE_INTEGER;
+	return (TG_OK);
+}
+
+static uint8_t _get_er(cmdObj_t *cmd) 
+{
+	rpt_exception(TG_INTERNAL_ERROR, 42);	// bogus exception report
 	return (TG_OK);
 }
 
@@ -932,9 +941,7 @@ static uint8_t _set_sr(cmdObj_t *cmd)
 
 static uint8_t _set_si(cmdObj_t *cmd) 
 {
-	if ((cmd->value < STATUS_REPORT_MIN_MS) && (cmd->value!=0)) {
-		cmd->value = STATUS_REPORT_MIN_MS;
-	}
+	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
 	cfg.status_report_interval = (uint32_t)cmd->value;
 	return(TG_OK);
 }

@@ -328,8 +328,7 @@ uint8_t rpt_status_report_callback() 		// called by controller dispatcher
 		(cm.status_report_request == false)) {
 		return (TG_NOOP);
 	}
-	// the following could be re-organized but -Os is actually most efficient with this code:
-	if ((cfg.comm_mode == JSON_MODE) && (cfg.status_report_verbosity == SR_FILTERED)) {
+	if (cfg.status_report_verbosity == SR_FILTERED) {
 		if (rpt_populate_filtered_status_report() == true) {
 			cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 		}
