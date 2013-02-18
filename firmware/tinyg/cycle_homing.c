@@ -281,8 +281,7 @@ static uint8_t _homing_axis_start(int8_t axis)
 		hm.limit_switch = -1;
 	}
 	hm.saved_jerk = cfg.a[axis].jerk_max;					// save the max jerk value
-	cfg.a[axis].jerk_max = cfg.a[axis].jerk_homing;			// use the homing jerk for homing
-	return (_set_hm_func(_homing_axis_clear));				//...and start the clear
+	return (_set_hm_func(_homing_axis_clear));				// start the clear
 }
 
 // Handle an initial switch closure by backing off switches
@@ -317,6 +316,7 @@ static uint8_t _homing_axis_backoff_limit(int8_t axis)		// back off cleared limi
 
 static uint8_t _homing_axis_search(int8_t axis)				// start the search
 {
+	cfg.a[axis].jerk_max = cfg.a[axis].jerk_homing;			// use the homing jerk for search onward
 	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
     return (_set_hm_func(_homing_axis_latch));
 }
