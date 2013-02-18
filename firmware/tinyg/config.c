@@ -918,25 +918,24 @@ static void _print_sr(cmdObj_t *cmd)
 
 static uint8_t _set_sr(cmdObj_t *cmd)
 {
-	memset(cfg.status_report_list, 0 , sizeof(cfg.status_report_list));
+	uint8_t elements = 0;
+	index_t status_report_list[CMD_STATUS_REPORT_LEN];
+	memset(status_report_list, 0, sizeof(status_report_list));
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if (((cmd = cmd->nx) == NULL) || (cmd->type == TYPE_EMPTY)) break;
+		if (((cmd = cmd->nx) == NULL) || (cmd->type == TYPE_EMPTY)) { break;}
 		if ((cmd->type == TYPE_BOOL) && (cmd->value == true)) {
-			cfg.status_report_list[i] = cmd->index;
+			status_report_list[i] = cmd->index;
 			cmd->value = cmd->index;	// persist the index as the value
 			cmd_persist(cmd);
-			cmd_get_cmdObj(cmd);		// this get will return the current value		
+			cmd_get_cmdObj(cmd);		// this get will return the current value
+			elements++;
+		} else {
+			return (TG_INPUT_VALUE_UNSUPPORTED);
 		}
 	}
-/*
-	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if ((cmd = cmd->nx) == NULL) break;
-		cfg.status_report_list[i] = cmd->index;
-		cmd->value = cmd->index;	// you want to persist the index as the value
-		cmd_persist(cmd);
-	}
-*/
+	if (elements == 0) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	memcpy(cfg.status_report_list, status_report_list, sizeof(status_report_list));
 	return (TG_OK);
 }
 
