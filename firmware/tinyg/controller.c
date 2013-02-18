@@ -50,6 +50,7 @@
 #include "util.h"
 #include "help.h"
 #include "xio/xio.h"
+#include "xmega/xmega_rtc.h"
 #include "xmega/xmega_init.h"
 
 // local helpers
@@ -389,9 +390,10 @@ uint8_t _system_assertions()
 	if (mr.magic_end		!= MAGICNUM) { value = 14; }
 	if (st_get_st_magic()	!= MAGICNUM) { value = 15; }
 	if (st_get_sps_magic()	!= MAGICNUM) { value = 16; }
+	if (rtc.magic_end 		!= MAGICNUM) { value = 17; }
+	xio_assertions(&value);									// run xio assertions
 
 	if (value == 0) { return (TG_OK);}
-
 	rpt_exception(TG_MEMORY_CORRUPTION, value);
 	cm_shutdown();
 	return (TG_EAGAIN);

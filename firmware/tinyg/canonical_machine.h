@@ -36,7 +36,7 @@
  * CANONICAL MACHINE STRUCTURES
  */
 typedef struct cmSingleton {		// struct to manage cm globals and cycles
-	magicNum_t magic_start;			// magic number to test memory integity	
+	uint16_t magic_start;			// magic number to test memory integity	
 	uint8_t combined_state;			// combination of states for display purposes
 	uint8_t machine_state;			// machine/cycle/motion is the actual machine state
 	uint8_t cycle_state;
@@ -50,7 +50,7 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint8_t	g28_flag;				// true = complete a G28 move
 	uint8_t	g30_flag;				// true = complete a G30 move
 	uint8_t g10_persist_flag;		//.G10 changed offsets - persist them
-	magicNum_t magic_end;
+	uint16_t magic_end;
 } cmSingleton_t;
 cmSingleton_t cm;
 
@@ -78,7 +78,7 @@ cmSingleton_t cm;
  *	 the operating state for the values (which may have changed).
  */
 typedef struct GCodeModel {				// Gcode dynamic model
-	magicNum_t magic_start;				// magic number to test memory integity
+	uint16_t magic_start;				// magic number to test memory integity
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
 										// G82, G83 G84, G85, G86, G87, G88, G89 
@@ -133,7 +133,7 @@ typedef struct GCodeModel {				// Gcode dynamic model
 	double parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 	double arc_radius;					// R - radius value in arc radius mode
 	double arc_offset[3];  				// IJK - used by arc commands
-	magicNum_t magic_end;
+	uint16_t magic_end;
 }  GCodeModel_t;
 
 typedef struct GCodeInput {				// Gcode model inputs - meaning depends on context

@@ -39,7 +39,7 @@
 struct controllerSingleton {		// main TG controller struct
 //	double version;					// tinyg version number
 //	double build;					// tinyg build number
-	magicNum_t magic_start;			// magic number to test memory integity	
+	uint16_t magic_start;			// magic number to test memory integity	
 	double null;					// dumping ground for items with no target
 	uint8_t test;
 	uint8_t src;					// active source device
@@ -49,7 +49,7 @@ struct controllerSingleton {		// main TG controller struct
 	int32_t led_counter;			// a convenience for flashing an LED
 	char in_buf[INPUT_BUFFER_LEN];	// input text buffer
 	char out_buf[OUTPUT_BUFFER_LEN];// output text buffer
-	magicNum_t magic_end;
+	uint16_t magic_end;
 };
 struct controllerSingleton tg;		// controller state structure
 

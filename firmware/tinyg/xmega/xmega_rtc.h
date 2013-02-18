@@ -36,10 +36,11 @@
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_MED_gc;	// med interrupt on compare
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_HI_gc;		// hi interrupt on compare
 
-struct rtClock {
+typedef struct rtClock {
 	volatile uint32_t clock_ticks;				// RTC tick counter
-};
-struct rtClock rtc;
+	uint16_t magic_end;
+} rtClock_t;
+rtClock_t rtc;
 
 void rtc_init(void);							// initialize and start general timer
 

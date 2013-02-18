@@ -36,7 +36,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	369.04
+#define TINYG_BUILD_NUMBER   	369.05
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
@@ -71,6 +71,7 @@
 /*************************************************************************
  * TinyG application-specific prototypes, defines and globals
  */
+#define MAGICNUM 0x12EF			// used for memory integrity assertions
 
 #define AXES 6					// number of axes supported in this version
 #define MOTORS 4				// number of motors on the board
@@ -102,9 +103,6 @@
 
 #define PWM_1	0
 #define PWM_2	1
-
-typedef uint16_t magicNum_t;
-#define MAGICNUM 0x12EF		// used for memory integrity assertions
 
 /* TinyG status codes
  * The first code range (0-19) is aligned with the XIO codes and must be so.

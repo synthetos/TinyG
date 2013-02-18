@@ -143,6 +143,8 @@ void xio_open_generic(uint8_t dev, x_open_t x_open,
 {
 	xioDev_t *d = &ds[dev];
 	memset (d, 0, sizeof(xioDev_t));
+	d->magic_start = MAGICNUM;
+	d->magic_end = MAGICNUM;
 	d->dev = dev;
 
 	// bind functions to device structure
@@ -249,6 +251,28 @@ void xio_set_stdin(const uint8_t dev)  { stdin  = &ds[dev].file; }
 void xio_set_stdout(const uint8_t dev) { stdout = &ds[dev].file; }
 void xio_set_stderr(const uint8_t dev) { stderr = &ds[dev].file; }
 
+/*
+ * xio_assertions() - validate operating state
+ *
+ *	Returns status code (0 if everything is OK) 
+ *	and sets a value if there is a failure.
+ */
+uint8_t xio_assertions(uint8_t *value)
+{
+	if (ds[XIO_DEV_USB].magic_start		!= MAGICNUM) { *value = 100; }
+	if (ds[XIO_DEV_USB].magic_end		!= MAGICNUM) { *value = 101; }
+	if (ds[XIO_DEV_RS485].magic_start	!= MAGICNUM) { *value = 102; }
+	if (ds[XIO_DEV_RS485].magic_end		!= MAGICNUM) { *value = 103; }
+	if (ds[XIO_DEV_SPI1].magic_start	!= MAGICNUM) { *value = 104; }
+	if (ds[XIO_DEV_SPI1].magic_end		!= MAGICNUM) { *value = 105; }
+	if (ds[XIO_DEV_SPI2].magic_start	!= MAGICNUM) { *value = 106; }
+	if (ds[XIO_DEV_SPI2].magic_end		!= MAGICNUM) { *value = 107; }
+	if (ds[XIO_DEV_PGM].magic_start		!= MAGICNUM) { *value = 108; }
+	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) { *value = 109; }
+
+	if (*value != 0) { return (TG_MEMORY_CORRUPTION); }
+	return (TG_OK);
+}
 
 /*****************************************************************************
  * UNIT TESTS 

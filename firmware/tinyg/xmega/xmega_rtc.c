@@ -56,6 +56,7 @@ void rtc_init()
 	RTC.INTCTRL = RTC_COMPINTLVL;						// interrupt on compare
 
 	rtc.clock_ticks = 0;								//  default RTC clock counter
+	rtc.magic_end = MAGICNUM;
 }
 
 /* 

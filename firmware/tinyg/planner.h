@@ -166,13 +166,13 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 } mpBuf_t;
 
 typedef struct mpBufferPool {	// ring buffer for sub-moves
-	magicNum_t magic_start;		// magic number to test memory integity	
+	uint16_t magic_start;		// magic number to test memory integity	
 	uint8_t buffers_available;	// running count of available buffers
 	mpBuf_t *w;					// get_write_buffer pointer
 	mpBuf_t *q;					// queue_write_buffer pointer
 	mpBuf_t *r;					// get/end_run_buffer pointer
 	mpBuf_t bf[PLANNER_BUFFER_POOL_SIZE];// buffer storage
-	magicNum_t magic_end;
+	uint16_t magic_end;
 } mpBufferPool_t;
 
 typedef struct mpMoveMasterSingleton {	// common variables for planning (move master)
@@ -191,7 +191,7 @@ typedef struct mpMoveMasterSingleton {	// common variables for planning (move ma
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
-	magicNum_t magic_start;		// magic number to test memory integity	
+	uint16_t magic_start;		// magic number to test memory integity	
 	uint32_t linenum;			// runtime line/block number of BF being executed
 	uint8_t move_state;			// state of the overall move
 	uint8_t section_state;		// state within a move section
@@ -227,7 +227,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	double midpoint_acceleration;//acceleration at the midpoint
 //	double jerk_div2;			// max linear jerk divided by 2
 //	double segment_accel_time;	// time increment for accel computation purposes
-	magicNum_t magic_end;
+	uint16_t magic_end;
 } mpMoveRuntimeSingleton_t;
 
 

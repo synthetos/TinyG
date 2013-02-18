@@ -59,11 +59,6 @@ double *set_vector_by_axis(double value, uint8_t axis);
 // (ritorno is Italian for return) 
 #define ritorno(a) { uint8_t status; if((status = a) != TG_OK) return(status);}
 
-// support for assertions
-//#define assert_abort( condition, status ) { if ( condition == false ) { rpt_exception( status ); cm_shutdown();} }
-//#define assert_return( condition, status ) { if ( condition == false ) { rpt_exception( status ); return (status);} }
-//#define assert_continue( condition, status ) { if ( condition == false ) { rpt_exception( status );} }
-
 /***** Math Support *****/
 
 // side-effect safe forms of min and max

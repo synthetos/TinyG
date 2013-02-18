@@ -90,6 +90,7 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 
 typedef struct xioDEVICE {						// common device struct (one per dev)
 	// references and self references
+	uint16_t magic_start;						// memory integrity check
 	uint8_t dev;								// self referential device number
 	FILE file;									// stdio FILE stream structure
 	void *x;									// extended device struct binding (static)
@@ -119,6 +120,7 @@ typedef struct xioDEVICE {						// common device struct (one per dev)
 	uint8_t flag_eol;							// end of line detected
 	uint8_t flag_eof;							// end of file detected
 	char *buf;									// text buffer binding (can be dynamic)
+	uint16_t magic_end;
 } xioDev_t;
 
 typedef FILE *(*x_open_t)(const uint8_t dev, const char *addr, const flags_t flags);
@@ -181,6 +183,9 @@ void xio_init_stdio(void);				// set std devs & do startup prompt
 void xio_set_stdin(const uint8_t dev);
 void xio_set_stdout(const uint8_t dev);
 void xio_set_stderr(const uint8_t dev);
+
+// assertions
+uint8_t xio_assertions(uint8_t *value);
 
 /*************************************************************************
  * SUPPORTING DEFINTIONS - SHOULD NOT NEED TO CHANGE

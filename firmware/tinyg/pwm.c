@@ -67,7 +67,7 @@
 
 typedef struct pwmStruct { 			// one per PWM channel
 	uint8_t ctrla;					// byte needed to active CTRLA (it's dynamic - rest are static)
-	TC1_t *timer;		// assumes TC1 flavor timers used for PWM channels
+	TC1_t *timer;					// assumes TC1 flavor timers used for PWM channels
 } pwmStruct_t;
 static pwmStruct_t pwm[PWMS];		// array of PWMs (usually 2, see system.h)
 

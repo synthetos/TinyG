@@ -56,9 +56,6 @@
 #define xmega_eeprom_h
 
 #include <avr/io.h>
-//#include <avr/interrupt.h>
-//#include <avr/sleep.h>
-//#include "xboot.h"
 
 /* Configuration settings */
 // UNCOMMENT FOR TEST ONLY - uses a RAM block to simulate EEPROM
