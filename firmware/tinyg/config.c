@@ -899,8 +899,10 @@ static uint8_t _get_rx(cmdObj_t *cmd)
 
 /**** REPORT FUNCTIONS ****
  * _get_sr()   - run status report
- * _print_sr() - run status report
+ * _set_sr()   - set status report elements
+ * _print_sr() - print multiline text status report
  * _set_si()   - set status report interval
+ *
  * cmd_set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
  * cmd_set_tv() - set text verbosity level (exposed) - for details see textVerbosity in config.h
  */
@@ -910,32 +912,14 @@ static uint8_t _get_sr(cmdObj_t *cmd)
 	return (TG_OK);
 }
 
+static uint8_t _set_sr(cmdObj_t *cmd)
+{
+	return (rpt_set_status_report(cmd));
+}
+
 static void _print_sr(cmdObj_t *cmd)
 {
 	rpt_populate_unfiltered_status_report();
-}
-
-static uint8_t _set_sr(cmdObj_t *cmd)
-{
-	uint8_t elements = 0;
-	index_t status_report_list[CMD_STATUS_REPORT_LEN];
-	memset(status_report_list, 0, sizeof(status_report_list));
-
-	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if (((cmd = cmd->nx) == NULL) || (cmd->type == TYPE_EMPTY)) { break;}
-		if ((cmd->type == TYPE_BOOL) && (cmd->value == true)) {
-			status_report_list[i] = cmd->index;
-			cmd->value = cmd->index;			// persist the index as the value
-			cmd_persist(cmd);
-			elements++;
-		} else {
-			return (TG_INPUT_VALUE_UNSUPPORTED);
-		}
-	}
-	if (elements == 0) { return (TG_INPUT_VALUE_UNSUPPORTED);}
-	memcpy(cfg.status_report_list, status_report_list, sizeof(status_report_list));
-	rpt_populate_unfiltered_status_report();	// return current values
-	return (TG_OK);
 }
 
 static uint8_t _set_si(cmdObj_t *cmd) 

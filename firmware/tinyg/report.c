@@ -270,7 +270,6 @@ void rpt_print_system_ready_message(void)
 
 /* 
  * rpt_init_status_report()
- * rpt_set_status_report()
  *
  *	Call this function to completely re-initialze the status report
  *	Sets SR list to hard-coded defaults and re-initializes sr values in NVM
@@ -291,6 +290,35 @@ void rpt_init_status_report(uint8_t persist_flag)
 		cmd->index++;
 	}
 	cm.status_report_request = false;
+}
+
+/* 
+ * rpt_set_status_report() - interpret an sr set string and return current report
+ *
+ *	Call this function to completely re-initialze the status report
+ *	Sets SR list to hard-coded defaults and re-initializes sr values in NVM
+ */
+uint8_t rpt_set_status_report(cmdObj_t *cmd)
+{
+	uint8_t elements = 0;
+	index_t status_report_list[CMD_STATUS_REPORT_LEN];
+	memset(status_report_list, 0, sizeof(status_report_list));
+
+	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
+		if (((cmd = cmd->nx) == NULL) || (cmd->type == TYPE_EMPTY)) { break;}
+		if ((cmd->type == TYPE_BOOL) && (cmd->value == true)) {
+			status_report_list[i] = cmd->index;
+			cmd->value = cmd->index;			// persist the index as the value
+			cmd_persist(cmd);
+			elements++;
+		} else {
+			return (TG_INPUT_VALUE_UNSUPPORTED);
+		}
+	}
+	if (elements == 0) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	memcpy(cfg.status_report_list, status_report_list, sizeof(status_report_list));
+	rpt_populate_unfiltered_status_report();	// return current values
+	return (TG_OK);
 }
 
 /* 

@@ -30,8 +30,9 @@
 #include <avr/interrupt.h>
 
 #include "../tinyg.h"
-#include "../gpio.h"
+#include "../config.h"
 #include "../report.h"
+#include "../gpio.h"
 #include "xmega_rtc.h"
 
 /* 
