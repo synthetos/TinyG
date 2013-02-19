@@ -268,7 +268,9 @@ void rpt_print_system_ready_message(void)
  *	  - grbl compatibility forms are not yet supported.
  */
 
-/* rpt_init_status_report()
+/* 
+ * rpt_init_status_report()
+ * rpt_set_status_report()
  *
  *	Call this function to completely re-initialze the status report
  *	Sets SR list to hard-coded defaults and re-initializes sr values in NVM
@@ -359,7 +361,7 @@ void rpt_populate_unfiltered_status_report()
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
 		cmd_get_cmdObj(cmd);
-		strcpy(tmp, cmd->group);			// flatten out groups
+		strcpy(tmp, cmd->group);			// concatenate groups and tokens
 		strcat(tmp, cmd->token);
 		strcpy(cmd->token, tmp);
 		cmd = cmd->nx;

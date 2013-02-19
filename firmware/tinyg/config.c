@@ -550,7 +550,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "hom","homc",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[C], false },// C homed
 
 	// Reports, tests, help, and messages
-	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },		// status report object
+	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr , (double *)&tg.null, 0 },// status report object
 	{ "", "qr",  _f00, fmt_qr,  _print_int, _get_qr,  _set_nul, (double *)&tg.null, 0 },		// queue report setting
 	{ "", "er",  _f00, fmt_nul, _print_nul, _get_er,  _set_nul, (double *)&tg.null, 0 },		// invoke bogus exception report for testing
 	{ "", "rx",  _f00, fmt_rx,  _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },		// space in RX buffer
@@ -900,7 +900,6 @@ static uint8_t _get_rx(cmdObj_t *cmd)
 /**** REPORT FUNCTIONS ****
  * _get_sr()   - run status report
  * _print_sr() - run status report
- * _set_sr()   - set status report specification
  * _set_si()   - set status report interval
  * cmd_set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
  * cmd_set_tv() - set text verbosity level (exposed) - for details see textVerbosity in config.h
@@ -926,9 +925,8 @@ static uint8_t _set_sr(cmdObj_t *cmd)
 		if (((cmd = cmd->nx) == NULL) || (cmd->type == TYPE_EMPTY)) { break;}
 		if ((cmd->type == TYPE_BOOL) && (cmd->value == true)) {
 			status_report_list[i] = cmd->index;
-			cmd->value = cmd->index;	// persist the index as the value
+			cmd->value = cmd->index;			// persist the index as the value
 			cmd_persist(cmd);
-			cmd_get_cmdObj(cmd);		// this get will return the current value
 			elements++;
 		} else {
 			return (TG_INPUT_VALUE_UNSUPPORTED);
@@ -936,6 +934,7 @@ static uint8_t _set_sr(cmdObj_t *cmd)
 	}
 	if (elements == 0) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	memcpy(cfg.status_report_list, status_report_list, sizeof(status_report_list));
+	rpt_populate_unfiltered_status_report();	// return current values
 	return (TG_OK);
 }
 
