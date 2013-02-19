@@ -1550,17 +1550,18 @@ void cfg_init()
 			}
 		}
 	}
-	rpt_init_status_report(true);// requires special treatment (persist = true)
+	rpt_init_status_report(true);			// requires special treatment (persist = true)
 }
 
 static uint8_t _set_defa(cmdObj_t *cmd) 
 {
-	if (cmd->value != true) {		// failsafe. Must set true or no action occurs
+	if (cmd->value != true) {				// failsafe. Must set true or no action occurs
 		print_defaults_help(cmd);
 		return (TG_OK);
 	}
-	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
+	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
 	rpt_print_initializing_message();
+	rpt_init_status_report(true);			// reset status reports
 
 	for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
 		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
