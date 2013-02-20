@@ -2,7 +2,7 @@
  * spindle.c - canonical machine spindle driver
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -119,7 +119,7 @@ uint8_t cm_set_spindle_speed(double speed)
 //		return (TG_MAX_SPINDLE_SPEED_EXCEEDED);
 //	}
 	mp_queue_command(_exec_spindle_speed, 0, speed);
-    	return (TG_OK);
+    return (TG_OK);
 }
 static void _exec_spindle_speed(uint8_t i, double speed)
 {

@@ -2,7 +2,7 @@
  * xmega_init.h - general init and support functions for xmega family
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -34,5 +34,6 @@
  */
 
 void xmega_init(void);
+void CCPWrite( volatile uint8_t * address, uint8_t value );
 
 #endif

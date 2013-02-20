@@ -132,7 +132,7 @@ ENTER_BLINK_COUNT     = 3
 ENTER_BLINK_WAIT      = 30000
 
 # ENTER_UART
-#ENTER_UART_NEED_SYNC = yes
+ENTER_UART_NEED_SYNC = yes
 
 # ENTER_FIFO
 #ENTER_FIFO_NEED_SYNC = yes
@@ -152,9 +152,9 @@ WATCHDOG_TIMEOUT      = WDT_PER_1KCLK_gc
 #WATCHDOG_TIMEOUT      = WDT_PER_8KCLK_gc
 
 # LED
-LED_PORT_NAME         = A
-LED_PIN               = 7
-LED_INV               = 1
+LED_PORT_NAME         = F
+LED_PIN               = 5
+LED_INV               = 0
 
 # UART
 # Select BAUD rate, port name, and UART number

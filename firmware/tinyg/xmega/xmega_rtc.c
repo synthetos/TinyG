@@ -2,7 +2,7 @@
  * xmega_rtc.h - real-time counter/clock
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -30,8 +30,9 @@
 #include <avr/interrupt.h>
 
 #include "../tinyg.h"
-#include "../gpio.h"
+#include "../config.h"
 #include "../report.h"
+#include "../gpio.h"
 #include "xmega_rtc.h"
 
 /* 
@@ -56,6 +57,7 @@ void rtc_init()
 	RTC.INTCTRL = RTC_COMPINTLVL;						// interrupt on compare
 
 	rtc.clock_ticks = 0;								//  default RTC clock counter
+	rtc.magic_end = MAGICNUM;
 }
 
 /* 

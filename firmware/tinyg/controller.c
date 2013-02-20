@@ -31,8 +31,8 @@
 
 #include <ctype.h>				// for parsing
 #include <string.h>
-#include <stdio.h>				// precursor for xio.h
 #include <avr/pgmspace.h>		// precursor for xio.h
+#include <avr/interrupt.h>
 
 #include "tinyg.h"				// #1 unfortunately, there are some dependencies
 #include "config.h"				// #2
@@ -43,19 +43,24 @@
 #include "canonical_machine.h"
 #include "plan_arc.h"
 #include "planner.h"
-#include "report.h"
+#include "stepper.h"
 #include "system.h"
 #include "gpio.h"
+#include "report.h"
+#include "util.h"
 #include "help.h"
 #include "xio/xio.h"
+#include "xmega/xmega_rtc.h"
+#include "xmega/xmega_init.h"
 
 // local helpers
 static void _controller_HSM(void);
 static uint8_t _dispatch(void);
-static void _text_response(const uint8_t status, const char *buf);
-
-static uint8_t _shutdown_handler(void);
 static uint8_t _reset_handler(void);
+static uint8_t _bootloader_handler(void);
+static uint8_t _limit_switch_handler(void);
+static uint8_t _shutdown_idler(void);
+static uint8_t _system_assertions(void);
 static uint8_t _feedhold_handler(void);
 static uint8_t _cycle_start_handler(void);
 static uint8_t _sync_to_tx_buffer(void);
@@ -70,6 +75,9 @@ void tg_init(uint8_t default_src)
 	cfg.fw_build = TINYG_BUILD_NUMBER;
 	cfg.fw_version = TINYG_VERSION_NUMBER;
 	cfg.hw_version = TINYG_HARDWARE_VERSION;
+
+	tg.magic_start = MAGICNUM;
+	tg.magic_end = MAGICNUM;
 
 	tg.default_src = default_src;
 	xio_set_stdin(tg.default_src);
@@ -112,10 +120,13 @@ static void _controller_HSM()
 {
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
 											// Order is important:
-	DISPATCH(_reset_handler());				// 1. reset signal
-	DISPATCH(_shutdown_handler());			// 2. limit switch has been thrown
-	DISPATCH(_feedhold_handler());			// 3. feedhold signal
-	DISPATCH(_cycle_start_handler());		// 4. cycle start signal
+	DISPATCH(_reset_handler());				// 1. software reset received
+	DISPATCH(_bootloader_handler());		// 2. received ESC char to start bootloader
+	DISPATCH(_limit_switch_handler());		// 3. limit switch has been thrown
+	DISPATCH(_shutdown_idler());			// 4. idle in shutdown state
+	DISPATCH(_system_assertions());			// 5. system integrity assertions
+	DISPATCH(_feedhold_handler());			// 6. feedhold requested
+	DISPATCH(_cycle_start_handler());		// 7. cycle start requested
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report
@@ -132,51 +143,8 @@ static void _controller_HSM()
 	DISPATCH(_dispatch());					// read and execute next command
 }
 
-/*
- * _shutdown_handler()
- *
- *	Shutdown is triggered by an active limit switch firing. This causes the 
- *	canonical machine to run the shutdown functions and set the machine state 
- *	to MACHINE_SHUTDOWN.
- *
- *	Once shutdown occurs the only thing this handler does is blink an LED 
- *	(spindle CW/CCW LED). The system can only be cleared by performing a reset.
- *
- *	This function returns EAGAIN causing the control loop to never advance beyond
- *	this point. It's important that the reset handler is still called so a SW reset
- *	(ctrl-x) can be processed.
- */
-
-#define LED_COUNTER 100000
-
-static uint8_t _shutdown_handler(void)
-{
-	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
-
-	// first time through perform the shutdown
-	if (cm_get_machine_state() != MACHINE_SHUTDOWN) {
-		cm_shutdown();
-
-	// after that just flash the LED
-	} else {
-		if (--tg.led_counter < 0) {
-			tg.led_counter = LED_COUNTER;
-			if (tg.led_state == 0) {
-				gpio_led_on(INDICATOR_LED);
-				tg.led_state = 1;
-			} else {
-				gpio_led_off(INDICATOR_LED);
-				tg.led_state = 0;
-			}
-		}
-	}
-	return (TG_EAGAIN);	 // EAGAIN prevents any other actions from running
-}
-
-
 /***************************************************************************** 
- * _dispatch() 			- dispatch line read from active input device
- * _dispatch_return()	- perform returns and prompting for commands
+ * _dispatch() - dispatch line received from active input device
  *
  *	Reads next command line and dispatches to relevant parser or action
  *	Accepts commands if the move queue has room - EAGAINS if it doesn't
@@ -202,25 +170,22 @@ static uint8_t _dispatch()
 
 	// dispatch the new text line
 	switch (toupper(tg.in_buf[0])) {
-//		case '^': { sig_reset(); break; }		// debug char for reset tests
-//		case '@': { sig_feedhold(); break;}		// debug char for feedhold tests
-//		case '#': { sig_cycle_start(); break;}	// debug char for cycle start tests
 
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {
-				_text_response(TG_OK, tg.in_buf);
+				tg_text_response(TG_OK, tg.in_buf);
 			}
 			break;
 		}
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TEXT_MODE;
 			print_general_help();
-			_text_response(TG_OK, tg.in_buf);
+			tg_text_response(TG_OK, tg.in_buf);
 			break;
 		}
 		case '$': case '?':{ 					// text-mode configs
 			cfg.comm_mode = TEXT_MODE;
-			_text_response(cfg_text_parser(tg.in_buf), tg.in_buf);
+			tg_text_response(cfg_text_parser(tg.in_buf), tg.in_buf);
 			break;
 		}
 		case '{': { 							// JSON input
@@ -230,130 +195,28 @@ static uint8_t _dispatch()
 		}
 		default: {								// anything else must be Gcode
 			if (cfg.comm_mode == JSON_MODE) {
-				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN);	// use output buffer as a temp
-				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);
+				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN -8);	// use out_buf as temp
+				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);		// '-8' is used for JSON chars
 				js_json_parser(tg.in_buf);
 			} else {
-				_text_response(gc_gcode_parser(tg.in_buf), tg.in_buf);
+				tg_text_response(gc_gcode_parser(tg.in_buf), tg.in_buf);
 			}
 		}
 	}
 	return (TG_OK);
 }
 
-/**** System Prompts **************************************************************
- * tg_get_status_message()
- * _prompt_ok()
- * _prompt_error()
- */
-
-/* These strings must align with the status codes in tinyg.h
- * The number of elements in the indexing array must match the # of strings
- * Reference for putting display strings and string arrays in program memory:
- * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
- */
-static const char msg_sc00[] PROGMEM = "OK";
-static const char msg_sc01[] PROGMEM = "Error";
-static const char msg_sc02[] PROGMEM = "Eagain";
-static const char msg_sc03[] PROGMEM = "Noop";
-static const char msg_sc04[] PROGMEM = "Complete";
-static const char msg_sc05[] PROGMEM = "Terminated";
-static const char msg_sc06[] PROGMEM = "Hard reset";
-static const char msg_sc07[] PROGMEM = "End of line";
-static const char msg_sc08[] PROGMEM = "End of file";
-static const char msg_sc09[] PROGMEM = "File not open";
-static const char msg_sc10[] PROGMEM = "Max file size exceeded";
-static const char msg_sc11[] PROGMEM = "No such device";
-static const char msg_sc12[] PROGMEM = "Buffer empty";
-static const char msg_sc13[] PROGMEM = "Buffer full";
-static const char msg_sc14[] PROGMEM = "Buffer full - fatal";
-static const char msg_sc15[] PROGMEM = "Initializing";
-static const char msg_sc16[] PROGMEM = "#16";
-static const char msg_sc17[] PROGMEM = "#17";
-static const char msg_sc18[] PROGMEM = "#18";
-static const char msg_sc19[] PROGMEM = "#19";
-
-static const char msg_sc20[] PROGMEM = "Internal error";
-static const char msg_sc21[] PROGMEM = "Internal range error";
-static const char msg_sc22[] PROGMEM = "Floating point error";
-static const char msg_sc23[] PROGMEM = "Divide by zero";
-static const char msg_sc24[] PROGMEM = "#24";
-static const char msg_sc25[] PROGMEM = "#25";
-static const char msg_sc26[] PROGMEM = "#26";
-static const char msg_sc27[] PROGMEM = "#27";
-static const char msg_sc28[] PROGMEM = "#28";
-static const char msg_sc29[] PROGMEM = "#29";
-static const char msg_sc30[] PROGMEM = "#30";
-static const char msg_sc31[] PROGMEM = "#31";
-static const char msg_sc32[] PROGMEM = "#32";
-static const char msg_sc33[] PROGMEM = "#33";
-static const char msg_sc34[] PROGMEM = "#34";
-static const char msg_sc35[] PROGMEM = "#35";
-static const char msg_sc36[] PROGMEM = "#36";
-static const char msg_sc37[] PROGMEM = "#37";
-static const char msg_sc38[] PROGMEM = "#38";
-static const char msg_sc39[] PROGMEM = "#39";
-
-static const char msg_sc40[] PROGMEM = "Unrecognized command";
-static const char msg_sc41[] PROGMEM = "Expected command letter";
-static const char msg_sc42[] PROGMEM = "Bad number format";
-static const char msg_sc43[] PROGMEM = "Input exceeds max length";
-static const char msg_sc44[] PROGMEM = "Input value too small";
-static const char msg_sc45[] PROGMEM = "Input value too large";
-static const char msg_sc46[] PROGMEM = "Input value range error";
-static const char msg_sc47[] PROGMEM = "Input value unsupported";
-static const char msg_sc48[] PROGMEM = "JSON syntax error";
-static const char msg_sc49[] PROGMEM = "JSON input has too many pairs";
-static const char msg_sc50[] PROGMEM = "Out of buffer space";
-static const char msg_sc51[] PROGMEM = "#51";
-static const char msg_sc52[] PROGMEM = "#52";
-static const char msg_sc53[] PROGMEM = "#53";
-static const char msg_sc54[] PROGMEM = "#54";
-static const char msg_sc55[] PROGMEM = "#55";
-static const char msg_sc56[] PROGMEM = "#56";
-static const char msg_sc57[] PROGMEM = "#57";
-static const char msg_sc58[] PROGMEM = "#58";
-static const char msg_sc59[] PROGMEM = "#59";
-
-static const char msg_sc60[] PROGMEM = "Zero length move";
-static const char msg_sc61[] PROGMEM = "Gcode block skipped";
-static const char msg_sc62[] PROGMEM = "Gcode input error";
-static const char msg_sc63[] PROGMEM = "Gcode feedrate error";
-static const char msg_sc64[] PROGMEM = "Gcode axis word missing";
-static const char msg_sc65[] PROGMEM = "Gcode modal group violation";
-static const char msg_sc66[] PROGMEM = "Homing cycle failed";
-static const char msg_sc67[] PROGMEM = "Max travel exceeded";
-static const char msg_sc68[] PROGMEM = "Max spindle speed exceeded";
-static const char msg_sc69[] PROGMEM = "Arc specification error";
-
-PGM_P const msgStatusMessage[] PROGMEM = {
-	msg_sc00, msg_sc01, msg_sc02, msg_sc03, msg_sc04, msg_sc05, msg_sc06, msg_sc07, msg_sc08, msg_sc09,
-	msg_sc10, msg_sc11, msg_sc12, msg_sc13, msg_sc14, msg_sc15, msg_sc16, msg_sc17, msg_sc18, msg_sc19,
-	msg_sc20, msg_sc21, msg_sc22, msg_sc23, msg_sc24, msg_sc25, msg_sc26, msg_sc27, msg_sc28, msg_sc29,
-	msg_sc30, msg_sc31, msg_sc32, msg_sc33, msg_sc34, msg_sc35, msg_sc36, msg_sc37, msg_sc38, msg_sc39,
-	msg_sc40, msg_sc41, msg_sc42, msg_sc43, msg_sc44, msg_sc45, msg_sc46, msg_sc47, msg_sc48, msg_sc49,
-	msg_sc50, msg_sc51, msg_sc52, msg_sc53, msg_sc54, msg_sc55, msg_sc56, msg_sc57, msg_sc58, msg_sc59,
-	msg_sc60, msg_sc61, msg_sc62, msg_sc63, msg_sc64, msg_sc65, msg_sc66, msg_sc67, msg_sc68, msg_sc69
-};
-
-
-char *tg_get_status_message(uint8_t status, char *msg) 
-{
-	strncpy_P(msg,(PGM_P)pgm_read_word(&msgStatusMessage[status]), STATUS_MESSAGE_LEN);
-	return (msg);
-}
-
 /************************************************************************************
- * _text_response() - text mode responses
+ * tg_text_response() - text mode responses
  *
  *	Outputs prompt, status and message strings
  */
 static const char prompt_mm[] PROGMEM = "mm";
 static const char prompt_in[] PROGMEM = "inch";
 static const char prompt_ok[] PROGMEM = "tinyg [%S] ok> ";
-static const char prompt_err[] PROGMEM = "tinyg [%S] error: %S %s\n";
+static const char prompt_err[] PROGMEM = "tinyg [%S] error: %s %s\n";
 
-static void _text_response(const uint8_t status, const char *buf)
+void tg_text_response(const uint8_t status, const char *buf)
 {
 	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
 
@@ -364,7 +227,8 @@ static void _text_response(const uint8_t status, const char *buf)
 	if ((status == TG_OK) || (status == TG_EAGAIN) || (status == TG_NOOP) || (status == TG_ZERO_LENGTH_MOVE)) {
 		fprintf_P(stderr, (PGM_P)&prompt_ok, Units);
 	} else {
-		fprintf_P(stderr, (PGM_P)prompt_err, Units, (PGM_P)pgm_read_word(&msgStatusMessage[status]), buf);
+		char status_message[STATUS_MESSAGE_LEN];
+		fprintf_P(stderr, (PGM_P)prompt_err, Units, rpt_get_status_message(status, status_message), buf);
 	}
 
 	// deliver echo and messages
@@ -372,72 +236,6 @@ static void _text_response(const uint8_t status, const char *buf)
 	if ((cfg.text_verbosity >= TV_MESSAGES) && (cmd->token[0] == 'm')) {
 		fprintf(stderr, "%s\n", *cmd->stringp);
 	}
-}
-
-/**** Application Messages *********************************************************
- * tg_print_message()        - print a character string passed as argument
- * tg_print_message_value()  - print a message with a value
- * tg_print_message_number() - print a canned message by number
- *
- * tg_print_loading_configs_message()
- * tg_print_initializing_message()
- * tg_print_system_ready_message()
- */
-
-void tg_print_message(char *msg)
-{
-	cmd_add_string("msg", msg);
-	cmd_print_list(TG_OK, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
-}
-/*
-void tg_print_message_value(char *msg, double value)
-{
-	cmd_add_string("msg", msg);
-	cmd_add_float("v", value);
-	cmd_print_list(TG_OK, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
-}
-*/
-/*
-void tg_print_message_number(uint8_t msgnum) 
-{
-	char msg[APPLICATION_MESSAGE_LEN];
-	strncpy_P(msg,(PGM_P)pgm_read_word(&msgApplicationMessage[msgnum]), APPLICATION_MESSAGE_LEN);
-	tg_print_message(msg);
-}
-*/
-
-void tg_print_loading_configs_message(void)
-{
-#ifndef __SUPPRESS_STARTUP_MESSAGES
-	cmd_reset_list();
-	cmd_add_object("fv");
-	cmd_add_object("fb");
-	cmd_add_string_P("msg", PSTR("Loading configs from EEPROM"));
-	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
-#endif
-}
-
-void tg_print_initializing_message(void)
-{
-#ifndef __SUPPRESS_STARTUP_MESSAGES
-	cmd_reset_list();
-	cmd_add_object("fv");
-	cmd_add_object("fb");
-	cmd_add_string_P("msg", PSTR(INIT_CONFIGURATION_MESSAGE)); // see settings.h & sub-headers
-	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
-#endif
-}
-
-void tg_print_system_ready_message(void)
-{
-#ifndef __SUPPRESS_STARTUP_MESSAGES
-	cmd_reset_list();
-	cmd_add_object("fv");
-	cmd_add_object("fb");
-	cmd_add_string_P("msg", PSTR("SYSTEM READY"));
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
-#endif
-	if (cfg.comm_mode == TEXT_MODE) { _text_response(TG_OK, "");}// prompt
 }
 
 /**** Utilities ****
@@ -479,6 +277,7 @@ void tg_set_active_source(uint8_t dev)
 
 /**** Signal handlers ****
  * _reset_handler()
+ * _bootloader_handler()
  * _feedhold_handler()
  * _cycle_start_handler()
  */
@@ -490,6 +289,27 @@ static uint8_t _reset_handler(void)
 	tg_reset();							// hard reset - identical to hitting RESET button
 	return (TG_EAGAIN);
 }
+
+static uint8_t _bootloader_handler(void)
+{
+	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
+	cli();
+	asm("jmp 0x030000");
+	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
+}
+
+/*
+static uint8_t _bootloader_handler(void)
+{
+	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
+//	sig.sig_request_bootloader = false;
+	asm("jmp 0x030000");
+//	CCPWrite( &RST.CTRL, RST_SWRST_bm );
+//	CCP = CCP_IOREG_gc;
+//	RST.CTRL = RST_SWRST_bm;
+	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
+}
+*/
 
 static uint8_t _feedhold_handler(void)
 {
@@ -505,4 +325,73 @@ static uint8_t _cycle_start_handler(void)
 	sig.sig_cycle_start = false;
 	cm_cycle_start();
 	return (TG_EAGAIN);					// best to restart the control loop
+}
+
+/*
+ * _limit_switch_handler() - shut down system if limit switch fired
+ */
+static uint8_t _limit_switch_handler(void)
+{
+	if (cm_get_machine_state() == MACHINE_SHUTDOWN) { return (TG_NOOP);}
+	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
+	cm_shutdown();
+	return (TG_OK);
+}
+
+/* 
+ * _shutdown_idler() - revent any further activity form occurring if shut down
+ *
+ *	This function returns EAGAIN causing the control loop to never advance beyond
+ *	this point. It's important that the reset handler is still called so a SW reset
+ *	(ctrl-x) can be processed.
+ */
+#define LED_COUNTER 100000
+
+static uint8_t _shutdown_idler(void)
+{
+	if (cm_get_machine_state() != MACHINE_SHUTDOWN) { return (TG_OK);}
+
+	if (--tg.led_counter < 0) {
+		tg.led_counter = LED_COUNTER;
+		if (tg.led_state == 0) {
+			gpio_led_on(INDICATOR_LED);
+			tg.led_state = 1;
+		} else {
+			gpio_led_off(INDICATOR_LED);
+			tg.led_state = 0;
+		}
+	}
+	return (TG_EAGAIN);	 // EAGAIN prevents any other actions from running
+}
+
+/* 
+ * _system_assertions() - check memory integrity and other assertions
+ */
+uint8_t _system_assertions()
+{
+	uint8_t value = 0;
+
+	if (tg.magic_start		!= MAGICNUM) { value = 1; }
+	if (tg.magic_end		!= MAGICNUM) { value = 2; }
+	if (cm.magic_start 		!= MAGICNUM) { value = 3; }
+	if (cm.magic_end		!= MAGICNUM) { value = 4; }
+	if (gm.magic_start		!= MAGICNUM) { value = 5; }
+	if (gm.magic_end 		!= MAGICNUM) { value = 6; }
+	if (cfg.magic_start		!= MAGICNUM) { value = 7; }
+	if (cfg.magic_end		!= MAGICNUM) { value = 8; }
+	if (cmdStr.magic_start	!= MAGICNUM) { value = 9; }
+	if (cmdStr.magic_end	!= MAGICNUM) { value = 10; }
+	if (mb.magic_start		!= MAGICNUM) { value = 11; }
+	if (mb.magic_end		!= MAGICNUM) { value = 12; }
+	if (mr.magic_start		!= MAGICNUM) { value = 13; }
+	if (mr.magic_end		!= MAGICNUM) { value = 14; }
+	if (st_get_st_magic()	!= MAGICNUM) { value = 15; }
+	if (st_get_sps_magic()	!= MAGICNUM) { value = 16; }
+	if (rtc.magic_end 		!= MAGICNUM) { value = 17; }
+	xio_assertions(&value);									// run xio assertions
+
+	if (value == 0) { return (TG_OK);}
+	rpt_exception(TG_MEMORY_CORRUPTION, value);
+	cm_shutdown();
+	return (TG_EAGAIN);
 }

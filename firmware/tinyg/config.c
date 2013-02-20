@@ -31,29 +31,30 @@
  *	The config system provides a structured way to access and set configuration variables.
  *	It also provides a way to get an arbitrary variable for reporting. Config operates
  *	as a collection of "objects" (OK, so they are not really objects) that encapsulate
- *	each variable. The objects are collected into a list (the body), which also has  
+ *	each variable. The objects are collected into a list (the body), which also may have  
  *	header and footer objects. This way the internals don't care about how the variable
  *	is represented or communicated externally as all operations occur on the cmdObj list. 
  *	The list is populated by the text_parser or the JSON_parser depending on the mode.
  *	The lists are also used for responses and are read out (printed) by a text-mode or
- *	JSON print function.
+ *	JSON serialization function.
  */
 /*	--- Config variables, tables and strings ---
  *
  *	Each configuration value is identified by a short mnemonic string (token). The token 
  *	is resolved to an index into the cfgArray which is an array of structures with the 
- *	static assignments for each variable. The array is organized as:
+ *	static assignments for each variable. The cfgArray contains typed data in program 
+ *	memory (PROGMEM).
  * 
- *	- cfgArray contains typed data in program memory (PROGMEM). Each cfgItem has:
- *		- group string identifying what group the variable is part of (if any)
- *		- token string - the token for that variable - pre-pended with the group (if any)
- *		- operations flags - flag if the value should be initialized and/or persisted to NVM
- *		- pointer to a formatted print string also in program memory (Used only for text mode)
- *		- function pointer for formatted print() method or text-mode readouts
- *		- function pointer for get() method - gets values from memory
- *		- function pointer for set() method - sets values and runs functions
- *		- target - memory location that the value is written to / read from
- *		- default value - for cold initialization
+ *	Each cfgItem has:
+ *	 - group string identifying what group the variable is part of; or "" if no group
+ *	 - token string - the token for that variable - pre-pended with the group (if present)
+ *	 - operations flags - e.g. if the value should be initialized and/or persisted to NVM
+ *	 - pointer to a formatted print string also in program memory (Used only for text mode)
+ *	 - function pointer for formatted print() method for text-mode readouts
+ *	 - function pointer for get() method - gets value from memory
+ *	 - function pointer for set() method - sets value and runs functions
+ *	 - target - memory location that the value is written to / read from
+ *	 - default value - for cold initialization
  *
  *	Additionally an NVM array contains values persisted to EEPROM as doubles; indexed by cfgArray index
  *
@@ -210,7 +211,6 @@ static void _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]); // help
  *****************************************************************************/
 
 // parameter-specific internal functions
-//static uint8_t _get_id(cmdObj_t *cmd);	// get device ID (signature)
 static uint8_t _set_hv(cmdObj_t *cmd);		// set hardware version
 static uint8_t _get_sr(cmdObj_t *cmd);		// run status report (as data)
 static void _print_sr(cmdObj_t *cmd);		// run status report (as printout)
@@ -218,6 +218,7 @@ static uint8_t _set_sr(cmdObj_t *cmd);		// set status report specification
 static uint8_t _set_si(cmdObj_t *cmd);		// set status report interval
 static uint8_t _get_id(cmdObj_t *cmd);		// get device ID
 static uint8_t _get_qr(cmdObj_t *cmd);		// run queue report (as data)
+static uint8_t _get_er(cmdObj_t *cmd);		// invoke a bogus exception report for testing purposes
 static uint8_t _get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 
 static uint8_t _get_gc(cmdObj_t *cmd);		// get current gcode block
@@ -241,7 +242,9 @@ static uint8_t _get_frmo(cmdObj_t *cmd);	// get feedrate mode...
 static uint8_t _get_vel(cmdObj_t *cmd);		// get runtime velocity...
 static uint8_t _get_pos(cmdObj_t *cmd);		// get runtime work position...
 static uint8_t _get_mpos(cmdObj_t *cmd);	// get runtime machine position...
-static void _print_pos(cmdObj_t *cmd);		// print runtime work position...
+static uint8_t _get_ofs(cmdObj_t *cmd);		// get runtime work offset...
+static void _print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
+static void _print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
 
 static uint8_t _set_defa(cmdObj_t *cmd);	// reset config to default values
 
@@ -249,7 +252,6 @@ static uint8_t _set_sa(cmdObj_t *cmd);		// set motor step angle
 static uint8_t _set_tr(cmdObj_t *cmd);		// set motor travel per revolution
 static uint8_t _set_mi(cmdObj_t *cmd);		// set microsteps
 static uint8_t _set_po(cmdObj_t *cmd);		// set motor polarity
-static uint8_t _set_motor_steps_per_unit(cmdObj_t *cmd);
 
 static uint8_t _get_am(cmdObj_t *cmd);		// get axis mode
 static uint8_t _set_am(cmdObj_t *cmd);		// set axis mode
@@ -394,7 +396,7 @@ static const char fmt_ma[] PROGMEM = "[ma]  min arc segment%18.3f%S\n";
 static const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%16.3f%S\n";
 static const char fmt_mt[] PROGMEM = "[mt]  min segment time%13.0f uSec\n";
 static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0=NO,1=NC]\n";
-static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms [0=off]\n";
+static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms\n";
 static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX%8d [0,1=CR,2=LF]\n";
 static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0,1]\n";
 static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0,1]\n";
@@ -426,24 +428,11 @@ static const char fmt_plan[] PROGMEM = "Plane:               %s\n";
 static const char fmt_path[] PROGMEM = "Path Mode:           %s\n";
 static const char fmt_dist[] PROGMEM = "Distance mode:       %s\n";
 static const char fmt_frmo[] PROGMEM = "Feed rate mode:      %s\n";
-static const char fmt_posx[] PROGMEM = "X position:%15.3f%S\n";
-static const char fmt_posy[] PROGMEM = "Y position:%15.3f%S\n";
-static const char fmt_posz[] PROGMEM = "Z position:%15.3f%S\n";
-static const char fmt_posa[] PROGMEM = "A position:%15.3f%S\n";
-static const char fmt_posb[] PROGMEM = "B position:%15.3f%S\n";
-static const char fmt_posc[] PROGMEM = "C position:%15.3f%S\n";
-static const char fmt_mpox[] PROGMEM = "X machine posn:%11.3f%S\n";
-static const char fmt_mpoy[] PROGMEM = "Y machine posn:%11.3f%S\n";
-static const char fmt_mpoz[] PROGMEM = "Z machine posn:%11.3f%S\n";
-static const char fmt_mpoa[] PROGMEM = "A machine posn:%11.3f%S\n";
-static const char fmt_mpob[] PROGMEM = "B machine posn:%11.3f%S\n";
-static const char fmt_mpoc[] PROGMEM = "C machine posn:%11.3f%S\n";
-static const char fmt_homx[] PROGMEM = "X axis homed:%9d\n";
-static const char fmt_homy[] PROGMEM = "Y axis homed:%9d\n";
-static const char fmt_homz[] PROGMEM = "Z axis homed:%9d\n";
-static const char fmt_homa[] PROGMEM = "A axis homed:%9d\n";
-static const char fmt_homb[] PROGMEM = "B axis homed:%9d\n";
-static const char fmt_homc[] PROGMEM = "C axis homed:%9d\n";
+
+static const char fmt_pos[]  PROGMEM = "%c position:%15.3f%S\n";
+static const char fmt_mpos[] PROGMEM = "%c machine posn:%11.3f%S\n";
+static const char fmt_ofs[]  PROGMEM = "%c work offset:%12.3f%S\n";
+static const char fmt_hom[]  PROGMEM = "%c axis homed:%9.0f\n";
 
 // Motor print formatting strings
 static const char fmt_0ma[] PROGMEM = "[%s%s] m%s map to axis%15d [0=X, 1=Y...]\n";
@@ -467,6 +456,7 @@ static const char fmt_Xsv[] PROGMEM = "[%s%s] %s search velocity%16.3f%S/min\n";
 static const char fmt_Xlv[] PROGMEM = "[%s%s] %s latch velocity%17.3f%S/min\n";
 static const char fmt_Xlb[] PROGMEM = "[%s%s] %s latch backoff%18.3f%S\n";
 static const char fmt_Xzb[] PROGMEM = "[%s%s] %s zero backoff%19.3f%S\n";
+static const char fmt_Xjh[] PROGMEM = "[%s%s] %s jerk homing%16.0f%S/min^3\n";
 
 // PWM strings
 static const char fmt_p1frq[] PROGMEM = "[p1frq] pwm frequency   %15.3f Hz\n";
@@ -529,29 +519,40 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "path",_f00,fmt_path,_print_str, _get_path,_set_nul,(double *)&tg.null, 0 },		// path control mode
 	{ "",   "dist",_f00,fmt_dist,_print_str, _get_dist,_set_nul,(double *)&tg.null, 0 },		// distance mode
 	{ "",   "frmo",_f00,fmt_frmo,_print_str, _get_frmo,_set_nul,(double *)&tg.null, 0 },		// feed rate mode
-	{ "pos","posx",_fns,fmt_posx,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// X position
-	{ "pos","posy",_fns,fmt_posy,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Y position
-	{ "pos","posz",_fns,fmt_posz,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Z position
-	{ "pos","posa",_fns,fmt_posa,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// A position
-	{ "pos","posb",_fns,fmt_posb,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// B position
-	{ "pos","posc",_fns,fmt_posc,_print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// C position
-	{ "mpo","mpox",_fns,fmt_mpox,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// X machine position
-	{ "mpo","mpoy",_fns,fmt_mpoy,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Y machine position
-	{ "mpo","mpoz",_fns,fmt_mpoz,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Z machine position
-	{ "mpo","mpoa",_fns,fmt_mpoa,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// A machine position
-	{ "mpo","mpob",_fns,fmt_mpob,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// B machine position
-	{ "mpo","mpoc",_fns,fmt_mpoc,_print_pos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// C machine position
-	{ "hom","home",_fns,fmt_home,_print_str, _get_home,_run_home,(double *)&tg.null, 0 },		// homing state, invoke homing cycle
-	{ "hom","homx",_fns,fmt_homx,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[X], false },// X homed - Homing status group
-	{ "hom","homy",_fns,fmt_homy,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[Y], false },// Y homed
-	{ "hom","homz",_fns,fmt_homz,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[Z], false },// Z homed
-	{ "hom","homa",_fns,fmt_homa,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[A], false },// A homed
-	{ "hom","homb",_fns,fmt_homb,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[B], false },// B homed
-	{ "hom","homc",_fns,fmt_homc,_print_int, _get_ui8, _set_nul,(double *)&cm.homed[C], false },// C homed
+
+	{ "mpo","mpox",_f00,fmt_mpos,_print_mpos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// X machine position
+	{ "mpo","mpoy",_f00,fmt_mpos,_print_mpos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Y machine position
+	{ "mpo","mpoz",_f00,fmt_mpos,_print_mpos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Z machine position
+	{ "mpo","mpoa",_f00,fmt_mpos,_print_mpos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// A machine position
+	{ "mpo","mpob",_f00,fmt_mpos,_print_mpos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// B machine position
+	{ "mpo","mpoc",_f00,fmt_mpos,_print_mpos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// C machine position
+
+	{ "pos","posx",_f00,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// X work position
+	{ "pos","posy",_f00,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Y work position
+	{ "pos","posz",_f00,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// Z work position
+	{ "pos","posa",_f00,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// A work position
+	{ "pos","posb",_f00,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// B work position
+	{ "pos","posc",_f00,fmt_pos, _print_pos, _get_pos, _set_nul,(double *)&tg.null, 0 },		// C work position
+
+	{ "ofs","ofsx",_f00,fmt_ofs, _print_mpos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// X work offset
+	{ "ofs","ofsy",_f00,fmt_ofs, _print_mpos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// Y work offset
+	{ "ofs","ofsz",_f00,fmt_ofs, _print_mpos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// Z work offset
+	{ "ofs","ofsa",_f00,fmt_ofs, _print_mpos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// A work offset 
+	{ "ofs","ofsb",_f00,fmt_ofs, _print_mpos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// B work offset 
+	{ "ofs","ofsc",_f00,fmt_ofs, _print_mpos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// C work offset
+
+	{ "hom","home",_f00,fmt_hom, _print_str, _get_home,_run_home,(double *)&tg.null, 0 },		// homing state, invoke homing cycle
+	{ "hom","homx",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[X], false },// X homed - Homing status group
+	{ "hom","homy",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[Y], false },// Y homed
+	{ "hom","homz",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[Z], false },// Z homed
+	{ "hom","homa",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[A], false },// A homed
+	{ "hom","homb",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[B], false },// B homed
+	{ "hom","homc",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[C], false },// C homed
 
 	// Reports, tests, help, and messages
-	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr,  (double *)&tg.null, 0 },		// status report object
+	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr , (double *)&tg.null, 0 },// status report object
 	{ "", "qr",  _f00, fmt_qr,  _print_int, _get_qr,  _set_nul, (double *)&tg.null, 0 },		// queue report setting
+	{ "", "er",  _f00, fmt_nul, _print_nul, _get_er,  _set_nul, (double *)&tg.null, 0 },		// invoke bogus exception report for testing
 	{ "", "rx",  _f00, fmt_rx,  _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },		// space in RX buffer
 	{ "", "msg", _f00, fmt_str, _print_str, _get_nul, _set_nul, (double *)&tg.null, 0 },		// string for generic messages
 	{ "", "test",_f00, fmt_nul, _print_nul, print_test_help, tg_test, (double *)&tg.test,0 },	// prints test help screen
@@ -602,6 +603,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "x","xlv",_fip, fmt_Xlv, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_velocity,	X_LATCH_VELOCITY },
 	{ "x","xlb",_fip, fmt_Xlb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_backoff,	X_LATCH_BACKOFF },
 	{ "x","xzb",_fip, fmt_Xzb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].zero_backoff,		X_ZERO_BACKOFF },
+	{ "x","xjh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].jerk_homing,		X_JERK_HOMING },
 
 	{ "y","yam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[Y].axis_mode,		Y_AXIS_MODE },
 	{ "y","yvm",_fip, fmt_Xvm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].velocity_max,		Y_VELOCITY_MAX },
@@ -615,6 +617,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "y","ylv",_fip, fmt_Xlv, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_velocity,	Y_LATCH_VELOCITY },
 	{ "y","ylb",_fip, fmt_Xlb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_backoff,	Y_LATCH_BACKOFF },
 	{ "y","yzb",_fip, fmt_Xzb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].zero_backoff,		Y_ZERO_BACKOFF },
+	{ "y","yjh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].jerk_homing,		Y_JERK_HOMING },
 
 	{ "z","zam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[Z].axis_mode,		Z_AXIS_MODE },
 	{ "z","zvm",_fip, fmt_Xvm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].velocity_max,	 	Z_VELOCITY_MAX },
@@ -628,6 +631,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "z","zlv",_fip, fmt_Xlv, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_velocity,	Z_LATCH_VELOCITY },
 	{ "z","zlb",_fip, fmt_Xlb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_backoff,	Z_LATCH_BACKOFF },
 	{ "z","zzb",_fip, fmt_Xzb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].zero_backoff,		Z_ZERO_BACKOFF },
+	{ "z","zjh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].jerk_homing,		Z_JERK_HOMING },
 
 	{ "a","aam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[A].axis_mode,		A_AXIS_MODE },
 	{ "a","avm",_fip, fmt_Xvm, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].velocity_max,	 	A_VELOCITY_MAX },
@@ -642,6 +646,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "a","alv",_fip, fmt_Xlv, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_velocity,	A_LATCH_VELOCITY },
 	{ "a","alb",_fip, fmt_Xlb, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_backoff,	A_LATCH_BACKOFF },
 	{ "a","azb",_fip, fmt_Xzb, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].zero_backoff,		A_ZERO_BACKOFF },
+	{ "a","ajh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[A].jerk_homing,		A_JERK_HOMING },
 
 	{ "b","bam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[B].axis_mode,		B_AXIS_MODE },
 	{ "b","bvm",_fip, fmt_Xvm, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].velocity_max,	 	B_VELOCITY_MAX },
@@ -818,8 +823,9 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","g92",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// origin offsets
 	{ "","g28",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// g28 home position
 	{ "","g30",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// g30 home position
+	{ "","mpo",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// machine position group
 	{ "","pos",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// work position group
-	{ "","mpo",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// machine pposition group
+	{ "","ofs",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// work offset group
 	{ "","hom",_f00, fmt_nul, _print_nul, _get_grp, _set_grp,(double *)&tg.null,0 },	// axis homing state group
 
 	// Uber-group (groups of groups, for text-mode displays only)
@@ -830,7 +836,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "$", _f00, fmt_nul, _print_nul, _do_all,    _set_nul,(double *)&tg.null,0 }
 };
 
-#define CMD_COUNT_GROUPS 		24		// count of simple groups
+#define CMD_COUNT_GROUPS 		25		// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 		// count of uber-groups
 
 #define CMD_INDEX_MAX (sizeof cfgArray / sizeof(cfgItem_t))
@@ -847,11 +853,9 @@ const cfgItem_t cfgArray[] PROGMEM = {
 //index_t cmd_get_max_index() { return (CMD_INDEX_MAX);}
 uint8_t cmd_index_is_group(index_t index) { return _index_is_group(index);}
 
-/**** Versions, IDs, and simple reports  ****
+/**** SYSTEM VARIABLES: Versions and IDs **************************************
  * _set_hv() - set hardweare version number
  * _get_id() - get device ID (signature)
- * _get_qr() - run queue report
- * _get_rx() - get bytes available in RX buffer
  */
 static uint8_t _set_hv(cmdObj_t *cmd) 
 {
@@ -870,10 +874,27 @@ static uint8_t _get_id(cmdObj_t *cmd)
 	return (TG_OK);
 }
 
+/**** REPORT FUNCTIONS ********************************************************
+ * _get_qr() 	- run queue report
+ * _get_er()	- invoke a bogus exception report for testing purposes (it's not real)
+ * _get_rx()	- get bytes available in RX buffer
+ * _get_sr()	- run status report
+ * _set_sr()	- set status report elements
+ * _print_sr()	- print multiline text status report
+ * _set_si()	- set status report interval
+ * cmd_set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
+ * cmd_set_tv() - set text verbosity level (exposed) - for details see textVerbosity in config.h
+ */
 static uint8_t _get_qr(cmdObj_t *cmd) 
 {
 	cmd->value = (double)mp_get_planner_buffers_available();
 	cmd->type = TYPE_INTEGER;
+	return (TG_OK);
+}
+
+static uint8_t _get_er(cmdObj_t *cmd) 
+{
+	rpt_exception(TG_INTERNAL_ERROR, 42);	// bogus exception report
 	return (TG_OK);
 }
 
@@ -884,18 +905,15 @@ static uint8_t _get_rx(cmdObj_t *cmd)
 	return (TG_OK);
 }
 
-/**** REPORT FUNCTIONS ****
- * _get_sr()   - run status report
- * _print_sr() - run status report
- * _set_sr()   - set status report specification
- * _set_si()   - set status report interval
- * cmd_set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
- * cmd_set_tv() - set text verbosity level (exposed) - for details see textVerbosity in config.h
- */
 static uint8_t _get_sr(cmdObj_t *cmd)
 {
 	rpt_populate_unfiltered_status_report();
 	return (TG_OK);
+}
+
+static uint8_t _set_sr(cmdObj_t *cmd)
+{
+	return (rpt_set_status_report(cmd));
 }
 
 static void _print_sr(cmdObj_t *cmd)
@@ -903,35 +921,9 @@ static void _print_sr(cmdObj_t *cmd)
 	rpt_populate_unfiltered_status_report();
 }
 
-static uint8_t _set_sr(cmdObj_t *cmd)
-{
-	memset(cfg.status_report_list, 0 , sizeof(cfg.status_report_list));
-
-	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if (((cmd = cmd->nx) == NULL) || (cmd->type == TYPE_EMPTY)) break;
-		if ((cmd->type == TYPE_BOOL) && (cmd->value == true)) {
-			cfg.status_report_list[i] = cmd->index;
-			cmd->value = cmd->index;	// persist the index as the value
-			cmd_persist(cmd);
-			cmd_get_cmdObj(cmd);		// this get will return the current value		
-		}
-	}
-/*
-	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if ((cmd = cmd->nx) == NULL) break;
-		cfg.status_report_list[i] = cmd->index;
-		cmd->value = cmd->index;	// you want to persist the index as the value
-		cmd_persist(cmd);
-	}
-*/
-	return (TG_OK);
-}
-
 static uint8_t _set_si(cmdObj_t *cmd) 
 {
-	if ((cmd->value < STATUS_REPORT_MIN_MS) && (cmd->value!=0)) {
-		cmd->value = STATUS_REPORT_MIN_MS;
-	}
+	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
 	cfg.status_report_interval = (uint32_t)cmd->value;
 	return(TG_OK);
 }
@@ -992,7 +984,9 @@ uint8_t cmd_set_tv(cmdObj_t *cmd)
  * _get_vel()  - get runtime velocity
  * _get_pos()  - get runtime work position
  * _get_mpos() - get runtime machine position
- * _print_pos()- print work or machine position
+ * _get_ofs()  - get runtime work offset
+ * _print_pos()- print work position (with proper units)
+ * _print_mpos()- print machine position (always mm units)
  */
 static uint8_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value)
 {
@@ -1105,22 +1099,38 @@ static uint8_t _get_mpos(cmdObj_t *cmd)
 	return (TG_OK);
 }
 
-static void _print_pos(cmdObj_t *cmd)
+static uint8_t _get_ofs(cmdObj_t *cmd) 
 {
-	cmd_get(cmd);
-	uint8_t axis = _get_pos_axis(cmd->index);
-	uint8_t units = DEGREES;	// rotary
-	char format[CMD_FORMAT_LEN+1];
-	if (axis < A) { units = cm_get_units_mode();}
-	fprintf(stderr, _get_format(cmd->index,format), cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
+	cmd->value = cm_get_runtime_work_offset(_get_pos_axis(cmd->index));
+	cmd->type = TYPE_FLOAT;
+	return (TG_OK);
 }
 
-/**** GCODE AND RELATED FUNCTIONS ****************************************/
-/* _get_gc()	- get gcode block
+static void _print_pos_helper(cmdObj_t *cmd, uint8_t units)
+{
+	cmd_get(cmd);
+	char axes[6] = {"XYZABC"};
+	char format[CMD_FORMAT_LEN+1];
+	uint8_t axis = _get_pos_axis(cmd->index);
+	if (axis >= A) { units = DEGREES;}
+	fprintf(stderr, _get_format(cmd->index,format), axes[axis], cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
+}
+
+static void _print_pos(cmdObj_t *cmd)		// print position with unit displays for MM or Inches
+{
+	_print_pos_helper(cmd, cm_get_units_mode());
+}
+
+static void _print_mpos(cmdObj_t *cmd)		// print position with fixed unit display - always in Degrees or MM
+{
+	_print_pos_helper(cmd, MILLIMETERS);
+}
+
+/**** GCODE AND RELATED FUNCTIONS *********************************************
+ * _get_gc()	- get gcode block
  * _run_gc()	- launch the gcode parser on a block of gcode
  * _run_home()	- invoke a homing cycle
  */
-
 static uint8_t _get_gc(cmdObj_t *cmd)
 {
 	ritorno(cmd_copy_string(cmd, tg.in_buf));
@@ -1139,16 +1149,15 @@ static uint8_t _run_home(cmdObj_t *cmd)
 	return (TG_OK);
 }
 
-/**** AXIS AND MOTOR FUNCTIONS ****
+/**** AXIS AND MOTOR FUNCTIONS ************************************************
+ * _set_motor_steps_per_unit() - update this derived value
  * _get_am() - get axis mode w/enumeration string
  * _set_am() - set axis mode w/exception handling for axis type
- * _print_am() - print axis mode w/enumeration string
  * _set_sw() - run this any time you change a switch setting	
  * _set_sa() - set motor step_angle & recompute steps_per_unit
  * _set_tr() - set motor travel_per_rev & recompute steps_per_unit
  * _set_mi() - set microsteps & recompute steps_per_unit
  * _set_po() - set polarity and update stepper structs
- * _set_motor_steps_per_unit() - update this derived value
  *
  * _pr_ma_ui8() - print motor or axis uint8_t value w/no units or unit conversion
  * _pr_ma_lin() - print linear value with units and in/mm unit conversion
@@ -1157,6 +1166,15 @@ static uint8_t _run_home(cmdObj_t *cmd)
  * _print_coor()- print coordinate offsets with linear units
  * _print_corr()- print coordinate offsets with rotary units
  */
+
+// helper. This function will need to be rethought if microstep morphing is implemented
+static uint8_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
+{
+	uint8_t m = _get_motor(cmd->index);
+	cfg.m[m].steps_per_unit = (360 / (cfg.m[m].step_angle / cfg.m[m].microsteps) / cfg.m[m].travel_rev);
+	return (TG_OK);
+}
+
 static uint8_t _get_am(cmdObj_t *cmd)
 {
 	_get_ui8(cmd);
@@ -1221,13 +1239,6 @@ static uint8_t _set_po(cmdObj_t *cmd)		// motor polarity
 	return (TG_OK);
 }
 
-static uint8_t _set_motor_steps_per_unit(cmdObj_t *cmd) // This function will need to be rethought if microstep morphing is implemented
-{
-	uint8_t m = _get_motor(cmd->index);
-	cfg.m[m].steps_per_unit = (360 / (cfg.m[m].step_angle / cfg.m[m].microsteps) / cfg.m[m].travel_rev);
-	return (TG_OK);
-}
-
 static void _pr_ma_ui8(cmdObj_t *cmd)		// print uint8_t value
 {
 	cmd_get(cmd);
@@ -1275,7 +1286,7 @@ static void _print_corr(cmdObj_t *cmd)	// print coordinate offsets with rotary u
 					(PGM_P)pgm_read_word(&msg_units[F_DEG]));
 }
 
-/**** COMMUNICATIONS SETTINGS ****
+/**** COMMUNICATIONS SETTINGS *************************************************
  * _set_ic() - ignore CR or LF on RX
  * _set_ec() - enable CRLF on TX
  * _set_ee() - enable character echo
@@ -1283,7 +1294,6 @@ static void _print_corr(cmdObj_t *cmd)	// print coordinate offsets with rotary u
  * _set_baud() - set USB baud rate
  *	The above assume USB is the std device
  */
-
 static uint8_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
 {
 	if (fp_NOT_ZERO(cmd->value)) { 
@@ -1294,7 +1304,7 @@ static uint8_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
 	return (TG_OK);
 }
 
-static uint8_t _set_ic(cmdObj_t *cmd) 	// ignore CR or LF on RX
+static uint8_t _set_ic(cmdObj_t *cmd) 				// ignore CR or LF on RX
 {
 	cfg.ignore_crlf = (uint8_t)cmd->value;
 	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
@@ -1308,19 +1318,19 @@ static uint8_t _set_ic(cmdObj_t *cmd) 	// ignore CR or LF on RX
 	return (TG_OK);
 }
 
-static uint8_t _set_ec(cmdObj_t *cmd) 	// expand CR to CRLF on TX
+static uint8_t _set_ec(cmdObj_t *cmd) 				// expand CR to CRLF on TX
 {
 	cfg.enable_cr = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_CRLF, XIO_NOCRLF));
 }
 
-static uint8_t _set_ee(cmdObj_t *cmd) 	// enable character echo
+static uint8_t _set_ee(cmdObj_t *cmd) 				// enable character echo
 {
 	cfg.enable_echo = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_ECHO, XIO_NOECHO));
 }
 
-static uint8_t _set_ex(cmdObj_t *cmd)		// enable XON/XOFF
+static uint8_t _set_ex(cmdObj_t *cmd)				// enable XON/XOFF
 {
 	cfg.enable_xon = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_XOFF, XIO_NOXOFF));
@@ -1359,7 +1369,7 @@ uint8_t cfg_baud_rate_callback(void)
 	return (TG_OK);
 }
 
-/**** UberGroup Operations ****
+/**** UberGroup Operations ****************************************************
  * Uber groups are groups of groups organized for convenience:
  *	- motors	- group of all motor groups
  *	- axes		- group of all axis groups
@@ -1426,19 +1436,19 @@ static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
 	return (TG_COMPLETE);
 }
 
-/*****************************************************************************
- *****************************************************************************
- *****************************************************************************
- *** END SETTING-SPECIFIC REGION *********************************************
- *** Code below should not require changes as parameters are added/updated ***
- *****************************************************************************
- *****************************************************************************
- *****************************************************************************/
+/******************************************************************************
+ ******************************************************************************
+ ******************************************************************************
+ *** END SETTING-SPECIFIC REGION **********************************************
+ *** Code below should not require changes as parameters are added/updated ****
+ ******************************************************************************
+ ******************************************************************************
+ ******************************************************************************/
 
-/****************************************************************************/
-/**** CMD FUNCTION ENTRY POINTS *********************************************/
-/****************************************************************************/
-/* These are the primary access points to cmd functions
+/******************************************************************************
+ **** CMD FUNCTION ENTRY POINTS ***********************************************
+ ******************************************************************************
+ * These are the primary access points to cmd functions
  * These are the gatekeeper functions that check index ranges so others don't have to
  *
  * cmd_set() 	- Write a value or invoke a function - operates on single valued elements or groups
@@ -1479,13 +1489,13 @@ void cmd_persist(cmdObj_t *cmd)
 	}
 }
 
-/****************************************************************************
+/******************************************************************************
  * cfg_init() - called once on hard reset
  * _set_defa() - reset NVM with default values for active profile
  *
- * Will perform one of 2 actions:
- *	(1) if NVM is set up or out-of-rev: load RAM and NVM with hardwired default settings
- *	(2) if NVM is set up and at current config version: use NVM data for config
+ * Performs one of 2 actions:
+ *	(1) if NVM is set up or out-of-rev load RAM and NVM with settings.h defaults
+ *	(2) if NVM is set up and at current config version use NVM data for config
  *
  *	You can assume the cfg struct has been zeroed by a hard reset. 
  *	Do not clear it as the version and build numbers have already been set by tg_init()
@@ -1493,6 +1503,11 @@ void cmd_persist(cmdObj_t *cmd)
 void cfg_init()
 {
 	cmdObj_t *cmd = cmd_reset_list();
+	cmdStr.magic_start = MAGICNUM;
+	cmdStr.magic_end = MAGICNUM;
+	cfg.magic_start = MAGICNUM;
+	cfg.magic_end = MAGICNUM;
+
 	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
 	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
 	cfg.nvm_base_addr = NVM_BASE_ADDR;
@@ -1507,7 +1522,7 @@ void cfg_init()
 
 	// Case (2) NVM is setup and in revision
 	} else {
-		tg_print_loading_configs_message();
+		rpt_print_loading_configs_message();
 		for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
 			if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
 				strcpy_P(cmd->token, cfgArray[cmd->index].token);	// read the token from the array
@@ -1516,17 +1531,17 @@ void cfg_init()
 			}
 		}
 	}
-	rpt_init_status_report(true);// requires special treatment (persist = true)
+//	rpt_init_status_report(true);			// requires special treatment (persist = true)
+	rpt_init_status_report(false);			// requires special treatment (persist = false)
 }
 
 static uint8_t _set_defa(cmdObj_t *cmd) 
 {
-	if (cmd->value != true) {		// failsafe. Must set true or no action occurs
+	if (cmd->value != true) {				// failsafe. Must set true or no action occurs
 		print_defaults_help(cmd);
 		return (TG_OK);
 	}
-	cm_set_units_mode(MILLIMETERS);	// must do init in MM mode
-	tg_print_initializing_message();
+	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
 
 	for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
 		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
@@ -1536,10 +1551,12 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 			cmd_persist(cmd);
 		}
 	}
+	rpt_print_initializing_message();
+	rpt_init_status_report(true);			// reset status reports (persist = true)
 	return (TG_OK);
 }
 
-/****************************************************************************
+/******************************************************************************
  * cfg_text_parser() - update a config setting from a text block (text mode)
  * _text_parser() 	 - helper for above
  * 
@@ -1610,7 +1627,7 @@ static uint8_t _text_parser(char *str, cmdObj_t *cmd)
 	return (TG_OK);
 }
 
-/***** Generic Internal Functions *******************************************
+/***** Generic Internal Functions *********************************************
  * Generic sets()
  * _set_nul() - set nothing (returns TG_NOOP)
  * _set_ui8() - set value as 8 bit uint8_t value w/o unit conversion
@@ -1703,7 +1720,6 @@ static uint8_t _get_dbu(cmdObj_t *cmd)
  * _print_dbl() - print double value w/no units or unit conversion
  * _print_lin() - print linear value with units and in/mm unit conversion
  * _print_rot() - print rotary value with units
- *
  */
 static void _print_nul(cmdObj_t *cmd) {}
 
@@ -1749,7 +1765,7 @@ static void _print_rot(cmdObj_t *cmd)
 	fprintf(stderr, _get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[F_DEG]));
 }
 
-/***************************************************************************** 
+/******************************************************************************
  * Accessors - get various data from an object given the index
  * _get_format() 	- return format string for an index
  * _get_motor()		- return the motor number as an index or -1 if na
@@ -1797,7 +1813,7 @@ static int8_t _get_pos_axis(const index_t i)
 	return (ptr - axes);
 }
 
-/********************************************************************************
+/******************************************************************************
  * Group operations
  *
  *	Group operations work on parent/child groups where the parent is one of:
@@ -1891,16 +1907,39 @@ uint8_t cmd_group_is_prefixed(char *group)
 	return (true);
 }
 
-/*****************************************************************************
- ***** cmdObj functions ******************************************************
- *****************************************************************************/
+/******************************************************************************
+ ***** cmdObj functions *******************************************************
+ ******************************************************************************/
 
-/*****************************************************************************
+/******************************************************************************
  * cmdObj helper functions and other low-level cmd helpers
- * cmd_get_index() 		 - get index from mnenonic token + group
  * cmd_get_type()		 - returns command type as a CMD_TYPE enum
  * cmd_persist_offsets() - write any changed G54 (et al) offsets back to NVM
+ * cmd_get_index() 		 - get index from mnenonic token + group
  */
+uint8_t cmd_get_type(cmdObj_t *cmd)
+{
+	if (strcmp("gc", cmd->token) == 0) return (CMD_TYPE_GCODE);
+	if (strcmp("sr", cmd->token) == 0) return (CMD_TYPE_REPORT);
+	if (strcmp("qr", cmd->token) == 0) return (CMD_TYPE_REPORT);
+	return (CMD_TYPE_CONFIG);
+}
+
+uint8_t cmd_persist_offsets(uint8_t flag)
+{
+	if (flag == true) {
+		cmdObj_t cmd;
+		for (uint8_t i=1; i<=COORDS; i++) {
+			for (uint8_t j=0; j<AXES; j++) {
+				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
+				cmd.index = cmd_get_index("", cmd.token);
+				cmd.value = cfg.offset[i][j];
+				cmd_persist(&cmd);				// only writes changed values
+			}
+		}
+	}
+	return (TG_OK);
+}
 
 /* 
  * cmd_get_index() is the most expensive routine in the whole config. It does a linear table scan 
@@ -1938,30 +1977,6 @@ index_t cmd_get_index(const char *group, const char *token)
 	return (NO_MATCH);
 }
 
-uint8_t cmd_get_type(cmdObj_t *cmd)
-{
-	if (strcmp("gc", cmd->token) == 0) return (CMD_TYPE_GCODE);
-	if (strcmp("sr", cmd->token) == 0) return (CMD_TYPE_REPORT);
-	if (strcmp("qr", cmd->token) == 0) return (CMD_TYPE_REPORT);
-	return (CMD_TYPE_CONFIG);
-}
-
-uint8_t cmd_persist_offsets(uint8_t flag)
-{
-	if (flag == true) {
-		cmdObj_t cmd;
-		for (uint8_t i=1; i<=COORDS; i++) {
-			for (uint8_t j=0; j<AXES; j++) {
-				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
-				cmd.index = cmd_get_index("", cmd.token);
-				cmd.value = cfg.offset[i][j];
-				cmd_persist(&cmd);				// only writes changed values
-			}
-		}
-	}
-	return (TG_OK);
-}
-
 /*
  * cmdObj low-level object and list operations
  * cmd_get_cmdObj()		- setup a cmd object by providing the index
@@ -1992,8 +2007,8 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 	cmd_reset_obj(cmd);
 	cmd->index = tmp;
 
-	strcpy_P(cmd->group, cfgArray[cmd->index].group); // group field is always terminated
-	strcpy_P(cmd->token, cfgArray[cmd->index].token); // token field is always terminated
+	strcpy_P(cmd->token, cfgArray[cmd->index].token);	// token field is always terminated
+	strcpy_P(cmd->group, cfgArray[cmd->index].group);	// group field is always terminated
 
 	// special processing for system groups and stripping tokens for groups
 	if (cmd->group[0] != NUL) {
@@ -2157,13 +2172,11 @@ cmdObj_t *cmd_add_message_P(const char *string)	// conditionally add a message o
 	return (NULL);
 }
 
-/**** cmd_print_list() - print cmd_array as JSON or text ****
+/**** cmd_print_list() - print cmd_array as JSON or text **********************
  *
- * 	Use this function for all text and JSON output that wants to be in a response header
- *	(don't just printf stuff)
- * 	It generates and prints the JSON and text mode output strings 
- *	In JSON mode it generates the footer with the status code, buffer count and checksum
- *	In text mode it uses the the textmode variable to set the output format
+ * 	Generate and print the JSON and text mode output strings. Use this function 
+ *	for all text and JSON output that wants to be in a response header. 
+ *	Don't just printf stuff.
  *
  *	Inputs:
  *	  json_flags = JSON_OBJECT_FORMAT - print just the body w/o header or footer
@@ -2236,12 +2249,12 @@ void _print_text_multiline_formatted()
 	}
 }
 
-/************************************************************************************
- ***** EEPROM access functions ******************************************************
- ************************************************************************************
+/******************************************************************************
+ ***** EEPROM access functions ************************************************
+ ******************************************************************************
  * cmd_read_NVM_value()	 - return value (as double) by index
- * cmd_write_NVM_value() - write to NVM by index, but only if the value has changed
- * (see 331.09 or earlier for token/value record-oriented routines)
+ * cmd_write_NVM_value() - write to NVM by index, but only if the value has 
+ * 	changed (see 331.09 or earlier for token/value record-oriented routines)
  *
  *	It's the responsibility of the caller to make sure the index does not exceed range
  */

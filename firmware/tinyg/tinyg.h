@@ -3,7 +3,7 @@
  *			 (see also system.h and settings.h)
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -36,7 +36,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	367.05		// Working through Riley's tgFX issues
+#define TINYG_BUILD_NUMBER   	369.16		// documentation cleaning pass prior to promotion
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
@@ -71,6 +71,7 @@
 /*************************************************************************
  * TinyG application-specific prototypes, defines and globals
  */
+#define MAGICNUM 0x12EF			// used for memory integrity assertions
 
 #define AXES 6					// number of axes supported in this version
 #define MOTORS 4				// number of motors on the board
@@ -140,9 +141,9 @@
 #define	TG_DIVIDE_BY_ZERO 23
 #define	TG_INVALID_ADDRESS 24
 #define	TG_READ_ONLY_ADDRESS 25
-#define	TG_ERROR_26 26
-#define	TG_ERROR_27 27
-#define	TG_ERROR_28 28
+#define	TG_INIT_FAIL 26
+#define	TG_SHUTDOWN 27
+#define	TG_MEMORY_CORRUPTION 28
 #define	TG_ERROR_29 29
 #define	TG_ERROR_30 30
 #define	TG_ERROR_31 31
@@ -164,10 +165,10 @@
 #define	TG_INPUT_VALUE_TOO_LARGE 45		// input error: value is over maximum
 #define	TG_INPUT_VALUE_RANGE_ERROR 46	// input error: value is out-of-range
 #define	TG_INPUT_VALUE_UNSUPPORTED 47	// input error: value is not supported
-#define	TG_JSON_SYNTAX_ERROR 48			// JSON string is not well formed
-#define	TG_JSON_TOO_MANY_PAIRS 49		// JSON string or has too many JSON pairs
-#define	TG_NO_BUFFER_SPACE 50			// Buffer pool is full and cannot perform this operation
-#define	TG_ERROR_51 51
+#define	TG_JSON_SYNTAX_ERROR 48			// JSON input string is not well formed
+#define	TG_JSON_TOO_MANY_PAIRS 49		// JSON input string has too many JSON pairs
+#define	TG_JSON_TOO_LONG 50				// JSON output exceeds buffer size
+#define	TG_NO_BUFFER_SPACE 51			// Buffer pool is full and cannot perform this operation
 #define	TG_ERROR_52 52
 #define	TG_ERROR_53 53
 #define	TG_ERROR_54 54
@@ -188,5 +189,5 @@
 #define	TG_MAX_TRAVEL_EXCEEDED 67
 #define	TG_MAX_SPINDLE_SPEED_EXCEEDED 68
 #define	TG_ARC_SPECIFICATION_ERROR 69	// arc specification error
-	
+
 #endif

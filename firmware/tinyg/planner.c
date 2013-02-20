@@ -2,7 +2,7 @@
  * planner.c - cartesian trajectory planning and motion execution
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -96,6 +96,9 @@ void mp_init()
 // You can assume all memory has been zeroed by a hard reset. If not, use this code:
 //	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
 //	memset(&mm, 0, sizeof(mm));	// clear all values, pointers and status
+
+	mr.magic_start = MAGICNUM;
+	mr.magic_end = MAGICNUM;
 	mp_init_buffers();
 }
 
@@ -313,6 +316,9 @@ void mp_init_buffers(void)
 	uint8_t i;
 
 	memset(&mb, 0, sizeof(mb));		// clear all values, pointers and status
+	mb.magic_start = MAGICNUM;
+	mb.magic_end = MAGICNUM;
+
 	mb.w = &mb.bf[0];				// init write and read buffer pointers
 	mb.q = &mb.bf[0];
 	mb.r = &mb.bf[0];

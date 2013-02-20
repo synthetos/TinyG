@@ -44,8 +44,8 @@
  *	commands that only affect the gcode model are done immediately whereas 
  *	commands that have a physcial effect must be synchronized.
  *
- *	Immediate commands are obvious - just write to the GM struct. Synchronous
- *	commands work like this:
+ *	Immediate commands are obvious - just write to the GM struct. 
+ *	Synchronous commands work like this:
  *
  *	  - Call the cm_xxx_xxx() function which will do any input validation and 
  *		return an error if it detects one.
@@ -177,6 +177,8 @@ void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
  * cm_get_model_canonical_position_vector() - return model position vector in internal canonical form
  * cm_get_runtime_machine_position() - return current machine position in external form 
  * cm_get_runtime work_position() - return current work coordinate position in external form 
+ * cm_get_runtime work_offset() - return current work offset
+ * cm_get_runtime work_scaling() - return current work scaling factor
  */
 
 double cm_get_coord_offset(uint8_t axis)
@@ -229,12 +231,14 @@ double *cm_get_model_canonical_position_vector(double position[])
 
 double cm_get_runtime_machine_position(uint8_t axis) 
 {
-	// NB: This form takes 20 bytes less than calling first then deciding later
-	if (gm.units_mode == INCHES) {
-		return (mp_get_runtime_machine_position(axis) / MM_PER_INCH);
-	} else {
-		return (mp_get_runtime_machine_position(axis));
-	}
+	return (mp_get_runtime_machine_position(axis));
+
+// deprecated behavior
+//	if (gm.units_mode == INCHES) {
+//		return (mp_get_runtime_machine_position(axis) / MM_PER_INCH);
+//	} else {
+//		return (mp_get_runtime_machine_position(axis));
+//	}
 }
 
 double cm_get_runtime_work_position(uint8_t axis) 
@@ -244,6 +248,11 @@ double cm_get_runtime_work_position(uint8_t axis)
 	} else {
 		return (mp_get_runtime_work_position(axis));
 	}
+}
+
+double cm_get_runtime_work_offset(uint8_t axis) 
+{
+	return (mp_get_runtime_work_offset(axis));
 }
 
 /*
@@ -523,6 +532,12 @@ void cm_init()
 //	memset(&gf, 0, sizeof(gf));
 //	memset(&gm, 0, sizeof(gm));
 
+	// setup magic numbers
+	cm.magic_start = MAGICNUM;
+	cm.magic_end = MAGICNUM;
+	gm.magic_start = MAGICNUM;
+	gm.magic_end = MAGICNUM;
+
 	// set gcode defaults
 	cm_set_units_mode(cfg.units_mode);
 	cm_set_coord_system(cfg.coord_system);
@@ -555,12 +570,7 @@ void cm_shutdown()
 //	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
-	// send out an emergency shutdown message
-	if (cfg.comm_mode == JSON_MODE) {
-		printf_P(PSTR("{\"er\":\"Emergency shut down\"}\n"));
-	} else {
-		printf_P(PSTR("EMERGENCY SHUTDOWN\n"));
-	}
+	rpt_exception(TG_SHUTDOWN,1);			// send shutdown message, value = 1 (arbitrary)
 	cm.machine_state = MACHINE_SHUTDOWN;
 }
 

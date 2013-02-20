@@ -42,6 +42,7 @@
  * sig_reset()		 - end program (hard)
  * sig_feedhold()	 - stop motion
  * sig_cycle_start() - start or resume motion
+ * sig_request_bootloader()
  */
 
 void sig_init()
@@ -64,4 +65,9 @@ inline void sig_feedhold()				// pause
 inline void sig_cycle_start()			// start or resume
 {
 	sig.sig_cycle_start = true;
+}
+
+inline void sig_request_bootloader()	// start or resume
+{
+	sig.sig_request_bootloader = true;
 }

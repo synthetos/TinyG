@@ -1,8 +1,8 @@
 /*
- * tg_controller.h - tinyg controller and top level parsers
+ * tg_controller.h - tinyg controller and main dispatch loop
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -32,13 +32,14 @@
 
 #define TG_FLAG_PROMPTS_bm (1<<0)	// prompt enabled if set
 #define INPUT_BUFFER_LEN 255		// text buffer size (255 max)
-#define OUTPUT_BUFFER_LEN 255		// text buffer size (255 max)
+#define OUTPUT_BUFFER_LEN 512		// text buffer size
 #define STATUS_MESSAGE_LEN 32		// status message string storage allocation
 #define APPLICATION_MESSAGE_LEN 64	// application message string storage allocation
 
 struct controllerSingleton {		// main TG controller struct
 //	double version;					// tinyg version number
 //	double build;					// tinyg build number
+	uint16_t magic_start;			// magic number to test memory integity	
 	double null;					// dumping ground for items with no target
 	uint8_t test;
 	uint8_t src;					// active source device
@@ -48,6 +49,7 @@ struct controllerSingleton {		// main TG controller struct
 	int32_t led_counter;			// a convenience for flashing an LED
 	char in_buf[INPUT_BUFFER_LEN];	// input text buffer
 	char out_buf[OUTPUT_BUFFER_LEN];// output text buffer
+	uint16_t magic_end;
 };
 struct controllerSingleton tg;		// controller state structure
 
@@ -57,11 +59,7 @@ void tg_controller(void);
 void tg_application_startup(void);
 void tg_set_active_source(uint8_t dev);
 void tg_reset_source(void);
-char *tg_get_status_message(uint8_t status, char *msg);
-void tg_print_message(char *msg);
-void tg_print_loading_configs_message(void);
-void tg_print_initializing_message(void);
-void tg_print_system_ready_message(void);
+void tg_text_response(const uint8_t status, const char *buf);
 
 #ifdef __DEBUG
 void tg_dump_controller_state(void);

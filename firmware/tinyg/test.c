@@ -2,7 +2,7 @@
  * test.c - tinyg test sets
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -40,21 +40,21 @@
 #include "xio/xio.h"
 
 // regression test files
-#include "tests/test_001_homing.h"	// G28.1 homing cycles
-#include "tests/test_002_smoke.h" 	// basic functionality
-#include "tests/test_003_squares.h"	// square moves
-#include "tests/test_004_arcs.h"	// arc moves
-#include "tests/test_005_dwell.h"	// dwells embedded in move sequences
-#include "tests/test_006_feedhold.h"// feedhold - requires manual ! and ~ entry
-#include "tests/test_007_Mcodes.h"	// M codes synchronized w/moves (planner queue)
-#include "tests/test_008_json.h"	// JSON parser and IO
-#include "tests/test_009_inverse_time.h"// inverse time mode
-#include "tests/test_010_rotary.h"	// ABC axes
-#include "tests/test_011_small_moves.h"	// small move test
-#include "tests/test_012_slow_moves.h"	// slow move test
+#include "tests/test_001_homing.h"			// G28.1 homing cycles
+#include "tests/test_002_smoke.h" 			// basic functionality
+#include "tests/test_003_squares.h"			// square moves
+#include "tests/test_004_arcs.h"			// arc moves
+#include "tests/test_005_dwell.h"			// dwells embedded in move sequences
+#include "tests/test_006_feedhold.h"		// feedhold - requires manual ! and ~ entry
+#include "tests/test_007_Mcodes.h"			// M codes synchronized w/moves (planner queue)
+#include "tests/test_008_json.h"			// JSON parser and IO
+#include "tests/test_009_inverse_time.h"	// inverse time mode
+#include "tests/test_010_rotary.h"			// ABC axes
+#include "tests/test_011_small_moves.h"		// small move test
+#include "tests/test_012_slow_moves.h"		// slow move test
 #include "tests/test_013_coordinate_offsets.h"	// what it says
-#include "tests/test_050_mudflap.h"	// mudflap test - entire drawing
-#include "tests/test_051_braid.h"	// braid test - partial drawing
+#include "tests/test_050_mudflap.h"			// mudflap test - entire drawing
+#include "tests/test_051_braid.h"			// braid test - partial drawing
 
 /*
  * tg_test() - system tests from FLASH invoked by $test=n command
@@ -64,8 +64,6 @@
  */
 uint8_t tg_test(cmdObj_t *cmd)
 {
-	cfg.comm_mode = TEXT_MODE;	// all tests run in text mode only
-
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (TG_OK);}
 		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
@@ -103,11 +101,17 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
+// avrdude -p x192a3 -c avr109 -b 115200 -P COM19
+// avrdude -e -p atxmega192a3 -c avrispmkii -P usb -U boot:w:xboot-boot.hex
+
+//	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"mpox\":true,\"mpoy\":true}}");
+
+//	xio_queue_RX_string_usb("$defau=1\n");
 //	xio_queue_RX_string_usb("$id\n");
 //	xio_queue_RX_string_usb("{\n");
 //	xio_queue_RX_string_usb("G3 X28.949238578680202 Y33.51776649746193 I2.1091370558375635 J-2.1091370558375635 F1524\n");
 
-	xio_queue_RX_string_usb("g0x2\n");			// G0 smoke test
+//	xio_queue_RX_string_usb("g0x2\n");			// G0 smoke test
 //	xio_queue_RX_string_usb("{\"gc\":\"g2\"}\n");// G0 smoke test in JSON
 
 	// text parser test cases
@@ -160,6 +164,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"gc\":\"g20\"}\n");
 //	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"mpo\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("g92a0\n");
 //	xio_queue_RX_string_usb("g0a3\n");			// should be a=3. Instead it's a=1
@@ -272,6 +279,10 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 /* G10 coordinate offsets */
 //	xio_queue_RX_string_usb("g10 L2 p2 x10 y11 z12\n");
 
+/* G20 / G21 units */
+//	xio_queue_RX_string_usb("g20\n");
+//	xio_queue_RX_string_usb("g21\n");
+
 /* G28 and G30 homing tests */
 //	xio_queue_RX_string_usb("g28.2x0\n");
 //	xio_queue_RX_string_usb("g28.1\n");			// G28.1 OK
@@ -351,8 +362,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"err_1\":36000}\n");
 //	xio_queue_RX_string_usb("{\"1sa\":3.6.000}\n");
 //	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");				// invoke a status report
-	xio_queue_RX_string_usb("{\"sr\":{\"line\":true,\"posx\":true,\"posy\":true}}\n");	// set status report
-	xio_queue_RX_string_usb("{\"sr\":{\"line\":null,\"posx\":null,\"posy\":null}}\n");	// set status report
+//	xio_queue_RX_string_usb("{\"sr\":{\"line\":true,\"posx\":true,\"posy\":true}}\n");	// set status report
+//	xio_queue_RX_string_usb("{\"sr\":{\"line\":null,\"posx\":null,\"posy\":null}}\n");	// set status report
 //	xio_queue_RX_string_usb("{\"x\":{\"am\":2,\"vm\":601.000,\"fr\":1201.000,\"tm\":476.000,\"jm\":20000001.000,\"jd\":0.051,\"sm\":2,\"sv\":-502.000,\"lv\":101.000,\"lb\":2.001,\"zb\":1.001}}\n");
 
 //	xio_queue_RX_string_usb("{\"x\":\"\"}\n");				// x axis group display
@@ -409,7 +420,6 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 */
 #endif
 }
-
 
 /***** Debug Functions ******/
 #ifdef __DEBUG

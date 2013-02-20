@@ -2,7 +2,7 @@
  * help.h - collected help routines
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -31,6 +31,7 @@
 #include "tinyg.h"
 #include "util.h"
 #include "config.h"
+#include "report.h"
 #include "controller.h"
 #include "help.h"
 
@@ -59,7 +60,7 @@ These commands are active from the command line:\n\
 "));
 _status_report_advisory();
 _postscript();
-tg_print_system_ready_message();
+rpt_print_system_ready_message();
 return(TG_OK);
 }
 

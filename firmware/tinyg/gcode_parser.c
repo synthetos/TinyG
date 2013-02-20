@@ -1,5 +1,5 @@
 /*
- * gcode_interpreter.c - rs274/ngc parser.
+ * gcode_interpreter.c - rs274/ngc Gcode parser.
  * Part of TinyG project
  *
  * Copyright (c) 2010-2013 Alden S. Hart, Jr.

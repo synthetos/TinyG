@@ -1,7 +1,7 @@
 /* stepper.h - stepper motor interface
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -76,6 +76,9 @@ void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(double microseconds);
 uint8_t st_prep_line(double steps[], double microseconds);
+
+uint16_t st_get_st_magic(void);
+uint16_t st_get_sps_magic(void);
 
 #ifdef __DEBUG
 void st_dump_stepper_state(void);

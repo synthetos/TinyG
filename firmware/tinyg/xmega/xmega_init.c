@@ -144,7 +144,7 @@ void xmega_init_clocks(void)
 
 /* CCP write helper function written in assembly.
  *
- *  This function is written in assembly because of the timecritial
+ *  This function is written in assembly because of the time critial
  *  operation of writing to the registers.
  *
  *  - address A pointer to the address to write to.

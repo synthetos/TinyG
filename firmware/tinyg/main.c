@@ -2,7 +2,7 @@
  * main.c - TinyG - An embedded rs274/ngc CNC controller
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it under the terms of the 
  * GNU General Public License as published by the Free Software Foundation, either version 3 
@@ -44,7 +44,6 @@
 #include "planner.h"
 #include "stepper.h"
 #include "spindle.h"
-#include "network.h"
 #include "gpio.h"
 #include "test.h"
 #include "pwm.h"
@@ -86,7 +85,7 @@ int main(void)
 	PMIC_EnableMediumLevel();
 	PMIC_EnableLowLevel();
 	sei();							// enable global interrupts
-	tg_print_system_ready_message();// (LAST) announce system is ready
+	rpt_print_system_ready_message();// (LAST) announce system is ready
 
 	_unit_tests();					// run any unit tests that are enabled
 	tg_canned_startup();			// run any pre-loaded commands

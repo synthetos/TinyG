@@ -42,8 +42,12 @@
 // ADVICE: Check your machine profile before continuing
 
 #define STATUS_REPORT_MIN_MS		50		// milliseconds - enforces a viable minimum
-#define STATUS_REPORT_INTERVAL_MS	50		// milliseconds - set to 0 to disable
-#define SR_DEFAULTS "line","posx","posy","posz","posa","vel","unit","momo","stat","homx","homy","homz","homa","coor"
+#define STATUS_REPORT_INTERVAL_MS	100		// milliseconds - set to 0 to disable
+//#define SR_DEFAULTS "line","vel","mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","momo","coor","stat","homx","homy","homz","homa"
+#define SR_DEFAULTS "line","vel","posx","posy","posz","posa","unit","momo","coor","stat"
+
+#define SWITCH_TYPE SW_TYPE_NORMALLY_OPEN
+//#define SWITCH_TYPE SW_TYPE_NORMALLY_CLOSED
 
 //#define SR_VERBOSITY				SR_OFF
 #define SR_VERBOSITY				SR_FILTERED
@@ -59,21 +63,22 @@
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
 
 // Comm mode and echo levels - CAUTION: may be overridden by machine profiles
-#define COM_IGNORE_CRLF				IGNORE_OFF			// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
+#define COM_IGNORE_CRLF				IGNORE_OFF	// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_EXPAND_CR				false
 #define COM_ENABLE_ECHO				false
 #define COM_ENABLE_XON				true
 
-#define COMM_MODE					JSON_MODE
+//#define COMM_MODE					JSON_MODE
+#define COMM_MODE					TEXT_MODE
 #define TEXT_VERBOSITY				TV_VERBOSE
-//#define JSON_VERBOSITY			JV_SILENT			// no response is provided for any command
-//#define JSON_VERBOSITY			JV_OMIT_BODY		// response contains no body - footer only
-//#define JSON_VERBOSITY			JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
-//#define JSON_VERBOSITY			JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
-//#define JSON_VERBOSITY			JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
-#define JSON_VERBOSITY			JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
 
-// Queue report settings
+//#define JSON_VERBOSITY			JV_SILENT	// no response is provided for any command
+//#define JSON_VERBOSITY			JV_FOOTER	// responses contain  footer only; no command echo, gcode blocks or messages
+//#define JSON_VERBOSITY			JV_CONFIGS	// echo configs; gcode blocks are not echoed; messages are not echoed
+//#define JSON_VERBOSITY			JV_MESSAGES	// echo configs; gcode messages only (if present); no block echo or line numbers
+#define JSON_VERBOSITY				JV_LINENUM	// echo configs; gcode blocks return messages and line numbers as present
+//#define JSON_VERBOSITY			JV_VERBOSE	// echos all configs and gcode blocks, line numbers and messages
+
 #define QR_VERBOSITY				QR_OFF
 //#define QR_VERBOSITY				QR_FILTERED
 //#define QR_VERBOSITY				QR_VERBOSE
@@ -84,12 +89,11 @@
 
 // default machine profiles - chose only one:
 
-//#include "settings/settings_default.h"			// Default settings for shipment
+#include "settings/settings_default.h"			// Default settings for release
 //#include "settings/settings_lumenlabMicRoV3.h"	// Lumenlabs micRo v3
 //#include "settings/settings_otherlab.h"			// Otherlab Othercutter
 //#include "settings/settings_probotixV90.h"		// Probotix FireballV90
-//#include "settings/settings_sacidu93.h"			// related to Issue #12
-#include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
+//#include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
 //#include "settings/settings_ultimaker.h"			// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"			// Zen Toolworks 7x12
 

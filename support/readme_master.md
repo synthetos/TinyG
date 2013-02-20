@@ -3,17 +3,18 @@ TinyG Introduction
 
 ![TinyG v7 Board](http://farm9.staticflickr.com/8186/8436183471_6b3708cd0d_c.jpg)
 
-TinyG is a 6 axis motion control system designed for high performance on small to mid-sized machines. Some features are:
+TinyG is a 6 axis motion control system designed for high-performance on small to mid-sized machines. Some features:
 
 * 6 axis motion (XYXABC axes)
 * jerk controlled motion for acceleration planning (3rd order motion planning)
 * status displays ('?' character)
 * XON/XOFF protocol over serial
 * config is necessarily different to take into account the larger number of settings
-* RESTful represenation and JSON interface (over USB)
+* RESTful interface using JSON
 
 See these links for more details.
 
+* [Synthetos](https://www.synthetos.com/)
 * [TinyG Wiki](https://www.synthetos.com/wiki/index.php?title=Projects:TinyG)
 * [TinyG Support Forum](https://www.synthetos.com/forum/tinyg/)
 * [TinyG Github](https://github.com/synthetos/TinyG)
@@ -27,7 +28,7 @@ Changelog:
 
 339.09: 
 BUG FIXES IN 0.94
-* Issue #14 - Full circle G02 resslts in error - fixed
+* Issue #14 - Full circle G02 results in error - fixed
 * Issue #15 - Ignore CR and Ignore LF comnined into a single command to prevent both from being active at once and bricking TinyG
 * Checksum added to JSON output lines
 

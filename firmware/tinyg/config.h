@@ -2,7 +2,7 @@
  * config.h - configuration sub-system
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -160,8 +160,10 @@ enum textFormats {					// text output print modes
 };
 
 typedef struct cmdString {			// shared string object
+	uint16_t magic_start;
 	uint8_t wp;						// current string array index
 	char string[CMD_SHARED_STRING_LEN];
+	uint16_t magic_end;
 } cmdStr_t;
 
 typedef struct cmdObject {			// depending on use, not all elements may be populated
@@ -234,7 +236,7 @@ void cfg_dump_NVM(const uint16_t start_record, const uint16_t end_record, char *
 /**** Global scope config structures ****/
 
 // main configuration parameter table
-struct cfgAxisParameters {
+typedef struct cfgAxisParameters {
 	uint8_t axis_mode;				// see tgAxisMode in gcode.h
 	double feedrate_max;			// max velocity in mm/min or deg/min
 	double velocity_max;			// max velocity in mm/min or deg/min
@@ -246,9 +248,10 @@ struct cfgAxisParameters {
 	double latch_velocity;			// homing latch velocity
 	double latch_backoff;			// backoff from switches prior to homing latch movement
 	double zero_backoff;			// backoff from switches for machine zero
-};
+	double jerk_homing;				// homing jerk (Jh) in mm/min^3
+} cfgAxis_t;
 
-struct cfgMotorParameters {
+typedef struct cfgMotorParameters {
 	uint8_t	motor_map;				// map motor to axis
   	uint8_t microsteps;				// microsteps to apply for each axis (ex: 8)
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor direction
@@ -256,9 +259,9 @@ struct cfgMotorParameters {
 	double step_angle;				// degrees per whole step (ex: 1.8)
 	double travel_rev;				// mm or deg of travel per motor revolution
 	double steps_per_unit;			// steps (usteps)/mm or deg of travel
-};
+} cfgMotor_t;
 
-struct cfgPWMParameters {
+typedef struct cfgPWMParameters {
   	double frequency;				// base frequency for PWM driver, in Hz
 	double cw_speed_lo;             // minimum clockwise spindle speed [0..N]
     double cw_speed_hi;             // maximum clockwise spindle speed
@@ -269,9 +272,10 @@ struct cfgPWMParameters {
     double ccw_phase_lo;			// pwm phase at minimum CCW spindle speed, clamped [0..1]
     double ccw_phase_hi;			// pwm phase at maximum CCW spindle speed, clamped
     double phase_off;               // pwm phase when spindle is disabled
-};
+} cfgPWM_t;
 
-struct cfgParameters {
+typedef struct cfgParameters {
+	uint16_t magic_start;			// magic number to test memory integity
 	double fw_build;				// tinyg firmware build number
 	double fw_version;				// tinyg firmware version number
 	double hw_version;				// tinyg hardware compatibility
@@ -333,13 +337,13 @@ struct cfgParameters {
 	double offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute + G54,G55,G56,G57,G58,G59
 
 	// motor and axis structs
-	struct cfgMotorParameters m[MOTORS];// settings for motors 1-4
-	struct cfgAxisParameters a[AXES];	// settings for axes X,Y,Z,A B,C
-	struct cfgPWMParameters p;			// settings for PWM p
-};
-struct cfgParameters cfg; 			// declared in the header to make it global
-#define CFG(x) cfg.a[x]				// handy macro for referencing axis values,
-									// e.g: CFG(X_AXIS).steps_per_mm
+	cfgMotor_t m[MOTORS];			// settings for motors 1-4
+	cfgAxis_t a[AXES];				// settings for axes X,Y,Z,A B,C
+	cfgPWM_t p;						// settings for PWM p
+
+	uint16_t magic_end;
+} cfgParameters_t;
+cfgParameters_t cfg;
 
 /* unit test setup */
 //#define __UNIT_TEST_CONFIG		// uncomment to enable config unit tests

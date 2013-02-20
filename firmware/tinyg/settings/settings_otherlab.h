@@ -14,15 +14,17 @@
 /**** Otherlab profile *************************************************/
 /***********************************************************************/
 
-#define TINYG_CONFIGURATION_PROFILE "Otherlab Cutter"	// displays base config profile
-#define INIT_CONFIGURATION_MESSAGE "#### Initializing configs to Othercutter settings ####"
+// ***> NOTE: The init message must be a single line with no CRs or LFs 
+#define INIT_MESSAGE "#### Initializing configs to Othercutter settings ####"
 
-#define JERK_MAX 			900000000	// yes, that's "900,000,000" mm/(min^3)
-#define JUNCTION_DEVIATION	0.01		// default value, in mm
-#define JUNCTION_ACCELERATION 100000	// centripetal acceleration around corners
-#define SWITCH_TYPE SW_TYPE_NORMALLY_OPEN
+#define JERK_MAX 					900000000	// yes, that's "900,000,000" mm/(min^3)
+#define JUNCTION_DEVIATION			0.01		// default value, in mm
+#define JUNCTION_ACCELERATION 		100000		// centripetal acceleration around corners
 
 // *** settings.h overrides ***
+
+#undef	SWITCH_TYPE
+#define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN
 
 #undef	QR_VERBOSITY
 #define QR_VERBOSITY				QR_FILTERED
@@ -30,13 +32,13 @@
 #undef	COMM_MODE
 #define COMM_MODE					JSON_MODE			// alternately: TEXT_MODE
 
-//#undef JSON_VERBOSITY
-//#define JSON_VERBOSITY			JV_SILENT			// no response is provided for any command
-//#define JSON_VERBOSITY			JV_OMIT_BODY		// response contains no body - footer only
-//#define JSON_VERBOSITY			JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
-//#define JSON_VERBOSITY			JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
-//#define JSON_VERBOSITY			JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
-//#define JSON_VERBOSITY			JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
+#undef JSON_VERBOSITY
+//#define JSON_VERBOSITY JV_SILENT		// no response is provided for any command
+//#define JSON_VERBOSITY JV_FOOTER		// responses contain  footer only; no command echo, gcode blocks or messages
+//#define JSON_VERBOSITY JV_CONFIGS		// echo configs; gcode blocks are not echoed; messages are not echoed
+#define JSON_VERBOSITY JV_MESSAGES		// echo configs; gcode messages only (if present); no block echo or line numbers
+//#define JSON_VERBOSITY  JV_LINENUM	// echo configs; gcode blocks return messages and line numbers as present
+//#define JSON_VERBOSITY JV_VERBOSE		// echos all configs and gcode blocks, line numbers and messages
 
 // *** motor settings ***
 
@@ -78,10 +80,11 @@
 #define X_JUNCTION_DEVIATION			JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN				SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
 #define X_SWITCH_MODE_MAX				SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
-#define X_SEARCH_VELOCITY 				-2000				// xsv		move in negative direction
+#define X_SEARCH_VELOCITY 				2000				// xsv		move in negative direction
 #define X_LATCH_VELOCITY 				500					// xlv		mm/min
 #define X_LATCH_BACKOFF 				12					// xlb		mm
 #define X_ZERO_BACKOFF 					5					// xzb		mm
+#define X_JERK_HOMING					X_JERK_MAX			// xjh
 
 #define Y_AXIS_MODE 					AXIS_STANDARD
 #define Y_VELOCITY_MAX 					15000
@@ -91,38 +94,40 @@
 #define Y_JUNCTION_DEVIATION 			JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN				SW_MODE_DISABLED	// Y-axis is infinite
 #define Y_SWITCH_MODE_MAX				SW_MODE_DISABLED
-#define Y_SEARCH_VELOCITY 				-1000
+#define Y_SEARCH_VELOCITY 				1000
 #define Y_LATCH_VELOCITY 				1000
 #define Y_LATCH_BACKOFF 				1
 #define Y_ZERO_BACKOFF 					0
+#define Y_JERK_HOMING					Y_JERK_MAX
 
 #define Z_AXIS_MODE 					AXIS_STANDARD
 #define Z_VELOCITY_MAX 					10000
 #define Z_FEEDRATE_MAX 					1000
 #define Z_TRAVEL_MAX 					25
-#define Z_JERK_MAX 						JERK_MAX	// 200 Million
+#define Z_JERK_MAX 						JERK_MAX			// 200 Million
 #define Z_JUNCTION_DEVIATION 			JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN				SW_MODE_HOMING
 #define Z_SWITCH_MODE_MAX				SW_MODE_DISABLED
 #define Z_SEARCH_VELOCITY 				1000.0
 #define Z_LATCH_VELOCITY 				500.0
 #define Z_LATCH_BACKOFF 				12
-#define Z_ZERO_BACKOFF 					20.5        // based on blade geometry
+#define Z_ZERO_BACKOFF 					20.5      			// based on blade geometry
+#define Z_JERK_HOMING					Z_JERK_MAX
 
 #define A_AXIS_MODE 					AXIS_STANDARD
-#define A_VELOCITY_MAX 					60000.0		// deg/min
-#define A_FEEDRATE_MAX 					7200.0		// deg/min
+#define A_VELOCITY_MAX 					60000.0				// deg/min
+#define A_FEEDRATE_MAX 					7200.0				// deg/min
 #define A_TRAVEL_MAX 					375.0
-#define A_JERK_MAX 						24000000000	// yes, 24 Billion
+#define A_JERK_MAX 						24000000000			// yes, 24 Billion
 #define A_JUNCTION_DEVIATION 			0.1
-#define A_RADIUS 						1.0				// deg
-#define A_SWITCH_MODE_MIN				SW_MODE_HOMING	// disable limit switch halt
+#define A_RADIUS 						1.0					// deg
+#define A_SWITCH_MODE_MIN				SW_MODE_HOMING		// disable limit switch halt
 #define A_SWITCH_MODE_MAX				SW_MODE_DISABLED
-#define A_SEARCH_VELOCITY 				6000.0		// deg/min
-#define A_LATCH_VELOCITY 				600.0		// deg/min
-#define A_LATCH_BACKOFF 				15.0		// deg
-#define A_ZERO_BACKOFF 					1			// deg
-
+#define A_SEARCH_VELOCITY 				6000.0				// deg/min
+#define A_LATCH_VELOCITY 				600.0				// deg/min
+#define A_LATCH_BACKOFF 				15.0				// deg
+#define A_ZERO_BACKOFF 					1					// deg
+#define A_JERK_HOMING					A_JERK_MAX
 
 #define B_AXIS_MODE 					AXIS_DISABLED
 #define B_VELOCITY_MAX 					3600
@@ -131,10 +136,6 @@
 #define B_JERK_MAX 						JERK_MAX
 #define B_JUNCTION_DEVIATION 			JUNCTION_DEVIATION
 #define B_RADIUS 						1
-#define B_SEARCH_VELOCITY 				-600
-#define B_LATCH_VELOCITY 				100
-#define B_LATCH_BACKOFF 				-5
-#define B_ZERO_BACKOFF 					2
 
 #define C_AXIS_MODE 					AXIS_DISABLED
 #define C_VELOCITY_MAX 					3600
@@ -143,10 +144,6 @@
 #define C_JERK_MAX 						JERK_MAX
 #define C_JUNCTION_DEVIATION 			JUNCTION_DEVIATION
 #define C_RADIUS 						1
-#define C_SEARCH_VELOCITY 				-600
-#define C_LATCH_VELOCITY 				100
-#define C_LATCH_BACKOFF 				-5
-#define C_ZERO_BACKOFF 					2
 
 // *** PWM SPINDLE CONTROL ***
 

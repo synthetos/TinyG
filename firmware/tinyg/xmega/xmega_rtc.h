@@ -2,7 +2,7 @@
  * xmega_rtc.h - general purpose real-time clock
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -36,10 +36,11 @@
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_MED_gc;	// med interrupt on compare
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_HI_gc;		// hi interrupt on compare
 
-struct rtClock {
+typedef struct rtClock {
 	volatile uint32_t clock_ticks;				// RTC tick counter
-};
-struct rtClock rtc;
+	uint16_t magic_end;
+} rtClock_t;
+rtClock_t rtc;
 
 void rtc_init(void);							// initialize and start general timer
 

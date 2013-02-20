@@ -2,7 +2,7 @@
  * util.c - a random assortment of useful functions
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -47,6 +47,7 @@
 #include "canonical_machine.h"
 #include "planner.h"
 #include "stepper.h"
+#include "report.h"
 
 /**** Vector functions ****
  * copy_vector()			- copy vector of arbitrary length
@@ -214,5 +215,4 @@ uint16_t compute_checksum(char const *string, const uint16_t length)
     }
     return (h % HASHMASK);
 }
-
 
