@@ -2,7 +2,7 @@
  * test.c - tinyg test sets
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -169,7 +169,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"mpo\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("g92a0\n");
-	xio_queue_RX_string_usb("g0a3\n");			// should be a=3. Instead it's a=1
+//	xio_queue_RX_string_usb("g0a3\n");			// should be a=3. Instead it's a=1
 
 //	xio_queue_RX_string_usb("t3\n");			// change tool
 
@@ -420,7 +420,6 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 */
 #endif
 }
-
 
 /***** Debug Functions ******/
 #ifdef __DEBUG
