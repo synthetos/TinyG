@@ -570,7 +570,7 @@ void cm_shutdown()
 //	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
-	rpt_exception(TG_SHUTDOWN,1);			// send an emergency shutdown message
+	rpt_exception(TG_SHUTDOWN,1);			// send shutdown message, value = 1 (arbitrary)
 	cm.machine_state = MACHINE_SHUTDOWN;
 }
 

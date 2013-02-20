@@ -44,17 +44,17 @@
 
 // *** settings.h overrides ***
 
-#undef	COM_COMM_MODE
-#define COM_COMM_MODE				JSON_MODE
-//#define COM_COMM_MODE				TEXT_MODE
+#undef	COMM_MODE
+#define COMM_MODE				JSON_MODE
+//#define COMM_MODE				TEXT_MODE
 
-#undef COM_JSON_VERBOSITY
-//#define COM_JSON_VERBOSITY		JV_SILENT			// no response is provided for any command
-//#define COM_JSON_VERBOSITY		JV_OMIT_BODY		// response contains no body - footer only
-//#define COM_JSON_VERBOSITY		JV_OMIT_GCODE_BODY	// body returned for configs; omitted for Gcode commands
-#define COM_JSON_VERBOSITY		JV_GCODE_LINENUM_ONLY// body returned for configs; Gcode returns line number as 'n', otherwise body is omitted
-//#define COM_JSON_VERBOSITY		JV_GCODE_MESSAGES	// body returned for configs; Gcode returns line numbers and messages only
-//#define COM_JSON_VERBOSITY		JV_VERBOSE			// body returned for configs and Gcode - Gcode comments removed
+#undef JSON_VERBOSITY
+//#define JSON_VERBOSITY JV_SILENT		// no response is provided for any command
+//#define JSON_VERBOSITY JV_FOOTER		// responses contain  footer only; no command echo, gcode blocks or messages
+//#define JSON_VERBOSITY JV_CONFIGS		// echo configs; gcode blocks are not echoed; messages are not echoed
+#define JSON_VERBOSITY JV_MESSAGES		// echo configs; gcode messages only (if present); no block echo or line numbers
+//#define JSON_VERBOSITY  JV_LINENUM	// echo configs; gcode blocks return messages and line numbers as present
+//#define JSON_VERBOSITY JV_VERBOSE		// echos all configs and gcode blocks, line numbers and messages
 
 // *** motor settings ***
 
@@ -62,7 +62,7 @@
 #define M1_STEP_ANGLE			1.8		// 1sa
 #define M1_TRAVEL_PER_REV		36.54	// 1tr
 #define M1_MICROSTEPS			8		// 1mi		1,2,4,8
-#define M1_POLARITY				1		// 1po		0=normal, 1=reversed
+#define M1_POLARITY				0		// 1po		0=normal, 1=reversed
 #define M1_POWER_MODE			1		// 1pm		TRUE=low power idle enabled 
 
 #define M2_MOTOR_MAP			Y
@@ -76,7 +76,7 @@
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		1.25
 #define M3_MICROSTEPS			8
-#define M3_POLARITY				1
+#define M3_POLARITY				0
 #define M3_POWER_MODE			1
 
 #define M4_MOTOR_MAP			A
@@ -93,7 +93,6 @@
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX			220					// xtm		travel between switches or crashes
 #define X_JERK_MAX				5000000000			// xjm		yes, that's "5 billion" mm/(min^3)
-//#define X_JERK_MAX			50000000			// xjm		yes, that's "5 billion" mm/(min^3)
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN		SW_MODE_HOMING
 #define X_SWITCH_MODE_MAX		SW_MODE_DISABLED
@@ -120,7 +119,6 @@
 #define Y_LATCH_VELOCITY		100
 #define Y_LATCH_BACKOFF			20
 #define Y_ZERO_BACKOFF			3
-//#define Y_JERK_HOMING			Y_JERK_MAX
 #define Y_JERK_HOMING			10000000000			// xjh
 
 #define Z_AXIS_MODE				AXIS_STANDARD
@@ -136,7 +134,6 @@
 #define Z_LATCH_VELOCITY		100
 #define Z_LATCH_BACKOFF			20
 #define Z_ZERO_BACKOFF			10
-//#define Z_JERK_HOMING			Z_JERK_MAX
 #define Z_JERK_HOMING			1000000000			// xjh
 
 #define A_AXIS_MODE				AXIS_STANDARD
@@ -161,12 +158,6 @@
 #define B_JERK_MAX				20000000
 #define B_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define B_RADIUS				1
-//#define B_SWITCH_MODE_MIN		SW_MODE_DISABLED
-//#define B_SWITCH_MODE_MAX		SW_MODE_DISABLED
-//#define B_SEARCH_VELOCITY		-600
-//#define B_LATCH_VELOCITY		100
-//#define B_LATCH_BACKOFF			-5
-//#define B_ZERO_BACKOFF			2
 
 #define C_AXIS_MODE				AXIS_DISABLED
 #define C_VELOCITY_MAX			3600
@@ -175,12 +166,6 @@
 #define C_JERK_MAX				20000000
 #define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define C_RADIUS				1
-//#define C_SWITCH_MODE_MIN		SW_MODE_DISABLED
-//#define C_SWITCH_MODE_MAX		SW_MODE_DISABLED
-//#define C_SEARCH_VELOCITY		-600
-//#define C_LATCH_VELOCITY		100
-//#define C_LATCH_BACKOFF			-5
-//#define C_ZERO_BACKOFF			2
 
 #ifdef __PLAN_R2
 #undef  X_JERK_MAX
@@ -190,7 +175,6 @@
 #undef  Z_JERK_MAX
 #define Z_JERK_MAX				600000				//
 #endif
-
 
 // *** DEFAULT COORDINATE SYSTEM OFFSETS ***
 // Our convention is:
@@ -205,14 +189,14 @@
 #define G54_B_OFFSET 0
 #define G54_C_OFFSET 0
 
-#define G55_X_OFFSET 100		// set G55 to be a zero in the middle of the table
-#define G55_Y_OFFSET 100
+#define G55_X_OFFSET (X_TRAVEL_MAX/2)	// set g55 to middle of table
+#define G55_Y_OFFSET (Y_TRAVEL_MAX/2)
 #define G55_Z_OFFSET 0
 #define G55_A_OFFSET 0
 #define G55_B_OFFSET 0
 #define G55_C_OFFSET 0
 
-#define G56_X_OFFSET 100		// special settings for running braid
+#define G56_X_OFFSET (X_TRAVEL_MAX/2)	// special settings for running braid tests
 #define G56_Y_OFFSET 20
 #define G56_Z_OFFSET -10
 #define G56_A_OFFSET 0

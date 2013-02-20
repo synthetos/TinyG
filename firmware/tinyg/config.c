@@ -31,29 +31,30 @@
  *	The config system provides a structured way to access and set configuration variables.
  *	It also provides a way to get an arbitrary variable for reporting. Config operates
  *	as a collection of "objects" (OK, so they are not really objects) that encapsulate
- *	each variable. The objects are collected into a list (the body), which also has  
+ *	each variable. The objects are collected into a list (the body), which also may have  
  *	header and footer objects. This way the internals don't care about how the variable
  *	is represented or communicated externally as all operations occur on the cmdObj list. 
  *	The list is populated by the text_parser or the JSON_parser depending on the mode.
  *	The lists are also used for responses and are read out (printed) by a text-mode or
- *	JSON print function.
+ *	JSON serialization function.
  */
 /*	--- Config variables, tables and strings ---
  *
  *	Each configuration value is identified by a short mnemonic string (token). The token 
  *	is resolved to an index into the cfgArray which is an array of structures with the 
- *	static assignments for each variable. The array is organized as:
+ *	static assignments for each variable. The cfgArray contains typed data in program 
+ *	memory (PROGMEM).
  * 
- *	- cfgArray contains typed data in program memory (PROGMEM). Each cfgItem has:
- *		- group string identifying what group the variable is part of (if any)
- *		- token string - the token for that variable - pre-pended with the group (if any)
- *		- operations flags - flag if the value should be initialized and/or persisted to NVM
- *		- pointer to a formatted print string also in program memory (Used only for text mode)
- *		- function pointer for formatted print() method or text-mode readouts
- *		- function pointer for get() method - gets values from memory
- *		- function pointer for set() method - sets values and runs functions
- *		- target - memory location that the value is written to / read from
- *		- default value - for cold initialization
+ *	Each cfgItem has:
+ *	 - group string identifying what group the variable is part of; or "" if no group
+ *	 - token string - the token for that variable - pre-pended with the group (if present)
+ *	 - operations flags - e.g. if the value should be initialized and/or persisted to NVM
+ *	 - pointer to a formatted print string also in program memory (Used only for text mode)
+ *	 - function pointer for formatted print() method for text-mode readouts
+ *	 - function pointer for get() method - gets value from memory
+ *	 - function pointer for set() method - sets value and runs functions
+ *	 - target - memory location that the value is written to / read from
+ *	 - default value - for cold initialization
  *
  *	Additionally an NVM array contains values persisted to EEPROM as doubles; indexed by cfgArray index
  *
@@ -251,7 +252,6 @@ static uint8_t _set_sa(cmdObj_t *cmd);		// set motor step angle
 static uint8_t _set_tr(cmdObj_t *cmd);		// set motor travel per revolution
 static uint8_t _set_mi(cmdObj_t *cmd);		// set microsteps
 static uint8_t _set_po(cmdObj_t *cmd);		// set motor polarity
-static uint8_t _set_motor_steps_per_unit(cmdObj_t *cmd);
 
 static uint8_t _get_am(cmdObj_t *cmd);		// get axis mode
 static uint8_t _set_am(cmdObj_t *cmd);		// set axis mode
@@ -853,12 +853,9 @@ const cfgItem_t cfgArray[] PROGMEM = {
 //index_t cmd_get_max_index() { return (CMD_INDEX_MAX);}
 uint8_t cmd_index_is_group(index_t index) { return _index_is_group(index);}
 
-/**** Versions, IDs, and simple reports  ****
+/**** SYSTEM VARIABLES: Versions and IDs **************************************
  * _set_hv() - set hardweare version number
  * _get_id() - get device ID (signature)
- * _get_qr() - run queue report
- * _get_er() - invoke a bogus exception report for testing purposes (it's not real)
- * _get_rx() - get bytes available in RX buffer
  */
 static uint8_t _set_hv(cmdObj_t *cmd) 
 {
@@ -877,6 +874,17 @@ static uint8_t _get_id(cmdObj_t *cmd)
 	return (TG_OK);
 }
 
+/**** REPORT FUNCTIONS ********************************************************
+ * _get_qr() 	- run queue report
+ * _get_er()	- invoke a bogus exception report for testing purposes (it's not real)
+ * _get_rx()	- get bytes available in RX buffer
+ * _get_sr()	- run status report
+ * _set_sr()	- set status report elements
+ * _print_sr()	- print multiline text status report
+ * _set_si()	- set status report interval
+ * cmd_set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
+ * cmd_set_tv() - set text verbosity level (exposed) - for details see textVerbosity in config.h
+ */
 static uint8_t _get_qr(cmdObj_t *cmd) 
 {
 	cmd->value = (double)mp_get_planner_buffers_available();
@@ -897,15 +905,6 @@ static uint8_t _get_rx(cmdObj_t *cmd)
 	return (TG_OK);
 }
 
-/**** REPORT FUNCTIONS ****
- * _get_sr()   - run status report
- * _set_sr()   - set status report elements
- * _print_sr() - print multiline text status report
- * _set_si()   - set status report interval
- *
- * cmd_set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
- * cmd_set_tv() - set text verbosity level (exposed) - for details see textVerbosity in config.h
- */
 static uint8_t _get_sr(cmdObj_t *cmd)
 {
 	rpt_populate_unfiltered_status_report();
@@ -1127,12 +1126,11 @@ static void _print_mpos(cmdObj_t *cmd)		// print position with fixed unit displa
 	_print_pos_helper(cmd, MILLIMETERS);
 }
 
-/**** GCODE AND RELATED FUNCTIONS ****************************************/
-/* _get_gc()	- get gcode block
+/**** GCODE AND RELATED FUNCTIONS *********************************************
+ * _get_gc()	- get gcode block
  * _run_gc()	- launch the gcode parser on a block of gcode
  * _run_home()	- invoke a homing cycle
  */
-
 static uint8_t _get_gc(cmdObj_t *cmd)
 {
 	ritorno(cmd_copy_string(cmd, tg.in_buf));
@@ -1151,16 +1149,15 @@ static uint8_t _run_home(cmdObj_t *cmd)
 	return (TG_OK);
 }
 
-/**** AXIS AND MOTOR FUNCTIONS ****
+/**** AXIS AND MOTOR FUNCTIONS ************************************************
+ * _set_motor_steps_per_unit() - update this derived value
  * _get_am() - get axis mode w/enumeration string
  * _set_am() - set axis mode w/exception handling for axis type
- * _print_am() - print axis mode w/enumeration string
  * _set_sw() - run this any time you change a switch setting	
  * _set_sa() - set motor step_angle & recompute steps_per_unit
  * _set_tr() - set motor travel_per_rev & recompute steps_per_unit
  * _set_mi() - set microsteps & recompute steps_per_unit
  * _set_po() - set polarity and update stepper structs
- * _set_motor_steps_per_unit() - update this derived value
  *
  * _pr_ma_ui8() - print motor or axis uint8_t value w/no units or unit conversion
  * _pr_ma_lin() - print linear value with units and in/mm unit conversion
@@ -1169,6 +1166,15 @@ static uint8_t _run_home(cmdObj_t *cmd)
  * _print_coor()- print coordinate offsets with linear units
  * _print_corr()- print coordinate offsets with rotary units
  */
+
+// helper. This function will need to be rethought if microstep morphing is implemented
+static uint8_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
+{
+	uint8_t m = _get_motor(cmd->index);
+	cfg.m[m].steps_per_unit = (360 / (cfg.m[m].step_angle / cfg.m[m].microsteps) / cfg.m[m].travel_rev);
+	return (TG_OK);
+}
+
 static uint8_t _get_am(cmdObj_t *cmd)
 {
 	_get_ui8(cmd);
@@ -1233,13 +1239,6 @@ static uint8_t _set_po(cmdObj_t *cmd)		// motor polarity
 	return (TG_OK);
 }
 
-static uint8_t _set_motor_steps_per_unit(cmdObj_t *cmd) // This function will need to be rethought if microstep morphing is implemented
-{
-	uint8_t m = _get_motor(cmd->index);
-	cfg.m[m].steps_per_unit = (360 / (cfg.m[m].step_angle / cfg.m[m].microsteps) / cfg.m[m].travel_rev);
-	return (TG_OK);
-}
-
 static void _pr_ma_ui8(cmdObj_t *cmd)		// print uint8_t value
 {
 	cmd_get(cmd);
@@ -1287,7 +1286,7 @@ static void _print_corr(cmdObj_t *cmd)	// print coordinate offsets with rotary u
 					(PGM_P)pgm_read_word(&msg_units[F_DEG]));
 }
 
-/**** COMMUNICATIONS SETTINGS ****
+/**** COMMUNICATIONS SETTINGS *************************************************
  * _set_ic() - ignore CR or LF on RX
  * _set_ec() - enable CRLF on TX
  * _set_ee() - enable character echo
@@ -1295,7 +1294,6 @@ static void _print_corr(cmdObj_t *cmd)	// print coordinate offsets with rotary u
  * _set_baud() - set USB baud rate
  *	The above assume USB is the std device
  */
-
 static uint8_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
 {
 	if (fp_NOT_ZERO(cmd->value)) { 
@@ -1306,7 +1304,7 @@ static uint8_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
 	return (TG_OK);
 }
 
-static uint8_t _set_ic(cmdObj_t *cmd) 	// ignore CR or LF on RX
+static uint8_t _set_ic(cmdObj_t *cmd) 				// ignore CR or LF on RX
 {
 	cfg.ignore_crlf = (uint8_t)cmd->value;
 	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
@@ -1320,19 +1318,19 @@ static uint8_t _set_ic(cmdObj_t *cmd) 	// ignore CR or LF on RX
 	return (TG_OK);
 }
 
-static uint8_t _set_ec(cmdObj_t *cmd) 	// expand CR to CRLF on TX
+static uint8_t _set_ec(cmdObj_t *cmd) 				// expand CR to CRLF on TX
 {
 	cfg.enable_cr = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_CRLF, XIO_NOCRLF));
 }
 
-static uint8_t _set_ee(cmdObj_t *cmd) 	// enable character echo
+static uint8_t _set_ee(cmdObj_t *cmd) 				// enable character echo
 {
 	cfg.enable_echo = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_ECHO, XIO_NOECHO));
 }
 
-static uint8_t _set_ex(cmdObj_t *cmd)		// enable XON/XOFF
+static uint8_t _set_ex(cmdObj_t *cmd)				// enable XON/XOFF
 {
 	cfg.enable_xon = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_XOFF, XIO_NOXOFF));
@@ -1371,7 +1369,7 @@ uint8_t cfg_baud_rate_callback(void)
 	return (TG_OK);
 }
 
-/**** UberGroup Operations ****
+/**** UberGroup Operations ****************************************************
  * Uber groups are groups of groups organized for convenience:
  *	- motors	- group of all motor groups
  *	- axes		- group of all axis groups
@@ -1438,19 +1436,19 @@ static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
 	return (TG_COMPLETE);
 }
 
-/*****************************************************************************
- *****************************************************************************
- *****************************************************************************
- *** END SETTING-SPECIFIC REGION *********************************************
- *** Code below should not require changes as parameters are added/updated ***
- *****************************************************************************
- *****************************************************************************
- *****************************************************************************/
+/******************************************************************************
+ ******************************************************************************
+ ******************************************************************************
+ *** END SETTING-SPECIFIC REGION **********************************************
+ *** Code below should not require changes as parameters are added/updated ****
+ ******************************************************************************
+ ******************************************************************************
+ ******************************************************************************/
 
-/****************************************************************************/
-/**** CMD FUNCTION ENTRY POINTS *********************************************/
-/****************************************************************************/
-/* These are the primary access points to cmd functions
+/******************************************************************************
+ **** CMD FUNCTION ENTRY POINTS ***********************************************
+ ******************************************************************************
+ * These are the primary access points to cmd functions
  * These are the gatekeeper functions that check index ranges so others don't have to
  *
  * cmd_set() 	- Write a value or invoke a function - operates on single valued elements or groups
@@ -1491,13 +1489,13 @@ void cmd_persist(cmdObj_t *cmd)
 	}
 }
 
-/****************************************************************************
+/******************************************************************************
  * cfg_init() - called once on hard reset
  * _set_defa() - reset NVM with default values for active profile
  *
- * Will perform one of 2 actions:
- *	(1) if NVM is set up or out-of-rev: load RAM and NVM with hardwired default settings
- *	(2) if NVM is set up and at current config version: use NVM data for config
+ * Performs one of 2 actions:
+ *	(1) if NVM is set up or out-of-rev load RAM and NVM with settings.h defaults
+ *	(2) if NVM is set up and at current config version use NVM data for config
  *
  *	You can assume the cfg struct has been zeroed by a hard reset. 
  *	Do not clear it as the version and build numbers have already been set by tg_init()
@@ -1533,7 +1531,8 @@ void cfg_init()
 			}
 		}
 	}
-	rpt_init_status_report(true);			// requires special treatment (persist = true)
+//	rpt_init_status_report(true);			// requires special treatment (persist = true)
+	rpt_init_status_report(false);			// requires special treatment (persist = false)
 }
 
 static uint8_t _set_defa(cmdObj_t *cmd) 
@@ -1543,8 +1542,6 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 		return (TG_OK);
 	}
 	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
-	rpt_print_initializing_message();
-	rpt_init_status_report(true);			// reset status reports
 
 	for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
 		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
@@ -1554,10 +1551,12 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 			cmd_persist(cmd);
 		}
 	}
+	rpt_print_initializing_message();
+	rpt_init_status_report(true);			// reset status reports (persist = true)
 	return (TG_OK);
 }
 
-/****************************************************************************
+/******************************************************************************
  * cfg_text_parser() - update a config setting from a text block (text mode)
  * _text_parser() 	 - helper for above
  * 
@@ -1628,7 +1627,7 @@ static uint8_t _text_parser(char *str, cmdObj_t *cmd)
 	return (TG_OK);
 }
 
-/***** Generic Internal Functions *******************************************
+/***** Generic Internal Functions *********************************************
  * Generic sets()
  * _set_nul() - set nothing (returns TG_NOOP)
  * _set_ui8() - set value as 8 bit uint8_t value w/o unit conversion
@@ -1721,7 +1720,6 @@ static uint8_t _get_dbu(cmdObj_t *cmd)
  * _print_dbl() - print double value w/no units or unit conversion
  * _print_lin() - print linear value with units and in/mm unit conversion
  * _print_rot() - print rotary value with units
- *
  */
 static void _print_nul(cmdObj_t *cmd) {}
 
@@ -1767,7 +1765,7 @@ static void _print_rot(cmdObj_t *cmd)
 	fprintf(stderr, _get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[F_DEG]));
 }
 
-/***************************************************************************** 
+/******************************************************************************
  * Accessors - get various data from an object given the index
  * _get_format() 	- return format string for an index
  * _get_motor()		- return the motor number as an index or -1 if na
@@ -1815,7 +1813,7 @@ static int8_t _get_pos_axis(const index_t i)
 	return (ptr - axes);
 }
 
-/********************************************************************************
+/******************************************************************************
  * Group operations
  *
  *	Group operations work on parent/child groups where the parent is one of:
@@ -1909,16 +1907,39 @@ uint8_t cmd_group_is_prefixed(char *group)
 	return (true);
 }
 
-/*****************************************************************************
- ***** cmdObj functions ******************************************************
- *****************************************************************************/
+/******************************************************************************
+ ***** cmdObj functions *******************************************************
+ ******************************************************************************/
 
-/*****************************************************************************
+/******************************************************************************
  * cmdObj helper functions and other low-level cmd helpers
- * cmd_get_index() 		 - get index from mnenonic token + group
  * cmd_get_type()		 - returns command type as a CMD_TYPE enum
  * cmd_persist_offsets() - write any changed G54 (et al) offsets back to NVM
+ * cmd_get_index() 		 - get index from mnenonic token + group
  */
+uint8_t cmd_get_type(cmdObj_t *cmd)
+{
+	if (strcmp("gc", cmd->token) == 0) return (CMD_TYPE_GCODE);
+	if (strcmp("sr", cmd->token) == 0) return (CMD_TYPE_REPORT);
+	if (strcmp("qr", cmd->token) == 0) return (CMD_TYPE_REPORT);
+	return (CMD_TYPE_CONFIG);
+}
+
+uint8_t cmd_persist_offsets(uint8_t flag)
+{
+	if (flag == true) {
+		cmdObj_t cmd;
+		for (uint8_t i=1; i<=COORDS; i++) {
+			for (uint8_t j=0; j<AXES; j++) {
+				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
+				cmd.index = cmd_get_index("", cmd.token);
+				cmd.value = cfg.offset[i][j];
+				cmd_persist(&cmd);				// only writes changed values
+			}
+		}
+	}
+	return (TG_OK);
+}
 
 /* 
  * cmd_get_index() is the most expensive routine in the whole config. It does a linear table scan 
@@ -1954,30 +1975,6 @@ index_t cmd_get_index(const char *group, const char *token)
 		return (i);															// five character match
 	}
 	return (NO_MATCH);
-}
-
-uint8_t cmd_get_type(cmdObj_t *cmd)
-{
-	if (strcmp("gc", cmd->token) == 0) return (CMD_TYPE_GCODE);
-	if (strcmp("sr", cmd->token) == 0) return (CMD_TYPE_REPORT);
-	if (strcmp("qr", cmd->token) == 0) return (CMD_TYPE_REPORT);
-	return (CMD_TYPE_CONFIG);
-}
-
-uint8_t cmd_persist_offsets(uint8_t flag)
-{
-	if (flag == true) {
-		cmdObj_t cmd;
-		for (uint8_t i=1; i<=COORDS; i++) {
-			for (uint8_t j=0; j<AXES; j++) {
-				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
-				cmd.index = cmd_get_index("", cmd.token);
-				cmd.value = cfg.offset[i][j];
-				cmd_persist(&cmd);				// only writes changed values
-			}
-		}
-	}
-	return (TG_OK);
 }
 
 /*
@@ -2018,7 +2015,6 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_NOSTRIP) {
 			cmd->group[0] = NUL;
 		} else {
-//			strcpy_P(cmd->group, cfgArray[cmd->index].group); 	 // group field is always terminated
 			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
 		}
 	}
@@ -2176,13 +2172,11 @@ cmdObj_t *cmd_add_message_P(const char *string)	// conditionally add a message o
 	return (NULL);
 }
 
-/**** cmd_print_list() - print cmd_array as JSON or text ****
+/**** cmd_print_list() - print cmd_array as JSON or text **********************
  *
- * 	Use this function for all text and JSON output that wants to be in a response header
- *	(don't just printf stuff)
- * 	It generates and prints the JSON and text mode output strings 
- *	In JSON mode it generates the footer with the status code, buffer count and checksum
- *	In text mode it uses the the textmode variable to set the output format
+ * 	Generate and print the JSON and text mode output strings. Use this function 
+ *	for all text and JSON output that wants to be in a response header. 
+ *	Don't just printf stuff.
  *
  *	Inputs:
  *	  json_flags = JSON_OBJECT_FORMAT - print just the body w/o header or footer
@@ -2255,12 +2249,12 @@ void _print_text_multiline_formatted()
 	}
 }
 
-/************************************************************************************
- ***** EEPROM access functions ******************************************************
- ************************************************************************************
+/******************************************************************************
+ ***** EEPROM access functions ************************************************
+ ******************************************************************************
  * cmd_read_NVM_value()	 - return value (as double) by index
- * cmd_write_NVM_value() - write to NVM by index, but only if the value has changed
- * (see 331.09 or earlier for token/value record-oriented routines)
+ * cmd_write_NVM_value() - write to NVM by index, but only if the value has 
+ * 	changed (see 331.09 or earlier for token/value record-oriented routines)
  *
  *	It's the responsibility of the caller to make sure the index does not exceed range
  */
