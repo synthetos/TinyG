@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Atmel Studio Solution File, Format Version 11.00
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "xboot", "xboot.cproj", "{EEB5A5AD-8067-4A27-8F86-4BF019F63650}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AVR = Debug|AVR
+		Release|AVR = Release|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EEB5A5AD-8067-4A27-8F86-4BF019F63650}.Debug|AVR.ActiveCfg = Debug|AVR
+		{EEB5A5AD-8067-4A27-8F86-4BF019F63650}.Debug|AVR.Build.0 = Debug|AVR
+		{EEB5A5AD-8067-4A27-8F86-4BF019F63650}.Release|AVR.ActiveCfg = Release|AVR
+		{EEB5A5AD-8067-4A27-8F86-4BF019F63650}.Release|AVR.Build.0 = Release|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

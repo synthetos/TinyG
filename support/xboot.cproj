@@ -1,0 +1,203 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>6.0</ProjectVersion>
+    <ToolchainName>com.Atmel.AVRGCC8</ToolchainName>
+    <ProjectGuid>{eeb5a5ad-8067-4a27-8f86-4bf019f63650}</ProjectGuid>
+    <avrdevice>ATxmega192A3</avrdevice>
+    <avrdeviceseries>none</avrdeviceseries>
+    <OutputType>Executable</OutputType>
+    <Language>C</Language>
+    <OutputFileName>$(MSBuildProjectName)</OutputFileName>
+    <OutputFileExtension>.elf</OutputFileExtension>
+    <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
+    <AssemblyName>xboot</AssemblyName>
+    <Name>xboot</Name>
+    <RootNamespace>xboot</RootNamespace>
+    <ToolchainFlavour>Native</ToolchainFlavour>
+    <KeepTimersRunning>true</KeepTimersRunning>
+    <OverrideVtor>false</OverrideVtor>
+    <OverrideVtorValue />
+    <eraseonlaunchrule>0</eraseonlaunchrule>
+    <AsfVersion>3.1.3</AsfVersion>
+    <avrtoolinterface />
+    <avrtool>com.atmel.avrdbg.tool.simulator</avrtool>
+    <com_atmel_avrdbg_tool_simulator>
+      <ToolType xmlns="">com.atmel.avrdbg.tool.simulator</ToolType>
+      <ToolName xmlns="">AVR Simulator</ToolName>
+      <ToolNumber xmlns="">
+      </ToolNumber>
+      <KeepTimersRunning xmlns="">true</KeepTimersRunning>
+      <OverrideVtor xmlns="">false</OverrideVtor>
+      <OverrideVtorValue xmlns="">
+      </OverrideVtorValue>
+      <Channel xmlns="">
+        <host>127.0.0.1</host>
+        <port>4091</port>
+        <ssl>False</ssl>
+      </Channel>
+    </com_atmel_avrdbg_tool_simulator>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <ToolchainSettings>
+      <AvrGcc>
+        <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+        <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+        <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+        <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+        <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+        <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
+        <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+        <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+        <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+        <avrgcc.linker.libraries.Libraries>
+          <ListValues>
+            <Value>m</Value>
+          </ListValues>
+        </avrgcc.linker.libraries.Libraries>
+      </AvrGcc>
+    </ToolchainSettings>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <ToolchainSettings>
+      <AvrGcc>
+  <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+  <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+  <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+  <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+  <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+  <avrgcc.compiler.symbols.DefSymbols>
+    <ListValues>
+      <Value>F_CPU=32000000</Value>
+      <Value>USE_CONFIG_H</Value>
+    </ListValues>
+  </avrgcc.compiler.symbols.DefSymbols>
+  <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
+  <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+  <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+  <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
+  <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+  <avrgcc.compiler.miscellaneous.OtherFlags>-mmcu=atxmega192a3 -I. -gdwarf-2 -std=gnu99 -ffunction-sections -fdata-sections -fno-jump-tables -Wa,-adhlns=flash.lst -Wstrict-prototypes</avrgcc.compiler.miscellaneous.OtherFlags>
+  <avrgcc.linker.libraries.Libraries>
+    <ListValues>
+      <Value>m</Value>
+    </ListValues>
+  </avrgcc.linker.libraries.Libraries>
+  <avrgcc.linker.memorysettings.Flash>
+    <ListValues>
+      <Value>.text=0x18000</Value>
+    </ListValues>
+  </avrgcc.linker.memorysettings.Flash>
+  <avrgcc.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcc.assembler.debugging.DebugLevel>
+</AvrGcc>
+    </ToolchainSettings>
+    <UsesExternalMakeFile>False</UsesExternalMakeFile>
+    <ExternalMakeFilePath>\\vmware-host\Shared Folders\Alden\Projects\proj38_TinyG\TinyG\xboot\xboot\Makefile</ExternalMakeFilePath>
+    <PreBuildEvent>
+    </PreBuildEvent>
+    <PostBuildEvent>avr-objcopy -O ihex --change-addresses -0x30000 xboot.hex xboot-boot.hex
+avr-nm -n xboot.elf &gt; xboot.sym</PostBuildEvent>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="api.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="api.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="eeprom_driver.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="eeprom_driver.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="fifo.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="fifo.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="flash.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="flash.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="i2c.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="i2c.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="protocol.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="sp_driver.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="sp_driver.S">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="uart.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="uart.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="watchdog.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="watchdog.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="xboot.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="xboot.h">
+      <SubType>compile</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="conf" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="#xbootapi.c#">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="config.h.mk">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="conf\akafuino32a4.conf.mk">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="conf\arduino328p.conf.mk">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="conf\mongoose.conf.mk">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="conf\x192a3.conf.mk">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="conf\x32a4.conf.mk">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="conf\x64a3.conf.mk">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="Makefile">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="mkpackage.sh">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="README.md">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="TAGS">
+      <SubType>compile</SubType>
+    </None>
+  </ItemGroup>
+  <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
+</Project>
