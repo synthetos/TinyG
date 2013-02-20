@@ -88,7 +88,7 @@
 static char _read_rx_buffer(xioSpi_t *dx);
 static char _write_rx_buffer(xioSpi_t *dx, char c);
 static char _read_tx_buffer(xioSpi_t *dx);
-static char _write_tx_buffer(xioSpi_t *dx, char c);
+//static char _write_tx_buffer(xioSpi_t *dx, char c);
 static char _xfer_spi_char(xioSpi_t *dx, char c_out);
 static char _read_spi_char(xioSpi_t *dx);
 
@@ -391,7 +391,7 @@ static char _read_tx_buffer(xioSpi_t *dx)
 	if ((--(dx->tx_buf_tail)) == 0) { dx->tx_buf_tail = SPI_TX_BUFFER_SIZE-1;}
 	return (c);
 }
-
+/*
 static char _write_tx_buffer(xioSpi_t *dx, char c) 
 {
 	spibuf_t next_buf_head = dx->tx_buf_head-1;
@@ -401,7 +401,7 @@ static char _write_tx_buffer(xioSpi_t *dx, char c)
 	dx->tx_buf_head = next_buf_head;
 	return (XIO_OK);
 }
-
+*/
 /*
  * Bitbangers used by the SPI routines
  * _xfer_spi_char() - send a character on MOSI and receive incoming char on MISO

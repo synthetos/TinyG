@@ -1,8 +1,8 @@
 /*
- * json_parser.c - JSON parser for rs274/ngc parser.
+ * json_parser.c - JSON parser for TinyG
  * Part of TinyG project
  *
- * Copyright (c) 2012 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2013 Alden S. Hart, Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 

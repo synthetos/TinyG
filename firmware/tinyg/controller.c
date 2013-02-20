@@ -170,9 +170,6 @@ static uint8_t _dispatch()
 
 	// dispatch the new text line
 	switch (toupper(tg.in_buf[0])) {
-//		case '^': { sig_reset(); break; }		// debug char for reset tests
-//		case '@': { sig_feedhold(); break;}		// debug char for feedhold tests
-//		case '#': { sig_cycle_start(); break;}	// debug char for cycle start tests
 
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {
