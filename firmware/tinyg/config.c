@@ -428,6 +428,7 @@ static const char fmt_plan[] PROGMEM = "Plane:               %s\n";
 static const char fmt_path[] PROGMEM = "Path Mode:           %s\n";
 static const char fmt_dist[] PROGMEM = "Distance mode:       %s\n";
 static const char fmt_frmo[] PROGMEM = "Feed rate mode:      %s\n";
+static const char fmt_prev[] PROGMEM = "Preview mode:        %s\n";
 
 static const char fmt_pos[]  PROGMEM = "%c position:%15.3f%S\n";
 static const char fmt_mpos[] PROGMEM = "%c machine posn:%11.3f%S\n";
@@ -519,7 +520,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "path",_f00,fmt_path,_print_str, _get_path,_set_nul,(double *)&tg.null, 0 },		// path control mode
 	{ "",   "dist",_f00,fmt_dist,_print_str, _get_dist,_set_nul,(double *)&tg.null, 0 },		// distance mode
 	{ "",   "frmo",_f00,fmt_frmo,_print_str, _get_frmo,_set_nul,(double *)&tg.null, 0 },		// feed rate mode
-
+	{ "",   "prev",_f00,fmt_prev,_print_int, _get_ui8, _set_ui8,(double *)&cm.preview_mode,0 },	// set preview mode
+	
 	{ "mpo","mpox",_f00,fmt_mpos,_print_mpos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// X machine position
 	{ "mpo","mpoy",_f00,fmt_mpos,_print_mpos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Y machine position
 	{ "mpo","mpoz",_f00,fmt_mpos,_print_mpos, _get_mpos,_set_nul,(double *)&tg.null, 0 },		// Z machine position

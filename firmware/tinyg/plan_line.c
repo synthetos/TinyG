@@ -1263,7 +1263,13 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
-	//**** main dispatcher to process segments ***
+	//**** preview mode ****
+	if (cm.preview_mode == true) {
+		mp_free_run_buffer();				// free bf if it's actually done
+		return (TG_OK);
+	}
+
+	//**** main dispatcher to process segments ****
 	switch (mr.move_state) {
 		case (MOVE_STATE_HEAD): { status = _exec_aline_head(); break;}
 		case (MOVE_STATE_BODY): { status = _exec_aline_body(); break;}
@@ -1288,7 +1294,6 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	//	  TG_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
 
 	if (status == TG_EAGAIN) { 
-//		rpt_decr_status_report(); 				// continue running mr buffer
 		rpt_request_status_report(); 			// continue reporting mr buffer
 	} else {
 		mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
