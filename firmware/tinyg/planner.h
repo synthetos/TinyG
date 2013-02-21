@@ -156,13 +156,8 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 	double braking_velocity;	// current value for braking velocity
 
 	double jerk;				// maximum linear jerk term for this move
-#ifdef __PLAN_R2
-	double recip_half_jerk;		// used by planning
-	double half_jerk;			// used by planning
-#else
 	double recip_jerk;			// 1/Jm used for planning (compute-once)
 	double cbrt_jerk;			// cube root of Jm used for planning (compute-once)
-#endif
 } mpBuf_t;
 
 typedef struct mpBufferPool {	// ring buffer for sub-moves
