@@ -438,16 +438,17 @@ static struct qrIndexes qr;
 
 void rpt_request_queue_report() 
 { 
-	if (cfg.enable_qr == QR_OFF) return;
+	if (cfg.queue_report_verbosity == QR_OFF) return;
 
 	qr.buffers_available = mp_get_planner_buffers_available();
 
 	// perform filtration for QR_FILTERED reports
-	if (cfg.enable_qr == QR_FILTERED) {
+	if (cfg.queue_report_verbosity == QR_FILTERED) {
 		if (qr.buffers_available == qr.prev_available) {
 			return;
 		}
-		if ((qr.buffers_available > cfg.qr_lo_water) && (qr.buffers_available < cfg.qr_hi_water)) {
+		if ((qr.buffers_available > cfg.queue_report_lo_water) && 
+			(qr.buffers_available < cfg.queue_report_hi_water)) {
 			return;
 		}
 	}

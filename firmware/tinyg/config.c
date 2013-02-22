@@ -402,10 +402,10 @@ static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0=off,1=
 static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0=off,1=on]\n";
 static const char fmt_ex[] PROGMEM = "[ex]  enable xon xoff%14d [0=off,1=on]\n";
 static const char fmt_ej[] PROGMEM = "[ej]  enable json mode%13d [0=text,1=JSON]\n";
-static const char fmt_jv[] PROGMEM = "[jv]  json verbosity%15d [0=silent,1=footer,2=configs,3=messages,4=linenum,5=verbose]\n";
-static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=prompt,2=messages,3=configs,4=verbose]\n";
-static const char fmt_sv[] PROGMEM = "[sv]  status verbosity%13d [0=off,1=filtered,2=verbose]\n";
-static const char fmt_eq[] PROGMEM = "[eq]  queue report verbosity%7d [0=off,1=filtered,2=verbose]\n";
+static const char fmt_jv[] PROGMEM = "[jv]  json verbosity%15d [0=silent,1=footer,2=messages,3=configs,4=linenum,5=verbose]\n";
+static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=prompt,2=messages,3=configs,4=linenum,5=verbose]\n";
+static const char fmt_sv[] PROGMEM = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
+static const char fmt_qv[] PROGMEM = "[eq]  queue report verbosity%7d [0=off,1=filtered,2=verbose]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
 
 static const char fmt_qr[] PROGMEM = "qr:%d\n";
@@ -761,7 +761,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","ej",  _f07, fmt_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,			COMM_MODE },
 	{ "sys","jv",  _f07, fmt_jv, _print_ui8, _get_ui8, cmd_set_jv,(double *)&cfg.json_verbosity,	JSON_VERBOSITY },
 	{ "sys","tv",  _f07, fmt_tv, _print_ui8, _get_ui8, cmd_set_tv,(double *)&cfg.text_verbosity,	TEXT_VERBOSITY },
-	{ "sys","eq",  _f07, fmt_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,			QR_VERBOSITY },
+	{ "sys","qv",  _f07, fmt_qv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.queue_report_verbosity,QR_VERBOSITY },
 	{ "sys","sv",  _f07, fmt_sv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.status_report_verbosity,SR_VERBOSITY },
 	{ "sys","si",  _f07, fmt_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
 	{ "sys","baud",_fns, fmt_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
@@ -770,8 +770,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "mt",  _fip, fmt_mt, _print_lin, _get_dbl, _set_dbl, (double *)&cfg.estd_segment_usec,	NOM_SEGMENT_USEC },
 	{ "",   "ml",  _fip, fmt_ml, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.min_segment_len,	MIN_LINE_LENGTH },
 	{ "",   "ma",  _fip, fmt_ma, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.arc_segment_len,	ARC_SEGMENT_LENGTH },
-	{ "",   "eqh", _fip, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.qr_hi_water, 		QR_HI_WATER },
-	{ "",   "eql", _fip, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.qr_lo_water, 		QR_LO_WATER },
+	{ "",   "qrh", _fip, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.queue_report_hi_water, QR_HI_WATER },
+	{ "",   "qrl", _fip, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.queue_report_lo_water, QR_LO_WATER },
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
@@ -859,6 +859,7 @@ uint8_t cmd_index_is_group(index_t index) { return _index_is_group(index);}
  */
 static uint8_t _set_hv(cmdObj_t *cmd) 
 {
+	if (cmd->value > TINYG_HARDWARE_VERSION_MAX) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	_set_dbl(cmd);					// record the hardware version
 	sys_port_bindings(cmd->value);	// reset port bindings
 	gpio_init();					// re-initialize the GPIO ports
@@ -928,38 +929,29 @@ static uint8_t _set_si(cmdObj_t *cmd)
 	return(TG_OK);
 }
 
+uint8_t cmd_set_tv(cmdObj_t *cmd) 
+{
+	if (cmd->value > TV_VERBOSE) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	cfg.text_verbosity = cmd->value;
+	return(TG_OK);
+}
+
 uint8_t cmd_set_jv(cmdObj_t *cmd) 
 {
+	if (cmd->value > JV_VERBOSE) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	cfg.json_verbosity = cmd->value;
 
 	cfg.echo_json_footer = false;
-	cfg.echo_json_configs = false;
 	cfg.echo_json_messages = false;
+	cfg.echo_json_configs = false;
 	cfg.echo_json_linenum = false;
 	cfg.echo_json_gcode_block = false;
 
 	if (cmd->value >= JV_FOOTER) 	{ cfg.echo_json_footer = true;}
-	if (cmd->value >= JV_CONFIGS)	{ cfg.echo_json_configs = true;}
 	if (cmd->value >= JV_MESSAGES)	{ cfg.echo_json_messages = true;}
+	if (cmd->value >= JV_CONFIGS)	{ cfg.echo_json_configs = true;}
 	if (cmd->value >= JV_LINENUM)	{ cfg.echo_json_linenum = true;}
 	if (cmd->value >= JV_VERBOSE)	{ cfg.echo_json_gcode_block = true;}
-
-	return(TG_OK);
-}
-
-uint8_t cmd_set_tv(cmdObj_t *cmd) 
-{
-	cfg.text_verbosity = cmd->value;
-
-	cfg.echo_text_prompt = false;
-	cfg.echo_text_messages = false;
-	cfg.echo_text_configs = false;
-	cfg.echo_text_gcode_block = false;
-
-	if (cmd->value >= TV_PROMPT)	{ cfg.echo_text_prompt = true;} 
-	if (cmd->value >= TV_MESSAGES)	{ cfg.echo_text_messages = true;}
-	if (cmd->value >= TV_CONFIGS)	{ cfg.echo_text_configs = true;}
-	if (cmd->value >= TV_VERBOSE)	{ cfg.echo_text_gcode_block = true;}
 
 	return(TG_OK);
 }
@@ -1201,7 +1193,8 @@ static uint8_t _set_am(cmdObj_t *cmd)		// axis mode
 }
 
 static uint8_t _set_sw(cmdObj_t *cmd)		// switch setting
-{ 
+{
+	if (cmd->value > SW_TYPE_NORMALLY_CLOSED) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	_set_ui8(cmd);
 	gpio_init();
 	return (TG_OK);
@@ -1306,6 +1299,7 @@ static uint8_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
 
 static uint8_t _set_ic(cmdObj_t *cmd) 				// ignore CR or LF on RX
 {
+	if (cmd->value > IGNORE_LF) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	cfg.ignore_crlf = (uint8_t)cmd->value;
 	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
 	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORELF);
@@ -1320,18 +1314,21 @@ static uint8_t _set_ic(cmdObj_t *cmd) 				// ignore CR or LF on RX
 
 static uint8_t _set_ec(cmdObj_t *cmd) 				// expand CR to CRLF on TX
 {
+	if (cmd->value > true) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	cfg.enable_cr = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_CRLF, XIO_NOCRLF));
 }
 
 static uint8_t _set_ee(cmdObj_t *cmd) 				// enable character echo
 {
+	if (cmd->value > true) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	cfg.enable_echo = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_ECHO, XIO_NOECHO));
 }
 
 static uint8_t _set_ex(cmdObj_t *cmd)				// enable XON/XOFF
 {
+	if (cmd->value > true) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	cfg.enable_xon = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_XOFF, XIO_NOXOFF));
 }
@@ -1598,6 +1595,7 @@ static uint8_t _text_parser(char *str, cmdObj_t *cmd)
 
 	// string pre-processing
 	cmd_reset_obj(cmd);						// initialize config object
+	cmd_copy_string(cmd, str);				// make a copy for eventual reporting
 	if (*str == '$') str++;					// ignore leading $
 	for (ptr_rd = ptr_wr = str; *ptr_rd!=NUL; ptr_rd++, ptr_wr++) {
 		*ptr_wr = tolower(*ptr_rd);			// convert string to lower case
@@ -2153,22 +2151,16 @@ cmdObj_t *cmd_add_string_P(char *token, const char *string)
 
 cmdObj_t *cmd_add_message(const char *string)	// conditionally add a message object to the body
 {
-	if (((cfg.comm_mode == JSON_MODE) && (cfg.echo_json_messages == true)) ||
-	  	((cfg.comm_mode == TEXT_MODE) && (cfg.echo_text_messages == true))) {
-		return(cmd_add_string("msg", string));
-	}
-	return (NULL);
+	if ((cfg.comm_mode == JSON_MODE) && (cfg.echo_json_messages != true)) { return (NULL);}
+	return(cmd_add_string("msg", string));
 }
 
 cmdObj_t *cmd_add_message_P(const char *string)	// conditionally add a message object to the body
 {
-	if (((cfg.comm_mode == JSON_MODE) && (cfg.echo_json_messages == true)) ||
-	  	((cfg.comm_mode == TEXT_MODE) && (cfg.echo_text_messages == true))) {
-		char message[CMD_MESSAGE_LEN]; 
-		sprintf_P(message, string);
-		return(cmd_add_string("msg", message));
-	}
-	return (NULL);
+	if ((cfg.comm_mode == JSON_MODE) && (cfg.echo_json_messages != true)) { return (NULL);}
+	char message[CMD_MESSAGE_LEN]; 
+	sprintf_P(message, string);
+	return(cmd_add_string("msg", message));
 }
 
 /**** cmd_print_list() - print cmd_array as JSON or text **********************
@@ -2241,7 +2233,7 @@ void _print_text_multiline_formatted()
 {
 	cmdObj_t *cmd = cmd_body;
 
-	fprintf(stderr,"\n");
+//	fprintf(stderr,"\n");
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		if (cmd->type != TYPE_PARENT) { cmd_print(cmd);}
 		cmd = cmd->nx;

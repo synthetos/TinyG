@@ -20,7 +20,7 @@
     <OverrideVtor>false</OverrideVtor>
     <OverrideVtorValue />
     <eraseonlaunchrule>0</eraseonlaunchrule>
-    <AsfVersion>2.11.1</AsfVersion>
+    <AsfVersion>3.1.3</AsfVersion>
     <avrtool>com.atmel.avrdbg.tool.simulator</avrtool>
     <avrtoolinterface />
     <com_atmel_avrdbg_tool_simulator>
@@ -34,7 +34,7 @@
       </OverrideVtorValue>
       <Channel>
         <host>127.0.0.1</host>
-        <port>1226</port>
+        <port>1177</port>
         <ssl>False</ssl>
       </Channel>
     </com_atmel_avrdbg_tool_simulator>

@@ -398,7 +398,7 @@ void js_print_json_response(uint8_t status)
 
 	// Body processing
 	cmdObj_t *cmd = cmd_body;
-	if (cmd_get_type(cmd) == CMD_TYPE_GCODE) {
+	if (cmd_get_type(cmd) == CMD_TYPE_GCODE) {			// first block will be the command (gcode block or config)
 		if (cfg.echo_json_gcode_block == false) {
 			cmd->type = TYPE_EMPTY;						// skip gcode block if no echo
 		}
@@ -410,6 +410,12 @@ void js_print_json_response(uint8_t status)
 			cmd->type = TYPE_EMPTY;						// skip config if no echo
 		}
 	}
+	do {												// any subsequent cmds will be messages
+		cmd = cmd->nx;		
+		if (cfg.echo_json_messages == false) {
+			cmd->type = TYPE_EMPTY;
+		}
+	} while (cmd->nx != NULL);
 
 	// Footer processing
 	while(cmd->type != TYPE_EMPTY) { cmd = cmd->nx;}	// advance to first free object

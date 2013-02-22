@@ -36,9 +36,11 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	369.20		// removed bootloader ESC trap
+#define TINYG_BUILD_NUMBER   	369.21		// removed bootloader ESC trap
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
+
+#define TINYG_HARDWARE_VERSION_MAX TINYG_HARDWARE_VERSION
 
 /****** DEVELOPMENT SETTINGS ******/
 
