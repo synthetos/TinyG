@@ -428,7 +428,7 @@ static const char fmt_plan[] PROGMEM = "Plane:               %s\n";
 static const char fmt_path[] PROGMEM = "Path Mode:           %s\n";
 static const char fmt_dist[] PROGMEM = "Distance mode:       %s\n";
 static const char fmt_frmo[] PROGMEM = "Feed rate mode:      %s\n";
-static const char fmt_prev[] PROGMEM = "Preview mode:        %s\n";
+static const char fmt_prev[] PROGMEM = "Preview mode:        %d\n";
 
 static const char fmt_pos[]  PROGMEM = "%c position:%15.3f%S\n";
 static const char fmt_mpos[] PROGMEM = "%c machine posn:%11.3f%S\n";

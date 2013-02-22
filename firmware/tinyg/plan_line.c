@@ -1265,7 +1265,8 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 
 	//**** preview mode ****
 	if (cm.preview_mode == true) {
-		mp_free_run_buffer();				// free bf if it's actually done
+		copy_axis_vector(mr.position, mr.endpoint); // update runtime position	
+		mp_free_run_buffer();						// free bf if it's actually done
 		return (TG_OK);
 	}
 
