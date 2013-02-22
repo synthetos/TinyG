@@ -386,8 +386,8 @@ static const char fmt_dbl[] PROGMEM = "%f\n";	// generic format for doubles
 static const char fmt_str[] PROGMEM = "%s\n";	// generic format for string message (with no formatting)
 
 // System group and ungrouped formatting strings
-static const char fmt_fv[] PROGMEM = "[fv]  firmware version%16.2f\n";
 static const char fmt_fb[] PROGMEM = "[fb]  firmware build%18.2f\n";
+static const char fmt_fv[] PROGMEM = "[fv]  firmware version%16.2f\n";
 static const char fmt_hv[] PROGMEM = "[hv]  hardware version%16.2f\n";
 static const char fmt_id[] PROGMEM = "[id]  TinyG ID%30s\n";
 static const char fmt_ja[] PROGMEM = "[ja]  junction acceleration%8.0f%S\n";
@@ -397,16 +397,16 @@ static const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%16.3f%S\n";
 static const char fmt_mt[] PROGMEM = "[mt]  min segment time%13.0f uSec\n";
 static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0=NO,1=NC]\n";
 static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms\n";
-static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX%8d [0,1=CR,2=LF]\n";
-static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0,1]\n";
-static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0,1]\n";
-static const char fmt_ex[] PROGMEM = "[ex]  enable xon xoff%14d [0,1]\n";
-static const char fmt_eq[] PROGMEM = "[eq]  queue report verbosity%7d [0-2]\n";
-static const char fmt_ej[] PROGMEM = "[ej]  enable json mode%13d [0,1]\n";
-static const char fmt_jv[] PROGMEM = "[jv]  json verbosity%15d [0-5]\n";
-static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0-3]\n";
-static const char fmt_sv[] PROGMEM = "[sv]  status verbosity%13d [0-2]\n";
-static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [0-6]\n";
+static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX%8d [0=off,1=CR,2=LF]\n";
+static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0=off,1=on]\n";
+static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0=off,1=on]\n";
+static const char fmt_ex[] PROGMEM = "[ex]  enable xon xoff%14d [0=off,1=on]\n";
+static const char fmt_ej[] PROGMEM = "[ej]  enable json mode%13d [0=text,1=JSON]\n";
+static const char fmt_jv[] PROGMEM = "[jv]  json verbosity%15d [0=silent,1=footer,2=configs,3=messages,4=linenum,5=verbose]\n";
+static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=prompt,2=messages,3=configs,4=verbose]\n";
+static const char fmt_sv[] PROGMEM = "[sv]  status verbosity%13d [0=off,1=filtered,2=verbose]\n";
+static const char fmt_eq[] PROGMEM = "[eq]  queue report verbosity%7d [0=off,1=filtered,2=verbose]\n";
+static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
 
 static const char fmt_qr[] PROGMEM = "qr:%d\n";
 static const char fmt_rx[] PROGMEM = "rx:%d\n";
@@ -758,12 +758,12 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","ec",  _f07, fmt_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,			COM_EXPAND_CR },
 	{ "sys","ee",  _f07, fmt_ee, _print_ui8, _get_ui8, _set_ee,  (double *)&cfg.enable_echo,		COM_ENABLE_ECHO },
 	{ "sys","ex",  _f07, fmt_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
-	{ "sys","eq",  _f07, fmt_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,			QR_VERBOSITY },
 	{ "sys","ej",  _f07, fmt_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,			COMM_MODE },
 	{ "sys","jv",  _f07, fmt_jv, _print_ui8, _get_ui8, cmd_set_jv,(double *)&cfg.json_verbosity,	JSON_VERBOSITY },
 	{ "sys","tv",  _f07, fmt_tv, _print_ui8, _get_ui8, cmd_set_tv,(double *)&cfg.text_verbosity,	TEXT_VERBOSITY },
-	{ "sys","si",  _f07, fmt_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
+	{ "sys","eq",  _f07, fmt_eq, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.enable_qr,			QR_VERBOSITY },
 	{ "sys","sv",  _f07, fmt_sv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.status_report_verbosity,SR_VERBOSITY },
+	{ "sys","si",  _f07, fmt_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
 	{ "sys","baud",_fns, fmt_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
 
 	// removed from system group as "hidden" parameters
@@ -2241,6 +2241,7 @@ void _print_text_multiline_formatted()
 {
 	cmdObj_t *cmd = cmd_body;
 
+	fprintf(stderr,"\n");
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		if (cmd->type != TYPE_PARENT) { cmd_print(cmd);}
 		cmd = cmd->nx;

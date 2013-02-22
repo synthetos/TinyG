@@ -216,6 +216,13 @@ static const char prompt_in[] PROGMEM = "inch";
 static const char prompt_ok[] PROGMEM = "tinyg [%S] ok> ";
 static const char prompt_err[] PROGMEM = "tinyg [%S] error: %s %s\n";
 
+/*
+	if (cmd->value >= TV_PROMPT)	{ cfg.echo_text_prompt = true;} 
+	if (cmd->value >= TV_MESSAGES)	{ cfg.echo_text_messages = true;}
+	if (cmd->value >= TV_CONFIGS)	{ cfg.echo_text_configs = true;}
+	if (cmd->value >= TV_VERBOSE)	{ cfg.echo_text_gcode_block = true;}
+*/
+
 void tg_text_response(const uint8_t status, const char *buf)
 {
 	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
@@ -231,11 +238,23 @@ void tg_text_response(const uint8_t status, const char *buf)
 		fprintf_P(stderr, (PGM_P)prompt_err, Units, rpt_get_status_message(status, status_message), buf);
 	}
 
-	// deliver echo and messages
+	if (cfg.echo_text_gcode_block == true) {		// echo gcode block if enabled
+		fprintf(stderr, tg.in_buf);
+	}
+
+	// echo messages is enabled
 	cmdObj_t *cmd = cmd_body;	// if there is a message it will aways be in the second object
 	if ((cfg.text_verbosity >= TV_MESSAGES) && (cmd->token[0] == 'm')) {
 		fprintf(stderr, "%s\n", *cmd->stringp);
 	}
+
+
+
+	// deliver echo and messages
+//	cmdObj_t *cmd = cmd_body;	// if there is a message it will aways be in the second object
+//	if ((cfg.text_verbosity >= TV_MESSAGES) && (cmd->token[0] == 'm')) {
+//		fprintf(stderr, "%s\n", *cmd->stringp);
+//	}
 }
 
 /**** Utilities ****
