@@ -179,11 +179,13 @@ void rpt_print_message_number(uint8_t msgnum)
 */
 
 /**** Application Messages *********************************************************
- * rpt_print_loading_configs_message()
- * rpt_print_initializing_message()
- * rpt_print_system_ready_message()
+ * rpt_print_initializing_message()	   - initializing configs from hard-coded profile
+ * rpt_print_loading_configs_message() - loading configs from EEPROM
+ * rpt_print_system_ready_message()    - system ready message
+ *
+ *	These messages are always in JSON format to allow UIs to sync
  */
-void rpt_print_loading_configs_message(void)
+void _startup_helper(uint8_t status, const char *msg)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	cmd_reset_list();
@@ -191,35 +193,24 @@ void rpt_print_loading_configs_message(void)
 	cmd_add_object("fv");
 	cmd_add_object("hv");
 	cmd_add_object("id");
-	cmd_add_string_P("msg", PSTR("Loading configs from EEPROM"));
-	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
+	cmd_add_string_P("msg", msg);
+	js_print_json_response(status);
 #endif
 }
 
 void rpt_print_initializing_message(void)
 {
-#ifndef __SUPPRESS_STARTUP_MESSAGES
-	cmd_reset_list();
-	cmd_add_object("fb");
-	cmd_add_object("fv");
-	cmd_add_object("hv");
-	cmd_add_object("id");
-	cmd_add_string_P("msg", PSTR(INIT_MESSAGE)); // see settings.h & sub-headers
-	cmd_print_list(TG_INITIALIZING, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
-#endif
+	_startup_helper(TG_INITIALIZING, PSTR(INIT_MESSAGE));
+}
+
+void rpt_print_loading_configs_message(void)
+{
+	_startup_helper(TG_INITIALIZING, PSTR("Loading configs from EEPROM"));
 }
 
 void rpt_print_system_ready_message(void)
 {
-#ifndef __SUPPRESS_STARTUP_MESSAGES
-	cmd_reset_list();
-	cmd_add_object("fb");
-	cmd_add_object("fv");
-	cmd_add_object("hv");
-	cmd_add_object("id");
-	cmd_add_string_P("msg", PSTR("SYSTEM READY"));
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
-#endif
+	_startup_helper(TG_OK, PSTR("SYSTEM READY"));
 	if (cfg.comm_mode == TEXT_MODE) { tg_text_response(TG_OK, "");}// prompt
 }
 

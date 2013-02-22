@@ -1494,8 +1494,8 @@ void cmd_persist(cmdObj_t *cmd)
  * _set_defa() - reset NVM with default values for active profile
  *
  * Performs one of 2 actions:
- *	(1) if NVM is set up or out-of-rev load RAM and NVM with settings.h defaults
- *	(2) if NVM is set up and at current config version use NVM data for config
+ *	(1) if NVM is set up and at current config version use NVM data for config
+ *	(2) if NVM is set up or out-of-rev load RAM and NVM with settings.h defaults
  *
  *	You can assume the cfg struct has been zeroed by a hard reset. 
  *	Do not clear it as the version and build numbers have already been set by tg_init()
@@ -1509,30 +1509,29 @@ void cfg_init()
 	cfg.magic_end = MAGICNUM;
 
 	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
-	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
+//	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
 	cfg.nvm_base_addr = NVM_BASE_ADDR;
 	cfg.nvm_profile_base = cfg.nvm_base_addr;
 	cmd->index = 0;							// this will read the first record in NVM
-	cmd_read_NVM_value(cmd);
 
-	// Case (1) NVM is not setup or not in revision
-	if (cmd->value != cfg.fw_build) {
-		cmd->value = true;
-		_set_defa(cmd);		// this subroutine called from here and from the $defa=1 command
-
-	// Case (2) NVM is setup and in revision
-	} else {
-		rpt_print_loading_configs_message();
-		for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
-			if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
-				strcpy_P(cmd->token, cfgArray[cmd->index].token);	// read the token from the array
-				cmd_read_NVM_value(cmd);
-				cmd_set(cmd);
+	for (uint8_t i=0; i<3; i++) {			// retry the read 3 times - NVM can be cantakerous
+		cmd_read_NVM_value(cmd);
+		if (cmd->value == cfg.fw_build) {	// case (1) NVM is setup and in revision
+			rpt_print_loading_configs_message();
+			for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
+				if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
+					strcpy_P(cmd->token, cfgArray[cmd->index].token);	// read the token from the array
+					cmd_read_NVM_value(cmd);
+					cmd_set(cmd);
+				}
 			}
+			rpt_init_status_report(false);	// persist = false
+			return;
 		}
 	}
-//	rpt_init_status_report(true);			// requires special treatment (persist = true)
-	rpt_init_status_report(false);			// requires special treatment (persist = false)
+	// case (2) NVM is not setup or not in revision
+	cmd->value = true;
+	_set_defa(cmd);		// this subroutine called from here and from the $defa=1 command
 }
 
 static uint8_t _set_defa(cmdObj_t *cmd) 
@@ -1552,7 +1551,7 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 		}
 	}
 	rpt_print_initializing_message();
-	rpt_init_status_report(true);			// reset status reports (persist = true)
+	rpt_init_status_report(true);			// reset status reports w/persist = true
 	return (TG_OK);
 }
 
