@@ -177,7 +177,7 @@
     <Compile Include="settings\settings_lumenlabMicRoV3.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_otherlab.h">
+    <Compile Include="settings\settings_othercutter.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_probotixV90.h">
