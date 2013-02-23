@@ -39,8 +39,8 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to Ultimaker profile"
 
-#define JUNCTION_DEVIATION			0.05	// default value, in mm
-#define JUNCTION_ACCELERATION 		400000	// centripetal acceleration around corners
+#define JUNCTION_DEVIATION		0.05		// default value, in mm
+#define JUNCTION_ACCELERATION 	400000		// centripetal acceleration around corners
 
 // *** settings.h overrides ***
 

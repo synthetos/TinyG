@@ -213,7 +213,7 @@ static uint8_t _dispatch()
 static const char prompt_mm[] PROGMEM = "mm";
 static const char prompt_in[] PROGMEM = "inch";
 static const char prompt_ok[] PROGMEM = "tinyg [%S] ok> ";
-static const char prompt_err[] PROGMEM = "tinyg [%S] ERROR> %s: %s ";
+static const char prompt_err[] PROGMEM = "tinyg [%S] err: %s: %s ";
 
 void tg_text_response(const uint8_t status, const char *buf)
 {

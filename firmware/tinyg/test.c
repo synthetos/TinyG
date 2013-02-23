@@ -116,7 +116,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 	// text parser test cases
 //	xio_queue_RX_string_usb("?\n");				// text mode status report
-//	xio_queue_RX_string_usb("$$\n");			// sys request
+//	xio_queue_RX_string_usb("$$\n");			// show all request
 //	xio_queue_RX_string_usb("$ec=1\n");			// turn CR expansion on
 //	xio_queue_RX_string_usb("$qr\n");			// invoke QR report
 //	xio_queue_RX_string_usb("$ej=1\n");			// enable JSON mode

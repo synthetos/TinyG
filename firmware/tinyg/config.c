@@ -159,6 +159,8 @@ typedef struct cfgItem {
 // generic internal functions
 static uint8_t _set_nul(cmdObj_t *cmd);	// noop
 static uint8_t _set_ui8(cmdObj_t *cmd);	// set a uint8_t value
+static uint8_t _set_01(cmdObj_t *cmd);	// set a 0 or 1 value w/validation
+static uint8_t _set_012(cmdObj_t *cmd);	// set a 0, 1 or 2 value w/validation
 static uint8_t _set_int(cmdObj_t *cmd);	// set an integer value
 static uint8_t _set_dbl(cmdObj_t *cmd);	// set a double value
 static uint8_t _set_dbu(cmdObj_t *cmd);	// set a double with unit conversion
@@ -203,7 +205,6 @@ static uint8_t _do_motors(cmdObj_t *cmd);	// print parameters for all motor grou
 static uint8_t _do_axes(cmdObj_t *cmd);	// print parameters for all axis groups
 static uint8_t _do_offsets(cmdObj_t *cmd);// print offsets for G54-G59, G92
 static uint8_t _do_all(cmdObj_t *cmd);	// print all parameters
-static void _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]); // helper to print multiple groups in a list
 
 /*****************************************************************************
  **** PARAMETER-SPECIFIC CODE REGION *****************************************
@@ -403,9 +404,9 @@ static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0=off,1=on]\n";
 static const char fmt_ex[] PROGMEM = "[ex]  enable xon xoff%14d [0=off,1=on]\n";
 static const char fmt_ej[] PROGMEM = "[ej]  enable json mode%13d [0=text,1=JSON]\n";
 static const char fmt_jv[] PROGMEM = "[jv]  json verbosity%15d [0=silent,1=footer,2=messages,3=configs,4=linenum,5=verbose]\n";
-static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=prompt,2=messages,3=configs,4=linenum,5=verbose]\n";
+static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
 static const char fmt_sv[] PROGMEM = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
-static const char fmt_qv[] PROGMEM = "[eq]  queue report verbosity%7d [0=off,1=filtered,2=verbose]\n";
+static const char fmt_qv[] PROGMEM = "[qv]  queue report verbosity%7d [0=off,1=filtered,2=verbose]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
 
 static const char fmt_qr[] PROGMEM = "qr:%d\n";
@@ -567,28 +568,28 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "1","1tr",_fip, fmt_0tr, _pr_ma_lin, _get_dbu ,_set_tr, (double *)&cfg.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
 	{ "1","1mi",_fip, fmt_0mi, _pr_ma_ui8, _get_ui8, _set_mi, (double *)&cfg.m[MOTOR_1].microsteps,	M1_MICROSTEPS },
 	{ "1","1po",_fip, fmt_0po, _pr_ma_ui8, _get_ui8, _set_po, (double *)&cfg.m[MOTOR_1].polarity,	M1_POLARITY },
-	{ "1","1pm",_fip, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_1].power_mode,	M1_POWER_MODE },
+	{ "1","1pm",_fip, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_01, (double *)&cfg.m[MOTOR_1].power_mode,	M1_POWER_MODE },
 
 	{ "2","2ma",_fip, fmt_0ma, _pr_ma_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_2].motor_map,	M2_MOTOR_MAP },
 	{ "2","2sa",_fip, fmt_0sa, _pr_ma_rot, _get_dbl, _set_sa, (double *)&cfg.m[MOTOR_2].step_angle,	M2_STEP_ANGLE },
 	{ "2","2tr",_fip, fmt_0tr, _pr_ma_lin, _get_dbu, _set_tr, (double *)&cfg.m[MOTOR_2].travel_rev,	M2_TRAVEL_PER_REV },
 	{ "2","2mi",_fip, fmt_0mi, _pr_ma_ui8, _get_ui8, _set_mi, (double *)&cfg.m[MOTOR_2].microsteps,	M2_MICROSTEPS },
 	{ "2","2po",_fip, fmt_0po, _pr_ma_ui8, _get_ui8, _set_po, (double *)&cfg.m[MOTOR_2].polarity,	M2_POLARITY },
-	{ "2","2pm",_fip, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_2].power_mode,	M2_POWER_MODE },
+	{ "2","2pm",_fip, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_01, (double *)&cfg.m[MOTOR_2].power_mode,	M2_POWER_MODE },
 
 	{ "3","3ma",_fip, fmt_0ma, _pr_ma_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_3].motor_map,	M3_MOTOR_MAP },
 	{ "3","3sa",_fip, fmt_0sa, _pr_ma_rot, _get_dbl, _set_sa, (double *)&cfg.m[MOTOR_3].step_angle,	M3_STEP_ANGLE },
 	{ "3","3tr",_fip, fmt_0tr, _pr_ma_lin, _get_dbu, _set_tr, (double *)&cfg.m[MOTOR_3].travel_rev,	M3_TRAVEL_PER_REV },
 	{ "3","3mi",_fip, fmt_0mi, _pr_ma_ui8, _get_ui8, _set_mi, (double *)&cfg.m[MOTOR_3].microsteps,	M3_MICROSTEPS },
 	{ "3","3po",_fip, fmt_0po, _pr_ma_ui8, _get_ui8, _set_po, (double *)&cfg.m[MOTOR_3].polarity,	M3_POLARITY },
-	{ "3","3pm",_fip, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_3].power_mode,	M3_POWER_MODE },
+	{ "3","3pm",_fip, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_01, (double *)&cfg.m[MOTOR_3].power_mode,	M3_POWER_MODE },
 
 	{ "4","4ma",_fip, fmt_0ma, _pr_ma_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_4].motor_map,	M4_MOTOR_MAP },
 	{ "4","4sa",_fip, fmt_0sa, _pr_ma_rot, _get_dbl, _set_sa, (double *)&cfg.m[MOTOR_4].step_angle,	M4_STEP_ANGLE },
 	{ "4","4tr",_fip, fmt_0tr, _pr_ma_lin, _get_dbu, _set_tr, (double *)&cfg.m[MOTOR_4].travel_rev,	M4_TRAVEL_PER_REV },
 	{ "4","4mi",_fip, fmt_0mi, _pr_ma_ui8, _get_ui8, _set_mi, (double *)&cfg.m[MOTOR_4].microsteps,	M4_MICROSTEPS },
 	{ "4","4po",_fip, fmt_0po, _pr_ma_ui8, _get_ui8, _set_po, (double *)&cfg.m[MOTOR_4].polarity,	M4_POLARITY },
-	{ "4","4pm",_fip, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_ui8,(double *)&cfg.m[MOTOR_4].power_mode,	M4_POWER_MODE },
+	{ "4","4pm",_fip, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_01, (double *)&cfg.m[MOTOR_4].power_mode,	M4_POWER_MODE },
 
 	// Axis parameters
 	{ "x","xam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[X].axis_mode,		X_AXIS_MODE },
@@ -596,6 +597,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "x","xfr",_fip, fmt_Xfr, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].feedrate_max,		X_FEEDRATE_MAX },
 	{ "x","xtm",_fip, fmt_Xtm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].travel_max,		X_TRAVEL_MAX },
 	{ "x","xjm",_fip, fmt_Xjm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].jerk_max,			X_JERK_MAX },
+	{ "x","xjh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].jerk_homing,		X_JERK_HOMING },
 	{ "x","xjd",_fip, fmt_Xjd, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].junction_dev,		X_JUNCTION_DEVIATION },
 	{ "x","xsn",_fip, fmt_Xsn, _pr_ma_ui8, _get_ui8, _set_sw, (double *)&sw.mode[0],				X_SWITCH_MODE_MIN },
 	{ "x","xsx",_fip, fmt_Xsx, _pr_ma_ui8, _get_ui8, _set_sw, (double *)&sw.mode[1],				X_SWITCH_MODE_MAX },
@@ -603,13 +605,14 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "x","xlv",_fip, fmt_Xlv, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_velocity,	X_LATCH_VELOCITY },
 	{ "x","xlb",_fip, fmt_Xlb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_backoff,	X_LATCH_BACKOFF },
 	{ "x","xzb",_fip, fmt_Xzb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].zero_backoff,		X_ZERO_BACKOFF },
-	{ "x","xjh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].jerk_homing,		X_JERK_HOMING },
+
 
 	{ "y","yam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[Y].axis_mode,		Y_AXIS_MODE },
 	{ "y","yvm",_fip, fmt_Xvm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].velocity_max,		Y_VELOCITY_MAX },
 	{ "y","yfr",_fip, fmt_Xfr, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].feedrate_max,		Y_FEEDRATE_MAX },
 	{ "y","ytm",_fip, fmt_Xtm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].travel_max,		Y_TRAVEL_MAX },
 	{ "y","yjm",_fip, fmt_Xjm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].jerk_max,			Y_JERK_MAX },
+	{ "y","yjh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].jerk_homing,		Y_JERK_HOMING },
 	{ "y","yjd",_fip, fmt_Xjd, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].junction_dev,		Y_JUNCTION_DEVIATION },
 	{ "y","ysn",_fip, fmt_Xsn, _pr_ma_ui8, _get_ui8, _set_sw, (double *)&sw.mode[2],				Y_SWITCH_MODE_MIN },
 	{ "y","ysx",_fip, fmt_Xsx, _pr_ma_ui8, _get_ui8, _set_sw, (double *)&sw.mode[3],				Y_SWITCH_MODE_MAX },
@@ -617,13 +620,14 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "y","ylv",_fip, fmt_Xlv, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_velocity,	Y_LATCH_VELOCITY },
 	{ "y","ylb",_fip, fmt_Xlb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_backoff,	Y_LATCH_BACKOFF },
 	{ "y","yzb",_fip, fmt_Xzb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].zero_backoff,		Y_ZERO_BACKOFF },
-	{ "y","yjh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].jerk_homing,		Y_JERK_HOMING },
+
 
 	{ "z","zam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[Z].axis_mode,		Z_AXIS_MODE },
 	{ "z","zvm",_fip, fmt_Xvm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].velocity_max,	 	Z_VELOCITY_MAX },
 	{ "z","zfr",_fip, fmt_Xfr, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].feedrate_max,	 	Z_FEEDRATE_MAX },
 	{ "z","ztm",_fip, fmt_Xtm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].travel_max,		Z_TRAVEL_MAX },
 	{ "z","zjm",_fip, fmt_Xjm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].jerk_max,			Z_JERK_MAX },
+	{ "z","zjh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].jerk_homing,		Z_JERK_HOMING },
 	{ "z","zjd",_fip, fmt_Xjd, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].junction_dev,	 	Z_JUNCTION_DEVIATION },
 	{ "z","zsn",_fip, fmt_Xsn, _pr_ma_ui8, _get_ui8, _set_sw, (double *)&sw.mode[4],				Z_SWITCH_MODE_MIN },
 	{ "z","zsx",_fip, fmt_Xsx, _pr_ma_ui8, _get_ui8, _set_sw, (double *)&sw.mode[5],				Z_SWITCH_MODE_MAX },
@@ -631,13 +635,14 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "z","zlv",_fip, fmt_Xlv, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_velocity,	Z_LATCH_VELOCITY },
 	{ "z","zlb",_fip, fmt_Xlb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_backoff,	Z_LATCH_BACKOFF },
 	{ "z","zzb",_fip, fmt_Xzb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].zero_backoff,		Z_ZERO_BACKOFF },
-	{ "z","zjh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].jerk_homing,		Z_JERK_HOMING },
+
 
 	{ "a","aam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[A].axis_mode,		A_AXIS_MODE },
 	{ "a","avm",_fip, fmt_Xvm, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].velocity_max,	 	A_VELOCITY_MAX },
 	{ "a","afr",_fip, fmt_Xfr, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].feedrate_max, 	A_FEEDRATE_MAX },
 	{ "a","atm",_fip, fmt_Xtm, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].travel_max,		A_TRAVEL_MAX },
 	{ "a","ajm",_fip, fmt_Xjm, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].jerk_max,			A_JERK_MAX },
+	{ "a","ajh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[A].jerk_homing,		A_JERK_HOMING },
 	{ "a","ajd",_fip, fmt_Xjd, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].junction_dev,	 	A_JUNCTION_DEVIATION },
 	{ "a","ara",_fip, fmt_Xra, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].radius,			A_RADIUS},
 	{ "a","asn",_fip, fmt_Xsn, _pr_ma_ui8, _get_ui8, _set_sw, (double *)&sw.mode[6],				A_SWITCH_MODE_MIN },
@@ -646,7 +651,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "a","alv",_fip, fmt_Xlv, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_velocity,	A_LATCH_VELOCITY },
 	{ "a","alb",_fip, fmt_Xlb, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].latch_backoff,	A_LATCH_BACKOFF },
 	{ "a","azb",_fip, fmt_Xzb, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].zero_backoff,		A_ZERO_BACKOFF },
-	{ "a","ajh",_fip, fmt_Xjh, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[A].jerk_homing,		A_JERK_HOMING },
 
 	{ "b","bam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[B].axis_mode,		B_AXIS_MODE },
 	{ "b","bvm",_fip, fmt_Xvm, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[B].velocity_max,	 	B_VELOCITY_MAX },
@@ -741,30 +745,31 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g30","g30c",_fin, fmt_cloc, _print_corr,_get_dbl, _set_nul,(double *)&gm.g30_position[C], 0 },
 
 	// System parameters
-	// NOTE: The ordering within the gcode defaults is important for token resolution
 	// NOTE: Some values have been removed from the system group but are still accessible as individual elements
-	{ "sys","gpl", _f07, fmt_gpl, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.select_plane,		GCODE_DEFAULT_PLANE },
-	{ "sys","gun", _f07, fmt_gun, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.units_mode,			GCODE_DEFAULT_UNITS },
-	{ "sys","gco", _f07, fmt_gco, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.coord_system,		GCODE_DEFAULT_COORD_SYSTEM },
-	{ "sys","gpa", _f07, fmt_gpa, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.path_control,		GCODE_DEFAULT_PATH_CONTROL },
-	{ "sys","gdi", _f07, fmt_gdi, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.distance_mode,		GCODE_DEFAULT_DISTANCE_MODE },
-	{ "",   "gc",  _f00, fmt_nul, _print_nul, _get_gc, _run_gc,  (double *)&tg.null, 0 }, // gcode block - must be last in this group
-
 	{ "sys","ja",  _f07, fmt_ja, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.junction_acceleration,JUNCTION_ACCELERATION },
 	{ "sys","ct",  _f07, fmt_ct, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.chordal_tolerance,	CHORDAL_TOLERANCE },
 	{ "sys","st",  _f07, fmt_st, _print_ui8, _get_ui8, _set_sw,  (double *)&sw.switch_type,			SWITCH_TYPE },
+
+	{ "sys","ej",  _f07, fmt_ej, _print_ui8, _get_ui8, _set_01,  (double *)&cfg.comm_mode,			COMM_MODE },
+	{ "sys","jv",  _f07, fmt_jv, _print_ui8, _get_ui8, cmd_set_jv,(double *)&cfg.json_verbosity,	JSON_VERBOSITY },
+	{ "sys","tv",  _f07, fmt_tv, _print_ui8, _get_ui8, _set_01,  (double *)&cfg.text_verbosity,	TEXT_VERBOSITY },
+	{ "sys","qv",  _f07, fmt_qv, _print_ui8, _get_ui8, _set_012, (double *)&cfg.queue_report_verbosity,QR_VERBOSITY },
+	{ "sys","sv",  _f07, fmt_sv, _print_ui8, _get_ui8, _set_012, (double *)&cfg.status_report_verbosity,SR_VERBOSITY },
+	{ "sys","si",  _f07, fmt_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
 
 	{ "sys","ic",  _f07, fmt_ic, _print_ui8, _get_ui8, _set_ic,  (double *)&cfg.ignore_crlf,		COM_IGNORE_CRLF },
 	{ "sys","ec",  _f07, fmt_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,			COM_EXPAND_CR },
 	{ "sys","ee",  _f07, fmt_ee, _print_ui8, _get_ui8, _set_ee,  (double *)&cfg.enable_echo,		COM_ENABLE_ECHO },
 	{ "sys","ex",  _f07, fmt_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
-	{ "sys","ej",  _f07, fmt_ej, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.comm_mode,			COMM_MODE },
-	{ "sys","jv",  _f07, fmt_jv, _print_ui8, _get_ui8, cmd_set_jv,(double *)&cfg.json_verbosity,	JSON_VERBOSITY },
-	{ "sys","tv",  _f07, fmt_tv, _print_ui8, _get_ui8, cmd_set_tv,(double *)&cfg.text_verbosity,	TEXT_VERBOSITY },
-	{ "sys","qv",  _f07, fmt_qv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.queue_report_verbosity,QR_VERBOSITY },
-	{ "sys","sv",  _f07, fmt_sv, _print_ui8, _get_ui8, _set_ui8, (double *)&cfg.status_report_verbosity,SR_VERBOSITY },
-	{ "sys","si",  _f07, fmt_si, _print_dbl, _get_int, _set_si,  (double *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
 	{ "sys","baud",_fns, fmt_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
+
+	// NOTE: The ordering within the gcode defaults is important for token resolution
+	{ "sys","gpl", _f07, fmt_gpl, _print_ui8, _get_ui8,_set_012, (double *)&cfg.select_plane,		GCODE_DEFAULT_PLANE },
+	{ "sys","gun", _f07, fmt_gun, _print_ui8, _get_ui8,_set_01,  (double *)&cfg.units_mode,			GCODE_DEFAULT_UNITS },
+	{ "sys","gco", _f07, fmt_gco, _print_ui8, _get_ui8,_set_ui8, (double *)&cfg.coord_system,		GCODE_DEFAULT_COORD_SYSTEM },
+	{ "sys","gpa", _f07, fmt_gpa, _print_ui8, _get_ui8,_set_012, (double *)&cfg.path_control,		GCODE_DEFAULT_PATH_CONTROL },
+	{ "sys","gdi", _f07, fmt_gdi, _print_ui8, _get_ui8,_set_01,  (double *)&cfg.distance_mode,		GCODE_DEFAULT_DISTANCE_MODE },
+	{ "",   "gc",  _f00, fmt_nul, _print_nul, _get_gc, _run_gc,  (double *)&tg.null, 0 }, // gcode block - must be last in this group
 
 	// removed from system group as "hidden" parameters
 	{ "",   "mt",  _fip, fmt_mt, _print_lin, _get_dbl, _set_dbl, (double *)&cfg.estd_segment_usec,	NOM_SEGMENT_USEC },
@@ -928,13 +933,14 @@ static uint8_t _set_si(cmdObj_t *cmd)
 	cfg.status_report_interval = (uint32_t)cmd->value;
 	return(TG_OK);
 }
-
+/*
 uint8_t cmd_set_tv(cmdObj_t *cmd) 
 {
 	if (cmd->value > TV_VERBOSE) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	cfg.text_verbosity = cmd->value;
 	return(TG_OK);
 }
+*/
 
 uint8_t cmd_set_jv(cmdObj_t *cmd) 
 {
@@ -1175,12 +1181,30 @@ static uint8_t _get_am(cmdObj_t *cmd)
 
 static uint8_t _set_am(cmdObj_t *cmd)		// axis mode
 {
-	char linear_axes[] = {"xyz"};
 
+	char linear_axes[] = {"xyz"};
+	if (strchr(linear_axes, cmd->token[0]) != NULL) { // true if it's a linear axis
+		if (cmd->value > AXIS_MAX_LINEAR) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	} else {
+		if (cmd->value > AXIS_MAX_ROTARY) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	}
+
+//	char linear_axes[] = {"xyz"};
+//	if (strchr(linear_axes, cmd->group[0]) != NULL) { // true if it's a linear axis
+//		if (cmd->value > AXIS_MAX_LINEAR) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+//	} else {
+//		if (cmd->value > AXIS_MAX_ROTARY) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+//	}
+	_set_ui8(cmd);
+	return(TG_OK);
+}
+
+/*
 	if (strchr(linear_axes, cmd->group[0]) != NULL) {		// true if it's a linear axis
 		if (cmd->value > AXIS_MAX_LINEAR) {
-			cmd->value = 0;
-			cmd_add_message_P(PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED"));
+		return (TG_INPUT_VALUE_UNSUPPORTED);
+//			cmd->value = 0;
+//			cmd_add_message_P(PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED"));
 		}
 	} else {
 		if (cmd->value > AXIS_MAX_ROTARY) {
@@ -1188,9 +1212,9 @@ static uint8_t _set_am(cmdObj_t *cmd)		// axis mode
 			cmd_add_message_P(PSTR("*** WARNING *** Unsupported rotary axis mode. Axis DISABLED"));
 		}
 	}
-	_set_ui8(cmd);
-	return(TG_OK);
-}
+
+*/
+
 
 static uint8_t _set_sw(cmdObj_t *cmd)		// switch setting
 {
@@ -1380,10 +1404,11 @@ uint8_t cfg_baud_rate_callback(void)
  * _do_all()		- get and print all groups uber group
  */
 
-static void _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
+static uint8_t _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
 {
 	for (uint8_t i=0; i < CMD_MAX_OBJECTS; i++) {
-		if (list[i][0] == NUL) return;
+		if (list[i][0] == NUL) { return (TG_COMPLETE);}
+		cmd_reset_list();
 		cmd = cmd_body;
 		strncpy(cmd->token, list[i], CMD_TOKEN_LEN);
 		cmd->index = cmd_get_index("", cmd->token);
@@ -1391,46 +1416,41 @@ static void _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // helpe
 		cmd_get_cmdObj(cmd);
 		cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 	}
+	return (TG_COMPLETE);
 }
 
 static uint8_t _do_motors(cmdObj_t *cmd)	// print parameters for all motor groups
 {
 	char list[][CMD_TOKEN_LEN+1] = {"1","2","3","4",""}; // must have a terminating element
-	_do_group_list(cmd, list);
-	return (TG_COMPLETE);
+	return (_do_group_list(cmd, list));
 }
 
 static uint8_t _do_axes(cmdObj_t *cmd)	// print parameters for all axis groups
 {
 	char list[][CMD_TOKEN_LEN+1] = {"x","y","z","a","b","c",""}; // must have a terminating element
-	_do_group_list(cmd, list);
-	return (TG_COMPLETE);
+	return (_do_group_list(cmd, list));
 }
 
 static uint8_t _do_offsets(cmdObj_t *cmd)	// print offset parameters for G54-G59,G92, G28, G30
 {
 	char list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92","g28","g30",""}; // must have a terminating element
-	_do_group_list(cmd, list);
-	return (TG_COMPLETE);
+	return (_do_group_list(cmd, list));
 }
 
-static uint8_t _do_all(cmdObj_t *cmd)		// print all parameters
+static uint8_t _do_all(cmdObj_t *cmd)	// print all parameters
 {
-	// print system group
-	strcpy(cmd->token,"sys");
-	_get_grp(cmd);
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED,  JSON_RESPONSE_FORMAT);
-
-	_do_offsets(cmd);
-	_do_motors(cmd);
-	_do_axes(cmd);
-
-	// print PWM group
-	strcpy(cmd->token,"p1");
+	strcpy(cmd->token,"sys");			// print system group
 	_get_grp(cmd);
 	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 
-	return (TG_COMPLETE);
+	_do_motors(cmd);					// print all motor groups
+	_do_axes(cmd);						// print all axis groups
+
+	strcpy(cmd->token,"p1");			// print PWM group		
+	_get_grp(cmd);
+	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
+
+	return (_do_offsets(cmd));			// print all offsets
 }
 
 /******************************************************************************
@@ -1628,6 +1648,8 @@ static uint8_t _text_parser(char *str, cmdObj_t *cmd)
  * Generic sets()
  * _set_nul() - set nothing (returns TG_NOOP)
  * _set_ui8() - set value as 8 bit uint8_t value w/o unit conversion
+ * _set_01()  - set a 0 or 1 uint8_t value with validation
+ * _set_012() - set a 0, 1 or 2 uint8_t value with validation
  * _set_int() - set value as 32 bit integer w/o unit conversion
  * _set_dbl() - set value as double w/o unit conversion
  * _set_dbu() - set value as double w/unit conversion
@@ -1646,6 +1668,24 @@ static uint8_t _set_ui8(cmdObj_t *cmd)
 	*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->type = TYPE_INTEGER;
 	return(TG_OK);
+}
+
+static uint8_t _set_01(cmdObj_t *cmd)
+{
+	if (cmd->value > 1) { 
+		return (TG_INPUT_VALUE_UNSUPPORTED);
+	} else {
+		return (_set_ui8(cmd));
+	}
+}
+
+static uint8_t _set_012(cmdObj_t *cmd)
+{
+	if (cmd->value > 2) { 
+		return (TG_INPUT_VALUE_UNSUPPORTED);
+	} else {
+		return (_set_ui8(cmd));
+	}
 }
 
 static uint8_t _set_int(cmdObj_t *cmd)
@@ -2198,7 +2238,6 @@ void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags)
 void _print_text_inline_pairs()
 {
 	cmdObj_t *cmd = cmd_body;
-
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		switch (cmd->type) {
 			case TYPE_PARENT:	{ cmd = cmd->nx; continue; }
@@ -2215,7 +2254,6 @@ void _print_text_inline_pairs()
 void _print_text_inline_values()
 {
 	cmdObj_t *cmd = cmd_body;
-
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		switch (cmd->type) {
 			case TYPE_PARENT:	{ cmd = cmd->nx; continue; }
@@ -2232,8 +2270,6 @@ void _print_text_inline_values()
 void _print_text_multiline_formatted()
 {
 	cmdObj_t *cmd = cmd_body;
-
-//	fprintf(stderr,"\n");
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		if (cmd->type != TYPE_PARENT) { cmd_print(cmd);}
 		cmd = cmd->nx;
