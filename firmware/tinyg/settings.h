@@ -73,7 +73,6 @@
 #define COM_ENABLE_ECHO				false
 #define COM_ENABLE_XON				true
 
-
 /**** MACHINE PROFILES ******************************************************/
 
 // machine default profiles - chose only one:

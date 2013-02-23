@@ -437,12 +437,12 @@ static const char fmt_ofs[]  PROGMEM = "%c work offset:%12.3f%S\n";
 static const char fmt_hom[]  PROGMEM = "%c axis homed:%9.0f\n";
 
 // Motor print formatting strings
-static const char fmt_0ma[] PROGMEM = "[%s%s] m%s map to axis%15d [0=X, 1=Y...]\n";
+static const char fmt_0ma[] PROGMEM = "[%s%s] m%s map to axis%15d [0=X,1=Y,2=Z...]\n";
 static const char fmt_0sa[] PROGMEM = "[%s%s] m%s step angle%20.3f%S\n";
 static const char fmt_0tr[] PROGMEM = "[%s%s] m%s travel per revolution%9.3f%S\n";
 static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
-static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0,1]\n";
-static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0,1]\n";
+static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
+static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=off,1=on]\n";
 
 // Axis print formatting strings
 static const char fmt_Xam[] PROGMEM = "[%s%s] %s axis mode%18d %S\n";
@@ -452,8 +452,8 @@ static const char fmt_Xtm[] PROGMEM = "[%s%s] %s travel maximum%17.3f%S\n";
 static const char fmt_Xjm[] PROGMEM = "[%s%s] %s jerk maximum%15.0f%S/min^3\n";
 static const char fmt_Xjd[] PROGMEM = "[%s%s] %s junction deviation%14.4f%S (larger is faster)\n";
 static const char fmt_Xra[] PROGMEM = "[%s%s] %s radius value%20.4f%S\n";
-static const char fmt_Xsn[] PROGMEM = "[%s%s] %s switch min%17d [0-4]\n";
-static const char fmt_Xsx[] PROGMEM = "[%s%s] %s switch max%17d [0-4]\n";
+static const char fmt_Xsn[] PROGMEM = "[%s%s] %s switch min%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
+static const char fmt_Xsx[] PROGMEM = "[%s%s] %s switch max%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
 static const char fmt_Xsv[] PROGMEM = "[%s%s] %s search velocity%16.3f%S/min\n";
 static const char fmt_Xlv[] PROGMEM = "[%s%s] %s latch velocity%17.3f%S/min\n";
 static const char fmt_Xlb[] PROGMEM = "[%s%s] %s latch backoff%18.3f%S\n";
