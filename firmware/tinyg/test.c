@@ -106,6 +106,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 //	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"mpox\":true,\"mpoy\":true}}");
 
+//	xio_queue_RX_string_usb("$qf\n");
 //	xio_queue_RX_string_usb("$defau=1\n");
 //	xio_queue_RX_string_usb("$id\n");
 //	xio_queue_RX_string_usb("{\n");

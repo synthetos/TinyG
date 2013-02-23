@@ -218,7 +218,8 @@ static void _print_sr(cmdObj_t *cmd);		// run status report (as printout)
 static uint8_t _set_sr(cmdObj_t *cmd);		// set status report specification
 static uint8_t _set_si(cmdObj_t *cmd);		// set status report interval
 static uint8_t _get_id(cmdObj_t *cmd);		// get device ID
-static uint8_t _get_qr(cmdObj_t *cmd);		// run queue report (as data)
+static uint8_t _get_qr(cmdObj_t *cmd);		// get a queue report (as data)
+static uint8_t _run_qf(cmdObj_t *cmd);		// execute a queue flush block
 static uint8_t _get_er(cmdObj_t *cmd);		// invoke a bogus exception report for testing purposes
 static uint8_t _get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 
@@ -553,6 +554,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, fmt_nul, _print_sr,  _get_sr,  _set_sr , (double *)&tg.null, 0 },// status report object
 	{ "", "qr",  _f00, fmt_qr,  _print_int, _get_qr,  _set_nul, (double *)&tg.null, 0 },		// queue report setting
+	{ "", "qf",  _f00, fmt_nul, _print_nul, _run_qf,  _run_qf,  (double *)&tg.null, 0 },		// queue flush
 	{ "", "er",  _f00, fmt_nul, _print_nul, _get_er,  _set_nul, (double *)&tg.null, 0 },		// invoke bogus exception report for testing
 	{ "", "rx",  _f00, fmt_rx,  _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },		// space in RX buffer
 	{ "", "msg", _f00, fmt_str, _print_str, _get_nul, _set_nul, (double *)&tg.null, 0 },		// string for generic messages
@@ -881,7 +883,8 @@ static uint8_t _get_id(cmdObj_t *cmd)
 }
 
 /**** REPORT FUNCTIONS ********************************************************
- * _get_qr() 	- run queue report
+ * _get_qr() 	- get a queue report (as data)
+ * _run_qf() 	- execute a planner buffer flush
  * _get_er()	- invoke a bogus exception report for testing purposes (it's not real)
  * _get_rx()	- get bytes available in RX buffer
  * _get_sr()	- run status report
@@ -895,6 +898,12 @@ static uint8_t _get_qr(cmdObj_t *cmd)
 {
 	cmd->value = (double)mp_get_planner_buffers_available();
 	cmd->type = TYPE_INTEGER;
+	return (TG_OK);
+}
+
+static uint8_t _run_qf(cmdObj_t *cmd) 
+{
+	mp_flush_planner();
 	return (TG_OK);
 }
 
@@ -1188,33 +1197,9 @@ static uint8_t _set_am(cmdObj_t *cmd)		// axis mode
 	} else {
 		if (cmd->value > AXIS_MAX_ROTARY) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	}
-
-//	char linear_axes[] = {"xyz"};
-//	if (strchr(linear_axes, cmd->group[0]) != NULL) { // true if it's a linear axis
-//		if (cmd->value > AXIS_MAX_LINEAR) { return (TG_INPUT_VALUE_UNSUPPORTED);}
-//	} else {
-//		if (cmd->value > AXIS_MAX_ROTARY) { return (TG_INPUT_VALUE_UNSUPPORTED);}
-//	}
 	_set_ui8(cmd);
 	return(TG_OK);
 }
-
-/*
-	if (strchr(linear_axes, cmd->group[0]) != NULL) {		// true if it's a linear axis
-		if (cmd->value > AXIS_MAX_LINEAR) {
-		return (TG_INPUT_VALUE_UNSUPPORTED);
-//			cmd->value = 0;
-//			cmd_add_message_P(PSTR("*** WARNING *** Unsupported linear axis mode. Axis DISABLED"));
-		}
-	} else {
-		if (cmd->value > AXIS_MAX_ROTARY) {
-			cmd->value = 0;
-			cmd_add_message_P(PSTR("*** WARNING *** Unsupported rotary axis mode. Axis DISABLED"));
-		}
-	}
-
-*/
-
 
 static uint8_t _set_sw(cmdObj_t *cmd)		// switch setting
 {
@@ -1241,9 +1226,9 @@ static uint8_t _set_tr(cmdObj_t *cmd)		// motor travel per revolution
 static uint8_t _set_mi(cmdObj_t *cmd)		// motor microsteps
 {
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
-		cmd_add_message_P(PSTR("*** WARNING *** Non-standard microstep value"));
+		cmd_add_message_P(PSTR("*** WARNING *** Setting non-standard microstep value"));
 	}
-	_set_ui8(cmd);						// but set it anyway, even if it's unsupported
+	_set_ui8(cmd);							// set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);
 	st_set_microsteps(_get_motor(cmd->index), (uint8_t)cmd->value);
 	return (TG_OK);
@@ -1251,7 +1236,7 @@ static uint8_t _set_mi(cmdObj_t *cmd)		// motor microsteps
 
 static uint8_t _set_po(cmdObj_t *cmd)		// motor polarity
 { 
-	_set_ui8(cmd);
+	ritorno (_set_01(cmd));
 	st_set_polarity(_get_motor(cmd->index), (uint8_t)cmd->value);
 	return (TG_OK);
 }
