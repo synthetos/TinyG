@@ -23,7 +23,10 @@ See these links for more details.
 
 CURRENT MASTER VERSION
 ========
-The current master version is 0.94, BUILD 339.09 (GoGo Boots)
+The current master version is 0.95, BUILD 370.01
+Please refer to the [TinyG wiki](https://github.com/synthetos/TinyG/wiki) for documentation and user manuals
+
+The previous master version is 0.94, BUILD 339.09 (GoGo Boots)
 Changelog:
 
 339.09: 
