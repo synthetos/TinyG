@@ -54,7 +54,7 @@
 #define SR_VERBOSITY				SR_FILTERED	// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 #define STATUS_REPORT_MIN_MS		50			// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	100			// milliseconds - set to 0 to disable
-#define SR_DEFAULTS "line","vel","posx","posy","posz","posa","unit","momo","coor","stat"
+#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
 #define QR_VERBOSITY				QR_OFF		// one of: QR_OFF, QR_FILTERED, QR_VERBOSE
 #define QR_HI_WATER					20
