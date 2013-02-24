@@ -7,6 +7,8 @@
 *.d
 tinyg.aws
 tinyg.aps
+tinyg.atsln
+tinyg.atsuo
+tinyg.cproj
 tinyg.eep
-tinyg.hex
 .DS_Store
