@@ -422,7 +422,7 @@ static const char fmt_macs[] PROGMEM = "Raw machine state:   %s\n"; // raw machi
 static const char fmt_cycs[] PROGMEM = "Cycle state:         %s\n";
 static const char fmt_mots[] PROGMEM = "Motion state:        %s\n";
 static const char fmt_hold[] PROGMEM = "Feedhold state:      %s\n";
-static const char fmt_home[] PROGMEM = "Homing state:        %s\n";
+static const char fmt_home[] PROGMEM = "Machine homing stat: %s\n";
 static const char fmt_unit[] PROGMEM = "Units:               %s\n"; // units mode as ASCII string
 static const char fmt_coor[] PROGMEM = "Coordinate system:   %s\n";
 static const char fmt_momo[] PROGMEM = "Motion mode:         %s\n";
@@ -434,7 +434,7 @@ static const char fmt_frmo[] PROGMEM = "Feed rate mode:      %s\n";
 static const char fmt_pos[]  PROGMEM = "%c position:%15.3f%S\n";
 static const char fmt_mpos[] PROGMEM = "%c machine posn:%11.3f%S\n";
 static const char fmt_ofs[]  PROGMEM = "%c work offset:%12.3f%S\n";
-static const char fmt_hom[]  PROGMEM = "%c axis homed:%9.0f\n";
+static const char fmt_hom[]  PROGMEM = "%c axis homing state:%2.0f\n";
 
 // Motor print formatting strings
 static const char fmt_0ma[] PROGMEM = "[%s%s] m%s map to axis%15d [0=X,1=Y,2=Z...]\n";
@@ -543,7 +543,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "ofs","ofsb",_f00,fmt_ofs, _print_mpos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// B work offset 
 	{ "ofs","ofsc",_f00,fmt_ofs, _print_mpos, _get_ofs, _set_nul,(double *)&tg.null, 0 },		// C work offset
 
-	{ "hom","home",_f00,fmt_hom, _print_str, _get_home,_run_home,(double *)&tg.null, 0 },		// homing state, invoke homing cycle
+	{ "hom","home",_f00,fmt_home,_print_str, _get_home,_run_home,(double *)&tg.null, 0 },		// homing state, invoke homing cycle
 	{ "hom","homx",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[X], false },// X homed - Homing status group
 	{ "hom","homy",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[Y], false },// Y homed
 	{ "hom","homz",_f00,fmt_hom, _print_pos, _get_ui8, _set_nul,(double *)&cm.homed[Z], false },// Z homed
