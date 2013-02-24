@@ -73,8 +73,8 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 									// cmdObj defines
 #define CMD_GROUP_LEN 3				// max length of group prefix
 #define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
-#define CMD_FORMAT_LEN 80			// print formatting string max length
-#define CMD_MESSAGE_LEN 80			// sufficient space to contain end-user messages
+#define CMD_FORMAT_LEN 128			// print formatting string max length
+#define CMD_MESSAGE_LEN 128			// sufficient space to contain end-user messages
 #define CMD_FOOTER_LEN 18			// sufficient space to contain a JSON footer array
 #define CMD_SHARED_STRING_LEN 200	// shared string for string values
 
@@ -119,19 +119,16 @@ enum tgCommunicationsMode {
 
 enum textVerbosity {
 	TV_SILENT = 0,					// no response is provided
-	TV_PROMPT,						// returns prompt only and exception messages
-	TV_MESSAGES,					// returns prompt only and exception messages
-	TV_CONFIGS,						// returns prompt, messages and echo config commands. Gcode blocks are not echoed 
-	TV_VERBOSE						// returns all prompts, messages, configs and gcode blocks
+	TV_VERBOSE						// response is provided. Error responses ech message and failed commands
 };
 
 enum jsonVerbosity {
 	JV_SILENT = 0,					// no response is provided for any command
-	JV_FOOTER,						// responses contain  footer only; no command echo, gcode blocks or messages
-	JV_CONFIGS,						// echo configs; gcode blocks are not echoed; messages are not echoed
-	JV_MESSAGES,					// echo configs; gcode messages only (if present); no block echo or line numbers
-	JV_LINENUM,						// echo configs; gcode blocks return messages and line numbers as present
-	JV_VERBOSE						// echos all configs and gcode blocks, line numbers and messages
+	JV_FOOTER,						// returns footer only (no command echo, gcode blocks or messages)
+	JV_MESSAGES,					// returns footer, messages (exception and gcode messages)
+	JV_CONFIGS,						// returns footer, messages, config commands
+	JV_LINENUM,						// returns footer, messages, config commands, gcode line numbers if present
+	JV_VERBOSE						// returns footer, messages, config commands, gcode blocks
 };
 
 enum qrVerbosity {					// planner queue enable and verbosity
@@ -301,31 +298,26 @@ typedef struct cfgParameters {
 	uint8_t path_control;			// G61,G61.1,G64 reset default
 	uint8_t distance_mode;			// G90,G91 reset default
 
-	// communications settings		// these first 4 are shadow settigns for XIO cntrl bits
-	uint8_t ignore_crlf;			// ignore CR or LF on RX
+	// communications settings
+	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
+	uint8_t ignore_crlf;			// ignore CR or LF on RX --- these 4 are shadow settings for XIO cntrl bits
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_xon;				// enable XON/XOFF mode
-	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
 
-	uint8_t enable_qr;				// queue reports enabled and verbosity level
-	uint8_t qr_hi_water;
-	uint8_t qr_lo_water;
+	uint8_t queue_report_verbosity;	// queue reports enabled and verbosity level
+	uint8_t queue_report_hi_water;
+	uint8_t queue_report_lo_water;
 	uint8_t json_verbosity;			// see enum in this file for settings
 	uint8_t text_verbosity;			// see enum in this file for settings
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
 
 	uint8_t echo_json_footer;		// flags for JSON responses serialization
-	uint8_t echo_json_configs;
 	uint8_t echo_json_messages;
+	uint8_t echo_json_configs;
 	uint8_t echo_json_linenum;
 	uint8_t echo_json_gcode_block;
-
-	uint8_t echo_text_prompt;		// flags for text mode response construction
-	uint8_t echo_text_messages;
-	uint8_t echo_text_configs;
-	uint8_t echo_text_gcode_block;
 
 	// status report configs
 	uint8_t status_report_verbosity;					// see enum in this file for settings

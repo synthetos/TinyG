@@ -40,6 +40,7 @@
 #include "../tinyg.h"					// needed for AXES definition
 #include "../gpio.h"					// needed for XON/XOFF LED indicator
 #include "../util.h"					// needed to pick up __debug defines
+#include "../config.h"					// needed to write back usb baud rate
 
 /******************************************************************************
  * USART CONFIGURATION RECORDS
@@ -160,6 +161,7 @@ void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
 {
 	dx->usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
 	dx->usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
+	cfg.usb_baud_rate = baud;
 }
 
 /*

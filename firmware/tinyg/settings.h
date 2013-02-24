@@ -38,64 +38,52 @@
 #define settings_h
 
 /**** GENERAL SETTINGS ******************************************************/
-// These can be overridden in machine profiles by using #undef
-// ADVICE: Check your machine profile before continuing
 
-#define STATUS_REPORT_MIN_MS		50		// milliseconds - enforces a viable minimum
-#define STATUS_REPORT_INTERVAL_MS	100		// milliseconds - set to 0 to disable
-//#define SR_DEFAULTS "line","vel","mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","momo","coor","stat","homx","homy","homz","homa"
-#define SR_DEFAULTS "line","vel","posx","posy","posz","posa","unit","momo","coor","stat"
+// **** PLEASE NOTE **** Any of these may be overridden in machine profiles
+// Do not assume these are the effective settings. Check the machine profile 
 
-#define SWITCH_TYPE SW_TYPE_NORMALLY_OPEN
-//#define SWITCH_TYPE SW_TYPE_NORMALLY_CLOSED
+// Machine configuration settings
+#define CHORDAL_TOLERANCE 			0.01		// chord accuracy for arc drawing
+#define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 
-//#define SR_VERBOSITY				SR_OFF
-#define SR_VERBOSITY				SR_FILTERED
-//#define SR_VERBOSITY				SR_VERBOSE
+// Communications and reporting settings
+#define COMM_MODE					TEXT_MODE	// one of: TEXT_MODE, JSON_MODE
+#define TEXT_VERBOSITY				TV_VERBOSE	// one of: TV_SILENT, TV_VERBOSE
+#define JSON_VERBOSITY				JV_LINENUM	// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
-#define CHORDAL_TOLERANCE 0.01		// chord accuracy for arc drawing
+#define SR_VERBOSITY				SR_FILTERED	// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+#define STATUS_REPORT_MIN_MS		50			// milliseconds - enforces a viable minimum
+#define STATUS_REPORT_INTERVAL_MS	100			// milliseconds - set to 0 to disable
+#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
-// Gcode defaults
+#define QR_VERBOSITY				QR_OFF		// one of: QR_OFF, QR_FILTERED, QR_VERBOSE
+#define QR_HI_WATER					20
+#define QR_LO_WATER					2
+
+// Gcode startup defaults
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY
 #define GCODE_DEFAULT_UNITS			MILLIMETERS
 #define GCODE_DEFAULT_COORD_SYSTEM	G54
 #define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
 
-// Comm mode and echo levels - CAUTION: may be overridden by machine profiles
+// Comm mode and echo levels
 #define COM_IGNORE_CRLF				IGNORE_OFF	// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_EXPAND_CR				false
 #define COM_ENABLE_ECHO				false
 #define COM_ENABLE_XON				true
 
-//#define COMM_MODE					JSON_MODE
-#define COMM_MODE					TEXT_MODE
-#define TEXT_VERBOSITY				TV_VERBOSE
-
-//#define JSON_VERBOSITY			JV_SILENT	// no response is provided for any command
-//#define JSON_VERBOSITY			JV_FOOTER	// responses contain  footer only; no command echo, gcode blocks or messages
-//#define JSON_VERBOSITY			JV_CONFIGS	// echo configs; gcode blocks are not echoed; messages are not echoed
-//#define JSON_VERBOSITY			JV_MESSAGES	// echo configs; gcode messages only (if present); no block echo or line numbers
-#define JSON_VERBOSITY				JV_LINENUM	// echo configs; gcode blocks return messages and line numbers as present
-//#define JSON_VERBOSITY			JV_VERBOSE	// echos all configs and gcode blocks, line numbers and messages
-
-#define QR_VERBOSITY				QR_OFF
-//#define QR_VERBOSITY				QR_FILTERED
-//#define QR_VERBOSITY				QR_VERBOSE
-#define QR_HI_WATER					20
-#define QR_LO_WATER					2
-
 /**** MACHINE PROFILES ******************************************************/
 
-// default machine profiles - chose only one:
+// machine default profiles - chose only one:
 
-#include "settings/settings_default.h"			// Default settings for release
-//#include "settings/settings_lumenlabMicRoV3.h"	// Lumenlabs micRo v3
-//#include "settings/settings_otherlab.h"			// Otherlab Othercutter
-//#include "settings/settings_probotixV90.h"		// Probotix FireballV90
-//#include "settings/settings_shapeoko375.h"		// Shapeoko 375mm kit
-//#include "settings/settings_ultimaker.h"			// Ultimaker 3D printer
-//#include "settings/settings_zen7x12.h"			// Zen Toolworks 7x12
+#include "settings/settings_default.h"				// Default settings for release
+//#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
+//#include "settings/settings_othercutter.h"			// Otherlab Othercutter
+//#include "settings/settings_probotixV90.h"			// Probotix FireballV90
+//#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
+//#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
+//#include "settings/settings_zen7x12.h"				// Zen Toolworks 7x12
 
 /*** Handle optional modules that may not be in every machine ***/
 

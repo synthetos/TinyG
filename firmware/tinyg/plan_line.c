@@ -100,7 +100,6 @@ double mp_get_runtime_work_position(uint8_t axis) {
 double mp_get_runtime_work_offset(uint8_t axis) { 
 	return (mr.work_offset[axis]);
 }
-//double mp_get_runtime_work_scaling(uint8_t axis);
 
 void mp_set_runtime_work_offset(double offset[]) { 
 	copy_axis_vector(mr.work_offset, offset);
@@ -185,10 +184,6 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
 	}
 	bf->jerk = sqrt(jerk_squared);
 
-#ifdef __PLAN_R2
-	bf->recip_half_jerk = 2/bf->jerk;			// used by planning
-	bf->half_jerk = bf->jerk/2;				    // used by planning
-#else
 	if (fabs(bf->jerk - mm.prev_jerk) < JERK_MATCH_PRECISION) {	// can we re-use jerk terms?
 		bf->cbrt_jerk = mm.prev_cbrt_jerk;
 		bf->recip_jerk = mm.prev_recip_jerk;
@@ -199,7 +194,6 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
 		mm.prev_cbrt_jerk = bf->cbrt_jerk;
 		mm.prev_recip_jerk = bf->recip_jerk;
 	}
-#endif
 
 	// finish up the current block variables
 	if (cm_get_path_control() != PATH_EXACT_STOP) { // exact stop cases already zeroed
@@ -334,230 +328,6 @@ void _reset_replannable_list()
 		bp->replannable = true;
 	} while (((bp = mp_get_next_buffer(bp)) != bf) && (bp->move_state != MOVE_STATE_OFF));
 }
-
-#ifdef __PLAN_R2
-
-/*
- * _calculate_trapezoid() - calculate trapezoid parameters
- *
- *	This rather brute-force function sets section lengths and velocities based 
- *	on the line length and velocities requested. It modifies the bf buffer and 
- *	returns accurate head_length, body_length and tail_length, and accurate or 
- *	reasonably approximate velocities. We care about accuracy on lengths, less 
- *	so for velocity (as long as velocity err's on the side of too slow). We need 
- *	the velocities to be set even for zero-length sections so we can compute 
- *	entry and exits for adjacent sections.
- *
- *	Inputs used are:
- *	  bf->length			- actual block length (must remain accurate)
- *	  bf->entry_velocity	- requested Ve
- *	  bf->cruise_velocity	- requested Vt
- *	  bf->exit_velocity		- requested Vx
- *	  bf->cruise_vmax		- used in some comparisons
- *
- *	Variables set may include the velocities above (not the vmax), and:
- *	  bf->head_length		- bf->length allocated to head
- *	  bf->body_length		- bf->length allocated to body
- *	  bf->tail_length		- bf->length allocated to tail
- *
- *	Note: The following condition must be met on entry: Ve <= Vt >= Vx 
- *
- *	Classes of moves:
- *	  Maximum-Fit - The trapezoid can accommodate its maximum velocity values for
- *		the given length (entry_vmax, cruise_vmax, exit_vmax). But the trapezoid 
- *		generator actally doesn't know about the max's and only processes requested 
- *		values.
- *
- *	  Requested-Fit - The move has sufficient length to achieve the target (set) 
- *		cruising velocity. It will accommodate the acceleration / deceleration 
- *		profile and in the distance given (length)
- *
- *	  Rate-Limited-Fit - The move does not have sufficient length to achieve target 
- *		cruising velocity - the target velocity will be lower than the requested 
- *		velocity. The entry and exit velocities are satisfied. 
- *
- *	  Degraded-Fit - The move does not have sufficient length to transition from
- *		the entry velocity to the exit velocity in the available length. These 
- *		velocities are not negotiable, so a degraded solution is found.
- *
- *	  No-Fit - The move cannot be executed as the planned execution time is less
- *		than the minimum segment interpolation time of the runtime execution module.
- *
- *	Various cases handled;
- *	  No-Fit cases - the line is too short to plan
- *		No fit
- *
- *	  Degraded fit cases - line is too short to satisfy both Ve and Vx
- *	    H"	Ve<Vx		Ve is degraded (velocity step). Vx is met
- *	  	T"	Ve>Vx		Ve is degraded (velocity step). Vx is met
- *	  	B	<short>		line is very short but drawable; is treated as a body only
- *
- *	  Rate-Limited cases - Ve and Vx can be satisfied but Vt cannot
- *	  	HT	(Ve=Vx)<Vt	symmetric case. Split the length and compute Vt.
- *	  	HT'	(Ve!=Vx)<Vt	asymmetric case. Find H and T by successive approximation.
- *		HBT'			Lb < min body length - treated as an HT case
- *		H'				Lb < min body length - reduce J to fit H to length
- *		T'				Lb < min body length - reduce J to fit T to length
- *
- *	  Requested-Fit cases
- *	  	HBT	Ve<Vt>Vx	sufficient length exists for all part (corner case: HBT')
- *	  	HB	Ve<Vt=Vx	head accelerates to cruise - exits at full speed (corner case: H')
- *	  	BT	Ve=Vt>Vx	enter at full speed and decelerate (corner case: T')
- *	  	HT	Ve & Vx		perfect fit HT (very rare)
- *	  	H	Ve<Vx		perfect fit H (common, results from planning)
- *	  	T	Ve>Vx		perfect fit T (common, results from planning)
- *	  	B	Ve=Vt=Vx	Velocities tested to tolerance
- *
- *	The order of the cases/tests in the code is pretty important
- */
-
-// The minimum lengths are dynamic, and depend on the velocity
-// These expressions evaluate to the minimum lengths for the current velocity settings
-// Note: The head and tail lengths are 2 minimum segments, the body is 1 min segment
-#define MIN_HEAD_LENGTH (MIN_SEGMENT_TIME * (bf->cruise_velocity + bf->entry_velocity))
-#define MIN_TAIL_LENGTH (MIN_SEGMENT_TIME * (bf->cruise_velocity + bf->exit_velocity))
-#define MIN_BODY_LENGTH (MIN_SEGMENT_TIME * bf->cruise_velocity)
-
-static void _calculate_trapezoid(mpBuf_t *bf) 
-{
-	bf->head_length = 0;		// inialize the lengths
-	bf->body_length = 0;
-	bf->tail_length = 0;
-	
-	// precomputed squares of velocities (skip cruise_velocity for now)
-	double entry_velocity_squared  = square(bf->entry_velocity);
-	double exit_velocity_squared   = square(bf->exit_velocity);
-
-	// Combined short cases:
-	//	- H and T requested-fit cases (exact fit cases, to within TRAPEZOID_LENGTH_FIT_TOLERANCE)
-	//	- H" and T" degraded-fit cases
-	//	- H' and T' requested-fit cases where the body residual is less than MIN_BODY_LENGTH
-	//	- no-fit case
-	// Also converts 2 segment heads and tails that would be too short to a body-only move (1 segment)
-	double minimum_length = _get_target_length(entry_velocity_squared, exit_velocity_squared, bf);
-	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// Head & tail cases
-		if (bf->entry_velocity > bf->exit_velocity)	{		// Tail cases
-			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// T" (degraded case)
-				bf->entry_velocity = _get_target_velocity(exit_velocity_squared, bf->length, bf);
-			}
-			bf->cruise_velocity = bf->entry_velocity;
-			if (bf->length >= MIN_TAIL_LENGTH) {			// run this as a 2+ segment tail
-				bf->tail_length = bf->length;
-			} else if (bf->length > MIN_BODY_LENGTH) {		// run this as a 1 segment body
-				bf->body_length = bf->length;
-			} else {
-				bf->move_state = MOVE_STATE_SKIP;			// tell runtime to skip the block
-			}
-			return;
-		}
-		if (bf->entry_velocity < bf->exit_velocity)	{		// Head cases
-			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// H" (degraded case)
-				bf->exit_velocity = _get_target_velocity(entry_velocity_squared, bf->length, bf);
-			}
-			bf->cruise_velocity = bf->exit_velocity;
-			if (bf->length >= MIN_HEAD_LENGTH) {			// run this as a 2+ segment head
-				bf->head_length = bf->length;
-			} else if (bf->length > MIN_BODY_LENGTH) {		// run this as a 1 segment body
-				bf->body_length = bf->length;
-			} else {
-				bf->move_state = MOVE_STATE_SKIP;			// tell runtime to skip the block
-			}
-			return;
-		}
-	}
-
-	// Compute the optimal head and tail lengths and see if you can satify the move with these
-	double cruise_velocity_squared = square(bf->cruise_velocity);
-	bf->head_length = _get_target_length(entry_velocity_squared, cruise_velocity_squared, bf);
-	bf->tail_length = _get_target_length(exit_velocity_squared, cruise_velocity_squared, bf);
-
-	// Do target velocity cases
-	if (bf->length >= (bf->head_length + bf->tail_length)) {
-		bf->body_length = bf->length - bf->head_length - bf->tail_length;
-		// If a non-zero body is < minimum length distribute it to the head and/or tail
-		// This will generate small (acceptable) velocity errors in runtime execution
-		// but preserve correct distance, which is more important.
-		if (bf->body_length < MIN_BODY_LENGTH) {
-			bf->head_length += bf->body_length/2;
-			bf->tail_length += bf->body_length/2;
-			bf->body_length = 0;
-		}
-	} else { // Do reduced velocity cases
-		bf->head_length = _get_intersection_distance(entry_velocity_squared, exit_velocity_squared, bf->length, bf);
-		bf->cruise_velocity = min(bf->cruise_vmax, _get_target_velocity(entry_velocity_squared, bf->head_length, bf));
-		bf->tail_length = bf->length - bf->head_length;		
-		if (bf->head_length < MIN_HEAD_LENGTH) {	// adjust if head_length < minimum
-			bf->tail_length = bf->length;			// ... to be all tail
-			bf->head_length = 0;
-		}
-		if (bf->tail_length < MIN_TAIL_LENGTH) {	// adjust if tail_length < minimum
-			bf->head_length = bf->length;			//... to be all head
-			bf->tail_length = 0;
-		}
-	}
-}
-
-/*
-	// Compute the optimal head and tail lengths
-	double cruise_velocity_squared = square(bf->cruise_velocity);// now pre-compute the cruise velocity square
-	bf->head_length = _get_target_length(entry_velocity_squared, cruise_velocity_squared, bf);
-	bf->tail_length = _get_target_length(exit_velocity_squared, cruise_velocity_squared, bf);
-	if (bf->head_length < MIN_HEAD_LENGTH) { bf->head_length = 0;}
-	if (bf->tail_length < MIN_TAIL_LENGTH) { bf->tail_length = 0;}
-
-	// Rate-limited HT and HT' cases
-	if (bf->length < (bf->head_length + bf->tail_length)) { // it's rate limited
-
-		// Rate-limited HT case (symmetric case)
-		if (fabs(bf->entry_velocity - bf->exit_velocity) < TRAPEZOID_VELOCITY_TOLERANCE) {
-			bf->head_length = bf->length/2;
-			bf->tail_length = bf->head_length;
-			bf->cruise_velocity = min(bf->cruise_vmax, _get_target_velocity(entry_velocity_squared, bf->head_length, bf));
-			return;
-		}
-		bf->head_length = _get_intersection_distance(entry_velocity_squared, exit_velocity_squared, bf->length, bf);
-		bf->cruise_velocity = min(bf->cruise_vmax, _get_target_velocity(entry_velocity_squared, bf->head_length, bf));
-		bf->tail_length = bf->length - bf->head_length;
-		// Adjust the head and tail lengths for corner cases (lengths < minimums)
-		if (bf->head_length < MIN_HEAD_LENGTH) {
-			bf->tail_length = bf->length;			// adjust the move to be all tail...
-			bf->head_length = 0;
-		}
-		if (bf->tail_length < MIN_TAIL_LENGTH) {
-			bf->head_length = bf->length;			//...or all head
-			bf->tail_length = 0;
-		}
-		return;
-	}
-
-	// Requested-fit cases: remaining of: HBT, HB, BT, BT, H, T, B, cases
-	bf->body_length = bf->length - bf->head_length - bf->tail_length;
-
-	// If a non-zero body is < minimum length distribute it to the head and/or tail
-	// This will generate small (acceptable) velocity errors in runtime execution
-	// but preserve correct distance, which is more important.
-	if ((bf->body_length < MIN_BODY_LENGTH) && (bf->body_length > EPSILON)) {
-		if (bf->head_length > EPSILON) {
-			if (bf->tail_length > EPSILON) {			// HBT reduces to HT
-				bf->head_length += bf->body_length/2;
-				bf->tail_length += bf->body_length/2;
-			} else {									// HB reduces to H
-				bf->head_length += bf->body_length;
-			}
-		} else {										// BT reduces to T
-			bf->tail_length += bf->body_length;
-		}
-		bf->body_length = 0;
-
-	// If the body is a standalone make the cruise velocity match the entry velocity 
-	// This removes a potential velocity discontinuity at the expense of top speed
-	} else if ((bf->head_length < EPSILON) && (bf->tail_length < EPSILON)) {
-		bf->cruise_velocity = bf->entry_velocity;
-	}
-}
-*/
-
-#else
 
 /*
  * _calculate_trapezoid() - calculate trapezoid parameters
@@ -755,7 +525,6 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 		bf->cruise_velocity = bf->entry_velocity;
 	}
 }
-#endif // ifdef __PLAN_R2 
 
 /*	
  * _get_target_length()		- derive accel/decel length from delta V and jerk
@@ -763,14 +532,6 @@ static void _calculate_trapezoid(mpBuf_t *bf)
  *
  *	This set of functions returns the fourth thing knowing the other three.
  *	
- *	_get_target_length() is a convenient function for determining the 
- *	optimal_length (L) of a line given the inital velocity (Vi), 
- *	target velocity (Vt) and maximum jerk (Jm).
- *
- *	The length (distance) equation uses a linear acceleration ramp of rate Ar.
- *	This works because the distance covered by the convex AND concave sections 
- *	combined adds up to the same as a linear acceleration period.
-
  * 	  Jm = the given maximum jerk
  *	  T  = time of the entire move
  *	  T  = 2*sqrt((Vt-Vi)/Jm)
@@ -782,56 +543,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
  *	Assumes Vt, Vi and L are positive or zero
  *	Cannot assume Vt>=Vi due to rounding errors and use of PLANNER_VELOCITY_TOLERANCE
  *	necessitating the introduction of fabs()
- *
- *	Linear acceleration formula solved for length:
- *
- *	 a)  L = (Vt^2 - Vi^2)/(2 Ar)
- *	 b)  L = (Vt^2 - Vi^2)/(2 (Jm*T)/4) = (Vt^2 - Vi^2)/((Jm*T)/2)
- *	 c)  L = (Vt^2 - Vi^2)/(Jm/2)     (We can safely assume we need the entire movement, and treat T as 1)
- *
- * 	_get_target_velocity() is a convenient function for determining Vt target  
- *	velocity for a given the initial velocity (Vi), length (L), and maximum jerk (Jm).
- *	Equation d) is b) solved for Vt. e) Returns Vt^2, which can delay the sqrt() until needed.
- *
- *	 d)	Vt = sqrt(L*(Jm/2)+Vi^2)
- *	 e)	Vt^2 = L*(Jm/2)+Vi^2
- *
- *	When using linear acceleration, we can easily compute what distance (D) to start decelerating
- *	to Vt at total distance L, after accelerating from Vi without even stopping at a plateau.
- *	This is case HT' described above.
- *
- *	 f) solve Sqrt[2 (j/2) D + v^2] = Sqrt[2 (j/2) (L-D) + V^2] for D
- *	 g) D = (L j - Vi^2 + Vt^2)/(2j)
- *
- *	NOTE that many operations require Vi^2, Vt^2, and Jm/2. 
- *	These should be precomputed and stored when possible.
- *
- *  FYI: Here's an expression that returns the jerk for a given deltaV and L:
- * 	 return(cube(deltaV / (pow(L, 0.66666666))));
- */
-#ifdef __PLAN_R2
-static double _get_target_length(const double Vi_squared, const double Vt_squared, const mpBuf_t *bf)
-{
-	return fabs((Vt_squared - Vi_squared) * bf->recip_half_jerk);
-}
 
-static double _get_target_velocity(const double Vi_squared, const double L, const mpBuf_t *bf)
-{
-	return sqrt(L * bf->half_jerk + Vi_squared);
-}
-
-static double _get_intersection_distance(const double Vi_squared, const double Vt_squared, const double L, const mpBuf_t *bf)
-{
-	return (L * bf->jerk - Vi_squared + Vt_squared)/(2 * bf->jerk);
-}
-#else
-
-/*	
- * _get_target_length()		- derive accel/decel length from delta V and jerk
- * _get_target_velocity()	- derive velocity achievable from delta V and length
- *
- *	This set of functions returns the fourth thing knowing the other three.
- *	
  *	_get_target_length() is a convenient function for determining the 
  *	optimal_length (L) of a line given the inital velocity (Vi), 
  *	target velocity (Vt) and maximum jerk (Jm).
@@ -868,7 +580,6 @@ static double _get_target_velocity(const double Vi, const double L, const mpBuf_
 {
 	return (pow(L, 0.66666666) * bf->cbrt_jerk + Vi);
 }
-#endif
 
 /*
  * _get_junction_vmax() - Chamnit's algorithm - simple
@@ -1035,12 +746,7 @@ uint8_t mp_plan_hold_callback()
 */
 //	braking_velocity = mr.segment_velocity;
 	braking_velocity = _compute_next_segment_velocity();
-
-#ifdef __PLAN_R2
-	braking_length = _get_target_length(square(braking_velocity), 0, bp); // bp is OK to use here
-#else
 	braking_length = _get_target_length(braking_velocity, 0, bp); // bp is OK to use here
-#endif
 	
 	// Hack to prevent Case 2 moves for perfect-fit decels. Happens in homing situations
 	// The real fix: The braking velocity cannot simply be the mr.segment_velocity as this
@@ -1091,11 +797,8 @@ uint8_t mp_plan_hold_callback()
 			continue;
 		}
 		bp->entry_vmax = braking_velocity;		// velocity we need to shed
-#ifdef __PLAN_R2
-		braking_length = _get_target_length(square(braking_velocity), 0, bp);
-#else
 		braking_length = _get_target_length(braking_velocity, 0, bp);
-#endif
+
 		if (braking_length > bp->length) {		// decel does not fit in bp buffer
 			bp->exit_vmax = braking_velocity - _get_target_velocity(0, bp->length, bp);
 			braking_velocity = bp->exit_vmax;	// braking velocity for next buffer
@@ -1263,14 +966,7 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
-	//**** preview mode ****
-	if (cm.preview_mode == true) {
-		copy_axis_vector(mr.position, mr.endpoint); // update runtime position	
-		mp_free_run_buffer();						// free bf if it's actually done
-		return (TG_OK);
-	}
-
-	//**** main dispatcher to process segments ****
+	//**** main dispatcher to process segments ***
 	switch (mr.move_state) {
 		case (MOVE_STATE_HEAD): { status = _exec_aline_head(); break;}
 		case (MOVE_STATE_BODY): { status = _exec_aline_body(); break;}
@@ -1295,6 +991,7 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	//	  TG_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
 
 	if (status == TG_EAGAIN) { 
+//		rpt_decr_status_report(); 				// continue running mr buffer
 		rpt_request_status_report(); 			// continue reporting mr buffer
 	} else {
 		mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
@@ -1558,12 +1255,8 @@ static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBu
 	bf->exit_velocity = Vx;
 	bf->cruise_vmax = Vt;
 	bf->jerk = JERK_TEST_VALUE;
-#ifdef __PLAN_R2
-	TODO_make_this_work();
-#else
 	bf->recip_jerk = 1/bf->jerk;
 	bf->cbrt_jerk = cbrt(bf->jerk);
-#endif
 	_calculate_trapezoid(bf);
 }
 

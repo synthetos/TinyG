@@ -32,13 +32,12 @@
 
 #define TG_FLAG_PROMPTS_bm (1<<0)	// prompt enabled if set
 #define INPUT_BUFFER_LEN 255		// text buffer size (255 max)
+#define SAVED_BUFFER_LEN 100		// saved buffer size (for reporting only)
 #define OUTPUT_BUFFER_LEN 512		// text buffer size
 #define STATUS_MESSAGE_LEN 32		// status message string storage allocation
 #define APPLICATION_MESSAGE_LEN 64	// application message string storage allocation
 
 struct controllerSingleton {		// main TG controller struct
-//	double version;					// tinyg version number
-//	double build;					// tinyg build number
 	uint16_t magic_start;			// magic number to test memory integity	
 	double null;					// dumping ground for items with no target
 	uint8_t test;
@@ -49,6 +48,7 @@ struct controllerSingleton {		// main TG controller struct
 	int32_t led_counter;			// a convenience for flashing an LED
 	char in_buf[INPUT_BUFFER_LEN];	// input text buffer
 	char out_buf[OUTPUT_BUFFER_LEN];// output text buffer
+	char saved_buf[SAVED_BUFFER_LEN];// save the input buffer
 	uint16_t magic_end;
 };
 struct controllerSingleton tg;		// controller state structure

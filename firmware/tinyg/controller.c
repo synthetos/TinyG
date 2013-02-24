@@ -167,13 +167,14 @@ static uint8_t _dispatch()
 		return (status);
 	}
 	tg.linelen = strlen(tg.in_buf)+1;
+	strncpy(tg.saved_buf, tg.in_buf, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 
 	// dispatch the new text line
 	switch (toupper(tg.in_buf[0])) {
 
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {
-				tg_text_response(TG_OK, tg.in_buf);
+				tg_text_response(TG_OK, tg.saved_buf);
 			}
 			break;
 		}
@@ -185,7 +186,7 @@ static uint8_t _dispatch()
 		}
 		case '$': case '?':{ 					// text-mode configs
 			cfg.comm_mode = TEXT_MODE;
-			tg_text_response(cfg_text_parser(tg.in_buf), tg.in_buf);
+			tg_text_response(cfg_text_parser(tg.in_buf), tg.saved_buf);
 			break;
 		}
 		case '{': { 							// JSON input
@@ -199,7 +200,7 @@ static uint8_t _dispatch()
 				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);		// '-8' is used for JSON chars
 				js_json_parser(tg.in_buf);
 			} else {
-				tg_text_response(gc_gcode_parser(tg.in_buf), tg.in_buf);
+				tg_text_response(gc_gcode_parser(tg.in_buf), tg.saved_buf);
 			}
 		}
 	}
@@ -208,34 +209,33 @@ static uint8_t _dispatch()
 
 /************************************************************************************
  * tg_text_response() - text mode responses
- *
- *	Outputs prompt, status and message strings
  */
 static const char prompt_mm[] PROGMEM = "mm";
 static const char prompt_in[] PROGMEM = "inch";
 static const char prompt_ok[] PROGMEM = "tinyg [%S] ok> ";
-static const char prompt_err[] PROGMEM = "tinyg [%S] error: %s %s\n";
+static const char prompt_err[] PROGMEM = "tinyg [%S] err: %s: %s ";
 
 void tg_text_response(const uint8_t status, const char *buf)
 {
 	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
 
-	// deliver the prompt
-	const char *Units;			// becomes pointer to progmem string
-	if (cm_get_units_mode() != INCHES) Units = (PGM_P)&prompt_mm;
-	else Units = (PGM_P)&prompt_in;
+	const char *units;								// becomes pointer to progmem string
+	if (cm_get_units_mode() != INCHES) { 
+		units = (PGM_P)&prompt_mm;
+	} else {
+		units = (PGM_P)&prompt_in;
+	}
 	if ((status == TG_OK) || (status == TG_EAGAIN) || (status == TG_NOOP) || (status == TG_ZERO_LENGTH_MOVE)) {
-		fprintf_P(stderr, (PGM_P)&prompt_ok, Units);
+		fprintf_P(stderr, (PGM_P)&prompt_ok, units);
 	} else {
 		char status_message[STATUS_MESSAGE_LEN];
-		fprintf_P(stderr, (PGM_P)prompt_err, Units, rpt_get_status_message(status, status_message), buf);
+		fprintf_P(stderr, (PGM_P)prompt_err, units, rpt_get_status_message(status, status_message), buf);
 	}
-
-	// deliver echo and messages
-	cmdObj_t *cmd = cmd_body;	// if there is a message it will aways be in the second object
-	if ((cfg.text_verbosity >= TV_MESSAGES) && (cmd->token[0] == 'm')) {
-		fprintf(stderr, "%s\n", *cmd->stringp);
+	cmdObj_t *cmd = cmd_body+1;
+	if (cmd->token[0] == 'm') {
+		fprintf(stderr, *cmd->stringp);
 	}
+	fprintf(stderr, "\n");
 }
 
 /**** Utilities ****

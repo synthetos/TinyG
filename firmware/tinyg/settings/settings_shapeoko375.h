@@ -39,22 +39,16 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to Shapeoko 375mm profile"
 
-#define JUNCTION_DEVIATION	0.01		// default value, in mm - smaller is faster
-#define JUNCTION_ACCELERATION 2000000	// 2 million - centripetal acceleration around corners
+#define JUNCTION_DEVIATION		0.01	// default value, in mm - smaller is faster
+#define JUNCTION_ACCELERATION	2000000	// 2 million - centripetal acceleration around corners
 
 // *** settings.h overrides ***
 
-#undef	COMM_MODE
-#define COMM_MODE				JSON_MODE
-//#define COMM_MODE				TEXT_MODE
+//#undef COMM_MODE
+//#define COMM_MODE				JSON_MODE
 
-#undef JSON_VERBOSITY
-//#define JSON_VERBOSITY JV_SILENT		// no response is provided for any command
-//#define JSON_VERBOSITY JV_FOOTER		// responses contain  footer only; no command echo, gcode blocks or messages
-//#define JSON_VERBOSITY JV_CONFIGS		// echo configs; gcode blocks are not echoed; messages are not echoed
-#define JSON_VERBOSITY JV_MESSAGES		// echo configs; gcode messages only (if present); no block echo or line numbers
-//#define JSON_VERBOSITY  JV_LINENUM	// echo configs; gcode blocks return messages and line numbers as present
-//#define JSON_VERBOSITY JV_VERBOSE		// echos all configs and gcode blocks, line numbers and messages
+//#undef JSON_VERBOSITY
+//#define JSON_VERBOSITY 		JV_MESSAGES
 
 // *** motor settings ***
 

@@ -41,10 +41,10 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to Zen Toolworks 7x12 profile"
 
-#define JERK_MAX_LINEAR 			100000000	// yes, that's "100,000,000" mm/(min^3)
-#define JERK_MAX_ROTARY 			10000000000	// yes, that's "10 billion" mm/(min^3)
-#define JUNCTION_DEVIATION	0.05		// default value, in mm
-#define JUNCTION_ACCELERATION 100000	// centripetal acceleration around corners
+#define JERK_MAX_LINEAR 		100000000	// yes, that's "100,000,000" mm/(min^3)
+#define JERK_MAX_ROTARY 		10000000000	// yes, that's "10 billion" mm/(min^3)
+#define JUNCTION_DEVIATION		0.05		// default value, in mm
+#define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
 
 // *** settings.h overrides ***
 
@@ -114,8 +114,8 @@
 #define Z_TRAVEL_MAX 			75
 #define Z_JERK_MAX 				JERK_MAX_LINEAR
 #define Z_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
-#define Z_SWITCH_MODE_MIN 		SW_MODE_HOMING
-#define Z_SWITCH_MODE_MAX 		SW_MODE_DISABLED
+#define Z_SWITCH_MODE_MIN 		SW_MODE_DISABLED
+#define Z_SWITCH_MODE_MAX 		SW_MODE_HOMING
 #define Z_SEARCH_VELOCITY 		400
 #define Z_LATCH_VELOCITY 		100
 #define Z_LATCH_BACKOFF 		2

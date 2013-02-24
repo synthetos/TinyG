@@ -104,10 +104,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 // avrdude -p x192a3 -c avr109 -b 115200 -P COM19
 // avrdude -e -p atxmega192a3 -c avrispmkii -P usb -U boot:w:xboot-boot.hex
 
-
-	xio_queue_RX_string_usb("{\"prev\":1}");
 //	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"mpox\":true,\"mpoy\":true}}");
 
+//	xio_queue_RX_string_usb("$qf\n");
 //	xio_queue_RX_string_usb("$defau=1\n");
 //	xio_queue_RX_string_usb("$id\n");
 //	xio_queue_RX_string_usb("{\n");
@@ -118,7 +117,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 	// text parser test cases
 //	xio_queue_RX_string_usb("?\n");				// text mode status report
-//	xio_queue_RX_string_usb("$$\n");			// sys request
+//	xio_queue_RX_string_usb("$$\n");			// show all request
 //	xio_queue_RX_string_usb("$ec=1\n");			// turn CR expansion on
 //	xio_queue_RX_string_usb("$qr\n");			// invoke QR report
 //	xio_queue_RX_string_usb("$ej=1\n");			// enable JSON mode
@@ -391,6 +390,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"gc\":\"n10000000 g0 x0\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"n100000000 g0 x20\"}\n");
 
+/*
 	xio_queue_RX_string_usb("{\"gc\":\"N1 T1M6\"}\n");
 	xio_queue_RX_string_usb("{\"gc\":\"N2 G17\"}\n");
 	xio_queue_RX_string_usb("{\"gc\":\"N3 G21 (mm)\"}\n");
@@ -405,7 +405,6 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 	xio_queue_RX_string_usb("{\"gc\":\"N12 X0.980Y-33.534\"}\n");
 	xio_queue_RX_string_usb("{\"gc\":\"N13 X1.304Y-33.546\"}\n");
 	xio_queue_RX_string_usb("{\"gc\":\"N14 X1.626Y-33.562\"}\n");
-/*
 	xio_queue_RX_string_usb("{\"gc\":\"N15 X1.946Y-33.580\"}\n");
 	xio_queue_RX_string_usb("{\"gc\":\"N16 X2.262Y-33.602\"}\n");
 	xio_queue_RX_string_usb("{\"gc\":\"N17 X2.574Y-33.628\"}\n");
