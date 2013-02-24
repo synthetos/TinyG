@@ -30,13 +30,14 @@
 #define report_h
 
 char *rpt_get_status_message(uint8_t status, char *msg);
-void rpt_print_message(char *msg);
+//void rpt_print_message(char *msg);
 void rpt_exception(uint8_t status, int16_t value);
 void rpt_print_loading_configs_message(void);
 void rpt_print_initializing_message(void);
 void rpt_print_system_ready_message(void);
 
-void rpt_init_status_report(uint8_t persist_flag);
+//void rpt_init_status_report(uint8_t persist_flag);
+void rpt_init_status_report(void);
 uint8_t rpt_set_status_report(cmdObj_t *cmd);
 void rpt_decr_status_report(void);
 void rpt_request_status_report(void);

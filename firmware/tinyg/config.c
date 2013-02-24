@@ -892,7 +892,6 @@ static uint8_t _get_id(cmdObj_t *cmd)
  * _print_sr()	- print multiline text status report
  * _set_si()	- set status report interval
  * cmd_set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
- * cmd_set_tv() - set text verbosity level (exposed) - for details see textVerbosity in config.h
  */
 static uint8_t _get_qr(cmdObj_t *cmd) 
 {
@@ -942,14 +941,6 @@ static uint8_t _set_si(cmdObj_t *cmd)
 	cfg.status_report_interval = (uint32_t)cmd->value;
 	return(TG_OK);
 }
-/*
-uint8_t cmd_set_tv(cmdObj_t *cmd) 
-{
-	if (cmd->value > TV_VERBOSE) { return (TG_INPUT_VALUE_UNSUPPORTED);}
-	cfg.text_verbosity = cmd->value;
-	return(TG_OK);
-}
-*/
 
 uint8_t cmd_set_jv(cmdObj_t *cmd) 
 {
@@ -1516,6 +1507,21 @@ void cfg_init()
 	cfg.nvm_profile_base = cfg.nvm_base_addr;
 	cmd->index = 0;							// this will read the first record in NVM
 
+	cmd_read_NVM_value(cmd);
+	if (cmd->value == cfg.fw_build) {		// case (1) NVM is setup and in revision
+		rpt_print_loading_configs_message();
+		for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
+			if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
+				strcpy_P(cmd->token, cfgArray[cmd->index].token);	// read the token from the array
+				cmd_read_NVM_value(cmd);
+				cmd_set(cmd);
+			}
+		}
+		rpt_init_status_report();
+		return;
+	}
+
+/*
 	for (uint8_t i=0; i<3; i++) {			// retry the read 3 times - NVM can be cantakerous
 		cmd_read_NVM_value(cmd);
 		if (cmd->value == cfg.fw_build) {	// case (1) NVM is setup and in revision
@@ -1531,6 +1537,8 @@ void cfg_init()
 			return;
 		}
 	}
+*/
+
 	// case (2) NVM is not setup or not in revision
 	cmd->value = true;
 	_set_defa(cmd);		// this subroutine called from here and from the $defa=1 command
@@ -1553,7 +1561,8 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 		}
 	}
 	rpt_print_initializing_message();
-	rpt_init_status_report(true);			// reset status reports w/persist = true
+//	rpt_init_status_report(true);			// reset status reports w/persist = true
+	rpt_init_status_report();				// reset status reports
 	return (TG_OK);
 }
 
