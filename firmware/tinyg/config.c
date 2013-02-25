@@ -1487,8 +1487,8 @@ void cmd_persist(cmdObj_t *cmd)
  * _set_defa() - reset NVM with default values for active profile
  *
  * Performs one of 2 actions:
- *	(1) if NVM is set up and at current config version use NVM data for config
- *	(2) if NVM is set up or out-of-rev load RAM and NVM with settings.h defaults
+ *	(1) if NVM is set up or out-of-rev load RAM and NVM with settings.h defaults
+ *	(2) if NVM is set up and at current config version use NVM data for config
  *
  *	You can assume the cfg struct has been zeroed by a hard reset. 
  *	Do not clear it as the version and build numbers have already been set by tg_init()
@@ -1501,13 +1501,16 @@ void cfg_init()
 	cfg.magic_start = MAGICNUM;
 	cfg.magic_end = MAGICNUM;
 
-	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
+	cm_set_units_mode(MILLIMETERS);			// must do inits in MM mode
 	cfg.nvm_base_addr = NVM_BASE_ADDR;
 	cfg.nvm_profile_base = cfg.nvm_base_addr;
 	cmd->index = 0;							// this will read the first record in NVM
 
 	cmd_read_NVM_value(cmd);
-	if (cmd->value == cfg.fw_build) {		// case (1) NVM is setup and in revision
+	if (cmd->value != cfg.fw_build) {
+		cmd->value = true;					// case (1) NVM is not setup or not in revision
+		_set_defa(cmd);	
+	} else {								// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
 		for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
 			if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
@@ -1517,30 +1520,27 @@ void cfg_init()
 			}
 		}
 		rpt_init_status_report();
-		return;
 	}
-	// case (2) NVM is not setup or not in revision
-	cmd->value = true;
-	_set_defa(cmd);		// this subroutine called from here and from the $defa=1 command
 }
 
+// _set_defa() is both a helper and called directly from the $defa=1 command
 static uint8_t _set_defa(cmdObj_t *cmd) 
 {
 	if (cmd->value != true) {				// failsafe. Must set true or no action occurs
 		print_defaults_help(cmd);
 		return (TG_OK);
 	}
-	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
+	cm_set_units_mode(MILLIMETERS);			// must do inits in MM mode
 
 	for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
 		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
 			cmd->value = (double)pgm_read_float(&cfgArray[cmd->index].def_value);
 			strcpy_P(cmd->token, cfgArray[cmd->index].token);
 			cmd_set(cmd);
-			cmd_persist(cmd);
+			cmd_persist(cmd);				// persist must occur when no other interrupts are firing
 		}
 	}
-	rpt_print_initializing_message();
+	rpt_print_initializing_message();		// don't start TX until all the NVM persistence is done
 	rpt_init_status_report();				// reset status reports
 	return (TG_OK);
 }

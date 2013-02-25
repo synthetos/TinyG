@@ -270,8 +270,8 @@ void rpt_init_status_report()
 uint8_t rpt_set_status_report(cmdObj_t *cmd)
 {
 	uint8_t elements = 0;
-	cmdObj_t *cmd_saved = cmd;
-	index_t index_saved = cmd->index;
+//	cmdObj_t *cmd_saved = cmd;
+//	index_t index_saved = cmd->index;
 	index_t status_report_list[CMD_STATUS_REPORT_LEN];
 	memset(status_report_list, 0, sizeof(status_report_list));
 	index_t sr_start = cmd_get_index("","se00");		// set first SR persistence index
@@ -291,7 +291,7 @@ uint8_t rpt_set_status_report(cmdObj_t *cmd)
 	if (elements == 0) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	memcpy(cfg.status_report_list, status_report_list, sizeof(status_report_list));
 	rpt_populate_unfiltered_status_report();			// return current values (clobbers cmd struct)
-	cmd_saved->index = index_saved;						// restore the command index
+//	cmd_saved->index = index_saved;						// restore the command index
 	return (TG_OK);
 }
 
@@ -354,10 +354,11 @@ uint8_t rpt_status_report_callback() 		// called by controller dispatcher
 void rpt_populate_unfiltered_status_report()
 {
 	char tmp[CMD_TOKEN_LEN+1];
-	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
+	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
+	cmd->index = cmd_get_index("","sr");	// set the index - may be needed by calling function
 	cmd = cmd->nx;
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
