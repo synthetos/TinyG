@@ -1502,7 +1502,6 @@ void cfg_init()
 	cfg.magic_end = MAGICNUM;
 
 	cm_set_units_mode(MILLIMETERS);			// must do init in MM mode
-//	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
 	cfg.nvm_base_addr = NVM_BASE_ADDR;
 	cfg.nvm_profile_base = cfg.nvm_base_addr;
 	cmd->index = 0;							// this will read the first record in NVM
@@ -1520,25 +1519,6 @@ void cfg_init()
 		rpt_init_status_report();
 		return;
 	}
-
-/*
-	for (uint8_t i=0; i<3; i++) {			// retry the read 3 times - NVM can be cantakerous
-		cmd_read_NVM_value(cmd);
-		if (cmd->value == cfg.fw_build) {	// case (1) NVM is setup and in revision
-			rpt_print_loading_configs_message();
-			for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
-				if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
-					strcpy_P(cmd->token, cfgArray[cmd->index].token);	// read the token from the array
-					cmd_read_NVM_value(cmd);
-					cmd_set(cmd);
-				}
-			}
-			rpt_init_status_report(false);	// persist = false
-			return;
-		}
-	}
-*/
-
 	// case (2) NVM is not setup or not in revision
 	cmd->value = true;
 	_set_defa(cmd);		// this subroutine called from here and from the $defa=1 command
@@ -1561,7 +1541,6 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 		}
 	}
 	rpt_print_initializing_message();
-//	rpt_init_status_report(true);			// reset status reports w/persist = true
 	rpt_init_status_report();				// reset status reports
 	return (TG_OK);
 }

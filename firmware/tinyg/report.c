@@ -290,7 +290,7 @@ uint8_t rpt_set_status_report(cmdObj_t *cmd)
 	}
 	if (elements == 0) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	memcpy(cfg.status_report_list, status_report_list, sizeof(status_report_list));
-	rpt_populate_unfiltered_status_report();			// return current values
+	rpt_populate_unfiltered_status_report();			// return current values (clobbers cmd struct)
 	cmd_saved->index = index_saved;						// restore the command index
 	return (TG_OK);
 }
