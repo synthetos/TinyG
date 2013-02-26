@@ -294,22 +294,17 @@ static uint8_t _bootloader_handler(void)
 {
 	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
 	cli();
+	asm("ldi r16, 0xff");				// reset stack pointer by loading it with 0x5fff
+	asm("out 0x3d, r16");				// See https://sites.google.com/site/avrasmintro/
+	asm("ldi r16, 0x5f");
+	asm("out 0x3e, r16");				//...0x3e is stack pointer hi
+	asm("jmp 0x030000");				// jump to boot region
 	asm("jmp 0x030000");
 	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
 }
-
-/*
-static uint8_t _bootloader_handler(void)
-{
-	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
-//	sig.sig_request_bootloader = false;
-	asm("jmp 0x030000");
 //	CCPWrite( &RST.CTRL, RST_SWRST_bm );
 //	CCP = CCP_IOREG_gc;
 //	RST.CTRL = RST_SWRST_bm;
-	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
-}
-*/
 
 static uint8_t _feedhold_handler(void)
 {

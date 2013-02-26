@@ -63,6 +63,13 @@ int main(void)
 
 	cli();
 
+	// See https://sites.google.com/site/avrasmintro/
+//	asm("ldi r16, 0xff");	// reset stack pointer
+//	asm("out 0x3d, r16");
+//	asm("ldi r16, 0x5f");
+//	asm("out 0x3e, r16");
+//	asm("jmp 0x030000");	// jump to boot region
+
 	// system and drivers
 	sys_init();			// system hardware setup 			- must be first
 	rtc_init();			// real time counter
