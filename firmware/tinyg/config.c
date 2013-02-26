@@ -255,10 +255,10 @@ static uint8_t _set_tr(cmdObj_t *cmd);		// set motor travel per revolution
 static uint8_t _set_mi(cmdObj_t *cmd);		// set microsteps
 static uint8_t _set_po(cmdObj_t *cmd);		// set motor polarity
 
+static uint8_t _set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
 static uint8_t _get_am(cmdObj_t *cmd);		// get axis mode
 static uint8_t _set_am(cmdObj_t *cmd);		// set axis mode
 static void _print_am(cmdObj_t *cmd);		// print axis mode
-static uint8_t _set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
 
 static uint8_t _set_ic(cmdObj_t *cmd);		// ignore CR or LF on RX input
 static uint8_t _set_ec(cmdObj_t *cmd);		// expand CRLF on TX outout
@@ -857,7 +857,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #define _index_is_uber(i)   ((i >= CMD_INDEX_START_UBER_GROUPS) ? true : false)
 #define _index_is_group_or_uber(i) ((i >= CMD_INDEX_START_GROUPS) ? true : false)
 
-//index_t cmd_get_max_index() { return (CMD_INDEX_MAX);}
 uint8_t cmd_index_is_group(index_t index) { return _index_is_group(index);}
 
 /**** SYSTEM VARIABLES: Versions and IDs **************************************

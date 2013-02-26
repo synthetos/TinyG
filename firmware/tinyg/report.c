@@ -270,8 +270,6 @@ void rpt_init_status_report()
 uint8_t rpt_set_status_report(cmdObj_t *cmd)
 {
 	uint8_t elements = 0;
-//	cmdObj_t *cmd_saved = cmd;
-//	index_t index_saved = cmd->index;
 	index_t status_report_list[CMD_STATUS_REPORT_LEN];
 	memset(status_report_list, 0, sizeof(status_report_list));
 	index_t sr_start = cmd_get_index("","se00");		// set first SR persistence index
@@ -290,8 +288,7 @@ uint8_t rpt_set_status_report(cmdObj_t *cmd)
 	}
 	if (elements == 0) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	memcpy(cfg.status_report_list, status_report_list, sizeof(status_report_list));
-	rpt_populate_unfiltered_status_report();			// return current values (clobbers cmd struct)
-//	cmd_saved->index = index_saved;						// restore the command index
+	rpt_populate_unfiltered_status_report();			// return current values
 	return (TG_OK);
 }
 
@@ -376,6 +373,10 @@ void rpt_populate_unfiltered_status_report()
  *
  *	Designed to be displayed as a JSON object; i;e; no footer or header
  *	Returns 'true' if the report has new data, 'false' if there is nothing to report.
+ *
+ *	NOTE: Unlike rpt_populate_unfiltered_status_report(), this function does NOT set 
+ *	the SR index, which is a relatively expensive operation. In current use this 
+ *	doesn't matter, but if the caller assumes its set it may lead to a side-effect (bug)
  */
 uint8_t rpt_populate_filtered_status_report()
 {
@@ -386,17 +387,19 @@ uint8_t rpt_populate_filtered_status_report()
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
+//	cmd->index = cmd_get_index("","sr");	// OMITTED - set the index - may be needed by calling function
 	cmd = cmd->nx;
+
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
-		cmd_get_cmdObj(cmd);
-		strcpy(tmp, cmd->group);			// flatten out groups
-		strcat(tmp, cmd->token);
-		strcpy(cmd->token, tmp);
 
+		cmd_get_cmdObj(cmd);
 		if (cfg.status_report_value[i] == cmd->value) {	// float == comparison runs the risk of overreporting. So be it
 			continue;
 		} else {
+			strcpy(tmp, cmd->group);		// flatten out groups
+			strcat(tmp, cmd->token);
+			strcpy(cmd->token, tmp);
 			cfg.status_report_value[i] = cmd->value;
 			cmd = cmd->nx;
 //			if (cmd == NULL) { return (false);}	// This is never supposed to happen
