@@ -151,40 +151,22 @@ void rpt_exception(uint8_t status, int16_t value)
 		TINYG_BUILD_NUMBER, status, rpt_get_status_message(status, msg), value);
 }
 
-/**** Message Primitives ***********************************************************
- * rpt_print_message()        - print a character string passed as argument
- * rpt_print_message_value()  - print a message with a value
- * rpt_print_message_number() - print a canned message by number
- */
-void rpt_print_message(char *msg)
-{
-	cmd_add_string("msg", msg);
-	cmd_print_list(TG_OK, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
-}
-/*
-void rpt_print_message_value(char *msg, double value)
-{
-	cmd_add_string("msg", msg);
-	cmd_add_float("v", value);
-	cmd_print_list(TG_OK, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
-}
-*/
-/*
-void rpt_print_message_number(uint8_t msgnum) 
-{
-	char msg[APPLICATION_MESSAGE_LEN];
-	strncpy_P(msg,(PGM_P)pgm_read_word(&msgApplicationMessage[msgnum]), APPLICATION_MESSAGE_LEN);
-	tg_print_message(msg);
-}
-*/
-
 /**** Application Messages *********************************************************
+ * rpt_print_message() 				   - print a character string passed as argument
  * rpt_print_initializing_message()	   - initializing configs from hard-coded profile
  * rpt_print_loading_configs_message() - loading configs from EEPROM
  * rpt_print_system_ready_message()    - system ready message
  *
  *	These messages are always in JSON format to allow UIs to sync
  */
+/*
+void rpt_print_message(char *msg)
+{
+	cmd_add_string("msg", msg);
+	cmd_print_list(TG_OK, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
+}
+*/
+
 void _startup_helper(uint8_t status, const char *msg)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
@@ -265,7 +247,7 @@ void rpt_print_system_ready_message(void)
  *	Call this function to completely re-initialze the status report
  *	Sets SR list to hard-coded defaults and re-initializes sr values in NVM
  */
-void rpt_init_status_report(uint8_t persist_flag)
+void rpt_init_status_report()
 {
 	cmdObj_t *cmd = cmd_reset_list();	// used for status report persistence locations
 	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
@@ -277,29 +259,27 @@ void rpt_init_status_report(uint8_t persist_flag)
 		cfg.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
 		cmd->value = cmd_get_index("", sr_defaults[i]);	// load the index for the SR element
 		cmd_set(cmd);
-		cmd_persist(cmd);
-		cmd->index++;
+		cmd_persist(cmd);								// conditionally persist - automatic by cmd_persis()
+		cmd->index++;									// increment SR NVM index
 	}
-	cm.status_report_request = false;
 }
 
 /* 
- * rpt_set_status_report() - interpret an sr set string and return current report
- *
- *	Call this function to completely re-initialze the status report
- *	Sets SR list to hard-coded defaults and re-initializes sr values in NVM
+ * rpt_set_status_report() - interpret an sr setup string and return current report
  */
 uint8_t rpt_set_status_report(cmdObj_t *cmd)
 {
 	uint8_t elements = 0;
 	index_t status_report_list[CMD_STATUS_REPORT_LEN];
 	memset(status_report_list, 0, sizeof(status_report_list));
+	index_t sr_start = cmd_get_index("","se00");		// set first SR persistence index
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if (((cmd = cmd->nx) == NULL) || (cmd->type == TYPE_EMPTY)) { break;}
 		if ((cmd->type == TYPE_BOOL) && (cmd->value == true)) {
 			status_report_list[i] = cmd->index;
-			cmd->value = cmd->index;			// persist the index as the value
+			cmd->value = cmd->index;					// persist the index as the value
+			cmd->index = sr_start + i;					// index of the SR persistence location
 			cmd_persist(cmd);
 			elements++;
 		} else {
@@ -308,7 +288,7 @@ uint8_t rpt_set_status_report(cmdObj_t *cmd)
 	}
 	if (elements == 0) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	memcpy(cfg.status_report_list, status_report_list, sizeof(status_report_list));
-	rpt_populate_unfiltered_status_report();	// return current values
+	rpt_populate_unfiltered_status_report();			// return current values
 	return (TG_OK);
 }
 
@@ -371,10 +351,11 @@ uint8_t rpt_status_report_callback() 		// called by controller dispatcher
 void rpt_populate_unfiltered_status_report()
 {
 	char tmp[CMD_TOKEN_LEN+1];
-	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
+	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
+	cmd->index = cmd_get_index("","sr");	// set the index - may be needed by calling function
 	cmd = cmd->nx;
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
@@ -392,6 +373,10 @@ void rpt_populate_unfiltered_status_report()
  *
  *	Designed to be displayed as a JSON object; i;e; no footer or header
  *	Returns 'true' if the report has new data, 'false' if there is nothing to report.
+ *
+ *	NOTE: Unlike rpt_populate_unfiltered_status_report(), this function does NOT set 
+ *	the SR index, which is a relatively expensive operation. In current use this 
+ *	doesn't matter, but if the caller assumes its set it may lead to a side-effect (bug)
  */
 uint8_t rpt_populate_filtered_status_report()
 {
@@ -402,17 +387,19 @@ uint8_t rpt_populate_filtered_status_report()
 	cmd->type = TYPE_PARENT; 				// setup the parent object
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
+//	cmd->index = cmd_get_index("","sr");	// OMITTED - set the index - may be needed by calling function
 	cmd = cmd->nx;
+
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
-		cmd_get_cmdObj(cmd);
-		strcpy(tmp, cmd->group);			// flatten out groups
-		strcat(tmp, cmd->token);
-		strcpy(cmd->token, tmp);
 
+		cmd_get_cmdObj(cmd);
 		if (cfg.status_report_value[i] == cmd->value) {	// float == comparison runs the risk of overreporting. So be it
 			continue;
 		} else {
+			strcpy(tmp, cmd->group);		// flatten out groups
+			strcat(tmp, cmd->token);
+			strcpy(cmd->token, tmp);
 			cfg.status_report_value[i] = cmd->value;
 			cmd = cmd->nx;
 //			if (cmd == NULL) { return (false);}	// This is never supposed to happen
