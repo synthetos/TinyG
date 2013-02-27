@@ -277,11 +277,10 @@ void tg_set_active_source(uint8_t dev)
 
 /**** Signal handlers ****
  * _reset_handler()
- * _bootloader_handler()
  * _feedhold_handler()
  * _cycle_start_handler()
+ * _bootloader_handler()
  */
-
 static uint8_t _reset_handler(void)
 {
 	if (sig.sig_reset == false) { return (TG_NOOP);}
@@ -289,22 +288,6 @@ static uint8_t _reset_handler(void)
 	tg_reset();							// hard reset - identical to hitting RESET button
 	return (TG_EAGAIN);
 }
-
-static uint8_t _bootloader_handler(void)
-{
-	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
-	cli();
-	asm("ldi r16, 0xff");				// reset stack pointer by loading it with 0x5fff
-	asm("out 0x3d, r16");				// See https://sites.google.com/site/avrasmintro/
-	asm("ldi r16, 0x5f");
-	asm("out 0x3e, r16");				//...0x3e is stack pointer hi
-	asm("jmp 0x030000");				// jump to boot region
-	asm("jmp 0x030000");
-	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
-}
-//	CCPWrite( &RST.CTRL, RST_SWRST_bm );
-//	CCP = CCP_IOREG_gc;
-//	RST.CTRL = RST_SWRST_bm;
 
 static uint8_t _feedhold_handler(void)
 {
@@ -320,6 +303,46 @@ static uint8_t _cycle_start_handler(void)
 	sig.sig_cycle_start = false;
 	cm_cycle_start();
 	return (TG_EAGAIN);					// best to restart the control loop
+}
+
+/*
+ * _bootloader_handler()
+ *
+ * 	Turns off interrupts, resets the stack pointer and jumps to the boot region.
+ *	All the values in the assembly are hard coded because the pre-processor 
+ *	doesn't open strings to process defines.
+ *
+ *	  RAMEND 	0x05ff					// starting location for stack pointer
+ *	  SPL		0x3d					// stack pointer lo
+ *	  SPH		0x3e					// stack pointer hi
+ *	  BOOTSTRT	0x030000				// start of boot region
+ *
+ *  Refs:
+ *	  https://sites.google.com/site/avrasmintro/
+ *	  http://www.stanford.edu/class/ee281/projects/aut2002/yingzong-mouse/media/GCCAVRInlAsmCB.pdf
+ *
+ * 	If the BOOTRST fuse were working you could simply do it like this:
+ *
+ *	  CCPWrite( &RST.CTRL, RST_SWRST_bm );
+ *
+ *  alternately:
+ *
+ *	  CCP = CCP_IOREG_gc;
+ *	  RST.CTRL = RST_SWRST_bm;
+ */
+static uint8_t _bootloader_handler(void)
+{
+	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
+	cli();
+
+	asm("ldi r16, 0xff" "\n\t" \
+		"out 0x3d, r16" "\n\t" \
+		"ldi r16, 0x5f" "\n\t" \
+		"out 0x3e, r16" "\n\t" \
+		"jmp 0x030000"  "\n\t" \
+		);
+
+	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
 }
 
 /*
