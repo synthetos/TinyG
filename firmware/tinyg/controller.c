@@ -335,12 +335,15 @@ static uint8_t _bootloader_handler(void)
 	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
 	cli();
 
+	/*
 	asm("ldi r16, 0xff" "\n\t" \
 		"out 0x3d, r16" "\n\t" \
 		"ldi r16, 0x5f" "\n\t" \
 		"out 0x3e, r16" "\n\t" \
 		"jmp 0x030000"  "\n\t" \
 		);
+	*/
+	CCPWrite( &RST.CTRL, RST_SWRST_bm );
 
 	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
 }
