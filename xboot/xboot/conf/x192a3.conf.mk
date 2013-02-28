@@ -97,7 +97,7 @@ USE_ATTACH_LED = no
 USE_FIFO = no
 
 # General Options
-USE_INTERRUPTS = no
+USE_INTERRUPTS = yes
 USE_WATCHDOG = no
 
 # Bootloader Features
@@ -128,11 +128,11 @@ ENTER_PIN_STATE       = 0
 ENTER_PIN_PUEN        = 1
 
 # ENTER_DELAY
-ENTER_BLINK_COUNT     = 3
-ENTER_BLINK_WAIT      = 30000
+ENTER_BLINK_COUNT     = 10
+ENTER_BLINK_WAIT      = 300000
 
 # ENTER_UART
-ENTER_UART_NEED_SYNC = yes
+ENTER_UART_NEED_SYNC = no
 
 # ENTER_FIFO
 #ENTER_FIFO_NEED_SYNC = yes
@@ -152,7 +152,7 @@ WATCHDOG_TIMEOUT      = WDT_PER_1KCLK_gc
 #WATCHDOG_TIMEOUT      = WDT_PER_8KCLK_gc
 
 # LED
-LED_PORT_NAME         = F
+LED_PORT_NAME         = A
 LED_PIN               = 5
 LED_INV               = 0
 
