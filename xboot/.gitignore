@@ -9,3 +9,7 @@
 *.swp
 *.sym
 .dep
+config.h
+config.mk
+xboot.atsln
+xboot.cproj
