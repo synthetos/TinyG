@@ -82,7 +82,7 @@ enum swNums {	 			// indexes into switch arrays
 #define SW_MODE_HOMING 			SW_HOMING	// enable switch for homing only
 #define SW_MODE_LIMIT 			SW_LIMIT		// enable switch for limits only
 #define SW_MODE_HOMING_LIMIT   (SW_HOMING | SW_LIMIT)	// homing and limits
-#define SW_MODE_MAX_VALUE 		SW_MODE_LIMIT
+#define SW_MODE_MAX_VALUE 		SW_MODE_HOMING_LIMIT
 
 enum swType {
 	SW_TYPE_NORMALLY_OPEN = 0,

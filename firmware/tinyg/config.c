@@ -1193,7 +1193,7 @@ static uint8_t _set_am(cmdObj_t *cmd)		// axis mode
 
 static uint8_t _set_sw(cmdObj_t *cmd)		// switch setting
 {
-	if (cmd->value > SW_TYPE_NORMALLY_CLOSED) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	if (cmd->value > SW_MODE_MAX_VALUE) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	_set_ui8(cmd);
 	gpio_init();
 	return (TG_OK);
