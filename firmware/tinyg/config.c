@@ -124,6 +124,7 @@
 #include "test.h"
 #include "help.h"
 #include "system.h"
+#include "network.h"
 #include "xio/xio.h"
 #include "xmega/xmega_eeprom.h"
 
@@ -408,6 +409,7 @@ static const char fmt_jv[] PROGMEM = "[jv]  json verbosity%15d [0=silent,1=foote
 static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
 static const char fmt_sv[] PROGMEM = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
 static const char fmt_qv[] PROGMEM = "[qv]  queue report verbosity%7d [0=off,1=filtered,2=verbose]\n";
+static const char fmt_net[] PROGMEM = "[net]  network mode%16d [0=standalone,1=master,2=slave]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
 
 static const char fmt_qr[] PROGMEM = "qr:%d\n";
@@ -763,6 +765,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","ec",  _f07, fmt_ec, _print_ui8, _get_ui8, _set_ec,  (double *)&cfg.enable_cr,			COM_EXPAND_CR },
 	{ "sys","ee",  _f07, fmt_ee, _print_ui8, _get_ui8, _set_ee,  (double *)&cfg.enable_echo,		COM_ENABLE_ECHO },
 	{ "sys","ex",  _f07, fmt_ex, _print_ui8, _get_ui8, _set_ex,  (double *)&cfg.enable_xon,			COM_ENABLE_XON },
+	{ "sys","net", _f07, fmt_net,_print_ui8, _get_ui8, _set_012, (double *)&tg.network,				NET_STANDALONE },
 	{ "sys","baud",_fns, fmt_baud,_print_ui8,_get_ui8, _set_baud,(double *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
 
 	// NOTE: The ordering within the gcode defaults is important for token resolution
