@@ -905,7 +905,7 @@ static uint8_t _get_qr(cmdObj_t *cmd)
 
 static uint8_t _run_qf(cmdObj_t *cmd) 
 {
-	mp_flush_planner();
+	cm_flush_planner();
 	return (TG_OK);
 }
 

@@ -3,6 +3,7 @@
  * Part of TinyG project
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2012 - 2013 Rob Giseburt
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -106,16 +107,16 @@ void mp_init()
  * mp_flush_planner() - flush all moves in the planner and all arcs
  *
  *	Does not affect the move currently running in mr.
+ *	Does not affect mm or gm model positions
  *	This function is designed to be called during a hold to reset the planner
- *	and is also useful for jogs and other console-driven commands
+ *	This function should not generally be called; call cm_flush_planner() instead
  */
-
 void mp_flush_planner()
 {
 	ar_abort_arc();
 	mp_init_buffers();
 	cm.motion_state = MOTION_STOP;
-//	cm_exec_program_stop();
+//	copy_axis_vector(mm.position, mr.position);
 }
 
 /*
@@ -136,7 +137,6 @@ void mp_flush_planner()
  *	the motors will still be processing the action and the real tool 
  *	position is still close to the starting point.
  */
-
 double *mp_get_plan_position(double position[])
 {
 	copy_axis_vector(position, mm.position);	

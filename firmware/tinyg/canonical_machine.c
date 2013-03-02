@@ -117,7 +117,7 @@ static void _exec_program_finalize(uint8_t machine_state, double float_val);
  *
  ************************************************************************/
 
-/* 
+/*
  * cm_get_combined_state() - combines raw states into something a user might want to see
  */
 
@@ -519,6 +519,8 @@ static double _get_move_times(double *min_time)
  * Initialization and Termination (4.3.2)
  *
  * cm_init() 
+ * cm_shutdown() 
+ * cm_flush_planner()
  *
  *	Config init cfg_init() must have been run beforehand. Many parameters 
  *	used by the canonical machine are actually set during cfg_init().
@@ -572,6 +574,21 @@ void cm_shutdown()
 
 	rpt_exception(TG_SHUTDOWN,1);			// send shutdown message, value = 1 (arbitrary)
 	cm.machine_state = MACHINE_SHUTDOWN;
+}
+
+/*
+ * cm_flush_planner() - Flush planner queue and correct model position
+ */
+uint8_t cm_flush_planner()
+{
+	mp_flush_planner();
+
+	for (uint8_t i=0; i<AXES; i++) {
+		mp_set_axis_position(i, mp_get_runtime_machine_position(i));
+		gm.position[i] = mp_get_runtime_machine_position(i);
+		gm.target[i] = gm.position[i];
+	}
+	return (TG_OK);
 }
 
 /* 
