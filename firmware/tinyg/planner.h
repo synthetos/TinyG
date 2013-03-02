@@ -3,6 +3,7 @@
  * Part of TinyG project
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2012 - 2013 Rob Giseburt
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 

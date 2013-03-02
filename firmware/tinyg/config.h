@@ -76,7 +76,7 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 #define CMD_FORMAT_LEN 128			// print formatting string max length
 #define CMD_MESSAGE_LEN 128			// sufficient space to contain end-user messages
 #define CMD_FOOTER_LEN 18			// sufficient space to contain a JSON footer array
-#define CMD_SHARED_STRING_LEN 200	// shared string for string values
+#define CMD_SHARED_STRING_LEN 512	// shared string for string values
 
 									// cmdObj list defines
 #define CMD_BODY_LEN 25				// body elements - allow for 1 parent + N children 

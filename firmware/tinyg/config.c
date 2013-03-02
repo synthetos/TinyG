@@ -281,17 +281,19 @@ static const char msg_g20[] PROGMEM = "G20 - inches mode";
 static const char msg_g21[] PROGMEM = "G21 - millimeter mode";
 static PGM_P const msg_unit[] PROGMEM = { msg_g20, msg_g21 };
 
-static const char msg_stat0[] PROGMEM = "Initializing";	// stat uses this array
-static const char msg_stat1[] PROGMEM = "Reset";
-static const char msg_stat2[] PROGMEM = "Stop";
-static const char msg_stat3[] PROGMEM = "End";
-static const char msg_stat4[] PROGMEM = "Run";
-static const char msg_stat5[] PROGMEM = "Hold";
-static const char msg_stat6[] PROGMEM = "Probe";
-static const char msg_stat7[] PROGMEM = "Cycle";
-static const char msg_stat8[] PROGMEM = "Homing";
-static const char msg_stat9[] PROGMEM = "Jog";
-static PGM_P const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3, msg_stat4, msg_stat5, msg_stat6, msg_stat7, msg_stat8, msg_stat9};
+static const char msg_stat0[] PROGMEM = "Initializing";	// combined state (stat) uses this array
+static const char msg_stat1[] PROGMEM = "Ready";
+static const char msg_stat2[] PROGMEM = "Shutdown";
+static const char msg_stat3[] PROGMEM = "Stop";
+static const char msg_stat4[] PROGMEM = "End";
+static const char msg_stat5[] PROGMEM = "Run";
+static const char msg_stat6[] PROGMEM = "Hold";
+static const char msg_stat7[] PROGMEM = "Probe";
+static const char msg_stat8[] PROGMEM = "Cycle";
+static const char msg_stat9[] PROGMEM = "Homing";
+static const char msg_stat10[] PROGMEM = "Jog";
+static PGM_P const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3, msg_stat4, msg_stat5, 
+										  msg_stat6, msg_stat7, msg_stat8, msg_stat9, msg_stat10};
 
 static const char msg_macs0[] PROGMEM = "Initializing";
 static const char msg_macs1[] PROGMEM = "Reset";
