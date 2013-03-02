@@ -108,7 +108,7 @@
 ## MCU = atmega1284p
 ## MCU = atmega2560
 ## MCU = atmega2561
-MCU = atxmega192a3
+MCU = atxmega64a3
 
 # Is this a bootloader?
 #MAKE_BOOTLOADER=no
@@ -311,7 +311,7 @@ ifeq ($(OVERRIDE_AVRDUDE_PROGRAMMER),)
 # Type: avrdude -c ?
 # to get a full listing.
 #
-#AVRDUDE_PROGRAMMER = jtag2pdi
+@AVRDUDE_PROGRAMMER = jtag2pdi
 #AVRDUDE_PROGRAMMER = jtag2isp
 AVRDUDE_PROGRAMMER = avrispmkii
 #AVRDUDE_PROGRAMMER = avr109
@@ -324,7 +324,7 @@ AVRDUDE_PORT = usb
 #AVRDUDE_PORT = /dev/ttyUSB0
 
 # BAUD Rate
-#AVRDUDE_BAUD = 115200
+@AVRDUDE_BAUD = 115200
 endif
 
 # Sections to write
@@ -520,7 +520,7 @@ ifeq ($(MAKE_BOOTLOADER), yes)
 ifeq ($(XMEGA), yes)
 ifeq ($(PROG_BOOT_ONLY), yes)
   BOOT_TARGET=$(TARGET)-boot.hex
-  AVRDUDE_WRITE_FLASH =  -U boot:w:$(TARGET)-boot.hex
+  AVRDUDE_WRITE_FLASH = -U boot:w:$(TARGET)-boot.hex
 endif
 endif
 endif

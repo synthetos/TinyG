@@ -116,7 +116,6 @@ void mp_flush_planner()
 	ar_abort_arc();
 	mp_init_buffers();
 	cm.motion_state = MOTION_STOP;
-//	cm_exec_program_stop();
 }
 
 /*
