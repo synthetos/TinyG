@@ -152,7 +152,7 @@ WATCHDOG_TIMEOUT      = WDT_PER_1KCLK_gc
 #WATCHDOG_TIMEOUT      = WDT_PER_8KCLK_gc
 
 # LED
-LED_PORT_NAME         = A
+LED_PORT_NAME         = F
 LED_PIN               = 5
 LED_INV               = 0
 

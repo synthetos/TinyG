@@ -44,6 +44,7 @@
 #include "planner.h"
 #include "stepper.h"
 #include "spindle.h"
+#include "network.h"
 #include "gpio.h"
 #include "test.h"
 #include "pwm.h"
@@ -62,13 +63,6 @@ int main(void)
 	// a hardware reset or a watchdog timer reset.
 
 	cli();
-
-	// See https://sites.google.com/site/avrasmintro/
-//	asm("ldi r16, 0xff");	// reset stack pointer
-//	asm("out 0x3d, r16");
-//	asm("ldi r16, 0x5f");
-//	asm("out 0x3e, r16");
-//	asm("jmp 0x030000");	// jump to boot region
 
 	// system and drivers
 	sys_init();			// system hardware setup 			- must be first
@@ -97,17 +91,15 @@ int main(void)
 	_unit_tests();					// run any unit tests that are enabled
 	tg_canned_startup();			// run any pre-loaded commands
 
-#ifdef __STANDALONE_MODE
-	while(true){ tg_controller();}	// this mode executes gcode blocks received via USB
-#endif
-
-#ifdef __MASTER_MODE
-	while(true){ tg_repeater();}	// this mode receives on USB and repeats to RS485
-#endif
-
-#ifdef __SLAVE_MODE
-	while(true){ tg_receiver();}	// this mode executes gcode blocks received via RS485
-#endif
+	while (true) {
+//		if (tg.network == NET_MASTER) { 
+//			tg_repeater();
+//		} else if (tg.network == NET_SLAVE) { 
+//			tg_receiver();
+//		} else {
+			tg_controller();		// NET_STANDALONE
+//		}
+	}
 }
 
 /*
