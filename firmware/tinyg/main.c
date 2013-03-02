@@ -92,28 +92,14 @@ int main(void)
 	tg_canned_startup();			// run any pre-loaded commands
 
 	while (true) {
-		if (tg.network == NET_MASTER) { 
-			tg_repeater();
-		} else if (tg.network == NET_SLAVE) { 
-			tg_receiver();
-		} else {
+//		if (tg.network == NET_MASTER) { 
+//			tg_repeater();
+//		} else if (tg.network == NET_SLAVE) { 
+//			tg_receiver();
+//		} else {
 			tg_controller();		// NET_STANDALONE
-		}
+//		}
 	}
-
-/*
-#ifdef __STANDALONE_MODE
-	while(true){ tg_controller();}	// this mode executes gcode blocks received via USB
-#endif
-
-#ifdef __MASTER_MODE
-	while(true){ tg_repeater();}	// this mode receives on USB and repeats to RS485
-#endif
-
-#ifdef __SLAVE_MODE
-	while(true){ tg_receiver();}	// this mode executes gcode blocks received via RS485
-#endif
-*/
 }
 
 /*
