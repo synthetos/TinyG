@@ -217,6 +217,7 @@ static uint8_t _get_sr(cmdObj_t *cmd);		// run status report (as data)
 static void _print_sr(cmdObj_t *cmd);		// run status report (as printout)
 static uint8_t _set_sr(cmdObj_t *cmd);		// set status report specification
 static uint8_t _set_si(cmdObj_t *cmd);		// set status report interval
+static uint8_t _run_boot(cmdObj_t *cmd);	// jump to the bootloader
 static uint8_t _get_id(cmdObj_t *cmd);		// get device ID
 static uint8_t _get_qr(cmdObj_t *cmd);		// get a queue report (as data)
 static uint8_t _run_qf(cmdObj_t *cmd);		// execute a queue flush block
@@ -280,17 +281,19 @@ static const char msg_g20[] PROGMEM = "G20 - inches mode";
 static const char msg_g21[] PROGMEM = "G21 - millimeter mode";
 static PGM_P const msg_unit[] PROGMEM = { msg_g20, msg_g21 };
 
-static const char msg_stat0[] PROGMEM = "Initializing";	// stat uses this array
-static const char msg_stat1[] PROGMEM = "Reset";
-static const char msg_stat2[] PROGMEM = "Stop";
-static const char msg_stat3[] PROGMEM = "End";
-static const char msg_stat4[] PROGMEM = "Run";
-static const char msg_stat5[] PROGMEM = "Hold";
-static const char msg_stat6[] PROGMEM = "Probe";
-static const char msg_stat7[] PROGMEM = "Cycle";
-static const char msg_stat8[] PROGMEM = "Homing";
-static const char msg_stat9[] PROGMEM = "Jog";
-static PGM_P const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3, msg_stat4, msg_stat5, msg_stat6, msg_stat7, msg_stat8, msg_stat9};
+static const char msg_stat0[] PROGMEM = "Initializing";	// combined state (stat) uses this array
+static const char msg_stat1[] PROGMEM = "Ready";
+static const char msg_stat2[] PROGMEM = "Shutdown";
+static const char msg_stat3[] PROGMEM = "Stop";
+static const char msg_stat4[] PROGMEM = "End";
+static const char msg_stat5[] PROGMEM = "Run";
+static const char msg_stat6[] PROGMEM = "Hold";
+static const char msg_stat7[] PROGMEM = "Probe";
+static const char msg_stat8[] PROGMEM = "Cycle";
+static const char msg_stat9[] PROGMEM = "Homing";
+static const char msg_stat10[] PROGMEM = "Jog";
+static PGM_P const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3, msg_stat4, msg_stat5, 
+										  msg_stat6, msg_stat7, msg_stat8, msg_stat9, msg_stat10};
 
 static const char msg_macs0[] PROGMEM = "Initializing";
 static const char msg_macs1[] PROGMEM = "Reset";
@@ -560,7 +563,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "msg", _f00, fmt_str, _print_str, _get_nul, _set_nul, (double *)&tg.null, 0 },		// string for generic messages
 	{ "", "test",_f00, fmt_nul, _print_nul, print_test_help, tg_test, (double *)&tg.test,0 },	// prints test help screen
 	{ "", "defa",_f00, fmt_nul, _print_nul, print_defaults_help,_set_defa,(double *)&tg.null,0},// prints defaults help screen
-	{ "", "boot",_f00, fmt_nul, _print_nul, print_boot_loader_help,_set_nul, (double *)&tg.null,0 },
+	{ "", "boot",_f00, fmt_nul, _print_nul, print_boot_loader_help,_run_boot,(double *)&tg.null,0 },
 	{ "", "help",_f00, fmt_nul, _print_nul, print_config_help,_set_nul, (double *)&tg.null,0 },	// prints config help screen
 	{ "", "h",   _f00, fmt_nul, _print_nul, print_config_help,_set_nul, (double *)&tg.null,0 },	// alias for "help"
 
@@ -890,6 +893,7 @@ static uint8_t _get_id(cmdObj_t *cmd)
  * _set_sr()	- set status report elements
  * _print_sr()	- print multiline text status report
  * _set_si()	- set status report interval
+ * _run_boot()  - request boot loader entry
  * cmd_set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
  */
 static uint8_t _get_qr(cmdObj_t *cmd) 
@@ -941,6 +945,12 @@ static uint8_t _set_si(cmdObj_t *cmd)
 	return(TG_OK);
 }
 
+static uint8_t _run_boot(cmdObj_t *cmd)
+{
+	sig_request_bootloader();
+	return(TG_OK);
+}
+
 uint8_t cmd_set_jv(cmdObj_t *cmd) 
 {
 	if (cmd->value > JV_VERBOSE) { return (TG_INPUT_VALUE_UNSUPPORTED);}
@@ -960,6 +970,7 @@ uint8_t cmd_set_jv(cmdObj_t *cmd)
 
 	return(TG_OK);
 }
+
 
 /**** GCODE MODEL ITEMS ****************************************
  * _get_msg_helper() - helper to get display message
@@ -1193,7 +1204,7 @@ static uint8_t _set_am(cmdObj_t *cmd)		// axis mode
 
 static uint8_t _set_sw(cmdObj_t *cmd)		// switch setting
 {
-	if (cmd->value > SW_MODE_MAX_VALUE) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	if (cmd->value > SW_TYPE_NORMALLY_CLOSED) { return (TG_INPUT_VALUE_UNSUPPORTED);}
 	_set_ui8(cmd);
 	gpio_init();
 	return (TG_OK);

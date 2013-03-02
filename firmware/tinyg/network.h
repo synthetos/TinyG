@@ -1,9 +1,8 @@
 /*
- * plan_line.h - acceleration managed line planning and motion execution
+ * network.h - tinyg networking protocol
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
- * Copyright (c) 2012 - 2013 Rob Giseburt
+ * Copyright (c) 2011 - 2012 Alden S. Hart Jr.
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -26,10 +25,20 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef network_h
+#define network_h
 
-#ifndef plan_line_h
-#define plan_line_h 
+/*
+ * Global Scope Functions
+ */
 
-// NOTE: function prototypes are in planner.h for ease of access by external files
+enum networkMode {
+	NET_STANDALONE = 0,
+	NET_MASTER,
+	NET_SLAVE
+};
+
+void tg_repeater(void);
+void tg_receiver(void);
 
 #endif

@@ -3,6 +3,7 @@
  * Part of TinyG project
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2012 - 2013 Rob Giseburt
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -991,7 +992,6 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	//	  TG_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
 
 	if (status == TG_EAGAIN) { 
-//		rpt_decr_status_report(); 				// continue running mr buffer
 		rpt_request_status_report(); 			// continue reporting mr buffer
 	} else {
 		mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
@@ -1005,23 +1005,23 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 }
 
 /* Forward difference math explained:
- * 	We're using two quadratic curve end-to-end, forming the concave and convex 
- *	section of the s-curve.
- *	For each half, we have three points:
- * 	T[0] is the start point, or the entro or middle of the "s". This will be one of:
- *  	entry_velocity (acceleration concave),
- * 		cruise_velocity (deceleration concave), or
- * 		midpoint_velocity (convex)
- *	T[1] is the "control point" set to T[0] for concave sections, and T[2] for convex
- *	T[2] is the end point of the quadratic, which will be the midpoint or endpoint of the s.
+ * 	We're using two quadratic curves end-to-end, forming the concave and convex 
+ *	section of the s-curve. For each half, we have three points:
+ *
+ *    T[0] is the start point, or the entro or middle of the "s". This will be one of:
+ *  	- entry_velocity (acceleration concave),
+ * 		- cruise_velocity (deceleration concave), or
+ * 		- midpoint_velocity (convex)
+ *	  T[1] is the "control point" set to T[0] for concave sections, and T[2] for convex
+ *	  T[2] is the end point of the quadratic, which will be the midpoint or endpoint of the s.
  *
  *  TODO MATH EXPLANATION
  *  
- *  A = T[0] - 2*T[1] + T[2]
- *  B = 2 * (T[1] - T[0])
- *  C = T[0]
- *  h = (1/mr.segments)
-
+ *    A = T[0] - 2*T[1] + T[2]
+ *    B = 2 * (T[1] - T[0])
+ *    C = T[0]
+ *    h = (1/mr.segments)
+ *
  *  forward_diff_1 = Ah^2+Bh = (T[0] - 2*T[1] + T[2])h*h + (2 * (T[1] - T[0]))h
  *  forward_diff_2 = 2Ah^2 = 2*(T[0] - 2*T[1] + T[2])h*h
  */
