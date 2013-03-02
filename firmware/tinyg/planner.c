@@ -107,10 +107,10 @@ void mp_init()
  * mp_flush_planner() - flush all moves in the planner and all arcs
  *
  *	Does not affect the move currently running in mr.
+ *	Does not affect mm or gm model positions
  *	This function is designed to be called during a hold to reset the planner
- *	and is also useful for jogs and other console-driven commands
+ *	This function should not generally be called; call cm_flush_planner() instead
  */
-
 void mp_flush_planner()
 {
 	ar_abort_arc();
@@ -136,7 +136,6 @@ void mp_flush_planner()
  *	the motors will still be processing the action and the real tool 
  *	position is still close to the starting point.
  */
-
 double *mp_get_plan_position(double position[])
 {
 	copy_axis_vector(position, mm.position);	

@@ -577,14 +577,16 @@ void cm_shutdown()
 }
 
 /*
- * cm_flush_planner() - Stop movement and flush planner queue
+ * cm_flush_planner() - Flush planner queue and correct model positions
  */
 uint8_t cm_flush_planner()
 {
 	mp_flush_planner();
 
 	for (uint8_t i=0; i<AXES; i++) {
+		mp_set_axis_position(i, mp_get_runtime_machine_position(i));	// set mm from mr
 		gm.position[i] = mp_get_runtime_machine_position(i);
+		gm.target[i] = gm.position[i];
 	}
 	return (TG_OK);
 }

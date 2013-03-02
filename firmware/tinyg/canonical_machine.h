@@ -471,7 +471,7 @@ void cm_init(void);												// init canonical machine
 void cm_shutdown(void);											// emergency shutdown
 
 uint8_t cm_set_machine_axis_position(uint8_t axis, const double position);	// set absolute position
-uint8_t cm_flush_planner(void);									// stop movement and flush planner queue
+uint8_t cm_flush_planner(void);									// flush planner queue with coordinate resets
 
 uint8_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 uint8_t cm_set_units_mode(uint8_t mode);						// G20, G21
