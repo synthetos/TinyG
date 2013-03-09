@@ -33,6 +33,7 @@
 
 #include "xboot.h"
 
+
 #ifdef USE_INTERRUPTS
 volatile unsigned char comm_mode;
 
