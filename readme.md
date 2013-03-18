@@ -15,7 +15,7 @@ TinyG is a 6 axis motion control system designed for high-performance on small t
 See these links for more details.
 
 * [Synthetos](https://www.synthetos.com/)
-* [TinyG Wiki](https://www.synthetos.com/wiki/index.php?title=Projects:TinyG)
+* [TinyG Wiki](https://github.com/synthetos/TinyG/wiki)
 * [TinyG Support Forum](https://www.synthetos.com/forum/tinyg/)
 * [TinyG Github](https://github.com/synthetos/TinyG)
 * [Synthetos Web Store](https://www.synthetos.com/webstore/)
