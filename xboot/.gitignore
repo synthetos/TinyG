@@ -1,5 +1,6 @@
 *~
 *.eep
+*.elf
 *.lss
 *.lst
 *.map
@@ -7,11 +8,13 @@
 *.d
 *.swp
 *.sym
+*.aws
 .dep
 config.h
 config.mk
 xboot.atsln
 xboot.atsuo
 xboot.cproj
+Debug
 TcfTransactionLog.csv
 .DS_store
