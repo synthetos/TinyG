@@ -1,0 +1,17 @@
+*~
+*.eep
+*.lss
+*.lst
+*.map
+*.o
+*.d
+*.swp
+*.sym
+.dep
+config.h
+config.mk
+xboot.atsln
+xboot.atsuo
+xboot.cproj
+TcfTransactionLog.csv
+.DS_store
