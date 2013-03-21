@@ -54,9 +54,9 @@ These commands are active from the command line:\n\
   h             Show this help screen\n\
   $h            Show configuration help screen\n\
   $test         List self-tests\n\
-  $test-N       Run self-test N\n\
+  $test=N       Run self-test N\n\
   $home=1       Run a homing cycle\n\
-  $defaults=1   Restore all settings to \"factory\" defaults\n\
+  $defa=1       Restore all settings to \"factory\" defaults\n\
 "));
 _status_report_advisory();
 _postscript();
@@ -153,7 +153,7 @@ static void _status_report_advisory()
 {
 fprintf_P(stderr, PSTR("\n\
 Note: TinyG generates automatic status reports by default\n\
-This can be disabled by entering $si=0\n\
+This can be disabled by entering $sv=0\n\
 See the wiki below for more details.\n\
 "));
 }
