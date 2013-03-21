@@ -1687,11 +1687,8 @@ static uint8_t _set_dbl(cmdObj_t *cmd)
 
 static uint8_t _set_dbu(cmdObj_t *cmd)
 {
-	if (cm_get_units_mode() == INCHES) {
-		*((double *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value * MM_PER_INCH;
-	} else {
-		*((double *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
-	}
+	if (cm_get_units_mode() == INCHES) { cmd->value *= MM_PER_INCH;}
+	*((double *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->type = TYPE_FLOAT;
 	return(TG_OK);
 }
