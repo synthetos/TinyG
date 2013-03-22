@@ -306,45 +306,34 @@ static uint8_t _cycle_start_handler(void)
 }
 
 /*
- * _bootloader_handler()
+ * _bootloader_handler() - executes a software reset using CCPWrite
  *
- * 	Turns off interrupts, resets the stack pointer and jumps to the boot region.
+ * 	An earlier attempt turned off interrupts, reset the stack pointer and jumped
+ *	to the boot region. The assembly code is preserved below as an example.
  *	All the values in the assembly are hard coded because the pre-processor 
- *	doesn't open strings to process defines.
+ *	doesn't open strings to process #defines.
  *
  *	  RAMEND 	0x05ff					// starting location for stack pointer
  *	  SPL		0x3d					// stack pointer lo
  *	  SPH		0x3e					// stack pointer hi
  *	  BOOTSTRT	0x030000				// start of boot region
  *
- *  Refs:
- *	  https://sites.google.com/site/avrasmintro/
- *	  http://www.stanford.edu/class/ee281/projects/aut2002/yingzong-mouse/media/GCCAVRInlAsmCB.pdf
- *
- * 	If the BOOTRST fuse were working you could simply do it like this:
- *
- *	  CCPWrite( &RST.CTRL, RST_SWRST_bm );
- *
- *  alternately:
- *
- *	  CCP = CCP_IOREG_gc;
- *	  RST.CTRL = RST_SWRST_bm;
- */
-static uint8_t _bootloader_handler(void)
-{
-	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
-	cli();
-
-	/*
 	asm("ldi r16, 0xff" "\n\t" \
 		"out 0x3d, r16" "\n\t" \
 		"ldi r16, 0x5f" "\n\t" \
 		"out 0x3e, r16" "\n\t" \
 		"jmp 0x030000"  "\n\t" \
 		);
-	*/
-	CCPWrite( &RST.CTRL, RST_SWRST_bm );
-
+ *
+ *  Refs:
+ *	  https://sites.google.com/site/avrasmintro/
+ *	  http://www.stanford.edu/class/ee281/projects/aut2002/yingzong-mouse/media/GCCAVRInlAsmCB.pdf
+ */
+static uint8_t _bootloader_handler(void)
+{
+	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
+	cli();
+	CCPWrite(&RST.CTRL, RST_SWRST_bm);
 	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
 }
 
