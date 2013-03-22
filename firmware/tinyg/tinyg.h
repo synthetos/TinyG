@@ -39,6 +39,7 @@
 #define TINYG_BUILD_NUMBER   	372.01		// begin Mike Estee's round of fixes
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
+//#define TINYG_HARDWARE_VERSION	6.00		// board revision number
 
 #define TINYG_HARDWARE_VERSION_MAX TINYG_HARDWARE_VERSION
 

@@ -246,18 +246,34 @@ void gpio_led_off(uint8_t led)
 
 void gpio_set_bit_on(uint8_t b)
 {
-	if (b & 0x08) { device.out_port[0]->OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x04) { device.out_port[1]->OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x02) { device.out_port[2]->OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x01) { device.out_port[3]->OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x08) { 
+		device.out_port[0]->OUTSET = GPIO1_OUT_BIT_bm;
+	}
+	if (b & 0x04) { 
+		device.out_port[1]->OUTSET = GPIO1_OUT_BIT_bm;
+	}
+	if (b & 0x02) { 
+		device.out_port[2]->OUTSET = GPIO1_OUT_BIT_bm;
+	}
+	if (b & 0x01) { 
+		device.out_port[3]->OUTSET = GPIO1_OUT_BIT_bm;
+	}
 }
 
 void gpio_set_bit_off(uint8_t b)
 {
-	if (b & 0x08) { device.out_port[0]->OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x04) { device.out_port[1]->OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x02) { device.out_port[2]->OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x01) { device.out_port[3]->OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x08) { 
+		device.out_port[0]->OUTCLR = GPIO1_OUT_BIT_bm;
+	}
+	if (b & 0x04) { 
+		device.out_port[1]->OUTCLR = GPIO1_OUT_BIT_bm;
+	}
+	if (b & 0x02) { 
+		device.out_port[2]->OUTCLR = GPIO1_OUT_BIT_bm;
+	}
+	if (b & 0x01) { 
+		device.out_port[3]->OUTCLR = GPIO1_OUT_BIT_bm;
+	}
 }
 
 // DEPRECATED CODE THAT MIGHT STILL BE USEFUL
