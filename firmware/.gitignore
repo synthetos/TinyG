@@ -8,9 +8,6 @@
 *.map
 *.srec
 *.aws
-*.aps
-*.atsln
 *.atsuo
-*.cproj
 .DS_Store
 TcfTransactionLog.csv

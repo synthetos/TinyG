@@ -71,14 +71,14 @@ int main(void)
 	sig_init();			// signal flags
 	st_init(); 			// stepper subsystem 				- must precede gpio_init()
 	gpio_init();		// switches and parallel IO
-	pwm_init();			// pulse width modulation drivers	- must follow gpio_init()
+//	pwm_init();			// pulse width modulation drivers	- must follow gpio_init()
 
 	// application structures
 	tg_init(STD_INPUT);	// tinyg controller (controller.c)	- must be first app init; reqs xio_init()
 	cfg_init();			// config records from eeprom 		- must be next app init
 	mp_init();			// motion planning subsystem
 	cm_init();			// canonical machine				- must follow cfg_init()
-	sp_init();			// spindle PWM and variables
+//	sp_init();			// spindle PWM and variables
 
 	// now bring up the interupts and get started
 	PMIC_SetVectorLocationToApplication(); // as opposed to boot ROM

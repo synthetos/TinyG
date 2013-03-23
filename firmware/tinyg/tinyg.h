@@ -36,7 +36,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	370.07		// Units conversion during settings bug; help file changes
+#define TINYG_BUILD_NUMBER   	370.08		// PWM / Coolant bit bug
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
