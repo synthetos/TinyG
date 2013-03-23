@@ -6,8 +6,6 @@
 *.lss
 *.map
 *.aws
-*.aps
-*.atsln
 *.atsuo
 *.cproj
 *.eep
