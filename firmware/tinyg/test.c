@@ -105,7 +105,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 // avrdude -e -p atxmega192a3 -c avrispmkii -P usb -U boot:w:xboot-boot.hex
 
 	xio_queue_RX_string_usb("g20\n");
-	xio_queue_RX_string_usb("$xvm=1000\n");
+//	xio_queue_RX_string_usb("$xvm=1000\n");
 
 //	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"mpox\":true,\"mpoy\":true}}\n");
 

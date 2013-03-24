@@ -128,7 +128,7 @@
 #define Z_LATCH_VELOCITY		100
 #define Z_LATCH_BACKOFF			20
 #define Z_ZERO_BACKOFF			10
-#define Z_JERK_HOMING			1000000000			// xjh
+#define Z_JERK_HOMING			50000000			// xjh
 
 #define A_AXIS_MODE				AXIS_STANDARD
 #define A_VELOCITY_MAX			60000

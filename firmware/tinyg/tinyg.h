@@ -36,7 +36,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	372.01		// begin Mike Estee's round of fixes
+#define TINYG_BUILD_NUMBER   	372.02		// Test reformulated math
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
@@ -44,10 +44,10 @@
 
 /****** DEVELOPMENT SETTINGS ******/
 
-//#define __CANNED_STARTUP					// run any canned startup moves
-//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-//#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
-//#define __UNIT_TESTS						// master enable for unit tests; uncomment modules in .h files
+#define __CANNED_STARTUP					// run any canned startup moves
+#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+#define __UNIT_TESTS						// master enable for unit tests; uncomment modules in .h files
 //#define __DEBUG							// complies debug functions found in test.c
 
 // UNIT_TESTS exist for various modules are can be enabled at the end of their .h files
