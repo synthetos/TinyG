@@ -82,9 +82,11 @@ static pwmStruct_t pwm[PWMS];		// array of PWMs (usually 2, see system.h)
  */
 void pwm_init()
 {
+	gpio_set_bit_off(SPINDLE_PWM);
+
 	// setup PWM channel 1
 	memset(&pwm[PWM_1], 0, sizeof(pwmStruct_t));		// clear parent structure 
-	memset(&TIMER_PWM1, 0, sizeof(PWM_TIMER_t));		// zero out the timer registers
+	//memset(&TIMER_PWM1, 0, sizeof(PWM_TIMER_t));		// zero out the timer registers
 	pwm[PWM_1].timer = &TIMER_PWM1;						// bind timer struct to PWM struct array
 	pwm[PWM_1].ctrla = PWM1_CTRLA_CLKSEL;				// initialize starting clock operating range
 	pwm[PWM_1].timer->CTRLB = PWM1_CTRLB;
