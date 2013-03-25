@@ -88,9 +88,9 @@ uint8_t ar_arc( const double target[],
 	cm_get_model_canonical_position_vector(ar.position);// set initial arc position
 
 //	copy_axis_vector(ar.endpoint, target);
-//	ar.endpoint[axis_1] = target[0];					// save the arc endpoint
-//	ar.endpoint[axis_2] = target[1];
-//	ar.endpoint[axis_linear] = linear_travel;
+	ar.endpoint[axis_1] = target[0];					// save the arc endpoint
+	ar.endpoint[axis_2] = target[1];
+	ar.endpoint[axis_linear] = target[2];
 
 	copy_axis_vector(ar.work_offset, work_offset);		// propagate the work offset
 	ar.time = minutes;
@@ -138,8 +138,7 @@ uint8_t ar_arc_callback()
 	if (ar.run_state == MOVE_STATE_OFF) { return (TG_NOOP);}
 	if (mp_get_planner_buffers_available() == 0) { return (TG_EAGAIN);}
 	if (ar.run_state == MOVE_STATE_RUN) {
-//		if (--ar.segment_count > 0) {
-		if (--ar.segment_count >= 0) {
+		if (--ar.segment_count > 0) {
 			ar.theta += ar.segment_theta;
 			ar.target[ar.axis_1] = ar.center_1 + sin(ar.theta) * ar.radius;
 			ar.target[ar.axis_2] = ar.center_2 + cos(ar.theta) * ar.radius;
@@ -148,7 +147,7 @@ uint8_t ar_arc_callback()
 			copy_axis_vector(ar.position, ar.target);	// update runtime position	
 			return (TG_EAGAIN);
 		} else {
-//			(void)MP_LINE(ar.endpoint, ar.segment_time, ar.work_offset,0);// do last segment to the exact endpoint
+			(void)MP_LINE(ar.endpoint, ar.segment_time, ar.work_offset,0);// do last segment to the exact endpoint
 		}
 	}
 	ar.run_state = MOVE_STATE_OFF;
