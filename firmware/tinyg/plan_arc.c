@@ -42,37 +42,6 @@
 #include "planner.h"
 #include "kinematics.h"
 
-struct arArcSingleton {			// persistent planner and runtime variables
-	uint8_t run_state;			// runtime state machine sequence
-	uint32_t linenum;			// line number of the arc feed move (Nxxxxx)
-	uint32_t lineindex;			// line index of the arc feed move (autoincrement)
-	
-	double endpoint[AXES];		// endpoint position
-	double position[AXES];		// accumulating runtime position
-	double target[AXES];		// runtime target position
-	double work_offset[AXES];	// offset from machine coord system for reporting
-
-	double length;				// length of line or helix in mm
-	double time;				// total running time (derived)
-	double min_time;			// not sure this is needed
-	double theta;				// total angle specified by arc
-	double radius;				// computed via offsets
-	double angular_travel;		// travel along the arc
-	double linear_travel;		// travel along linear axis of arc
-	uint8_t axis_1;				// arc plane axis
-	uint8_t axis_2;				// arc plane axis
-	uint8_t axis_linear;		// transverse axis (helical)
-
-	double segments;			// number of segments in arc or blend
-	uint32_t segment_count;		// count of running segments
-	double segment_time;		// constant time per aline segment
-	double segment_theta;		// angular motion per segment
-	double segment_linear_travel;// linear motion per segment
-	double center_1;			// center of circle at axis 1 (typ X)
-	double center_2;			// center of circle at axis 2 (typ Y)
-};
-static struct arArcSingleton ar;
-
 /*
  * Local functions
  */
@@ -80,7 +49,6 @@ static uint8_t _compute_center_arc(void);
 static uint8_t _get_arc_radius(void);
 static double _get_arc_time (const double linear_travel, const double angular_travel, const double radius);
 static double _get_theta(const double x, const double y);
-
 
 /*****************************************************************************
  * mp_arc() - setup an arc move for runtime
@@ -118,7 +86,12 @@ uint8_t ar_arc( const double target[],
 
 	// load the move struct for an arc
 	cm_get_model_canonical_position_vector(ar.position);// set initial arc position
-	copy_axis_vector(ar.endpoint, target);				// save the arc endpoint
+
+//	copy_axis_vector(ar.endpoint, target);
+//	ar.endpoint[axis_1] = target[0];					// save the arc endpoint
+//	ar.endpoint[axis_2] = target[1];
+//	ar.endpoint[axis_linear] = linear_travel;
+
 	copy_axis_vector(ar.work_offset, work_offset);		// propagate the work offset
 	ar.time = minutes;
 	ar.min_time = min_time;
@@ -165,7 +138,8 @@ uint8_t ar_arc_callback()
 	if (ar.run_state == MOVE_STATE_OFF) { return (TG_NOOP);}
 	if (mp_get_planner_buffers_available() == 0) { return (TG_EAGAIN);}
 	if (ar.run_state == MOVE_STATE_RUN) {
-		if (--ar.segment_count > 0) {
+//		if (--ar.segment_count > 0) {
+		if (--ar.segment_count >= 0) {
 			ar.theta += ar.segment_theta;
 			ar.target[ar.axis_1] = ar.center_1 + sin(ar.theta) * ar.radius;
 			ar.target[ar.axis_2] = ar.center_2 + cos(ar.theta) * ar.radius;
@@ -174,7 +148,7 @@ uint8_t ar_arc_callback()
 			copy_axis_vector(ar.position, ar.target);	// update runtime position	
 			return (TG_EAGAIN);
 		} else {
-			(void)MP_LINE(ar.endpoint, ar.segment_time, ar.work_offset,0);// do last segment to the exact endpoint
+//			(void)MP_LINE(ar.endpoint, ar.segment_time, ar.work_offset,0);// do last segment to the exact endpoint
 		}
 	}
 	ar.run_state = MOVE_STATE_OFF;

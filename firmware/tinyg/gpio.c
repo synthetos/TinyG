@@ -159,6 +159,7 @@ void gpio_rtc_callback(void)
 			sw.state[i] = SW_IDLE; continue;
 		}
 		if (sw.count[i] == 0) {							// trigger point
+			sw.sw_num_thrown = i;						// record number of thrown switch
 			sw.state[i] = SW_LOCKOUT;
 //			sw_show_switch();							// only called if __DEBUG enabled
 			if (cm.cycle_state == CYCLE_HOMING) {		// regardless of switch type
@@ -171,12 +172,14 @@ void gpio_rtc_callback(void)
 }
 
 /*
- * gpio_get_switch_mode() - return switch mode setting
+ * gpio_get_switch_mode() 	- return switch mode setting
  * gpio_get_limit_thrown()  - return true if a limit was tripped
+ * gpio_get_sw_num()  		- return switch number most recently thrown
  */
 
 uint8_t gpio_get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
 uint8_t gpio_get_limit_thrown(void) { return(sw.limit_flag);}
+uint8_t gpio_get_sw_thrown(void) { return(sw.sw_num_thrown);}
 
 /*
  * gpio_reset_switches() - reset all switches and reset limit flag
@@ -246,18 +249,34 @@ void gpio_led_off(uint8_t led)
 
 void gpio_set_bit_on(uint8_t b)
 {
-	if (b & 0x08) { device.out_port[0]->OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x04) { device.out_port[1]->OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x02) { device.out_port[2]->OUTSET = GPIO1_OUT_BIT_bm;}
-	if (b & 0x01) { device.out_port[3]->OUTSET = GPIO1_OUT_BIT_bm;}
+	if (b & 0x08) { 
+		device.out_port[0]->OUTSET = GPIO1_OUT_BIT_bm;
+	}
+	if (b & 0x04) { 
+		device.out_port[1]->OUTSET = GPIO1_OUT_BIT_bm;
+	}
+	if (b & 0x02) { 
+		device.out_port[2]->OUTSET = GPIO1_OUT_BIT_bm;
+	}
+	if (b & 0x01) { 
+		device.out_port[3]->OUTSET = GPIO1_OUT_BIT_bm;
+	}
 }
 
 void gpio_set_bit_off(uint8_t b)
 {
-	if (b & 0x08) { device.out_port[0]->OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x04) { device.out_port[1]->OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x02) { device.out_port[2]->OUTCLR = GPIO1_OUT_BIT_bm;}
-	if (b & 0x01) { device.out_port[3]->OUTCLR = GPIO1_OUT_BIT_bm;}
+	if (b & 0x08) { 
+		device.out_port[0]->OUTCLR = GPIO1_OUT_BIT_bm;
+	}
+	if (b & 0x04) { 
+		device.out_port[1]->OUTCLR = GPIO1_OUT_BIT_bm;
+	}
+	if (b & 0x02) { 
+		device.out_port[2]->OUTCLR = GPIO1_OUT_BIT_bm;
+	}
+	if (b & 0x01) { 
+		device.out_port[3]->OUTCLR = GPIO1_OUT_BIT_bm;
+	}
 }
 
 // DEPRECATED CODE THAT MIGHT STILL BE USEFUL

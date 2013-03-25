@@ -32,6 +32,39 @@
 
 // See planner.h for MM_PER_ARC_SEGMENT setting
 
+typedef struct arArcSingleton {			// persistent planner and runtime variables
+	double magic_start;
+	uint8_t run_state;			// runtime state machine sequence
+	uint32_t linenum;			// line number of the arc feed move (Nxxxxx)
+	uint32_t lineindex;			// line index of the arc feed move (autoincrement)
+	
+	double endpoint[AXES];		// endpoint position
+	double position[AXES];		// accumulating runtime position
+	double target[AXES];		// runtime target position
+	double work_offset[AXES];	// offset from machine coord system for reporting
+
+	double length;				// length of line or helix in mm
+	double time;				// total running time (derived)
+	double min_time;			// not sure this is needed
+	double theta;				// total angle specified by arc
+	double radius;				// computed via offsets
+	double angular_travel;		// travel along the arc
+	double linear_travel;		// travel along linear axis of arc
+	uint8_t axis_1;				// arc plane axis
+	uint8_t axis_2;				// arc plane axis
+	uint8_t axis_linear;		// transverse axis (helical)
+
+	double segments;			// number of segments in arc or blend
+	int32_t segment_count;		// count of running segments
+	double segment_time;		// constant time per aline segment
+	double segment_theta;		// angular motion per segment
+	double segment_linear_travel;// linear motion per segment
+	double center_1;			// center of circle at axis 1 (typ X)
+	double center_2;			// center of circle at axis 2 (typ Y)
+	double magic_end;
+} arc_t;
+arc_t ar;
+
 // function prototypes
 uint8_t ar_arc(	const double target[],
 				const double i, const double j, const double k, 

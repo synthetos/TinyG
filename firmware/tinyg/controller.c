@@ -166,6 +166,7 @@ static uint8_t _dispatch()
 		// Note that TG_EAGAIN, TG_NOOP etc. will just flow through
 		return (status);
 	}
+	cmd_reset_list();
 	tg.linelen = strlen(tg.in_buf)+1;
 	strncpy(tg.saved_buf, tg.in_buf, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 
@@ -277,11 +278,10 @@ void tg_set_active_source(uint8_t dev)
 
 /**** Signal handlers ****
  * _reset_handler()
- * _bootloader_handler()
  * _feedhold_handler()
  * _cycle_start_handler()
+ * _bootloader_handler()
  */
-
 static uint8_t _reset_handler(void)
 {
 	if (sig.sig_reset == false) { return (TG_NOOP);}
@@ -289,27 +289,6 @@ static uint8_t _reset_handler(void)
 	tg_reset();							// hard reset - identical to hitting RESET button
 	return (TG_EAGAIN);
 }
-
-static uint8_t _bootloader_handler(void)
-{
-	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
-	cli();
-	asm("jmp 0x030000");
-	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
-}
-
-/*
-static uint8_t _bootloader_handler(void)
-{
-	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
-//	sig.sig_request_bootloader = false;
-	asm("jmp 0x030000");
-//	CCPWrite( &RST.CTRL, RST_SWRST_bm );
-//	CCP = CCP_IOREG_gc;
-//	RST.CTRL = RST_SWRST_bm;
-	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
-}
-*/
 
 static uint8_t _feedhold_handler(void)
 {
@@ -328,13 +307,46 @@ static uint8_t _cycle_start_handler(void)
 }
 
 /*
+ * _bootloader_handler() - executes a software reset using CCPWrite
+ *
+ * 	An earlier attempt turned off interrupts, reset the stack pointer and jumped
+ *	to the boot region. The assembly code is preserved below as an example.
+ *	All the values in the assembly are hard coded because the pre-processor 
+ *	doesn't open strings to process #defines.
+ *
+ *	  RAMEND 	0x05ff					// starting location for stack pointer
+ *	  SPL		0x3d					// stack pointer lo
+ *	  SPH		0x3e					// stack pointer hi
+ *	  BOOTSTRT	0x030000				// start of boot region
+ *
+	asm("ldi r16, 0xff" "\n\t" \
+		"out 0x3d, r16" "\n\t" \
+		"ldi r16, 0x5f" "\n\t" \
+		"out 0x3e, r16" "\n\t" \
+		"jmp 0x030000"  "\n\t" \
+		);
+ *
+ *  Refs:
+ *	  https://sites.google.com/site/avrasmintro/
+ *	  http://www.stanford.edu/class/ee281/projects/aut2002/yingzong-mouse/media/GCCAVRInlAsmCB.pdf
+ */
+static uint8_t _bootloader_handler(void)
+{
+	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
+	cli();
+	CCPWrite(&RST.CTRL, RST_SWRST_bm);
+	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
+}
+
+/*
  * _limit_switch_handler() - shut down system if limit switch fired
  */
 static uint8_t _limit_switch_handler(void)
 {
 	if (cm_get_machine_state() == MACHINE_SHUTDOWN) { return (TG_NOOP);}
 	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
-	cm_shutdown();
+//	cm_shutdown(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
+	cm_shutdown(sw.sw_num_thrown);
 	return (TG_OK);
 }
 
@@ -371,7 +383,7 @@ uint8_t _system_assertions()
 {
 	uint8_t value = 0;
 
-	if (tg.magic_start		!= MAGICNUM) { value = 1; }
+	if (tg.magic_start		!= MAGICNUM) { value = 1; }		// Note: reported VALue is offset by ALARM_MEMORY_OFFSET
 	if (tg.magic_end		!= MAGICNUM) { value = 2; }
 	if (cm.magic_start 		!= MAGICNUM) { value = 3; }
 	if (cm.magic_end		!= MAGICNUM) { value = 4; }
@@ -385,13 +397,15 @@ uint8_t _system_assertions()
 	if (mb.magic_end		!= MAGICNUM) { value = 12; }
 	if (mr.magic_start		!= MAGICNUM) { value = 13; }
 	if (mr.magic_end		!= MAGICNUM) { value = 14; }
-	if (st_get_st_magic()	!= MAGICNUM) { value = 15; }
-	if (st_get_sps_magic()	!= MAGICNUM) { value = 16; }
-	if (rtc.magic_end 		!= MAGICNUM) { value = 17; }
+	if (ar.magic_start		!= MAGICNUM) { value = 15; }
+	if (ar.magic_end		!= MAGICNUM) { value = 16; }
+	if (st_get_st_magic()	!= MAGICNUM) { value = 17; }
+	if (st_get_sps_magic()	!= MAGICNUM) { value = 18; }
+	if (rtc.magic_end 		!= MAGICNUM) { value = 19; }
 	xio_assertions(&value);									// run xio assertions
 
 	if (value == 0) { return (TG_OK);}
 	rpt_exception(TG_MEMORY_CORRUPTION, value);
-	cm_shutdown();
+	cm_shutdown(ALARM_MEMORY_OFFSET + value);	
 	return (TG_EAGAIN);
 }

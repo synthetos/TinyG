@@ -468,10 +468,10 @@ void cm_set_model_linenum(uint32_t linenum);
 
 /*--- canonical machining functions ---*/
 void cm_init(void);												// init canonical machine
-void cm_shutdown(void);											// emergency shutdown
+void cm_shutdown(uint8_t value);								// emergency shutdown
 
 uint8_t cm_set_machine_axis_position(uint8_t axis, const double position);	// set absolute position
-uint8_t cm_flush_planner(void);									// stop movement and flush planner queue
+uint8_t cm_flush_planner(void);									// flush planner queue with coordinate resets
 
 uint8_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 uint8_t cm_set_units_mode(uint8_t mode);						// G20, G21
@@ -524,9 +524,7 @@ uint8_t cm_change_tool(uint8_t tool);							// M6, T
 uint8_t cm_select_tool(uint8_t tool);							// T parameter
 
 // canonical machine commands not called from gcode dispatcher
-void cm_comment(char *comment);									// comment handler
-void cm_message(char *message);									// msg to console
-
+void cm_message(char *message);									// msg to console (e.g. Gcode comments)
 void cm_cycle_start(void);										// (no Gcode)
 void cm_cycle_end(void); 										// (no Gcode)
 void cm_feedhold(void);											// (no Gcode)
