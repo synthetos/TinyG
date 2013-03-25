@@ -468,7 +468,7 @@ void cm_set_model_linenum(uint32_t linenum);
 
 /*--- canonical machining functions ---*/
 void cm_init(void);												// init canonical machine
-void cm_shutdown(void);											// emergency shutdown
+void cm_shutdown(uint8_t value);								// emergency shutdown
 
 uint8_t cm_set_machine_axis_position(uint8_t axis, const double position);	// set absolute position
 uint8_t cm_flush_planner(void);									// flush planner queue with coordinate resets

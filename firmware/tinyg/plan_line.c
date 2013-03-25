@@ -573,7 +573,6 @@ static void _calculate_trapezoid(mpBuf_t *bf)
  * 	return(cube(deltaV / (pow(L, 0.66666666))));
  */
 
- /*
 static double _get_target_length(const double Vi, const double Vt, const mpBuf_t *bf)
 {
 	return (fabs(Vi-Vt) * sqrt(fabs(Vi-Vt) * bf->recip_jerk));
@@ -583,7 +582,6 @@ static double _get_target_velocity(const double Vi, const double L, const mpBuf_
 {
 	return (pow(L, 0.66666666) * bf->cbrt_jerk + Vi);
 }
- */
 
 /*	
  * _get_target_length2()	- derive accel/decel length from delta V and jerk
@@ -628,6 +626,7 @@ static double _get_target_velocity(const double Vi, const double L, const mpBuf_
  *  FYI: Here's an expression that returns the jerk for a given deltaV (Vt-Vi) and L:
  * 	return(cube(deltaV / (pow(L, 0.66666666))));
  */
+ /*
 static double _get_target_length(const double Vi, const double Vt, const mpBuf_t *bf)
 {
 	return ((Vt+Vi) * sqrt(fabs(Vt-Vi) * bf->recip_jerk));
@@ -635,29 +634,13 @@ static double _get_target_length(const double Vi, const double Vt, const mpBuf_t
 
 static double _get_target_velocity(const double Vi, const double L, const mpBuf_t *bf)
 {
-	double JmL2 = bf->jerk*L*L;
-	double Vi3x16 = 16*Vi*Vi*Vi;
+	double JmL2 = bf->jerk*square(L);
+	double Vi2 = square(Vi);
+	double Vi3x16 = 16*Vi*Vi2;
 	double Ia = cbrt(3*sqrt(3) * sqrt(27*square(JmL2) + (2*JmL2*Vi3x16)) + 27*JmL2 + Vi3x16);
-	return ((Ia/cbrt(2) + 4*cbrt(2)*Vi*Vi/Ia - Vi)/3);
-
-//	double Jm = bf->jerk;
-//	double Vi2 = Vi*Vi;
-//	double K2 = cbrt(2);
-//	double K1 = 3*sqrt(3);
-//	double L4 = L2*L2;
-//	double Jm2 = Jm*Jm;
-//	double L2 = L*L;
-//	double Ia = cbrt(3*sqrt(3) * sqrt(27*Jm2*L4 + 32*Jm*L2*Vi3) + 27*Jm*L2 + 16*Vi3);
-//	double Ib = cbrt(3*sqrt(3) * sqrt(27*Jm*Jm*L*L*L*L + 32*Jm*L*L*Vi*Vi*Vi) + 27*Jm*L*L + 16*Vi*Vi*Vi);
-//	double Ic = cbrt(3*sqrt(3) * sqrt(27* Jm*L*L * Jm*L*L + 2*Jm*L*L* 16*Vi*Vi*Vi) + 27*Jm*L*L + 16*Vi*Vi*Vi);
-
-//	Vt = (1/3) * 
-//		  cbrt(((3*sqrt(3) * sqrt(27*Jm*Jm * L*L*L*L + 32*Jm * L*L * Vi*Vi*Vi) + 
-//		  27*Jm * L*L + 16*Vi*Vi*Vi)) / cbrt(2) + (4*cbrt(2) * Vi*Vi) / 
-//		  cbrt((3*sqrt(3) * sqrt(27*Jm*Jm * L*L*L*L + 32*Jm * L*L * Vi*Vi*Vi) +  
-//		  27*Jm * L*L + 16*Vi*Vi*Vi)) - Vi);
+	return ((Ia/cbrt(2) + 4*cbrt(2)*Vi2/Ia - Vi)/3);
 }
-
+*/
 /*
  * _get_junction_vmax() - Chamnit's algorithm - simple
  *

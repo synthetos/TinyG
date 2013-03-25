@@ -118,7 +118,11 @@ uint8_t ar_arc( const double target[],
 
 	// load the move struct for an arc
 	cm_get_model_canonical_position_vector(ar.position);// set initial arc position
-	copy_axis_vector(ar.endpoint, target);				// save the arc endpoint
+
+	ar.endpoint[axis_1] = target[0];					// save the arc endpoint
+	ar.endpoint[axis_2] = target[1];
+	ar.endpoint[axis_linear] = linear_travel;
+
 	copy_axis_vector(ar.work_offset, work_offset);		// propagate the work offset
 	ar.time = minutes;
 	ar.min_time = min_time;

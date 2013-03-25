@@ -559,7 +559,7 @@ void cm_init()
  * cm_shutdown() - shut down machine
  */
 
-void cm_shutdown()
+void cm_shutdown(uint8_t value)
 {
 	// stop the steppers and the spindle
 	st_disable();
@@ -572,7 +572,7 @@ void cm_shutdown()
 //	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
-	rpt_exception(TG_SHUTDOWN,1);			// send shutdown message, value = 1 (arbitrary)
+	rpt_exception(TG_SHUTDOWN,value);		// send shutdown message
 	cm.machine_state = MACHINE_SHUTDOWN;
 }
 

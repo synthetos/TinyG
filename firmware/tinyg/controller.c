@@ -344,7 +344,8 @@ static uint8_t _limit_switch_handler(void)
 {
 	if (cm_get_machine_state() == MACHINE_SHUTDOWN) { return (TG_NOOP);}
 	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
-	cm_shutdown();
+//	cm_shutdown(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
+	cm_shutdown(sw.sw_num_thrown);
 	return (TG_OK);
 }
 
@@ -381,7 +382,7 @@ uint8_t _system_assertions()
 {
 	uint8_t value = 0;
 
-	if (tg.magic_start		!= MAGICNUM) { value = 1; }
+	if (tg.magic_start		!= MAGICNUM) { value = 1; }		// Note: reported VALue is offset by ALARM_MEMORY_OFFSET
 	if (tg.magic_end		!= MAGICNUM) { value = 2; }
 	if (cm.magic_start 		!= MAGICNUM) { value = 3; }
 	if (cm.magic_end		!= MAGICNUM) { value = 4; }
@@ -402,6 +403,6 @@ uint8_t _system_assertions()
 
 	if (value == 0) { return (TG_OK);}
 	rpt_exception(TG_MEMORY_CORRUPTION, value);
-	cm_shutdown();
+	cm_shutdown(ALARM_MEMORY_OFFSET + value);	
 	return (TG_EAGAIN);
 }
