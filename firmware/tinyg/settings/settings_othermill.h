@@ -33,7 +33,7 @@
 #define COM_ENABLE_QR		true
 
 #undef  QR_VERBOSITY
-#define QR_VERBOSITY		QR_FILTERED		// one of: QR_OFF, QR_FILTERED, QR_VERBOSE
+#define QR_VERBOSITY		QR_VERBOSE		// one of: QR_OFF, QR_FILTERED, QR_VERBOSE
 
 // *** motor settings ***
 
@@ -78,7 +78,7 @@
 #define X_SEARCH_VELOCITY 				1800				// xsv
 #define X_LATCH_VELOCITY 				200					// xlv		mm/min
 #define X_LATCH_BACKOFF 				15					// xlb		mm
-#define X_ZERO_BACKOFF 					0					// xzb		mm
+#define X_ZERO_BACKOFF 					3					// xzb		mm
 #define X_JERK_HOMING					X_JERK_MAX			// xjh
 
 #define Y_AXIS_MODE 					AXIS_STANDARD
@@ -92,7 +92,7 @@
 #define Y_SEARCH_VELOCITY 				1800
 #define Y_LATCH_VELOCITY 				200
 #define Y_LATCH_BACKOFF 				15
-#define Y_ZERO_BACKOFF 					0
+#define Y_ZERO_BACKOFF 					7
 #define Y_JERK_HOMING					Y_JERK_MAX
 
 #define Z_AXIS_MODE 					AXIS_STANDARD

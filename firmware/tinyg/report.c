@@ -434,7 +434,7 @@ void rpt_request_queue_report()
 		if (qr.buffers_available == qr.prev_available) {
 			return;
 		}
-		if ((qr.buffers_available > cfg.queue_report_lo_water) || 
+		if ((qr.buffers_available > cfg.queue_report_lo_water) && 
 			(qr.buffers_available < cfg.queue_report_hi_water)) {
 			return;
 		}
