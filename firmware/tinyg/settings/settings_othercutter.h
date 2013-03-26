@@ -1,5 +1,5 @@
 /*
- * settings_othercutter.h - Otherlab Cardboard Cutter
+ * settings_othercutter.h - Otherfab Cardboard Cutter
  */
 /* Note: The values in this file are the default settings that are loaded
  * 		 into a virgin EEPROM, and can be changed using the config commands.
