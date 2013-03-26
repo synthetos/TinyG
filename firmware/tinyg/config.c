@@ -611,7 +611,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "x","xlb",_fip, fmt_Xlb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].latch_backoff,	X_LATCH_BACKOFF },
 	{ "x","xzb",_fip, fmt_Xzb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[X].zero_backoff,		X_ZERO_BACKOFF },
 
-
 	{ "y","yam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[Y].axis_mode,		Y_AXIS_MODE },
 	{ "y","yvm",_fip, fmt_Xvm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].velocity_max,		Y_VELOCITY_MAX },
 	{ "y","yfr",_fip, fmt_Xfr, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].feedrate_max,		Y_FEEDRATE_MAX },
@@ -626,7 +625,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "y","ylb",_fip, fmt_Xlb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].latch_backoff,	Y_LATCH_BACKOFF },
 	{ "y","yzb",_fip, fmt_Xzb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Y].zero_backoff,		Y_ZERO_BACKOFF },
 
-
 	{ "z","zam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[Z].axis_mode,		Z_AXIS_MODE },
 	{ "z","zvm",_fip, fmt_Xvm, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].velocity_max,	 	Z_VELOCITY_MAX },
 	{ "z","zfr",_fip, fmt_Xfr, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].feedrate_max,	 	Z_FEEDRATE_MAX },
@@ -640,7 +638,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "z","zlv",_fip, fmt_Xlv, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_velocity,	Z_LATCH_VELOCITY },
 	{ "z","zlb",_fip, fmt_Xlb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].latch_backoff,	Z_LATCH_BACKOFF },
 	{ "z","zzb",_fip, fmt_Xzb, _pr_ma_lin, _get_dbu, _set_dbu,(double *)&cfg.a[Z].zero_backoff,		Z_ZERO_BACKOFF },
-
 
 	{ "a","aam",_fip, fmt_Xam, _print_am,  _get_am,  _set_am, (double *)&cfg.a[A].axis_mode,		A_AXIS_MODE },
 	{ "a","avm",_fip, fmt_Xvm, _pr_ma_rot, _get_dbl, _set_dbl,(double *)&cfg.a[A].velocity_max,	 	A_VELOCITY_MAX },
@@ -2006,7 +2003,7 @@ index_t cmd_get_index(const char *group, const char *token)
  * cmd_add_float()		- add a floating point value to end of cmd body
  * cmd_add_string()		- add a string object to end of cmd body
  * cmd_add_string_P()	- add a program memory string as a string object to end of cmd body
- * cmd_add_message()	- add a mesasge to cmd body
+ * cmd_add_message()	- add a message to cmd body
  * cmd_add_message_P()	- add a program memory message the the cmd body
  *
  *	Note: Functions that return a cmd pointer point to the object that was modified

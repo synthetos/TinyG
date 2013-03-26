@@ -146,13 +146,14 @@ static uint8_t _normalize_gcode_block(char *block)
 			(toupper(comment[1]) == 'S') &&
 			(toupper(comment[2]) == 'G')) {
 			i=0;
+			comment +=3;					// skip past the leading chars
 			while ((c = comment[i++]) != NUL) {// remove trailing parenthesis
 				if (c == ')') {
 					comment[--i] = NUL;
 					break;
 				}
 			}
-			(void)cm_message(comment+3);
+			(void)cm_message(comment);
 			return (true);
 		}
 	}

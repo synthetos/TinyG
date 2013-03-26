@@ -35,7 +35,10 @@
 #include "system.h"
 #include "pwm.h"
 
-/***** PWM defines, structures and memory allocation *****/
+/***** PWM defines, structures and memory allocation *****
+ *
+ * Three are two PWM channels - 
+ */
 
 // defines common to all PWM channels
 //#define PWM_TIMER_TYPE	TC1_struct	// PWM uses TC1's
@@ -55,15 +58,16 @@
  *	 TC_CLKSEL_DIV8_gc  - good for about  62 Hz to  16 KHz
  *	 TC_CLKSEL_DIV64_gc - good for about   8 Hz to   2 Khz
  */
-#define PWM1_CTRLA_CLKSEL TC_CLKSEL_DIV1_gc	// starting clock select value
-#define PWM1_CTRLB (3 | TC0_CCBEN_bm)// single slope PWM enabled on channel B
-#define PWM1_ISR_vect TCD1_CCB_vect	// must match timer assignments in system.h
-#define PWM1_INTCTRLB		0		// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
+#define PWM1_CTRLA_CLKSEL	TC_CLKSEL_DIV1_gc	// starting clock select value
+#define PWM1_CTRLB 			(3 | TC0_CCBEN_bm)	// single slope PWM enabled on channel B
+#define PWM1_ISR_vect 		TCD1_CCB_vect		// must match timer assignments in system.h
+#define PWM1_INTCTRLB		0					// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
 
-#define PWM2_CTRLA_CLKSEL TC_CLKSEL_DIV1_gc
-#define PWM2_CTRLB 			3		// single slope PWM enabled, no output channel
-#define PWM2_ISR_vect TCE1_CCB_vect	// must match timer assignments in system.h
-#define PWM2_INTCTRLB		0		// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
+#define PWM2_CTRLA_CLKSEL 	TC_CLKSEL_DIV1_gc
+#define PWM2_CTRLB 			3					// single slope PWM enabled, no output channel
+//#define PWM1_CTRLB 		(3 | TC0_CCBEN_bm)	// single slope PWM enabled on channel B
+#define PWM2_ISR_vect		TCE1_CCB_vect		// must match timer assignments in system.h
+#define PWM2_INTCTRLB		0					// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
 
 typedef struct pwmStruct { 			// one per PWM channel
 	uint8_t ctrla;					// byte needed to active CTRLA (it's dynamic - rest are static)
@@ -79,14 +83,12 @@ static pwmStruct_t pwm[PWMS];		// array of PWMs (usually 2, see system.h)
  *	  - Whatever level interrupts you use must be enabled in main()
  *	  - init assumes PWM1 output bit (D5) has been set to output previously (stepper.c)
  *	  - See system.h for timer and port assignments
+ *    - Don't do this: memset(&TIMER_PWM1, 0, sizeof(PWM_TIMER_t)); // zero out the timer registers
  */
 void pwm_init()
 {
-	gpio_set_bit_off(SPINDLE_PWM);
-
 	// setup PWM channel 1
 	memset(&pwm[PWM_1], 0, sizeof(pwmStruct_t));		// clear parent structure 
-	//memset(&TIMER_PWM1, 0, sizeof(PWM_TIMER_t));		// zero out the timer registers
 	pwm[PWM_1].timer = &TIMER_PWM1;						// bind timer struct to PWM struct array
 	pwm[PWM_1].ctrla = PWM1_CTRLA_CLKSEL;				// initialize starting clock operating range
 	pwm[PWM_1].timer->CTRLB = PWM1_CTRLB;
@@ -94,7 +96,6 @@ void pwm_init()
 
 	// setup PWM channel 2
 	memset(&pwm[PWM_2], 0, sizeof(pwmStruct_t));		// clear all values, pointers and status
-	memset(&TIMER_PWM2, 0, sizeof(PWM_TIMER_t));
 	pwm[PWM_2].timer = &TIMER_PWM2;
 	pwm[PWM_2].ctrla = PWM2_CTRLA_CLKSEL;
 	pwm[PWM_2].timer->CTRLB = PWM2_CTRLB;

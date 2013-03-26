@@ -50,7 +50,6 @@ C_SRCS +=  \
 ../json_parser.c \
 ../kinematics.c \
 ../main.c \
-../network.c \
 ../planner.c \
 ../plan_arc.c \
 ../plan_line.c \
@@ -92,7 +91,6 @@ help.o \
 json_parser.o \
 kinematics.o \
 main.o \
-network.o \
 planner.o \
 plan_arc.o \
 plan_line.o \
@@ -128,7 +126,6 @@ help.o \
 json_parser.o \
 kinematics.o \
 main.o \
-network.o \
 planner.o \
 plan_arc.o \
 plan_line.o \
@@ -164,7 +161,6 @@ help.d \
 json_parser.d \
 kinematics.d \
 main.d \
-network.d \
 planner.d \
 plan_arc.d \
 plan_line.d \
@@ -200,7 +196,6 @@ help.d \
 json_parser.d \
 kinematics.d \
 main.d \
-network.d \
 planner.d \
 plan_arc.d \
 plan_line.d \
@@ -236,8 +231,6 @@ OUTPUT_FILE_DEP:= ./makedep.mk
 LIB_DEP+= 
 
 # AVR32/GNU C Compiler
-
-
 
 
 

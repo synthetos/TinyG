@@ -36,7 +36,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	370.08		// inches mode settings and help files
+#define TINYG_BUILD_NUMBER   	370.09		// inches mode settings and help files
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
@@ -191,5 +191,9 @@
 #define	TG_MAX_TRAVEL_EXCEEDED 67
 #define	TG_MAX_SPINDLE_SPEED_EXCEEDED 68
 #define	TG_ARC_SPECIFICATION_ERROR 69	// arc specification error
+
+/*** Alarm States ***/
+#define ALARM_LIMIT_OFFSET 0
+#define ALARM_MEMORY_OFFSET 10
 
 #endif

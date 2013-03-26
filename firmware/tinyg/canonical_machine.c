@@ -559,7 +559,7 @@ void cm_init()
  * cm_shutdown() - shut down machine
  */
 
-void cm_shutdown()
+void cm_shutdown(uint8_t value)
 {
 	// stop the steppers and the spindle
 	st_disable();
@@ -572,19 +572,19 @@ void cm_shutdown()
 //	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
-	rpt_exception(TG_SHUTDOWN,1);			// send shutdown message, value = 1 (arbitrary)
+	rpt_exception(TG_SHUTDOWN,value);		// send shutdown message
 	cm.machine_state = MACHINE_SHUTDOWN;
 }
 
 /*
- * cm_flush_planner() - Flush planner queue and correct model position
+ * cm_flush_planner() - Flush planner queue and correct model positions
  */
 uint8_t cm_flush_planner()
 {
 	mp_flush_planner();
 
 	for (uint8_t i=0; i<AXES; i++) {
-		mp_set_axis_position(i, mp_get_runtime_machine_position(i));
+		mp_set_axis_position(i, mp_get_runtime_machine_position(i));	// set mm from mr
 		gm.position[i] = mp_get_runtime_machine_position(i);
 		gm.target[i] = gm.position[i];
 	}
@@ -1052,13 +1052,8 @@ uint8_t cm_spindle_override_factor(uint8_t flag)	// M50.1
 }
 
 /*
- * cm_comment() - ignore comments (I do)
  * cm_message() - send a message to the console (or JSON)
  */
-void cm_comment(char *comment)
-{
-	return;
-}
 
 void cm_message(char *message)
 {
