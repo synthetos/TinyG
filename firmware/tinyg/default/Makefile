@@ -2,9 +2,14 @@
 # Makefile for the project tinyg
 ###############################################################################
 
+#MCU = atxmega256a3
+#PROG_MCU = x256a3
+
+MCU = atxmega192a3
+PROG_MCU = x192a3
+
 ## General Flags
 PROJECT = tinyg
-MCU = atxmega192a3
 TARGET = tinyg.elf
 CC = avr-gcc
 
@@ -47,6 +52,13 @@ LINKONLYOBJECTS =
 
 ## Build
 all: $(TARGET) tinyg.hex tinyg.eep tinyg.lss size
+
+## Install
+install: tinyg.hex
+	avrdude -p $(PROG_MCU) -c avrispmkII -P usb -Uflash:w:tinyg.hex
+
+bootload: tinyg.hex
+	avrdude -p $(PROG_MCU) -c avr109 -b 115200 -P /dev/tty.usbserial-* -Uflash:w:tinyg.hex
 
 ## Compile
 util.o: ../util.c
@@ -160,7 +172,7 @@ $(TARGET): $(OBJECTS)
 
 size: ${TARGET}
 	@echo
-	@avr-size -C --mcu=${MCU} ${TARGET}
+	@avr-size ${TARGET}
 
 ## Clean target
 .PHONY: clean
