@@ -36,7 +36,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	370.09		// inches mode settings and help files
+#define TINYG_BUILD_NUMBER   	370.10		// LED flashes faster
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 

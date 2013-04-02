@@ -357,7 +357,7 @@ static uint8_t _limit_switch_handler(void)
  *	this point. It's important that the reset handler is still called so a SW reset
  *	(ctrl-x) can be processed.
  */
-#define LED_COUNTER 100000
+#define LED_COUNTER 25000
 
 static uint8_t _shutdown_idler(void)
 {

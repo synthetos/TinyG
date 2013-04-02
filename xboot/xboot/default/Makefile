@@ -97,5 +97,5 @@ clean:
 
 
 ## Other dependencies
--include $(shell mkdir dep 2>/dev/null) $(wildcard dep/*)
+-include $(shell mkdir dep 2>NUL) $(wildcard dep/*)
 
