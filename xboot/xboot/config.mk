@@ -98,7 +98,7 @@ USE_FIFO = no
 
 # General Options
 USE_INTERRUPTS = yes
-USE_WATCHDOG = no
+USE_WATCHDOG = yes
 
 # Bootloader Features
 ENABLE_BLOCK_SUPPORT = yes

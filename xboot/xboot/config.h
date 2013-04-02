@@ -53,4 +53,5 @@
 #define USE_INTERRUPTS
 #define USE_LED
 #define USE_UART
+#define USE_WATCHDOG
 #define WATCHDOG_TIMEOUT WDT_PER_1KCLK_gc
