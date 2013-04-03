@@ -32,6 +32,12 @@
 #undef	COM_ENABLE_QR
 #define COM_ENABLE_QR		true
 
+#undef  QR_VERBOSITY
+#define QR_VERBOSITY	      QR_VERBOSE
+
+#undef  COM_IGNORE_CRLF
+#define COM_IGNORE_CRLF			1
+
 // *** motor settings ***
 
 #define M1_MOTOR_MAP 		X			// 1ma

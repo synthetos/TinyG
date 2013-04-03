@@ -56,7 +56,7 @@
 #define STATUS_REPORT_INTERVAL_MS	100			// milliseconds - set to 0 to disable
 #define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
-#define QR_VERBOSITY				QR_OFF		// one of: QR_OFF, QR_FILTERED, QR_VERBOSE
+#define QR_VERBOSITY				QR_FILTERED		// one of: QR_OFF, QR_FILTERED, QR_VERBOSE
 #define QR_HI_WATER					20
 #define QR_LO_WATER					2
 
@@ -80,7 +80,7 @@
 //#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_othercutter.h"			// Otherlab Othercutter
- #include "settings/settings_othermill.h"			// Otherlab Othermill
+#include "settings/settings_othermill.h"			// Otherlab Othermill
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
 //#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
