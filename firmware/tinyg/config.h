@@ -273,9 +273,6 @@ typedef struct cfgPWMParameters {
 
 typedef struct cfgParameters {
 	uint16_t magic_start;			// magic number to test memory integity
-	double fw_build;				// tinyg firmware build number
-	double fw_version;				// tinyg firmware version number
-	double hw_version;				// tinyg hardware compatibility
 
 	uint16_t nvm_base_addr;			// NVM base address
 	uint16_t nvm_profile_base;		// NVM base address of current profile

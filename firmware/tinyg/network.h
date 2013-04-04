@@ -38,7 +38,9 @@ enum networkMode {
 	NET_SLAVE
 };
 
-void tg_repeater(void);
-void tg_receiver(void);
+void net_init();
+
+#define XIO_DEV_NET XIO_DEV_RS485	// define the network channel
+#define net_forward(c) (xio_putc(XIO_DEV_NET,c))
 
 #endif

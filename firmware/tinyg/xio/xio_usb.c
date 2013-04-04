@@ -39,6 +39,8 @@
 
 #include "xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
+#include "../network.h"
+#include "../controller.h"
 
 // Fast accessors
 #define USB ds[XIO_DEV_USB]
@@ -130,6 +132,9 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 {
 	char c = USBu.usart->DATA;					// can only read DATA once
 
+	if (tg.network_mode == NET_MASTER) {		// forward character if you are a master
+		net_forward(c);
+	}
 	// trap signals - do not insert character into RX queue
 	if (c == CHAR_RESET) {	 					// trap Kill signal
 		USB.signal = XIO_SIG_RESET;				// set signal value

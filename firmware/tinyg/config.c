@@ -124,6 +124,7 @@
 #include "test.h"
 #include "help.h"
 #include "system.h"
+#include "network.h"
 #include "xio/xio.h"
 #include "xmega/xmega_eeprom.h"
 
@@ -502,9 +503,9 @@ static const char fmt_gdi[] PROGMEM = "[gdi] default gcode distance mode%2d [0=G
 
 const cfgItem_t cfgArray[] PROGMEM = {
 	// grp  token flags format*, print_func, get_func, set_func  target for get/set,   default value
-	{ "sys","fb", _f07, fmt_fb, _print_dbl, _get_dbl, _set_nul, (double *)&cfg.fw_build,   TINYG_BUILD_NUMBER }, // MUST BE FIRST!
-	{ "sys","fv", _f07, fmt_fv, _print_dbl, _get_dbl, _set_nul, (double *)&cfg.fw_version, TINYG_VERSION_NUMBER },
-	{ "sys","hv", _f07, fmt_hv, _print_dbl, _get_dbl, _set_hv,  (double *)&cfg.hw_version, TINYG_HARDWARE_VERSION },
+	{ "sys","fb", _f07, fmt_fb, _print_dbl, _get_dbl, _set_nul, (double *)&tg.fw_build,   TINYG_BUILD_NUMBER }, // MUST BE FIRST!
+	{ "sys","fv", _f07, fmt_fv, _print_dbl, _get_dbl, _set_nul, (double *)&tg.fw_version, TINYG_VERSION_NUMBER },
+	{ "sys","hv", _f07, fmt_hv, _print_dbl, _get_dbl, _set_hv,  (double *)&tg.hw_version, TINYG_HARDWARE_VERSION },
 	{ "sys","id", _fns, fmt_id, _print_str, _get_id,  _set_nul, (double *)&tg.null, 0 },		// device ID (ASCII signature)
 
 	// dynamic model attributes for reporting puropses (up front for speed)
@@ -779,6 +780,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "ma",  _fip, fmt_ma, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.arc_segment_len,	ARC_SEGMENT_LENGTH },
 	{ "",   "qrh", _fip, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.queue_report_hi_water, QR_HI_WATER },
 	{ "",   "qrl", _fip, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.queue_report_lo_water, QR_LO_WATER },
+	{ "",   "net", _fip, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&tg.network_mode,		NET_STANDALONE },
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
@@ -1514,7 +1516,7 @@ void cfg_init()
 	cmd->index = 0;							// this will read the first record in NVM
 
 	cmd_read_NVM_value(cmd);
-	if (cmd->value != cfg.fw_build) {
+	if (cmd->value != tg.fw_build) {
 		cmd->value = true;					// case (1) NVM is not setup or not in revision
 		_set_defa(cmd);	
 	} else {								// case (2) NVM is setup and in revision

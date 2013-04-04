@@ -70,19 +70,18 @@ static uint8_t _sync_to_planner(void);
  * tg_init() - controller init
  */
 
-void tg_init(uint8_t default_src) 
+void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err) 
 {
-	cfg.fw_build = TINYG_BUILD_NUMBER;
-	cfg.fw_version = TINYG_VERSION_NUMBER;
-	cfg.hw_version = TINYG_HARDWARE_VERSION;
-
 	tg.magic_start = MAGICNUM;
 	tg.magic_end = MAGICNUM;
+	tg.fw_build = TINYG_BUILD_NUMBER;
+	tg.fw_version = TINYG_VERSION_NUMBER;
+	tg.hw_version = TINYG_HARDWARE_VERSION;
 
-	tg.default_src = default_src;
-	xio_set_stdin(tg.default_src);
-	xio_set_stdout(tg.default_src);
-	xio_set_stderr(STD_ERROR);
+	xio_set_stdin(std_in);
+	xio_set_stdout(std_out);
+	xio_set_stderr(std_err);
+	tg.default_src = std_in;
 	tg_set_active_source(tg.default_src);	// set initial active source
 }
 
@@ -158,7 +157,7 @@ static uint8_t _dispatch()
 
 	// read input line or return if not a completed line
 	// xio_gets() is a non-blocking workalike of fgets()
-	if ((status = xio_gets(tg.src, tg.in_buf, sizeof(tg.in_buf))) != TG_OK) {
+	if ((status = xio_gets(tg.active_src, tg.in_buf, sizeof(tg.in_buf))) != TG_OK) {
 		if (status == TG_EOF) {					// EOF can come from file devices only
 			fprintf_P(stderr, PSTR("End of command file\n"));
 			tg_reset_source();					// reset to default source
@@ -273,7 +272,7 @@ void tg_reset_source()
 
 void tg_set_active_source(uint8_t dev)
 {
-	tg.src = dev;						// dev = XIO device #. See xio.h
+	tg.active_src = dev;				// dev = XIO device #. See xio.h
 }
 
 /**** Signal handlers ****
