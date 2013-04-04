@@ -123,7 +123,7 @@ uint8_t cm_set_spindle_speed(double speed)
 }
 static void _exec_spindle_speed(uint8_t i, double speed)
 {
-//	cm_set_spindle_speed_parameter(speed);
+	cm_set_spindle_speed_parameter(speed);
     
     // update spindle speed if we're running
     pwm_set_duty(PWM_1, cm_get_spindle_pwm(gm.spindle_mode) );
@@ -136,4 +136,5 @@ static void _exec_spindle_speed(uint8_t i, double speed)
 void cm_exec_spindle_speed(double speed)
 {
 	// TODO: Link in S command and calibrations to allow dynamic spindle speed setting 
+	cm_set_spindle_speed(speed);
 }
