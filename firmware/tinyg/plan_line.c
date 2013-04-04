@@ -608,13 +608,14 @@ static double _get_target_velocity(const double Vi, const double L, const mpBuf_
  *
  *	 a) L = Vi * Td + (Ar*Td^2)/2		... which becomes b) with substitutions for Ar and T
  *	 b) L = 2 * (Vi*sqrt((Vt-Vi)/Jm) + sqrt((Vt-Vi)/Jm)/2 * (Vt-Vi))
- *	 c) L = (Vt+Vi) * sqrt((Vt-Vi)/Jm) 	... a short alternate form of b) assuming only positive values
+ *	 c) L = (Vt+Vi) * sqrt(abs(Vt-Vi)/Jm) 	... a short alternate form of b) assuming only positive values
  *
  *	 Notes: Ar = (Jm*T)/4					Ar is ramp acceleration
  *			T  = 2*sqrt((Vt-Vi)/Jm)			T is time
+ *
  *			Assumes Vt, Vi and L are positive or zero
  *			Cannot assume Vt>=Vi due to rounding errors and use of PLANNER_VELOCITY_TOLERANCE
- *			  necessitating the introduction of fabs()
+ *			necessitating the introduction of fabs()
  *
  * 	_get_target_velocity() is a convenient function for determining Vt target 
  *	velocity for a given the initial velocity (Vi), length (L), and maximum jerk (Jm).

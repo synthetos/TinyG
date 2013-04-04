@@ -382,7 +382,7 @@ uint8_t _system_assertions()
 {
 	uint8_t value = 0;
 
-	if (tg.magic_start		!= MAGICNUM) { value = 1; }		// Note: reported VALue is offset by ALARM_MEMORY_OFFSET
+	if (tg.magic_start		!= MAGICNUM) { value = 1; }		// Note: reported Value is offset by ALARM_MEMORY_OFFSET
 	if (tg.magic_end		!= MAGICNUM) { value = 2; }
 	if (cm.magic_start 		!= MAGICNUM) { value = 3; }
 	if (cm.magic_end		!= MAGICNUM) { value = 4; }

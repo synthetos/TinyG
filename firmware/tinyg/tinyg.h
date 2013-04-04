@@ -36,7 +36,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	372.04		// PWM work
+#define TINYG_BUILD_NUMBER   	370.11		// FOlding in changes and resyncing
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 //#define TINYG_HARDWARE_VERSION	6.00		// board revision number

@@ -2003,7 +2003,7 @@ index_t cmd_get_index(const char *group, const char *token)
  * cmd_add_float()		- add a floating point value to end of cmd body
  * cmd_add_string()		- add a string object to end of cmd body
  * cmd_add_string_P()	- add a program memory string as a string object to end of cmd body
- * cmd_add_message()	- add a mesasge to cmd body
+ * cmd_add_message()	- add a message to cmd body
  * cmd_add_message_P()	- add a program memory message the the cmd body
  *
  *	Note: Functions that return a cmd pointer point to the object that was modified
