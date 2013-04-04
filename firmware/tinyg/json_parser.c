@@ -307,6 +307,9 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  *	  - If a JSON object is empty represent it as {}
  *	    --- OR ---
  *	  - If a JSON object is empty omit the object altogether (no curlies)
+ *
+ *	Note: TYPE_FLOAT_UNITS is used to convert a value back to inches mode for display
+ *		  that was previously converted to MM mode for internal operations.
  */
 
 #define BUFFER_MARGIN 8			// safety margin to avoibd buffer overruns
@@ -326,11 +329,15 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 			need_a_comma = true;
 			str += sprintf(str, "\"%s\":", cmd->token);
 			if (cmd->type == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
-			else if (cmd->type == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", cmd->value);}
-			else if (cmd->type == TYPE_FLOAT)	{ str += sprintf(str, "%0.3f", cmd->value);}
-			else if (cmd->type == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
-			else if (cmd->type == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  *cmd->stringp);}
-			else if (cmd->type == TYPE_BOOL) 	{
+			else if (cmd->type == TYPE_INTEGER)		{ str += sprintf(str, "%1.0f", cmd->value);}
+			else if (cmd->type == TYPE_FLOAT)		{ str += sprintf(str, "%0.3f", cmd->value);}
+			else if (cmd->type == TYPE_FLOAT_UNITS)	{ 
+				if (cm_get_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
+				str += sprintf(str, "%0.3f", cmd->value);
+			}
+			else if (cmd->type == TYPE_STRING)		{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
+			else if (cmd->type == TYPE_ARRAY)		{ str += sprintf(str, "[%s]",  *cmd->stringp);}
+			else if (cmd->type == TYPE_BOOL) 		{
 				if (cmd->value == false) { str += sprintf(str, "false");}
 				else { str += sprintf(str, "true"); }
 			}

@@ -36,7 +36,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	370.13		// Adding network functions for 5 and 6 axis operation
+#define TINYG_BUILD_NUMBER   	370.14		// Fix incorrect unit reporting in JSON responses
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
