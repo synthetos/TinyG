@@ -1052,13 +1052,8 @@ uint8_t cm_spindle_override_factor(uint8_t flag)	// M50.1
 }
 
 /*
- * cm_comment() - ignore comments (I do)
  * cm_message() - send a message to the console (or JSON)
  */
-void cm_comment(char *comment)
-{
-	return;
-}
 
 void cm_message(char *message)
 {

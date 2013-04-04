@@ -138,12 +138,6 @@
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="network.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="network.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="planner.c">
       <SubType>compile</SubType>
     </Compile>

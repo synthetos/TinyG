@@ -100,6 +100,8 @@ void mp_init()
 
 	mr.magic_start = MAGICNUM;
 	mr.magic_end = MAGICNUM;
+	ar.magic_start = MAGICNUM;
+	ar.magic_end = MAGICNUM;
 	mp_init_buffers();
 }
 
@@ -116,6 +118,7 @@ void mp_flush_planner()
 	ar_abort_arc();
 	mp_init_buffers();
 	cm.motion_state = MOTION_STOP;
+//	copy_axis_vector(mm.position, mr.position);
 }
 
 /*

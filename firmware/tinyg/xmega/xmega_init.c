@@ -39,18 +39,19 @@
 #include "../system.h"
 #include "xmega_init.h"
 
-void _xmega_init_clocks(void);
+void xmega_init_clocks(void);
+void CCPWrite(volatile uint8_t * address, uint8_t value);
 
 /*
  * xmega_init()
  */
 
 void xmega_init(void) {
-	_xmega_init_clocks();
+	xmega_init_clocks();
 }
 
 /*
- * _xmega_init_clocks()
+ * xmega_init_clocks()
  *
  * This routine is lifted and modified from Boston Android and from
  * http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&p=711659
@@ -68,7 +69,7 @@ void xmega_init(void) {
 	CCPWrite(&CLK.CTRL, CLK_SCLKSEL_PLL_gc);    // Switch to PLL clock
  */
 
-void _xmega_init_clocks(void) 
+void xmega_init_clocks(void) 
 { 
 #ifdef __CLOCK_EXTERNAL_8MHZ 				// external 8 Mhx Xtal with 4x PLL = 32 Mhz
 	OSC.XOSCCTRL = 0x4B;					// 2-9 MHz crystal; 0.4-16 MHz XTAL w/16K CLK startup

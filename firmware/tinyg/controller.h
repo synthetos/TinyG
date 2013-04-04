@@ -40,6 +40,7 @@
 struct controllerSingleton {		// main TG controller struct
 	uint16_t magic_start;			// magic number to test memory integity	
 	double null;					// dumping ground for items with no target
+	uint8_t network;				// network mode
 	uint8_t test;
 	uint8_t src;					// active source device
 	uint8_t default_src;			// default source device

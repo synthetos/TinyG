@@ -524,9 +524,7 @@ uint8_t cm_change_tool(uint8_t tool);							// M6, T
 uint8_t cm_select_tool(uint8_t tool);							// T parameter
 
 // canonical machine commands not called from gcode dispatcher
-void cm_comment(char *comment);									// comment handler
-void cm_message(char *message);									// msg to console
-
+void cm_message(char *message);									// msg to console (e.g. Gcode comments)
 void cm_cycle_start(void);										// (no Gcode)
 void cm_cycle_end(void); 										// (no Gcode)
 void cm_feedhold(void);											// (no Gcode)

@@ -3,7 +3,6 @@
  * Part of TinyG project
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
- * Copyright (c) 2012 - 2013 Rob Giseburt
  *
  * TinyG is free software: you can redistribute it and/or modify it 
  * under the terms of the GNU General Public License as published by 
@@ -285,7 +284,7 @@ void mp_dump_runtime_state(void);
 
 /*** Unit tests ***/
 
-#define __UNIT_TEST_PLANNER	// uncomment to compile in planner unit tests
+//#define __UNIT_TEST_PLANNER	// uncomment to compile in planner unit tests
 #ifdef __UNIT_TEST_PLANNER
 void mp_unit_tests(void);
 void mp_plan_arc_unit_tests(void);

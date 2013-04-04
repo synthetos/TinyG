@@ -166,6 +166,7 @@ static uint8_t _dispatch()
 		// Note that TG_EAGAIN, TG_NOOP etc. will just flow through
 		return (status);
 	}
+	cmd_reset_list();
 	tg.linelen = strlen(tg.in_buf)+1;
 	strncpy(tg.saved_buf, tg.in_buf, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 
@@ -356,7 +357,7 @@ static uint8_t _limit_switch_handler(void)
  *	this point. It's important that the reset handler is still called so a SW reset
  *	(ctrl-x) can be processed.
  */
-#define LED_COUNTER 100000
+#define LED_COUNTER 25000
 
 static uint8_t _shutdown_idler(void)
 {
@@ -382,7 +383,7 @@ uint8_t _system_assertions()
 {
 	uint8_t value = 0;
 
-	if (tg.magic_start		!= MAGICNUM) { value = 1; }		// Note: reported Value is offset by ALARM_MEMORY_OFFSET
+	if (tg.magic_start		!= MAGICNUM) { value = 1; }		// Note: reported VALue is offset by ALARM_MEMORY_OFFSET
 	if (tg.magic_end		!= MAGICNUM) { value = 2; }
 	if (cm.magic_start 		!= MAGICNUM) { value = 3; }
 	if (cm.magic_end		!= MAGICNUM) { value = 4; }
@@ -396,9 +397,11 @@ uint8_t _system_assertions()
 	if (mb.magic_end		!= MAGICNUM) { value = 12; }
 	if (mr.magic_start		!= MAGICNUM) { value = 13; }
 	if (mr.magic_end		!= MAGICNUM) { value = 14; }
-	if (st_get_st_magic()	!= MAGICNUM) { value = 15; }
-	if (st_get_sps_magic()	!= MAGICNUM) { value = 16; }
-	if (rtc.magic_end 		!= MAGICNUM) { value = 17; }
+	if (ar.magic_start		!= MAGICNUM) { value = 15; }
+	if (ar.magic_end		!= MAGICNUM) { value = 16; }
+	if (st_get_st_magic()	!= MAGICNUM) { value = 17; }
+	if (st_get_sps_magic()	!= MAGICNUM) { value = 18; }
+	if (rtc.magic_end 		!= MAGICNUM) { value = 19; }
 	xio_assertions(&value);									// run xio assertions
 
 	if (value == 0) { return (TG_OK);}

@@ -59,13 +59,13 @@
  *	 TC_CLKSEL_DIV64_gc - good for about   8 Hz to   2 Khz
  */
 #define PWM1_CTRLA_CLKSEL	TC_CLKSEL_DIV1_gc	// starting clock select value
-#define PWM1_CTRLB			(3 | TC0_CCBEN_bm)	// single slope PWM enabled on channel B
+#define PWM1_CTRLB 			(3 | TC0_CCBEN_bm)	// single slope PWM enabled on channel B
 #define PWM1_ISR_vect 		TCD1_CCB_vect		// must match timer assignments in system.h
 #define PWM1_INTCTRLB		0					// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
 
-#define PWM2_CTRLA_CLKSEL	TC_CLKSEL_DIV1_gc
+#define PWM2_CTRLA_CLKSEL 	TC_CLKSEL_DIV1_gc
 #define PWM2_CTRLB 			3					// single slope PWM enabled, no output channel
-//#define PWM1_CTRLB		(3 | TC0_CCBEN_bm)	// single slope PWM enabled on channel B
+//#define PWM1_CTRLB 		(3 | TC0_CCBEN_bm)	// single slope PWM enabled on channel B
 #define PWM2_ISR_vect		TCE1_CCB_vect		// must match timer assignments in system.h
 #define PWM2_INTCTRLB		0					// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
 

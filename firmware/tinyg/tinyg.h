@@ -36,10 +36,9 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	370.11		// FOlding in changes and resyncing
+#define TINYG_BUILD_NUMBER   	370.11		// Folding in changes and resyncing branches
 #define TINYG_VERSION_NUMBER	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
-//#define TINYG_HARDWARE_VERSION	6.00		// board revision number
 
 #define TINYG_HARDWARE_VERSION_MAX TINYG_HARDWARE_VERSION
 
@@ -193,10 +192,8 @@
 #define	TG_MAX_SPINDLE_SPEED_EXCEEDED 68
 #define	TG_ARC_SPECIFICATION_ERROR 69	// arc specification error
 
-/*** Alarm values ***/
-// These are the values reported in shutdown and ER messages
-
-#define ALARM_LIMIT_OFFSET 0			// used to report limit switch closures
-#define ALARM_MEMORY_OFFSET 10			// offset for memory corruption report values
+/*** Alarm States ***/
+#define ALARM_LIMIT_OFFSET 0
+#define ALARM_MEMORY_OFFSET 10
 
 #endif
