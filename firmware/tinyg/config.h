@@ -170,6 +170,7 @@ typedef struct cmdObject {			// depending on use, not all elements may be popula
 	index_t index;					// index of tokenized name, or -1 if no token (optional)
 	int8_t depth;					// depth of object in the tree. 0 is root (-1 is invalid)
 	int8_t type;					// see cmdType
+	int8_t precision;				// decimal precision for reporting (JSON)
 	double value;					// numeric value
 	char token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
 	char group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group

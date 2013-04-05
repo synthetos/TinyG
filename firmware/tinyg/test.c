@@ -106,8 +106,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 //	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"mpox\":true,\"mpoy\":true}}\n");
 
-	xio_queue_RX_string_usb("M3 S1000\n");
-
+//	xio_queue_RX_string_usb("M3 S1000\n");
 //	xio_queue_RX_string_usb("$test=4\n");
 //	xio_queue_RX_string_usb("g20\n");
 //	xio_queue_RX_string_usb("{\"xvm\":100}\n");
@@ -116,7 +115,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$defau=1\n");
 //	xio_queue_RX_string_usb("$id\n");
 //	xio_queue_RX_string_usb("{\n");
-//	xio_queue_RX_string_usb("G3 X28.949238578680202 Y33.51776649746193 I2.1091370558375635 J-2.1091370558375635 F1524\n");
+	xio_queue_RX_string_usb("G3 X28.949238578680202 Y33.51776649746193 I2.1091370558375635 J-2.1091370558375635 F1524\n");
 
 //	xio_queue_RX_string_usb("g0x2\n");			// G0 smoke test
 //	xio_queue_RX_string_usb("{\"gc\":\"g2\"}\n");// G0 smoke test in JSON
