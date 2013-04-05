@@ -36,7 +36,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	370.16		// Got PWM working - was config error only
+#define TINYG_FIRMWARE_BUILD   	370.17		// JSON display of very small numbers
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
