@@ -66,7 +66,7 @@
 
 #define PWM2_CTRLA_CLKSEL 	TC_CLKSEL_DIV1_gc
 #define PWM2_CTRLB 			3					// single slope PWM enabled, no output channel
-//#define PWM1_CTRLB 		(3 | TC0_CCBEN_bm)	// single slope PWM enabled on channel B
+//#define PWM2_CTRLB 		(3 | TC0_CCBEN_bm)	// single slope PWM enabled on channel B
 #define PWM2_ISR_vect		TCE1_CCB_vect		// must match timer assignments in system.h
 #define PWM2_INTCTRLB		0					// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
 
@@ -132,8 +132,8 @@ ISR(PWM2_ISR_vect)
 uint8_t pwm_set_freq(uint8_t chan, double freq)
 {
 	if (chan > PWMS) { return (TG_NO_SUCH_DEVICE);}
-	if (freq > PWM_MAX_FREQ) { return (TG_INPUT_VALUE_TOO_SMALL);}
-	if (freq < PWM_MIN_FREQ) { return (TG_INPUT_VALUE_TOO_LARGE);}
+	if (freq > PWM_MAX_FREQ) { return (TG_INPUT_VALUE_TOO_LARGE);}
+	if (freq < PWM_MIN_FREQ) { return (TG_INPUT_VALUE_TOO_SMALL);}
 
 	// set the period and the prescaler
 	double prescale = F_CPU/65536/freq;	// optimal non-integer prescaler value

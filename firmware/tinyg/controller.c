@@ -74,9 +74,8 @@ void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 {
 	tg.magic_start = MAGICNUM;
 	tg.magic_end = MAGICNUM;
-	tg.fw_build = TINYG_BUILD_NUMBER;
-	tg.fw_version = TINYG_VERSION_NUMBER;
-	tg.hw_version = TINYG_HARDWARE_VERSION;
+	tg.fw_build = TINYG_FIRMWARE_BUILD;
+	tg.fw_version = TINYG_FIRMWARE_VERSION;	// NB: HW version is set from EEPROM
 
 	xio_set_stdin(std_in);
 	xio_set_stdout(std_out);

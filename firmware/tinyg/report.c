@@ -148,7 +148,7 @@ void rpt_exception(uint8_t status, int16_t value)
 {
 	char msg[STATUS_MESSAGE_LEN];
 	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\",\"val\":%d}}\n"), 
-		TINYG_BUILD_NUMBER, status, rpt_get_status_message(status, msg), value);
+		TINYG_FIRMWARE_BUILD, status, rpt_get_status_message(status, msg), value);
 }
 
 /**** Application Messages *********************************************************

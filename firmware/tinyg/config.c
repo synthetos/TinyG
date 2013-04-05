@@ -503,8 +503,8 @@ static const char fmt_gdi[] PROGMEM = "[gdi] default gcode distance mode%2d [0=G
 
 const cfgItem_t cfgArray[] PROGMEM = {
 	// grp  token flags format*, print_func, get_func, set_func  target for get/set,   default value
-	{ "sys","fb", _f07, fmt_fb, _print_dbl, _get_dbl, _set_nul, (double *)&tg.fw_build,   TINYG_BUILD_NUMBER }, // MUST BE FIRST!
-	{ "sys","fv", _f07, fmt_fv, _print_dbl, _get_dbl, _set_nul, (double *)&tg.fw_version, TINYG_VERSION_NUMBER },
+	{ "sys","fb", _f07, fmt_fb, _print_dbl, _get_dbl, _set_nul, (double *)&tg.fw_build,   TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
+	{ "sys","fv", _f07, fmt_fv, _print_dbl, _get_dbl, _set_nul, (double *)&tg.fw_version, TINYG_FIRMWARE_VERSION },
 	{ "sys","hv", _f07, fmt_hv, _print_dbl, _get_dbl, _set_hv,  (double *)&tg.hw_version, TINYG_HARDWARE_VERSION },
 	{ "sys","id", _fns, fmt_id, _print_str, _get_id,  _set_nul, (double *)&tg.null, 0 },		// device ID (ASCII signature)
 

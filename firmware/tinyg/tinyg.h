@@ -36,15 +36,11 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	370.14		// Fix incorrect unit reporting in JSON responses
-#define TINYG_VERSION_NUMBER	0.95		// major version
+#define TINYG_FIRMWARE_BUILD   	370.16		// Got PWM working - was config error only
+#define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7.00		// board revision number
 
 #define TINYG_HARDWARE_VERSION_MAX TINYG_HARDWARE_VERSION
-
-#define STD_IN 				XIO_DEV_USB		// default IO settings
-#define STD_OUT				XIO_DEV_USB
-#define STD_ERR				XIO_DEV_USB
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -64,10 +60,14 @@
  */
 #define MAGICNUM 0x12EF			// used for memory integrity assertions
 
-#define AXES 6					// number of axes supported in this version
-#define MOTORS 4				// number of motors on the board
-#define COORDS 6				// number of supported coordinate systems (1-6)
-#define PWMS 2					// number of supported PWM channels
+#define STD_IN 	XIO_DEV_USB		// default IO settings
+#define STD_OUT	XIO_DEV_USB
+#define STD_ERR	XIO_DEV_USB
+
+#define AXES 	6				// number of axes supported in this version
+#define MOTORS	4				// number of motors on the board
+#define COORDS	6				// number of supported coordinate systems (1-6)
+#define PWMS	2				// number of supported PWM channels
 
 // If you change COORDS you must adjust the entries in cfgArray table in config.c
 

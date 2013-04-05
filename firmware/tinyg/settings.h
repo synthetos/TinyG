@@ -88,8 +88,21 @@
 
 /*** Handle optional modules that may not be in every machine ***/
 
-// If PWM_1 is not defined fill it with dummy values
+// If PWM_1 is not defined fill it with default values
 #ifndef	P1_PWM_FREQUENCY
+
+#define P1_PWM_FREQUENCY                100					// in Hz
+#define P1_CW_SPEED_LO                  1000				// in RPM (arbitrary units)
+#define P1_CW_SPEED_HI                  2000
+#define P1_CW_PHASE_LO                  0.125				// phase [0..1]
+#define P1_CW_PHASE_HI                  0.2
+#define P1_CCW_SPEED_LO                 1000
+#define P1_CCW_SPEED_HI                 2000
+#define P1_CCW_PHASE_LO                 0.125
+#define P1_CCW_PHASE_HI                 0.2
+#define P1_PWM_PHASE_OFF                0.1
+
+/*
 #define P1_PWM_FREQUENCY	0	// Hz
 #define P1_CW_SPEED_LO		0	// in RPM (arbitrary units)
 #define P1_CW_SPEED_HI		0
@@ -100,6 +113,8 @@
 #define P1_CCW_PHASE_LO		0
 #define P1_CCW_PHASE_HI		0
 #define P1_PWM_PHASE_OFF	0
+*/
+
 #endif//P1_PWM_FREQUENCY
 
 #endif
