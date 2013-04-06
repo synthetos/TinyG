@@ -48,6 +48,7 @@
 // Version
 #define XBOOT_VERSION_MAJOR 1
 #define XBOOT_VERSION_MINOR 7
+#define XBOOT_TINYG_REVISION 1		// added a revision for TinyG uses
 
 // config.h
 #ifdef USE_CONFIG_H

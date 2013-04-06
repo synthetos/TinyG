@@ -158,7 +158,11 @@ static uint8_t _dispatch()
 	// xio_gets() is a non-blocking workalike of fgets()
 	if ((status = xio_gets(tg.active_src, tg.in_buf, sizeof(tg.in_buf))) != TG_OK) {
 		if (status == TG_EOF) {					// EOF can come from file devices only
-			fprintf_P(stderr, PSTR("End of command file\n"));
+			if (cfg.comm_mode == TEXT_MODE) {
+				fprintf_P(stderr, PSTR("End of command file\n"));
+			} else {
+				rpt_exception(TG_EOF, 0);		// not really an exception
+			}
 			tg_reset_source();					// reset to default source
 		}
 		// Note that TG_EAGAIN, TG_NOOP etc. will just flow through

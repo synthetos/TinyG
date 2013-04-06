@@ -39,7 +39,7 @@
 // Defines
 
 // General Commands
-#define CMD_SYNC                '\x1b'
+#define CMD_SYNC                '\x1b'		// ESC char
 
 // Informational Commands
 #define CMD_CHECK_AUTOINCREMENT 'a'

@@ -36,7 +36,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	370.17		// JSON display of very small numbers
+#define TINYG_FIRMWARE_BUILD   	370.18		// wrapped command file end in JSON
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
@@ -100,7 +100,7 @@
  * Please don't change them without checking the corresponding values in xio.h
  *
  * Any changes to the ranges also require changing the message strings and 
- * string array in controller.c
+ * string array in report.c
  */
  
 // OS, communications and low-level status (must align with XIO_xxxx codes in xio.h)
@@ -120,7 +120,7 @@
 #define	TG_BUFFER_FULL 13
 #define	TG_BUFFER_FULL_FATAL 14
 #define	TG_INITIALIZING 15				// initializing - not ready for use
-#define	TG_ERROR_16 16
+#define	TG_ENTERING_BOOT_LOADER 16		// this code actually emitted from boot loader, not TInyG
 #define	TG_ERROR_17 17
 #define	TG_ERROR_18 18
 #define	TG_ERROR_19 19					// NOTE: XIO codes align to here
