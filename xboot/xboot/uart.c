@@ -112,4 +112,16 @@ void uart_deinit(void)
         UART_UBRR = 0;
 #endif // __AVR_XMEGA__
 }
+/*
+void uart_send_string(char *s) 
+{
+	while (*s != 0) {
+		uart_send_char_blocking(*s); 
+//		UART_DEVICE.DATA = *s;
+//		while (!(UART_DEVICE.STATUS & USART_TXCIF_bm)) {}
+//		UART_DEVICE.STATUS |= USART_TXCIF_bm;
+		s++;
+	}
+}
 
+*/

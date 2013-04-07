@@ -108,7 +108,7 @@ int main(void)
         CCPWrite(&CLK.CTRL, CLK_SCLKSEL_PLL_gc);// switch to PLL clock
         OSC.CTRL &= ~OSC_RC2MEN_bm;				// disable internal 2 MHz clock
 
-    /*
+    /* Original code from xboot sources replaced by the above:
         OSC.CTRL |= OSC_RC32MEN_bm; // turn on 32 MHz oscillator
         while (!(OSC.STATUS & OSC_RC32MRDY_bm)) { }; // wait for it to start
         CCP = CCP_IOREG_gc;
@@ -244,7 +244,7 @@ int main(void)
         #ifdef USE_UART
         // Initialize UART
         uart_init();
-        
+
         // Initialize RX pin pull-up
         
 #ifdef __AVR_XMEGA__
@@ -324,6 +324,17 @@ int main(void)
         wdt_disable();
 #endif
         
+		//**************************************
+		// one-time startup message     
+		// THIS CAUSES AVRDUDE TO PUKE. TOO BAD.
+		//	unsigned char startup[] = "{\"er\":{\"st\":8,\"msg\":\"Boot loader initialized\",\"val\":0}}\n";
+		//	unsigned char startup[] = "{\"er\":{\"st\":8}}\n";
+//			unsigned char startup[] = "{\"boot\":2}\n";
+//			unsigned char startup[] = "{\"boot\":2}\n";
+//			comm_mode = MODE_UART;
+//			for (int i = 0; i < sizeof(startup); i++) { send_char(startup[i]);}
+		//**************************************
+
         // --------------------------------------------------
         // End initialization section
         
@@ -331,7 +342,6 @@ int main(void)
         // Triggers that are checked once, regardless of
         // whether or not USE_ENTER_DELAY is selected
         // --------------------------------------------------
-        
         
         
         // --------------------------------------------------
@@ -438,7 +448,7 @@ int main(void)
         #ifdef USE_WATCHDOG
         WDT_EnableAndSetTimeout();
         #endif // USE_WATCHDOG
-        
+
         // Main bootloader        
         while (in_bootloader) {
                 #ifdef USE_LED

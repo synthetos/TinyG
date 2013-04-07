@@ -70,6 +70,7 @@
 // Prototypes
 extern void uart_init(void);
 extern void uart_deinit(void);
+//extern void uart_send_string(char *s);
 
 #endif // __UART_H
 
