@@ -15,6 +15,6 @@ config.mk
 xboot.atsln
 xboot.atsuo
 xboot.cproj
-Debug
+xboot-boot.hex
 TcfTransactionLog.csv
 .DS_store
