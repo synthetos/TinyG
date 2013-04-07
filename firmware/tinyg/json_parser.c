@@ -307,6 +307,9 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  *	  - If a JSON object is empty represent it as {}
  *	    --- OR ---
  *	  - If a JSON object is empty omit the object altogether (no curlies)
+ *
+ *	Note: TYPE_FLOAT_UNITS is used to convert a value back to inches mode for display
+ *		  that was previously converted to MM mode for internal operations.
  */
 
 #define BUFFER_MARGIN 8			// safety margin to avoibd buffer overruns
@@ -320,17 +323,30 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 	uint8_t need_a_comma = false;
 
 	*str++ = '{'; 								// write opening curly
+
 	while (true) {
 		if (cmd->type != TYPE_EMPTY) {
 			if (need_a_comma) { *str++ = ',';}
 			need_a_comma = true;
 			str += sprintf(str, "\"%s\":", cmd->token);
+
+			if (cmd->type == TYPE_FLOAT_UNITS)	{ 
+				if (cm_get_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
+				cmd->type = TYPE_FLOAT;
+			}
 			if (cmd->type == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
 			else if (cmd->type == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", cmd->value);}
-			else if (cmd->type == TYPE_FLOAT)	{ str += sprintf(str, "%0.3f", cmd->value);}
 			else if (cmd->type == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
 			else if (cmd->type == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  *cmd->stringp);}
-			else if (cmd->type == TYPE_BOOL) 	{
+			else if (cmd->type == TYPE_FLOAT) {
+				if 		(cmd->precision == 0) { str += sprintf(str, "%0.0f", cmd->value);}
+				else if (cmd->precision == 1) { str += sprintf(str, "%0.1f", cmd->value);}
+				else if (cmd->precision == 2) { str += sprintf(str, "%0.2f", cmd->value);}
+				else if (cmd->precision == 3) { str += sprintf(str, "%0.3f", cmd->value);}
+				else if (cmd->precision == 4) { str += sprintf(str, "%0.4f", cmd->value);}
+				else 						  { str += sprintf(str, "%f", cmd->value);}
+			}
+			else if (cmd->type == TYPE_BOOL) {
 				if (cmd->value == false) { str += sprintf(str, "false");}
 				else { str += sprintf(str, "true"); }
 			}
@@ -339,6 +355,31 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 				need_a_comma = false;
 			}
 		}
+/*
+		if (cmd->type != TYPE_EMPTY) {
+			if (need_a_comma) { *str++ = ',';}
+			need_a_comma = true;
+			str += sprintf(str, "\"%s\":", cmd->token);
+			if (cmd->type == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
+			else if (cmd->type == TYPE_INTEGER)		{ str += sprintf(str, "%1.0f", cmd->value);}
+			else if (cmd->type == TYPE_FLOAT)		{ str += sprintf(str, "%0.3f", cmd->value);}
+			else if (cmd->type == TYPE_FLOAT_UNITS)	{ 
+				if (cm_get_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
+				str += sprintf(str, "%0.3f", cmd->value);
+			}
+			else if (cmd->type == TYPE_STRING)		{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
+			else if (cmd->type == TYPE_ARRAY)		{ str += sprintf(str, "[%s]",  *cmd->stringp);}
+			else if (cmd->type == TYPE_BOOL) 		{
+				if (cmd->value == false) { str += sprintf(str, "false");}
+				else { str += sprintf(str, "true"); }
+			}
+			if (cmd->type == TYPE_PARENT) { 
+				*str++ = '{';
+				need_a_comma = false;
+			}
+		}
+
+*/
 		if (str >= str_max) { return (-1);}		// signal buffer overrun
 		if ((cmd = cmd->nx) == NULL) { break;}	// end of the list
 		if (cmd->depth < prev_depth) {
@@ -347,6 +388,7 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 		}
 		prev_depth = cmd->depth;
 	}
+
 	// closing curlies and NEWLINE
 	while (prev_depth-- > initial_depth) { *str++ = '}';}
 	str += sprintf(str, "}\n");	// using sprintf for this last one ensures a NUL termination

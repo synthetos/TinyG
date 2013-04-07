@@ -92,6 +92,7 @@ uint8_t cm_spindle_control(uint8_t spindle_mode)
 	mp_queue_command(_exec_spindle_control, spindle_mode, 0);
 	return(TG_OK);
 }
+
 static void _exec_spindle_control(uint8_t spindle_mode, double f)
 {
 	cm_set_spindle_mode(spindle_mode);
@@ -110,30 +111,28 @@ static void _exec_spindle_control(uint8_t spindle_mode, double f)
 }
 
 /*
- * cm_set_spindle_speed() - queue the S parameter to the planner buffer
+ * cm_set_spindle_speed() 	- queue the S parameter to the planner buffer
+ * cm_exec_spindle_speed() 	- execute the S command (called from the planner buffer)
+ * _exec_spindle_speed()	- spindle speed callback from planner queue
  */
 
 uint8_t cm_set_spindle_speed(double speed)
 {
-//	if (speed > cfg.max_spindle speed) {
-//		return (TG_MAX_SPINDLE_SPEED_EXCEEDED);
-//	}
+//	if (speed > cfg.max_spindle speed) { return (TG_MAX_SPINDLE_SPEED_EXCEEDED);}
 	mp_queue_command(_exec_spindle_speed, 0, speed);
     return (TG_OK);
 }
-static void _exec_spindle_speed(uint8_t i, double speed)
-{
-//	cm_set_spindle_speed_parameter(speed);
-    
-    // update spindle speed if we're running
-    pwm_set_duty(PWM_1, cm_get_spindle_pwm(gm.spindle_mode) );
-}
 
-
-/*
- * cm_exec_spindle_speed() - execute the S command (called from the planner buffer)
- */
 void cm_exec_spindle_speed(double speed)
 {
-	// TODO: Link in S command and calibrations to allow dynamic spindle speed setting 
+// TODO: Link in S command and calibrations to allow dynamic spindle speed setting 
+	cm_set_spindle_speed(speed);
 }
+
+static void _exec_spindle_speed(uint8_t i, double speed)
+{
+	cm_set_spindle_speed_parameter(speed);
+	pwm_set_duty(PWM_1, cm_get_spindle_pwm(gm.spindle_mode) ); // update spindle speed if we're running
+}
+
+

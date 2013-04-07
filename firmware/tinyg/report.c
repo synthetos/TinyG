@@ -70,7 +70,7 @@ static const char msg_sc12[] PROGMEM = "Buffer empty";
 static const char msg_sc13[] PROGMEM = "Buffer full";
 static const char msg_sc14[] PROGMEM = "Buffer full - fatal";
 static const char msg_sc15[] PROGMEM = "Initializing";
-static const char msg_sc16[] PROGMEM = "16";
+static const char msg_sc16[] PROGMEM = "Entering boot loader";
 static const char msg_sc17[] PROGMEM = "17";
 static const char msg_sc18[] PROGMEM = "18";
 static const char msg_sc19[] PROGMEM = "19";
@@ -148,7 +148,7 @@ void rpt_exception(uint8_t status, int16_t value)
 {
 	char msg[STATUS_MESSAGE_LEN];
 	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\",\"val\":%d}}\n"), 
-		TINYG_BUILD_NUMBER, status, rpt_get_status_message(status, msg), value);
+		TINYG_FIRMWARE_BUILD, status, rpt_get_status_message(status, msg), value);
 }
 
 /**** Application Messages *********************************************************
@@ -434,8 +434,8 @@ void rpt_request_queue_report()
 		if (qr.buffers_available == qr.prev_available) {
 			return;
 		}
-		if ((qr.buffers_available > cfg.queue_report_lo_water) && 
-			(qr.buffers_available < cfg.queue_report_hi_water)) {
+		if ((qr.buffers_available > cfg.queue_report_lo_water) && 	// e.g. > 2 buffers available
+			(qr.buffers_available < cfg.queue_report_hi_water)) {	// e.g. < 20 buffers available
 			return;
 		}
 	}

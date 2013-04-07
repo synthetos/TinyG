@@ -74,8 +74,9 @@ int main(void)
 	pwm_init();			// pulse width modulation drivers	- must follow gpio_init()
 
 	// application structures
-	tg_init(STD_INPUT);	// tinyg controller (controller.c)	- must be first app init; reqs xio_init()
+	tg_init(STD_IN, STD_OUT, STD_ERR);	// must be first app init; reqs xio_init()
 	cfg_init();			// config records from eeprom 		- must be next app init
+	net_init();			// reset std devices if required	- must follow cfg_init()
 	mp_init();			// motion planning subsystem
 	cm_init();			// canonical machine				- must follow cfg_init()
 	sp_init();			// spindle PWM and variables
@@ -92,13 +93,7 @@ int main(void)
 	tg_canned_startup();			// run any pre-loaded commands
 
 	while (true) {
-//		if (tg.network == NET_MASTER) { 
-//			tg_repeater();
-//		} else if (tg.network == NET_SLAVE) { 
-//			tg_receiver();
-//		} else {
-			tg_controller();		// NET_STANDALONE
-//		}
+		tg_controller(); 
 	}
 }
 

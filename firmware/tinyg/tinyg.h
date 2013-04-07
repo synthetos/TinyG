@@ -36,9 +36,9 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_BUILD_NUMBER   	370.10		// LED flashes faster
-#define TINYG_VERSION_NUMBER	0.95		// major version
-#define TINYG_HARDWARE_VERSION	7.00		// board revision number
+#define TINYG_FIRMWARE_BUILD   	370.18		// wrapped command file end in JSON
+#define TINYG_FIRMWARE_VERSION	0.95		// major version
+#define TINYG_HARDWARE_VERSION	7			// board revision number
 
 #define TINYG_HARDWARE_VERSION_MAX TINYG_HARDWARE_VERSION
 
@@ -55,30 +55,19 @@
 // bringing in new functionality
 //#define __PLAN_R2							// comment out to use R1 planner functions
 
-/****** OPERATING SETTINGS *******/
-
-// Operating Mode: (chose only one)
-#define __STANDALONE_MODE					// normal operation - receive from USB
-//#define __MASTER_MODE						// receive from USB, relay to rs485
-//#define __SLAVE_MODE						// receive from rs485
-
-#ifdef __SLAVE_MODE
-#define STD_INPUT XIO_DEV_RS485
-#define STD_ERROR XIO_DEV_USB
-#else 
-#define STD_INPUT XIO_DEV_USB
-#define STD_ERROR XIO_DEV_USB
-#endif
-
 /*************************************************************************
  * TinyG application-specific prototypes, defines and globals
  */
 #define MAGICNUM 0x12EF			// used for memory integrity assertions
 
-#define AXES 6					// number of axes supported in this version
-#define MOTORS 4				// number of motors on the board
-#define COORDS 6				// number of supported coordinate systems (1-6)
-#define PWMS 2					// number of supported PWM channels
+#define STD_IN 	XIO_DEV_USB		// default IO settings
+#define STD_OUT	XIO_DEV_USB
+#define STD_ERR	XIO_DEV_USB
+
+#define AXES 	6				// number of axes supported in this version
+#define MOTORS	4				// number of motors on the board
+#define COORDS	6				// number of supported coordinate systems (1-6)
+#define PWMS	2				// number of supported PWM channels
 
 // If you change COORDS you must adjust the entries in cfgArray table in config.c
 
@@ -111,7 +100,7 @@
  * Please don't change them without checking the corresponding values in xio.h
  *
  * Any changes to the ranges also require changing the message strings and 
- * string array in controller.c
+ * string array in report.c
  */
  
 // OS, communications and low-level status (must align with XIO_xxxx codes in xio.h)
@@ -131,7 +120,7 @@
 #define	TG_BUFFER_FULL 13
 #define	TG_BUFFER_FULL_FATAL 14
 #define	TG_INITIALIZING 15				// initializing - not ready for use
-#define	TG_ERROR_16 16
+#define	TG_ENTERING_BOOT_LOADER 16		// this code actually emitted from boot loader, not TInyG
 #define	TG_ERROR_17 17
 #define	TG_ERROR_18 18
 #define	TG_ERROR_19 19					// NOTE: XIO codes align to here

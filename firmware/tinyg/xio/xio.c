@@ -250,7 +250,7 @@ void xio_set_stdout(const uint8_t dev) { stdout = &ds[dev].file; }
 void xio_set_stderr(const uint8_t dev)
 {
 	stderr = &ds[dev].file; 
-	xio.stderr_shadow = stderr;
+	xio.stderr_shadow = stderr;		// this is the last thing in RAM, so we use it as a memory corruption canary
 }
 
 /*

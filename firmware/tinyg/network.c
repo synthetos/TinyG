@@ -36,29 +36,37 @@
 #include <stdbool.h>				// true and false
 #include <avr/pgmspace.h>			// precursor for xio.h
 
+#include "network.h"
+#include "controller.h"
 #include "xio/xio.h"
-#include "gpio.h"
-//#include "controller.h"
 
 /*
  * Local Scope Functions and Data
  */
 
-static char _nextchar(char c);
-
 /*
  * net_init()
  */
-
 void net_init() 
 {
-	return;
+	// re-point IO if in slave mode
+	if (tg.network_mode == NET_SLAVE) {
+		tg_init(XIO_DEV_NET, XIO_DEV_NET, XIO_DEV_NET);
+	}
 }
 
-/* 
- * tg_repeater() - top-level controller.
- */
+/*
+void net_forward(unsigned char c)
+{
+	xio_putc(XIO_DEV_RS485, c);	// write to RS485 port
+}
+*/
 
+/* 
+ * tg_repeater()
+ * tg_receiver()
+ */
+/*
 void tg_repeater()
 {
 //	uint8_t full_duplex = false;
@@ -79,10 +87,6 @@ void tg_repeater()
 //		_delay_ms(10);
 	}
 }
-
-/* 
- * tg_receiver()
- */
 
 void tg_receiver()
 {
@@ -112,3 +116,4 @@ static char _nextchar(char c)
 	}
 	return (n);
 }
+*/

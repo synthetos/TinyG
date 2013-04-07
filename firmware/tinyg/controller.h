@@ -40,10 +40,13 @@
 struct controllerSingleton {		// main TG controller struct
 	uint16_t magic_start;			// magic number to test memory integity	
 	double null;					// dumping ground for items with no target
-	uint8_t network;				// network mode
+	double fw_build;				// tinyg firmware build number
+	double fw_version;				// tinyg firmware version number
+	double hw_version;				// tinyg hardware compatibility
 	uint8_t test;
-	uint8_t src;					// active source device
+	uint8_t active_src;				// active source device
 	uint8_t default_src;			// default source device
+	uint8_t network_mode;			// 0=master, 1=repeater, 2=slave
 	uint8_t linelen;				// length of currently processing line
 	uint8_t led_state;				// 0=off, 1=on
 	int32_t led_counter;			// a convenience for flashing an LED
@@ -54,7 +57,8 @@ struct controllerSingleton {		// main TG controller struct
 };
 struct controllerSingleton tg;		// controller state structure
 
-void tg_init(uint8_t default_src);
+//void tg_init(uint8_t default_src);
+void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
 void tg_reset(void);
 void tg_controller(void);
 void tg_application_startup(void);

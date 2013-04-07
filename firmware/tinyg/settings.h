@@ -53,7 +53,7 @@
 
 #define SR_VERBOSITY				SR_FILTERED	// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 #define STATUS_REPORT_MIN_MS		50			// milliseconds - enforces a viable minimum
-#define STATUS_REPORT_INTERVAL_MS	100			// milliseconds - set to 0 to disable
+#define STATUS_REPORT_INTERVAL_MS	100			// milliseconds - set $SV=0 to disable
 #define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
 #define QR_VERBOSITY				QR_OFF		// one of: QR_OFF, QR_FILTERED, QR_VERBOSE
@@ -79,7 +79,8 @@
 
 //#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
-//#include "settings/settings_othercutter.h"			// Otherlab Othercutter
+//#include "settings/settings_othercutter.h"			// Otherlab OtherCutter
+//#include "settings/settings_otherfab.h"				// Otherlab OtherFab
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
 #include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
@@ -87,8 +88,21 @@
 
 /*** Handle optional modules that may not be in every machine ***/
 
-// If PWM_1 is not defined fill it with dummy values
+// If PWM_1 is not defined fill it with default values
 #ifndef	P1_PWM_FREQUENCY
+
+#define P1_PWM_FREQUENCY                100					// in Hz
+#define P1_CW_SPEED_LO                  1000				// in RPM (arbitrary units)
+#define P1_CW_SPEED_HI                  2000
+#define P1_CW_PHASE_LO                  0.125				// phase [0..1]
+#define P1_CW_PHASE_HI                  0.2
+#define P1_CCW_SPEED_LO                 1000
+#define P1_CCW_SPEED_HI                 2000
+#define P1_CCW_PHASE_LO                 0.125
+#define P1_CCW_PHASE_HI                 0.2
+#define P1_PWM_PHASE_OFF                0.1
+
+/*
 #define P1_PWM_FREQUENCY	0	// Hz
 #define P1_CW_SPEED_LO		0	// in RPM (arbitrary units)
 #define P1_CW_SPEED_HI		0
@@ -99,6 +113,8 @@
 #define P1_CCW_PHASE_LO		0
 #define P1_CCW_PHASE_HI		0
 #define P1_PWM_PHASE_OFF	0
+*/
+
 #endif//P1_PWM_FREQUENCY
 
 #endif

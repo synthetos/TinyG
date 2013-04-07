@@ -15,7 +15,7 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
-CFLAGS += -Wall -gdwarf-2 -std=gnu99                 -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -Wall -gdwarf-2 -std=gnu99                               -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
 
 ## Assembly specific flags
@@ -40,7 +40,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 LIBS = -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o planner.o report.o spindle.o stepper.o system.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio.o xio_pgm.o xio_rs485.o xio_signals.o xio_usart.o pwm.o plan_line.o plan_arc.o xio_spi.o xio_file.o 
+OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o planner.o report.o spindle.o stepper.o system.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio.o xio_pgm.o xio_rs485.o xio_signals.o xio_usart.o pwm.o plan_line.o plan_arc.o xio_spi.o xio_file.o network.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -143,6 +143,9 @@ xio_spi.o: ../xio/xio_spi.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 xio_file.o: ../xio/xio_file.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+network.o: ../network.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link
