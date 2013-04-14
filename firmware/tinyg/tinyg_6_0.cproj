@@ -20,7 +20,7 @@
     <OverrideVtor>false</OverrideVtor>
     <OverrideVtorValue />
     <eraseonlaunchrule>0</eraseonlaunchrule>
-    <AsfVersion>3.1.3</AsfVersion>
+    <AsfVersion>2.11.1</AsfVersion>
     <avrtool>com.atmel.avrdbg.tool.simulator</avrtool>
     <avrtoolinterface />
     <com_atmel_avrdbg_tool_simulator>
@@ -136,6 +136,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="main.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="network.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="network.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="planner.c">

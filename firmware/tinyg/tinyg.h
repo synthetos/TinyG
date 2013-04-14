@@ -36,7 +36,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	370.18		// wrapped command file end in JSON
+#define TINYG_FIRMWARE_BUILD   	370.19		// wrapped command file end in JSON
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 

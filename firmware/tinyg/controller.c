@@ -116,6 +116,17 @@ void tg_controller()
 #define	DISPATCH(func) if (func == TG_EAGAIN) return; 
 static void _controller_HSM()
 {
+//----- ISRs. These should be considered the highest priority scheduler functions ----//
+/*	
+ *	HI	Stepper DDA pulse generation		(set in stepper.h)
+ *	HI	Stepper load routine SW interrupt	(set in stepper.h)
+ *	HI	Dwell timer counter 				(set in stepper.h)
+ *	MED	GPIO1 switch port - limits / homing	(set in gpio.h)
+ *  MED	Serial RX for USB					(set in xio_usart.h)
+ *  LO	Segment execution SW interrupt		(set in stepper.h) 
+ *  LO	Serial TX for USB & RS-485			(set in xio_usart.h)
+ *	LO	Real time clock interrupt			(set in xmega_rtc.h)
+ */
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
 											// Order is important:
 	DISPATCH(_reset_handler());				// 1. software reset received
