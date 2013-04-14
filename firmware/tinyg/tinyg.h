@@ -31,12 +31,12 @@
  * We try to follow this (at least we are evolving to it). It's worth a read.
  * ftp://ftp.idsoftware.com/idstuff/doom3/source/CodeStyleConventions.doc
  */
-#ifndef tinyg_h
-#define tinyg_h
+#ifndef _TINYG_H_
+#define _TINYG_H_
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	370.19		// wrapped command file end in JSON
+#define TINYG_FIRMWARE_BUILD   	371.01		// master / slave operation for 5 axis machine
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
@@ -45,7 +45,7 @@
 /****** DEVELOPMENT SETTINGS ******/
 
 //#define __CANNED_STARTUP					// run any canned startup moves
-//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
 //#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 //#define __UNIT_TESTS						// master enable for unit tests; uncomment modules in .h files
 //#define __DEBUG							// complies debug functions found in test.c
@@ -185,4 +185,4 @@
 #define ALARM_LIMIT_OFFSET 0
 #define ALARM_MEMORY_OFFSET 10
 
-#endif
+#endif //_TINYG_H_

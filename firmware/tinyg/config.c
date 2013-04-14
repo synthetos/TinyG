@@ -781,7 +781,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "ma",  _fip, 4, fmt_ma, _print_lin, _get_dbu, _set_dbu, (double *)&cfg.arc_segment_len,		ARC_SEGMENT_LENGTH },
 	{ "",   "qrh", _fip, 0, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.queue_report_hi_water, QR_HI_WATER },
 	{ "",   "qrl", _fip, 0, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&cfg.queue_report_lo_water, QR_LO_WATER },
-	{ "",   "net", _fip, 0, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&tg.network_mode,			NET_STANDALONE },
+	{ "sys","net", _fip, 0, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (double *)&tg.network_mode,			NETWORK_MODE },
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***

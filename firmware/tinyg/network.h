@@ -33,14 +33,17 @@
  */
 
 enum networkMode {
-	NET_STANDALONE = 0,
-	NET_MASTER,
-	NET_SLAVE
+	NETWORK_STANDALONE = 0,
+	NETWORK_MASTER,
+	NETWORK_SLAVE
 };
 
 void net_init();
+void net_forward(unsigned char c);
+uint8_t net_test_rxtx(uint8_t c);
+uint8_t net_test_loopback(uint8_t c);
 
 #define XIO_DEV_NET XIO_DEV_RS485	// define the network channel
-#define net_forward(c) (xio_putc(XIO_DEV_NET,c))
+//#define net_forward(c) (xio_putc(XIO_DEV_NET,c))
 
 #endif

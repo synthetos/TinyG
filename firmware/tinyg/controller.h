@@ -66,8 +66,4 @@ void tg_set_active_source(uint8_t dev);
 void tg_reset_source(void);
 void tg_text_response(const uint8_t status, const char *buf);
 
-#ifdef __DEBUG
-void tg_dump_controller_state(void);
-#endif
-
 #endif

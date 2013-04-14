@@ -247,6 +247,7 @@ enum xioSignals {
 #define XOFF (char)0x13		// ^s - DC3, XOFF, pause
 #define CAN (char)0x18		// ^x - Cancel, abort
 #define ESC (char)0x1B		// ^[ - ESC(ape)
+//#define SP  (char)0x20		// ' '  Space character		// defined externally
 #define DEL (char)0x7F		//  DEL(ete)
 
 #define Q_EMPTY (char)0xFF	// signal no character
@@ -369,7 +370,7 @@ enum xioCodes {
     0x7F    DEL	
 */
 
-#define __UNIT_TEST_XIO			// include and run xio unit tests
+//#define __UNIT_TEST_XIO			// include and run xio unit tests
 #ifdef __UNIT_TEST_XIO
 void xio_unit_tests(void);
 #define	XIO_UNITS xio_unit_tests();

@@ -65,24 +65,24 @@ int main(void)
 	cli();
 
 	// system and drivers
-	sys_init();			// system hardware setup 			- must be first
-	rtc_init();			// real time counter
-	xio_init();			// xmega io subsystem
-	sig_init();			// signal flags
-	st_init(); 			// stepper subsystem 				- must precede gpio_init()
-	gpio_init();		// switches and parallel IO
-	pwm_init();			// pulse width modulation drivers	- must follow gpio_init()
+	sys_init();						// system hardware setup 			- must be first
+	rtc_init();						// real time counter
+	xio_init();						// xmega io subsystem
+	sig_init();						// signal flags
+	st_init(); 						// stepper subsystem 				- must precede gpio_init()
+	gpio_init();					// switches and parallel IO
+	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()
 
 	// application structures
-	tg_init(STD_IN, STD_OUT, STD_ERR);	// must be first app init; reqs xio_init()
-	cfg_init();			// config records from eeprom 		- must be next app init
-	net_init();			// reset std devices if required	- must follow cfg_init()
-	mp_init();			// motion planning subsystem
-	cm_init();			// canonical machine				- must follow cfg_init()
-	sp_init();			// spindle PWM and variables
+	tg_init(STD_IN, STD_OUT, STD_ERR);// must be first app init; reqs xio_init()
+	cfg_init();						// config records from eeprom 		- must be next app init
+	net_init();						// reset std devices if required	- must follow cfg_init()
+	mp_init();						// motion planning subsystem
+	cm_init();						// canonical machine				- must follow cfg_init()
+	sp_init();						// spindle PWM and variables
 
 	// now bring up the interupts and get started
-	PMIC_SetVectorLocationToApplication(); // as opposed to boot ROM
+	PMIC_SetVectorLocationToApplication();// as opposed to boot ROM
 	PMIC_EnableHighLevel();			// all levels are used, so don't bother to abstract them
 	PMIC_EnableMediumLevel();
 	PMIC_EnableLowLevel();
@@ -91,9 +91,13 @@ int main(void)
 
 	_unit_tests();					// run any unit tests that are enabled
 	tg_canned_startup();			// run any pre-loaded commands
-
+	
 	while (true) {
 		tg_controller(); 
+
+		// network diagnostics
+		// c = net_test_rxtx(c);
+		// c = net_test_loopback(c);
 	}
 }
 
