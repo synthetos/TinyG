@@ -30,13 +30,22 @@
  * Is this code over documented? Possibly. 
  * We try to follow this (at least we are evolving to it). It's worth a read.
  * ftp://ftp.idsoftware.com/idstuff/doom3/source/CodeStyleConventions.doc
+
+ Project setup notes:
+ ref: http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=117023
+ Yes it's definitely worth making WinAVR work as Atmel have yet to issue a toolchain 
+ that does not contain some serious errors (though I just discovered I have no real 
+ choice to use xmage32A4U). To fix for WinAVR then for each project use 
+ Project-Configuration Options and under Custom Options untick the  "Use toolchain" 
+ box then set the top one to \winavr\bin\avr-gcc.exe and the lower one to 
+ \winavr\utils\bin\make.exe
  */
 #ifndef _TINYG_H_
 #define _TINYG_H_
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	371.01		// master / slave operation for 5 axis machine
+#define TINYG_FIRMWARE_BUILD   	371.02		// Changed profile - master / slave operation for 5 axis machine
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
@@ -44,9 +53,9 @@
 
 /****** DEVELOPMENT SETTINGS ******/
 
-//#define __CANNED_STARTUP					// run any canned startup moves
+#define __CANNED_STARTUP					// run any canned startup moves
 #define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-//#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 //#define __UNIT_TESTS						// master enable for unit tests; uncomment modules in .h files
 //#define __DEBUG							// complies debug functions found in test.c
 

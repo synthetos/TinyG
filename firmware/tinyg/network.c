@@ -56,8 +56,9 @@ void net_init()
 	// re-point IO if in slave mode
 	if (tg.network_mode == NETWORK_SLAVE) {
 		tg_init(XIO_DEV_RS485, XIO_DEV_USB, XIO_DEV_USB);
+		tg_set_secondary_source(XIO_DEV_USB);
 	}
-	xio_enable_rs485_rx();		// needed for clean start
+//	xio_enable_rs485_rx();		// needed for clean start for RS-485;
 }
 
 void net_forward(unsigned char c)

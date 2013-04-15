@@ -81,7 +81,7 @@ void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
 	tg.default_src = std_in;
-	tg_set_active_source(tg.default_src);	// set initial active source
+	tg_set_primary_source(tg.default_src);	// set primary source
 }
 
 /* 
@@ -118,14 +118,14 @@ static void _controller_HSM()
 {
 //----- ISRs. These should be considered the highest priority scheduler functions ----//
 /*	
- *	HI	Stepper DDA pulse generation		(set in stepper.h)
- *	HI	Stepper load routine SW interrupt	(set in stepper.h)
- *	HI	Dwell timer counter 				(set in stepper.h)
- *	MED	GPIO1 switch port - limits / homing	(set in gpio.h)
- *  MED	Serial RX for USB					(set in xio_usart.h)
- *  LO	Segment execution SW interrupt		(set in stepper.h) 
- *  LO	Serial TX for USB & RS-485			(set in xio_usart.h)
- *	LO	Real time clock interrupt			(set in xmega_rtc.h)
+ *	HI	Stepper DDA pulse generation		// see stepper.h
+ *	HI	Stepper load routine SW interrupt	// see stepper.h
+ *	HI	Dwell timer counter 				// see stepper.h
+ *	MED	GPIO1 switch port - limits / homing	// see gpio.h
+ *  MED	Serial RX for USB					// see xio_usart.h
+ *  LO	Segment execution SW interrupt		// see stepper.h
+ *  LO	Serial TX for USB & RS-485			// see xio_usart.h
+ *	LO	Real time clock interrupt			// see xmega_rtc.h
  */
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
 											// Order is important:
@@ -167,7 +167,13 @@ static uint8_t _dispatch()
 
 	// read input line or return if not a completed line
 	// xio_gets() is a non-blocking workalike of fgets()
-	if ((status = xio_gets(tg.active_src, tg.in_buf, sizeof(tg.in_buf))) != TG_OK) {
+	while (true) {
+		// read from primary source
+		if ((status = xio_gets(tg.primary_src, tg.in_buf, sizeof(tg.in_buf))) == TG_OK) {
+			tg.bufp = tg.in_buf;
+			break;
+		}
+		// handle end-of-file from primary source
 		if (status == TG_EOF) {					// EOF can come from file devices only
 			if (cfg.comm_mode == TEXT_MODE) {
 				fprintf_P(stderr, PSTR("End of command file\n"));
@@ -176,8 +182,14 @@ static uint8_t _dispatch()
 			}
 			tg_reset_source();					// reset to default source
 		}
-		// Note that TG_EAGAIN, TG_NOOP etc. will just flow through
-		return (status);
+		// read from secondary source
+		if (tg.in2_buf != NULL) {
+			if ((status = xio_gets(tg.secondary_src, tg.in2_buf, sizeof(tg.in2_buf))) == TG_OK) {
+				tg.bufp = tg.in2_buf;
+				break;
+			}
+		}
+		return (status);						// Note: TG_EAGAIN, errors, etc. will drop through
 	}
 	cmd_reset_list();
 	tg.linelen = strlen(tg.in_buf)+1;
@@ -195,26 +207,26 @@ static uint8_t _dispatch()
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TEXT_MODE;
 			print_general_help();
-			tg_text_response(TG_OK, tg.in_buf);
+			tg_text_response(TG_OK, tg.bufp);
 			break;
 		}
 		case '$': case '?':{ 					// text-mode configs
 			cfg.comm_mode = TEXT_MODE;
-			tg_text_response(cfg_text_parser(tg.in_buf), tg.saved_buf);
+			tg_text_response(cfg_text_parser(tg.bufp), tg.saved_buf);
 			break;
 		}
 		case '{': { 							// JSON input
 			cfg.comm_mode = JSON_MODE;
-			js_json_parser(tg.in_buf);
+			js_json_parser(tg.bufp);
 			break;
 		}
 		default: {								// anything else must be Gcode
 			if (cfg.comm_mode == JSON_MODE) {
-				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN -8);	// use out_buf as temp
-				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);		// '-8' is used for JSON chars
-				js_json_parser(tg.in_buf);
+				strncpy(tg.out_buf, tg.bufp, INPUT_BUFFER_LEN -8);	// use out_buf as temp
+				sprintf(tg.bufp,"{\"gc\":\"%s\"}\n", tg.out_buf);
+				js_json_parser(tg.bufp);
 			} else {
-				tg_text_response(gc_gcode_parser(tg.in_buf), tg.saved_buf);
+				tg_text_response(gc_gcode_parser(tg.bufp), tg.saved_buf);
 			}
 		}
 	}
@@ -279,15 +291,9 @@ static uint8_t _sync_to_planner()
 	return (TG_OK);
 }
 
-void tg_reset_source()
-{
-	tg_set_active_source(tg.default_src);
-}
-
-void tg_set_active_source(uint8_t dev)
-{
-	tg.active_src = dev;				// dev = XIO device #. See xio.h
-}
+void tg_reset_source() { tg_set_primary_source(tg.default_src);}
+void tg_set_primary_source(uint8_t dev) { tg.primary_src = dev;}
+void tg_set_secondary_source(uint8_t dev) { tg.secondary_src = dev;}
 
 /**** Signal handlers ****
  * _reset_handler()

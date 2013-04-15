@@ -155,6 +155,11 @@ FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags)
 	dx->usart->CTRLB = (USART_TXEN_bm | USART_RXEN_bm);	// enable tx and rx
 	dx->usart->CTRLA = CTRLA_RXON_TXON;					// enable tx and rx IRQs
 	return (&d->file);		// return FILE reference
+
+	// here's a bag for the RS485 device
+	if (dev == XIO_DEV_RS485) {
+		xio_enable_rs485_rx();							// sets RS-485 to RX mode initially
+	}
 }
 
 void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)

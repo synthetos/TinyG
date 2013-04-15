@@ -86,7 +86,7 @@ uint8_t tg_test(cmdObj_t *cmd)
 			return (TG_ERROR);
 		}
 	}
-	tg_set_active_source(XIO_DEV_PGM);
+	tg_set_primary_source(XIO_DEV_PGM);
 	return (TG_OK);
 }
 
@@ -104,7 +104,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 // avrdude -p x192a3 -c avr109 -b 115200 -P COM19
 // avrdude -e -p atxmega192a3 -c avrispmkii -P usb -U boot:w:xboot-boot.hex
 
-	xio_queue_RX_string_usb("$net\n");
+//	xio_queue_RX_string_usb("$net\n");
 
 //	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"mpox\":true,\"mpoy\":true}}\n");
 
@@ -253,7 +253,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
 
 /* G0's */
-//	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
+	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
 //	xio_queue_RX_string_usb("g0 x0\n");
 //	xio_queue_RX_string_usb("g0 x2\n");
 //	xio_queue_RX_string_usb("g0 x3\n");
