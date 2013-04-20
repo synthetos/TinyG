@@ -58,7 +58,7 @@ void net_init()
 		tg_init(XIO_DEV_RS485, XIO_DEV_USB, XIO_DEV_USB);
 		tg_set_secondary_source(XIO_DEV_USB);
 	}
-//	xio_enable_rs485_rx();		// needed for clean start for RS-485;
+	xio_enable_rs485_rx();		// needed for clean start for RS-485;
 }
 
 void net_forward(unsigned char c)

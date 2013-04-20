@@ -509,7 +509,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","hv", _f07, 0, fmt_hv, _print_dbl, _get_dbl, _set_hv,  (double *)&tg.hw_version, TINYG_HARDWARE_VERSION },
 	{ "sys","id", _fns, 0, fmt_id, _print_str, _get_id,  _set_nul, (double *)&tg.null, 0 },		// device ID (ASCII signature)
 
-	// dynamic model attributes for reporting puropses (up front for speed)
+	// dynamic model attributes for reporting purposes (up front for speed)
 	{ "",   "n",   _fin, 0, fmt_line,_print_int, _get_int, _set_int,(double *)&gm.linenum,0 },	// Gcode line number - gets model line number
 	{ "",   "line",_fin, 0, fmt_line,_print_int, _get_line,_set_int,(double *)&gm.linenum,0 },	// Gcode line number - gets runtime line number
 	{ "",   "feed",_f00, 2, fmt_feed,_print_lin, _get_dbu, _set_nul,(double *)&tg.null, 0 },	// feed rate

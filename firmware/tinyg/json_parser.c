@@ -312,7 +312,7 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  *		  that was previously converted to MM mode for internal operations.
  */
 
-#define BUFFER_MARGIN 8			// safety margin to avoibd buffer overruns
+#define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns
 
 int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 {

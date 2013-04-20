@@ -171,6 +171,7 @@ static uint8_t _dispatch()
 		// read from primary source
 		if ((status = xio_gets(tg.primary_src, tg.in_buf, sizeof(tg.in_buf))) == TG_OK) {
 			tg.bufp = tg.in_buf;
+			printf ("%s\n", tg.bufp);
 			break;
 		}
 		// handle end-of-file from primary source
@@ -192,11 +193,12 @@ static uint8_t _dispatch()
 		return (status);						// Note: TG_EAGAIN, errors, etc. will drop through
 	}
 	cmd_reset_list();
-	tg.linelen = strlen(tg.in_buf)+1;
-	strncpy(tg.saved_buf, tg.in_buf, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
+	tg.linelen = strlen(tg.in_buf)+1;					// linelen only tracks primary input
+	strncpy(tg.saved_buf, tg.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 
 	// dispatch the new text line
-	switch (toupper(tg.in_buf[0])) {
+//	switch (toupper(tg.bufp[0])) {
+	switch (toupper(*tg.bufp)) {				// first char
 
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {
