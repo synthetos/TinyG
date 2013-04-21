@@ -1089,32 +1089,36 @@ static uint8_t _get_vel(cmdObj_t *cmd)
 {
 	cmd->value = mp_get_runtime_velocity();
 	if (cm_get_units_mode() == INCHES) cmd->value *= INCH_PER_MM;
-	cmd->type = TYPE_FLOAT;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+//	cmd->type = TYPE_FLOAT_UNITS;	//++++ UNTESTED
+	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 
 static uint8_t _get_pos(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_runtime_work_position(_get_pos_axis(cmd->index));
-	cmd->type = TYPE_FLOAT;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+//	cmd->type = TYPE_FLOAT_UNITS;	//++++ UNTESTED
+	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 
 static uint8_t _get_mpos(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_runtime_machine_position(_get_pos_axis(cmd->index));
-	cmd->type = TYPE_FLOAT;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+//	cmd->type = TYPE_FLOAT_UNITS;	//++++ UNTESTED
+	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 
 static uint8_t _get_ofs(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_runtime_work_offset(_get_pos_axis(cmd->index));
-	cmd->type = TYPE_FLOAT;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+//	cmd->type = TYPE_FLOAT_UNITS;	//++++ UNTESTED
+	cmd->type = TYPE_FLOAT;
 	return (TG_OK);
 }
 
@@ -1685,8 +1689,8 @@ static uint8_t _set_int(cmdObj_t *cmd)
 static uint8_t _set_dbl(cmdObj_t *cmd)
 {
 	*((double *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
-	cmd->type = TYPE_FLOAT;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->type = TYPE_FLOAT;
 	return(TG_OK);
 }
 
@@ -1694,8 +1698,8 @@ static uint8_t _set_dbu(cmdObj_t *cmd)
 {
 	if (cm_get_units_mode() == INCHES) { cmd->value *= MM_PER_INCH;}
 	*((double *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
-	cmd->type = TYPE_FLOAT_UNITS;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->type = TYPE_FLOAT_UNITS;
 	return(TG_OK);
 }
 
@@ -1733,6 +1737,7 @@ static uint8_t _get_dbu(cmdObj_t *cmd)
 	if (cm_get_units_mode() == INCHES) {
 		cmd->value *= INCH_PER_MM;
 	}
+//	cmd->type = TYPE_FLOAT_UNITS;	// ++++ UNTESTED
 	return (TG_OK);
 }
 
