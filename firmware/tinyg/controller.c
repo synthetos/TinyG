@@ -183,6 +183,7 @@ static uint8_t _dispatch()
 			}
 			tg_reset_source();					// reset to default source
 		}
+/*
 		// read from secondary source
 		if (tg.in2_buf != NULL) {
 			if ((status = xio_gets(tg.secondary_src, tg.in2_buf, sizeof(tg.in2_buf))) == TG_OK) {
@@ -190,6 +191,7 @@ static uint8_t _dispatch()
 				break;
 			}
 		}
+*/
 		return (status);						// Note: TG_EAGAIN, errors, etc. will drop through
 	}
 	cmd_reset_list();
@@ -197,7 +199,6 @@ static uint8_t _dispatch()
 	strncpy(tg.saved_buf, tg.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 
 	// dispatch the new text line
-//	switch (toupper(tg.bufp[0])) {
 	switch (toupper(*tg.bufp)) {				// first char
 
 		case NUL: { 							// blank line (just a CR)
@@ -287,7 +288,8 @@ static uint8_t _sync_to_tx_buffer()
 
 static uint8_t _sync_to_planner()
 {
-	if (mp_get_planner_buffers_available() == 0) { 
+//	if (mp_get_planner_buffers_available() == 0) { 
+	if (mp_get_planner_buffers_available() < 3) { 
 		return (TG_EAGAIN);
 	}
 	return (TG_OK);

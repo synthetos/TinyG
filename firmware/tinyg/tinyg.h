@@ -45,7 +45,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	371.03		// Changed profile - master / slave operation for 5 axis machine
+#define TINYG_FIRMWARE_BUILD   	372.01		// QF and feedhold work
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
