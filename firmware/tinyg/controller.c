@@ -171,7 +171,7 @@ static uint8_t _dispatch()
 		// read from primary source
 		if ((status = xio_gets(tg.primary_src, tg.in_buf, sizeof(tg.in_buf))) == TG_OK) {
 			tg.bufp = tg.in_buf;
-			printf ("%s\n", tg.bufp);
+//			printf ("%s\n", tg.bufp);
 			break;
 		}
 		// handle end-of-file from primary source
