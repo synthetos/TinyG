@@ -24,6 +24,9 @@
 
 // *** settings.h overrides ***
 
+#undef  SR_DEFAULTS
+#define SR_DEFAULTS "line","mpox","mpoy","mpoz","mpoa","feed","vel","unit","coor","dist","frmo","momo","stat"
+
 #undef	SWITCH_TYPE
 #define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED
 
