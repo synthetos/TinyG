@@ -1130,10 +1130,10 @@ static void _exec_program_finalize(uint8_t machine_state, double f)
 	cm.machine_state = machine_state;
 	cm.cycle_state = CYCLE_OFF;
 	cm.motion_state = MOTION_STOP;
-	cm.hold_state = FEEDHOLD_OFF;			//...and any feedhold is ended
+	cm.hold_state = FEEDHOLD_OFF;					//...and any feedhold is ended
 	cm.cycle_start_flag = false;
-	mp_zero_segment_velocity();				// for reporting purposes
-	rpt_request_status_report();			// request final status report (not unfiltered)
-	cmd_persist_offsets(cm.g10_persist_flag); // persist offsets if any changes made
+	mp_zero_segment_velocity();						// for reporting purposes
+	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report (not unfiltered)
+	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
 }
 

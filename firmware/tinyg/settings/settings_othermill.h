@@ -15,7 +15,7 @@
 /***********************************************************************/
 
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
-#define INIT_MESSAGE "Initializing configs to OtherFab settings"
+#define INIT_MESSAGE "Initializing configs to OtherFab OtherMill settings"
 
 
 #define JERK_MAX				600000000	// yes, that's "n00,000,000" mm/(min^3)

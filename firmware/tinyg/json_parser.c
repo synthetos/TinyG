@@ -96,7 +96,7 @@ void js_json_parser(char *str)
 	cmd_reset_list();					// get a fresh cmdObj list
 	uint8_t status = _json_parser_kernal(str);
 	cmd_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
-	rpt_request_status_report();	// generate an incremental status report if there are gcode model changes
+	rpt_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
 
 uint8_t _json_parser_kernal(char *str)

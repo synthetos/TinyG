@@ -1041,7 +1041,7 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	// initiate the hold - look for the end of the decel move
 	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == TG_OK)) {
 		cm.hold_state = FEEDHOLD_HOLD;
-		rpt_request_status_report();
+		rpt_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
 
 	// There are 3 things that can happen here depending on return conditions:
@@ -1052,7 +1052,7 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	//	  TG_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
 
 	if (status == TG_EAGAIN) { 
-		rpt_request_status_report(); 			// continue reporting mr buffer
+		rpt_request_status_report(SR_TIMED_REQUEST); // continue reporting mr buffer
 	} else {
 		mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
 		mr.section_state = MOVE_STATE_OFF;

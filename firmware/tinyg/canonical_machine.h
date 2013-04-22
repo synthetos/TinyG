@@ -45,7 +45,7 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint8_t cycle_start_flag;		// flag to end feedhold
 	uint8_t homing_state;			// homing cycle sub-state machine
 	uint8_t homed[AXES];			// individual axis homing flags
-	uint8_t status_report_request;	// set true to request a sr
+	uint8_t status_report_request;	// 0=no request, 1=timed request, 2=run one now 
 	uint32_t status_report_counter;	// status report RTC counter for minimum timing
 	uint8_t	g28_flag;				// true = complete a G28 move
 	uint8_t	g30_flag;				// true = complete a G30 move
@@ -278,6 +278,12 @@ enum cmFeedholdState {				// applies to cm.feedhold_state
 enum cmHomingState {				// applies to cm.homing_state
 	HOMING_NOT_HOMED = 0,			// machine is not homed (0=false)
 	HOMING_HOMED = 1				// machine is homed (1=true)
+};
+
+enum cmStatusReportRequest {
+	SR_NO_REQUEST = 0,				// no status report is requested
+	SR_TIMED_REQUEST,				// request a status report at next timer interval
+	SR_IMMEDIATE_REQUEST			// request a status report ASAP
 };
 
 /* The difference between NextAction and MotionMode is that NextAction is 
