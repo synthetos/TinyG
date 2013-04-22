@@ -45,7 +45,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	372.02		// status report misfires
+#define TINYG_FIRMWARE_BUILD   	372.03		// prep for edge push
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 

@@ -86,7 +86,8 @@ enum moveState {
  *	planning in the case of very short lines or arc segments. 
  *	Suggest 12 min. Limit is 255
  */
-#define PLANNER_BUFFER_POOL_SIZE 24
+#define PLANNER_BUFFER_POOL_SIZE 28
+#define PLANNER_BUFFER_HEADROOM 4			// buffers to reserve in planner before processing new input line
 
 /* Some parameters for _generate_trapezoid()
  * TRAPEZOID_ITERATION_MAX	 			Max iterations for convergence in the HT asymmetric case.

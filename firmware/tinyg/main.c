@@ -94,10 +94,6 @@ int main(void)
 	
 	while (true) {
 		tg_controller(); 
-
-		// network diagnostics
-		// c = net_test_rxtx(c);
-		// c = net_test_loopback(c);
 	}
 }
 

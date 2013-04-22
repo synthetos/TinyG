@@ -168,13 +168,11 @@ static uint8_t _dispatch()
 	// read input line or return if not a completed line
 	// xio_gets() is a non-blocking workalike of fgets()
 	while (true) {
-		// read from primary source
 		if ((status = xio_gets(tg.primary_src, tg.in_buf, sizeof(tg.in_buf))) == TG_OK) {
 			tg.bufp = tg.in_buf;
-//			printf ("%s\n", tg.bufp);
 			break;
 		}
-		// handle end-of-file from primary source
+		// handle end-of-file from file devices
 		if (status == TG_EOF) {					// EOF can come from file devices only
 			if (cfg.comm_mode == TEXT_MODE) {
 				fprintf_P(stderr, PSTR("End of command file\n"));
@@ -183,24 +181,14 @@ static uint8_t _dispatch()
 			}
 			tg_reset_source();					// reset to default source
 		}
-/*
-		// read from secondary source
-		if (tg.in2_buf != NULL) {
-			if ((status = xio_gets(tg.secondary_src, tg.in2_buf, sizeof(tg.in2_buf))) == TG_OK) {
-				tg.bufp = tg.in2_buf;
-				break;
-			}
-		}
-*/
 		return (status);						// Note: TG_EAGAIN, errors, etc. will drop through
 	}
-	cmd_reset_list();
+//	cmd_reset_list();	//++++ shouldn't be necessary - test this carefully.
 	tg.linelen = strlen(tg.in_buf)+1;					// linelen only tracks primary input
 	strncpy(tg.saved_buf, tg.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 
 	// dispatch the new text line
 	switch (toupper(*tg.bufp)) {				// first char
-
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {
 				tg_text_response(TG_OK, tg.saved_buf);
@@ -288,8 +276,8 @@ static uint8_t _sync_to_tx_buffer()
 
 static uint8_t _sync_to_planner()
 {
-//	if (mp_get_planner_buffers_available() == 0) { 
-	if (mp_get_planner_buffers_available() < 3) { 
+//	if (mp_get_planner_buffers_available() == 0) { 	// old line
+	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { // allow up to N planner buffers for this line
 		return (TG_EAGAIN);
 	}
 	return (TG_OK);

@@ -53,7 +53,6 @@ struct controllerSingleton {			// main TG controller struct
 	int32_t led_counter;				// a convenience for flashing an LED
 	char *bufp;							// pointer to primary or secondary in buffer
 	char in_buf[INPUT_BUFFER_LEN];		// primary input buffer
-	char in2_buf[INPUT_BUFFER_LEN];		// secondary input buffer
 	char out_buf[OUTPUT_BUFFER_LEN];	// output buffer
 	char saved_buf[SAVED_BUFFER_LEN];	// save the input buffer
 	uint16_t magic_end;
