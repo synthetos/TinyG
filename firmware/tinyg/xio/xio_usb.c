@@ -1,6 +1,6 @@
 /*
- * xio_usb.c	- FTDI USB device driver for xmega family
- * 				- works with avr-gcc stdio library
+ * xio_usb.c - FTDI USB device driver for xmega family
+ * 			 - works with avr-gcc stdio library
  *
  * Part of TinyG project
  *
@@ -27,9 +27,6 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/*------
- *	This version implements signal character capture at the ISR level
- */
 
 #include <stdio.h>						// precursor for xio.h
 #include <stdbool.h>					// true and false
@@ -39,8 +36,12 @@
 
 #include "xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
+
+// application specific stuff that's littered into the USB handler
+#include "../tinyg.h"
 #include "../network.h"
 #include "../controller.h"
+#include "../canonical_machine.h"		// trapped characters communicate directly with the canonical machine
 
 // Fast accessors
 #define USB ds[XIO_DEV_USB]
@@ -142,18 +143,21 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal
-		USB.signal = XIO_SIG_FEEDHOLD;
-		sig_feedhold();
-		return;
-	}
-	if (c == CHAR_CYCLE_START) {				// trap cycle start signal
-		USB.signal = XIO_SIG_CYCLE_START;
-		sig_cycle_start();
+		cm_request_feedhold();
+//		USB.signal = XIO_SIG_FEEDHOLD;
+//		sig_feedhold();
 		return;
 	}
 	if (c == CHAR_QUEUE_FLUSH) {				// trap queue flush signal
-		USB.signal = XIO_SIG_QUEUE_FLUSH;
-		sig_queue_flush();
+		cm_request_queue_flush();
+//		USB.signal = XIO_SIG_QUEUE_FLUSH;
+//		sig_queue_flush();
+		return;
+	}
+	if (c == CHAR_CYCLE_START) {				// trap cycle start signal
+		cm_request_cycle_start();
+//		USB.signal = XIO_SIG_CYCLE_START;
+//		sig_cycle_start();
 		return;
 	}
 //	if (c == CHAR_BOOTLOADER) {					// trap ESC to start boot loader

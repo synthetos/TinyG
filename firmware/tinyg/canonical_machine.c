@@ -591,6 +591,12 @@ uint8_t cm_flush_planner()
 	return (TG_OK);
 }
 
+uint8_t cm_flush_planner_callback()
+{
+	
+	return (TG_OK);	
+}
+
 /* 
  * Representation (4.3.3)
  *
@@ -1084,9 +1090,57 @@ void cm_message(char *message)
  *
  * cm_program_end is a stop that also resets the machine to initial state
  */
+/*
+ * cm_feedhold_sequencing_callback() - process feedholds, cycle starts and queue flushes
+ *
+ * Implement the following rules:
+ *
+ *	- A feedhold request received during motion should be honored
+ *	- A feedhold request received during a feedhold should be ignored and reset
+ *	- A feedhold request received during a motion stop should be ignored and reset
+ *
+ *	- A queue flush request received during motion should be ignored and reset
+ *	- A queue flush request received during a feedhold should be deferred until 
+ *		the feedhold enters a HOLD state (i.e. until deceleration is complete)
+ *	- A queue flush request received during a motion stop should be honored
+ *
+ *	- A cycle start request received during motion should be ignored and reset
+ *	- A cycle start request received during a feedhold should be deferred until 
+ *		the feedhold enters a HOLD state (i.e. until deceleration is complete)
+ *		If a queue flush request is also present the queue flush should be done first
+ *	- A cycle start request received during a motion stop should be honored and 
+ *		should start to run anything in the planner queue
+ */
+void cm_feedhold_sequencing_callback()
+{
+	if ((cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF)) {
+		cm.motion_state = MOTION_HOLD;
+		cm.hold_state = FEEDHOLD_SYNC;
+		cm.cycle_start_requested = false;
+	}
+}
+
+void cm_request_feedhold(void)
+{
+	cm.feedhold_requested = true;
+	return;
+}
+
+void cm_request_queue_flush(void)
+{
+	cm.queue_flush_requested = true;
+	return;
+}
+
+void cm_request_cycle_start(void)
+{
+	cm.cycle_start_requested = true;
+	return;
+}
+
 void cm_cycle_start()
 {
-	cm.cycle_start_flag = true;
+	cm.cycle_start_requested = true;
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {
 		cm.cycle_state = CYCLE_STARTED;	// don't change homing, probe or other cycles
@@ -1097,15 +1151,6 @@ void cm_cycle_end()
 {
 	if (cm.cycle_state == CYCLE_STARTED) {
 		_exec_program_finalize(MACHINE_PROGRAM_STOP,0);
-	}
-}
-
-void cm_feedhold()
-{
-	if ((cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF)) {
-		cm.motion_state = MOTION_HOLD;
-		cm.hold_state = FEEDHOLD_SYNC;
-		cm.cycle_start_flag = false;
 	}
 }
 
@@ -1131,7 +1176,7 @@ static void _exec_program_finalize(uint8_t machine_state, double f)
 	cm.cycle_state = CYCLE_OFF;
 	cm.motion_state = MOTION_STOP;
 	cm.hold_state = FEEDHOLD_OFF;					//...and any feedhold is ended
-	cm.cycle_start_flag = false;
+	cm.cycle_start_requested = false;
 	mp_zero_segment_velocity();						// for reporting purposes
 	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report (not unfiltered)
 	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made

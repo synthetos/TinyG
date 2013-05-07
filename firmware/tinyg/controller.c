@@ -135,15 +135,19 @@ static void _controller_HSM()
 	DISPATCH(_limit_switch_handler());		// 3. limit switch has been thrown
 	DISPATCH(_shutdown_idler());			// 4. idle in shutdown state
 	DISPATCH(_system_assertions());			// 5. system integrity assertions
-	DISPATCH(_queue_flush_handler());		// .  queue flush signal received
+
+											// these 3 are a group that should be in sequence:
 	DISPATCH(_feedhold_handler());			// 6. feedhold requested
-	DISPATCH(_cycle_start_handler());		// 7. cycle start requested
+	DISPATCH(_queue_flush_handler());		// 7. queue flush signal received
+	DISPATCH(_cycle_start_handler());		// 8. cycle start requested
+
+	DISPATCH(mp_plan_hold_callback());		// plan a feedhold
+	DISPATCH(mp_end_hold_callback());		// end a feedhold
+
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report
 	DISPATCH(rpt_queue_report_callback());	// conditionally send queue report
-	DISPATCH(mp_plan_hold_callback());		// plan a feedhold
-	DISPATCH(mp_end_hold_callback());		// end a feedhold
 	DISPATCH(ar_arc_callback());			// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());			// G28.2 continuation
 
@@ -191,6 +195,30 @@ static uint8_t _dispatch()
 
 	// dispatch the new text line
 	switch (toupper(*tg.bufp)) {				// first char
+
+		case '!': { cm_request_feedhold(); break; }
+		case '@': { cm_request_queue_flush(); break; }
+		case '~': { cm_request_cycle_start(); break; }
+/*
+		case '!': {
+			cm_request_feedhold();
+//			sig.sig_feedhold = true;
+//			_feedhold_handler();
+			break;
+		}
+		case '@': {
+			cm_request_queue_flush();
+//			sig.sig_queue_flush = true;
+//			_queue_flush_handler();	
+			break;
+		}
+		case '~': {
+			cm_request_cycle_start();
+//			sig.sig_cycle_start = true;
+//			_cycle_start_handler();	
+			break;
+		}
+*/
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {
 				tg_text_response(TG_OK, tg.saved_buf);

@@ -386,6 +386,7 @@ void xio_queue_RX_char_usart(const uint8_t dev, const char c)
 	xioUsart_t *dx = d->x;
 
 	// trap signals - do not insert into RX queue
+/*
 	if (c == CHAR_RESET) {	 					// trap Kill signal
 		d->signal = XIO_SIG_RESET;				// set signal value
 		sig_reset();							// call app-specific sig handler
@@ -401,6 +402,7 @@ void xio_queue_RX_char_usart(const uint8_t dev, const char c)
 		sig_cycle_start();
 		return;
 	}
+*/
 	// normal path
 	advance_buffer(dx->rx_buf_head, RX_BUFFER_SIZE);
 	if (dx->rx_buf_head != dx->rx_buf_tail) {	// write char unless buffer full
