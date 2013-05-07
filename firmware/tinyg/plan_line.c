@@ -903,8 +903,9 @@ double _compute_next_segment_velocity()
 uint8_t mp_end_hold_callback()
 {
 	mpBuf_t *bf;
-	if ((cm.hold_state == FEEDHOLD_HOLD) && (cm.cycle_start_requested == true)) { 
-		cm.cycle_start_requested = false;
+//	if ((cm.hold_state == FEEDHOLD_HOLD) && (cm.cycle_start_requested == true)) { 
+	if (cm.hold_state == FEEDHOLD_END_HOLD) { 
+//		cm.cycle_start_requested = false;
 		cm.hold_state = FEEDHOLD_OFF;
 		if ((bf = mp_get_run_buffer()) == NULL) {	// NULL means nothing's running
 			cm.motion_state = MOTION_STOP;

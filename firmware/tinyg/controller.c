@@ -59,11 +59,11 @@ static uint8_t _dispatch(void);
 static uint8_t _reset_handler(void);
 static uint8_t _bootloader_handler(void);
 static uint8_t _limit_switch_handler(void);
-static uint8_t _shutdown_idler(void);
+static uint8_t _alarm_idler(void);
 static uint8_t _system_assertions(void);
-static uint8_t _feedhold_handler(void);
-static uint8_t _cycle_start_handler(void);
-static uint8_t _queue_flush_handler(void);
+//static uint8_t _feedhold_handler(void);
+//static uint8_t _cycle_start_handler(void);
+//static uint8_t _queue_flush_handler(void);
 static uint8_t _sync_to_tx_buffer(void);
 static uint8_t _sync_to_planner(void);
 
@@ -133,17 +133,17 @@ static void _controller_HSM()
 	DISPATCH(_reset_handler());				// 1. software reset received
 	DISPATCH(_bootloader_handler());		// 2. received ESC char to start bootloader
 	DISPATCH(_limit_switch_handler());		// 3. limit switch has been thrown
-	DISPATCH(_shutdown_idler());			// 4. idle in shutdown state
+	DISPATCH(_alarm_idler());				// 4. idle in alarm state
 	DISPATCH(_system_assertions());			// 5. system integrity assertions
 
 											// these 3 are a group that should be in sequence:
-	DISPATCH(_feedhold_handler());			// 6. feedhold requested
-	DISPATCH(_queue_flush_handler());		// 7. queue flush signal received
-	DISPATCH(_cycle_start_handler());		// 8. cycle start requested
+	DISPATCH(cm_feedhold_sequencing_callback());
+//	DISPATCH(_feedhold_handler());			// 6. feedhold requested
+//	DISPATCH(_queue_flush_handler());		// 7. queue flush signal received
+//	DISPATCH(_cycle_start_handler());		// 8. cycle start requested
 
 	DISPATCH(mp_plan_hold_callback());		// plan a feedhold
 	DISPATCH(mp_end_hold_callback());		// end a feedhold
-
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report
@@ -330,12 +330,12 @@ static uint8_t _reset_handler(void)
 	tg_reset();							// hard reset - identical to hitting RESET button
 	return (TG_EAGAIN);
 }
-
+/*
 static uint8_t _feedhold_handler(void)
 {
 	if (sig.sig_feedhold == false) { return (TG_NOOP);}
 	sig.sig_feedhold = false;
-	cm_feedhold();
+	cm_request_feedhold();
 	return (TG_EAGAIN);					// best to restart the control loop
 }
 
@@ -354,7 +354,7 @@ static uint8_t _queue_flush_handler(void)
 	cm_flush_planner();
 	return (TG_EAGAIN);					// best to restart the control loop
 }
-
+*/
 /*
  * _bootloader_handler() - executes a software reset using CCPWrite
  *
@@ -392,10 +392,10 @@ static uint8_t _bootloader_handler(void)
  */
 static uint8_t _limit_switch_handler(void)
 {
-	if (cm_get_machine_state() == MACHINE_SHUTDOWN) { return (TG_NOOP);}
+	if (cm_get_machine_state() == MACHINE_ALARM) { return (TG_NOOP);}
 	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
-//	cm_shutdown(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
-	cm_shutdown(sw.sw_num_thrown);
+//	cm_alarm(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
+	cm_alarm(sw.sw_num_thrown);
 	return (TG_OK);
 }
 
@@ -408,9 +408,9 @@ static uint8_t _limit_switch_handler(void)
  */
 #define LED_COUNTER 25000
 
-static uint8_t _shutdown_idler(void)
+static uint8_t _alarm_idler(void)
 {
-	if (cm_get_machine_state() != MACHINE_SHUTDOWN) { return (TG_OK);}
+	if (cm_get_machine_state() != MACHINE_ALARM) { return (TG_OK);}
 
 	if (--tg.led_counter < 0) {
 		tg.led_counter = LED_COUNTER;
@@ -455,6 +455,6 @@ uint8_t _system_assertions()
 
 	if (value == 0) { return (TG_OK);}
 	rpt_exception(TG_MEMORY_CORRUPTION, value);
-	cm_shutdown(ALARM_MEMORY_OFFSET + value);	
+	cm_alarm(ALARM_MEMORY_OFFSET + value);	
 	return (TG_EAGAIN);
 }

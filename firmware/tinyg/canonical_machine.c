@@ -556,10 +556,9 @@ void cm_init()
 }
 
 /*
- * cm_shutdown() - shut down machine
+ * cm_alarm() - alarm state - shut down machine
  */
-
-void cm_shutdown(uint8_t value)
+void cm_alarm(uint8_t value)
 {
 	// stop the steppers and the spindle
 	st_disable();
@@ -573,7 +572,7 @@ void cm_shutdown(uint8_t value)
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
 	rpt_exception(TG_SHUTDOWN,value);		// send shutdown message
-	cm.machine_state = MACHINE_SHUTDOWN;
+	cm.machine_state = MACHINE_ALARM;
 }
 
 /*
@@ -1090,6 +1089,7 @@ void cm_message(char *message)
  *
  * cm_program_end is a stop that also resets the machine to initial state
  */
+
 /*
  * cm_feedhold_sequencing_callback() - process feedholds, cycle starts and queue flushes
  *
@@ -1099,7 +1099,7 @@ void cm_message(char *message)
  *	- A feedhold request received during a feedhold should be ignored and reset
  *	- A feedhold request received during a motion stop should be ignored and reset
  *
- *	- A queue flush request received during motion should be ignored and reset
+ *	- A queue flush request received during motion should be ignored but not reset
  *	- A queue flush request received during a feedhold should be deferred until 
  *		the feedhold enters a HOLD state (i.e. until deceleration is complete)
  *	- A queue flush request received during a motion stop should be honored
@@ -1111,41 +1111,42 @@ void cm_message(char *message)
  *	- A cycle start request received during a motion stop should be honored and 
  *		should start to run anything in the planner queue
  */
-void cm_feedhold_sequencing_callback()
+uint8_t cm_feedhold_sequencing_callback()
 {
-	if ((cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF)) {
-		cm.motion_state = MOTION_HOLD;
-		cm.hold_state = FEEDHOLD_SYNC;
-		cm.cycle_start_requested = false;
+	if (cm.feedhold_requested == true) {
+		if ((cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF)) {
+			cm.motion_state = MOTION_HOLD;
+			cm.hold_state = FEEDHOLD_SYNC;	// invokes the start of the hold
+		}
+		cm.feedhold_requested = false;
 	}
-}
-
-void cm_request_feedhold(void)
-{
-	cm.feedhold_requested = true;
-	return;
-}
-
-void cm_request_queue_flush(void)
-{
-	cm.queue_flush_requested = true;
-	return;
-}
-
-void cm_request_cycle_start(void)
-{
-	cm.cycle_start_requested = true;
-	return;
+	if (cm.queue_flush_requested == true) {
+		if ((cm.motion_state == MOTION_STOP) ||
+			((cm.motion_state == MOTION_HOLD) && (cm.hold_state == FEEDHOLD_HOLD))) {
+			cm.queue_flush_requested = false;
+			mp_flush_planner();
+		}
+	}
+	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false)) {
+		cm.hold_state = FEEDHOLD_END_HOLD;	// releases the hold
+		cm.cycle_start_requested = false;
+		cm_cycle_start();
+	}
+	return (TG_OK);
 }
 
 void cm_cycle_start()
 {
-	cm.cycle_start_requested = true;
+//	cm.cycle_start_requested = true;
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {
 		cm.cycle_state = CYCLE_STARTED;	// don't change homing, probe or other cycles
 	}
 }
+
+void cm_request_feedhold(void) { cm.feedhold_requested = true; }
+void cm_request_queue_flush(void) { cm.queue_flush_requested = true; }
+void cm_request_cycle_start(void) { cm.cycle_start_requested = true; }
 
 void cm_cycle_end() 
 {

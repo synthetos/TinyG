@@ -233,7 +233,7 @@ GCodeInput_t gf;		// gcode input flags
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
 	COMBINED_INITIALIZING = 0,		// machine is initializing
 	COMBINED_READY,					// machine is ready for use
-	COMBINED_SHUTDOWN,				// machine is shut down
+	COMBINED_ALARM,					// machine is in alarm state (shut down)
 	COMBINED_PROGRAM_STOP,			// program stop or no more blocks
 	COMBINED_PROGRAM_END,			// program end
 	COMBINED_RUN,					// motion is running
@@ -248,7 +248,7 @@ enum cmCombinedState {				// check alignment with messages in config.c / msg_sta
 enum cmMachineState {
 	MACHINE_INITIALIZING = 0,		// machine is initializing
 	MACHINE_READY,					// machine is ready for use
-	MACHINE_SHUTDOWN,				// machine is in shutdown state
+	MACHINE_ALARM,					// machine is in alarm state (shutdown)
 	MACHINE_PROGRAM_STOP,			// program stop or no more blocks
 	MACHINE_PROGRAM_END,			// program end
 	MACHINE_CYCLE,					// machine is running (cycling)
@@ -476,7 +476,7 @@ void cm_set_model_linenum(uint32_t linenum);
 
 /*--- canonical machining functions ---*/
 void cm_init(void);												// init canonical machine
-void cm_shutdown(uint8_t value);								// emergency shutdown
+void cm_alarm(uint8_t value);									// emergency shutdown
 
 uint8_t cm_set_machine_axis_position(uint8_t axis, const double position);	// set absolute position
 uint8_t cm_flush_planner(void);									// flush planner queue with coordinate resets
@@ -532,7 +532,11 @@ uint8_t cm_change_tool(uint8_t tool);							// M6, T
 uint8_t cm_select_tool(uint8_t tool);							// T parameter
 
 // canonical machine commands not called from gcode dispatcher
-void cm_feedhold_sequencing_callback(void);						// process feedhold, cycle start and queue flush requests
+uint8_t cm_feedhold_sequencing_callback(void);					// process feedhold, cycle start and queue flush requests
+void cm_request_feedhold(void);
+void cm_request_queue_flush(void);
+void cm_request_cycle_start(void);
+
 void cm_message(char *message);									// msg to console (e.g. Gcode comments)
 void cm_cycle_start(void);										// (no Gcode)
 void cm_cycle_end(void); 										// (no Gcode)
