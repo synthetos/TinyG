@@ -151,6 +151,11 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		sig_cycle_start();
 		return;
 	}
+	if (c == CHAR_QUEUE_FLUSH) {				// trap queue flush signal
+		USB.signal = XIO_SIG_QUEUE_FLUSH;
+		sig_queue_flush();
+		return;
+	}
 //	if (c == CHAR_BOOTLOADER) {					// trap ESC to start boot loader
 //		USB.signal = XIO_SIG_BOOTLOADER;
 //		sig_request_bootloader();

@@ -45,7 +45,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	372.03		// prep for edge push
+#define TINYG_FIRMWARE_BUILD   	373.01		// Testing queue flush alternatives
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
@@ -53,9 +53,9 @@
 
 /****** DEVELOPMENT SETTINGS ******/
 
-//#define __CANNED_STARTUP					// run any canned startup moves
-//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-//#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+#define __CANNED_STARTUP					// run any canned startup moves
+#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 //#define __UNIT_TESTS						// master enable for unit tests; uncomment modules in .h files
 //#define __DEBUG							// complies debug functions found in test.c
 
@@ -129,7 +129,7 @@
 #define	TG_BUFFER_FULL 13
 #define	TG_BUFFER_FULL_FATAL 14
 #define	TG_INITIALIZING 15				// initializing - not ready for use
-#define	TG_ENTERING_BOOT_LOADER 16		// this code actually emitted from boot loader, not TInyG
+#define	TG_ENTERING_BOOT_LOADER 16		// this code actually emitted from boot loader, not TinyG
 #define	TG_ERROR_17 17
 #define	TG_ERROR_18 18
 #define	TG_ERROR_19 19					// NOTE: XIO codes align to here

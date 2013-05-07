@@ -63,6 +63,7 @@ static uint8_t _shutdown_idler(void);
 static uint8_t _system_assertions(void);
 static uint8_t _feedhold_handler(void);
 static uint8_t _cycle_start_handler(void);
+static uint8_t _queue_flush_handler(void);
 static uint8_t _sync_to_tx_buffer(void);
 static uint8_t _sync_to_planner(void);
 
@@ -134,6 +135,7 @@ static void _controller_HSM()
 	DISPATCH(_limit_switch_handler());		// 3. limit switch has been thrown
 	DISPATCH(_shutdown_idler());			// 4. idle in shutdown state
 	DISPATCH(_system_assertions());			// 5. system integrity assertions
+	DISPATCH(_queue_flush_handler());		// .  queue flush signal received
 	DISPATCH(_feedhold_handler());			// 6. feedhold requested
 	DISPATCH(_cycle_start_handler());		// 7. cycle start requested
 
@@ -314,6 +316,14 @@ static uint8_t _cycle_start_handler(void)
 	if (sig.sig_cycle_start == false) { return (TG_NOOP);}
 	sig.sig_cycle_start = false;
 	cm_cycle_start();
+	return (TG_EAGAIN);					// best to restart the control loop
+}
+
+static uint8_t _queue_flush_handler(void)
+{
+	if (sig.sig_queue_flush == false) { return (TG_NOOP);}
+	sig.sig_queue_flush = false;
+	cm_flush_planner();
 	return (TG_EAGAIN);					// best to restart the control loop
 }
 

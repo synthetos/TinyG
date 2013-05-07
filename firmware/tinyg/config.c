@@ -559,7 +559,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, 0, fmt_nul, _print_sr,  _get_sr,  _set_sr , (double *)&tg.null, 0 },		// status report object
 	{ "", "qr",  _f00, 0, fmt_qr,  _print_int, _get_qr,  _set_nul, (double *)&tg.null, 0 },		// queue report setting
-	{ "", "qf",  _f00, 0, fmt_nul, _print_nul, _get_nul, _run_qf,  (double *)&tg.null, 0 },		// queue flush
+//	{ "", "qf",  _f00, 0, fmt_nul, _print_nul, _get_nul, _run_qf,  (double *)&tg.null, 0 },		// queue flush
 	{ "", "er",  _f00, 0, fmt_nul, _print_nul, _get_er,  _set_nul, (double *)&tg.null, 0 },		// invoke bogus exception report for testing
 	{ "", "rx",  _f00, 0, fmt_rx,  _print_int, _get_rx,  _set_nul, (double *)&tg.null, 0 },		// space in RX buffer
 	{ "", "msg", _f00, 0, fmt_str, _print_str, _get_nul, _set_nul, (double *)&tg.null, 0 },		// string for generic messages

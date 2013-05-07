@@ -67,6 +67,12 @@ inline void sig_cycle_start()			// start or resume
 	sig.sig_cycle_start = true;
 }
 
+inline void sig_queue_flush()
+{
+	sig.sig_queue_flush = true;
+}
+
+
 inline void sig_request_bootloader()	// start or resume
 {
 	sig.sig_request_bootloader = true;

@@ -226,6 +226,7 @@ enum xioSignals {
 	XIO_SIG_RESET,			// cancel operation immediately
 	XIO_SIG_FEEDHOLD,		// pause operation
 	XIO_SIG_CYCLE_START,	// start or resume operation
+	XIO_SIG_QUEUE_FLUSH,	// flush planner queue
 	XIO_SIG_DELETE,			// backspace or delete character (BS, DEL)
 	XIO_SIG_BELL,			// BELL character (BEL, ^g)
 	XIO_SIG_BOOTLOADER		// ESC character - start bootloader
@@ -245,6 +246,7 @@ enum xioSignals {
 #define CR	(char)0x0D		// ^m - carriage return
 #define XON (char)0x11		// ^q - DC1, XON, resume
 #define XOFF (char)0x13		// ^s - DC3, XOFF, pause
+#define SYN (char)0x16		// ^v - SYN - Used for queue flush
 #define CAN (char)0x18		// ^x - Cancel, abort
 #define ESC (char)0x1B		// ^[ - ESC(ape)
 //#define SP  (char)0x20		// ' '  Space character		// defined externally
@@ -257,7 +259,9 @@ enum xioSignals {
 #define CHAR_RESET CAN
 #define CHAR_FEEDHOLD (char)'!'
 #define CHAR_CYCLE_START (char)'~'
-#define CHAR_BOOTLOADER (char)ESC
+#define CHAR_QUEUE_FLUSH (char)'@'
+//#define CHAR_QUEUE_FLUSH SYN
+#define CHAR_BOOTLOADER ESC
 
 /* XIO return codes
  * These codes are the "inner nest" for the TG_ return codes. 
