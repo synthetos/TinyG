@@ -1104,7 +1104,6 @@ uint8_t cm_feedhold_sequencing_callback()
 		if ((cm.motion_state == MOTION_STOP) ||
 			((cm.motion_state == MOTION_HOLD) && (cm.hold_state == FEEDHOLD_HOLD))) {
 			cm.queue_flush_requested = false;
-//			mp_flush_planner();
 			cm_flush_planner();
 		}
 	}
@@ -1128,6 +1127,7 @@ uint8_t cm_flush_planner()
 		gm.position[i] = mp_get_runtime_machine_position(i);
 		gm.target[i] = gm.position[i];
 	}
+	rpt_request_queue_report();
 	return (TG_OK);
 }
 /*
