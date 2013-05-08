@@ -137,8 +137,8 @@ static void _controller_HSM()
 	DISPATCH(_system_assertions());			// 5. system integrity assertions
 
 	DISPATCH(cm_feedhold_sequencing_callback());
-	DISPATCH(mp_plan_hold_callback());		// plan a feedhold
-	DISPATCH(mp_end_hold_callback());		// end a feedhold
+	DISPATCH(mp_plan_hold_callback());		// plan a feedhold from line runtime
+//	DISPATCH(mp_end_hold_callback());		// end a feedhold
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report

@@ -1123,9 +1123,10 @@ uint8_t cm_feedhold_sequencing_callback()
 		}
 	}
 	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false)) {
-		cm.hold_state = FEEDHOLD_END_HOLD;	// releases the hold
 		cm.cycle_start_requested = false;
+		cm.hold_state = FEEDHOLD_END_HOLD;
 		cm_cycle_start();
+		mp_end_hold();
 	}
 	return (TG_OK);
 }

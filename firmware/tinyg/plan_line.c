@@ -894,12 +894,9 @@ double _compute_next_segment_velocity()
 }
 
 /*
- * mp_end_hold_callback() - callback from main loop to end a feedhold
- *
- * 	This function is a callback that is called from the controller. To end a 
- *	hold do not call mp_end_feedhold() directly, instead call cm_cycle_start().
+ * mp_end_hold() - end a feedhold
  */
-uint8_t mp_end_hold_callback()
+uint8_t mp_end_hold()
 {
 	if (cm.hold_state == FEEDHOLD_END_HOLD) { 
 		cm.hold_state = FEEDHOLD_OFF;
@@ -914,20 +911,6 @@ uint8_t mp_end_hold_callback()
 	return (TG_OK);
 }
 
-/*
-	mpBuf_t *bf;
-	if ((cm.hold_state == FEEDHOLD_HOLD) && (cm.cycle_start_requested == true)) { 
-		cm.cycle_start_requested = false;
-		cm.hold_state = FEEDHOLD_OFF;
-		if ((bf = mp_get_run_buffer()) == NULL) {	// NULL means nothing's running
-			cm.motion_state = MOTION_STOP;
-			return (TG_NOOP);
-		}
-		cm.motion_state = MOTION_RUN;
-		st_request_exec_move();					// restart the steppers
-	}
-	return (TG_OK);
-*/
 
 /*************************************************************************/
 /**** ALINE EXECUTION ROUTINES *******************************************/
