@@ -78,6 +78,9 @@ void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	tg.fw_build = TINYG_FIRMWARE_BUILD;
 	tg.fw_version = TINYG_FIRMWARE_VERSION;	// NB: HW version is set from EEPROM
 
+	tg.reset_requested = false;
+	tg.bootloader_requested = false;
+
 	xio_set_stdin(std_in);
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
@@ -130,18 +133,13 @@ static void _controller_HSM()
  */
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
 											// Order is important:
-	DISPATCH(_reset_handler());				// 1. software reset received
-	DISPATCH(_bootloader_handler());		// 2. received ESC char to start bootloader
+	DISPATCH(_reset_handler());				// 1. received software reset request
+	DISPATCH(_bootloader_handler());		// 2. received bootloader request
 	DISPATCH(_limit_switch_handler());		// 3. limit switch has been thrown
 	DISPATCH(_alarm_idler());				// 4. idle in alarm state
 	DISPATCH(_system_assertions());			// 5. system integrity assertions
 
-											// these 3 are a group that should be in sequence:
 	DISPATCH(cm_feedhold_sequencing_callback());
-//	DISPATCH(_feedhold_handler());			// 6. feedhold requested
-//	DISPATCH(_queue_flush_handler());		// 7. queue flush signal received
-//	DISPATCH(_cycle_start_handler());		// 8. cycle start requested
-
 	DISPATCH(mp_plan_hold_callback());		// plan a feedhold
 	DISPATCH(mp_end_hold_callback());		// end a feedhold
 
@@ -317,44 +315,18 @@ void tg_reset_source() { tg_set_primary_source(tg.default_src);}
 void tg_set_primary_source(uint8_t dev) { tg.primary_src = dev;}
 void tg_set_secondary_source(uint8_t dev) { tg.secondary_src = dev;}
 
-/**** Signal handlers ****
+/*
  * _reset_handler()
- * _feedhold_handler()
- * _cycle_start_handler()
- * _bootloader_handler()
  */
+void tg_request_reset() { tg.reset_requested = true; }
+
 static uint8_t _reset_handler(void)
 {
-	if (sig.sig_reset == false) { return (TG_NOOP);}
-//	sig.sig_reset = false;				// why bother?
+	if (tg.reset_requested == false) { return (TG_NOOP);}
 	tg_reset();							// hard reset - identical to hitting RESET button
 	return (TG_EAGAIN);
 }
-/*
-static uint8_t _feedhold_handler(void)
-{
-	if (sig.sig_feedhold == false) { return (TG_NOOP);}
-	sig.sig_feedhold = false;
-	cm_request_feedhold();
-	return (TG_EAGAIN);					// best to restart the control loop
-}
 
-static uint8_t _cycle_start_handler(void)
-{
-	if (sig.sig_cycle_start == false) { return (TG_NOOP);}
-	sig.sig_cycle_start = false;
-	cm_cycle_start();
-	return (TG_EAGAIN);					// best to restart the control loop
-}
-
-static uint8_t _queue_flush_handler(void)
-{
-	if (sig.sig_queue_flush == false) { return (TG_NOOP);}
-	sig.sig_queue_flush = false;
-	cm_flush_planner();
-	return (TG_EAGAIN);					// best to restart the control loop
-}
-*/
 /*
  * _bootloader_handler() - executes a software reset using CCPWrite
  *
@@ -379,9 +351,12 @@ static uint8_t _queue_flush_handler(void)
  *	  https://sites.google.com/site/avrasmintro/
  *	  http://www.stanford.edu/class/ee281/projects/aut2002/yingzong-mouse/media/GCCAVRInlAsmCB.pdf
  */
+
+void tg_request_bootloader() { tg.bootloader_requested = true;}
+
 static uint8_t _bootloader_handler(void)
 {
-	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
+	if (tg.bootloader_requested == false) { return (TG_NOOP);}
 	cli();
 	CCPWrite(&RST.CTRL, RST_SWRST_bm);
 	return (TG_EAGAIN);					// never gets here but keeps the compiler happy

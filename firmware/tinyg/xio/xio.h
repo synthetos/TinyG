@@ -137,14 +137,14 @@ typedef void (*x_flow_t)(xioDev_t *d);
 #include "xio_file.h"
 #include "xio_usart.h"
 #include "xio_spi.h"
-#include "xio_signals.h"
+//#include "xio_signals.h"
 
 // Static structure allocations
 xioDev_t 		ds[XIO_DEV_COUNT];			// allocate top-level dev structs
 xioUsart_t 		us[XIO_DEV_USART_COUNT];	// USART extended IO structs
 xioSpi_t 		spi[XIO_DEV_SPI_COUNT];		// SPI extended IO structs
 xioFile_t 		fs[XIO_DEV_FILE_COUNT];		// FILE extended IO structs
-xioSignals_t	sig;						// signal flags
+//xioSignals_t	sig;						// signal flags
 extern struct controllerSingleton tg;	// needed by init() for default source
 
 /*************************************************************************

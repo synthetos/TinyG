@@ -40,7 +40,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 LIBS = -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o planner.o report.o spindle.o stepper.o system.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio.o xio_pgm.o xio_rs485.o xio_signals.o xio_usart.o pwm.o plan_line.o plan_arc.o xio_spi.o xio_file.o network.o 
+OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o planner.o report.o spindle.o stepper.o system.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio.o xio_pgm.o xio_rs485.o xio_usart.o pwm.o plan_line.o plan_arc.o xio_spi.o xio_file.o network.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -120,9 +120,6 @@ xio_pgm.o: ../xio/xio_pgm.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 xio_rs485.o: ../xio/xio_rs485.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-xio_signals.o: ../xio/xio_signals.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 xio_usart.o: ../xio/xio_usart.c

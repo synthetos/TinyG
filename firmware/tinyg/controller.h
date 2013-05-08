@@ -51,6 +51,8 @@ struct controllerSingleton {			// main TG controller struct
 	uint8_t linelen;					// length of currently processing line
 	uint8_t led_state;					// 0=off, 1=on
 	int32_t led_counter;				// a convenience for flashing an LED
+	uint8_t reset_requested;			// flag to perform a software reset
+	uint8_t bootloader_requested;		// flag to enter the bootloader
 	char *bufp;							// pointer to primary or secondary in buffer
 	char in_buf[INPUT_BUFFER_LEN];		// primary input buffer
 	char out_buf[OUTPUT_BUFFER_LEN];	// output buffer
@@ -61,6 +63,8 @@ struct controllerSingleton tg;			// controller state structure
 
 //void tg_init(uint8_t default_src);
 void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
+void tg_request_reset(void);
+void tg_request_bootloader(void);
 void tg_reset(void);
 void tg_controller(void);
 void tg_application_startup(void);

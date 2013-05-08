@@ -124,7 +124,6 @@ static void _exec_program_finalize(uint8_t machine_state, double float_val);
 uint8_t cm_get_combined_state() 
 {
 	if (cm.machine_state == MACHINE_CYCLE) {
-//		if (cm.motion_state == MOTION_STOP) cm.combined_state = COMBINED_PROGRAM_STOP;	//++++ NEW
 		if (cm.motion_state == MOTION_RUN) cm.combined_state = COMBINED_RUN;
 		if (cm.motion_state == MOTION_HOLD) cm.combined_state = COMBINED_HOLD;
 		if (cm.cycle_state == CYCLE_HOMING) cm.combined_state = COMBINED_HOMING;
@@ -550,6 +549,11 @@ void cm_init()
 
 	// never start a machine in a motion mode	
 	gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
+
+	// reset request flags
+	cm.feedhold_requested = false;
+	cm.queue_flush_requested = false;
+	cm.cycle_start_requested = false;
 
 	// signal that the machine is ready for action
 	cm.machine_state = MACHINE_READY;	

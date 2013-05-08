@@ -136,33 +136,25 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 	if (tg.network_mode == NETWORK_MASTER) {	// forward character if you are a master
 		net_forward(c);
 	}
-	// trap signals - do not insert character into RX queue
+	// trap async commands - do not insert character into RX queue
 	if (c == CHAR_RESET) {	 					// trap Kill signal
-		USB.signal = XIO_SIG_RESET;				// set signal value
-		sig_reset();							// call sig handler
+		tg_request_reset();
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal
 		cm_request_feedhold();
-//		USB.signal = XIO_SIG_FEEDHOLD;
-//		sig_feedhold();
 		return;
 	}
 	if (c == CHAR_QUEUE_FLUSH) {				// trap queue flush signal
 		cm_request_queue_flush();
-//		USB.signal = XIO_SIG_QUEUE_FLUSH;
-//		sig_queue_flush();
 		return;
 	}
 	if (c == CHAR_CYCLE_START) {				// trap cycle start signal
 		cm_request_cycle_start();
-//		USB.signal = XIO_SIG_CYCLE_START;
-//		sig_cycle_start();
 		return;
 	}
 //	if (c == CHAR_BOOTLOADER) {					// trap ESC to start boot loader
-//		USB.signal = XIO_SIG_BOOTLOADER;
-//		sig_request_bootloader();
+//		tg_request_bootloader();
 //		return;
 //	}
 	// filter out CRs and LFs if they are to be ignored

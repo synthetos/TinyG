@@ -68,7 +68,7 @@ int main(void)
 	sys_init();						// system hardware setup 			- must be first
 	rtc_init();						// real time counter
 	xio_init();						// xmega io subsystem
-	sig_init();						// signal flags
+//	sig_init();						// signal flags
 	st_init(); 						// stepper subsystem 				- must precede gpio_init()
 	gpio_init();					// switches and parallel IO
 	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()

@@ -42,10 +42,14 @@
 #include <stdbool.h>					// true and false
 #include <avr/pgmspace.h>				// precursor for xio.h
 #include <avr/interrupt.h>
-#include <avr/sleep.h>		// needed for blocking character writes
+#include <avr/sleep.h>					// needed for blocking character writes
 
 #include "xio.h"
 #include "../xmega/xmega_interrupts.h"
+
+#include "../tinyg.h"					// needed for canonical machine
+#include "../controller.h"				// needed for trapping kill char
+#include "../canonical_machine.h"		// needed for fgeedhold and cycle start
 
 // Fast accessors
 #define RS ds[XIO_DEV_RS485]
@@ -161,20 +165,17 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)		// serial port C0 RX isr
 		return;										// shouldn't ever happen; bit of a fail-safe here
 	}
 
-	// trap signals - do not insert into RX queue
-	if (c == CHAR_RESET) {	 						// trap Kill signal
-		RS.signal = XIO_SIG_RESET;					// set signal value
-		sig_reset();								// call app-specific sig handler
+	// trap async commands - do not insert into RX queue
+	if (c == CHAR_RESET) {	 						// trap Kill character
+		tg_request_reset();							// call app-specific sig handler
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {						// trap feedhold signal
-		RS.signal = XIO_SIG_FEEDHOLD;
-		sig_feedhold();
+		cm_request_feedhold();
 		return;
 	}
 	if (c == CHAR_CYCLE_START) {					// trap end_feedhold signal
-		RS.signal = XIO_SIG_CYCLE_START;
-		sig_cycle_start();
+		cm_request_cycle_start();
 		return;
 	}
 	// filter out CRs and LFs if they are to be ignored

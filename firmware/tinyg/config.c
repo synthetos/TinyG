@@ -948,7 +948,7 @@ static uint8_t _set_si(cmdObj_t *cmd)
 
 static uint8_t _run_boot(cmdObj_t *cmd)
 {
-	sig_request_bootloader();
+	tg_request_bootloader();
 	return(TG_OK);
 }
 
