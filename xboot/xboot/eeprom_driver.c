@@ -32,13 +32,9 @@
 #include "eeprom_driver.h"
 #include "string.h"
 
-#ifdef __AVR_XMEGA__
 #ifdef USE_AVR1008_EEPROM
-
 #include <avr/sleep.h>
-
 #endif // USE_AVR1008_EEPROM
-#endif // __AVR_XMEGA__
 
 #ifdef __AVR_XMEGA__
 

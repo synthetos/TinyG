@@ -135,10 +135,8 @@ static void _controller_HSM()
 	DISPATCH(_limit_switch_handler());		// 3. limit switch has been thrown
 	DISPATCH(_alarm_idler());				// 4. idle in alarm state
 	DISPATCH(_system_assertions());			// 5. system integrity assertions
-
 	DISPATCH(cm_feedhold_sequencing_callback());
 	DISPATCH(mp_plan_hold_callback());		// plan a feedhold from line runtime
-//	DISPATCH(mp_end_hold_callback());		// end a feedhold
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report
@@ -308,36 +306,14 @@ static uint8_t _reset_handler(void)
 /*
  * tg_request_bootloader()
  * _bootloader_handler() - executes a software reset using CCPWrite
- *
- * 	An earlier attempt turned off interrupts, reset the stack pointer and jumped
- *	to the boot region. The assembly code is preserved below as an example.
- *	All the values in the assembly are hard coded because the pre-processor 
- *	doesn't open strings to process #defines.
- *
- *	  RAMEND 	0x05ff					// starting location for stack pointer
- *	  SPL		0x3d					// stack pointer lo
- *	  SPH		0x3e					// stack pointer hi
- *	  BOOTSTRT	0x030000				// start of boot region
- *
-	asm("ldi r16, 0xff" "\n\t" \
-		"out 0x3d, r16" "\n\t" \
-		"ldi r16, 0x5f" "\n\t" \
-		"out 0x3e, r16" "\n\t" \
-		"jmp 0x030000"  "\n\t" \
-		);
- *
- *  Refs:
- *	  https://sites.google.com/site/avrasmintro/
- *	  http://www.stanford.edu/class/ee281/projects/aut2002/yingzong-mouse/media/GCCAVRInlAsmCB.pdf
  */
-
 void tg_request_bootloader() { tg.bootloader_requested = true;}
 
 static uint8_t _bootloader_handler(void)
 {
 	if (tg.bootloader_requested == false) { return (TG_NOOP);}
 	cli();
-	CCPWrite(&RST.CTRL, RST_SWRST_bm);
+	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
 	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
 }
 

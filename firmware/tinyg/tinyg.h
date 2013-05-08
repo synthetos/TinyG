@@ -45,7 +45,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	373.10		// consoldate feedhold callbacks
+#define TINYG_FIRMWARE_BUILD   	374.01		// boot loader work
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
