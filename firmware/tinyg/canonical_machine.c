@@ -105,7 +105,7 @@ static void _exec_select_tool(uint8_t tool, double float_val);
 static void _exec_mist_coolant_control(uint8_t mist_coolant, double float_val);
 static void _exec_flood_coolant_control(uint8_t flood_coolant, double float_val);
 //static void _exec_feed_override_enable(uint8_t feed_override, double float_val);
-static void _exec_program_finalize(uint8_t machine_state, double float_val);
+static void _program_finalize(uint8_t machine_state, double float_val);
 
 #define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
@@ -359,7 +359,7 @@ static double _calc_ABC(uint8_t i, double target[], double flag[])
 	} else if ((cfg.a[i].axis_mode == AXIS_RADIUS) && (flag[i] > EPSILON)) {
 		tmp = _to_millimeters(target[i]) * 360 / (2 * M_PI * cfg.a[i].radius);
 
-/* COMMENTED OUT THE SLAVE MODES
+/* DEPRECATED CODE FOR SLAVE MODES - LEFT IN FOR EXAMPLE
 	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_X) && (flag[X] > EPSILON)) {
 		tmp = (target[X] - gm.position[X]) * 360 / (2 * M_PI * cfg.a[i].radius);
 
@@ -1075,32 +1075,43 @@ void cm_message(char *message)
  */
 
 /*
- * cm_feedhold_sequencing_callback() - process feedholds, cycle starts and queue flushes
+ * cm_request_feedhold()
+ * cm_request_queue_flush()
+ * cm_request_cycle_start()
+ * cm_feedhold_sequencing_callback() - process feedholds, cycle starts & queue flushes
+ * cm_flush_planner() - Flush planner queue and correct model positions
  *
- * Implement the following rules:
+ * Feedholds, queue flushes and cycles starts are all related. The request functions set
+ *	flags for these. The sequencing callback interprets the flags according to the 
+ *	following rules:
  *
- *	- A feedhold request received during motion should be honored
- *	- A feedhold request received during a feedhold should be ignored and reset
- *	- A feedhold request received during a motion stop should be ignored and reset
+ *	A feedhold request received during motion should be honored
+ *	A feedhold request received during a feedhold should be ignored and reset
+ *	A feedhold request received during a motion stop should be ignored and reset
  *
- *	- A queue flush request received during motion should be ignored but not reset
- *	- A queue flush request received during a feedhold should be deferred until 
+ *	A queue flush request received during motion should be ignored but not reset
+ *	A queue flush request received during a feedhold should be deferred until 
  *		the feedhold enters a HOLD state (i.e. until deceleration is complete)
- *	- A queue flush request received during a motion stop should be honored
+ *	A queue flush request received during a motion stop should be honored
  *
- *	- A cycle start request received during motion should be ignored and reset
- *	- A cycle start request received during a feedhold should be deferred until 
+ *	A cycle start request received during motion should be ignored and reset
+ *	A cycle start request received during a feedhold should be deferred until 
  *		the feedhold enters a HOLD state (i.e. until deceleration is complete)
  *		If a queue flush request is also present the queue flush should be done first
- *	- A cycle start request received during a motion stop should be honored and 
+ *	A cycle start request received during a motion stop should be honored and 
  *		should start to run anything in the planner queue
  */
+
+void cm_request_feedhold(void) { cm.feedhold_requested = true; }
+void cm_request_queue_flush(void) { cm.queue_flush_requested = true; }
+void cm_request_cycle_start(void) { cm.cycle_start_requested = true; }
+
 uint8_t cm_feedhold_sequencing_callback()
 {
 	if (cm.feedhold_requested == true) {
 		if ((cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF)) {
 			cm.motion_state = MOTION_HOLD;
-			cm.hold_state = FEEDHOLD_SYNC;	// invokes the start of the hold
+			cm.hold_state = FEEDHOLD_SYNC;	// invokes hold from aline execution
 		}
 		cm.feedhold_requested = false;
 	}
@@ -1119,9 +1130,6 @@ uint8_t cm_feedhold_sequencing_callback()
 	return (TG_OK);
 }
 
-/*
- * cm_flush_planner() - Flush planner queue and correct model positions
- */
 uint8_t cm_flush_planner()
 {
 	mp_flush_planner();
@@ -1134,49 +1142,49 @@ uint8_t cm_flush_planner()
 	rpt_request_queue_report();
 	return (TG_OK);
 }
+
 /*
-uint8_t cm_flush_planner_callback()
-{	
-	return (TG_OK);	
-}
-*/
+ * Program and cycle state functions
+ *
+ * cm_cycle_start()
+ * cm_cycle_end()
+ * cm_program_stop()
+ * cm_optional_program_end()
+ * cm_program_stop()
+ * _program_finalize() - helper
+ */
 void cm_cycle_start()
 {
-//	cm.cycle_start_requested = true;
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {
 		cm.cycle_state = CYCLE_STARTED;	// don't change homing, probe or other cycles
 	}
 }
 
-void cm_request_feedhold(void) { cm.feedhold_requested = true; }
-void cm_request_queue_flush(void) { cm.queue_flush_requested = true; }
-void cm_request_cycle_start(void) { cm.cycle_start_requested = true; }
-
 void cm_cycle_end() 
 {
 	if (cm.cycle_state == CYCLE_STARTED) {
-		_exec_program_finalize(MACHINE_PROGRAM_STOP,0);
+		_program_finalize(MACHINE_PROGRAM_STOP,0);
 	}
 }
 
 void cm_program_stop() 
 { 
-	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_STOP,0);
+	mp_queue_command(_program_finalize, MACHINE_PROGRAM_STOP,0);
 }
 
 void cm_optional_program_stop()	
 { 
-	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_STOP,0);
+	mp_queue_command(_program_finalize, MACHINE_PROGRAM_STOP,0);
 }
 
 void cm_program_end()				// M2, M30
 {
 //	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
-	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_END,0);
+	mp_queue_command(_program_finalize, MACHINE_PROGRAM_END,0);
 }
 
-static void _exec_program_finalize(uint8_t machine_state, double f)
+static void _program_finalize(uint8_t machine_state, double f)
 {
 	cm.machine_state = machine_state;
 	cm.cycle_state = CYCLE_OFF;

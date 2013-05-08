@@ -61,9 +61,6 @@ static uint8_t _bootloader_handler(void);
 static uint8_t _limit_switch_handler(void);
 static uint8_t _alarm_idler(void);
 static uint8_t _system_assertions(void);
-//static uint8_t _feedhold_handler(void);
-//static uint8_t _cycle_start_handler(void);
-//static uint8_t _queue_flush_handler(void);
 static uint8_t _sync_to_tx_buffer(void);
 static uint8_t _sync_to_planner(void);
 
@@ -194,29 +191,10 @@ static uint8_t _dispatch()
 	// dispatch the new text line
 	switch (toupper(*tg.bufp)) {				// first char
 
-		case '!': { cm_request_feedhold(); break; }
-		case '@': { cm_request_queue_flush(); break; }
-		case '~': { cm_request_cycle_start(); break; }
-/*
-		case '!': {
-			cm_request_feedhold();
-//			sig.sig_feedhold = true;
-//			_feedhold_handler();
-			break;
-		}
-		case '@': {
-			cm_request_queue_flush();
-//			sig.sig_queue_flush = true;
-//			_queue_flush_handler();	
-			break;
-		}
-		case '~': {
-			cm_request_cycle_start();
-//			sig.sig_cycle_start = true;
-//			_cycle_start_handler();	
-			break;
-		}
-*/
+//		case '!': { cm_request_feedhold(); break; }		// include for diagnostics
+//		case '@': { cm_request_queue_flush(); break; }
+//		case '~': { cm_request_cycle_start(); break; }
+
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {
 				tg_text_response(TG_OK, tg.saved_buf);
@@ -304,7 +282,6 @@ static uint8_t _sync_to_tx_buffer()
 
 static uint8_t _sync_to_planner()
 {
-//	if (mp_get_planner_buffers_available() == 0) { 	// old line
 	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { // allow up to N planner buffers for this line
 		return (TG_EAGAIN);
 	}
@@ -316,6 +293,7 @@ void tg_set_primary_source(uint8_t dev) { tg.primary_src = dev;}
 void tg_set_secondary_source(uint8_t dev) { tg.secondary_src = dev;}
 
 /*
+ * tg_request_reset()
  * _reset_handler()
  */
 void tg_request_reset() { tg.reset_requested = true; }
@@ -328,6 +306,7 @@ static uint8_t _reset_handler(void)
 }
 
 /*
+ * tg_request_bootloader()
  * _bootloader_handler() - executes a software reset using CCPWrite
  *
  * 	An earlier attempt turned off interrupts, reset the stack pointer and jumped
@@ -375,7 +354,7 @@ static uint8_t _limit_switch_handler(void)
 }
 
 /* 
- * _shutdown_idler() - revent any further activity form occurring if shut down
+ * _alarm_idler() - revent any further activity form occurring if shut down
  *
  *	This function returns EAGAIN causing the control loop to never advance beyond
  *	this point. It's important that the reset handler is still called so a SW reset
