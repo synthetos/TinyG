@@ -381,33 +381,33 @@ uint8_t _set_hm_func(uint8_t (*func)(int8_t axis))
 int8_t _get_next_axis(int8_t axis)
 {
 	if (axis == -1) {	// inelegant brute force solution
-		if (gf.target[Z] == true) return (Z);
-		if (gf.target[X] == true) return (X);
-		if (gf.target[Y] == true) return (Y);
-		if (gf.target[A] == true) return (A);
-//		if (gf.target[B] == true) return (B);
-//		if (gf.target[C] == true) return (C);
+		if (gf.target[AXIS_Z] == true) return (AXIS_Z);
+		if (gf.target[AXIS_X] == true) return (AXIS_X);
+		if (gf.target[AXIS_Y] == true) return (AXIS_Y);
+		if (gf.target[AXIS_A] == true) return (AXIS_A);
+//		if (gf.target[AXIS_B] == true) return (AXIS_B);
+//		if (gf.target[AXIS_C] == true) return (AXIS_C);
 		return (-2);	// error
-	} else if (axis == Z) {
-		if (gf.target[X] == true) return (X);
-		if (gf.target[Y] == true) return (Y);
-		if (gf.target[A] == true) return (A);
-//		if (gf.target[B] == true) return (B);
-//		if (gf.target[C] == true) return (C);
-	} else if (axis == X) {
-		if (gf.target[Y] == true) return (Y);
-		if (gf.target[A] == true) return (A);
-//		if (gf.target[B] == true) return (B);
-//		if (gf.target[C] == true) return (C);
-	} else if (axis == Y) {
-		if (gf.target[A] == true) return (A);
-//		if (gf.target[B] == true) return (B);
-//		if (gf.target[C] == true) return (C);
-//	} else if (axis == A) {
-//		if (gf.target[B] == true) return (B);
-//		if (gf.target[C] == true) return (C);
-//	} else if (axis == B) {
-//		if (gf.target[C] == true) return (C);
+	} else if (axis == AXIS_Z) {
+		if (gf.target[AXIS_X] == true) return (AXIS_X);
+		if (gf.target[AXIS_Y] == true) return (AXIS_Y);
+		if (gf.target[AXIS_A] == true) return (AXIS_A);
+//		if (gf.target[AXIS_B] == true) return (AXIS_B);
+//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+	} else if (axis == AXIS_X) {
+		if (gf.target[AXIS_Y] == true) return (AXIS_Y);
+		if (gf.target[AXIS_A] == true) return (AXIS_A);
+//		if (gf.target[AXIS_B] == true) return (AXIS_B);
+//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+	} else if (axis == AXIS_Y) {
+		if (gf.target[AXIS_A] == true) return (AXIS_A);
+//		if (gf.target[AXIS_B] == true) return (AXIS_B);
+//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+//	} else if (axis == AXIS_A) {
+//		if (gf.target[AXIS_B] == true) return (AXIS_B);
+//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+//	} else if (axis == AXIS_B) {
+//		if (gf.target[AXIS_C] == true) return (AXIS_C);
 	}
 	return (-1);	// done
 }

@@ -192,7 +192,8 @@ uint8_t cm_arc_feed(double target[], double flags[],// arc endpoints
 	// This can happen when a F word or M word is by itself.
 	// (The tests below are organized for execution efficiency)
 	if ((i==0) && (j==0) && (radius==0) && (k==0)) {
-		if ((flags[X] + flags[Y] + flags[Z] + flags[A] + flags[B] + flags[C]) == 0) {
+		if ((flags[AXIS_X] + flags[AXIS_Y] + flags[AXIS_Z] + 
+			 flags[AXIS_A] + flags[AXIS_B] + flags[AXIS_C]) == 0) {
 			return (TG_OK);
 		}
 	}
@@ -277,7 +278,7 @@ uint8_t _compute_center_arc()
 
 	// Trace the arc
 	set_vector(gm.target[gm.plane_axis_0], gm.target[gm.plane_axis_1], gm.target[gm.plane_axis_2],
-			   gm.target[A], gm.target[B], gm.target[C]);
+			   gm.target[AXIS_A], gm.target[AXIS_B], gm.target[AXIS_C]);
 
 	return(ar_arc(vector,
 				  gm.arc_offset[gm.plane_axis_0],

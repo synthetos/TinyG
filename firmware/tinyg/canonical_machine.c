@@ -321,7 +321,7 @@ void cm_set_target(double target[], double flag[])
 	double tmp = 0;
 
 	// process XYZABC for lower modes
-	for (i=X; i<=Z; i++) {
+	for (i=AXIS_X; i<=AXIS_Z; i++) {
 		if ((flag[i] < EPSILON) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 			continue;
 		} else if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
@@ -333,7 +333,7 @@ void cm_set_target(double target[], double flag[])
 		}
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
-	for (i=A; i<=C; i++) {
+	for (i=AXIS_A; i<=AXIS_C; i++) {
 		// skip axis if not flagged for update or its disabled
 		if ((flag[i] < EPSILON) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 			continue;
@@ -485,13 +485,13 @@ static double _get_move_times(double *min_time)
 		if (gm.inverse_feed_rate_mode == true) {
 			inv_time = gm.inverse_feed_rate;
 		} else {
-			xyz_time = sqrt(square(gm.target[X] - gm.position[X]) + // in mm
-							square(gm.target[Y] - gm.position[Y]) +
-							square(gm.target[Z] - gm.position[Z])) / gm.feed_rate; // in linear units
+			xyz_time = sqrt(square(gm.target[AXIS_X] - gm.position[AXIS_X]) + // in mm
+							square(gm.target[AXIS_Y] - gm.position[AXIS_Y]) +
+							square(gm.target[AXIS_Z] - gm.position[AXIS_Z])) / gm.feed_rate; // in linear units
 			if (xyz_time ==0) {
-				abc_time = sqrt(square(gm.target[A] - gm.position[A]) + // in deg
-							square(gm.target[B] - gm.position[B]) +
-							square(gm.target[C] - gm.position[C])) / gm.feed_rate; // in degree units
+				abc_time = sqrt(square(gm.target[AXIS_A] - gm.position[AXIS_A]) + // in deg
+								square(gm.target[AXIS_B] - gm.position[AXIS_B]) +
+								square(gm.target[AXIS_C] - gm.position[AXIS_C])) / gm.feed_rate; // in degree units
 			}
 		}
 	}
@@ -609,17 +609,17 @@ uint8_t cm_select_plane(uint8_t plane)
 {
 	gm.select_plane = plane;
 	if (plane == CANON_PLANE_YZ) {
-		gm.plane_axis_0 = Y;
-		gm.plane_axis_1 = Z;
-		gm.plane_axis_2 = X;
+		gm.plane_axis_0 = AXIS_Y;
+		gm.plane_axis_1 = AXIS_Z;
+		gm.plane_axis_2 = AXIS_X;
 	} else if (plane == CANON_PLANE_XZ) {
-		gm.plane_axis_0 = X;
-		gm.plane_axis_1 = Z;
-		gm.plane_axis_2 = Y;
+		gm.plane_axis_0 = AXIS_X;
+		gm.plane_axis_1 = AXIS_Z;
+		gm.plane_axis_2 = AXIS_Y;
 	} else {
-		gm.plane_axis_0 = X;
-		gm.plane_axis_1 = Y;
-		gm.plane_axis_2 = Z;
+		gm.plane_axis_0 = AXIS_X;
+		gm.plane_axis_1 = AXIS_Y;
+		gm.plane_axis_2 = AXIS_Z;
 	}
 	return (TG_OK);
 }

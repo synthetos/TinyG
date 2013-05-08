@@ -203,14 +203,14 @@ uint8_t gpio_read_switch(uint8_t sw_num)
 
 	uint8_t read = 0;
 	switch (sw_num) {
-		case SW_MIN_X: { read = device.sw_port[X]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_X: { read = device.sw_port[X]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Y: { read = device.sw_port[Y]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Y: { read = device.sw_port[Y]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Z: { read = device.sw_port[Z]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Z: { read = device.sw_port[Z]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_A: { read = device.sw_port[A]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_A: { read = device.sw_port[A]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_X: { read = device.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_X: { read = device.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Y: { read = device.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Y: { read = device.sw_port[AXIS_Y]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Z: { read = device.sw_port[AXIS_Z]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Z: { read = device.sw_port[AXIS_Z]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_A: { read = device.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_A: { read = device.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
 	}
 	if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
 		return ((read == 0) ? SW_CLOSED : SW_OPEN);		// confusing. An NO switch drives the pin LO when thrown
