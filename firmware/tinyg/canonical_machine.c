@@ -124,6 +124,7 @@ static void _exec_program_finalize(uint8_t machine_state, double float_val);
 uint8_t cm_get_combined_state() 
 {
 	if (cm.machine_state == MACHINE_CYCLE) {
+		if (cm.motion_state == MOTION_STOP) cm.combined_state = COMBINED_PROGRAM_STOP;	//++++ NEW
 		if (cm.motion_state == MOTION_RUN) cm.combined_state = COMBINED_RUN;
 		if (cm.motion_state == MOTION_HOLD) cm.combined_state = COMBINED_HOLD;
 		if (cm.cycle_state == CYCLE_HOMING) cm.combined_state = COMBINED_HOMING;
@@ -573,27 +574,6 @@ void cm_alarm(uint8_t value)
 
 	rpt_exception(TG_SHUTDOWN,value);		// send shutdown message
 	cm.machine_state = MACHINE_ALARM;
-}
-
-/*
- * cm_flush_planner() - Flush planner queue and correct model positions
- */
-uint8_t cm_flush_planner()
-{
-	mp_flush_planner();
-
-	for (uint8_t i=0; i<AXES; i++) {
-		mp_set_axis_position(i, mp_get_runtime_machine_position(i));	// set mm from mr
-		gm.position[i] = mp_get_runtime_machine_position(i);
-		gm.target[i] = gm.position[i];
-	}
-	return (TG_OK);
-}
-
-uint8_t cm_flush_planner_callback()
-{
-	
-	return (TG_OK);	
 }
 
 /* 
@@ -1124,7 +1104,8 @@ uint8_t cm_feedhold_sequencing_callback()
 		if ((cm.motion_state == MOTION_STOP) ||
 			((cm.motion_state == MOTION_HOLD) && (cm.hold_state == FEEDHOLD_HOLD))) {
 			cm.queue_flush_requested = false;
-			mp_flush_planner();
+//			mp_flush_planner();
+			cm_flush_planner();
 		}
 	}
 	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false)) {
@@ -1135,6 +1116,26 @@ uint8_t cm_feedhold_sequencing_callback()
 	return (TG_OK);
 }
 
+/*
+ * cm_flush_planner() - Flush planner queue and correct model positions
+ */
+uint8_t cm_flush_planner()
+{
+	mp_flush_planner();
+
+	for (uint8_t i=0; i<AXES; i++) {
+		mp_set_axis_position(i, mp_get_runtime_machine_position(i));	// set mm from mr
+		gm.position[i] = mp_get_runtime_machine_position(i);
+		gm.target[i] = gm.position[i];
+	}
+	return (TG_OK);
+}
+/*
+uint8_t cm_flush_planner_callback()
+{	
+	return (TG_OK);	
+}
+*/
 void cm_cycle_start()
 {
 //	cm.cycle_start_requested = true;

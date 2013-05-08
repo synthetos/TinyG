@@ -263,8 +263,8 @@ enum cmCycleState {
 };
 
 enum cmMotionState {
-	MOTION_STOP = 0,
-	MOTION_RUN,						// machine is running
+	MOTION_STOP = 0,				// motion has stopped
+	MOTION_RUN,						// machine is in motion
 	MOTION_HOLD						// feedhold in progress
 };
 

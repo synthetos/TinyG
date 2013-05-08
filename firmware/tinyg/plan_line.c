@@ -1042,6 +1042,7 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	// initiate the hold - look for the end of the decel move
 	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == TG_OK)) {
 		cm.hold_state = FEEDHOLD_HOLD;
+		cm.motion_state = MOTION_STOP;
 		rpt_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
 
