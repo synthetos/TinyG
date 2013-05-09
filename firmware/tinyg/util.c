@@ -72,22 +72,22 @@ inline void copy_axis_vector(double dest[], const double src[])
 
 double get_axis_vector_length(const double a[], const double b[]) 
 {
-	return (sqrt(square(a[X] - b[X]) +
-				 square(a[Y] - b[Y]) +
-				 square(a[Z] - b[Z]) +
-				 square(a[A] - b[A]) +
-				 square(a[B] - b[B]) +
-				 square(a[C] - b[C])));
+	return (sqrt(square(a[AXIS_X] - b[AXIS_X]) +
+				 square(a[AXIS_Y] - b[AXIS_Y]) +
+				 square(a[AXIS_Z] - b[AXIS_Z]) +
+				 square(a[AXIS_A] - b[AXIS_A]) +
+				 square(a[AXIS_B] - b[AXIS_B]) +
+				 square(a[AXIS_C] - b[AXIS_C])));
 }
 
 double *set_vector(double x, double y, double z, double a, double b, double c)
 {
-	vector[X] = x;
-	vector[Y] = y;
-	vector[Z] = z;
-	vector[A] = a;
-	vector[B] = b;
-	vector[C] = c;
+	vector[AXIS_X] = x;
+	vector[AXIS_Y] = y;
+	vector[AXIS_Z] = z;
+	vector[AXIS_A] = a;
+	vector[AXIS_B] = b;
+	vector[AXIS_C] = c;
 	return (vector);
 }
 
@@ -95,12 +95,12 @@ double *set_vector_by_axis(double value, uint8_t axis)
 {
 	clear_vector(vector);
 	switch (axis) {
-		case (X): vector[X] = value; break;
-		case (Y): vector[Y] = value; break;
-		case (Z): vector[Z] = value; break;
-		case (A): vector[A] = value; break;
-		case (B): vector[B] = value; break;
-		case (C): vector[C] = value;
+		case (AXIS_X): vector[AXIS_X] = value; break;
+		case (AXIS_Y): vector[AXIS_Y] = value; break;
+		case (AXIS_Z): vector[AXIS_Z] = value; break;
+		case (AXIS_A): vector[AXIS_A] = value; break;
+		case (AXIS_B): vector[AXIS_B] = value; break;
+		case (AXIS_C): vector[AXIS_C] = value;
 	}
 	return (vector);
 }

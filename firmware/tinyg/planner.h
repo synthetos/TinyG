@@ -86,7 +86,8 @@ enum moveState {
  *	planning in the case of very short lines or arc segments. 
  *	Suggest 12 min. Limit is 255
  */
-#define PLANNER_BUFFER_POOL_SIZE 24
+#define PLANNER_BUFFER_POOL_SIZE 28
+#define PLANNER_BUFFER_HEADROOM 4			// buffers to reserve in planner before processing new input line
 
 /* Some parameters for _generate_trapezoid()
  * TRAPEZOID_ITERATION_MAX	 			Max iterations for convergence in the HT asymmetric case.
@@ -249,7 +250,7 @@ void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t int_val, double f
 uint8_t mp_dwell(const double seconds);
 uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time);
 uint8_t mp_plan_hold_callback(void);
-uint8_t mp_end_hold_callback(void);
+uint8_t mp_end_hold(void);
 uint8_t mp_feed_rate_override(uint8_t flag, double parameter);
 
 // planner buffer handlers

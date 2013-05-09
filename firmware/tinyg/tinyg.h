@@ -30,13 +30,22 @@
  * Is this code over documented? Possibly. 
  * We try to follow this (at least we are evolving to it). It's worth a read.
  * ftp://ftp.idsoftware.com/idstuff/doom3/source/CodeStyleConventions.doc
+
+ Project setup notes:
+ ref: http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=117023
+ Yes it's definitely worth making WinAVR work as Atmel have yet to issue a toolchain 
+ that does not contain some serious errors (though I just discovered I have no real 
+ choice to use xmage32A4U). To fix for WinAVR then for each project use 
+ Project-Configuration Options and under Custom Options untick the  "Use toolchain" 
+ box then set the top one to \winavr\bin\avr-gcc.exe and the lower one to 
+ \winavr\utils\bin\make.exe
  */
-#ifndef tinyg_h
-#define tinyg_h
+#ifndef _TINYG_H_
+#define _TINYG_H_
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	370.18		// wrapped command file end in JSON
+#define TINYG_FIRMWARE_BUILD   	375.01		// Revisit homing with new feedhold sequencing code
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
@@ -77,15 +86,15 @@
  * Alternate enum is: enum tgAxes { X=0, Y, Z, A, B, C };
  */
 
-#define X	0
-#define Y	1
-#define Z	2
-#define A	3
-#define B	4
-#define C	5
-#define U 	6				// reserved
-#define V 	7				// reserved
-#define W 	8				// reserved
+#define AXIS_X	0
+#define AXIS_Y	1
+#define AXIS_Z	2
+#define AXIS_A	3
+#define AXIS_B	4
+#define AXIS_C	5
+#define AXIS_U 	6			// reserved
+#define AXIS_V 	7			// reserved
+#define AXIS_W 	8			// reserved
 
 #define MOTOR_1	0 			// define motor numbers and array indexes
 #define MOTOR_2	1			// must be defines. enums don't work
@@ -120,7 +129,7 @@
 #define	TG_BUFFER_FULL 13
 #define	TG_BUFFER_FULL_FATAL 14
 #define	TG_INITIALIZING 15				// initializing - not ready for use
-#define	TG_ENTERING_BOOT_LOADER 16		// this code actually emitted from boot loader, not TInyG
+#define	TG_ENTERING_BOOT_LOADER 16		// this code actually emitted from boot loader, not TinyG
 #define	TG_ERROR_17 17
 #define	TG_ERROR_18 18
 #define	TG_ERROR_19 19					// NOTE: XIO codes align to here
@@ -185,4 +194,4 @@
 #define ALARM_LIMIT_OFFSET 0
 #define ALARM_MEMORY_OFFSET 10
 
-#endif
+#endif //_TINYG_H_

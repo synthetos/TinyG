@@ -42,10 +42,12 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint8_t cycle_state;
 	uint8_t motion_state;
 	uint8_t hold_state;				// feedhold sub-state machine
-	uint8_t cycle_start_flag;		// flag to end feedhold
+	uint8_t feedhold_requested;		// feedhold character has been received
+	uint8_t queue_flush_requested;	// queue flush character has been received
+	uint8_t cycle_start_requested;	// cycle start character has been received (flag to end feedhold)
 	uint8_t homing_state;			// homing cycle sub-state machine
 	uint8_t homed[AXES];			// individual axis homing flags
-	uint8_t status_report_request;	// set true to request a sr
+	uint8_t status_report_request;	// 0=no request, 1=timed request, 2=run one now 
 	uint32_t status_report_counter;	// status report RTC counter for minimum timing
 	uint8_t	g28_flag;				// true = complete a G28 move
 	uint8_t	g30_flag;				// true = complete a G30 move
@@ -231,7 +233,7 @@ GCodeInput_t gf;		// gcode input flags
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
 	COMBINED_INITIALIZING = 0,		// machine is initializing
 	COMBINED_READY,					// machine is ready for use
-	COMBINED_SHUTDOWN,				// machine is shut down
+	COMBINED_ALARM,					// machine is in alarm state (shut down)
 	COMBINED_PROGRAM_STOP,			// program stop or no more blocks
 	COMBINED_PROGRAM_END,			// program end
 	COMBINED_RUN,					// motion is running
@@ -246,7 +248,7 @@ enum cmCombinedState {				// check alignment with messages in config.c / msg_sta
 enum cmMachineState {
 	MACHINE_INITIALIZING = 0,		// machine is initializing
 	MACHINE_READY,					// machine is ready for use
-	MACHINE_SHUTDOWN,				// machine is in shutdown state
+	MACHINE_ALARM,					// machine is in alarm state (shutdown)
 	MACHINE_PROGRAM_STOP,			// program stop or no more blocks
 	MACHINE_PROGRAM_END,			// program end
 	MACHINE_CYCLE,					// machine is running (cycling)
@@ -261,8 +263,8 @@ enum cmCycleState {
 };
 
 enum cmMotionState {
-	MOTION_STOP = 0,
-	MOTION_RUN,						// machine is running
+	MOTION_STOP = 0,				// motion has stopped
+	MOTION_RUN,						// machine is in motion
 	MOTION_HOLD						// feedhold in progress
 };
 
@@ -278,6 +280,12 @@ enum cmFeedholdState {				// applies to cm.feedhold_state
 enum cmHomingState {				// applies to cm.homing_state
 	HOMING_NOT_HOMED = 0,			// machine is not homed (0=false)
 	HOMING_HOMED = 1				// machine is homed (1=true)
+};
+
+enum cmStatusReportRequest {
+	SR_NO_REQUEST = 0,				// no status report is requested
+	SR_TIMED_REQUEST,				// request a status report at next timer interval
+	SR_IMMEDIATE_REQUEST			// request a status report ASAP
 };
 
 /* The difference between NextAction and MotionMode is that NextAction is 
@@ -468,7 +476,7 @@ void cm_set_model_linenum(uint32_t linenum);
 
 /*--- canonical machining functions ---*/
 void cm_init(void);												// init canonical machine
-void cm_shutdown(uint8_t value);								// emergency shutdown
+void cm_alarm(uint8_t value);									// emergency shutdown
 
 uint8_t cm_set_machine_axis_position(uint8_t axis, const double position);	// set absolute position
 uint8_t cm_flush_planner(void);									// flush planner queue with coordinate resets
@@ -524,6 +532,11 @@ uint8_t cm_change_tool(uint8_t tool);							// M6, T
 uint8_t cm_select_tool(uint8_t tool);							// T parameter
 
 // canonical machine commands not called from gcode dispatcher
+uint8_t cm_feedhold_sequencing_callback(void);					// process feedhold, cycle start and queue flush requests
+void cm_request_feedhold(void);
+void cm_request_queue_flush(void);
+void cm_request_cycle_start(void);
+
 void cm_message(char *message);									// msg to console (e.g. Gcode comments)
 void cm_cycle_start(void);										// (no Gcode)
 void cm_cycle_end(void); 										// (no Gcode)

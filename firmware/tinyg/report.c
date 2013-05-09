@@ -295,6 +295,7 @@ uint8_t rpt_set_status_report(cmdObj_t *cmd)
 /* 
  * rpt_run_text_status_report()	- generate a text mode status report in multiline format
  * rpt_request_status_report()	- request a status report to run after minimum interval
+ * rpt_force_status_report()	- request a status report to run at the next main loop opporunity
  * rpt_status_report_rtc_callback()	- real-time clock downcount for minimum reporting interval
  * rpt_status_report_callback()	- main loop callback to send a report if one is ready
  *
@@ -312,21 +313,23 @@ void rpt_run_text_status_report()
 	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 }
 
-void rpt_request_status_report()
+void rpt_request_status_report(uint8_t request_type)
 {
-	cm.status_report_request = true;
+	cm.status_report_request = request_type;
 }
 
 void rpt_status_report_rtc_callback() 		// called by 10ms real-time clock
 {
-	if (cm.status_report_counter != 0) { cm.status_report_counter--;} // stick at zero
+	if (--cm.status_report_counter == 0) {
+		cm.status_report_request = SR_IMMEDIATE_REQUEST;	// promote to immediate request
+		cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// reset minimum interval
+	}
 }
 
 uint8_t rpt_status_report_callback() 		// called by controller dispatcher
 {
 	if ((cfg.status_report_verbosity == SR_OFF) || 
-		(cm.status_report_counter != 0) ||
-		(cm.status_report_request == false)) {
+		(cm.status_report_request != SR_IMMEDIATE_REQUEST)) {
 		return (TG_NOOP);
 	}
 	if (cfg.status_report_verbosity == SR_FILTERED) {
@@ -337,8 +340,8 @@ uint8_t rpt_status_report_callback() 		// called by controller dispatcher
 		rpt_populate_unfiltered_status_report();
 		cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	}
-	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// reset minimum interval
-	cm.status_report_request = false;
+//	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// reset minimum interval
+	cm.status_report_request = SR_NO_REQUEST;
 	return (TG_OK);
 }
 

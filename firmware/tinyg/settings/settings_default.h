@@ -18,7 +18,7 @@
  * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF7
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
  * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
@@ -50,28 +50,28 @@
 
 // *** motor settings ***
 
-#define M1_MOTOR_MAP 			X			// 1ma
+#define M1_MOTOR_MAP 			AXIS_X		// 1ma
 #define M1_STEP_ANGLE 			1.8			// 1sa
 #define M1_TRAVEL_PER_REV		1.25		// 1tr
 #define M1_MICROSTEPS			8			// 1mi		1,2,4,8
 #define M1_POLARITY				0			// 1po		0=normal, 1=reversed
 #define M1_POWER_MODE			1			// 1pm		TRUE=low power idle enabled 
 
-#define M2_MOTOR_MAP	 		Y
+#define M2_MOTOR_MAP	 		AXIS_Y
 #define M2_STEP_ANGLE			1.8
 #define M2_TRAVEL_PER_REV		1.25
 #define M2_MICROSTEPS			8
 #define M2_POLARITY				0
 #define M2_POWER_MODE			1
 
-#define M3_MOTOR_MAP			Z
+#define M3_MOTOR_MAP			AXIS_Z
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		1.25
 #define M3_MICROSTEPS			8
 #define M3_POLARITY				0
 #define M3_POWER_MODE			1
 
-#define M4_MOTOR_MAP			A
+#define M4_MOTOR_MAP			AXIS_A
 #define M4_STEP_ANGLE			1.8
 #define M4_TRAVEL_PER_REV		360			// degrees moved per motor rev
 #define M4_MICROSTEPS			8

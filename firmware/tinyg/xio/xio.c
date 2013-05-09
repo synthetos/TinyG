@@ -107,7 +107,7 @@ void xio_init()
 
 	// open individual devices (file device opens occur at time-of-use)
 	xio_open(XIO_DEV_USB,  0, USB_FLAGS);
-//	xio_open(XIO_DEV_RS485,0, RS485_FLAGS);
+	xio_open(XIO_DEV_RS485,0, RS485_FLAGS);
 	xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
 	xio_open(XIO_DEV_SPI2, 0, SPI_FLAGS);
 }

@@ -39,6 +39,8 @@
 #include <avr/interrupt.h>
 #include <util/crc16.h>
 
+// RST.STATUS & RST_SRF_bm	
+
 // token pasting
 #define token_paste2_int(x, y) x ## y
 #define token_paste2(x, y) token_paste2_int(x, y)
@@ -58,7 +60,6 @@
 // Configuration
 
 // clock config
-#ifdef __AVR_XMEGA__
 // DFLL for better stability
 #define USE_DFLL
 // use 32MHz osc if makefile calls for it
@@ -68,18 +69,14 @@
 #define USE_32MHZ_RC
 #endif // F_CPU
 
-#endif // __AVR_XMEGA__
-
 #ifndef USE_CONFIG_H
 
 // Begin Default Configuration Section
 // --------------------------------------------------
 
-#ifdef __AVR_XMEGA__
 // AVR1008 fixes
 // Really only applicable to XMEGA 256a3 rev A and B devices
 //#define USE_AVR1008_EEPROM
-#endif // __AVR_XMEGA__
 
 // bootloader entrace
 #define USE_ENTER_DELAY
@@ -214,31 +211,13 @@
 
 // ENTER_PIN
 #define ENTER_PORT              token_paste2(PORT, ENTER_PORT_NAME)
-
-#ifdef __AVR_XMEGA__
 #define ENTER_PIN_CTRL          token_paste3(ENTER_PORT.PIN, ENTER_PIN, CTRL)
-#else // __AVR_XMEGA__
-#define ENTER_PORT_DDR          token_paste2(DDR, ENTER_PORT_NAME)
-#define ENTER_PORT_PIN          token_paste2(PIN, ENTER_PORT_NAME)
-#endif // __AVR_XMEGA__
 
 // LED
 #define LED_PORT                token_paste2(PORT, LED_PORT_NAME)
 
-#ifndef __AVR_XMEGA__
-#define LED_PORT_DDR            token_paste2(DDR, LED_PORT_NAME)
-#define LED_PORT_PIN            token_paste2(PIN, LED_PORT_NAME)
-#endif // __AVR_XMEGA__
-
 // UART RS485 Enable Output
 #define UART_EN_PORT            token_paste2(PORT, UART_EN_PORT_NAME)
-
-#ifndef __AVR_XMEGA__
-#define UART_EN_PORT_DDR        token_paste2(DDR, UART_EN_PORT_NAME)
-#define UART_EN_PORT_PIN        token_paste2(PIN, UART_EN_PORT_NAME)
-#endif // __AVR_XMEGA__
-
-#ifdef __AVR_XMEGA__
 
 #if (UART_NUMBER == 0)
 #define UART_RX_PIN             2
@@ -305,60 +284,9 @@
 #endif
 #endif
 
-#else // __AVR_XMEGA__
-
-#define UART_UDR                token_paste2(UDR, UART_NUMBER)
-#define UART_UCSRA              token_paste3(UCSR, UART_NUMBER, A)
-#define UART_UCSRB              token_paste3(UCSR, UART_NUMBER, B)
-#define UART_UCSRC              token_paste3(UCSR, UART_NUMBER, C)
-#define UART_UBRR               token_paste2(UBRR, UART_NUMBER)
-#define UART_UBRRL              token_paste3(UBRR, UART_NUMBER, L)
-#define UART_UBRRH              token_paste3(UBRR, UART_NUMBER, H)
-
-#if (UART_NUMBER == 0)
-
-#define UART_RX_PIN             0
-#define UART_TX_PIN             1
-
-#ifdef PORTE
-
-#define UART_PORT               PORTE
-#define UART_DDR                DDRE
-
-#else // PORTE
-
-#define UART_PORT               PORTD
-#define UART_DDR                DDRD
-
-#endif
-
-#else // UART_NUMBER
-
-#define UART_RX_PIN             2
-#define UART_TX_PIN             3
-#define UART_PORT               PORTD
-#define UART_DDR                DDRD
-
-#endif // UART_NUMBER
-
-#ifdef UART_U2X
-#define UART_BRV                ((uint32_t)((F_CPU) + ((uint32_t)(UART_BAUD_RATE) * 4UL)) / ((uint32_t)(UART_BAUD_RATE) * 8UL) - 1)
-#else
-#define UART_BRV                ((uint32_t)((F_CPU) + ((uint32_t)(UART_BAUD_RATE) * 8UL)) / ((uint32_t)(UART_BAUD_RATE) * 16UL) - 1)
-#endif
-
-#endif // __AVR_XMEGA__
-
 // FIFO
 #define FIFO_DATA_PORT          token_paste2(PORT, FIFO_DATA_PORT_NAME)
 #define FIFO_CTL_PORT           token_paste2(PORT, FIFO_CTL_PORT_NAME)
-
-#ifndef __AVR_XMEGA__
-#define FIFO_DATA_PORT_DDR      token_paste2(DDR, FIFO_DATA_PORT_NAME)
-#define FIFO_DATA_PORT_PIN      token_paste2(PIN, FIFO_DATA_PORT_NAME)
-#define FIFO_CTL_PORT_DDR       token_paste2(DDR, FIFO_CTL_PORT_NAME)
-#define FIFO_CTL_PORT_PIN       token_paste2(PIN, FIFO_CTL_PORT_NAME)
-#endif // __AVR_XMEGA__
 
 // I2C
 #define I2C_DEVICE              token_paste2(TWI, I2C_DEVICE_PORT)
@@ -432,10 +360,6 @@ typedef uint32_t ADDR_T;
 #include "watchdog.h"
 #include "api.h"
 
-#ifndef __AVR_XMEGA__
-#include <avr/wdt.h>
-#endif // __AVR_XMEGA__
-
 // globals
 #ifdef USE_INTERRUPTS
 extern volatile unsigned char comm_mode;
@@ -466,6 +390,5 @@ void BlockRead(unsigned int size, unsigned char mem, ADDR_T *address);
 
 uint16_t crc16_block(uint32_t start, uint32_t length);
 void install_firmware(void);
-
 
 #endif // __XBOOT_H

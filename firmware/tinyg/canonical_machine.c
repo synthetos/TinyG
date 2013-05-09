@@ -105,7 +105,7 @@ static void _exec_select_tool(uint8_t tool, double float_val);
 static void _exec_mist_coolant_control(uint8_t mist_coolant, double float_val);
 static void _exec_flood_coolant_control(uint8_t flood_coolant, double float_val);
 //static void _exec_feed_override_enable(uint8_t feed_override, double float_val);
-static void _exec_program_finalize(uint8_t machine_state, double float_val);
+static void _program_finalize(uint8_t machine_state, double float_val);
 
 #define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
@@ -320,7 +320,7 @@ void cm_set_target(double target[], double flag[])
 	double tmp = 0;
 
 	// process XYZABC for lower modes
-	for (i=X; i<=Z; i++) {
+	for (i=AXIS_X; i<=AXIS_Z; i++) {
 		if ((flag[i] < EPSILON) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 			continue;
 		} else if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
@@ -332,7 +332,7 @@ void cm_set_target(double target[], double flag[])
 		}
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
-	for (i=A; i<=C; i++) {
+	for (i=AXIS_A; i<=AXIS_C; i++) {
 		// skip axis if not flagged for update or its disabled
 		if ((flag[i] < EPSILON) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 			continue;
@@ -359,7 +359,7 @@ static double _calc_ABC(uint8_t i, double target[], double flag[])
 	} else if ((cfg.a[i].axis_mode == AXIS_RADIUS) && (flag[i] > EPSILON)) {
 		tmp = _to_millimeters(target[i]) * 360 / (2 * M_PI * cfg.a[i].radius);
 
-/* COMMENTED OUT THE SLAVE MODES
+/* DEPRECATED CODE FOR SLAVE MODES - LEFT IN FOR EXAMPLE
 	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_X) && (flag[X] > EPSILON)) {
 		tmp = (target[X] - gm.position[X]) * 360 / (2 * M_PI * cfg.a[i].radius);
 
@@ -484,13 +484,13 @@ static double _get_move_times(double *min_time)
 		if (gm.inverse_feed_rate_mode == true) {
 			inv_time = gm.inverse_feed_rate;
 		} else {
-			xyz_time = sqrt(square(gm.target[X] - gm.position[X]) + // in mm
-							square(gm.target[Y] - gm.position[Y]) +
-							square(gm.target[Z] - gm.position[Z])) / gm.feed_rate; // in linear units
+			xyz_time = sqrt(square(gm.target[AXIS_X] - gm.position[AXIS_X]) + // in mm
+							square(gm.target[AXIS_Y] - gm.position[AXIS_Y]) +
+							square(gm.target[AXIS_Z] - gm.position[AXIS_Z])) / gm.feed_rate; // in linear units
 			if (xyz_time ==0) {
-				abc_time = sqrt(square(gm.target[A] - gm.position[A]) + // in deg
-							square(gm.target[B] - gm.position[B]) +
-							square(gm.target[C] - gm.position[C])) / gm.feed_rate; // in degree units
+				abc_time = sqrt(square(gm.target[AXIS_A] - gm.position[AXIS_A]) + // in deg
+								square(gm.target[AXIS_B] - gm.position[AXIS_B]) +
+								square(gm.target[AXIS_C] - gm.position[AXIS_C])) / gm.feed_rate; // in degree units
 			}
 		}
 	}
@@ -550,16 +550,20 @@ void cm_init()
 	// never start a machine in a motion mode	
 	gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
 
+	// reset request flags
+	cm.feedhold_requested = false;
+	cm.queue_flush_requested = false;
+	cm.cycle_start_requested = false;
+
 	// signal that the machine is ready for action
 	cm.machine_state = MACHINE_READY;	
 	cm.combined_state = COMBINED_READY;
 }
 
 /*
- * cm_shutdown() - shut down machine
+ * cm_alarm() - alarm state - shut down machine
  */
-
-void cm_shutdown(uint8_t value)
+void cm_alarm(uint8_t value)
 {
 	// stop the steppers and the spindle
 	st_disable();
@@ -573,22 +577,7 @@ void cm_shutdown(uint8_t value)
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
 	rpt_exception(TG_SHUTDOWN,value);		// send shutdown message
-	cm.machine_state = MACHINE_SHUTDOWN;
-}
-
-/*
- * cm_flush_planner() - Flush planner queue and correct model positions
- */
-uint8_t cm_flush_planner()
-{
-	mp_flush_planner();
-
-	for (uint8_t i=0; i<AXES; i++) {
-		mp_set_axis_position(i, mp_get_runtime_machine_position(i));	// set mm from mr
-		gm.position[i] = mp_get_runtime_machine_position(i);
-		gm.target[i] = gm.position[i];
-	}
-	return (TG_OK);
+	cm.machine_state = MACHINE_ALARM;
 }
 
 /* 
@@ -624,17 +613,17 @@ uint8_t cm_select_plane(uint8_t plane)
 {
 	gm.select_plane = plane;
 	if (plane == CANON_PLANE_YZ) {
-		gm.plane_axis_0 = Y;
-		gm.plane_axis_1 = Z;
-		gm.plane_axis_2 = X;
+		gm.plane_axis_0 = AXIS_Y;
+		gm.plane_axis_1 = AXIS_Z;
+		gm.plane_axis_2 = AXIS_X;
 	} else if (plane == CANON_PLANE_XZ) {
-		gm.plane_axis_0 = X;
-		gm.plane_axis_1 = Z;
-		gm.plane_axis_2 = Y;
+		gm.plane_axis_0 = AXIS_X;
+		gm.plane_axis_1 = AXIS_Z;
+		gm.plane_axis_2 = AXIS_Y;
 	} else {
-		gm.plane_axis_0 = X;
-		gm.plane_axis_1 = Y;
-		gm.plane_axis_2 = Z;
+		gm.plane_axis_0 = AXIS_X;
+		gm.plane_axis_1 = AXIS_Y;
+		gm.plane_axis_2 = AXIS_Z;
 	}
 	return (TG_OK);
 }
@@ -1084,9 +1073,89 @@ void cm_message(char *message)
  *
  * cm_program_end is a stop that also resets the machine to initial state
  */
+
+/*
+ * cm_request_feedhold()
+ * cm_request_queue_flush()
+ * cm_request_cycle_start()
+ * cm_feedhold_sequencing_callback() - process feedholds, cycle starts & queue flushes
+ * cm_flush_planner() - Flush planner queue and correct model positions
+ *
+ * Feedholds, queue flushes and cycles starts are all related. The request functions set
+ *	flags for these. The sequencing callback interprets the flags according to the 
+ *	following rules:
+ *
+ *	A feedhold request received during motion should be honored
+ *	A feedhold request received during a feedhold should be ignored and reset
+ *	A feedhold request received during a motion stop should be ignored and reset
+ *
+ *	A queue flush request received during motion should be ignored but not reset
+ *	A queue flush request received during a feedhold should be deferred until 
+ *		the feedhold enters a HOLD state (i.e. until deceleration is complete)
+ *	A queue flush request received during a motion stop should be honored
+ *
+ *	A cycle start request received during motion should be ignored and reset
+ *	A cycle start request received during a feedhold should be deferred until 
+ *		the feedhold enters a HOLD state (i.e. until deceleration is complete)
+ *		If a queue flush request is also present the queue flush should be done first
+ *	A cycle start request received during a motion stop should be honored and 
+ *		should start to run anything in the planner queue
+ */
+
+void cm_request_feedhold(void) { cm.feedhold_requested = true; }
+void cm_request_queue_flush(void) { cm.queue_flush_requested = true; }
+void cm_request_cycle_start(void) { cm.cycle_start_requested = true; }
+
+uint8_t cm_feedhold_sequencing_callback()
+{
+	if (cm.feedhold_requested == true) {
+		if ((cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF)) {
+			cm.motion_state = MOTION_HOLD;
+			cm.hold_state = FEEDHOLD_SYNC;	// invokes hold from aline execution
+		}
+		cm.feedhold_requested = false;
+	}
+	if (cm.queue_flush_requested == true) {
+		if ((cm.motion_state == MOTION_STOP) ||
+			((cm.motion_state == MOTION_HOLD) && (cm.hold_state == FEEDHOLD_HOLD))) {
+			cm.queue_flush_requested = false;
+			cm_flush_planner();
+		}
+	}
+	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false)) {
+		cm.cycle_start_requested = false;
+		cm.hold_state = FEEDHOLD_END_HOLD;
+		cm_cycle_start();
+		mp_end_hold();
+	}
+	return (TG_OK);
+}
+
+uint8_t cm_flush_planner()
+{
+	mp_flush_planner();
+
+	for (uint8_t i=0; i<AXES; i++) {
+		mp_set_axis_position(i, mp_get_runtime_machine_position(i));	// set mm from mr
+		gm.position[i] = mp_get_runtime_machine_position(i);
+		gm.target[i] = gm.position[i];
+	}
+	rpt_request_queue_report();
+	return (TG_OK);
+}
+
+/*
+ * Program and cycle state functions
+ *
+ * cm_cycle_start()
+ * cm_cycle_end()
+ * cm_program_stop()
+ * cm_optional_program_end()
+ * cm_program_stop()
+ * _program_finalize() - helper
+ */
 void cm_cycle_start()
 {
-	cm.cycle_start_flag = true;
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {
 		cm.cycle_state = CYCLE_STARTED;	// don't change homing, probe or other cycles
@@ -1096,44 +1165,35 @@ void cm_cycle_start()
 void cm_cycle_end() 
 {
 	if (cm.cycle_state == CYCLE_STARTED) {
-		_exec_program_finalize(MACHINE_PROGRAM_STOP,0);
-	}
-}
-
-void cm_feedhold()
-{
-	if ((cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF)) {
-		cm.motion_state = MOTION_HOLD;
-		cm.hold_state = FEEDHOLD_SYNC;
-		cm.cycle_start_flag = false;
+		_program_finalize(MACHINE_PROGRAM_STOP,0);
 	}
 }
 
 void cm_program_stop() 
 { 
-	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_STOP,0);
+	mp_queue_command(_program_finalize, MACHINE_PROGRAM_STOP,0);
 }
 
 void cm_optional_program_stop()	
 { 
-	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_STOP,0);
+	mp_queue_command(_program_finalize, MACHINE_PROGRAM_STOP,0);
 }
 
 void cm_program_end()				// M2, M30
 {
 //	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
-	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_END,0);
+	mp_queue_command(_program_finalize, MACHINE_PROGRAM_END,0);
 }
 
-static void _exec_program_finalize(uint8_t machine_state, double f)
+static void _program_finalize(uint8_t machine_state, double f)
 {
 	cm.machine_state = machine_state;
 	cm.cycle_state = CYCLE_OFF;
 	cm.motion_state = MOTION_STOP;
-	cm.hold_state = FEEDHOLD_OFF;			//...and any feedhold is ended
-	cm.cycle_start_flag = false;
-	mp_zero_segment_velocity();				// for reporting purposes
-	rpt_request_status_report();			// request final status report (not unfiltered)
-	cmd_persist_offsets(cm.g10_persist_flag); // persist offsets if any changes made
+	cm.hold_state = FEEDHOLD_OFF;					//...and any feedhold is ended
+	cm.cycle_start_requested = false;
+	mp_zero_segment_velocity();						// for reporting purposes
+	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report (not unfiltered)
+	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
 }
 

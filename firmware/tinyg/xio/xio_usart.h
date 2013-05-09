@@ -187,6 +187,8 @@ int xio_getc_usart(FILE *stream);
 int xio_putc_usart(const char c, FILE *stream);
 int xio_putc_usb(const char c, FILE *stream);	// stdio compatible put character
 int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
+void xio_enable_rs485_rx(void);					// needed for startup
+void xio_enable_rs485_tx(void);					// included for completeness
 
 // handy helpers
 buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx);

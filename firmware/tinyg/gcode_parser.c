@@ -289,15 +289,15 @@ static uint8_t _parse_gcode_block(char *buf)
 			case 'F': SET_NON_MODAL (feed_rate, value);
 			case 'P': SET_NON_MODAL (parameter, value); 	// used for dwell time, G10 coord select
 			case 'S': SET_NON_MODAL (spindle_speed, value); 
-			case 'X': SET_NON_MODAL (target[X], value);
-			case 'Y': SET_NON_MODAL (target[Y], value);
-			case 'Z': SET_NON_MODAL (target[Z], value);
-			case 'A': SET_NON_MODAL (target[A], value);
-			case 'B': SET_NON_MODAL (target[B], value);
-			case 'C': SET_NON_MODAL (target[C], value);
-		//	case 'U': SET_NON_MODAL (target[U], value);		// reserved
-		//	case 'V': SET_NON_MODAL (target[V], value);		// reserved
-		//	case 'W': SET_NON_MODAL (target[W], value);		// reserved
+			case 'X': SET_NON_MODAL (target[AXIS_X], value);
+			case 'Y': SET_NON_MODAL (target[AXIS_Y], value);
+			case 'Z': SET_NON_MODAL (target[AXIS_Z], value);
+			case 'A': SET_NON_MODAL (target[AXIS_A], value);
+			case 'B': SET_NON_MODAL (target[AXIS_B], value);
+			case 'C': SET_NON_MODAL (target[AXIS_C], value);
+		//	case 'U': SET_NON_MODAL (target[AXIS_U], value);		// reserved
+		//	case 'V': SET_NON_MODAL (target[AXIS_V], value);		// reserved
+		//	case 'W': SET_NON_MODAL (target[AXIS_W], value);		// reserved
 			case 'I': SET_NON_MODAL (arc_offset[0], value);
 			case 'J': SET_NON_MODAL (arc_offset[1], value);
 			case 'K': SET_NON_MODAL (arc_offset[2], value);

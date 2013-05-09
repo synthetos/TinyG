@@ -42,23 +42,27 @@
 #include <stdbool.h>					// true and false
 #include <avr/pgmspace.h>				// precursor for xio.h
 #include <avr/interrupt.h>
-#include <avr/sleep.h>		// needed for blocking character writes
+#include <avr/sleep.h>					// needed for blocking character writes
 
 #include "xio.h"
 #include "../xmega/xmega_interrupts.h"
+
+#include "../tinyg.h"					// needed for canonical machine
+#include "../controller.h"				// needed for trapping kill char
+#include "../canonical_machine.h"		// needed for fgeedhold and cycle start
 
 // Fast accessors
 #define RS ds[XIO_DEV_RS485]
 #define RSu us[XIO_DEV_RS485 - XIO_DEV_USART_OFFSET]
 
 /*
- * Local helper functions
- *	_xio_enable_rs485_tx() - specialized routine to enable rs488 TX mode
- *	_xio_enable_rs485_rx() - specialized routine to enable rs488 RX mode
+ * Helper functions
+ *	xio_enable_rs485_tx() - specialized routine to enable rs488 TX mode
+ *	xio_enable_rs485_rx() - specialized routine to enable rs488 RX mode
  *
  *	enables one mode and disables the other
  */
-static void _xio_enable_rs485_tx()
+void xio_enable_rs485_tx()
 {
 	// enable TX, related interrupts & set DE and RE lines (disabling RX) 
 	RSu.usart->CTRLB = USART_TXEN_bm;
@@ -66,7 +70,7 @@ static void _xio_enable_rs485_tx()
 	RSu.port->OUTSET = (RS485_DE_bm | RS485_RE_bm);
 }
 
-static void _xio_enable_rs485_rx()
+void xio_enable_rs485_rx()
 {
 	// enable RX, related interrupts & clr DE and RE lines (disabling TX) 
 	RSu.usart->CTRLB = USART_RXEN_bm;
@@ -112,7 +116,7 @@ int xio_putc_rs485(const char c, FILE *stream)
 		}
 	};
 	// enable TX mode and write data to TX buffer
-	_xio_enable_rs485_tx();							// enable for TX
+	xio_enable_rs485_tx();							// enable for TX
 	RSu.tx_buf_head = next_tx_buf_head;				// accept next buffer head
 	RSu.tx_buf[RSu.tx_buf_head] = c;				// ...write char to buffer
 
@@ -144,7 +148,7 @@ ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC1 data register empty
 
 ISR(RS485_TXC_ISR_vect)	// ISR(USARTC1_TXC_vect) 
 {
-	_xio_enable_rs485_rx();							// revert to RX mode
+	xio_enable_rs485_rx();							// revert to RX mode
 }
 
 /* 
@@ -161,20 +165,17 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)		// serial port C0 RX isr
 		return;										// shouldn't ever happen; bit of a fail-safe here
 	}
 
-	// trap signals - do not insert into RX queue
-	if (c == CHAR_RESET) {	 						// trap Kill signal
-		RS.signal = XIO_SIG_RESET;					// set signal value
-		sig_reset();								// call app-specific sig handler
+	// trap async commands - do not insert into RX queue
+	if (c == CHAR_RESET) {	 						// trap Kill character
+		tg_request_reset();							// call app-specific sig handler
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {						// trap feedhold signal
-		RS.signal = XIO_SIG_FEEDHOLD;
-		sig_feedhold();
+		cm_request_feedhold();
 		return;
 	}
 	if (c == CHAR_CYCLE_START) {					// trap end_feedhold signal
-		RS.signal = XIO_SIG_CYCLE_START;
-		sig_cycle_start();
+		cm_request_cycle_start();
 		return;
 	}
 	// filter out CRs and LFs if they are to be ignored

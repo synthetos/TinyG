@@ -103,7 +103,6 @@ ISR(I2C_DEVICE_ISR)
 
 void i2c_init(void)
 {
-#ifdef __AVR_XMEGA__
         I2C_DEVICE.CTRL = 0;
         #if I2C_MATCH_ANY
         #ifdef USE_INTERRUPTS
@@ -124,17 +123,14 @@ void i2c_init(void)
         I2C_DEVICE.SLAVE.ADDR = I2C_ADDRESS;
         #endif
         I2C_DEVICE.SLAVE.ADDRMASK = 0;
-#endif // __AVR_XMEGA__
 }
 
 void i2c_deinit(void)
 {
         // Shut down I2C module and turn off interrupt
-#ifdef __AVR_XMEGA__
         I2C_DEVICE.SLAVE.CTRLA = 0;
         I2C_DEVICE.SLAVE.ADDR = 0;
         I2C_DEVICE.SLAVE.ADDRMASK = 0;
-#endif // __AVR_XMEGA__
 }
 
 

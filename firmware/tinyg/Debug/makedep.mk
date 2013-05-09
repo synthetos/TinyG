@@ -22,8 +22,6 @@ kinematics.c
 
 main.c
 
-network.c
-
 planner.c
 
 plan_arc.c

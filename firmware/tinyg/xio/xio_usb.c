@@ -1,6 +1,6 @@
 /*
- * xio_usb.c	- FTDI USB device driver for xmega family
- * 				- works with avr-gcc stdio library
+ * xio_usb.c - FTDI USB device driver for xmega family
+ * 			 - works with avr-gcc stdio library
  *
  * Part of TinyG project
  *
@@ -27,9 +27,6 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/*------
- *	This version implements signal character capture at the ISR level
- */
 
 #include <stdio.h>						// precursor for xio.h
 #include <stdbool.h>					// true and false
@@ -39,8 +36,12 @@
 
 #include "xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
+
+// application specific stuff that's littered into the USB handler
+#include "../tinyg.h"
 #include "../network.h"
 #include "../controller.h"
+#include "../canonical_machine.h"		// trapped characters communicate directly with the canonical machine
 
 // Fast accessors
 #define USB ds[XIO_DEV_USB]
@@ -132,28 +133,28 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 {
 	char c = USBu.usart->DATA;					// can only read DATA once
 
-	if (tg.network_mode == NET_MASTER) {		// forward character if you are a master
+	if (tg.network_mode == NETWORK_MASTER) {	// forward character if you are a master
 		net_forward(c);
 	}
-	// trap signals - do not insert character into RX queue
+	// trap async commands - do not insert character into RX queue
 	if (c == CHAR_RESET) {	 					// trap Kill signal
-		USB.signal = XIO_SIG_RESET;				// set signal value
-		sig_reset();							// call sig handler
+		tg_request_reset();
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal
-		USB.signal = XIO_SIG_FEEDHOLD;
-		sig_feedhold();
+		cm_request_feedhold();
+		return;
+	}
+	if (c == CHAR_QUEUE_FLUSH) {				// trap queue flush signal
+		cm_request_queue_flush();
 		return;
 	}
 	if (c == CHAR_CYCLE_START) {				// trap cycle start signal
-		USB.signal = XIO_SIG_CYCLE_START;
-		sig_cycle_start();
+		cm_request_cycle_start();
 		return;
 	}
 //	if (c == CHAR_BOOTLOADER) {					// trap ESC to start boot loader
-//		USB.signal = XIO_SIG_BOOTLOADER;
-//		sig_request_bootloader();
+//		tg_request_bootloader();
 //		return;
 //	}
 	// filter out CRs and LFs if they are to be ignored

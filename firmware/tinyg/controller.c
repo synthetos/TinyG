@@ -33,6 +33,7 @@
 #include <string.h>
 #include <avr/pgmspace.h>		// precursor for xio.h
 #include <avr/interrupt.h>
+#include <avr/wdt.h>			// used for software reset
 
 #include "tinyg.h"				// #1 unfortunately, there are some dependencies
 #include "config.h"				// #2
@@ -59,10 +60,8 @@ static uint8_t _dispatch(void);
 static uint8_t _reset_handler(void);
 static uint8_t _bootloader_handler(void);
 static uint8_t _limit_switch_handler(void);
-static uint8_t _shutdown_idler(void);
+static uint8_t _alarm_idler(void);
 static uint8_t _system_assertions(void);
-static uint8_t _feedhold_handler(void);
-static uint8_t _cycle_start_handler(void);
 static uint8_t _sync_to_tx_buffer(void);
 static uint8_t _sync_to_planner(void);
 
@@ -77,11 +76,14 @@ void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	tg.fw_build = TINYG_FIRMWARE_BUILD;
 	tg.fw_version = TINYG_FIRMWARE_VERSION;	// NB: HW version is set from EEPROM
 
+	tg.reset_requested = false;
+	tg.bootloader_requested = false;
+
 	xio_set_stdin(std_in);
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
 	tg.default_src = std_in;
-	tg_set_active_source(tg.default_src);	// set initial active source
+	tg_set_primary_source(tg.default_src);	// set primary source
 }
 
 /* 
@@ -116,21 +118,30 @@ void tg_controller()
 #define	DISPATCH(func) if (func == TG_EAGAIN) return; 
 static void _controller_HSM()
 {
+//----- ISRs. These should be considered the highest priority scheduler functions ----//
+/*	
+ *	HI	Stepper DDA pulse generation		// see stepper.h
+ *	HI	Stepper load routine SW interrupt	// see stepper.h
+ *	HI	Dwell timer counter 				// see stepper.h
+ *	MED	GPIO1 switch port - limits / homing	// see gpio.h
+ *  MED	Serial RX for USB					// see xio_usart.h
+ *  LO	Segment execution SW interrupt		// see stepper.h
+ *  LO	Serial TX for USB & RS-485			// see xio_usart.h
+ *	LO	Real time clock interrupt			// see xmega_rtc.h
+ */
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
 											// Order is important:
-	DISPATCH(_reset_handler());				// 1. software reset received
-	DISPATCH(_bootloader_handler());		// 2. received ESC char to start bootloader
+	DISPATCH(_reset_handler());				// 1. received software reset request
+	DISPATCH(_bootloader_handler());		// 2. received bootloader request
 	DISPATCH(_limit_switch_handler());		// 3. limit switch has been thrown
-	DISPATCH(_shutdown_idler());			// 4. idle in shutdown state
+	DISPATCH(_alarm_idler());				// 4. idle in alarm state
 	DISPATCH(_system_assertions());			// 5. system integrity assertions
-	DISPATCH(_feedhold_handler());			// 6. feedhold requested
-	DISPATCH(_cycle_start_handler());		// 7. cycle start requested
+	DISPATCH(cm_feedhold_sequencing_callback());
+	DISPATCH(mp_plan_hold_callback());		// plan a feedhold from line runtime
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report
 	DISPATCH(rpt_queue_report_callback());	// conditionally send queue report
-	DISPATCH(mp_plan_hold_callback());		// plan a feedhold
-	DISPATCH(mp_end_hold_callback());		// end a feedhold
 	DISPATCH(ar_arc_callback());			// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());			// G28.2 continuation
 
@@ -156,7 +167,12 @@ static uint8_t _dispatch()
 
 	// read input line or return if not a completed line
 	// xio_gets() is a non-blocking workalike of fgets()
-	if ((status = xio_gets(tg.active_src, tg.in_buf, sizeof(tg.in_buf))) != TG_OK) {
+	while (true) {
+		if ((status = xio_gets(tg.primary_src, tg.in_buf, sizeof(tg.in_buf))) == TG_OK) {
+			tg.bufp = tg.in_buf;
+			break;
+		}
+		// handle end-of-file from file devices
 		if (status == TG_EOF) {					// EOF can come from file devices only
 			if (cfg.comm_mode == TEXT_MODE) {
 				fprintf_P(stderr, PSTR("End of command file\n"));
@@ -165,15 +181,18 @@ static uint8_t _dispatch()
 			}
 			tg_reset_source();					// reset to default source
 		}
-		// Note that TG_EAGAIN, TG_NOOP etc. will just flow through
-		return (status);
+		return (status);						// Note: TG_EAGAIN, errors, etc. will drop through
 	}
-	cmd_reset_list();
-	tg.linelen = strlen(tg.in_buf)+1;
-	strncpy(tg.saved_buf, tg.in_buf, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
+//	cmd_reset_list();	//++++ shouldn't be necessary - test this carefully.
+	tg.linelen = strlen(tg.in_buf)+1;					// linelen only tracks primary input
+	strncpy(tg.saved_buf, tg.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 
 	// dispatch the new text line
-	switch (toupper(tg.in_buf[0])) {
+	switch (toupper(*tg.bufp)) {				// first char
+
+//		case '!': { cm_request_feedhold(); break; }		// include for diagnostics
+//		case '@': { cm_request_queue_flush(); break; }
+//		case '~': { cm_request_cycle_start(); break; }
 
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {
@@ -184,26 +203,26 @@ static uint8_t _dispatch()
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TEXT_MODE;
 			print_general_help();
-			tg_text_response(TG_OK, tg.in_buf);
+			tg_text_response(TG_OK, tg.bufp);
 			break;
 		}
 		case '$': case '?':{ 					// text-mode configs
 			cfg.comm_mode = TEXT_MODE;
-			tg_text_response(cfg_text_parser(tg.in_buf), tg.saved_buf);
+			tg_text_response(cfg_text_parser(tg.bufp), tg.saved_buf);
 			break;
 		}
 		case '{': { 							// JSON input
 			cfg.comm_mode = JSON_MODE;
-			js_json_parser(tg.in_buf);
+			js_json_parser(tg.bufp);
 			break;
 		}
 		default: {								// anything else must be Gcode
 			if (cfg.comm_mode == JSON_MODE) {
-				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN -8);	// use out_buf as temp
-				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);		// '-8' is used for JSON chars
-				js_json_parser(tg.in_buf);
+				strncpy(tg.out_buf, tg.bufp, INPUT_BUFFER_LEN -8);	// use out_buf as temp
+				sprintf(tg.bufp,"{\"gc\":\"%s\"}\n", tg.out_buf);
+				js_json_parser(tg.bufp);
 			} else {
-				tg_text_response(gc_gcode_parser(tg.in_buf), tg.saved_buf);
+				tg_text_response(gc_gcode_parser(tg.bufp), tg.saved_buf);
 			}
 		}
 	}
@@ -262,81 +281,48 @@ static uint8_t _sync_to_tx_buffer()
 
 static uint8_t _sync_to_planner()
 {
-	if (mp_get_planner_buffers_available() == 0) { 
+	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { // allow up to N planner buffers for this line
 		return (TG_EAGAIN);
 	}
 	return (TG_OK);
 }
 
-void tg_reset_source()
-{
-	tg_set_active_source(tg.default_src);
-}
+void tg_reset_source() { tg_set_primary_source(tg.default_src);}
+void tg_set_primary_source(uint8_t dev) { tg.primary_src = dev;}
+void tg_set_secondary_source(uint8_t dev) { tg.secondary_src = dev;}
 
-void tg_set_active_source(uint8_t dev)
-{
-	tg.active_src = dev;				// dev = XIO device #. See xio.h
-}
-
-/**** Signal handlers ****
+/*
+ * tg_request_reset()
  * _reset_handler()
- * _feedhold_handler()
- * _cycle_start_handler()
- * _bootloader_handler()
+ * tg_reset() - software hard reset using watchdog timer
  */
+void tg_request_reset() { tg.reset_requested = true; }
+
 static uint8_t _reset_handler(void)
 {
-	if (sig.sig_reset == false) { return (TG_NOOP);}
-//	sig.sig_reset = false;				// why bother?
+	if (tg.reset_requested == false) { return (TG_NOOP);}
 	tg_reset();							// hard reset - identical to hitting RESET button
 	return (TG_EAGAIN);
 }
 
-static uint8_t _feedhold_handler(void)
+void tg_reset(void)			// software hard reset using the watchdog timer
 {
-	if (sig.sig_feedhold == false) { return (TG_NOOP);}
-	sig.sig_feedhold = false;
-	cm_feedhold();
-	return (TG_EAGAIN);					// best to restart the control loop
+	wdt_enable(WDTO_15MS);
+	while (true);			// loops for about 15ms then resets
 }
 
-static uint8_t _cycle_start_handler(void)
-{
-	if (sig.sig_cycle_start == false) { return (TG_NOOP);}
-	sig.sig_cycle_start = false;
-	cm_cycle_start();
-	return (TG_EAGAIN);					// best to restart the control loop
-}
 
 /*
+ * tg_request_bootloader()
  * _bootloader_handler() - executes a software reset using CCPWrite
- *
- * 	An earlier attempt turned off interrupts, reset the stack pointer and jumped
- *	to the boot region. The assembly code is preserved below as an example.
- *	All the values in the assembly are hard coded because the pre-processor 
- *	doesn't open strings to process #defines.
- *
- *	  RAMEND 	0x05ff					// starting location for stack pointer
- *	  SPL		0x3d					// stack pointer lo
- *	  SPH		0x3e					// stack pointer hi
- *	  BOOTSTRT	0x030000				// start of boot region
- *
-	asm("ldi r16, 0xff" "\n\t" \
-		"out 0x3d, r16" "\n\t" \
-		"ldi r16, 0x5f" "\n\t" \
-		"out 0x3e, r16" "\n\t" \
-		"jmp 0x030000"  "\n\t" \
-		);
- *
- *  Refs:
- *	  https://sites.google.com/site/avrasmintro/
- *	  http://www.stanford.edu/class/ee281/projects/aut2002/yingzong-mouse/media/GCCAVRInlAsmCB.pdf
  */
+void tg_request_bootloader() { tg.bootloader_requested = true;}
+
 static uint8_t _bootloader_handler(void)
 {
-	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
+	if (tg.bootloader_requested == false) { return (TG_NOOP);}
 	cli();
-	CCPWrite(&RST.CTRL, RST_SWRST_bm);
+	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
 	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
 }
 
@@ -345,15 +331,15 @@ static uint8_t _bootloader_handler(void)
  */
 static uint8_t _limit_switch_handler(void)
 {
-	if (cm_get_machine_state() == MACHINE_SHUTDOWN) { return (TG_NOOP);}
+	if (cm_get_machine_state() == MACHINE_ALARM) { return (TG_NOOP);}
 	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
-//	cm_shutdown(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
-	cm_shutdown(sw.sw_num_thrown);
+//	cm_alarm(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
+	cm_alarm(sw.sw_num_thrown);
 	return (TG_OK);
 }
 
 /* 
- * _shutdown_idler() - revent any further activity form occurring if shut down
+ * _alarm_idler() - revent any further activity form occurring if shut down
  *
  *	This function returns EAGAIN causing the control loop to never advance beyond
  *	this point. It's important that the reset handler is still called so a SW reset
@@ -361,9 +347,9 @@ static uint8_t _limit_switch_handler(void)
  */
 #define LED_COUNTER 25000
 
-static uint8_t _shutdown_idler(void)
+static uint8_t _alarm_idler(void)
 {
-	if (cm_get_machine_state() != MACHINE_SHUTDOWN) { return (TG_OK);}
+	if (cm_get_machine_state() != MACHINE_ALARM) { return (TG_OK);}
 
 	if (--tg.led_counter < 0) {
 		tg.led_counter = LED_COUNTER;
@@ -408,6 +394,6 @@ uint8_t _system_assertions()
 
 	if (value == 0) { return (TG_OK);}
 	rpt_exception(TG_MEMORY_CORRUPTION, value);
-	cm_shutdown(ALARM_MEMORY_OFFSET + value);	
+	cm_alarm(ALARM_MEMORY_OFFSET + value);	
 	return (TG_EAGAIN);
 }

@@ -158,30 +158,30 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
 	// Set unit vector and jerk terms - this is all done together for efficiency 
 	// Ordinarily FP tests are to EPSILON but in this case they actually are zero
 	double jerk_squared = 0;
-	double diff = target[X] - mm.position[X];
+	double diff = target[AXIS_X] - mm.position[AXIS_X];
 	if (fp_NOT_ZERO(diff)) { 
-		bf->unit[X] = diff / length;
-		jerk_squared = square(bf->unit[X] * cfg.a[X].jerk_max);
+		bf->unit[AXIS_X] = diff / length;
+		jerk_squared = square(bf->unit[AXIS_X] * cfg.a[AXIS_X].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[Y] - mm.position[Y])) { 
-		bf->unit[Y] = diff / length;
-		jerk_squared += square(bf->unit[Y] * cfg.a[Y].jerk_max);
+	if (fp_NOT_ZERO(diff = target[AXIS_Y] - mm.position[AXIS_Y])) { 
+		bf->unit[AXIS_Y] = diff / length;
+		jerk_squared += square(bf->unit[AXIS_Y] * cfg.a[AXIS_Y].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[Z] - mm.position[Z])) { 
-		bf->unit[Z] = diff / length;
-		jerk_squared += square(bf->unit[Z] * cfg.a[Z].jerk_max);
+	if (fp_NOT_ZERO(diff = target[AXIS_Z] - mm.position[AXIS_Z])) { 
+		bf->unit[AXIS_Z] = diff / length;
+		jerk_squared += square(bf->unit[AXIS_Z] * cfg.a[AXIS_Z].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[A] - mm.position[A])) { 
-		bf->unit[A] = diff / length;
-		jerk_squared += square(bf->unit[A] * cfg.a[A].jerk_max);
+	if (fp_NOT_ZERO(diff = target[AXIS_A] - mm.position[AXIS_A])) { 
+		bf->unit[AXIS_A] = diff / length;
+		jerk_squared += square(bf->unit[AXIS_A] * cfg.a[AXIS_A].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[B] - mm.position[B])) { 
-		bf->unit[B] = diff / length;
-		jerk_squared += square(bf->unit[B] * cfg.a[B].jerk_max);
+	if (fp_NOT_ZERO(diff = target[AXIS_B] - mm.position[AXIS_B])) { 
+		bf->unit[AXIS_B] = diff / length;
+		jerk_squared += square(bf->unit[AXIS_B] * cfg.a[AXIS_B].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[C] - mm.position[C])) { 
-		bf->unit[C] = diff / length;
-		jerk_squared += square(bf->unit[C] * cfg.a[C].jerk_max);
+	if (fp_NOT_ZERO(diff = target[AXIS_C] - mm.position[AXIS_C])) { 
+		bf->unit[AXIS_C] = diff / length;
+		jerk_squared += square(bf->unit[AXIS_C] * cfg.a[AXIS_C].jerk_max);
 	}
 	bf->jerk = sqrt(jerk_squared);
 
@@ -698,27 +698,27 @@ static double _get_target_velocity(const double Vi, const double L, const mpBuf_
  */
 static double _get_junction_vmax(const double a_unit[], const double b_unit[])
 {
-	double costheta = - (a_unit[X] * b_unit[X]) - (a_unit[Y] * b_unit[Y]) 
-					  - (a_unit[Z] * b_unit[Z]) - (a_unit[A] * b_unit[A]) 
-					  - (a_unit[B] * b_unit[B]) - (a_unit[C] * b_unit[C]);
+	double costheta = - (a_unit[AXIS_X] * b_unit[AXIS_X]) - (a_unit[AXIS_Y] * b_unit[AXIS_Y]) 
+					  - (a_unit[AXIS_Z] * b_unit[AXIS_Z]) - (a_unit[AXIS_A] * b_unit[AXIS_A]) 
+					  - (a_unit[AXIS_B] * b_unit[AXIS_B]) - (a_unit[AXIS_C] * b_unit[AXIS_C]);
 
 	if (costheta < -0.99) { return (10000000); } 		// straight line cases
 	if (costheta > 0.99)  { return (0); } 				// reversal cases
 
 	// Fuse the junction deviations into a vector sum
-	double a_delta = square(a_unit[X] * cfg.a[X].junction_dev);
-	a_delta += square(a_unit[Y] * cfg.a[Y].junction_dev);
-	a_delta += square(a_unit[Z] * cfg.a[Z].junction_dev);
-	a_delta += square(a_unit[A] * cfg.a[A].junction_dev);
-	a_delta += square(a_unit[B] * cfg.a[B].junction_dev);
-	a_delta += square(a_unit[C] * cfg.a[C].junction_dev);
+	double a_delta = square(a_unit[AXIS_X] * cfg.a[AXIS_X].junction_dev);
+	a_delta += square(a_unit[AXIS_Y] * cfg.a[AXIS_Y].junction_dev);
+	a_delta += square(a_unit[AXIS_Z] * cfg.a[AXIS_Z].junction_dev);
+	a_delta += square(a_unit[AXIS_A] * cfg.a[AXIS_A].junction_dev);
+	a_delta += square(a_unit[AXIS_B] * cfg.a[AXIS_B].junction_dev);
+	a_delta += square(a_unit[AXIS_C] * cfg.a[AXIS_C].junction_dev);
 
-	double b_delta = square(b_unit[X] * cfg.a[X].junction_dev);
-	b_delta += square(b_unit[Y] * cfg.a[Y].junction_dev);
-	b_delta += square(b_unit[Z] * cfg.a[Z].junction_dev);
-	b_delta += square(b_unit[A] * cfg.a[A].junction_dev);
-	b_delta += square(b_unit[B] * cfg.a[B].junction_dev);
-	b_delta += square(b_unit[C] * cfg.a[C].junction_dev);
+	double b_delta = square(b_unit[AXIS_X] * cfg.a[AXIS_X].junction_dev);
+	b_delta += square(b_unit[AXIS_Y] * cfg.a[AXIS_Y].junction_dev);
+	b_delta += square(b_unit[AXIS_Z] * cfg.a[AXIS_Z].junction_dev);
+	b_delta += square(b_unit[AXIS_A] * cfg.a[AXIS_A].junction_dev);
+	b_delta += square(b_unit[AXIS_B] * cfg.a[AXIS_B].junction_dev);
+	b_delta += square(b_unit[AXIS_C] * cfg.a[AXIS_C].junction_dev);
 
 	double delta = (sqrt(a_delta) + sqrt(b_delta))/2;
 	double sintheta_over2 = sqrt((1 - costheta)/2);
@@ -798,12 +798,12 @@ uint8_t mp_plan_hold_callback()
 	mr_available_length = get_axis_vector_length(mr.endpoint, mr.position);
 
 /*	mr_available_length = 
-		(sqrt(square(mr.endpoint[X] - mr.position[X]) +
-			  square(mr.endpoint[Y] - mr.position[Y]) +
-			  square(mr.endpoint[Z] - mr.position[Z]) +
-			  square(mr.endpoint[A] - mr.position[A]) +
-			  square(mr.endpoint[B] - mr.position[B]) +
-			  square(mr.endpoint[C] - mr.position[C])));
+		(sqrt(square(mr.endpoint[AXIS_X] - mr.position[AXIS_X]) +
+			  square(mr.endpoint[AXIS_Y] - mr.position[AXIS_Y]) +
+			  square(mr.endpoint[AXIS_Z] - mr.position[AXIS_Z]) +
+			  square(mr.endpoint[AXIS_A] - mr.position[AXIS_A]) +
+			  square(mr.endpoint[AXIS_B] - mr.position[AXIS_B]) +
+			  square(mr.endpoint[AXIS_C] - mr.position[AXIS_C])));
 */
 //	braking_velocity = mr.segment_velocity;
 	braking_velocity = _compute_next_segment_velocity();
@@ -893,19 +893,14 @@ double _compute_next_segment_velocity()
 	return (mr.segment_velocity + mr.forward_diff_1);
 }
 
-/* 
- * mp_end_hold_callback() - callback from main loop to end a feedhold
- *
- * 	This function is a callback that is called from the controller. To end a 
- *	hold do not call mp_end_feedhold() directly, instead call cm_cycle_start().
+/*
+ * mp_end_hold() - end a feedhold
  */
-
-uint8_t mp_end_hold_callback()
+uint8_t mp_end_hold()
 {
-	mpBuf_t *bf;
-	if ((cm.hold_state == FEEDHOLD_HOLD) && (cm.cycle_start_flag == true)) { 
-		cm.cycle_start_flag = false;
+	if (cm.hold_state == FEEDHOLD_END_HOLD) { 
 		cm.hold_state = FEEDHOLD_OFF;
+		mpBuf_t *bf;
 		if ((bf = mp_get_run_buffer()) == NULL) {	// NULL means nothing's running
 			cm.motion_state = MOTION_STOP;
 			return (TG_NOOP);
@@ -915,6 +910,7 @@ uint8_t mp_end_hold_callback()
 	}
 	return (TG_OK);
 }
+
 
 /*************************************************************************/
 /**** ALINE EXECUTION ROUTINES *******************************************/
@@ -1041,7 +1037,8 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	// initiate the hold - look for the end of the decel move
 	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == TG_OK)) {
 		cm.hold_state = FEEDHOLD_HOLD;
-		rpt_request_status_report();
+		cm.motion_state = MOTION_STOP;
+		rpt_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
 
 	// There are 3 things that can happen here depending on return conditions:
@@ -1052,7 +1049,7 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	//	  TG_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
 
 	if (status == TG_EAGAIN) { 
-		rpt_request_status_report(); 			// continue reporting mr buffer
+		rpt_request_status_report(SR_TIMED_REQUEST); // continue reporting mr buffer
 	} else {
 		mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
 		mr.section_state = MOVE_STATE_OFF;
@@ -1233,27 +1230,27 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 
 	if ((correction_flag == true) && (mr.segment_count == 1) && 
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_STARTED)) {
-		mr.target[X] = mr.endpoint[X];	// rounding error correction for last segment
-		mr.target[Y] = mr.endpoint[Y];
-		mr.target[Z] = mr.endpoint[Z];
-		mr.target[A] = mr.endpoint[A];
-		mr.target[B] = mr.endpoint[B];
-		mr.target[C] = mr.endpoint[C];
+		mr.target[AXIS_X] = mr.endpoint[AXIS_X];	// rounding error correction for last segment
+		mr.target[AXIS_Y] = mr.endpoint[AXIS_Y];
+		mr.target[AXIS_Z] = mr.endpoint[AXIS_Z];
+		mr.target[AXIS_A] = mr.endpoint[AXIS_A];
+		mr.target[AXIS_B] = mr.endpoint[AXIS_B];
+		mr.target[AXIS_C] = mr.endpoint[AXIS_C];
 	} else {
 		double intermediate = mr.segment_velocity * mr.segment_move_time;
-		mr.target[X] = mr.position[X] + (mr.unit[X] * intermediate);
-		mr.target[Y] = mr.position[Y] + (mr.unit[Y] * intermediate);
-		mr.target[Z] = mr.position[Z] + (mr.unit[Z] * intermediate);
-		mr.target[A] = mr.position[A] + (mr.unit[A] * intermediate);
-		mr.target[B] = mr.position[B] + (mr.unit[B] * intermediate);
-		mr.target[C] = mr.position[C] + (mr.unit[C] * intermediate);
+		mr.target[AXIS_X] = mr.position[AXIS_X] + (mr.unit[AXIS_X] * intermediate);
+		mr.target[AXIS_Y] = mr.position[AXIS_Y] + (mr.unit[AXIS_Y] * intermediate);
+		mr.target[AXIS_Z] = mr.position[AXIS_Z] + (mr.unit[AXIS_Z] * intermediate);
+		mr.target[AXIS_A] = mr.position[AXIS_A] + (mr.unit[AXIS_A] * intermediate);
+		mr.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * intermediate);
+		mr.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * intermediate);
 	}
-	travel[X] = mr.target[X] - mr.position[X];
-	travel[Y] = mr.target[Y] - mr.position[Y];
-	travel[Z] = mr.target[Z] - mr.position[Z];
-	travel[A] = mr.target[A] - mr.position[A];
-	travel[B] = mr.target[B] - mr.position[B];
-	travel[C] = mr.target[C] - mr.position[C];
+	travel[AXIS_X] = mr.target[AXIS_X] - mr.position[AXIS_X];
+	travel[AXIS_Y] = mr.target[AXIS_Y] - mr.position[AXIS_Y];
+	travel[AXIS_Z] = mr.target[AXIS_Z] - mr.position[AXIS_Z];
+	travel[AXIS_A] = mr.target[AXIS_A] - mr.position[AXIS_A];
+	travel[AXIS_B] = mr.target[AXIS_B] - mr.position[AXIS_B];
+	travel[AXIS_C] = mr.target[AXIS_C] - mr.position[AXIS_C];
 
 /* The above is a re-arranged and loop unrolled version of this:
 	for (uint8_t i=0; i < AXES; i++) {	// don't do the error correction if you are going into a hold
@@ -1271,12 +1268,12 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
 		copy_axis_vector(mr.position, mr.target); 	// update runtime position	
 /*  TRY THIS
-		mr.position[X] = mr.target[X];
-		mr.position[Y] = mr.target[Y];
-		mr.position[Z] = mr.target[Z];
-		mr.position[A] = mr.target[A];
-		mr.position[B] = mr.target[B];
-		mr.position[C] = mr.target[C];	
+		mr.position[AXIS_X] = mr.target[AXIS_X];
+		mr.position[AXIS_Y] = mr.target[AXIS_Y];
+		mr.position[AXIS_Z] = mr.target[AXIS_Z];
+		mr.position[AXIS_A] = mr.target[AXIS_A];
+		mr.position[AXIS_B] = mr.target[AXIS_B];
+		mr.position[AXIS_C] = mr.target[AXIS_C];	
 */	
 	}
 	if (--mr.segment_count == 0) {
@@ -1487,22 +1484,22 @@ static void _test_calculate_trapezoid()
 static void _make_unit_vector(double unit[], double x, double y, double z, double a, double b, double c)
 {
 	double length = sqrt(x*x + y*y + z*z + a*a + b*b + c*c);
-	unit[X] = x/length;
-	unit[Y] = y/length;
-	unit[Z] = z/length;
-	unit[A] = a/length;
-	unit[B] = b/length;
-	unit[C] = c/length;
+	unit[AXIS_X] = x/length;
+	unit[AXIS_Y] = y/length;
+	unit[AXIS_Z] = z/length;
+	unit[AXIS_A] = a/length;
+	unit[AXIS_B] = b/length;
+	unit[AXIS_C] = c/length;
 }
 
 static void _test_get_junction_vmax()
 {
-//	cfg.a[X].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[Y].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[Z].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[A].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[B].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[C].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[AXIS_X].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[AXIS_Y].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[AXIS_Z].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[AXIS_A].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[AXIS_B].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[AXIS_C].jerk_max = JERK_TEST_VALUE;
 //	mm.jerk_transition_size = 0.5;
 //	mm.jerk_limit_max = 184.2;
 /*

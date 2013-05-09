@@ -35,9 +35,13 @@
 #include <stdio.h>					// precursor for xio.h
 #include <stdbool.h>				// true and false
 #include <avr/pgmspace.h>			// precursor for xio.h
+#include <util/delay.h>				// for tests
 
+#include "tinyg.h"
 #include "network.h"
 #include "controller.h"
+#include "gpio.h"
+#include "system.h"
 #include "xio/xio.h"
 
 /*
@@ -50,70 +54,65 @@
 void net_init() 
 {
 	// re-point IO if in slave mode
-	if (tg.network_mode == NET_SLAVE) {
-		tg_init(XIO_DEV_NET, XIO_DEV_NET, XIO_DEV_NET);
+	if (tg.network_mode == NETWORK_SLAVE) {
+		tg_init(XIO_DEV_RS485, XIO_DEV_USB, XIO_DEV_USB);
+		tg_set_secondary_source(XIO_DEV_USB);
 	}
+	xio_enable_rs485_rx();		// needed for clean start for RS-485;
 }
 
-/*
 void net_forward(unsigned char c)
 {
 	xio_putc(XIO_DEV_RS485, c);	// write to RS485 port
 }
-*/
 
 /* 
- * tg_repeater()
- * tg_receiver()
+ * net_test_rxtx() - test transmission from master to slave
+ * net_test_loopback() - test transmission from master to slave and looping back
  */
-/*
-void tg_repeater()
-{
-//	uint8_t full_duplex = false;
-	uint8_t full_duplex = true;
-	unsigned char tx = 'Z';
-	unsigned char rx;
 
-	while (true) {
-		tx = _nextchar(tx);
-		xio_putc(XIO_DEV_RS485, tx);	// write to RS485 port
-		if (full_duplex) {
-			while ((rx = xio_getc(XIO_DEV_RS485)) == -1);	// blocking read
-			xio_putc(XIO_DEV_USB, rx);	// echo RX to USB port
-		} else {
-			xio_putc(XIO_DEV_USB, tx);	// write TX to USB port
-		}	
-//		gpio_toggle_port(1);
-//		_delay_ms(10);
+uint8_t net_test_rxtx(uint8_t c) 
+{
+	int d;
+
+	// master operation
+	if (tg.network_mode == NETWORK_MASTER) {
+		if ((c < 0x20) || (c >= 0x7F)) { c = 0x20; }
+		c++;
+		xio_putc(XIO_DEV_RS485, c);			// write to RS485 port
+		xio_putc(XIO_DEV_USB, c);			// write to USB port
+		_delay_ms(2);
+
+	// slave operation
+	} else {
+		if ((d = xio_getc(XIO_DEV_RS485)) != _FDEV_ERR) {
+			xio_putc(XIO_DEV_USB, d);
+		}
 	}
+	return (c);
 }
 
-void tg_receiver()
+uint8_t net_test_loopback(uint8_t c)
 {
-//	tg_controller();	// this node executes gcode blocks received via RS485
-
-//	int	getc_code = 0;
-	int rx;
-
-	xio_queue_RX_string_usart(XIO_DEV_RS485, "Z");		// simulate an RX char
-
-	while (true) {
-		while ((rx = xio_getc(XIO_DEV_RS485)) == -1);
-		xio_putc(XIO_DEV_RS485, rx);	// write to RS485 port
-//		xio_putc_rs485(rx, fdev_rs485);	// alternate form of above
-//		gpio_toggle_port(1);
+	if (tg.network_mode == NETWORK_MASTER) {
+		// send a character
+		if ((c < 0x20) || (c >= 0x7F)) { c = 0x20; }
+		c++;
+		xio_putc(XIO_DEV_RS485, c);			// write to RS485 port
+		
+		// wait for loopback character
+		while (true) {
+			if ((c = xio_getc(XIO_DEV_RS485)) != _FDEV_ERR) {
+				xio_putc(XIO_DEV_USB, c);			// write to USB port
+			}
+		}
+	} else {
+		if ((c = xio_getc(XIO_DEV_RS485)) != _FDEV_ERR) {
+			xio_putc(XIO_DEV_RS485, c);			// write back to master
+			xio_putc(XIO_DEV_USB, c);			// write to slave USB
+		}
 	}
+	_delay_ms(2);
+	return (c);
 }
 
-static char _nextchar(char c)
-{
-//	uint8_t cycle = false;
-	uint8_t cycle = true;
-	char n = c;
-
-	if ((cycle) && ((n = ++c) > 'z')) {
-		n = '0';
-	}
-	return (n);
-}
-*/

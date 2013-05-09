@@ -37,34 +37,37 @@
 /***********************************************************************/
 
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
-#define INIT_MESSAGE "Initializing configs to Shapeoko 375mm profile"
+#define INIT_MESSAGE "Initializing configs to OpenPnP experimental profile"
 
 #define JUNCTION_DEVIATION		0.01	// default value, in mm - smaller is faster
 #define JUNCTION_ACCELERATION	2000000	// 2 million - centripetal acceleration around corners
 
 // *** settings.h overrides ***
 
-//#undef COMM_MODE
-//#define COMM_MODE				JSON_MODE
+#undef COMM_MODE
+#define COMM_MODE				TEXT_MODE
 
-//#undef JSON_VERBOSITY
-//#define JSON_VERBOSITY 		JV_MESSAGES
+#undef JSON_VERBOSITY
+#define JSON_VERBOSITY 			JV_LINENUM
+
+#undef COM_ENABLE_XON
+#define COM_ENABLE_XON			true
 
 // *** motor settings ***
 
 #define M1_MOTOR_MAP 			AXIS_X	// 1ma
 #define M1_STEP_ANGLE			1.8		// 1sa
-#define M1_TRAVEL_PER_REV		36.54	// 1tr
+#define M1_TRAVEL_PER_REV		25.4	// 1tr
 #define M1_MICROSTEPS			8		// 1mi		1,2,4,8
 #define M1_POLARITY				0		// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE			1		// 1pm		TRUE=low power idle enabled 
+#define M1_POWER_MODE			0		// 1pm		TRUE=low power idle enabled 
 
 #define M2_MOTOR_MAP			AXIS_Y
 #define M2_STEP_ANGLE			1.8
 #define M2_TRAVEL_PER_REV		36.54
 #define M2_MICROSTEPS			8
 #define M2_POLARITY				0
-#define M2_POWER_MODE			1
+#define M2_POWER_MODE			0
 
 #define M3_MOTOR_MAP			AXIS_Z
 #define M3_STEP_ANGLE			1.8
@@ -83,10 +86,10 @@
 // *** axis settings ***
 
 #define X_AXIS_MODE				AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
-#define X_VELOCITY_MAX			16000 				// xvm		G0 max velocity in mm/min
+#define X_VELOCITY_MAX			15000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX			220					// xtm		travel between switches or crashes
-#define X_JERK_MAX				5000000000			// xjm		yes, that's "5 billion" mm/(min^3)
+#define X_JERK_MAX				2500000000			// xjm		yes, that's "2.5 billion" mm/(min^3)
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN		SW_MODE_HOMING
 #define X_SWITCH_MODE_MAX		SW_MODE_DISABLED

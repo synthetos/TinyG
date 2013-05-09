@@ -118,6 +118,8 @@ uint8_t gpio_read_switch(uint8_t sw_num);
 
 void gpio_led_on(uint8_t led);
 void gpio_led_off(uint8_t led);
+void gpio_led_toggle(uint8_t led);
+uint8_t gpio_read_bit(uint8_t b);
 void gpio_set_bit_on(uint8_t b);
 void gpio_set_bit_off(uint8_t b);
 void sw_show_switch(void);
