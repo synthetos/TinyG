@@ -346,7 +346,8 @@ static uint8_t _homing_axis_move(int8_t axis, double target, double velocity)
 	double flags[] = {1,1,1,1,1,1};
 	set_vector_by_axis(target, axis);
 	cm_set_feed_rate(velocity);
-	mp_flush_planner();
+	cm_request_queue_flush();
+	cm_request_cycle_start();
 	ritorno(cm_straight_feed(vector, flags));
 	return (TG_EAGAIN);
 }

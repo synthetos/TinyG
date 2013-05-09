@@ -33,6 +33,7 @@
 #include <string.h>
 #include <avr/pgmspace.h>		// precursor for xio.h
 #include <avr/interrupt.h>
+#include <avr/wdt.h>			// used for software reset
 
 #include "tinyg.h"				// #1 unfortunately, there are some dependencies
 #include "config.h"				// #2
@@ -293,6 +294,7 @@ void tg_set_secondary_source(uint8_t dev) { tg.secondary_src = dev;}
 /*
  * tg_request_reset()
  * _reset_handler()
+ * tg_reset() - software hard reset using watchdog timer
  */
 void tg_request_reset() { tg.reset_requested = true; }
 
@@ -302,6 +304,13 @@ static uint8_t _reset_handler(void)
 	tg_reset();							// hard reset - identical to hitting RESET button
 	return (TG_EAGAIN);
 }
+
+void tg_reset(void)			// software hard reset using the watchdog timer
+{
+	wdt_enable(WDTO_15MS);
+	while (true);			// loops for about 15ms then resets
+}
+
 
 /*
  * tg_request_bootloader()

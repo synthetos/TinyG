@@ -104,13 +104,12 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 // avrdude -p x192a3 -c avr109 -b 115200 -P COM19
 // avrdude -e -p atxmega192a3 -c avrispmkii -P usb -U boot:w:xboot-boot.hex
 
-	xio_queue_RX_string_usb("g1 f100 x100\n");		// Feedhold/queue flush test
-	xio_queue_RX_string_usb("!\n");
-	xio_queue_RX_string_usb("@\n");
-	xio_queue_RX_string_usb("~\n");
+//	xio_queue_RX_string_usb("g1 f100 x100\n");		// Feedhold/queue flush test
+//	xio_queue_RX_string_usb("!\n");
+//	xio_queue_RX_string_usb("@\n");
+//	xio_queue_RX_string_usb("~\n");
 
-//	xio_queue_RX_string_usb("g0 x0.015\n");		// Small move test
-
+	xio_queue_RX_string_usb("g1 f1800 x0.0005\n");	// Small move test for G61.1
 
 //	xio_queue_RX_string_usb("$net\n");
 

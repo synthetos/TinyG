@@ -25,7 +25,6 @@
 #include <stdio.h>				// precursor for xio.h
 #include <avr/pgmspace.h>		// precursor for xio.h
 #include <avr/interrupt.h>
-#include <avr/wdt.h>			// used for software reset
 
 #include "xmega/xmega_interrupts.h"
 //#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
@@ -94,16 +93,6 @@ int main(void)
 	while (true) {
 		tg_controller(); 
 	}
-}
-
-/*
- * tg_reset() - software hard reset using watchdog timer
- */
-
-void tg_reset(void)			// software hard reset using the watchdog timer
-{
-	wdt_enable(WDTO_15MS);
-	while (true);			// loops for about 15ms then resets
 }
 
 /*

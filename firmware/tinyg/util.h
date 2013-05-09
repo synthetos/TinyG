@@ -81,8 +81,10 @@ double *set_vector_by_axis(double value, uint8_t axis);
 #endif
 
 #ifndef EPSILON
-#define EPSILON 0.00001						// rounding error for floats
+#define EPSILON 0.00001					// rounding error for floats
+//#define EPSILON 0.0000001					// rounding error for floats
 #endif
+
 #ifndef fp_EQ
 #define fp_EQ(a,b) (fabs(a-b) < EPSILON)	// requires math.h to be included in each file used
 #endif
