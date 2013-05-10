@@ -139,7 +139,7 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
 	double junction_velocity;
 
 	// trap error conditions
-	if (minutes < EPSILON) { return (TG_ZERO_LENGTH_MOVE);}
+	if (minutes < EPSILON_2) { return (TG_ZERO_LENGTH_MOVE);}
 
 	double length = get_axis_vector_length(target, mm.position);
 	if (length < EPSILON) { return (TG_ZERO_LENGTH_MOVE);}
