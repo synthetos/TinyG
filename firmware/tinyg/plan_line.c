@@ -156,12 +156,11 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
 	copy_axis_vector(bf->work_offset, work_offset);// propagate offset
 
 	// Set unit vector and jerk terms - this is all done together for efficiency 
-	// Ordinarily FP tests are to EPSILON but in this case they actually are zero
 	double jerk_squared = 0;
 	double diff = target[AXIS_X] - mm.position[AXIS_X];
 	if (fp_NOT_ZERO(diff)) { 
 		bf->unit[AXIS_X] = diff / length;
-		jerk_squared = square(bf->unit[AXIS_X] * cfg.a[AXIS_X].jerk_max);
+		jerk_squared += square(bf->unit[AXIS_X] * cfg.a[AXIS_X].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = target[AXIS_Y] - mm.position[AXIS_Y])) { 
 		bf->unit[AXIS_Y] = diff / length;

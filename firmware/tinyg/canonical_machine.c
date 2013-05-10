@@ -321,7 +321,8 @@ void cm_set_target(double target[], double flag[])
 
 	// process XYZABC for lower modes
 	for (i=AXIS_X; i<=AXIS_Z; i++) {
-		if ((flag[i] < EPSILON) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
+//		if ((flag[i] < EPSILON) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
+		if ((fp_ZERO(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 			continue;
 		} else if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
 			if (gm.distance_mode == ABSOLUTE_MODE) {
@@ -334,7 +335,8 @@ void cm_set_target(double target[], double flag[])
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
 	for (i=AXIS_A; i<=AXIS_C; i++) {
 		// skip axis if not flagged for update or its disabled
-		if ((flag[i] < EPSILON) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
+//		if ((flag[i] < EPSILON) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
+		if ((fp_ZERO(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 			continue;
 		} else tmp = _calc_ABC(i, target, flag);		
 		
@@ -356,7 +358,8 @@ static double _calc_ABC(uint8_t i, double target[], double flag[])
 	if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
 		tmp = target[i];	// no mm conversion - it's in degrees
 
-	} else if ((cfg.a[i].axis_mode == AXIS_RADIUS) && (flag[i] > EPSILON)) {
+//	} else if ((cfg.a[i].axis_mode == AXIS_RADIUS) && (flag[i] > EPSILON)) {
+	} else if ((cfg.a[i].axis_mode == AXIS_RADIUS) && (fp_NOT_ZERO(flag[i]))) {
 		tmp = _to_millimeters(target[i]) * 360 / (2 * M_PI * cfg.a[i].radius);
 
 /* DEPRECATED CODE FOR SLAVE MODES - LEFT IN FOR EXAMPLE
@@ -677,7 +680,8 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
 		return (TG_INTERNAL_RANGE_ERROR);
 	}
 	for (uint8_t i=0; i<AXES; i++) {
-		if (flag[i] > EPSILON) {
+//		if (flag[i] > EPSILON) {
+		if (fp_NOT_ZERO(flag[i])) {
 			cfg.offset[coord_system][i] = offset[i];
 			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
 		}
@@ -696,7 +700,8 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
 uint8_t cm_set_absolute_origin(double origin[], double flag[])
 {
 	for (uint8_t i=0; i<AXES; i++) {
-		if (flag[i] > EPSILON) {
+//		if (flag[i] > EPSILON) {
+		if (fp_NOT_ZERO(flag[i])) {
 			cm_set_machine_axis_position(i, cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
 			cm.homed[i] = true;
 		}
@@ -717,7 +722,8 @@ uint8_t cm_set_origin_offsets(double offset[], double flag[])
 {
 	gm.origin_offset_enable = 1;
 	for (uint8_t i=0; i<AXES; i++) {
-		if (flag[i] > EPSILON) {
+//		if (flag[i] > EPSILON) {
+		if (fp_NOT_ZERO(flag[i])) {
 			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] - _to_millimeters(offset[i]);
 		}
 	}
