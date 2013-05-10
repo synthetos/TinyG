@@ -179,16 +179,17 @@
 #define	TG_ERROR_59 59
 
 // Gcode and machining errors
-#define	TG_ZERO_LENGTH_MOVE 60			// move is zero length
-#define	TG_GCODE_BLOCK_SKIPPED 61		// block is too short - was skipped
-#define	TG_GCODE_INPUT_ERROR 62			// general error for gcode input 
-#define	TG_GCODE_FEEDRATE_ERROR 63		// move has no feedrate
-#define	TG_GCODE_AXIS_WORD_MISSING 64	// command requires at least one axis present
-#define	TG_MODAL_GROUP_VIOLATION 65		// gcode modal group error
-#define	TG_HOMING_CYCLE_FAILED 66		// homing cycle did not complete
-#define	TG_MAX_TRAVEL_EXCEEDED 67
-#define	TG_MAX_SPINDLE_SPEED_EXCEEDED 68
-#define	TG_ARC_SPECIFICATION_ERROR 69	// arc specification error
+#define	TG_ZERO_LENGTH_MOVE 60			// move is less than minimum length
+#define	TG_MINIMUM_TIME_MOVE 61			// move is less than minimum time
+#define	TG_GCODE_BLOCK_SKIPPED 62		// block is too short - was skipped
+#define	TG_GCODE_INPUT_ERROR 63			// general error for gcode input 
+#define	TG_GCODE_FEEDRATE_ERROR 64		// move has no feedrate
+#define	TG_GCODE_AXIS_WORD_MISSING 65	// command requires at least one axis present
+#define	TG_MODAL_GROUP_VIOLATION 66		// gcode modal group error
+#define	TG_HOMING_CYCLE_FAILED 67		// homing cycle did not complete
+#define	TG_MAX_TRAVEL_EXCEEDED 68
+#define	TG_MAX_SPINDLE_SPEED_EXCEEDED 69
+#define	TG_ARC_SPECIFICATION_ERROR 70	// arc specification error
 
 /*** Alarm States ***/
 #define ALARM_LIMIT_OFFSET 0

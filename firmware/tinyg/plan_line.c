@@ -506,6 +506,20 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 	// If a non-zero body is < minimum length distribute it to the head and/or tail
 	// This will generate small (acceptable) velocity errors in runtime execution
 	// but preserve correct distance, which is more important.
+	if ((bf->body_length < MIN_BODY_LENGTH) && (fp_NOT_ZERO(bf->body_length))) {
+		if (fp_NOT_ZERO(bf->head_length)) {
+			if (fp_NOT_ZERO(bf->tail_length)) {			// HBT reduces to HT
+				bf->head_length += bf->body_length/2;
+				bf->tail_length += bf->body_length/2;
+			} else {									// HB reduces to H
+				bf->head_length += bf->body_length;
+			}
+		} else {										// BT reduces to T
+			bf->tail_length += bf->body_length;
+		}
+		bf->body_length = 0;
+
+/*++++
 	if ((bf->body_length < MIN_BODY_LENGTH) && (bf->body_length > EPSILON)) {
 		if (bf->head_length > EPSILON) {
 			if (bf->tail_length > EPSILON) {			// HBT reduces to HT
@@ -518,10 +532,12 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			bf->tail_length += bf->body_length;
 		}
 		bf->body_length = 0;
+*/
 
 	// If the body is a standalone make the cruise velocity match the entry velocity 
 	// This removes a potential velocity discontinuity at the expense of top speed
-	} else if ((bf->head_length < EPSILON) && (bf->tail_length < EPSILON)) {
+//++++	} else if ((bf->head_length < EPSILON) && (bf->tail_length < EPSILON)) {
+	} else if ((fp_ZERO(bf->head_length)) && (fp_ZERO(bf->tail_length))) {
 		bf->cruise_velocity = bf->entry_velocity;
 	}
 }
@@ -813,7 +829,8 @@ uint8_t mp_plan_hold_callback()
 	// is the velocity of the last segment, not the one that's going to be executed next.
 	// The braking_velocity needs to be the velocity of the next segment that has not yet 
 	// been computed. In the eman time, this hack will work. 
-	if ((braking_length > mr_available_length) && (bp->exit_velocity < EPSILON)) {
+//	if ((braking_length > mr_available_length) && (bp->exit_velocity < EPSILON)) {
+	if ((braking_length > mr_available_length) && (fp_ZERO(bp->exit_velocity))) {
 		braking_length = mr_available_length;
 	}
 
@@ -997,7 +1014,8 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 
 		// initialization to process the new incoming bf buffer
 		bf->replannable = false;
-		if (bf->length < EPSILON) {
+//		if (bf->length < EPSILON) {
+		if (fp_ZERO(bf->length)) {
 			mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
 			mr.section_state = MOVE_STATE_OFF;
 			bf->nx->replannable = false;			// prevent overplanning (Note 2)
@@ -1101,7 +1119,8 @@ static void _init_forward_diffs(double t0, double t2)
 static uint8_t _exec_aline_head()
 {
 	if (mr.section_state == MOVE_STATE_NEW) {	// initialize the move singleton (mr)
-		if (mr.head_length < EPSILON) { 
+//		if (mr.head_length < EPSILON) { 
+		if (fp_ZERO(mr.head_length)) { 
 			mr.move_state = MOVE_STATE_BODY;
 			return(_exec_aline_body());			// skip ahead to the body generator
 		}
@@ -1134,7 +1153,8 @@ static uint8_t _exec_aline_head()
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
 		if (_exec_aline_segment(false) == TG_COMPLETE) {
-			if ((mr.body_length < EPSILON) && (mr.tail_length < EPSILON)) { return(TG_OK);}	// end the move
+//			if ((mr.body_length < EPSILON) && (mr.tail_length < EPSILON)) { return(TG_OK);}	// end the move
+			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) { return(TG_OK);}	// end the move
 			mr.move_state = MOVE_STATE_BODY;
 			mr.section_state = MOVE_STATE_NEW;
 		}
@@ -1151,7 +1171,8 @@ static uint8_t _exec_aline_head()
 static uint8_t _exec_aline_body()
 {
 	if (mr.section_state == MOVE_STATE_NEW) {
-		if (mr.body_length < EPSILON) {
+//		if (mr.body_length < EPSILON) {
+		if (fp_ZERO(mr.body_length)) {
 			mr.move_state = MOVE_STATE_TAIL;
 			return(_exec_aline_tail());			// skip ahead to tail periods
 		}
@@ -1168,7 +1189,8 @@ static uint8_t _exec_aline_body()
 	}
 	if (mr.section_state == MOVE_STATE_RUN) {				// stright part (period 3)
 		if (_exec_aline_segment(false) == TG_COMPLETE) {
-			if (mr.tail_length < EPSILON) { return(TG_OK);}	// end the move
+//			if (mr.tail_length < EPSILON) { return(TG_OK);}	// end the move
+			if (fp_ZERO(mr.tail_length)) { return(TG_OK);}	// end the move
 			mr.move_state = MOVE_STATE_TAIL;
 			mr.section_state = MOVE_STATE_NEW;
 		}
@@ -1182,7 +1204,8 @@ static uint8_t _exec_aline_body()
 static uint8_t _exec_aline_tail()
 {
 	if (mr.section_state == MOVE_STATE_NEW) {
-		if (mr.tail_length < EPSILON) { return(TG_OK);}		// end the move
+//		if (mr.tail_length < EPSILON) { return(TG_OK);}		// end the move
+		if (fp_ZERO(mr.tail_length)) { return(TG_OK);}		// end the move
 		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
 		mr.move_time = mr.tail_length / mr.midpoint_velocity;
 		mr.segments = ceil(uSec(mr.move_time) / (2 * cfg.estd_segment_usec));// # of segments in *each half*

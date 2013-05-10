@@ -118,15 +118,16 @@ static const char msg_sc58[] PROGMEM = "58";
 static const char msg_sc59[] PROGMEM = "59";
 
 static const char msg_sc60[] PROGMEM = "Zero length move";
-static const char msg_sc61[] PROGMEM = "Gcode block skipped";
-static const char msg_sc62[] PROGMEM = "Gcode input error";
-static const char msg_sc63[] PROGMEM = "Gcode feedrate error";
-static const char msg_sc64[] PROGMEM = "Gcode axis word missing";
-static const char msg_sc65[] PROGMEM = "Gcode modal group violation";
-static const char msg_sc66[] PROGMEM = "Homing cycle failed";
-static const char msg_sc67[] PROGMEM = "Max travel exceeded";
-static const char msg_sc68[] PROGMEM = "Max spindle speed exceeded";
-static const char msg_sc69[] PROGMEM = "Arc specification error";
+static const char msg_sc61[] PROGMEM = "Skipped minimum time move";
+static const char msg_sc62[] PROGMEM = "Gcode block skipped";
+static const char msg_sc63[] PROGMEM = "Gcode input error";
+static const char msg_sc64[] PROGMEM = "Gcode feedrate error";
+static const char msg_sc65[] PROGMEM = "Gcode axis word missing";
+static const char msg_sc66[] PROGMEM = "Gcode modal group violation";
+static const char msg_sc67[] PROGMEM = "Homing cycle failed";
+static const char msg_sc68[] PROGMEM = "Max travel exceeded";
+static const char msg_sc69[] PROGMEM = "Max spindle speed exceeded";
+static const char msg_sc70[] PROGMEM = "Arc specification error";
 
 PGM_P const msgStatusMessage[] PROGMEM = {
 	msg_sc00, msg_sc01, msg_sc02, msg_sc03, msg_sc04, msg_sc05, msg_sc06, msg_sc07, msg_sc08, msg_sc09,
@@ -135,7 +136,8 @@ PGM_P const msgStatusMessage[] PROGMEM = {
 	msg_sc30, msg_sc31, msg_sc32, msg_sc33, msg_sc34, msg_sc35, msg_sc36, msg_sc37, msg_sc38, msg_sc39,
 	msg_sc40, msg_sc41, msg_sc42, msg_sc43, msg_sc44, msg_sc45, msg_sc46, msg_sc47, msg_sc48, msg_sc49,
 	msg_sc50, msg_sc51, msg_sc52, msg_sc53, msg_sc54, msg_sc55, msg_sc56, msg_sc57, msg_sc58, msg_sc59,
-	msg_sc60, msg_sc61, msg_sc62, msg_sc63, msg_sc64, msg_sc65, msg_sc66, msg_sc67, msg_sc68, msg_sc69
+	msg_sc60, msg_sc61, msg_sc62, msg_sc63, msg_sc64, msg_sc65, msg_sc66, msg_sc67, msg_sc68, msg_sc69,
+	msg_sc70
 };
 
 char *rpt_get_status_message(uint8_t status, char *msg) 
