@@ -58,16 +58,29 @@
  * set_vector_by_axis()		- load a single value into a zero vector
  */
 
-inline void copy_vector(double dest[], const double src[], uint8_t length) 
+void copy_vector(double dst[], const double src[], uint8_t length) 
 {
 	for (uint8_t i=0; i<length; i++) {
-		dest[i] = src[i];
+		dst[i] = src[i];
 	}
 }
 
-inline void copy_axis_vector(double dest[], const double src[]) 
+void copy_axis_vector(double dst[], const double src[]) 
 {
-	memcpy(dest, src, sizeof(double)*AXES);
+	memcpy(dst, src, sizeof(double)*AXES);
+}
+
+uint8_t vector_equal(const double a[], const double b[]) 
+{
+	if ((fp_EQ(a[AXIS_X], b[AXIS_X])) &&
+	 	(fp_EQ(a[AXIS_Y], b[AXIS_Y])) &&
+	 	(fp_EQ(a[AXIS_Z], b[AXIS_Z])) &&
+	 	(fp_EQ(a[AXIS_A], b[AXIS_A])) &&
+	 	(fp_EQ(a[AXIS_B], b[AXIS_B])) &&
+	 	(fp_EQ(a[AXIS_C], b[AXIS_C]))) {
+		return (true);
+	}
+	return (false);
 }
 
 double get_axis_vector_length(const double a[], const double b[]) 

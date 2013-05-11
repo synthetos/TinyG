@@ -139,10 +139,9 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
 	double junction_velocity;
 
 	// trap error conditions
-	if (minutes < EPSILON_2) { return (TG_ZERO_LENGTH_MOVE);}
-
 	double length = get_axis_vector_length(target, mm.position);
-	if (length < EPSILON) { return (TG_ZERO_LENGTH_MOVE);}
+	if (length < EPSILON) { return (TG_MINIMUM_LENGTH_MOVE_ERROR);}
+	if (minutes < EPSILON_2) { return (TG_MINIMUM_TIME_MOVE_ERROR);}
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) { return (TG_BUFFER_FULL_FATAL);} // never supposed to fail

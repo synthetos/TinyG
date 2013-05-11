@@ -321,7 +321,6 @@ void cm_set_target(double target[], double flag[])
 
 	// process XYZABC for lower modes
 	for (i=AXIS_X; i<=AXIS_Z; i++) {
-//		if ((flag[i] < EPSILON) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 		if ((fp_ZERO(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 			continue;
 		} else if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
@@ -335,7 +334,6 @@ void cm_set_target(double target[], double flag[])
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
 	for (i=AXIS_A; i<=AXIS_C; i++) {
 		// skip axis if not flagged for update or its disabled
-//		if ((flag[i] < EPSILON) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 		if ((fp_ZERO(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 			continue;
 		} else tmp = _calc_ABC(i, target, flag);		
@@ -358,7 +356,6 @@ static double _calc_ABC(uint8_t i, double target[], double flag[])
 	if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
 		tmp = target[i];	// no mm conversion - it's in degrees
 
-//	} else if ((cfg.a[i].axis_mode == AXIS_RADIUS) && (flag[i] > EPSILON)) {
 	} else if ((cfg.a[i].axis_mode == AXIS_RADIUS) && (fp_NOT_ZERO(flag[i]))) {
 		tmp = _to_millimeters(target[i]) * 360 / (2 * M_PI * cfg.a[i].radius);
 
@@ -764,6 +761,8 @@ uint8_t cm_straight_traverse(double target[], double flags[])
 {
 	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_target(target,flags);
+	if (vector_equal(gm.target, gm.position)) { return (TG_OK); }
+
 	cm_cycle_start();							// required for homing & other cycles
 	uint8_t status = MP_LINE(gm.target, 
 							_get_move_times(&gm.min_time), 
@@ -887,6 +886,8 @@ uint8_t cm_straight_feed(double target[], double flags[])
 //	}
 
 	cm_set_target(target, flags);
+	if (vector_equal(gm.target, gm.position)) { return (TG_OK); }
+
 	cm_cycle_start();						// required for homing & other cycles
 	uint8_t status = MP_LINE(gm.target, 
 							 _get_move_times(&gm.min_time), 

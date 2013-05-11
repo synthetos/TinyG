@@ -45,7 +45,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	375.03		// Revisit homing with new feedhold sequencing code
+#define TINYG_FIRMWARE_BUILD   	375.04		// Revisit homing with new feedhold sequencing code
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
@@ -53,9 +53,9 @@
 
 /****** DEVELOPMENT SETTINGS ******/
 
-#define __CANNED_STARTUP					// run any canned startup moves
-#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+//#define __CANNED_STARTUP					// run any canned startup moves
+//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+//#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 //#define __UNIT_TESTS						// master enable for unit tests; uncomment modules in .h files
 //#define __DEBUG							// complies debug functions found in test.c
 
@@ -179,8 +179,8 @@
 #define	TG_ERROR_59 59
 
 // Gcode and machining errors
-#define	TG_ZERO_LENGTH_MOVE 60			// move is less than minimum length
-#define	TG_MINIMUM_TIME_MOVE 61			// move is less than minimum time
+#define	TG_MINIMUM_LENGTH_MOVE_ERROR 60	// move is less than minimum length
+#define	TG_MINIMUM_TIME_MOVE_ERROR 61	// move is less than minimum time
 #define	TG_GCODE_BLOCK_SKIPPED 62		// block is too short - was skipped
 #define	TG_GCODE_INPUT_ERROR 63			// general error for gcode input 
 #define	TG_GCODE_FEEDRATE_ERROR 64		// move has no feedrate

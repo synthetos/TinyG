@@ -81,7 +81,7 @@ uint8_t ar_arc( const double target[],
 	// "move_length" is the total mm of travel of the helix (or just arc)
 	ar.length = hypot(angular_travel * radius, fabs(linear_travel));	
 	if (ar.length < cfg.arc_segment_len) {	// too short to draw
-		return (TG_ZERO_LENGTH_MOVE);
+		return (TG_MINIMUM_LENGTH_MOVE_ERROR);
 	}
 
 	// load the move struct for an arc

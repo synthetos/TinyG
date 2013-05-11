@@ -247,7 +247,8 @@ void tg_text_response(const uint8_t status, const char *buf)
 	} else {
 		units = (PGM_P)&prompt_in;
 	}
-	if ((status == TG_OK) || (status == TG_EAGAIN) || (status == TG_NOOP) || (status == TG_ZERO_LENGTH_MOVE)) {
+//	if ((status == TG_OK) || (status == TG_EAGAIN) || (status == TG_NOOP) || (status == TG_ZERO_LENGTH_MOVE)) {
+	if ((status == TG_OK) || (status == TG_EAGAIN) || (status == TG_NOOP)) {
 		fprintf_P(stderr, (PGM_P)&prompt_ok, units);
 	} else {
 		char status_message[STATUS_MESSAGE_LEN];

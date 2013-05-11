@@ -534,8 +534,8 @@ uint8_t st_prep_line(double steps[], double microseconds)
 	// *** defensive programming ***
 	// trap conditions that would prevent queueing the line
 	if (sps.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (TG_INTERNAL_ERROR);
-	} else if (isfinite(microseconds) == false) { return (TG_ZERO_LENGTH_MOVE);
-	} else if (microseconds < EPSILON) { return (TG_MINIMUM_TIME_MOVE);
+	} else if (isfinite(microseconds) == false) { return (TG_MINIMUM_LENGTH_MOVE_ERROR);
+	} else if (microseconds < EPSILON) { return (TG_MINIMUM_TIME_MOVE_ERROR);
 	}
 	sps.counter_reset_flag = false;		// initialize counter reset flag for this move.
 

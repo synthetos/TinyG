@@ -117,8 +117,8 @@ static const char msg_sc57[] PROGMEM = "57";
 static const char msg_sc58[] PROGMEM = "58";
 static const char msg_sc59[] PROGMEM = "59";
 
-static const char msg_sc60[] PROGMEM = "Zero length move";
-static const char msg_sc61[] PROGMEM = "Skipped minimum time move";
+static const char msg_sc60[] PROGMEM = "Move less than minimum length";
+static const char msg_sc61[] PROGMEM = "move less than minimum time";
 static const char msg_sc62[] PROGMEM = "Gcode block skipped";
 static const char msg_sc63[] PROGMEM = "Gcode input error";
 static const char msg_sc64[] PROGMEM = "Gcode feedrate error";
