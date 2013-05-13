@@ -65,7 +65,7 @@
 uint8_t tg_test(cmdObj_t *cmd)
 {
 	switch ((uint8_t)cmd->value) {
-		case 0: { return (TG_OK);}
+		case 0: { return (STAT_OK);}
 		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
 		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke),PGM_FLAGS); break;}
 		case 3: { xio_open(XIO_DEV_PGM, PGMFILE(&test_squares),PGM_FLAGS); break;}
@@ -83,11 +83,11 @@ uint8_t tg_test(cmdObj_t *cmd)
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 		default: {
 			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
-			return (TG_ERROR);
+			return (STAT_ERROR);
 		}
 	}
 	tg_set_primary_source(XIO_DEV_PGM);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*

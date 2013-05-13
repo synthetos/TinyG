@@ -159,13 +159,13 @@ uint8_t cm_homing_cycle_start(void)
 	hm.func = _homing_axis_start; 			// bind initial processing function
 	cm.cycle_state = CYCLE_HOMING;
 	cm.homing_state = HOMING_NOT_HOMED;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_homing_callback(void)
 {
-	if (cm.cycle_state != CYCLE_HOMING) { return (TG_NOOP);} // exit if not in a homing cycle
-	if (cm_isbusy() == true) { return (TG_EAGAIN);}	 // sync to planner move ends
+	if (cm.cycle_state != CYCLE_HOMING) { return (STAT_NOOP);} // exit if not in a homing cycle
+	if (cm_isbusy() == true) { return (STAT_EAGAIN);}	 // sync to planner move ends
 	return (hm.func(hm.axis));					// execute the current homing move
 }
 
@@ -180,7 +180,7 @@ static uint8_t _homing_finalize_exit(int8_t axis)	// third part of return to hom
 	cm.homing_state = HOMING_HOMED;
 	cm.cycle_state = CYCLE_STARTED;
 	cm_cycle_end();
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static const char msg_axis0[] PROGMEM = "X";
@@ -199,7 +199,7 @@ static uint8_t _homing_error_exit(int8_t axis)
 	}
 //	cmd_add_string("msg",message);
 	cmd_add_message(message);
-	cmd_print_list(TG_HOMING_CYCLE_FAILED, TEXT_INLINE_PAIRS, JSON_RESPONSE_FORMAT);
+	cmd_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_INLINE_PAIRS, JSON_RESPONSE_FORMAT);
 
 	mp_flush_planner(); 						// should be stopped, but in case of switch closure
 	cm_set_coord_system(hm.saved_coord_system);	// restore to work coordinate system
@@ -208,7 +208,7 @@ static uint8_t _homing_error_exit(int8_t axis)
 	cm_set_feed_rate(hm.saved_feed_rate);
 	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;
-	return (TG_HOMING_CYCLE_FAILED);		// homing state remains HOMING_NOT_HOMED
+	return (STAT_HOMING_CYCLE_FAILED);		// homing state remains HOMING_NOT_HOMED
 }
 
 /* Homing axis moves - these execute in sequence for each axis
@@ -349,11 +349,11 @@ static uint8_t _homing_axis_move(int8_t axis, double target, double velocity)
 	cm_request_queue_flush();
 	cm_request_cycle_start();
 	ritorno(cm_straight_feed(vector, flags));
-	return (TG_EAGAIN);
+	return (STAT_EAGAIN);
 }
 
 /* _run_homing_dual_axis() - kernal routine for running homing on a dual axis */
-//static uint8_t _run_homing_dual_axis(int8_t axis) { return (TG_OK);}
+//static uint8_t _run_homing_dual_axis(int8_t axis) { return (STAT_OK);}
 
 /**** HELPERS ****************************************************************/
 /*
@@ -363,7 +363,7 @@ static uint8_t _homing_axis_move(int8_t axis, double target, double velocity)
 uint8_t _set_hm_func(uint8_t (*func)(int8_t axis))
 {
 	hm.func = func;
-	return (TG_EAGAIN);
+	return (STAT_EAGAIN);
 }
 
 /*
@@ -463,6 +463,6 @@ int8_t _get_next_axes(int8_t axis)
 	}
 
 	// Got a valid axis. Find out if it's a dual
-	return (TG_OK);
+	return (STAT_OK);
 }
 */

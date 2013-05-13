@@ -74,14 +74,14 @@ uint8_t ar_arc( const double target[],
 				const double min_time)		// minimum time for arc for replanning purposes
 {
 	if (ar.run_state != MOVE_STATE_OFF) {
-		return (TG_INTERNAL_ERROR);			// (not supposed to fail)
+		return (STAT_INTERNAL_ERROR);			// (not supposed to fail)
 	}
 	ar.linenum = cm_get_model_linenum();	// get gcode model line number as debugging convenience
 
 	// "move_length" is the total mm of travel of the helix (or just arc)
 	ar.length = hypot(angular_travel * radius, fabs(linear_travel));	
 	if (ar.length < cfg.arc_segment_len) {	// too short to draw
-		return (TG_MINIMUM_LENGTH_MOVE_ERROR);
+		return (STAT_MINIMUM_LENGTH_MOVE_ERROR);
 	}
 
 	// load the move struct for an arc
@@ -120,7 +120,7 @@ uint8_t ar_arc( const double target[],
 	ar.center_2 = ar.position[ar.axis_2] - cos(ar.theta) * ar.radius;
 	ar.target[ar.axis_linear] = ar.position[ar.axis_linear];
 	ar.run_state = MOVE_STATE_RUN;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -135,8 +135,8 @@ uint8_t ar_arc( const double target[],
 
 uint8_t ar_arc_callback() 
 {
-	if (ar.run_state == MOVE_STATE_OFF) { return (TG_NOOP);}
-	if (mp_get_planner_buffers_available() == 0) { return (TG_EAGAIN);}
+	if (ar.run_state == MOVE_STATE_OFF) { return (STAT_NOOP);}
+	if (mp_get_planner_buffers_available() == 0) { return (STAT_EAGAIN);}
 	if (ar.run_state == MOVE_STATE_RUN) {
 		if (--ar.segment_count > 0) {
 			ar.theta += ar.segment_theta;
@@ -145,13 +145,13 @@ uint8_t ar_arc_callback()
 			ar.target[ar.axis_linear] += ar.segment_linear_travel;
 			(void)MP_LINE(ar.target, ar.segment_time, ar.work_offset, 0);
 			copy_axis_vector(ar.position, ar.target);	// update runtime position	
-			return (TG_EAGAIN);
+			return (STAT_EAGAIN);
 		} else {
 			(void)MP_LINE(ar.endpoint, ar.segment_time, ar.work_offset,0);// do last segment to the exact endpoint
 		}
 	}
 	ar.run_state = MOVE_STATE_OFF;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -177,14 +177,14 @@ uint8_t cm_arc_feed(double target[], double flags[],// arc endpoints
 					double radius, 					// non-zero sets radius mode
 					uint8_t motion_mode)			// defined motion mode
 {
-	uint8_t status = TG_OK;
+	uint8_t status = STAT_OK;
 
 	// copy parameters into the current state
 	gm.motion_mode = motion_mode;
 
 	// trap zero feed rate condition
 	if ((gm.inverse_feed_rate_mode == false) && (gm.feed_rate == 0)) {
-		return (TG_GCODE_FEEDRATE_ERROR);
+		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
 
 	// Trap conditions where no arc movement will occur, 
@@ -194,7 +194,7 @@ uint8_t cm_arc_feed(double target[], double flags[],// arc endpoints
 	if ((i==0) && (j==0) && (radius==0) && (k==0)) {
 		if ((flags[AXIS_X] + flags[AXIS_Y] + flags[AXIS_Z] + 
 			 flags[AXIS_A] + flags[AXIS_B] + flags[AXIS_C]) == 0) {
-			return (TG_OK);
+			return (STAT_OK);
 		}
 	}
 	// set parameters
@@ -205,7 +205,7 @@ uint8_t cm_arc_feed(double target[], double flags[],// arc endpoints
 	// A non-zero radius is a radius arc. Compute the IJK offset coordinates.
 	// These will override any IJK offsets provided in the call
 	if (radius > EPSILON) {
-		if ((_get_arc_radius() != TG_OK)) {
+		if ((_get_arc_radius() != STAT_OK)) {
 			return (status);					// error return
 		}
 	}
@@ -244,13 +244,13 @@ uint8_t _compute_center_arc()
 {
 	// calculate the theta (angle) of the current point (see header notes)
 	double theta_start = _get_theta(-gm.arc_offset[gm.plane_axis_0], -gm.arc_offset[gm.plane_axis_1]);
-	if(isnan(theta_start) == true) { return(TG_ARC_SPECIFICATION_ERROR);}
+	if(isnan(theta_start) == true) { return(STAT_ARC_SPECIFICATION_ERROR);}
 
 	// calculate the theta (angle) of the target point
 	double theta_end = _get_theta(
 		gm.target[gm.plane_axis_0] - gm.arc_offset[gm.plane_axis_0] - gm.position[gm.plane_axis_0], 
  		gm.target[gm.plane_axis_1] - gm.arc_offset[gm.plane_axis_1] - gm.position[gm.plane_axis_1]);
-	if(isnan(theta_end) == true) { return (TG_ARC_SPECIFICATION_ERROR); }
+	if(isnan(theta_end) == true) { return (STAT_ARC_SPECIFICATION_ERROR); }
 
 	// ensure that the difference is positive so we have clockwise travel
 	if (theta_end < theta_start) { theta_end += 2*M_PI; }
@@ -381,7 +381,7 @@ uint8_t _get_arc_radius()
 	// If r is smaller than d the arc is now traversing the complex plane beyond
 	// the reach of any real CNC, and thus - for practical reasons - we will 
 	// terminate promptly
-	if(isnan(h_x2_div_d) == true) { return (TG_FLOATING_POINT_ERROR);}
+	if(isnan(h_x2_div_d) == true) { return (STAT_FLOATING_POINT_ERROR);}
 
 	// Invert the sign of h_x2_div_d if circle is counter clockwise (see header notes)
 	if (gm.motion_mode == MOTION_MODE_CCW_ARC) { h_x2_div_d = -h_x2_div_d;}
@@ -396,7 +396,7 @@ uint8_t _get_arc_radius()
 	// Complete the operation by calculating the actual center of the arc
 	gm.arc_offset[gm.plane_axis_0] = (x-(y*h_x2_div_d))/2;
 	gm.arc_offset[gm.plane_axis_1] = (y+(x*h_x2_div_d))/2;
-	return (TG_OK);
+	return (STAT_OK);
 } 
     
 /*

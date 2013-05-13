@@ -28,14 +28,14 @@ uint8_t cfg_config_parser(char *str)
 	        }
 			default: rpt_run_multiline_status_report(); 
 		}
-		return (TG_OK);
+		return (STAT_OK);
 	}
 //######################### END diagnostic ##############################
 */
 
 //	if (str[0] == '?') {					// special handling for status report
 //		rpt_run_multiline_status_report();
-//		return (TG_OK);
+//		return (STAT_OK);
 //	}
 	ritorno(_parse_config_string(str,cmd));	// get the first object
 	if ((cmd->value_type != VALUE_TYPE_PARENT) && (cmd->value_type != VALUE_TYPE_NULL)) {
@@ -43,7 +43,7 @@ uint8_t cfg_config_parser(char *str)
 		cmd_persist(cmd);
 	}
 	cmd_print(cmd);							// print value(s)
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 

@@ -90,7 +90,7 @@ double cm_get_spindle_pwm( uint8_t spindle_mode )
 uint8_t cm_spindle_control(uint8_t spindle_mode)
 {
 	mp_queue_command(_exec_spindle_control, spindle_mode, 0);
-	return(TG_OK);
+	return(STAT_OK);
 }
 
 static void _exec_spindle_control(uint8_t spindle_mode, double f)
@@ -118,9 +118,9 @@ static void _exec_spindle_control(uint8_t spindle_mode, double f)
 
 uint8_t cm_set_spindle_speed(double speed)
 {
-//	if (speed > cfg.max_spindle speed) { return (TG_MAX_SPINDLE_SPEED_EXCEEDED);}
+//	if (speed > cfg.max_spindle speed) { return (STAT_MAX_SPINDLE_SPEED_EXCEEDED);}
 	mp_queue_command(_exec_spindle_speed, 0, speed);
-    return (TG_OK);
+    return (STAT_OK);
 }
 
 void cm_exec_spindle_speed(double speed)

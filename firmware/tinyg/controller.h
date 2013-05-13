@@ -30,7 +30,7 @@
 
 #include <stdio.h>						// needed for FILE def'n
 
-#define TG_FLAG_PROMPTS_bm (1<<0)		// prompt enabled if set
+//#define TG_FLAG_PROMPTS_bm (1<<0)		// prompt enabled if set
 #define INPUT_BUFFER_LEN 255			// text buffer size (255 max)
 #define SAVED_BUFFER_LEN 100			// saved buffer size (for reporting only)
 #define OUTPUT_BUFFER_LEN 512			// text buffer size

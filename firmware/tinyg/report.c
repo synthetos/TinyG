@@ -118,7 +118,7 @@ static const char msg_sc58[] PROGMEM = "58";
 static const char msg_sc59[] PROGMEM = "59";
 
 static const char msg_sc60[] PROGMEM = "Move less than minimum length";
-static const char msg_sc61[] PROGMEM = "move less than minimum time";
+static const char msg_sc61[] PROGMEM = "Move less than minimum time";
 static const char msg_sc62[] PROGMEM = "Gcode block skipped";
 static const char msg_sc63[] PROGMEM = "Gcode input error";
 static const char msg_sc64[] PROGMEM = "Gcode feedrate error";
@@ -165,7 +165,7 @@ void rpt_exception(uint8_t status, int16_t value)
 void rpt_print_message(char *msg)
 {
 	cmd_add_string("msg", msg);
-	cmd_print_list(TG_OK, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
+	cmd_print_list(STAT_OK, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 }
 */
 
@@ -184,18 +184,18 @@ void _startup_helper(uint8_t status, const char *msg)
 
 void rpt_print_initializing_message(void)
 {
-	_startup_helper(TG_INITIALIZING, PSTR(INIT_MESSAGE));
+	_startup_helper(STAT_INITIALIZING, PSTR(INIT_MESSAGE));
 }
 
 void rpt_print_loading_configs_message(void)
 {
-	_startup_helper(TG_INITIALIZING, PSTR("Loading configs from EEPROM"));
+	_startup_helper(STAT_INITIALIZING, PSTR("Loading configs from EEPROM"));
 }
 
 void rpt_print_system_ready_message(void)
 {
-	_startup_helper(TG_OK, PSTR("SYSTEM READY"));
-	if (cfg.comm_mode == TEXT_MODE) { tg_text_response(TG_OK, "");}// prompt
+	_startup_helper(STAT_OK, PSTR("SYSTEM READY"));
+	if (cfg.comm_mode == TEXT_MODE) { tg_text_response(STAT_OK, "");}// prompt
 }
 
 /*****************************************************************************
@@ -285,13 +285,13 @@ uint8_t rpt_set_status_report(cmdObj_t *cmd)
 			cmd_persist(cmd);
 			elements++;
 		} else {
-			return (TG_INPUT_VALUE_UNSUPPORTED);
+			return (STAT_INPUT_VALUE_UNSUPPORTED);
 		}
 	}
-	if (elements == 0) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	if (elements == 0) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	memcpy(cfg.status_report_list, status_report_list, sizeof(status_report_list));
 	rpt_populate_unfiltered_status_report();			// return current values
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /* 
@@ -312,7 +312,7 @@ uint8_t rpt_set_status_report(cmdObj_t *cmd)
 void rpt_run_text_status_report()
 {
 	rpt_populate_unfiltered_status_report();
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
+	cmd_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 }
 
 void rpt_request_status_report(uint8_t request_type)
@@ -332,19 +332,19 @@ uint8_t rpt_status_report_callback() 		// called by controller dispatcher
 {
 	if ((cfg.status_report_verbosity == SR_OFF) || 
 		(cm.status_report_request != SR_IMMEDIATE_REQUEST)) {
-		return (TG_NOOP);
+		return (STAT_NOOP);
 	}
 	if (cfg.status_report_verbosity == SR_FILTERED) {
 		if (rpt_populate_filtered_status_report() == true) {
-			cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
+			cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 		}
 	} else {
 		rpt_populate_unfiltered_status_report();
-		cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
+		cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	}
 //	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// reset minimum interval
 	cm.status_report_request = SR_NO_REQUEST;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -450,7 +450,7 @@ void rpt_request_queue_report()
 
 uint8_t rpt_queue_report_callback()
 {
-	if (qr.request == false) { return (TG_NOOP);}
+	if (qr.request == false) { return (STAT_NOOP);}
 	qr.request = false;
 
 	// cget a clean cmd object
@@ -463,8 +463,8 @@ uint8_t rpt_queue_report_callback()
 	sprintf_P(cmd->token, PSTR("qr"));
 	cmd->value = qr.buffers_available;
 	cmd->type = TYPE_INTEGER;
-	cmd_print_list(TG_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
-	return (TG_OK);
+	cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
+	return (STAT_OK);
 }
 
 /****************************************************************************
@@ -477,7 +477,7 @@ uint8_t rpt_queue_report_callback()
 void sr_unit_tests(void)
 {
 	sr_init();
-	tg.communications_mode = TG_JSON_MODE;
+	tg.communications_mode = STAT_JSON_MODE;
 	sr_run_status_report();
 }
 

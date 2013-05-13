@@ -61,7 +61,7 @@ These commands are active from the command line:\n\
 _status_report_advisory();
 _postscript();
 rpt_print_system_ready_message();
-return(TG_OK);
+return(STAT_OK);
 }
 
 /*
@@ -93,7 +93,7 @@ For configuration details see: https://github.com/synthetos/TinyG/wiki/TinyG-Con
 "));
 _status_report_advisory();
 _postscript();
-return(TG_OK);
+return(STAT_OK);
 }
 
 /*
@@ -119,7 +119,7 @@ Invoke self test by entering $test=N where N is one of:\n\
   $test=13 coordinate system offset test (G92, G54-G59)\n\
 "));
 _postscript();
-return(TG_OK);
+return(STAT_OK);
 }
 
 /*
@@ -132,7 +132,7 @@ fprintf_P(stderr, PSTR("\
 Enter $defaults=1 to reset the system to the factory default values.\n\
 This will overwrite any changes you have made.\n"));
 _postscript();
-return(TG_OK);
+return(STAT_OK);
 }
 
 /*
@@ -144,7 +144,7 @@ fprintf_P(stderr, PSTR("\n\n\n#### TinyG BOOT LOADER Help ####\n"));
 fprintf_P(stderr, PSTR("\
 Enter $boot=1 to enter the boot loader.\n"));
 _postscript();
-return(TG_OK);
+return(STAT_OK);
 }
 
 // help helper functions (snicker)

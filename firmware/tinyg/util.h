@@ -58,7 +58,7 @@ double *set_vector_by_axis(double value, uint8_t axis);
 
 // ritorno is a handy way to provide exception returns - it returns only if an error occurred
 // (ritorno is Italian for return) 
-#define ritorno(a) { uint8_t status; if((status = a) != TG_OK) return(status);}
+#define ritorno(a) { uint8_t status; if((status = a) != STAT_OK) return(status);}
 
 /***** Math Support *****/
 

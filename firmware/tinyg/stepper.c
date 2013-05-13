@@ -399,7 +399,7 @@ void st_request_exec_move()
 static void _exec_move()
 {
    	if (sps.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
-		if (mp_exec_move() != TG_NOOP) {
+		if (mp_exec_move() != STAT_NOOP) {
 			sps.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
 			_request_load_move();
 		}
@@ -533,9 +533,9 @@ uint8_t st_prep_line(double steps[], double microseconds)
 
 	// *** defensive programming ***
 	// trap conditions that would prevent queueing the line
-	if (sps.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (TG_INTERNAL_ERROR);
-	} else if (isfinite(microseconds) == false) { return (TG_MINIMUM_LENGTH_MOVE_ERROR);
-	} else if (microseconds < EPSILON) { return (TG_MINIMUM_TIME_MOVE_ERROR);
+	if (sps.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);
+	} else if (isfinite(microseconds) == false) { return (STAT_MINIMUM_LENGTH_MOVE_ERROR);
+	} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
 	sps.counter_reset_flag = false;		// initialize counter reset flag for this move.
 
@@ -565,7 +565,7 @@ uint8_t st_prep_line(double steps[], double microseconds)
 	}
 	sps.prev_ticks = sps.timer_ticks;
 	sps.move_type = MOVE_TYPE_ALINE;
-	return (TG_OK);
+	return (STAT_OK);
 }
 // FOOTNOTE: This expression was previously computed as below but floating 
 // point rounding errors caused subtle and nasty accumulated position errors:

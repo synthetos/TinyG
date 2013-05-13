@@ -68,8 +68,8 @@ uint8_t gc_gcode_parser(char *block)
 {
 	uint8_t msg_flag = _normalize_gcode_block(block);	// get block ready for parsing
 	if (block[0] == NUL) {
-		if (msg_flag == true) return (TG_OK);	// queues messages for display
-		return (TG_NOOP); 
+		if (msg_flag == true) return (STAT_OK);	// queues messages for display
+		return (STAT_NOOP); 
 	}
 	return(_parse_gcode_block(block));			// parse block & return if error
 }
@@ -177,7 +177,7 @@ static uint8_t _parse_gcode_block(char *buf)
 	uint8_t i=0; 	 			// persistent index into Gcode block buffer (buf)
   	char letter;				// parsed letter, eg.g. G or X or Y
 	double value;				// value parsed from letter (e.g. 2 for G2)
-	uint8_t status = TG_OK;
+	uint8_t status = STAT_OK;
 
 	// set initial state for new move 
 	memset(&gp, 0, sizeof(gp));	// clear all parser values
@@ -186,7 +186,7 @@ static uint8_t _parse_gcode_block(char *buf)
 	gn.motion_mode = cm_get_motion_mode();	// get motion mode from previous block
 
   	// extract commands and parameters
-	while((status = _get_next_statement(&letter, &value, buf, &i)) == TG_OK) {
+	while((status = _get_next_statement(&letter, &value, buf, &i)) == STAT_OK) {
 
 		switch(letter) {
 			case 'G':
@@ -208,7 +208,7 @@ static uint8_t _parse_gcode_block(char *buf)
 							case 1: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_G28_POSITION); 
 							case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SEARCH_HOME); 
 							case 3: SET_NON_MODAL (next_action, NEXT_ACTION_SET_ABSOLUTE_ORIGIN);
-							default: status = TG_UNRECOGNIZED_COMMAND;
+							default: status = STAT_UNRECOGNIZED_COMMAND;
 						}
 						break;
 					}
@@ -216,14 +216,14 @@ static uint8_t _parse_gcode_block(char *buf)
 						switch (_point(value)) {
 							case 0: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_GOTO_G30_POSITION);
 							case 1: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_G30_POSITION); 
-							default: status = TG_UNRECOGNIZED_COMMAND;
+							default: status = STAT_UNRECOGNIZED_COMMAND;
 						}
 						break;
 					}
 /*					case 38: 
 						switch (_point(value)) {
 							case 2: SET_NON_MODAL (next_action, NEXT_ACTION_STRAIGHT_PROBE); 
-							default: status = TG_UNRECOGNIZED_COMMAND;
+							default: status = STAT_UNRECOGNIZED_COMMAND;
 						}
 						break;
 					}
@@ -240,7 +240,7 @@ static uint8_t _parse_gcode_block(char *buf)
 						switch (_point(value)) {
 							case 0: SET_MODAL (MODAL_GROUP_G13, path_control, PATH_EXACT_PATH);
 							case 1: SET_MODAL (MODAL_GROUP_G13, path_control, PATH_EXACT_STOP); 
-							default: status = TG_UNRECOGNIZED_COMMAND;
+							default: status = STAT_UNRECOGNIZED_COMMAND;
 						}
 						break;
 					}
@@ -254,13 +254,13 @@ static uint8_t _parse_gcode_block(char *buf)
 							case 1: SET_NON_MODAL (next_action, NEXT_ACTION_RESET_ORIGIN_OFFSETS);
 							case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS);
 							case 3: SET_NON_MODAL (next_action, NEXT_ACTION_RESUME_ORIGIN_OFFSETS); 
-							default: status = TG_UNRECOGNIZED_COMMAND;
+							default: status = STAT_UNRECOGNIZED_COMMAND;
 						}
 						break;
 					}
 					case 93: SET_MODAL (MODAL_GROUP_G5, inverse_feed_rate_mode, true);
 					case 94: SET_MODAL (MODAL_GROUP_G5, inverse_feed_rate_mode, false);
-					default: status = TG_UNRECOGNIZED_COMMAND;
+					default: status = STAT_UNRECOGNIZED_COMMAND;
 				}
 				break;
 
@@ -281,7 +281,7 @@ static uint8_t _parse_gcode_block(char *buf)
 					case 49: SET_MODAL (MODAL_GROUP_M9, override_enables, false);
 					case 50: SET_MODAL (MODAL_GROUP_M9, feed_rate_override_enable, true); // conditionally true
 					case 51: SET_MODAL (MODAL_GROUP_M9, spindle_override_enable, true);	  // conditionally true
-					default: status = TG_UNRECOGNIZED_COMMAND;
+					default: status = STAT_UNRECOGNIZED_COMMAND;
 				}
 				break;
 
@@ -304,11 +304,11 @@ static uint8_t _parse_gcode_block(char *buf)
 			case 'R': SET_NON_MODAL (arc_radius, value);
 			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);// line number
 			case 'L': break;								// not used for anything
-			default: status = TG_UNRECOGNIZED_COMMAND;
+			default: status = STAT_UNRECOGNIZED_COMMAND;
 		}
-		if(status != TG_OK) break;
+		if(status != STAT_OK) break;
 	}
-	if ((status != TG_OK) && (status != TG_COMPLETE)) return (status);
+	if ((status != STAT_OK) && (status != STAT_COMPLETE)) return (status);
 	ritorno(_check_gcode_block());			// perform Gcode error checking
 	return (_execute_gcode_block());		// if successful execute the block
 }
@@ -354,7 +354,7 @@ static uint8_t _parse_gcode_block(char *buf)
 
 static uint8_t _execute_gcode_block()
 {
-	uint8_t status = TG_OK;
+	uint8_t status = STAT_OK;
 
 	cm_set_model_linenum(gn.linenum);
 	EXEC_FUNC(cm_set_inverse_feed_rate_mode, inverse_feed_rate_mode);
@@ -421,7 +421,7 @@ static uint8_t _execute_gcode_block()
 }
 
 /*
- * _check_gcode_block() - return a TG_ error if an error is detected
+ * _check_gcode_block() - return a STAT_ error if an error is detected
  */
 
 static uint8_t _check_gcode_block()
@@ -434,15 +434,15 @@ static uint8_t _check_gcode_block()
 	// line, the activity of the group 1 G-code is suspended for that line. 
 	// The axis word-using G-codes from group 0 are G10, G28, G30, and G92"
 //	if ((gp.modals[MODAL_GROUP_G0] == true) && (gp.modals[MODAL_GROUP_G1] == true)) {
-//		return (TG_MODAL_GROUP_VIOLATION);
+//		return (STAT_MODAL_GROUP_VIOLATION);
 //	}
 	
 	// look for commands that require an axis word to be present
 //	if ((gp.modals[MODAL_GROUP_G0] == true) || (gp.modals[MODAL_GROUP_G1] == true)) {
 //		if (_axis_changed() == false)
-//		return (TG_GCODE_AXIS_WORD_MISSING);
+//		return (STAT_GCODE_AXIS_WORD_MISSING);
 //	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -451,17 +451,17 @@ static uint8_t _check_gcode_block()
 
 static uint8_t _get_next_statement(char *letter, double *value, char *buf, uint8_t *i) {
 	if (buf[*i] == NUL) { 		// no more statements
-		return (TG_COMPLETE);
+		return (STAT_COMPLETE);
 	}
 	*letter = buf[*i];
 	if(isupper(*letter) == false) { 
-		return (TG_EXPECTED_COMMAND_LETTER);
+		return (STAT_EXPECTED_COMMAND_LETTER);
 	}
 	(*i)++;
 	if (read_double(buf, i, value) == false) {
-		return (TG_BAD_NUMBER_FORMAT);
+		return (STAT_BAD_NUMBER_FORMAT);
 	}
-	return (TG_OK);		// leave the index on the next character after the statement
+	return (STAT_OK);		// leave the index on the next character after the statement
 }
 
 static uint8_t _point(double value) 

@@ -131,9 +131,9 @@ ISR(PWM2_ISR_vect)
 
 uint8_t pwm_set_freq(uint8_t chan, double freq)
 {
-	if (chan > PWMS) { return (TG_NO_SUCH_DEVICE);}
-	if (freq > PWM_MAX_FREQ) { return (TG_INPUT_VALUE_TOO_LARGE);}
-	if (freq < PWM_MIN_FREQ) { return (TG_INPUT_VALUE_TOO_SMALL);}
+	if (chan > PWMS) { return (STAT_NO_SUCH_DEVICE);}
+	if (freq > PWM_MAX_FREQ) { return (STAT_INPUT_VALUE_TOO_LARGE);}
+	if (freq < PWM_MIN_FREQ) { return (STAT_INPUT_VALUE_TOO_SMALL);}
 
 	// set the period and the prescaler
 	double prescale = F_CPU/65536/freq;	// optimal non-integer prescaler value
@@ -153,7 +153,7 @@ uint8_t pwm_set_freq(uint8_t chan, double freq)
 		pwm[chan].timer->PER = F_CPU/64/freq;
 		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV64_gc;
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /* 
@@ -171,25 +171,25 @@ uint8_t pwm_set_freq(uint8_t chan, double freq)
 
 uint8_t pwm_set_duty(uint8_t chan, double duty)
 {
-    if (duty < 0.0) { return (TG_INPUT_VALUE_TOO_SMALL);}
-    if (duty > 1.0) { return (TG_INPUT_VALUE_TOO_LARGE);}
+    if (duty < 0.0) { return (STAT_INPUT_VALUE_TOO_SMALL);}
+    if (duty > 1.0) { return (STAT_INPUT_VALUE_TOO_LARGE);}
     
 	// Ffrq = Fper/(2N(CCA+1))
 	// Fpwm = Fper/((N(PER+1))
 	
     double period_scalar = pwm[chan].timer->PER;
 	pwm[chan].timer->CCB = (uint16_t)(period_scalar * duty) + 1;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
 uint8_t pwm_set_duty(uint8_t chan, double duty)
 {
-	if (duty < 0)   { return (TG_INPUT_VALUE_TOO_SMALL);}
-	if (duty > 100) { return (TG_INPUT_VALUE_TOO_LARGE);}
+	if (duty < 0)   { return (STAT_INPUT_VALUE_TOO_SMALL);}
+	if (duty > 100) { return (STAT_INPUT_VALUE_TOO_LARGE);}
 
 	pwm[chan].timer->CCB = (uint16_t)(pwm[chan].timer->PER - pwm[chan].timer->PER / (duty/100));
-	return (TG_OK);
+	return (STAT_OK);
 }
 */
 //###########################################################################

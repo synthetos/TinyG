@@ -868,11 +868,11 @@ uint8_t cmd_index_is_group(index_t index) { return _index_is_group(index);}
  */
 static uint8_t _set_hv(cmdObj_t *cmd) 
 {
-	if (cmd->value > TINYG_HARDWARE_VERSION_MAX) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	if (cmd->value > TINYG_HARDWARE_VERSION_MAX) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	_set_dbl(cmd);					// record the hardware version
 	sys_port_bindings(cmd->value);	// reset port bindings
 	gpio_init();					// re-initialize the GPIO ports
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _get_id(cmdObj_t *cmd) 
@@ -881,7 +881,7 @@ static uint8_t _get_id(cmdObj_t *cmd)
 	sys_get_id(tmp);
 	ritorno(cmd_copy_string(cmd, tmp));
 	cmd->type = TYPE_STRING;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /**** REPORT FUNCTIONS ********************************************************
@@ -900,33 +900,33 @@ static uint8_t _get_qr(cmdObj_t *cmd)
 {
 	cmd->value = (double)mp_get_planner_buffers_available();
 	cmd->type = TYPE_INTEGER;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _run_qf(cmdObj_t *cmd) 
 {
 	cm_request_queue_flush();
 //	cm_flush_planner();
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _get_er(cmdObj_t *cmd) 
 {
-	rpt_exception(TG_INTERNAL_ERROR, 42);	// bogus exception report
-	return (TG_OK);
+	rpt_exception(STAT_INTERNAL_ERROR, 42);	// bogus exception report
+	return (STAT_OK);
 }
 
 static uint8_t _get_rx(cmdObj_t *cmd)
 {
 	cmd->value = (double)xio_get_usb_rx_free();
 	cmd->type = TYPE_INTEGER;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _get_sr(cmdObj_t *cmd)
 {
 	rpt_populate_unfiltered_status_report();
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _set_sr(cmdObj_t *cmd)
@@ -943,18 +943,18 @@ static uint8_t _set_si(cmdObj_t *cmd)
 {
 	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
 	cfg.status_report_interval = (uint32_t)cmd->value;
-	return(TG_OK);
+	return(STAT_OK);
 }
 
 static uint8_t _run_boot(cmdObj_t *cmd)
 {
 	tg_request_bootloader();
-	return(TG_OK);
+	return(STAT_OK);
 }
 
 uint8_t cmd_set_jv(cmdObj_t *cmd) 
 {
-	if (cmd->value > JV_VERBOSE) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	if (cmd->value > JV_VERBOSE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	cfg.json_verbosity = cmd->value;
 
 	cfg.echo_json_footer = false;
@@ -969,7 +969,7 @@ uint8_t cmd_set_jv(cmdObj_t *cmd)
 	if (cmd->value >= JV_LINENUM)	{ cfg.echo_json_linenum = true;}
 	if (cmd->value >= JV_VERBOSE)	{ cfg.echo_json_gcode_block = true;}
 
-	return(TG_OK);
+	return(STAT_OK);
 }
 
 
@@ -1002,7 +1002,7 @@ static uint8_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value)
 	cmd->value = (double)value;
 	cmd->type = TYPE_INTEGER;
 	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg[value*2]))); // hack alert: direct computation of index
-	return (TG_OK);
+	return (STAT_OK);
 //	return((char *)pgm_read_word(&msg[(uint8_t)value]));
 }
 
@@ -1014,7 +1014,7 @@ static uint8_t _get_stat(cmdObj_t *cmd)
 	cmd->value = cm_get_machine_state();
 	cmd->type = TYPE_INTEGER;
 	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN));
-	return (TG_OK);
+	return (STAT_OK);
  */
 //	strncpy_P(cmd->string_value,(PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN);
 }
@@ -1083,7 +1083,7 @@ static uint8_t _get_line(cmdObj_t *cmd)
 {
 	cmd->value = (double)mp_get_runtime_linenum();
 	cmd->type = TYPE_INTEGER;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _get_vel(cmdObj_t *cmd) 
@@ -1093,7 +1093,7 @@ static uint8_t _get_vel(cmdObj_t *cmd)
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 //	cmd->type = TYPE_FLOAT_UNITS;	//++++ UNTESTED
 	cmd->type = TYPE_FLOAT;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _get_pos(cmdObj_t *cmd) 
@@ -1102,7 +1102,7 @@ static uint8_t _get_pos(cmdObj_t *cmd)
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 //	cmd->type = TYPE_FLOAT_UNITS;	//++++ UNTESTED
 	cmd->type = TYPE_FLOAT;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _get_mpos(cmdObj_t *cmd) 
@@ -1111,7 +1111,7 @@ static uint8_t _get_mpos(cmdObj_t *cmd)
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 //	cmd->type = TYPE_FLOAT_UNITS;	//++++ UNTESTED
 	cmd->type = TYPE_FLOAT;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _get_ofs(cmdObj_t *cmd) 
@@ -1120,7 +1120,7 @@ static uint8_t _get_ofs(cmdObj_t *cmd)
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 //	cmd->type = TYPE_FLOAT_UNITS;	//++++ UNTESTED
 	cmd->type = TYPE_FLOAT;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static void _print_pos_helper(cmdObj_t *cmd, uint8_t units)
@@ -1152,7 +1152,7 @@ static uint8_t _get_gc(cmdObj_t *cmd)
 {
 	ritorno(cmd_copy_string(cmd, tg.in_buf));
 	cmd->type = TYPE_STRING;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _run_gc(cmdObj_t *cmd)
@@ -1163,7 +1163,7 @@ static uint8_t _run_gc(cmdObj_t *cmd)
 static uint8_t _run_home(cmdObj_t *cmd)
 {
 	if (cmd->value == true) { cm_homing_cycle_start();}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /**** AXIS AND MOTOR FUNCTIONS ************************************************
@@ -1189,7 +1189,7 @@ static uint8_t _set_motor_steps_per_unit(cmdObj_t *cmd)
 {
 	uint8_t m = _get_motor(cmd->index);
 	cfg.m[m].steps_per_unit = (360 / (cfg.m[m].step_angle / cfg.m[m].microsteps) / cfg.m[m].travel_rev);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _get_am(cmdObj_t *cmd)
@@ -1203,34 +1203,34 @@ static uint8_t _set_am(cmdObj_t *cmd)		// axis mode
 
 	char linear_axes[] = {"xyz"};
 	if (strchr(linear_axes, cmd->token[0]) != NULL) { // true if it's a linear axis
-		if (cmd->value > AXIS_MAX_LINEAR) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+		if (cmd->value > AXIS_MAX_LINEAR) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	} else {
-		if (cmd->value > AXIS_MAX_ROTARY) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+		if (cmd->value > AXIS_MAX_ROTARY) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	}
 	_set_ui8(cmd);
-	return(TG_OK);
+	return(STAT_OK);
 }
 
 static uint8_t _set_sw(cmdObj_t *cmd)		// switch setting
 {
-	if (cmd->value > SW_MODE_MAX_VALUE) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	if (cmd->value > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	_set_ui8(cmd);
 	gpio_init();
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _set_sa(cmdObj_t *cmd)		// motor step angle
 { 
 	_set_dbl(cmd);
 	_set_motor_steps_per_unit(cmd); 
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _set_tr(cmdObj_t *cmd)		// motor travel per revolution
 { 
 	_set_dbu(cmd);
 	_set_motor_steps_per_unit(cmd); 
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _set_mi(cmdObj_t *cmd)		// motor microsteps
@@ -1241,14 +1241,14 @@ static uint8_t _set_mi(cmdObj_t *cmd)		// motor microsteps
 	_set_ui8(cmd);							// set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);
 	st_set_microsteps(_get_motor(cmd->index), (uint8_t)cmd->value);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _set_po(cmdObj_t *cmd)		// motor polarity
 { 
 	ritorno (_set_01(cmd));
 	st_set_polarity(_get_motor(cmd->index), (uint8_t)cmd->value);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static void _pr_ma_ui8(cmdObj_t *cmd)		// print uint8_t value
@@ -1313,12 +1313,12 @@ static uint8_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
 	} else { 
 		(void)xio_ctrl(XIO_DEV_USB, no);
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _set_ic(cmdObj_t *cmd) 				// ignore CR or LF on RX
 {
-	if (cmd->value > IGNORE_LF) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	if (cmd->value > IGNORE_LF) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	cfg.ignore_crlf = (uint8_t)cmd->value;
 	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
 	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORELF);
@@ -1328,26 +1328,26 @@ static uint8_t _set_ic(cmdObj_t *cmd) 				// ignore CR or LF on RX
 	} else if (cfg.ignore_crlf == IGNORE_LF) {		// $ic=2
 		(void)xio_ctrl(XIO_DEV_USB, XIO_IGNORELF);
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _set_ec(cmdObj_t *cmd) 				// expand CR to CRLF on TX
 {
-	if (cmd->value > true) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	if (cmd->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	cfg.enable_cr = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_CRLF, XIO_NOCRLF));
 }
 
 static uint8_t _set_ee(cmdObj_t *cmd) 				// enable character echo
 {
-	if (cmd->value > true) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	if (cmd->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	cfg.enable_echo = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_ECHO, XIO_NOECHO));
 }
 
 static uint8_t _set_ex(cmdObj_t *cmd)				// enable XON/XOFF
 {
-	if (cmd->value > true) { return (TG_INPUT_VALUE_UNSUPPORTED);}
+	if (cmd->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	cfg.enable_xon = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_XOFF, XIO_NOXOFF));
 }
@@ -1367,22 +1367,22 @@ static uint8_t _set_baud(cmdObj_t *cmd)
 	uint8_t baud = (uint8_t)cmd->value;
 	if ((baud < 1) || (baud > 6)) {
 		cmd_add_message_P(PSTR("*** WARNING *** Illegal baud rate specified"));
-		return (TG_INPUT_VALUE_UNSUPPORTED);
+		return (STAT_INPUT_VALUE_UNSUPPORTED);
 	}
 	cfg.usb_baud_rate = baud;
 	cfg.usb_baud_flag = true;
 	char message[CMD_MESSAGE_LEN]; 
 	sprintf_P(message, PSTR("*** NOTICE *** Restting baud rate to %S"),(PGM_P)pgm_read_word(&msg_baud[baud]));
 	cmd_add_message(message);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cfg_baud_rate_callback(void) 
 {
-	if (cfg.usb_baud_flag == false) { return(TG_NOOP);}
+	if (cfg.usb_baud_flag == false) { return(STAT_NOOP);}
 	cfg.usb_baud_flag = false;
 	xio_set_baud(XIO_DEV_USB, cfg.usb_baud_rate);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /**** UberGroup Operations ****************************************************
@@ -1402,16 +1402,16 @@ uint8_t cfg_baud_rate_callback(void)
 static uint8_t _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
 {
 	for (uint8_t i=0; i < CMD_MAX_OBJECTS; i++) {
-		if (list[i][0] == NUL) { return (TG_COMPLETE);}
+		if (list[i][0] == NUL) { return (STAT_COMPLETE);}
 		cmd_reset_list();
 		cmd = cmd_body;
 		strncpy(cmd->token, list[i], CMD_TOKEN_LEN);
 		cmd->index = cmd_get_index("", cmd->token);
 //		cmd->type = TYPE_PARENT;
 		cmd_get_cmdObj(cmd);
-		cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
+		cmd_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 	}
-	return (TG_COMPLETE);
+	return (STAT_COMPLETE);
 }
 
 static uint8_t _do_motors(cmdObj_t *cmd)	// print parameters for all motor groups
@@ -1436,14 +1436,14 @@ static uint8_t _do_all(cmdObj_t *cmd)	// print all parameters
 {
 	strcpy(cmd->token,"sys");			// print system group
 	_get_grp(cmd);
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
+	cmd_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 
 	_do_motors(cmd);					// print all motor groups
 	_do_axes(cmd);						// print all axis groups
 
 	strcpy(cmd->token,"p1");			// print PWM group		
 	_get_grp(cmd);
-	cmd_print_list(TG_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
+	cmd_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 
 	return (_do_offsets(cmd));			// print all offsets
 }
@@ -1474,13 +1474,13 @@ static uint8_t _do_all(cmdObj_t *cmd)	// print all parameters
 
 uint8_t cmd_set(cmdObj_t *cmd)
 {
-	ASSERT_CMD_INDEX(TG_UNRECOGNIZED_COMMAND);
+	ASSERT_CMD_INDEX(STAT_UNRECOGNIZED_COMMAND);
 	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].set)))(cmd));
 }
 
 uint8_t cmd_get(cmdObj_t *cmd)
 {
-	ASSERT_CMD_INDEX(TG_UNRECOGNIZED_COMMAND);
+	ASSERT_CMD_INDEX(STAT_UNRECOGNIZED_COMMAND);
 	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd));
 }
 
@@ -1547,7 +1547,7 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 {
 	if (cmd->value != true) {				// failsafe. Must set true or no action occurs
 		print_defaults_help(cmd);
-		return (TG_OK);
+		return (STAT_OK);
 	}
 	cm_set_units_mode(MILLIMETERS);			// must do inits in MM mode
 
@@ -1561,7 +1561,7 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 	}
 	rpt_print_initializing_message();		// don't start TX until all the NVM persistence is done
 	rpt_init_status_report();				// reset status reports
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /******************************************************************************
@@ -1577,11 +1577,11 @@ static uint8_t _set_defa(cmdObj_t *cmd)
 uint8_t cfg_text_parser(char *str)
 {
 	cmdObj_t *cmd = cmd_reset_list();		// returns first object in the body
-	uint8_t status = TG_OK;
+	uint8_t status = STAT_OK;
 
 	if (str[0] == '?') {					// handle status report case
 		rpt_run_text_status_report();
-		return (TG_OK);
+		return (STAT_OK);
 	}
 	if ((str[0] == '$') && (str[1] == NUL)) {  // treat a lone $ as a sys request
 		strcat(str,"sys");
@@ -1589,8 +1589,8 @@ uint8_t cfg_text_parser(char *str)
 	// single-unit parser processing
 	ritorno(_text_parser(str, cmd));		// decode the request or return if error
 	if ((cmd->type == TYPE_PARENT) || (cmd->type == TYPE_NULL)) {
-		if (cmd_get(cmd) == TG_COMPLETE) {	// populate value, group values, or run uber-group displays
-			return (TG_OK);					// return for uber-group displays so they don't print twice
+		if (cmd_get(cmd) == STAT_COMPLETE) {	// populate value, group values, or run uber-group displays
+			return (STAT_OK);					// return for uber-group displays so they don't print twice
 		}
 	} else { 								// process SET and RUN commands
 		status = cmd_set(cmd);				// set single value
@@ -1631,14 +1631,14 @@ static uint8_t _text_parser(char *str, cmdObj_t *cmd)
 		}
 	}
 	if ((cmd->index = cmd_get_index("",cmd->token)) == NO_MATCH) { 
-		return (TG_UNRECOGNIZED_COMMAND);
+		return (STAT_UNRECOGNIZED_COMMAND);
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /***** Generic Internal Functions *********************************************
  * Generic sets()
- * _set_nul() - set nothing (returns TG_NOOP)
+ * _set_nul() - set nothing (returns STAT_NOOP)
  * _set_ui8() - set value as 8 bit uint8_t value w/o unit conversion
  * _set_01()  - set a 0 or 1 uint8_t value with validation
  * _set_012() - set a 0, 1 or 2 uint8_t value with validation
@@ -1647,25 +1647,25 @@ static uint8_t _text_parser(char *str, cmdObj_t *cmd)
  * _set_dbu() - set value as double w/unit conversion
  *
  * Generic gets()
- * _get_nul() - get nothing (returns TG_NOOP)
+ * _get_nul() - get nothing (returns STAT_NOOP)
  * _get_ui8() - get value as 8 bit uint8_t w/o unit conversion
  * _get_int() - get value as 32 bit integer w/o unit conversion
  * _get_dbl() - get value as double w/o unit conversion
  * _get_dbu() - get value as double w/unit conversion
  */
-static uint8_t _set_nul(cmdObj_t *cmd) { return (TG_NOOP);}
+static uint8_t _set_nul(cmdObj_t *cmd) { return (STAT_NOOP);}
 
 static uint8_t _set_ui8(cmdObj_t *cmd)
 {
 	*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->type = TYPE_INTEGER;
-	return(TG_OK);
+	return(STAT_OK);
 }
 
 static uint8_t _set_01(cmdObj_t *cmd)
 {
 	if (cmd->value > 1) { 
-		return (TG_INPUT_VALUE_UNSUPPORTED);
+		return (STAT_INPUT_VALUE_UNSUPPORTED);
 	} else {
 		return (_set_ui8(cmd));
 	}
@@ -1674,7 +1674,7 @@ static uint8_t _set_01(cmdObj_t *cmd)
 static uint8_t _set_012(cmdObj_t *cmd)
 {
 	if (cmd->value > 2) { 
-		return (TG_INPUT_VALUE_UNSUPPORTED);
+		return (STAT_INPUT_VALUE_UNSUPPORTED);
 	} else {
 		return (_set_ui8(cmd));
 	}
@@ -1684,7 +1684,7 @@ static uint8_t _set_int(cmdObj_t *cmd)
 {
 	*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->type = TYPE_INTEGER;
-	return(TG_OK);
+	return(STAT_OK);
 }
 
 static uint8_t _set_dbl(cmdObj_t *cmd)
@@ -1692,7 +1692,7 @@ static uint8_t _set_dbl(cmdObj_t *cmd)
 	*((double *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->type = TYPE_FLOAT;
-	return(TG_OK);
+	return(STAT_OK);
 }
 
 static uint8_t _set_dbu(cmdObj_t *cmd)
@@ -1701,27 +1701,27 @@ static uint8_t _set_dbu(cmdObj_t *cmd)
 	*((double *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->type = TYPE_FLOAT_UNITS;
-	return(TG_OK);
+	return(STAT_OK);
 }
 
 static uint8_t _get_nul(cmdObj_t *cmd) 
 { 
 	cmd->type = TYPE_NULL;
-	return (TG_NOOP);
+	return (STAT_NOOP);
 }
 
 static uint8_t _get_ui8(cmdObj_t *cmd)
 {
 	cmd->value = (double)*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target));
 	cmd->type = TYPE_INTEGER;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _get_int(cmdObj_t *cmd)
 {
 	cmd->value = (double)*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target));
 	cmd->type = TYPE_INTEGER;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _get_dbl(cmdObj_t *cmd)
@@ -1729,7 +1729,7 @@ static uint8_t _get_dbl(cmdObj_t *cmd)
 	cmd->value = *((double *)pgm_read_word(&cfgArray[cmd->index].target));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->type = TYPE_FLOAT;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _get_dbu(cmdObj_t *cmd)
@@ -1739,7 +1739,7 @@ static uint8_t _get_dbu(cmdObj_t *cmd)
 		cmd->value *= INCH_PER_MM;
 	}
 //	cmd->type = TYPE_FLOAT_UNITS;	// ++++ UNTESTED
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /* Generic prints()
@@ -1894,7 +1894,7 @@ static uint8_t _get_grp(cmdObj_t *cmd)
 		(++cmd)->index = i;
 		cmd_get_cmdObj(cmd);
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -1909,7 +1909,7 @@ static uint8_t _get_grp(cmdObj_t *cmd)
 
 static uint8_t _set_grp(cmdObj_t *cmd)
 {
-	if (cfg.comm_mode == TEXT_MODE) return (TG_UNRECOGNIZED_COMMAND);
+	if (cfg.comm_mode == TEXT_MODE) return (STAT_UNRECOGNIZED_COMMAND);
 	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
 		if (cmd->type == TYPE_EMPTY) break;
@@ -1920,7 +1920,7 @@ static uint8_t _set_grp(cmdObj_t *cmd)
 			cmd_persist(cmd);
 		}
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -1968,7 +1968,7 @@ uint8_t cmd_persist_offsets(uint8_t flag)
 			}
 		}
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /* 
@@ -2096,12 +2096,12 @@ cmdObj_t *cmd_reset_list()					// clear the header and response body
 
 uint8_t cmd_copy_string(cmdObj_t *cmd, const char *src)
 {
-	if ((cmdStr.wp + strlen(src)) > CMD_SHARED_STRING_LEN) { return (TG_BUFFER_FULL);}
+	if ((cmdStr.wp + strlen(src)) > CMD_SHARED_STRING_LEN) { return (STAT_BUFFER_FULL);}
 	char *dst = &cmdStr.string[cmdStr.wp];
 	strcpy(dst, src);						// copy string to current head position
 	cmdStr.wp += strlen(src)+1;				// advance head for next string
 	cmd->stringp = (char (*)[])dst;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P)
@@ -2168,7 +2168,7 @@ cmdObj_t *cmd_add_string(char *token, const char *string)	// add a string object
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
-		if (cmd_copy_string(cmd, string) != TG_OK) { return (NULL);}
+		if (cmd_copy_string(cmd, string) != STAT_OK) { return (NULL);}
 		cmd->index = cmd_get_index("", cmd->token);
 		cmd->type = TYPE_STRING;
 		return (cmd);
@@ -2286,7 +2286,7 @@ uint8_t cmd_read_NVM_value(cmdObj_t *cmd)
 	uint16_t nvm_address = cfg.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
 	(void)EEPROM_ReadBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
 	memcpy(&cmd->value, &nvm_byte_array, NVM_VALUE_LEN);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cmd_write_NVM_value(cmdObj_t *cmd)
@@ -2300,7 +2300,7 @@ uint8_t cmd_write_NVM_value(cmdObj_t *cmd)
 		uint16_t nvm_address = cfg.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
 		(void)EEPROM_WriteBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /****************************************************************************

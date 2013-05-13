@@ -75,7 +75,7 @@ uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
 	//		if (cfg.m[j].motor_map == i) { steps[j] = joint[i] * cfg.m[j].steps_per_unit;}
 	//	}
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*

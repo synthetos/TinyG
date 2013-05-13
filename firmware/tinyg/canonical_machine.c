@@ -404,7 +404,7 @@ static double _calc_ABC(uint8_t i, double target[], double flag[])
 
 void cm_set_gcode_model_endpoint_position(uint8_t status) 
 {
-	if (status == TG_OK) copy_axis_vector(gm.position, gm.target);
+	if (status == STAT_OK) copy_axis_vector(gm.position, gm.target);
 }
 
 /* 
@@ -576,7 +576,7 @@ void cm_alarm(uint8_t value)
 //	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
-	rpt_exception(TG_SHUTDOWN,value);		// send shutdown message
+	rpt_exception(STAT_SHUTDOWN,value);		// send shutdown message
 	cm.machine_state = MACHINE_ALARM;
 }
 
@@ -603,7 +603,7 @@ uint8_t cm_set_machine_axis_position(uint8_t axis, const double position)
 	gm.position[axis] = position;
 	gm.target[axis] = position;
 	mp_set_axis_position(axis, position);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -625,7 +625,7 @@ uint8_t cm_select_plane(uint8_t plane)
 		gm.plane_axis_1 = AXIS_Y;
 		gm.plane_axis_2 = AXIS_Z;
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -634,7 +634,7 @@ uint8_t cm_select_plane(uint8_t plane)
 uint8_t cm_set_units_mode(uint8_t mode)
 {
 	gm.units_mode = mode;	// 0 = inches, 1 = mm.
-	return(TG_OK);
+	return(STAT_OK);
 }
 
 /*
@@ -643,7 +643,7 @@ uint8_t cm_set_units_mode(uint8_t mode)
 uint8_t cm_set_distance_mode(uint8_t mode)
 {
 	gm.distance_mode = mode;	// 0 = absolute mode, 1 = incremental
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -653,7 +653,7 @@ uint8_t	cm_set_coord_system(uint8_t coord_system)
 {
 	gm.coord_system = coord_system;	
 	mp_queue_command(_exec_offset, coord_system,0);
-	return (TG_OK);
+	return (STAT_OK);
 }
 static void _exec_offset(uint8_t coord_system, double float_val)
 {
@@ -674,7 +674,7 @@ static void _exec_offset(uint8_t coord_system, double float_val)
 uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[])
 {
 	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
-		return (TG_INTERNAL_RANGE_ERROR);
+		return (STAT_INTERNAL_RANGE_ERROR);
 	}
 	for (uint8_t i=0; i<AXES; i++) {
 //		if (flag[i] > EPSILON) {
@@ -683,7 +683,7 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
 			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
 		}
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -703,7 +703,7 @@ uint8_t cm_set_absolute_origin(double origin[], double flag[])
 			cm.homed[i] = true;
 		}
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /* 
@@ -725,7 +725,7 @@ uint8_t cm_set_origin_offsets(double offset[], double flag[])
 		}
 	}
 	mp_queue_command(_exec_offset, gm.coord_system,0);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_reset_origin_offsets()
@@ -734,21 +734,21 @@ uint8_t cm_reset_origin_offsets()
 	for (uint8_t i=0; i<AXES; i++) 
 		gm.origin_offset[i] = 0;
 	mp_queue_command(_exec_offset, gm.coord_system,0);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_suspend_origin_offsets()
 {
 	gm.origin_offset_enable = 0;
 	mp_queue_command(_exec_offset, gm.coord_system,0);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_resume_origin_offsets()
 {
 	gm.origin_offset_enable = 1;
 	mp_queue_command(_exec_offset, gm.coord_system,0);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /* 
@@ -761,7 +761,7 @@ uint8_t cm_straight_traverse(double target[], double flags[])
 {
 	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_target(target,flags);
-	if (vector_equal(gm.target, gm.position)) { return (TG_OK); }
+	if (vector_equal(gm.target, gm.position)) { return (STAT_OK); }
 
 	cm_cycle_start();							// required for homing & other cycles
 	uint8_t status = MP_LINE(gm.target, 
@@ -782,7 +782,7 @@ uint8_t cm_straight_traverse(double target[], double flags[])
 uint8_t cm_set_g28_position(void)
 {
 	copy_axis_vector(gm.g28_position, gm.position);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_goto_g28_position(double target[], double flags[])
@@ -797,7 +797,7 @@ uint8_t cm_goto_g28_position(double target[], double flags[])
 uint8_t cm_set_g30_position(void)
 {
 	copy_axis_vector(gm.g30_position, gm.position);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_goto_g30_position(double target[], double flags[])
@@ -829,7 +829,7 @@ uint8_t cm_set_feed_rate(double feed_rate)
 	} else {
 		gm.feed_rate = _to_millimeters(feed_rate);
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -842,7 +842,7 @@ uint8_t cm_set_feed_rate(double feed_rate)
 inline uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode)
 {
 	gm.inverse_feed_rate_mode = mode;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -852,7 +852,7 @@ inline uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode)
 uint8_t cm_set_path_control(uint8_t mode)
 {
 	gm.path_control = mode;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /* 
@@ -867,7 +867,7 @@ uint8_t cm_dwell(double seconds)
 {
 	gm.parameter = seconds;
 	(void)mp_dwell(seconds);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_straight_feed(double target[], double flags[])
@@ -876,7 +876,7 @@ uint8_t cm_straight_feed(double target[], double flags[])
 
 	// trap zero feed rate condition
 	if ((gm.inverse_feed_rate_mode == false) && (gm.feed_rate == 0)) {
-		return (TG_GCODE_FEEDRATE_ERROR);
+		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
 
 	// Introduce a short dwell if the machine is not busy to enable the planning
@@ -886,7 +886,7 @@ uint8_t cm_straight_feed(double target[], double flags[])
 //	}
 
 	cm_set_target(target, flags);
-	if (vector_equal(gm.target, gm.position)) { return (TG_OK); }
+	if (vector_equal(gm.target, gm.position)) { return (STAT_OK); }
 
 	cm_cycle_start();						// required for homing & other cycles
 	uint8_t status = MP_LINE(gm.target, 
@@ -915,7 +915,7 @@ uint8_t cm_straight_feed(double target[], double flags[])
 uint8_t cm_change_tool(uint8_t tool)
 {
 	mp_queue_command(_exec_change_tool, tool, 0);
-	return (TG_OK);
+	return (STAT_OK);
 }
 static void _exec_change_tool(uint8_t tool, double float_val)
 {
@@ -925,7 +925,7 @@ static void _exec_change_tool(uint8_t tool, double float_val)
 uint8_t cm_select_tool(uint8_t tool)
 {
 	mp_queue_command(_exec_select_tool, tool, 0);
-	return (TG_OK);
+	return (STAT_OK);
 }
 static void _exec_select_tool(uint8_t tool, double float_val)
 {
@@ -942,13 +942,13 @@ static void _exec_select_tool(uint8_t tool, double float_val)
 uint8_t cm_mist_coolant_control(uint8_t mist_coolant)
 {
 	mp_queue_command(_exec_mist_coolant_control, mist_coolant,0);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_flood_coolant_control(uint8_t flood_coolant)
 {
 	mp_queue_command(_exec_flood_coolant_control, flood_coolant,0);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static void _exec_mist_coolant_control(uint8_t mist_coolant, double float_val)
@@ -990,7 +990,7 @@ uint8_t cm_override_enables(uint8_t flag)			// M48, M49
 	gm.feed_rate_override_enable = flag;
 	gm.traverse_override_enable = flag;
 	gm.spindle_override_enable = flag;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_feed_rate_override_enable(uint8_t flag)	// M50
@@ -1000,7 +1000,7 @@ uint8_t cm_feed_rate_override_enable(uint8_t flag)	// M50
 	} else {
 		gm.feed_rate_override_enable = true;
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
@@ -1008,7 +1008,7 @@ uint8_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
 	gm.feed_rate_override_enable = flag;
 	gm.feed_rate_override_factor = gn.parameter;
 //	mp_feed_rate_override(flag, gn.parameter);		// replan the queue for new feed rate
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_traverse_override_enable(uint8_t flag)	// M50.2
@@ -1018,7 +1018,7 @@ uint8_t cm_traverse_override_enable(uint8_t flag)	// M50.2
 	} else {
 		gm.traverse_override_enable = true;
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_traverse_override_factor(uint8_t flag)	// M51
@@ -1026,7 +1026,7 @@ uint8_t cm_traverse_override_factor(uint8_t flag)	// M51
 	gm.traverse_override_enable = flag;
 	gm.traverse_override_factor = gn.parameter;
 //	mp_feed_rate_override(flag, gn.parameter);		// replan the queue for new feed rate
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_spindle_override_enable(uint8_t flag)	// M51.1
@@ -1036,7 +1036,7 @@ uint8_t cm_spindle_override_enable(uint8_t flag)	// M51.1
 	} else {
 		gm.spindle_override_enable = true;
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_spindle_override_factor(uint8_t flag)	// M50.1
@@ -1044,7 +1044,7 @@ uint8_t cm_spindle_override_factor(uint8_t flag)	// M50.1
 	gm.spindle_override_enable = flag;
 	gm.spindle_override_factor = gn.parameter;
 //	change spindle speed
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -1135,7 +1135,7 @@ uint8_t cm_feedhold_sequencing_callback()
 		cm_cycle_start();
 		mp_end_hold();
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_flush_planner()
@@ -1148,7 +1148,7 @@ uint8_t cm_flush_planner()
 		gm.target[i] = gm.position[i];
 	}
 	rpt_request_queue_report();
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*

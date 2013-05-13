@@ -173,7 +173,7 @@ uint8_t mp_exec_move()
 {
 	mpBuf_t *bf;
 
-	if ((bf = mp_get_run_buffer()) == NULL) return (TG_NOOP);	// NULL means nothing's running
+	if ((bf = mp_get_run_buffer()) == NULL) return (STAT_NOOP);	// NULL means nothing's running
 
 	// Manage cycle and motion state transitions
 	// cycle auto-start for lines only. Add other move types as appropriate.
@@ -188,7 +188,7 @@ uint8_t mp_exec_move()
 	if (bf->bf_func != NULL) {
 		return (bf->bf_func(bf));
 	}
-	return (TG_INTERNAL_ERROR);		// never supposed to get here
+	return (STAT_INTERNAL_ERROR);		// never supposed to get here
 }
 
 /************************************************************************************
@@ -229,7 +229,7 @@ static uint8_t _exec_command(mpBuf_t *bf)
 	bf->cm_func(bf->int_val, bf->dbl_val);
 	st_prep_null();			// Must call a null prep to keep the loader happy. 
 	mp_free_run_buffer();
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*************************************************************************
@@ -246,19 +246,19 @@ uint8_t mp_dwell(double seconds)
 	mpBuf_t *bf; 
 
 	if ((bf = mp_get_write_buffer()) == NULL) {	// get write buffer or fail
-		return (TG_BUFFER_FULL_FATAL);		  	// (not supposed to fail)
+		return (STAT_BUFFER_FULL_FATAL);		  	// (not supposed to fail)
 	}
 	bf->bf_func = _exec_dwell;					// register the callback to the exec function
 	bf->time = seconds;						  	// in seconds, not minutes
 	mp_queue_write_buffer(MOVE_TYPE_DWELL);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static uint8_t _exec_dwell(mpBuf_t *bf)
 {
 	st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
 	mp_free_run_buffer();
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /**** PLANNER BUFFERS *****************************************************

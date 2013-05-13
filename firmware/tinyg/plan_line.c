@@ -127,7 +127,7 @@ void mp_zero_segment_velocity()
  * 	Note: All math is done in absolute coordinates using "double precision" 
  *	floating point (even though AVRgcc does this as single precision)
  *
- *	Note: Returning a status that is not TG_OK means the endpoint is NOT
+ *	Note: Returning a status that is not STAT_OK means the endpoint is NOT
  *	advanced. So lines that are too short to move will accumulate and get 
  *	executed once the accumlated error exceeds the minimums 
  */
@@ -140,11 +140,11 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
 
 	// trap error conditions
 	double length = get_axis_vector_length(target, mm.position);
-	if (length < EPSILON) { return (TG_MINIMUM_LENGTH_MOVE_ERROR);}
-	if (minutes < EPSILON_2) { return (TG_MINIMUM_TIME_MOVE_ERROR);}
+	if (length < EPSILON) { return (STAT_MINIMUM_LENGTH_MOVE_ERROR);}
+	if (minutes < EPSILON_2) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}
 
 	// get a cleared buffer and setup move variables
-	if ((bf = mp_get_write_buffer()) == NULL) { return (TG_BUFFER_FULL_FATAL);} // never supposed to fail
+	if ((bf = mp_get_write_buffer()) == NULL) { return (STAT_BUFFER_FULL_FATAL);} // never supposed to fail
 
 	bf->bf_func = _exec_aline;					// register the callback to the exec function
 	bf->linenum = cm_get_model_linenum();		// block being planned
@@ -210,7 +210,7 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
 	_plan_block_list(bf, &mr_flag);				// replan block list and commit current block
 	copy_axis_vector(mm.position, bf->target);	// update planning position
 	mp_queue_write_buffer(MOVE_TYPE_ALINE);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /***** ALINE HELPERS *****
@@ -798,10 +798,10 @@ static double _get_junction_vmax(const double a_unit[], const double b_unit[])
 
 uint8_t mp_plan_hold_callback()
 {
-	if (cm.hold_state != FEEDHOLD_PLAN) { return (TG_NOOP);}	// not planning a feedhold
+	if (cm.hold_state != FEEDHOLD_PLAN) { return (STAT_NOOP);}	// not planning a feedhold
 
 	mpBuf_t *bp; 					// working buffer pointer
-	if ((bp = mp_get_run_buffer()) == NULL) { return (TG_NOOP);}	// Oops! nothing's running
+	if ((bp = mp_get_run_buffer()) == NULL) { return (STAT_NOOP);}	// Oops! nothing's running
 
 	uint8_t mr_flag = true;		// used to tell replan to account for mr buffer Vx
 	double mr_available_length; // available length left in mr buffer for deceleration
@@ -851,7 +851,7 @@ uint8_t mp_plan_hold_callback()
 		_reset_replannable_list();				// make it replan all the blocks
 		_plan_block_list(mp_get_last_buffer(), &mr_flag);
 		cm.hold_state = FEEDHOLD_DECEL;			// set state to decelerate and exit
-		return (TG_OK);
+		return (STAT_OK);
 	}
 
 	// Case 2: deceleration exceeds available length in mr buffer
@@ -897,7 +897,7 @@ uint8_t mp_plan_hold_callback()
 	_reset_replannable_list();					// make it replan all the blocks
 	_plan_block_list(mp_get_last_buffer(), &mr_flag);
 	cm.hold_state = FEEDHOLD_DECEL;				// set state to decelerate and exit
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 double _compute_next_segment_velocity()
@@ -918,12 +918,12 @@ uint8_t mp_end_hold()
 		mpBuf_t *bf;
 		if ((bf = mp_get_run_buffer()) == NULL) {	// NULL means nothing's running
 			cm.motion_state = MOTION_STOP;
-			return (TG_NOOP);
+			return (STAT_NOOP);
 		}
 		cm.motion_state = MOTION_RUN;
 		st_request_exec_move();					// restart the steppers
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 
@@ -939,22 +939,22 @@ uint8_t mp_end_hold()
  *	_exec_aline_segment()	- helper for running a segment
  *
  *	Returns:
- *	 TG_OK		move is done
- *	 TG_EAGAIN	move is not finished - has more segments to run
- *	 TG_NOOP	cause no operation from the steppers - do not load the move
- *	 TG_xxxxx	fatal error. Ends the move and frees the bf buffer
+ *	 STAT_OK		move is done
+ *	 STAT_EAGAIN	move is not finished - has more segments to run
+ *	 STAT_NOOP		cause no operation from the steppers - do not load the move
+ *	 STAT_xxxxx		fatal error. Ends the move and frees the bf buffer
  *	
  *	This routine is called from the (LO) interrupt level. The interrupt 
  *	sequencing relies on the behaviors of the routines being exactly correct.
  *	Each call to _exec_aline() must execute and prep *one and only one* 
  *	segment. If the segment is the not the last segment in the bf buffer the 
- *	_aline() must return TG_EAGAIN. If it's the last segment it must return 
- *	TG_OK. If it encounters a fatal error that would terminate the move it 
+ *	_aline() must return STAT_EAGAIN. If it's the last segment it must return 
+ *	STAT_OK. If it encounters a fatal error that would terminate the move it 
  *	should return a valid error code. Failure to obey this will introduce 
  *	subtle and very difficult to diagnose bugs (trust me on this).
  *
- *	Note 1 Returning TG_OK ends the move and frees the bf buffer. 
- *		   Returning TG_OK at this point does NOT advance position meaning any
+ *	Note 1 Returning STAT_OK ends the move and frees the bf buffer. 
+ *		   Returning STAT_OK at this point does NOT advance position meaning any
  *		   position error will be compensated by the next move.
  *
  *	Note 2 Solves a potential race condition where the current move ends but the 
@@ -1005,11 +1005,11 @@ uint8_t mp_end_hold()
  */
 static uint8_t _exec_aline(mpBuf_t *bf)
 {
-	uint8_t status = TG_OK;
+	uint8_t status = STAT_OK;
 
-	if (bf->move_state == MOVE_STATE_OFF) { return (TG_NOOP);} 
+	if (bf->move_state == MOVE_STATE_OFF) { return (STAT_NOOP);} 
 	if (mr.move_state == MOVE_STATE_OFF) {
-		if (cm.hold_state == FEEDHOLD_HOLD) { return (TG_NOOP);}// stops here if holding
+		if (cm.hold_state == FEEDHOLD_HOLD) { return (STAT_NOOP);}// stops here if holding
 
 		// initialization to process the new incoming bf buffer
 		bf->replannable = false;
@@ -1020,7 +1020,7 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 			bf->nx->replannable = false;			// prevent overplanning (Note 2)
 			st_prep_null();							// call this to leep the loader happy
 			mp_free_run_buffer();
-			return (TG_NOOP);
+			return (STAT_NOOP);
 		}
 		bf->move_state = MOVE_STATE_RUN;
 		mr.move_state = MOVE_STATE_HEAD;
@@ -1044,14 +1044,14 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 		case (MOVE_STATE_HEAD): { status = _exec_aline_head(); break;}
 		case (MOVE_STATE_BODY): { status = _exec_aline_body(); break;}
 		case (MOVE_STATE_TAIL): { status = _exec_aline_tail(); break;}
-		case (MOVE_STATE_SKIP): { status = TG_OK; break;}
+		case (MOVE_STATE_SKIP): { status = STAT_OK; break;}
 	}
 
 	// feed hold post-processing
 	if (cm.hold_state == FEEDHOLD_SYNC) { cm.hold_state = FEEDHOLD_PLAN;}
 
 	// initiate the hold - look for the end of the decel move
-	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == TG_OK)) {
+	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == STAT_OK)) {
 		cm.hold_state = FEEDHOLD_HOLD;
 		cm.motion_state = MOTION_STOP;
 		rpt_request_status_report(SR_IMMEDIATE_REQUEST);
@@ -1060,11 +1060,11 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 	// There are 3 things that can happen here depending on return conditions:
 	//	  status	 bf->move_state	 Description
 	//    ---------	 --------------	 ----------------------------------------
-	//	  TG_EAGAIN	 <don't care>	 mr buffer has more segments to run
-	//	  TG_OK		 MOVE_STATE_RUN	 mr and bf buffers are done
-	//	  TG_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
+	//	  STAT_EAGAIN	 <don't care>	 mr buffer has more segments to run
+	//	  STAT_OK		 MOVE_STATE_RUN	 mr and bf buffers are done
+	//	  STAT_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
 
-	if (status == TG_EAGAIN) { 
+	if (status == STAT_EAGAIN) { 
 		rpt_request_status_report(SR_TIMED_REQUEST); // continue reporting mr buffer
 	} else {
 		mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
@@ -1129,14 +1129,14 @@ static uint8_t _exec_aline_head()
 		mr.segment_move_time = mr.move_time / (2 * mr.segments);
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-			return(TG_GCODE_BLOCK_SKIPPED);		// exit without advancing position
+			return(STAT_GCODE_BLOCK_SKIPPED);		// exit without advancing position
 		}
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 		mr.section_state = MOVE_STATE_RUN1;
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {	// concave part of accel curve (period 1)
 		mr.segment_velocity += mr.forward_diff_1;
-		if (_exec_aline_segment(false) == TG_COMPLETE) { // set up for second half
+		if (_exec_aline_segment(false) == STAT_COMPLETE) { // set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = MOVE_STATE_RUN2;
 
@@ -1146,19 +1146,19 @@ static uint8_t _exec_aline_head()
 		} else {
 			mr.forward_diff_1 += mr.forward_diff_2;
 		}
-		return(TG_EAGAIN);
+		return(STAT_EAGAIN);
 	}
 	if (mr.section_state == MOVE_STATE_RUN2) {	// convex part of accel curve (period 2)
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
-		if (_exec_aline_segment(false) == TG_COMPLETE) {
-//			if ((mr.body_length < EPSILON) && (mr.tail_length < EPSILON)) { return(TG_OK);}	// end the move
-			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) { return(TG_OK);}	// end the move
+		if (_exec_aline_segment(false) == STAT_COMPLETE) {
+//			if ((mr.body_length < EPSILON) && (mr.tail_length < EPSILON)) { return(STAT_OK);}	// end the move
+			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) { return(STAT_OK);}	// end the move
 			mr.move_state = MOVE_STATE_BODY;
 			mr.section_state = MOVE_STATE_NEW;
 		}
 	}
-	return(TG_EAGAIN);
+	return(STAT_EAGAIN);
 }
 
 /*
@@ -1181,20 +1181,20 @@ static uint8_t _exec_aline_body()
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-			return(TG_GCODE_BLOCK_SKIPPED);		// exit without advancing position
+			return(STAT_GCODE_BLOCK_SKIPPED);		// exit without advancing position
 		}
 		
 		mr.section_state = MOVE_STATE_RUN;
 	}
 	if (mr.section_state == MOVE_STATE_RUN) {				// stright part (period 3)
-		if (_exec_aline_segment(false) == TG_COMPLETE) {
-//			if (mr.tail_length < EPSILON) { return(TG_OK);}	// end the move
-			if (fp_ZERO(mr.tail_length)) { return(TG_OK);}	// end the move
+		if (_exec_aline_segment(false) == STAT_COMPLETE) {
+//			if (mr.tail_length < EPSILON) { return(STAT_OK);}	// end the move
+			if (fp_ZERO(mr.tail_length)) { return(STAT_OK);}	// end the move
 			mr.move_state = MOVE_STATE_TAIL;
 			mr.section_state = MOVE_STATE_NEW;
 		}
 	}
-	return(TG_EAGAIN);
+	return(STAT_EAGAIN);
 }
 
 /*
@@ -1203,22 +1203,22 @@ static uint8_t _exec_aline_body()
 static uint8_t _exec_aline_tail()
 {
 	if (mr.section_state == MOVE_STATE_NEW) {
-//		if (mr.tail_length < EPSILON) { return(TG_OK);}		// end the move
-		if (fp_ZERO(mr.tail_length)) { return(TG_OK);}		// end the move
+//		if (mr.tail_length < EPSILON) { return(STAT_OK);}		// end the move
+		if (fp_ZERO(mr.tail_length)) { return(STAT_OK);}		// end the move
 		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
 		mr.move_time = mr.tail_length / mr.midpoint_velocity;
 		mr.segments = ceil(uSec(mr.move_time) / (2 * cfg.estd_segment_usec));// # of segments in *each half*
 		mr.segment_move_time = mr.move_time / (2 * mr.segments);// time to advance for each segment
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-			return(TG_GCODE_BLOCK_SKIPPED);					// exit without advancing position
+			return(STAT_GCODE_BLOCK_SKIPPED);					// exit without advancing position
 		}
 		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
 		mr.section_state = MOVE_STATE_RUN1;
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {				// convex part (period 4)
 		mr.segment_velocity += mr.forward_diff_1;
-		if (_exec_aline_segment(false) == TG_COMPLETE) { 	  	// set up for second half
+		if (_exec_aline_segment(false) == STAT_COMPLETE) { 	  	// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = MOVE_STATE_RUN2;
 
@@ -1228,14 +1228,14 @@ static uint8_t _exec_aline_tail()
 		} else {
 			mr.forward_diff_1 += mr.forward_diff_2;
 		}
-		return(TG_EAGAIN);
+		return(STAT_EAGAIN);
 	}
 	if (mr.section_state == MOVE_STATE_RUN2) {				// concave part (period 5)
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
-		if (_exec_aline_segment(true) == TG_COMPLETE) { return (TG_OK);}	// end the move
+		if (_exec_aline_segment(true) == STAT_COMPLETE) { return (STAT_OK);}	// end the move
 	}
-	return(TG_EAGAIN);
+	return(STAT_EAGAIN);
 }
 
 /*
@@ -1286,7 +1286,7 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 */
 	// prep the segment for the steppers and adjust the variables for the next iteration
 	(void)ik_kinematics(travel, steps, mr.microseconds);
-	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
+	if (st_prep_line(steps, mr.microseconds) == STAT_OK) {
 		copy_axis_vector(mr.position, mr.target); 	// update runtime position	
 /*  TRY THIS
 		mr.position[AXIS_X] = mr.target[AXIS_X];
@@ -1298,9 +1298,9 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 */	
 	}
 	if (--mr.segment_count == 0) {
-		return (TG_COMPLETE);	// this section has run all its segments
+		return (STAT_COMPLETE);	// this section has run all its segments
 	}
-	return (TG_EAGAIN);			// this section still has more segments to run
+	return (STAT_EAGAIN);			// this section still has more segments to run
 }
 
 
