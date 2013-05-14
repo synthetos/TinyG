@@ -648,7 +648,7 @@ stat_t cm_set_distance_mode(uint8_t mode)
 /*
  * cm_set_coord_system() - G54-G59
  */
-stat_t	cm_set_coord_system(uint8_t coord_system)
+stat_t cm_set_coord_system(uint8_t coord_system)
 {
 	gm.coord_system = coord_system;	
 	mp_queue_command(_exec_offset, coord_system,0);
@@ -670,7 +670,7 @@ static void _exec_offset(uint8_t coord_system, float float_val)
  *	the offsets (as Gcode expects). If you want to persist coordinate system 
  *	offsets use $g54x - $g59c config functions instead.
  */
-stat_t	cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
+stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 {
 	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
 		return (STAT_INTERNAL_RANGE_ERROR);
@@ -706,10 +706,10 @@ stat_t cm_set_absolute_origin(float origin[], float flag[])
 }
 
 /* 
- * cm_set_origin_offsets() - G92
- * cm_reset_origin_offsets() - G92.1
- * cm_suspend_origin_offsets() - G92.2
- * cm_resume_origin_offsets() - G92.3
+ * cm_set_origin_offsets() 		- G92
+ * cm_reset_origin_offsets() 	- G92.1
+ * cm_suspend_origin_offsets() 	- G92.2
+ * cm_resume_origin_offsets() 	- G92.3
  *
  * G92's behave according to NIST 3.5.18 & LinuxCNC G92
  * http://linuxcnc.org/docs/html/gcode/gcode.html#sec:G92-G92.1-G92.2-G92.3
@@ -1187,17 +1187,32 @@ void cm_optional_program_stop()
 
 void cm_program_end()				// M2, M30
 {
-//	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
+	// this bunch is defined by NIST 3.6.1
+	cm_reset_origin_offsets();						// G92.1
+//	cm_suspend_origin_offsets();					// G92.2 - as per Kramer
+
+	cm_set_coord_system(cfg.coord_system);			// default coordinate system
+	cm_select_plane(cfg.select_plane);				// default arc plane
+	cm_set_units_mode(cfg.units_mode);				// default units mode
+	cm_set_distance_mode(cfg.distance_mode);
+	cm_spindle_control(SPINDLE_OFF);				// M5
+	cm_flood_coolant_control(false);				// M9
+	cm_set_inverse_feed_rate_mode(false);
+
+//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1
+	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);	
+
 	mp_queue_command(_program_finalize, MACHINE_PROGRAM_END,0);
 }
 
 static void _program_finalize(uint8_t machine_state, float f)
 {
 	cm.machine_state = machine_state;
-	cm.cycle_state = CYCLE_OFF;
 	cm.motion_state = MOTION_STOP;
+	cm.cycle_state = CYCLE_OFF;
+	cm.cycle_start_requested = false;				// cancel any cycle start request
 	cm.hold_state = FEEDHOLD_OFF;					//...and any feedhold is ended
-	cm.cycle_start_requested = false;
+
 	mp_zero_segment_velocity();						// for reporting purposes
 	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report (not unfiltered)
 	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made

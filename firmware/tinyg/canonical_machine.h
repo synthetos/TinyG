@@ -515,10 +515,7 @@ stat_t cm_arc_feed(float target[], float flags[], 				// G2, G3
 stat_t cm_dwell(float seconds);									// G4, P parameter
 
 stat_t cm_set_spindle_speed(float speed);						// S parameter
-stat_t cm_start_spindle_clockwise(void);						// M3
-stat_t cm_start_spindle_counterclockwise(void);					// M4
-stat_t cm_stop_spindle_turning(void);							// M5
-stat_t cm_spindle_control(uint8_t spindle_mode);				// integrated spindle control
+stat_t cm_spindle_control(uint8_t spindle_mode);				// M3, M4, M5 integrated spindle control
 
 stat_t cm_mist_coolant_control(uint8_t mist_coolant); 			// M7
 stat_t cm_flood_coolant_control(uint8_t flood_coolant);			// M8, M9
