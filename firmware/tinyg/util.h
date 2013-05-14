@@ -56,10 +56,6 @@ float *set_vector(float x, float y, float z, float a, float b, float c);
 float *set_vector_by_axis(float value, uint8_t axis);
 #define clear_vector(a) memset(a,0,sizeof(a))
 
-// ritorno is a handy way to provide exception returns - it returns only if an error occurred
-// (ritorno is Italian for return) 
-#define ritorno(a) { uint8_t status; if((status = a) != STAT_OK) return(status);}
-
 /***** Math Support *****/
 
 // side-effect safe forms of min and max
@@ -82,8 +78,8 @@ float *set_vector_by_axis(float value, uint8_t axis);
 #endif
 
 #ifndef EPSILON
-//#define EPSILON 	0.00001					// rounding error for floats
-#define EPSILON 	0.000001				// rounding error for floats
+#define EPSILON 	0.00001					// rounding error for floats
+//#define EPSILON 	0.000001				// rounding error for floats
 #define EPSILON_2 	0.0000001				// rounding error for floats - special cases
 #endif
 

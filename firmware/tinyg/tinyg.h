@@ -45,7 +45,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	375.07		// Change float to float
+#define TINYG_FIRMWARE_BUILD   	375.08		// Moved ritorno() to tinyg.h and main.c; introduce stat_t typdef
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
@@ -104,13 +104,21 @@
 #define PWM_1	0
 #define PWM_2	1
 
-/* TinyG status codes
+/* 
+ * STATUS CODES
+ *
  * The first code range (0-19) is aligned with the XIO codes and must be so.
  * Please don't change them without checking the corresponding values in xio.h
  *
  * Any changes to the ranges also require changing the message strings and 
  * string array in report.c
+ *
+ * ritorno is a handy way to provide exception returns 
+ * It returns only if an error occurred. (ritorno is Italian for return) 
  */
+typedef uint8_t stat_t;
+extern stat_t status_code;				// declared in main.cpp
+#define ritorno(a) if((status_code=a) != STAT_OK) { return(status_code); }
  
 // OS, communications and low-level status (must align with XIO_xxxx codes in xio.h)
 #define	STAT_OK 0						// function completed OK
