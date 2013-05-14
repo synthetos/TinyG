@@ -110,7 +110,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("~\n");
 
 	xio_queue_RX_string_usb("g1 f1800 x0.0005\n");	// Small move test for G61.1
-	xio_queue_RX_string_usb("g20\n");				// Small move test for G61.1
+	xio_queue_RX_string_usb("g20\n");
+	xio_queue_RX_string_usb("m2\n");
 
 //	xio_queue_RX_string_usb("$net\n");
 

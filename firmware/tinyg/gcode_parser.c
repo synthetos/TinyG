@@ -414,8 +414,11 @@ static uint8_t _execute_gcode_block()
 		}
 	}
 	cm_set_absolute_override(false);		// un-set abs overrride (for reporting purposes) 
+
+	// do the M stops: M0, M1, M2, M30, M60
 	if (gf.program_flow == true) {
-		// do the M stops: M0, M1, M2, M30, M60
+		if (gn.program_flow == PROGRAM_STOP) { cm_program_stop(); } 
+		else { cm_program_end(); }
 	}
 	return (status);
 }

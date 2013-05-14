@@ -1190,11 +1190,11 @@ void cm_program_end()				// M2, M30
 	// this bunch is defined by NIST 3.6.1
 	cm_reset_origin_offsets();						// G92.1
 //	cm_suspend_origin_offsets();					// G92.2 - as per Kramer
-
 	cm_set_coord_system(cfg.coord_system);			// default coordinate system
+
 	cm_select_plane(cfg.select_plane);				// default arc plane
-	cm_set_units_mode(cfg.units_mode);				// default units mode
 	cm_set_distance_mode(cfg.distance_mode);
+	cm_set_units_mode(cfg.units_mode);				// default units mode
 	cm_spindle_control(SPINDLE_OFF);				// M5
 	cm_flood_coolant_control(false);				// M9
 	cm_set_inverse_feed_rate_mode(false);
