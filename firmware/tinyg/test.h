@@ -49,8 +49,8 @@ void tg_canned_startup(void);
  *
  *	DEBUG usage examples:
  *		DEBUG0(dbCONFIG, PSTR("String with no variables"));
- *		DEBUG1(dbCONFIG, PSTR("String with one variable: %f"), double_var);
- *		DEBUG2(dbCONFIG, PSTR("String with two variables: %4.2f, %d"), double_var, int_var);
+ *		DEBUG1(dbCONFIG, PSTR("String with one variable: %f"), float_var);
+ *		DEBUG2(dbCONFIG, PSTR("String with two variables: %4.2f, %d"), float_var, int_var);
  *
  *	DEBUG print statements are coded so they occupy no program space if 
  *	they are not enabled. If you also use __dbXXXX defines to enable debug
@@ -63,8 +63,8 @@ void tg_canned_startup(void);
 #ifdef __DEBUG
 void dump_everything(void);
 void roll_over_and_die(void);
-void print_scalar(const char *label, double value);
-void print_vector(const char *label, double vector[], uint8_t length);
+void print_scalar(const char *label, float value);
+void print_vector(const char *label, float vector[], uint8_t length);
 
 // global allocation of debug control variables
 	uint8_t dbECHO_GCODE_BLOCK;
@@ -113,13 +113,13 @@ struct mpSegmentLog {
 	uint8_t move_state;
 	uint32_t linenum;
 	uint32_t segments;
-	double velocity;
-	double microseconds;
-//	double position_x;
-//	double target_x;
-//	double step_x;
-//	double move_time;
-//	double accel_time;
+	float velocity;
+	float microseconds;
+//	float position_x;
+//	float target_x;
+//	float step_x;
+//	float move_time;
+//	float accel_time;
 };
 struct mpSegmentLog sl[SEGMENT_LOGGER_MAX];
 uint16_t sl_index;
@@ -129,13 +129,13 @@ void segment_logger(uint8_t move_state,
 					uint32_t linenum,
 					uint32_t segments, 
 					uint32_t segment_count, 
-					double velocity,
-					double microseconds
-//					double position_x, 
-//					double target_x,
-//					double step_x, 
-//					double move_time,
-//					double accel_time
+					float velocity,
+					float microseconds
+//					float position_x, 
+//					float target_x,
+//					float step_x, 
+//					float move_time,
+//					float accel_time
 					);
 
 #define SEGMENT_LOGGER segment_logger(bf->move_state, \

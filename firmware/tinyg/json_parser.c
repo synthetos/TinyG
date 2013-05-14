@@ -335,16 +335,16 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 				cmd->type = TYPE_FLOAT;
 			}
 			if (cmd->type == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
-			else if (cmd->type == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", cmd->value);}
+			else if (cmd->type == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", (double)cmd->value);}
 			else if (cmd->type == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
 			else if (cmd->type == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  *cmd->stringp);}
 			else if (cmd->type == TYPE_FLOAT) {
-				if 		(cmd->precision == 0) { str += sprintf(str, "%0.0f", cmd->value);}
-				else if (cmd->precision == 1) { str += sprintf(str, "%0.1f", cmd->value);}
-				else if (cmd->precision == 2) { str += sprintf(str, "%0.2f", cmd->value);}
-				else if (cmd->precision == 3) { str += sprintf(str, "%0.3f", cmd->value);}
-				else if (cmd->precision == 4) { str += sprintf(str, "%0.4f", cmd->value);}
-				else 						  { str += sprintf(str, "%f", cmd->value);}
+				if 		(cmd->precision == 0) { str += sprintf(str, "%0.0f", (double)cmd->value);}
+				else if (cmd->precision == 1) { str += sprintf(str, "%0.1f", (double)cmd->value);}
+				else if (cmd->precision == 2) { str += sprintf(str, "%0.2f", (double)cmd->value);}
+				else if (cmd->precision == 3) { str += sprintf(str, "%0.3f", (double)cmd->value);}
+				else if (cmd->precision == 4) { str += sprintf(str, "%0.4f", (double)cmd->value);}
+				else 						  { str += sprintf(str, "%f", 	 (double)cmd->value);}
 			}
 			else if (cmd->type == TYPE_BOOL) {
 				if (cmd->value == false) { str += sprintf(str, "false");}
@@ -632,7 +632,7 @@ cmdObj_t * _add_string(cmdObj_t *cmd, char *token, char *string)
 cmdObj_t * _add_integer(cmdObj_t *cmd, char *token, uint32_t integer)
 {
 	strncpy(cmd->token, token, CMD_TOKEN_LEN);
-	cmd->value = (double)integer;
+	cmd->value = (float)integer;
 	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
 	cmd->type = TYPE_INTEGER;
 	return (cmd->nx);

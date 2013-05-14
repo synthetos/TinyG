@@ -87,19 +87,19 @@ typedef struct GCodeModel {				// Gcode dynamic model
 	uint8_t program_flow;				// currently vestigal - captured, but not uses
 	uint32_t linenum;					// N word
 
-	double target[AXES]; 				// XYZABC where the move should go
-	double position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
-	double origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
-	double work_offset[AXES];			// XYZABC work offset to be forwarded to planner
-	double work_scaling[AXES];			// XYZABC scale factor to get to work coordinates
-	double g28_position[AXES];			// XYZABC stored machine position for G28
-	double g30_position[AXES];			// XYZABC stored machine position for G30
+	float target[AXES]; 				// XYZABC where the move should go
+	float position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
+	float origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
+	float work_offset[AXES];			// XYZABC work offset to be forwarded to planner
+	float work_scaling[AXES];			// XYZABC scale factor to get to work coordinates
+	float g28_position[AXES];			// XYZABC stored machine position for G28
+	float g30_position[AXES];			// XYZABC stored machine position for G30
 
-	double min_time;					// minimum time possible for the move given axis constraints
-	double feed_rate; 					// F - normalized to millimeters/minute
-	double inverse_feed_rate; 			// ignored if inverse_feed_rate not active
-	double feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
-	double traverse_override_factor;	// 1.0000 x traverse rate. Go down from there
+	float min_time;					// minimum time possible for the move given axis constraints
+	float feed_rate; 					// F - normalized to millimeters/minute
+	float inverse_feed_rate; 			// ignored if inverse_feed_rate not active
+	float feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
+	float traverse_override_factor;	// 1.0000 x traverse rate. Go down from there
 	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
@@ -124,17 +124,17 @@ typedef struct GCodeModel {				// Gcode dynamic model
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
 
 	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
-	double  spindle_speed;				// in RPM
-	double  spindle_override_factor;	// 1.0000 x S spindle speed. Go up or down from there
+	float  spindle_speed;				// in RPM
+	float  spindle_override_factor;	// 1.0000 x S spindle speed. Go up or down from there
 	uint8_t	spindle_override_enable;	// TRUE = override enabled
 
 // unimplemented gcode parameters
-//	double cutter_radius;				// D - cutter radius compensation (0 is off)
-//	double cutter_length;				// H - cutter length compensation (0 is off)
+//	float cutter_radius;				// D - cutter radius compensation (0 is off)
+//	float cutter_length;				// H - cutter length compensation (0 is off)
 
-	double parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
-	double arc_radius;					// R - radius value in arc radius mode
-	double arc_offset[3];  				// IJK - used by arc commands
+	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
+	float arc_radius;					// R - radius value in arc radius mode
+	float arc_offset[3];  				// IJK - used by arc commands
 	uint16_t magic_end;
 }  GCodeModel_t;
 
@@ -145,13 +145,13 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t program_flow;				// currently vestigal - captured, but not uses
 	uint32_t linenum;					// N word or autoincrement in the model
 
-	double target[AXES]; 				// XYZABC where the move should go
+	float target[AXES]; 				// XYZABC where the move should go
 
-	double min_time;					// minimum time possible for the move given axis constraints
-	double feed_rate; 					// F - normalized to millimeters/minute
-	double inverse_feed_rate; 			// ignored if inverse_feed_rate not active
-	double feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
-	double traverse_override_factor;	// 1.0000 x traverse rate. Go down from there
+	float min_time;					// minimum time possible for the move given axis constraints
+	float feed_rate; 					// F - normalized to millimeters/minute
+	float inverse_feed_rate; 			// ignored if inverse_feed_rate not active
+	float feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
+	float traverse_override_factor;	// 1.0000 x traverse rate. Go down from there
 	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
@@ -172,17 +172,17 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
 
 	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
-	double  spindle_speed;				// in RPM
-	double  spindle_override_factor;	// 1.0000 x S spindle speed. Go up or down from there
+	float  spindle_speed;				// in RPM
+	float  spindle_override_factor;	// 1.0000 x S spindle speed. Go up or down from there
 	uint8_t	spindle_override_enable;	// TRUE = override enabled
 
 // unimplemented gcode parameters
-//	double cutter_radius;				// D - cutter radius compensation (0 is off)
-//	double cutter_length;				// H - cutter length compensation (0 is off)
+//	float cutter_radius;				// D - cutter radius compensation (0 is off)
+//	float cutter_length;				// H - cutter length compensation (0 is off)
 
-	double parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
-	double arc_radius;					// R - radius value in arc radius mode
-	double arc_offset[3];  				// IJK - used by arc commands
+	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
+	float arc_radius;					// R - radius value in arc radius mode
+	float arc_offset[3];  				// IJK - used by arc commands
 } GCodeInput_t;
 
 // Allocation
@@ -455,22 +455,22 @@ uint8_t cm_isbusy(void);
 void cm_set_motion_mode(uint8_t motion_mode);
 void cm_set_absolute_override(uint8_t absolute_override);
 void cm_set_spindle_mode(uint8_t spindle_mode);
-void cm_set_spindle_speed_parameter(double speed);
+void cm_set_spindle_speed_parameter(float speed);
 void cm_set_tool_number(uint8_t tool);
 
-double cm_get_coord_offset(uint8_t axis);
-double *cm_get_coord_offset_vector(double vector[]);
-double cm_get_model_work_position(uint8_t axis);
-//double *cm_get_model_work_position_vector(double position[]);
-double cm_get_model_canonical_target(uint8_t axis);
-double *cm_get_model_canonical_position_vector(double vector[]);
-double cm_get_runtime_machine_position(uint8_t axis);
-double cm_get_runtime_work_position(uint8_t axis);
-double cm_get_runtime_work_offset(uint8_t axis);
+float cm_get_coord_offset(uint8_t axis);
+float *cm_get_coord_offset_vector(float vector[]);
+float cm_get_model_work_position(uint8_t axis);
+//float *cm_get_model_work_position_vector(float position[]);
+float cm_get_model_canonical_target(uint8_t axis);
+float *cm_get_model_canonical_position_vector(float vector[]);
+float cm_get_runtime_machine_position(uint8_t axis);
+float cm_get_runtime_work_position(uint8_t axis);
+float cm_get_runtime_work_offset(uint8_t axis);
 
-void cm_set_arc_offset(double i, double j, double k);
-void cm_set_arc_radius(double r);
-void cm_set_target(double target[], double flag[]);
+void cm_set_arc_offset(float i, float j, float k);
+void cm_set_arc_radius(float r);
+void cm_set_target(float target[], float flag[]);
 void cm_set_gcode_model_endpoint_position(uint8_t status);
 void cm_set_model_linenum(uint32_t linenum);
 
@@ -478,7 +478,7 @@ void cm_set_model_linenum(uint32_t linenum);
 void cm_init(void);												// init canonical machine
 void cm_alarm(uint8_t value);									// emergency shutdown
 
-uint8_t cm_set_machine_axis_position(uint8_t axis, const double position);	// set absolute position
+uint8_t cm_set_machine_axis_position(uint8_t axis, const float position);	// set absolute position
 uint8_t cm_flush_planner(void);									// flush planner queue with coordinate resets
 
 uint8_t cm_select_plane(uint8_t plane);							// G17, G18, G19
@@ -486,32 +486,32 @@ uint8_t cm_set_units_mode(uint8_t mode);						// G20, G21
 
 uint8_t cm_homing_cycle_start(void);							// G28.2
 uint8_t cm_homing_callback(void);								// G28.2 main loop callback
-uint8_t cm_set_absolute_origin(double origin[], double flags[]);// G28.3  (special function)
+uint8_t cm_set_absolute_origin(float origin[], float flags[]);// G28.3  (special function)
 
 uint8_t cm_set_g28_position(void);								// G28.1
-uint8_t cm_goto_g28_position(double target[], double flags[]); 	// G28
+uint8_t cm_goto_g28_position(float target[], float flags[]); 	// G28
 uint8_t cm_set_g30_position(void);								// G30.1
-uint8_t cm_goto_g30_position(double target[], double flags[]);	// G30
+uint8_t cm_goto_g30_position(float target[], float flags[]);	// G30
 
 uint8_t	cm_set_coord_system(uint8_t coord_system);				// G54 - G59
-uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[]); // G10 L2
+uint8_t	cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
 uint8_t cm_set_distance_mode(uint8_t mode);						// G90, G91
-uint8_t cm_set_origin_offsets(double offset[], double flag[]);	// G92
+uint8_t cm_set_origin_offsets(float offset[], float flag[]);	// G92
 uint8_t cm_reset_origin_offsets(void); 							// G92.1
 uint8_t cm_suspend_origin_offsets(void); 						// G92.2
 uint8_t cm_resume_origin_offsets(void);				 			// G92.3
 
-uint8_t cm_straight_traverse(double target[], double flags[]);
-uint8_t cm_set_feed_rate(double feed_rate);						// F parameter
+uint8_t cm_straight_traverse(float target[], float flags[]);
+uint8_t cm_set_feed_rate(float feed_rate);						// F parameter
 uint8_t cm_set_inverse_feed_rate_mode(uint8_t mode);			// True= inv mode
 uint8_t cm_set_path_control(uint8_t mode);						// G61, G61.1, G64
-uint8_t cm_straight_feed(double target[], double flags[]);		// G1
-uint8_t cm_arc_feed(double target[], double flags[], 			// G2, G3
-					double i, double j, double k, 
-					double radius, uint8_t motion_mode);
-uint8_t cm_dwell(double seconds);								// G4, P parameter
+uint8_t cm_straight_feed(float target[], float flags[]);		// G1
+uint8_t cm_arc_feed(float target[], float flags[], 			// G2, G3
+					float i, float j, float k, 
+					float radius, uint8_t motion_mode);
+uint8_t cm_dwell(float seconds);								// G4, P parameter
 
-uint8_t cm_set_spindle_speed(double speed);						// S parameter
+uint8_t cm_set_spindle_speed(float speed);						// S parameter
 uint8_t cm_start_spindle_clockwise(void);						// M3
 uint8_t cm_start_spindle_counterclockwise(void);				// M4
 uint8_t cm_stop_spindle_turning(void);							// M5

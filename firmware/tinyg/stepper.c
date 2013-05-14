@@ -166,8 +166,8 @@
 static void _exec_move(void);
 static void _load_move(void);
 static void _request_load_move(void);
-static void _set_f_dda(double *f_dda, double *dda_substeps,
-					   const double major_axis_steps, const double microseconds);
+static void _set_f_dda(float *f_dda, float *dda_substeps,
+					   const float major_axis_steps, const float microseconds);
 
 /*
  * Stepper structures
@@ -223,7 +223,7 @@ typedef struct stPrepSingleton {
 	uint16_t timer_period;			// DDA or dwell clock period setting
 	uint32_t timer_ticks;			// DDA or dwell ticks for the move
 	uint32_t timer_ticks_X_substeps;// DDA ticks scaled by substep factor
-	double segment_velocity;		// +++++ record segment velocity for diagnostics
+	float segment_velocity;		// +++++ record segment velocity for diagnostics
 	stPrepMotor_t m[MOTORS];		// per-motor structs
 } stPrepSingleton_t;
 static struct stPrepSingleton sps;
@@ -517,19 +517,19 @@ void _load_move()
  *	the loader. It deals with all the DDA optimizations and timer setups so that
  *	loading can be performed as rapidly as possible. It works in joint space 
  *	(motors) and it works in steps, not length units. All args are provided as 
- *	doubles and converted to their appropriate integer types for the loader. 
+ *	floats and converted to their appropriate integer types for the loader. 
  *
  * Args:
  *	steps[] are signed relative motion in steps (can be non-integer values)
  *	Microseconds - how many microseconds the segment should run 
  */
 
-uint8_t st_prep_line(double steps[], double microseconds)
+uint8_t st_prep_line(float steps[], float microseconds)
 {
 	uint8_t i;
-	double f_dda = F_DDA;		// starting point for adjustment
-	double dda_substeps = DDA_SUBSTEPS;
-	double major_axis_steps = 0;
+	float f_dda = F_DDA;		// starting point for adjustment
+	float dda_substeps = DDA_SUBSTEPS;
+	float major_axis_steps = 0;
 
 	// *** defensive programming ***
 	// trap conditions that would prevent queueing the line
@@ -586,7 +586,7 @@ void st_prep_null()
  * st_prep_dwell() 	 - Add a dwell to the move buffer
  */
 
-void st_prep_dwell(double microseconds)
+void st_prep_dwell(float microseconds)
 {
 	sps.move_type = MOVE_TYPE_DWELL;
 	sps.timer_period = _f_to_period(F_DWELL);
@@ -609,12 +609,12 @@ void st_prep_dwell(double microseconds)
  *	here for historical and recovery purposes.It doesn't take any room because 
  *	the compiler sees DDA_OVERCLOCK is defined as zero and doesn't compile it.
  */
-static void _set_f_dda(double *f_dda,
-						  double *dda_substeps, 
-						  const double major_axis_steps, 
-						  const double microseconds)
+static void _set_f_dda(float *f_dda,
+						  float *dda_substeps, 
+						  const float major_axis_steps, 
+						  const float microseconds)
 {
-	double f_dda_base = (major_axis_steps / microseconds) * 1000000;
+	float f_dda_base = (major_axis_steps / microseconds) * 1000000;
 
 	// chose a good clock value, assuming the line will fit
 	if (DDA_OVERCLOCK == 0) { return;}				// 0 = disabled

@@ -28,7 +28,7 @@
  *	are taken to optimize interpolation and pulse train accuracy.
  *
  *	- The DDA accepts and processes fractional motor steps. Steps are 
- *	  passed to the move queue as doubles, and do not need to be integer
+ *	  passed to the move queue as floats, and do not need to be integer
  *	  values. The DDA implements fractional steps and interpolation by 
  *	  extending the counter range downward using the DDA_SUBSTEPS setting. 
  *
@@ -74,8 +74,8 @@ void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode);
 uint8_t st_test_prep_state(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
-void st_prep_dwell(double microseconds);
-uint8_t st_prep_line(double steps[], double microseconds);
+void st_prep_dwell(float microseconds);
+uint8_t st_prep_line(float steps[], float microseconds);
 
 uint16_t st_get_st_magic(void);
 uint16_t st_get_sps_magic(void);
@@ -85,7 +85,7 @@ void st_dump_stepper_state(void);
 #endif
 
 // handy macro
-#define _f_to_period(f) (uint16_t)((double)F_CPU / (double)f)
+#define _f_to_period(f) (uint16_t)((float)F_CPU / (float)f)
 
 /*
  * Stepper configs and constants
@@ -136,13 +136,13 @@ void st_dump_stepper_state(void);
  *	This is the minumum value the DDA time can run with a fixed 32 Mhz 
  *	clock. Anything lower will overflow the 16 bit PERIOD register.
  */
-//#define F_DDA_MIN (double)489	// hz
-#define F_DDA_MIN (double)500	// hz - is 489 Hz with some margin
+//#define F_DDA_MIN (float)489	// hz
+#define F_DDA_MIN (float)500	// hz - is 489 Hz with some margin
 
 /* Timer settings for stepper module. See system.h for timer assignments
  */
-#define F_DDA 		(double)50000	// DDA frequency in hz.
-#define F_DWELL		(double)10000	// Dwell count frequency in hz.
+#define F_DDA 		(float)50000	// DDA frequency in hz.
+#define F_DWELL		(float)10000	// Dwell count frequency in hz.
 #define SWI_PERIOD 	100				// cycles you have to shut off SW interrupt
 #define TIMER_PERIOD_MIN (20)		// used to trap bad timer loads
 

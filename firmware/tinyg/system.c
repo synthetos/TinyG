@@ -51,7 +51,7 @@ void sys_init()
 	sys_port_bindings(TINYG_HARDWARE_VERSION);
 }
 
-void sys_port_bindings(double hw_version)
+void sys_port_bindings(float hw_version)
 {
 	device.st_port[0] = &PORT_MOTOR_1;
 	device.st_port[1] = &PORT_MOTOR_2;

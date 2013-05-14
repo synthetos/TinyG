@@ -51,8 +51,8 @@ static uint8_t _normalize_gcode_block(char *block);
 static uint8_t _parse_gcode_block(char *line);	// Parse the block into structs
 static uint8_t _execute_gcode_block(void);		// Execute the gcode block
 static uint8_t _check_gcode_block(void);		// check the block for correctness
-static uint8_t _get_next_statement(char *letter, double *value, char *buf, uint8_t *i);
-static uint8_t _point(double value);
+static uint8_t _get_next_statement(char *letter, float *value, char *buf, uint8_t *i);
+static uint8_t _point(float value);
 
 #define SET_MODAL(m,parm,val) ({gn.parm=val; gf.parm=1; gp.modals[m]+=1; break;})
 #define SET_NON_MODAL(parm,val) ({gn.parm=val; gf.parm=1; break;})
@@ -176,7 +176,7 @@ static uint8_t _parse_gcode_block(char *buf)
 {
 	uint8_t i=0; 	 			// persistent index into Gcode block buffer (buf)
   	char letter;				// parsed letter, eg.g. G or X or Y
-	double value;				// value parsed from letter (e.g. 2 for G2)
+	float value;				// value parsed from letter (e.g. 2 for G2)
 	uint8_t status = STAT_OK;
 
 	// set initial state for new move 
@@ -449,7 +449,7 @@ static uint8_t _check_gcode_block()
  * helpers
  */
 
-static uint8_t _get_next_statement(char *letter, double *value, char *buf, uint8_t *i) {
+static uint8_t _get_next_statement(char *letter, float *value, char *buf, uint8_t *i) {
 	if (buf[*i] == NUL) { 		// no more statements
 		return (STAT_COMPLETE);
 	}
@@ -458,13 +458,13 @@ static uint8_t _get_next_statement(char *letter, double *value, char *buf, uint8
 		return (STAT_EXPECTED_COMMAND_LETTER);
 	}
 	(*i)++;
-	if (read_double(buf, i, value) == false) {
+	if (read_float(buf, i, value) == false) {
 		return (STAT_BAD_NUMBER_FORMAT);
 	}
 	return (STAT_OK);		// leave the index on the next character after the statement
 }
 
-static uint8_t _point(double value) 
+static uint8_t _point(float value) 
 {
 	return((uint8_t)(value*10 - trunc(value)*10));	// isolate the decimal point as an int
 }

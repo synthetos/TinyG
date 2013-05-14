@@ -86,7 +86,7 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 #define CMD_STATUS_REPORT_LEN 24	// max number of status report elements - see cfgArray
 									// must also line up in cfgArray, se00 - seXX
 
-#define NVM_VALUE_LEN 4				// NVM value length (double, fixed length)
+#define NVM_VALUE_LEN 4				// NVM value length (float, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
 
 #define IGNORE_OFF 0				// accept either CR or LF as termination on RX text line
@@ -171,7 +171,7 @@ typedef struct cmdObject {			// depending on use, not all elements may be popula
 	int8_t depth;					// depth of object in the tree. 0 is root (-1 is invalid)
 	int8_t type;					// see cmdType
 	int8_t precision;				// decimal precision for reporting (JSON)
-	double value;					// numeric value
+	float value;					// numeric value
 	char token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
 	char group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group
 	char (*stringp)[];				// pointer to array of characters from shared character array
@@ -215,7 +215,7 @@ uint8_t cmd_copy_string(cmdObj_t *cmd, const char *src);
 uint8_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P);
 cmdObj_t *cmd_add_object(char *token);
 cmdObj_t *cmd_add_integer(char *token, const uint32_t value);
-cmdObj_t *cmd_add_float(char *token, const double value);
+cmdObj_t *cmd_add_float(char *token, const float value);
 cmdObj_t *cmd_add_string(char *token, const char *string);
 cmdObj_t *cmd_add_string_P(char *token, const char *string);
 cmdObj_t *cmd_add_message(const char *string);
@@ -237,17 +237,17 @@ void cfg_dump_NVM(const uint16_t start_record, const uint16_t end_record, char *
 // main configuration parameter table
 typedef struct cfgAxisParameters {
 	uint8_t axis_mode;				// see tgAxisMode in gcode.h
-	double feedrate_max;			// max velocity in mm/min or deg/min
-	double velocity_max;			// max velocity in mm/min or deg/min
-	double travel_max;				// work envelope w/warned or rejected blocks
-	double jerk_max;				// max jerk (Jm) in mm/min^3
-	double junction_dev;			// aka cornering delta
-	double radius;					// radius in mm for rotary axis modes
-	double search_velocity;			// homing search velocity
-	double latch_velocity;			// homing latch velocity
-	double latch_backoff;			// backoff from switches prior to homing latch movement
-	double zero_backoff;			// backoff from switches for machine zero
-	double jerk_homing;				// homing jerk (Jh) in mm/min^3
+	float feedrate_max;			// max velocity in mm/min or deg/min
+	float velocity_max;			// max velocity in mm/min or deg/min
+	float travel_max;				// work envelope w/warned or rejected blocks
+	float jerk_max;				// max jerk (Jm) in mm/min^3
+	float junction_dev;			// aka cornering delta
+	float radius;					// radius in mm for rotary axis modes
+	float search_velocity;			// homing search velocity
+	float latch_velocity;			// homing latch velocity
+	float latch_backoff;			// backoff from switches prior to homing latch movement
+	float zero_backoff;			// backoff from switches for machine zero
+	float jerk_homing;				// homing jerk (Jh) in mm/min^3
 } cfgAxis_t;
 
 typedef struct cfgMotorParameters {
@@ -255,22 +255,22 @@ typedef struct cfgMotorParameters {
   	uint8_t microsteps;				// microsteps to apply for each axis (ex: 8)
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor direction
  	uint8_t power_mode;				// 1=lo power idle mode, 0=full power idle mode
-	double step_angle;				// degrees per whole step (ex: 1.8)
-	double travel_rev;				// mm or deg of travel per motor revolution
-	double steps_per_unit;			// steps (usteps)/mm or deg of travel
+	float step_angle;				// degrees per whole step (ex: 1.8)
+	float travel_rev;				// mm or deg of travel per motor revolution
+	float steps_per_unit;			// steps (usteps)/mm or deg of travel
 } cfgMotor_t;
 
 typedef struct cfgPWMParameters {
-  	double frequency;				// base frequency for PWM driver, in Hz
-	double cw_speed_lo;             // minimum clockwise spindle speed [0..N]
-    double cw_speed_hi;             // maximum clockwise spindle speed
-    double cw_phase_lo;             // pwm phase at minimum CW spindle speed, clamped [0..1]
-    double cw_phase_hi;             // pwm phase at maximum CW spindle speed, clamped [0..1]
-	double ccw_speed_lo;            // minimum counter-clockwise spindle speed [0..N]
-    double ccw_speed_hi;			// maximum counter-clockwise spindle speed
-    double ccw_phase_lo;			// pwm phase at minimum CCW spindle speed, clamped [0..1]
-    double ccw_phase_hi;			// pwm phase at maximum CCW spindle speed, clamped
-    double phase_off;               // pwm phase when spindle is disabled
+  	float frequency;				// base frequency for PWM driver, in Hz
+	float cw_speed_lo;             // minimum clockwise spindle speed [0..N]
+    float cw_speed_hi;             // maximum clockwise spindle speed
+    float cw_phase_lo;             // pwm phase at minimum CW spindle speed, clamped [0..1]
+    float cw_phase_hi;             // pwm phase at maximum CW spindle speed, clamped [0..1]
+	float ccw_speed_lo;            // minimum counter-clockwise spindle speed [0..N]
+    float ccw_speed_hi;			// maximum counter-clockwise spindle speed
+    float ccw_phase_lo;			// pwm phase at minimum CCW spindle speed, clamped [0..1]
+    float ccw_phase_hi;			// pwm phase at maximum CCW spindle speed, clamped
+    float phase_off;               // pwm phase when spindle is disabled
 } cfgPWM_t;
 
 typedef struct cfgParameters {
@@ -280,15 +280,15 @@ typedef struct cfgParameters {
 	uint16_t nvm_profile_base;		// NVM base address of current profile
 
 	// hidden settings				// not part of system group, but still accessible
-	double min_segment_len;			// line drawing resolution in mm
-	double arc_segment_len;			// arc drawing resolution in mm
-	double chordal_tolerance;		// arc chordal accuracy setting in mm
-	double estd_segment_usec;		// approximate segment time in microseconds
+	float min_segment_len;			// line drawing resolution in mm
+	float arc_segment_len;			// arc drawing resolution in mm
+	float chordal_tolerance;		// arc chordal accuracy setting in mm
+	float estd_segment_usec;		// approximate segment time in microseconds
 //	uint8_t enable_acceleration;	// enable acceleration control
 
 	// system group settings
-	double junction_acceleration;	// centripetal acceleration max for cornering
-//	double max_spindle_speed;		// in RPM
+	float junction_acceleration;	// centripetal acceleration max for cornering
+//	float max_spindle_speed;		// in RPM
 
 	// gcode power-on default settings - defaults are not the same as the gm state
 	uint8_t coord_system;			// G10 active coordinate system default
@@ -322,10 +322,10 @@ typedef struct cfgParameters {
 	uint8_t status_report_verbosity;					// see enum in this file for settings
 	uint32_t status_report_interval;					// in MS. set non-zero to enable
 	index_t status_report_list[CMD_STATUS_REPORT_LEN];	// status report elements to report
-	double status_report_value[CMD_STATUS_REPORT_LEN];	// previous values for filtered reporting
+	float status_report_value[CMD_STATUS_REPORT_LEN];	// previous values for filtered reporting
 
 	// coordinate systems and offsets
-	double offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute + G54,G55,G56,G57,G58,G59
+	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute + G54,G55,G56,G57,G58,G59
 
 	// motor and axis structs
 	cfgMotor_t m[MOTORS];			// settings for motors 1-4

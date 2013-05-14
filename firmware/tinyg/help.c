@@ -172,11 +172,11 @@ Have fun\n"));
 //***** diagnostic dumps *****
 //****************************
 
-void dump_set_f_dda(double f_dda,
-					double dda_substeps, 
-					double major_axis_steps, 
-					double microseconds,
-					double f_dda_base)
+void dump_set_f_dda(float f_dda,
+					float dda_substeps, 
+					float major_axis_steps, 
+					float microseconds,
+					float f_dda_base)
 {
 /* UNCOMMENT IF YOU NEED THIS
 fprintf_P(stderr, PSTR("dump_set_f_dda()\n\

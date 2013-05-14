@@ -96,16 +96,16 @@
 // NOTE: The canonical machine singleton "cm" would normally be declared here 
 // but it's also used by cycles so it's in canonical_machine.h instead.
 
-static double _get_move_times(double *min_time);
+static float _get_move_times(float *min_time);
 
 // planner queue callbacks
-static void _exec_offset(uint8_t coord_system, double float_val);
-static void _exec_change_tool(uint8_t tool, double float_val);
-static void _exec_select_tool(uint8_t tool, double float_val);
-static void _exec_mist_coolant_control(uint8_t mist_coolant, double float_val);
-static void _exec_flood_coolant_control(uint8_t flood_coolant, double float_val);
-//static void _exec_feed_override_enable(uint8_t feed_override, double float_val);
-static void _program_finalize(uint8_t machine_state, double float_val);
+static void _exec_offset(uint8_t coord_system, float float_val);
+static void _exec_change_tool(uint8_t tool, float float_val);
+static void _exec_select_tool(uint8_t tool, float float_val);
+static void _exec_mist_coolant_control(uint8_t mist_coolant, float float_val);
+static void _exec_flood_coolant_control(uint8_t flood_coolant, float float_val);
+//static void _exec_feed_override_enable(uint8_t feed_override, float float_val);
+static void _program_finalize(uint8_t machine_state, float float_val);
 
 #define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
@@ -161,11 +161,11 @@ uint8_t cm_isbusy() { return (mp_isbusy());}
 void cm_set_motion_mode(uint8_t motion_mode) {gm.motion_mode = motion_mode;} 
 void cm_set_absolute_override(uint8_t absolute_override) { gm.absolute_override = absolute_override;}
 void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
-void cm_set_spindle_speed_parameter(double speed) { gm.spindle_speed = speed;}
+void cm_set_spindle_speed_parameter(float speed) { gm.spindle_speed = speed;}
 void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
 
-//void cm_sync_tool_number(uint8_t tool) { mp_sync_command(SYNC_TOOL_NUMBER, (double)tool);}
-//void cm_sync_spindle_speed_parameter(double speed) { mp_sync_command(SYNC_SPINDLE_SPEED, speed);}
+//void cm_sync_tool_number(uint8_t tool) { mp_sync_command(SYNC_TOOL_NUMBER, (float)tool);}
+//void cm_sync_spindle_speed_parameter(float speed) { mp_sync_command(SYNC_SPINDLE_SPEED, speed);}
 
 /* Position and Offset getters
  *
@@ -181,7 +181,7 @@ void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
  * cm_get_runtime work_scaling() - return current work scaling factor
  */
 
-double cm_get_coord_offset(uint8_t axis)
+float cm_get_coord_offset(uint8_t axis)
 {
 	if (gm.absolute_override == true) {
 		return (0);						// no work offset if in abs override mode
@@ -193,7 +193,7 @@ double cm_get_coord_offset(uint8_t axis)
 	}
 }
 
-double *cm_get_coord_offset_vector(double vector[])
+float *cm_get_coord_offset_vector(float vector[])
 {
 	for (uint8_t i=0; i<AXES; i++) {
 		vector[i] = cm_get_coord_offset(i);
@@ -201,7 +201,7 @@ double *cm_get_coord_offset_vector(double vector[])
 	return (vector);
 }
 
-double cm_get_model_work_position(uint8_t axis) 
+float cm_get_model_work_position(uint8_t axis) 
 {
 	if (gm.units_mode == INCHES) {
 		return ((gm.position[axis] - cm_get_coord_offset(axis)) / MM_PER_INCH);
@@ -210,7 +210,7 @@ double cm_get_model_work_position(uint8_t axis)
 	}
 }
 /*
-double *cm_get_model_work_position_vector(double position[]) 
+float *cm_get_model_work_position_vector(float position[]) 
 {
 	for (uint8_t i=0; i<AXES; i++) {
 		position[i] = cm_get_model_work_position(i);
@@ -218,18 +218,18 @@ double *cm_get_model_work_position_vector(double position[])
 	return (position);
 }
 */
-double cm_get_model_canonical_target(uint8_t axis) 
+float cm_get_model_canonical_target(uint8_t axis) 
 {
 	return (gm.target[axis]);
 }
 
-double *cm_get_model_canonical_position_vector(double position[])
+float *cm_get_model_canonical_position_vector(float position[])
 {
 	copy_axis_vector(position, gm.position);	
 	return (position);
 }
 
-double cm_get_runtime_machine_position(uint8_t axis) 
+float cm_get_runtime_machine_position(uint8_t axis) 
 {
 	return (mp_get_runtime_machine_position(axis));
 
@@ -241,7 +241,7 @@ double cm_get_runtime_machine_position(uint8_t axis)
 //	}
 }
 
-double cm_get_runtime_work_position(uint8_t axis) 
+float cm_get_runtime_work_position(uint8_t axis) 
 {
 	if (gm.units_mode == INCHES) {
 		return (mp_get_runtime_work_position(axis) / MM_PER_INCH);
@@ -250,7 +250,7 @@ double cm_get_runtime_work_position(uint8_t axis)
 	}
 }
 
-double cm_get_runtime_work_offset(uint8_t axis) 
+float cm_get_runtime_work_offset(uint8_t axis) 
 {
 	return (mp_get_runtime_work_offset(axis));
 }
@@ -268,14 +268,14 @@ double cm_get_runtime_work_offset(uint8_t axis)
  * cm_set_model_linenum() - set line number in the model
  */
 
-void cm_set_arc_offset(double i, double j, double k)
+void cm_set_arc_offset(float i, float j, float k)
 { 
 	gm.arc_offset[0] = _to_millimeters(i);
 	gm.arc_offset[1] = _to_millimeters(j);
 	gm.arc_offset[2] = _to_millimeters(k);
 }
 
-void cm_set_arc_radius(double r) 
+void cm_set_arc_radius(float r) 
 { 
 	gm.arc_radius = _to_millimeters(r);
 }
@@ -311,13 +311,13 @@ void cm_set_model_linenum(uint32_t linenum)
  *	Target coordinates are provided in target[]
  *	Axes that need processing are signaled in flag[]
  */
-static double _calc_ABC(uint8_t i, double target[], double flag[]);
+static float _calc_ABC(uint8_t i, float target[], float flag[]);
 
-//void cm_set_target(double target[], double flag[], uint8_t machine_coords)
-void cm_set_target(double target[], double flag[])
+//void cm_set_target(float target[], float flag[], uint8_t machine_coords)
+void cm_set_target(float target[], float flag[])
 { 
 	uint8_t i;
-	double tmp = 0;
+	float tmp = 0;
 
 	// process XYZABC for lower modes
 	for (i=AXIS_X; i<=AXIS_Z; i++) {
@@ -349,9 +349,9 @@ void cm_set_target(double target[], double flag[])
 // ESTEE: fix to workaround a gcc compiler bug wherein it runs out of spill registers
 // we moved this block into its own function so that we get a fresh stack push
 // ALDEN: This shows up in avr-gcc 4.7.0 and avr-libc 1.8.0
-static double _calc_ABC(uint8_t i, double target[], double flag[])
+static float _calc_ABC(uint8_t i, float target[], float flag[])
 {
-	double tmp = 0;
+	float tmp = 0;
 	
 	if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
 		tmp = target[i];	// no mm conversion - it's in degrees
@@ -370,19 +370,19 @@ static double _calc_ABC(uint8_t i, double target[], double flag[])
 		tmp = (target[Z] - gm.position[Z]) * 360 / (2 * M_PI * cfg.a[i].radius);
 
 	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XY) && ((flag[X] > EPSILON) || (flag[Y] > EPSILON))) {
-		double length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]));
+		float length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]));
 		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
 
 	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XZ) && ((flag[X] > EPSILON) || (flag[Z] > EPSILON))) {
-		double length = sqrt(square(target[X] - gm.position[X]) + square(target[Z] - gm.position[Z]));
+		float length = sqrt(square(target[X] - gm.position[X]) + square(target[Z] - gm.position[Z]));
 		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
 
 	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_YZ) && ((flag[Y] > EPSILON) || (flag[Z] > EPSILON))) {
-		double length = sqrt(square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
+		float length = sqrt(square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
 		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
 
 	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XYZ) && ((flag[X] > EPSILON) || (flag[Y] > EPSILON) || (flag[Z] > EPSILON))) {
-		double length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
+		float length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
 		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
 */
 	}
@@ -469,14 +469,14 @@ void cm_set_gcode_model_endpoint_position(uint8_t status)
  *		any time required for acceleration or deceleration.
  */
 
-static double _get_move_times(double *min_time)
+static float _get_move_times(float *min_time)
 {
 	uint8_t i;
-	double inv_time=0;	// inverse time if doing a feed in G93 mode
-	double xyz_time=0;	// coordinated move linear part at req feed rate
-	double abc_time=0;	// coordinated move rotary part at req feed rate
-	double max_time=0;	// time required for the rate-limiting axis
-	double tmp_time=0;	// used in computation
+	float inv_time=0;	// inverse time if doing a feed in G93 mode
+	float xyz_time=0;	// coordinated move linear part at req feed rate
+	float abc_time=0;	// coordinated move rotary part at req feed rate
+	float max_time=0;	// time required for the rate-limiting axis
+	float tmp_time=0;	// used in computation
 	*min_time = 1234567;// arbitrarily large number
 
 	// compute times for feed motion
@@ -598,7 +598,7 @@ void cm_alarm(uint8_t value)
 /*
  * cm_set_machine_axis_position() - set the position of a single axis
  */
-uint8_t cm_set_machine_axis_position(uint8_t axis, const double position)
+uint8_t cm_set_machine_axis_position(uint8_t axis, const float position)
 {
 	gm.position[axis] = position;
 	gm.target[axis] = position;
@@ -655,9 +655,9 @@ uint8_t	cm_set_coord_system(uint8_t coord_system)
 	mp_queue_command(_exec_offset, coord_system,0);
 	return (STAT_OK);
 }
-static void _exec_offset(uint8_t coord_system, double float_val)
+static void _exec_offset(uint8_t coord_system, float float_val)
 {
-	double offsets[AXES];
+	float offsets[AXES];
 	for (uint8_t i=0; i<AXES; i++) {
 		offsets[i] = cfg.offset[coord_system][i] + (gm.origin_offset[i] * gm.origin_offset_enable);
 	}
@@ -671,7 +671,7 @@ static void _exec_offset(uint8_t coord_system, double float_val)
  *	the offsets (as Gcode expects). If you want to persist coordinate system 
  *	offsets use $g54x - $g59c config functions instead.
  */
-uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[])
+uint8_t	cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 {
 	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
 		return (STAT_INTERNAL_RANGE_ERROR);
@@ -694,7 +694,7 @@ uint8_t	cm_set_coord_offsets(uint8_t coord_system, double offset[], double flag[
  *	Y axis. USE: With the axis(or axes) where you want it, issue g92.4 y0 
  *	(for example). The Y axis will now be set to 0 (or whatever value provided)
  */
-uint8_t cm_set_absolute_origin(double origin[], double flag[])
+uint8_t cm_set_absolute_origin(float origin[], float flag[])
 {
 	for (uint8_t i=0; i<AXES; i++) {
 //		if (flag[i] > EPSILON) {
@@ -715,7 +715,7 @@ uint8_t cm_set_absolute_origin(double origin[], double flag[])
  * G92's behave according to NIST 3.5.18 & LinuxCNC G92
  * http://linuxcnc.org/docs/html/gcode/gcode.html#sec:G92-G92.1-G92.2-G92.3
  */
-uint8_t cm_set_origin_offsets(double offset[], double flag[])
+uint8_t cm_set_origin_offsets(float offset[], float flag[])
 {
 	gm.origin_offset_enable = 1;
 	for (uint8_t i=0; i<AXES; i++) {
@@ -757,7 +757,7 @@ uint8_t cm_resume_origin_offsets()
  * cm_straight_traverse() - G0 linear rapid
  */
 
-uint8_t cm_straight_traverse(double target[], double flags[])
+uint8_t cm_straight_traverse(float target[], float flags[])
 {
 	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_target(target,flags);
@@ -785,12 +785,12 @@ uint8_t cm_set_g28_position(void)
 	return (STAT_OK);
 }
 
-uint8_t cm_goto_g28_position(double target[], double flags[])
+uint8_t cm_goto_g28_position(float target[], float flags[])
 {
 	cm_set_absolute_override(true);
 	cm_straight_traverse(target, flags);
 	while (mp_get_planner_buffers_available() == 0); 	// make sure you have an available buffer
-	double f[] = {1,1,1,1,1,1};
+	float f[] = {1,1,1,1,1,1};
 	return(cm_straight_traverse(gm.g28_position, f));
 }
 
@@ -800,12 +800,12 @@ uint8_t cm_set_g30_position(void)
 	return (STAT_OK);
 }
 
-uint8_t cm_goto_g30_position(double target[], double flags[])
+uint8_t cm_goto_g30_position(float target[], float flags[])
 {
 	cm_set_absolute_override(true);
 	cm_straight_traverse(target, flags);
 	while (mp_get_planner_buffers_available() == 0); 	// make sure you have an available buffer
-	double f[] = {1,1,1,1,1,1};
+	float f[] = {1,1,1,1,1,1};
 	return(cm_straight_traverse(gm.g30_position, f));
 }
 
@@ -822,7 +822,7 @@ uint8_t cm_goto_g30_position(double target[], double flags[])
  * inverse feed rate as this would require knowing the move length in advance.
  */
 
-uint8_t cm_set_feed_rate(double feed_rate)
+uint8_t cm_set_feed_rate(float feed_rate)
 {
 	if (gm.inverse_feed_rate_mode == true) {
 		gm.inverse_feed_rate = feed_rate; // minutes per motion for this block only
@@ -863,14 +863,14 @@ uint8_t cm_set_path_control(uint8_t mode)
  * cm_straight_feed() - G1
  */ 
 
-uint8_t cm_dwell(double seconds)
+uint8_t cm_dwell(float seconds)
 {
 	gm.parameter = seconds;
 	(void)mp_dwell(seconds);
 	return (STAT_OK);
 }
 
-uint8_t cm_straight_feed(double target[], double flags[])
+uint8_t cm_straight_feed(float target[], float flags[])
 {
 	gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 
@@ -917,7 +917,7 @@ uint8_t cm_change_tool(uint8_t tool)
 	mp_queue_command(_exec_change_tool, tool, 0);
 	return (STAT_OK);
 }
-static void _exec_change_tool(uint8_t tool, double float_val)
+static void _exec_change_tool(uint8_t tool, float float_val)
 {
 	gm.tool = tool;
 }
@@ -927,7 +927,7 @@ uint8_t cm_select_tool(uint8_t tool)
 	mp_queue_command(_exec_select_tool, tool, 0);
 	return (STAT_OK);
 }
-static void _exec_select_tool(uint8_t tool, double float_val)
+static void _exec_select_tool(uint8_t tool, float float_val)
 {
 	gm.tool = tool;
 }
@@ -951,7 +951,7 @@ uint8_t cm_flood_coolant_control(uint8_t flood_coolant)
 	return (STAT_OK);
 }
 
-static void _exec_mist_coolant_control(uint8_t mist_coolant, double float_val)
+static void _exec_mist_coolant_control(uint8_t mist_coolant, float float_val)
 {
 	gm.mist_coolant = mist_coolant;
 	if (mist_coolant == true) {
@@ -961,7 +961,7 @@ static void _exec_mist_coolant_control(uint8_t mist_coolant, double float_val)
 	}
 }
 
-static void _exec_flood_coolant_control(uint8_t flood_coolant, double float_val)
+static void _exec_flood_coolant_control(uint8_t flood_coolant, float float_val)
 {
 	gm.flood_coolant = flood_coolant;
 	if (flood_coolant == true) {
@@ -1192,7 +1192,7 @@ void cm_program_end()				// M2, M30
 	mp_queue_command(_program_finalize, MACHINE_PROGRAM_END,0);
 }
 
-static void _program_finalize(uint8_t machine_state, double f)
+static void _program_finalize(uint8_t machine_state, float f)
 {
 	cm.machine_state = machine_state;
 	cm.cycle_state = CYCLE_OFF;

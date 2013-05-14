@@ -38,22 +38,22 @@
 
 /****** Global Scope Variables and Functions ******/
 
-double vector[AXES];				// vector of axes for passing to subroutines
+float vector[AXES];				// vector of axes for passing to subroutines
 
-double min3(double x1, double x2, double x3);
-double min4(double x1, double x2, double x3, double x4);
-double max3(double x1, double x2, double x3);
-double max4(double x1, double x2, double x3, double x4);
+float min3(float x1, float x2, float x3);
+float min4(float x1, float x2, float x3, float x4);
+float max3(float x1, float x2, float x3);
+float max4(float x1, float x2, float x3, float x4);
 uint8_t isnumber(char c);
-uint8_t read_double(char *buf, uint8_t *i, double *double_ptr);
+uint8_t read_float(char *buf, uint8_t *i, float *float_ptr);
 uint16_t compute_checksum(char const *string, const uint16_t length);
 
-void copy_vector(double dst[], const double src[], uint8_t length);
-void copy_axis_vector(double dst[], const double src[]);
-uint8_t vector_equal(const double a[], const double b[]) ;
-double get_axis_vector_length(const double a[], const double b[]);
-double *set_vector(double x, double y, double z, double a, double b, double c);
-double *set_vector_by_axis(double value, uint8_t axis);
+void copy_vector(float dst[], const float src[], uint8_t length);
+void copy_axis_vector(float dst[], const float src[]);
+uint8_t vector_equal(const float a[], const float b[]) ;
+float get_axis_vector_length(const float a[], const float b[]);
+float *set_vector(float x, float y, float z, float a, float b, float c);
+float *set_vector_by_axis(float value, uint8_t axis);
 #define clear_vector(a) memset(a,0,sizeof(a))
 
 // ritorno is a handy way to provide exception returns - it returns only if an error occurred
@@ -111,8 +111,8 @@ double *set_vector_by_axis(double value, uint8_t axis);
 #define MAX_ULONG (4294967295)
 #define MM_PER_INCH (25.4)
 #define INCH_PER_MM (1/25.4)
-#define MICROSECONDS_PER_MINUTE ((double)60000000)
-#define uSec(a) ((double)(a * MICROSECONDS_PER_MINUTE))
+#define MICROSECONDS_PER_MINUTE ((float)60000000)
+#define uSec(a) ((float)(a * MICROSECONDS_PER_MINUTE))
 
 #define RADIAN (57.2957795)
 //		M_PI is pi as defined in math.h

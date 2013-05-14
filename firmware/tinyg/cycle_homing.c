@@ -52,20 +52,20 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 	uint8_t (*func)(int8_t axis);// binding for callback function state machine
 
 	// per-axis parameters
-	double direction;			// set to 1 for positive (max), -1 for negative (to min);
-	double search_travel;		// signed distance to travel in search
-	double search_velocity;		// search speed as positive number
-	double latch_velocity;		// latch speed as positive number
-	double latch_backoff;		// max distance to back off switch during latch phase 
-	double zero_backoff;		// distance to back off switch before setting zero
-	double max_clear_backoff;	// maximum distance of switch clearing backoffs before erring out
+	float direction;			// set to 1 for positive (max), -1 for negative (to min);
+	float search_travel;		// signed distance to travel in search
+	float search_velocity;		// search speed as positive number
+	float latch_velocity;		// latch speed as positive number
+	float latch_backoff;		// max distance to back off switch during latch phase 
+	float zero_backoff;		// distance to back off switch before setting zero
+	float max_clear_backoff;	// maximum distance of switch clearing backoffs before erring out
 
 	// state saved from gcode model
-	double saved_feed_rate;		// F setting
+	float saved_feed_rate;		// F setting
 	uint8_t saved_units_mode;	// G20,G21 global setting
 	uint8_t saved_coord_system;	// G54 - G59 setting
 	uint8_t saved_distance_mode;// G90,G91 global setting
-	double saved_jerk;			// saved and restored for each axis homed
+	float saved_jerk;			// saved and restored for each axis homed
 };
 static struct hmHomingSingleton hm;
 
@@ -80,7 +80,7 @@ static uint8_t _homing_axis_search(int8_t axis);
 static uint8_t _homing_axis_latch(int8_t axis);
 static uint8_t _homing_axis_zero_backoff(int8_t axis);
 static uint8_t _homing_axis_set_zero(int8_t axis);
-static uint8_t _homing_axis_move(int8_t axis, double target, double velocity);
+static uint8_t _homing_axis_move(int8_t axis, float target, float velocity);
 static uint8_t _homing_finalize_exit(int8_t axis);
 static uint8_t _homing_error_exit(int8_t axis);
 
@@ -341,9 +341,9 @@ static uint8_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 	return (_set_hm_func(_homing_axis_start));
 }
 
-static uint8_t _homing_axis_move(int8_t axis, double target, double velocity)
+static uint8_t _homing_axis_move(int8_t axis, float target, float velocity)
 {
-	double flags[] = {1,1,1,1,1,1};
+	float flags[] = {1,1,1,1,1,1};
 	set_vector_by_axis(target, axis);
 	cm_set_feed_rate(velocity);
 	cm_request_queue_flush();

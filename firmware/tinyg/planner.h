@@ -66,9 +66,9 @@ enum moveState {
 /* ESTD_SEGMENT_USEC	 Microseconds per planning segment
  *	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
  */
-#define NOM_SEGMENT_USEC ((double)5000)			// nominal segment time
-#define MIN_SEGMENT_USEC ((double)2500)			// minimum segment time
-#define MIN_ARC_SEGMENT_USEC ((double)10000)	// minimum arc segment time
+#define NOM_SEGMENT_USEC ((float)5000)			// nominal segment time
+#define MIN_SEGMENT_USEC ((float)2500)			// minimum segment time
+#define MIN_ARC_SEGMENT_USEC ((float)10000)	// minimum arc segment time
 #define NOM_SEGMENT_TIME (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME (MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
@@ -107,7 +107,7 @@ enum moveState {
 //#define MP_LINE(t,m,o,n) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m,o,n) : mp_line(t,m))
 #define MP_LINE(t,m,o,n) (mp_aline(t,m,o,n))	// non-planned lines are disabled
 
-typedef void (*cm_exec)(uint8_t, double);	// callback to canonical_machine execution function
+typedef void (*cm_exec)(uint8_t, float);	// callback to canonical_machine execution function
 
 /*
  *	Planner structures
@@ -135,30 +135,30 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 	uint8_t move_state;			// move state machine sequence
 	uint8_t replannable;		// TRUE if move can be replanned
 
-	double target[AXES];		// target position in floating point
-	double unit[AXES];			// unit vector for axis scaling & planning
-	double work_offset[AXES];	// offset from the work coordinate system (for reporting only)
+	float target[AXES];		// target position in floating point
+	float unit[AXES];			// unit vector for axis scaling & planning
+	float work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
-	double time;				// line, helix or dwell time in minutes
-	double min_time;			// minimum time for the move - for rate override replanning
-	double head_length;
-	double body_length;
-	double tail_length;
-	double length;				// total length of line or helix in mm
+	float time;				// line, helix or dwell time in minutes
+	float min_time;			// minimum time for the move - for rate override replanning
+	float head_length;
+	float body_length;
+	float tail_length;
+	float length;				// total length of line or helix in mm
 								// *** SEE NOTES ON THESE VARIABLES, in aline() ***
-	double entry_velocity;		// entry velocity requested for the move
-	double cruise_velocity;		// cruise velocity requested & achieved
-	double exit_velocity;		// exit velocity requested for the move
+	float entry_velocity;		// entry velocity requested for the move
+	float cruise_velocity;		// cruise velocity requested & achieved
+	float exit_velocity;		// exit velocity requested for the move
 
-	double entry_vmax;			// max junction velocity at entry of this move
-	double cruise_vmax;			// max cruise velocity requested for move
-	double exit_vmax;			// max exit velocity possible (redundant)
-	double delta_vmax;			// max velocity difference for this move
-	double braking_velocity;	// current value for braking velocity
+	float entry_vmax;			// max junction velocity at entry of this move
+	float cruise_vmax;			// max cruise velocity requested for move
+	float exit_vmax;			// max exit velocity possible (redundant)
+	float delta_vmax;			// max velocity difference for this move
+	float braking_velocity;	// current value for braking velocity
 
-	double jerk;				// maximum linear jerk term for this move
-	double recip_jerk;			// 1/Jm used for planning (compute-once)
-	double cbrt_jerk;			// cube root of Jm used for planning (compute-once)
+	float jerk;				// maximum linear jerk term for this move
+	float recip_jerk;			// 1/Jm used for planning (compute-once)
+	float cbrt_jerk;			// cube root of Jm used for planning (compute-once)
 } mpBuf_t;
 
 typedef struct mpBufferPool {	// ring buffer for sub-moves
@@ -172,16 +172,16 @@ typedef struct mpBufferPool {	// ring buffer for sub-moves
 } mpBufferPool_t;
 
 typedef struct mpMoveMasterSingleton {	// common variables for planning (move master)
-	double position[AXES];		// final move position for planning purposes
-	double ms_in_queue;			// total ms of movement & dwell in planner queue
-	double prev_jerk;			// jerk values cached from previous move
-	double prev_recip_jerk;
-	double prev_cbrt_jerk;
+	float position[AXES];		// final move position for planning purposes
+	float ms_in_queue;			// total ms of movement & dwell in planner queue
+	float prev_jerk;			// jerk values cached from previous move
+	float prev_recip_jerk;
+	float prev_cbrt_jerk;
 #ifdef __UNIT_TEST_PLANNER
-	double test_case;
-	double test_velocity;
-	double a_unit[AXES];
-	double b_unit[AXES];
+	float test_case;
+	float test_velocity;
+	float a_unit[AXES];
+	float b_unit[AXES];
 #endif
 } mpMoveMasterSingleton_t;
 
@@ -192,37 +192,37 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	uint8_t move_state;			// state of the overall move
 	uint8_t section_state;		// state within a move section
 
-	double endpoint[AXES];		// final target for bf (used to correct rounding errors)
-	double position[AXES];		// current move position
-	double target[AXES];		// target move position
-	double unit[AXES];			// unit vector for axis scaling & planning
-	double work_offset[AXES];	// offset from the work coordinate system (for reporting only)
+	float endpoint[AXES];		// final target for bf (used to correct rounding errors)
+	float position[AXES];		// current move position
+	float target[AXES];		// target move position
+	float unit[AXES];			// unit vector for axis scaling & planning
+	float work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
-	double head_length;			// copies of bf variables of same name
-	double body_length;
-	double tail_length;
-	double entry_velocity;
-	double cruise_velocity;
-	double exit_velocity;
+	float head_length;			// copies of bf variables of same name
+	float body_length;
+	float tail_length;
+	float entry_velocity;
+	float cruise_velocity;
+	float exit_velocity;
 
-	double length;				// length of line in mm
-	double move_time;			// total running time (derived)
-	double midpoint_velocity;	// velocity at accel/decel midpoint
-	double jerk;				// max linear jerk
+	float length;				// length of line in mm
+	float move_time;			// total running time (derived)
+	float midpoint_velocity;	// velocity at accel/decel midpoint
+	float jerk;				// max linear jerk
 
-	double segments;			// number of segments in arc or blend
+	float segments;			// number of segments in arc or blend
 	uint32_t segment_count;		// count of running segments
-	double segment_move_time;	// actual time increment per aline segment
-	double microseconds;		// line or segment time in microseconds
-	double segment_length;		// computed length for aline segment
-	double segment_velocity;	// computed velocity for aline segment
-	double forward_diff_1;      // forward difference level 1 (Acceleration)
-	double forward_diff_2;      // forward difference level 2 (Jerk - constant)
-//	double accel_time;			// total pseudo-time for acceleration calculation
-//	double elapsed_accel_time;	// current running time for accel calculation
-//	double midpoint_acceleration;//acceleration at the midpoint
-//	double jerk_div2;			// max linear jerk divided by 2
-//	double segment_accel_time;	// time increment for accel computation purposes
+	float segment_move_time;	// actual time increment per aline segment
+	float microseconds;		// line or segment time in microseconds
+	float segment_length;		// computed length for aline segment
+	float segment_velocity;	// computed velocity for aline segment
+	float forward_diff_1;      // forward difference level 1 (Acceleration)
+	float forward_diff_2;      // forward difference level 2 (Jerk - constant)
+//	float accel_time;			// total pseudo-time for acceleration calculation
+//	float elapsed_accel_time;	// current running time for accel calculation
+//	float midpoint_acceleration;//acceleration at the midpoint
+//	float jerk_div2;			// max linear jerk divided by 2
+//	float segment_accel_time;	// time increment for accel computation purposes
 	uint16_t magic_end;
 } mpMoveRuntimeSingleton_t;
 
@@ -240,18 +240,18 @@ void mp_init(void);
 void mp_init_buffers(void);
 
 void mp_flush_planner(void);
-double *mp_get_plan_position(double position[]);
-void mp_set_plan_position(const double position[]);
-void mp_set_axes_position(const double position[]);
-void mp_set_axis_position(uint8_t axis, const double position);
+float *mp_get_plan_position(float position[]);
+void mp_set_plan_position(const float position[]);
+void mp_set_axes_position(const float position[]);
+void mp_set_axis_position(uint8_t axis, const float position);
 
 uint8_t mp_exec_move(void);
-void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t int_val, double float_val);
-uint8_t mp_dwell(const double seconds);
-uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time);
+void mp_queue_command(void(*cm_exec)(uint8_t, float), uint8_t int_val, float float_val);
+uint8_t mp_dwell(const float seconds);
+uint8_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time);
 uint8_t mp_plan_hold_callback(void);
 uint8_t mp_end_hold(void);
-uint8_t mp_feed_rate_override(uint8_t flag, double parameter);
+uint8_t mp_feed_rate_override(uint8_t flag, float parameter);
 
 // planner buffer handlers
 uint8_t mp_get_planner_buffers_available(void);
@@ -268,13 +268,13 @@ mpBuf_t * mp_get_last_buffer(void);
 
 // plan_line.c functions
 uint8_t mp_isbusy(void);
-double mp_get_runtime_linenum(void);
-double mp_get_runtime_velocity(void);
-double mp_get_runtime_work_position(uint8_t axis);
-double mp_get_runtime_machine_position(uint8_t axis);
-double mp_get_runtime_work_offset(uint8_t axis);
-double mp_get_runtime_work_scaling(uint8_t axis);
-void mp_set_runtime_work_offset(double offset[]); 
+float mp_get_runtime_linenum(void);
+float mp_get_runtime_velocity(void);
+float mp_get_runtime_work_position(uint8_t axis);
+float mp_get_runtime_machine_position(uint8_t axis);
+float mp_get_runtime_work_offset(uint8_t axis);
+float mp_get_runtime_work_scaling(uint8_t axis);
+void mp_set_runtime_work_offset(float offset[]); 
 void mp_zero_segment_velocity(void);
 
 #ifdef __DEBUG

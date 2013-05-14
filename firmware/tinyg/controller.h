@@ -39,10 +39,10 @@
 
 struct controllerSingleton {			// main TG controller struct
 	uint16_t magic_start;				// magic number to test memory integity	
-	double null;						// dumping ground for items with no target
-	double fw_build;					// tinyg firmware build number
-	double fw_version;					// tinyg firmware version number
-	double hw_version;					// tinyg hardware compatibility
+	float null;						// dumping ground for items with no target
+	float fw_build;					// tinyg firmware build number
+	float fw_version;					// tinyg firmware version number
+	float hw_version;					// tinyg hardware compatibility
 	uint8_t test;
 	uint8_t primary_src;				// primary input source device
 	uint8_t secondary_src;				// secondary input source device

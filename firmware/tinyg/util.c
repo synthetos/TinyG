@@ -58,19 +58,19 @@
  * set_vector_by_axis()		- load a single value into a zero vector
  */
 
-void copy_vector(double dst[], const double src[], uint8_t length) 
+void copy_vector(float dst[], const float src[], uint8_t length) 
 {
 	for (uint8_t i=0; i<length; i++) {
 		dst[i] = src[i];
 	}
 }
 
-void copy_axis_vector(double dst[], const double src[]) 
+void copy_axis_vector(float dst[], const float src[]) 
 {
-	memcpy(dst, src, sizeof(double)*AXES);
+	memcpy(dst, src, sizeof(float)*AXES);
 }
 
-uint8_t vector_equal(const double a[], const double b[]) 
+uint8_t vector_equal(const float a[], const float b[]) 
 {
 	if ((fp_EQ(a[AXIS_X], b[AXIS_X])) &&
 	 	(fp_EQ(a[AXIS_Y], b[AXIS_Y])) &&
@@ -83,7 +83,7 @@ uint8_t vector_equal(const double a[], const double b[])
 	return (false);
 }
 
-double get_axis_vector_length(const double a[], const double b[]) 
+float get_axis_vector_length(const float a[], const float b[]) 
 {
 	return (sqrt(square(a[AXIS_X] - b[AXIS_X]) +
 				 square(a[AXIS_Y] - b[AXIS_Y]) +
@@ -93,7 +93,7 @@ double get_axis_vector_length(const double a[], const double b[])
 				 square(a[AXIS_C] - b[AXIS_C])));
 }
 
-double *set_vector(double x, double y, double z, double a, double b, double c)
+float *set_vector(float x, float y, float z, float a, float b, float c)
 {
 	vector[AXIS_X] = x;
 	vector[AXIS_Y] = y;
@@ -104,7 +104,7 @@ double *set_vector(double x, double y, double z, double a, double b, double c)
 	return (vector);
 }
 
-double *set_vector_by_axis(double value, uint8_t axis)
+float *set_vector_by_axis(float value, uint8_t axis)
 {
 	clear_vector(vector);
 	switch (axis) {
@@ -135,34 +135,34 @@ double *set_vector_by_axis(double value, uint8_t axis)
  *	#define max4(a,b,c,d) (max(max(a,b),max(c,d)))
  */
 
-inline double min3(double x1, double x2, double x3)
+inline float min3(float x1, float x2, float x3)
 {
-	double min = x1;
+	float min = x1;
 	if (x2 < min) { min = x2;} 
 	if (x3 < min) { return (x3);} 
 	return (min);
 }
 
-inline double min4(double x1, double x2, double x3, double x4)
+inline float min4(float x1, float x2, float x3, float x4)
 {
-	double min = x1;
+	float min = x1;
 	if (x2 < min) { min = x2;} 
 	if (x3 < min) { min = x3;} 
 	if (x4 < min) { return (x4);}
 	return (min);
 }
 
-inline double max3(double x1, double x2, double x3)
+inline float max3(float x1, float x2, float x3)
 {
-	double max = x1;
+	float max = x1;
 	if (x2 > max) { max = x2;} 
 	if (x3 > max) { return (x3);} 
 	return (max);
 }
 
-inline double max4(double x1, double x2, double x3, double x4)
+inline float max4(float x1, float x2, float x3, float x4)
 {
-	double max = x1;
+	float max = x1;
 	if (x2 > max) { max = x2;} 
 	if (x3 > max) { max = x3;} 
 	if (x4 > max) { return (x4);}
@@ -182,22 +182,22 @@ uint8_t isnumber(char c)
 }
 
 /* 
- * read_double() - read a double from a normalized char array
+ * read_float() - read a float from a normalized char array
  *
  *	buf			normalized char array (line)
  *	i			char array index must point to start of number
- *	double_ptr	pointer to double to write value into
+ *	float_ptr	pointer to float to write value into
  *
  *	The line is normalized when it is all caps, has no white space,
  *	no non-alphnumeric characters, and no newline or CR.
  */
 
-uint8_t read_double(char *buf, uint8_t *i, double *double_ptr) 
+uint8_t read_float(char *buf, uint8_t *i, float *float_ptr) 
 {
 	char *start = buf + *i;
 	char *end;
   
-	*double_ptr = strtod(start, &end);
+	*float_ptr = strtod(start, &end);
 	if(end == start) { 
 		return(false); 
 	}

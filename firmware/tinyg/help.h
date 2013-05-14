@@ -33,8 +33,8 @@ uint8_t print_test_help(cmdObj_t *cmd);
 uint8_t print_defaults_help(cmdObj_t *cmd);
 uint8_t print_boot_loader_help(cmdObj_t *cmd);
 
-void dump_set_f_dda(double f_dda, double dda_substeps, 
-					double major_axis_steps, 
-					double microseconds,
-					double f_dda_base);
+void dump_set_f_dda(float f_dda, float dda_substeps, 
+					float major_axis_steps, 
+					float microseconds,
+					float f_dda_base);
 #endif

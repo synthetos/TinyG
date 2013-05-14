@@ -77,7 +77,7 @@
 #define _bump(a) ((a<PLANNER_BUFFER_POOL_SIZE-1)?(a+1):0) // buffer incr & wrap
 #define spindle_speed time		// local alias for spindle_speed to the time variable
 #define int_val move_code		// local alias for uint8_t to the move_code
-#define dbl_val time			// local alias for double to the time variable
+#define dbl_val time			// local alias for float to the time variable
 
 // execution routines (NB: These are all called from the LO interrupt)
 static uint8_t _exec_dwell(mpBuf_t *bf);
@@ -139,24 +139,24 @@ void mp_flush_planner()
  *	the motors will still be processing the action and the real tool 
  *	position is still close to the starting point.
  */
-double *mp_get_plan_position(double position[])
+float *mp_get_plan_position(float position[])
 {
 	copy_axis_vector(position, mm.position);	
 	return (position);
 }
 
-void mp_set_plan_position(const double position[])
+void mp_set_plan_position(const float position[])
 {
 	copy_axis_vector(mm.position, position);
 }
 
-void mp_set_axes_position(const double position[])
+void mp_set_axes_position(const float position[])
 {
 	copy_axis_vector(mm.position, position);
 	copy_axis_vector(mr.position, position);
 }
 
-void mp_set_axis_position(uint8_t axis, const double position)
+void mp_set_axis_position(uint8_t axis, const float position)
 {
 	mm.position[axis] = position;
 	mr.position[axis] = position;
@@ -208,7 +208,7 @@ uint8_t mp_exec_move()
  *	and makes keeping the queue full much easier - therefore avoiding Q starvation
  */
 
-void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t int_val, double float_val)
+void mp_queue_command(void(*cm_exec)(uint8_t, float), uint8_t int_val, float float_val)
 {
 	mpBuf_t *bf;
 
@@ -241,7 +241,7 @@ static uint8_t _exec_command(mpBuf_t *bf)
  * timer than the stepper pulse timer.
  */
 
-uint8_t mp_dwell(double seconds) 
+uint8_t mp_dwell(float seconds) 
 {
 	mpBuf_t *bf; 
 
