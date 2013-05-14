@@ -61,7 +61,6 @@ struct controllerSingleton {			// main TG controller struct
 };
 struct controllerSingleton tg;			// controller state structure
 
-//void tg_init(uint8_t default_src);
 void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
 void tg_request_reset(void);
 void tg_request_bootloader(void);

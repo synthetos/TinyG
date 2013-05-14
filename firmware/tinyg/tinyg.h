@@ -45,7 +45,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	375.08		// Moved ritorno() to tinyg.h and main.c; introduce stat_t typdef
+#define TINYG_FIRMWARE_BUILD   	375.09		// Changing over status returns to stat_t
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 

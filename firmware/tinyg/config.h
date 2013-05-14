@@ -191,28 +191,28 @@ cmdObj_t cmd_list[CMD_LIST_LEN];	// JSON header element
  */
 
 void cfg_init(void);
-uint8_t cfg_text_parser(char *str);
-uint8_t cfg_baud_rate_callback(void);
+stat_t cfg_text_parser(char *str);
+stat_t cfg_baud_rate_callback(void);
 
 // main entry points for core access functions
-uint8_t cmd_get(cmdObj_t *cmd);		// get value
-uint8_t cmd_set(cmdObj_t *cmd);		// set value
+stat_t cmd_get(cmdObj_t *cmd);		// get value
+stat_t cmd_set(cmdObj_t *cmd);		// set value
 void cmd_print(cmdObj_t *cmd);		// formatted print
 void cmd_persist(cmdObj_t *cmd);	// persistence
 
 // helpers
 index_t cmd_get_index(const char *group, const char *token);
 uint8_t cmd_get_type(cmdObj_t *cmd);
-uint8_t cmd_set_jv(cmdObj_t *cmd);
-uint8_t cmd_set_tv(cmdObj_t *cmd);
-uint8_t cmd_persist_offsets(uint8_t flag);
+stat_t cmd_set_jv(cmdObj_t *cmd);
+stat_t cmd_set_tv(cmdObj_t *cmd);
+stat_t cmd_persist_offsets(uint8_t flag);
 
 // object and list functions
 void cmd_get_cmdObj(cmdObj_t *cmd);
 cmdObj_t *cmd_reset_obj(cmdObj_t *cmd);
 cmdObj_t *cmd_reset_list(void);
-uint8_t cmd_copy_string(cmdObj_t *cmd, const char *src);
-uint8_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P);
+stat_t cmd_copy_string(cmdObj_t *cmd, const char *src);
+stat_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P);
 cmdObj_t *cmd_add_object(char *token);
 cmdObj_t *cmd_add_integer(char *token, const uint32_t value);
 cmdObj_t *cmd_add_float(char *token, const float value);
@@ -221,12 +221,12 @@ cmdObj_t *cmd_add_string_P(char *token, const char *string);
 cmdObj_t *cmd_add_message(const char *string);
 cmdObj_t *cmd_add_message_P(const char *string);
 
-void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags);
+void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
 uint8_t cmd_group_is_prefixed(char *group);
 uint8_t cmd_index_is_group(index_t index);
 
-uint8_t cmd_read_NVM_value(cmdObj_t *cmd);
-uint8_t cmd_write_NVM_value(cmdObj_t *cmd);
+stat_t cmd_read_NVM_value(cmdObj_t *cmd);
+stat_t cmd_write_NVM_value(cmdObj_t *cmd);
 
 #ifdef __DEBUG
 void cfg_dump_NVM(const uint16_t start_record, const uint16_t end_record, char *label);

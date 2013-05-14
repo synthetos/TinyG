@@ -159,19 +159,19 @@ typedef struct cfgItem {
 // prototypes are divided into generic functions and parameter-specific functions
 
 // generic internal functions
-static uint8_t _set_nul(cmdObj_t *cmd);	// noop
-static uint8_t _set_ui8(cmdObj_t *cmd);	// set a uint8_t value
-static uint8_t _set_01(cmdObj_t *cmd);	// set a 0 or 1 value w/validation
-static uint8_t _set_012(cmdObj_t *cmd);	// set a 0, 1 or 2 value w/validation
-static uint8_t _set_int(cmdObj_t *cmd);	// set an integer value
-static uint8_t _set_dbl(cmdObj_t *cmd);	// set a float value
-static uint8_t _set_dbu(cmdObj_t *cmd);	// set a float with unit conversion
+static stat_t _set_nul(cmdObj_t *cmd);	// noop
+static stat_t _set_ui8(cmdObj_t *cmd);	// set a uint8 value
+static stat_t _set_01(cmdObj_t *cmd);	// set a 0 or 1 value w/validation
+static stat_t _set_012(cmdObj_t *cmd);	// set a 0, 1 or 2 value w/validation
+static stat_t _set_int(cmdObj_t *cmd);	// set a uint32 integer value
+static stat_t _set_dbl(cmdObj_t *cmd);	// set a float value
+static stat_t _set_dbu(cmdObj_t *cmd);	// set a float with unit conversion
 
-static uint8_t _get_nul(cmdObj_t *cmd);	// get null value type
-static uint8_t _get_ui8(cmdObj_t *cmd);	// get uint8_t value
-static uint8_t _get_int(cmdObj_t *cmd);	// get uint32_t integer value
-static uint8_t _get_dbl(cmdObj_t *cmd);	// get float value
-static uint8_t _get_dbu(cmdObj_t *cmd);	// get float with unit conversion
+static stat_t _get_nul(cmdObj_t *cmd);	// get null value type
+static stat_t _get_ui8(cmdObj_t *cmd);	// get uint8 value
+static stat_t _get_int(cmdObj_t *cmd);	// get uint32 integer value
+static stat_t _get_dbl(cmdObj_t *cmd);	// get float value
+static stat_t _get_dbu(cmdObj_t *cmd);	// get float with unit conversion
 
 static void _print_nul(cmdObj_t *cmd);	// print nothing
 static void _print_str(cmdObj_t *cmd);	// print a string value
@@ -195,18 +195,18 @@ static char *_get_format(const index_t i, char *format);
 static int8_t _get_motor(const index_t i);
 //static int8_t _get_axis(const index_t i);
 static int8_t _get_pos_axis(const index_t i);
-static uint8_t _text_parser(char *str, cmdObj_t *c);
-static uint8_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value);
+static stat_t _text_parser(char *str, cmdObj_t *c);
+static stat_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value);
 static void _print_text_inline_pairs();
 static void _print_text_inline_values();
 static void _print_text_multiline_formatted();
 
-static uint8_t _set_grp(cmdObj_t *cmd);	// set data for a group
-static uint8_t _get_grp(cmdObj_t *cmd);	// get data for a group
-static uint8_t _do_motors(cmdObj_t *cmd);	// print parameters for all motor groups
-static uint8_t _do_axes(cmdObj_t *cmd);	// print parameters for all axis groups
-static uint8_t _do_offsets(cmdObj_t *cmd);// print offsets for G54-G59, G92
-static uint8_t _do_all(cmdObj_t *cmd);	// print all parameters
+static stat_t _set_grp(cmdObj_t *cmd);	// set data for a group
+static stat_t _get_grp(cmdObj_t *cmd);	// get data for a group
+static stat_t _do_motors(cmdObj_t *cmd);	// print parameters for all motor groups
+static stat_t _do_axes(cmdObj_t *cmd);	// print parameters for all axis groups
+static stat_t _do_offsets(cmdObj_t *cmd);// print offsets for G54-G59, G92
+static stat_t _do_all(cmdObj_t *cmd);	// print all parameters
 
 /*****************************************************************************
  **** PARAMETER-SPECIFIC CODE REGION *****************************************
@@ -214,60 +214,60 @@ static uint8_t _do_all(cmdObj_t *cmd);	// print all parameters
  *****************************************************************************/
 
 // parameter-specific internal functions
-static uint8_t _set_hv(cmdObj_t *cmd);		// set hardware version
-static uint8_t _get_sr(cmdObj_t *cmd);		// run status report (as data)
+static stat_t _set_hv(cmdObj_t *cmd);		// set hardware version
+static stat_t _get_sr(cmdObj_t *cmd);		// run status report (as data)
 static void _print_sr(cmdObj_t *cmd);		// run status report (as printout)
-static uint8_t _set_sr(cmdObj_t *cmd);		// set status report specification
-static uint8_t _set_si(cmdObj_t *cmd);		// set status report interval
-static uint8_t _run_boot(cmdObj_t *cmd);	// jump to the bootloader
-static uint8_t _get_id(cmdObj_t *cmd);		// get device ID
-static uint8_t _get_qr(cmdObj_t *cmd);		// get a queue report (as data)
-static uint8_t _run_qf(cmdObj_t *cmd);		// execute a queue flush block
-static uint8_t _get_er(cmdObj_t *cmd);		// invoke a bogus exception report for testing purposes
-static uint8_t _get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
+static stat_t _set_sr(cmdObj_t *cmd);		// set status report specification
+static stat_t _set_si(cmdObj_t *cmd);		// set status report interval
+static stat_t _run_boot(cmdObj_t *cmd);	// jump to the bootloader
+static stat_t _get_id(cmdObj_t *cmd);		// get device ID
+static stat_t _get_qr(cmdObj_t *cmd);		// get a queue report (as data)
+static stat_t _run_qf(cmdObj_t *cmd);		// execute a queue flush block
+static stat_t _get_er(cmdObj_t *cmd);		// invoke a bogus exception report for testing purposes
+static stat_t _get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 
-static uint8_t _get_gc(cmdObj_t *cmd);		// get current gcode block
-static uint8_t _run_gc(cmdObj_t *cmd);		// run a gcode block
-static uint8_t _run_home(cmdObj_t *cmd);	// invoke a homing cycle
+static stat_t _get_gc(cmdObj_t *cmd);		// get current gcode block
+static stat_t _run_gc(cmdObj_t *cmd);		// run a gcode block
+static stat_t _run_home(cmdObj_t *cmd);	// invoke a homing cycle
 
-static uint8_t _get_line(cmdObj_t *cmd);	// get runtime line number
-static uint8_t _get_stat(cmdObj_t *cmd);	// get combined machine state as value and string
-static uint8_t _get_macs(cmdObj_t *cmd);	// get raw machine state as value and string
-static uint8_t _get_cycs(cmdObj_t *cmd);	// get raw cycle state (etc etc)...
-static uint8_t _get_mots(cmdObj_t *cmd);	// get raw motion state...
-static uint8_t _get_hold(cmdObj_t *cmd);	// get raw hold state...
-static uint8_t _get_home(cmdObj_t *cmd);	// get raw homing state...
-static uint8_t _get_unit(cmdObj_t *cmd);	// get unit mode...
-static uint8_t _get_coor(cmdObj_t *cmd);	// get coordinate system in effect...
-static uint8_t _get_momo(cmdObj_t *cmd);	// get motion mode...
-static uint8_t _get_plan(cmdObj_t *cmd);	// get active plane...
-static uint8_t _get_path(cmdObj_t *cmd);	// get patch control mode...
-static uint8_t _get_dist(cmdObj_t *cmd);	// get distance mode...
-static uint8_t _get_frmo(cmdObj_t *cmd);	// get feedrate mode...
-static uint8_t _get_vel(cmdObj_t *cmd);		// get runtime velocity...
-static uint8_t _get_pos(cmdObj_t *cmd);		// get runtime work position...
-static uint8_t _get_mpos(cmdObj_t *cmd);	// get runtime machine position...
-static uint8_t _get_ofs(cmdObj_t *cmd);		// get runtime work offset...
+static stat_t _get_line(cmdObj_t *cmd);	// get runtime line number
+static stat_t _get_stat(cmdObj_t *cmd);	// get combined machine state as value and string
+static stat_t _get_macs(cmdObj_t *cmd);	// get raw machine state as value and string
+static stat_t _get_cycs(cmdObj_t *cmd);	// get raw cycle state (etc etc)...
+static stat_t _get_mots(cmdObj_t *cmd);	// get raw motion state...
+static stat_t _get_hold(cmdObj_t *cmd);	// get raw hold state...
+static stat_t _get_home(cmdObj_t *cmd);	// get raw homing state...
+static stat_t _get_unit(cmdObj_t *cmd);	// get unit mode...
+static stat_t _get_coor(cmdObj_t *cmd);	// get coordinate system in effect...
+static stat_t _get_momo(cmdObj_t *cmd);	// get motion mode...
+static stat_t _get_plan(cmdObj_t *cmd);	// get active plane...
+static stat_t _get_path(cmdObj_t *cmd);	// get patch control mode...
+static stat_t _get_dist(cmdObj_t *cmd);	// get distance mode...
+static stat_t _get_frmo(cmdObj_t *cmd);	// get feedrate mode...
+static stat_t _get_vel(cmdObj_t *cmd);		// get runtime velocity...
+static stat_t _get_pos(cmdObj_t *cmd);		// get runtime work position...
+static stat_t _get_mpos(cmdObj_t *cmd);	// get runtime machine position...
+static stat_t _get_ofs(cmdObj_t *cmd);		// get runtime work offset...
 static void _print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
 static void _print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
 
-static uint8_t _set_defa(cmdObj_t *cmd);	// reset config to default values
+static stat_t _set_defa(cmdObj_t *cmd);	// reset config to default values
 
-static uint8_t _set_sa(cmdObj_t *cmd);		// set motor step angle
-static uint8_t _set_tr(cmdObj_t *cmd);		// set motor travel per revolution
-static uint8_t _set_mi(cmdObj_t *cmd);		// set microsteps
-static uint8_t _set_po(cmdObj_t *cmd);		// set motor polarity
+static stat_t _set_sa(cmdObj_t *cmd);		// set motor step angle
+static stat_t _set_tr(cmdObj_t *cmd);		// set motor travel per revolution
+static stat_t _set_mi(cmdObj_t *cmd);		// set microsteps
+static stat_t _set_po(cmdObj_t *cmd);		// set motor polarity
 
-static uint8_t _set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
-static uint8_t _get_am(cmdObj_t *cmd);		// get axis mode
-static uint8_t _set_am(cmdObj_t *cmd);		// set axis mode
+static stat_t _set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
+static stat_t _get_am(cmdObj_t *cmd);		// get axis mode
+static stat_t _set_am(cmdObj_t *cmd);		// set axis mode
 static void _print_am(cmdObj_t *cmd);		// print axis mode
 
-static uint8_t _set_ic(cmdObj_t *cmd);		// ignore CR or LF on RX input
-static uint8_t _set_ec(cmdObj_t *cmd);		// expand CRLF on TX outout
-static uint8_t _set_ee(cmdObj_t *cmd);		// enable character echo
-static uint8_t _set_ex(cmdObj_t *cmd);		// enable XON/XOFF
-static uint8_t _set_baud(cmdObj_t *cmd);	// set USB baud rate
+static stat_t _set_ic(cmdObj_t *cmd);		// ignore CR or LF on RX input
+static stat_t _set_ec(cmdObj_t *cmd);		// expand CRLF on TX outout
+static stat_t _set_ee(cmdObj_t *cmd);		// enable character echo
+static stat_t _set_ex(cmdObj_t *cmd);		// enable XON/XOFF
+static stat_t _set_baud(cmdObj_t *cmd);	// set USB baud rate
 
 /***** PROGMEM Strings ******************************************************/
 
@@ -866,7 +866,7 @@ uint8_t cmd_index_is_group(index_t index) { return _index_is_group(index);}
  * _set_hv() - set hardweare version number
  * _get_id() - get device ID (signature)
  */
-static uint8_t _set_hv(cmdObj_t *cmd) 
+static stat_t _set_hv(cmdObj_t *cmd) 
 {
 	if (cmd->value > TINYG_HARDWARE_VERSION_MAX) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	_set_dbl(cmd);					// record the hardware version
@@ -875,7 +875,7 @@ static uint8_t _set_hv(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-static uint8_t _get_id(cmdObj_t *cmd) 
+static stat_t _get_id(cmdObj_t *cmd) 
 {
 	char tmp[SYS_ID_LEN];
 	sys_get_id(tmp);
@@ -896,40 +896,40 @@ static uint8_t _get_id(cmdObj_t *cmd)
  * _run_boot()  - request boot loader entry
  * cmd_set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
  */
-static uint8_t _get_qr(cmdObj_t *cmd) 
+static stat_t _get_qr(cmdObj_t *cmd) 
 {
 	cmd->value = (float)mp_get_planner_buffers_available();
 	cmd->type = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
-static uint8_t _run_qf(cmdObj_t *cmd) 
+static stat_t _run_qf(cmdObj_t *cmd) 
 {
 	cm_request_queue_flush();
 //	cm_flush_planner();
 	return (STAT_OK);
 }
 
-static uint8_t _get_er(cmdObj_t *cmd) 
+static stat_t _get_er(cmdObj_t *cmd) 
 {
 	rpt_exception(STAT_INTERNAL_ERROR, 42);	// bogus exception report
 	return (STAT_OK);
 }
 
-static uint8_t _get_rx(cmdObj_t *cmd)
+static stat_t _get_rx(cmdObj_t *cmd)
 {
 	cmd->value = (float)xio_get_usb_rx_free();
 	cmd->type = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
-static uint8_t _get_sr(cmdObj_t *cmd)
+static stat_t _get_sr(cmdObj_t *cmd)
 {
 	rpt_populate_unfiltered_status_report();
 	return (STAT_OK);
 }
 
-static uint8_t _set_sr(cmdObj_t *cmd)
+static stat_t _set_sr(cmdObj_t *cmd)
 {
 	return (rpt_set_status_report(cmd));
 }
@@ -939,20 +939,20 @@ static void _print_sr(cmdObj_t *cmd)
 	rpt_populate_unfiltered_status_report();
 }
 
-static uint8_t _set_si(cmdObj_t *cmd) 
+static stat_t _set_si(cmdObj_t *cmd) 
 {
 	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
 	cfg.status_report_interval = (uint32_t)cmd->value;
 	return(STAT_OK);
 }
 
-static uint8_t _run_boot(cmdObj_t *cmd)
+static stat_t _run_boot(cmdObj_t *cmd)
 {
 	tg_request_bootloader();
 	return(STAT_OK);
 }
 
-uint8_t cmd_set_jv(cmdObj_t *cmd) 
+stat_t cmd_set_jv(cmdObj_t *cmd) 
 {
 	if (cmd->value > JV_VERBOSE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	cfg.json_verbosity = cmd->value;
@@ -997,7 +997,7 @@ uint8_t cmd_set_jv(cmdObj_t *cmd)
  * _print_pos()- print work position (with proper units)
  * _print_mpos()- print machine position (always mm units)
  */
-static uint8_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value)
+static stat_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value)
 {
 	cmd->value = (float)value;
 	cmd->type = TYPE_INTEGER;
@@ -1006,7 +1006,7 @@ static uint8_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value)
 //	return((char *)pgm_read_word(&msg[(uint8_t)value]));
 }
 
-static uint8_t _get_stat(cmdObj_t *cmd)
+static stat_t _get_stat(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_stat, cm_get_combined_state()));
 
@@ -1019,74 +1019,74 @@ static uint8_t _get_stat(cmdObj_t *cmd)
 //	strncpy_P(cmd->string_value,(PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN);
 }
 
-static uint8_t _get_macs(cmdObj_t *cmd)
+static stat_t _get_macs(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_macs, cm_get_machine_state()));
 }
 
-static uint8_t _get_cycs(cmdObj_t *cmd)
+static stat_t _get_cycs(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_cycs, cm_get_cycle_state()));
 }
 
-static uint8_t _get_mots(cmdObj_t *cmd)
+static stat_t _get_mots(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_mots, cm_get_motion_state()));
 }
 
-static uint8_t _get_hold(cmdObj_t *cmd)
+static stat_t _get_hold(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_hold, cm_get_hold_state()));
 }
 
-static uint8_t _get_home(cmdObj_t *cmd)
+static stat_t _get_home(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_home, cm_get_homing_state()));
 }
 
-static uint8_t _get_unit(cmdObj_t *cmd)
+static stat_t _get_unit(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_unit, cm_get_units_mode()));
 }
 
-static uint8_t _get_coor(cmdObj_t *cmd)
+static stat_t _get_coor(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_coor, cm_get_coord_system()));
 }
 
-static uint8_t _get_momo(cmdObj_t *cmd)
+static stat_t _get_momo(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_momo, cm_get_motion_mode()));
 }
 
-static uint8_t _get_plan(cmdObj_t *cmd)
+static stat_t _get_plan(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_plan, cm_get_select_plane()));
 }
 
-static uint8_t _get_path(cmdObj_t *cmd)
+static stat_t _get_path(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_path, cm_get_path_control()));
 }
 
-static uint8_t _get_dist(cmdObj_t *cmd)
+static stat_t _get_dist(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_dist, cm_get_distance_mode()));
 }
 
-static uint8_t _get_frmo(cmdObj_t *cmd)
+static stat_t _get_frmo(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_frmo, cm_get_inverse_feed_rate_mode()));
 }
 
-static uint8_t _get_line(cmdObj_t *cmd)
+static stat_t _get_line(cmdObj_t *cmd)
 {
 	cmd->value = (float)mp_get_runtime_linenum();
 	cmd->type = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
-static uint8_t _get_vel(cmdObj_t *cmd) 
+static stat_t _get_vel(cmdObj_t *cmd) 
 {
 	cmd->value = mp_get_runtime_velocity();
 	if (cm_get_units_mode() == INCHES) cmd->value *= INCH_PER_MM;
@@ -1096,7 +1096,7 @@ static uint8_t _get_vel(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-static uint8_t _get_pos(cmdObj_t *cmd) 
+static stat_t _get_pos(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_runtime_work_position(_get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
@@ -1105,7 +1105,7 @@ static uint8_t _get_pos(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-static uint8_t _get_mpos(cmdObj_t *cmd) 
+static stat_t _get_mpos(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_runtime_machine_position(_get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
@@ -1114,7 +1114,7 @@ static uint8_t _get_mpos(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-static uint8_t _get_ofs(cmdObj_t *cmd) 
+static stat_t _get_ofs(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_runtime_work_offset(_get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
@@ -1148,19 +1148,19 @@ static void _print_mpos(cmdObj_t *cmd)		// print position with fixed unit displa
  * _run_gc()	- launch the gcode parser on a block of gcode
  * _run_home()	- invoke a homing cycle
  */
-static uint8_t _get_gc(cmdObj_t *cmd)
+static stat_t _get_gc(cmdObj_t *cmd)
 {
 	ritorno(cmd_copy_string(cmd, tg.in_buf));
 	cmd->type = TYPE_STRING;
 	return (STAT_OK);
 }
 
-static uint8_t _run_gc(cmdObj_t *cmd)
+static stat_t _run_gc(cmdObj_t *cmd)
 {
 	return(gc_gcode_parser(*cmd->stringp));
 }
 
-static uint8_t _run_home(cmdObj_t *cmd)
+static stat_t _run_home(cmdObj_t *cmd)
 {
 	if (cmd->value == true) { cm_homing_cycle_start();}
 	return (STAT_OK);
@@ -1176,7 +1176,7 @@ static uint8_t _run_home(cmdObj_t *cmd)
  * _set_mi() - set microsteps & recompute steps_per_unit
  * _set_po() - set polarity and update stepper structs
  *
- * _pr_ma_ui8() - print motor or axis uint8_t value w/no units or unit conversion
+ * _pr_ma_ui8() - print motor or axis uint8 value w/no units or unit conversion
  * _pr_ma_lin() - print linear value with units and in/mm unit conversion
  * _pr_ma_rot() - print rotary value with units
  * _print_am()	- print axis mode with enumeration string
@@ -1185,20 +1185,20 @@ static uint8_t _run_home(cmdObj_t *cmd)
  */
 
 // helper. This function will need to be rethought if microstep morphing is implemented
-static uint8_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
+static stat_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
 {
 	uint8_t m = _get_motor(cmd->index);
 	cfg.m[m].steps_per_unit = (360 / (cfg.m[m].step_angle / cfg.m[m].microsteps) / cfg.m[m].travel_rev);
 	return (STAT_OK);
 }
 
-static uint8_t _get_am(cmdObj_t *cmd)
+static stat_t _get_am(cmdObj_t *cmd)
 {
 	_get_ui8(cmd);
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_am, cmd->value)); // see 331.09 for old method
 }
 
-static uint8_t _set_am(cmdObj_t *cmd)		// axis mode
+static stat_t _set_am(cmdObj_t *cmd)		// axis mode
 {
 
 	char linear_axes[] = {"xyz"};
@@ -1211,7 +1211,7 @@ static uint8_t _set_am(cmdObj_t *cmd)		// axis mode
 	return(STAT_OK);
 }
 
-static uint8_t _set_sw(cmdObj_t *cmd)		// switch setting
+static stat_t _set_sw(cmdObj_t *cmd)		// switch setting
 {
 	if (cmd->value > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	_set_ui8(cmd);
@@ -1219,21 +1219,21 @@ static uint8_t _set_sw(cmdObj_t *cmd)		// switch setting
 	return (STAT_OK);
 }
 
-static uint8_t _set_sa(cmdObj_t *cmd)		// motor step angle
+static stat_t _set_sa(cmdObj_t *cmd)		// motor step angle
 { 
 	_set_dbl(cmd);
 	_set_motor_steps_per_unit(cmd); 
 	return (STAT_OK);
 }
 
-static uint8_t _set_tr(cmdObj_t *cmd)		// motor travel per revolution
+static stat_t _set_tr(cmdObj_t *cmd)		// motor travel per revolution
 { 
 	_set_dbu(cmd);
 	_set_motor_steps_per_unit(cmd); 
 	return (STAT_OK);
 }
 
-static uint8_t _set_mi(cmdObj_t *cmd)		// motor microsteps
+static stat_t _set_mi(cmdObj_t *cmd)		// motor microsteps
 {
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
 		cmd_add_message_P(PSTR("*** WARNING *** Setting non-standard microstep value"));
@@ -1244,7 +1244,7 @@ static uint8_t _set_mi(cmdObj_t *cmd)		// motor microsteps
 	return (STAT_OK);
 }
 
-static uint8_t _set_po(cmdObj_t *cmd)		// motor polarity
+static stat_t _set_po(cmdObj_t *cmd)		// motor polarity
 { 
 	ritorno (_set_01(cmd));
 	st_set_polarity(_get_motor(cmd->index), (uint8_t)cmd->value);
@@ -1306,7 +1306,7 @@ static void _print_corr(cmdObj_t *cmd)	// print coordinate offsets with rotary u
  * _set_baud() - set USB baud rate
  *	The above assume USB is the std device
  */
-static uint8_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
+static stat_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
 {
 	if (fp_NOT_ZERO(cmd->value)) { 
 		(void)xio_ctrl(XIO_DEV_USB, yes);
@@ -1316,7 +1316,7 @@ static uint8_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
 	return (STAT_OK);
 }
 
-static uint8_t _set_ic(cmdObj_t *cmd) 				// ignore CR or LF on RX
+static stat_t _set_ic(cmdObj_t *cmd) 				// ignore CR or LF on RX
 {
 	if (cmd->value > IGNORE_LF) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	cfg.ignore_crlf = (uint8_t)cmd->value;
@@ -1331,21 +1331,21 @@ static uint8_t _set_ic(cmdObj_t *cmd) 				// ignore CR or LF on RX
 	return (STAT_OK);
 }
 
-static uint8_t _set_ec(cmdObj_t *cmd) 				// expand CR to CRLF on TX
+static stat_t _set_ec(cmdObj_t *cmd) 				// expand CR to CRLF on TX
 {
 	if (cmd->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	cfg.enable_cr = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_CRLF, XIO_NOCRLF));
 }
 
-static uint8_t _set_ee(cmdObj_t *cmd) 				// enable character echo
+static stat_t _set_ee(cmdObj_t *cmd) 				// enable character echo
 {
 	if (cmd->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	cfg.enable_echo = (uint8_t)cmd->value;
 	return(_set_comm_helper(cmd, XIO_ECHO, XIO_NOECHO));
 }
 
-static uint8_t _set_ex(cmdObj_t *cmd)				// enable XON/XOFF
+static stat_t _set_ex(cmdObj_t *cmd)				// enable XON/XOFF
 {
 	if (cmd->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	cfg.enable_xon = (uint8_t)cmd->value;
@@ -1362,7 +1362,7 @@ static uint8_t _set_ex(cmdObj_t *cmd)				// enable XON/XOFF
  *	Then it performs the callback to apply the new baud rate
  */
 
-static uint8_t _set_baud(cmdObj_t *cmd)
+static stat_t _set_baud(cmdObj_t *cmd)
 {
 	uint8_t baud = (uint8_t)cmd->value;
 	if ((baud < 1) || (baud > 6)) {
@@ -1377,7 +1377,7 @@ static uint8_t _set_baud(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-uint8_t cfg_baud_rate_callback(void) 
+stat_t cfg_baud_rate_callback(void) 
 {
 	if (cfg.usb_baud_flag == false) { return(STAT_NOOP);}
 	cfg.usb_baud_flag = false;
@@ -1399,7 +1399,7 @@ uint8_t cfg_baud_rate_callback(void)
  * _do_all()		- get and print all groups uber group
  */
 
-static uint8_t _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
+static stat_t _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
 {
 	for (uint8_t i=0; i < CMD_MAX_OBJECTS; i++) {
 		if (list[i][0] == NUL) { return (STAT_COMPLETE);}
@@ -1414,25 +1414,25 @@ static uint8_t _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // he
 	return (STAT_COMPLETE);
 }
 
-static uint8_t _do_motors(cmdObj_t *cmd)	// print parameters for all motor groups
+static stat_t _do_motors(cmdObj_t *cmd)	// print parameters for all motor groups
 {
 	char list[][CMD_TOKEN_LEN+1] = {"1","2","3","4",""}; // must have a terminating element
 	return (_do_group_list(cmd, list));
 }
 
-static uint8_t _do_axes(cmdObj_t *cmd)	// print parameters for all axis groups
+static stat_t _do_axes(cmdObj_t *cmd)	// print parameters for all axis groups
 {
 	char list[][CMD_TOKEN_LEN+1] = {"x","y","z","a","b","c",""}; // must have a terminating element
 	return (_do_group_list(cmd, list));
 }
 
-static uint8_t _do_offsets(cmdObj_t *cmd)	// print offset parameters for G54-G59,G92, G28, G30
+static stat_t _do_offsets(cmdObj_t *cmd)	// print offset parameters for G54-G59,G92, G28, G30
 {
 	char list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92","g28","g30",""}; // must have a terminating element
 	return (_do_group_list(cmd, list));
 }
 
-static uint8_t _do_all(cmdObj_t *cmd)	// print all parameters
+static stat_t _do_all(cmdObj_t *cmd)	// print all parameters
 {
 	strcpy(cmd->token,"sys");			// print system group
 	_get_grp(cmd);
@@ -1472,13 +1472,13 @@ static uint8_t _do_all(cmdObj_t *cmd)	// print all parameters
 
 #define ASSERT_CMD_INDEX(a) if (cmd->index >= CMD_INDEX_MAX) return (a);
 
-uint8_t cmd_set(cmdObj_t *cmd)
+stat_t cmd_set(cmdObj_t *cmd)
 {
 	ASSERT_CMD_INDEX(STAT_UNRECOGNIZED_COMMAND);
 	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].set)))(cmd));
 }
 
-uint8_t cmd_get(cmdObj_t *cmd)
+stat_t cmd_get(cmdObj_t *cmd)
 {
 	ASSERT_CMD_INDEX(STAT_UNRECOGNIZED_COMMAND);
 	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd));
@@ -1543,7 +1543,7 @@ void cfg_init()
 }
 
 // _set_defa() is both a helper and called directly from the $defa=1 command
-static uint8_t _set_defa(cmdObj_t *cmd) 
+static stat_t _set_defa(cmdObj_t *cmd) 
 {
 	if (cmd->value != true) {				// failsafe. Must set true or no action occurs
 		print_defaults_help(cmd);
@@ -1574,10 +1574,10 @@ static uint8_t _set_defa(cmdObj_t *cmd)
  *	- $x		display a group
  *	- ?			generate a status report (multiline format)
  */
-uint8_t cfg_text_parser(char *str)
+stat_t cfg_text_parser(char *str)
 {
 	cmdObj_t *cmd = cmd_reset_list();		// returns first object in the body
-	uint8_t status = STAT_OK;
+	stat_t status = STAT_OK;
 
 	if (str[0] == '?') {					// handle status report case
 		rpt_run_text_status_report();
@@ -1600,7 +1600,7 @@ uint8_t cfg_text_parser(char *str)
 	return (status);
 }
 
-static uint8_t _text_parser(char *str, cmdObj_t *cmd)
+static stat_t _text_parser(char *str, cmdObj_t *cmd)
 {
 	char *ptr_rd, *ptr_wr;					// read and write pointers
 	char separators[] = {" =:|\t"};			// any separator someone might use
@@ -1653,16 +1653,16 @@ static uint8_t _text_parser(char *str, cmdObj_t *cmd)
  * _get_dbl() - get value as float w/o unit conversion
  * _get_dbu() - get value as float w/unit conversion
  */
-static uint8_t _set_nul(cmdObj_t *cmd) { return (STAT_NOOP);}
+static stat_t _set_nul(cmdObj_t *cmd) { return (STAT_NOOP);}
 
-static uint8_t _set_ui8(cmdObj_t *cmd)
+static stat_t _set_ui8(cmdObj_t *cmd)
 {
 	*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->type = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
-static uint8_t _set_01(cmdObj_t *cmd)
+static stat_t _set_01(cmdObj_t *cmd)
 {
 	if (cmd->value > 1) { 
 		return (STAT_INPUT_VALUE_UNSUPPORTED);
@@ -1671,7 +1671,7 @@ static uint8_t _set_01(cmdObj_t *cmd)
 	}
 }
 
-static uint8_t _set_012(cmdObj_t *cmd)
+static stat_t _set_012(cmdObj_t *cmd)
 {
 	if (cmd->value > 2) { 
 		return (STAT_INPUT_VALUE_UNSUPPORTED);
@@ -1680,14 +1680,14 @@ static uint8_t _set_012(cmdObj_t *cmd)
 	}
 }
 
-static uint8_t _set_int(cmdObj_t *cmd)
+static stat_t _set_int(cmdObj_t *cmd)
 {
 	*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->type = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
-static uint8_t _set_dbl(cmdObj_t *cmd)
+static stat_t _set_dbl(cmdObj_t *cmd)
 {
 	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
@@ -1695,7 +1695,7 @@ static uint8_t _set_dbl(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-static uint8_t _set_dbu(cmdObj_t *cmd)
+static stat_t _set_dbu(cmdObj_t *cmd)
 {
 	if (cm_get_units_mode() == INCHES) { cmd->value *= MM_PER_INCH;}
 	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
@@ -1704,27 +1704,27 @@ static uint8_t _set_dbu(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-static uint8_t _get_nul(cmdObj_t *cmd) 
+static stat_t _get_nul(cmdObj_t *cmd) 
 { 
 	cmd->type = TYPE_NULL;
 	return (STAT_NOOP);
 }
 
-static uint8_t _get_ui8(cmdObj_t *cmd)
+static stat_t _get_ui8(cmdObj_t *cmd)
 {
 	cmd->value = (float)*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target));
 	cmd->type = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
-static uint8_t _get_int(cmdObj_t *cmd)
+static stat_t _get_int(cmdObj_t *cmd)
 {
 	cmd->value = (float)*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target));
 	cmd->type = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
-static uint8_t _get_dbl(cmdObj_t *cmd)
+static stat_t _get_dbl(cmdObj_t *cmd)
 {
 	cmd->value = *((float *)pgm_read_word(&cfgArray[cmd->index].target));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
@@ -1732,7 +1732,7 @@ static uint8_t _get_dbl(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-static uint8_t _get_dbu(cmdObj_t *cmd)
+static stat_t _get_dbu(cmdObj_t *cmd)
 {
 	_get_dbl(cmd);
 	if (cm_get_units_mode() == INCHES) {
@@ -1883,7 +1883,7 @@ static int8_t _get_pos_axis(const index_t i)
  *	even though the sys parent is labeled as a TYPE_PARENT.
  */
 
-static uint8_t _get_grp(cmdObj_t *cmd)
+static stat_t _get_grp(cmdObj_t *cmd)
 {
 	char *parent_group = cmd->token;		// token in the parent cmd object is the group
 	char group[CMD_GROUP_LEN+1];			// group string retrieved from cfgArray child
@@ -1907,7 +1907,7 @@ static uint8_t _get_grp(cmdObj_t *cmd)
  *	This function serves JSON mode only as text mode shouldn't call it.
  */
 
-static uint8_t _set_grp(cmdObj_t *cmd)
+static stat_t _set_grp(cmdObj_t *cmd)
 {
 	if (cfg.comm_mode == TEXT_MODE) return (STAT_UNRECOGNIZED_COMMAND);
 	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
@@ -1955,7 +1955,7 @@ uint8_t cmd_get_type(cmdObj_t *cmd)
 	return (CMD_TYPE_CONFIG);
 }
 
-uint8_t cmd_persist_offsets(uint8_t flag)
+stat_t cmd_persist_offsets(uint8_t flag)
 {
 	if (flag == true) {
 		cmdObj_t cmd;
@@ -2094,7 +2094,7 @@ cmdObj_t *cmd_reset_list()					// clear the header and response body
 	return (cmd_body);						// this is a convenience for calling routines
 }
 
-uint8_t cmd_copy_string(cmdObj_t *cmd, const char *src)
+stat_t cmd_copy_string(cmdObj_t *cmd, const char *src)
 {
 	if ((cmdStr.wp + strlen(src)) > CMD_SHARED_STRING_LEN) { return (STAT_BUFFER_FULL);}
 	char *dst = &cmdStr.string[cmdStr.wp];
@@ -2104,7 +2104,7 @@ uint8_t cmd_copy_string(cmdObj_t *cmd, const char *src)
 	return (STAT_OK);
 }
 
-uint8_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P)
+stat_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P)
 {
 	char buf[CMD_SHARED_STRING_LEN];
 	strncpy_P(buf, src_P, CMD_SHARED_STRING_LEN);
@@ -2211,7 +2211,7 @@ cmdObj_t *cmd_add_message_P(const char *string)	// conditionally add a message o
  *	  text_flags = TEXT_INLINE_VALUES - print text as comma separated values on a single line
  *	  text_flags = TEXT_MULTILINE_FORMATTED - print text one value per line with formatting string
  */
-void cmd_print_list(uint8_t status, uint8_t text_flags, uint8_t json_flags)
+void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags)
 {
 	if (cfg.comm_mode == JSON_MODE) {
 		switch (json_flags) {
@@ -2280,7 +2280,7 @@ void _print_text_multiline_formatted()
  *
  *	It's the responsibility of the caller to make sure the index does not exceed range
  */
-uint8_t cmd_read_NVM_value(cmdObj_t *cmd)
+stat_t cmd_read_NVM_value(cmdObj_t *cmd)
 {
 	int8_t nvm_byte_array[NVM_VALUE_LEN];
 	uint16_t nvm_address = cfg.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
@@ -2289,7 +2289,7 @@ uint8_t cmd_read_NVM_value(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-uint8_t cmd_write_NVM_value(cmdObj_t *cmd)
+stat_t cmd_write_NVM_value(cmdObj_t *cmd)
 {
 	float tmp = cmd->value;
 	ritorno(cmd_read_NVM_value(cmd));

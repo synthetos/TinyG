@@ -56,14 +56,14 @@
 
 // local helpers
 static void _controller_HSM(void);
-static uint8_t _dispatch(void);
-static uint8_t _reset_handler(void);
-static uint8_t _bootloader_handler(void);
-static uint8_t _limit_switch_handler(void);
-static uint8_t _alarm_idler(void);
-static uint8_t _system_assertions(void);
-static uint8_t _sync_to_tx_buffer(void);
-static uint8_t _sync_to_planner(void);
+static stat_t _dispatch(void);
+static stat_t _reset_handler(void);
+static stat_t _bootloader_handler(void);
+static stat_t _limit_switch_handler(void);
+static stat_t _alarm_idler(void);
+static stat_t _system_assertions(void);
+static stat_t _sync_to_tx_buffer(void);
+static stat_t _sync_to_planner(void);
 
 /*
  * tg_init() - controller init
@@ -161,7 +161,7 @@ static void _controller_HSM()
  *	Also responsible for prompts and for flow control 
  */
 
-static uint8_t _dispatch()
+static stat_t _dispatch()
 {
 	uint8_t status;
 
@@ -272,7 +272,7 @@ void tg_text_response(const uint8_t status, const char *buf)
  *	and other messages are sent to the active device.
  */
 
-static uint8_t _sync_to_tx_buffer()
+static stat_t _sync_to_tx_buffer()
 {
 	if ((xio_get_tx_bufcount_usart(ds[XIO_DEV_USB].x) >= XOFF_TX_LO_WATER_MARK)) {
 		return (STAT_EAGAIN);
@@ -280,7 +280,7 @@ static uint8_t _sync_to_tx_buffer()
 	return (STAT_OK);
 }
 
-static uint8_t _sync_to_planner()
+static stat_t _sync_to_planner()
 {
 	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { // allow up to N planner buffers for this line
 		return (STAT_EAGAIN);
@@ -299,7 +299,7 @@ void tg_set_secondary_source(uint8_t dev) { tg.secondary_src = dev;}
  */
 void tg_request_reset() { tg.reset_requested = true; }
 
-static uint8_t _reset_handler(void)
+static stat_t _reset_handler(void)
 {
 	if (tg.reset_requested == false) { return (STAT_NOOP);}
 	tg_reset();							// hard reset - identical to hitting RESET button
@@ -319,7 +319,7 @@ void tg_reset(void)			// software hard reset using the watchdog timer
  */
 void tg_request_bootloader() { tg.bootloader_requested = true;}
 
-static uint8_t _bootloader_handler(void)
+static stat_t _bootloader_handler(void)
 {
 	if (tg.bootloader_requested == false) { return (STAT_NOOP);}
 	cli();
@@ -330,7 +330,7 @@ static uint8_t _bootloader_handler(void)
 /*
  * _limit_switch_handler() - shut down system if limit switch fired
  */
-static uint8_t _limit_switch_handler(void)
+static stat_t _limit_switch_handler(void)
 {
 	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
 	if (gpio_get_limit_thrown() == false) return (STAT_NOOP);
@@ -348,7 +348,7 @@ static uint8_t _limit_switch_handler(void)
  */
 #define LED_COUNTER 25000
 
-static uint8_t _alarm_idler(void)
+static stat_t _alarm_idler(void)
 {
 	if (cm_get_machine_state() != MACHINE_ALARM) { return (STAT_OK);}
 
