@@ -269,7 +269,7 @@ void rpt_init_status_report()
 /* 
  * rpt_set_status_report() - interpret an sr setup string and return current report
  */
-uint8_t rpt_set_status_report(cmdObj_t *cmd)
+stat_t rpt_set_status_report(cmdObj_t *cmd)
 {
 	uint8_t elements = 0;
 	index_t status_report_list[CMD_STATUS_REPORT_LEN];
@@ -328,7 +328,7 @@ void rpt_status_report_rtc_callback() 		// called by 10ms real-time clock
 	}
 }
 
-uint8_t rpt_status_report_callback() 		// called by controller dispatcher
+stat_t rpt_status_report_callback() 		// called by controller dispatcher
 {
 	if ((cfg.status_report_verbosity == SR_OFF) || 
 		(cm.status_report_request != SR_IMMEDIATE_REQUEST)) {

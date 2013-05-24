@@ -87,7 +87,7 @@ float cm_get_spindle_pwm( uint8_t spindle_mode )
  * cm_exec_spindle_control() - execute the spindle command (called from planner)
  */
 
-uint8_t cm_spindle_control(uint8_t spindle_mode)
+stat_t cm_spindle_control(uint8_t spindle_mode)
 {
 	mp_queue_command(_exec_spindle_control, spindle_mode, 0);
 	return(STAT_OK);
@@ -116,7 +116,7 @@ static void _exec_spindle_control(uint8_t spindle_mode, float f)
  * _exec_spindle_speed()	- spindle speed callback from planner queue
  */
 
-uint8_t cm_set_spindle_speed(float speed)
+stat_t cm_set_spindle_speed(float speed)
 {
 //	if (speed > cfg.max_spindle speed) { return (STAT_MAX_SPINDLE_SPEED_EXCEEDED);}
 	mp_queue_command(_exec_spindle_speed, 0, speed);

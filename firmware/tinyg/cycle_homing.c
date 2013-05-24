@@ -72,19 +72,19 @@ static struct hmHomingSingleton hm;
 
 /**** NOTE: global prototypes and other .h info is located in canonical_machine.h ****/
 
-static uint8_t _homing_axis_start(int8_t axis);
-static uint8_t _homing_axis_clear(int8_t axis);
-static uint8_t _homing_axis_backoff_home(int8_t axis);
-static uint8_t _homing_axis_backoff_limit(int8_t axis);
-static uint8_t _homing_axis_search(int8_t axis);
-static uint8_t _homing_axis_latch(int8_t axis);
-static uint8_t _homing_axis_zero_backoff(int8_t axis);
-static uint8_t _homing_axis_set_zero(int8_t axis);
-static uint8_t _homing_axis_move(int8_t axis, float target, float velocity);
-static uint8_t _homing_finalize_exit(int8_t axis);
-static uint8_t _homing_error_exit(int8_t axis);
+static stat_t _homing_axis_start(int8_t axis);
+static stat_t _homing_axis_clear(int8_t axis);
+static stat_t _homing_axis_backoff_home(int8_t axis);
+static stat_t _homing_axis_backoff_limit(int8_t axis);
+static stat_t _homing_axis_search(int8_t axis);
+static stat_t _homing_axis_latch(int8_t axis);
+static stat_t _homing_axis_zero_backoff(int8_t axis);
+static stat_t _homing_axis_set_zero(int8_t axis);
+static stat_t _homing_axis_move(int8_t axis, float target, float velocity);
+static stat_t _homing_finalize_exit(int8_t axis);
+static stat_t _homing_error_exit(int8_t axis);
 
-static uint8_t _set_hm_func(uint8_t (*func)(int8_t axis));
+static stat_t _set_hm_func(uint8_t (*func)(int8_t axis));
 static int8_t _get_next_axis(int8_t axis);
 //static int8_t _get_next_axes(int8_t axis);
 
@@ -169,7 +169,7 @@ uint8_t cm_homing_callback(void)
 	return (hm.func(hm.axis));					// execute the current homing move
 }
 
-static uint8_t _homing_finalize_exit(int8_t axis)	// third part of return to home
+static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 {
 	mp_flush_planner(); 						// should be stopped, but in case of switch closure
 	cm_set_coord_system(hm.saved_coord_system);	// restore to work coordinate system
@@ -189,7 +189,7 @@ static const char msg_axis2[] PROGMEM = "Z";
 static const char msg_axis3[] PROGMEM = "A";
 static PGM_P const msg_axis[] PROGMEM = { msg_axis0, msg_axis1, msg_axis2, msg_axis3};
 
-static uint8_t _homing_error_exit(int8_t axis)
+static stat_t _homing_error_exit(int8_t axis)
 {
 	char message[CMD_MESSAGE_LEN]; 
 	if (axis == -2) {
@@ -222,7 +222,7 @@ static uint8_t _homing_error_exit(int8_t axis)
  *	_homing_axis_move()			- helper that actually executes the above moves
  */
 
-static uint8_t _homing_axis_start(int8_t axis)
+static stat_t _homing_axis_start(int8_t axis)
 {
 	// get the first or next axis
 	if ((axis = _get_next_axis(axis)) < 0) { 				// axes are done or error
@@ -286,7 +286,7 @@ static uint8_t _homing_axis_start(int8_t axis)
 
 // Handle an initial switch closure by backing off switches
 // NOTE: Relies on independent switches per axis (not shared)
-static uint8_t _homing_axis_clear(int8_t axis)				// first clear move
+static stat_t _homing_axis_clear(int8_t axis)				// first clear move
 {
 	int8_t homing = gpio_read_switch(hm.homing_switch);
 	int8_t limit = gpio_read_switch(hm.limit_switch);
@@ -302,38 +302,38 @@ static uint8_t _homing_axis_clear(int8_t axis)				// first clear move
  	return (_set_hm_func(_homing_axis_backoff_limit));		// will backoff limit switch some more
 }
 
-static uint8_t _homing_axis_backoff_home(int8_t axis)		// back off cleared homing switch
+static stat_t _homing_axis_backoff_home(int8_t axis)		// back off cleared homing switch
 {
 	_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
     return (_set_hm_func(_homing_axis_search));
 }
 
-static uint8_t _homing_axis_backoff_limit(int8_t axis)		// back off cleared limit switch
+static stat_t _homing_axis_backoff_limit(int8_t axis)		// back off cleared limit switch
 {
 	_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
     return (_set_hm_func(_homing_axis_search));
 }
 
-static uint8_t _homing_axis_search(int8_t axis)				// start the search
+static stat_t _homing_axis_search(int8_t axis)				// start the search
 {
 	cfg.a[axis].jerk_max = cfg.a[axis].jerk_homing;			// use the homing jerk for search onward
 	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
     return (_set_hm_func(_homing_axis_latch));
 }
 
-static uint8_t _homing_axis_latch(int8_t axis)				// latch to switch open
+static stat_t _homing_axis_latch(int8_t axis)				// latch to switch open
 {
 	_homing_axis_move(axis, hm.latch_backoff, hm.latch_velocity);    
 	return (_set_hm_func(_homing_axis_zero_backoff)); 
 }
 
-static uint8_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero position
+static stat_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero position
 {
 	_homing_axis_move(axis, hm.zero_backoff, hm.search_velocity);
 	return (_set_hm_func(_homing_axis_set_zero));
 }
 
-static uint8_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
+static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 {
 	cm_set_machine_axis_position(axis, 0);
 	cfg.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
@@ -341,7 +341,7 @@ static uint8_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 	return (_set_hm_func(_homing_axis_start));
 }
 
-static uint8_t _homing_axis_move(int8_t axis, float target, float velocity)
+static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 {
 	float flags[] = {1,1,1,1,1,1};
 	set_vector_by_axis(target, axis);
@@ -353,7 +353,7 @@ static uint8_t _homing_axis_move(int8_t axis, float target, float velocity)
 }
 
 /* _run_homing_dual_axis() - kernal routine for running homing on a dual axis */
-//static uint8_t _run_homing_dual_axis(int8_t axis) { return (STAT_OK);}
+//static stat_t _run_homing_dual_axis(int8_t axis) { return (STAT_OK);}
 
 /**** HELPERS ****************************************************************/
 /*

@@ -129,7 +129,7 @@ ISR(PWM2_ISR_vect)
  *	Doesn't turn time on until duty cycle is set
  */
 
-uint8_t pwm_set_freq(uint8_t chan, float freq)
+stat_t pwm_set_freq(uint8_t chan, float freq)
 {
 	if (chan > PWMS) { return (STAT_NO_SUCH_DEVICE);}
 	if (freq > PWM_MAX_FREQ) { return (STAT_INPUT_VALUE_TOO_LARGE);}
@@ -169,7 +169,7 @@ uint8_t pwm_set_freq(uint8_t chan, float freq)
  *	The frequency must have been set previously
  */
 
-uint8_t pwm_set_duty(uint8_t chan, float duty)
+stat_t pwm_set_duty(uint8_t chan, float duty)
 {
     if (duty < 0.0) { return (STAT_INPUT_VALUE_TOO_SMALL);}
     if (duty > 1.0) { return (STAT_INPUT_VALUE_TOO_LARGE);}
@@ -182,16 +182,6 @@ uint8_t pwm_set_duty(uint8_t chan, float duty)
 	return (STAT_OK);
 }
 
-/*
-uint8_t pwm_set_duty(uint8_t chan, float duty)
-{
-	if (duty < 0)   { return (STAT_INPUT_VALUE_TOO_SMALL);}
-	if (duty > 100) { return (STAT_INPUT_VALUE_TOO_LARGE);}
-
-	pwm[chan].timer->CCB = (uint16_t)(pwm[chan].timer->PER - pwm[chan].timer->PER / (duty/100));
-	return (STAT_OK);
-}
-*/
 //###########################################################################
 //##### UNIT TESTS ##########################################################
 //###########################################################################

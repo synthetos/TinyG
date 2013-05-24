@@ -32,9 +32,6 @@
  * motion control code for a specific robot. It keeps state and executes
  * commands - passing the stateless commands to the motion control layer. 
  */
-/* See the wiki for module details and additional information:
- *	 http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info
- */
 /* --- Synchronous and immediate commands ---
  *
  *	Useful reference for doing C callbacks http://www.newty.de/fpt/fpt.html
@@ -320,7 +317,7 @@ void cm_set_target(float target[], float flag[])
 
 	// process XYZABC for lower modes
 	for (i=AXIS_X; i<=AXIS_Z; i++) {
-		if ((fp_ZERO(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
+		if ((fp_FALSE(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 			continue;
 		} else if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
 			if (gm.distance_mode == ABSOLUTE_MODE) {
@@ -333,7 +330,7 @@ void cm_set_target(float target[], float flag[])
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
 	for (i=AXIS_A; i<=AXIS_C; i++) {
 		// skip axis if not flagged for update or its disabled
-		if ((fp_ZERO(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
+		if ((fp_FALSE(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
 			continue;
 		} else tmp = _calc_ABC(i, target, flag);		
 		
@@ -355,32 +352,32 @@ static float _calc_ABC(uint8_t i, float target[], float flag[])
 	if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
 		tmp = target[i];	// no mm conversion - it's in degrees
 
-	} else if ((cfg.a[i].axis_mode == AXIS_RADIUS) && (fp_NOT_ZERO(flag[i]))) {
+	} else if ((cfg.a[i].axis_mode == AXIS_RADIUS) && (fp_TRUE(flag[i]))) {
 		tmp = _to_millimeters(target[i]) * 360 / (2 * M_PI * cfg.a[i].radius);
 
 /* DEPRECATED CODE FOR SLAVE MODES - LEFT IN FOR EXAMPLE
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_X) && (flag[X] > EPSILON)) {
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_X) && (fp_TRUE(flag[X]))) {
 		tmp = (target[X] - gm.position[X]) * 360 / (2 * M_PI * cfg.a[i].radius);
 
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_Y) && (flag[Y] > EPSILON)) {
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_Y) && (fp_TRUE(flag[Y]))) {
 		tmp = (target[Y] - gm.position[Y]) * 360 / (2 * M_PI * cfg.a[i].radius);
 
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_Z) && (flag[Z] > EPSILON)) {
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_Z) && (fp_TRUE(flag[Z]))) {
 		tmp = (target[Z] - gm.position[Z]) * 360 / (2 * M_PI * cfg.a[i].radius);
 
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XY) && ((flag[X] > EPSILON) || (flag[Y] > EPSILON))) {
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XY) && ((fp_TRUE(flag[X])) || (fp_TRUE(flag[Y])))) {
 		float length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]));
 		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
 
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XZ) && ((flag[X] > EPSILON) || (flag[Z] > EPSILON))) {
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XZ) && ((fp_TRUE(flag[X])) || (fp_TRUE(flag[Z])))) {
 		float length = sqrt(square(target[X] - gm.position[X]) + square(target[Z] - gm.position[Z]));
 		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
 
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_YZ) && ((flag[Y] > EPSILON) || (flag[Z] > EPSILON))) {
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_YZ) && ((fp_TRUE(flag[Y])) || (fp_TRUE(flag[Z])))) {
 		float length = sqrt(square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
 		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
 
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XYZ) && ((flag[X] > EPSILON) || (flag[Y] > EPSILON) || (flag[Z] > EPSILON))) {
+	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XYZ) && ((fp_TRUE(flag[X])) || (fp_TRUE(flag[Y])) || (fp_TRUE(flag[Z])))) {
 		float length = sqrt(square(target[X] - gm.position[X]) + square(target[Y] - gm.position[Y]) + square(target[Z] - gm.position[Z]));
 		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
 */
@@ -676,8 +673,7 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 		return (STAT_INTERNAL_RANGE_ERROR);
 	}
 	for (uint8_t i=0; i<AXES; i++) {
-//		if (flag[i] > EPSILON) {
-		if (fp_NOT_ZERO(flag[i])) {
+		if (fp_TRUE(flag[i])) {
 			cfg.offset[coord_system][i] = offset[i];
 			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
 		}
@@ -696,8 +692,7 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 stat_t cm_set_absolute_origin(float origin[], float flag[])
 {
 	for (uint8_t i=0; i<AXES; i++) {
-//		if (flag[i] > EPSILON) {
-		if (fp_NOT_ZERO(flag[i])) {
+		if (fp_TRUE(flag[i])) {
 			cm_set_machine_axis_position(i, cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
 			cm.homed[i] = true;
 		}
@@ -718,8 +713,7 @@ stat_t cm_set_origin_offsets(float offset[], float flag[])
 {
 	gm.origin_offset_enable = 1;
 	for (uint8_t i=0; i<AXES; i++) {
-//		if (flag[i] > EPSILON) {
-		if (fp_NOT_ZERO(flag[i])) {
+		if (fp_TRUE(flag[i])) {
 			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] - _to_millimeters(offset[i]);
 		}
 	}

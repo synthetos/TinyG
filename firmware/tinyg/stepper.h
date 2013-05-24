@@ -75,7 +75,7 @@ uint8_t st_test_prep_state(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(float microseconds);
-uint8_t st_prep_line(float steps[], float microseconds);
+stat_t st_prep_line(float steps[], float microseconds);
 
 uint16_t st_get_st_magic(void);
 uint16_t st_get_sps_magic(void);

@@ -45,8 +45,8 @@
 /*
  * Local functions
  */
-static uint8_t _compute_center_arc(void);
-static uint8_t _get_arc_radius(void);
+static stat_t _compute_center_arc(void);
+static stat_t _get_arc_radius(void);
 static float _get_arc_time (const float linear_travel, const float angular_travel, const float radius);
 static float _get_theta(const float x, const float y);
 
@@ -60,7 +60,7 @@ static float _get_theta(const float x, const float y);
  *
  *  Parts of this routine were originally sourced from the grbl project.
  */
-uint8_t ar_arc( const float target[], 
+stat_t ar_arc( const float target[], 
 				const float i, const float j, const float k, 
 				const float theta, 		// starting angle
 				const float radius, 		// radius of the circle in mm
@@ -133,7 +133,7 @@ uint8_t ar_arc( const float target[],
  *  Parts of this routine were originally sourced from the grbl project.
  */
 
-uint8_t ar_arc_callback() 
+stat_t ar_arc_callback() 
 {
 	if (ar.run_state == MOVE_STATE_OFF) { return (STAT_NOOP);}
 	if (mp_get_planner_buffers_available() == 0) { return (STAT_EAGAIN);}
@@ -167,15 +167,15 @@ void ar_abort_arc()
 
 /*****************************************************************************
  * Canonical Machining arc functions (arc prep for planning and runtime)
- * cm_arc_feed() - entry point for arc prep
+ * cm_arc_feed() 		 - entry point for arc prep
  * _compute_center_arc() - compute arc from I and J (arc center point)
  * _get_arc_radius() 	 - compute arc center (offset) from radius.
  * _get_arc_time()		 - compute time to complete arc at current feed rate
  */
-uint8_t cm_arc_feed(float target[], float flags[],// arc endpoints
-					float i, float j, float k, 	// offsets
-					float radius, 					// non-zero sets radius mode
-					uint8_t motion_mode)			// defined motion mode
+stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
+				   float i, float j, float k, 		// offsets
+				   float radius, 					// non-zero sets radius mode
+				   uint8_t motion_mode)				// defined motion mode
 {
 	uint8_t status = STAT_OK;
 
@@ -240,7 +240,7 @@ uint8_t cm_arc_feed(float target[], float flags[],// arc endpoints
  *                  C   <- theta_start (e.g. -145 degrees: theta_start == -PI*(3/4))
  */
 
-uint8_t _compute_center_arc()
+static stat_t _compute_center_arc()
 {
 	// calculate the theta (angle) of the current point (see header notes)
 	float theta_start = _get_theta(-gm.arc_offset[gm.plane_axis_0], -gm.arc_offset[gm.plane_axis_1]);
@@ -361,7 +361,7 @@ uint8_t _compute_center_arc()
  *                                   C  <-- Current position
  */
 
-uint8_t _get_arc_radius()
+static stat_t _get_arc_radius()
 {
 	float x;
 	float y;

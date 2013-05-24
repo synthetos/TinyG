@@ -48,10 +48,10 @@ struct gcodeParserSingleton {	 	  // struct to manage globals
 
 // local helper functions and macros
 static uint8_t _normalize_gcode_block(char *block);
-static uint8_t _parse_gcode_block(char *line);	// Parse the block into structs
-static uint8_t _execute_gcode_block(void);		// Execute the gcode block
-static uint8_t _check_gcode_block(void);		// check the block for correctness
-static uint8_t _get_next_statement(char *letter, float *value, char *buf, uint8_t *i);
+static stat_t _parse_gcode_block(char *line);	// Parse the block into structs
+static stat_t _execute_gcode_block(void);		// Execute the gcode block
+static stat_t _check_gcode_block(void);		// check the block for correctness
+static stat_t _get_next_statement(char *letter, float *value, char *buf, uint8_t *i);
 static uint8_t _point(float value);
 
 #define SET_MODAL(m,parm,val) ({gn.parm=val; gf.parm=1; gp.modals[m]+=1; break;})
@@ -64,7 +64,7 @@ static uint8_t _point(float value);
  *	Top level of gcode parser. Normalizes block and looks for special cases
  */
 
-uint8_t gc_gcode_parser(char *block)
+stat_t gc_gcode_parser(char *block)
 {
 	uint8_t msg_flag = _normalize_gcode_block(block);	// get block ready for parsing
 	if (block[0] == NUL) {
@@ -172,12 +172,12 @@ static uint8_t _normalize_gcode_block(char *block)
  *	  - inverse feed rate mode is cancelled - set back to units_per_minute mode
  */
 
-static uint8_t _parse_gcode_block(char *buf) 
+static stat_t _parse_gcode_block(char *buf) 
 {
 	uint8_t i=0; 	 			// persistent index into Gcode block buffer (buf)
   	char letter;				// parsed letter, eg.g. G or X or Y
 	float value;				// value parsed from letter (e.g. 2 for G2)
-	uint8_t status = STAT_OK;
+	stat_t status = STAT_OK;
 
 	// set initial state for new move 
 	memset(&gp, 0, sizeof(gp));	// clear all parser values
@@ -352,9 +352,9 @@ static uint8_t _parse_gcode_block(char *buf)
  *	to calling the canonical functions (which do the unit conversions)
  */
 
-static uint8_t _execute_gcode_block()
+static stat_t _execute_gcode_block()
 {
-	uint8_t status = STAT_OK;
+	stat_t status = STAT_OK;
 
 	cm_set_model_linenum(gn.linenum);
 	EXEC_FUNC(cm_set_inverse_feed_rate_mode, inverse_feed_rate_mode);
@@ -427,7 +427,7 @@ static uint8_t _execute_gcode_block()
  * _check_gcode_block() - return a STAT_ error if an error is detected
  */
 
-static uint8_t _check_gcode_block()
+static stat_t _check_gcode_block()
 {
 	// Check for modal group violations. From NIST, section 3.4 "It is an error 
 	// to put a G-code from group 1 and a G-code from group 0 on the same line 
@@ -452,7 +452,7 @@ static uint8_t _check_gcode_block()
  * helpers
  */
 
-static uint8_t _get_next_statement(char *letter, float *value, char *buf, uint8_t *i) {
+static stat_t _get_next_statement(char *letter, float *value, char *buf, uint8_t *i) {
 	if (buf[*i] == NUL) { 		// no more statements
 		return (STAT_COMPLETE);
 	}

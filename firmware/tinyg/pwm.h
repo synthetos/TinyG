@@ -30,8 +30,8 @@
 #define pwm_h
 
 void pwm_init(void);
-uint8_t pwm_set_freq(uint8_t channel, float freq);
-uint8_t pwm_set_duty(uint8_t channel, float duty);
+stat_t pwm_set_freq(uint8_t channel, float freq);
+stat_t pwm_set_duty(uint8_t channel, float duty);
 
 
 //#define __UNIT_TEST_PWM		// uncomment to enable PWM unit tests

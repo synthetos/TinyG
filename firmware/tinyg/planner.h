@@ -57,21 +57,23 @@ enum moveState {
 /* The following must apply:
  *	  MM_PER_ARC_SEGMENT >= MIN_LINE_LENGTH >= MIN_SEGMENT_LENGTH 
  */
-#define ARC_SEGMENT_LENGTH 0.1		// Arc segment size (mm).(0.03)
-#define MIN_LINE_LENGTH 0.08		// Smallest line the system can plan (mm) (0.02)
-#define MIN_SEGMENT_LENGTH 0.05		// Smallest accel/decel segment (mm). Set to produce ~10 ms segments (0.01)
+#define ARC_SEGMENT_LENGTH 	0.1		// Arc segment size (mm).(0.03)
+#define MIN_LINE_LENGTH 	0.08	// Smallest line the system can plan (mm) (0.02)
+#define MIN_SEGMENT_LENGTH 	0.05	// Smallest accel/decel segment (mm). Set to produce ~10 ms segments (0.01)
 
 #define JERK_MATCH_PRECISION 1000	// precision to which jerk must match to be considered effectively the same
 
 /* ESTD_SEGMENT_USEC	 Microseconds per planning segment
  *	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
  */
-#define NOM_SEGMENT_USEC ((float)5000)			// nominal segment time
-#define MIN_SEGMENT_USEC ((float)2500)			// minimum segment time
-#define MIN_ARC_SEGMENT_USEC ((float)10000)	// minimum arc segment time
-#define NOM_SEGMENT_TIME (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
-#define MIN_SEGMENT_TIME (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
-#define MIN_ARC_SEGMENT_TIME (MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
+#define NOM_SEGMENT_USEC 		((float)5000)		// nominal segment time
+#define MIN_SEGMENT_USEC 		((float)2500)		// minimum segment time
+#define MIN_ARC_SEGMENT_USEC	((float)10000)		// minimum arc segment time
+#define NOM_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
+#define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
+#define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
+#define MIN_LENGTH_MOVE 		(EPSILON)
+#define MIN_TIME_MOVE  			((float)0.0000001)
 
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.
@@ -126,7 +128,7 @@ enum mpBufferState {			// bf->buffer_state values
 typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;		// static pointer to previous buffer
 	struct mpBuffer *nx;		// static pointer to next buffer
-	uint8_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function - passes *bf, returns uint8_t
+	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function - passes *bf, returns stat_t
 	cm_exec cm_func;			// callback to canonical machine execution function
 	uint32_t linenum;			// runtime line number; or line index if not numbered
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
@@ -245,13 +247,13 @@ void mp_set_plan_position(const float position[]);
 void mp_set_axes_position(const float position[]);
 void mp_set_axis_position(uint8_t axis, const float position);
 
-uint8_t mp_exec_move(void);
+stat_t mp_exec_move(void);
 void mp_queue_command(void(*cm_exec)(uint8_t, float), uint8_t int_val, float float_val);
-uint8_t mp_dwell(const float seconds);
-uint8_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time);
-uint8_t mp_plan_hold_callback(void);
-uint8_t mp_end_hold(void);
-uint8_t mp_feed_rate_override(uint8_t flag, float parameter);
+stat_t mp_dwell(const float seconds);
+stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time);
+stat_t mp_plan_hold_callback(void);
+stat_t mp_end_hold(void);
+stat_t mp_feed_rate_override(uint8_t flag, float parameter);
 
 // planner buffer handlers
 uint8_t mp_get_planner_buffers_available(void);

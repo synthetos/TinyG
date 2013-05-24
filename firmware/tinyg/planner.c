@@ -80,8 +80,8 @@
 #define dbl_val time			// local alias for float to the time variable
 
 // execution routines (NB: These are all called from the LO interrupt)
-static uint8_t _exec_dwell(mpBuf_t *bf);
-static uint8_t _exec_command(mpBuf_t *bf);
+static stat_t _exec_dwell(mpBuf_t *bf);
+static stat_t _exec_command(mpBuf_t *bf);
 
 #ifdef __DEBUG
 static uint8_t _get_buffer_index(mpBuf_t *bf); 
@@ -169,7 +169,7 @@ void mp_set_axis_position(uint8_t axis, const float position)
  *	Manages run buffers and other details
  */
 
-uint8_t mp_exec_move() 
+stat_t mp_exec_move() 
 {
 	mpBuf_t *bf;
 
@@ -224,7 +224,7 @@ void mp_queue_command(void(*cm_exec)(uint8_t, float), uint8_t int_val, float flo
 	return;
 }
 
-static uint8_t _exec_command(mpBuf_t *bf)
+static stat_t _exec_command(mpBuf_t *bf)
 {
 	bf->cm_func(bf->int_val, bf->dbl_val);
 	st_prep_null();			// Must call a null prep to keep the loader happy. 
@@ -241,7 +241,7 @@ static uint8_t _exec_command(mpBuf_t *bf)
  * timer than the stepper pulse timer.
  */
 
-uint8_t mp_dwell(float seconds) 
+stat_t mp_dwell(float seconds) 
 {
 	mpBuf_t *bf; 
 
@@ -254,7 +254,7 @@ uint8_t mp_dwell(float seconds)
 	return (STAT_OK);
 }
 
-static uint8_t _exec_dwell(mpBuf_t *bf)
+static stat_t _exec_dwell(mpBuf_t *bf)
 {
 	st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
 	mp_free_run_buffer();

@@ -48,10 +48,10 @@
 
 // local scope stuff
 
-uint8_t _json_parser_kernal(char *str);
-static uint8_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth);
-static uint8_t _normalize_json_string(char *str, uint16_t size);
-//static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd);
+static stat_t _json_parser_kernal(char *str);
+static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth);
+static stat_t _normalize_json_string(char *str, uint16_t size);
+//static stat_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
 
 /****************************************************************************
  * js_json_parser() - exposed part of JSON parser
@@ -99,7 +99,7 @@ void js_json_parser(char *str)
 	rpt_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
 
-uint8_t _json_parser_kernal(char *str)
+stat_t _json_parser_kernal(char *str)
 {
 	uint8_t status;
 	int8_t depth;
@@ -147,7 +147,7 @@ uint8_t _json_parser_kernal(char *str)
  *	to lower case, with the exception of gcode comments
  */
 
-static uint8_t _normalize_json_string(char *str, uint16_t size)
+static stat_t _normalize_json_string(char *str, uint16_t size)
 {
 	char *wr;								// write pointer
 	uint8_t in_comment = false;
@@ -188,7 +188,7 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
  *	"fr" is found in the name string the parser will search for "xfr"in the 
  *	cfgArray.
  */
-static uint8_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
+static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 {
 	char *tmp;
 	char terminators[] = {"},"};
@@ -268,12 +268,12 @@ static uint8_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 /*
  * _gcode_comment_overrun_hack() - gcode overrun exception
  *
- *	Make an exception for string buffer overrun if the string is Gcode and the
- *	overrun is caused by as comment. The comment will be truncated. 
- *	If the comment happens to be a message, well tough noogies, bucko.
+ *	Make an exception for string buffer overrun if the string is Gcode and the overrun is 
+ *	caused by as comment. The comment will be truncated. If the comment happens to be a 
+ *	message, well tough noodles, bucko.
  */
 /*
-static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
+static stat_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
 {
 	if (strstr(cmd->string,"(") == NULL) {
 		return (false);
@@ -355,31 +355,6 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 				need_a_comma = false;
 			}
 		}
-/*
-		if (cmd->type != TYPE_EMPTY) {
-			if (need_a_comma) { *str++ = ',';}
-			need_a_comma = true;
-			str += sprintf(str, "\"%s\":", cmd->token);
-			if (cmd->type == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
-			else if (cmd->type == TYPE_INTEGER)		{ str += sprintf(str, "%1.0f", cmd->value);}
-			else if (cmd->type == TYPE_FLOAT)		{ str += sprintf(str, "%0.3f", cmd->value);}
-			else if (cmd->type == TYPE_FLOAT_UNITS)	{ 
-				if (cm_get_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
-				str += sprintf(str, "%0.3f", cmd->value);
-			}
-			else if (cmd->type == TYPE_STRING)		{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
-			else if (cmd->type == TYPE_ARRAY)		{ str += sprintf(str, "[%s]",  *cmd->stringp);}
-			else if (cmd->type == TYPE_BOOL) 		{
-				if (cmd->value == false) { str += sprintf(str, "false");}
-				else { str += sprintf(str, "true"); }
-			}
-			if (cmd->type == TYPE_PARENT) { 
-				*str++ = '{';
-				need_a_comma = false;
-			}
-		}
-
-*/
 		if (str >= str_max) { return (-1);}		// signal buffer overrun
 		if ((cmd = cmd->nx) == NULL) { break;}	// end of the list
 		if (cmd->depth < prev_depth) {

@@ -524,7 +524,7 @@ void _load_move()
  *	Microseconds - how many microseconds the segment should run 
  */
 
-uint8_t st_prep_line(float steps[], float microseconds)
+stat_t st_prep_line(float steps[], float microseconds)
 {
 	uint8_t i;
 	float f_dda = F_DDA;		// starting point for adjustment

@@ -183,7 +183,6 @@ static stat_t _dispatch()
 		}
 		return (status);						// Note: STAT_EAGAIN, errors, etc. will drop through
 	}
-//	cmd_reset_list();	//++++ shouldn't be necessary - test this carefully.
 	tg.linelen = strlen(tg.in_buf)+1;					// linelen only tracks primary input
 	strncpy(tg.saved_buf, tg.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 

@@ -66,7 +66,7 @@ typedef struct arArcSingleton {			// persistent planner and runtime variables
 arc_t ar;
 
 // function prototypes
-uint8_t ar_arc(	const float target[],
+stat_t ar_arc(	const float target[],
 				const float i, const float j, const float k, 
 				const float theta, 
 				const float radius, 
@@ -79,7 +79,7 @@ uint8_t ar_arc(	const float target[],
 				const float work_offset[],
 				const float min_time);
 
-uint8_t ar_arc_callback(void);
+stat_t ar_arc_callback(void);
 void ar_abort_arc(void);
 
 #endif

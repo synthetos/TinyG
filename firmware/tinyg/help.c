@@ -67,7 +67,7 @@ return(STAT_OK);
 /*
  * print_config_help() - help invoked as $h
  */
-uint8_t print_config_help(cmdObj_t *cmd)
+stat_t print_config_help(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG CONFIGURATION Help ####\n"));
 fprintf_P(stderr, PSTR("\
@@ -99,7 +99,7 @@ return(STAT_OK);
 /*
  * print_test_help() - help invoked for tests
  */
-uint8_t print_test_help(cmdObj_t *cmd)
+stat_t print_test_help(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG SELF TEST Help ####\n"));
 fprintf_P(stderr, PSTR("\
@@ -125,7 +125,7 @@ return(STAT_OK);
 /*
  * print_defaults_help() - help invoked for defaults
  */
-uint8_t print_defaults_help(cmdObj_t *cmd)
+stat_t print_defaults_help(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG RESTORE DEFAULTS Help ####\n"));
 fprintf_P(stderr, PSTR("\
@@ -138,7 +138,7 @@ return(STAT_OK);
 /*
  * print_boot_loader_help()
  */
-uint8_t print_boot_loader_help(cmdObj_t *cmd)
+stat_t print_boot_loader_help(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG BOOT LOADER Help ####\n"));
 fprintf_P(stderr, PSTR("\

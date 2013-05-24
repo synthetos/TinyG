@@ -268,13 +268,13 @@ enum cmMotionState {
 	MOTION_HOLD						// feedhold in progress
 };
 
-enum cmFeedholdState {				// applies to cm.feedhold_state
+enum cmFeedholdState {				// feedhold_state machine
 	FEEDHOLD_OFF = 0,				// no feedhold in effect
-	FEEDHOLD_SYNC, 					// sync to latest aline segment
+	FEEDHOLD_SYNC, 					// start hold - sync to latest aline segment
 	FEEDHOLD_PLAN, 					// replan blocks for feedhold
 	FEEDHOLD_DECEL,					// decelerate to hold point
 	FEEDHOLD_HOLD,					// holding
-	FEEDHOLD_END_HOLD				// end hold (transient state)
+	FEEDHOLD_END_HOLD				// end hold (transient state to OFF)
 };
 
 enum cmHomingState {				// applies to cm.homing_state

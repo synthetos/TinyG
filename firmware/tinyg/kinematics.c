@@ -53,7 +53,7 @@
  *		  loading. See stepper.c for details.
  */
 
-uint8_t ik_kinematics(float travel[], float steps[], float microseconds)
+void ik_kinematics(float travel[], float steps[], float microseconds)
 {
 	uint8_t i;
 	float joint[AXES];
@@ -75,7 +75,6 @@ uint8_t ik_kinematics(float travel[], float steps[], float microseconds)
 	//		if (cfg.m[j].motor_map == i) { steps[j] = joint[i] * cfg.m[j].steps_per_unit;}
 	//	}
 	}
-	return (STAT_OK);
 }
 
 /*

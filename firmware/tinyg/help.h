@@ -27,11 +27,11 @@
 #ifndef help_h
 #define help_h
 
-uint8_t print_general_help(void);
-uint8_t print_config_help(cmdObj_t *cmd);
-uint8_t print_test_help(cmdObj_t *cmd);
-uint8_t print_defaults_help(cmdObj_t *cmd);
-uint8_t print_boot_loader_help(cmdObj_t *cmd);
+stat_t print_general_help(void);
+stat_t print_config_help(cmdObj_t *cmd);
+stat_t print_test_help(cmdObj_t *cmd);
+stat_t print_defaults_help(cmdObj_t *cmd);
+stat_t print_boot_loader_help(cmdObj_t *cmd);
 
 void dump_set_f_dda(float f_dda, float dda_substeps, 
 					float major_axis_steps, 
