@@ -80,7 +80,9 @@
 #define dbl_val time			// local alias for float to the time variable
 
 // execution routines (NB: These are all called from the LO interrupt)
-static stat_t _exec_dwell(mpBuf_t *bf);
+//static stat_t _exec_dwell(mpBuf_t *bf);
+static stat_t _start_dwell(mpBuf_t *bf);
+static stat_t _end_dwell(mpBuf_t *bf);
 static stat_t _exec_command(mpBuf_t *bf);
 
 #ifdef __DEBUG
@@ -246,17 +248,24 @@ stat_t mp_dwell(float seconds)
 	mpBuf_t *bf; 
 
 	if ((bf = mp_get_write_buffer()) == NULL) {	// get write buffer or fail
-		return (STAT_BUFFER_FULL_FATAL);		  	// (not supposed to fail)
+		return (STAT_BUFFER_FULL_FATAL);		// (not supposed to fail)
 	}
-	bf->bf_func = _exec_dwell;					// register the callback to the exec function
+	bf->bf_func = _start_dwell;					// register callback to dwell start
 	bf->time = seconds;						  	// in seconds, not minutes
 	mp_queue_write_buffer(MOVE_TYPE_DWELL);
 	return (STAT_OK);
 }
 
-static stat_t _exec_dwell(mpBuf_t *bf)
+static stat_t _start_dwell(mpBuf_t *bf)
 {
 	st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
+	bf->bf_func = _end_dwell;
+//	mp_free_run_buffer();
+	return (STAT_OK);
+}
+
+static stat_t _end_dwell(mpBuf_t *bf)			// all's well that ends dwell
+{
 	mp_free_run_buffer();
 	return (STAT_OK);
 }

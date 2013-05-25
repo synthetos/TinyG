@@ -334,8 +334,8 @@ ISR(TIMER_DDA_ISR_vect)
  		st.m[MOTOR_4].counter -= st.timer_ticks_X_substeps;
 		PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
 	}
-	if (--st.timer_ticks_downcount == 0) {			// end move
- 		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// disable DDA timer
+	if (--st.timer_ticks_downcount == 0) {		// end move
+ 		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;	// disable DDA timer
 		// power-down motors if this feature is enabled
 		if (cfg.m[MOTOR_1].power_mode == true) {
 			PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; 
@@ -439,7 +439,6 @@ void _load_move()
 		// If axis has 0 steps the direction setting can be omitted
 		// If axis has 0 steps enabling motors is req'd to support power mode = 1
 
-#ifdef MOTOR_1
 		st.m[MOTOR_1].steps = sps.m[MOTOR_1].steps;			// set steps
 		if (sps.counter_reset_flag == true) {				// compensate for pulse phasing
 			st.m[MOTOR_1].counter = -(st.timer_ticks_downcount);
@@ -453,8 +452,6 @@ void _load_move()
 			}
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// enable motor
 		}
-#endif
-#ifdef MOTOR_2
 		st.m[MOTOR_2].steps = sps.m[MOTOR_2].steps;
 		if (sps.counter_reset_flag == true) {
 			st.m[MOTOR_2].counter = -(st.timer_ticks_downcount);
@@ -467,8 +464,6 @@ void _load_move()
 			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 		}
-#endif
-#ifdef MOTOR_3
 		st.m[MOTOR_3].steps = sps.m[MOTOR_3].steps;
 		if (sps.counter_reset_flag == true) {
 			st.m[MOTOR_3].counter = -(st.timer_ticks_downcount);
@@ -481,8 +476,6 @@ void _load_move()
 			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 		}
-#endif
-#ifdef MOTOR_4
 		st.m[MOTOR_4].steps = sps.m[MOTOR_4].steps;
 		if (sps.counter_reset_flag == true) {
 			st.m[MOTOR_4].counter = (st.timer_ticks_downcount);
@@ -495,19 +488,18 @@ void _load_move()
 			}
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 		}
-#endif
-		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;					// enable the DDA timer
+		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
 
 	// handle dwells
 	} else if (sps.move_type == MOVE_TYPE_DWELL) {
 		st.timer_ticks_downcount = sps.timer_ticks;
-		TIMER_DWELL.PER = sps.timer_period;						// load dwell timer period
- 		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;					// enable the dwell timer
+		TIMER_DWELL.PER = sps.timer_period;					// load dwell timer period
+ 		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
 	}
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here) 
-	sps.exec_state = PREP_BUFFER_OWNED_BY_EXEC;					// flip it back
-	st_request_exec_move();										// exec and prep next move
+	sps.exec_state = PREP_BUFFER_OWNED_BY_EXEC;				// flip it back
+	st_request_exec_move();									// exec and prep next move
 }
 
 /*

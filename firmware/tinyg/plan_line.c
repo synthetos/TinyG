@@ -810,7 +810,7 @@ stat_t mp_plan_hold_callback()
 	// The real fix: The braking velocity cannot simply be the mr.segment_velocity as this
 	// is the velocity of the last segment, not the one that's going to be executed next.
 	// The braking_velocity needs to be the velocity of the next segment that has not yet 
-	// been computed. In the eman time, this hack will work. 
+	// been computed. In the mean time, this hack will work. 
 	if ((braking_length > mr_available_length) && (fp_ZERO(bp->exit_velocity))) {
 		braking_length = mr_available_length;
 	}

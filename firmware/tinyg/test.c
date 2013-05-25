@@ -109,9 +109,28 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("@\n");
 //	xio_queue_RX_string_usb("~\n");
 
+/*
 	xio_queue_RX_string_usb("g1 f1800 x0.0005\n");	// Small move test for G61.1
 	xio_queue_RX_string_usb("g20\n");
 	xio_queue_RX_string_usb("m2\n");
+*/
+
+/*
+M20
+G0 X1 Y1
+M8 G4 P1 (COOLANT ON AND PAUSE)
+G4 P1
+M9 (COOLANT OFF)
+G0 X2 Y2
+M30
+*/
+	xio_queue_RX_string_usb("M20\n");
+	xio_queue_RX_string_usb("G0 X1 Y1\n");
+	xio_queue_RX_string_usb("M8 G4 P3\n");
+	xio_queue_RX_string_usb("G4 P3\n");
+	xio_queue_RX_string_usb("M9\n");
+	xio_queue_RX_string_usb("G0 X2 Y2\n");
+	xio_queue_RX_string_usb("M30\n");
 
 //	xio_queue_RX_string_usb("$net\n");
 
