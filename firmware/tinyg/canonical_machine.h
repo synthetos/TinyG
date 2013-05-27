@@ -128,6 +128,8 @@ typedef struct GCodeModel {				// Gcode dynamic model
 	float  spindle_override_factor;	// 1.0000 x S spindle speed. Go up or down from there
 	uint8_t	spindle_override_enable;	// TRUE = override enabled
 
+	uint8_t block_delete_switch;		// set true to enable block deletes (true is default)
+
 // unimplemented gcode parameters
 //	float cutter_radius;				// D - cutter radius compensation (0 is off)
 //	float cutter_length;				// H - cutter length compensation (0 is off)
@@ -452,6 +454,7 @@ uint8_t cm_get_distance_mode(void);
 uint8_t cm_get_inverse_feed_rate_mode(void);
 uint8_t cm_get_spindle_mode(void);
 uint32_t cm_get_model_linenum(void);
+uint8_t	cm_get_block_delete_switch(void);
 uint8_t cm_isbusy(void);
 
 void cm_set_motion_mode(uint8_t motion_mode);

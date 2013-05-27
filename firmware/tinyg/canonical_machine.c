@@ -152,6 +152,7 @@ uint8_t cm_get_distance_mode() { return gm.distance_mode;}
 uint8_t cm_get_inverse_feed_rate_mode() { return gm.inverse_feed_rate_mode;}
 uint8_t cm_get_spindle_mode() { return gm.spindle_mode;} 
 uint32_t cm_get_model_linenum() { return gm.linenum;}
+uint8_t	cm_get_block_delete_switch() { return gm.block_delete_switch;}
 uint8_t cm_isbusy() { return (mp_isbusy());}
 
 // set parameters in gm struct
@@ -859,8 +860,10 @@ stat_t cm_set_path_control(uint8_t mode)
 stat_t cm_dwell(float seconds)
 {
 	gm.parameter = seconds;
-	(void)mp_dwell(seconds);
-	return (STAT_OK);
+	return(mp_dwell(seconds));
+
+//	(void)mp_dwell(seconds);
+//	return (STAT_OK);
 }
 
 stat_t cm_straight_feed(float target[], float flags[])

@@ -48,7 +48,8 @@ enum moveState {
 	MOVE_STATE_HEAD,		// aline() acceleration portions
 	MOVE_STATE_BODY,		// aline() cruise portions
 	MOVE_STATE_TAIL,		// aline() deceleration portions
-	MOVE_STATE_SKIP			// mark a skipped block
+	MOVE_STATE_SKIP,		// mark a skipped block
+	MOVE_STATE_END			// move is markes as done (used by dwells)
 };
 #define MOVE_STATE_RUN1 MOVE_STATE_RUN // a convenience
 
@@ -247,9 +248,10 @@ void mp_set_plan_position(const float position[]);
 void mp_set_axes_position(const float position[]);
 void mp_set_axis_position(uint8_t axis, const float position);
 
-stat_t mp_exec_move(void);
+stat_t mp_exec_move(int32_t timer_ticks_downcount);
 void mp_queue_command(void(*cm_exec)(uint8_t, float), uint8_t int_val, float float_val);
 stat_t mp_dwell(const float seconds);
+void mp_end_dwell(void);
 stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time);
 stat_t mp_plan_hold_callback(void);
 stat_t mp_end_hold(void);

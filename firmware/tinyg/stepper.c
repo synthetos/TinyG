@@ -166,8 +166,6 @@
 static void _exec_move(void);
 static void _load_move(void);
 static void _request_load_move(void);
-static void _set_f_dda(float *f_dda, float *dda_substeps,
-					   const float major_axis_steps, const float microseconds);
 
 /*
  * Stepper structures
@@ -188,18 +186,17 @@ static void _set_f_dda(float *f_dda, float *dda_substeps,
 
 // Runtime structs. Used exclusively by step generation ISR (HI)
 typedef struct stRunMotor { 		// one per controlled motor
-	int32_t steps;					// total steps in axis
-	int32_t counter;				// DDA counter for axis
+	int32_t phase_increment;		// total steps in axis times substeps factor
+	int32_t phase_accumulator;		// DDA phase angle accumulator for axis
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor polarity
 } stRunMotor_t;
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integity	
-	int32_t timer_ticks_downcount;	// tick down-counter (unscaled)
-	int32_t timer_ticks_X_substeps;	// ticks multiplied by scaling factor
+	int32_t dda_ticks_downcount;	// tick down-counter (unscaled)
+	int32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t m[MOTORS];			// runtime motor structures
 } stRunSingleton_t;
-static stRunSingleton_t st;
 
 // Prep-time structs. Used by exec/prep ISR (MED) and read-only during load 
 // Must be careful about volatiles in this one
@@ -210,7 +207,7 @@ enum prepBufferState {
 };
 
 typedef struct stPrepMotor {
- 	uint32_t steps; 				// total steps in each direction
+ 	uint32_t phase_increment; 		// total steps in axis times substep factor
 	int8_t dir;						// b0 = direction
 } stPrepMotor_t;
 
@@ -218,15 +215,21 @@ typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integity	
 	uint8_t move_type;				// move type
 	volatile uint8_t exec_state;	// move execution state 
-	volatile uint8_t counter_reset_flag; // set TRUE if counter should be reset
+	volatile uint8_t reset_flag;	// set TRUE if accumulator should be reset
 	uint32_t prev_ticks;			// tick count from previous move
-	uint16_t timer_period;			// DDA or dwell clock period setting
-	uint32_t timer_ticks;			// DDA or dwell ticks for the move
-	uint32_t timer_ticks_X_substeps;// DDA ticks scaled by substep factor
-	float segment_velocity;		// +++++ record segment velocity for diagnostics
+	uint16_t dda_period;			// DDA or dwell clock period setting
+	uint32_t dda_ticks;				// DDA or dwell ticks for the move
+	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
+//	float segment_velocity;			// +++++ record segment velocity for diagnostics
 	stPrepMotor_t m[MOTORS];		// per-motor structs
 } stPrepSingleton_t;
+
+// Allocate static structures
+static stRunSingleton_t st;
 static struct stPrepSingleton sps;
+
+uint16_t st_get_st_magic() { return (st.magic_start);}
+uint16_t st_get_sps_magic() { return (sps.magic_start);}
 
 /* 
  * st_init() - initialize stepper motor subsystem 
@@ -281,9 +284,6 @@ void st_init()
 	sps.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
 }
 
-uint16_t st_get_st_magic() { return (st.magic_start);}
-uint16_t st_get_sps_magic() { return (sps.magic_start);}
-
 /* 
  * st_disable() - stop the steppers. Requires re-init to recover
  */
@@ -314,27 +314,27 @@ void st_disable()
 
 ISR(TIMER_DDA_ISR_vect)
 {
-	if ((st.m[MOTOR_1].counter += st.m[MOTOR_1].steps) > 0) {
+	if ((st.m[MOTOR_1].phase_accumulator += st.m[MOTOR_1].phase_increment) > 0) {
 		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;	// turn step bit on
- 		st.m[MOTOR_1].counter -= st.timer_ticks_X_substeps;
+ 		st.m[MOTOR_1].phase_accumulator -= st.dda_ticks_X_substeps;
 		PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;	// turn step bit off in ~1 uSec
 	}
-	if ((st.m[MOTOR_2].counter += st.m[MOTOR_2].steps) > 0) {
+	if ((st.m[MOTOR_2].phase_accumulator += st.m[MOTOR_2].phase_increment) > 0) {
 		PORT_MOTOR_2_VPORT.OUT |= STEP_BIT_bm;
- 		st.m[MOTOR_2].counter -= st.timer_ticks_X_substeps;
+ 		st.m[MOTOR_2].phase_accumulator -= st.dda_ticks_X_substeps;
 		PORT_MOTOR_2_VPORT.OUT &= ~STEP_BIT_bm;
 	}
-	if ((st.m[MOTOR_3].counter += st.m[MOTOR_3].steps) > 0) {
+	if ((st.m[MOTOR_3].phase_accumulator += st.m[MOTOR_3].phase_increment) > 0) {
 		PORT_MOTOR_3_VPORT.OUT |= STEP_BIT_bm;
- 		st.m[MOTOR_3].counter -= st.timer_ticks_X_substeps;
+ 		st.m[MOTOR_3].phase_accumulator -= st.dda_ticks_X_substeps;
 		PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;
 	}
-	if ((st.m[MOTOR_4].counter += st.m[MOTOR_4].steps) > 0) {
+	if ((st.m[MOTOR_4].phase_accumulator += st.m[MOTOR_4].phase_increment) > 0) {
 		PORT_MOTOR_4_VPORT.OUT |= STEP_BIT_bm;
- 		st.m[MOTOR_4].counter -= st.timer_ticks_X_substeps;
+ 		st.m[MOTOR_4].phase_accumulator -= st.dda_ticks_X_substeps;
 		PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
 	}
-	if (--st.timer_ticks_downcount == 0) {		// end move
+	if (--st.dda_ticks_downcount == 0) {		// end move
  		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;	// disable DDA timer
 		// power-down motors if this feature is enabled
 		if (cfg.m[MOTOR_1].power_mode == true) {
@@ -354,8 +354,10 @@ ISR(TIMER_DDA_ISR_vect)
 }
 
 ISR(TIMER_DWELL_ISR_vect) {						// DWELL timer interupt
-	if (--st.timer_ticks_downcount == 0) {
+	if (--st.dda_ticks_downcount == 0) {
  		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;	// disable DWELL timer
+		mp_end_dwell();
+		_exec_move();							// process the end of the dwell
 		_load_move();
 	}
 }
@@ -399,7 +401,7 @@ void st_request_exec_move()
 static void _exec_move()
 {
    	if (sps.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
-		if (mp_exec_move() != STAT_NOOP) {
+		if (mp_exec_move(st.dda_ticks_downcount) != STAT_NOOP) {
 			sps.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
 			_request_load_move();
 		}
@@ -408,7 +410,7 @@ static void _exec_move()
 
 static void _request_load_move()
 {
-	if (st.timer_ticks_downcount == 0) {				// bother interrupting
+	if (st.dda_ticks_downcount == 0) {				// bother interrupting
 		TIMER_LOAD.PER = SWI_PERIOD;
 		TIMER_LOAD.CTRLA = STEP_TIMER_ENABLE;			// trigger a HI interrupt
 	} 	// else don't bother to interrupt. You'll just trigger an 
@@ -425,25 +427,25 @@ static void _request_load_move()
 
 void _load_move()
 {
-	if (st.timer_ticks_downcount != 0) { return;}				  // exit if it's still busy
+	if (st.dda_ticks_downcount != 0) { return;}				  // exit if it's still busy
 	if (sps.exec_state != PREP_BUFFER_OWNED_BY_LOADER) { return;} // if there are no more moves
 
 	// handle aline loads first (most common case)  NB: there are no more lines, only alines
 	if (sps.move_type == MOVE_TYPE_ALINE) {
-		st.timer_ticks_downcount = sps.timer_ticks;
-		st.timer_ticks_X_substeps = sps.timer_ticks_X_substeps;
-		TIMER_DDA.PER = sps.timer_period;
+		st.dda_ticks_downcount = sps.dda_ticks;
+		st.dda_ticks_X_substeps = sps.dda_ticks_X_substeps;
+		TIMER_DDA.PER = sps.dda_period;
  
 		// This section is somewhat optimized for execution speed 
 		// All axes must set steps and compensate for out-of-range pulse phasing. 
 		// If axis has 0 steps the direction setting can be omitted
 		// If axis has 0 steps enabling motors is req'd to support power mode = 1
 
-		st.m[MOTOR_1].steps = sps.m[MOTOR_1].steps;			// set steps
-		if (sps.counter_reset_flag == true) {				// compensate for pulse phasing
-			st.m[MOTOR_1].counter = -(st.timer_ticks_downcount);
+		st.m[MOTOR_1].phase_increment = sps.m[MOTOR_1].phase_increment;			// set steps
+		if (sps.reset_flag == true) {				// compensate for pulse phasing
+			st.m[MOTOR_1].phase_accumulator = -(st.dda_ticks_downcount);
 		}
-		if (st.m[MOTOR_1].steps != 0) {
+		if (st.m[MOTOR_1].phase_increment != 0) {
 			// For ideal optimizations, only set or clear a bit at a time.
 			if (sps.m[MOTOR_1].dir == 0) {
 				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm;// CW motion (bit cleared)
@@ -452,11 +454,11 @@ void _load_move()
 			}
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// enable motor
 		}
-		st.m[MOTOR_2].steps = sps.m[MOTOR_2].steps;
-		if (sps.counter_reset_flag == true) {
-			st.m[MOTOR_2].counter = -(st.timer_ticks_downcount);
+		st.m[MOTOR_2].phase_increment = sps.m[MOTOR_2].phase_increment;
+		if (sps.reset_flag == true) {
+			st.m[MOTOR_2].phase_accumulator = -(st.dda_ticks_downcount);
 		}
-		if (st.m[MOTOR_2].steps != 0) {
+		if (st.m[MOTOR_2].phase_increment != 0) {
 			if (sps.m[MOTOR_2].dir == 0) {
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm;
 			} else {
@@ -464,11 +466,11 @@ void _load_move()
 			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 		}
-		st.m[MOTOR_3].steps = sps.m[MOTOR_3].steps;
-		if (sps.counter_reset_flag == true) {
-			st.m[MOTOR_3].counter = -(st.timer_ticks_downcount);
+		st.m[MOTOR_3].phase_increment = sps.m[MOTOR_3].phase_increment;
+		if (sps.reset_flag == true) {
+			st.m[MOTOR_3].phase_accumulator = -(st.dda_ticks_downcount);
 		}
-		if (st.m[MOTOR_3].steps != 0) {
+		if (st.m[MOTOR_3].phase_increment != 0) {
 			if (sps.m[MOTOR_3].dir == 0) {
 				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm;
 			} else {
@@ -476,11 +478,11 @@ void _load_move()
 			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 		}
-		st.m[MOTOR_4].steps = sps.m[MOTOR_4].steps;
-		if (sps.counter_reset_flag == true) {
-			st.m[MOTOR_4].counter = (st.timer_ticks_downcount);
+		st.m[MOTOR_4].phase_increment = sps.m[MOTOR_4].phase_increment;
+		if (sps.reset_flag == true) {
+			st.m[MOTOR_4].phase_accumulator = (st.dda_ticks_downcount);
 		}
-		if (st.m[MOTOR_4].steps != 0) {
+		if (st.m[MOTOR_4].phase_increment != 0) {
 			if (sps.m[MOTOR_4].dir == 0) {
 				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm;
 			} else {
@@ -492,8 +494,8 @@ void _load_move()
 
 	// handle dwells
 	} else if (sps.move_type == MOVE_TYPE_DWELL) {
-		st.timer_ticks_downcount = sps.timer_ticks;
-		TIMER_DWELL.PER = sps.timer_period;					// load dwell timer period
+		st.dda_ticks_downcount = sps.dda_ticks;
+		TIMER_DWELL.PER = sps.dda_period;					// load dwell timer period
  		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
 	}
 
@@ -521,7 +523,6 @@ stat_t st_prep_line(float steps[], float microseconds)
 	uint8_t i;
 	float f_dda = F_DDA;		// starting point for adjustment
 	float dda_substeps = DDA_SUBSTEPS;
-	float major_axis_steps = 0;
 
 	// *** defensive programming ***
 	// trap conditions that would prevent queueing the line
@@ -529,39 +530,28 @@ stat_t st_prep_line(float steps[], float microseconds)
 	} else if (isfinite(microseconds) == false) { return (STAT_MINIMUM_LENGTH_MOVE_ERROR);
 	} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
-	sps.counter_reset_flag = false;		// initialize counter reset flag for this move.
-
-// *** DEPRECATED CODE BLOCK ***
-	// This code is left here in case integer overclocking is re-enabled
-	// This code does not get compiled (under -0s) if DDA_OVERCLOCK = 0
-	for (i=0; i<MOTORS; i++) {
-		if (major_axis_steps < fabs(steps[i])) { 
-			major_axis_steps = fabs(steps[i]); 
-		}
-	}
-	_set_f_dda(&f_dda, &dda_substeps, major_axis_steps, microseconds);
-// *** ...TO HERE ***
+	sps.reset_flag = false;		// initialize counter reset flag for this move.
 
 	// setup motor parameters
 	for (i=0; i<MOTORS; i++) {
 		sps.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ cfg.m[i].polarity;
-		sps.m[i].steps = (uint32_t)fabs(steps[i] * dda_substeps);
+		sps.m[i].phase_increment = (uint32_t)fabs(steps[i] * dda_substeps);
 	}
-	sps.timer_period = _f_to_period(f_dda);
-	sps.timer_ticks = (uint32_t)((microseconds/1000000) * f_dda);
-	sps.timer_ticks_X_substeps = sps.timer_ticks * dda_substeps;	// see FOOTNOTE
+	sps.dda_period = _f_to_period(f_dda);
+	sps.dda_ticks = (uint32_t)((microseconds/1000000) * f_dda);
+	sps.dda_ticks_X_substeps = sps.dda_ticks * dda_substeps;	// see FOOTNOTE
 
 	// anti-stall measure in case change in velocity between segments is too great 
-	if ((sps.timer_ticks * COUNTER_RESET_FACTOR) < sps.prev_ticks) {  // NB: uint32_t math
-		sps.counter_reset_flag = true;
+	if ((sps.dda_ticks * COUNTER_RESET_FACTOR) < sps.prev_ticks) {  // NB: uint32_t math
+		sps.reset_flag = true;
 	}
-	sps.prev_ticks = sps.timer_ticks;
+	sps.prev_ticks = sps.dda_ticks;
 	sps.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }
 // FOOTNOTE: This expression was previously computed as below but floating 
 // point rounding errors caused subtle and nasty accumulated position errors:
-//	sp.timer_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
+//	sp.dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
 
 /* 
  * st_prep_null() - Keeps the loader happy. Otherwise performs no action
@@ -581,56 +571,8 @@ void st_prep_null()
 void st_prep_dwell(float microseconds)
 {
 	sps.move_type = MOVE_TYPE_DWELL;
-	sps.timer_period = _f_to_period(F_DWELL);
-	sps.timer_ticks = (uint32_t)((microseconds/1000000) * F_DWELL);
-}
-
-/* 
- * _set_f_dda() - get optimal DDA frequency setting
- *
- *	Find the highest integer multiple of the major axis step rate that is
- *	less than DDA max frequency and no more than OVERCLOCK times the
- *	step rate; or use the min DDA frequency if the step rate is too low.
- *	Test that the selected rate will fit into a long (i.e. won't overflow 
- *	uint32_t timer_ticks_scaled). If it doesn't fit reduce the substep 
- *	precision until it does. If it *still* doesn't fit get rid of the 
- *	overclocking. If it **still** doesn't fit throw a trap and give up.
- */
-/**** DEPRECATED **** 
- *	This function is needed if DDA_OVERCLOCKING is ever re-enabled. It's left
- *	here for historical and recovery purposes.It doesn't take any room because 
- *	the compiler sees DDA_OVERCLOCK is defined as zero and doesn't compile it.
- */
-static void _set_f_dda(float *f_dda,
-						  float *dda_substeps, 
-						  const float major_axis_steps, 
-						  const float microseconds)
-{
-	float f_dda_base = (major_axis_steps / microseconds) * 1000000;
-
-	// chose a good clock value, assuming the line will fit
-	if (DDA_OVERCLOCK == 0) { return;}				// 0 = disabled
-	if ((f_dda_base * DDA_OVERCLOCK) < F_DDA_MIN) {	// too slow
-		*f_dda = F_DDA_MIN;
-	} else {
-		for (uint8_t dda_overclock=DDA_OVERCLOCK; dda_overclock>0; dda_overclock--) {
-			if ((*f_dda = (f_dda_base * dda_overclock)) <  F_DDA) { break;}
-		}
-	}
-	// reduce substep precision if line won't fit into timer_ticks_scaled equiv to
-	// this expr: ((microseconds/1000000) *(*f_dda) *(*dda_substeps)) > MAX_ULONG) {
-	while ((microseconds *(*f_dda) *(*dda_substeps)) > (MAX_ULONG * 1000000)) {
-		if (((*dda_substeps) = (*dda_substeps)/2) < 1) {
-			(*dda_substeps) = 1;
-			// dang. still need more room. kill the overclock
-			if (((*f_dda) = f_dda_base) < F_DDA_MIN) {
-				 *f_dda = F_DDA_MIN;
-			}
-			if ((microseconds *(*f_dda) *(*dda_substeps)) > (MAX_ULONG * 1000000)) {
-				break;
-			}
-		}
-	}
+	sps.dda_period = _f_to_period(F_DWELL);
+	sps.dda_ticks = (uint32_t)((microseconds/1000000) * F_DWELL);
 }
 
 /*
@@ -638,7 +580,7 @@ static void _set_f_dda(float *f_dda,
  */
 inline uint8_t st_isbusy()
 {
-	if (st.timer_ticks_downcount == 0) {
+	if (st.dda_ticks_downcount == 0) {
 		return (false);
 	} 
 	return (true);
@@ -685,7 +627,7 @@ void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode)
 
 #ifdef __DEBUG
 
-static const char sts_sing[] PROGMEM = "stSingleton timer_ticks (remaining):%d\n";
+static const char sts_sing[] PROGMEM = "stSingleton dda_ticks (remaining):%d\n";
 static const char sts_timr[] PROGMEM = "  timer %s  enabled:%d  period:%d\n";
 static const char sts_motr[] PROGMEM = "  motor[%d] pol:%d  steps:%d  counter:%d\n";
 
@@ -693,7 +635,7 @@ void st_dump_stepper_state()
 {
 	uint8_t i;
 
-	fprintf_P(stderr, (PGM_P)sts_sing, st.timer_ticks_downcount);
+	fprintf_P(stderr, (PGM_P)sts_sing, st.dda_ticks_downcount);
 
 	fprintf_P(stderr, (PGM_P)sts_timr, "dda", TIMER_DDA.CTRLA, TIMER_DDA.PER);
 	fprintf_P(stderr, (PGM_P)sts_timr, "dwl", TIMER_DWELL.CTRLA, TIMER_DWELL.PER);
@@ -703,8 +645,8 @@ void st_dump_stepper_state()
 	for (i=0; i<MOTORS; i++) {
 		fprintf_P(stderr, (PGM_P)sts_motr, i, 
 			st.m[i].polarity,
-			st.m[i].steps,
-			st.m[i].counter);
+			st.m[i].phase_increment,
+			st.m[i].phase_accumulator);
 	}
 }
 

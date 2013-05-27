@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	377.02		// Intermediate push for dwell testing
+#define TINYG_FIRMWARE_BUILD   	377.03		// Dwell testing
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
@@ -51,9 +51,9 @@
 
 /****** DEVELOPMENT SETTINGS ******/
 
-//#define __CANNED_STARTUP					// run any canned startup moves
-//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-//#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+#define __CANNED_STARTUP					// run any canned startup moves
+#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 //#define __UNIT_TESTS						// master enable for unit tests; uncomment modules in .h files
 //#define __DEBUG							// complies debug functions found in test.c
 
@@ -101,6 +101,12 @@
 
 #define PWM_1	0
 #define PWM_2	1
+
+/*************************************************************************
+ * String handling help - strings are handled as uint8_t's typedef'd to char_t
+ */
+//typedef uint8_t char_t;
+typedef char char_t;
 
 /* 
  * STATUS CODES

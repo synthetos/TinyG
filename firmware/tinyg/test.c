@@ -125,11 +125,18 @@ G0 X2 Y2
 M30
 */
 //	xio_queue_RX_string_usb("M20\n");
-	xio_queue_RX_string_usb("G0 X1 Y1\n");
-	xio_queue_RX_string_usb("M8 G4 P0.05\n");
-//	xio_queue_RX_string_usb("G4 P3\n");
+	xio_queue_RX_string_usb("G0 X0.01 Y0.01\n");
+//	xio_queue_RX_string_usb("M8 G4 P0.001\n");
+//	xio_queue_RX_string_usb("M8 G4 P2\n");
+
+	xio_queue_RX_string_usb("M8\n");
+
+//	xio_queue_RX_string_usb("G4 P2\n");
+	xio_queue_RX_string_usb("G4 P0.001\n");
+
 	xio_queue_RX_string_usb("M9\n");
 	xio_queue_RX_string_usb("G0 X2 Y2\n");
+
 //	xio_queue_RX_string_usb("M30\n");
 
 //	xio_queue_RX_string_usb("$net\n");

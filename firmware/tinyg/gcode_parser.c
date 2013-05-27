@@ -47,12 +47,12 @@ struct gcodeParserSingleton {	 	  // struct to manage globals
 }; struct gcodeParserSingleton gp;
 
 // local helper functions and macros
-static uint8_t _normalize_gcode_block(char *block);
-static stat_t _parse_gcode_block(char *line);	// Parse the block into structs
+static void _normalize_gcode_block(char_t *cmd, char_t **com, char_t **msg, uint8_t *block_delete_flag);
+static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value);
+static stat_t _point(float value);
+static stat_t _validate_gcode_block(void);
+static stat_t _parse_gcode_block(char_t *line);	// Parse the block into the GN/GF structs
 static stat_t _execute_gcode_block(void);		// Execute the gcode block
-static stat_t _check_gcode_block(void);		// check the block for correctness
-static stat_t _get_next_statement(char *letter, float *value, char *buf, uint8_t *i);
-static uint8_t _point(float value);
 
 #define SET_MODAL(m,parm,val) ({gn.parm=val; gf.parm=1; gp.modals[m]+=1; break;})
 #define SET_NON_MODAL(parm,val) ({gn.parm=val; gf.parm=1; break;})
@@ -64,130 +64,185 @@ static uint8_t _point(float value);
  *	Top level of gcode parser. Normalizes block and looks for special cases
  */
 
-stat_t gc_gcode_parser(char *block)
+stat_t gc_gcode_parser(char_t *block)
 {
-	uint8_t msg_flag = _normalize_gcode_block(block);	// get block ready for parsing
-	if (block[0] == NUL) {
-		if (msg_flag == true) return (STAT_OK);	// queues messages for display
-		return (STAT_NOOP); 
+	char_t *cmd = block;					// gcode command or NUL string
+	char_t none = NUL;
+	char_t *com = &none;					// gcode comment or NUL string
+	char_t *msg = &none;					// gcode message or NUL string
+	uint8_t block_delete_flag;
+
+	_normalize_gcode_block(cmd, &com, &msg, &block_delete_flag);
+	
+	if ((block_delete_flag == true) && (cm_get_block_delete_switch() == true)) {
+		return (STAT_NOOP);
 	}
-	return(_parse_gcode_block(block));			// parse block & return if error
+	if (*msg != NUL) {
+		(void)cm_message(msg);				// queue the message	
+	}	
+	return(_parse_gcode_block(block));
 }
 
 /*
  * _normalize_gcode_block() - normalize a block (line) of gcode in place
  *
- *	Comments always terminate the block (embedded comments are not supported)
- *	Messages in comments are sent to console (stderr)
- *	Processing: split string into command and comment portions. Valid choices:
- *	  supported:	command
- *	  supported:	comment
- *	  supported:	command comment
- *	  unsupported:	command command
- *	  unsupported:	comment command
- *	  unsupported:	command comment command
+ *	Normalization functions:
+ *   - convert all letters to upper case
+ *	 - remove white space, control and other invalid characters 
+ *	 - remove (erroneous) leading zeros that might be taken to mean Octal
+ *	 - identify and return start of comments and messages
+ *	 - signal if a block-delete character (/) was encountered in the first space
  *
- *	Valid characters in a Gcode block are (see RS274NGC_3 Appendix E)
- *		digits						all digits are passed to interpreter
- *		lower case alpha			all alpha is passed
- *		upper case alpha			all alpha is passed
- *		+ - . / *	< = > 			chars passed to interpreter
- *		| % # ( ) [ ] { } 			chars passed to interpreter
- *		<sp> <tab> 					chars are legal but are not passed
- *		/  							if first, block delete char - omits the block
+ *	So this: "  g1 x100 Y100 f400" becomes this: "G1X100Y100F400"
  *
- *	Invalid characters in a Gcode block are:
- *		control characters			chars < 0x20
- *		! $ % ,	; ; ? @ 
- *		^ _ ~ " ' <DEL>
+ *	Comment and message handling:
+ *	 - Comments and messages are not normalized - they are left alone
+ *	 - Comments always terminate the block (i.e. embedded comments are not supported)
+ *	 - The 'MSG' specifier in comment can have mixed case but cannot cannot have embedded white spaces
+ *	 - Normalization returns true if there was a message to display, false otherwise
+ *	 - Processing splits string into command and comment portions - supported cases are:
+ *		 COMMAND
+ *		 (comment)
+ *		 COMMAND (comment)
  *
- *	MSG specifier in comment can have mixed case but cannot cannot have 
- *	embedded white spaces
+ *	Returns:
+ *	 - com points to comment string or to NUL if no comment
+ *	 - msg points to message string or to NUL if no comment
+ *	 - block_delete_flag is set true if block delete encountered, false otherwise
+ */
+static void _normalize_gcode_block(char_t *cmd, char_t **com, char_t **msg, uint8_t *block_delete_flag)
+{
+	char_t *rd = cmd;				// read pointer
+	char_t *wr = cmd;				// write pointer
+
+	// Preset comments and messages to NUL string
+	// Not required if com and msg already point to NUL on entry
+//	for (rd = cmd; *rd != NUL; rd++) { if (*rd == NUL) { *com = rd; *msg = rd; rd = cmd;} }
+
+	// mark block deletes
+	if (*rd == '/') { *block_delete_flag = true; } 
+	else { *block_delete_flag = false; }
+	
+	// normalize the command block & find the comment(if any)
+	for (; *wr != NUL; rd++) {
+		if (*rd == NUL) { *wr = NUL; }
+		else if (*rd == '(') { *wr = NUL; *com = rd+1; } 
+		else if ((isalnum((char)*rd)) || (strchr("-.", *rd))) { // all valid characters
+			*(wr++) = (char_t)toupper((char)*(rd));
+		}
+	}
+	
+	// Perform Octal stripping - remove invalid leading zeros in number strings
+	rd = cmd;
+	while (*rd != NUL) {
+		if (*rd == '.') break;							// don't strip past a decimal point
+		if ((!isdigit(*rd)) && (*(rd+1) == '0') && (isdigit(*(rd+2)))) {
+			wr = rd+1;
+			while (*wr != NUL) { *wr = *(wr+1); wr++;}	// copy forward w/overwrite
+			continue;
+		}
+		rd++;
+	}
+	
+	// process comments and messages
+	if (**com != NUL) {
+		rd = *com;
+		while (isspace(*rd)) { rd++; }		// skip any leading spaces before "msg"
+		if ((tolower(*rd) == 'm') && (tolower(*(rd+1)) == 's') && (tolower(*(rd+2)) == 'g')) {
+			*msg = rd+3;
+		}
+		for (; *rd != NUL; rd++) {	
+			if (*rd == ')') *rd = NUL;		// NUL terminate on trailing parenthesis, if any
+		}
+	}
+}
+
+/*
+ * _get_next_gcode_word() - get gcode word consisting of a letter and a value
  *
- *	Returns true if there was a message to display, false otherwise
- *
- *	++++ todo: Support leading and trailing spaces around the MSG specifier
+ *	This function requires the Gcode string to be normalized.
+ *	Normalization must remove any leading zeros or they will be converted to Octal
+ *	G0X... is not interpreted as hexadecimal. This is trapped.
+ */
+static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value) 
+{
+	if (**pstr == NUL) { return (STAT_COMPLETE); }	// no more words
+
+	// get letter part
+	if(isupper(**pstr) == false) { return (STAT_EXPECTED_COMMAND_LETTER); }
+	*letter = **pstr;
+	(*pstr)++;
+	
+	// X-axis-becomes-a-hexadecimal-number get-value case, e.g. G0X100 --> G255
+	if ((**pstr == '0') && (*(*pstr+1) == 'X')) {
+		*value = 0;
+		(*pstr)++;
+		return (STAT_OK);		// pointer points to X
+	}
+
+	// get-value general case
+	char *end; 
+	*value = strtod(*pstr, &end);
+	if(end == *pstr) { return(STAT_BAD_NUMBER_FORMAT); }	// more robust test then checking for value=0;
+	*pstr = end;
+	return (STAT_OK);			// pointer points to next character after the word
+}
+
+/*
+ * _point() - isolate the decimal point value as an integer
+ */
+static uint8_t _point(float value) { return((uint8_t)(value*10 - trunc(value)*10));}
+
+/*
+ * _validate_gcode_block() - check for some gross Gcode block semantic violations
  */
 
-static uint8_t _normalize_gcode_block(char *block) 
+static stat_t _validate_gcode_block()
 {
-	char c;
-	char *comment=0;	// comment pointer - first char past opening paren
-	uint8_t i=0; 		// index for incoming characters
-	uint8_t j=0;		// index for normalized characters
+	//	Check for modal group violations. From NIST, section 3.4 "It is an error to put
+	//	a G-code from group 1 and a G-code from group 0 on the same line if both of them 
+	//	use axis words. If an axis word-using G-code from group 1 is implicitly in effect 
+	//	on a line (by having been activated on an earlier line), and a group 0 G-code that 
+	//	uses axis words appears on the line, the activity of the group 1 G-code is suspended 
+	//	for that line. The axis word-using G-codes from group 0 are G10, G28, G30, and G92"
 
-	if (block[0] == '/') {					// discard deleted blocks
-		block[0] = NUL;
-		return (false);
-	}
-	if (block[0] == '?') {					// trap and return ? command
-		return (false);
-	}
-	// normalize the command block & mark the comment(if any)
-	while ((c = toupper(block[i++])) != NUL) {
-		if ((isupper(c)) || (isdigit(c))) {	// capture common chars
-		 	block[j++] = c; 
-			continue;
-		}
-		if (c == '(') {						// detect & handle comments
-			block[j] = NUL;
-			comment = &block[i]; 
-			break;
-		}
-		if (c <= ' ') continue;				// toss controls & whitespace
-		if (c == DEL) continue;				// toss DELETE (0x7F)
-		if (strchr("!$%,;:?@^_~`\'\"", c))	// toss invalid punctuation
-			continue;
-		block[j++] = c;
-	}
-	block[j] = NUL;							// terminate the command
-	if (comment != 0) {
-		if ((toupper(comment[0]) == 'M') && 
-			(toupper(comment[1]) == 'S') &&
-			(toupper(comment[2]) == 'G')) {
-			i=0;
-			comment +=3;					// skip past the leading chars
-			while ((c = comment[i++]) != NUL) {// remove trailing parenthesis
-				if (c == ')') {
-					comment[--i] = NUL;
-					break;
-				}
-			}
-			(void)cm_message(comment);
-			return (true);
-		}
-	}
-	return (false);
+//	if ((gp.modals[MODAL_GROUP_G0] == true) && (gp.modals[MODAL_GROUP_G1] == true)) {
+//		return (STAT_MODAL_GROUP_VIOLATION);
+//	}
+	
+	// look for commands that require an axis word to be present
+//	if ((gp.modals[MODAL_GROUP_G0] == true) || (gp.modals[MODAL_GROUP_G1] == true)) {
+//		if (_axis_changed() == false)
+//		return (STAT_GCODE_AXIS_WORD_MISSING);
+//	}
+	return (STAT_OK);
 }
 
 /*
  * _parse_gcode_block() - parses one line of NULL terminated G-Code. 
  *
- *	All the parser does is load the state values in gn (next model state),
- *	and flags in gf (model state flags). The execute routine applies them.
- *	The line is assumed to contain only uppercase characters and signed 
- *  floats (no whitespace).
+ *	All the parser does is load the state values in gn (next model state) and set flags
+ *	in gf (model state flags). The execute routine applies them. The buffer is assumed to 
+ *	contain only uppercase characters and signed floats (no whitespace).
  *
  *	A number of implicit things happen when the gn struct is zeroed:
  *	  - inverse feed rate mode is cancelled - set back to units_per_minute mode
  */
-
-static stat_t _parse_gcode_block(char *buf) 
+static stat_t _parse_gcode_block(char_t *buf) 
 {
-	uint8_t i=0; 	 			// persistent index into Gcode block buffer (buf)
-  	char letter;				// parsed letter, eg.g. G or X or Y
-	float value;				// value parsed from letter (e.g. 2 for G2)
+	char *pstr = (char *)buf;		// persistent pointer into gcode block for parsing words
+  	char letter;					// parsed letter, eg.g. G or X or Y
+	float value = 0;				// value parsed from letter (e.g. 2 for G2)
 	stat_t status = STAT_OK;
 
 	// set initial state for new move 
-	memset(&gp, 0, sizeof(gp));	// clear all parser values
-	memset(&gf, 0, sizeof(gf));	// clear all next-state flags
-	memset(&gn, 0, sizeof(gn));	// clear all next-state values
+	memset(&gp, 0, sizeof(gp));		// clear all parser values
+	memset(&gf, 0, sizeof(gf));		// clear all next-state flags
+	memset(&gn, 0, sizeof(gn));		// clear all next-state values
 	gn.motion_mode = cm_get_motion_mode();	// get motion mode from previous block
 
   	// extract commands and parameters
-	while((status = _get_next_statement(&letter, &value, buf, &i)) == STAT_OK) {
-
+	while((status = _get_next_gcode_word(&pstr, &letter, &value)) == STAT_OK) {
 		switch(letter) {
 			case 'G':
 				switch((uint8_t)value) {
@@ -287,7 +342,7 @@ static stat_t _parse_gcode_block(char *buf)
 
 			case 'T': SET_NON_MODAL (tool, (uint8_t)trunc(value));
 			case 'F': SET_NON_MODAL (feed_rate, value);
-			case 'P': SET_NON_MODAL (parameter, value); 	// used for dwell time, G10 coord select
+			case 'P': SET_NON_MODAL (parameter, value);				// used for dwell time, G10 coord select
 			case 'S': SET_NON_MODAL (spindle_speed, value); 
 			case 'X': SET_NON_MODAL (target[AXIS_X], value);
 			case 'Y': SET_NON_MODAL (target[AXIS_Y], value);
@@ -302,14 +357,14 @@ static stat_t _parse_gcode_block(char *buf)
 			case 'J': SET_NON_MODAL (arc_offset[1], value);
 			case 'K': SET_NON_MODAL (arc_offset[2], value);
 			case 'R': SET_NON_MODAL (arc_radius, value);
-			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);// line number
-			case 'L': break;								// not used for anything
+			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);		// line number
+			case 'L': break;										// not used for anything
 			default: status = STAT_UNRECOGNIZED_COMMAND;
 		}
 		if(status != STAT_OK) break;
 	}
 	if ((status != STAT_OK) && (status != STAT_COMPLETE)) return (status);
-	ritorno(_check_gcode_block());			// perform Gcode error checking
+	ritorno(_validate_gcode_block());
 	return (_execute_gcode_block());		// if successful execute the block
 }
 
@@ -422,54 +477,4 @@ static stat_t _execute_gcode_block()
 	}
 	return (status);
 }
-
-/*
- * _check_gcode_block() - return a STAT_ error if an error is detected
- */
-
-static stat_t _check_gcode_block()
-{
-	// Check for modal group violations. From NIST, section 3.4 "It is an error 
-	// to put a G-code from group 1 and a G-code from group 0 on the same line 
-	// if both of them use axis words. If an axis word-using G-code from group 
-	// 1 is implicitly in effect on a line (by having been activated on an 
-	// earlier line), and a group 0 G-code that uses axis words appears on the 
-	// line, the activity of the group 1 G-code is suspended for that line. 
-	// The axis word-using G-codes from group 0 are G10, G28, G30, and G92"
-//	if ((gp.modals[MODAL_GROUP_G0] == true) && (gp.modals[MODAL_GROUP_G1] == true)) {
-//		return (STAT_MODAL_GROUP_VIOLATION);
-//	}
-	
-	// look for commands that require an axis word to be present
-//	if ((gp.modals[MODAL_GROUP_G0] == true) || (gp.modals[MODAL_GROUP_G1] == true)) {
-//		if (_axis_changed() == false)
-//		return (STAT_GCODE_AXIS_WORD_MISSING);
-//	}
-	return (STAT_OK);
-}
-
-/*
- * helpers
- */
-
-static stat_t _get_next_statement(char *letter, float *value, char *buf, uint8_t *i) {
-	if (buf[*i] == NUL) { 		// no more statements
-		return (STAT_COMPLETE);
-	}
-	*letter = buf[*i];
-	if(isupper(*letter) == false) { 
-		return (STAT_EXPECTED_COMMAND_LETTER);
-	}
-	(*i)++;
-	if (read_float(buf, i, value) == false) {
-		return (STAT_BAD_NUMBER_FORMAT);
-	}
-	return (STAT_OK);		// leave the index on the next character after the statement
-}
-
-static uint8_t _point(float value) 
-{
-	return((uint8_t)(value*10 - trunc(value)*10));	// isolate the decimal point as an int
-}
-
-
+

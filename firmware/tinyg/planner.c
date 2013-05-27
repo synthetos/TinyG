@@ -80,9 +80,9 @@
 #define dbl_val time			// local alias for float to the time variable
 
 // execution routines (NB: These are all called from the LO interrupt)
-//static stat_t _exec_dwell(mpBuf_t *bf);
-static stat_t _start_dwell(mpBuf_t *bf);
-static stat_t _end_dwell(mpBuf_t *bf);
+static stat_t _exec_dwell(mpBuf_t *bf);
+//static stat_t _start_dwell(mpBuf_t *bf);
+//static stat_t _end_dwell(mpBuf_t *bf);
 static stat_t _exec_command(mpBuf_t *bf);
 
 #ifdef __DEBUG
@@ -171,19 +171,27 @@ void mp_set_axis_position(uint8_t axis, const float position)
  *	Manages run buffers and other details
  */
 
-stat_t mp_exec_move() 
+stat_t mp_exec_move(int32_t timer_ticks_downcount)
 {
 	mpBuf_t *bf;
 
 	if ((bf = mp_get_run_buffer()) == NULL) return (STAT_NOOP);	// NULL means nothing's running
 
-	// Manage cycle and motion state transitions
-	// cycle auto-start for lines only. Add other move types as appropriate.
+	// Manage cycle and motion state transitions. Cycle auto-start for lines only. 
+	// Add other move types as appropriate.
 	if (bf->move_type == MOVE_TYPE_ALINE) {
 		if (cm.cycle_state == CYCLE_OFF) cm_cycle_start();
+		if (cm.motion_state == MOTION_STOP) cm.motion_state = MOTION_RUN;
 	}
-	if ((cm.motion_state == MOTION_STOP) && (bf->move_type == MOVE_TYPE_ALINE)) {
-		cm.motion_state = MOTION_RUN;
+//	if ((bf->move_type == MOVE_TYPE_ALINE) && (cm.motion_state == MOTION_STOP) {
+//		cm.motion_state = MOTION_RUN;
+//	}
+	if (bf->move_type == MOVE_TYPE_DWELL) {
+		if (bf->move_state == MOVE_STATE_RUN) { 
+			if (timer_ticks_downcount == 0) {
+				bf->move_state = MOVE_STATE_END;
+			}
+		}
 	}
 
 	// run the move callback in the buffer
@@ -250,25 +258,27 @@ stat_t mp_dwell(float seconds)
 	if ((bf = mp_get_write_buffer()) == NULL) {	// get write buffer or fail
 		return (STAT_BUFFER_FULL_FATAL);		// (not supposed to fail)
 	}
-	bf->bf_func = _start_dwell;					// register callback to dwell start
+	bf->bf_func = _exec_dwell;					// register callback to dwell start
 	bf->time = seconds;						  	// in seconds, not minutes
-	mp_queue_write_buffer(MOVE_TYPE_DWELL);
+	bf->move_state = MOVE_STATE_NEW;
+	mp_queue_write_buffer(MOVE_TYPE_DWELL); 
 	return (STAT_OK);
 }
 
-static stat_t _start_dwell(mpBuf_t *bf)
+static stat_t _exec_dwell(mpBuf_t *bf)
 {
-	st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
-	bf->bf_func = _end_dwell;
-//	mp_free_run_buffer();
+	if (bf->move_state == MOVE_STATE_NEW) {
+		st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
+		bf->move_state = MOVE_STATE_RUN;
+	}
 	return (STAT_OK);
 }
 
-static stat_t _end_dwell(mpBuf_t *bf)			// all's well that ends dwell
+void mp_end_dwell()								// all's well that ends dwell
 {
 	mp_free_run_buffer();
-	return (STAT_OK);
 }
+
 
 /**** PLANNER BUFFERS *****************************************************
  *
@@ -392,7 +402,7 @@ mpBuf_t * mp_get_run_buffer()
 void mp_free_run_buffer()						// EMPTY current run buf & adv to next
 {
 	mp_clear_buffer(mb.r);						// clear it out (& reset replannable)
-	mb.r->buffer_state = MP_BUFFER_EMPTY;
+//	mb.r->buffer_state = MP_BUFFER_EMPTY;		// redundant after the clear, above
 	mb.r = mb.r->nx;							 // advance to next run buffer
 	if (mb.r->buffer_state == MP_BUFFER_QUEUED) {// only if queued...
 		mb.r->buffer_state = MP_BUFFER_PENDING;  // pend next buffer
@@ -428,7 +438,7 @@ mpBuf_t * mp_get_last_buffer(void)
 
 void mp_clear_buffer(mpBuf_t *bf) 
 {
-	mpBuf_t *nx = bf->nx;	// save pointers
+	mpBuf_t *nx = bf->nx;			// save pointers
 	mpBuf_t *pv = bf->pv;
 	memset(bf, 0, sizeof(mpBuf_t));
 	bf->nx = nx;					// restore pointers
@@ -437,7 +447,7 @@ void mp_clear_buffer(mpBuf_t *bf)
 
 void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp)
 {
-	mpBuf_t *nx = bf->nx;	// save pointers
+	mpBuf_t *nx = bf->nx;			// save pointers
 	mpBuf_t *pv = bf->pv;
  	memcpy(bf, bp, sizeof(mpBuf_t));
 	bf->nx = nx;					// restore pointers
