@@ -123,14 +123,14 @@ void st_dump_stepper_state(void);
 //#define DDA_OVERCLOCK 16		// doesn't have to be a binary multiple
 #define DDA_OVERCLOCK 0			// Permanently disabled. See above NOTE
 
-/* Counter resets
- * 	You want to reset the DDA counters if the new ticks value is way less 
- *	than previous value, but otherwise you should leave the counters alone.
- *	Preserving the counter value from the previous segment aligns pulse 
- *	phasing between segments. However, if the new counter is going to be 
- *	much less than the old counter you must reset it or risk motor stalls. 
+/* Accumulator resets
+ * 	You want to reset the DDA accumulators if the new ticks value is way less 
+ *	than previous value, but otherwise you should leave the accumulators alone.
+ *	Preserving the accumulator value from the previous segment aligns pulse 
+ *	phasing between segments. However, if the new accumulator is going to be 
+ *	much less than the old one you must reset it or risk motor stalls.
  */
-#define COUNTER_RESET_FACTOR 2	// amount counter range can safely change
+#define ACCUMULATOR_RESET_FACTOR 2	// amount counter range can safely change
 
 /* DDA minimum operating frequency
  *	This is the minumum value the DDA time can run with a fixed 32 Mhz 

@@ -214,8 +214,9 @@ typedef struct stPrepMotor {
 typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integity	
 	uint8_t move_type;				// move type
+	uint8_t prep_state;				// set TRUE to load, false to skip
 	volatile uint8_t exec_state;	// move execution state 
-	volatile uint8_t reset_flag;	// set TRUE if accumulator should be reset
+	volatile uint8_t reset_flag;	// TRUE if accumulator should be reset
 	uint32_t prev_ticks;			// tick count from previous move
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
@@ -427,8 +428,8 @@ static void _request_load_move()
 
 void _load_move()
 {
-	if (st.dda_ticks_downcount != 0) { return;}				  // exit if it's still busy
-	if (sps.exec_state != PREP_BUFFER_OWNED_BY_LOADER) { return;} // if there are no more moves
+	if (st.dda_ticks_downcount != 0) return;					// exit if it's still busy
+	if (sps.exec_state != PREP_BUFFER_OWNED_BY_LOADER) return;	// if there are no more moves
 
 	// handle aline loads first (most common case)  NB: there are no more lines, only alines
 	if (sps.move_type == MOVE_TYPE_ALINE) {
@@ -494,13 +495,16 @@ void _load_move()
 
 	// handle dwells
 	} else if (sps.move_type == MOVE_TYPE_DWELL) {
-		st.dda_ticks_downcount = sps.dda_ticks;
-		TIMER_DWELL.PER = sps.dda_period;					// load dwell timer period
- 		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
+		if (sps.prep_state == true) {
+			st.dda_ticks_downcount = sps.dda_ticks;
+			TIMER_DWELL.PER = sps.dda_period;					// load dwell timer period
+ 			TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
+		}
 	}
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here) 
 	sps.exec_state = PREP_BUFFER_OWNED_BY_EXEC;				// flip it back
+	sps.prep_state = false;
 	st_request_exec_move();									// exec and prep next move
 }
 
@@ -530,7 +534,7 @@ stat_t st_prep_line(float steps[], float microseconds)
 	} else if (isfinite(microseconds) == false) { return (STAT_MINIMUM_LENGTH_MOVE_ERROR);
 	} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
-	sps.reset_flag = false;		// initialize counter reset flag for this move.
+	sps.reset_flag = false;		// initialize accumulator reset flag for this move.
 
 	// setup motor parameters
 	for (i=0; i<MOTORS; i++) {
@@ -542,11 +546,12 @@ stat_t st_prep_line(float steps[], float microseconds)
 	sps.dda_ticks_X_substeps = sps.dda_ticks * dda_substeps;	// see FOOTNOTE
 
 	// anti-stall measure in case change in velocity between segments is too great 
-	if ((sps.dda_ticks * COUNTER_RESET_FACTOR) < sps.prev_ticks) {  // NB: uint32_t math
+	if ((sps.dda_ticks * ACCUMULATOR_RESET_FACTOR) < sps.prev_ticks) {  // NB: uint32_t math
 		sps.reset_flag = true;
 	}
 	sps.prev_ticks = sps.dda_ticks;
 	sps.move_type = MOVE_TYPE_ALINE;
+	sps.prep_state = true;
 	return (STAT_OK);
 }
 // FOOTNOTE: This expression was previously computed as below but floating 
@@ -562,6 +567,7 @@ stat_t st_prep_line(float steps[], float microseconds)
 void st_prep_null()
 {
 	sps.move_type = MOVE_TYPE_NULL;
+	sps.prep_state = true;
 }
 
 /* 
@@ -571,6 +577,7 @@ void st_prep_null()
 void st_prep_dwell(float microseconds)
 {
 	sps.move_type = MOVE_TYPE_DWELL;
+	sps.prep_state = true;
 	sps.dda_period = _f_to_period(F_DWELL);
 	sps.dda_ticks = (uint32_t)((microseconds/1000000) * F_DWELL);
 }

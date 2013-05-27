@@ -49,7 +49,7 @@ enum moveState {
 	MOVE_STATE_BODY,		// aline() cruise portions
 	MOVE_STATE_TAIL,		// aline() deceleration portions
 	MOVE_STATE_SKIP,		// mark a skipped block
-	MOVE_STATE_END			// move is markes as done (used by dwells)
+	MOVE_STATE_END			// move is marked as done (used by dwells)
 };
 #define MOVE_STATE_RUN1 MOVE_STATE_RUN // a convenience
 
