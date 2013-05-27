@@ -358,7 +358,8 @@ ISR(TIMER_DWELL_ISR_vect) {						// DWELL timer interupt
 	if (--st.dda_ticks_downcount == 0) {
  		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;	// disable DWELL timer
 		mp_end_dwell();
-		_exec_move();							// process the end of the dwell
+//		_exec_move(MOVE_STATE_END);				// process the end of the dwell
+		_exec_move();				// process the end of the dwell
 		_load_move();
 	}
 }
@@ -399,9 +400,11 @@ void st_request_exec_move()
 	}
 }
 
+//static void _exec_move(uint8_t state)
 static void _exec_move()
 {
    	if (sps.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
+//		if (mp_exec_move(st.dda_ticks_downcount) != STAT_NOOP) {
 		if (mp_exec_move(st.dda_ticks_downcount) != STAT_NOOP) {
 			sps.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
 			_request_load_move();

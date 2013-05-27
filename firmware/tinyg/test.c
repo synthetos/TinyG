@@ -124,20 +124,23 @@ M9 (COOLANT OFF)
 G0 X2 Y2
 M30
 */
-//	xio_queue_RX_string_usb("M20\n");
+/*
+G0 X1 Y1
+M8
+G4 P2 (WAIT FOR CYLINDER - DOWN)
+M9
+G4 P2 (WAIT FOR CYLINDER - UP)
+M30 (END OF CODE)
+*/
 //	xio_queue_RX_string_usb("G0 X0.01 Y0.01\n");
 //	xio_queue_RX_string_usb("M8 G4 P0.001\n");
-//	xio_queue_RX_string_usb("M8 G4 P2\n");
+	xio_queue_RX_string_usb("G1 X10 Y10 F1000\n");
+	xio_queue_RX_string_usb("M8 G4 P2\n");
 
-	xio_queue_RX_string_usb("M8\n");
-
-	xio_queue_RX_string_usb("G4 P10\n");
-//	xio_queue_RX_string_usb("G4 P0.001\n");
-
+	xio_queue_RX_string_usb("X0 Y0\n");
+	xio_queue_RX_string_usb("G4 P2\n");
 	xio_queue_RX_string_usb("M9\n");
-	xio_queue_RX_string_usb("G0 X2 Y2\n");
-
-//	xio_queue_RX_string_usb("M30\n");
+	xio_queue_RX_string_usb("M30\n");
 
 //	xio_queue_RX_string_usb("$net\n");
 
