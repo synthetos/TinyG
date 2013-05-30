@@ -321,9 +321,9 @@ static stat_t _parse_gcode_block(char_t *buf)
 
 			case 'M':
 				switch((uint8_t)value) {
-					case 0: case 1: 
+					case 0: case 1: case 60:
 							SET_MODAL (MODAL_GROUP_M4, program_flow, PROGRAM_STOP);
-					case 2: case 30: case 60:
+					case 2: case 30:
 							SET_MODAL (MODAL_GROUP_M4, program_flow, PROGRAM_END);
 					case 3: SET_MODAL (MODAL_GROUP_M7, spindle_mode, SPINDLE_CW);
 					case 4: SET_MODAL (MODAL_GROUP_M7, spindle_mode, SPINDLE_CCW);
