@@ -233,17 +233,17 @@ GCodeInput_t gf;		// gcode input flags
 // #### LAYER 8 CRITICAL REGION ###
 // #### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT #### 
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
-	COMBINED_INITIALIZING = 0,		// machine is initializing
-	COMBINED_READY,					// machine is ready for use
-	COMBINED_ALARM,					// machine is in alarm state (shut down)
-	COMBINED_PROGRAM_STOP,			// program stop or no more blocks
-	COMBINED_PROGRAM_END,			// program end
-	COMBINED_RUN,					// motion is running
-	COMBINED_HOLD,					// motion is holding
-	COMBINED_PROBE,					// probe cycle active
-	COMBINED_CYCLE,					// machine is running (cycling)
-	COMBINED_HOMING,				// homing is treated as a cycle
-	COMBINED_JOG					// jogging is treated as a cycle
+	COMBINED_INITIALIZING = 0,		// [0] machine is initializing
+	COMBINED_READY,					// [1] machine is ready for use
+	COMBINED_ALARM,					// [2] machine is in alarm state (shut down)
+	COMBINED_PROGRAM_STOP,			// [3] program stop or no more blocks
+	COMBINED_PROGRAM_END,			// [4] program end
+	COMBINED_RUN,					// [5] motion is running
+	COMBINED_HOLD,					// [6] motion is holding
+	COMBINED_PROBE,					// [7] probe cycle active
+	COMBINED_CYCLE,					// [8] machine is running (cycling)
+	COMBINED_HOMING,				// [9] homing is treated as a cycle
+	COMBINED_JOG					// [10] jogging is treated as a cycle
 };
 //#### END CRITICAL REGION ####
 
