@@ -43,16 +43,16 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	377.05		// Dwell testing
+#define TINYG_FIRMWARE_BUILD   	377.06		// Dwell testing
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
-#define TINYG_HARDWARE_VERSION_MAX TINYG_HARDWARE_VERSION
+#define TINYG_HARDWARE_VERSION_MAX 8		// get ready for version 8
 
 /****** DEVELOPMENT SETTINGS ******/
 
-#define __CANNED_STARTUP					// run any canned startup moves
-#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+//#define __CANNED_STARTUP					// run any canned startup moves
+//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
 //#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 //#define __UNIT_TESTS						// master enable for unit tests; uncomment modules in .h files
 //#define __DEBUG							// complies debug functions found in test.c

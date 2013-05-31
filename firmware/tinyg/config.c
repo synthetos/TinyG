@@ -2291,6 +2291,7 @@ stat_t cmd_read_NVM_value(cmdObj_t *cmd)
 
 stat_t cmd_write_NVM_value(cmdObj_t *cmd)
 {
+	if (cm.cycle_state != CYCLE_OFF) return (STAT_FILE_NOT_OPEN);	// can't write when machine is moving
 	float tmp = cmd->value;
 	ritorno(cmd_read_NVM_value(cmd));
 	if (cmd->value != tmp) {		// catches the isnan() case as well

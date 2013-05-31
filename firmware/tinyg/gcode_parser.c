@@ -77,9 +77,9 @@ stat_t gc_gcode_parser(char_t *block)
 	if ((block_delete_flag == true) && (cm_get_block_delete_switch() == true)) {
 		return (STAT_NOOP);
 	}
-	if (*msg != NUL) {
-		(void)cm_message(msg);				// queue the message	
-	}	
+//	if (*msg != NUL) { // +++++ THIS HAS A SERIOUS BUG IN IT SO FOR NOW IT'S DISABLED
+//		(void)cm_message(msg);				// queue the message	
+//	}	
 	return(_parse_gcode_block(block));
 }
 

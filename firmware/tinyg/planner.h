@@ -197,7 +197,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 
 	float endpoint[AXES];		// final target for bf (used to correct rounding errors)
 	float position[AXES];		// current move position
-	float target[AXES];		// target move position
+	float target[AXES];			// target move position
 	float unit[AXES];			// unit vector for axis scaling & planning
 	float work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
@@ -211,21 +211,16 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float length;				// length of line in mm
 	float move_time;			// total running time (derived)
 	float midpoint_velocity;	// velocity at accel/decel midpoint
-	float jerk;				// max linear jerk
+	float jerk;					// max linear jerk
 
-	float segments;			// number of segments in arc or blend
+	float segments;				// number of segments in arc or blend
 	uint32_t segment_count;		// count of running segments
 	float segment_move_time;	// actual time increment per aline segment
-	float microseconds;		// line or segment time in microseconds
+	float microseconds;			// line or segment time in microseconds
 	float segment_length;		// computed length for aline segment
-	float segment_velocity;	// computed velocity for aline segment
+	float segment_velocity;		// computed velocity for aline segment
 	float forward_diff_1;      // forward difference level 1 (Acceleration)
 	float forward_diff_2;      // forward difference level 2 (Jerk - constant)
-//	float accel_time;			// total pseudo-time for acceleration calculation
-//	float elapsed_accel_time;	// current running time for accel calculation
-//	float midpoint_acceleration;//acceleration at the midpoint
-//	float jerk_div2;			// max linear jerk divided by 2
-//	float segment_accel_time;	// time increment for accel computation purposes
 	uint16_t magic_end;
 } mpMoveRuntimeSingleton_t;
 
@@ -248,7 +243,7 @@ void mp_set_plan_position(const float position[]);
 void mp_set_axes_position(const float position[]);
 void mp_set_axis_position(uint8_t axis, const float position);
 
-stat_t mp_exec_move(int32_t timer_ticks_downcount);
+stat_t mp_exec_move(void);
 void mp_queue_command(void(*cm_exec)(uint8_t, float), uint8_t int_val, float float_val);
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);

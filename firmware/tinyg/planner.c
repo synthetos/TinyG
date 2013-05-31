@@ -81,8 +81,6 @@
 
 // execution routines (NB: These are all called from the LO interrupt)
 static stat_t _exec_dwell(mpBuf_t *bf);
-//static stat_t _start_dwell(mpBuf_t *bf);
-//static stat_t _end_dwell(mpBuf_t *bf);
 static stat_t _exec_command(mpBuf_t *bf);
 
 #ifdef __DEBUG
@@ -171,30 +169,20 @@ void mp_set_axis_position(uint8_t axis, const float position)
  *	Manages run buffers and other details
  */
 
-stat_t mp_exec_move(int32_t timer_ticks_downcount)
+stat_t mp_exec_move()
 {
 	mpBuf_t *bf;
 
 	if ((bf = mp_get_run_buffer()) == NULL) return (STAT_NOOP);	// NULL means nothing's running
 
-	// Manage cycle and motion state transitions. Cycle auto-start for lines only. 
-	// Add other move types as appropriate.
+	// Manage cycle and motion state transitions. 
+	// Cycle auto-start for lines only. 
 	if (bf->move_type == MOVE_TYPE_ALINE) {
 		if (cm.cycle_state == CYCLE_OFF) cm_cycle_start();
 		if (cm.motion_state == MOTION_STOP) cm.motion_state = MOTION_RUN;
 	}
-//	if ((bf->move_type == MOVE_TYPE_ALINE) && (cm.motion_state == MOTION_STOP) {
-//		cm.motion_state = MOTION_RUN;
-//	}
-	if (bf->move_type == MOVE_TYPE_DWELL) {
-		if (bf->move_state == MOVE_STATE_RUN) { 
-			if (timer_ticks_downcount == 0) {
-				bf->move_state = MOVE_STATE_END;
-			}
-		}
-	}
 
-	// run the move callback in the buffer
+	// run the move callback in the planner buffer
 	if (bf->bf_func != NULL) {
 		return (bf->bf_func(bf));
 	}
@@ -265,6 +253,11 @@ stat_t mp_dwell(float seconds)
 	return (STAT_OK);
 }
 
+void mp_end_dwell()								// all's well that ends dwell
+{
+	mp_free_run_buffer();						// Note: this is called from an interrupt
+}
+
 static stat_t _exec_dwell(mpBuf_t *bf)
 {
 	if (bf->move_state == MOVE_STATE_NEW) {
@@ -273,12 +266,6 @@ static stat_t _exec_dwell(mpBuf_t *bf)
 	}
 	return (STAT_OK);
 }
-
-void mp_end_dwell()								// all's well that ends dwell
-{
-	mp_free_run_buffer();
-}
-
 
 /**** PLANNER BUFFERS *****************************************************
  *

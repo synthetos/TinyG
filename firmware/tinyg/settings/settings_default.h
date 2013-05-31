@@ -109,7 +109,7 @@
 #define Y_JERK_HOMING			Y_JERK_MAX
 
 #define Z_AXIS_MODE 			AXIS_STANDARD
-#define Z_VELOCITY_MAX 			500
+#define Z_VELOCITY_MAX 			600
 #define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX 			75
 #define Z_JERK_MAX 				JERK_MAX
@@ -122,13 +122,14 @@
 #define Z_ZERO_BACKOFF 			1
 #define Z_JERK_HOMING			Z_JERK_MAX
 
-#define A_AXIS_MODE 			AXIS_STANDARD
-#define A_VELOCITY_MAX 			3600
+						// A values are chosen to make the A motor react the same as X for testing
+#define A_AXIS_MODE 			AXIS_RADIUS
+#define A_VELOCITY_MAX 			((X_VELOCITY_MAX/M1_TRAVEL_PER_REV)*360) // set to the same speed as X axis
 #define A_FEEDRATE_MAX 			A_VELOCITY_MAX
 #define A_TRAVEL_MAX 			-1
-#define A_JERK_MAX 				JERK_MAX
+#define A_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
-#define A_RADIUS 				1
+#define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628)) 
 #define A_SWITCH_MODE_MIN 		SW_MODE_HOMING
 #define A_SWITCH_MODE_MAX 		SW_MODE_DISABLED
 #define A_SEARCH_VELOCITY 		600
@@ -136,6 +137,10 @@
 #define A_LATCH_BACKOFF 		5
 #define A_ZERO_BACKOFF 			2
 #define A_JERK_HOMING			A_JERK_MAX
+
+//#define A_VELOCITY_MAX 		172800
+//#define A_JERK_MAX 			5760000000
+//#define A_RADIUS 				0.19894368
 
 #define B_AXIS_MODE 			AXIS_DISABLED
 #define B_VELOCITY_MAX 			3600

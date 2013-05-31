@@ -104,8 +104,8 @@ stat_t print_test_help(cmdObj_t *cmd)
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG SELF TEST Help ####\n"));
 fprintf_P(stderr, PSTR("\
 Invoke self test by entering $test=N where N is one of:\n\
-  $test=1  homing test   (you must trip homing switches)\n\
-  $test=2  smoke test\n\
+  $test=1  smoke test\n\
+  $test=2  homing test   (you must trip homing switches)\n\
   $test=3  square test   (a series of squares)\n\
   $test=4  arc test      (some large circles)\n\
   $test=5  dwell test    (moves spaced by 1 second dwells)\n\
@@ -117,6 +117,11 @@ Invoke self test by entering $test=N where N is one of:\n\
   $test=11 small moves test\n\
   $test=12 slow moves test\n\
   $test=13 coordinate system offset test (G92, G54-G59)\n\
+\n\
+Tests assume a centered XY origin and at least 80mm clearance in all directions\n\
+Tests assume Z has at least 40mm posiitive clearance\n\
+Tests start with a G0 X0 Y0 Z0 move\n\
+Homing is the exception. No initial position or clearance is assumed\n\
 "));
 _postscript();
 return(STAT_OK);
