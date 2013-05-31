@@ -7,8 +7,6 @@
  */
 const char PROGMEM test_small_moves[] = "\
 (MSG**** Test very short moves [v1] ****)\n\
-$si=3000\n\
-g55\n\
 g0x0y0\n\
 g4p0.5\n\
 g1x0.1f1000\n\
@@ -41,6 +39,33 @@ x0.1\n\
 x0\n\
 x0.1\n\
 g4p0.5\n\
-g54\n\
+x0\n\
+x0.01\n\
+x0\n\
+x0.01\n\
+x0\n\
+x0.01\n\
+x0\n\
+x0.01\n\
+x0\n\
+x0.01\n\
+x0\n\
+x0.01\n\
+x0\n\
+x0.01\n\
+x0\n\
+x0.01\n\
+x0\n\
+x0.01\n\
+x0\n\
+x0.01\n\
+x0\n\
+x0.01\n\
+x0\n\
+x0.01\n\
+x0\n\
+x0.01\n\
+x0\n\
+x0.01\n\
 g0x0y0\n\
-m30";
+m2";

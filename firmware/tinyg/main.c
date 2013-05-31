@@ -49,6 +49,7 @@
 #include "pwm.h"
 
 static void _unit_tests(void);
+stat_t status_code;				// declared in main.c
 
 /*
  * Inits and MAIN

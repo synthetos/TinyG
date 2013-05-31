@@ -80,12 +80,43 @@
 #define M4_POLARITY				0
 #define M4_POWER_MODE			1
 
+/* Mapping for dual grantry setup
+#define M1_MOTOR_MAP 			AXIS_X	// 1ma
+#define M1_STEP_ANGLE			0.9		// 1sa
+#define M1_TRAVEL_PER_REV		36.54	// 1tr
+#define M1_MICROSTEPS			8		// 1mi		1,2,4,8
+#define M1_POLARITY				0		// 1po		0=normal, 1=reversed
+#define M1_POWER_MODE			1		// 1pm		TRUE=low power idle enabled 
+
+#define M2_MOTOR_MAP			AXIS_Y
+#define M2_STEP_ANGLE			0.9
+#define M2_TRAVEL_PER_REV		36.54
+#define M2_MICROSTEPS			8
+#define M2_POLARITY				1
+#define M2_POWER_MODE			1
+
+#define M3_MOTOR_MAP			AXIS_Y
+#define M3_STEP_ANGLE			0.9
+#define M3_TRAVEL_PER_REV		36.54
+#define M3_MICROSTEPS			8
+#define M3_POLARITY				0
+#define M3_POWER_MODE			1
+
+#define M4_MOTOR_MAP			AXIS_Z
+#define M4_STEP_ANGLE			0.45
+#define M4_TRAVEL_PER_REV		2.1166
+#define M4_MICROSTEPS			8
+#define M4_POLARITY				1
+#define M4_POWER_MODE			0
+*/
+
 // *** axis settings ***
 
 #define X_AXIS_MODE				AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
 #define X_VELOCITY_MAX			16000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
-#define X_TRAVEL_MAX			220					// xtm		travel between switches or crashes
+//#define X_TRAVEL_MAX			220					// xtm		travel between switches or crashes
+#define X_TRAVEL_MAX			300					// xtm		travel between switches or crashes
 #define X_JERK_MAX				5000000000			// xjm		yes, that's "5 billion" mm/(min^3)
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN		SW_MODE_HOMING

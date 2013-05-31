@@ -40,8 +40,8 @@
 #include "xio/xio.h"
 
 // regression test files
-#include "tests/test_001_homing.h"			// G28.1 homing cycles
-#include "tests/test_002_smoke.h" 			// basic functionality
+#include "tests/test_001_smoke.h" 			// basic functionality
+#include "tests/test_002_homing.h"			// G28.1 homing cycles
 #include "tests/test_003_squares.h"			// square moves
 #include "tests/test_004_arcs.h"			// arc moves
 #include "tests/test_005_dwell.h"			// dwells embedded in move sequences
@@ -65,9 +65,9 @@
 uint8_t tg_test(cmdObj_t *cmd)
 {
 	switch ((uint8_t)cmd->value) {
-		case 0: { return (TG_OK);}
-		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
-		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke),PGM_FLAGS); break;}
+		case 0: { return (STAT_OK);}
+		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke),PGM_FLAGS); break;}
+		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
 		case 3: { xio_open(XIO_DEV_PGM, PGMFILE(&test_squares),PGM_FLAGS); break;}
 		case 4: { xio_open(XIO_DEV_PGM, PGMFILE(&test_arcs),PGM_FLAGS); break;}
 		case 5: { xio_open(XIO_DEV_PGM, PGMFILE(&test_dwell),PGM_FLAGS); break;}
@@ -83,11 +83,11 @@ uint8_t tg_test(cmdObj_t *cmd)
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 		default: {
 			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
-			return (TG_ERROR);
+			return (STAT_ERROR);
 		}
 	}
 	tg_set_primary_source(XIO_DEV_PGM);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -109,7 +109,29 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("@\n");
 //	xio_queue_RX_string_usb("~\n");
 
+/*
 	xio_queue_RX_string_usb("g1 f1800 x0.0005\n");	// Small move test for G61.1
+	xio_queue_RX_string_usb("g20\n");
+	xio_queue_RX_string_usb("m2\n");
+*/
+
+/*  DWELL TESTS
+G0 X1 Y1
+M8
+G4 P2 (WAIT FOR CYLINDER - DOWN)
+M9
+G4 P2 (WAIT FOR CYLINDER - UP)
+M30 (END OF CODE)
+*/
+//	xio_queue_RX_string_usb("G0 X0.01 Y0.01\n");
+//	xio_queue_RX_string_usb("M8 G4 P0.001\n");
+	xio_queue_RX_string_usb("G1 X10 Y10 F1000\n");
+	xio_queue_RX_string_usb("M8 G4 P2\n");
+	xio_queue_RX_string_usb("X0 Y0\n");
+	xio_queue_RX_string_usb("G4 P2\n");
+	xio_queue_RX_string_usb("M9\n");
+	xio_queue_RX_string_usb("M30\n");
+
 
 //	xio_queue_RX_string_usb("$net\n");
 
@@ -475,12 +497,12 @@ void roll_over_and_die()
 	tg_application_reset();
 }
 
-void print_scalar(const char *label, double value)
+void print_scalar(const char *label, float value)
 {
 	fprintf_P(stderr,PSTR("%S %8.4f\n"),label,value); 
 }
 
-void print_vector(const char *label, double vector[], uint8_t count)
+void print_vector(const char *label, float vector[], uint8_t count)
 {
 	fprintf_P(stderr,PSTR("%S"),label); 
 	for (uint8_t i=0; i<count; i++) {

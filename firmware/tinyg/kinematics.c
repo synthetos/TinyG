@@ -36,7 +36,7 @@
 #include "canonical_machine.h"
 #include "kinematics.h"
 
-//static void _inverse_kinematics(double travel[], double joint[], double microseconds);
+//static void _inverse_kinematics(float travel[], float joint[], float microseconds);
 
 /*
  * ik_kinematics() - wrapper routine for inverse kinematics
@@ -45,21 +45,21 @@
  *	Performs axis mapping & conversion of length units to steps (see note)
  *	Also deals with inhibited axes
  *
- *	Note: The reason steps are returned as doubles (as opposed to, say,
+ *	Note: The reason steps are returned as floats (as opposed to, say,
  *		  uint32_t) is to accommodate fractional DDA steps. The DDA deals 
  *		  with fractional step values as fixed-point binary in order to get
  *		  the smoothest possible operation. Steps are passed to the move prep
- *		  routine as doubles and converted to fixed-point binary during queue 
+ *		  routine as floats and converted to fixed-point binary during queue 
  *		  loading. See stepper.c for details.
  */
 
-uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
+void ik_kinematics(float travel[], float steps[], float microseconds)
 {
 	uint8_t i;
-	double joint[AXES];
+	float joint[AXES];
 
 //	_inverse_kinematics(travel, joint, microseconds);// you can insert inverse kinematics transformations here
-	memcpy(joint, travel, sizeof(double)*AXES);		 //...or just do a memcopy for cartesian machines
+	memcpy(joint, travel, sizeof(float)*AXES);		 //...or just do a memcopy for cartesian machines
 
 	// Map motors to axes and convert length units to steps
 	// Most of the conversion math has already been done in steps_per_unit
@@ -75,7 +75,6 @@ uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
 	//		if (cfg.m[j].motor_map == i) { steps[j] = joint[i] * cfg.m[j].steps_per_unit;}
 	//	}
 	}
-	return (TG_OK);
 }
 
 /*
@@ -90,7 +89,7 @@ uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
  *	time it takes to complete the mp_exec_move() function.
  */
 /*
-static void _inverse_kinematics(double travel[], double joint[], double microseconds)
+static void _inverse_kinematics(float travel[], float joint[], float microseconds)
 {
 	for (uint8_t i=0; i<AXES; i++) {
 		joint[i] = travel[i];

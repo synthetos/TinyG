@@ -22,6 +22,8 @@ kinematics.c
 
 main.c
 
+network.c
+
 planner.c
 
 plan_arc.c
@@ -49,8 +51,6 @@ xio\xio_file.c
 xio\xio_pgm.c
 
 xio\xio_rs485.c
-
-xio\xio_signals.c
 
 xio\xio_spi.c
 

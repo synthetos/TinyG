@@ -264,11 +264,11 @@ enum xioSignals {
 #define CHAR_BOOTLOADER ESC
 
 /* XIO return codes
- * These codes are the "inner nest" for the TG_ return codes. 
+ * These codes are the "inner nest" for the STAT_ return codes. 
  * The first N TG codes correspond directly to these codes.
  * This eases using XIO by itself (without tinyg) and simplifes using
  * tinyg codes with no mapping when used together. This comes at the cost 
- * of making sure these lists are aligned. TG_should be based on this list.
+ * of making sure these lists are aligned. STAT_should be based on this list.
  */
 
 enum xioCodes {

@@ -57,14 +57,14 @@
 #define M2_STEP_ANGLE			1.8
 #define M2_TRAVEL_PER_REV		40.5
 #define M2_MICROSTEPS			8
-#define M2_POLARITY				1
+#define M2_POLARITY				0
 #define M2_POWER_MODE			1
 
 #define M3_MOTOR_MAP			AXIS_Z
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		3.00
 #define M3_MICROSTEPS			8
-#define M3_POLARITY				0
+#define M3_POLARITY				1
 #define M3_POWER_MODE			1
 
 #define M4_MOTOR_MAP			AXIS_A
@@ -76,47 +76,54 @@
 
 // *** axis settings ***
 
-#define X_AXIS_MODE 			AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
-#define X_VELOCITY_MAX 			50000 				// xvm		G0 max velocity in mm/min
-#define X_FEEDRATE_MAX 			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
-#define X_TRAVEL_MAX 			170					// xtm		travel between switches or crashes
-#define X_JERK_MAX 				100000000000		// xjm		yes, that's "100 billion" mm/(min^3)
-#define X_JUNCTION_DEVIATION 	JUNCTION_DEVIATION	// xjd
-#define X_SWITCH_MODE_MIN		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
-#define X_SWITCH_MODE_MAX		SW_MODE_LIMIT		// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
-#define X_SEARCH_VELOCITY 		1000				// xsv		move in negative direction
-#define X_LATCH_VELOCITY 		100					// xlv		mm/min
-#define X_LATCH_BACKOFF 		10					// xlb		mm
-#define X_ZERO_BACKOFF 			2					// xzb		mm
-#define X_JERK_HOMING			X_JERK_MAX			// xjh
+#define X_AXIS_MODE 			AXIS_STANDARD			// xam		see canonical_machine.h cmAxisMode for valid values
+#define X_VELOCITY_MAX 			10000 					// xvm		G0 max velocity in mm/min
+#define X_FEEDRATE_MAX 			X_VELOCITY_MAX			// xfr 		G1 max feed rate in mm/min
+#define X_TRAVEL_MAX 			212						// xtm		travel between switches or crashes
+//#define X_JERK_MAX 			100000000000			// xjm		yes, that's "100 billion" mm/(min^3)
+#define X_JERK_MAX 				50000000000				// xjm		yes, that's "50 billion" mm/(min^3)
+#define X_JERK_HOMING			7500000000				// xjh
+#define X_JUNCTION_DEVIATION 	JUNCTION_DEVIATION		// xjd
+//#define X_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT	// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT, 
+//#define X_SWITCH_MODE_MAX		SW_MODE_LIMIT			// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT, 
+#define X_SWITCH_MODE_MIN		SW_MODE_HOMING			// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT, 
+#define X_SWITCH_MODE_MAX		SW_MODE_DISABLED		// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT, 
+#define X_SEARCH_VELOCITY 		3000					// xsv		move in negative direction
+#define X_LATCH_VELOCITY 		200						// xlv		mm/min
+#define X_LATCH_BACKOFF 		10						// xlb		mm
+#define X_ZERO_BACKOFF 			3						// xzb		mm
 
 #define Y_AXIS_MODE 			AXIS_STANDARD
-#define Y_VELOCITY_MAX 			50000
+#define Y_VELOCITY_MAX 			10000
 #define Y_FEEDRATE_MAX 			Y_VELOCITY_MAX
-#define Y_TRAVEL_MAX 			170
-#define Y_JERK_MAX 				100000000000			// 100 billion
+#define Y_TRAVEL_MAX 			190
+#define Y_JERK_MAX 				50000000000				// 50 billion
+#define Y_JERK_HOMING			7500000000
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
+//#define Y_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT
+//#define Y_SWITCH_MODE_MAX		SW_MODE_LIMIT
 #define Y_SWITCH_MODE_MIN		SW_MODE_HOMING
-#define Y_SWITCH_MODE_MAX		SW_MODE_LIMIT
-#define Y_SEARCH_VELOCITY 		1000
-#define Y_LATCH_VELOCITY		100
+#define Y_SWITCH_MODE_MAX		SW_MODE_DISABLED
+#define Y_SEARCH_VELOCITY 		3000
+#define Y_LATCH_VELOCITY		200
 #define Y_LATCH_BACKOFF			10
-#define Y_ZERO_BACKOFF			2
-#define Y_JERK_HOMING			Y_JERK_MAX
+#define Y_ZERO_BACKOFF			3
 
 #define Z_AXIS_MODE				AXIS_STANDARD
-#define Z_VELOCITY_MAX			2400
+#define Z_VELOCITY_MAX			2000
 #define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
-#define Z_TRAVEL_MAX			50
+#define Z_TRAVEL_MAX			220
 #define Z_JERK_MAX				50000000				// 50,000,000
+#define Z_JERK_HOMING			1000000000
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
+//#define Z_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT
+//#define Z_SWITCH_MODE_MAX		SW_MODE_LIMIT
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
 #define Z_SWITCH_MODE_MAX		SW_MODE_HOMING
-#define Z_SEARCH_VELOCITY		400
-#define Z_LATCH_VELOCITY		100
-#define Z_LATCH_BACKOFF			10
+#define Z_SEARCH_VELOCITY		1000
+#define Z_LATCH_VELOCITY		200
+#define Z_LATCH_BACKOFF			5
 #define Z_ZERO_BACKOFF			2
-#define Z_JERK_HOMING			Z_JERK_MAX
 
 #define A_AXIS_MODE				AXIS_STANDARD
 #define A_VELOCITY_MAX			3600
@@ -165,8 +172,8 @@
 #define G55_B_OFFSET 0
 #define G55_C_OFFSET 0
 
-#define G56_X_OFFSET 0
-#define G56_Y_OFFSET 0
+#define G56_X_OFFSET (X_TRAVEL_MAX/4)
+#define G56_Y_OFFSET (Y_TRAVEL_MAX/4)
 #define G56_Z_OFFSET 0
 #define G56_A_OFFSET 0
 #define G56_B_OFFSET 0

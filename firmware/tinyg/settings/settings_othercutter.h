@@ -23,14 +23,24 @@
 
 // *** settings.h overrides ***
 
-#undef	SWITCH_TYPE
-#define SWITCH_TYPE 		SW_TYPE_NORMALLY_CLOSED
+#undef  SR_DEFAULTS
+#define SR_DEFAULTS "line","mpox","mpoy","mpoz","mpoa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
-#undef	COM_COMM_MODE
-#define COM_COMM_MODE		TG_JSON_MODE
+#undef	SWITCH_TYPE
+#define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED
+
+#undef	COMM_MODE
+#define COMM_MODE				JSON_MODE
+
+#undef	JSON_VERBOSITY
+#define JSON_VERBOSITY			JV_CONFIGS
 
 #undef	COM_ENABLE_QR
-#define COM_ENABLE_QR		true
+#define COM_ENABLE_QR			true
+
+#undef 	QR_VERBOSITY
+//#define QR_VERBOSITY			QR_FILTERED
+#define QR_VERBOSITY			QR_VERBOSE
 
 // *** motor settings ***
 

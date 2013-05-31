@@ -30,7 +30,7 @@
 
 #include <stdio.h>						// needed for FILE def'n
 
-#define TG_FLAG_PROMPTS_bm (1<<0)		// prompt enabled if set
+//#define TG_FLAG_PROMPTS_bm (1<<0)		// prompt enabled if set
 #define INPUT_BUFFER_LEN 255			// text buffer size (255 max)
 #define SAVED_BUFFER_LEN 100			// saved buffer size (for reporting only)
 #define OUTPUT_BUFFER_LEN 512			// text buffer size
@@ -39,10 +39,10 @@
 
 struct controllerSingleton {			// main TG controller struct
 	uint16_t magic_start;				// magic number to test memory integity	
-	double null;						// dumping ground for items with no target
-	double fw_build;					// tinyg firmware build number
-	double fw_version;					// tinyg firmware version number
-	double hw_version;					// tinyg hardware compatibility
+	float null;						// dumping ground for items with no target
+	float fw_build;					// tinyg firmware build number
+	float fw_version;					// tinyg firmware version number
+	float hw_version;					// tinyg hardware compatibility
 	uint8_t test;
 	uint8_t primary_src;				// primary input source device
 	uint8_t secondary_src;				// secondary input source device
@@ -61,7 +61,6 @@ struct controllerSingleton {			// main TG controller struct
 };
 struct controllerSingleton tg;			// controller state structure
 
-//void tg_init(uint8_t default_src);
 void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
 void tg_request_reset(void);
 void tg_request_bootloader(void);

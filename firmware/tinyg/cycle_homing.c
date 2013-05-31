@@ -52,39 +52,39 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 	uint8_t (*func)(int8_t axis);// binding for callback function state machine
 
 	// per-axis parameters
-	double direction;			// set to 1 for positive (max), -1 for negative (to min);
-	double search_travel;		// signed distance to travel in search
-	double search_velocity;		// search speed as positive number
-	double latch_velocity;		// latch speed as positive number
-	double latch_backoff;		// max distance to back off switch during latch phase 
-	double zero_backoff;		// distance to back off switch before setting zero
-	double max_clear_backoff;	// maximum distance of switch clearing backoffs before erring out
+	float direction;			// set to 1 for positive (max), -1 for negative (to min);
+	float search_travel;		// signed distance to travel in search
+	float search_velocity;		// search speed as positive number
+	float latch_velocity;		// latch speed as positive number
+	float latch_backoff;		// max distance to back off switch during latch phase 
+	float zero_backoff;		// distance to back off switch before setting zero
+	float max_clear_backoff;	// maximum distance of switch clearing backoffs before erring out
 
 	// state saved from gcode model
-	double saved_feed_rate;		// F setting
+	float saved_feed_rate;		// F setting
 	uint8_t saved_units_mode;	// G20,G21 global setting
 	uint8_t saved_coord_system;	// G54 - G59 setting
 	uint8_t saved_distance_mode;// G90,G91 global setting
-	double saved_jerk;			// saved and restored for each axis homed
+	float saved_jerk;			// saved and restored for each axis homed
 };
 static struct hmHomingSingleton hm;
 
 
 /**** NOTE: global prototypes and other .h info is located in canonical_machine.h ****/
 
-static uint8_t _homing_axis_start(int8_t axis);
-static uint8_t _homing_axis_clear(int8_t axis);
-static uint8_t _homing_axis_backoff_home(int8_t axis);
-static uint8_t _homing_axis_backoff_limit(int8_t axis);
-static uint8_t _homing_axis_search(int8_t axis);
-static uint8_t _homing_axis_latch(int8_t axis);
-static uint8_t _homing_axis_zero_backoff(int8_t axis);
-static uint8_t _homing_axis_set_zero(int8_t axis);
-static uint8_t _homing_axis_move(int8_t axis, double target, double velocity);
-static uint8_t _homing_finalize_exit(int8_t axis);
-static uint8_t _homing_error_exit(int8_t axis);
+static stat_t _homing_axis_start(int8_t axis);
+static stat_t _homing_axis_clear(int8_t axis);
+static stat_t _homing_axis_backoff_home(int8_t axis);
+static stat_t _homing_axis_backoff_limit(int8_t axis);
+static stat_t _homing_axis_search(int8_t axis);
+static stat_t _homing_axis_latch(int8_t axis);
+static stat_t _homing_axis_zero_backoff(int8_t axis);
+static stat_t _homing_axis_set_zero(int8_t axis);
+static stat_t _homing_axis_move(int8_t axis, float target, float velocity);
+static stat_t _homing_finalize_exit(int8_t axis);
+static stat_t _homing_error_exit(int8_t axis);
 
-static uint8_t _set_hm_func(uint8_t (*func)(int8_t axis));
+static stat_t _set_hm_func(uint8_t (*func)(int8_t axis));
 static int8_t _get_next_axis(int8_t axis);
 //static int8_t _get_next_axes(int8_t axis);
 
@@ -159,17 +159,17 @@ uint8_t cm_homing_cycle_start(void)
 	hm.func = _homing_axis_start; 			// bind initial processing function
 	cm.cycle_state = CYCLE_HOMING;
 	cm.homing_state = HOMING_NOT_HOMED;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 uint8_t cm_homing_callback(void)
 {
-	if (cm.cycle_state != CYCLE_HOMING) { return (TG_NOOP);} // exit if not in a homing cycle
-	if (cm_isbusy() == true) { return (TG_EAGAIN);}	 // sync to planner move ends
+	if (cm.cycle_state != CYCLE_HOMING) { return (STAT_NOOP);} // exit if not in a homing cycle
+	if (cm_isbusy() == true) { return (STAT_EAGAIN);}	 // sync to planner move ends
 	return (hm.func(hm.axis));					// execute the current homing move
 }
 
-static uint8_t _homing_finalize_exit(int8_t axis)	// third part of return to home
+static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 {
 	mp_flush_planner(); 						// should be stopped, but in case of switch closure
 	cm_set_coord_system(hm.saved_coord_system);	// restore to work coordinate system
@@ -180,7 +180,7 @@ static uint8_t _homing_finalize_exit(int8_t axis)	// third part of return to hom
 	cm.homing_state = HOMING_HOMED;
 	cm.cycle_state = CYCLE_STARTED;
 	cm_cycle_end();
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static const char msg_axis0[] PROGMEM = "X";
@@ -189,7 +189,7 @@ static const char msg_axis2[] PROGMEM = "Z";
 static const char msg_axis3[] PROGMEM = "A";
 static PGM_P const msg_axis[] PROGMEM = { msg_axis0, msg_axis1, msg_axis2, msg_axis3};
 
-static uint8_t _homing_error_exit(int8_t axis)
+static stat_t _homing_error_exit(int8_t axis)
 {
 	char message[CMD_MESSAGE_LEN]; 
 	if (axis == -2) {
@@ -199,7 +199,7 @@ static uint8_t _homing_error_exit(int8_t axis)
 	}
 //	cmd_add_string("msg",message);
 	cmd_add_message(message);
-	cmd_print_list(TG_HOMING_CYCLE_FAILED, TEXT_INLINE_PAIRS, JSON_RESPONSE_FORMAT);
+	cmd_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_INLINE_PAIRS, JSON_RESPONSE_FORMAT);
 
 	mp_flush_planner(); 						// should be stopped, but in case of switch closure
 	cm_set_coord_system(hm.saved_coord_system);	// restore to work coordinate system
@@ -208,7 +208,7 @@ static uint8_t _homing_error_exit(int8_t axis)
 	cm_set_feed_rate(hm.saved_feed_rate);
 	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;
-	return (TG_HOMING_CYCLE_FAILED);		// homing state remains HOMING_NOT_HOMED
+	return (STAT_HOMING_CYCLE_FAILED);		// homing state remains HOMING_NOT_HOMED
 }
 
 /* Homing axis moves - these execute in sequence for each axis
@@ -222,7 +222,7 @@ static uint8_t _homing_error_exit(int8_t axis)
  *	_homing_axis_move()			- helper that actually executes the above moves
  */
 
-static uint8_t _homing_axis_start(int8_t axis)
+static stat_t _homing_axis_start(int8_t axis)
 {
 	// get the first or next axis
 	if ((axis = _get_next_axis(axis)) < 0) { 				// axes are done or error
@@ -286,7 +286,7 @@ static uint8_t _homing_axis_start(int8_t axis)
 
 // Handle an initial switch closure by backing off switches
 // NOTE: Relies on independent switches per axis (not shared)
-static uint8_t _homing_axis_clear(int8_t axis)				// first clear move
+static stat_t _homing_axis_clear(int8_t axis)				// first clear move
 {
 	int8_t homing = gpio_read_switch(hm.homing_switch);
 	int8_t limit = gpio_read_switch(hm.limit_switch);
@@ -302,38 +302,38 @@ static uint8_t _homing_axis_clear(int8_t axis)				// first clear move
  	return (_set_hm_func(_homing_axis_backoff_limit));		// will backoff limit switch some more
 }
 
-static uint8_t _homing_axis_backoff_home(int8_t axis)		// back off cleared homing switch
+static stat_t _homing_axis_backoff_home(int8_t axis)		// back off cleared homing switch
 {
 	_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
     return (_set_hm_func(_homing_axis_search));
 }
 
-static uint8_t _homing_axis_backoff_limit(int8_t axis)		// back off cleared limit switch
+static stat_t _homing_axis_backoff_limit(int8_t axis)		// back off cleared limit switch
 {
 	_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
     return (_set_hm_func(_homing_axis_search));
 }
 
-static uint8_t _homing_axis_search(int8_t axis)				// start the search
+static stat_t _homing_axis_search(int8_t axis)				// start the search
 {
 	cfg.a[axis].jerk_max = cfg.a[axis].jerk_homing;			// use the homing jerk for search onward
 	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
     return (_set_hm_func(_homing_axis_latch));
 }
 
-static uint8_t _homing_axis_latch(int8_t axis)				// latch to switch open
+static stat_t _homing_axis_latch(int8_t axis)				// latch to switch open
 {
 	_homing_axis_move(axis, hm.latch_backoff, hm.latch_velocity);    
 	return (_set_hm_func(_homing_axis_zero_backoff)); 
 }
 
-static uint8_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero position
+static stat_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero position
 {
 	_homing_axis_move(axis, hm.zero_backoff, hm.search_velocity);
 	return (_set_hm_func(_homing_axis_set_zero));
 }
 
-static uint8_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
+static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 {
 	cm_set_machine_axis_position(axis, 0);
 	cfg.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
@@ -341,19 +341,19 @@ static uint8_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 	return (_set_hm_func(_homing_axis_start));
 }
 
-static uint8_t _homing_axis_move(int8_t axis, double target, double velocity)
+static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 {
-	double flags[] = {1,1,1,1,1,1};
+	float flags[] = {1,1,1,1,1,1};
 	set_vector_by_axis(target, axis);
 	cm_set_feed_rate(velocity);
 	cm_request_queue_flush();
 	cm_request_cycle_start();
 	ritorno(cm_straight_feed(vector, flags));
-	return (TG_EAGAIN);
+	return (STAT_EAGAIN);
 }
 
 /* _run_homing_dual_axis() - kernal routine for running homing on a dual axis */
-//static uint8_t _run_homing_dual_axis(int8_t axis) { return (TG_OK);}
+//static stat_t _run_homing_dual_axis(int8_t axis) { return (STAT_OK);}
 
 /**** HELPERS ****************************************************************/
 /*
@@ -363,7 +363,7 @@ static uint8_t _homing_axis_move(int8_t axis, double target, double velocity)
 uint8_t _set_hm_func(uint8_t (*func)(int8_t axis))
 {
 	hm.func = func;
-	return (TG_EAGAIN);
+	return (STAT_EAGAIN);
 }
 
 /*
@@ -463,6 +463,6 @@ int8_t _get_next_axes(int8_t axis)
 	}
 
 	// Got a valid axis. Find out if it's a dual
-	return (TG_OK);
+	return (STAT_OK);
 }
 */

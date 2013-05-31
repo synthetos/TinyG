@@ -123,20 +123,20 @@ ISR(PWM2_ISR_vect)
  * pwm_set_freq() - set PWM channel frequency
  *
  *	channel	- PWM channel
- *	freq	- PWM frequency in Khz as a double
+ *	freq	- PWM frequency in Khz as a float
  *
  *	Assumes 32MHz clock.
  *	Doesn't turn time on until duty cycle is set
  */
 
-uint8_t pwm_set_freq(uint8_t chan, double freq)
+stat_t pwm_set_freq(uint8_t chan, float freq)
 {
-	if (chan > PWMS) { return (TG_NO_SUCH_DEVICE);}
-	if (freq > PWM_MAX_FREQ) { return (TG_INPUT_VALUE_TOO_LARGE);}
-	if (freq < PWM_MIN_FREQ) { return (TG_INPUT_VALUE_TOO_SMALL);}
+	if (chan > PWMS) { return (STAT_NO_SUCH_DEVICE);}
+	if (freq > PWM_MAX_FREQ) { return (STAT_INPUT_VALUE_TOO_LARGE);}
+	if (freq < PWM_MIN_FREQ) { return (STAT_INPUT_VALUE_TOO_SMALL);}
 
 	// set the period and the prescaler
-	double prescale = F_CPU/65536/freq;	// optimal non-integer prescaler value
+	float prescale = F_CPU/65536/freq;	// optimal non-integer prescaler value
 	if (prescale <= 1) { 
 		pwm[chan].timer->PER = F_CPU/freq;
 		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV1_gc;
@@ -153,7 +153,7 @@ uint8_t pwm_set_freq(uint8_t chan, double freq)
 		pwm[chan].timer->PER = F_CPU/64/freq;
 		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV64_gc;
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /* 
@@ -169,29 +169,19 @@ uint8_t pwm_set_freq(uint8_t chan, double freq)
  *	The frequency must have been set previously
  */
 
-uint8_t pwm_set_duty(uint8_t chan, double duty)
+stat_t pwm_set_duty(uint8_t chan, float duty)
 {
-    if (duty < 0.0) { return (TG_INPUT_VALUE_TOO_SMALL);}
-    if (duty > 1.0) { return (TG_INPUT_VALUE_TOO_LARGE);}
+    if (duty < 0.0) { return (STAT_INPUT_VALUE_TOO_SMALL);}
+    if (duty > 1.0) { return (STAT_INPUT_VALUE_TOO_LARGE);}
     
 	// Ffrq = Fper/(2N(CCA+1))
 	// Fpwm = Fper/((N(PER+1))
 	
-    double period_scalar = pwm[chan].timer->PER;
+    float period_scalar = pwm[chan].timer->PER;
 	pwm[chan].timer->CCB = (uint16_t)(period_scalar * duty) + 1;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
-/*
-uint8_t pwm_set_duty(uint8_t chan, double duty)
-{
-	if (duty < 0)   { return (TG_INPUT_VALUE_TOO_SMALL);}
-	if (duty > 100) { return (TG_INPUT_VALUE_TOO_LARGE);}
-
-	pwm[chan].timer->CCB = (uint16_t)(pwm[chan].timer->PER - pwm[chan].timer->PER / (duty/100));
-	return (TG_OK);
-}
-*/
 //###########################################################################
 //##### UNIT TESTS ##########################################################
 //###########################################################################

@@ -56,14 +56,14 @@
 
 // local helpers
 static void _controller_HSM(void);
-static uint8_t _dispatch(void);
-static uint8_t _reset_handler(void);
-static uint8_t _bootloader_handler(void);
-static uint8_t _limit_switch_handler(void);
-static uint8_t _alarm_idler(void);
-static uint8_t _system_assertions(void);
-static uint8_t _sync_to_tx_buffer(void);
-static uint8_t _sync_to_planner(void);
+static stat_t _dispatch(void);
+static stat_t _reset_handler(void);
+static stat_t _bootloader_handler(void);
+static stat_t _limit_switch_handler(void);
+static stat_t _alarm_idler(void);
+static stat_t _system_assertions(void);
+static stat_t _sync_to_tx_buffer(void);
+static stat_t _sync_to_planner(void);
 
 /*
  * tg_init() - controller init
@@ -98,11 +98,11 @@ void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
  * and are called even if they are not currently active. 
  *
  * The DISPATCH macro calls the function and returns to the controller parent 
- * if not finished (TG_EAGAIN), preventing later routines from running 
+ * if not finished (STAT_EAGAIN), preventing later routines from running 
  * (they remain blocked). Any other condition - OK or ERR - drops through 
  * and runs the next routine in the list.
  *
- * A routine that had no action (i.e. is OFF or idle) should return TG_NOOP
+ * A routine that had no action (i.e. is OFF or idle) should return STAT_NOOP
  *
  * Useful reference on state machines:
  * http://johnsantic.com/comp/state.html, "Writing Efficient State Machines in C"
@@ -115,7 +115,7 @@ void tg_controller()
 	}
 }
 
-#define	DISPATCH(func) if (func == TG_EAGAIN) return; 
+#define	DISPATCH(func) if (func == STAT_EAGAIN) return; 
 static void _controller_HSM()
 {
 //----- ISRs. These should be considered the highest priority scheduler functions ----//
@@ -161,29 +161,28 @@ static void _controller_HSM()
  *	Also responsible for prompts and for flow control 
  */
 
-static uint8_t _dispatch()
+static stat_t _dispatch()
 {
 	uint8_t status;
 
 	// read input line or return if not a completed line
 	// xio_gets() is a non-blocking workalike of fgets()
 	while (true) {
-		if ((status = xio_gets(tg.primary_src, tg.in_buf, sizeof(tg.in_buf))) == TG_OK) {
+		if ((status = xio_gets(tg.primary_src, tg.in_buf, sizeof(tg.in_buf))) == STAT_OK) {
 			tg.bufp = tg.in_buf;
 			break;
 		}
 		// handle end-of-file from file devices
-		if (status == TG_EOF) {					// EOF can come from file devices only
+		if (status == STAT_EOF) {					// EOF can come from file devices only
 			if (cfg.comm_mode == TEXT_MODE) {
 				fprintf_P(stderr, PSTR("End of command file\n"));
 			} else {
-				rpt_exception(TG_EOF, 0);		// not really an exception
+				rpt_exception(STAT_EOF, 0);		// not really an exception
 			}
 			tg_reset_source();					// reset to default source
 		}
-		return (status);						// Note: TG_EAGAIN, errors, etc. will drop through
+		return (status);						// Note: STAT_EAGAIN, errors, etc. will drop through
 	}
-//	cmd_reset_list();	//++++ shouldn't be necessary - test this carefully.
 	tg.linelen = strlen(tg.in_buf)+1;					// linelen only tracks primary input
 	strncpy(tg.saved_buf, tg.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 
@@ -196,14 +195,14 @@ static uint8_t _dispatch()
 
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {
-				tg_text_response(TG_OK, tg.saved_buf);
+				tg_text_response(STAT_OK, tg.saved_buf);
 			}
 			break;
 		}
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TEXT_MODE;
 			print_general_help();
-			tg_text_response(TG_OK, tg.bufp);
+			tg_text_response(STAT_OK, tg.bufp);
 			break;
 		}
 		case '$': case '?':{ 					// text-mode configs
@@ -226,7 +225,7 @@ static uint8_t _dispatch()
 			}
 		}
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /************************************************************************************
@@ -247,7 +246,8 @@ void tg_text_response(const uint8_t status, const char *buf)
 	} else {
 		units = (PGM_P)&prompt_in;
 	}
-	if ((status == TG_OK) || (status == TG_EAGAIN) || (status == TG_NOOP) || (status == TG_ZERO_LENGTH_MOVE)) {
+//	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP) || (status == STAT_ZERO_LENGTH_MOVE)) {
+	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP)) {
 		fprintf_P(stderr, (PGM_P)&prompt_ok, units);
 	} else {
 		char status_message[STATUS_MESSAGE_LEN];
@@ -271,20 +271,20 @@ void tg_text_response(const uint8_t status, const char *buf)
  *	and other messages are sent to the active device.
  */
 
-static uint8_t _sync_to_tx_buffer()
+static stat_t _sync_to_tx_buffer()
 {
 	if ((xio_get_tx_bufcount_usart(ds[XIO_DEV_USB].x) >= XOFF_TX_LO_WATER_MARK)) {
-		return (TG_EAGAIN);
+		return (STAT_EAGAIN);
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
-static uint8_t _sync_to_planner()
+static stat_t _sync_to_planner()
 {
 	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { // allow up to N planner buffers for this line
-		return (TG_EAGAIN);
+		return (STAT_EAGAIN);
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 void tg_reset_source() { tg_set_primary_source(tg.default_src);}
@@ -298,11 +298,11 @@ void tg_set_secondary_source(uint8_t dev) { tg.secondary_src = dev;}
  */
 void tg_request_reset() { tg.reset_requested = true; }
 
-static uint8_t _reset_handler(void)
+static stat_t _reset_handler(void)
 {
-	if (tg.reset_requested == false) { return (TG_NOOP);}
+	if (tg.reset_requested == false) { return (STAT_NOOP);}
 	tg_reset();							// hard reset - identical to hitting RESET button
-	return (TG_EAGAIN);
+	return (STAT_EAGAIN);
 }
 
 void tg_reset(void)			// software hard reset using the watchdog timer
@@ -318,24 +318,24 @@ void tg_reset(void)			// software hard reset using the watchdog timer
  */
 void tg_request_bootloader() { tg.bootloader_requested = true;}
 
-static uint8_t _bootloader_handler(void)
+static stat_t _bootloader_handler(void)
 {
-	if (tg.bootloader_requested == false) { return (TG_NOOP);}
+	if (tg.bootloader_requested == false) { return (STAT_NOOP);}
 	cli();
 	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
-	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
+	return (STAT_EAGAIN);					// never gets here but keeps the compiler happy
 }
 
 /*
  * _limit_switch_handler() - shut down system if limit switch fired
  */
-static uint8_t _limit_switch_handler(void)
+static stat_t _limit_switch_handler(void)
 {
-	if (cm_get_machine_state() == MACHINE_ALARM) { return (TG_NOOP);}
-	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
+	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
+	if (gpio_get_limit_thrown() == false) return (STAT_NOOP);
 //	cm_alarm(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
 	cm_alarm(sw.sw_num_thrown);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /* 
@@ -347,9 +347,9 @@ static uint8_t _limit_switch_handler(void)
  */
 #define LED_COUNTER 25000
 
-static uint8_t _alarm_idler(void)
+static stat_t _alarm_idler(void)
 {
-	if (cm_get_machine_state() != MACHINE_ALARM) { return (TG_OK);}
+	if (cm_get_machine_state() != MACHINE_ALARM) { return (STAT_OK);}
 
 	if (--tg.led_counter < 0) {
 		tg.led_counter = LED_COUNTER;
@@ -361,7 +361,7 @@ static uint8_t _alarm_idler(void)
 			tg.led_state = 0;
 		}
 	}
-	return (TG_EAGAIN);	 // EAGAIN prevents any other actions from running
+	return (STAT_EAGAIN);	 // EAGAIN prevents any other actions from running
 }
 
 /* 
@@ -392,8 +392,8 @@ uint8_t _system_assertions()
 	if (rtc.magic_end 		!= MAGICNUM) { value = 19; }
 	xio_assertions(&value);									// run xio assertions
 
-	if (value == 0) { return (TG_OK);}
-	rpt_exception(TG_MEMORY_CORRUPTION, value);
+	if (value == 0) { return (STAT_OK);}
+	rpt_exception(STAT_MEMORY_CORRUPTION, value);
 	cm_alarm(ALARM_MEMORY_OFFSET + value);	
-	return (TG_EAGAIN);
+	return (STAT_EAGAIN);
 }
