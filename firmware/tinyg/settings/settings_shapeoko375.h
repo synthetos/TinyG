@@ -79,8 +79,8 @@
 #define M4_MICROSTEPS			8
 #define M4_POLARITY				0
 #define M4_POWER_MODE			1
-/*
 
+/* Mapping for dual grantry setup
 #define M1_MOTOR_MAP 			AXIS_X	// 1ma
 #define M1_STEP_ANGLE			0.9		// 1sa
 #define M1_TRAVEL_PER_REV		36.54	// 1tr
@@ -108,8 +108,6 @@
 #define M4_MICROSTEPS			8
 #define M4_POLARITY				1
 #define M4_POWER_MODE			0
-
-
 */
 
 // *** axis settings ***
