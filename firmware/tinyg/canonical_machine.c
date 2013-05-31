@@ -1182,9 +1182,36 @@ void cm_optional_program_stop()
 	mp_queue_command(_program_finalize, MACHINE_PROGRAM_STOP,0);
 }
 
+/*
+ * cm_program_end() - Implements M2 and M30
+ *
+ * The END behaviors are defined by NIST 3.6.1 are:
+ *	1. Axis offsets are set to zero (like G92.2) and origin offsets are set to the default (like G54)
+ *	2. Selected plane is set to CANON_PLANE_XY (like G17)
+ *	3. Distance mode is set to MODE_ABSOLUTE (like G90)
+ *	4. Feed rate mode is set to UNITS_PER_MINUTE (like G94)
+ *	5. Feed and speed overrides are set to ON (like M48)
+ *	6. Cutter compensation is turned off (like G40)
+ *	7. The spindle is stopped (like M5)
+ *	8. The current motion mode is set to G_1 (like G1)
+ *	9. Coolant is turned off (like M9)
+ *
+ * cm_program_end() implments things slightly differently:
+ *	1. Axis offsets are set to G92.1 CANCEL offsets (instead of using G92.2 SUSPEND Offsets)
+ *	   Set default coordinate system (uses $gco, not G54)
+ *	2. Selected plane is set to default plane ($gpl) (instead of setting it to G54)
+ *	3. Distance mode is set to MODE_ABSOLUTE (like G90)
+ *	4. Feed rate mode is set to UNITS_PER_MINUTE (like G94)
+ * 	5. Not implemented
+ *	6. Not implemented 
+ *	7. The spindle is stopped (like M5)
+ *	8. Motion mode is canceled like G80 (not set to G1) 
+ *	9. Coolant is turned off (like M9)
+ *	+  Default INCHES or MM units mode is restored ($gun) 
+ */
+
 void cm_program_end()				// M2, M30
 {
-	// this bunch is defined by NIST 3.6.1
 	cm_reset_origin_offsets();						// G92.1
 //	cm_suspend_origin_offsets();					// G92.2 - as per Kramer
 	cm_set_coord_system(cfg.coord_system);			// default coordinate system
