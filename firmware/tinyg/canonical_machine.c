@@ -516,8 +516,7 @@ static float _get_move_times(float *min_time)
  * Initialization and Termination (4.3.2)
  *
  * cm_init() 
- * cm_shutdown() 
- * cm_flush_planner()
+ * cm_alarm() 
  *
  *	Config init cfg_init() must have been run beforehand. Many parameters 
  *	used by the canonical machine are actually set during cfg_init().
@@ -1143,6 +1142,7 @@ stat_t cm_flush_planner()
 		gm.position[i] = mp_get_runtime_machine_position(i);
 		gm.target[i] = gm.position[i];
 	}
+//	cm_program_stop();			// take the machine to a stop condition & req a status report
 	rpt_request_queue_report();
 	return (STAT_OK);
 }
@@ -1157,6 +1157,19 @@ stat_t cm_flush_planner()
  * cm_program_end()				- M2, M30
  * _program_finalize() 			- helper
  */
+static void _program_finalize(uint8_t machine_state, float f)
+{
+	cm.machine_state = machine_state;
+	cm.motion_state = MOTION_STOP;
+	cm.cycle_state = CYCLE_OFF;
+	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
+	cm.cycle_start_requested = false;				//...and cancel any cycle start request
+
+	mp_zero_segment_velocity();						// for reporting purposes
+	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report (not unfiltered)
+	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
+}
+
 void cm_cycle_start()
 {
 	cm.machine_state = MACHINE_CYCLE;
@@ -1229,15 +1242,3 @@ void cm_program_end()				// M2, M30
 	mp_queue_command(_program_finalize, MACHINE_PROGRAM_END,0);
 }
 
-static void _program_finalize(uint8_t machine_state, float f)
-{
-	cm.machine_state = machine_state;
-	cm.motion_state = MOTION_STOP;
-	cm.cycle_state = CYCLE_OFF;
-	cm.cycle_start_requested = false;				// cancel any cycle start request
-	cm.hold_state = FEEDHOLD_OFF;					//...and any feedhold is ended
-
-	mp_zero_segment_velocity();						// for reporting purposes
-	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report (not unfiltered)
-	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
-}
