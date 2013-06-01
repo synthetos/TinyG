@@ -1,5 +1,7 @@
 /* 
- * test_001_homing.h 
+ * test_002_homing.h 
+ *
+ *	- Performs homing cycle in X, Y and Z
  *
  * Notes:
  *	  -	The character array should be derived from the filename (by convention)

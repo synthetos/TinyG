@@ -1,5 +1,23 @@
 /* 
- * test_002_smoke.h 
+ * test_001_smoke.h 
+ *
+ * This test checks basic functionality:
+ *	- motor 1 CW at full speed ~3 seconds
+ *	- motor 1 CCW at full speed ~3 seconds
+ *	- motor 2 CW at full speed ~3 seconds
+ *	- motor 2 CCW at full speed ~3 seconds
+ *	- motor 3 CW at full speed ~3 seconds
+ *	- motor 3 CCW at full speed ~3 seconds
+ *	- motor 4 CW at full speed ~3 seconds
+ *	- motor 4 CCW at full speed ~3 seconds
+ *	- all motors CW at full speed ~3 seconds
+ *	- all motors CCW at full speed ~3 seconds
+ *	- all motors CW at medium speed ~3 seconds
+ *	- all motors CCW at medium speed ~3 seconds
+ * 	- draw a CW circle in XY with Z axis movement
+ * 	- draw a CCW circle in XY with Z axis movement
+ *	- light LEDs 1,2 and 4 in sequence for about 1 second each:
+ *	- short finishing move
  *
  * Notes:
  *	  -	The character array should be derived from the filename (by convention)

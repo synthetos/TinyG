@@ -53,6 +53,7 @@
 #include "tests/test_011_small_moves.h"		// small move test
 #include "tests/test_012_slow_moves.h"		// slow move test
 #include "tests/test_013_coordinate_offsets.h"	// what it says
+#include "tests/test_014_microsteps.h"		// test all microstep settings
 #include "tests/test_050_mudflap.h"			// mudflap test - entire drawing
 #include "tests/test_051_braid.h"			// braid test - partial drawing
 
@@ -79,6 +80,7 @@ uint8_t tg_test(cmdObj_t *cmd)
 		case 11: { xio_open(XIO_DEV_PGM, PGMFILE(&test_small_moves),PGM_FLAGS); break;}
 		case 12: { xio_open(XIO_DEV_PGM, PGMFILE(&test_slow_moves),PGM_FLAGS); break;}
 		case 13: { xio_open(XIO_DEV_PGM, PGMFILE(&test_coordinate_offsets),PGM_FLAGS); break;}
+		case 14: { xio_open(XIO_DEV_PGM, PGMFILE(&test_microsteps),PGM_FLAGS); break;}
 		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 		default: {

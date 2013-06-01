@@ -273,7 +273,7 @@ uint8_t xio_assertions(uint8_t *value)
 	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) { *value = 109; }
 	if (stderr != xio.stderr_shadow) 				 { *value = 200; } 
 
-	if (*value != 0) { return (STAT_MEMORY_CORRUPTION); }
+	if (*value != 0) { return (STAT_MEMORY_FAULT); }
 	return (STAT_OK);
 }
 

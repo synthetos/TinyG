@@ -259,9 +259,8 @@ enum xioSignals {
 #define CHAR_RESET CAN
 #define CHAR_FEEDHOLD (char)'!'
 #define CHAR_CYCLE_START (char)'~'
-#define CHAR_QUEUE_FLUSH (char)'@'
-//#define CHAR_QUEUE_FLUSH SYN
-#define CHAR_BOOTLOADER ESC
+#define CHAR_QUEUE_FLUSH (char)'%'
+//#define CHAR_BOOTLOADER ESC
 
 /* XIO return codes
  * These codes are the "inner nest" for the STAT_ return codes. 
@@ -337,16 +336,16 @@ enum xioCodes {
     0x1F    US      ctrl-_
 
     0x20    <space>             Gcode blocks
-    0x21    !       excl point  TinyG feedhold
+    0x21    !       excl point  TinyG feedhold (trapped and removed from serial stream)
     0x22    "       quote       JSON notation
-    0x23    #       number      Gcode parameter prefix
+    0x23    #       number      Gcode parameter prefix; JSON topic prefix character
     0x24    $       dollar      TinyG / grbl out-of-cycle settings prefix
     0x25    &       ampersand   universal symbol for logical AND (not used here)    
-    0x26    %       percent		
+    0x26    %       percent		Queue Flush character (trapped and removed from serial stream)
     0x27    '       single quote	
     0x28    (       open paren  Gcode comments
     0x29    )       close paren Gcode comments
-    0x2A    *       asterisk    Gcode expressions
+    0x2A    *       asterisk    Gcode expressions; JSON wildcard character
     0x2B    +       plus        Gcode numbers, parameters and expressions
     0x2C    ,       comma       JSON notation
     0x2D    -       minus       Gcode numbers, parameters and expressions
@@ -358,7 +357,7 @@ enum xioCodes {
     0x3D    =       equals      Gcode expressions
     0x3E    >       greaterthan Gcode expressions
     0x3F    ?       question mk TinyG / grbl query
-    0x40    @       at symbol	
+    0x40    @       at symbol	JSON address prefix character
 
     0x5B    [       open bracketGcode expressions
     0x5C    \       backslash   JSON notation (escape)
@@ -370,7 +369,7 @@ enum xioCodes {
     0x7B    {       open curly  JSON notation
     0x7C    |       pipe        universal symbol for logical OR (not used here)
     0x7D    }       close curly JSON notation
-    0x7E    ~       tilde       TinyG cycle start
+    0x7E    ~       tilde       TinyG cycle start (trapped and removed from serial stream)
     0x7F    DEL	
 */
 
