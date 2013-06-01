@@ -393,7 +393,7 @@ uint8_t _system_assertions()
 	xio_assertions(&value);									// run xio assertions
 
 	if (value == 0) { return (STAT_OK);}
-	rpt_exception(STAT_MEMORY_CORRUPTION, value);
+	rpt_exception(STAT_MEMORY_FAULT, value);
 	cm_alarm(ALARM_MEMORY_OFFSET + value);	
 	return (STAT_EAGAIN);
 }

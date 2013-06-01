@@ -572,7 +572,7 @@ void cm_alarm(uint8_t value)
 //	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
-	rpt_exception(STAT_SHUTDOWN,value);		// send shutdown message
+	rpt_exception(STAT_ALARMED,value);		// send shutdown message
 	cm.machine_state = MACHINE_ALARM;
 }
 
@@ -1142,7 +1142,9 @@ stat_t cm_flush_planner()
 		gm.position[i] = mp_get_runtime_machine_position(i);
 		gm.target[i] = gm.position[i];
 	}
-//	cm_program_stop();			// take the machine to a stop condition & req a status report
+	cm.motion_state = MOTION_STOP;
+	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
+//	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report
 	rpt_request_queue_report();
 	return (STAT_OK);
 }

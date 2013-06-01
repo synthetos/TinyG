@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	377.08		// No functional changes
+#define TINYG_FIRMWARE_BUILD   	377.08		// CXhages queue flush character to % from @
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
@@ -154,8 +154,8 @@ extern stat_t status_code;				// declared in main.cpp
 #define	STAT_INVALID_ADDRESS 24
 #define	STAT_READ_ONLY_ADDRESS 25
 #define	STAT_INIT_FAIL 26
-#define	STAT_SHUTDOWN 27
-#define	STAT_MEMORY_CORRUPTION 28
+#define	STAT_ALARMED 27
+#define	STAT_MEMORY_FAULT 28
 #define	STAT_ERROR_29 29
 #define	STAT_ERROR_30 30
 #define	STAT_ERROR_31 31
