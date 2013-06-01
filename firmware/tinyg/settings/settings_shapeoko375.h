@@ -44,11 +44,14 @@
 
 // *** settings.h overrides ***
 
-//#undef COMM_MODE
-//#define COMM_MODE				JSON_MODE
+#undef COMM_MODE
+#define COMM_MODE				JSON_MODE
 
-//#undef JSON_VERBOSITY
-//#define JSON_VERBOSITY 		JV_MESSAGES
+#undef JSON_VERBOSITY
+#define JSON_VERBOSITY 			JV_MESSAGES
+
+#undef SWITCH_TYPE
+#define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 
 // *** motor settings ***
 
@@ -56,7 +59,7 @@
 #define M1_STEP_ANGLE			1.8		// 1sa
 #define M1_TRAVEL_PER_REV		36.54	// 1tr
 #define M1_MICROSTEPS			8		// 1mi		1,2,4,8
-#define M1_POLARITY				0		// 1po		0=normal, 1=reversed
+#define M1_POLARITY				1		// 1po		0=normal, 1=reversed
 #define M1_POWER_MODE			1		// 1pm		TRUE=low power idle enabled 
 
 #define M2_MOTOR_MAP			AXIS_Y
@@ -69,13 +72,13 @@
 #define M3_MOTOR_MAP			AXIS_Z
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		1.25
-#define M3_MICROSTEPS			8
-#define M3_POLARITY				0
+#define M3_MICROSTEPS			4
+#define M3_POLARITY				1
 #define M3_POWER_MODE			1
 
 #define M4_MOTOR_MAP			AXIS_A
 #define M4_STEP_ANGLE			1.8
-#define M4_TRAVEL_PER_REV		180		// degrees per motor rev - 1:2 gearing
+#define M4_TRAVEL_PER_REV		360		// degrees per motor rev - no gearing
 #define M4_MICROSTEPS			8
 #define M4_POLARITY				0
 #define M4_POWER_MODE			1
@@ -153,7 +156,6 @@
 #define Z_JERK_MAX				50000000			// 50,000,000
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
-//#define Z_SWITCH_MODE_MAX		SW_MODE_HOMING_LIMIT
 #define Z_SWITCH_MODE_MAX		SW_MODE_HOMING
 #define Z_SEARCH_VELOCITY		Z_VELOCITY_MAX
 #define Z_LATCH_VELOCITY		100
