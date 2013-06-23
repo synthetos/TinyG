@@ -7,7 +7,6 @@
 *.map
 *.aws
 *.atsuo
-*.cproj
 *.eep
 .DS_Store
 TcfTransactionLog.csv
