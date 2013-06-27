@@ -253,7 +253,7 @@ void rpt_init_status_report()
 {
 	cmdObj_t *cmd = cmd_reset_list();	// used for status report persistence locations
 	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
-	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// RTC fires every 10 ms
+	cm.status_report_counter = (cfg.status_report_interval / RTC_MILLISECONDS);	// RTC fires every 10 ms
 
 	cmd->index = cmd_get_index("","se00");				// set first SR persistence index
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
@@ -324,7 +324,7 @@ void rpt_status_report_rtc_callback() 		// called by 10ms real-time clock
 {
 	if (--cm.status_report_counter == 0) {
 		cm.status_report_request = SR_IMMEDIATE_REQUEST;	// promote to immediate request
-		cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// reset minimum interval
+		cm.status_report_counter = (cfg.status_report_interval / RTC_MILLISECONDS);	// reset minimum interval
 	}
 }
 

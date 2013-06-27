@@ -29,19 +29,19 @@
 #ifndef xmega_rtc_h
 #define xmga_rtc_h
 
-#define RTC_PERIOD 10							// interrupt on every 10 RTC ticks (~10 ms)
+#define RTC_MILLISECONDS 10							// interrupt on every 10 RTC ticks (~10 ms)
 
 // Interrupt level: pick one
-#define	RTC_COMPINTLVL RTC_COMPINTLVL_LO_gc;			// lo interrupt on compare
+#define	RTC_COMPINTLVL RTC_COMPINTLVL_LO_gc;		// lo interrupt on compare
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_MED_gc;	// med interrupt on compare
-//#define	RTC_COMPINTLVL RTC_COMPINTLVL_HI_gc;		// hi interrupt on compare
+//#define	RTC_COMPINTLVL RTC_COMPINTLVL_HI_gc;	// hi interrupt on compare
 
 typedef struct rtClock {
-	volatile uint32_t clock_ticks;				// RTC tick counter
+	volatile uint32_t clock_ticks;					// RTC tick counter
 	uint16_t magic_end;
 } rtClock_t;
 rtClock_t rtc;
 
-void rtc_init(void);							// initialize and start general timer
+void rtc_init(void);								// initialize and start general timer
 
 #endif

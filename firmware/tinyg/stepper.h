@@ -71,6 +71,8 @@ void st_enable_motor(const uint8_t motor);
 void st_enable_motors(void);
 void st_disable_motor(const uint8_t motor);
 void st_disable_motors(void);
+void st_start_disable_motors_timer(void);
+void st_disable_motors_rtc_callback(void);
 void st_kill_motors(void);		// stop all motors (stop the steppers)
 
 uint8_t st_isbusy(void);		// return TRUE is any axis is running (F=idle)

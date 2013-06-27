@@ -127,6 +127,8 @@ M9
 G4 P2 (WAIT FOR CYLINDER - UP)
 M30 (END OF CODE)
 */
+
+//	xio_queue_RX_string_usb("$me\n");
 //	xio_queue_RX_string_usb("G0 X0.01 Y0.01\n");
 //	xio_queue_RX_string_usb("M8 G4 P0.001\n");
 //	xio_queue_RX_string_usb("G1 X10 Y10 F1000\n");

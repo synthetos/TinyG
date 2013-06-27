@@ -404,7 +404,7 @@ static const char fmt_ja[] PROGMEM = "[ja]  junction acceleration%8.0f%S\n";
 static const char fmt_ml[] PROGMEM = "[ml]  min line segment%17.3f%S\n";
 static const char fmt_ma[] PROGMEM = "[ma]  min arc segment%18.3f%S\n";
 static const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%16.3f%S\n";
-static const char fmt_mt[] PROGMEM = "[mt]  min segment time%13.0f uSec\n";
+static const char fmt_ms[] PROGMEM = "[ms]  min segment time%13.0f uSec\n";
 static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0=NO,1=NC]\n";
 static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms\n";
 static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX%8d [0=off,1=CR,2=LF]\n";
@@ -423,6 +423,7 @@ static const char fmt_rx[] PROGMEM = "rx:%d\n";
 
 static const char fmt_md[] PROGMEM = "motors disabled\n";
 static const char fmt_me[] PROGMEM = "motors enabled\n";
+static const char fmt_mt[] PROGMEM = "[mt]  motor disble timeout%9d Sec\n";
 
 // Gcode model values for reporting purposes
 static const char fmt_vel[]  PROGMEM = "Velocity:%17.3f%S/min\n";
@@ -564,8 +565,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, 0, fmt_nul, _print_sr,  _get_sr,  _set_sr , (float *)&tg.null, 0 },	// status report object
-	{ "", "md",  _f00, 0, fmt_md,  _print_str, _set_md,  _set_md,  (float *)&tg.null, 0 },	// disable all motors
-	{ "", "me",  _f00, 0, fmt_me,  _print_str, _set_me,  _set_me,  (float *)&tg.null, 0 },	// enable all motors with pm=0
 	{ "", "qr",  _f00, 0, fmt_qr,  _print_int, _get_qr,  _set_nul, (float *)&tg.null, 0 },	// queue report setting
 	{ "", "qf",  _f00, 0, fmt_nul, _print_nul, _get_nul, _run_qf,  (float *)&tg.null, 0 },	// queue flush
 	{ "", "er",  _f00, 0, fmt_nul, _print_nul, _get_er,  _set_nul, (float *)&tg.null, 0 },	// invoke bogus exception report for testing
@@ -758,11 +757,14 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g30","g30c",_fin, 3, fmt_cloc, _print_corr,_get_dbl, _set_nul,(float *)&gm.g30_position[AXIS_C], 0 },
 
 	// System parameters
-	// NOTE: Some values have been removed from the system group but are still accessible as individual elements
 	{ "sys","ja",  _f07, 0, fmt_ja, _print_lin, _get_dbu, _set_dbu, (float *)&cfg.junction_acceleration,JUNCTION_ACCELERATION },
 	{ "sys","ct",  _f07, 4, fmt_ct, _print_lin, _get_dbu, _set_dbu, (float *)&cfg.chordal_tolerance,	CHORDAL_TOLERANCE },
 	{ "sys","st",  _f07, 0, fmt_st, _print_ui8, _get_ui8, _set_sw,  (float *)&sw.switch_type,			SWITCH_TYPE },
-
+	{ "sys","mt",  _f07, 0, fmt_mt, _print_int, _get_int, _set_int, (float *)&cfg.motor_disable_timeout,MOTOR_DISABLE_TIMEOUT},
+	// Note:"me" must initialize after "mt" so it can use the timeout value
+	{ "",   "me",  _fin, 0, fmt_me, _print_str, _set_me,  _set_me,  (float *)&tg.null, 0 },
+	{ "",   "md",  _f00, 0, fmt_md, _print_str, _set_md,  _set_md,  (float *)&tg.null, 0 },	// disable all motors
+	
 	{ "sys","ej",  _f07, 0, fmt_ej, _print_ui8, _get_ui8, _set_01,  (float *)&cfg.comm_mode,			COMM_MODE },
 	{ "sys","jv",  _f07, 0, fmt_jv, _print_ui8, _get_ui8, cmd_set_jv,(float *)&cfg.json_verbosity,		JSON_VERBOSITY },
 	{ "sys","tv",  _f07, 0, fmt_tv, _print_ui8, _get_ui8, _set_01,  (float *)&cfg.text_verbosity,		TEXT_VERBOSITY },
@@ -785,7 +787,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "gc",  _f00, 0, fmt_nul, _print_nul, _get_gc, _run_gc,  (float *)&tg.null, 0 }, // gcode block - must be last in this group
 
 	// removed from system group as "hidden" parameters
-	{ "",   "mt",  _fip, 0, fmt_mt, _print_lin, _get_dbl, _set_dbl, (float *)&cfg.estd_segment_usec,	NOM_SEGMENT_USEC },
+	{ "",   "ms",  _fip, 0, fmt_ms, _print_lin, _get_dbl, _set_dbl, (float *)&cfg.estd_segment_usec,	NOM_SEGMENT_USEC },
 	{ "",   "ml",  _fip, 4, fmt_ml, _print_lin, _get_dbu, _set_dbu, (float *)&cfg.min_segment_len,		MIN_LINE_LENGTH },
 	{ "",   "ma",  _fip, 4, fmt_ma, _print_lin, _get_dbu, _set_dbu, (float *)&cfg.arc_segment_len,		ARC_SEGMENT_LENGTH },
 	{ "",   "qrh", _fip, 0, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (float *)&cfg.queue_report_hi_water,QR_HI_WATER },
@@ -895,7 +897,7 @@ static stat_t _get_id(cmdObj_t *cmd)
 
 /**** REPORT FUNCTIONS ********************************************************
  * _set_md() 	- disable all motors
- * _set_md() 	- enable motors with pm=0
+ * _set_md() 	- enable motors with $Npm=0
  * _get_qr() 	- get a queue report (as data)
  * _run_qf() 	- execute a planner buffer flush
  * _get_er()	- invoke a bogus exception report for testing purposes (it's not real)
@@ -1225,7 +1227,6 @@ static stat_t _get_am(cmdObj_t *cmd)
 
 static stat_t _set_am(cmdObj_t *cmd)		// axis mode
 {
-
 	char linear_axes[] = {"xyz"};
 	if (strchr(linear_axes, cmd->token[0]) != NULL) { // true if it's a linear axis
 		if (cmd->value > AXIS_MAX_LINEAR) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
