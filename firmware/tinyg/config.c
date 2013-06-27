@@ -225,6 +225,8 @@ static stat_t _get_qr(cmdObj_t *cmd);		// get a queue report (as data)
 static stat_t _run_qf(cmdObj_t *cmd);		// execute a queue flush block
 static stat_t _get_er(cmdObj_t *cmd);		// invoke a bogus exception report for testing purposes
 static stat_t _get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
+static stat_t _set_md(cmdObj_t *cmd);		// disable all motors
+static stat_t _set_me(cmdObj_t *cmd);		// enable motors with power-mode set to 0 (on)
 
 static stat_t _get_gc(cmdObj_t *cmd);		// get current gcode block
 static stat_t _run_gc(cmdObj_t *cmd);		// run a gcode block
@@ -419,6 +421,9 @@ static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200
 static const char fmt_qr[] PROGMEM = "qr:%d\n";
 static const char fmt_rx[] PROGMEM = "rx:%d\n";
 
+static const char fmt_md[] PROGMEM = "motors disabled\n";
+static const char fmt_me[] PROGMEM = "motors enabled\n";
+
 // Gcode model values for reporting purposes
 static const char fmt_vel[]  PROGMEM = "Velocity:%17.3f%S/min\n";
 static const char fmt_line[] PROGMEM = "Line number:%10.0f\n";
@@ -559,6 +564,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, 0, fmt_nul, _print_sr,  _get_sr,  _set_sr , (float *)&tg.null, 0 },	// status report object
+	{ "", "md",  _f00, 0, fmt_md,  _print_str, _set_md,  _set_md,  (float *)&tg.null, 0 },	// disable all motors
+	{ "", "me",  _f00, 0, fmt_me,  _print_str, _set_me,  _set_me,  (float *)&tg.null, 0 },	// enable all motors with pm=0
 	{ "", "qr",  _f00, 0, fmt_qr,  _print_int, _get_qr,  _set_nul, (float *)&tg.null, 0 },	// queue report setting
 	{ "", "qf",  _f00, 0, fmt_nul, _print_nul, _get_nul, _run_qf,  (float *)&tg.null, 0 },	// queue flush
 	{ "", "er",  _f00, 0, fmt_nul, _print_nul, _get_er,  _set_nul, (float *)&tg.null, 0 },	// invoke bogus exception report for testing
@@ -569,6 +576,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "boot",_f00, 0, fmt_nul, _print_nul, print_boot_loader_help,_run_boot,(float *)&tg.null,0 },
 	{ "", "help",_f00, 0, fmt_nul, _print_nul, print_config_help,_set_nul, (float *)&tg.null,0 },// prints config help screen
 	{ "", "h",   _f00, 0, fmt_nul, _print_nul, print_config_help,_set_nul, (float *)&tg.null,0 },// alias for "help"
+
 
 	// Motor parameters
 	{ "1","1ma",_fip, 0, fmt_0ma, _pr_ma_ui8, _get_ui8, _set_ui8,(float *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
@@ -886,6 +894,8 @@ static stat_t _get_id(cmdObj_t *cmd)
 }
 
 /**** REPORT FUNCTIONS ********************************************************
+ * _set_md() 	- disable all motors
+ * _set_md() 	- enable motors with pm=0
  * _get_qr() 	- get a queue report (as data)
  * _run_qf() 	- execute a planner buffer flush
  * _get_er()	- invoke a bogus exception report for testing purposes (it's not real)
@@ -897,6 +907,19 @@ static stat_t _get_id(cmdObj_t *cmd)
  * _run_boot()  - request boot loader entry
  * cmd_set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
  */
+
+static stat_t _set_md(cmdObj_t *cmd) 
+{
+	st_disable_motors();
+	return (STAT_OK);
+}
+
+static stat_t _set_me(cmdObj_t *cmd) 
+{
+	st_enable_motors();
+	return (STAT_OK);
+}
+
 static stat_t _get_qr(cmdObj_t *cmd) 
 {
 	cmd->value = (float)mp_get_planner_buffers_available();

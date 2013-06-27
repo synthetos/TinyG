@@ -1180,7 +1180,8 @@ void cm_cycle_start()
 {
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {
-		cm.cycle_state = CYCLE_STARTED;	// don't change homing, probe or other cycles
+		cm.cycle_state = CYCLE_STARTED;				// don't change homing, probe or other cycles
+		st_enable_motors();							// enable motors if not already enabled
 	}
 }
 

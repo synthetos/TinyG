@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	378.03		// Working config power mode issue #26
+#define TINYG_FIRMWARE_BUILD   	378.04		// Working config power mode issues #28, #35
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 

@@ -34,6 +34,7 @@
 #include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "planner.h"
+#include "stepper.h"
 #include "report.h"
 #include "gpio.h"
 
@@ -159,6 +160,7 @@ uint8_t cm_homing_cycle_start(void)
 	hm.func = _homing_axis_start; 			// bind initial processing function
 	cm.cycle_state = CYCLE_HOMING;
 	cm.homing_state = HOMING_NOT_HOMED;
+	st_enable_motors();						// enable motors if not already enabled
 	return (STAT_OK);
 }
 

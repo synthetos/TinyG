@@ -286,40 +286,42 @@ void st_init()
 }
 
 /* 
- * st_enable_motor()  - ennable a motor
+ * st_enable_motor()  - enable a motor
+ * st_enable_motors() - enable all motors with $pm set to 0
  * st_disable_motor() - disable a motor
+ * st_disable_motors()- disable all motors
  * st_kill_motors()   - stop the steppers. Requires re-init to recover
  */
 void st_enable_motor(const uint8_t motor)
 {
-	if (motor == MOTOR_1) {
-		PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-	}
-	if (motor == MOTOR_2) {
-		PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-	}
-	if (motor == MOTOR_3) {
-		PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-	}
-	if (motor == MOTOR_4) {
-		PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-	}
+	if (motor == MOTOR_1) { PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
+	if (motor == MOTOR_2) { PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
+	if (motor == MOTOR_3) { PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
+	if (motor == MOTOR_4) { PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
+}
+
+void st_enable_motors()
+{
+	if (cfg.m[MOTOR_1].power_mode == 0) { st_enable_motor(MOTOR_1);}
+	if (cfg.m[MOTOR_2].power_mode == 0) { st_enable_motor(MOTOR_2);}
+	if (cfg.m[MOTOR_3].power_mode == 0) { st_enable_motor(MOTOR_3);}
+	if (cfg.m[MOTOR_4].power_mode == 0) { st_enable_motor(MOTOR_4);}
 }
 
 void st_disable_motor(const uint8_t motor)
 {
-	if (motor == MOTOR_1) {
-		PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-	}
-	if (motor == MOTOR_2) {
-		PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-	}
-	if (motor == MOTOR_3) {
-		PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-	}
-	if (motor == MOTOR_4) {
-		PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-	}
+	if (motor == MOTOR_1) { PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
+	if (motor == MOTOR_2) { PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
+	if (motor == MOTOR_3) { PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
+	if (motor == MOTOR_4) { PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
+}
+
+void st_disable_motors()
+{
+	st_disable_motor(MOTOR_1);
+	st_disable_motor(MOTOR_2);
+	st_disable_motor(MOTOR_3);
+	st_disable_motor(MOTOR_4);
 }
 
 void st_kill_motors()
