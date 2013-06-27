@@ -566,7 +566,7 @@ void cm_init()
 void cm_alarm(uint8_t value)
 {
 	// stop the steppers and the spindle
-	st_disable();
+	st_kill_motors();
 	cm_spindle_control(SPINDLE_OFF);
 
 	// disable all MCode functions

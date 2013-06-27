@@ -446,6 +446,7 @@ uint8_t cm_get_hold_state(void);
 uint8_t cm_get_homing_state(void);
 
 uint8_t cm_get_model_motion_mode(void);
+uint8_t cm_get_runtime_motion_mode(void);
 uint8_t cm_get_model_coord_system(void);
 uint8_t cm_get_model_units_mode(void);
 uint8_t cm_get_model_select_plane(void);

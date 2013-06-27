@@ -193,6 +193,7 @@ cmdObj_t cmd_list[CMD_LIST_LEN];	// JSON header element
  */
 
 void cfg_init(void);
+stat_t cfg_cycle_check(void);
 stat_t cfg_text_parser(char *str);
 stat_t cfg_baud_rate_callback(void);
 

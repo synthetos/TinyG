@@ -286,16 +286,49 @@ void st_init()
 }
 
 /* 
- * st_disable() - stop the steppers. Requires re-init to recover
+ * st_enable_motor()  - ennable a motor
+ * st_disable_motor() - disable a motor
+ * st_kill_motors()   - stop the steppers. Requires re-init to recover
  */
+void st_enable_motor(const uint8_t motor)
+{
+	if (motor == MOTOR_1) {
+		PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+	}
+	if (motor == MOTOR_2) {
+		PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+	}
+	if (motor == MOTOR_3) {
+		PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+	}
+	if (motor == MOTOR_4) {
+		PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+	}
+}
 
-void st_disable()
+void st_disable_motor(const uint8_t motor)
+{
+	if (motor == MOTOR_1) {
+		PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+	}
+	if (motor == MOTOR_2) {
+		PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+	}
+	if (motor == MOTOR_3) {
+		PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+	}
+	if (motor == MOTOR_4) {
+		PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+	}
+}
+
+void st_kill_motors()
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
 		device.st_port[i]->DIR = MOTOR_PORT_DIR_gm;  // sets outputs for motors & GPIO1, and GPIO2 inputs
 		device.st_port[i]->OUT = MOTOR_ENABLE_BIT_bm;// zero port bits AND disable motor
 	}
-	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// turn timer off
+	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;			// turn timer off
 }
 
 /*

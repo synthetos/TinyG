@@ -257,6 +257,7 @@ static stat_t _set_sa(cmdObj_t *cmd);		// set motor step angle
 static stat_t _set_tr(cmdObj_t *cmd);		// set motor travel per revolution
 static stat_t _set_mi(cmdObj_t *cmd);		// set microsteps
 static stat_t _set_po(cmdObj_t *cmd);		// set motor polarity
+static stat_t _set_pm(cmdObj_t *cmd);		// set motor power mode
 
 static stat_t _set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
 static stat_t _get_am(cmdObj_t *cmd);		// get axis mode
@@ -447,7 +448,7 @@ static const char fmt_0sa[] PROGMEM = "[%s%s] m%s step angle%20.3f%S\n";
 static const char fmt_0tr[] PROGMEM = "[%s%s] m%s travel per revolution%9.3f%S\n";
 static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
 static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
-static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=off,1=on]\n";
+static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=remain powered,1=shut off when idle]\n";
 
 // Axis print formatting strings
 static const char fmt_Xam[] PROGMEM = "[%s%s] %s axis mode%18d %S\n";
@@ -575,28 +576,28 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "1","1tr",_fip, 3, fmt_0tr, _pr_ma_lin, _get_dbu ,_set_tr, (float *)&cfg.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
 	{ "1","1mi",_fip, 0, fmt_0mi, _pr_ma_ui8, _get_ui8, _set_mi, (float *)&cfg.m[MOTOR_1].microsteps,	M1_MICROSTEPS },
 	{ "1","1po",_fip, 0, fmt_0po, _pr_ma_ui8, _get_ui8, _set_po, (float *)&cfg.m[MOTOR_1].polarity,		M1_POLARITY },
-	{ "1","1pm",_fip, 0, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_01, (float *)&cfg.m[MOTOR_1].power_mode,	M1_POWER_MODE },
+	{ "1","1pm",_fip, 0, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_pm, (float *)&cfg.m[MOTOR_1].power_mode,	M1_POWER_MODE },
 
 	{ "2","2ma",_fip, 0, fmt_0ma, _pr_ma_ui8, _get_ui8, _set_ui8,(float *)&cfg.m[MOTOR_2].motor_map,	M2_MOTOR_MAP },
 	{ "2","2sa",_fip, 2, fmt_0sa, _pr_ma_rot, _get_dbl, _set_sa, (float *)&cfg.m[MOTOR_2].step_angle,	M2_STEP_ANGLE },
 	{ "2","2tr",_fip, 3, fmt_0tr, _pr_ma_lin, _get_dbu, _set_tr, (float *)&cfg.m[MOTOR_2].travel_rev,	M2_TRAVEL_PER_REV },
 	{ "2","2mi",_fip, 0, fmt_0mi, _pr_ma_ui8, _get_ui8, _set_mi, (float *)&cfg.m[MOTOR_2].microsteps,	M2_MICROSTEPS },
 	{ "2","2po",_fip, 0, fmt_0po, _pr_ma_ui8, _get_ui8, _set_po, (float *)&cfg.m[MOTOR_2].polarity,		M2_POLARITY },
-	{ "2","2pm",_fip, 0, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_01, (float *)&cfg.m[MOTOR_2].power_mode,	M2_POWER_MODE },
+	{ "2","2pm",_fip, 0, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_pm, (float *)&cfg.m[MOTOR_2].power_mode,	M2_POWER_MODE },
 
 	{ "3","3ma",_fip, 0, fmt_0ma, _pr_ma_ui8, _get_ui8, _set_ui8,(float *)&cfg.m[MOTOR_3].motor_map,	M3_MOTOR_MAP },
 	{ "3","3sa",_fip, 2, fmt_0sa, _pr_ma_rot, _get_dbl, _set_sa, (float *)&cfg.m[MOTOR_3].step_angle,	M3_STEP_ANGLE },
 	{ "3","3tr",_fip, 3, fmt_0tr, _pr_ma_lin, _get_dbu, _set_tr, (float *)&cfg.m[MOTOR_3].travel_rev,	M3_TRAVEL_PER_REV },
 	{ "3","3mi",_fip, 0, fmt_0mi, _pr_ma_ui8, _get_ui8, _set_mi, (float *)&cfg.m[MOTOR_3].microsteps,	M3_MICROSTEPS },
 	{ "3","3po",_fip, 0, fmt_0po, _pr_ma_ui8, _get_ui8, _set_po, (float *)&cfg.m[MOTOR_3].polarity,		M3_POLARITY },
-	{ "3","3pm",_fip, 0, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_01, (float *)&cfg.m[MOTOR_3].power_mode,	M3_POWER_MODE },
+	{ "3","3pm",_fip, 0, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_pm, (float *)&cfg.m[MOTOR_3].power_mode,	M3_POWER_MODE },
 
 	{ "4","4ma",_fip, 0, fmt_0ma, _pr_ma_ui8, _get_ui8, _set_ui8,(float *)&cfg.m[MOTOR_4].motor_map,	M4_MOTOR_MAP },
 	{ "4","4sa",_fip, 2, fmt_0sa, _pr_ma_rot, _get_dbl, _set_sa, (float *)&cfg.m[MOTOR_4].step_angle,	M4_STEP_ANGLE },
 	{ "4","4tr",_fip, 3, fmt_0tr, _pr_ma_lin, _get_dbu, _set_tr, (float *)&cfg.m[MOTOR_4].travel_rev,	M4_TRAVEL_PER_REV },
 	{ "4","4mi",_fip, 0, fmt_0mi, _pr_ma_ui8, _get_ui8, _set_mi, (float *)&cfg.m[MOTOR_4].microsteps,	M4_MICROSTEPS },
 	{ "4","4po",_fip, 0, fmt_0po, _pr_ma_ui8, _get_ui8, _set_po, (float *)&cfg.m[MOTOR_4].polarity,		M4_POLARITY },
-	{ "4","4pm",_fip, 0, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_01, (float *)&cfg.m[MOTOR_4].power_mode,	M4_POWER_MODE },
+	{ "4","4pm",_fip, 0, fmt_0pm, _pr_ma_ui8, _get_ui8, _set_pm, (float *)&cfg.m[MOTOR_4].power_mode,	M4_POWER_MODE },
 
 	// Axis parameters
 	{ "x","xam",_fip, 0, fmt_Xam, _print_am,  _get_am,  _set_am, (float *)&cfg.a[AXIS_X].axis_mode,		X_AXIS_MODE },
@@ -1057,9 +1058,6 @@ static stat_t _get_coor(cmdObj_t *cmd)
 static stat_t _get_momo(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (prog_char_ptr)msg_momo, cm_get_runtime_motion_mode()));
-//	cmd->value = (float)mp_get_runtime_linenum();
-//	cmd->type = TYPE_INTEGER;
-//	return (STAT_OK);
 }
 
 static stat_t _get_plan(cmdObj_t *cmd)
@@ -1178,6 +1176,7 @@ static stat_t _run_home(cmdObj_t *cmd)
  * _set_tr() - set motor travel_per_rev & recompute steps_per_unit
  * _set_mi() - set microsteps & recompute steps_per_unit
  * _set_po() - set polarity and update stepper structs
+ * _set_pm() - set motor power mode and take action
  *
  * _pr_ma_ui8() - print motor or axis uint8 value w/no units or unit conversion
  * _pr_ma_lin() - print linear value with units and in/mm unit conversion
@@ -1251,6 +1250,17 @@ static stat_t _set_po(cmdObj_t *cmd)		// motor polarity
 { 
 	ritorno (_set_01(cmd));
 	st_set_polarity(_get_motor(cmd->index), (uint8_t)cmd->value);
+	return (STAT_OK);
+}
+
+static stat_t _set_pm(cmdObj_t *cmd)		// motor power mode
+{ 
+	ritorno (_set_01(cmd));
+	if (fp_ZERO(cmd->value)) {				// zero means enable motor - i.e. disable power management mode
+		st_enable_motor(_get_motor(cmd->index));
+	} else {
+		st_disable_motor(_get_motor(cmd->index));
+	}
 	return (STAT_OK);
 }
 
@@ -1638,6 +1648,16 @@ static stat_t _text_parser(char *str, cmdObj_t *cmd)
 	}
 	return (STAT_OK);
 }
+
+/*
+ * cfg_cycle_check() - check if in a machining cycle and toss command if so
+ */
+
+stat_t cfg_cycle_check(void)
+{
+	return (STAT_OK);
+}
+
 
 /***** Generic Internal Functions *********************************************
  * Generic sets()
