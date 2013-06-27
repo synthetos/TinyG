@@ -241,7 +241,7 @@ void tg_text_response(const uint8_t status, const char *buf)
 	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
 
 	const char *units;								// becomes pointer to progmem string
-	if (cm_get_units_mode() != INCHES) { 
+	if (cm_get_model_units_mode() != INCHES) { 
 		units = (PGM_P)&prompt_mm;
 	} else {
 		units = (PGM_P)&prompt_in;

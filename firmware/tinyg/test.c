@@ -106,6 +106,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 // avrdude -p x192a3 -c avr109 -b 115200 -P COM19
 // avrdude -e -p atxmega192a3 -c avrispmkii -P usb -U boot:w:xboot-boot.hex
 
+//	xio_queue_RX_string_usb("g28.2 x0\n");			// homing test
+
 //	xio_queue_RX_string_usb("g1 f100 x100\n");		// Feedhold/queue flush test
 //	xio_queue_RX_string_usb("!\n");
 //	xio_queue_RX_string_usb("@\n");
@@ -125,14 +127,16 @@ M9
 G4 P2 (WAIT FOR CYLINDER - UP)
 M30 (END OF CODE)
 */
+
+//	xio_queue_RX_string_usb("$me\n");
 //	xio_queue_RX_string_usb("G0 X0.01 Y0.01\n");
 //	xio_queue_RX_string_usb("M8 G4 P0.001\n");
-	xio_queue_RX_string_usb("G1 X10 Y10 F1000\n");
-	xio_queue_RX_string_usb("M8 G4 P2\n");
-	xio_queue_RX_string_usb("X0 Y0\n");
-	xio_queue_RX_string_usb("G4 P2\n");
-	xio_queue_RX_string_usb("M9\n");
-	xio_queue_RX_string_usb("M30\n");
+//	xio_queue_RX_string_usb("G1 X10 Y10 F1000\n");
+//	xio_queue_RX_string_usb("M8 G4 P2\n");
+//	xio_queue_RX_string_usb("X0 Y0\n");
+//	xio_queue_RX_string_usb("G4 P2\n");
+//	xio_queue_RX_string_usb("M9\n");
+//	xio_queue_RX_string_usb("M30\n");
 
 
 //	xio_queue_RX_string_usb("$net\n");

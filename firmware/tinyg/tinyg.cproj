@@ -202,7 +202,19 @@
     <Compile Include="settings\settings_lumenlabMicRoV3.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_otherlab.h">
+    <Compile Include="settings\settings_openpnp.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="settings\settings_othercutter.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="settings\settings_othermill.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="settings\settings_pocketcnc_linear.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="settings\settings_pocketcnc_rotary.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_probotixV90.h">
@@ -244,16 +256,16 @@
     <Compile Include="tests\test_001_smoke.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="tests\test_002_squares.h">
+    <Compile Include="tests\test_002_homing.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="tests\test_003_arcs.h">
+    <Compile Include="tests\test_003_squares.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="tests\test_004_dwell.h">
+    <Compile Include="tests\test_004_arcs.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="tests\test_005_homing.h">
+    <Compile Include="tests\test_005_dwell.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="tests\test_006_feedhold.h">
@@ -275,6 +287,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="tests\test_012_slow_moves.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test_013_coordinate_offsets.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="tests\test_014_microsteps.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="tests\test_050_mudflap.h">

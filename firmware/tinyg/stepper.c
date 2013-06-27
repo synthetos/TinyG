@@ -162,6 +162,7 @@
 #include "config.h"
 #include "stepper.h" 	
 #include "planner.h"
+#include "xmega/xmega_rtc.h"
 
 static void _exec_move(void);
 static void _load_move(void);
@@ -286,16 +287,64 @@ void st_init()
 }
 
 /* 
- * st_disable() - stop the steppers. Requires re-init to recover
+ * st_enable_motor()  - enable a motor
+ * st_enable_motors() - enable all motors with $pm set to 0
+ * st_disable_motor() - disable a motor
+ * st_disable_motors()- disable all motors
+ * st_start_disable_motors_timeout()
+ * st_disable_motors_rtc_callback()
+ * st_kill_motors()   - stop the steppers. Requires re-init to recover
  */
+void st_enable_motor(const uint8_t motor)
+{
+	if (motor == MOTOR_1) { PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
+	if (motor == MOTOR_2) { PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
+	if (motor == MOTOR_3) { PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
+	if (motor == MOTOR_4) { PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
+}
 
-void st_disable()
+void st_enable_motors()
+{
+	if (cfg.m[MOTOR_1].power_mode == 0) { st_enable_motor(MOTOR_1);}
+	if (cfg.m[MOTOR_2].power_mode == 0) { st_enable_motor(MOTOR_2);}
+	if (cfg.m[MOTOR_3].power_mode == 0) { st_enable_motor(MOTOR_3);}
+	if (cfg.m[MOTOR_4].power_mode == 0) { st_enable_motor(MOTOR_4);}
+	st_start_disable_motors_timer();
+}
+
+void st_disable_motor(const uint8_t motor)
+{
+	if (motor == MOTOR_1) { PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
+	if (motor == MOTOR_2) { PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
+	if (motor == MOTOR_3) { PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
+	if (motor == MOTOR_4) { PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
+}
+
+void st_disable_motors()
+{
+	st_disable_motor(MOTOR_1);
+	st_disable_motor(MOTOR_2);
+	st_disable_motor(MOTOR_3);
+	st_disable_motor(MOTOR_4);
+}
+
+void st_start_disable_motors_timer()	// reset timeout interval
+{
+	cfg.motor_disable_timer = cfg.motor_disable_timeout * (1000 / RTC_MILLISECONDS);
+}
+
+void st_disable_motors_rtc_callback() 		// called by 10ms real-time clock
+{
+	if (--cfg.motor_disable_timer == 0) { st_disable_motors(); }
+}
+
+void st_kill_motors()
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
 		device.st_port[i]->DIR = MOTOR_PORT_DIR_gm;  // sets outputs for motors & GPIO1, and GPIO2 inputs
 		device.st_port[i]->OUT = MOTOR_ENABLE_BIT_bm;// zero port bits AND disable motor
 	}
-	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// turn timer off
+	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;			// turn timer off
 }
 
 /*
@@ -338,6 +387,9 @@ ISR(TIMER_DDA_ISR_vect)
 	if (--st.dda_ticks_downcount == 0) {		// end move
  		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;	// disable DDA timer
 		// power-down motors if this feature is enabled
+
+		st_start_disable_motors_timer();
+/*
 		if (cfg.m[MOTOR_1].power_mode == true) {
 			PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; 
 		}
@@ -350,6 +402,7 @@ ISR(TIMER_DDA_ISR_vect)
 		if (cfg.m[MOTOR_4].power_mode == true) {
 			PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; 
 		}
+*/
 		_load_move();							// load the next move
 	}
 }

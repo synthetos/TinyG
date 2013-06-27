@@ -109,7 +109,9 @@ enum cmdType {						// classification of commands
 	CMD_TYPE_NULL = 0,
 	CMD_TYPE_CONFIG,				// configuration commands
 	CMD_TYPE_GCODE,					// gcode
-	CMD_TYPE_REPORT					// SR, QR and any other report
+	CMD_TYPE_REPORT,				// SR, QR and any other report
+	CMD_TYPE_MESSAGE,				// cmd object carries a message
+	CMD_TYPE_LINENUM				// cmd object carries a gcode line number
 };
 
 enum tgCommunicationsMode {
@@ -191,6 +193,7 @@ cmdObj_t cmd_list[CMD_LIST_LEN];	// JSON header element
  */
 
 void cfg_init(void);
+stat_t cfg_cycle_check(void);
 stat_t cfg_text_parser(char *str);
 stat_t cfg_baud_rate_callback(void);
 
@@ -237,16 +240,16 @@ void cfg_dump_NVM(const uint16_t start_record, const uint16_t end_record, char *
 // main configuration parameter table
 typedef struct cfgAxisParameters {
 	uint8_t axis_mode;				// see tgAxisMode in gcode.h
-	float feedrate_max;			// max velocity in mm/min or deg/min
-	float velocity_max;			// max velocity in mm/min or deg/min
+	float feedrate_max;				// max velocity in mm/min or deg/min
+	float velocity_max;				// max velocity in mm/min or deg/min
 	float travel_max;				// work envelope w/warned or rejected blocks
-	float jerk_max;				// max jerk (Jm) in mm/min^3
-	float junction_dev;			// aka cornering delta
+	float jerk_max;					// max jerk (Jm) in mm/min^3
+	float junction_dev;				// aka cornering delta
 	float radius;					// radius in mm for rotary axis modes
 	float search_velocity;			// homing search velocity
 	float latch_velocity;			// homing latch velocity
 	float latch_backoff;			// backoff from switches prior to homing latch movement
-	float zero_backoff;			// backoff from switches for machine zero
+	float zero_backoff;				// backoff from switches for machine zero
 	float jerk_homing;				// homing jerk (Jh) in mm/min^3
 } cfgAxis_t;
 
@@ -262,15 +265,15 @@ typedef struct cfgMotorParameters {
 
 typedef struct cfgPWMParameters {
   	float frequency;				// base frequency for PWM driver, in Hz
-	float cw_speed_lo;             // minimum clockwise spindle speed [0..N]
-    float cw_speed_hi;             // maximum clockwise spindle speed
-    float cw_phase_lo;             // pwm phase at minimum CW spindle speed, clamped [0..1]
-    float cw_phase_hi;             // pwm phase at maximum CW spindle speed, clamped [0..1]
-	float ccw_speed_lo;            // minimum counter-clockwise spindle speed [0..N]
-    float ccw_speed_hi;			// maximum counter-clockwise spindle speed
-    float ccw_phase_lo;			// pwm phase at minimum CCW spindle speed, clamped [0..1]
-    float ccw_phase_hi;			// pwm phase at maximum CCW spindle speed, clamped
-    float phase_off;               // pwm phase when spindle is disabled
+	float cw_speed_lo;				// minimum clockwise spindle speed [0..N]
+    float cw_speed_hi;				// maximum clockwise spindle speed
+    float cw_phase_lo;				// pwm phase at minimum CW spindle speed, clamped [0..1]
+    float cw_phase_hi;				// pwm phase at maximum CW spindle speed, clamped [0..1]
+	float ccw_speed_lo;				// minimum counter-clockwise spindle speed [0..N]
+    float ccw_speed_hi;				// maximum counter-clockwise spindle speed
+    float ccw_phase_lo;				// pwm phase at minimum CCW spindle speed, clamped [0..1]
+    float ccw_phase_hi;				// pwm phase at maximum CCW spindle speed, clamped
+    float phase_off;				// pwm phase when spindle is disabled
 } cfgPWM_t;
 
 typedef struct cfgParameters {
@@ -279,16 +282,18 @@ typedef struct cfgParameters {
 	uint16_t nvm_base_addr;			// NVM base address
 	uint16_t nvm_profile_base;		// NVM base address of current profile
 
-	// hidden settings				// not part of system group, but still accessible
-	float min_segment_len;			// line drawing resolution in mm
-	float arc_segment_len;			// arc drawing resolution in mm
-	float chordal_tolerance;		// arc chordal accuracy setting in mm
-	float estd_segment_usec;		// approximate segment time in microseconds
-//	uint8_t enable_acceleration;	// enable acceleration control
-
 	// system group settings
 	float junction_acceleration;	// centripetal acceleration max for cornering
+	float chordal_tolerance;		// arc chordal accuracy setting in mm
+	uint32_t motor_disable_timeout;	// time in seconds before disabling motors
+	uint32_t motor_disable_timer;	// down counter for above (in system ticks - 10ms increments)
 //	float max_spindle_speed;		// in RPM
+
+	// hidden system settings
+	float min_segment_len;			// line drawing resolution in mm
+	float arc_segment_len;			// arc drawing resolution in mm
+	float estd_segment_usec;		// approximate segment time in microseconds
+//	uint8_t enable_acceleration;	// enable acceleration control
 
 	// gcode power-on default settings - defaults are not the same as the gm state
 	uint8_t coord_system;			// G10 active coordinate system default

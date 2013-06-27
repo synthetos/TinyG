@@ -65,11 +65,20 @@
 #ifndef stepper_h
 #define stepper_h
 
-void st_init(void);			// initialize stepper subsystem
-void st_disable(void);		// stop the steppers (step the stoppers)
-uint8_t st_isbusy(void);	// return TRUE is any axis is running (F=idle)
+void st_init(void);				// initialize stepper subsystem
+
+void st_enable_motor(const uint8_t motor);
+void st_enable_motors(void);
+void st_disable_motor(const uint8_t motor);
+void st_disable_motors(void);
+void st_start_disable_motors_timer(void);
+void st_disable_motors_rtc_callback(void);
+void st_kill_motors(void);		// stop all motors (stop the steppers)
+
+uint8_t st_isbusy(void);		// return TRUE is any axis is running (F=idle)
 void st_set_polarity(const uint8_t motor, const uint8_t polarity);
 void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode);
+void st_set_power_mode(const uint8_t motor, const uint8_t power_mode);
 
 uint8_t st_test_prep_state(void);
 void st_request_exec_move(void);

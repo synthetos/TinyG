@@ -33,6 +33,7 @@
 #include "../config.h"
 #include "../report.h"
 #include "../gpio.h"
+#include "../stepper.h"
 #include "xmega_rtc.h"
 
 /* 
@@ -50,9 +51,9 @@ void rtc_init()
 	CLK.RTCCTRL = CLK_RTCSRC_RCOSC_gc | CLK_RTCEN_bm;	// Set internal 32kHz osc as RTC clock source
 	do {} while (RTC.STATUS & RTC_SYNCBUSY_bm);			// Wait until RTC is not busy
 
-	RTC.PER = RTC_PERIOD-1;								// overflow period
+	RTC.PER = RTC_MILLISECONDS-1;						// overflow period
 	RTC.CNT = 0;
-	RTC.COMP = RTC_PERIOD-1;
+	RTC.COMP = RTC_MILLISECONDS-1;
 	RTC.CTRL = RTC_PRESCALER_DIV1_gc;					// no prescale (1x)
 	RTC.INTCTRL = RTC_COMPINTLVL;						// interrupt on compare
 
@@ -86,14 +87,15 @@ ISR(RTC_COMP_vect)
 	// callbacks to whatever you need to happen on each RTC tick go here:
 	gpio_rtc_callback();					// switch debouncing
 	rpt_status_report_rtc_callback();		// status report timing
+	st_disable_motors_rtc_callback();		// stepper disable timer
 
 	// here's the default RTC timer clock
-	++rtc.clock_ticks;					// increment real time clock (unused)
+	++rtc.clock_ticks;						// increment real time clock (unused)
 }
 
 void rtc_reset_rtc_clock()
 {
-//	RTC.INTCTRL = RTC_OVFINTLVL_OFF_gc;	// disable interrupt
+//	RTC.INTCTRL = RTC_OVFINTLVL_OFF_gc;		// disable interrupt
 	rtc.clock_ticks = 0;
-//	RTC.INTCTRL = RTC_OVFINTLVL_LO_gc;	// enable interrupt
+//	RTC.INTCTRL = RTC_OVFINTLVL_LO_gc;		// enable interrupt
 }

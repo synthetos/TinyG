@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	377.08		// CXhages queue flush character to % from @
+#define TINYG_FIRMWARE_BUILD   	378.04		// Working config power mode issues #28, #35
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
@@ -181,7 +181,7 @@ extern stat_t status_code;				// declared in main.cpp
 #define	STAT_JSON_TOO_MANY_PAIRS 49			// JSON input string has too many JSON pairs
 #define	STAT_JSON_TOO_LONG 50				// JSON output exceeds buffer size
 #define	STAT_NO_BUFFER_SPACE 51				// Buffer pool is full and cannot perform this operation
-#define	STAT_ERROR_52 52
+#define	STAT_CONFIG_NOT_TAKEN 52			// configuration value not taken while in machining cycle
 #define	STAT_ERROR_53 53
 #define	STAT_ERROR_54 54
 #define	STAT_ERROR_55 55
