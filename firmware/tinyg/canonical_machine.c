@@ -280,7 +280,8 @@ void cm_set_arc_radius(float r)
 
 void cm_set_model_linenum(uint32_t linenum)
 {
-	gm.linenum = linenum;
+	gm.linenum = linenum;		// you must first set the model line number,
+	cmd_add_object("n");		// then add the line number to the cmd list
 }
 
 /* 

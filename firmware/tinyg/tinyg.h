@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	377.08		// CXhages queue flush character to % from @
+#define TINYG_FIRMWARE_BUILD   	378.01		// Working on homing switch setting bug
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 

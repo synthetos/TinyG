@@ -1952,6 +1952,8 @@ uint8_t cmd_get_type(cmdObj_t *cmd)
 	if (strcmp("gc", cmd->token) == 0) return (CMD_TYPE_GCODE);
 	if (strcmp("sr", cmd->token) == 0) return (CMD_TYPE_REPORT);
 	if (strcmp("qr", cmd->token) == 0) return (CMD_TYPE_REPORT);
+	if (strcmp("msg",cmd->token) == 0) return (CMD_TYPE_MESSAGE);
+	if (strcmp("n",  cmd->token) == 0) return (CMD_TYPE_LINENUM);
 	return (CMD_TYPE_CONFIG);
 }
 

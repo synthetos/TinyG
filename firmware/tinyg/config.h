@@ -109,7 +109,9 @@ enum cmdType {						// classification of commands
 	CMD_TYPE_NULL = 0,
 	CMD_TYPE_CONFIG,				// configuration commands
 	CMD_TYPE_GCODE,					// gcode
-	CMD_TYPE_REPORT					// SR, QR and any other report
+	CMD_TYPE_REPORT,				// SR, QR and any other report
+	CMD_TYPE_MESSAGE,				// cmd object carries a message
+	CMD_TYPE_LINENUM				// cmd object carries a gcode line number
 };
 
 enum tgCommunicationsMode {
