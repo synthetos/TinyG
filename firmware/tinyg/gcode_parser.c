@@ -239,7 +239,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 	memset(&gp, 0, sizeof(gp));		// clear all parser values
 	memset(&gf, 0, sizeof(gf));		// clear all next-state flags
 	memset(&gn, 0, sizeof(gn));		// clear all next-state values
-	gn.motion_mode = cm_get_motion_mode();	// get motion mode from previous block
+	gn.motion_mode = cm_get_model_motion_mode();// get motion mode from previous block
 
   	// extract commands and parameters
 	while((status = _get_next_gcode_word(&pstr, &letter, &value)) == STAT_OK) {

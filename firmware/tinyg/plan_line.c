@@ -78,15 +78,17 @@ uint8_t mp_isbusy()
 }
 
 /*
- * mp_get_runtime_linenum()	 - returns currently executing line number
- * mp_get_runtime_velocity() - returns current velocity (aggregate)
+ * mp_get_runtime_motion_mode() 	- returns motion mode of currently executing command
+ * mp_get_runtime_linenum()	 		- returns currently executing line number
+ * mp_get_runtime_velocity() 		- returns current velocity (aggregate)
  * mp_get_runtime_machine_position() - returns current axis position in machine coordinates
- * mp_get_runtime_work_position() - returns current axis position in work coordinates
- *									that were in effect at move planning time
+ * mp_get_runtime_work_position() 	- returns current axis position in work coordinates
+ *									  that were in effect at move planning time
  * mp_set_runtime_work_offset()
- * mp_zero_segment_velocity() - correct velocity in last segment for reporting purposes
+ * mp_zero_segment_velocity() 		- correct velocity in last segment for reporting purposes
  */
 
+uint8_t mp_get_runtime_motion_mode(void) { return (mr.motion_mode);}
 float mp_get_runtime_linenum(void) { return (mr.linenum);}
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 
@@ -148,6 +150,7 @@ stat_t mp_aline(const float target[], const float minutes, const float work_offs
 
 	bf->bf_func = _exec_aline;					// register the callback to the exec function
 	bf->linenum = cm_get_model_linenum();		// block being planned
+	bf->motion_mode = cm_get_model_motion_mode();
 	bf->time = minutes;
 	bf->min_time = min_time;
 	bf->length = length;
@@ -195,7 +198,7 @@ stat_t mp_aline(const float target[], const float minutes, const float work_offs
 	}
 
 	// finish up the current block variables
-	if (cm_get_path_control() != PATH_EXACT_STOP) { // exact stop cases already zeroed
+	if (cm_get_model_path_control() != PATH_EXACT_STOP) { // exact stop cases already zeroed
 		bf->replannable = true;
 		exact_stop = 12345678;					// an arbitrarily large floating point number
 	}
@@ -1005,6 +1008,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		mr.move_state = MOVE_STATE_HEAD;
 		mr.section_state = MOVE_STATE_NEW;
 		mr.linenum = bf->linenum;
+		mr.motion_mode = bf->motion_mode;
 		mr.jerk = bf->jerk;
 		mr.head_length = bf->head_length;
 		mr.body_length = bf->body_length;

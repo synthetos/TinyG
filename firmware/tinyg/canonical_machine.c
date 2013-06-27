@@ -133,8 +133,15 @@ uint8_t cm_get_combined_state()
 }
 
 /*
- * Low-level Getters and Setters (work directly on the Gcode model struct)
+ * Low-level Getters and Setters (most work directly on the Gcode model struct)
  */
+// set parameters in gm struct
+void cm_set_motion_mode(uint8_t motion_mode) {gm.motion_mode = motion_mode;} 
+void cm_set_absolute_override(uint8_t absolute_override) { gm.absolute_override = absolute_override;}
+void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
+void cm_set_spindle_speed_parameter(float speed) { gm.spindle_speed = speed;}
+void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
+
 // get parameter from cm struct
 uint8_t cm_get_machine_state() { return cm.machine_state;}
 uint8_t cm_get_cycle_state() { return cm.cycle_state;}
@@ -143,24 +150,20 @@ uint8_t cm_get_hold_state() { return cm.hold_state;}
 uint8_t cm_get_homing_state() { return cm.homing_state;}
 
 // get parameter from gm struct
-uint8_t cm_get_motion_mode() { return gm.motion_mode;}
-uint8_t cm_get_coord_system() { return gm.coord_system;}
-uint8_t cm_get_units_mode() { return gm.units_mode;}
-uint8_t cm_get_select_plane() { return gm.select_plane;}
-uint8_t cm_get_path_control() { return gm.path_control;}
-uint8_t cm_get_distance_mode() { return gm.distance_mode;}
-uint8_t cm_get_inverse_feed_rate_mode() { return gm.inverse_feed_rate_mode;}
-uint8_t cm_get_spindle_mode() { return gm.spindle_mode;} 
+uint8_t cm_get_model_motion_mode() { return gm.motion_mode;}
+uint8_t cm_get_model_coord_system() { return gm.coord_system;}
+uint8_t cm_get_model_units_mode() { return gm.units_mode;}
+uint8_t cm_get_model_select_plane() { return gm.select_plane;}
+uint8_t cm_get_model_path_control() { return gm.path_control;}
+uint8_t cm_get_model_distance_mode() { return gm.distance_mode;}
+uint8_t cm_get_model_inverse_feed_rate_mode() { return gm.inverse_feed_rate_mode;}
+uint8_t cm_get_model_spindle_mode() { return gm.spindle_mode;} 
 uint32_t cm_get_model_linenum() { return gm.linenum;}
 uint8_t	cm_get_block_delete_switch() { return gm.block_delete_switch;}
-uint8_t cm_isbusy() { return (mp_isbusy());}
 
-// set parameters in gm struct
-void cm_set_motion_mode(uint8_t motion_mode) {gm.motion_mode = motion_mode;} 
-void cm_set_absolute_override(uint8_t absolute_override) { gm.absolute_override = absolute_override;}
-void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
-void cm_set_spindle_speed_parameter(float speed) { gm.spindle_speed = speed;}
-void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
+// get runtime variables from  MR struct
+uint8_t cm_get_runtime_motion_mode() { return mp_get_runtime_motion_mode();}
+uint8_t cm_isbusy() { return (mp_isbusy());}
 
 //void cm_sync_tool_number(uint8_t tool) { mp_sync_command(SYNC_TOOL_NUMBER, (float)tool);}
 //void cm_sync_spindle_speed_parameter(float speed) { mp_sync_command(SYNC_SPINDLE_SPEED, speed);}

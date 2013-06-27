@@ -331,7 +331,7 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 			str += sprintf(str, "\"%s\":", cmd->token);
 
 			if (cmd->type == TYPE_FLOAT_UNITS)	{ 
-				if (cm_get_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
+				if (cm_get_model_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
 				cmd->type = TYPE_FLOAT;
 			}
 			if (cmd->type == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
