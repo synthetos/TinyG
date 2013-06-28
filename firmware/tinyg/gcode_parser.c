@@ -96,14 +96,23 @@ stat_t gc_gcode_parser(char_t *block)
  *	So this: "  g1 x100 Y100 f400" becomes this: "G1X100Y100F400"
  *
  *	Comment and message handling:
+ *	 - Comments field start with a '(' char or alternately a semicolon ';' 
  *	 - Comments and messages are not normalized - they are left alone
- *	 - Comments always terminate the block (i.e. embedded comments are not supported)
  *	 - The 'MSG' specifier in comment can have mixed case but cannot cannot have embedded white spaces
  *	 - Normalization returns true if there was a message to display, false otherwise
- *	 - Processing splits string into command and comment portions - supported cases are:
- *		 COMMAND
- *		 (comment)
- *		 COMMAND (comment)
+ *	 - Comments always terminate the block - i.e. leading or embedded comments are not supported
+ *	 	- Valid cases (examples)			Notes:
+ *		    G0X10							 - command only - no comment
+ *		    (comment text)                   - There is no command on this line
+ *		    G0X10 (comment text)
+ *		    G0X10 (comment text				 - It's OK to drop the trailing paren
+ *		    G0X10 ;comment text				 - It's OK to drop the trailing paren
+ *
+ *	 	- Invalid cases (examples)			Notes:
+ *		    G0X10 comment text				 - Comment with no separator
+ *		    N10 (comment) G0X10 			 - embedded comment. G0X10 will be ignored
+ *		    (comment) G0X10 				 - leading comment. G0X10 will be ignored
+ * 			G0X10 # comment					 - invalid separator
  *
  *	Returns:
  *	 - com points to comment string or to NUL if no comment
@@ -123,10 +132,11 @@ static void _normalize_gcode_block(char_t *cmd, char_t **com, char_t **msg, uint
 	if (*rd == '/') { *block_delete_flag = true; } 
 	else { *block_delete_flag = false; }
 	
-	// normalize the command block & find the comment(if any)
+	// normalize the command block & find the comment (if any)
 	for (; *wr != NUL; rd++) {
 		if (*rd == NUL) { *wr = NUL; }
-		else if (*rd == '(') { *wr = NUL; *com = rd+1; } 
+//		else if (*rd == '(') { *wr = NUL; *com = rd+1; }
+		else if ((*rd == '(') || (*rd == ';')) { *wr = NUL; *com = rd+1; }
 		else if ((isalnum((char)*rd)) || (strchr("-.", *rd))) { // all valid characters
 			*(wr++) = (char_t)toupper((char)*(rd));
 		}
