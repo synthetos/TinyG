@@ -214,6 +214,7 @@ int main(void)
 //			for (int i = 0; i < sizeof(startup); i++) { send_char(startup[i]);}
 		//**************************************
 
+
         // --------------------------------------------------
         // End initialization section
         
@@ -221,8 +222,43 @@ int main(void)
         // Triggers that are checked once, regardless of
         // whether or not USE_ENTER_DELAY is selected
         // --------------------------------------------------
-        
-        
+
+        // --------------------------------------------------
+		// Detect reset source and skip boot for some cases
+		// Uses the Reset Status Register to determine tha cause of the reset and act accordingly
+		// See xmega manual sections 9.4 Reset Sources and 9.5 Register Description
+		// Note: Software Reset (SRF) is used by the BOOT command and is handled in next section
+/*		
+		if (RST.STATUS & RST_SDRF_bm) {		// Spike Detection Reset Flag (see iox192a3.h)
+			RST.STATUS |= RST_SDRF_bm;		// clear reset condition bit
+			asm("jmp 0");					// jump into application code
+		}
+		
+		if (RST.STATUS & RST_BORF_bm) {		// Brown Out Reset Flag
+			RST.STATUS |= RST_BORF_bm;		// clear reset condition bit
+			asm("jmp 0");
+		}
+
+		if (RST.STATUS & RST_WDRF_bm) {		// Watchdog Reset Flag
+			RST.STATUS |= RST_WDRF_bm;		// clear reset condition bit
+			asm("jmp 0");
+		}
+
+		if (RST.STATUS & RST_PDIRF_bm) {	// Program and Debug Interface Reset Flag
+			RST.STATUS |= RST_PDIRF_bm;		// clear reset condition bit
+			asm("jmp 0");
+		}
+*/
+//		if (RST.STATUS & RST_EXTRF_bm) {	// External Reset Flag - reset button
+//			RST.STATUS |= RST_EXTRF_bm;		// clear reset condition bit
+//			asm("jmp 0");
+//		}
+/*
+		if (RST.STATUS & RST_PORF_bm) {		// Power On Reset Flag
+			RST.STATUS |= RST_PORF_bm;		// clear reset condition bit
+			asm("jmp 0");
+		}
+*/
         // --------------------------------------------------
         // End one time trigger section
         
@@ -230,16 +266,18 @@ int main(void)
 
 	    k = ENTER_BLINK_COUNT*2;
 
-		// ++++ Blink count delay hack
+        // --------------------------------------------------
+		// **** Blink count delay hack
 		// This code tests the software reset bit to determine if the bootloader was entered
 		// from the application via a $boot=1 or {"boot"1} command. If so, it will remain in
-		// the boot loader 20 time longer than usual, which should be about a minute.
+		// the boot loader 20 times longer than usual, which should be about a minute.
 		// Thanks to Rob Giseburt for pointing this out.
 		if (RST.STATUS & RST_SRF_bm) {	// it came from a software reset
 			RST.STATUS = 0xFF;			// reset all status bits (just to be sure)
 			k *= 20;					// 20 times the timeout delay, which is typically 3 seconds.
 		}
-		// ++++ regular code resumes from here
+		// **** regular code resumes from here
+        // --------------------------------------------------
 
         j = ENTER_BLINK_WAIT;
         while (!in_bootloader && k > 0)

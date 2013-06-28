@@ -15,7 +15,7 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
-CFLAGS += -Wall -gdwarf-2 -std=gnu99 -fdata-sections  -DUSE_CONFIG_H  -ffunction-sections           -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -Wall -gdwarf-2 -std=gnu99 -fdata-sections  -DUSE_CONFIG_H  -ffunction-sections             -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
 
 ## Assembly specific flags
@@ -43,9 +43,7 @@ OBJECTS = api.o eeprom_driver.o fifo.o flash.o i2c.o sp_driver.o uart.o watchdog
 LINKONLYOBJECTS = 
 
 ## Build
-all: $(TARGET) xboot.hex xboot.eep xboot.lss size
-
-## Compile
+all: $(TARGET) xboot.hex xboot.eep xboot.lss## Compile
 api.o: ../api.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
@@ -85,10 +83,6 @@ $(TARGET): $(OBJECTS)
 
 %.lss: $(TARGET)
 	avr-objdump -h -S $< > $@
-
-size: ${TARGET}
-	@echo
-	@avr-size -C --mcu=${MCU} ${TARGET}
 
 ## Clean target
 .PHONY: clean
