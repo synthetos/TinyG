@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	378.05		// Added semicolon character to Gcode comments
+#define TINYG_FIRMWARE_BUILD   	378.06		// Case where power managed axis is not released
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
