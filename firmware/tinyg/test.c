@@ -147,6 +147,7 @@ M30 (END OF CODE)
 //	xio_queue_RX_string_usb("$test=4\n");
 //	xio_queue_RX_string_usb("g20\n");
 //	xio_queue_RX_string_usb("{\"xvm\":100}\n");
+	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("$qf\n");
 //	xio_queue_RX_string_usb("$defau=1\n");

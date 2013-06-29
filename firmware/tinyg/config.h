@@ -79,11 +79,11 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 #define CMD_SHARED_STRING_LEN 512	// shared string for string values
 
 									// cmdObj list defines
-#define CMD_BODY_LEN 25				// body elements - allow for 1 parent + N children 
+#define CMD_BODY_LEN 30				// body elements - allow for 1 parent + N children 
 #define CMD_LIST_LEN (CMD_BODY_LEN+2)// +2 allows for a header and a footer
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 
-#define CMD_STATUS_REPORT_LEN 24	// max number of status report elements - see cfgArray
+#define CMD_STATUS_REPORT_LEN 28	// max number of status report elements - see cfgArray
 									// must also line up in cfgArray, se00 - seXX
 
 #define NVM_VALUE_LEN 4				// NVM value length (float, fixed length)
