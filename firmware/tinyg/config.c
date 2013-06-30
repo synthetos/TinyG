@@ -78,6 +78,8 @@
  *	 - group of all motor groups
  *	 - group of all offset groups
  *	 - group of all groups
+ *
+ *	See config.h for a dsicussion of the related cmdObj lists
  */
 /*  --- Making changes and adding new values
  *
@@ -891,7 +893,7 @@ static stat_t _get_id(cmdObj_t *cmd)
 	char tmp[SYS_ID_LEN];
 	sys_get_id(tmp);
 	ritorno(cmd_copy_string(cmd, tmp));
-	cmd->type = TYPE_STRING;
+	cmd->objtype = TYPE_STRING;
 	return (STAT_OK);
 }
 
@@ -925,7 +927,7 @@ static stat_t _set_me(cmdObj_t *cmd)
 static stat_t _get_qr(cmdObj_t *cmd) 
 {
 	cmd->value = (float)mp_get_planner_buffers_available();
-	cmd->type = TYPE_INTEGER;
+	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
@@ -945,7 +947,7 @@ static stat_t _get_er(cmdObj_t *cmd)
 static stat_t _get_rx(cmdObj_t *cmd)
 {
 	cmd->value = (float)xio_get_usb_rx_free();
-	cmd->type = TYPE_INTEGER;
+	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
@@ -1026,7 +1028,7 @@ stat_t cmd_set_jv(cmdObj_t *cmd)
 static stat_t _get_msg_helper(cmdObj_t *cmd, prog_char_ptr msg, uint8_t value)
 {
 	cmd->value = (float)value;
-	cmd->type = TYPE_INTEGER;
+	cmd->objtype = TYPE_INTEGER;
 	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg[value*2]))); // hack alert: direct computation of index
 	return (STAT_OK);
 //	return((char *)pgm_read_word(&msg[(uint8_t)value]));
@@ -1038,7 +1040,7 @@ static stat_t _get_stat(cmdObj_t *cmd)
 
 /* how to do this w/o calling the helper routine - See 331.09 for original routines
 	cmd->value = cm_get_machine_state();
-	cmd->type = TYPE_INTEGER;
+	cmd->objtype = TYPE_INTEGER;
 	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN));
 	return (STAT_OK);
  */
@@ -1108,7 +1110,7 @@ static stat_t _get_frmo(cmdObj_t *cmd)
 static stat_t _get_line(cmdObj_t *cmd)
 {
 	cmd->value = (float)mp_get_runtime_linenum();
-	cmd->type = TYPE_INTEGER;
+	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
@@ -1117,8 +1119,8 @@ static stat_t _get_vel(cmdObj_t *cmd)
 	cmd->value = mp_get_runtime_velocity();
 	if (cm_get_model_units_mode() == INCHES) cmd->value *= INCH_PER_MM;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-//	cmd->type = TYPE_FLOAT_UNITS;	//++++ UNTESTED
-	cmd->type = TYPE_FLOAT;
+//	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
+	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
@@ -1126,8 +1128,8 @@ static stat_t _get_pos(cmdObj_t *cmd)
 {
 	cmd->value = cm_get_runtime_work_position(_get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-//	cmd->type = TYPE_FLOAT_UNITS;	//++++ UNTESTED
-	cmd->type = TYPE_FLOAT;
+//	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
+	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
@@ -1135,8 +1137,8 @@ static stat_t _get_mpos(cmdObj_t *cmd)
 {
 	cmd->value = cm_get_runtime_machine_position(_get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-//	cmd->type = TYPE_FLOAT_UNITS;	//++++ UNTESTED
-	cmd->type = TYPE_FLOAT;
+//	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
+	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
@@ -1144,8 +1146,8 @@ static stat_t _get_ofs(cmdObj_t *cmd)
 {
 	cmd->value = cm_get_runtime_work_offset(_get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-//	cmd->type = TYPE_FLOAT_UNITS;	//++++ UNTESTED
-	cmd->type = TYPE_FLOAT;
+//	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
+	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
@@ -1177,7 +1179,7 @@ static void _print_mpos(cmdObj_t *cmd)		// print position with fixed unit displa
 static stat_t _get_gc(cmdObj_t *cmd)
 {
 	ritorno(cmd_copy_string(cmd, tg.in_buf));
-	cmd->type = TYPE_STRING;
+	cmd->objtype = TYPE_STRING;
 	return (STAT_OK);
 }
 
@@ -1444,7 +1446,7 @@ static stat_t _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // hel
 		cmd = cmd_body;
 		strncpy(cmd->token, list[i], CMD_TOKEN_LEN);
 		cmd->index = cmd_get_index("", cmd->token);
-//		cmd->type = TYPE_PARENT;
+//		cmd->objtype = TYPE_PARENT;
 		cmd_get_cmdObj(cmd);
 		cmd_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 	}
@@ -1627,7 +1629,7 @@ stat_t cfg_text_parser(char *str)
 
 	// parse and execute the command (only processes 1 command per line)
 	ritorno(_text_parser(str, cmd));		// run the parser to decode the command
-	if ((cmd->type == TYPE_NULL) || (cmd->type == TYPE_PARENT)) {  // NB: TYPE_NULL is 1. See config.h
+	if ((cmd->objtype == TYPE_NULL) || (cmd->objtype == TYPE_PARENT)) {
 		if (cmd_get(cmd) == STAT_COMPLETE) {// populate value, group values, or run uber-group displays
 			return (STAT_OK);				// return for uber-group displays so they don't print twice
 		}
@@ -1655,7 +1657,7 @@ static stat_t _text_parser(char *str, cmdObj_t *cmd)
 	*ptr_wr = NUL;							// terminate the string
 
 	// parse fields into the cmd struct
-	cmd->type = TYPE_NULL;
+	cmd->objtype = TYPE_NULL;
 	if ((ptr_rd = strpbrk(str, separators)) == NULL) { // no value part
 		strncpy(cmd->token, str, CMD_TOKEN_LEN);
 	} else {
@@ -1664,7 +1666,7 @@ static stat_t _text_parser(char *str, cmdObj_t *cmd)
 		str = ++ptr_rd;
 		cmd->value = strtod(str, &ptr_rd);	// ptr_rd used as end pointer
 		if (ptr_rd != str) {
-			cmd->type = TYPE_FLOAT;
+			cmd->objtype = TYPE_FLOAT;
 		}
 	}
 
@@ -1711,7 +1713,7 @@ static stat_t _set_nul(cmdObj_t *cmd) { return (STAT_NOOP);}
 static stat_t _set_ui8(cmdObj_t *cmd)
 {
 	*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
-	cmd->type = TYPE_INTEGER;
+	cmd->objtype = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
@@ -1736,7 +1738,7 @@ static stat_t _set_012(cmdObj_t *cmd)
 static stat_t _set_int(cmdObj_t *cmd)
 {
 	*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
-	cmd->type = TYPE_INTEGER;
+	cmd->objtype = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
@@ -1744,7 +1746,7 @@ static stat_t _set_dbl(cmdObj_t *cmd)
 {
 	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-	cmd->type = TYPE_FLOAT;
+	cmd->objtype = TYPE_FLOAT;
 	return(STAT_OK);
 }
 
@@ -1753,27 +1755,27 @@ static stat_t _set_dbu(cmdObj_t *cmd)
 	if (cm_get_model_units_mode() == INCHES) { cmd->value *= MM_PER_INCH;}
 	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-	cmd->type = TYPE_FLOAT_UNITS;
+	cmd->objtype = TYPE_FLOAT_UNITS;
 	return(STAT_OK);
 }
 
 static stat_t _get_nul(cmdObj_t *cmd) 
 { 
-	cmd->type = TYPE_NULL;
+	cmd->objtype = TYPE_NULL;
 	return (STAT_NOOP);
 }
 
 static stat_t _get_ui8(cmdObj_t *cmd)
 {
 	cmd->value = (float)*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target));
-	cmd->type = TYPE_INTEGER;
+	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
 static stat_t _get_int(cmdObj_t *cmd)
 {
 	cmd->value = (float)*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target));
-	cmd->type = TYPE_INTEGER;
+	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
@@ -1781,7 +1783,7 @@ static stat_t _get_dbl(cmdObj_t *cmd)
 {
 	cmd->value = *((float *)pgm_read_word(&cfgArray[cmd->index].target));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-	cmd->type = TYPE_FLOAT;
+	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
@@ -1791,7 +1793,7 @@ static stat_t _get_dbu(cmdObj_t *cmd)
 	if (cm_get_model_units_mode() == INCHES) {
 		cmd->value *= INCH_PER_MM;
 	}
-//	cmd->type = TYPE_FLOAT_UNITS;	// ++++ UNTESTED
+//	cmd->objtype = TYPE_FLOAT_UNITS;	// ++++ UNTESTED
 	return (STAT_OK);
 }
 
@@ -1940,7 +1942,7 @@ static stat_t _get_grp(cmdObj_t *cmd)
 {
 	char *parent_group = cmd->token;		// token in the parent cmd object is the group
 	char group[CMD_GROUP_LEN+1];			// group string retrieved from cfgArray child
-	cmd->type = TYPE_PARENT;				// make first object the parent 
+	cmd->objtype = TYPE_PARENT;				// make first object the parent 
 	for (index_t i=0; i<=CMD_INDEX_END_SINGLES; i++) {
 		strcpy_P(group, cfgArray[i].group);  // don't need strncpy as it's always terminated
 		if (strcmp(parent_group, group) != 0) continue;
@@ -1955,7 +1957,7 @@ static stat_t _get_grp(cmdObj_t *cmd)
  *
  *	This functions is called "_set_group()" but technically it's a getter and 
  *	a setter. It iterates the group children and either gets the value or sets
- *	the value for each depending on the cmd->type.
+ *	the value for each depending on the cmd->objtype.
  *
  *	This function serves JSON mode only as text mode shouldn't call it.
  */
@@ -1965,8 +1967,8 @@ static stat_t _set_grp(cmdObj_t *cmd)
 	if (cfg.comm_mode == TEXT_MODE) return (STAT_UNRECOGNIZED_COMMAND);
 	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
-		if (cmd->type == TYPE_EMPTY) break;
-		else if (cmd->type == TYPE_NULL)	// NULL means GET the value
+		if (cmd->objtype == TYPE_EMPTY) break;
+		else if (cmd->objtype == TYPE_NULL)	// NULL means GET the value
 			cmd_get(cmd);
 		else {
 			cmd_set(cmd);
@@ -2108,7 +2110,7 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
  
 cmdObj_t *cmd_reset_obj(cmdObj_t *cmd)	// clear a single cmdObj structure
 {
-	cmd->type = TYPE_EMPTY;				// selective clear is much faster than calling memset
+	cmd->objtype = TYPE_EMPTY;				// selective clear is much faster than calling memset
 	cmd->index = 0;
 	cmd->value = 0;
 	cmd->precision = 0;
@@ -2119,7 +2121,7 @@ cmdObj_t *cmd_reset_obj(cmdObj_t *cmd)	// clear a single cmdObj structure
 	if (cmd->pv == NULL) { 				// set depth correctly
 		cmd->depth = 0;
 	} else {
-		if (cmd->pv->type == TYPE_PARENT) { 
+		if (cmd->pv->objtype == TYPE_PARENT) { 
 			cmd->depth = cmd->pv->depth + 1;
 		} else {
 			cmd->depth = cmd->pv->depth;
@@ -2137,14 +2139,14 @@ cmdObj_t *cmd_reset_list()					// clear the header and response body
 		cmd->nx = (cmd+1);
 		cmd->index = 0;
 		cmd->depth = 1;						// header and footer are corrected later
-		cmd->type = TYPE_EMPTY;
+		cmd->objtype = TYPE_EMPTY;
 		cmd->token[0] = NUL;
 	}
 	(--cmd)->nx = NULL;
 	cmd = cmd_list;							// setup response header element ('r')
 	cmd->pv = NULL;
 	cmd->depth = 0;
-	cmd->type = TYPE_PARENT;
+	cmd->objtype = TYPE_PARENT;
 	strcpy(cmd->token, "r");
 	return (cmd_body);						// this is a convenience for calling routines
 }
@@ -2170,7 +2172,7 @@ cmdObj_t *cmd_add_object(char *token)		// add an object to the body using a toke
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->type != TYPE_EMPTY) {
+		if (cmd->objtype != TYPE_EMPTY) {
 			cmd = cmd->nx;
 			continue;
 		}
@@ -2186,13 +2188,13 @@ cmdObj_t *cmd_add_integer(char *token, const uint32_t value)// add an integer ob
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->type != TYPE_EMPTY) {
+		if (cmd->objtype != TYPE_EMPTY) {
 			cmd = cmd->nx;
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		cmd->value = (float) value;
-		cmd->type = TYPE_INTEGER;
+		cmd->objtype = TYPE_INTEGER;
 		return (cmd);
 	}
 	return (NULL);
@@ -2202,13 +2204,13 @@ cmdObj_t *cmd_add_float(char *token, const float value)	// add a float object to
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->type != TYPE_EMPTY) {
+		if (cmd->objtype != TYPE_EMPTY) {
 			cmd = cmd->nx;
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		cmd->value = value;
-		cmd->type = TYPE_FLOAT;
+		cmd->objtype = TYPE_FLOAT;
 		return (cmd);
 	}
 	return (NULL);
@@ -2218,14 +2220,14 @@ cmdObj_t *cmd_add_string(char *token, const char *string)	// add a string object
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->type != TYPE_EMPTY) {
+		if (cmd->objtype != TYPE_EMPTY) {
 			cmd = cmd->nx;
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		if (cmd_copy_string(cmd, string) != STAT_OK) { return (NULL);}
 		cmd->index = cmd_get_index("", cmd->token);
-		cmd->type = TYPE_STRING;
+		cmd->objtype = TYPE_STRING;
 		return (cmd);
 	}
 	return (NULL);
@@ -2288,7 +2290,7 @@ void _print_text_inline_pairs()
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		switch (cmd->type) {
+		switch (cmd->objtype) {
 			case TYPE_PARENT:	{ cmd = cmd->nx; continue; }
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
@@ -2296,7 +2298,7 @@ void _print_text_inline_pairs()
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
-		if (cmd->type != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}		
+		if (cmd->objtype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}		
 	}
 }
 
@@ -2304,7 +2306,7 @@ void _print_text_inline_values()
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		switch (cmd->type) {
+		switch (cmd->objtype) {
 			case TYPE_PARENT:	{ cmd = cmd->nx; continue; }
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%1.3f"), cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), cmd->value); break;}
@@ -2312,7 +2314,7 @@ void _print_text_inline_values()
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		cmd = cmd->nx;
-		if (cmd->type != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
+		if (cmd->objtype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
 	}
 }
 
@@ -2320,9 +2322,9 @@ void _print_text_multiline_formatted()
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		if (cmd->type != TYPE_PARENT) { cmd_print(cmd);}
+		if (cmd->objtype != TYPE_PARENT) { cmd_print(cmd);}
 		cmd = cmd->nx;
-		if (cmd->type == TYPE_EMPTY) { break;}
+		if (cmd->objtype == TYPE_EMPTY) { break;}
 	}
 }
 

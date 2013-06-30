@@ -31,26 +31,43 @@
 
 /**** cmdObj lists ****
  *
- * 	Commands and groups of commands are processed internally a doubly linked list
+ * 	Commands and groups of commands are processed internally a doubly linked list of
  *	cmdObj_t structures. This isolates the command and config internals from the 
  *	details of communications, parsing and display in text mode and JSON mode.
+ *
  *	The first element of the list is designated the response header element ("r") 
  *	but the list can also be serialized as a simple object by skipping over the header
  *
  *	To use the cmd list first reset it by calling cmd_reset_list(). This initializes
- *	the header, marks the the objects as TYPE_EMPTY, resets the shared string, and 
+ *	the header, marks the the objects as TYPE_EMPTY (-1), resets the shared string, and 
  *	terminates the last element by setting its NX pointer to NULL. When you use the 
  *	list you can terminate your own last element, or just leave the EMPTY elements 
  *	to be skipped over during outpout serialization.
  * 
- * 	We don;t use recursion so parent/child nesting relationships are captured in a 
- *	'depth' variable, This must remain consistent if the curlies  are to work out. 
+ * 	We don't use recursion so parent/child nesting relationships are captured in a 
+ *	'depth' variable, This must remain consistent if the curlies are to work out. 
  *	In general you should not have to track depth explicitly if you use cmd_reset_list()
  *	or the accessor functions like cmd_add_integer() or cmd_add_message(). 
  *	If you see problems with curlies check the depth values in the lists.
  *
  *	Use the cmd_print_list() dispatcher for all JSON and text output. Do not simply 
  *	run through printf.
+ */
+/*	Token and Group Fields
+ * 
+ *	The cmdObject struct (cmdObj_t) has strict rules on the use of the token and group fields.
+ *	The follwing forms are legal which support the use cases listed:
+ *
+ *	Forms
+ *	  - group is NUL; token is full token including any group profix
+ *	  - group is populated; token is carried without the group prefix
+ *	  - group is populated; token is NUL - indicates a group operation
+ *
+ *  Use Cases
+ *	  - Lookup full token in cfgArray to get the index. Concatenates grp+token as key
+ *	  - Text-mode displays. Concatenates grp+token for display, may also use grp alone
+ *	  - JSON-mode display for single - element value e.g. xvm. Concatenate as above
+ *	  - JSON-mode display of a parent/child group. Parent is named grp, children nems are tokens
  */
 /*	Cmd object string handling
  *
@@ -94,8 +111,8 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 #define IGNORE_LF 2					// ignore LF on RX
 
 enum objType {						// object / value typing for config and JSON
-	TYPE_EMPTY = 0,					// object has no value (which is not the same as "NULL")
-	TYPE_NULL,						// value is 'null' (meaning the JSON null value)
+	TYPE_EMPTY = -1,				// object has no value (which is not the same as "NULL")
+	TYPE_NULL = 0,					// value is 'null' (meaning the JSON null value)
 	TYPE_BOOL,						// value is "true" (1) or "false"(0)
 	TYPE_INTEGER,					// value is a uint32_t
 	TYPE_FLOAT,						// value is a floating point number
@@ -171,7 +188,7 @@ typedef struct cmdObject {			// depending on use, not all elements may be popula
 	struct cmdObject *nx;			// pointer to next object or NULL if last object
 	index_t index;					// index of tokenized name, or -1 if no token (optional)
 	int8_t depth;					// depth of object in the tree. 0 is root (-1 is invalid)
-	int8_t type;					// see cmdType
+	int8_t objtype;					// see objType enum
 	int8_t precision;				// decimal precision for reporting (JSON)
 	float value;					// numeric value
 	char token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
