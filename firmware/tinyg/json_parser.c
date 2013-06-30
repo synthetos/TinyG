@@ -131,7 +131,7 @@ stat_t _json_parser_kernal(char *str)
 
 	// execute the command
 	cmd = cmd_body;
-	if (cmd->type == TYPE_NULL){				// means GET the value
+	if (cmd->objtype == TYPE_NULL){				// means GET the value
 		ritorno(cmd_get(cmd));					// ritorno returns w/status on any errors
 	} else {
 		ritorno(cmd_set(cmd));					// set value or call a function (e.g. gcode)
@@ -209,26 +209,26 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 
 	// nulls (gets)
 	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { // process null value
-		cmd->type = TYPE_NULL;
+		cmd->objtype = TYPE_NULL;
 		cmd->value = TYPE_NULL;
 	
 	// numbers
 	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
 		cmd->value = strtod(*pstr, &tmp);			// tmp is the end pointer
 		if(tmp == *pstr) { return (STAT_BAD_NUMBER_FORMAT);}
-		cmd->type = TYPE_FLOAT;
+		cmd->objtype = TYPE_FLOAT;
 
 	// object parent
 	} else if (**pstr == '{') { 
-		cmd->type = TYPE_PARENT;
-//		*depth += 1;								// cmd_reset_obj() sets the next object's level so this is redundant
+		cmd->objtype = TYPE_PARENT;
+//		*depth += 1;							// cmd_reset_obj() sets the next object's level so this is redundant
 		(*pstr)++;
-		return(STAT_EAGAIN);							// signal that there is more to parse
+		return(STAT_EAGAIN);					// signal that there is more to parse
 
 	// strings
-	} else if (**pstr == '\"') { 					// value is a string
+	} else if (**pstr == '\"') { 				// value is a string
 		(*pstr)++;
-		cmd->type = TYPE_STRING;
+		cmd->objtype = TYPE_STRING;
 		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);} // find the end of the string
 		*tmp = NUL;
 		ritorno(cmd_copy_string(cmd, *pstr));
@@ -236,20 +236,20 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 
 	// boolean true/false
 	} else if (**pstr == 't') { 
-		cmd->type = TYPE_BOOL;
+		cmd->objtype = TYPE_BOOL;
 		cmd->value = true;
 	} else if (**pstr == 'f') { 
-		cmd->type = TYPE_BOOL;
+		cmd->objtype = TYPE_BOOL;
 		cmd->value = false;
 
 	// arrays
 	} else if (**pstr == '[') {
-		cmd->type = TYPE_ARRAY;
-		ritorno(cmd_copy_string(cmd, *pstr));		// copy array into string for error displays
-		return (STAT_INPUT_VALUE_UNSUPPORTED);		// return error as the parser doesn't do input arrays yet
+		cmd->objtype = TYPE_ARRAY;
+		ritorno(cmd_copy_string(cmd, *pstr));	// copy array into string for error displays
+		return (STAT_INPUT_VALUE_UNSUPPORTED);	// return error as the parser doesn't do input arrays yet
 
 	// general error condition
-	} else { return (STAT_JSON_SYNTAX_ERROR); }			// ill-formed JSON
+	} else { return (STAT_JSON_SYNTAX_ERROR); }	// ill-formed JSON
 
 	// process comma separators and end curlies
 	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { // advance to terminator or err out
@@ -262,7 +262,7 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 	if (**pstr == ',') { return (STAT_EAGAIN);}	// signal that there is more to parse
 
 	(*pstr)++;
-	return (STAT_OK);								// signal that parsing is complete
+	return (STAT_OK);							// signal that parsing is complete
 }
 
 /*
@@ -325,20 +325,20 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 	*str++ = '{'; 								// write opening curly
 
 	while (true) {
-		if (cmd->type != TYPE_EMPTY) {
+		if (cmd->objtype != TYPE_EMPTY) {
 			if (need_a_comma) { *str++ = ',';}
 			need_a_comma = true;
 			str += sprintf(str, "\"%s\":", cmd->token);
 
-			if (cmd->type == TYPE_FLOAT_UNITS)	{ 
+			if (cmd->objtype == TYPE_FLOAT_UNITS)	{ 
 				if (cm_get_model_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
-				cmd->type = TYPE_FLOAT;
+				cmd->objtype = TYPE_FLOAT;
 			}
-			if (cmd->type == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
-			else if (cmd->type == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", (double)cmd->value);}
-			else if (cmd->type == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
-			else if (cmd->type == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  *cmd->stringp);}
-			else if (cmd->type == TYPE_FLOAT) {
+			if (cmd->objtype == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
+			else if (cmd->objtype == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", (double)cmd->value);}
+			else if (cmd->objtype == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
+			else if (cmd->objtype == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  *cmd->stringp);}
+			else if (cmd->objtype == TYPE_FLOAT) {
 				if 		(cmd->precision == 0) { str += sprintf(str, "%0.0f", (double)cmd->value);}
 				else if (cmd->precision == 1) { str += sprintf(str, "%0.1f", (double)cmd->value);}
 				else if (cmd->precision == 2) { str += sprintf(str, "%0.2f", (double)cmd->value);}
@@ -346,11 +346,11 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 				else if (cmd->precision == 4) { str += sprintf(str, "%0.4f", (double)cmd->value);}
 				else 						  { str += sprintf(str, "%f", 	 (double)cmd->value);}
 			}
-			else if (cmd->type == TYPE_BOOL) {
+			else if (cmd->objtype == TYPE_BOOL) {
 				if (cmd->value == false) { str += sprintf(str, "false");}
 				else { str += sprintf(str, "true"); }
 			}
-			if (cmd->type == TYPE_PARENT) { 
+			if (cmd->objtype == TYPE_PARENT) { 
 				*str++ = '{';
 				need_a_comma = false;
 			}
@@ -422,35 +422,35 @@ void js_print_json_response(uint8_t status)
 
 		if (cmd_type == CMD_TYPE_GCODE) {	
 			if (cfg.echo_json_gcode_block == false) {	// kill command echo if not enabled
-				cmd->type = TYPE_EMPTY;
+				cmd->objtype = TYPE_EMPTY;
 			}
 
 		} else if (cmd_type == CMD_TYPE_CONFIG) {		// kill config echo if not enabled
 			if (cfg.echo_json_configs == false) {
-				cmd->type = TYPE_EMPTY;
+				cmd->objtype = TYPE_EMPTY;
 			}
 
 		} else if (cmd_type == CMD_TYPE_MESSAGE) {		// kill message echo if not enabled
 			if (cfg.echo_json_messages == false) {
-				cmd->type = TYPE_EMPTY;
+				cmd->objtype = TYPE_EMPTY;
 			}
 
 		} else if (cmd_type == CMD_TYPE_LINENUM) {		// kill line number echo if not enabled
 			if (cfg.echo_json_linenum == false) {
-				cmd->type = TYPE_EMPTY;
+				cmd->objtype = TYPE_EMPTY;
 			}
 		}
 		cmd = cmd->nx;		
 	}
 
 	// Footer processing
-	while(cmd->type != TYPE_EMPTY) { cmd = cmd->nx;}	// advance to first free object
+	while(cmd->objtype != TYPE_EMPTY) { cmd = cmd->nx;}	// advance to first free object
 	char footer_string[CMD_FOOTER_LEN];
 	sprintf(footer_string, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
 	tg.linelen = 0;										// reset linelen so it's only reported once
 
 	cmd_copy_string(cmd, footer_string);				// link string to cmd object
-	cmd->type = TYPE_ARRAY;
+	cmd->objtype = TYPE_ARRAY;
 	strcpy(cmd->token, "f");
 	cmd->nx = NULL;
 
@@ -589,7 +589,7 @@ cmdObj_t * _reset_array()
 		cmd->index = 0;
 		cmd->token[0] = NUL;
 		cmd->depth = 0;
-		cmd->type = TYPE_EMPTY;
+		cmd->objtype = TYPE_EMPTY;
 		cmd++;
 	}
 	(--cmd)->nx = NULL;				// correct last element
@@ -600,7 +600,7 @@ cmdObj_t * _add_parent(cmdObj_t *cmd, char *token)
 {
 	strncpy(cmd->token, token, CMD_TOKEN_LEN);
 	cmd->nx->depth = cmd->depth+1;
-	cmd->type = TYPE_PARENT;
+	cmd->objtype = TYPE_PARENT;
 	return (cmd->nx);
 }
 
@@ -609,7 +609,7 @@ cmdObj_t * _add_string(cmdObj_t *cmd, char *token, char *string)
 	strncpy(cmd->token, token, CMD_TOKEN_LEN);
 	cmd_copy_string(cmd, string);
 	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
-	cmd->type = TYPE_STRING;
+	cmd->objtype = TYPE_STRING;
 	return (cmd->nx);
 }
 
@@ -618,20 +618,20 @@ cmdObj_t * _add_integer(cmdObj_t *cmd, char *token, uint32_t integer)
 	strncpy(cmd->token, token, CMD_TOKEN_LEN);
 	cmd->value = (float)integer;
 	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
-	cmd->type = TYPE_INTEGER;
+	cmd->objtype = TYPE_INTEGER;
 	return (cmd->nx);
 }
 
 cmdObj_t * _add_empty(cmdObj_t *cmd)
 {
 	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
-	cmd->type = TYPE_EMPTY;
+	cmd->objtype = TYPE_EMPTY;
 	return (cmd->nx);
 }
 
 cmdObj_t * _add_array(cmdObj_t *cmd, char *array_string)
 {
-	cmd->type = TYPE_ARRAY;
+	cmd->objtype = TYPE_ARRAY;
 //	strncpy(cmd->string, array_string, CMD_STRING_LEN);
 	cmd_copy_string(cmd, array_string);
 	return (cmd->nx);

@@ -277,8 +277,8 @@ stat_t rpt_set_status_report(cmdObj_t *cmd)
 	index_t sr_start = cmd_get_index("","se00");		// set first SR persistence index
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if (((cmd = cmd->nx) == NULL) || (cmd->type == TYPE_EMPTY)) { break;}
-		if ((cmd->type == TYPE_BOOL) && (cmd->value == true)) {
+		if (((cmd = cmd->nx) == NULL) || (cmd->objtype == TYPE_EMPTY)) { break;}
+		if ((cmd->objtype == TYPE_BOOL) && (cmd->value == true)) {
 			status_report_list[i] = cmd->index;
 			cmd->value = cmd->index;					// persist the index as the value
 			cmd->index = sr_start + i;					// index of the SR persistence location
@@ -357,7 +357,7 @@ void rpt_populate_unfiltered_status_report()
 {
 	char tmp[CMD_TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
-	cmd->type = TYPE_PARENT; 				// setup the parent object
+	cmd->objtype = TYPE_PARENT; 			// setup the parent object
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
 	cmd->index = cmd_get_index("","sr");	// set the index - may be needed by calling function
@@ -389,7 +389,7 @@ uint8_t rpt_populate_filtered_status_report()
 	char tmp[CMD_TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
 
-	cmd->type = TYPE_PARENT; 				// setup the parent object
+	cmd->objtype = TYPE_PARENT; 			// setup the parent object
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
 //	cmd->index = cmd_get_index("","sr");	// OMITTED - set the index - may be needed by calling function
@@ -462,7 +462,7 @@ uint8_t rpt_queue_report_callback()
 	// make a qr object and print it
 	sprintf_P(cmd->token, PSTR("qr"));
 	cmd->value = qr.buffers_available;
-	cmd->type = TYPE_INTEGER;
+	cmd->objtype = TYPE_INTEGER;
 	cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (STAT_OK);
 }

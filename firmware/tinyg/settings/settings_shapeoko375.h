@@ -48,7 +48,7 @@
 #define COMM_MODE				JSON_MODE
 
 #undef JSON_VERBOSITY
-#define JSON_VERBOSITY 			JV_MESSAGES
+#define JSON_VERBOSITY 			JV_CONFIGS
 
 #undef SWITCH_TYPE
 #define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
@@ -61,6 +61,7 @@
 #define M1_MICROSTEPS			8		// 1mi		1,2,4,8
 #define M1_POLARITY				1		// 1po		0=normal, 1=reversed
 #define M1_POWER_MODE			0		// 1pm		TRUE=low power idle enabled 
+
 
 #define M2_MOTOR_MAP			AXIS_Y
 #define M2_STEP_ANGLE			1.8
@@ -89,14 +90,14 @@
 #define M1_TRAVEL_PER_REV		36.54	// 1tr
 #define M1_MICROSTEPS			8		// 1mi		1,2,4,8
 #define M1_POLARITY				0		// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE			1		// 1pm		TRUE=low power idle enabled 
+#define M1_POWER_MODE			0		// 1pm		TRUE=low power idle enabled 
 
 #define M2_MOTOR_MAP			AXIS_Y
 #define M2_STEP_ANGLE			0.9
 #define M2_TRAVEL_PER_REV		36.54
 #define M2_MICROSTEPS			8
 #define M2_POLARITY				1
-#define M2_POWER_MODE			1
+#define M2_POWER_MODE			0
 
 #define M3_MOTOR_MAP			AXIS_Y
 #define M3_STEP_ANGLE			0.9
