@@ -386,13 +386,12 @@ ISR(TIMER_DDA_ISR_vect)
 	}
 	if (--st.dda_ticks_downcount == 0) {		// end move
  		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;	// disable DDA timer
-		// power-down motors if this feature is enabled
-
-		if (cfg.m[MOTOR_1].power_mode == true) { PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
-		if (cfg.m[MOTOR_2].power_mode == true) { PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
-		if (cfg.m[MOTOR_3].power_mode == true) { PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
-		if (cfg.m[MOTOR_4].power_mode == true) { PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
 		st_start_disable_motors_timer();
+		// power-down motors if this feature is enabled
+		if (cfg.m[MOTOR_1].power_mode == true) PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; // set to 0 to disable
+		if (cfg.m[MOTOR_2].power_mode == true) PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+		if (cfg.m[MOTOR_3].power_mode == true) PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+		if (cfg.m[MOTOR_4].power_mode == true) PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 		_load_move();							// load the next move
 	}
 }

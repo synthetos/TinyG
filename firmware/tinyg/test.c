@@ -118,6 +118,10 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 	xio_queue_RX_string_usb("g20\n");
 	xio_queue_RX_string_usb("m2\n");
 */
+//	xio_queue_RX_string_usb("$xam=1\n");
+//	xio_queue_RX_string_usb("$1po=1\n");
+//	xio_queue_RX_string_usb("$x\n");				// display a group
+//	xio_queue_RX_string_usb("{\"xam\":1}\n");
 
 /*  DWELL TESTS
 G0 X1 Y1
@@ -147,7 +151,7 @@ M30 (END OF CODE)
 //	xio_queue_RX_string_usb("$test=4\n");
 //	xio_queue_RX_string_usb("g20\n");
 //	xio_queue_RX_string_usb("{\"xvm\":100}\n");
-	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
+//	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("$qf\n");
 //	xio_queue_RX_string_usb("$defau=1\n");

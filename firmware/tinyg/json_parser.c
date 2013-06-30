@@ -221,12 +221,12 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 	// object parent
 	} else if (**pstr == '{') { 
 		cmd->type = TYPE_PARENT;
-//		*depth += 1;								// cmd_reset_obj() sets the next object's level so this is redundant
+//		*depth += 1;							// cmd_reset_obj() sets the next object's level so this is redundant
 		(*pstr)++;
-		return(STAT_EAGAIN);							// signal that there is more to parse
+		return(STAT_EAGAIN);					// signal that there is more to parse
 
 	// strings
-	} else if (**pstr == '\"') { 					// value is a string
+	} else if (**pstr == '\"') { 				// value is a string
 		(*pstr)++;
 		cmd->type = TYPE_STRING;
 		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);} // find the end of the string
@@ -245,11 +245,11 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 	// arrays
 	} else if (**pstr == '[') {
 		cmd->type = TYPE_ARRAY;
-		ritorno(cmd_copy_string(cmd, *pstr));		// copy array into string for error displays
-		return (STAT_INPUT_VALUE_UNSUPPORTED);		// return error as the parser doesn't do input arrays yet
+		ritorno(cmd_copy_string(cmd, *pstr));	// copy array into string for error displays
+		return (STAT_INPUT_VALUE_UNSUPPORTED);	// return error as the parser doesn't do input arrays yet
 
 	// general error condition
-	} else { return (STAT_JSON_SYNTAX_ERROR); }			// ill-formed JSON
+	} else { return (STAT_JSON_SYNTAX_ERROR); }	// ill-formed JSON
 
 	// process comma separators and end curlies
 	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { // advance to terminator or err out
@@ -262,7 +262,7 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 	if (**pstr == ',') { return (STAT_EAGAIN);}	// signal that there is more to parse
 
 	(*pstr)++;
-	return (STAT_OK);								// signal that parsing is complete
+	return (STAT_OK);							// signal that parsing is complete
 }
 
 /*

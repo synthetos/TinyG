@@ -1616,22 +1616,24 @@ stat_t cfg_text_parser(char *str)
 	cmdObj_t *cmd = cmd_reset_list();		// returns first object in the body
 	stat_t status = STAT_OK;
 
+	// pre-process the command 
 	if (str[0] == '?') {					// handle status report case
 		rpt_run_text_status_report();
 		return (STAT_OK);
 	}
-	if ((str[0] == '$') && (str[1] == NUL)) {  // treat a lone $ as a sys request
+	if ((str[0] == '$') && (str[1] == NUL)) { // treat a lone $ as a sys request
 		strcat(str,"sys");
 	}
-	// single-unit parser processing
-	ritorno(_text_parser(str, cmd));		// decode the request or return if error
-	if ((cmd->type == TYPE_PARENT) || (cmd->type == TYPE_NULL)) {
-		if (cmd_get(cmd) == STAT_COMPLETE) {	// populate value, group values, or run uber-group displays
-			return (STAT_OK);					// return for uber-group displays so they don't print twice
+
+	// parse and execute the command (only processes 1 command per line)
+	ritorno(_text_parser(str, cmd));		// run the parser to decode the command
+	if ((cmd->type == TYPE_NULL) || (cmd->type == TYPE_PARENT)) {  // NB: TYPE_NULL is 1. See config.h
+		if (cmd_get(cmd) == STAT_COMPLETE) {// populate value, group values, or run uber-group displays
+			return (STAT_OK);				// return for uber-group displays so they don't print twice
 		}
 	} else { 								// process SET and RUN commands
-		status = cmd_set(cmd);				// set single value
-		cmd_persist(cmd);
+		status = cmd_set(cmd);				// set (or run) single value
+		cmd_persist(cmd);					// conditionally persist depending on flags in array
 	}
 	cmd_print_list(status, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT); // print the results
 	return (status);
@@ -1642,19 +1644,17 @@ static stat_t _text_parser(char *str, cmdObj_t *cmd)
 	char *ptr_rd, *ptr_wr;					// read and write pointers
 	char separators[] = {" =:|\t"};			// any separator someone might use
 
-	// string pre-processing
+	// pre-process and normalize the string
 	cmd_reset_obj(cmd);						// initialize config object
 	cmd_copy_string(cmd, str);				// make a copy for eventual reporting
 	if (*str == '$') str++;					// ignore leading $
 	for (ptr_rd = ptr_wr = str; *ptr_rd!=NUL; ptr_rd++, ptr_wr++) {
 		*ptr_wr = tolower(*ptr_rd);			// convert string to lower case
-		if (*ptr_rd==',') {
-			*ptr_wr = *(++ptr_rd);			// skip over comma
-		}
+		if (*ptr_rd==',') { *ptr_wr = *(++ptr_rd); } // skip over commas
 	}
-	*ptr_wr = NUL;
+	*ptr_wr = NUL;							// terminate the string
 
-	// field processing
+	// parse fields into the cmd struct
 	cmd->type = TYPE_NULL;
 	if ((ptr_rd = strpbrk(str, separators)) == NULL) { // no value part
 		strncpy(cmd->token, str, CMD_TOKEN_LEN);
@@ -1667,8 +1667,14 @@ static stat_t _text_parser(char *str, cmdObj_t *cmd)
 			cmd->type = TYPE_FLOAT;
 		}
 	}
-	if ((cmd->index = cmd_get_index("",cmd->token)) == NO_MATCH) { 
+
+	// validate and post-process the token
+	if ((cmd->index = cmd_get_index("",cmd->token)) == NO_MATCH) { // get index or fail it
 		return (STAT_UNRECOGNIZED_COMMAND);
+	}
+	strcpy_P(cmd->group, cfgArray[cmd->index].group);	// capture the group string if there is one
+	if (cmd->group[0] != NUL) {							// strip group character from token
+		strncpy(cmd->token, cmd->token+1, CMD_TOKEN_LEN-1);
 	}
 	return (STAT_OK);
 }
