@@ -79,7 +79,7 @@
 
 // machine default profiles - chose only one:
 
-#include "settings/settings_default.h"				// Default settings for release
+#include "settings/settings_default.h"					// Default settings for release
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othercutter.h"			// Otherfab OtherCutter
