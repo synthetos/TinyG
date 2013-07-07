@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	378.12		// Added exception handling for all ((cmd = cmd->nx) == NULL) cases
+#define TINYG_FIRMWARE_BUILD   	379.01		// Changed queue flush to also wipe serial buffer
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 

@@ -89,6 +89,7 @@
 #include "report.h"
 #include "gpio.h"
 #include "system.h"
+#include "xio/xio.h"			// for serial queue flush
 
 // NOTE: The canonical machine singleton "cm" would normally be declared here 
 // but it's also used by cycles so it's in canonical_machine.h instead.
@@ -1125,7 +1126,7 @@ stat_t cm_feedhold_sequencing_callback()
 		if ((cm.motion_state == MOTION_STOP) ||
 			((cm.motion_state == MOTION_HOLD) && (cm.hold_state == FEEDHOLD_HOLD))) {
 			cm.queue_flush_requested = false;
-			cm_flush_planner();
+			cm_queue_flush();
 		}
 	}
 	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false)) {
@@ -1137,19 +1138,21 @@ stat_t cm_feedhold_sequencing_callback()
 	return (STAT_OK);
 }
 
-stat_t cm_flush_planner()
+stat_t cm_queue_flush()
 {
-	mp_flush_planner();
+	xio_reset_usb_rx_buffers();		// flush serial queues
+	mp_flush_planner();				// flush planner queue
 
 	for (uint8_t i=0; i<AXES; i++) {
 		mp_set_axis_position(i, mp_get_runtime_machine_position(i));	// set mm from mr
 		gm.position[i] = mp_get_runtime_machine_position(i);
 		gm.target[i] = gm.position[i];
 	}
-	cm.motion_state = MOTION_STOP;
-	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
-//	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report
-	rpt_request_queue_report();
+	_program_finalize(MACHINE_PROGRAM_STOP, 0);
+//	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
+//	cm.motion_state = MOTION_STOP;
+////	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report
+//	rpt_request_queue_report();
 	return (STAT_OK);
 }
 

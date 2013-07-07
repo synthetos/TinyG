@@ -410,69 +410,38 @@ void js_print_json_object(cmdObj_t *cmd)
 
 void js_print_json_response(uint8_t status)
 {
-	if (cm.machine_state == MACHINE_INITIALIZING) {		// always do full echo during startup
-		cmdObj_t tmp;
-		tmp.value = JV_VERBOSE;
-		cmd_set_jv(&tmp);
-	}
-	if (cfg.json_verbosity == JV_SILENT) { return;}		// silent responses
+	if (cfg.json_verbosity == JV_SILENT) return;		// silent responses
 
 	// Body processing
 	cmdObj_t *cmd = cmd_body;
-	uint8_t cmd_type;
+	if (cm.machine_state != MACHINE_INITIALIZING) {		// always do full echo during startup
+		uint8_t cmd_type;
+		do {
+			if ((cmd_type = cmd_get_type(cmd)) == CMD_TYPE_NULL) break;
 
-	do {
-		cmd_type = cmd_get_type(cmd);
+			if (cmd_type == CMD_TYPE_GCODE) {	
+				if (cfg.echo_json_gcode_block == false) {	// kill command echo if not enabled
+					cmd->objtype = TYPE_EMPTY;
+				}
 
-		if (cmd_type == CMD_TYPE_GCODE) {	
-			if (cfg.echo_json_gcode_block == false) {	// kill command echo if not enabled
-				cmd->objtype = TYPE_EMPTY;
+			} else if (cmd_type == CMD_TYPE_CONFIG) {		// kill config echo if not enabled
+				if (cfg.echo_json_configs == false) {
+					cmd->objtype = TYPE_EMPTY;
+				}
+
+			} else if (cmd_type == CMD_TYPE_MESSAGE) {		// kill message echo if not enabled
+				if (cfg.echo_json_messages == false) {
+					cmd->objtype = TYPE_EMPTY;
+				}
+
+			} else if (cmd_type == CMD_TYPE_LINENUM) {		// kill line number echo if not enabled
+				if (cfg.echo_json_linenum == false) {
+					cmd->objtype = TYPE_EMPTY;
+				}
 			}
-
-		} else if (cmd_type == CMD_TYPE_CONFIG) {		// kill config echo if not enabled
-			if (cfg.echo_json_configs == false) {
-				cmd->objtype = TYPE_EMPTY;
-			}
-
-		} else if (cmd_type == CMD_TYPE_MESSAGE) {		// kill message echo if not enabled
-			if (cfg.echo_json_messages == false) {
-				cmd->objtype = TYPE_EMPTY;
-			}
-
-		} else if (cmd_type == CMD_TYPE_LINENUM) {		// kill line number echo if not enabled
-			if (cfg.echo_json_linenum == false) {
-				cmd->objtype = TYPE_EMPTY;
-			}
-		}
-	} while ((cmd = cmd->nx) != NULL);
-
-/*
-	while (cmd->nx != NULL) {
-		cmd_type = cmd_get_type(cmd);
-
-		if (cmd_type == CMD_TYPE_GCODE) {	
-			if (cfg.echo_json_gcode_block == false) {	// kill command echo if not enabled
-				cmd->objtype = TYPE_EMPTY;
-			}
-
-		} else if (cmd_type == CMD_TYPE_CONFIG) {		// kill config echo if not enabled
-			if (cfg.echo_json_configs == false) {
-				cmd->objtype = TYPE_EMPTY;
-			}
-
-		} else if (cmd_type == CMD_TYPE_MESSAGE) {		// kill message echo if not enabled
-			if (cfg.echo_json_messages == false) {
-				cmd->objtype = TYPE_EMPTY;
-			}
-
-		} else if (cmd_type == CMD_TYPE_LINENUM) {		// kill line number echo if not enabled
-			if (cfg.echo_json_linenum == false) {
-				cmd->objtype = TYPE_EMPTY;
-			}
-		}
-		cmd = cmd->nx;	
+		} while ((cmd = cmd->nx) != NULL);
 	}
-*/
+
 	// Footer processing
 	while(cmd->objtype != TYPE_EMPTY) {					// find a free cmdObj at end of the list...
 		if ((cmd = cmd->nx) == NULL) {					//...or hit the NULL and return w/o a footer

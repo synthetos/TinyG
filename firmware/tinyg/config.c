@@ -1932,6 +1932,7 @@ uint8_t cmd_group_is_prefixed(char *group)
  */
 uint8_t cmd_get_type(cmdObj_t *cmd)
 {
+	if (cmd->token[0] == NUL) return (CMD_TYPE_NULL);
 	if (strcmp("gc", cmd->token) == 0) return (CMD_TYPE_GCODE);
 	if (strcmp("sr", cmd->token) == 0) return (CMD_TYPE_REPORT);
 	if (strcmp("qr", cmd->token) == 0) return (CMD_TYPE_REPORT);
