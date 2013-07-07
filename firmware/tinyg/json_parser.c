@@ -93,7 +93,7 @@ static stat_t _normalize_json_string(char *str, uint16_t size);
 
 void js_json_parser(char *str)
 {
-	cmd_reset_list();					// get a fresh cmdObj list
+//	cmd_reset_list();					// get a fresh cmdObj list
 	uint8_t status = _json_parser_kernal(str);
 	cmd_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	rpt_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
@@ -103,7 +103,7 @@ stat_t _json_parser_kernal(char *str)
 {
 	uint8_t status;
 	int8_t depth;
-	cmdObj_t *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_reset_list();			// get a fresh cmdObj list
 	char group[CMD_GROUP_LEN+1] = {""};			// group identifier - starts as NUL
 	int8_t i = CMD_BODY_LEN;
 
@@ -126,7 +126,7 @@ stat_t _json_parser_kernal(char *str)
 		if ((cmd_index_is_group(cmd->index)) && (cmd_group_is_prefixed(cmd->token))) {
 			strncpy(group, cmd->token, CMD_GROUP_LEN);// record the group ID
 		}
-		cmd = cmd->nx;
+		if ((cmd = cmd->nx) == NULL) return (STAT_JSON_TOO_MANY_PAIRS);// Not supposed to encounter a NULL
 	} while (status != STAT_OK);					// breaks when parsing is complete
 
 	// execute the command
@@ -290,11 +290,15 @@ static stat_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  *
  * 	Operation:
  *	  - The cmdObj list is processed start to finish with no recursion
+ *
  *	  - Assume the first object is depth 0 or greater (the opening curly)
+ *
  *	  - Assume remaining depths have been set correctly; but might not achieve closure;
  *		e.g. list starts on 0, and ends on 3, in which case provide correct closing curlies
+ *
  *	  - Assume there can be multiple, independent, non-contiguous JSON objects at a 
  *		given depth value. These are processed correctly - e.g. 0,1,1,0,1,1,0,1,1
+ *
  *	  - The list must have a terminating cmdObj where cmd->nx == NULL. 
  *		The terminating object may or may not have data (empty or not empty).
  *
@@ -417,6 +421,32 @@ void js_print_json_response(uint8_t status)
 	cmdObj_t *cmd = cmd_body;
 	uint8_t cmd_type;
 
+	do {
+		cmd_type = cmd_get_type(cmd);
+
+		if (cmd_type == CMD_TYPE_GCODE) {	
+			if (cfg.echo_json_gcode_block == false) {	// kill command echo if not enabled
+				cmd->objtype = TYPE_EMPTY;
+			}
+
+		} else if (cmd_type == CMD_TYPE_CONFIG) {		// kill config echo if not enabled
+			if (cfg.echo_json_configs == false) {
+				cmd->objtype = TYPE_EMPTY;
+			}
+
+		} else if (cmd_type == CMD_TYPE_MESSAGE) {		// kill message echo if not enabled
+			if (cfg.echo_json_messages == false) {
+				cmd->objtype = TYPE_EMPTY;
+			}
+
+		} else if (cmd_type == CMD_TYPE_LINENUM) {		// kill line number echo if not enabled
+			if (cfg.echo_json_linenum == false) {
+				cmd->objtype = TYPE_EMPTY;
+			}
+		}
+	} while ((cmd = cmd->nx) != NULL);
+
+/*
 	while (cmd->nx != NULL) {
 		cmd_type = cmd_get_type(cmd);
 
@@ -440,18 +470,23 @@ void js_print_json_response(uint8_t status)
 				cmd->objtype = TYPE_EMPTY;
 			}
 		}
-		cmd = cmd->nx;		
+		cmd = cmd->nx;	
 	}
-
+*/
 	// Footer processing
-	while(cmd->objtype != TYPE_EMPTY) { cmd = cmd->nx;}	// advance to first free object
+	while(cmd->objtype != TYPE_EMPTY) {					// find a free cmdObj at end of the list...
+		if ((cmd = cmd->nx) == NULL) {					//...or hit the NULL and return w/o a footer
+			js_serialize_json(cmd_header, tg.out_buf, sizeof(tg.out_buf));
+			return;			
+		}
+	}
 	char footer_string[CMD_FOOTER_LEN];
 	sprintf(footer_string, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
 	tg.linelen = 0;										// reset linelen so it's only reported once
 
 	cmd_copy_string(cmd, footer_string);				// link string to cmd object
 	cmd->objtype = TYPE_ARRAY;
-	strcpy(cmd->token, "f");
+	strcpy(cmd->token, "f");							// terminate the list
 	cmd->nx = NULL;
 
 	// do all this to avoid having to serialize it twice

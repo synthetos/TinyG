@@ -29,6 +29,85 @@
 
 #include <stdbool.h>
 
+/**** Config System Overview and Usage ***
+ *
+ *	--- Config objects and the config list ---
+ *
+ *	The config system provides a structured way to access and set configuration variables.
+ *	It also provides a way to get an arbitrary variable for reporting. Config operates
+ *	as a collection of "objects" (OK, so they are not really objects) that encapsulate
+ *	each variable. The objects are collected into a list (the body), which also may have  
+ *	header and footer objects. This way the internals don't care about how the variable
+ *	is represented or communicated externally as all operations occur on the cmdObj list. 
+ *	The list is populated by the text_parser or the JSON_parser depending on the mode.
+ *	The lists are also used for responses and are read out (printed) by a text-mode or
+ *	JSON serialization function.
+ */
+/*	--- Config variables, tables and strings ---
+ *
+ *	Each configuration value is identified by a short mnemonic string (token). The token 
+ *	is resolved to an index into the cfgArray which is an array of structures with the 
+ *	static assignments for each variable. The cfgArray contains typed data in program 
+ *	memory (PROGMEM).
+ * 
+ *	Each cfgItem has:
+ *	 - group string identifying what group the variable is part of; or "" if no group
+ *	 - token string - the token for that variable - pre-pended with the group (if present)
+ *	 - operations flags - e.g. if the value should be initialized and/or persisted to NVM
+ *	 - pointer to a formatted print string also in program memory (Used only for text mode)
+ *	 - function pointer for formatted print() method for text-mode readouts
+ *	 - function pointer for get() method - gets value from memory
+ *	 - function pointer for set() method - sets value and runs functions
+ *	 - target - memory location that the value is written to / read from
+ *	 - default value - for cold initialization
+ *
+ *	Additionally an NVM array contains values persisted to EEPROM as floats; indexed by cfgArray index
+ *
+ *	The following rules apply to mnemonic tokens
+ *	 - are up to 5 alphnuneric characters and cannot contain whitespace or separators
+ *	 - must be unique (non colliding).
+ *	 - axis tokens start with the axis letter and are typically 3 characters including the axis letter
+ *	 - motor tokens start with the motor digit and are typically 3 characters including the motor digit
+ *	 - non-axis or non-motor tokens are 2-5 characters and by convention generally should not start 
+ *		with: xyzabcuvw0123456789 (but there can be exceptions)
+ *
+ *  "Groups" are collections of values that mimic REST resources. Groups include:
+ *	 - axis groups prefixed by "xyzabc"		("uvw" are reserved)
+ *	 - motor groups prefixed by "1234"		("56789" are reserved)
+ *	 - PWM groups prefixed by p1, p2 	    (p3 - p9 are reserved)
+ *	 - coordinate system groups prefixed by g54, g55, g56, g57, g59, g92
+ *	 - a system group is identified by "sys" and contains a collection of otherwise unrelated values
+ *
+ *	"Uber-groups" are groups of groups that are only used for text-mode printing - e.g.
+ *	 - group of all axes groups
+ *	 - group of all motor groups
+ *	 - group of all offset groups
+ *	 - group of all groups
+ */
+/*  --- Making changes and adding new values
+ *
+ *	Adding a new value to config (or changing an existing one) involves touching the following places:
+ *
+ *	 - Add a formatting string to fmt_XXX strings. Not needed if there is no text-mode print function
+ *	   of you are using one of the generic print strings.
+ * 
+ *	 - Create a new record in cfgArray[]. Use existing ones for examples. You can usually use existing
+ *	   functions for get and set; or create a new one if you need a specialized function.
+ *
+ *	   The ordering of group displays is set by the order of items in cfgArray. None of the other 
+ *	   orders matter but are generally kept sequenced for easier reading and code maintenance. Also,
+ *	   Items earlier in the array will resolve token searches faster than ones later in the array.
+ *
+ *	   Note that matching will occur from the most specific to the least specific, meaning that
+ *	   if tokens overlap the longer one should be earlier in the array: "gco" should precede "gc".
+ */
+/*  --- Rules, guidelines and random stuff
+ *
+ *	It's the responsibility of the object creator to set the index. Downstream functions
+ *	all expect a valid index. Set the index by calling cmd_get_index(). This also validates
+ *	the token and group if no lookup exists.
+ */
+
 /**** cmdObj lists ****
  *
  * 	Commands and groups of commands are processed internally a doubly linked list of
@@ -39,10 +118,13 @@
  *	but the list can also be serialized as a simple object by skipping over the header
  *
  *	To use the cmd list first reset it by calling cmd_reset_list(). This initializes
- *	the header, marks the the objects as TYPE_EMPTY (-1), resets the shared string, and 
- *	terminates the last element by setting its NX pointer to NULL. When you use the 
- *	list you can terminate your own last element, or just leave the EMPTY elements 
- *	to be skipped over during outpout serialization.
+ *	the header, marks the the objects as TYPE_EMPTY (-1), resets the shared string, 
+ *	relinks all objects with NX and PV pointers, and makes the last element the 
+ *	terminating element by setting its NX pointer to NULL. The terminating element 
+ *	may carry data, and will be processed.
+ *
+ *	When you use the list you can terminate your own last element, or just leave the 
+ *	EMPTY elements to be skipped over during output serialization.
  * 
  * 	We don't use recursion so parent/child nesting relationships are captured in a 
  *	'depth' variable, This must remain consistent if the curlies are to work out. 

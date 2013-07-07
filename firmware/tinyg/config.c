@@ -24,85 +24,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /*
- *	Config system overview
- *
- *	--- Config objects and the config list ---
- *
- *	The config system provides a structured way to access and set configuration variables.
- *	It also provides a way to get an arbitrary variable for reporting. Config operates
- *	as a collection of "objects" (OK, so they are not really objects) that encapsulate
- *	each variable. The objects are collected into a list (the body), which also may have  
- *	header and footer objects. This way the internals don't care about how the variable
- *	is represented or communicated externally as all operations occur on the cmdObj list. 
- *	The list is populated by the text_parser or the JSON_parser depending on the mode.
- *	The lists are also used for responses and are read out (printed) by a text-mode or
- *	JSON serialization function.
- */
-/*	--- Config variables, tables and strings ---
- *
- *	Each configuration value is identified by a short mnemonic string (token). The token 
- *	is resolved to an index into the cfgArray which is an array of structures with the 
- *	static assignments for each variable. The cfgArray contains typed data in program 
- *	memory (PROGMEM).
- * 
- *	Each cfgItem has:
- *	 - group string identifying what group the variable is part of; or "" if no group
- *	 - token string - the token for that variable - pre-pended with the group (if present)
- *	 - operations flags - e.g. if the value should be initialized and/or persisted to NVM
- *	 - pointer to a formatted print string also in program memory (Used only for text mode)
- *	 - function pointer for formatted print() method for text-mode readouts
- *	 - function pointer for get() method - gets value from memory
- *	 - function pointer for set() method - sets value and runs functions
- *	 - target - memory location that the value is written to / read from
- *	 - default value - for cold initialization
- *
- *	Additionally an NVM array contains values persisted to EEPROM as floats; indexed by cfgArray index
- *
- *	The following rules apply to mnemonic tokens
- *	 - are up to 5 alphnuneric characters and cannot contain whitespace or separators
- *	 - must be unique (non colliding).
- *	 - axis tokens start with the axis letter and are typically 3 characters including the axis letter
- *	 - motor tokens start with the motor digit and are typically 3 characters including the motor digit
- *	 - non-axis or non-motor tokens are 2-5 characters and by convention generally should not start 
- *		with: xyzabcuvw0123456789 (but there can be exceptions)
- *
- *  "Groups" are collections of values that mimic REST resources. Groups include:
- *	 - axis groups prefixed by "xyzabc"		("uvw" are reserved)
- *	 - motor groups prefixed by "1234"		("56789" are reserved)
- *	 - PWM groups prefixed by p1, p2 	    (p3 - p9 are reserved)
- *	 - coordinate system groups prefixed by g54, g55, g56, g57, g59, g92
- *	 - a system group is identified by "sys" and contains a collection of otherwise unrelated values
- *
- *	"Uber-groups" are groups of groups that are only used for text-mode printing - e.g.
- *	 - group of all axes groups
- *	 - group of all motor groups
- *	 - group of all offset groups
- *	 - group of all groups
- *
- *	See config.h for a dsicussion of the related cmdObj lists
- */
-/*  --- Making changes and adding new values
- *
- *	Adding a new value to config (or changing an existing one) involves touching the following places:
- *
- *	 - Add a formatting string to fmt_XXX strings. Not needed if there is no text-mode print function
- *	   of you are using one of the generic print strings.
- * 
- *	 - Create a new record in cfgArray[]. Use existing ones for examples. You can usually use existing
- *	   functions for get and set; or create a new one if you need a specialized function.
- *
- *	   The ordering of group displays is set by the order of items in cfgArray. None of the other 
- *	   orders matter but are generally kept sequenced for easier reading and code maintenance. Also,
- *	   Items earlier in the array will resolve token searches faster than ones later in the array.
- *
- *	   Note that matching will occur from the most specific to the least specific, meaning that
- *	   if tokens overlap the longer one should be earlier in the array: "gco" should precede "gc".
- */
-/*  --- Rules, guidelines and random stuff
- *
- *	It's the responsibility of the object creator to set the index. Downstream functions
- *	all expect a valid index. Set the index by calling cmd_get_index(). This also validates
- *	the token and group if no lookup exists.
+ *	See config.h for a Config system overview and a bunch of details.
  */
 #include <ctype.h>
 #include <stdlib.h>
@@ -2179,7 +2101,7 @@ cmdObj_t *cmd_add_object(char *token)		// add an object to the body using a toke
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		if (cmd->objtype != TYPE_EMPTY) {
-			cmd = cmd->nx;
+			if ((cmd = cmd->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
 			continue;
 		}
 		// load the index from the token or die trying
@@ -2195,7 +2117,7 @@ cmdObj_t *cmd_add_integer(char *token, const uint32_t value)// add an integer ob
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		if (cmd->objtype != TYPE_EMPTY) {
-			cmd = cmd->nx;
+			if ((cmd = cmd->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
@@ -2211,7 +2133,7 @@ cmdObj_t *cmd_add_float(char *token, const float value)	// add a float object to
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		if (cmd->objtype != TYPE_EMPTY) {
-			cmd = cmd->nx;
+			if ((cmd = cmd->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
@@ -2227,7 +2149,7 @@ cmdObj_t *cmd_add_string(char *token, const char *string)	// add a string object
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		if (cmd->objtype != TYPE_EMPTY) {
-			cmd = cmd->nx;
+			if ((cmd = cmd->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
@@ -2297,13 +2219,13 @@ void _print_text_inline_pairs()
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		switch (cmd->objtype) {
-			case TYPE_PARENT:	{ cmd = cmd->nx; continue; }
+			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), cmd->token, *cmd->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
-		cmd = cmd->nx;
+		if ((cmd = cmd->nx) == NULL) return;
 		if (cmd->objtype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}		
 	}
 }
@@ -2313,13 +2235,13 @@ void _print_text_inline_values()
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		switch (cmd->objtype) {
-			case TYPE_PARENT:	{ cmd = cmd->nx; continue; }
+			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%1.3f"), cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), cmd->value); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *cmd->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
-		cmd = cmd->nx;
+		if ((cmd = cmd->nx) == NULL) return;
 		if (cmd->objtype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
 	}
 }
@@ -2329,8 +2251,8 @@ void _print_text_multiline_formatted()
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		if (cmd->objtype != TYPE_PARENT) { cmd_print(cmd);}
-		cmd = cmd->nx;
-		if (cmd->objtype == TYPE_EMPTY) { break;}
+		if ((cmd = cmd->nx) == NULL) return;
+		if (cmd->objtype == TYPE_EMPTY) break;
 	}
 }
 

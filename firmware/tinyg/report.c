@@ -361,7 +361,7 @@ void rpt_populate_unfiltered_status_report()
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
 	cmd->index = cmd_get_index("","sr");	// set the index - may be needed by calling function
-	cmd = cmd->nx;
+	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
@@ -369,7 +369,7 @@ void rpt_populate_unfiltered_status_report()
 		strcpy(tmp, cmd->group);			// concatenate groups and tokens
 		strcat(tmp, cmd->token);
 		strcpy(cmd->token, tmp);
-		cmd = cmd->nx;
+		if ((cmd = cmd->nx) == NULL) return; // should never be NULL unless SR length exceeds available buffer array 
 	}
 }
 
@@ -393,7 +393,7 @@ uint8_t rpt_populate_filtered_status_report()
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
 //	cmd->index = cmd_get_index("","sr");	// OMITTED - set the index - may be needed by calling function
-	cmd = cmd->nx;
+	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
@@ -406,8 +406,7 @@ uint8_t rpt_populate_filtered_status_report()
 			strcat(tmp, cmd->token);
 			strcpy(cmd->token, tmp);
 			cfg.status_report_value[i] = cmd->value;
-			cmd = cmd->nx;
-//			if (cmd == NULL) { return (false);}	// This is never supposed to happen
+			if ((cmd = cmd->nx) == NULL) return (false); // should never be NULL unless SR length exceeds available buffer array
 			has_data = true;
 		}
 	}
