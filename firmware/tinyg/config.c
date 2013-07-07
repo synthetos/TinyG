@@ -1675,8 +1675,14 @@ static stat_t _text_parser(char *str, cmdObj_t *cmd)
 		return (STAT_UNRECOGNIZED_COMMAND);
 	}
 	strcpy_P(cmd->group, cfgArray[cmd->index].group);	// capture the group string if there is one
-	if (cmd->group[0] != NUL) {							// strip group character from token
-		strncpy(cmd->token, cmd->token+1, CMD_TOKEN_LEN-1);
+
+	if (strlen(cmd->group) > 0) {			// see if you need to strip the token
+		ptr_wr = cmd->token;
+		ptr_rd = cmd->token + strlen(cmd->group);
+		while (*ptr_rd != NUL) {
+			*(ptr_wr)++ = *(ptr_rd)++;
+		}
+		*ptr_wr = NUL;
 	}
 	return (STAT_OK);
 }
