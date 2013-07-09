@@ -87,6 +87,7 @@ static stat_t _set_nul(cmdObj_t *cmd);	// noop
 static stat_t _set_ui8(cmdObj_t *cmd);	// set a uint8 value
 static stat_t _set_01(cmdObj_t *cmd);	// set a 0 or 1 value w/validation
 static stat_t _set_012(cmdObj_t *cmd);	// set a 0, 1 or 2 value w/validation
+static stat_t _set_0123(cmdObj_t *cmd);	// set a 0, 1, 2 or 3 value w/validation
 static stat_t _set_int(cmdObj_t *cmd);	// set a uint32 integer value
 static stat_t _set_dbl(cmdObj_t *cmd);	// set a float value
 static stat_t _set_dbu(cmdObj_t *cmd);	// set a float with unit conversion
@@ -145,6 +146,7 @@ static stat_t _set_sr(cmdObj_t *cmd);		// set status report specification
 static stat_t _set_si(cmdObj_t *cmd);		// set status report interval
 static stat_t _run_boot(cmdObj_t *cmd);	// jump to the bootloader
 static stat_t _get_id(cmdObj_t *cmd);		// get device ID
+static stat_t _set_jv(cmdObj_t *cmd);		// set JSON verbosity
 static stat_t _get_qr(cmdObj_t *cmd);		// get a queue report (as data)
 static stat_t _run_qf(cmdObj_t *cmd);		// execute a queue flush block
 static stat_t _get_er(cmdObj_t *cmd);		// invoke a bogus exception report for testing purposes
@@ -690,9 +692,9 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "md",  _f00, 0, fmt_md, _print_str, _set_md,  _set_md,  (float *)&tg.null, 0 },	// disable all motors
 	
 	{ "sys","ej",  _f07, 0, fmt_ej, _print_ui8, _get_ui8, _set_01,  (float *)&cfg.comm_mode,			COMM_MODE },
-	{ "sys","jv",  _f07, 0, fmt_jv, _print_ui8, _get_ui8, cmd_set_jv,(float *)&cfg.json_verbosity,		JSON_VERBOSITY },
+	{ "sys","jv",  _f07, 0, fmt_jv, _print_ui8, _get_ui8, _set_jv,  (float *)&cfg.json_verbosity,		JSON_VERBOSITY },
 	{ "sys","tv",  _f07, 0, fmt_tv, _print_ui8, _get_ui8, _set_01,  (float *)&cfg.text_verbosity,		TEXT_VERBOSITY },
-	{ "sys","qv",  _f07, 0, fmt_qv, _print_ui8, _get_ui8, _set_012, (float *)&cfg.queue_report_verbosity,QR_VERBOSITY },
+	{ "sys","qv",  _f07, 0, fmt_qv, _print_ui8, _get_ui8, _set_0123,(float *)&cfg.queue_report_verbosity,QR_VERBOSITY },
 	{ "sys","sv",  _f07, 0, fmt_sv, _print_ui8, _get_ui8, _set_012, (float *)&cfg.status_report_verbosity,SR_VERBOSITY },
 	{ "sys","si",  _f07, 0, fmt_si, _print_dbl, _get_int, _set_si,  (float *)&cfg.status_report_interval,STATUS_REPORT_INTERVAL_MS },
 
@@ -821,7 +823,8 @@ static stat_t _get_id(cmdObj_t *cmd)
 
 /**** REPORT FUNCTIONS ********************************************************
  * _set_md() 	- disable all motors
- * _set_md() 	- enable motors with $Npm=0
+ * _set_me() 	- enable motors with $Npm=0
+ * _set_qv() 	- get a queue report verbosity
  * _get_qr() 	- get a queue report (as data)
  * _run_qf() 	- execute a planner buffer flush
  * _get_er()	- invoke a bogus exception report for testing purposes (it's not real)
@@ -902,7 +905,8 @@ static stat_t _run_boot(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-stat_t cmd_set_jv(cmdObj_t *cmd) 
+//stat_t cmd_set_jv(cmdObj_t *cmd) 
+static stat_t _set_jv(cmdObj_t *cmd) 
 {
 	if (cmd->value > JV_VERBOSE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	cfg.json_verbosity = cmd->value;
@@ -1657,6 +1661,15 @@ static stat_t _set_01(cmdObj_t *cmd)
 static stat_t _set_012(cmdObj_t *cmd)
 {
 	if (cmd->value > 2) { 
+		return (STAT_INPUT_VALUE_UNSUPPORTED);
+	} else {
+		return (_set_ui8(cmd));
+	}
+}
+
+static stat_t _set_0123(cmdObj_t *cmd)
+{
+	if (cmd->value > 3) { 
 		return (STAT_INPUT_VALUE_UNSUPPORTED);
 	} else {
 		return (_set_ui8(cmd));

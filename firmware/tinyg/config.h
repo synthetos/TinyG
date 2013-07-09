@@ -236,7 +236,8 @@ enum jsonVerbosity {
 enum qrVerbosity {					// planner queue enable and verbosity
 	QR_OFF = 0,						// no response is provided
 	QR_FILTERED,					// queue depth reported only above hi-water mark and below lo-water mark  
-	QR_VERBOSE						// queue depth reported for all buffers
+	QR_VERBOSE,						// queue depth reported for all buffers
+	QR_RELATIVE						// queue depth reported for all buffers, and buffers added, buffered removed
 };
 
 enum srVerbosity {					// status report enable and verbosity
@@ -305,8 +306,6 @@ void cmd_persist(cmdObj_t *cmd);	// persistence
 // helpers
 index_t cmd_get_index(const char *group, const char *token);
 uint8_t cmd_get_type(cmdObj_t *cmd);
-stat_t cmd_set_jv(cmdObj_t *cmd);
-stat_t cmd_set_tv(cmdObj_t *cmd);
 stat_t cmd_persist_offsets(uint8_t flag);
 
 // object and list functions
@@ -411,6 +410,9 @@ typedef struct cfgParameters {
 	uint8_t queue_report_verbosity;	// queue reports enabled and verbosity level
 	uint8_t queue_report_hi_water;
 	uint8_t queue_report_lo_water;
+	uint16_t queue_report_added;	// number of buffers added this cycle since last report 
+	uint16_t queue_report_removed;	// number of buffers removed this cycle since last report 
+
 	uint8_t json_verbosity;			// see enum in this file for settings
 	uint8_t text_verbosity;			// see enum in this file for settings
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values

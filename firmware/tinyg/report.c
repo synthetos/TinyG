@@ -382,6 +382,9 @@ void rpt_populate_unfiltered_status_report()
  *	NOTE: Unlike rpt_populate_unfiltered_status_report(), this function does NOT set 
  *	the SR index, which is a relatively expensive operation. In current use this 
  *	doesn't matter, but if the caller assumes its set it may lead to a side-effect (bug)
+ *
+ *	NOTE: Room for improvement - look up the SR index initially and cache it, use the 
+ *		  cached value for all remaining reports.
  */
 uint8_t rpt_populate_filtered_status_report()
 {
@@ -400,6 +403,7 @@ uint8_t rpt_populate_filtered_status_report()
 
 		cmd_get_cmdObj(cmd);
 		if (cfg.status_report_value[i] == cmd->value) {	// float == comparison runs the risk of overreporting. So be it
+			cmd->objtype = TYPE_EMPTY;
 			continue;
 		} else {
 			strcpy(tmp, cmd->group);		// flatten out groups
@@ -427,8 +431,9 @@ struct qrIndexes {				// static data for queue reports
 };
 static struct qrIndexes qr;
 
-void rpt_request_queue_report() 
-{ 
+//void rpt_request_queue_report(int16_t count)
+void rpt_request_queue_report()
+{
 	if (cfg.queue_report_verbosity == QR_OFF) return;
 
 	qr.buffers_available = mp_get_planner_buffers_available();
