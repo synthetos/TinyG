@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	379.02		// Fixed status report so last element is properly filtered
+#define TINYG_FIRMWARE_BUILD   	379.03		// Debugging mcgyver problem
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 

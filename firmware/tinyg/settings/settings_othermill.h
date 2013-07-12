@@ -24,10 +24,10 @@
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
 
 // *** settings.h overrides ***
-
+/*
 #undef  SR_DEFAULTS
 #define SR_DEFAULTS "line","mpox","mpoy","mpoz","mpoa","feed","vel","unit","coor","dist","frmo","momo","stat"
-
+*/
 #undef	SWITCH_TYPE
 #define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED
 
@@ -35,7 +35,8 @@
 #define COMM_MODE				JSON_MODE
 
 #undef	JSON_VERBOSITY
-#define JSON_VERBOSITY			JV_CONFIGS
+//#define JSON_VERBOSITY			JV_CONFIGS
+#define JSON_VERBOSITY				JV_VERBOSE		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
 #undef	COM_ENABLE_QR
 #define COM_ENABLE_QR			true
@@ -73,6 +74,38 @@
 #define M4_MICROSTEPS 			8
 #define M4_POLARITY 			1			
 #define M4_POWER_MODE 			1					// hold
+
+/*
+#define M1_MOTOR_MAP 			AXIS_X				// 1ma
+#define M1_STEP_ANGLE 			1.8					// 1sa
+#define M1_TRAVEL_PER_REV 		5.08				// 1tr
+#define M1_MICROSTEPS 			8					// 1mi		1,2,4,8
+#define M1_POLARITY 			1					// 1po		0=normal, 1=reversed
+#define M1_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
+
+#define M2_MOTOR_MAP 			AXIS_Y
+#define M2_STEP_ANGLE 			1.8
+#define M2_TRAVEL_PER_REV 		5.08
+#define M2_MICROSTEPS 			8
+#define M2_POLARITY 			1
+#define M2_POWER_MODE 			0					// hold
+
+#define M3_MOTOR_MAP 			AXIS_Z
+#define M3_STEP_ANGLE 			15
+#define M3_TRAVEL_PER_REV 		1.27
+#define M3_MICROSTEPS 			8
+#define M3_POLARITY 			1
+#define M3_POWER_MODE 			0					// z-axis leadscrew doesn't need hold, enable low power idle
+
+#define M4_MOTOR_MAP 			AXIS_A
+#define M4_STEP_ANGLE 			1.8
+//#define M4_TRAVEL_PER_REV 		180					// degrees moved per motor rev
+#define M4_TRAVEL_PER_REV 		360					// degrees moved per motor rev
+#define M4_MICROSTEPS 			8
+#define M4_POLARITY 			1			
+#define M4_POWER_MODE 			1					// hold
+
+*/
 
 // *** axis settings ***
 

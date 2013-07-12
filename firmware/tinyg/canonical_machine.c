@@ -1170,7 +1170,9 @@ static void _program_finalize(uint8_t machine_state, float f)
 {
 	cm.machine_state = machine_state;
 	cm.motion_state = MOTION_STOP;
-	cm.cycle_state = CYCLE_OFF;
+	if (cm.cycle_state == CYCLE_MACHINING) {
+		cm.cycle_state = CYCLE_OFF;					// don't end cycle if homing, probing, etc.
+	}
 	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
 	cm.cycle_start_requested = false;				//...and cancel any cycle start request
 
@@ -1183,7 +1185,7 @@ void cm_cycle_start()
 {
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {
-		cm.cycle_state = CYCLE_STARTED;				// don't change homing, probe or other cycles
+		cm.cycle_state = CYCLE_MACHINING;			// don't change homing, probe or other cycles
 		cfg.queue_report_added = 0;					// clear buffer counter
 		cfg.queue_report_removed = 0;				// clear buffer counter
 		st_enable_motors();							// enable motors if not already enabled
@@ -1192,7 +1194,7 @@ void cm_cycle_start()
 
 void cm_cycle_end() 
 {
-	if (cm.cycle_state == CYCLE_STARTED) {
+	if (cm.cycle_state == CYCLE_MACHINING) {
 		_program_finalize(MACHINE_PROGRAM_STOP,0);
 	}
 }

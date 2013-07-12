@@ -1230,7 +1230,7 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	// each axis. Set the target in absolute coords and compute relative steps.
 
 	if ((correction_flag == true) && (mr.segment_count == 1) && 
-		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_STARTED)) {
+		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
 		mr.target[AXIS_X] = mr.endpoint[AXIS_X];	// rounding error correction for last segment
 		mr.target[AXIS_Y] = mr.endpoint[AXIS_Y];
 		mr.target[AXIS_Z] = mr.endpoint[AXIS_Z];

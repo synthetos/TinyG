@@ -258,7 +258,7 @@ enum cmMachineState {
 
 enum cmCycleState {
 	CYCLE_OFF = 0,					// machine is idle
-	CYCLE_STARTED,					// machine in normal cycle
+	CYCLE_MACHINING,				// machine in normal machining cycle
 	CYCLE_PROBE,					// machine in probe cycle
 	CYCLE_HOMING,					// homing is treated as a specialized cycle
 	CYCLE_JOG						// jogging is treated as a specialized cycle
