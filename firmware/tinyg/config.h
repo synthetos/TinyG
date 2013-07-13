@@ -219,6 +219,11 @@ enum tgCommunicationsMode {
 	JSON_MODE_RELAXED				// relaxed JSON construction (future)
 };
 
+enum tgCommunicationsSticky {
+	NOT_STICKY = 0,					// communications mode changes automatically
+	STICKY							// communications mode does not change
+};
+
 enum textVerbosity {
 	TV_SILENT = 0,					// no response is provided
 	TV_VERBOSE						// response is provided. Error responses ech message and failed commands
@@ -237,7 +242,7 @@ enum qrVerbosity {					// planner queue enable and verbosity
 	QR_OFF = 0,						// no response is provided
 	QR_FILTERED,					// queue depth reported only above hi-water mark and below lo-water mark  
 	QR_VERBOSE,						// queue depth reported for all buffers
-	QR_RELATIVE						// queue depth reported for all buffers, and buffers added, buffered removed
+	QR_TRIPLE						// queue depth reported for all buffers, and buffers added, buffered removed
 };
 
 enum srVerbosity {					// status report enable and verbosity
@@ -410,8 +415,6 @@ typedef struct cfgParameters {
 	uint8_t queue_report_verbosity;	// queue reports enabled and verbosity level
 	uint8_t queue_report_hi_water;
 	uint8_t queue_report_lo_water;
-	uint16_t queue_report_added;	// number of buffers added this cycle since last report 
-	uint16_t queue_report_removed;	// number of buffers removed this cycle since last report 
 
 	uint8_t json_verbosity;			// see enum in this file for settings
 	uint8_t text_verbosity;			// see enum in this file for settings

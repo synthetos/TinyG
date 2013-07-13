@@ -1177,6 +1177,22 @@ static void _program_finalize(uint8_t machine_state, float f)
 	cm.cycle_start_requested = false;				//...and cancel any cycle start request
 
 	mp_zero_segment_velocity();						// for reporting purposes
+
+	// execute program END resets
+	if (machine_state == MACHINE_PROGRAM_END) {
+		cm_reset_origin_offsets();					// G92.1
+	//	cm_suspend_origin_offsets();				// G92.2 - as per Kramer
+		cm_set_coord_system(cfg.coord_system);		// reset to default coordinate system
+		cm_select_plane(cfg.select_plane);			// reset to default arc plane
+		cm_set_distance_mode(cfg.distance_mode);
+		cm_set_units_mode(cfg.units_mode);			// reset to default units mode
+		cm_spindle_control(SPINDLE_OFF);			// M5
+		cm_flood_coolant_control(false);			// M9
+		cm_set_inverse_feed_rate_mode(false);
+	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1
+		cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);	
+	}
+
 	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report (not unfiltered)
 	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
 }
@@ -1186,8 +1202,7 @@ void cm_cycle_start()
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {
 		cm.cycle_state = CYCLE_MACHINING;			// don't change homing, probe or other cycles
-		cfg.queue_report_added = 0;					// clear buffer counter
-		cfg.queue_report_removed = 0;				// clear buffer counter
+		rpt_clear_queue_report();					// clear queue reporting buffer counts
 		st_enable_motors();							// enable motors if not already enabled
 	}
 }
@@ -1239,20 +1254,6 @@ void cm_optional_program_stop()
 
 void cm_program_end()				// M2, M30
 {
-	cm_reset_origin_offsets();						// G92.1
-//	cm_suspend_origin_offsets();					// G92.2 - as per Kramer
-	cm_set_coord_system(cfg.coord_system);			// default coordinate system
-
-	cm_select_plane(cfg.select_plane);				// default arc plane
-	cm_set_distance_mode(cfg.distance_mode);
-	cm_set_units_mode(cfg.units_mode);				// default units mode
-	cm_spindle_control(SPINDLE_OFF);				// M5
-	cm_flood_coolant_control(false);				// M9
-	cm_set_inverse_feed_rate_mode(false);
-
-//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1
-	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);	
-
 	mp_queue_command(_program_finalize, MACHINE_PROGRAM_END,0);
 }
 

@@ -24,10 +24,6 @@
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
 
 // *** settings.h overrides ***
-/*
-#undef  SR_DEFAULTS
-#define SR_DEFAULTS "line","mpox","mpoy","mpoz","mpoa","feed","vel","unit","coor","dist","frmo","momo","stat"
-*/
 
 #undef GCODE_DEFAULT_UNITS
 #define GCODE_DEFAULT_UNITS		INCHES
@@ -138,22 +134,6 @@
 #define A_ZERO_BACKOFF 			2
 #define A_JERK_HOMING			A_JERK_MAX
 
-/*
-#define A_AXIS_MODE 			AXIS_STANDARD
-#define A_VELOCITY_MAX 			3600				// deg/min
-#define A_FEEDRATE_MAX 			A_VELOCITY_MAX		// deg/min
-#define A_TRAVEL_MAX 			-1
-#define A_JERK_MAX 				JERK_MAX
-#define A_JUNCTION_DEVIATION 	0.1
-#define A_RADIUS 				1.0					// deg
-#define A_SWITCH_MODE_MIN		SW_MODE_DISABLED	// disable limit switch halt
-#define A_SWITCH_MODE_MAX		SW_MODE_DISABLED
-#define A_SEARCH_VELOCITY 		600					// deg/min
-#define A_LATCH_VELOCITY 		100					// deg/min
-#define A_LATCH_BACKOFF 		5					// deg
-#define A_ZERO_BACKOFF 			2					// deg
-#define A_JERK_HOMING			JERK_MAX
-*/
 #define B_AXIS_MODE 			AXIS_DISABLED
 #define B_VELOCITY_MAX 			3600
 #define B_FEEDRATE_MAX 			B_VELOCITY_MAX

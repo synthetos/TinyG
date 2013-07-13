@@ -420,22 +420,22 @@ void js_print_json_response(uint8_t status)
 			if ((cmd_type = cmd_get_type(cmd)) == CMD_TYPE_NULL) break;
 
 			if (cmd_type == CMD_TYPE_GCODE) {	
-				if (cfg.echo_json_gcode_block == false) {	// kill command echo if not enabled
+				if (cfg.echo_json_gcode_block == false) {// kill command echo if not enabled
 					cmd->objtype = TYPE_EMPTY;
 				}
 
-			} else if (cmd_type == CMD_TYPE_CONFIG) {		// kill config echo if not enabled
+			} else if (cmd_type == CMD_TYPE_CONFIG) {	// kill config echo if not enabled
 				if (cfg.echo_json_configs == false) {
 					cmd->objtype = TYPE_EMPTY;
 				}
 
-			} else if (cmd_type == CMD_TYPE_MESSAGE) {		// kill message echo if not enabled
+			} else if (cmd_type == CMD_TYPE_MESSAGE) {	// kill message echo if not enabled
 				if (cfg.echo_json_messages == false) {
 					cmd->objtype = TYPE_EMPTY;
 				}
 
-			} else if (cmd_type == CMD_TYPE_LINENUM) {		// kill line number echo if not enabled
-				if (cfg.echo_json_linenum == false) {
+			} else if (cmd_type == CMD_TYPE_LINENUM) {	// kill line number echo if not enabled
+				if ((cfg.echo_json_linenum == false) || (cmd->value == 0)) { // do not report line# 0
 					cmd->objtype = TYPE_EMPTY;
 				}
 			}
