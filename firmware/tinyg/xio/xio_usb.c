@@ -153,10 +153,6 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		cm_request_cycle_start();
 		return;
 	}
-//	if (c == CHAR_BOOTLOADER) {					// trap ESC to start boot loader
-//		tg_request_bootloader();
-//		return;
-//	}
 	// filter out CRs and LFs if they are to be ignored
 	if ((c == CR) && (USB.flag_ignorecr)) return;
 	if ((c == LF) && (USB.flag_ignorelf)) return;
@@ -169,7 +165,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		if ((USB.flag_xoff) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
 			xio_xoff_usart(&USBu);
 		}
-	} else { 									// buffer-full - toss the incoming character
+	} else { 											// buffer-full - toss the incoming character
 		if ((++USBu.rx_buf_head) > RX_BUFFER_SIZE-1) {	// reset the head
 			USBu.rx_buf_count = RX_BUFFER_SIZE-1;		// reset count for good measure
 			USBu.rx_buf_head = 1;
@@ -185,4 +181,20 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 buffer_t xio_get_usb_rx_free(void)
 {
 	return (RX_BUFFER_SIZE - xio_get_rx_bufcount_usart(&USBu));
+}
+
+/*
+ * xio_reset_usb_rx_buffers() - clears the USB RX buffer
+ */
+void xio_reset_usb_rx_buffers(void)
+{
+	// reset xio_gets() buffer
+	USB.len = 0;
+	USB.flag_in_line = false;
+
+	// reset interrupt circular buffer
+	USBu.rx_buf_head = 1;		// can't use location 0 in circular buffer
+	USBu.rx_buf_tail = 1;
+	USBu.tx_buf_head = 1;
+	USBu.tx_buf_tail = 1;
 }

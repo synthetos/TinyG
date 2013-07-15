@@ -46,7 +46,9 @@ void rpt_run_text_status_report(void);
 void rpt_populate_unfiltered_status_report(void);
 uint8_t rpt_populate_filtered_status_report(void);
 
-void rpt_request_queue_report(void);
+void rpt_clear_queue_report(void);
+//void rpt_request_queue_report(void);
+void rpt_request_queue_report(int8_t buffers);
 stat_t rpt_queue_report_callback(void);
 
 // If you are looking for the defaults for the status report see config.h

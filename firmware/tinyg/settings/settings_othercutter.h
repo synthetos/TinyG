@@ -77,11 +77,11 @@
 #define X_AXIS_MODE 					AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
 #define X_VELOCITY_MAX 					15000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 					1000				// xfr 		G1 max feed rate in mm/min
-#define X_TRAVEL_MAX 					320					// travel between switches or crashes
+#define X_TRAVEL_MAX 					320					// xtm		travel between switches or crashes
 #define X_JERK_MAX 						JERK_MAX			// xjm
 #define X_JUNCTION_DEVIATION			JUNCTION_DEVIATION	// xjd
-#define X_SWITCH_MODE_MIN				SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
-#define X_SWITCH_MODE_MAX				SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
+#define X_SWITCH_MODE_MIN 				SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
+#define X_SWITCH_MODE_MAX 				SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SEARCH_VELOCITY 				2000				// xsv
 #define X_LATCH_VELOCITY 				500					// xlv		mm/min
 #define X_LATCH_BACKOFF 				12					// xlb		mm

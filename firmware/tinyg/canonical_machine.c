@@ -89,6 +89,7 @@
 #include "report.h"
 #include "gpio.h"
 #include "system.h"
+#include "xio/xio.h"			// for serial queue flush
 
 // NOTE: The canonical machine singleton "cm" would normally be declared here 
 // but it's also used by cycles so it's in canonical_machine.h instead.
@@ -1125,7 +1126,7 @@ stat_t cm_feedhold_sequencing_callback()
 		if ((cm.motion_state == MOTION_STOP) ||
 			((cm.motion_state == MOTION_HOLD) && (cm.hold_state == FEEDHOLD_HOLD))) {
 			cm.queue_flush_requested = false;
-			cm_flush_planner();
+			cm_queue_flush();
 		}
 	}
 	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false)) {
@@ -1137,19 +1138,21 @@ stat_t cm_feedhold_sequencing_callback()
 	return (STAT_OK);
 }
 
-stat_t cm_flush_planner()
+stat_t cm_queue_flush()
 {
-	mp_flush_planner();
+	xio_reset_usb_rx_buffers();		// flush serial queues
+	mp_flush_planner();				// flush planner queue
 
 	for (uint8_t i=0; i<AXES; i++) {
 		mp_set_axis_position(i, mp_get_runtime_machine_position(i));	// set mm from mr
 		gm.position[i] = mp_get_runtime_machine_position(i);
 		gm.target[i] = gm.position[i];
 	}
-	cm.motion_state = MOTION_STOP;
-	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
-//	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report
-	rpt_request_queue_report();
+	_program_finalize(MACHINE_PROGRAM_STOP, 0);
+//	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
+//	cm.motion_state = MOTION_STOP;
+////	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report
+//	rpt_request_queue_report();
 	return (STAT_OK);
 }
 
@@ -1167,11 +1170,29 @@ static void _program_finalize(uint8_t machine_state, float f)
 {
 	cm.machine_state = machine_state;
 	cm.motion_state = MOTION_STOP;
-	cm.cycle_state = CYCLE_OFF;
+	if (cm.cycle_state == CYCLE_MACHINING) {
+		cm.cycle_state = CYCLE_OFF;					// don't end cycle if homing, probing, etc.
+	}
 	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
 	cm.cycle_start_requested = false;				//...and cancel any cycle start request
 
 	mp_zero_segment_velocity();						// for reporting purposes
+
+	// execute program END resets
+	if (machine_state == MACHINE_PROGRAM_END) {
+		cm_reset_origin_offsets();					// G92.1
+	//	cm_suspend_origin_offsets();				// G92.2 - as per Kramer
+		cm_set_coord_system(cfg.coord_system);		// reset to default coordinate system
+		cm_select_plane(cfg.select_plane);			// reset to default arc plane
+		cm_set_distance_mode(cfg.distance_mode);
+		cm_set_units_mode(cfg.units_mode);			// reset to default units mode
+		cm_spindle_control(SPINDLE_OFF);			// M5
+		cm_flood_coolant_control(false);			// M9
+		cm_set_inverse_feed_rate_mode(false);
+	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1
+		cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);	
+	}
+
 	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report (not unfiltered)
 	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
 }
@@ -1180,14 +1201,15 @@ void cm_cycle_start()
 {
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {
-		cm.cycle_state = CYCLE_STARTED;				// don't change homing, probe or other cycles
+		cm.cycle_state = CYCLE_MACHINING;			// don't change homing, probe or other cycles
+		rpt_clear_queue_report();					// clear queue reporting buffer counts
 		st_enable_motors();							// enable motors if not already enabled
 	}
 }
 
 void cm_cycle_end() 
 {
-	if (cm.cycle_state == CYCLE_STARTED) {
+	if (cm.cycle_state == CYCLE_MACHINING) {
 		_program_finalize(MACHINE_PROGRAM_STOP,0);
 	}
 }
@@ -1232,20 +1254,6 @@ void cm_optional_program_stop()
 
 void cm_program_end()				// M2, M30
 {
-	cm_reset_origin_offsets();						// G92.1
-//	cm_suspend_origin_offsets();					// G92.2 - as per Kramer
-	cm_set_coord_system(cfg.coord_system);			// default coordinate system
-
-	cm_select_plane(cfg.select_plane);				// default arc plane
-	cm_set_distance_mode(cfg.distance_mode);
-	cm_set_units_mode(cfg.units_mode);				// default units mode
-	cm_spindle_control(SPINDLE_OFF);				// M5
-	cm_flood_coolant_control(false);				// M9
-	cm_set_inverse_feed_rate_mode(false);
-
-//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1
-	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);	
-
 	mp_queue_command(_program_finalize, MACHINE_PROGRAM_END,0);
 }
 

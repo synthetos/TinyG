@@ -108,6 +108,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 //	xio_queue_RX_string_usb("g28.2 x0\n");			// homing test
 
+//	xio_queue_RX_string_usb("{\"gc\":\"N78 (Row 2 Copy 9-1)\"}\n");
+
 //	xio_queue_RX_string_usb("g1 f100 x100\n");		// Feedhold/queue flush test
 //	xio_queue_RX_string_usb("!\n");
 //	xio_queue_RX_string_usb("@\n");
@@ -120,6 +122,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 */
 //	xio_queue_RX_string_usb("$xam=1\n");
 //	xio_queue_RX_string_usb("$1po=1\n");
+//	xio_queue_RX_string_usb("$g54x=20.00\n");
 //	xio_queue_RX_string_usb("$x\n");				// display a group
 //	xio_queue_RX_string_usb("{\"xam\":1}\n");
 

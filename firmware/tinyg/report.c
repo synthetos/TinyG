@@ -361,7 +361,7 @@ void rpt_populate_unfiltered_status_report()
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
 	cmd->index = cmd_get_index("","sr");	// set the index - may be needed by calling function
-	cmd = cmd->nx;
+	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
@@ -369,7 +369,7 @@ void rpt_populate_unfiltered_status_report()
 		strcpy(tmp, cmd->group);			// concatenate groups and tokens
 		strcat(tmp, cmd->token);
 		strcpy(cmd->token, tmp);
-		cmd = cmd->nx;
+		if ((cmd = cmd->nx) == NULL) return; // should never be NULL unless SR length exceeds available buffer array 
 	}
 }
 
@@ -382,6 +382,9 @@ void rpt_populate_unfiltered_status_report()
  *	NOTE: Unlike rpt_populate_unfiltered_status_report(), this function does NOT set 
  *	the SR index, which is a relatively expensive operation. In current use this 
  *	doesn't matter, but if the caller assumes its set it may lead to a side-effect (bug)
+ *
+ *	NOTE: Room for improvement - look up the SR index initially and cache it, use the 
+ *		  cached value for all remaining reports.
  */
 uint8_t rpt_populate_filtered_status_report()
 {
@@ -393,21 +396,21 @@ uint8_t rpt_populate_filtered_status_report()
 	strcpy(cmd->token, "sr");
 //	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
 //	cmd->index = cmd_get_index("","sr");	// OMITTED - set the index - may be needed by calling function
-	cmd = cmd->nx;
+	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
 
 		cmd_get_cmdObj(cmd);
 		if (cfg.status_report_value[i] == cmd->value) {	// float == comparison runs the risk of overreporting. So be it
+			cmd->objtype = TYPE_EMPTY;
 			continue;
 		} else {
 			strcpy(tmp, cmd->group);		// flatten out groups
 			strcat(tmp, cmd->token);
 			strcpy(cmd->token, tmp);
 			cfg.status_report_value[i] = cmd->value;
-			cmd = cmd->nx;
-//			if (cmd == NULL) { return (false);}	// This is never supposed to happen
+			if ((cmd = cmd->nx) == NULL) return (false); // should never be NULL unless SR length exceeds available buffer array
 			has_data = true;
 		}
 	}
@@ -425,14 +428,30 @@ struct qrIndexes {				// static data for queue reports
 	uint8_t request;			// set to true to request a report
 	uint8_t buffers_available;	// stored value used by callback
 	uint8_t prev_available;		// used to filter reports
+	uint8_t buffers_added;		// buffers added since last report
+	uint8_t buffers_removed;	// buffers removed since last report
 };
 static struct qrIndexes qr;
 
-void rpt_request_queue_report() 
-{ 
+void rpt_clear_queue_report()
+{
+	qr.request = false;
+	qr.buffers_added = 0;
+	qr.buffers_removed = 0;
+}
+
+void rpt_request_queue_report(int8_t buffers)
+//void rpt_request_queue_report()
+{
 	if (cfg.queue_report_verbosity == QR_OFF) return;
 
 	qr.buffers_available = mp_get_planner_buffers_available();
+
+	if (buffers > 0) {
+		qr.buffers_added += buffers;
+	} else {
+		qr.buffers_removed -= buffers;
+	}
 
 	// perform filtration for QR_FILTERED reports
 	if (cfg.queue_report_verbosity == QR_FILTERED) {
@@ -453,7 +472,24 @@ uint8_t rpt_queue_report_callback()
 	if (qr.request == false) { return (STAT_NOOP);}
 	qr.request = false;
 
-	// cget a clean cmd object
+	if (cfg.comm_mode == TEXT_MODE) {
+		if (cfg.queue_report_verbosity == QR_VERBOSE) {
+			fprintf(stderr, "qr:%d\n", qr.buffers_available);
+		} else  if (cfg.queue_report_verbosity == QR_TRIPLE) {
+			fprintf(stderr, "qr:%d,added:%d,removed:%d\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+		}
+	} else {
+		if (cfg.queue_report_verbosity == QR_VERBOSE) {
+			fprintf(stderr, "{\"qr\":%d}\n", qr.buffers_available);
+		} else  if (cfg.queue_report_verbosity == QR_TRIPLE) {
+			fprintf(stderr, "{\"qr\":[%d,%d,%d]}\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+			rpt_clear_queue_report();
+		}
+	}
+	return (STAT_OK);
+
+/*
+	// get a clean cmd object
 //	cmdObj_t *cmd = cmd_reset_list();		// normally you do a list reset but the following is more time efficient
 	cmdObj_t *cmd = cmd_body;
 	cmd_reset_obj(cmd);
@@ -465,6 +501,7 @@ uint8_t rpt_queue_report_callback()
 	cmd->objtype = TYPE_INTEGER;
 	cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (STAT_OK);
+*/
 }
 
 /****************************************************************************

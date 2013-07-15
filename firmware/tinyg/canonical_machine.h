@@ -95,11 +95,11 @@ typedef struct GCodeModel {				// Gcode dynamic model
 	float g28_position[AXES];			// XYZABC stored machine position for G28
 	float g30_position[AXES];			// XYZABC stored machine position for G30
 
-	float min_time;					// minimum time possible for the move given axis constraints
+	float min_time;						// minimum time possible for the move given axis constraints
 	float feed_rate; 					// F - normalized to millimeters/minute
 	float inverse_feed_rate; 			// ignored if inverse_feed_rate not active
 	float feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
-	float traverse_override_factor;	// 1.0000 x traverse rate. Go down from there
+	float traverse_override_factor;		// 1.0000 x traverse rate. Go down from there
 	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
@@ -124,8 +124,8 @@ typedef struct GCodeModel {				// Gcode dynamic model
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
 
 	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
-	float  spindle_speed;				// in RPM
-	float  spindle_override_factor;	// 1.0000 x S spindle speed. Go up or down from there
+	float spindle_speed;				// in RPM
+	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
 	uint8_t	spindle_override_enable;	// TRUE = override enabled
 
 	uint8_t block_delete_switch;		// set true to enable block deletes (true is default)
@@ -149,11 +149,11 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 
 	float target[AXES]; 				// XYZABC where the move should go
 
-	float min_time;					// minimum time possible for the move given axis constraints
+	float min_time;						// minimum time possible for the move given axis constraints
 	float feed_rate; 					// F - normalized to millimeters/minute
 	float inverse_feed_rate; 			// ignored if inverse_feed_rate not active
 	float feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
-	float traverse_override_factor;	// 1.0000 x traverse rate. Go down from there
+	float traverse_override_factor;		// 1.0000 x traverse rate. Go down from there
 	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
@@ -174,8 +174,8 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
 
 	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
-	float  spindle_speed;				// in RPM
-	float  spindle_override_factor;	// 1.0000 x S spindle speed. Go up or down from there
+	float spindle_speed;				// in RPM
+	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
 	uint8_t	spindle_override_enable;	// TRUE = override enabled
 
 // unimplemented gcode parameters
@@ -258,7 +258,7 @@ enum cmMachineState {
 
 enum cmCycleState {
 	CYCLE_OFF = 0,					// machine is idle
-	CYCLE_STARTED,					// machine in normal cycle
+	CYCLE_MACHINING,				// machine in normal machining cycle
 	CYCLE_PROBE,					// machine in probe cycle
 	CYCLE_HOMING,					// homing is treated as a specialized cycle
 	CYCLE_JOG						// jogging is treated as a specialized cycle
@@ -485,8 +485,8 @@ void cm_set_model_linenum(uint32_t linenum);
 void cm_init(void);												// init canonical machine
 void cm_alarm(uint8_t value);									// emergency shutdown
 
-stat_t cm_set_machine_axis_position(uint8_t axis, const float position);	// set absolute position
-stat_t cm_flush_planner(void);									// flush planner queue with coordinate resets
+stat_t cm_set_machine_axis_position(uint8_t axis, const float position);// set absolute position
+stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
 
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
