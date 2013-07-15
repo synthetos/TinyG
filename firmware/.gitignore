@@ -9,6 +9,5 @@
 *.srec
 *.aws
 *.atsuo
-*.cproj
 .DS_Store
 TcfTransactionLog.csv
