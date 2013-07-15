@@ -472,17 +472,23 @@ uint8_t rpt_queue_report_callback()
 	if (qr.request == false) { return (STAT_NOOP);}
 	qr.request = false;
 
-	if (cfg.queue_report_verbosity == QR_VERBOSE) {
-		fprintf(stderr, "{\"qr\":%d}\n", qr.buffers_available);
-	}
-	if (cfg.queue_report_verbosity == QR_TRIPLE) {
-		fprintf(stderr, "{\"qr\":[%d,%d,%d]}\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
-		rpt_clear_queue_report();
+	if (cfg.comm_mode == TEXT_MODE) {
+		if (cfg.queue_report_verbosity == QR_VERBOSE) {
+			fprintf(stderr, "qr:%d\n", qr.buffers_available);
+		} else  if (cfg.queue_report_verbosity == QR_TRIPLE) {
+			fprintf(stderr, "qr:%d,added:%d,removed:%d\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+		}
+	} else {
+		if (cfg.queue_report_verbosity == QR_VERBOSE) {
+			fprintf(stderr, "{\"qr\":%d}\n", qr.buffers_available);
+		} else  if (cfg.queue_report_verbosity == QR_TRIPLE) {
+			fprintf(stderr, "{\"qr\":[%d,%d,%d]}\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+			rpt_clear_queue_report();
+		}
 	}
 	return (STAT_OK);
 
 /*
-
 	// get a clean cmd object
 //	cmdObj_t *cmd = cmd_reset_list();		// normally you do a list reset but the following is more time efficient
 	cmdObj_t *cmd = cmd_body;
