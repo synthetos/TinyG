@@ -91,6 +91,12 @@ int xio_putc_usb(const char c, FILE *stream)
 ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
 	if (USBu.fc_char == NUL) {						// normal char TX path
+		// If the CTS pin (FTDI's RTS) is HIGH, then we cannot send more.
+		if ((USBu.port->IN & USB_CTS_bm)) {
+			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;	// force another interrupt
+			return;
+		}
+		
 		if (USBu.tx_buf_head != USBu.tx_buf_tail) {	// buffer has data
 			advance_buffer(USBu.tx_buf_tail, TX_BUFFER_SIZE);
 			USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];
@@ -105,6 +111,16 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 		USBu.fc_char = NUL;
 	}
 }
+
+/*
+ * Pin Change (edge-detect) interrupt for CTS pin.
+ */
+
+ISR(USB_CTS_ISR_vect)	
+{
+	USBu.usart->CTRLA = CTRLA_RXON_TXON;		// force another interrupt
+}
+
 
 /* 
  * USB_RX_ISR - USB receiver interrupt (RX)
@@ -124,9 +140,6 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
  *	- Flow control should cut off at high water mark, re-enable at low water mark
  *	- High water mark should have about 4 - 8 bytes left in buffer (~95% full) 
  *	- Low water mark about 50% full
- *
- *  See https://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Module-Details#Notes_on_Circular_Buffers
- *  for a discussion of how the circular buffers work
  */
 
 ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int 

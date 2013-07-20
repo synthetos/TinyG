@@ -82,17 +82,23 @@
 #define USB_TX_ISR_vect USARTC0_DRE_vect		// (TX) data register empty IRQ
 
 #define USB_PORT PORTC							// port where the USART is located
-#define USB_CTS_bp (0)							// CTS - bit position (pin is wired on board)
+#define USB_CTS_bp (1)							// CTS - bit position (pin is wired on board)
 #define USB_CTS_bm (1<<USB_CTS_bp)				// CTS - bit mask
-#define USB_RTS_bp (1)							// RTS - bit position (pin is wired on board)
+#define USB_CTS_PINCTRL PIN1CTRL				// CTS - PINxCTRL assignment
+#define USB_CTS_ISR_vect PORTC_INT0_vect		// CTS - Interrupt Vector (PORTC_INT0_vect or PORTC_INT1_vect)
+#define USB_CTS_INTMSK INT0MASK					// CTS - Interrupt Mask Register (INT0MASK or INT1MASK)
+#define USB_CTS_INTLVL (PORT_INT0LVL_LO_gc)
+
+#define USB_RTS_bp (0)							// RTS - bit position (pin is wired on board)
 #define USB_RTS_bm (1<<USB_RTS_bp)				// RTS - bit mask
+
 #define USB_RX_bm (1<<2)						// RX pin bit mask
 #define USB_TX_bm (1<<3)						// TX pin bit mask
 
 #define USB_INBITS_bm (USB_CTS_bm | USB_RX_bm)	// input bits
 #define USB_OUTBITS_bm (USB_RTS_bm | USB_TX_bm)	// output bits
-#define USB_OUTCLR_bm (0)						// outputs init'd to 0
-#define USB_OUTSET_bm (USB_RTS_bm | USB_TX_bm)	// outputs init'd to 1
+#define USB_OUTCLR_bm (USB_RTS_bm)				// outputs init'd to 0
+#define USB_OUTSET_bm (USB_TX_bm)				// outputs init'd to 1
 
 //**** RS485 device configuration (no echo or CRLF) ****
 #define RS485_BAUD	   XIO_BAUD_115200

@@ -703,7 +703,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","ic",  _f07, 0, fmt_ic, _print_ui8, _get_ui8, _set_ic,  (float *)&cfg.ignore_crlf,			COM_IGNORE_CRLF },
 	{ "sys","ec",  _f07, 0, fmt_ec, _print_ui8, _get_ui8, _set_ec,  (float *)&cfg.enable_cr,			COM_EXPAND_CR },
 	{ "sys","ee",  _f07, 0, fmt_ee, _print_ui8, _get_ui8, _set_ee,  (float *)&cfg.enable_echo,			COM_ENABLE_ECHO },
-	{ "sys","ex",  _f07, 0, fmt_ex, _print_ui8, _get_ui8, _set_ex,  (float *)&cfg.enable_flow_control,	COM_ENABLE_XON },
+	{ "sys","ex",  _f07, 0, fmt_ex, _print_ui8, _get_ui8, _set_ex,  (float *)&cfg.enable_flow_control,	COM_ENABLE_FLOW_CONTROL },
 	{ "sys","fs",  _f07, 0, fmt_fs, _print_ui8, _get_ui8, _set_ui8, (float *)&cfg.footer_style,			0 },
 	{ "sys","baud",_fns, 0, fmt_baud,_print_ui8,_get_ui8, _set_baud,(float *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
 	{ "sys","net", _fip, 0, fmt_net,_print_ui8, _get_ui8, _set_ui8, (float *)&tg.network_mode,			NETWORK_MODE },

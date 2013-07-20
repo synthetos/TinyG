@@ -154,6 +154,11 @@ FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags)
 	dx->port->OUTSET = (uint8_t)pgm_read_byte(&cfgUsart[idx].outset);
 	dx->usart->CTRLB = (USART_TXEN_bm | USART_RXEN_bm);	// enable tx and rx
 	dx->usart->CTRLA = CTRLA_RXON_TXON;					// enable tx and rx IRQs
+
+	dx->port->USB_CTS_PINCTRL = PORT_OPC_TOTEM_gc | PORT_ISC_BOTHEDGES_gc;
+	dx->port->INTCTRL = USB_CTS_INTLVL;		// see xio_usart.h for setting
+	dx->port->USB_CTS_INTMSK = USB_CTS_bm;
+
 	return (&d->file);		// return FILE reference
 
 	// here's a bag for the RS485 device
@@ -180,35 +185,46 @@ void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
  *
  *	Reminder: tx/rx queues fill from top to bottom, w/0 being the wrap location
  */
-/*
+
 void xio_xoff_usart(xioUsart_t *dx)
 {
 	if (dx->fc_state == FC_IN_XON) {
-		// dx->fc_char = XOFF; 
 		dx->fc_state = FC_IN_XOFF;
-		// dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
-		
+
+		// Using XON/XOFF flow control
+		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
+			dx->fc_char = XOFF; 
+			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
+		}
+
 		// Using hardware flow control. The CTS pin on the *FTDI* is our RTS.
 		// Logic 1 means we're NOT ready for more data.
-		dx->port->OUTSET = USB_RTS_bm;
+		if (cfg.enable_flow_control == FLOW_CONTROL_RTS) {
+			dx->port->OUTSET = USB_RTS_bm;
+		}
 	}
 }
 
 void xio_xon_usart(xioUsart_t *dx)
 {
 	if (dx->fc_state == FC_IN_XOFF) {
-		// dx->fc_char = XON; 
 		dx->fc_state = FC_IN_XON;
-		// dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
-		
+
+		// Using XON/XOFF flow control
+		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
+			dx->fc_char = XON; 
+			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
+		}
+
 		// Using hardware flow control. The CTS pin on the *FTDI* is our RTS.
 		// Logic 0 means we're ready for more data.
-		dx->port->OUTCLR = USB_RTS_bm;
+		if (cfg.enable_flow_control == FLOW_CONTROL_RTS) {
+			dx->port->OUTCLR = USB_RTS_bm;
+		}
 	}
 }
 
-*/
-
+/*
 void xio_xoff_usart(xioUsart_t *dx)
 {
 	if (dx->fc_state == FC_IN_XON) {
@@ -226,6 +242,7 @@ void xio_xon_usart(xioUsart_t *dx)
 		dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
 	}
 }
+*/
 
 void xio_fc_usart(xioDev_t *d)		// callback from the usart handlers
 {
