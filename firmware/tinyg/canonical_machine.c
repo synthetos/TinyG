@@ -115,8 +115,13 @@ static void _program_finalize(uint8_t machine_state, float float_val);
  *
  ************************************************************************/
 
-/*
+/* State management - see canonical_machine.h for header notes
  * cm_get_combined_state() - combines raw states into something a user might want to see
+ * cm_get_machine_state()
+ * cm_get_motion_state() 
+ * cm_get_cycle_state() 
+ * cm_get_hold_state() 
+ * cm_get_homing_state() 
  */
 
 uint8_t cm_get_combined_state() 
@@ -132,6 +137,12 @@ uint8_t cm_get_combined_state()
 	}
 	return cm.combined_state;
 }
+uint8_t cm_get_machine_state() { return cm.machine_state;}
+uint8_t cm_get_cycle_state() { return cm.cycle_state;}
+uint8_t cm_get_motion_state() { return cm.motion_state;}
+uint8_t cm_get_hold_state() { return cm.hold_state;}
+uint8_t cm_get_homing_state() { return cm.homing_state;}
+
 
 /*
  * Low-level Getters and Setters (most work directly on the Gcode model struct)
@@ -142,13 +153,6 @@ void cm_set_absolute_override(uint8_t absolute_override) { gm.absolute_override 
 void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
 void cm_set_spindle_speed_parameter(float speed) { gm.spindle_speed = speed;}
 void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
-
-// get parameter from cm struct
-uint8_t cm_get_machine_state() { return cm.machine_state;}
-uint8_t cm_get_cycle_state() { return cm.cycle_state;}
-uint8_t cm_get_motion_state() { return cm.motion_state;}
-uint8_t cm_get_hold_state() { return cm.hold_state;}
-uint8_t cm_get_homing_state() { return cm.homing_state;}
 
 // get parameter from gm struct
 uint8_t cm_get_model_motion_mode() { return gm.motion_mode;}

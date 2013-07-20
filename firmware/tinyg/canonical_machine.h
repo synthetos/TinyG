@@ -29,6 +29,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/* Command synchronzation and state management in the canonical machine
+ *
+ * 	The canonical machine needs to be aware of the gcode model state (model) 
+ *	and the runtine state (runtime). Some commands affect only the model in 
+ *	that they provide input to other commands. Other commands need to be 
+ *	passed to the planner so that they execute in synchronzation with the 
+ *	Gcode. The canoncial machine needs to be aware of this and keep it straight
+ *
+ *	Similarly, some data retrieval commands (gets) need to return values from 
+ *	the model, others need to return the actual runtime state.
+ *
+ *	The following lists the proper handling for the canonical machine commands
+ *
+ *  === SYSTEM STATE ===
+ *
+ *	System state represented by the cm.xxxxxx_state variables reflect the runtime
+ *	state
+
+ * 	GETS
+ *
+ *	=== MODEL ===
+ *
+ *	=== RUNTIME ===
+ *
+
+ *	SETS / COMMANDS
+ *
+ *	=== MODEL ===
+ *
+ *	=== RUNTIME ===
+ *  cm_set_absolute_origin() - G28.3
+ *	 
+*/
+
 #ifndef canonical_machine_h
 #define canonical_machine_h
 
@@ -195,19 +229,11 @@ GCodeInput_t gf;		// gcode input flags
 /*****************************************************************************
  * 
  * MACHINE STATE MODEL
- * ref: http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-State-Models
  *
- * The following variables track canonical machine state and state transitions.
- *
- *		- cm.machine_state		- overall state of machine and program execution
- *		- cm.cycle_state		- what cycle the machine is executing (or none)
- *		- cm.motion_state		- state of movement
- *
- * These additional sub-states are also tracked
- *
- *		- mr.hold_state
- *		- mr.feed_override_state
- *		- cm.homing_state
+ * The following main variables track canonical machine state and state transitions.
+ *		- cm.machine_state	- overall state of machine and program execution
+ *		- cm.cycle_state	- what cycle the machine is executing (or none)
+ *		- cm.motion_state	- state of movement
  */
 /*	Allowed states and combined states
  *

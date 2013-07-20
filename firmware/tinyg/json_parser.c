@@ -454,6 +454,7 @@ void js_print_json_response(uint8_t status)
 	tg.linelen = 0;										// reset linelen so it's only reported once
 
 	cmd_copy_string(cmd, footer_string);				// link string to cmd object
+	cmd->depth = 0;				//++++++++++++						// footer is at same depth as 'r'
 	cmd->objtype = TYPE_ARRAY;
 	strcpy(cmd->token, "f");							// terminate the list
 	cmd->nx = NULL;
