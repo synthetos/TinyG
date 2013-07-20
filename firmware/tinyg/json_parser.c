@@ -414,6 +414,8 @@ void js_print_json_response(uint8_t status)
 {
 	if (cfg.json_verbosity == JV_SILENT) return;		// silent responses
 
+	if (status == STAT_JSON_SYNTAX_ERROR) return;		// syntax errors on input generate ill-formed JSON. Drop them
+
 	// Body processing
 	cmdObj_t *cmd = cmd_body;
 	if (cm.machine_state != MACHINE_INITIALIZING) {		// always do full echo during startup

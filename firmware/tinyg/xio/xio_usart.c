@@ -180,6 +180,34 @@ void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
  *
  *	Reminder: tx/rx queues fill from top to bottom, w/0 being the wrap location
  */
+/*
+void xio_xoff_usart(xioUsart_t *dx)
+{
+	if (dx->fc_state == FC_IN_XON) {
+		// dx->fc_char = XOFF; 
+		dx->fc_state = FC_IN_XOFF;
+		// dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
+		
+		// Using hardware flow control. The CTS pin on the *FTDI* is our RTS.
+		// Logic 1 means we're NOT ready for more data.
+		dx->port->OUTSET = USB_RTS_bm;
+	}
+}
+
+void xio_xon_usart(xioUsart_t *dx)
+{
+	if (dx->fc_state == FC_IN_XOFF) {
+		// dx->fc_char = XON; 
+		dx->fc_state = FC_IN_XON;
+		// dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
+		
+		// Using hardware flow control. The CTS pin on the *FTDI* is our RTS.
+		// Logic 0 means we're ready for more data.
+		dx->port->OUTCLR = USB_RTS_bm;
+	}
+}
+
+*/
 
 void xio_xoff_usart(xioUsart_t *dx)
 {
