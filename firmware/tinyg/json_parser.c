@@ -361,11 +361,12 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 		}
 		if (str >= str_max) { return (-1);}		// signal buffer overrun
 		if ((cmd = cmd->nx) == NULL) { break;}	// end of the list
-		if (cmd->depth < prev_depth) {
+
+		while (cmd->depth < prev_depth--) {		// iterate the closing curlies
 			need_a_comma = true;
-			*str++ = '}';						// and close the level
+			*str++ = '}';
 		}
-		prev_depth = cmd->depth;
+		prev_depth = cmd->depth;	
 	}
 
 	// closing curlies and NEWLINE
@@ -454,7 +455,7 @@ void js_print_json_response(uint8_t status)
 	tg.linelen = 0;										// reset linelen so it's only reported once
 
 	cmd_copy_string(cmd, footer_string);				// link string to cmd object
-	cmd->depth = 0;				//++++++++++++						// footer is at same depth as 'r'
+	cmd->depth = 0;										// footer is at same depth as 'r'
 	cmd->objtype = TYPE_ARRAY;
 	strcpy(cmd->token, "f");							// terminate the list
 	cmd->nx = NULL;
