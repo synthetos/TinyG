@@ -115,15 +115,16 @@ static void _program_finalize(uint8_t machine_state, float float_val);
  *
  ************************************************************************/
 
-/* State management - see canonical_machine.h for header notes
+/* 
  * cm_get_combined_state() - combines raw states into something a user might want to see
  * cm_get_machine_state()
  * cm_get_motion_state() 
  * cm_get_cycle_state() 
  * cm_get_hold_state() 
- * cm_get_homing_state() 
+ * cm_get_homing_state()
+ *
+ *	The cm.xxxxxx_state variables reflect the runtime state
  */
-
 uint8_t cm_get_combined_state() 
 {
 	if (cm.machine_state == MACHINE_CYCLE) {
@@ -144,8 +145,8 @@ uint8_t cm_get_hold_state() { return cm.hold_state;}
 uint8_t cm_get_homing_state() { return cm.homing_state;}
 
 
-/*
- * Low-level Getters and Setters (most work directly on the Gcode model struct)
+/* 
+ * Model state Getters and Setters
  */
 // set parameters in gm struct
 void cm_set_motion_mode(uint8_t motion_mode) {gm.motion_mode = motion_mode;} 
@@ -166,28 +167,28 @@ uint8_t cm_get_model_spindle_mode() { return gm.spindle_mode;}
 uint32_t cm_get_model_linenum() { return gm.linenum;}
 uint8_t	cm_get_block_delete_switch() { return gm.block_delete_switch;}
 
-// get runtime variables from  MR struct
+/* 
+ * Runtime state Getters and Setters
+ */
 uint8_t cm_get_runtime_motion_mode() { return mp_get_runtime_motion_mode();}
 uint8_t cm_isbusy() { return (mp_isbusy());}
 
-//void cm_sync_tool_number(uint8_t tool) { mp_sync_command(SYNC_TOOL_NUMBER, (float)tool);}
-//void cm_sync_spindle_speed_parameter(float speed) { mp_sync_command(SYNC_SPINDLE_SPEED, speed);}
-
-/* Position and Offset getters
+/* Position and Offset getters - work from model and runtime
  *
- * cm_get_coord_offset() - return the currently active coordinate offset for an axis
- * cm_get_coord_offset_vector() - return currently active coordinate offsets as a vector
+ * cm_get_model_coord_offset() - return the currently active coordinate offset for an axis
+ * cm_get_model_coord_offset_vector() - return currently active coordinate offsets as a vector
  * cm_get_model_work_position() - return position from the gm struct into gn struct form (external form)
  * cm_get_model_work_position_vector() - return model position vector in externalized form
  * cm_get_model_canonical_target() - return model target in internal canonical form
  * cm_get_model_canonical_position_vector() - return model position vector in internal canonical form
+ *
  * cm_get_runtime_machine_position() - return current machine position in external form 
  * cm_get_runtime work_position() - return current work coordinate position in external form 
  * cm_get_runtime work_offset() - return current work offset
  * cm_get_runtime work_scaling() - return current work scaling factor
  */
 
-float cm_get_coord_offset(uint8_t axis)
+float cm_get_model_coord_offset(uint8_t axis)
 {
 	if (gm.absolute_override == true) {
 		return (0);						// no work offset if in abs override mode
@@ -199,10 +200,10 @@ float cm_get_coord_offset(uint8_t axis)
 	}
 }
 
-float *cm_get_coord_offset_vector(float vector[])
+float *cm_get_model_coord_offset_vector(float vector[])
 {
 	for (uint8_t i=0; i<AXES; i++) {
-		vector[i] = cm_get_coord_offset(i);
+		vector[i] = cm_get_model_coord_offset(i);
 	}
 	return (vector);
 }
@@ -210,9 +211,9 @@ float *cm_get_coord_offset_vector(float vector[])
 float cm_get_model_work_position(uint8_t axis) 
 {
 	if (gm.units_mode == INCHES) {
-		return ((gm.position[axis] - cm_get_coord_offset(axis)) / MM_PER_INCH);
+		return ((gm.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
 	} else {
-		return (gm.position[axis] - cm_get_coord_offset(axis));
+		return (gm.position[axis] - cm_get_model_coord_offset(axis));
 	}
 }
 /*
@@ -262,26 +263,26 @@ float cm_get_runtime_work_offset(uint8_t axis)
 }
 
 /*
- * Setters - these inhale gn values into the gm struct
+ * Model initializers - these inhale gn values into the gm struct
  *
  *	Input coordinates are in native block formats (gn form);
  *	i.e. they are not unit adjusted or otherwise pre-processed.
  *	The setters take care of coordinate system, units, and 
  *	distance mode conversions and normalizations.
  *
- * cm_set_arc_offset()	  - set all IJK offsets
- * cm_set_radius()		  - set radius value
- * cm_set_model_linenum() - set line number in the model
+ * cm_set_model_arc_offset()  - set all IJK offsets
+ * cm_set_model_radius()	  - set radius value
+ * cm_set_model_linenum() 	  - set line number in the model
  */
 
-void cm_set_arc_offset(float i, float j, float k)
+void cm_set_model_arc_offset(float i, float j, float k)
 { 
 	gm.arc_offset[0] = _to_millimeters(i);
 	gm.arc_offset[1] = _to_millimeters(j);
 	gm.arc_offset[2] = _to_millimeters(k);
 }
 
-void cm_set_arc_radius(float r) 
+void cm_set_model_arc_radius(float r) 
 { 
 	gm.arc_radius = _to_millimeters(r);
 }
@@ -293,7 +294,7 @@ void cm_set_model_linenum(uint32_t linenum)
 }
 
 /* 
- * cm_set_target() - set target vector in GM model
+ * cm_set_model_target() - set target vector in GM model
  *
  * This is a core routine. It handles:
  *	- conversion of linear units to internal canonical form (mm)
@@ -320,7 +321,7 @@ void cm_set_model_linenum(uint32_t linenum)
  */
 static float _calc_ABC(uint8_t i, float target[], float flag[]);
 
-void cm_set_target(float target[], float flag[])
+void cm_set_model_target(float target[], float flag[])
 { 
 	uint8_t i;
 	float tmp = 0;
@@ -331,7 +332,7 @@ void cm_set_target(float target[], float flag[])
 			continue;
 		} else if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
 			if (gm.distance_mode == ABSOLUTE_MODE) {
-				gm.target[i] = cm_get_coord_offset(i) + _to_millimeters(target[i]);
+				gm.target[i] = cm_get_model_coord_offset(i) + _to_millimeters(target[i]);
 			} else {
 				gm.target[i] += _to_millimeters(target[i]);
 			}
@@ -345,7 +346,7 @@ void cm_set_target(float target[], float flag[])
 		} else tmp = _calc_ABC(i, target, flag);		
 		
 		if (gm.distance_mode == ABSOLUTE_MODE) {
-			gm.target[i] = tmp + cm_get_coord_offset(i); // sacidu93's fix to Issue #22
+			gm.target[i] = tmp + cm_get_model_coord_offset(i); // sacidu93's fix to Issue #22
 		} else {
 			gm.target[i] += tmp;
 		}
@@ -396,7 +397,7 @@ static float _calc_ABC(uint8_t i, float target[], float flag[])
 }
 
 /* 
- * cm_set_gcode_model_endpoint_position() - uses internal canonical coordinates only
+ * cm_set_model_endpoint_position() - uses internal canonical coordinates only
  *
  * 	This routine sets the endpoint position in the gccode model if the move was
  *	successfully completed (no errors). Leaving the endpoint position alone for 
@@ -408,7 +409,7 @@ static float _calc_ABC(uint8_t i, float target[], float flag[])
  *	position is still close to the starting point. 
  */
 
-void cm_set_gcode_model_endpoint_position(stat_t status) 
+void cm_set_model_endpoint_position(stat_t status) 
 {
 	if (status == STAT_OK) copy_axis_vector(gm.position, gm.target);
 }
@@ -762,15 +763,15 @@ stat_t cm_resume_origin_offsets()
 stat_t cm_straight_traverse(float target[], float flags[])
 {
 	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
-	cm_set_target(target,flags);
+	cm_set_model_target(target,flags);
 	if (vector_equal(gm.target, gm.position)) { return (STAT_OK); }
 
 	cm_cycle_start();							// required for homing & other cycles
 	stat_t status = MP_LINE(gm.target, 
 							_get_move_times(&gm.min_time), 
-							cm_get_coord_offset_vector(gm.work_offset), 
+							cm_get_model_coord_offset_vector(gm.work_offset), 
 							gm.min_time);
-	cm_set_gcode_model_endpoint_position(status);
+	cm_set_model_endpoint_position(status);
 	return (status);
 }
 
@@ -889,16 +890,16 @@ stat_t cm_straight_feed(float target[], float flags[])
 //		cm_dwell(PLANNER_STARTUP_DELAY_SECONDS);
 //	}
 
-	cm_set_target(target, flags);
+	cm_set_model_target(target, flags);
 	if (vector_equal(gm.target, gm.position)) { return (STAT_OK); }
 
 	cm_cycle_start();						// required for homing & other cycles
 	stat_t status = MP_LINE(gm.target, 
 							 _get_move_times(&gm.min_time), 
-							 cm_get_coord_offset_vector(gm.work_offset), 
+							 cm_get_model_coord_offset_vector(gm.work_offset), 
 							 gm.min_time);
 
-	cm_set_gcode_model_endpoint_position(status);
+	cm_set_model_endpoint_position(status);
 	return (status);
 }
 
@@ -906,6 +907,7 @@ stat_t cm_straight_feed(float target[], float flags[])
  * Spindle Functions (4.3.7)
  */
 // see spindle.c, spindle.h
+//void cm_sync_spindle_speed_parameter(float speed) { mp_sync_command(SYNC_SPINDLE_SPEED, speed);}
 
 /*
  * Tool Functions (4.3.8)
@@ -935,6 +937,8 @@ static void _exec_select_tool(uint8_t tool, float float_val)
 {
 	gm.tool = tool;
 }
+
+//void cm_sync_tool_number(uint8_t tool) { mp_sync_command(SYNC_TOOL_NUMBER, (float)tool);}
 
 /* 
  * Miscellaneous Functions (4.3.9)

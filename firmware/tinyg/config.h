@@ -411,6 +411,7 @@ typedef struct cfgParameters {
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_xon;				// enable XON/XOFF mode
+	uint8_t footer_style;			// select footer style
 
 	uint8_t queue_report_verbosity;	// queue reports enabled and verbosity level
 	uint8_t queue_report_hi_water;

@@ -337,12 +337,14 @@ static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX%8d [0=off,1=CR
 static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0=off,1=on]\n";
 static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0=off,1=on]\n";
 static const char fmt_ex[] PROGMEM = "[ex]  enable xon xoff%14d [0=off,1=on]\n";
+static const char fmt_fs[] PROGMEM = "[fs]  footer style%17d [0=old,1]\n";
 static const char fmt_ej[] PROGMEM = "[ej]  enable json mode%13d [0=text,1=JSON]\n";
 static const char fmt_jv[] PROGMEM = "[jv]  json verbosity%15d [0=silent,1=footer,2=messages,3=configs,4=linenum,5=verbose]\n";
 static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
 static const char fmt_sv[] PROGMEM = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
 static const char fmt_qv[] PROGMEM = "[qv]  queue report verbosity%7d [0=off,1=filtered,2=verbose]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
+static const char fmt_net[] PROGMEM = "[net]  network mode%16d [0=master]\n";
 
 static const char fmt_qr[] PROGMEM = "qr:%d\n";
 static const char fmt_rx[] PROGMEM = "rx:%d\n";
@@ -702,7 +704,9 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","ec",  _f07, 0, fmt_ec, _print_ui8, _get_ui8, _set_ec,  (float *)&cfg.enable_cr,			COM_EXPAND_CR },
 	{ "sys","ee",  _f07, 0, fmt_ee, _print_ui8, _get_ui8, _set_ee,  (float *)&cfg.enable_echo,			COM_ENABLE_ECHO },
 	{ "sys","ex",  _f07, 0, fmt_ex, _print_ui8, _get_ui8, _set_ex,  (float *)&cfg.enable_xon,			COM_ENABLE_XON },
+	{ "sys","fs",  _f07, 0, fmt_fs, _print_ui8, _get_ui8, _set_ui8, (float *)&cfg.footer_style,			0 },
 	{ "sys","baud",_fns, 0, fmt_baud,_print_ui8,_get_ui8, _set_baud,(float *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
+	{ "sys","net", _fip, 0, fmt_net,_print_ui8, _get_ui8, _set_ui8, (float *)&tg.network_mode,			NETWORK_MODE },
 
 	// NOTE: The ordering within the gcode defaults is important for token resolution
 	{ "sys","gpl", _f07, 0, fmt_gpl, _print_ui8, _get_ui8,_set_012, (float *)&cfg.select_plane,			GCODE_DEFAULT_PLANE },
@@ -718,7 +722,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "ma",  _fip, 4, fmt_ma, _print_lin, _get_dbu, _set_dbu, (float *)&cfg.arc_segment_len,		ARC_SEGMENT_LENGTH },
 	{ "",   "qrh", _fip, 0, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (float *)&cfg.queue_report_hi_water,QR_HI_WATER },
 	{ "",   "qrl", _fip, 0, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (float *)&cfg.queue_report_lo_water,QR_LO_WATER },
-	{ "sys","net", _fip, 0, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (float *)&tg.network_mode,			NETWORK_MODE },
+	{ "",   "qrl", _fip, 0, fmt_ui8,_print_ui8, _get_ui8, _set_ui8, (float *)&cfg.queue_report_lo_water,QR_LO_WATER },
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***

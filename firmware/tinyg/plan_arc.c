@@ -198,9 +198,9 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 		}
 	}
 	// set parameters
-	cm_set_target(target,flags);
-	cm_set_arc_offset(i,j,k);
-	cm_set_arc_radius(radius);
+	cm_set_model_target(target,flags);
+	cm_set_model_arc_offset(i,j,k);
+	cm_set_model_arc_radius(radius);
 
 	// A non-zero radius is a radius arc. Compute the IJK offset coordinates.
 	// These will override any IJK offsets provided in the call
@@ -218,7 +218,7 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 
 	// execute the move
 	status = _compute_center_arc();
-	cm_set_gcode_model_endpoint_position(status);
+	cm_set_model_endpoint_position(status);
 	return (status);
 }
 
