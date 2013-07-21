@@ -427,10 +427,10 @@ void js_print_json_response(uint8_t status)
 					cmd->objtype = TYPE_EMPTY;
 				}
 
-			} else if (cmd_type == CMD_TYPE_CONFIG) {	// kill config echo if not enabled
-				if (cfg.echo_json_configs == false) {
-					cmd->objtype = TYPE_EMPTY;
-				}
+//			} else if (cmd_type == CMD_TYPE_CONFIG) {	// kill config echo if not enabled
+//				if (cfg.echo_json_configs == false) {
+//					cmd->objtype = TYPE_EMPTY;
+//				}
 
 			} else if (cmd_type == CMD_TYPE_MESSAGE) {	// kill message echo if not enabled
 				if (cfg.echo_json_messages == false) {
