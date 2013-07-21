@@ -191,13 +191,13 @@ void xio_xoff_usart(xioUsart_t *dx)
 	if (dx->fc_state == FC_IN_XON) {
 		dx->fc_state = FC_IN_XOFF;
 
-		// Using XON/XOFF flow control
+		// If using XON/XOFF flow control
 		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
 			dx->fc_char = XOFF; 
 			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
 		}
 
-		// Using hardware flow control. The CTS pin on the *FTDI* is our RTS.
+		// If using hardware flow control. The CTS pin on the *FTDI* is our RTS.
 		// Logic 1 means we're NOT ready for more data.
 		if (cfg.enable_flow_control == FLOW_CONTROL_RTS) {
 			dx->port->OUTSET = USB_RTS_bm;
@@ -210,39 +210,19 @@ void xio_xon_usart(xioUsart_t *dx)
 	if (dx->fc_state == FC_IN_XOFF) {
 		dx->fc_state = FC_IN_XON;
 
-		// Using XON/XOFF flow control
+		// If using XON/XOFF flow control
 		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
 			dx->fc_char = XON; 
 			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
 		}
 
-		// Using hardware flow control. The CTS pin on the *FTDI* is our RTS.
+		// If using hardware flow control. The CTS pin on the *FTDI* is our RTS.
 		// Logic 0 means we're ready for more data.
 		if (cfg.enable_flow_control == FLOW_CONTROL_RTS) {
 			dx->port->OUTCLR = USB_RTS_bm;
 		}
 	}
 }
-
-/*
-void xio_xoff_usart(xioUsart_t *dx)
-{
-	if (dx->fc_state == FC_IN_XON) {
-		dx->fc_char = XOFF; 
-		dx->fc_state = FC_IN_XOFF;
-		dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
-	}
-}
-
-void xio_xon_usart(xioUsart_t *dx)
-{
-	if (dx->fc_state == FC_IN_XOFF) {
-		dx->fc_char = XON; 
-		dx->fc_state = FC_IN_XON;
-		dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
-	}
-}
-*/
 
 void xio_fc_usart(xioDev_t *d)		// callback from the usart handlers
 {

@@ -76,12 +76,13 @@
  */
 #define _bump(a) ((a<PLANNER_BUFFER_POOL_SIZE-1)?(a+1):0) // buffer incr & wrap
 #define spindle_speed time		// local alias for spindle_speed to the time variable
-#define int_val move_code		// local alias for uint8_t to the move_code
-#define dbl_val time			// local alias for float to the time variable
+//#define int_val move_code		// local alias for uint8_t to the move_code
+//#define dbl_val time			// local alias for float to the time variable
 
 // execution routines (NB: These are all called from the LO interrupt)
 static stat_t _exec_dwell(mpBuf_t *bf);
 static stat_t _exec_command(mpBuf_t *bf);
+//static stat_t _exec_command_vector(mpBuf_t *bf);
 
 #ifdef __DEBUG
 static uint8_t _get_buffer_index(mpBuf_t *bf); 
@@ -111,20 +112,18 @@ void mp_init()
  *	Does not affect the move currently running in mr.
  *	Does not affect mm or gm model positions
  *	This function is designed to be called during a hold to reset the planner
- *	This function should not generally be called; call cm_flush_planner() instead
+ *	This function should not generally be called; call cm_queue_flush() instead
  */
 void mp_flush_planner()
 {
 	ar_abort_arc();
 	mp_init_buffers();
 	cm.motion_state = MOTION_STOP;
-//	copy_axis_vector(mm.position, mr.position);
 }
 
 /*
- * mp_set_plan_position() 	- sets planning position (for G92)
- * mp_get_plan_position() 	- returns planning position
- * mp_set_axis_position() 	- sets both planning and runtime positions (for G2/G3)
+ * mp_set_planner_position() - sets both planner position by axis (mm struct)
+ * mp_set_runtime_position() - sets both runtime position by axis (mr struct)
  *
  * 	Keeping track of position is complicated by the fact that moves exist in 
  *	several reference frames. The scheme to keep this straight is:
@@ -134,18 +133,30 @@ void mp_flush_planner()
  *	 - mr.target	- target position of runtime segment
  *	 - mr.endpoint	- final target position of runtime segment
  *
- *	Note that the positions are set immediately when they are computed and 
- *	are not an accurate representation of the tool position. In reality 
- *	the motors will still be processing the action and the real tool 
- *	position is still close to the starting point.
+ *	Note that position is set immediately when called and may not be not an accurate 
+ *	representation of the tool position. The motors are still processing the 
+ *	action and the real tool position is still close to the starting point.
  */
-float *mp_get_plan_position(float position[])
+
+void mp_set_planner_position(uint8_t axis, const float position)
+{
+	mm.position[axis] = position;
+}
+
+void mp_set_runtime_position(uint8_t axis, const float position)
+{
+	mr.position[axis] = position;
+}
+
+
+/* +++++++++++++++++++++++
+float *mp_get_plan_position_vector(float position[])
 {
 	copy_axis_vector(position, mm.position);	
 	return (position);
 }
 
-void mp_set_plan_position(const float position[])
+void mp_set_plan_position_vector(const float position[])
 {
 	copy_axis_vector(mm.position, position);
 }
@@ -155,13 +166,14 @@ void mp_set_axes_position(const float position[])
 	copy_axis_vector(mm.position, position);
 	copy_axis_vector(mr.position, position);
 }
-
+*/
+/*
 void mp_set_axis_position(uint8_t axis, const float position)
 {
 	mm.position[axis] = position;
 	mr.position[axis] = position;
 }
-
+*/
 /*************************************************************************/
 /* mp_exec_move() - execute runtime functions to prep move for steppers
  *
@@ -191,6 +203,7 @@ stat_t mp_exec_move()
 
 /************************************************************************************
  * mp_queue_command() - queue a synchronous Mcode, program control, or other command
+ * _exec_command() 	  - callback to execute command
  *
  *	How this works:
  *	  - The command is called by the Gcode interpreter (cm_<command>, e.g. an M code)
@@ -206,7 +219,12 @@ stat_t mp_exec_move()
  *	and makes keeping the queue full much easier - therefore avoiding Q starvation
  */
 
-void mp_queue_command(void(*cm_exec)(uint8_t, float), uint8_t int_val, float float_val)
+//void mp_queue_command(void(*cm_exec)(uint8_t, float), uint8_t int_val, float float_val)
+//void mp_queue_command(void(*cm_exec)(float, float), uint8_t int_val, float float_val)
+//void mp_queue_command(void(*cm_exec)(float[], float[]), float int_val, float float_val)
+//void mp_queue_command(void(*cm_exec)(void *, void *), void *int_val, void *float_val)
+void mp_queue_command(void(*cm_exec)(uint8_t, float, float[], float[]), 
+		uint8_t int_val, float float_val, float *vector, float *flag)
 {
 	mpBuf_t *bf;
 
@@ -224,12 +242,44 @@ void mp_queue_command(void(*cm_exec)(uint8_t, float), uint8_t int_val, float flo
 
 static stat_t _exec_command(mpBuf_t *bf)
 {
-	bf->cm_func(bf->int_val, bf->dbl_val);
+	bf->cm_func(bf->int_val, bf->dbl_val,(float *)NULL, (float *)NULL);
 	st_prep_null();			// Must call a null prep to keep the loader happy. 
 	mp_free_run_buffer();
 	return (STAT_OK);
 }
 
+/*
+ * mp_queue_command_vector() - vector version of mp_queue_command()
+ * _exec_command_vector() 	 - callback to execute command
+ */
+/*
+void mp_queue_command_vector(void(*cm_exec)(uint8_t, float), float vector[], float flag[])
+{
+	mpBuf_t *bf;
+
+	// this error is not reported as buffer availability was checked upstream in the controller
+	if ((bf = mp_get_write_buffer()) == NULL) return;
+
+	bf->move_type = MOVE_TYPE_COMMAND;
+	bf->bf_func = _exec_command_vector;	// callback to planner queue exec function
+	bf->cm_func = cm_exec;				// callback to canonical machine exec function
+
+	for (uint8_t i=0; i<AXES; i++) {
+		bf->target[i] = vector[i];		// store vector in target[] and flags in unit[]
+		bf->unit[i] = flag[i];
+	}
+	mp_queue_write_buffer(MOVE_TYPE_COMMAND);
+	return;
+}
+
+static stat_t _exec_command_vector(mpBuf_t *bf)
+{
+	bf->cm_func(bf->target, bf->unit);
+	st_prep_null();			// Must call a null prep to keep the loader happy. 
+	mp_free_run_buffer();
+	return (STAT_OK);
+}
+*/
 /*************************************************************************
  * mp_dwell() 	 - queue a dwell
  * _exec_dwell() - dwell continuation

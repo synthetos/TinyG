@@ -36,8 +36,11 @@
 #include "config.h"
 #include "pwm.h"
 
-static void _exec_spindle_control(uint8_t spindle_mode, float f);
-static void _exec_spindle_speed(uint8_t i, float speed);
+//static void _exec_spindle_control(uint8_t spindle_mode, float f);
+//static void _exec_spindle_speed(uint8_t i, float speed);
+
+static void _exec_spindle_control(uint8_t spindle_mode, float f, float *vector, float *flag);
+static void _exec_spindle_speed(uint8_t i, float speed, float *vector, float *flag);
 
 /* 
  * sp_init()
@@ -89,11 +92,12 @@ float cm_get_spindle_pwm( uint8_t spindle_mode )
 
 stat_t cm_spindle_control(uint8_t spindle_mode)
 {
-	mp_queue_command(_exec_spindle_control, spindle_mode, 0);
+	mp_queue_command(_exec_spindle_control, spindle_mode, 0, 0, 0);
 	return(STAT_OK);
 }
 
-static void _exec_spindle_control(uint8_t spindle_mode, float f)
+//static void _exec_spindle_control(uint8_t spindle_mode, float f) ++++++++++++++++
+static void _exec_spindle_control(uint8_t spindle_mode, float f, float *vector, float *flag)
 {
 	cm_set_spindle_mode(spindle_mode);
  	if (spindle_mode == SPINDLE_CW) {
@@ -119,7 +123,7 @@ static void _exec_spindle_control(uint8_t spindle_mode, float f)
 stat_t cm_set_spindle_speed(float speed)
 {
 //	if (speed > cfg.max_spindle speed) { return (STAT_MAX_SPINDLE_SPEED_EXCEEDED);}
-	mp_queue_command(_exec_spindle_speed, 0, speed);
+	mp_queue_command(_exec_spindle_speed, 0, speed, 0, 0);
     return (STAT_OK);
 }
 
@@ -129,7 +133,8 @@ void cm_exec_spindle_speed(float speed)
 	cm_set_spindle_speed(speed);
 }
 
-static void _exec_spindle_speed(uint8_t i, float speed)
+//static void _exec_spindle_speed(uint8_t i, float speed)
+static void _exec_spindle_speed(uint8_t i, float speed, float *vector, float *flag)
 {
 	cm_set_spindle_speed_parameter(speed);
 	pwm_set_duty(PWM_1, cm_get_spindle_pwm(gm.spindle_mode) ); // update spindle speed if we're running

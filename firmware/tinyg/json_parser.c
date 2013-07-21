@@ -362,7 +362,6 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 		if (str >= str_max) { return (-1);}		// signal buffer overrun
 		if ((cmd = cmd->nx) == NULL) { break;}	// end of the list
 
-//		if (cmd->depth < prev_depth) {			// execute the closing curly
 		while (cmd->depth < prev_depth--) {		// iterate the closing curlies
 			need_a_comma = true;
 			*str++ = '}';
