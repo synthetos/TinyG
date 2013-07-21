@@ -481,7 +481,7 @@ uint8_t cm_get_model_inverse_feed_rate_mode(void);
 uint8_t cm_get_model_spindle_mode(void);
 uint32_t cm_get_model_linenum(void);
 uint8_t	cm_get_block_delete_switch(void);
-uint8_t cm_isbusy(void);
+uint8_t cm_get_runtime_busy(void);
 
 void cm_set_motion_mode(uint8_t motion_mode);
 void cm_set_absolute_override(uint8_t absolute_override);

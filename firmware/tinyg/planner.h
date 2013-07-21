@@ -110,11 +110,6 @@ enum moveState {
 //#define MP_LINE(t,m,o,n) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m,o,n) : mp_line(t,m))
 #define MP_LINE(t,m,o,n) (mp_aline(t,m,o,n))	// non-planned lines are disabled
 
-//typedef void (*cm_exec)(uint8_t, float);	// callback to canonical_machine execution function
-//typedef void (*cm_exec)(float[], float[]);	// callback to canonical_machine execution function
-// callback to canonical_machine execution function
-// vars map to move_code, time, target[] and unit[], respectively
-//typedef void (*cm_exec)(uint8_t, float, float[], float[]);	
 typedef void (*cm_exec)(float[], float[]);
 
 /*
@@ -169,10 +164,6 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 	float recip_jerk;			// 1/Jm used for planning (compute-once)
 	float cbrt_jerk;			// cube root of Jm used for planning (compute-once)
 } mpBuf_t;
-//+++++++++++++#define int_val move_code		// alias for uint8_t to the move_code
-//#define dbl_val time			// alias for float to the time variable
-#define v1 target
-#define v2 unit
 
 typedef struct mpBufferPool {	// ring buffer for sub-moves
 	uint16_t magic_start;		// magic number to test memory integity	
@@ -251,20 +242,9 @@ void mp_init_buffers(void);
 void mp_flush_planner(void);
 void mp_set_planner_position(uint8_t axis, const float position);
 void mp_set_runtime_position(uint8_t axis, const float position);
-//float *mp_get_plan_position_vector(float position[]);
-//void mp_set_plan_position_vector(const float position[]);
-//void mp_set_axes_position(const float position[]);
-//void mp_set_axis_position(uint8_t axis, const float position);
 
 stat_t mp_exec_move(void);
-//void mp_queue_command(void(*cm_exec)(uint8_t, float), uint8_t int_val, float float_val);
-//void mp_queue_command(void(*cm_exec)(float[], float[]), uint8_t int_val, float float_val);
-//void mp_queue_command(void(*cm_exec)(float[], float[]), float int_val, float float_val);
-//void mp_queue_command(void(*cm_exec)(void *, void *), void *int_val, void *float_val);
-//void mp_queue_command(void(*cm_exec)(uint8_t, float, float[], float[]), 
-//		uint8_t int_val, float float_val, float *vector, float *flag);
-//void mp_queue_command_vector(void(*cm_exec)(uint8_t, float), float vector[], float flag[]);
-void mp_queue_command(void(*cm_exec)(float[], float[]), float *v1, float *v2);
+void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *flag);
 
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
@@ -287,7 +267,7 @@ mpBuf_t * mp_get_last_buffer(void);
 #define mp_get_next_buffer(b) ((mpBuf_t *)(b->nx))
 
 // plan_line.c functions
-uint8_t mp_isbusy(void);
+uint8_t mp_get_runtime_busy(void);
 uint8_t mp_get_runtime_motion_mode(void);
 float mp_get_runtime_linenum(void);
 float mp_get_runtime_velocity(void);

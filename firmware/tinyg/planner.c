@@ -76,8 +76,8 @@
  */
 #define _bump(a) ((a<PLANNER_BUFFER_POOL_SIZE-1)?(a+1):0) // buffer incr & wrap
 #define spindle_speed time		// local alias for spindle_speed to the time variable
-//#define int_val move_code		// local alias for uint8_t to the move_code
-//#define dbl_val time			// local alias for float to the time variable
+#define value_vector target		// alias for vector of values
+#define flag_vector unit		// alias for vector of flags
 
 // execution routines (NB: These are all called from the LO interrupt)
 static stat_t _exec_dwell(mpBuf_t *bf);
@@ -219,13 +219,7 @@ stat_t mp_exec_move()
  *	and makes keeping the queue full much easier - therefore avoiding Q starvation
  */
 
-//void mp_queue_command(void(*cm_exec)(uint8_t, float), uint8_t int_val, float float_val)
-//void mp_queue_command(void(*cm_exec)(float, float), uint8_t int_val, float float_val)
-//void mp_queue_command(void(*cm_exec)(float[], float[]), float int_val, float float_val)
-//void mp_queue_command(void(*cm_exec)(void *, void *), void *int_val, void *float_val)
-//void mp_queue_command(void(*cm_exec)(uint8_t, float, float[], float[]), 
-//		uint8_t int_val, float float_val, float *vector, float *flag)
-void mp_queue_command(void(*cm_exec)(float[], float[]), float *v1, float *v2)
+void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *flag)
 {
 	mpBuf_t *bf;
 
@@ -237,21 +231,17 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *v1, float *v2)
 	bf->cm_func = cm_exec;				// callback to canonical machine exec function
 
 	for (uint8_t i=0; i<AXES; i++) {
-		bf->target[i] = v1[i];			// store vectors in target[] and unit[]
-		bf->unit[i] = v2[i];
+		bf->value_vector[i] = value[i];
+		bf->flag_vector[i] = flag[i];
 	}
-
-//	bf->int_val = int_val;
-//	bf->dbl_val = float_val;
 	mp_queue_write_buffer(MOVE_TYPE_COMMAND);
 	return;
 }
 
 static stat_t _exec_command(mpBuf_t *bf)
 {
-//+++++	bf->cm_func(bf->int_val, bf->dbl_val,(float *)NULL, (float *)NULL);
-	bf->cm_func(bf->v1, bf->v2);
-	st_prep_null();			// Must call a null prep to keep the loader happy. 
+	bf->cm_func(bf->value_vector, bf->flag_vector);	// 2 vectors used by callbacks
+	st_prep_null();									// Must call a null prep to keep the loader happy. 
 	mp_free_run_buffer();
 	return (STAT_OK);
 }

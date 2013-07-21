@@ -63,13 +63,13 @@ static void _init_forward_diffs(float t0, float t2);
 static float _compute_next_segment_velocity(void);
 
 /* 
- * mp_isbusy() - return TRUE if motion control busy (i.e. robot is moving)
+ * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
  *
  *	Use this function to sync to the queue. If you wait until it returns
  *	FALSE you know the queue is empty and the motors have stopped.
  */
 
-uint8_t mp_isbusy()
+uint8_t mp_get_runtime_busy()
 {
 	if ((st_isbusy() == true) || (mr.move_state > MOVE_STATE_NEW)) {
 		return (true);

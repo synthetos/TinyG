@@ -166,15 +166,15 @@ uint8_t cm_homing_cycle_start(void)
 
 uint8_t cm_homing_callback(void)
 {
-	if (cm.cycle_state != CYCLE_HOMING) { return (STAT_NOOP);} // exit if not in a homing cycle
-	if (cm_isbusy() == true) { return (STAT_EAGAIN);}	 // sync to planner move ends
-	return (hm.func(hm.axis));					// execute the current homing move
+	if (cm.cycle_state != CYCLE_HOMING) { return (STAT_NOOP);} 	// exit if not in a homing cycle
+	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}	// sync to planner move ends
+	return (hm.func(hm.axis));						// execute the current homing move
 }
 
 static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 {
-	mp_flush_planner(); 						// should be stopped, but in case of switch closure
-	cm_set_coord_system(hm.saved_coord_system);	// restore to work coordinate system
+	mp_flush_planner(); 							// should be stopped, but in case of switch closure
+	cm_set_coord_system(hm.saved_coord_system);		// restore to work coordinate system
 	cm_set_units_mode(hm.saved_units_mode);
 	cm_set_distance_mode(hm.saved_distance_mode);
 	cm_set_feed_rate(hm.saved_feed_rate);
