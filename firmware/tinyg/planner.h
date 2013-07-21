@@ -114,7 +114,8 @@ enum moveState {
 //typedef void (*cm_exec)(float[], float[]);	// callback to canonical_machine execution function
 // callback to canonical_machine execution function
 // vars map to move_code, time, target[] and unit[], respectively
-typedef void (*cm_exec)(uint8_t, float, float[], float[]);	
+//typedef void (*cm_exec)(uint8_t, float, float[], float[]);	
+typedef void (*cm_exec)(float[], float[]);
 
 /*
  *	Planner structures
@@ -168,8 +169,10 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 	float recip_jerk;			// 1/Jm used for planning (compute-once)
 	float cbrt_jerk;			// cube root of Jm used for planning (compute-once)
 } mpBuf_t;
-#define int_val move_code		// alias for uint8_t to the move_code
-#define dbl_val time			// alias for float to the time variable
+//+++++++++++++#define int_val move_code		// alias for uint8_t to the move_code
+//#define dbl_val time			// alias for float to the time variable
+#define v1 target
+#define v2 unit
 
 typedef struct mpBufferPool {	// ring buffer for sub-moves
 	uint16_t magic_start;		// magic number to test memory integity	
@@ -258,9 +261,10 @@ stat_t mp_exec_move(void);
 //void mp_queue_command(void(*cm_exec)(float[], float[]), uint8_t int_val, float float_val);
 //void mp_queue_command(void(*cm_exec)(float[], float[]), float int_val, float float_val);
 //void mp_queue_command(void(*cm_exec)(void *, void *), void *int_val, void *float_val);
-void mp_queue_command(void(*cm_exec)(uint8_t, float, float[], float[]), 
-		uint8_t int_val, float float_val, float *vector, float *flag);
+//void mp_queue_command(void(*cm_exec)(uint8_t, float, float[], float[]), 
+//		uint8_t int_val, float float_val, float *vector, float *flag);
 //void mp_queue_command_vector(void(*cm_exec)(uint8_t, float), float vector[], float flag[]);
+void mp_queue_command(void(*cm_exec)(float[], float[]), float *v1, float *v2);
 
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);

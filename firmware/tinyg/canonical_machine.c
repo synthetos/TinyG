@@ -32,16 +32,26 @@
  * motion control code for a specific robot. It keeps state and executes
  * commands - passing the stateless commands to the motion control layer. 
  */
-/* --- Synchronous and immediate commands ---
+/* --- System state contexts and canonical machine command execution ---
  *
  *	Useful reference for doing C callbacks http://www.newty.de/fpt/fpt.html
  *
- *	Some commands in the canonical machine need to be executed immediately and 
- *	some need to be synchronized with movement (the planner queue). In general,
- *	commands that only affect the gcode model are done immediately whereas 
- *	commands that have a physcial effect must be synchronized.
+ *	There are 3 temporal contexts for system state:
+ *	  - The Gcode model in the canonical machine (the "model" context, held in gm)
+ *	  - The machine model used by the planner for planning ("planner" context, held in mm)
+ *	  - The "runtime" context used for move execution (held in mr)
  *
- *	Immediate commands are obvious - just write to the GM struct. 
+ *	Functions in the canonical machine may apply to one or more contexts. Commands that
+ *	apply to the Gcode model and/or planner are executed immediately (i.e. when called)
+ *
+ *	Commands that affect the runtime need to be synchronized with movement and are 
+ *	therefore queued into the planner queue and execute from the queue - Synchronous commands
+ *
+ *	There are a few commands that affect all 3 contexts and are therefore executed
+ *	to the gm amd mm structs and are also queued to execute their runtine part.  
+ *
+ *	The applicable context is in the function name as "model", "planner" or "runtime"
+ *
  *	Synchronous commands work like this:
  *
  *	  - Call the cm_xxx_xxx() function which will do any input validation and 
@@ -58,10 +68,11 @@
  *		args.  Take careful note that the callback executes under an interrupt, 
  *		so beware of variables that may need to be Volatile.
  *
- *	For a list of the synchronous commands see the static function prototypes
- *	for the planner queue callbacks. Some other notes:
- *
- *	  - All getters are immediate. These just return values from the Gcode model (gm).
+ *	Notes:
+ *	  - The synchronous command execution mechanism uses 2 vectors in the bf buffer
+ *		to store and return values for the callback. It's obvious, but impractical
+ *		to pass the entire bf buffer to the callback as some of these commands are 
+ *		actually executed locally and have no buffer.
  *
  *	  - Commands that are used to set the gm model state for interpretation of the
  *		current Gcode block. For example, cm_set_feed_rate(). This sets the model
@@ -97,20 +108,12 @@
 static float _get_move_times(float *min_time);
 
 // planner queue callbacks
-static void _exec_offset(uint8_t coord_system, float float_val, float *vector, float *flag);
-static void _exec_change_tool(uint8_t tool, float float_val, float *vector, float *flag);
-static void _exec_select_tool(uint8_t tool, float float_val, float *vector, float *flag);
-static void _exec_mist_coolant_control(uint8_t mist_coolant, float float_val, float *vector, float *flag);
-static void _exec_flood_coolant_control(uint8_t flood_coolant, float float_val, float *vector, float *flag);
-static void _exec_program_finalize(uint8_t machine_state, float float_val, float *vector, float *flag);
-
-//static void _exec_offset(uint8_t coord_system, float float_val);
-//static void _exec_change_tool(uint8_t tool, float float_val);
-//static void _exec_select_tool(uint8_t tool, float float_val);
-//static void _exec_mist_coolant_control(uint8_t mist_coolant, float float_val);
-//static void _exec_flood_coolant_control(uint8_t flood_coolant, float float_val);
-//static void _exec_feed_override_enable(uint8_t feed_override, float float_val);
-//static void _program_finalize(uint8_t machine_state, float float_val);
+static void _exec_offset(float *v1, float *v2);
+static void _exec_change_tool(float *v1, float *v2);
+static void _exec_select_tool(float *v1, float *v2);
+static void _exec_mist_coolant_control(float *v1, float *v2);
+static void _exec_flood_coolant_control(float *v1, float *v2);
+static void _exec_program_finalize(float *v1, float *v2);
 
 #define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
@@ -180,7 +183,7 @@ uint8_t	cm_get_block_delete_switch() { return gm.block_delete_switch;}
 uint8_t cm_get_runtime_motion_mode() { return mp_get_runtime_motion_mode();}
 uint8_t cm_isbusy() { return (mp_isbusy());}
 
-/* Position and Offset getters - work from model and runtime
+/* Position and Offset getters - operate on model and runtime contexts
  *
  * cm_get_model_coord_offset() - return the currently active coordinate offset for an axis
  * cm_get_model_coord_offset_vector() - return currently active coordinate offsets as a vector
@@ -615,7 +618,6 @@ stat_t cm_set_machine_axis_position(uint8_t axis, const float position)
 {
 	gm.position[axis] = position;
 	gm.target[axis] = position;
-//+++++	mp_set_axis_position(axis, position);
 	mp_set_planner_position(axis, position);
 	mp_set_runtime_position(axis, position);
 	return (STAT_OK);
@@ -667,14 +669,19 @@ stat_t cm_set_distance_mode(uint8_t mode)
  */
 stat_t cm_set_coord_system(uint8_t coord_system)
 {
+	float v1[AXES] = { (float)coord_system,0,0,0,0,0 }; // pass coordinate system in v1[0] element
+
 	gm.coord_system = coord_system;	
-	mp_queue_command(_exec_offset, coord_system, 0, 0,0);
+//	mp_queue_command(_exec_offset, coord_system, 0,NULL,NULL);
+	mp_queue_command(_exec_offset, v1, v1);				// second v1 is not used
 	return (STAT_OK);
 }
 
 //static void _exec_offset(uint8_t coord_system, float float_val)
-static void _exec_offset(uint8_t coord_system, float float_val, float *vector, float *flag)
+//static void _exec_offset(uint8_t coord_system, float float_val, float *vector, float *flag)
+static void _exec_offset(float *v1, float *v2)
 {
+	uint8_t coord_system = ((uint8_t)v1[0]);	// coordinate system passed in v1[0] element
 	float offsets[AXES];
 	for (uint8_t i=0; i<AXES; i++) {
 		offsets[i] = cfg.offset[coord_system][i] + (gm.origin_offset[i] * gm.origin_offset_enable);
@@ -762,40 +769,45 @@ stat_t cm_set_absolute_origin(float origin[], float flag[])
  */
 stat_t cm_set_origin_offsets(float offset[], float flag[])
 {
+	// set offsets in the Gcode model context
 	gm.origin_offset_enable = 1;
 	for (uint8_t i=0; i<AXES; i++) {
 		if (fp_TRUE(flag[i])) {
 			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] - _to_millimeters(offset[i]);
 		}
 	}
-//	mp_queue_command(_exec_offset, gm.coord_system,0);
-	mp_queue_command(_exec_offset, gm.coord_system,0,0,0);
+
+	// now pass the offset to the callback
+	// setting the coordinate system also applies the offsets
+	float v1[AXES] = { (float)gm.coord_system,0,0,0,0,0 };	// pass coordinate system in v1[0] element
+	mp_queue_command(_exec_offset, v1, v1);					// second v1 is not used
 	return (STAT_OK);
 }
 
 stat_t cm_reset_origin_offsets()
 {
 	gm.origin_offset_enable = 0;
-	for (uint8_t i=0; i<AXES; i++) 
+	for (uint8_t i=0; i<AXES; i++)
 		gm.origin_offset[i] = 0;
-//	mp_queue_command(_exec_offset, gm.coord_system,0);
-	mp_queue_command(_exec_offset, gm.coord_system,0,0,0);
+
+	float v1[AXES] = { (float)gm.coord_system,0,0,0,0,0 };
+	mp_queue_command(_exec_offset, v1, v1);
 	return (STAT_OK);
 }
 
 stat_t cm_suspend_origin_offsets()
 {
 	gm.origin_offset_enable = 0;
-//	mp_queue_command(_exec_offset, gm.coord_system,0);
-	mp_queue_command(_exec_offset, gm.coord_system,0,0,0);
+	float v1[AXES] = { (float)gm.coord_system,0,0,0,0,0 };
+	mp_queue_command(_exec_offset, v1, v1);
 	return (STAT_OK);
 }
 
 stat_t cm_resume_origin_offsets()
 {
 	gm.origin_offset_enable = 1;
-//	mp_queue_command(_exec_offset, gm.coord_system,0);
-	mp_queue_command(_exec_offset, gm.coord_system,0,0,0);
+	float v1[AXES] = { (float)gm.coord_system,0,0,0,0,0 };
+	mp_queue_command(_exec_offset, v1, v1);
 	return (STAT_OK);
 }
 
@@ -966,25 +978,33 @@ stat_t cm_straight_feed(float target[], float flags[])
 stat_t cm_change_tool(uint8_t tool)
 {
 //	mp_queue_command(_exec_change_tool, tool, 0);
-	mp_queue_command(_exec_change_tool, tool, 0,0,0);
+//	mp_queue_command(_exec_change_tool, tool, 0,0,0);
+
+	float v1[AXES] = { (float)tool,0,0,0,0,0 };
+	mp_queue_command(_exec_change_tool, v1, v1);
 	return (STAT_OK);
 }
 //static void _exec_change_tool(uint8_t tool, float float_val)
-static void _exec_change_tool(uint8_t tool, float float_val, float *vector, float *flag)
+//static void _exec_change_tool(uint8_t tool, float float_val, float *vector, float *flag)
+static void _exec_change_tool(float *v1, float *v2)
 {
-	gm.tool = tool;
+	gm.tool = (uint8_t)v1[0];
 }
 
 stat_t cm_select_tool(uint8_t tool)
 {
 //	mp_queue_command(_exec_select_tool, tool, 0);
-	mp_queue_command(_exec_select_tool, tool, 0,0,0);
+//	mp_queue_command(_exec_select_tool, tool, 0,0,0);
+
+	float v1[AXES] = { (float)tool,0,0,0,0,0 };
+	mp_queue_command(_exec_select_tool, v1, v1);
 	return (STAT_OK);
 }
 //static void _exec_select_tool(uint8_t tool, float float_val)
-static void _exec_select_tool(uint8_t tool, float float_val, float *vector, float *flag)
+//static void _exec_select_tool(uint8_t tool, float float_val, float *vector, float *flag)
+static void _exec_select_tool(float *v1, float *v2)
 {
-	gm.tool = tool;
+	gm.tool = (uint8_t)v1[0];
 }
 
 //void cm_sync_tool_number(uint8_t tool) { mp_sync_command(SYNC_TOOL_NUMBER, (float)tool);}
@@ -999,22 +1019,29 @@ static void _exec_select_tool(uint8_t tool, float float_val, float *vector, floa
 stat_t cm_mist_coolant_control(uint8_t mist_coolant)
 {
 //	mp_queue_command(_exec_mist_coolant_control, mist_coolant,0);
-	mp_queue_command(_exec_mist_coolant_control, mist_coolant,0,0,0);
+//	mp_queue_command(_exec_mist_coolant_control, mist_coolant,0,0,0);
+
+	float v1[AXES] = { (float)mist_coolant,0,0,0,0,0 };
+	mp_queue_command(_exec_mist_coolant_control, v1, v1);
 	return (STAT_OK);
 }
 
 stat_t cm_flood_coolant_control(uint8_t flood_coolant)
 {
 //	mp_queue_command(_exec_flood_coolant_control, flood_coolant,0);
-	mp_queue_command(_exec_flood_coolant_control, flood_coolant,0,0,0);
+//	mp_queue_command(_exec_flood_coolant_control, flood_coolant,0,0,0);
+
+	float v1[AXES] = { (float)flood_coolant,0,0,0,0,0 };
+	mp_queue_command(_exec_flood_coolant_control, v1, v1);
 	return (STAT_OK);
 }
 
 //static void _exec_mist_coolant_control(uint8_t mist_coolant, float float_val)
-static void _exec_mist_coolant_control(uint8_t mist_coolant, float float_val, float *vector, float *flag)
+//static void _exec_mist_coolant_control(uint8_t mist_coolant, float float_val, float *vector, float *flag)
+static void _exec_mist_coolant_control(float *v1, float *v2)
 {
-	gm.mist_coolant = mist_coolant;
-	if (mist_coolant == true) {
+	gm.mist_coolant = (uint8_t)v1[0];
+	if (gm.mist_coolant == true) {
 		gpio_set_bit_on(MIST_COOLANT_BIT);
 	} else {
 		gpio_set_bit_off(MIST_COOLANT_BIT);
@@ -1022,14 +1049,17 @@ static void _exec_mist_coolant_control(uint8_t mist_coolant, float float_val, fl
 }
 
 //static void _exec_flood_coolant_control(uint8_t flood_coolant, float float_val)
-static void _exec_flood_coolant_control(uint8_t flood_coolant, float float_val, float *vector, float *flag)
+//static void _exec_flood_coolant_control(uint8_t flood_coolant, float float_val, float *vector, float *flag)
+static void _exec_flood_coolant_control(float *v1, float *v2)
 {
-	gm.flood_coolant = flood_coolant;
-	if (flood_coolant == true) {
+	gm.flood_coolant = (uint8_t)v1[0];
+	if (gm.flood_coolant == true) {
 		gpio_set_bit_on(FLOOD_COOLANT_BIT);
 	} else {
 		gpio_set_bit_off(FLOOD_COOLANT_BIT);
-		_exec_mist_coolant_control(false,0,0,0);	// M9 special function
+//		_exec_mist_coolant_control(false,0,0,0);	// M9 special function
+		float v1[AXES] = { 0,0,0,0,0,0 };
+		_exec_mist_coolant_control(v1, v1);			// M9 special function
 	}
 }
 
@@ -1205,12 +1235,14 @@ stat_t cm_queue_flush()
 	mp_flush_planner();				// flush planner queue
 
 	for (uint8_t i=0; i<AXES; i++) {
-//+++++		mp_set_axis_position(i, mp_get_runtime_machine_position(i));	// set mm from mr
 		mp_set_planner_position(i, mp_get_runtime_machine_position(i));	// set mm from mr
 		gm.position[i] = mp_get_runtime_machine_position(i);
 		gm.target[i] = gm.position[i];
 	}
-	_exec_program_finalize(MACHINE_PROGRAM_STOP, 0,0,0);
+	float v1[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
+	_exec_program_finalize(v1,v1);
+
+//	_exec_program_finalize(MACHINE_PROGRAM_STOP, 0,0,0);
 //	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
 //	cm.motion_state = MOTION_STOP;
 ////	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report
@@ -1229,9 +1261,10 @@ stat_t cm_queue_flush()
  * _program_finalize() 			- helper
  */
 //static void _program_finalize(uint8_t machine_state, float f)
-static void _exec_program_finalize(uint8_t machine_state, float f, float *vector, float *flag)
+//static void _exec_program_finalize(uint8_t machine_state, float f, float *vector, float *flag)
+static void _exec_program_finalize(float *v1, float *v2)
 {
-	cm.machine_state = machine_state;
+	cm.machine_state = (uint8_t)v1[0];;
 	cm.motion_state = MOTION_STOP;
 	if (cm.cycle_state == CYCLE_MACHINING) {
 		cm.cycle_state = CYCLE_OFF;					// don't end cycle if homing, probing, etc.
@@ -1242,7 +1275,7 @@ static void _exec_program_finalize(uint8_t machine_state, float f, float *vector
 	mp_zero_segment_velocity();						// for reporting purposes
 
 	// execute program END resets
-	if (machine_state == MACHINE_PROGRAM_END) {
+	if (cm.machine_state == MACHINE_PROGRAM_END) {
 		cm_reset_origin_offsets();					// G92.1 - we do G91.1 instead of G92.2
 	//	cm_suspend_origin_offsets();				// G92.2 - as per Kramer
 		cm_set_coord_system(cfg.coord_system);		// reset to default coordinate system
@@ -1273,18 +1306,24 @@ void cm_cycle_start()
 void cm_cycle_end() 
 {
 	if (cm.cycle_state == CYCLE_MACHINING) {
-		_exec_program_finalize(MACHINE_PROGRAM_STOP,0,0,0);
+//		_exec_program_finalize(MACHINE_PROGRAM_STOP,0,0,0);
+		float v1[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
+		_exec_program_finalize(v1,v1);
 	}
 }
 
 void cm_program_stop() 
 { 
-	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_STOP,0,0,0);
+//	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_STOP,0,0,0);
+	float v1[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
+	mp_queue_command(_exec_program_finalize, v1, v1);
 }
 
 void cm_optional_program_stop()	
 { 
-	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_STOP,0,0,0);
+//	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_STOP,0,0,0);
+	float v1[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
+	mp_queue_command(_exec_program_finalize, v1, v1);
 }
 
 /*
@@ -1317,6 +1356,9 @@ void cm_optional_program_stop()
 
 void cm_program_end()				// M2, M30
 {
-	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_END,0,0,0);
+//	mp_queue_command(_exec_program_finalize, MACHINE_PROGRAM_END,0,0,0);
+	float v1[AXES] = { (float)MACHINE_PROGRAM_END, 0,0,0,0,0 };
+	mp_queue_command(_exec_program_finalize, v1, v1);
+
 }
 

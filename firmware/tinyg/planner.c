@@ -223,8 +223,9 @@ stat_t mp_exec_move()
 //void mp_queue_command(void(*cm_exec)(float, float), uint8_t int_val, float float_val)
 //void mp_queue_command(void(*cm_exec)(float[], float[]), float int_val, float float_val)
 //void mp_queue_command(void(*cm_exec)(void *, void *), void *int_val, void *float_val)
-void mp_queue_command(void(*cm_exec)(uint8_t, float, float[], float[]), 
-		uint8_t int_val, float float_val, float *vector, float *flag)
+//void mp_queue_command(void(*cm_exec)(uint8_t, float, float[], float[]), 
+//		uint8_t int_val, float float_val, float *vector, float *flag)
+void mp_queue_command(void(*cm_exec)(float[], float[]), float *v1, float *v2)
 {
 	mpBuf_t *bf;
 
@@ -234,15 +235,22 @@ void mp_queue_command(void(*cm_exec)(uint8_t, float, float[], float[]),
 	bf->move_type = MOVE_TYPE_COMMAND;
 	bf->bf_func = _exec_command;		// callback to planner queue exec function
 	bf->cm_func = cm_exec;				// callback to canonical machine exec function
-	bf->int_val = int_val;
-	bf->dbl_val = float_val;
+
+	for (uint8_t i=0; i<AXES; i++) {
+		bf->target[i] = v1[i];			// store vectors in target[] and unit[]
+		bf->unit[i] = v2[i];
+	}
+
+//	bf->int_val = int_val;
+//	bf->dbl_val = float_val;
 	mp_queue_write_buffer(MOVE_TYPE_COMMAND);
 	return;
 }
 
 static stat_t _exec_command(mpBuf_t *bf)
 {
-	bf->cm_func(bf->int_val, bf->dbl_val,(float *)NULL, (float *)NULL);
+//+++++	bf->cm_func(bf->int_val, bf->dbl_val,(float *)NULL, (float *)NULL);
+	bf->cm_func(bf->v1, bf->v2);
 	st_prep_null();			// Must call a null prep to keep the loader happy. 
 	mp_free_run_buffer();
 	return (STAT_OK);

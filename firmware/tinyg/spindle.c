@@ -24,6 +24,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdlib.h>
 #include <avr/io.h>
 #include <math.h>
 #include "tinyg.h"
@@ -38,9 +39,10 @@
 
 //static void _exec_spindle_control(uint8_t spindle_mode, float f);
 //static void _exec_spindle_speed(uint8_t i, float speed);
-
-static void _exec_spindle_control(uint8_t spindle_mode, float f, float *vector, float *flag);
-static void _exec_spindle_speed(uint8_t i, float speed, float *vector, float *flag);
+//static void _exec_spindle_control(uint8_t spindle_mode, float f, float *vector, float *flag);
+//static void _exec_spindle_speed(uint8_t i, float speed, float *vector, float *flag);
+static void _exec_spindle_control(float *v1, float *v2);
+static void _exec_spindle_speed(float *v1, float *v2);
 
 /* 
  * sp_init()
@@ -92,13 +94,16 @@ float cm_get_spindle_pwm( uint8_t spindle_mode )
 
 stat_t cm_spindle_control(uint8_t spindle_mode)
 {
-	mp_queue_command(_exec_spindle_control, spindle_mode, 0, 0, 0);
+//	mp_queue_command(_exec_spindle_control, spindle_mode, 0, NULL, NULL);
+	float v1[AXES] = { (float)spindle_mode, 0,0,0,0,0 };
+	mp_queue_command(_exec_spindle_control, v1, v1);
 	return(STAT_OK);
 }
 
-//static void _exec_spindle_control(uint8_t spindle_mode, float f) ++++++++++++++++
-static void _exec_spindle_control(uint8_t spindle_mode, float f, float *vector, float *flag)
+//static void _exec_spindle_control(uint8_t spindle_mode, float f, float *vector, float *flag)
+static void _exec_spindle_control(float *v1, float *v2)
 {
+	uint8_t spindle_mode = (uint8_t)v1[0];
 	cm_set_spindle_mode(spindle_mode);
  	if (spindle_mode == SPINDLE_CW) {
 		gpio_set_bit_on(SPINDLE_BIT);
@@ -123,7 +128,9 @@ static void _exec_spindle_control(uint8_t spindle_mode, float f, float *vector, 
 stat_t cm_set_spindle_speed(float speed)
 {
 //	if (speed > cfg.max_spindle speed) { return (STAT_MAX_SPINDLE_SPEED_EXCEEDED);}
-	mp_queue_command(_exec_spindle_speed, 0, speed, 0, 0);
+//++++	mp_queue_command(_exec_spindle_speed, 0, speed, NULL, NULL);
+	float v1[AXES] = { speed, 0,0,0,0,0 };
+	mp_queue_command(_exec_spindle_speed, v1, v1);
     return (STAT_OK);
 }
 
@@ -133,10 +140,10 @@ void cm_exec_spindle_speed(float speed)
 	cm_set_spindle_speed(speed);
 }
 
-//static void _exec_spindle_speed(uint8_t i, float speed)
-static void _exec_spindle_speed(uint8_t i, float speed, float *vector, float *flag)
+//static void _exec_spindle_speed(uint8_t i, float speed, float *vector, float *flag)
+static void _exec_spindle_speed(float *v1, float *v2)
 {
-	cm_set_spindle_speed_parameter(speed);
+	cm_set_spindle_speed_parameter(v1[0]);
 	pwm_set_duty(PWM_1, cm_get_spindle_pwm(gm.spindle_mode) ); // update spindle speed if we're running
 }
 
