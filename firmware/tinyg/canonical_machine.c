@@ -113,6 +113,7 @@ static void _exec_change_tool(float *value, float *flag);
 static void _exec_select_tool(float *value, float *flag);
 static void _exec_mist_coolant_control(float *value, float *flag);
 static void _exec_flood_coolant_control(float *value, float *flag);
+static void _exec_absolute_origin(float *value, float *flag);
 static void _exec_program_finalize(float *value, float *flag);
 
 #define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
@@ -249,7 +250,7 @@ float *cm_get_model_canonical_position_vector(float position[])
 float cm_get_runtime_machine_position(uint8_t axis) 
 {
 	return (mp_get_runtime_machine_position(axis));
-//	deprecated behavior
+//	deprecated behavior - left in for reference
 //	if (gm.units_mode == INCHES) {
 //		return (mp_get_runtime_machine_position(axis) / MM_PER_INCH);
 //	} else {
@@ -598,7 +599,6 @@ void cm_alarm(uint8_t value)
 /* 
  * Representation (4.3.3)
  *
- * cm_set_machine_axis_position()- set the position of a single axis
  * cm_select_plane()			- G17,G18,G19 select axis plane
  * cm_set_units_mode()			- G20, G21
  * cm_set_distance_mode()		- G90, G91
@@ -609,18 +609,6 @@ void cm_alarm(uint8_t value)
  * cm_suspend_origin_offsets()	- G92.2
  * cm_resume_origin_offsets()	- G92.3
  */
-
-/*
- * cm_set_machine_axis_position() - set the position of a single axis
- */
-stat_t cm_set_machine_axis_position(uint8_t axis, const float position)
-{
-	gm.position[axis] = position;
-	gm.target[axis] = position;
-	mp_set_planner_position(axis, position);
-	mp_set_runtime_position(axis, position);
-	return (STAT_OK);
-}
 
 /*
  * cm_select_plane() - G17,G18,G19 select axis plane
@@ -711,7 +699,8 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 
 /*
  * cm_set_absolute_origin() - G28.3
- * _exec_origin() - callback from planner
+ * _exec_absolute_origin()  - callback from planner
+ * cm_set_axis_origin()		- set the origin of a single axis
  *
  *	This is an "unofficial gcode" command to allow arbitrarily setting an axis 
  *	to an absolute position. This is needed to support the Otherlab infinite 
@@ -721,41 +710,34 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 
 stat_t cm_set_absolute_origin(float origin[], float flag[])
 {
-	for (uint8_t i=0; i<AXES; i++) {
-		if (fp_TRUE(flag[i])) {
-			cm_set_machine_axis_position(i, cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
-			cm.homed[i] = true;
-		}
-	}
-	return (STAT_OK);
-}
-
- /*
-static void _exec_origin(uint8_t coord_system, float float_val)
-{
-	float offsets[AXES];
-	for (uint8_t i=0; i<AXES; i++) {
-		offsets[i] = cfg.offset[coord_system][i] + (gm.origin_offset[i] * gm.origin_offset_enable);
-	}
-	mp_set_runtime_work_offset(offsets);
-}
-
-
-stat_t cm_set_absolute_origin(float origin[], float flag[])
-{
-//	gm.coord_system = coord_system;	
-//	mp_queue_command(_exec_offset, coord_system,0);
+	float value[AXES];
 
 	for (uint8_t i=0; i<AXES; i++) {
 		if (fp_TRUE(flag[i])) {
-			cm_set_machine_axis_position(i, cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]));
-			cm.homed[i] = true;
+			value[i] = cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]);
+			cm_set_axis_origin(i, value[i]);
 		}
 	}
-
+	mp_queue_command(_exec_absolute_origin, value, flag);
 	return (STAT_OK);
 }
-*/
+static void _exec_absolute_origin(float *value, float *flag)
+{
+	for (uint8_t i=0; i<AXES; i++) {
+		if (flag[i] == true) {
+			mp_set_runtime_position(i, value[i]);
+			cm.homed[i] = true;					// it's not considered homed until you get to the runtime
+		}
+	}
+}
+
+void cm_set_axis_origin(uint8_t axis, const float position)
+{
+	gm.position[axis] = position;
+	gm.target[axis] = position;
+	mp_set_planner_position(axis, position);
+//	return (STAT_OK);
+}
 
 /* 
  * cm_set_origin_offsets() 		- G92
@@ -776,8 +758,7 @@ stat_t cm_set_origin_offsets(float offset[], float flag[])
 		}
 	}
 
-	// now pass the offset to the callback
-	// setting the coordinate system also applies the offsets
+	// now pass the offset to the callback - setting the coordinate system also applies the offsets
 	float value[AXES] = { (float)gm.coord_system,0,0,0,0,0 };	// pass coordinate system in value[0] element
 	mp_queue_command(_exec_offset, value, value);				// second vector is not used
 	return (STAT_OK);

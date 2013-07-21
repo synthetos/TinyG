@@ -511,7 +511,6 @@ void cm_set_model_linenum(uint32_t linenum);
 void cm_init(void);												// init canonical machine
 void cm_alarm(uint8_t value);									// emergency shutdown
 
-stat_t cm_set_machine_axis_position(uint8_t axis, const float position);// set absolute position
 stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
 
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
@@ -520,6 +519,7 @@ stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 stat_t cm_homing_cycle_start(void);								// G28.2
 stat_t cm_homing_callback(void);								// G28.2 main loop callback
 stat_t cm_set_absolute_origin(float origin[], float flags[]);	// G28.3  (special function)
+void cm_set_axis_origin(uint8_t axis, const float position);	// set absolute position (used by G28's)
 
 stat_t cm_set_g28_position(void);								// G28.1
 stat_t cm_goto_g28_position(float target[], float flags[]); 	// G28
