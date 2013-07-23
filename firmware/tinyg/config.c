@@ -1931,7 +1931,7 @@ static stat_t _set_grp(cmdObj_t *cmd)
  */
 uint8_t cmd_group_is_prefixed(char *group)
 {
-	if (strstr("sr",group) != NULL) {	// you can extend like this: "sr,sys,xyzzy"
+	if (strstr("sr,sys",group) != NULL) {	// you can extend like this: "sr,sys,xyzzy"
 		return (false);
 	}
 	return (true);

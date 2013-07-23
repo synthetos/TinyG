@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	383.02		// Homing fails
+#define TINYG_FIRMWARE_BUILD   	383.03		// {"sys":{"gco":1}} fails - fixed by adding "sys" to cmd_group_is_prefixed
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
