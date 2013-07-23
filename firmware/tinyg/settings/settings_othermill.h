@@ -46,66 +46,33 @@
 
 // *** motor settings ***
 
-#define M1_MOTOR_MAP 			AXIS_X				// 1ma
-#define M1_STEP_ANGLE 			1.8					// 1sa
-#define M1_TRAVEL_PER_REV 		5.08				// 1tr
-#define M1_MICROSTEPS 			8					// 1mi		1,2,4,8
-#define M1_POLARITY 			1					// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
+#define M4_MOTOR_MAP 			AXIS_X				// 1ma
+#define M4_STEP_ANGLE 			1.8					// 1sa
+#define M4_TRAVEL_PER_REV 		5.08				// 1tr
+#define M4_MICROSTEPS 			8					// 1mi		1,2,4,8
+#define M4_POLARITY 			0					// 1po		0=normal, 1=reversed
+#define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
 
-#define M2_MOTOR_MAP 			AXIS_Y
-#define M2_STEP_ANGLE 			1.8
-#define M2_TRAVEL_PER_REV 		5.08
-#define M2_MICROSTEPS 			8
-#define M2_POLARITY 			1
-#define M2_POWER_MODE 			0					// hold
-
-#define M3_MOTOR_MAP 			AXIS_Z
-#define M3_STEP_ANGLE 			15
-#define M3_TRAVEL_PER_REV 		1.27
+#define M3_MOTOR_MAP 			AXIS_Y
+#define M3_STEP_ANGLE 			1.8
+#define M3_TRAVEL_PER_REV 		5.08
 #define M3_MICROSTEPS 			8
 #define M3_POLARITY 			1
-#define M3_POWER_MODE 			0					// z-axis leadscrew doesn't need hold, enable low power idle
+#define M3_POWER_MODE 			0					
 
-#define M4_MOTOR_MAP 			AXIS_A
-#define M4_STEP_ANGLE 			1.8
-//#define M4_TRAVEL_PER_REV 		180					// degrees moved per motor rev
-#define M4_TRAVEL_PER_REV 		360					// degrees moved per motor rev
-#define M4_MICROSTEPS 			8
-#define M4_POLARITY 			1			
-#define M4_POWER_MODE 			1					// hold
-
-/*
-#define M1_MOTOR_MAP 			AXIS_X				// 1ma
-#define M1_STEP_ANGLE 			1.8					// 1sa
-#define M1_TRAVEL_PER_REV 		5.08				// 1tr
-#define M1_MICROSTEPS 			8					// 1mi		1,2,4,8
-#define M1_POLARITY 			1					// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
-
-#define M2_MOTOR_MAP 			AXIS_Y
-#define M2_STEP_ANGLE 			1.8
-#define M2_TRAVEL_PER_REV 		5.08
+#define M2_MOTOR_MAP 			AXIS_Z
+#define M2_STEP_ANGLE 			15
+#define M2_TRAVEL_PER_REV 		1.27
 #define M2_MICROSTEPS 			8
 #define M2_POLARITY 			1
-#define M2_POWER_MODE 			0					// hold
+#define M2_POWER_MODE 			0					
 
-#define M3_MOTOR_MAP 			AXIS_Z
-#define M3_STEP_ANGLE 			15
-#define M3_TRAVEL_PER_REV 		1.27
-#define M3_MICROSTEPS 			8
-#define M3_POLARITY 			1
-#define M3_POWER_MODE 			0					// z-axis leadscrew doesn't need hold, enable low power idle
-
-#define M4_MOTOR_MAP 			AXIS_A
-#define M4_STEP_ANGLE 			1.8
-//#define M4_TRAVEL_PER_REV 		180					// degrees moved per motor rev
-#define M4_TRAVEL_PER_REV 		360					// degrees moved per motor rev
-#define M4_MICROSTEPS 			8
-#define M4_POLARITY 			1			
-#define M4_POWER_MODE 			1					// hold
-
-*/
+#define M1_MOTOR_MAP 			AXIS_A
+#define M1_STEP_ANGLE 			1.8
+#define M1_TRAVEL_PER_REV 		360					// degrees moved per motor rev
+#define M1_MICROSTEPS 			8
+#define M1_POLARITY 			1			
+#define M1_POWER_MODE 			1					
 
 // *** axis settings ***
 
@@ -167,22 +134,6 @@
 #define A_ZERO_BACKOFF 			2
 #define A_JERK_HOMING			A_JERK_MAX
 
-/*
-#define A_AXIS_MODE 			AXIS_STANDARD
-#define A_VELOCITY_MAX 			3600				// deg/min
-#define A_FEEDRATE_MAX 			A_VELOCITY_MAX		// deg/min
-#define A_TRAVEL_MAX 			-1
-#define A_JERK_MAX 				JERK_MAX
-#define A_JUNCTION_DEVIATION 	0.1
-#define A_RADIUS 				1.0					// deg
-#define A_SWITCH_MODE_MIN		SW_MODE_DISABLED	// disable limit switch halt
-#define A_SWITCH_MODE_MAX		SW_MODE_DISABLED
-#define A_SEARCH_VELOCITY 		600					// deg/min
-#define A_LATCH_VELOCITY 		100					// deg/min
-#define A_LATCH_BACKOFF 		5					// deg
-#define A_ZERO_BACKOFF 			2					// deg
-#define A_JERK_HOMING			JERK_MAX
-*/
 #define B_AXIS_MODE 			AXIS_DISABLED
 #define B_VELOCITY_MAX 			3600
 #define B_FEEDRATE_MAX 			B_VELOCITY_MAX

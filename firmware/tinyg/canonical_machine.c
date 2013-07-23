@@ -702,6 +702,13 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
  * _exec_absolute_origin()  - callback from planner
  * cm_set_axis_origin()		- set the origin of a single axis
  *
+ *	cm_set_absolute_origin() takes a vector of origins (presumably 0's, but not 
+ *	necessarily) and applies them to all axes where the corresponding position 
+ *	in the flag vector is true (1).
+ *
+ *	This is a 2 step process. The model and planner contexts are set immediately,
+ *	the runtime command is queued and synchronized woth the planner queue.
+ *
  *	This is an "unofficial gcode" command to allow arbitrarily setting an axis 
  *	to an absolute position. This is needed to support the Otherlab infinite 
  *	Y axis. USE: With the axis(or axes) where you want it, issue g92.4 y0 
