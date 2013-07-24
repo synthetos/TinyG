@@ -371,7 +371,7 @@ static const char fmt_plan[] PROGMEM = "Plane:               %s\n";
 static const char fmt_path[] PROGMEM = "Path Mode:           %s\n";
 static const char fmt_dist[] PROGMEM = "Distance mode:       %s\n";
 static const char fmt_frmo[] PROGMEM = "Feed rate mode:      %s\n";
-static const char fmt_ss[]   PROGMEM = "Switch %d state:     %d\n";
+static const char fmt_ss[]   PROGMEM = "Switch %s state:     %d\n";
 
 static const char fmt_pos[]  PROGMEM = "%c position:%15.3f%S\n";
 static const char fmt_mpos[] PROGMEM = "%c machine posn:%11.3f%S\n";
@@ -782,6 +782,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","a",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
 	{ "","b",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
 	{ "","c",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
+	{ "","ss", _f00, 0, fmt_nul, _print_nul, _get_grp, _set_nul,(float *)&tg.null,0 },
 	{ "","g54",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },	// coord offset groups
 	{ "","g55",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
 	{ "","g56",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
@@ -804,7 +805,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "$", _f00, 0, fmt_nul, _print_nul, _do_all,    _set_nul,(float *)&tg.null,0 }
 };
 
-#define CMD_COUNT_GROUPS 		25		// count of simple groups
+#define CMD_COUNT_GROUPS 		26		// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 		// count of uber-groups
 
 #define CMD_INDEX_MAX (sizeof cfgArray / sizeof(cfgItem_t))
