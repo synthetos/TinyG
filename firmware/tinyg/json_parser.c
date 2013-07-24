@@ -111,7 +111,7 @@ stat_t _json_parser_kernal(char *str)
 
 	// parse the JSON command into the cmd body
 	do {
-		if (--i == 0) { return (STAT_JSON_TOO_MANY_PAIRS); }			// length error
+		if (--i == 0) { return (STAT_JSON_TOO_MANY_PAIRS); } // length error
 		if ((status = _get_nv_pair_strict(cmd, &str, &depth)) > STAT_EAGAIN) { // erred out
 			return (status);
 		}
@@ -131,10 +131,10 @@ stat_t _json_parser_kernal(char *str)
 
 	// execute the command
 	cmd = cmd_body;
-	if (cmd->objtype == TYPE_NULL){				// means GET the value
-		ritorno(cmd_get(cmd));					// ritorno returns w/status on any errors
+	if (cmd->objtype == TYPE_NULL){					// means GET the value
+		ritorno(cmd_get(cmd));						// ritorno returns w/status on any errors
 	} else {
-		ritorno(cmd_set(cmd));					// set value or call a function (e.g. gcode)
+		ritorno(cmd_set(cmd));						// set value or call a function (e.g. gcode)
 		cmd_persist(cmd);
 	}
 	return (STAT_OK);								// only successful commands exit through this point

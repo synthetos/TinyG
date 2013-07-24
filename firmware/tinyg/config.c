@@ -156,30 +156,31 @@ static stat_t _set_me(cmdObj_t *cmd);		// enable motors with power-mode set to 0
 
 static stat_t _get_gc(cmdObj_t *cmd);		// get current gcode block
 static stat_t _run_gc(cmdObj_t *cmd);		// run a gcode block
-static stat_t _run_home(cmdObj_t *cmd);	// invoke a homing cycle
+static stat_t _run_home(cmdObj_t *cmd);		// invoke a homing cycle
 
-static stat_t _get_line(cmdObj_t *cmd);	// get runtime line number
-static stat_t _get_stat(cmdObj_t *cmd);	// get combined machine state as value and string
-static stat_t _get_macs(cmdObj_t *cmd);	// get raw machine state as value and string
-static stat_t _get_cycs(cmdObj_t *cmd);	// get raw cycle state (etc etc)...
-static stat_t _get_mots(cmdObj_t *cmd);	// get raw motion state...
-static stat_t _get_hold(cmdObj_t *cmd);	// get raw hold state...
-static stat_t _get_home(cmdObj_t *cmd);	// get raw homing state...
-static stat_t _get_unit(cmdObj_t *cmd);	// get unit mode...
-static stat_t _get_coor(cmdObj_t *cmd);	// get coordinate system in effect...
-static stat_t _get_momo(cmdObj_t *cmd);	// get motion mode...
-static stat_t _get_plan(cmdObj_t *cmd);	// get active plane...
-static stat_t _get_path(cmdObj_t *cmd);	// get patch control mode...
-static stat_t _get_dist(cmdObj_t *cmd);	// get distance mode...
-static stat_t _get_frmo(cmdObj_t *cmd);	// get feedrate mode...
+static stat_t _get_line(cmdObj_t *cmd);		// get runtime line number
+static stat_t _get_stat(cmdObj_t *cmd);		// get combined machine state as value and string
+static stat_t _get_macs(cmdObj_t *cmd);		// get raw machine state as value and string
+static stat_t _get_cycs(cmdObj_t *cmd);		// get raw cycle state (etc etc)...
+static stat_t _get_mots(cmdObj_t *cmd);		// get raw motion state...
+static stat_t _get_hold(cmdObj_t *cmd);		// get raw hold state...
+static stat_t _get_home(cmdObj_t *cmd);		// get raw homing state...
+static stat_t _get_unit(cmdObj_t *cmd);		// get unit mode...
+static stat_t _get_coor(cmdObj_t *cmd);		// get coordinate system in effect...
+static stat_t _get_momo(cmdObj_t *cmd);		// get motion mode...
+static stat_t _get_plan(cmdObj_t *cmd);		// get active plane...
+static stat_t _get_path(cmdObj_t *cmd);		// get patch control mode...
+static stat_t _get_dist(cmdObj_t *cmd);		// get distance mode...
+static stat_t _get_frmo(cmdObj_t *cmd);		// get feedrate mode...
 static stat_t _get_vel(cmdObj_t *cmd);		// get runtime velocity...
 static stat_t _get_pos(cmdObj_t *cmd);		// get runtime work position...
-static stat_t _get_mpos(cmdObj_t *cmd);	// get runtime machine position...
+static stat_t _get_mpos(cmdObj_t *cmd);		// get runtime machine position...
 static stat_t _get_ofs(cmdObj_t *cmd);		// get runtime work offset...
 static void _print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
 static void _print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
+static void _print_ss(cmdObj_t *cmd);		// print switch state
 
-static stat_t _set_defa(cmdObj_t *cmd);	// reset config to default values
+static stat_t _set_defa(cmdObj_t *cmd);		// reset config to default values
 
 static stat_t _set_sa(cmdObj_t *cmd);		// set motor step angle
 static stat_t _set_tr(cmdObj_t *cmd);		// set motor travel per revolution
@@ -370,6 +371,7 @@ static const char fmt_plan[] PROGMEM = "Plane:               %s\n";
 static const char fmt_path[] PROGMEM = "Path Mode:           %s\n";
 static const char fmt_dist[] PROGMEM = "Distance mode:       %s\n";
 static const char fmt_frmo[] PROGMEM = "Feed rate mode:      %s\n";
+static const char fmt_ss[]   PROGMEM = "Switch %d state:     %d\n";
 
 static const char fmt_pos[]  PROGMEM = "%c position:%15.3f%S\n";
 static const char fmt_mpos[] PROGMEM = "%c machine posn:%11.3f%S\n";
@@ -435,6 +437,11 @@ static const char fmt_gdi[] PROGMEM = "[gdi] default gcode distance mode%2d [0=G
  *
  *	- Groups do not have groups. Neither do uber-groups, e.g.
  *	  'x' is --> { "", "x",  	and 'm' is --> { "", "m",  
+ *
+ * 	Key:
+ *	  - grp		group string
+ *	  - token	full token string, including group prefix if applicable
+ *	  - flags	see 
  */
 
 const cfgItem_t cfgArray[] PROGMEM = {
@@ -707,6 +714,16 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","fs",  _f07, 0, fmt_fs, _print_ui8, _get_ui8, _set_ui8, (float *)&cfg.footer_style,			0 },
 	{ "sys","baud",_fns, 0, fmt_baud,_print_ui8,_get_ui8, _set_baud,(float *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
 	{ "sys","net", _fip, 0, fmt_net,_print_ui8, _get_ui8, _set_ui8, (float *)&tg.network_mode,			NETWORK_MODE },
+
+	// switch state readers
+	{ "ss","ss0",  _f00, 0, fmt_ss, _print_ss, _get_ui8, _set_nul, (float *)&sw.state[0], 0 },
+	{ "ss","ss1",  _f00, 0, fmt_ss, _print_ss, _get_ui8, _set_nul, (float *)&sw.state[1], 0 },
+	{ "ss","ss2",  _f00, 0, fmt_ss, _print_ss, _get_ui8, _set_nul, (float *)&sw.state[2], 0 },
+	{ "ss","ss3",  _f00, 0, fmt_ss, _print_ss, _get_ui8, _set_nul, (float *)&sw.state[3], 0 },
+	{ "ss","ss4",  _f00, 0, fmt_ss, _print_ss, _get_ui8, _set_nul, (float *)&sw.state[4], 0 },
+	{ "ss","ss5",  _f00, 0, fmt_ss, _print_ss, _get_ui8, _set_nul, (float *)&sw.state[5], 0 },
+	{ "ss","ss6",  _f00, 0, fmt_ss, _print_ss, _get_ui8, _set_nul, (float *)&sw.state[6], 0 },
+	{ "ss","ss7",  _f00, 0, fmt_ss, _print_ss, _get_ui8, _set_nul, (float *)&sw.state[7], 0 },
 
 	// NOTE: The ordering within the gcode defaults is important for token resolution
 	{ "sys","gpl", _f07, 0, fmt_gpl, _print_ui8, _get_ui8,_set_012, (float *)&cfg.select_plane,			GCODE_DEFAULT_PLANE },
@@ -1177,6 +1194,13 @@ static stat_t _set_sw(cmdObj_t *cmd)		// switch setting
 	return (STAT_OK);
 }
 
+static void _print_ss(cmdObj_t *cmd)		// print switch state
+{
+	cmd_get(cmd);
+	char format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, _get_format(cmd->index, format), cmd->token, cmd->value);
+}
+
 static stat_t _set_sa(cmdObj_t *cmd)		// motor step angle
 { 
 	_set_dbl(cmd);
@@ -1251,7 +1275,7 @@ static void _print_am(cmdObj_t *cmd)		// print axis mode with enumeration string
 					(PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
 }
 
-static void _print_coor(cmdObj_t *cmd)	// print coordinate offsets with linear units
+static void _print_coor(cmdObj_t *cmd)		// print coordinate offsets with linear units
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
@@ -1259,13 +1283,14 @@ static void _print_coor(cmdObj_t *cmd)	// print coordinate offsets with linear u
 					(PGM_P)pgm_read_word(&msg_units[cm_get_model_units_mode()]));
 }
 
-static void _print_corr(cmdObj_t *cmd)	// print coordinate offsets with rotary units
+static void _print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
 {
 	cmd_get(cmd);
 	char format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, _get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
 					(PGM_P)pgm_read_word(&msg_units[F_DEG]));
 }
+
 
 /**** COMMUNICATIONS SETTINGS *************************************************
  * _set_ic() - ignore CR or LF on RX

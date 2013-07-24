@@ -146,21 +146,22 @@ ISR(A_MAX_ISR_vect)	{ _isr_helper(SW_MAX_A);}
 static void _isr_helper(uint8_t sw_num)
 {
 	if (sw.mode[sw_num] == SW_MODE_DISABLED) return;	// this is never supposed to happen
-	if (sw.state[sw_num] == SW_LOCKOUT) return;			// exit if switch is in lockout
-	sw.state[sw_num] = SW_DEGLITCHING;					// either transitions state from IDLE or overwrites it
+	if (sw.debounce[sw_num] == SW_LOCKOUT) return;		// exit if switch is in lockout
+	sw.debounce[sw_num] = SW_DEGLITCHING;				// either transitions state from IDLE or overwrites it
 	sw.count[sw_num] = -SW_DEGLITCH_TICKS;				// reset deglitch count regardless of entry state
+	gpio_read_switch(sw_num);							// sets the state value in the struct
 }
 
 void gpio_rtc_callback(void)
 {
 	for (uint8_t i=0; i < NUM_SWITCHES; i++) { 
-		if (sw.state[i] == SW_IDLE) continue;
+		if (sw.debounce[i] == SW_IDLE) continue;
 		if (++sw.count[i] == SW_LOCKOUT_TICKS) {		// state is either lockout or deglitching
-			sw.state[i] = SW_IDLE; continue;
+			sw.debounce[i] = SW_IDLE; continue;
 		}
 		if (sw.count[i] == 0) {							// trigger point
 			sw.sw_num_thrown = i;						// record number of thrown switch
-			sw.state[i] = SW_LOCKOUT;
+			sw.debounce[i] = SW_LOCKOUT;
 //			sw_show_switch();							// only called if __DEBUG enabled
 			if (cm.cycle_state == CYCLE_HOMING) {		// regardless of switch type
 				cm_request_feedhold();
@@ -188,7 +189,7 @@ uint8_t gpio_get_sw_thrown(void) { return(sw.sw_num_thrown);}
 void gpio_reset_switches() 
 {
 	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
-		sw.state[i] = SW_IDLE;
+		sw.debounce[i] = SW_IDLE;
 //		sw.count[i] = -SW_DEGLITCH_TICKS;
 	}
 	sw.limit_flag = false;
@@ -213,9 +214,11 @@ uint8_t gpio_read_switch(uint8_t sw_num)
 		case SW_MAX_A: { read = device.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
 	}
 	if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
-		return ((read == 0) ? SW_CLOSED : SW_OPEN);		// confusing. An NO switch drives the pin LO when thrown
+		sw.state[sw_num] = ((read == 0) ? SW_CLOSED : SW_OPEN);// confusing. An NO switch drives the pin LO when thrown
+		return (sw.state[sw_num]);
 	} else {
-		return ((read != 0) ? SW_CLOSED : SW_OPEN);
+		sw.state[sw_num] = ((read != 0) ? SW_CLOSED : SW_OPEN);
+		return (sw.state[sw_num]);
 	}
 }
 

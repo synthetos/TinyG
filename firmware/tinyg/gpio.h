@@ -80,7 +80,7 @@ enum swNums {	 			// indexes into switch arrays
 
 #define SW_MODE_DISABLED 		0			// disabled for all operations
 #define SW_MODE_HOMING 			SW_HOMING	// enable switch for homing only
-#define SW_MODE_LIMIT 			SW_LIMIT		// enable switch for limits only
+#define SW_MODE_LIMIT 			SW_LIMIT	// enable switch for limits only
 #define SW_MODE_HOMING_LIMIT   (SW_HOMING | SW_LIMIT)	// homing and limits
 #define SW_MODE_MAX_VALUE 		SW_MODE_HOMING_LIMIT
 
@@ -89,7 +89,7 @@ enum swType {
 	SW_TYPE_NORMALLY_CLOSED
 };
 
-enum swState {						// state machine for managing debouncing and lockout
+enum swDebounce {							// state machine for managing debouncing and lockout
 	SW_IDLE = 0,
 	SW_DEGLITCHING,
 	SW_LOCKOUT
@@ -99,8 +99,9 @@ struct swStruct {							// switch state
 	uint8_t switch_type;					// 0=NO, 1=NC - applies to all switches
 	uint8_t limit_flag;						// 1=limit switch thrown - do a lockout
 	uint8_t sw_num_thrown;					// number of switch that was just thrown
+	uint8_t state[NUM_SWITCHES];			// 0=OPEN, 1=CLOSED (depends on switch type)
 	volatile uint8_t mode[NUM_SWITCHES];	// 0=disabled, 1=homing, 2=homing+limit, 3=limit
-	volatile uint8_t state[NUM_SWITCHES];	// see switch processing functions for explanation
+	volatile uint8_t debounce[NUM_SWITCHES];// switch debouncer state machine - see swDebounce
 	volatile int8_t count[NUM_SWITCHES];	// deglitching and lockout counter
 };
 struct swStruct sw;
