@@ -273,6 +273,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 							case 1: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_G28_POSITION); 
 							case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SEARCH_HOME); 
 							case 3: SET_NON_MODAL (next_action, NEXT_ACTION_SET_ABSOLUTE_ORIGIN);
+							case 4: SET_NON_MODAL (next_action, NEXT_ACTION_SET_HOMING_NO_SET);
 							default: status = STAT_UNRECOGNIZED_COMMAND;
 						}
 						break;
@@ -452,6 +453,7 @@ static stat_t _execute_gcode_block()
 
 	switch (gn.next_action) {
 		case NEXT_ACTION_SEARCH_HOME: { status = cm_homing_cycle_start(); break;}								// G28.2
+		case NEXT_ACTION_SET_HOMING_NO_SET: { status = cm_homing_cycle_start_no_set(); break;}					// G28.4
 //		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_probe_cycle_start(); break;}
 		case NEXT_ACTION_SET_ABSOLUTE_ORIGIN: { status = cm_set_absolute_origin(gn.target, gf.target); break;}	// G28.3
 		case NEXT_ACTION_SET_G28_POSITION: { status = cm_set_g28_position(); break;}							// G28.1

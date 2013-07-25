@@ -51,6 +51,8 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 	uint8_t homing_closed;		// 0=open, 1=closed
 	uint8_t limit_closed;		// 0=open, 1=closed
 	uint8_t (*func)(int8_t axis);// binding for callback function state machine
+	
+	uint8_t set_coordinates; //flag for G28.4.  When set to a nonzero value, the coordinates will be set to zero at the end of a homing cycle
 
 	// per-axis parameters
 	float direction;			// set to 1 for positive (max), -1 for negative (to min);
@@ -67,6 +69,8 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 	uint8_t saved_coord_system;	// G54 - G59 setting
 	uint8_t saved_distance_mode;// G90,G91 global setting
 	float saved_jerk;			// saved and restored for each axis homed
+	
+	
 };
 static struct hmHomingSingleton hm;
 
@@ -143,6 +147,30 @@ static int8_t _get_next_axis(int8_t axis);
  *	to cm_isbusy() is about.
  */
 
+uint8_t cm_homing_cycle_start_no_set(void)
+{
+	// save relevant non-axis parameters from Gcode model
+	hm.saved_units_mode = gm.units_mode;
+	hm.saved_coord_system = gm.coord_system;
+	hm.saved_distance_mode = gm.distance_mode;
+	hm.saved_feed_rate = gm.feed_rate;
+	
+	//set flag to not update position variables at the end of the cycle
+	hm.set_coordinates = 0;
+
+	// set working values
+	cm_set_units_mode(MILLIMETERS);
+	cm_set_distance_mode(INCREMENTAL_MODE);
+	cm_set_coord_system(ABSOLUTE_COORDS);	// homing is done in machine coordinates
+
+	hm.axis = -1;							// set to retrieve initial axis
+	hm.func = _homing_axis_start; 			// bind initial processing function
+	cm.cycle_state = CYCLE_HOMING;
+	cm.homing_state = HOMING_NOT_HOMED;	    //this cycle should not change the homing state but at this point I think the homing state is the only way to see if the cycle is complete.
+	st_enable_motors();						// enable motors if not already enabled
+	return (STAT_OK);
+}
+
 uint8_t cm_homing_cycle_start(void)
 {
 	// save relevant non-axis parameters from Gcode model
@@ -150,6 +178,9 @@ uint8_t cm_homing_cycle_start(void)
 	hm.saved_coord_system = gm.coord_system;
 	hm.saved_distance_mode = gm.distance_mode;
 	hm.saved_feed_rate = gm.feed_rate;
+	
+	//set flag to update position variables at the end of the cycle
+	hm.set_coordinates = 1;
 
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
@@ -346,7 +377,9 @@ static stat_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero positio
 
 static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 {
-	cm_set_machine_axis_position(axis, 0);
+	if(hm.set_coordinates != 0){
+		cm_set_machine_axis_position(axis, 0);
+	}
 	cfg.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
 	cm.homed[axis] = true;
 	return (_set_hm_func(_homing_axis_start));

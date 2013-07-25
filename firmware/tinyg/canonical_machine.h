@@ -309,7 +309,8 @@ enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,	// G92.2
 	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,	// G92.3
 	NEXT_ACTION_DWELL,					// G4
-	NEXT_ACTION_STRAIGHT_PROBE			// G38.2
+	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
+	NEXT_ACTION_SET_HOMING_NO_SET		// G28.4 homing cycle with no coordinate setting
 };
 
 enum cmMotionMode {						// G Modal Group 1
@@ -492,6 +493,7 @@ stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 
 stat_t cm_homing_cycle_start(void);								// G28.2
+stat_t cm_homing_cycle_start_no_set(void);								// G28.4
 stat_t cm_homing_callback(void);								// G28.2 main loop callback
 stat_t cm_set_absolute_origin(float origin[], float flags[]);	// G28.3  (special function)
 
