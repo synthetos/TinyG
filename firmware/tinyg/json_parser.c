@@ -413,7 +413,10 @@ void js_print_json_response(uint8_t status)
 {
 	if (cfg.json_verbosity == JV_SILENT) return;		// silent responses
 
-	if (status == STAT_JSON_SYNTAX_ERROR) return;		// syntax errors on input generate ill-formed JSON. Drop them
+	if (status == STAT_JSON_SYNTAX_ERROR) {
+		fprintf(stderr, "{\"r\":{\"er\":48,\"msg\":\"%s\"},\"f\":[1,48,%d,0]}\n", tg.saved_buf, tg.linelen);
+		return;		// syntax errors on input generate ill-formed JSON. Drop them
+	}
 
 	// Body processing
 	cmdObj_t *cmd = cmd_body;

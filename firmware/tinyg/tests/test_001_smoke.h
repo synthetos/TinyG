@@ -14,8 +14,8 @@
  *	- all motors CCW at full speed ~3 seconds
  *	- all motors CW at medium speed ~3 seconds
  *	- all motors CCW at medium speed ~3 seconds
- * 	- draw a CW circle in XY with Z axis movement
- * 	- draw a CCW circle in XY with Z axis movement
+ *	- all motors CW at slow speed ~3 seconds
+ *	- all motors CCW at slow speed ~3 seconds
  *	- light LEDs 1,2 and 4 in sequence for about 1 second each:
  *	- short finishing move
  *
@@ -39,9 +39,8 @@ G00 x40 y40 z40 a40\n\
 G00 x0 y0 z0 a0\n\
 G01 f200 x10 y10 z10 a10\n\
 x0 y0 z0 a0\n\
-G02 f10000 x0 y0 z40 i27 j27\n\
-G03 f10000 x0 y0 z0 i27 j27\n\
-g0x0y0z0\n\
+G01 f50 x3 y3 z3 a3\n\
+x0 y0 z0 a0\n\
 m3g4p1\n\
 m5g4p1\n\
 m4g4p1\n\
@@ -54,3 +53,10 @@ m9\n\
 g0x1\n\
 g0x0\n\
 m2";
+
+
+/*
+//G02 f10000 x0 y0 z40 i27 j27\n\
+//G03 f10000 x0 y0 z0 i27 j27\n\
+//g0x0y0z0\n\
+*/
