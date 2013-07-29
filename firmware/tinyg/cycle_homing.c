@@ -51,6 +51,7 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 	uint8_t homing_closed;		// 0=open, 1=closed
 	uint8_t limit_closed;		// 0=open, 1=closed
 	uint8_t (*func)(int8_t axis);// binding for callback function state machine
+	uint8_t set_coordinates;	// G28.4 flag. true = set coords to zero at the end of homing cycle
 
 	// per-axis parameters
 	float direction;			// set to 1 for positive (max), -1 for negative (to min);
@@ -155,6 +156,7 @@ uint8_t cm_homing_cycle_start(void)
 	cm_set_units_mode(MILLIMETERS);
 	cm_set_distance_mode(INCREMENTAL_MODE);
 	cm_set_coord_system(ABSOLUTE_COORDS);	// homing is done in machine coordinates
+	hm.set_coordinates = true;
 
 	hm.axis = -1;							// set to retrieve initial axis
 	hm.func = _homing_axis_start; 			// bind initial processing function
@@ -163,6 +165,29 @@ uint8_t cm_homing_cycle_start(void)
 	st_enable_motors();						// enable motors if not already enabled
 	return (STAT_OK);
 }
+
+uint8_t cm_homing_cycle_start_no_set(void)
+{
+	// save relevant non-axis parameters from Gcode model
+	hm.saved_units_mode = gm.units_mode;
+	hm.saved_coord_system = gm.coord_system;
+	hm.saved_distance_mode = gm.distance_mode;
+	hm.saved_feed_rate = gm.feed_rate;
+
+	// set working values
+	cm_set_units_mode(MILLIMETERS);
+	cm_set_distance_mode(INCREMENTAL_MODE);
+	cm_set_coord_system(ABSOLUTE_COORDS);	// homing is done in machine coordinates
+	hm.set_coordinates = false;				// set flag to not update position variables at the end of the cycle
+
+	hm.axis = -1;							// set to retrieve initial axis
+	hm.func = _homing_axis_start; 			// bind initial processing function
+	cm.cycle_state = CYCLE_HOMING;
+	cm.homing_state = HOMING_NOT_HOMED;	    // this cycle should not change the homing state but at this point I think the homing state is the only way to see if the cycle is complete.
+	st_enable_motors();						// enable motors if not already enabled
+	return (STAT_OK);
+}
+
 
 uint8_t cm_homing_callback(void)
 {
@@ -180,7 +205,7 @@ static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 	cm_set_feed_rate(hm.saved_feed_rate);
 	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.homing_state = HOMING_HOMED;
-	cm.cycle_state = CYCLE_OFF;
+//	cm.cycle_state = CYCLE_OFF; //+++++++++++++++
 	cm_cycle_end();
 	return (STAT_OK);
 }
@@ -216,7 +241,8 @@ static stat_t _homing_error_exit(int8_t axis)
 	cm_set_distance_mode(hm.saved_distance_mode);
 	cm_set_feed_rate(hm.saved_feed_rate);
 	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
-	cm.cycle_state = CYCLE_OFF;
+//	cm.cycle_state = CYCLE_OFF;   ++++++++++++++++++
+	cm_cycle_end();
 	return (STAT_HOMING_CYCLE_FAILED);		// homing state remains HOMING_NOT_HOMED
 }
 
@@ -240,7 +266,7 @@ static stat_t _homing_axis_start(int8_t axis)
 		} else if (axis == -2) { 							// -2 is error
 			cm_set_units_mode(hm.saved_units_mode);
 			cm_set_distance_mode(hm.saved_distance_mode);
-			cm.cycle_state = CYCLE_OFF;
+//			cm.cycle_state = CYCLE_OFF;	+++++++++++++++++
 			cm_cycle_end();
 			return (_homing_error_exit(-2));
 		}
@@ -344,8 +370,10 @@ static stat_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero positio
 
 static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 {
-	cm_set_axis_origin(axis, 0);
-	mp_set_runtime_position(axis, 0);
+	if (hm.set_coordinates != false) {						// do not set axis if in G28.4 cycle
+		cm_set_axis_origin(axis, 0);
+		mp_set_runtime_position(axis, 0);
+	}
 	cfg.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
 	cm.homed[axis] = true;
 	return (_set_homing_func(_homing_axis_start));

@@ -324,6 +324,7 @@ enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_DEFAULT = 0,			// Must be zero (invokes motion modes)
 	NEXT_ACTION_SEARCH_HOME,			// G28.2 homing cycle
 	NEXT_ACTION_SET_ABSOLUTE_ORIGIN,	// G28.3 origin set
+	NEXT_ACTION_HOMING_NO_SET,			// G28.4 homing cycle with no coordinate setting
 	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordingates 
 	NEXT_ACTION_GOTO_G28_POSITION,		// G28 go to machine position
 	NEXT_ACTION_SET_G30_POSITION,		// G30.1
@@ -517,6 +518,7 @@ stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 
 stat_t cm_homing_cycle_start(void);								// G28.2
+stat_t cm_homing_cycle_start_no_set(void);						// G28.4
 stat_t cm_homing_callback(void);								// G28.2 main loop callback
 stat_t cm_set_absolute_origin(float origin[], float flags[]);	// G28.3  (special function)
 void cm_set_axis_origin(uint8_t axis, const float position);	// set absolute position (used by G28's)
