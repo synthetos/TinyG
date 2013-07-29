@@ -128,6 +128,8 @@ static const char msg_sc67[] PROGMEM = "Homing cycle failed";
 static const char msg_sc68[] PROGMEM = "Max travel exceeded";
 static const char msg_sc69[] PROGMEM = "Max spindle speed exceeded";
 static const char msg_sc70[] PROGMEM = "Arc specification error";
+static const char msg_sc71[] PROGMEM = "Soft limit exceeded";
+static const char msg_sc72[] PROGMEM = "Command not accepted";
 
 PGM_P const msgStatusMessage[] PROGMEM = {
 	msg_sc00, msg_sc01, msg_sc02, msg_sc03, msg_sc04, msg_sc05, msg_sc06, msg_sc07, msg_sc08, msg_sc09,
@@ -137,7 +139,7 @@ PGM_P const msgStatusMessage[] PROGMEM = {
 	msg_sc40, msg_sc41, msg_sc42, msg_sc43, msg_sc44, msg_sc45, msg_sc46, msg_sc47, msg_sc48, msg_sc49,
 	msg_sc50, msg_sc51, msg_sc52, msg_sc53, msg_sc54, msg_sc55, msg_sc56, msg_sc57, msg_sc58, msg_sc59,
 	msg_sc60, msg_sc61, msg_sc62, msg_sc63, msg_sc64, msg_sc65, msg_sc66, msg_sc67, msg_sc68, msg_sc69,
-	msg_sc70
+	msg_sc70, msg_sc71, msg_sc72
 };
 
 char *rpt_get_status_message(uint8_t status, char *msg) 

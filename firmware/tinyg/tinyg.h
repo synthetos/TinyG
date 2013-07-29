@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	384.04		// changes to default settings and tests for automated tester
+#define TINYG_FIRMWARE_BUILD   	385.01		// restructured response to malformed JSON
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
@@ -202,6 +202,8 @@ extern stat_t status_code;				// declared in main.cpp
 #define	STAT_MAX_TRAVEL_EXCEEDED 68
 #define	STAT_MAX_SPINDLE_SPEED_EXCEEDED 69
 #define	STAT_ARC_SPECIFICATION_ERROR 70		// arc specification error
+#define	STAT_SOFT_LIMIT_EXCEEDED 71			// soft limit error
+#define	STAT_COMMAND_NOT_ACCEPTED 72		// command cannot be accepted at this time
 
 /*** Alarm States ***/
 #define ALARM_LIMIT_OFFSET 0

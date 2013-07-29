@@ -109,12 +109,18 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("G0 X0.1 Y0.1\n");
 //	xio_queue_RX_string_usb("g28.3 x0 y0\n");
 
+	xio_queue_RX_string_usb("{\n");					// malformed JSON test
+	xio_queue_RX_string_usb("{\"gc\":}\n");			// malformed JSON test
+	xio_queue_RX_string_usb("{\"\":}\n");
+	xio_queue_RX_string_usb("{\"\":\"\"}\n");
+	xio_queue_RX_string_usb("{gibberish}\n");
+
 //	xio_queue_RX_string_usb("{\"gc\":\"N78 (Row 2 Copy 9-1)\"}\n");
 //	xio_queue_RX_string_usb("{\"g54\":\"\"}\n");
 //	xio_queue_RX_string_usb("{\"sys\":{\"gco\":1}}\n");
 //	xio_queue_RX_string_usb("{\"ss0\":\"\"}\n");
-	xio_queue_RX_string_usb("$ss0\n");
-	xio_queue_RX_string_usb("{\"ss\":\"\"}\n");
+//	xio_queue_RX_string_usb("$ss0\n");
+//	xio_queue_RX_string_usb("{\"ss\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("g1 f100 x100\n");		// Feedhold/queue flush test
 //	xio_queue_RX_string_usb("!\n");
@@ -126,7 +132,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 	xio_queue_RX_string_usb("g20\n");
 	xio_queue_RX_string_usb("m2\n");
 */
-	xio_queue_RX_string_usb("$xam=1\n");
+//	xio_queue_RX_string_usb("$xam=1\n");
 //	xio_queue_RX_string_usb("$1po=1\n");
 //	xio_queue_RX_string_usb("$g54x=20.00\n");
 //	xio_queue_RX_string_usb("$x\n");				// display a group

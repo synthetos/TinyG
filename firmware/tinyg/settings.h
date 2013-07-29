@@ -45,7 +45,7 @@
 // Machine configuration settings
 #define CHORDAL_TOLERANCE 			0.001			// chord accuracy for arc drawing
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
-#define MOTOR_DISABLE_TIMEOUT		60				// seconds
+#define MOTOR_DISABLE_TIMEOUT		1				// seconds
 
 // Communications and reporting settings
 //#define COMM_MODE					TEXT_MODE		// one of: TEXT_MODE, JSON_MODE
