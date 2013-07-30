@@ -51,7 +51,6 @@
 static stat_t _json_parser_kernal(char *str);
 static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth);
 static stat_t _normalize_json_string(char *str, uint16_t size);
-//static stat_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
 
 /****************************************************************************
  * js_json_parser() - exposed part of JSON parser
@@ -93,15 +92,14 @@ static stat_t _normalize_json_string(char *str, uint16_t size);
 
 void js_json_parser(char *str)
 {
-//	cmd_reset_list();					// get a fresh cmdObj list
-	uint8_t status = _json_parser_kernal(str);
+	stat_t status = _json_parser_kernal(str);
 	cmd_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	rpt_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
 
 stat_t _json_parser_kernal(char *str)
 {
-	uint8_t status;
+	stat_t status;
 	int8_t depth;
 	cmdObj_t *cmd = cmd_reset_list();			// get a fresh cmdObj list
 	char group[CMD_GROUP_LEN+1] = {""};			// group identifier - starts as NUL
@@ -149,7 +147,7 @@ stat_t _json_parser_kernal(char *str)
 
 static stat_t _normalize_json_string(char *str, uint16_t size)
 {
-	char *wr;								// write pointer
+	char_t *wr;								// write pointer
 	uint8_t in_comment = false;
 
 	if (strlen(str) > size) return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
@@ -190,8 +188,8 @@ static stat_t _normalize_json_string(char *str, uint16_t size)
  */
 static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 {
-	char *tmp;
-	char terminators[] = {"},"};
+	char_t *tmp;
+	char_t terminators[] = {"},"};
 
 	cmd_reset_obj(cmd);								// wipes the object and sets the depth
 
@@ -265,22 +263,6 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 	return (STAT_OK);							// signal that parsing is complete
 }
 
-/*
- * _gcode_comment_overrun_hack() - gcode overrun exception
- *
- *	Make an exception for string buffer overrun if the string is Gcode and the overrun is 
- *	caused by as comment. The comment will be truncated. If the comment happens to be a 
- *	message, well tough noodles, bucko.
- */
-/*
-static stat_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
-{
-	if (strstr(cmd->string,"(") == NULL) {
-		return (false);
-	}
-	return (true);
-}
-*/
 /****************************************************************************
  * js_serialize_json() - make a JSON object string from JSON object array
  *
@@ -320,8 +302,8 @@ static stat_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
 
 int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 {
-	char *str = out_buf;
-	char *str_max = out_buf + size - BUFFER_MARGIN;
+	char_t *str = out_buf;
+	char_t *str_max = out_buf + size - BUFFER_MARGIN;
 	int8_t initial_depth = cmd->depth;
 	int8_t prev_depth = 0;
 	uint8_t need_a_comma = false;

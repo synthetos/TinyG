@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	386.02		// manually merged G28.4 from robgrz
+#define TINYG_FIRMWARE_BUILD   	386.03		// added char_t typedef to align w/C++ version
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
@@ -105,8 +105,12 @@
 /*************************************************************************
  * String handling help - strings are handled as uint8_t's typedef'd to char_t
  */
-//typedef uint8_t char_t;
+//typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
 typedef char char_t;
+
+typedef uint8_t stat_t;
+extern stat_t status_code;				// declared in main.cpp
+#define ritorno(a) if((status_code=a) != STAT_OK) { return(status_code); }
 
 /* 
  * STATUS CODES
@@ -120,9 +124,6 @@ typedef char char_t;
  * ritorno is a handy way to provide exception returns 
  * It returns only if an error occurred. (ritorno is Italian for return) 
  */
-typedef uint8_t stat_t;
-extern stat_t status_code;				// declared in main.cpp
-#define ritorno(a) if((status_code=a) != STAT_OK) { return(status_code); }
  
 // OS, communications and low-level status (must align with XIO_xxxx codes in xio.h)
 #define	STAT_OK 0						// function completed OK
