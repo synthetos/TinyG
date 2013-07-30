@@ -246,7 +246,7 @@ float *cm_get_model_canonical_position_vector(float position[])
 	return (position);
 }
 
-/* NOTE: machine position is always returned in mm mode. No units ocnversion is performed */
+/* NOTE: machine position is always returned in mm mode. No units conversion is performed */
 float cm_get_runtime_machine_position(uint8_t axis) 
 {
 	return (mp_get_runtime_machine_position(axis));
@@ -920,7 +920,9 @@ stat_t cm_straight_feed(float target[], float flags[])
 	gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 
 	// trap zero feed rate condition
-	if ((gm.inverse_feed_rate_mode == false) && (gm.feed_rate == 0)) {
+//	if ((gm.inverse_feed_rate_mode == false) && (gm.feed_rate == 0)) {
+	if ((gm.inverse_feed_rate_mode == false) && (fp_ZERO(gm.feed_rate))) {
+
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
 
@@ -934,8 +936,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 	if (vector_equal(gm.target, gm.position)) { return (STAT_OK); }
 
 	cm_cycle_start();						// required for homing & other cycles
-	stat_t status = MP_LINE(gm.target, 
-							 _get_move_times(&gm.min_time), 
+	stat_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), 
 							 cm_get_model_coord_offset_vector(gm.work_offset), 
 							 gm.min_time);
 

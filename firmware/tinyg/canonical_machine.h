@@ -283,8 +283,8 @@ enum cmMachineState {
 
 enum cmCycleState {
 	CYCLE_OFF = 0,					// machine is idle
-	CYCLE_MACHINING,				// machine in normal machining cycle
-	CYCLE_PROBE,					// machine in probe cycle
+	CYCLE_MACHINING,				// in normal machining cycle
+	CYCLE_PROBE,					// in probe cycle
 	CYCLE_HOMING,					// homing is treated as a specialized cycle
 	CYCLE_JOG						// jogging is treated as a specialized cycle
 };
@@ -564,12 +564,13 @@ stat_t cm_change_tool(uint8_t tool);							// M6, T
 stat_t cm_select_tool(uint8_t tool);							// T parameter
 
 // canonical machine commands not called from gcode dispatcher
+void cm_message(char *message);									// msg to console (e.g. Gcode comments)
+
 stat_t cm_feedhold_sequencing_callback(void);					// process feedhold, cycle start and queue flush requests
 void cm_request_feedhold(void);
 void cm_request_queue_flush(void);
 void cm_request_cycle_start(void);
 
-void cm_message(char *message);									// msg to console (e.g. Gcode comments)
 void cm_cycle_start(void);										// (no Gcode)
 void cm_cycle_end(void); 										// (no Gcode)
 void cm_feedhold(void);											// (no Gcode)
