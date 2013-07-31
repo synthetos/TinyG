@@ -403,7 +403,6 @@ typedef struct cfgParameters {
 	float min_segment_len;			// line drawing resolution in mm
 	float arc_segment_len;			// arc drawing resolution in mm
 	float estd_segment_usec;		// approximate segment time in microseconds
-//	uint8_t enable_acceleration;	// enable acceleration control
 
 	// gcode power-on default settings - defaults are not the same as the gm state
 	uint8_t coord_system;			// G10 active coordinate system default

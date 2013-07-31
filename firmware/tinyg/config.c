@@ -352,7 +352,7 @@ static const char fmt_rx[] PROGMEM = "rx:%d\n";
 
 static const char fmt_md[] PROGMEM = "motors disabled\n";
 static const char fmt_me[] PROGMEM = "motors enabled\n";
-static const char fmt_mt[] PROGMEM = "[mt]  motor disble timeout%9d Sec\n";
+static const char fmt_mt[] PROGMEM = "[mt]  motor disable timeout%8d Sec\n";
 
 // Gcode model values for reporting purposes
 static const char fmt_vel[]  PROGMEM = "Velocity:%17.3f%S/min\n";
@@ -510,7 +510,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "boot",_f00, 0, fmt_nul, _print_nul, print_boot_loader_help,_run_boot,(float *)&tg.null,0 },
 	{ "", "help",_f00, 0, fmt_nul, _print_nul, print_config_help,_set_nul, (float *)&tg.null,0 },// prints config help screen
 	{ "", "h",   _f00, 0, fmt_nul, _print_nul, print_config_help,_set_nul, (float *)&tg.null,0 },// alias for "help"
-
 
 	// Motor parameters
 	{ "1","1ma",_fip, 0, fmt_0ma, _pr_ma_ui8, _get_ui8, _set_ui8,(float *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
@@ -838,9 +837,9 @@ static stat_t _get_id(cmdObj_t *cmd)
 {
 	char tmp[SYS_ID_LEN];
 	sys_get_id(tmp);
-	ritorno(cmd_copy_string(cmd, tmp));
 	cmd->objtype = TYPE_STRING;
-	return (STAT_OK);
+	ritorno(cmd_copy_string(cmd, tmp));
+//	return (STAT_OK);
 }
 
 /**** REPORT FUNCTIONS ********************************************************
@@ -2080,7 +2079,7 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);	// populate the value
 }
  
-cmdObj_t *cmd_reset_obj(cmdObj_t *cmd)	// clear a single cmdObj structure
+cmdObj_t *cmd_reset_obj(cmdObj_t *cmd)		// clear a single cmdObj structure
 {
 	cmd->objtype = TYPE_EMPTY;				// selective clear is much faster than calling memset
 	cmd->index = 0;
@@ -2090,7 +2089,7 @@ cmdObj_t *cmd_reset_obj(cmdObj_t *cmd)	// clear a single cmdObj structure
 	cmd->group[0] = NUL;
 	cmd->stringp = NULL;
 
-	if (cmd->pv == NULL) { 				// set depth correctly
+	if (cmd->pv == NULL) { 					// set depth correctly
 		cmd->depth = 0;
 	} else {
 		if (cmd->pv->objtype == TYPE_PARENT) { 
