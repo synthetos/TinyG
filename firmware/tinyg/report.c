@@ -516,7 +516,7 @@ uint8_t rpt_queue_report_callback()
 void sr_unit_tests(void)
 {
 	sr_init();
-	tg.communications_mode = STAT_JSON_MODE;
+	cs.communications_mode = STAT_JSON_MODE;
 	sr_run_status_report();
 }
 

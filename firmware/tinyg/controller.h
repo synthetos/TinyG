@@ -59,7 +59,7 @@ struct controllerSingleton {			// main TG controller struct
 	char saved_buf[SAVED_BUFFER_LEN];	// save the input buffer
 	uint16_t magic_end;
 };
-struct controllerSingleton tg;			// controller state structure
+struct controllerSingleton cs;			// controller state structure
 
 void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
 void tg_request_reset(void);

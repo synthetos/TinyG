@@ -446,51 +446,51 @@ static const char fmt_gdi[] PROGMEM = "[gdi] default gcode distance mode%2d [0=G
 
 const cfgItem_t cfgArray[] PROGMEM = {
 	// grp  token flags p, format*, print_func, get_func, set_func  target for get/set,   	default value
-	{ "sys","fb", _f07, 2, fmt_fb, _print_dbl, _get_dbl, _set_nul, (float *)&tg.fw_build,   TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
-	{ "sys","fv", _f07, 3, fmt_fv, _print_dbl, _get_dbl, _set_nul, (float *)&tg.fw_version, TINYG_FIRMWARE_VERSION },
-	{ "sys","hv", _f07, 0, fmt_hv, _print_dbl, _get_dbl, _set_hv,  (float *)&tg.hw_version, TINYG_HARDWARE_VERSION },
-	{ "sys","id", _fns, 0, fmt_id, _print_str, _get_id,  _set_nul, (float *)&tg.null, 0 },		// device ID (ASCII signature)
+	{ "sys","fb", _f07, 2, fmt_fb, _print_dbl, _get_dbl, _set_nul, (float *)&cs.fw_build,   TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
+	{ "sys","fv", _f07, 3, fmt_fv, _print_dbl, _get_dbl, _set_nul, (float *)&cs.fw_version, TINYG_FIRMWARE_VERSION },
+	{ "sys","hv", _f07, 0, fmt_hv, _print_dbl, _get_dbl, _set_hv,  (float *)&cs.hw_version, TINYG_HARDWARE_VERSION },
+	{ "sys","id", _fns, 0, fmt_id, _print_str, _get_id,  _set_nul, (float *)&cs.null, 0 },		// device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
 	{ "",   "n",   _fin, 0, fmt_line,_print_int, _get_int, _set_int,(float *)&gm.linenum,0 },// Gcode line number - gets model line number
 	{ "",   "line",_fin, 0, fmt_line,_print_int, _get_line,_set_int,(float *)&gm.linenum,0 },// Gcode line number - gets runtime line number
-	{ "",   "feed",_f00, 2, fmt_feed,_print_lin, _get_dbu, _set_nul,(float *)&tg.null, 0 },	// feed rate
-	{ "",   "stat",_f00, 0, fmt_stat,_print_str, _get_stat,_set_nul,(float *)&tg.null, 0 },	// combined machine state
-	{ "",   "macs",_f00, 0, fmt_macs,_print_str, _get_macs,_set_nul,(float *)&tg.null, 0 },	// raw machine state
-	{ "",   "cycs",_f00, 0, fmt_cycs,_print_str, _get_cycs,_set_nul,(float *)&tg.null, 0 },	// cycle state
-	{ "",   "mots",_f00, 0, fmt_mots,_print_str, _get_mots,_set_nul,(float *)&tg.null, 0 },	// motion state
-	{ "",   "hold",_f00, 0, fmt_hold,_print_str, _get_hold,_set_nul,(float *)&tg.null, 0 },	// feedhold state
-	{ "",   "vel", _f00, 2, fmt_vel, _print_lin, _get_vel, _set_nul,(float *)&tg.null, 0 },	// current velocity
-	{ "",   "unit",_f00, 0, fmt_unit,_print_str, _get_unit,_set_nul,(float *)&tg.null, 0 },	// units mode
-	{ "",   "coor",_f00, 0, fmt_coor,_print_str, _get_coor,_set_nul,(float *)&tg.null, 0 },	// coordinate system
-	{ "",   "momo",_f00, 0, fmt_momo,_print_str, _get_momo,_set_nul,(float *)&tg.null, 0 },	// motion mode
-	{ "",   "plan",_f00, 0, fmt_plan,_print_str, _get_plan,_set_nul,(float *)&tg.null, 0 },	// plane select
-	{ "",   "path",_f00, 0, fmt_path,_print_str, _get_path,_set_nul,(float *)&tg.null, 0 },	// path control mode
-	{ "",   "dist",_f00, 0, fmt_dist,_print_str, _get_dist,_set_nul,(float *)&tg.null, 0 },	// distance mode
-	{ "",   "frmo",_f00, 0, fmt_frmo,_print_str, _get_frmo,_set_nul,(float *)&tg.null, 0 },	// feed rate mode
+	{ "",   "feed",_f00, 2, fmt_feed,_print_lin, _get_dbu, _set_nul,(float *)&cs.null, 0 },	// feed rate
+	{ "",   "stat",_f00, 0, fmt_stat,_print_str, _get_stat,_set_nul,(float *)&cs.null, 0 },	// combined machine state
+	{ "",   "macs",_f00, 0, fmt_macs,_print_str, _get_macs,_set_nul,(float *)&cs.null, 0 },	// raw machine state
+	{ "",   "cycs",_f00, 0, fmt_cycs,_print_str, _get_cycs,_set_nul,(float *)&cs.null, 0 },	// cycle state
+	{ "",   "mots",_f00, 0, fmt_mots,_print_str, _get_mots,_set_nul,(float *)&cs.null, 0 },	// motion state
+	{ "",   "hold",_f00, 0, fmt_hold,_print_str, _get_hold,_set_nul,(float *)&cs.null, 0 },	// feedhold state
+	{ "",   "vel", _f00, 2, fmt_vel, _print_lin, _get_vel, _set_nul,(float *)&cs.null, 0 },	// current velocity
+	{ "",   "unit",_f00, 0, fmt_unit,_print_str, _get_unit,_set_nul,(float *)&cs.null, 0 },	// units mode
+	{ "",   "coor",_f00, 0, fmt_coor,_print_str, _get_coor,_set_nul,(float *)&cs.null, 0 },	// coordinate system
+	{ "",   "momo",_f00, 0, fmt_momo,_print_str, _get_momo,_set_nul,(float *)&cs.null, 0 },	// motion mode
+	{ "",   "plan",_f00, 0, fmt_plan,_print_str, _get_plan,_set_nul,(float *)&cs.null, 0 },	// plane select
+	{ "",   "path",_f00, 0, fmt_path,_print_str, _get_path,_set_nul,(float *)&cs.null, 0 },	// path control mode
+	{ "",   "dist",_f00, 0, fmt_dist,_print_str, _get_dist,_set_nul,(float *)&cs.null, 0 },	// distance mode
+	{ "",   "frmo",_f00, 0, fmt_frmo,_print_str, _get_frmo,_set_nul,(float *)&cs.null, 0 },	// feed rate mode
 
-	{ "mpo","mpox",_f00, 3, fmt_mpos,_print_mpos, _get_mpos,_set_nul,(float *)&tg.null, 0 },// X machine position
-	{ "mpo","mpoy",_f00, 3, fmt_mpos,_print_mpos, _get_mpos,_set_nul,(float *)&tg.null, 0 },// Y machine position
-	{ "mpo","mpoz",_f00, 3, fmt_mpos,_print_mpos, _get_mpos,_set_nul,(float *)&tg.null, 0 },// Z machine position
-	{ "mpo","mpoa",_f00, 3, fmt_mpos,_print_mpos, _get_mpos,_set_nul,(float *)&tg.null, 0 },// A machine position
-	{ "mpo","mpob",_f00, 3, fmt_mpos,_print_mpos, _get_mpos,_set_nul,(float *)&tg.null, 0 },// B machine position
-	{ "mpo","mpoc",_f00, 3, fmt_mpos,_print_mpos, _get_mpos,_set_nul,(float *)&tg.null, 0 },// C machine position
+	{ "mpo","mpox",_f00, 3, fmt_mpos,_print_mpos, _get_mpos,_set_nul,(float *)&cs.null, 0 },// X machine position
+	{ "mpo","mpoy",_f00, 3, fmt_mpos,_print_mpos, _get_mpos,_set_nul,(float *)&cs.null, 0 },// Y machine position
+	{ "mpo","mpoz",_f00, 3, fmt_mpos,_print_mpos, _get_mpos,_set_nul,(float *)&cs.null, 0 },// Z machine position
+	{ "mpo","mpoa",_f00, 3, fmt_mpos,_print_mpos, _get_mpos,_set_nul,(float *)&cs.null, 0 },// A machine position
+	{ "mpo","mpob",_f00, 3, fmt_mpos,_print_mpos, _get_mpos,_set_nul,(float *)&cs.null, 0 },// B machine position
+	{ "mpo","mpoc",_f00, 3, fmt_mpos,_print_mpos, _get_mpos,_set_nul,(float *)&cs.null, 0 },// C machine position
 
-	{ "pos","posx",_f00, 3, fmt_pos, _print_pos, _get_pos, _set_nul,(float *)&tg.null, 0 },	// X work position
-	{ "pos","posy",_f00, 3, fmt_pos, _print_pos, _get_pos, _set_nul,(float *)&tg.null, 0 },	// Y work position
-	{ "pos","posz",_f00, 3, fmt_pos, _print_pos, _get_pos, _set_nul,(float *)&tg.null, 0 },	// Z work position
-	{ "pos","posa",_f00, 3, fmt_pos, _print_pos, _get_pos, _set_nul,(float *)&tg.null, 0 },	// A work position
-	{ "pos","posb",_f00, 3, fmt_pos, _print_pos, _get_pos, _set_nul,(float *)&tg.null, 0 },	// B work position
-	{ "pos","posc",_f00, 3, fmt_pos, _print_pos, _get_pos, _set_nul,(float *)&tg.null, 0 },	// C work position
+	{ "pos","posx",_f00, 3, fmt_pos, _print_pos, _get_pos, _set_nul,(float *)&cs.null, 0 },	// X work position
+	{ "pos","posy",_f00, 3, fmt_pos, _print_pos, _get_pos, _set_nul,(float *)&cs.null, 0 },	// Y work position
+	{ "pos","posz",_f00, 3, fmt_pos, _print_pos, _get_pos, _set_nul,(float *)&cs.null, 0 },	// Z work position
+	{ "pos","posa",_f00, 3, fmt_pos, _print_pos, _get_pos, _set_nul,(float *)&cs.null, 0 },	// A work position
+	{ "pos","posb",_f00, 3, fmt_pos, _print_pos, _get_pos, _set_nul,(float *)&cs.null, 0 },	// B work position
+	{ "pos","posc",_f00, 3, fmt_pos, _print_pos, _get_pos, _set_nul,(float *)&cs.null, 0 },	// C work position
 
-	{ "ofs","ofsx",_f00, 3, fmt_ofs, _print_mpos, _get_ofs, _set_nul,(float *)&tg.null, 0 },// X work offset
-	{ "ofs","ofsy",_f00, 3, fmt_ofs, _print_mpos, _get_ofs, _set_nul,(float *)&tg.null, 0 },// Y work offset
-	{ "ofs","ofsz",_f00, 3, fmt_ofs, _print_mpos, _get_ofs, _set_nul,(float *)&tg.null, 0 },// Z work offset
-	{ "ofs","ofsa",_f00, 3, fmt_ofs, _print_mpos, _get_ofs, _set_nul,(float *)&tg.null, 0 },// A work offset 
-	{ "ofs","ofsb",_f00, 3, fmt_ofs, _print_mpos, _get_ofs, _set_nul,(float *)&tg.null, 0 },// B work offset 
-	{ "ofs","ofsc",_f00, 3, fmt_ofs, _print_mpos, _get_ofs, _set_nul,(float *)&tg.null, 0 },// C work offset
+	{ "ofs","ofsx",_f00, 3, fmt_ofs, _print_mpos, _get_ofs, _set_nul,(float *)&cs.null, 0 },// X work offset
+	{ "ofs","ofsy",_f00, 3, fmt_ofs, _print_mpos, _get_ofs, _set_nul,(float *)&cs.null, 0 },// Y work offset
+	{ "ofs","ofsz",_f00, 3, fmt_ofs, _print_mpos, _get_ofs, _set_nul,(float *)&cs.null, 0 },// Z work offset
+	{ "ofs","ofsa",_f00, 3, fmt_ofs, _print_mpos, _get_ofs, _set_nul,(float *)&cs.null, 0 },// A work offset 
+	{ "ofs","ofsb",_f00, 3, fmt_ofs, _print_mpos, _get_ofs, _set_nul,(float *)&cs.null, 0 },// B work offset 
+	{ "ofs","ofsc",_f00, 3, fmt_ofs, _print_mpos, _get_ofs, _set_nul,(float *)&cs.null, 0 },// C work offset
 
-	{ "hom","home",_f00, 0, fmt_home,_print_str, _get_home,_run_home,(float *)&tg.null, 0 },	   // homing state, invoke homing cycle
+	{ "hom","home",_f00, 0, fmt_home,_print_str, _get_home,_run_home,(float *)&cs.null, 0 },	   // homing state, invoke homing cycle
 	{ "hom","homx",_f00, 0, fmt_hom, _print_pos, _get_ui8, _set_nul,(float *)&cm.homed[AXIS_X], false },// X homed - Homing status group
 	{ "hom","homy",_f00, 0, fmt_hom, _print_pos, _get_ui8, _set_nul,(float *)&cm.homed[AXIS_Y], false },// Y homed
 	{ "hom","homz",_f00, 0, fmt_hom, _print_pos, _get_ui8, _set_nul,(float *)&cm.homed[AXIS_Z], false },// Z homed
@@ -499,17 +499,17 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "hom","homc",_f00, 0, fmt_hom, _print_pos, _get_ui8, _set_nul,(float *)&cm.homed[AXIS_C], false },// C homed
 
 	// Reports, tests, help, and messages
-	{ "", "sr",  _f00, 0, fmt_nul, _print_sr,  _get_sr,  _set_sr , (float *)&tg.null, 0 },	// status report object
-	{ "", "qr",  _f00, 0, fmt_qr,  _print_int, _get_qr,  _set_nul, (float *)&tg.null, 0 },	// queue report setting
-	{ "", "qf",  _f00, 0, fmt_nul, _print_nul, _get_nul, _run_qf,  (float *)&tg.null, 0 },	// queue flush
-	{ "", "er",  _f00, 0, fmt_nul, _print_nul, _get_er,  _set_nul, (float *)&tg.null, 0 },	// invoke bogus exception report for testing
-	{ "", "rx",  _f00, 0, fmt_rx,  _print_int, _get_rx,  _set_nul, (float *)&tg.null, 0 },	// space in RX buffer
-	{ "", "msg", _f00, 0, fmt_str, _print_str, _get_nul, _set_nul, (float *)&tg.null, 0 },	// string for generic messages
-	{ "", "test",_f00, 0, fmt_nul, _print_nul, print_test_help, tg_test, (float *)&tg.test,0 },// prints test help screen
-	{ "", "defa",_f00, 0, fmt_nul, _print_nul, print_defaults_help,_set_defa,(float *)&tg.null,0},// prints defaults help screen
-	{ "", "boot",_f00, 0, fmt_nul, _print_nul, print_boot_loader_help,_run_boot,(float *)&tg.null,0 },
-	{ "", "help",_f00, 0, fmt_nul, _print_nul, print_config_help,_set_nul, (float *)&tg.null,0 },// prints config help screen
-	{ "", "h",   _f00, 0, fmt_nul, _print_nul, print_config_help,_set_nul, (float *)&tg.null,0 },// alias for "help"
+	{ "", "sr",  _f00, 0, fmt_nul, _print_sr,  _get_sr,  _set_sr , (float *)&cs.null, 0 },	// status report object
+	{ "", "qr",  _f00, 0, fmt_qr,  _print_int, _get_qr,  _set_nul, (float *)&cs.null, 0 },	// queue report setting
+	{ "", "qf",  _f00, 0, fmt_nul, _print_nul, _get_nul, _run_qf,  (float *)&cs.null, 0 },	// queue flush
+	{ "", "er",  _f00, 0, fmt_nul, _print_nul, _get_er,  _set_nul, (float *)&cs.null, 0 },	// invoke bogus exception report for testing
+	{ "", "rx",  _f00, 0, fmt_rx,  _print_int, _get_rx,  _set_nul, (float *)&cs.null, 0 },	// space in RX buffer
+	{ "", "msg", _f00, 0, fmt_str, _print_str, _get_nul, _set_nul, (float *)&cs.null, 0 },	// string for generic messages
+	{ "", "test",_f00, 0, fmt_nul, _print_nul, print_test_help, tg_test, (float *)&cs.test,0 },// prints test help screen
+	{ "", "defa",_f00, 0, fmt_nul, _print_nul, print_defaults_help,_set_defa,(float *)&cs.null,0},// prints defaults help screen
+	{ "", "boot",_f00, 0, fmt_nul, _print_nul, print_boot_loader_help,_run_boot,(float *)&cs.null,0 },
+	{ "", "help",_f00, 0, fmt_nul, _print_nul, print_config_help,_set_nul, (float *)&cs.null,0 },// prints config help screen
+	{ "", "h",   _f00, 0, fmt_nul, _print_nul, print_config_help,_set_nul, (float *)&cs.null,0 },// alias for "help"
 
 	// Motor parameters
 	{ "1","1ma",_fip, 0, fmt_0ma, _pr_ma_ui8, _get_ui8, _set_ui8,(float *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
@@ -696,8 +696,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","st",  _f07, 0, fmt_st, _print_ui8, _get_ui8, _set_sw,  (float *)&sw.switch_type,			SWITCH_TYPE },
 	{ "sys","mt",  _f07, 0, fmt_mt, _print_int, _get_int, _set_int, (float *)&cfg.motor_disable_timeout,MOTOR_DISABLE_TIMEOUT},
 	// Note:"me" must initialize after "mt" so it can use the timeout value
-	{ "",   "me",  _fin, 0, fmt_me, _print_str, _set_me,  _set_me,  (float *)&tg.null, 0 },
-	{ "",   "md",  _f00, 0, fmt_md, _print_str, _set_md,  _set_md,  (float *)&tg.null, 0 },	// disable all motors
+	{ "",   "me",  _fin, 0, fmt_me, _print_str, _set_me,  _set_me,  (float *)&cs.null, 0 },
+	{ "",   "md",  _f00, 0, fmt_md, _print_str, _set_md,  _set_md,  (float *)&cs.null, 0 },	// disable all motors
 	
 	{ "sys","ej",  _f07, 0, fmt_ej, _print_ui8, _get_ui8, _set_01,  (float *)&cfg.comm_mode,			COMM_MODE },
 	{ "sys","jv",  _f07, 0, fmt_jv, _print_ui8, _get_ui8, _set_jv,  (float *)&cfg.json_verbosity,		JSON_VERBOSITY },
@@ -712,7 +712,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","ex",  _f07, 0, fmt_ex, _print_ui8, _get_ui8, _set_ex,  (float *)&cfg.enable_flow_control,	COM_ENABLE_FLOW_CONTROL },
 	{ "sys","fs",  _f07, 0, fmt_fs, _print_ui8, _get_ui8, _set_ui8, (float *)&cfg.footer_style,			0 },
 	{ "sys","baud",_fns, 0, fmt_baud,_print_ui8,_get_ui8, _set_baud,(float *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
-	{ "sys","net", _fip, 0, fmt_net,_print_ui8, _get_ui8, _set_ui8, (float *)&tg.network_mode,			NETWORK_MODE },
+	{ "sys","net", _fip, 0, fmt_net,_print_ui8, _get_ui8, _set_ui8, (float *)&cs.network_mode,			NETWORK_MODE },
 
 	// switch state readers
 	{ "ss","ss0",  _f00, 0, fmt_ss, _print_ss, _get_ui8, _set_nul, (float *)&sw.state[0], 0 },
@@ -730,7 +730,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","gco", _f07, 0, fmt_gco, _print_ui8, _get_ui8,_set_ui8, (float *)&cfg.coord_system,			GCODE_DEFAULT_COORD_SYSTEM },
 	{ "sys","gpa", _f07, 0, fmt_gpa, _print_ui8, _get_ui8,_set_012, (float *)&cfg.path_control,			GCODE_DEFAULT_PATH_CONTROL },
 	{ "sys","gdi", _f07, 0, fmt_gdi, _print_ui8, _get_ui8,_set_01,  (float *)&cfg.distance_mode,		GCODE_DEFAULT_DISTANCE_MODE },
-	{ "",   "gc",  _f00, 0, fmt_nul, _print_nul, _get_gc, _run_gc,  (float *)&tg.null, 0 }, // gcode block - must be last in this group
+	{ "",   "gc",  _f00, 0, fmt_nul, _print_nul, _get_gc, _run_gc,  (float *)&cs.null, 0 }, // gcode block - must be last in this group
 
 	// removed from system group as "hidden" parameters
 	{ "",   "ms",  _fip, 0, fmt_ms, _print_lin, _get_dbl, _set_dbl, (float *)&cfg.estd_segment_usec,	NOM_SEGMENT_USEC },
@@ -769,39 +769,39 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with CMD_COUNT_GROUPS below ****
-	{ "","sys",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },	// system group
-	{ "","p1", _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },	// PWM 1 group
-	{ "","1",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },	// motor groups
-	{ "","2",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
-	{ "","3",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
-	{ "","4",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
-	{ "","x",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },	// axis groups
-	{ "","y",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
-	{ "","z",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
-	{ "","a",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
-	{ "","b",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
-	{ "","c",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
-	{ "","ss", _f00, 0, fmt_nul, _print_nul, _get_grp, _set_nul,(float *)&tg.null,0 },
-	{ "","g54",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },	// coord offset groups
-	{ "","g55",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
-	{ "","g56",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
-	{ "","g57",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
-	{ "","g58",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
-	{ "","g59",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },
-	{ "","g92",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },	// origin offsets
-	{ "","g28",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },	// g28 home position
-	{ "","g30",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },	// g30 home position
-	{ "","mpo",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },	// machine position group
-	{ "","pos",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },	// work position group
-	{ "","ofs",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },	// work offset group
-	{ "","hom",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&tg.null,0 },	// axis homing state group
+	{ "","sys",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },	// system group
+	{ "","p1", _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },	// PWM 1 group
+	{ "","1",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },	// motor groups
+	{ "","2",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },
+	{ "","3",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },
+	{ "","4",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },
+	{ "","x",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },	// axis groups
+	{ "","y",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },
+	{ "","z",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },
+	{ "","a",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },
+	{ "","b",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },
+	{ "","c",  _f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },
+	{ "","ss", _f00, 0, fmt_nul, _print_nul, _get_grp, _set_nul,(float *)&cs.null,0 },
+	{ "","g54",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },	// coord offset groups
+	{ "","g55",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },
+	{ "","g56",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },
+	{ "","g57",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },
+	{ "","g58",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },
+	{ "","g59",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },
+	{ "","g92",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },	// origin offsets
+	{ "","g28",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },	// g28 home position
+	{ "","g30",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },	// g30 home position
+	{ "","mpo",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },	// machine position group
+	{ "","pos",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },	// work position group
+	{ "","ofs",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },	// work offset group
+	{ "","hom",_f00, 0, fmt_nul, _print_nul, _get_grp, _set_grp,(float *)&cs.null,0 },	// axis homing state group
 
 	// Uber-group (groups of groups, for text-mode displays only)
 	// *** Must agree with CMD_COUNT_UBER_GROUPS below ****
-	{ "", "m", _f00, 0, fmt_nul, _print_nul, _do_motors, _set_nul,(float *)&tg.null,0 },
-	{ "", "q", _f00, 0, fmt_nul, _print_nul, _do_axes,   _set_nul,(float *)&tg.null,0 },
-	{ "", "o", _f00, 0, fmt_nul, _print_nul, _do_offsets,_set_nul,(float *)&tg.null,0 },
-	{ "", "$", _f00, 0, fmt_nul, _print_nul, _do_all,    _set_nul,(float *)&tg.null,0 }
+	{ "", "m", _f00, 0, fmt_nul, _print_nul, _do_motors, _set_nul,(float *)&cs.null,0 },
+	{ "", "q", _f00, 0, fmt_nul, _print_nul, _do_axes,   _set_nul,(float *)&cs.null,0 },
+	{ "", "o", _f00, 0, fmt_nul, _print_nul, _do_offsets,_set_nul,(float *)&cs.null,0 },
+	{ "", "$", _f00, 0, fmt_nul, _print_nul, _do_all,    _set_nul,(float *)&cs.null,0 }
 };
 
 #define CMD_COUNT_GROUPS 		26		// count of simple groups
@@ -839,7 +839,7 @@ static stat_t _get_id(cmdObj_t *cmd)
 	sys_get_id(tmp);
 	cmd->objtype = TYPE_STRING;
 	ritorno(cmd_copy_string(cmd, tmp));
-//	return (STAT_OK);
+	return (STAT_OK);
 }
 
 /**** REPORT FUNCTIONS ********************************************************
@@ -1125,7 +1125,7 @@ static void _print_mpos(cmdObj_t *cmd)		// print position with fixed unit displa
  */
 static stat_t _get_gc(cmdObj_t *cmd)
 {
-	ritorno(cmd_copy_string(cmd, tg.in_buf));
+	ritorno(cmd_copy_string(cmd, cs.in_buf));
 	cmd->objtype = TYPE_STRING;
 	return (STAT_OK);
 }
@@ -1520,7 +1520,7 @@ void cfg_init()
 	cmd->index = 0;							// this will read the first record in NVM
 
 	cmd_read_NVM_value(cmd);
-	if (cmd->value != tg.fw_build) {
+	if (cmd->value != cs.fw_build) {
 		cmd->value = true;					// case (1) NVM is not setup or not in revision
 		_set_defa(cmd);	
 	} else {								// case (2) NVM is setup and in revision

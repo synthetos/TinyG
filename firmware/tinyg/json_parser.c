@@ -367,8 +367,8 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
  */
 void js_print_json_object(cmdObj_t *cmd)
 {
-	js_serialize_json(cmd, tg.out_buf, sizeof(tg.out_buf));
-	fprintf(stderr, "%s", tg.out_buf);
+	js_serialize_json(cmd, cs.out_buf, sizeof(cs.out_buf));
+	fprintf(stderr, "%s", cs.out_buf);
 }
 
 /*
@@ -399,7 +399,7 @@ void js_print_json_response(uint8_t status)
 	cmdObj_t *cmd = cmd_body;
 	if (status == STAT_JSON_SYNTAX_ERROR) {
 		cmd_reset_list();
-		cmd_add_string("msg", tg.saved_buf);
+		cmd_add_string("msg", cs.saved_buf);
 
 	} else if (cm.machine_state != MACHINE_INITIALIZING) {		// always do full echo during startup
 		uint8_t cmd_type;
@@ -432,13 +432,13 @@ void js_print_json_response(uint8_t status)
 	// Footer processing
 	while(cmd->objtype != TYPE_EMPTY) {					// find a free cmdObj at end of the list...
 		if ((cmd = cmd->nx) == NULL) {					//...or hit the NULL and return w/o a footer
-			js_serialize_json(cmd_header, tg.out_buf, sizeof(tg.out_buf));
+			js_serialize_json(cmd_header, cs.out_buf, sizeof(cs.out_buf));
 			return;			
 		}
 	}
 	char footer_string[CMD_FOOTER_LEN];
-	sprintf(footer_string, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
-	tg.linelen = 0;										// reset linelen so it's only reported once
+	sprintf(footer_string, "%d,%d,%d,0",FOOTER_REVISION, status, cs.linelen);
+	cs.linelen = 0;										// reset linelen so it's only reported once
 
 	cmd_copy_string(cmd, footer_string);				// link string to cmd object
 	cmd->depth = 0;										// footer 'f' is a peer to response 'r'
@@ -447,19 +447,19 @@ void js_print_json_response(uint8_t status)
 	cmd->nx = NULL;
 
 	// do all this to avoid having to serialize it twice
-	int16_t strcount = js_serialize_json(cmd_header, tg.out_buf, sizeof(tg.out_buf));// make JSON string w/o checksum
+	int16_t strcount = js_serialize_json(cmd_header, cs.out_buf, sizeof(cs.out_buf));// make JSON string w/o checksum
 	if (strcount < 0) { return;}						// encountered an overrun during serialization
 	if (strcount > OUTPUT_BUFFER_LEN - MAX_TAIL_LEN) { return;}	// would overrun during checksum generation
 	int16_t strcount2 = strcount;
 	char tail[MAX_TAIL_LEN];
 
-	while (tg.out_buf[strcount] != '0') { strcount--; }	// find end of checksum
-	strcpy(tail, tg.out_buf + strcount + 1);			// save the json termination
+	while (cs.out_buf[strcount] != '0') { strcount--; }	// find end of checksum
+	strcpy(tail, cs.out_buf + strcount + 1);			// save the json termination
 
-	while (tg.out_buf[strcount2] != ',') { strcount2--; }// find start of checksum
-	sprintf((char *)tg.out_buf + strcount2 + 1, 
-		"%d%s", compute_checksum(tg.out_buf, strcount2), tail);
-	fprintf(stderr, "%s", tg.out_buf);
+	while (cs.out_buf[strcount2] != ',') { strcount2--; }// find start of checksum
+	sprintf((char *)cs.out_buf + strcount2 + 1, 
+		"%d%s", compute_checksum(cs.out_buf, strcount2), tail);
+	fprintf(stderr, "%s", cs.out_buf);
 }
 
 //###########################################################################
@@ -495,26 +495,26 @@ void _test_serialize()
 
 	// null list
 	_reset_array();
-	js_serialize_json(cmd_array, tg.out_buf, sizeof(tg.out_buf));
+	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a null child
 	cmd = _reset_array();
 	cmd = _add_parent(cmd, "r");
-	js_serialize_json(cmd_array, tg.out_buf, sizeof(tg.out_buf));
+	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// single string element (message)
 	cmd = _reset_array();
 	cmd = _add_string(cmd, "msg", "test message");
-	js_serialize_json(cmd_array, tg.out_buf, sizeof(tg.out_buf));
+	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// string element and an integer element
 	cmd = _reset_array();
 	cmd = _add_string(cmd, "msg", "test message");
 	cmd = _add_integer(cmd, "answer", 42);
-	js_serialize_json(cmd_array, tg.out_buf, sizeof(tg.out_buf));
+	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a string and an integer element
@@ -522,7 +522,7 @@ void _test_serialize()
 	cmd = _add_parent(cmd, "r");
 	cmd = _add_string(cmd, "msg", "test message");
 	cmd = _add_integer(cmd, "answer", 42);
-	js_serialize_json(cmd_array, tg.out_buf, sizeof(tg.out_buf));
+	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a null child followed by a final level 0 element (footer)
@@ -531,7 +531,7 @@ void _test_serialize()
 	cmd = _add_empty(cmd);
 	cmd = _add_string(cmd, "f", "[1,0,12,1234]");	// fake out a footer
 	cmd->pv->depth = 0;
-	js_serialize_json(cmd_array, tg.out_buf, sizeof(tg.out_buf));
+	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a single element child followed by empties folowed by a final level 0 element
@@ -542,20 +542,20 @@ void _test_serialize()
 	cmd = _add_empty(cmd);
 	cmd = _add_string(cmd, "f", "[1,0,12,1234]");	// fake out a footer
 	cmd->pv->depth = 0;
-	js_serialize_json(cmd_array, tg.out_buf, sizeof(tg.out_buf));
+	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// response object parent with no children w/footer
 	cmd_reset_list();								// works with the header/body/footer list
 	_add_array(cmd, "1,0,12,1234");					// fake out a footer
-	js_serialize_json(cmd_header, tg.out_buf, sizeof(tg.out_buf));
+	js_serialize_json(cmd_header, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// response parent with one element w/footer
 	cmd_reset_list();								// works with the header/body/footer list
 	cmd_add_string("msg", "test message");
 	_add_array(cmd, "1,0,12,1234");					// fake out a footer
-	js_serialize_json(cmd_header, tg.out_buf, sizeof(tg.out_buf));
+	js_serialize_json(cmd_header, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 }
 
@@ -569,7 +569,7 @@ char * _clr(char *buf)
 
 void _printit(void)
 {
-//	printf("%s", tg.out_buf);	
+//	printf("%s", cs.out_buf);	
 }
 
 cmdObj_t * _reset_array()

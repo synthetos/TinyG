@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	386.03		// added char_t typedef to align w/C++ version
+#define TINYG_FIRMWARE_BUILD   	386.04		// Changed tg struct to cs
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 

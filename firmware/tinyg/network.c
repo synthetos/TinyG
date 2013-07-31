@@ -54,7 +54,7 @@
 void net_init() 
 {
 	// re-point IO if in slave mode
-	if (tg.network_mode == NETWORK_SLAVE) {
+	if (cs.network_mode == NETWORK_SLAVE) {
 		tg_init(XIO_DEV_RS485, XIO_DEV_USB, XIO_DEV_USB);
 		tg_set_secondary_source(XIO_DEV_USB);
 	}
@@ -76,7 +76,7 @@ uint8_t net_test_rxtx(uint8_t c)
 	int d;
 
 	// master operation
-	if (tg.network_mode == NETWORK_MASTER) {
+	if (cs.network_mode == NETWORK_MASTER) {
 		if ((c < 0x20) || (c >= 0x7F)) { c = 0x20; }
 		c++;
 		xio_putc(XIO_DEV_RS485, c);			// write to RS485 port
@@ -94,7 +94,7 @@ uint8_t net_test_rxtx(uint8_t c)
 
 uint8_t net_test_loopback(uint8_t c)
 {
-	if (tg.network_mode == NETWORK_MASTER) {
+	if (cs.network_mode == NETWORK_MASTER) {
 		// send a character
 		if ((c < 0x20) || (c >= 0x7F)) { c = 0x20; }
 		c++;

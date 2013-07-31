@@ -146,7 +146,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 {
 	char c = USBu.usart->DATA;					// can only read DATA once
 
-	if (tg.network_mode == NETWORK_MASTER) {	// forward character if you are a master
+	if (cs.network_mode == NETWORK_MASTER) {	// forward character if you are a master
 		net_forward(c);
 	}
 	// trap async commands - do not insert character into RX queue

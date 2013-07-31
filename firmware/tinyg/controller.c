@@ -71,19 +71,19 @@ static stat_t _sync_to_planner(void);
 
 void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err) 
 {
-	tg.magic_start = MAGICNUM;
-	tg.magic_end = MAGICNUM;
-	tg.fw_build = TINYG_FIRMWARE_BUILD;
-	tg.fw_version = TINYG_FIRMWARE_VERSION;	// NB: HW version is set from EEPROM
+	cs.magic_start = MAGICNUM;
+	cs.magic_end = MAGICNUM;
+	cs.fw_build = TINYG_FIRMWARE_BUILD;
+	cs.fw_version = TINYG_FIRMWARE_VERSION;	// NB: HW version is set from EEPROM
 
-	tg.reset_requested = false;
-	tg.bootloader_requested = false;
+	cs.reset_requested = false;
+	cs.bootloader_requested = false;
 
 	xio_set_stdin(std_in);
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
-	tg.default_src = std_in;
-	tg_set_primary_source(tg.default_src);	// set primary source
+	cs.default_src = std_in;
+	tg_set_primary_source(cs.default_src);	// set primary source
 }
 
 /* 
@@ -168,8 +168,8 @@ static stat_t _dispatch()
 	// read input line or return if not a completed line
 	// xio_gets() is a non-blocking workalike of fgets()
 	while (true) {
-		if ((status = xio_gets(tg.primary_src, tg.in_buf, sizeof(tg.in_buf))) == STAT_OK) {
-			tg.bufp = tg.in_buf;
+		if ((status = xio_gets(cs.primary_src, cs.in_buf, sizeof(cs.in_buf))) == STAT_OK) {
+			cs.bufp = cs.in_buf;
 			break;
 		}
 		// handle end-of-file from file devices
@@ -183,11 +183,11 @@ static stat_t _dispatch()
 		}
 		return (status);						// Note: STAT_EAGAIN, errors, etc. will drop through
 	}
-	tg.linelen = strlen(tg.in_buf)+1;					// linelen only tracks primary input
-	strncpy(tg.saved_buf, tg.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
+	cs.linelen = strlen(cs.in_buf)+1;					// linelen only tracks primary input
+	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 
 	// dispatch the new text line
-	switch (toupper(*tg.bufp)) {				// first char
+	switch (toupper(*cs.bufp)) {				// first char
 
 //		case '!': { cm_request_feedhold(); break; }		// include for diagnostics
 //		case '@': { cm_request_queue_flush(); break; }
@@ -195,33 +195,33 @@ static stat_t _dispatch()
 
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {
-				tg_text_response(STAT_OK, tg.saved_buf);
+				tg_text_response(STAT_OK, cs.saved_buf);
 			}
 			break;
 		}
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TEXT_MODE;
 			print_general_help();
-			tg_text_response(STAT_OK, tg.bufp);
+			tg_text_response(STAT_OK, cs.bufp);
 			break;
 		}
 		case '$': case '?':{ 					// text-mode configs
 			cfg.comm_mode = TEXT_MODE;
-			tg_text_response(cfg_text_parser(tg.bufp), tg.saved_buf);
+			tg_text_response(cfg_text_parser(cs.bufp), cs.saved_buf);
 			break;
 		}
 		case '{': { 							// JSON input
 			cfg.comm_mode = JSON_MODE;
-			js_json_parser(tg.bufp);
+			js_json_parser(cs.bufp);
 			break;
 		}
 		default: {								// anything else must be Gcode
 			if (cfg.comm_mode == JSON_MODE) {
-				strncpy(tg.out_buf, tg.bufp, INPUT_BUFFER_LEN -8);	// use out_buf as temp
-				sprintf(tg.bufp,"{\"gc\":\"%s\"}\n", tg.out_buf);
-				js_json_parser(tg.bufp);
+				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);	// use out_buf as temp
+				sprintf(cs.bufp,"{\"gc\":\"%s\"}\n", cs.out_buf);
+				js_json_parser(cs.bufp);
 			} else {
-				tg_text_response(gc_gcode_parser(tg.bufp), tg.saved_buf);
+				tg_text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
 			}
 		}
 	}
@@ -287,20 +287,20 @@ static stat_t _sync_to_planner()
 	return (STAT_OK);
 }
 
-void tg_reset_source() { tg_set_primary_source(tg.default_src);}
-void tg_set_primary_source(uint8_t dev) { tg.primary_src = dev;}
-void tg_set_secondary_source(uint8_t dev) { tg.secondary_src = dev;}
+void tg_reset_source() { tg_set_primary_source(cs.default_src);}
+void tg_set_primary_source(uint8_t dev) { cs.primary_src = dev;}
+void tg_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
 
 /*
  * tg_request_reset()
  * _reset_handler()
  * tg_reset() - software hard reset using watchdog timer
  */
-void tg_request_reset() { tg.reset_requested = true; }
+void tg_request_reset() { cs.reset_requested = true; }
 
 static stat_t _reset_handler(void)
 {
-	if (tg.reset_requested == false) { return (STAT_NOOP);}
+	if (cs.reset_requested == false) { return (STAT_NOOP);}
 	tg_reset();							// hard reset - identical to hitting RESET button
 	return (STAT_EAGAIN);
 }
@@ -316,11 +316,11 @@ void tg_reset(void)			// software hard reset using the watchdog timer
  * tg_request_bootloader()
  * _bootloader_handler() - executes a software reset using CCPWrite
  */
-void tg_request_bootloader() { tg.bootloader_requested = true;}
+void tg_request_bootloader() { cs.bootloader_requested = true;}
 
 static stat_t _bootloader_handler(void)
 {
-	if (tg.bootloader_requested == false) { return (STAT_NOOP);}
+	if (cs.bootloader_requested == false) { return (STAT_NOOP);}
 	cli();
 	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
 	return (STAT_EAGAIN);					// never gets here but keeps the compiler happy
@@ -351,14 +351,14 @@ static stat_t _alarm_idler(void)
 {
 	if (cm_get_machine_state() != MACHINE_ALARM) { return (STAT_OK);}
 
-	if (--tg.led_counter < 0) {
-		tg.led_counter = LED_COUNTER;
-		if (tg.led_state == 0) {
+	if (--cs.led_counter < 0) {
+		cs.led_counter = LED_COUNTER;
+		if (cs.led_state == 0) {
 			gpio_led_on(INDICATOR_LED);
-			tg.led_state = 1;
+			cs.led_state = 1;
 		} else {
 			gpio_led_off(INDICATOR_LED);
-			tg.led_state = 0;
+			cs.led_state = 0;
 		}
 	}
 	return (STAT_EAGAIN);	 // EAGAIN prevents any other actions from running
@@ -371,8 +371,8 @@ uint8_t _system_assertions()
 {
 	uint8_t value = 0;
 
-	if (tg.magic_start		!= MAGICNUM) { value = 1; }		// Note: reported VALue is offset by ALARM_MEMORY_OFFSET
-	if (tg.magic_end		!= MAGICNUM) { value = 2; }
+	if (cs.magic_start		!= MAGICNUM) { value = 1; }		// Note: reported VALue is offset by ALARM_MEMORY_OFFSET
+	if (cs.magic_end		!= MAGICNUM) { value = 2; }
 	if (cm.magic_start 		!= MAGICNUM) { value = 3; }
 	if (cm.magic_end		!= MAGICNUM) { value = 4; }
 	if (gm.magic_start		!= MAGICNUM) { value = 5; }
