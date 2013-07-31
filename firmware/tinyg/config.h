@@ -272,7 +272,8 @@ enum textFormats {					// text output print modes
 
 typedef struct cmdString {			// shared string object
 	uint16_t magic_start;
-	uint8_t wp;						// current string array index
+//	uint8_t wp;							// current string array index for len < 256 bytes
+	uint16_t wp;						// use this value is string len > 255 bytes
 	char string[CMD_SHARED_STRING_LEN];
 	uint16_t magic_end;
 } cmdStr_t;
@@ -285,9 +286,9 @@ typedef struct cmdObject {			// depending on use, not all elements may be popula
 	int8_t objtype;					// see objType enum
 	int8_t precision;				// decimal precision for reporting (JSON)
 	float value;					// numeric value
-	char token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
-	char group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group
-	char (*stringp)[];				// pointer to array of characters from shared character array
+	char_t token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
+	char_t group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group
+	char_t (*stringp)[];			// pointer to array of characters from shared character array
 } cmdObj_t; 						// OK, so it's not REALLY an object
 
 typedef uint8_t (*fptrCmd)(cmdObj_t *cmd);// required for cmd table access

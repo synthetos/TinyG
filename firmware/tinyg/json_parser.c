@@ -320,7 +320,7 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 				if (cm_get_model_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
 				cmd->objtype = TYPE_FLOAT;
 			}
-			if (cmd->objtype == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
+			if (cmd->objtype == TYPE_NULL)	{ str += sprintf((char *)str, "\"\"");}
 			else if (cmd->objtype == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", (double)cmd->value);}
 			else if (cmd->objtype == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
 			else if (cmd->objtype == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  *cmd->stringp);}
@@ -457,7 +457,8 @@ void js_print_json_response(uint8_t status)
 	strcpy(tail, tg.out_buf + strcount + 1);			// save the json termination
 
 	while (tg.out_buf[strcount2] != ',') { strcount2--; }// find start of checksum
-	sprintf(tg.out_buf + strcount2 + 1, "%d%s", compute_checksum(tg.out_buf, strcount2), tail);
+	sprintf((char *)tg.out_buf + strcount2 + 1, 
+		"%d%s", compute_checksum(tg.out_buf, strcount2), tail);
 	fprintf(stderr, "%s", tg.out_buf);
 }
 
