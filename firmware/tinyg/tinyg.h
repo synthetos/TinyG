@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	386.06		// Renamed JSON functions for consistency
+#define TINYG_FIRMWARE_BUILD   	386.07		// Rearranged char, char_t and char_P in config.c
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
