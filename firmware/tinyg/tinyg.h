@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	386.09		// Slight changes to JSON_parser to align with g2 code
+#define TINYG_FIRMWARE_BUILD   	386.10		// Aligining canonical machine with g2
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 

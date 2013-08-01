@@ -334,7 +334,7 @@ static stat_t _limit_switch_handler(void)
 	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
 	if (gpio_get_limit_thrown() == false) return (STAT_NOOP);
 //	cm_alarm(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
-	cm_alarm(sw.sw_num_thrown);
+	canonical_machine_alarm(sw.sw_num_thrown);
 	return (STAT_OK);
 }
 
@@ -394,6 +394,6 @@ uint8_t _system_assertions()
 
 	if (value == 0) { return (STAT_OK);}
 	rpt_exception(STAT_MEMORY_FAULT, value);
-	cm_alarm(ALARM_MEMORY_OFFSET + value);	
+	canonical_machine_alarm(ALARM_MEMORY_OFFSET + value);	
 	return (STAT_EAGAIN);
 }

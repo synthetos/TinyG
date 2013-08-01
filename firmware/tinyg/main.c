@@ -77,10 +77,10 @@ int main(void)
 	cfg_init();						// config records from eeprom 		- must be next app init
 	net_init();						// reset std devices if required	- must follow cfg_init()
 	mp_init();						// motion planning subsystem
-	cm_init();						// canonical machine				- must follow cfg_init()
+	canonical_machine_init();		// canonical machine				- must follow cfg_init()
 	sp_init();						// spindle PWM and variables
 
-	// now bring up the interupts and get started
+	// now bring up the interrupts and get started
 	PMIC_SetVectorLocationToApplication();// as opposed to boot ROM
 	PMIC_EnableHighLevel();			// all levels are used, so don't bother to abstract them
 	PMIC_EnableMediumLevel();

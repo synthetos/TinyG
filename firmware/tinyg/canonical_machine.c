@@ -4,31 +4,31 @@
  *
  * Copyright (c) 2010 - 2013 Alden S Hart, Jr.
  *
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
+ *
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+/*
  * This code is a loose implementation of Kramer, Proctor and Messina's
  * canonical machining functions as described in the NIST RS274/NGC v3
- */
-/* TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
- *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-/* The canonical machine is the layer between the Gcode parser and the
+ * The canonical machine is the layer between the Gcode parser and the
  * motion control code for a specific robot. It keeps state and executes
  * commands - passing the stateless commands to the motion control layer. 
  */
@@ -102,8 +102,16 @@
 #include "system.h"
 #include "xio/xio.h"			// for serial queue flush
 
+/***********************************************************************************
+ **** STRUCTURE ALLOCATIONS ********************************************************
+ ***********************************************************************************/
 // NOTE: The canonical machine singleton "cm" would normally be declared here 
 // but it's also used by cycles so it's in canonical_machine.h instead.
+
+
+/***********************************************************************************
+ **** GENERIC STATIC FUNCTIONS AND VARIABLES ***************************************
+ ***********************************************************************************/
 
 static float _get_move_times(float *min_time);
 
@@ -118,6 +126,11 @@ static void _exec_program_finalize(float *value, float *flag);
 
 #define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
+
+/***********************************************************************************
+ **** CODE *************************************************************************
+ ***********************************************************************************/
+
 /*************************************************************************
  *
  * HELPERS AND UTILITY FUNCTIONS
@@ -126,7 +139,7 @@ static void _exec_program_finalize(float *value, float *flag);
  *
  ************************************************************************/
 
-/* Runtime State fucntions
+/* Runtime State functions
  *
  * cm_get_combined_state() - combines raw states into something a user might want to see
  * cm_get_machine_state()
@@ -181,7 +194,6 @@ uint8_t cm_get_model_inverse_feed_rate_mode() { return gm.inverse_feed_rate_mode
 uint8_t cm_get_model_spindle_mode() { return gm.spindle_mode;} 
 uint32_t cm_get_model_linenum() { return gm.linenum;}
 uint8_t	cm_get_block_delete_switch() { return gm.block_delete_switch;}
-
 
 /* Position and Offset getters - operates on model and runtime contexts
  *
@@ -250,13 +262,13 @@ float *cm_get_model_canonical_position_vector(float position[])
 float cm_get_runtime_machine_position(uint8_t axis) 
 {
 	return (mp_get_runtime_machine_position(axis));
+}
 //	deprecated behavior - left in for reference
 //	if (gm.units_mode == INCHES) {
 //		return (mp_get_runtime_machine_position(axis) / MM_PER_INCH);
 //	} else {
 //		return (mp_get_runtime_machine_position(axis));
 //	}
-}
 
 float cm_get_runtime_work_position(uint8_t axis) 
 {
@@ -312,19 +324,12 @@ void cm_set_model_linenum(uint32_t linenum)
  *	- translation of work coordinates to machine coordinates (internal canonical form)
  *	- computation and application of axis modes as so:
  *
- *		DISABLED
- *		  - Incoming value is ignored. Target value is not changed
- *
- *		ENABLED 
- *		  - Convert axis values to canonical format and store as target
- *
- *		INHIBITED
- *	  	  - Same processing as ENABLED, but axis will not actually be run
- *
- * 		RADIUS
- *		  - ABC axis value is provided in Gcode block in linear units
- *		  - Target is set to degrees based on axis' Radius value
- *		  - Radius mode is only processed for ABC axes. Application to XYZ is ignored.
+ *	DISABLED  - Incoming value is ignored. Target value is not changed
+ *	ENABLED	  - Convert axis values to canonical format and store as target
+ *	INHIBITED - Same processing as ENABLED, but axis will not actually be run
+ * 	RADIUS	  - ABC axis value is provided in Gcode block in linear units
+ *			  - Target is set to degrees based on axis' Radius value
+ *			  - Radius mode is only processed for ABC axes. Application to XYZ is ignored.
  *
  *	Target coordinates are provided in target[]
  *	Axes that need processing are signaled in flag[]
@@ -428,13 +433,13 @@ void cm_set_model_endpoint_position(stat_t status)
  * _get_move_times() - get minimum and optimal move times
  *
  *	The minimum time is the fastest the move can be performed given the velocity 
- *	constraints on each particpating axis - regardless of the feedrate requested. 
+ *	constraints on each participating axis - regardless of the feed rate requested. 
  *	The minimum time is the time limited by the rate-limiting axis. The minimum 
  *	time is needed to compute the optimal time and is recorded for possible 
  *	feed override computation..
  *
- *	The optimal time is either the time resulting from the requested feedrate or 
- *	the minimum time if the requested feedrate is not achievable. Optimal times for 
+ *	The optimal time is either the time resulting from the requested feed rate or 
+ *	the minimum time if the requested feed rate is not achievable. Optimal times for 
  *	traverses are always the minimum time.
  *
  *	Axis modes are taken into account by having cm_set_target() load the targets 
@@ -535,20 +540,20 @@ static float _get_move_times(float *min_time)
 /* 
  * Initialization and Termination (4.3.2)
  *
- * cm_init() 
- * cm_alarm() 
+ * canonical_machine_init() 
+ * canonical_machine_alarm() 
  *
  *	Config init cfg_init() must have been run beforehand. Many parameters 
  *	used by the canonical machine are actually set during cfg_init().
  */
 
-void cm_init()
+void canonical_machine_init()
 {
-// You can assume all memory has been zeroed by a hard reset. If not, use this code:
-//	memset(&cm, 0, sizeof(cm));		// reset canonicalMachineSingleton
-//	memset(&gn, 0, sizeof(gn));		// clear all values, pointers and status
-//	memset(&gf, 0, sizeof(gf));
-//	memset(&gm, 0, sizeof(gm));
+// If you can assume all memory has been zeroed by a hard reset you don't need this code:
+	memset(&cm, 0, sizeof(cm));		// reset canonicalMachineSingleton
+	memset(&gn, 0, sizeof(gn));		// clear all values, pointers and status
+	memset(&gf, 0, sizeof(gf));
+	memset(&gm, 0, sizeof(gm));
 
 	// setup magic numbers
 	cm.magic_start = MAGICNUM;
@@ -562,6 +567,8 @@ void cm_init()
 	cm_select_plane(cfg.select_plane);
 	cm_set_path_control(cfg.path_control);
 	cm_set_distance_mode(cfg.distance_mode);
+
+	gm.block_delete_switch = true;
 
 	// never start a machine in a motion mode	
 	gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
@@ -577,12 +584,12 @@ void cm_init()
 }
 
 /*
- * cm_alarm() - alarm state - shut down machine
+ * canonical_machine_alarm() - alarm state; shut down machine
  */
-void cm_alarm(uint8_t value)
+void canonical_machine_alarm(uint8_t value)
 {
 	// stop the steppers and the spindle
-	st_kill_motors();
+	st_disable_motors();
 	cm_spindle_control(SPINDLE_OFF);
 
 	// disable all MCode functions

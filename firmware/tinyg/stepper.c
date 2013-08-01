@@ -293,7 +293,6 @@ void st_init()
  * st_disable_motors()- disable all motors
  * st_start_disable_motors_timeout()
  * st_disable_motors_rtc_callback()
- * st_kill_motors()   - stop the steppers. Requires re-init to recover
  */
 void st_enable_motor(const uint8_t motor)
 {
@@ -336,15 +335,6 @@ void st_start_disable_motors_timer()	// reset timeout interval
 void st_disable_motors_rtc_callback() 		// called by 10ms real-time clock
 {
 	if (--cfg.motor_disable_timer == 0) { st_disable_motors(); }
-}
-
-void st_kill_motors()
-{
-	for (uint8_t i=0; i<MOTORS; i++) {
-		device.st_port[i]->DIR = MOTOR_PORT_DIR_gm;  // sets outputs for motors & GPIO1, and GPIO2 inputs
-		device.st_port[i]->OUT = MOTOR_ENABLE_BIT_bm;// zero port bits AND disable motor
-	}
-	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;			// turn timer off
 }
 
 /*
