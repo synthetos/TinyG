@@ -41,10 +41,10 @@
  * Global Scope Functions
  */
 
-void js_json_parser(char *str);
-int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size);
-void js_print_json_object(cmdObj_t *cmd);
-void js_print_json_response(uint8_t status);
+void json_parser(char *str);
+int16_t json_serialize(cmdObj_t *cmd, char *out_buf, uint16_t size);
+void json_print_object(cmdObj_t *cmd);
+void json_print_response(uint8_t status);
 
 /* unit test setup */
 

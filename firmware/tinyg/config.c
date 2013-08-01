@@ -2244,8 +2244,8 @@ void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags)
 	if (cfg.comm_mode == JSON_MODE) {
 		switch (json_flags) {
 			case JSON_NO_PRINT: { break; } 
-			case JSON_OBJECT_FORMAT: { js_print_json_object(cmd_body); break; }
-			case JSON_RESPONSE_FORMAT: { js_print_json_response(status); break; }
+			case JSON_OBJECT_FORMAT: { json_print_object(cmd_body); break; }
+			case JSON_RESPONSE_FORMAT: { json_print_response(status); break; }
 		}
 	} else {
 		switch (text_flags) {

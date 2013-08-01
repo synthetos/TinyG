@@ -53,7 +53,7 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth);
 static stat_t _normalize_json_string(char *str, uint16_t size);
 
 /****************************************************************************
- * js_json_parser() - exposed part of JSON parser
+ * json_parser() - exposed part of JSON parser
  * _json_parser_kernal()
  * _normalize_json_string()
  * _get_nv_pair_strict()
@@ -84,13 +84,13 @@ static stat_t _normalize_json_string(char *str, uint16_t size);
  *	  - returns the status and the JSON response string
  *
  *	Separation of concerns
- *	  js_json_parser() is the only exposed part. It does parsing, display, and status reports.
+ *	  json_parser() is the only exposed part. It does parsing, display, and status reports.
  *	  _get_nv_pair() only does parsing and syntax; no semantic validation or group handling
  *	  _json_parser_kernal() does index validation and group handling and executes sets and gets
  *		in an application agnostic way. It should work for other apps than TinyG 
  */
 
-void js_json_parser(char *str)
+void json_parser(char *str)
 {
 	stat_t status = _json_parser_kernal(str);
 	cmd_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
@@ -264,7 +264,7 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 }
 
 /****************************************************************************
- * js_serialize_json() - make a JSON object string from JSON object array
+ * json_serialize() - make a JSON object string from JSON object array
  *
  *	*cmd is a pointer to the first element in the cmd list to serialize
  *	*out_buf is a pointer to the output string - usually what was the input string
@@ -300,7 +300,7 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 
 #define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns
 
-int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
+int16_t json_serialize(cmdObj_t *cmd, char *out_buf, uint16_t size)
 {
 	char_t *str = out_buf;
 	char_t *str_max = out_buf + size - BUFFER_MARGIN;
@@ -359,20 +359,20 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 }
 
 /*
- * js_print_json_object() - serialize and print the cmdObj array directly (w/o header & footer)
+ * json_print_object() - serialize and print the cmdObj array directly (w/o header & footer)
  *
  *	Ignores JSON verbosity settings and everything else - just serializes the list & prints
  *	Useful for reports and other simple output.
  *	Object list should be terminated by cmd->nx == NULL
  */
-void js_print_json_object(cmdObj_t *cmd)
+void json_print_object(cmdObj_t *cmd)
 {
-	js_serialize_json(cmd, cs.out_buf, sizeof(cs.out_buf));
+	json_serialize(cmd, cs.out_buf, sizeof(cs.out_buf));
 	fprintf(stderr, "%s", cs.out_buf);
 }
 
 /*
- * js_print_json_response() - JSON responses with headers, footers and observes JSON verbosity 
+ * json_print_response() - JSON responses with headers, footers and observes JSON verbosity 
  *
  *	A footer is returned for every setting except $jv=0
  *
@@ -391,7 +391,7 @@ void js_print_json_object(cmdObj_t *cmd)
  */
 #define MAX_TAIL_LEN 8
 
-void js_print_json_response(uint8_t status)
+void json_print_response(uint8_t status)
 {
 	if (cfg.json_verbosity == JV_SILENT) return;		// silent responses
 
@@ -432,7 +432,7 @@ void js_print_json_response(uint8_t status)
 	// Footer processing
 	while(cmd->objtype != TYPE_EMPTY) {					// find a free cmdObj at end of the list...
 		if ((cmd = cmd->nx) == NULL) {					//...or hit the NULL and return w/o a footer
-			js_serialize_json(cmd_header, cs.out_buf, sizeof(cs.out_buf));
+			json_serialize(cmd_header, cs.out_buf, sizeof(cs.out_buf));
 			return;			
 		}
 	}
@@ -447,7 +447,7 @@ void js_print_json_response(uint8_t status)
 	cmd->nx = NULL;
 
 	// do all this to avoid having to serialize it twice
-	int16_t strcount = js_serialize_json(cmd_header, cs.out_buf, sizeof(cs.out_buf));// make JSON string w/o checksum
+	int16_t strcount = json_serialize(cmd_header, cs.out_buf, sizeof(cs.out_buf));// make JSON string w/o checksum
 	if (strcount < 0) { return;}						// encountered an overrun during serialization
 	if (strcount > OUTPUT_BUFFER_LEN - MAX_TAIL_LEN) { return;}	// would overrun during checksum generation
 	int16_t strcount2 = strcount;
@@ -495,26 +495,26 @@ void _test_serialize()
 
 	// null list
 	_reset_array();
-	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a null child
 	cmd = _reset_array();
 	cmd = _add_parent(cmd, "r");
-	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// single string element (message)
 	cmd = _reset_array();
 	cmd = _add_string(cmd, "msg", "test message");
-	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// string element and an integer element
 	cmd = _reset_array();
 	cmd = _add_string(cmd, "msg", "test message");
 	cmd = _add_integer(cmd, "answer", 42);
-	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a string and an integer element
@@ -522,7 +522,7 @@ void _test_serialize()
 	cmd = _add_parent(cmd, "r");
 	cmd = _add_string(cmd, "msg", "test message");
 	cmd = _add_integer(cmd, "answer", 42);
-	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a null child followed by a final level 0 element (footer)
@@ -531,7 +531,7 @@ void _test_serialize()
 	cmd = _add_empty(cmd);
 	cmd = _add_string(cmd, "f", "[1,0,12,1234]");	// fake out a footer
 	cmd->pv->depth = 0;
-	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a single element child followed by empties folowed by a final level 0 element
@@ -542,20 +542,20 @@ void _test_serialize()
 	cmd = _add_empty(cmd);
 	cmd = _add_string(cmd, "f", "[1,0,12,1234]");	// fake out a footer
 	cmd->pv->depth = 0;
-	js_serialize_json(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// response object parent with no children w/footer
 	cmd_reset_list();								// works with the header/body/footer list
 	_add_array(cmd, "1,0,12,1234");					// fake out a footer
-	js_serialize_json(cmd_header, cs.out_buf, sizeof(cs.out_buf));
+	json_serialize(cmd_header, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// response parent with one element w/footer
 	cmd_reset_list();								// works with the header/body/footer list
 	cmd_add_string("msg", "test message");
 	_add_array(cmd, "1,0,12,1234");					// fake out a footer
-	js_serialize_json(cmd_header, cs.out_buf, sizeof(cs.out_buf));
+	json_serialize(cmd_header, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 }
 
@@ -633,39 +633,39 @@ cmdObj_t * _add_array(cmdObj_t *cmd, char *array_string)
 
 void _test_parser()
 {
-// tip: breakpoint the js_json_parser return (STAT_OK) and examine the js[] array
+// tip: breakpoint the json_parser return (STAT_OK) and examine the js[] array
 
 // success cases
 
 	// single NV pair cases
-	js_json_parser("{\"config_version\":null}\n");					// simple null test
-	js_json_parser("{\"config_profile\":true}\n");					// simple true test
-	js_json_parser("{\"prompt\":false}\n");							// simple false test
-	js_json_parser("{\"gcode\":\"g0 x3 y4 z5.5 (comment line)\"}\n");// string test w/comment
-	js_json_parser("{\"x_feedrate\":1200}\n");						// numeric test
-	js_json_parser("{\"y_feedrate\":-1456}\n");						// numeric test
+	json_parser("{\"config_version\":null}\n");					// simple null test
+	json_parser("{\"config_profile\":true}\n");					// simple true test
+	json_parser("{\"prompt\":false}\n");							// simple false test
+	json_parser("{\"gcode\":\"g0 x3 y4 z5.5 (comment line)\"}\n");// string test w/comment
+	json_parser("{\"x_feedrate\":1200}\n");						// numeric test
+	json_parser("{\"y_feedrate\":-1456}\n");						// numeric test
 
-	js_json_parser("{\"Z_velocity_maximum\":null}\n");				// axis w/null
-	js_json_parser("{\"m1_microsteps\":null}\n");					// motor w/null
-	js_json_parser("{\"2mi\":8}\n");								// motor token w/null
-	js_json_parser("{\"no-token\":12345}\n");						// non-token w/number
+	json_parser("{\"Z_velocity_maximum\":null}\n");				// axis w/null
+	json_parser("{\"m1_microsteps\":null}\n");					// motor w/null
+	json_parser("{\"2mi\":8}\n");								// motor token w/null
+	json_parser("{\"no-token\":12345}\n");						// non-token w/number
 
 	// multi-pair cases					 tabs here V
-	js_json_parser("{\"firmware_version\":329.26,		\"config_version\":0.93}\n");
-	js_json_parser("{\"1mi\":8, \"2mi\":8,\"3mi\":8,\"4mi\":8}\n");	// 4 elements
+	json_parser("{\"firmware_version\":329.26,		\"config_version\":0.93}\n");
+	json_parser("{\"1mi\":8, \"2mi\":8,\"3mi\":8,\"4mi\":8}\n");	// 4 elements
 
 	// parent / child cases
-	js_json_parser("{\"status_report\":{\"ln\":true, \"x_pos\":true, \"y_pos\":true, \"z_pos\":true}}\n");
-	js_json_parser("{\"parent_case1\":{\"child_null\":null}}\n");	// parent w/single child
-	js_json_parser("{\"parent_case2\":{\"child_num\":23456}}\n");	// parent w/single child
-	js_json_parser("{\"parent_case3\":{\"child_str\":\"stringdata\"}}\n");// parent w/single child
+	json_parser("{\"status_report\":{\"ln\":true, \"x_pos\":true, \"y_pos\":true, \"z_pos\":true}}\n");
+	json_parser("{\"parent_case1\":{\"child_null\":null}}\n");	// parent w/single child
+	json_parser("{\"parent_case2\":{\"child_num\":23456}}\n");	// parent w/single child
+	json_parser("{\"parent_case3\":{\"child_str\":\"stringdata\"}}\n");// parent w/single child
 
 // error cases
 
-	js_json_parser("{\"err_1\":36000x\n}");							// illegal number 
-	js_json_parser("{\"err_2\":\"text\n}");							// no string termination
-	js_json_parser("{\"err_3\":\"12345\",}\n");						// bad } termination
-	js_json_parser("{\"err_4\":\"12345\"\n");						// no } termination
+	json_parser("{\"err_1\":36000x\n}");							// illegal number 
+	json_parser("{\"err_2\":\"text\n}");							// no string termination
+	json_parser("{\"err_3\":\"12345\",}\n");						// bad } termination
+	json_parser("{\"err_4\":\"12345\"\n");						// no } termination
 
 }
 

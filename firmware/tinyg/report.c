@@ -180,7 +180,7 @@ void _startup_helper(uint8_t status, const char *msg)
 	cmd_add_object("hv");
 	cmd_add_object("id");
 	cmd_add_string_P("msg", msg);
-	js_print_json_response(status);
+	json_print_response(status);
 #endif
 }
 

@@ -212,14 +212,14 @@ static stat_t _dispatch()
 		}
 		case '{': { 							// JSON input
 			cfg.comm_mode = JSON_MODE;
-			js_json_parser(cs.bufp);
+			json_parser(cs.bufp);
 			break;
 		}
 		default: {								// anything else must be Gcode
 			if (cfg.comm_mode == JSON_MODE) {
 				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);	// use out_buf as temp
 				sprintf(cs.bufp,"{\"gc\":\"%s\"}\n", cs.out_buf);
-				js_json_parser(cs.bufp);
+				json_parser(cs.bufp);
 			} else {
 				tg_text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
 			}
