@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	386.08		// Introduced char_t and (char *) casts in printf's in JSON_parser to support cross-platform casts
+#define TINYG_FIRMWARE_BUILD   	386.09		// Slight changes to JSON_parser to align with g2 code
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 

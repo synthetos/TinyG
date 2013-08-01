@@ -300,7 +300,7 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 
 #define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns during footer checksum generation
 
-int16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
+uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 {
 	char_t *str = out_buf;
 	char_t *str_max = out_buf + size - BUFFER_MARGIN;
@@ -314,7 +314,7 @@ int16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 		if (cmd->objtype != TYPE_EMPTY) {
 			if (need_a_comma) { *str++ = ',';}
 			need_a_comma = true;
-			str += sprintf(str, "\"%s\":", (char *)cmd->token);
+			str += sprintf((char *)str, "\"%s\":", cmd->token);
 
 			if (cmd->objtype == TYPE_FLOAT_UNITS)	{ 
 				if (cm_get_model_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
@@ -333,7 +333,7 @@ int16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 				else 						  { str += (char_t)sprintf((char *)str, "%f",    (double)cmd->value);}
 			}
 			else if (cmd->objtype == TYPE_BOOL) {
-				if (cmd->value == false) { str += sprintf(str, "false");}
+				if (fp_FALSE(cmd->value)) { str += sprintf((char *)str, "false");}
 				else { str += (char_t)sprintf((char *)str, "true"); }
 			}
 			if (cmd->objtype == TYPE_PARENT) { 
@@ -401,7 +401,7 @@ void json_print_response(uint8_t status)
 		cmd_reset_list();
 		cmd_add_string("msg", cs.saved_buf);
 
-	} else if (cm.machine_state != MACHINE_INITIALIZING) {		// always do full echo during startup
+	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
 		uint8_t cmd_type;
 		do {
 			if ((cmd_type = cmd_get_type(cmd)) == CMD_TYPE_NULL) break;
@@ -422,7 +422,7 @@ void json_print_response(uint8_t status)
 				}
 
 			} else if (cmd_type == CMD_TYPE_LINENUM) {	// kill line number echo if not enabled
-				if ((cfg.echo_json_linenum == false) || (cmd->value == 0)) { // do not report line# 0
+				if ((cfg.echo_json_linenum == false) || (fp_ZERO(cmd->value))) { // do not report line# 0
 					cmd->objtype = TYPE_EMPTY;
 				}
 			}
