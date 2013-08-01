@@ -603,14 +603,19 @@ void canonical_machine_alarm(uint8_t value)
 	cm.machine_state = MACHINE_ALARM;
 }
 
-/* 
+/*
  * Representation (4.3.3)
  *
+ * Functions that affect the Gcode model only:
  * cm_select_plane()			- G17,G18,G19 select axis plane
  * cm_set_units_mode()			- G20, G21
  * cm_set_distance_mode()		- G90, G91
+ * cm_set_coord_offsets()		- G10 (delayed persistence)
+ *
+ * Functions that affect gcode model and are queued to planner
  * cm_set_coord_system()		- G54-G59
- * cm_set_coord_system_offsets()- G10 (does not persist)
+ * cm_set_absolute_origin()		- G28.3 - model, planner and queue to runtime
+ * cm_set_axis_origin()			- set the origin of a single axis - model and planner
  * cm_set_origin_offsets()		- G92
  * cm_reset_origin_offsets()	- G92.1
  * cm_suspend_origin_offsets()	- G92.2
@@ -618,7 +623,7 @@ void canonical_machine_alarm(uint8_t value)
  */
 
 /*
- * cm_select_plane() - G17,G18,G19 select axis plane
+ * cm_select_plane() - G17,G18,G19 select axis plane (AFFECTS MODEL ONLY)
  */
 stat_t cm_select_plane(uint8_t plane) 
 {
@@ -640,9 +645,7 @@ stat_t cm_select_plane(uint8_t plane)
 }
 
 /*
- * cm_set_units_mode() - G20, G21
- *
- *	Applies to Gcode model only
+ * cm_set_units_mode() - G20, G21 (AFFECTS MODEL ONLY)
  */
 stat_t cm_set_units_mode(uint8_t mode)
 {
@@ -651,9 +654,7 @@ stat_t cm_set_units_mode(uint8_t mode)
 }
 
 /*
- * cm_set_distance_mode() - G90, G91
- *
- *	Applies to Gcode model only
+ * cm_set_distance_mode() - G90, G91 (AFFECTS MODEL ONLY)
  */
 stat_t cm_set_distance_mode(uint8_t mode)
 {
@@ -662,7 +663,29 @@ stat_t cm_set_distance_mode(uint8_t mode)
 }
 
 /*
- * cm_set_coord_system() - G54-G59
+ * cm_set_coord_offsets() - AFFECTS MODEL ONLY
+ *
+ *	This function applies the offset to the GM model but does not persist the 
+ *	offsets during the Gcode cycle. The persist flag is used to persist offsets
+ *	once the cycle has ended. You can also use $g54x - $g59c config functions 
+ *	to change offsets.
+ */
+stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
+{
+	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
+		return (STAT_INTERNAL_RANGE_ERROR);
+	}
+	for (uint8_t i=0; i<AXES; i++) {
+		if (fp_TRUE(flag[i])) {
+			cfg.offset[coord_system][i] = offset[i];
+			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
+		}
+	}
+	return (STAT_OK);
+}
+
+/*
+ * cm_set_coord_system() - G54-G59 
  * _exec_offset() - callback from planner
  */
 stat_t cm_set_coord_system(uint8_t coord_system)
@@ -684,30 +707,9 @@ static void _exec_offset(float *value, float *flag)
 }
 
 /*
- * cm_set_coord_system_offsets() - G10 L2 Pn
- *
- *	Note: This function appies the offset to the GM model but does not persist
- *	the offsets (as Gcode expects). If you want to persist coordinate system 
- *	offsets use $g54x - $g59c config functions instead.
- */
-stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
-{
-	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
-		return (STAT_INTERNAL_RANGE_ERROR);
-	}
-	for (uint8_t i=0; i<AXES; i++) {
-		if (fp_TRUE(flag[i])) {
-			cfg.offset[coord_system][i] = offset[i];
-			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
-		}
-	}
-	return (STAT_OK);
-}
-
-/*
- * cm_set_absolute_origin() - G28.3
+ * cm_set_absolute_origin() - G28.3 - model, planner and queue to runtime
  * _exec_absolute_origin()  - callback from planner
- * cm_set_axis_origin()		- set the origin of a single axis
+ * cm_set_axis_origin()		- set the origin of a single axis - model and planner
  *
  *	cm_set_absolute_origin() takes a vector of origins (presumably 0's, but not 
  *	necessarily) and applies them to all axes where the corresponding position 
@@ -750,7 +752,6 @@ void cm_set_axis_origin(uint8_t axis, const float position)
 	gm.position[axis] = position;
 	gm.target[axis] = position;
 	mp_set_planner_position(axis, position);
-//	return (STAT_OK);
 }
 
 /* 
@@ -878,7 +879,7 @@ stat_t cm_goto_g30_position(float target[], float flags[])
 stat_t cm_set_feed_rate(float feed_rate)
 {
 	if (gm.inverse_feed_rate_mode == true) {
-		gm.inverse_feed_rate = feed_rate;				// minutes per motion for this block only
+		gm.inverse_feed_rate = feed_rate;	// minutes per motion for this block only
 	} else {
 		gm.feed_rate = _to_millimeters(feed_rate);
 	}
@@ -911,7 +912,7 @@ stat_t cm_set_path_control(uint8_t mode)
 /* 
  * Machining Functions (4.3.6)
  *
- * cm_arc_feed() - see arc.c
+ * cm_arc_feed() - see plan_arc.c
  * cm_dwell() - G4, P parameter (seconds)
  * cm_straight_feed() - G1
  */ 
@@ -927,7 +928,6 @@ stat_t cm_straight_feed(float target[], float flags[])
 	gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 
 	// trap zero feed rate condition
-//	if ((gm.inverse_feed_rate_mode == false) && (gm.feed_rate == 0)) {
 	if ((gm.inverse_feed_rate_mode == false) && (fp_ZERO(gm.feed_rate))) {
 
 		return (STAT_GCODE_FEEDRATE_ERROR);
@@ -1008,8 +1008,10 @@ static void _exec_mist_coolant_control(float *value, float *flag)
 	gm.mist_coolant = (uint8_t)value[0];
 	if (gm.mist_coolant == true) {
 		gpio_set_bit_on(MIST_COOLANT_BIT);
+//		coolant_enable_pin.set();
 	} else {
 		gpio_set_bit_off(MIST_COOLANT_BIT);
+//		coolant_enable_pin.clear();
 	}
 }
 
@@ -1024,8 +1026,10 @@ static void _exec_flood_coolant_control(float *value, float *flag)
 	gm.flood_coolant = (uint8_t)value[0];
 	if (gm.flood_coolant == true) {
 		gpio_set_bit_on(FLOOD_COOLANT_BIT);
+//		coolant_enable_pin.set();
 	} else {
 		gpio_set_bit_off(FLOOD_COOLANT_BIT);
+//		coolant_enable_pin.clear();
 		float value[AXES] = { 0,0,0,0,0,0 };
 		_exec_mist_coolant_control(value, value);		// M9 special function
 	}
@@ -1221,15 +1225,39 @@ stat_t cm_queue_flush()
 /*
  * Program and cycle state functions
  *
+ * _exec_program_finalize() 	- helper
  * cm_cycle_start()
  * cm_cycle_end()
  * cm_program_stop()			- M0
  * cm_optional_program_stop()	- M1	
  * cm_program_end()				- M2, M30
- * _program_finalize() 			- helper
+ *
+ * cm_program_end() implements M2 and M30
+ * The END behaviors are defined by NIST 3.6.1 are:
+ *	1. Axis offsets are set to zero (like G92.2) and origin offsets are set to the default (like G54)
+ *	2. Selected plane is set to CANON_PLANE_XY (like G17)
+ *	3. Distance mode is set to MODE_ABSOLUTE (like G90)
+ *	4. Feed rate mode is set to UNITS_PER_MINUTE (like G94)
+ *	5. Feed and speed overrides are set to ON (like M48)
+ *	6. Cutter compensation is turned off (like G40)
+ *	7. The spindle is stopped (like M5)
+ *	8. The current motion mode is set to G_1 (like G1)
+ *	9. Coolant is turned off (like M9)
+ *
+ * cm_program_end() implments things slightly differently:
+ *	1. Axis offsets are set to G92.1 CANCEL offsets (instead of using G92.2 SUSPEND Offsets)
+ *	   Set default coordinate system (uses $gco, not G54)
+ *	2. Selected plane is set to default plane ($gpl) (instead of setting it to G54)
+ *	3. Distance mode is set to MODE_ABSOLUTE (like G90)
+ *	4. Feed rate mode is set to UNITS_PER_MINUTE (like G94)
+ * 	5. Not implemented
+ *	6. Not implemented 
+ *	7. The spindle is stopped (like M5)
+ *	8. Motion mode is canceled like G80 (not set to G1) 
+ *	9. Coolant is turned off (like M9)
+ *	+  Default INCHES or MM units mode is restored ($gun) 
  */
-//static void _program_finalize(uint8_t machine_state, float f)
-//static void _exec_program_finalize(uint8_t machine_state, float f, float *vector, float *flag)
+
 static void _exec_program_finalize(float *value, float *flag)
 {
 	cm.machine_state = (uint8_t)value[0];;
@@ -1273,7 +1301,6 @@ void cm_cycle_start()
 
 void cm_cycle_end() 
 {
-//	if (cm.cycle_state == CYCLE_MACHINING) {
 	if (cm.cycle_state != CYCLE_OFF) {
 		float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
 		_exec_program_finalize(value,value);
@@ -1292,38 +1319,8 @@ void cm_optional_program_stop()
 	mp_queue_command(_exec_program_finalize, value, value);
 }
 
-/*
- * cm_program_end() - Implements M2 and M30
- *
- * The END behaviors are defined by NIST 3.6.1 are:
- *	1. Axis offsets are set to zero (like G92.2) and origin offsets are set to the default (like G54)
- *	2. Selected plane is set to CANON_PLANE_XY (like G17)
- *	3. Distance mode is set to MODE_ABSOLUTE (like G90)
- *	4. Feed rate mode is set to UNITS_PER_MINUTE (like G94)
- *	5. Feed and speed overrides are set to ON (like M48)
- *	6. Cutter compensation is turned off (like G40)
- *	7. The spindle is stopped (like M5)
- *	8. The current motion mode is set to G_1 (like G1)
- *	9. Coolant is turned off (like M9)
- *
- * cm_program_end() implments things slightly differently:
- *	1. Axis offsets are set to G92.1 CANCEL offsets (instead of using G92.2 SUSPEND Offsets)
- *	   Set default coordinate system (uses $gco, not G54)
- *	2. Selected plane is set to default plane ($gpl) (instead of setting it to G54)
- *	3. Distance mode is set to MODE_ABSOLUTE (like G90)
- *	4. Feed rate mode is set to UNITS_PER_MINUTE (like G94)
- * 	5. Not implemented
- *	6. Not implemented 
- *	7. The spindle is stopped (like M5)
- *	8. Motion mode is canceled like G80 (not set to G1) 
- *	9. Coolant is turned off (like M9)
- *	+  Default INCHES or MM units mode is restored ($gun) 
- */
-
-void cm_program_end()				// M2, M30
+void cm_program_end()
 {
 	float value[AXES] = { (float)MACHINE_PROGRAM_END, 0,0,0,0,0 };
 	mp_queue_command(_exec_program_finalize, value, value);
-
 }
-
