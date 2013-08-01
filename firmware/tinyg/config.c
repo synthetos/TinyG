@@ -2177,7 +2177,7 @@ cmdObj_t *cmd_add_float(char_t *token, const float value)	// add a float object 
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		if (cmd->objtype != TYPE_EMPTY) {
-			if ((cmd = cmd->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
+			if ((cmd = cmd->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
@@ -2188,12 +2188,12 @@ cmdObj_t *cmd_add_float(char_t *token, const float value)	// add a float object 
 	return (NULL);
 }
 
-cmdObj_t *cmd_add_string(char_t *token, const char_t *string)	// add a string object to the body
+cmdObj_t *cmd_add_string(char_t *token, const char_t *string) // add a string object to the body
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
 		if (cmd->objtype != TYPE_EMPTY) {
-			if ((cmd = cmd->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
+			if ((cmd = cmd->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
 			continue;
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
@@ -2341,7 +2341,7 @@ stat_t cmd_write_NVM_value(cmdObj_t *cmd)
 #ifdef __UNIT_TEST_CONFIG
 
 #define NVMwr(i,v) { cmd.index=i; cmd.value=v; cmd_write_NVM_value(&cmd);}
-#define NVMrd(i)   { cmd.index=i; cmd_read_NVM_value(&cmd); printf("%f\n",cmd.value);}
+#define NVMrd(i)   { cmd.index=i; cmd_read_NVM_value(&cmd); printf("%f\n", (char *)cmd.value);}
 
 void cfg_unit_tests()
 {

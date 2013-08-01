@@ -314,7 +314,7 @@ static void _spi_putc()
 static void _spi_loopback()
 {
 	FILE * fdev;
-	char buf[10] = "tester\n";
+	char_t buf[10] = "tester\n";
 //	uint8_t i=0;
 	uint32_t j=0;
 
@@ -322,7 +322,7 @@ static void _spi_loopback()
 	xio_set_stdout(XIO_DEV_SPI1);
 	while (true) {
 //		for (i=0; i<7; i++) { xio_putc_spi(buf[i], fdev);}
-		printf("%s",buf);
+		printf("%s", (char *)buf);
 		for (j=(DELAY*0.76); j>0; j--);
 	}
 }

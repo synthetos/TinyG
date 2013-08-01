@@ -692,11 +692,11 @@ void EEPROM_unit_tests()
 void _EEPROM_test_write_and_read()
 {
 	uint16_t address = 0;
-	char tbuf[16];
+	char_t tbuf[16];
 
 	EEPROM_WriteString(address, "0123456789", TRUE);	// 10 chars + termination
 	EEPROM_ReadString(address, tbuf, 16);
-	printf("%s\n", tbuf);
+	printf("%s\n", (char *)tbuf);
 }
 
 void _EEPROM_test_write()

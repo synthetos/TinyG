@@ -48,9 +48,9 @@
 
 // local scope stuff
 
-static stat_t _json_parser_kernal(char *str);
-static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth);
-static stat_t _normalize_json_string(char *str, uint16_t size);
+static stat_t _json_parser_kernal(char_t *str);
+static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth);
+static stat_t _normalize_json_string(char_t *str, uint16_t size);
 
 /****************************************************************************
  * json_parser() - exposed part of JSON parser
@@ -90,19 +90,19 @@ static stat_t _normalize_json_string(char *str, uint16_t size);
  *		in an application agnostic way. It should work for other apps than TinyG 
  */
 
-void json_parser(char *str)
+void json_parser(char_t *str)
 {
 	stat_t status = _json_parser_kernal(str);
 	cmd_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	rpt_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
 
-stat_t _json_parser_kernal(char *str)
+stat_t _json_parser_kernal(char_t *str)
 {
 	stat_t status;
 	int8_t depth;
 	cmdObj_t *cmd = cmd_reset_list();			// get a fresh cmdObj list
-	char group[CMD_GROUP_LEN+1] = {""};			// group identifier - starts as NUL
+	char_t group[CMD_GROUP_LEN+1] = {""};			// group identifier - starts as NUL
 	int8_t i = CMD_BODY_LEN;
 
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
@@ -145,7 +145,7 @@ stat_t _json_parser_kernal(char *str)
  *	to lower case, with the exception of gcode comments
  */
 
-static stat_t _normalize_json_string(char *str, uint16_t size)
+static stat_t _normalize_json_string(char_t *str, uint16_t size)
 {
 	char_t *wr;								// write pointer
 	uint8_t in_comment = false;
@@ -186,7 +186,7 @@ static stat_t _normalize_json_string(char *str, uint16_t size)
  *	"fr" is found in the name string the parser will search for "xfr"in the 
  *	cfgArray.
  */
-static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
+static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 {
 	char_t *tmp;
 	char_t terminators[] = {"},"};
@@ -298,9 +298,9 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
  *		  that was previously converted to MM mode for internal operations.
  */
 
-#define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns
+#define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns during footer checksum generation
 
-int16_t json_serialize(cmdObj_t *cmd, char *out_buf, uint16_t size)
+int16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 {
 	char_t *str = out_buf;
 	char_t *str_max = out_buf + size - BUFFER_MARGIN;
@@ -314,27 +314,27 @@ int16_t json_serialize(cmdObj_t *cmd, char *out_buf, uint16_t size)
 		if (cmd->objtype != TYPE_EMPTY) {
 			if (need_a_comma) { *str++ = ',';}
 			need_a_comma = true;
-			str += sprintf(str, "\"%s\":", cmd->token);
+			str += sprintf(str, "\"%s\":", (char *)cmd->token);
 
 			if (cmd->objtype == TYPE_FLOAT_UNITS)	{ 
 				if (cm_get_model_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
 				cmd->objtype = TYPE_FLOAT;
 			}
-			if (cmd->objtype == TYPE_NULL)	{ str += sprintf((char *)str, "\"\"");}
-			else if (cmd->objtype == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", (double)cmd->value);}
-			else if (cmd->objtype == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
-			else if (cmd->objtype == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  *cmd->stringp);}
+			if		(cmd->objtype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "\"\"");}
+			else if (cmd->objtype == TYPE_INTEGER)	{ str += (char_t)sprintf((char *)str, "%1.0f", (double)cmd->value);}
+			else if (cmd->objtype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*cmd->stringp);}
+			else if (cmd->objtype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*cmd->stringp);}
 			else if (cmd->objtype == TYPE_FLOAT) {
-				if 		(cmd->precision == 0) { str += sprintf(str, "%0.0f", (double)cmd->value);}
-				else if (cmd->precision == 1) { str += sprintf(str, "%0.1f", (double)cmd->value);}
-				else if (cmd->precision == 2) { str += sprintf(str, "%0.2f", (double)cmd->value);}
-				else if (cmd->precision == 3) { str += sprintf(str, "%0.3f", (double)cmd->value);}
-				else if (cmd->precision == 4) { str += sprintf(str, "%0.4f", (double)cmd->value);}
-				else 						  { str += sprintf(str, "%f", 	 (double)cmd->value);}
+				if 		(cmd->precision == 0) { str += (char_t)sprintf((char *)str, "%0.0f", (double)cmd->value);}
+				else if (cmd->precision == 1) { str += (char_t)sprintf((char *)str, "%0.1f", (double)cmd->value);}
+				else if (cmd->precision == 2) { str += (char_t)sprintf((char *)str, "%0.2f", (double)cmd->value);}
+				else if (cmd->precision == 3) { str += (char_t)sprintf((char *)str, "%0.3f", (double)cmd->value);}
+				else if (cmd->precision == 4) { str += (char_t)sprintf((char *)str, "%0.4f", (double)cmd->value);}
+				else 						  { str += (char_t)sprintf((char *)str, "%f",    (double)cmd->value);}
 			}
 			else if (cmd->objtype == TYPE_BOOL) {
 				if (cmd->value == false) { str += sprintf(str, "false");}
-				else { str += sprintf(str, "true"); }
+				else { str += (char_t)sprintf((char *)str, "true"); }
 			}
 			if (cmd->objtype == TYPE_PARENT) { 
 				*str++ = '{';
@@ -353,7 +353,7 @@ int16_t json_serialize(cmdObj_t *cmd, char *out_buf, uint16_t size)
 
 	// closing curlies and NEWLINE
 	while (prev_depth-- > initial_depth) { *str++ = '}';}
-	str += sprintf(str, "}\n");	// using sprintf for this last one ensures a NUL termination
+	str += sprintf((char *)str, "}\n");	// using sprintf for this last one ensures a NUL termination
 	if (str > out_buf + size) { return (-1);}
 	return (str - out_buf);
 }
@@ -368,7 +368,7 @@ int16_t json_serialize(cmdObj_t *cmd, char *out_buf, uint16_t size)
 void json_print_object(cmdObj_t *cmd)
 {
 	json_serialize(cmd, cs.out_buf, sizeof(cs.out_buf));
-	fprintf(stderr, "%s", cs.out_buf);
+	fprintf(stderr, "%s", (char *)cs.out_buf);
 }
 
 /*
@@ -436,8 +436,8 @@ void json_print_response(uint8_t status)
 			return;			
 		}
 	}
-	char footer_string[CMD_FOOTER_LEN];
-	sprintf(footer_string, "%d,%d,%d,0",FOOTER_REVISION, status, cs.linelen);
+	char_t footer_string[CMD_FOOTER_LEN];
+	sprintf((char *)footer_string, "%d,%d,%d,0", FOOTER_REVISION, status, cs.linelen);
 	cs.linelen = 0;										// reset linelen so it's only reported once
 
 	cmd_copy_string(cmd, footer_string);				// link string to cmd object

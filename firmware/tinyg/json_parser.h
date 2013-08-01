@@ -41,8 +41,8 @@
  * Global Scope Functions
  */
 
-void json_parser(char *str);
-int16_t json_serialize(cmdObj_t *cmd, char *out_buf, uint16_t size);
+void json_parser(char_t *str);
+int16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size);
 void json_print_object(cmdObj_t *cmd);
 void json_print_response(uint8_t status);
 
