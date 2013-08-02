@@ -85,8 +85,8 @@ void st_prep_null(void);
 void st_prep_dwell(float microseconds);
 stat_t st_prep_line(float steps[], float microseconds);
 
-uint16_t st_get_st_magic(void);
-uint16_t st_get_sps_magic(void);
+uint16_t st_get_stepper_run_magic(void);
+uint16_t st_get_stepper_prep_magic(void);
 
 #ifdef __DEBUG
 void st_dump_stepper_state(void);

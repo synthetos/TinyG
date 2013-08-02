@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   	386.12		// Cleaning up some elements in cfg, cm and st structs
+#define TINYG_FIRMWARE_BUILD   	386.13		// Cleaning up naming in stepper module
 #define TINYG_FIRMWARE_VERSION	0.95		// major version
 #define TINYG_HARDWARE_VERSION	7			// board revision number
 
