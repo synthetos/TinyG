@@ -105,9 +105,11 @@
 /***********************************************************************************
  **** STRUCTURE ALLOCATIONS ********************************************************
  ***********************************************************************************/
-// NOTE: The canonical machine singleton "cm" would normally be declared here 
-// but it's also used by cycles so it's in canonical_machine.h instead.
 
+//cmSingleton_t cm;		// canonical machine control structure
+//GCodeModel_t gm;		// active gcode model
+//GCodeInput_t gn;		// gcode input values
+//GCodeInput_t gf;		// gcode input flags
 
 /***********************************************************************************
  **** GENERIC STATIC FUNCTIONS AND VARIABLES ***************************************
@@ -313,6 +315,7 @@ void cm_set_model_linenum(uint32_t linenum)
 {
 	gm.linenum = linenum;		// you must first set the model line number,
 	cmd_add_object("n");		// then add the line number to the cmd list
+//++++ The above is not the same as the G2 version	
 }
 
 /* 
@@ -663,7 +666,7 @@ stat_t cm_set_distance_mode(uint8_t mode)
 }
 
 /*
- * cm_set_coord_offsets() - AFFECTS MODEL ONLY
+ * cm_set_coord_offsets() - G10 L2 Pn (AFFECTS MODEL ONLY)
  *
  *	This function applies the offset to the GM model but does not persist the 
  *	offsets during the Gcode cycle. The persist flag is used to persist offsets
@@ -740,7 +743,8 @@ stat_t cm_set_absolute_origin(float origin[], float flag[])
 static void _exec_absolute_origin(float *value, float *flag)
 {
 	for (uint8_t i=0; i<AXES; i++) {
-		if (flag[i] == true) {
+//		if (flag[i] == true) {
+		if (fp_TRUE(flag[i])) {
 			mp_set_runtime_position(i, value[i]);
 			cm.homed[i] = true;					// it's not considered homed until you get to the runtime
 		}
@@ -920,7 +924,10 @@ stat_t cm_set_path_control(uint8_t mode)
 stat_t cm_dwell(float seconds)
 {
 	gm.parameter = seconds;
-	return(mp_dwell(seconds));
+//	return(mp_dwell(seconds));
+	(void)mp_dwell(seconds);
+	return (STAT_OK);
+
 }
 
 stat_t cm_straight_feed(float target[], float flags[])
@@ -955,7 +962,6 @@ stat_t cm_straight_feed(float target[], float flags[])
  * Spindle Functions (4.3.7)
  */
 // see spindle.c, spindle.h
-//void cm_sync_spindle_speed_parameter(float speed) { mp_sync_command(SYNC_SPINDLE_SPEED, speed);}
 
 /*
  * Tool Functions (4.3.8)
@@ -1030,8 +1036,8 @@ static void _exec_flood_coolant_control(float *value, float *flag)
 	} else {
 		gpio_set_bit_off(FLOOD_COOLANT_BIT);
 //		coolant_enable_pin.clear();
-		float value[AXES] = { 0,0,0,0,0,0 };
-		_exec_mist_coolant_control(value, value);		// M9 special function
+		float val2[AXES] = { 0,0,0,0,0,0 };
+		_exec_mist_coolant_control(val2, val2);		// M9 special function
 	}
 }
 

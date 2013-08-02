@@ -222,16 +222,23 @@ typedef struct stPrepSingleton {
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
-//	float segment_velocity;			// +++++ record segment velocity for diagnostics
+//	float segment_velocity;			// record segment velocity for diagnostics
 	stPrepMotor_t m[MOTORS];		// per-motor structs
 } stPrepSingleton_t;
 
+typedef struct stMainSingleton {
+	uint16_t magic_start;			// magic number to test memory integity
+	uint32_t motor_disable_timer;	// down counter for above (in system ticks - 10ms increments)
+} stMainSingleton_t;
+
 // Allocate static structures
 static stRunSingleton_t st;
-static struct stPrepSingleton sps;
+static stPrepSingleton_t sps;
+static stMainSingleton_t stm;
 
 uint16_t st_get_st_magic() { return (st.magic_start);}
 uint16_t st_get_sps_magic() { return (sps.magic_start);}
+uint16_t st_get_stepper_main_magic() { return (stm.magic_start);}
 
 /* 
  * st_init() - initialize stepper motor subsystem 
@@ -329,12 +336,12 @@ void st_disable_motors()
 
 void st_start_disable_motors_timer()	// reset timeout interval
 {
-	cfg.motor_disable_timer = cfg.motor_disable_timeout * (1000 / RTC_MILLISECONDS);
+	stm.motor_disable_timer = cfg.motor_disable_timeout * (1000 / RTC_MILLISECONDS);
 }
 
 void st_disable_motors_rtc_callback() 		// called by 10ms real-time clock
 {
-	if (--cfg.motor_disable_timer == 0) { st_disable_motors(); }
+	if (--stm.motor_disable_timer == 0) { st_disable_motors(); }
 }
 
 /*

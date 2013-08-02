@@ -387,16 +387,14 @@ typedef struct cfgPWMParameters {
 } cfgPWM_t;
 
 typedef struct cfgParameters {
-	uint16_t magic_start;			// magic number to test memory integity
-
+	uint16_t magic_start;			// magic number to test memory integrity
 	uint16_t nvm_base_addr;			// NVM base address
 	uint16_t nvm_profile_base;		// NVM base address of current profile
 
 	// system group settings
 	float junction_acceleration;	// centripetal acceleration max for cornering
 	float chordal_tolerance;		// arc chordal accuracy setting in mm
-	uint32_t motor_disable_timeout;	// time in seconds before disabling motors
-	uint32_t motor_disable_timer;	// down counter for above (in system ticks - 10ms increments)
+	uint32_t motor_disable_timeout;	// seconds before disabling motors (see cm for counter)
 //	float max_spindle_speed;		// in RPM
 
 	// hidden system settings
@@ -436,7 +434,7 @@ typedef struct cfgParameters {
 
 	// status report configs
 	uint8_t status_report_verbosity;					// see enum in this file for settings
-	uint32_t status_report_interval;					// in MS. set non-zero to enable
+	uint32_t status_report_interval;					// in milliseconds
 	index_t status_report_list[CMD_STATUS_REPORT_LEN];	// status report elements to report
 	float status_report_value[CMD_STATUS_REPORT_LEN];	// previous values for filtered reporting
 

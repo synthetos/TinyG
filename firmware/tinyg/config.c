@@ -201,9 +201,12 @@ static stat_t _set_ee(cmdObj_t *cmd);		// enable character echo
 static stat_t _set_ex(cmdObj_t *cmd);		// enable XON/XOFF and RTS/CTS flow control
 static stat_t _set_baud(cmdObj_t *cmd);	// set USB baud rate
 
-/***** PROGMEM Strings ******************************************************/
-
-/* strings used by formatted print functions */
+/***********************************************************************************
+ **** FLASH STRINGS AND STRING ARRAYS **********************************************
+ ***********************************************************************************/
+/* Format strings for printf() formatting
+ * NOTE: DO NOT USE TABS IN FORMAT STRINGS
+ */
 
 static const char_t PROGMEM msg_units0[] = " in";	// used by generic print functions
 static const char_t PROGMEM msg_units1[] = " mm";

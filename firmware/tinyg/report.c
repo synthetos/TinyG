@@ -54,6 +54,7 @@
  * Reference for putting display strings and string arrays in program memory:
  * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
  */
+/*
 static const char msg_sc00[] PROGMEM = "OK";
 static const char msg_sc01[] PROGMEM = "Error";
 static const char msg_sc02[] PROGMEM = "Eagain";
@@ -82,7 +83,7 @@ static const char msg_sc23[] PROGMEM = "Divide by zero";
 static const char msg_sc24[] PROGMEM = "Invalid Address";
 static const char msg_sc25[] PROGMEM = "Read-only address";
 static const char msg_sc26[] PROGMEM = "Initialization failure";
-static const char msg_sc27[] PROGMEM = "System alarmed";
+static const char msg_sc27[] PROGMEM = "System alarm - shutting down";
 static const char msg_sc28[] PROGMEM = "Memory fault or corruption";
 static const char msg_sc29[] PROGMEM = "29";
 static const char msg_sc30[] PROGMEM = "30";
@@ -108,7 +109,7 @@ static const char msg_sc48[] PROGMEM = "JSON syntax error";
 static const char msg_sc49[] PROGMEM = "JSON input has too many pairs";
 static const char msg_sc50[] PROGMEM = "JSON output too long";
 static const char msg_sc51[] PROGMEM = "Out of buffer space";
-static const char msg_sc52[] PROGMEM = "Config not taken during machining cycle";
+static const char msg_sc52[] PROGMEM = "Config rejected during machining cycle";
 static const char msg_sc53[] PROGMEM = "53";
 static const char msg_sc54[] PROGMEM = "54";
 static const char msg_sc55[] PROGMEM = "55";
@@ -141,13 +142,105 @@ PGM_P const msgStatusMessage[] PROGMEM = {
 	msg_sc60, msg_sc61, msg_sc62, msg_sc63, msg_sc64, msg_sc65, msg_sc66, msg_sc67, msg_sc68, msg_sc69,
 	msg_sc70, msg_sc71, msg_sc72
 };
+*/
+static const char_t PROGMEM stat_00[] = "OK";
+static const char_t PROGMEM stat_01[] = "Error";
+static const char_t PROGMEM stat_02[] = "Eagain";
+static const char_t PROGMEM stat_03[] = "Noop";
+static const char_t PROGMEM stat_04[] = "Complete";
+static const char_t PROGMEM stat_05[] = "Terminated";
+static const char_t PROGMEM stat_06[] = "Hard reset";
+static const char_t PROGMEM stat_07[] = "End of line";
+static const char_t PROGMEM stat_08[] = "End of file";
+static const char_t PROGMEM stat_09[] = "File not open";
+static const char_t PROGMEM stat_10[] = "Max file size exceeded";
+static const char_t PROGMEM stat_11[] = "No such device";
+static const char_t PROGMEM stat_12[] = "Buffer empty";
+static const char_t PROGMEM stat_13[] = "Buffer full";
+static const char_t PROGMEM stat_14[] = "Buffer full - fatal";
+static const char_t PROGMEM stat_15[] = "Initializing";
+static const char_t PROGMEM stat_16[] = "Entering boot loader";
+static const char_t PROGMEM stat_17[] = "Function is stubbed";
+static const char_t PROGMEM stat_18[] = "stat_18";
+static const char_t PROGMEM stat_19[] = "stat_19";
+
+static const char_t PROGMEM stat_20[] = "Internal error";
+static const char_t PROGMEM stat_21[] = "Internal range error";
+static const char_t PROGMEM stat_22[] = "Floating point error";
+static const char_t PROGMEM stat_23[] = "Divide by zero";
+static const char_t PROGMEM stat_24[] = "Invalid Address";
+static const char_t PROGMEM stat_25[] = "Read-only address";
+static const char_t PROGMEM stat_26[] = "Initialization failure";
+static const char_t PROGMEM stat_27[] = "System alarm - shutting down";
+static const char_t PROGMEM stat_28[] = "Memory fault or corruption";
+static const char_t PROGMEM stat_29[] = "stat_29";
+static const char_t PROGMEM stat_30[] = "stat_30";
+static const char_t PROGMEM stat_31[] = "stat_31";
+static const char_t PROGMEM stat_32[] = "stat_32";
+static const char_t PROGMEM stat_33[] = "stat_33";
+static const char_t PROGMEM stat_34[] = "stat_34";
+static const char_t PROGMEM stat_35[] = "stat_35";
+static const char_t PROGMEM stat_36[] = "stat_36";
+static const char_t PROGMEM stat_37[] = "stat_37";
+static const char_t PROGMEM stat_38[] = "stat_38";
+static const char_t PROGMEM stat_39[] = "stat_39";
+
+static const char_t PROGMEM stat_40[] = "Unrecognized command";
+static const char_t PROGMEM stat_41[] = "Expected command letter";
+static const char_t PROGMEM stat_42[] = "Bad number format";
+static const char_t PROGMEM stat_43[] = "Input exceeds max length";
+static const char_t PROGMEM stat_44[] = "Input value too small";
+static const char_t PROGMEM stat_45[] = "Input value too large";
+static const char_t PROGMEM stat_46[] = "Input value range error";
+static const char_t PROGMEM stat_47[] = "Input value unsupported";
+static const char_t PROGMEM stat_48[] = "JSON syntax error";
+static const char_t PROGMEM stat_49[] = "JSON input has too many pairs";
+static const char_t PROGMEM stat_50[] = "JSON output too long";
+static const char_t PROGMEM stat_51[] = "Out of buffer space";
+static const char_t PROGMEM stat_52[] = "Config rejected during machining cycle";
+static const char_t PROGMEM stat_53[] = "stat_53";
+static const char_t PROGMEM stat_54[] = "stat_54";
+static const char_t PROGMEM stat_55[] = "stat_55";
+static const char_t PROGMEM stat_56[] = "stat_56";
+static const char_t PROGMEM stat_57[] = "stat_57";
+static const char_t PROGMEM stat_58[] = "stat_58";
+static const char_t PROGMEM stat_59[] = "stat_59";
+
+static const char_t PROGMEM stat_60[] = "Move less than minimum length";
+static const char_t PROGMEM stat_61[] = "Move less than minimum time";
+static const char_t PROGMEM stat_62[] = "Gcode block skipped";
+static const char_t PROGMEM stat_63[] = "Gcode input error";
+static const char_t PROGMEM stat_64[] = "Gcode feedrate error";
+static const char_t PROGMEM stat_65[] = "Gcode axis word missing";
+static const char_t PROGMEM stat_66[] = "Gcode modal group violation";
+static const char_t PROGMEM stat_67[] = "Homing cycle failed";
+static const char_t PROGMEM stat_68[] = "Max travel exceeded";
+static const char_t PROGMEM stat_69[] = "Max spindle speed exceeded";
+static const char_t PROGMEM stat_70[] = "Arc specification error";
+static const char_t PROGMEM stat_71[] = "Soft limit exceeded";
+static const char_t PROGMEM stat_72[] = "Command not accepted";
+
+//PGM_P const msgStatusMessage[] PROGMEM = {
+PGM_P const PROGMEM stat_msg[] = {
+	stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
+	stat_10, stat_11, stat_12, stat_13, stat_14, stat_15, stat_16, stat_17, stat_18, stat_19,
+	stat_20, stat_21, stat_22, stat_23, stat_24, stat_25, stat_26, stat_27, stat_28, stat_29,
+	stat_30, stat_31, stat_32, stat_33, stat_34, stat_35, stat_36, stat_37, stat_38, stat_39,
+	stat_40, stat_41, stat_42, stat_43, stat_44, stat_45, stat_46, stat_47, stat_48, stat_49,
+	stat_50, stat_51, stat_52, stat_53, stat_54, stat_55, stat_56, stat_57, stat_58, stat_59,
+	stat_60, stat_61, stat_62, stat_63, stat_64, stat_65, stat_66, stat_67, stat_68, stat_69,
+	stat_70, stat_71, stat_72
+};
 
 char *rpt_get_status_message(uint8_t status, char *msg) 
 {
-	strncpy_P(msg,(PGM_P)pgm_read_word(&msgStatusMessage[status]), STATUS_MESSAGE_LEN);
+	strncpy_P(msg,(PGM_P)pgm_read_word(&stat_msg[status]), STATUS_MESSAGE_LEN);
 	return (msg);
 }
 
+/*
+ * rpt_exception() - generate an exception message
+ */
 void rpt_exception(uint8_t status, int16_t value)
 {
 	char msg[STATUS_MESSAGE_LEN];
@@ -171,7 +264,7 @@ void rpt_print_message(char *msg)
 }
 */
 
-void _startup_helper(uint8_t status, const char *msg)
+void _startup_helper(stat_t status, const char *msg)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	cmd_reset_list();
@@ -241,21 +334,20 @@ void rpt_print_system_ready_message(void)
  *		the system into text mode.
  *
  *	  - Automatic status reports in text mode return CSV format according to si setting
- *
- *	  - grbl compatibility forms are not yet supported.
  */
 
 /* 
  * rpt_init_status_report()
  *
- *	Call this function to completely re-initialze the status report
- *	Sets SR list to hard-coded defaults and re-initializes sr values in NVM
+ *	Call this function to completely re-initialize the status report
+ *	Sets SR list to hard-coded defaults and re-initializes SR values in NVM
  */
 void rpt_init_status_report()
 {
 	cmdObj_t *cmd = cmd_reset_list();	// used for status report persistence locations
 	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
 	cm.status_report_counter = (cfg.status_report_interval / RTC_MILLISECONDS);	// RTC fires every 10 ms
+//	SysTickTimer.getValue()
 
 	cmd->index = cmd_get_index("","se00");				// set first SR persistence index
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {

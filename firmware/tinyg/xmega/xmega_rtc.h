@@ -37,11 +37,13 @@
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_HI_gc;	// hi interrupt on compare
 
 typedef struct rtClock {
-	volatile uint32_t clock_ticks;					// RTC tick counter
-	uint16_t magic_end;
+	uint32_t clock_ticks;							// RTC tick counter, 100 uSec each
+	uint32_t sys_ticks;								// system tick counter, 1 ms each
+	uint16_t magic_end;								// magic number is read directly
 } rtClock_t;
 rtClock_t rtc;
 
 void rtc_init(void);								// initialize and start general timer
+uint32_t SysTickTimer_getValue();					// *** this will become a Motate object method
 
 #endif

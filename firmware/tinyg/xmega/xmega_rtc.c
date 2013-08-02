@@ -57,16 +57,22 @@ void rtc_init()
 	RTC.CTRL = RTC_PRESCALER_DIV1_gc;					// no prescale (1x)
 	RTC.INTCTRL = RTC_COMPINTLVL;						// interrupt on compare
 
-	rtc.clock_ticks = 0;								//  default RTC clock counter
+	rtc.clock_ticks = 0;								// reset RTC clock counter
 	rtc.magic_end = MAGICNUM;
+}
+/*
+void rtc_reset_rtc_clock()
+{
+	rtc.clock_ticks = 0;
+}
+*/
+uint32_t SysTickTimer_getValue()
+{
+	return (rtc.sys_ticks);
 }
 
 /* 
  * rtc ISR 
- *
- * This used to have application-specific clocks and timers in it but that approach
- * was abandoned because I decided it was better to just provide callbacks to the 
- * relevant code modules to perform those functions.
  *
  * It is the responsibility of the callback code to ensure atomicity and volatiles
  * are observed correctly as the callback will be run at the interrupt level.
@@ -91,11 +97,5 @@ ISR(RTC_COMP_vect)
 
 	// here's the default RTC timer clock
 	++rtc.clock_ticks;						// increment real time clock (unused)
-}
-
-void rtc_reset_rtc_clock()
-{
-//	RTC.INTCTRL = RTC_OVFINTLVL_OFF_gc;		// disable interrupt
-	rtc.clock_ticks = 0;
-//	RTC.INTCTRL = RTC_OVFINTLVL_LO_gc;		// enable interrupt
+	rtc.sys_ticks = rtc.clock_ticks/10;
 }
