@@ -97,5 +97,5 @@ ISR(RTC_COMP_vect)
 
 	// here's the default RTC timer clock
 	++rtc.clock_ticks;						// increment real time clock (unused)
-	rtc.sys_ticks = rtc.clock_ticks/10;
+	rtc.sys_ticks = rtc.clock_ticks*10;
 }
