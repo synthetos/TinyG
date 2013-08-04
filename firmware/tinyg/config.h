@@ -272,8 +272,8 @@ enum textFormats {					// text output print modes
 
 typedef struct cmdString {			// shared string object
 	uint16_t magic_start;
-//	uint8_t wp;							// current string array index for len < 256 bytes
-	uint16_t wp;						// use this value is string len > 255 bytes
+//	uint8_t wp;						// use this string array index value if string len < 256 bytes
+	uint16_t wp;					// use this string array index value is string len > 255 bytes
 	char string[CMD_SHARED_STRING_LEN];
 	uint16_t magic_end;
 } cmdStr_t;
@@ -432,11 +432,11 @@ typedef struct cfgParameters {
 	uint8_t echo_json_linenum;
 	uint8_t echo_json_gcode_block;
 
-	// status report configs
-	uint8_t status_report_verbosity;					// see enum in this file for settings
-	uint32_t status_report_interval;					// in milliseconds
-	index_t status_report_list[CMD_STATUS_REPORT_LEN];	// status report elements to report
-	float status_report_value[CMD_STATUS_REPORT_LEN];	// previous values for filtered reporting
+	// status report configs		// see cm struct for SR operating variables
+	uint8_t status_report_verbosity;// see enum in this file for settings
+	uint32_t status_report_interval;// in milliseconds
+	index_t status_report_list[CMD_STATUS_REPORT_LEN];// status report elements to report
+	float status_report_value[CMD_STATUS_REPORT_LEN];// previous values for filtered reporting
 
 	// coordinate systems and offsets
 	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute + G54,G55,G56,G57,G58,G59

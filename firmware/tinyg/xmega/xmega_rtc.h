@@ -36,8 +36,9 @@
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_MED_gc;	// med interrupt on compare
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_HI_gc;	// hi interrupt on compare
 
+// Note: sys_ticks is in ms but is only accurate to 10 ms as it's derived from rtc_ticks
 typedef struct rtClock {
-	uint32_t clock_ticks;							// RTC tick counter, 100 uSec each
+	uint32_t rtc_ticks;								// RTC tick counter, 10 uSec each
 	uint32_t sys_ticks;								// system tick counter, 1 ms each
 	uint16_t magic_end;								// magic number is read directly
 } rtClock_t;

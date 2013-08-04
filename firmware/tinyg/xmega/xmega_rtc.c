@@ -57,13 +57,14 @@ void rtc_init()
 	RTC.COMP = RTC_MILLISECONDS-1;
 	RTC.CTRL = RTC_PRESCALER_DIV1_gc;					// no prescale (1x)
 	RTC.INTCTRL = RTC_COMPINTLVL;						// interrupt on compare
-	rtc.clock_ticks = 0;								// reset RTC clock counter
+	rtc.rtc_ticks = 0;									// reset tick counter
+	rtc.sys_ticks = 0;									// reset tick counter
 	rtc.magic_end = MAGICNUM;
 }
 
 uint32_t SysTickTimer_getValue()
 {
-	return (rtc.clock_ticks);
+	return (rtc.sys_ticks);
 }
 
 /* 
@@ -87,11 +88,7 @@ ISR(RTC_COMP_vect)
 {
 	// callbacks to whatever you need to happen on each RTC tick go here:
 	gpio_rtc_callback();					// switch debouncing
-//	rpt_status_report_rtc_callback();		// status report timing
 	st_disable_motors_rtc_callback();		// stepper disable timer
 
-	++rtc.clock_ticks;						// increment real time clock
-	rtc.sys_ticks = rtc.clock_ticks*10;		// sys ticks is in ms but not accurate to ms
-
-//	if ((rtc.sys_ticks % 100) == 0) { printf("%lu ", rtc.sys_ticks);}
+	rtc.sys_ticks = ++rtc.rtc_ticks*10;		// advance both tick counters as appropriate
 }
