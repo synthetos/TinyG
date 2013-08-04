@@ -51,24 +51,19 @@ void rtc_init()
 	CLK.RTCCTRL = CLK_RTCSRC_RCOSC_gc | CLK_RTCEN_bm;	// Set internal 32kHz osc as RTC clock source
 	do {} while (RTC.STATUS & RTC_SYNCBUSY_bm);			// Wait until RTC is not busy
 
-	RTC.PER = RTC_MILLISECONDS-1;						// overflow period
+	// the following must be in this order or it doesn;t work
+	RTC.PER = RTC_MILLISECONDS-1;						// set overflow period to 10ms - approximate
 	RTC.CNT = 0;
 	RTC.COMP = RTC_MILLISECONDS-1;
 	RTC.CTRL = RTC_PRESCALER_DIV1_gc;					// no prescale (1x)
 	RTC.INTCTRL = RTC_COMPINTLVL;						// interrupt on compare
-
 	rtc.clock_ticks = 0;								// reset RTC clock counter
 	rtc.magic_end = MAGICNUM;
 }
-/*
-void rtc_reset_rtc_clock()
-{
-	rtc.clock_ticks = 0;
-}
-*/
+
 uint32_t SysTickTimer_getValue()
 {
-	return (rtc.sys_ticks);
+	return (rtc.clock_ticks);
 }
 
 /* 
@@ -92,10 +87,11 @@ ISR(RTC_COMP_vect)
 {
 	// callbacks to whatever you need to happen on each RTC tick go here:
 	gpio_rtc_callback();					// switch debouncing
-	rpt_status_report_rtc_callback();		// status report timing
+//	rpt_status_report_rtc_callback();		// status report timing
 	st_disable_motors_rtc_callback();		// stepper disable timer
 
-	// here's the default RTC timer clock
-	++rtc.clock_ticks;						// increment real time clock (unused)
-	rtc.sys_ticks = rtc.clock_ticks*10;
+	++rtc.clock_ticks;						// increment real time clock
+	rtc.sys_ticks = rtc.clock_ticks*10;		// sys ticks is in ms but not accurate to ms
+
+//	if ((rtc.sys_ticks % 100) == 0) { printf("%lu ", rtc.sys_ticks);}
 }

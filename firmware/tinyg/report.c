@@ -345,9 +345,10 @@ void rpt_print_system_ready_message(void)
 void rpt_init_status_report()
 {
 	cmdObj_t *cmd = cmd_reset_list();	// used for status report persistence locations
+	cm.status_report_requested = false;
 	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
-	cm.status_report_counter = (cfg.status_report_interval / RTC_MILLISECONDS);	// RTC fires every 10 ms
-//	SysTickTimer.getValue()
+//	cm.status_report_counter = (cfg.status_report_interval / RTC_MILLISECONDS);	// RTC fires every 10 ms
+//	cm.status_report_counter = MAX_ULONG;				// disable reports until requested
 
 	cmd->index = cmd_get_index("","se00");				// set first SR persistence index
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
@@ -361,7 +362,7 @@ void rpt_init_status_report()
 }
 
 /* 
- * rpt_set_status_report() - interpret an sr setup string and return current report
+ * rpt_set_status_report() - interpret an SR setup string and return current report
  */
 stat_t rpt_set_status_report(cmdObj_t *cmd)
 {
@@ -411,23 +412,24 @@ void rpt_run_text_status_report()
 
 void rpt_request_status_report(uint8_t request_type)
 {
-	cm.status_report_request = request_type;
-}
-
-void rpt_status_report_rtc_callback() 		// called by 10ms real-time clock
-{
-	if (--cm.status_report_counter == 0) {
-		cm.status_report_request = SR_IMMEDIATE_REQUEST;	// promote to immediate request
-		cm.status_report_counter = (cfg.status_report_interval / RTC_MILLISECONDS);	// reset minimum interval
+	if (request_type == SR_IMMEDIATE_REQUEST) {
+		cm.status_report_systick = SysTickTimer_getValue();
+		cm.status_report_requested = true;
+		return;
+	}
+	if (request_type == SR_TIMED_REQUEST) {
+		if (cm.status_report_requested == false) {
+			cm.status_report_systick = SysTickTimer_getValue() + cfg.status_report_interval;
+		}
+		cm.status_report_requested = true;
 	}
 }
 
 stat_t rpt_status_report_callback() 		// called by controller dispatcher
 {
-	if ((cfg.status_report_verbosity == SR_OFF) || 
-		(cm.status_report_request != SR_IMMEDIATE_REQUEST)) {
-		return (STAT_NOOP);
-	}
+	if (cfg.status_report_verbosity == SR_OFF) return (STAT_NOOP);
+	if (SysTickTimer_getValue() < cm.status_report_systick) return (STAT_NOOP);
+
 	if (cfg.status_report_verbosity == SR_FILTERED) {
 		if (rpt_populate_filtered_status_report() == true) {
 			cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
@@ -436,8 +438,7 @@ stat_t rpt_status_report_callback() 		// called by controller dispatcher
 		rpt_populate_unfiltered_status_report();
 		cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	}
-//	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// reset minimum interval
-	cm.status_report_request = SR_NO_REQUEST;
+	cm.status_report_requested = false;		// disable reports until requested again
 	return (STAT_OK);
 }
 
