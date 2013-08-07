@@ -71,8 +71,10 @@ void st_enable_motor(const uint8_t motor);
 void st_enable_motors(void);
 void st_disable_motor(const uint8_t motor);
 void st_disable_motors(void);
-void st_start_disable_motors_timer(void);
-void st_disable_motors_rtc_callback(void);
+void st_set_motor_disable_timeout(uint32_t seconds);
+stat_t st_motor_disable_callback(void);
+//void st_start_disable_motors_timer(void);
+//void st_disable_motors_rtc_callback(void);
 
 uint8_t st_isbusy(void);		// return TRUE is any axis is running (F=idle)
 void st_set_polarity(const uint8_t motor, const uint8_t polarity);
@@ -98,6 +100,12 @@ void st_dump_stepper_state(void);
 /*
  * Stepper configs and constants
  */
+
+enum cmStepperPowerMode {
+	POWER_MODE_DELAYED_DISABLE = 0,	// full power until disabled
+	POWER_MODE_DISABLE_ON_IDLE,		// power down immediately on idle
+	POWER_MODE_LOW_POWER_IDLE		// not implemented yet
+};
 
 /* DDA substepping
  * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping.

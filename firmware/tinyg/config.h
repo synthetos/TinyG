@@ -367,7 +367,7 @@ typedef struct cfgMotorParameters {
 	uint8_t	motor_map;				// map motor to axis
   	uint8_t microsteps;				// microsteps to apply for each axis (ex: 8)
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor direction
- 	uint8_t power_mode;				// 1=lo power idle mode, 0=full power idle mode
+ 	uint8_t power_mode;				// See stepper.h for enum
 	float step_angle;				// degrees per whole step (ex: 1.8)
 	float travel_rev;				// mm or deg of travel per motor revolution
 	float steps_per_unit;			// steps (usteps)/mm or deg of travel
@@ -394,7 +394,7 @@ typedef struct cfgParameters {
 	// system group settings
 	float junction_acceleration;	// centripetal acceleration max for cornering
 	float chordal_tolerance;		// arc chordal accuracy setting in mm
-	uint32_t motor_disable_timeout;	// seconds before disabling motors (see cm for counter)
+	uint32_t motor_disable_timeout;	// seconds before disabling motors
 //	float max_spindle_speed;		// in RPM
 
 	// hidden system settings

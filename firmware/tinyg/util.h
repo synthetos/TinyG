@@ -45,6 +45,7 @@ float min4(float x1, float x2, float x3, float x4);
 float max3(float x1, float x2, float x3);
 float max4(float x1, float x2, float x3, float x4);
 uint8_t isnumber(char c);
+char_t *escape_string(char_t *dst, char_t *src);
 uint8_t read_float(char *buf, uint8_t *i, float *float_ptr);
 uint16_t compute_checksum(char const *string, const uint16_t length);
 

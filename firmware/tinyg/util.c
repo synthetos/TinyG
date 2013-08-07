@@ -181,6 +181,22 @@ uint8_t isnumber(char c)
 	return (isdigit(c));
 }
 
+/*
+ * escape_string() - add escapes to a string - currently for quotes only
+ */
+
+char_t *escape_string(char_t *dst, char_t *src) 
+{
+	char_t c;
+	char_t *start_dst = dst;
+
+	while ((c = *(src++)) != 0) {	// NUL
+		if (c == '"') { *(dst++) = '\\'; }
+		*(dst++) = c;
+	}
+	return (start_dst);
+}
+
 /* 
  * read_float() - read a float from a normalized char array
  *

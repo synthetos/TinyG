@@ -86,9 +86,8 @@ uint32_t SysTickTimer_getValue()
 
 ISR(RTC_COMP_vect)
 {
-	// callbacks to whatever you need to happen on each RTC tick go here:
-	gpio_rtc_callback();					// switch debouncing
-	st_disable_motors_rtc_callback();		// stepper disable timer
-
 	rtc.sys_ticks = ++rtc.rtc_ticks*10;		// advance both tick counters as appropriate
+
+	// callbacks to whatever you need to happen on each RTC tick go here:
+	gpio_rtc_callback();					// switch debounceing
 }

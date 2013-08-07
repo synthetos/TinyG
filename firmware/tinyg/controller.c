@@ -120,36 +120,38 @@ static void _controller_HSM()
 {
 //----- ISRs. These should be considered the highest priority scheduler functions ----//
 /*	
- *	HI	Stepper DDA pulse generation		// see stepper.h
- *	HI	Stepper load routine SW interrupt	// see stepper.h
- *	HI	Dwell timer counter 				// see stepper.h
- *	MED	GPIO1 switch port - limits / homing	// see gpio.h
- *  MED	Serial RX for USB					// see xio_usart.h
- *  LO	Segment execution SW interrupt		// see stepper.h
- *  LO	Serial TX for USB & RS-485			// see xio_usart.h
- *	LO	Real time clock interrupt			// see xmega_rtc.h
+ *	HI	Stepper DDA pulse generation			// see stepper.h
+ *	HI	Stepper load routine SW interrupt		// see stepper.h
+ *	HI	Dwell timer counter 					// see stepper.h
+ *	MED	GPIO1 switch port - limits / homing		// see gpio.h
+ *  MED	Serial RX for USB						// see xio_usart.h
+ *  LO	Segment execution SW interrupt			// see stepper.h
+ *  LO	Serial TX for USB & RS-485				// see xio_usart.h
+ *	LO	Real time clock interrupt				// see xmega_rtc.h
  */
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
-											// Order is important:
-	DISPATCH(_reset_handler());				// 1. received software reset request
-	DISPATCH(_bootloader_handler());		// 2. received bootloader request
-	DISPATCH(_limit_switch_handler());		// 3. limit switch has been thrown
-	DISPATCH(_alarm_idler());				// 4. idle in alarm state
-	DISPATCH(_system_assertions());			// 5. system integrity assertions
+												// Order is important:
+	DISPATCH(_reset_handler());					// 1. received software reset request
+	DISPATCH(_bootloader_handler());			// 2. received bootloader request
+	DISPATCH(_limit_switch_handler());			// 3. limit switch has been thrown
+	DISPATCH(_alarm_idler());					// 4. idle in alarm state
+	DISPATCH(_system_assertions());				// 5. system integrity assertions
 	DISPATCH(cm_feedhold_sequencing_callback());
-	DISPATCH(mp_plan_hold_callback());		// plan a feedhold from line runtime
+	DISPATCH(mp_plan_hold_callback());			// plan a feedhold from line runtime
 
 //----- planner hierarchy for gcode and cycles -------------------------//
-	DISPATCH(rpt_status_report_callback());	// conditionally send status report
-	DISPATCH(rpt_queue_report_callback());	// conditionally send queue report
-	DISPATCH(ar_arc_callback());			// arc generation runs behind lines
-	DISPATCH(cm_homing_callback());			// G28.2 continuation
+	DISPATCH(st_motor_disable_callback());		// stepper motor disable timer
+//	DISPATCH(gpio_switch_debounce_callback());	// debounce switches
+	DISPATCH(rpt_status_report_callback());		// conditionally send status report
+	DISPATCH(rpt_queue_report_callback());		// conditionally send queue report
+	DISPATCH(ar_arc_callback());				// arc generation runs behind lines
+	DISPATCH(cm_homing_callback());				// G28.2 continuation
 
 //----- command readers and parsers ------------------------------------//
-	DISPATCH(_sync_to_planner());			// ensure there is at least one free buffer in planning queue
-	DISPATCH(_sync_to_tx_buffer());			// sync with TX buffer (pseudo-blocking)
-	DISPATCH(cfg_baud_rate_callback());		// perform baud rate update (must be after TX sync)
-	DISPATCH(_dispatch());					// read and execute next command
+	DISPATCH(_sync_to_planner());				// ensure there is at least one free buffer in planning queue
+	DISPATCH(_sync_to_tx_buffer());				// sync with TX buffer (pseudo-blocking)
+	DISPATCH(cfg_baud_rate_callback());			// perform baud rate update (must be after TX sync)
+	DISPATCH(_dispatch());						// read and execute next command
 }
 
 /***************************************************************************** 
