@@ -293,8 +293,8 @@ void st_init()
  * st_enable_motors() - enable all motors with $pm set to POWER_MODE_DELAYED_DISABLE
  * st_disable_motor() - disable a motor
  * st_disable_motors()- disable all motors
- * st_start_disable_motors_timeout()
- * st_disable_motors_rtc_callback()
+ * st_set_motor_disable_timeout()
+ * st_motor_disable_callback()
  */
 void st_enable_motor(const uint8_t motor)
 {
@@ -343,8 +343,8 @@ stat_t st_motor_disable_callback() 	// called by controller
 	return (STAT_OK);
 }
 
-/*
- * ISRs
+/***** Interrupt Service Routines *****
+ *
  * ISR - DDA timer interrupt routine - service ticks from DDA timer
  *
  *	The step bit pulse width is ~1 uSec, which is OK for the TI DRV8811's.
