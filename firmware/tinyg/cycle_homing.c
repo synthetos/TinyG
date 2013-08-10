@@ -93,7 +93,6 @@ static int8_t _get_next_axis(int8_t axis);
 
 /*****************************************************************************
  * cm_homing_cycle_start()	- G28.1 homing cycle using limit switches
- * cm_homing_callback() 	- main loop callback for running the homing cycle
  *
  * Homing works from a G28.1 according to the following writeup: 
  *	https://github.com/synthetos/TinyG/wiki/TinyG-Homing-(version-0.95-and-above)
@@ -188,14 +187,6 @@ uint8_t cm_homing_cycle_start_no_set(void)
 	return (STAT_OK);
 }
 
-
-uint8_t cm_homing_callback(void)
-{
-	if (cm.cycle_state != CYCLE_HOMING) { return (STAT_NOOP);} 	// exit if not in a homing cycle
-	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}	// sync to planner move ends
-	return (hm.func(hm.axis));						// execute the current homing move
-}
-
 static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 {
 	mp_flush_planner(); 							// should be stopped, but in case of switch closure
@@ -210,17 +201,16 @@ static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 	return (STAT_OK);
 }
 
-static const char msg_axis0[] PROGMEM = "X";
-static const char msg_axis1[] PROGMEM = "Y";
-static const char msg_axis2[] PROGMEM = "Z";
-static const char msg_axis3[] PROGMEM = "A";
-static PGM_P const msg_axis[] PROGMEM = { msg_axis0, msg_axis1, msg_axis2, msg_axis3};
-
 /* _homing_error_exit()
  *
  * Since the error exit returns via the homing callback - and not the main controller - 
  * it requires its own diplay processing 
  */
+static const char msg_axis0[] PROGMEM = "X";
+static const char msg_axis1[] PROGMEM = "Y";
+static const char msg_axis2[] PROGMEM = "Z";
+static const char msg_axis3[] PROGMEM = "A";
+static PGM_P const msg_axis[] PROGMEM = { msg_axis0, msg_axis1, msg_axis2, msg_axis3};
 
 static stat_t _homing_error_exit(int8_t axis)
 {
@@ -241,12 +231,13 @@ static stat_t _homing_error_exit(int8_t axis)
 	cm_set_distance_mode(hm.saved_distance_mode);
 	cm_set_feed_rate(hm.saved_feed_rate);
 	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
-//	cm.cycle_state = CYCLE_OFF;   ++++++++++++++++++
+	cm.cycle_state = CYCLE_OFF;
 	cm_cycle_end();
-	return (STAT_HOMING_CYCLE_FAILED);		// homing state remains HOMING_NOT_HOMED
+	return (STAT_HOMING_CYCLE_FAILED);			// homing state remains HOMING_NOT_HOMED
 }
 
 /* Homing axis moves - these execute in sequence for each axis
+ * cm_homing_callback() 		- main loop callback for running the homing cycle
  *	_homing_axis_start()		- get next axis, initialize variables, call the clear
  *	_homing_axis_clear()		- initiate a clear to move off a switch that is thrown at the start
  *	_homing_axis_backoff_home()	- back off the cleared home switch
@@ -257,6 +248,13 @@ static stat_t _homing_error_exit(int8_t axis)
  *	_homing_axis_move()			- helper that actually executes the above moves
  */
 
+uint8_t cm_homing_callback(void)
+{
+	if (cm.cycle_state != CYCLE_HOMING) { return (STAT_NOOP);} 	// exit if not in a homing cycle
+	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}	// sync to planner move ends
+	return (hm.func(hm.axis));						// execute the current homing move
+}
+
 static stat_t _homing_axis_start(int8_t axis)
 {
 	// get the first or next axis
@@ -266,7 +264,7 @@ static stat_t _homing_axis_start(int8_t axis)
 		} else if (axis == -2) { 							// -2 is error
 			cm_set_units_mode(hm.saved_units_mode);
 			cm_set_distance_mode(hm.saved_distance_mode);
-//			cm.cycle_state = CYCLE_OFF;	+++++++++++++++++
+			cm.cycle_state = CYCLE_OFF;
 			cm_cycle_end();
 			return (_homing_error_exit(-2));
 		}

@@ -74,7 +74,8 @@ stat_t gc_gcode_parser(char_t *block)
 
 	_normalize_gcode_block(cmd, &com, &msg, &block_delete_flag);
 	
-	if ((block_delete_flag == true) && (cm_get_block_delete_switch() == true)) {
+//	if ((block_delete_flag == true) && (cm_get_block_delete_switch() == true)) {
+	if (block_delete_flag == true) {
 		return (STAT_NOOP);
 	}
 //	if (*msg != NUL) { // +++++ THIS HAS A SERIOUS BUG IN IT SO FOR NOW IT'S DISABLED
@@ -421,6 +422,9 @@ static stat_t _parse_gcode_block(char_t *buf)
 static stat_t _execute_gcode_block()
 {
 	stat_t status = STAT_OK;
+
+//+++++ DIAGNOSTIC +++++
+	printf("posX: %6.3f, posY: %6.3f\n", (double)gm.position[AXIS_X], (double)gm.target[AXIS_Y]);
 
 	cm_set_model_linenum(gn.linenum);
 	EXEC_FUNC(cm_set_inverse_feed_rate_mode, inverse_feed_rate_mode);
