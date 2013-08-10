@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   		386.18	// Cosmetic changes
+#define TINYG_FIRMWARE_BUILD   		387.01	// Added NaN and infinity traps to JSON parsing (Rob's +dev changes)
 #define TINYG_FIRMWARE_VERSION		0.95	// major version
 #define TINYG_HARDWARE_VERSION		7		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8

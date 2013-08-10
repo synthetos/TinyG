@@ -320,17 +320,27 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 				if (cm_get_model_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
 				cmd->objtype = TYPE_FLOAT;
 			}
-			if		(cmd->objtype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "\"\"");}
-			else if (cmd->objtype == TYPE_INTEGER)	{ str += (char_t)sprintf((char *)str, "%1.0f", (double)cmd->value);}
+			if		(cmd->objtype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "\"\"");} // Note that that "" is NOT null.
+			else if (cmd->objtype == TYPE_INTEGER)	{
+				double tmp_value = (double)cmd->value;
+				if (tmp_value == NAN || tmp_value == INFINITY)
+					tmp_value = 0;
+				str += (char_t)sprintf((char *)str, "%1.0f", tmp_value);
+			}
 			else if (cmd->objtype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*cmd->stringp);}
 			else if (cmd->objtype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*cmd->stringp);}
 			else if (cmd->objtype == TYPE_FLOAT) {
-				if 		(cmd->precision == 0) { str += (char_t)sprintf((char *)str, "%0.0f", (double)cmd->value);}
-				else if (cmd->precision == 1) { str += (char_t)sprintf((char *)str, "%0.1f", (double)cmd->value);}
-				else if (cmd->precision == 2) { str += (char_t)sprintf((char *)str, "%0.2f", (double)cmd->value);}
-				else if (cmd->precision == 3) { str += (char_t)sprintf((char *)str, "%0.3f", (double)cmd->value);}
-				else if (cmd->precision == 4) { str += (char_t)sprintf((char *)str, "%0.4f", (double)cmd->value);}
-				else 						  { str += (char_t)sprintf((char *)str, "%f",    (double)cmd->value);}
+
+				double tmp_value = (double)cmd->value;
+				if (tmp_value == NAN || tmp_value == INFINITY)
+					tmp_value = 0;
+
+				if 		(cmd->precision == 0) { str += (char_t)sprintf((char *)str, "%0.0f", tmp_value);}
+				else if (cmd->precision == 1) { str += (char_t)sprintf((char *)str, "%0.1f", tmp_value);}
+				else if (cmd->precision == 2) { str += (char_t)sprintf((char *)str, "%0.2f", tmp_value);}
+				else if (cmd->precision == 3) { str += (char_t)sprintf((char *)str, "%0.3f", tmp_value);}
+				else if (cmd->precision == 4) { str += (char_t)sprintf((char *)str, "%0.4f", tmp_value);}
+				else 						  { str += (char_t)sprintf((char *)str, "%f",    tmp_value);}
 			}
 			else if (cmd->objtype == TYPE_BOOL) {
 				if (fp_FALSE(cmd->value)) { str += sprintf((char *)str, "false");}
@@ -401,7 +411,7 @@ void json_print_response(uint8_t status)
 		cmd_reset_list();
 		cmd_add_string("msg", escape_string(cs.in_buf, cs.saved_buf));
 
-	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
+	} else if (cm.machine_state != MACHINE_INITIALIZING) {		// always do full echo during startup
 		uint8_t cmd_type;
 		do {
 			if ((cmd_type = cmd_get_type(cmd)) == CMD_TYPE_NULL) break;
