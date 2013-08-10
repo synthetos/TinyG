@@ -424,7 +424,7 @@ static stat_t _execute_gcode_block()
 	stat_t status = STAT_OK;
 
 //+++++ DIAGNOSTIC +++++
-	printf("posX: %6.3f, posY: %6.3f\n", (double)gm.position[AXIS_X], (double)gm.target[AXIS_Y]);
+//	printf("posX: %6.3f, posY: %6.3f\n", (double)gm.position[AXIS_X], (double)gm.target[AXIS_Y]);
 
 	cm_set_model_linenum(gn.linenum);
 	EXEC_FUNC(cm_set_inverse_feed_rate_mode, inverse_feed_rate_mode);

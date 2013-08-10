@@ -1581,9 +1581,7 @@ stat_t cfg_text_parser(char_t *str)
 	if (str[0] == '?') {					// handle status report case
 
 //++++ TEMPORARY DIAGNOSTICS +++++++++++++++
-//		printf("posX: %6.3f, tarX: %6.3f\n", gm.position[AXIS_X], gm.target[AXIS_X]);
-		printf("posX: %6.3f, posY: %6.3f\n", gm.position[AXIS_X], gm.target[AXIS_Y]);
-
+//		printf("posX: %6.3f, posY: %6.3f\n", gm.position[AXIS_X], gm.target[AXIS_Y]);
 		rpt_run_text_status_report();
 		return (STAT_OK);
 	}

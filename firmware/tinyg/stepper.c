@@ -474,7 +474,7 @@ void _load_move()
 		st_run.dda_ticks_downcount = st_prep.dda_ticks;
 		st_run.dda_ticks_X_substeps = st_prep.dda_ticks_X_substeps;
 		TIMER_DDA.PER = st_prep.dda_period;
-//+++++		st_set_motor_disable_timeout(cfg.motor_disable_timeout);	//+++++
+//+++++	st_set_motor_disable_timeout(cfg.motor_disable_timeout);
 
 		// This section is somewhat optimized for execution speed 
 		// All axes must set steps and compensate for out-of-range pulse phasing. 

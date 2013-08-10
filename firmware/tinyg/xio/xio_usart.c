@@ -134,7 +134,10 @@ FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags)
 	memset (dx, 0, sizeof(xioUsart_t));				// clear all values
 	xio_reset_working_flags(d);
 	xio_ctrl_generic(d, flags);						// setup control flags	
-	if (d->flag_xoff) dx->fc_state = FC_IN_XON;		// transfer flow control setting 
+	if (d->flag_xoff) {								// initialize flow control settings
+		dx->fc_state_rx = FC_IN_XON;
+		dx->fc_state_tx = FC_IN_XON;
+	}
 
 	// setup internal RX/TX control buffers
 	dx->rx_buf_head = 1;		// can't use location 0 in circular buffer
@@ -188,12 +191,12 @@ void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
 
 void xio_xoff_usart(xioUsart_t *dx)
 {
-	if (dx->fc_state == FC_IN_XON) {
-		dx->fc_state = FC_IN_XOFF;
+	if (dx->fc_state_rx == FC_IN_XON) {
+		dx->fc_state_rx = FC_IN_XOFF;
 
 		// If using XON/XOFF flow control
 		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
-			dx->fc_char = XOFF; 
+			dx->fc_char_rx = XOFF; 
 			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
 		}
 
@@ -207,12 +210,12 @@ void xio_xoff_usart(xioUsart_t *dx)
 
 void xio_xon_usart(xioUsart_t *dx)
 {
-	if (dx->fc_state == FC_IN_XOFF) {
-		dx->fc_state = FC_IN_XON;
+	if (dx->fc_state_rx == FC_IN_XOFF) {
+		dx->fc_state_rx = FC_IN_XON;
 
 		// If using XON/XOFF flow control
 		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
-			dx->fc_char = XON; 
+			dx->fc_char_rx = XON; 
 			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
 		}
 
