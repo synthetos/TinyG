@@ -730,12 +730,12 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
 /*************************************************************************
  * feedholds - functions for performing holds
  *
- * mp_plan_hold_callback() - replan block list to execute hold
- * mp_end_hold_callback() - remove the hold and restart block list
+ * mp_plan_hold_callback()	- replan block list to execute hold
+ * mp_end_hold() 			- release the hold and restart block list
  *
  *	Feedhold is executed as cm.hold_state transitions executed inside 
  *	_exec_aline() and main loop callbacks to these functions:
- *	mp_plan_hold_callback() and mp_end_hold_callback().
+ *	mp_plan_hold_callback() and mp_end_hold().
  */
 /*	Holds work like this:
  * 
@@ -745,26 +745,26 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
  *
  *	  - Hold state == SYNC tells the aline exec routine to execute the next aline 
  *		segment then set hold_state to PLAN. This gives the planner sufficient 
- *		time to replan the block list for the hold before the next aline 
- *		segment needs to be processed.
+ *		time to replan the block list for the hold before the next aline segment 
+ *		needs to be processed.
  *
  *	  - Hold state == PLAN tells the planner to replan the mr buffer, the current
  *		run buffer (bf), and any subsequent bf buffers as necessary to execute a
  *		hold. Hold planning replans the planner buffer queue down to zero and then
  *		back up from zero. Hold state is set to DECEL when planning is complete.
  *
- *	  - Hold state == DECEL persists until the aline execution gets runs to 
- *		zero velocity, at which point hold state transitions to HOLD.
+ *	  - Hold state == DECEL persists until the aline execution runs to zero 
+ *		velocity, at which point hold state transitions to HOLD.
  *
  *	  - Hold state == HOLD persists until the cycle is restarted. A cycle start 
  *		is an asynchronous event that sets the cycle_start_flag TRUE. It can 
  *		occur any time after the hold is requested - either before or after 
  *		motion stops.
  *
- *	  - mp_end_hold_callback() will execute once the hold state == HOLD and 
- *		cycle_start_flag == TRUE. This sets the hold state to OFF which enables
- *		_exec_aline() to continue processing. Move execution begins with the 
- *		first buffer after the hold.
+ *	  - mp_end_hold() is executed from cm_feedhold_sequencing_callback() once the 
+ *		hold state == HOLD and a cycle_start has been requested.This sets the hold 
+ *		state to OFF which enables _exec_aline() to continue processing. Move 
+ *		execution begins with the first buffer after the hold.
  *
  *	Terms used:
  *	 - mr is the runtime buffer. It was initially loaded from the bf buffer
@@ -1038,9 +1038,11 @@ static stat_t _exec_aline(mpBuf_t *bf)
 	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == STAT_OK)) {
 		cm.hold_state = FEEDHOLD_HOLD;
 		cm.motion_state = MOTION_HOLD;
+//		mp_free_run_buffer();				// free bf and send a status report
+//+++++ DIAGNOSTIC
+//		printf("HOLD: posX: %6.3f, posY: %6.3f\n", (double)mr.position[AXIS_X], (double)mr.target[AXIS_Y]);
 		rpt_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
-
 
 	// There are 3 things that can happen here depending on return conditions:
 	//	  status	 bf->move_state	 Description
@@ -1056,6 +1058,8 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		mr.section_state = MOVE_STATE_OFF;
 		bf->nx->replannable = false;			// prevent overplanning (Note 2)
 		if (bf->move_state == MOVE_STATE_RUN) {
+//+++++ DIAGNOSTIC
+//			printf("HOLD2: posX: %6.3f, posY: %6.3f\n", (double)mr.position[AXIS_X], (double)mr.target[AXIS_Y]);
 			mp_free_run_buffer();				// free bf if it's actually done
 		}
 	}
@@ -1229,6 +1233,7 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	// Multiply computed length by the unit vector to get the contribution for
 	// each axis. Set the target in absolute coords and compute relative steps.
 
+	// Don't do the error correction if you are going into a hold
 	if ((correction_flag == true) && (mr.segment_count == 1) && 
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
 		mr.target[AXIS_X] = mr.endpoint[AXIS_X];	// rounding error correction for last segment
@@ -1268,7 +1273,7 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	ik_kinematics(travel, steps, mr.microseconds);
 	if (st_prep_line(steps, mr.microseconds) == STAT_OK) {
 		copy_axis_vector(mr.position, mr.target); 	// update runtime position	
-/*  TRY THIS
+/* TRY THIS
 		mr.position[AXIS_X] = mr.target[AXIS_X];
 		mr.position[AXIS_Y] = mr.target[AXIS_Y];
 		mr.position[AXIS_Z] = mr.target[AXIS_Z];
