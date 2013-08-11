@@ -28,8 +28,8 @@
  */
 
 //#include <stdlib.h>
-#include <math.h>
 //#include <stdio.h>			// uncomment for debugging
+#include <math.h>
 #include <avr/pgmspace.h>		// precursor for xio.h
 
 #include "tinyg.h"

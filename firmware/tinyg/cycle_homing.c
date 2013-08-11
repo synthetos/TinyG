@@ -198,6 +198,8 @@ static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 	cm.homing_state = HOMING_HOMED;
 	cm.cycle_state = CYCLE_OFF;						// required
 	cm_cycle_end();
+//+++++ DIAGNOSTIC +++++
+//	printf("Homed: posX: %6.3f, posY: %6.3f\n", (double)gm.position[AXIS_X], (double)gm.target[AXIS_Y]);
 	return (STAT_OK);
 }
 
@@ -371,6 +373,8 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 	if (hm.set_coordinates != false) {						// do not set axis if in G28.4 cycle
 		cm_set_axis_origin(axis, 0);
 		mp_set_runtime_position(axis, 0);
+	} else {
+		cm_set_axis_origin(axis, cm_get_runtime_work_position(AXIS_X));
 	}
 	cfg.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
 	cm.homed[axis] = true;
