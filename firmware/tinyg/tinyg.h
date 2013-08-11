@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   		387.03	// Work on G28.4 for Robgrz
+#define TINYG_FIRMWARE_BUILD   		387.04	// Added XON/XOFF test
 #define TINYG_FIRMWARE_VERSION		0.95	// major version
 #define TINYG_HARDWARE_VERSION		7		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8

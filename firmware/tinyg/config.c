@@ -146,7 +146,8 @@ static stat_t _get_sr(cmdObj_t *cmd);		// run status report (as data)
 static void _print_sr(cmdObj_t *cmd);		// run status report (as printout)
 static stat_t _set_sr(cmdObj_t *cmd);		// set status report specification
 static stat_t _set_si(cmdObj_t *cmd);		// set status report interval
-static stat_t _run_boot(cmdObj_t *cmd);	// jump to the bootloader
+static stat_t _run_boot(cmdObj_t *cmd);		// jump to the bootloader
+static stat_t _run_sx(cmdObj_t *cmd);		// send XOFF, XON
 static stat_t _get_id(cmdObj_t *cmd);		// get device ID
 static stat_t _set_jv(cmdObj_t *cmd);		// set JSON verbosity
 static stat_t _get_qr(cmdObj_t *cmd);		// get a queue report (as data)
@@ -514,6 +515,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "", "boot",_f00, 0, fmt_nul, _print_nul, print_boot_loader_help,_run_boot,(float *)&cs.null,0 },
 	{ "", "help",_f00, 0, fmt_nul, _print_nul, print_config_help,_set_nul, (float *)&cs.null,0 },// prints config help screen
 	{ "", "h",   _f00, 0, fmt_nul, _print_nul, print_config_help,_set_nul, (float *)&cs.null,0 },// alias for "help"
+	{ "", "sx",  _f00, 0, fmt_nul, _print_nul, _run_sx,  _run_sx , (float *)&cs.null, 0 },	// send XOFF, XON test
 
 	// Motor parameters
 	{ "1","1ma",_fip, 0, fmt_0ma, _pr_ma_ui8, _get_ui8, _set_ui8,(float *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
@@ -860,6 +862,7 @@ static stat_t _get_id(cmdObj_t *cmd)
  * _set_si()	- set status report interval
  * _run_boot()  - request boot loader entry
  * cmd_set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
+ * _run_sx()	- send XOFF, XON
  */
 
 static stat_t _set_md(cmdObj_t *cmd) 
@@ -949,6 +952,13 @@ static stat_t _set_jv(cmdObj_t *cmd)
 	if (cmd->value >= JV_VERBOSE)	{ cfg.echo_json_gcode_block = true;}
 
 	return(STAT_OK);
+}
+
+static stat_t _run_sx(cmdObj_t *cmd) 
+{
+	xio_putc(XIO_DEV_USB, XOFF);
+	xio_putc(XIO_DEV_USB, XON);	
+	return (STAT_OK);
 }
 
 
