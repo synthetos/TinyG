@@ -743,7 +743,6 @@ stat_t cm_set_absolute_origin(float origin[], float flag[])
 static void _exec_absolute_origin(float *value, float *flag)
 {
 	for (uint8_t i=0; i<AXES; i++) {
-//		if (flag[i] == true) {
 		if (fp_TRUE(flag[i])) {
 			mp_set_runtime_position(i, value[i]);
 			cm.homed[i] = true;					// it's not considered homed until you get to the runtime
@@ -924,7 +923,6 @@ stat_t cm_set_path_control(uint8_t mode)
 stat_t cm_dwell(float seconds)
 {
 	gm.parameter = seconds;
-//	return(mp_dwell(seconds));
 	(void)mp_dwell(seconds);
 	return (STAT_OK);
 
@@ -1014,10 +1012,10 @@ static void _exec_mist_coolant_control(float *value, float *flag)
 	gm.mist_coolant = (uint8_t)value[0];
 	if (gm.mist_coolant == true) {
 		gpio_set_bit_on(MIST_COOLANT_BIT);
-//		coolant_enable_pin.set();
+//+++++	coolant_enable_pin.set();
 	} else {
 		gpio_set_bit_off(MIST_COOLANT_BIT);
-//		coolant_enable_pin.clear();
+//+++++	coolant_enable_pin.clear();
 	}
 }
 
