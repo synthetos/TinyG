@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   		387.07	// Minor changes to config.c to support G2 alignment
+#define TINYG_FIRMWARE_BUILD   		387.08	// Changes to comand index evaluators in config.c
 #define TINYG_FIRMWARE_VERSION		0.95	// major version
 #define TINYG_HARDWARE_VERSION		7		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8

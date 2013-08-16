@@ -870,20 +870,22 @@ const cfgItem_t PROGMEM cfgArray[] = {
 #define CMD_INDEX_END_SINGLES		(CMD_INDEX_MAX - CMD_COUNT_UBER_GROUPS - CMD_COUNT_GROUPS - CMD_STATUS_REPORT_LEN)
 #define CMD_INDEX_START_GROUPS		(CMD_INDEX_MAX - CMD_COUNT_UBER_GROUPS - CMD_COUNT_GROUPS)
 #define CMD_INDEX_START_UBER_GROUPS (CMD_INDEX_MAX - CMD_COUNT_UBER_GROUPS)
+/* </DO NOT MESS WITH THESE DEFINES> */
 
+/*
 #define _index_is_single(i) ((i <= CMD_INDEX_END_SINGLES) ? true : false)	// Evaluators
 #define _index_is_group(i) (((i >= CMD_INDEX_START_GROUPS) && (i < CMD_INDEX_START_UBER_GROUPS)) ? true : false)
 #define _index_lt_groups(i) ((i <= CMD_INDEX_START_GROUPS) ? true : false)
-
 #define _index_is_uber(i)   ((i >= CMD_INDEX_START_UBER_GROUPS) ? true : false)
 #define _index_is_group_or_uber(i) ((i >= CMD_INDEX_START_GROUPS) ? true : false)
-
-/* </DO NOT MESS WITH THESE DEFINES> */
+*/
 
 index_t	cmd_index_max() { return ( CMD_INDEX_MAX );}
 uint8_t cmd_index_lt_max(index_t index) { return ((index < CMD_INDEX_MAX) ? true : false);}
 uint8_t cmd_index_ge_max(index_t index) { return ((index >= CMD_INDEX_MAX) ? true : false);}
-uint8_t cmd_index_is_group(index_t index) { return _index_is_group(index);}
+uint8_t cmd_index_is_single(index_t index) { return ((index <= CMD_INDEX_END_SINGLES) ? true : false);}
+uint8_t cmd_index_is_group(index_t index) { return (((index >= CMD_INDEX_START_GROUPS) && (index < CMD_INDEX_START_UBER_GROUPS)) ? true : false);}
+uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_GROUPS) ? true : false);}
 
 /* G2 code
 #define CMD_INDEX_MAX (sizeof cfgArray / sizeof(cfgItem_t))
@@ -1577,7 +1579,7 @@ void cmd_persist(cmdObj_t *cmd)
 #ifdef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
 	return;
 #endif
-	if (_index_lt_groups(cmd->index) == false) return;
+	if (cmd_index_lt_groups(cmd->index) == false) return;
 	if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_PERSIST) {
 		cmd_write_NVM_value(cmd);
 	}
@@ -1613,7 +1615,7 @@ void cfg_init()
 		_set_defa(cmd);	
 	} else {								// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
-		for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
+		for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {
 			if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
 				strcpy_P(cmd->token, cfgArray[cmd->index].token);	// read the token from the array
 				cmd_read_NVM_value(cmd);
@@ -1633,7 +1635,7 @@ static stat_t _set_defa(cmdObj_t *cmd)
 	}
 	cm_set_units_mode(MILLIMETERS);			// must do inits in MM mode
 
-	for (cmd->index=0; _index_is_single(cmd->index); cmd->index++) {
+	for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {
 		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
 			cmd->value = (float)pgm_read_float(&cfgArray[cmd->index].def_value);
 			strcpy_P(cmd->token, cfgArray[cmd->index].token);

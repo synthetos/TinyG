@@ -336,7 +336,13 @@ cmdObj_t *cmd_add_message_P(const char *string);
 
 void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
 uint8_t cmd_group_is_prefixed(char *group);
+//uint8_t cmd_index_is_group(index_t index);
+index_t	cmd_index_max();
+uint8_t cmd_index_lt_max(index_t index);
+uint8_t cmd_index_ge_max(index_t index);
+uint8_t cmd_index_is_single(index_t index);
 uint8_t cmd_index_is_group(index_t index);
+uint8_t cmd_index_lt_groups(index_t index);
 
 stat_t cmd_read_NVM_value(cmdObj_t *cmd);
 stat_t cmd_write_NVM_value(cmdObj_t *cmd);
