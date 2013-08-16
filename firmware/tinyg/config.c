@@ -91,14 +91,14 @@ static stat_t set_01(cmdObj_t *cmd);	// set a 0 or 1 value w/validation
 static stat_t set_012(cmdObj_t *cmd);	// set a 0, 1 or 2 value w/validation
 static stat_t set_0123(cmdObj_t *cmd);	// set a 0, 1, 2 or 3 value w/validation
 static stat_t set_int(cmdObj_t *cmd);	// set a uint32 integer value
-static stat_t set_dbl(cmdObj_t *cmd);	// set a float value
-static stat_t set_dbu(cmdObj_t *cmd);	// set a float with unit conversion
+static stat_t set_flt(cmdObj_t *cmd);	// set a float value
+static stat_t set_flu(cmdObj_t *cmd);	// set a float with unit conversion
 
 static stat_t get_nul(cmdObj_t *cmd);	// get null value type
 static stat_t get_ui8(cmdObj_t *cmd);	// get uint8 value
 static stat_t get_int(cmdObj_t *cmd);	// get uint32 integer value
-static stat_t get_dbl(cmdObj_t *cmd);	// get float value
-static stat_t get_dbu(cmdObj_t *cmd);	// get float with unit conversion
+static stat_t get_flt(cmdObj_t *cmd);	// get float value
+static stat_t get_flu(cmdObj_t *cmd);	// get float with unit conversion
 
 static void print_nul(cmdObj_t *cmd);	// print nothing
 static void print_str(cmdObj_t *cmd);	// print a string value
@@ -881,6 +881,12 @@ uint8_t cmd_index_is_single(index_t index) { return ((index <= CMD_INDEX_END_SIN
 uint8_t cmd_index_is_group(index_t index) { return (((index >= CMD_INDEX_START_GROUPS) && (index < CMD_INDEX_START_UBER_GROUPS)) ? true : false);}
 uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_GROUPS) ? true : false);}
 
+/***********************************************************************************
+ **** APPLICATION SPECIFIC FUNCTIONS ***********************************************
+ ***********************************************************************************/
+
+ * set_dbu() - set value as float w/unit conversion
+ * get_dbu() - get value as float w/unit conversion
 
 /**** SYSTEM VARIABLES: Versions and IDs **************************************
  * set_hv() - set hardweare version number
@@ -904,34 +910,25 @@ static stat_t get_id(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-/**** REPORT FUNCTIONS ********************************************************
- * set_md() 	- disable all motors
- * set_me() 	- enable motors with $Npm=0
- * set_qv() 	- get a queue report verbosity
- * get_qr() 	- get a queue report (as data)
- * run_qf() 	- execute a planner buffer flush
+/**** COMMAND AND REPORT FUNCTIONS ********************************************************
+ * set_qv() - set queue report verbosity
+ * get_qr() - run a queue report (as data)
+ * run_qf() - execute a planner buffer flush
  * get_er()	- invoke a bogus exception report for testing purposes (it's not real)
  * get_rx()	- get bytes available in RX buffer
+ * set_si()	- set status report interval
  * get_sr()	- run status report
  * set_sr()	- set status report elements
- * print_sr()	- print multiline text status report
- * set_si()	- set status report interval
- * run_boot()  - request boot loader entry
- * cmd_set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
+ * print_sr() - print multiline text status report
+ * set_md() - disable all motors
+ * set_me() - enable motors with $Npm=0
  * run_sx()	- send XOFF, XON
+ * set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
+ * get_gc()	- get gcode block
+ * run_gc()	- launch the gcode parser on a block of gcode
+ * run_home() - invoke a homing cycle
+ * run_boot() - request boot loader entry
  */
-
-static stat_t set_md(cmdObj_t *cmd) 
-{
-	st_disable_motors();
-	return (STAT_OK);
-}
-
-static stat_t set_me(cmdObj_t *cmd) 
-{
-	st_enable_motors();
-	return (STAT_OK);
-}
 
 static stat_t get_qr(cmdObj_t *cmd) 
 {
@@ -943,7 +940,6 @@ static stat_t get_qr(cmdObj_t *cmd)
 static stat_t run_qf(cmdObj_t *cmd) 
 {
 	cm_request_queue_flush();
-//	cm_flush_planner();
 	return (STAT_OK);
 }
 
@@ -958,6 +954,13 @@ static stat_t get_rx(cmdObj_t *cmd)
 	cmd->value = (float)xio_get_usb_rx_free();
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
+}
+
+static stat_t set_si(cmdObj_t *cmd)
+{
+	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
+	cfg.status_report_interval = (uint32_t)cmd->value;
+	return(STAT_OK);
 }
 
 static stat_t get_sr(cmdObj_t *cmd)
@@ -976,20 +979,25 @@ static void print_sr(cmdObj_t *cmd)
 	rpt_populate_unfiltered_status_report();
 }
 
-static stat_t set_si(cmdObj_t *cmd) 
+static stat_t set_md(cmdObj_t *cmd)
 {
-	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
-	cfg.status_report_interval = (uint32_t)cmd->value;
-	return(STAT_OK);
+	st_disable_motors();
+	return (STAT_OK);
 }
 
-static stat_t run_boot(cmdObj_t *cmd)
+static stat_t set_me(cmdObj_t *cmd)
 {
-	tg_request_bootloader();
-	return(STAT_OK);
+	st_enable_motors();
+	return (STAT_OK);
 }
 
-//stat_t cmd_set_jv(cmdObj_t *cmd) 
+static stat_t run_sx(cmdObj_t *cmd)
+{
+	xio_putc(XIO_DEV_USB, XOFF);
+	xio_putc(XIO_DEV_USB, XON);
+	return (STAT_OK);
+}
+
 static stat_t set_jv(cmdObj_t *cmd) 
 {
 	if (cmd->value > JV_VERBOSE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
@@ -1010,16 +1018,33 @@ static stat_t set_jv(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-static stat_t run_sx(cmdObj_t *cmd) 
+static stat_t get_gc(cmdObj_t *cmd)
 {
-	xio_putc(XIO_DEV_USB, XOFF);
-	xio_putc(XIO_DEV_USB, XON);	
+	ritorno(cmd_copy_string(cmd, cs.in_buf));
+	cmd->objtype = TYPE_STRING;
 	return (STAT_OK);
 }
 
+static stat_t run_gc(cmdObj_t *cmd)
+{
+	return(gc_gcode_parser(*cmd->stringp));
+}
+
+static stat_t run_home(cmdObj_t *cmd)
+{
+	if (cmd->value == true) { cm_homing_cycle_start();}
+	return (STAT_OK);
+}
+
+static stat_t run_boot(cmdObj_t *cmd)
+{
+	tg_request_bootloader();
+	return(STAT_OK);
+}
 
 /**** GCODE MODEL ITEMS ****************************************
  * _get_msg_helper() - helper to get display message
+ 
  * get_stat() - get combined machine state as value and string
  * get_macs() - get raw machine state as value and string
  * get_cycs() - get raw cycle state as value and string
@@ -1036,11 +1061,14 @@ static stat_t run_sx(cmdObj_t *cmd)
  * get_feed() - get feed rate 
  * get_line() - get runtime line number for status reports
  * get_vel()  - get runtime velocity
+ * get_ofs()  - get runtime work offset
  * get_pos()  - get runtime work position
  * get_mpos() - get runtime machine position
- * get_ofs()  - get runtime work offset
+ *
  * print_pos()- print work position (with proper units)
  * print_mpos()- print machine position (always mm units)
+ * print_coor()- print coordinate offsets with linear units
+ * print_corr()- print coordinate offsets with rotary units 
  */
 static stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value)
 {
@@ -1049,6 +1077,11 @@ static stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value)
 	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg[value*2]))); // hack alert: direct computation of index
 	return (STAT_OK);
 //	return((char_t *)pgm_read_word(&msg[(uint8_t)value]));
+/* ARM code:
+	cmd->value = (float)value;
+	cmd->objtype = TYPE_INTEGER;
+	return (cmd_copy_string(cmd, msg_array[value]));
+*/
 }
 
 static stat_t get_stat(cmdObj_t *cmd)
@@ -1141,6 +1174,15 @@ static stat_t get_vel(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
+static stat_t get_ofs(cmdObj_t *cmd)
+{
+	cmd->value = cm_get_runtime_work_offset(get_pos_axis(cmd->index));
+	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	//	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
+	cmd->objtype = TYPE_FLOAT;
+	return (STAT_OK);
+}
+
 static stat_t get_pos(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_runtime_work_position(get_pos_axis(cmd->index));
@@ -1153,15 +1195,6 @@ static stat_t get_pos(cmdObj_t *cmd)
 static stat_t get_mpos(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_runtime_machine_position(get_pos_axis(cmd->index));
-	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-//	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
-	cmd->objtype = TYPE_FLOAT;
-	return (STAT_OK);
-}
-
-static stat_t get_ofs(cmdObj_t *cmd) 
-{
-	cmd->value = cm_get_runtime_work_offset(get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 //	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
 	cmd->objtype = TYPE_FLOAT;
@@ -1188,27 +1221,20 @@ static void print_mpos(cmdObj_t *cmd)		// print position with fixed unit display
 	_print_pos_helper(cmd, MILLIMETERS);
 }
 
-/**** GCODE AND RELATED FUNCTIONS *********************************************
- * get_gc()	- get gcode block
- * run_gc()	- launch the gcode parser on a block of gcode
- * run_home()	- invoke a homing cycle
- */
-static stat_t get_gc(cmdObj_t *cmd)
+static void print_coor(cmdObj_t *cmd)		// print coordinate offsets with linear units
 {
-	ritorno(cmd_copy_string(cmd, cs.in_buf));
-	cmd->objtype = TYPE_STRING;
-	return (STAT_OK);
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
+	(PGM_P)pgm_read_word(&msg_units[cm_get_model_units_mode()]));
 }
 
-static stat_t run_gc(cmdObj_t *cmd)
+static void print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
 {
-	return(gc_gcode_parser(*cmd->stringp));
-}
-
-static stat_t run_home(cmdObj_t *cmd)
-{
-	if (cmd->value == true) { cm_homing_cycle_start();}
-	return (STAT_OK);
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
+	(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
 }
 
 /**** AXIS AND MOTOR FUNCTIONS ************************************************
@@ -1226,8 +1252,6 @@ static stat_t run_home(cmdObj_t *cmd)
  * pr_ma_lin() - print linear value with units and in/mm unit conversion
  * pr_ma_rot() - print rotary value with units
  * print_am()	- print axis mode with enumeration string
- * print_coor()- print coordinate offsets with linear units
- * print_corr()- print coordinate offsets with rotary units
  */
 
 // helper. This function will need to be rethought if microstep morphing is implemented
@@ -1344,23 +1368,6 @@ static void print_am(cmdObj_t *cmd)		// print axis mode with enumeration string
 	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
 					(PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
 }
-
-static void print_coor(cmdObj_t *cmd)		// print coordinate offsets with linear units
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
-					(PGM_P)pgm_read_word(&msg_units[cm_get_model_units_mode()]));
-}
-
-static void print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
-					(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
-}
-
 
 /**** COMMUNICATIONS SETTINGS *************************************************
  * set_ic() - ignore CR or LF on RX
@@ -1733,14 +1740,12 @@ stat_t cfg_cycle_check(void)
  * set_012() - set a 0, 1 or 2 uint8_t value with validation
  * set_int() - set value as 32 bit integer w/o unit conversion
  * set_dbl() - set value as float w/o unit conversion
- * set_dbu() - set value as float w/unit conversion
  *
  * Generic gets()
  * get_nul() - get nothing (returns STAT_NOOP)
  * get_ui8() - get value as 8 bit uint8_t w/o unit conversion
  * get_int() - get value as 32 bit integer w/o unit conversion
  * get_dbl() - get value as float w/o unit conversion
- * get_dbu() - get value as float w/unit conversion
  */
 static stat_t set_nul(cmdObj_t *cmd) { return (STAT_NOOP);}
 
@@ -1785,7 +1790,7 @@ static stat_t set_int(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-static stat_t set_dbl(cmdObj_t *cmd)
+static stat_t set_flt(cmdObj_t *cmd)
 {
 	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
@@ -1793,7 +1798,7 @@ static stat_t set_dbl(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-static stat_t set_dbu(cmdObj_t *cmd)
+static stat_t set_flu(cmdObj_t *cmd)
 {
 	if (cm_get_model_units_mode() == INCHES) { cmd->value *= MM_PER_INCH;}
 	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
