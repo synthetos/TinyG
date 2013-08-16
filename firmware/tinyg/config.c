@@ -123,7 +123,7 @@ static int8_t get_motor(const index_t i);
 //static int8_t get_axis(const index_t i);
 static int8_t get_pos_axis(const index_t i);
 static stat_t _text_parser(char_t *str, cmdObj_t *c);
-static stat_t get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value);
+static stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value);
 static void _print_text_inline_pairs();
 static void _print_text_inline_values();
 static void _print_text_multiline_formatted();
@@ -883,17 +883,57 @@ uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_G
  **** APPLICATION SPECIFIC FUNCTIONS ***********************************************
  ***********************************************************************************/
 
-/***** UNIT CONVERSION FUNCTIONS ***************************************************
- * get_flu() - get floating point number with Gcode units conversion
- * set_flu() - set floating point number with Gcode units conversion
- * print_lin - print linear axis value with Gcode units conversion
- * print_rot - print rotary axis value with Gcode units conversion
- *
- * set_dbu() - set value as float w/unit conversion
- * get_dbu() - get value as float w/unit conversion
- * print_lin() - print linear value with units and in/mm unit conversion
- * print_rot() - print rotary value with units
+/***** SUPPORTING FUNCTIONS: ACCESSORS, HELPERS, UNIT CONVERSIONS ******************
+ * get_format() - return format string for an index
+ * get_motor()	- return motor number as an index or -1 if na
+ * get_axis()	- return axis number or -1 if NA
+ * get_pos_axis()- return axis number for pos values or -1 if none - e.g. posx
+ * get_flu()	- get floating point number with Gcode units conversion
+ * set_flu()	- set floating point number with Gcode units conversion
+ * print_lin	- print linear axis value with Gcode units conversion
+ * print_rot	- print rotary axis value with Gcode units conversion
  */
+
+static char_t *get_format(const index_t index, char_t *format)
+{
+	strncpy_P(format, (PGM_P)pgm_read_word(&cfgArray[index].format), CMD_FORMAT_LEN);
+	return (format);
+}
+
+static int8_t get_motor(const index_t i)
+{
+	char_t *ptr;
+	char_t motors[] = {"1234"};
+	char_t tmp[CMD_TOKEN_LEN+1];
+
+	strcpy_P(tmp, cfgArray[i].group);
+	if ((ptr = strchr(motors, tmp[0])) == NULL) {
+		return (-1);
+	}
+	return (ptr - motors);
+}
+/*
+static int8_t get_axis(const index_t i)
+{
+	char_t *ptr;
+	char_t tmp[CMD_TOKEN_LEN+1];
+	char_t axes[] = {"xyzabc"};
+
+	strcpy_P(tmp, cfgArray[i].token);
+	if ((ptr = strchr(axes, tmp[0])) == NULL) { return (-1);}
+	return (ptr - axes);
+}
+*/
+static int8_t get_pos_axis(const index_t i)
+{
+	char_t *ptr;
+	char_t tmp[CMD_TOKEN_LEN+1];
+	char_t axes[] = {"xyzabc"};
+
+	strcpy_P(tmp, cfgArray[i].token);
+	if ((ptr = strchr(axes, tmp[3])) == NULL) { return (-1);}
+	return (ptr - axes);
+}
 
 static stat_t set_dbu(cmdObj_t *cmd)
 {
@@ -928,7 +968,7 @@ static void print_rot(cmdObj_t *cmd)
 	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
 }
 
-/******* System and application control variables and functions ******
+/******* SYSTEM ID AND CONTROL VARIABLES ****************************************************
  * set_hv() - set hardware version number
  * get_id() - get device ID (signature)
  */
@@ -950,8 +990,7 @@ static stat_t get_id(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-
-/**** COMMAND AND REPORT FUNCTIONS ********************************************************
+/**** REPORT AND COMMAND FUNCTIONS ********************************************************
  * set_qv() - set queue report verbosity
  * get_qr() - run a queue report (as data)
  * run_qf() - request a planner buffer flush
@@ -1083,9 +1122,10 @@ static stat_t run_boot(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-
 /**** GCODE MODEL ITEMS ****************************************
- * get_msg_helper() - helper to get display message
+ * _get_msg_helper() - helper to get display message
+ * _get_pos_axis()	- returns the axis index given the token string (hack hack)
+ *
  * get_stat() - get combined machine state as value and string
  * get_macs() - get raw machine state as value and string
  * get_cycs() - get raw cycle state as value and string
@@ -1102,24 +1142,32 @@ static stat_t run_boot(cmdObj_t *cmd)
  * get_feed() - get feed rate 
  * get_line() - get runtime line number for status reports
  * get_vel()  - get runtime velocity
+ * get_ofs()  - get runtime work offset
  * get_pos()  - get runtime work position
  * get_mpos() - get runtime machine position
- * get_ofs()  - get runtime work offset
+ * 
  * print_pos()- print work position (with proper units)
  * print_mpos()- print machine position (always mm units)
+ * print_coor()- print coordinate offsets with linear units
+ * print_corr()- print coordinate offsets with rotary units
  */
-static stat_t get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value)
+static stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value)
 {
 	cmd->value = (float)value;
 	cmd->objtype = TYPE_INTEGER;
 	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg[value*2]))); // hack alert: direct computation of index
 	return (STAT_OK);
 //	return((char_t *)pgm_read_word(&msg[(uint8_t)value]));
+/* ARM code:
+	cmd->value = (float)value;
+	cmd->objtype = TYPE_INTEGER;
+	return (cmd_copy_string(cmd, msg_array[value]));
+*/
 }
 
 static stat_t get_stat(cmdObj_t *cmd)
 {
-	return(get_msg_helper(cmd, (char_P)msg_stat, cm_get_combined_state()));
+	return(_get_msg_helper(cmd, (char_P)msg_stat, cm_get_combined_state()));
 
 /* how to do this w/o calling the helper routine - See 331.09 for original routines
 	cmd->value = cm_get_machine_state();
@@ -1132,62 +1180,62 @@ static stat_t get_stat(cmdObj_t *cmd)
 
 static stat_t get_macs(cmdObj_t *cmd)
 {
-	return(get_msg_helper(cmd, (char_P)msg_macs, cm_get_machine_state()));
+	return(_get_msg_helper(cmd, (char_P)msg_macs, cm_get_machine_state()));
 }
 
 static stat_t get_cycs(cmdObj_t *cmd)
 {
-	return(get_msg_helper(cmd, (char_P)msg_cycs, cm_get_cycle_state()));
+	return(_get_msg_helper(cmd, (char_P)msg_cycs, cm_get_cycle_state()));
 }
 
 static stat_t get_mots(cmdObj_t *cmd)
 {
-	return(get_msg_helper(cmd, (char_P)msg_mots, cm_get_motion_state()));
+	return(_get_msg_helper(cmd, (char_P)msg_mots, cm_get_motion_state()));
 }
 
 static stat_t get_hold(cmdObj_t *cmd)
 {
-	return(get_msg_helper(cmd, (char_P)msg_hold, cm_get_hold_state()));
+	return(_get_msg_helper(cmd, (char_P)msg_hold, cm_get_hold_state()));
 }
 
 static stat_t get_home(cmdObj_t *cmd)
 {
-	return(get_msg_helper(cmd, (char_P)msg_home, cm_get_homing_state()));
+	return(_get_msg_helper(cmd, (char_P)msg_home, cm_get_homing_state()));
 }
 
 static stat_t get_unit(cmdObj_t *cmd)
 {
-	return(get_msg_helper(cmd, (char_P)msg_unit, cm_get_model_units_mode()));
+	return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_model_units_mode()));
 }
 
 static stat_t get_coor(cmdObj_t *cmd)
 {
-	return(get_msg_helper(cmd, (char_P)msg_coor, cm_get_model_coord_system()));
+	return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_model_coord_system()));
 }
 
 static stat_t get_momo(cmdObj_t *cmd)
 {
-	return(get_msg_helper(cmd, (char_P)msg_momo, cm_get_runtime_motion_mode()));
+	return(_get_msg_helper(cmd, (char_P)msg_momo, cm_get_runtime_motion_mode()));
 }
 
 static stat_t get_plan(cmdObj_t *cmd)
 {
-	return(get_msg_helper(cmd, (char_P)msg_plan, cm_get_model_select_plane()));
+	return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_model_select_plane()));
 }
 
 static stat_t get_path(cmdObj_t *cmd)
 {
-	return(get_msg_helper(cmd, (char_P)msg_path, cm_get_model_path_control()));
+	return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_model_path_control()));
 }
 
 static stat_t get_dist(cmdObj_t *cmd)
 {
-	return(get_msg_helper(cmd, (char_P)msg_dist, cm_get_model_distance_mode()));
+	return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_model_distance_mode()));
 }
 
 static stat_t get_frmo(cmdObj_t *cmd)
 {
-	return(get_msg_helper(cmd, (char_P)msg_frmo, cm_get_model_inverse_feed_rate_mode()));
+	return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_model_inverse_feed_rate_mode()));
 }
 
 static stat_t get_line(cmdObj_t *cmd)
@@ -1254,11 +1302,32 @@ static void print_mpos(cmdObj_t *cmd)		// print position with fixed unit display
 	_print_pos_helper(cmd, MILLIMETERS);
 }
 
+static void print_coor(cmdObj_t *cmd)		// print coordinate offsets with linear units
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
+	(PGM_P)pgm_read_word(&msg_units[cm_get_model_units_mode()]));
+}
+
+static void print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
+	(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
+}
+
+
 /**** AXIS AND MOTOR FUNCTIONS ************************************************
  * set_motor_steps_per_unit() - update this derived value
+ *
  * get_am() - get axis mode w/enumeration string
  * set_am() - set axis mode w/exception handling for axis type
- * set_sw() - run this any time you change a switch setting	
+ * get_jrk() - get jerk value w/1,000,000 correction
+ * set_jrk() - set jerk value w/1,000,000 correction
+ * set_sw() - run this any time you change a switch setting
+ *	
  * set_sa() - set motor step_angle & recompute steps_per_unit
  * set_tr() - set motor travel_per_rev & recompute steps_per_unit
  * set_mi() - set microsteps & recompute steps_per_unit
@@ -1269,8 +1338,6 @@ static void print_mpos(cmdObj_t *cmd)		// print position with fixed unit display
  * pr_ma_lin() - print linear value with units and in/mm unit conversion
  * pr_ma_rot() - print rotary value with units
  * print_am()	- print axis mode with enumeration string
- * print_coor()- print coordinate offsets with linear units
- * print_corr()- print coordinate offsets with rotary units
  */
 
 // helper. This function will need to be rethought if microstep morphing is implemented
@@ -1284,7 +1351,7 @@ static stat_t _set_motor_steps_per_unit(cmdObj_t *cmd)
 static stat_t get_am(cmdObj_t *cmd)
 {
 	get_ui8(cmd);
-	return(get_msg_helper(cmd, (char_P)msg_am, cmd->value)); // see 331.09 for old method
+	return(_get_msg_helper(cmd, (char_P)msg_am, cmd->value)); // see 331.09 for old method
 }
 
 static stat_t set_am(cmdObj_t *cmd)		// axis mode
@@ -1299,7 +1366,29 @@ static stat_t set_am(cmdObj_t *cmd)		// axis mode
 	return(STAT_OK);
 }
 
-static stat_t set_sw(cmdObj_t *cmd)		// switch setting
+stat_t get_jrk(cmdObj_t *cmd)
+{
+	get_dbl(cmd);
+	if (cm_get_model_units_mode() == INCHES) {
+		cmd->value *= (INCH_PER_MM)/1000000;
+	} else {
+		cmd->value /= 1000000;
+	}
+	cmd->precision = cfgArray[cmd->index].precision;
+	cmd->objtype = TYPE_FLOAT;
+	return (STAT_OK);
+}
+
+stat_t set_jrk(cmdObj_t *cmd)
+{
+	if (cm_get_model_units_mode() == INCHES) { cmd->value *= MM_PER_INCH;}
+	*((float *)cfgArray[cmd->index].target) = (1000000 * cmd->value);
+	cmd->precision = cfgArray[cmd->index].precision;
+	cmd->objtype = TYPE_FLOAT_UNITS;
+	return(STAT_OK);
+}
+
+static stat_t set_sw(cmdObj_t *cmd)			// switch setting
 {
 	if (cmd->value > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	set_ui8(cmd);
@@ -1307,28 +1396,28 @@ static stat_t set_sw(cmdObj_t *cmd)		// switch setting
 	return (STAT_OK);
 }
 
-static void print_ss(cmdObj_t *cmd)		// print switch state
+static void print_ss(cmdObj_t *cmd)			// print switch state
 {
 	cmd_get(cmd);
 	char_t format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, get_format(cmd->index, format), cmd->token, cmd->value);
 }
 
-static stat_t set_sa(cmdObj_t *cmd)		// motor step angle
+static stat_t set_sa(cmdObj_t *cmd)			// motor step angle
 { 
 	set_dbl(cmd);
 	_set_motor_steps_per_unit(cmd); 
 	return (STAT_OK);
 }
 
-static stat_t set_tr(cmdObj_t *cmd)		// motor travel per revolution
+static stat_t set_tr(cmdObj_t *cmd)			// motor travel per revolution
 { 
 	set_dbu(cmd);
 	_set_motor_steps_per_unit(cmd); 
 	return (STAT_OK);
 }
 
-static stat_t set_mi(cmdObj_t *cmd)		// motor microsteps
+static stat_t set_mi(cmdObj_t *cmd)			// motor microsteps
 {
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
 		cmd_add_message_P(PSTR("*** WARNING *** Setting non-standard microstep value"));
@@ -1339,14 +1428,14 @@ static stat_t set_mi(cmdObj_t *cmd)		// motor microsteps
 	return (STAT_OK);
 }
 
-static stat_t set_po(cmdObj_t *cmd)		// motor polarity
+static stat_t set_po(cmdObj_t *cmd)			// motor polarity
 { 
 	ritorno (set_01(cmd));
 	st_set_polarity(get_motor(cmd->index), (uint8_t)cmd->value);
 	return (STAT_OK);
 }
 
-static stat_t set_pm(cmdObj_t *cmd)		// motor power mode
+static stat_t set_pm(cmdObj_t *cmd)			// motor power mode
 { 
 	ritorno (set_01(cmd));
 	if (fp_ZERO(cmd->value)) {				// zero means enable motor - i.e. disable power management mode
@@ -1380,30 +1469,13 @@ static void pr_ma_rot(cmdObj_t *cmd)		// print a rotary value in degrees units
 					(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
 }
 
-static void print_am(cmdObj_t *cmd)		// print axis mode with enumeration string
+static void print_am(cmdObj_t *cmd)			// print axis mode with enumeration string
 {
 	cmd_get(cmd);
 	char_t format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
 					(PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
 }
-
-static void print_coor(cmdObj_t *cmd)		// print coordinate offsets with linear units
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
-					(PGM_P)pgm_read_word(&msg_units[cm_get_model_units_mode()]));
-}
-
-static void print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
-					(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
-}
-
 
 /**** COMMUNICATIONS SETTINGS *************************************************
  * set_ic() - ignore CR or LF on RX
@@ -1899,53 +1971,6 @@ static void print_dbl(cmdObj_t *cmd)
 	fprintf(stderr, get_format(cmd->index, format), cmd->value);
 }
 
-/******************************************************************************
- * Accessors - get various data from an object given the index
- * get_format() 	- return format string for an index
- * get_motor()		- return the motor number as an index or -1 if na
- * get_axis()		- return the axis as an index or -1 if na 
- * get_pos_axis()	- return axis number for pos values or -1 if none - e.g. posx
- */
-static char_t *get_format(const index_t i, char_t *format)
-{
-	strncpy_P(format, (PGM_P)pgm_read_word(&cfgArray[i].format), CMD_FORMAT_LEN);
-	return (format);
-}
-
-static int8_t get_motor(const index_t i)
-{
-	char_t *ptr;
-	char_t motors[] = {"1234"};
-	char_t tmp[CMD_TOKEN_LEN+1];
-
-	strcpy_P(tmp, cfgArray[i].group);
-	if ((ptr = strchr(motors, tmp[0])) == NULL) {
-		return (-1);
-	}
-	return (ptr - motors);
-}
-/*
-static int8_t get_axis(const index_t i)
-{
-	char_t *ptr;
-	char_t tmp[CMD_TOKEN_LEN+1];
-	char_t axes[] = {"xyzabc"};
-
-	strcpy_P(tmp, cfgArray[i].token);
-	if ((ptr = strchr(axes, tmp[0])) == NULL) { return (-1);}
-	return (ptr - axes);
-}
-*/
-static int8_t get_pos_axis(const index_t i)
-{
-	char_t *ptr;
-	char_t tmp[CMD_TOKEN_LEN+1];
-	char_t axes[] = {"xyzabc"};
-
-	strcpy_P(tmp, cfgArray[i].token);
-	if ((ptr = strchr(axes, tmp[3])) == NULL) { return (-1);}
-	return (ptr - axes);
-}
 
 /******************************************************************************
  * Group operations
