@@ -879,9 +879,57 @@ uint8_t cmd_index_is_single(index_t index) { return ((index <= CMD_INDEX_END_SIN
 uint8_t cmd_index_is_group(index_t index) { return (((index >= CMD_INDEX_START_GROUPS) && (index < CMD_INDEX_START_UBER_GROUPS)) ? true : false);}
 uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_GROUPS) ? true : false);}
 
+/***********************************************************************************
+ **** APPLICATION SPECIFIC FUNCTIONS ***********************************************
+ ***********************************************************************************/
 
-/**** SYSTEM VARIABLES: Versions and IDs **************************************
- * set_hv() - set hardweare version number
+/***** UNIT CONVERSION FUNCTIONS ***************************************************
+ * get_flu() - get floating point number with Gcode units conversion
+ * set_flu() - set floating point number with Gcode units conversion
+ * print_lin - print linear axis value with Gcode units conversion
+ * print_rot - print rotary axis value with Gcode units conversion
+ *
+ * set_dbu() - set value as float w/unit conversion
+ * get_dbu() - get value as float w/unit conversion
+ * print_lin() - print linear value with units and in/mm unit conversion
+ * print_rot() - print rotary value with units
+ */
+
+static stat_t set_dbu(cmdObj_t *cmd)
+{
+	if (cm_get_model_units_mode() == INCHES) { cmd->value *= MM_PER_INCH;}
+	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
+	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->objtype = TYPE_FLOAT_UNITS;
+	return(STAT_OK);
+}
+
+static stat_t get_dbu(cmdObj_t *cmd)
+{
+	get_dbl(cmd);
+	if (cm_get_model_units_mode() == INCHES) {
+		cmd->value *= INCH_PER_MM;
+	}
+	//	cmd->objtype = TYPE_FLOAT_UNITS;	// ++++ UNTESTED
+	return (STAT_OK);
+}
+
+static void print_lin(cmdObj_t *cmd)
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[cm_get_model_units_mode()]));
+}
+
+static void print_rot(cmdObj_t *cmd)
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
+}
+
+/******* System and application control variables and functions ******
+ * set_hv() - set hardware version number
  * get_id() - get device ID (signature)
  */
 static stat_t set_hv(cmdObj_t *cmd) 
@@ -902,34 +950,26 @@ static stat_t get_id(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-/**** REPORT FUNCTIONS ********************************************************
- * set_md() 	- disable all motors
- * set_me() 	- enable motors with $Npm=0
- * set_qv() 	- get a queue report verbosity
- * get_qr() 	- get a queue report (as data)
- * run_qf() 	- execute a planner buffer flush
+
+/**** COMMAND AND REPORT FUNCTIONS ********************************************************
+ * set_qv() - set queue report verbosity
+ * get_qr() - run a queue report (as data)
+ * run_qf() - request a planner buffer flush
  * get_er()	- invoke a bogus exception report for testing purposes (it's not real)
  * get_rx()	- get bytes available in RX buffer
+ * set_si()	- set status report interval
  * get_sr()	- run status report
  * set_sr()	- set status report elements
- * print_sr()	- print multiline text status report
- * set_si()	- set status report interval
- * run_boot()  - request boot loader entry
- * cmd_set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
+ * print_sr() - print multiline text status report
+ * set_md() - disable all motors
+ * set_me() - enable motors with $Npm=0
  * run_sx()	- send XOFF, XON
+ * set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
+ * get_gc()	- get gcode block
+ * run_gc()	- launch the gcode parser on a block of gcode
+ * run_home() - invoke a homing cycle
+ * run_boot() - request boot loader entry
  */
-
-static stat_t set_md(cmdObj_t *cmd) 
-{
-	st_disable_motors();
-	return (STAT_OK);
-}
-
-static stat_t set_me(cmdObj_t *cmd) 
-{
-	st_enable_motors();
-	return (STAT_OK);
-}
 
 static stat_t get_qr(cmdObj_t *cmd) 
 {
@@ -941,7 +981,6 @@ static stat_t get_qr(cmdObj_t *cmd)
 static stat_t run_qf(cmdObj_t *cmd) 
 {
 	cm_request_queue_flush();
-//	cm_flush_planner();
 	return (STAT_OK);
 }
 
@@ -956,6 +995,13 @@ static stat_t get_rx(cmdObj_t *cmd)
 	cmd->value = (float)xio_get_usb_rx_free();
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
+}
+
+static stat_t set_si(cmdObj_t *cmd)
+{
+	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
+	cfg.status_report_interval = (uint32_t)cmd->value;
+	return(STAT_OK);
 }
 
 static stat_t get_sr(cmdObj_t *cmd)
@@ -974,20 +1020,25 @@ static void print_sr(cmdObj_t *cmd)
 	rpt_populate_unfiltered_status_report();
 }
 
-static stat_t set_si(cmdObj_t *cmd) 
+static stat_t set_md(cmdObj_t *cmd)
 {
-	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
-	cfg.status_report_interval = (uint32_t)cmd->value;
-	return(STAT_OK);
+	st_disable_motors();
+	return (STAT_OK);
 }
 
-static stat_t run_boot(cmdObj_t *cmd)
+static stat_t set_me(cmdObj_t *cmd)
 {
-	tg_request_bootloader();
-	return(STAT_OK);
+	st_enable_motors();
+	return (STAT_OK);
 }
 
-//stat_t cmd_set_jv(cmdObj_t *cmd) 
+static stat_t run_sx(cmdObj_t *cmd)
+{
+	xio_putc(XIO_DEV_USB, XOFF);
+	xio_putc(XIO_DEV_USB, XON);
+	return (STAT_OK);
+}
+
 static stat_t set_jv(cmdObj_t *cmd) 
 {
 	if (cmd->value > JV_VERBOSE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
@@ -1008,11 +1059,28 @@ static stat_t set_jv(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-static stat_t run_sx(cmdObj_t *cmd) 
+static stat_t get_gc(cmdObj_t *cmd)
 {
-	xio_putc(XIO_DEV_USB, XOFF);
-	xio_putc(XIO_DEV_USB, XON);	
+	ritorno(cmd_copy_string(cmd, cs.in_buf));
+	cmd->objtype = TYPE_STRING;
 	return (STAT_OK);
+}
+
+static stat_t run_gc(cmdObj_t *cmd)
+{
+	return(gc_gcode_parser(*cmd->stringp));
+}
+
+static stat_t run_home(cmdObj_t *cmd)
+{
+	if (cmd->value == true) { cm_homing_cycle_start();}
+	return (STAT_OK);
+}
+
+static stat_t run_boot(cmdObj_t *cmd)
+{
+	tg_request_bootloader();
+	return(STAT_OK);
 }
 
 
@@ -1184,29 +1252,6 @@ static void print_pos(cmdObj_t *cmd)		// print position with unit displays for M
 static void print_mpos(cmdObj_t *cmd)		// print position with fixed unit display - always in Degrees or MM
 {
 	_print_pos_helper(cmd, MILLIMETERS);
-}
-
-/**** GCODE AND RELATED FUNCTIONS *********************************************
- * get_gc()	- get gcode block
- * run_gc()	- launch the gcode parser on a block of gcode
- * run_home()	- invoke a homing cycle
- */
-static stat_t get_gc(cmdObj_t *cmd)
-{
-	ritorno(cmd_copy_string(cmd, cs.in_buf));
-	cmd->objtype = TYPE_STRING;
-	return (STAT_OK);
-}
-
-static stat_t run_gc(cmdObj_t *cmd)
-{
-	return(gc_gcode_parser(*cmd->stringp));
-}
-
-static stat_t run_home(cmdObj_t *cmd)
-{
-	if (cmd->value == true) { cm_homing_cycle_start();}
-	return (STAT_OK);
 }
 
 /**** AXIS AND MOTOR FUNCTIONS ************************************************
@@ -1731,14 +1776,12 @@ stat_t cfg_cycle_check(void)
  * set_012() - set a 0, 1 or 2 uint8_t value with validation
  * set_int() - set value as 32 bit integer w/o unit conversion
  * set_dbl() - set value as float w/o unit conversion
- * set_dbu() - set value as float w/unit conversion
  *
  * Generic gets()
  * get_nul() - get nothing (returns STAT_NOOP)
  * get_ui8() - get value as 8 bit uint8_t w/o unit conversion
  * get_int() - get value as 32 bit integer w/o unit conversion
  * get_dbl() - get value as float w/o unit conversion
- * get_dbu() - get value as float w/unit conversion
  */
 static stat_t set_nul(cmdObj_t *cmd) { return (STAT_NOOP);}
 
@@ -1791,15 +1834,6 @@ static stat_t set_dbl(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-static stat_t set_dbu(cmdObj_t *cmd)
-{
-	if (cm_get_model_units_mode() == INCHES) { cmd->value *= MM_PER_INCH;}
-	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
-	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-	cmd->objtype = TYPE_FLOAT_UNITS;
-	return(STAT_OK);
-}
-
 static stat_t get_nul(cmdObj_t *cmd) 
 { 
 	cmd->objtype = TYPE_NULL;
@@ -1828,24 +1862,12 @@ static stat_t get_dbl(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-static stat_t get_dbu(cmdObj_t *cmd)
-{
-	get_dbl(cmd);
-	if (cm_get_model_units_mode() == INCHES) {
-		cmd->value *= INCH_PER_MM;
-	}
-//	cmd->objtype = TYPE_FLOAT_UNITS;	// ++++ UNTESTED
-	return (STAT_OK);
-}
-
 /* Generic prints()
  * print_nul() - print nothing
  * print_str() - print string value
  * print_ui8() - print uint8_t value w/no units or unit conversion
  * print_int() - print integer value w/no units or unit conversion
  * print_dbl() - print float value w/no units or unit conversion
- * print_lin() - print linear value with units and in/mm unit conversion
- * print_rot() - print rotary value with units
  */
 static void print_nul(cmdObj_t *cmd) {}
 
@@ -1875,20 +1897,6 @@ static void print_dbl(cmdObj_t *cmd)
 	cmd_get(cmd);
 	char_t format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, get_format(cmd->index, format), cmd->value);
-}
-
-static void print_lin(cmdObj_t *cmd)
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[cm_get_model_units_mode()]));
-}
-
-static void print_rot(cmdObj_t *cmd)
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
 }
 
 /******************************************************************************
