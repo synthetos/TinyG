@@ -323,17 +323,14 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 			if		(cmd->objtype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "\"\"");} // Note that that "" is NOT null.
 			else if (cmd->objtype == TYPE_INTEGER)	{
 				double tmp_value = (double)cmd->value;
-				if (tmp_value == NAN || tmp_value == INFINITY)
-					tmp_value = 0;
+				if (tmp_value == NAN || tmp_value == INFINITY) { tmp_value = 0;}
 				str += (char_t)sprintf((char *)str, "%1.0f", tmp_value);
 			}
 			else if (cmd->objtype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*cmd->stringp);}
 			else if (cmd->objtype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*cmd->stringp);}
 			else if (cmd->objtype == TYPE_FLOAT) {
-
 				double tmp_value = (double)cmd->value;
-				if (tmp_value == NAN || tmp_value == INFINITY)
-					tmp_value = 0;
+				if (tmp_value == NAN || tmp_value == INFINITY) {tmp_value = 0;}
 
 				if 		(cmd->precision == 0) { str += (char_t)sprintf((char *)str, "%0.0f", tmp_value);}
 				else if (cmd->precision == 1) { str += (char_t)sprintf((char *)str, "%0.1f", tmp_value);}
@@ -409,7 +406,7 @@ void json_print_response(uint8_t status)
 	cmdObj_t *cmd = cmd_body;
 	if (status == STAT_JSON_SYNTAX_ERROR) {
 		cmd_reset_list();
-		cmd_add_string("msg", escape_string(cs.in_buf, cs.saved_buf));
+		cmd_add_string((const char_t *)"msg", escape_string(cs.in_buf, cs.saved_buf));
 
 	} else if (cm.machine_state != MACHINE_INITIALIZING) {		// always do full echo during startup
 		uint8_t cmd_type;

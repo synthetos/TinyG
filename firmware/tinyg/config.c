@@ -2241,7 +2241,7 @@ stat_t cmd_copy_string_P(cmdObj_t *cmd, const char_t *src_P)
 	return (cmd_copy_string(cmd, buf));
 }
 
-cmdObj_t *cmd_add_object(char_t *token)		// add an object to the body using a token
+cmdObj_t *cmd_add_object(const char_t *token)  // add an object to the body using a token
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
@@ -2257,7 +2257,7 @@ cmdObj_t *cmd_add_object(char_t *token)		// add an object to the body using a to
 	return (NULL);
 }
 
-cmdObj_t *cmd_add_integer(char_t *token, const uint32_t value)// add an integer object to the body
+cmdObj_t *cmd_add_integer(const char_t *token, const uint32_t value)// add an integer object to the body
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
@@ -2273,7 +2273,7 @@ cmdObj_t *cmd_add_integer(char_t *token, const uint32_t value)// add an integer 
 	return (NULL);
 }
 
-cmdObj_t *cmd_add_float(char_t *token, const float value)	// add a float object to the body
+cmdObj_t *cmd_add_float(const char_t *token, const float value)	// add a float object to the body
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
@@ -2289,7 +2289,7 @@ cmdObj_t *cmd_add_float(char_t *token, const float value)	// add a float object 
 	return (NULL);
 }
 
-cmdObj_t *cmd_add_string(char_t *token, const char_t *string) // add a string object to the body
+cmdObj_t *cmd_add_string(const char_t *token, const char_t *string) // add a string object to the body
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
@@ -2306,7 +2306,7 @@ cmdObj_t *cmd_add_string(char_t *token, const char_t *string) // add a string ob
 	return (NULL);
 }
 
-cmdObj_t *cmd_add_string_P(char_t *token, const char_t *string)
+cmdObj_t *cmd_add_string_P(const char_t *token, const char_t *string)
 {
 	char_t message[CMD_MESSAGE_LEN]; 
 	sprintf_P(message, string);

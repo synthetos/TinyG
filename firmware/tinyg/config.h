@@ -326,11 +326,11 @@ cmdObj_t *cmd_reset_obj(cmdObj_t *cmd);
 cmdObj_t *cmd_reset_list(void);
 stat_t cmd_copy_string(cmdObj_t *cmd, const char *src);
 stat_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P);
-cmdObj_t *cmd_add_object(char *token);
-cmdObj_t *cmd_add_integer(char *token, const uint32_t value);
-cmdObj_t *cmd_add_float(char *token, const float value);
-cmdObj_t *cmd_add_string(char *token, const char *string);
-cmdObj_t *cmd_add_string_P(char *token, const char *string);
+cmdObj_t *cmd_add_object(const char *token);
+cmdObj_t *cmd_add_integer(const char *token, const uint32_t value);
+cmdObj_t *cmd_add_float(const char *token, const float value);
+cmdObj_t *cmd_add_string(const char *token, const char *string);
+cmdObj_t *cmd_add_string_P(const char *token, const char *string);
 cmdObj_t *cmd_add_message(const char *string);
 cmdObj_t *cmd_add_message_P(const char *string);
 
