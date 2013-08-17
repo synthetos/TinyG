@@ -65,11 +65,13 @@ static stat_t _sync_to_planner(void);
 static stat_t _sync_to_tx_buffer(void);
 static stat_t _command_dispatch(void);
 
-
 // prep for export to other modules:
 stat_t hardware_hard_reset_handler(void);
 stat_t hardware_bootloader_handler(void);
 
+/***********************************************************************************
+ **** CODE *************************************************************************
+ ***********************************************************************************/
 /*
  * controller_init() - controller init
  */
@@ -83,7 +85,7 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 
 	cs.linelen = 0;							// initialize index for read_line()
 	cs.state = CONTROLLER_STARTUP;			// ready to run startup lines
-	cs.reset_requested = false;
+	cs.hard_reset_requested = false;
 	cs.bootloader_requested = false;
 
 	xio_set_stdin(std_in);
@@ -242,7 +244,6 @@ static stat_t _command_dispatch()
 }
 
 /**** Local Utilities ********************************************************/
-
 /*
  * _alarm_idler() - blink rapidly and prevent further activity from occurring
  * _normal_idler() - blink Indicator LED slowly to show everything is OK
@@ -364,7 +365,7 @@ uint8_t _system_assertions()
  * hardware_hard_reset()		 - hard reset using watchdog timer
  * hardware_hard_reset_handler() - controller's rest handler
  */
-void hardware_request_hard_reset() { cs.reset_requested = true; }
+void hardware_request_hard_reset() { cs.hard_reset_requested = true; }
 
 void hardware_hard_reset(void)			// software hard reset using the watchdog timer
 {
@@ -374,7 +375,7 @@ void hardware_hard_reset(void)			// software hard reset using the watchdog timer
 
 stat_t hardware_hard_reset_handler(void)
 {
-	if (cs.reset_requested == false) { return (STAT_NOOP);}
+	if (cs.hard_reset_requested == false) { return (STAT_NOOP);}
 	hardware_hard_reset();				// hard reset - identical to hitting RESET button
 	return (STAT_EAGAIN);
 }

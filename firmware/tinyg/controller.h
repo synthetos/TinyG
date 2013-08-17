@@ -42,23 +42,28 @@
 
 struct controllerSingleton {			// main TG controller struct
 	uint16_t magic_start;				// magic number to test memory integity	
+	uint8_t state;						// controller state
 	float null;							// dumping ground for items with no target
 	float fw_build;						// tinyg firmware build number
 	float fw_version;					// tinyg firmware version number
 	float hw_platform;					// tinyg hardware compatibility - platform type
 	float hw_version;					// tinyg hardware compatibility
-	uint8_t state;						// controller state
-	uint8_t request_reset;				// set true of a system reset should be performed
+
+	// communications state variables
 	uint8_t primary_src;				// primary input source device
 	uint8_t secondary_src;				// secondary input source device
 	uint8_t default_src;				// default source device
 	uint8_t network_mode;				// 0=master, 1=repeater, 2=slave
 	uint8_t linelen;					// length of currently processing line
+	
+	// system state variables
 	uint8_t led_state;		// LEGACY	// 0=off, 1=on
 	int32_t led_counter;	// LEGACY	// a convenience for flashing an LED
 	uint32_t led_timer;					// SysTick timer for idler LEDs
-	uint8_t reset_requested;			// flag to perform a software reset
+	uint8_t hard_reset_requested;		// flag to perform a hard reset
 	uint8_t bootloader_requested;		// flag to enter the bootloader
+	
+	// controller serial buffers
 	char *bufp;							// pointer to primary or secondary in buffer
 	char in_buf[INPUT_BUFFER_LEN];		// primary input buffer
 	char out_buf[OUTPUT_BUFFER_LEN];	// output buffer
