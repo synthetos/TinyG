@@ -25,7 +25,6 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 #include "tinyg.h"
 #include "util.h"
 #include "config.h"
@@ -127,7 +126,6 @@ static void _normalize_gcode_block(char_t *cmd, char_t **com, char_t **msg, uint
 	// normalize the command block & find the comment (if any)
 	for (; *wr != NUL; rd++) {
 		if (*rd == NUL) { *wr = NUL; }
-//		else if (*rd == '(') { *wr = NUL; *com = rd+1; }
 		else if ((*rd == '(') || (*rd == ';')) { *wr = NUL; *com = rd+1; }
 		else if ((isalnum((char)*rd)) || (strchr("-.", *rd))) { // all valid characters
 			*(wr++) = (char_t)toupper((char)*(rd));

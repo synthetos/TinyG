@@ -39,15 +39,14 @@
 struct hmHomingSingleton {		// persistent homing runtime variables
 	// controls for homing cycle
 	int8_t axis;				// axis currently being homed
-//	int8_t axis2;				// second axis if dual axis
 	uint8_t min_mode;			// mode for min switch fo this axis
 	uint8_t max_mode;			// mode for max switch fo this axis
 	int8_t homing_switch;		// homing switch for current axis (index into switch flag table)
 	int8_t limit_switch;		// limit switch for current axis, or -1 if none
 	uint8_t homing_closed;		// 0=open, 1=closed
 	uint8_t limit_closed;		// 0=open, 1=closed
-	uint8_t (*func)(int8_t axis);// binding for callback function state machine
 	uint8_t set_coordinates;	// G28.4 flag. true = set coords to zero at the end of homing cycle
+	uint8_t (*func)(int8_t axis);// binding for callback function state machine
 
 	// per-axis parameters
 	float direction;			// set to 1 for positive (max), -1 for negative (to min);
@@ -70,6 +69,7 @@ static struct hmHomingSingleton hm;
 
 /**** NOTE: global prototypes and other .h info is located in canonical_machine.h ****/
 
+static stat_t _set_homing_func(uint8_t (*func)(int8_t axis));
 static stat_t _homing_axis_start(int8_t axis);
 static stat_t _homing_axis_clear(int8_t axis);
 static stat_t _homing_axis_backoff_home(int8_t axis);
@@ -81,8 +81,6 @@ static stat_t _homing_axis_set_zero(int8_t axis);
 static stat_t _homing_axis_move(int8_t axis, float target, float velocity);
 static stat_t _homing_finalize_exit(int8_t axis);
 static stat_t _homing_error_exit(int8_t axis);
-
-static stat_t _set_homing_func(uint8_t (*func)(int8_t axis));
 static int8_t _get_next_axis(int8_t axis);
 //static int8_t _get_next_axes(int8_t axis);
 
@@ -157,7 +155,6 @@ uint8_t cm_homing_cycle_start(void)
 	hm.func = _homing_axis_start; 			// bind initial processing function
 	cm.cycle_state = CYCLE_HOMING;
 	cm.homing_state = HOMING_NOT_HOMED;
-	st_enable_motors();						// enable motors if not already enabled
 	return (STAT_OK);
 }
 
@@ -179,7 +176,6 @@ uint8_t cm_homing_cycle_start_no_set(void)
 	hm.func = _homing_axis_start; 			// bind initial processing function
 	cm.cycle_state = CYCLE_HOMING;
 	cm.homing_state = HOMING_NOT_HOMED;	    // this cycle should not change the homing state but at this point I think the homing state is the only way to see if the cycle is complete.
-	st_enable_motors();						// enable motors if not already enabled
 	return (STAT_OK);
 }
 
@@ -236,6 +232,7 @@ static stat_t _homing_error_exit(int8_t axis)
 
 /* Homing axis moves - these execute in sequence for each axis
  * cm_homing_callback() 		- main loop callback for running the homing cycle
+ *	_set_homing_func()			- a convenience for setting the next dispatch vector and exiting
  *	_homing_axis_start()		- get next axis, initialize variables, call the clear
  *	_homing_axis_clear()		- initiate a clear to move off a switch that is thrown at the start
  *	_homing_axis_backoff_home()	- back off the cleared home switch
@@ -252,6 +249,13 @@ uint8_t cm_homing_callback(void)
 	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}	// sync to planner move ends
 	return (hm.func(hm.axis));						// execute the current homing move
 }
+
+uint8_t _set_homing_func(uint8_t (*func)(int8_t axis))
+{
+	hm.func = func;
+	return (STAT_EAGAIN);
+}
+
 
 static stat_t _homing_axis_start(int8_t axis)
 {
@@ -391,17 +395,6 @@ static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 
 /* _run_homing_dual_axis() - kernal routine for running homing on a dual axis */
 //static stat_t _run_homing_dual_axis(int8_t axis) { return (STAT_OK);}
-
-/**** HELPERS ****************************************************************/
-/*
- * _set_homing_func() - a convenience for setting the next dispatch vector and exiting
- */
-
-uint8_t _set_homing_func(uint8_t (*func)(int8_t axis))
-{
-	hm.func = func;
-	return (STAT_EAGAIN);
-}
 
 /*
  * _get_next_axis() - return next axis in sequence based on axis in arg
