@@ -35,6 +35,7 @@
 #include "json_parser.h"
 #include "text_parser.h"
 #include "help.h"
+#include "util.h"
 #include "xio/xio.h"
 #include "xmega/xmega_eeprom.h"
 
@@ -89,7 +90,6 @@ void cmd_persist(cmdObj_t *cmd)
 
 /******************************************************************************
  * config_init()  - called once on hard reset
- * set_defaults() - reset NVM with default values for active profile
  *
  * Performs one of 2 actions:
  *	(1) if NVM is set up or out-of-rev load RAM and NVM with settings.h defaults
@@ -128,9 +128,13 @@ void config_init()
 	}
 }
 
+/*
+ * set_defaults() - reset NVM with default values for active profile
+ */
 stat_t set_defaults(cmdObj_t *cmd) 
 {
-	if (cmd->value != true) {				// failsafe. Must set true or no action occurs
+//	if (cmd->value != true) {				// failsafe. Must set true or no action occurs
+	if (fp_FALSE(cmd->value)) {				// failsafe. Must set true or no action occurs
 		print_defaults_help(cmd);
 		return (STAT_OK);
 	}
@@ -192,7 +196,7 @@ char_t *get_format(const index_t i, char_t *format)
 	return (format);
 }
 
-//ARM version: REPLACED BY A MACRO in config.h
+//ARM version:
 //char *get_format(const index_t index) { return ((char *)cfgArray[index].format); }
 
 /* Generic sets()

@@ -59,38 +59,20 @@ cfgParameters_t cfg; 				// application specific configuration parameters
  ***********************************************************************************/
 // See config.cpp/.h for generic variables and functions that are not specific to 
 // TinyG or the motion control application domain
-  
-// system and application control variables and functions
 
-static stat_t set_flu(cmdObj_t *cmd);	// set a float with unit conversion
-static stat_t get_flu(cmdObj_t *cmd);	// get float with unit conversion
-static void print_lin(cmdObj_t *cmd);	// print linear values
-static void print_rot(cmdObj_t *cmd);	// print rotary values
-
-//static void pr_ma_str(cmdObj_t *cmd); // generic print functions for motors and axes
-static void pr_ma_ui8(cmdObj_t *cmd);
-//static void pr_ma_int(cmdObj_t *cmd); // placeholder
-//static void pr_ma_flt(cmdObj_t *cmd); // placeholder
-static void pr_ma_lin(cmdObj_t *cmd);
-static void pr_ma_rot(cmdObj_t *cmd);
-static void print_coor(cmdObj_t *cmd);	// print coordinate offsets with linear units
-static void print_corr(cmdObj_t *cmd);	// print coordinate offsets with rotary units
-
-// helpers
-static int8_t _get_motor(const index_t i);
-//static int8_t _get_axis(const index_t i);
-static int8_t _get_pos_axis(const index_t i);
-static stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value);
+// helpers (most helpers are defined immediate above their usage so they don't need prototypes here)
 
 static stat_t _do_motors(cmdObj_t *cmd);// print parameters for all motor groups
 static stat_t _do_axes(cmdObj_t *cmd);	// print parameters for all axis groups
 static stat_t _do_offsets(cmdObj_t *cmd);// print offsets for G54-G59, G92
 static stat_t _do_all(cmdObj_t *cmd);	// print all parameters
 
-/*****************************************************************************
- **** PARAMETER-SPECIFIC CODE REGION *****************************************
- **** This code and data will change as you add / update config parameters ***
- *****************************************************************************/
+// Gcode domain specific functions
+
+static stat_t set_flu(cmdObj_t *cmd);	// set a float with unit conversion
+static stat_t get_flu(cmdObj_t *cmd);	// get float with unit conversion
+static void print_lin(cmdObj_t *cmd);	// print linear values
+static void print_rot(cmdObj_t *cmd);	// print rotary values
 
 // system and application control variables and functions
 
@@ -133,6 +115,8 @@ static stat_t get_ofs(cmdObj_t *cmd);		// get runtime work offset...
 static void print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
 static void print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
 static void print_ss(cmdObj_t *cmd);		// print switch state
+static void print_coor(cmdObj_t *cmd);	// print coordinate offsets with linear units
+static void print_corr(cmdObj_t *cmd);	// print coordinate offsets with rotary units
 
 static stat_t get_line(cmdObj_t *cmd);		// get runtime line number
 static stat_t get_stat(cmdObj_t *cmd);		// get combined machine state as value and string
@@ -165,6 +149,12 @@ static void print_am(cmdObj_t *cmd);		// print axis mode
 //static stat_t set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 static stat_t set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
 
+//static void pr_ma_str(cmdObj_t *cmd); // generic print functions for motors and axes
+static void pr_ma_ui8(cmdObj_t *cmd);
+//static void pr_ma_int(cmdObj_t *cmd); // placeholder
+//static void pr_ma_flt(cmdObj_t *cmd); // placeholder
+static void pr_ma_lin(cmdObj_t *cmd);
+static void pr_ma_rot(cmdObj_t *cmd);
 
 /***********************************************************************************
  **** FLASH STRINGS AND STRING ARRAYS **********************************************
@@ -841,47 +831,10 @@ uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_G
  **** APPLICATION SPECIFIC FUNCTIONS ***********************************************
  ***********************************************************************************/
 
-/***** APPLICATION_SPECIFIC EXTENSIONS TO GENERIC FUNCTIONS ************************
- * get_flu()   - get floating point number with Gcode units conversion
- * set_flu()   - set floating point number with Gcode units conversion
- * print_lin() - print linear axis value with Gcode units conversion
- * print_rot() - print rotary axis value with Gcode units conversion
- */
-
-static stat_t set_flu(cmdObj_t *cmd)
-{
-	if (cm_get_model_units_mode() == INCHES) { cmd->value *= MM_PER_INCH;}
-	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
-	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-	cmd->objtype = TYPE_FLOAT_UNITS;
-	return(STAT_OK);
-}
-
-static stat_t get_flu(cmdObj_t *cmd)
-{
-	get_flt(cmd);
-	if (cm_get_model_units_mode() == INCHES) {
-		cmd->value *= INCH_PER_MM;
-	}
-	//	cmd->objtype = TYPE_FLOAT_UNITS;	// ++++ UNTESTED
-	return (STAT_OK);
-}
-
-static void print_lin(cmdObj_t *cmd)
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[cm_get_model_units_mode()]));
-}
-
-static void print_rot(cmdObj_t *cmd)
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
-}
-
 /***** HELPERS *********************************************************************
+ *
+ * Helpers are defined first so they don't need separate function prototypes
+ *
  * _get_motor()	- return motor number as an index or -1 if na
  * _get_axis()	- return axis number or -1 if NA
  * _get_pos_axis()- return axis number for pos values or -1 if none - e.g. posx
@@ -922,6 +875,44 @@ static int8_t _get_pos_axis(const index_t i)
 	return (ptr - axes);
 }
 
+/***** DOMAIN SPECIFIC EXTENSIONS TO GENERIC FUNCTIONS ************************
+ * get_flu()   - get floating point number with Gcode units conversion
+ * set_flu()   - set floating point number with Gcode units conversion
+ * print_lin() - print linear axis value with Gcode units conversion
+ * print_rot() - print rotary axis value with Gcode units conversion
+ */
+static stat_t set_flu(cmdObj_t *cmd)
+{
+	if (cm_get_model_units_mode() == INCHES) { cmd->value *= MM_PER_INCH;}
+	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
+	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->objtype = TYPE_FLOAT_UNITS;
+	return(STAT_OK);
+}
+
+static stat_t get_flu(cmdObj_t *cmd)
+{
+	get_flt(cmd);
+	if (cm_get_model_units_mode() == INCHES) {
+		cmd->value *= INCH_PER_MM;
+	}
+	//	cmd->objtype = TYPE_FLOAT_UNITS;	// ++++ UNTESTED
+	return (STAT_OK);
+}
+
+static void print_lin(cmdObj_t *cmd)
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[cm_get_model_units_mode()]));
+}
+
+static void print_rot(cmdObj_t *cmd)
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
+}
 
 /******* SYSTEM ID AND CONTROL VARIABLES ****************************************************
  * set_hv() - set hardware version number
