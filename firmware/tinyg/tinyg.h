@@ -43,7 +43,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   		387.13	// Partial refactoring of hardware reset and bootloader commands
+#define TINYG_FIRMWARE_BUILD   		387.14	// Aligned controller code (for now)
 #define TINYG_FIRMWARE_VERSION		0.95	// major version
 #define TINYG_HARDWARE_VERSION		7		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8

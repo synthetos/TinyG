@@ -57,13 +57,14 @@
 // local helpers
 static void _controller_HSM(void);
 static stat_t _alarm_idler(void);
+static stat_t _normal_idler(void);
 static stat_t _limit_switch_handler(void);
 static stat_t _system_assertions(void);
 //static stat_t _cycle_start_handler(void);
 static stat_t _sync_to_planner(void);
 static stat_t _sync_to_tx_buffer(void);
 static stat_t _command_dispatch(void);
-static stat_t _normal_idler(void);
+
 
 // prep for export to other modules:
 stat_t hardware_hard_reset_handler(void);
@@ -161,7 +162,7 @@ static void _controller_HSM()
 	DISPATCH(_sync_to_tx_buffer());				// sync with TX buffer (pseudo-blocking)
 	DISPATCH(cfg_baud_rate_callback());			// perform baud rate update (must be after TX sync)
 	DISPATCH(_command_dispatch());				// read and execute next command
-//	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
+	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
 }
 
 /***************************************************************************** 
@@ -240,24 +241,17 @@ static stat_t _command_dispatch()
 	return (STAT_OK);
 }
 
-/* 
- * _normal_idler() - blink Indicator LED slowly to show everything is OK
+/**** Local Utilities ********************************************************/
+
+/*
  * _alarm_idler() - blink rapidly and prevent further activity from occurring
+ * _normal_idler() - blink Indicator LED slowly to show everything is OK
  *
  *	Alarm idler flashes indicator LED rapidly to show everything is not OK. 
  *	Alarm function returns EAGAIN causing the control loop to never advance beyond 
  *	this point. It's important that the reset handler is still called so a SW reset 
  *	(ctrl-x) or bootloader request can be processed.
  */
-
-static stat_t _normal_idler(  )
-{
-	if (SysTickTimer_getValue() > cs.led_timer) {
-		cs.led_timer = SysTickTimer_getValue() + LED_NORMAL_TIMER;
-//		IndicatorLed_toggle();
-	}
-	return (STAT_OK);
-}
 
 static stat_t _alarm_idler(void)
 {
@@ -270,58 +264,35 @@ static stat_t _alarm_idler(void)
 	return (STAT_EAGAIN);	 // EAGAIN prevents any other actions from running
 }
 
-/**** Flag handlers ***********************************************************
- * _reset_handler()
- * _feedhold_handler()
- * _cycle_start_handler()
- * _limit_switch_handler() - shut down system if limit switch fired
- */
-
-/**** Hardware Reset Handlers *************************************************
- * hardware_request_hard_reset()
- * hardware_hard_reset()		 - hard reset using watchdog timer
- * hardware_hard_reset_handler() - controller's rest handler
- */
-void hardware_request_hard_reset() { cs.reset_requested = true; }
-
-void hardware_hard_reset(void)			// software hard reset using the watchdog timer
+static stat_t _normal_idler(  )
 {
-	wdt_enable(WDTO_15MS);
-	while (true);						// loops for about 15ms then resets
+/*
+	if (SysTickTimer_getValue() > cs.led_timer) {
+		cs.led_timer = SysTickTimer_getValue() + LED_NORMAL_TIMER;
+//		IndicatorLed_toggle();
+	}
+*/
+	return (STAT_OK);
 }
 
-stat_t hardware_hard_reset_handler(void)
-{
-	if (cs.reset_requested == false) { return (STAT_NOOP);}
-	hardware_hard_reset();				// hard reset - identical to hitting RESET button
-	return (STAT_EAGAIN);
-}
-
-/**** Bootloader Handlers *****************************************************
- * hardware_request_bootloader()
- * hareware_request_bootloader_handler() - executes a software reset using CCPWrite
- */
-void hardware_request_bootloader() { cs.bootloader_requested = true;}
-
-stat_t hardware_bootloader_handler(void)
-{
-	if (cs.bootloader_requested == false) { return (STAT_NOOP);}
-	cli();
-	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
-	return (STAT_EAGAIN);					// never gets here but keeps the compiler happy
-}
-
-/**** Local Utilities ********************************************************
- * _sync_to_tx_buffer() - return eagain if TX queue is backed up
- * _sync_to_planner() - return eagain if planner is not ready for a new command
- * tg_reset_source() - reset source to default input device (see note)
- * tg_set_active_source() - set current input source
+/*
+ * tg_reset_source() 		 - reset source to default input device (see note)
+ * tg_set_primary_source() 	 - set current primary input source
+ * tg_set_secondary_source() - set current primary input source
  *
  * Note: Once multiple serial devices are supported reset_source() should
- *	be expanded to also set the stdout/stderr console device so the prompt
- *	and other messages are sent to the active device.
+ * be expanded to also set the stdout/stderr console device so the prompt
+ * and other messages are sent to the active device.
  */
 
+void tg_reset_source() { tg_set_primary_source(cs.default_src);}
+void tg_set_primary_source(uint8_t dev) { cs.primary_src = dev;}
+void tg_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
+
+/*
+ * _sync_to_tx_buffer() - return eagain if TX queue is backed up
+ * _sync_to_planner() - return eagain if planner is not ready for a new command
+ */
 static stat_t _sync_to_tx_buffer()
 {
 	if ((xio_get_tx_bufcount_usart(ds[XIO_DEV_USB].x) >= XOFF_TX_LO_WATER_MARK)) {
@@ -337,14 +308,6 @@ static stat_t _sync_to_planner()
 	}
 	return (STAT_OK);
 }
-
-void tg_reset_source() { tg_set_primary_source(cs.default_src);}
-void tg_set_primary_source(uint8_t dev) { cs.primary_src = dev;}
-void tg_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
-
-
-
-
 
 /*
  * _limit_switch_handler() - shut down system if limit switch fired
@@ -392,8 +355,48 @@ uint8_t _system_assertions()
 	return (STAT_EAGAIN);
 }
 
+//============================================================================
+//=========== MOVE TO xmega_tinyg.c ==========================================
+//============================================================================
 
-//=========== MOVE TO text_parser.c ===========================
+/**** Hardware Reset Handlers *************************************************
+ * hardware_request_hard_reset()
+ * hardware_hard_reset()		 - hard reset using watchdog timer
+ * hardware_hard_reset_handler() - controller's rest handler
+ */
+void hardware_request_hard_reset() { cs.reset_requested = true; }
+
+void hardware_hard_reset(void)			// software hard reset using the watchdog timer
+{
+	wdt_enable(WDTO_15MS);
+	while (true);						// loops for about 15ms then resets
+}
+
+stat_t hardware_hard_reset_handler(void)
+{
+	if (cs.reset_requested == false) { return (STAT_NOOP);}
+	hardware_hard_reset();				// hard reset - identical to hitting RESET button
+	return (STAT_EAGAIN);
+}
+
+/**** Bootloader Handlers *****************************************************
+ * hardware_request_bootloader()
+ * hareware_request_bootloader_handler() - executes a software reset using CCPWrite
+ */
+void hardware_request_bootloader() { cs.bootloader_requested = true;}
+
+stat_t hardware_bootloader_handler(void)
+{
+	if (cs.bootloader_requested == false) { return (STAT_NOOP);}
+	cli();
+	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
+	return (STAT_EAGAIN);					// never gets here but keeps the compiler happy
+}
+
+
+//============================================================================
+//=========== MOVE TO text_parser.c ==========================================
+//============================================================================
 
 /************************************************************************************
  * tg_text_response() - text mode responses
