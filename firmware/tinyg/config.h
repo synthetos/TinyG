@@ -288,8 +288,11 @@ enum textFormats {					// text output print modes
 
 typedef struct cmdString {				// shared string object
 	uint16_t magic_start;
-//	uint8_t wp;							// use this string array index value if string len < 256 bytes
+#if (CMD_SHARED_STRING_LEN < 256)
+	uint8_t wp;							// use this string array index value if string len < 256 bytes
+#else
 	uint16_t wp;						// use this string array index value is string len > 255 bytes
+#endif
 	char string[CMD_SHARED_STRING_LEN];
 	uint16_t magic_end;
 } cmdStr_t;
@@ -341,11 +344,10 @@ extern const cfgItem_t cfgArray[];
 
 /**** Global scope function prototypes ****/
 
-void cfg_init(void);
+void config_init(void);
 
-//stat_t cfg_cycle_check(void);
-//stat_t cfg_text_parser(char *str);
-//stat_t cfg_baud_rate_callback(void);
+stat_t cfg_baud_rate_callback(void);
+stat_t set_defa(cmdObj_t *cmd);	// reset config to default values
 
 // main entry points for core access functions
 stat_t cmd_get(cmdObj_t *cmd);		// get value
@@ -396,8 +398,10 @@ stat_t get_grp(cmdObj_t *cmd);		// get data for a group
 void cmd_get_cmdObj(cmdObj_t *cmd);
 cmdObj_t *cmd_reset_obj(cmdObj_t *cmd);
 cmdObj_t *cmd_reset_list(void);
+
 stat_t cmd_copy_string(cmdObj_t *cmd, const char *src);
 stat_t cmd_copy_string_P(cmdObj_t *cmd, const char *src_P);
+
 cmdObj_t *cmd_add_object(const char *token);
 cmdObj_t *cmd_add_integer(const char *token, const uint32_t value);
 cmdObj_t *cmd_add_float(const char *token, const float value);
@@ -406,8 +410,6 @@ cmdObj_t *cmd_add_string_P(const char *token, const char *string);
 cmdObj_t *cmd_add_message(const char *string);
 cmdObj_t *cmd_add_message_P(const char *string);
 void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
-
-stat_t set_defa(cmdObj_t *cmd);	// reset config to default values
 
 stat_t cmd_read_NVM_value(cmdObj_t *cmd);
 stat_t cmd_write_NVM_value(cmdObj_t *cmd);

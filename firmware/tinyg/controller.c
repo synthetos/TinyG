@@ -29,9 +29,6 @@
  *	 http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info
  */
 
-#include <ctype.h>				// for parsing
-#include <string.h>
-#include <avr/pgmspace.h>		// precursor for xio.h
 #include <avr/interrupt.h>
 #include <avr/wdt.h>			// used for software reset
 
@@ -40,6 +37,7 @@
 #include "controller.h"
 #include "settings.h"
 #include "json_parser.h"
+#include "text_parser.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "plan_arc.h"
@@ -222,7 +220,7 @@ static stat_t _command_dispatch()
 		}
 		case '$': case '?':{ 					// text-mode configs
 			cfg.comm_mode = TEXT_MODE;
-			tg_text_response(cfg_text_parser(cs.bufp), cs.saved_buf);
+			tg_text_response(text_parser(cs.bufp), cs.saved_buf);
 			break;
 		}
 		case '{': { 							// JSON input

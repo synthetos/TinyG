@@ -25,12 +25,7 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* See the wiki for additional information about tests:
- *	 http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info
- */
 
-#include <stdio.h>				// precursor for xio.h
-#include <avr/pgmspace.h>		// precursor for xio.h
 #include "tinyg.h"				// #1 unfortunately, there are some dependencies
 #include "util.h"				// #2
 #include "config.h"				// #3

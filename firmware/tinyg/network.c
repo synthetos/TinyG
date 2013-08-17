@@ -32,9 +32,6 @@
  *	using what's in this file, but you won;t find much more.
  */
 
-#include <stdio.h>					// precursor for xio.h
-#include <stdbool.h>				// true and false
-#include <avr/pgmspace.h>			// precursor for xio.h
 #include <util/delay.h>				// for tests
 
 #include "tinyg.h"

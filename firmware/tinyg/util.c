@@ -31,23 +31,10 @@
  *	  - math and min/max utilities and extensions 
  *	  - vector manipulation utilities
  *	  - support for debugging routines
- */  
-#include <ctype.h>
-#include <stdio.h>				// precursor for xio.h
-#include <stdlib.h>
-#include <stdbool.h>
-#include <math.h>
-#include <string.h>
-#include <avr/pgmspace.h>		// precursor for xio.h
+ */ 
 
 #include "tinyg.h"
 #include "util.h"
-#include "config.h"
-#include "controller.h"
-#include "canonical_machine.h"
-#include "planner.h"
-#include "stepper.h"
-#include "report.h"
 
 /**** Vector functions ****
  * copy_vector()			- copy vector of arbitrary length

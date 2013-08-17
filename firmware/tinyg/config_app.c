@@ -26,12 +26,6 @@
 /*
  *	See config.h for a Config system overview and a bunch of details.
  */
-#include <ctype.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
-#include <stdio.h>			// precursor for xio.h
-#include <avr/pgmspace.h>	// precursor for xio.h
 
 #include "tinyg.h"			// config reaches into almost everything
 #include "config.h"
@@ -73,28 +67,6 @@ static stat_t get_flu(cmdObj_t *cmd);	// get float with unit conversion
 static void print_lin(cmdObj_t *cmd);	// print linear values
 static void print_rot(cmdObj_t *cmd);	// print rotary values
 
-/*
-// generic internal functions
-static stat_t set_nul(cmdObj_t *cmd);	// noop
-static stat_t set_ui8(cmdObj_t *cmd);	// set a uint8 value
-static stat_t set_01(cmdObj_t *cmd);	// set a 0 or 1 value w/validation
-static stat_t set_012(cmdObj_t *cmd);	// set a 0, 1 or 2 value w/validation
-static stat_t set_0123(cmdObj_t *cmd);	// set a 0, 1, 2 or 3 value w/validation
-static stat_t set_int(cmdObj_t *cmd);	// set a uint32 integer value
-static stat_t set_flt(cmdObj_t *cmd);	// set a float value
-
-static stat_t get_nul(cmdObj_t *cmd);	// get null value type
-static stat_t get_ui8(cmdObj_t *cmd);	// get uint8 value
-static stat_t get_int(cmdObj_t *cmd);	// get uint32 integer value
-static stat_t get_flt(cmdObj_t *cmd);	// get float value
-
-static void print_nul(cmdObj_t *cmd);	// print nothing
-static void print_str(cmdObj_t *cmd);	// print a string value
-static void print_ui8(cmdObj_t *cmd);	// print unit8_t value w/no units
-static void print_int(cmdObj_t *cmd);	// print integer value w/no units
-static void print_flt(cmdObj_t *cmd);	// print float value w/no units
-*/
-
 //static void pr_ma_str(cmdObj_t *cmd); // generic print functions for motors and axes
 static void pr_ma_ui8(cmdObj_t *cmd);
 //static void pr_ma_int(cmdObj_t *cmd); // placeholder
@@ -104,19 +76,12 @@ static void pr_ma_rot(cmdObj_t *cmd);
 static void print_coor(cmdObj_t *cmd);	// print coordinate offsets with linear units
 static void print_corr(cmdObj_t *cmd);	// print coordinate offsets with rotary units
 
-// helpers for generic functions
-//static char_t *get_format(const index_t i, char_t *format);
+// helpers
 static int8_t get_motor(const index_t i);
 //static int8_t get_axis(const index_t i);
 static int8_t get_pos_axis(const index_t i);
-static stat_t _text_parser(char_t *str, cmdObj_t *c);
 static stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value);
-//static void _print_text_inline_pairs();
-//static void _print_text_inline_values();
-//static void _print_text_multiline_formatted();
 
-//static stat_t set_grp(cmdObj_t *cmd);	// set data for a group
-//static stat_t get_grp(cmdObj_t *cmd);	// get data for a group
 static stat_t _do_motors(cmdObj_t *cmd);// print parameters for all motor groups
 static stat_t _do_axes(cmdObj_t *cmd);	// print parameters for all axis groups
 static stat_t _do_offsets(cmdObj_t *cmd);// print offsets for G54-G59, G92
@@ -132,7 +97,6 @@ static stat_t _do_all(cmdObj_t *cmd);	// print all parameters
 static stat_t set_hv(cmdObj_t *cmd);		// set hardware version
 static stat_t get_id(cmdObj_t *cmd);		// get device ID
 static stat_t run_boot(cmdObj_t *cmd);		// jump to the bootloader
-//static stat_t set_defa(cmdObj_t *cmd);		// reset config to default values
 
 static stat_t get_gc(cmdObj_t *cmd);		// get current gcode block
 static stat_t run_gc(cmdObj_t *cmd);		// run a gcode block

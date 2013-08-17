@@ -30,13 +30,6 @@
  *	 http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-JSON
  */
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>					// needed for memcpy, memset
-#include <stdio.h>					// precursor for xio.h
-#include <avr/pgmspace.h>			// precursor for xio.h
-
 #include "tinyg.h"
 #include "config.h"					// JSON sits on top of the config system
 #include "controller.h"

@@ -26,30 +26,15 @@
 /*
  *	See config.h for a Config system overview and a bunch of details.
  */
-#include <ctype.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
-#include <stdio.h>			// precursor for xio.h
-#include <avr/pgmspace.h>	// precursor for xio.h
 
 #include "tinyg.h"			// config reaches into almost everything
-#include "util.h"
 #include "config.h"
 #include "report.h"
-#include "settings.h"
 #include "controller.h"
 #include "canonical_machine.h"
-#include "gcode_parser.h"
 #include "json_parser.h"
 #include "text_parser.h"
-#include "planner.h"
-#include "stepper.h"
-#include "gpio.h"
-#include "test.h"
 #include "help.h"
-#include "system.h"
-#include "network.h"
 #include "xio/xio.h"
 #include "xmega/xmega_eeprom.h"
 
@@ -59,12 +44,6 @@
 
 cmdStr_t cmdStr;
 cmdObj_t cmd_list[CMD_LIST_LEN];	// JSON header element
-
-/***********************************************************************************
- **** GENERIC STATIC FUNCTIONS AND VARIABLES ***************************************
- ***********************************************************************************/
-
-//static void _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]); // helper to print multiple groups in a list
 
 /***********************************************************************************
  **** CODE *************************************************************************
@@ -111,7 +90,7 @@ void cmd_persist(cmdObj_t *cmd)
 }
 
 /******************************************************************************
- * cfg_init() - called once on hard reset
+ * config_init() - called once on hard reset
  * set_defa() - reset NVM with default values for active profile
  *
  * Performs one of 2 actions:
@@ -121,7 +100,7 @@ void cmd_persist(cmdObj_t *cmd)
  *	You can assume the cfg struct has been zeroed by a hard reset. 
  *	Do not clear it as the version and build numbers have already been set by tg_init()
  */
-void cfg_init()
+void config_init()
 {
 	cmdObj_t *cmd = cmd_reset_list();
 	cmdStr.magic_start = MAGICNUM;

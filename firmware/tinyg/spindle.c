@@ -24,9 +24,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <avr/io.h>
-#include <math.h>
 #include "tinyg.h"
 #include "gpio.h"
 #include "gcode_parser.h"

@@ -53,12 +53,6 @@
  *	may have changed and lead to unpredictable results.
  */
 
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>				// for memset
-#include <stdio.h>				// precursor for xio.h
-#include <avr/pgmspace.h>		// precursor for xio.h
-
 #include "tinyg.h"
 #include "config.h"
 #include "canonical_machine.h"

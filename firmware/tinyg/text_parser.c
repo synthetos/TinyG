@@ -26,37 +26,19 @@
 /*
  *	See config.h for a Config system overview and a bunch of details.
  */
-#include <ctype.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
-#include <stdio.h>			// precursor for xio.h
-#include <avr/pgmspace.h>	// precursor for xio.h
 
 #include "tinyg.h"			// config reaches into almost everything
-#include "util.h"
 #include "config.h"
 #include "report.h"
-#include "settings.h"
 #include "controller.h"
 #include "canonical_machine.h"
-#include "gcode_parser.h"
-#include "json_parser.h"
 #include "text_parser.h"
-#include "planner.h"
-#include "stepper.h"
-#include "gpio.h"
-#include "test.h"
-#include "help.h"
-#include "system.h"
-#include "network.h"
 #include "xio/xio.h"
 
-static stat_t _text_parser(char_t *str, cmdObj_t *cmd);
-//static stat_t _text_parser_kernal(uint8_t *str, cmdObj_t *cmd);
+static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd);
 
 /******************************************************************************
- * cfg_text_parser() - update a config setting from a text block (text mode)
+ * text_parser() - update a config setting from a text block (text mode)
  * _text_parser() 	 - helper for above
  * 
  * Use cases handled:
@@ -65,7 +47,7 @@ static stat_t _text_parser(char_t *str, cmdObj_t *cmd);
  *	- $x		display a group
  *	- ?			generate a status report (multiline format)
  */
-stat_t cfg_text_parser(char_t *str)
+stat_t text_parser(char_t *str)
 {
 	cmdObj_t *cmd = cmd_reset_list();		// returns first object in the body
 	stat_t status = STAT_OK;
@@ -83,7 +65,7 @@ stat_t cfg_text_parser(char_t *str)
 	}
 
 	// parse and execute the command (only processes 1 command per line)
-	ritorno(_text_parser(str, cmd));		// run the parser to decode the command
+	ritorno(_text_parser_kernal(str, cmd));	// run the parser to decode the command
 	if ((cmd->objtype == TYPE_NULL) || (cmd->objtype == TYPE_PARENT)) {
 		if (cmd_get(cmd) == STAT_COMPLETE) {// populate value, group values, or run uber-group displays
 			return (STAT_OK);				// return for uber-group displays so they don't print twice
@@ -96,7 +78,7 @@ stat_t cfg_text_parser(char_t *str)
 	return (status);
 }
 
-static stat_t _text_parser(char_t *str, cmdObj_t *cmd)
+static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 {
 	char_t *ptr_rd, *ptr_wr;				// read and write pointers
 	char_t separators[] = {" =:|\t"};		// any separator someone might use
@@ -182,7 +164,6 @@ void tg_text_response(const uint8_t status, const char *buf)
 
 void text_print_inline_pairs(cmdObj_t *cmd)
 {
-//	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		switch (cmd->objtype) {
 			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
@@ -198,7 +179,6 @@ void text_print_inline_pairs(cmdObj_t *cmd)
 
 void text_print_inline_values(cmdObj_t *cmd)
 {
-//	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		switch (cmd->objtype) {
 			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
@@ -214,7 +194,6 @@ void text_print_inline_values(cmdObj_t *cmd)
 
 void text_print_multiline_formatted(cmdObj_t *cmd)
 {
-//	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		if (cmd->objtype != TYPE_PARENT) { cmd_print(cmd);}
 		if ((cmd = cmd->nx) == NULL) return;

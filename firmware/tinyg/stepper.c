@@ -148,13 +148,7 @@
  *	degrees of phase angle results in a step being generated. 
  */
 
-#include <stdlib.h>
-#include <string.h>				// needed for memset in st_init()
-#include <math.h>				// isinfinite()
-#include <stdio.h>				// precursor for xio.h
-#include <avr/pgmspace.h>		// precursor for xio.h
 #include <avr/interrupt.h>
-#include <avr/io.h>
 
 #include "tinyg.h"
 #include "util.h"
@@ -241,8 +235,8 @@ uint16_t st_get_stepper_prep_magic() { return (st_prep.magic_start);}
  *	Notes:
  *	  - This init requires sys_init() to be run beforehand
  *		This init is a precursor for gpio_init()
- * 	  - microsteps are setup during cfg_init()
- *	  - motor polarity is setup during cfg_init()
+ * 	  - microsteps are setup during config_init()
+ *	  - motor polarity is setup during config_init()
  *	  - high level interrupts must be enabled in main() once all inits are complete
  */
 

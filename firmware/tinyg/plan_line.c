@@ -27,11 +27,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-//#include <stdlib.h>
-//#include <stdio.h>			// uncomment for debugging
-#include <math.h>
-#include <avr/pgmspace.h>		// precursor for xio.h
-
 #include "tinyg.h"
 #include "config.h"
 #include "controller.h"

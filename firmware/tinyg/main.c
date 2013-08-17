@@ -22,14 +22,7 @@
 /* See github.coom/Synthetos/tinyg for code and docs on the wiki 
  */
 
-#include <stdio.h>				// precursor for xio.h
-#include <avr/pgmspace.h>		// precursor for xio.h
 #include <avr/interrupt.h>
-
-#include "xmega/xmega_interrupts.h"
-//#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
-#include "xmega/xmega_rtc.h"
-#include "xio/xio.h"
 
 #include "tinyg.h"				// #1 There are some dependencies
 #include "system.h"
@@ -47,6 +40,11 @@
 #include "gpio.h"
 #include "test.h"
 #include "pwm.h"
+
+#include "xio/xio.h"
+#include "xmega/xmega_interrupts.h"
+#include "xmega/xmega_rtc.h"
+//#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
 
 static void _unit_tests(void);
 stat_t status_code;				// declared in main.c
@@ -74,10 +72,10 @@ int main(void)
 
 	// application structures
 	controller_init(STD_IN, STD_OUT, STD_ERR);// must be first app init; reqs xio_init()
-	cfg_init();						// config records from eeprom 		- must be next app init
-	net_init();						// reset std devices if required	- must follow cfg_init()
+	config_init();					// config records from eeprom 		- must be next app init
+	net_init();						// reset std devices if required	- must follow config_init()
 	mp_init();						// motion planning subsystem
-	canonical_machine_init();		// canonical machine				- must follow cfg_init()
+	canonical_machine_init();		// canonical machine				- must follow config_init()
 	sp_init();						// spindle PWM and variables
 
 	// now bring up the interrupts and get started

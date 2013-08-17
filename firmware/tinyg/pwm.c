@@ -26,10 +26,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <string.h>				// needed for memset
 #include <avr/interrupt.h>
-#include <avr/io.h>
 
 #include "tinyg.h"
 #include "system.h"

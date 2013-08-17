@@ -25,15 +25,6 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* See http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info
- */
-
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>					// needed for memcpy, memset
-#include <avr/pgmspace.h>			// precursor for xio.h
 
 #include "tinyg.h"
 #include "util.h"

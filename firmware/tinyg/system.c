@@ -33,10 +33,6 @@
  *
  */
 
-#include <stdio.h>
-#include <stddef.h> 
-#include <avr/pgmspace.h> 
-
 #include "tinyg.h"
 #include "system.h"
 #include "xmega/xmega_init.h"

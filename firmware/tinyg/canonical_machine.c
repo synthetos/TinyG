@@ -83,11 +83,6 @@
  *		this category.
  *
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>				// needed for memcpy, memset
-#include <avr/pgmspace.h>		// needed for exception strings
 
 #include "tinyg.h"
 #include "util.h"

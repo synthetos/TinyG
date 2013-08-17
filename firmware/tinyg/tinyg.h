@@ -41,12 +41,20 @@
 #ifndef _TINYG_H_
 #define _TINYG_H_
 
-#include <stdio.h>			// precursor for xio.h
-#include <avr/pgmspace.h>	// precursor for xio.h
+// common system includes
+#include <ctype.h>					
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <avr/pgmspace.h>
+
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   		388.01	// Refactoring config.c out into separate files
+#define TINYG_FIRMWARE_BUILD   		388.02	// Cleanup config.c refactoring
 #define TINYG_FIRMWARE_VERSION		0.95	// major version
 #define TINYG_HARDWARE_VERSION		7		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8

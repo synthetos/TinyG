@@ -24,10 +24,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-//#include <ctype.h>
-#include <stdio.h>
-#include <avr/pgmspace.h>
-
 #include "tinyg.h"
 #include "util.h"
 #include "config.h"

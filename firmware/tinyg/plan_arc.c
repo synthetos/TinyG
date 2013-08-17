@@ -27,12 +27,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <math.h>
-#include <stdio.h>				// precursor for xio.h
-#include <avr/pgmspace.h>		// precursor for xio.h
-
-#include "xio/xio.h"			// support trap and debug statements
 #include "tinyg.h"
 #include "config.h"
 #include "controller.h"			// only needed for line number
@@ -41,6 +35,7 @@
 #include "plan_arc.h"
 #include "planner.h"
 #include "kinematics.h"
+#include "xio/xio.h"			// support trap and debug statements
 
 /*
  * Local functions
