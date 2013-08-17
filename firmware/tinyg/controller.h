@@ -75,13 +75,14 @@ enum cmControllerState {				// manages startup lines
 
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
 void controller_run(void);
-void tg_request_reset(void);
-void tg_request_bootloader(void);
 void tg_reset(void);
 void tg_application_startup(void);
 void tg_reset_source(void);
 void tg_set_primary_source(uint8_t dev);
 void tg_set_secondary_source(uint8_t dev);
 void tg_text_response(const uint8_t status, const char *buf);
+
+void hardware_request_hard_reset(void);
+void hardware_request_bootloader(void);
 
 #endif

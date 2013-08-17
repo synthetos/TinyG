@@ -1118,7 +1118,7 @@ static stat_t run_home(cmdObj_t *cmd)
 
 static stat_t run_boot(cmdObj_t *cmd)
 {
-	tg_request_bootloader();
+	hardware_request_bootloader();
 	return(STAT_OK);
 }
 

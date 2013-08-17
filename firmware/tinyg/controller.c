@@ -56,15 +56,18 @@
 
 // local helpers
 static void _controller_HSM(void);
-static stat_t _command_dispatch(void);
 static stat_t _alarm_idler(void);
-static stat_t _normal_idler(void);
-static stat_t _reset_handler(void);
-static stat_t _bootloader_handler(void);
 static stat_t _limit_switch_handler(void);
 static stat_t _system_assertions(void);
-static stat_t _sync_to_tx_buffer(void);
+//static stat_t _cycle_start_handler(void);
 static stat_t _sync_to_planner(void);
+static stat_t _sync_to_tx_buffer(void);
+static stat_t _command_dispatch(void);
+static stat_t _normal_idler(void);
+
+// prep for export to other modules:
+stat_t hardware_hard_reset_handler(void);
+stat_t hardware_bootloader_handler(void);
 
 /*
  * controller_init() - controller init
@@ -131,8 +134,8 @@ static void _controller_HSM()
  */
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
 												// Order is important:
-	DISPATCH(_reset_handler());					// 1. received software reset request
-	DISPATCH(_bootloader_handler());			// 2. received request to enter bootloader
+	DISPATCH(hardware_hard_reset_handler());	// 1. handle hard reset requests
+	DISPATCH(hardware_bootloader_handler());	// 2. handle requests to enter bootloader
 	DISPATCH(_alarm_idler());					// 3. idle in alarm state (shutdown)
 //	DISPATCH( poll_switches());					// 4. run a switch polling cycle
 	DISPATCH(_limit_switch_handler());			// 5. limit switch has been thrown
@@ -267,39 +270,48 @@ static stat_t _alarm_idler(void)
 	return (STAT_EAGAIN);	 // EAGAIN prevents any other actions from running
 }
 
-/************************************************************************************
- * tg_text_response() - text mode responses
+/**** Flag handlers ***********************************************************
+ * _reset_handler()
+ * _feedhold_handler()
+ * _cycle_start_handler()
+ * _limit_switch_handler() - shut down system if limit switch fired
  */
-static const char prompt_mm[] PROGMEM = "mm";
-static const char prompt_in[] PROGMEM = "inch";
-static const char prompt_ok[] PROGMEM = "tinyg [%S] ok> ";
-static const char prompt_err[] PROGMEM = "tinyg [%S] err: %s: %s ";
 
-void tg_text_response(const uint8_t status, const char *buf)
+/**** Hardware Reset Handlers *************************************************
+ * hardware_request_hard_reset()
+ * hardware_hard_reset()		 - hard reset using watchdog timer
+ * hardware_hard_reset_handler() - controller's rest handler
+ */
+void hardware_request_hard_reset() { cs.reset_requested = true; }
+
+void hardware_hard_reset(void)			// software hard reset using the watchdog timer
 {
-	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
-
-	const char *units;								// becomes pointer to progmem string
-	if (cm_get_model_units_mode() != INCHES) { 
-		units = (PGM_P)&prompt_mm;
-	} else {
-		units = (PGM_P)&prompt_in;
-	}
-//	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP) || (status == STAT_ZERO_LENGTH_MOVE)) {
-	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP)) {
-		fprintf_P(stderr, (PGM_P)&prompt_ok, units);
-	} else {
-		char status_message[STATUS_MESSAGE_LEN];
-		fprintf_P(stderr, (PGM_P)prompt_err, units, rpt_get_status_message(status, status_message), buf);
-	}
-	cmdObj_t *cmd = cmd_body+1;
-	if (cmd->token[0] == 'm') {
-		fprintf(stderr, *cmd->stringp);
-	}
-	fprintf(stderr, "\n");
+	wdt_enable(WDTO_15MS);
+	while (true);						// loops for about 15ms then resets
 }
 
-/**** Utilities ****
+stat_t hardware_hard_reset_handler(void)
+{
+	if (cs.reset_requested == false) { return (STAT_NOOP);}
+	hardware_hard_reset();				// hard reset - identical to hitting RESET button
+	return (STAT_EAGAIN);
+}
+
+/**** Bootloader Handlers *****************************************************
+ * hardware_request_bootloader()
+ * hareware_request_bootloader_handler() - executes a software reset using CCPWrite
+ */
+void hardware_request_bootloader() { cs.bootloader_requested = true;}
+
+stat_t hardware_bootloader_handler(void)
+{
+	if (cs.bootloader_requested == false) { return (STAT_NOOP);}
+	cli();
+	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
+	return (STAT_EAGAIN);					// never gets here but keeps the compiler happy
+}
+
+/**** Local Utilities ********************************************************
  * _sync_to_tx_buffer() - return eagain if TX queue is backed up
  * _sync_to_planner() - return eagain if planner is not ready for a new command
  * tg_reset_source() - reset source to default input device (see note)
@@ -330,40 +342,9 @@ void tg_reset_source() { tg_set_primary_source(cs.default_src);}
 void tg_set_primary_source(uint8_t dev) { cs.primary_src = dev;}
 void tg_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
 
-/*
- * tg_request_reset()
- * _reset_handler()
- * tg_reset() - software hard reset using watchdog timer
- */
-void tg_request_reset() { cs.reset_requested = true; }
-
-static stat_t _reset_handler(void)
-{
-	if (cs.reset_requested == false) { return (STAT_NOOP);}
-	tg_reset();							// hard reset - identical to hitting RESET button
-	return (STAT_EAGAIN);
-}
-
-void tg_reset(void)			// software hard reset using the watchdog timer
-{
-	wdt_enable(WDTO_15MS);
-	while (true);			// loops for about 15ms then resets
-}
 
 
-/*
- * tg_request_bootloader()
- * _bootloader_handler() - executes a software reset using CCPWrite
- */
-void tg_request_bootloader() { cs.bootloader_requested = true;}
 
-static stat_t _bootloader_handler(void)
-{
-	if (cs.bootloader_requested == false) { return (STAT_NOOP);}
-	cli();
-	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
-	return (STAT_EAGAIN);					// never gets here but keeps the compiler happy
-}
 
 /*
  * _limit_switch_handler() - shut down system if limit switch fired
@@ -409,4 +390,39 @@ uint8_t _system_assertions()
 	rpt_exception(STAT_MEMORY_FAULT, value);
 	canonical_machine_alarm(ALARM_MEMORY_OFFSET + value);	
 	return (STAT_EAGAIN);
+}
+
+
+//=========== MOVE TO text_parser.c ===========================
+
+/************************************************************************************
+ * tg_text_response() - text mode responses
+ */
+static const char prompt_mm[] PROGMEM = "mm";
+static const char prompt_in[] PROGMEM = "inch";
+static const char prompt_ok[] PROGMEM = "tinyg [%S] ok> ";
+static const char prompt_err[] PROGMEM = "tinyg [%S] err: %s: %s ";
+
+void tg_text_response(const uint8_t status, const char *buf)
+{
+	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
+
+	const char *units;								// becomes pointer to progmem string
+	if (cm_get_model_units_mode() != INCHES) { 
+		units = (PGM_P)&prompt_mm;
+	} else {
+		units = (PGM_P)&prompt_in;
+	}
+//	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP) || (status == STAT_ZERO_LENGTH_MOVE)) {
+	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP)) {
+		fprintf_P(stderr, (PGM_P)&prompt_ok, units);
+	} else {
+		char status_message[STATUS_MESSAGE_LEN];
+		fprintf_P(stderr, (PGM_P)prompt_err, units, rpt_get_status_message(status, status_message), buf);
+	}
+	cmdObj_t *cmd = cmd_body+1;
+	if (cmd->token[0] == 'm') {
+		fprintf(stderr, *cmd->stringp);
+	}
+	fprintf(stderr, "\n");
 }

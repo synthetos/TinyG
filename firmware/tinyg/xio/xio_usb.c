@@ -179,7 +179,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 	}
 	// trap async commands - do not insert character into RX queue
 	if (c == CHAR_RESET) {	 					// trap Kill signal
-		tg_request_reset();
+		hardware_request_hard_reset();
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal
