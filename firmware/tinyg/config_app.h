@@ -292,4 +292,12 @@ typedef struct cfgParameters {
 } cfgParameters_t;
 extern cfgParameters_t cfg;
 
+
+/***********************************************************************************
+ **** EXPOSED APPLICATION SPECIFIC FUNCTIONS ***************************************
+ ***********************************************************************************/
+
+stat_t set_baud_callback(void);
+
+
 #endif

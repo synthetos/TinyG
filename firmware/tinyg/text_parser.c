@@ -27,7 +27,7 @@
  *	See config.h for a Config system overview and a bunch of details.
  */
 
-#include "tinyg.h"			// config reaches into almost everything
+#include "tinyg.h"
 #include "config.h"
 #include "report.h"
 #include "controller.h"

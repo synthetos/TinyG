@@ -336,18 +336,11 @@ extern const cfgItem_t cfgArray[];
 #define cmd_header cmd_list
 #define cmd_body  (cmd_list+1)
 
-//cmdStr_t cmdStr;
-//cmdObj_t cmd_list[CMD_LIST_LEN];	// JSON header element
-//#define cmd_header cmd_list
-//#define cmd_body  (cmd_list+1)
-
-
-/**** Global scope function prototypes ****/
+/**** Generic function prototypes ****/
+// See config_app.h for application-specific functions
 
 void config_init(void);
-
-stat_t cfg_baud_rate_callback(void);
-stat_t set_defa(cmdObj_t *cmd);	// reset config to default values
+stat_t set_defaults(cmdObj_t *cmd);
 
 // main entry points for core access functions
 stat_t cmd_get(cmdObj_t *cmd);		// get value
@@ -392,7 +385,6 @@ char_t *get_format(const index_t index, char_t *format);
 
 stat_t set_grp(cmdObj_t *cmd);		// set data for a group
 stat_t get_grp(cmdObj_t *cmd);		// get data for a group
-
 
 // object and list functions
 void cmd_get_cmdObj(cmdObj_t *cmd);

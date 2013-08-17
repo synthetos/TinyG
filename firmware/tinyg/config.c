@@ -58,23 +58,21 @@ cmdObj_t cmd_list[CMD_LIST_LEN];	// JSON header element
  * cmd_persist()- persist value to NVM. Takes special cases into account
  */
 
-#define ASSERT_CMD_INDEX(a) if (cmd->index >= CMD_INDEX_MAX) return (a);
-
 stat_t cmd_set(cmdObj_t *cmd)
 {
-//	ASSERT_CMD_INDEX(STAT_UNRECOGNIZED_COMMAND);
+	if (cmd->index >= cmd_index_max()) { return (STAT_INTERNAL_RANGE_ERROR);}
 	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].set)))(cmd));
 }
 
 stat_t cmd_get(cmdObj_t *cmd)
 {
-//	ASSERT_CMD_INDEX(STAT_UNRECOGNIZED_COMMAND);
+	if (cmd->index >= cmd_index_max()) { return(STAT_INTERNAL_RANGE_ERROR);}
 	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd));
 }
 
 void cmd_print(cmdObj_t *cmd)
 {
-//	if (cmd->index >= CMD_INDEX_MAX) return;
+	if (cmd->index >= cmd_index_max()) return;
 	((fptrPrint)(pgm_read_word(&cfgArray[cmd->index].print)))(cmd);
 }
 
@@ -90,8 +88,8 @@ void cmd_persist(cmdObj_t *cmd)
 }
 
 /******************************************************************************
- * config_init() - called once on hard reset
- * set_defa() - reset NVM with default values for active profile
+ * config_init()  - called once on hard reset
+ * set_defaults() - reset NVM with default values for active profile
  *
  * Performs one of 2 actions:
  *	(1) if NVM is set up or out-of-rev load RAM and NVM with settings.h defaults
@@ -116,7 +114,7 @@ void config_init()
 	cmd_read_NVM_value(cmd);
 	if (cmd->value != cs.fw_build) {
 		cmd->value = true;					// case (1) NVM is not setup or not in revision
-		set_defa(cmd);	
+		set_defaults(cmd);	
 	} else {								// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
 		for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {
@@ -130,8 +128,7 @@ void config_init()
 	}
 }
 
-// set_defa() is both a helper and called directly from the $defa=1 command
-stat_t set_defa(cmdObj_t *cmd) 
+stat_t set_defaults(cmdObj_t *cmd) 
 {
 	if (cmd->value != true) {				// failsafe. Must set true or no action occurs
 		print_defaults_help(cmd);
@@ -149,15 +146,6 @@ stat_t set_defa(cmdObj_t *cmd)
 	}
 	rpt_print_initializing_message();		// don't start TX until all the NVM persistence is done
 	rpt_init_status_report();				// reset status reports
-	return (STAT_OK);
-}
-
-/*
- * cfg_cycle_check() - check if in a machining cycle and toss command if so
- */
-
-stat_t cfg_cycle_check(void)
-{
 	return (STAT_OK);
 }
 
@@ -204,12 +192,8 @@ char_t *get_format(const index_t i, char_t *format)
 	return (format);
 }
 
-/* ARM version: REPLACED BY A MACRO - See config.h
-char *get_format(const index_t index)
-{
-	return ((char *)cfgArray[index].format);
-}
-*/
+//ARM version: REPLACED BY A MACRO in config.h
+//char *get_format(const index_t index) { return ((char *)cfgArray[index].format); }
 
 /* Generic sets()
  *	set_nul() - set nothing (returns STAT_NOOP)
@@ -409,40 +393,13 @@ uint8_t cmd_group_is_prefixed(char_t *group)
 
 /******************************************************************************
  * cmdObj helper functions and other low-level cmd helpers
- * cmd_get_type()		 - returns command type as a CMD_TYPE enum
- * cmd_persist_offsets() - write any changed G54 (et al) offsets back to NVM
- * cmd_get_index() 		 - get index from mnenonic token + group
  */
-uint8_t cmd_get_type(cmdObj_t *cmd)
-{
-	if (cmd->token[0] == NUL) return (CMD_TYPE_NULL);
-	if (strcmp("gc", cmd->token) == 0) return (CMD_TYPE_GCODE);
-	if (strcmp("sr", cmd->token) == 0) return (CMD_TYPE_REPORT);
-	if (strcmp("qr", cmd->token) == 0) return (CMD_TYPE_REPORT);
-	if (strcmp("msg",cmd->token) == 0) return (CMD_TYPE_MESSAGE);
-	if (strcmp("n",  cmd->token) == 0) return (CMD_TYPE_LINENUM);
-	return (CMD_TYPE_CONFIG);
-}
 
-stat_t cmd_persist_offsets(uint8_t flag)
-{
-	if (flag == true) {
-		cmdObj_t cmd;
-		for (uint8_t i=1; i<=COORDS; i++) {
-			for (uint8_t j=0; j<AXES; j++) {
-				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
-				cmd.index = cmd_get_index("", cmd.token);
-				cmd.value = cfg.offset[i][j];
-				cmd_persist(&cmd);				// only writes changed values
-			}
-		}
-	}
-	return (STAT_OK);
-}
-
-/* 
- * cmd_get_index() is the most expensive routine in the whole config. It does a linear table scan 
- * of the PROGMEM strings, which of course could be further optimized with indexes or hashing.
+/* cmd_get_index() - get index from mnenonic token + group
+ *
+ * cmd_get_index() is the most expensive routine in the whole config. It does a 
+ * linear table scan of the PROGMEM strings, which of course could be further 
+ * optimized with indexes or hashing.
  */
 index_t cmd_get_index(const char_t *group, const char_t *token)
 {
@@ -477,6 +434,42 @@ index_t cmd_get_index(const char_t *group, const char_t *token)
 	}
 	return (NO_MATCH);
 }
+
+/* 
+ * cmd_get_type() - returns command type as a CMD_TYPE enum
+ */
+
+uint8_t cmd_get_type(cmdObj_t *cmd)
+{
+	if (cmd->token[0] == NUL) return (CMD_TYPE_NULL);
+	if (strcmp("gc", cmd->token) == 0) return (CMD_TYPE_GCODE);
+	if (strcmp("sr", cmd->token) == 0) return (CMD_TYPE_REPORT);
+	if (strcmp("qr", cmd->token) == 0) return (CMD_TYPE_REPORT);
+	if (strcmp("msg",cmd->token) == 0) return (CMD_TYPE_MESSAGE);
+	if (strcmp("n",  cmd->token) == 0) return (CMD_TYPE_LINENUM);
+	return (CMD_TYPE_CONFIG);
+}
+
+/*
+ * cmd_persist_offsets() - write any changed G54 (et al) offsets back to NVM
+ */
+
+stat_t cmd_persist_offsets(uint8_t flag)
+{
+	if (flag == true) {
+		cmdObj_t cmd;
+		for (uint8_t i=1; i<=COORDS; i++) {
+			for (uint8_t j=0; j<AXES; j++) {
+				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
+				cmd.index = cmd_get_index("", cmd.token);
+				cmd.value = cfg.offset[i][j];
+				cmd_persist(&cmd);				// only writes changed values
+			}
+		}
+	}
+	return (STAT_OK);
+}
+
 
 /******************************************************************************
  * cmdObj low-level object and list operations
@@ -700,68 +693,6 @@ void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags)
 		}
 	}
 }
-
-/*
-void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags)
-{
-	if (cfg.comm_mode == JSON_MODE) {
-		switch (json_flags) {
-			case JSON_NO_PRINT: { break; } 
-			case JSON_OBJECT_FORMAT: { json_print_object(cmd_body); break; }
-			case JSON_RESPONSE_FORMAT: { json_print_response(status); break; }
-		}
-	} else {
-		switch (text_flags) {
-			case TEXT_NO_PRINT: { break; } 
-			case TEXT_INLINE_PAIRS: { _print_text_inline_pairs(); break; }
-			case TEXT_INLINE_VALUES: { _print_text_inline_values(); break; }
-			case TEXT_MULTILINE_FORMATTED: { _print_text_multiline_formatted();}
-		}
-	}
-}
-
-void _print_text_inline_pairs()
-{
-	cmdObj_t *cmd = cmd_body;
-	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		switch (cmd->objtype) {
-			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
-			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
-			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), cmd->token, *cmd->stringp); break;}
-			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
-		}
-		if ((cmd = cmd->nx) == NULL) return;
-		if (cmd->objtype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}		
-	}
-}
-
-void _print_text_inline_values()
-{
-	cmdObj_t *cmd = cmd_body;
-	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		switch (cmd->objtype) {
-			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%1.3f"), cmd->value); break;}
-			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), cmd->value); break;}
-			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *cmd->stringp); break;}
-			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
-		}
-		if ((cmd = cmd->nx) == NULL) return;
-		if (cmd->objtype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
-	}
-}
-
-void _print_text_multiline_formatted()
-{
-	cmdObj_t *cmd = cmd_body;
-	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		if (cmd->objtype != TYPE_PARENT) { cmd_print(cmd);}
-		if ((cmd = cmd->nx) == NULL) return;
-		if (cmd->objtype == TYPE_EMPTY) break;
-	}
-}
-*/
 
 /******************************************************************************
  ***** EEPROM access functions ************************************************
