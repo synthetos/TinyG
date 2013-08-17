@@ -41,9 +41,12 @@
 #ifndef _TINYG_H_
 #define _TINYG_H_
 
+#include <stdio.h>			// precursor for xio.h
+#include <avr/pgmspace.h>	// precursor for xio.h
+
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   		387.15	// Changed cmd_add_xxx functions to accept const char * for token arg
+#define TINYG_FIRMWARE_BUILD   		388.01	// Refactoring config.c out into separate files
 #define TINYG_FIRMWARE_VERSION		0.95	// major version
 #define TINYG_HARDWARE_VERSION		7		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8
@@ -106,6 +109,10 @@
  */
 //typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
 typedef char char_t;
+
+//typedef char PROGMEM *prog_char_ptr;	// access to PROGMEM arrays of PROGMEM strings
+typedef const char PROGMEM *char_P;		// access to PROGMEM arrays of PROGMEM strings
+//typedef const char *char_P;			// ARM/C++ version requires this typedef instead
 
 typedef uint8_t stat_t;
 extern stat_t status_code;				// declared in main.cpp

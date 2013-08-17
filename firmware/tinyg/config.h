@@ -29,6 +29,10 @@
 
 #include <stdbool.h>
 
+/***** PLEASE NOTE *****
+#include "config_app.h"	// is present at the end of this file 
+*/
+
 /**** Config System Overview and Usage ***
  *
  *	--- Config objects and the config list ---
@@ -165,25 +169,37 @@
  *	CMD_BODY_LEN needs to allow for one parent JSON object and enough children
  *	to complete the largest possible operation - usually the status report.
  */
-									// chose one based on # of elements in cmdArray
+
+ /***********************************************************************************
+  **** DEFINITIONS AND SETTINGS *****************************************************
+  ***********************************************************************************/
+
+// Sizing and footprints			// chose one based on # of elements in cmdArray
 //typedef uint8_t index_t;			// use this if there are < 255 indexed objects
 typedef uint16_t index_t;			// use this if there are > 255 indexed objects
-#define NO_MATCH (index_t)0xFFFF
-									// cmdObj defines
-#define CMD_GROUP_LEN 3				// max length of group prefix
-#define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
+
+// defines allocated from stack (not-pre-allocated)
+
 #define CMD_FORMAT_LEN 128			// print formatting string max length
 #define CMD_MESSAGE_LEN 128			// sufficient space to contain end-user messages
-#define CMD_FOOTER_LEN 18			// sufficient space to contain a JSON footer array
-#define CMD_SHARED_STRING_LEN 512	// shared string for string values
 
-									// cmdObj list defines
-#define CMD_BODY_LEN 30				// body elements - allow for 1 parent + N children 
+// pre-allocated defines (take RAM permanently)
+
+#define CMD_SHARED_STRING_LEN 512	// shared string for string values
+#define CMD_BODY_LEN 30				// body elements - allow for 1 parent + N children
+									// (each body element takes 25 bytes of RAM)
+
+// Stuff you probably don't want to change 
+
+#define NO_MATCH (index_t)0xFFFF
+#define CMD_GROUP_LEN 3				// max length of group prefix
+#define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
+#define CMD_FOOTER_LEN 18			// sufficient space to contain a JSON footer array
 #define CMD_LIST_LEN (CMD_BODY_LEN+2)// +2 allows for a header and a footer
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 
-#define CMD_STATUS_REPORT_LEN 28	// max number of status report elements - see cfgArray
-									// must also line up in cfgArray, se00 - seXX
+#define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS 	// max number of status report elements - see cfgArray
+									// **** must also line up in cfgArray, se00 - seXX ****
 
 #define NVM_VALUE_LEN 4				// NVM value length (float, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
@@ -208,15 +224,6 @@ enum objType {						// object / value typing for config and JSON
 	TYPE_STRING,					// value is in string field
 	TYPE_ARRAY,						// value is array element count, values are CSV ASCII in string field
 	TYPE_PARENT						// object is a parent to a sub-object
-};
-
-enum cmdType {						// classification of commands
-	CMD_TYPE_NULL = 0,
-	CMD_TYPE_CONFIG,				// configuration commands
-	CMD_TYPE_GCODE,					// gcode
-	CMD_TYPE_REPORT,				// SR, QR and any other report
-	CMD_TYPE_MESSAGE,				// cmd object carries a message
-	CMD_TYPE_LINENUM				// cmd object carries a gcode line number
 };
 
 enum tgCommunicationsMode {
@@ -244,13 +251,6 @@ enum jsonVerbosity {
 	JV_VERBOSE						// returns footer, messages, config commands, gcode blocks
 };
 
-enum qrVerbosity {					// planner queue enable and verbosity
-	QR_OFF = 0,						// no response is provided
-	QR_FILTERED,					// queue depth reported only above hi-water mark and below lo-water mark  
-	QR_VERBOSE,						// queue depth reported for all buffers
-	QR_TRIPLE						// queue depth reported for all buffers, and buffers added, buffered removed
-};
-
 enum srVerbosity {					// status report enable and verbosity
 	SR_OFF = 0,						// no reports
 	SR_FILTERED,					// reports only values that have changed from the last report
@@ -270,44 +270,82 @@ enum textFormats {					// text output print modes
 	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines with formatted print per line
 };
 
-typedef struct cmdString {			// shared string object
+
+/**** operations flags and shorthand ****/
+
+#define F_INITIALIZE	0x01			// initialize this item (run set during initialization)
+#define F_PERSIST 		0x02			// persist this item when set is run
+#define F_NOSTRIP		0x04			// do not strip the group prefix from the token
+#define _f00			0x00
+#define _fin			F_INITIALIZE
+#define _fpe			F_PERSIST
+#define _fip			(F_INITIALIZE | F_PERSIST)
+#define _fns			F_NOSTRIP
+#define _f07			(F_INITIALIZE | F_PERSIST | F_NOSTRIP)
+
+
+/**** Structures ****/
+
+typedef struct cmdString {				// shared string object
 	uint16_t magic_start;
-//	uint8_t wp;						// use this string array index value if string len < 256 bytes
-	uint16_t wp;					// use this string array index value is string len > 255 bytes
+//	uint8_t wp;							// use this string array index value if string len < 256 bytes
+	uint16_t wp;						// use this string array index value is string len > 255 bytes
 	char string[CMD_SHARED_STRING_LEN];
 	uint16_t magic_end;
 } cmdStr_t;
 
-typedef struct cmdObject {			// depending on use, not all elements may be populated
-	struct cmdObject *pv;			// pointer to previous object or NULL if first object
-	struct cmdObject *nx;			// pointer to next object or NULL if last object
-	index_t index;					// index of tokenized name, or -1 if no token (optional)
-	int8_t depth;					// depth of object in the tree. 0 is root (-1 is invalid)
-	int8_t objtype;					// see objType enum
-	int8_t precision;				// decimal precision for reporting (JSON)
-	float value;					// numeric value
-	char_t token[CMD_TOKEN_LEN+1];	// full mnemonic token for lookup
-	char_t group[CMD_GROUP_LEN+1];	// group prefix or NUL if not in a group
-	char_t (*stringp)[];			// pointer to array of characters from shared character array
-} cmdObj_t; 						// OK, so it's not REALLY an object
+typedef struct cmdObject {				// depending on use, not all elements may be populated
+	struct cmdObject *pv;				// pointer to previous object or NULL if first object
+	struct cmdObject *nx;				// pointer to next object or NULL if last object
+	index_t index;						// index of tokenized name, or -1 if no token (optional)
+	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
+	int8_t objtype;						// see objType enum
+	int8_t precision;					// decimal precision for reporting (JSON)
+	float value;						// numeric value
+	char_t token[CMD_TOKEN_LEN+1];		// full mnemonic token for lookup
+	char_t group[CMD_GROUP_LEN+1];		// group prefix or NUL if not in a group
+	char_t (*stringp)[];				// pointer to array of characters from shared character array
+} cmdObj_t; 							// OK, so it's not REALLY an object
 
 typedef uint8_t (*fptrCmd)(cmdObj_t *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj_t *cmd);// required for PROGMEM access
 
-// static allocation and definitions
-cmdStr_t cmdStr;
-cmdObj_t cmd_list[CMD_LIST_LEN];	// JSON header element
+typedef struct cfgItem {
+	char_t group[CMD_GROUP_LEN+1];		// group prefix (with NUL termination)
+	char_t token[CMD_TOKEN_LEN+1];		// token - stripped of group prefix (w/NUL termination)
+	uint8_t flags;						// operations flags - see defines below
+ 	int8_t precision;					// decimal precision for display (JSON)
+ 	const char_t *format;				// pointer to formatted print string in FLASH
+	fptrPrint print;					// print binding: aka void (*print)(cmdObj_t *cmd);
+	fptrCmd get;						// GET binding aka uint8_t (*get)(cmdObj_t *cmd)
+	fptrCmd set;						// SET binding aka uint8_t (*set)(cmdObj_t *cmd)
+	float *target;						// target for writing config value
+	float def_value;					// default value for config item
+} cfgItem_t;
+
+
+/**** static allocation and definitions ****/
+
+extern cmdStr_t cmdStr;
+extern cmdObj_t cmd_list[];
+extern const cfgItem_t cfgArray[];
+
 #define cmd_header cmd_list
 #define cmd_body  (cmd_list+1)
 
-/*
- * Global Scope Functions
- */
+//cmdStr_t cmdStr;
+//cmdObj_t cmd_list[CMD_LIST_LEN];	// JSON header element
+//#define cmd_header cmd_list
+//#define cmd_body  (cmd_list+1)
+
+
+/**** Global scope function prototypes ****/
 
 void cfg_init(void);
-stat_t cfg_cycle_check(void);
-stat_t cfg_text_parser(char *str);
-stat_t cfg_baud_rate_callback(void);
+
+//stat_t cfg_cycle_check(void);
+//stat_t cfg_text_parser(char *str);
+//stat_t cfg_baud_rate_callback(void);
 
 // main entry points for core access functions
 stat_t cmd_get(cmdObj_t *cmd);		// get value
@@ -316,9 +354,43 @@ void cmd_print(cmdObj_t *cmd);		// formatted print
 void cmd_persist(cmdObj_t *cmd);	// persistence
 
 // helpers
-index_t cmd_get_index(const char *group, const char *token);
 uint8_t cmd_get_type(cmdObj_t *cmd);
 stat_t cmd_persist_offsets(uint8_t flag);
+
+index_t cmd_get_index(const char *group, const char *token);
+index_t	cmd_index_max();
+uint8_t cmd_index_lt_max(index_t index);
+uint8_t cmd_index_ge_max(index_t index);
+uint8_t cmd_index_is_single(index_t index);
+uint8_t cmd_index_is_group(index_t index);
+uint8_t cmd_index_lt_groups(index_t index);
+uint8_t cmd_group_is_prefixed(char_t *group);
+
+// generic internal functions and accessors
+stat_t set_nul(cmdObj_t *cmd);		// set nothing (no operation)
+stat_t set_ui8(cmdObj_t *cmd);		// set uint8_t value
+stat_t set_01(cmdObj_t *cmd);		// set a 0 or 1 value with validation
+stat_t set_012(cmdObj_t *cmd);		// set a 0, 1 or 2 value with validation
+stat_t set_0123(cmdObj_t *cmd);		// set a 0, 1, 2 or 3 value with validation
+stat_t set_int(cmdObj_t *cmd);		// set uint32_t integer value
+stat_t set_flt(cmdObj_t *cmd);		// set floating point value
+
+stat_t get_nul(cmdObj_t *cmd);		// get null value type
+stat_t get_ui8(cmdObj_t *cmd);		// get uint8_t value
+stat_t get_int(cmdObj_t *cmd);		// get uint32_t integer value
+stat_t get_flt(cmdObj_t *cmd);		// get floating point value
+
+void print_nul(cmdObj_t *cmd);		// print nothing (no operation)
+void print_str(cmdObj_t *cmd);		// print a string value
+void print_ui8(cmdObj_t *cmd);		// print unit8_t value
+void print_int(cmdObj_t *cmd);		// print uint32_t integer value
+void print_flt(cmdObj_t *cmd);		// print floating point value
+
+char_t *get_format(const index_t index, char_t *format);
+
+stat_t set_grp(cmdObj_t *cmd);		// set data for a group
+stat_t get_grp(cmdObj_t *cmd);		// get data for a group
+
 
 // object and list functions
 void cmd_get_cmdObj(cmdObj_t *cmd);
@@ -333,16 +405,9 @@ cmdObj_t *cmd_add_string(const char *token, const char *string);
 cmdObj_t *cmd_add_string_P(const char *token, const char *string);
 cmdObj_t *cmd_add_message(const char *string);
 cmdObj_t *cmd_add_message_P(const char *string);
-
 void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
-uint8_t cmd_group_is_prefixed(char *group);
-//uint8_t cmd_index_is_group(index_t index);
-index_t	cmd_index_max();
-uint8_t cmd_index_lt_max(index_t index);
-uint8_t cmd_index_ge_max(index_t index);
-uint8_t cmd_index_is_single(index_t index);
-uint8_t cmd_index_is_group(index_t index);
-uint8_t cmd_index_lt_groups(index_t index);
+
+stat_t set_defa(cmdObj_t *cmd);	// reset config to default values
 
 stat_t cmd_read_NVM_value(cmdObj_t *cmd);
 stat_t cmd_write_NVM_value(cmdObj_t *cmd);
@@ -351,110 +416,13 @@ stat_t cmd_write_NVM_value(cmdObj_t *cmd);
 void cfg_dump_NVM(const uint16_t start_record, const uint16_t end_record, char *label);
 #endif
 
-/**** Global scope config structures ****/
+/*********************************************************************************************
+ **** PLEASE NOTICE THAT CONFIG_APP.H IS HERE ************************************************
+ *********************************************************************************************/
+#include "config_app.h"
 
-// main configuration parameter table
-typedef struct cfgAxisParameters {
-	uint8_t axis_mode;				// see tgAxisMode in gcode.h
-	float feedrate_max;				// max velocity in mm/min or deg/min
-	float velocity_max;				// max velocity in mm/min or deg/min
-	float travel_max;				// work envelope w/warned or rejected blocks
-	float jerk_max;					// max jerk (Jm) in mm/min^3
-	float junction_dev;				// aka cornering delta
-	float radius;					// radius in mm for rotary axis modes
-	float search_velocity;			// homing search velocity
-	float latch_velocity;			// homing latch velocity
-	float latch_backoff;			// backoff from switches prior to homing latch movement
-	float zero_backoff;				// backoff from switches for machine zero
-	float jerk_homing;				// homing jerk (Jh) in mm/min^3
-} cfgAxis_t;
 
-typedef struct cfgMotorParameters {
-	uint8_t	motor_map;				// map motor to axis
-  	uint8_t microsteps;				// microsteps to apply for each axis (ex: 8)
-	uint8_t polarity;				// 0=normal polarity, 1=reverse motor direction
- 	uint8_t power_mode;				// See stepper.h for enum
-	float step_angle;				// degrees per whole step (ex: 1.8)
-	float travel_rev;				// mm or deg of travel per motor revolution
-	float steps_per_unit;			// steps (usteps)/mm or deg of travel
-} cfgMotor_t;
-
-typedef struct cfgPWMParameters {
-  	float frequency;				// base frequency for PWM driver, in Hz
-	float cw_speed_lo;				// minimum clockwise spindle speed [0..N]
-    float cw_speed_hi;				// maximum clockwise spindle speed
-    float cw_phase_lo;				// pwm phase at minimum CW spindle speed, clamped [0..1]
-    float cw_phase_hi;				// pwm phase at maximum CW spindle speed, clamped [0..1]
-	float ccw_speed_lo;				// minimum counter-clockwise spindle speed [0..N]
-    float ccw_speed_hi;				// maximum counter-clockwise spindle speed
-    float ccw_phase_lo;				// pwm phase at minimum CCW spindle speed, clamped [0..1]
-    float ccw_phase_hi;				// pwm phase at maximum CCW spindle speed, clamped
-    float phase_off;				// pwm phase when spindle is disabled
-} cfgPWM_t;
-
-typedef struct cfgParameters {
-	uint16_t magic_start;			// magic number to test memory integrity
-	uint16_t nvm_base_addr;			// NVM base address
-	uint16_t nvm_profile_base;		// NVM base address of current profile
-
-	// system group settings
-	float junction_acceleration;	// centripetal acceleration max for cornering
-	float chordal_tolerance;		// arc chordal accuracy setting in mm
-	uint32_t motor_disable_timeout;	// seconds before disabling motors
-//	float max_spindle_speed;		// in RPM
-
-	// hidden system settings
-	float min_segment_len;			// line drawing resolution in mm
-	float arc_segment_len;			// arc drawing resolution in mm
-	float estd_segment_usec;		// approximate segment time in microseconds
-
-	// gcode power-on default settings - defaults are not the same as the gm state
-	uint8_t coord_system;			// G10 active coordinate system default
-	uint8_t select_plane;			// G17,G18,G19 reset default
-	uint8_t units_mode;				// G20,G21 reset default
-	uint8_t path_control;			// G61,G61.1,G64 reset default
-	uint8_t distance_mode;			// G90,G91 reset default
-
-	// communications settings
-	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
-	uint8_t ignore_crlf;			// ignore CR or LF on RX --- these 4 are shadow settings for XIO cntrl bits
-	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
-	uint8_t enable_echo;			// enable text-mode echo
-	uint8_t enable_flow_control;	// enable XON/XOFF or RTS/CTS flow control
-	uint8_t footer_style;			// select footer style
-
-	uint8_t queue_report_verbosity;	// queue reports enabled and verbosity level
-	uint8_t queue_report_hi_water;
-	uint8_t queue_report_lo_water;
-
-	uint8_t json_verbosity;			// see enum in this file for settings
-	uint8_t text_verbosity;			// see enum in this file for settings
-	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
-	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
-
-	uint8_t echo_json_footer;		// flags for JSON responses serialization
-	uint8_t echo_json_messages;
-	uint8_t echo_json_configs;
-	uint8_t echo_json_linenum;
-	uint8_t echo_json_gcode_block;
-
-	// status report configs		// see cm struct for SR operating variables
-	uint8_t status_report_verbosity;// see enum in this file for settings
-	uint32_t status_report_interval;// in milliseconds
-	index_t status_report_list[CMD_STATUS_REPORT_LEN];// status report elements to report
-	float status_report_value[CMD_STATUS_REPORT_LEN];// previous values for filtered reporting
-
-	// coordinate systems and offsets
-	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute + G54,G55,G56,G57,G58,G59
-
-	// motor and axis structs
-	cfgMotor_t m[MOTORS];			// settings for motors 1-4
-	cfgAxis_t a[AXES];				// settings for axes X,Y,Z,A B,C
-	cfgPWM_t p;						// settings for PWM p
-
-	uint16_t magic_end;
-} cfgParameters_t;
-cfgParameters_t cfg;
+/*** Unit tests ***/
 
 /* unit test setup */
 //#define __UNIT_TEST_CONFIG		// uncomment to enable config unit tests

@@ -418,8 +418,8 @@ void json_print_response(uint8_t status)
 					cmd->objtype = TYPE_EMPTY;
 				}
 
-//			} else if (cmd_type == CMD_TYPE_CONFIG) {	// kill config echo if not enabled
-//				if (cfg.echo_json_configs == false) {
+//+++++		} else if (cmd_type == CMD_TYPE_CONFIG) {	// kill config echo if not enabled
+//fix me		if (cfg.echo_json_configs == false) {
 //					cmd->objtype = TYPE_EMPTY;
 //				}
 
@@ -464,8 +464,7 @@ void json_print_response(uint8_t status)
 	strcpy(tail, cs.out_buf + strcount + 1);			// save the json termination
 
 	while (cs.out_buf[strcount2] != ',') { strcount2--; }// find start of checksum
-	sprintf((char *)cs.out_buf + strcount2 + 1, 
-		"%d%s", compute_checksum(cs.out_buf, strcount2), tail);
+	sprintf((char *)cs.out_buf + strcount2 + 1, "%d%s", compute_checksum(cs.out_buf, strcount2), tail);
 	fprintf(stderr, "%s", cs.out_buf);
 }
 

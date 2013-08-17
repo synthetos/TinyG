@@ -402,6 +402,7 @@ stat_t hardware_bootloader_handler(void)
 /************************************************************************************
  * tg_text_response() - text mode responses
  */
+ /*
 static const char prompt_mm[] PROGMEM = "mm";
 static const char prompt_in[] PROGMEM = "inch";
 static const char prompt_ok[] PROGMEM = "tinyg [%S] ok> ";
@@ -430,3 +431,4 @@ void tg_text_response(const uint8_t status, const char *buf)
 	}
 	fprintf(stderr, "\n");
 }
+*/
