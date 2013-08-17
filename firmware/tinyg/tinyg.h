@@ -54,7 +54,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   		388.03	// Cleanup config.c refactoring
+#define TINYG_FIRMWARE_BUILD   		388.04	// Homing cycle cleanup
 #define TINYG_FIRMWARE_VERSION		0.95	// major version
 #define TINYG_HARDWARE_VERSION		7		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8

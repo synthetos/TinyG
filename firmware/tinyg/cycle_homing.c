@@ -158,24 +158,10 @@ uint8_t cm_homing_cycle_start(void)
 	return (STAT_OK);
 }
 
-uint8_t cm_homing_cycle_start_no_set(void)
+stat_t cm_homing_cycle_start_no_set(void)
 {
-	// save relevant non-axis parameters from Gcode model
-	hm.saved_units_mode = gm.units_mode;
-	hm.saved_coord_system = gm.coord_system;
-	hm.saved_distance_mode = gm.distance_mode;
-	hm.saved_feed_rate = gm.feed_rate;
-
-	// set working values
-	cm_set_units_mode(MILLIMETERS);
-	cm_set_distance_mode(INCREMENTAL_MODE);
-	cm_set_coord_system(ABSOLUTE_COORDS);	// homing is done in machine coordinates
+	cm_homing_cycle_start();
 	hm.set_coordinates = false;				// set flag to not update position variables at the end of the cycle
-
-	hm.axis = -1;							// set to retrieve initial axis
-	hm.func = _homing_axis_start; 			// bind initial processing function
-	cm.cycle_state = CYCLE_HOMING;
-	cm.homing_state = HOMING_NOT_HOMED;	    // this cycle should not change the homing state but at this point I think the homing state is the only way to see if the cycle is complete.
 	return (STAT_OK);
 }
 
