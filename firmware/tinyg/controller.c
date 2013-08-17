@@ -56,26 +56,29 @@
 
 // local helpers
 static void _controller_HSM(void);
-static stat_t _dispatch(void);
+static stat_t _command_dispatch(void);
+static stat_t _alarm_idler(void);
+static stat_t _normal_idler(void);
 static stat_t _reset_handler(void);
 static stat_t _bootloader_handler(void);
 static stat_t _limit_switch_handler(void);
-static stat_t _alarm_idler(void);
 static stat_t _system_assertions(void);
 static stat_t _sync_to_tx_buffer(void);
 static stat_t _sync_to_planner(void);
 
 /*
- * tg_init() - controller init
+ * controller_init() - controller init
  */
 
-void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err) 
+void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err) 
 {
 	cs.magic_start = MAGICNUM;
 	cs.magic_end = MAGICNUM;
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
 	cs.fw_version = TINYG_FIRMWARE_VERSION;	// NB: HW version is set from EEPROM
 
+	cs.linelen = 0;							// initialize index for read_line()
+	cs.state = CONTROLLER_STARTUP;			// ready to run startup lines
 	cs.reset_requested = false;
 	cs.bootloader_requested = false;
 
@@ -87,7 +90,7 @@ void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 }
 
 /* 
- * tg_controller() - MAIN LOOP - top-level controller
+ * controller_run() - MAIN LOOP - top-level controller
  *
  * The order of the dispatched tasks is very important. 
  * Tasks are ordered by increasing dependency (blocking hierarchy).
@@ -103,12 +106,9 @@ void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
  * and runs the next routine in the list.
  *
  * A routine that had no action (i.e. is OFF or idle) should return STAT_NOOP
- *
- * Useful reference on state machines:
- * http://johnsantic.com/comp/state.html, "Writing Efficient State Machines in C"
  */
 
-void tg_controller() 
+void controller_run() 
 { 
 	while (true) { 
 		_controller_HSM();
@@ -132,30 +132,37 @@ static void _controller_HSM()
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
 												// Order is important:
 	DISPATCH(_reset_handler());					// 1. received software reset request
-	DISPATCH(_bootloader_handler());			// 2. received bootloader request
-	DISPATCH(_limit_switch_handler());			// 3. limit switch has been thrown
-	DISPATCH(_alarm_idler());					// 4. idle in alarm state
-	DISPATCH(_system_assertions());				// 5. system integrity assertions
-	DISPATCH(cm_feedhold_sequencing_callback());
-	DISPATCH(mp_plan_hold_callback());			// plan a feedhold from line runtime
+	DISPATCH(_bootloader_handler());			// 2. received request to enter bootloader
+	DISPATCH(_alarm_idler());					// 3. idle in alarm state (shutdown)
+//	DISPATCH( poll_switches());					// 4. run a switch polling cycle
+	DISPATCH(_limit_switch_handler());			// 5. limit switch has been thrown
+
+	DISPATCH(cm_feedhold_sequencing_callback());// 6a. feedhold state machine runner
+	DISPATCH(mp_plan_hold_callback());			// 6b. plan a feedhold from line runtime
+
+//	DISPATCH(_cycle_start_handler());			// 7. cycle start requested
+	DISPATCH(_system_assertions());				// 8. system integrity assertions
 
 //----- planner hierarchy for gcode and cycles -------------------------//
+
 	DISPATCH(st_motor_disable_callback());		// stepper motor disable timer
-//	DISPATCH(gpio_switch_debounce_callback());	// debounce switches
+//	DISPATCH(switch_debounce_callback());		// debounce switches
 	DISPATCH(rpt_status_report_callback());		// conditionally send status report
 	DISPATCH(rpt_queue_report_callback());		// conditionally send queue report
 	DISPATCH(ar_arc_callback());				// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());				// G28.2 continuation
 
 //----- command readers and parsers ------------------------------------//
+
 	DISPATCH(_sync_to_planner());				// ensure there is at least one free buffer in planning queue
 	DISPATCH(_sync_to_tx_buffer());				// sync with TX buffer (pseudo-blocking)
 	DISPATCH(cfg_baud_rate_callback());			// perform baud rate update (must be after TX sync)
-	DISPATCH(_dispatch());						// read and execute next command
+	DISPATCH(_command_dispatch());				// read and execute next command
+//	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
 }
 
 /***************************************************************************** 
- * _dispatch() - dispatch line received from active input device
+ * _command_dispatch() - dispatch line received from active input device
  *
  *	Reads next command line and dispatches to relevant parser or action
  *	Accepts commands if the move queue has room - EAGAINS if it doesn't
@@ -163,7 +170,7 @@ static void _controller_HSM()
  *	Also responsible for prompts and for flow control 
  */
 
-static stat_t _dispatch()
+static stat_t _command_dispatch()
 {
 	uint8_t status;
 
@@ -228,6 +235,36 @@ static stat_t _dispatch()
 		}
 	}
 	return (STAT_OK);
+}
+
+/* 
+ * _normal_idler() - blink Indicator LED slowly to show everything is OK
+ * _alarm_idler() - blink rapidly and prevent further activity from occurring
+ *
+ *	Alarm idler flashes indicator LED rapidly to show everything is not OK. 
+ *	Alarm function returns EAGAIN causing the control loop to never advance beyond 
+ *	this point. It's important that the reset handler is still called so a SW reset 
+ *	(ctrl-x) or bootloader request can be processed.
+ */
+
+static stat_t _normal_idler(  )
+{
+	if (SysTickTimer_getValue() > cs.led_timer) {
+		cs.led_timer = SysTickTimer_getValue() + LED_NORMAL_TIMER;
+//		IndicatorLed_toggle();
+	}
+	return (STAT_OK);
+}
+
+static stat_t _alarm_idler(void)
+{
+	if (cm_get_machine_state() != MACHINE_ALARM) { return (STAT_OK);}
+
+	if (SysTickTimer_getValue() > cs.led_timer) {
+		cs.led_timer = SysTickTimer_getValue() + LED_ALARM_TIMER;
+		IndicatorLed_toggle();
+	}
+	return (STAT_EAGAIN);	 // EAGAIN prevents any other actions from running
 }
 
 /************************************************************************************
@@ -338,32 +375,6 @@ static stat_t _limit_switch_handler(void)
 //	cm_alarm(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
 	canonical_machine_alarm(sw.sw_num_thrown);
 	return (STAT_OK);
-}
-
-/* 
- * _alarm_idler() - revent any further activity form occurring if shut down
- *
- *	This function returns EAGAIN causing the control loop to never advance beyond
- *	this point. It's important that the reset handler is still called so a SW reset
- *	(ctrl-x) can be processed.
- */
-#define LED_COUNTER 25000
-
-static stat_t _alarm_idler(void)
-{
-	if (cm_get_machine_state() != MACHINE_ALARM) { return (STAT_OK);}
-
-	if (--cs.led_counter < 0) {
-		cs.led_counter = LED_COUNTER;
-		if (cs.led_state == 0) {
-			gpio_led_on(INDICATOR_LED);
-			cs.led_state = 1;
-		} else {
-			gpio_led_off(INDICATOR_LED);
-			cs.led_state = 0;
-		}
-	}
-	return (STAT_EAGAIN);	 // EAGAIN prevents any other actions from running
 }
 
 /* 

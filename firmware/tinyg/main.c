@@ -73,7 +73,7 @@ int main(void)
 	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()
 
 	// application structures
-	tg_init(STD_IN, STD_OUT, STD_ERR);// must be first app init; reqs xio_init()
+	controller_init(STD_IN, STD_OUT, STD_ERR);// must be first app init; reqs xio_init()
 	cfg_init();						// config records from eeprom 		- must be next app init
 	net_init();						// reset std devices if required	- must follow cfg_init()
 	mp_init();						// motion planning subsystem
@@ -92,7 +92,7 @@ int main(void)
 	tg_canned_startup();			// run any pre-loaded commands
 	
 	while (true) {
-		tg_controller(); 
+		controller_run(); 
 	}
 }
 

@@ -71,6 +71,9 @@
 #include "canonical_machine.h"
 #include "xio/xio.h"						// signals
 
+
+//======================== Switch Functions ===============================
+
 /*
  * variables and settings 
  */
@@ -221,6 +224,39 @@ uint8_t gpio_read_switch(uint8_t sw_num)
 		return (sw.state[sw_num]);
 	}
 }
+
+
+//======================== Parallel IO Functions ===============================
+
+/*
+ * IndicatorLed_set() 	- fake out for IndicatorLed.set() until we get Motate running
+ * IndicatorLed_clear() - fake out for IndicatorLed.clear() until we get Motate running
+ * IndicatorLed_toggle()- fake out for IndicatorLed.toggle() until we get Motate running
+ */
+
+void IndicatorLed_set()
+{
+	gpio_led_on(INDICATOR_LED);
+	cs.led_state = 1;
+}
+
+void IndicatorLed_clear()
+{
+	gpio_led_off(INDICATOR_LED);
+	cs.led_state = 0;
+}
+
+void IndicatorLed_toggle()
+{
+	if (cs.led_state == 0) {
+		gpio_led_on(INDICATOR_LED);
+		cs.led_state = 1;
+	} else {
+		gpio_led_off(INDICATOR_LED);
+		cs.led_state = 0;
+	}
+}
+
 
 /*
  * gpio_led_on() - turn led on - assumes TinyG LED mapping
