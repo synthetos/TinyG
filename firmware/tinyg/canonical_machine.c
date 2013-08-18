@@ -1110,13 +1110,13 @@ stat_t cm_spindle_override_factor(uint8_t flag)	// M50.1
 }
 
 /*
- * cm_message() - send a message to the console (or JSON)
+ * cm_message() - queue a message to the response string (unconditionally)
  */
 
 void cm_message(char *message)
 {
-	cmd_add_message(message);			// conditionally adds the message to the response object
-//	cmd_add_string("msg", message);		// adds the message to the response object
+	cmd_add_string("msg",message);
+//	cmd_add_conditional_message(message);	// conditional version
 }
 
 /*

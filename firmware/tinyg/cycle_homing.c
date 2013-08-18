@@ -197,11 +197,11 @@ static stat_t _homing_error_exit(int8_t axis)
 	// generate the warning message
 	cmd_reset_list();
 	if (axis == -2) {
-		cmd_add_message_P(PSTR("*** WARNING *** Homing error: Specified axis(es) cannot be homed"));
+		cmd_add_conditional_message_P(PSTR("*** WARNING *** Homing error: Specified axis(es) cannot be homed"));
 	} else {
 		char message[CMD_MESSAGE_LEN]; 
 		sprintf_P(message, PSTR("*** WARNING *** Homing error: %S axis settings misconfigured"), (PGM_P)pgm_read_word(&msg_axis[axis]));
-		cmd_add_message(message);
+		cmd_add_conditional_message(message);
 	}
 	cmd_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 

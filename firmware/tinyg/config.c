@@ -487,8 +487,8 @@ stat_t cmd_persist_offsets(uint8_t flag)
  * cmd_add_float()		- add a floating point value to end of cmd body
  * cmd_add_string()		- add a string object to end of cmd body
  * cmd_add_string_P()	- add a program memory string as a string object to end of cmd body
- * cmd_add_message()	- add a message to cmd body
- * cmd_add_message_P()	- add a program memory message the the cmd body
+ * cmd_add_conditional_message()	- add a message to cmd body if messages are enabled
+ * cmd_add_conditional_message_P()	- add a program memory message to cmd body if enabled
  *
  *	Note: Functions that return a cmd pointer point to the object that was modified
  *	or a NULL pointer if there was an error
@@ -652,18 +652,16 @@ cmdObj_t *cmd_add_string_P(const char_t *token, const char_t *string)
 	return(cmd_add_string(token, message));
 }
 
-cmdObj_t *cmd_add_message(const char_t *string)		// conditionally add a message object to the body
+cmdObj_t *cmd_add_conditional_message(const char_t *string)		// conditionally add a message object to the body
 {
 	if ((cfg.comm_mode == JSON_MODE) && (cfg.echo_json_messages != true)) { return (NULL);}
 	return(cmd_add_string("msg", string));
 }
 
-cmdObj_t *cmd_add_message_P(const char_t *string)	// conditionally add a message object to the body
+cmdObj_t *cmd_add_conditional_message_P(const char_t *string)	// conditionally add a message object to the body
 {
 	if ((cfg.comm_mode == JSON_MODE) && (cfg.echo_json_messages != true)) { return (NULL);}
-	char_t message[CMD_MESSAGE_LEN]; 
-	sprintf_P(message, string);
-	return(cmd_add_string("msg", message));
+	return(cmd_add_string_P("msg", string));
 }
 
 /**** cmd_print_list() - print cmd_array as JSON or text **********************

@@ -1363,7 +1363,7 @@ static stat_t set_tr(cmdObj_t *cmd)			// motor travel per revolution
 static stat_t set_mi(cmdObj_t *cmd)			// motor microsteps
 {
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
-		cmd_add_message_P(PSTR("*** WARNING *** Setting non-standard microstep value"));
+		cmd_add_conditional_message_P(PSTR("*** WARNING *** Setting non-standard microstep value"));
 	}
 	set_ui8(cmd);							// set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);
@@ -1488,14 +1488,14 @@ static stat_t set_baud(cmdObj_t *cmd)
 {
 	uint8_t baud = (uint8_t)cmd->value;
 	if ((baud < 1) || (baud > 6)) {
-		cmd_add_message_P(PSTR("*** WARNING *** Illegal baud rate specified"));
+		cmd_add_conditional_message_P(PSTR("*** WARNING *** Illegal baud rate specified"));
 		return (STAT_INPUT_VALUE_UNSUPPORTED);
 	}
 	cfg.usb_baud_rate = baud;
 	cfg.usb_baud_flag = true;
 	char_t message[CMD_MESSAGE_LEN]; 
 	sprintf_P(message, PSTR("*** NOTICE *** Restting baud rate to %S"),(PGM_P)pgm_read_word(&msg_baud[baud]));
-	cmd_add_message(message);
+	cmd_add_conditional_message(message);
 	return (STAT_OK);
 }
 
