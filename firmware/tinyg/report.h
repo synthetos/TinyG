@@ -29,7 +29,8 @@
 #ifndef report_h
 #define report_h
 
-char *rpt_get_status_message(uint8_t status, char *msg);
+char *get_status_message(stat_t status);
+//char *rpt_get_status_message(uint8_t status, char *msg);
 void rpt_print_message(char *msg);
 void rpt_exception(uint8_t status, int16_t value);
 void rpt_print_loading_configs_message(void);

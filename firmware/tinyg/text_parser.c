@@ -80,46 +80,46 @@ stat_t text_parser(char_t *str)
 
 static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 {
-	char_t *ptr_rd, *ptr_wr;				// read and write pointers
+	char_t *rd, *wr;						// read and write pointers
+//	char_t separators[] = {"="};			// only separator allowed is = sign
 	char_t separators[] = {" =:|\t"};		// any separator someone might use
 
 	// pre-process and normalize the string
-	cmd_reset_obj(cmd);						// initialize config object
+//	cmd_reset_obj(cmd);						// initialize config object
 	cmd_copy_string(cmd, str);				// make a copy for eventual reporting
 	if (*str == '$') str++;					// ignore leading $
-	for (ptr_rd = ptr_wr = str; *ptr_rd!=NUL; ptr_rd++, ptr_wr++) {
-		*ptr_wr = tolower(*ptr_rd);			// convert string to lower case
-		if (*ptr_rd==',') { *ptr_wr = *(++ptr_rd); } // skip over commas
+	for (rd = wr = str; *rd != NUL; rd++, wr++) {
+		*wr = tolower(*rd);					// convert string to lower case
+		if (*rd == ',') { *wr = *(++rd);}	// skip over commas
 	}
-	*ptr_wr = NUL;							// terminate the string
+	*wr = NUL;								// terminate the string
 
 	// parse fields into the cmd struct
 	cmd->objtype = TYPE_NULL;
-	if ((ptr_rd = strpbrk(str, separators)) == NULL) { // no value part
+	if ((rd = strpbrk(str, separators)) == NULL) { // no value part
 		strncpy(cmd->token, str, CMD_TOKEN_LEN);
 	} else {
-		*ptr_rd = NUL;						// terminate at end of name
+		*rd = NUL;							// terminate at end of name
 		strncpy(cmd->token, str, CMD_TOKEN_LEN);
-		str = ++ptr_rd;
-		cmd->value = strtod(str, &ptr_rd);	// ptr_rd used as end pointer
-		if (ptr_rd != str) {
+		str = ++rd;
+		cmd->value = strtod(str, &rd);		// ptr_rd used as end pointer
+		if (rd != str) {
 			cmd->objtype = TYPE_FLOAT;
 		}
 	}
 
 	// validate and post-process the token
-	if ((cmd->index = cmd_get_index("",cmd->token)) == NO_MATCH) { // get index or fail it
+//	if ((cmd->index = cmd_get_index("",cmd->token)) == NO_MATCH) { // get index or fail it
+	if ((cmd->index = cmd_get_index((const char_t *)"", cmd->token)) == NO_MATCH) { // get index or fail it
 		return (STAT_UNRECOGNIZED_COMMAND);
 	}
 	strcpy_P(cmd->group, cfgArray[cmd->index].group);	// capture the group string if there is one
 
 	if (strlen(cmd->group) > 0) {			// see if you need to strip the token
-		ptr_wr = cmd->token;
-		ptr_rd = cmd->token + strlen(cmd->group);
-		while (*ptr_rd != NUL) {
-			*(ptr_wr)++ = *(ptr_rd)++;
-		}
-		*ptr_wr = NUL;
+		wr = cmd->token;
+		rd = cmd->token + strlen(cmd->group);
+		while (*rd != NUL) { *(wr)++ = *(rd)++;}
+		*wr = NUL;
 	}
 	return (STAT_OK);
 }
@@ -127,31 +127,25 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 /************************************************************************************
  * text_response() - text mode responses
  */
-static const char prompt_mm[] PROGMEM = "mm";
-static const char prompt_in[] PROGMEM = "inch";
-static const char prompt_ok[] PROGMEM = "tinyg [%S] ok> ";
-static const char prompt_err[] PROGMEM = "tinyg [%S] err: %s: %s ";
+static const char prompt_ok[] PROGMEM = "tinyg [%s] ok> ";
+static const char prompt_err[] PROGMEM = "tinyg [%s] err: %s: %s ";
 
-void tg_text_response(const uint8_t status, const char *buf)
+void tg_text_response(const stat_t status, const char *buf)
 {
 	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
 
-	const char *units;								// becomes pointer to progmem string
-	if (cm_get_model_units_mode() != INCHES) { 
-		units = (PGM_P)&prompt_mm;
-	} else {
-		units = (PGM_P)&prompt_in;
-	}
-//	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP) || (status == STAT_ZERO_LENGTH_MOVE)) {
+	char units[] = "inch";
+	if (cm_get_model_units_mode() != INCHES) { strcpy(units, "mm"); }
+
 	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP)) {
-		fprintf_P(stderr, (PGM_P)&prompt_ok, units);
+		fprintf_P(stderr, (PGM_P)prompt_ok, units);
 	} else {
-		char status_message[STATUS_MESSAGE_LEN];
-		fprintf_P(stderr, (PGM_P)prompt_err, units, rpt_get_status_message(status, status_message), buf);
+//		char status_message[STATUS_MESSAGE_LEN];
+		fprintf_P(stderr, (PGM_P)prompt_err, units, get_status_message(status), buf);
 	}
 	cmdObj_t *cmd = cmd_body+1;
 	if (cmd->token[0] == 'm') {
-		fprintf(stderr, *cmd->stringp);
+		fprintf(stderr, (char *)*cmd->stringp);
 	}
 	fprintf(stderr, "\n");
 }

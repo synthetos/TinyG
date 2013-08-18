@@ -54,7 +54,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   		388.06	// Config refactoring cleanup cleanup
+#define TINYG_FIRMWARE_BUILD   		388.07	// String compatibility work
 #define TINYG_FIRMWARE_VERSION		0.95	// major version
 #define TINYG_HARDWARE_VERSION		7		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8
@@ -138,7 +138,10 @@ extern stat_t status_code;				// declared in main.cpp
  * ritorno is a handy way to provide exception returns 
  * It returns only if an error occurred. (ritorno is Italian for return) 
  */
- 
+
+#define STATUS_MESSAGE_LEN 48			// status message string storage allocation
+char status_message[STATUS_MESSAGE_LEN];// allocate string for global use 
+
 // OS, communications and low-level status (must align with XIO_xxxx codes in xio.h)
 #define	STAT_OK 0						// function completed OK
 #define	STAT_ERROR 1					// generic error return (EPERM)

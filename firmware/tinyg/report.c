@@ -102,7 +102,7 @@ static const char_t PROGMEM stat_48[] = "JSON syntax error";
 static const char_t PROGMEM stat_49[] = "JSON input has too many pairs";
 static const char_t PROGMEM stat_50[] = "JSON output too long";
 static const char_t PROGMEM stat_51[] = "Out of buffer space";
-static const char_t PROGMEM stat_52[] = "Config rejected during machining cycle";
+static const char_t PROGMEM stat_52[] = "Config rejected during machining cycle";	// current longest message: 39 chars
 static const char_t PROGMEM stat_53[] = "stat_53";
 static const char_t PROGMEM stat_54[] = "stat_54";
 static const char_t PROGMEM stat_55[] = "stat_55";
@@ -136,10 +136,11 @@ PGM_P const PROGMEM stat_msg[] = {
 	stat_70, stat_71, stat_72
 };
 
-char *rpt_get_status_message(uint8_t status, char *msg) 
+char *get_status_message(stat_t status) 
 {
-	strncpy_P(msg,(PGM_P)pgm_read_word(&stat_msg[status]), STATUS_MESSAGE_LEN);
-	return (msg);
+	// see tinyg.h for allocation of status_message string
+	strncpy_P(status_message,(PGM_P)pgm_read_word(&stat_msg[status]), STATUS_MESSAGE_LEN);
+	return (status_message);
 }
 
 /*
@@ -147,9 +148,8 @@ char *rpt_get_status_message(uint8_t status, char *msg)
  */
 void rpt_exception(uint8_t status, int16_t value)
 {
-	char msg[STATUS_MESSAGE_LEN];
 	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\",\"val\":%d}}\n"), 
-		TINYG_FIRMWARE_BUILD, status, rpt_get_status_message(status, msg), value);
+		TINYG_FIRMWARE_BUILD, status, get_status_message(status), value);
 }
 
 /**** Application Messages *********************************************************
