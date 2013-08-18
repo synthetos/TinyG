@@ -75,13 +75,13 @@ enum swNums {	 			// indexes into switch arrays
 #define SW_CLOSED	 1
 
 // switch mode settings
-#define SW_HOMING 0x01
-#define SW_LIMIT 0x02
+#define SW_HOMING_BIT 0x01
+#define SW_LIMIT_BIT 0x02
 
-#define SW_MODE_DISABLED 		0			// disabled for all operations
-#define SW_MODE_HOMING 			SW_HOMING	// enable switch for homing only
-#define SW_MODE_LIMIT 			SW_LIMIT	// enable switch for limits only
-#define SW_MODE_HOMING_LIMIT   (SW_HOMING | SW_LIMIT)	// homing and limits
+#define SW_MODE_DISABLED 		0								// disabled for all operations
+#define SW_MODE_HOMING 			SW_HOMING_BIT					// enable switch for homing only
+#define SW_MODE_LIMIT 			SW_LIMIT_BIT					// enable switch for limits only
+#define SW_MODE_HOMING_LIMIT   (SW_HOMING_BIT | SW_LIMIT_BIT)	// homing and limits
 #define SW_MODE_MAX_VALUE 		SW_MODE_HOMING_LIMIT
 
 enum swType {
@@ -109,13 +109,13 @@ struct swStruct sw;
 // Note 1: The term "thrown" is used because switches could be normally-open 
 //		   or normally-closed. "Thrown" means activated or hit.
 
-void gpio_init(void);
-void gpio_rtc_callback(void);
-uint8_t gpio_get_switch_mode(uint8_t sw_num);
-uint8_t gpio_get_limit_thrown(void);
-uint8_t gpio_get_sw_thrown(void);
-void gpio_reset_switches(void);
-uint8_t gpio_read_switch(uint8_t sw_num);
+void switch_init(void);
+void switch_rtc_callback(void);
+uint8_t get_switch_mode(uint8_t sw_num);
+uint8_t get_limit_switch_thrown(void);
+uint8_t get_switch_thrown(void);
+void reset_switches(void);
+uint8_t read_switch(uint8_t sw_num);
 
 void IndicatorLed_set(void);
 void IndicatorLed_clear(void);

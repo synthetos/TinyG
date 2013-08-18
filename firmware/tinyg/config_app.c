@@ -833,12 +833,20 @@ uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_G
 
 /***** HELPERS *********************************************************************
  *
- * Helpers are defined first so they don't need separate function prototypes
+ * Helpers are defined first so they don;t need separate function prototypes
  *
+ * get_axis_char() - return ASCII char for axis given the axis number
  * _get_motor()	- return motor number as an index or -1 if na
  * _get_axis()	- return axis number or -1 if NA
  * _get_pos_axis()- return axis number for pos values or -1 if none - e.g. posx
  */
+
+char_t get_axis_char(int8_t axis)
+{
+	char_t axis_char[] = "XYZABC";
+	if ((axis < 0) || (axis > AXIS_MAX)) return (' ');
+	return (axis_char[axis]);
+}
 
 static int8_t _get_motor(const index_t i)
 {
@@ -923,7 +931,8 @@ static stat_t set_hv(cmdObj_t *cmd)
 	if (cmd->value > TINYG_HARDWARE_VERSION_MAX) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	set_flt(cmd);					// record the hardware version
 	sys_port_bindings(cmd->value);	// reset port bindings
-	gpio_init();					// re-initialize the GPIO ports
+	switch_init();					// re-initialize the GPIO ports
+//+++++	gpio_init();					// re-initialize the GPIO ports
 	return (STAT_OK);
 }
 
@@ -1335,7 +1344,7 @@ static stat_t set_sw(cmdObj_t *cmd)			// switch setting
 {
 	if (cmd->value > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	set_ui8(cmd);
-	gpio_init();
+	switch_init();
 	return (STAT_OK);
 }
 

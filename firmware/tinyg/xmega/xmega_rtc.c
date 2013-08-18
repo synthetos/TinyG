@@ -89,5 +89,5 @@ ISR(RTC_COMP_vect)
 	rtc.sys_ticks = ++rtc.rtc_ticks*10;		// advance both tick counters as appropriate
 
 	// callbacks to whatever you need to happen on each RTC tick go here:
-	gpio_rtc_callback();					// switch debounceing
+	switch_rtc_callback();					// switch debounceing
 }

@@ -314,7 +314,7 @@ static stat_t _sync_to_planner()
 static stat_t _limit_switch_handler(void)
 {
 	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
-	if (gpio_get_limit_thrown() == false) return (STAT_NOOP);
+	if (get_limit_switch_thrown() == false) return (STAT_NOOP);
 //	cm_alarm(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
 	canonical_machine_alarm(sw.sw_num_thrown);
 	return (STAT_OK);

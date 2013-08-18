@@ -301,6 +301,7 @@ extern cfgParameters_t cfg;
  **** EXPOSED APPLICATION SPECIFIC FUNCTIONS ***************************************
  ***********************************************************************************/
 
+char_t get_axis_char(int8_t axis);
 stat_t set_baud_callback(void);
 
 

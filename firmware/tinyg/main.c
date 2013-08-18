@@ -67,7 +67,8 @@ int main(void)
 	rtc_init();						// real time counter
 	xio_init();						// xmega io subsystem
 	st_init(); 						// stepper subsystem 				- must precede gpio_init()
-	gpio_init();					// switches and parallel IO
+	switch_init();					// switches 
+//	gpio_init();					// parallel IO
 	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()
 
 	// application structures

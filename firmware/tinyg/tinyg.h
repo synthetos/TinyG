@@ -54,7 +54,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   		388.11	// pass through message sending code
+#define TINYG_FIRMWARE_BUILD   		388.12	// homing changes to align with G2
 #define TINYG_FIRMWARE_VERSION		0.95	// major version
 #define TINYG_HARDWARE_VERSION		7		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8
@@ -103,14 +103,17 @@
 #define AXIS_U 	6			// reserved
 #define AXIS_V 	7			// reserved
 #define AXIS_W 	8			// reserved
+#define AXIS_MAX AXIS_C
 
 #define MOTOR_1	0 			// define motor numbers and array indexes
 #define MOTOR_2	1			// must be defines. enums don't work
 #define MOTOR_3	2
 #define MOTOR_4	3
+#define MOTOR_MAX MOTOR_4
 
 #define PWM_1	0
 #define PWM_2	1
+#define PWM_MAX PWM_2
 
 /*************************************************************************
  * String handling help - strings are handled as uint8_t's typedef'd to char_t

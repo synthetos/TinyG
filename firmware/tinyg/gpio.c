@@ -81,10 +81,10 @@
 #define SW_LOCKOUT_TICKS 25					// 25=250ms. RTC ticks are ~10ms each
 #define SW_DEGLITCH_TICKS 3					// 3=30ms
 
-static void _isr_helper(uint8_t sw_num);
+static void _switch_isr_helper(uint8_t sw_num);
 
 /*
- * gpio_init() - initialize homing/limit switches
+ * switch_init() - initialize homing/limit switches
  *
  *	This function assumes sys_init() and st_init() have been run previously to 
  *	bind the ports and set bit IO directions, repsectively. See system.h for details
@@ -96,7 +96,7 @@ static void _isr_helper(uint8_t sw_num);
 #define PIN_MODE PORT_OPC_PULLUP_gc				// pin mode. see iox192a3.h for details
 //#define PIN_MODE PORT_OPC_TOTEM_gc			// alternate pin mode for v7 boards
 
-void gpio_init(void)
+void switch_init(void)
 {
 	for (uint8_t i=0; i<NUM_SWITCH_PAIRS; i++) {
 		// old code from when switches fired on one edge or the other:
@@ -120,15 +120,15 @@ void gpio_init(void)
 		// set interrupt levels. Interrupts must be enabled in main()
 		device.sw_port[i]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
 	}
-	gpio_reset_switches();
+	reset_switches();
 }
 
 /*
  * Switch closure processing routines
  *
- * ISRs 				- switch interrupt handler vectors
- * _isr_helper()		- common code for all switch ISRs
- * gpio_rtc_callback()	- called from RTC for each RTC tick.
+ * ISRs 				 - switch interrupt handler vectors
+ * _isr_helper()		 - common code for all switch ISRs
+ * switch_rtc_callback() - called from RTC for each RTC tick.
  *
  *	These functions interact with each other to process switch closures and firing.
  *	Each switch has a counter which is initially set to negative SW_DEGLITCH_TICKS.
@@ -137,25 +137,25 @@ void gpio_init(void)
  *	The counter continues to increment positive until the lockout is exceeded.
  */
 
-ISR(X_MIN_ISR_vect)	{ _isr_helper(SW_MIN_X);}
-ISR(Y_MIN_ISR_vect)	{ _isr_helper(SW_MIN_Y);}
-ISR(Z_MIN_ISR_vect)	{ _isr_helper(SW_MIN_Z);}
-ISR(A_MIN_ISR_vect)	{ _isr_helper(SW_MIN_A);}
-ISR(X_MAX_ISR_vect)	{ _isr_helper(SW_MAX_X);}
-ISR(Y_MAX_ISR_vect)	{ _isr_helper(SW_MAX_Y);}
-ISR(Z_MAX_ISR_vect)	{ _isr_helper(SW_MAX_Z);}
-ISR(A_MAX_ISR_vect)	{ _isr_helper(SW_MAX_A);}
+ISR(X_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_X);}
+ISR(Y_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Y);}
+ISR(Z_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Z);}
+ISR(A_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_A);}
+ISR(X_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_X);}
+ISR(Y_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Y);}
+ISR(Z_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Z);}
+ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
 
-static void _isr_helper(uint8_t sw_num)
+static void _switch_isr_helper(uint8_t sw_num)
 {
 	if (sw.mode[sw_num] == SW_MODE_DISABLED) return;	// this is never supposed to happen
 	if (sw.debounce[sw_num] == SW_LOCKOUT) return;		// exit if switch is in lockout
 	sw.debounce[sw_num] = SW_DEGLITCHING;				// either transitions state from IDLE or overwrites it
 	sw.count[sw_num] = -SW_DEGLITCH_TICKS;				// reset deglitch count regardless of entry state
-	gpio_read_switch(sw_num);							// sets the state value in the struct
+	read_switch(sw_num);							// sets the state value in the struct
 }
 
-void gpio_rtc_callback(void)
+void switch_rtc_callback(void)
 {
 	for (uint8_t i=0; i < NUM_SWITCHES; i++) { 
 		if (sw.debounce[i] == SW_IDLE) continue;
@@ -168,7 +168,7 @@ void gpio_rtc_callback(void)
 //			sw_show_switch();							// only called if __DEBUG enabled
 			if (cm.cycle_state == CYCLE_HOMING) {		// regardless of switch type
 				cm_request_feedhold();
-			} else if (sw.mode[i] & SW_LIMIT) {			// should be a limit switch, so fire it.
+			} else if (sw.mode[i] & SW_LIMIT_BIT) {		// should be a limit switch, so fire it.
 				sw.limit_flag = true;					// triggers an emergency shutdown
 			}
 		}
@@ -176,20 +176,20 @@ void gpio_rtc_callback(void)
 }
 
 /*
- * gpio_get_switch_mode() 	- return switch mode setting
- * gpio_get_limit_thrown()  - return true if a limit was tripped
- * gpio_get_sw_num()  		- return switch number most recently thrown
+ * get_switch_mode()  - return switch mode setting
+ * get_limit_thrown() - return true if a limit was tripped
+ * get_switch_num()   - return switch number most recently thrown
  */
 
-uint8_t gpio_get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
-uint8_t gpio_get_limit_thrown(void) { return(sw.limit_flag);}
-uint8_t gpio_get_sw_thrown(void) { return(sw.sw_num_thrown);}
+uint8_t get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
+uint8_t get_limit_switch_thrown(void) { return(sw.limit_flag);}
+uint8_t get_switch_thrown(void) { return(sw.sw_num_thrown);}
 
 /*
- * gpio_reset_switches() - reset all switches and reset limit flag
+ * reset_switches() - reset all switches and reset limit flag
  */
 
-void gpio_reset_switches() 
+void reset_switches() 
 {
 	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
 		sw.debounce[i] = SW_IDLE;
@@ -199,9 +199,9 @@ void gpio_reset_switches()
 }
 
 /*
- * gpio_read_switch() - read a switch directly with no interrupts or deglitching
+ * read_switch() - read a switch directly with no interrupts or deglitching
  */
-uint8_t gpio_read_switch(uint8_t sw_num)
+uint8_t read_switch(uint8_t sw_num)
 {
 	if ((sw_num < 0) || (sw_num >= NUM_SWITCHES)) return (SW_DISABLED);
 
