@@ -230,19 +230,18 @@ static stat_t _homing_error_exit(int8_t axis)
  *	_homing_axis_move()			- helper that actually executes the above moves
  */
 
-uint8_t cm_homing_callback(void)
+stat_t cm_homing_callback(void)
 {
 	if (cm.cycle_state != CYCLE_HOMING) { return (STAT_NOOP);} 	// exit if not in a homing cycle
 	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}	// sync to planner move ends
 	return (hm.func(hm.axis));						// execute the current homing move
 }
 
-uint8_t _set_homing_func(uint8_t (*func)(int8_t axis))
+static stat_t _set_homing_func(stat_t (*func)(int8_t axis))
 {
 	hm.func = func;
 	return (STAT_EAGAIN);
 }
-
 
 static stat_t _homing_axis_start(int8_t axis)
 {
@@ -259,7 +258,8 @@ static stat_t _homing_axis_start(int8_t axis)
 		}
 	}
 	// trap gross mis-configurations
-	if ((cfg.a[axis].search_velocity == 0) || (cfg.a[axis].latch_velocity == 0)) {
+//	if ((cfg.a[axis].search_velocity == 0) || (cfg.a[axis].latch_velocity == 0)) {
+	if ((fp_ZERO(cfg.a[axis].search_velocity)) || (fp_ZERO(cfg.a[axis].latch_velocity))) {	
 		return (_homing_error_exit(axis));
 	}
 	if ((cfg.a[axis].travel_max <= 0) || (cfg.a[axis].latch_backoff <= 0)) {

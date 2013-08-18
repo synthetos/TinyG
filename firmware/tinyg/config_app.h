@@ -24,10 +24,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef config_app_h
-#define config_app_h
+#ifndef CONFIG_APP_H_ONCE
+#define CONFIG_APP_H_ONCE
 
-#include <stdbool.h>
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+//#include <stdbool.h>
 
 /**** Config System Overview and Usage ***
  *
@@ -300,4 +304,8 @@ extern cfgParameters_t cfg;
 stat_t set_baud_callback(void);
 
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif //End of include guard: CONFIG_APP_H_ONCE
