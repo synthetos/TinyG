@@ -37,7 +37,7 @@
 #include "settings.h"
 #include "planner.h"
 #include "stepper.h"
-//#include "switch.h"
+#include "switch.h"
 #include "gpio.h"
 #include "report.h"
 #include "test.h"

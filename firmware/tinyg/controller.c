@@ -44,6 +44,7 @@
 #include "planner.h"
 #include "stepper.h"
 #include "system.h"
+#include "switch.h"
 #include "gpio.h"
 #include "report.h"
 #include "util.h"

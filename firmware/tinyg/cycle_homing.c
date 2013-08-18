@@ -32,7 +32,8 @@
 #include "planner.h"
 #include "stepper.h"
 #include "report.h"
-#include "gpio.h"
+#include "switch.h"
+//#include "gpio.h"
 
 /**** Homing singleton structure ****/
 
