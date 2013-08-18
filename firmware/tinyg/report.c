@@ -125,7 +125,8 @@ static const char_t PROGMEM stat_70[] = "Arc specification error";
 static const char_t PROGMEM stat_71[] = "Soft limit exceeded";
 static const char_t PROGMEM stat_72[] = "Command not accepted";
 
-PGM_P const PROGMEM stat_msg[] = {
+PGM_P const PROGMEM stat_msg[] = {			// AVR/GCC version
+//static const char_t *stat_msg[] = {		// ARM/GCC++ version
 	stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
 	stat_10, stat_11, stat_12, stat_13, stat_14, stat_15, stat_16, stat_17, stat_18, stat_19,
 	stat_20, stat_21, stat_22, stat_23, stat_24, stat_25, stat_26, stat_27, stat_28, stat_29,
@@ -138,9 +139,12 @@ PGM_P const PROGMEM stat_msg[] = {
 
 char *get_status_message(stat_t status) 
 {
-	// see tinyg.h for allocation of status_message string
+// see tinyg.h for allocation of status_message string
 	strncpy_P(status_message,(PGM_P)pgm_read_word(&stat_msg[status]), STATUS_MESSAGE_LEN);
 	return (status_message);
+/* ARM code
+	return ((const char *)stat_msg[status]);
+*/
 }
 
 /*

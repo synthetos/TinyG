@@ -133,7 +133,6 @@ void config_init()
  */
 stat_t set_defaults(cmdObj_t *cmd) 
 {
-//	if (cmd->value != true) {				// failsafe. Must set true or no action occurs
 	if (fp_FALSE(cmd->value)) {				// failsafe. Must set true or no action occurs
 		print_defaults_help(cmd);
 		return (STAT_OK);
@@ -450,6 +449,7 @@ uint8_t cmd_get_type(cmdObj_t *cmd)
 	if (strcmp("sr", cmd->token) == 0) return (CMD_TYPE_REPORT);
 	if (strcmp("qr", cmd->token) == 0) return (CMD_TYPE_REPORT);
 	if (strcmp("msg",cmd->token) == 0) return (CMD_TYPE_MESSAGE);
+	if (strcmp("err",cmd->token) == 0) return (CMD_TYPE_MESSAGE); 	// errors are reported as messages
 	if (strcmp("n",  cmd->token) == 0) return (CMD_TYPE_LINENUM);
 	return (CMD_TYPE_CONFIG);
 }

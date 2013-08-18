@@ -38,9 +38,9 @@
 static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd);
 
 /******************************************************************************
- * text_parser() - update a config setting from a text block (text mode)
- * _text_parser() 	 - helper for above
- * 
+ * text_parser() 		 - update a config setting from a text block (text mode)
+ * _text_parser_kernal() - helper for above
+ *
  * Use cases handled:
  *	- $xfr=1200	set a parameter
  *	- $xfr		display a parameter
@@ -54,9 +54,6 @@ stat_t text_parser(char_t *str)
 
 	// pre-process the command 
 	if (str[0] == '?') {					// handle status report case
-
-//+++++ DIAGNOSTIC +++++
-//		printf("Text: posX: %6.3f, posY: %6.3f\n", (double)gm.position[AXIS_X], (double)gm.target[AXIS_Y]);
 		rpt_run_text_status_report();
 		return (STAT_OK);
 	}
@@ -81,8 +78,8 @@ stat_t text_parser(char_t *str)
 static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 {
 	char_t *rd, *wr;						// read and write pointers
-//	char_t separators[] = {"="};			// only separator allowed is = sign
-	char_t separators[] = {" =:|\t"};		// any separator someone might use
+//	char_t separators[] = {"="};			// STRICT: only separator allowed is = sign
+	char_t separators[] = {" =:|\t"};		// RELAXED: any separator someone might use
 
 	// pre-process and normalize the string
 //	cmd_reset_obj(cmd);						// initialize config object
@@ -109,11 +106,10 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 	}
 
 	// validate and post-process the token
-//	if ((cmd->index = cmd_get_index("",cmd->token)) == NO_MATCH) { // get index or fail it
 	if ((cmd->index = cmd_get_index((const char_t *)"", cmd->token)) == NO_MATCH) { // get index or fail it
 		return (STAT_UNRECOGNIZED_COMMAND);
 	}
-	strcpy_P(cmd->group, cfgArray[cmd->index].group);	// capture the group string if there is one
+	strcpy_P(cmd->group, cfgArray[cmd->index].group);// capture the group string if there is one
 
 	if (strlen(cmd->group) > 0) {			// see if you need to strip the token
 		wr = cmd->token;
@@ -138,13 +134,13 @@ void tg_text_response(const stat_t status, const char *buf)
 	if (cm_get_model_units_mode() != INCHES) { strcpy(units, "mm"); }
 
 	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP)) {
-		fprintf_P(stderr, (PGM_P)prompt_ok, units);
+		fprintf_P(stderr, prompt_ok, units); // Note: it's safer to cast (PGM_P)prompt_ok but not mandatory
 	} else {
-//		char status_message[STATUS_MESSAGE_LEN];
-		fprintf_P(stderr, (PGM_P)prompt_err, units, get_status_message(status), buf);
+		fprintf_P(stderr, prompt_err, units, get_status_message(status), buf);
 	}
 	cmdObj_t *cmd = cmd_body+1;
-	if (cmd->token[0] == 'm') {
+
+	if (cmd_get_type(cmd) == CMD_TYPE_MESSAGE) {
 		fprintf(stderr, (char *)*cmd->stringp);
 	}
 	fprintf(stderr, "\n");

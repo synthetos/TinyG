@@ -54,7 +54,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   		388.07	// String compatibility work
+#define TINYG_FIRMWARE_BUILD   		388.08	// String compatibility work
 #define TINYG_FIRMWARE_VERSION		0.95	// major version
 #define TINYG_HARDWARE_VERSION		7		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8
@@ -115,16 +115,15 @@
 /*************************************************************************
  * String handling help - strings are handled as uint8_t's typedef'd to char_t
  */
+typedef char char_t;					// C version 
 //typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
-typedef char char_t;
 
-//typedef char PROGMEM *prog_char_ptr;	// access to PROGMEM arrays of PROGMEM strings
 typedef const char PROGMEM *char_P;		// access to PROGMEM arrays of PROGMEM strings
 //typedef const char *char_P;			// ARM/C++ version requires this typedef instead
 
-typedef uint8_t stat_t;
-extern stat_t status_code;				// declared in main.cpp
-#define ritorno(a) if((status_code=a) != STAT_OK) { return(status_code); }
+// global string allocated for status messages
+#define STATUS_MESSAGE_LEN 48			// status message string storage allocation
+char status_message[STATUS_MESSAGE_LEN];// allocate string for global use 
 
 /* 
  * STATUS CODES
@@ -139,8 +138,11 @@ extern stat_t status_code;				// declared in main.cpp
  * It returns only if an error occurred. (ritorno is Italian for return) 
  */
 
-#define STATUS_MESSAGE_LEN 48			// status message string storage allocation
-char status_message[STATUS_MESSAGE_LEN];// allocate string for global use 
+// setup status code type and reeturn macro
+typedef uint8_t stat_t;
+extern stat_t status_code;				// declared in main.cpp
+#define ritorno(a) if((status_code=a) != STAT_OK) { return(status_code); }
+
 
 // OS, communications and low-level status (must align with XIO_xxxx codes in xio.h)
 #define	STAT_OK 0						// function completed OK
