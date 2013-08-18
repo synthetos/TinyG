@@ -35,6 +35,7 @@
 
 stat_t text_parser(char_t *str);
 void text_response(const uint8_t status, char_t *buf);
+void text_print_list(stat_t status, uint8_t flags);
 void text_print_inline_pairs(cmdObj_t *cmd);
 void text_print_inline_values(cmdObj_t *cmd);
 void text_print_multiline_formatted(cmdObj_t *cmd);

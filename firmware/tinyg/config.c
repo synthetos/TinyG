@@ -680,21 +680,13 @@ cmdObj_t *cmd_add_message_P(const char_t *string)	// conditionally add a message
  *	  text_flags = TEXT_INLINE_VALUES - print text as comma separated values on a single line
  *	  text_flags = TEXT_MULTILINE_FORMATTED - print text one value per line with formatting string
  */
+
 void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags)
 {
 	if (cfg.comm_mode == JSON_MODE) {
-		switch (json_flags) {
-			case JSON_NO_PRINT: { break; } 
-			case JSON_OBJECT_FORMAT: { json_print_object(cmd_body); break; }
-			case JSON_RESPONSE_FORMAT: { json_print_response(status); break; }
-		}
+		json_print_list(status, json_flags);
 	} else {
-		switch (text_flags) {
-			case TEXT_NO_PRINT: { break; } 
-			case TEXT_INLINE_PAIRS: { text_print_inline_pairs(cmd_body); break; }
-			case TEXT_INLINE_VALUES: { text_print_inline_values(cmd_body); break; }
-			case TEXT_MULTILINE_FORMATTED: { text_print_multiline_formatted(cmd_body);}
-		}
+		text_print_list(status, text_flags);
 	}
 }
 

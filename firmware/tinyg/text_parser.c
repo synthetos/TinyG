@@ -29,11 +29,15 @@
 
 #include "tinyg.h"
 #include "config.h"
-#include "report.h"
 #include "controller.h"
 #include "canonical_machine.h"
 #include "text_parser.h"
-#include "xio/xio.h"
+#include "report.h"
+#include "xio/xio.h"				// for ASCII char definitions
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd);
 
@@ -99,7 +103,7 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 		*rd = NUL;							// terminate at end of name
 		strncpy(cmd->token, str, CMD_TOKEN_LEN);
 		str = ++rd;
-		cmd->value = strtod(str, &rd);		// ptr_rd used as end pointer
+		cmd->value = strtod(str, &rd);		// rd used as end pointer
 		if (rd != str) {
 			cmd->objtype = TYPE_FLOAT;
 		}
@@ -134,7 +138,7 @@ void tg_text_response(const stat_t status, const char *buf)
 	if (cm_get_model_units_mode() != INCHES) { strcpy(units, "mm"); }
 
 	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP)) {
-		fprintf_P(stderr, prompt_ok, units); // Note: it's safer to cast (PGM_P)prompt_ok but not mandatory
+		fprintf_P(stderr, prompt_ok, units); // Note: in AVR it's safer to cast (PGM_P)prompt_ok but not mandatory
 	} else {
 		fprintf_P(stderr, prompt_err, units, get_status_message(status), buf);
 	}
@@ -146,11 +150,22 @@ void tg_text_response(const stat_t status, const char *buf)
 	fprintf(stderr, "\n");
 }
 
-/************************************************************************************
+/***** PRINT FUNCTIONS ********************************************************
+ * json_print_list() - command to select and produce a JSON formatted output
  * text_print_inline_pairs()
  * text_print_inline_values()
  * text_print_multiline_formatted()
  */
+
+void text_print_list(stat_t status, uint8_t flags)
+{
+	switch (flags) {
+		case TEXT_NO_PRINT: { break; } 
+		case TEXT_INLINE_PAIRS: { text_print_inline_pairs(cmd_body); break; }
+		case TEXT_INLINE_VALUES: { text_print_inline_values(cmd_body); break; }
+		case TEXT_MULTILINE_FORMATTED: { text_print_multiline_formatted(cmd_body);}
+	}
+}
 
 void text_print_inline_pairs(cmdObj_t *cmd)
 {
@@ -191,3 +206,6 @@ void text_print_multiline_formatted(cmdObj_t *cmd)
 	}
 }
 
+#ifdef __cplusplus
+}
+#endif // __cplusplus
