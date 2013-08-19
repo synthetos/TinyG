@@ -29,14 +29,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef canonical_machine_h
-#define canonical_machine_h
+#ifndef _CANONICAL_MACHINE_H_
+#define _CANONICAL_MACHINE_H_
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 /*****************************************************************************
  * CANONICAL MACHINE STRUCTURES
  */
 typedef struct cmSingleton {		// struct to manage cm globals and cycles
-	uint16_t magic_start;			// magic number to test memory integity	
+	magic_t magic_start;			// magic number to test memory integity	
 	uint8_t combined_state;			// combination of states for display purposes
 	uint8_t machine_state;			// machine/cycle/motion is the actual machine state
 	uint8_t cycle_state;
@@ -52,7 +56,7 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint8_t cycle_start_requested;	// cycle start character has been received (flag to end feedhold)
 	uint8_t status_report_requested;// status report has been requested
 	uint32_t status_report_systick;	// SysTick value for next status report
-	uint16_t magic_end;
+	magic_t magic_end;
 } cmSingleton_t;
 cmSingleton_t cm;
 
@@ -545,4 +549,4 @@ void cm_program_end(void);										// M2
 void cm_exec_program_stop(void);
 void cm_exec_program_end(void);
 
-#endif
+#endif // _CANONICAL_MACHINE_H_

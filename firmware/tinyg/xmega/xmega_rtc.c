@@ -33,6 +33,7 @@
 #include "../config.h"
 #include "../report.h"
 #include "../gpio.h"
+#include "../switch.h"
 #include "../stepper.h"
 #include "xmega_rtc.h"
 

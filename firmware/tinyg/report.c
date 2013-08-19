@@ -27,17 +27,21 @@
  */
 
 #include "tinyg.h"
-#include "util.h"
 #include "config.h"
-#include "json_parser.h"
 #include "controller.h"
-#include "planner.h"
-#include "gcode_parser.h"
-#include "canonical_machine.h"
 #include "report.h"
+#include "json_parser.h"
+#include "text_parser.h"
+#include "canonical_machine.h"
+#include "planner.h"
 #include "settings.h"
+#include "util.h"
 #include "xio/xio.h"
 #include "xmega/xmega_rtc.h"
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 /**** Status and Exception Messages **************************************************
  * rpt_get_status_message() - return the status message
@@ -99,10 +103,10 @@ static const char_t PROGMEM stat_45[] = "Input value too large";
 static const char_t PROGMEM stat_46[] = "Input value range error";
 static const char_t PROGMEM stat_47[] = "Input value unsupported";
 static const char_t PROGMEM stat_48[] = "JSON syntax error";
-static const char_t PROGMEM stat_49[] = "JSON input has too many pairs";
+static const char_t PROGMEM stat_49[] = "JSON input has too many pairs";	// current longest message: 30 chars
 static const char_t PROGMEM stat_50[] = "JSON output too long";
 static const char_t PROGMEM stat_51[] = "Out of buffer space";
-static const char_t PROGMEM stat_52[] = "Config rejected during machining cycle";	// current longest message: 39 chars
+static const char_t PROGMEM stat_52[] = "Config rejected during cycle";
 static const char_t PROGMEM stat_53[] = "stat_53";
 static const char_t PROGMEM stat_54[] = "stat_54";
 static const char_t PROGMEM stat_55[] = "stat_55";
@@ -137,7 +141,7 @@ PGM_P const PROGMEM stat_msg[] = {			// AVR/GCC version
 	stat_70, stat_71, stat_72
 };
 
-char *get_status_message(stat_t status) 
+char *get_status_message(stat_t status)
 {
 // see tinyg.h for allocation of status_message string
 	strncpy_P(status_message,(PGM_P)pgm_read_word(&stat_msg[status]), STATUS_MESSAGE_LEN);
@@ -157,30 +161,22 @@ void rpt_exception(uint8_t status, int16_t value)
 }
 
 /**** Application Messages *********************************************************
- * rpt_print_message() 				   - print a character string passed as argument
  * rpt_print_initializing_message()	   - initializing configs from hard-coded profile
  * rpt_print_loading_configs_message() - loading configs from EEPROM
  * rpt_print_system_ready_message()    - system ready message
  *
  *	These messages are always in JSON format to allow UIs to sync
  */
-/*
-void rpt_print_message(char *msg)
-{
-	cmd_add_string("msg", msg);
-	cmd_print_list(STAT_OK, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
-}
-*/
 
 void _startup_helper(stat_t status, const char *msg)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	cmd_reset_list();
-	cmd_add_object("fb");
-	cmd_add_object("fv");
-	cmd_add_object("hv");
-	cmd_add_object("id");
-	cmd_add_string_P("msg", msg);
+	cmd_add_object((const char_t *)"fb");
+	cmd_add_object((const char_t *)"fv");
+	cmd_add_object((const char_t *)"hv");
+	cmd_add_object((const char_t *)"id");
+	cmd_add_string_P((const char_t *)"msg", (const char_t *)msg);	
 	json_print_response(status);
 #endif
 }
@@ -198,7 +194,7 @@ void rpt_print_loading_configs_message(void)
 void rpt_print_system_ready_message(void)
 {
 	_startup_helper(STAT_OK, PSTR("SYSTEM READY"));
-	if (cfg.comm_mode == TEXT_MODE) { tg_text_response(STAT_OK, "");}// prompt
+	if (cfg.comm_mode == TEXT_MODE) { tg_text_response(STAT_OK, (char_t *)"");}// prompt
 }
 
 /*****************************************************************************
@@ -256,11 +252,14 @@ void rpt_init_status_report()
 	cm.status_report_requested = false;
 	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
 
-	cmd->index = cmd_get_index("","se00");				// set first SR persistence index
+	const char_t nul[] = "";
+	const char_t se00[] = "se00";
+	cmd->index = cmd_get_index(nul, se00);				// set first SR persistence index
+
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
 		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
 		cfg.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
-		cmd->value = cmd_get_index("", sr_defaults[i]);	// load the index for the SR element
+		cmd->value = cmd_get_index(nul, sr_defaults[i]);// load the index for the SR element
 		cmd_set(cmd);
 		cmd_persist(cmd);								// conditionally persist - automatic by cmd_persis()
 		cmd->index++;									// increment SR NVM index
@@ -275,11 +274,11 @@ stat_t rpt_set_status_report(cmdObj_t *cmd)
 	uint8_t elements = 0;
 	index_t status_report_list[CMD_STATUS_REPORT_LEN];
 	memset(status_report_list, 0, sizeof(status_report_list));
-	index_t sr_start = cmd_get_index("","se00");		// set first SR persistence index
+	index_t sr_start = cmd_get_index((const char_t *)"",(const char_t *)"se00");// set first SR persistence index
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if (((cmd = cmd->nx) == NULL) || (cmd->objtype == TYPE_EMPTY)) { break;}
-		if ((cmd->objtype == TYPE_BOOL) && (cmd->value == true)) {
+		if ((cmd->objtype == TYPE_BOOL) && (fp_TRUE(cmd->value))) {
 			status_report_list[i] = cmd->index;
 			cmd->value = cmd->index;					// persist the index as the value
 			cmd->index = sr_start + i;					// index of the SR persistence location
@@ -357,12 +356,14 @@ stat_t rpt_status_report_callback() 		// called by controller dispatcher
 
 void rpt_populate_unfiltered_status_report()
 {
-	char tmp[CMD_TOKEN_LEN+1];
+	const char_t nul[] = "";
+	const char_t sr[] = "sr";
+	char_t tmp[CMD_TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
+
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object
-	strcpy(cmd->token, "sr");
-//	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
-	cmd->index = cmd_get_index("","sr");	// set the index - may be needed by calling function
+	strcpy(cmd->token, sr);
+	cmd->index = cmd_get_index(nul, sr);	// set the index - may be needed by calling function
 	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
@@ -390,21 +391,21 @@ void rpt_populate_unfiltered_status_report()
  */
 uint8_t rpt_populate_filtered_status_report()
 {
+	const char_t sr[] = "sr";
 	uint8_t has_data = false;
-	char tmp[CMD_TOKEN_LEN+1];
+	char_t tmp[CMD_TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
 
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object
-	strcpy(cmd->token, "sr");
-//	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
-//	cmd->index = cmd_get_index("","sr");	// OMITTED - set the index - may be needed by calling function
+	strcpy(cmd->token, sr);
+//	cmd->index = cmd_get_index(nul, sr);	// OMITTED - set the index - may be needed by calling function
 	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
 
 		cmd_get_cmdObj(cmd);
-		if (cfg.status_report_value[i] == cmd->value) {	// float == comparison runs the risk of overreporting. So be it
+		if (fp_EQ(cmd->value, cfg.status_report_value[i])) {
 			cmd->objtype = TYPE_EMPTY;
 			continue;
 		} else {
@@ -521,4 +522,8 @@ void sr_unit_tests(void)
 }
 
 #endif
+#endif
+
+#ifdef __cplusplus
+}
 #endif

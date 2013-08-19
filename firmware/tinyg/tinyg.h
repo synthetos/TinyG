@@ -54,7 +54,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD   		389.01	// broke out switch functions into a separate file
+#define TINYG_FIRMWARE_BUILD   		389.02	// working through compatibility in report.c (g2 build 016.01)
 #define TINYG_FIRMWARE_VERSION		0.95	// major version
 #define TINYG_HARDWARE_VERSION		7		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8
@@ -72,28 +72,33 @@
 // bringing in new functionality
 //#define __PLAN_R2							// comment out to use R1 planner functions
 
-/*************************************************************************
- * TinyG application-specific prototypes, defines and globals
- */
+/******************************************************************************
+ ***** PLATFORM COMPATIBILITY *************************************************
+ ******************************************************************************/
+
+
+/******************************************************************************
+ ***** TINYG APPLICATION DEFINITIONS ******************************************
+ ******************************************************************************/
+
+typedef uint16_t magic_t;		// magic number size
 #define MAGICNUM 0x12EF			// used for memory integrity assertions
 
 #define STD_IN 	XIO_DEV_USB		// default IO settings
 #define STD_OUT	XIO_DEV_USB
 #define STD_ERR	XIO_DEV_USB
 
+/***** Axes, motors & PWM channels used by the application *****/
+// Axes, motors & PWM channels must be defines (not enums) so #ifdef <value> can be used
+
 #define AXES 	6				// number of axes supported in this version
 #define MOTORS	4				// number of motors on the board
 #define COORDS	6				// number of supported coordinate systems (1-6)
 #define PWMS	2				// number of supported PWM channels
 
-// If you change COORDS you must adjust the entries in cfgArray table in config.c
+// Note: If you change COORDS you must adjust the entries in cfgArray table in config.c
 
-/* Axes, motors & PWM channels must be defines (not enums) so #ifdef <value> can be used
- * 	 NB: Using defines can have side effects if anythign else in the code uses A, B, X... etc.
- *   The "side effect safe" min and max routines had this side effect.
- * Alternate enum is: enum tgAxes { X=0, Y, Z, A, B, C };
- */
-
+// Axes, motors & PWM channels must be defines (not enums) so #ifdef <value> can be used
 #define AXIS_X	0
 #define AXIS_Y	1
 #define AXIS_Z	2
@@ -115,6 +120,8 @@
 #define PWM_2	1
 #define PWM_MAX PWM_2
 
+//#ifdef __AVR_GCC
+
 /*************************************************************************
  * String handling help - strings are handled as uint8_t's typedef'd to char_t
  */
@@ -124,9 +131,10 @@ typedef char char_t;					// C version
 typedef const char PROGMEM *char_P;		// access to PROGMEM arrays of PROGMEM strings
 //typedef const char *char_P;			// ARM/C++ version requires this typedef instead
 
-// global string allocated for status messages
-#define STATUS_MESSAGE_LEN 48			// status message string storage allocation
-char status_message[STATUS_MESSAGE_LEN];// allocate string for global use 
+//#define SysTickTimer.getValue SysTickTimer_getValue
+
+//#endif // __AVR_GCC
+
 
 /* 
  * STATUS CODES
@@ -141,11 +149,12 @@ char status_message[STATUS_MESSAGE_LEN];// allocate string for global use
  * It returns only if an error occurred. (ritorno is Italian for return) 
  */
 
-// setup status code type and reeturn macro
 typedef uint8_t stat_t;
+#define STATUS_MESSAGE_LEN 48			// status message string storage allocation
+char status_message[STATUS_MESSAGE_LEN];// allocate string for global use
+
 extern stat_t status_code;				// declared in main.cpp
 #define ritorno(a) if((status_code=a) != STAT_OK) { return(status_code); }
-
 
 // OS, communications and low-level status (must align with XIO_xxxx codes in xio.h)
 #define	STAT_OK 0						// function completed OK
