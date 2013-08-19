@@ -26,8 +26,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef planner_h
-#define planner_h 
+#ifndef PLANNER_H_ONCE
+#define PLANNER_H_ONCE
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 enum moveType {				// bf->move_type values 
 	MOVE_TYPE_NULL = 0,		// null move - does a no-op
@@ -80,7 +84,7 @@ enum moveState {
  *	Used to introduce a short dwell before planning an idle machine.
  *  If you don;t do this the first block will always plan to zero as it will
  *	start executing before the next block arrives from the serial port.
- *	This cuases the machine to stutter once on startup.
+ *	This causes the machine to stutter once on startup.
  */
 #define PLANNER_STARTUP_DELAY_SECONDS 0.05	// in seconds
 
@@ -110,7 +114,7 @@ enum moveState {
 //#define MP_LINE(t,m,o,n) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m,o,n) : mp_line(t,m))
 #define MP_LINE(t,m,o,n) (mp_aline(t,m,o,n))	// non-planned lines are disabled
 
-typedef void (*cm_exec)(float[], float[]);
+typedef void (*cm_exec)(float[], float[]);		// callback to canonical_machine execution function
 
 /*
  *	Planner structures
@@ -166,13 +170,13 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 } mpBuf_t;
 
 typedef struct mpBufferPool {	// ring buffer for sub-moves
-	uint16_t magic_start;		// magic number to test memory integity	
+	magic_t magic_start;		// magic number to test memory integity	
 	uint8_t buffers_available;	// running count of available buffers
 	mpBuf_t *w;					// get_write_buffer pointer
 	mpBuf_t *q;					// queue_write_buffer pointer
 	mpBuf_t *r;					// get/end_run_buffer pointer
 	mpBuf_t bf[PLANNER_BUFFER_POOL_SIZE];// buffer storage
-	uint16_t magic_end;
+	magic_t magic_end;
 } mpBufferPool_t;
 
 typedef struct mpMoveMasterSingleton {	// common variables for planning (move master)
@@ -191,7 +195,7 @@ typedef struct mpMoveMasterSingleton {	// common variables for planning (move ma
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
-	uint16_t magic_start;		// magic number to test memory integity	
+	magic_t magic_start;		// magic number to test memory integity	
 	uint32_t linenum;			// runtime line/block number of BF being executed
 	uint8_t motion_mode;		// runtime motion mode for status reports
 	uint8_t move_state;			// state of the overall move
@@ -223,14 +227,19 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float segment_velocity;		// computed velocity for aline segment
 	float forward_diff_1;      // forward difference level 1 (Acceleration)
 	float forward_diff_2;      // forward difference level 2 (Jerk - constant)
-	uint16_t magic_end;
+	magic_t magic_end;
 } mpMoveRuntimeSingleton_t;
 
 
 // Allocate global scope structs
-mpBufferPool_t mb;				// move buffer queue
-mpMoveMasterSingleton_t mm;		// context for line planning
-mpMoveRuntimeSingleton_t mr;	// context for line runtime
+//mpBufferPool_t mb;				// move buffer queue
+//mpMoveMasterSingleton_t mm;		// context for line planning
+//mpMoveRuntimeSingleton_t mr;	// context for line runtime
+
+// Reference global scope structs
+extern mpBufferPool_t mb;				// move buffer queue
+extern mpMoveMasterSingleton_t mm;		// context for line planning
+extern mpMoveRuntimeSingleton_t mr;	// context for line runtime
 
 /*
  * Global Scope Functions
@@ -295,5 +304,9 @@ void mp_plan_arc_unit_tests(void);
 #define	PLANNER_UNITS
 #endif // end __UNIT_TEST_PLANNER
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif	// End of include Guard: PLANNER_H_ONCE
 

@@ -65,6 +65,15 @@
 #include "util.h"
 //#include "xio/xio.h"			// uncomment for debugging
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+// Allocate global scope structs
+mpBufferPool_t mb;				// move buffer queue
+mpMoveMasterSingleton_t mm;		// context for line planning
+mpMoveRuntimeSingleton_t mr;	// context for line runtime
+
 /*
  * Local Scope Data and Functions
  */
@@ -505,3 +514,6 @@ void mp_dump_runtime_state(void)
 }
 #endif // __DEBUG
 
+#ifdef __cplusplus
+}
+#endif
