@@ -417,7 +417,6 @@ uint8_t rpt_populate_filtered_status_report()
 			has_data = true;
 		}
 	}
-//	cmd->pv->nx = NULL;						// back up one and terminate the body
 	return (has_data);
 }
 

@@ -38,8 +38,8 @@
  box then set the top one to \winavr\bin\avr-gcc.exe 
  and the lower one to \winavr\utils\bin\make.exe
  */
-#ifndef _TINYG_H_
-#define _TINYG_H_
+#ifndef TINYG_H_ONCE
+#define TINYG_H_ONCE
 
 // common system includes
 #include <ctype.h>					
@@ -49,12 +49,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+//#ifdef __AVR
 #include <avr/pgmspace.h>
+//#endif
 
+//#include "MotatePins.h"
 
-// NOTE: This header requires <stdio.h> be included previously
-
-#define TINYG_FIRMWARE_BUILD   		389.02	// working through compatibility in report.c (g2 build 016.01)
+#define TINYG_FIRMWARE_BUILD   		389.03	// queue report compatibility in report.c (g2 build 016.02)
 #define TINYG_FIRMWARE_VERSION		0.95	// major version
 #define TINYG_HARDWARE_VERSION		7		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8
@@ -241,4 +242,4 @@ extern stat_t status_code;				// declared in main.cpp
 #define ALARM_LIMIT_OFFSET 0
 #define ALARM_MEMORY_OFFSET 10
 
-#endif //_TINYG_H_
+#endif // End of include guard: TINYG2_H_ONCE
