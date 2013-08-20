@@ -93,14 +93,14 @@ static void _dump_plan_buffer(mpBuf_t *bf);
 #endif
 
 /* 
- * mp_init()
+ * planner_init()
  */
 
-void mp_init()
+void planner_init()
 {
-// You can assume all memory has been zeroed by a hard reset. If not, use this code:
-//	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
-//	memset(&mm, 0, sizeof(mm));	// clear all values, pointers and status
+// If you can can assume all memory has been zeroed by a hard reset you don;t need these next 2 lines
+	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
+	memset(&mm, 0, sizeof(mm));	// clear all values, pointers and status
 
 	mr.magic_start = MAGICNUM;
 	mr.magic_end = MAGICNUM;
@@ -212,7 +212,7 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 		bf->flag_vector[i] = flag[i];
 	}
 	mp_queue_write_buffer(MOVE_TYPE_COMMAND);
-	return;
+//	return;
 }
 
 static stat_t _exec_command(mpBuf_t *bf)

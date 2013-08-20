@@ -29,13 +29,20 @@
 
 #include "tinyg.h"
 #include "config.h"
-#include "controller.h"			// only needed for line number
+//#include "controller.h"			// only needed for line number
 #include "canonical_machine.h"
 #include "util.h"
 #include "plan_arc.h"
 #include "planner.h"
-#include "kinematics.h"
-#include "xio/xio.h"			// support trap and debug statements
+//#include "kinematics.h"
+//#include "xio/xio.h"			// support trap and debug statements
+
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+// Allocate arc planner structure
+arc_t ar;
 
 /*
  * Local functions
@@ -46,7 +53,7 @@ static float _get_arc_time (const float linear_travel, const float angular_trave
 static float _get_theta(const float x, const float y);
 
 /*****************************************************************************
- * mp_arc() - setup an arc move for runtime
+ * ar_arc() - setup an arc move for runtime
  *
  *	Generates an arc by queueing line segments to the move buffer.
  *	The arc is approximated by generating a large number of tiny, linear
@@ -57,9 +64,9 @@ static float _get_theta(const float x, const float y);
  */
 stat_t ar_arc( const float target[], 
 				const float i, const float j, const float k, 
-				const float theta, 		// starting angle
+				const float theta, 			// starting angle
 				const float radius, 		// radius of the circle in mm
-				const float angular_travel,// radians along arc (+CW, -CCW)
+				const float angular_travel,	// radians along arc (+CW, -CCW)
 				const float linear_travel, 
 				const uint8_t axis_1, 		// circle plane in tool space
 				const uint8_t axis_2,  		// circle plane in tool space
@@ -68,9 +75,8 @@ stat_t ar_arc( const float target[],
 				const float work_offset[],	// offset from work coordinate system
 				const float min_time)		// minimum time for arc for replanning purposes
 {
-	if (ar.run_state != MOVE_STATE_OFF) {
-		return (STAT_INTERNAL_ERROR);			// (not supposed to fail)
-	}
+	if (ar.run_state != MOVE_STATE_OFF) { return (STAT_INTERNAL_ERROR); } // (not supposed to fail)
+
 	ar.linenum = cm_get_model_linenum();	// get gcode model line number as debugging convenience
 
 	// "move_length" is the total mm of travel of the helix (or just arc)
@@ -82,13 +88,12 @@ stat_t ar_arc( const float target[],
 	// load the move struct for an arc
 	cm_get_model_canonical_position_vector(ar.position);// set initial arc position
 
-//	copy_axis_vector(ar.endpoint, target);
 	ar.endpoint[axis_1] = target[0];					// save the arc endpoint
 	ar.endpoint[axis_2] = target[1];
 	ar.endpoint[axis_linear] = target[2];
 
 	copy_axis_vector(ar.work_offset, work_offset);		// propagate the work offset
-	ar.time = minutes;
+	ar.time = minutes;									// load the singleton
 	ar.min_time = min_time;
 	ar.theta = theta;
 	ar.radius = radius;
@@ -150,7 +155,7 @@ stat_t ar_arc_callback()
 }
 
 /*
- * ar_abort_arc() - stop an arc.
+ * ar_abort_arc() - stop arc movement without maintaining position
  *
  *	OK to call if no arc is running
  */
@@ -172,7 +177,7 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 				   float radius, 					// non-zero sets radius mode
 				   uint8_t motion_mode)				// defined motion mode
 {
-	uint8_t status = STAT_OK;
+	stat_t status = STAT_OK;
 
 	// copy parameters into the current state
 	gm.motion_mode = motion_mode;
@@ -186,9 +191,8 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 	// but the system is still in arc motion mode - this is not an error.
 	// This can happen when a F word or M word is by itself.
 	// (The tests below are organized for execution efficiency)
-	if ((i==0) && (j==0) && (radius==0) && (k==0)) {
-		if ((flags[AXIS_X] + flags[AXIS_Y] + flags[AXIS_Z] + 
-			 flags[AXIS_A] + flags[AXIS_B] + flags[AXIS_C]) == 0) {
+	if ( fp_ZERO(i) && fp_ZERO(j) && fp_ZERO(k) && fp_ZERO(radius) ) {
+		if ( fp_ZERO((flags[AXIS_X] + flags[AXIS_Y] + flags[AXIS_Z] + flags[AXIS_A] + flags[AXIS_B] + flags[AXIS_C]))) {
 			return (STAT_OK);
 		}
 	}
@@ -199,14 +203,11 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 
 	// A non-zero radius is a radius arc. Compute the IJK offset coordinates.
 	// These will override any IJK offsets provided in the call
-	if (radius > EPSILON) {
-		if ((_get_arc_radius() != STAT_OK)) {
-			return (status);					// error return
-		}
-	}
+	if (fp_NOT_ZERO(radius)) { ritorno(_get_arc_radius());}	// returns if error
 
 	// Introduce a short dwell if the machine is idle to enable the planning
 	// queue to begin to fill (avoids first block having to plan down to zero)
+// DOESN'T WORK - TRY SOMETHING ELSE
 //	if (st_isbusy() == false) {
 //		cm_dwell(PLANNER_STARTUP_DELAY_SECONDS);
 //	}
@@ -216,7 +217,6 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 	cm_set_model_endpoint_position(status);
 	return (status);
 }
-
 
 /*
  * _cm_compute_center_arc() - compute arc from I and J (arc center point)
@@ -409,7 +409,7 @@ static stat_t _get_arc_radius()
  *	and the linear travel into account, but how many people actually use helixes?
  */
 
-static float _get_arc_time (const float linear_travel, 	// in mm
+static float _get_arc_time (const float linear_travel, 		// in mm
 							 const float angular_travel, 	// in radians
 							 const float radius)			// in mm
 {
@@ -469,4 +469,8 @@ void mp_plan_arc_unit_tests()
 }
 
 #endif
+#endif
+
+#ifdef __cplusplus
+}
 #endif
