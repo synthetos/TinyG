@@ -540,9 +540,33 @@ void _load_move()
 	}
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here) 
-	st_prep.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
 	st_prep.prep_state = false;
+	st_prep.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
 	st_request_exec_move();									// exec and prep next move
+}
+
+/* 
+ * st_prep_null() - Keeps the loader happy. Otherwise performs no action
+ *
+ *	Used by M codes, tool and spindle changes
+ */
+
+void st_prep_null()
+{
+	st_prep.move_type = MOVE_TYPE_NULL;
+	st_prep.prep_state = true;
+}
+
+/* 
+ * st_prep_dwell() 	 - Add a dwell to the move buffer
+ */
+
+void st_prep_dwell(float microseconds)
+{
+	st_prep.move_type = MOVE_TYPE_DWELL;
+	st_prep.prep_state = true;
+	st_prep.dda_period = _f_to_period(F_DWELL);
+	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * F_DWELL);
 }
 
 /*
@@ -594,30 +618,6 @@ stat_t st_prep_line(float steps[], float microseconds)
 // FOOTNOTE: This expression was previously computed as below but floating 
 // point rounding errors caused subtle and nasty accumulated position errors:
 //	sp.dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
-
-/* 
- * st_prep_null() - Keeps the loader happy. Otherwise performs no action
- *
- *	Used by M codes, tool and spindle changes
- */
-
-void st_prep_null()
-{
-	st_prep.move_type = MOVE_TYPE_NULL;
-	st_prep.prep_state = true;
-}
-
-/* 
- * st_prep_dwell() 	 - Add a dwell to the move buffer
- */
-
-void st_prep_dwell(float microseconds)
-{
-	st_prep.move_type = MOVE_TYPE_DWELL;
-	st_prep.prep_state = true;
-	st_prep.dda_period = _f_to_period(F_DWELL);
-	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * F_DWELL);
-}
 
 /*
  * st_isbusy() - return TRUE if motors are running or a dwell is running

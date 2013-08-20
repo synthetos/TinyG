@@ -170,11 +170,7 @@ stat_t mp_exec_move()
 		if (cm.cycle_state == CYCLE_OFF) cm_cycle_start();
 		if (cm.motion_state == MOTION_STOP) cm.motion_state = MOTION_RUN;
 	}
-
-	// run the move callback in the planner buffer
-	if (bf->bf_func != NULL) {
-		return (bf->bf_func(bf));
-	}
+	if (bf->bf_func != NULL) { return (bf->bf_func(bf));} 	// run the move callback in the planner buffer
 	return (STAT_INTERNAL_ERROR);		// never supposed to get here
 }
 
@@ -224,11 +220,11 @@ static stat_t _exec_command(mpBuf_t *bf)
 }
 
 /*************************************************************************
- * mp_dwell() 	 - queue a dwell
- * _exec_dwell() - dwell continuation
+ * mp_dwell() 	  - queue a dwell
+ * _exec_dwell() - dwell execution
  *
  * Dwells are performed by passing a dwell move to the stepper drivers.
- * When the stepper driver sees a dwell it times the swell on a separate 
+ * When the stepper driver sees a dwell it times the dwell on a separate 
  * timer than the stepper pulse timer.
  */
 
@@ -237,28 +233,34 @@ stat_t mp_dwell(float seconds)
 	mpBuf_t *bf; 
 
 	if ((bf = mp_get_write_buffer()) == NULL) {	// get write buffer or fail
-		return (STAT_BUFFER_FULL_FATAL);		// (not supposed to fail)
+		return (STAT_BUFFER_FULL_FATAL);		// (not ever supposed to fail)
 	}
 	bf->bf_func = _exec_dwell;					// register callback to dwell start
 	bf->time = seconds;						  	// in seconds, not minutes
-	bf->move_state = MOVE_STATE_NEW;
+//	bf->move_state = MOVE_STATE_NEW;
 	mp_queue_write_buffer(MOVE_TYPE_DWELL); 
 	return (STAT_OK);
 }
 
-void mp_end_dwell()								// all's well that ends dwell
-{
-	mp_free_run_buffer();						// Note: this is called from an interrupt
-}
-
 static stat_t _exec_dwell(mpBuf_t *bf)
 {
+	st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
+	mp_free_run_buffer();
+	return (STAT_OK);
+/*
 	if (bf->move_state == MOVE_STATE_NEW) {
 		st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
 		bf->move_state = MOVE_STATE_RUN;
 	}
 	return (STAT_OK);
+*/
 }
+/*
+void mp_end_dwell()								// all's well that ends dwell
+{
+	mp_free_run_buffer();						// Note: this is called from an interrupt
+}
+*/
 
 /**** PLANNER BUFFERS *****************************************************
  *
