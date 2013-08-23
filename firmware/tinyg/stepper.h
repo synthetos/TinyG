@@ -100,9 +100,9 @@ void st_dump_stepper_state(void);
  */
 
 enum cmStepperPowerMode {
-	POWER_MODE_DELAYED_DISABLE = 0,	// full power until disabled
-	POWER_MODE_DISABLE_ON_IDLE,		// power down immediately on idle
-	POWER_MODE_LOW_POWER_IDLE		// not implemented yet
+	POWER_MODE_ENABLE_FULL_CYCLE =0,// fully powered during cycles
+	POWER_MODE_DISABLE_ON_IDLE		// power down motor immediately when idle
+//	POWER_MODE_LOW_POWER_IDLE		// not implemented yet
 };
 
 /* DDA substepping

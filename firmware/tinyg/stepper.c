@@ -300,10 +300,10 @@ void st_enable_motor(const uint8_t motor)
 
 void st_enable_motors()
 {
-	if (cfg.m[MOTOR_1].power_mode == POWER_MODE_DELAYED_DISABLE) { st_enable_motor(MOTOR_1);}
-	if (cfg.m[MOTOR_2].power_mode == POWER_MODE_DELAYED_DISABLE) { st_enable_motor(MOTOR_2);}
-	if (cfg.m[MOTOR_3].power_mode == POWER_MODE_DELAYED_DISABLE) { st_enable_motor(MOTOR_3);}
-	if (cfg.m[MOTOR_4].power_mode == POWER_MODE_DELAYED_DISABLE) { st_enable_motor(MOTOR_4);}
+	if (cfg.m[MOTOR_1].power_mode == POWER_MODE_ENABLE_FULL_CYCLE) { st_enable_motor(MOTOR_1);}
+	if (cfg.m[MOTOR_2].power_mode == POWER_MODE_ENABLE_FULL_CYCLE) { st_enable_motor(MOTOR_2);}
+	if (cfg.m[MOTOR_3].power_mode == POWER_MODE_ENABLE_FULL_CYCLE) { st_enable_motor(MOTOR_3);}
+	if (cfg.m[MOTOR_4].power_mode == POWER_MODE_ENABLE_FULL_CYCLE) { st_enable_motor(MOTOR_4);}
 	st_set_motor_disable_timeout(cfg.motor_disable_timeout);
 }
 
@@ -376,8 +376,8 @@ ISR(TIMER_DDA_ISR_vect)
 	}
 	if (--st_run.dda_ticks_downcount == 0) {	// end move
  		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;	// disable DDA timer
-		st_set_motor_disable_timeout(cfg.motor_disable_timeout);
-		// power-down motors if this feature is enabled - set to 0 to disable
+//		st_set_motor_disable_timeout(cfg.motor_disable_timeout);
+		// power-down motors if this feature is enabled
 		if (cfg.m[MOTOR_1].power_mode == POWER_MODE_DISABLE_ON_IDLE) PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 		if (cfg.m[MOTOR_2].power_mode == POWER_MODE_DISABLE_ON_IDLE) PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 		if (cfg.m[MOTOR_3].power_mode == POWER_MODE_DISABLE_ON_IDLE) PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
@@ -389,7 +389,7 @@ ISR(TIMER_DDA_ISR_vect)
 ISR(TIMER_DWELL_ISR_vect) {						// DWELL timer interupt
 	if (--st_run.dda_ticks_downcount == 0) {
  		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;	// disable DWELL timer
-		mp_end_dwell();							// free the planner buffer
+//		mp_end_dwell();							// free the planner buffer
 		_load_move();
 	}
 }
