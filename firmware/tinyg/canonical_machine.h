@@ -309,7 +309,8 @@ enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,	// G92.2
 	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,	// G92.3
 	NEXT_ACTION_DWELL,					// G4
-	NEXT_ACTION_STRAIGHT_PROBE			// G38.2
+	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
+	NEXT_ACTION_SET_HOMING_NO_SET		// G28.4 homing cycle with no coordinate setting
 };
 
 enum cmMotionMode {						// G Modal Group 1
@@ -492,6 +493,7 @@ stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 
 stat_t cm_homing_cycle_start(void);								// G28.2
+stat_t cm_homing_cycle_start_no_set(void);								// G28.4
 stat_t cm_homing_callback(void);								// G28.2 main loop callback
 stat_t cm_set_absolute_origin(float origin[], float flags[]);	// G28.3  (special function)
 
@@ -499,6 +501,11 @@ stat_t cm_set_g28_position(void);								// G28.1
 stat_t cm_goto_g28_position(float target[], float flags[]); 	// G28
 stat_t cm_set_g30_position(void);								// G30.1
 stat_t cm_goto_g30_position(float target[], float flags[]);		// G30
+
+stat_t cm_probe_cycle_start(void);								// G38.2
+stat_t cm_probe_callback(void);								// G38.2 main loop callback
+int8_t cm_probe_get_axis(void);
+void cm_probe_set_position(float);
 
 stat_t cm_set_coord_system(uint8_t coord_system);				// G54 - G59
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2

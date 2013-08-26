@@ -10,6 +10,8 @@ controller.c
 
 cycle_homing.c
 
+cycle_probing.c
+
 gcode_parser.c
 
 gpio.c

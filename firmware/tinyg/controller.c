@@ -144,6 +144,7 @@ static void _controller_HSM()
 	DISPATCH(rpt_queue_report_callback());	// conditionally send queue report
 	DISPATCH(ar_arc_callback());			// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());			// G28.2 continuation
+	DISPATCH(cm_probe_callback());			// G38.2 continuation
 
 //----- command readers and parsers ------------------------------------//
 	DISPATCH(_sync_to_planner());			// ensure there is at least one free buffer in planning queue

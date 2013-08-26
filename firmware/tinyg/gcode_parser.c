@@ -273,6 +273,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 							case 1: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_G28_POSITION); 
 							case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SEARCH_HOME); 
 							case 3: SET_NON_MODAL (next_action, NEXT_ACTION_SET_ABSOLUTE_ORIGIN);
+							case 4: SET_NON_MODAL (next_action, NEXT_ACTION_SET_HOMING_NO_SET);
 							default: status = STAT_UNRECOGNIZED_COMMAND;
 						}
 						break;
@@ -285,14 +286,14 @@ static stat_t _parse_gcode_block(char_t *buf)
 						}
 						break;
 					}
-/*					case 38: 
+					case 38: {
 						switch (_point(value)) {
 							case 2: SET_NON_MODAL (next_action, NEXT_ACTION_STRAIGHT_PROBE); 
 							default: status = STAT_UNRECOGNIZED_COMMAND;
 						}
 						break;
 					}
-*/					case 40: break;	// ignore cancel cutter radius compensation
+					case 40: break;	// ignore cancel cutter radius compensation
 					case 49: break;	// ignore cancel tool length offset comp.
 					case 53: SET_NON_MODAL (absolute_override, true);
 					case 54: SET_MODAL (MODAL_GROUP_G12, coord_system, G54);
@@ -452,7 +453,8 @@ static stat_t _execute_gcode_block()
 
 	switch (gn.next_action) {
 		case NEXT_ACTION_SEARCH_HOME: { status = cm_homing_cycle_start(); break;}								// G28.2
-//		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_probe_cycle_start(); break;}
+		case NEXT_ACTION_SET_HOMING_NO_SET: { status = cm_homing_cycle_start_no_set(); break;}					// G28.4
+		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_probe_cycle_start(); break;}								//G38.2
 		case NEXT_ACTION_SET_ABSOLUTE_ORIGIN: { status = cm_set_absolute_origin(gn.target, gf.target); break;}	// G28.3
 		case NEXT_ACTION_SET_G28_POSITION: { status = cm_set_g28_position(); break;}							// G28.1
 		case NEXT_ACTION_GOTO_G28_POSITION: { status = cm_goto_g28_position(gn.target, gf.target); break;}		// G28
