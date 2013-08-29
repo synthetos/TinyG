@@ -844,7 +844,7 @@ uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_G
 char_t get_axis_char(int8_t axis)
 {
 	char_t axis_char[] = "XYZABC";
-	if ((axis < 0) || (axis > AXIS_MAX)) return (' ');
+	if ((axis < 0) || (axis > AXES)) return (' ');
 	return (axis_char[axis]);
 }
 

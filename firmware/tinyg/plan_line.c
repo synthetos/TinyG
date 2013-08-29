@@ -86,27 +86,11 @@ uint8_t mp_get_runtime_busy()
 uint8_t mp_get_runtime_motion_mode(void) { return (mr.motion_mode);}
 float mp_get_runtime_linenum(void) { return (mr.linenum);}
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
-
-float mp_get_runtime_machine_position(uint8_t axis) { 
-	return (mr.position[axis]);
-}
-
-float mp_get_runtime_work_position(uint8_t axis) { 
-	return (mr.position[axis] - mr.work_offset[axis]);
-}
-
-float mp_get_runtime_work_offset(uint8_t axis) { 
-	return (mr.work_offset[axis]);
-}
-
-void mp_set_runtime_work_offset(float offset[]) { 
-	copy_axis_vector(mr.work_offset, offset);
-}
-
-void mp_zero_segment_velocity() 
-{
-	mr.segment_velocity = 0;
-}
+float mp_get_runtime_machine_position(uint8_t axis) { return (mr.position[axis]);}
+float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.work_offset[axis]);}
+float mp_get_runtime_work_offset(uint8_t axis) { return (mr.work_offset[axis]);}
+void mp_set_runtime_work_offset(float offset[]) { copy_axis_vector(mr.work_offset, offset);}
+void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
 
 /**************************************************************************
  * mp_aline() - plan a line with acceleration / deceleration
@@ -117,9 +101,6 @@ void mp_zero_segment_velocity()
  *	Jerk is a measure of impact to the machine. Controlling jerk smoothes 
  *	transitions between moves and allows for faster feeds while controlling 
  *	machine oscillations and other undesirable side-effects.
- *
- *	A detailed explanation of how this module works can be found on the wiki:
- *  http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info:#Acceleration_Planning
  *
  * 	Note: All math is done in absolute coordinates using "float precision" 
  *	floating point (even though AVRgcc does this as single precision)
@@ -144,10 +125,10 @@ stat_t mp_aline(const float target[], const float minutes, const float work_offs
 	if ((bf = mp_get_write_buffer()) == NULL) { return (STAT_BUFFER_FULL_FATAL);} // never supposed to fail
 
 	bf->bf_func = _exec_aline;					// register the callback to the exec function
-	bf->linenum = cm_get_model_linenum();		// block being planned
+	bf->linenum = cm_get_model_linenum();		// retrieve the line number being planned
 	bf->motion_mode = cm_get_model_motion_mode();
 	bf->time = minutes;
-	bf->min_time = min_time;
+	bf->min_time = min_time;					// used for feed override replanning only
 	bf->length = length;
 	copy_axis_vector(bf->target, target); 		// set target for runtime
 	copy_axis_vector(bf->work_offset, work_offset);// propagate offset
@@ -222,8 +203,17 @@ stat_t mp_aline(const float target[], const float minutes, const float work_offs
 
 /* _plan_block_list() - plans the entire block list
  *
- *	Plans all blocks between and including the first block and the block provided (bf).
- *	Sets entry, exit and cruise v's from vmax's then calls trapezoid generation. 
+ *	The block list is the circular buffer of planner buffers (bf's). The block 
+ *	currently being planned is the "bf" block. The "first block" is the next block 
+ *	to execute; queued immediately behind the currently executing block, aka the 
+ *	"running" block. In some cases there is no first block because the list is empty 
+ *	or there is only one block and it is already running. 
+ *
+ *	If blocks following the first block are already optimally planned (non replannable)
+ *	the first block that is not optimally planned becomes the effective first block.
+ *
+ *	_plan_block_list() plans all blocks between and including the (effective) first block 
+ *	and the bf. It sets entry, exit and cruise v's from vmax's then calls trapezoid generation. 
  *
  *	Variables that must be provided in the mpBuffers that will be processed:
  *
@@ -280,8 +270,8 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 {
 	mpBuf_t *bp = bf;
 
-	// Backward planning pass. Find beginning of the list and update the braking velocities.
-	// At the end *bp points to the first buffer before the list.
+	// Backward planning pass. Find first block and update the braking velocities.
+	// At the end *bp points to the buffer before the first block.
 	while ((bp = mp_get_prev_buffer(bp)) != bf) {
 		if (bp->replannable == false) { break; }
 		bp->braking_velocity = min(bp->nx->entry_vmax, bp->nx->braking_velocity) + bp->delta_vmax;
@@ -695,8 +685,8 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
 static float _get_junction_vmax(const float a_unit[], const float b_unit[])
 {
 	float costheta = - (a_unit[AXIS_X] * b_unit[AXIS_X]) - (a_unit[AXIS_Y] * b_unit[AXIS_Y]) 
-					  - (a_unit[AXIS_Z] * b_unit[AXIS_Z]) - (a_unit[AXIS_A] * b_unit[AXIS_A]) 
-					  - (a_unit[AXIS_B] * b_unit[AXIS_B]) - (a_unit[AXIS_C] * b_unit[AXIS_C]);
+					 - (a_unit[AXIS_Z] * b_unit[AXIS_Z]) - (a_unit[AXIS_A] * b_unit[AXIS_A]) 
+					 - (a_unit[AXIS_B] * b_unit[AXIS_B]) - (a_unit[AXIS_C] * b_unit[AXIS_C]);
 
 	if (costheta < -0.99) { return (10000000); } 		// straight line cases
 	if (costheta > 0.99)  { return (0); } 				// reversal cases

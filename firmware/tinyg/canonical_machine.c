@@ -221,9 +221,12 @@ float cm_get_model_coord_offset(uint8_t axis)
 
 float *cm_get_model_coord_offset_vector(float vector[])
 {
-	for (uint8_t i=0; i<AXES; i++) {
-		vector[i] = cm_get_model_coord_offset(i);
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		vector[axis] = cm_get_model_coord_offset(axis);
 	}
+//	for (uint8_t i=0; i<AXES; i++) {
+//		vector[i] = cm_get_model_coord_offset(i);
+//	}
 	return (vector);
 }
 
@@ -238,8 +241,8 @@ float cm_get_model_work_position(uint8_t axis)
 /*
 float *cm_get_model_work_position_vector(float position[]) 
 {
-	for (uint8_t i=0; i<AXES; i++) {
-		position[i] = cm_get_model_work_position(i);
+	for (uint8_t axis = AXIS_X; axis < AXIS_MAX; axis++) {
+		position[axis] = cm_get_model_work_position(axis);
 	}
 	return (position);
 }
@@ -491,7 +494,6 @@ void cm_set_model_endpoint_position(stat_t status)
 
 static float _get_move_times(float *min_time)
 {
-	uint8_t i;
 	float inv_time=0;	// inverse time if doing a feed in G93 mode
 	float xyz_time=0;	// coordinated move linear part at req feed rate
 	float abc_time=0;	// coordinated move rotary part at req feed rate
@@ -514,17 +516,34 @@ static float _get_move_times(float *min_time)
 			}
 		}
 	}
- 	for (i=0; i<AXES; i++) {
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
-			tmp_time = fabs(gm.target[i] - gm.position[i]) / cfg.a[i].feedrate_max;
+			tmp_time = fabs(gm.target[axis] - gm.position[axis]) / cfg.a[axis].feedrate_max;
 		} else { // gm.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
-			tmp_time = fabs(gm.target[i] - gm.position[i]) / cfg.a[i].velocity_max;
+			tmp_time = fabs(gm.target[axis] - gm.position[axis]) / cfg.a[axis].velocity_max;
 		}
 		max_time = max(max_time, tmp_time);
 		*min_time = min(*min_time, tmp_time);
 	}
 	return (max4(inv_time, max_time, xyz_time, abc_time));
 }
+
+/* 
+ * _test_soft_limits() - return error code if soft limit is exceeded
+ *
+ *	Must be called with target properly set in GM struct. Best done after cm_set_model_target() 
+ */
+stat_t _test_soft_limits()
+{
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if ((gm.target[axis] < 0) || (gm.target[axis] > cfg.a[axis].travel_max)) {
+			return (STAT_SOFT_LIMIT_EXCEEDED);
+		}
+	}
+	return (STAT_OK);
+}
+
+ 
 
 /*************************************************************************
  *
@@ -673,9 +692,9 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
 		return (STAT_INTERNAL_RANGE_ERROR);
 	}
-	for (uint8_t i=0; i<AXES; i++) {
-		if (fp_TRUE(flag[i])) {
-			cfg.offset[coord_system][i] = offset[i];
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (fp_TRUE(flag[axis])) {
+			cfg.offset[coord_system][axis] = offset[axis];
 			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
 		}
 	}
@@ -698,8 +717,8 @@ static void _exec_offset(float *value, float *flag)
 {
 	uint8_t coord_system = ((uint8_t)value[0]);				// coordinate system is passed in value[0] element
 	float offsets[AXES];
-	for (uint8_t i=0; i<AXES; i++) {
-		offsets[i] = cfg.offset[coord_system][i] + (gm.origin_offset[i] * gm.origin_offset_enable);
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		offsets[axis] = cfg.offset[coord_system][axis] + (gm.origin_offset[axis] * gm.origin_offset_enable);
 	}
 	mp_set_runtime_work_offset(offsets);
 }
@@ -726,21 +745,22 @@ stat_t cm_set_absolute_origin(float origin[], float flag[])
 {
 	float value[AXES];
 
-	for (uint8_t i=0; i<AXES; i++) {
-		if (fp_TRUE(flag[i])) {
-			value[i] = cfg.offset[gm.coord_system][i] + _to_millimeters(origin[i]);
-			cm_set_axis_origin(i, value[i]);
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (fp_TRUE(flag[axis])) {
+			value[axis] = cfg.offset[gm.coord_system][axis] + _to_millimeters(origin[axis]);
+			cm_set_axis_origin(axis, value[axis]);
 		}
 	}
 	mp_queue_command(_exec_absolute_origin, value, flag);
 	return (STAT_OK);
 }
+
 static void _exec_absolute_origin(float *value, float *flag)
 {
-	for (uint8_t i=0; i<AXES; i++) {
-		if (fp_TRUE(flag[i])) {
-			mp_set_runtime_position(i, value[i]);
-			cm.homed[i] = true;					// it's not considered homed until you get to the runtime
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (fp_TRUE(flag[axis])) {
+			mp_set_runtime_position(axis, value[axis]);
+			cm.homed[axis] = true;				// it's not considered homed until you get to the runtime
 		}
 	}
 }
@@ -765,24 +785,25 @@ stat_t cm_set_origin_offsets(float offset[], float flag[])
 {
 	// set offsets in the Gcode model context
 	gm.origin_offset_enable = 1;
-	for (uint8_t i=0; i<AXES; i++) {
-		if (fp_TRUE(flag[i])) {
-			gm.origin_offset[i] = gm.position[i] - cfg.offset[gm.coord_system][i] - _to_millimeters(offset[i]);
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (fp_TRUE(flag[axis])) {
+			gm.origin_offset[axis] = gm.position[axis] - 
+									 cfg.offset[gm.coord_system][axis] - _to_millimeters(offset[axis]);
 		}
 	}
 
 	// now pass the offset to the callback - setting the coordinate system also applies the offsets
-	float value[AXES] = { (float)gm.coord_system,0,0,0,0,0 };	// pass coordinate system in value[0] element
-	mp_queue_command(_exec_offset, value, value);				// second vector is not used
+	float value[AXES] = { (float)gm.coord_system,0,0,0,0,0 }; // pass coordinate system in value[0] element
+	mp_queue_command(_exec_offset, value, value);				  // second vector is not used
 	return (STAT_OK);
 }
 
 stat_t cm_reset_origin_offsets()
 {
 	gm.origin_offset_enable = 0;
-	for (uint8_t i=0; i<AXES; i++)
-		gm.origin_offset[i] = 0;
-
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		gm.origin_offset[axis] = 0;
+	}
 	float value[AXES] = { (float)gm.coord_system,0,0,0,0,0 };
 	mp_queue_command(_exec_offset, value, value);
 	return (STAT_OK);
@@ -815,6 +836,7 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_model_target(target,flags);
 	if (vector_equal(gm.target, gm.position)) { return (STAT_OK); }
+	ritorno(_test_soft_limits());
 
 	cm_cycle_start();							// required for homing & other cycles
 	stat_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), 
@@ -971,6 +993,7 @@ stat_t cm_change_tool(uint8_t tool)
 	mp_queue_command(_exec_change_tool, value, value);
 	return (STAT_OK);
 }
+
 static void _exec_change_tool(float *value, float *flag)
 {
 	gm.tool = (uint8_t)value[0];
@@ -1205,10 +1228,10 @@ stat_t cm_queue_flush()
 	xio_reset_usb_rx_buffers();		// flush serial queues
 	mp_flush_planner();				// flush planner queue
 
-	for (uint8_t i=0; i<AXES; i++) {
-		mp_set_planner_position(i, mp_get_runtime_machine_position(i));	// set mm from mr
-		gm.position[i] = mp_get_runtime_machine_position(i);
-		gm.target[i] = gm.position[i];
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		mp_set_planner_position(axis, mp_get_runtime_machine_position(axis)); // set mm from mr
+		gm.position[axis] = mp_get_runtime_machine_position(axis);
+		gm.target[axis] = gm.position[axis];
 	}
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
 	_exec_program_finalize(value, value);			// finalize now, not later

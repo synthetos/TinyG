@@ -85,7 +85,6 @@ mpMoveRuntimeSingleton_t mr;	// context for line runtime
 // execution routines (NB: These are all called from the LO interrupt)
 static stat_t _exec_dwell(mpBuf_t *bf);
 static stat_t _exec_command(mpBuf_t *bf);
-//static stat_t _exec_command_vector(mpBuf_t *bf);
 
 #ifdef __DEBUG
 static uint8_t _get_buffer_index(mpBuf_t *bf); 
@@ -203,12 +202,11 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 	bf->bf_func = _exec_command;		// callback to planner queue exec function
 	bf->cm_func = cm_exec;				// callback to canonical machine exec function
 
-	for (uint8_t i=0; i<AXES; i++) {
-		bf->value_vector[i] = value[i];
-		bf->flag_vector[i] = flag[i];
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		bf->value_vector[axis] = value[axis];
+		bf->flag_vector[axis] = flag[axis];
 	}
 	mp_queue_write_buffer(MOVE_TYPE_COMMAND);
-//	return;
 }
 
 static stat_t _exec_command(mpBuf_t *bf)
@@ -370,22 +368,22 @@ void mp_queue_write_buffer(const uint8_t move_type)
 
 mpBuf_t * mp_get_run_buffer() 
 {
-	// condition: fresh buffer; becomes running if queued or pending
+	// CASE: fresh buffer; becomes running if queued or pending
 	if ((mb.r->buffer_state == MP_BUFFER_QUEUED) || 
 		(mb.r->buffer_state == MP_BUFFER_PENDING)) {
 		 mb.r->buffer_state = MP_BUFFER_RUNNING;
 	}
-	// condition: asking for the same run buffer for the Nth time
+	// CASE: asking for the same run buffer for the Nth time
 	if (mb.r->buffer_state == MP_BUFFER_RUNNING) {	// return same buffer
 		return (mb.r);
 	}
-	return (NULL);								// condition: no queued buffers. fail it.
+	return (NULL);								// CASE: no queued buffers. fail it.
 }
 
 void mp_free_run_buffer()						// EMPTY current run buf & adv to next
 {
-	mp_clear_buffer(mb.r);						// clear it out (& reset replannable)
-//	mb.r->buffer_state = MP_BUFFER_EMPTY;		// redundant after the clear, above
+	mp_clear_buffer(mb.r);						 // clear it out (& reset replannable)
+//	mb.r->buffer_state = MP_BUFFER_EMPTY;		 // redundant after the clear, above
 	mb.r = mb.r->nx;							 // advance to next run buffer
 	if (mb.r->buffer_state == MP_BUFFER_QUEUED) {// only if queued...
 		mb.r->buffer_state = MP_BUFFER_PENDING;  // pend next buffer
