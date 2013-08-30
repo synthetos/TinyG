@@ -55,7 +55,7 @@ static stat_t _exec_aline_body(void);
 static stat_t _exec_aline_tail(void);
 static stat_t _exec_aline_segment(uint8_t correction_flag);
 static void _init_forward_diffs(float t0, float t2);
-static float _compute_next_segment_velocity(void);
+//static float _compute_next_segment_velocity(void);
 
 /* 
  * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
@@ -277,7 +277,7 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 		bp->braking_velocity = min(bp->nx->entry_vmax, bp->nx->braking_velocity) + bp->delta_vmax;
 	}
 
-	// forward planning pass - recomputes trapezoids in the list.
+	// forward planning pass - recomputes trapezoids in the list from the first block to the bf block.
 	while ((bp = mp_get_next_buffer(bp)) != bf) {
 		if ((bp->pv == bf) || (*mr_flag == true))  {
 			bp->entry_velocity = bp->entry_vmax;		// first block in the list
@@ -320,9 +320,9 @@ static void _reset_replannable_list()
  * _calculate_trapezoid() - calculate trapezoid parameters
  *
  *	This rather brute-force function sets section lengths and velocities based 
- *	on the line length and velocities requested. It modifies the bf buffer and 
- *	returns accurate head_length, body_length and tail_length, and accurate or 
- *	reasonably approximate velocities. We care about accuracy on lengths, less 
+ *	on the line length and velocities requested. It modifies the bf buffer passed 
+ *	in and returns accurate head_length, body_length and tail_length, and accurate 
+ *	or reasonably approximate velocities. We care about accuracy on lengths, less 
  *	so for velocity (as long as velocity err's on the side of too slow). We need 
  *	the velocities to be set even for zero-length sections so we can compute 
  *	entry and exits for adjacent sections.
@@ -342,14 +342,15 @@ static void _reset_replannable_list()
  *	Note: The following condition must be met on entry: Ve <= Vt >= Vx 
  *
  *	Classes of moves:
+ *
  *	  Maximum-Fit - The trapezoid can accommodate its maximum velocity values for
  *		the given length (entry_vmax, cruise_vmax, exit_vmax). But the trapezoid 
  *		generator actally doesn't know about the max's and only processes requested 
  *		values.
  *
- *	  Requested-Fit - The move has sufficient length to achieve the target ("set") 
- *		cruising velocity. It will accommodate the acceleration / deceleration 
- *		profile and in the distance given (length)
+ *	  Requested-Fit - The move has sufficient length to achieve the target cruising 
+ *		velocity. It will accommodate the acceleration / deceleration profile and 
+ *		in the distance given (length)
  *
  *	  Rate-Limited-Fit - The move does not have sufficient length to achieve target 
  *		cruising velocity - the target velocity will be lower than the requested 
@@ -362,35 +363,36 @@ static void _reset_replannable_list()
  *	  No-Fit - The move cannot be executed as the planned execution time is less
  *		than the minimum segment interpolation time of the runtime execution module.
  *
- *	Various cases handled;
- *	  No-Fit cases - the line is too short to plan
- *		No fit
+ *	Various cases handled (H=head, B=body, T=tail)
+ *
+ *	  Requested-Fit cases
+ *	  	HBT	Ve<Vt>Vx	sufficient length exists for all parts (corner case: HBT')
+ *	  	HB	Ve<Vt=Vx	head accelerates to cruise - exits at full speed (corner case: H')
+ *	  	BT	Ve=Vt>Vx	enter at full speed and decelerate (corner case: T')
+ *	  	HT	Ve & Vx		perfect fit HT (very rare)
+ *	  	H	Ve<Vx		perfect fit H (common, results from planning)
+ *	  	T	Ve>Vx		perfect fit T (common, results from planning)
+ *	  	B	Ve=Vt=Vx	Velocities are close to each other and within matching tolerance
+ *
+ *	  Rate-Limited cases - Ve and Vx can be satisfied but Vt cannot
+ *	  	HT	(Ve=Vx)<Vt	symmetric case. Split the length and compute Vt.
+ *	  	HT'	(Ve!=Vx)<Vt	asymmetric case. Find H and T by successive approximation.
+ *		HBT'			body length < min body length - treated as an HT case
+ *		H'				body length < min body length - reduce J to fit H to length
+ *		T'				body length < min body length - reduce J to fit T to length
  *
  *	  Degraded fit cases - line is too short to satisfy both Ve and Vx
  *	    H"	Ve<Vx		Ve is degraded (velocity step). Vx is met
  *	  	T"	Ve>Vx		Ve is degraded (velocity step). Vx is met
  *	  	B	<short>		line is very short but drawable; is treated as a body only
  *
- *	  Rate-Limited cases - Ve and Vx can be satisfied but Vt cannot
- *	  	HT	(Ve=Vx)<Vt	symmetric case. Split the length and compute Vt.
- *	  	HT'	(Ve!=Vx)<Vt	asymmetric case. Find H and T by successive approximation.
- *		HBT'			Lb < min body length - treated as an HT case
- *		H'				Lb < min body length - reduce J to fit H to length
- *		T'				Lb < min body length - reduce J to fit T to length
- *
- *	  Requested-Fit cases
- *	  	HBT	Ve<Vt>Vx	sufficient length exists for all part (corner case: HBT')
- *	  	HB	Ve<Vt=Vx	head accelerates to cruise - exits at full speed (corner case: H')
- *	  	BT	Ve=Vt>Vx	enter at full speed and decelerate (corner case: T')
- *	  	HT	Ve & Vx		perfect fit HT (very rare)
- *	  	H	Ve<Vx		perfect fit H (common, results from planning)
- *	  	T	Ve>Vx		perfect fit T (common, results from planning)
- *	  	B	Ve=Vt=Vx	Velocities tested to tolerance
+ *	  No-Fit cases - the line is too short to plan
+ *		No fit			this block will be skipped as it can't be drawn
  *
  *	The order of the cases/tests in the code is pretty important
  */
 
-// The minimum lengths are dynamic, and depend on the velocity
+// The minimum lengths are dynamic and depend on the velocity
 // These expressions evaluate to the minimum lengths for the current velocity settings
 // Note: The head and tail lengths are 2 minimum segments, the body is 1 min segment
 #define MIN_HEAD_LENGTH (MIN_SEGMENT_TIME * (bf->cruise_velocity + bf->entry_velocity))
@@ -403,15 +405,15 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 	bf->body_length = 0;
 	bf->tail_length = 0;
 
-	// Combined short cases:
+	// Combined short-line cases. Do these first to get them out of the way.
 	//	- H and T requested-fit cases (exact fit cases, to within TRAPEZOID_LENGTH_FIT_TOLERANCE)
 	//	- H" and T" degraded-fit cases
 	//	- H' and T' requested-fit cases where the body residual is less than MIN_BODY_LENGTH
 	//	- no-fit case
 	// Also converts 2 segment heads and tails that would be too short to a body-only move (1 segment)
 	float minimum_length = _get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
-	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// Head & tail cases
-		if (bf->entry_velocity > bf->exit_velocity)	{		// Tail cases
+	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head & tail cases
+		if (bf->entry_velocity > bf->exit_velocity)	{		// tail cases
 			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// T" (degraded case)
 				bf->entry_velocity = _get_target_velocity(bf->exit_velocity, bf->length, bf);
 			}
@@ -425,7 +427,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			}
 			return;
 		}
-		if (bf->entry_velocity < bf->exit_velocity)	{		// Head cases
+		if (bf->entry_velocity < bf->exit_velocity)	{		// head cases
 			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// H" (degraded case)
 				bf->exit_velocity = _get_target_velocity(bf->entry_velocity, bf->length, bf);
 			}
@@ -473,12 +475,14 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			}
 			if (++i > TRAPEZOID_ITERATION_MAX) { fprintf_P(stderr,PSTR("_calculate_trapezoid() failed to converge"));}
 		} while ((fabs(bf->cruise_velocity - computed_velocity) / computed_velocity) > TRAPEZOID_ITERATION_ERROR_PERCENT);
+
+		// set velocity and clean up any parts that are too short 
 		bf->cruise_velocity = computed_velocity;
 		bf->head_length = _get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
 		bf->tail_length = bf->length - bf->head_length;
 		if (bf->head_length < MIN_HEAD_LENGTH) {
 			bf->tail_length = bf->length;			// adjust the move to be all tail...
-			bf->head_length = 0;					// adjust the jerk to fit to the adjusted length
+			bf->head_length = 0;
 		}
 		if (bf->tail_length < MIN_TAIL_LENGTH) {
 			bf->head_length = bf->length;			//...or all head
@@ -514,8 +518,8 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 }
 
 /*	
- * _get_target_length()		- derive accel/decel length from delta V and jerk
- * _get_target_velocity()	- derive velocity achievable from delta V and length
+ * _get_target_length()	  - derive accel/decel length from delta V and jerk
+ * _get_target_velocity() - derive velocity achievable from delta V and length
  *
  *	This set of functions returns the fourth thing knowing the other three.
  *	
@@ -570,8 +574,8 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
 }
 
 /*	
- * _get_target_length2()	- derive accel/decel length from delta V and jerk
- * _get_target_velocity2()	- derive velocity achievable from initial V, length and jerk
+ * _get_target_length2()   - derive accel/decel length from delta V and jerk
+ * _get_target_velocity2() - derive velocity achievable from initial V, length and jerk
  *
  *	This set of functions returns the fourth thing knowing the other three.
  *	
@@ -668,8 +672,8 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
  *		float radius = delta * sin(theta/2)/(1-sin(theta/2));
  */
 /*  This version function extends Chamnit's algorithm by computing a value for delta that 
- *	takes the contributions of the individual axes in the move into account. It allows 
- *	the radius of curvature to vary by axis. This is necessary to support axes that have 
+ *	takes the contributions of the individual axes in the move into account. This allows 
+ *	the control radius to vary by axis. This is necessary to support axes that have 
  *	different dynamics; such as a Z axis that doesn't move as fast as X and Y (such as a 
  *	screw driven Z axis on machine with a belt driven XY - like a Shapeoko), or rotary 
  *	axes ABC that have completely different dynamics than their linear counterparts.
@@ -715,8 +719,8 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
 /*************************************************************************
  * feedholds - functions for performing holds
  *
- * mp_plan_hold_callback()	- replan block list to execute hold
- * mp_end_hold() 			- release the hold and restart block list
+ * mp_plan_hold_callback() - replan block list to execute hold
+ * mp_end_hold() 		   - release the hold and restart block list
  *
  *	Feedhold is executed as cm.hold_state transitions executed inside 
  *	_exec_aline() and main loop callbacks to these functions:
@@ -767,17 +771,24 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
  *		  code in this module, but the code is so complicated I just left it
  *		  organized for clarity and hoped for the best from compiler optimization. 
  */
+/*
+static float _compute_next_segment_velocity()
+{
+	if (mr.move_state == MOVE_STATE_BODY) { return (mr.segment_velocity);}
+	return (mr.segment_velocity + mr.forward_diff_1);
+}
+*/
 
 stat_t mp_plan_hold_callback()
 {
 	if (cm.hold_state != FEEDHOLD_PLAN) { return (STAT_NOOP);}	// not planning a feedhold
 
-	mpBuf_t *bp; 					// working buffer pointer
+	mpBuf_t *bp; 				// working buffer pointer
 	if ((bp = mp_get_run_buffer()) == NULL) { return (STAT_NOOP);}	// Oops! nothing's running
 
 	uint8_t mr_flag = true;		// used to tell replan to account for mr buffer Vx
-	float mr_available_length; // available length left in mr buffer for deceleration
-	float braking_velocity;	// velocity left to shed to brake to zero
+	float mr_available_length;	// available length left in mr buffer for deceleration
+	float braking_velocity;		// velocity left to shed to brake to zero
 	float braking_length;		// distance required to brake to zero from braking_velocity
 
 	// examine and process mr buffer
@@ -791,7 +802,12 @@ stat_t mp_plan_hold_callback()
 			  square(mr.endpoint[AXIS_B] - mr.position[AXIS_B]) +
 			  square(mr.endpoint[AXIS_C] - mr.position[AXIS_C])));
 */
-	braking_velocity = _compute_next_segment_velocity();
+
+//	braking_velocity = _compute_next_segment_velocity();
+	// compute next_segment velocity
+	braking_velocity = mr.segment_velocity;
+	if (mr.move_state != MOVE_STATE_BODY) { braking_velocity +=	mr.forward_diff_1;}
+
 	braking_length = _get_target_length(braking_velocity, 0, bp); // bp is OK to use here
 	
 	// Hack to prevent Case 2 moves for perfect-fit decels. Happens in homing situations
@@ -803,7 +819,7 @@ stat_t mp_plan_hold_callback()
 		braking_length = mr_available_length;
 	}
 
-	// Case 1: deceleration fits entirely in mr
+	// Case 1: deceleration fits entirely into the length remaining in mr buffer
 	if (braking_length <= mr_available_length) {
 		// set mr to a tail to perform the deceleration
 		mr.exit_velocity = 0;
@@ -812,7 +828,7 @@ stat_t mp_plan_hold_callback()
 		mr.move_state = MOVE_STATE_TAIL;
 		mr.section_state = MOVE_STATE_NEW;
 
-		// re-use bp+0 to be the hold point and to draw the remaining length
+		// re-use bp+0 to be the hold point and to run the remaining block length
 		bp->length = mr_available_length - braking_length;
 		bp->delta_vmax = _get_target_velocity(0, bp->length, bp);
 		bp->entry_vmax = 0;						// set bp+0 as hold point
@@ -824,7 +840,7 @@ stat_t mp_plan_hold_callback()
 		return (STAT_OK);
 	}
 
-	// Case 2: deceleration exceeds available length in mr buffer
+	// Case 2: deceleration exceeds length remaining in mr buffer
 	// First, replan mr to minimum (but non-zero) exit velocity
 
 	mr.move_state = MOVE_STATE_TAIL;
@@ -870,12 +886,6 @@ stat_t mp_plan_hold_callback()
 	return (STAT_OK);
 }
 
-static float _compute_next_segment_velocity()
-{
-	if (mr.move_state == MOVE_STATE_BODY) { return (mr.segment_velocity);}
-	return (mr.segment_velocity + mr.forward_diff_1);
-}
-
 /*
  * mp_end_hold() - end a feedhold
  */
@@ -898,13 +908,13 @@ stat_t mp_end_hold()
 /*************************************************************************/
 /**** ALINE EXECUTION ROUTINES *******************************************/
 /*************************************************************************
- * ---> Everything here fires from LO interrupt and must be interrupt safe
+ * ---> Everything here fires from interrupts and must be interrupt safe
  *
- *  _exec_aline()			- acceleration line main routine
- *	_exec_aline_head()		- helper for acceleration section
- *	_exec_aline_body()		- helper for cruise section
- *	_exec_aline_tail()		- helper for deceleration section
- *	_exec_aline_segment()	- helper for running a segment
+ *  _exec_aline()		  - acceleration line main routine
+ *	_exec_aline_head()	  - helper for acceleration section
+ *	_exec_aline_body()	  - helper for cruise section
+ *	_exec_aline_tail()	  - helper for deceleration section
+ *	_exec_aline_segment() - helper for running a segment
  *
  *	Returns:
  *	 STAT_OK		move is done
@@ -973,9 +983,9 @@ stat_t mp_end_hold()
  */
 static stat_t _exec_aline(mpBuf_t *bf)
 {
-	uint8_t status = STAT_OK;
-
 	if (bf->move_state == MOVE_STATE_OFF) { return (STAT_NOOP);} 
+
+	// start a new move by setting up local context (singleton)
 	if (mr.move_state == MOVE_STATE_OFF) {
 		if (cm.hold_state == FEEDHOLD_HOLD) { return (STAT_NOOP);}// stops here if holding
 
@@ -1008,11 +1018,13 @@ static stat_t _exec_aline(mpBuf_t *bf)
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
 	//**** main dispatcher to process segments ***
+	stat_t status = STAT_OK;
 	switch (mr.move_state) {
 		case (MOVE_STATE_HEAD): { status = _exec_aline_head(); break;}
 		case (MOVE_STATE_BODY): { status = _exec_aline_body(); break;}
 		case (MOVE_STATE_TAIL): { status = _exec_aline_tail(); break;}
 		case (MOVE_STATE_SKIP): { status = STAT_OK; break;}
+		default: return (STAT_INTERNAL_ERROR);
 	}
 
 	// Feedhold processing. Refer to canonical_machine.h for state machine
@@ -1025,7 +1037,8 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		cm.motion_state = MOTION_HOLD;
 //		mp_free_run_buffer();				// free bf and send a status report
 //+++++ DIAGNOSTIC
-//		printf("HOLD: posX: %6.3f, posY: %6.3f\n", (double)mr.position[AXIS_X], (double)mr.target[AXIS_Y]);
+//+++++ DOES THIS NEED TO SET CURRENT POSITION TO FIX THE G28.4 ERROR?
+		printf("HOLD: posX: %6.3f, posY: %6.3f\n", (double)mr.position[AXIS_X], (double)mr.target[AXIS_Y]);
 		rpt_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
 
@@ -1052,13 +1065,13 @@ static stat_t _exec_aline(mpBuf_t *bf)
 }
 
 /* Forward difference math explained:
- * 	We're using two quadratic curves end-to-end, forming the concave and convex 
- *	section of the s-curve. For each half, we have three points:
+ * 	We're using two quadratic bezier curves end-to-end, forming the concave and convex 
+ *	section of the s-curve. For each half we have three points:
  *
- *    T[0] is the start point, or the entro or middle of the "s". This will be one of:
- *  	- entry_velocity (acceleration concave),
- * 		- cruise_velocity (deceleration concave), or
- * 		- midpoint_velocity (convex)
+ *    T[0] is the start point, or the entry or middle of the "s". This will be one of:
+ *			- entry_velocity (acceleration concave),
+ *			- cruise_velocity (deceleration concave), or
+ *			- midpoint_velocity (convex)
  *	  T[1] is the "control point" set to T[0] for concave sections, and T[2] for convex
  *	  T[2] is the end point of the quadratic, which will be the midpoint or endpoint of the s.
  *
@@ -1144,7 +1157,7 @@ static stat_t _exec_aline_body()
 	if (mr.section_state == MOVE_STATE_NEW) {
 		if (fp_ZERO(mr.body_length)) {
 			mr.move_state = MOVE_STATE_TAIL;
-			return(_exec_aline_tail());			// skip ahead to tail periods
+			return(_exec_aline_tail());						// skip ahead to tail periods
 		}
 		mr.move_time = mr.body_length / mr.cruise_velocity;
 		mr.segments = ceil(uSec(mr.move_time) / cfg.estd_segment_usec);
@@ -1152,14 +1165,14 @@ static stat_t _exec_aline_body()
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-			return(STAT_GCODE_BLOCK_SKIPPED);		// exit without advancing position
+			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
 		}
 		
 		mr.section_state = MOVE_STATE_RUN;
 	}
-	if (mr.section_state == MOVE_STATE_RUN) {				// stright part (period 3)
+	if (mr.section_state == MOVE_STATE_RUN) {				// straight part (period 3)
 		if (_exec_aline_segment(false) == STAT_COMPLETE) {
-			if (fp_ZERO(mr.tail_length)) { return(STAT_OK);}	// end the move
+			if (fp_ZERO(mr.tail_length)) return(STAT_OK);	// end the move
 			mr.move_state = MOVE_STATE_TAIL;
 			mr.section_state = MOVE_STATE_NEW;
 		}
@@ -1187,7 +1200,7 @@ static stat_t _exec_aline_tail()
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {				// convex part (period 4)
 		mr.segment_velocity += mr.forward_diff_1;
-		if (_exec_aline_segment(false) == STAT_COMPLETE) { 	  	// set up for second half
+		if (_exec_aline_segment(false) == STAT_COMPLETE) {	// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = MOVE_STATE_RUN2;
 
@@ -1218,10 +1231,10 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	// Multiply computed length by the unit vector to get the contribution for
 	// each axis. Set the target in absolute coords and compute relative steps.
 
-	// Don't do the error correction if you are going into a hold
+	// Don't do the endpoint correction if you are going into a hold
 	if ((correction_flag == true) && (mr.segment_count == 1) && 
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-		mr.target[AXIS_X] = mr.endpoint[AXIS_X];	// rounding error correction for last segment
+		mr.target[AXIS_X] = mr.endpoint[AXIS_X]; // correct any accumulated rounding errors in last segment
 		mr.target[AXIS_Y] = mr.endpoint[AXIS_Y];
 		mr.target[AXIS_Z] = mr.endpoint[AXIS_Z];
 		mr.target[AXIS_A] = mr.endpoint[AXIS_A];
