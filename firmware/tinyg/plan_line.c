@@ -1140,9 +1140,9 @@ static stat_t _exec_aline_head()
 		mr.forward_diff_1 += mr.forward_diff_2;
 //		if (_exec_aline_segment(false) == STAT_COMPLETE) {  +++++++++
 		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
-			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) { 
-				return(STAT_OK);							// end the move
-			}
+//+++++		if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) { 
+//				return(STAT_OK);							// end the move
+//			}
 			mr.move_state = MOVE_STATE_BODY;
 			mr.section_state = MOVE_STATE_NEW;
 		}
@@ -1177,9 +1177,9 @@ static stat_t _exec_aline_body()
 	if (mr.section_state == MOVE_STATE_RUN) {				// straight part (period 3)
 //		if (_exec_aline_segment(false) == STAT_COMPLETE) {	++++++++++++++
 		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
-			if (fp_ZERO(mr.tail_length)) {
-				return(STAT_OK);							// end the move
-			}
+//+++++			if (fp_ZERO(mr.tail_length)) {
+//				return(STAT_OK);							// end the move
+//			}
 			mr.move_state = MOVE_STATE_TAIL;
 			mr.section_state = MOVE_STATE_NEW;
 		}
@@ -1224,9 +1224,10 @@ static stat_t _exec_aline_tail()
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
 //		if (_exec_aline_segment(true) == STAT_COMPLETE) { 
-		if (_exec_aline_segment(true) == STAT_OK) { 
-			return (STAT_OK);								// end the move
-		}
+		return (_exec_aline_segment(true)); 				// ends the move or continues EAGAIN
+//		if (_exec_aline_segment(true) == STAT_OK) { 
+//			return (STAT_OK);								// end the move
+//		}
 	}
 	return(STAT_EAGAIN);
 }
