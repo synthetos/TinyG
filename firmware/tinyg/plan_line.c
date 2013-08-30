@@ -1024,7 +1024,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		case (MOVE_STATE_BODY): { status = _exec_aline_body(); break;}
 		case (MOVE_STATE_TAIL): { status = _exec_aline_tail(); break;}
 		case (MOVE_STATE_SKIP): { status = STAT_OK; break;}
-		default: return (STAT_INTERNAL_ERROR);
+		default: 				{ return (STAT_INTERNAL_ERROR);}
 	}
 
 	// Feedhold processing. Refer to canonical_machine.h for state machine
@@ -1104,10 +1104,10 @@ static void _init_forward_diffs(float t0, float t2)
  */
 static stat_t _exec_aline_head()
 {
-	if (mr.section_state == MOVE_STATE_NEW) {	// initialize the move singleton (mr)
+	if (mr.section_state == MOVE_STATE_NEW) {		// initialize the move singleton (mr)
 		if (fp_ZERO(mr.head_length)) { 
 			mr.move_state = MOVE_STATE_BODY;
-			return(_exec_aline_body());			// skip ahead to the body generator
+			return(_exec_aline_body());				// skip ahead to the body generator
 		}
 		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
 		mr.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
@@ -1120,9 +1120,10 @@ static stat_t _exec_aline_head()
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 		mr.section_state = MOVE_STATE_RUN1;
 	}
-	if (mr.section_state == MOVE_STATE_RUN1) {	// concave part of accel curve (period 1)
+	if (mr.section_state == MOVE_STATE_RUN1) {		// concave part of accel curve (period 1)
 		mr.segment_velocity += mr.forward_diff_1;
-		if (_exec_aline_segment(false) == STAT_COMPLETE) { // set up for second half
+//+++++		if (_exec_aline_segment(false) == STAT_COMPLETE) { // set up for second half
+		if (_exec_aline_segment(false) == STAT_OK) { // set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = MOVE_STATE_RUN2;
 
@@ -1134,11 +1135,14 @@ static stat_t _exec_aline_head()
 		}
 		return(STAT_EAGAIN);
 	}
-	if (mr.section_state == MOVE_STATE_RUN2) {	// convex part of accel curve (period 2)
+	if (mr.section_state == MOVE_STATE_RUN2) {		// convex part of accel curve (period 2)
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
-		if (_exec_aline_segment(false) == STAT_COMPLETE) {
-			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) { return(STAT_OK);}	// end the move
+//		if (_exec_aline_segment(false) == STAT_COMPLETE) {  +++++++++
+		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
+			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) { 
+				return(STAT_OK);							// end the move
+			}
 			mr.move_state = MOVE_STATE_BODY;
 			mr.section_state = MOVE_STATE_NEW;
 		}
@@ -1171,8 +1175,11 @@ static stat_t _exec_aline_body()
 		mr.section_state = MOVE_STATE_RUN;
 	}
 	if (mr.section_state == MOVE_STATE_RUN) {				// straight part (period 3)
-		if (_exec_aline_segment(false) == STAT_COMPLETE) {
-			if (fp_ZERO(mr.tail_length)) return(STAT_OK);	// end the move
+//		if (_exec_aline_segment(false) == STAT_COMPLETE) {	++++++++++++++
+		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
+			if (fp_ZERO(mr.tail_length)) {
+				return(STAT_OK);							// end the move
+			}
 			mr.move_state = MOVE_STATE_TAIL;
 			mr.section_state = MOVE_STATE_NEW;
 		}
@@ -1200,7 +1207,8 @@ static stat_t _exec_aline_tail()
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {				// convex part (period 4)
 		mr.segment_velocity += mr.forward_diff_1;
-		if (_exec_aline_segment(false) == STAT_COMPLETE) {	// set up for second half
+//		if (_exec_aline_segment(false) == STAT_COMPLETE) {+++++	// set up for second half
+		if (_exec_aline_segment(false) == STAT_OK) {		// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = MOVE_STATE_RUN2;
 
@@ -1215,7 +1223,10 @@ static stat_t _exec_aline_tail()
 	if (mr.section_state == MOVE_STATE_RUN2) {				// concave part (period 5)
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
-		if (_exec_aline_segment(true) == STAT_COMPLETE) { return (STAT_OK);}	// end the move
+//		if (_exec_aline_segment(true) == STAT_COMPLETE) { 
+		if (_exec_aline_segment(true) == STAT_OK) { 
+			return (STAT_OK);								// end the move
+		}
 	}
 	return(STAT_EAGAIN);
 }
@@ -1281,11 +1292,11 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 */	
 	}
 	if (--mr.segment_count == 0) {
-		return (STAT_COMPLETE);	// this section has run all its segments
+//		return (STAT_COMPLETE);	// this section has run all its segments
+		return (STAT_OK);			// this section has run all its segments
 	}
 	return (STAT_EAGAIN);			// this section still has more segments to run
 }
-
 
 
 /****** UNIT TESTS ******/
