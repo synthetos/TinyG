@@ -4,26 +4,25 @@
  *
  * Copyright (c) 2012 - 2013 Alden S. Hart, Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* See the wiki for module details and additional information:
  *	 http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info
@@ -48,10 +47,10 @@
 
 // local scope stuff
 
-uint8_t _json_parser_kernal(char *str);
-static uint8_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth);
-static uint8_t _normalize_json_string(char *str, uint16_t size);
-//static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd);
+static stat_t _json_parser_kernal(char *str);
+static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth);
+static stat_t _normalize_json_string(char *str, uint16_t size);
+//static stat_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
 
 /****************************************************************************
  * js_json_parser() - exposed part of JSON parser
@@ -93,17 +92,17 @@ static uint8_t _normalize_json_string(char *str, uint16_t size);
 
 void js_json_parser(char *str)
 {
-	cmd_reset_list();					// get a fresh cmdObj list
+//	cmd_reset_list();					// get a fresh cmdObj list
 	uint8_t status = _json_parser_kernal(str);
 	cmd_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
-	rpt_request_status_report();	// generate an incremental status report if there are gcode model changes
+	rpt_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
 
-uint8_t _json_parser_kernal(char *str)
+stat_t _json_parser_kernal(char *str)
 {
 	uint8_t status;
 	int8_t depth;
-	cmdObj_t *cmd = cmd_body;
+	cmdObj_t *cmd = cmd_reset_list();			// get a fresh cmdObj list
 	char group[CMD_GROUP_LEN+1] = {""};			// group identifier - starts as NUL
 	int8_t i = CMD_BODY_LEN;
 
@@ -111,8 +110,8 @@ uint8_t _json_parser_kernal(char *str)
 
 	// parse the JSON command into the cmd body
 	do {
-		if (--i == 0) { return (TG_JSON_TOO_MANY_PAIRS); }			// length error
-		if ((status = _get_nv_pair_strict(cmd, &str, &depth)) > TG_EAGAIN) { // erred out
+		if (--i == 0) { return (STAT_JSON_TOO_MANY_PAIRS); }			// length error
+		if ((status = _get_nv_pair_strict(cmd, &str, &depth)) > STAT_EAGAIN) { // erred out
 			return (status);
 		}
 		// propagate the group from previous NV pair (if relevant)
@@ -121,23 +120,23 @@ uint8_t _json_parser_kernal(char *str)
 		}
 		// validate the token and get the index
 		if ((cmd->index = cmd_get_index(cmd->group, cmd->token)) == NO_MATCH) { 
-			return (TG_UNRECOGNIZED_COMMAND);
+			return (STAT_UNRECOGNIZED_COMMAND);
 		}
 		if ((cmd_index_is_group(cmd->index)) && (cmd_group_is_prefixed(cmd->token))) {
 			strncpy(group, cmd->token, CMD_GROUP_LEN);// record the group ID
 		}
-		cmd = cmd->nx;
-	} while (status != TG_OK);					// breaks when parsing is complete
+		if ((cmd = cmd->nx) == NULL) return (STAT_JSON_TOO_MANY_PAIRS);// Not supposed to encounter a NULL
+	} while (status != STAT_OK);					// breaks when parsing is complete
 
 	// execute the command
 	cmd = cmd_body;
-	if (cmd->type == TYPE_NULL){				// means GET the value
+	if (cmd->objtype == TYPE_NULL){				// means GET the value
 		ritorno(cmd_get(cmd));					// ritorno returns w/status on any errors
 	} else {
 		ritorno(cmd_set(cmd));					// set value or call a function (e.g. gcode)
 		cmd_persist(cmd);
 	}
-	return (TG_OK);								// only successful commands exit through this point
+	return (STAT_OK);								// only successful commands exit through this point
 }
 
 /*
@@ -147,12 +146,12 @@ uint8_t _json_parser_kernal(char *str)
  *	to lower case, with the exception of gcode comments
  */
 
-static uint8_t _normalize_json_string(char *str, uint16_t size)
+static stat_t _normalize_json_string(char *str, uint16_t size)
 {
 	char *wr;								// write pointer
 	uint8_t in_comment = false;
 
-	if (strlen(str) > size) return (TG_INPUT_EXCEEDS_MAX_LENGTH);
+	if (strlen(str) > size) return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
 
 	for (wr = str; *str != NUL; str++) {
 		if (!in_comment) {					// normal processing
@@ -165,7 +164,7 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
 		}
 	}
 	*wr = NUL;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*
@@ -188,7 +187,7 @@ static uint8_t _normalize_json_string(char *str, uint16_t size)
  *	"fr" is found in the name string the parser will search for "xfr"in the 
  *	cfgArray.
  */
-static uint8_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
+static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 {
 	char *tmp;
 	char terminators[] = {"},"};
@@ -197,83 +196,83 @@ static uint8_t _get_nv_pair_strict(cmdObj_t *cmd, char **pstr, int8_t *depth)
 
 	// --- Process name part ---
 	// find leading and trailing name quotes and set pointers.
-	if ((*pstr = strchr(*pstr, '\"')) == NULL) { return (TG_JSON_SYNTAX_ERROR);}
-	if ((tmp = strchr(++(*pstr), '\"')) == NULL) { return (TG_JSON_SYNTAX_ERROR);}
+	if ((*pstr = strchr(*pstr, '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);}
+	if ((tmp = strchr(++(*pstr), '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);}
 	*tmp = NUL;
 	strncpy(cmd->token, *pstr, CMD_TOKEN_LEN);		// copy the string to the token
 
 	// --- Process value part ---  (organized from most to least encountered)
 	*pstr = ++tmp;
-	if ((*pstr = strchr(*pstr, ':')) == NULL) return (TG_JSON_SYNTAX_ERROR);
+	if ((*pstr = strchr(*pstr, ':')) == NULL) return (STAT_JSON_SYNTAX_ERROR);
 	(*pstr)++;										// advance to start of value field
 
 	// nulls (gets)
 	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { // process null value
-		cmd->type = TYPE_NULL;
+		cmd->objtype = TYPE_NULL;
 		cmd->value = TYPE_NULL;
 	
 	// numbers
 	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
 		cmd->value = strtod(*pstr, &tmp);			// tmp is the end pointer
-		if(tmp == *pstr) { return (TG_BAD_NUMBER_FORMAT);}
-		cmd->type = TYPE_FLOAT;
+		if(tmp == *pstr) { return (STAT_BAD_NUMBER_FORMAT);}
+		cmd->objtype = TYPE_FLOAT;
 
 	// object parent
 	} else if (**pstr == '{') { 
-		cmd->type = TYPE_PARENT;
-//		*depth += 1;								// cmd_reset_obj() sets the next object's level so this is redundant
+		cmd->objtype = TYPE_PARENT;
+//		*depth += 1;							// cmd_reset_obj() sets the next object's level so this is redundant
 		(*pstr)++;
-		return(TG_EAGAIN);							// signal that there is more to parse
+		return(STAT_EAGAIN);					// signal that there is more to parse
 
 	// strings
-	} else if (**pstr == '\"') { 					// value is a string
+	} else if (**pstr == '\"') { 				// value is a string
 		(*pstr)++;
-		cmd->type = TYPE_STRING;
-		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (TG_JSON_SYNTAX_ERROR);} // find the end of the string
+		cmd->objtype = TYPE_STRING;
+		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);} // find the end of the string
 		*tmp = NUL;
 		ritorno(cmd_copy_string(cmd, *pstr));
 		*pstr = ++tmp;
 
 	// boolean true/false
 	} else if (**pstr == 't') { 
-		cmd->type = TYPE_BOOL;
+		cmd->objtype = TYPE_BOOL;
 		cmd->value = true;
 	} else if (**pstr == 'f') { 
-		cmd->type = TYPE_BOOL;
+		cmd->objtype = TYPE_BOOL;
 		cmd->value = false;
 
 	// arrays
 	} else if (**pstr == '[') {
-		cmd->type = TYPE_ARRAY;
-		ritorno(cmd_copy_string(cmd, *pstr));		// copy array into string for error displays
-		return (TG_INPUT_VALUE_UNSUPPORTED);		// return error as the parser doesn't do input arrays yet
+		cmd->objtype = TYPE_ARRAY;
+		ritorno(cmd_copy_string(cmd, *pstr));	// copy array into string for error displays
+		return (STAT_INPUT_VALUE_UNSUPPORTED);	// return error as the parser doesn't do input arrays yet
 
 	// general error condition
-	} else { return (TG_JSON_SYNTAX_ERROR); }			// ill-formed JSON
+	} else { return (STAT_JSON_SYNTAX_ERROR); }	// ill-formed JSON
 
 	// process comma separators and end curlies
 	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { // advance to terminator or err out
-		return (TG_JSON_SYNTAX_ERROR);
+		return (STAT_JSON_SYNTAX_ERROR);
 	}
 	if (**pstr == '}') { 
 		*depth -= 1;							// pop up a nesting level
 		(*pstr)++;								// advance to comma or whatever follows
 	}
-	if (**pstr == ',') { return (TG_EAGAIN);}	// signal that there is more to parse
+	if (**pstr == ',') { return (STAT_EAGAIN);}	// signal that there is more to parse
 
 	(*pstr)++;
-	return (TG_OK);								// signal that parsing is complete
+	return (STAT_OK);							// signal that parsing is complete
 }
 
 /*
  * _gcode_comment_overrun_hack() - gcode overrun exception
  *
- *	Make an exception for string buffer overrun if the string is Gcode and the
- *	overrun is caused by as comment. The comment will be truncated. 
- *	If the comment happens to be a message, well tough noogies, bucko.
+ *	Make an exception for string buffer overrun if the string is Gcode and the overrun is 
+ *	caused by as comment. The comment will be truncated. If the comment happens to be a 
+ *	message, well tough noodles, bucko.
  */
 /*
-static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
+static stat_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
 {
 	if (strstr(cmd->string,"(") == NULL) {
 		return (false);
@@ -290,11 +289,15 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  *
  * 	Operation:
  *	  - The cmdObj list is processed start to finish with no recursion
+ *
  *	  - Assume the first object is depth 0 or greater (the opening curly)
+ *
  *	  - Assume remaining depths have been set correctly; but might not achieve closure;
  *		e.g. list starts on 0, and ends on 3, in which case provide correct closing curlies
+ *
  *	  - Assume there can be multiple, independent, non-contiguous JSON objects at a 
  *		given depth value. These are processed correctly - e.g. 0,1,1,0,1,1,0,1,1
+ *
  *	  - The list must have a terminating cmdObj where cmd->nx == NULL. 
  *		The terminating object may or may not have data (empty or not empty).
  *
@@ -307,9 +310,12 @@ static uint8_t _gcode_comment_overrun_hack(cmdObj_t *cmd)
  *	  - If a JSON object is empty represent it as {}
  *	    --- OR ---
  *	  - If a JSON object is empty omit the object altogether (no curlies)
+ *
+ *	Note: TYPE_FLOAT_UNITS is used to convert a value back to inches mode for display
+ *		  that was previously converted to MM mode for internal operations.
  */
 
-#define BUFFER_MARGIN 8			// safety margin to avoibd buffer overruns
+#define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns
 
 int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 {
@@ -320,21 +326,34 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 	uint8_t need_a_comma = false;
 
 	*str++ = '{'; 								// write opening curly
+
 	while (true) {
-		if (cmd->type != TYPE_EMPTY) {
+		if (cmd->objtype != TYPE_EMPTY) {
 			if (need_a_comma) { *str++ = ',';}
 			need_a_comma = true;
 			str += sprintf(str, "\"%s\":", cmd->token);
-			if (cmd->type == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
-			else if (cmd->type == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", cmd->value);}
-			else if (cmd->type == TYPE_FLOAT)	{ str += sprintf(str, "%0.3f", cmd->value);}
-			else if (cmd->type == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
-			else if (cmd->type == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  *cmd->stringp);}
-			else if (cmd->type == TYPE_BOOL) 	{
+
+			if (cmd->objtype == TYPE_FLOAT_UNITS)	{ 
+				if (cm_get_model_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
+				cmd->objtype = TYPE_FLOAT;
+			}
+			if (cmd->objtype == TYPE_NULL)	{ str += sprintf(str, "\"\"");}
+			else if (cmd->objtype == TYPE_INTEGER)	{ str += sprintf(str, "%1.0f", (double)cmd->value);}
+			else if (cmd->objtype == TYPE_STRING)	{ str += sprintf(str, "\"%s\"",*cmd->stringp);}
+			else if (cmd->objtype == TYPE_ARRAY)	{ str += sprintf(str, "[%s]",  *cmd->stringp);}
+			else if (cmd->objtype == TYPE_FLOAT) {
+				if 		(cmd->precision == 0) { str += sprintf(str, "%0.0f", (double)cmd->value);}
+				else if (cmd->precision == 1) { str += sprintf(str, "%0.1f", (double)cmd->value);}
+				else if (cmd->precision == 2) { str += sprintf(str, "%0.2f", (double)cmd->value);}
+				else if (cmd->precision == 3) { str += sprintf(str, "%0.3f", (double)cmd->value);}
+				else if (cmd->precision == 4) { str += sprintf(str, "%0.4f", (double)cmd->value);}
+				else 						  { str += sprintf(str, "%f", 	 (double)cmd->value);}
+			}
+			else if (cmd->objtype == TYPE_BOOL) {
 				if (cmd->value == false) { str += sprintf(str, "false");}
 				else { str += sprintf(str, "true"); }
 			}
-			if (cmd->type == TYPE_PARENT) { 
+			if (cmd->objtype == TYPE_PARENT) { 
 				*str++ = '{';
 				need_a_comma = false;
 			}
@@ -347,6 +366,7 @@ int16_t js_serialize_json(cmdObj_t *cmd, char *out_buf, uint16_t size)
 		}
 		prev_depth = cmd->depth;
 	}
+
 	// closing curlies and NEWLINE
 	while (prev_depth-- > initial_depth) { *str++ = '}';}
 	str += sprintf(str, "}\n");	// using sprintf for this last one ensures a NUL termination
@@ -389,43 +409,52 @@ void js_print_json_object(cmdObj_t *cmd)
 
 void js_print_json_response(uint8_t status)
 {
-	if (cm.machine_state == MACHINE_INITIALIZING) {		// always do full echo during startup
-		cmdObj_t tmp;
-		tmp.value = JV_VERBOSE;
-		cmd_set_jv(&tmp);
-	}
-	if (cfg.json_verbosity == JV_SILENT) { return;}		// silent responses
+	if (cfg.json_verbosity == JV_SILENT) return;		// silent responses
 
 	// Body processing
 	cmdObj_t *cmd = cmd_body;
-	if (cmd_get_type(cmd) == CMD_TYPE_GCODE) {			// first block will be the command (gcode block or config)
-		if (cfg.echo_json_gcode_block == false) {
-			cmd->type = TYPE_EMPTY;						// skip gcode block if no echo
-		}
-		if ((cfg.echo_json_linenum == true) && (cm_get_model_linenum() != 0)) {
-			cmd = cmd_add_object("n");
-		}
-	} else {
-		if (cfg.echo_json_configs == false) {
-			cmd->type = TYPE_EMPTY;						// skip config if no echo
-		}
+	if (cm.machine_state != MACHINE_INITIALIZING) {		// always do full echo during startup
+		uint8_t cmd_type;
+		do {
+			if ((cmd_type = cmd_get_type(cmd)) == CMD_TYPE_NULL) break;
+
+			if (cmd_type == CMD_TYPE_GCODE) {	
+				if (cfg.echo_json_gcode_block == false) {// kill command echo if not enabled
+					cmd->objtype = TYPE_EMPTY;
+				}
+
+			} else if (cmd_type == CMD_TYPE_CONFIG) {	// kill config echo if not enabled
+				if (cfg.echo_json_configs == false) {
+					cmd->objtype = TYPE_EMPTY;
+				}
+
+			} else if (cmd_type == CMD_TYPE_MESSAGE) {	// kill message echo if not enabled
+				if (cfg.echo_json_messages == false) {
+					cmd->objtype = TYPE_EMPTY;
+				}
+
+			} else if (cmd_type == CMD_TYPE_LINENUM) {	// kill line number echo if not enabled
+				if ((cfg.echo_json_linenum == false) || (cmd->value == 0)) { // do not report line# 0
+					cmd->objtype = TYPE_EMPTY;
+				}
+			}
+		} while ((cmd = cmd->nx) != NULL);
 	}
-	do {												// any subsequent cmds will be messages
-		cmd = cmd->nx;		
-		if (cfg.echo_json_messages == false) {
-			cmd->type = TYPE_EMPTY;
-		}
-	} while (cmd->nx != NULL);
 
 	// Footer processing
-	while(cmd->type != TYPE_EMPTY) { cmd = cmd->nx;}	// advance to first free object
+	while(cmd->objtype != TYPE_EMPTY) {					// find a free cmdObj at end of the list...
+		if ((cmd = cmd->nx) == NULL) {					//...or hit the NULL and return w/o a footer
+			js_serialize_json(cmd_header, tg.out_buf, sizeof(tg.out_buf));
+			return;			
+		}
+	}
 	char footer_string[CMD_FOOTER_LEN];
 	sprintf(footer_string, "%d,%d,%d,0",FOOTER_REVISION, status, tg.linelen);
 	tg.linelen = 0;										// reset linelen so it's only reported once
 
 	cmd_copy_string(cmd, footer_string);				// link string to cmd object
-	cmd->type = TYPE_ARRAY;
-	strcpy(cmd->token, "f");
+	cmd->objtype = TYPE_ARRAY;
+	strcpy(cmd->token, "f");							// terminate the list
 	cmd->nx = NULL;
 
 	// do all this to avoid having to serialize it twice
@@ -563,7 +592,7 @@ cmdObj_t * _reset_array()
 		cmd->index = 0;
 		cmd->token[0] = NUL;
 		cmd->depth = 0;
-		cmd->type = TYPE_EMPTY;
+		cmd->objtype = TYPE_EMPTY;
 		cmd++;
 	}
 	(--cmd)->nx = NULL;				// correct last element
@@ -574,7 +603,7 @@ cmdObj_t * _add_parent(cmdObj_t *cmd, char *token)
 {
 	strncpy(cmd->token, token, CMD_TOKEN_LEN);
 	cmd->nx->depth = cmd->depth+1;
-	cmd->type = TYPE_PARENT;
+	cmd->objtype = TYPE_PARENT;
 	return (cmd->nx);
 }
 
@@ -583,29 +612,29 @@ cmdObj_t * _add_string(cmdObj_t *cmd, char *token, char *string)
 	strncpy(cmd->token, token, CMD_TOKEN_LEN);
 	cmd_copy_string(cmd, string);
 	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
-	cmd->type = TYPE_STRING;
+	cmd->objtype = TYPE_STRING;
 	return (cmd->nx);
 }
 
 cmdObj_t * _add_integer(cmdObj_t *cmd, char *token, uint32_t integer)
 {
 	strncpy(cmd->token, token, CMD_TOKEN_LEN);
-	cmd->value = (double)integer;
+	cmd->value = (float)integer;
 	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
-	cmd->type = TYPE_INTEGER;
+	cmd->objtype = TYPE_INTEGER;
 	return (cmd->nx);
 }
 
 cmdObj_t * _add_empty(cmdObj_t *cmd)
 {
 	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
-	cmd->type = TYPE_EMPTY;
+	cmd->objtype = TYPE_EMPTY;
 	return (cmd->nx);
 }
 
 cmdObj_t * _add_array(cmdObj_t *cmd, char *array_string)
 {
-	cmd->type = TYPE_ARRAY;
+	cmd->objtype = TYPE_ARRAY;
 //	strncpy(cmd->string, array_string, CMD_STRING_LEN);
 	cmd_copy_string(cmd, array_string);
 	return (cmd->nx);
@@ -614,7 +643,7 @@ cmdObj_t * _add_array(cmdObj_t *cmd, char *array_string)
 
 void _test_parser()
 {
-// tip: breakpoint the js_json_parser return (TG_OK) and examine the js[] array
+// tip: breakpoint the js_json_parser return (STAT_OK) and examine the js[] array
 
 // success cases
 

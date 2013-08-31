@@ -1,10 +1,10 @@
-# xmega192a3 configuration
+# xmega256a3 configuration
 
 # use config.h
 USE_CONFIG_H = yes
 
 # MCU
-MCU = atxmega192a3
+MCU = atxmega256a3
 
 # Clock Speed
 # Use 2 MHz internal RC oscillator
@@ -39,7 +39,7 @@ AVRDUDE_FUSES =
 # See datasheet section 4.16.3 for more information
 #AVRDUDE_FUSES += -U fuse2:w:0xBF:m
 
-# There is no fuse byte 3.....
+# There is no fuse byte 3.....nobody expects the Spanish Inquisition
 
 # Fuse byte 4: Start-up configuration
 # See datasheet section 4.16.4
@@ -97,8 +97,8 @@ USE_ATTACH_LED = no
 USE_FIFO = no
 
 # General Options
-USE_INTERRUPTS = no
-USE_WATCHDOG = no
+USE_INTERRUPTS = yes
+USE_WATCHDOG = yes
 
 # Bootloader Features
 ENABLE_BLOCK_SUPPORT = yes
@@ -129,10 +129,10 @@ ENTER_PIN_PUEN        = 1
 
 # ENTER_DELAY
 ENTER_BLINK_COUNT     = 3
-ENTER_BLINK_WAIT      = 30000
+ENTER_BLINK_WAIT      = 1000000
 
 # ENTER_UART
-ENTER_UART_NEED_SYNC = yes
+ENTER_UART_NEED_SYNC = no
 
 # ENTER_FIFO
 #ENTER_FIFO_NEED_SYNC = yes
@@ -152,7 +152,7 @@ WATCHDOG_TIMEOUT      = WDT_PER_1KCLK_gc
 #WATCHDOG_TIMEOUT      = WDT_PER_8KCLK_gc
 
 # LED
-LED_PORT_NAME         = A
+LED_PORT_NAME         = C
 LED_PIN               = 5
 LED_INV               = 0
 

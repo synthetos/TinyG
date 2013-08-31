@@ -4,20 +4,17 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it under the terms of the 
- * GNU General Public License as published by the Free Software Foundation, either version 3 
- * of the License, or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without 
- * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
- * GNU General Public License for details. You should have received a copy of the GNU General 
- * Public License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING 
- * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* ----- XIO - Xmega Device System ----
  *
@@ -107,7 +104,7 @@ void xio_init()
 
 	// open individual devices (file device opens occur at time-of-use)
 	xio_open(XIO_DEV_USB,  0, USB_FLAGS);
-//	xio_open(XIO_DEV_RS485,0, RS485_FLAGS);
+	xio_open(XIO_DEV_RS485,0, RS485_FLAGS);
 	xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
 	xio_open(XIO_DEV_SPI2, 0, SPI_FLAGS);
 }
@@ -250,7 +247,7 @@ void xio_set_stdout(const uint8_t dev) { stdout = &ds[dev].file; }
 void xio_set_stderr(const uint8_t dev)
 {
 	stderr = &ds[dev].file; 
-	xio.stderr_shadow = stderr;
+	xio.stderr_shadow = stderr;		// this is the last thing in RAM, so we use it as a memory corruption canary
 }
 
 /*
@@ -273,8 +270,8 @@ uint8_t xio_assertions(uint8_t *value)
 	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) { *value = 109; }
 	if (stderr != xio.stderr_shadow) 				 { *value = 200; } 
 
-	if (*value != 0) { return (TG_MEMORY_CORRUPTION); }
-	return (TG_OK);
+	if (*value != 0) { return (STAT_MEMORY_FAULT); }
+	return (STAT_OK);
 }
 
 /*****************************************************************************

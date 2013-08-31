@@ -31,7 +31,13 @@
 /*                                                                      */
 /************************************************************************/
 
+/*
+ * Note: The AVR mega code has been hacked out for readability and 
+ *		 because we don't need it.
+ */
 #include "xboot.h"
+
+void CCPWrite( volatile uint8_t * address, uint8_t value );
 
 #ifdef USE_INTERRUPTS
 volatile unsigned char comm_mode;
@@ -43,14 +49,7 @@ volatile unsigned char rx_char_cnt;
 volatile unsigned char tx_buff0;
 volatile unsigned char tx_char_cnt;
 #else
-#ifdef __AVR_XMEGA__
 unsigned char comm_mode;
-#else // __AVR_XMEGA__
-// Force data section on atmega
-// Seems to be a bug in newer versions of gcc
-// this ensures .bss is placed after .data
-unsigned char comm_mode = 1;
-#endif // __AVR_XMEGA__
 #endif // USE_INTERRUPTS
 
 unsigned char buffer[SPM_PAGESIZE];
@@ -88,13 +87,22 @@ int main(void)
         // Entry point and communication methods are initialized here
         // --------------------------------------------------
         
-        
-#ifdef __AVR_XMEGA__
-        
         #ifdef USE_32MHZ_RC
         #if (F_CPU != 32000000L)
         #error F_CPU must match oscillator setting!
         #endif // F_CPU
+
+        // clock setup imported form tinyg/xmega/xmega_init.c
+        OSC.XOSCCTRL = 0xCB;					// 12-16 MHz crystal; 0.4-16 MHz XTAL w 16K CLK startup
+        OSC.CTRL = 0x08;						// enable external crystal oscillator
+        while(!(OSC.STATUS & OSC_XOSCRDY_bm));	// wait for oscillator ready
+        OSC.PLLCTRL = 0xC2;						// XOSC is PLL Source; 2x Factor (32 MHz sys clock)
+        OSC.CTRL = 0x18;						// Enable PLL & External Oscillator
+        while(!(OSC.STATUS & OSC_PLLRDY_bm));	// wait for PLL ready
+        CCPWrite(&CLK.CTRL, CLK_SCLKSEL_PLL_gc);// switch to PLL clock
+        OSC.CTRL &= ~OSC_RC2MEN_bm;				// disable internal 2 MHz clock
+
+    /* Original code from xboot sources replaced by the above:
         OSC.CTRL |= OSC_RC32MEN_bm; // turn on 32 MHz oscillator
         while (!(OSC.STATUS & OSC_RC32MRDY_bm)) { }; // wait for it to start
         CCP = CCP_IOREG_gc;
@@ -109,18 +117,10 @@ int main(void)
         #ifdef USE_DFLL
         DFLLRC2M.CTRL = DFLL_ENABLE_bm;
         #endif // USE_DFLL
+     */
         #endif // USE_32MHZ_RC
-        
-#else // __AVR_XMEGA__
-        
-        // nothing special for ATmega
-        
-#endif // __AVR_XMEGA__
-        
+                
         // interrupts
-        
-#ifdef __AVR_XMEGA__
-        
         #ifdef NEED_INTERRUPTS
         // remap interrupts to boot section
         CCP = CCP_IOREG_gc;
@@ -131,16 +131,7 @@ int main(void)
         #endif // USE_INTERRUPTS
         #endif // NEED_INTERRUPTS
         
-#else // __AVR_XMEGA__
-        
-        // nothing special for ATmega
-        
-#endif // __AVR_XMEGA__
-        
         // LED
-        
-#ifdef __AVR_XMEGA__
-        
         #ifdef USE_LED
         // Initialize LED pin
         LED_PORT.DIRSET = (1 << LED_PIN);
@@ -150,25 +141,8 @@ int main(void)
         LED_PORT.OUTSET = (1 << LED_PIN);
         #endif // LED_PIN_INV
         #endif // USE_LED
-        
-#else // __AVR_XMEGA__
-        
-        #ifdef USE_LED
-        // Initialize LED pin
-        LED_PORT_DDR |= (1 << LED_PIN);
-        #if LED_PIN_INV
-        LED_PORT &= ~(1 << LED_PIN);
-        #else
-        LED_PORT |= (1 << LED_PIN);
-        #endif // LED_PIN_INV
-        #endif // USE_LED
-        
-#endif // __AVR_XMEGA__
-        
+                
         // I2C Attach LED_PIN
-        
-#ifdef __AVR_XMEGA__
-        
         #ifdef USE_I2C_ADDRESS_NEGOTIATION
         #ifdef USE_ATTACH_LED
         // Initialize ATTACH_LED
@@ -181,26 +155,7 @@ int main(void)
         #endif // USE_ATTACH_LED
         #endif // USE_I2C_ADDRESS_NEGOTIATION
         
-#else // __AVR_XMEGA__
-        
-        #ifdef USE_I2C_ADDRESS_NEGOTIATION
-        #ifdef USE_ATTACH_LED
-        // Initialize ATTACH_LED
-        ATTACH_LED_PORT_DDR |= (1 << ATTACH_LED_PIN);
-        #if ATTACH_LED_INV
-        ATTACH_LED_PORT |= (1 << ATTACH_LED_PIN);
-        #else
-        ATTACH_LED_PORT &= ~(1 << ATTACH_LED_PIN);
-        #endif // ATTACH_LED_INV
-        #endif // USE_ATTACH_LED
-        #endif // USE_I2C_ADDRESS_NEGOTIATION
-        
-#endif // __AVR_XMEGA__
-        
         // Enter pin
-        
-#ifdef __AVR_XMEGA__
-        
         #ifdef USE_ENTER_PIN
         // Make sure it's an input
         ENTER_PORT.DIRCLR = (1 << ENTER_PIN);
@@ -210,48 +165,17 @@ int main(void)
         #endif // ENTER_PIN_PUEN
         #endif // USE_ENTER_PIN
         
-#else // __AVR_XMEGA__
-        
-        #ifdef USE_ENTER_PIN
-        // Make sure it's an input
-        ENTER_PORT_DDR &= ~(1 << ENTER_PIN);
-        #if ENTER_PIN_PUEN
-        // Enable bootloader entry pin pullup
-        ENTER_PORT |= (1 << ENTER_PIN);
-        #else // ENER_PIN_PUEN
-        // Disable bootloader entry pin pullup
-        ENTER_PORT &= ~(1 << ENTER_PIN);
-        #endif // ENTER_PIN_PUEN
-        #endif // USE_ENTER_PIN
-        
-#endif // __AVR_XMEGA__
-        
         #ifdef USE_UART
         // Initialize UART
         uart_init();
-        
+
         // Initialize RX pin pull-up
-        
-#ifdef __AVR_XMEGA__
-        
         #ifdef UART_RX_PUEN
         // Enable RX pin pullup
         UART_RX_PIN_CTRL = 0x18;
         #endif // UART_RX_PUEN
         
-#else // __AVR_XMEGA__
-        
-        #ifdef UART_RX_PUEN
-        // Enable RX pin pullup
-        UART_PORT |= (1 << UART_RX_PIN);
-        #endif // UART_RX_PUEN
-        
-#endif // __AVR_XMEGA__
-        
         // Initialize UART EN pin
-        
-#ifdef __AVR_XMEGA__
-        
         #ifdef USE_UART_EN_PIN
         UART_EN_PORT.DIRSET = (1 << UART_EN_PIN);
         #if UART_EN_INV
@@ -261,54 +185,35 @@ int main(void)
         #endif // UART_PIN_INV
         #endif // USE_UART_EN_PIN
         
-#else // __AVR_XMEGA__
-        
-        #ifdef USE_UART_EN_PIN
-        UART_EN_PORT_DDR |= (1 << UART_EN_PIN);
-        #if UART_EN_INV
-        UART_EN_PORT |= (1 << UART_EN_PIN);
-        #else // UART_PIN_INV
-        UART_EN_PORT &= ~(1 << UART_EN_PIN);
-        #endif // UART_PIN_INV
-        #endif // USE_UART_EN_PIN
-        
-#endif // __AVR_XMEGA__
-        
         #endif // USE_UART
         
         #ifdef USE_I2C
         // Initialize I2C interface
         i2c_init();
         
-#ifdef __AVR_XMEGA__
-        
         #ifdef USE_I2C_ADDRESS_NEGOTIATION
         I2C_AUTONEG_PORT.DIRCLR = (1 << I2C_AUTONEG_PIN);
         I2C_AUTONEG_PORT.OUTCLR = (1 << I2C_AUTONEG_PIN);
         #endif // USE_I2C_ADDRESS_NEGOTIATION
         
-#else // __AVR_XMEGA__
-        
-        #ifdef USE_I2C_ADDRESS_NEGOTIATION
-        I2C_AUTONEG_PORT_DDR &= ~(1 << I2C_AUTONEG_PIN);
-        I2C_AUTONEG_PORT &= ~(1 << I2C_AUTONEG_PIN);
-        #endif // USE_I2C_ADDRESS_NEGOTIATION
-        
-#endif // __AVR_XMEGA__
-        
-        #endif // USE_I2C
+		#endif // USE_I2C
         
         #ifdef USE_FIFO
         // Initialize FIFO
         fifo_init();
         #endif // USE_FIFO
         
-#ifndef __AVR_XMEGA__
-        // ATMEGA must reset via watchdog, so turn it off
-        MCUSR = 0;
-        wdt_disable();
-#endif
-        
+		//**************************************
+		// one-time startup message     
+		// THIS CAUSES AVRDUDE TO PUKE. TOO BAD.
+		//	unsigned char startup[] = "{\"er\":{\"st\":8,\"msg\":\"Boot loader initialized\",\"val\":0}}\n";
+		//	unsigned char startup[] = "{\"er\":{\"st\":8}}\n";
+//			unsigned char startup[] = "{\"boot\":2}\n";
+//			unsigned char startup[] = "{\"boot\":2}\n";
+//			comm_mode = MODE_UART;
+//			for (int i = 0; i < sizeof(startup); i++) { send_char(startup[i]);}
+		//**************************************
+
         // --------------------------------------------------
         // End initialization section
         
@@ -318,23 +223,31 @@ int main(void)
         // --------------------------------------------------
         
         
-        
         // --------------------------------------------------
         // End one time trigger section
         
 #ifdef USE_ENTER_DELAY
-        k = ENTER_BLINK_COUNT*2;
+
+	    k = ENTER_BLINK_COUNT*2;
+
+		// ++++ Blink count delay hack
+		// This code tests the software reset bit to determine if the bootloader was entered
+		// from the application via a $boot=1 or {"boot"1} command. If so, it will remain in
+		// the boot loader 20 time longer than usual, which should be about a minute.
+		// Thanks to Rob Giseburt for pointing this out.
+		if (RST.STATUS & RST_SRF_bm) {	// it came from a software reset
+			RST.STATUS = 0xFF;			// reset all status bits (just to be sure)
+			k *= 20;					// 20 times the timeout delay, which is typically 3 seconds.
+		}
+		// ++++ regular code resumes from here
+
         j = ENTER_BLINK_WAIT;
         while (!in_bootloader && k > 0)
         {
                 if (j-- <= 0)
                 {
                         #ifdef USE_LED
-#ifdef __AVR_XMEGA__
                         LED_PORT.OUTTGL = (1 << LED_PIN);
-#else // __AVR_XMEGA__
-                        LED_PORT ^= (1 << LED_PIN);
-#endif // __AVR_XMEGA__
                         #endif // USE_LED
                         j = ENTER_BLINK_WAIT;
                         k--;
@@ -356,13 +269,8 @@ int main(void)
                 
                 #ifdef USE_ENTER_PIN
                 // Check entry pin state
-#ifdef __AVR_XMEGA__
                 if ((ENTER_PORT.IN & (1 << ENTER_PIN)) == (ENTER_PIN_STATE ? (1 << ENTER_PIN) : 0))
                         in_bootloader = 1;
-#else // __AVR_XMEGA__
-                if ((ENTER_PORT_PIN & (1 << ENTER_PIN)) == (ENTER_PIN_STATE ? (1 << ENTER_PIN) : 0))
-                        in_bootloader = 1;
-#endif // __AVR_XMEGA__
                 #endif // USE_ENTER_PIN
                 
                 #ifdef USE_ENTER_UART
@@ -405,11 +313,7 @@ int main(void)
                 // --------------------------------------------------
                 // End main trigger section
                 
-#ifdef __AVR_XMEGA__
                 WDT_Reset();
-#else // __AVR_XMEGA__
-                wdt_reset();
-#endif // __AVR_XMEGA__
                 
 #ifdef USE_ENTER_DELAY
         }
@@ -423,15 +327,11 @@ int main(void)
         #ifdef USE_WATCHDOG
         WDT_EnableAndSetTimeout();
         #endif // USE_WATCHDOG
-        
+
         // Main bootloader        
         while (in_bootloader) {
                 #ifdef USE_LED
-#ifdef __AVR_XMEGA__
                 LED_PORT.OUTTGL = (1 << LED_PIN);
-#else // __AVR_XMEGA__
-                LED_PORT ^= (1 << LED_PIN);
-#endif // __AVR_XMEGA__
                 #endif // USE_LED
                 
                 val = get_char();
@@ -478,7 +378,7 @@ int main(void)
                         // Erase the application section
                         Flash_EraseApplicationSection();
                         // Wait for completion
-#ifdef __AVR_XMEGA__
+
                         #ifdef USE_WATCHDOG
                         while (NVM_STATUS & NVM_NVMBUSY_bp)
                         {
@@ -488,7 +388,6 @@ int main(void)
                         #else // USE_WATCHDOG
                         SP_WaitForSPM();
                         #endif // USE_WATCHDOG
-#endif // __AVR_XMEGA__
                         
                         // Erase EEPROM
                         EEPROM_erase_all();
@@ -601,7 +500,7 @@ int main(void)
                 }
                 #endif // ENABLE_EEPROM_BYTE_SUPPORT
                 #ifdef ENABLE_LOCK_BITS
-#ifdef __AVR_XMEGA__
+
                 // Write lockbits
                 else if (val == CMD_WRITE_LOCK_BITS)
                 {
@@ -613,10 +512,9 @@ int main(void)
                 {
                         send_char(SP_ReadLockBits());
                 }
-#endif // __AVR_XMEGA__
                 #endif // ENABLE_LOCK_BITS
+
                 #ifdef ENABLE_FUSE_BITS
-#ifdef __AVR_XMEGA__
                 // Read low fuse bits
                 else if (val == CMD_READ_LOW_FUSE_BITS)
                 {
@@ -632,8 +530,8 @@ int main(void)
                 {
                         send_char(SP_ReadFuseByte(2));
                 }
-#endif // __AVR_XMEGA__
                 #endif // ENABLE_FUSE_BITS
+
                 // Enter and leave programming mode
                 else if ((val == CMD_ENTER_PROG_MODE) || (val == CMD_LEAVE_PROG_MODE))
                 {
@@ -913,71 +811,39 @@ autoneg_done:
         uart_deinit();
         
         // Disable RX pin pull-up
-#ifdef __AVR_XMEGA__
         #ifdef UART_RX_PUEN
         // Disable RX pin pullup
         UART_RX_PIN_CTRL = 0;
         #endif // UART_RX_PUEN
-#else // __AVR_XMEGA__
-        #ifdef UART_RX_PUEN
-        // Disable RX pin pullup
-        UART_PORT &= ~(1 << UART_RX_PIN);
-        #endif // UART_RX_PUEN
-#endif // __AVR_XMEGA__
         
         // Shut down UART EN pin
         #ifdef USE_UART_EN_PIN
-#ifdef __AVR_XMEGA__
         UART_EN_PORT.DIRCLR = (1 << UART_EN_PIN);
         UART_EN_PORT.OUTCLR = (1 << UART_EN_PIN);
-#else // __AVR_XMEGA__
-        UART_EN_PORT_DDR &= ~(1 << UART_EN_PIN);
-        UART_EN_PORT &= ~(1 << UART_EN_PIN);
-#endif // __AVR_XMEGA__
         #endif // USE_UART_EN_PIN
         #endif // USE_UART
         
-#ifdef __AVR_XMEGA__
         #ifdef LOCK_SPM_ON_EXIT
         // Lock SPM writes
         SP_LockSPM();
         #endif // LOCK_SPM_ON_EXIT
-#endif // __AVR_XMEGA__
         
         // Disable bootloader entry pin
-#ifdef __AVR_XMEGA__
         #ifdef USE_ENTER_PIN
         #if ENTER_PIN_PUEN
         // Disable bootloader entry pin pullup
         ENTER_PIN_CTRL = 0;
         #endif // ENTER_PIN_PUEN
         #endif // USE_ENTER_PIN
-#else // __AVR_XMEGA__
-        #ifdef USE_ENTER_PIN
-        #if ENTER_PIN_PUEN
-        // Disable bootloader entry pin pullup
-        ENTER_PORT &= ~(1 << ENTER_PIN);
-        #endif // ENTER_PIN_PUEN
-        #endif // USE_ENTER_PIN
-#endif // __AVR_XMEGA__
         
         // LED
-#ifdef __AVR_XMEGA__
         #ifdef USE_LED
         // Turn off LED on exit
         LED_PORT.DIRCLR = (1 << LED_PIN);
         LED_PORT.OUTCLR = (1 << LED_PIN);
         #endif // USE_LED
-#else // __AVR_XMEGA__
-        #ifdef USE_LED
-        // Turn off LED on exit
-        LED_PORT_DDR &= ~(1 << LED_PIN);
-        LED_PORT &= ~(1 << LED_PIN);
-        #endif // USE_LED
-#endif //__AVR_XMEGA__
         
         // Attach LED
-#ifdef __AVR_XMEGA__
         #ifdef USE_I2C_ADDRESS_NEGOTIATION
         #ifdef USE_ATTACH_LED
         // Disable ATTACH_LED
@@ -985,23 +851,12 @@ autoneg_done:
         ATTACH_LED_PORT.OUTCLR = (1 << ATTACH_LED_PIN);
         #endif // USE_ATTACH_LED
         #endif // USE_I2C_ADDRESS_NEGOTIATION
-#else // __AVR_XMEGA__
-        #ifdef USE_I2C_ADDRESS_NEGOTIATION
-        #ifdef USE_ATTACH_LED
-        // Disable ATTACH_LED
-        ATTACH_LED_PORT_DDR &= ~(1 << ATTACH_LED_PIN);
-        ATTACH_LED_PORT &= ~(1 << ATTACH_LED_PIN);
-        #endif // USE_ATTACH_LED
-        #endif // USE_I2C_ADDRESS_NEGOTIATION
-#endif // __AVR_XMEGA__
         
-#ifdef __AVR_XMEGA__
         #ifdef NEED_INTERRUPTS
         // remap interrupts back to application section
         CCP = CCP_IOREG_gc;
         PMIC.CTRL = 0;
         #endif // NEED_INTERRUPTS
-#endif // __AVR_XMEGA__
         
         #ifdef USE_WATCHDOG
         WDT_Disable();
@@ -1022,17 +877,10 @@ autoneg_done:
 
 #ifdef USE_I2C_ADDRESS_NEGOTIATION
 
-#ifdef __AVR_XMEGA__
 #define ow_assert()             I2C_AUTONEG_PORT.DIRSET = (1 << I2C_AUTONEG_PIN)
 #define ow_deassert()           I2C_AUTONEG_PORT.DIRCLR = (1 << I2C_AUTONEG_PIN)
 #define ow_read()               (I2C_AUTONEG_PORT.IN & (1 << I2C_AUTONEG_PIN))
 #define ow_is_asserted()        (!ow_read())
-#else
-#define ow_assert()             I2C_AUTONEG_PORT_DDR |= (1 << 0)
-#define ow_deassert()           I2C_AUTONEG_PORT_DDR &= ~(1 << 0)
-#define ow_read()               (I2C_AUTONEG_PORT_PIN & (1 << 0))
-#define ow_is_asserted()        (!ow_read())
-#endif // __AVR_XMEGA__
 
 unsigned char __attribute__ ((noinline)) ow_slave_read_bit(void)
 {
@@ -1141,7 +989,6 @@ unsigned char __attribute__ ((noinline)) get_char(void)
                 // Get next character
                 if (comm_mode == MODE_UNDEF || comm_mode == MODE_I2C)
                 {
-#ifdef __AVR_XMEGA__
                         if (i2c_address_match())
                         {
                                 // Address match, send ACK
@@ -1171,9 +1018,6 @@ unsigned char __attribute__ ((noinline)) get_char(void)
                                         i2c_send_nak();
                                 }
                         }
-#else // __AVR_XMEGA__
-                        #error Not implemented!
-#endif // __AVR_XMEGA__
                 }
                 #endif // USE_I2C
 
@@ -1204,7 +1048,6 @@ void __attribute__ ((noinline)) send_char(unsigned char c)
         // Send character
         if (comm_mode == MODE_UNDEF || comm_mode == MODE_UART)
         {
-#ifdef __AVR_XMEGA__
                 #ifdef USE_UART_EN_PIN
                 #if UART_EN_INV
                 UART_EN_PORT.OUTCLR = (1 << UART_EN_PIN);
@@ -1212,17 +1055,7 @@ void __attribute__ ((noinline)) send_char(unsigned char c)
                 UART_EN_PORT.OUTSET = (1 << UART_EN_PIN);
                 #endif // UART_PIN_INV
                 #endif // USE_UART_EN_PIN
-#else // __AVR_XMEGA__
-                #ifdef USE_UART_EN_PIN
-                #if UART_EN_INV
-                UART_EN_PORT &= ~(1 << UART_EN_PIN);
-                #else // UART_PIN_INV
-                UART_EN_PORT |= (1 << UART_EN_PIN);
-                #endif // UART_PIN_INV
-                #endif // USE_UART_EN_PIN
-#endif // __AVR_XMEGA__
                 uart_send_char_blocking(c);
-#ifdef __AVR_XMEGA__
                 #ifdef USE_UART_EN_PIN
                 #if UART_EN_INV
                 UART_EN_PORT.OUTSET = (1 << UART_EN_PIN);
@@ -1230,16 +1063,6 @@ void __attribute__ ((noinline)) send_char(unsigned char c)
                 UART_EN_PORT.OUTCLR = (1 << UART_EN_PIN);
                 #endif // UART_PIN_INV
                 #endif // USE_UART_EN_PIN
-#else // __AVR_XMEGA__
-                #ifdef USE_UART_EN_PIN
-                #if UART_EN_INV
-                UART_EN_PORT |= (1 << UART_EN_PIN);
-                #else // UART_PIN_INV
-                UART_EN_PORT &= ~(1 << UART_EN_PIN);
-                #endif // UART_PIN_INV
-                #endif // USE_UART_EN_PIN
-#endif // __AVR_XMEGA__
-                
         }
         #endif // USE_UART
         
@@ -1249,7 +1072,6 @@ void __attribute__ ((noinline)) send_char(unsigned char c)
         {
                 while (1)
                 {
-#ifdef __AVR_XMEGA__
                         if (i2c_address_match())
                         {
                                 // Address match, send ACK
@@ -1277,9 +1099,6 @@ void __attribute__ ((noinline)) send_char(unsigned char c)
                                 }
                                 return;
                         }
-#else // __AVR_XMEGA__
-                        #error Not implemented!
-#endif // __AVR_XMEGA__
                 }
         }
         #endif // USE_I2C
@@ -1350,19 +1169,13 @@ unsigned char BlockLoad(unsigned int size, unsigned char mem, ADDR_T *address)
         } 
         
         // Flash memory type
-#ifdef __AVR_XMEGA__
         else if (mem == MEM_FLASH || mem == MEM_USERSIG)
-#else // __AVR_XMEGA__
-        else if (mem == MEM_FLASH)
-#endif // __AVR_XMEGA__
         {
                 // NOTE: For flash programming, 'address' is given in words.
                 tempaddress = (*address) << 1;  // Store address in page.
                 
                 (*address) += size >> 1;
-                
-#ifdef __AVR_XMEGA__
-                
+                                
                 if (mem == MEM_FLASH)
                 {
                         #ifdef ENABLE_FLASH_ERASE_WRITE
@@ -1378,16 +1191,7 @@ unsigned char BlockLoad(unsigned int size, unsigned char mem, ADDR_T *address)
                         Flash_WaitForSPM();
                         Flash_WriteUserSignatureRow();
                         Flash_WaitForSPM();
-                }
-                
-#else // __AVR_XMEGA__
-                #ifdef ENABLE_FLASH_ERASE_WRITE
-                Flash_ProgramPage(tempaddress, buffer, 1);
-                #else
-                Flash_ProgramPage(tempaddress, buffer, 0);
-                #endif
-#endif // __AVR_XMEGA__
-                
+                }                
                 return REPLY_ACK; // Report programming OK
         }
         
@@ -1414,17 +1218,12 @@ void BlockRead(unsigned int size, unsigned char mem, ADDR_T *address)
         }
         
         // Flash memory type.
-#ifdef __AVR_XMEGA__
         else if (mem == MEM_FLASH || mem == MEM_USERSIG || mem == MEM_PRODSIG)
-#else // __AVR_XMEGA__
-        else if (mem == MEM_FLASH)
-#endif // __AVR_XMEGA__
         {
                 (*address) <<= 1; // Convert address to bytes temporarily.
                 
                 do
                 {
-#ifdef __AVR_XMEGA__
                         if (mem == MEM_FLASH)
                         {
                                 buffer[offset++] = Flash_ReadByte(*address);
@@ -1437,10 +1236,6 @@ void BlockRead(unsigned int size, unsigned char mem, ADDR_T *address)
                         {
                                 buffer[offset++] = SP_ReadCalibrationByte(*address);
                         }
-#else // __AVR_XMEGA__
-                        buffer[offset++] = Flash_ReadByte(*address);
-#endif // __AVR_XMEGA__
-                        
                         Flash_WaitForSPM();
                         
                         (*address)++;    // Select next word in memory.
@@ -1527,11 +1322,7 @@ void install_firmware()
                         for (uint32_t ptr = 0; ptr < XB_APP_SIZE; ptr += SPM_PAGESIZE)
                         {
                                 #ifdef USE_LED
-#ifdef __AVR_XMEGA__
                                 LED_PORT.OUTTGL = (1 << LED_PIN);
-#else // __AVR_XMEGA__
-                                LED_PORT ^= (1 << LED_PIN);
-#endif // __AVR_XMEGA__
                                 #endif // USE_LED
                                 
                                 Flash_ReadFlashPage(buffer, ptr + XB_APP_TEMP_START);
@@ -1550,4 +1341,69 @@ void install_firmware()
 }
 
 
+/****************************************************************************/
+/* Macros to protect the code from interrupts */
+
+#define AVR_ENTER_CRITICAL_REGION() uint8_t volatile saved_sreg = SREG; cli();
+#define AVR_LEAVE_CRITICAL_REGION() SREG = saved_sreg;
+
+
+/* CCP write helper function written in assembly.
+ *
+ *  This function is written in assembly because of the time critial
+ *  operation of writing to the registers.
+ *
+ *  - address A pointer to the address to write to.
+ *  - value   The value to put in to the register.
+ */
+
+void CCPWrite( volatile uint8_t * address, uint8_t value )
+{
+#ifdef __ICCAVR__
+
+	// Store global interrupt setting in scratch register and disable interrupts.
+        asm("in  R1, 0x3F \n"
+	    "cli"
+	    );
+
+	// Move destination address pointer to Z pointer registers.
+	asm("movw r30, r16");
+#ifdef RAMPZ
+	asm("ldi  R16, 0 \n"
+            "out  0x3B, R16"
+	    );
+
+#endif
+	asm("ldi  r16,  0xD8 \n"
+	    "out  0x34, r16  \n"
+#if (__MEMORY_MODEL__ == 1)
+	    "st     Z,  r17  \n");
+#elif (__MEMORY_MODEL__ == 2)
+	    "st     Z,  r18  \n");
+#else /* (__MEMORY_MODEL__ == 3) || (__MEMORY_MODEL__ == 5) */
+	    "st     Z,  r19  \n");
+#endif /* __MEMORY_MODEL__ */
+
+	// Restore global interrupt setting from scratch register.
+        asm("out  0x3F, R1");
+
+#elif defined __GNUC__
+	AVR_ENTER_CRITICAL_REGION();
+	volatile uint8_t * tmpAddr = address;
+#ifdef RAMPZ
+	RAMPZ = 0;
+#endif
+	asm volatile(
+		"movw r30,  %0"	      "\n\t"
+		"ldi  r16,  %2"	      "\n\t"
+		"out   %3, r16"	      "\n\t"
+		"st     Z,  %1"       "\n\t"
+		:
+		: "r" (tmpAddr), "r" (value), "M" (CCP_IOREG_gc), "i" (&CCP)
+		: "r16", "r30", "r31"
+		);
+
+	AVR_LEAVE_CRITICAL_REGION();
+#endif
+}
 

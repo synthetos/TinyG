@@ -6,26 +6,17 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
- *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <stdio.h>						// precursor for xio.h
 #include <stdbool.h>					// true and false
@@ -134,7 +125,7 @@ FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags)
 	memset (dx, 0, sizeof(xioUsart_t));				// clear all values
 	xio_reset_working_flags(d);
 	xio_ctrl_generic(d, flags);						// setup control flags	
-	if (d->flag_xoff) dx->fc_state = FC_IN_XON;		// transfer flow control setting 
+	if (d->flag_xoff) dx->fc_state_rx = FC_IN_XON;	// transfer flow control setting 
 
 	// setup internal RX/TX control buffers
 	dx->rx_buf_head = 1;		// can't use location 0 in circular buffer
@@ -154,7 +145,17 @@ FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags)
 	dx->port->OUTSET = (uint8_t)pgm_read_byte(&cfgUsart[idx].outset);
 	dx->usart->CTRLB = (USART_TXEN_bm | USART_RXEN_bm);	// enable tx and rx
 	dx->usart->CTRLA = CTRLA_RXON_TXON;					// enable tx and rx IRQs
+
+	dx->port->USB_CTS_PINCTRL = PORT_OPC_TOTEM_gc | PORT_ISC_BOTHEDGES_gc;
+	dx->port->INTCTRL = USB_CTS_INTLVL;		// see xio_usart.h for setting
+	dx->port->USB_CTS_INTMSK = USB_CTS_bm;
+
 	return (&d->file);		// return FILE reference
+
+	// here's a bag for the RS485 device
+	if (dev == XIO_DEV_RS485) {
+		xio_enable_rs485_rx();							// sets RS-485 to RX mode initially
+	}
 }
 
 void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
@@ -169,7 +170,7 @@ void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
  *
  * xio_xoff_usart() - send XOFF flow control for USART devices
  * xio_xon_usart()  - send XON flow control for USART devices
- * xio_fc_usart() - Usart device flow control callback
+ * xio_fc_usart()   - Usart device flow control callback
  * xio_get_tx_bufcount_usart() - returns number of chars in TX buffer
  * xio_get_rx_bufcount_usart() - returns number of chars in RX buffer
  *
@@ -178,19 +179,39 @@ void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
 
 void xio_xoff_usart(xioUsart_t *dx)
 {
-	if (dx->fc_state == FC_IN_XON) {
-		dx->fc_char = XOFF; 
-		dx->fc_state = FC_IN_XOFF;
-		dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
+	if (dx->fc_state_rx == FC_IN_XON) {
+		dx->fc_state_rx = FC_IN_XOFF;
+
+		// If using XON/XOFF flow control
+		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
+			dx->fc_char_rx = XOFF; 
+			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
+		}
+
+		// If using hardware flow control. The CTS pin on the *FTDI* is our RTS.
+		// Logic 1 means we're NOT ready for more data.
+		if (cfg.enable_flow_control == FLOW_CONTROL_RTS) {
+			dx->port->OUTSET = USB_RTS_bm;
+		}
 	}
 }
 
 void xio_xon_usart(xioUsart_t *dx)
 {
-	if (dx->fc_state == FC_IN_XOFF) {
-		dx->fc_char = XON; 
-		dx->fc_state = FC_IN_XON;
-		dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
+	if (dx->fc_state_rx == FC_IN_XOFF) {
+		dx->fc_state_rx = FC_IN_XON;
+
+		// If using XON/XOFF flow control
+		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
+			dx->fc_char_rx = XON; 
+			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
+		}
+
+		// If using hardware flow control. The CTS pin on the *FTDI* is our RTS.
+		// Logic 0 means we're ready for more data.
+		if (cfg.enable_flow_control == FLOW_CONTROL_RTS) {
+			dx->port->OUTCLR = USB_RTS_bm;
+		}
 	}
 }
 
@@ -380,22 +401,6 @@ void xio_queue_RX_char_usart(const uint8_t dev, const char c)
 	xioDev_t *d = &ds[dev];
 	xioUsart_t *dx = d->x;
 
-	// trap signals - do not insert into RX queue
-	if (c == CHAR_RESET) {	 					// trap Kill signal
-		d->signal = XIO_SIG_RESET;				// set signal value
-		sig_reset();							// call app-specific sig handler
-		return;
-	}
-	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal
-		d->signal = XIO_SIG_FEEDHOLD;
-		sig_feedhold();
-		return;
-	}
-	if (c == CHAR_CYCLE_START) {				// trap cycle start signal
-		d->signal = XIO_SIG_CYCLE_START;
-		sig_cycle_start();
-		return;
-	}
 	// normal path
 	advance_buffer(dx->rx_buf_head, RX_BUFFER_SIZE);
 	if (dx->rx_buf_head != dx->rx_buf_tail) {	// write char unless buffer full

@@ -3,24 +3,25 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
- * for details. You should have received a copy of the GNU General Public 
- * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* 
  *	Coordinated motion (line drawing) is performed using a classic 
@@ -28,7 +29,7 @@
  *	are taken to optimize interpolation and pulse train accuracy.
  *
  *	- The DDA accepts and processes fractional motor steps. Steps are 
- *	  passed to the move queue as doubles, and do not need to be integer
+ *	  passed to the move queue as floats, and do not need to be integer
  *	  values. The DDA implements fractional steps and interpolation by 
  *	  extending the counter range downward using the DDA_SUBSTEPS setting. 
  *
@@ -65,17 +66,26 @@
 #ifndef stepper_h
 #define stepper_h
 
-void st_init(void);			// initialize stepper subsystem
-void st_disable(void);		// stop the steppers (step the stoppers)
-uint8_t st_isbusy(void);	// return TRUE is any axis is running (F=idle)
+void st_init(void);				// initialize stepper subsystem
+
+void st_enable_motor(const uint8_t motor);
+void st_enable_motors(void);
+void st_disable_motor(const uint8_t motor);
+void st_disable_motors(void);
+void st_start_disable_motors_timer(void);
+void st_disable_motors_rtc_callback(void);
+void st_kill_motors(void);		// stop all motors (stop the steppers)
+
+uint8_t st_isbusy(void);		// return TRUE is any axis is running (F=idle)
 void st_set_polarity(const uint8_t motor, const uint8_t polarity);
 void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode);
+void st_set_power_mode(const uint8_t motor, const uint8_t power_mode);
 
 uint8_t st_test_prep_state(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
-void st_prep_dwell(double microseconds);
-uint8_t st_prep_line(double steps[], double microseconds);
+void st_prep_dwell(float microseconds);
+stat_t st_prep_line(float steps[], float microseconds);
 
 uint16_t st_get_st_magic(void);
 uint16_t st_get_sps_magic(void);
@@ -85,7 +95,7 @@ void st_dump_stepper_state(void);
 #endif
 
 // handy macro
-#define _f_to_period(f) (uint16_t)((double)F_CPU / (double)f)
+#define _f_to_period(f) (uint16_t)((float)F_CPU / (float)f)
 
 /*
  * Stepper configs and constants
@@ -123,26 +133,26 @@ void st_dump_stepper_state(void);
 //#define DDA_OVERCLOCK 16		// doesn't have to be a binary multiple
 #define DDA_OVERCLOCK 0			// Permanently disabled. See above NOTE
 
-/* Counter resets
- * 	You want to reset the DDA counters if the new ticks value is way less 
- *	than previous value, but otherwise you should leave the counters alone.
- *	Preserving the counter value from the previous segment aligns pulse 
- *	phasing between segments. However, if the new counter is going to be 
- *	much less than the old counter you must reset it or risk motor stalls. 
+/* Accumulator resets
+ * 	You want to reset the DDA accumulators if the new ticks value is way less 
+ *	than previous value, but otherwise you should leave the accumulators alone.
+ *	Preserving the accumulator value from the previous segment aligns pulse 
+ *	phasing between segments. However, if the new accumulator is going to be 
+ *	much less than the old one you must reset it or risk motor stalls.
  */
-#define COUNTER_RESET_FACTOR 2	// amount counter range can safely change
+#define ACCUMULATOR_RESET_FACTOR 2	// amount counter range can safely change
 
 /* DDA minimum operating frequency
  *	This is the minumum value the DDA time can run with a fixed 32 Mhz 
  *	clock. Anything lower will overflow the 16 bit PERIOD register.
  */
-//#define F_DDA_MIN (double)489	// hz
-#define F_DDA_MIN (double)500	// hz - is 489 Hz with some margin
+//#define F_DDA_MIN (float)489	// hz
+#define F_DDA_MIN (float)500	// hz - is 489 Hz with some margin
 
 /* Timer settings for stepper module. See system.h for timer assignments
  */
-#define F_DDA 		(double)50000	// DDA frequency in hz.
-#define F_DWELL		(double)10000	// Dwell count frequency in hz.
+#define F_DDA 		(float)50000	// DDA frequency in hz.
+#define F_DWELL		(float)10000	// Dwell count frequency in hz.
 #define SWI_PERIOD 	100				// cycles you have to shut off SW interrupt
 #define TIMER_PERIOD_MIN (20)		// used to trap bad timer loads
 

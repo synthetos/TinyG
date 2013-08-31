@@ -4,26 +4,17 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
- *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #ifndef test_h
 #define test_h
@@ -49,8 +40,8 @@ void tg_canned_startup(void);
  *
  *	DEBUG usage examples:
  *		DEBUG0(dbCONFIG, PSTR("String with no variables"));
- *		DEBUG1(dbCONFIG, PSTR("String with one variable: %f"), double_var);
- *		DEBUG2(dbCONFIG, PSTR("String with two variables: %4.2f, %d"), double_var, int_var);
+ *		DEBUG1(dbCONFIG, PSTR("String with one variable: %f"), float_var);
+ *		DEBUG2(dbCONFIG, PSTR("String with two variables: %4.2f, %d"), float_var, int_var);
  *
  *	DEBUG print statements are coded so they occupy no program space if 
  *	they are not enabled. If you also use __dbXXXX defines to enable debug
@@ -63,8 +54,8 @@ void tg_canned_startup(void);
 #ifdef __DEBUG
 void dump_everything(void);
 void roll_over_and_die(void);
-void print_scalar(const char *label, double value);
-void print_vector(const char *label, double vector[], uint8_t length);
+void print_scalar(const char *label, float value);
+void print_vector(const char *label, float vector[], uint8_t length);
 
 // global allocation of debug control variables
 	uint8_t dbECHO_GCODE_BLOCK;
@@ -113,13 +104,13 @@ struct mpSegmentLog {
 	uint8_t move_state;
 	uint32_t linenum;
 	uint32_t segments;
-	double velocity;
-	double microseconds;
-//	double position_x;
-//	double target_x;
-//	double step_x;
-//	double move_time;
-//	double accel_time;
+	float velocity;
+	float microseconds;
+//	float position_x;
+//	float target_x;
+//	float step_x;
+//	float move_time;
+//	float accel_time;
 };
 struct mpSegmentLog sl[SEGMENT_LOGGER_MAX];
 uint16_t sl_index;
@@ -129,13 +120,13 @@ void segment_logger(uint8_t move_state,
 					uint32_t linenum,
 					uint32_t segments, 
 					uint32_t segment_count, 
-					double velocity,
-					double microseconds
-//					double position_x, 
-//					double target_x,
-//					double step_x, 
-//					double move_time,
-//					double accel_time
+					float velocity,
+					float microseconds
+//					float position_x, 
+//					float target_x,
+//					float step_x, 
+//					float move_time,
+//					float accel_time
 					);
 
 #define SEGMENT_LOGGER segment_logger(bf->move_state, \

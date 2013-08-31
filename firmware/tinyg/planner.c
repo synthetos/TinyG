@@ -3,27 +3,27 @@
  * Part of TinyG project
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2012 - 2013 Rob Giseburt
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* --- Planner Notes ----
  *
@@ -76,11 +76,11 @@
 #define _bump(a) ((a<PLANNER_BUFFER_POOL_SIZE-1)?(a+1):0) // buffer incr & wrap
 #define spindle_speed time		// local alias for spindle_speed to the time variable
 #define int_val move_code		// local alias for uint8_t to the move_code
-#define dbl_val time			// local alias for double to the time variable
+#define dbl_val time			// local alias for float to the time variable
 
 // execution routines (NB: These are all called from the LO interrupt)
-static uint8_t _exec_dwell(mpBuf_t *bf);
-static uint8_t _exec_command(mpBuf_t *bf);
+static stat_t _exec_dwell(mpBuf_t *bf);
+static stat_t _exec_command(mpBuf_t *bf);
 
 #ifdef __DEBUG
 static uint8_t _get_buffer_index(mpBuf_t *bf); 
@@ -99,6 +99,8 @@ void mp_init()
 
 	mr.magic_start = MAGICNUM;
 	mr.magic_end = MAGICNUM;
+	ar.magic_start = MAGICNUM;
+	ar.magic_end = MAGICNUM;
 	mp_init_buffers();
 }
 
@@ -106,16 +108,16 @@ void mp_init()
  * mp_flush_planner() - flush all moves in the planner and all arcs
  *
  *	Does not affect the move currently running in mr.
+ *	Does not affect mm or gm model positions
  *	This function is designed to be called during a hold to reset the planner
- *	and is also useful for jogs and other console-driven commands
+ *	This function should not generally be called; call cm_flush_planner() instead
  */
-
 void mp_flush_planner()
 {
 	ar_abort_arc();
 	mp_init_buffers();
 	cm.motion_state = MOTION_STOP;
-//	cm_exec_program_stop();
+//	copy_axis_vector(mm.position, mr.position);
 }
 
 /*
@@ -136,25 +138,24 @@ void mp_flush_planner()
  *	the motors will still be processing the action and the real tool 
  *	position is still close to the starting point.
  */
-
-double *mp_get_plan_position(double position[])
+float *mp_get_plan_position(float position[])
 {
 	copy_axis_vector(position, mm.position);	
 	return (position);
 }
 
-void mp_set_plan_position(const double position[])
+void mp_set_plan_position(const float position[])
 {
 	copy_axis_vector(mm.position, position);
 }
 
-void mp_set_axes_position(const double position[])
+void mp_set_axes_position(const float position[])
 {
 	copy_axis_vector(mm.position, position);
 	copy_axis_vector(mr.position, position);
 }
 
-void mp_set_axis_position(uint8_t axis, const double position)
+void mp_set_axis_position(uint8_t axis, const float position)
 {
 	mm.position[axis] = position;
 	mr.position[axis] = position;
@@ -167,26 +168,24 @@ void mp_set_axis_position(uint8_t axis, const double position)
  *	Manages run buffers and other details
  */
 
-uint8_t mp_exec_move() 
+stat_t mp_exec_move()
 {
 	mpBuf_t *bf;
 
-	if ((bf = mp_get_run_buffer()) == NULL) return (TG_NOOP);	// NULL means nothing's running
+	if ((bf = mp_get_run_buffer()) == NULL) return (STAT_NOOP);	// NULL means nothing's running
 
-	// Manage cycle and motion state transitions
-	// cycle auto-start for lines only. Add other move types as appropriate.
+	// Manage cycle and motion state transitions. 
+	// Cycle auto-start for lines only. 
 	if (bf->move_type == MOVE_TYPE_ALINE) {
 		if (cm.cycle_state == CYCLE_OFF) cm_cycle_start();
-	}
-	if ((cm.motion_state == MOTION_STOP) && (bf->move_type == MOVE_TYPE_ALINE)) {
-		cm.motion_state = MOTION_RUN;
+		if (cm.motion_state == MOTION_STOP) cm.motion_state = MOTION_RUN;
 	}
 
-	// run the move callback in the buffer
+	// run the move callback in the planner buffer
 	if (bf->bf_func != NULL) {
 		return (bf->bf_func(bf));
 	}
-	return (TG_INTERNAL_ERROR);		// never supposed to get here
+	return (STAT_INTERNAL_ERROR);		// never supposed to get here
 }
 
 /************************************************************************************
@@ -206,7 +205,7 @@ uint8_t mp_exec_move()
  *	and makes keeping the queue full much easier - therefore avoiding Q starvation
  */
 
-void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t int_val, double float_val)
+void mp_queue_command(void(*cm_exec)(uint8_t, float), uint8_t int_val, float float_val)
 {
 	mpBuf_t *bf;
 
@@ -222,12 +221,12 @@ void mp_queue_command(void(*cm_exec)(uint8_t, double), uint8_t int_val, double f
 	return;
 }
 
-static uint8_t _exec_command(mpBuf_t *bf)
+static stat_t _exec_command(mpBuf_t *bf)
 {
 	bf->cm_func(bf->int_val, bf->dbl_val);
 	st_prep_null();			// Must call a null prep to keep the loader happy. 
 	mp_free_run_buffer();
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /*************************************************************************
@@ -239,24 +238,32 @@ static uint8_t _exec_command(mpBuf_t *bf)
  * timer than the stepper pulse timer.
  */
 
-uint8_t mp_dwell(double seconds) 
+stat_t mp_dwell(float seconds) 
 {
 	mpBuf_t *bf; 
 
 	if ((bf = mp_get_write_buffer()) == NULL) {	// get write buffer or fail
-		return (TG_BUFFER_FULL_FATAL);		  	// (not supposed to fail)
+		return (STAT_BUFFER_FULL_FATAL);		// (not supposed to fail)
 	}
-	bf->bf_func = _exec_dwell;					// register the callback to the exec function
+	bf->bf_func = _exec_dwell;					// register callback to dwell start
 	bf->time = seconds;						  	// in seconds, not minutes
-	mp_queue_write_buffer(MOVE_TYPE_DWELL);
-	return (TG_OK);
+	bf->move_state = MOVE_STATE_NEW;
+	mp_queue_write_buffer(MOVE_TYPE_DWELL); 
+	return (STAT_OK);
 }
 
-static uint8_t _exec_dwell(mpBuf_t *bf)
+void mp_end_dwell()								// all's well that ends dwell
 {
-	st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
-	mp_free_run_buffer();
-	return (TG_OK);
+	mp_free_run_buffer();						// Note: this is called from an interrupt
+}
+
+static stat_t _exec_dwell(mpBuf_t *bf)
+{
+	if (bf->move_state == MOVE_STATE_NEW) {
+		st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
+		bf->move_state = MOVE_STATE_RUN;
+	}
+	return (STAT_OK);
 }
 
 /**** PLANNER BUFFERS *****************************************************
@@ -362,6 +369,7 @@ void mp_queue_write_buffer(const uint8_t move_type)
 	mb.q->buffer_state = MP_BUFFER_QUEUED;
 	mb.q = mb.q->nx;							// advance the queued buffer pointer
 	st_request_exec_move();						// request a move exec if not busy
+	rpt_request_queue_report(+1);				// add to the "added buffers" count
 }
 
 mpBuf_t * mp_get_run_buffer() 
@@ -381,14 +389,14 @@ mpBuf_t * mp_get_run_buffer()
 void mp_free_run_buffer()						// EMPTY current run buf & adv to next
 {
 	mp_clear_buffer(mb.r);						// clear it out (& reset replannable)
-	mb.r->buffer_state = MP_BUFFER_EMPTY;
+//	mb.r->buffer_state = MP_BUFFER_EMPTY;		// redundant after the clear, above
 	mb.r = mb.r->nx;							 // advance to next run buffer
 	if (mb.r->buffer_state == MP_BUFFER_QUEUED) {// only if queued...
 		mb.r->buffer_state = MP_BUFFER_PENDING;  // pend next buffer
 	}
 	if (mb.w == mb.r) cm_cycle_end();			// end the cycle if the queue empties
 	mb.buffers_available++;
-	rpt_request_queue_report();
+	rpt_request_queue_report(-1);				// add to the "removed buffers" count
 }
 
 mpBuf_t * mp_get_first_buffer(void)
@@ -417,7 +425,7 @@ mpBuf_t * mp_get_last_buffer(void)
 
 void mp_clear_buffer(mpBuf_t *bf) 
 {
-	mpBuf_t *nx = bf->nx;	// save pointers
+	mpBuf_t *nx = bf->nx;			// save pointers
 	mpBuf_t *pv = bf->pv;
 	memset(bf, 0, sizeof(mpBuf_t));
 	bf->nx = nx;					// restore pointers
@@ -426,7 +434,7 @@ void mp_clear_buffer(mpBuf_t *bf)
 
 void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp)
 {
-	mpBuf_t *nx = bf->nx;	// save pointers
+	mpBuf_t *nx = bf->nx;			// save pointers
 	mpBuf_t *pv = bf->pv;
  	memcpy(bf, bp, sizeof(mpBuf_t));
 	bf->nx = nx;					// restore pointers

@@ -4,24 +4,25 @@
  *
  * Copyright (c) 2010 - 2013 Alden S Hart, Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
- * for details. You should have received a copy of the GNU General Public 
- * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,6 +35,7 @@
 #include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "planner.h"
+#include "stepper.h"
 #include "report.h"
 #include "gpio.h"
 
@@ -52,39 +54,39 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 	uint8_t (*func)(int8_t axis);// binding for callback function state machine
 
 	// per-axis parameters
-	double direction;			// set to 1 for positive (max), -1 for negative (to min);
-	double search_travel;		// signed distance to travel in search
-	double search_velocity;		// search speed as positive number
-	double latch_velocity;		// latch speed as positive number
-	double latch_backoff;		// max distance to back off switch during latch phase 
-	double zero_backoff;		// distance to back off switch before setting zero
-	double max_clear_backoff;	// maximum distance of switch clearing backoffs before erring out
+	float direction;			// set to 1 for positive (max), -1 for negative (to min);
+	float search_travel;		// signed distance to travel in search
+	float search_velocity;		// search speed as positive number
+	float latch_velocity;		// latch speed as positive number
+	float latch_backoff;		// max distance to back off switch during latch phase 
+	float zero_backoff;		// distance to back off switch before setting zero
+	float max_clear_backoff;	// maximum distance of switch clearing backoffs before erring out
 
 	// state saved from gcode model
-	double saved_feed_rate;		// F setting
+	float saved_feed_rate;		// F setting
 	uint8_t saved_units_mode;	// G20,G21 global setting
 	uint8_t saved_coord_system;	// G54 - G59 setting
 	uint8_t saved_distance_mode;// G90,G91 global setting
-	double saved_jerk;			// saved and restored for each axis homed
+	float saved_jerk;			// saved and restored for each axis homed
 };
 static struct hmHomingSingleton hm;
 
 
 /**** NOTE: global prototypes and other .h info is located in canonical_machine.h ****/
 
-static uint8_t _homing_axis_start(int8_t axis);
-static uint8_t _homing_axis_clear(int8_t axis);
-static uint8_t _homing_axis_backoff_home(int8_t axis);
-static uint8_t _homing_axis_backoff_limit(int8_t axis);
-static uint8_t _homing_axis_search(int8_t axis);
-static uint8_t _homing_axis_latch(int8_t axis);
-static uint8_t _homing_axis_zero_backoff(int8_t axis);
-static uint8_t _homing_axis_set_zero(int8_t axis);
-static uint8_t _homing_axis_move(int8_t axis, double target, double velocity);
-static uint8_t _homing_finalize_exit(int8_t axis);
-static uint8_t _homing_error_exit(int8_t axis);
+static stat_t _homing_axis_start(int8_t axis);
+static stat_t _homing_axis_clear(int8_t axis);
+static stat_t _homing_axis_backoff_home(int8_t axis);
+static stat_t _homing_axis_backoff_limit(int8_t axis);
+static stat_t _homing_axis_search(int8_t axis);
+static stat_t _homing_axis_latch(int8_t axis);
+static stat_t _homing_axis_zero_backoff(int8_t axis);
+static stat_t _homing_axis_set_zero(int8_t axis);
+static stat_t _homing_axis_move(int8_t axis, float target, float velocity);
+static stat_t _homing_finalize_exit(int8_t axis);
+static stat_t _homing_error_exit(int8_t axis);
 
-static uint8_t _set_hm_func(uint8_t (*func)(int8_t axis));
+static stat_t _set_hm_func(uint8_t (*func)(int8_t axis));
 static int8_t _get_next_axis(int8_t axis);
 //static int8_t _get_next_axes(int8_t axis);
 
@@ -159,17 +161,18 @@ uint8_t cm_homing_cycle_start(void)
 	hm.func = _homing_axis_start; 			// bind initial processing function
 	cm.cycle_state = CYCLE_HOMING;
 	cm.homing_state = HOMING_NOT_HOMED;
-	return (TG_OK);
+	st_enable_motors();						// enable motors if not already enabled
+	return (STAT_OK);
 }
 
 uint8_t cm_homing_callback(void)
 {
-	if (cm.cycle_state != CYCLE_HOMING) { return (TG_NOOP);} // exit if not in a homing cycle
-	if (cm_isbusy() == true) { return (TG_EAGAIN);}	 // sync to planner move ends
+	if (cm.cycle_state != CYCLE_HOMING) { return (STAT_NOOP);} // exit if not in a homing cycle
+	if (cm_isbusy() == true) { return (STAT_EAGAIN);}	 // sync to planner move ends
 	return (hm.func(hm.axis));					// execute the current homing move
 }
 
-static uint8_t _homing_finalize_exit(int8_t axis)	// third part of return to home
+static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 {
 	mp_flush_planner(); 						// should be stopped, but in case of switch closure
 	cm_set_coord_system(hm.saved_coord_system);	// restore to work coordinate system
@@ -178,9 +181,10 @@ static uint8_t _homing_finalize_exit(int8_t axis)	// third part of return to hom
 	cm_set_feed_rate(hm.saved_feed_rate);
 	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.homing_state = HOMING_HOMED;
-	cm.cycle_state = CYCLE_STARTED;
+//	cm.cycle_state = CYCLE_MACHINING;
+	cm.cycle_state = CYCLE_OFF;
 	cm_cycle_end();
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 static const char msg_axis0[] PROGMEM = "X";
@@ -189,17 +193,24 @@ static const char msg_axis2[] PROGMEM = "Z";
 static const char msg_axis3[] PROGMEM = "A";
 static PGM_P const msg_axis[] PROGMEM = { msg_axis0, msg_axis1, msg_axis2, msg_axis3};
 
-static uint8_t _homing_error_exit(int8_t axis)
+/* _homing_error_exit()
+ *
+ * Since the error exit returns via the homing callback - and not the main controller - 
+ * it requires its own diplay processing 
+ */
+
+static stat_t _homing_error_exit(int8_t axis)
 {
+	cmd_reset_list();
 	char message[CMD_MESSAGE_LEN]; 
 	if (axis == -2) {
 		sprintf_P(message, PSTR("*** WARNING *** Homing error: Specified axis(es) cannot be homed"));
 	} else {
-		sprintf_P(message, PSTR("*** WARNING *** Homing error: %S axis settings incorrect"), (PGM_P)pgm_read_word(&msg_axis[axis]));
+		sprintf_P(message, PSTR("*** WARNING *** Homing error: %S axis settings misconfigured"), (PGM_P)pgm_read_word(&msg_axis[axis]));
 	}
 //	cmd_add_string("msg",message);
 	cmd_add_message(message);
-	cmd_print_list(TG_HOMING_CYCLE_FAILED, TEXT_INLINE_PAIRS, JSON_RESPONSE_FORMAT);
+	cmd_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_INLINE_PAIRS, JSON_RESPONSE_FORMAT);
 
 	mp_flush_planner(); 						// should be stopped, but in case of switch closure
 	cm_set_coord_system(hm.saved_coord_system);	// restore to work coordinate system
@@ -208,7 +219,7 @@ static uint8_t _homing_error_exit(int8_t axis)
 	cm_set_feed_rate(hm.saved_feed_rate);
 	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;
-	return (TG_HOMING_CYCLE_FAILED);		// homing state remains HOMING_NOT_HOMED
+	return (STAT_HOMING_CYCLE_FAILED);		// homing state remains HOMING_NOT_HOMED
 }
 
 /* Homing axis moves - these execute in sequence for each axis
@@ -222,7 +233,7 @@ static uint8_t _homing_error_exit(int8_t axis)
  *	_homing_axis_move()			- helper that actually executes the above moves
  */
 
-static uint8_t _homing_axis_start(int8_t axis)
+static stat_t _homing_axis_start(int8_t axis)
 {
 	// get the first or next axis
 	if ((axis = _get_next_axis(axis)) < 0) { 				// axes are done or error
@@ -231,7 +242,8 @@ static uint8_t _homing_axis_start(int8_t axis)
 		} else if (axis == -2) { 							// -2 is error
 			cm_set_units_mode(hm.saved_units_mode);
 			cm_set_distance_mode(hm.saved_distance_mode);
-			cm.cycle_state = CYCLE_STARTED;
+//			cm.cycle_state = CYCLE_MACHINING;
+			cm.cycle_state = CYCLE_OFF;
 			cm_cycle_end();
 			return (_homing_error_exit(-2));
 		}
@@ -286,7 +298,7 @@ static uint8_t _homing_axis_start(int8_t axis)
 
 // Handle an initial switch closure by backing off switches
 // NOTE: Relies on independent switches per axis (not shared)
-static uint8_t _homing_axis_clear(int8_t axis)				// first clear move
+static stat_t _homing_axis_clear(int8_t axis)				// first clear move
 {
 	int8_t homing = gpio_read_switch(hm.homing_switch);
 	int8_t limit = gpio_read_switch(hm.limit_switch);
@@ -302,38 +314,38 @@ static uint8_t _homing_axis_clear(int8_t axis)				// first clear move
  	return (_set_hm_func(_homing_axis_backoff_limit));		// will backoff limit switch some more
 }
 
-static uint8_t _homing_axis_backoff_home(int8_t axis)		// back off cleared homing switch
+static stat_t _homing_axis_backoff_home(int8_t axis)		// back off cleared homing switch
 {
 	_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
     return (_set_hm_func(_homing_axis_search));
 }
 
-static uint8_t _homing_axis_backoff_limit(int8_t axis)		// back off cleared limit switch
+static stat_t _homing_axis_backoff_limit(int8_t axis)		// back off cleared limit switch
 {
 	_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
     return (_set_hm_func(_homing_axis_search));
 }
 
-static uint8_t _homing_axis_search(int8_t axis)				// start the search
+static stat_t _homing_axis_search(int8_t axis)				// start the search
 {
 	cfg.a[axis].jerk_max = cfg.a[axis].jerk_homing;			// use the homing jerk for search onward
 	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
     return (_set_hm_func(_homing_axis_latch));
 }
 
-static uint8_t _homing_axis_latch(int8_t axis)				// latch to switch open
+static stat_t _homing_axis_latch(int8_t axis)				// latch to switch open
 {
 	_homing_axis_move(axis, hm.latch_backoff, hm.latch_velocity);    
 	return (_set_hm_func(_homing_axis_zero_backoff)); 
 }
 
-static uint8_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero position
+static stat_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero position
 {
 	_homing_axis_move(axis, hm.zero_backoff, hm.search_velocity);
 	return (_set_hm_func(_homing_axis_set_zero));
 }
 
-static uint8_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
+static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 {
 	cm_set_machine_axis_position(axis, 0);
 	cfg.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
@@ -341,18 +353,19 @@ static uint8_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 	return (_set_hm_func(_homing_axis_start));
 }
 
-static uint8_t _homing_axis_move(int8_t axis, double target, double velocity)
+static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 {
-	double flags[] = {1,1,1,1,1,1};
+	float flags[] = {1,1,1,1,1,1};
 	set_vector_by_axis(target, axis);
 	cm_set_feed_rate(velocity);
-	mp_flush_planner();
+	cm_request_queue_flush();
+	cm_request_cycle_start();
 	ritorno(cm_straight_feed(vector, flags));
-	return (TG_EAGAIN);
+	return (STAT_EAGAIN);
 }
 
 /* _run_homing_dual_axis() - kernal routine for running homing on a dual axis */
-//static uint8_t _run_homing_dual_axis(int8_t axis) { return (TG_OK);}
+//static stat_t _run_homing_dual_axis(int8_t axis) { return (STAT_OK);}
 
 /**** HELPERS ****************************************************************/
 /*
@@ -362,7 +375,7 @@ static uint8_t _homing_axis_move(int8_t axis, double target, double velocity)
 uint8_t _set_hm_func(uint8_t (*func)(int8_t axis))
 {
 	hm.func = func;
-	return (TG_EAGAIN);
+	return (STAT_EAGAIN);
 }
 
 /*
@@ -381,33 +394,33 @@ uint8_t _set_hm_func(uint8_t (*func)(int8_t axis))
 int8_t _get_next_axis(int8_t axis)
 {
 	if (axis == -1) {	// inelegant brute force solution
-		if (gf.target[Z] == true) return (Z);
-		if (gf.target[X] == true) return (X);
-		if (gf.target[Y] == true) return (Y);
-		if (gf.target[A] == true) return (A);
-//		if (gf.target[B] == true) return (B);
-//		if (gf.target[C] == true) return (C);
+		if (gf.target[AXIS_Z] == true) return (AXIS_Z);
+		if (gf.target[AXIS_X] == true) return (AXIS_X);
+		if (gf.target[AXIS_Y] == true) return (AXIS_Y);
+		if (gf.target[AXIS_A] == true) return (AXIS_A);
+//		if (gf.target[AXIS_B] == true) return (AXIS_B);
+//		if (gf.target[AXIS_C] == true) return (AXIS_C);
 		return (-2);	// error
-	} else if (axis == Z) {
-		if (gf.target[X] == true) return (X);
-		if (gf.target[Y] == true) return (Y);
-		if (gf.target[A] == true) return (A);
-//		if (gf.target[B] == true) return (B);
-//		if (gf.target[C] == true) return (C);
-	} else if (axis == X) {
-		if (gf.target[Y] == true) return (Y);
-		if (gf.target[A] == true) return (A);
-//		if (gf.target[B] == true) return (B);
-//		if (gf.target[C] == true) return (C);
-	} else if (axis == Y) {
-		if (gf.target[A] == true) return (A);
-//		if (gf.target[B] == true) return (B);
-//		if (gf.target[C] == true) return (C);
-//	} else if (axis == A) {
-//		if (gf.target[B] == true) return (B);
-//		if (gf.target[C] == true) return (C);
-//	} else if (axis == B) {
-//		if (gf.target[C] == true) return (C);
+	} else if (axis == AXIS_Z) {
+		if (gf.target[AXIS_X] == true) return (AXIS_X);
+		if (gf.target[AXIS_Y] == true) return (AXIS_Y);
+		if (gf.target[AXIS_A] == true) return (AXIS_A);
+//		if (gf.target[AXIS_B] == true) return (AXIS_B);
+//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+	} else if (axis == AXIS_X) {
+		if (gf.target[AXIS_Y] == true) return (AXIS_Y);
+		if (gf.target[AXIS_A] == true) return (AXIS_A);
+//		if (gf.target[AXIS_B] == true) return (AXIS_B);
+//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+	} else if (axis == AXIS_Y) {
+		if (gf.target[AXIS_A] == true) return (AXIS_A);
+//		if (gf.target[AXIS_B] == true) return (AXIS_B);
+//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+//	} else if (axis == AXIS_A) {
+//		if (gf.target[AXIS_B] == true) return (AXIS_B);
+//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+//	} else if (axis == AXIS_B) {
+//		if (gf.target[AXIS_C] == true) return (AXIS_C);
 	}
 	return (-1);	// done
 }
@@ -462,6 +475,6 @@ int8_t _get_next_axes(int8_t axis)
 	}
 
 	// Got a valid axis. Find out if it's a dual
-	return (TG_OK);
+	return (STAT_OK);
 }
 */

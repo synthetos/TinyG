@@ -1,34 +1,22 @@
 /*
- * xio_usb.c	- FTDI USB device driver for xmega family
- * 				- works with avr-gcc stdio library
+ * xio_usb.c - FTDI USB device driver for xmega family
+ * 			 - works with avr-gcc stdio library
  *
  * Part of TinyG project
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
- *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-/*------
- *	This version implements signal character capture at the ISR level
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include <stdio.h>						// precursor for xio.h
@@ -39,6 +27,12 @@
 
 #include "xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
+
+// application specific stuff that's littered into the USB handler
+#include "../tinyg.h"
+#include "../network.h"
+#include "../controller.h"
+#include "../canonical_machine.h"		// trapped characters communicate directly with the canonical machine
 
 // Fast accessors
 #define USB ds[XIO_DEV_USB]
@@ -87,20 +81,40 @@ int xio_putc_usb(const char c, FILE *stream)
 
 ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
-	if (USBu.fc_char == NUL) {						// normal char TX path
-		if (USBu.tx_buf_head != USBu.tx_buf_tail) {	// buffer has data
-			advance_buffer(USBu.tx_buf_tail, TX_BUFFER_SIZE);
-			USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];
-		} else {
-			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;	// force another interrupt
-		}
-	} else {										// need to send XON or XOFF
-	// comment out the XON/XOFF indicator for efficient ISR handling
-	//	if (USBu.fc_char == XOFF) { gpio_set_bit_on(0x01);// turn on XOFF LED
-	//	} else { gpio_set_bit_off(0x01);}				// turn off XOFF LED
-		USBu.usart->DATA = USBu.fc_char;
-		USBu.fc_char = NUL;
+	// If the CTS pin (FTDI's RTS) is HIGH, then we cannot send anything, so exit
+	if ((USBu.port->IN & USB_CTS_bm)) {
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// force another TX interrupt
+		return;
 	}
+
+	// Send an RX-side XON or XOFF character if queued
+	if (USBu.fc_char_rx != NUL) {					// an XON/ of XOFF needs to be sent
+		USBu.usart->DATA = USBu.fc_char_rx;			// send the XON/XOFF char and exit
+		USBu.fc_char_rx = NUL;
+		return;
+	}
+
+	// Halt transmission while in TX-side XOFF
+	if (USBu.fc_state_tx == FC_IN_XOFF) {
+		return;
+	}
+
+	// Otherwise process normal TX transmission
+	if (USBu.tx_buf_head != USBu.tx_buf_tail) {		// buffer has data
+		advance_buffer(USBu.tx_buf_tail, TX_BUFFER_SIZE);
+		USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];
+	} else {
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// force another interrupt
+	}
+} 
+
+/*
+ * Pin Change (edge-detect) interrupt for CTS pin.
+ */
+
+ISR(USB_CTS_ISR_vect)	
+{
+	USBu.usart->CTRLA = CTRLA_RXON_TXON;		// force another interrupt
 }
 
 /* 
@@ -130,27 +144,38 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 {
 	char c = USBu.usart->DATA;					// can only read DATA once
 
-	// trap signals - do not insert character into RX queue
+	if (tg.network_mode == NETWORK_MASTER) {	// forward character if you are a master
+		net_forward(c);
+	}
+	// trap async commands - do not insert character into RX queue
 	if (c == CHAR_RESET) {	 					// trap Kill signal
-		USB.signal = XIO_SIG_RESET;				// set signal value
-		sig_reset();							// call sig handler
+		tg_request_reset();
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal
-		USB.signal = XIO_SIG_FEEDHOLD;
-		sig_feedhold();
+		cm_request_feedhold();
+		return;
+	}
+	if (c == CHAR_QUEUE_FLUSH) {				// trap queue flush signal
+		cm_request_queue_flush();
 		return;
 	}
 	if (c == CHAR_CYCLE_START) {				// trap cycle start signal
-		USB.signal = XIO_SIG_CYCLE_START;
-		sig_cycle_start();
+		cm_request_cycle_start();
 		return;
 	}
-//	if (c == CHAR_BOOTLOADER) {					// trap ESC to start boot loader
-//		USB.signal = XIO_SIG_BOOTLOADER;
-//		sig_request_bootloader();
-//		return;
-//	}
+	if (USB.flag_xoff) {
+		if (c == XOFF) {						// trap incoming XON/XOFF signals
+			USBu.fc_state_tx = FC_IN_XOFF;
+			return;
+		}
+		if (c == XON) {
+			USBu.fc_state_tx = FC_IN_XON;
+			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;// force a TX interrupt
+			return;
+		}
+	}
+
 	// filter out CRs and LFs if they are to be ignored
 	if ((c == CR) && (USB.flag_ignorecr)) return;
 	if ((c == LF) && (USB.flag_ignorelf)) return;
@@ -163,7 +188,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		if ((USB.flag_xoff) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
 			xio_xoff_usart(&USBu);
 		}
-	} else { 									// buffer-full - toss the incoming character
+	} else { 											// buffer-full - toss the incoming character
 		if ((++USBu.rx_buf_head) > RX_BUFFER_SIZE-1) {	// reset the head
 			USBu.rx_buf_count = RX_BUFFER_SIZE-1;		// reset count for good measure
 			USBu.rx_buf_head = 1;
@@ -179,4 +204,20 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 buffer_t xio_get_usb_rx_free(void)
 {
 	return (RX_BUFFER_SIZE - xio_get_rx_bufcount_usart(&USBu));
+}
+
+/*
+ * xio_reset_usb_rx_buffers() - clears the USB RX buffer
+ */
+void xio_reset_usb_rx_buffers(void)
+{
+	// reset xio_gets() buffer
+	USB.len = 0;
+	USB.flag_in_line = false;
+
+	// reset interrupt circular buffer
+	USBu.rx_buf_head = 1;		// can't use location 0 in circular buffer
+	USBu.rx_buf_tail = 1;
+	USBu.tx_buf_head = 1;
+	USBu.tx_buf_tail = 1;
 }

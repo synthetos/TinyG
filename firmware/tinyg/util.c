@@ -4,26 +4,25 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* util.c/.h contains a dog's breakfast of supporting functions that are 
  * not specific to tinyg: including:
@@ -58,49 +57,62 @@
  * set_vector_by_axis()		- load a single value into a zero vector
  */
 
-inline void copy_vector(double dest[], const double src[], uint8_t length) 
+void copy_vector(float dst[], const float src[], uint8_t length) 
 {
 	for (uint8_t i=0; i<length; i++) {
-		dest[i] = src[i];
+		dst[i] = src[i];
 	}
 }
 
-inline void copy_axis_vector(double dest[], const double src[]) 
+void copy_axis_vector(float dst[], const float src[]) 
 {
-	memcpy(dest, src, sizeof(double)*AXES);
+	memcpy(dst, src, sizeof(float)*AXES);
 }
 
-double get_axis_vector_length(const double a[], const double b[]) 
+uint8_t vector_equal(const float a[], const float b[]) 
 {
-	return (sqrt(square(a[X] - b[X]) +
-				 square(a[Y] - b[Y]) +
-				 square(a[Z] - b[Z]) +
-				 square(a[A] - b[A]) +
-				 square(a[B] - b[B]) +
-				 square(a[C] - b[C])));
+	if ((fp_EQ(a[AXIS_X], b[AXIS_X])) &&
+	 	(fp_EQ(a[AXIS_Y], b[AXIS_Y])) &&
+	 	(fp_EQ(a[AXIS_Z], b[AXIS_Z])) &&
+	 	(fp_EQ(a[AXIS_A], b[AXIS_A])) &&
+	 	(fp_EQ(a[AXIS_B], b[AXIS_B])) &&
+	 	(fp_EQ(a[AXIS_C], b[AXIS_C]))) {
+		return (true);
+	}
+	return (false);
 }
 
-double *set_vector(double x, double y, double z, double a, double b, double c)
+float get_axis_vector_length(const float a[], const float b[]) 
 {
-	vector[X] = x;
-	vector[Y] = y;
-	vector[Z] = z;
-	vector[A] = a;
-	vector[B] = b;
-	vector[C] = c;
+	return (sqrt(square(a[AXIS_X] - b[AXIS_X]) +
+				 square(a[AXIS_Y] - b[AXIS_Y]) +
+				 square(a[AXIS_Z] - b[AXIS_Z]) +
+				 square(a[AXIS_A] - b[AXIS_A]) +
+				 square(a[AXIS_B] - b[AXIS_B]) +
+				 square(a[AXIS_C] - b[AXIS_C])));
+}
+
+float *set_vector(float x, float y, float z, float a, float b, float c)
+{
+	vector[AXIS_X] = x;
+	vector[AXIS_Y] = y;
+	vector[AXIS_Z] = z;
+	vector[AXIS_A] = a;
+	vector[AXIS_B] = b;
+	vector[AXIS_C] = c;
 	return (vector);
 }
 
-double *set_vector_by_axis(double value, uint8_t axis)
+float *set_vector_by_axis(float value, uint8_t axis)
 {
 	clear_vector(vector);
 	switch (axis) {
-		case (X): vector[X] = value; break;
-		case (Y): vector[Y] = value; break;
-		case (Z): vector[Z] = value; break;
-		case (A): vector[A] = value; break;
-		case (B): vector[B] = value; break;
-		case (C): vector[C] = value;
+		case (AXIS_X): vector[AXIS_X] = value; break;
+		case (AXIS_Y): vector[AXIS_Y] = value; break;
+		case (AXIS_Z): vector[AXIS_Z] = value; break;
+		case (AXIS_A): vector[AXIS_A] = value; break;
+		case (AXIS_B): vector[AXIS_B] = value; break;
+		case (AXIS_C): vector[AXIS_C] = value;
 	}
 	return (vector);
 }
@@ -122,34 +134,34 @@ double *set_vector_by_axis(double value, uint8_t axis)
  *	#define max4(a,b,c,d) (max(max(a,b),max(c,d)))
  */
 
-inline double min3(double x1, double x2, double x3)
+inline float min3(float x1, float x2, float x3)
 {
-	double min = x1;
+	float min = x1;
 	if (x2 < min) { min = x2;} 
 	if (x3 < min) { return (x3);} 
 	return (min);
 }
 
-inline double min4(double x1, double x2, double x3, double x4)
+inline float min4(float x1, float x2, float x3, float x4)
 {
-	double min = x1;
+	float min = x1;
 	if (x2 < min) { min = x2;} 
 	if (x3 < min) { min = x3;} 
 	if (x4 < min) { return (x4);}
 	return (min);
 }
 
-inline double max3(double x1, double x2, double x3)
+inline float max3(float x1, float x2, float x3)
 {
-	double max = x1;
+	float max = x1;
 	if (x2 > max) { max = x2;} 
 	if (x3 > max) { return (x3);} 
 	return (max);
 }
 
-inline double max4(double x1, double x2, double x3, double x4)
+inline float max4(float x1, float x2, float x3, float x4)
 {
-	double max = x1;
+	float max = x1;
 	if (x2 > max) { max = x2;} 
 	if (x3 > max) { max = x3;} 
 	if (x4 > max) { return (x4);}
@@ -169,22 +181,22 @@ uint8_t isnumber(char c)
 }
 
 /* 
- * read_double() - read a double from a normalized char array
+ * read_float() - read a float from a normalized char array
  *
  *	buf			normalized char array (line)
  *	i			char array index must point to start of number
- *	double_ptr	pointer to double to write value into
+ *	float_ptr	pointer to float to write value into
  *
  *	The line is normalized when it is all caps, has no white space,
  *	no non-alphnumeric characters, and no newline or CR.
  */
 
-uint8_t read_double(char *buf, uint8_t *i, double *double_ptr) 
+uint8_t read_float(char *buf, uint8_t *i, float *float_ptr) 
 {
 	char *start = buf + *i;
 	char *end;
   
-	*double_ptr = strtod(start, &end);
+	*float_ptr = strtod(start, &end);
 	if(end == start) { 
 		return(false); 
 	}

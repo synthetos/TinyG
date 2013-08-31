@@ -4,26 +4,17 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
- *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* XIO devices are compatible with avr-gcc stdio, so formatted printing 
  * is supported. To use this sub-system outside of TinyG you may need 
@@ -137,14 +128,14 @@ typedef void (*x_flow_t)(xioDev_t *d);
 #include "xio_file.h"
 #include "xio_usart.h"
 #include "xio_spi.h"
-#include "xio_signals.h"
+//#include "xio_signals.h"
 
 // Static structure allocations
 xioDev_t 		ds[XIO_DEV_COUNT];			// allocate top-level dev structs
 xioUsart_t 		us[XIO_DEV_USART_COUNT];	// USART extended IO structs
 xioSpi_t 		spi[XIO_DEV_SPI_COUNT];		// SPI extended IO structs
 xioFile_t 		fs[XIO_DEV_FILE_COUNT];		// FILE extended IO structs
-xioSignals_t	sig;						// signal flags
+//xioSignals_t	sig;						// signal flags
 extern struct controllerSingleton tg;	// needed by init() for default source
 
 /*************************************************************************
@@ -226,6 +217,7 @@ enum xioSignals {
 	XIO_SIG_RESET,			// cancel operation immediately
 	XIO_SIG_FEEDHOLD,		// pause operation
 	XIO_SIG_CYCLE_START,	// start or resume operation
+	XIO_SIG_QUEUE_FLUSH,	// flush planner queue
 	XIO_SIG_DELETE,			// backspace or delete character (BS, DEL)
 	XIO_SIG_BELL,			// BELL character (BEL, ^g)
 	XIO_SIG_BOOTLOADER		// ESC character - start bootloader
@@ -245,8 +237,10 @@ enum xioSignals {
 #define CR	(char)0x0D		// ^m - carriage return
 #define XON (char)0x11		// ^q - DC1, XON, resume
 #define XOFF (char)0x13		// ^s - DC3, XOFF, pause
+#define SYN (char)0x16		// ^v - SYN - Used for queue flush
 #define CAN (char)0x18		// ^x - Cancel, abort
 #define ESC (char)0x1B		// ^[ - ESC(ape)
+//#define SP  (char)0x20		// ' '  Space character		// defined externally
 #define DEL (char)0x7F		//  DEL(ete)
 
 #define Q_EMPTY (char)0xFF	// signal no character
@@ -256,14 +250,15 @@ enum xioSignals {
 #define CHAR_RESET CAN
 #define CHAR_FEEDHOLD (char)'!'
 #define CHAR_CYCLE_START (char)'~'
-#define CHAR_BOOTLOADER (char)ESC
+#define CHAR_QUEUE_FLUSH (char)'%'
+//#define CHAR_BOOTLOADER ESC
 
 /* XIO return codes
- * These codes are the "inner nest" for the TG_ return codes. 
+ * These codes are the "inner nest" for the STAT_ return codes. 
  * The first N TG codes correspond directly to these codes.
  * This eases using XIO by itself (without tinyg) and simplifes using
  * tinyg codes with no mapping when used together. This comes at the cost 
- * of making sure these lists are aligned. TG_should be based on this list.
+ * of making sure these lists are aligned. STAT_should be based on this list.
  */
 
 enum xioCodes {
@@ -332,28 +327,28 @@ enum xioCodes {
     0x1F    US      ctrl-_
 
     0x20    <space>             Gcode blocks
-    0x21    !       excl point  TinyG feedhold
+    0x21    !       excl point  TinyG feedhold (trapped and removed from serial stream)
     0x22    "       quote       JSON notation
-    0x23    #       number      Gcode parameter prefix
+    0x23    #       number      Gcode parameter prefix; JSON topic prefix character
     0x24    $       dollar      TinyG / grbl out-of-cycle settings prefix
     0x25    &       ampersand   universal symbol for logical AND (not used here)    
-    0x26    %       percent		
+    0x26    %       percent		Queue Flush character (trapped and removed from serial stream)
     0x27    '       single quote	
     0x28    (       open paren  Gcode comments
     0x29    )       close paren Gcode comments
-    0x2A    *       asterisk    Gcode expressions
+    0x2A    *       asterisk    Gcode expressions; JSON wildcard character
     0x2B    +       plus        Gcode numbers, parameters and expressions
     0x2C    ,       comma       JSON notation
     0x2D    -       minus       Gcode numbers, parameters and expressions
     0x2E    .       period      Gcode numbers, parameters and expressions
     0x2F    /       fwd slash   Gcode expressions & block delete char
     0x3A    :       colon       JSON notation
-    0x3B    ;       semicolon
+    0x3B    ;       semicolon	Gcode comemnt delimiter (alternate)
     0x3C    <       less than   Gcode expressions
     0x3D    =       equals      Gcode expressions
     0x3E    >       greaterthan Gcode expressions
     0x3F    ?       question mk TinyG / grbl query
-    0x40    @       at symbol	
+    0x40    @       at symbol	JSON address prefix character
 
     0x5B    [       open bracketGcode expressions
     0x5C    \       backslash   JSON notation (escape)
@@ -365,11 +360,11 @@ enum xioCodes {
     0x7B    {       open curly  JSON notation
     0x7C    |       pipe        universal symbol for logical OR (not used here)
     0x7D    }       close curly JSON notation
-    0x7E    ~       tilde       TinyG cycle start
+    0x7E    ~       tilde       TinyG cycle start (trapped and removed from serial stream)
     0x7F    DEL	
 */
 
-#define __UNIT_TEST_XIO			// include and run xio unit tests
+//#define __UNIT_TEST_XIO			// include and run xio unit tests
 #ifdef __UNIT_TEST_XIO
 void xio_unit_tests(void);
 #define	XIO_UNITS xio_unit_tests();

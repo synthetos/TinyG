@@ -4,26 +4,25 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* 	This module is really nothing mre than a placeholder at this time.
  * 	"Networking" refers to a planned RS485 broadcast network to support
@@ -35,80 +34,84 @@
 #include <stdio.h>					// precursor for xio.h
 #include <stdbool.h>				// true and false
 #include <avr/pgmspace.h>			// precursor for xio.h
+#include <util/delay.h>				// for tests
 
-#include "xio/xio.h"
+#include "tinyg.h"
+#include "network.h"
+#include "controller.h"
 #include "gpio.h"
-//#include "controller.h"
+#include "system.h"
+#include "xio/xio.h"
 
 /*
  * Local Scope Functions and Data
  */
 
-static char _nextchar(char c);
-
 /*
  * net_init()
  */
-
 void net_init() 
 {
-	return;
+	// re-point IO if in slave mode
+	if (tg.network_mode == NETWORK_SLAVE) {
+		tg_init(XIO_DEV_RS485, XIO_DEV_USB, XIO_DEV_USB);
+		tg_set_secondary_source(XIO_DEV_USB);
+	}
+	xio_enable_rs485_rx();		// needed for clean start for RS-485;
+}
+
+void net_forward(unsigned char c)
+{
+	xio_putc(XIO_DEV_RS485, c);	// write to RS485 port
 }
 
 /* 
- * tg_repeater() - top-level controller.
+ * net_test_rxtx() - test transmission from master to slave
+ * net_test_loopback() - test transmission from master to slave and looping back
  */
 
-void tg_repeater()
+uint8_t net_test_rxtx(uint8_t c) 
 {
-//	uint8_t full_duplex = false;
-	uint8_t full_duplex = true;
-	unsigned char tx = 'Z';
-	unsigned char rx;
+	int d;
 
-	while (true) {
-		tx = _nextchar(tx);
-		xio_putc(XIO_DEV_RS485, tx);	// write to RS485 port
-		if (full_duplex) {
-			while ((rx = xio_getc(XIO_DEV_RS485)) == -1);	// blocking read
-			xio_putc(XIO_DEV_USB, rx);	// echo RX to USB port
-		} else {
-			xio_putc(XIO_DEV_USB, tx);	// write TX to USB port
-		}	
-//		gpio_toggle_port(1);
-//		_delay_ms(10);
+	// master operation
+	if (tg.network_mode == NETWORK_MASTER) {
+		if ((c < 0x20) || (c >= 0x7F)) { c = 0x20; }
+		c++;
+		xio_putc(XIO_DEV_RS485, c);			// write to RS485 port
+		xio_putc(XIO_DEV_USB, c);			// write to USB port
+		_delay_ms(2);
+
+	// slave operation
+	} else {
+		if ((d = xio_getc(XIO_DEV_RS485)) != _FDEV_ERR) {
+			xio_putc(XIO_DEV_USB, d);
+		}
 	}
+	return (c);
 }
 
-/* 
- * tg_receiver()
- */
-
-void tg_receiver()
+uint8_t net_test_loopback(uint8_t c)
 {
-//	tg_controller();	// this node executes gcode blocks received via RS485
-
-//	int	getc_code = 0;
-	int rx;
-
-	xio_queue_RX_string_usart(XIO_DEV_RS485, "Z");		// simulate an RX char
-
-	while (true) {
-		while ((rx = xio_getc(XIO_DEV_RS485)) == -1);
-		xio_putc(XIO_DEV_RS485, rx);	// write to RS485 port
-//		xio_putc_rs485(rx, fdev_rs485);	// alternate form of above
-//		gpio_toggle_port(1);
+	if (tg.network_mode == NETWORK_MASTER) {
+		// send a character
+		if ((c < 0x20) || (c >= 0x7F)) { c = 0x20; }
+		c++;
+		xio_putc(XIO_DEV_RS485, c);			// write to RS485 port
+		
+		// wait for loopback character
+		while (true) {
+			if ((c = xio_getc(XIO_DEV_RS485)) != _FDEV_ERR) {
+				xio_putc(XIO_DEV_USB, c);			// write to USB port
+			}
+		}
+	} else {
+		if ((c = xio_getc(XIO_DEV_RS485)) != _FDEV_ERR) {
+			xio_putc(XIO_DEV_RS485, c);			// write back to master
+			xio_putc(XIO_DEV_USB, c);			// write to slave USB
+		}
 	}
+	_delay_ms(2);
+	return (c);
 }
 
-static char _nextchar(char c)
-{
-//	uint8_t cycle = false;
-	uint8_t cycle = true;
-	char n = c;
-
-	if ((cycle) && ((n = ++c) > 'z')) {
-		n = '0';
-	}
-	return (n);
-}

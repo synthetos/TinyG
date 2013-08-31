@@ -4,26 +4,25 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* See the wiki for module details and additional information:
  *	 http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info
@@ -33,6 +32,7 @@
 #include <string.h>
 #include <avr/pgmspace.h>		// precursor for xio.h
 #include <avr/interrupt.h>
+#include <avr/wdt.h>			// used for software reset
 
 #include "tinyg.h"				// #1 unfortunately, there are some dependencies
 #include "config.h"				// #2
@@ -55,35 +55,34 @@
 
 // local helpers
 static void _controller_HSM(void);
-static uint8_t _dispatch(void);
-static uint8_t _reset_handler(void);
-static uint8_t _bootloader_handler(void);
-static uint8_t _limit_switch_handler(void);
-static uint8_t _shutdown_idler(void);
-static uint8_t _system_assertions(void);
-static uint8_t _feedhold_handler(void);
-static uint8_t _cycle_start_handler(void);
-static uint8_t _sync_to_tx_buffer(void);
-static uint8_t _sync_to_planner(void);
+static stat_t _dispatch(void);
+static stat_t _reset_handler(void);
+static stat_t _bootloader_handler(void);
+static stat_t _limit_switch_handler(void);
+static stat_t _alarm_idler(void);
+static stat_t _system_assertions(void);
+static stat_t _sync_to_tx_buffer(void);
+static stat_t _sync_to_planner(void);
 
 /*
  * tg_init() - controller init
  */
 
-void tg_init(uint8_t default_src) 
+void tg_init(uint8_t std_in, uint8_t std_out, uint8_t std_err) 
 {
-	cfg.fw_build = TINYG_BUILD_NUMBER;
-	cfg.fw_version = TINYG_VERSION_NUMBER;
-	cfg.hw_version = TINYG_HARDWARE_VERSION;
-
 	tg.magic_start = MAGICNUM;
 	tg.magic_end = MAGICNUM;
+	tg.fw_build = TINYG_FIRMWARE_BUILD;
+	tg.fw_version = TINYG_FIRMWARE_VERSION;	// NB: HW version is set from EEPROM
 
-	tg.default_src = default_src;
-	xio_set_stdin(tg.default_src);
-	xio_set_stdout(tg.default_src);
-	xio_set_stderr(STD_ERROR);
-	tg_set_active_source(tg.default_src);	// set initial active source
+	tg.reset_requested = false;
+	tg.bootloader_requested = false;
+
+	xio_set_stdin(std_in);
+	xio_set_stdout(std_out);
+	xio_set_stderr(std_err);
+	tg.default_src = std_in;
+	tg_set_primary_source(tg.default_src);	// set primary source
 }
 
 /* 
@@ -98,11 +97,11 @@ void tg_init(uint8_t default_src)
  * and are called even if they are not currently active. 
  *
  * The DISPATCH macro calls the function and returns to the controller parent 
- * if not finished (TG_EAGAIN), preventing later routines from running 
+ * if not finished (STAT_EAGAIN), preventing later routines from running 
  * (they remain blocked). Any other condition - OK or ERR - drops through 
  * and runs the next routine in the list.
  *
- * A routine that had no action (i.e. is OFF or idle) should return TG_NOOP
+ * A routine that had no action (i.e. is OFF or idle) should return STAT_NOOP
  *
  * Useful reference on state machines:
  * http://johnsantic.com/comp/state.html, "Writing Efficient State Machines in C"
@@ -115,24 +114,33 @@ void tg_controller()
 	}
 }
 
-#define	DISPATCH(func) if (func == TG_EAGAIN) return; 
+#define	DISPATCH(func) if (func == STAT_EAGAIN) return; 
 static void _controller_HSM()
 {
+//----- ISRs. These should be considered the highest priority scheduler functions ----//
+/*	
+ *	HI	Stepper DDA pulse generation		// see stepper.h
+ *	HI	Stepper load routine SW interrupt	// see stepper.h
+ *	HI	Dwell timer counter 				// see stepper.h
+ *	MED	GPIO1 switch port - limits / homing	// see gpio.h
+ *  MED	Serial RX for USB					// see xio_usart.h
+ *  LO	Segment execution SW interrupt		// see stepper.h
+ *  LO	Serial TX for USB & RS-485			// see xio_usart.h
+ *	LO	Real time clock interrupt			// see xmega_rtc.h
+ */
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
 											// Order is important:
-	DISPATCH(_reset_handler());				// 1. software reset received
-	DISPATCH(_bootloader_handler());		// 2. received ESC char to start bootloader
+	DISPATCH(_reset_handler());				// 1. received software reset request
+	DISPATCH(_bootloader_handler());		// 2. received bootloader request
 	DISPATCH(_limit_switch_handler());		// 3. limit switch has been thrown
-	DISPATCH(_shutdown_idler());			// 4. idle in shutdown state
+	DISPATCH(_alarm_idler());				// 4. idle in alarm state
 	DISPATCH(_system_assertions());			// 5. system integrity assertions
-	DISPATCH(_feedhold_handler());			// 6. feedhold requested
-	DISPATCH(_cycle_start_handler());		// 7. cycle start requested
+	DISPATCH(cm_feedhold_sequencing_callback());
+	DISPATCH(mp_plan_hold_callback());		// plan a feedhold from line runtime
 
 //----- planner hierarchy for gcode and cycles -------------------------//
 	DISPATCH(rpt_status_report_callback());	// conditionally send status report
 	DISPATCH(rpt_queue_report_callback());	// conditionally send queue report
-	DISPATCH(mp_plan_hold_callback());		// plan a feedhold
-	DISPATCH(mp_end_hold_callback());		// end a feedhold
 	DISPATCH(ar_arc_callback());			// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());			// G28.2 continuation
 
@@ -152,59 +160,71 @@ static void _controller_HSM()
  *	Also responsible for prompts and for flow control 
  */
 
-static uint8_t _dispatch()
+static stat_t _dispatch()
 {
 	uint8_t status;
 
 	// read input line or return if not a completed line
 	// xio_gets() is a non-blocking workalike of fgets()
-	if ((status = xio_gets(tg.src, tg.in_buf, sizeof(tg.in_buf))) != TG_OK) {
-		if (status == TG_EOF) {					// EOF can come from file devices only
-			fprintf_P(stderr, PSTR("End of command file\n"));
+	while (true) {
+		if ((status = xio_gets(tg.primary_src, tg.in_buf, sizeof(tg.in_buf))) == STAT_OK) {
+			tg.bufp = tg.in_buf;
+			break;
+		}
+		// handle end-of-file from file devices
+		if (status == STAT_EOF) {					// EOF can come from file devices only
+			if (cfg.comm_mode == TEXT_MODE) {
+				fprintf_P(stderr, PSTR("End of command file\n"));
+			} else {
+				rpt_exception(STAT_EOF, 0);		// not really an exception
+			}
 			tg_reset_source();					// reset to default source
 		}
-		// Note that TG_EAGAIN, TG_NOOP etc. will just flow through
-		return (status);
+		return (status);						// Note: STAT_EAGAIN, errors, etc. will drop through
 	}
-	tg.linelen = strlen(tg.in_buf)+1;
-	strncpy(tg.saved_buf, tg.in_buf, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
+	tg.linelen = strlen(tg.in_buf)+1;					// linelen only tracks primary input
+	strncpy(tg.saved_buf, tg.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 
 	// dispatch the new text line
-	switch (toupper(tg.in_buf[0])) {
+	switch (toupper(*tg.bufp)) {				// first char
+
+//		case '!': { cm_request_feedhold(); break; }		// include for diagnostics
+//		case '@': { cm_request_queue_flush(); break; }
+//		case '~': { cm_request_cycle_start(); break; }
 
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {
-				tg_text_response(TG_OK, tg.saved_buf);
+				tg_text_response(STAT_OK, tg.saved_buf);
 			}
 			break;
 		}
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TEXT_MODE;
 			print_general_help();
-			tg_text_response(TG_OK, tg.in_buf);
+			tg_text_response(STAT_OK, tg.bufp);
 			break;
 		}
 		case '$': case '?':{ 					// text-mode configs
 			cfg.comm_mode = TEXT_MODE;
-			tg_text_response(cfg_text_parser(tg.in_buf), tg.saved_buf);
+			tg_text_response(cfg_text_parser(tg.bufp), tg.saved_buf);
 			break;
 		}
 		case '{': { 							// JSON input
 			cfg.comm_mode = JSON_MODE;
-			js_json_parser(tg.in_buf);
+			js_json_parser(tg.bufp);
 			break;
 		}
 		default: {								// anything else must be Gcode
 			if (cfg.comm_mode == JSON_MODE) {
-				strncpy(tg.out_buf, tg.in_buf, INPUT_BUFFER_LEN -8);	// use out_buf as temp
-				sprintf(tg.in_buf,"{\"gc\":\"%s\"}\n", tg.out_buf);		// '-8' is used for JSON chars
-				js_json_parser(tg.in_buf);
+				strncpy(tg.out_buf, tg.bufp, INPUT_BUFFER_LEN -8);	// use out_buf as temp
+				sprintf(tg.bufp,"{\"gc\":\"%s\"}\n", tg.out_buf);
+				js_json_parser(tg.bufp);
 			} else {
-				tg_text_response(gc_gcode_parser(tg.in_buf), tg.saved_buf);
+				tg_text_response(gc_gcode_parser(tg.bufp), tg.saved_buf);
 			}
 		}
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /************************************************************************************
@@ -220,12 +240,13 @@ void tg_text_response(const uint8_t status, const char *buf)
 	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
 
 	const char *units;								// becomes pointer to progmem string
-	if (cm_get_units_mode() != INCHES) { 
+	if (cm_get_model_units_mode() != INCHES) { 
 		units = (PGM_P)&prompt_mm;
 	} else {
 		units = (PGM_P)&prompt_in;
 	}
-	if ((status == TG_OK) || (status == TG_EAGAIN) || (status == TG_NOOP) || (status == TG_ZERO_LENGTH_MOVE)) {
+//	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP) || (status == STAT_ZERO_LENGTH_MOVE)) {
+	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP)) {
 		fprintf_P(stderr, (PGM_P)&prompt_ok, units);
 	} else {
 		char status_message[STATUS_MESSAGE_LEN];
@@ -249,107 +270,85 @@ void tg_text_response(const uint8_t status, const char *buf)
  *	and other messages are sent to the active device.
  */
 
-static uint8_t _sync_to_tx_buffer()
+static stat_t _sync_to_tx_buffer()
 {
 	if ((xio_get_tx_bufcount_usart(ds[XIO_DEV_USB].x) >= XOFF_TX_LO_WATER_MARK)) {
-		return (TG_EAGAIN);
+		return (STAT_EAGAIN);
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
-static uint8_t _sync_to_planner()
+static stat_t _sync_to_planner()
 {
-	if (mp_get_planner_buffers_available() == 0) { 
-		return (TG_EAGAIN);
+	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { // allow up to N planner buffers for this line
+		return (STAT_EAGAIN);
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
-void tg_reset_source()
-{
-	tg_set_active_source(tg.default_src);
-}
-
-void tg_set_active_source(uint8_t dev)
-{
-	tg.src = dev;						// dev = XIO device #. See xio.h
-}
-
-/**** Signal handlers ****
- * _reset_handler()
- * _bootloader_handler()
- * _feedhold_handler()
- * _cycle_start_handler()
- */
-
-static uint8_t _reset_handler(void)
-{
-	if (sig.sig_reset == false) { return (TG_NOOP);}
-//	sig.sig_reset = false;				// why bother?
-	tg_reset();							// hard reset - identical to hitting RESET button
-	return (TG_EAGAIN);
-}
-
-static uint8_t _bootloader_handler(void)
-{
-	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
-	cli();
-	asm("jmp 0x030000");
-	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
-}
+void tg_reset_source() { tg_set_primary_source(tg.default_src);}
+void tg_set_primary_source(uint8_t dev) { tg.primary_src = dev;}
+void tg_set_secondary_source(uint8_t dev) { tg.secondary_src = dev;}
 
 /*
-static uint8_t _bootloader_handler(void)
-{
-	if (sig.sig_request_bootloader == false) { return (TG_NOOP);}
-//	sig.sig_request_bootloader = false;
-	asm("jmp 0x030000");
-//	CCPWrite( &RST.CTRL, RST_SWRST_bm );
-//	CCP = CCP_IOREG_gc;
-//	RST.CTRL = RST_SWRST_bm;
-	return (TG_EAGAIN);					// never gets here but keeps the compiler happy
-}
-*/
+ * tg_request_reset()
+ * _reset_handler()
+ * tg_reset() - software hard reset using watchdog timer
+ */
+void tg_request_reset() { tg.reset_requested = true; }
 
-static uint8_t _feedhold_handler(void)
+static stat_t _reset_handler(void)
 {
-	if (sig.sig_feedhold == false) { return (TG_NOOP);}
-	sig.sig_feedhold = false;
-	cm_feedhold();
-	return (TG_EAGAIN);					// best to restart the control loop
+	if (tg.reset_requested == false) { return (STAT_NOOP);}
+	tg_reset();							// hard reset - identical to hitting RESET button
+	return (STAT_EAGAIN);
 }
 
-static uint8_t _cycle_start_handler(void)
+void tg_reset(void)			// software hard reset using the watchdog timer
 {
-	if (sig.sig_cycle_start == false) { return (TG_NOOP);}
-	sig.sig_cycle_start = false;
-	cm_cycle_start();
-	return (TG_EAGAIN);					// best to restart the control loop
+	wdt_enable(WDTO_15MS);
+	while (true);			// loops for about 15ms then resets
+}
+
+
+/*
+ * tg_request_bootloader()
+ * _bootloader_handler() - executes a software reset using CCPWrite
+ */
+void tg_request_bootloader() { tg.bootloader_requested = true;}
+
+static stat_t _bootloader_handler(void)
+{
+	if (tg.bootloader_requested == false) { return (STAT_NOOP);}
+	cli();
+	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
+	return (STAT_EAGAIN);					// never gets here but keeps the compiler happy
 }
 
 /*
  * _limit_switch_handler() - shut down system if limit switch fired
  */
-static uint8_t _limit_switch_handler(void)
+static stat_t _limit_switch_handler(void)
 {
-	if (cm_get_machine_state() == MACHINE_SHUTDOWN) { return (TG_NOOP);}
-	if (gpio_get_limit_thrown() == false) return (TG_NOOP);
-	cm_shutdown();
-	return (TG_OK);
+	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
+	if (gpio_get_limit_thrown() == false) return (STAT_NOOP);
+//	cm_alarm(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
+	cm_alarm(sw.sw_num_thrown);
+	return (STAT_OK);
 }
 
 /* 
- * _shutdown_idler() - revent any further activity form occurring if shut down
+ * _alarm_idler() - revent any further activity form occurring if shut down
  *
  *	This function returns EAGAIN causing the control loop to never advance beyond
  *	this point. It's important that the reset handler is still called so a SW reset
  *	(ctrl-x) can be processed.
  */
-#define LED_COUNTER 100000
+#define LED_COUNTER 25000
 
-static uint8_t _shutdown_idler(void)
+static stat_t _alarm_idler(void)
 {
-	if (cm_get_machine_state() != MACHINE_SHUTDOWN) { return (TG_OK);}
+	if (cm_get_machine_state() != MACHINE_ALARM) { return (STAT_OK);}
 
 	if (--tg.led_counter < 0) {
 		tg.led_counter = LED_COUNTER;
@@ -361,7 +360,7 @@ static uint8_t _shutdown_idler(void)
 			tg.led_state = 0;
 		}
 	}
-	return (TG_EAGAIN);	 // EAGAIN prevents any other actions from running
+	return (STAT_EAGAIN);	 // EAGAIN prevents any other actions from running
 }
 
 /* 
@@ -371,7 +370,7 @@ uint8_t _system_assertions()
 {
 	uint8_t value = 0;
 
-	if (tg.magic_start		!= MAGICNUM) { value = 1; }
+	if (tg.magic_start		!= MAGICNUM) { value = 1; }		// Note: reported VALue is offset by ALARM_MEMORY_OFFSET
 	if (tg.magic_end		!= MAGICNUM) { value = 2; }
 	if (cm.magic_start 		!= MAGICNUM) { value = 3; }
 	if (cm.magic_end		!= MAGICNUM) { value = 4; }
@@ -385,13 +384,15 @@ uint8_t _system_assertions()
 	if (mb.magic_end		!= MAGICNUM) { value = 12; }
 	if (mr.magic_start		!= MAGICNUM) { value = 13; }
 	if (mr.magic_end		!= MAGICNUM) { value = 14; }
-	if (st_get_st_magic()	!= MAGICNUM) { value = 15; }
-	if (st_get_sps_magic()	!= MAGICNUM) { value = 16; }
-	if (rtc.magic_end 		!= MAGICNUM) { value = 17; }
+	if (ar.magic_start		!= MAGICNUM) { value = 15; }
+	if (ar.magic_end		!= MAGICNUM) { value = 16; }
+	if (st_get_st_magic()	!= MAGICNUM) { value = 17; }
+	if (st_get_sps_magic()	!= MAGICNUM) { value = 18; }
+	if (rtc.magic_end 		!= MAGICNUM) { value = 19; }
 	xio_assertions(&value);									// run xio assertions
 
-	if (value == 0) { return (TG_OK);}
-	rpt_exception(TG_MEMORY_CORRUPTION, value);
-	cm_shutdown();
-	return (TG_EAGAIN);
+	if (value == 0) { return (STAT_OK);}
+	rpt_exception(STAT_MEMORY_FAULT, value);
+	cm_alarm(ALARM_MEMORY_OFFSET + value);	
+	return (STAT_EAGAIN);
 }

@@ -4,26 +4,17 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
- *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* See the wiki for additional information about tests:
  *	 http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info
@@ -40,8 +31,8 @@
 #include "xio/xio.h"
 
 // regression test files
-#include "tests/test_001_homing.h"			// G28.1 homing cycles
-#include "tests/test_002_smoke.h" 			// basic functionality
+#include "tests/test_001_smoke.h" 			// basic functionality
+#include "tests/test_002_homing.h"			// G28.1 homing cycles
 #include "tests/test_003_squares.h"			// square moves
 #include "tests/test_004_arcs.h"			// arc moves
 #include "tests/test_005_dwell.h"			// dwells embedded in move sequences
@@ -53,6 +44,7 @@
 #include "tests/test_011_small_moves.h"		// small move test
 #include "tests/test_012_slow_moves.h"		// slow move test
 #include "tests/test_013_coordinate_offsets.h"	// what it says
+#include "tests/test_014_microsteps.h"		// test all microstep settings
 #include "tests/test_050_mudflap.h"			// mudflap test - entire drawing
 #include "tests/test_051_braid.h"			// braid test - partial drawing
 
@@ -65,9 +57,9 @@
 uint8_t tg_test(cmdObj_t *cmd)
 {
 	switch ((uint8_t)cmd->value) {
-		case 0: { return (TG_OK);}
-		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
-		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke),PGM_FLAGS); break;}
+		case 0: { return (STAT_OK);}
+		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke),PGM_FLAGS); break;}
+		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
 		case 3: { xio_open(XIO_DEV_PGM, PGMFILE(&test_squares),PGM_FLAGS); break;}
 		case 4: { xio_open(XIO_DEV_PGM, PGMFILE(&test_arcs),PGM_FLAGS); break;}
 		case 5: { xio_open(XIO_DEV_PGM, PGMFILE(&test_dwell),PGM_FLAGS); break;}
@@ -79,15 +71,16 @@ uint8_t tg_test(cmdObj_t *cmd)
 		case 11: { xio_open(XIO_DEV_PGM, PGMFILE(&test_small_moves),PGM_FLAGS); break;}
 		case 12: { xio_open(XIO_DEV_PGM, PGMFILE(&test_slow_moves),PGM_FLAGS); break;}
 		case 13: { xio_open(XIO_DEV_PGM, PGMFILE(&test_coordinate_offsets),PGM_FLAGS); break;}
+		case 14: { xio_open(XIO_DEV_PGM, PGMFILE(&test_microsteps),PGM_FLAGS); break;}
 		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 		default: {
 			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
-			return (TG_ERROR);
+			return (STAT_ERROR);
 		}
 	}
-	tg_set_active_source(XIO_DEV_PGM);
-	return (TG_OK);
+	tg_set_primary_source(XIO_DEV_PGM);
+	return (STAT_OK);
 }
 
 /*
@@ -104,13 +97,62 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 // avrdude -p x192a3 -c avr109 -b 115200 -P COM19
 // avrdude -e -p atxmega192a3 -c avrispmkii -P usb -U boot:w:xboot-boot.hex
 
+//	xio_queue_RX_string_usb("g28.2 x0\n");			// homing test
+
+//	xio_queue_RX_string_usb("{\"gc\":\"N78 (Row 2 Copy 9-1)\"}\n");
+
+//	xio_queue_RX_string_usb("g1 f100 x100\n");		// Feedhold/queue flush test
+//	xio_queue_RX_string_usb("!\n");
+//	xio_queue_RX_string_usb("@\n");
+//	xio_queue_RX_string_usb("~\n");
+
+/*
+	xio_queue_RX_string_usb("g1 f1800 x0.0005\n");	// Small move test for G61.1
+	xio_queue_RX_string_usb("g20\n");
+	xio_queue_RX_string_usb("m2\n");
+*/
+//	xio_queue_RX_string_usb("$xam=1\n");
+//	xio_queue_RX_string_usb("$1po=1\n");
+//	xio_queue_RX_string_usb("$g54x=20.00\n");
+//	xio_queue_RX_string_usb("$x\n");				// display a group
+//	xio_queue_RX_string_usb("{\"xam\":1}\n");
+
+/*  DWELL TESTS
+G0 X1 Y1
+M8
+G4 P2 (WAIT FOR CYLINDER - DOWN)
+M9
+G4 P2 (WAIT FOR CYLINDER - UP)
+M30 (END OF CODE)
+*/
+
+//	xio_queue_RX_string_usb("$me\n");
+//	xio_queue_RX_string_usb("G0 X0.01 Y0.01\n");
+//	xio_queue_RX_string_usb("M8 G4 P0.001\n");
+//	xio_queue_RX_string_usb("G1 X10 Y10 F1000\n");
+//	xio_queue_RX_string_usb("M8 G4 P2\n");
+//	xio_queue_RX_string_usb("X0 Y0\n");
+//	xio_queue_RX_string_usb("G4 P2\n");
+//	xio_queue_RX_string_usb("M9\n");
+//	xio_queue_RX_string_usb("M30\n");
+
+
+//	xio_queue_RX_string_usb("$net\n");
+
 //	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"mpox\":true,\"mpoy\":true}}\n");
+
+//	xio_queue_RX_string_usb("M3 S1000\n");
+//	xio_queue_RX_string_usb("$test=4\n");
+//	xio_queue_RX_string_usb("g20\n");
+//	xio_queue_RX_string_usb("{\"xvm\":100}\n");
+//	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
 
 //	xio_queue_RX_string_usb("$qf\n");
 //	xio_queue_RX_string_usb("$defau=1\n");
 //	xio_queue_RX_string_usb("$id\n");
 //	xio_queue_RX_string_usb("{\n");
 //	xio_queue_RX_string_usb("G3 X28.949238578680202 Y33.51776649746193 I2.1091370558375635 J-2.1091370558375635 F1524\n");
+//	xio_queue_RX_string_usb("{\"gc\":\"g0x1.2y1.3\"}\n");
 
 //	xio_queue_RX_string_usb("g0x2\n");			// G0 smoke test
 //	xio_queue_RX_string_usb("{\"gc\":\"g2\"}\n");// G0 smoke test in JSON
@@ -460,12 +502,12 @@ void roll_over_and_die()
 	tg_application_reset();
 }
 
-void print_scalar(const char *label, double value)
+void print_scalar(const char *label, float value)
 {
 	fprintf_P(stderr,PSTR("%S %8.4f\n"),label,value); 
 }
 
-void print_vector(const char *label, double vector[], uint8_t count)
+void print_vector(const char *label, float vector[], uint8_t count)
 {
 	fprintf_P(stderr,PSTR("%S"),label); 
 	for (uint8_t i=0; i<count; i++) {

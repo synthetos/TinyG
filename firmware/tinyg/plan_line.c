@@ -5,31 +5,28 @@
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  * Copyright (c) 2012 - 2013 Rob Giseburt
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-//#include <stdlib.h>
 #include <math.h>
-//#include <stdio.h>			// uncomment for debugging
 #include <avr/pgmspace.h>		// precursor for xio.h
 
 #include "tinyg.h"
@@ -47,20 +44,20 @@
 // aline planner routines / feedhold planning
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
 static void _calculate_trapezoid(mpBuf_t *bf);
-static double _get_target_length(const double Vi, const double Vt, const mpBuf_t *bf);
-static double _get_target_velocity(const double Vi, const double L, const mpBuf_t *bf);
-//static double _get_intersection_distance(const double Vi_squared, const double Vt_squared, const double L, const mpBuf_t *bf);
-static double _get_junction_vmax(const double a_unit[], const double b_unit[]);
+static float _get_target_length(const float Vi, const float Vt, const mpBuf_t *bf);
+static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
+//static float _get_intersection_distance(const float Vi_squared, const float Vt_squared, const float L, const mpBuf_t *bf);
+static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
 static void _reset_replannable_list(void);
 
 // execute routines (NB: These are all called from the LO interrupt)
-static uint8_t _exec_aline(mpBuf_t *bf);
-static uint8_t _exec_aline_head(void);
-static uint8_t _exec_aline_body(void);
-static uint8_t _exec_aline_tail(void);
-static uint8_t _exec_aline_segment(uint8_t correction_flag);
-static void _init_forward_diffs(double t0, double t2);
-static double _compute_next_segment_velocity(void);
+static stat_t _exec_aline(mpBuf_t *bf);
+static stat_t _exec_aline_head(void);
+static stat_t _exec_aline_body(void);
+static stat_t _exec_aline_tail(void);
+static stat_t _exec_aline_segment(uint8_t correction_flag);
+static void _init_forward_diffs(float t0, float t2);
+static float _compute_next_segment_velocity(void);
 
 /* 
  * mp_isbusy() - return TRUE if motion control busy (i.e. robot is moving)
@@ -78,31 +75,33 @@ uint8_t mp_isbusy()
 }
 
 /*
- * mp_get_runtime_linenum()	 - returns currently executing line number
- * mp_get_runtime_velocity() - returns current velocity (aggregate)
+ * mp_get_runtime_motion_mode() 	- returns motion mode of currently executing command
+ * mp_get_runtime_linenum()	 		- returns currently executing line number
+ * mp_get_runtime_velocity() 		- returns current velocity (aggregate)
  * mp_get_runtime_machine_position() - returns current axis position in machine coordinates
- * mp_get_runtime_work_position() - returns current axis position in work coordinates
- *									that were in effect at move planning time
+ * mp_get_runtime_work_position() 	- returns current axis position in work coordinates
+ *									  that were in effect at move planning time
  * mp_set_runtime_work_offset()
- * mp_zero_segment_velocity() - correct velocity in last segment for reporting purposes
+ * mp_zero_segment_velocity() 		- correct velocity in last segment for reporting purposes
  */
 
-double mp_get_runtime_linenum(void) { return (mr.linenum);}
-double mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
+uint8_t mp_get_runtime_motion_mode(void) { return (mr.motion_mode);}
+float mp_get_runtime_linenum(void) { return (mr.linenum);}
+float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 
-double mp_get_runtime_machine_position(uint8_t axis) { 
+float mp_get_runtime_machine_position(uint8_t axis) { 
 	return (mr.position[axis]);
 }
 
-double mp_get_runtime_work_position(uint8_t axis) { 
+float mp_get_runtime_work_position(uint8_t axis) { 
 	return (mr.position[axis] - mr.work_offset[axis]);
 }
 
-double mp_get_runtime_work_offset(uint8_t axis) { 
+float mp_get_runtime_work_offset(uint8_t axis) { 
 	return (mr.work_offset[axis]);
 }
 
-void mp_set_runtime_work_offset(double offset[]) { 
+void mp_set_runtime_work_offset(float offset[]) { 
 	copy_axis_vector(mr.work_offset, offset);
 }
 
@@ -124,31 +123,31 @@ void mp_zero_segment_velocity()
  *	A detailed explanation of how this module works can be found on the wiki:
  *  http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info:#Acceleration_Planning
  *
- * 	Note: All math is done in absolute coordinates using "double precision" 
+ * 	Note: All math is done in absolute coordinates using "float precision" 
  *	floating point (even though AVRgcc does this as single precision)
  *
- *	Note: Returning a status that is not TG_OK means the endpoint is NOT
+ *	Note: Returning a status that is not STAT_OK means the endpoint is NOT
  *	advanced. So lines that are too short to move will accumulate and get 
  *	executed once the accumlated error exceeds the minimums 
  */
 
-uint8_t mp_aline(const double target[], const double minutes, const double work_offset[], const double min_time)
+stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time)
 {
 	mpBuf_t *bf; 						// current move pointer
-	double exact_stop = 0;
-	double junction_velocity;
+	float exact_stop = 0;
+	float junction_velocity;
 
 	// trap error conditions
-	if (minutes < EPSILON) { return (TG_ZERO_LENGTH_MOVE);}
-
-	double length = get_axis_vector_length(target, mm.position);
-	if (length < EPSILON) { return (TG_ZERO_LENGTH_MOVE);}
+	float length = get_axis_vector_length(target, mm.position);
+	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE_ERROR);}
+	if (minutes < MIN_TIME_MOVE) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}
 
 	// get a cleared buffer and setup move variables
-	if ((bf = mp_get_write_buffer()) == NULL) { return (TG_BUFFER_FULL_FATAL);} // never supposed to fail
+	if ((bf = mp_get_write_buffer()) == NULL) { return (STAT_BUFFER_FULL_FATAL);} // never supposed to fail
 
 	bf->bf_func = _exec_aline;					// register the callback to the exec function
 	bf->linenum = cm_get_model_linenum();		// block being planned
+	bf->motion_mode = cm_get_model_motion_mode();
 	bf->time = minutes;
 	bf->min_time = min_time;
 	bf->length = length;
@@ -156,32 +155,31 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
 	copy_axis_vector(bf->work_offset, work_offset);// propagate offset
 
 	// Set unit vector and jerk terms - this is all done together for efficiency 
-	// Ordinarily FP tests are to EPSILON but in this case they actually are zero
-	double jerk_squared = 0;
-	double diff = target[X] - mm.position[X];
+	float jerk_squared = 0;
+	float diff = target[AXIS_X] - mm.position[AXIS_X];
 	if (fp_NOT_ZERO(diff)) { 
-		bf->unit[X] = diff / length;
-		jerk_squared = square(bf->unit[X] * cfg.a[X].jerk_max);
+		bf->unit[AXIS_X] = diff / length;
+		jerk_squared += square(bf->unit[AXIS_X] * cfg.a[AXIS_X].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[Y] - mm.position[Y])) { 
-		bf->unit[Y] = diff / length;
-		jerk_squared += square(bf->unit[Y] * cfg.a[Y].jerk_max);
+	if (fp_NOT_ZERO(diff = target[AXIS_Y] - mm.position[AXIS_Y])) { 
+		bf->unit[AXIS_Y] = diff / length;
+		jerk_squared += square(bf->unit[AXIS_Y] * cfg.a[AXIS_Y].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[Z] - mm.position[Z])) { 
-		bf->unit[Z] = diff / length;
-		jerk_squared += square(bf->unit[Z] * cfg.a[Z].jerk_max);
+	if (fp_NOT_ZERO(diff = target[AXIS_Z] - mm.position[AXIS_Z])) { 
+		bf->unit[AXIS_Z] = diff / length;
+		jerk_squared += square(bf->unit[AXIS_Z] * cfg.a[AXIS_Z].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[A] - mm.position[A])) { 
-		bf->unit[A] = diff / length;
-		jerk_squared += square(bf->unit[A] * cfg.a[A].jerk_max);
+	if (fp_NOT_ZERO(diff = target[AXIS_A] - mm.position[AXIS_A])) { 
+		bf->unit[AXIS_A] = diff / length;
+		jerk_squared += square(bf->unit[AXIS_A] * cfg.a[AXIS_A].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[B] - mm.position[B])) { 
-		bf->unit[B] = diff / length;
-		jerk_squared += square(bf->unit[B] * cfg.a[B].jerk_max);
+	if (fp_NOT_ZERO(diff = target[AXIS_B] - mm.position[AXIS_B])) { 
+		bf->unit[AXIS_B] = diff / length;
+		jerk_squared += square(bf->unit[AXIS_B] * cfg.a[AXIS_B].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[C] - mm.position[C])) { 
-		bf->unit[C] = diff / length;
-		jerk_squared += square(bf->unit[C] * cfg.a[C].jerk_max);
+	if (fp_NOT_ZERO(diff = target[AXIS_C] - mm.position[AXIS_C])) { 
+		bf->unit[AXIS_C] = diff / length;
+		jerk_squared += square(bf->unit[AXIS_C] * cfg.a[AXIS_C].jerk_max);
 	}
 	bf->jerk = sqrt(jerk_squared);
 
@@ -197,7 +195,7 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
 	}
 
 	// finish up the current block variables
-	if (cm_get_path_control() != PATH_EXACT_STOP) { // exact stop cases already zeroed
+	if (cm_get_model_path_control() != PATH_EXACT_STOP) { // exact stop cases already zeroed
 		bf->replannable = true;
 		exact_stop = 12345678;					// an arbitrarily large floating point number
 	}
@@ -212,7 +210,7 @@ uint8_t mp_aline(const double target[], const double minutes, const double work_
 	_plan_block_list(bf, &mr_flag);				// replan block list and commit current block
 	copy_axis_vector(mm.position, bf->target);	// update planning position
 	mp_queue_write_buffer(MOVE_TYPE_ALINE);
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /***** ALINE HELPERS *****
@@ -320,7 +318,7 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 /*
  *	_reset_replannable_list() - resets all blocks in the planning list to be replannable
  */	
-void _reset_replannable_list()
+static void _reset_replannable_list()
 {
 	mpBuf_t *bf = mp_get_first_buffer();
 	if (bf == NULL) { return;}
@@ -423,7 +421,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 	//	- H' and T' requested-fit cases where the body residual is less than MIN_BODY_LENGTH
 	//	- no-fit case
 	// Also converts 2 segment heads and tails that would be too short to a body-only move (1 segment)
-	double minimum_length = _get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
+	float minimum_length = _get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
 	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// Head & tail cases
 		if (bf->entry_velocity > bf->exit_velocity)	{		// Tail cases
 			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// T" (degraded case)
@@ -472,7 +470,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 		}
 
 		// Rate-limited HT' case (asymmetric) - this is relatively expensive but it's not called very often
-		double computed_velocity = bf->cruise_vmax;
+		float computed_velocity = bf->cruise_vmax;
 		uint8_t i=0;
 		do {
 			bf->cruise_velocity = computed_velocity;	// initialize from previous iteration 
@@ -507,9 +505,9 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 	// If a non-zero body is < minimum length distribute it to the head and/or tail
 	// This will generate small (acceptable) velocity errors in runtime execution
 	// but preserve correct distance, which is more important.
-	if ((bf->body_length < MIN_BODY_LENGTH) && (bf->body_length > EPSILON)) {
-		if (bf->head_length > EPSILON) {
-			if (bf->tail_length > EPSILON) {			// HBT reduces to HT
+	if ((bf->body_length < MIN_BODY_LENGTH) && (fp_NOT_ZERO(bf->body_length))) {
+		if (fp_NOT_ZERO(bf->head_length)) {
+			if (fp_NOT_ZERO(bf->tail_length)) {			// HBT reduces to HT
 				bf->head_length += bf->body_length/2;
 				bf->tail_length += bf->body_length/2;
 			} else {									// HB reduces to H
@@ -522,7 +520,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 
 	// If the body is a standalone make the cruise velocity match the entry velocity 
 	// This removes a potential velocity discontinuity at the expense of top speed
-	} else if ((bf->head_length < EPSILON) && (bf->tail_length < EPSILON)) {
+	} else if ((fp_ZERO(bf->head_length)) && (fp_ZERO(bf->tail_length))) {
 		bf->cruise_velocity = bf->entry_velocity;
 	}
 }
@@ -572,16 +570,76 @@ static void _calculate_trapezoid(mpBuf_t *bf)
  *  FYI: Here's an expression that returns the jerk for a given deltaV and L:
  * 	return(cube(deltaV / (pow(L, 0.66666666))));
  */
-static double _get_target_length(const double Vi, const double Vt, const mpBuf_t *bf)
+
+static float _get_target_length(const float Vi, const float Vt, const mpBuf_t *bf)
 {
 	return (fabs(Vi-Vt) * sqrt(fabs(Vi-Vt) * bf->recip_jerk));
 }
 
-static double _get_target_velocity(const double Vi, const double L, const mpBuf_t *bf)
+static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
 {
 	return (pow(L, 0.66666666) * bf->cbrt_jerk + Vi);
 }
 
+/*	
+ * _get_target_length2()	- derive accel/decel length from delta V and jerk
+ * _get_target_velocity2()	- derive velocity achievable from initial V, length and jerk
+ *
+ *	This set of functions returns the fourth thing knowing the other three.
+ *	
+ * 	  Jm = the given maximum jerk
+ *	  T  = time of the entire move
+ *	  T  = 2*sqrt((Vt-Vi)/Jm)
+ *	  As = The acceleration at inflection point between convex and concave portions of the S-curve.
+ *	  As = (Jm*T)/2
+ *    Ar = ramp acceleration
+ *	  Ar = As/2 = (Jm*T)/4
+ *	
+ *	Assumes Vt, Vi and L are positive or zero
+ *	Cannot assume Vt>=Vi due to rounding errors and use of PLANNER_VELOCITY_TOLERANCE
+ *	necessitating the introduction of fabs()
+ *
+ *	_get_target_length() is a convenient function for determining the optimal_length (L) 
+ *	of a line given the inital velocity (Vi), target velocity (Vt) and maximum jerk (Jm).
+ *
+ *	The length (distance) equation is derived from: 
+ *
+ *	 a) L = Vi * Td + (Ar*Td^2)/2		... which becomes b) with substitutions for Ar and T
+ *	 b) L = 2 * (Vi*sqrt((Vt-Vi)/Jm) + sqrt((Vt-Vi)/Jm)/2 * (Vt-Vi))
+ *	 c) L = (Vt+Vi) * sqrt(abs(Vt-Vi)/Jm) 	... a short alternate form of b) assuming only positive values
+ *
+ *	 Notes: Ar = (Jm*T)/4					Ar is ramp acceleration
+ *			T  = 2*sqrt((Vt-Vi)/Jm)			T is time
+ *
+ *			Assumes Vt, Vi and L are positive or zero
+ *			Cannot assume Vt>=Vi due to rounding errors and use of PLANNER_VELOCITY_TOLERANCE
+ *			necessitating the introduction of fabs()
+ *
+ * 	_get_target_velocity() is a convenient function for determining Vt target 
+ *	velocity for a given the initial velocity (Vi), length (L), and maximum jerk (Jm).
+ *	Solving equation c) for Vt gives d)
+ *
+ *	 d) 1/3*((3*sqrt(3)*sqrt(27*Jm^2*L^4+32*Jm*L^2*Vi^3)+27*Jm*L^2+16*Vi^3)^(1/3)/2^(1/3) + 
+ *      (4*2^(1/3)*Vi^2)/(3*sqrt(3)*sqrt(27*Jm^2*L^4+32*Jm*L^2*Vi^3)+27*Jm*L^2+16*Vi^3)^(1/3) - Vi)
+ *
+ *  FYI: Here's an expression that returns the jerk for a given deltaV (Vt-Vi) and L:
+ * 	return(cube(deltaV / (pow(L, 0.66666666))));
+ */
+ /*
+static float _get_target_length(const float Vi, const float Vt, const mpBuf_t *bf)
+{
+	return ((Vt+Vi) * sqrt(fabs(Vt-Vi) * bf->recip_jerk));
+}
+
+static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
+{
+	float JmL2 = bf->jerk*square(L);
+	float Vi2 = square(Vi);
+	float Vi3x16 = 16*Vi*Vi2;
+	float Ia = cbrt(3*sqrt(3) * sqrt(27*square(JmL2) + (2*JmL2*Vi3x16)) + 27*JmL2 + Vi3x16);
+	return ((Ia/cbrt(2) + 4*cbrt(2)*Vi2/Ia - Vi)/3);
+}
+*/
 /*
  * _get_junction_vmax() - Chamnit's algorithm - simple
  *
@@ -618,8 +676,8 @@ static double _get_target_velocity(const double Vi, const double L, const mpBuf_
  *	only two sqrt computations and no sine/cosines."
  *
  *	How to compute the radius using brute-force trig:
- *		double theta = acos(costheta);
- *		double radius = delta * sin(theta/2)/(1-sin(theta/2));
+ *		float theta = acos(costheta);
+ *		float radius = delta * sin(theta/2)/(1-sin(theta/2));
  */
 /*  This version function extends Chamnit's algorithm by computing a value for delta that 
  *	takes the contributions of the individual axes in the move into account. It allows 
@@ -636,33 +694,33 @@ static double _get_target_velocity(const double Vi, const double L, const mpBuf_
  *	 	Usum	Length of sums			Ux + Uy
  *	 	d		Delta of sums			(Dx*Ux+DY*UY)/Usum
  */
-static double _get_junction_vmax(const double a_unit[], const double b_unit[])
+static float _get_junction_vmax(const float a_unit[], const float b_unit[])
 {
-	double costheta = - (a_unit[X] * b_unit[X]) - (a_unit[Y] * b_unit[Y]) 
-					  - (a_unit[Z] * b_unit[Z]) - (a_unit[A] * b_unit[A]) 
-					  - (a_unit[B] * b_unit[B]) - (a_unit[C] * b_unit[C]);
+	float costheta = - (a_unit[AXIS_X] * b_unit[AXIS_X]) - (a_unit[AXIS_Y] * b_unit[AXIS_Y]) 
+					  - (a_unit[AXIS_Z] * b_unit[AXIS_Z]) - (a_unit[AXIS_A] * b_unit[AXIS_A]) 
+					  - (a_unit[AXIS_B] * b_unit[AXIS_B]) - (a_unit[AXIS_C] * b_unit[AXIS_C]);
 
 	if (costheta < -0.99) { return (10000000); } 		// straight line cases
 	if (costheta > 0.99)  { return (0); } 				// reversal cases
 
 	// Fuse the junction deviations into a vector sum
-	double a_delta = square(a_unit[X] * cfg.a[X].junction_dev);
-	a_delta += square(a_unit[Y] * cfg.a[Y].junction_dev);
-	a_delta += square(a_unit[Z] * cfg.a[Z].junction_dev);
-	a_delta += square(a_unit[A] * cfg.a[A].junction_dev);
-	a_delta += square(a_unit[B] * cfg.a[B].junction_dev);
-	a_delta += square(a_unit[C] * cfg.a[C].junction_dev);
+	float a_delta = square(a_unit[AXIS_X] * cfg.a[AXIS_X].junction_dev);
+	a_delta += square(a_unit[AXIS_Y] * cfg.a[AXIS_Y].junction_dev);
+	a_delta += square(a_unit[AXIS_Z] * cfg.a[AXIS_Z].junction_dev);
+	a_delta += square(a_unit[AXIS_A] * cfg.a[AXIS_A].junction_dev);
+	a_delta += square(a_unit[AXIS_B] * cfg.a[AXIS_B].junction_dev);
+	a_delta += square(a_unit[AXIS_C] * cfg.a[AXIS_C].junction_dev);
 
-	double b_delta = square(b_unit[X] * cfg.a[X].junction_dev);
-	b_delta += square(b_unit[Y] * cfg.a[Y].junction_dev);
-	b_delta += square(b_unit[Z] * cfg.a[Z].junction_dev);
-	b_delta += square(b_unit[A] * cfg.a[A].junction_dev);
-	b_delta += square(b_unit[B] * cfg.a[B].junction_dev);
-	b_delta += square(b_unit[C] * cfg.a[C].junction_dev);
+	float b_delta = square(b_unit[AXIS_X] * cfg.a[AXIS_X].junction_dev);
+	b_delta += square(b_unit[AXIS_Y] * cfg.a[AXIS_Y].junction_dev);
+	b_delta += square(b_unit[AXIS_Z] * cfg.a[AXIS_Z].junction_dev);
+	b_delta += square(b_unit[AXIS_A] * cfg.a[AXIS_A].junction_dev);
+	b_delta += square(b_unit[AXIS_B] * cfg.a[AXIS_B].junction_dev);
+	b_delta += square(b_unit[AXIS_C] * cfg.a[AXIS_C].junction_dev);
 
-	double delta = (sqrt(a_delta) + sqrt(b_delta))/2;
-	double sintheta_over2 = sqrt((1 - costheta)/2);
-	double radius = delta * sintheta_over2 / (1-sintheta_over2);
+	float delta = (sqrt(a_delta) + sqrt(b_delta))/2;
+	float sintheta_over2 = sqrt((1 - costheta)/2);
+	float radius = delta * sintheta_over2 / (1-sintheta_over2);
 	return(sqrt(radius * cfg.junction_acceleration));
 }
 
@@ -722,30 +780,29 @@ static double _get_junction_vmax(const double a_unit[], const double b_unit[])
  *		  organized for clarity and hoped for the best from compiler optimization. 
  */
 
-uint8_t mp_plan_hold_callback()
+stat_t mp_plan_hold_callback()
 {
-	if (cm.hold_state != FEEDHOLD_PLAN) { return (TG_NOOP);}	// not planning a feedhold
+	if (cm.hold_state != FEEDHOLD_PLAN) { return (STAT_NOOP);}	// not planning a feedhold
 
 	mpBuf_t *bp; 					// working buffer pointer
-	if ((bp = mp_get_run_buffer()) == NULL) { return (TG_NOOP);}	// Oops! nothing's running
+	if ((bp = mp_get_run_buffer()) == NULL) { return (STAT_NOOP);}	// Oops! nothing's running
 
 	uint8_t mr_flag = true;		// used to tell replan to account for mr buffer Vx
-	double mr_available_length; // available length left in mr buffer for deceleration
-	double braking_velocity;	// velocity left to shed to brake to zero
-	double braking_length;		// distance required to brake to zero from braking_velocity
+	float mr_available_length; // available length left in mr buffer for deceleration
+	float braking_velocity;	// velocity left to shed to brake to zero
+	float braking_length;		// distance required to brake to zero from braking_velocity
 
 	// examine and process mr buffer
 	mr_available_length = get_axis_vector_length(mr.endpoint, mr.position);
 
 /*	mr_available_length = 
-		(sqrt(square(mr.endpoint[X] - mr.position[X]) +
-			  square(mr.endpoint[Y] - mr.position[Y]) +
-			  square(mr.endpoint[Z] - mr.position[Z]) +
-			  square(mr.endpoint[A] - mr.position[A]) +
-			  square(mr.endpoint[B] - mr.position[B]) +
-			  square(mr.endpoint[C] - mr.position[C])));
+		(sqrt(square(mr.endpoint[AXIS_X] - mr.position[AXIS_X]) +
+			  square(mr.endpoint[AXIS_Y] - mr.position[AXIS_Y]) +
+			  square(mr.endpoint[AXIS_Z] - mr.position[AXIS_Z]) +
+			  square(mr.endpoint[AXIS_A] - mr.position[AXIS_A]) +
+			  square(mr.endpoint[AXIS_B] - mr.position[AXIS_B]) +
+			  square(mr.endpoint[AXIS_C] - mr.position[AXIS_C])));
 */
-//	braking_velocity = mr.segment_velocity;
 	braking_velocity = _compute_next_segment_velocity();
 	braking_length = _get_target_length(braking_velocity, 0, bp); // bp is OK to use here
 	
@@ -753,8 +810,8 @@ uint8_t mp_plan_hold_callback()
 	// The real fix: The braking velocity cannot simply be the mr.segment_velocity as this
 	// is the velocity of the last segment, not the one that's going to be executed next.
 	// The braking_velocity needs to be the velocity of the next segment that has not yet 
-	// been computed. In the eman time, this hack will work. 
-	if ((braking_length > mr_available_length) && (bp->exit_velocity < EPSILON)) {
+	// been computed. In the mean time, this hack will work. 
+	if ((braking_length > mr_available_length) && (fp_ZERO(bp->exit_velocity))) {
 		braking_length = mr_available_length;
 	}
 
@@ -776,7 +833,7 @@ uint8_t mp_plan_hold_callback()
 		_reset_replannable_list();				// make it replan all the blocks
 		_plan_block_list(mp_get_last_buffer(), &mr_flag);
 		cm.hold_state = FEEDHOLD_DECEL;			// set state to decelerate and exit
-		return (TG_OK);
+		return (STAT_OK);
 	}
 
 	// Case 2: deceleration exceeds available length in mr buffer
@@ -822,39 +879,33 @@ uint8_t mp_plan_hold_callback()
 	_reset_replannable_list();					// make it replan all the blocks
 	_plan_block_list(mp_get_last_buffer(), &mr_flag);
 	cm.hold_state = FEEDHOLD_DECEL;				// set state to decelerate and exit
-	return (TG_OK);
+	return (STAT_OK);
 }
 
-double _compute_next_segment_velocity()
+static float _compute_next_segment_velocity()
 {
-	if (mr.move_state == MOVE_STATE_BODY) {
-		return (mr.segment_velocity);
-	}
+	if (mr.move_state == MOVE_STATE_BODY) { return (mr.segment_velocity);}
 	return (mr.segment_velocity + mr.forward_diff_1);
 }
 
-/* 
- * mp_end_hold_callback() - callback from main loop to end a feedhold
- *
- * 	This function is a callback that is called from the controller. To end a 
- *	hold do not call mp_end_feedhold() directly, instead call cm_cycle_start().
+/*
+ * mp_end_hold() - end a feedhold
  */
-
-uint8_t mp_end_hold_callback()
+stat_t mp_end_hold()
 {
-	mpBuf_t *bf;
-	if ((cm.hold_state == FEEDHOLD_HOLD) && (cm.cycle_start_flag == true)) { 
-		cm.cycle_start_flag = false;
+	if (cm.hold_state == FEEDHOLD_END_HOLD) { 
 		cm.hold_state = FEEDHOLD_OFF;
+		mpBuf_t *bf;
 		if ((bf = mp_get_run_buffer()) == NULL) {	// NULL means nothing's running
 			cm.motion_state = MOTION_STOP;
-			return (TG_NOOP);
+			return (STAT_NOOP);
 		}
 		cm.motion_state = MOTION_RUN;
 		st_request_exec_move();					// restart the steppers
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
+
 
 /*************************************************************************/
 /**** ALINE EXECUTION ROUTINES *******************************************/
@@ -868,22 +919,22 @@ uint8_t mp_end_hold_callback()
  *	_exec_aline_segment()	- helper for running a segment
  *
  *	Returns:
- *	 TG_OK		move is done
- *	 TG_EAGAIN	move is not finished - has more segments to run
- *	 TG_NOOP	cause no operation from the steppers - do not load the move
- *	 TG_xxxxx	fatal error. Ends the move and frees the bf buffer
+ *	 STAT_OK		move is done
+ *	 STAT_EAGAIN	move is not finished - has more segments to run
+ *	 STAT_NOOP		cause no operation from the steppers - do not load the move
+ *	 STAT_xxxxx		fatal error. Ends the move and frees the bf buffer
  *	
  *	This routine is called from the (LO) interrupt level. The interrupt 
  *	sequencing relies on the behaviors of the routines being exactly correct.
  *	Each call to _exec_aline() must execute and prep *one and only one* 
  *	segment. If the segment is the not the last segment in the bf buffer the 
- *	_aline() must return TG_EAGAIN. If it's the last segment it must return 
- *	TG_OK. If it encounters a fatal error that would terminate the move it 
+ *	_aline() must return STAT_EAGAIN. If it's the last segment it must return 
+ *	STAT_OK. If it encounters a fatal error that would terminate the move it 
  *	should return a valid error code. Failure to obey this will introduce 
  *	subtle and very difficult to diagnose bugs (trust me on this).
  *
- *	Note 1 Returning TG_OK ends the move and frees the bf buffer. 
- *		   Returning TG_OK at this point does NOT advance position meaning any
+ *	Note 1 Returning STAT_OK ends the move and frees the bf buffer. 
+ *		   Returning STAT_OK at this point does NOT advance position meaning any
  *		   position error will be compensated by the next move.
  *
  *	Note 2 Solves a potential race condition where the current move ends but the 
@@ -932,28 +983,29 @@ uint8_t mp_end_hold_callback()
  *	Note: For a direct math implementation see build 357.xx or earlier
  *		  Builds 358 onward have only forward difference code
  */
-static uint8_t _exec_aline(mpBuf_t *bf)
+static stat_t _exec_aline(mpBuf_t *bf)
 {
-	uint8_t status = TG_OK;
+	uint8_t status = STAT_OK;
 
-	if (bf->move_state == MOVE_STATE_OFF) { return (TG_NOOP);} 
+	if (bf->move_state == MOVE_STATE_OFF) { return (STAT_NOOP);} 
 	if (mr.move_state == MOVE_STATE_OFF) {
-		if (cm.hold_state == FEEDHOLD_HOLD) { return (TG_NOOP);}// stops here if holding
+		if (cm.hold_state == FEEDHOLD_HOLD) { return (STAT_NOOP);}// stops here if holding
 
 		// initialization to process the new incoming bf buffer
 		bf->replannable = false;
-		if (bf->length < EPSILON) {
+		if (fp_ZERO(bf->length)) {
 			mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
 			mr.section_state = MOVE_STATE_OFF;
 			bf->nx->replannable = false;			// prevent overplanning (Note 2)
 			st_prep_null();							// call this to leep the loader happy
 			mp_free_run_buffer();
-			return (TG_NOOP);
+			return (STAT_NOOP);
 		}
 		bf->move_state = MOVE_STATE_RUN;
 		mr.move_state = MOVE_STATE_HEAD;
 		mr.section_state = MOVE_STATE_NEW;
 		mr.linenum = bf->linenum;
+		mr.motion_mode = bf->motion_mode;
 		mr.jerk = bf->jerk;
 		mr.head_length = bf->head_length;
 		mr.body_length = bf->body_length;
@@ -972,27 +1024,30 @@ static uint8_t _exec_aline(mpBuf_t *bf)
 		case (MOVE_STATE_HEAD): { status = _exec_aline_head(); break;}
 		case (MOVE_STATE_BODY): { status = _exec_aline_body(); break;}
 		case (MOVE_STATE_TAIL): { status = _exec_aline_tail(); break;}
-		case (MOVE_STATE_SKIP): { status = TG_OK; break;}
+		case (MOVE_STATE_SKIP): { status = STAT_OK; break;}
 	}
 
-	// feed hold post-processing
+	// Feedhold processing. Refer to canonical_machine.h for state machine
+	// Catch the feedhold request and start the planning the hold
 	if (cm.hold_state == FEEDHOLD_SYNC) { cm.hold_state = FEEDHOLD_PLAN;}
 
-	// initiate the hold - look for the end of the decel move
-	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == TG_OK)) {
+	// Look for the end of the decel to go into HOLD state
+	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == STAT_OK)) {
 		cm.hold_state = FEEDHOLD_HOLD;
-		rpt_request_status_report();
+		cm.motion_state = MOTION_HOLD;
+		rpt_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
+
 
 	// There are 3 things that can happen here depending on return conditions:
 	//	  status	 bf->move_state	 Description
 	//    ---------	 --------------	 ----------------------------------------
-	//	  TG_EAGAIN	 <don't care>	 mr buffer has more segments to run
-	//	  TG_OK		 MOVE_STATE_RUN	 mr and bf buffers are done
-	//	  TG_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
+	//	  STAT_EAGAIN	 <don't care>	 mr buffer has more segments to run
+	//	  STAT_OK		 MOVE_STATE_RUN	 mr and bf buffers are done
+	//	  STAT_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
 
-	if (status == TG_EAGAIN) { 
-		rpt_request_status_report(); 			// continue reporting mr buffer
+	if (status == STAT_EAGAIN) { 
+		rpt_request_status_report(SR_TIMED_REQUEST); // continue reporting mr buffer
 	} else {
 		mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
 		mr.section_state = MOVE_STATE_OFF;
@@ -1027,11 +1082,11 @@ static uint8_t _exec_aline(mpBuf_t *bf)
  */
 
 // NOTE: t1 will always be == t0, so we don't pass it
-static void _init_forward_diffs(double t0, double t2)
+static void _init_forward_diffs(float t0, float t2)
 {
-	double H_squared = square(1/mr.segments);
+	float H_squared = square(1/mr.segments);
 	// A = T[0] - 2*T[1] + T[2], if T[0] == T[1], then it becomes - T[0] + T[2]
-	double AH_squared = (t2 - t0) * H_squared;
+	float AH_squared = (t2 - t0) * H_squared;
 	
 	// Ah²+Bh, and B=2 * (T[1] - T[0]), if T[0] == T[1], then it becomes simply Ah^2
 	mr.forward_diff_1 = AH_squared;
@@ -1042,10 +1097,10 @@ static void _init_forward_diffs(double t0, double t2)
 /*
  * _exec_aline_head()
  */
-static uint8_t _exec_aline_head()
+static stat_t _exec_aline_head()
 {
 	if (mr.section_state == MOVE_STATE_NEW) {	// initialize the move singleton (mr)
-		if (mr.head_length < EPSILON) { 
+		if (fp_ZERO(mr.head_length)) { 
 			mr.move_state = MOVE_STATE_BODY;
 			return(_exec_aline_body());			// skip ahead to the body generator
 		}
@@ -1055,14 +1110,14 @@ static uint8_t _exec_aline_head()
 		mr.segment_move_time = mr.move_time / (2 * mr.segments);
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-			return(TG_GCODE_BLOCK_SKIPPED);		// exit without advancing position
+			return(STAT_GCODE_BLOCK_SKIPPED);		// exit without advancing position
 		}
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 		mr.section_state = MOVE_STATE_RUN1;
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {	// concave part of accel curve (period 1)
 		mr.segment_velocity += mr.forward_diff_1;
-		if (_exec_aline_segment(false) == TG_COMPLETE) { // set up for second half
+		if (_exec_aline_segment(false) == STAT_COMPLETE) { // set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = MOVE_STATE_RUN2;
 
@@ -1072,18 +1127,18 @@ static uint8_t _exec_aline_head()
 		} else {
 			mr.forward_diff_1 += mr.forward_diff_2;
 		}
-		return(TG_EAGAIN);
+		return(STAT_EAGAIN);
 	}
 	if (mr.section_state == MOVE_STATE_RUN2) {	// convex part of accel curve (period 2)
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
-		if (_exec_aline_segment(false) == TG_COMPLETE) {
-			if ((mr.body_length < EPSILON) && (mr.tail_length < EPSILON)) { return(TG_OK);}	// end the move
+		if (_exec_aline_segment(false) == STAT_COMPLETE) {
+			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) { return(STAT_OK);}	// end the move
 			mr.move_state = MOVE_STATE_BODY;
 			mr.section_state = MOVE_STATE_NEW;
 		}
 	}
-	return(TG_EAGAIN);
+	return(STAT_EAGAIN);
 }
 
 /*
@@ -1092,10 +1147,10 @@ static uint8_t _exec_aline_head()
  *	The body is broken into little segments even though it is a straight line so that 
  *	feedholds can happen in the middle of a line with a minimum of latency
  */
-static uint8_t _exec_aline_body()
+static stat_t _exec_aline_body()
 {
 	if (mr.section_state == MOVE_STATE_NEW) {
-		if (mr.body_length < EPSILON) {
+		if (fp_ZERO(mr.body_length)) {
 			mr.move_state = MOVE_STATE_TAIL;
 			return(_exec_aline_tail());			// skip ahead to tail periods
 		}
@@ -1105,42 +1160,42 @@ static uint8_t _exec_aline_body()
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-			return(TG_GCODE_BLOCK_SKIPPED);		// exit without advancing position
+			return(STAT_GCODE_BLOCK_SKIPPED);		// exit without advancing position
 		}
 		
 		mr.section_state = MOVE_STATE_RUN;
 	}
 	if (mr.section_state == MOVE_STATE_RUN) {				// stright part (period 3)
-		if (_exec_aline_segment(false) == TG_COMPLETE) {
-			if (mr.tail_length < EPSILON) { return(TG_OK);}	// end the move
+		if (_exec_aline_segment(false) == STAT_COMPLETE) {
+			if (fp_ZERO(mr.tail_length)) { return(STAT_OK);}	// end the move
 			mr.move_state = MOVE_STATE_TAIL;
 			mr.section_state = MOVE_STATE_NEW;
 		}
 	}
-	return(TG_EAGAIN);
+	return(STAT_EAGAIN);
 }
 
 /*
  * _exec_aline_tail()
  */
-static uint8_t _exec_aline_tail()
+static stat_t _exec_aline_tail()
 {
 	if (mr.section_state == MOVE_STATE_NEW) {
-		if (mr.tail_length < EPSILON) { return(TG_OK);}		// end the move
+		if (fp_ZERO(mr.tail_length)) { return(STAT_OK);}		// end the move
 		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
 		mr.move_time = mr.tail_length / mr.midpoint_velocity;
 		mr.segments = ceil(uSec(mr.move_time) / (2 * cfg.estd_segment_usec));// # of segments in *each half*
 		mr.segment_move_time = mr.move_time / (2 * mr.segments);// time to advance for each segment
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-			return(TG_GCODE_BLOCK_SKIPPED);					// exit without advancing position
+			return(STAT_GCODE_BLOCK_SKIPPED);					// exit without advancing position
 		}
 		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
 		mr.section_state = MOVE_STATE_RUN1;
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {				// convex part (period 4)
 		mr.segment_velocity += mr.forward_diff_1;
-		if (_exec_aline_segment(false) == TG_COMPLETE) { 	  	// set up for second half
+		if (_exec_aline_segment(false) == STAT_COMPLETE) { 	  	// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = MOVE_STATE_RUN2;
 
@@ -1150,50 +1205,50 @@ static uint8_t _exec_aline_tail()
 		} else {
 			mr.forward_diff_1 += mr.forward_diff_2;
 		}
-		return(TG_EAGAIN);
+		return(STAT_EAGAIN);
 	}
 	if (mr.section_state == MOVE_STATE_RUN2) {				// concave part (period 5)
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
-		if (_exec_aline_segment(true) == TG_COMPLETE) { return (TG_OK);}	// end the move
+		if (_exec_aline_segment(true) == STAT_COMPLETE) { return (STAT_OK);}	// end the move
 	}
-	return(TG_EAGAIN);
+	return(STAT_EAGAIN);
 }
 
 /*
  * _exec_aline_segment() - segment runner helper
  */
-static uint8_t _exec_aline_segment(uint8_t correction_flag)
+static stat_t _exec_aline_segment(uint8_t correction_flag)
 {
-	double travel[AXES];
-	double steps[MOTORS];
+	float travel[AXES];
+	float steps[MOTORS];
 
 	// Multiply computed length by the unit vector to get the contribution for
 	// each axis. Set the target in absolute coords and compute relative steps.
 
 	if ((correction_flag == true) && (mr.segment_count == 1) && 
-		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_STARTED)) {
-		mr.target[X] = mr.endpoint[X];	// rounding error correction for last segment
-		mr.target[Y] = mr.endpoint[Y];
-		mr.target[Z] = mr.endpoint[Z];
-		mr.target[A] = mr.endpoint[A];
-		mr.target[B] = mr.endpoint[B];
-		mr.target[C] = mr.endpoint[C];
+		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
+		mr.target[AXIS_X] = mr.endpoint[AXIS_X];	// rounding error correction for last segment
+		mr.target[AXIS_Y] = mr.endpoint[AXIS_Y];
+		mr.target[AXIS_Z] = mr.endpoint[AXIS_Z];
+		mr.target[AXIS_A] = mr.endpoint[AXIS_A];
+		mr.target[AXIS_B] = mr.endpoint[AXIS_B];
+		mr.target[AXIS_C] = mr.endpoint[AXIS_C];
 	} else {
-		double intermediate = mr.segment_velocity * mr.segment_move_time;
-		mr.target[X] = mr.position[X] + (mr.unit[X] * intermediate);
-		mr.target[Y] = mr.position[Y] + (mr.unit[Y] * intermediate);
-		mr.target[Z] = mr.position[Z] + (mr.unit[Z] * intermediate);
-		mr.target[A] = mr.position[A] + (mr.unit[A] * intermediate);
-		mr.target[B] = mr.position[B] + (mr.unit[B] * intermediate);
-		mr.target[C] = mr.position[C] + (mr.unit[C] * intermediate);
+		float intermediate = mr.segment_velocity * mr.segment_move_time;
+		mr.target[AXIS_X] = mr.position[AXIS_X] + (mr.unit[AXIS_X] * intermediate);
+		mr.target[AXIS_Y] = mr.position[AXIS_Y] + (mr.unit[AXIS_Y] * intermediate);
+		mr.target[AXIS_Z] = mr.position[AXIS_Z] + (mr.unit[AXIS_Z] * intermediate);
+		mr.target[AXIS_A] = mr.position[AXIS_A] + (mr.unit[AXIS_A] * intermediate);
+		mr.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * intermediate);
+		mr.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * intermediate);
 	}
-	travel[X] = mr.target[X] - mr.position[X];
-	travel[Y] = mr.target[Y] - mr.position[Y];
-	travel[Z] = mr.target[Z] - mr.position[Z];
-	travel[A] = mr.target[A] - mr.position[A];
-	travel[B] = mr.target[B] - mr.position[B];
-	travel[C] = mr.target[C] - mr.position[C];
+	travel[AXIS_X] = mr.target[AXIS_X] - mr.position[AXIS_X];
+	travel[AXIS_Y] = mr.target[AXIS_Y] - mr.position[AXIS_Y];
+	travel[AXIS_Z] = mr.target[AXIS_Z] - mr.position[AXIS_Z];
+	travel[AXIS_A] = mr.target[AXIS_A] - mr.position[AXIS_A];
+	travel[AXIS_B] = mr.target[AXIS_B] - mr.position[AXIS_B];
+	travel[AXIS_C] = mr.target[AXIS_C] - mr.position[AXIS_C];
 
 /* The above is a re-arranged and loop unrolled version of this:
 	for (uint8_t i=0; i < AXES; i++) {	// don't do the error correction if you are going into a hold
@@ -1207,22 +1262,22 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 	}
 */
 	// prep the segment for the steppers and adjust the variables for the next iteration
-	(void)ik_kinematics(travel, steps, mr.microseconds);
-	if (st_prep_line(steps, mr.microseconds) == TG_OK) {
+	ik_kinematics(travel, steps, mr.microseconds);
+	if (st_prep_line(steps, mr.microseconds) == STAT_OK) {
 		copy_axis_vector(mr.position, mr.target); 	// update runtime position	
 /*  TRY THIS
-		mr.position[X] = mr.target[X];
-		mr.position[Y] = mr.target[Y];
-		mr.position[Z] = mr.target[Z];
-		mr.position[A] = mr.target[A];
-		mr.position[B] = mr.target[B];
-		mr.position[C] = mr.target[C];	
+		mr.position[AXIS_X] = mr.target[AXIS_X];
+		mr.position[AXIS_Y] = mr.target[AXIS_Y];
+		mr.position[AXIS_Z] = mr.target[AXIS_Z];
+		mr.position[AXIS_A] = mr.target[AXIS_A];
+		mr.position[AXIS_B] = mr.target[AXIS_B];
+		mr.position[AXIS_C] = mr.target[AXIS_C];	
 */	
 	}
 	if (--mr.segment_count == 0) {
-		return (TG_COMPLETE);	// this section has run all its segments
+		return (STAT_COMPLETE);	// this section has run all its segments
 	}
-	return (TG_EAGAIN);			// this section still has more segments to run
+	return (STAT_EAGAIN);			// this section still has more segments to run
 }
 
 
@@ -1232,22 +1287,73 @@ static uint8_t _exec_aline_segment(uint8_t correction_flag)
 #ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_PLANNER
 
-//#define JERK_TEST_VALUE (double)50000000	// set this to the value in the profile you are running
-#define JERK_TEST_VALUE (double)100000000	// set this to the value in the profile you are running
+//#define JERK_TEST_VALUE (float)50000000	// set this to the value in the profile you are running
+#define JERK_TEST_VALUE (float)100000000	// set this to the value in the profile you are running
 
 static void _test_calculate_trapezoid(void);
 static void _test_get_junction_vmax(void);
-static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBuf_t *bf);
-static void _make_unit_vector(double unit[], double x, double y, double z, double a, double b, double c);
-//static void _set_jerk(const double jerk, mpBuf_t *bf);
+static void _test_trapezoid(float length, float Ve, float Vt, float Vx, mpBuf_t *bf);
+static void _make_unit_vector(float unit[], float x, float y, float z, float a, float b, float c);
+//static void _set_jerk(const float jerk, mpBuf_t *bf);
+static void _test_get_target_length(void);
+static void _test_get_target_velocity(void);
 
 void mp_unit_tests()
 {
-	_test_calculate_trapezoid();
+	_test_get_target_length();
+//	_test_get_target_velocity();
+//	_test_calculate_trapezoid();
 //	_test_get_junction_vmax();
 }
 
-static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBuf_t *bf)
+static void _test_get_target_length()
+{
+	mpBuf_t *bf = mp_get_write_buffer();
+	bf->jerk = 1800000;
+	bf->recip_jerk = 1/bf->jerk;
+	float L;
+	float Vi;
+	float Vt;
+
+	Vi = 0;
+	Vt = 300;
+	L = _get_target_length(Vi, Vt, bf);		// result: L = 3.872983
+	Vt = _get_target_velocity(Vi, L, bf);	// result: Vt = 300
+
+	Vi = 165;
+	Vt = 300;
+	L = _get_target_length(Vi, Vt, bf);		// result: L = 4.027018
+	Vt = _get_target_velocity(Vi, L, bf);	// result: Vt = 300
+
+	Vi = 523;
+	Vt = 600;
+	L = _get_target_length(Vi, Vt, bf);		// result: L = 7.344950
+	Vt = _get_target_velocity(Vi, L, bf);	// result: Vt = 600
+
+	Vi = 200;
+	Vt = 400;
+	L = _get_target_length(Vi, Vt, bf);		// result: L = 6.324555
+	Vt = _get_target_velocity(Vi, L, bf);	// result: Vt = 400
+
+	Vi = 174;
+	Vt = 347;
+	L = _get_target_length(Vi, Vt, bf);		// result: L = 5.107690
+	Vt = _get_target_velocity(Vi, L, bf);	// result: Vt = 347
+}
+
+static void _test_get_target_velocity()
+{
+	mpBuf_t *bf = mp_get_write_buffer();
+
+	float L = 3.872983;
+	float Vi = 0;
+	float Vt; 			// 300
+	bf->jerk = 1800000;
+
+	Vt = _get_target_velocity(Vi, L, bf);
+}
+
+static void _test_trapezoid(float length, float Ve, float Vt, float Vx, mpBuf_t *bf)
 {
 	bf->length = length;
 	bf->entry_velocity = Ve;
@@ -1262,7 +1368,7 @@ static void _test_trapezoid(double length, double Ve, double Vt, double Vx, mpBu
 
 static void _test_calculate_trapezoid()
 {
-	mpBuf_t *bf = _get_write_buffer();
+	mpBuf_t *bf = mp_get_write_buffer();
 
 // these tests are calibrated the following parameters:
 //	jerk_max 				50 000 000		(all axes)
@@ -1373,28 +1479,28 @@ static void _test_calculate_trapezoid()
 
 }
 
-static void _make_unit_vector(double unit[], double x, double y, double z, double a, double b, double c)
+static void _make_unit_vector(float unit[], float x, float y, float z, float a, float b, float c)
 {
-	double length = sqrt(x*x + y*y + z*z + a*a + b*b + c*c);
-	unit[X] = x/length;
-	unit[Y] = y/length;
-	unit[Z] = z/length;
-	unit[A] = a/length;
-	unit[B] = b/length;
-	unit[C] = c/length;
+	float length = sqrt(x*x + y*y + z*z + a*a + b*b + c*c);
+	unit[AXIS_X] = x/length;
+	unit[AXIS_Y] = y/length;
+	unit[AXIS_Z] = z/length;
+	unit[AXIS_A] = a/length;
+	unit[AXIS_B] = b/length;
+	unit[AXIS_C] = c/length;
 }
 
 static void _test_get_junction_vmax()
 {
-//	cfg.a[X].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[Y].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[Z].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[A].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[B].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[C].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[AXIS_X].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[AXIS_Y].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[AXIS_Z].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[AXIS_A].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[AXIS_B].jerk_max = JERK_TEST_VALUE;
+//	cfg.a[AXIS_C].jerk_max = JERK_TEST_VALUE;
 //	mm.jerk_transition_size = 0.5;
 //	mm.jerk_limit_max = 184.2;
-
+/*
 	mm.test_case = 1;				// straight line along X axis
 	_make_unit_vector(mm.a_unit, 1.0000, 0.0000, 0, 0, 0, 0);
 	_make_unit_vector(mm.b_unit, 1.0000, 0.0000, 0, 0, 0, 0);
@@ -1449,6 +1555,7 @@ static void _test_get_junction_vmax()
 	_make_unit_vector(mm.a_unit, 0.7071, 0.7071, 0, 0, 0, 0);
 	_make_unit_vector(mm.b_unit,-0.7071,-0.7071, 0, 0, 0, 0);
 	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
+*/
 }
 
 #endif // __UNIT_TEST_PLANNER

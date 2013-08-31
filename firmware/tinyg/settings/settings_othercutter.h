@@ -23,39 +23,49 @@
 
 // *** settings.h overrides ***
 
-#undef	SWITCH_TYPE
-#define SWITCH_TYPE 		SW_TYPE_NORMALLY_CLOSED
+#undef  SR_DEFAULTS
+#define SR_DEFAULTS "line","mpox","mpoy","mpoz","mpoa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
-#undef	COM_COMM_MODE
-#define COM_COMM_MODE		TG_JSON_MODE
+#undef	SWITCH_TYPE
+#define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED
+
+#undef	COMM_MODE
+#define COMM_MODE				JSON_MODE
+
+#undef	JSON_VERBOSITY
+#define JSON_VERBOSITY			JV_CONFIGS
 
 #undef	COM_ENABLE_QR
-#define COM_ENABLE_QR		true
+#define COM_ENABLE_QR			true
+
+#undef 	QR_VERBOSITY
+//#define QR_VERBOSITY			QR_FILTERED
+#define QR_VERBOSITY			QR_VERBOSE
 
 // *** motor settings ***
 
-#define M1_MOTOR_MAP 		X			// 1ma
+#define M1_MOTOR_MAP 		AXIS_X		// 1ma
 #define M1_STEP_ANGLE 		1.8			// 1sa
 #define M1_TRAVEL_PER_REV 	54.023		// 1tr
 #define M1_MICROSTEPS 		8			// 1mi		1,2,4,8
 #define M1_POLARITY 		1			// 1po		0=normal, 1=reversed
 #define M1_POWER_MODE 		1			// 1pm		TRUE=low power idle enabled 
 
-#define M2_MOTOR_MAP 		Y
+#define M2_MOTOR_MAP 		AXIS_Y
 #define M2_STEP_ANGLE 		1.8
 #define M2_TRAVEL_PER_REV 	34.314
 #define M2_MICROSTEPS 		8
 #define M2_POLARITY 		1
 #define M2_POWER_MODE 		1			// hold
 
-#define M3_MOTOR_MAP 		Z
+#define M3_MOTOR_MAP 		AXIS_Z
 #define M3_STEP_ANGLE 		15
 #define M3_TRAVEL_PER_REV 	2.438
 #define M3_MICROSTEPS 		4
 #define M3_POLARITY 		1
 #define M3_POWER_MODE 		1			// z-axis leadscrew doesn't need hold, enable low power idle
 
-#define M4_MOTOR_MAP 		A
+#define M4_MOTOR_MAP 		AXIS_A
 #define M4_STEP_ANGLE 		1.8
 #define M4_TRAVEL_PER_REV 	180.0		// degrees moved per motor rev
 #define M4_MICROSTEPS 		8
@@ -67,11 +77,11 @@
 #define X_AXIS_MODE 					AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
 #define X_VELOCITY_MAX 					15000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 					1000				// xfr 		G1 max feed rate in mm/min
-#define X_TRAVEL_MAX 					320					// travel between switches or crashes
+#define X_TRAVEL_MAX 					320					// xtm		travel between switches or crashes
 #define X_JERK_MAX 						JERK_MAX			// xjm
 #define X_JUNCTION_DEVIATION			JUNCTION_DEVIATION	// xjd
-#define X_SWITCH_MODE_MIN				SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
-#define X_SWITCH_MODE_MAX				SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
+#define X_SWITCH_MODE_MIN 				SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
+#define X_SWITCH_MODE_MAX 				SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SEARCH_VELOCITY 				2000				// xsv
 #define X_LATCH_VELOCITY 				500					// xlv		mm/min
 #define X_LATCH_BACKOFF 				12					// xlb		mm

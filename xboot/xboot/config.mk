@@ -40,6 +40,7 @@ AVRDUDE_FUSES =
 #AVRDUDE_FUSES += -U fuse2:w:0xBF:m
 
 # There is no fuse byte 3.....
+# Nobody expects the Spanish Inquisition
 
 # Fuse byte 4: Start-up configuration
 # See datasheet section 4.16.4
@@ -97,8 +98,8 @@ USE_ATTACH_LED = no
 USE_FIFO = no
 
 # General Options
-USE_INTERRUPTS = no
-USE_WATCHDOG = no
+USE_INTERRUPTS = yes
+USE_WATCHDOG = yes
 
 # Bootloader Features
 ENABLE_BLOCK_SUPPORT = yes
@@ -128,8 +129,8 @@ ENTER_PIN_STATE       = 0
 ENTER_PIN_PUEN        = 1
 
 # ENTER_DELAY
-ENTER_BLINK_COUNT     = 3
-ENTER_BLINK_WAIT      = 30000
+ENTER_BLINK_COUNT     = 12
+ENTER_BLINK_WAIT      = 250000
 
 # ENTER_UART
 ENTER_UART_NEED_SYNC = yes
@@ -152,7 +153,7 @@ WATCHDOG_TIMEOUT      = WDT_PER_1KCLK_gc
 #WATCHDOG_TIMEOUT      = WDT_PER_8KCLK_gc
 
 # LED
-LED_PORT_NAME         = A
+LED_PORT_NAME         = F
 LED_PIN               = 5
 LED_INV               = 0
 
@@ -162,6 +163,7 @@ UART_BAUD_RATE        = 115200
 UART_PORT_NAME        = C
 UART_NUMBER           = 0
 UART_RX_PUEN          = yes
+UART_STARTUP_MESSAGE  = yes
 
 # UART RS485 Enable Output
 UART_EN_PORT_NAME     = C
@@ -194,8 +196,8 @@ I2C_AUTONEG_PORT_NAME         = A
 I2C_AUTONEG_PIN               = 2
 
 # Attach LED
-ATTACH_LED_PORT_NAME          = A
-ATTACH_LED_PIN                = 1
+ATTACH_LED_PORT_NAME          = F
+ATTACH_LED_PIN                = 5
 ATTACH_LED_INV                = 1
 
 

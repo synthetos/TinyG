@@ -4,24 +4,25 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
- * for details. You should have received a copy of the GNU General Public 
- * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include <avr/io.h>
@@ -36,8 +37,8 @@
 #include "config.h"
 #include "pwm.h"
 
-static void _exec_spindle_control(uint8_t spindle_mode, double f);
-static void _exec_spindle_speed(uint8_t i, double speed);
+static void _exec_spindle_control(uint8_t spindle_mode, float f);
+static void _exec_spindle_speed(uint8_t i, float speed);
 
 /* 
  * sp_init()
@@ -54,9 +55,9 @@ void sp_init()
 /*
  * cm_get_spindle_pwm() - return PWM phase (duty cycle) for dir and speed
  */
-double cm_get_spindle_pwm( uint8_t spindle_mode )
+float cm_get_spindle_pwm( uint8_t spindle_mode )
 {
-    double speed_lo=0, speed_hi=0, phase_lo=0, phase_hi=0;
+    float speed_lo=0, speed_hi=0, phase_lo=0, phase_hi=0;
     if (spindle_mode==SPINDLE_CW ) {
         speed_lo = cfg.p.cw_speed_lo;
         speed_hi = cfg.p.cw_speed_hi;
@@ -75,7 +76,7 @@ double cm_get_spindle_pwm( uint8_t spindle_mode )
         if( gm.spindle_speed > speed_hi ) gm.spindle_speed = speed_hi;
         
         // normalize speed to [0..1]
-        double speed = (gm.spindle_speed - speed_lo) / (speed_hi - speed_lo);
+        float speed = (gm.spindle_speed - speed_lo) / (speed_hi - speed_lo);
         return (speed * (phase_hi - phase_lo)) + phase_lo;
         
     } else
@@ -87,12 +88,13 @@ double cm_get_spindle_pwm( uint8_t spindle_mode )
  * cm_exec_spindle_control() - execute the spindle command (called from planner)
  */
 
-uint8_t cm_spindle_control(uint8_t spindle_mode)
+stat_t cm_spindle_control(uint8_t spindle_mode)
 {
 	mp_queue_command(_exec_spindle_control, spindle_mode, 0);
-	return(TG_OK);
+	return(STAT_OK);
 }
-static void _exec_spindle_control(uint8_t spindle_mode, double f)
+
+static void _exec_spindle_control(uint8_t spindle_mode, float f)
 {
 	cm_set_spindle_mode(spindle_mode);
  	if (spindle_mode == SPINDLE_CW) {
@@ -110,30 +112,28 @@ static void _exec_spindle_control(uint8_t spindle_mode, double f)
 }
 
 /*
- * cm_set_spindle_speed() - queue the S parameter to the planner buffer
+ * cm_set_spindle_speed() 	- queue the S parameter to the planner buffer
+ * cm_exec_spindle_speed() 	- execute the S command (called from the planner buffer)
+ * _exec_spindle_speed()	- spindle speed callback from planner queue
  */
 
-uint8_t cm_set_spindle_speed(double speed)
+stat_t cm_set_spindle_speed(float speed)
 {
-//	if (speed > cfg.max_spindle speed) {
-//		return (TG_MAX_SPINDLE_SPEED_EXCEEDED);
-//	}
+//	if (speed > cfg.max_spindle speed) { return (STAT_MAX_SPINDLE_SPEED_EXCEEDED);}
 	mp_queue_command(_exec_spindle_speed, 0, speed);
-    return (TG_OK);
+    return (STAT_OK);
 }
-static void _exec_spindle_speed(uint8_t i, double speed)
+
+void cm_exec_spindle_speed(float speed)
 {
-//	cm_set_spindle_speed_parameter(speed);
-    
-    // update spindle speed if we're running
-    pwm_set_duty(PWM_1, cm_get_spindle_pwm(gm.spindle_mode) );
+// TODO: Link in S command and calibrations to allow dynamic spindle speed setting 
+	cm_set_spindle_speed(speed);
+}
+
+static void _exec_spindle_speed(uint8_t i, float speed)
+{
+	cm_set_spindle_speed_parameter(speed);
+	pwm_set_duty(PWM_1, cm_get_spindle_pwm(gm.spindle_mode) ); // update spindle speed if we're running
 }
 
 
-/*
- * cm_exec_spindle_speed() - execute the S command (called from the planner buffer)
- */
-void cm_exec_spindle_speed(double speed)
-{
-	// TODO: Link in S command and calibrations to allow dynamic spindle speed setting 
-}

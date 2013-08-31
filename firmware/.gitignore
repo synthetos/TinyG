@@ -1,13 +1,12 @@
-*.elf
-*.pyc
 *.o
 *.d
-*.eep
-*.map
-*.lss
+*.elf
 *.map
 *.srec
+*.lss
+*.map
 *.aws
 *.atsuo
+*.eep
 .DS_Store
 TcfTransactionLog.csv

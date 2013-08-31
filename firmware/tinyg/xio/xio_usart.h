@@ -4,29 +4,20 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
- *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /*
- * Rob: The usart.h and .c files can be considered the parent class for the 
+ * The usart.h and .c files can be considered the parent class for the 
  * USB and RS485 devices which are derived from them. The usart.h file acts 
  * as the header file for all three classes: usart.c, usb.c and rs485.c
  */
@@ -74,7 +65,7 @@
 //**** USB device configuration ****
 //NOTE: XIO_BLOCK / XIO_NOBLOCK affects reads only. Writes always block. (see xio.h)
 
-#define USB_BAUD	 XIO_BAUD_115200
+#define USB_BAUD  XIO_BAUD_115200
 #define USB_FLAGS (XIO_BLOCK |  XIO_ECHO | XIO_XOFF | XIO_LINEMODE )
 
 #define USB_USART USARTC0						// USB usart
@@ -82,17 +73,23 @@
 #define USB_TX_ISR_vect USARTC0_DRE_vect		// (TX) data register empty IRQ
 
 #define USB_PORT PORTC							// port where the USART is located
-#define USB_CTS_bp (0)							// CTS - bit position (pin is wired on board)
+#define USB_CTS_bp (1)							// CTS - bit position (pin is wired on board)
 #define USB_CTS_bm (1<<USB_CTS_bp)				// CTS - bit mask
-#define USB_RTS_bp (1)							// RTS - bit position (pin is wired on board)
+#define USB_CTS_PINCTRL PIN1CTRL				// CTS - PINxCTRL assignment
+#define USB_CTS_ISR_vect PORTC_INT0_vect		// CTS - Interrupt Vector (PORTC_INT0_vect or PORTC_INT1_vect)
+#define USB_CTS_INTMSK INT0MASK					// CTS - Interrupt Mask Register (INT0MASK or INT1MASK)
+#define USB_CTS_INTLVL (PORT_INT0LVL_LO_gc)
+
+#define USB_RTS_bp (0)							// RTS - bit position (pin is wired on board)
 #define USB_RTS_bm (1<<USB_RTS_bp)				// RTS - bit mask
+
 #define USB_RX_bm (1<<2)						// RX pin bit mask
 #define USB_TX_bm (1<<3)						// TX pin bit mask
 
 #define USB_INBITS_bm (USB_CTS_bm | USB_RX_bm)	// input bits
 #define USB_OUTBITS_bm (USB_RTS_bm | USB_TX_bm)	// output bits
-#define USB_OUTCLR_bm (0)						// outputs init'd to 0
-#define USB_OUTSET_bm (USB_RTS_bm | USB_TX_bm)	// outputs init'd to 1
+#define USB_OUTCLR_bm (USB_RTS_bm)				// outputs init'd to 0
+#define USB_OUTSET_bm (USB_TX_bm)				// outputs init'd to 1
 
 //**** RS485 device configuration (no echo or CRLF) ****
 #define RS485_BAUD	   XIO_BAUD_115200
@@ -155,8 +152,9 @@ enum xioFCState {
  *	     or a max of 254 characters usable
  */
 typedef struct xioUSART {
-	uint8_t fc_char;			 			// flow control character to send
-	volatile uint8_t fc_state;				// flow control state
+	uint8_t fc_char_rx;			 			// RX-side flow control character to send
+	volatile uint8_t fc_state_rx;			// flow control state on RX side
+	volatile uint8_t fc_state_tx;			// flow control state on TX side
 
 	volatile buffer_t rx_buf_tail;			// RX buffer read index
 	volatile buffer_t rx_buf_head;			// RX buffer write index (written by ISR)
@@ -187,11 +185,14 @@ int xio_getc_usart(FILE *stream);
 int xio_putc_usart(const char c, FILE *stream);
 int xio_putc_usb(const char c, FILE *stream);	// stdio compatible put character
 int xio_putc_rs485(const char c, FILE *stream);	// stdio compatible put character
+void xio_enable_rs485_rx(void);					// needed for startup
+void xio_enable_rs485_tx(void);					// included for completeness
 
 // handy helpers
 buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx);
 buffer_t xio_get_tx_bufcount_usart(const xioUsart_t *dx);
 buffer_t xio_get_usb_rx_free(void);
+void xio_reset_usb_rx_buffers(void);
 
 void xio_queue_RX_char_usart(const uint8_t dev, const char c);
 void xio_queue_RX_string_usart(const uint8_t dev, const char *buf);

@@ -4,26 +4,25 @@
  *
  * Copyright (c) 2011 - 2012 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* util.c/.h contains a dog's breakfast of supporting functions that are 
  * not specific to tinyg: including:
@@ -38,26 +37,23 @@
 
 /****** Global Scope Variables and Functions ******/
 
-double vector[AXES];				// vector of axes for passing to subroutines
+float vector[AXES];				// vector of axes for passing to subroutines
 
-double min3(double x1, double x2, double x3);
-double min4(double x1, double x2, double x3, double x4);
-double max3(double x1, double x2, double x3);
-double max4(double x1, double x2, double x3, double x4);
+float min3(float x1, float x2, float x3);
+float min4(float x1, float x2, float x3, float x4);
+float max3(float x1, float x2, float x3);
+float max4(float x1, float x2, float x3, float x4);
 uint8_t isnumber(char c);
-uint8_t read_double(char *buf, uint8_t *i, double *double_ptr);
+uint8_t read_float(char *buf, uint8_t *i, float *float_ptr);
 uint16_t compute_checksum(char const *string, const uint16_t length);
 
-void copy_vector(double dest[], const double src[], uint8_t length);
-void copy_axis_vector(double dest[], const double src[]);
-double get_axis_vector_length(const double a[], const double b[]);
-double *set_vector(double x, double y, double z, double a, double b, double c);
-double *set_vector_by_axis(double value, uint8_t axis);
+void copy_vector(float dst[], const float src[], uint8_t length);
+void copy_axis_vector(float dst[], const float src[]);
+uint8_t vector_equal(const float a[], const float b[]) ;
+float get_axis_vector_length(const float a[], const float b[]);
+float *set_vector(float x, float y, float z, float a, float b, float c);
+float *set_vector_by_axis(float value, uint8_t axis);
 #define clear_vector(a) memset(a,0,sizeof(a))
-
-// ritorno is a handy way to provide exception returns - it returns only if an error occurred
-// (ritorno is Italian for return) 
-#define ritorno(a) { uint8_t status; if((status = a) != TG_OK) return(status);}
 
 /***** Math Support *****/
 
@@ -81,8 +77,10 @@ double *set_vector_by_axis(double value, uint8_t axis);
 #endif
 
 #ifndef EPSILON
-#define EPSILON 0.00001						// rounding error for floats
+#define EPSILON 	0.00001					// rounding error for floats
+//#define EPSILON 	0.000001				// rounding error for floats
 #endif
+
 #ifndef fp_EQ
 #define fp_EQ(a,b) (fabs(a-b) < EPSILON)	// requires math.h to be included in each file used
 #endif
@@ -107,8 +105,8 @@ double *set_vector_by_axis(double value, uint8_t axis);
 #define MAX_ULONG (4294967295)
 #define MM_PER_INCH (25.4)
 #define INCH_PER_MM (1/25.4)
-#define MICROSECONDS_PER_MINUTE ((double)60000000)
-#define uSec(a) ((double)(a * MICROSECONDS_PER_MINUTE))
+#define MICROSECONDS_PER_MINUTE ((float)60000000)
+#define uSec(a) ((float)(a * MICROSECONDS_PER_MINUTE))
 
 #define RADIAN (57.2957795)
 //		M_PI is pi as defined in math.h

@@ -4,24 +4,17 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
- * for details. You should have received a copy of the GNU General Public 
- * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 //#include <ctype.h>
@@ -61,13 +54,13 @@ These commands are active from the command line:\n\
 _status_report_advisory();
 _postscript();
 rpt_print_system_ready_message();
-return(TG_OK);
+return(STAT_OK);
 }
 
 /*
  * print_config_help() - help invoked as $h
  */
-uint8_t print_config_help(cmdObj_t *cmd)
+stat_t print_config_help(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG CONFIGURATION Help ####\n"));
 fprintf_P(stderr, PSTR("\
@@ -93,19 +86,19 @@ For configuration details see: https://github.com/synthetos/TinyG/wiki/TinyG-Con
 "));
 _status_report_advisory();
 _postscript();
-return(TG_OK);
+return(STAT_OK);
 }
 
 /*
  * print_test_help() - help invoked for tests
  */
-uint8_t print_test_help(cmdObj_t *cmd)
+stat_t print_test_help(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG SELF TEST Help ####\n"));
 fprintf_P(stderr, PSTR("\
 Invoke self test by entering $test=N where N is one of:\n\
-  $test=1  homing test   (you must trip homing switches)\n\
-  $test=2  smoke test\n\
+  $test=1  smoke test\n\
+  $test=2  homing test   (you must trip homing switches)\n\
   $test=3  square test   (a series of squares)\n\
   $test=4  arc test      (some large circles)\n\
   $test=5  dwell test    (moves spaced by 1 second dwells)\n\
@@ -117,34 +110,39 @@ Invoke self test by entering $test=N where N is one of:\n\
   $test=11 small moves test\n\
   $test=12 slow moves test\n\
   $test=13 coordinate system offset test (G92, G54-G59)\n\
+\n\
+Tests assume a centered XY origin and at least 80mm clearance in all directions\n\
+Tests assume Z has at least 40mm posiitive clearance\n\
+Tests start with a G0 X0 Y0 Z0 move\n\
+Homing is the exception. No initial position or clearance is assumed\n\
 "));
 _postscript();
-return(TG_OK);
+return(STAT_OK);
 }
 
 /*
  * print_defaults_help() - help invoked for defaults
  */
-uint8_t print_defaults_help(cmdObj_t *cmd)
+stat_t print_defaults_help(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG RESTORE DEFAULTS Help ####\n"));
 fprintf_P(stderr, PSTR("\
 Enter $defaults=1 to reset the system to the factory default values.\n\
 This will overwrite any changes you have made.\n"));
 _postscript();
-return(TG_OK);
+return(STAT_OK);
 }
 
 /*
  * print_boot_loader_help()
  */
-uint8_t print_boot_loader_help(cmdObj_t *cmd)
+stat_t print_boot_loader_help(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG BOOT LOADER Help ####\n"));
 fprintf_P(stderr, PSTR("\
 Enter $boot=1 to enter the boot loader.\n"));
 _postscript();
-return(TG_OK);
+return(STAT_OK);
 }
 
 // help helper functions (snicker)
@@ -172,11 +170,11 @@ Have fun\n"));
 //***** diagnostic dumps *****
 //****************************
 
-void dump_set_f_dda(double f_dda,
-					double dda_substeps, 
-					double major_axis_steps, 
-					double microseconds,
-					double f_dda_base)
+void dump_set_f_dda(float f_dda,
+					float dda_substeps, 
+					float major_axis_steps, 
+					float microseconds,
+					float f_dda_base)
 {
 /* UNCOMMENT IF YOU NEED THIS
 fprintf_P(stderr, PSTR("dump_set_f_dda()\n\

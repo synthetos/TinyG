@@ -4,26 +4,25 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include <stdlib.h>
@@ -36,7 +35,7 @@
 #include "canonical_machine.h"
 #include "kinematics.h"
 
-//static void _inverse_kinematics(double travel[], double joint[], double microseconds);
+//static void _inverse_kinematics(float travel[], float joint[], float microseconds);
 
 /*
  * ik_kinematics() - wrapper routine for inverse kinematics
@@ -45,21 +44,21 @@
  *	Performs axis mapping & conversion of length units to steps (see note)
  *	Also deals with inhibited axes
  *
- *	Note: The reason steps are returned as doubles (as opposed to, say,
+ *	Note: The reason steps are returned as floats (as opposed to, say,
  *		  uint32_t) is to accommodate fractional DDA steps. The DDA deals 
  *		  with fractional step values as fixed-point binary in order to get
  *		  the smoothest possible operation. Steps are passed to the move prep
- *		  routine as doubles and converted to fixed-point binary during queue 
+ *		  routine as floats and converted to fixed-point binary during queue 
  *		  loading. See stepper.c for details.
  */
 
-uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
+void ik_kinematics(float travel[], float steps[], float microseconds)
 {
 	uint8_t i;
-	double joint[AXES];
+	float joint[AXES];
 
 //	_inverse_kinematics(travel, joint, microseconds);// you can insert inverse kinematics transformations here
-	memcpy(joint, travel, sizeof(double)*AXES);		 //...or just do a memcopy for cartesian machines
+	memcpy(joint, travel, sizeof(float)*AXES);		 //...or just do a memcopy for cartesian machines
 
 	// Map motors to axes and convert length units to steps
 	// Most of the conversion math has already been done in steps_per_unit
@@ -75,7 +74,6 @@ uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
 	//		if (cfg.m[j].motor_map == i) { steps[j] = joint[i] * cfg.m[j].steps_per_unit;}
 	//	}
 	}
-	return (TG_OK);
 }
 
 /*
@@ -90,7 +88,7 @@ uint8_t ik_kinematics(double travel[], double steps[], double microseconds)
  *	time it takes to complete the mp_exec_move() function.
  */
 /*
-static void _inverse_kinematics(double travel[], double joint[], double microseconds)
+static void _inverse_kinematics(float travel[], float joint[], float microseconds)
 {
 	for (uint8_t i=0; i<AXES; i++) {
 		joint[i] = travel[i];

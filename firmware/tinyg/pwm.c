@@ -4,26 +4,25 @@
  *
  * Copyright (c) 2012 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include <stdlib.h>
@@ -34,8 +33,12 @@
 #include "tinyg.h"
 #include "system.h"
 #include "pwm.h"
+#include "gpio.h"
 
-/***** PWM defines, structures and memory allocation *****/
+/***** PWM defines, structures and memory allocation *****
+ *
+ * Three are two PWM channels - 
+ */
 
 // defines common to all PWM channels
 //#define PWM_TIMER_TYPE	TC1_struct	// PWM uses TC1's
@@ -55,15 +58,16 @@
  *	 TC_CLKSEL_DIV8_gc  - good for about  62 Hz to  16 KHz
  *	 TC_CLKSEL_DIV64_gc - good for about   8 Hz to   2 Khz
  */
-#define PWM1_CTRLA_CLKSEL TC_CLKSEL_DIV1_gc	// starting clock select value
-#define PWM1_CTRLB (3 | TC0_CCBEN_bm)// single slope PWM enabled on channel B
-#define PWM1_ISR_vect TCD1_CCB_vect	// must match timer assignments in system.h
-#define PWM1_INTCTRLB		0		// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
+#define PWM1_CTRLA_CLKSEL	TC_CLKSEL_DIV1_gc	// starting clock select value
+#define PWM1_CTRLB 			(3 | TC0_CCBEN_bm)	// single slope PWM enabled on channel B
+#define PWM1_ISR_vect 		TCD1_CCB_vect		// must match timer assignments in system.h
+#define PWM1_INTCTRLB		0					// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
 
-#define PWM2_CTRLA_CLKSEL TC_CLKSEL_DIV1_gc
-#define PWM2_CTRLB 			3		// single slope PWM enabled, no output channel
-#define PWM2_ISR_vect TCE1_CCB_vect	// must match timer assignments in system.h
-#define PWM2_INTCTRLB		0		// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
+#define PWM2_CTRLA_CLKSEL 	TC_CLKSEL_DIV1_gc
+#define PWM2_CTRLB 			3					// single slope PWM enabled, no output channel
+//#define PWM2_CTRLB 		(3 | TC0_CCBEN_bm)	// single slope PWM enabled on channel B
+#define PWM2_ISR_vect		TCE1_CCB_vect		// must match timer assignments in system.h
+#define PWM2_INTCTRLB		0					// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
 
 typedef struct pwmStruct { 			// one per PWM channel
 	uint8_t ctrla;					// byte needed to active CTRLA (it's dynamic - rest are static)
@@ -79,12 +83,14 @@ static pwmStruct_t pwm[PWMS];		// array of PWMs (usually 2, see system.h)
  *	  - Whatever level interrupts you use must be enabled in main()
  *	  - init assumes PWM1 output bit (D5) has been set to output previously (stepper.c)
  *	  - See system.h for timer and port assignments
+ *    - Don't do this: memset(&TIMER_PWM1, 0, sizeof(PWM_TIMER_t)); // zero out the timer registers
  */
 void pwm_init()
 {
+	gpio_set_bit_off(SPINDLE_PWM);
+
 	// setup PWM channel 1
 	memset(&pwm[PWM_1], 0, sizeof(pwmStruct_t));		// clear parent structure 
-	memset(&TIMER_PWM1, 0, sizeof(PWM_TIMER_t));		// zero out the timer registers
 	pwm[PWM_1].timer = &TIMER_PWM1;						// bind timer struct to PWM struct array
 	pwm[PWM_1].ctrla = PWM1_CTRLA_CLKSEL;				// initialize starting clock operating range
 	pwm[PWM_1].timer->CTRLB = PWM1_CTRLB;
@@ -92,7 +98,6 @@ void pwm_init()
 
 	// setup PWM channel 2
 	memset(&pwm[PWM_2], 0, sizeof(pwmStruct_t));		// clear all values, pointers and status
-	memset(&TIMER_PWM2, 0, sizeof(PWM_TIMER_t));
 	pwm[PWM_2].timer = &TIMER_PWM2;
 	pwm[PWM_2].ctrla = PWM2_CTRLA_CLKSEL;
 	pwm[PWM_2].timer->CTRLB = PWM2_CTRLB;
@@ -117,20 +122,20 @@ ISR(PWM2_ISR_vect)
  * pwm_set_freq() - set PWM channel frequency
  *
  *	channel	- PWM channel
- *	freq	- PWM frequency in Khz as a double
+ *	freq	- PWM frequency in Khz as a float
  *
  *	Assumes 32MHz clock.
  *	Doesn't turn time on until duty cycle is set
  */
 
-uint8_t pwm_set_freq(uint8_t chan, double freq)
+stat_t pwm_set_freq(uint8_t chan, float freq)
 {
-	if (chan > PWMS) { return (TG_NO_SUCH_DEVICE);}
-	if (freq > PWM_MAX_FREQ) { return (TG_INPUT_VALUE_TOO_SMALL);}
-	if (freq < PWM_MIN_FREQ) { return (TG_INPUT_VALUE_TOO_LARGE);}
+	if (chan > PWMS) { return (STAT_NO_SUCH_DEVICE);}
+	if (freq > PWM_MAX_FREQ) { return (STAT_INPUT_VALUE_TOO_LARGE);}
+	if (freq < PWM_MIN_FREQ) { return (STAT_INPUT_VALUE_TOO_SMALL);}
 
 	// set the period and the prescaler
-	double prescale = F_CPU/65536/freq;	// optimal non-integer prescaler value
+	float prescale = F_CPU/65536/freq;	// optimal non-integer prescaler value
 	if (prescale <= 1) { 
 		pwm[chan].timer->PER = F_CPU/freq;
 		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV1_gc;
@@ -147,7 +152,7 @@ uint8_t pwm_set_freq(uint8_t chan, double freq)
 		pwm[chan].timer->PER = F_CPU/64/freq;
 		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV64_gc;
 	}
-	return (TG_OK);
+	return (STAT_OK);
 }
 
 /* 
@@ -163,29 +168,19 @@ uint8_t pwm_set_freq(uint8_t chan, double freq)
  *	The frequency must have been set previously
  */
 
-uint8_t pwm_set_duty(uint8_t chan, double duty)
+stat_t pwm_set_duty(uint8_t chan, float duty)
 {
-    if (duty < 0.0) { return (TG_INPUT_VALUE_TOO_SMALL);}
-    if (duty > 1.0) { return (TG_INPUT_VALUE_TOO_LARGE);}
+    if (duty < 0.0) { return (STAT_INPUT_VALUE_TOO_SMALL);}
+    if (duty > 1.0) { return (STAT_INPUT_VALUE_TOO_LARGE);}
     
 	// Ffrq = Fper/(2N(CCA+1))
 	// Fpwm = Fper/((N(PER+1))
 	
-    double period_scalar = pwm[chan].timer->PER;
+    float period_scalar = pwm[chan].timer->PER;
 	pwm[chan].timer->CCB = (uint16_t)(period_scalar * duty) + 1;
-	return (TG_OK);
+	return (STAT_OK);
 }
 
-/*
-uint8_t pwm_set_duty(uint8_t chan, double duty)
-{
-	if (duty < 0)   { return (TG_INPUT_VALUE_TOO_SMALL);}
-	if (duty > 100) { return (TG_INPUT_VALUE_TOO_LARGE);}
-
-	pwm[chan].timer->CCB = (uint16_t)(pwm[chan].timer->PER - pwm[chan].timer->PER / (duty/100));
-	return (TG_OK);
-}
-*/
 //###########################################################################
 //##### UNIT TESTS ##########################################################
 //###########################################################################

@@ -4,24 +4,25 @@
  *
  * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
- * for details. You should have received a copy of the GNU General Public 
- * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* Note: The values in this file are the default settings that are loaded
  * 		 into a virgin EEPROM, and can be changed using the config commands.
@@ -44,41 +45,74 @@
 
 // *** settings.h overrides ***
 
-//#undef COMM_MODE
-//#define COMM_MODE				JSON_MODE
+#undef COMM_MODE
+#define COMM_MODE				JSON_MODE
 
-//#undef JSON_VERBOSITY
-//#define JSON_VERBOSITY 		JV_MESSAGES
+#undef JSON_VERBOSITY
+#define JSON_VERBOSITY 			JV_CONFIGS
+
+#undef SWITCH_TYPE
+#define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 
 // *** motor settings ***
 
-#define M1_MOTOR_MAP 			X		// 1ma
+#define M1_MOTOR_MAP 			AXIS_X	// 1ma
 #define M1_STEP_ANGLE			1.8		// 1sa
+#define M1_TRAVEL_PER_REV		36.54	// 1tr
+#define M1_MICROSTEPS			8		// 1mi		1,2,4,8
+#define M1_POLARITY				1		// 1po		0=normal, 1=reversed
+#define M1_POWER_MODE			0		// 1pm		TRUE=low power idle enabled 
+
+#define M2_MOTOR_MAP			AXIS_Y
+#define M2_STEP_ANGLE			1.8
+#define M2_TRAVEL_PER_REV		36.54
+#define M2_MICROSTEPS			8
+#define M2_POLARITY				0
+#define M2_POWER_MODE			0
+
+#define M3_MOTOR_MAP			AXIS_Z
+#define M3_STEP_ANGLE			1.8
+#define M3_TRAVEL_PER_REV		1.25
+#define M3_MICROSTEPS			4
+#define M3_POLARITY				1
+#define M3_POWER_MODE			1
+
+#define M4_MOTOR_MAP			AXIS_A
+#define M4_STEP_ANGLE			1.8
+#define M4_TRAVEL_PER_REV		360		// degrees per motor rev - no gearing
+#define M4_MICROSTEPS			8
+#define M4_POLARITY				0
+#define M4_POWER_MODE			0
+
+/* Mapping for dual grantry setup
+#define M1_MOTOR_MAP 			AXIS_X	// 1ma
+#define M1_STEP_ANGLE			0.9		// 1sa
 #define M1_TRAVEL_PER_REV		36.54	// 1tr
 #define M1_MICROSTEPS			8		// 1mi		1,2,4,8
 #define M1_POLARITY				0		// 1po		0=normal, 1=reversed
 #define M1_POWER_MODE			1		// 1pm		TRUE=low power idle enabled 
 
-#define M2_MOTOR_MAP			Y
-#define M2_STEP_ANGLE			1.8
+#define M2_MOTOR_MAP			AXIS_Y
+#define M2_STEP_ANGLE			0.9
 #define M2_TRAVEL_PER_REV		36.54
 #define M2_MICROSTEPS			8
-#define M2_POLARITY				0
+#define M2_POLARITY				1
 #define M2_POWER_MODE			1
 
-#define M3_MOTOR_MAP			Z
-#define M3_STEP_ANGLE			1.8
-#define M3_TRAVEL_PER_REV		1.25
+#define M3_MOTOR_MAP			AXIS_Y
+#define M3_STEP_ANGLE			0.9
+#define M3_TRAVEL_PER_REV		36.54
 #define M3_MICROSTEPS			8
 #define M3_POLARITY				0
 #define M3_POWER_MODE			1
 
-#define M4_MOTOR_MAP			A
-#define M4_STEP_ANGLE			1.8
-#define M4_TRAVEL_PER_REV		180		// degrees per motor rev - 1:2 gearing
+#define M4_MOTOR_MAP			AXIS_Z
+#define M4_STEP_ANGLE			0.45
+#define M4_TRAVEL_PER_REV		2.1166
 #define M4_MICROSTEPS			8
-#define M4_POLARITY				0
-#define M4_POWER_MODE			1
+#define M4_POLARITY				1
+#define M4_POWER_MODE			0
+*/
 
 // *** axis settings ***
 
@@ -86,12 +120,11 @@
 #define X_VELOCITY_MAX			16000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX			220					// xtm		travel between switches or crashes
+//#define X_TRAVEL_MAX			300					// xtm		travel between switches or crashes
 #define X_JERK_MAX				5000000000			// xjm		yes, that's "5 billion" mm/(min^3)
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
-#define X_SWITCH_MODE_MIN		SW_MODE_HOMING
-#define X_SWITCH_MODE_MAX		SW_MODE_DISABLED
-//#define X_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
-//#define X_SWITCH_MODE_MAX		SW_MODE_LIMIT		// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_HOMING_LIMIT, SW_MODE_LIMIT
+#define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
+#define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SEARCH_VELOCITY		3000				// xsv		minus means move to minimum switch
 #define X_LATCH_VELOCITY		100					// xlv		mm/min
 #define X_LATCH_BACKOFF			20					// xlb		mm
@@ -107,8 +140,6 @@
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN		SW_MODE_HOMING
 #define Y_SWITCH_MODE_MAX		SW_MODE_DISABLED
-//#define Y_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT
-//#define Y_SWITCH_MODE_MAX		SW_MODE_LIMIT		//SW_MODE_DISABLED
 #define Y_SEARCH_VELOCITY		3000
 #define Y_LATCH_VELOCITY		100
 #define Y_LATCH_BACKOFF			20
@@ -122,7 +153,6 @@
 #define Z_JERK_MAX				50000000			// 50,000,000
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
-//#define Z_SWITCH_MODE_MAX		SW_MODE_HOMING_LIMIT
 #define Z_SWITCH_MODE_MAX		SW_MODE_HOMING
 #define Z_SEARCH_VELOCITY		Z_VELOCITY_MAX
 #define Z_LATCH_VELOCITY		100
