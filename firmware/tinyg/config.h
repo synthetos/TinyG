@@ -192,6 +192,12 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 #define IGNORE_CR 1					// ignore CR on RX
 #define IGNORE_LF 2					// ignore LF on RX
 
+enum flowControl {
+	FLOW_CONTROL_OFF = 0,			// flow control disabled
+	FLOW_CONTROL_XON,				// flow control uses XON/XOFF
+	FLOW_CONTROL_RTS				// flow control uses RTS/CTS
+};
+
 enum objType {						// object / value typing for config and JSON
 	TYPE_EMPTY = -1,				// object has no value (which is not the same as "NULL")
 	TYPE_NULL = 0,					// value is 'null' (meaning the JSON null value)
@@ -410,7 +416,8 @@ typedef struct cfgParameters {
 	uint8_t ignore_crlf;			// ignore CR or LF on RX --- these 4 are shadow settings for XIO cntrl bits
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable text-mode echo
-	uint8_t enable_xon;				// enable XON/XOFF mode
+//	uint8_t enable_xon;				// enable XON/XOFF mode
+	uint8_t enable_flow_control;	// enable XON/XOFF or RTS/CTS flow control
 
 	uint8_t queue_report_verbosity;	// queue reports enabled and verbosity level
 	uint8_t queue_report_hi_water;

@@ -90,20 +90,40 @@ int xio_putc_usb(const char c, FILE *stream)
 
 ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
-	if (USBu.fc_char == NUL) {						// normal char TX path
-		if (USBu.tx_buf_head != USBu.tx_buf_tail) {	// buffer has data
-			advance_buffer(USBu.tx_buf_tail, TX_BUFFER_SIZE);
-			USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];
-		} else {
-			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;	// force another interrupt
-		}
-	} else {										// need to send XON or XOFF
-	// comment out the XON/XOFF indicator for efficient ISR handling
-	//	if (USBu.fc_char == XOFF) { gpio_set_bit_on(0x01);// turn on XOFF LED
-	//	} else { gpio_set_bit_off(0x01);}				// turn off XOFF LED
-		USBu.usart->DATA = USBu.fc_char;
-		USBu.fc_char = NUL;
+	// If the CTS pin (FTDI's RTS) is HIGH, then we cannot send anything, so exit
+	if ((USBu.port->IN & USB_CTS_bm)) {
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// force another TX interrupt
+		return;
 	}
+
+	// Send an RX-side XON or XOFF character if queued
+	if (USBu.fc_char_rx != NUL) {					// an XON/ of XOFF needs to be sent
+		USBu.usart->DATA = USBu.fc_char_rx;			// send the XON/XOFF char and exit
+		USBu.fc_char_rx = NUL;
+		return;
+	}
+
+	// Halt transmission while in TX-side XOFF
+	if (USBu.fc_state_tx == FC_IN_XOFF) {
+		return;
+	}
+
+	// Otherwise process normal TX transmission
+	if (USBu.tx_buf_head != USBu.tx_buf_tail) {		// buffer has data
+		advance_buffer(USBu.tx_buf_tail, TX_BUFFER_SIZE);
+		USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];
+	} else {
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// force another interrupt
+	}
+} 
+
+/*
+ * Pin Change (edge-detect) interrupt for CTS pin.
+ */
+
+ISR(USB_CTS_ISR_vect)	
+{
+	USBu.usart->CTRLA = CTRLA_RXON_TXON;		// force another interrupt
 }
 
 /* 
@@ -153,6 +173,18 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		cm_request_cycle_start();
 		return;
 	}
+	if (USB.flag_xoff) {
+		if (c == XOFF) {						// trap incoming XON/XOFF signals
+			USBu.fc_state_tx = FC_IN_XOFF;
+			return;
+		}
+		if (c == XON) {
+			USBu.fc_state_tx = FC_IN_XON;
+			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;// force a TX interrupt
+			return;
+		}
+	}
+
 	// filter out CRs and LFs if they are to be ignored
 	if ((c == CR) && (USB.flag_ignorecr)) return;
 	if ((c == LF) && (USB.flag_ignorelf)) return;
