@@ -379,14 +379,13 @@ stat_t set_grp(cmdObj_t *cmd)
 /*
  * cmd_group_is_prefixed() - hack
  *
- *	This little function deals with the fact that some groups don't use the parent 
- *	token as a prefix to the child elements; SR being a good example.
+ *	This little function deals with the exception cases that some groups don't use
+ *	the parent token as a prefix to the child elements; SR being a good example.
  */
 uint8_t cmd_group_is_prefixed(char_t *group)
 {
-	if (strstr("sr,sys",group) != NULL) {	// you can extend like this: "sr,sys,xyzzy"
-		return (false);
-	}
+	if (strcmp("sr",group) == 0) return (false);
+	if (strcmp("sys",group) == 0) return (false);
 	return (true);
 }
 
