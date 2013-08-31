@@ -29,7 +29,7 @@ Please refer to the [TinyG wiki](https://github.com/synthetos/TinyG/wiki) for do
 Run $hv=6 and verify that it took. 
 This addresses HW changes between the versions.**
 
-Tinyg versions 7 and 8 are electrically the same, and can be set the HW version 8.
+Tinyg versions 7 and 8 are electrically the same, and can be set to HW version 8.
 
 The previous master version is 0.95, BUILD 370.01
 
@@ -40,6 +40,6 @@ If you have feature requests or find any bugs please log them in the Issues tab 
 BRANCHES
 ========
 
-MASTER is the current production code. This is not updated very frequently.
-EDGE branch is thought to be relatively stable, but has not received enough testing to be promoted to maser
-DEV is work in process. THere are no gurantees that it will even run. This code from dev only if specificlly sent there
+* MASTER is the current production code. This is not updated very frequently.
+* EDGE branch is thought to be relatively stable, but has not received enough testing to be promoted to master.
+* DEV is work in process and generally not a good idea to use. Use code from dev only if specifically directed there.
