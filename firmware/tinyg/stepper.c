@@ -376,7 +376,7 @@ ISR(TIMER_DDA_ISR_vect)
 	}
 	if (--st_run.dda_ticks_downcount == 0) {	// end move
  		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;	// disable DDA timer
-//		st_set_motor_disable_timeout(cfg.motor_disable_timeout);
+		st_set_motor_disable_timeout(cfg.motor_disable_timeout);
 		// power-down motors if this feature is enabled
 		if (cfg.m[MOTOR_1].power_mode == POWER_MODE_DISABLE_ON_IDLE) PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 		if (cfg.m[MOTOR_2].power_mode == POWER_MODE_DISABLE_ON_IDLE) PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;

@@ -1289,7 +1289,7 @@ static void _exec_program_finalize(float *value, float *flag)
 	}
 	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
 	cm.cycle_start_requested = false;				// cancel any pending cycle start request
-	st_set_motor_disable_timeout(cfg.motor_disable_timeout); // set timer to disable motor power
+//	st_set_motor_disable_timeout(cfg.motor_disable_timeout); // set timer to disable motor power
 
 	mp_zero_segment_velocity();						// for reporting purposes
 

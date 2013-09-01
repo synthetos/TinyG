@@ -235,7 +235,7 @@ stat_t mp_dwell(float seconds)
 	}
 	bf->bf_func = _exec_dwell;					// register callback to dwell start
 	bf->time = seconds;						  	// in seconds, not minutes
-//	bf->move_state = MOVE_STATE_NEW;
+	bf->move_state = MOVE_STATE_NEW;
 	mp_queue_write_buffer(MOVE_TYPE_DWELL); 
 	return (STAT_OK);
 }
