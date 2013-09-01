@@ -25,10 +25,6 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* See the wiki for module details and additional information:
- *	 http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info
- *	 http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-JSON
- */
 
 #include "tinyg.h"
 #include "config.h"					// JSON sits on top of the config system
@@ -94,7 +90,7 @@ stat_t _json_parser_kernal(char_t *str)
 {
 	stat_t status;
 	int8_t depth;
-	cmdObj_t *cmd = cmd_reset_list();			// get a fresh cmdObj list
+	cmdObj_t *cmd = cmd_reset_list();				// get a fresh cmdObj list
 	char_t group[CMD_GROUP_LEN+1] = {""};			// group identifier - starts as NUL
 	int8_t i = CMD_BODY_LEN;
 

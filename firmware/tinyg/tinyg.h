@@ -65,6 +65,7 @@
 //#define __CANNED_STARTUP					// run any canned startup moves
 //#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
 //#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+//#define __SUPPRESS_CANNED_TESTS 			// to save space in debug compiles
 //#define __UNIT_TESTS						// master enable for unit tests; uncomment modules in .h files
 //#define __DEBUG							// complies debug functions found in test.c
 
@@ -106,20 +107,17 @@ typedef uint16_t magic_t;		// magic number size
 #define AXIS_A	3
 #define AXIS_B	4
 #define AXIS_C	5
-#define AXIS_U 	6			// reserved
-#define AXIS_V 	7			// reserved
-#define AXIS_W 	8			// reserved
-#define AXIS_MAX AXIS_C
+#define AXIS_U 	6				// reserved
+#define AXIS_V 	7				// reserved
+#define AXIS_W 	8				// reserved
 
-#define MOTOR_1	0 			// define motor numbers and array indexes
-#define MOTOR_2	1			// must be defines. enums don't work
+#define MOTOR_1	0 				// define motor numbers and array indexes
+#define MOTOR_2	1				// must be defines. enums don't work
 #define MOTOR_3	2
 #define MOTOR_4	3
-#define MOTOR_MAX MOTOR_4
 
 #define PWM_1	0
 #define PWM_2	1
-#define PWM_MAX PWM_2
 
 //#ifdef __AVR_GCC
 
@@ -154,7 +152,8 @@ typedef uint8_t stat_t;
 #define STATUS_MESSAGE_LEN 48			// status message string storage allocation
 char status_message[STATUS_MESSAGE_LEN];// allocate string for global use
 
-extern stat_t status_code;				// declared in main.cpp
+stat_t status_code;						// allocate a variable for this macro
+//extern stat_t status_code;			// declared in main.cpp
 #define ritorno(a) if((status_code=a) != STAT_OK) { return(status_code); }
 
 // OS, communications and low-level status (must align with XIO_xxxx codes in xio.h)

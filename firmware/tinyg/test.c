@@ -35,6 +35,8 @@
 #include "xio/xio.h"
 
 // regression test files
+#ifndef __SUPPRESS_CANNED_TESTS
+
 #include "tests/test_001_smoke.h" 			// basic functionality
 #include "tests/test_002_homing.h"			// G28.1 homing cycles
 #include "tests/test_003_squares.h"			// square moves
@@ -52,6 +54,8 @@
 #include "tests/test_050_mudflap.h"			// mudflap test - entire drawing
 #include "tests/test_051_braid.h"			// braid test - partial drawing
 
+#endif
+
 /*
  * tg_test() - system tests from FLASH invoked by $test=n command
  *
@@ -62,6 +66,7 @@ uint8_t tg_test(cmdObj_t *cmd)
 {
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (STAT_OK);}
+#ifndef __SUPPRESS_CANNED_TESTS
 		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke),PGM_FLAGS); break;}
 		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
 		case 3: { xio_open(XIO_DEV_PGM, PGMFILE(&test_squares),PGM_FLAGS); break;}
@@ -78,6 +83,7 @@ uint8_t tg_test(cmdObj_t *cmd)
 		case 14: { xio_open(XIO_DEV_PGM, PGMFILE(&test_microsteps),PGM_FLAGS); break;}
 		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
+#endif
 		default: {
 			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
 			return (STAT_ERROR);
@@ -104,7 +110,10 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("G0 X0.1 Y0.1\n");
 //	xio_queue_RX_string_usb("g28.3 x0 y0\n");
 
-	xio_queue_RX_string_usb("g0 z10\n");
+	xio_queue_RX_string_usb("{\"x\":{\"jm\":6000000000}}\n");
+	xio_queue_RX_string_usb("{\"y\":{\"jm\":6000000000}}\n");
+
+//	xio_queue_RX_string_usb("g0 z10\n");
 
 //	xio_queue_RX_string_usb("{\n");					// malformed JSON test
 //	xio_queue_RX_string_usb("{\"gc\":}\n");			// malformed JSON test

@@ -85,7 +85,6 @@ mpMoveRuntimeSingleton_t mr;	// context for line runtime
 // execution routines (NB: These are all called from the LO interrupt)
 static stat_t _exec_dwell(mpBuf_t *bf);
 static stat_t _exec_command(mpBuf_t *bf);
-//static stat_t _exec_command_vector(mpBuf_t *bf);
 
 #ifdef __DEBUG
 static uint8_t _get_buffer_index(mpBuf_t *bf); 
@@ -170,11 +169,7 @@ stat_t mp_exec_move()
 		if (cm.cycle_state == CYCLE_OFF) cm_cycle_start();
 		if (cm.motion_state == MOTION_STOP) cm.motion_state = MOTION_RUN;
 	}
-
-	// run the move callback in the planner buffer
-	if (bf->bf_func != NULL) {
-		return (bf->bf_func(bf));
-	}
+	if (bf->bf_func != NULL) { return (bf->bf_func(bf));} 	// run the move callback in the planner buffer
 	return (STAT_INTERNAL_ERROR);		// never supposed to get here
 }
 
@@ -207,12 +202,11 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 	bf->bf_func = _exec_command;		// callback to planner queue exec function
 	bf->cm_func = cm_exec;				// callback to canonical machine exec function
 
-	for (uint8_t i=0; i<AXES; i++) {
-		bf->value_vector[i] = value[i];
-		bf->flag_vector[i] = flag[i];
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		bf->value_vector[axis] = value[axis];
+		bf->flag_vector[axis] = flag[axis];
 	}
 	mp_queue_write_buffer(MOVE_TYPE_COMMAND);
-//	return;
 }
 
 static stat_t _exec_command(mpBuf_t *bf)
@@ -224,11 +218,11 @@ static stat_t _exec_command(mpBuf_t *bf)
 }
 
 /*************************************************************************
- * mp_dwell() 	 - queue a dwell
- * _exec_dwell() - dwell continuation
+ * mp_dwell() 	  - queue a dwell
+ * _exec_dwell() - dwell execution
  *
  * Dwells are performed by passing a dwell move to the stepper drivers.
- * When the stepper driver sees a dwell it times the swell on a separate 
+ * When the stepper driver sees a dwell it times the dwell on a separate 
  * timer than the stepper pulse timer.
  */
 
@@ -237,28 +231,34 @@ stat_t mp_dwell(float seconds)
 	mpBuf_t *bf; 
 
 	if ((bf = mp_get_write_buffer()) == NULL) {	// get write buffer or fail
-		return (STAT_BUFFER_FULL_FATAL);		// (not supposed to fail)
+		return (STAT_BUFFER_FULL_FATAL);		// (not ever supposed to fail)
 	}
 	bf->bf_func = _exec_dwell;					// register callback to dwell start
 	bf->time = seconds;						  	// in seconds, not minutes
-	bf->move_state = MOVE_STATE_NEW;
+//	bf->move_state = MOVE_STATE_NEW;
 	mp_queue_write_buffer(MOVE_TYPE_DWELL); 
 	return (STAT_OK);
 }
 
-void mp_end_dwell()								// all's well that ends dwell
-{
-	mp_free_run_buffer();						// Note: this is called from an interrupt
-}
-
 static stat_t _exec_dwell(mpBuf_t *bf)
 {
+	st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
+	mp_free_run_buffer();
+	return (STAT_OK);
+/*
 	if (bf->move_state == MOVE_STATE_NEW) {
 		st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
 		bf->move_state = MOVE_STATE_RUN;
 	}
 	return (STAT_OK);
+*/
 }
+/*
+void mp_end_dwell()								// all's well that ends dwell
+{
+	mp_free_run_buffer();						// Note: this is called from an interrupt
+}
+*/
 
 /**** PLANNER BUFFERS *****************************************************
  *
@@ -368,22 +368,22 @@ void mp_queue_write_buffer(const uint8_t move_type)
 
 mpBuf_t * mp_get_run_buffer() 
 {
-	// condition: fresh buffer; becomes running if queued or pending
+	// CASE: fresh buffer; becomes running if queued or pending
 	if ((mb.r->buffer_state == MP_BUFFER_QUEUED) || 
 		(mb.r->buffer_state == MP_BUFFER_PENDING)) {
 		 mb.r->buffer_state = MP_BUFFER_RUNNING;
 	}
-	// condition: asking for the same run buffer for the Nth time
+	// CASE: asking for the same run buffer for the Nth time
 	if (mb.r->buffer_state == MP_BUFFER_RUNNING) {	// return same buffer
 		return (mb.r);
 	}
-	return (NULL);								// condition: no queued buffers. fail it.
+	return (NULL);								// CASE: no queued buffers. fail it.
 }
 
 void mp_free_run_buffer()						// EMPTY current run buf & adv to next
 {
-	mp_clear_buffer(mb.r);						// clear it out (& reset replannable)
-//	mb.r->buffer_state = MP_BUFFER_EMPTY;		// redundant after the clear, above
+	mp_clear_buffer(mb.r);						 // clear it out (& reset replannable)
+//	mb.r->buffer_state = MP_BUFFER_EMPTY;		 // redundant after the clear, above
 	mb.r = mb.r->nx;							 // advance to next run buffer
 	if (mb.r->buffer_state == MP_BUFFER_QUEUED) {// only if queued...
 		mb.r->buffer_state = MP_BUFFER_PENDING;  // pend next buffer
