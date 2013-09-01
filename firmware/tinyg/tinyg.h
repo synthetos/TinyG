@@ -55,9 +55,9 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		389.04	// planner and plan_arc alignment
-#define TINYG_FIRMWARE_VERSION		0.95	// major version
-#define TINYG_HARDWARE_VERSION		7		// board revision number
+#define TINYG_FIRMWARE_BUILD   		389.07	// Re-applying cmd_is_prefixed fix
+#define TINYG_FIRMWARE_VERSION		0.97	// major version
+#define TINYG_HARDWARE_VERSION		8		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8
 
 /****** DEVELOPMENT SETTINGS ******/
