@@ -64,6 +64,8 @@ stat_t gc_gcode_parser(char_t *block)
 
 	_normalize_gcode_block(cmd, &com, &msg, &block_delete_flag);
 	
+	// Block delete omits the line if a / char is present in the first space
+	// For now this is unconditional and will always delete
 //	if ((block_delete_flag == true) && (cm_get_block_delete_switch() == true)) {
 	if (block_delete_flag == true) {
 		return (STAT_NOOP);
@@ -276,14 +278,14 @@ static stat_t _parse_gcode_block(char_t *buf)
 						}
 						break;
 					}
-/*					case 38: 
+					case 38: {
 						switch (_point(value)) {
 							case 2: SET_NON_MODAL (next_action, NEXT_ACTION_STRAIGHT_PROBE); 
 							default: status = STAT_UNRECOGNIZED_COMMAND;
 						}
 						break;
 					}
-*/					case 40: break;	// ignore cancel cutter radius compensation
+					case 40: break;	// ignore cancel cutter radius compensation
 					case 49: break;	// ignore cancel tool length offset comp.
 					case 53: SET_NON_MODAL (absolute_override, true);
 					case 54: SET_MODAL (MODAL_GROUP_G12, coord_system, G54);
@@ -413,7 +415,7 @@ static stat_t _execute_gcode_block()
 	stat_t status = STAT_OK;
 
 //+++++ DIAGNOSTIC +++++
-//	printf("Gcode: posX: %6.3f, posY: %6.3f\n", (double)gm.position[AXIS_X], (double)gm.target[AXIS_Y]);
+//	printf("Gcode: posX: %6.3f, tgtY: %6.3f\n", (double)gm.position[AXIS_X], (double)gm.target[AXIS_Y]);
 
 	cm_set_model_linenum(gn.linenum);
 	EXEC_FUNC(cm_set_inverse_feed_rate_mode, inverse_feed_rate_mode);
@@ -454,7 +456,7 @@ static stat_t _execute_gcode_block()
 		case NEXT_ACTION_SET_ABSOLUTE_ORIGIN: { status = cm_set_absolute_origin(gn.target, gf.target); break;}	// G28.3
 		case NEXT_ACTION_HOMING_NO_SET: { status = cm_homing_cycle_start_no_set(); break;}						// G28.4
 
-//		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_probe_cycle_start(); break;}								// G38.2
+		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_probe_cycle_start(); break;}								// G38.2
 
 		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(gn.parameter, gn.target, gf.target); break;}
 		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(gn.target, gf.target); break;}

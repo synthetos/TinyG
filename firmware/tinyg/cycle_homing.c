@@ -232,7 +232,7 @@ stat_t cm_homing_callback(void)
 {
 	if (cm.cycle_state != CYCLE_HOMING) { return (STAT_NOOP);} 	// exit if not in a homing cycle
 	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}	// sync to planner move ends
-	return (hm.func(hm.axis));						// execute the current homing move
+	return (hm.func(hm.axis));									// execute the current homing move
 }
 
 static stat_t _set_homing_func(stat_t (*func)(int8_t axis))

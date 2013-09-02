@@ -236,22 +236,6 @@ void gpio_toggle_port(uint8_t b)
 	gpio_write_port(gpio_port_value);
 }
 */
-/*
- * _show_switch() - simple display routine
- */
-#ifdef __DEBUG
-void sw_show_switch(void)
-{
-	fprintf_P(stderr, PSTR("Limit Switch Thrown Xmin %d Xmax %d  Ymin %d Ymax %d  \
-		Zmin %d Zmax %d Amin %d Amax %d\n"), 
-		sw.state[SW_MIN_X], sw.state[SW_MAX_X],
-		sw.state[SW_MIN_Y], sw.state[SW_MAX_Y],
-		sw.state[SW_MIN_Z], sw.state[SW_MAX_Z],
-		sw.state[SW_MIN_A], sw.state[SW_MAX_A]);
-}
-#else
-void sw_show_switch(void) {}
-#endif
 
 //###########################################################################
 //##### UNIT TESTS ##########################################################

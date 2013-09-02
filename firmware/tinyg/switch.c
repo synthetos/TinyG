@@ -143,7 +143,8 @@ void switch_rtc_callback(void)
 			sw.sw_num_thrown = i;						// record number of thrown switch
 			sw.debounce[i] = SW_LOCKOUT;
 //			sw_show_switch();							// only called if __DEBUG enabled
-			if (cm.cycle_state == CYCLE_HOMING) {		// regardless of switch type
+
+			if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) {		// regardless of switch type
 				cm_request_feedhold();
 			} else if (sw.mode[i] & SW_LIMIT_BIT) {		// should be a limit switch, so fire it.
 				sw.limit_flag = true;					// triggers an emergency shutdown
@@ -202,6 +203,22 @@ uint8_t read_switch(uint8_t sw_num)
 	}
 }
 
+/*
+ * _show_switch() - simple display routine
+ */
+#ifdef __DEBUG
+void sw_show_switch(void)
+{
+	fprintf_P(stderr, PSTR("Limit Switch Thrown Xmin %d Xmax %d  Ymin %d Ymax %d  \
+		Zmin %d Zmax %d Amin %d Amax %d\n"), 
+		sw.state[SW_MIN_X], sw.state[SW_MAX_X],
+		sw.state[SW_MIN_Y], sw.state[SW_MAX_Y],
+		sw.state[SW_MIN_Z], sw.state[SW_MAX_Z],
+		sw.state[SW_MIN_A], sw.state[SW_MAX_A]);
+}
+#else
+void sw_show_switch(void) {}
+#endif
 
 /*============== G2 switch code - completely different, for now ===================
 

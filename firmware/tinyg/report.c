@@ -128,6 +128,7 @@ static const char_t PROGMEM stat_69[] = "Max spindle speed exceeded";
 static const char_t PROGMEM stat_70[] = "Arc specification error";
 static const char_t PROGMEM stat_71[] = "Soft limit exceeded";
 static const char_t PROGMEM stat_72[] = "Command not accepted";
+static const char_t PROGMEM stat_73[] = "Probing cycle failed";
 
 PGM_P const PROGMEM stat_msg[] = {			// AVR/GCC version
 //static const char_t *stat_msg[] = {		// ARM/GCC++ version
@@ -138,7 +139,7 @@ PGM_P const PROGMEM stat_msg[] = {			// AVR/GCC version
 	stat_40, stat_41, stat_42, stat_43, stat_44, stat_45, stat_46, stat_47, stat_48, stat_49,
 	stat_50, stat_51, stat_52, stat_53, stat_54, stat_55, stat_56, stat_57, stat_58, stat_59,
 	stat_60, stat_61, stat_62, stat_63, stat_64, stat_65, stat_66, stat_67, stat_68, stat_69,
-	stat_70, stat_71, stat_72
+	stat_70, stat_71, stat_72, stat_73
 };
 
 char *get_status_message(stat_t status)

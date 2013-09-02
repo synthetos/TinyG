@@ -55,7 +55,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		390.01	// Working on stomped SR's in homing - bug introduced in 388.12 (after intermediate commit)
+#define TINYG_FIRMWARE_BUILD   		391.01	// Installing Robgrz's probing code - EXPERIMENTAL
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8
@@ -236,6 +236,7 @@ stat_t status_code;						// allocate a variable for this macro
 #define	STAT_ARC_SPECIFICATION_ERROR 70		// arc specification error
 #define	STAT_SOFT_LIMIT_EXCEEDED 71			// soft limit error
 #define	STAT_COMMAND_NOT_ACCEPTED 72		// command cannot be accepted at this time
+#define	STAT_PROBING_CYCLE_FAILED 73		// probing cycle did not complete
 
 /*** Alarm States ***/
 #define ALARM_LIMIT_OFFSET 0
