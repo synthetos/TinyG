@@ -1038,7 +1038,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 //		mp_free_run_buffer();				// free bf and send a status report
 //+++++ DIAGNOSTIC
 //+++++ DOES THIS NEED TO SET CURRENT POSITION TO FIX THE G28.4 ERROR?
-		printf("HOLD: posX: %6.3f, posY: %6.3f\n", (double)mr.position[AXIS_X], (double)mr.target[AXIS_Y]);
+//		printf("HOLD: posX: %6.3f, posY: %6.3f\n", (double)mr.position[AXIS_X], (double)mr.target[AXIS_Y]);
 		rpt_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
 
@@ -1240,9 +1240,9 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	float travel[AXES];
 	float steps[MOTORS];
 
-	// Multiply computed length by the unit vector to get the contribution for
-	// each axis. Set the target in absolute coords and compute relative steps.
 
+	// Multiply computed length by the unit vector to get the contribution for each axis. 
+	// Set the target in absolute coords and compute relative steps.
 	// Don't do the endpoint correction if you are going into a hold
 	if ((correction_flag == true) && (mr.segment_count == 1) && 
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
@@ -1252,6 +1252,11 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 		mr.target[AXIS_A] = mr.endpoint[AXIS_A];
 		mr.target[AXIS_B] = mr.endpoint[AXIS_B];
 		mr.target[AXIS_C] = mr.endpoint[AXIS_C];
+
+// +++++ DIAGNOSTIC
+		double raw_x = mr.position[AXIS_X] + (mr.unit[AXIS_X] * mr.segment_velocity * mr.segment_move_time);
+		printf("END: corX: %6.5f, rawX: %6.5f\n", (double)mr.target[AXIS_X], raw_x);
+
 	} else {
 		float intermediate = mr.segment_velocity * mr.segment_move_time;
 		mr.target[AXIS_X] = mr.position[AXIS_X] + (mr.unit[AXIS_X] * intermediate);
@@ -1261,6 +1266,7 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 		mr.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * intermediate);
 		mr.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * intermediate);
 	}
+
 	travel[AXIS_X] = mr.target[AXIS_X] - mr.position[AXIS_X];
 	travel[AXIS_Y] = mr.target[AXIS_Y] - mr.position[AXIS_Y];
 	travel[AXIS_Z] = mr.target[AXIS_Z] - mr.position[AXIS_Z];

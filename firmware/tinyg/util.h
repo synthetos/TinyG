@@ -79,8 +79,8 @@ float *set_vector_by_axis(float value, uint8_t axis);
 #endif
 
 #ifndef EPSILON
-#define EPSILON 	0.00001					// rounding error for floats
-//#define EPSILON 	0.000001				// rounding error for floats
+#define EPSILON 	0.00001					// allowable rounding error for floats
+//#define EPSILON 	0.000001				// allowable rounding error for floats
 #endif
 
 #ifndef fp_EQ
