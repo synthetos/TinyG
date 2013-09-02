@@ -268,6 +268,7 @@ typedef struct cfgParameters {
 	uint8_t queue_report_lo_water;
 
 	uint8_t json_verbosity;			// see enum in this file for settings
+	uint8_t json_footer_depth;		// 0=footer is peer to response 'r', 1=child of response 'r'
 	uint8_t text_verbosity;			// see enum in this file for settings
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton

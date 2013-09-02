@@ -1254,8 +1254,8 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 		mr.target[AXIS_C] = mr.endpoint[AXIS_C];
 
 // +++++ DIAGNOSTIC
-		double raw_x = mr.position[AXIS_X] + (mr.unit[AXIS_X] * mr.segment_velocity * mr.segment_move_time);
-		printf("END: corX: %6.5f, rawX: %6.5f\n", (double)mr.target[AXIS_X], raw_x);
+//		double raw_x = mr.position[AXIS_X] + (mr.unit[AXIS_X] * mr.segment_velocity * mr.segment_move_time);
+//		printf("END: corX: %6.5f, rawX: %6.5f\n", (double)mr.target[AXIS_X], raw_x);
 
 	} else {
 		float intermediate = mr.segment_velocity * mr.segment_move_time;

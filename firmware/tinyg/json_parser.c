@@ -389,7 +389,7 @@ void json_print_object(cmdObj_t *cmd)
 
 void json_print_response(uint8_t status)
 {
-	if (cfg.json_verbosity == JV_SILENT) return;		// silent responses
+	if (cfg.json_verbosity == JV_SILENT) return;			// silent responses
 
 	// Body processing
 	cmdObj_t *cmd = cmd_body;
@@ -398,27 +398,27 @@ void json_print_response(uint8_t status)
 		cmd_add_string("err", escape_string(cs.in_buf, cs.saved_buf));
 // alt:	cmd_add_string((const char_t *)"err", escape_string(cs.in_buf, cs.saved_buf));
 
-	} else if (cm.machine_state != MACHINE_INITIALIZING) {		// always do full echo during startup
+	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
 		uint8_t cmd_type;
 		do {
 			if ((cmd_type = cmd_get_type(cmd)) == CMD_TYPE_NULL) break;
 
 			if (cmd_type == CMD_TYPE_GCODE) {	
-				if (cfg.echo_json_gcode_block == false) {// kill command echo if not enabled
+				if (cfg.echo_json_gcode_block == false) {	// kill command echo if not enabled
 					cmd->objtype = TYPE_EMPTY;
 				}
 
-//+++++		} else if (cmd_type == CMD_TYPE_CONFIG) {	// kill config echo if not enabled
+//+++++		} else if (cmd_type == CMD_TYPE_CONFIG) {		// kill config echo if not enabled
 //fix me		if (cfg.echo_json_configs == false) {
 //					cmd->objtype = TYPE_EMPTY;
 //				}
 
-			} else if (cmd_type == CMD_TYPE_MESSAGE) {	// kill message echo if not enabled
+			} else if (cmd_type == CMD_TYPE_MESSAGE) {		// kill message echo if not enabled
 				if (cfg.echo_json_messages == false) {
 					cmd->objtype = TYPE_EMPTY;
 				}
 
-			} else if (cmd_type == CMD_TYPE_LINENUM) {	// kill line number echo if not enabled
+			} else if (cmd_type == CMD_TYPE_LINENUM) {		// kill line number echo if not enabled
 				if ((cfg.echo_json_linenum == false) || (fp_ZERO(cmd->value))) { // do not report line# 0
 					cmd->objtype = TYPE_EMPTY;
 				}
@@ -427,8 +427,8 @@ void json_print_response(uint8_t status)
 	}
 
 	// Footer processing
-	while(cmd->objtype != TYPE_EMPTY) {					// find a free cmdObj at end of the list...
-		if ((cmd = cmd->nx) == NULL) {					//...or hit the NULL and return w/o a footer
+	while(cmd->objtype != TYPE_EMPTY) {						// find a free cmdObj at end of the list...
+		if ((cmd = cmd->nx) == NULL) {						//...or hit the NULL and return w/o a footer
 			json_serialize(cmd_header, cs.out_buf, sizeof(cs.out_buf));
 			return;			
 		}
@@ -438,7 +438,8 @@ void json_print_response(uint8_t status)
 	cs.linelen = 0;										// reset linelen so it's only reported once
 
 	cmd_copy_string(cmd, footer_string);				// link string to cmd object
-	cmd->depth = 0;										// footer 'f' is a peer to response 'r'
+//	cmd->depth = 0;										// footer 'f' is a peer to response 'r' (hard wired to 0)
+	cmd->depth = cfg.json_footer_depth;					// 0=footer is peer to response 'r', 1=child of response 'r'
 	cmd->objtype = TYPE_ARRAY;
 	strcpy(cmd->token, "f");							// terminate the list
 	cmd->nx = NULL;

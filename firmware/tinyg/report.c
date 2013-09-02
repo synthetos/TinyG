@@ -172,6 +172,7 @@ void rpt_exception(uint8_t status, int16_t value)
 void _startup_helper(stat_t status, const char *msg)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
+	cfg.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
 	cmd_reset_list();
 	cmd_add_object((const char_t *)"fb");
 	cmd_add_object((const char_t *)"fv");

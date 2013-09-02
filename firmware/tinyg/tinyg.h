@@ -55,7 +55,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		391.01	// Installing Robgrz's probing code - EXPERIMENTAL
+#define TINYG_FIRMWARE_BUILD   		391.02	// Added hidden FD variable to control footer depth
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8
