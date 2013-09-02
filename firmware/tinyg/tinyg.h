@@ -55,7 +55,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		389.07	// Fixed stepper bug introduced in 389.05
+#define TINYG_FIRMWARE_BUILD   		390.01	// Working on stomped SR's in homing - bug introduced in 388.12 (after intermediate commit)
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8

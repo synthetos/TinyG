@@ -167,7 +167,9 @@ stat_t cm_homing_cycle_start_no_set(void)
 
 static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 {
-	mp_flush_planner(); 							// should be stopped, but in case of switch closure
+	mp_flush_planner(); 							// should be stopped, but in case of switch closure. 
+													// don't use cm_request_queue_flush() here
+
 	cm_set_coord_system(hm.saved_coord_system);		// restore to work coordinate system
 	cm_set_units_mode(hm.saved_units_mode);
 	cm_set_distance_mode(hm.saved_distance_mode);
@@ -201,6 +203,8 @@ static stat_t _homing_error_exit(int8_t axis)
 
 	// clean up and exit
 	mp_flush_planner(); 						// should be stopped, but in case of switch closure
+												// don't use cm_request_queue_flush() here
+
 	cm_set_coord_system(hm.saved_coord_system);	// restore to work coordinate system
 	cm_set_units_mode(hm.saved_units_mode);
 	cm_set_distance_mode(hm.saved_distance_mode);
@@ -367,7 +371,8 @@ static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 	vector[axis] = target;
 	flags[axis] = true;
 	cm_set_feed_rate(velocity);
-	cm_request_queue_flush();
+//+++++ change G2
+	mp_flush_planner();										// don't use cm_request_queue_flush() here
 	cm_request_cycle_start();
 	ritorno(cm_straight_feed(vector, flags));
 	return (STAT_EAGAIN);
