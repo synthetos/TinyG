@@ -4,24 +4,25 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
- * for details. You should have received a copy of the GNU General Public 
- * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* 	This module provides the low-level stepper drivers and some related
  * 	functions. It dequeues lines queued by the motor_queue routines.
@@ -151,14 +152,36 @@
 #include <avr/interrupt.h>
 
 #include "tinyg.h"
-#include "util.h"
-#include "system.h"
 #include "config.h"
 #include "stepper.h" 	
 #include "planner.h"
-#include "xmega/xmega_rtc.h"
+//#include "motatePins.h"		// defined in hardware.h   Not needed here
+//#include "motateTimers.h"
+//#include "hardware.h"
+#include "system.h"				// Xmega only. Goes away in favor of hardware.h
+#include "util.h"
 
-static void _exec_move(void);
+#include "xmega/xmega_rtc.h"	// Xmega only. Goes away with RTC refactoring
+
+//#define ENABLE_DIAGNOSTICS
+#ifdef ENABLE_DIAGNOSTICS
+#define INCREMENT_DIAGNOSTIC_COUNTER(motor) st_run.m[motor].step_count_diagnostic++;
+#else
+#define INCREMENT_DIAGNOSTIC_COUNTER(motor)	// chose this one to disable counters
+#endif
+
+enum prepBufferState {
+	PREP_BUFFER_OWNED_BY_LOADER = 0,	// staging buffer is ready for load
+	PREP_BUFFER_OWNED_BY_EXEC			// staging buffer is being loaded
+};
+
+// Setup local resources
+
+//static void _load_move(void);
+//static void _request_load_move(void);
+//static void _clear_diagnostic_counters(void);
+
+//static void _exec_move(void);
 static void _load_move(void);
 static void _request_load_move(void);
 
@@ -179,7 +202,7 @@ static void _request_load_move(void);
  *	the stepper inner-loops better.
  */
 
-// Runtime structs. Used exclusively by step generation ISR (HI)
+// Runtime structure. Used exclusively by step generation ISR (HI)
 
 typedef struct stRunMotor { 		// one per controlled motor
 	int32_t phase_increment;		// total steps in axis times substeps factor
@@ -195,13 +218,8 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	stRunMotor_t m[MOTORS];			// runtime motor structures
 } stRunSingleton_t;
 
-// Prep-time structs. Used by exec/prep ISR (MED) and read-only during load 
+// Prep-time structure. Used by exec/prep ISR (MED) and read-only during load
 // Must be careful about volatiles in this one
-
-enum prepBufferState {
-	PREP_BUFFER_OWNED_BY_LOADER = 0,// staging buffer is ready for load
-	PREP_BUFFER_OWNED_BY_EXEC		// staging buffer is being loaded
-};
 
 typedef struct stPrepMotor {
  	uint32_t phase_increment; 		// total steps in axis times substep factor
@@ -401,17 +419,21 @@ ISR(TIMER_LOAD_ISR_vect) {						// load steppers SW interrupt
 
 ISR(TIMER_EXEC_ISR_vect) {						// exec move SW interrupt
  	TIMER_EXEC.CTRLA = STEP_TIMER_DISABLE;		// disable SW interrupt timer
-	_exec_move();								// NULL state
+
+	// exec_move
+   	if (st_prep.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
+	   	if (mp_exec_move() != STAT_NOOP) {
+		   	st_prep.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
+		   	_request_load_move();
+	   	}
+   	}
+	
 }
 
 /* Software interrupts to fire the above
  * st_test_exec_state()	   - return TRUE if exec/prep can run
  * _request_load_move()    - SW interrupt to request to load a move
  *	st_request_exec_move() - SW interrupt to request to execute a move
- * _exec_move() 		   - Run a move from the planner and prepare it for loading
- *
- *	_exec_move() can only be called be called from an ISR at a level lower
- *	than DDA, Only use st_request_exec_move() to call it.
  */
 
 uint8_t st_test_exec_state()
@@ -427,17 +449,6 @@ void st_request_exec_move()
 	if (st_prep.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {	// bother interrupting
 		TIMER_EXEC.PER = SWI_PERIOD;
 		TIMER_EXEC.CTRLA = STEP_TIMER_ENABLE;			// trigger a LO interrupt
-	}
-}
-
-static void _exec_move()
-{
-   	if (st_prep.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
-//		if (mp_exec_move(state) != STAT_NOOP) {
-		if (mp_exec_move() != STAT_NOOP) {
-			st_prep.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
-			_request_load_move();
-		}
 	}
 }
 

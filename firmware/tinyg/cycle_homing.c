@@ -1,27 +1,28 @@
 /*
- * cycle_homing - homing cycle extension to canonical_machine.c
- * Part of TinyG project
+ * cycle_homing.c - homing cycle extension to canonical_machine.c
+ * This file is part of the TinyG project
  *
  * Copyright (c) 2010 - 2013 Alden S Hart, Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
- * for details. You should have received a copy of the GNU General Public 
- * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include "tinyg.h"
@@ -30,17 +31,21 @@
 #include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "planner.h"
-#include "stepper.h"
-#include "report.h"
+//#include "stepper.h"
+//#include "report.h"
 #include "switch.h"
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 /**** Homing singleton structure ****/
 
 struct hmHomingSingleton {		// persistent homing runtime variables
 	// controls for homing cycle
 	int8_t axis;				// axis currently being homed
-	uint8_t min_mode;			// mode for min switch fo this axis
-	uint8_t max_mode;			// mode for max switch fo this axis
+	uint8_t min_mode;			// mode for min switch for this axis
+	uint8_t max_mode;			// mode for max switch for this axis
 	int8_t homing_switch;		// homing switch for current axis (index into switch flag table)
 	int8_t limit_switch;		// limit switch for current axis, or -1 if none
 	uint8_t homing_closed;		// 0=open, 1=closed
@@ -96,7 +101,7 @@ static int8_t _get_next_axis(int8_t axis);
  *	Homing is invoked using a G28.1 command with 1 or more axes specified in the
  *	command: e.g. g28.1 x0 y0 z0     (FYI: the number after each axis is irrelevant)
  *
- *	Homing is always run in the following order - for each enabeled axis:
+ *	Homing is always run in the following order - for each enabled axis:
  *	  Z,X,Y,A			Note: B and C cannot be homed
  *
  *	At the start of a homing cycle those switches configured for homing 
@@ -120,9 +125,9 @@ static int8_t _get_next_axis(int8_t axis);
  *
  *	Once all moves for an axis are complete the next axis in the sequence is homed
  *
- *	When a homing cycle is intiated the homing state is set to HOMING_NOT_HOMED
- *	When homing comples successfully this si set to HOMING_HOMED, otherwise it
- *	remains HOMING_NOT_HOMED.	
+ *	When a homing cycle is initiated the homing state is set to HOMING_NOT_HOMED
+ *	When homing completes successfully this is set to HOMING_HOMED, otherwise it
+ *	remains HOMING_NOT_HOMED.
  */
 /*	--- Some further details ---
  *
@@ -204,7 +209,6 @@ static stat_t _homing_error_exit(int8_t axis)
 	// clean up and exit
 	mp_flush_planner(); 						// should be stopped, but in case of switch closure
 												// don't use cm_request_queue_flush() here
-
 	cm_set_coord_system(hm.saved_coord_system);	// restore to work coordinate system
 	cm_set_units_mode(hm.saved_units_mode);
 	cm_set_distance_mode(hm.saved_distance_mode);
@@ -371,7 +375,6 @@ static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 	vector[axis] = target;
 	flags[axis] = true;
 	cm_set_feed_rate(velocity);
-//+++++ change G2
 	mp_flush_planner();										// don't use cm_request_queue_flush() here
 	cm_request_cycle_start();
 	ritorno(cm_straight_feed(vector, flags));
@@ -481,3 +484,7 @@ int8_t _get_next_axes(int8_t axis)
 	return (STAT_OK);
 }
 */
+
+#ifdef __cplusplus
+}
+#endif
