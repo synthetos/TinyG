@@ -6,9 +6,13 @@ canonical_machine.c
 
 config.c
 
+config_app.c
+
 controller.c
 
 cycle_homing.c
+
+cycle_probing.c
 
 gcode_parser.c
 
@@ -38,9 +42,13 @@ spindle.c
 
 stepper.c
 
+switch.c
+
 system.c
 
 test.c
+
+text_parser.c
 
 util.c
 

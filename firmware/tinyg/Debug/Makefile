@@ -42,8 +42,10 @@ SUBDIRS :=  \
 C_SRCS +=  \
 ../canonical_machine.c \
 ../config.c \
+../config_app.c \
 ../controller.c \
 ../cycle_homing.c \
+../cycle_probing.c \
 ../gcode_parser.c \
 ../gpio.c \
 ../help.c \
@@ -58,8 +60,10 @@ C_SRCS +=  \
 ../report.c \
 ../spindle.c \
 ../stepper.c \
+../switch.c \
 ../system.c \
 ../test.c \
+../text_parser.c \
 ../util.c \
 ../xio/xio.c \
 ../xio/xio_file.c \
@@ -83,8 +87,10 @@ ASM_SRCS +=
 OBJS +=  \
 canonical_machine.o \
 config.o \
+config_app.o \
 controller.o \
 cycle_homing.o \
+cycle_probing.o \
 gcode_parser.o \
 gpio.o \
 help.o \
@@ -99,8 +105,10 @@ pwm.o \
 report.o \
 spindle.o \
 stepper.o \
+switch.o \
 system.o \
 test.o \
+text_parser.o \
 util.o \
 xio/xio.o \
 xio/xio_file.o \
@@ -118,8 +126,10 @@ xmega/xmega_rtc.o
 OBJS_AS_ARGS +=  \
 canonical_machine.o \
 config.o \
+config_app.o \
 controller.o \
 cycle_homing.o \
+cycle_probing.o \
 gcode_parser.o \
 gpio.o \
 help.o \
@@ -134,8 +144,10 @@ pwm.o \
 report.o \
 spindle.o \
 stepper.o \
+switch.o \
 system.o \
 test.o \
+text_parser.o \
 util.o \
 xio/xio.o \
 xio/xio_file.o \
@@ -153,8 +165,10 @@ xmega/xmega_rtc.o
 C_DEPS +=  \
 canonical_machine.d \
 config.d \
+config_app.d \
 controller.d \
 cycle_homing.d \
+cycle_probing.d \
 gcode_parser.d \
 gpio.d \
 help.d \
@@ -169,8 +183,10 @@ pwm.d \
 report.d \
 spindle.d \
 stepper.d \
+switch.d \
 system.d \
 test.d \
+text_parser.d \
 util.d \
 xio/xio.d \
 xio/xio_file.d \
@@ -188,8 +204,10 @@ xmega/xmega_rtc.d
 C_DEPS_AS_ARGS +=  \
 canonical_machine.d \
 config.d \
+config_app.d \
 controller.d \
 cycle_homing.d \
+cycle_probing.d \
 gcode_parser.d \
 gpio.d \
 help.d \
@@ -204,8 +222,10 @@ pwm.d \
 report.d \
 spindle.d \
 stepper.d \
+switch.d \
 system.d \
 test.d \
+text_parser.d \
 util.d \
 xio/xio.d \
 xio/xio_file.d \
@@ -231,6 +251,14 @@ OUTPUT_FILE_DEP:= ./makedep.mk
 LIB_DEP+= 
 
 # AVR32/GNU C Compiler
+
+
+
+
+
+
+
+
 
 
 
