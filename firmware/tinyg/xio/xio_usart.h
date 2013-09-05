@@ -50,15 +50,17 @@
 
 // Buffer sizing
 #define buffer_t uint_fast8_t					// fast, but limits buffer to 255 char max
+//#define buffer_t uint16_t						// larger buffers
+
 #define RX_BUFFER_SIZE (buffer_t)255			// buffer_t can be 8 bits
 #define TX_BUFFER_SIZE (buffer_t)255			// buffer_t can be 8 bits
 
 // Alternates for larger buffers - mostly for debugging
 //#define buffer_t uint16_t						// slower, but larger buffers
-//#define RX_BUFFER_SIZE (buffer_t)512			// buffer_t must be 16 bits if >255
-//#define TX_BUFFER_SIZE (buffer_t)512			// buffer_t must be 16 bits if >255
-//#define RX_BUFFER_SIZE (buffer_t)1024			// 2048 is the practical upper limit
-//#define TX_BUFFER_SIZE (buffer_t)1024			// 2048 is practical upper limit given RAM
+//#define RX_BUFFER_SIZE (buffer_t)511			// buffer_t must be 16 bits if >255
+//#define TX_BUFFER_SIZE (buffer_t)511			// buffer_t must be 16 bits if >255
+//#define RX_BUFFER_SIZE (buffer_t)1023			// 2048 is the practical upper limit
+//#define TX_BUFFER_SIZE (buffer_t)1023			// 2048 is practical upper limit given RAM
 
 // XON/XOFF hi and lo watermarks. At 115.200 the host has approx. 100 uSec per char 
 // to react to an XOFF. 90% (0.9) of 255 chars gives 25 chars to react, or about 2.5 ms.  

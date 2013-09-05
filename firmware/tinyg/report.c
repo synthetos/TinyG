@@ -310,19 +310,13 @@ stat_t rpt_set_status_report(cmdObj_t *cmd)
  */
 void rpt_request_status_report(uint8_t request_type)
 {
-	// ++++ This can probably be written more efficiently, but the logic is subtle.
 	if (request_type == SR_IMMEDIATE_REQUEST) {
 		cm.status_report_systick = SysTickTimer_getValue();
-		cm.status_report_requested = true;
-		return;
 	}
-	if (request_type == SR_TIMED_REQUEST) {
-		if (cm.status_report_requested == false) {
-			cm.status_report_systick = SysTickTimer_getValue() + cfg.status_report_interval;
-		}
-		cm.status_report_requested = true;
+	if ((request_type == SR_TIMED_REQUEST) && (cm.status_report_requested == false)) {
+		cm.status_report_systick = SysTickTimer_getValue() + cfg.status_report_interval;
 	}
-
+	cm.status_report_requested = true;
 }
 
 stat_t rpt_status_report_callback() 		// called by controller dispatcher
@@ -343,19 +337,6 @@ stat_t rpt_status_report_callback() 		// called by controller dispatcher
 	cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (STAT_OK);
 }
-
-/*
-	if (cfg.status_report_verbosity == SR_FILTERED) {
-		if (rpt_populate_filtered_status_report() == true) {
-			cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
-		}
-	} else {
-		rpt_populate_unfiltered_status_report();
-		cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
-	}
-	cm.status_report_requested = false;		// disable reports until requested again
-	return (STAT_OK);
-*/
 
 /* 
  * rpt_run_text_status_report() - generate a text mode status report in multiline format
