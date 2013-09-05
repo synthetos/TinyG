@@ -204,9 +204,9 @@ static stat_t _command_dispatch()
 	// dispatch the new text line
 	switch (toupper(*cs.bufp)) {				// first char
 
-//		case '!': { cm_request_feedhold(); break; }		// include for diagnostics
-//		case '@': { cm_request_queue_flush(); break; }
-//		case '~': { cm_request_cycle_start(); break; }
+		case '!': { cm_request_feedhold(); break; }		// include for diagnostics
+		case '%': { cm_request_queue_flush(); break; }
+		case '~': { cm_request_cycle_start(); break; }
 
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {

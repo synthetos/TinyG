@@ -110,8 +110,14 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("G0 X0.1 Y0.1\n");
 //	xio_queue_RX_string_usb("g28.3 x0 y0\n");
 
-	xio_queue_RX_string_usb("{\"x\":{\"jm\":6000000000}}\n");
-	xio_queue_RX_string_usb("{\"y\":{\"jm\":6000000000}}\n");
+	xio_queue_RX_string_usb("G53 G01 F150  Y115.00\n");
+	xio_queue_RX_string_usb("!\n");
+	xio_queue_RX_string_usb("%\n");
+	xio_queue_RX_string_usb("~\n");
+	xio_queue_RX_string_usb("M00");
+
+//	xio_queue_RX_string_usb("{\"x\":{\"jm\":6000000000}}\n");
+//	xio_queue_RX_string_usb("{\"y\":{\"jm\":6000000000}}\n");
 
 //	xio_queue_RX_string_usb("g0 z10\n");
 
@@ -130,7 +136,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 //	xio_queue_RX_string_usb("g1 f100 x100\n");		// Feedhold/queue flush test
 //	xio_queue_RX_string_usb("!\n");
-//	xio_queue_RX_string_usb("@\n");
+//	xio_queue_RX_string_usb("%\n");
 //	xio_queue_RX_string_usb("~\n");
 
 /*
