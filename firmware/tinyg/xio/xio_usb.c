@@ -248,6 +248,6 @@ void xio_reset_usb_rx_buffers(void)
 	// reset interrupt circular buffer
 	USBu.rx_buf_head = 1;		// can't use location 0 in circular buffer
 	USBu.rx_buf_tail = 1;
-	USBu.tx_buf_head = 1;
-	USBu.tx_buf_tail = 1;
+//	USBu.tx_buf_head = 1;		//++++++ GET RID OF THIS!!!!!
+//	USBu.tx_buf_tail = 1;
 }
