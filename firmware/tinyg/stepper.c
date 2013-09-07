@@ -120,11 +120,11 @@ typedef struct stPrepSingleton {
 static stRunSingleton_t st_run;
 static stPrepSingleton_t st_prep;
 
-uint16_t st_get_stepper_run_magic() { return (st_run.magic_start);}
-uint16_t st_get_stepper_prep_magic() { return (st_prep.magic_start);}
+magic_t st_get_stepper_run_magic() { return (st_run.magic_start);}
+magic_t st_get_stepper_prep_magic() { return (st_prep.magic_start);}
 
 /* 
- * st_init() - initialize stepper motor subsystem 
+ * stepper_init() - initialize stepper motor subsystem 
  *
  *	Notes:
  *	  - This init requires sys_init() to be run beforehand
@@ -134,11 +134,12 @@ uint16_t st_get_stepper_prep_magic() { return (st_prep.magic_start);}
  *	  - high level interrupts must be enabled in main() once all inits are complete
  */
 
-void st_init()
+void stepper_init()
 {
 //	You can assume all values are zeroed. If not, use this:
 //	memset(&st, 0, sizeof(st));	// clear all values, pointers and status
 
+	memset(&st_run, 0, sizeof(st_run));		// clear all values, pointers and status
 	st_run.magic_start = MAGICNUM;
 	st_prep.magic_start = MAGICNUM;
 

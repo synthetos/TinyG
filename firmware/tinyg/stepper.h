@@ -179,7 +179,7 @@
 #ifndef stepper_h
 #define stepper_h
 
-void st_init(void);				// initialize stepper subsystem
+void stepper_init(void);
 
 void st_enable_motor(const uint8_t motor);
 void st_enable_motors(void);
@@ -231,7 +231,6 @@ enum cmStepperPowerMode {
  *
  *	Set to 1 to disable, but don't do this or you will lose a lot of accuracy.
  */
-//#define DDA_SUBSTEPS 1000000		// 100,000 accumulates substeps to 6 decimal places
 #define DDA_SUBSTEPS 100000		// 100,000 accumulates substeps to 6 decimal places
 
 /* DDA overclocking
