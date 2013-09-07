@@ -24,14 +24,15 @@
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
 
 // *** settings.h overrides ***
+// Note: there are some commented test values below
 
 #undef  SR_DEFAULTS
-//++++#define SR_DEFAULTS 			"stat"
-#define SR_DEFAULTS 			"mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
+#define SR_DEFAULTS 			"stat"
+//#define SR_DEFAULTS 			"mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
 
 #undef	SWITCH_TYPE
-//++++#define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED
-#define SWITCH_TYPE 			SW_TYPE_NORMALLY_OPEN
+#define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED
+//#define SWITCH_TYPE 			SW_TYPE_NORMALLY_OPEN
 
 #undef	COMM_MODE
 #define COMM_MODE				JSON_MODE
@@ -49,42 +50,11 @@
 #undef 	QR_VERBOSITY
 #define QR_VERBOSITY			QR_VERBOSE
 
-//+++++ ADDED:
 #undef COM_ENABLE_FLOW_CONTROL
 #define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON
 
 // *** motor settings ***
-
-#define M1_MOTOR_MAP 			AXIS_X				// 1ma
-#define M1_STEP_ANGLE 			1.8					// 1sa
-#define M1_TRAVEL_PER_REV 		5.08				// 1tr
-#define M1_MICROSTEPS 			8					// 1mi		1,2,4,8
-//++++ #define M1_POLARITY 			0					// 1po		0=normal, 1=reversed
-#define M1_POLARITY 			1
-#define M1_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
-
-#define M2_MOTOR_MAP 			AXIS_Y
-#define M2_STEP_ANGLE 			1.8
-#define M2_TRAVEL_PER_REV 		5.08
-#define M2_MICROSTEPS 			8
-#define M2_POLARITY 			1
-#define M2_POWER_MODE 			0					
-
-#define M3_MOTOR_MAP 			AXIS_Z
-#define M3_STEP_ANGLE 			15
-#define M3_TRAVEL_PER_REV 		1.27
-#define M3_MICROSTEPS 			8
-#define M3_POLARITY 			1
-#define M3_POWER_MODE 			0					
-
-#define M4_MOTOR_MAP 			AXIS_A
-#define M4_STEP_ANGLE 			1.8
-#define M4_TRAVEL_PER_REV 		360					// degrees moved per motor rev
-#define M4_MICROSTEPS 			8
-#define M4_POLARITY 			1			
-#define M4_POWER_MODE 			1					
-
-/* ORIGINAL
+			
 #define M4_MOTOR_MAP 			AXIS_X				// 1ma
 #define M4_STEP_ANGLE 			1.8					// 1sa
 #define M4_TRAVEL_PER_REV 		5.08				// 1tr
@@ -112,7 +82,6 @@
 #define M1_MICROSTEPS 			8
 #define M1_POLARITY 			1			
 #define M1_POWER_MODE 			1					
-*/
 
 // *** axis settings ***
 

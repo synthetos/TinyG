@@ -79,19 +79,19 @@
 #define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_EXPAND_CR				false
 #define COM_ENABLE_ECHO				false
-//#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON
-#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_RTS
+#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON
+//#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_RTS
 
 /**** MACHINE PROFILES ******************************************************/
 
 // machine default profiles - chose only one:
 
-//#include "settings/settings_default.h"				// Default settings for release
+#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_mcgyver.h"				// debugging
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othercutter.h"			// Otherfab OtherCutter
-#include "settings/settings_othermill.h"				// Otherfab OtherMill
+//#include "settings/settings_othermill.h"				// Otherfab OtherMill
 //#include "settings/settings_pocketcnc_linear.h"		// PocketCNC 5 axis mill - linear settings
 //#include "settings/settings_pocketcnc_rotary.h"		// PocketCNC 5 axis mill - rotary settings
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
