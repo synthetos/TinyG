@@ -207,7 +207,7 @@ void st_do_motor_idle_timeout()
  * st_set_motor_power()		 - set motor power level
  */
 
-void st_turn_motor_power_on(const uint8_t motor)
+void st_energize_motor(const uint8_t motor)
 {
 	if (motor == MOTOR_1) { PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
 	if (motor == MOTOR_2) { PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
@@ -215,7 +215,7 @@ void st_turn_motor_power_on(const uint8_t motor)
 	if (motor == MOTOR_4) { PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
 }
 
-void st_turn_motor_power_off(const uint8_t motor)
+void st_deenergize_motor(const uint8_t motor)
 {
 	if (motor == MOTOR_1) { PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
 	if (motor == MOTOR_2) { PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
@@ -236,28 +236,24 @@ void st_set_motor_power(const uint8_t motor)
 
 void st_energize_motors()
 {
-	if (cfg.m[MOTOR_1].power_mode == ENABLE_AXIS_DURING_CYCLE) { st_turn_motor_power_on(MOTOR_1);}
-	if (cfg.m[MOTOR_2].power_mode == ENABLE_AXIS_DURING_CYCLE) { st_turn_motor_power_on(MOTOR_2);}
-	if (cfg.m[MOTOR_3].power_mode == ENABLE_AXIS_DURING_CYCLE) { st_turn_motor_power_on(MOTOR_3);}
-	if (cfg.m[MOTOR_4].power_mode == ENABLE_AXIS_DURING_CYCLE) { st_turn_motor_power_on(MOTOR_4);}
+	if (cfg.m[MOTOR_1].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_1);}
+	if (cfg.m[MOTOR_2].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_2);}
+	if (cfg.m[MOTOR_3].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_3);}
+	if (cfg.m[MOTOR_4].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_4);}
 	st_do_motor_idle_timeout();
 }
 
 void st_deenergize_motors()
 {
-	st_turn_motor_power_off(MOTOR_1);
-	st_turn_motor_power_off(MOTOR_2);
-	st_turn_motor_power_off(MOTOR_3);
-	st_turn_motor_power_off(MOTOR_4);
+	st_deenergize_motor(MOTOR_1);
+	st_deenergize_motor(MOTOR_2);
+	st_deenergize_motor(MOTOR_3);
+	st_deenergize_motor(MOTOR_4);
 }
 
 void st_idle_motors()
 {
-	st_deenergize_motors();
-//	st_turn_motor_power_off(MOTOR_1);
-//	st_turn_motor_power_off(MOTOR_2);
-//	st_turn_motor_power_off(MOTOR_3);
-//	st_turn_motor_power_off(MOTOR_4);
+	st_deenergize_motors();		// for now idle is the same as de-energized
 }
 
 /*
@@ -314,10 +310,10 @@ ISR(TIMER_DDA_ISR_vect)
  		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;	// disable DDA timer
 		st_do_motor_idle_timeout();
 		// power-down motors if this feature is enabled
-		if (cfg.m[MOTOR_1].power_mode == DISABLE_AXIS_WHEN_IDLE) PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-		if (cfg.m[MOTOR_2].power_mode == DISABLE_AXIS_WHEN_IDLE) PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-		if (cfg.m[MOTOR_3].power_mode == DISABLE_AXIS_WHEN_IDLE) PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-		if (cfg.m[MOTOR_4].power_mode == DISABLE_AXIS_WHEN_IDLE) PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+		if (cfg.m[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+		if (cfg.m[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+		if (cfg.m[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+		if (cfg.m[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 		_load_move();							// load the next move
 	}
 }

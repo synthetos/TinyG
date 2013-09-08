@@ -313,7 +313,7 @@ static const char_t PROGMEM fmt_net[] = "[net]  network mode%16d [0=master]\n";
 static const char_t PROGMEM fmt_qr[] = "qr:%d\n";
 static const char_t PROGMEM fmt_rx[] = "rx:%d\n";
 
-static const char_t PROGMEM fmt_mt[] = "[mt]  motor idle timeout%16.2f Sec\n";
+static const char_t PROGMEM fmt_mt[] = "[mt]  motor idle timeout%14.2f Sec\n";
 static const char_t PROGMEM fmt_me[] = "motors energized\n";
 static const char_t PROGMEM fmt_md[] = "motors de-energized\n";
 
@@ -1395,10 +1395,10 @@ static stat_t set_po(cmdObj_t *cmd)			// motor polarity
 static stat_t set_pm(cmdObj_t *cmd)			// motor power mode
 { 
 	ritorno (set_01(cmd));
-	if (fp_ZERO(cmd->value)) {				// zero means enable motor - i.e. disable power management mode
-		st_turn_motor_power_on(_get_motor(cmd->index));
+	if (fp_ZERO(cmd->value)) { // people asked this setting take effect immediately, hence:
+		st_energize_motor(_get_motor(cmd->index));
 	} else {
-		st_turn_motor_power_off(_get_motor(cmd->index));
+		st_deenergize_motor(_get_motor(cmd->index));
 	}
 	return (STAT_OK);
 }

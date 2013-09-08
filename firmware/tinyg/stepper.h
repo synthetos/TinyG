@@ -184,8 +184,8 @@ void stepper_init(void);
 void st_set_motor_idle_timeout(float seconds);
 void st_do_motor_idle_timeout(void);
 
-void st_turn_motor_power_on(const uint8_t motor);
-void st_turn_motor_power_off(const uint8_t motor);
+void st_energize_motor(const uint8_t motor);
+void st_deenergize_motor(const uint8_t motor);
 void st_set_motor_power(const uint8_t motor);
 
 void st_energize_motors(void);
@@ -219,21 +219,21 @@ void st_dump_stepper_state(void);
  * Stepper configs and constants
  */
 
-// Currently there is no distinction between IDLE and OFF. 
+// Currently there is no distinction between IDLE and OFF (DEENERGIZED)
 // In the future IDLE will be powered at a low, torque-maintaining current
 
 enum motorState {					// used w/start and stop flags to sequence motor power
-	MOTOR_OFF = 0,					// motor is stopped and un-powered
-	MOTOR_IDLE,						// motor is stopped and maintained at idle current
-	MOTOR_STOPPED,					// motor is stopped and maintained at running current
-	MOTOR_RUNNING					// motor is running
+	MOTOR_OFF = 0,					// motor is stopped and deenergized
+	MOTOR_IDLE,						// motor is stopped and may be partially energized for torque maintenance
+	MOTOR_STOPPED,					// motor is stopped and fully energized
+	MOTOR_RUNNING					// motor is running (and fully energized)
 };
 
 enum cmStepperPowerMode {
-	ENABLE_AXIS_DURING_CYCLE =0,	// axis is fully powered during cycles
-	DISABLE_AXIS_WHEN_IDLE,			// power down motor shortly after it's idle
-	REDUCE_AXIS_POWER_WHEN_IDLE,	// enable Vref current reduction (not implemented yet)
-	DYNAMIC_AXIS_POWER				// adjust motor current with velocity (not implemented yet)
+	MOTOR_ENERGIZED_DURING_CYCLE=0,	// motor is fully powered during cycles
+	MOTOR_IDLE_WHEN_STOPPED,		// idle motor shortly after it's stopped - even in cycle
+	MOTOR_POWER_REDUCED_WHEN_IDLE,	// enable Vref current reduction (not implemented yet)
+	DYNAMIC_MOTOR_POWER				// adjust motor current with velocity (not implemented yet)
 };
 
 enum prepBufferState {

@@ -55,7 +55,7 @@
 #define M1_TRAVEL_PER_REV		1.25		// 1tr
 #define M1_MICROSTEPS			8			// 1mi		1,2,4,8
 #define M1_POLARITY				0			// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE			0			// 1pm		TRUE=low power idle enabled 
+#define M1_POWER_MODE			0			// 1pm		standard
 
 #define M2_MOTOR_MAP	 		AXIS_Y
 #define M2_STEP_ANGLE			1.8
