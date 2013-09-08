@@ -69,7 +69,7 @@
 extern "C"{
 #endif
 
-// Allocate global scope structs
+// Allocate global scope structures
 mpBufferPool_t mb;				// move buffer queue
 mpMoveMasterSingleton_t mm;		// context for line planning
 mpMoveRuntimeSingleton_t mr;	// context for line runtime

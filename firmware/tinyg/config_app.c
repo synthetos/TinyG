@@ -2,29 +2,28 @@
  * config_app.c - application-specific part of configuration data
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
- * for details. You should have received a copy of the GNU General Public 
- * License along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/*
- *	See config.h for a Config system overview and a bunch of details.
+
+/* This file contains application specific data for the config system:
+ *	- application-specific functions and function prototypes 
+ *	- application-specific message and print format strings
+ *	- application-specific config array
+ *	- any other application-specific data or functions
+ *
+ * See config_app.h for a detailed description of config objects and the config table
  */
 
 #include "tinyg.h"
@@ -96,6 +95,7 @@ static stat_t run_qf(cmdObj_t *cmd);		// execute a queue flush block
 static stat_t get_er(cmdObj_t *cmd);		// invoke a bogus exception report for testing purposes
 static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 
+static stat_t set_mt(cmdObj_t *cmd);		// set motor disable timeout in deconds
 static stat_t set_md(cmdObj_t *cmd);		// disable all motors
 static stat_t set_me(cmdObj_t *cmd);		// enable motors with power-mode set to 0 (on)
 
@@ -313,10 +313,9 @@ static const char_t PROGMEM fmt_net[] = "[net]  network mode%16d [0=master]\n";
 static const char_t PROGMEM fmt_qr[] = "qr:%d\n";
 static const char_t PROGMEM fmt_rx[] = "rx:%d\n";
 
+static const char_t PROGMEM fmt_mt[] = "[mt]  motor disable timeout%11.2f Sec\n";
 static const char_t PROGMEM fmt_md[] = "motors disabled\n";
 static const char_t PROGMEM fmt_me[] = "motors enabled\n";
-static const char_t PROGMEM fmt_mt[] = "[mt]  motor disable timeout%8d Sec\n";
-static const char_t PROGMEM fmt_dd[] = "[dd]  stepper disable delay%8d mSec\n";
 
 // Gcode model values for reporting purposes
 static const char_t PROGMEM fmt_vel[]  = "Velocity:%17.3f%S/min\n";
@@ -410,7 +409,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	// group token flags p, format*, print_func, get_func, set_func, target for get/set,   	default value
 	{ "sys", "fb", _f07, 2, fmt_fb, print_flt, get_flt, set_nul, (float *)&cs.fw_build,   TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
 	{ "sys", "fv", _f07, 3, fmt_fv, print_flt, get_flt, set_nul, (float *)&cs.fw_version, TINYG_FIRMWARE_VERSION },
-//	{ "sys", "hp", _f07, 0, fmt_hp, print_flt, get_flt, set_flt, (float *)&cs.hw_platform, TINYG2_HARDWARE_PLATFORM },
+//	{ "sys", "hp", _f07, 0, fmt_hp, print_flt, get_flt, set_flt, (float *)&cs.hw_platform, TINYG_HARDWARE_PLATFORM },
 	{ "sys", "hv", _f07, 0, fmt_hv, print_flt, get_flt, set_hv,  (float *)&cs.hw_version, TINYG_HARDWARE_VERSION },
 	{ "sys", "id", _fns, 0, fmt_id, print_str, get_id,  set_nul, (float *)&cs.null, 0 },		// device ID (ASCII signature)
 
@@ -690,13 +689,11 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	// System parameters
 	{ "sys","ja",  _f07, 0, fmt_ja, print_lin, get_flu, set_flu, (float *)&cfg.junction_acceleration,	JUNCTION_ACCELERATION },
 	{ "sys","ct",  _f07, 4, fmt_ct, print_lin, get_flu, set_flu, (float *)&cfg.chordal_tolerance,		CHORDAL_TOLERANCE },
-//	{ "sys","dd",  _f07, 0, fmt_dd, print_int, get_int, set_int, (float *)&cfg.stepper_disable_delay,	DISABLE_DELAY },
 	{ "sys","st",  _f07, 0, fmt_st, print_ui8, get_ui8, set_sw,  (float *)&sw.switch_type,				SWITCH_TYPE },
-	{ "sys","mt",  _f07, 0, fmt_mt, print_int, get_int, set_int, (float *)&cfg.motor_disable_timeout,	MOTOR_DISABLE_TIMEOUT},
-	// Note:"me" must initialize after "mt" so it can use the timeout value
-	{ "",   "me",  _fin, 0, fmt_me, print_str, set_me,  set_me,  (float *)&cs.null, 0 },				// enable all motors
-	{ "",   "md",  _f00, 0, fmt_md, print_str, set_md,  set_md,  (float *)&cs.null, 0 },				// disable all motors
-	
+	{ "sys","mt",  _f07, 2, fmt_mt, print_flt, get_flt, set_mt,  (float *)&cfg.motor_disable_timeout, 	MOTOR_DISABLE_TIMEOUT},
+	{ "",   "me",  _f00, 0, fmt_me, print_str, set_me,  set_me,  (float *)&cs.null, 0 },
+	{ "",   "md",  _f00, 0, fmt_md, print_str, set_md,  set_md,  (float *)&cs.null, 0 },
+
 	{ "sys","ej",  _f07, 0, fmt_ej, print_ui8, get_ui8, set_01,  (float *)&cfg.comm_mode,				COMM_MODE },
 	{ "sys","jv",  _f07, 0, fmt_jv, print_ui8, get_ui8, set_jv,  (float *)&cfg.json_verbosity,			JSON_VERBOSITY },
 	{ "sys","tv",  _f07, 0, fmt_tv, print_ui8, get_ui8, set_01,  (float *)&cfg.text_verbosity,			TEXT_VERBOSITY },
@@ -955,6 +952,7 @@ static stat_t get_id(cmdObj_t *cmd)
  * get_sr()	- run status report
  * set_sr()	- set status report elements
  * print_sr() - print multiline text status report
+ * set_mt() - set motor disable timeout in seconds
  * set_md() - disable all motors
  * set_me() - enable motors with $Npm=0
  * run_sx()	- send XOFF, XON
@@ -1014,13 +1012,19 @@ static void print_sr(cmdObj_t *cmd)
 	rpt_populate_unfiltered_status_report();
 }
 
-static stat_t set_md(cmdObj_t *cmd)
+static stat_t set_mt(cmdObj_t *cmd)
+{
+	st_set_motor_disable_timeout(cmd->value);	
+	return (STAT_OK);
+}
+
+static stat_t set_md(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
 	st_disable_motors();
 	return (STAT_OK);
 }
 
-static stat_t set_me(cmdObj_t *cmd)
+static stat_t set_me(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
 	st_enable_motors();
 	return (STAT_OK);

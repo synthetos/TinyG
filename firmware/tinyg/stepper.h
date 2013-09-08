@@ -181,11 +181,13 @@
 
 void stepper_init(void);
 
+void st_set_motor_disable_timeout(float seconds);
+void st_do_motor_disable_timeout(void);
+
 void st_enable_motor(const uint8_t motor);
-void st_enable_motors(void);
 void st_disable_motor(const uint8_t motor);
+void st_enable_motors(void);
 void st_disable_motors(void);
-void st_set_motor_disable_timeout(uint32_t seconds);
 stat_t st_motor_disable_callback(void);
 
 uint8_t st_isbusy(void);		// return TRUE is any axis is running (F=idle)
@@ -219,10 +221,18 @@ enum prepBufferState {
 };
 
 enum cmStepperPowerMode {
-	POWER_MODE_ENABLE_FULL_CYCLE =0,// fully powered during cycles
-	POWER_MODE_DISABLE_ON_IDLE		// power down motor immediately when idle
-//	POWER_MODE_LOW_POWER_IDLE		// not implemented yet
+	ENABLE_AXIS_DURING_CYCLE =0,		// axis is fully powered during cycles
+	DISABLE_AXIS_WHEN_IDLE,				// power down motor shortly after it's idle
+	REDUCE_AXIS_POWER_WHEN_IDLE,		// enable Vref current reduction (not implemented yet)
+	DYNAMIC_AXIS_POWER					// adjust motor current with velocity (not implemented yet)
 };
+
+/* Timer settings for stepper module. See hardware.h for overall timer assignments */
+
+// Stepper power management settings
+//	Min/Max timeouts allowed for motor disable. Allow for inertial stop; must be non-zero
+#define STEPPER_MIN_TIMEOUT_SECONDS 0.1					// seconds !!! SHOULD NEVER BE ZERO !!!
+#define STEPPER_MAX_TIMEOUT_SECONDS (4294967295/1000)	// for conversion to uint32_t
 
 /* DDA substepping
  * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping.

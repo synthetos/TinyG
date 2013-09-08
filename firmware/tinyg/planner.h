@@ -195,7 +195,7 @@ typedef struct mpMoveMasterSingleton {	// common variables for planning (move ma
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
-	magic_t magic_start;		// magic number to test memory integity	
+	magic_t magic_start;		// magic number to test memory integrity	
 	uint32_t linenum;			// runtime line/block number of BF being executed
 	uint8_t motion_mode;		// runtime motion mode for status reports
 	uint8_t move_state;			// state of the overall move
@@ -225,21 +225,15 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float microseconds;			// line or segment time in microseconds
 	float segment_length;		// computed length for aline segment
 	float segment_velocity;		// computed velocity for aline segment
-	float forward_diff_1;      // forward difference level 1 (Acceleration)
-	float forward_diff_2;      // forward difference level 2 (Jerk - constant)
+	float forward_diff_1;		// forward difference level 1 (Acceleration)
+	float forward_diff_2;		// forward difference level 2 (Jerk - constant)
 	magic_t magic_end;
 } mpMoveRuntimeSingleton_t;
 
-
-// Allocate global scope structs
-//mpBufferPool_t mb;				// move buffer queue
-//mpMoveMasterSingleton_t mm;		// context for line planning
-//mpMoveRuntimeSingleton_t mr;	// context for line runtime
-
-// Reference global scope structs
+// Reference global scope structures
 extern mpBufferPool_t mb;				// move buffer queue
 extern mpMoveMasterSingleton_t mm;		// context for line planning
-extern mpMoveRuntimeSingleton_t mr;	// context for line runtime
+extern mpMoveRuntimeSingleton_t mr;		// context for line runtime
 
 /*
  * Global Scope Functions
