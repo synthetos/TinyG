@@ -241,6 +241,14 @@ enum prepBufferState {
 	PREP_BUFFER_OWNED_BY_EXEC		// staging buffer is being loaded
 };
 
+// motor stop bitfields
+#define M1_STOP (0x01)				// used to set st_run.motor_stop_flags
+#define M2_STOP	(0x02)
+#define M3_STOP	(0x04)
+#define M4_STOP	(0x08)
+#define M5_STOP	(0x10)
+#define M6_STOP	(0x20)
+#define ALL_MOTORS_STOPPED	(M1_STOP | M2_STOP | M3_STOP | M4_STOP | M5_STOP | M6_STOP)
 
 /* Timer settings for stepper module. See hardware.h for overall timer assignments */
 

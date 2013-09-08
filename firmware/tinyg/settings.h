@@ -86,7 +86,7 @@
 
 // machine default profiles - chose only one:
 
-#include "settings/settings_default.h"				// Default settings for release
+//#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_mcgyver.h"				// debugging
 //#include "settings/settings_openpnp.h"				// OpenPnP
@@ -95,7 +95,7 @@
 //#include "settings/settings_pocketcnc_linear.h"		// PocketCNC 5 axis mill - linear settings
 //#include "settings/settings_pocketcnc_rotary.h"		// PocketCNC 5 axis mill - rotary settings
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
-//#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
+#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"				// Zen Toolworks 7x12
 

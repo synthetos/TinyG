@@ -85,9 +85,7 @@ typedef struct stRunMotor { 			// one per controlled motor
 	int32_t phase_increment;			// total steps in axis times substeps factor
 	int32_t phase_accumulator;			// DDA phase angle accumulator for axis
 	uint8_t polarity;					// 0=normal polarity, 1=reverse motor polarity
-	volatile uint8_t motor_start_flag;	// Set TRUE by interrupt when a motor starts
-	volatile uint8_t motor_stop_flag;	// Set TRUE by interrupt when a motor stops
-	uint32_t motor_idle_systick;		// sys_tick at which to idle this motor
+//	uint32_t motor_idle_systick;		// sys_tick at which to idle this motor
 } stRunMotor_t;
 
 typedef struct stRunSingleton {			// Stepper static values and axis parameters
@@ -95,6 +93,7 @@ typedef struct stRunSingleton {			// Stepper static values and axis parameters
 	int32_t dda_ticks_downcount;		// tick down-counter (unscaled)
 	int32_t dda_ticks_X_substeps;		// ticks multiplied by scaling factor
 	uint32_t motor_idle_systick;		// sys_tick at which to idle all motors
+	volatile uint8_t motor_stop_flags;	// bitfield for motor stop conditions
 	stRunMotor_t m[MOTORS];				// runtime motor structures
 } stRunSingleton_t;
 
@@ -139,9 +138,6 @@ magic_t st_get_stepper_prep_magic() { return (st_prep.magic_start);}
 
 void stepper_init()
 {
-//	You can assume all values are zeroed. If not, use this:
-//	memset(&st, 0, sizeof(st));	// clear all values, pointers and status
-
 	memset(&st_run, 0, sizeof(st_run));			// clear all values, pointers and status
 	st_run.magic_start = MAGICNUM;
 	st_prep.magic_start = MAGICNUM;
@@ -262,9 +258,11 @@ void st_idle_motors()
 
 stat_t st_motor_power_callback() 	// called by controller
 {
-	if (SysTickTimer_getValue() < st_run.motor_idle_systick ) {
-		return (STAT_NOOP);
+	if (st_run.motor_stop_flags != 0) {
+		st_run.motor_stop_flags = 0;
+		st_do_motor_idle_timeout();
 	}
+	if (SysTickTimer_getValue() < st_run.motor_idle_systick ) return (STAT_NOOP);
 	st_idle_motors();
 	return (STAT_OK);
 }
@@ -308,12 +306,7 @@ ISR(TIMER_DDA_ISR_vect)
 	}
 	if (--st_run.dda_ticks_downcount == 0) {	// end move
  		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;	// disable DDA timer
-		st_do_motor_idle_timeout();
-		// power-down motors if this feature is enabled
-		if (cfg.m[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-		if (cfg.m[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-		if (cfg.m[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-		if (cfg.m[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+		st_run.motor_stop_flags = ALL_MOTORS_STOPPED;
 		_load_move();							// load the next move
 	}
 }
@@ -393,25 +386,25 @@ void _load_move()
 		st_run.dda_ticks_downcount = st_prep.dda_ticks;
 		st_run.dda_ticks_X_substeps = st_prep.dda_ticks_X_substeps;
 		TIMER_DDA.PER = st_prep.dda_period;
-//+++++	st_set_motor_disable_timeout(cfg.motor_disable_timeout);
 
 		// This section is somewhat optimized for execution speed 
 		// All axes must set steps and compensate for out-of-range pulse phasing. 
 		// If axis has 0 steps the direction setting can be omitted
 		// If axis has 0 steps enabling motors is req'd to support power mode = 1
 
-		st_run.m[MOTOR_1].phase_increment = st_prep.m[MOTOR_1].phase_increment;			// set steps
-		if (st_prep.reset_flag == true) {				// compensate for pulse phasing
+		st_run.m[MOTOR_1].phase_increment = st_prep.m[MOTOR_1].phase_increment;	// set steps
+		if (st_prep.reset_flag == true) {					// compensate for pulse phasing
 			st_run.m[MOTOR_1].phase_accumulator = -(st_run.dda_ticks_downcount);
 		}
-		if (st_run.m[MOTOR_1].phase_increment != 0) {
+		if (st_run.m[MOTOR_1].phase_increment != 0) {		// meaning motor is supposed to run
 			// For ideal optimizations, only set or clear a bit at a time.
 			if (st_prep.m[MOTOR_1].dir == 0) {
 				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm;// CW motion (bit cleared)
 			} else {
 				PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
 			}
-			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// enable motor
+			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// energize motor
+//			st_run.m[MOTOR_1].motor_start_flag = true;		// set bit indicating motor has started
 		}
 
 		st_run.m[MOTOR_2].phase_increment = st_prep.m[MOTOR_2].phase_increment;
@@ -425,6 +418,7 @@ void _load_move()
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+//			st_run.m[MOTOR_2].motor_start_flag = true;
 		}
 
 		st_run.m[MOTOR_3].phase_increment = st_prep.m[MOTOR_3].phase_increment;
@@ -438,6 +432,7 @@ void _load_move()
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+//			st_run.m[MOTOR_3].motor_start_flag = true;
 		}
 
 		st_run.m[MOTOR_4].phase_increment = st_prep.m[MOTOR_4].phase_increment;
@@ -451,8 +446,8 @@ void _load_move()
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+//			st_run.m[MOTOR_4].motor_start_flag = true;
 		}
-
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
 
 	// handle dwells
