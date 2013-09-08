@@ -61,17 +61,17 @@ cfgParameters_t cfg; 				// application specific configuration parameters
 
 // helpers (most helpers are defined immediate above their usage so they don't need prototypes here)
 
-static stat_t _do_motors(cmdObj_t *cmd);// print parameters for all motor groups
-static stat_t _do_axes(cmdObj_t *cmd);	// print parameters for all axis groups
-static stat_t _do_offsets(cmdObj_t *cmd);// print offsets for G54-G59, G92
-static stat_t _do_all(cmdObj_t *cmd);	// print all parameters
+static stat_t _do_motors(cmdObj_t *cmd);	// print parameters for all motor groups
+static stat_t _do_axes(cmdObj_t *cmd);		// print parameters for all axis groups
+static stat_t _do_offsets(cmdObj_t *cmd);	// print offsets for G54-G59, G92
+static stat_t _do_all(cmdObj_t *cmd);		// print all parameters
 
 // Gcode domain specific functions
 
-static stat_t set_flu(cmdObj_t *cmd);	// set a float with unit conversion
-static stat_t get_flu(cmdObj_t *cmd);	// get float with unit conversion
-static void print_lin(cmdObj_t *cmd);	// print linear values
-static void print_rot(cmdObj_t *cmd);	// print rotary values
+static stat_t set_flu(cmdObj_t *cmd);		// set a float with unit conversion
+static stat_t get_flu(cmdObj_t *cmd);		// get float with unit conversion
+static void print_lin(cmdObj_t *cmd);		// print linear values
+static void print_rot(cmdObj_t *cmd);		// print rotary values
 
 // system and application control variables and functions
 
@@ -115,8 +115,8 @@ static stat_t get_ofs(cmdObj_t *cmd);		// get runtime work offset...
 static void print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
 static void print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
 static void print_ss(cmdObj_t *cmd);		// print switch state
-static void print_coor(cmdObj_t *cmd);	// print coordinate offsets with linear units
-static void print_corr(cmdObj_t *cmd);	// print coordinate offsets with rotary units
+static void print_coor(cmdObj_t *cmd);		// print coordinate offsets with linear units
+static void print_corr(cmdObj_t *cmd);		// print coordinate offsets with rotary units
 
 static stat_t get_line(cmdObj_t *cmd);		// get runtime line number
 static stat_t get_stat(cmdObj_t *cmd);		// get combined machine state as value and string
@@ -149,10 +149,10 @@ static void print_am(cmdObj_t *cmd);		// print axis mode
 //static stat_t set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 static stat_t set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
 
-//static void pr_ma_str(cmdObj_t *cmd); // generic print functions for motors and axes
+//static void pr_ma_str(cmdObj_t *cmd); 	// generic print functions for motors and axes
 static void pr_ma_ui8(cmdObj_t *cmd);
-//static void pr_ma_int(cmdObj_t *cmd); // placeholder
-//static void pr_ma_flt(cmdObj_t *cmd); // placeholder
+//static void pr_ma_int(cmdObj_t *cmd); 	// placeholder
+//static void pr_ma_flt(cmdObj_t *cmd); 	// placeholder
 static void pr_ma_lin(cmdObj_t *cmd);
 static void pr_ma_rot(cmdObj_t *cmd);
 
@@ -313,9 +313,9 @@ static const char_t PROGMEM fmt_net[] = "[net]  network mode%16d [0=master]\n";
 static const char_t PROGMEM fmt_qr[] = "qr:%d\n";
 static const char_t PROGMEM fmt_rx[] = "rx:%d\n";
 
-static const char_t PROGMEM fmt_mt[] = "[mt]  motor disable timeout%11.2f Sec\n";
-static const char_t PROGMEM fmt_md[] = "motors disabled\n";
-static const char_t PROGMEM fmt_me[] = "motors enabled\n";
+static const char_t PROGMEM fmt_mt[] = "[mt]  motor idle timeout%16.2f Sec\n";
+static const char_t PROGMEM fmt_me[] = "motors energized\n";
+static const char_t PROGMEM fmt_md[] = "motors de-energized\n";
 
 // Gcode model values for reporting purposes
 static const char_t PROGMEM fmt_vel[]  = "Velocity:%17.3f%S/min\n";
@@ -690,7 +690,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys","ja",  _f07, 0, fmt_ja, print_lin, get_flu, set_flu, (float *)&cfg.junction_acceleration,	JUNCTION_ACCELERATION },
 	{ "sys","ct",  _f07, 4, fmt_ct, print_lin, get_flu, set_flu, (float *)&cfg.chordal_tolerance,		CHORDAL_TOLERANCE },
 	{ "sys","st",  _f07, 0, fmt_st, print_ui8, get_ui8, set_sw,  (float *)&sw.switch_type,				SWITCH_TYPE },
-	{ "sys","mt",  _f07, 2, fmt_mt, print_flt, get_flt, set_mt,  (float *)&cfg.motor_disable_timeout, 	MOTOR_DISABLE_TIMEOUT},
+	{ "sys","mt",  _f07, 2, fmt_mt, print_flt, get_flt, set_mt,  (float *)&cfg.motor_idle_timeout, 		MOTOR_IDLE_TIMEOUT},
 	{ "",   "me",  _f00, 0, fmt_me, print_str, set_me,  set_me,  (float *)&cs.null, 0 },
 	{ "",   "md",  _f00, 0, fmt_md, print_str, set_md,  set_md,  (float *)&cs.null, 0 },
 
@@ -1014,19 +1014,19 @@ static void print_sr(cmdObj_t *cmd)
 
 static stat_t set_mt(cmdObj_t *cmd)
 {
-	st_set_motor_disable_timeout(cmd->value);	
+	st_set_motor_idle_timeout(cmd->value);	
 	return (STAT_OK);
 }
 
 static stat_t set_md(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
-	st_disable_motors();
+	st_deenergize_motors();
 	return (STAT_OK);
 }
 
 static stat_t set_me(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
-	st_enable_motors();
+	st_energize_motors();
 	return (STAT_OK);
 }
 
@@ -1396,9 +1396,9 @@ static stat_t set_pm(cmdObj_t *cmd)			// motor power mode
 { 
 	ritorno (set_01(cmd));
 	if (fp_ZERO(cmd->value)) {				// zero means enable motor - i.e. disable power management mode
-		st_enable_motor(_get_motor(cmd->index));
+		st_turn_motor_power_on(_get_motor(cmd->index));
 	} else {
-		st_disable_motor(_get_motor(cmd->index));
+		st_turn_motor_power_off(_get_motor(cmd->index));
 	}
 	return (STAT_OK);
 }

@@ -606,7 +606,7 @@ void canonical_machine_init()
 void canonical_machine_alarm(uint8_t value)
 {
 	// stop the steppers and the spindle
-	st_disable_motors();
+	st_deenergize_motors();
 	cm_spindle_control(SPINDLE_OFF);
 
 	// disable all MCode functions
@@ -1318,7 +1318,7 @@ void cm_cycle_start()
 	if (cm.cycle_state == CYCLE_OFF) {
 		cm.cycle_state = CYCLE_MACHINING;			// don't change homing, probe or other cycles
 		rpt_clear_queue_report();					// clear queue reporting buffer counts
-		st_enable_motors();							// enable motors if not already enabled
+		st_energize_motors();						// enable motors if not already enabled
 	}
 }
 

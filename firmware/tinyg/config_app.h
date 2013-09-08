@@ -240,7 +240,7 @@ typedef struct cfgParameters {
 	// system group settings
 	float junction_acceleration;	// centripetal acceleration max for cornering
 	float chordal_tolerance;		// arc chordal accuracy setting in mm
-	float motor_disable_timeout;	// seconds before disabling motors
+	float motor_idle_timeout;		// seconds before setting motors to idle current (currently this is OFF)
 //	float max_spindle_speed;		// in RPM
 
 	// hidden system settings

@@ -81,39 +81,42 @@ static void _request_load_move(void);
 
 // Runtime structure. Used exclusively by step generation ISR (HI)
 
-typedef struct stRunMotor { 		// one per controlled motor
-	int32_t phase_increment;		// total steps in axis times substeps factor
-	int32_t phase_accumulator;		// DDA phase angle accumulator for axis
-	uint8_t polarity;				// 0=normal polarity, 1=reverse motor polarity
+typedef struct stRunMotor { 			// one per controlled motor
+	int32_t phase_increment;			// total steps in axis times substeps factor
+	int32_t phase_accumulator;			// DDA phase angle accumulator for axis
+	uint8_t polarity;					// 0=normal polarity, 1=reverse motor polarity
+	volatile uint8_t motor_start_flag;	// Set TRUE by interrupt when a motor starts
+	volatile uint8_t motor_stop_flag;	// Set TRUE by interrupt when a motor stops
+	uint32_t motor_idle_systick;		// sys_tick at which to idle this motor
 } stRunMotor_t;
 
-typedef struct stRunSingleton {		// Stepper static values and axis parameters
-	uint16_t magic_start;			// magic number to test memory integrity	
-	int32_t dda_ticks_downcount;	// tick down-counter (unscaled)
-	int32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
-	uint32_t motor_disable_systick;	// sys_tick at which to disable the motors
-	stRunMotor_t m[MOTORS];			// runtime motor structures
+typedef struct stRunSingleton {			// Stepper static values and axis parameters
+	uint16_t magic_start;				// magic number to test memory integrity	
+	int32_t dda_ticks_downcount;		// tick down-counter (unscaled)
+	int32_t dda_ticks_X_substeps;		// ticks multiplied by scaling factor
+	uint32_t motor_idle_systick;		// sys_tick at which to idle all motors
+	stRunMotor_t m[MOTORS];				// runtime motor structures
 } stRunSingleton_t;
 
 // Prep-time structure. Used by exec/prep ISR (MED) and read-only during load
 // Must be careful about volatiles in this one
 
 typedef struct stPrepMotor {
- 	uint32_t phase_increment; 		// total steps in axis times substep factor
-	int8_t dir;						// b0 = direction
+ 	uint32_t phase_increment; 			// total steps in axis times substep factor
+	int8_t dir;							// direction
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
-	uint16_t magic_start;			// magic number to test memory integrity	
-	uint8_t move_type;				// move type
-	volatile uint8_t exec_state;	// move execution state 
-	volatile uint8_t reset_flag;	// TRUE if accumulator should be reset
-	uint32_t prev_ticks;			// tick count from previous move
-	uint16_t dda_period;			// DDA or dwell clock period setting
-	uint32_t dda_ticks;				// DDA or dwell ticks for the move
-	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
-//	float segment_velocity;			// record segment velocity for diagnostics
-	stPrepMotor_t m[MOTORS];		// per-motor structs
+	uint16_t magic_start;				// magic number to test memory integrity	
+	uint8_t move_type;					// move type
+	volatile uint8_t exec_state;		// move execution state 
+	volatile uint8_t reset_flag;		// TRUE if accumulator should be reset
+	uint32_t prev_ticks;				// tick count from previous move
+	uint16_t dda_period;				// DDA or dwell clock period setting
+	uint32_t dda_ticks;					// DDA or dwell ticks for the move
+	uint32_t dda_ticks_X_substeps;		// DDA ticks scaled by substep factor
+//	float segment_velocity;				// record segment velocity for diagnostics
+	stPrepMotor_t m[MOTORS];			// per-motor structs
 } stPrepSingleton_t;
 
 // Allocate static structures
@@ -139,7 +142,7 @@ void stepper_init()
 //	You can assume all values are zeroed. If not, use this:
 //	memset(&st, 0, sizeof(st));	// clear all values, pointers and status
 
-	memset(&st_run, 0, sizeof(st_run));		// clear all values, pointers and status
+	memset(&st_run, 0, sizeof(st_run));			// clear all values, pointers and status
 	st_run.magic_start = MAGICNUM;
 	st_prep.magic_start = MAGICNUM;
 
@@ -178,40 +181,33 @@ void stepper_init()
 }
 
 /* 
- * st_set_motor_disable_timeout() - set the timeout in the config
+ * st_set_motor_idle_timeout() - set the timeout in the config
  */
 
-void st_set_motor_disable_timeout(float seconds)
+void st_set_motor_idle_timeout(float seconds)
 {
-	cfg.motor_disable_timeout = min(STEPPER_MAX_TIMEOUT_SECONDS, max(seconds, STEPPER_MIN_TIMEOUT_SECONDS));
+	cfg.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(seconds, IDLE_TIMEOUT_SECONDS_MIN));
 }
-/*
-void st_set_motor_disable_timeout(uint32_t seconds)
-{
-	st_run.motor_disable_systick = SysTickTimer_getValue() + (seconds * 1000);
-}
-*/
+
 /* 
- * st_do_motor_disable_timeout()  - execute the timeout
+ * st_do_motor_idle_timeout()  - execute the timeout
  *
- *	Sets a point N seconds in the future when the motors will be disabled (time out)
+ *	Sets a point N seconds in the future when the motors will be idled (time out)
  *	Can be called at any time to extend N seconds from the current time
  */
 
-void st_do_motor_disable_timeout()
+void st_do_motor_idle_timeout()
 {
-	st_run.motor_disable_systick = SysTickTimer_getValue() + (uint32_t)(cfg.motor_disable_timeout * 1000);
+	st_run.motor_idle_systick = SysTickTimer_getValue() + (uint32_t)(cfg.motor_idle_timeout * 1000);
 }
 
 /* 
- * st_enable_motor()  - enable a motor
- * st_disable_motor() - disable a motor
- * st_enable_motors() - enable all motors with $pm set to POWER_MODE_DELAYED_DISABLE
- * st_disable_motors()- disable all motors
- * st_motor_disable_callback()
+ * st_turn_motor_power_on()  - enable a motor
+ * st_turn_motor_power_off() - disable a motor
+ * st_set_motor_power()		 - set motor power level
  */
 
-void st_enable_motor(const uint8_t motor)
+void st_turn_motor_power_on(const uint8_t motor)
 {
 	if (motor == MOTOR_1) { PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
 	if (motor == MOTOR_2) { PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
@@ -219,7 +215,7 @@ void st_enable_motor(const uint8_t motor)
 	if (motor == MOTOR_4) { PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
 }
 
-void st_disable_motor(const uint8_t motor)
+void st_turn_motor_power_off(const uint8_t motor)
 {
 	if (motor == MOTOR_1) { PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
 	if (motor == MOTOR_2) { PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
@@ -227,29 +223,53 @@ void st_disable_motor(const uint8_t motor)
 	if (motor == MOTOR_4) { PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
 }
 
-void st_enable_motors()
+void st_set_motor_power(const uint8_t motor)
 {
-	if (cfg.m[MOTOR_1].power_mode == ENABLE_AXIS_DURING_CYCLE) { st_enable_motor(MOTOR_1);}
-	if (cfg.m[MOTOR_2].power_mode == ENABLE_AXIS_DURING_CYCLE) { st_enable_motor(MOTOR_2);}
-	if (cfg.m[MOTOR_3].power_mode == ENABLE_AXIS_DURING_CYCLE) { st_enable_motor(MOTOR_3);}
-	if (cfg.m[MOTOR_4].power_mode == ENABLE_AXIS_DURING_CYCLE) { st_enable_motor(MOTOR_4);}
-	st_do_motor_disable_timeout();
+
 }
 
-void st_disable_motors()
+/* 
+ * st_energize_motors()   - apply power to all motors
+ * st_deenergize_motors() - remove power from all motors
+ * st_idle_motors()		  - set all motors to idle power level
+ */
+
+void st_energize_motors()
 {
-	st_disable_motor(MOTOR_1);
-	st_disable_motor(MOTOR_2);
-	st_disable_motor(MOTOR_3);
-	st_disable_motor(MOTOR_4);
+	if (cfg.m[MOTOR_1].power_mode == ENABLE_AXIS_DURING_CYCLE) { st_turn_motor_power_on(MOTOR_1);}
+	if (cfg.m[MOTOR_2].power_mode == ENABLE_AXIS_DURING_CYCLE) { st_turn_motor_power_on(MOTOR_2);}
+	if (cfg.m[MOTOR_3].power_mode == ENABLE_AXIS_DURING_CYCLE) { st_turn_motor_power_on(MOTOR_3);}
+	if (cfg.m[MOTOR_4].power_mode == ENABLE_AXIS_DURING_CYCLE) { st_turn_motor_power_on(MOTOR_4);}
+	st_do_motor_idle_timeout();
 }
 
-stat_t st_motor_disable_callback() 	// called by controller
+void st_deenergize_motors()
 {
-	if (SysTickTimer_getValue() < st_run.motor_disable_systick ) {
+	st_turn_motor_power_off(MOTOR_1);
+	st_turn_motor_power_off(MOTOR_2);
+	st_turn_motor_power_off(MOTOR_3);
+	st_turn_motor_power_off(MOTOR_4);
+}
+
+void st_idle_motors()
+{
+	st_deenergize_motors();
+//	st_turn_motor_power_off(MOTOR_1);
+//	st_turn_motor_power_off(MOTOR_2);
+//	st_turn_motor_power_off(MOTOR_3);
+//	st_turn_motor_power_off(MOTOR_4);
+}
+
+/*
+ * st_motor_power_callback() - callback to manage motor power sequencing
+ */
+
+stat_t st_motor_power_callback() 	// called by controller
+{
+	if (SysTickTimer_getValue() < st_run.motor_idle_systick ) {
 		return (STAT_NOOP);
 	}
-	st_disable_motors();
+	st_idle_motors();
 	return (STAT_OK);
 }
 
@@ -292,7 +312,7 @@ ISR(TIMER_DDA_ISR_vect)
 	}
 	if (--st_run.dda_ticks_downcount == 0) {	// end move
  		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;	// disable DDA timer
-		st_do_motor_disable_timeout();
+		st_do_motor_idle_timeout();
 		// power-down motors if this feature is enabled
 		if (cfg.m[MOTOR_1].power_mode == DISABLE_AXIS_WHEN_IDLE) PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 		if (cfg.m[MOTOR_2].power_mode == DISABLE_AXIS_WHEN_IDLE) PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;

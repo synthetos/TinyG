@@ -181,14 +181,18 @@
 
 void stepper_init(void);
 
-void st_set_motor_disable_timeout(float seconds);
-void st_do_motor_disable_timeout(void);
+void st_set_motor_idle_timeout(float seconds);
+void st_do_motor_idle_timeout(void);
 
-void st_enable_motor(const uint8_t motor);
-void st_disable_motor(const uint8_t motor);
-void st_enable_motors(void);
-void st_disable_motors(void);
-stat_t st_motor_disable_callback(void);
+void st_turn_motor_power_on(const uint8_t motor);
+void st_turn_motor_power_off(const uint8_t motor);
+void st_set_motor_power(const uint8_t motor);
+
+void st_energize_motors(void);
+void st_deenergize_motors(void);
+void st_idle_motors(void);
+
+stat_t st_motor_power_callback(void);
 
 uint8_t st_isbusy(void);		// return TRUE is any axis is running (F=idle)
 void st_set_polarity(const uint8_t motor, const uint8_t polarity);
@@ -215,24 +219,36 @@ void st_dump_stepper_state(void);
  * Stepper configs and constants
  */
 
-enum prepBufferState {
-	PREP_BUFFER_OWNED_BY_LOADER = 0,	// staging buffer is ready for load
-	PREP_BUFFER_OWNED_BY_EXEC			// staging buffer is being loaded
+// Currently there is no distinction between IDLE and OFF. 
+// In the future IDLE will be powered at a low, torque-maintaining current
+
+enum motorState {					// used w/start and stop flags to sequence motor power
+	MOTOR_OFF = 0,					// motor is stopped and un-powered
+	MOTOR_IDLE,						// motor is stopped and maintained at idle current
+	MOTOR_STOPPED,					// motor is stopped and maintained at running current
+	MOTOR_RUNNING					// motor is running
 };
 
 enum cmStepperPowerMode {
-	ENABLE_AXIS_DURING_CYCLE =0,		// axis is fully powered during cycles
-	DISABLE_AXIS_WHEN_IDLE,				// power down motor shortly after it's idle
-	REDUCE_AXIS_POWER_WHEN_IDLE,		// enable Vref current reduction (not implemented yet)
-	DYNAMIC_AXIS_POWER					// adjust motor current with velocity (not implemented yet)
+	ENABLE_AXIS_DURING_CYCLE =0,	// axis is fully powered during cycles
+	DISABLE_AXIS_WHEN_IDLE,			// power down motor shortly after it's idle
+	REDUCE_AXIS_POWER_WHEN_IDLE,	// enable Vref current reduction (not implemented yet)
+	DYNAMIC_AXIS_POWER				// adjust motor current with velocity (not implemented yet)
 };
+
+enum prepBufferState {
+	PREP_BUFFER_OWNED_BY_LOADER = 0,// staging buffer is ready for load
+	PREP_BUFFER_OWNED_BY_EXEC		// staging buffer is being loaded
+};
+
 
 /* Timer settings for stepper module. See hardware.h for overall timer assignments */
 
 // Stepper power management settings
 //	Min/Max timeouts allowed for motor disable. Allow for inertial stop; must be non-zero
-#define STEPPER_MIN_TIMEOUT_SECONDS 0.1					// seconds !!! SHOULD NEVER BE ZERO !!!
-#define STEPPER_MAX_TIMEOUT_SECONDS (4294967295/1000)	// for conversion to uint32_t
+#define IDLE_TIMEOUT_SECONDS_MIN 	0.1				 // seconds !!! SHOULD NEVER BE ZERO !!!
+#define IDLE_TIMEOUT_SECONDS_MAX   (4294967295/1000) // for conversion to uint32_t
+#define IDLE_TIMEOUT_SECONDS 		0.1				 // seconds in DISABLE_AXIS_WHEN_IDLE mode
 
 /* DDA substepping
  * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping.

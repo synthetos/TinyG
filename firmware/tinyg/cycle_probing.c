@@ -156,7 +156,7 @@ uint8_t cm_probe_cycle_start(void)
 	pb.axis = -1;							// set to retrieve initial axis
 	pb.func = _probing_axis_start; 			// bind initial processing function
 	cm.cycle_state = CYCLE_PROBE;
-	st_enable_motors();						// enable motors if not already enabled
+	st_energize_motors();					// enable motors if not already enabled
 	return (STAT_OK);
 }
 
