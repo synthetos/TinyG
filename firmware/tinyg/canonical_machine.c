@@ -101,10 +101,11 @@
  **** STRUCTURE ALLOCATIONS ********************************************************
  ***********************************************************************************/
 
-//cmSingleton_t cm;		// canonical machine control structure
-//GCodeModel_t gm;		// active gcode model
-//GCodeInput_t gn;		// gcode input values
-//GCodeInput_t gf;		// gcode input flags
+cmSingleton_t cm;		// canonical machine control structure
+GCodeModel_t gm;		// active gcode model
+GCodeInput_t gn;		// gcode input values
+GCodeInput_t gf;		// gcode input flags
+GCodeContext_t gc;		// gcode model context for export to runtime
 
 /***********************************************************************************
  **** GENERIC STATIC FUNCTIONS AND VARIABLES ***************************************
@@ -224,9 +225,6 @@ float *cm_get_model_coord_offset_vector(float vector[])
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		vector[axis] = cm_get_model_coord_offset(axis);
 	}
-//	for (uint8_t i=0; i<AXES; i++) {
-//		vector[i] = cm_get_model_coord_offset(i);
-//	}
 	return (vector);
 }
 
@@ -285,7 +283,7 @@ float cm_get_runtime_work_offset(uint8_t axis)
 }
 
 /*
- * Model initializers - these inhale gn values into the gm struct
+ * Model manipulation - these inhale gn values into the gm struct, other functions
  *
  *	Input coordinates are in native block formats (gn form);
  *	i.e. they are not unit adjusted or otherwise pre-processed.
@@ -295,6 +293,7 @@ float cm_get_runtime_work_offset(uint8_t axis)
  * cm_set_model_arc_offset()  - set all IJK offsets
  * cm_set_model_radius()	  - set radius value
  * cm_set_model_linenum() 	  - set line number in the model
+ * cm_load_model_context() 	  - load Gcode model context struct
  */
 
 void cm_set_model_arc_offset(float i, float j, float k)
@@ -314,6 +313,24 @@ void cm_set_model_linenum(uint32_t linenum)
 	gm.linenum = linenum;		// you must first set the model line number,
 	cmd_add_object("n");		// then add the line number to the cmd list
 //++++ The above is not the same as the G2 version	
+}
+
+GCodeContext_t *cm_load_model_context(GCodeContext_t *gc)
+{
+	gc->linenum = gm.linenum;
+	gc->min_time = gm.min_time;
+	gc->feed_rate = gm.feed_rate;
+	gc->motion_mode = gm.motion_mode;
+	gc->inverse_feed_rate_mode = gm.inverse_feed_rate_mode;
+	gc->select_plane = gm.select_plane;
+	gc->units_mode = gm.units_mode;
+	gc->coord_system = gm.coord_system;
+	gc->absolute_override = gm.absolute_override;
+	gc->path_control = gm.path_control;
+	gc->distance_mode = gm.distance_mode;
+	gc->tool = gm.tool;
+	cm_get_model_coord_offset_vector(gc->work_offset);
+	return (gc);
 }
 
 /* 
@@ -432,6 +449,8 @@ void cm_set_model_endpoint_position(stat_t status)
 
 /* 
  * _get_move_times() - get minimum and optimal move times
+ *
+ *	Returns optimal_time and sets minimim_time (which may be different).
  *
  *	The minimum time is the fastest the move can be performed given the velocity 
  *	constraints on each participating axis - regardless of the feed rate requested. 
@@ -839,9 +858,13 @@ stat_t cm_straight_traverse(float target[], float flags[])
 //	ritorno(_test_soft_limits());
 
 	cm_cycle_start();							// required for homing & other cycles
-	stat_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), 
-							cm_get_model_coord_offset_vector(gm.work_offset), 
-							gm.min_time);
+
+	stat_t status = mp_aline(gm.target, _get_move_times(&gm.min_time), cm_load_model_context(&gc));
+
+//	stat_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), 
+//							cm_get_model_coord_offset_vector(gm.work_offset), 
+//							gm.min_time);
+
 	cm_set_model_endpoint_position(status);
 	return (status);
 }
@@ -965,9 +988,15 @@ stat_t cm_straight_feed(float target[], float flags[])
 	if (vector_equal(gm.target, gm.position)) { return (STAT_OK); }
 
 	cm_cycle_start();						// required for homing & other cycles
-	stat_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), 
-							 cm_get_model_coord_offset_vector(gm.work_offset), 
-							 gm.min_time);
+
+	stat_t status = mp_aline(gm.target, _get_move_times(&gm.min_time), cm_load_model_context(&gc));
+
+//	stat_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), 
+//							 cm_get_model_coord_offset_vector(gm.work_offset), 
+//							 gm.min_time);
+
+//	cm_get_model_coord_offset_vector(gm.work_offset), 
+//	stat_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), &gm);
 
 	cm_set_model_endpoint_position(status);
 	return (status);

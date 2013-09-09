@@ -232,19 +232,29 @@ void st_set_motor_power(const uint8_t motor)
 
 void st_energize_motors()
 {
-	if (cfg.m[MOTOR_1].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_1);}
-	if (cfg.m[MOTOR_2].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_2);}
-	if (cfg.m[MOTOR_3].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_3);}
-	if (cfg.m[MOTOR_4].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_4);}
+//	if (cfg.m[MOTOR_1].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_1);}
+//	if (cfg.m[MOTOR_2].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_2);}
+//	if (cfg.m[MOTOR_3].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_3);}
+//	if (cfg.m[MOTOR_4].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_4);}
+
+	PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+	PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+	PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+	PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 	st_do_motor_idle_timeout();
 }
 
 void st_deenergize_motors()
 {
-	st_deenergize_motor(MOTOR_1);
-	st_deenergize_motor(MOTOR_2);
-	st_deenergize_motor(MOTOR_3);
-	st_deenergize_motor(MOTOR_4);
+//	st_deenergize_motor(MOTOR_1);
+//	st_deenergize_motor(MOTOR_2);
+//	st_deenergize_motor(MOTOR_3);
+//	st_deenergize_motor(MOTOR_4);
+
+	PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+	PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+	PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+	PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 }
 
 void st_idle_motors()
@@ -285,9 +295,9 @@ stat_t st_motor_power_callback() 	// called by controller
 ISR(TIMER_DDA_ISR_vect)
 {
 	if ((st_run.m[MOTOR_1].phase_accumulator += st_run.m[MOTOR_1].phase_increment) > 0) {
-		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;	// turn step bit on
+		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;		// turn step bit on
  		st_run.m[MOTOR_1].phase_accumulator -= st_run.dda_ticks_X_substeps;
-		PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;	// turn step bit off in ~1 uSec
+		PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;		// turn step bit off in ~1 uSec
 	}
 	if ((st_run.m[MOTOR_2].phase_accumulator += st_run.m[MOTOR_2].phase_increment) > 0) {
 		PORT_MOTOR_2_VPORT.OUT |= STEP_BIT_bm;
@@ -304,28 +314,28 @@ ISR(TIMER_DDA_ISR_vect)
  		st_run.m[MOTOR_4].phase_accumulator -= st_run.dda_ticks_X_substeps;
 		PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
 	}
-	if (--st_run.dda_ticks_downcount == 0) {	// end move
- 		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;	// disable DDA timer
-		st_run.motor_stop_flags = ALL_MOTORS_STOPPED;
-		_load_move();							// load the next move
+	if (--st_run.dda_ticks_downcount == 0) {			// end move
+ 		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;			// disable DDA timer
+		st_run.motor_stop_flags = ALL_MOTORS_STOPPED;	// return all STOPPED bits
+		_load_move();									// load the next move
 	}
 }
 
-ISR(TIMER_DWELL_ISR_vect) {						// DWELL timer interrupt
+ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
 	if (--st_run.dda_ticks_downcount == 0) {
- 		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;	// disable DWELL timer
-//		mp_end_dwell();							// free the planner buffer
+ 		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;			// disable DWELL timer
+//		mp_end_dwell();									// free the planner buffer
 		_load_move();
 	}
 }
 
-ISR(TIMER_LOAD_ISR_vect) {						// load steppers SW interrupt
- 	TIMER_LOAD.CTRLA = STEP_TIMER_DISABLE;		// disable SW interrupt timer
+ISR(TIMER_LOAD_ISR_vect) {								// load steppers SW interrupt
+ 	TIMER_LOAD.CTRLA = STEP_TIMER_DISABLE;				// disable SW interrupt timer
 	_load_move();
 }
 
-ISR(TIMER_EXEC_ISR_vect) {						// exec move SW interrupt
- 	TIMER_EXEC.CTRLA = STEP_TIMER_DISABLE;		// disable SW interrupt timer
+ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
+ 	TIMER_EXEC.CTRLA = STEP_TIMER_DISABLE;				// disable SW interrupt timer
 
 	// exec_move
    	if (st_prep.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
@@ -404,7 +414,6 @@ void _load_move()
 				PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
 			}
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// energize motor
-//			st_run.m[MOTOR_1].motor_start_flag = true;		// set bit indicating motor has started
 		}
 
 		st_run.m[MOTOR_2].phase_increment = st_prep.m[MOTOR_2].phase_increment;
@@ -418,7 +427,6 @@ void _load_move()
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-//			st_run.m[MOTOR_2].motor_start_flag = true;
 		}
 
 		st_run.m[MOTOR_3].phase_increment = st_prep.m[MOTOR_3].phase_increment;
@@ -432,7 +440,6 @@ void _load_move()
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-//			st_run.m[MOTOR_3].motor_start_flag = true;
 		}
 
 		st_run.m[MOTOR_4].phase_increment = st_prep.m[MOTOR_4].phase_increment;
@@ -446,7 +453,6 @@ void _load_move()
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-//			st_run.m[MOTOR_4].motor_start_flag = true;
 		}
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
 
