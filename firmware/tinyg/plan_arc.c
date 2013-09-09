@@ -238,13 +238,13 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 static stat_t _compute_center_arc()
 {
 	// calculate the theta (angle) of the current point (see header notes)
-	float theta_start = _get_theta(-gm.arc_offset[gm.plane_axis_0], -gm.arc_offset[gm.plane_axis_1]);
+	float theta_start = _get_theta(-gmx.arc_offset[gmx.plane_axis_0], -gmx.arc_offset[gmx.plane_axis_1]);
 	if(isnan(theta_start) == true) { return(STAT_ARC_SPECIFICATION_ERROR);}
 
 	// calculate the theta (angle) of the target point
 	float theta_end = _get_theta(
-		gm.target[gm.plane_axis_0] - gm.arc_offset[gm.plane_axis_0] - gm.position[gm.plane_axis_0], 
- 		gm.target[gm.plane_axis_1] - gm.arc_offset[gm.plane_axis_1] - gm.position[gm.plane_axis_1]);
+		gm.target[gmx.plane_axis_0] - gmx.arc_offset[gmx.plane_axis_0] - gmx.position[gmx.plane_axis_0], 
+ 		gm.target[gmx.plane_axis_1] - gmx.arc_offset[gmx.plane_axis_1] - gmx.position[gmx.plane_axis_1]);
 	if(isnan(theta_end) == true) { return (STAT_ARC_SPECIFICATION_ERROR); }
 
 	// ensure that the difference is positive so we have clockwise travel
@@ -267,20 +267,20 @@ static stat_t _compute_center_arc()
 
 	// Find the radius, calculate travel in the depth axis of the helix,
 	// and compute the time it should take to perform the move
-	float radius_tmp = hypot(gm.arc_offset[gm.plane_axis_0], gm.arc_offset[gm.plane_axis_1]);
-	float linear_travel = gm.target[gm.plane_axis_2] - gm.position[gm.plane_axis_2];
+	float radius_tmp = hypot(gmx.arc_offset[gmx.plane_axis_0], gmx.arc_offset[gmx.plane_axis_1]);
+	float linear_travel = gm.target[gmx.plane_axis_2] - gmx.position[gmx.plane_axis_2];
 	float move_time = _get_arc_time(linear_travel, angular_travel, radius_tmp);
 
 	// Trace the arc
-	set_vector(gm.target[gm.plane_axis_0], gm.target[gm.plane_axis_1], gm.target[gm.plane_axis_2],
+	set_vector(gm.target[gmx.plane_axis_0], gm.target[gmx.plane_axis_1], gm.target[gmx.plane_axis_2],
 			   gm.target[AXIS_A], gm.target[AXIS_B], gm.target[AXIS_C]);
 
 	return(ar_arc(vector,
-				  gm.arc_offset[gm.plane_axis_0],
-				  gm.arc_offset[gm.plane_axis_1],
-				  gm.arc_offset[gm.plane_axis_2],
+				  gmx.arc_offset[gmx.plane_axis_0],
+				  gmx.arc_offset[gmx.plane_axis_1],
+				  gmx.arc_offset[gmx.plane_axis_2],
 				  theta_start, radius_tmp, angular_travel, linear_travel, 
-				  gm.plane_axis_0, gm.plane_axis_1, gm.plane_axis_2, 
+				  gmx.plane_axis_0, gmx.plane_axis_1, gmx.plane_axis_2, 
 				  move_time, gm.work_offset, gm.min_time));
 }
 
@@ -363,15 +363,15 @@ static stat_t _get_arc_radius()
 	float h_x2_div_d;
 
 	// Calculate the change in position along each selected axis
-	x = gm.target[gm.plane_axis_0]-gm.position[gm.plane_axis_0];
-	y = gm.target[gm.plane_axis_1]-gm.position[gm.plane_axis_1];
+	x = gm.target[gmx.plane_axis_0]-gmx.position[gmx.plane_axis_0];
+	y = gm.target[gmx.plane_axis_1]-gmx.position[gmx.plane_axis_1];
 
-	gm.arc_offset[0] = 0;	// reset the offsets
-	gm.arc_offset[1] = 0;
-	gm.arc_offset[2] = 0;
+	gmx.arc_offset[0] = 0;	// reset the offsets
+	gmx.arc_offset[1] = 0;
+	gmx.arc_offset[2] = 0;
 
 	// == -(h * 2 / d)
-	h_x2_div_d = -sqrt(4 * square(gm.arc_radius) - (square(x) - square(y))) / hypot(x,y);
+	h_x2_div_d = -sqrt(4 * square(gmx.arc_radius) - (square(x) - square(y))) / hypot(x,y);
 
 	// If r is smaller than d the arc is now traversing the complex plane beyond
 	// the reach of any real CNC, and thus - for practical reasons - we will 
@@ -386,11 +386,11 @@ static stat_t _get_arc_radius()
 	// such circles in a single line of g-code. By inverting the sign of 
 	// h_x2_div_d the center of the circles is placed on the opposite side of 
 	// the line of travel and thus we get the unadvisably long arcs as prescribed.
-	if (gm.arc_radius < 0) { h_x2_div_d = -h_x2_div_d; }
+	if (gmx.arc_radius < 0) { h_x2_div_d = -h_x2_div_d; }
 
 	// Complete the operation by calculating the actual center of the arc
-	gm.arc_offset[gm.plane_axis_0] = (x-(y*h_x2_div_d))/2;
-	gm.arc_offset[gm.plane_axis_1] = (y+(x*h_x2_div_d))/2;
+	gmx.arc_offset[gmx.plane_axis_0] = (x-(y*h_x2_div_d))/2;
+	gmx.arc_offset[gmx.plane_axis_1] = (y+(x*h_x2_div_d))/2;
 	return (STAT_OK);
 } 
     
@@ -418,17 +418,17 @@ static float _get_arc_time (const float linear_travel, 		// in mm
 	float planar_travel = fabs(angular_travel * radius);// travel in arc plane
 
 	if (gm.inverse_feed_rate_mode == true) {
-		move_time = gm.inverse_feed_rate;
+		move_time = gmx.inverse_feed_rate;
 	} else {
 		move_time = sqrt(square(planar_travel) + square(linear_travel)) / gm.feed_rate;
 	}
-	if ((tmp = planar_travel/cfg.a[gm.plane_axis_0].feedrate_max) > move_time) {
+	if ((tmp = planar_travel/cfg.a[gmx.plane_axis_0].feedrate_max) > move_time) {
 		move_time = tmp;
 	}
-	if ((tmp = planar_travel/cfg.a[gm.plane_axis_1].feedrate_max) > move_time) {
+	if ((tmp = planar_travel/cfg.a[gmx.plane_axis_1].feedrate_max) > move_time) {
 		move_time = tmp;
 	}
-	if ((tmp = fabs(linear_travel/cfg.a[gm.plane_axis_2].feedrate_max)) > move_time) {
+	if ((tmp = fabs(linear_travel/cfg.a[gmx.plane_axis_2].feedrate_max)) > move_time) {
 		move_time = tmp;
 	}
 	return (move_time);

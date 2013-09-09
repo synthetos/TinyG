@@ -61,6 +61,9 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 
 /* GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
  *
+ * - gs is the core Gcode model state. This typedef is used by all gm structs and is
+ *	 copied and passed into the planner for runtime reporting and recalculation
+ *
  * - gm keeps the internal gcode state model in normalized, canonical form. 
  *	 All values are unit converted (to mm) and in the machine coordinate 
  *	 system (absolute coordinate system). Gm is owned by the canonical machine 
@@ -82,72 +85,77 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
  *	 G92 offsets. cfg has the power-on / reset gcode default values, but gm has
  *	 the operating state for the values (which may have changed).
  */
-typedef struct GCodeModel {				// Gcode dynamic model
-	uint16_t magic_start;				// magic number to test memory integity
-	uint8_t next_action;				// handles G modal group 1 moves & non-modals
+ typedef struct GCodeModel {			// Gcode model context values to carry forward into runtime
+	uint32_t linenum;					// Gcode block line number
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
 										// G82, G83 G84, G85, G86, G87, G88, G89 
-	uint8_t program_flow;				// currently vestigal - captured, but not uses
-	uint32_t linenum;					// N word
-
 	float target[AXES]; 				// XYZABC where the move should go
-	float position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
-	float origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
-	float work_offset[AXES];			// XYZABC work offset to be forwarded to planner
-	float work_scaling[AXES];			// XYZABC scale factor to get to work coordinates
-	float g28_position[AXES];			// XYZABC stored machine position for G28
-	float g30_position[AXES];			// XYZABC stored machine position for G30
+	float work_offset[AXES];			// offset from the work coordinate system (for reporting only)
 
 	float min_time;						// minimum time possible for the move given axis constraints
 	float feed_rate; 					// F - normalized to millimeters/minute
-	float inverse_feed_rate; 			// ignored if inverse_feed_rate not active
-	float feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
-	float traverse_override_factor;		// 1.0000 x traverse rate. Go down from there
+	float spindle_speed;				// in RPM
+	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
+
 	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
-	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
-	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
-	uint8_t l_word;						// L word - used by G10s
-
 	uint8_t select_plane;				// G17,G18,G19 - values to set plane to
-	uint8_t plane_axis_0;		 		// actual axes of the selected plane
-	uint8_t plane_axis_1;		 		// ...(used in gm only)
-	uint8_t plane_axis_2; 
-
 	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
 	uint8_t coord_system;				// G54-G59 - select coordinate system 1-9
 	uint8_t absolute_override;			// G53 TRUE = move using machine coordinates - this block only (G53)
-	uint8_t origin_offset_enable;		// G92 offsets enabled/disabled.  0=disabled, 1=enabled
-
 	uint8_t path_control;				// G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
 	uint8_t distance_mode;				// G91   0=use absolute coords(G90), 1=incremental movement
-
 	uint8_t tool;						// T value
 	uint8_t change_tool;				// M6
 	uint8_t mist_coolant;				// TRUE = mist on (M7), FALSE = off (M9)
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
-
 	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
-	float spindle_speed;				// in RPM
+
+} GCodeModel_t;
+
+typedef struct GCodeModelExtended {		// Gcode dynamic model extensions
+	uint16_t magic_start;				// magic number to test memory integity
+	uint8_t next_action;				// handles G modal group 1 moves & non-modals
+	uint8_t program_flow;				// currently vestigal - captured, but not used
+
+	float position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
+	float origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
+	float g28_position[AXES];			// XYZABC stored machine position for G28
+	float g30_position[AXES];			// XYZABC stored machine position for G30
+
+	float inverse_feed_rate; 			// ignored if inverse_feed_rate not active
+	float feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
+	float traverse_override_factor;		// 1.0000 x traverse rate. Go down from there
+	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
+	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
+	uint8_t l_word;						// L word - used by G10s
+
+	uint8_t plane_axis_0;		 		// actual axes of the selected plane
+	uint8_t plane_axis_1;		 		// ...(used in gm only)
+	uint8_t plane_axis_2; 
+
+	uint8_t origin_offset_enable;		// G92 offsets enabled/disabled.  0=disabled, 1=enabled
+
 	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
 	uint8_t	spindle_override_enable;	// TRUE = override enabled
 
 	uint8_t block_delete_switch;		// set true to enable block deletes (true is default)
 
+	float arc_radius;					// R - radius value in arc radius mode
+	float arc_offset[3];  				// IJK - used by arc commands
+
 // unimplemented gcode parameters
 //	float cutter_radius;				// D - cutter radius compensation (0 is off)
 //	float cutter_length;				// H - cutter length compensation (0 is off)
 
-	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
-	float arc_radius;					// R - radius value in arc radius mode
-	float arc_offset[3];  				// IJK - used by arc commands
 	uint16_t magic_end;
-}  GCodeModel_t;
+
+}  GCodeModelX_t;
 
 typedef struct GCodeInput {				// Gcode model inputs - meaning depends on context
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
 										// G82, G83 G84, G85, G86, G87, G88, G89 
-	uint8_t program_flow;				// currently vestigal - captured, but not uses
+	uint8_t program_flow;				// currently vestigal - captured, but not used
 	uint32_t linenum;					// N word or autoincrement in the model
 
 	float target[AXES]; 				// XYZABC where the move should go
@@ -193,9 +201,10 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 // Externs - See canonical_machine.c for allocation
 
 extern cmSingleton_t cm;
-extern GCodeModel_t gm;		// active gcode model
-extern GCodeInput_t gn;		// gcode input values
-extern GCodeInput_t gf;		// gcode input flags
+extern GCodeModel_t gm;			// core gcode model
+extern GCodeModelX_t gmx;		// extended gcode model
+extern GCodeInput_t gn;			// gcode input values
+extern GCodeInput_t gf;			// gcode input flags
 
 /*****************************************************************************
  * 

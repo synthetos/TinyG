@@ -34,12 +34,12 @@
 
 #include "tinyg.h"				// #1 unfortunately, there are some dependencies
 #include "config.h"				// #2
+#include "canonical_machine.h"
 #include "controller.h"
 #include "settings.h"
 #include "json_parser.h"
 #include "text_parser.h"
 #include "gcode_parser.h"
-#include "canonical_machine.h"
 #include "plan_arc.h"
 #include "planner.h"
 #include "stepper.h"
@@ -333,8 +333,8 @@ uint8_t _system_assertions()
 	if (cs.magic_end				!= MAGICNUM) { value = 2; }
 	if (cm.magic_start 				!= MAGICNUM) { value = 3; }
 	if (cm.magic_end				!= MAGICNUM) { value = 4; }
-	if (gm.magic_start				!= MAGICNUM) { value = 5; }
-	if (gm.magic_end 				!= MAGICNUM) { value = 6; }
+	if (gmx.magic_start				!= MAGICNUM) { value = 5; }
+	if (gmx.magic_end 				!= MAGICNUM) { value = 6; }
 	if (cfg.magic_start				!= MAGICNUM) { value = 7; }
 	if (cfg.magic_end				!= MAGICNUM) { value = 8; }
 	if (cmdStr.magic_start			!= MAGICNUM) { value = 9; }

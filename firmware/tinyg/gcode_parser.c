@@ -46,6 +46,10 @@ static stat_t _execute_gcode_block(void);		// Execute the gcode block
 
 #define SET_MODAL(m,parm,val) ({gn.parm=val; gf.parm=1; gp.modals[m]+=1; break;})
 #define SET_NON_MODAL(parm,val) ({gn.parm=val; gf.parm=1; break;})
+
+//#define SET_MODAL(m,parm,val) ({gn.gs.parm=val; gf.gs.parm=1; gp.modals[m]+=1; break;})
+//#define SET_NON_MODAL(parm,val) ({gn.gs.parm=val; gf.gs.parm=1; break;})
+
 #define EXEC_FUNC(f,v) if((uint8_t)gf.v != false) { status = f(gn.v);}
 
 /*

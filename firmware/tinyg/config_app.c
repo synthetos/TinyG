@@ -665,26 +665,26 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "g59","g59b",_fip, 3, fmt_cofs, print_corr, get_flu, set_flu,(float *)&cfg.offset[G59][AXIS_B], G59_B_OFFSET },
 	{ "g59","g59c",_fip, 3, fmt_cofs, print_corr, get_flu, set_flu,(float *)&cfg.offset[G59][AXIS_C], G59_C_OFFSET },
 
-	{ "g92","g92x",_fin, 3, fmt_cofs, print_coor, get_flu, set_nul,(float *)&gm.origin_offset[AXIS_X], 0 },// G92 handled differently
-	{ "g92","g92y",_fin, 3, fmt_cofs, print_coor, get_flu, set_nul,(float *)&gm.origin_offset[AXIS_Y], 0 },
-	{ "g92","g92z",_fin, 3, fmt_cofs, print_coor, get_flu, set_nul,(float *)&gm.origin_offset[AXIS_Z], 0 },
-	{ "g92","g92a",_fin, 3, fmt_cofs, print_corr, get_flt, set_nul,(float *)&gm.origin_offset[AXIS_A], 0 },
-	{ "g92","g92b",_fin, 3, fmt_cofs, print_corr, get_flt, set_nul,(float *)&gm.origin_offset[AXIS_B], 0 },
-	{ "g92","g92c",_fin, 3, fmt_cofs, print_corr, get_flt, set_nul,(float *)&gm.origin_offset[AXIS_C], 0 },
+	{ "g92","g92x",_fin, 3, fmt_cofs, print_coor, get_flu, set_nul,(float *)&gmx.origin_offset[AXIS_X], 0 },// G92 handled differently
+	{ "g92","g92y",_fin, 3, fmt_cofs, print_coor, get_flu, set_nul,(float *)&gmx.origin_offset[AXIS_Y], 0 },
+	{ "g92","g92z",_fin, 3, fmt_cofs, print_coor, get_flu, set_nul,(float *)&gmx.origin_offset[AXIS_Z], 0 },
+	{ "g92","g92a",_fin, 3, fmt_cofs, print_corr, get_flt, set_nul,(float *)&gmx.origin_offset[AXIS_A], 0 },
+	{ "g92","g92b",_fin, 3, fmt_cofs, print_corr, get_flt, set_nul,(float *)&gmx.origin_offset[AXIS_B], 0 },
+	{ "g92","g92c",_fin, 3, fmt_cofs, print_corr, get_flt, set_nul,(float *)&gmx.origin_offset[AXIS_C], 0 },
 
-	{ "g28","g28x",_fin, 3, fmt_cloc, print_coor, get_flu, set_nul,(float *)&gm.g28_position[AXIS_X], 0 },// g28 handled differently
-	{ "g28","g28y",_fin, 3, fmt_cloc, print_coor, get_flu, set_nul,(float *)&gm.g28_position[AXIS_Y], 0 },
-	{ "g28","g28z",_fin, 3, fmt_cloc, print_coor, get_flu, set_nul,(float *)&gm.g28_position[AXIS_Z], 0 },
-	{ "g28","g28a",_fin, 3, fmt_cloc, print_corr, get_flt, set_nul,(float *)&gm.g28_position[AXIS_A], 0 },
-	{ "g28","g28b",_fin, 3, fmt_cloc, print_corr, get_flt, set_nul,(float *)&gm.g28_position[AXIS_B], 0 },
-	{ "g28","g28c",_fin, 3, fmt_cloc, print_corr, get_flt, set_nul,(float *)&gm.g28_position[AXIS_C], 0 },
+	{ "g28","g28x",_fin, 3, fmt_cloc, print_coor, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_X], 0 },// g28 handled differently
+	{ "g28","g28y",_fin, 3, fmt_cloc, print_coor, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_Y], 0 },
+	{ "g28","g28z",_fin, 3, fmt_cloc, print_coor, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_Z], 0 },
+	{ "g28","g28a",_fin, 3, fmt_cloc, print_corr, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_A], 0 },
+	{ "g28","g28b",_fin, 3, fmt_cloc, print_corr, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_B], 0 },
+	{ "g28","g28c",_fin, 3, fmt_cloc, print_corr, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_C], 0 },
 
-	{ "g30","g30x",_fin, 3, fmt_cloc, print_coor, get_flu, set_nul,(float *)&gm.g30_position[AXIS_X], 0 },// g30 handled differently
-	{ "g30","g30y",_fin, 3, fmt_cloc, print_coor, get_flu, set_nul,(float *)&gm.g30_position[AXIS_Y], 0 },
-	{ "g30","g30z",_fin, 3, fmt_cloc, print_coor, get_flu, set_nul,(float *)&gm.g30_position[AXIS_Z], 0 },
-	{ "g30","g30a",_fin, 3, fmt_cloc, print_corr, get_flt, set_nul,(float *)&gm.g30_position[AXIS_A], 0 },
-	{ "g30","g30b",_fin, 3, fmt_cloc, print_corr, get_flt, set_nul,(float *)&gm.g30_position[AXIS_B], 0 },
-	{ "g30","g30c",_fin, 3, fmt_cloc, print_corr, get_flt, set_nul,(float *)&gm.g30_position[AXIS_C], 0 },
+	{ "g30","g30x",_fin, 3, fmt_cloc, print_coor, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_X], 0 },// g30 handled differently
+	{ "g30","g30y",_fin, 3, fmt_cloc, print_coor, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_Y], 0 },
+	{ "g30","g30z",_fin, 3, fmt_cloc, print_coor, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_Z], 0 },
+	{ "g30","g30a",_fin, 3, fmt_cloc, print_corr, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_A], 0 },
+	{ "g30","g30b",_fin, 3, fmt_cloc, print_corr, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_B], 0 },
+	{ "g30","g30c",_fin, 3, fmt_cloc, print_corr, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_C], 0 },
 
 	// System parameters
 	{ "sys","ja",  _f07, 0, fmt_ja, print_lin, get_flu, set_flu, (float *)&cfg.junction_acceleration,	JUNCTION_ACCELERATION },
