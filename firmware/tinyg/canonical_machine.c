@@ -101,10 +101,10 @@
  **** STRUCTURE ALLOCATIONS ********************************************************
  ***********************************************************************************/
 
-//cmSingleton_t cm;		// canonical machine control structure
-//GCodeModel_t gm;		// active gcode model
-//GCodeInput_t gn;		// gcode input values
-//GCodeInput_t gf;		// gcode input flags
+cmSingleton_t cm;		// canonical machine control structure
+GCodeModel_t gm;		// active gcode model
+GCodeInput_t gn;		// gcode input values
+GCodeInput_t gf;		// gcode input flags
 
 /***********************************************************************************
  **** GENERIC STATIC FUNCTIONS AND VARIABLES ***************************************

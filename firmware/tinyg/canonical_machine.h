@@ -58,7 +58,6 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint32_t status_report_systick;	// SysTick value for next status report
 	magic_t magic_end;
 } cmSingleton_t;
-cmSingleton_t cm;
 
 /* GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
  *
@@ -191,10 +190,12 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	float arc_offset[3];  				// IJK - used by arc commands
 } GCodeInput_t;
 
-// Allocation
-GCodeModel_t gm;		// active gcode model
-GCodeInput_t gn;		// gcode input values
-GCodeInput_t gf;		// gcode input flags
+// Externs - See canonical_machine.c for allocation
+
+extern cmSingleton_t cm;
+extern GCodeModel_t gm;		// active gcode model
+extern GCodeInput_t gn;		// gcode input values
+extern GCodeInput_t gf;		// gcode input flags
 
 /*****************************************************************************
  * 
