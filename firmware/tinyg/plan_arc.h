@@ -65,6 +65,8 @@ typedef struct arArcSingleton {	// persistent planner and runtime variables
 	float segment_linear_travel;// linear motion per segment
 	float center_1;				// center of circle at axis 1 (typ X)
 	float center_2;				// center of circle at axis 2 (typ Y)
+
+	GCodeContext_t gc;			// Gcode model context
 	magic_t magic_end;
 } arc_t;
 extern arc_t ar;
@@ -80,8 +82,9 @@ stat_t ar_arc(	const float target[],
 				const uint8_t axis_2, 
 				const uint8_t axis_linear,
 				const float minutes,
-				const float work_offset[],
-				const float min_time);
+				const GCodeContext_t *gc);
+//				const float work_offset[],
+//				const float min_time);
 
 stat_t ar_arc_callback(void);
 void ar_abort_arc(void);

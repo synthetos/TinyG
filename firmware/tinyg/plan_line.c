@@ -88,9 +88,20 @@ float mp_get_runtime_linenum(void) { return (mr.linenum);}
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 float mp_get_runtime_machine_position(uint8_t axis) { return (mr.position[axis]);}
 float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.work_offset[axis]);}
-float mp_get_runtime_work_offset(uint8_t axis) { return (mr.work_offset[axis]);}
+
 void mp_set_runtime_work_offset(float offset[]) { copy_axis_vector(mr.work_offset, offset);}
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
+
+float mp_get_runtime_work_offset(uint8_t axis) { 
+	return (mr.work_offset[axis]);
+}
+//	float temp_value = 
+//	if (mr.move_state == MOVE_STATE_OFF) {
+//		return (mr.work_offset[axis]));
+//	} else {
+//	}
+//}
+
 
 /**************************************************************************
  * mp_aline() - plan a line with acceleration / deceleration
@@ -110,7 +121,8 @@ void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
  *	executed once the accumlated error exceeds the minimums 
  */
 
-stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time)
+//stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time)
+stat_t mp_aline(const float target[], const float minutes, const GCodeContext_t *gc)
 {
 	mpBuf_t *bf; 						// current move pointer
 	float exact_stop = 0;
@@ -124,14 +136,18 @@ stat_t mp_aline(const float target[], const float minutes, const float work_offs
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) { return (STAT_BUFFER_FULL_FATAL);} // never supposed to fail
 
-	bf->bf_func = _exec_aline;					// register the callback to the exec function
-	bf->linenum = cm_get_model_linenum();		// retrieve the line number being planned
-	bf->motion_mode = cm_get_model_motion_mode();
+	bf->bf_func = _exec_aline;							// register the callback to the exec function
+
+//	bf->gc.linenum = cm_get_model_linenum();			// retrieve the line number being planned
+//	bf->gc.motion_mode = cm_get_model_motion_mode();
+
 	bf->time = minutes;
-	bf->min_time = min_time;					// used for feed override replanning only
+//	bf->min_time = min_time;							// used for feed override replanning only
 	bf->length = length;
-	copy_axis_vector(bf->target, target); 		// set target for runtime
-	copy_axis_vector(bf->work_offset, work_offset);// propagate offset
+	copy_axis_vector(bf->target, target);				// set target for runtime
+//	copy_axis_vector(bf->gc.work_offset, work_offset);	// propagate offset
+
+	memcpy(&bf->gc, &gc, sizeof(GCodeContext_t));		// copy model context
 
 	// Set unit vector and jerk terms - this is all done together for efficiency 
 	float jerk_squared = 0;
@@ -1002,8 +1018,8 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		bf->move_state = MOVE_STATE_RUN;
 		mr.move_state = MOVE_STATE_HEAD;
 		mr.section_state = MOVE_STATE_NEW;
-		mr.linenum = bf->linenum;
-		mr.motion_mode = bf->motion_mode;
+		mr.linenum = bf->gc.linenum;
+		mr.motion_mode = bf->gc.motion_mode;
 		mr.jerk = bf->jerk;
 		mr.head_length = bf->head_length;
 		mr.body_length = bf->body_length;
@@ -1012,8 +1028,8 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		mr.cruise_velocity = bf->cruise_velocity;
 		mr.exit_velocity = bf->exit_velocity;
 		copy_axis_vector(mr.unit, bf->unit);
-		copy_axis_vector(mr.endpoint, bf->target);	// save the final target of the move
-		copy_axis_vector(mr.work_offset, bf->work_offset);// propagate offset
+		copy_axis_vector(mr.endpoint, bf->target);				// save the final target of the move
+		copy_axis_vector(mr.work_offset, bf->gc.work_offset);	// propagate offset
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
