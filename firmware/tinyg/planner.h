@@ -29,8 +29,6 @@
 #ifndef PLANNER_H_ONCE
 #define PLANNER_H_ONCE
 
-#include "canonical_machine.h"	// needed for the definition of GCodeContext
-
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -124,51 +122,51 @@ typedef void (*cm_exec)(float[], float[]);		// callback to canonical_machine exe
 
 // All the enums that equal zero must be zero. Don't change this
 
-enum mpBufferState {				// bf->buffer_state values 
-	MP_BUFFER_EMPTY = 0,			// struct is available for use (MUST BE 0)
-	MP_BUFFER_LOADING,				// being written ("checked out")
-	MP_BUFFER_QUEUED,				// in queue
-	MP_BUFFER_PENDING,				// marked as the next buffer to run
-	MP_BUFFER_RUNNING				// current running buffer
+enum mpBufferState {			// bf->buffer_state values 
+	MP_BUFFER_EMPTY = 0,		// struct is available for use (MUST BE 0)
+	MP_BUFFER_LOADING,			// being written ("checked out")
+	MP_BUFFER_QUEUED,			// in queue
+	MP_BUFFER_PENDING,			// marked as the next buffer to run
+	MP_BUFFER_RUNNING			// current running buffer
 };
 
-typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
-	struct mpBuffer *pv;			// static pointer to previous buffer
-	struct mpBuffer *nx;			// static pointer to next buffer
+typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
+	struct mpBuffer *pv;		// static pointer to previous buffer
+	struct mpBuffer *nx;		// static pointer to next buffer
 	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function
-	cm_exec cm_func;				// callback to canonical machine execution function
-	uint8_t buffer_state;			// used to manage queueing/dequeueing
-	uint8_t move_type;				// used to dispatch to run routine
-	uint8_t move_code;				// byte that can be used by used exec functions
-	uint8_t move_state;				// move state machine sequence
-	uint8_t replannable;			// TRUE if move can be replanned
+	cm_exec cm_func;			// callback to canonical machine execution function
+	uint32_t linenum;			// runtime line number; or line index if not numbered
+	uint8_t motion_mode;		// runtime motion mode for status reporting
+	uint8_t buffer_state;		// used to manage queueing/dequeueing
+	uint8_t move_type;			// used to dispatch to run routine
+	uint8_t move_code;			// byte that can be used by used exec functions
+	uint8_t move_state;			// move state machine sequence
+	uint8_t replannable;		// TRUE if move can be replanned
 
-	float target[AXES];				// target position in floating point
-	float unit[AXES];				// unit vector for axis scaling & planning
+	float target[AXES];			// target position in floating point
+	float unit[AXES];			// unit vector for axis scaling & planning
+	float work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
-	float time;						// line, helix or dwell time in minutes
-	float min_time;					// minimum time for the move - for rate override replanning
+	float time;					// line, helix or dwell time in minutes
+	float min_time;				// minimum time for the move - for rate override replanning
 	float head_length;
 	float body_length;
 	float tail_length;
-	float length;					// total length of line or helix in mm
+	float length;				// total length of line or helix in mm
+								// *** SEE NOTES ON THESE VARIABLES, in aline() ***
+	float entry_velocity;		// entry velocity requested for the move
+	float cruise_velocity;		// cruise velocity requested & achieved
+	float exit_velocity;		// exit velocity requested for the move
 
-									// *** SEE NOTES ON THESE VARIABLES, in aline() ***
-	float entry_velocity;			// entry velocity requested for the move
-	float cruise_velocity;			// cruise velocity requested & achieved
-	float exit_velocity;			// exit velocity requested for the move
+	float entry_vmax;			// max junction velocity at entry of this move
+	float cruise_vmax;			// max cruise velocity requested for move
+	float exit_vmax;			// max exit velocity possible (redundant)
+	float delta_vmax;			// max velocity difference for this move
+	float braking_velocity;		// current value for braking velocity
 
-	float entry_vmax;				// max junction velocity at entry of this move
-	float cruise_vmax;				// max cruise velocity requested for move
-	float exit_vmax;				// max exit velocity possible (redundant)
-	float delta_vmax;				// max velocity difference for this move
-	float braking_velocity;			// current value for braking velocity
-
-	float jerk;						// maximum linear jerk term for this move
-	float recip_jerk;				// 1/Jm used for planning (compute-once)
-	float cbrt_jerk;				// cube root of Jm used for planning (compute-once)
-
-	GCodeContext_t gc;				// closure to carry all the Gcode model parameters
+	float jerk;					// maximum linear jerk term for this move
+	float recip_jerk;			// 1/Jm used for planning (compute-once)
+	float cbrt_jerk;			// cube root of Jm used for planning (compute-once)
 } mpBuf_t;
 
 typedef struct mpBufferPool {	// ring buffer for sub-moves
@@ -253,10 +251,7 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
-
-//stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time);
-stat_t mp_aline(const float target[], const float minutes, const GCodeContext_t *gc);
-
+stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time);
 stat_t mp_plan_hold_callback(void);
 stat_t mp_end_hold(void);
 stat_t mp_feed_rate_override(uint8_t flag, float parameter);

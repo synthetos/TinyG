@@ -62,7 +62,6 @@ static float _get_theta(const float x, const float y);
  *
  *  Parts of this routine were originally sourced from the grbl project.
  */
-/*
 stat_t ar_arc( const float target[], 
 				const float i, const float j, const float k, 
 				const float theta, 			// starting angle
@@ -75,19 +74,6 @@ stat_t ar_arc( const float target[],
 				const float minutes,		// time to complete the move
 				const float work_offset[],	// offset from work coordinate system
 				const float min_time)		// minimum time for arc for replanning purposes
-*/
-
-stat_t ar_arc( const float target[], 
-				const float i, const float j, const float k, 
-				const float theta, 			// starting angle
-				const float radius, 		// radius of the circle in mm
-				const float angular_travel,	// radians along arc (+CW, -CCW)
-				const float linear_travel, 
-				const uint8_t axis_1, 		// circle plane in tool space
-				const uint8_t axis_2,  		// circle plane in tool space
-				const uint8_t axis_linear,	// linear travel if helical motion
-				const float minutes,		// time to complete the move
-				const GCodeContext_t *gc)	// Gcode model context for reporting
 {
 	if (ar.run_state != MOVE_STATE_OFF) { return (STAT_INTERNAL_ERROR); } // (not supposed to fail)
 
@@ -106,9 +92,9 @@ stat_t ar_arc( const float target[],
 	ar.endpoint[axis_2] = target[1];
 	ar.endpoint[axis_linear] = target[2];
 
-//	copy_axis_vector(ar.work_offset, work_offset);		// propagate the work offset
+	copy_axis_vector(ar.work_offset, work_offset);		// propagate the work offset
 	ar.time = minutes;									// load the singleton
-//	ar.min_time = min_time;
+	ar.min_time = min_time;
 	ar.theta = theta;
 	ar.radius = radius;
 	ar.axis_1 = axis_1;
@@ -157,17 +143,11 @@ stat_t ar_arc_callback()
 			ar.target[ar.axis_1] = ar.center_1 + sin(ar.theta) * ar.radius;
 			ar.target[ar.axis_2] = ar.center_2 + cos(ar.theta) * ar.radius;
 			ar.target[ar.axis_linear] += ar.segment_linear_travel;
-
-//			(void)MP_LINE(ar.target, ar.segment_time, ar.work_offset, 0);
-			(void)mp_aline(ar.target, ar.segment_time, &gc);
-
+			(void)MP_LINE(ar.target, ar.segment_time, ar.work_offset, 0);
 			copy_axis_vector(ar.position, ar.target);	// update runtime position	
 			return (STAT_EAGAIN);
 		} else {
-
-//			(void)MP_LINE(ar.endpoint, ar.segment_time, ar.work_offset,0);// do last segment to the exact endpoint
-			(void)mp_aline(ar.target, ar.segment_time, &gc);
-
+			(void)MP_LINE(ar.endpoint, ar.segment_time, ar.work_offset,0);// do last segment to the exact endpoint
 		}
 	}
 	ar.run_state = MOVE_STATE_OFF;
@@ -300,9 +280,8 @@ static stat_t _compute_center_arc()
 				  gm.arc_offset[gm.plane_axis_1],
 				  gm.arc_offset[gm.plane_axis_2],
 				  theta_start, radius_tmp, angular_travel, linear_travel, 
-				  gm.plane_axis_0, gm.plane_axis_1, gm.plane_axis_2, move_time, 
-				  cm_load_model_context(&gc)));
-//				  gm.work_offset, gm.min_time));
+				  gm.plane_axis_0, gm.plane_axis_1, gm.plane_axis_2, 
+				  move_time, gm.work_offset, gm.min_time));
 }
 
 /* 

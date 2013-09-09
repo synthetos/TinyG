@@ -55,7 +55,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		393.01	// Really crazy experimental stuff to change how model contexts are communicated to the runtime
+#define TINYG_FIRMWARE_BUILD   		392.10	// Changed JSON error case tests to isnan() and isinf(); updated comments in stepper.h
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number

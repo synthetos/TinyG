@@ -58,6 +58,7 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint32_t status_report_systick;	// SysTick value for next status report
 	magic_t magic_end;
 } cmSingleton_t;
+cmSingleton_t cm;
 
 /* GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
  *
@@ -94,7 +95,7 @@ typedef struct GCodeModel {				// Gcode dynamic model
 	float position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
 	float origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
 	float work_offset[AXES];			// XYZABC work offset to be forwarded to planner
-//	float work_scaling[AXES];			// XYZABC scale factor to get to work coordinates
+	float work_scaling[AXES];			// XYZABC scale factor to get to work coordinates
 	float g28_position[AXES];			// XYZABC stored machine position for G28
 	float g30_position[AXES];			// XYZABC stored machine position for G30
 
@@ -190,32 +191,10 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	float arc_offset[3];  				// IJK - used by arc commands
 } GCodeInput_t;
 
-typedef struct GCodeContext {			// Gcode model context values to carry forward into runtime
-	uint32_t linenum;					// Gcode block line number
-
-	float min_time;						// minimum time possible for the move given axis constraints
-	float feed_rate; 					// F - normalized to millimeters/minute
-	float work_offset[AXES];			// offset from the work coordinate system (for reporting only)
-
-	uint8_t motion_mode;				// runtime motion mode for status reporting
-	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
-	uint8_t select_plane;				// G17,G18,G19 - values to set plane to
-	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
-	uint8_t coord_system;				// G54-G59 - select coordinate system 1-9
-	uint8_t absolute_override;			// G53 TRUE = move using machine coordinates - this block only (G53)
-	uint8_t path_control;				// G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
-	uint8_t distance_mode;				// G91   0=use absolute coords(G90), 1=incremental movement
-	uint8_t tool;						// T value
-} GCodeContext_t;
-
-// structure externs - declared in canonical_machine.c
-
-extern cmSingleton_t cm;
-extern GCodeModel_t gm;					// active gcode model
-extern GCodeInput_t gn;					// gcode input values
-extern GCodeInput_t gf;					// gcode input flags
-extern GCodeContext_t gc;				// gcode model context for export to runtime
-
+// Allocation
+GCodeModel_t gm;		// active gcode model
+GCodeInput_t gn;		// gcode input values
+GCodeInput_t gf;		// gcode input flags
 
 /*****************************************************************************
  * 
@@ -497,7 +476,6 @@ void cm_set_model_arc_radius(float r);
 void cm_set_model_target(float target[], float flag[]);
 void cm_set_model_endpoint_position(stat_t status);
 void cm_set_model_linenum(uint32_t linenum);
-GCodeContext_t *cm_load_model_context(GCodeContext_t *gc);
 
 /*--- canonical machining functions ---*/
 void canonical_machine_init(void);

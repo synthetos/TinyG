@@ -296,6 +296,7 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 	int8_t initial_depth = cmd->depth;
 	int8_t prev_depth = 0;
 	uint8_t need_a_comma = false;
+	double tmp_value = 0;
 
 	*str++ = '{'; 								// write opening curly
 
@@ -305,22 +306,24 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 			need_a_comma = true;
 			str += sprintf((char *)str, "\"%s\":", cmd->token);
 
+			// check for illegal int and float values (saves ~200 bytes over multiple isnan and isinf calls)
+			if (cmd->objtype == TYPE_INTEGER || cmd->objtype == TYPE_FLOAT) {
+				if (isnan(tmp_value = (double)cmd->value) || isinf(tmp_value)) {
+					tmp_value = 0;
+				}
+			}
+
 			if (cmd->objtype == TYPE_FLOAT_UNITS)	{ 
 				if (cm_get_model_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
 				cmd->objtype = TYPE_FLOAT;
 			}
 			if		(cmd->objtype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "\"\"");} // Note that that "" is NOT null.
 			else if (cmd->objtype == TYPE_INTEGER)	{
-				double tmp_value = (double)cmd->value;
-				if (tmp_value == NAN || tmp_value == INFINITY) { tmp_value = 0;}
 				str += (char_t)sprintf((char *)str, "%1.0f", tmp_value);
 			}
 			else if (cmd->objtype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*cmd->stringp);}
 			else if (cmd->objtype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*cmd->stringp);}
 			else if (cmd->objtype == TYPE_FLOAT) {
-				double tmp_value = (double)cmd->value;
-				if (tmp_value == NAN || tmp_value == INFINITY) {tmp_value = 0;}
-
 				if 		(cmd->precision == 0) { str += (char_t)sprintf((char *)str, "%0.0f", tmp_value);}
 				else if (cmd->precision == 1) { str += (char_t)sprintf((char *)str, "%0.1f", tmp_value);}
 				else if (cmd->precision == 2) { str += (char_t)sprintf((char *)str, "%0.2f", tmp_value);}

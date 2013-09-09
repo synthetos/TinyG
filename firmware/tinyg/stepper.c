@@ -246,11 +246,6 @@ void st_energize_motors()
 
 void st_deenergize_motors()
 {
-//	st_deenergize_motor(MOTOR_1);
-//	st_deenergize_motor(MOTOR_2);
-//	st_deenergize_motor(MOTOR_3);
-//	st_deenergize_motor(MOTOR_4);
-
 	PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 	PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 	PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
