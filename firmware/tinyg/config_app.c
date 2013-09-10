@@ -1173,7 +1173,7 @@ static stat_t get_coor(cmdObj_t *cmd)
 
 static stat_t get_momo(cmdObj_t *cmd)
 {
-	return(_get_msg_helper(cmd, (char_P)msg_momo, cm_get_runtime_motion_mode()));
+	return(_get_msg_helper(cmd, (char_P)msg_momo, cm_get_motion_mode(RUNTIME)));
 }
 
 static stat_t get_plan(cmdObj_t *cmd)

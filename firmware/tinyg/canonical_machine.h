@@ -490,7 +490,7 @@ uint8_t cm_get_runtime_busy(void);
 // ---- existing ----
 
 //uint8_t cm_get_model_motion_mode(void);
-uint8_t cm_get_runtime_motion_mode(void);
+//uint8_t cm_get_runtime_motion_mode(void);
 //uint8_t cm_get_model_coord_system(void);
 //uint8_t cm_get_model_units_mode(void);
 //uint8_t cm_get_model_select_plane(void);
@@ -510,13 +510,14 @@ uint8_t	cm_get_block_delete_switch(void);
 
 //float cm_get_model_coord_offset(uint8_t axis);
 //float *cm_get_model_coord_offsets(float vector[]);
-float cm_get_model_work_position(uint8_t axis);
+
+//float cm_get_model_work_position(uint8_t axis);
+
 //float *cm_get_model_work_position_vector(float position[]);
 //float cm_get_model_canonical_target(uint8_t axis);
 
-
-float cm_get_runtime_machine_position(uint8_t axis);
-float cm_get_runtime_work_position(uint8_t axis);
+//float cm_get_runtime_machine_position(uint8_t axis);
+//float cm_get_runtime_work_position(uint8_t axis);
 float cm_get_runtime_work_offset(uint8_t axis);
 
 void cm_set_model_arc_offset(float i, float j, float k);

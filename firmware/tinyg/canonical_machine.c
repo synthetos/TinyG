@@ -342,6 +342,7 @@ float cm_get_machine_position(GCodeState_t *gm, uint8_t axis)
 //	}
 }
 
+
 /* ---- existing ---- */
 /*
 //float *cm_get_model_coord_offset_vector(float vector[])
@@ -436,9 +437,10 @@ void cm_set_model_arc_radius(float r)
 	gmx.arc_radius = _to_millimeters(r);
 }
 
+
 void cm_set_model_linenum(uint32_t linenum)
 {
-	gm.linenum = linenum;	// you must first set the model line number,
+	gm.linenum = linenum;		// you must first set the model line number,
 	cmd_add_object("n");		// then add the line number to the cmd list
 //++++ The above is not the same as the G2 version	
 }
