@@ -267,7 +267,7 @@ static stat_t _compute_center_arc()
 	gm.move_time = _get_arc_time(linear_travel, angular_travel, radius_tmp);
 
 	// Trace the arc
-	cm_get_model_coord_offset_vector(gm.work_offset);	// setup the work offsets
+	cm_get_model_coord_offsets(gm.work_offset);		// setup the work offsets
 	set_vector(gm.target[gmx.plane_axis_0], gm.target[gmx.plane_axis_1], gm.target[gmx.plane_axis_2],
 			   gm.target[AXIS_A], gm.target[AXIS_B], gm.target[AXIS_C]);
 

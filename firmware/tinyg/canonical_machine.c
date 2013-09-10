@@ -214,6 +214,21 @@ uint8_t	cm_get_block_delete_switch() { return gmx.block_delete_switch;}
 
 /* Position and Offset getters - operates on model and runtime contexts
  *
+ * ---- new ----
+ *
+ * cm_get_work_position() - return position from the gm struct into gn struct form (external form)
+ * cm_get_work_position_vector() - return model position vector in externalized form
+ *
+ * cm_get_coord_offset() - return the currently active coordinate offset for an axis
+ * cm_get_coord_offset_vector() - return currently active coordinate offsets as a vector
+ * cm_get_canonical_target() - return model target in internal canonical form
+ * cm_get_canonical_position_vector() - return model position vector in internal canonical form
+ * cm_get_machine_position() - return current machine position in external form 
+ * cm_get_work_position() - return current work coordinate position in external form 
+ * cm_get_work_offset() - return current work offset
+ *
+ * ---- existing -----
+ *
  * cm_get_model_coord_offset() - return the currently active coordinate offset for an axis
  * cm_get_model_coord_offset_vector() - return currently active coordinate offsets as a vector
  * cm_get_model_work_position() - return position from the gm struct into gn struct form (external form)
@@ -224,22 +239,51 @@ uint8_t	cm_get_block_delete_switch() { return gmx.block_delete_switch;}
  * cm_get_runtime_machine_position() - return current machine position in external form 
  * cm_get_runtime work_position() - return current work coordinate position in external form 
  * cm_get_runtime work_offset() - return current work offset
- * cm_get_runtime work_scaling() - return current work scaling factor
  */
+
+/* ---- new ---- */
+
+/*
+ * cm_get_work_position() - return work position in external form
+ *
+ *	... that means in prevailing units (mm/inch) and with all offsets applied
+ *
+ * Note: This function only works after the gm struct as had the work_offsets setup by 
+ *		 calling cm_get_model_coord_offset_vector() first.
+ */
+
+float cm_get_work_position(GCodeState_t *gm, uint8_t axis) 
+{
+	if (gm == MODEL) {
+		if (gm->units_mode == INCHES) {
+			return ((gmx.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
+		} else {
+			return (gmx.position[axis] - cm_get_model_coord_offset(axis));
+		}
+	}
+	if (gm->units_mode == INCHES) {
+		return (mp_get_runtime_work_position(axis) / MM_PER_INCH);
+	} else {
+		return (mp_get_runtime_work_position(axis));
+	}
+}
+
+/* ---- existing ---- */
 
 float cm_get_model_coord_offset(uint8_t axis)
 {
 	if (gm.absolute_override == true) {
-		return (0);						// no work offset if in abs override mode
+		return (0);							// no work offset if in abs override mode
 	}
-	if (gmx.origin_offset_enable == 1) {
+	if (gmx.origin_offset_enable == 1) {	// it's actually 1, and not 'true'
 		return (cfg.offset[gm.coord_system][axis] + gmx.origin_offset[axis]); // includes G5x and G92 compoenents
 	} else {
 		return (cfg.offset[gm.coord_system][axis]);		// just the g5x coordinate system components
 	}
 }
 
-float *cm_get_model_coord_offset_vector(float vector[])
+//float *cm_get_model_coord_offset_vector(float vector[])
+float *cm_get_model_coord_offsets(float vector[])
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		vector[axis] = cm_get_model_coord_offset(axis);
@@ -858,11 +902,11 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 //	ritorno(_test_soft_limits());
 
-	cm_get_model_coord_offset_vector(gm.work_offset); // copy the fully resolved offsets to the state
-	gm.move_time = _get_move_times(&gm.minimum_time); // set move time and minimum time in the state
-	cm_cycle_start();								  // required for homing & other cycles
-	stat_t status = mp_aline(&gm);					  // run the move
-	cm_set_model_endpoint_position(status);           // update position if the move was successful
+	cm_get_model_coord_offsets(gm.work_offset);			// copy the fully resolved offsets to the state
+	gm.move_time = _get_move_times(&gm.minimum_time);	// set move time and minimum time in the state
+	cm_cycle_start();									// required for homing & other cycles
+	stat_t status = mp_aline(&gm);						// run the move
+	cm_set_model_endpoint_position(status);				// update position if the move was successful
 	return (status);
 }
 
@@ -983,11 +1027,11 @@ stat_t cm_straight_feed(float target[], float flags[])
 	cm_set_model_target(target, flags);
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 
-	cm_get_model_coord_offset_vector(gm.work_offset); // copy the fully resolved offsets to the state
-	gm.move_time = _get_move_times(&gm.minimum_time); // set move time and minimum time in the state
-	cm_cycle_start();								  // required for homing & other cycles
-	stat_t status = mp_aline(&gm);					  // run the move
-	cm_set_model_endpoint_position(status);           // update position if the move was successful
+	cm_get_model_coord_offsets(gm.work_offset); 		// copy the fully resolved offsets to the state
+	gm.move_time = _get_move_times(&gm.minimum_time);	// set move time and minimum time in the state
+	cm_cycle_start();									// required for homing & other cycles
+	stat_t status = mp_aline(&gm);						// run the move
+	cm_set_model_endpoint_position(status);				// update position if the move was successful
 	return (status);
 }
 

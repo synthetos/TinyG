@@ -55,7 +55,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		392.21	// Replaced a bunch more MODEL layer setters and getters
+#define TINYG_FIRMWARE_BUILD   		392.22	// Starting work on more complex getters and setters like offsets
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number

@@ -7,26 +7,25 @@
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
- * TinyG is free software: you can redistribute it and/or modify it 
- * under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, 
- * or (at your option) any later version.
+ * This file ("the software") is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2 as published by the
+ * Free Software Foundation. You should have received a copy of the GNU General Public
+ * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * TinyG is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for details.
+ * As a special exception, you may use this file as part of a software library without
+ * restriction. Specifically, if other files instantiate templates or use macros or
+ * inline functions from this file, or you compile this file and link it with  other
+ * files to produce an executable, this file does not by itself cause the resulting
+ * executable to be covered by the GNU General Public License. This exception does not
+ * however invalidate any other reasons why the executable file might be covered by the
+ * GNU General Public License.
  *
- * You should have received a copy of the GNU General Public License 
- * along with TinyG  If not, see <http://www.gnu.org/licenses/>.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
+ * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+ * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #ifndef _CANONICAL_MACHINE_H_
@@ -38,8 +37,8 @@ extern "C"{
 
 /* Defines */
 
-#define MODEL &gm
-#define RUNTIME &mr.gm
+#define MODEL 	(GCodeState_t *)&gm
+#define RUNTIME (GCodeState_t *)&mr.gm
 
 /*****************************************************************************
  * CANONICAL MACHINE STRUCTURES
@@ -459,6 +458,7 @@ uint8_t cm_get_motion_state(void);
 uint8_t cm_get_hold_state(void);
 uint8_t cm_get_homing_state(void);
 
+// ---- new ----
 uint8_t cm_get_motion_mode(GCodeState_t *gm);
 uint8_t cm_get_coord_system(GCodeState_t *gm);
 uint8_t cm_get_units_mode(GCodeState_t *gm);
@@ -468,6 +468,10 @@ uint8_t cm_get_distance_mode(GCodeState_t *gm);
 uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gm);
 uint8_t cm_get_spindle_mode(GCodeState_t *gm);
 uint32_t cm_get_linenum(GCodeState_t *gm);
+
+float cm_get_work_position(GCodeState_t *gm, uint8_t axis);
+
+// ---- existing ----
 
 //uint8_t cm_get_model_motion_mode(void);
 uint8_t cm_get_runtime_motion_mode(void);
@@ -495,7 +499,7 @@ void cm_set_tool_number(GCodeState_t *gm, uint8_t tool);
 //void cm_set_tool_number(uint8_t tool);
 
 float cm_get_model_coord_offset(uint8_t axis);
-float *cm_get_model_coord_offset_vector(float vector[]);
+float *cm_get_model_coord_offsets(float vector[]);
 float cm_get_model_work_position(uint8_t axis);
 //float *cm_get_model_work_position_vector(float position[]);
 float cm_get_model_canonical_target(uint8_t axis);
