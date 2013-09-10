@@ -55,7 +55,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		392.16	// More arc refactoring - changed struct name from GCodeModel to GCodeState
+#define TINYG_FIRMWARE_BUILD   		392.17	// More cleanup after gcode model state changes
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number

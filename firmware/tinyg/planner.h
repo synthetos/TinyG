@@ -113,9 +113,6 @@ enum moveState {
  *	Macros and typedefs
  */
 
-//#define MP_LINE(t,m,o,n) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m,o,n) : mp_line(t,m))
-#define MP_LINE(t,m,o,n) (mp_aline(t,m,o,n))	// non-planned lines are disabled
-
 typedef void (*cm_exec)(float[], float[]);		// callback to canonical_machine execution function
 
 /*

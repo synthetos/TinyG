@@ -171,7 +171,7 @@ stat_t mp_aline(const GCodeState_t *gm)
 	// finish up the current block variables
 	if (cm_get_model_path_control() != PATH_EXACT_STOP) { 	// exact stop cases already zeroed
 		bf->replannable = true;
-		exact_stop = 12345678;								// an arbitrarily large floating point number
+		exact_stop = 8675309;								// an arbitrarily large floating point number (Jenny)
 	}
 	bf->cruise_vmax = bf->length / bf->gm.move_time;		// target velocity requested
 	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);
@@ -182,7 +182,7 @@ stat_t mp_aline(const GCodeState_t *gm)
 
 	uint8_t mr_flag = false;
 	_plan_block_list(bf, &mr_flag);							// replan block list and commit current block
-	copy_axis_vector(mm.position, bf->gm.target);				// update planning position
+	copy_axis_vector(mm.position, bf->gm.target);			// update planning position
 	mp_queue_write_buffer(MOVE_TYPE_ALINE);
 	return (STAT_OK);
 }

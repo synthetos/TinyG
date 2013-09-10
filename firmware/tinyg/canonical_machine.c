@@ -839,16 +839,11 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 //	ritorno(_test_soft_limits());
 
-	cm_get_model_coord_offset_vector(gm.work_offset);
-	gm.move_time = _get_move_times(&gm.minimum_time);
-	cm_cycle_start();									// required for homing & other cycles
-	stat_t status = mp_aline(&gm);
-
-//	stat_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), 
-//							cm_get_model_coord_offset_vector(gm.work_offset), 
-//							gm.min_time);
-
-	cm_set_model_endpoint_position(status);
+	cm_get_model_coord_offset_vector(gm.work_offset); // copy the fully resolved offsets to the state
+	gm.move_time = _get_move_times(&gm.minimum_time); // set move time and minimum time in the state
+	cm_cycle_start();								  // required for homing & other cycles
+	stat_t status = mp_aline(&gm);					  // run the move
+	cm_set_model_endpoint_position(status);           // update position if the move was successful
 	return (status);
 }
 
@@ -957,11 +952,10 @@ stat_t cm_straight_feed(float target[], float flags[])
 
 	// trap zero feed rate condition
 	if ((gm.inverse_feed_rate_mode == false) && (fp_ZERO(gm.feed_rate))) {
-
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
 
-	// Introduce a short dwell if the machine is not busy to enable the planning
+	// Introduce a short delay if the machine is not busy to enable the planning
 	// queue to begin to fill (avoids first block having to plan down to zero)
 //	if (st_isbusy() == false) {
 //		cm_dwell(PLANNER_STARTUP_DELAY_SECONDS);
@@ -970,17 +964,11 @@ stat_t cm_straight_feed(float target[], float flags[])
 	cm_set_model_target(target, flags);
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 
-	cm_get_model_coord_offset_vector(gm.work_offset);
-	gm.move_time = _get_move_times(&gm.minimum_time);
-	cm_cycle_start();									// required for homing & other cycles
-	stat_t status = mp_aline(&gm);
-
-//	cm_cycle_start();						// required for homing & other cycles
-//	stat_t status = MP_LINE(gm.target, _get_move_times(&gm.minimum_time), 
-//							 cm_get_model_coord_offset_vector(gm.work_offset), 
-//							 gm.minimum_time);
-
-	cm_set_model_endpoint_position(status);
+	cm_get_model_coord_offset_vector(gm.work_offset); // copy the fully resolved offsets to the state
+	gm.move_time = _get_move_times(&gm.minimum_time); // set move time and minimum time in the state
+	cm_cycle_start();								  // required for homing & other cycles
+	stat_t status = mp_aline(&gm);					  // run the move
+	cm_set_model_endpoint_position(status);           // update position if the move was successful
 	return (status);
 }
 
