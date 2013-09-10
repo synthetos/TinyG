@@ -178,7 +178,7 @@ typedef struct mpBufferPool {	// ring buffer for sub-moves
 
 typedef struct mpMoveMasterSingleton {	// common variables for planning (move master)
 	float position[AXES];		// final move position for planning purposes
-	float ms_in_queue;			// total ms of movement & dwell in planner queue
+//	float ms_in_queue;			// total ms of movement & dwell in planner queue
 	float prev_jerk;			// jerk values cached from previous move
 	float prev_recip_jerk;
 	float prev_cbrt_jerk;
@@ -193,16 +193,16 @@ typedef struct mpMoveMasterSingleton {	// common variables for planning (move ma
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
 	magic_t magic_start;		// magic number to test memory integrity	
-	uint32_t linenum;			// runtime line/block number of BF being executed
-	uint8_t motion_mode;		// runtime motion mode for status reports
+//	uint32_t linenum;			// runtime line/block number of BF being executed
+//	uint8_t motion_mode;		// runtime motion mode for status reports
 	uint8_t move_state;			// state of the overall move
 	uint8_t section_state;		// state within a move section
 
 	float endpoint[AXES];		// final target for bf (used to correct rounding errors)
 	float position[AXES];		// current move position
-	float target[AXES];			// target move position
+//	float target[AXES];			// target move position
 	float unit[AXES];			// unit vector for axis scaling & planning
-	float work_offset[AXES];	// offset from the work coordinate system (for reporting only)
+//	float work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
 	float head_length;			// copies of bf variables of same name
 	float body_length;
@@ -212,7 +212,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float exit_velocity;
 
 	float length;				// length of line in mm
-	float move_time;			// total running time (derived)
+//	float move_time;			// total running time (derived)
 	float midpoint_velocity;	// velocity at accel/decel midpoint
 	float jerk;					// max linear jerk
 
@@ -224,6 +224,9 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float segment_velocity;		// computed velocity for aline segment
 	float forward_diff_1;		// forward difference level 1 (Acceleration)
 	float forward_diff_2;		// forward difference level 2 (Jerk - constant)
+
+	GCodeState_t gm;			// gocode model state currently executing
+
 	magic_t magic_end;
 } mpMoveRuntimeSingleton_t;
 

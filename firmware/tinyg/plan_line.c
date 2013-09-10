@@ -83,13 +83,13 @@ uint8_t mp_get_runtime_busy()
  * mp_zero_segment_velocity() 		- correct velocity in last segment for reporting purposes
  */
 
-uint8_t mp_get_runtime_motion_mode(void) { return (mr.motion_mode);}
-float mp_get_runtime_linenum(void) { return (mr.linenum);}
+uint8_t mp_get_runtime_motion_mode(void) { return (mr.gm.motion_mode);}
+float mp_get_runtime_linenum(void) { return (mr.gm.linenum);}
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 float mp_get_runtime_machine_position(uint8_t axis) { return (mr.position[axis]);}
-float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.work_offset[axis]);}
-float mp_get_runtime_work_offset(uint8_t axis) { return (mr.work_offset[axis]);}
-void mp_set_runtime_work_offset(float offset[]) { copy_axis_vector(mr.work_offset, offset);}
+float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
+float mp_get_runtime_work_offset(uint8_t axis) { return (mr.gm.work_offset[axis]);}
+void mp_set_runtime_work_offset(float offset[]) { copy_axis_vector(mr.gm.work_offset, offset);}
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
 
 /**************************************************************************
@@ -985,6 +985,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		if (cm.hold_state == FEEDHOLD_HOLD) { return (STAT_NOOP);}// stops here if holding
 
 		// initialization to process the new incoming bf buffer
+		memcpy(&mr.gm, &bf->gm, sizeof(GCodeState_t));	// copy in the gcode model state
 		bf->replannable = false;
 		if (fp_ZERO(bf->length)) {
 			mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
@@ -997,8 +998,8 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		bf->move_state = MOVE_STATE_RUN;
 		mr.move_state = MOVE_STATE_HEAD;
 		mr.section_state = MOVE_STATE_NEW;
-		mr.linenum = bf->gm.linenum;
-		mr.motion_mode = bf->gm.motion_mode;
+//		mr.linenum = bf->gm.linenum;
+//		mr.motion_mode = bf->gm.motion_mode;
 		mr.jerk = bf->jerk;
 		mr.head_length = bf->head_length;
 		mr.body_length = bf->body_length;
@@ -1008,7 +1009,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		mr.exit_velocity = bf->exit_velocity;
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.endpoint, bf->gm.target);	// save the final target of the move
-		copy_axis_vector(mr.work_offset, bf->gm.work_offset);// propagate offset
+//		copy_axis_vector(mr.work_offset, bf->gm.work_offset);// propagate offset
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -1033,7 +1034,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 //		mp_free_run_buffer();				// free bf and send a status report
 //+++++ DIAGNOSTIC
 //+++++ DOES THIS NEED TO SET CURRENT POSITION TO FIX THE G28.4 ERROR?
-//		printf("HOLD: posX: %6.3f, posY: %6.3f\n", (double)mr.position[AXIS_X], (double)mr.target[AXIS_Y]);
+//		printf("HOLD: posX: %6.3f, posY: %6.3f\n", (double)mr.position[AXIS_X], (double)mr.gm.target[AXIS_Y]);
 		rpt_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
 
@@ -1052,7 +1053,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		bf->nx->replannable = false;			// prevent overplanning (Note 2)
 		if (bf->move_state == MOVE_STATE_RUN) {
 //+++++ DIAGNOSTIC
-//			printf("HOLD2: posX: %6.3f, posY: %6.3f\n", (double)mr.position[AXIS_X], (double)mr.target[AXIS_Y]);
+//			printf("HOLD2: posX: %6.3f, posY: %6.3f\n", (double)mr.position[AXIS_X], (double)mr.gm.target[AXIS_Y]);
 			mp_free_run_buffer();				// free bf if it's actually done
 		}
 	}
@@ -1105,9 +1106,9 @@ static stat_t _exec_aline_head()
 			return(_exec_aline_body());				// skip ahead to the body generator
 		}
 		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
-		mr.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
-		mr.segments = ceil(uSec(mr.move_time) / (2 * cfg.estd_segment_usec)); // # of segments in *each half*
-		mr.segment_move_time = mr.move_time / (2 * mr.segments);
+		mr.gm.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
+		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cfg.estd_segment_usec)); // # of segments in *each half*
+		mr.segment_move_time = mr.gm.move_time / (2 * mr.segments);
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
 			return(STAT_GCODE_BLOCK_SKIPPED);		// exit without advancing position
@@ -1158,9 +1159,9 @@ static stat_t _exec_aline_body()
 			mr.move_state = MOVE_STATE_TAIL;
 			return(_exec_aline_tail());						// skip ahead to tail periods
 		}
-		mr.move_time = mr.body_length / mr.cruise_velocity;
-		mr.segments = ceil(uSec(mr.move_time) / cfg.estd_segment_usec);
-		mr.segment_move_time = mr.move_time / mr.segments;
+		mr.gm.move_time = mr.body_length / mr.cruise_velocity;
+		mr.segments = ceil(uSec(mr.gm.move_time) / cfg.estd_segment_usec);
+		mr.segment_move_time = mr.gm.move_time / mr.segments;
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
@@ -1190,9 +1191,9 @@ static stat_t _exec_aline_tail()
 	if (mr.section_state == MOVE_STATE_NEW) {
 		if (fp_ZERO(mr.tail_length)) { return(STAT_OK);}		// end the move
 		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
-		mr.move_time = mr.tail_length / mr.midpoint_velocity;
-		mr.segments = ceil(uSec(mr.move_time) / (2 * cfg.estd_segment_usec));// # of segments in *each half*
-		mr.segment_move_time = mr.move_time / (2 * mr.segments);// time to advance for each segment
+		mr.gm.move_time = mr.tail_length / mr.midpoint_velocity;
+		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cfg.estd_segment_usec));// # of segments in *each half*
+		mr.segment_move_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
 			return(STAT_GCODE_BLOCK_SKIPPED);					// exit without advancing position
@@ -1241,56 +1242,52 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	// Don't do the endpoint correction if you are going into a hold
 	if ((correction_flag == true) && (mr.segment_count == 1) && 
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-		mr.target[AXIS_X] = mr.endpoint[AXIS_X]; // correct any accumulated rounding errors in last segment
-		mr.target[AXIS_Y] = mr.endpoint[AXIS_Y];
-		mr.target[AXIS_Z] = mr.endpoint[AXIS_Z];
-		mr.target[AXIS_A] = mr.endpoint[AXIS_A];
-		mr.target[AXIS_B] = mr.endpoint[AXIS_B];
-		mr.target[AXIS_C] = mr.endpoint[AXIS_C];
-
-// +++++ DIAGNOSTIC
-//		double raw_x = mr.position[AXIS_X] + (mr.unit[AXIS_X] * mr.segment_velocity * mr.segment_move_time);
-//		printf("END: corX: %6.5f, rawX: %6.5f\n", (double)mr.target[AXIS_X], raw_x);
+		mr.gm.target[AXIS_X] = mr.endpoint[AXIS_X]; // correct any accumulated rounding errors in last segment
+		mr.gm.target[AXIS_Y] = mr.endpoint[AXIS_Y];
+		mr.gm.target[AXIS_Z] = mr.endpoint[AXIS_Z];
+		mr.gm.target[AXIS_A] = mr.endpoint[AXIS_A];
+		mr.gm.target[AXIS_B] = mr.endpoint[AXIS_B];
+		mr.gm.target[AXIS_C] = mr.endpoint[AXIS_C];
 
 	} else {
 		float intermediate = mr.segment_velocity * mr.segment_move_time;
-		mr.target[AXIS_X] = mr.position[AXIS_X] + (mr.unit[AXIS_X] * intermediate);
-		mr.target[AXIS_Y] = mr.position[AXIS_Y] + (mr.unit[AXIS_Y] * intermediate);
-		mr.target[AXIS_Z] = mr.position[AXIS_Z] + (mr.unit[AXIS_Z] * intermediate);
-		mr.target[AXIS_A] = mr.position[AXIS_A] + (mr.unit[AXIS_A] * intermediate);
-		mr.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * intermediate);
-		mr.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * intermediate);
+		mr.gm.target[AXIS_X] = mr.position[AXIS_X] + (mr.unit[AXIS_X] * intermediate);
+		mr.gm.target[AXIS_Y] = mr.position[AXIS_Y] + (mr.unit[AXIS_Y] * intermediate);
+		mr.gm.target[AXIS_Z] = mr.position[AXIS_Z] + (mr.unit[AXIS_Z] * intermediate);
+		mr.gm.target[AXIS_A] = mr.position[AXIS_A] + (mr.unit[AXIS_A] * intermediate);
+		mr.gm.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * intermediate);
+		mr.gm.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * intermediate);
 	}
 
-	travel[AXIS_X] = mr.target[AXIS_X] - mr.position[AXIS_X];
-	travel[AXIS_Y] = mr.target[AXIS_Y] - mr.position[AXIS_Y];
-	travel[AXIS_Z] = mr.target[AXIS_Z] - mr.position[AXIS_Z];
-	travel[AXIS_A] = mr.target[AXIS_A] - mr.position[AXIS_A];
-	travel[AXIS_B] = mr.target[AXIS_B] - mr.position[AXIS_B];
-	travel[AXIS_C] = mr.target[AXIS_C] - mr.position[AXIS_C];
+	travel[AXIS_X] = mr.gm.target[AXIS_X] - mr.position[AXIS_X];
+	travel[AXIS_Y] = mr.gm.target[AXIS_Y] - mr.position[AXIS_Y];
+	travel[AXIS_Z] = mr.gm.target[AXIS_Z] - mr.position[AXIS_Z];
+	travel[AXIS_A] = mr.gm.target[AXIS_A] - mr.position[AXIS_A];
+	travel[AXIS_B] = mr.gm.target[AXIS_B] - mr.position[AXIS_B];
+	travel[AXIS_C] = mr.gm.target[AXIS_C] - mr.position[AXIS_C];
 
 /* The above is a re-arranged and loop unrolled version of this:
 	for (uint8_t i=0; i < AXES; i++) {	// don't do the error correction if you are going into a hold
 		if ((correction_flag == true) && (mr.segment_count == 1) && 
 			(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_STARTED)) {
-			mr.target[i] = mr.endpoint[i];	// rounding error correction for last segment
+			mr.gm.target[i] = mr.endpoint[i];	// rounding error correction for last segment
 		} else {
-			mr.target[i] = mr.position[i] + (mr.unit[i] * mr.segment_velocity * mr.segment_move_time);
+			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * mr.segment_velocity * mr.segment_move_time);
 		}
-		travel[i] = mr.target[i] - mr.position[i];
+		travel[i] = mr.gm.target[i] - mr.position[i];
 	}
 */
 	// prep the segment for the steppers and adjust the variables for the next iteration
 	ik_kinematics(travel, steps, mr.microseconds);
 	if (st_prep_line(steps, mr.microseconds) == STAT_OK) {
-		copy_axis_vector(mr.position, mr.target); 	// update runtime position	
+		copy_axis_vector(mr.position, mr.gm.target); 	// update runtime position	
 /* TRY THIS
-		mr.position[AXIS_X] = mr.target[AXIS_X];
-		mr.position[AXIS_Y] = mr.target[AXIS_Y];
-		mr.position[AXIS_Z] = mr.target[AXIS_Z];
-		mr.position[AXIS_A] = mr.target[AXIS_A];
-		mr.position[AXIS_B] = mr.target[AXIS_B];
-		mr.position[AXIS_C] = mr.target[AXIS_C];	
+		mr.position[AXIS_X] = mr.gm.target[AXIS_X];
+		mr.position[AXIS_Y] = mr.gm.target[AXIS_Y];
+		mr.position[AXIS_Z] = mr.gm.target[AXIS_Z];
+		mr.position[AXIS_A] = mr.gm.target[AXIS_A];
+		mr.position[AXIS_B] = mr.gm.target[AXIS_B];
+		mr.position[AXIS_C] = mr.gm.target[AXIS_C];	
 */	
 	}
 	if (--mr.segment_count == 0) {
