@@ -169,7 +169,7 @@ stat_t mp_aline(const GCodeState_t *gm)
 	}
 
 	// finish up the current block variables
-	if (cm_get_model_path_control() != PATH_EXACT_STOP) { 	// exact stop cases already zeroed
+	if (cm_get_path_control(MODEL) != PATH_EXACT_STOP) { 	// exact stop cases already zeroed
 		bf->replannable = true;
 		exact_stop = 8675309;								// an arbitrarily large floating point number (Jenny)
 	}

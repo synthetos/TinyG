@@ -889,7 +889,7 @@ static int8_t _get_pos_axis(const index_t i)
  */
 static stat_t set_flu(cmdObj_t *cmd)
 {
-	if (cm_get_model_units_mode() == INCHES) { cmd->value *= MM_PER_INCH;}
+	if (cm_get_units_mode(MODEL) == INCHES) { cmd->value *= MM_PER_INCH;}
 	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT_UNITS;
@@ -899,7 +899,7 @@ static stat_t set_flu(cmdObj_t *cmd)
 static stat_t get_flu(cmdObj_t *cmd)
 {
 	get_flt(cmd);
-	if (cm_get_model_units_mode() == INCHES) {
+	if (cm_get_units_mode(MODEL) == INCHES) {
 		cmd->value *= INCH_PER_MM;
 	}
 	//	cmd->objtype = TYPE_FLOAT_UNITS;	// ++++ UNTESTED
@@ -910,7 +910,7 @@ static void print_lin(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
 	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[cm_get_model_units_mode()]));
+	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
 }
 
 static void print_rot(cmdObj_t *cmd)
@@ -1163,12 +1163,12 @@ static stat_t get_home(cmdObj_t *cmd)
 
 static stat_t get_unit(cmdObj_t *cmd)
 {
-	return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_model_units_mode()));
+	return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_units_mode(MODEL)));
 }
 
 static stat_t get_coor(cmdObj_t *cmd)
 {
-	return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_model_coord_system()));
+	return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_coord_system(MODEL)));
 }
 
 static stat_t get_momo(cmdObj_t *cmd)
@@ -1178,22 +1178,22 @@ static stat_t get_momo(cmdObj_t *cmd)
 
 static stat_t get_plan(cmdObj_t *cmd)
 {
-	return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_model_select_plane()));
+	return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_select_plane(MODEL)));
 }
 
 static stat_t get_path(cmdObj_t *cmd)
 {
-	return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_model_path_control()));
+	return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_path_control(MODEL)));
 }
 
 static stat_t get_dist(cmdObj_t *cmd)
 {
-	return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_model_distance_mode()));
+	return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_distance_mode(MODEL)));
 }
 
 static stat_t get_frmo(cmdObj_t *cmd)
 {
-	return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_model_inverse_feed_rate_mode()));
+	return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_inverse_feed_rate_mode(MODEL)));
 }
 
 static stat_t get_line(cmdObj_t *cmd)
@@ -1206,7 +1206,7 @@ static stat_t get_line(cmdObj_t *cmd)
 static stat_t get_vel(cmdObj_t *cmd) 
 {
 	cmd->value = mp_get_runtime_velocity();
-	if (cm_get_model_units_mode() == INCHES) cmd->value *= INCH_PER_MM;
+	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 //	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
 	cmd->objtype = TYPE_FLOAT;
@@ -1252,7 +1252,7 @@ static void _print_pos_helper(cmdObj_t *cmd, uint8_t units)
 
 static void print_pos(cmdObj_t *cmd)		// print position with unit displays for MM or Inches
 {
-	_print_pos_helper(cmd, cm_get_model_units_mode());
+	_print_pos_helper(cmd, cm_get_units_mode(MODEL));
 }
 
 static void print_mpos(cmdObj_t *cmd)		// print position with fixed unit display - always in Degrees or MM
@@ -1265,7 +1265,7 @@ static void print_coor(cmdObj_t *cmd)		// print coordinate offsets with linear u
 	cmd_get(cmd);
 	char_t format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
-	(PGM_P)pgm_read_word(&msg_units[cm_get_model_units_mode()]));
+	(PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
 }
 
 static void print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
@@ -1326,7 +1326,7 @@ static stat_t set_am(cmdObj_t *cmd)		// axis mode
 stat_t get_jrk(cmdObj_t *cmd)
 {
 	get_flt(cmd);
-	if (cm_get_model_units_mode() == INCHES) {
+	if (cm_get_units_mode(MODEL) == INCHES) {
 		cmd->value *= (INCH_PER_MM)/1000000;
 	} else {
 		cmd->value /= 1000000;
@@ -1338,7 +1338,7 @@ stat_t get_jrk(cmdObj_t *cmd)
 
 stat_t set_jrk(cmdObj_t *cmd)
 {
-	if (cm_get_model_units_mode() == INCHES) { cmd->value *= MM_PER_INCH;}
+	if (cm_get_units_mode(MODEL) == INCHES) { cmd->value *= MM_PER_INCH;}
 	*((float *)cfgArray[cmd->index].target) = (1000000 * cmd->value);
 	cmd->precision = cfgArray[cmd->index].precision;
 	cmd->objtype = TYPE_FLOAT_UNITS;
@@ -1415,7 +1415,7 @@ static void pr_ma_lin(cmdObj_t *cmd)		// print a linear value in prevailing unit
 	cmd_get(cmd);
 	char_t format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->value, 
-					(PGM_P)pgm_read_word(&msg_units[cm_get_model_units_mode()]));
+					(PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
 }
 
 static void pr_ma_rot(cmdObj_t *cmd)		// print a rotary value in degrees units

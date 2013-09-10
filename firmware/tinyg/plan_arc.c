@@ -74,7 +74,7 @@ stat_t ar_arc(const GCodeState_t *gm, 		// gcode model state
 {
 	if (ar.run_state != MOVE_STATE_OFF) { return (STAT_INTERNAL_ERROR); } // (not supposed to fail)
 
-	ar.gm.linenum = cm_get_model_linenum();
+	ar.gm.linenum = cm_get_linenum(MODEL);
 
 	// length is the total mm of travel of the helix (or just arc)
 	ar.length = hypot(angular_travel * radius, fabs(linear_travel));	

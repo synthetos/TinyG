@@ -314,7 +314,7 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 			}
 
 			if (cmd->objtype == TYPE_FLOAT_UNITS)	{ 
-				if (cm_get_model_units_mode() == INCHES) { cmd->value /= MM_PER_INCH;}
+				if (cm_get_units_mode(MODEL) == INCHES) { cmd->value /= MM_PER_INCH;}
 				cmd->objtype = TYPE_FLOAT;
 			}
 			if		(cmd->objtype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "\"\"");} // Note that that "" is NOT null.

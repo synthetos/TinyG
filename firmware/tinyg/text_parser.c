@@ -135,7 +135,7 @@ void tg_text_response(const stat_t status, const char *buf)
 	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
 
 	char units[] = "inch";
-	if (cm_get_model_units_mode() != INCHES) { strcpy(units, "mm"); }
+	if (cm_get_units_mode(MODEL) != INCHES) { strcpy(units, "mm"); }
 
 	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP)) {
 		fprintf_P(stderr, prompt_ok, units); // Note: in AVR it's safer to cast (PGM_P)prompt_ok but not mandatory
