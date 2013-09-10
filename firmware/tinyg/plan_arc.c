@@ -81,10 +81,10 @@ stat_t ar_arc(const GCodeState_t *gm, 		// gcode model state
 	if (ar.length < cfg.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE_ERROR); // too short to draw
 
 	// load the arc controller singleton
-	memcpy(&ar.gm, gm, sizeof(GCodeState_t));			// get the entire GCode context - some will be overwritten to run segments
-	cm_get_model_canonical_position_vector(ar.position);// set initial arc position
+	memcpy(&ar.gm, gm, sizeof(GCodeState_t));		// get the entire GCode context - some will be overwritten to run segments
+	cm_get_model_machine_position_vector(ar.position);	// set initial arc position
 
-	ar.endpoint[axis_1] = gm->target[0];				// save the arc endpoint
+	ar.endpoint[axis_1] = gm->target[0];			// save the arc endpoint
 	ar.endpoint[axis_2] = gm->target[1];
 	ar.endpoint[axis_linear] = gm->target[2];
 	ar.arc_time = gm->move_time;

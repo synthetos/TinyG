@@ -167,19 +167,11 @@ uint8_t cm_get_motion_state() { return cm.motion_state;}
 uint8_t cm_get_hold_state() { return cm.hold_state;}
 uint8_t cm_get_homing_state() { return cm.homing_state;}
 
-uint8_t cm_get_runtime_motion_mode() { return mp_get_runtime_motion_mode();}
-uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
-
 /* 
  * Model State Getters and Setters
  */
 
-void cm_set_motion_mode(GCodeState_t *gm, uint8_t motion_mode) { gm->motion_mode = motion_mode;}
-void cm_set_absolute_override(GCodeState_t *gm, uint8_t absolute_override) { gm->absolute_override = absolute_override;}
-void cm_set_spindle_mode(GCodeState_t *gm, uint8_t spindle_mode) { gm->spindle_mode = spindle_mode;} 
-void cm_set_spindle_speed_parameter(GCodeState_t *gm, float speed) { gm->spindle_speed = speed;}
-void cm_set_tool_number(GCodeState_t *gm, uint8_t tool) { gm->tool = tool;}
-
+uint32_t cm_get_linenum(GCodeState_t *gm) { return gm->linenum;}
 uint8_t cm_get_motion_mode(GCodeState_t *gm) { return gm->motion_mode;}
 uint8_t cm_get_coord_system(GCodeState_t *gm) { return gm->coord_system;}
 uint8_t cm_get_units_mode(GCodeState_t *gm) { return gm->units_mode;}
@@ -188,89 +180,21 @@ uint8_t cm_get_path_control(GCodeState_t *gm) { return gm->path_control;}
 uint8_t cm_get_distance_mode(GCodeState_t *gm) { return gm->distance_mode;}
 uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gm) { return gm->inverse_feed_rate_mode;}
 uint8_t cm_get_spindle_mode(GCodeState_t *gm) { return gm->spindle_mode;} 
-uint32_t cm_get_linenum(GCodeState_t *gm) { return gm->linenum;}
-
-/* 
- * Old Model state Getters and Setters
- */
-// set parameters in gm struct
-//void cm_set_motion_mode(uint8_t motion_mode) {gm.motion_mode = motion_mode;} 
-//void cm_set_absolute_override(uint8_t absolute_override) { gm.absolute_override = absolute_override;}
-//void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
-//void cm_set_spindle_speed_parameter(float speed) { gm.spindle_speed = speed;}
-//void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
-
-// get parameter from gm struct
-//uint8_t cm_get_model_motion_mode() { return gm.motion_mode;}
-//uint8_t cm_get_model_coord_system() { return gm.coord_system;}
-//uint8_t cm_get_model_units_mode() { return gm.units_mode;}
-//uint8_t cm_get_model_select_plane() { return gm.select_plane;}
-//uint8_t cm_get_model_path_control() { return gm.path_control;}
-//uint8_t cm_get_model_distance_mode() { return gm.distance_mode;}
-//uint8_t cm_get_model_inverse_feed_rate_mode() { return gm.inverse_feed_rate_mode;}
-//uint8_t cm_get_model_spindle_mode() { return gm.spindle_mode;} 
-//uint32_t cm_get_model_linenum() { return gm.linenum;}
 uint8_t	cm_get_block_delete_switch() { return gmx.block_delete_switch;}
+uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
 
-/* Position and Offset getters - operates on model and runtime contexts
- *
- * ---- new ----
- *
- * cm_get_work_position() - return position from the gm struct into gn struct form (external form)
- * cm_get_work_position_vector() - return model position vector in externalized form
- *
- * cm_get_coord_offset() - return the currently active coordinate offset for an axis
- * cm_get_coord_offset_vector() - return currently active coordinate offsets as a vector
- * cm_get_canonical_target() - return model target in internal canonical form
- * cm_get_canonical_position_vector() - return model position vector in internal canonical form
- * cm_get_machine_position() - return current machine position in external form 
- * cm_get_work_position() - return current work coordinate position in external form 
- *
- * cm_get_work_offset() - return current work offset
- *
- * ---- existing -----
- *
- * cm_get_model_coord_offset() - return the currently active coordinate offset for an axis
- * cm_get_model_coord_offset_vector() - return currently active coordinate offsets as a vector
- * cm_get_model_work_position() - return position from the gm struct into gn struct form (external form)
- * cm_get_model_work_position_vector() - return model position vector in externalized form
- * cm_get_model_canonical_target() - return model target in internal canonical form
- * cm_get_model_canonical_position_vector() - return model position vector in internal canonical form
- *
- * cm_get_runtime_machine_position() - return current machine position in external form 
- * cm_get_runtime work_position() - return current work coordinate position in external form 
- * cm_get_runtime work_offset() - return current work offset
- */
+void cm_set_motion_mode(GCodeState_t *gm, uint8_t motion_mode) { gm->motion_mode = motion_mode;}
+void cm_set_absolute_override(GCodeState_t *gm, uint8_t absolute_override) { gm->absolute_override = absolute_override;}
+void cm_set_spindle_mode(GCodeState_t *gm, uint8_t spindle_mode) { gm->spindle_mode = spindle_mode;} 
+void cm_set_spindle_speed_parameter(GCodeState_t *gm, float speed) { gm->spindle_speed = speed;}
+void cm_set_tool_number(GCodeState_t *gm, uint8_t tool) { gm->tool = tool;}
 
-/* ---- new ---- */
-
-/*
- * cm_get_work_position() - return work position in external form
- *
- *	... that means in prevailing units (mm/inch) and with all offsets applied
- *
- * Note: This function only works after the gm struct as had the work_offsets setup by 
- *		 calling cm_get_model_coord_offset_vector() first.
- */
-
-float cm_get_work_position(GCodeState_t *gm, uint8_t axis) 
-{
-	if (gm == MODEL) {
-		if (gm->units_mode == INCHES) {
-			return ((gmx.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
-		} else {
-			return (gmx.position[axis] - cm_get_model_coord_offset(axis));
-		}
-	}
-	if (gm->units_mode == INCHES) {
-		return (mp_get_runtime_work_position(axis) / MM_PER_INCH);
-	} else {
-		return (mp_get_runtime_work_position(axis));
-	}
-}
 
 /*
  * cm_get_model_coord_offset() - return the currently active coordinate offset for an axis
+ *
+ *	This function is typicaly used to evaluate and set offsets, as opposed to cm_get_work_offset()
+ *	which merely returns what's in the work_offset[] array.
  */
 
 float cm_get_model_coord_offset(uint8_t axis)
@@ -286,7 +210,7 @@ float cm_get_model_coord_offset(uint8_t axis)
 }
 
 /*
- * cm_get_work_offset() - get coord offsets from the gm
+ * cm_get_work_offset() - return a coord offset from the gm
  */
 
 float cm_get_work_offset(GCodeState_t *gm, uint8_t axis) 
@@ -314,15 +238,6 @@ void cm_set_move_times(GCodeState_t *gm)
 }
 
 /*
- * cm_get_model_canonical_position_vector()
- */
-float *cm_get_model_canonical_position_vector(float position[])
-{
-	copy_axis_vector(position, gmx.position);	
-	return (position);
-}
-
-/*
  * cm_get_machine_position()
  *
  * NOTE: machine position is always returned in mm mode. No units conversion is performed
@@ -342,76 +257,40 @@ float cm_get_machine_position(GCodeState_t *gm, uint8_t axis)
 //	}
 }
 
-
-/* ---- existing ---- */
 /*
-//float *cm_get_model_coord_offset_vector(float vector[])
-float *cm_get_model_coord_offsets(float vector[])
+ * cm_get_model_machine_position_vector() - get machine position in canonical units (mm)
+ */
+float *cm_get_model_machine_position_vector(float position[])
 {
-	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		vector[axis] = cm_get_model_coord_offset(axis);
-	}
-//	for (uint8_t i=0; i<AXES; i++) {
-//		vector[i] = cm_get_model_coord_offset(i);
-//	}
-	return (vector);
-}
-*/
-/*
-float cm_get_model_work_position(uint8_t axis) 
-{
-	if (gm.units_mode == INCHES) {
-		return ((gmx.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
-	} else {
-		return (gmx.position[axis] - cm_get_model_coord_offset(axis));
-	}
-}
-*/
-/*
-float *cm_get_model_work_position_vector(float position[]) 
-{
-	for (uint8_t axis = AXIS_X; axis < AXIS_MAX; axis++) {
-		position[axis] = cm_get_model_work_position(axis);
-	}
+	copy_axis_vector(position, gmx.position);	
 	return (position);
 }
-*/
-/*
-float cm_get_model_canonical_target(uint8_t axis) 
-{
-	return (gm.target[axis]);
-}
-*/
 
-/* NOTE: machine position is always returned in mm mode. No units conversion is performed */
 /*
-float cm_get_runtime_machine_position(uint8_t axis) 
+ * cm_get_work_position() - return work position in external form
+ *
+ *	... that means in prevailing units (mm/inch) and with all offsets applied
+ *
+ * Note: This function only works after the gm struct as had the work_offsets setup by 
+ *		 calling cm_get_model_coord_offset_vector() first.
+ */
+
+float cm_get_work_position(GCodeState_t *gm, uint8_t axis) 
 {
-	return (mp_get_runtime_machine_position(axis));
-}
-*/
-//	deprecated behavior - left in for reference
-//	if (gm.units_mode == INCHES) {
-//		return (mp_get_runtime_machine_position(axis) / MM_PER_INCH);
-//	} else {
-//		return (mp_get_runtime_machine_position(axis));
-//	}
-/*
-float cm_get_runtime_work_position(uint8_t axis) 
-{
-	if (gm.units_mode == INCHES) {
+	if (gm == MODEL) {
+		if (gm->units_mode == INCHES) {
+			return ((gmx.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
+		} else {
+			return (gmx.position[axis] - cm_get_model_coord_offset(axis));
+		}
+	}
+	if (gm->units_mode == INCHES) {
 		return (mp_get_runtime_work_position(axis) / MM_PER_INCH);
 	} else {
 		return (mp_get_runtime_work_position(axis));
 	}
 }
-*/
-/*
-float cm_get_runtime_work_offset(uint8_t axis) 
-{
-	return (mp_get_runtime_work_offset(axis));
-}
-*/
+
 /*
  * Model initializers - these inhale gn values into the gm struct
  *
