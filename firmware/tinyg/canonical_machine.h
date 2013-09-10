@@ -59,7 +59,8 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	magic_t magic_end;
 } cmSingleton_t;
 
-/* GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
+/*****************************************************************************
+ * GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
  *
  * - gm is the core Gcode model state. It keeps the internal gcode state model in 
  *	 normalized, canonical form. All values are unit converted (to mm) and in the 
@@ -88,8 +89,8 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
  *	 G92 offsets. cfg has the power-on / reset gcode default values, but gm has
  *	 the operating state for the values (which may have changed).
  */
- typedef struct GCodeModel {			// Gcode model context values to carry forward into runtime
-	uint32_t linenum;					// Gcode block line number
+ typedef struct GCodeState {			// Gcode model state - used by model, planning and runtime
+ 	uint32_t linenum;					// Gcode block line number
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
 										// G82, G83 G84, G85, G86, G87, G88, G89 
 	float target[AXES]; 				// XYZABC where the move should go
@@ -114,9 +115,9 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
 	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
 
-} GCodeModel_t;
+} GCodeState_t;
 
-typedef struct GCodeModelExtended {		// Gcode dynamic model extensions
+typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by model and arcs
 	uint16_t magic_start;				// magic number to test memory integity
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t program_flow;				// used only by the gcode_parser
@@ -151,7 +152,7 @@ typedef struct GCodeModelExtended {		// Gcode dynamic model extensions
 
 	uint16_t magic_end;
 
-}  GCodeModelX_t;
+}  GCodeStateX_t;
 
 typedef struct GCodeInput {				// Gcode model inputs - meaning depends on context
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
@@ -202,11 +203,11 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 
 // Externs - See canonical_machine.c for allocation
 
-extern cmSingleton_t cm;		// canonical machine singleton
-extern GCodeModel_t  gm;		// core gcode model
-extern GCodeModelX_t gmx;		// extended gcode model
-extern GCodeInput_t  gn;		// gcode input values
-extern GCodeInput_t  gf;		// gcode input flags
+extern cmSingleton_t cm;		// canonical machine controller singleton
+extern GCodeState_t  gm;		// core gcode model state
+extern GCodeStateX_t gmx;		// extended gcode model state
+extern GCodeInput_t  gn;		// gcode input values - transient
+extern GCodeInput_t  gf;		// gcode input flags - transient
 
 /*****************************************************************************
  * 

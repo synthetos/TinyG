@@ -138,22 +138,14 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function
 	cm_exec cm_func;			// callback to canonical machine execution function
 
-	GCodeModel_t gm;			// bind in goce model context
-
-//	uint32_t linenum;			// runtime line number; or line index if not numbered
-//	uint8_t motion_mode;		// runtime motion mode for status reporting
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
 	uint8_t move_type;			// used to dispatch to run routine
 	uint8_t move_code;			// byte that can be used by used exec functions
 	uint8_t move_state;			// move state machine sequence
 	uint8_t replannable;		// TRUE if move can be replanned
 
-//	float target[AXES];			// target position in floating point
 	float unit[AXES];			// unit vector for axis scaling & planning
-//	float work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
-//	float move_time;			// line, helix or dwell time in minutes
-//	float minimum_time;			// minimum time for the move - for rate override replanning
 	float length;				// total length of line or helix in mm
 	float head_length;
 	float body_length;
@@ -172,6 +164,9 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 	float jerk;					// maximum linear jerk term for this move
 	float recip_jerk;			// 1/Jm used for planning (compute-once)
 	float cbrt_jerk;			// cube root of Jm used for planning (compute-once)
+
+	GCodeState_t gm;			// Gode model state - passed from model, used by planner and runtime
+
 } mpBuf_t;
 
 typedef struct mpBufferPool {	// ring buffer for sub-moves
@@ -257,8 +252,7 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
 
-//stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time);
-stat_t mp_aline(const GCodeModel_t *gm);
+stat_t mp_aline(const GCodeState_t *gm);
 
 stat_t mp_plan_hold_callback(void);
 stat_t mp_end_hold(void);

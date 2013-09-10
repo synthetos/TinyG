@@ -110,8 +110,7 @@ void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
  *	executed once the accumlated error exceeds the minimums 
  */
 
-//stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time)
-stat_t mp_aline(const GCodeModel_t *gm)
+stat_t mp_aline(const GCodeState_t *gm)
 {
 	mpBuf_t *bf; 						// current move pointer
 	float exact_stop = 0;
@@ -125,16 +124,9 @@ stat_t mp_aline(const GCodeModel_t *gm)
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) { return (STAT_BUFFER_FULL_FATAL);} // never supposed to fail
 
-	memcpy(&bf->gm, gm, sizeof(GCodeModel_t));
-
+	memcpy(&bf->gm, gm, sizeof(GCodeState_t));	// copy model state into planner
 	bf->bf_func = _exec_aline;					// register the callback to the exec function
-//	bf->linenum = cm_get_model_linenum();		// retrieve the line number being planned
-//	bf->motion_mode = cm_get_model_motion_mode();
-//	bf->time = minutes;
-//	bf->min_time = min_time;					// used for feed override replanning only
 	bf->length = length;
-//	copy_axis_vector(bf->target, target); 		// set target for runtime
-//	copy_axis_vector(bf->work_offset, work_offset);// propagate offset
 
 	// Set unit vector and jerk terms - this is all done together for efficiency 
 	float jerk_squared = 0;
