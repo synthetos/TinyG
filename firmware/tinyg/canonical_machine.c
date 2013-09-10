@@ -257,15 +257,10 @@ float cm_get_work_position(GCodeState_t *gm, uint8_t axis)
 {
 	if (gm == MODEL) {
 		if (gm->units_mode == INCHES) {
-			return ((gmx.position[axis] - cm_get_coord_offset(axis)) / MM_PER_INCH);
+			return ((gmx.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
 		} else {
-			return (gmx.position[axis] - cm_get_coord_offset(axis));
+			return (gmx.position[axis] - cm_get_model_coord_offset(axis));
 		}
-//		if (gm->units_mode == INCHES) {
-//			return ((gmx.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
-//		} else {
-//			return (gmx.position[axis] - cm_get_model_coord_offset(axis));
-//		}
 	}
 	if (gm->units_mode == INCHES) {
 		return (mp_get_runtime_work_position(axis) / MM_PER_INCH);
@@ -275,27 +270,12 @@ float cm_get_work_position(GCodeState_t *gm, uint8_t axis)
 }
 
 /*
- * cm_get_coord_offset() - return the currently active coordinate offset for an axis
- */
-float cm_get_coord_offset(uint8_t axis)
-{
-	if (gm.absolute_override == true) {
-		return (0);							// no work offset if in abs override mode
-	}
-	if (gmx.origin_offset_enable == 1) {	// it's actually 1, and not 'true'
-		return (cfg.offset[gm.coord_system][axis] + gmx.origin_offset[axis]); // includes G5x and G92 compoenents
-	} else {
-		return (cfg.offset[gm.coord_system][axis]);		// just the g5x coordinate system components
-	}
-}
-
-/*
  * cm_set_work_offsets() - capture coord offsets from the model into absolute values in the gm
  */
 void cm_set_work_offsets(GCodeState_t *gm)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		gm->work_offset[axis] = cm_get_coord_offset(axis);
+		gm->work_offset[axis] = cm_get_model_coord_offset(axis);
 	}
 }
 
@@ -307,8 +287,10 @@ void cm_set_move_times(GCodeState_t *gm)
 	gm->move_time = _get_move_times(&(gm->minimum_time));
 }
 
-/* ---- existing ---- */
 /*
+ * cm_get_model_coord_offset() - return the currently active coordinate offset for an axis
+ */
+
 float cm_get_model_coord_offset(uint8_t axis)
 {
 	if (gm.absolute_override == true) {
@@ -320,7 +302,8 @@ float cm_get_model_coord_offset(uint8_t axis)
 		return (cfg.offset[gm.coord_system][axis]);		// just the g5x coordinate system components
 	}
 }
-*/
+
+/* ---- existing ---- */
 /*
 //float *cm_get_model_coord_offset_vector(float vector[])
 float *cm_get_model_coord_offsets(float vector[])
@@ -337,16 +320,10 @@ float *cm_get_model_coord_offsets(float vector[])
 float cm_get_model_work_position(uint8_t axis) 
 {
 	if (gm.units_mode == INCHES) {
-		return ((gmx.position[axis] - cm_get_coord_offset(axis)) / MM_PER_INCH);
+		return ((gmx.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
 	} else {
-		return (gmx.position[axis] - cm_get_coord_offset(axis));
+		return (gmx.position[axis] - cm_get_model_coord_offset(axis));
 	}
-
-//	if (gm.units_mode == INCHES) {
-//		return ((gmx.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
-//	} else {
-//		return (gmx.position[axis] - cm_get_model_coord_offset(axis));
-//	}
 }
 /*
 float *cm_get_model_work_position_vector(float position[]) 
@@ -458,8 +435,7 @@ void cm_set_model_target(float target[], float flag[])
 			continue;
 		} else if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
 			if (gm.distance_mode == ABSOLUTE_MODE) {
-//				gm.target[i] = cm_get_model_coord_offset(i) + _to_millimeters(target[i]);
-				gm.target[i] = cm_get_coord_offset(i) + _to_millimeters(target[i]);
+				gm.target[i] = cm_get_model_coord_offset(i) + _to_millimeters(target[i]);
 			} else {
 				gm.target[i] += _to_millimeters(target[i]);
 			}
@@ -473,8 +449,7 @@ void cm_set_model_target(float target[], float flag[])
 		} else tmp = _calc_ABC(i, target, flag);		
 		
 		if (gm.distance_mode == ABSOLUTE_MODE) {
-//			gm.target[i] = tmp + cm_get_model_coord_offset(i); // sacidu93's fix to Issue #22
-			gm.target[i] = tmp + cm_get_coord_offset(i); // sacidu93's fix to Issue #22
+			gm.target[i] = tmp + cm_get_model_coord_offset(i); // sacidu93's fix to Issue #22
 		} else {
 			gm.target[i] += tmp;
 		}
