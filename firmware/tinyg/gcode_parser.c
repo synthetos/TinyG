@@ -241,7 +241,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 	memset(&gp, 0, sizeof(gp));		// clear all parser values
 	memset(&gf, 0, sizeof(gf));		// clear all next-state flags
 	memset(&gn, 0, sizeof(gn));		// clear all next-state values
-	gn.motion_mode = cm_get_model_motion_mode();// get motion mode from previous block
+	gn.motion_mode = cm_get_motion_mode(MODEL);// get motion mode from previous block
 
   	// extract commands and parameters
 	while((status = _get_next_gcode_word(&pstr, &letter, &value)) == STAT_OK) {
@@ -462,7 +462,7 @@ static stat_t _execute_gcode_block()
 		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS: { status = cm_resume_origin_offsets(); break;}
 
 		case NEXT_ACTION_DEFAULT: { 
-			cm_set_absolute_override(gn.absolute_override);	// apply override setting to gm struct
+			cm_set_absolute_override(MODEL, gn.absolute_override);	// apply override setting to gm struct
 			switch (gn.motion_mode) {
 				case MOTION_MODE_CANCEL_MOTION_MODE: { gm.motion_mode = gn.motion_mode; break;}
 				case MOTION_MODE_STRAIGHT_TRAVERSE: { status = cm_straight_traverse(gn.target, gf.target); break;}
@@ -474,7 +474,7 @@ static stat_t _execute_gcode_block()
 			}
 		}
 	}
-	cm_set_absolute_override(false);		// un-set abs overrride (for reporting purposes) 
+	cm_set_absolute_override(MODEL, false);	 // un-set abs overrride (for reporting purposes) 
 
 	// do the M stops: M0, M1, M2, M30, M60
 	if (gf.program_flow == true) {

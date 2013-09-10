@@ -96,7 +96,7 @@ stat_t cm_spindle_control(uint8_t spindle_mode)
 static void _exec_spindle_control(float *value, float *flag)
 {
 	uint8_t spindle_mode = (uint8_t)value[0];
-	cm_set_spindle_mode(spindle_mode);
+	cm_set_spindle_mode(MODEL, spindle_mode);
  	if (spindle_mode == SPINDLE_CW) {
 		gpio_set_bit_on(SPINDLE_BIT);
 		gpio_set_bit_off(SPINDLE_DIR);
@@ -133,7 +133,7 @@ void cm_exec_spindle_speed(float speed)
 
 static void _exec_spindle_speed(float *value, float *flag)
 {
-	cm_set_spindle_speed_parameter(value[0]);
+	cm_set_spindle_speed_parameter(MODEL, value[0]);
 	pwm_set_duty(PWM_1, cm_get_spindle_pwm(gm.spindle_mode) ); // update spindle speed if we're running
 }
 

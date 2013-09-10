@@ -36,6 +36,11 @@
 extern "C"{
 #endif
 
+/* Defines */
+
+#define MODEL &gm
+#define RUNTIME &mr.gm
+
 /*****************************************************************************
  * CANONICAL MACHINE STRUCTURES
  */
@@ -454,7 +459,17 @@ uint8_t cm_get_motion_state(void);
 uint8_t cm_get_hold_state(void);
 uint8_t cm_get_homing_state(void);
 
-uint8_t cm_get_model_motion_mode(void);
+uint8_t cm_get_motion_mode(GCodeState_t *gm);
+uint8_t cm_get_coord_system(GCodeState_t *gm);
+uint8_t cm_get_units_mode(GCodeState_t *gm);
+uint8_t cm_get_select_plane(GCodeState_t *gm);
+uint8_t cm_get_path_control(GCodeState_t *gm);
+uint8_t cm_get_distance_mode(GCodeState_t *gm);
+uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gm);
+uint8_t cm_get_spindle_mode(GCodeState_t *gm);
+uint32_t cm_get_linenum(GCodeState_t *gm);
+
+//uint8_t cm_get_model_motion_mode(void);
 uint8_t cm_get_runtime_motion_mode(void);
 uint8_t cm_get_model_coord_system(void);
 uint8_t cm_get_model_units_mode(void);
@@ -464,14 +479,20 @@ uint8_t cm_get_model_distance_mode(void);
 uint8_t cm_get_model_inverse_feed_rate_mode(void);
 uint8_t cm_get_model_spindle_mode(void);
 uint32_t cm_get_model_linenum(void);
+
 uint8_t	cm_get_block_delete_switch(void);
 uint8_t cm_get_runtime_busy(void);
 
-void cm_set_motion_mode(uint8_t motion_mode);
-void cm_set_absolute_override(uint8_t absolute_override);
-void cm_set_spindle_mode(uint8_t spindle_mode);
-void cm_set_spindle_speed_parameter(float speed);
-void cm_set_tool_number(uint8_t tool);
+void cm_set_motion_mode(GCodeState_t *gm, uint8_t motion_mode);
+void cm_set_absolute_override(GCodeState_t *gm, uint8_t absolute_override);
+void cm_set_spindle_mode(GCodeState_t *gm, uint8_t spindle_mode);
+void cm_set_spindle_speed_parameter(GCodeState_t *gm, float speed);
+void cm_set_tool_number(GCodeState_t *gm, uint8_t tool);
+//void cm_set_motion_mode(uint8_t motion_mode);
+//void cm_set_absolute_override(uint8_t absolute_override);
+//void cm_set_spindle_mode(uint8_t spindle_mode);
+//void cm_set_spindle_speed_parameter(float speed);
+//void cm_set_tool_number(uint8_t tool);
 
 float cm_get_model_coord_offset(uint8_t axis);
 float *cm_get_model_coord_offset_vector(float vector[]);

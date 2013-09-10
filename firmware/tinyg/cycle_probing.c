@@ -185,7 +185,7 @@ static stat_t _probing_finalize_exit(int8_t axis)	// third part of return to hom
 	cm_set_units_mode(pb.saved_units_mode);
 	cm_set_distance_mode(pb.saved_distance_mode);
 	cm_set_feed_rate(pb.saved_feed_rate);
-	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
+	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 //	cm.cycle_state = CYCLE_MACHINING;
 	cm.cycle_state = CYCLE_OFF;
 	cm_cycle_end();
@@ -219,7 +219,7 @@ static stat_t _probing_error_exit(int8_t axis)
 	cm_set_units_mode(pb.saved_units_mode);
 	cm_set_distance_mode(pb.saved_distance_mode);
 	cm_set_feed_rate(pb.saved_feed_rate);
-	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
+	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;
 	cm_cycle_end();
 	return (STAT_PROBING_CYCLE_FAILED);

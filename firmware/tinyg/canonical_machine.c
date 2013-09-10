@@ -170,19 +170,38 @@ uint8_t cm_get_homing_state() { return cm.homing_state;}
 uint8_t cm_get_runtime_motion_mode() { return mp_get_runtime_motion_mode();}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
 
+/* 
+ * Model State Getters and Setters
+ */
+
+void cm_set_motion_mode(GCodeState_t *gm, uint8_t motion_mode) { gm->motion_mode = motion_mode;}
+void cm_set_absolute_override(GCodeState_t *gm, uint8_t absolute_override) { gm->absolute_override = absolute_override;}
+void cm_set_spindle_mode(GCodeState_t *gm, uint8_t spindle_mode) { gm->spindle_mode = spindle_mode;} 
+void cm_set_spindle_speed_parameter(GCodeState_t *gm, float speed) { gm->spindle_speed = speed;}
+void cm_set_tool_number(GCodeState_t *gm, uint8_t tool) { gm->tool = tool;}
+
+uint8_t cm_get_motion_mode(GCodeState_t *gm) { return gm->motion_mode;}
+uint8_t cm_get_coord_system(GCodeState_t *gm) { return gm->coord_system;}
+uint8_t cm_get_units_mode(GCodeState_t *gm) { return gm->units_mode;}
+uint8_t cm_get_select_plane(GCodeState_t *gm) { return gm->select_plane;}
+uint8_t cm_get_path_control(GCodeState_t *gm) { return gm->path_control;}
+uint8_t cm_get_distance_mode(GCodeState_t *gm) { return gm->distance_mode;}
+uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gm) { return gm->inverse_feed_rate_mode;}
+uint8_t cm_get_spindle_mode(GCodeState_t *gm) { return gm->spindle_mode;} 
+uint32_t cm_get_linenum(GCodeState_t *gm) { return gm->linenum;}
 
 /* 
- * Model state Getters and Setters
+ * Old Model state Getters and Setters
  */
 // set parameters in gm struct
-void cm_set_motion_mode(uint8_t motion_mode) {gm.motion_mode = motion_mode;} 
-void cm_set_absolute_override(uint8_t absolute_override) { gm.absolute_override = absolute_override;}
-void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
-void cm_set_spindle_speed_parameter(float speed) { gm.spindle_speed = speed;}
-void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
+//void cm_set_motion_mode(uint8_t motion_mode) {gm.motion_mode = motion_mode;} 
+//void cm_set_absolute_override(uint8_t absolute_override) { gm.absolute_override = absolute_override;}
+//void cm_set_spindle_mode(uint8_t spindle_mode) { gm.spindle_mode = spindle_mode;} 
+//void cm_set_spindle_speed_parameter(float speed) { gm.spindle_speed = speed;}
+//void cm_set_tool_number(uint8_t tool) { gm.tool = tool;}
 
 // get parameter from gm struct
-uint8_t cm_get_model_motion_mode() { return gm.motion_mode;}
+//uint8_t cm_get_model_motion_mode() { return gm.motion_mode;}
 uint8_t cm_get_model_coord_system() { return gm.coord_system;}
 uint8_t cm_get_model_units_mode() { return gm.units_mode;}
 uint8_t cm_get_model_select_plane() { return gm.select_plane;}
@@ -862,7 +881,7 @@ stat_t cm_set_g28_position(void)
 
 stat_t cm_goto_g28_position(float target[], float flags[])
 {
-	cm_set_absolute_override(true);
+	cm_set_absolute_override(MODEL, true);
 	cm_straight_traverse(target, flags);
 	while (mp_get_planner_buffers_available() == 0); 	// make sure you have an available buffer
 	float f[] = {1,1,1,1,1,1};
@@ -877,7 +896,7 @@ stat_t cm_set_g30_position(void)
 
 stat_t cm_goto_g30_position(float target[], float flags[])
 {
-	cm_set_absolute_override(true);
+	cm_set_absolute_override(MODEL, true);
 	cm_straight_traverse(target, flags);
 	while (mp_get_planner_buffers_available() == 0); 	// make sure you have an available buffer
 	float f[] = {1,1,1,1,1,1};
@@ -1301,8 +1320,9 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_spindle_control(SPINDLE_OFF);			// M5
 		cm_flood_coolant_control(false);			// M9
 		cm_set_inverse_feed_rate_mode(false);
-	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1
-		cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);	
+	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1, but we cancel motion mode. Safer.
+//		cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);	
+		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);	
 	}
 
 	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report (not unfiltered)

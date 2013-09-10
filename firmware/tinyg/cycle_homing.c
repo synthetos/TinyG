@@ -179,7 +179,7 @@ static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 	cm_set_units_mode(hm.saved_units_mode);
 	cm_set_distance_mode(hm.saved_distance_mode);
 	cm_set_feed_rate(hm.saved_feed_rate);
-	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
+	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.homing_state = HOMING_HOMED;
 	cm.cycle_state = CYCLE_OFF;						// required
 	cm_cycle_end();
@@ -213,7 +213,7 @@ static stat_t _homing_error_exit(int8_t axis)
 	cm_set_units_mode(hm.saved_units_mode);
 	cm_set_distance_mode(hm.saved_distance_mode);
 	cm_set_feed_rate(hm.saved_feed_rate);
-	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
+	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;
 	cm_cycle_end();
 	return (STAT_HOMING_CYCLE_FAILED);			// homing state remains HOMING_NOT_HOMED
