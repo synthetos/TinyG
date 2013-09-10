@@ -225,6 +225,7 @@ uint8_t	cm_get_block_delete_switch() { return gmx.block_delete_switch;}
  * cm_get_canonical_position_vector() - return model position vector in internal canonical form
  * cm_get_machine_position() - return current machine position in external form 
  * cm_get_work_position() - return current work coordinate position in external form 
+ *
  * cm_get_work_offset() - return current work offset
  *
  * ---- existing -----
@@ -256,10 +257,15 @@ float cm_get_work_position(GCodeState_t *gm, uint8_t axis)
 {
 	if (gm == MODEL) {
 		if (gm->units_mode == INCHES) {
-			return ((gmx.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
+			return ((gmx.position[axis] - cm_get_coord_offset(axis)) / MM_PER_INCH);
 		} else {
-			return (gmx.position[axis] - cm_get_model_coord_offset(axis));
+			return (gmx.position[axis] - cm_get_coord_offset(axis));
 		}
+//		if (gm->units_mode == INCHES) {
+//			return ((gmx.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
+//		} else {
+//			return (gmx.position[axis] - cm_get_model_coord_offset(axis));
+//		}
 	}
 	if (gm->units_mode == INCHES) {
 		return (mp_get_runtime_work_position(axis) / MM_PER_INCH);
@@ -302,7 +308,7 @@ void cm_set_move_times(GCodeState_t *gm)
 }
 
 /* ---- existing ---- */
-
+/*
 float cm_get_model_coord_offset(uint8_t axis)
 {
 	if (gm.absolute_override == true) {
@@ -314,7 +320,7 @@ float cm_get_model_coord_offset(uint8_t axis)
 		return (cfg.offset[gm.coord_system][axis]);		// just the g5x coordinate system components
 	}
 }
-
+*/
 /*
 //float *cm_get_model_coord_offset_vector(float vector[])
 float *cm_get_model_coord_offsets(float vector[])
@@ -331,10 +337,16 @@ float *cm_get_model_coord_offsets(float vector[])
 float cm_get_model_work_position(uint8_t axis) 
 {
 	if (gm.units_mode == INCHES) {
-		return ((gmx.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
+		return ((gmx.position[axis] - cm_get_coord_offset(axis)) / MM_PER_INCH);
 	} else {
-		return (gmx.position[axis] - cm_get_model_coord_offset(axis));
+		return (gmx.position[axis] - cm_get_coord_offset(axis));
 	}
+
+//	if (gm.units_mode == INCHES) {
+//		return ((gmx.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
+//	} else {
+//		return (gmx.position[axis] - cm_get_model_coord_offset(axis));
+//	}
 }
 /*
 float *cm_get_model_work_position_vector(float position[]) 
@@ -446,7 +458,8 @@ void cm_set_model_target(float target[], float flag[])
 			continue;
 		} else if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
 			if (gm.distance_mode == ABSOLUTE_MODE) {
-				gm.target[i] = cm_get_model_coord_offset(i) + _to_millimeters(target[i]);
+//				gm.target[i] = cm_get_model_coord_offset(i) + _to_millimeters(target[i]);
+				gm.target[i] = cm_get_coord_offset(i) + _to_millimeters(target[i]);
 			} else {
 				gm.target[i] += _to_millimeters(target[i]);
 			}
@@ -460,7 +473,8 @@ void cm_set_model_target(float target[], float flag[])
 		} else tmp = _calc_ABC(i, target, flag);		
 		
 		if (gm.distance_mode == ABSOLUTE_MODE) {
-			gm.target[i] = tmp + cm_get_model_coord_offset(i); // sacidu93's fix to Issue #22
+//			gm.target[i] = tmp + cm_get_model_coord_offset(i); // sacidu93's fix to Issue #22
+			gm.target[i] = tmp + cm_get_coord_offset(i); // sacidu93's fix to Issue #22
 		} else {
 			gm.target[i] += tmp;
 		}
