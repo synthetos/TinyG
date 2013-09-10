@@ -55,7 +55,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		392.27	// cm_get_work_offset()
+#define TINYG_FIRMWARE_BUILD   		392.28	// Switched in cm_get_work_position()
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number

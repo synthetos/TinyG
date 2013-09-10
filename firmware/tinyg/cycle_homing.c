@@ -360,7 +360,8 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 		cm_set_axis_origin(axis, 0);
 		mp_set_runtime_position(axis, 0);
 	} else {
-		cm_set_axis_origin(axis, cm_get_runtime_work_position(axis));
+//		cm_set_axis_origin(axis, cm_get_runtime_work_position(axis));
+		cm_set_axis_origin(axis, cm_get_work_position(RUNTIME, axis));
 	}
 	cfg.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
 	cm.homed[axis] = true;

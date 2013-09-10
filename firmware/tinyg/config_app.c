@@ -1215,7 +1215,8 @@ static stat_t get_vel(cmdObj_t *cmd)
 
 static stat_t get_pos(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_runtime_work_position(_get_pos_axis(cmd->index));
+//	cmd->value = cm_get_runtime_work_position(_get_pos_axis(cmd->index));
+	cmd->value = cm_get_work_position(RUNTIME, _get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 //	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
 	cmd->objtype = TYPE_FLOAT;

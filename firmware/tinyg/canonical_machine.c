@@ -270,7 +270,23 @@ float cm_get_work_position(GCodeState_t *gm, uint8_t axis)
 }
 
 /*
- * cm_set_work_offset() - get coord offsets from the gm
+ * cm_get_model_coord_offset() - return the currently active coordinate offset for an axis
+ */
+
+float cm_get_model_coord_offset(uint8_t axis)
+{
+	if (gm.absolute_override == true) {
+		return (0);							// no work offset if in abs override mode
+	}
+	if (gmx.origin_offset_enable == 1) {	// it's actually 1, and not 'true'
+		return (cfg.offset[gm.coord_system][axis] + gmx.origin_offset[axis]); // includes G5x and G92 compoenents
+	} else {
+		return (cfg.offset[gm.coord_system][axis]);		// just the g5x coordinate system components
+	}
+}
+
+/*
+ * cm_get_work_offset() - get coord offsets from the gm
  */
 
 float cm_get_work_offset(GCodeState_t *gm, uint8_t axis) 
@@ -298,19 +314,12 @@ void cm_set_move_times(GCodeState_t *gm)
 }
 
 /*
- * cm_get_model_coord_offset() - return the currently active coordinate offset for an axis
+ * cm_get_model_canonical_position_vector()
  */
-
-float cm_get_model_coord_offset(uint8_t axis)
+float *cm_get_model_canonical_position_vector(float position[])
 {
-	if (gm.absolute_override == true) {
-		return (0);							// no work offset if in abs override mode
-	}
-	if (gmx.origin_offset_enable == 1) {	// it's actually 1, and not 'true'
-		return (cfg.offset[gm.coord_system][axis] + gmx.origin_offset[axis]); // includes G5x and G92 compoenents
-	} else {
-		return (cfg.offset[gm.coord_system][axis]);		// just the g5x coordinate system components
-	}
+	copy_axis_vector(position, gmx.position);	
+	return (position);
 }
 
 /* ---- existing ---- */
@@ -346,16 +355,12 @@ float *cm_get_model_work_position_vector(float position[])
 	return (position);
 }
 */
+/*
 float cm_get_model_canonical_target(uint8_t axis) 
 {
 	return (gm.target[axis]);
 }
-
-float *cm_get_model_canonical_position_vector(float position[])
-{
-	copy_axis_vector(position, gmx.position);	
-	return (position);
-}
+*/
 
 /* NOTE: machine position is always returned in mm mode. No units conversion is performed */
 float cm_get_runtime_machine_position(uint8_t axis) 
@@ -368,7 +373,7 @@ float cm_get_runtime_machine_position(uint8_t axis)
 //	} else {
 //		return (mp_get_runtime_machine_position(axis));
 //	}
-
+/*
 float cm_get_runtime_work_position(uint8_t axis) 
 {
 	if (gm.units_mode == INCHES) {
@@ -377,6 +382,7 @@ float cm_get_runtime_work_position(uint8_t axis)
 		return (mp_get_runtime_work_position(axis));
 	}
 }
+*/
 /*
 float cm_get_runtime_work_offset(uint8_t axis) 
 {
