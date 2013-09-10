@@ -270,6 +270,16 @@ float cm_get_work_position(GCodeState_t *gm, uint8_t axis)
 }
 
 /*
+ * cm_set_work_offset() - get coord offsets from the gm
+ */
+
+float cm_get_work_offset(GCodeState_t *gm, uint8_t axis) 
+{
+//	return (mp_get_runtime_work_offset(axis));
+	return (gm->work_offset[axis]);
+}
+
+/*
  * cm_set_work_offsets() - capture coord offsets from the model into absolute values in the gm
  */
 void cm_set_work_offsets(GCodeState_t *gm)
@@ -317,6 +327,7 @@ float *cm_get_model_coord_offsets(float vector[])
 	return (vector);
 }
 */
+/*
 float cm_get_model_work_position(uint8_t axis) 
 {
 	if (gm.units_mode == INCHES) {
@@ -325,6 +336,7 @@ float cm_get_model_work_position(uint8_t axis)
 		return (gmx.position[axis] - cm_get_model_coord_offset(axis));
 	}
 }
+*/
 /*
 float *cm_get_model_work_position_vector(float position[]) 
 {
@@ -365,12 +377,12 @@ float cm_get_runtime_work_position(uint8_t axis)
 		return (mp_get_runtime_work_position(axis));
 	}
 }
-
+/*
 float cm_get_runtime_work_offset(uint8_t axis) 
 {
 	return (mp_get_runtime_work_offset(axis));
 }
-
+*/
 /*
  * Model initializers - these inhale gn values into the gm struct
  *
