@@ -839,10 +839,15 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 //	ritorno(_test_soft_limits());
 
-	cm_cycle_start();							// required for homing & other cycles
-	stat_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), 
-							cm_get_model_coord_offset_vector(gm.work_offset), 
-							gm.min_time);
+	cm_get_model_coord_offset_vector(gm.work_offset);
+	gm.move_time = _get_move_times(&gm.minimum_time);
+	cm_cycle_start();									// required for homing & other cycles
+	stat_t status = mp_aline(&gm);
+
+//	stat_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), 
+//							cm_get_model_coord_offset_vector(gm.work_offset), 
+//							gm.min_time);
+
 	cm_set_model_endpoint_position(status);
 	return (status);
 }
@@ -965,10 +970,15 @@ stat_t cm_straight_feed(float target[], float flags[])
 	cm_set_model_target(target, flags);
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 
-	cm_cycle_start();						// required for homing & other cycles
-	stat_t status = MP_LINE(gm.target, _get_move_times(&gm.min_time), 
-							 cm_get_model_coord_offset_vector(gm.work_offset), 
-							 gm.min_time);
+	cm_get_model_coord_offset_vector(gm.work_offset);
+	gm.move_time = _get_move_times(&gm.minimum_time);
+	cm_cycle_start();									// required for homing & other cycles
+	stat_t status = mp_aline(&gm);
+
+//	cm_cycle_start();						// required for homing & other cycles
+//	stat_t status = MP_LINE(gm.target, _get_move_times(&gm.minimum_time), 
+//							 cm_get_model_coord_offset_vector(gm.work_offset), 
+//							 gm.minimum_time);
 
 	cm_set_model_endpoint_position(status);
 	return (status);

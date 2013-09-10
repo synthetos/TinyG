@@ -29,6 +29,8 @@
 #ifndef PLANNER_H_ONCE
 #define PLANNER_H_ONCE
 
+#include "canonical_machine.h"
+
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -135,20 +137,23 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 	struct mpBuffer *nx;		// static pointer to next buffer
 	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function
 	cm_exec cm_func;			// callback to canonical machine execution function
-	uint32_t linenum;			// runtime line number; or line index if not numbered
-	uint8_t motion_mode;		// runtime motion mode for status reporting
+
+	GCodeModel_t gm;			// bind in goce model context
+
+//	uint32_t linenum;			// runtime line number; or line index if not numbered
+//	uint8_t motion_mode;		// runtime motion mode for status reporting
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
 	uint8_t move_type;			// used to dispatch to run routine
 	uint8_t move_code;			// byte that can be used by used exec functions
 	uint8_t move_state;			// move state machine sequence
 	uint8_t replannable;		// TRUE if move can be replanned
 
-	float target[AXES];			// target position in floating point
+//	float target[AXES];			// target position in floating point
 	float unit[AXES];			// unit vector for axis scaling & planning
 	float work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
-	float time;					// line, helix or dwell time in minutes
-	float min_time;				// minimum time for the move - for rate override replanning
+//	float move_time;			// line, helix or dwell time in minutes
+//	float minimum_time;			// minimum time for the move - for rate override replanning
 	float head_length;
 	float body_length;
 	float tail_length;
@@ -251,7 +256,10 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
-stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time);
+
+//stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time);
+stat_t mp_aline(const GCodeModel_t *gm);
+
 stat_t mp_plan_hold_callback(void);
 stat_t mp_end_hold(void);
 stat_t mp_feed_rate_override(uint8_t flag, float parameter);

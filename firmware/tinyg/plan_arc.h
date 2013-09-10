@@ -39,17 +39,20 @@ extern "C"{
 typedef struct arArcSingleton {	// persistent planner and runtime variables
 	magic_t magic_start;
 	uint8_t run_state;			// runtime state machine sequence
-	uint32_t linenum;			// line number of the arc feed move (Nxxxxx)
-	uint32_t lineindex;			// line index of the arc feed move (autoincrement)
-	
-	float endpoint[AXES];		// endpoint position
+//	uint32_t lineindex;			// line index of the arc feed move (autoincrement)
+
+	GCodeModel_t gm;			// Gcode model is used for each arc segment. Usage:
+//	uint32_t linenum;			// line number of the arc feed move - same for each segment
+//	float target[AXES];			// arc segment target
+//	float work_offset[AXES];	// offset from machine coord system for reporting
+//	float move_time;			// segment_time: constant time per aline segment
+
+	float endpoint[AXES];		// arc endpoint position
 	float position[AXES];		// accumulating runtime position
-	float target[AXES];			// runtime target position
-	float work_offset[AXES];	// offset from machine coord system for reporting
 
 	float length;				// length of line or helix in mm
-	float time;					// total running time (derived)
-	float min_time;				// not sure this is needed
+	float arc_time;				// total running time for arc (derived)
+//	float minimum_time;			// not sure this is needed
 	float theta;				// total angle specified by arc
 	float radius;				// computed via offsets
 	float angular_travel;		// travel along the arc
@@ -60,7 +63,6 @@ typedef struct arArcSingleton {	// persistent planner and runtime variables
 
 	float segments;				// number of segments in arc or blend
 	int32_t segment_count;		// count of running segments
-	float segment_time;			// constant time per aline segment
 	float segment_theta;		// angular motion per segment
 	float segment_linear_travel;// linear motion per segment
 	float center_1;				// center of circle at axis 1 (typ X)
@@ -70,6 +72,19 @@ typedef struct arArcSingleton {	// persistent planner and runtime variables
 extern arc_t ar;
 
 // function prototypes
+
+stat_t ar_arc(const GCodeModel_t *gm,
+			  const float i, 
+			  const float j, 
+			  const float k, 
+			  const float theta,
+			  const float radius,
+			  const float angular_travel,
+			  const float linear_travel, 
+			  const uint8_t axis_1,
+			  const uint8_t axis_2,
+			  const uint8_t axis_linear);
+/*
 stat_t ar_arc(	const float target[],
 				const float i, const float j, const float k, 
 				const float theta, 
@@ -82,6 +97,7 @@ stat_t ar_arc(	const float target[],
 				const float minutes,
 				const float work_offset[],
 				const float min_time);
+*/
 
 stat_t ar_arc_callback(void);
 void ar_abort_arc(void);

@@ -61,13 +61,16 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 
 /* GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
  *
- * - gs is the core Gcode model state. This typedef is used by all gm structs and is
- *	 copied and passed into the planner for runtime reporting and recalculation
+ * - gm is the core Gcode model state. It keeps the internal gcode state model in 
+ *	 normalized, canonical form. All values are unit converted (to mm) and in the 
+ *	 machine coordinate system (absolute coordinate system). Gm is owned by the 
+ *	 canonical machine layer and should be accessed only through cm_ routines.
  *
- * - gm keeps the internal gcode state model in normalized, canonical form. 
- *	 All values are unit converted (to mm) and in the machine coordinate 
- *	 system (absolute coordinate system). Gm is owned by the canonical machine 
- *	 layer and should be accessed only through cm_ routines.
+ *	 The gm core struct is copied and passed as context to the runtime where it is 
+ *	 used for planning, replanning, and reporting.
+ *
+ * - gmx is the extended gcode model variabales that are only used by the canonical 
+ *	 machine and do not need to be passed further down.
  *
  * - gn is used by the gcode interpreter and is re-initialized for each 
  *   gcode block.It accepts data in the new gcode block in the formats 
@@ -92,7 +95,8 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	float target[AXES]; 				// XYZABC where the move should go
 	float work_offset[AXES];			// offset from the work coordinate system (for reporting only)
 
-	float min_time;						// minimum time possible for the move given axis constraints
+	float move_time;					// optimal time for move given axis constraints
+	float minimum_time;					// minimum time possible for move given axis constraints
 	float feed_rate; 					// F - normalized to millimeters/minute
 	float spindle_speed;				// in RPM
 	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
@@ -115,7 +119,7 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 typedef struct GCodeModelExtended {		// Gcode dynamic model extensions
 	uint16_t magic_start;				// magic number to test memory integity
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
-	uint8_t program_flow;				// currently vestigal - captured, but not used
+	uint8_t program_flow;				// used only by the gcode_parser
 
 	float position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
 	float origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
@@ -132,13 +136,11 @@ typedef struct GCodeModelExtended {		// Gcode dynamic model extensions
 	uint8_t plane_axis_0;		 		// actual axes of the selected plane
 	uint8_t plane_axis_1;		 		// ...(used in gm only)
 	uint8_t plane_axis_2; 
-
 	uint8_t origin_offset_enable;		// G92 offsets enabled/disabled.  0=disabled, 1=enabled
+	uint8_t block_delete_switch;		// set true to enable block deletes (true is default)
 
 	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
 	uint8_t	spindle_override_enable;	// TRUE = override enabled
-
-	uint8_t block_delete_switch;		// set true to enable block deletes (true is default)
 
 	float arc_radius;					// R - radius value in arc radius mode
 	float arc_offset[3];  				// IJK - used by arc commands
@@ -155,12 +157,11 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
 										// G82, G83 G84, G85, G86, G87, G88, G89 
-	uint8_t program_flow;				// currently vestigal - captured, but not used
+	uint8_t program_flow;				// used only by the gcode_parser
 	uint32_t linenum;					// N word or autoincrement in the model
 
 	float target[AXES]; 				// XYZABC where the move should go
 
-	float min_time;						// minimum time possible for the move given axis constraints
 	float feed_rate; 					// F - normalized to millimeters/minute
 	float inverse_feed_rate; 			// ignored if inverse_feed_rate not active
 	float feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
@@ -189,22 +190,23 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
 	uint8_t	spindle_override_enable;	// TRUE = override enabled
 
+	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
+	float arc_radius;					// R - radius value in arc radius mode
+	float arc_offset[3];  				// IJK - used by arc commands
+
 // unimplemented gcode parameters
 //	float cutter_radius;				// D - cutter radius compensation (0 is off)
 //	float cutter_length;				// H - cutter length compensation (0 is off)
 
-	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
-	float arc_radius;					// R - radius value in arc radius mode
-	float arc_offset[3];  				// IJK - used by arc commands
 } GCodeInput_t;
 
 // Externs - See canonical_machine.c for allocation
 
-extern cmSingleton_t cm;
-extern GCodeModel_t gm;			// core gcode model
+extern cmSingleton_t cm;		// canonical machine singleton
+extern GCodeModel_t  gm;		// core gcode model
 extern GCodeModelX_t gmx;		// extended gcode model
-extern GCodeInput_t gn;			// gcode input values
-extern GCodeInput_t gf;			// gcode input flags
+extern GCodeInput_t  gn;		// gcode input values
+extern GCodeInput_t  gf;		// gcode input flags
 
 /*****************************************************************************
  * 

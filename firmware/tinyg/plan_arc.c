@@ -29,13 +29,10 @@
 
 #include "tinyg.h"
 #include "config.h"
-//#include "controller.h"			// only needed for line number
 #include "canonical_machine.h"
 #include "util.h"
 #include "plan_arc.h"
 #include "planner.h"
-//#include "kinematics.h"
-//#include "xio/xio.h"			// support trap and debug statements
 
 #ifdef __cplusplus
 extern "C"{
@@ -62,6 +59,19 @@ static float _get_theta(const float x, const float y);
  *
  *  Parts of this routine were originally sourced from the grbl project.
  */
+stat_t ar_arc(const GCodeModel_t *gm, 		// core model values
+			  const float i, 
+			  const float j, 
+			  const float k, 
+			  const float theta, 			// starting angle
+			  const float radius, 			// radius of the circle in mm
+			  const float angular_travel,	// radians along arc (+CW, -CCW)
+			  const float linear_travel, 
+			  const uint8_t axis_1, 		// circle plane in tool space
+			  const uint8_t axis_2,  		// circle plane in tool space
+			  const uint8_t axis_linear)	// linear travel if helical motion
+
+/*
 stat_t ar_arc( const float target[], 
 				const float i, const float j, const float k, 
 				const float theta, 			// starting angle
@@ -74,27 +84,34 @@ stat_t ar_arc( const float target[],
 				const float minutes,		// time to complete the move
 				const float work_offset[],	// offset from work coordinate system
 				const float min_time)		// minimum time for arc for replanning purposes
+*/
+
 {
 	if (ar.run_state != MOVE_STATE_OFF) { return (STAT_INTERNAL_ERROR); } // (not supposed to fail)
 
-	ar.linenum = cm_get_model_linenum();	// get gcode model line number as debugging convenience
+	ar.gm.linenum = cm_get_model_linenum();
 
-	// "move_length" is the total mm of travel of the helix (or just arc)
+	// length is the total mm of travel of the helix (or just arc)
 	ar.length = hypot(angular_travel * radius, fabs(linear_travel));	
 	if (ar.length < cfg.arc_segment_len) {	// too short to draw
 		return (STAT_MINIMUM_LENGTH_MOVE_ERROR);
 	}
 
 	// load the move struct for an arc
+
+	memcpy(&ar.gm, &gm, sizeof(GCodeModel_t));			// get the entire GCode context - some will be overwritten
 	cm_get_model_canonical_position_vector(ar.position);// set initial arc position
 
-	ar.endpoint[axis_1] = target[0];					// save the arc endpoint
-	ar.endpoint[axis_2] = target[1];
-	ar.endpoint[axis_linear] = target[2];
+	ar.endpoint[axis_1] = gm->target[0];				// save the arc endpoint
+	ar.endpoint[axis_2] = gm->target[1];
+	ar.endpoint[axis_linear] = gm->target[2];
 
-	copy_axis_vector(ar.work_offset, work_offset);		// propagate the work offset
-	ar.time = minutes;									// load the singleton
-	ar.min_time = min_time;
+//	copy_axis_vector(ar.work_offset, work_offset);		// propagate the work offset
+	cm_get_model_coord_offset_vector(ar.gm.work_offset);
+//	gm.move_time = _get_move_times(&gm.minimum_time);
+
+	ar.arc_time = gm->move_time;
+//	ar.minimum_time = gm->minimum_time;
 	ar.theta = theta;
 	ar.radius = radius;
 	ar.axis_1 = axis_1;
@@ -106,7 +123,7 @@ stat_t ar_arc( const float target[],
 	// Find the minimum number of segments that meets these constraints...
 	float segments_required_for_chordal_accuracy = ar.length / sqrt(4*cfg.chordal_tolerance * (2 * radius - cfg.chordal_tolerance));
 	float segments_required_for_minimum_distance = ar.length / cfg.arc_segment_len;
-	float segments_required_for_minimum_time = ar.time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
+	float segments_required_for_minimum_time = ar.arc_time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
 	ar.segments = floor(min3(segments_required_for_chordal_accuracy,
 							 segments_required_for_minimum_distance,
 							 segments_required_for_minimum_time));
@@ -115,10 +132,10 @@ stat_t ar_arc( const float target[],
 	ar.segment_count = (uint32_t)ar.segments;
 	ar.segment_theta = ar.angular_travel / ar.segments;
 	ar.segment_linear_travel = ar.linear_travel / ar.segments;
-	ar.segment_time = ar.time / ar.segments;
+	ar.gm.move_time = ar.arc_time / ar.segments;						// segment_time
 	ar.center_1 = ar.position[ar.axis_1] - sin(ar.theta) * ar.radius;
 	ar.center_2 = ar.position[ar.axis_2] - cos(ar.theta) * ar.radius;
-	ar.target[ar.axis_linear] = ar.position[ar.axis_linear];
+	ar.gm.target[ar.axis_linear] = ar.position[ar.axis_linear];
 	ar.run_state = MOVE_STATE_RUN;
 	return (STAT_OK);
 }
@@ -140,14 +157,18 @@ stat_t ar_arc_callback()
 	if (ar.run_state == MOVE_STATE_RUN) {
 		if (--ar.segment_count > 0) {
 			ar.theta += ar.segment_theta;
-			ar.target[ar.axis_1] = ar.center_1 + sin(ar.theta) * ar.radius;
-			ar.target[ar.axis_2] = ar.center_2 + cos(ar.theta) * ar.radius;
-			ar.target[ar.axis_linear] += ar.segment_linear_travel;
-			(void)MP_LINE(ar.target, ar.segment_time, ar.work_offset, 0);
-			copy_axis_vector(ar.position, ar.target);	// update runtime position	
+			ar.gm.target[ar.axis_1] = ar.center_1 + sin(ar.theta) * ar.radius;
+			ar.gm.target[ar.axis_2] = ar.center_2 + cos(ar.theta) * ar.radius;
+			ar.gm.target[ar.axis_linear] += ar.segment_linear_travel;
+
+//			(void)MP_LINE(ar.target, ar.segment_time, ar.work_offset, 0);
+			mp_aline(&ar.gm);
+
+			copy_axis_vector(ar.position, ar.gm.target);	// update runtime position	
 			return (STAT_EAGAIN);
 		} else {
-			(void)MP_LINE(ar.endpoint, ar.segment_time, ar.work_offset,0);// do last segment to the exact endpoint
+//			(void)MP_LINE(ar.endpoint, ar.segment_time, ar.work_offset,0);// do last segment to the exact endpoint
+			mp_aline(&ar.gm);		// do last segment to the exact endpoint
 		}
 	}
 	ar.run_state = MOVE_STATE_OFF;
@@ -269,19 +290,28 @@ static stat_t _compute_center_arc()
 	// and compute the time it should take to perform the move
 	float radius_tmp = hypot(gmx.arc_offset[gmx.plane_axis_0], gmx.arc_offset[gmx.plane_axis_1]);
 	float linear_travel = gm.target[gmx.plane_axis_2] - gmx.position[gmx.plane_axis_2];
-	float move_time = _get_arc_time(linear_travel, angular_travel, radius_tmp);
+//	float move_time = _get_arc_time(linear_travel, angular_travel, radius_tmp);
+	gm.move_time = _get_arc_time(linear_travel, angular_travel, radius_tmp);
 
 	// Trace the arc
 	set_vector(gm.target[gmx.plane_axis_0], gm.target[gmx.plane_axis_1], gm.target[gmx.plane_axis_2],
 			   gm.target[AXIS_A], gm.target[AXIS_B], gm.target[AXIS_C]);
 
+	return(ar_arc(&gm,
+				  gmx.arc_offset[gmx.plane_axis_0],
+				  gmx.arc_offset[gmx.plane_axis_1],
+				  gmx.arc_offset[gmx.plane_axis_2],
+				  theta_start, radius_tmp, angular_travel, linear_travel, 
+				  gmx.plane_axis_0, gmx.plane_axis_1, gmx.plane_axis_2));
+/*
 	return(ar_arc(vector,
 				  gmx.arc_offset[gmx.plane_axis_0],
 				  gmx.arc_offset[gmx.plane_axis_1],
 				  gmx.arc_offset[gmx.plane_axis_2],
 				  theta_start, radius_tmp, angular_travel, linear_travel, 
 				  gmx.plane_axis_0, gmx.plane_axis_1, gmx.plane_axis_2, 
-				  move_time, gm.work_offset, gm.min_time));
+				  move_time, gm.work_offset, gm.minimum_time));
+*/
 }
 
 /* 

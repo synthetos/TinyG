@@ -70,6 +70,7 @@ extern "C"{
 #endif
 
 // Allocate global scope structures
+
 mpBufferPool_t mb;				// move buffer queue
 mpMoveMasterSingleton_t mm;		// context for line planning
 mpMoveRuntimeSingleton_t mr;	// context for line runtime
@@ -78,9 +79,9 @@ mpMoveRuntimeSingleton_t mr;	// context for line runtime
  * Local Scope Data and Functions
  */
 #define _bump(a) ((a<PLANNER_BUFFER_POOL_SIZE-1)?(a+1):0) // buffer incr & wrap
-#define spindle_speed time		// local alias for spindle_speed to the time variable
-#define value_vector target		// alias for vector of values
-#define flag_vector unit		// alias for vector of flags
+#define spindle_speed move_time		// local alias for spindle_speed to the time variable
+#define value_vector gm.target		// alias for vector of values
+#define flag_vector unit			// alias for vector of flags
 
 // execution routines (NB: These are all called from the LO interrupt)
 static stat_t _exec_dwell(mpBuf_t *bf);
@@ -234,7 +235,7 @@ stat_t mp_dwell(float seconds)
 		return (STAT_BUFFER_FULL_FATAL);		// (not ever supposed to fail)
 	}
 	bf->bf_func = _exec_dwell;					// register callback to dwell start
-	bf->time = seconds;						  	// in seconds, not minutes
+	bf->gm.move_time = seconds;					// in seconds, not minutes
 	bf->move_state = MOVE_STATE_NEW;
 	mp_queue_write_buffer(MOVE_TYPE_DWELL); 
 	return (STAT_OK);
@@ -242,7 +243,7 @@ stat_t mp_dwell(float seconds)
 
 static stat_t _exec_dwell(mpBuf_t *bf)
 {
-	st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
+	st_prep_dwell((uint32_t)(bf->gm.move_time * 1000000));// convert seconds to uSec
 	mp_free_run_buffer();
 	return (STAT_OK);
 /*

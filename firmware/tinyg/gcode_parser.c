@@ -46,10 +46,6 @@ static stat_t _execute_gcode_block(void);		// Execute the gcode block
 
 #define SET_MODAL(m,parm,val) ({gn.parm=val; gf.parm=1; gp.modals[m]+=1; break;})
 #define SET_NON_MODAL(parm,val) ({gn.parm=val; gf.parm=1; break;})
-
-//#define SET_MODAL(m,parm,val) ({gn.gs.parm=val; gf.gs.parm=1; gp.modals[m]+=1; break;})
-//#define SET_NON_MODAL(parm,val) ({gn.gs.parm=val; gf.gs.parm=1; break;})
-
 #define EXEC_FUNC(f,v) if((uint8_t)gf.v != false) { status = f(gn.v);}
 
 /*
@@ -417,9 +413,6 @@ static stat_t _parse_gcode_block(char_t *buf)
 static stat_t _execute_gcode_block()
 {
 	stat_t status = STAT_OK;
-
-//+++++ DIAGNOSTIC +++++
-//	printf("Gcode: posX: %6.3f, tgtY: %6.3f\n", (double)gm.position[AXIS_X], (double)gm.target[AXIS_Y]);
 
 	cm_set_model_linenum(gn.linenum);
 	EXEC_FUNC(cm_set_inverse_feed_rate_mode, inverse_feed_rate_mode);

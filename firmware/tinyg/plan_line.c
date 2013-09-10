@@ -110,53 +110,56 @@ void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
  *	executed once the accumlated error exceeds the minimums 
  */
 
-stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time)
+//stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time)
+stat_t mp_aline(const GCodeModel_t *gm)
 {
 	mpBuf_t *bf; 						// current move pointer
 	float exact_stop = 0;
 	float junction_velocity;
 
 	// trap error conditions
-	float length = get_axis_vector_length(target, mm.position);
+	float length = get_axis_vector_length(gm->target, mm.position);
 	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE_ERROR);}
-	if (minutes < MIN_TIME_MOVE) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}
+	if (gm->move_time < MIN_TIME_MOVE) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) { return (STAT_BUFFER_FULL_FATAL);} // never supposed to fail
 
+	memcpy(&bf->gm, &gm, sizeof(GCodeModel_t));
+
 	bf->bf_func = _exec_aline;					// register the callback to the exec function
-	bf->linenum = cm_get_model_linenum();		// retrieve the line number being planned
-	bf->motion_mode = cm_get_model_motion_mode();
-	bf->time = minutes;
-	bf->min_time = min_time;					// used for feed override replanning only
+//	bf->linenum = cm_get_model_linenum();		// retrieve the line number being planned
+//	bf->motion_mode = cm_get_model_motion_mode();
+//	bf->time = minutes;
+//	bf->min_time = min_time;					// used for feed override replanning only
 	bf->length = length;
-	copy_axis_vector(bf->target, target); 		// set target for runtime
-	copy_axis_vector(bf->work_offset, work_offset);// propagate offset
+//	copy_axis_vector(bf->target, target); 		// set target for runtime
+//	copy_axis_vector(bf->work_offset, work_offset);// propagate offset
 
 	// Set unit vector and jerk terms - this is all done together for efficiency 
 	float jerk_squared = 0;
-	float diff = target[AXIS_X] - mm.position[AXIS_X];
+	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
 	if (fp_NOT_ZERO(diff)) { 
 		bf->unit[AXIS_X] = diff / length;
 		jerk_squared += square(bf->unit[AXIS_X] * cfg.a[AXIS_X].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[AXIS_Y] - mm.position[AXIS_Y])) { 
+	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Y] - mm.position[AXIS_Y])) { 
 		bf->unit[AXIS_Y] = diff / length;
 		jerk_squared += square(bf->unit[AXIS_Y] * cfg.a[AXIS_Y].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[AXIS_Z] - mm.position[AXIS_Z])) { 
+	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Z] - mm.position[AXIS_Z])) { 
 		bf->unit[AXIS_Z] = diff / length;
 		jerk_squared += square(bf->unit[AXIS_Z] * cfg.a[AXIS_Z].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[AXIS_A] - mm.position[AXIS_A])) { 
+	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_A] - mm.position[AXIS_A])) { 
 		bf->unit[AXIS_A] = diff / length;
 		jerk_squared += square(bf->unit[AXIS_A] * cfg.a[AXIS_A].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[AXIS_B] - mm.position[AXIS_B])) { 
+	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_B] - mm.position[AXIS_B])) { 
 		bf->unit[AXIS_B] = diff / length;
 		jerk_squared += square(bf->unit[AXIS_B] * cfg.a[AXIS_B].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = target[AXIS_C] - mm.position[AXIS_C])) { 
+	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_C] - mm.position[AXIS_C])) { 
 		bf->unit[AXIS_C] = diff / length;
 		jerk_squared += square(bf->unit[AXIS_C] * cfg.a[AXIS_C].jerk_max);
 	}
@@ -174,11 +177,11 @@ stat_t mp_aline(const float target[], const float minutes, const float work_offs
 	}
 
 	// finish up the current block variables
-	if (cm_get_model_path_control() != PATH_EXACT_STOP) { // exact stop cases already zeroed
+	if (cm_get_model_path_control() != PATH_EXACT_STOP) { 	// exact stop cases already zeroed
 		bf->replannable = true;
-		exact_stop = 12345678;					// an arbitrarily large floating point number
+		exact_stop = 12345678;								// an arbitrarily large floating point number
 	}
-	bf->cruise_vmax = bf->length / bf->time;	// target velocity requested
+	bf->cruise_vmax = bf->length / bf->gm.move_time;		// target velocity requested
 	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);
 	bf->entry_vmax = min3(bf->cruise_vmax, junction_velocity, exact_stop);
 	bf->delta_vmax = _get_target_velocity(0, bf->length, bf);
@@ -186,8 +189,8 @@ stat_t mp_aline(const float target[], const float minutes, const float work_offs
 	bf->braking_velocity = bf->delta_vmax;
 
 	uint8_t mr_flag = false;
-	_plan_block_list(bf, &mr_flag);				// replan block list and commit current block
-	copy_axis_vector(mm.position, bf->target);	// update planning position
+	_plan_block_list(bf, &mr_flag);							// replan block list and commit current block
+	copy_axis_vector(mm.position, bf->gm.target);				// update planning position
 	mp_queue_write_buffer(MOVE_TYPE_ALINE);
 	return (STAT_OK);
 }
@@ -1002,8 +1005,8 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		bf->move_state = MOVE_STATE_RUN;
 		mr.move_state = MOVE_STATE_HEAD;
 		mr.section_state = MOVE_STATE_NEW;
-		mr.linenum = bf->linenum;
-		mr.motion_mode = bf->motion_mode;
+		mr.linenum = bf->gm.linenum;
+		mr.motion_mode = bf->gm.motion_mode;
 		mr.jerk = bf->jerk;
 		mr.head_length = bf->head_length;
 		mr.body_length = bf->body_length;
@@ -1012,8 +1015,8 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		mr.cruise_velocity = bf->cruise_velocity;
 		mr.exit_velocity = bf->exit_velocity;
 		copy_axis_vector(mr.unit, bf->unit);
-		copy_axis_vector(mr.endpoint, bf->target);	// save the final target of the move
-		copy_axis_vector(mr.work_offset, bf->work_offset);// propagate offset
+		copy_axis_vector(mr.endpoint, bf->gm.target);	// save the final target of the move
+		copy_axis_vector(mr.work_offset, bf->gm.work_offset);// propagate offset
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 

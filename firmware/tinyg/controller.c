@@ -34,12 +34,12 @@
 
 #include "tinyg.h"				// #1 unfortunately, there are some dependencies
 #include "config.h"				// #2
-#include "canonical_machine.h"
 #include "controller.h"
 #include "settings.h"
 #include "json_parser.h"
 #include "text_parser.h"
 #include "gcode_parser.h"
+#include "canonical_machine.h"
 #include "plan_arc.h"
 #include "planner.h"
 #include "stepper.h"
