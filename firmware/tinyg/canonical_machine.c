@@ -271,7 +271,6 @@ float cm_get_work_position(GCodeState_t *gm, uint8_t axis)
 /*
  * cm_get_coord_offset() - return the currently active coordinate offset for an axis
  */
-
 float cm_get_coord_offset(uint8_t axis)
 {
 	if (gm.absolute_override == true) {
@@ -285,16 +284,22 @@ float cm_get_coord_offset(uint8_t axis)
 }
 
 /*
- * cm_get_work_offsets() - captures model offsets into absolute values in the gm
+ * cm_set_work_offsets() - capture coord offsets from the model into absolute values in the gm
  */
-
-void cm_get_work_offsets(GCodeState_t *gm)
+void cm_set_work_offsets(GCodeState_t *gm)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		gm->work_offset[axis] = cm_get_coord_offset(axis);
 	}
 }
 
+/*
+ * cm_set_move_times() - capture optimal and minimum move times into the gm
+ */
+void cm_set_move_times(GCodeState_t *gm)
+{
+	gm->move_time = _get_move_times(&(gm->minimum_time));
+}
 
 /* ---- existing ---- */
 
@@ -932,8 +937,10 @@ stat_t cm_straight_traverse(float target[], float flags[])
 //	ritorno(_test_soft_limits());
 
 //	cm_get_model_coord_offsets(gm.work_offset);			// copy the fully resolved offsets to the state
-	cm_get_work_offsets(&gm);							// capture the fully resolved offsets to the state
-	gm.move_time = _get_move_times(&gm.minimum_time);	// set move time and minimum time in the state
+//	gm.move_time = _get_move_times(&gm.minimum_time);	// set move time and minimum time in the state
+
+	cm_set_work_offsets(&gm);							// capture the fully resolved offsets to the state
+	cm_set_move_times(&gm);								// set move time and minimum time in the state
 	cm_cycle_start();									// required for homing & other cycles
 	stat_t status = mp_aline(&gm);						// run the move
 	cm_set_model_endpoint_position(status);				// update position if the move was successful
@@ -1058,8 +1065,10 @@ stat_t cm_straight_feed(float target[], float flags[])
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 
 //	cm_get_model_coord_offsets(gm.work_offset); 		// copy the fully resolved offsets to the state
-	cm_get_work_offsets(&gm);							// capture the fully resolved offsets to the state
-	gm.move_time = _get_move_times(&gm.minimum_time);	// set move time and minimum time in the state
+//	gm.move_time = _get_move_times(&gm.minimum_time);	// set move time and minimum time in the state
+
+	cm_set_work_offsets(&gm);							// capture the fully resolved offsets to the state
+	cm_set_move_times(&gm);								// set move time and minimum time in the state
 	cm_cycle_start();									// required for homing & other cycles
 	stat_t status = mp_aline(&gm);						// run the move
 	cm_set_model_endpoint_position(status);				// update position if the move was successful

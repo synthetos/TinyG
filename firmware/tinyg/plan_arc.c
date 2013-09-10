@@ -268,7 +268,7 @@ static stat_t _compute_center_arc()
 
 	// Trace the arc
 //	cm_get_model_coord_offsets(gm.work_offset);		// setup the work offsets
-	cm_get_work_offsets(&gm);						// capture the fully resolved offsets to the state
+	cm_set_work_offsets(&gm);						// capture the fully resolved offsets to the state
 	set_vector(gm.target[gmx.plane_axis_0], gm.target[gmx.plane_axis_1], gm.target[gmx.plane_axis_2],
 			   gm.target[AXIS_A], gm.target[AXIS_B], gm.target[AXIS_C]);
 

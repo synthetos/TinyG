@@ -470,8 +470,10 @@ uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gm);
 uint8_t cm_get_spindle_mode(GCodeState_t *gm);
 uint32_t cm_get_linenum(GCodeState_t *gm);
 
+void cm_set_work_offsets(GCodeState_t *gm);
+void cm_set_move_times(GCodeState_t *gm);
+
 float cm_get_work_position(GCodeState_t *gm, uint8_t axis);
-void cm_get_work_offsets(GCodeState_t *gm);
 
 // ---- existing ----
 
