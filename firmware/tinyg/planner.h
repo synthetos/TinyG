@@ -150,14 +150,14 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 
 //	float target[AXES];			// target position in floating point
 	float unit[AXES];			// unit vector for axis scaling & planning
-	float work_offset[AXES];	// offset from the work coordinate system (for reporting only)
+//	float work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
 //	float move_time;			// line, helix or dwell time in minutes
 //	float minimum_time;			// minimum time for the move - for rate override replanning
+	float length;				// total length of line or helix in mm
 	float head_length;
 	float body_length;
 	float tail_length;
-	float length;				// total length of line or helix in mm
 								// *** SEE NOTES ON THESE VARIABLES, in aline() ***
 	float entry_velocity;		// entry velocity requested for the move
 	float cruise_velocity;		// cruise velocity requested & achieved

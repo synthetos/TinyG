@@ -107,14 +107,14 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 // avrdude -p x192a3 -c avr109 -b 115200 -P COM19
 // avrdude -e -p atxmega192a3 -c avrispmkii -P usb -U boot:w:xboot-boot.hex
 
-//	xio_queue_RX_string_usb("G0 X0.1 Y0.1\n");
+	xio_queue_RX_string_usb("G0 X0.1 Y0.1\n");
 //	xio_queue_RX_string_usb("g28.3 x0 y0\n");
 
-	xio_queue_RX_string_usb("G53 G01 F150  Y115.00\n");
-	xio_queue_RX_string_usb("!\n");
-	xio_queue_RX_string_usb("%\n");
-	xio_queue_RX_string_usb("~\n");
-	xio_queue_RX_string_usb("M00");
+//	xio_queue_RX_string_usb("G53 G01 F150  Y115.00\n");
+//	xio_queue_RX_string_usb("!\n");
+//	xio_queue_RX_string_usb("%\n");
+//	xio_queue_RX_string_usb("~\n");
+//	xio_queue_RX_string_usb("M00");
 
 //	xio_queue_RX_string_usb("{\"x\":{\"jm\":6000000000}}\n");
 //	xio_queue_RX_string_usb("{\"y\":{\"jm\":6000000000}}\n");

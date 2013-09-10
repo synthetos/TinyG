@@ -125,7 +125,7 @@ stat_t mp_aline(const GCodeModel_t *gm)
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) { return (STAT_BUFFER_FULL_FATAL);} // never supposed to fail
 
-	memcpy(&bf->gm, &gm, sizeof(GCodeModel_t));
+	memcpy(&bf->gm, gm, sizeof(GCodeModel_t));
 
 	bf->bf_func = _exec_aline;					// register the callback to the exec function
 //	bf->linenum = cm_get_model_linenum();		// retrieve the line number being planned
