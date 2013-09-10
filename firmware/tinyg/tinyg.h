@@ -55,7 +55,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		392.14	// Second attempt at running Gcode model all the way down to the runtime. Lines work, arcs don't
+#define TINYG_FIRMWARE_BUILD   		392.15	// Refactoring arcs for passing entire Gcode context to runtime
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number

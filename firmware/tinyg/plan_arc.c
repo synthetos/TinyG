@@ -99,7 +99,7 @@ stat_t ar_arc( const float target[],
 
 	// load the move struct for an arc
 
-	memcpy(&ar.gm, &gm, sizeof(GCodeModel_t));			// get the entire GCode context - some will be overwritten
+	memcpy(&ar.gm, gm, sizeof(GCodeModel_t));			// get the entire GCode context - some will be overwritten
 	cm_get_model_canonical_position_vector(ar.position);// set initial arc position
 
 	ar.endpoint[axis_1] = gm->target[0];				// save the arc endpoint
