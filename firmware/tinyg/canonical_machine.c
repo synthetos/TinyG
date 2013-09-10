@@ -322,6 +322,26 @@ float *cm_get_model_canonical_position_vector(float position[])
 	return (position);
 }
 
+/*
+ * cm_get_machine_position()
+ *
+ * NOTE: machine position is always returned in mm mode. No units conversion is performed
+ */
+float cm_get_machine_position(GCodeState_t *gm, uint8_t axis) 
+{
+	if (gm == MODEL) {
+		return (gmx.position[axis]);
+	}
+	return (mp_get_runtime_machine_position(axis));
+
+//	deprecated behavior - left in for reference
+//	if (gm.units_mode == INCHES) {
+//		return (mp_get_runtime_machine_position(axis) / MM_PER_INCH);
+//	} else {
+//		return (mp_get_runtime_machine_position(axis));
+//	}
+}
+
 /* ---- existing ---- */
 /*
 //float *cm_get_model_coord_offset_vector(float vector[])
@@ -363,10 +383,12 @@ float cm_get_model_canonical_target(uint8_t axis)
 */
 
 /* NOTE: machine position is always returned in mm mode. No units conversion is performed */
+/*
 float cm_get_runtime_machine_position(uint8_t axis) 
 {
 	return (mp_get_runtime_machine_position(axis));
 }
+*/
 //	deprecated behavior - left in for reference
 //	if (gm.units_mode == INCHES) {
 //		return (mp_get_runtime_machine_position(axis) / MM_PER_INCH);

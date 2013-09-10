@@ -480,6 +480,7 @@ void cm_set_move_times(GCodeState_t *gm);
 void cm_set_work_offsets(GCodeState_t *gm);
 float cm_get_work_offset(GCodeState_t *gm, uint8_t axis);
 float cm_get_work_position(GCodeState_t *gm, uint8_t axis);
+float cm_get_machine_position(GCodeState_t *gm, uint8_t axis);
 
 float cm_get_model_coord_offset(uint8_t axis);
 float *cm_get_model_canonical_position_vector(float vector[]);
