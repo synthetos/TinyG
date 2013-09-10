@@ -268,6 +268,34 @@ float cm_get_work_position(GCodeState_t *gm, uint8_t axis)
 	}
 }
 
+/*
+ * cm_get_coord_offset() - return the currently active coordinate offset for an axis
+ */
+
+float cm_get_coord_offset(uint8_t axis)
+{
+	if (gm.absolute_override == true) {
+		return (0);							// no work offset if in abs override mode
+	}
+	if (gmx.origin_offset_enable == 1) {	// it's actually 1, and not 'true'
+		return (cfg.offset[gm.coord_system][axis] + gmx.origin_offset[axis]); // includes G5x and G92 compoenents
+	} else {
+		return (cfg.offset[gm.coord_system][axis]);		// just the g5x coordinate system components
+	}
+}
+
+/*
+ * cm_get_work_offsets() - captures model offsets into absolute values in the gm
+ */
+
+void cm_get_work_offsets(GCodeState_t *gm)
+{
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		gm->work_offset[axis] = cm_get_coord_offset(axis);
+	}
+}
+
+
 /* ---- existing ---- */
 
 float cm_get_model_coord_offset(uint8_t axis)
@@ -282,6 +310,7 @@ float cm_get_model_coord_offset(uint8_t axis)
 	}
 }
 
+/*
 //float *cm_get_model_coord_offset_vector(float vector[])
 float *cm_get_model_coord_offsets(float vector[])
 {
@@ -293,7 +322,7 @@ float *cm_get_model_coord_offsets(float vector[])
 //	}
 	return (vector);
 }
-
+*/
 float cm_get_model_work_position(uint8_t axis) 
 {
 	if (gm.units_mode == INCHES) {
@@ -902,7 +931,8 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 //	ritorno(_test_soft_limits());
 
-	cm_get_model_coord_offsets(gm.work_offset);			// copy the fully resolved offsets to the state
+//	cm_get_model_coord_offsets(gm.work_offset);			// copy the fully resolved offsets to the state
+	cm_get_work_offsets(&gm);							// capture the fully resolved offsets to the state
 	gm.move_time = _get_move_times(&gm.minimum_time);	// set move time and minimum time in the state
 	cm_cycle_start();									// required for homing & other cycles
 	stat_t status = mp_aline(&gm);						// run the move
@@ -1027,7 +1057,8 @@ stat_t cm_straight_feed(float target[], float flags[])
 	cm_set_model_target(target, flags);
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 
-	cm_get_model_coord_offsets(gm.work_offset); 		// copy the fully resolved offsets to the state
+//	cm_get_model_coord_offsets(gm.work_offset); 		// copy the fully resolved offsets to the state
+	cm_get_work_offsets(&gm);							// capture the fully resolved offsets to the state
 	gm.move_time = _get_move_times(&gm.minimum_time);	// set move time and minimum time in the state
 	cm_cycle_start();									// required for homing & other cycles
 	stat_t status = mp_aline(&gm);						// run the move
