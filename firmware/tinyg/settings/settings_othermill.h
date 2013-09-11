@@ -10,6 +10,8 @@
  *		 to be changed are in tinyg.h
  */
 
+//#define __TEST
+
 /***********************************************************************/
 /**** Otherlab OtherMill profile ***************************************/
 /***********************************************************************/
@@ -27,12 +29,18 @@
 // Note: there are some commented test values below
 
 #undef  SR_DEFAULTS
-//#define SR_DEFAULTS 			"stat"
+#ifdef __TEST
 #define SR_DEFAULTS 			"mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
+#else
+#define SR_DEFAULTS 			"stat"
+#endif
 
 #undef	SWITCH_TYPE
-//#define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED
+#ifdef __TEST
 #define SWITCH_TYPE 			SW_TYPE_NORMALLY_OPEN
+#else
+#define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED
+#endif
 
 #undef	COMM_MODE
 #define COMM_MODE				JSON_MODE
