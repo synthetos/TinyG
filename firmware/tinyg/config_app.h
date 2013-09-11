@@ -286,7 +286,7 @@ typedef struct cfgParameters {
 	float status_report_value[CMD_STATUS_REPORT_LEN];// previous values for filtered reporting
 
 	// coordinate systems and offsets
-	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute + G54,G55,G56,G57,G58,G59
+	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
 
 	// motor and axis structs
 	cfgMotor_t m[MOTORS];			// settings for motors 1-4

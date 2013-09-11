@@ -189,24 +189,31 @@ void cm_set_spindle_mode(GCodeState_t *gm, uint8_t spindle_mode) { gm->spindle_m
 void cm_set_spindle_speed_parameter(GCodeState_t *gm, float speed) { gm->spindle_speed = speed;}
 void cm_set_tool_number(GCodeState_t *gm, uint8_t tool) { gm->tool = tool;}
 
-
 /*
  * cm_get_model_coord_offset() - return the currently active coordinate offset for an axis
  *
  *	This function is typicaly used to evaluate and set offsets, as opposed to cm_get_work_offset()
  *	which merely returns what's in the work_offset[] array.
  */
+/*
+float cm_get_coord_offset(uint8_t coord_system, uint8_t axis)
+{
+	if (gm.absolute_override == true) return (0);	// no work offset if in abs override mode
 
+	float offset = cfg.offset[coord_system][axis];
+	// it's actually 1, and not 'true'
+	if (gmx.origin_offset_enable == 1) offset += gmx.origin_offset[axis]; // includes G5x and G92 compoenents
+	return (offset); 
+}
+*/
 float cm_get_model_coord_offset(uint8_t axis)
 {
-	if (gm.absolute_override == true) {
-		return (0);							// no work offset if in abs override mode
-	}
-	if (gmx.origin_offset_enable == 1) {	// it's actually 1, and not 'true'
-		return (cfg.offset[gm.coord_system][axis] + gmx.origin_offset[axis]); // includes G5x and G92 compoenents
-	} else {
-		return (cfg.offset[gm.coord_system][axis]);		// just the g5x coordinate system components
-	}
+	if (gm.absolute_override == true) return (0);	// no work offset if in abs override mode
+
+	float offset = cfg.offset[gm.coord_system][axis];
+	// it's actually 1, and not 'true'
+	if (gmx.origin_offset_enable == 1) offset += gmx.origin_offset[axis]; // includes G5x and G92 compoenents
+	return (offset); 
 }
 
 /*
@@ -215,7 +222,6 @@ float cm_get_model_coord_offset(uint8_t axis)
 
 float cm_get_work_offset(GCodeState_t *gm, uint8_t axis) 
 {
-//	return (mp_get_runtime_work_offset(axis));
 	return (gm->work_offset[axis]);
 }
 
@@ -277,18 +283,15 @@ float *cm_get_model_machine_position_vector(float position[])
 
 float cm_get_work_position(GCodeState_t *gm, uint8_t axis) 
 {
+	float position;
+
 	if (gm == MODEL) {
-		if (gm->units_mode == INCHES) {
-			return ((gmx.position[axis] - cm_get_model_coord_offset(axis)) / MM_PER_INCH);
-		} else {
-			return (gmx.position[axis] - cm_get_model_coord_offset(axis));
-		}
-	}
-	if (gm->units_mode == INCHES) {
-		return (mp_get_runtime_work_position(axis) / MM_PER_INCH);
+		position = gmx.position[axis] - cm_get_model_coord_offset(axis);
 	} else {
-		return (mp_get_runtime_work_position(axis));
+		position = mp_get_runtime_work_position(axis);
 	}
+	if (gm->units_mode == INCHES) position /= MM_PER_INCH;
+	return (position);
 }
 
 /*
@@ -347,81 +350,73 @@ static float _calc_ABC(uint8_t i, float target[], float flag[]);
 
 void cm_set_model_target(float target[], float flag[])
 { 
-	uint8_t i;
-	float tmp = 0;
+	uint8_t axis;
+//	float tmp = 0;
 
 	// process XYZABC for lower modes
-	for (i=AXIS_X; i<=AXIS_Z; i++) {
-		if ((fp_FALSE(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
+	for (axis=AXIS_X; axis<=AXIS_Z; axis++) {
+		if ((fp_FALSE(flag[axis])) || (cfg.a[axis].axis_mode == AXIS_DISABLED)) {
 			continue;
-		} else if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
+		} else if ((cfg.a[axis].axis_mode == AXIS_STANDARD) || (cfg.a[axis].axis_mode == AXIS_INHIBITED)) {
+			gm.target[axis] = _to_millimeters(target[axis]) + cm_get_model_coord_offset(axis);
+//			gm.target[axis] += _to_millimeters(target[axis]);
+//			if (gm.distance_mode != ABSOLUTE_MODE) gm.target[axis] += cm_get_model_coord_offset(axis);
+/*
 			if (gm.distance_mode == ABSOLUTE_MODE) {
-				gm.target[i] = cm_get_model_coord_offset(i) + _to_millimeters(target[i]);
-			} else {
-				gm.target[i] += _to_millimeters(target[i]);
+				gm.target[axis] = cm_get_model_coord_offset(axis) + _to_millimeters(target[axis]);
+				} else {
+				gm.target[axis] += _to_millimeters(target[axis]);
 			}
+*/
 		}
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
-	for (i=AXIS_A; i<=AXIS_C; i++) {
+	for (axis=AXIS_A; axis<=AXIS_C; axis++) {
 		// skip axis if not flagged for update or its disabled
-		if ((fp_FALSE(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
+		if ((fp_FALSE(flag[axis])) || (cfg.a[axis].axis_mode == AXIS_DISABLED)) {
 			continue;
-		} else tmp = _calc_ABC(i, target, flag);		
-		
-		if (gm.distance_mode == ABSOLUTE_MODE) {
-			gm.target[i] = tmp + cm_get_model_coord_offset(i); // sacidu93's fix to Issue #22
 		} else {
-			gm.target[i] += tmp;
+//			tmp = _calc_ABC(axis, target, flag);		
+			if ((cfg.a[axis].axis_mode == AXIS_STANDARD) || (cfg.a[axis].axis_mode == AXIS_INHIBITED)) {
+				gm.target[axis] = target[axis];	// no mm conversion - it's in degrees
+
+				} else if ((cfg.a[axis].axis_mode == AXIS_RADIUS) && (fp_TRUE(flag[axis]))) {
+				gm.target[axis] = _to_millimeters(target[axis]) * 360 / (2 * M_PI * cfg.a[axis].radius);
+			}
 		}
+		gm.target[axis] += cm_get_model_coord_offset(axis);
+//		gm.target[axis] = tmp + cm_get_model_coord_offset(axis);
+//		gm.target[axis] = tmp;
+//		if (gm.distance_mode != ABSOLUTE_MODE) gm.target[axis] += cm_get_model_coord_offset(axis);
+/*		
+		if (gm.distance_mode == ABSOLUTE_MODE) {
+			gm.target[axis] = tmp + cm_get_model_coord_offset(axis); // sacidu93's fix to Issue #22
+		} else {
+			gm.target[axis] += tmp;
+		}
+*/
 	}
 }
 
 // ESTEE: fix to workaround a gcc compiler bug wherein it runs out of spill registers
 // we moved this block into its own function so that we get a fresh stack push
 // ALDEN: This shows up in avr-gcc 4.7.0 and avr-libc 1.8.0
-static float _calc_ABC(uint8_t i, float target[], float flag[])
+/*
+static float _calc_ABC(uint8_t axis, float target[], float flag[])
 {
 	float tmp = 0;
 	
-	if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
-		tmp = target[i];	// no mm conversion - it's in degrees
+	if ((cfg.a[axis].axis_mode == AXIS_STANDARD) || (cfg.a[axis].axis_mode == AXIS_INHIBITED)) {
+		tmp = target[axis];	// no mm conversion - it's in degrees
 
-	} else if ((cfg.a[i].axis_mode == AXIS_RADIUS) && (fp_TRUE(flag[i]))) {
-		tmp = _to_millimeters(target[i]) * 360 / (2 * M_PI * cfg.a[i].radius);
-
-/* DEPRECATED CODE FOR SLAVE MODES - LEFT IN FOR EXAMPLE
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_X) && (fp_TRUE(flag[X]))) {
-		tmp = (target[X] - gmx.position[X]) * 360 / (2 * M_PI * cfg.a[i].radius);
-
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_Y) && (fp_TRUE(flag[Y]))) {
-		tmp = (target[Y] - gmx.position[Y]) * 360 / (2 * M_PI * cfg.a[i].radius);
-
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_Z) && (fp_TRUE(flag[Z]))) {
-		tmp = (target[Z] - gmx.position[Z]) * 360 / (2 * M_PI * cfg.a[i].radius);
-
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XY) && ((fp_TRUE(flag[X])) || (fp_TRUE(flag[Y])))) {
-		float length = sqrt(square(target[X] - gmx.position[X]) + square(target[Y] - gmx.position[Y]));
-		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
-
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XZ) && ((fp_TRUE(flag[X])) || (fp_TRUE(flag[Z])))) {
-		float length = sqrt(square(target[X] - gmx.position[X]) + square(target[Z] - gmx.position[Z]));
-		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
-
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_YZ) && ((fp_TRUE(flag[Y])) || (fp_TRUE(flag[Z])))) {
-		float length = sqrt(square(target[Y] - gmx.position[Y]) + square(target[Z] - gmx.position[Z]));
-		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
-
-	} else if ((cfg.a[i].axis_mode == AXIS_SLAVE_XYZ) && ((fp_TRUE(flag[X])) || (fp_TRUE(flag[Y])) || (fp_TRUE(flag[Z])))) {
-		float length = sqrt(square(target[X] - gmx.position[X]) + square(target[Y] - gmx.position[Y]) + square(target[Z] - gmx.position[Z]));
-		tmp = length * 360 / (2 * M_PI * cfg.a[i].radius);
-*/
+	} else if ((cfg.a[axis].axis_mode == AXIS_RADIUS) && (fp_TRUE(flag[axis]))) {
+		tmp = _to_millimeters(target[axis]) * 360 / (2 * M_PI * cfg.a[axis].radius);
 	}
 	return tmp;
 }
-
+*/
 /* 
- * cm_set_model_endpoint_position() - uses internal canonical coordinates only
+ * cm_set_model_position() - set endpoint position; uses internal canonical coordinates only
  *
  * 	This routine sets the endpoint position in the gccode model if the move was
  *	successfully completed (no errors). Leaving the endpoint position alone for 
@@ -433,7 +428,7 @@ static float _calc_ABC(uint8_t i, float target[], float flag[])
  *	position is still close to the starting point. 
  */
 
-void cm_set_model_endpoint_position(stat_t status) 
+void cm_set_model_position(stat_t status) 
 {
 	if (status == STAT_OK) copy_axis_vector(gmx.position, gm.target);
 }
@@ -721,6 +716,7 @@ stat_t cm_set_coord_system(uint8_t coord_system)
 	mp_queue_command(_exec_offset, value, value);			// second vector (flags) is not used, so fake it
 	return (STAT_OK);
 }
+
 static void _exec_offset(float *value, float *flag)
 {
 	uint8_t coord_system = ((uint8_t)value[0]);				// coordinate system is passed in value[0] element
@@ -729,6 +725,7 @@ static void _exec_offset(float *value, float *flag)
 		offsets[axis] = cfg.offset[coord_system][axis] + (gmx.origin_offset[axis] * gmx.origin_offset_enable);
 	}
 	mp_set_runtime_work_offset(offsets);
+//	cm_set_work_offsets(RUNTIME);
 }
 
 /*
@@ -846,14 +843,11 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 //	ritorno(_test_soft_limits());
 
-//	cm_get_model_coord_offsets(gm.work_offset);			// copy the fully resolved offsets to the state
-//	gm.move_time = _get_move_times(&gm.minimum_time);	// set move time and minimum time in the state
-
 	cm_set_work_offsets(&gm);							// capture the fully resolved offsets to the state
 	cm_set_move_times(&gm);								// set move time and minimum time in the state
 	cm_cycle_start();									// required for homing & other cycles
 	stat_t status = mp_aline(&gm);						// run the move
-	cm_set_model_endpoint_position(status);				// update position if the move was successful
+	cm_set_model_position(status);						// update position if the move was successful
 	return (status);
 }
 
@@ -974,14 +968,11 @@ stat_t cm_straight_feed(float target[], float flags[])
 	cm_set_model_target(target, flags);
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 
-//	cm_get_model_coord_offsets(gm.work_offset); 		// copy the fully resolved offsets to the state
-//	gm.move_time = _get_move_times(&gm.minimum_time);	// set move time and minimum time in the state
-
 	cm_set_work_offsets(&gm);							// capture the fully resolved offsets to the state
 	cm_set_move_times(&gm);								// set move time and minimum time in the state
 	cm_cycle_start();									// required for homing & other cycles
 	stat_t status = mp_aline(&gm);						// run the move
-	cm_set_model_endpoint_position(status);				// update position if the move was successful
+	cm_set_model_position(status);						// update position if the move was successful
 	return (status);
 }
 

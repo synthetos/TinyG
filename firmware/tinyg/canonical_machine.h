@@ -449,7 +449,7 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
  * FUNCTION PROTOTYPES
  */
 
-/*--- helper functions for canonical machining functions ---*/
+/*--- getters, setters and helper functions for canonical machining functions ---*/
 
 uint8_t cm_get_combined_state(void); 
 uint8_t cm_get_machine_state(void);
@@ -476,6 +476,8 @@ void cm_set_spindle_mode(GCodeState_t *gm, uint8_t spindle_mode);
 void cm_set_spindle_speed_parameter(GCodeState_t *gm, float speed);
 void cm_set_tool_number(GCodeState_t *gm, uint8_t tool);
 
+float cm_get_coord_offset(uint8_t coord_system, uint8_t axis);
+
 float cm_get_model_coord_offset(uint8_t axis);
 float cm_get_work_offset(GCodeState_t *gm, uint8_t axis);
 void cm_set_work_offsets(GCodeState_t *gm);
@@ -487,10 +489,11 @@ float cm_get_work_position(GCodeState_t *gm, uint8_t axis);
 void cm_set_model_arc_offset(float i, float j, float k);
 void cm_set_model_arc_radius(float r);
 void cm_set_model_target(float target[], float flag[]);
-void cm_set_model_endpoint_position(stat_t status);
+void cm_set_model_position(stat_t status);
 void cm_set_model_linenum(uint32_t linenum);
 
 /*--- canonical machining functions ---*/
+
 void canonical_machine_init(void);
 void canonical_machine_alarm(uint8_t value);					// emergency shutdown
 

@@ -267,16 +267,12 @@ mpBuf_t * mp_get_last_buffer(void);
 #define mp_get_next_buffer(b) ((mpBuf_t *)(b->nx))
 
 // plan_line.c functions
-uint8_t mp_get_runtime_busy(void);
-uint8_t mp_get_runtime_motion_mode(void);
-float mp_get_runtime_linenum(void);
 float mp_get_runtime_velocity(void);
 float mp_get_runtime_work_position(uint8_t axis);
 float mp_get_runtime_machine_position(uint8_t axis);
-float mp_get_runtime_work_offset(uint8_t axis);
-float mp_get_runtime_work_scaling(uint8_t axis);
 void mp_set_runtime_work_offset(float offset[]); 
 void mp_zero_segment_velocity(void);
+uint8_t mp_get_runtime_busy(void);
 
 #ifdef __DEBUG
 void mp_dump_running_plan_buffer(void);

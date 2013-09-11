@@ -57,6 +57,22 @@ static stat_t _exec_aline_segment(uint8_t correction_flag);
 static void _init_forward_diffs(float t0, float t2);
 //static float _compute_next_segment_velocity(void);
 
+/* Runtime-specific setters and getters
+ *
+ * mp_get_runtime_velocity() 		- returns current velocity (aggregate)
+ * mp_get_runtime_machine_position() - returns current axis position in machine coordinates
+ * mp_get_runtime_work_position() 	- returns current axis position in work coordinates
+ *									  that were in effect at move planning time
+ * mp_set_runtime_work_offset()
+ * mp_zero_segment_velocity() 		- correct velocity in last segment for reporting purposes
+ */
+
+float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
+float mp_get_runtime_machine_position(uint8_t axis) { return (mr.position[axis]);}
+float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
+void mp_set_runtime_work_offset(float offset[]) { copy_axis_vector(mr.gm.work_offset, offset);}
+void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
+
 /* 
  * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
  *
@@ -71,26 +87,6 @@ uint8_t mp_get_runtime_busy()
 	}
 	return (false);
 }
-
-/*
- * mp_get_runtime_motion_mode() 	- returns motion mode of currently executing command
- * mp_get_runtime_linenum()	 		- returns currently executing line number
- * mp_get_runtime_velocity() 		- returns current velocity (aggregate)
- * mp_get_runtime_machine_position() - returns current axis position in machine coordinates
- * mp_get_runtime_work_position() 	- returns current axis position in work coordinates
- *									  that were in effect at move planning time
- * mp_set_runtime_work_offset()
- * mp_zero_segment_velocity() 		- correct velocity in last segment for reporting purposes
- */
-
-uint8_t mp_get_runtime_motion_mode(void) { return (mr.gm.motion_mode);}
-float mp_get_runtime_linenum(void) { return (mr.gm.linenum);}
-float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
-float mp_get_runtime_machine_position(uint8_t axis) { return (mr.position[axis]);}
-float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
-float mp_get_runtime_work_offset(uint8_t axis) { return (mr.gm.work_offset[axis]);}
-void mp_set_runtime_work_offset(float offset[]) { copy_axis_vector(mr.gm.work_offset, offset);}
-void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
 
 /**************************************************************************
  * mp_aline() - plan a line with acceleration / deceleration

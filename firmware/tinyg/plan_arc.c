@@ -208,7 +208,7 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 
 	// execute the move
 	status = _compute_center_arc();
-	cm_set_model_endpoint_position(status);
+	cm_set_model_position(status);		// set endpoint position if the move was successful
 	return (status);
 }
 
@@ -263,11 +263,9 @@ static stat_t _compute_center_arc()
 	// and compute the time it should take to perform the move
 	float radius_tmp = hypot(gmx.arc_offset[gmx.plane_axis_0], gmx.arc_offset[gmx.plane_axis_1]);
 	float linear_travel = gm.target[gmx.plane_axis_2] - gmx.position[gmx.plane_axis_2];
-//	float move_time = _get_arc_time(linear_travel, angular_travel, radius_tmp);
 	gm.move_time = _get_arc_time(linear_travel, angular_travel, radius_tmp);
 
 	// Trace the arc
-//	cm_get_model_coord_offsets(gm.work_offset);		// setup the work offsets
 	cm_set_work_offsets(&gm);						// capture the fully resolved offsets to the state
 	set_vector(gm.target[gmx.plane_axis_0], gm.target[gmx.plane_axis_1], gm.target[gmx.plane_axis_2],
 			   gm.target[AXIS_A], gm.target[AXIS_B], gm.target[AXIS_C]);
