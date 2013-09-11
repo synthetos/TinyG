@@ -111,8 +111,6 @@ GCodeInput_t  gf;		// gcode input flags - transient
  **** GENERIC STATIC FUNCTIONS AND VARIABLES ***************************************
  ***********************************************************************************/
 
-static float _get_move_times(float *min_time);
-
 // command execution callbacks from planner queue
 static void _exec_offset(float *value, float *flag);
 static void _exec_change_tool(float *value, float *flag);
@@ -244,14 +242,6 @@ void cm_set_work_offsets(GCodeState_t *gm)
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		gm->work_offset[axis] = cm_get_active_coord_offset(axis);
 	}
-}
-
-/*
- * cm_set_move_times() - capture optimal and minimum move times into the gm
- */
-void cm_set_move_times(GCodeState_t *gm)
-{
-	gm->move_time = _get_move_times(&(gm->minimum_time));
 }
 
 /*
@@ -408,7 +398,8 @@ void cm_set_model_position(stat_t status)
 	if (status == STAT_OK) copy_axis_vector(gmx.position, gm.target);
 }
 
-/* 
+/*
+ * cm_set_move_times() - capture optimal and minimum move times into the gm
  * _get_move_times() - get minimum and optimal move times
  *
  *	The minimum time is the fastest the move can be performed given the velocity 
@@ -470,14 +461,20 @@ void cm_set_model_position(stat_t status)
  *		any time required for acceleration or deceleration.
  */
 
-static float _get_move_times(float *min_time)
+#define JENNY 8675309
+
+void cm_set_move_times(GCodeState_t *target_gm)
 {
-	float inv_time=0;	// inverse time if doing a feed in G93 mode
-	float xyz_time=0;	// coordinated move linear part at req feed rate
-	float abc_time=0;	// coordinated move rotary part at req feed rate
-	float max_time=0;	// time required for the rate-limiting axis
-	float tmp_time=0;	// used in computation
-	*min_time = 1234567;// arbitrarily large number
+	float inv_time=0;					// inverse time if doing a feed in G93 mode
+	float xyz_time=0;					// coordinated move linear part at req feed rate
+	float abc_time=0;					// coordinated move rotary part at req feed rate
+	float max_time=0;					// time required for the rate-limiting axis
+	float tmp_time=0;					// used in computation
+	target_gm->minimum_time = JENNY; 	// arbitrarily large number
+
+	// NOTE: In the below code all references to 'gm.' read from the canonical machine gm, 
+	//		 not the target gcode model, which is referenced as target_gm->  In most cases 
+	//		 the canonical machine will be the target, but this is not required.
 
 	// compute times for feed motion
 	if (gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
@@ -501,9 +498,9 @@ static float _get_move_times(float *min_time)
 			tmp_time = fabs(gm.target[axis] - gmx.position[axis]) / cfg.a[axis].velocity_max;
 		}
 		max_time = max(max_time, tmp_time);
-		*min_time = min(*min_time, tmp_time);
+		target_gm->minimum_time = min(target_gm->minimum_time, tmp_time);
 	}
-	return (max4(inv_time, max_time, xyz_time, abc_time));
+	target_gm->move_time = max4(inv_time, max_time, xyz_time, abc_time);
 }
 
 /* 
@@ -818,11 +815,11 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 //	ritorno(_test_soft_limits());
 
-	cm_set_work_offsets(&gm);							// capture the fully resolved offsets to the state
-	cm_set_move_times(&gm);								// set move time and minimum time in the state
-	cm_cycle_start();									// required for homing & other cycles
-	stat_t status = mp_aline(&gm);						// run the move
-	cm_set_model_position(status);						// update position if the move was successful
+	cm_set_work_offsets(&gm);				// capture the fully resolved offsets to the state
+	cm_set_move_times(&gm);					// set move time and minimum time in the state
+	cm_cycle_start();						// required for homing & other cycles
+	stat_t status = mp_aline(&gm);			// run the move
+	cm_set_model_position(status);			// update position if the move was successful
 	return (status);
 }
 
@@ -842,10 +839,10 @@ stat_t cm_set_g28_position(void)
 stat_t cm_goto_g28_position(float target[], float flags[])
 {
 	cm_set_absolute_override(MODEL, true);
-	cm_straight_traverse(target, flags);
-	while (mp_get_planner_buffers_available() == 0); 	// make sure you have an available buffer
+	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
+	while (mp_get_planner_buffers_available() == 0); // make sure you have an available buffer
 	float f[] = {1,1,1,1,1,1};
-	return(cm_straight_traverse(gmx.g28_position, f));
+	return(cm_straight_traverse(gmx.g28_position, f));// execute actual stored move
 }
 
 stat_t cm_set_g30_position(void)
@@ -857,10 +854,10 @@ stat_t cm_set_g30_position(void)
 stat_t cm_goto_g30_position(float target[], float flags[])
 {
 	cm_set_absolute_override(MODEL, true);
-	cm_straight_traverse(target, flags);
-	while (mp_get_planner_buffers_available() == 0); 	// make sure you have an available buffer
+	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
+	while (mp_get_planner_buffers_available() == 0); // make sure you have an available buffer
 	float f[] = {1,1,1,1,1,1};
-	return(cm_straight_traverse(gmx.g30_position, f));
+	return(cm_straight_traverse(gmx.g30_position, f));// execute actual stored move
 }
 
 /* 
