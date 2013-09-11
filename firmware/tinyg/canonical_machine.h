@@ -38,6 +38,7 @@ extern "C"{
 /* Defines */
 
 #define MODEL 	(GCodeState_t *)&gm
+#define PLANNER (GCodeState_t *)&bf->gm		// relative to current buffer (bf)
 #define RUNTIME (GCodeState_t *)&mr.gm
 
 /*****************************************************************************
@@ -95,8 +96,10 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
  */
  typedef struct GCodeState {			// Gcode model state - used by model, planning and runtime
  	uint32_t linenum;					// Gcode block line number
+	uint32_t program_counter;			// machine generated block number
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
 										// G82, G83 G84, G85, G86, G87, G88, G89 
+
 	float target[AXES]; 				// XYZABC where the move should go
 	float work_offset[AXES];			// offset from the work coordinate system (for reporting only)
 
@@ -106,13 +109,13 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	float spindle_speed;				// in RPM
 	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 
-	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
 	uint8_t select_plane;				// G17,G18,G19 - values to set plane to
 	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
-	uint8_t coord_system;				// G54-G59 - select coordinate system 1-9
 	uint8_t absolute_override;			// G53 TRUE = move using machine coordinates - this block only (G53)
+	uint8_t coord_system;				// G54-G59 - select coordinate system 1-9
 	uint8_t path_control;				// G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
 	uint8_t distance_mode;				// G91   0=use absolute coords(G90), 1=incremental movement
+	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
 	uint8_t tool;						// T value
 	uint8_t change_tool;				// M6
 	uint8_t mist_coolant;				// TRUE = mist on (M7), FALSE = off (M9)
@@ -248,7 +251,7 @@ extern GCodeInput_t  gf;		// gcode input flags - transient
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
 	COMBINED_INITIALIZING = 0,		// [0] machine is initializing
 	COMBINED_READY,					// [1] machine is ready for use
-	COMBINED_ALARM,					// [2] machine is in alarm state (shut down)
+	COMBINED_ALARM,					// [2] machine is in a soft alarm state
 	COMBINED_PROGRAM_STOP,			// [3] program stop or no more blocks
 	COMBINED_PROGRAM_END,			// [4] program end
 	COMBINED_RUN,					// [5] motion is running
@@ -256,17 +259,19 @@ enum cmCombinedState {				// check alignment with messages in config.c / msg_sta
 	COMBINED_PROBE,					// [7] probe cycle active
 	COMBINED_CYCLE,					// [8] machine is running (cycling)
 	COMBINED_HOMING,				// [9] homing is treated as a cycle
-	COMBINED_JOG					// [10] jogging is treated as a cycle
+	COMBINED_JOG,					// [10] jogging is treated as a cycle
+	COMBINED_HARDFAIL				// [11] machine has lost position and has shut down
 };
 //#### END CRITICAL REGION ####
 
 enum cmMachineState {
 	MACHINE_INITIALIZING = 0,		// machine is initializing
 	MACHINE_READY,					// machine is ready for use
-	MACHINE_ALARM,					// machine is in alarm state (shutdown)
+	MACHINE_ALARM,					// machine is in a soft alarm state
 	MACHINE_PROGRAM_STOP,			// program stop or no more blocks
 	MACHINE_PROGRAM_END,			// program end
 	MACHINE_CYCLE,					// machine is running (cycling)
+	MACHINE_HARDFAIL				// machine has lost position and has shut down
 };
 
 enum cmCycleState {
@@ -471,10 +476,10 @@ uint8_t	cm_get_block_delete_switch(void);
 uint8_t cm_get_runtime_busy(void);
 
 void cm_set_motion_mode(GCodeState_t *gm, uint8_t motion_mode);
-void cm_set_absolute_override(GCodeState_t *gm, uint8_t absolute_override);
 void cm_set_spindle_mode(GCodeState_t *gm, uint8_t spindle_mode);
 void cm_set_spindle_speed_parameter(GCodeState_t *gm, float speed);
 void cm_set_tool_number(GCodeState_t *gm, uint8_t tool);
+void cm_set_absolute_override(GCodeState_t *gm, uint8_t absolute_override);
 
 float cm_get_active_coord_offset(uint8_t axis);
 float cm_get_work_offset(GCodeState_t *gm, uint8_t axis);
@@ -500,9 +505,9 @@ stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 
 stat_t cm_homing_cycle_start(void);								// G28.2
-stat_t cm_homing_cycle_start_no_set(void);						// G28.4
 stat_t cm_homing_callback(void);								// G28.2 main loop callback
-stat_t cm_set_absolute_origin(float origin[], float flags[]);	// G28.3  (special function)
+stat_t cm_set_absolute_origin(float origin[], float flags[]);	// G28.3 (special function)
+stat_t cm_homing_cycle_start_no_set(void);						// G28.4 (special function)
 void cm_set_axis_origin(uint8_t axis, const float position);	// set absolute position (used by G28's)
 
 stat_t cm_set_g28_position(void);								// G28.1

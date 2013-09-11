@@ -182,10 +182,15 @@ uint8_t	cm_get_block_delete_switch() { return gmx.block_delete_switch;}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
 
 void cm_set_motion_mode(GCodeState_t *gm, uint8_t motion_mode) { gm->motion_mode = motion_mode;}
-void cm_set_absolute_override(GCodeState_t *gm, uint8_t absolute_override) { gm->absolute_override = absolute_override;}
 void cm_set_spindle_mode(GCodeState_t *gm, uint8_t spindle_mode) { gm->spindle_mode = spindle_mode;} 
 void cm_set_spindle_speed_parameter(GCodeState_t *gm, float speed) { gm->spindle_speed = speed;}
 void cm_set_tool_number(GCodeState_t *gm, uint8_t tool) { gm->tool = tool;}
+
+void cm_set_absolute_override(GCodeState_t *gm, uint8_t absolute_override) 
+{ 
+	gm->absolute_override = absolute_override;
+	cm_set_work_offsets(MODEL);	// need to reset the offsets in the model when you change this
+}
 
 /*
  * Notes on Coordinate System and Offset functions
@@ -522,8 +527,6 @@ stat_t _test_soft_limits()
 	return (STAT_OK);
 }
 
- 
-
 /*************************************************************************
  *
  * CANONICAL MACHINING FUNCTIONS
@@ -741,7 +744,7 @@ static void _exec_absolute_origin(float *value, float *flag)
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
 			mp_set_runtime_position(axis, value[axis]);
-			cm.homed[axis] = true;				// it's not considered homed until you get to the runtime
+			cm.homed[axis] = true;	// it's not considered homed until you get to the runtime
 		}
 	}
 }
@@ -769,13 +772,12 @@ stat_t cm_set_origin_offsets(float offset[], float flag[])
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
 			gmx.origin_offset[axis] = gmx.position[axis] - 
-									 cfg.offset[gm.coord_system][axis] - _to_millimeters(offset[axis]);
+									  cfg.offset[gm.coord_system][axis] - _to_millimeters(offset[axis]);
 		}
 	}
-
 	// now pass the offset to the callback - setting the coordinate system also applies the offsets
 	float value[AXES] = { (float)gm.coord_system,0,0,0,0,0 }; // pass coordinate system in value[0] element
-	mp_queue_command(_exec_offset, value, value);				  // second vector is not used
+	mp_queue_command(_exec_offset, value, value);			  // second value arg is not used
 	return (STAT_OK);
 }
 
@@ -1027,10 +1029,10 @@ static void _exec_flood_coolant_control(float *value, float *flag)
 	gm.flood_coolant = (uint8_t)value[0];
 	if (gm.flood_coolant == true) {
 		gpio_set_bit_on(FLOOD_COOLANT_BIT);
-//		coolant_enable_pin.set();
+//+++++	coolant_enable_pin.set();
 	} else {
 		gpio_set_bit_off(FLOOD_COOLANT_BIT);
-//		coolant_enable_pin.clear();
+//+++++	coolant_enable_pin.clear();
 		float val2[AXES] = { 0,0,0,0,0,0 };
 		_exec_mist_coolant_control(val2, val2);		// M9 special function
 	}
@@ -1216,13 +1218,7 @@ stat_t cm_queue_flush()
 		gm.target[axis] = gmx.position[axis];
 	}
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-	_exec_program_finalize(value, value);			// finalize now, not later
-
-// DEPRECATED
-//	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
-//	cm.motion_state = MOTION_STOP;
-////	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report
-//	rpt_request_queue_report();
+	_exec_program_finalize(value, value); // finalize with a PROGRAM_STOP. Second value arg is irrelevant.
 	return (STAT_OK);
 }
 

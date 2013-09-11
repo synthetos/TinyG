@@ -87,7 +87,7 @@ static stat_t set_sr(cmdObj_t *cmd);		// set status report specification
 static stat_t get_sr(cmdObj_t *cmd);		// run status report (as data)
 static void print_sr(cmdObj_t *cmd);		// run status report (as printout)
 static stat_t set_si(cmdObj_t *cmd);		// set status report interval
-static stat_t run_sx(cmdObj_t *cmd);		// send XOFF, XON
+//static stat_t run_sx(cmdObj_t *cmd);		// send XOFF, XON
 
 static stat_t set_jv(cmdObj_t *cmd);		// set JSON verbosity
 static stat_t get_qr(cmdObj_t *cmd);		// get a queue report (as data)
@@ -472,7 +472,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "", "boot",_f00, 0, fmt_nul, print_nul, print_boot_loader_help,run_boot,(float *)&cs.null,0 },
 	{ "", "help",_f00, 0, fmt_nul, print_nul, print_config_help, set_nul, (float *)&cs.null,0 },		// prints config help screen
 	{ "", "h",   _f00, 0, fmt_nul, print_nul, print_config_help, set_nul, (float *)&cs.null,0 },		// alias for "help"
-	{ "", "sx",  _f00, 0, fmt_nul, print_nul, run_sx,  run_sx , (float *)&cs.null, 0 },					// send XOFF, XON test
+//	{ "", "sx",  _f00, 0, fmt_nul, print_nul, run_sx,  run_sx , (float *)&cs.null, 0 },					// send XOFF, XON test
 
 	// Motor parameters
 	{ "1","1ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
@@ -955,7 +955,6 @@ static stat_t get_id(cmdObj_t *cmd)
  * set_mt() - set motor disable timeout in seconds
  * set_md() - disable all motors
  * set_me() - enable motors with $Npm=0
- * run_sx()	- send XOFF, XON
  * set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
  * get_gc()	- get gcode block
  * run_gc()	- launch the gcode parser on a block of gcode
@@ -1029,14 +1028,14 @@ static stat_t set_me(cmdObj_t *cmd)	// Make sure this function is not part of in
 	st_energize_motors();
 	return (STAT_OK);
 }
-
+/* run_sx()	- send XOFF, XON  -- for test purposes only
 static stat_t run_sx(cmdObj_t *cmd)
 {
 	xio_putc(XIO_DEV_USB, XOFF);
 	xio_putc(XIO_DEV_USB, XON);
 	return (STAT_OK);
 }
-
+*/
 static stat_t set_jv(cmdObj_t *cmd) 
 {
 	if (cmd->value > JV_VERBOSE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
@@ -1136,39 +1135,22 @@ static stat_t get_stat(cmdObj_t *cmd)
 //	strncpy_P(cmd->string_value,(PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN);
 }
 
-static stat_t get_macs(cmdObj_t *cmd)
-{
-	return(_get_msg_helper(cmd, (char_P)msg_macs, cm_get_machine_state()));
-}
-
-static stat_t get_cycs(cmdObj_t *cmd)
-{
-	return(_get_msg_helper(cmd, (char_P)msg_cycs, cm_get_cycle_state()));
-}
-
-static stat_t get_mots(cmdObj_t *cmd)
-{
-	return(_get_msg_helper(cmd, (char_P)msg_mots, cm_get_motion_state()));
-}
-
-static stat_t get_hold(cmdObj_t *cmd)
-{
-	return(_get_msg_helper(cmd, (char_P)msg_hold, cm_get_hold_state()));
-}
-
-static stat_t get_home(cmdObj_t *cmd)
-{
-	return(_get_msg_helper(cmd, (char_P)msg_home, cm_get_homing_state()));
-}
+static stat_t get_macs(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_macs, cm_get_machine_state()));}
+static stat_t get_cycs(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_cycs, cm_get_cycle_state()));}
+static stat_t get_mots(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_mots, cm_get_motion_state()));}
+static stat_t get_hold(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_hold, cm_get_hold_state()));}
+static stat_t get_home(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_home, cm_get_homing_state()));}
 
 static stat_t get_unit(cmdObj_t *cmd)
 {
-	return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_units_mode(MODEL)));
+//	return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_units_mode(MODEL)));
+	return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_units_mode(RUNTIME)));
 }
 
 static stat_t get_coor(cmdObj_t *cmd)
 {
-	return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_coord_system(MODEL)));
+//	return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_coord_system(MODEL)));
+	return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_coord_system(RUNTIME)));
 }
 
 static stat_t get_momo(cmdObj_t *cmd)
@@ -1178,27 +1160,30 @@ static stat_t get_momo(cmdObj_t *cmd)
 
 static stat_t get_plan(cmdObj_t *cmd)
 {
-	return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_select_plane(MODEL)));
+//	return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_select_plane(MODEL)));
+	return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_select_plane(RUNTIME)));
 }
 
 static stat_t get_path(cmdObj_t *cmd)
 {
-	return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_path_control(MODEL)));
+//	return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_path_control(MODEL)));
+	return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_path_control(RUNTIME)));
 }
 
 static stat_t get_dist(cmdObj_t *cmd)
 {
-	return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_distance_mode(MODEL)));
+//	return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_distance_mode(MODEL)));
+	return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_distance_mode(RUNTIME)));
 }
 
 static stat_t get_frmo(cmdObj_t *cmd)
 {
-	return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_inverse_feed_rate_mode(MODEL)));
+//	return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_inverse_feed_rate_mode(MODEL)));
+	return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_inverse_feed_rate_mode(RUNTIME)));
 }
 
 static stat_t get_line(cmdObj_t *cmd)
 {
-//	cmd->value = (float)mp_get_runtime_linenum();
 	cmd->value = (float)cm_get_linenum(RUNTIME);
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
@@ -1206,8 +1191,12 @@ static stat_t get_line(cmdObj_t *cmd)
 
 static stat_t get_vel(cmdObj_t *cmd) 
 {
-	cmd->value = mp_get_runtime_velocity();
-	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
+	if (cm_get_motion_state() == MOTION_STOP) {
+		cmd->value = 0;
+	} else {
+		cmd->value = mp_get_runtime_velocity();
+		if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
+	}
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 //	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
 	cmd->objtype = TYPE_FLOAT;
@@ -1234,7 +1223,11 @@ static stat_t get_mpos(cmdObj_t *cmd)
 
 static stat_t get_ofs(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_work_offset(RUNTIME, _get_pos_axis(cmd->index));
+	if (cm_get_motion_state() == MOTION_STOP) {
+		cmd->value = cm_get_work_offset(MODEL, _get_pos_axis(cmd->index));
+	} else {
+		cmd->value = cm_get_work_offset(RUNTIME, _get_pos_axis(cmd->index));
+	}
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 //	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
 	cmd->objtype = TYPE_FLOAT;
