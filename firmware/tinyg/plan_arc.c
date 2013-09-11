@@ -208,7 +208,7 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 
 	// execute the move
 	status = _compute_center_arc();
-	cm_set_model_position(status);		// set endpoint position if the move was successful
+	cm_conditional_set_model_position(status);	// set endpoint position if the move was successful
 	return (status);
 }
 

@@ -476,20 +476,18 @@ void cm_set_spindle_mode(GCodeState_t *gm, uint8_t spindle_mode);
 void cm_set_spindle_speed_parameter(GCodeState_t *gm, float speed);
 void cm_set_tool_number(GCodeState_t *gm, uint8_t tool);
 
-float cm_get_coord_offset(uint8_t coord_system, uint8_t axis);
-
 float cm_get_active_coord_offset(uint8_t axis);
 float cm_get_work_offset(GCodeState_t *gm, uint8_t axis);
 void cm_set_work_offsets(GCodeState_t *gm);
-void cm_set_move_times(GCodeState_t *gm);
 float cm_get_absolute_position(GCodeState_t *gm, uint8_t axis);
 float cm_get_work_position(GCodeState_t *gm, uint8_t axis);
+void cm_set_move_times(GCodeState_t *gm);
 
 void cm_set_model_arc_offset(float i, float j, float k);
 void cm_set_model_arc_radius(float r);
-void cm_set_model_target(float target[], float flag[]);
-void cm_set_model_position(stat_t status);
 void cm_set_model_linenum(uint32_t linenum);
+void cm_set_model_target(float target[], float flag[]);
+void cm_conditional_set_model_position(stat_t status);
 
 /*--- canonical machining functions ---*/
 

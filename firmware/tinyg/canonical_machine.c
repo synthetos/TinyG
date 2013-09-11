@@ -188,7 +188,7 @@ void cm_set_spindle_speed_parameter(GCodeState_t *gm, float speed) { gm->spindle
 void cm_set_tool_number(GCodeState_t *gm, uint8_t tool) { gm->tool = tool;}
 
 /*
- * Coordinate System / Offset functions
+ * Notes on Coordinate System and Offset functions
  *
  * All positional information in the canonical machine is kept as absolute coords and in 
  *	canonical units (mm). The offsets are only used to translate in and out of canonical form 
@@ -247,13 +247,13 @@ void cm_set_work_offsets(GCodeState_t *gm)
 /*
  * cm_get_absolute_position() - get position of axis in absolute coordinates
  *
- * NOTE: machine position is always returned in mm mode. No units conversion is performed
- * NOTE: only MODEL and RUNTIME are supported (no PLANNER or bf's)
+ * NOTE: Machine position is always returned in mm mode. No units conversion is performed
+ * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
 float cm_get_absolute_position(GCodeState_t *gm, uint8_t axis) 
 {
 	if (gm == MODEL) return (gmx.position[axis]);
-	return (mp_get_runtime_machine_position(axis));
+	return (mp_get_runtime_absolute_position(axis));
 }
 
 /*
@@ -261,8 +261,10 @@ float cm_get_absolute_position(GCodeState_t *gm, uint8_t axis)
  *
  *	... that means in prevailing units (mm/inch) and with all offsets applied
  *
- * Note: This function only works after the gm struct as had the work_offsets setup by 
+ * NOTE: This function only works after the gm struct as had the work_offsets setup by 
  *		 calling cm_get_model_coord_offset_vector() first.
+ *
+ * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
 
 float cm_get_work_position(GCodeState_t *gm, uint8_t axis) 
@@ -274,12 +276,12 @@ float cm_get_work_position(GCodeState_t *gm, uint8_t axis)
 	} else {
 		position = mp_get_runtime_work_position(axis);
 	}
-	if (gm->units_mode == INCHES) position /= MM_PER_INCH;
+	if (gm->units_mode == INCHES) { position /= MM_PER_INCH; }
 	return (position);
 }
 
 /*
- * Model initializers - these inhale gn values into the gm struct
+ * Arc initializers - these inhale gn values into the gmx struct
  *
  *	Input coordinates are in native block formats (gn form);
  *	i.e. they are not unit adjusted or otherwise pre-processed.
@@ -288,7 +290,6 @@ float cm_get_work_position(GCodeState_t *gm, uint8_t axis)
  *
  * cm_set_model_arc_offset()  - set all IJK offsets
  * cm_set_model_radius()	  - set radius value
- * cm_set_model_linenum() 	  - set line number in the model
  */
 
 void cm_set_model_arc_offset(float i, float j, float k)
@@ -303,6 +304,9 @@ void cm_set_model_arc_radius(float r)
 	gmx.arc_radius = _to_millimeters(r);
 }
 
+/*
+ * cm_set_model_linenum() 	  - set line number in the model
+ */
 
 void cm_set_model_linenum(uint32_t linenum)
 {
@@ -381,7 +385,7 @@ static float _calc_ABC(uint8_t axis, float target[], float flag[])
 }
 */
 /* 
- * cm_set_model_position() - set endpoint position; uses internal canonical coordinates only
+ * cm_conditional_set_model_position() - set endpoint position; uses internal canonical coordinates only
  *
  * 	This routine sets the endpoint position in the gccode model if the move was
  *	successfully completed (no errors). Leaving the endpoint position alone for 
@@ -393,7 +397,7 @@ static float _calc_ABC(uint8_t axis, float target[], float flag[])
  *	position is still close to the starting point. 
  */
 
-void cm_set_model_position(stat_t status) 
+void cm_conditional_set_model_position(stat_t status) 
 {
 	if (status == STAT_OK) copy_axis_vector(gmx.position, gm.target);
 }
@@ -815,11 +819,11 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 //	ritorno(_test_soft_limits());
 
-	cm_set_work_offsets(&gm);				// capture the fully resolved offsets to the state
-	cm_set_move_times(&gm);					// set move time and minimum time in the state
-	cm_cycle_start();						// required for homing & other cycles
-	stat_t status = mp_aline(&gm);			// run the move
-	cm_set_model_position(status);			// update position if the move was successful
+	cm_set_work_offsets(&gm);					// capture the fully resolved offsets to the state
+	cm_set_move_times(&gm);						// set move time and minimum time in the state
+	cm_cycle_start();							// required for homing & other cycles
+	stat_t status = mp_aline(&gm);				// run the move
+	cm_conditional_set_model_position(status);	// update position if the move was successful
 	return (status);
 }
 
@@ -940,11 +944,11 @@ stat_t cm_straight_feed(float target[], float flags[])
 	cm_set_model_target(target, flags);
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 
-	cm_set_work_offsets(&gm);							// capture the fully resolved offsets to the state
-	cm_set_move_times(&gm);								// set move time and minimum time in the state
-	cm_cycle_start();									// required for homing & other cycles
-	stat_t status = mp_aline(&gm);						// run the move
-	cm_set_model_position(status);						// update position if the move was successful
+	cm_set_work_offsets(&gm);					// capture the fully resolved offsets to the state
+	cm_set_move_times(&gm);						// set move time and minimum time in the state
+	cm_cycle_start();							// required for homing & other cycles
+	stat_t status = mp_aline(&gm);				// run the move
+	cm_conditional_set_model_position(status);	// update position if the move was successful
 	return (status);
 }
 
@@ -1203,9 +1207,12 @@ stat_t cm_queue_flush()
 	xio_reset_usb_rx_buffers();		// flush serial queues
 	mp_flush_planner();				// flush planner queue
 
+	// Note: The following uses low-level mp calls for absolute position. 
+	//		 It could also use cm_get_absolute_position(RUNTIME, axis);
+
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		mp_set_planner_position(axis, mp_get_runtime_machine_position(axis)); // set mm from mr
-		gmx.position[axis] = mp_get_runtime_machine_position(axis);
+		mp_set_planner_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
+		gmx.position[axis] = mp_get_runtime_absolute_position(axis);
 		gm.target[axis] = gmx.position[axis];
 	}
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
@@ -1278,7 +1285,6 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_flood_coolant_control(false);			// M9
 		cm_set_inverse_feed_rate_mode(false);
 	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1, but we cancel motion mode. Safer.
-//		cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);	
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);	
 	}
 

@@ -269,7 +269,7 @@ mpBuf_t * mp_get_last_buffer(void);
 // plan_line.c functions
 float mp_get_runtime_velocity(void);
 float mp_get_runtime_work_position(uint8_t axis);
-float mp_get_runtime_machine_position(uint8_t axis);
+float mp_get_runtime_absolute_position(uint8_t axis);
 void mp_set_runtime_work_offset(float offset[]); 
 void mp_zero_segment_velocity(void);
 uint8_t mp_get_runtime_busy(void);

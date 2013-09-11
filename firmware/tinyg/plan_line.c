@@ -68,7 +68,7 @@ static void _init_forward_diffs(float t0, float t2);
  */
 
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
-float mp_get_runtime_machine_position(uint8_t axis) { return (mr.position[axis]);}
+float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]);}
 float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
 void mp_set_runtime_work_offset(float offset[]) { copy_axis_vector(mr.gm.work_offset, offset);}
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
