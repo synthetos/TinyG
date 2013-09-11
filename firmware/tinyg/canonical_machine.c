@@ -190,29 +190,40 @@ void cm_set_spindle_speed_parameter(GCodeState_t *gm, float speed) { gm->spindle
 void cm_set_tool_number(GCodeState_t *gm, uint8_t tool) { gm->tool = tool;}
 
 /*
- * cm_get_model_coord_offset() - return the currently active coordinate offset for an axis
+ * Coordinate System / Offset functions
  *
- *	This function is typicaly used to evaluate and set offsets, as opposed to cm_get_work_offset()
+ * All positional information in the canonical machine is kept as absolute coords and in 
+ *	canonical units (mm). The offsets are only used to translate in and out of canonical form 
+ *	during interpretation and response.
+ *
+ * Managing the coordinate systems & offsets is somewhat complicated. The following affect offsets:
+ *	- coordinate system selected. 1-9 correspond to G54-G59
+ *	- absolute override: forces current move to be interpreted in machine coordinates: G53 (system 0)
+ *	- G92 offsets are added "on top of" the coord system offsets -- if origin_offset_enable == true
+ *	- G28 and G30 moves; these are run in absolute coordinates
+ *
+ * The offsets themselves are considered static, are kept in cfg, and are supposed to be persistent.
+ *
+ * To reduce complexity and data load the following is done:
+ *	- Full data for coordinates/offsets is only accessible by the canonical machine, not the downstream
+ *	- A fully resolved set of coord and G92 offsets, with per-move exceptions can be captured as "work_offsets"
+ *	- The core gcode context (gm) only knows about the active coord system and the work offsets
+ */
+
+/*
+ * cm_get_active_coord_offset() - return the currently active coordinate offset for an axis
+ *
+ *	Takes G5x, G92 and absolute override into account to return the active offset for this move
+ *
+ *	This function is typically used to evaluate and set offsets, as opposed to cm_get_work_offset()
  *	which merely returns what's in the work_offset[] array.
  */
-/*
-float cm_get_coord_offset(uint8_t coord_system, uint8_t axis)
-{
-	if (gm.absolute_override == true) return (0);	// no work offset if in abs override mode
 
-	float offset = cfg.offset[coord_system][axis];
-	// it's actually 1, and not 'true'
-	if (gmx.origin_offset_enable == 1) offset += gmx.origin_offset[axis]; // includes G5x and G92 compoenents
-	return (offset); 
-}
-*/
-float cm_get_model_coord_offset(uint8_t axis)
+float cm_get_active_coord_offset(uint8_t axis)
 {
-	if (gm.absolute_override == true) return (0);	// no work offset if in abs override mode
-
+	if (gm.absolute_override == true) return (0);		// no offset if in absolute override mode
 	float offset = cfg.offset[gm.coord_system][axis];
-	// it's actually 1, and not 'true'
-	if (gmx.origin_offset_enable == 1) offset += gmx.origin_offset[axis]; // includes G5x and G92 compoenents
+	if (gmx.origin_offset_enable == true) offset += gmx.origin_offset[axis]; // includes G5x and G92 compoenents
 	return (offset); 
 }
 
@@ -231,7 +242,7 @@ float cm_get_work_offset(GCodeState_t *gm, uint8_t axis)
 void cm_set_work_offsets(GCodeState_t *gm)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		gm->work_offset[axis] = cm_get_model_coord_offset(axis);
+		gm->work_offset[axis] = cm_get_active_coord_offset(axis);
 	}
 }
 
@@ -244,32 +255,15 @@ void cm_set_move_times(GCodeState_t *gm)
 }
 
 /*
- * cm_get_machine_position()
+ * cm_get_absolute_position() - get position of axis in absolute coordinates
  *
  * NOTE: machine position is always returned in mm mode. No units conversion is performed
+ * NOTE: only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
-float cm_get_machine_position(GCodeState_t *gm, uint8_t axis) 
+float cm_get_absolute_position(GCodeState_t *gm, uint8_t axis) 
 {
-	if (gm == MODEL) {
-		return (gmx.position[axis]);
-	}
+	if (gm == MODEL) return (gmx.position[axis]);
 	return (mp_get_runtime_machine_position(axis));
-
-//	deprecated behavior - left in for reference
-//	if (gm.units_mode == INCHES) {
-//		return (mp_get_runtime_machine_position(axis) / MM_PER_INCH);
-//	} else {
-//		return (mp_get_runtime_machine_position(axis));
-//	}
-}
-
-/*
- * cm_get_model_machine_position_vector() - get machine position in canonical units (mm)
- */
-float *cm_get_model_machine_position_vector(float position[])
-{
-	copy_axis_vector(position, gmx.position);	
-	return (position);
 }
 
 /*
@@ -286,7 +280,7 @@ float cm_get_work_position(GCodeState_t *gm, uint8_t axis)
 	float position;
 
 	if (gm == MODEL) {
-		position = gmx.position[axis] - cm_get_model_coord_offset(axis);
+		position = gmx.position[axis] - cm_get_active_coord_offset(axis);
 	} else {
 		position = mp_get_runtime_work_position(axis);
 	}
@@ -346,62 +340,43 @@ void cm_set_model_linenum(uint32_t linenum)
  *	Target coordinates are provided in target[]
  *	Axes that need processing are signaled in flag[]
  */
-static float _calc_ABC(uint8_t i, float target[], float flag[]);
 
 void cm_set_model_target(float target[], float flag[])
 { 
 	uint8_t axis;
-//	float tmp = 0;
 
 	// process XYZABC for lower modes
 	for (axis=AXIS_X; axis<=AXIS_Z; axis++) {
 		if ((fp_FALSE(flag[axis])) || (cfg.a[axis].axis_mode == AXIS_DISABLED)) {
-			continue;
+			continue; 							// skip axis if not flagged for update or it's disabled
 		} else if ((cfg.a[axis].axis_mode == AXIS_STANDARD) || (cfg.a[axis].axis_mode == AXIS_INHIBITED)) {
-			gm.target[axis] = _to_millimeters(target[axis]) + cm_get_model_coord_offset(axis);
-//			gm.target[axis] += _to_millimeters(target[axis]);
-//			if (gm.distance_mode != ABSOLUTE_MODE) gm.target[axis] += cm_get_model_coord_offset(axis);
-/*
-			if (gm.distance_mode == ABSOLUTE_MODE) {
-				gm.target[axis] = cm_get_model_coord_offset(axis) + _to_millimeters(target[axis]);
-				} else {
-				gm.target[axis] += _to_millimeters(target[axis]);
-			}
-*/
+			gm.target[axis] = _to_millimeters(target[axis]) + cm_get_active_coord_offset(axis);
 		}
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
 	for (axis=AXIS_A; axis<=AXIS_C; axis++) {
-		// skip axis if not flagged for update or its disabled
 		if ((fp_FALSE(flag[axis])) || (cfg.a[axis].axis_mode == AXIS_DISABLED)) {
-			continue;
+			continue; 							// skip axis if not flagged for update or it's disabled
 		} else {
-//			tmp = _calc_ABC(axis, target, flag);		
 			if ((cfg.a[axis].axis_mode == AXIS_STANDARD) || (cfg.a[axis].axis_mode == AXIS_INHIBITED)) {
 				gm.target[axis] = target[axis];	// no mm conversion - it's in degrees
 
-				} else if ((cfg.a[axis].axis_mode == AXIS_RADIUS) && (fp_TRUE(flag[axis]))) {
+			} else if ((cfg.a[axis].axis_mode == AXIS_RADIUS) && (fp_TRUE(flag[axis]))) {
 				gm.target[axis] = _to_millimeters(target[axis]) * 360 / (2 * M_PI * cfg.a[axis].radius);
 			}
 		}
-		gm.target[axis] += cm_get_model_coord_offset(axis);
-//		gm.target[axis] = tmp + cm_get_model_coord_offset(axis);
-//		gm.target[axis] = tmp;
-//		if (gm.distance_mode != ABSOLUTE_MODE) gm.target[axis] += cm_get_model_coord_offset(axis);
-/*		
-		if (gm.distance_mode == ABSOLUTE_MODE) {
-			gm.target[axis] = tmp + cm_get_model_coord_offset(axis); // sacidu93's fix to Issue #22
-		} else {
-			gm.target[axis] += tmp;
-		}
-*/
+		gm.target[axis] += cm_get_active_coord_offset(axis);
 	}
 }
 
+/*
 // ESTEE: fix to workaround a gcc compiler bug wherein it runs out of spill registers
 // we moved this block into its own function so that we get a fresh stack push
 // ALDEN: This shows up in avr-gcc 4.7.0 and avr-libc 1.8.0
-/*
+// see build 391 or earlier for an example of how to incorporate this helper function
+
+//static float _calc_ABC(uint8_t i, float target[], float flag[]);		// move this line to above cm_set_model_target()
+
 static float _calc_ABC(uint8_t axis, float target[], float flag[])
 {
 	float tmp = 0;

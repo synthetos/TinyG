@@ -478,12 +478,11 @@ void cm_set_tool_number(GCodeState_t *gm, uint8_t tool);
 
 float cm_get_coord_offset(uint8_t coord_system, uint8_t axis);
 
-float cm_get_model_coord_offset(uint8_t axis);
+float cm_get_active_coord_offset(uint8_t axis);
 float cm_get_work_offset(GCodeState_t *gm, uint8_t axis);
 void cm_set_work_offsets(GCodeState_t *gm);
 void cm_set_move_times(GCodeState_t *gm);
-float cm_get_machine_position(GCodeState_t *gm, uint8_t axis);
-float *cm_get_model_machine_position_vector(float vector[]);
+float cm_get_absolute_position(GCodeState_t *gm, uint8_t axis);
 float cm_get_work_position(GCodeState_t *gm, uint8_t axis);
 
 void cm_set_model_arc_offset(float i, float j, float k);

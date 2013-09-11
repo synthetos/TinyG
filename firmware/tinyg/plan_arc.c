@@ -51,7 +51,7 @@ static float _get_arc_time (const float linear_travel, const float angular_trave
 static float _get_theta(const float x, const float y);
 
 /*****************************************************************************
- * ar_arc() - setup an arc move for runtime
+ * cm_arc() - setup an arc move for runtime
  *
  *	Generates an arc by queueing line segments to the move buffer.
  *	The arc is approximated by generating a large number of tiny, linear
@@ -60,7 +60,7 @@ static float _get_theta(const float x, const float y);
  *
  *  Parts of this routine were originally sourced from the grbl project.
  */
-stat_t ar_arc(const GCodeState_t *gm, 		// gcode model state
+stat_t cm_arc(const GCodeState_t *gm, 		// gcode model state
 			  const float i,
 			  const float j,
 			  const float k,
@@ -82,7 +82,7 @@ stat_t ar_arc(const GCodeState_t *gm, 		// gcode model state
 
 	// load the arc controller singleton
 	memcpy(&ar.gm, gm, sizeof(GCodeState_t));		// get the entire GCode context - some will be overwritten to run segments
-	cm_get_model_machine_position_vector(ar.position);	// set initial arc position
+	copy_axis_vector(ar.position, gmx.position);	// set initial arc position from gcode model
 
 	ar.endpoint[axis_1] = gm->target[0];			// save the arc endpoint
 	ar.endpoint[axis_2] = gm->target[1];
@@ -118,7 +118,7 @@ stat_t ar_arc(const GCodeState_t *gm, 		// gcode model state
 }
 
 /*
- * ar_arc_callback() - generate an arc
+ * cm_arc_callback() - generate an arc
  *
  *	ar_arc_callback() is structured as a continuation called by mp_move_dispatcher.
  *	Each time it's called it queues as many arc segments (lines) as it can 
@@ -127,7 +127,7 @@ stat_t ar_arc(const GCodeState_t *gm, 		// gcode model state
  *  Parts of this routine were originally sourced from the grbl project.
  */
 
-stat_t ar_arc_callback() 
+stat_t cm_arc_callback() 
 {
 	if (ar.run_state == MOVE_STATE_OFF) { return (STAT_NOOP);}
 	if (mp_get_planner_buffers_available() == 0) { return (STAT_EAGAIN);}
@@ -149,12 +149,12 @@ stat_t ar_arc_callback()
 }
 
 /*
- * ar_abort_arc() - stop arc movement without maintaining position
+ * cm_abort_arc() - stop arc movement without maintaining position
  *
  *	OK to call if no arc is running
  */
 
-void ar_abort_arc() 
+void cm_abort_arc() 
 {
 	ar.run_state = MOVE_STATE_OFF;
 }
@@ -270,12 +270,11 @@ static stat_t _compute_center_arc()
 	set_vector(gm.target[gmx.plane_axis_0], gm.target[gmx.plane_axis_1], gm.target[gmx.plane_axis_2],
 			   gm.target[AXIS_A], gm.target[AXIS_B], gm.target[AXIS_C]);
 
-	return(ar_arc(&gm,
-				  gmx.arc_offset[gmx.plane_axis_0],
-				  gmx.arc_offset[gmx.plane_axis_1],
-				  gmx.arc_offset[gmx.plane_axis_2],
-				  theta_start, radius_tmp, angular_travel, linear_travel, 
-				  gmx.plane_axis_0, gmx.plane_axis_1, gmx.plane_axis_2));
+	return(cm_arc(&gm, gmx.arc_offset[gmx.plane_axis_0],
+					   gmx.arc_offset[gmx.plane_axis_1],
+					   gmx.arc_offset[gmx.plane_axis_2],
+					   theta_start, radius_tmp, angular_travel, linear_travel, 
+					   gmx.plane_axis_0, gmx.plane_axis_1, gmx.plane_axis_2));
 }
 
 /* 
