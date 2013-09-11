@@ -37,8 +37,9 @@ extern "C"{
 
 /* Defines */
 
-#define MODEL 	(GCodeState_t *)&gm
-#define RUNTIME (GCodeState_t *)&mr.gm
+#define MODEL 	(GCodeState_t *)&gm			// absolute from canonical machine gm model
+#define PLANNER (GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
+#define RUNTIME (GCodeState_t *)&mr.gm		// absolute fomr runtime mm struct
 
 /*****************************************************************************
  * CANONICAL MACHINE STRUCTURES
@@ -458,30 +459,30 @@ uint8_t cm_get_motion_state(void);
 uint8_t cm_get_hold_state(void);
 uint8_t cm_get_homing_state(void);
 
-uint32_t cm_get_linenum(GCodeState_t *gm);
-uint8_t cm_get_motion_mode(GCodeState_t *gm);
-uint8_t cm_get_coord_system(GCodeState_t *gm);
-uint8_t cm_get_units_mode(GCodeState_t *gm);
-uint8_t cm_get_select_plane(GCodeState_t *gm);
-uint8_t cm_get_path_control(GCodeState_t *gm);
-uint8_t cm_get_distance_mode(GCodeState_t *gm);
-uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gm);
-uint8_t cm_get_spindle_mode(GCodeState_t *gm);
+uint32_t cm_get_linenum(GCodeState_t *gcode_state);
+uint8_t cm_get_motion_mode(GCodeState_t *gcode_state);
+uint8_t cm_get_coord_system(GCodeState_t *gcode_state);
+uint8_t cm_get_units_mode(GCodeState_t *gcode_state);
+uint8_t cm_get_select_plane(GCodeState_t *gcode_state);
+uint8_t cm_get_path_control(GCodeState_t *gcode_state);
+uint8_t cm_get_distance_mode(GCodeState_t *gcode_state);
+uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gcode_state);
+uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state);
 uint8_t	cm_get_block_delete_switch(void);
 uint8_t cm_get_runtime_busy(void);
 
-void cm_set_motion_mode(GCodeState_t *gm, uint8_t motion_mode);
-void cm_set_absolute_override(GCodeState_t *gm, uint8_t absolute_override);
-void cm_set_spindle_mode(GCodeState_t *gm, uint8_t spindle_mode);
-void cm_set_spindle_speed_parameter(GCodeState_t *gm, float speed);
-void cm_set_tool_number(GCodeState_t *gm, uint8_t tool);
+void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode);
+void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode);
+void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed);
+void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool);
+void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override);
 
 float cm_get_active_coord_offset(uint8_t axis);
-float cm_get_work_offset(GCodeState_t *gm, uint8_t axis);
-void cm_set_work_offsets(GCodeState_t *gm);
-float cm_get_absolute_position(GCodeState_t *gm, uint8_t axis);
-float cm_get_work_position(GCodeState_t *gm, uint8_t axis);
-void cm_set_move_times(GCodeState_t *gm);
+float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis);
+void cm_set_work_offsets(GCodeState_t *gcode_state);
+float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis);
+float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
+void cm_set_move_times(GCodeState_t *gcode_state);
 
 void cm_set_model_arc_offset(float i, float j, float k);
 void cm_set_model_arc_radius(float r);

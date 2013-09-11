@@ -169,23 +169,28 @@ uint8_t cm_get_homing_state() { return cm.homing_state;}
  * Model State Getters and Setters
  */
 
-uint32_t cm_get_linenum(GCodeState_t *gm) { return gm->linenum;}
-uint8_t cm_get_motion_mode(GCodeState_t *gm) { return gm->motion_mode;}
-uint8_t cm_get_coord_system(GCodeState_t *gm) { return gm->coord_system;}
-uint8_t cm_get_units_mode(GCodeState_t *gm) { return gm->units_mode;}
-uint8_t cm_get_select_plane(GCodeState_t *gm) { return gm->select_plane;}
-uint8_t cm_get_path_control(GCodeState_t *gm) { return gm->path_control;}
-uint8_t cm_get_distance_mode(GCodeState_t *gm) { return gm->distance_mode;}
-uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gm) { return gm->inverse_feed_rate_mode;}
-uint8_t cm_get_spindle_mode(GCodeState_t *gm) { return gm->spindle_mode;} 
+uint32_t cm_get_linenum(GCodeState_t *gcode_state) { return gcode_state->linenum;}
+uint8_t cm_get_motion_mode(GCodeState_t *gcode_state) { return gcode_state->motion_mode;}
+uint8_t cm_get_coord_system(GCodeState_t *gcode_state) { return gcode_state->coord_system;}
+uint8_t cm_get_units_mode(GCodeState_t *gcode_state) { return gcode_state->units_mode;}
+uint8_t cm_get_select_plane(GCodeState_t *gcode_state) { return gcode_state->select_plane;}
+uint8_t cm_get_path_control(GCodeState_t *gcode_state) { return gcode_state->path_control;}
+uint8_t cm_get_distance_mode(GCodeState_t *gcode_state) { return gcode_state->distance_mode;}
+uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gcode_state) { return gcode_state->inverse_feed_rate_mode;}
+uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spindle_mode;} 
 uint8_t	cm_get_block_delete_switch() { return gmx.block_delete_switch;}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
 
-void cm_set_motion_mode(GCodeState_t *gm, uint8_t motion_mode) { gm->motion_mode = motion_mode;}
-void cm_set_absolute_override(GCodeState_t *gm, uint8_t absolute_override) { gm->absolute_override = absolute_override;}
-void cm_set_spindle_mode(GCodeState_t *gm, uint8_t spindle_mode) { gm->spindle_mode = spindle_mode;} 
-void cm_set_spindle_speed_parameter(GCodeState_t *gm, float speed) { gm->spindle_speed = speed;}
-void cm_set_tool_number(GCodeState_t *gm, uint8_t tool) { gm->tool = tool;}
+void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode) { gcode_state->motion_mode = motion_mode;}
+void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode) { gcode_state->spindle_mode = spindle_mode;} 
+void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed) { gcode_state->spindle_speed = speed;}
+void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool) { gcode_state->tool = tool;}
+
+void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override) 
+{
+	gcode_state->absolute_override = absolute_override;
+	cm_set_work_offsets(MODEL);	// must reset offsets if you change absolute override	
+}
 
 /*
  * Notes on Coordinate System and Offset functions
@@ -226,21 +231,21 @@ float cm_get_active_coord_offset(uint8_t axis)
 }
 
 /*
- * cm_get_work_offset() - return a coord offset from the gm
+ * cm_get_work_offset() - return a coord offset from the gcode_state
  */
 
-float cm_get_work_offset(GCodeState_t *gm, uint8_t axis) 
+float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis) 
 {
-	return (gm->work_offset[axis]);
+	return (gcode_state->work_offset[axis]);
 }
 
 /*
- * cm_set_work_offsets() - capture coord offsets from the model into absolute values in the gm
+ * cm_set_work_offsets() - capture coord offsets from the model into absolute values in the gcode_state
  */
-void cm_set_work_offsets(GCodeState_t *gm)
+void cm_set_work_offsets(GCodeState_t *gcode_state)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		gm->work_offset[axis] = cm_get_active_coord_offset(axis);
+		gcode_state->work_offset[axis] = cm_get_active_coord_offset(axis);
 	}
 }
 
@@ -250,9 +255,9 @@ void cm_set_work_offsets(GCodeState_t *gm)
  * NOTE: Machine position is always returned in mm mode. No units conversion is performed
  * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
-float cm_get_absolute_position(GCodeState_t *gm, uint8_t axis) 
+float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis) 
 {
-	if (gm == MODEL) return (gmx.position[axis]);
+	if (gcode_state == MODEL) return (gmx.position[axis]);
 	return (mp_get_runtime_absolute_position(axis));
 }
 
@@ -261,22 +266,22 @@ float cm_get_absolute_position(GCodeState_t *gm, uint8_t axis)
  *
  *	... that means in prevailing units (mm/inch) and with all offsets applied
  *
- * NOTE: This function only works after the gm struct as had the work_offsets setup by 
+ * NOTE: This function only works after the gcode_state struct as had the work_offsets setup by 
  *		 calling cm_get_model_coord_offset_vector() first.
  *
  * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
 
-float cm_get_work_position(GCodeState_t *gm, uint8_t axis) 
+float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis) 
 {
 	float position;
 
-	if (gm == MODEL) {
+	if (gcode_state == MODEL) {
 		position = gmx.position[axis] - cm_get_active_coord_offset(axis);
 	} else {
 		position = mp_get_runtime_work_position(axis);
 	}
-	if (gm->units_mode == INCHES) { position /= MM_PER_INCH; }
+	if (gcode_state->units_mode == INCHES) { position /= MM_PER_INCH; }
 	return (position);
 }
 
@@ -403,7 +408,7 @@ void cm_conditional_set_model_position(stat_t status)
 }
 
 /*
- * cm_set_move_times() - capture optimal and minimum move times into the gm
+ * cm_set_move_times() - capture optimal and minimum move times into the gcode_state
  * _get_move_times() - get minimum and optimal move times
  *
  *	The minimum time is the fastest the move can be performed given the velocity 
@@ -467,14 +472,14 @@ void cm_conditional_set_model_position(stat_t status)
 
 #define JENNY 8675309
 
-void cm_set_move_times(GCodeState_t *target_gm)
+void cm_set_move_times(GCodeState_t *gcode_state)
 {
 	float inv_time=0;					// inverse time if doing a feed in G93 mode
 	float xyz_time=0;					// coordinated move linear part at req feed rate
 	float abc_time=0;					// coordinated move rotary part at req feed rate
 	float max_time=0;					// time required for the rate-limiting axis
 	float tmp_time=0;					// used in computation
-	target_gm->minimum_time = JENNY; 	// arbitrarily large number
+	gcode_state->minimum_time = JENNY; 	// arbitrarily large number
 
 	// NOTE: In the below code all references to 'gm.' read from the canonical machine gm, 
 	//		 not the target gcode model, which is referenced as target_gm->  In most cases 
@@ -502,9 +507,9 @@ void cm_set_move_times(GCodeState_t *target_gm)
 			tmp_time = fabs(gm.target[axis] - gmx.position[axis]) / cfg.a[axis].velocity_max;
 		}
 		max_time = max(max_time, tmp_time);
-		target_gm->minimum_time = min(target_gm->minimum_time, tmp_time);
+		gcode_state->minimum_time = min(gcode_state->minimum_time, tmp_time);
 	}
-	target_gm->move_time = max4(inv_time, max_time, xyz_time, abc_time);
+	gcode_state->move_time = max4(inv_time, max_time, xyz_time, abc_time);
 }
 
 /* 
@@ -521,8 +526,6 @@ stat_t _test_soft_limits()
 	}
 	return (STAT_OK);
 }
-
- 
 
 /*************************************************************************
  *
@@ -772,7 +775,6 @@ stat_t cm_set_origin_offsets(float offset[], float flag[])
 									 cfg.offset[gm.coord_system][axis] - _to_millimeters(offset[axis]);
 		}
 	}
-
 	// now pass the offset to the callback - setting the coordinate system also applies the offsets
 	float value[AXES] = { (float)gm.coord_system,0,0,0,0,0 }; // pass coordinate system in value[0] element
 	mp_queue_command(_exec_offset, value, value);				  // second vector is not used
@@ -984,6 +986,7 @@ stat_t cm_select_tool(uint8_t tool)
 	mp_queue_command(_exec_select_tool, value, value);
 	return (STAT_OK);
 }
+
 static void _exec_select_tool(float *value, float *flag)
 {
 	gm.tool = (uint8_t)value[0];
@@ -1027,10 +1030,10 @@ static void _exec_flood_coolant_control(float *value, float *flag)
 	gm.flood_coolant = (uint8_t)value[0];
 	if (gm.flood_coolant == true) {
 		gpio_set_bit_on(FLOOD_COOLANT_BIT);
-//		coolant_enable_pin.set();
+//+++++	coolant_enable_pin.set();
 	} else {
 		gpio_set_bit_off(FLOOD_COOLANT_BIT);
-//		coolant_enable_pin.clear();
+//+++++	coolant_enable_pin.clear();
 		float val2[AXES] = { 0,0,0,0,0,0 };
 		_exec_mist_coolant_control(val2, val2);		// M9 special function
 	}
@@ -1217,12 +1220,6 @@ stat_t cm_queue_flush()
 	}
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
 	_exec_program_finalize(value, value);			// finalize now, not later
-
-// DEPRECATED
-//	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
-//	cm.motion_state = MOTION_STOP;
-////	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report
-//	rpt_request_queue_report();
 	return (STAT_OK);
 }
 
