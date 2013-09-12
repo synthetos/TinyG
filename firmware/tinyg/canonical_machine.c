@@ -344,84 +344,47 @@ static float _calc_ABC(uint8_t i, float target[], float flag[]);		// move this l
 
 void cm_set_model_target(float target[], float flag[])
 {
-/*
 	uint8_t axis;
+	float tmp = 0;
 
 	// process XYZABC for lower modes
 	for (axis=AXIS_X; axis<=AXIS_Z; axis++) {
 		if ((fp_FALSE(flag[axis])) || (cfg.a[axis].axis_mode == AXIS_DISABLED)) {
-			continue; 							// skip axis if not flagged for update or it's disabled
+			continue;		// skip axis if not flagged for update or its disabled
 		} else if ((cfg.a[axis].axis_mode == AXIS_STANDARD) || (cfg.a[axis].axis_mode == AXIS_INHIBITED)) {
-			gm.target[axis] = _to_millimeters(target[axis]) + cm_get_active_coord_offset(axis);
+			if (gm.distance_mode == ABSOLUTE_MODE) {
+				gm.target[axis] = cm_get_active_coord_offset(axis) + _to_millimeters(target[axis]);
+			} else {
+				gm.target[axis] += _to_millimeters(target[axis]);
+			}
 		}
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
 	for (axis=AXIS_A; axis<=AXIS_C; axis++) {
 		if ((fp_FALSE(flag[axis])) || (cfg.a[axis].axis_mode == AXIS_DISABLED)) {
-			continue; 							// skip axis if not flagged for update or it's disabled
+			continue;		// skip axis if not flagged for update or its disabled
 		} else {
-			if ((cfg.a[axis].axis_mode == AXIS_STANDARD) || (cfg.a[axis].axis_mode == AXIS_INHIBITED)) {
-				gm.target[axis] = target[axis];	// no mm conversion - it's in degrees
-
-			} else if ((cfg.a[axis].axis_mode == AXIS_RADIUS) && (fp_TRUE(flag[axis]))) {
-				gm.target[axis] = _to_millimeters(target[axis]) * 360 / (2 * M_PI * cfg.a[axis].radius);
-			}
+			tmp = _calc_ABC(axis, target, flag);
 		}
-		gm.target[axis] += cm_get_active_coord_offset(axis);
-	}
-*/
-
-	uint8_t i;
-	float tmp = 0;
-
-	// process XYZABC for lower modes
-	for (i=AXIS_X; i<=AXIS_Z; i++) {
-		if ((fp_FALSE(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
-			continue;
-		} else if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
-			if (gm.distance_mode == ABSOLUTE_MODE) {
-				gm.target[i] = cm_get_active_coord_offset(i) + _to_millimeters(target[i]);
-			} else {
-				gm.target[i] += _to_millimeters(target[i]);
-			}
-		}
-	}
-	// FYI: The ABC loop below relies on the XYZ loop having been run first
-	for (i=AXIS_A; i<=AXIS_C; i++) {
-		// skip axis if not flagged for update or its disabled
-		if ((fp_FALSE(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
-			continue;
-		} else tmp = _calc_ABC(i, target, flag);		
-		
 		if (gm.distance_mode == ABSOLUTE_MODE) {
-			gm.target[i] = tmp + cm_get_active_coord_offset(i); // sacidu93's fix to Issue #22
+			gm.target[axis] = tmp + cm_get_active_coord_offset(axis); // sacidu93's fix to Issue #22
 		} else {
-			gm.target[i] += tmp;
+			gm.target[axis] += tmp;
 		}
 	}
-
-
 }
-
 
 // ESTEE: fix to workaround a gcc compiler bug wherein it runs out of spill registers
 // we moved this block into its own function so that we get a fresh stack push
 // ALDEN: This shows up in avr-gcc 4.7.0 and avr-libc 1.8.0
 // see build 391 or earlier for an example of how to incorporate this helper function
 
-//static float _calc_ABC(uint8_t i, float target[], float flag[]);		// move this line to above cm_set_model_target()
-
 static float _calc_ABC(uint8_t axis, float target[], float flag[])
 {
-	float tmp = 0;
-	
 	if ((cfg.a[axis].axis_mode == AXIS_STANDARD) || (cfg.a[axis].axis_mode == AXIS_INHIBITED)) {
-		tmp = target[axis];	// no mm conversion - it's in degrees
-
-	} else if ((cfg.a[axis].axis_mode == AXIS_RADIUS) && (fp_TRUE(flag[axis]))) {
-		tmp = _to_millimeters(target[axis]) * 360 / (2 * M_PI * cfg.a[axis].radius);
+		return(target[axis]);	// no mm conversion - it's in degrees
 	}
-	return tmp;
+	return(_to_millimeters(target[axis]) * 360 / (2 * M_PI * cfg.a[axis].radius));
 }
 
 /* 
