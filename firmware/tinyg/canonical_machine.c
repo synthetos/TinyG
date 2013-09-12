@@ -340,8 +340,11 @@ void cm_set_model_linenum(uint32_t linenum)
  *	Axes that need processing are signaled in flag[]
  */
 
+static float _calc_ABC(uint8_t i, float target[], float flag[]);		// move this line to above cm_set_model_target()
+
 void cm_set_model_target(float target[], float flag[])
-{ 
+{
+/*
 	uint8_t axis;
 
 	// process XYZABC for lower modes
@@ -366,9 +369,41 @@ void cm_set_model_target(float target[], float flag[])
 		}
 		gm.target[axis] += cm_get_active_coord_offset(axis);
 	}
+*/
+
+	uint8_t i;
+	float tmp = 0;
+
+	// process XYZABC for lower modes
+	for (i=AXIS_X; i<=AXIS_Z; i++) {
+		if ((fp_FALSE(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
+			continue;
+		} else if ((cfg.a[i].axis_mode == AXIS_STANDARD) || (cfg.a[i].axis_mode == AXIS_INHIBITED)) {
+			if (gm.distance_mode == ABSOLUTE_MODE) {
+				gm.target[i] = cm_get_active_coord_offset(i) + _to_millimeters(target[i]);
+			} else {
+				gm.target[i] += _to_millimeters(target[i]);
+			}
+		}
+	}
+	// FYI: The ABC loop below relies on the XYZ loop having been run first
+	for (i=AXIS_A; i<=AXIS_C; i++) {
+		// skip axis if not flagged for update or its disabled
+		if ((fp_FALSE(flag[i])) || (cfg.a[i].axis_mode == AXIS_DISABLED)) {
+			continue;
+		} else tmp = _calc_ABC(i, target, flag);		
+		
+		if (gm.distance_mode == ABSOLUTE_MODE) {
+			gm.target[i] = tmp + cm_get_active_coord_offset(i); // sacidu93's fix to Issue #22
+		} else {
+			gm.target[i] += tmp;
+		}
+	}
+
+
 }
 
-/*
+
 // ESTEE: fix to workaround a gcc compiler bug wherein it runs out of spill registers
 // we moved this block into its own function so that we get a fresh stack push
 // ALDEN: This shows up in avr-gcc 4.7.0 and avr-libc 1.8.0
@@ -388,7 +423,7 @@ static float _calc_ABC(uint8_t axis, float target[], float flag[])
 	}
 	return tmp;
 }
-*/
+
 /* 
  * cm_conditional_set_model_position() - set endpoint position; uses internal canonical coordinates only
  *
