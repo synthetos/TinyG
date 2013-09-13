@@ -10,7 +10,7 @@
  *		 to be changed are in tinyg.h
  */
 
-//#define __TEST
+#define __DEBUG
 
 /***********************************************************************/
 /**** Otherlab OtherMill profile ***************************************/
@@ -29,17 +29,17 @@
 // Note: there are some commented test values below
 
 #undef  SR_DEFAULTS
-#ifdef __TEST
-#define SR_DEFAULTS 			"mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
-#else
+#ifndef __DEBUG
 #define SR_DEFAULTS 			"stat"
+#else
+#define SR_DEFAULTS 			"mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
 #endif
 
 #undef	SWITCH_TYPE
-#ifdef __TEST
-#define SWITCH_TYPE 			SW_TYPE_NORMALLY_OPEN
-#else
+#ifndef __DEBUG
 #define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED
+#else
+#define SWITCH_TYPE 			SW_TYPE_NORMALLY_OPEN
 #endif
 
 #undef	COMM_MODE
@@ -61,7 +61,9 @@
 #define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON
 
 // *** motor settings ***
-			
+
+#ifndef __DEBUG
+
 #define M4_MOTOR_MAP 			AXIS_X				// 1ma
 #define M4_STEP_ANGLE 			1.8					// 1sa
 #define M4_TRAVEL_PER_REV 		5.08				// 1tr
@@ -90,6 +92,37 @@
 #define M1_POLARITY 			1			
 #define M1_POWER_MODE 			1					
 
+#else 
+
+#define M1_MOTOR_MAP 			AXIS_X				// 1ma
+#define M1_STEP_ANGLE 			1.8					// 1sa
+#define M1_TRAVEL_PER_REV 		5.08				// 1tr
+#define M1_MICROSTEPS 			8					// 1mi		1,2,4,8
+#define M1_POLARITY 			1					// 1po		0=normal, 1=reversed
+#define M1_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
+
+#define M2_MOTOR_MAP 			AXIS_Y
+#define M2_STEP_ANGLE 			1.8
+#define M2_TRAVEL_PER_REV 		5.08
+#define M2_MICROSTEPS 			8
+#define M2_POLARITY 			0
+#define M2_POWER_MODE 			0					
+
+#define M3_MOTOR_MAP 			AXIS_Z
+#define M3_STEP_ANGLE 			15
+#define M3_TRAVEL_PER_REV 		1.27
+#define M3_MICROSTEPS 			8
+#define M3_POLARITY 			1
+#define M3_POWER_MODE 			0					
+
+#define M4_MOTOR_MAP 			AXIS_A
+#define M4_STEP_ANGLE 			1.8
+#define M4_TRAVEL_PER_REV 		360					// degrees moved per motor rev
+#define M4_MICROSTEPS 			8
+#define M4_POLARITY 			1			
+#define M4_POWER_MODE 			1					
+
+#endif
 // *** axis settings ***
 
 #define X_AXIS_MODE 			AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values

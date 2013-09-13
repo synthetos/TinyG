@@ -296,7 +296,6 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 	int8_t initial_depth = cmd->depth;
 	int8_t prev_depth = 0;
 	uint8_t need_a_comma = false;
-	double tmp_value = 0;
 
 	*str++ = '{'; 								// write opening curly
 
@@ -306,30 +305,28 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 			need_a_comma = true;
 			str += sprintf((char *)str, "\"%s\":", cmd->token);
 
-			// check for illegal int and float values (saves ~200 bytes over multiple isnan and isinf calls)
-			if (cmd->objtype == TYPE_INTEGER || cmd->objtype == TYPE_FLOAT) {
-				if (isnan(tmp_value = (double)cmd->value) || isinf(tmp_value)) {
-					tmp_value = 0;
-				}
+			// check for illegal float values
+			if (cmd->objtype == TYPE_FLOAT || cmd->objtype == TYPE_FLOAT_UNITS) {
+				if (isnan((double)cmd->value) || isinf((double)cmd->value)) { cmd->value = 0;}
 			}
-
 			if (cmd->objtype == TYPE_FLOAT_UNITS)	{ 
 				if (cm_get_units_mode(MODEL) == INCHES) { cmd->value /= MM_PER_INCH;}
 				cmd->objtype = TYPE_FLOAT;
 			}
+
 			if		(cmd->objtype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "\"\"");} // Note that that "" is NOT null.
 			else if (cmd->objtype == TYPE_INTEGER)	{
-				str += (char_t)sprintf((char *)str, "%1.0f", tmp_value);
+				str += (char_t)sprintf((char *)str, "%1.0f", (double)cmd->value);
 			}
 			else if (cmd->objtype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*cmd->stringp);}
 			else if (cmd->objtype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*cmd->stringp);}
 			else if (cmd->objtype == TYPE_FLOAT) {
-				if 		(cmd->precision == 0) { str += (char_t)sprintf((char *)str, "%0.0f", tmp_value);}
-				else if (cmd->precision == 1) { str += (char_t)sprintf((char *)str, "%0.1f", tmp_value);}
-				else if (cmd->precision == 2) { str += (char_t)sprintf((char *)str, "%0.2f", tmp_value);}
-				else if (cmd->precision == 3) { str += (char_t)sprintf((char *)str, "%0.3f", tmp_value);}
-				else if (cmd->precision == 4) { str += (char_t)sprintf((char *)str, "%0.4f", tmp_value);}
-				else 						  { str += (char_t)sprintf((char *)str, "%f",    tmp_value);}
+				if 		(cmd->precision == 0) { str += (char_t)sprintf((char *)str, "%0.0f", (double)cmd->value);}
+				else if (cmd->precision == 1) { str += (char_t)sprintf((char *)str, "%0.1f", (double)cmd->value);}
+				else if (cmd->precision == 2) { str += (char_t)sprintf((char *)str, "%0.2f", (double)cmd->value);}
+				else if (cmd->precision == 3) { str += (char_t)sprintf((char *)str, "%0.3f", (double)cmd->value);}
+				else if (cmd->precision == 4) { str += (char_t)sprintf((char *)str, "%0.4f", (double)cmd->value);}
+				else 						  { str += (char_t)sprintf((char *)str, "%f",    (double)cmd->value);}
 			}
 			else if (cmd->objtype == TYPE_BOOL) {
 				if (fp_FALSE(cmd->value)) { str += sprintf((char *)str, "false");}

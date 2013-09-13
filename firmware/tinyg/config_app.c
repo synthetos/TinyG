@@ -893,6 +893,7 @@ static stat_t set_flu(cmdObj_t *cmd)
 	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT_UNITS;
+//	cmd->objtype = TYPE_FLOAT;
 	return(STAT_OK);
 }
 
@@ -902,7 +903,7 @@ static stat_t get_flu(cmdObj_t *cmd)
 	if (cm_get_units_mode(MODEL) == INCHES) {
 		cmd->value *= INCH_PER_MM;
 	}
-	//	cmd->objtype = TYPE_FLOAT_UNITS;	// ++++ UNTESTED
+//	cmd->objtype = TYPE_FLOAT_UNITS;	// ++++ UNTESTED
 	return (STAT_OK);
 }
 
