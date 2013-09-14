@@ -55,7 +55,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		392.42	// Fixed reporting error in JSON response causing FP value to be displayed as zero
+#define TINYG_FIRMWARE_BUILD   		392.43	// Added fix for RTS mode flow control startup in xio_usb.c
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
