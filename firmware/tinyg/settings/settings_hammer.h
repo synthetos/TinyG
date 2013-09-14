@@ -43,8 +43,11 @@
 #define INIT_MESSAGE "Initializing configs to HAMMER settings"
 
 #define VELOCITY_MAX			1000		// mm/min (converts to degrees / min)
-
 #define JERK_MAX 				100000000	// yes, that's "100,000,000" mm/(min^3)
+
+#define ROTARY_VELOCITY_MAX		28800
+#define ROTARY_JERK_MAX			1400000000	// 1.2b
+
 #define JUNCTION_DEVIATION		0.05		// default value, in mm
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
 
@@ -129,15 +132,10 @@
 
 						// A values are chosen to make the A motor react the same as X for testing
 #define A_AXIS_MODE 			AXIS_STANDARD
-//#define A_VELOCITY_MAX 			((VELOCITY_MAX/M4_TRAVEL_PER_REV)*360) // set to the same speed as X axis
-#define A_VELOCITY_MAX 			28800
-
-#define A_FEEDRATE_MAX 			A_VELOCITY_MAX
+#define A_VELOCITY_MAX 			ROTARY_VELOCITY_MAX
+#define A_FEEDRATE_MAX 			ROTARY_VELOCITY_MAX
 #define A_TRAVEL_MAX 			-1
-
-#define A_JERK_MAX 				200000000
-//#define A_JERK_MAX 				(JERK_MAX*(360/M4_TRAVEL_PER_REV))
-
+#define A_JERK_MAX 				ROTARY_JERK_MAX
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define A_RADIUS 				(M4_TRAVEL_PER_REV/(2*3.14159628)) 
 #define A_SWITCH_MODE_MIN 		SW_MODE_HOMING
@@ -148,23 +146,25 @@
 #define A_ZERO_BACKOFF 			2
 #define A_JERK_HOMING			A_JERK_MAX
 
+//#define A_VELOCITY_MAX 		((VELOCITY_MAX/M4_TRAVEL_PER_REV)*360) // set to the same speed as X axis
 //#define A_VELOCITY_MAX 		172800
+//#define A_JERK_MAX 			(JERK_MAX*(360/M4_TRAVEL_PER_REV))
 //#define A_JERK_MAX 			5760000000
 //#define A_RADIUS 				0.19894368
 
 #define B_AXIS_MODE 			AXIS_STANDARD
-#define B_VELOCITY_MAX 			((VELOCITY_MAX/M3_TRAVEL_PER_REV)*360)
-#define B_FEEDRATE_MAX 			B_VELOCITY_MAX
+#define B_VELOCITY_MAX 			ROTARY_VELOCITY_MAX
+#define B_FEEDRATE_MAX 			ROTARY_VELOCITY_MAX
 #define B_TRAVEL_MAX 			-1
-#define B_JERK_MAX 				(JERK_MAX*(360/M3_TRAVEL_PER_REV))
+#define B_JERK_MAX 				ROTARY_JERK_MAX
 #define B_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define B_RADIUS 				1
 
 #define C_AXIS_MODE 			AXIS_STANDARD
-#define C_VELOCITY_MAX 			((VELOCITY_MAX/M2_TRAVEL_PER_REV)*360)
-#define C_FEEDRATE_MAX 			C_VELOCITY_MAX
+#define C_VELOCITY_MAX 			ROTARY_VELOCITY_MAX
+#define C_FEEDRATE_MAX 			ROTARY_VELOCITY_MAX
 #define C_TRAVEL_MAX 			-1
-#define C_JERK_MAX 				(JERK_MAX*(360/M2_TRAVEL_PER_REV))
+#define C_JERK_MAX 				ROTARY_JERK_MAX
 #define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define C_RADIUS				1
 
