@@ -66,14 +66,22 @@
 
 #define M4_MOTOR_MAP 			AXIS_X				// 1ma
 #define M4_STEP_ANGLE 			1.8					// 1sa
+#ifndef __DEBUG
 #define M4_TRAVEL_PER_REV 		5.08				// 1tr
+#else
+#define M4_TRAVEL_PER_REV 		1.25				// 1tr
+#endif
 #define M4_MICROSTEPS 			8					// 1mi		1,2,4,8
 #define M4_POLARITY 			0					// 1po		0=normal, 1=reversed
 #define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
 
 #define M3_MOTOR_MAP 			AXIS_Y
 #define M3_STEP_ANGLE 			1.8
-#define M3_TRAVEL_PER_REV 		5.08
+#ifndef __DEBUG
+#define M4_TRAVEL_PER_REV 		5.08				// 1tr
+#else
+#define M4_TRAVEL_PER_REV 		1.25				// 1tr
+#endif
 #define M3_MICROSTEPS 			8
 #define M3_POLARITY 			1
 #define M3_POWER_MODE 			0					

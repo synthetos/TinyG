@@ -45,7 +45,7 @@
 // Machine configuration settings
 #define CHORDAL_TOLERANCE 			0.001			// chord accuracy for arc drawing
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
-#define MOTOR_IDLE_TIMEOUT			2				// seconds to maintain motor at full powwer before idling
+#define MOTOR_IDLE_TIMEOUT			2				// seconds to maintain motor at full power before idling
 
 // Communications and reporting settings
 //#define COMM_MODE					TEXT_MODE		// one of: TEXT_MODE, JSON_MODE
@@ -87,11 +87,12 @@
 // machine default profiles - chose only one:
 
 //#include "settings/settings_default.h"				// Default settings for release
+#include "settings/settings_hammer.h"				// Hammer torque demo
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_mcgyver.h"				// debugging
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othercutter.h"			// Otherfab OtherCutter
-#include "settings/settings_othermill.h"				// Otherfab OtherMill
+//#include "settings/settings_othermill.h"				// Otherfab OtherMill
 //#include "settings/settings_pocketcnc_linear.h"		// PocketCNC 5 axis mill - linear settings
 //#include "settings/settings_pocketcnc_rotary.h"		// PocketCNC 5 axis mill - rotary settings
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
