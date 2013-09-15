@@ -177,6 +177,7 @@ uint8_t cm_get_select_plane(GCodeState_t *gcode_state) { return gcode_state->sel
 uint8_t cm_get_path_control(GCodeState_t *gcode_state) { return gcode_state->path_control;}
 uint8_t cm_get_distance_mode(GCodeState_t *gcode_state) { return gcode_state->distance_mode;}
 uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gcode_state) { return gcode_state->inverse_feed_rate_mode;}
+uint8_t cm_get_tool(GCodeState_t *gcode_state) { return gcode_state->tool;}
 uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spindle_mode;} 
 uint8_t	cm_get_block_delete_switch() { return gmx.block_delete_switch;}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
@@ -317,7 +318,7 @@ void cm_set_model_linenum(uint32_t linenum)
 {
 	gm.linenum = linenum;		// you must first set the model line number,
 	cmd_add_object("n");		// then add the line number to the cmd list
-//++++ The above is not the same as the G2 version	
+//++++ The above is not the same as the ARM version	
 }
 
 /* 
@@ -340,7 +341,17 @@ void cm_set_model_linenum(uint32_t linenum)
  *	Axes that need processing are signaled in flag[]
  */
 
-static float _calc_ABC(uint8_t i, float target[], float flag[]);		// move this line to above cm_set_model_target()
+// ESTEE: _calc_ABC is a fix to workaround a gcc compiler bug wherein it runs out of spill 
+//        registers we moved this block into its own function so that we get a fresh stack push
+// ALDEN: This shows up in avr-gcc 4.7.0 and avr-libc 1.8.0
+
+static float _calc_ABC(uint8_t axis, float target[], float flag[])
+{
+	if ((cfg.a[axis].axis_mode == AXIS_STANDARD) || (cfg.a[axis].axis_mode == AXIS_INHIBITED)) {
+		return(target[axis]);	// no mm conversion - it's in degrees
+	}
+	return(_to_millimeters(target[axis]) * 360 / (2 * M_PI * cfg.a[axis].radius));
+}
 
 void cm_set_model_target(float target[], float flag[])
 {
@@ -372,19 +383,6 @@ void cm_set_model_target(float target[], float flag[])
 			gm.target[axis] += tmp;
 		}
 	}
-}
-
-// ESTEE: fix to workaround a gcc compiler bug wherein it runs out of spill registers
-// we moved this block into its own function so that we get a fresh stack push
-// ALDEN: This shows up in avr-gcc 4.7.0 and avr-libc 1.8.0
-// see build 391 or earlier for an example of how to incorporate this helper function
-
-static float _calc_ABC(uint8_t axis, float target[], float flag[])
-{
-	if ((cfg.a[axis].axis_mode == AXIS_STANDARD) || (cfg.a[axis].axis_mode == AXIS_INHIBITED)) {
-		return(target[axis]);	// no mm conversion - it's in degrees
-	}
-	return(_to_millimeters(target[axis]) * 360 / (2 * M_PI * cfg.a[axis].radius));
 }
 
 /* 
@@ -960,32 +958,32 @@ stat_t cm_straight_feed(float target[], float flags[])
 /*
  * Tool Functions (4.3.8)
  *
- * cm_change_tool() - M6 (This might become a complete tool change cycle)
  * cm_select_tool() - T parameter
+ * cm_change_tool() - M6 (This might become a complete tool change cycle)
  *
  * These functions are stubbed out for now and don't actually do anything
  */
 
-stat_t cm_change_tool(uint8_t tool)
+stat_t cm_select_tool(uint8_t tool_select)
 {
-	float value[AXES] = { (float)tool,0,0,0,0,0 };
-	mp_queue_command(_exec_change_tool, value, value);
-	return (STAT_OK);
-}
-
-static void _exec_change_tool(float *value, float *flag)
-{
-	gm.tool = (uint8_t)value[0];
-}
-
-stat_t cm_select_tool(uint8_t tool)
-{
-	float value[AXES] = { (float)tool,0,0,0,0,0 };
+	float value[AXES] = { (float)tool_select,0,0,0,0,0 };
 	mp_queue_command(_exec_select_tool, value, value);
 	return (STAT_OK);
 }
 
 static void _exec_select_tool(float *value, float *flag)
+{
+	gm.tool_select = (uint8_t)value[0];
+}
+
+stat_t cm_change_tool(uint8_t tool_change)
+{
+	float value[AXES] = { (float)gm.tool_select,0,0,0,0,0 };
+	mp_queue_command(_exec_change_tool, value, value);
+	return (STAT_OK);
+}
+
+static void _exec_change_tool(float *value, float *flag)
 {
 	gm.tool = (uint8_t)value[0];
 }

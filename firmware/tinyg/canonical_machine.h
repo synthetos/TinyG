@@ -114,8 +114,8 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint8_t absolute_override;			// G53 TRUE = move using machine coordinates - this block only (G53)
 	uint8_t path_control;				// G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
 	uint8_t distance_mode;				// G91   0=use absolute coords(G90), 1=incremental movement
-	uint8_t tool;						// T value
-	uint8_t change_tool;				// M6
+	uint8_t tool;						// M6 tool change - moves "tool_select" to "tool"
+	uint8_t tool_select;				// T value - T sets this value
 	uint8_t mist_coolant;				// TRUE = mist on (M7), FALSE = off (M9)
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
 	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
@@ -186,8 +186,9 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t path_control;				// G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
 	uint8_t distance_mode;				// G91   0=use absolute coords(G90), 1=incremental movement
 
-	uint8_t tool;						// T value
-	uint8_t change_tool;				// M6
+	uint8_t tool;						// Tool after T and M6 (tool_select and tool_change)
+	uint8_t tool_select;				// T value - T sets this value
+	uint8_t tool_change;				// M6 tool change flag - moves "tool_select" to "tool"
 	uint8_t mist_coolant;				// TRUE = mist on (M7), FALSE = off (M9)
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
 
@@ -467,6 +468,7 @@ uint8_t cm_get_select_plane(GCodeState_t *gcode_state);
 uint8_t cm_get_path_control(GCodeState_t *gcode_state);
 uint8_t cm_get_distance_mode(GCodeState_t *gcode_state);
 uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gcode_state);
+uint8_t cm_get_tool(GCodeState_t *gcode_state);
 uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state);
 uint8_t	cm_get_block_delete_switch(void);
 uint8_t cm_get_runtime_busy(void);
@@ -548,8 +550,8 @@ stat_t cm_traverse_override_factor(uint8_t flag);				// M50.3
 stat_t cm_spindle_override_enable(uint8_t flag); 				// M51
 stat_t cm_spindle_override_factor(uint8_t flag);				// M51.1
 
-stat_t cm_change_tool(uint8_t tool);							// M6, T
 stat_t cm_select_tool(uint8_t tool);							// T parameter
+stat_t cm_change_tool(uint8_t tool);							// M6
 
 // canonical machine commands not called from gcode dispatcher
 void cm_message(char *message);									// msg to console (e.g. Gcode comments)

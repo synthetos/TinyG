@@ -114,7 +114,7 @@ static stat_t get_mpos(cmdObj_t *cmd);		// get runtime machine position...
 static stat_t get_ofs(cmdObj_t *cmd);		// get runtime work offset...
 static void print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
 static void print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
-static void print_ss(cmdObj_t *cmd);		// print switch state
+//static void print_ss(cmdObj_t *cmd);		// print switch state
 static void print_coor(cmdObj_t *cmd);		// print coordinate offsets with linear units
 static void print_corr(cmdObj_t *cmd);		// print coordinate offsets with rotary units
 
@@ -132,6 +132,7 @@ static stat_t get_plan(cmdObj_t *cmd);		// get active plane...
 static stat_t get_path(cmdObj_t *cmd);		// get patch control mode...
 static stat_t get_dist(cmdObj_t *cmd);		// get distance mode...
 static stat_t get_frmo(cmdObj_t *cmd);		// get feedrate mode...
+static stat_t get_tool(cmdObj_t *cmd);		// get tool
 static stat_t get_vel(cmdObj_t *cmd);		// get runtime velocity...
 
 // motor and axis variables and functions
@@ -334,7 +335,8 @@ static const char_t PROGMEM fmt_plan[] = "Plane:               %s\n";
 static const char_t PROGMEM fmt_path[] = "Path Mode:           %s\n";
 static const char_t PROGMEM fmt_dist[] = "Distance mode:       %s\n";
 static const char_t PROGMEM fmt_frmo[] = "Feed rate mode:      %s\n";
-static const char_t PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
+static const char_t PROGMEM fmt_tool[] = "Tool number          %d\n";
+//static const char_t PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
 
 static const char_t PROGMEM fmt_pos[]  = "%c position:%15.3f%S\n";
 static const char_t PROGMEM fmt_mpos[] = "%c machine posn:%11.3f%S\n";
@@ -430,6 +432,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "",   "path",_f00, 0, fmt_path, print_str, get_path, set_nul,(float *)&cs.null, 0 },		// path control mode
 	{ "",   "dist",_f00, 0, fmt_dist, print_str, get_dist, set_nul,(float *)&cs.null, 0 },		// distance mode
 	{ "",   "frmo",_f00, 0, fmt_frmo, print_str, get_frmo, set_nul,(float *)&cs.null, 0 },		// feed rate mode
+	{ "",   "tool",_f00, 0, fmt_tool, print_int, get_tool, set_nul,(float *)&cs.null, 0 },		// active tool
 
 	{ "mpo","mpox",_f00, 3, fmt_mpos, print_mpos, get_mpos, set_nul,(float *)&cs.null, 0 },		// X machine position
 	{ "mpo","mpoy",_f00, 3, fmt_mpos, print_mpos, get_mpos, set_nul,(float *)&cs.null, 0 },		// Y machine position
@@ -710,6 +713,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys","net", _fip, 0, fmt_net,print_ui8, get_ui8, set_ui8, (float *)&cs.network_mode,				NETWORK_MODE },
 
 	// switch state readers
+/*
 	{ "ss","ss0",  _f00, 0, fmt_ss, print_ss, get_ui8, set_nul, (float *)&sw.state[0], 0 },
 	{ "ss","ss1",  _f00, 0, fmt_ss, print_ss, get_ui8, set_nul, (float *)&sw.state[1], 0 },
 	{ "ss","ss2",  _f00, 0, fmt_ss, print_ss, get_ui8, set_nul, (float *)&sw.state[2], 0 },
@@ -718,7 +722,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "ss","ss5",  _f00, 0, fmt_ss, print_ss, get_ui8, set_nul, (float *)&sw.state[5], 0 },
 	{ "ss","ss6",  _f00, 0, fmt_ss, print_ss, get_ui8, set_nul, (float *)&sw.state[6], 0 },
 	{ "ss","ss7",  _f00, 0, fmt_ss, print_ss, get_ui8, set_nul, (float *)&sw.state[7], 0 },
-
+*/
 	// NOTE: The ordering within the gcode defaults is important for token resolution
 	{ "sys","gpl", _f07, 0, fmt_gpl, print_ui8, get_ui8, set_012, (float *)&cfg.select_plane,		GCODE_DEFAULT_PLANE },
 	{ "sys","gun", _f07, 0, fmt_gun, print_ui8, get_ui8, set_01,  (float *)&cfg.units_mode,			GCODE_DEFAULT_UNITS },
@@ -1088,6 +1092,7 @@ static stat_t run_boot(cmdObj_t *cmd)
  * get_mots() - get raw motion state as value and string
  * get_hold() - get raw hold state as value and string
  * get_home() - get raw homing state as value and string
+ *
  * get_unit() - get units mode as integer and display string
  * get_coor() - get goodinate system
  * get_momo() - get runtime motion mode
@@ -1095,6 +1100,7 @@ static stat_t run_boot(cmdObj_t *cmd)
  * get_path() - get model gcode path control mode
  * get_dist() - get model gcode distance mode
  * get_frmo() - get model gcode feed rate mode
+ * get_tool() - get tool
  * get_feed() - get feed rate 
  * get_line() - get runtime line number for status reports
  * get_vel()  - get runtime velocity
@@ -1189,10 +1195,24 @@ static stat_t get_frmo(cmdObj_t *cmd)
 	return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_inverse_feed_rate_mode(RUNTIME)));
 }
 
+static stat_t get_tool(cmdObj_t *cmd)
+{
+	if (cm_get_motion_state() == MOTION_STOP) {
+		cmd->value = (float)cm_get_tool(MODEL);
+	} else {
+		cmd->value = (float)cm_get_tool(RUNTIME);
+	}
+	cmd->objtype = TYPE_INTEGER;
+	return (STAT_OK);
+}
 
 static stat_t get_line(cmdObj_t *cmd)
 {
-	cmd->value = (float)cm_get_linenum(RUNTIME);
+	if (cm_get_motion_state() == MOTION_STOP) {
+		cmd->value = (float)cm_get_linenum(MODEL);
+	} else {
+		cmd->value = (float)cm_get_linenum(RUNTIME);
+	}
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
@@ -1212,14 +1232,11 @@ static stat_t get_vel(cmdObj_t *cmd)
 
 static stat_t get_pos(cmdObj_t *cmd) 
 {
-//	cmd->value = cm_get_work_position(RUNTIME, _get_pos_axis(cmd->index));
-
 	if (cm_get_motion_state() == MOTION_STOP) { 
 		cmd->value = cm_get_work_position(MODEL, _get_pos_axis(cmd->index));
 	} else {
 		cmd->value = cm_get_work_position(RUNTIME, _get_pos_axis(cmd->index));
 	}
-
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1358,12 +1375,14 @@ static stat_t set_sw(cmdObj_t *cmd)			// switch setting
 	return (STAT_OK);
 }
 
+/*
 static void print_ss(cmdObj_t *cmd)			// print switch state
 {
 	cmd_get(cmd);
 	char_t format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, get_format(cmd->index, format), cmd->token, cmd->value);
 }
+*/
 
 static stat_t set_sa(cmdObj_t *cmd)			// motor step angle
 { 

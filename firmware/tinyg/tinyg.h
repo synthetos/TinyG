@@ -55,7 +55,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		392.47	// Removed option to igmore CR of LF line terminators on RX. Too easy to (apparently) brick the board.
+#define TINYG_FIRMWARE_BUILD   		392.48	// Added tool parameter (T), tool change (M6) and "tool" report - PRELIMINARY
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number

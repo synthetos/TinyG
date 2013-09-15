@@ -331,7 +331,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 					case 3: SET_MODAL (MODAL_GROUP_M7, spindle_mode, SPINDLE_CW);
 					case 4: SET_MODAL (MODAL_GROUP_M7, spindle_mode, SPINDLE_CCW);
 					case 5: SET_MODAL (MODAL_GROUP_M7, spindle_mode, SPINDLE_OFF);
-					case 6: SET_NON_MODAL (change_tool, true);
+					case 6: SET_NON_MODAL (tool_change, true);
 					case 7: SET_MODAL (MODAL_GROUP_M8, mist_coolant, true);
 					case 8: SET_MODAL (MODAL_GROUP_M8, flood_coolant, true);
 					case 9: SET_MODAL (MODAL_GROUP_M8, flood_coolant, false);
@@ -343,7 +343,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 				}
 				break;
 
-			case 'T': SET_NON_MODAL (tool, (uint8_t)trunc(value));
+			case 'T': SET_NON_MODAL (tool_select, (uint8_t)trunc(value));
 			case 'F': SET_NON_MODAL (feed_rate, value);
 			case 'P': SET_NON_MODAL (parameter, value);				// used for dwell time, G10 coord select
 			case 'S': SET_NON_MODAL (spindle_speed, value); 
@@ -421,8 +421,8 @@ static stat_t _execute_gcode_block()
 	EXEC_FUNC(cm_traverse_override_factor, traverse_override_factor);
 	EXEC_FUNC(cm_set_spindle_speed, spindle_speed);
 	EXEC_FUNC(cm_spindle_override_factor, spindle_override_factor);
-	EXEC_FUNC(cm_select_tool, tool);
-	EXEC_FUNC(cm_change_tool, tool);
+	EXEC_FUNC(cm_select_tool, tool_select);			// tool_select is where it's written
+	EXEC_FUNC(cm_change_tool, tool_change);
 	EXEC_FUNC(cm_spindle_control, spindle_mode); 	// spindle on or off
 	EXEC_FUNC(cm_mist_coolant_control, mist_coolant); 
 	EXEC_FUNC(cm_flood_coolant_control, flood_coolant);	// also disables mist coolant if OFF 
