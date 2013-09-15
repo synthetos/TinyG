@@ -282,9 +282,6 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
  *	  - If a JSON object is empty represent it as {}
  *	    --- OR ---
  *	  - If a JSON object is empty omit the object altogether (no curlies)
- *
- *	Note: TYPE_FLOAT_UNITS is used to convert a value back to inches mode for display
- *		  that was previously converted to MM mode for internal operations.
  */
 
 #define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns during footer checksum generation
@@ -306,14 +303,11 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 			str += sprintf((char *)str, "\"%s\":", cmd->token);
 
 			// check for illegal float values
-			if (cmd->objtype == TYPE_FLOAT || cmd->objtype == TYPE_FLOAT_UNITS) {
+			if (cmd->objtype == TYPE_FLOAT) {
 				if (isnan((double)cmd->value) || isinf((double)cmd->value)) { cmd->value = 0;}
 			}
-			if (cmd->objtype == TYPE_FLOAT_UNITS)	{ 
-				if (cm_get_units_mode(MODEL) == INCHES) { cmd->value /= MM_PER_INCH;}
-				cmd->objtype = TYPE_FLOAT;
-			}
 
+			// serialize output value
 			if		(cmd->objtype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "\"\"");} // Note that that "" is NOT null.
 			else if (cmd->objtype == TYPE_INTEGER)	{
 				str += (char_t)sprintf((char *)str, "%1.0f", (double)cmd->value);

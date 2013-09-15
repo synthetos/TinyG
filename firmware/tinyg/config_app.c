@@ -476,8 +476,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 
 	// Motor parameters
 	{ "1","1ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
-	{ "1","1sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt , set_sa, (float *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
-	{ "1","1tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu , set_tr, (float *)&cfg.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
+	{ "1","1sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
+	{ "1","1tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&cfg.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
 	{ "1","1mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&cfg.m[MOTOR_1].microsteps,	M1_MICROSTEPS },
 	{ "1","1po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_po, (float *)&cfg.m[MOTOR_1].polarity,	M1_POLARITY },
 	{ "1","1pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&cfg.m[MOTOR_1].power_mode,	M1_POWER_MODE },
@@ -889,21 +889,17 @@ static int8_t _get_pos_axis(const index_t i)
  */
 static stat_t set_flu(cmdObj_t *cmd)
 {
-	if (cm_get_units_mode(MODEL) == INCHES) { cmd->value *= MM_PER_INCH;}
+	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= MM_PER_INCH;
 	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-	cmd->objtype = TYPE_FLOAT_UNITS;
-//	cmd->objtype = TYPE_FLOAT;
+	cmd->objtype = TYPE_FLOAT;
 	return(STAT_OK);
 }
 
 static stat_t get_flu(cmdObj_t *cmd)
 {
 	get_flt(cmd);
-	if (cm_get_units_mode(MODEL) == INCHES) {
-		cmd->value *= INCH_PER_MM;
-	}
-//	cmd->objtype = TYPE_FLOAT_UNITS;	// ++++ UNTESTED
+	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
 	return (STAT_OK);
 }
 
@@ -1143,13 +1139,56 @@ static stat_t get_cycs(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_
 static stat_t get_mots(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_mots, cm_get_motion_state()));}
 static stat_t get_hold(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_hold, cm_get_hold_state()));}
 static stat_t get_home(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_home, cm_get_homing_state()));}
-static stat_t get_unit(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_units_mode(RUNTIME)));}
-static stat_t get_coor(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_coord_system(RUNTIME)));}
-static stat_t get_momo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_momo, cm_get_motion_mode(RUNTIME)));}
-static stat_t get_plan(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_select_plane(RUNTIME)));}
-static stat_t get_path(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_path_control(RUNTIME)));}
-static stat_t get_dist(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_distance_mode(RUNTIME)));}
-static stat_t get_frmo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_inverse_feed_rate_mode(RUNTIME)));}
+
+static stat_t get_unit(cmdObj_t *cmd) 
+{ 
+	if (cm_get_motion_state() == MOTION_STOP)
+	return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_units_mode(MODEL)));	// if
+	return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_units_mode(RUNTIME)));	// else
+}
+
+static stat_t get_coor(cmdObj_t *cmd) 
+{
+	if (cm_get_motion_state() == MOTION_STOP)
+	return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_coord_system(MODEL)));
+	return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_coord_system(RUNTIME)));
+}
+
+static stat_t get_momo(cmdObj_t *cmd) 
+{
+	if (cm_get_motion_state() == MOTION_STOP)
+	return(_get_msg_helper(cmd, (char_P)msg_momo, cm_get_motion_mode(MODEL)));
+	return(_get_msg_helper(cmd, (char_P)msg_momo, cm_get_motion_mode(RUNTIME)));
+}
+
+static stat_t get_plan(cmdObj_t *cmd)
+{
+	if (cm_get_motion_state() == MOTION_STOP)
+	return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_select_plane(MODEL)));
+	return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_select_plane(RUNTIME)));
+}
+
+static stat_t get_path(cmdObj_t *cmd)
+{
+	if (cm_get_motion_state() == MOTION_STOP)
+	return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_path_control(MODEL)));
+	return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_path_control(RUNTIME)));
+}
+
+static stat_t get_dist(cmdObj_t *cmd)
+{
+	if (cm_get_motion_state() == MOTION_STOP)
+	return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_distance_mode(MODEL)));
+	return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_distance_mode(RUNTIME)));
+}
+
+static stat_t get_frmo(cmdObj_t *cmd)
+{
+	if (cm_get_motion_state() == MOTION_STOP)
+	return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_inverse_feed_rate_mode(MODEL)));
+	return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_inverse_feed_rate_mode(RUNTIME)));
+}
+
 
 static stat_t get_line(cmdObj_t *cmd)
 {
@@ -1167,16 +1206,21 @@ static stat_t get_vel(cmdObj_t *cmd)
 		if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
 	}
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-//	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
 static stat_t get_pos(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_work_position(RUNTIME, _get_pos_axis(cmd->index));
+//	cmd->value = cm_get_work_position(RUNTIME, _get_pos_axis(cmd->index));
+
+	if (cm_get_motion_state() == MOTION_STOP) { 
+		cmd->value = cm_get_work_position(MODEL, _get_pos_axis(cmd->index));
+	} else {
+		cmd->value = cm_get_work_position(RUNTIME, _get_pos_axis(cmd->index));
+	}
+
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-//	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
@@ -1185,7 +1229,6 @@ static stat_t get_mpos(cmdObj_t *cmd)
 {
 	cmd->value = cm_get_absolute_position(RUNTIME, _get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-//	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
@@ -1198,7 +1241,6 @@ static stat_t get_ofs(cmdObj_t *cmd)
 		cmd->value = cm_get_work_offset(RUNTIME, _get_pos_axis(cmd->index));
 	}
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-//	cmd->objtype = TYPE_FLOAT_UNITS;	//++++ UNTESTED
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
@@ -1301,10 +1343,10 @@ stat_t get_jrk(cmdObj_t *cmd)
 
 stat_t set_jrk(cmdObj_t *cmd)
 {
-	if (cm_get_units_mode(MODEL) == INCHES) { cmd->value *= MM_PER_INCH;}
+	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= MM_PER_INCH;
 	*((float *)cfgArray[cmd->index].target) = (1000000 * cmd->value);
 	cmd->precision = cfgArray[cmd->index].precision;
-	cmd->objtype = TYPE_FLOAT_UNITS;
+	cmd->objtype = TYPE_FLOAT;
 	return(STAT_OK);
 }
 

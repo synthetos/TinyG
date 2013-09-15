@@ -204,9 +204,17 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 #define NVM_VALUE_LEN 4				// NVM value length (float, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
 
+/*
 #define IGNORE_OFF 0				// accept either CR or LF as termination on RX text line
 #define IGNORE_CR 1					// ignore CR on RX
 #define IGNORE_LF 2					// ignore LF on RX
+*/
+
+enum lineTermination {
+	IGNORE_OFF = 0,					// accept either CR or LF as termination on RX text line
+	IGNORE_CR,						// ignore CR on RX
+	IGNORE_LF						// ignore LF on RX
+};
 
 enum flowControl {
 	FLOW_CONTROL_OFF = 0,			// flow control disabled
@@ -220,7 +228,6 @@ enum objType {						// object / value typing for config and JSON
 	TYPE_BOOL,						// value is "true" (1) or "false"(0)
 	TYPE_INTEGER,					// value is a uint32_t
 	TYPE_FLOAT,						// value is a floating point number
-	TYPE_FLOAT_UNITS,				// value is a floating point number which may require units conversion
 	TYPE_STRING,					// value is in string field
 	TYPE_ARRAY,						// value is array element count, values are CSV ASCII in string field
 	TYPE_PARENT						// object is a parent to a sub-object

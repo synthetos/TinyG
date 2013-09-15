@@ -41,7 +41,7 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to Zen Toolworks 7x12 profile"
 
-#define JERK_MAX_LINEAR 		100000000	// yes, that's "100,000,000" mm/(min^3)
+#define JERK_MAX_LINEAR 		500000000	// yes, that's "100,000,000" mm/(min^3)
 #define JERK_MAX_ROTARY 		10000000000	// yes, that's "10 billion" mm/(min^3)
 #define JUNCTION_DEVIATION		0.05		// default value, in mm
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
@@ -63,8 +63,7 @@
 #define M1_STEP_ANGLE 			1.8			// 1sa
 #define M1_TRAVEL_PER_REV		1.25		// 1tr
 #define M1_MICROSTEPS			8			// 1mi		1,2,4,8
-//#define M1_POLARITY				0			// 1po		0=normal, 1=reversed
-#define M1_POLARITY				1			// 1po		0=normal, 1=reversed
+#define M1_POLARITY				1 // REVERSE// 1po		0=normal, 1=reverse
 #define M1_POWER_MODE			1			// 1pm		TRUE=low power idle enabled 
 
 #define M2_MOTOR_MAP	 		AXIS_Y
@@ -78,8 +77,7 @@
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		1.25
 #define M3_MICROSTEPS			8
-//#define M3_POLARITY				0
-#define M3_POLARITY				1
+#define M3_POLARITY				1 // REVERSE
 #define M3_POWER_MODE			1
 
 #define M4_MOTOR_MAP			AXIS_A
