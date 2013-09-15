@@ -101,7 +101,7 @@ static stat_t set_me(cmdObj_t *cmd);		// enable motors with power-mode set to 0 
 
 // communications settings
 
-static stat_t set_ic(cmdObj_t *cmd);		// ignore CR or LF on RX input
+//static stat_t set_ic(cmdObj_t *cmd);		// ignore CR or LF on RX input
 static stat_t set_ec(cmdObj_t *cmd);		// expand CRLF on TX outout
 static stat_t set_ee(cmdObj_t *cmd);		// enable character echo
 static stat_t set_ex(cmdObj_t *cmd);		// enable XON/XOFF and RTS/CTS flow control
@@ -296,12 +296,12 @@ static const char_t PROGMEM fmt_ms[] = "[ms]  min segment time%13.0f uSec\n";
 static const char_t PROGMEM fmt_st[] = "[st]  switch type%18d [0=NO,1=NC]\n";
 static const char_t PROGMEM fmt_si[] = "[si]  status interval%14.0f ms\n";
 
-static const char_t PROGMEM fmt_ic[] = "[ic]  ignore CR or LF on RX%8d [0=off,1=CR,2=LF]\n";
+//static const char_t PROGMEM fmt_ic[] = "[ic]  ignore CR or LF on RX%8d [0=off,1=CR,2=LF]\n";
 static const char_t PROGMEM fmt_ec[] = "[ec]  expand LF to CRLF on TX%6d [0=off,1=on]\n";
 static const char_t PROGMEM fmt_ee[] = "[ee]  enable echo%18d [0=off,1=on]\n";
 static const char_t PROGMEM fmt_ex[] = "[ex]  enable flow control%10d [0=off,1=XON/XOFF, 2=RTS/CTS]\n";
 
-static const char_t PROGMEM fmt_fs[] = "[fs]  footer style%17d [0=old,1]\n";
+static const char_t PROGMEM fmt_fs[] = "[fs]  footer style%17d [0=new,1=old]\n";
 static const char_t PROGMEM fmt_ej[] = "[ej]  enable json mode%13d [0=text,1=JSON]\n";
 static const char_t PROGMEM fmt_jv[] = "[jv]  json verbosity%15d [0=silent,1=footer,2=messages,3=configs,4=linenum,5=verbose]\n";
 static const char_t PROGMEM fmt_tv[] = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
@@ -701,7 +701,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys","sv",  _f07, 0, fmt_sv, print_ui8, get_ui8, set_012, (float *)&cfg.status_report_verbosity,	SR_VERBOSITY },
 	{ "sys","si",  _f07, 0, fmt_si, print_flt, get_int, set_si,  (float *)&cfg.status_report_interval,	STATUS_REPORT_INTERVAL_MS },
 
-	{ "sys","ic",  _f07, 0, fmt_ic, print_ui8, get_ui8, set_ic,  (float *)&cfg.ignore_crlf,				COM_IGNORE_CRLF },
+//	{ "sys","ic",  _f07, 0, fmt_ic, print_ui8, get_ui8, set_ic,  (float *)&cfg.ignore_crlf,				COM_IGNORE_CRLF },
 	{ "sys","ec",  _f07, 0, fmt_ec, print_ui8, get_ui8, set_ec,  (float *)&cfg.enable_cr,				COM_EXPAND_CR },
 	{ "sys","ee",  _f07, 0, fmt_ee, print_ui8, get_ui8, set_ee,  (float *)&cfg.enable_echo,				COM_ENABLE_ECHO },
 	{ "sys","ex",  _f07, 0, fmt_ex, print_ui8, get_ui8, set_ex,  (float *)&cfg.enable_flow_control,		COM_ENABLE_FLOW_CONTROL },
@@ -1456,7 +1456,7 @@ static stat_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
 	}
 	return (STAT_OK);
 }
-
+/* REMOVED - too easy to make the board appear to be bricked
 static stat_t set_ic(cmdObj_t *cmd) 				// ignore CR or LF on RX
 {
 	if (cmd->value > IGNORE_LF) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
@@ -1471,6 +1471,7 @@ static stat_t set_ic(cmdObj_t *cmd) 				// ignore CR or LF on RX
 	}
 	return (STAT_OK);
 }
+*/
 
 static stat_t set_ec(cmdObj_t *cmd) 				// expand CR to CRLF on TX
 {

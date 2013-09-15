@@ -205,17 +205,12 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
 
 /*
-#define IGNORE_OFF 0				// accept either CR or LF as termination on RX text line
-#define IGNORE_CR 1					// ignore CR on RX
-#define IGNORE_LF 2					// ignore LF on RX
-*/
-
-enum lineTermination {
+enum lineTermination {				// REMOVED. Too easy to make the board non-responsive (not a total brick, but close)
 	IGNORE_OFF = 0,					// accept either CR or LF as termination on RX text line
 	IGNORE_CR,						// ignore CR on RX
 	IGNORE_LF						// ignore LF on RX
 };
-
+*/
 enum flowControl {
 	FLOW_CONTROL_OFF = 0,			// flow control disabled
 	FLOW_CONTROL_XON,				// flow control uses XON/XOFF

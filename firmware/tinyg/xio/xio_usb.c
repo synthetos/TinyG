@@ -209,8 +209,8 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 	}
 
 	// filter out CRs and LFs if they are to be ignored
-	if ((c == CR) && (USB.flag_ignorecr)) return;
-	if ((c == LF) && (USB.flag_ignorelf)) return;
+//	if ((c == CR) && (USB.flag_ignorecr)) return;	// REMOVED IGNORE_CR and IGNORE LF handling
+//	if ((c == LF) && (USB.flag_ignorelf)) return;
 
 	// normal character path
 	advance_buffer(USBu.rx_buf_head, RX_BUFFER_SIZE);
