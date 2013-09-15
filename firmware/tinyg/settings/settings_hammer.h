@@ -42,8 +42,8 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to HAMMER settings"
 
-#define VELOCITY_MAX			1000		// mm/min (converts to degrees / min)
-#define JERK_MAX 				100000000	// yes, that's "100,000,000" mm/(min^3)
+#define VELOCITY_MAX			1000			// mm/min (converts to degrees / min)
+#define JERK_MAX 				40000000		// yes, that's "100,000,000" mm/(min^3)
 
 #define ROTARY_VELOCITY_MAX		28800
 #define ROTARY_JERK_MAX			1400000000	// 1.2b
@@ -60,21 +60,21 @@
 
 #define M1_MOTOR_MAP 			AXIS_X		// 1ma
 #define M1_STEP_ANGLE 			1.8			// 1sa
-#define M1_TRAVEL_PER_REV		1.25		// 1tr
+#define M1_TRAVEL_PER_REV		20			// 1tr
 #define M1_MICROSTEPS			8			// 1mi		1,2,4,8
 #define M1_POLARITY				0			// 1po		0=normal, 1=reversed
 #define M1_POWER_MODE			0			// 1pm		standard
 
-#define M2_MOTOR_MAP	 		AXIS_C
+#define M2_MOTOR_MAP	 		AXIS_Y
 #define M2_STEP_ANGLE			1.8
-#define M2_TRAVEL_PER_REV		360			// degrees
+#define M2_TRAVEL_PER_REV		20
 #define M2_MICROSTEPS			8
 #define M2_POLARITY				0
 #define M2_POWER_MODE			0
 
-#define M3_MOTOR_MAP			AXIS_B
+#define M3_MOTOR_MAP			AXIS_Z
 #define M3_STEP_ANGLE			1.8
-#define M3_TRAVEL_PER_REV		360			// degrees
+#define M3_TRAVEL_PER_REV		20
 #define M3_MICROSTEPS			8
 #define M3_POLARITY				0
 #define M3_POWER_MODE			0
@@ -99,7 +99,7 @@
 #define X_SEARCH_VELOCITY 		500					// xsv		move in negative direction
 #define X_LATCH_VELOCITY 		100					// xlv		mm/min
 #define X_LATCH_BACKOFF 		2					// xlb		mm
-#define X_ZERO_BACKOFF 			1					// xzb		mm
+#define X_ZERO_BACKOFF 			0.25					// xzb		mm
 #define X_JERK_HOMING			X_JERK_MAX			// xjh
 
 #define Y_AXIS_MODE 			AXIS_STANDARD
@@ -110,10 +110,11 @@
 #define Y_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN 		SW_MODE_HOMING
 #define Y_SWITCH_MODE_MAX 		SW_MODE_DISABLED
+//#define Y_SWITCH_MODE_MAX 		SW_MODE_LIMIT
 #define Y_SEARCH_VELOCITY 		500
 #define Y_LATCH_VELOCITY 		100
 #define Y_LATCH_BACKOFF 		2
-#define Y_ZERO_BACKOFF 			1
+#define Y_ZERO_BACKOFF 			0.25
 #define Y_JERK_HOMING			Y_JERK_MAX
 
 #define Z_AXIS_MODE 			AXIS_STANDARD
@@ -127,7 +128,7 @@
 #define Z_SEARCH_VELOCITY 		400
 #define Z_LATCH_VELOCITY 		100
 #define Z_LATCH_BACKOFF 		2
-#define Z_ZERO_BACKOFF 			1
+#define Z_ZERO_BACKOFF 			0.25
 #define Z_JERK_HOMING			Z_JERK_MAX
 
 						// A values are chosen to make the A motor react the same as X for testing
