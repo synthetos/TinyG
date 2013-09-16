@@ -1265,6 +1265,7 @@ static void _exec_program_finalize(float *value, float *flag)
 	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
 	cm.cycle_start_requested = false;				// cancel any pending cycle start request
 	mp_zero_segment_velocity();						// for reporting purposes
+	st_do_idle_timeout();
 
 	// execute program END resets
 	if (cm.machine_state == MACHINE_PROGRAM_END) {

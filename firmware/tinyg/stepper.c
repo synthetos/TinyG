@@ -241,7 +241,9 @@ void st_energize_motors()
 	PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 	PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 	PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-	st_do_motor_idle_timeout();
+//	st_run.motor_idle_systick = SysTickTimer_getValue() + (uint32_t)(1000 * 1000); // enable motors for 1000 seconds
+	st_run.motor_idle_systick = MAX_ULONG;
+//	st_do_motor_idle_timeout();
 }
 
 void st_deenergize_motors()
@@ -257,6 +259,11 @@ void st_idle_motors()
 	st_deenergize_motors();		// for now idle is the same as de-energized
 }
 
+void st_do_idle_timeout()
+{
+	st_run.motor_stop_flags = ALL_MOTORS_STOPPED; // return all STOPPED bits
+}
+
 /*
  * st_motor_power_callback() - callback to manage motor power sequencing
  */
@@ -265,7 +272,8 @@ stat_t st_motor_power_callback() 	// called by controller
 {
 	if (st_run.motor_stop_flags != 0) {
 		st_run.motor_stop_flags = 0;
-		st_do_motor_idle_timeout();
+		st_run.motor_idle_systick = SysTickTimer_getValue() + (uint32_t)(cfg.motor_idle_timeout * 1000);
+//		st_do_motor_idle_timeout();
 	}
 	if (SysTickTimer_getValue() < st_run.motor_idle_systick ) return (STAT_NOOP);
 	st_idle_motors();
@@ -311,7 +319,7 @@ ISR(TIMER_DDA_ISR_vect)
 	}
 	if (--st_run.dda_ticks_downcount == 0) {			// end move
  		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;			// disable DDA timer
-		st_run.motor_stop_flags = ALL_MOTORS_STOPPED;	// return all STOPPED bits
+//		st_run.motor_stop_flags = ALL_MOTORS_STOPPED;	// return all STOPPED bits
 		_load_move();									// load the next move
 	}
 }
@@ -383,8 +391,12 @@ static void _request_load_move()
 
 void _load_move()
 {
-	if (st_run.dda_ticks_downcount != 0) return;					// exit if it's still busy
-	if (st_prep.exec_state != PREP_BUFFER_OWNED_BY_LOADER) return;	// if there are no more moves
+	if (st_run.dda_ticks_downcount != 0) return;			// exit if it's still busy
+
+	if (st_prep.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {// if there are no moves to load
+//		st_run.motor_stop_flags = ALL_MOTORS_STOPPED;		// return all STOPPED bits
+		return;
+	}
 
 	// handle aline loads first (most common case)  NB: there are no more lines, only alines
 	if (st_prep.move_type == MOVE_TYPE_ALINE) {
@@ -450,6 +462,7 @@ void _load_move()
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 		}
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
+		st_energize_motors();								// power up motors and set initial timer
 
 	// handle dwells
 	} else if (st_prep.move_type == MOVE_TYPE_DWELL) {

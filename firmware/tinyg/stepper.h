@@ -180,6 +180,7 @@ void stepper_init(void);
 
 void st_set_motor_idle_timeout(float seconds);
 void st_do_motor_idle_timeout(void);
+void st_do_idle_timeout(void);
 
 void st_energize_motor(const uint8_t motor);
 void st_deenergize_motor(const uint8_t motor);
