@@ -321,7 +321,6 @@ ISR(TIMER_DDA_ISR_vect)
 	}
 	if (--st_run.dda_ticks_downcount == 0) {			// end move
  		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;			// disable DDA timer
-//		st_run.motor_stop_flags = ALL_MOTORS_STOPPED;	// return all STOPPED bits
 		_load_move();									// load the next move
 	}
 }
@@ -429,7 +428,7 @@ void _load_move()
 		} else {
 			if (cfg.m[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// energize motor
-				st_run.m[MOTOR_1].power_state = MOTOR_STOPPED;
+				st_run.m[MOTOR_1].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
 
@@ -448,7 +447,7 @@ void _load_move()
 		} else {
 			if (cfg.m[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-				st_run.m[MOTOR_2].power_state = MOTOR_STOPPED;
+				st_run.m[MOTOR_2].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
 
@@ -467,7 +466,7 @@ void _load_move()
 		} else {
 			if (cfg.m[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-				st_run.m[MOTOR_3].power_state = MOTOR_STOPPED;
+				st_run.m[MOTOR_3].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
 
@@ -486,7 +485,7 @@ void _load_move()
 		} else {
 			if (cfg.m[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-				st_run.m[MOTOR_4].power_state = MOTOR_STOPPED;
+				st_run.m[MOTOR_4].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
