@@ -466,7 +466,7 @@ stat_t cmd_persist_offsets(uint8_t flag)
 			for (uint8_t j=0; j<AXES; j++) {
 				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
 				cmd.index = cmd_get_index("", cmd.token);
-				cmd.value = cfg.offset[i][j];
+				cmd.value = cm_cfg.offset[i][j];
 				cmd_persist(&cmd);				// only writes changed values
 			}
 		}

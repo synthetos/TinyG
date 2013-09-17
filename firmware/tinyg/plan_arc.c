@@ -77,7 +77,7 @@ stat_t cm_arc(const GCodeState_t *gm, 		// gcode model state
 
 	// length is the total mm of travel of the helix (or just arc)
 	ar.length = hypot(angular_travel * radius, fabs(linear_travel));	
-	if (ar.length < cfg.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE_ERROR); // too short to draw
+	if (ar.length < cm_cfg.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE_ERROR); // too short to draw
 
 	// load the arc controller singleton
 	memcpy(&ar.gm, gm, sizeof(GCodeState_t));		// get the entire GCode context - some will be overwritten to run segments
@@ -96,8 +96,8 @@ stat_t cm_arc(const GCodeState_t *gm, 		// gcode model state
 	ar.linear_travel = linear_travel;
 	
 	// Find the minimum number of segments that meets these constraints...
-	float segments_required_for_chordal_accuracy = ar.length / sqrt(4*cfg.chordal_tolerance * (2 * radius - cfg.chordal_tolerance));
-	float segments_required_for_minimum_distance = ar.length / cfg.arc_segment_len;
+	float segments_required_for_chordal_accuracy = ar.length / sqrt(4*cm_cfg.chordal_tolerance * (2 * radius - cm_cfg.chordal_tolerance));
+	float segments_required_for_minimum_distance = ar.length / cm_cfg.arc_segment_len;
 	float segments_required_for_minimum_time = ar.arc_time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
 	ar.segments = floor(min3(segments_required_for_chordal_accuracy,
 							 segments_required_for_minimum_distance,
@@ -414,13 +414,13 @@ static float _get_arc_time (const float linear_travel, 		// in mm
 	} else {
 		move_time = sqrt(square(planar_travel) + square(linear_travel)) / gm.feed_rate;
 	}
-	if ((tmp = planar_travel/cfg.a[gmx.plane_axis_0].feedrate_max) > move_time) {
+	if ((tmp = planar_travel/cm_cfg.a[gmx.plane_axis_0].feedrate_max) > move_time) {
 		move_time = tmp;
 	}
-	if ((tmp = planar_travel/cfg.a[gmx.plane_axis_1].feedrate_max) > move_time) {
+	if ((tmp = planar_travel/cm_cfg.a[gmx.plane_axis_1].feedrate_max) > move_time) {
 		move_time = tmp;
 	}
-	if ((tmp = fabs(linear_travel/cfg.a[gmx.plane_axis_2].feedrate_max)) > move_time) {
+	if ((tmp = fabs(linear_travel/cm_cfg.a[gmx.plane_axis_2].feedrate_max)) > move_time) {
 		move_time = tmp;
 	}
 	return (move_time);

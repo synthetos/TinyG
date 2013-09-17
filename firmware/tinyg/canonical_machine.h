@@ -44,6 +44,46 @@ extern "C"{
 /*****************************************************************************
  * CANONICAL MACHINE STRUCTURES
  */
+
+typedef struct cmConfigAxis {
+	uint8_t axis_mode;				// see tgAxisMode in gcode.h
+	float feedrate_max;				// max velocity in mm/min or deg/min
+	float velocity_max;				// max velocity in mm/min or deg/min
+	float travel_max;				// work envelope w/warned or rejected blocks
+	float jerk_max;					// max jerk (Jm) in mm/min^3
+	float junction_dev;				// aka cornering delta
+	float radius;					// radius in mm for rotary axis modes
+	float search_velocity;			// homing search velocity
+	float latch_velocity;			// homing latch velocity
+	float latch_backoff;			// backoff from switches prior to homing latch movement
+	float zero_backoff;				// backoff from switches for machine zero
+	float jerk_homing;				// homing jerk (Jh) in mm/min^3
+} cfgAxis_t;
+
+typedef struct cmConfig {
+	// system group settings
+	float junction_acceleration;	// centripetal acceleration max for cornering
+	float chordal_tolerance;		// arc chordal accuracy setting in mm
+
+	// hidden system settings
+	float min_segment_len;			// line drawing resolution in mm
+	float arc_segment_len;			// arc drawing resolution in mm
+	float estd_segment_usec;		// approximate segment time in microseconds
+
+	// gcode power-on default settings - defaults are not the same as the gm state
+	uint8_t coord_system;			// G10 active coordinate system default
+	uint8_t select_plane;			// G17,G18,G19 reset default
+	uint8_t units_mode;				// G20,G21 reset default
+	uint8_t path_control;			// G61,G61.1,G64 reset default
+	uint8_t distance_mode;			// G90,G91 reset default
+
+	// coordinate systems and offsets
+	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
+
+	// settings for axes X,Y,Z,A B,C
+	cfgAxis_t a[AXES];
+} cmConfig_t;
+
 typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	magic_t magic_start;			// magic number to test memory integity	
 	uint8_t combined_state;			// combination of states for display purposes
@@ -209,6 +249,7 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 
 // Externs - See canonical_machine.c for allocation
 
+extern cmConfig_t 	 cm_cfg;	// canonical machine configuration values
 extern cmSingleton_t cm;		// canonical machine controller singleton
 extern GCodeState_t  gm;		// core gcode model state
 extern GCodeStateX_t gmx;		// extended gcode model state

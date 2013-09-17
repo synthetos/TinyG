@@ -260,10 +260,10 @@ static stat_t _homing_axis_start(int8_t axis)
 		}
 	}
 	// trap gross mis-configurations
-	if ((fp_ZERO(cfg.a[axis].search_velocity)) || (fp_ZERO(cfg.a[axis].latch_velocity))) {	
+	if ((fp_ZERO(cm_cfg.a[axis].search_velocity)) || (fp_ZERO(cm_cfg.a[axis].latch_velocity))) {	
 		return (_homing_error_exit(axis));
 	}
-	if ((cfg.a[axis].travel_max <= 0) || (cfg.a[axis].latch_backoff <= 0)) {
+	if ((cm_cfg.a[axis].travel_max <= 0) || (cm_cfg.a[axis].latch_backoff <= 0)) {
 		return (_homing_error_exit(axis));
 	}
 
@@ -275,24 +275,24 @@ static stat_t _homing_axis_start(int8_t axis)
 		return (_homing_error_exit(axis));					// axis cannot be homed
 	}
 	hm.axis = axis;											// persist the axis
-	hm.search_velocity = fabs(cfg.a[axis].search_velocity); // search velocity is always positive
-	hm.latch_velocity = fabs(cfg.a[axis].latch_velocity); 	// latch velocity is always positive
+	hm.search_velocity = fabs(cm_cfg.a[axis].search_velocity);// search velocity is always positive
+	hm.latch_velocity = fabs(cm_cfg.a[axis].latch_velocity);// latch velocity is always positive
 
 	// setup parameters homing to the minimum switch
 	if (hm.min_mode & SW_HOMING_BIT) {
 		hm.homing_switch = MIN_SWITCH(axis);				// the min is the homing switch
 		hm.limit_switch = MAX_SWITCH(axis);					// the max would be the limit switch
-		hm.search_travel = -cfg.a[axis].travel_max;			// search travels in negative direction
-		hm.latch_backoff = cfg.a[axis].latch_backoff;		// latch travels in positive direction
-		hm.zero_backoff = cfg.a[axis].zero_backoff;
+		hm.search_travel = -cm_cfg.a[axis].travel_max;		// search travels in negative direction
+		hm.latch_backoff = cm_cfg.a[axis].latch_backoff;	// latch travels in positive direction
+		hm.zero_backoff = cm_cfg.a[axis].zero_backoff;
 
 	// setup parameters for positive travel (homing to the maximum switch)
 	} else {
 		hm.homing_switch = MAX_SWITCH(axis);				// the max is the homing switch
 		hm.limit_switch = MIN_SWITCH(axis);					// the min would be the limit switch
-		hm.search_travel = cfg.a[axis].travel_max;			// search travels in positive direction
-		hm.latch_backoff = -cfg.a[axis].latch_backoff;		// latch travels in negative direction
-		hm.zero_backoff = -cfg.a[axis].zero_backoff;
+		hm.search_travel = cm_cfg.a[axis].travel_max;		// search travels in positive direction
+		hm.latch_backoff = -cm_cfg.a[axis].latch_backoff;	// latch travels in negative direction
+		hm.zero_backoff = -cm_cfg.a[axis].zero_backoff;
 	}
     // if homing is disabled for the axis then skip to the next axis
 	uint8_t sw_mode = get_switch_mode(hm.homing_switch);
@@ -301,7 +301,7 @@ static stat_t _homing_axis_start(int8_t axis)
 	}
 	// disable the limit switch parameter if there is no limit switch
 	if (get_switch_mode(hm.limit_switch) == SW_MODE_DISABLED) { hm.limit_switch = -1;}
-	hm.saved_jerk = cfg.a[axis].jerk_max;					// save the max jerk value
+	hm.saved_jerk = cm_cfg.a[axis].jerk_max;				// save the max jerk value
 	return (_set_homing_func(_homing_axis_clear));			// start the clear
 }
 
@@ -337,7 +337,7 @@ static stat_t _homing_axis_backoff_limit(int8_t axis)		// back off cleared limit
 
 static stat_t _homing_axis_search(int8_t axis)				// start the search
 {
-	cfg.a[axis].jerk_max = cfg.a[axis].jerk_homing;			// use the homing jerk for search onward
+	cm_cfg.a[axis].jerk_max = cm_cfg.a[axis].jerk_homing;	// use the homing jerk for search onward
 	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
     return (_set_homing_func(_homing_axis_latch));
 }
@@ -363,7 +363,7 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 //		cm_set_axis_origin(axis, cm_get_runtime_work_position(axis));
 		cm_set_axis_origin(axis, cm_get_work_position(RUNTIME, axis));
 	}
-	cfg.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
+	cm_cfg.a[axis].jerk_max = hm.saved_jerk;				// restore the max jerk value
 	cm.homed[axis] = true;
 	return (_set_homing_func(_homing_axis_start));
 }

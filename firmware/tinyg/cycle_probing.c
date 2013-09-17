@@ -275,10 +275,10 @@ static stat_t _probing_axis_start(int8_t axis)
 		}
 	}
 	// trap gross mis-configurations
-	if ((cfg.a[axis].search_velocity == 0) || (cfg.a[axis].latch_velocity == 0)) {
+	if ((cm_cfg.a[axis].search_velocity == 0) || (cm_cfg.a[axis].latch_velocity == 0)) {
 		return (_probing_error_exit(axis));
 	}
-	if ((cfg.a[axis].travel_max <= 0) || (cfg.a[axis].latch_backoff <= 0)) {
+	if ((cm_cfg.a[axis].travel_max <= 0) || (cm_cfg.a[axis].latch_backoff <= 0)) {
 		return (_probing_error_exit(axis));
 	}
 
@@ -290,24 +290,24 @@ static stat_t _probing_axis_start(int8_t axis)
 		return (_probing_error_exit(axis));					// axis cannot be homed
 	}
 	pb.axis = axis;											// persist the axis
-	pb.search_velocity = fabs(cfg.a[axis].search_velocity); // search velocity is always positive
-	pb.latch_velocity = fabs(cfg.a[axis].latch_velocity); 	// latch velocity is always positive
+	pb.search_velocity = fabs(cm_cfg.a[axis].search_velocity);// search velocity is always positive
+	pb.latch_velocity = fabs(cm_cfg.a[axis].latch_velocity);// latch velocity is always positive
 
 	// setup parameters homing to the minimum switch
 	if (pb.min_mode & SW_HOMING_BIT) {
 		pb.homing_switch = MIN_SWITCH(axis);				// the min is the homing switch
 		pb.limit_switch = MAX_SWITCH(axis);					// the max would be the limit switch
-		pb.search_travel = -cfg.a[axis].travel_max;			// search travels in negative direction
-		pb.latch_backoff = cfg.a[axis].latch_backoff;		// latch travels in positive direction
-		pb.zero_backoff = cfg.a[axis].zero_backoff;
+		pb.search_travel = -cm_cfg.a[axis].travel_max;		// search travels in negative direction
+		pb.latch_backoff = cm_cfg.a[axis].latch_backoff;	// latch travels in positive direction
+		pb.zero_backoff = cm_cfg.a[axis].zero_backoff;
 
 	// setup parameters for positive travel (homing to the maximum switch)
 	} else {
 		pb.homing_switch = MAX_SWITCH(axis);				// the max is the homing switch
 		pb.limit_switch = MIN_SWITCH(axis);					// the min would be the limit switch
-		pb.search_travel = cfg.a[axis].travel_max;			// search travels in positive direction
-		pb.latch_backoff = -cfg.a[axis].latch_backoff;		// latch travels in negative direction
-		pb.zero_backoff = -cfg.a[axis].zero_backoff;
+		pb.search_travel = cm_cfg.a[axis].travel_max;		// search travels in positive direction
+		pb.latch_backoff = -cm_cfg.a[axis].latch_backoff;	// latch travels in negative direction
+		pb.zero_backoff = -cm_cfg.a[axis].zero_backoff;
 	}
     // if homing is disabled for the axis then skip to the next axis
 	uint8_t sw_mode = get_switch_mode(pb.homing_switch);
@@ -318,7 +318,7 @@ static stat_t _probing_axis_start(int8_t axis)
 	if (get_switch_mode(pb.limit_switch) == SW_MODE_DISABLED) {
 		pb.limit_switch = -1;
 	}
-	pb.saved_jerk = cfg.a[axis].jerk_max;					// save the max jerk value
+	pb.saved_jerk = cm_cfg.a[axis].jerk_max;				// save the max jerk value
 	return (_set_pb_func(_probing_axis_clear));				// start the clear
 }
 
@@ -330,7 +330,7 @@ static stat_t _probing_axis_clear(int8_t axis)				// first clear move
 	int8_t limit = read_switch(pb.limit_switch);
 
 	if ((homing == SW_OPEN) && (limit != SW_CLOSED)) {
- 		return (_set_pb_func(_probing_axis_search));			// OK to start the search
+ 		return (_set_pb_func(_probing_axis_search));		// OK to start the search
 	}
 	if (homing == SW_CLOSED) {
 		_probing_axis_move(axis, pb.latch_backoff, pb.search_velocity);
@@ -354,7 +354,7 @@ static stat_t _probing_axis_backoff_limit(int8_t axis)		// back off cleared limi
 
 static stat_t _probing_axis_search(int8_t axis)				// start the search
 {
-	cfg.a[axis].jerk_max = cfg.a[axis].jerk_homing;			// use the homing jerk for search onward
+	cm_cfg.a[axis].jerk_max = cm_cfg.a[axis].jerk_homing;	// use the homing jerk for search onward
 	_probing_axis_move(axis, pb.search_travel, pb.search_velocity);
     return (_set_pb_func(_probing_axis_latch));
 }
@@ -373,7 +373,7 @@ static stat_t _probing_axis_zero_backoff(int8_t axis)		// backoff to zero positi
 
 static stat_t _probing_axis_set_zero(int8_t axis)			// set zero and finish up
 {
-	cfg.a[axis].jerk_max = pb.saved_jerk;					// restore the max jerk value
+	cm_cfg.a[axis].jerk_max = pb.saved_jerk;				// restore the max jerk value
 	//cm.homed[axis] = true;
 	return (_set_pb_func(_probing_axis_start));
 }

@@ -57,7 +57,7 @@ void ik_kinematics(float travel[], float steps[], float microseconds)
 	// Most of the conversion math has already been done in during config in steps_per_unit()
 	// which takes axis travel, step angle and microsteps into account.
 	for (uint8_t axis=0; axis<AXES; axis++) {
-		if (cfg.a[axis].axis_mode == AXIS_INHIBITED) { joint[axis] = 0;}
+		if (cm_cfg.a[axis].axis_mode == AXIS_INHIBITED) { joint[axis] = 0;}
 		if (st_cfg.m[MOTOR_1].motor_map == axis) { steps[MOTOR_1] = joint[axis] * st_cfg.m[MOTOR_1].steps_per_unit;}
 		if (st_cfg.m[MOTOR_2].motor_map == axis) { steps[MOTOR_2] = joint[axis] * st_cfg.m[MOTOR_2].steps_per_unit;}
 		if (st_cfg.m[MOTOR_3].motor_map == axis) { steps[MOTOR_3] = joint[axis] * st_cfg.m[MOTOR_3].steps_per_unit;}

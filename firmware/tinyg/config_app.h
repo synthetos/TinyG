@@ -186,7 +186,7 @@ enum qrVerbosity {					// planner queue enable and verbosity
 /***********************************************************************************
  **** APPLICATION_SPECIFIC CONFIG STRUCTURE(S) *************************************
  ***********************************************************************************/
-
+/*
 typedef struct cfgAxisParameters {
 	uint8_t axis_mode;				// see tgAxisMode in gcode.h
 	float feedrate_max;				// max velocity in mm/min or deg/min
@@ -201,7 +201,7 @@ typedef struct cfgAxisParameters {
 	float zero_backoff;				// backoff from switches for machine zero
 	float jerk_homing;				// homing jerk (Jh) in mm/min^3
 } cfgAxis_t;
-
+*/
 /*
 typedef struct cfgMotorParameters {
 	uint8_t	motor_map;				// map motor to axis
@@ -233,22 +233,22 @@ typedef struct cfgParameters {
 	uint16_t nvm_profile_base;		// NVM base address of current profile
 
 	// system group settings
-	float junction_acceleration;	// centripetal acceleration max for cornering
-	float chordal_tolerance;		// arc chordal accuracy setting in mm
+//	float junction_acceleration;	// centripetal acceleration max for cornering
+//	float chordal_tolerance;		// arc chordal accuracy setting in mm
 //	float motor_idle_timeout;		// seconds before setting motors to idle current (currently this is OFF)
 //	float max_spindle_speed;		// in RPM
 
 	// hidden system settings
-	float min_segment_len;			// line drawing resolution in mm
-	float arc_segment_len;			// arc drawing resolution in mm
-	float estd_segment_usec;		// approximate segment time in microseconds
+//	float min_segment_len;			// line drawing resolution in mm
+//	float arc_segment_len;			// arc drawing resolution in mm
+//	float estd_segment_usec;		// approximate segment time in microseconds
 
 	// gcode power-on default settings - defaults are not the same as the gm state
-	uint8_t coord_system;			// G10 active coordinate system default
-	uint8_t select_plane;			// G17,G18,G19 reset default
-	uint8_t units_mode;				// G20,G21 reset default
-	uint8_t path_control;			// G61,G61.1,G64 reset default
-	uint8_t distance_mode;			// G90,G91 reset default
+//	uint8_t coord_system;			// G10 active coordinate system default
+//	uint8_t select_plane;			// G17,G18,G19 reset default
+//	uint8_t units_mode;				// G20,G21 reset default
+//	uint8_t path_control;			// G61,G61.1,G64 reset default
+//	uint8_t distance_mode;			// G90,G91 reset default
 
 	// communications settings
 	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
@@ -281,11 +281,11 @@ typedef struct cfgParameters {
 	float status_report_value[CMD_STATUS_REPORT_LEN];// previous values for filtered reporting
 
 	// coordinate systems and offsets
-	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
+//	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
 
 	// motor and axis structs
 //	cfgMotor_t m[MOTORS];			// settings for motors 1-4
-	cfgAxis_t a[AXES];				// settings for axes X,Y,Z,A B,C
+//	cfgAxis_t a[AXES];				// settings for axes X,Y,Z,A B,C
 	cfgPWM_t p;						// settings for PWM p
 
 	uint16_t magic_end;
