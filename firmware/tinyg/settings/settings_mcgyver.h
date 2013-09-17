@@ -1,6 +1,3 @@
-/*
- * settings_othermill.h - Otherlab Mini Milling Machine
- */
 /* Note: The values in this file are the default settings that are loaded
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
