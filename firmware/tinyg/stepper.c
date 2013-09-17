@@ -87,14 +87,13 @@ typedef struct stRunMotor { 			// one per controlled motor
 	uint8_t polarity;					// 0=normal polarity, 1=reverse motor polarity
 	uint8_t power_state;				// state machine for managing motor power
 	uint32_t power_systick;				// sys_tick for next state transition
+//	uint32_t power_level;				// power level for this segment (FUTURE)
 } stRunMotor_t;
 
 typedef struct stRunSingleton {			// Stepper static values and axis parameters
 	uint16_t magic_start;				// magic number to test memory integrity	
 	int32_t dda_ticks_downcount;		// tick down-counter (unscaled)
 	int32_t dda_ticks_X_substeps;		// ticks multiplied by scaling factor
-	uint32_t motor_idle_systick;		// sys_tick at which to idle all motors
-	volatile uint8_t motor_stop_flags;	// bitfield for motor stop conditions
 	stRunMotor_t m[MOTORS];				// runtime motor structures
 } stRunSingleton_t;
 
@@ -180,35 +179,18 @@ void stepper_init()
 /*
  * Motor power management functions
  *
- * st_energize_motor()			- apply power to a motor
- * st_deenergize_motor()		- remove power from a motor
- * st_set_motor_power()			- set motor a specified power level
- * st_energize_motors()			- apply power to all motors
- * st_deenergize_motors()		- remove power from all motors
- *
- * st_set_motor_idle_timeout()	- set the timeout in the config
- * st_idle_motors()				- set all motors to idle power level
- * st_motor_power_callback()	- callback to manage motor power sequencing
- * st_do_motor_idle_timeout()	- execute the timeout
- *
- *	Sets a point N seconds in the future when the motors will be idled (time out)
- *	Can be called at any time to extend N seconds from the current time
+ * st_set_motor_idle_timeout()	- set timeout parameter
+ * st_set_motor_power()			 - set motor a specified power level
+ * st_energize_motor()			 - apply power to a motor
+ * st_deenergize_motor()		 - remove power from a motor
+ * st_energize_motors()			 - apply power to all motors
+ * st_deenergize_motors()		 - remove power from all motors
+ * st_motor_power_callback()	 - callback to manage motor power sequencing
  */
 
-void st_energize_motor(const uint8_t motor)
+void st_set_motor_idle_timeout(float seconds)
 {
-	if (motor == MOTOR_1) { PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
-	if (motor == MOTOR_2) { PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
-	if (motor == MOTOR_3) { PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
-	if (motor == MOTOR_4) { PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; }
-}
-
-void st_deenergize_motor(const uint8_t motor)
-{
-	if (motor == MOTOR_1) { PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
-	if (motor == MOTOR_2) { PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
-	if (motor == MOTOR_3) { PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
-	if (motor == MOTOR_4) { PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; }
+	cfg.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(seconds, IDLE_TIMEOUT_SECONDS_MIN));
 }
 
 void st_set_motor_power(const uint8_t motor)
@@ -216,25 +198,32 @@ void st_set_motor_power(const uint8_t motor)
 
 }
 
-void st_set_motor_idle_timeout(float seconds)
+void st_energize_motor(const uint8_t motor)
 {
-	cfg.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(seconds, IDLE_TIMEOUT_SECONDS_MIN));
+	switch(motor) {
+		case (MOTOR_1): { PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; return; }
+		case (MOTOR_2): { PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; return; }
+		case (MOTOR_3): { PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; return; }
+		case (MOTOR_4): { PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; return; }
+	}
+}
+
+void st_deenergize_motor(const uint8_t motor)
+{
+	switch (motor) {
+		case (MOTOR_1): { PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; return; }
+		case (MOTOR_2): { PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; return; }
+		case (MOTOR_3): { PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; return; }
+		case (MOTOR_4): { PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; return; }
+	}
 }
 
 void st_energize_motors()
 {
-//	if (cfg.m[MOTOR_1].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_1);}
-//	if (cfg.m[MOTOR_2].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_2);}
-//	if (cfg.m[MOTOR_3].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_3);}
-//	if (cfg.m[MOTOR_4].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) { st_energize_motor(MOTOR_4);}
-
 	PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 	PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 	PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 	PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-//	st_run.motor_idle_systick = SysTickTimer_getValue() + (uint32_t)(1000 * 1000); // enable motors for 1000 seconds
-//	st_run.motor_idle_systick = MAX_ULONG;
-//	st_do_motor_idle_timeout();
 }
 
 void st_deenergize_motors()
@@ -244,28 +233,6 @@ void st_deenergize_motors()
 	PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 	PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 }
-
-/*
-void st_do_motor_idle_timeout()
-{
-	st_run.motor_idle_systick = SysTickTimer_getValue() + (uint32_t)(cfg.motor_idle_timeout * 1000);
-}
-*/
-
-/*
-void st_idle_motors()
-{
-	st_deenergize_motors();		// for now idle is the same as de-energized
-}
-*/
-/*
-void st_start_motor_idle_timeout()
-{
-	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
-		st_run.m[motor].power_state = MOTOR_START_IDLE_TIMEOUT;
-	}
-}
-*/
 
 stat_t st_motor_power_callback() 	// called by controller
 {
@@ -282,34 +249,36 @@ stat_t st_motor_power_callback() 	// called by controller
 				}
 
 				case (MOTOR_TIME_IDLE_TIMEOUT): {
-					if (SysTickTimer_getValue() >= st_run.motor_idle_systick ) { 
-						st_deenergize_motor(motor);
+					if (SysTickTimer_getValue() > st_run.m[motor].power_systick ) { 
 						st_run.m[motor].power_state = MOTOR_IDLE;
+						st_deenergize_motor(motor);
 					}
 					break;
 				}
 			}
 		} else if(cfg.m[motor].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			switch (st_run.m[motor].power_state) {
+				case (MOTOR_START_IDLE_TIMEOUT): {
+					st_run.m[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(250);
+					st_run.m[motor].power_state = MOTOR_TIME_IDLE_TIMEOUT;
+					break;
+				}
+
+				case (MOTOR_TIME_IDLE_TIMEOUT): {
+					if (SysTickTimer_getValue() > st_run.m[motor].power_systick ) { 
+						st_run.m[motor].power_state = MOTOR_IDLE;
+						st_deenergize_motor(motor);
+					}
+					break;
+				}
+			}
+
+//		} else if(cfg.m[motor].power_mode == MOTOR_POWER_REDUCED_WHEN_IDLE) {	// future
 			
-		} else if(cfg.m[motor].power_mode == MOTOR_POWER_REDUCED_WHEN_IDLE) {
-			
-		} else if(cfg.m[motor].power_mode == DYNAMIC_MOTOR_POWER) {
+//		} else if(cfg.m[motor].power_mode == DYNAMIC_MOTOR_POWER) {				// future
 			
 		}
 	}
-
-/*
-	return (STAT_NOOP);
-	st_run.m[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(cfg.motor_idle_timeout * 1000);
-	
-	if (st_run.motor_stop_flags != 0) {
-		st_run.motor_stop_flags = 0;
-		st_run.motor_idle_systick = SysTickTimer_getValue() + (uint32_t)(cfg.motor_idle_timeout * 1000);
-//		st_do_motor_idle_timeout();
-	}
-	if (SysTickTimer_getValue() < st_run.motor_idle_systick ) return (STAT_NOOP);
-	st_idle_motors();
-*/
 	return (STAT_OK);
 }
 
@@ -427,7 +396,7 @@ void _load_move()
 	if (st_run.dda_ticks_downcount != 0) return;			// exit if it's still busy
 
 	if (st_prep.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	// if there are no moves to load
-		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {// start to idle the motors.
+		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {// start motor idle cycle
 			st_run.m[motor].power_state = MOTOR_START_IDLE_TIMEOUT;
 		}
 		return;
@@ -457,9 +426,11 @@ void _load_move()
 			}
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// energize motor
 			st_run.m[MOTOR_1].power_state = MOTOR_RUNNING;
-		} else if (cfg.m[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
-			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// energize motor
-			st_run.m[MOTOR_1].power_state = MOTOR_STOPPED;
+		} else {
+			if (cfg.m[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// energize motor
+				st_run.m[MOTOR_1].power_state = MOTOR_STOPPED;
+			}
 		}
 
 		st_run.m[MOTOR_2].phase_increment = st_prep.m[MOTOR_2].phase_increment;
@@ -474,9 +445,11 @@ void _load_move()
 			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_2].power_state = MOTOR_RUNNING;
-		} else if (cfg.m[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
-			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-			st_run.m[MOTOR_2].power_state = MOTOR_STOPPED;
+		} else {
+			if (cfg.m[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+				st_run.m[MOTOR_2].power_state = MOTOR_STOPPED;
+			}
 		}
 
 		st_run.m[MOTOR_3].phase_increment = st_prep.m[MOTOR_3].phase_increment;
@@ -491,9 +464,11 @@ void _load_move()
 			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_3].power_state = MOTOR_RUNNING;
-		} else if (cfg.m[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
-			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-			st_run.m[MOTOR_3].power_state = MOTOR_STOPPED;
+		} else {
+			if (cfg.m[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+				st_run.m[MOTOR_3].power_state = MOTOR_STOPPED;
+			}
 		}
 
 		st_run.m[MOTOR_4].phase_increment = st_prep.m[MOTOR_4].phase_increment;
@@ -508,12 +483,13 @@ void _load_move()
 			}
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_4].power_state = MOTOR_RUNNING;
-		} else if (cfg.m[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
-			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-			st_run.m[MOTOR_4].power_state = MOTOR_STOPPED;
+		} else {
+			if (cfg.m[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+				st_run.m[MOTOR_4].power_state = MOTOR_STOPPED;
+			}
 		}
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
-//		st_energize_motors();								// power up motors and set initial timer
 
 	// handle dwells
 	} else if (st_prep.move_type == MOVE_TYPE_DWELL) {
