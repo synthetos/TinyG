@@ -85,7 +85,8 @@ typedef struct stRunMotor { 			// one per controlled motor
 	int32_t phase_increment;			// total steps in axis times substeps factor
 	int32_t phase_accumulator;			// DDA phase angle accumulator for axis
 	uint8_t polarity;					// 0=normal polarity, 1=reverse motor polarity
-//	uint32_t motor_idle_systick;		// sys_tick at which to idle this motor
+	uint8_t power_state;				// state machine for managing motor power
+	uint32_t power_systick;				// sys_tick for next state transition
 } stRunMotor_t;
 
 typedef struct stRunSingleton {			// Stepper static values and axis parameters
@@ -176,31 +177,22 @@ void stepper_init()
 	st_prep.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
 }
 
-/* 
- * st_set_motor_idle_timeout() - set the timeout in the config
- */
-
-void st_set_motor_idle_timeout(float seconds)
-{
-	cfg.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(seconds, IDLE_TIMEOUT_SECONDS_MIN));
-}
-
-/* 
- * st_do_motor_idle_timeout()  - execute the timeout
+/*
+ * Motor power management functions
+ *
+ * st_energize_motor()			- apply power to a motor
+ * st_deenergize_motor()		- remove power from a motor
+ * st_set_motor_power()			- set motor a specified power level
+ * st_energize_motors()			- apply power to all motors
+ * st_deenergize_motors()		- remove power from all motors
+ *
+ * st_set_motor_idle_timeout()	- set the timeout in the config
+ * st_idle_motors()				- set all motors to idle power level
+ * st_motor_power_callback()	- callback to manage motor power sequencing
+ * st_do_motor_idle_timeout()	- execute the timeout
  *
  *	Sets a point N seconds in the future when the motors will be idled (time out)
  *	Can be called at any time to extend N seconds from the current time
- */
-
-void st_do_motor_idle_timeout()
-{
-	st_run.motor_idle_systick = SysTickTimer_getValue() + (uint32_t)(cfg.motor_idle_timeout * 1000);
-}
-
-/* 
- * st_turn_motor_power_on()  - enable a motor
- * st_turn_motor_power_off() - disable a motor
- * st_set_motor_power()		 - set motor power level
  */
 
 void st_energize_motor(const uint8_t motor)
@@ -224,11 +216,10 @@ void st_set_motor_power(const uint8_t motor)
 
 }
 
-/* 
- * st_energize_motors()   - apply power to all motors
- * st_deenergize_motors() - remove power from all motors
- * st_idle_motors()		  - set all motors to idle power level
- */
+void st_set_motor_idle_timeout(float seconds)
+{
+	cfg.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(seconds, IDLE_TIMEOUT_SECONDS_MIN));
+}
 
 void st_energize_motors()
 {
@@ -242,7 +233,7 @@ void st_energize_motors()
 	PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 	PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 //	st_run.motor_idle_systick = SysTickTimer_getValue() + (uint32_t)(1000 * 1000); // enable motors for 1000 seconds
-	st_run.motor_idle_systick = MAX_ULONG;
+//	st_run.motor_idle_systick = MAX_ULONG;
 //	st_do_motor_idle_timeout();
 }
 
@@ -254,22 +245,63 @@ void st_deenergize_motors()
 	PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 }
 
+/*
+void st_do_motor_idle_timeout()
+{
+	st_run.motor_idle_systick = SysTickTimer_getValue() + (uint32_t)(cfg.motor_idle_timeout * 1000);
+}
+*/
+
+/*
 void st_idle_motors()
 {
 	st_deenergize_motors();		// for now idle is the same as de-energized
 }
-
-void st_do_idle_timeout()
-{
-	st_run.motor_stop_flags = ALL_MOTORS_STOPPED; // return all STOPPED bits
-}
-
+*/
 /*
- * st_motor_power_callback() - callback to manage motor power sequencing
- */
+void st_start_motor_idle_timeout()
+{
+	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
+		st_run.m[motor].power_state = MOTOR_START_IDLE_TIMEOUT;
+	}
+}
+*/
 
 stat_t st_motor_power_callback() 	// called by controller
 {
+	// manage power for each motor individually - facilitates advanced features
+	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
+
+		if (cfg.m[motor].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) {
+
+			switch (st_run.m[motor].power_state) {
+				case (MOTOR_START_IDLE_TIMEOUT): {
+					st_run.m[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(cfg.motor_idle_timeout * 1000);
+					st_run.m[motor].power_state = MOTOR_TIME_IDLE_TIMEOUT;
+					break;
+				}
+
+				case (MOTOR_TIME_IDLE_TIMEOUT): {
+					if (SysTickTimer_getValue() >= st_run.motor_idle_systick ) { 
+						st_deenergize_motor(motor);
+						st_run.m[motor].power_state = MOTOR_IDLE;
+					}
+					break;
+				}
+			}
+		} else if(cfg.m[motor].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			
+		} else if(cfg.m[motor].power_mode == MOTOR_POWER_REDUCED_WHEN_IDLE) {
+			
+		} else if(cfg.m[motor].power_mode == DYNAMIC_MOTOR_POWER) {
+			
+		}
+	}
+
+/*
+	return (STAT_NOOP);
+	st_run.m[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(cfg.motor_idle_timeout * 1000);
+	
 	if (st_run.motor_stop_flags != 0) {
 		st_run.motor_stop_flags = 0;
 		st_run.motor_idle_systick = SysTickTimer_getValue() + (uint32_t)(cfg.motor_idle_timeout * 1000);
@@ -277,6 +309,7 @@ stat_t st_motor_power_callback() 	// called by controller
 	}
 	if (SysTickTimer_getValue() < st_run.motor_idle_systick ) return (STAT_NOOP);
 	st_idle_motors();
+*/
 	return (STAT_OK);
 }
 
@@ -393,8 +426,10 @@ void _load_move()
 {
 	if (st_run.dda_ticks_downcount != 0) return;			// exit if it's still busy
 
-	if (st_prep.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {// if there are no moves to load
-//		st_run.motor_stop_flags = ALL_MOTORS_STOPPED;		// return all STOPPED bits
+	if (st_prep.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	// if there are no moves to load
+		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {// start to idle the motors.
+			st_run.m[motor].power_state = MOTOR_START_IDLE_TIMEOUT;
+		}
 		return;
 	}
 
@@ -421,6 +456,10 @@ void _load_move()
 				PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
 			}
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// energize motor
+			st_run.m[MOTOR_1].power_state = MOTOR_RUNNING;
+		} else if (cfg.m[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// energize motor
+			st_run.m[MOTOR_1].power_state = MOTOR_STOPPED;
 		}
 
 		st_run.m[MOTOR_2].phase_increment = st_prep.m[MOTOR_2].phase_increment;
@@ -434,6 +473,10 @@ void _load_move()
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+			st_run.m[MOTOR_2].power_state = MOTOR_RUNNING;
+		} else if (cfg.m[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+			st_run.m[MOTOR_2].power_state = MOTOR_STOPPED;
 		}
 
 		st_run.m[MOTOR_3].phase_increment = st_prep.m[MOTOR_3].phase_increment;
@@ -447,6 +490,10 @@ void _load_move()
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+			st_run.m[MOTOR_3].power_state = MOTOR_RUNNING;
+		} else if (cfg.m[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+			st_run.m[MOTOR_3].power_state = MOTOR_STOPPED;
 		}
 
 		st_run.m[MOTOR_4].phase_increment = st_prep.m[MOTOR_4].phase_increment;
@@ -460,9 +507,13 @@ void _load_move()
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+			st_run.m[MOTOR_4].power_state = MOTOR_RUNNING;
+		} else if (cfg.m[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+			st_run.m[MOTOR_4].power_state = MOTOR_STOPPED;
 		}
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
-		st_energize_motors();								// power up motors and set initial timer
+//		st_energize_motors();								// power up motors and set initial timer
 
 	// handle dwells
 	} else if (st_prep.move_type == MOVE_TYPE_DWELL) {

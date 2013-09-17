@@ -220,9 +220,11 @@ void st_dump_stepper_state(void);
 // Currently there is no distinction between IDLE and OFF (DEENERGIZED)
 // In the future IDLE will be powered at a low, torque-maintaining current
 
-enum motorState {					// used w/start and stop flags to sequence motor power
+enum motorPowerState {				// used w/start and stop flags to sequence motor power
 	MOTOR_OFF = 0,					// motor is stopped and deenergized
 	MOTOR_IDLE,						// motor is stopped and may be partially energized for torque maintenance
+	MOTOR_TIME_IDLE_TIMEOUT,		// run idle timeout
+	MOTOR_START_IDLE_TIMEOUT,		// transitional state to start idle timers
 	MOTOR_STOPPED,					// motor is stopped and fully energized
 	MOTOR_RUNNING					// motor is running (and fully energized)
 };

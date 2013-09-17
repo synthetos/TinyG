@@ -436,14 +436,7 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 	AXIS_STANDARD,					// axis in coordinated motion w/standard behaviors
 	AXIS_INHIBITED,					// axis is computed but not activated
 	AXIS_RADIUS,					// rotary axis calibrated to circumference
-//	AXIS_SLAVE_X,					// rotary axis slaved to X axis
-//	AXIS_SLAVE_Y,					// rotary axis slaved to Y axis
-//	AXIS_SLAVE_Z,					// rotary axis slaved to Z axis
-//	AXIS_SLAVE_XY,					// rotary axis slaved to XY plane
-//	AXIS_SLAVE_XZ,					// rotary axis slaved to XZ plane
-//	AXIS_SLAVE_YZ,					// rotary axis slaved to YZ plane
-//	AXIS_SLAVE_XYZ					// rotary axis slaved to XYZ movement
-};	// ordering must be preserved. See _cm_get_feed_time() and seek time()
+};	// ordering must be preserved. See cm_set_move_times()
 #define AXIS_MAX_LINEAR AXIS_INHIBITED
 #define AXIS_MAX_ROTARY AXIS_RADIUS
 
