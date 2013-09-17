@@ -202,6 +202,7 @@ typedef struct cfgAxisParameters {
 	float jerk_homing;				// homing jerk (Jh) in mm/min^3
 } cfgAxis_t;
 
+/*
 typedef struct cfgMotorParameters {
 	uint8_t	motor_map;				// map motor to axis
   	uint8_t microsteps;				// microsteps to apply for each axis (ex: 8)
@@ -211,6 +212,7 @@ typedef struct cfgMotorParameters {
 	float travel_rev;				// mm or deg of travel per motor revolution
 	float steps_per_unit;			// steps (usteps)/mm or deg of travel
 } cfgMotor_t;
+*/
 
 typedef struct cfgPWMParameters {
   	float frequency;				// base frequency for PWM driver, in Hz
@@ -233,7 +235,7 @@ typedef struct cfgParameters {
 	// system group settings
 	float junction_acceleration;	// centripetal acceleration max for cornering
 	float chordal_tolerance;		// arc chordal accuracy setting in mm
-	float motor_idle_timeout;		// seconds before setting motors to idle current (currently this is OFF)
+//	float motor_idle_timeout;		// seconds before setting motors to idle current (currently this is OFF)
 //	float max_spindle_speed;		// in RPM
 
 	// hidden system settings
@@ -282,7 +284,7 @@ typedef struct cfgParameters {
 	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
 
 	// motor and axis structs
-	cfgMotor_t m[MOTORS];			// settings for motors 1-4
+//	cfgMotor_t m[MOTORS];			// settings for motors 1-4
 	cfgAxis_t a[AXES];				// settings for axes X,Y,Z,A B,C
 	cfgPWM_t p;						// settings for PWM p
 

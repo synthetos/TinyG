@@ -57,70 +57,14 @@
 #define INCREMENT_DIAGNOSTIC_COUNTER(motor)	// chose this one to disable counters
 #endif
 
-// Setup local resources
-
-static void _load_move(void);
-static void _request_load_move(void);
-
-/*
- * Stepper structures
- *
- *	There are 4 sets of structures involved in this operation;
- *
- *	data structure:						static to:		runs at:
- *	  mpBuffer planning buffers (bf)	  planner.c		  main loop
- *	  mrRuntimeSingleton (mr)			  planner.c		  MED ISR
- *	  stPrepSingleton (sp)				  stepper.c		  MED ISR
- *	  stRunSingleton (st)				  stepper.c		  HI ISR
- *  
- *	Care has been taken to isolate actions on these structures to the 
- *	execution level in which they run and to use the minimum number of 
- *	volatiles in these structures. This allows the compiler to optimize
- *	the stepper inner-loops better.
- */
-
-// Runtime structure. Used exclusively by step generation ISR (HI)
-
-typedef struct stRunMotor { 			// one per controlled motor
-	int32_t phase_increment;			// total steps in axis times substeps factor
-	int32_t phase_accumulator;			// DDA phase angle accumulator for axis
-	uint8_t polarity;					// 0=normal polarity, 1=reverse motor polarity
-	uint8_t power_state;				// state machine for managing motor power
-	uint32_t power_systick;				// sys_tick for next state transition
-//	uint32_t power_level;				// power level for this segment (FUTURE)
-} stRunMotor_t;
-
-typedef struct stRunSingleton {			// Stepper static values and axis parameters
-	uint16_t magic_start;				// magic number to test memory integrity	
-	int32_t dda_ticks_downcount;		// tick down-counter (unscaled)
-	int32_t dda_ticks_X_substeps;		// ticks multiplied by scaling factor
-	stRunMotor_t m[MOTORS];				// runtime motor structures
-} stRunSingleton_t;
-
-// Prep-time structure. Used by exec/prep ISR (MED) and read-only during load
-// Must be careful about volatiles in this one
-
-typedef struct stPrepMotor {
- 	uint32_t phase_increment; 			// total steps in axis times substep factor
-	int8_t dir;							// direction
-} stPrepMotor_t;
-
-typedef struct stPrepSingleton {
-	uint16_t magic_start;				// magic number to test memory integrity	
-	uint8_t move_type;					// move type
-	volatile uint8_t exec_state;		// move execution state 
-	volatile uint8_t reset_flag;		// TRUE if accumulator should be reset
-	uint32_t prev_ticks;				// tick count from previous move
-	uint16_t dda_period;				// DDA or dwell clock period setting
-	uint32_t dda_ticks;					// DDA or dwell ticks for the move
-	uint32_t dda_ticks_X_substeps;		// DDA ticks scaled by substep factor
-//	float segment_velocity;				// record segment velocity for diagnostics
-	stPrepMotor_t m[MOTORS];			// per-motor structs
-} stPrepSingleton_t;
-
-// Allocate static structures
+// Allocate structures
+stConfig_t st_cfg;
 static stRunSingleton_t st_run;
 static stPrepSingleton_t st_prep;
+
+// Setup local functions
+static void _load_move(void);
+static void _request_load_move(void);
 
 magic_t st_get_stepper_run_magic() { return (st_run.magic_start);}
 magic_t st_get_stepper_prep_magic() { return (st_prep.magic_start);}
@@ -201,7 +145,7 @@ inline uint8_t stepper_isbusy()
 
 void st_set_motor_idle_timeout(float seconds)
 {
-	cfg.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(seconds, IDLE_TIMEOUT_SECONDS_MIN));
+	st_cfg.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(seconds, IDLE_TIMEOUT_SECONDS_MIN));
 }
 
 void st_set_motor_power(const uint8_t motor)
@@ -267,11 +211,11 @@ stat_t st_motor_power_callback() 	// called by controller
 	// manage power for each motor individually - facilitates advanced features
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 
-		if (cfg.m[motor].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) {
+		if (st_cfg.m[motor].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) {
 
 			switch (st_run.m[motor].power_state) {
 				case (MOTOR_START_IDLE_TIMEOUT): {
-					st_run.m[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(cfg.motor_idle_timeout * 1000);
+					st_run.m[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_idle_timeout * 1000);
 					st_run.m[motor].power_state = MOTOR_TIME_IDLE_TIMEOUT;
 					break;
 				}
@@ -284,7 +228,7 @@ stat_t st_motor_power_callback() 	// called by controller
 					break;
 				}
 			}
-		} else if(cfg.m[motor].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+		} else if(st_cfg.m[motor].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 			switch (st_run.m[motor].power_state) {
 				case (MOTOR_START_IDLE_TIMEOUT): {
 					st_run.m[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(250);
@@ -454,7 +398,7 @@ void _load_move()
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// energize motor
 			st_run.m[MOTOR_1].power_state = MOTOR_RUNNING;
 		} else {
-			if (cfg.m[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			if (st_cfg.m[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// energize motor
 				st_run.m[MOTOR_1].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
@@ -473,7 +417,7 @@ void _load_move()
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_2].power_state = MOTOR_RUNNING;
 		} else {
-			if (cfg.m[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			if (st_cfg.m[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.m[MOTOR_2].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
@@ -492,7 +436,7 @@ void _load_move()
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_3].power_state = MOTOR_RUNNING;
 		} else {
-			if (cfg.m[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			if (st_cfg.m[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.m[MOTOR_3].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
@@ -511,7 +455,7 @@ void _load_move()
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_4].power_state = MOTOR_RUNNING;
 		} else {
-			if (cfg.m[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			if (st_cfg.m[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.m[MOTOR_4].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
@@ -582,7 +526,7 @@ stat_t st_prep_line(float steps[], float microseconds)
 
 	// setup motor parameters
 	for (i=0; i<MOTORS; i++) {
-		st_prep.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ cfg.m[i].polarity;
+		st_prep.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ st_cfg.m[i].polarity;
 		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * dda_substeps);
 	}
 	st_prep.dda_period = _f_to_period(f_dda);

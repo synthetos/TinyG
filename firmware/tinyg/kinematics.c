@@ -28,6 +28,7 @@
 #include "tinyg.h"
 #include "config.h"
 #include "canonical_machine.h"
+#include "stepper.h"
 #include "kinematics.h"
 
 //static void _inverse_kinematics(float travel[], float joint[], float microseconds);
@@ -57,16 +58,16 @@ void ik_kinematics(float travel[], float steps[], float microseconds)
 	// which takes axis travel, step angle and microsteps into account.
 	for (uint8_t axis=0; axis<AXES; axis++) {
 		if (cfg.a[axis].axis_mode == AXIS_INHIBITED) { joint[axis] = 0;}
-		if (cfg.m[MOTOR_1].motor_map == axis) { steps[MOTOR_1] = joint[axis] * cfg.m[MOTOR_1].steps_per_unit;}
-		if (cfg.m[MOTOR_2].motor_map == axis) { steps[MOTOR_2] = joint[axis] * cfg.m[MOTOR_2].steps_per_unit;}
-		if (cfg.m[MOTOR_3].motor_map == axis) { steps[MOTOR_3] = joint[axis] * cfg.m[MOTOR_3].steps_per_unit;}
-		if (cfg.m[MOTOR_4].motor_map == axis) { steps[MOTOR_4] = joint[axis] * cfg.m[MOTOR_4].steps_per_unit;}
-//		if (cfg.m[MOTOR_5].motor_map == axis) { steps[MOTOR_5] = joint[axis] * cfg.m[MOTOR_5].steps_per_unit;}
-//		if (cfg.m[MOTOR_6].motor_map == axis) { steps[MOTOR_6] = joint[axis] * cfg.m[MOTOR_6].steps_per_unit;}
+		if (st_cfg.m[MOTOR_1].motor_map == axis) { steps[MOTOR_1] = joint[axis] * st_cfg.m[MOTOR_1].steps_per_unit;}
+		if (st_cfg.m[MOTOR_2].motor_map == axis) { steps[MOTOR_2] = joint[axis] * st_cfg.m[MOTOR_2].steps_per_unit;}
+		if (st_cfg.m[MOTOR_3].motor_map == axis) { steps[MOTOR_3] = joint[axis] * st_cfg.m[MOTOR_3].steps_per_unit;}
+		if (st_cfg.m[MOTOR_4].motor_map == axis) { steps[MOTOR_4] = joint[axis] * st_cfg.m[MOTOR_4].steps_per_unit;}
+//		if (st_cfg.m[MOTOR_5].motor_map == axis) { steps[MOTOR_5] = joint[axis] * st_cfg.m[MOTOR_5].steps_per_unit;}
+//		if (st_cfg.m[MOTOR_6].motor_map == axis) { steps[MOTOR_6] = joint[axis] * st_cfg.m[MOTOR_6].steps_per_unit;}
 
 	// the above is a loop unrolled version of this:
 	//	for (uint8_t motor=0; motor<MOTORS; motor++) {
-	//		if (cfg.m[motor].motor_map == axis) { steps[motor] = joint[axis] * cfg.m[motor].steps_per_unit;}
+	//		if (st_cfg.m[motor].motor_map == axis) { steps[motor] = joint[axis] * st_cfg.m[motor].steps_per_unit;}
 	//	}
 	}
 }

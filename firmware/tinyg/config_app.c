@@ -478,51 +478,51 @@ const cfgItem_t PROGMEM cfgArray[] = {
 //	{ "", "sx",  _f00, 0, fmt_nul, print_nul, run_sx,  run_sx , (float *)&cs.null, 0 },					// send XOFF, XON test
 
 	// Motor parameters
-	{ "1","1ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
-	{ "1","1sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
-	{ "1","1tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&cfg.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
-	{ "1","1mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&cfg.m[MOTOR_1].microsteps,	M1_MICROSTEPS },
-	{ "1","1po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_po, (float *)&cfg.m[MOTOR_1].polarity,	M1_POLARITY },
-	{ "1","1pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&cfg.m[MOTOR_1].power_mode,	M1_POWER_MODE },
+	{ "1","1ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&st_cfg.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
+	{ "1","1sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&st_cfg.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
+	{ "1","1tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&st_cfg.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
+	{ "1","1mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&st_cfg.m[MOTOR_1].microsteps,	M1_MICROSTEPS },
+	{ "1","1po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_po, (float *)&st_cfg.m[MOTOR_1].polarity,		M1_POLARITY },
+	{ "1","1pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&st_cfg.m[MOTOR_1].power_mode,	M1_POWER_MODE },
 #if (MOTORS >= 2)
-	{ "2","2ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&cfg.m[MOTOR_2].motor_map,	M2_MOTOR_MAP },
-	{ "2","2sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&cfg.m[MOTOR_2].step_angle,	M2_STEP_ANGLE },
-	{ "2","2tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&cfg.m[MOTOR_2].travel_rev,	M2_TRAVEL_PER_REV },
-	{ "2","2mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&cfg.m[MOTOR_2].microsteps,	M2_MICROSTEPS },
-	{ "2","2po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_po, (float *)&cfg.m[MOTOR_2].polarity,	M2_POLARITY },
-	{ "2","2pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&cfg.m[MOTOR_2].power_mode,	M2_POWER_MODE },
+	{ "2","2ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&st_cfg.m[MOTOR_2].motor_map,	M2_MOTOR_MAP },
+	{ "2","2sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&st_cfg.m[MOTOR_2].step_angle,	M2_STEP_ANGLE },
+	{ "2","2tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&st_cfg.m[MOTOR_2].travel_rev,	M2_TRAVEL_PER_REV },
+	{ "2","2mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&st_cfg.m[MOTOR_2].microsteps,	M2_MICROSTEPS },
+	{ "2","2po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_po, (float *)&st_cfg.m[MOTOR_2].polarity,		M2_POLARITY },
+	{ "2","2pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&st_cfg.m[MOTOR_2].power_mode,	M2_POWER_MODE },
 #endif
 #if (MOTORS >= 3)
-	{ "3","3ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&cfg.m[MOTOR_3].motor_map,	M3_MOTOR_MAP },
-	{ "3","3sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&cfg.m[MOTOR_3].step_angle,	M3_STEP_ANGLE },
-	{ "3","3tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&cfg.m[MOTOR_3].travel_rev,	M3_TRAVEL_PER_REV },
-	{ "3","3mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&cfg.m[MOTOR_3].microsteps,	M3_MICROSTEPS },
-	{ "3","3po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_po, (float *)&cfg.m[MOTOR_3].polarity,	M3_POLARITY },
-	{ "3","3pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&cfg.m[MOTOR_3].power_mode,	M3_POWER_MODE },
+	{ "3","3ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&st_cfg.m[MOTOR_3].motor_map,	M3_MOTOR_MAP },
+	{ "3","3sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&st_cfg.m[MOTOR_3].step_angle,	M3_STEP_ANGLE },
+	{ "3","3tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&st_cfg.m[MOTOR_3].travel_rev,	M3_TRAVEL_PER_REV },
+	{ "3","3mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&st_cfg.m[MOTOR_3].microsteps,	M3_MICROSTEPS },
+	{ "3","3po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_po, (float *)&st_cfg.m[MOTOR_3].polarity,		M3_POLARITY },
+	{ "3","3pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&st_cfg.m[MOTOR_3].power_mode,	M3_POWER_MODE },
 #endif
 #if (MOTORS >= 4)
-	{ "4","4ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&cfg.m[MOTOR_4].motor_map,	M4_MOTOR_MAP },
-	{ "4","4sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&cfg.m[MOTOR_4].step_angle,	M4_STEP_ANGLE },
-	{ "4","4tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&cfg.m[MOTOR_4].travel_rev,	M4_TRAVEL_PER_REV },
-	{ "4","4mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&cfg.m[MOTOR_4].microsteps,	M4_MICROSTEPS },
-	{ "4","4po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_po, (float *)&cfg.m[MOTOR_4].polarity,	M4_POLARITY },
-	{ "4","4pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&cfg.m[MOTOR_4].power_mode,	M4_POWER_MODE },
+	{ "4","4ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&st_cfg.m[MOTOR_4].motor_map,	M4_MOTOR_MAP },
+	{ "4","4sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&st_cfg.m[MOTOR_4].step_angle,	M4_STEP_ANGLE },
+	{ "4","4tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&st_cfg.m[MOTOR_4].travel_rev,	M4_TRAVEL_PER_REV },
+	{ "4","4mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&st_cfg.m[MOTOR_4].microsteps,	M4_MICROSTEPS },
+	{ "4","4po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_po, (float *)&st_cfg.m[MOTOR_4].polarity,		M4_POLARITY },
+	{ "4","4pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&st_cfg.m[MOTOR_4].power_mode,	M4_POWER_MODE },
 #endif
 #if (MOTORS >= 5)
-	{ "5","5ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&cfg.m[MOTOR_5].motor_map,	M5_MOTOR_MAP },
-	{ "5","5sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&cfg.m[MOTOR_5].step_angle,	M5_STEP_ANGLE },
-	{ "5","5tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&cfg.m[MOTOR_5].travel_rev,	M5_TRAVEL_PER_REV },
-	{ "5","5mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&cfg.m[MOTOR_5].microsteps,	M5_MICROSTEPS },
-	{ "5","5po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_po, (float *)&cfg.m[MOTOR_5].polarity,	M5_POLARITY },
-	{ "5","5pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&cfg.m[MOTOR_5].power_mode,	M5_POWER_MODE },
+	{ "5","5ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&st_cfg.m[MOTOR_5].motor_map,	M5_MOTOR_MAP },
+	{ "5","5sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&st_cfg.m[MOTOR_5].step_angle,	M5_STEP_ANGLE },
+	{ "5","5tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&st_cfg.m[MOTOR_5].travel_rev,	M5_TRAVEL_PER_REV },
+	{ "5","5mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&st_cfg.m[MOTOR_5].microsteps,	M5_MICROSTEPS },
+	{ "5","5po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_po, (float *)&st_cfg.m[MOTOR_5].polarity,		M5_POLARITY },
+	{ "5","5pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&st_cfg.m[MOTOR_5].power_mode,	M5_POWER_MODE },
 #endif
 #if (MOTORS >= 6)
-	{ "6","6ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&cfg.m[MOTOR_6].motor_map,	M6_MOTOR_MAP },
-	{ "6","6sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&cfg.m[MOTOR_6].step_angle,	M6_STEP_ANGLE },
-	{ "6","6tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&cfg.m[MOTOR_6].travel_rev,	M6_TRAVEL_PER_REV },
-	{ "6","6mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&cfg.m[MOTOR_6].microsteps,	M6_MICROSTEPS },
-	{ "6","6po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_po, (float *)&cfg.m[MOTOR_6].polarity,	M6_POLARITY },
-	{ "6","6pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&cfg.m[MOTOR_6].power_mode,	M6_POWER_MODE },
+	{ "6","6ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&st_cfg.m[MOTOR_6].motor_map,	M6_MOTOR_MAP },
+	{ "6","6sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&st_cfg.m[MOTOR_6].step_angle,	M6_STEP_ANGLE },
+	{ "6","6tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&st_cfg.m[MOTOR_6].travel_rev,	M6_TRAVEL_PER_REV },
+	{ "6","6mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&st_cfg.m[MOTOR_6].microsteps,	M6_MICROSTEPS },
+	{ "6","6po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_po, (float *)&st_cfg.m[MOTOR_6].polarity,		M6_POLARITY },
+	{ "6","6pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&st_cfg.m[MOTOR_6].power_mode,	M6_POWER_MODE },
 #endif
 
 	// Axis parameters
@@ -693,7 +693,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys","ja",  _f07, 0, fmt_ja, print_lin, get_flu, set_flu, (float *)&cfg.junction_acceleration,	JUNCTION_ACCELERATION },
 	{ "sys","ct",  _f07, 4, fmt_ct, print_lin, get_flu, set_flu, (float *)&cfg.chordal_tolerance,		CHORDAL_TOLERANCE },
 	{ "sys","st",  _f07, 0, fmt_st, print_ui8, get_ui8, set_sw,  (float *)&sw.switch_type,				SWITCH_TYPE },
-	{ "sys","mt",  _f07, 2, fmt_mt, print_flt, get_flt, set_mt,  (float *)&cfg.motor_idle_timeout, 		MOTOR_IDLE_TIMEOUT},
+	{ "sys","mt",  _f07, 2, fmt_mt, print_flt, get_flt, set_mt,  (float *)&st_cfg.motor_idle_timeout, 	MOTOR_IDLE_TIMEOUT},
 	{ "",   "me",  _f00, 0, fmt_me, print_str, set_me,  set_me,  (float *)&cs.null, 0 },
 	{ "",   "md",  _f00, 0, fmt_md, print_str, set_md,  set_md,  (float *)&cs.null, 0 },
 
@@ -1323,7 +1323,7 @@ static void print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary u
 static stat_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
 {
 	uint8_t m = _get_motor(cmd->index);
-	cfg.m[m].steps_per_unit = (360 / (cfg.m[m].step_angle / cfg.m[m].microsteps) / cfg.m[m].travel_rev);
+	st_cfg.m[m].steps_per_unit = (360 / (st_cfg.m[m].step_angle / st_cfg.m[m].microsteps) / st_cfg.m[m].travel_rev);
 	return (STAT_OK);
 }
 
