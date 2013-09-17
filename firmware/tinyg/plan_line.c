@@ -82,9 +82,7 @@ void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
 
 uint8_t mp_get_runtime_busy()
 {
-	if ((st_isbusy() == true) || (mr.move_state > MOVE_STATE_NEW)) {
-		return (true);
-	}
+	if ((stepper_isbusy() == true) || (mr.move_state > MOVE_STATE_NEW)) return (true);
 	return (false);
 }
 

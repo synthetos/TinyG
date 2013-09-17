@@ -177,6 +177,17 @@ void stepper_init()
 }
 
 /*
+ * stepper_isbusy() - return TRUE if motors are running or a dwell is running
+ */
+inline uint8_t stepper_isbusy()
+{
+	if (st_run.dda_ticks_downcount == 0) {
+		return (false);
+	} 
+	return (true);
+}
+
+/*
  * Motor power management functions
  *
  * st_set_motor_idle_timeout()	- set timeout parameter
@@ -201,37 +212,54 @@ void st_set_motor_power(const uint8_t motor)
 void st_energize_motor(const uint8_t motor)
 {
 	switch(motor) {
-		case (MOTOR_1): { PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; return; }
-		case (MOTOR_2): { PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; return; }
-		case (MOTOR_3): { PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; return; }
-		case (MOTOR_4): { PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; return; }
+		case (MOTOR_1): { PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; break; }
+		case (MOTOR_2): { PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; break; }
+		case (MOTOR_3): { PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; break; }
+		case (MOTOR_4): { PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; break; }
+//		st_run.m[motor].power_state = MOTOR_POWERED;
 	}
 }
 
 void st_deenergize_motor(const uint8_t motor)
 {
 	switch (motor) {
-		case (MOTOR_1): { PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; return; }
-		case (MOTOR_2): { PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; return; }
-		case (MOTOR_3): { PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; return; }
-		case (MOTOR_4): { PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; return; }
+		case (MOTOR_1): { PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; break; }
+		case (MOTOR_2): { PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; break; }
+		case (MOTOR_3): { PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; break; }
+		case (MOTOR_4): { PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; break; }
 	}
+	st_run.m[motor].power_state = MOTOR_OFF;
 }
 
 void st_energize_motors()
 {
+	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
+		st_energize_motor(motor);
+		st_run.m[motor].power_state = MOTOR_TIME_IDLE_TIMEOUT;	// start the timeout
+	}
+/*
 	PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 	PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 	PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 	PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+
+	// if you turn them on you have to set the timers to turn them off
+	st_run.m[MOTOR_1].power_state = MOTOR_TIME_IDLE_TIMEOUT;
+	st_run.m[MOTOR_2].power_state = MOTOR_TIME_IDLE_TIMEOUT;
+	st_run.m[MOTOR_3].power_state = MOTOR_TIME_IDLE_TIMEOUT;
+	st_run.m[MOTOR_4].power_state = MOTOR_TIME_IDLE_TIMEOUT;
+*/
 }
 
 void st_deenergize_motors()
 {
-	PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-	PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-	PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-	PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
+		st_deenergize_motor(motor);
+	}
+//	PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+//	PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+//	PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+//	PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 }
 
 stat_t st_motor_power_callback() 	// called by controller
@@ -572,17 +600,6 @@ stat_t st_prep_line(float steps[], float microseconds)
 // FOOTNOTE: This expression was previously computed as below but floating 
 // point rounding errors caused subtle and nasty accumulated position errors:
 //	sp.dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
-
-/*
- * st_isbusy() - return TRUE if motors are running or a dwell is running
- */
-inline uint8_t st_isbusy()
-{
-	if (st_run.dda_ticks_downcount == 0) {
-		return (false);
-	} 
-	return (true);
-}
 
 /* 
  * st_set_polarity() - setter needed by the config system
