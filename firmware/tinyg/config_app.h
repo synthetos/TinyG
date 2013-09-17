@@ -186,69 +186,11 @@ enum qrVerbosity {					// planner queue enable and verbosity
 /***********************************************************************************
  **** APPLICATION_SPECIFIC CONFIG STRUCTURE(S) *************************************
  ***********************************************************************************/
-/*
-typedef struct cfgAxisParameters {
-	uint8_t axis_mode;				// see tgAxisMode in gcode.h
-	float feedrate_max;				// max velocity in mm/min or deg/min
-	float velocity_max;				// max velocity in mm/min or deg/min
-	float travel_max;				// work envelope w/warned or rejected blocks
-	float jerk_max;					// max jerk (Jm) in mm/min^3
-	float junction_dev;				// aka cornering delta
-	float radius;					// radius in mm for rotary axis modes
-	float search_velocity;			// homing search velocity
-	float latch_velocity;			// homing latch velocity
-	float latch_backoff;			// backoff from switches prior to homing latch movement
-	float zero_backoff;				// backoff from switches for machine zero
-	float jerk_homing;				// homing jerk (Jh) in mm/min^3
-} cfgAxis_t;
-*/
-/*
-typedef struct cfgMotorParameters {
-	uint8_t	motor_map;				// map motor to axis
-  	uint8_t microsteps;				// microsteps to apply for each axis (ex: 8)
-	uint8_t polarity;				// 0=normal polarity, 1=reverse motor direction
- 	uint8_t power_mode;				// See stepper.h for enum
-	float step_angle;				// degrees per whole step (ex: 1.8)
-	float travel_rev;				// mm or deg of travel per motor revolution
-	float steps_per_unit;			// steps (usteps)/mm or deg of travel
-} cfgMotor_t;
-*/
-
-typedef struct cfgPWMParameters {
-  	float frequency;				// base frequency for PWM driver, in Hz
-	float cw_speed_lo;				// minimum clockwise spindle speed [0..N]
-    float cw_speed_hi;				// maximum clockwise spindle speed
-    float cw_phase_lo;				// pwm phase at minimum CW spindle speed, clamped [0..1]
-    float cw_phase_hi;				// pwm phase at maximum CW spindle speed, clamped [0..1]
-	float ccw_speed_lo;				// minimum counter-clockwise spindle speed [0..N]
-    float ccw_speed_hi;				// maximum counter-clockwise spindle speed
-    float ccw_phase_lo;				// pwm phase at minimum CCW spindle speed, clamped [0..1]
-    float ccw_phase_hi;				// pwm phase at maximum CCW spindle speed, clamped
-    float phase_off;				// pwm phase when spindle is disabled
-} cfgPWM_t;
 
 typedef struct cfgParameters {
 	uint16_t magic_start;			// magic number to test memory integrity
 	uint16_t nvm_base_addr;			// NVM base address
 	uint16_t nvm_profile_base;		// NVM base address of current profile
-
-	// system group settings
-//	float junction_acceleration;	// centripetal acceleration max for cornering
-//	float chordal_tolerance;		// arc chordal accuracy setting in mm
-//	float motor_idle_timeout;		// seconds before setting motors to idle current (currently this is OFF)
-//	float max_spindle_speed;		// in RPM
-
-	// hidden system settings
-//	float min_segment_len;			// line drawing resolution in mm
-//	float arc_segment_len;			// arc drawing resolution in mm
-//	float estd_segment_usec;		// approximate segment time in microseconds
-
-	// gcode power-on default settings - defaults are not the same as the gm state
-//	uint8_t coord_system;			// G10 active coordinate system default
-//	uint8_t select_plane;			// G17,G18,G19 reset default
-//	uint8_t units_mode;				// G20,G21 reset default
-//	uint8_t path_control;			// G61,G61.1,G64 reset default
-//	uint8_t distance_mode;			// G90,G91 reset default
 
 	// communications settings
 	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
@@ -279,14 +221,6 @@ typedef struct cfgParameters {
 	uint32_t status_report_interval;// in milliseconds
 	index_t status_report_list[CMD_STATUS_REPORT_LEN];// status report elements to report
 	float status_report_value[CMD_STATUS_REPORT_LEN];// previous values for filtered reporting
-
-	// coordinate systems and offsets
-//	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
-
-	// motor and axis structs
-//	cfgMotor_t m[MOTORS];			// settings for motors 1-4
-//	cfgAxis_t a[AXES];				// settings for axes X,Y,Z,A B,C
-	cfgPWM_t p;						// settings for PWM p
 
 	uint16_t magic_end;
 } cfgParameters_t;

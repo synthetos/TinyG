@@ -28,6 +28,32 @@
 #ifndef pwm_h
 #define pwm_h
 
+typedef struct pwmConfigPWM {
+  	float frequency;				// base frequency for PWM driver, in Hz
+	float cw_speed_lo;				// minimum clockwise spindle speed [0..N]
+    float cw_speed_hi;				// maximum clockwise spindle speed
+    float cw_phase_lo;				// pwm phase at minimum CW spindle speed, clamped [0..1]
+    float cw_phase_hi;				// pwm phase at maximum CW spindle speed, clamped [0..1]
+	float ccw_speed_lo;				// minimum counter-clockwise spindle speed [0..N]
+    float ccw_speed_hi;				// maximum counter-clockwise spindle speed
+    float ccw_phase_lo;				// pwm phase at minimum CCW spindle speed, clamped [0..1]
+    float ccw_phase_hi;				// pwm phase at maximum CCW spindle speed, clamped
+    float phase_off;				// pwm phase when spindle is disabled
+} pwmConfigPWM_t;
+
+typedef struct pwmConfig {
+	pwmConfigPWM_t p;				// settings for PWM p
+} pwmConfig_t;
+
+typedef struct pwmStruct { 			// one per PWM channel
+	uint8_t ctrla;					// byte needed to active CTRLA (it's dynamic - rest are static)
+	TC1_t *timer;					// assumes TC1 flavor timers used for PWM channels
+} pwmStruct_t;
+
+extern pwmConfig_t pwm_cfg;			// config struct
+extern pwmStruct_t pwm[];			// array of PWMs (usually 2, see system.h)
+
+
 void pwm_init(void);
 stat_t pwm_set_freq(uint8_t channel, float freq);
 stat_t pwm_set_duty(uint8_t channel, float duty);
