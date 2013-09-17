@@ -57,17 +57,16 @@
 #define INCREMENT_DIAGNOSTIC_COUNTER(motor)	// chose this one to disable counters
 #endif
 
-// Allocate structures
+/**** Allocate structures ****/
+
 stConfig_t st_cfg;
 static stRunSingleton_t st_run;
 static stPrepSingleton_t st_prep;
 
-// Setup local functions
+/**** Setup local functions ****/
+
 static void _load_move(void);
 static void _request_load_move(void);
-
-magic_t st_get_stepper_run_magic() { return (st_run.magic_start);}
-magic_t st_get_stepper_prep_magic() { return (st_prep.magic_start);}
 
 /* 
  * stepper_init() - initialize stepper motor subsystem 
@@ -132,6 +131,12 @@ inline uint8_t stepper_isbusy()
 }
 
 /*
+ * Magic Numbers
+ */
+magic_t st_get_stepper_run_magic() { return (st_run.magic_start);}
+magic_t st_get_stepper_prep_magic() { return (st_prep.magic_start);}
+
+/*
  * Motor power management functions
  *
  * st_set_motor_idle_timeout()	- set timeout parameter
@@ -181,18 +186,6 @@ void st_energize_motors()
 		st_energize_motor(motor);
 		st_run.m[motor].power_state = MOTOR_TIME_IDLE_TIMEOUT;	// start the timeout
 	}
-/*
-	PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-	PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-	PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-	PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-
-	// if you turn them on you have to set the timers to turn them off
-	st_run.m[MOTOR_1].power_state = MOTOR_TIME_IDLE_TIMEOUT;
-	st_run.m[MOTOR_2].power_state = MOTOR_TIME_IDLE_TIMEOUT;
-	st_run.m[MOTOR_3].power_state = MOTOR_TIME_IDLE_TIMEOUT;
-	st_run.m[MOTOR_4].power_state = MOTOR_TIME_IDLE_TIMEOUT;
-*/
 }
 
 void st_deenergize_motors()
@@ -200,10 +193,6 @@ void st_deenergize_motors()
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 		st_deenergize_motor(motor);
 	}
-//	PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-//	PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-//	PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-//	PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
 }
 
 stat_t st_motor_power_callback() 	// called by controller
@@ -364,11 +353,11 @@ static void _request_load_move()
 
 void _load_move()
 {
-	if (st_run.dda_ticks_downcount != 0) return;			// exit if it's still busy
+	if (st_run.dda_ticks_downcount != 0) return;					// exit if it's still busy
 
-	if (st_prep.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {	// if there are no moves to load
-		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {// start motor idle cycle
-			st_run.m[motor].power_state = MOTOR_START_IDLE_TIMEOUT;
+	if (st_prep.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {		// if there are no moves to load...
+		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
+			st_run.m[motor].power_state = MOTOR_START_IDLE_TIMEOUT;	// ...start motor power timeouts
 		}
 		return;
 	}
@@ -531,7 +520,11 @@ stat_t st_prep_line(float steps[], float microseconds)
 	}
 	st_prep.dda_period = _f_to_period(f_dda);
 	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * f_dda);
-	st_prep.dda_ticks_X_substeps = st_prep.dda_ticks * dda_substeps;	// see FOOTNOTE
+	st_prep.dda_ticks_X_substeps = st_prep.dda_ticks * dda_substeps;
+
+// 	FOOTNOTE: The above expression was previously computed as below but floating point 
+//  rounding errors caused subtle and nasty accumulated position errors:
+//	st_prep.dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
 
 	// anti-stall measure in case change in velocity between segments is too great 
 	if ((st_prep.dda_ticks * ACCUMULATOR_RESET_FACTOR) < st_prep.prev_ticks) {  // NB: uint32_t math
@@ -540,18 +533,6 @@ stat_t st_prep_line(float steps[], float microseconds)
 	st_prep.prev_ticks = st_prep.dda_ticks;
 	st_prep.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
-}
-// FOOTNOTE: This expression was previously computed as below but floating 
-// point rounding errors caused subtle and nasty accumulated position errors:
-//	sp.dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
-
-/* 
- * st_set_polarity() - setter needed by the config system
- */
-
-void st_set_polarity(const uint8_t motor, const uint8_t polarity)
-{
-	st_run.m[motor].polarity = polarity;
 }
 
 /* 
@@ -603,7 +584,7 @@ void st_dump_stepper_state()
 
 	for (i=0; i<MOTORS; i++) {
 		fprintf_P(stderr, (PGM_P)sts_motr, i, 
-			st_run.m[i].polarity,
+			st_cfg.m[i].polarity,
 			st_run.m[i].phase_increment,
 			st_run.m[i].phase_accumulator);
 	}

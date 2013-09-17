@@ -214,10 +214,9 @@ typedef struct stConfig {			// stepper configs
 typedef struct stRunMotor { 		// one per controlled motor
 	int32_t phase_increment;		// total steps in axis times substeps factor
 	int32_t phase_accumulator;		// DDA phase angle accumulator for axis
-	uint8_t polarity;				// 0=normal polarity, 1=reverse motor polarity
 	uint8_t power_state;			// state machine for managing motor power
 	uint32_t power_systick;			// sys_tick for next state transition
-//	uint32_t power_level;			// power level for this segment (FUTURE)
+	uint32_t power_level;			// power level for this segment (FUTURE)
 } stRunMotor_t;
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
@@ -270,7 +269,6 @@ void st_energize_motors(void);
 void st_deenergize_motors(void);
 stat_t st_motor_power_callback(void);
 
-void st_set_polarity(const uint8_t motor, const uint8_t polarity);
 void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode);
 void st_set_power_mode(const uint8_t motor, const uint8_t power_mode);
 

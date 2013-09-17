@@ -24,11 +24,13 @@
 
  Project setup notes:
  ref: http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=117023
- Yes it's definitely worth making WinAVR work. To install WinAVR for the project use 
- Project-Configuration Options and under Custom Options untick the "Use toolchain" 
- box then set the top one to \winavr\bin\avr-gcc.exe 
- and the lower one to \winavr\utils\bin\make.exe
+ `
+ `  Yes it's definitely worth making WinAVR work. To install WinAVR for the project use 
+ `  Project-Configuration Options and under Custom Options untick the "Use toolchain" box 
+    then set the top one to \winavr\bin\avr-gcc.exe 	(C:\WinAVR-20100110\bin\avr-gcc.exe)
+    and the lower one to 	\winavr\utils\bin\make.exe	(C:\WinAVR-20100110\utils\bin\make.exe)
  */
+
 #ifndef TINYG_H_ONCE
 #define TINYG_H_ONCE
 
@@ -46,7 +48,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		392.55	// Moved PWM configs to PWM files
+#define TINYG_FIRMWARE_BUILD   		392.56	// Removed redundant motor polarity functions
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
