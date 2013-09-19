@@ -176,51 +176,29 @@ enum cmdType {						// classification of commands
 	CMD_TYPE_LINENUM				// cmd object carries a gcode line number
 };
 
-enum qrVerbosity {					// planner queue enable and verbosity
-	QR_OFF = 0,						// no response is provided
-	QR_FILTERED,					// queue depth reported only above hi-water mark and below lo-water mark  
-	QR_VERBOSE,						// queue depth reported for all buffers
-	QR_TRIPLE						// queue depth reported for all buffers, and buffers added, buffered removed
-};
-
 /***********************************************************************************
  **** APPLICATION_SPECIFIC CONFIG STRUCTURE(S) *************************************
  ***********************************************************************************/
 
 typedef struct cfgParameters {
 	uint16_t magic_start;			// magic number to test memory integrity
-	uint16_t nvm_base_addr;			// NVM base address
-	uint16_t nvm_profile_base;		// NVM base address of current profile
 
 	// communications settings
+	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
+	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
+
 	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
 //	uint8_t ignore_crlf;			// ignore CR or LF on RX --- these 4 are shadow settings for XIO cntrl bits
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_flow_control;	// enable XON/XOFF or RTS/CTS flow control
-	uint8_t footer_style;			// select footer style
 
-	uint8_t queue_report_verbosity;	// queue reports enabled and verbosity level
-	uint8_t queue_report_hi_water;
-	uint8_t queue_report_lo_water;
-
-	uint8_t json_verbosity;			// see enum in this file for settings
-	uint8_t json_footer_depth;		// 0=footer is peer to response 'r', 1=child of response 'r'
+	// text mode settings
 	uint8_t text_verbosity;			// see enum in this file for settings
-	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
-	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
 
-	uint8_t echo_json_footer;		// flags for JSON responses serialization
-	uint8_t echo_json_messages;
-	uint8_t echo_json_configs;
-	uint8_t echo_json_linenum;
-	uint8_t echo_json_gcode_block;
-
-	// status report configs		// see cm struct for SR operating variables
-//	uint8_t status_report_verbosity;// see enum in this file for settings
-//	uint32_t status_report_interval;// in milliseconds
-//	index_t status_report_list[CMD_STATUS_REPORT_LEN];// status report elements to report
-//	float status_report_value[CMD_STATUS_REPORT_LEN];// previous values for filtered reporting
+	// Non-volatile RAM
+	uint16_t nvm_base_addr;			// NVM base address
+	uint16_t nvm_profile_base;		// NVM base address of current profile
 
 	uint16_t magic_end;
 } cfgParameters_t;

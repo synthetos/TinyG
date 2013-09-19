@@ -654,13 +654,13 @@ cmdObj_t *cmd_add_string_P(const char_t *token, const char_t *string)
 
 cmdObj_t *cmd_add_conditional_message(const char_t *string)		// conditionally add a message object to the body
 {
-	if ((cfg.comm_mode == JSON_MODE) && (cfg.echo_json_messages != true)) { return (NULL);}
+	if ((cfg.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
 	return(cmd_add_string("msg", string));
 }
 
 cmdObj_t *cmd_add_conditional_message_P(const char_t *string)	// conditionally add a message object to the body
 {
-	if ((cfg.comm_mode == JSON_MODE) && (cfg.echo_json_messages != true)) { return (NULL);}
+	if ((cfg.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
 	return(cmd_add_string_P("msg", string));
 }
 

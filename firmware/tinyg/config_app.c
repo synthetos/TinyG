@@ -531,8 +531,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "x","xjm",_fip, 0, fmt_Xjm, pr_ma_lin, get_jrk, set_jrk,(float *)&cm.a[AXIS_X].jerk_max,		X_JERK_MAX },
 	{ "x","xjh",_fip, 0, fmt_Xjh, pr_ma_lin, get_jrk, set_jrk,(float *)&cm.a[AXIS_X].jerk_homing,	X_JERK_HOMING },
 	{ "x","xjd",_fip, 4, fmt_Xjd, pr_ma_lin, get_flu, set_flu,(float *)&cm.a[AXIS_X].junction_dev,	X_JUNCTION_DEVIATION },
-	{ "x","xsn",_fip, 0, fmt_Xsn, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[0],						X_SWITCH_MODE_MIN },
-	{ "x","xsx",_fip, 0, fmt_Xsx, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[1],						X_SWITCH_MODE_MAX },
+	{ "x","xsn",_fip, 0, fmt_Xsn, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[0],					X_SWITCH_MODE_MIN },
+	{ "x","xsx",_fip, 0, fmt_Xsx, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[1],					X_SWITCH_MODE_MAX },
 	{ "x","xsv",_fip, 0, fmt_Xsv, pr_ma_lin, get_flu, set_flu,(float *)&cm.a[AXIS_X].search_velocity,X_SEARCH_VELOCITY },
 	{ "x","xlv",_fip, 0, fmt_Xlv, pr_ma_lin, get_flu, set_flu,(float *)&cm.a[AXIS_X].latch_velocity,X_LATCH_VELOCITY },
 	{ "x","xlb",_fip, 3, fmt_Xlb, pr_ma_lin, get_flu, set_flu,(float *)&cm.a[AXIS_X].latch_backoff,	X_LATCH_BACKOFF },
@@ -545,8 +545,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "y","yjm",_fip, 0, fmt_Xjm, pr_ma_lin, get_jrk, set_jrk,(float *)&cm.a[AXIS_Y].jerk_max,		Y_JERK_MAX },
 	{ "y","yjh",_fip, 0, fmt_Xjh, pr_ma_lin, get_jrk, set_jrk,(float *)&cm.a[AXIS_Y].jerk_homing,	Y_JERK_HOMING },
 	{ "y","yjd",_fip, 4, fmt_Xjd, pr_ma_lin, get_flu, set_flu,(float *)&cm.a[AXIS_Y].junction_dev,	Y_JUNCTION_DEVIATION },
-	{ "y","ysn",_fip, 0, fmt_Xsn, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[2],						Y_SWITCH_MODE_MIN },
-	{ "y","ysx",_fip, 0, fmt_Xsx, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[3],						Y_SWITCH_MODE_MAX },
+	{ "y","ysn",_fip, 0, fmt_Xsn, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[2],					Y_SWITCH_MODE_MIN },
+	{ "y","ysx",_fip, 0, fmt_Xsx, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[3],					Y_SWITCH_MODE_MAX },
 	{ "y","ysv",_fip, 0, fmt_Xsv, pr_ma_lin, get_flu, set_flu,(float *)&cm.a[AXIS_Y].search_velocity,Y_SEARCH_VELOCITY },
 	{ "y","ylv",_fip, 0, fmt_Xlv, pr_ma_lin, get_flu, set_flu,(float *)&cm.a[AXIS_Y].latch_velocity,Y_LATCH_VELOCITY },
 	{ "y","ylb",_fip, 3, fmt_Xlb, pr_ma_lin, get_flu, set_flu,(float *)&cm.a[AXIS_Y].latch_backoff,	Y_LATCH_BACKOFF },
@@ -559,8 +559,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "z","zjm",_fip, 0, fmt_Xjm, pr_ma_lin, get_jrk, set_jrk,(float *)&cm.a[AXIS_Z].jerk_max,		Z_JERK_MAX },
 	{ "z","zjh",_fip, 0, fmt_Xjh, pr_ma_lin, get_jrk, set_jrk,(float *)&cm.a[AXIS_Z].jerk_homing,	Z_JERK_HOMING },
 	{ "z","zjd",_fip, 4, fmt_Xjd, pr_ma_lin, get_flu, set_flu,(float *)&cm.a[AXIS_Z].junction_dev,	Z_JUNCTION_DEVIATION },
-	{ "z","zsn",_fip, 0, fmt_Xsn, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[4],						Z_SWITCH_MODE_MIN },
-	{ "z","zsx",_fip, 0, fmt_Xsx, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[5],						Z_SWITCH_MODE_MAX },
+	{ "z","zsn",_fip, 0, fmt_Xsn, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[4],					Z_SWITCH_MODE_MIN },
+	{ "z","zsx",_fip, 0, fmt_Xsx, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[5],					Z_SWITCH_MODE_MAX },
 	{ "z","zsv",_fip, 0, fmt_Xsv, pr_ma_lin, get_flu, set_flu,(float *)&cm.a[AXIS_Z].search_velocity,Z_SEARCH_VELOCITY },
 	{ "z","zlv",_fip, 0, fmt_Xlv, pr_ma_lin, get_flu, set_flu,(float *)&cm.a[AXIS_Z].latch_velocity,Z_LATCH_VELOCITY },
 	{ "z","zlb",_fip, 3, fmt_Xlb, pr_ma_lin, get_flu, set_flu,(float *)&cm.a[AXIS_Z].latch_backoff,	Z_LATCH_BACKOFF },
@@ -574,8 +574,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "a","ajh",_fip, 0, fmt_Xjh, pr_ma_lin, get_jrk, set_jrk,(float *)&cm.a[AXIS_A].jerk_homing,	A_JERK_HOMING },
 	{ "a","ajd",_fip, 4, fmt_Xjd, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_A].junction_dev,	A_JUNCTION_DEVIATION },
 	{ "a","ara",_fip, 3, fmt_Xra, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_A].radius,		A_RADIUS},
-	{ "a","asn",_fip, 0, fmt_Xsn, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[6],						A_SWITCH_MODE_MIN },
-	{ "a","asx",_fip, 0, fmt_Xsx, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[7],						A_SWITCH_MODE_MAX },
+	{ "a","asn",_fip, 0, fmt_Xsn, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[6],					A_SWITCH_MODE_MIN },
+	{ "a","asx",_fip, 0, fmt_Xsx, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[7],					A_SWITCH_MODE_MAX },
 	{ "a","asv",_fip, 0, fmt_Xsv, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_A].search_velocity,A_SEARCH_VELOCITY },
 	{ "a","alv",_fip, 0, fmt_Xlv, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_A].latch_velocity,A_LATCH_VELOCITY },
 	{ "a","alb",_fip, 3, fmt_Xlb, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_A].latch_backoff,	A_LATCH_BACKOFF },
@@ -589,8 +589,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 //	{ "b","bjh",_fip, 0, fmt_Xjh, pr_ma_lin, get_jrk, set_jrk,(float *)&cm.a[AXIS_B].jerk_homing,	B_JERK_HOMING },
 	{ "b","bjd",_fip, 0, fmt_Xjd, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_B].junction_dev,	B_JUNCTION_DEVIATION },
 	{ "b","bra",_fip, 3, fmt_Xra, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_B].radius,		B_RADIUS },
-//	{ "a","asn",_fip, 0, fmt_Xsn, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[6],						B_SWITCH_MODE_MIN },
-//	{ "a","asx",_fip, 0, fmt_Xsx, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[7],						B_SWITCH_MODE_MAX },
+//	{ "a","asn",_fip, 0, fmt_Xsn, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[6],					B_SWITCH_MODE_MIN },
+//	{ "a","asx",_fip, 0, fmt_Xsx, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[7],					B_SWITCH_MODE_MAX },
 //	{ "b","bsv",_fip, 0, fmt_Xsv, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_B].search_velocity,B_SEARCH_VELOCITY },
 //	{ "b","blv",_fip, 0, fmt_Xlv, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_B].latch_velocity,B_LATCH_VELOCITY },
 //	{ "b","blb",_fip, 3, fmt_Xlb, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_B].latch_backoff,	B_LATCH_BACKOFF },
@@ -604,8 +604,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 //	{ "c","cjh",_fip, 0, fmt_Xjh, pr_ma_lin, get_jrk, set_jrk,(float *)&cm.a[AXIS_C].jerk_homing,	C_JERK_HOMING },
 	{ "c","cjd",_fip, 0, fmt_Xjd, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_C].junction_dev,	C_JUNCTION_DEVIATION },
 	{ "c","cra",_fip, 3, fmt_Xra, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_C].radius,		C_RADIUS },
-//	{ "c","csn",_fip, 0, fmt_Xsn, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[6],						C_SWITCH_MODE_MIN },
-//	{ "c","csx",_fip, 0, fmt_Xsx, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[7],						C_SWITCH_MODE_MAX },
+//	{ "c","csn",_fip, 0, fmt_Xsn, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[6],					C_SWITCH_MODE_MIN },
+//	{ "c","csx",_fip, 0, fmt_Xsx, pr_ma_ui8, get_ui8, set_sw, (float *)&sw.mode[7],					C_SWITCH_MODE_MAX },
 //	{ "c","csv",_fip, 0, fmt_Xsv, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_C].search_velocity,C_SEARCH_VELOCITY },
 //	{ "c","clv",_fip, 0, fmt_Xlv, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_C].latch_velocity,C_LATCH_VELOCITY },
 //	{ "c","clb",_fip, 3, fmt_Xlb, pr_ma_rot, get_flt, set_flt,(float *)&cm.a[AXIS_C].latch_backoff,	C_LATCH_BACKOFF },
@@ -688,17 +688,17 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "g30","g30c",_fin, 3, fmt_cloc, print_corr, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_C], 0 },
 
 	// System parameters
-	{ "sys","ja",  _f07, 0, fmt_ja, print_lin, get_flu, set_flu, (float *)&cm.junction_acceleration,JUNCTION_ACCELERATION },
-	{ "sys","ct",  _f07, 4, fmt_ct, print_lin, get_flu, set_flu, (float *)&cm.chordal_tolerance,	CHORDAL_TOLERANCE },
+	{ "sys","ja",  _f07, 0, fmt_ja, print_lin, get_flu, set_flu, (float *)&cm.junction_acceleration,	JUNCTION_ACCELERATION },
+	{ "sys","ct",  _f07, 4, fmt_ct, print_lin, get_flu, set_flu, (float *)&cm.chordal_tolerance,		CHORDAL_TOLERANCE },
 	{ "sys","st",  _f07, 0, fmt_st, print_ui8, get_ui8, set_sw,  (float *)&sw.switch_type,				SWITCH_TYPE },
 	{ "sys","mt",  _f07, 2, fmt_mt, print_flt, get_flt, set_mt,  (float *)&st_cfg.motor_idle_timeout, 	MOTOR_IDLE_TIMEOUT},
 	{ "",   "me",  _f00, 0, fmt_me, print_str, set_me,  set_me,  (float *)&cs.null, 0 },
 	{ "",   "md",  _f00, 0, fmt_md, print_str, set_md,  set_md,  (float *)&cs.null, 0 },
 
 	{ "sys","ej",  _f07, 0, fmt_ej, print_ui8, get_ui8, set_01,  (float *)&cfg.comm_mode,				COMM_MODE },
-	{ "sys","jv",  _f07, 0, fmt_jv, print_ui8, get_ui8, set_jv,  (float *)&cfg.json_verbosity,			JSON_VERBOSITY },
+	{ "sys","jv",  _f07, 0, fmt_jv, print_ui8, get_ui8, set_jv,  (float *)&js.json_verbosity,			JSON_VERBOSITY },
 	{ "sys","tv",  _f07, 0, fmt_tv, print_ui8, get_ui8, set_01,  (float *)&cfg.text_verbosity,			TEXT_VERBOSITY },
-	{ "sys","qv",  _f07, 0, fmt_qv, print_ui8, get_ui8, set_0123,(float *)&cfg.queue_report_verbosity,	QR_VERBOSITY },
+	{ "sys","qv",  _f07, 0, fmt_qv, print_ui8, get_ui8, set_0123,(float *)&qr.queue_report_verbosity,	QR_VERBOSITY },
 	{ "sys","sv",  _f07, 0, fmt_sv, print_ui8, get_ui8, set_012, (float *)&sr.status_report_verbosity,	SR_VERBOSITY },
 	{ "sys","si",  _f07, 0, fmt_si, print_flt, get_int, set_si,  (float *)&sr.status_report_interval,	STATUS_REPORT_INTERVAL_MS },
 
@@ -706,7 +706,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys","ec",  _f07, 0, fmt_ec, print_ui8, get_ui8, set_ec,  (float *)&cfg.enable_cr,				COM_EXPAND_CR },
 	{ "sys","ee",  _f07, 0, fmt_ee, print_ui8, get_ui8, set_ee,  (float *)&cfg.enable_echo,				COM_ENABLE_ECHO },
 	{ "sys","ex",  _f07, 0, fmt_ex, print_ui8, get_ui8, set_ex,  (float *)&cfg.enable_flow_control,		COM_ENABLE_FLOW_CONTROL },
-	{ "sys","fs",  _f07, 0, fmt_fs, print_ui8, get_ui8, set_ui8, (float *)&cfg.footer_style,			0 },
+//	{ "sys","fs",  _f07, 0, fmt_fs, print_ui8, get_ui8, set_ui8, (float *)&js.json_footer_style,		0 },
 	{ "sys","baud",_fns, 0, fmt_baud,print_ui8,get_ui8, set_baud,(float *)&cfg.usb_baud_rate,			XIO_BAUD_115200 },
 	{ "sys","net", _fip, 0, fmt_net,print_ui8, get_ui8, set_ui8, (float *)&cs.network_mode,				NETWORK_MODE },
 
@@ -722,21 +722,20 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "ss","ss7",  _f00, 0, fmt_ss, print_ss, get_ui8, set_nul, (float *)&sw.state[7], 0 },
 */
 	// NOTE: The ordering within the gcode defaults is important for token resolution
-	{ "sys","gpl", _f07, 0, fmt_gpl, print_ui8, get_ui8, set_012, (float *)&cm.select_plane,		GCODE_DEFAULT_PLANE },
-	{ "sys","gun", _f07, 0, fmt_gun, print_ui8, get_ui8, set_01,  (float *)&cm.units_mode,			GCODE_DEFAULT_UNITS },
-	{ "sys","gco", _f07, 0, fmt_gco, print_ui8, get_ui8, set_ui8, (float *)&cm.coord_system,		GCODE_DEFAULT_COORD_SYSTEM },
-	{ "sys","gpa", _f07, 0, fmt_gpa, print_ui8, get_ui8, set_012, (float *)&cm.path_control,		GCODE_DEFAULT_PATH_CONTROL },
-	{ "sys","gdi", _f07, 0, fmt_gdi, print_ui8, get_ui8, set_01,  (float *)&cm.distance_mode,		GCODE_DEFAULT_DISTANCE_MODE },
+	{ "sys","gpl", _f07, 0, fmt_gpl, print_ui8, get_ui8, set_012, (float *)&cm.select_plane,	GCODE_DEFAULT_PLANE },
+	{ "sys","gun", _f07, 0, fmt_gun, print_ui8, get_ui8, set_01,  (float *)&cm.units_mode,		GCODE_DEFAULT_UNITS },
+	{ "sys","gco", _f07, 0, fmt_gco, print_ui8, get_ui8, set_ui8, (float *)&cm.coord_system,	GCODE_DEFAULT_COORD_SYSTEM },
+	{ "sys","gpa", _f07, 0, fmt_gpa, print_ui8, get_ui8, set_012, (float *)&cm.path_control,	GCODE_DEFAULT_PATH_CONTROL },
+	{ "sys","gdi", _f07, 0, fmt_gdi, print_ui8, get_ui8, set_01,  (float *)&cm.distance_mode,	GCODE_DEFAULT_DISTANCE_MODE },
 	{ "",   "gc",  _f00, 0, fmt_nul, print_nul, get_gc,  run_gc,  (float *)&cs.null, 0 }, // gcode block - must be last in this group
 
 	// "hidden" parameters (not in system group)
-	{ "",   "ms",  _fip, 0, fmt_ms, print_lin, get_flt, set_flt, (float *)&cm.estd_segment_usec,	NOM_SEGMENT_USEC },
-	{ "",   "ml",  _fip, 4, fmt_ml, print_lin, get_flu, set_flu, (float *)&cm.min_segment_len,		MIN_LINE_LENGTH },
-	{ "",   "ma",  _fip, 4, fmt_ma, print_lin, get_flu, set_flu, (float *)&cm.arc_segment_len,		ARC_SEGMENT_LENGTH },
-	{ "",   "qrh", _fip, 0, fmt_ui8,print_ui8, get_ui8, set_ui8, (float *)&cfg.queue_report_hi_water,	QR_HI_WATER },
-	{ "",   "qrl", _fip, 0, fmt_ui8,print_ui8, get_ui8, set_ui8, (float *)&cfg.queue_report_lo_water,	QR_LO_WATER },
-	{ "",   "qrl", _fip, 0, fmt_ui8,print_ui8, get_ui8, set_ui8, (float *)&cfg.queue_report_lo_water,	QR_LO_WATER },
-	{ "",   "fd",  _fip, 0, fmt_ui8,print_ui8, get_ui8, set_01,  (float *)&cfg.json_footer_depth,		JSON_FOOTER_DEPTH },
+	{ "",   "ms",  _fip, 0, fmt_ms, print_lin, get_flt, set_flt, (float *)&cm.estd_segment_usec,		NOM_SEGMENT_USEC },
+	{ "",   "ml",  _fip, 4, fmt_ml, print_lin, get_flu, set_flu, (float *)&cm.min_segment_len,			MIN_LINE_LENGTH },
+	{ "",   "ma",  _fip, 4, fmt_ma, print_lin, get_flu, set_flu, (float *)&cm.arc_segment_len,			ARC_SEGMENT_LENGTH },
+	{ "",   "qrh", _fip, 0, fmt_ui8,print_ui8, get_ui8, set_ui8, (float *)&qr.queue_report_hi_water,	QR_HI_WATER },
+	{ "",   "qrl", _fip, 0, fmt_ui8,print_ui8, get_ui8, set_ui8, (float *)&qr.queue_report_lo_water,	QR_LO_WATER },
+	{ "",   "fd",  _fip, 0, fmt_ui8,print_ui8, get_ui8, set_01,  (float *)&js.json_footer_depth,		JSON_FOOTER_DEPTH },
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
@@ -1040,19 +1039,19 @@ static stat_t run_sx(cmdObj_t *cmd)
 static stat_t set_jv(cmdObj_t *cmd) 
 {
 	if (cmd->value > JV_VERBOSE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	cfg.json_verbosity = cmd->value;
+	js.json_verbosity = cmd->value;
 
-	cfg.echo_json_footer = false;
-	cfg.echo_json_messages = false;
-	cfg.echo_json_configs = false;
-	cfg.echo_json_linenum = false;
-	cfg.echo_json_gcode_block = false;
+	js.echo_json_footer = false;
+	js.echo_json_messages = false;
+	js.echo_json_configs = false;
+	js.echo_json_linenum = false;
+	js.echo_json_gcode_block = false;
 
-	if (cmd->value >= JV_FOOTER) 	{ cfg.echo_json_footer = true;}
-	if (cmd->value >= JV_MESSAGES)	{ cfg.echo_json_messages = true;}
-	if (cmd->value >= JV_CONFIGS)	{ cfg.echo_json_configs = true;}
-	if (cmd->value >= JV_LINENUM)	{ cfg.echo_json_linenum = true;}
-	if (cmd->value >= JV_VERBOSE)	{ cfg.echo_json_gcode_block = true;}
+	if (cmd->value >= JV_FOOTER) 	{ js.echo_json_footer = true;}
+	if (cmd->value >= JV_MESSAGES)	{ js.echo_json_messages = true;}
+	if (cmd->value >= JV_CONFIGS)	{ js.echo_json_configs = true;}
+	if (cmd->value >= JV_LINENUM)	{ js.echo_json_linenum = true;}
+	if (cmd->value >= JV_VERBOSE)	{ js.echo_json_gcode_block = true;}
 
 	return(STAT_OK);
 }

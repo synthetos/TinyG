@@ -45,6 +45,7 @@ extern "C"{
 /**** Allocation ****/
 
 srSingleton_t sr;
+qrSingleton_t qr;
 
 /**** Status and Exception Messages **************************************************
  * rpt_get_status_message() - return the status message
@@ -175,7 +176,7 @@ void rpt_exception(uint8_t status, int16_t value)
 void _startup_helper(stat_t status, const char *msg)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
-	cfg.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
+	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
 	cmd_reset_list();
 	cmd_add_object((const char_t *)"fb");
 	cmd_add_object((const char_t *)"fv");
@@ -428,15 +429,6 @@ uint8_t rpt_populate_filtered_status_report()
  * rpt_queue_report_callback()	- run the queue report w/stored values
  */
 
-struct qrIndexes {				// static data for queue reports
-	uint8_t request;			// set to true to request a report
-	uint8_t buffers_available;	// stored value used by callback
-	uint8_t prev_available;		// used to filter reports
-	uint8_t buffers_added;		// buffers added since last report
-	uint8_t buffers_removed;	// buffers removed since last report
-};
-static struct qrIndexes qr;
-
 void rpt_clear_queue_report()
 {
 	qr.request = false;
@@ -447,7 +439,7 @@ void rpt_clear_queue_report()
 void rpt_request_queue_report(int8_t buffers)
 //void rpt_request_queue_report()
 {
-	if (cfg.queue_report_verbosity == QR_OFF) return;
+	if (qr.queue_report_verbosity == QR_OFF) return;
 
 	qr.buffers_available = mp_get_planner_buffers_available();
 
@@ -458,12 +450,12 @@ void rpt_request_queue_report(int8_t buffers)
 	}
 
 	// perform filtration for QR_FILTERED reports
-	if (cfg.queue_report_verbosity == QR_FILTERED) {
+	if (qr.queue_report_verbosity == QR_FILTERED) {
 		if (qr.buffers_available == qr.prev_available) {
 			return;
 		}
-		if ((qr.buffers_available > cfg.queue_report_lo_water) && 	// e.g. > 2 buffers available
-			(qr.buffers_available < cfg.queue_report_hi_water)) {	// e.g. < 20 buffers available
+		if ((qr.buffers_available > qr.queue_report_lo_water) && 	// e.g. > 2 buffers available
+			(qr.buffers_available < qr.queue_report_hi_water)) {	// e.g. < 20 buffers available
 			return;
 		}
 	}
@@ -477,15 +469,15 @@ uint8_t rpt_queue_report_callback()
 	qr.request = false;
 
 	if (cfg.comm_mode == TEXT_MODE) {
-		if (cfg.queue_report_verbosity == QR_VERBOSE) {
+		if (qr.queue_report_verbosity == QR_VERBOSE) {
 			fprintf(stderr, "qr:%d\n", qr.buffers_available);
-		} else  if (cfg.queue_report_verbosity == QR_TRIPLE) {
+		} else  if (qr.queue_report_verbosity == QR_TRIPLE) {
 			fprintf(stderr, "qr:%d,added:%d,removed:%d\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
 		}
 	} else {
-		if (cfg.queue_report_verbosity == QR_VERBOSE) {
+		if (qr.queue_report_verbosity == QR_VERBOSE) {
 			fprintf(stderr, "{\"qr\":%d}\n", qr.buffers_available);
-		} else  if (cfg.queue_report_verbosity == QR_TRIPLE) {
+		} else  if (qr.queue_report_verbosity == QR_TRIPLE) {
 			fprintf(stderr, "{\"qr\":[%d,%d,%d]}\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
 			rpt_clear_queue_report();
 		}

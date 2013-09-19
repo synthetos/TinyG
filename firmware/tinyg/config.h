@@ -235,44 +235,12 @@ enum tgCommunicationsMode {
 	JSON_MODE_RELAXED				// relaxed JSON construction (future)
 };
 
+/*
 enum tgCommunicationsSticky {
 	NOT_STICKY = 0,					// communications mode changes automatically
 	STICKY							// communications mode does not change
 };
-
-enum textVerbosity {
-	TV_SILENT = 0,					// no response is provided
-	TV_VERBOSE						// response is provided. Error responses ech message and failed commands
-};
-
-enum jsonVerbosity {
-	JV_SILENT = 0,					// no response is provided for any command
-	JV_FOOTER,						// returns footer only (no command echo, gcode blocks or messages)
-	JV_MESSAGES,					// returns footer, messages (exception and gcode messages)
-	JV_CONFIGS,						// returns footer, messages, config commands
-	JV_LINENUM,						// returns footer, messages, config commands, gcode line numbers if present
-	JV_VERBOSE						// returns footer, messages, config commands, gcode blocks
-};
-/*
-enum srVerbosity {					// status report enable and verbosity
-	SR_OFF = 0,						// no reports
-	SR_FILTERED,					// reports only values that have changed from the last report
-	SR_VERBOSE						// reports all values specified
-};
 */
-enum jsonFormats {					// json output print modes
-	JSON_NO_PRINT = 0,				// don't print anything if you find yourself in JSON mode
-	JSON_OBJECT_FORMAT,				// print just the body as a json object
-	JSON_RESPONSE_FORMAT			// print the header/body/footer as a response object
-};
-
-enum textFormats {					// text output print modes
-	TEXT_NO_PRINT = 0,				// don't print anything if you find yourself in TEXT mode
-	TEXT_INLINE_PAIRS,				// print key:value pairs as comma separated pairs
-	TEXT_INLINE_VALUES,				// print values as commas separated values
-	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines with formatted print per line
-};
-
 
 /**** operations flags and shorthand ****/
 

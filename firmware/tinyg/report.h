@@ -39,13 +39,20 @@ enum srVerbosity {					// status report enable and verbosity
 	SR_VERBOSE						// reports all values specified
 };
 
+enum qrVerbosity {					// planner queue enable and verbosity
+	QR_OFF = 0,						// no response is provided
+	QR_FILTERED,					// queue depth reported only above hi-water mark and below lo-water mark  
+	QR_VERBOSE,						// queue depth reported for all buffers
+	QR_TRIPLE						// queue depth reported for all buffers, and buffers added, buffered removed
+};
+
 typedef struct srSingleton {
 
-	// config values (PUBLIC)
+	/*** config values (PUBLIC) ***/
 	uint8_t status_report_verbosity;					// see enum in this file for settings
 	uint32_t status_report_interval;					// in milliseconds
 
-	// runtime values (PRIVATE)
+	/*** runtime values (PRIVATE) ***/
 	uint8_t status_report_requested;					// status report has been requested
 	uint32_t status_report_systick;						// SysTick value for next status report
 	index_t status_report_list[CMD_STATUS_REPORT_LEN];	// status report elements to report
@@ -53,9 +60,26 @@ typedef struct srSingleton {
 
 } srSingleton_t;
 
+typedef struct qrSingleton {		// data for queue reports
+
+	/*** config values (PUBLIC) ***/
+	uint8_t queue_report_verbosity;	// queue reports enabled and verbosity level
+	uint8_t queue_report_hi_water;
+	uint8_t queue_report_lo_water;
+
+	/*** runtime values (PRIVATE) ***/
+	uint8_t request;				// set to true to request a report
+	uint8_t buffers_available;		// stored value used by callback
+	uint8_t prev_available;			// used to filter reports
+	uint8_t buffers_added;			// buffers added since last report
+	uint8_t buffers_removed;		// buffers removed since last report
+
+} qrSingleton_t;
+
 /**** Externs - See report.c for allocation ****/
 
 extern srSingleton_t sr;
+extern qrSingleton_t qr;
 
 /**** Function Prototypes ****/
 

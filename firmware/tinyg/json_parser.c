@@ -29,12 +29,17 @@
 #include "config.h"					// JSON sits on top of the config system
 #include "controller.h"
 #include "json_parser.h"
+#include "text_parser.h"
 #include "canonical_machine.h"
 #include "report.h"
 #include "util.h"
 #include "xio/xio.h"				// for char definitions
 
-// local scope stuff
+/**** Allocation ****/
+
+jsSingleton_t js;
+
+/**** local scope stuff ****/
 
 static stat_t _json_parser_kernal(char_t *str);
 static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth);
@@ -382,7 +387,7 @@ void json_print_object(cmdObj_t *cmd)
 
 void json_print_response(uint8_t status)
 {
-	if (cfg.json_verbosity == JV_SILENT) return;			// silent responses
+	if (js.json_verbosity == JV_SILENT) return;			// silent responses
 
 	// Body processing
 	cmdObj_t *cmd = cmd_body;
@@ -397,22 +402,22 @@ void json_print_response(uint8_t status)
 			if ((cmd_type = cmd_get_type(cmd)) == CMD_TYPE_NULL) break;
 
 			if (cmd_type == CMD_TYPE_GCODE) {	
-				if (cfg.echo_json_gcode_block == false) {	// kill command echo if not enabled
+				if (js.echo_json_gcode_block == false) {	// kill command echo if not enabled
 					cmd->objtype = TYPE_EMPTY;
 				}
 
 //+++++		} else if (cmd_type == CMD_TYPE_CONFIG) {		// kill config echo if not enabled
-//fix me		if (cfg.echo_json_configs == false) {
+//fix me		if (js.echo_json_configs == false) {
 //					cmd->objtype = TYPE_EMPTY;
 //				}
 
 			} else if (cmd_type == CMD_TYPE_MESSAGE) {		// kill message echo if not enabled
-				if (cfg.echo_json_messages == false) {
+				if (js.echo_json_messages == false) {
 					cmd->objtype = TYPE_EMPTY;
 				}
 
 			} else if (cmd_type == CMD_TYPE_LINENUM) {		// kill line number echo if not enabled
-				if ((cfg.echo_json_linenum == false) || (fp_ZERO(cmd->value))) { // do not report line# 0
+				if ((js.echo_json_linenum == false) || (fp_ZERO(cmd->value))) { // do not report line# 0
 					cmd->objtype = TYPE_EMPTY;
 				}
 			}
@@ -432,7 +437,7 @@ void json_print_response(uint8_t status)
 
 	cmd_copy_string(cmd, footer_string);				// link string to cmd object
 //	cmd->depth = 0;										// footer 'f' is a peer to response 'r' (hard wired to 0)
-	cmd->depth = cfg.json_footer_depth;					// 0=footer is peer to response 'r', 1=child of response 'r'
+	cmd->depth = js.json_footer_depth;					// 0=footer is peer to response 'r', 1=child of response 'r'
 	cmd->objtype = TYPE_ARRAY;
 	strcpy(cmd->token, "f");							// terminate the list
 	cmd->nx = NULL;

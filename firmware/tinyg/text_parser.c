@@ -33,6 +33,7 @@
 #include "controller.h"
 #include "canonical_machine.h"
 #include "text_parser.h"
+#include "json_parser.h"
 #include "report.h"
 #include "xio/xio.h"				// for ASCII char definitions
 

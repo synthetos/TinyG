@@ -28,6 +28,8 @@
 #include "tinyg.h"
 #include "util.h"
 #include "config.h"
+#include "json_parser.h"
+#include "text_parser.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "planner.h"
@@ -55,7 +57,7 @@ struct pbProbingSingleton {		// persistent homing runtime variables
 	float search_velocity;		// search speed as positive number
 	float latch_velocity;		// latch speed as positive number
 	float latch_backoff;		// max distance to back off switch during latch phase 
-	float zero_backoff;		// distance to back off switch before setting zero
+	float zero_backoff;			// distance to back off switch before setting zero
 	float max_clear_backoff;	// maximum distance of switch clearing backoffs before erring out
 
 	// state saved from gcode model
@@ -290,23 +292,23 @@ static stat_t _probing_axis_start(int8_t axis)
 		return (_probing_error_exit(axis));					// axis cannot be homed
 	}
 	pb.axis = axis;											// persist the axis
-	pb.search_velocity = fabs(cm.a[axis].search_velocity);// search velocity is always positive
-	pb.latch_velocity = fabs(cm.a[axis].latch_velocity);// latch velocity is always positive
+	pb.search_velocity = fabs(cm.a[axis].search_velocity);	// search velocity is always positive
+	pb.latch_velocity = fabs(cm.a[axis].latch_velocity);	// latch velocity is always positive
 
 	// setup parameters homing to the minimum switch
 	if (pb.min_mode & SW_HOMING_BIT) {
 		pb.homing_switch = MIN_SWITCH(axis);				// the min is the homing switch
 		pb.limit_switch = MAX_SWITCH(axis);					// the max would be the limit switch
-		pb.search_travel = -cm.a[axis].travel_max;		// search travels in negative direction
-		pb.latch_backoff = cm.a[axis].latch_backoff;	// latch travels in positive direction
+		pb.search_travel = -cm.a[axis].travel_max;			// search travels in negative direction
+		pb.latch_backoff = cm.a[axis].latch_backoff;		// latch travels in positive direction
 		pb.zero_backoff = cm.a[axis].zero_backoff;
 
 	// setup parameters for positive travel (homing to the maximum switch)
 	} else {
 		pb.homing_switch = MAX_SWITCH(axis);				// the max is the homing switch
 		pb.limit_switch = MIN_SWITCH(axis);					// the min would be the limit switch
-		pb.search_travel = cm.a[axis].travel_max;		// search travels in positive direction
-		pb.latch_backoff = -cm.a[axis].latch_backoff;	// latch travels in negative direction
+		pb.search_travel = cm.a[axis].travel_max;			// search travels in positive direction
+		pb.latch_backoff = -cm.a[axis].latch_backoff;		// latch travels in negative direction
 		pb.zero_backoff = -cm.a[axis].zero_backoff;
 	}
     // if homing is disabled for the axis then skip to the next axis
@@ -318,7 +320,7 @@ static stat_t _probing_axis_start(int8_t axis)
 	if (get_switch_mode(pb.limit_switch) == SW_MODE_DISABLED) {
 		pb.limit_switch = -1;
 	}
-	pb.saved_jerk = cm.a[axis].jerk_max;				// save the max jerk value
+	pb.saved_jerk = cm.a[axis].jerk_max;					// save the max jerk value
 	return (_set_pb_func(_probing_axis_clear));				// start the clear
 }
 
@@ -373,7 +375,7 @@ static stat_t _probing_axis_zero_backoff(int8_t axis)		// backoff to zero positi
 
 static stat_t _probing_axis_set_zero(int8_t axis)			// set zero and finish up
 {
-	cm.a[axis].jerk_max = pb.saved_jerk;				// restore the max jerk value
+	cm.a[axis].jerk_max = pb.saved_jerk;					// restore the max jerk value
 	//cm.homed[axis] = true;
 	return (_set_pb_func(_probing_axis_start));
 }
