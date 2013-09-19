@@ -101,7 +101,7 @@
  **** STRUCTURE ALLOCATIONS ********************************************************
  ***********************************************************************************/
 
-cmConfig_t    cm_cfg;	// canonical machine configuration values
+//cmConfig_t    cm_cfg;	// canonical machine configuration values
 cmSingleton_t cm;		// canonical machine controller singleton
 GCodeState_t  gm;		// core gcode model state
 GCodeStateX_t gmx;		// extended gcode model state
@@ -238,7 +238,7 @@ void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_overri
 float cm_get_active_coord_offset(uint8_t axis)
 {
 	if (gm.absolute_override == true) return (0);		// no offset if in absolute override mode
-	float offset = cm_cfg.offset[gm.coord_system][axis];
+	float offset = cm.offset[gm.coord_system][axis];
 	if (gmx.origin_offset_enable == true) offset += gmx.origin_offset[axis]; // includes G5x and G92 compoenents
 	return (offset); 
 }
@@ -359,10 +359,10 @@ void cm_set_model_linenum(uint32_t linenum)
 
 static float _calc_ABC(uint8_t axis, float target[], float flag[])
 {
-	if ((cm_cfg.a[axis].axis_mode == AXIS_STANDARD) || (cm_cfg.a[axis].axis_mode == AXIS_INHIBITED)) {
+	if ((cm.a[axis].axis_mode == AXIS_STANDARD) || (cm.a[axis].axis_mode == AXIS_INHIBITED)) {
 		return(target[axis]);	// no mm conversion - it's in degrees
 	}
-	return(_to_millimeters(target[axis]) * 360 / (2 * M_PI * cm_cfg.a[axis].radius));
+	return(_to_millimeters(target[axis]) * 360 / (2 * M_PI * cm.a[axis].radius));
 }
 
 void cm_set_model_target(float target[], float flag[])
@@ -372,9 +372,9 @@ void cm_set_model_target(float target[], float flag[])
 
 	// process XYZABC for lower modes
 	for (axis=AXIS_X; axis<=AXIS_Z; axis++) {
-		if ((fp_FALSE(flag[axis])) || (cm_cfg.a[axis].axis_mode == AXIS_DISABLED)) {
+		if ((fp_FALSE(flag[axis])) || (cm.a[axis].axis_mode == AXIS_DISABLED)) {
 			continue;		// skip axis if not flagged for update or its disabled
-		} else if ((cm_cfg.a[axis].axis_mode == AXIS_STANDARD) || (cm_cfg.a[axis].axis_mode == AXIS_INHIBITED)) {
+		} else if ((cm.a[axis].axis_mode == AXIS_STANDARD) || (cm.a[axis].axis_mode == AXIS_INHIBITED)) {
 			if (gm.distance_mode == ABSOLUTE_MODE) {
 				gm.target[axis] = cm_get_active_coord_offset(axis) + _to_millimeters(target[axis]);
 			} else {
@@ -384,7 +384,7 @@ void cm_set_model_target(float target[], float flag[])
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
 	for (axis=AXIS_A; axis<=AXIS_C; axis++) {
-		if ((fp_FALSE(flag[axis])) || (cm_cfg.a[axis].axis_mode == AXIS_DISABLED)) {
+		if ((fp_FALSE(flag[axis])) || (cm.a[axis].axis_mode == AXIS_DISABLED)) {
 			continue;		// skip axis if not flagged for update or its disabled
 		} else {
 			tmp = _calc_ABC(axis, target, flag);
@@ -510,9 +510,9 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 	}
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
-			tmp_time = fabs(gm.target[axis] - gmx.position[axis]) / cm_cfg.a[axis].feedrate_max;
+			tmp_time = fabs(gm.target[axis] - gmx.position[axis]) / cm.a[axis].feedrate_max;
 		} else { // gm.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
-			tmp_time = fabs(gm.target[axis] - gmx.position[axis]) / cm_cfg.a[axis].velocity_max;
+			tmp_time = fabs(gm.target[axis] - gmx.position[axis]) / cm.a[axis].velocity_max;
 		}
 		max_time = max(max_time, tmp_time);
 		gcode_state->minimum_time = min(gcode_state->minimum_time, tmp_time);
@@ -528,7 +528,7 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 stat_t _test_soft_limits()
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		if ((gm.target[axis] < 0) || (gm.target[axis] > cm_cfg.a[axis].travel_max)) {
+		if ((gm.target[axis] < 0) || (gm.target[axis] > cm.a[axis].travel_max)) {
 			return (STAT_SOFT_LIMIT_EXCEEDED);
 		}
 	}
@@ -557,7 +557,7 @@ stat_t _test_soft_limits()
 void canonical_machine_init()
 {
 // If you can assume all memory has been zeroed by a hard reset you don't need this code:
-	memset(&cm, 0, sizeof(cm));		// reset canonicalMachineSingleton
+//	memset(&cm, 0, sizeof(cm));		// reset canonicalMachineSingleton
 	memset(&gn, 0, sizeof(gn));		// clear all values, pointers and status
 	memset(&gf, 0, sizeof(gf));
 	memset(&gm, 0, sizeof(gm));
@@ -569,11 +569,11 @@ void canonical_machine_init()
 	gmx.magic_end = MAGICNUM;
 
 	// set gcode defaults
-	cm_set_units_mode(cm_cfg.units_mode);
-	cm_set_coord_system(cm_cfg.coord_system);
-	cm_select_plane(cm_cfg.select_plane);
-	cm_set_path_control(cm_cfg.path_control);
-	cm_set_distance_mode(cm_cfg.distance_mode);
+	cm_set_units_mode(cm.units_mode);
+	cm_set_coord_system(cm.coord_system);
+	cm_select_plane(cm.select_plane);
+	cm_set_path_control(cm.path_control);
+	cm_set_distance_mode(cm.distance_mode);
 
 	gmx.block_delete_switch = true;
 
@@ -687,7 +687,7 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 	}
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
-			cm_cfg.offset[coord_system][axis] = offset[axis];
+			cm.offset[coord_system][axis] = offset[axis];
 			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
 		}
 	}
@@ -712,7 +712,7 @@ static void _exec_offset(float *value, float *flag)
 	uint8_t coord_system = ((uint8_t)value[0]);				// coordinate system is passed in value[0] element
 	float offsets[AXES];
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		offsets[axis] = cm_cfg.offset[coord_system][axis] + (gmx.origin_offset[axis] * gmx.origin_offset_enable);
+		offsets[axis] = cm.offset[coord_system][axis] + (gmx.origin_offset[axis] * gmx.origin_offset_enable);
 	}
 	mp_set_runtime_work_offset(offsets);
 //	cm_set_work_offsets(RUNTIME);
@@ -742,7 +742,7 @@ stat_t cm_set_absolute_origin(float origin[], float flag[])
 
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
-			value[axis] = cm_cfg.offset[gm.coord_system][axis] + _to_millimeters(origin[axis]);
+			value[axis] = cm.offset[gm.coord_system][axis] + _to_millimeters(origin[axis]);
 			cm_set_axis_origin(axis, value[axis]);
 		}
 	}
@@ -783,7 +783,7 @@ stat_t cm_set_origin_offsets(float offset[], float flag[])
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
 			gmx.origin_offset[axis] = gmx.position[axis] - 
-									 cm_cfg.offset[gm.coord_system][axis] - _to_millimeters(offset[axis]);
+									 cm.offset[gm.coord_system][axis] - _to_millimeters(offset[axis]);
 		}
 	}
 	// now pass the offset to the callback - setting the coordinate system also applies the offsets
@@ -1287,10 +1287,10 @@ static void _exec_program_finalize(float *value, float *flag)
 	if (cm.machine_state == MACHINE_PROGRAM_END) {
 		cm_reset_origin_offsets();					// G92.1 - we do G91.1 instead of G92.2
 	//	cm_suspend_origin_offsets();				// G92.2 - as per Kramer
-		cm_set_coord_system(cm_cfg.coord_system);	// reset to default coordinate system
-		cm_select_plane(cm_cfg.select_plane);		// reset to default arc plane
-		cm_set_distance_mode(cm_cfg.distance_mode);
-		cm_set_units_mode(cm_cfg.units_mode);		// reset to default units mode
+		cm_set_coord_system(cm.coord_system);	// reset to default coordinate system
+		cm_select_plane(cm.select_plane);		// reset to default arc plane
+		cm_set_distance_mode(cm.distance_mode);
+		cm_set_units_mode(cm.units_mode);		// reset to default units mode
 		cm_spindle_control(SPINDLE_OFF);			// M5
 		cm_flood_coolant_control(false);			// M9
 		cm_set_inverse_feed_rate_mode(false);

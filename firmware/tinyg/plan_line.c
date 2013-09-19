@@ -126,27 +126,27 @@ stat_t mp_aline(const GCodeState_t *gm)
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
 	if (fp_NOT_ZERO(diff)) { 
 		bf->unit[AXIS_X] = diff / length;
-		jerk_squared += square(bf->unit[AXIS_X] * cm_cfg.a[AXIS_X].jerk_max);
+		jerk_squared += square(bf->unit[AXIS_X] * cm.a[AXIS_X].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Y] - mm.position[AXIS_Y])) { 
 		bf->unit[AXIS_Y] = diff / length;
-		jerk_squared += square(bf->unit[AXIS_Y] * cm_cfg.a[AXIS_Y].jerk_max);
+		jerk_squared += square(bf->unit[AXIS_Y] * cm.a[AXIS_Y].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Z] - mm.position[AXIS_Z])) { 
 		bf->unit[AXIS_Z] = diff / length;
-		jerk_squared += square(bf->unit[AXIS_Z] * cm_cfg.a[AXIS_Z].jerk_max);
+		jerk_squared += square(bf->unit[AXIS_Z] * cm.a[AXIS_Z].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_A] - mm.position[AXIS_A])) { 
 		bf->unit[AXIS_A] = diff / length;
-		jerk_squared += square(bf->unit[AXIS_A] * cm_cfg.a[AXIS_A].jerk_max);
+		jerk_squared += square(bf->unit[AXIS_A] * cm.a[AXIS_A].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_B] - mm.position[AXIS_B])) { 
 		bf->unit[AXIS_B] = diff / length;
-		jerk_squared += square(bf->unit[AXIS_B] * cm_cfg.a[AXIS_B].jerk_max);
+		jerk_squared += square(bf->unit[AXIS_B] * cm.a[AXIS_B].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_C] - mm.position[AXIS_C])) { 
 		bf->unit[AXIS_C] = diff / length;
-		jerk_squared += square(bf->unit[AXIS_C] * cm_cfg.a[AXIS_C].jerk_max);
+		jerk_squared += square(bf->unit[AXIS_C] * cm.a[AXIS_C].jerk_max);
 	}
 	bf->jerk = sqrt(jerk_squared);
 
@@ -684,24 +684,24 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
 	if (costheta > 0.99)  { return (0); } 				// reversal cases
 
 	// Fuse the junction deviations into a vector sum
-	float a_delta = square(a_unit[AXIS_X] * cm_cfg.a[AXIS_X].junction_dev);
-	a_delta += square(a_unit[AXIS_Y] * cm_cfg.a[AXIS_Y].junction_dev);
-	a_delta += square(a_unit[AXIS_Z] * cm_cfg.a[AXIS_Z].junction_dev);
-	a_delta += square(a_unit[AXIS_A] * cm_cfg.a[AXIS_A].junction_dev);
-	a_delta += square(a_unit[AXIS_B] * cm_cfg.a[AXIS_B].junction_dev);
-	a_delta += square(a_unit[AXIS_C] * cm_cfg.a[AXIS_C].junction_dev);
+	float a_delta = square(a_unit[AXIS_X] * cm.a[AXIS_X].junction_dev);
+	a_delta += square(a_unit[AXIS_Y] * cm.a[AXIS_Y].junction_dev);
+	a_delta += square(a_unit[AXIS_Z] * cm.a[AXIS_Z].junction_dev);
+	a_delta += square(a_unit[AXIS_A] * cm.a[AXIS_A].junction_dev);
+	a_delta += square(a_unit[AXIS_B] * cm.a[AXIS_B].junction_dev);
+	a_delta += square(a_unit[AXIS_C] * cm.a[AXIS_C].junction_dev);
 
-	float b_delta = square(b_unit[AXIS_X] * cm_cfg.a[AXIS_X].junction_dev);
-	b_delta += square(b_unit[AXIS_Y] * cm_cfg.a[AXIS_Y].junction_dev);
-	b_delta += square(b_unit[AXIS_Z] * cm_cfg.a[AXIS_Z].junction_dev);
-	b_delta += square(b_unit[AXIS_A] * cm_cfg.a[AXIS_A].junction_dev);
-	b_delta += square(b_unit[AXIS_B] * cm_cfg.a[AXIS_B].junction_dev);
-	b_delta += square(b_unit[AXIS_C] * cm_cfg.a[AXIS_C].junction_dev);
+	float b_delta = square(b_unit[AXIS_X] * cm.a[AXIS_X].junction_dev);
+	b_delta += square(b_unit[AXIS_Y] * cm.a[AXIS_Y].junction_dev);
+	b_delta += square(b_unit[AXIS_Z] * cm.a[AXIS_Z].junction_dev);
+	b_delta += square(b_unit[AXIS_A] * cm.a[AXIS_A].junction_dev);
+	b_delta += square(b_unit[AXIS_B] * cm.a[AXIS_B].junction_dev);
+	b_delta += square(b_unit[AXIS_C] * cm.a[AXIS_C].junction_dev);
 
 	float delta = (sqrt(a_delta) + sqrt(b_delta))/2;
 	float sintheta_over2 = sqrt((1 - costheta)/2);
 	float radius = delta * sintheta_over2 / (1-sintheta_over2);
-	return(sqrt(radius * cm_cfg.junction_acceleration));
+	return(sqrt(radius * cm.junction_acceleration));
 }
 
 /*************************************************************************
@@ -1100,7 +1100,7 @@ static stat_t _exec_aline_head()
 		}
 		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
 		mr.gm.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
-		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm_cfg.estd_segment_usec)); // # of segments in *each half*
+		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec)); // # of segments in *each half*
 		mr.segment_move_time = mr.gm.move_time / (2 * mr.segments);
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
@@ -1149,7 +1149,7 @@ static stat_t _exec_aline_body()
 			return(_exec_aline_tail());						// skip ahead to tail periods
 		}
 		mr.gm.move_time = mr.body_length / mr.cruise_velocity;
-		mr.segments = ceil(uSec(mr.gm.move_time) / cm_cfg.estd_segment_usec);
+		mr.segments = ceil(uSec(mr.gm.move_time) / cm.estd_segment_usec);
 		mr.segment_move_time = mr.gm.move_time / mr.segments;
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
@@ -1178,7 +1178,7 @@ static stat_t _exec_aline_tail()
 		if (fp_ZERO(mr.tail_length)) { return(STAT_OK);}		// end the move
 		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
 		mr.gm.move_time = mr.tail_length / mr.midpoint_velocity;
-		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm_cfg.estd_segment_usec));// # of segments in *each half*
+		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec));// # of segments in *each half*
 		mr.segment_move_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
