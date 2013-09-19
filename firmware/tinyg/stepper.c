@@ -131,8 +131,9 @@ inline uint8_t stepper_isbusy()
 }
 
 /*
- * Magic Numbers
+ * Magic Numbers for assertions
  */
+
 magic_t st_get_stepper_run_magic() { return (st_run.magic_start);}
 magic_t st_get_stepper_prep_magic() { return (st_prep.magic_start);}
 
@@ -165,8 +166,9 @@ void st_energize_motor(const uint8_t motor)
 		case (MOTOR_2): { PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; break; }
 		case (MOTOR_3): { PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; break; }
 		case (MOTOR_4): { PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; break; }
-//		st_run.m[motor].power_state = MOTOR_POWERED;
 	}
+//	st_run.m[motor].power_state = MOTOR_POWERED;
+	st_run.m[motor].power_state = MOTOR_START_IDLE_TIMEOUT;
 }
 
 void st_deenergize_motor(const uint8_t motor)
@@ -184,7 +186,7 @@ void st_energize_motors()
 {
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 		st_energize_motor(motor);
-		st_run.m[motor].power_state = MOTOR_TIME_IDLE_TIMEOUT;	// start the timeout
+		st_run.m[motor].power_state = MOTOR_START_IDLE_TIMEOUT;
 	}
 }
 

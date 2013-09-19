@@ -40,6 +40,7 @@ extern "C"{
 #define MODEL 	(GCodeState_t *)&gm			// absolute from canonical machine gm model
 #define PLANNER (GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
 #define RUNTIME (GCodeState_t *)&mr.gm		// absolute fomr runtime mm struct
+#define ACTIVE_MODEL cm.am					// active model is maintained by state management
 
 /*****************************************************************************
  * CANONICAL MACHINE STRUCTURES
@@ -101,6 +102,7 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint8_t cycle_start_requested;	// cycle start character has been received (flag to end feedhold)
 	uint8_t status_report_requested;// status report has been requested
 	uint32_t status_report_systick;	// SysTick value for next status report
+	struct GCodeState *am;			// active Gcode model is maintained by state management
 	magic_t magic_end;
 } cmSingleton_t;
 
@@ -493,6 +495,7 @@ uint8_t cm_get_cycle_state(void);
 uint8_t cm_get_motion_state(void);
 uint8_t cm_get_hold_state(void);
 uint8_t cm_get_homing_state(void);
+void cm_set_motion_state(uint8_t motion_state);
 
 uint32_t cm_get_linenum(GCodeState_t *gcode_state);
 uint8_t cm_get_motion_mode(GCodeState_t *gcode_state);

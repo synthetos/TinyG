@@ -883,7 +883,8 @@ stat_t mp_end_hold()
 		cm.hold_state = FEEDHOLD_OFF;
 		mpBuf_t *bf;
 		if ((bf = mp_get_run_buffer()) == NULL) {	// NULL means nothing's running
-			cm.motion_state = MOTION_STOP;
+//			cm.motion_state = MOTION_STOP;
+			cm_set_motion_state(MOTION_STOP);
 			return (STAT_NOOP);
 		}
 		cm.motion_state = MOTION_RUN;
@@ -1020,7 +1021,9 @@ static stat_t _exec_aline(mpBuf_t *bf)
 	// Look for the end of the decel to go into HOLD state
 	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == STAT_OK)) {
 		cm.hold_state = FEEDHOLD_HOLD;
-		cm.motion_state = MOTION_HOLD;
+//		cm.motion_state = MOTION_HOLD;
+		cm_set_motion_state(MOTION_HOLD);
+
 //		mp_free_run_buffer();				// free bf and send a status report
 //+++++ DIAGNOSTIC
 //+++++ DOES THIS NEED TO SET CURRENT POSITION TO FIX THE G28.4 ERROR?

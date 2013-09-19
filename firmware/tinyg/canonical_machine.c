@@ -136,7 +136,8 @@ static void _exec_program_finalize(float *value, float *flag);
  *
  ************************************************************************/
 
-/* Runtime State functions
+/* 
+ * Canonical Machine State functions
  *
  * cm_get_combined_state() - combines raw states into something a user might want to see
  * cm_get_machine_state()
@@ -144,8 +145,7 @@ static void _exec_program_finalize(float *value, float *flag);
  * cm_get_cycle_state() 
  * cm_get_hold_state() 
  * cm_get_homing_state()
- * cm_get_runtime_motion_mode()
- * cm_get_runtime_busy()
+ * cm_set_motion_state() - adjusts active model pointer as well
  */
 uint8_t cm_get_combined_state() 
 {
@@ -165,6 +165,17 @@ uint8_t cm_get_cycle_state() { return cm.cycle_state;}
 uint8_t cm_get_motion_state() { return cm.motion_state;}
 uint8_t cm_get_hold_state() { return cm.hold_state;}
 uint8_t cm_get_homing_state() { return cm.homing_state;}
+
+void cm_set_motion_state(uint8_t motion_state) 
+{ 
+	cm.motion_state = motion_state;
+
+	switch (motion_state) {
+		case (MOTION_STOP): { ACTIVE_MODEL = MODEL; break; }
+		case (MOTION_RUN):  { ACTIVE_MODEL = RUNTIME; break; }
+		case (MOTION_HOLD): { ACTIVE_MODEL = RUNTIME; break; }
+	}
+}
 
 /* 
  * Model State Getters and Setters
@@ -573,6 +584,9 @@ void canonical_machine_init()
 	cm.feedhold_requested = false;
 	cm.queue_flush_requested = false;
 	cm.cycle_start_requested = false;
+
+//	cm.am = MODEL;	// setup initial Gcode model pointer
+	ACTIVE_MODEL = MODEL;	// setup initial Gcode model pointer
 
 	// signal that the machine is ready for action
 	cm.machine_state = MACHINE_READY;	
@@ -1181,7 +1195,8 @@ stat_t cm_feedhold_sequencing_callback()
 {
 	if (cm.feedhold_requested == true) {
 		if ((cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF)) {
-			cm.motion_state = MOTION_HOLD;
+//			cm.motion_state = MOTION_HOLD;
+			cm_set_motion_state(MOTION_HOLD);
 			cm.hold_state = FEEDHOLD_SYNC;	// invokes hold from aline execution
 		}
 		cm.feedhold_requested = false;
@@ -1259,7 +1274,8 @@ stat_t cm_queue_flush()
 static void _exec_program_finalize(float *value, float *flag)
 {
 	cm.machine_state = (uint8_t)value[0];;
-	cm.motion_state = MOTION_STOP;
+//	cm.motion_state = MOTION_STOP;
+	cm_set_motion_state(MOTION_STOP);
 	if (cm.cycle_state == CYCLE_MACHINING) {
 		cm.cycle_state = CYCLE_OFF;					// don't end cycle if homing, probing, etc.
 	}
