@@ -48,7 +48,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		392.57	// Staged active model (cm.am) to simplify gcode model access and reporting
+#define TINYG_FIRMWARE_BUILD   		392.58	// Installing active model (cm.am) to simplify gcode model access and reporting
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number

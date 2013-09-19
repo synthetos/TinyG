@@ -52,7 +52,7 @@
 
 /*** structures ***/
 
-cfgParameters_t cfg; 				// application specific configuration parameters
+cfgParameters_t cfg; 						// application specific configuration parameters
 
 /***********************************************************************************
  **** application-specific internal functions **************************************
@@ -411,7 +411,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	// group token flags p, format*, print_func, get_func, set_func, target for get/set,   	default value
 	{ "sys", "fb", _f07, 2, fmt_fb, print_flt, get_flt, set_nul, (float *)&cs.fw_build,   TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
 	{ "sys", "fv", _f07, 3, fmt_fv, print_flt, get_flt, set_nul, (float *)&cs.fw_version, TINYG_FIRMWARE_VERSION },
-//	{ "sys", "hp", _f07, 0, fmt_hp, print_flt, get_flt, set_flt, (float *)&cs.hw_platform, TINYG_HARDWARE_PLATFORM },
+//	{ "sys", "hp", _f07, 0, fmt_hp, print_flt, get_flt, set_flt, (float *)&cs.hw_platform,TINYG_HARDWARE_PLATFORM },
 	{ "sys", "hv", _f07, 0, fmt_hv, print_flt, get_flt, set_hv,  (float *)&cs.hw_version, TINYG_HARDWARE_VERSION },
 	{ "sys", "id", _fns, 0, fmt_id, print_str, get_id,  set_nul, (float *)&cs.null, 0 },		// device ID (ASCII signature)
 
@@ -1156,73 +1156,24 @@ static stat_t get_mots(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_
 static stat_t get_hold(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_hold, cm_get_hold_state()));}
 static stat_t get_home(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_home, cm_get_homing_state()));}
 
-static stat_t get_unit(cmdObj_t *cmd) 
-{ 
-	if (cm_get_motion_state() == MOTION_STOP)
-	return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_units_mode(MODEL)));	// if
-	return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_units_mode(RUNTIME)));	// else
-}
-
-static stat_t get_coor(cmdObj_t *cmd) 
-{
-	if (cm_get_motion_state() == MOTION_STOP)
-	return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_coord_system(MODEL)));
-	return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_coord_system(RUNTIME)));
-}
-
-static stat_t get_momo(cmdObj_t *cmd) 
-{
-	if (cm_get_motion_state() == MOTION_STOP)
-	return(_get_msg_helper(cmd, (char_P)msg_momo, cm_get_motion_mode(MODEL)));
-	return(_get_msg_helper(cmd, (char_P)msg_momo, cm_get_motion_mode(RUNTIME)));
-}
-
-static stat_t get_plan(cmdObj_t *cmd)
-{
-	if (cm_get_motion_state() == MOTION_STOP)
-	return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_select_plane(MODEL)));
-	return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_select_plane(RUNTIME)));
-}
-
-static stat_t get_path(cmdObj_t *cmd)
-{
-	if (cm_get_motion_state() == MOTION_STOP)
-	return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_path_control(MODEL)));
-	return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_path_control(RUNTIME)));
-}
-
-static stat_t get_dist(cmdObj_t *cmd)
-{
-	if (cm_get_motion_state() == MOTION_STOP)
-	return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_distance_mode(MODEL)));
-	return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_distance_mode(RUNTIME)));
-}
-
-static stat_t get_frmo(cmdObj_t *cmd)
-{
-	if (cm_get_motion_state() == MOTION_STOP)
-	return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_inverse_feed_rate_mode(MODEL)));
-	return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_inverse_feed_rate_mode(RUNTIME)));
-}
+static stat_t get_unit(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_units_mode(ACTIVE_MODEL)));}
+static stat_t get_coor(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_coord_system(ACTIVE_MODEL)));}
+static stat_t get_momo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_momo, cm_get_motion_mode(ACTIVE_MODEL)));}
+static stat_t get_plan(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_select_plane(ACTIVE_MODEL)));}
+static stat_t get_path(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_path_control(ACTIVE_MODEL)));}
+static stat_t get_dist(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_distance_mode(ACTIVE_MODEL)));}
+static stat_t get_frmo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_inverse_feed_rate_mode(ACTIVE_MODEL)));}
 
 static stat_t get_tool(cmdObj_t *cmd)
 {
-	if (cm_get_motion_state() == MOTION_STOP) {
-		cmd->value = (float)cm_get_tool(MODEL);
-	} else {
-		cmd->value = (float)cm_get_tool(RUNTIME);
-	}
+	cmd->value = (float)cm_get_tool(ACTIVE_MODEL);
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
 static stat_t get_line(cmdObj_t *cmd)
 {
-	if (cm_get_motion_state() == MOTION_STOP) {
-		cmd->value = (float)cm_get_linenum(MODEL);
-	} else {
-		cmd->value = (float)cm_get_linenum(RUNTIME);
-	}
+	cmd->value = (float)cm_get_linenum(ACTIVE_MODEL);
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
@@ -1233,8 +1184,9 @@ static stat_t get_vel(cmdObj_t *cmd)
 		cmd->value = 0;
 	} else {
 		cmd->value = mp_get_runtime_velocity();
-		if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
+		if (cm_get_units_mode(RUNTIME) == INCHES) cmd->value *= INCH_PER_MM;
 	}
+
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1242,11 +1194,7 @@ static stat_t get_vel(cmdObj_t *cmd)
 
 static stat_t get_pos(cmdObj_t *cmd) 
 {
-	if (cm_get_motion_state() == MOTION_STOP) { 
-		cmd->value = cm_get_work_position(MODEL, _get_pos_axis(cmd->index));
-	} else {
-		cmd->value = cm_get_work_position(RUNTIME, _get_pos_axis(cmd->index));
-	}
+	cmd->value = cm_get_work_position(ACTIVE_MODEL, _get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1262,11 +1210,7 @@ static stat_t get_mpos(cmdObj_t *cmd)
 
 static stat_t get_ofs(cmdObj_t *cmd) 
 {
-	if (cm_get_motion_state() == MOTION_STOP) {
-		cmd->value = cm_get_work_offset(MODEL, _get_pos_axis(cmd->index));
-	} else {
-		cmd->value = cm_get_work_offset(RUNTIME, _get_pos_axis(cmd->index));
-	}
+	cmd->value = cm_get_work_offset(ACTIVE_MODEL, _get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
