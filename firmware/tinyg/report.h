@@ -28,6 +28,37 @@
 #ifndef report_h
 #define report_h
 
+/**** Configs, Definitions and Structures ****/
+
+#define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS 	// max number of status report elements - see cfgArray
+									// **** must also line up in cfgArray, se00 - seXX ****
+
+enum srVerbosity {					// status report enable and verbosity
+	SR_OFF = 0,						// no reports
+	SR_FILTERED,					// reports only values that have changed from the last report
+	SR_VERBOSE						// reports all values specified
+};
+
+typedef struct srSingleton {
+
+	// config values (PUBLIC)
+	uint8_t status_report_verbosity;					// see enum in this file for settings
+	uint32_t status_report_interval;					// in milliseconds
+
+	// runtime values (PRIVATE)
+	uint8_t status_report_requested;					// status report has been requested
+	uint32_t status_report_systick;						// SysTick value for next status report
+	index_t status_report_list[CMD_STATUS_REPORT_LEN];	// status report elements to report
+	float status_report_value[CMD_STATUS_REPORT_LEN];	// previous values for filtered reporting
+
+} srSingleton_t;
+
+/**** Externs - See report.c for allocation ****/
+
+extern srSingleton_t sr;
+
+/**** Function Prototypes ****/
+
 char *get_status_message(stat_t status);
 //char *rpt_get_status_message(uint8_t status, char *msg);
 void rpt_print_message(char *msg);

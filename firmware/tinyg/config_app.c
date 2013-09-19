@@ -699,8 +699,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys","jv",  _f07, 0, fmt_jv, print_ui8, get_ui8, set_jv,  (float *)&cfg.json_verbosity,			JSON_VERBOSITY },
 	{ "sys","tv",  _f07, 0, fmt_tv, print_ui8, get_ui8, set_01,  (float *)&cfg.text_verbosity,			TEXT_VERBOSITY },
 	{ "sys","qv",  _f07, 0, fmt_qv, print_ui8, get_ui8, set_0123,(float *)&cfg.queue_report_verbosity,	QR_VERBOSITY },
-	{ "sys","sv",  _f07, 0, fmt_sv, print_ui8, get_ui8, set_012, (float *)&cfg.status_report_verbosity,	SR_VERBOSITY },
-	{ "sys","si",  _f07, 0, fmt_si, print_flt, get_int, set_si,  (float *)&cfg.status_report_interval,	STATUS_REPORT_INTERVAL_MS },
+	{ "sys","sv",  _f07, 0, fmt_sv, print_ui8, get_ui8, set_012, (float *)&sr.status_report_verbosity,	SR_VERBOSITY },
+	{ "sys","si",  _f07, 0, fmt_si, print_flt, get_int, set_si,  (float *)&sr.status_report_interval,	STATUS_REPORT_INTERVAL_MS },
 
 //	{ "sys","ic",  _f07, 0, fmt_ic, print_ui8, get_ui8, set_ic,  (float *)&cfg.ignore_crlf,				COM_IGNORE_CRLF },
 	{ "sys","ec",  _f07, 0, fmt_ec, print_ui8, get_ui8, set_ec,  (float *)&cfg.enable_cr,				COM_EXPAND_CR },
@@ -740,36 +740,36 @@ const cfgItem_t PROGMEM cfgArray[] = {
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
-	{ "","se00",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[0],0 },
-	{ "","se01",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[1],0 },
-	{ "","se02",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[2],0 },
-	{ "","se03",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[3],0 },
-	{ "","se04",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[4],0 },
-	{ "","se05",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[5],0 },
-	{ "","se06",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[6],0 },
-	{ "","se07",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[7],0 },
-	{ "","se08",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[8],0 },
-	{ "","se09",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[9],0 },
-	{ "","se10",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[10],0 },
-	{ "","se11",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[11],0 },
-	{ "","se12",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[12],0 },
-	{ "","se13",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[13],0 },
-	{ "","se14",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[14],0 },
-	{ "","se15",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[15],0 },
-	{ "","se16",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[16],0 },
-	{ "","se17",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[17],0 },
-	{ "","se18",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[18],0 },
-	{ "","se19",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[19],0 },
-	{ "","se20",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[20],0 },
-	{ "","se21",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[21],0 },
-	{ "","se22",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[22],0 },
-	{ "","se23",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[23],0 },
-	{ "","se24",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[24],0 },
-	{ "","se25",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[25],0 },
-	{ "","se26",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[26],0 },
-	{ "","se27",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[27],0 },
-	{ "","se28",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[28],0 },
-	{ "","se29",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&cfg.status_report_list[29],0 },
+	{ "","se00",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[0],0 },
+	{ "","se01",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[1],0 },
+	{ "","se02",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[2],0 },
+	{ "","se03",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[3],0 },
+	{ "","se04",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[4],0 },
+	{ "","se05",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[5],0 },
+	{ "","se06",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[6],0 },
+	{ "","se07",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[7],0 },
+	{ "","se08",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[8],0 },
+	{ "","se09",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[9],0 },
+	{ "","se10",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[10],0 },
+	{ "","se11",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[11],0 },
+	{ "","se12",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[12],0 },
+	{ "","se13",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[13],0 },
+	{ "","se14",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[14],0 },
+	{ "","se15",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[15],0 },
+	{ "","se16",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[16],0 },
+	{ "","se17",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[17],0 },
+	{ "","se18",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[18],0 },
+	{ "","se19",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[19],0 },
+	{ "","se20",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[20],0 },
+	{ "","se21",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[21],0 },
+	{ "","se22",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[22],0 },
+	{ "","se23",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[23],0 },
+	{ "","se24",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[24],0 },
+	{ "","se25",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[25],0 },
+	{ "","se26",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[26],0 },
+	{ "","se27",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[27],0 },
+	{ "","se28",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[28],0 },
+	{ "","se29",_fpe, 0, fmt_nul, print_nul, get_int, set_int,(float *)&sr.status_report_list[29],0 },
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with CMD_COUNT_GROUPS below ****
@@ -990,7 +990,7 @@ static stat_t get_rx(cmdObj_t *cmd)
 static stat_t set_si(cmdObj_t *cmd)
 {
 	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
-	cfg.status_report_interval = (uint32_t)cmd->value;
+	sr.status_report_interval = (uint32_t)cmd->value;
 	return(STAT_OK);
 }
 
@@ -1174,7 +1174,6 @@ static stat_t get_vel(cmdObj_t *cmd)
 		cmd->value = mp_get_runtime_velocity();
 		if (cm_get_units_mode(RUNTIME) == INCHES) cmd->value *= INCH_PER_MM;
 	}
-
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1322,15 +1321,13 @@ static void print_ss(cmdObj_t *cmd)			// print switch state
 static stat_t set_sa(cmdObj_t *cmd)			// motor step angle
 { 
 	set_flt(cmd);
-	_set_motor_steps_per_unit(cmd); 
-	return (STAT_OK);
+	return(_set_motor_steps_per_unit(cmd)); 
 }
 
 static stat_t set_tr(cmdObj_t *cmd)			// motor travel per revolution
 { 
 	set_flu(cmd);
-	_set_motor_steps_per_unit(cmd); 
-	return (STAT_OK);
+	return(_set_motor_steps_per_unit(cmd)); 
 }
 
 static stat_t set_mi(cmdObj_t *cmd)			// motor microsteps

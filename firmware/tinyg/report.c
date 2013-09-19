@@ -42,6 +42,10 @@
 extern "C"{
 #endif
 
+/**** Allocation ****/
+
+srSingleton_t sr;
+
 /**** Status and Exception Messages **************************************************
  * rpt_get_status_message() - return the status message
  * rpt_exception() - send an exception report (JSON formatted)
@@ -250,7 +254,7 @@ void rpt_print_system_ready_message(void)
 void rpt_init_status_report()
 {
 	cmdObj_t *cmd = cmd_reset_list();	// used for status report persistence locations
-	cm.status_report_requested = false;
+	sr.status_report_requested = false;
 	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
 
 	const char_t nul[] = "";
@@ -259,7 +263,7 @@ void rpt_init_status_report()
 
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
 		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
-		cfg.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
+		sr.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
 		cmd->value = cmd_get_index(nul, sr_defaults[i]);// load the index for the SR element
 		cmd_set(cmd);
 		cmd_persist(cmd);								// conditionally persist - automatic by cmd_persis()
@@ -290,7 +294,7 @@ stat_t rpt_set_status_report(cmdObj_t *cmd)
 		}
 	}
 	if (elements == 0) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	memcpy(cfg.status_report_list, status_report_list, sizeof(status_report_list));
+	memcpy(sr.status_report_list, status_report_list, sizeof(status_report_list));
 	rpt_populate_unfiltered_status_report();			// return current values
 	return (STAT_OK);
 }
@@ -310,23 +314,23 @@ stat_t rpt_set_status_report(cmdObj_t *cmd)
 void rpt_request_status_report(uint8_t request_type)
 {
 	if (request_type == SR_IMMEDIATE_REQUEST) {
-		cm.status_report_systick = SysTickTimer_getValue();
+		sr.status_report_systick = SysTickTimer_getValue();
 	}
-	if ((request_type == SR_TIMED_REQUEST) && (cm.status_report_requested == false)) {
-		cm.status_report_systick = SysTickTimer_getValue() + cfg.status_report_interval;
+	if ((request_type == SR_TIMED_REQUEST) && (sr.status_report_requested == false)) {
+		sr.status_report_systick = SysTickTimer_getValue() + sr.status_report_interval;
 	}
-	cm.status_report_requested = true;
+	sr.status_report_requested = true;
 }
 
 stat_t rpt_status_report_callback() 		// called by controller dispatcher
 {
-	if (cfg.status_report_verbosity == SR_OFF) return (STAT_NOOP);
-	if (cm.status_report_requested == false) return (STAT_NOOP);
-	if (SysTickTimer_getValue() < cm.status_report_systick) return (STAT_NOOP);
+	if (sr.status_report_verbosity == SR_OFF) return (STAT_NOOP);
+	if (sr.status_report_requested == false) return (STAT_NOOP);
+	if (SysTickTimer_getValue() < sr.status_report_systick) return (STAT_NOOP);
 
-	cm.status_report_requested = false;		// disable reports until requested again
+	sr.status_report_requested = false;		// disable reports until requested again
 
-	if (cfg.status_report_verbosity == SR_VERBOSE) {
+	if (sr.status_report_verbosity == SR_VERBOSE) {
 		rpt_populate_unfiltered_status_report();
 	} else {
 		if (rpt_populate_filtered_status_report() == false) {	// no new data
@@ -355,17 +359,17 @@ void rpt_run_text_status_report()
 void rpt_populate_unfiltered_status_report()
 {
 	const char_t nul[] = "";
-	const char_t sr[] = "sr";
+	const char_t sr_str[] = "sr";
 	char_t tmp[CMD_TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
 
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object
-	strcpy(cmd->token, sr);
-	cmd->index = cmd_get_index(nul, sr);	// set the index - may be needed by calling function
+	strcpy(cmd->token, sr_str);
+	cmd->index = cmd_get_index(nul, sr_str);// set the index - may be needed by calling function
 	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
+		if ((cmd->index = sr.status_report_list[i]) == 0) { break;}
 		cmd_get_cmdObj(cmd);
 		strcpy(tmp, cmd->group);			// concatenate groups and tokens
 		strcat(tmp, cmd->token);
@@ -389,28 +393,28 @@ void rpt_populate_unfiltered_status_report()
  */
 uint8_t rpt_populate_filtered_status_report()
 {
-	const char_t sr[] = "sr";
+	const char_t sr_str[] = "sr";
 	uint8_t has_data = false;
 	char_t tmp[CMD_TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
 
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object
-	strcpy(cmd->token, sr);
-//	cmd->index = cmd_get_index(nul, sr);	// OMITTED - set the index - may be needed by calling function
+	strcpy(cmd->token, sr_str);
+//	cmd->index = cmd_get_index(nul, sr_str);// OMITTED - set the index - may be needed by calling function
 	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
+		if ((cmd->index = sr.status_report_list[i]) == 0) { break;}
 
 		cmd_get_cmdObj(cmd);
-		if (fp_EQ(cmd->value, cfg.status_report_value[i])) {
+		if (fp_EQ(cmd->value, sr.status_report_value[i])) {
 			cmd->objtype = TYPE_EMPTY;
 			continue;
 		} else {
 			strcpy(tmp, cmd->group);		// flatten out groups
 			strcat(tmp, cmd->token);
 			strcpy(cmd->token, tmp);
-			cfg.status_report_value[i] = cmd->value;
+			sr.status_report_value[i] = cmd->value;
 			if ((cmd = cmd->nx) == NULL) return (false); // should never be NULL unless SR length exceeds available buffer array
 			has_data = true;
 		}

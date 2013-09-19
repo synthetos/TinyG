@@ -217,10 +217,10 @@ typedef struct cfgParameters {
 	uint8_t echo_json_gcode_block;
 
 	// status report configs		// see cm struct for SR operating variables
-	uint8_t status_report_verbosity;// see enum in this file for settings
-	uint32_t status_report_interval;// in milliseconds
-	index_t status_report_list[CMD_STATUS_REPORT_LEN];// status report elements to report
-	float status_report_value[CMD_STATUS_REPORT_LEN];// previous values for filtered reporting
+//	uint8_t status_report_verbosity;// see enum in this file for settings
+//	uint32_t status_report_interval;// in milliseconds
+//	index_t status_report_list[CMD_STATUS_REPORT_LEN];// status report elements to report
+//	float status_report_value[CMD_STATUS_REPORT_LEN];// previous values for filtered reporting
 
 	uint16_t magic_end;
 } cfgParameters_t;

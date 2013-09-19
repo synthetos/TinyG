@@ -199,8 +199,8 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 #define CMD_LIST_LEN (CMD_BODY_LEN+2)// +2 allows for a header and a footer
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 
-#define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS 	// max number of status report elements - see cfgArray
-									// **** must also line up in cfgArray, se00 - seXX ****
+//#define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS 	// max number of status report elements - see cfgArray
+//									// **** must also line up in cfgArray, se00 - seXX ****
 
 #define NVM_VALUE_LEN 4				// NVM value length (float, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
@@ -253,13 +253,13 @@ enum jsonVerbosity {
 	JV_LINENUM,						// returns footer, messages, config commands, gcode line numbers if present
 	JV_VERBOSE						// returns footer, messages, config commands, gcode blocks
 };
-
+/*
 enum srVerbosity {					// status report enable and verbosity
 	SR_OFF = 0,						// no reports
 	SR_FILTERED,					// reports only values that have changed from the last report
 	SR_VERBOSE						// reports all values specified
 };
-
+*/
 enum jsonFormats {					// json output print modes
 	JSON_NO_PRINT = 0,				// don't print anything if you find yourself in JSON mode
 	JSON_OBJECT_FORMAT,				// print just the body as a json object

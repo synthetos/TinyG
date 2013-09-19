@@ -100,8 +100,8 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint8_t feedhold_requested;		// feedhold character has been received
 	uint8_t queue_flush_requested;	// queue flush character has been received
 	uint8_t cycle_start_requested;	// cycle start character has been received (flag to end feedhold)
-	uint8_t status_report_requested;// status report has been requested
-	uint32_t status_report_systick;	// SysTick value for next status report
+//	uint8_t status_report_requested;// status report has been requested
+//	uint32_t status_report_systick;	// SysTick value for next status report
 	struct GCodeState *am;			// active Gcode model is maintained by state management
 	magic_t magic_end;
 } cmSingleton_t;
@@ -249,7 +249,7 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 
 } GCodeInput_t;
 
-// Externs - See canonical_machine.c for allocation
+/**** Externs - See canonical_machine.c for allocation ****/
 
 extern cmConfig_t 	 cm_cfg;	// canonical machine configuration values
 extern cmSingleton_t cm;		// canonical machine controller singleton

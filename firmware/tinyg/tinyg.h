@@ -48,7 +48,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		392.59	// Added 1,000,000 scaling to jerk settings
+#define TINYG_FIRMWARE_BUILD   		392.60	// Moved some stuff around to make status reports more modular
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
