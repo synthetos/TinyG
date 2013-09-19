@@ -120,7 +120,6 @@ void mp_flush_planner()
 {
 	cm_abort_arc();
 	mp_init_buffers();
-//	cm.motion_state = MOTION_STOP;
 	cm_set_motion_state(MOTION_STOP);
 }
 
@@ -168,7 +167,6 @@ stat_t mp_exec_move()
 	// Cycle auto-start for lines only. 
 	if (bf->move_type == MOVE_TYPE_ALINE) {
 		if (cm.cycle_state == CYCLE_OFF) cm_cycle_start();
-//		if (cm.motion_state == MOTION_STOP) cm.motion_state = MOTION_RUN;
 		if (cm.motion_state == MOTION_STOP) cm_set_motion_state(MOTION_RUN);
 	}
 	if (bf->bf_func != NULL) { return (bf->bf_func(bf));} 	// run the move callback in the planner buffer
@@ -247,20 +245,7 @@ static stat_t _exec_dwell(mpBuf_t *bf)
 	st_prep_dwell((uint32_t)(bf->gm.move_time * 1000000));// convert seconds to uSec
 	mp_free_run_buffer();
 	return (STAT_OK);
-/*
-	if (bf->move_state == MOVE_STATE_NEW) {
-		st_prep_dwell((uint32_t)(bf->time * 1000000));// convert seconds to uSec
-		bf->move_state = MOVE_STATE_RUN;
-	}
-	return (STAT_OK);
-*/
 }
-/*
-void mp_end_dwell()								// all's well that ends dwell
-{
-	mp_free_run_buffer();						// Note: this is called from an interrupt
-}
-*/
 
 /**** PLANNER BUFFERS *****************************************************
  *

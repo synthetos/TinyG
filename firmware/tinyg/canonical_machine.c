@@ -101,7 +101,6 @@
  **** STRUCTURE ALLOCATIONS ********************************************************
  ***********************************************************************************/
 
-//cmConfig_t    cm_cfg;	// canonical machine configuration values
 cmSingleton_t cm;		// canonical machine controller singleton
 GCodeState_t  gm;		// core gcode model state
 GCodeStateX_t gmx;		// extended gcode model state
@@ -585,8 +584,7 @@ void canonical_machine_init()
 	cm.queue_flush_requested = false;
 	cm.cycle_start_requested = false;
 
-//	cm.am = MODEL;	// setup initial Gcode model pointer
-	ACTIVE_MODEL = MODEL;	// setup initial Gcode model pointer
+	ACTIVE_MODEL = MODEL;			// setup initial Gcode model pointer
 
 	// signal that the machine is ready for action
 	cm.machine_state = MACHINE_READY;	
@@ -1195,7 +1193,6 @@ stat_t cm_feedhold_sequencing_callback()
 {
 	if (cm.feedhold_requested == true) {
 		if ((cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF)) {
-//			cm.motion_state = MOTION_HOLD;
 			cm_set_motion_state(MOTION_HOLD);
 			cm.hold_state = FEEDHOLD_SYNC;	// invokes hold from aline execution
 		}
@@ -1274,7 +1271,6 @@ stat_t cm_queue_flush()
 static void _exec_program_finalize(float *value, float *flag)
 {
 	cm.machine_state = (uint8_t)value[0];;
-//	cm.motion_state = MOTION_STOP;
 	cm_set_motion_state(MOTION_STOP);
 	if (cm.cycle_state == CYCLE_MACHINING) {
 		cm.cycle_state = CYCLE_OFF;					// don't end cycle if homing, probing, etc.

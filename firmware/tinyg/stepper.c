@@ -59,7 +59,7 @@
 
 /**** Allocate structures ****/
 
-stConfig_t st_cfg;
+stConfig_t st;
 static stRunSingleton_t st_run;
 static stPrepSingleton_t st_prep;
 
@@ -151,7 +151,7 @@ magic_t st_get_stepper_prep_magic() { return (st_prep.magic_start);}
 
 void st_set_motor_idle_timeout(float seconds)
 {
-	st_cfg.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(seconds, IDLE_TIMEOUT_SECONDS_MIN));
+	st.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(seconds, IDLE_TIMEOUT_SECONDS_MIN));
 }
 
 void st_set_motor_power(const uint8_t motor)
@@ -202,11 +202,11 @@ stat_t st_motor_power_callback() 	// called by controller
 	// manage power for each motor individually - facilitates advanced features
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 
-		if (st_cfg.m[motor].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) {
+		if (st.m[motor].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) {
 
 			switch (st_run.m[motor].power_state) {
 				case (MOTOR_START_IDLE_TIMEOUT): {
-					st_run.m[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_idle_timeout * 1000);
+					st_run.m[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st.motor_idle_timeout * 1000);
 					st_run.m[motor].power_state = MOTOR_TIME_IDLE_TIMEOUT;
 					break;
 				}
@@ -219,7 +219,7 @@ stat_t st_motor_power_callback() 	// called by controller
 					break;
 				}
 			}
-		} else if(st_cfg.m[motor].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+		} else if(st.m[motor].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 			switch (st_run.m[motor].power_state) {
 				case (MOTOR_START_IDLE_TIMEOUT): {
 					st_run.m[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(250);
@@ -389,7 +389,7 @@ void _load_move()
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// energize motor
 			st_run.m[MOTOR_1].power_state = MOTOR_RUNNING;
 		} else {
-			if (st_cfg.m[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			if (st.m[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// energize motor
 				st_run.m[MOTOR_1].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
@@ -408,7 +408,7 @@ void _load_move()
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_2].power_state = MOTOR_RUNNING;
 		} else {
-			if (st_cfg.m[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			if (st.m[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.m[MOTOR_2].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
@@ -427,7 +427,7 @@ void _load_move()
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_3].power_state = MOTOR_RUNNING;
 		} else {
-			if (st_cfg.m[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			if (st.m[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.m[MOTOR_3].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
@@ -446,7 +446,7 @@ void _load_move()
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_4].power_state = MOTOR_RUNNING;
 		} else {
-			if (st_cfg.m[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			if (st.m[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.m[MOTOR_4].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
@@ -517,7 +517,7 @@ stat_t st_prep_line(float steps[], float microseconds)
 
 	// setup motor parameters
 	for (i=0; i<MOTORS; i++) {
-		st_prep.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ st_cfg.m[i].polarity;
+		st_prep.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
 		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * dda_substeps);
 	}
 	st_prep.dda_period = _f_to_period(f_dda);
@@ -586,7 +586,7 @@ void st_dump_stepper_state()
 
 	for (i=0; i<MOTORS; i++) {
 		fprintf_P(stderr, (PGM_P)sts_motr, i, 
-			st_cfg.m[i].polarity,
+			st.m[i].polarity,
 			st_run.m[i].phase_increment,
 			st_run.m[i].phase_accumulator);
 	}

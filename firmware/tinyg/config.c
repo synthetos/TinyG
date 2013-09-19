@@ -219,29 +219,23 @@ stat_t set_ui8(cmdObj_t *cmd)
 
 stat_t set_01(cmdObj_t *cmd)
 {
-	if (cmd->value > 1) { 
-		return (STAT_INPUT_VALUE_UNSUPPORTED);
-	} else {
-		return (set_ui8(cmd));
-	}
+	if (cmd->value > 1) 
+	return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
+	return (set_ui8(cmd));					// else
 }
 
 stat_t set_012(cmdObj_t *cmd)
 {
-	if (cmd->value > 2) { 
-		return (STAT_INPUT_VALUE_UNSUPPORTED);
-	} else {
-		return (set_ui8(cmd));
-	}
+	if (cmd->value > 2)
+	return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
+	return (set_ui8(cmd));					// else
 }
 
 stat_t set_0123(cmdObj_t *cmd)
 {
-	if (cmd->value > 3) { 
-		return (STAT_INPUT_VALUE_UNSUPPORTED);
-	} else {
-		return (set_ui8(cmd));
-	}
+	if (cmd->value > 3)
+	return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
+	return (set_ui8(cmd));					// else
 }
 
 stat_t set_int(cmdObj_t *cmd)

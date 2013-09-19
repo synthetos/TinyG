@@ -250,9 +250,7 @@ typedef struct stPrepSingleton {
 // Externs - See stepper.c for allocation
 
 // Allocate static structures
-extern stConfig_t st_cfg;
-//extern stRunSingleton_t st_run;
-//extern stPrepSingleton_t st_prep;
+extern stConfig_t st;
 
 /*****************************************************************************
  * 
