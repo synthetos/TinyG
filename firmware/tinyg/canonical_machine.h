@@ -35,6 +35,8 @@
 extern "C"{
 #endif
 
+#include "config.h"
+
 /* Defines */
 
 #define MODEL 	(GCodeState_t *)&gm			// absolute from canonical machine gm model
@@ -61,36 +63,11 @@ typedef struct cmConfigAxis {
 	float jerk_homing;				// homing jerk (Jh) in mm/min^3
 } cfgAxis_t;
 
-/*
-typedef struct cmConfig {
-	// system group settings
-	float junction_acceleration;	// centripetal acceleration max for cornering
-	float chordal_tolerance;		// arc chordal accuracy setting in mm
-
-	// hidden system settings
-	float min_segment_len;			// line drawing resolution in mm
-	float arc_segment_len;			// arc drawing resolution in mm
-	float estd_segment_usec;		// approximate segment time in microseconds
-
-	// gcode power-on default settings - defaults are not the same as the gm state
-	uint8_t coord_system;			// G10 active coordinate system default
-	uint8_t select_plane;			// G17,G18,G19 reset default
-	uint8_t units_mode;				// G20,G21 reset default
-	uint8_t path_control;			// G61,G61.1,G64 reset default
-	uint8_t distance_mode;			// G90,G91 reset default
-
-	// coordinate systems and offsets
-	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
-
-	// settings for axes X,Y,Z,A B,C
-	cfgAxis_t a[AXES];
-} cmConfig_t;
-*/
-
 typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	magic_t magic_start;			// magic number to test memory integity	
 
-	/* Config variables (PUBLIC) */
+	/**** Config variables (PUBLIC) ****/
+
 	// system group settings
 	float junction_acceleration;	// centripetal acceleration max for cornering
 	float chordal_tolerance;		// arc chordal accuracy setting in mm
@@ -113,8 +90,8 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	// settings for axes X,Y,Z,A B,C
 	cfgAxis_t a[AXES];
 
+	/**** Runtime variables (PRIVATE) ****/
 
-	/* Runtime variables (PRIVATE) */
 	uint8_t combined_state;			// combination of states for display purposes
 	uint8_t machine_state;			// machine/cycle/motion is the actual machine state
 	uint8_t cycle_state;
@@ -513,6 +490,33 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 /*****************************************************************************
  * FUNCTION PROTOTYPES
  */
+
+/*--- interface functions for cmdArray ---*/
+
+stat_t cm_get_line(cmdObj_t *cmd);		// get runtime line number
+stat_t cm_get_stat(cmdObj_t *cmd);		// get combined machine state as value and string
+stat_t cm_get_macs(cmdObj_t *cmd);		// get raw machine state as value and string
+stat_t cm_get_cycs(cmdObj_t *cmd);		// get raw cycle state (etc etc)...
+stat_t cm_get_mots(cmdObj_t *cmd);		// get raw motion state...
+stat_t cm_get_hold(cmdObj_t *cmd);		// get raw hold state...
+stat_t cm_get_home(cmdObj_t *cmd);		// get raw homing state...
+stat_t cm_get_unit(cmdObj_t *cmd);		// get unit mode...
+stat_t cm_get_coor(cmdObj_t *cmd);		// get coordinate system in effect...
+stat_t cm_get_momo(cmdObj_t *cmd);		// get motion mode...
+stat_t cm_get_plan(cmdObj_t *cmd);		// get active plane...
+stat_t cm_get_path(cmdObj_t *cmd);		// get patch control mode...
+stat_t cm_get_dist(cmdObj_t *cmd);		// get distance mode...
+stat_t cm_get_frmo(cmdObj_t *cmd);		// get feedrate mode...
+stat_t cm_get_toolv(cmdObj_t *cmd);		// get tool (value)
+stat_t cm_get_vel(cmdObj_t *cmd);		// get runtime velocity...
+
+stat_t cm_get_pos(cmdObj_t *cmd);		// get runtime work position...
+stat_t cm_get_mpos(cmdObj_t *cmd);		// get runtime machine position...
+stat_t cm_get_ofs(cmdObj_t *cmd);		// get runtime work offset...
+void cm_print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
+void cm_print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
+void print_coor(cmdObj_t *cmd);			// print coordinate offsets with linear units
+void print_corr(cmdObj_t *cmd);			// print coordinate offsets with rotary units
 
 /*--- getters, setters and helper functions for canonical machining functions ---*/
 

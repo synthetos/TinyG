@@ -122,20 +122,266 @@ static void _exec_program_finalize(float *value, float *flag);
 
 #define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
-
 /***********************************************************************************
  **** CODE *************************************************************************
  ***********************************************************************************/
 
-/*************************************************************************
+/***********************************************************************************
+ * INTERFACE FUNCTIONS FOR cfgArray
  *
- * HELPERS AND UTILITY FUNCTIONS
- *
- *	These functions are not part of the NIST defined functions
- *
- ************************************************************************/
+ * Functions get, set and report variables
+ * These functions are not part of the NIST defined functions
+ ***********************************************************************************/
 
-/* 
+static const char_t PROGMEM msg_units0[] = " in";	// used by generic print functions
+static const char_t PROGMEM msg_units1[] = " mm";
+static const char_t PROGMEM msg_units2[] = " deg";
+static PGM_P const  PROGMEM msg_units[] = { msg_units0, msg_units1, msg_units2 };
+#define DEGREE_INDEX 2
+
+static const char_t PROGMEM msg_g20[] = "G20 - inches mode";
+static const char_t PROGMEM msg_g21[] = "G21 - millimeter mode";
+static PGM_P const  PROGMEM msg_unit[] = { msg_g20, msg_g21 };
+
+static const char_t PROGMEM msg_stat0[] = "Initializing";	// combined state (stat) uses this array
+static const char_t PROGMEM msg_stat1[] = "Ready";
+static const char_t PROGMEM msg_stat2[] = "Shutdown";
+static const char_t PROGMEM msg_stat3[] = "Stop";
+static const char_t PROGMEM msg_stat4[] = "End";
+static const char_t PROGMEM msg_stat5[] = "Run";
+static const char_t PROGMEM msg_stat6[] = "Hold";
+static const char_t PROGMEM msg_stat7[] = "Probe";
+static const char_t PROGMEM msg_stat8[] = "Cycle";
+static const char_t PROGMEM msg_stat9[] = "Homing";
+static const char_t PROGMEM msg_stat10[] = "Jog";
+static PGM_P const  PROGMEM msg_stat[] = { msg_stat0, msg_stat1, msg_stat2, msg_stat3, msg_stat4, msg_stat5, 
+										   msg_stat6, msg_stat7, msg_stat8, msg_stat9, msg_stat10};
+
+static const char_t PROGMEM msg_macs0[] = "Initializing";
+static const char_t PROGMEM msg_macs1[] = "Reset";
+static const char_t PROGMEM msg_macs2[] = "Cycle";
+static const char_t PROGMEM msg_macs3[] = "Stop";
+static const char_t PROGMEM msg_macs4[] = "End";
+static PGM_P const  PROGMEM msg_macs[] = { msg_macs0, msg_macs1, msg_macs2, msg_macs3 , msg_macs4};
+
+static const char_t PROGMEM msg_cycs0[] = "Off";
+static const char_t PROGMEM msg_cycs1[] = "Started";
+static const char_t PROGMEM msg_cycs2[] = "Homing";
+static const char_t PROGMEM msg_cycs3[] = "Probe";
+static PGM_P const  PROGMEM msg_cycs[] = { msg_cycs0, msg_cycs1, msg_cycs2, msg_cycs3 };
+
+static const char_t PROGMEM msg_mots0[] = "Stop";
+static const char_t PROGMEM msg_mots1[] = "Run";
+static const char_t PROGMEM msg_mots2[] = "Hold";
+static PGM_P const  PROGMEM msg_mots[] = { msg_mots0, msg_mots1, msg_mots2 };
+
+static const char_t PROGMEM msg_hold0[] = "Off";
+static const char_t PROGMEM msg_hold1[] = "Sync";
+static const char_t PROGMEM msg_hold2[] = "Plan";
+static const char_t PROGMEM msg_hold3[] = "Decel";
+static const char_t PROGMEM msg_hold4[] = "Hold";
+static PGM_P const  PROGMEM msg_hold[] = { msg_hold0, msg_hold1, msg_hold2, msg_hold3, msg_hold4 };
+
+static const char_t PROGMEM msg_home0[] = "Not Homed";
+static const char_t PROGMEM msg_home1[] = "Homed";
+static PGM_P const  PROGMEM msg_home[] = { msg_home0, msg_home1 };
+
+static const char_t PROGMEM msg_g53[] = "G53 - machine coordinate system";
+static const char_t PROGMEM msg_g54[] = "G54 - coordinate system 1";
+static const char_t PROGMEM msg_g55[] = "G55 - coordinate system 2";
+static const char_t PROGMEM msg_g56[] = "G56 - coordinate system 3";
+static const char_t PROGMEM msg_g57[] = "G57 - coordinate system 4";
+static const char_t PROGMEM msg_g58[] = "G58 - coordinate system 5";
+static const char_t PROGMEM msg_g59[] = "G59 - coordinate system 6";
+static PGM_P const  PROGMEM msg_coor[] = { msg_g53, msg_g54, msg_g55, msg_g56, msg_g57, msg_g58, msg_g59 };
+
+static const char_t PROGMEM msg_g00[] = "G0  - linear traverse (seek)";
+static const char_t PROGMEM msg_g01[] = "G1  - linear feed";
+static const char_t PROGMEM msg_g02[] = "G2  - clockwise arc feed";
+static const char_t PROGMEM msg_g03[] = "G3  - counter clockwise arc feed";
+static const char_t PROGMEM msg_g80[] = "G80 - cancel motion mode (none active)";
+static PGM_P const  PROGMEM msg_momo[] = { msg_g00, msg_g01, msg_g02, msg_g03, msg_g80 };
+
+static const char_t PROGMEM msg_g17[] = "G17 - XY plane";
+static const char_t PROGMEM msg_g18[] = "G18 - XZ plane";
+static const char_t PROGMEM msg_g19[] = "G19 - YZ plane";
+static PGM_P const  PROGMEM msg_plan[] = { msg_g17, msg_g18, msg_g19 };
+
+static const char_t PROGMEM msg_g61[] = "G61 - exact stop mode";
+static const char_t PROGMEM msg_g6a[] = "G61.1 - exact path mode";
+static const char_t PROGMEM msg_g64[] = "G64 - continuous mode";
+static PGM_P const  PROGMEM msg_path[] = { msg_g61, msg_g61, msg_g64 };
+
+static const char_t PROGMEM msg_g90[] = "G90 - absolute distance mode";
+static const char_t PROGMEM msg_g91[] = "G91 - incremental distance mode";
+static PGM_P const  PROGMEM msg_dist[] = { msg_g90, msg_g91 };
+
+static const char_t PROGMEM msg_g94[] = "G94 - units-per-minute mode (i.e. feedrate mode)";
+static const char_t PROGMEM msg_g93[] = "G93 - inverse time mode";
+static PGM_P const  PROGMEM msg_frmo[] = { msg_g94, msg_g93 };
+
+
+/**** Functions called directly from cmdArray table - mostly wrappers ****
+ * _get_msg_helper() - helper to get display message
+ *
+ * cm_get_stat() - get combined machine state as value and string
+ * cm_get_macs() - get raw machine state as value and string
+ * cm_get_cycs() - get raw cycle state as value and string
+ * cm_get_mots() - get raw motion state as value and string
+ * cm_get_hold() - get raw hold state as value and string
+ * cm_get_home() - get raw homing state as value and string
+ *
+ * cm_get_unit() - get units mode as integer and display string
+ * cm_get_coor() - get goodinate system
+ * cm_get_momo() - get runtime motion mode
+ * cm_get_plan() - get model gcode plane select
+ * cm_get_path() - get model gcode path control mode
+ * cm_get_dist() - get model gcode distance mode
+ * cm_get_frmo() - get model gcode feed rate mode
+ * cm_get_tool() - get tool
+ * cm_get_feed() - get feed rate 
+ * cm_get_line() - get runtime line number for status reports
+ * cm_get_vel()  - get runtime velocity
+ * cm_get_ofs()  - get runtime work offset
+ * cm_get_pos()  - get runtime work position
+ * cm_get_mpos() - get runtime machine position
+ * 
+ * print_pos()- print work position (with proper units)
+ * print_mpos()- print machine position (always mm units)
+ * print_coor()- print coordinate offsets with linear units
+ * print_corr()- print coordinate offsets with rotary units
+ */
+
+stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value)
+{
+	cmd->value = (float)value;
+	cmd->objtype = TYPE_INTEGER;
+	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg[value*2]))); // hack alert: direct computation of index
+	return (STAT_OK);
+//	return((char_t *)pgm_read_word(&msg[(uint8_t)value]));
+//  ARM code:
+//	cmd->value = (float)value;
+//	cmd->objtype = TYPE_INTEGER;
+//	return (cmd_copy_string(cmd, msg_array[value]));
+}
+
+stat_t cm_get_stat(cmdObj_t *cmd)
+{
+	return(_get_msg_helper(cmd, (char_P)msg_stat, cm_get_combined_state()));
+
+// how to do this w/o calling the helper routine - See 331.09 for original routines
+//	cmd->value = cm_get_machine_state();
+//	cmd->objtype = TYPE_INTEGER;
+//	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN));
+//	return (STAT_OK);
+
+//	strncpy_P(cmd->string_value,(PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN);
+}
+
+stat_t cm_get_macs(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_macs, cm_get_machine_state()));}
+stat_t cm_get_cycs(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_cycs, cm_get_cycle_state()));}
+stat_t cm_get_mots(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_mots, cm_get_motion_state()));}
+stat_t cm_get_hold(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_hold, cm_get_hold_state()));}
+stat_t cm_get_home(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_home, cm_get_homing_state()));}
+
+stat_t cm_get_unit(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_units_mode(ACTIVE_MODEL)));}
+stat_t cm_get_coor(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_coord_system(ACTIVE_MODEL)));}
+stat_t cm_get_momo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_momo, cm_get_motion_mode(ACTIVE_MODEL)));}
+stat_t cm_get_plan(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_select_plane(ACTIVE_MODEL)));}
+stat_t cm_get_path(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_path_control(ACTIVE_MODEL)));}
+stat_t cm_get_dist(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_distance_mode(ACTIVE_MODEL)));}
+stat_t cm_get_frmo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_inverse_feed_rate_mode(ACTIVE_MODEL)));}
+
+stat_t cm_get_toolv(cmdObj_t *cmd)
+{
+	cmd->value = (float)cm_get_tool(ACTIVE_MODEL);
+	cmd->objtype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+stat_t cm_get_line(cmdObj_t *cmd)
+{
+	cmd->value = (float)cm_get_linenum(ACTIVE_MODEL);
+	cmd->objtype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+stat_t cm_get_vel(cmdObj_t *cmd) 
+{
+	if (cm_get_motion_state() == MOTION_STOP) {
+		cmd->value = 0;
+	} else {
+		cmd->value = mp_get_runtime_velocity();
+		if (cm_get_units_mode(RUNTIME) == INCHES) cmd->value *= INCH_PER_MM;
+	}
+	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->objtype = TYPE_FLOAT;
+	return (STAT_OK);
+}
+
+stat_t cm_get_pos(cmdObj_t *cmd) 
+{
+	cmd->value = cm_get_work_position(ACTIVE_MODEL, _get_pos_axis(cmd->index));
+	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->objtype = TYPE_FLOAT;
+	return (STAT_OK);
+}
+
+stat_t cm_get_mpos(cmdObj_t *cmd) 
+{
+	cmd->value = cm_get_absolute_position(RUNTIME, _get_pos_axis(cmd->index));
+	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->objtype = TYPE_FLOAT;
+	return (STAT_OK);
+}
+
+stat_t cm_get_ofs(cmdObj_t *cmd) 
+{
+	cmd->value = cm_get_work_offset(ACTIVE_MODEL, _get_pos_axis(cmd->index));
+	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->objtype = TYPE_FLOAT;
+	return (STAT_OK);
+}
+
+void _print_pos_helper(cmdObj_t *cmd, uint8_t units)
+{
+	cmd_get(cmd);
+	char_t axes[6] = {"XYZABC"};
+	char_t format[CMD_FORMAT_LEN+1];
+	uint8_t axis = _get_pos_axis(cmd->index);
+	if (axis >= AXIS_A) { units = DEGREES;}
+	fprintf(stderr, get_format(cmd->index,format), axes[axis], cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
+}
+
+void cm_print_pos(cmdObj_t *cmd)		// print position with unit displays for MM or Inches
+{
+	_print_pos_helper(cmd, cm_get_units_mode(MODEL));
+}
+
+void cm_print_mpos(cmdObj_t *cmd)		// print position with fixed unit display - always in Degrees or MM
+{
+	_print_pos_helper(cmd, MILLIMETERS);
+}
+
+void cm_print_coor(cmdObj_t *cmd)		// print coordinate offsets with linear units
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
+	(PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
+}
+
+void cm_print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
+	(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
+}
+
+
+/**** Internal getters and setters ****
+ *
  * Canonical Machine State functions
  *
  * cm_get_combined_state() - combines raw states into something a user might want to see
@@ -204,6 +450,47 @@ void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_overri
 	cm_set_work_offsets(MODEL);	// must reset offsets if you change absolute override	
 }
 
+/*
+ * Arc initializers - these inhale gn values into the gmx struct
+ *
+ *	Input coordinates are in native block formats (gn form);
+ *	i.e. they are not unit adjusted or otherwise pre-processed.
+ *	The setters take care of coordinate system, units, and 
+ *	distance mode conversions and normalizations.
+ *
+ * cm_set_model_arc_offset()  - set all IJK offsets
+ * cm_set_model_radius()	  - set radius value
+ */
+
+void cm_set_model_arc_offset(float i, float j, float k)
+{ 
+	gmx.arc_offset[0] = _to_millimeters(i);
+	gmx.arc_offset[1] = _to_millimeters(j);
+	gmx.arc_offset[2] = _to_millimeters(k);
+}
+
+void cm_set_model_arc_radius(float r) 
+{ 
+	gmx.arc_radius = _to_millimeters(r);
+}
+
+/*
+ * cm_set_model_linenum() 	  - set line number in the model
+ */
+
+void cm_set_model_linenum(uint32_t linenum)
+{
+	gm.linenum = linenum;		// you must first set the model line number,
+	cmd_add_object("n");		// then add the line number to the cmd list
+//++++ The above is not the same as the ARM version	
+}
+
+/***********************************************************************************
+ * COORDINATE SYSTEMS AND OFFSETS
+ *
+ * Functions to get, set and report coordinate systems and work offsets
+ * These functions are not part of the NIST defined functions
+ ***********************************************************************************/
 /*
  * Notes on Coordinate System and Offset functions
  *
@@ -297,40 +584,12 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
 	return (position);
 }
 
-/*
- * Arc initializers - these inhale gn values into the gmx struct
+/***********************************************************************************
+ * CRITICAL HELPERS 
  *
- *	Input coordinates are in native block formats (gn form);
- *	i.e. they are not unit adjusted or otherwise pre-processed.
- *	The setters take care of coordinate system, units, and 
- *	distance mode conversions and normalizations.
- *
- * cm_set_model_arc_offset()  - set all IJK offsets
- * cm_set_model_radius()	  - set radius value
- */
-
-void cm_set_model_arc_offset(float i, float j, float k)
-{ 
-	gmx.arc_offset[0] = _to_millimeters(i);
-	gmx.arc_offset[1] = _to_millimeters(j);
-	gmx.arc_offset[2] = _to_millimeters(k);
-}
-
-void cm_set_model_arc_radius(float r) 
-{ 
-	gmx.arc_radius = _to_millimeters(r);
-}
-
-/*
- * cm_set_model_linenum() 	  - set line number in the model
- */
-
-void cm_set_model_linenum(uint32_t linenum)
-{
-	gm.linenum = linenum;		// you must first set the model line number,
-	cmd_add_object("n");		// then add the line number to the cmd list
-//++++ The above is not the same as the ARM version	
-}
+ * Core functions supporting the canonical machining fucntions
+ * These functions are not part of the NIST defined functions
+ ***********************************************************************************/
 
 /* 
  * cm_set_model_target() - set target vector in GM model

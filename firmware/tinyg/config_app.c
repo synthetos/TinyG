@@ -156,7 +156,7 @@ static void pr_ma_rot(cmdObj_t *cmd);
 /* Format strings for printf() formatting
  * NOTE: DO NOT USE TABS IN FORMAT STRINGS
  */
-
+/*
 static const char_t PROGMEM msg_units0[] = " in";	// used by generic print functions
 static const char_t PROGMEM msg_units1[] = " mm";
 static const char_t PROGMEM msg_units2[] = " deg";
@@ -209,7 +209,7 @@ static PGM_P const  PROGMEM msg_hold[] = { msg_hold0, msg_hold1, msg_hold2, msg_
 static const char_t PROGMEM msg_home0[] = "Not Homed";
 static const char_t PROGMEM msg_home1[] = "Homed";
 static PGM_P const  PROGMEM msg_home[] = { msg_home0, msg_home1 };
-
+*/
 static const char_t PROGMEM msg_baud0[] = "0";
 static const char_t PROGMEM msg_baud1[] = "9600";
 static const char_t PROGMEM msg_baud2[] = "19200";
@@ -225,7 +225,7 @@ static const char_t PROGMEM msg_sw2[] = "NO homing & limit";
 static const char_t PROGMEM msg_sw3[] = "NC homing";
 static const char_t PROGMEM msg_sw4[] = "NC homing & limit";
 static PGM_P const  PROGMEM msg_sw[] = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
-
+/*
 static const char_t PROGMEM msg_g53[] = "G53 - machine coordinate system";
 static const char_t PROGMEM msg_g54[] = "G54 - coordinate system 1";
 static const char_t PROGMEM msg_g55[] = "G55 - coordinate system 2";
@@ -259,7 +259,7 @@ static PGM_P const  PROGMEM msg_dist[] = { msg_g90, msg_g91 };
 static const char_t PROGMEM msg_g94[] = "G94 - units-per-minute mode (i.e. feedrate mode)";
 static const char_t PROGMEM msg_g93[] = "G93 - inverse time mode";
 static PGM_P const  PROGMEM msg_frmo[] = { msg_g94, msg_g93 };
-
+*/
 static const char_t PROGMEM msg_am00[] = "[disabled]";
 static const char_t PROGMEM msg_am01[] = "[standard]";
 static const char_t PROGMEM msg_am02[] = "[inhibited]";
@@ -407,52 +407,52 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys", "id", _fns, 0, fmt_id, print_str, get_id,  set_nul, (float *)&cs.null, 0 },		// device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
-	{ "",   "n",   _fin, 0, fmt_line, print_int, get_int,  set_int,(float *)&gm.linenum,0 },	// Gcode line number - gets model line number
-	{ "",   "line",_fin, 0, fmt_line, print_int, get_line, set_int,(float *)&gm.linenum,0 },	// Gcode line number - gets runtime line number
-	{ "",   "feed",_f00, 2, fmt_feed, print_lin, get_flu,  set_nul,(float *)&cs.null, 0 },		// feed rate
-	{ "",   "stat",_f00, 0, fmt_stat, print_str, get_stat, set_nul,(float *)&cs.null, 0 },		// combined machine state
-	{ "",   "macs",_f00, 0, fmt_macs, print_str, get_macs, set_nul,(float *)&cs.null, 0 },		// raw machine state
-	{ "",   "cycs",_f00, 0, fmt_cycs, print_str, get_cycs, set_nul,(float *)&cs.null, 0 },		// cycle state
-	{ "",   "mots",_f00, 0, fmt_mots, print_str, get_mots, set_nul,(float *)&cs.null, 0 },		// motion state
-	{ "",   "hold",_f00, 0, fmt_hold, print_str, get_hold, set_nul,(float *)&cs.null, 0 },		// feedhold state
-	{ "",   "vel", _f00, 2, fmt_vel,  print_lin, get_vel,  set_nul,(float *)&cs.null, 0 },		// current velocity
-	{ "",   "unit",_f00, 0, fmt_unit, print_str, get_unit, set_nul,(float *)&cs.null, 0 },		// units mode
-	{ "",   "coor",_f00, 0, fmt_coor, print_str, get_coor, set_nul,(float *)&cs.null, 0 },		// coordinate system
-	{ "",   "momo",_f00, 0, fmt_momo, print_str, get_momo, set_nul,(float *)&cs.null, 0 },		// motion mode
-	{ "",   "plan",_f00, 0, fmt_plan, print_str, get_plan, set_nul,(float *)&cs.null, 0 },		// plane select
-	{ "",   "path",_f00, 0, fmt_path, print_str, get_path, set_nul,(float *)&cs.null, 0 },		// path control mode
-	{ "",   "dist",_f00, 0, fmt_dist, print_str, get_dist, set_nul,(float *)&cs.null, 0 },		// distance mode
-	{ "",   "frmo",_f00, 0, fmt_frmo, print_str, get_frmo, set_nul,(float *)&cs.null, 0 },		// feed rate mode
-	{ "",   "tool",_f00, 0, fmt_tool, print_int, get_tool, set_nul,(float *)&cs.null, 0 },		// active tool
+	{ "",   "n",   _fin, 0, fmt_line, print_int, get_int,  	  set_int,(float *)&gm.linenum,0 },	// Gcode line number - gets model line number
+	{ "",   "line",_fin, 0, fmt_line, print_int, cm_get_line, set_int,(float *)&gm.linenum,0 },	// Gcode line number - gets runtime line number
+	{ "",   "feed",_f00, 2, fmt_feed, print_lin, get_flu,  	  set_nul,(float *)&cs.null, 0 },	// feed rate
+	{ "",   "stat",_f00, 0, fmt_stat, print_str, cm_get_stat, set_nul,(float *)&cs.null, 0 },	// combined machine state
+	{ "",   "macs",_f00, 0, fmt_macs, print_str, cm_get_macs, set_nul,(float *)&cs.null, 0 },	// raw machine state
+	{ "",   "cycs",_f00, 0, fmt_cycs, print_str, cm_get_cycs, set_nul,(float *)&cs.null, 0 },	// cycle state
+	{ "",   "mots",_f00, 0, fmt_mots, print_str, cm_get_mots, set_nul,(float *)&cs.null, 0 },	// motion state
+	{ "",   "hold",_f00, 0, fmt_hold, print_str, cm_get_hold, set_nul,(float *)&cs.null, 0 },	// feedhold state
+	{ "",   "vel", _f00, 2, fmt_vel,  print_lin, cm_get_vel,  set_nul,(float *)&cs.null, 0 },	// current velocity
+	{ "",   "unit",_f00, 0, fmt_unit, print_str, cm_get_unit, set_nul,(float *)&cs.null, 0 },	// units mode
+	{ "",   "coor",_f00, 0, fmt_coor, print_str, cm_get_coor, set_nul,(float *)&cs.null, 0 },	// coordinate system
+	{ "",   "momo",_f00, 0, fmt_momo, print_str, cm_get_momo, set_nul,(float *)&cs.null, 0 },	// motion mode
+	{ "",   "plan",_f00, 0, fmt_plan, print_str, cm_get_plan, set_nul,(float *)&cs.null, 0 },	// plane select
+	{ "",   "path",_f00, 0, fmt_path, print_str, cm_get_path, set_nul,(float *)&cs.null, 0 },	// path control mode
+	{ "",   "dist",_f00, 0, fmt_dist, print_str, cm_get_dist, set_nul,(float *)&cs.null, 0 },	// distance mode
+	{ "",   "frmo",_f00, 0, fmt_frmo, print_str, cm_get_frmo, set_nul,(float *)&cs.null, 0 },	// feed rate mode
+	{ "",   "tool",_f00, 0, fmt_tool, print_int, cm_get_toolv,set_nul,(float *)&cs.null, 0 },	// active tool
 
-	{ "mpo","mpox",_f00, 3, fmt_mpos, print_mpos, get_mpos, set_nul,(float *)&cs.null, 0 },		// X machine position
-	{ "mpo","mpoy",_f00, 3, fmt_mpos, print_mpos, get_mpos, set_nul,(float *)&cs.null, 0 },		// Y machine position
-	{ "mpo","mpoz",_f00, 3, fmt_mpos, print_mpos, get_mpos, set_nul,(float *)&cs.null, 0 },		// Z machine position
-	{ "mpo","mpoa",_f00, 3, fmt_mpos, print_mpos, get_mpos, set_nul,(float *)&cs.null, 0 },		// A machine position
-	{ "mpo","mpob",_f00, 3, fmt_mpos, print_mpos, get_mpos, set_nul,(float *)&cs.null, 0 },		// B machine position
-	{ "mpo","mpoc",_f00, 3, fmt_mpos, print_mpos, get_mpos, set_nul,(float *)&cs.null, 0 },		// C machine position
+	{ "mpo","mpox",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// X machine position
+	{ "mpo","mpoy",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// Y machine position
+	{ "mpo","mpoz",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// Z machine position
+	{ "mpo","mpoa",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// A machine position
+	{ "mpo","mpob",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// B machine position
+	{ "mpo","mpoc",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// C machine position
 
-	{ "pos","posx",_f00, 3, fmt_pos, print_pos, get_pos, set_nul,(float *)&cs.null, 0 },		// X work position
-	{ "pos","posy",_f00, 3, fmt_pos, print_pos, get_pos, set_nul,(float *)&cs.null, 0 },		// Y work position
-	{ "pos","posz",_f00, 3, fmt_pos, print_pos, get_pos, set_nul,(float *)&cs.null, 0 },		// Z work position
-	{ "pos","posa",_f00, 3, fmt_pos, print_pos, get_pos, set_nul,(float *)&cs.null, 0 },		// A work position
-	{ "pos","posb",_f00, 3, fmt_pos, print_pos, get_pos, set_nul,(float *)&cs.null, 0 },		// B work position
-	{ "pos","posc",_f00, 3, fmt_pos, print_pos, get_pos, set_nul,(float *)&cs.null, 0 },		// C work position
+	{ "pos","posx",_f00, 3, fmt_pos, cm_print_pos, cm_get_pos, set_nul,(float *)&cs.null, 0 },	// X work position
+	{ "pos","posy",_f00, 3, fmt_pos, cm_print_pos, cm_get_pos, set_nul,(float *)&cs.null, 0 },	// Y work position
+	{ "pos","posz",_f00, 3, fmt_pos, cm_print_pos, cm_get_pos, set_nul,(float *)&cs.null, 0 },	// Z work position
+	{ "pos","posa",_f00, 3, fmt_pos, cm_print_pos, cm_get_pos, set_nul,(float *)&cs.null, 0 },	// A work position
+	{ "pos","posb",_f00, 3, fmt_pos, cm_print_pos, cm_get_pos, set_nul,(float *)&cs.null, 0 },	// B work position
+	{ "pos","posc",_f00, 3, fmt_pos, cm_print_pos, cm_get_pos, set_nul,(float *)&cs.null, 0 },	// C work position
 
-	{ "ofs","ofsx",_f00, 3, fmt_ofs, print_mpos, get_ofs, set_nul,(float *)&cs.null, 0 },		// X work offset
-	{ "ofs","ofsy",_f00, 3, fmt_ofs, print_mpos, get_ofs, set_nul,(float *)&cs.null, 0 },		// Y work offset
-	{ "ofs","ofsz",_f00, 3, fmt_ofs, print_mpos, get_ofs, set_nul,(float *)&cs.null, 0 },		// Z work offset
-	{ "ofs","ofsa",_f00, 3, fmt_ofs, print_mpos, get_ofs, set_nul,(float *)&cs.null, 0 },		// A work offset 
-	{ "ofs","ofsb",_f00, 3, fmt_ofs, print_mpos, get_ofs, set_nul,(float *)&cs.null, 0 },		// B work offset 
-	{ "ofs","ofsc",_f00, 3, fmt_ofs, print_mpos, get_ofs, set_nul,(float *)&cs.null, 0 },		// C work offset
+	{ "ofs","ofsx",_f00, 3, fmt_ofs, cm_print_mpos, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// X work offset
+	{ "ofs","ofsy",_f00, 3, fmt_ofs, cm_print_mpos, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// Y work offset
+	{ "ofs","ofsz",_f00, 3, fmt_ofs, cm_print_mpos, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// Z work offset
+	{ "ofs","ofsa",_f00, 3, fmt_ofs, cm_print_mpos, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// A work offset 
+	{ "ofs","ofsb",_f00, 3, fmt_ofs, cm_print_mpos, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// B work offset 
+	{ "ofs","ofsc",_f00, 3, fmt_ofs, cm_print_mpos, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// C work offset
 
 	{ "hom","home",_f00, 0, fmt_home,print_str, get_home,run_home,(float *)&cs.null, 0 },	   // homing state, invoke homing cycle
-	{ "hom","homx",_f00, 0, fmt_hom, print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_X], false },// X homed - Homing status group
-	{ "hom","homy",_f00, 0, fmt_hom, print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_Y], false },// Y homed
-	{ "hom","homz",_f00, 0, fmt_hom, print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_Z], false },// Z homed
-	{ "hom","homa",_f00, 0, fmt_hom, print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_A], false },// A homed
-	{ "hom","homb",_f00, 0, fmt_hom, print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_B], false },// B homed
-	{ "hom","homc",_f00, 0, fmt_hom, print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_C], false },// C homed
+	{ "hom","homx",_f00, 0, fmt_hom, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_X], false },// X homed - Homing status group
+	{ "hom","homy",_f00, 0, fmt_hom, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_Y], false },// Y homed
+	{ "hom","homz",_f00, 0, fmt_hom, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_Z], false },// Z homed
+	{ "hom","homa",_f00, 0, fmt_hom, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_A], false },// A homed
+	{ "hom","homb",_f00, 0, fmt_hom, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_B], false },// B homed
+	{ "hom","homc",_f00, 0, fmt_hom, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_C], false },// C homed
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, 0, fmt_nul, sr_print,  sr_get,  sr_set,  (float *)&cs.null, 0 }, // status report object
@@ -1060,6 +1060,7 @@ static stat_t run_boot(cmdObj_t *cmd)
  * print_coor()- print coordinate offsets with linear units
  * print_corr()- print coordinate offsets with rotary units
  */
+/*
 static stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value)
 {
 	cmd->value = (float)value;
@@ -1067,26 +1068,26 @@ static stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value)
 	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg[value*2]))); // hack alert: direct computation of index
 	return (STAT_OK);
 //	return((char_t *)pgm_read_word(&msg[(uint8_t)value]));
-/* ARM code:
-	cmd->value = (float)value;
-	cmd->objtype = TYPE_INTEGER;
-	return (cmd_copy_string(cmd, msg_array[value]));
-*/
+//  ARM code:
+//	cmd->value = (float)value;
+//	cmd->objtype = TYPE_INTEGER;
+//	return (cmd_copy_string(cmd, msg_array[value]));
 }
 
 static stat_t get_stat(cmdObj_t *cmd)
 {
 	return(_get_msg_helper(cmd, (char_P)msg_stat, cm_get_combined_state()));
 
-/* how to do this w/o calling the helper routine - See 331.09 for original routines
-	cmd->value = cm_get_machine_state();
-	cmd->objtype = TYPE_INTEGER;
-	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN));
-	return (STAT_OK);
- */
+// how to do this w/o calling the helper routine - See 331.09 for original routines
+//	cmd->value = cm_get_machine_state();
+//	cmd->objtype = TYPE_INTEGER;
+//	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN));
+//	return (STAT_OK);
+
 //	strncpy_P(cmd->string_value,(PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN);
 }
-
+*/
+/*
 static stat_t get_macs(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_macs, cm_get_machine_state()));}
 static stat_t get_cycs(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_cycs, cm_get_cycle_state()));}
 static stat_t get_mots(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_mots, cm_get_motion_state()));}
@@ -1187,7 +1188,7 @@ static void print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary u
 	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
 	(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
 }
-
+*/
 /**** AXIS AND MOTOR FUNCTIONS ************************************************
  * _set_motor_steps_per_unit() - update this derived value
  *
