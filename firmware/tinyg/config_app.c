@@ -86,9 +86,7 @@ static stat_t run_boot(cmdObj_t *cmd);		// jump to the bootloader
 //static stat_t run_sx(cmdObj_t *cmd);		// send XOFF, XON
 
 static stat_t set_jv(cmdObj_t *cmd);		// set JSON verbosity
-static stat_t get_qr(cmdObj_t *cmd);		// get a queue report (as data)
 static stat_t run_qf(cmdObj_t *cmd);		// execute a queue flush block
-static stat_t get_er(cmdObj_t *cmd);		// invoke a bogus exception report for testing purposes
 static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 
 static stat_t set_mt(cmdObj_t *cmd);		// set motor disable timeout in deconds
@@ -458,9 +456,9 @@ const cfgItem_t PROGMEM cfgArray[] = {
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, 0, fmt_nul, sr_print,  sr_get,  sr_set,  (float *)&cs.null, 0 }, // status report object
-	{ "", "qr",  _f00, 0, fmt_qr,  print_int, get_qr,  set_nul, (float *)&cs.null, 0 },	// queue report setting
+	{ "", "qr",  _f00, 0, fmt_qr,  print_int, qr_get,  set_nul, (float *)&cs.null, 0 },	// queue report setting
+	{ "", "er",  _f00, 0, fmt_nul, print_nul, rpt_er,  set_nul, (float *)&cs.null, 0 },	// invoke bogus exception report for testing
 	{ "", "qf",  _f00, 0, fmt_nul, print_nul, get_nul, run_qf,  (float *)&cs.null, 0 },	// queue flush
-	{ "", "er",  _f00, 0, fmt_nul, print_nul, get_er,  set_nul, (float *)&cs.null, 0 },	// invoke bogus exception report for testing
 	{ "", "rx",  _f00, 0, fmt_rx,  print_int, get_rx,  set_nul, (float *)&cs.null, 0 },	// space in RX buffer
 	{ "", "msg", _f00, 0, fmt_str, print_str, get_nul, set_nul, (float *)&cs.null, 0 },	// string for generic messages
 	{ "", "defa",_f00, 0, fmt_nul, print_nul, print_defaults_help, set_defaults,(float *)&cs.null,0},	// set/print defaults / help screen
@@ -937,9 +935,7 @@ static stat_t get_id(cmdObj_t *cmd)
 }
 
 /**** REPORT AND COMMAND FUNCTIONS ********************************************************
- * get_qr() - run a queue report (as data)
  * run_qf() - request a planner buffer flush
- * get_er()	- invoke a bogus exception report for testing purposes (it's not real)
  * get_rx()	- get bytes available in RX buffer
  * set_mt() - set motor disable timeout in seconds
  * set_md() - disable all motors
@@ -950,23 +946,9 @@ static stat_t get_id(cmdObj_t *cmd)
  * run_home() - invoke a homing cycle
  * run_boot() - request boot loader entry
  */
-
-static stat_t get_qr(cmdObj_t *cmd) 
-{
-	cmd->value = (float)mp_get_planner_buffers_available();
-	cmd->objtype = TYPE_INTEGER;
-	return (STAT_OK);
-}
-
 static stat_t run_qf(cmdObj_t *cmd) 
 {
 	cm_request_queue_flush();
-	return (STAT_OK);
-}
-
-static stat_t get_er(cmdObj_t *cmd) 
-{
-	rpt_exception(STAT_INTERNAL_ERROR, 42);	// bogus exception report
 	return (STAT_OK);
 }
 

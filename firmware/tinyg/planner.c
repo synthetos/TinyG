@@ -350,7 +350,7 @@ void mp_queue_write_buffer(const uint8_t move_type)
 	mb.q->buffer_state = MP_BUFFER_QUEUED;
 	mb.q = mb.q->nx;							// advance the queued buffer pointer
 	st_request_exec_move();						// request a move exec if not busy
-	rpt_request_queue_report(+1);				// add to the "added buffers" count
+	qr_request_queue_report(+1);				// add to the "added buffers" count
 }
 
 mpBuf_t * mp_get_run_buffer() 
@@ -377,7 +377,7 @@ void mp_free_run_buffer()						// EMPTY current run buf & adv to next
 	}
 	if (mb.w == mb.r) cm_cycle_end();			// end the cycle if the queue empties
 	mb.buffers_available++;
-	rpt_request_queue_report(-1);				// add to the "removed buffers" count
+	qr_request_queue_report(-1);				// add to the "removed buffers" count
 }
 
 mpBuf_t * mp_get_first_buffer(void)

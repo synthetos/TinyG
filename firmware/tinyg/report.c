@@ -158,13 +158,21 @@ char *get_status_message(stat_t status)
 }
 
 /*
- * rpt_exception() - generate an exception message
+ * rpt_exception()	- generate an exception message - always in JSON format
+ * rpt_er()			- send a bogus exception report for testing purposes (it's not real)
  */
 void rpt_exception(uint8_t status, int16_t value)
 {
 	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\",\"val\":%d}}\n"), 
 		TINYG_FIRMWARE_BUILD, status, get_status_message(status), value);
 }
+
+stat_t rpt_er(cmdObj_t *cmd) 
+{
+	rpt_exception(STAT_INTERNAL_ERROR, 42);	// bogus exception report
+	return (STAT_OK);
+}
+
 
 /**** Application Messages *********************************************************
  * rpt_print_initializing_message()	   - initializing configs from hard-coded profile
@@ -450,18 +458,28 @@ uint8_t sr_populate_filtered_status_report()
 
 /*****************************************************************************
  * Queue Reports
- * rpt_request_queue_report()	- request a queue report with current values
- * rpt_queue_report_callback()	- run the queue report w/stored values
+ *
+ * qr_get() 					- run a queue report (as data)
+ * qr_clear_queue_report()		- wipe stored values
+ * qr_request_queue_report()	- request a queue report with current values
+ * qr_queue_report_callback()	- run the queue report w/stored values
  */
 
-void rpt_clear_queue_report()
+stat_t qr_get(cmdObj_t *cmd) 
+{
+	cmd->value = (float)mp_get_planner_buffers_available();
+	cmd->objtype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+void qr_clear_queue_report()
 {
 	qr.request = false;
 	qr.buffers_added = 0;
 	qr.buffers_removed = 0;
 }
 
-void rpt_request_queue_report(int8_t buffers)
+void qr_request_queue_report(int8_t buffers)
 {
 	if (qr.queue_report_verbosity == QR_OFF) return;
 
@@ -487,7 +505,7 @@ void rpt_request_queue_report(int8_t buffers)
 	qr.request = true;
 }
 
-uint8_t rpt_queue_report_callback()
+uint8_t qr_queue_report_callback()
 {
 	if (qr.request == false) { return (STAT_NOOP);}
 	qr.request = false;
@@ -506,7 +524,7 @@ uint8_t rpt_queue_report_callback()
 		} else {
 			if (qr.queue_report_verbosity == QR_TRIPLE) {
 				fprintf(stderr, "{\"qr\":[%d,%d,%d]}\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
-				rpt_clear_queue_report();
+				qr_clear_queue_report();
 			}
 		}
 	}

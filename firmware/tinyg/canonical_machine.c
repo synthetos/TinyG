@@ -1303,7 +1303,7 @@ void cm_cycle_start()
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {
 		cm.cycle_state = CYCLE_MACHINING;			// don't change homing, probe or other cycles
-		rpt_clear_queue_report();					// clear queue reporting buffer counts
+		qr_clear_queue_report();					// clear queue reporting buffer counts
 	}
 }
 

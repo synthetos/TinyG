@@ -82,10 +82,12 @@ extern srSingleton_t sr;
 extern qrSingleton_t qr;
 
 /**** Function Prototypes ****/
+// Note: If you are looking for the defaults for the status report see settings.h
 
 char *get_status_message(stat_t status);
 void rpt_print_message(char *msg);
 void rpt_exception(uint8_t status, int16_t value);
+stat_t rpt_er(cmdObj_t *cmd);
 void rpt_print_loading_configs_message(void);
 void rpt_print_initializing_message(void);
 void rpt_print_system_ready_message(void);
@@ -103,12 +105,11 @@ stat_t sr_run_text_status_report(void);
 stat_t sr_populate_unfiltered_status_report(void);
 uint8_t sr_populate_filtered_status_report(void);
 
-void rpt_clear_queue_report(void);
-//void rpt_request_queue_report(void);
-void rpt_request_queue_report(int8_t buffers);
-stat_t rpt_queue_report_callback(void);
+stat_t qr_get(cmdObj_t *cmd); 
+void qr_clear_queue_report(void);
+void qr_request_queue_report(int8_t buffers);
+stat_t qr_queue_report_callback(void);
 
-// If you are looking for the defaults for the status report see config.h
 
 /* unit test setup */
 //#define __UNIT_TEST_REPORT	// uncomment to enable report unit tests
