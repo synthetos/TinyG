@@ -94,6 +94,7 @@
 #include "spindle.h"
 #include "report.h"
 #include "gpio.h"
+#include "switch.h"
 #include "system.h"
 #include "xio/xio.h"			// for serial queue flush
 
@@ -220,6 +221,11 @@ static const char_t PROGMEM msg_g94[] = "G94 - units-per-minute mode (i.e. feedr
 static const char_t PROGMEM msg_g93[] = "G93 - inverse time mode";
 static PGM_P const  PROGMEM msg_frmo[] = { msg_g94, msg_g93 };
 
+static const char_t PROGMEM msg_am00[] = "[disabled]";
+static const char_t PROGMEM msg_am01[] = "[standard]";
+static const char_t PROGMEM msg_am02[] = "[inhibited]";
+static const char_t PROGMEM msg_am03[] = "[radius]";
+static PGM_P const  PROGMEM msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03};
 
 /**** Functions called directly from cmdArray table - mostly wrappers ****
  * _get_msg_helper() - helper to get display message
@@ -377,6 +383,70 @@ void cm_print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
 	char_t format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
 	(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
+}
+
+stat_t cm_run_home(cmdObj_t *cmd)
+{
+	if (cmd->value == true) { cm_homing_cycle_start();}
+	return (STAT_OK);
+}
+
+/*
+ * get_am() - get axis mode w/enumeration string
+ * set_am() - set axis mode w/exception handling for axis type
+ * get_jrk() - get jerk value w/1,000,000 correction
+ * set_jrk() - set jerk value w/1,000,000 correction
+ * set_sw() - run this any time you change a switch setting
+ */
+
+// helper. This function will need to be rethought if microstep morphing is implemented
+static stat_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
+{
+	uint8_t m = get_motor(cmd->index);
+	st.m[m].steps_per_unit = (360 / (st.m[m].step_angle / st.m[m].microsteps) / st.m[m].travel_rev);
+	return (STAT_OK);
+}
+
+stat_t cm_get_am(cmdObj_t *cmd)
+{
+	get_ui8(cmd);
+	return(_get_msg_helper(cmd, (char_P)msg_am, cmd->value)); // see 331.09 for old method
+}
+
+stat_t cm_set_am(cmdObj_t *cmd)		// axis mode
+{
+	char_t linear_axes[] = {"xyz"};
+	if (strchr(linear_axes, cmd->token[0]) != NULL) { // true if it's a linear axis
+		if (cmd->value > AXIS_MAX_LINEAR) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	} else {
+		if (cmd->value > AXIS_MAX_ROTARY) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	}
+	set_ui8(cmd);
+	return(STAT_OK);
+}
+
+stat_t cm_get_jrk(cmdObj_t *cmd)
+{
+	get_flt(cmd);
+	if (cfg.comm_mode == TEXT_MODE) cmd->value /= 1000000;
+	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
+	return (STAT_OK);
+}
+
+stat_t cm_set_jrk(cmdObj_t *cmd)
+{
+	if (cmd->value < 1000000) cmd->value *= 1000000;
+	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= MM_PER_INCH;
+	set_flt(cmd);
+	return(STAT_OK);
+}
+
+stat_t cm_set_sw(cmdObj_t *cmd)			// switch setting
+{
+	if (cmd->value > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	set_ui8(cmd);
+	switch_init();
+	return (STAT_OK);
 }
 
 

@@ -518,6 +518,15 @@ void cm_print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM 
 void cm_print_coor(cmdObj_t *cmd);		// print coordinate offsets with linear units
 void cm_print_corr(cmdObj_t *cmd);		// print coordinate offsets with rotary units
 
+stat_t cm_run_home(cmdObj_t *cmd);		// start homing cycle
+
+stat_t cm_get_am(cmdObj_t *cmd);		// get axis mode
+stat_t cm_set_am(cmdObj_t *cmd);		// set axis mode
+void cm_print_am(cmdObj_t *cmd);		// print axis mode
+stat_t cm_get_jrk(cmdObj_t *cmd);		// get jerk with 1,000,000 correction
+stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
+stat_t cm_set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
+
 /*--- getters, setters and helper functions for canonical machining functions ---*/
 
 uint8_t cm_get_combined_state(void); 
