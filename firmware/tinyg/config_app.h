@@ -209,8 +209,11 @@ extern cfgParameters_t cfg;
  **** EXPOSED APPLICATION SPECIFIC FUNCTIONS ***************************************
  ***********************************************************************************/
 
-char_t get_axis_char(int8_t axis);
 stat_t set_baud_callback(void);
+
+char_t get_axis_char(int8_t axis);
+int8_t get_motor(const index_t i);
+int8_t get_pos_axis(const index_t i);
 
 
 #ifdef __cplusplus

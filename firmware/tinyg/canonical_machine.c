@@ -246,10 +246,10 @@ static PGM_P const  PROGMEM msg_frmo[] = { msg_g94, msg_g93 };
  * cm_get_pos()  - get runtime work position
  * cm_get_mpos() - get runtime machine position
  * 
- * print_pos()- print work position (with proper units)
- * print_mpos()- print machine position (always mm units)
- * print_coor()- print coordinate offsets with linear units
- * print_corr()- print coordinate offsets with rotary units
+ * cm_print_pos()- print work position (with proper units)
+ * cm_print_mpos()- print machine position (always mm units)
+ * cm_print_coor()- print coordinate offsets with linear units
+ * cm_print_corr()- print coordinate offsets with rotary units
  */
 
 stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value)
@@ -321,7 +321,7 @@ stat_t cm_get_vel(cmdObj_t *cmd)
 
 stat_t cm_get_pos(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_work_position(ACTIVE_MODEL, _get_pos_axis(cmd->index));
+	cmd->value = cm_get_work_position(ACTIVE_MODEL, get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -329,7 +329,7 @@ stat_t cm_get_pos(cmdObj_t *cmd)
 
 stat_t cm_get_mpos(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_absolute_position(RUNTIME, _get_pos_axis(cmd->index));
+	cmd->value = cm_get_absolute_position(RUNTIME, get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -337,7 +337,7 @@ stat_t cm_get_mpos(cmdObj_t *cmd)
 
 stat_t cm_get_ofs(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_work_offset(ACTIVE_MODEL, _get_pos_axis(cmd->index));
+	cmd->value = cm_get_work_offset(ACTIVE_MODEL, get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -348,7 +348,7 @@ void _print_pos_helper(cmdObj_t *cmd, uint8_t units)
 	cmd_get(cmd);
 	char_t axes[6] = {"XYZABC"};
 	char_t format[CMD_FORMAT_LEN+1];
-	uint8_t axis = _get_pos_axis(cmd->index);
+	uint8_t axis = get_pos_axis(cmd->index);
 	if (axis >= AXIS_A) { units = DEGREES;}
 	fprintf(stderr, get_format(cmd->index,format), axes[axis], cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
 }

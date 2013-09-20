@@ -515,8 +515,8 @@ stat_t cm_get_mpos(cmdObj_t *cmd);		// get runtime machine position...
 stat_t cm_get_ofs(cmdObj_t *cmd);		// get runtime work offset...
 void cm_print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
 void cm_print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
-void print_coor(cmdObj_t *cmd);			// print coordinate offsets with linear units
-void print_corr(cmdObj_t *cmd);			// print coordinate offsets with rotary units
+void cm_print_coor(cmdObj_t *cmd);		// print coordinate offsets with linear units
+void cm_print_corr(cmdObj_t *cmd);		// print coordinate offsets with rotary units
 
 /*--- getters, setters and helper functions for canonical machining functions ---*/
 
