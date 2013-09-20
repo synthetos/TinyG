@@ -51,11 +51,13 @@ qrSingleton_t qr;
  * rpt_get_status_message() - return the status message
  * rpt_exception() - send an exception report (JSON formatted)
  *
- * These strings must align with the status codes in tinyg.h
+ * See tinyg.h for status codes. These strings must align with the status codes in tinyg.h
  * The number of elements in the indexing array must match the # of strings
- * Reference for putting display strings and string arrays in program memory:
+ *
+ * Reference for putting display strings and string arrays in AVR program memory:
  * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
  */
+
 static const char_t PROGMEM stat_00[] = "OK";
 static const char_t PROGMEM stat_01[] = "Error";
 static const char_t PROGMEM stat_02[] = "Eagain";
@@ -148,7 +150,6 @@ PGM_P const PROGMEM stat_msg[] = {			// AVR/GCC version
 
 char *get_status_message(stat_t status)
 {
-// see tinyg.h for allocation of status_message string
 	strncpy_P(status_message,(PGM_P)pgm_read_word(&stat_msg[status]), STATUS_MESSAGE_LEN);
 	return (status_message);
 /* ARM code
@@ -247,12 +248,12 @@ void rpt_print_system_ready_message(void)
  */
 
 /* 
- * rpt_init_status_report()
+ * sr_init_status_report()
  *
  *	Call this function to completely re-initialize the status report
  *	Sets SR list to hard-coded defaults and re-initializes SR values in NVM
  */
-void rpt_init_status_report()
+void sr_init_status_report()
 {
 	cmdObj_t *cmd = cmd_reset_list();	// used for status report persistence locations
 	sr.status_report_requested = false;
@@ -273,9 +274,29 @@ void rpt_init_status_report()
 }
 
 /* 
- * rpt_set_status_report() - interpret an SR setup string and return current report
+ * Wrappers and Setters - for calling from cmdArray table
+ *
+ * sr_get()		- run status report
+ * sr_set()		- set status report elements
+ * sr_print()	- display rtext output
+ * sr_set_si()	- set status report interval
  */
-stat_t rpt_set_status_report(cmdObj_t *cmd)
+
+stat_t sr_get(cmdObj_t *cmd) { return (sr_populate_unfiltered_status_report());}
+stat_t sr_set(cmdObj_t *cmd) { return (sr_set_status_report(cmd));}
+void sr_print(cmdObj_t *cmd) { sr_populate_unfiltered_status_report();}
+
+stat_t sr_set_si(cmdObj_t *cmd)
+{
+	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
+	sr.status_report_interval = (uint32_t)cmd->value;
+	return(STAT_OK);
+}
+
+/* 
+ * sr_set_status_report() - interpret an SR setup string and return current report
+ */
+stat_t sr_set_status_report(cmdObj_t *cmd)
 {
 	uint8_t elements = 0;
 	index_t status_report_list[CMD_STATUS_REPORT_LEN];
@@ -296,13 +317,13 @@ stat_t rpt_set_status_report(cmdObj_t *cmd)
 	}
 	if (elements == 0) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	memcpy(sr.status_report_list, status_report_list, sizeof(status_report_list));
-	rpt_populate_unfiltered_status_report();			// return current values
+	sr_populate_unfiltered_status_report();			// return current values
 	return (STAT_OK);
 }
 
 /* 
- * rpt_request_status_report()	- request a status report to run after minimum interval
- * rpt_status_report_callback()	- main loop callback to send a report if one is ready
+ * sr_request_status_report()	- request a status report to run after minimum interval
+ * sr_status_report_callback()	- main loop callback to send a report if one is ready
  *
  *	Status reports can be request from a number of sources including:
  *	  - direct request from command line in the form of ? or {"sr:""}
@@ -312,7 +333,7 @@ stat_t rpt_set_status_report(cmdObj_t *cmd)
  *	Status reports are generally returned with minimal delay (from the controller callback), 
  *	but will not be provided more frequently than the status report interval
  */
-void rpt_request_status_report(uint8_t request_type)
+stat_t sr_request_status_report(uint8_t request_type)
 {
 	if (request_type == SR_IMMEDIATE_REQUEST) {
 		sr.status_report_systick = SysTickTimer_getValue();
@@ -321,9 +342,10 @@ void rpt_request_status_report(uint8_t request_type)
 		sr.status_report_systick = SysTickTimer_getValue() + sr.status_report_interval;
 	}
 	sr.status_report_requested = true;
+	return (STAT_OK);
 }
 
-stat_t rpt_status_report_callback() 		// called by controller dispatcher
+stat_t sr_status_report_callback() 		// called by controller dispatcher
 {
 	if (sr.status_report_verbosity == SR_OFF) return (STAT_NOOP);
 	if (sr.status_report_requested == false) return (STAT_NOOP);
@@ -332,9 +354,9 @@ stat_t rpt_status_report_callback() 		// called by controller dispatcher
 	sr.status_report_requested = false;		// disable reports until requested again
 
 	if (sr.status_report_verbosity == SR_VERBOSE) {
-		rpt_populate_unfiltered_status_report();
+		sr_populate_unfiltered_status_report();
 	} else {
-		if (rpt_populate_filtered_status_report() == false) {	// no new data
+		if (sr_populate_filtered_status_report() == false) {	// no new data
 			return (STAT_OK);
 		}
 	}
@@ -343,21 +365,22 @@ stat_t rpt_status_report_callback() 		// called by controller dispatcher
 }
 
 /* 
- * rpt_run_text_status_report() - generate a text mode status report in multiline format
+ * sr_run_text_status_report() - generate a text mode status report in multiline format
  */
-void rpt_run_text_status_report()
+stat_t sr_run_text_status_report()
 {
-	rpt_populate_unfiltered_status_report();
+	sr_populate_unfiltered_status_report();
 	cmd_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
+	return (STAT_OK);
 }
 
 /*
- * rpt_populate_unfiltered_status_report() - populate cmdObj body with status values
+ * sr_populate_unfiltered_status_report() - populate cmdObj body with status values
  *
  *	Designed to be run as a response; i.e. have a "r" header and a footer.
  */
 
-void rpt_populate_unfiltered_status_report()
+stat_t sr_populate_unfiltered_status_report()
 {
 	const char_t nul[] = "";
 	const char_t sr_str[] = "sr";
@@ -375,24 +398,26 @@ void rpt_populate_unfiltered_status_report()
 		strcpy(tmp, cmd->group);			// concatenate groups and tokens
 		strcat(tmp, cmd->token);
 		strcpy(cmd->token, tmp);
-		if ((cmd = cmd->nx) == NULL) return; // should never be NULL unless SR length exceeds available buffer array 
+		if ((cmd = cmd->nx) == NULL) 
+			return (STAT_OK);				 // should never be NULL unless SR length exceeds available buffer array 
 	}
+	return (STAT_OK);
 }
 
 /*
- * rpt_populate_filtered_status_report() - populate cmdObj body with status values
+ * sr_populate_filtered_status_report() - populate cmdObj body with status values
  *
  *	Designed to be displayed as a JSON object; i;e; no footer or header
  *	Returns 'true' if the report has new data, 'false' if there is nothing to report.
  *
- *	NOTE: Unlike rpt_populate_unfiltered_status_report(), this function does NOT set 
+ *	NOTE: Unlike sr_populate_unfiltered_status_report(), this function does NOT set 
  *	the SR index, which is a relatively expensive operation. In current use this 
  *	doesn't matter, but if the caller assumes its set it may lead to a side-effect (bug)
  *
  *	NOTE: Room for improvement - look up the SR index initially and cache it, use the 
  *		  cached value for all remaining reports.
  */
-uint8_t rpt_populate_filtered_status_report()
+uint8_t sr_populate_filtered_status_report()
 {
 	const char_t sr_str[] = "sr";
 	uint8_t has_data = false;
@@ -437,7 +462,6 @@ void rpt_clear_queue_report()
 }
 
 void rpt_request_queue_report(int8_t buffers)
-//void rpt_request_queue_report()
 {
 	if (qr.queue_report_verbosity == QR_OFF) return;
 
@@ -471,20 +495,25 @@ uint8_t rpt_queue_report_callback()
 	if (cfg.comm_mode == TEXT_MODE) {
 		if (qr.queue_report_verbosity == QR_VERBOSE) {
 			fprintf(stderr, "qr:%d\n", qr.buffers_available);
-		} else  if (qr.queue_report_verbosity == QR_TRIPLE) {
-			fprintf(stderr, "qr:%d,added:%d,removed:%d\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+		} else  {
+			if (qr.queue_report_verbosity == QR_TRIPLE) {
+				fprintf(stderr, "qr:%d,added:%d,removed:%d\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+			}
 		}
 	} else {
 		if (qr.queue_report_verbosity == QR_VERBOSE) {
 			fprintf(stderr, "{\"qr\":%d}\n", qr.buffers_available);
-		} else  if (qr.queue_report_verbosity == QR_TRIPLE) {
-			fprintf(stderr, "{\"qr\":[%d,%d,%d]}\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
-			rpt_clear_queue_report();
+		} else {
+			if (qr.queue_report_verbosity == QR_TRIPLE) {
+				fprintf(stderr, "{\"qr\":[%d,%d,%d]}\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+				rpt_clear_queue_report();
+			}
 		}
 	}
 	return (STAT_OK);
+}
+/* Alternate Formulation - using cmdObj list
 
-/*
 	// get a clean cmd object
 //	cmdObj_t *cmd = cmd_reset_list();		// normally you do a list reset but the following is more time efficient
 	cmdObj_t *cmd = cmd_body;
@@ -498,7 +527,6 @@ uint8_t rpt_queue_report_callback()
 	cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (STAT_OK);
 */
-}
 
 /****************************************************************************
  ***** Report Unit Tests ****************************************************

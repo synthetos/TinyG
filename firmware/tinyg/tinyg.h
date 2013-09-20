@@ -48,7 +48,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		392.63	// Minor cleanup and not much else
+#define TINYG_FIRMWARE_BUILD   		392.64	// Status report moodularity work
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number

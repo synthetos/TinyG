@@ -125,7 +125,7 @@ void config_init()
 				cmd_set(cmd);
 			}
 		}
-		rpt_init_status_report();
+		sr_init_status_report();
 	}
 }
 
@@ -149,7 +149,7 @@ stat_t set_defaults(cmdObj_t *cmd)
 		}
 	}
 	rpt_print_initializing_message();		// don't start TX until all the NVM persistence is done
-	rpt_init_status_report();				// reset status reports
+	sr_init_status_report();				// reset status reports
 	return (STAT_OK);
 }
 

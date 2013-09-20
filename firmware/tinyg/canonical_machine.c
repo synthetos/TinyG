@@ -1294,7 +1294,7 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);	
 	}
 
-	rpt_request_status_report(SR_IMMEDIATE_REQUEST);// request a final status report (not unfiltered)
+	sr_request_status_report(SR_IMMEDIATE_REQUEST);	// request a final status report (not unfiltered)
 	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
 }
 

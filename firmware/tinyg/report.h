@@ -49,11 +49,11 @@ enum qrVerbosity {					// planner queue enable and verbosity
 typedef struct srSingleton {
 
 	/*** config values (PUBLIC) ***/
-	uint8_t status_report_verbosity;					// see enum in this file for settings
+	uint8_t status_report_verbosity;
 	uint32_t status_report_interval;					// in milliseconds
 
 	/*** runtime values (PRIVATE) ***/
-	uint8_t status_report_requested;					// status report has been requested
+	uint8_t status_report_requested;					// flag that SR has been requested
 	uint32_t status_report_systick;						// SysTick value for next status report
 	index_t status_report_list[CMD_STATUS_REPORT_LEN];	// status report elements to report
 	float status_report_value[CMD_STATUS_REPORT_LEN];	// previous values for filtered reporting
@@ -84,21 +84,24 @@ extern qrSingleton_t qr;
 /**** Function Prototypes ****/
 
 char *get_status_message(stat_t status);
-//char *rpt_get_status_message(uint8_t status, char *msg);
 void rpt_print_message(char *msg);
 void rpt_exception(uint8_t status, int16_t value);
 void rpt_print_loading_configs_message(void);
 void rpt_print_initializing_message(void);
 void rpt_print_system_ready_message(void);
 
-void rpt_init_status_report(void);
-stat_t rpt_set_status_report(cmdObj_t *cmd);
-void rpt_decr_status_report(void);
-void rpt_request_status_report(uint8_t request_type);
-stat_t rpt_status_report_callback(void);
-void rpt_run_text_status_report(void);
-void rpt_populate_unfiltered_status_report(void);
-uint8_t rpt_populate_filtered_status_report(void);
+void sr_init_status_report(void);
+stat_t sr_get(cmdObj_t *cmd);
+stat_t sr_set(cmdObj_t *cmd);
+void sr_print(cmdObj_t *cmd);
+stat_t sr_set_si(cmdObj_t *cmd);
+
+stat_t sr_set_status_report(cmdObj_t *cmd);
+stat_t sr_request_status_report(uint8_t request_type);
+stat_t sr_status_report_callback(void);
+stat_t sr_run_text_status_report(void);
+stat_t sr_populate_unfiltered_status_report(void);
+uint8_t sr_populate_filtered_status_report(void);
 
 void rpt_clear_queue_report(void);
 //void rpt_request_queue_report(void);

@@ -151,7 +151,7 @@ static void _controller_HSM()
 
 	DISPATCH(st_motor_power_callback());		// stepper motor power sequencing
 //	DISPATCH(switch_debounce_callback());		// debounce switches
-	DISPATCH(rpt_status_report_callback());		// conditionally send status report
+	DISPATCH(sr_status_report_callback());		// conditionally send status report
 	DISPATCH(rpt_queue_report_callback());		// conditionally send queue report
 	DISPATCH(cm_arc_callback());				// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());				// G28.2 continuation

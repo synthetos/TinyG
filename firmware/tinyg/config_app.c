@@ -83,11 +83,6 @@ static stat_t get_gc(cmdObj_t *cmd);		// get current gcode block
 static stat_t run_gc(cmdObj_t *cmd);		// run a gcode block
 static stat_t run_home(cmdObj_t *cmd);		// invoke a homing cycle
 static stat_t run_boot(cmdObj_t *cmd);		// jump to the bootloader
-
-static stat_t set_sr(cmdObj_t *cmd);		// set status report specification
-static stat_t get_sr(cmdObj_t *cmd);		// run status report (as data)
-static void print_sr(cmdObj_t *cmd);		// run status report (as printout)
-static stat_t set_si(cmdObj_t *cmd);		// set status report interval
 //static stat_t run_sx(cmdObj_t *cmd);		// send XOFF, XON
 
 static stat_t set_jv(cmdObj_t *cmd);		// set JSON verbosity
@@ -462,12 +457,12 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "hom","homc",_f00, 0, fmt_hom, print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_C], false },// C homed
 
 	// Reports, tests, help, and messages
-	{ "", "sr",  _f00, 0, fmt_nul, print_sr,  get_sr,  set_sr , (float *)&cs.null, 0 },			// status report object
-	{ "", "qr",  _f00, 0, fmt_qr,  print_int, get_qr,  set_nul, (float *)&cs.null, 0 },			// queue report setting
-	{ "", "qf",  _f00, 0, fmt_nul, print_nul, get_nul, run_qf,  (float *)&cs.null, 0 },			// queue flush
-	{ "", "er",  _f00, 0, fmt_nul, print_nul, get_er,  set_nul, (float *)&cs.null, 0 },			// invoke bogus exception report for testing
-	{ "", "rx",  _f00, 0, fmt_rx,  print_int, get_rx,  set_nul, (float *)&cs.null, 0 },			// space in RX buffer
-	{ "", "msg", _f00, 0, fmt_str, print_str, get_nul, set_nul, (float *)&cs.null, 0 },			// string for generic messages
+	{ "", "sr",  _f00, 0, fmt_nul, sr_print,  sr_get,  sr_set,  (float *)&cs.null, 0 }, // status report object
+	{ "", "qr",  _f00, 0, fmt_qr,  print_int, get_qr,  set_nul, (float *)&cs.null, 0 },	// queue report setting
+	{ "", "qf",  _f00, 0, fmt_nul, print_nul, get_nul, run_qf,  (float *)&cs.null, 0 },	// queue flush
+	{ "", "er",  _f00, 0, fmt_nul, print_nul, get_er,  set_nul, (float *)&cs.null, 0 },	// invoke bogus exception report for testing
+	{ "", "rx",  _f00, 0, fmt_rx,  print_int, get_rx,  set_nul, (float *)&cs.null, 0 },	// space in RX buffer
+	{ "", "msg", _f00, 0, fmt_str, print_str, get_nul, set_nul, (float *)&cs.null, 0 },	// string for generic messages
 	{ "", "defa",_f00, 0, fmt_nul, print_nul, print_defaults_help, set_defaults,(float *)&cs.null,0},	// set/print defaults / help screen
 	{ "", "test",_f00, 0, fmt_nul, print_nul, print_test_help, tg_test, (float *)&cs.null,0 },			// run tests, print test help screen
 	{ "", "boot",_f00, 0, fmt_nul, print_nul, print_boot_loader_help,run_boot,(float *)&cs.null,0 },
@@ -700,7 +695,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys","tv",  _f07, 0, fmt_tv, print_ui8, get_ui8, set_01,  (float *)&cfg.text_verbosity,			TEXT_VERBOSITY },
 	{ "sys","qv",  _f07, 0, fmt_qv, print_ui8, get_ui8, set_0123,(float *)&qr.queue_report_verbosity,	QR_VERBOSITY },
 	{ "sys","sv",  _f07, 0, fmt_sv, print_ui8, get_ui8, set_012, (float *)&sr.status_report_verbosity,	SR_VERBOSITY },
-	{ "sys","si",  _f07, 0, fmt_si, print_flt, get_int, set_si,  (float *)&sr.status_report_interval,	STATUS_REPORT_INTERVAL_MS },
+	{ "sys","si",  _f07, 0, fmt_si, print_flt, get_int, sr_set_si,(float *)&sr.status_report_interval,	STATUS_REPORT_INTERVAL_MS },
 
 //	{ "sys","ic",  _f07, 0, fmt_ic, print_ui8, get_ui8, set_ic,  (float *)&cfg.ignore_crlf,				COM_IGNORE_CRLF },
 	{ "sys","ec",  _f07, 0, fmt_ec, print_ui8, get_ui8, set_ec,  (float *)&cfg.enable_cr,				COM_EXPAND_CR },
@@ -946,10 +941,6 @@ static stat_t get_id(cmdObj_t *cmd)
  * run_qf() - request a planner buffer flush
  * get_er()	- invoke a bogus exception report for testing purposes (it's not real)
  * get_rx()	- get bytes available in RX buffer
- * set_si()	- set status report interval
- * get_sr()	- run status report
- * set_sr()	- set status report elements
- * print_sr() - print multiline text status report
  * set_mt() - set motor disable timeout in seconds
  * set_md() - disable all motors
  * set_me() - enable motors with $Npm=0
@@ -984,29 +975,6 @@ static stat_t get_rx(cmdObj_t *cmd)
 	cmd->value = (float)xio_get_usb_rx_free();
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
-}
-
-static stat_t set_si(cmdObj_t *cmd)
-{
-	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
-	sr.status_report_interval = (uint32_t)cmd->value;
-	return(STAT_OK);
-}
-
-static stat_t get_sr(cmdObj_t *cmd)
-{
-	rpt_populate_unfiltered_status_report();
-	return (STAT_OK);
-}
-
-static stat_t set_sr(cmdObj_t *cmd)
-{
-	return (rpt_set_status_report(cmd));
-}
-
-static void print_sr(cmdObj_t *cmd)
-{
-	rpt_populate_unfiltered_status_report();
 }
 
 static stat_t set_mt(cmdObj_t *cmd)

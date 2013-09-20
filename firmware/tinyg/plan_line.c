@@ -1028,7 +1028,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 //+++++ DIAGNOSTIC
 //+++++ DOES THIS NEED TO SET CURRENT POSITION TO FIX THE G28.4 ERROR?
 //		printf("HOLD: posX: %6.3f, posY: %6.3f\n", (double)mr.position[AXIS_X], (double)mr.gm.target[AXIS_Y]);
-		rpt_request_status_report(SR_IMMEDIATE_REQUEST);
+		sr_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
 
 	// There are 3 things that can happen here depending on return conditions:
@@ -1039,7 +1039,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 	//	  STAT_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
 
 	if (status == STAT_EAGAIN) { 
-		rpt_request_status_report(SR_TIMED_REQUEST); // continue reporting mr buffer
+		sr_request_status_report(SR_TIMED_REQUEST); // continue reporting mr buffer
 	} else {
 		mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
 		mr.section_state = MOVE_STATE_OFF;

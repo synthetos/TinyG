@@ -60,7 +60,7 @@ stat_t text_parser(char_t *str)
 
 	// pre-process the command 
 	if (str[0] == '?') {					// handle status report case
-		rpt_run_text_status_report();
+		sr_run_text_status_report();
 		return (STAT_OK);
 	}
 	if ((str[0] == '$') && (str[1] == NUL)) { // treat a lone $ as a sys request
