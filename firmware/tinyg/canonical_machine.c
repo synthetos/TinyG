@@ -129,7 +129,6 @@ static void _exec_program_finalize(float *value, float *flag);
 
 /***********************************************************************************
  * INTERFACE FUNCTIONS FOR cfgArray
- *
  * Functions get, set and report variables
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
@@ -391,7 +390,9 @@ stat_t cm_run_home(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-/*
+/* 
+ * AXIS FUNCTIONS
+ *
  * cm_get_am()	 - get axis mode w/enumeration string
  * cm_set_am()   - set axis mode w/exception handling for axis type
  * cm_print_am() - print axis mode with enumeration string
@@ -449,7 +450,6 @@ stat_t cm_set_sw(cmdObj_t *cmd)			// switch setting
 	switch_init();
 	return (STAT_OK);
 }
-
 
 /**** Internal getters and setters ****
  *
@@ -558,7 +558,6 @@ void cm_set_model_linenum(uint32_t linenum)
 
 /***********************************************************************************
  * COORDINATE SYSTEMS AND OFFSETS
- *
  * Functions to get, set and report coordinate systems and work offsets
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
@@ -656,8 +655,7 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
 }
 
 /***********************************************************************************
- * CRITICAL HELPERS 
- *
+ * CRITICAL HELPERS
  * Core functions supporting the canonical machining fucntions
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/

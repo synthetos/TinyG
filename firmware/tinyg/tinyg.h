@@ -48,7 +48,7 @@
 
 //#include "MotatePins.h"
 
-#define TINYG_FIRMWARE_BUILD   		392.66	// Modularity work in canonical machine. 
+#define TINYG_FIRMWARE_BUILD   		392.67	// Modularity work in stepper
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
@@ -68,10 +68,13 @@
 // bringing in new functionality
 //#define __PLAN_R2							// comment out to use R1 planner functions
 
+#ifndef WEAK
+#define WEAK  __attribute__ ((weak))
+#endif
+
 /******************************************************************************
  ***** PLATFORM COMPATIBILITY *************************************************
  ******************************************************************************/
-
 
 /******************************************************************************
  ***** TINYG APPLICATION DEFINITIONS ******************************************
@@ -127,7 +130,6 @@ typedef const char PROGMEM *char_P;		// access to PROGMEM arrays of PROGMEM stri
 //#define SysTickTimer.getValue SysTickTimer_getValue
 
 //#endif // __AVR_GCC
-
 
 /* 
  * STATUS CODES
