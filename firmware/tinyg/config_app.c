@@ -106,14 +106,7 @@ static stat_t set_sa(cmdObj_t *cmd);		// set motor step angle
 static stat_t set_tr(cmdObj_t *cmd);		// set motor travel per revolution
 static stat_t set_mi(cmdObj_t *cmd);		// set microsteps
 static stat_t set_pm(cmdObj_t *cmd);		// set motor power mode
-/*
-static stat_t get_am(cmdObj_t *cmd);		// get axis mode
-static stat_t set_am(cmdObj_t *cmd);		// set axis mode
-static void print_am(cmdObj_t *cmd);		// print axis mode
-static stat_t get_jrk(cmdObj_t *cmd);		// get jerk with 1,000,000 correction
-static stat_t set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
-static stat_t set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
-*/
+
 //static void pr_ma_str(cmdObj_t *cmd); 	// generic print functions for motors and axes
 static void pr_ma_ui8(cmdObj_t *cmd);
 //static void pr_ma_int(cmdObj_t *cmd); 	// placeholder
@@ -1096,16 +1089,8 @@ static void print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary u
  * pr_ma_ui8() - print motor or axis uint8 value w/no units or unit conversion
  * pr_ma_lin() - print linear value with units and in/mm unit conversion
  * pr_ma_rot() - print rotary value with units
- * print_am()  - print axis mode with enumeration string
  */
 /*
-// helper. This function will need to be rethought if microstep morphing is implemented
-static stat_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
-{
-	uint8_t m = get_motor(cmd->index);
-	st.m[m].steps_per_unit = (360 / (st.m[m].step_angle / st.m[m].microsteps) / st.m[m].travel_rev);
-	return (STAT_OK);
-}
 
 static stat_t get_am(cmdObj_t *cmd)
 {
@@ -1158,6 +1143,14 @@ static void print_ss(cmdObj_t *cmd)			// print switch state
 	fprintf(stderr, get_format(cmd->index, format), cmd->token, cmd->value);
 }
 */
+
+// helper. This function will need to be rethought if microstep morphing is implemented
+static stat_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
+{
+	uint8_t m = get_motor(cmd->index);
+	st.m[m].steps_per_unit = (360 / (st.m[m].step_angle / st.m[m].microsteps) / st.m[m].travel_rev);
+	return (STAT_OK);
+}
 
 static stat_t set_sa(cmdObj_t *cmd)			// motor step angle
 { 
@@ -1215,7 +1208,7 @@ static void pr_ma_rot(cmdObj_t *cmd)		// print a rotary value in degrees units
 	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->value,
 					(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
 }
-
+/*
 static void print_am(cmdObj_t *cmd)			// print axis mode with enumeration string
 {
 	cmd_get(cmd);
@@ -1223,6 +1216,7 @@ static void print_am(cmdObj_t *cmd)			// print axis mode with enumeration string
 	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
 					(PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
 }
+*/
 
 /**** COMMUNICATIONS SETTINGS *************************************************
  * set_ic() - ignore CR or LF on RX

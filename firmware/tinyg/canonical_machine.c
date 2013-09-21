@@ -392,20 +392,13 @@ stat_t cm_run_home(cmdObj_t *cmd)
 }
 
 /*
- * get_am() - get axis mode w/enumeration string
- * set_am() - set axis mode w/exception handling for axis type
- * get_jrk() - get jerk value w/1,000,000 correction
- * set_jrk() - set jerk value w/1,000,000 correction
- * set_sw() - run this any time you change a switch setting
+ * cm_get_am()	 - get axis mode w/enumeration string
+ * cm_set_am()   - set axis mode w/exception handling for axis type
+ * cm_print_am() - print axis mode with enumeration string
+ * cm_get_jrk()  - get jerk value w/1,000,000 correction
+ * cm_set_jrk()  - set jerk value w/1,000,000 correction
+ * cm_set_sw()   - run this any time you change a switch setting
  */
-
-// helper. This function will need to be rethought if microstep morphing is implemented
-static stat_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
-{
-	uint8_t m = get_motor(cmd->index);
-	st.m[m].steps_per_unit = (360 / (st.m[m].step_angle / st.m[m].microsteps) / st.m[m].travel_rev);
-	return (STAT_OK);
-}
 
 stat_t cm_get_am(cmdObj_t *cmd)
 {
@@ -423,6 +416,14 @@ stat_t cm_set_am(cmdObj_t *cmd)		// axis mode
 	}
 	set_ui8(cmd);
 	return(STAT_OK);
+}
+
+void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
+					(PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
 }
 
 stat_t cm_get_jrk(cmdObj_t *cmd)
