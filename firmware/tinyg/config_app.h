@@ -325,11 +325,18 @@ extern cfgParameters_t cfg;
  **** EXPOSED APPLICATION SPECIFIC FUNCTIONS ***************************************
  ***********************************************************************************/
 
-stat_t set_baud_callback(void);
+stat_t set_flu(cmdObj_t *cmd);
+stat_t get_flu(cmdObj_t *cmd);
+
+void print_lin(cmdObj_t *cmd);
+void print_rot(cmdObj_t *cmd);
 
 char_t get_axis_char(int8_t axis);
 int8_t get_motor(const index_t i);
 int8_t get_pos_axis(const index_t i);
+
+stat_t set_baud_callback(void);
+
 
 
 #ifdef __cplusplus

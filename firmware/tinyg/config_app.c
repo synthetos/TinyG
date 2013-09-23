@@ -68,12 +68,12 @@ static stat_t _do_offsets(cmdObj_t *cmd);	// print offsets for G54-G59, G92
 static stat_t _do_all(cmdObj_t *cmd);		// print all parameters
 
 // Gcode domain specific functions
-
+/*
 static stat_t set_flu(cmdObj_t *cmd);		// set a float with unit conversion
 static stat_t get_flu(cmdObj_t *cmd);		// get float with unit conversion
 static void print_lin(cmdObj_t *cmd);		// print linear values
 static void print_rot(cmdObj_t *cmd);		// print rotary values
-
+*/
 // system and application control variables and functions
 
 static stat_t set_hv(cmdObj_t *cmd);		// set hardware version
@@ -84,13 +84,12 @@ static stat_t run_gc(cmdObj_t *cmd);		// run a gcode block
 static stat_t run_boot(cmdObj_t *cmd);		// jump to the bootloader
 //static stat_t run_sx(cmdObj_t *cmd);		// send XOFF, XON
 
-//static stat_t set_jv(cmdObj_t *cmd);		// set JSON verbosity
 static stat_t run_qf(cmdObj_t *cmd);		// execute a queue flush block
 static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 
-static stat_t set_mt(cmdObj_t *cmd);		// set motor disable timeout in deconds
-static stat_t set_md(cmdObj_t *cmd);		// disable all motors
-static stat_t set_me(cmdObj_t *cmd);		// enable motors with power-mode set to 0 (on)
+//static stat_t set_mt(cmdObj_t *cmd);		// set motor disable timeout in deconds
+//static stat_t set_md(cmdObj_t *cmd);		// disable all motors
+//static stat_t set_me(cmdObj_t *cmd);		// enable motors with power-mode set to 0 (on)
 
 // communications settings
 
@@ -102,10 +101,10 @@ static stat_t set_baud(cmdObj_t *cmd);		// set USB baud rate
 
 // motor and axis variables and functions
 
-static stat_t set_sa(cmdObj_t *cmd);		// set motor step angle
-static stat_t set_tr(cmdObj_t *cmd);		// set motor travel per revolution
-static stat_t set_mi(cmdObj_t *cmd);		// set microsteps
-static stat_t set_pm(cmdObj_t *cmd);		// set motor power mode
+//static stat_t set_sa(cmdObj_t *cmd);		// set motor step angle
+//static stat_t set_tr(cmdObj_t *cmd);		// set motor travel per revolution
+//static stat_t set_mi(cmdObj_t *cmd);		// set microsteps
+//static stat_t set_pm(cmdObj_t *cmd);		// set motor power mode
 
 //static void pr_ma_str(cmdObj_t *cmd); 	// generic print functions for motors and axes
 static void pr_ma_ui8(cmdObj_t *cmd);
@@ -353,50 +352,50 @@ const cfgItem_t PROGMEM cfgArray[] = {
 
 	// Motor parameters
 	{ "1","1ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&st.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },
-	{ "1","1sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&st.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
-	{ "1","1tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&st.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
-	{ "1","1mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&st.m[MOTOR_1].microsteps,	M1_MICROSTEPS },
+	{ "1","1sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, st_set_sa, (float *)&st.m[MOTOR_1].step_angle,	M1_STEP_ANGLE },
+	{ "1","1tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, st_set_tr, (float *)&st.m[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
+	{ "1","1mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, st_set_mi, (float *)&st.m[MOTOR_1].microsteps,	M1_MICROSTEPS },
 	{ "1","1po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_01, (float *)&st.m[MOTOR_1].polarity,		M1_POLARITY },
-	{ "1","1pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&st.m[MOTOR_1].power_mode,	M1_POWER_MODE },
+	{ "1","1pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, st_set_pm, (float *)&st.m[MOTOR_1].power_mode,	M1_POWER_MODE },
 #if (MOTORS >= 2)
 	{ "2","2ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&st.m[MOTOR_2].motor_map,	M2_MOTOR_MAP },
-	{ "2","2sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&st.m[MOTOR_2].step_angle,	M2_STEP_ANGLE },
-	{ "2","2tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&st.m[MOTOR_2].travel_rev,	M2_TRAVEL_PER_REV },
-	{ "2","2mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&st.m[MOTOR_2].microsteps,	M2_MICROSTEPS },
+	{ "2","2sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, st_set_sa, (float *)&st.m[MOTOR_2].step_angle,	M2_STEP_ANGLE },
+	{ "2","2tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, st_set_tr, (float *)&st.m[MOTOR_2].travel_rev,	M2_TRAVEL_PER_REV },
+	{ "2","2mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, st_set_mi, (float *)&st.m[MOTOR_2].microsteps,	M2_MICROSTEPS },
 	{ "2","2po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_01, (float *)&st.m[MOTOR_2].polarity,		M2_POLARITY },
-	{ "2","2pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&st.m[MOTOR_2].power_mode,	M2_POWER_MODE },
+	{ "2","2pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, st_set_pm, (float *)&st.m[MOTOR_2].power_mode,	M2_POWER_MODE },
 #endif
 #if (MOTORS >= 3)
 	{ "3","3ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&st.m[MOTOR_3].motor_map,	M3_MOTOR_MAP },
-	{ "3","3sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&st.m[MOTOR_3].step_angle,	M3_STEP_ANGLE },
-	{ "3","3tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&st.m[MOTOR_3].travel_rev,	M3_TRAVEL_PER_REV },
-	{ "3","3mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&st.m[MOTOR_3].microsteps,	M3_MICROSTEPS },
+	{ "3","3sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, st_set_sa, (float *)&st.m[MOTOR_3].step_angle,	M3_STEP_ANGLE },
+	{ "3","3tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, st_set_tr, (float *)&st.m[MOTOR_3].travel_rev,	M3_TRAVEL_PER_REV },
+	{ "3","3mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, st_set_mi, (float *)&st.m[MOTOR_3].microsteps,	M3_MICROSTEPS },
 	{ "3","3po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_01, (float *)&st.m[MOTOR_3].polarity,		M3_POLARITY },
-	{ "3","3pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&st.m[MOTOR_3].power_mode,	M3_POWER_MODE },
+	{ "3","3pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, st_set_pm, (float *)&st.m[MOTOR_3].power_mode,	M3_POWER_MODE },
 #endif
 #if (MOTORS >= 4)
 	{ "4","4ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&st.m[MOTOR_4].motor_map,	M4_MOTOR_MAP },
-	{ "4","4sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&st.m[MOTOR_4].step_angle,	M4_STEP_ANGLE },
-	{ "4","4tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&st.m[MOTOR_4].travel_rev,	M4_TRAVEL_PER_REV },
-	{ "4","4mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&st.m[MOTOR_4].microsteps,	M4_MICROSTEPS },
+	{ "4","4sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, st_set_sa, (float *)&st.m[MOTOR_4].step_angle,	M4_STEP_ANGLE },
+	{ "4","4tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, st_set_tr, (float *)&st.m[MOTOR_4].travel_rev,	M4_TRAVEL_PER_REV },
+	{ "4","4mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, st_set_mi, (float *)&st.m[MOTOR_4].microsteps,	M4_MICROSTEPS },
 	{ "4","4po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_01, (float *)&st.m[MOTOR_4].polarity,		M4_POLARITY },
-	{ "4","4pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&st.m[MOTOR_4].power_mode,	M4_POWER_MODE },
+	{ "4","4pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, st_set_pm, (float *)&st.m[MOTOR_4].power_mode,	M4_POWER_MODE },
 #endif
 #if (MOTORS >= 5)
 	{ "5","5ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&st.m[MOTOR_5].motor_map,	M5_MOTOR_MAP },
-	{ "5","5sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&st.m[MOTOR_5].step_angle,	M5_STEP_ANGLE },
-	{ "5","5tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&st.m[MOTOR_5].travel_rev,	M5_TRAVEL_PER_REV },
-	{ "5","5mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&st.m[MOTOR_5].microsteps,	M5_MICROSTEPS },
+	{ "5","5sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, st_set_sa, (float *)&st.m[MOTOR_5].step_angle,	M5_STEP_ANGLE },
+	{ "5","5tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, st_set_tr, (float *)&st.m[MOTOR_5].travel_rev,	M5_TRAVEL_PER_REV },
+	{ "5","5mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, st_set_mi, (float *)&st.m[MOTOR_5].microsteps,	M5_MICROSTEPS },
 	{ "5","5po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_01, (float *)&st.m[MOTOR_5].polarity,		M5_POLARITY },
-	{ "5","5pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&st.m[MOTOR_5].power_mode,	M5_POWER_MODE },
+	{ "5","5pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, st_set_pm, (float *)&st.m[MOTOR_5].power_mode,	M5_POWER_MODE },
 #endif
 #if (MOTORS >= 6)
 	{ "6","6ma",_fip, 0, fmt_0ma, pr_ma_ui8, get_ui8, set_ui8,(float *)&st.m[MOTOR_6].motor_map,	M6_MOTOR_MAP },
-	{ "6","6sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, set_sa, (float *)&st.m[MOTOR_6].step_angle,	M6_STEP_ANGLE },
-	{ "6","6tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, set_tr, (float *)&st.m[MOTOR_6].travel_rev,	M6_TRAVEL_PER_REV },
-	{ "6","6mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, set_mi, (float *)&st.m[MOTOR_6].microsteps,	M6_MICROSTEPS },
+	{ "6","6sa",_fip, 2, fmt_0sa, pr_ma_rot, get_flt, st_set_sa, (float *)&st.m[MOTOR_6].step_angle,	M6_STEP_ANGLE },
+	{ "6","6tr",_fip, 3, fmt_0tr, pr_ma_lin, get_flu, st_set_tr, (float *)&st.m[MOTOR_6].travel_rev,	M6_TRAVEL_PER_REV },
+	{ "6","6mi",_fip, 0, fmt_0mi, pr_ma_ui8, get_ui8, st_set_mi, (float *)&st.m[MOTOR_6].microsteps,	M6_MICROSTEPS },
 	{ "6","6po",_fip, 0, fmt_0po, pr_ma_ui8, get_ui8, set_01, (float *)&st.m[MOTOR_6].polarity,		M6_POLARITY },
-	{ "6","6pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, set_pm, (float *)&st.m[MOTOR_6].power_mode,	M6_POWER_MODE },
+	{ "6","6pm",_fip, 0, fmt_0pm, pr_ma_ui8, get_ui8, st_set_pm, (float *)&st.m[MOTOR_6].power_mode,	M6_POWER_MODE },
 #endif
 
 	// Axis parameters
@@ -568,9 +567,9 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys","ja",  _f07, 0, fmt_ja, print_lin, get_flu, set_flu, (float *)&cm.junction_acceleration,	JUNCTION_ACCELERATION },
 	{ "sys","ct",  _f07, 4, fmt_ct, print_lin, get_flu, set_flu, (float *)&cm.chordal_tolerance,		CHORDAL_TOLERANCE },
 	{ "sys","st",  _f07, 0, fmt_st, print_ui8, get_ui8, cm_set_sw,  (float *)&sw.switch_type,			SWITCH_TYPE },
-	{ "sys","mt",  _f07, 2, fmt_mt, print_flt, get_flt, set_mt,  (float *)&st.motor_idle_timeout, 		MOTOR_IDLE_TIMEOUT},
-	{ "",   "me",  _f00, 0, fmt_me, print_str, set_me,  set_me,  (float *)&cs.null, 0 },
-	{ "",   "md",  _f00, 0, fmt_md, print_str, set_md,  set_md,  (float *)&cs.null, 0 },
+	{ "sys","mt",  _f07, 2, fmt_mt, print_flt, get_flt, st_set_mt,  (float *)&st.motor_idle_timeout, 		MOTOR_IDLE_TIMEOUT},
+	{ "",   "me",  _f00, 0, fmt_me, print_str, st_set_me,  st_set_me,  (float *)&cs.null, 0 },
+	{ "",   "md",  _f00, 0, fmt_md, print_str, st_set_md,  st_set_md,  (float *)&cs.null, 0 },
 
 	{ "sys","ej",  _f07, 0, fmt_ej, print_ui8, get_ui8, set_01,  (float *)&cfg.comm_mode,				COMM_MODE },
 	{ "sys","jv",  _f07, 0, fmt_jv, print_ui8, get_ui8, json_set_jv,  (float *)&js.json_verbosity,			JSON_VERBOSITY },
@@ -763,7 +762,7 @@ int8_t get_pos_axis(const index_t i)
  * print_lin() - print linear axis value with Gcode units conversion
  * print_rot() - print rotary axis value with Gcode units conversion
  */
-static stat_t set_flu(cmdObj_t *cmd)
+stat_t set_flu(cmdObj_t *cmd)
 {
 	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= MM_PER_INCH;
 	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
@@ -772,21 +771,21 @@ static stat_t set_flu(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-static stat_t get_flu(cmdObj_t *cmd)
+stat_t get_flu(cmdObj_t *cmd)
 {
 	get_flt(cmd);
 	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
 	return (STAT_OK);
 }
 
-static void print_lin(cmdObj_t *cmd)
+void print_lin(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
 	char_t format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
 }
 
-static void print_rot(cmdObj_t *cmd)
+void print_rot(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
 	char_t format[CMD_FORMAT_LEN+1];
@@ -840,7 +839,7 @@ static stat_t get_rx(cmdObj_t *cmd)
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
-
+/*
 static stat_t set_mt(cmdObj_t *cmd)
 {
 	st_set_motor_idle_timeout(cmd->value);	
@@ -858,7 +857,7 @@ static stat_t set_me(cmdObj_t *cmd)	// Make sure this function is not part of in
 	st_energize_motors();
 	return (STAT_OK);
 }
-
+*/
 /* run_sx()	- send XOFF, XON --- test only 
 static stat_t run_sx(cmdObj_t *cmd)
 {
@@ -927,7 +926,7 @@ static void print_ss(cmdObj_t *cmd)			// print switch state
  * pr_ma_lin() - print linear value with units and in/mm unit conversion
  * pr_ma_rot() - print rotary value with units
  */
-
+/*
 // helper. This function will need to be rethought if microstep morphing is implemented
 static stat_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
 {
@@ -969,7 +968,7 @@ static stat_t set_pm(cmdObj_t *cmd)			// motor power mode
 	}
 	return (STAT_OK);
 }
-
+*/
 static void pr_ma_ui8(cmdObj_t *cmd)		// print uint8_t value
 {
 	cmd_get(cmd);

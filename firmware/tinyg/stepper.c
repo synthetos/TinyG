@@ -561,6 +561,70 @@ void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode)
 	}
 }
 
+/*
+ * Configuration and display interfaces
+ */
+
+// helper. This function will need to be rethought if microstep morphing is implemented
+static stat_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
+{
+	uint8_t m = get_motor(cmd->index);
+	st.m[m].steps_per_unit = (360 / (st.m[m].step_angle / st.m[m].microsteps) / st.m[m].travel_rev);
+	return (STAT_OK);
+}
+
+stat_t st_set_sa(cmdObj_t *cmd)			// motor step angle
+{ 
+	set_flt(cmd);
+	return(_set_motor_steps_per_unit(cmd)); 
+}
+
+stat_t st_set_tr(cmdObj_t *cmd)			// motor travel per revolution
+{ 
+	set_flu(cmd);
+	return(_set_motor_steps_per_unit(cmd)); 
+}
+
+stat_t st_set_mi(cmdObj_t *cmd)			// motor microsteps
+{
+	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
+		cmd_add_conditional_message_P(PSTR("*** WARNING *** Setting non-standard microstep value"));
+	}
+	set_ui8(cmd);							// set it anyway, even if it's unsupported
+	_set_motor_steps_per_unit(cmd);
+	st_set_microsteps(get_motor(cmd->index), (uint8_t)cmd->value);
+	return (STAT_OK);
+}
+
+stat_t st_set_pm(cmdObj_t *cmd)			// motor power mode
+{ 
+	ritorno (set_01(cmd));
+	if (fp_ZERO(cmd->value)) { // people asked this setting take effect immediately, hence:
+		st_energize_motor(get_motor(cmd->index));
+	} else {
+		st_deenergize_motor(get_motor(cmd->index));
+	}
+	return (STAT_OK);
+}
+
+stat_t st_set_mt(cmdObj_t *cmd)
+{
+	st_set_motor_idle_timeout(cmd->value);	
+	return (STAT_OK);
+}
+
+stat_t st_set_md(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
+{
+	st_deenergize_motors();
+	return (STAT_OK);
+}
+
+stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
+{
+	st_energize_motors();
+	return (STAT_OK);
+}
+
 
 /**** DEBUG routines ****/
 /*

@@ -279,6 +279,15 @@ stat_t st_prep_line(float steps[], float microseconds);
 uint16_t st_get_stepper_run_magic(void);
 uint16_t st_get_stepper_prep_magic(void);
 
+stat_t st_set_sa(cmdObj_t *cmd);
+stat_t st_set_tr(cmdObj_t *cmd);
+stat_t st_set_mi(cmdObj_t *cmd);
+stat_t st_set_pm(cmdObj_t *cmd);
+stat_t st_set_mt(cmdObj_t *cmd);
+stat_t st_set_md(cmdObj_t *cmd);
+stat_t st_set_me(cmdObj_t *cmd);
+
+
 #ifdef __DEBUG
 void st_dump_stepper_state(void);
 #endif
