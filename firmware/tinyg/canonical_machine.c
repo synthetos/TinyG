@@ -402,6 +402,24 @@ stat_t cm_get_ofs(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
+/*
+ * text print functions
+ */
+/*
+static void print_lin(cmdObj_t *cmd)
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
+}
+
+static void print_rot(cmdObj_t *cmd)
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
+}
+*/
 void _print_pos_helper(cmdObj_t *cmd, uint8_t units)
 {
 	cmd_get(cmd);

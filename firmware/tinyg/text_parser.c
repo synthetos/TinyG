@@ -44,11 +44,11 @@ extern "C"{
 #ifndef __TEXT_MODE					// insert text stubs
 
 stat_t text_parser(char_t *str) { return (STAT_OK);}
-void text_response(const stat_t status, char_t *buf) return;
-void text_print_list() return;
-void text_print_inline_pairs() return;
-void text_print_inline_values() return;
-void text_print_multiline_formatted() return;
+void text_response(const stat_t status, char_t *buf) { return;}
+void text_print_list(stat_t status, uint8_t flags) { return;}
+void text_print_inline_pairs(cmdObj_t *cmd) { return;}
+void text_print_inline_values(cmdObj_t *cmd) { return;}
+void text_print_multiline_formatted(cmdObj_t *cmd) { return;}
 
 #else // __TEXT_MODE
 
@@ -218,6 +218,33 @@ void text_print_multiline_formatted(cmdObj_t *cmd)
 		if (cmd->objtype == TYPE_EMPTY) break;
 	}
 }
+
+/*
+ * Text print primitives
+ */
+
+void text_print_nul(cmdObj_t *cmd, const char_t *fmt) {}
+
+void text_print_str(cmdObj_t *cmd, const char_t *fmt)
+{
+	fprintf(stderr, fmt, *cmd->stringp);
+}
+
+void text_print_ui8(cmdObj_t *cmd, const char_t *fmt)
+{
+	fprintf(stderr, fmt, (uint8_t)cmd->value);
+}
+
+void text_print_int(cmdObj_t *cmd, const char_t *fmt)
+{
+	fprintf(stderr, fmt, (uint32_t)cmd->value);
+}
+
+void text_print_flt(cmdObj_t *cmd, const char_t *fmt)
+{
+	fprintf(stderr, fmt, cmd->value);
+}
+
 
 #ifdef __cplusplus
 }

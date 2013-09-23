@@ -554,23 +554,24 @@ stat_t cm_get_dist(cmdObj_t *cmd);		// get distance mode...
 stat_t cm_get_frmo(cmdObj_t *cmd);		// get feedrate mode...
 stat_t cm_get_toolv(cmdObj_t *cmd);		// get tool (value)
 stat_t cm_get_vel(cmdObj_t *cmd);		// get runtime velocity...
-
 stat_t cm_get_pos(cmdObj_t *cmd);		// get runtime work position...
 stat_t cm_get_mpos(cmdObj_t *cmd);		// get runtime machine position...
 stat_t cm_get_ofs(cmdObj_t *cmd);		// get runtime work offset...
-void cm_print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
-void cm_print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
-void cm_print_coor(cmdObj_t *cmd);		// print coordinate offsets with linear units
-void cm_print_corr(cmdObj_t *cmd);		// print coordinate offsets with rotary units
 
 stat_t cm_run_home(cmdObj_t *cmd);		// start homing cycle
 
 stat_t cm_get_am(cmdObj_t *cmd);		// get axis mode
 stat_t cm_set_am(cmdObj_t *cmd);		// set axis mode
-void cm_print_am(cmdObj_t *cmd);		// print axis mode
 stat_t cm_get_jrk(cmdObj_t *cmd);		// get jerk with 1,000,000 correction
 stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 stat_t cm_set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
+
+void cm_print_lin(cmdObj_t *cmd);		// generic print for linear values 
+void cm_print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
+void cm_print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
+void cm_print_coor(cmdObj_t *cmd);		// print coordinate offsets with linear units
+void cm_print_corr(cmdObj_t *cmd);		// print coordinate offsets with rotary units
+void cm_print_am(cmdObj_t *cmd);		// print axis mode
 
 /*--- getters, setters and helper functions for canonical machining functions ---*/
 
