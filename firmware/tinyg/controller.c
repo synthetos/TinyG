@@ -209,19 +209,19 @@ static stat_t _command_dispatch()
 
 		case NUL: { 							// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {
-				tg_text_response(STAT_OK, cs.saved_buf);
+				text_response(STAT_OK, cs.saved_buf);
 			}
 			break;
 		}
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TEXT_MODE;
 			print_general_help();
-			tg_text_response(STAT_OK, cs.bufp);
+			text_response(STAT_OK, cs.bufp);
 			break;
 		}
 		case '$': case '?':{ 					// text-mode configs
 			cfg.comm_mode = TEXT_MODE;
-			tg_text_response(text_parser(cs.bufp), cs.saved_buf);
+			text_response(text_parser(cs.bufp), cs.saved_buf);
 			break;
 		}
 		case '{': { 							// JSON input
@@ -235,7 +235,7 @@ static stat_t _command_dispatch()
 				sprintf(cs.bufp,"{\"gc\":\"%s\"}\n", cs.out_buf);
 				json_parser(cs.bufp);
 			} else {
-				tg_text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
+				text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
 			}
 		}
 	}

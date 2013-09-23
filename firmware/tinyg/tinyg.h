@@ -42,17 +42,23 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-//#ifdef __AVR
-#include <avr/pgmspace.h>
-//#endif
+
 
 //#include "MotatePins.h"
+
+/****** REVISIONS ******/
 
 #define TINYG_FIRMWARE_BUILD   		392.67	// Modularity work in stepper
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8
+
+
+/****** COMPILE-TIME SETTINGS ******/
+
+#define __TEXT_MODE							// enables text support in modules
+
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -75,6 +81,10 @@
 /******************************************************************************
  ***** PLATFORM COMPATIBILITY *************************************************
  ******************************************************************************/
+
+//#ifdef __AVR
+#include <avr/pgmspace.h>
+//#endif
 
 /******************************************************************************
  ***** TINYG APPLICATION DEFINITIONS ******************************************

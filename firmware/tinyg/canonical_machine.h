@@ -39,10 +39,55 @@ extern "C"{
 
 /* Defines */
 
-#define MODEL 	(GCodeState_t *)&gm			// absolute from canonical machine gm model
+#define MODEL 	(GCodeState_t *)&gm			// absolute pointer from canonical machine gm model
 #define PLANNER (GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
-#define RUNTIME (GCodeState_t *)&mr.gm		// absolute fomr runtime mm struct
-#define ACTIVE_MODEL cm.am					// active model is maintained by state management
+#define RUNTIME (GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
+#define ACTIVE_MODEL cm.am					// active model pointer is maintained by state management
+
+/* externs for glocal strings */
+
+extern const char_t PROGMEM fmt_vel[];		// gcode model reporting
+extern const char_t PROGMEM fmt_vel[];
+extern const char_t PROGMEM fmt_line[];
+extern const char_t PROGMEM fmt_feed[];
+extern const char_t PROGMEM fmt_stat[];
+extern const char_t PROGMEM fmt_macs[];
+extern const char_t PROGMEM fmt_cycs[];
+extern const char_t PROGMEM fmt_mots[];
+extern const char_t PROGMEM fmt_hold[];
+extern const char_t PROGMEM fmt_home[];
+extern const char_t PROGMEM fmt_unit[];
+extern const char_t PROGMEM fmt_coor[];
+extern const char_t PROGMEM fmt_momo[];
+extern const char_t PROGMEM fmt_plan[];
+extern const char_t PROGMEM fmt_path[];
+extern const char_t PROGMEM fmt_dist[];
+extern const char_t PROGMEM fmt_frmo[];
+extern const char_t PROGMEM fmt_tool[];
+extern const char_t PROGMEM fmt_cofs[];
+extern const char_t PROGMEM fmt_cloc[];
+
+extern const char_t PROGMEM fmt_gpl[];		// gcode defaults
+extern const char_t PROGMEM fmt_gun[];
+extern const char_t PROGMEM fmt_gco[];
+extern const char_t PROGMEM fmt_gpa[];
+extern const char_t PROGMEM fmt_gdi[];
+
+extern const char_t PROGMEM fmt_Xam[];		// axis settings
+extern const char_t PROGMEM fmt_Xfr[];
+extern const char_t PROGMEM fmt_Xvm[];
+extern const char_t PROGMEM fmt_Xtm[];
+extern const char_t PROGMEM fmt_Xjm[];
+extern const char_t PROGMEM fmt_Xjh[];
+extern const char_t PROGMEM fmt_Xjd[];
+extern const char_t PROGMEM fmt_Xra[];
+extern const char_t PROGMEM fmt_Xsn[];
+extern const char_t PROGMEM fmt_Xsx[];
+extern const char_t PROGMEM fmt_Xsv[];
+extern const char_t PROGMEM fmt_Xlv[];
+extern const char_t PROGMEM fmt_Xlb[];
+extern const char_t PROGMEM fmt_Xzb[];
+
 
 /*****************************************************************************
  * CANONICAL MACHINE STRUCTURES

@@ -209,7 +209,7 @@ void rpt_print_loading_configs_message(void)
 void rpt_print_system_ready_message(void)
 {
 	_startup_helper(STAT_OK, PSTR("SYSTEM READY"));
-	if (cfg.comm_mode == TEXT_MODE) { tg_text_response(STAT_OK, (char_t *)"");}// prompt
+	if (cfg.comm_mode == TEXT_MODE) { text_response(STAT_OK, (char_t *)"");}// prompt
 }
 
 /*****************************************************************************

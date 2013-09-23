@@ -133,6 +133,59 @@ static void _exec_program_finalize(float *value, float *flag);
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
 
+/* global formatting strings (PUBLIC) */
+
+#ifdef __TEXT_MODE
+
+const char_t PROGMEM fmt_vel[]  = "Velocity:%17.3f%S/min\n";
+const char_t PROGMEM fmt_line[] = "Line number:%10.0f\n";
+const char_t PROGMEM fmt_feed[] = "Feed rate:%16.3f%S/min\n";
+const char_t PROGMEM fmt_stat[] = "Machine state:       %s\n"; // combined machine state
+const char_t PROGMEM fmt_macs[] = "Raw machine state:   %s\n"; // raw machine state
+const char_t PROGMEM fmt_cycs[] = "Cycle state:         %s\n";
+const char_t PROGMEM fmt_mots[] = "Motion state:        %s\n";
+const char_t PROGMEM fmt_hold[] = "Feedhold state:      %s\n";
+const char_t PROGMEM fmt_home[] = "Homing state:        %s\n";
+const char_t PROGMEM fmt_unit[] = "Units:               %s\n"; // units mode as ASCII string
+const char_t PROGMEM fmt_coor[] = "Coordinate system:   %s\n";
+const char_t PROGMEM fmt_momo[] = "Motion mode:         %s\n";
+const char_t PROGMEM fmt_plan[] = "Plane:               %s\n";
+const char_t PROGMEM fmt_path[] = "Path Mode:           %s\n";
+const char_t PROGMEM fmt_dist[] = "Distance mode:       %s\n";
+const char_t PROGMEM fmt_frmo[] = "Feed rate mode:      %s\n";
+const char_t PROGMEM fmt_tool[] = "Tool number          %d\n";
+
+// Coordinate system offset print formatting strings
+const char_t PROGMEM fmt_cofs[] = "[%s%s] %s %s offset%20.3f%S\n";
+const char_t PROGMEM fmt_cloc[] = "[%s%s] %s %s location%18.3f%S\n";
+
+// Gcode model power-on reset default values
+const char_t PROGMEM fmt_gpl[] = "[gpl] default gcode plane%10d [0=G17,1=G18,2=G19]\n";
+const char_t PROGMEM fmt_gun[] = "[gun] default gcode units mode%5d [0=G20,1=G21]\n";
+const char_t PROGMEM fmt_gco[] = "[gco] default gcode coord system%3d [1-6 (G54-G59)]\n";
+const char_t PROGMEM fmt_gpa[] = "[gpa] default gcode path control%3d [0=G61,1=G61.1,2=G64]\n";
+const char_t PROGMEM fmt_gdi[] = "[gdi] default gcode distance mode%2d [0=G90,1=G91]\n";
+
+// Axis strings
+const char_t PROGMEM fmt_Xam[] = "[%s%s] %s axis mode%18d %S\n";
+const char_t PROGMEM fmt_Xfr[] = "[%s%s] %s feedrate maximum%15.3f%S/min\n";
+const char_t PROGMEM fmt_Xvm[] = "[%s%s] %s velocity maximum%15.3f%S/min\n";
+const char_t PROGMEM fmt_Xtm[] = "[%s%s] %s travel maximum%17.3f%S\n";
+const char_t PROGMEM fmt_Xjm[] = "[%s%s] %s jerk maximum%15.0f%S/min^3 * 1 million\n";
+const char_t PROGMEM fmt_Xjh[] = "[%s%s] %s jerk homing%16.0f%S/min^3 * 1 million\n";
+const char_t PROGMEM fmt_Xjd[] = "[%s%s] %s junction deviation%14.4f%S (larger is faster)\n";
+const char_t PROGMEM fmt_Xra[] = "[%s%s] %s radius value%20.4f%S\n";
+const char_t PROGMEM fmt_Xsn[] = "[%s%s] %s switch min%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
+const char_t PROGMEM fmt_Xsx[] = "[%s%s] %s switch max%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
+const char_t PROGMEM fmt_Xsv[] = "[%s%s] %s search velocity%16.3f%S/min\n";
+const char_t PROGMEM fmt_Xlv[] = "[%s%s] %s latch velocity%17.3f%S/min\n";
+const char_t PROGMEM fmt_Xlb[] = "[%s%s] %s latch backoff%18.3f%S\n";
+const char_t PROGMEM fmt_Xzb[] = "[%s%s] %s zero backoff%19.3f%S\n";
+
+#endif //__TEXT_MODE
+
+/* local strings (PRIVATE) */	// NB: used by both text and JSON modes
+
 static const char_t PROGMEM msg_units0[] = " in";	// used by generic print functions
 static const char_t PROGMEM msg_units1[] = " mm";
 static const char_t PROGMEM msg_units2[] = " deg";
@@ -225,6 +278,7 @@ static const char_t PROGMEM msg_am01[] = "[standard]";
 static const char_t PROGMEM msg_am02[] = "[inhibited]";
 static const char_t PROGMEM msg_am03[] = "[radius]";
 static PGM_P const  PROGMEM msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03};
+
 
 /**** Functions called directly from cmdArray table - mostly wrappers ****
  * _get_msg_helper() - helper to get display message

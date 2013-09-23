@@ -41,6 +41,17 @@
 extern "C"{
 #endif
 
+#ifndef __TEXT_MODE					// insert text stubs
+
+stat_t text_parser(char_t *str) { return (STAT_OK);}
+void text_response(const stat_t status, char_t *buf) return;
+void text_print_list() return;
+void text_print_inline_pairs() return;
+void text_print_inline_values() return;
+void text_print_multiline_formatted() return;
+
+#else // __TEXT_MODE
+
 static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd);
 
 /******************************************************************************
@@ -132,7 +143,7 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 static const char prompt_ok[] PROGMEM = "tinyg [%s] ok> ";
 static const char prompt_err[] PROGMEM = "tinyg [%s] err: %s: %s ";
 
-void tg_text_response(const stat_t status, const char *buf)
+void text_response(const stat_t status, char_t *buf)
 {
 	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
 
@@ -211,3 +222,5 @@ void text_print_multiline_formatted(cmdObj_t *cmd)
 #ifdef __cplusplus
 }
 #endif // __cplusplus
+
+#endif // __TEXT_MODE
