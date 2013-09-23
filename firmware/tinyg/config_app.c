@@ -84,7 +84,7 @@ static stat_t run_gc(cmdObj_t *cmd);		// run a gcode block
 static stat_t run_boot(cmdObj_t *cmd);		// jump to the bootloader
 //static stat_t run_sx(cmdObj_t *cmd);		// send XOFF, XON
 
-static stat_t set_jv(cmdObj_t *cmd);		// set JSON verbosity
+//static stat_t set_jv(cmdObj_t *cmd);		// set JSON verbosity
 static stat_t run_qf(cmdObj_t *cmd);		// execute a queue flush block
 static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 
@@ -573,7 +573,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "",   "md",  _f00, 0, fmt_md, print_str, set_md,  set_md,  (float *)&cs.null, 0 },
 
 	{ "sys","ej",  _f07, 0, fmt_ej, print_ui8, get_ui8, set_01,  (float *)&cfg.comm_mode,				COMM_MODE },
-	{ "sys","jv",  _f07, 0, fmt_jv, print_ui8, get_ui8, set_jv,  (float *)&js.json_verbosity,			JSON_VERBOSITY },
+	{ "sys","jv",  _f07, 0, fmt_jv, print_ui8, get_ui8, json_set_jv,  (float *)&js.json_verbosity,			JSON_VERBOSITY },
 	{ "sys","tv",  _f07, 0, fmt_tv, print_ui8, get_ui8, set_01,  (float *)&cfg.text_verbosity,			TEXT_VERBOSITY },
 	{ "sys","qv",  _f07, 0, fmt_qv, print_ui8, get_ui8, set_0123,(float *)&qr.queue_report_verbosity,	QR_VERBOSITY },
 	{ "sys","sv",  _f07, 0, fmt_sv, print_ui8, get_ui8, set_012, (float *)&sr.status_report_verbosity,	SR_VERBOSITY },
@@ -867,7 +867,7 @@ static stat_t run_sx(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 */
-
+/*
 static stat_t set_jv(cmdObj_t *cmd) 
 {
 	if (cmd->value > JV_VERBOSE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
@@ -887,7 +887,7 @@ static stat_t set_jv(cmdObj_t *cmd)
 
 	return(STAT_OK);
 }
-
+*/
 static stat_t get_gc(cmdObj_t *cmd)
 {
 	ritorno(cmd_copy_string(cmd, cs.in_buf));

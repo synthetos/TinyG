@@ -46,6 +46,32 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth);
 static stat_t _normalize_json_string(char_t *str, uint16_t size);
 
 /****************************************************************************
+ * Interface functions
+ *
+ *	json_set_jv()
+ */
+
+stat_t json_set_jv(cmdObj_t *cmd) 
+{
+	if (cmd->value > JV_VERBOSE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	js.json_verbosity = cmd->value;
+
+	js.echo_json_footer = false;
+	js.echo_json_messages = false;
+	js.echo_json_configs = false;
+	js.echo_json_linenum = false;
+	js.echo_json_gcode_block = false;
+
+	if (cmd->value >= JV_FOOTER) 	{ js.echo_json_footer = true;}
+	if (cmd->value >= JV_MESSAGES)	{ js.echo_json_messages = true;}
+	if (cmd->value >= JV_CONFIGS)	{ js.echo_json_configs = true;}
+	if (cmd->value >= JV_LINENUM)	{ js.echo_json_linenum = true;}
+	if (cmd->value >= JV_VERBOSE)	{ js.echo_json_gcode_block = true;}
+
+	return(STAT_OK);
+}
+
+/****************************************************************************
  * json_parser() - exposed part of JSON parser
  * _json_parser_kernal()
  * _normalize_json_string()

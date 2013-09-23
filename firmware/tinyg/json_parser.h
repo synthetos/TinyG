@@ -76,6 +76,8 @@ extern jsSingleton_t js;
 
 /**** Function Prototypes ****/
 
+stat_t json_set_jv(cmdObj_t *cmd);
+
 void json_parser(char_t *str);
 uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size);
 void json_print_object(cmdObj_t *cmd);
