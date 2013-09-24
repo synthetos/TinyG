@@ -719,11 +719,31 @@ void cm_print_dist(cmdObj_t *cmd);
 void cm_print_frmo(cmdObj_t *cmd);
 void cm_print_tool(cmdObj_t *cmd);
 
+void cm_print_gpl(cmdObj_t *cmd);
+void cm_print_gun(cmdObj_t *cmd);
+void cm_print_gco(cmdObj_t *cmd);
+void cm_print_gpa(cmdObj_t *cmd);
+void cm_print_gdi(cmdObj_t *cmd);
+
 void cm_print_lin(cmdObj_t *cmd);		// generic print for linear values 
 void cm_print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
 void cm_print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
 void cm_print_corl(cmdObj_t *cmd);		// print coordinate offsets with linear units
 void cm_print_corr(cmdObj_t *cmd);		// print coordinate offsets with rotary units
-void cm_print_am(cmdObj_t *cmd);		// print axis mode
+
+void cm_print_am(cmdObj_t *cmd);
+void cm_print_fr(cmdObj_t *cmd);
+void cm_print_vm(cmdObj_t *cmd);
+void cm_print_tm(cmdObj_t *cmd);
+void cm_print_jm(cmdObj_t *cmd);
+void cm_print_jh(cmdObj_t *cmd);
+void cm_print_jd(cmdObj_t *cmd);
+void cm_print_ra(cmdObj_t *cmd);
+void cm_print_sn(cmdObj_t *cmd);
+void cm_print_sx(cmdObj_t *cmd);
+void cm_print_sv(cmdObj_t *cmd);
+void cm_print_lv(cmdObj_t *cmd);
+void cm_print_lb(cmdObj_t *cmd);
+void cm_print_zb(cmdObj_t *cmd);
 
 #endif // _CANONICAL_MACHINE_H_

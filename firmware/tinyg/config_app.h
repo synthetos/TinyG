@@ -222,9 +222,11 @@ stat_t get_flu(cmdObj_t *cmd);
 void print_lin(cmdObj_t *cmd);
 void print_rot(cmdObj_t *cmd);
 
-char_t get_axis_char(int8_t axis);
-int8_t get_motor(const index_t i);
-int8_t get_pos_axis(const index_t i);
+int8_t get_motor(const index_t index);
+char_t get_axis_char(const int8_t axis);
+int8_t get_axis(const index_t index);
+int8_t get_axis_type(const index_t index);
+int8_t get_pos_axis(const index_t index);
 
 stat_t set_baud_callback(void);
 

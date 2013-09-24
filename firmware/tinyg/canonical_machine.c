@@ -1692,7 +1692,6 @@ const char_t PROGMEM fmt_Xlb[] = "[%s%s] %s latch backoff%18.3f%S\n";
 const char_t PROGMEM fmt_Xzb[] = "[%s%s] %s zero backoff%19.3f%S\n";
 
 // model state print functions
-
 void cm_print_vel(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_vel, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_feed(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_feed, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_line(cmdObj_t *cmd) { text_print_int(cmd, fmt_line);}
@@ -1711,6 +1710,86 @@ void cm_print_dist(cmdObj_t *cmd) { text_print_str(cmd, fmt_dist);}
 void cm_print_frmo(cmdObj_t *cmd) { text_print_str(cmd, fmt_frmo);}
 void cm_print_tool(cmdObj_t *cmd) { text_print_int(cmd, fmt_tool);}
 
+void cm_print_gpl(cmdObj_t *cmd) { text_print_int(cmd, fmt_gpl);}
+void cm_print_gun(cmdObj_t *cmd) { text_print_int(cmd, fmt_gun);}
+void cm_print_gco(cmdObj_t *cmd) { text_print_int(cmd, fmt_gco);}
+void cm_print_gpa(cmdObj_t *cmd) { text_print_int(cmd, fmt_gpa);}
+void cm_print_gdi(cmdObj_t *cmd) { text_print_int(cmd, fmt_gdi);}
+
+
+/*
+ * axis print functions
+ *
+ *	_print_axis_ui8() - helper to print an integer value with no units
+ *	_print_axis_flt() - helper to print a floating point linear value in prevailing units
+ * 
+ *	cm_print_am()
+ *	cm_print_fr()
+ *	cm_print_vm()
+ *	cm_print_tm()
+ *	cm_print_jm()
+ *	cm_print_jh()
+ *	cm_print_jd()
+ *	cm_print_ra()
+ *	cm_print_sn()
+ *	cm_print_sx()
+ *	cm_print_lv()
+ *	cm_print_lb()
+ *	cm_print_zb()
+ */
+
+static void _print_axis_ui8(cmdObj_t *cmd, const char_t *format)
+{
+	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value);
+}
+
+static void _print_axis_flt(cmdObj_t *cmd, const char_t *format)
+{
+	if (get_axis_type(cmd->index) == 0) {	// linear
+		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, 
+				 (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
+	} else {
+		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value,
+				 (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
+	}
+}
+
+void cm_print_am(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xam);}
+void cm_print_fr(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xfr);}
+void cm_print_vm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xvm);}
+void cm_print_tm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xtm);}
+void cm_print_jm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjm);}
+void cm_print_jh(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjh);}
+void cm_print_jd(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjd);}
+void cm_print_ra(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xra);}
+void cm_print_sn(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsn);}
+void cm_print_sx(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsx);}
+void cm_print_sv(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsv);}
+void cm_print_lv(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xlv);}
+void cm_print_lb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xlb);}
+void cm_print_zb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xzb);}
+
+/*
+static void _print_axis_linear(cmdObj_t *cmd, const char_t *format)
+{
+	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, 
+			 (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
+}
+
+static void _print_axis_rotary(cmdObj_t *cmd, const char_t *format)
+{
+	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value,
+			 (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
+}
+*/
+/*
+void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
+{
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
+					(PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
+}
+*/
 /*
  * print position
  *
@@ -1740,13 +1819,6 @@ void cm_print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
 	char_t format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
 		(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
-}
-
-void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
-{
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
-					(PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
 }
 
 #endif // __TEXT_MODE
