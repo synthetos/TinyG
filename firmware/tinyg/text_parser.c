@@ -249,6 +249,11 @@ void text_print_flt(cmdObj_t *cmd, const char_t *format)
 	fprintf_P(stderr, format, cmd->value);
 }
 
+void text_print_flt_units(cmdObj_t *cmd, const char_t *format, const char_t *units)
+{
+	fprintf_P(stderr, format, cmd->value, units);
+}
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

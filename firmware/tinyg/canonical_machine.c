@@ -1355,50 +1355,7 @@ void cm_program_end()
 
 #ifdef __TEXT_MODE
 
-const char_t PROGMEM fmt_vel[]  = "Velocity:%17.3f%S/min\n";
-const char_t PROGMEM fmt_line[] = "Line number:%10.0f\n";
-const char_t PROGMEM fmt_feed[] = "Feed rate:%16.3f%S/min\n";
-const char_t PROGMEM fmt_stat[] = "Machine state:       %s\n"; // combined machine state
-const char_t PROGMEM fmt_macs[] = "Raw machine state:   %s\n"; // raw machine state
-const char_t PROGMEM fmt_cycs[] = "Cycle state:         %s\n";
-const char_t PROGMEM fmt_mots[] = "Motion state:        %s\n";
-const char_t PROGMEM fmt_hold[] = "Feedhold state:      %s\n";
-const char_t PROGMEM fmt_home[] = "Homing state:        %s\n";
-const char_t PROGMEM fmt_unit[] = "Units:               %s\n"; // units mode as ASCII string
-const char_t PROGMEM fmt_coor[] = "Coordinate system:   %s\n";
-const char_t PROGMEM fmt_momo[] = "Motion mode:         %s\n";
-const char_t PROGMEM fmt_plan[] = "Plane:               %s\n";
-const char_t PROGMEM fmt_path[] = "Path Mode:           %s\n";
-const char_t PROGMEM fmt_dist[] = "Distance mode:       %s\n";
-const char_t PROGMEM fmt_frmo[] = "Feed rate mode:      %s\n";
-const char_t PROGMEM fmt_tool[] = "Tool number          %d\n";
 
-// Coordinate system offset print formatting strings
-const char_t PROGMEM fmt_cofs[] = "[%s%s] %s %s offset%20.3f%S\n";
-const char_t PROGMEM fmt_cloc[] = "[%s%s] %s %s location%18.3f%S\n";
-
-// Gcode model power-on reset default values
-const char_t PROGMEM fmt_gpl[] = "[gpl] default gcode plane%10d [0=G17,1=G18,2=G19]\n";
-const char_t PROGMEM fmt_gun[] = "[gun] default gcode units mode%5d [0=G20,1=G21]\n";
-const char_t PROGMEM fmt_gco[] = "[gco] default gcode coord system%3d [1-6 (G54-G59)]\n";
-const char_t PROGMEM fmt_gpa[] = "[gpa] default gcode path control%3d [0=G61,1=G61.1,2=G64]\n";
-const char_t PROGMEM fmt_gdi[] = "[gdi] default gcode distance mode%2d [0=G90,1=G91]\n";
-
-// Axis strings
-const char_t PROGMEM fmt_Xam[] = "[%s%s] %s axis mode%18d %S\n";
-const char_t PROGMEM fmt_Xfr[] = "[%s%s] %s feedrate maximum%15.3f%S/min\n";
-const char_t PROGMEM fmt_Xvm[] = "[%s%s] %s velocity maximum%15.3f%S/min\n";
-const char_t PROGMEM fmt_Xtm[] = "[%s%s] %s travel maximum%17.3f%S\n";
-const char_t PROGMEM fmt_Xjm[] = "[%s%s] %s jerk maximum%15.0f%S/min^3 * 1 million\n";
-const char_t PROGMEM fmt_Xjh[] = "[%s%s] %s jerk homing%16.0f%S/min^3 * 1 million\n";
-const char_t PROGMEM fmt_Xjd[] = "[%s%s] %s junction deviation%14.4f%S (larger is faster)\n";
-const char_t PROGMEM fmt_Xra[] = "[%s%s] %s radius value%20.4f%S\n";
-const char_t PROGMEM fmt_Xsn[] = "[%s%s] %s switch min%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
-const char_t PROGMEM fmt_Xsx[] = "[%s%s] %s switch max%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
-const char_t PROGMEM fmt_Xsv[] = "[%s%s] %s search velocity%16.3f%S/min\n";
-const char_t PROGMEM fmt_Xlv[] = "[%s%s] %s latch velocity%17.3f%S/min\n";
-const char_t PROGMEM fmt_Xlb[] = "[%s%s] %s latch backoff%18.3f%S\n";
-const char_t PROGMEM fmt_Xzb[] = "[%s%s] %s zero backoff%19.3f%S\n";
 
 #endif //__TEXT_MODE
 
@@ -1499,7 +1456,7 @@ static PGM_P const  PROGMEM msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03}
 
 
 /**** Functions called directly from cmdArray table - mostly wrappers ****
- * _get_msg_helper() - helper to get display message
+ * _get_msg_helper() - helper to get string values
  *
  * cm_get_stat() - get combined machine state as value and string
  * cm_get_macs() - get raw machine state as value and string
@@ -1620,82 +1577,6 @@ stat_t cm_get_ofs(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-/**** text_mode display functions (prints) ****/
-
-void cm_print_line(cmdObj_t *cmd)
-{
-	text_print_int(cmd, fmt_line);
-}
-//	cmd_get(cmd);
-//	char_t format[CMD_FORMAT_LEN+1];
-//	strncpy_P(format, (PGM_P)pgm_read_word(&fmt_line), CMD_FORMAT_LEN);
-//	fprintf(stderr, format, cmd->value, (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
-
-//	strncpy_P(txt.format, (PGM_P)pgm_read_word(&fmt_line[0]), CMD_FORMAT_LEN);
-//	strncpy_P(txt.format, fmt_line, CMD_FORMAT_LEN);
-//	strncpy(txt.format, (PGM_P)pgm_read_word(&fmt_line[0]), CMD_FORMAT_LEN);
-//	strcpy_P(txt.format, (PGM_P)pgm_read_word(&fmt_line));
-	
-//	strncpy_P(format, (PGM_P)pgm_read_word(&cfgArray[i].format), CMD_FORMAT_LEN);
-//	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
-//	text_print_int(cmd, txt.format);
-
-void cm_print_unit(cmdObj_t *cmd)
-{
-	text_print_str(cmd, fmt_unit);
-}
-
-/*
-static void print_lin(cmdObj_t *cmd)
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
-}
-
-static void print_rot(cmdObj_t *cmd)
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
-}
-*/
-void _print_pos_helper(cmdObj_t *cmd, uint8_t units)
-{
-	cmd_get(cmd);
-	char_t axes[6] = {"XYZABC"};
-	char_t format[CMD_FORMAT_LEN+1];
-	uint8_t axis = get_pos_axis(cmd->index);
-	if (axis >= AXIS_A) { units = DEGREES;}
-	fprintf(stderr, get_format(cmd->index,format), axes[axis], cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
-}
-
-void cm_print_pos(cmdObj_t *cmd)		// print position with unit displays for MM or Inches
-{
-	_print_pos_helper(cmd, cm_get_units_mode(MODEL));
-}
-
-void cm_print_mpos(cmdObj_t *cmd)		// print position with fixed unit display - always in Degrees or MM
-{
-	_print_pos_helper(cmd, MILLIMETERS);
-}
-
-void cm_print_coor(cmdObj_t *cmd)		// print coordinate offsets with linear units
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
-	(PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
-}
-
-void cm_print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
-	(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
-}
-
 stat_t cm_run_home(cmdObj_t *cmd)
 {
 	if (cmd->value == true) { cm_homing_cycle_start();}
@@ -1705,12 +1586,11 @@ stat_t cm_run_home(cmdObj_t *cmd)
 /* 
  * AXIS FUNCTIONS
  *
- * cm_get_am()	 - get axis mode w/enumeration string
- * cm_set_am()   - set axis mode w/exception handling for axis type
- * cm_print_am() - print axis mode with enumeration string
- * cm_get_jrk()  - get jerk value w/1,000,000 correction
- * cm_set_jrk()  - set jerk value w/1,000,000 correction
- * cm_set_sw()   - run this any time you change a switch setting
+ * cm_get_am()	- get axis mode w/enumeration string
+ * cm_set_am()	- set axis mode w/exception handling for axis type
+ * cm_get_jrk()	- get jerk value w/1,000,000 correction
+ * cm_set_jrk()	- set jerk value w/1,000,000 correction
+ * cm_set_sw()	- run this any time you change a switch setting
  */
 
 stat_t cm_get_am(cmdObj_t *cmd)
@@ -1729,14 +1609,6 @@ stat_t cm_set_am(cmdObj_t *cmd)		// axis mode
 	}
 	set_ui8(cmd);
 	return(STAT_OK);
-}
-
-void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
-					(PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
 }
 
 stat_t cm_get_jrk(cmdObj_t *cmd)
@@ -1762,3 +1634,121 @@ stat_t cm_set_sw(cmdObj_t *cmd)			// switch setting
 	switch_init();
 	return (STAT_OK);
 }
+
+/**** text_mode display functions (prints) ****/
+
+#ifdef __TEXT_MODE
+
+#define GET_UNITS(a) (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(a)])
+
+const char_t PROGMEM fmt_vel[]  = "Velocity:%17.3f%S/min\n";
+const char_t PROGMEM fmt_feed[] = "Feed rate:%16.3f%S/min\n";
+const char_t PROGMEM fmt_line[] = "Line number:%10.0f\n";
+const char_t PROGMEM fmt_stat[] = "Machine state:       %s\n"; // combined machine state
+const char_t PROGMEM fmt_macs[] = "Raw machine state:   %s\n"; // raw machine state
+const char_t PROGMEM fmt_cycs[] = "Cycle state:         %s\n";
+const char_t PROGMEM fmt_mots[] = "Motion state:        %s\n";
+const char_t PROGMEM fmt_hold[] = "Feedhold state:      %s\n";
+const char_t PROGMEM fmt_home[] = "Homing state:        %s\n";
+const char_t PROGMEM fmt_unit[] = "Units:               %s\n"; // units mode as ASCII string
+const char_t PROGMEM fmt_coor[] = "Coordinate system:   %s\n";
+const char_t PROGMEM fmt_momo[] = "Motion mode:         %s\n";
+const char_t PROGMEM fmt_plan[] = "Plane:               %s\n";
+const char_t PROGMEM fmt_path[] = "Path Mode:           %s\n";
+const char_t PROGMEM fmt_dist[] = "Distance mode:       %s\n";
+const char_t PROGMEM fmt_frmo[] = "Feed rate mode:      %s\n";
+const char_t PROGMEM fmt_tool[] = "Tool number          %d\n";
+
+// Coordinate system offset print formatting strings
+const char_t PROGMEM fmt_cofs[] = "[%s%s] %s %s offset%20.3f%S\n";
+const char_t PROGMEM fmt_cloc[] = "[%s%s] %s %s location%18.3f%S\n";
+
+// Gcode model power-on reset default values
+const char_t PROGMEM fmt_gpl[] = "[gpl] default gcode plane%10d [0=G17,1=G18,2=G19]\n";
+const char_t PROGMEM fmt_gun[] = "[gun] default gcode units mode%5d [0=G20,1=G21]\n";
+const char_t PROGMEM fmt_gco[] = "[gco] default gcode coord system%3d [1-6 (G54-G59)]\n";
+const char_t PROGMEM fmt_gpa[] = "[gpa] default gcode path control%3d [0=G61,1=G61.1,2=G64]\n";
+const char_t PROGMEM fmt_gdi[] = "[gdi] default gcode distance mode%2d [0=G90,1=G91]\n";
+
+// Axis strings
+const char_t PROGMEM fmt_Xam[] = "[%s%s] %s axis mode%18d %S\n";
+const char_t PROGMEM fmt_Xfr[] = "[%s%s] %s feedrate maximum%15.3f%S/min\n";
+const char_t PROGMEM fmt_Xvm[] = "[%s%s] %s velocity maximum%15.3f%S/min\n";
+const char_t PROGMEM fmt_Xtm[] = "[%s%s] %s travel maximum%17.3f%S\n";
+const char_t PROGMEM fmt_Xjm[] = "[%s%s] %s jerk maximum%15.0f%S/min^3 * 1 million\n";
+const char_t PROGMEM fmt_Xjh[] = "[%s%s] %s jerk homing%16.0f%S/min^3 * 1 million\n";
+const char_t PROGMEM fmt_Xjd[] = "[%s%s] %s junction deviation%14.4f%S (larger is faster)\n";
+const char_t PROGMEM fmt_Xra[] = "[%s%s] %s radius value%20.4f%S\n";
+const char_t PROGMEM fmt_Xsn[] = "[%s%s] %s switch min%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
+const char_t PROGMEM fmt_Xsx[] = "[%s%s] %s switch max%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
+const char_t PROGMEM fmt_Xsv[] = "[%s%s] %s search velocity%16.3f%S/min\n";
+const char_t PROGMEM fmt_Xlv[] = "[%s%s] %s latch velocity%17.3f%S/min\n";
+const char_t PROGMEM fmt_Xlb[] = "[%s%s] %s latch backoff%18.3f%S\n";
+const char_t PROGMEM fmt_Xzb[] = "[%s%s] %s zero backoff%19.3f%S\n";
+
+void cm_print_vel(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_vel, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_feed(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_feed, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_line(cmdObj_t *cmd) { text_print_int(cmd, fmt_line);}
+void cm_print_stat(cmdObj_t *cmd) { text_print_str(cmd, fmt_stat);}
+void cm_print_macs(cmdObj_t *cmd) { text_print_str(cmd, fmt_macs);}
+void cm_print_cycs(cmdObj_t *cmd) { text_print_str(cmd, fmt_cycs);}
+void cm_print_mots(cmdObj_t *cmd) { text_print_str(cmd, fmt_mots);}
+void cm_print_hold(cmdObj_t *cmd) { text_print_str(cmd, fmt_hold);}
+void cm_print_home(cmdObj_t *cmd) { text_print_str(cmd, fmt_home);}
+void cm_print_unit(cmdObj_t *cmd) { text_print_str(cmd, fmt_unit);}
+void cm_print_coor(cmdObj_t *cmd) { text_print_str(cmd, fmt_coor);}
+void cm_print_momo(cmdObj_t *cmd) { text_print_str(cmd, fmt_momo);}
+void cm_print_plan(cmdObj_t *cmd) { text_print_str(cmd, fmt_plan);}
+void cm_print_path(cmdObj_t *cmd) { text_print_str(cmd, fmt_path);}
+void cm_print_dist(cmdObj_t *cmd) { text_print_str(cmd, fmt_dist);}
+void cm_print_frmo(cmdObj_t *cmd) { text_print_str(cmd, fmt_frmo);}
+void cm_print_tool(cmdObj_t *cmd) { text_print_int(cmd, fmt_tool);}
+
+void _print_pos_helper(cmdObj_t *cmd, uint8_t units)
+{
+//	cmd_get(cmd);
+	char_t axes[6] = {"XYZABC"};
+	char_t format[CMD_FORMAT_LEN+1];
+	uint8_t axis = get_pos_axis(cmd->index);
+	if (axis >= AXIS_A) { units = DEGREES;}
+	fprintf(stderr, get_format(cmd->index,format), axes[axis], cmd->value, 
+		(PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
+}
+
+void cm_print_pos(cmdObj_t *cmd)		// print position with unit displays for MM or Inches
+{
+	_print_pos_helper(cmd, cm_get_units_mode(MODEL));
+}
+
+void cm_print_mpos(cmdObj_t *cmd)		// print position with fixed unit display - always in Degrees or MM
+{
+	_print_pos_helper(cmd, MILLIMETERS);
+}
+
+void cm_print_corl(cmdObj_t *cmd)		// print coordinate offsets with linear units
+{
+//	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
+		(PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
+}
+
+void cm_print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
+{
+//	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
+		(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
+}
+
+void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
+{
+//	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
+					(PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
+}
+
+#endif // __TEXT_MODE
+
+

@@ -169,26 +169,6 @@ const char_t PROGMEM fmt_rx[] = "rx:%d\n";
 const char_t PROGMEM fmt_mt[] = "[mt]  motor idle timeout%14.2f Sec\n";
 const char_t PROGMEM fmt_me[] = "motors energized\n";
 const char_t PROGMEM fmt_md[] = "motors de-energized\n";
-/*
-// Gcode model values for reporting purposes
-const char_t PROGMEM fmt_vel[]  = "Velocity:%17.3f%S/min\n";
-const char_t PROGMEM fmt_line[] = "Line number:%10.0f\n";
-const char_t PROGMEM fmt_feed[] = "Feed rate:%16.3f%S/min\n";
-const char_t PROGMEM fmt_stat[] = "Machine state:       %s\n"; // combined machine state
-const char_t PROGMEM fmt_macs[] = "Raw machine state:   %s\n"; // raw machine state
-const char_t PROGMEM fmt_cycs[] = "Cycle state:         %s\n";
-const char_t PROGMEM fmt_mots[] = "Motion state:        %s\n";
-const char_t PROGMEM fmt_hold[] = "Feedhold state:      %s\n";
-const char_t PROGMEM fmt_home[] = "Homing state:        %s\n";
-const char_t PROGMEM fmt_unit[] = "Units:               %s\n"; // units mode as ASCII string
-const char_t PROGMEM fmt_coor[] = "Coordinate system:   %s\n";
-const char_t PROGMEM fmt_momo[] = "Motion mode:         %s\n";
-const char_t PROGMEM fmt_plan[] = "Plane:               %s\n";
-const char_t PROGMEM fmt_path[] = "Path Mode:           %s\n";
-const char_t PROGMEM fmt_dist[] = "Distance mode:       %s\n";
-const char_t PROGMEM fmt_frmo[] = "Feed rate mode:      %s\n";
-const char_t PROGMEM fmt_tool[] = "Tool number          %d\n";
-*/
 
 //const char_t PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
 
@@ -205,24 +185,6 @@ const char_t PROGMEM fmt_0mi[] = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
 const char_t PROGMEM fmt_0po[] = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
 const char_t PROGMEM fmt_0pm[] = "[%s%s] m%s power management%10d [0=remain powered,1=power down when idle]\n";
 
-/*
-// Axis print formatting strings
-const char_t PROGMEM fmt_Xam[] = "[%s%s] %s axis mode%18d %S\n";
-const char_t PROGMEM fmt_Xfr[] = "[%s%s] %s feedrate maximum%15.3f%S/min\n";
-const char_t PROGMEM fmt_Xvm[] = "[%s%s] %s velocity maximum%15.3f%S/min\n";
-const char_t PROGMEM fmt_Xtm[] = "[%s%s] %s travel maximum%17.3f%S\n";
-const char_t PROGMEM fmt_Xjm[] = "[%s%s] %s jerk maximum%15.0f%S/min^3 * 1 million\n";
-const char_t PROGMEM fmt_Xjh[] = "[%s%s] %s jerk homing%16.0f%S/min^3 * 1 million\n";
-const char_t PROGMEM fmt_Xjd[] = "[%s%s] %s junction deviation%14.4f%S (larger is faster)\n";
-const char_t PROGMEM fmt_Xra[] = "[%s%s] %s radius value%20.4f%S\n";
-const char_t PROGMEM fmt_Xsn[] = "[%s%s] %s switch min%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
-const char_t PROGMEM fmt_Xsx[] = "[%s%s] %s switch max%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
-const char_t PROGMEM fmt_Xsv[] = "[%s%s] %s search velocity%16.3f%S/min\n";
-const char_t PROGMEM fmt_Xlv[] = "[%s%s] %s latch velocity%17.3f%S/min\n";
-const char_t PROGMEM fmt_Xlb[] = "[%s%s] %s latch backoff%18.3f%S\n";
-const char_t PROGMEM fmt_Xzb[] = "[%s%s] %s zero backoff%19.3f%S\n";
-*/
-
 // PWM strings
 const char_t PROGMEM fmt_p1frq[] = "[p1frq] pwm frequency   %15.3f Hz\n";
 const char_t PROGMEM fmt_p1csl[] = "[p1csl] pwm cw speed lo %15.3f RPM\n";
@@ -234,18 +196,6 @@ const char_t PROGMEM fmt_p1wsh[] = "[p1wsh] pwm ccw speed hi%15.3f RPM\n";
 const char_t PROGMEM fmt_p1wpl[] = "[p1wpl] pwm ccw phase lo%15.3f [0..1]\n";
 const char_t PROGMEM fmt_p1wph[] = "[p1wph] pwm ccw phase hi%15.3f [0..1]\n";
 const char_t PROGMEM fmt_p1pof[] = "[p1pof] pwm phase off   %15.3f [0..1]\n";
-/*
-// Coordinate system offset print formatting strings
-const char_t PROGMEM fmt_cofs[] = "[%s%s] %s %s offset%20.3f%S\n";
-const char_t PROGMEM fmt_cloc[] = "[%s%s] %s %s location%18.3f%S\n";
-
-// Gcode model power-on reset default values
-const char_t PROGMEM fmt_gpl[] = "[gpl] default gcode plane%10d [0=G17,1=G18,2=G19]\n";
-const char_t PROGMEM fmt_gun[] = "[gun] default gcode units mode%5d [0=G20,1=G21]\n";
-const char_t PROGMEM fmt_gco[] = "[gco] default gcode coord system%3d [1-6 (G54-G59)]\n";
-const char_t PROGMEM fmt_gpa[] = "[gpa] default gcode path control%3d [0=G61,1=G61.1,2=G64]\n";
-const char_t PROGMEM fmt_gdi[] = "[gdi] default gcode distance mode%2d [0=G90,1=G91]\n";
-*/
 
 /***********************************************************************************
  **** CONFIG TABLE  ****************************************************************
@@ -271,24 +221,23 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys", "id", _fns, 0, fmt_id, print_str, get_id,  set_nul, (float *)&cs.null, 0 },		// device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
+	{ "",   "vel", _f00, 2, fmt_vel,  cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },	// current velocity
+	{ "",   "feed",_f00, 2, fmt_feed, cm_print_feed, get_flu,  	  set_nul,(float *)&cs.null, 0 },	// feed rate
 	{ "",   "n",   _fin, 0, fmt_line, cm_print_line, get_int,  	  set_int,(float *)&gm.linenum,0 },	// Gcode line number - gets model line number
 	{ "",   "line",_fin, 0, fmt_line, cm_print_line, cm_get_line, set_int,(float *)&gm.linenum,0 },	// Gcode line number - gets runtime line number
-	{ "",   "feed",_f00, 2, fmt_feed, print_lin, get_flu,  	  set_nul,(float *)&cs.null, 0 },	// feed rate
-	{ "",   "stat",_f00, 0, fmt_stat, print_str, cm_get_stat, set_nul,(float *)&cs.null, 0 },	// combined machine state
-	{ "",   "macs",_f00, 0, fmt_macs, print_str, cm_get_macs, set_nul,(float *)&cs.null, 0 },	// raw machine state
-	{ "",   "cycs",_f00, 0, fmt_cycs, print_str, cm_get_cycs, set_nul,(float *)&cs.null, 0 },	// cycle state
-	{ "",   "mots",_f00, 0, fmt_mots, print_str, cm_get_mots, set_nul,(float *)&cs.null, 0 },	// motion state
-	{ "",   "hold",_f00, 0, fmt_hold, print_str, cm_get_hold, set_nul,(float *)&cs.null, 0 },	// feedhold state
-	{ "",   "vel", _f00, 2, fmt_vel,  print_lin, cm_get_vel,  set_nul,(float *)&cs.null, 0 },	// current velocity
-//	{ "",   "unit",_f00, 0, fmt_unit, print_str, cm_get_unit, set_nul,(float *)&cs.null, 0 },	// units mode
+	{ "",   "stat",_f00, 0, fmt_stat, cm_print_stat, cm_get_stat, set_nul,(float *)&cs.null, 0 },	// combined machine state
+	{ "",   "macs",_f00, 0, fmt_macs, cm_print_macs, cm_get_macs, set_nul,(float *)&cs.null, 0 },	// raw machine state
+	{ "",   "cycs",_f00, 0, fmt_cycs, cm_print_cycs, cm_get_cycs, set_nul,(float *)&cs.null, 0 },	// cycle state
+	{ "",   "mots",_f00, 0, fmt_mots, cm_print_mots, cm_get_mots, set_nul,(float *)&cs.null, 0 },	// motion state
+	{ "",   "hold",_f00, 0, fmt_hold, cm_print_hold, cm_get_hold, set_nul,(float *)&cs.null, 0 },	// feedhold state
 	{ "",   "unit",_f00, 0, fmt_unit, cm_print_unit, cm_get_unit, set_nul,(float *)&cs.null, 0 },	// units mode
-	{ "",   "coor",_f00, 0, fmt_coor, print_str, cm_get_coor, set_nul,(float *)&cs.null, 0 },	// coordinate system
-	{ "",   "momo",_f00, 0, fmt_momo, print_str, cm_get_momo, set_nul,(float *)&cs.null, 0 },	// motion mode
-	{ "",   "plan",_f00, 0, fmt_plan, print_str, cm_get_plan, set_nul,(float *)&cs.null, 0 },	// plane select
-	{ "",   "path",_f00, 0, fmt_path, print_str, cm_get_path, set_nul,(float *)&cs.null, 0 },	// path control mode
-	{ "",   "dist",_f00, 0, fmt_dist, print_str, cm_get_dist, set_nul,(float *)&cs.null, 0 },	// distance mode
-	{ "",   "frmo",_f00, 0, fmt_frmo, print_str, cm_get_frmo, set_nul,(float *)&cs.null, 0 },	// feed rate mode
-	{ "",   "tool",_f00, 0, fmt_tool, print_int, cm_get_toolv,set_nul,(float *)&cs.null, 0 },	// active tool
+	{ "",   "coor",_f00, 0, fmt_coor, cm_print_coor, cm_get_coor, set_nul,(float *)&cs.null, 0 },	// coordinate system
+	{ "",   "momo",_f00, 0, fmt_momo, cm_print_momo, cm_get_momo, set_nul,(float *)&cs.null, 0 },	// motion mode
+	{ "",   "plan",_f00, 0, fmt_plan, cm_print_plan, cm_get_plan, set_nul,(float *)&cs.null, 0 },	// plane select
+	{ "",   "path",_f00, 0, fmt_path, cm_print_path, cm_get_path, set_nul,(float *)&cs.null, 0 },	// path control mode
+	{ "",   "dist",_f00, 0, fmt_dist, cm_print_dist, cm_get_dist, set_nul,(float *)&cs.null, 0 },	// distance mode
+	{ "",   "frmo",_f00, 0, fmt_frmo, cm_print_frmo, cm_get_frmo, set_nul,(float *)&cs.null, 0 },	// feed rate mode
+	{ "",   "tool",_f00, 0, fmt_tool, cm_print_tool, cm_get_toolv,set_nul,(float *)&cs.null, 0 },	// active tool
 
 	{ "mpo","mpox",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// X machine position
 	{ "mpo","mpoy",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// Y machine position
@@ -483,65 +432,65 @@ const cfgItem_t PROGMEM cfgArray[] = {
     { "p1","p1pof",_fip, 3, fmt_p1pof, print_rot, get_flt, set_flt,(float *)&pwm_cfg.p.phase_off,	P1_PWM_PHASE_OFF },
 
 	// Coordinate system offsets (G54-G59 and G92)
-	{ "g54","g54x",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G54][AXIS_X], G54_X_OFFSET },
-	{ "g54","g54y",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G54][AXIS_Y], G54_Y_OFFSET },
-	{ "g54","g54z",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G54][AXIS_Z], G54_Z_OFFSET },
+	{ "g54","g54x",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G54][AXIS_X], G54_X_OFFSET },
+	{ "g54","g54y",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G54][AXIS_Y], G54_Y_OFFSET },
+	{ "g54","g54z",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G54][AXIS_Z], G54_Z_OFFSET },
 	{ "g54","g54a",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G54][AXIS_A], G54_A_OFFSET },
 	{ "g54","g54b",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G54][AXIS_B], G54_B_OFFSET },
 	{ "g54","g54c",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G54][AXIS_C], G54_C_OFFSET },
 
-	{ "g55","g55x",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G55][AXIS_X], G55_X_OFFSET },
-	{ "g55","g55y",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G55][AXIS_Y], G55_Y_OFFSET },
-	{ "g55","g55z",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G55][AXIS_Z], G55_Z_OFFSET },
+	{ "g55","g55x",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G55][AXIS_X], G55_X_OFFSET },
+	{ "g55","g55y",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G55][AXIS_Y], G55_Y_OFFSET },
+	{ "g55","g55z",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G55][AXIS_Z], G55_Z_OFFSET },
 	{ "g55","g55a",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G55][AXIS_A], G55_A_OFFSET },
 	{ "g55","g55b",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G55][AXIS_B], G55_B_OFFSET },
 	{ "g55","g55c",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G55][AXIS_C], G55_C_OFFSET },
 
-	{ "g56","g56x",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_X], G56_X_OFFSET },
-	{ "g56","g56y",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_Y], G56_Y_OFFSET },
-	{ "g56","g56z",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_Z], G56_Z_OFFSET },
+	{ "g56","g56x",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_X], G56_X_OFFSET },
+	{ "g56","g56y",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_Y], G56_Y_OFFSET },
+	{ "g56","g56z",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_Z], G56_Z_OFFSET },
 	{ "g56","g56a",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_A], G56_A_OFFSET },
 	{ "g56","g56b",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_B], G56_B_OFFSET },
 	{ "g56","g56c",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_C], G56_C_OFFSET },
 
-	{ "g57","g57x",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_X], G57_X_OFFSET },
-	{ "g57","g57y",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_Y], G57_Y_OFFSET },
-	{ "g57","g57z",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_Z], G57_Z_OFFSET },
+	{ "g57","g57x",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_X], G57_X_OFFSET },
+	{ "g57","g57y",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_Y], G57_Y_OFFSET },
+	{ "g57","g57z",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_Z], G57_Z_OFFSET },
 	{ "g57","g57a",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_A], G57_A_OFFSET },
 	{ "g57","g57b",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_B], G57_B_OFFSET },
 	{ "g57","g57c",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_C], G57_C_OFFSET },
 
-	{ "g58","g58x",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G58][AXIS_X], G58_X_OFFSET },
-	{ "g58","g58y",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G58][AXIS_Y], G58_Y_OFFSET },
-	{ "g58","g58z",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G58][AXIS_Z], G58_Z_OFFSET },
+	{ "g58","g58x",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G58][AXIS_X], G58_X_OFFSET },
+	{ "g58","g58y",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G58][AXIS_Y], G58_Y_OFFSET },
+	{ "g58","g58z",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G58][AXIS_Z], G58_Z_OFFSET },
 	{ "g58","g58a",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G58][AXIS_A], G58_A_OFFSET },
 	{ "g58","g58b",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G58][AXIS_B], G58_B_OFFSET },
 	{ "g58","g58c",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G58][AXIS_C], G58_C_OFFSET },
 
-	{ "g59","g59x",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_X], G59_X_OFFSET },
-	{ "g59","g59y",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_Y], G59_Y_OFFSET },
-	{ "g59","g59z",_fip, 3, fmt_cofs, cm_print_coor, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_Z], G59_Z_OFFSET },
+	{ "g59","g59x",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_X], G59_X_OFFSET },
+	{ "g59","g59y",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_Y], G59_Y_OFFSET },
+	{ "g59","g59z",_fip, 3, fmt_cofs, cm_print_corl, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_Z], G59_Z_OFFSET },
 	{ "g59","g59a",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_A], G59_A_OFFSET },
 	{ "g59","g59b",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_B], G59_B_OFFSET },
 	{ "g59","g59c",_fip, 3, fmt_cofs, cm_print_corr, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_C], G59_C_OFFSET },
 
-	{ "g92","g92x",_fin, 3, fmt_cofs, cm_print_coor, get_flu, set_nul,(float *)&gmx.origin_offset[AXIS_X], 0 },// G92 handled differently
-	{ "g92","g92y",_fin, 3, fmt_cofs, cm_print_coor, get_flu, set_nul,(float *)&gmx.origin_offset[AXIS_Y], 0 },
-	{ "g92","g92z",_fin, 3, fmt_cofs, cm_print_coor, get_flu, set_nul,(float *)&gmx.origin_offset[AXIS_Z], 0 },
+	{ "g92","g92x",_fin, 3, fmt_cofs, cm_print_corl, get_flu, set_nul,(float *)&gmx.origin_offset[AXIS_X], 0 },// G92 handled differently
+	{ "g92","g92y",_fin, 3, fmt_cofs, cm_print_corl, get_flu, set_nul,(float *)&gmx.origin_offset[AXIS_Y], 0 },
+	{ "g92","g92z",_fin, 3, fmt_cofs, cm_print_corl, get_flu, set_nul,(float *)&gmx.origin_offset[AXIS_Z], 0 },
 	{ "g92","g92a",_fin, 3, fmt_cofs, cm_print_corr, get_flt, set_nul,(float *)&gmx.origin_offset[AXIS_A], 0 },
 	{ "g92","g92b",_fin, 3, fmt_cofs, cm_print_corr, get_flt, set_nul,(float *)&gmx.origin_offset[AXIS_B], 0 },
 	{ "g92","g92c",_fin, 3, fmt_cofs, cm_print_corr, get_flt, set_nul,(float *)&gmx.origin_offset[AXIS_C], 0 },
 
-	{ "g28","g28x",_fin, 3, fmt_cloc, cm_print_coor, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_X], 0 },// g28 handled differently
-	{ "g28","g28y",_fin, 3, fmt_cloc, cm_print_coor, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_Y], 0 },
-	{ "g28","g28z",_fin, 3, fmt_cloc, cm_print_coor, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_Z], 0 },
+	{ "g28","g28x",_fin, 3, fmt_cloc, cm_print_corl, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_X], 0 },// g28 handled differently
+	{ "g28","g28y",_fin, 3, fmt_cloc, cm_print_corl, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_Y], 0 },
+	{ "g28","g28z",_fin, 3, fmt_cloc, cm_print_corl, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_Z], 0 },
 	{ "g28","g28a",_fin, 3, fmt_cloc, cm_print_corr, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_A], 0 },
 	{ "g28","g28b",_fin, 3, fmt_cloc, cm_print_corr, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_B], 0 },
 	{ "g28","g28c",_fin, 3, fmt_cloc, cm_print_corr, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_C], 0 },
 
-	{ "g30","g30x",_fin, 3, fmt_cloc, cm_print_coor, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_X], 0 },// g30 handled differently
-	{ "g30","g30y",_fin, 3, fmt_cloc, cm_print_coor, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_Y], 0 },
-	{ "g30","g30z",_fin, 3, fmt_cloc, cm_print_coor, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_Z], 0 },
+	{ "g30","g30x",_fin, 3, fmt_cloc, cm_print_corl, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_X], 0 },// g30 handled differently
+	{ "g30","g30y",_fin, 3, fmt_cloc, cm_print_corl, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_Y], 0 },
+	{ "g30","g30z",_fin, 3, fmt_cloc, cm_print_corl, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_Z], 0 },
 	{ "g30","g30a",_fin, 3, fmt_cloc, cm_print_corr, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_A], 0 },
 	{ "g30","g30b",_fin, 3, fmt_cloc, cm_print_corr, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_B], 0 },
 	{ "g30","g30c",_fin, 3, fmt_cloc, cm_print_corr, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_C], 0 },

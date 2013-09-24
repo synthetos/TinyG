@@ -695,13 +695,28 @@ stat_t cm_get_jrk(cmdObj_t *cmd);		// get jerk with 1,000,000 correction
 stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 stat_t cm_set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
 
+void cm_print_vel(cmdObj_t *cmd);
+void cm_print_feed(cmdObj_t *cmd);
 void cm_print_line(cmdObj_t *cmd);
+void cm_print_stat(cmdObj_t *cmd);
+void cm_print_macs(cmdObj_t *cmd);
+void cm_print_cycs(cmdObj_t *cmd);
+void cm_print_mots(cmdObj_t *cmd);
+void cm_print_hold(cmdObj_t *cmd);
+void cm_print_home(cmdObj_t *cmd);
 void cm_print_unit(cmdObj_t *cmd);
+void cm_print_coor(cmdObj_t *cmd);
+void cm_print_momo(cmdObj_t *cmd);
+void cm_print_plan(cmdObj_t *cmd);
+void cm_print_path(cmdObj_t *cmd);
+void cm_print_dist(cmdObj_t *cmd);
+void cm_print_frmo(cmdObj_t *cmd);
+void cm_print_tool(cmdObj_t *cmd);
 
 void cm_print_lin(cmdObj_t *cmd);		// generic print for linear values 
 void cm_print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
 void cm_print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
-void cm_print_coor(cmdObj_t *cmd);		// print coordinate offsets with linear units
+void cm_print_corl(cmdObj_t *cmd);		// print coordinate offsets with linear units
 void cm_print_corr(cmdObj_t *cmd);		// print coordinate offsets with rotary units
 void cm_print_am(cmdObj_t *cmd);		// print axis mode
 

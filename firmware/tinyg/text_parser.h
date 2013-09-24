@@ -72,6 +72,8 @@ void text_print_ui8(cmdObj_t *cmd, const char_t *format);
 void text_print_int(cmdObj_t *cmd, const char_t *format);
 void text_print_flt(cmdObj_t *cmd, const char_t *format);
 
+void text_print_flt_units(cmdObj_t *cmd, const char_t *format, const char_t *units);
+
 /* unit test setup */
 
 //#define __UNIT_TEST_TEXT				// uncomment to enable TEXT unit tests
