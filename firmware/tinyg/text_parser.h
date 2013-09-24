@@ -42,6 +42,19 @@ enum textFormats {					// text output print modes
 	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines with formatted print per line
 };
 
+typedef struct txtSingleton {		// text mode data
+
+	/*** config values (PUBLIC) ***/
+	char_t format[CMD_FORMAT_LEN+1];
+
+	/*** runtime values (PRIVATE) ***/
+
+} txtSingleton_t;
+
+/**** Externs - See report.c for allocation ****/
+
+extern txtSingleton_t txt;
+
 /*
  * Global Scope Functions
  */
@@ -52,6 +65,12 @@ void text_print_list(stat_t status, uint8_t flags);
 void text_print_inline_pairs(cmdObj_t *cmd);
 void text_print_inline_values(cmdObj_t *cmd);
 void text_print_multiline_formatted(cmdObj_t *cmd);
+
+void text_print_nul(cmdObj_t *cmd, const char_t *format);
+void text_print_str(cmdObj_t *cmd, const char_t *format);
+void text_print_ui8(cmdObj_t *cmd, const char_t *format);
+void text_print_int(cmdObj_t *cmd, const char_t *format);
+void text_print_flt(cmdObj_t *cmd, const char_t *format);
 
 /* unit test setup */
 

@@ -67,13 +67,6 @@ static stat_t _do_axes(cmdObj_t *cmd);		// print parameters for all axis groups
 static stat_t _do_offsets(cmdObj_t *cmd);	// print offsets for G54-G59, G92
 static stat_t _do_all(cmdObj_t *cmd);		// print all parameters
 
-// Gcode domain specific functions
-/*
-static stat_t set_flu(cmdObj_t *cmd);		// set a float with unit conversion
-static stat_t get_flu(cmdObj_t *cmd);		// get float with unit conversion
-static void print_lin(cmdObj_t *cmd);		// print linear values
-static void print_rot(cmdObj_t *cmd);		// print rotary values
-*/
 // system and application control variables and functions
 
 static stat_t set_hv(cmdObj_t *cmd);		// set hardware version
@@ -87,10 +80,6 @@ static stat_t run_boot(cmdObj_t *cmd);		// jump to the bootloader
 static stat_t run_qf(cmdObj_t *cmd);		// execute a queue flush block
 static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 
-//static stat_t set_mt(cmdObj_t *cmd);		// set motor disable timeout in deconds
-//static stat_t set_md(cmdObj_t *cmd);		// disable all motors
-//static stat_t set_me(cmdObj_t *cmd);		// enable motors with power-mode set to 0 (on)
-
 // communications settings
 
 //static stat_t set_ic(cmdObj_t *cmd);		// ignore CR or LF on RX input
@@ -98,13 +87,6 @@ static stat_t set_ec(cmdObj_t *cmd);		// expand CRLF on TX outout
 static stat_t set_ee(cmdObj_t *cmd);		// enable character echo
 static stat_t set_ex(cmdObj_t *cmd);		// enable XON/XOFF and RTS/CTS flow control
 static stat_t set_baud(cmdObj_t *cmd);		// set USB baud rate
-
-// motor and axis variables and functions
-
-//static stat_t set_sa(cmdObj_t *cmd);		// set motor step angle
-//static stat_t set_tr(cmdObj_t *cmd);		// set motor travel per revolution
-//static stat_t set_mi(cmdObj_t *cmd);		// set microsteps
-//static stat_t set_pm(cmdObj_t *cmd);		// set motor power mode
 
 //static void pr_ma_str(cmdObj_t *cmd); 	// generic print functions for motors and axes
 static void pr_ma_ui8(cmdObj_t *cmd);
@@ -289,8 +271,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys", "id", _fns, 0, fmt_id, print_str, get_id,  set_nul, (float *)&cs.null, 0 },		// device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
-	{ "",   "n",   _fin, 0, fmt_line, print_int, get_int,  	  set_int,(float *)&gm.linenum,0 },	// Gcode line number - gets model line number
-	{ "",   "line",_fin, 0, fmt_line, print_int, cm_get_line, set_int,(float *)&gm.linenum,0 },	// Gcode line number - gets runtime line number
+	{ "",   "n",   _fin, 0, fmt_line, cm_print_line, get_int,  	  set_int,(float *)&gm.linenum,0 },	// Gcode line number - gets model line number
+	{ "",   "line",_fin, 0, fmt_line, cm_print_line, cm_get_line, set_int,(float *)&gm.linenum,0 },	// Gcode line number - gets runtime line number
 	{ "",   "feed",_f00, 2, fmt_feed, print_lin, get_flu,  	  set_nul,(float *)&cs.null, 0 },	// feed rate
 	{ "",   "stat",_f00, 0, fmt_stat, print_str, cm_get_stat, set_nul,(float *)&cs.null, 0 },	// combined machine state
 	{ "",   "macs",_f00, 0, fmt_macs, print_str, cm_get_macs, set_nul,(float *)&cs.null, 0 },	// raw machine state
@@ -298,7 +280,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "",   "mots",_f00, 0, fmt_mots, print_str, cm_get_mots, set_nul,(float *)&cs.null, 0 },	// motion state
 	{ "",   "hold",_f00, 0, fmt_hold, print_str, cm_get_hold, set_nul,(float *)&cs.null, 0 },	// feedhold state
 	{ "",   "vel", _f00, 2, fmt_vel,  print_lin, cm_get_vel,  set_nul,(float *)&cs.null, 0 },	// current velocity
-	{ "",   "unit",_f00, 0, fmt_unit, print_str, cm_get_unit, set_nul,(float *)&cs.null, 0 },	// units mode
+//	{ "",   "unit",_f00, 0, fmt_unit, print_str, cm_get_unit, set_nul,(float *)&cs.null, 0 },	// units mode
+	{ "",   "unit",_f00, 0, fmt_unit, cm_print_unit, cm_get_unit, set_nul,(float *)&cs.null, 0 },	// units mode
 	{ "",   "coor",_f00, 0, fmt_coor, print_str, cm_get_coor, set_nul,(float *)&cs.null, 0 },	// coordinate system
 	{ "",   "momo",_f00, 0, fmt_momo, print_str, cm_get_momo, set_nul,(float *)&cs.null, 0 },	// motion mode
 	{ "",   "plan",_f00, 0, fmt_plan, print_str, cm_get_plan, set_nul,(float *)&cs.null, 0 },	// plane select

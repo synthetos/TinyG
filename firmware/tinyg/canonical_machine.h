@@ -44,50 +44,6 @@ extern "C"{
 #define RUNTIME (GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
 #define ACTIVE_MODEL cm.am					// active model pointer is maintained by state management
 
-/* externs for glocal strings */
-
-extern const char_t PROGMEM fmt_vel[];		// gcode model reporting
-extern const char_t PROGMEM fmt_vel[];
-extern const char_t PROGMEM fmt_line[];
-extern const char_t PROGMEM fmt_feed[];
-extern const char_t PROGMEM fmt_stat[];
-extern const char_t PROGMEM fmt_macs[];
-extern const char_t PROGMEM fmt_cycs[];
-extern const char_t PROGMEM fmt_mots[];
-extern const char_t PROGMEM fmt_hold[];
-extern const char_t PROGMEM fmt_home[];
-extern const char_t PROGMEM fmt_unit[];
-extern const char_t PROGMEM fmt_coor[];
-extern const char_t PROGMEM fmt_momo[];
-extern const char_t PROGMEM fmt_plan[];
-extern const char_t PROGMEM fmt_path[];
-extern const char_t PROGMEM fmt_dist[];
-extern const char_t PROGMEM fmt_frmo[];
-extern const char_t PROGMEM fmt_tool[];
-extern const char_t PROGMEM fmt_cofs[];
-extern const char_t PROGMEM fmt_cloc[];
-
-extern const char_t PROGMEM fmt_gpl[];		// gcode defaults
-extern const char_t PROGMEM fmt_gun[];
-extern const char_t PROGMEM fmt_gco[];
-extern const char_t PROGMEM fmt_gpa[];
-extern const char_t PROGMEM fmt_gdi[];
-
-extern const char_t PROGMEM fmt_Xam[];		// axis settings
-extern const char_t PROGMEM fmt_Xfr[];
-extern const char_t PROGMEM fmt_Xvm[];
-extern const char_t PROGMEM fmt_Xtm[];
-extern const char_t PROGMEM fmt_Xjm[];
-extern const char_t PROGMEM fmt_Xjh[];
-extern const char_t PROGMEM fmt_Xjd[];
-extern const char_t PROGMEM fmt_Xra[];
-extern const char_t PROGMEM fmt_Xsn[];
-extern const char_t PROGMEM fmt_Xsx[];
-extern const char_t PROGMEM fmt_Xsv[];
-extern const char_t PROGMEM fmt_Xlv[];
-extern const char_t PROGMEM fmt_Xlb[];
-extern const char_t PROGMEM fmt_Xzb[];
-
 
 /*****************************************************************************
  * CANONICAL MACHINE STRUCTURES
@@ -535,44 +491,6 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 /*****************************************************************************
  * FUNCTION PROTOTYPES
  */
-
-/*--- interface functions for cmdArray ---*/
-
-stat_t cm_get_line(cmdObj_t *cmd);		// get runtime line number
-stat_t cm_get_stat(cmdObj_t *cmd);		// get combined machine state as value and string
-stat_t cm_get_macs(cmdObj_t *cmd);		// get raw machine state as value and string
-stat_t cm_get_cycs(cmdObj_t *cmd);		// get raw cycle state (etc etc)...
-stat_t cm_get_mots(cmdObj_t *cmd);		// get raw motion state...
-stat_t cm_get_hold(cmdObj_t *cmd);		// get raw hold state...
-stat_t cm_get_home(cmdObj_t *cmd);		// get raw homing state...
-stat_t cm_get_unit(cmdObj_t *cmd);		// get unit mode...
-stat_t cm_get_coor(cmdObj_t *cmd);		// get coordinate system in effect...
-stat_t cm_get_momo(cmdObj_t *cmd);		// get motion mode...
-stat_t cm_get_plan(cmdObj_t *cmd);		// get active plane...
-stat_t cm_get_path(cmdObj_t *cmd);		// get patch control mode...
-stat_t cm_get_dist(cmdObj_t *cmd);		// get distance mode...
-stat_t cm_get_frmo(cmdObj_t *cmd);		// get feedrate mode...
-stat_t cm_get_toolv(cmdObj_t *cmd);		// get tool (value)
-stat_t cm_get_vel(cmdObj_t *cmd);		// get runtime velocity...
-stat_t cm_get_pos(cmdObj_t *cmd);		// get runtime work position...
-stat_t cm_get_mpos(cmdObj_t *cmd);		// get runtime machine position...
-stat_t cm_get_ofs(cmdObj_t *cmd);		// get runtime work offset...
-
-stat_t cm_run_home(cmdObj_t *cmd);		// start homing cycle
-
-stat_t cm_get_am(cmdObj_t *cmd);		// get axis mode
-stat_t cm_set_am(cmdObj_t *cmd);		// set axis mode
-stat_t cm_get_jrk(cmdObj_t *cmd);		// get jerk with 1,000,000 correction
-stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
-stat_t cm_set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
-
-void cm_print_lin(cmdObj_t *cmd);		// generic print for linear values 
-void cm_print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
-void cm_print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
-void cm_print_coor(cmdObj_t *cmd);		// print coordinate offsets with linear units
-void cm_print_corr(cmdObj_t *cmd);		// print coordinate offsets with rotary units
-void cm_print_am(cmdObj_t *cmd);		// print axis mode
-
 /*--- getters, setters and helper functions for canonical machining functions ---*/
 
 uint8_t cm_get_combined_state(void); 
@@ -692,5 +610,99 @@ void cm_optional_program_stop(void);							// M1
 void cm_program_end(void);										// M2
 void cm_exec_program_stop(void);
 void cm_exec_program_end(void);
+
+
+/************************************************************************************
+ ************************************************************************************
+ ************************************************************************************
+ * SUPPORT FOR INTERFACE AND CONFIGURATION FUNCTIONS
+ ************************************************************************************
+ ************************************************************************************
+ ************************************************************************************/
+
+/* externs for global strings */
+
+extern const char_t PROGMEM fmt_vel[];		// gcode model reporting
+extern const char_t PROGMEM fmt_vel[];
+extern const char_t PROGMEM fmt_line[];
+extern const char_t PROGMEM fmt_feed[];
+extern const char_t PROGMEM fmt_stat[];
+extern const char_t PROGMEM fmt_macs[];
+extern const char_t PROGMEM fmt_cycs[];
+extern const char_t PROGMEM fmt_mots[];
+extern const char_t PROGMEM fmt_hold[];
+extern const char_t PROGMEM fmt_home[];
+extern const char_t PROGMEM fmt_unit[];
+extern const char_t PROGMEM fmt_coor[];
+extern const char_t PROGMEM fmt_momo[];
+extern const char_t PROGMEM fmt_plan[];
+extern const char_t PROGMEM fmt_path[];
+extern const char_t PROGMEM fmt_dist[];
+extern const char_t PROGMEM fmt_frmo[];
+extern const char_t PROGMEM fmt_tool[];
+extern const char_t PROGMEM fmt_cofs[];
+extern const char_t PROGMEM fmt_cloc[];
+
+extern const char_t PROGMEM fmt_gpl[];		// gcode defaults
+extern const char_t PROGMEM fmt_gun[];
+extern const char_t PROGMEM fmt_gco[];
+extern const char_t PROGMEM fmt_gpa[];
+extern const char_t PROGMEM fmt_gdi[];
+
+extern const char_t PROGMEM fmt_Xam[];		// axis settings
+extern const char_t PROGMEM fmt_Xfr[];
+extern const char_t PROGMEM fmt_Xvm[];
+extern const char_t PROGMEM fmt_Xtm[];
+extern const char_t PROGMEM fmt_Xjm[];
+extern const char_t PROGMEM fmt_Xjh[];
+extern const char_t PROGMEM fmt_Xjd[];
+extern const char_t PROGMEM fmt_Xra[];
+extern const char_t PROGMEM fmt_Xsn[];
+extern const char_t PROGMEM fmt_Xsx[];
+extern const char_t PROGMEM fmt_Xsv[];
+extern const char_t PROGMEM fmt_Xlv[];
+extern const char_t PROGMEM fmt_Xlb[];
+extern const char_t PROGMEM fmt_Xzb[];
+
+
+/*--- interface functions for cmdArray ---*/
+
+stat_t cm_get_line(cmdObj_t *cmd);		// get runtime line number
+stat_t cm_get_stat(cmdObj_t *cmd);		// get combined machine state as value and string
+stat_t cm_get_macs(cmdObj_t *cmd);		// get raw machine state as value and string
+stat_t cm_get_cycs(cmdObj_t *cmd);		// get raw cycle state (etc etc)...
+stat_t cm_get_mots(cmdObj_t *cmd);		// get raw motion state...
+stat_t cm_get_hold(cmdObj_t *cmd);		// get raw hold state...
+stat_t cm_get_home(cmdObj_t *cmd);		// get raw homing state...
+stat_t cm_get_unit(cmdObj_t *cmd);		// get unit mode...
+stat_t cm_get_coor(cmdObj_t *cmd);		// get coordinate system in effect...
+stat_t cm_get_momo(cmdObj_t *cmd);		// get motion mode...
+stat_t cm_get_plan(cmdObj_t *cmd);		// get active plane...
+stat_t cm_get_path(cmdObj_t *cmd);		// get patch control mode...
+stat_t cm_get_dist(cmdObj_t *cmd);		// get distance mode...
+stat_t cm_get_frmo(cmdObj_t *cmd);		// get feedrate mode...
+stat_t cm_get_toolv(cmdObj_t *cmd);		// get tool (value)
+stat_t cm_get_vel(cmdObj_t *cmd);		// get runtime velocity...
+stat_t cm_get_pos(cmdObj_t *cmd);		// get runtime work position...
+stat_t cm_get_mpos(cmdObj_t *cmd);		// get runtime machine position...
+stat_t cm_get_ofs(cmdObj_t *cmd);		// get runtime work offset...
+
+stat_t cm_run_home(cmdObj_t *cmd);		// start homing cycle
+
+stat_t cm_get_am(cmdObj_t *cmd);		// get axis mode
+stat_t cm_set_am(cmdObj_t *cmd);		// set axis mode
+stat_t cm_get_jrk(cmdObj_t *cmd);		// get jerk with 1,000,000 correction
+stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
+stat_t cm_set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
+
+void cm_print_line(cmdObj_t *cmd);
+void cm_print_unit(cmdObj_t *cmd);
+
+void cm_print_lin(cmdObj_t *cmd);		// generic print for linear values 
+void cm_print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
+void cm_print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
+void cm_print_coor(cmdObj_t *cmd);		// print coordinate offsets with linear units
+void cm_print_corr(cmdObj_t *cmd);		// print coordinate offsets with rotary units
+void cm_print_am(cmdObj_t *cmd);		// print axis mode
 
 #endif // _CANONICAL_MACHINE_H_

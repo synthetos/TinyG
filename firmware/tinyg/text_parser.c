@@ -52,6 +52,8 @@ void text_print_multiline_formatted(cmdObj_t *cmd) { return;}
 
 #else // __TEXT_MODE
 
+txtSingleton_t txt;
+
 static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd);
 
 /******************************************************************************
@@ -221,30 +223,31 @@ void text_print_multiline_formatted(cmdObj_t *cmd)
 
 /*
  * Text print primitives
+ *
+ *	NOTE: format's are passed in as flash strings (PROGMEM)
  */
 
-void text_print_nul(cmdObj_t *cmd, const char_t *fmt) {}
+void text_print_nul(cmdObj_t *cmd, const char_t *format) {}
 
-void text_print_str(cmdObj_t *cmd, const char_t *fmt)
+void text_print_str(cmdObj_t *cmd, const char_t *format)
 {
-	fprintf(stderr, fmt, *cmd->stringp);
+	fprintf_P(stderr, format, *cmd->stringp);
 }
 
-void text_print_ui8(cmdObj_t *cmd, const char_t *fmt)
+void text_print_ui8(cmdObj_t *cmd, const char_t *format)
 {
-	fprintf(stderr, fmt, (uint8_t)cmd->value);
+	fprintf_P(stderr, format, (uint8_t)cmd->value);
 }
 
-void text_print_int(cmdObj_t *cmd, const char_t *fmt)
+void text_print_int(cmdObj_t *cmd, const char_t *format)
 {
-	fprintf(stderr, fmt, (uint32_t)cmd->value);
+	fprintf_P(stderr, format, (uint32_t)cmd->value);
 }
 
-void text_print_flt(cmdObj_t *cmd, const char_t *fmt)
+void text_print_flt(cmdObj_t *cmd, const char_t *format)
 {
-	fprintf(stderr, fmt, cmd->value);
+	fprintf_P(stderr, format, cmd->value);
 }
-
 
 #ifdef __cplusplus
 }

@@ -103,7 +103,9 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("M6T4\n");
 //	xio_queue_RX_string_usb("$tool\n");
 
-	xio_queue_RX_string_usb("$xvm\n");
+//	xio_queue_RX_string_usb("n23t4\n");
+//	xio_queue_RX_string_usb("$line\n");
+	xio_queue_RX_string_usb("$unit\n");
 
 //	xio_queue_RX_string_usb("{\"g55\":{\"z\":-53.668}}\n");
 //	xio_queue_RX_string_usb("G0 X0.1 Y0.1\n");
