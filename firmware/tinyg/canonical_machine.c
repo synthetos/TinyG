@@ -1659,6 +1659,11 @@ const char_t PROGMEM fmt_dist[] = "Distance mode:       %s\n";
 const char_t PROGMEM fmt_frmo[] = "Feed rate mode:      %s\n";
 const char_t PROGMEM fmt_tool[] = "Tool number          %d\n";
 
+const char_t PROGMEM fmt_pos[]  = "%c position:%15.3f%S\n";
+const char_t PROGMEM fmt_mpos[] = "%c machine posn:%11.3f%S\n";
+const char_t PROGMEM fmt_ofs[]  = "%c work offset:%12.3f%S\n";
+const char_t PROGMEM fmt_hom[]  = "%c axis homing state:%2.0f\n";
+
 // Coordinate system offset print formatting strings
 const char_t PROGMEM fmt_cofs[] = "[%s%s] %s %s offset%20.3f%S\n";
 const char_t PROGMEM fmt_cloc[] = "[%s%s] %s %s location%18.3f%S\n";
@@ -1686,6 +1691,8 @@ const char_t PROGMEM fmt_Xlv[] = "[%s%s] %s latch velocity%17.3f%S/min\n";
 const char_t PROGMEM fmt_Xlb[] = "[%s%s] %s latch backoff%18.3f%S\n";
 const char_t PROGMEM fmt_Xzb[] = "[%s%s] %s zero backoff%19.3f%S\n";
 
+// model state print functions
+
 void cm_print_vel(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_vel, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_feed(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_feed, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_line(cmdObj_t *cmd) { text_print_int(cmd, fmt_line);}
@@ -1704,30 +1711,25 @@ void cm_print_dist(cmdObj_t *cmd) { text_print_str(cmd, fmt_dist);}
 void cm_print_frmo(cmdObj_t *cmd) { text_print_str(cmd, fmt_frmo);}
 void cm_print_tool(cmdObj_t *cmd) { text_print_int(cmd, fmt_tool);}
 
-void _print_pos_helper(cmdObj_t *cmd, uint8_t units)
+/*
+ * print position
+ *
+ *	_print_pos_helper()
+ *	cm_print_pos()		- print position with unit displays for MM or Inches
+ * 	cm_print_mpos()		- print position with fixed unit display - always in Degrees or MM
+ */
+void _print_pos_helper(cmdObj_t *cmd, const char_t *format, uint8_t units)
 {
-//	cmd_get(cmd);
 	char_t axes[6] = {"XYZABC"};
-	char_t format[CMD_FORMAT_LEN+1];
 	uint8_t axis = get_pos_axis(cmd->index);
 	if (axis >= AXIS_A) { units = DEGREES;}
-	fprintf(stderr, get_format(cmd->index,format), axes[axis], cmd->value, 
-		(PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
+	fprintf_P(stderr, format, axes[axis], cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
 }
-
-void cm_print_pos(cmdObj_t *cmd)		// print position with unit displays for MM or Inches
-{
-	_print_pos_helper(cmd, cm_get_units_mode(MODEL));
-}
-
-void cm_print_mpos(cmdObj_t *cmd)		// print position with fixed unit display - always in Degrees or MM
-{
-	_print_pos_helper(cmd, MILLIMETERS);
-}
+void cm_print_pos(cmdObj_t *cmd)  { _print_pos_helper(cmd, fmt_pos, cm_get_units_mode(MODEL));}
+void cm_print_mpos(cmdObj_t *cmd) {	_print_pos_helper(cmd, fmt_mpos, MILLIMETERS);}
 
 void cm_print_corl(cmdObj_t *cmd)		// print coordinate offsets with linear units
 {
-//	cmd_get(cmd);
 	char_t format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
 		(PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
@@ -1735,7 +1737,6 @@ void cm_print_corl(cmdObj_t *cmd)		// print coordinate offsets with linear units
 
 void cm_print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
 {
-//	cmd_get(cmd);
 	char_t format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
 		(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
@@ -1743,7 +1744,6 @@ void cm_print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
 
 void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
 {
-//	cmd_get(cmd);
 	char_t format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
 					(PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));

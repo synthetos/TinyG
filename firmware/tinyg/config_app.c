@@ -172,10 +172,10 @@ const char_t PROGMEM fmt_md[] = "motors de-energized\n";
 
 //const char_t PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
 
-const char_t PROGMEM fmt_pos[]  = "%c position:%15.3f%S\n";
-const char_t PROGMEM fmt_mpos[] = "%c machine posn:%11.3f%S\n";
-const char_t PROGMEM fmt_ofs[]  = "%c work offset:%12.3f%S\n";
-const char_t PROGMEM fmt_hom[]  = "%c axis homing state:%2.0f\n";
+//const char_t PROGMEM fmt_pos[]  = "%c position:%15.3f%S\n";
+//const char_t PROGMEM fmt_mpos[] = "%c machine posn:%11.3f%S\n";
+//const char_t PROGMEM fmt_ofs[]  = "%c work offset:%12.3f%S\n";
+//const char_t PROGMEM fmt_hom[]  = "%c axis homing state:%2.0f\n";
 
 // Motor print formatting strings
 const char_t PROGMEM fmt_0ma[] = "[%s%s] m%s map to axis%15d [0=X,1=Y,2=Z...]\n";

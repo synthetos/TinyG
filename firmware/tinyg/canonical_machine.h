@@ -643,6 +643,11 @@ extern const char_t PROGMEM fmt_tool[];
 extern const char_t PROGMEM fmt_cofs[];
 extern const char_t PROGMEM fmt_cloc[];
 
+extern const char_t PROGMEM fmt_pos[];
+extern const char_t PROGMEM fmt_mpos[];
+extern const char_t PROGMEM fmt_ofs[];
+extern const char_t PROGMEM fmt_hom[];
+
 extern const char_t PROGMEM fmt_gpl[];		// gcode defaults
 extern const char_t PROGMEM fmt_gun[];
 extern const char_t PROGMEM fmt_gco[];
@@ -663,7 +668,6 @@ extern const char_t PROGMEM fmt_Xsv[];
 extern const char_t PROGMEM fmt_Xlv[];
 extern const char_t PROGMEM fmt_Xlb[];
 extern const char_t PROGMEM fmt_Xzb[];
-
 
 /*--- interface functions for cmdArray ---*/
 
@@ -694,6 +698,8 @@ stat_t cm_set_am(cmdObj_t *cmd);		// set axis mode
 stat_t cm_get_jrk(cmdObj_t *cmd);		// get jerk with 1,000,000 correction
 stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 stat_t cm_set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
+
+/*--- text_mode support functions ---*/
 
 void cm_print_vel(cmdObj_t *cmd);
 void cm_print_feed(cmdObj_t *cmd);
