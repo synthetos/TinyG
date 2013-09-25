@@ -1714,9 +1714,6 @@ const char_t PROGMEM fmt_mpos[] = "%c machine posn:%11.3f%S\n";
 const char_t PROGMEM fmt_ofs[]  = "%c work offset:%12.3f%S\n";
 const char_t PROGMEM fmt_hom[]  = "%c axis homing state:%2.0f\n";
 
-const char_t PROGMEM fmt_cofs[] = "[%s%s] %s %s offset%20.3f%S\n";
-const char_t PROGMEM fmt_cloc[] = "[%s%s] %s %s location%18.3f%S\n";
-
 const char_t PROGMEM fmt_gpl[] = "[gpl] default gcode plane%10d [0=G17,1=G18,2=G19]\n";
 const char_t PROGMEM fmt_gun[] = "[gun] default gcode units mode%5d [0=G20,1=G21]\n";
 const char_t PROGMEM fmt_gco[] = "[gco] default gcode coord system%3d [1-6 (G54-G59)]\n";
@@ -1801,6 +1798,9 @@ const char_t PROGMEM fmt_Xlv[] = "[%s%s] %s latch velocity%17.3f%S/min\n";
 const char_t PROGMEM fmt_Xlb[] = "[%s%s] %s latch backoff%18.3f%S\n";
 const char_t PROGMEM fmt_Xzb[] = "[%s%s] %s zero backoff%19.3f%S\n";
 
+const char_t PROGMEM fmt_cofs[] = "[%s%s] %s %s offset%20.3f%S\n";
+const char_t PROGMEM fmt_cloc[] = "[%s%s] %s %s location%18.3f%S\n";
+
 static void _print_axis_ui8(cmdObj_t *cmd, const char_t *format)
 {
 	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value);
@@ -1813,6 +1813,17 @@ static void _print_axis_flt(cmdObj_t *cmd, const char_t *format)
 				 (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
 	} else {
 		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value,
+				 (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
+	}
+}
+
+static void _print_axis_coord_flt(cmdObj_t *cmd, const char_t *format)
+{
+	if (cm_get_axis_type(cmd->index) == 0) {	// linear
+		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->token, cmd->value, 
+				 (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
+	} else {
+		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
 				 (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
 	}
 }
@@ -1830,6 +1841,9 @@ void cm_print_sv(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xsv);}
 void cm_print_lv(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xlv);}
 void cm_print_lb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xlb);}
 void cm_print_zb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xzb);}
+
+void cm_print_cofs(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cofs);}
+void cm_print_cloc(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cloc);}
 
 void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
 {
@@ -1854,6 +1868,7 @@ void _print_pos_helper(cmdObj_t *cmd, const char_t *format, uint8_t units)
 void cm_print_pos(cmdObj_t *cmd)  { _print_pos_helper(cmd, fmt_pos, cm_get_units_mode(MODEL));}
 void cm_print_mpos(cmdObj_t *cmd) {	_print_pos_helper(cmd, fmt_mpos, MILLIMETERS);}
 
+/*
 void cm_print_corl(cmdObj_t *cmd)		// print coordinate offsets with linear units
 {
 	char_t format[CMD_FORMAT_LEN+1];
@@ -1867,6 +1882,7 @@ void cm_print_corr(cmdObj_t *cmd)		// print coordinate offsets with rotary units
 	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
 		(PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
 }
+*/
 
 #endif // __TEXT_MODE
 

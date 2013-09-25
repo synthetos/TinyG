@@ -702,6 +702,9 @@ void cm_print_lv(cmdObj_t *cmd);
 void cm_print_lb(cmdObj_t *cmd);
 void cm_print_zb(cmdObj_t *cmd);
 
+void cm_print_cofs(cmdObj_t *cmd);
+void cm_print_cloc(cmdObj_t *cmd);
+
 //+++++ REMOVE +++++
 extern const char_t PROGMEM fmt_vel[];		// gcode model reporting
 extern const char_t PROGMEM fmt_vel[];
@@ -721,8 +724,6 @@ extern const char_t PROGMEM fmt_path[];
 extern const char_t PROGMEM fmt_dist[];
 extern const char_t PROGMEM fmt_frmo[];
 extern const char_t PROGMEM fmt_tool[];
-extern const char_t PROGMEM fmt_cofs[];
-extern const char_t PROGMEM fmt_cloc[];
 
 extern const char_t PROGMEM fmt_pos[];
 extern const char_t PROGMEM fmt_mpos[];
@@ -756,5 +757,8 @@ extern const char_t PROGMEM fmt_Xsv[];
 extern const char_t PROGMEM fmt_Xlv[];
 extern const char_t PROGMEM fmt_Xlb[];
 extern const char_t PROGMEM fmt_Xzb[];
+
+extern const char_t PROGMEM fmt_cofs[];
+extern const char_t PROGMEM fmt_cloc[];
 
 #endif // _CANONICAL_MACHINE_H_

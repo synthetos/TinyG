@@ -189,13 +189,13 @@ stat_t get_flt(cmdObj_t *cmd)
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
-
+/*
 char_t *get_format(const index_t i, char_t *format)
 {
 	strncpy_P(format, (PGM_P)pgm_read_word(&cfgArray[i].format), CMD_FORMAT_LEN);
 	return (format);
 }
-
+*/
 //ARM version:
 //char *get_format(const index_t index) { return ((char *)cfgArray[index].format); }
 
@@ -262,6 +262,7 @@ stat_t set_flt(cmdObj_t *cmd)
  */
 void print_nul(cmdObj_t *cmd) {}
 
+/*
 void print_str(cmdObj_t *cmd)
 {
 	cmd_get(cmd);
@@ -289,7 +290,7 @@ void print_flt(cmdObj_t *cmd)
 	char_t format[CMD_FORMAT_LEN+1];
 	fprintf(stderr, get_format(cmd->index, format), cmd->value);
 }
-
+*/
 
 /******************************************************************************
  * Group operations
