@@ -217,6 +217,21 @@ void print_rot(cmdObj_t *cmd);
 
 stat_t set_baud_callback(void);
 
+void co_print_ec(cmdObj_t *cmd);
+void co_print_ee(cmdObj_t *cmd);
+void co_print_ex(cmdObj_t *cmd);
+void co_print_baud(cmdObj_t *cmd);
+void co_print_net(cmdObj_t *cmd);
+void co_print_rx(cmdObj_t *cmd);
+
+//+++++ REMOVE +++/
+extern const char_t PROGMEM fmt_ec[];
+extern const char_t PROGMEM fmt_ee[];
+extern const char_t PROGMEM fmt_ex[];
+extern const char_t PROGMEM fmt_baud[];
+extern const char_t PROGMEM fmt_net[];
+extern const char_t PROGMEM fmt_rx[];
+
 
 #ifdef __cplusplus
 }

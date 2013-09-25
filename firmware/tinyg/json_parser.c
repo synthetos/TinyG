@@ -496,7 +496,20 @@ stat_t json_set_jv(cmdObj_t *cmd)
 
 #ifdef __TEXT_MODE
 
-//	{ "",   "fd",  _fip, 0, fmt_ui8,print_ui8, get_ui8, set_01,  (float *)&js.json_footer_depth,		JSON_FOOTER_DEPTH },
+/*
+ * js_print_ej()
+ * js_print_jv()
+ * js_print_fs()
+ */
+
+const char_t PROGMEM fmt_ej[] = "[ej]  enable json mode%13d [0=text,1=JSON]\n";
+const char_t PROGMEM fmt_jv[] = "[jv]  json verbosity%15d [0=silent,1=footer,2=messages,3=configs,4=linenum,5=verbose]\n";
+const char_t PROGMEM fmt_fs[] = "[fs]  footer style%17d [0=new,1=old]\n";
+
+void js_print_ej(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_ej);}
+void js_print_jv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_jv);}
+void js_print_fs(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_fs);}
+
 
 /*
  * json_print_list() - command to select and produce a JSON formatted output

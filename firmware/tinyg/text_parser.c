@@ -222,6 +222,14 @@ void text_print_multiline_formatted(cmdObj_t *cmd)
 }
 
 /*
+ * Text formatted print
+ */
+
+const char_t PROGMEM fmt_tv[] = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
+
+void tx_print_tv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_tv);}
+
+/*
  * Text print primitives using generic formats
  */
 const char_t PROGMEM fmt_nul[] = "";

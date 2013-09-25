@@ -110,11 +110,22 @@ stat_t qr_get(cmdObj_t *cmd);
 void qr_clear_queue_report(void);
 void qr_request_queue_report(int8_t buffers);
 stat_t qr_queue_report_callback(void);
+
+void sr_print_sr(cmdObj_t *cmd);
+void sr_print_si(cmdObj_t *cmd);
+void sr_print_sv(cmdObj_t *cmd);
+
+void qr_print_qv(cmdObj_t *cmd);
 void qr_print_qr(cmdObj_t *cmd);
 
 
 //+++++ REMOVE +++++
+
+extern const char_t PROGMEM fmt_si[];
+extern const char_t PROGMEM fmt_sv[];
+
 extern const char_t PROGMEM fmt_qr[];
+extern const char_t PROGMEM fmt_qv[];
 
 
 /* unit test setup */

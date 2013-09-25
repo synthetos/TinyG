@@ -39,6 +39,7 @@
 #include "../xmega/xmega_interrupts.h"
 
 #include "../tinyg.h"					// needed for canonical machine
+#include "../system.h"					// needed for hardware reset
 #include "../controller.h"				// needed for trapping kill char
 #include "../canonical_machine.h"		// needed for fgeedhold and cycle start
 

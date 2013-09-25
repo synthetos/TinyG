@@ -69,6 +69,8 @@ void text_print_inline_pairs(cmdObj_t *cmd);
 void text_print_inline_values(cmdObj_t *cmd);
 void text_print_multiline_formatted(cmdObj_t *cmd);
 
+void tx_print_tv(cmdObj_t *cmd);
+
 void tx_print_nul(cmdObj_t *cmd);
 void tx_print_str(cmdObj_t *cmd);
 void tx_print_ui8(cmdObj_t *cmd);
@@ -82,6 +84,9 @@ void text_print_int(cmdObj_t *cmd, const char_t *format);
 void text_print_flt(cmdObj_t *cmd, const char_t *format);
 
 void text_print_flt_units(cmdObj_t *cmd, const char_t *format, const char_t *units);
+
+extern const char_t PROGMEM fmt_tv[];
+
 
 /* unit test setup */
 

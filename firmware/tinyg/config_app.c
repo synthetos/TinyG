@@ -113,33 +113,6 @@ static const char_t PROGMEM msg_sw3[] = "NC homing";
 static const char_t PROGMEM msg_sw4[] = "NC homing & limit";
 static PGM_P const  PROGMEM msg_sw[] = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
 
-/* PROGMEM strings for print formatting
- * NOTE: DO NOT USE TABS IN FORMAT STRINGS
- */
-
-const char_t PROGMEM fmt_si[] = "[si]  status interval%14.0f ms\n";
-const char_t PROGMEM fmt_fs[] = "[fs]  footer style%17d [0=new,1=old]\n";
-
-//const char_t PROGMEM fmt_ic[] = "[ic]  ignore CR or LF on RX%8d [0=off,1=CR,2=LF]\n";
-
-const char_t PROGMEM fmt_ej[] = "[ej]  enable json mode%13d [0=text,1=JSON]\n";
-const char_t PROGMEM fmt_jv[] = "[jv]  json verbosity%15d [0=silent,1=footer,2=messages,3=configs,4=linenum,5=verbose]\n";
-const char_t PROGMEM fmt_sv[] = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
-const char_t PROGMEM fmt_qv[] = "[qv]  queue report verbosity%7d [0=off,1=filtered,2=verbose]\n";
-
-const char_t PROGMEM fmt_tv[] = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
-
-const char_t PROGMEM fmt_ec[] = "[ec]  expand LF to CRLF on TX%6d [0=off,1=on]\n";
-const char_t PROGMEM fmt_ee[] = "[ee]  enable echo%18d [0=off,1=on]\n";
-const char_t PROGMEM fmt_ex[] = "[ex]  enable flow control%10d [0=off,1=XON/XOFF, 2=RTS/CTS]\n";
-
-const char_t PROGMEM fmt_baud[] = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
-
-const char_t PROGMEM fmt_net[] = "[net]  network mode%16d [0=master]\n";
-
-const char_t PROGMEM fmt_rx[] = "rx:%d\n";
-
-
 //const char_t PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
 
 /***********************************************************************************
@@ -447,20 +420,20 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "",   "me",  _f00, 0, fmt_me, tx_print_str, st_set_me,  st_set_me,  (float *)&cs.null, 0 },
 	{ "",   "md",  _f00, 0, fmt_md, tx_print_str, st_set_md,  st_set_md,  (float *)&cs.null, 0 },
 
-	{ "sys","ej",  _f07, 0, fmt_ej, print_ui8, get_ui8, set_01,  (float *)&cfg.comm_mode,				COMM_MODE },
-	{ "sys","jv",  _f07, 0, fmt_jv, print_ui8, get_ui8, json_set_jv,  (float *)&js.json_verbosity,		JSON_VERBOSITY },
-	{ "sys","tv",  _f07, 0, fmt_tv, print_ui8, get_ui8, set_01,  (float *)&cfg.text_verbosity,			TEXT_VERBOSITY },
-	{ "sys","qv",  _f07, 0, fmt_qv, print_ui8, get_ui8, set_0123,(float *)&qr.queue_report_verbosity,	QR_VERBOSITY },
-	{ "sys","sv",  _f07, 0, fmt_sv, print_ui8, get_ui8, set_012, (float *)&sr.status_report_verbosity,	SR_VERBOSITY },
-	{ "sys","si",  _f07, 0, fmt_si, print_flt, get_int, sr_set_si,(float *)&sr.status_report_interval,	STATUS_REPORT_INTERVAL_MS },
+	{ "sys","ej",  _f07, 0, fmt_ej, js_print_ej, get_ui8, set_01,  (float *)&cfg.comm_mode,				COMM_MODE },
+	{ "sys","jv",  _f07, 0, fmt_jv, js_print_jv, get_ui8, json_set_jv,  (float *)&js.json_verbosity,		JSON_VERBOSITY },
+	{ "sys","tv",  _f07, 0, fmt_tv, tx_print_tv, get_ui8, set_01,  (float *)&cfg.text_verbosity,			TEXT_VERBOSITY },
+	{ "sys","qv",  _f07, 0, fmt_qv, qr_print_qv, get_ui8, set_0123,(float *)&qr.queue_report_verbosity,	QR_VERBOSITY },
+	{ "sys","sv",  _f07, 0, fmt_sv, sr_print_sv, get_ui8, set_012, (float *)&sr.status_report_verbosity,	SR_VERBOSITY },
+	{ "sys","si",  _f07, 0, fmt_si, sr_print_si, get_int, sr_set_si,(float *)&sr.status_report_interval,	STATUS_REPORT_INTERVAL_MS },
 
 //	{ "sys","ic",  _f07, 0, fmt_ic, print_ui8, get_ui8, set_ic,  (float *)&cfg.ignore_crlf,				COM_IGNORE_CRLF },
-	{ "sys","ec",  _f07, 0, fmt_ec, print_ui8, get_ui8, set_ec,  (float *)&cfg.enable_cr,				COM_EXPAND_CR },
-	{ "sys","ee",  _f07, 0, fmt_ee, print_ui8, get_ui8, set_ee,  (float *)&cfg.enable_echo,				COM_ENABLE_ECHO },
-	{ "sys","ex",  _f07, 0, fmt_ex, print_ui8, get_ui8, set_ex,  (float *)&cfg.enable_flow_control,		COM_ENABLE_FLOW_CONTROL },
-//	{ "sys","fs",  _f07, 0, fmt_fs, print_ui8, get_ui8, set_ui8, (float *)&js.json_footer_style,		0 },
-	{ "sys","baud",_fns, 0, fmt_baud,print_ui8,get_ui8, set_baud,(float *)&cfg.usb_baud_rate,			XIO_BAUD_115200 },
-	{ "sys","net", _fip, 0, fmt_net,print_ui8, get_ui8, set_ui8, (float *)&cs.network_mode,				NETWORK_MODE },
+	{ "sys","ec",  _f07, 0, fmt_ec, co_print_ec, get_ui8, set_ec,  (float *)&cfg.enable_cr,				COM_EXPAND_CR },
+	{ "sys","ee",  _f07, 0, fmt_ee, co_print_ee, get_ui8, set_ee,  (float *)&cfg.enable_echo,				COM_ENABLE_ECHO },
+	{ "sys","ex",  _f07, 0, fmt_ex, co_print_ex, get_ui8, set_ex,  (float *)&cfg.enable_flow_control,		COM_ENABLE_FLOW_CONTROL },
+//	{ "sys","fs",  _f07, 0, fmt_fs, js_print_fs, get_ui8, set_ui8, (float *)&js.json_footer_style,		0 },
+	{ "sys","baud",_fns, 0, fmt_baud,co_print_baud,get_ui8, set_baud,(float *)&cfg.usb_baud_rate,			XIO_BAUD_115200 },
+	{ "sys","net", _fip, 0, fmt_net,co_print_net, get_ui8, set_ui8, (float *)&cs.network_mode,				NETWORK_MODE },
 
 	// switch state readers
 /*
@@ -796,5 +769,24 @@ stat_t set_baud_callback(void)
 	xio_set_baud(XIO_DEV_USB, cfg.usb_baud_rate);
 	return (STAT_OK);
 }
+
+/**********************************************************************
+ * TEXT PRINTS
+ **********************************************************************/
+
+//const char_t PROGMEM fmt_ic[] = "[ic]  ignore CR or LF on RX%8d [0=off,1=CR,2=LF]\n";
+const char_t PROGMEM fmt_ec[] = "[ec]  expand LF to CRLF on TX%6d [0=off,1=on]\n";
+const char_t PROGMEM fmt_ee[] = "[ee]  enable echo%18d [0=off,1=on]\n";
+const char_t PROGMEM fmt_ex[] = "[ex]  enable flow control%10d [0=off,1=XON/XOFF, 2=RTS/CTS]\n";
+const char_t PROGMEM fmt_baud[] = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
+const char_t PROGMEM fmt_net[] = "[net]  network mode%16d [0=master]\n";
+const char_t PROGMEM fmt_rx[] = "rx:%d\n";
+
+void co_print_ec(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_ec);}
+void co_print_ee(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_ee);}
+void co_print_ex(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_ex);}
+void co_print_baud(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_baud);}
+void co_print_net(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_net);}
+void co_print_rx(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_rx);}
 
 
