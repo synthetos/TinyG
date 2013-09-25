@@ -72,7 +72,6 @@ static stat_t _do_all(cmdObj_t *cmd);		// print all parameters
 
 static stat_t get_gc(cmdObj_t *cmd);		// get current gcode block
 static stat_t run_gc(cmdObj_t *cmd);		// run a gcode block
-//static stat_t run_boot(cmdObj_t *cmd);		// jump to the bootloader
 //static stat_t run_sx(cmdObj_t *cmd);		// send XOFF, XON
 
 static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
@@ -586,8 +585,6 @@ uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_G
 /***** DOMAIN SPECIFIC EXTENSIONS TO GENERIC FUNCTIONS ************************
  * get_flu()   - get floating point number with Gcode units conversion
  * set_flu()   - set floating point number with Gcode units conversion
- * print_lin() - print linear axis value with Gcode units conversion
- * print_rot() - print rotary axis value with Gcode units conversion
  */
 stat_t set_flu(cmdObj_t *cmd)
 {
@@ -604,21 +601,6 @@ stat_t get_flu(cmdObj_t *cmd)
 	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
 	return (STAT_OK);
 }
-
-void print_lin(cmdObj_t *cmd)
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
-}
-
-void print_rot(cmdObj_t *cmd)
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
-}
-
 
 /**** UberGroup Operations ****************************************************
  * Uber groups are groups of groups organized for convenience:
@@ -700,13 +682,6 @@ static stat_t run_gc(cmdObj_t *cmd)
 {
 	return(gc_gcode_parser(*cmd->stringp));
 }
-/*
-static stat_t run_boot(cmdObj_t *cmd)
-{
-	hardware_request_bootloader();
-	return(STAT_OK);
-}
-*/
 /* run_sx()	- send XOFF, XON --- test only 
 static stat_t run_sx(cmdObj_t *cmd)
 {

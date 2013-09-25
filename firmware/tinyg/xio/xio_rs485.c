@@ -158,7 +158,7 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)		// serial port C0 RX isr
 
 	// trap async commands - do not insert into RX queue
 	if (c == CHAR_RESET) {	 						// trap Kill character
-		hardware_request_hard_reset();
+		hw_request_hard_reset();
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {						// trap feedhold signal

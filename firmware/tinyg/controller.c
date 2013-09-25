@@ -135,7 +135,7 @@ static void _controller_HSM()
  */
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
 												// Order is important:
-	DISPATCH(hardware_hard_reset_handler());	// 1. handle hard reset requests
+	DISPATCH(hw_hard_reset_handler());			// 1. handle hard reset requests
 	DISPATCH(hw_bootloader_handler());			// 2. handle requests to enter bootloader
 	DISPATCH(_alarm_idler());					// 3. idle in alarm state (shutdown)
 //	DISPATCH( poll_switches());					// 4. run a switch polling cycle
@@ -364,6 +364,7 @@ uint8_t _system_assertions()
  * hardware_hard_reset()		 - hard reset using watchdog timer
  * hardware_hard_reset_handler() - controller's rest handler
  */
+/*
 void hardware_request_hard_reset() { cs.hard_reset_requested = true; }
 
 void hardware_hard_reset(void)			// software hard reset using the watchdog timer
@@ -378,6 +379,7 @@ stat_t hardware_hard_reset_handler(void)
 	hardware_hard_reset();				// hard reset - identical to hitting RESET button
 	return (STAT_EAGAIN);
 }
+*/
 
 /**** Bootloader Handlers *****************************************************
  * hardware_request_bootloader()

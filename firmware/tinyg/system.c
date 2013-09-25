@@ -32,6 +32,7 @@
  *
  */
 #include <avr/interrupt.h>
+#include <avr/wdt.h>			// used for software reset
 
 #include "tinyg.h"	// #1
 #include "config.h"	// #2
@@ -39,6 +40,7 @@
 #include "switch.h"
 #include "controller.h"
 #include "text_parser.h"
+#include "xmega/xmega_rtc.h"
 #include "xmega/xmega_init.h"
 
 /*
@@ -131,18 +133,33 @@ void sys_get_id(char *id)
 }
 
 /*
+ * Hardware Reset Handlers
+ *
+ * hw_request_hard_reset()
+ * hw_hard_reset()			- hard reset using watchdog timer
+ * hw_hard_reset_handler()	- controller's rest handler
+ */
+void hw_request_hard_reset() { cs.hard_reset_requested = true; }
+
+void hw_hard_reset(void)			// software hard reset using the watchdog timer
+{
+	wdt_enable(WDTO_15MS);
+	while (true);					// loops for about 15ms then resets
+}
+
+stat_t hw_hard_reset_handler(void)
+{
+	if (cs.hard_reset_requested == false) { return (STAT_NOOP);}
+	hw_hard_reset();				// hard reset - identical to hitting RESET button
+	return (STAT_EAGAIN);
+}
+
+/*
  * Bootloader Handlers
  *
- * hw_run_boot() - invoke boot form the cfgArray
  * hw_request_bootloader()
  * hw_request_bootloader_handler() - executes a software reset using CCPWrite
  */
-
-stat_t hw_run_boot(cmdObj_t *cmd)
-{
-	hw_request_bootloader();
-	return(STAT_OK);
-}
 
 void hw_request_bootloader() { cs.bootloader_requested = true;}
 
@@ -161,6 +178,15 @@ stat_t hw_bootloader_handler(void)
  * CONFIGURATION AND INTERFACE FUNCTIONS
  * Functions to get and set variables from the cfgArray table
  ***********************************************************************************/
+
+/*
+ * hw_run_boot() - invoke boot form the cfgArray
+ */
+stat_t hw_run_boot(cmdObj_t *cmd)
+{
+	hw_request_bootloader();
+	return(STAT_OK);
+}
 
 /*
  * hw_set_hv() - set hardware version number
