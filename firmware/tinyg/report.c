@@ -282,26 +282,6 @@ void sr_init_status_report()
 }
 
 /* 
- * Wrappers and Setters - for calling from cmdArray table
- *
- * sr_get()		- run status report
- * sr_set()		- set status report elements
- * sr_print()	- display rtext output
- * sr_set_si()	- set status report interval
- */
-
-stat_t sr_get(cmdObj_t *cmd) { return (sr_populate_unfiltered_status_report());}
-stat_t sr_set(cmdObj_t *cmd) { return (sr_set_status_report(cmd));}
-void sr_print(cmdObj_t *cmd) { sr_populate_unfiltered_status_report();}
-
-stat_t sr_set_si(cmdObj_t *cmd)
-{
-	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
-	sr.status_report_interval = (uint32_t)cmd->value;
-	return(STAT_OK);
-}
-
-/* 
  * sr_set_status_report() - interpret an SR setup string and return current report
  */
 stat_t sr_set_status_report(cmdObj_t *cmd)
@@ -456,6 +436,32 @@ uint8_t sr_populate_filtered_status_report()
 	return (has_data);
 }
 
+/* 
+ * Wrappers and Setters - for calling from cmdArray table
+ *
+ * sr_get()		- run status report
+ * sr_set()		- set status report elements
+ * sr_set_si()	- set status report interval
+ */
+
+stat_t sr_get(cmdObj_t *cmd) { return (sr_populate_unfiltered_status_report());}
+stat_t sr_set(cmdObj_t *cmd) { return (sr_set_status_report(cmd));}
+
+stat_t sr_set_si(cmdObj_t *cmd)
+{
+	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
+	sr.status_report_interval = (uint32_t)cmd->value;
+	return(STAT_OK);
+}
+
+/*
+ * sr_print_sr() - produce SR text output
+ */
+
+void sr_print_sr(cmdObj_t *cmd) { sr_populate_unfiltered_status_report();}
+
+
+
 /*****************************************************************************
  * Queue Reports
  *
@@ -545,6 +551,14 @@ uint8_t qr_queue_report_callback()
 	cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (STAT_OK);
 */
+
+/*
+ * qr_print_qr() - produce QR text output
+ */
+const char_t PROGMEM fmt_qr[] = "qr:%d\n";
+
+void qr_print_qr(cmdObj_t *cmd) { text_print_int(cmd, fmt_qr);}
+
 
 /****************************************************************************
  ***** Report Unit Tests ****************************************************

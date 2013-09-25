@@ -1342,24 +1342,10 @@ void cm_program_end()
 
 
 /***********************************************************************************
- ***********************************************************************************
- ***********************************************************************************
  * CONFIGURATION AND INTERFACE FUNCTIONS
- * Functions get, set and report variables
+ * Functions to get and set variables from the cfgArray table
  * These functions are not part of the NIST defined functions
- ***********************************************************************************
- ***********************************************************************************
  ***********************************************************************************/
-
-/* global formatting strings (PUBLIC) */
-
-#ifdef __TEXT_MODE
-
-
-
-#endif //__TEXT_MODE
-
-/* local strings (PRIVATE) */	// NB: used by both text and JSON modes
 
 static const char_t PROGMEM msg_units0[] = " in";	// used by generic print functions
 static const char_t PROGMEM msg_units1[] = " mm";
@@ -1635,7 +1621,11 @@ stat_t cm_set_sw(cmdObj_t *cmd)			// switch setting
 	return (STAT_OK);
 }
 
-/**** text_mode display functions (prints) ****/
+
+/***********************************************************************************
+ * TEXT MODE SUPPORT
+ * Functions to print variables from the cfgArray table
+ ***********************************************************************************/
 
 #ifdef __TEXT_MODE
 
@@ -1664,11 +1654,9 @@ const char_t PROGMEM fmt_mpos[] = "%c machine posn:%11.3f%S\n";
 const char_t PROGMEM fmt_ofs[]  = "%c work offset:%12.3f%S\n";
 const char_t PROGMEM fmt_hom[]  = "%c axis homing state:%2.0f\n";
 
-// Coordinate system offset print formatting strings
 const char_t PROGMEM fmt_cofs[] = "[%s%s] %s %s offset%20.3f%S\n";
 const char_t PROGMEM fmt_cloc[] = "[%s%s] %s %s location%18.3f%S\n";
 
-// Gcode model power-on reset default values
 const char_t PROGMEM fmt_gpl[] = "[gpl] default gcode plane%10d [0=G17,1=G18,2=G19]\n";
 const char_t PROGMEM fmt_gun[] = "[gun] default gcode units mode%5d [0=G20,1=G21]\n";
 const char_t PROGMEM fmt_gco[] = "[gco] default gcode coord system%3d [1-6 (G54-G59)]\n";
@@ -1691,7 +1679,9 @@ const char_t PROGMEM fmt_Xlv[] = "[%s%s] %s latch velocity%17.3f%S/min\n";
 const char_t PROGMEM fmt_Xlb[] = "[%s%s] %s latch backoff%18.3f%S\n";
 const char_t PROGMEM fmt_Xzb[] = "[%s%s] %s zero backoff%19.3f%S\n";
 
+
 // model state print functions
+
 void cm_print_vel(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_vel, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_feed(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_feed, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_line(cmdObj_t *cmd) { text_print_int(cmd, fmt_line);}
@@ -1754,7 +1744,6 @@ static void _print_axis_flt(cmdObj_t *cmd, const char_t *format)
 	}
 }
 
-void cm_print_am(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xam);}
 void cm_print_fr(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xfr);}
 void cm_print_vm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xvm);}
 void cm_print_tm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xtm);}
@@ -1764,32 +1753,17 @@ void cm_print_jd(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjd);}
 void cm_print_ra(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xra);}
 void cm_print_sn(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsn);}
 void cm_print_sx(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsx);}
-void cm_print_sv(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsv);}
+void cm_print_sv(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xsv);}
 void cm_print_lv(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xlv);}
 void cm_print_lb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xlb);}
 void cm_print_zb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xzb);}
 
-/*
-static void _print_axis_linear(cmdObj_t *cmd, const char_t *format)
-{
-	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, 
-			 (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
-}
-
-static void _print_axis_rotary(cmdObj_t *cmd, const char_t *format)
-{
-	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value,
-			 (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
-}
-*/
-/*
 void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
 {
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
-					(PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
+	fprintf_P(stderr, fmt_Xam, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
+			 (PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
 }
-*/
+
 /*
  * print position
  *

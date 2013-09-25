@@ -93,10 +93,6 @@ void rpt_print_initializing_message(void);
 void rpt_print_system_ready_message(void);
 
 void sr_init_status_report(void);
-stat_t sr_get(cmdObj_t *cmd);
-stat_t sr_set(cmdObj_t *cmd);
-void sr_print(cmdObj_t *cmd);
-stat_t sr_set_si(cmdObj_t *cmd);
 
 stat_t sr_set_status_report(cmdObj_t *cmd);
 stat_t sr_request_status_report(uint8_t request_type);
@@ -105,10 +101,20 @@ stat_t sr_run_text_status_report(void);
 stat_t sr_populate_unfiltered_status_report(void);
 uint8_t sr_populate_filtered_status_report(void);
 
+stat_t sr_get(cmdObj_t *cmd);
+stat_t sr_set(cmdObj_t *cmd);
+stat_t sr_set_si(cmdObj_t *cmd);
+void sr_print_sr(cmdObj_t *cmd);
+
 stat_t qr_get(cmdObj_t *cmd); 
 void qr_clear_queue_report(void);
 void qr_request_queue_report(int8_t buffers);
 stat_t qr_queue_report_callback(void);
+void qr_print_qr(cmdObj_t *cmd);
+
+
+//+++++ REMOVE +++++
+extern const char_t PROGMEM fmt_qr[];
 
 
 /* unit test setup */

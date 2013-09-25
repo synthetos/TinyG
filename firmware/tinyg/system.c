@@ -32,8 +32,11 @@
  *
  */
 
-#include "tinyg.h"
+#include "tinyg.h"	// #1
+#include "config.h"	// #2
+
 #include "system.h"
+#include "text_parser.h"
 #include "xmega/xmega_init.h"
 
 /*
@@ -71,14 +74,6 @@ void sys_port_bindings(float hw_version)
 	}
 }
 
-uint8_t sys_read_calibration_byte(uint8_t index)
-{ 
-	NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc; 	// Load NVM Command register to read the calibration row
-	uint8_t result = pgm_read_byte(index); 
-	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 	 	// Clean up NVM Command register 
-	return(result); 
-}
-
 /*
  * sys_get_id() - get a human readable signature
  *
@@ -89,6 +84,7 @@ uint8_t sys_read_calibration_byte(uint8_t index)
  *	The alpha is the lo 5 bits of wafer number and XY coords in printable ASCII
  *	Refer to NVM_PROD_SIGNATURES_t in iox192a3.h for details.
  */
+ 
 enum { 
 	LOTNUM0=8,  // Lot Number Byte 0, ASCII 
 	LOTNUM1,    // Lot Number Byte 1, ASCII 
@@ -102,6 +98,14 @@ enum {
 	COORDY0,    // Wafer Coordinate Y Byte 0 
 	COORDY1,    // Wafer Coordinate Y Byte 1 
 }; 
+
+uint8_t sys_read_calibration_byte(uint8_t index)
+{ 
+	NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc; 	// Load NVM Command register to read the calibration row
+	uint8_t result = pgm_read_byte(index); 
+	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 	 	// Clean up NVM Command register 
+	return(result); 
+}
 
 void sys_get_id(char *id)
 {
@@ -123,3 +127,36 @@ void sys_get_id(char *id)
 
 	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 	 	// Clean up NVM Command register 
 }
+
+/***** END OF SYSTEM FUNCTIONS *****/
+
+
+
+/***********************************************************************************
+ * CONFIGURATION AND INTERFACE FUNCTIONS
+ * Functions to get and set variables from the cfgArray table
+ ***********************************************************************************/
+
+
+
+
+/***********************************************************************************
+ * TEXT MODE SUPPORT
+ * Functions to print variables from the cfgArray table
+ ***********************************************************************************/
+
+#ifdef __TEXT_MODE
+
+const char_t PROGMEM fmt_fb[] = "[fb]  firmware build%18.2f\n";
+const char_t PROGMEM fmt_fv[] = "[fv]  firmware version%16.2f\n";
+//const char_t PROGMEM fmt_hv[] = "[hp]  hardware platform%15.2f\n";
+const char_t PROGMEM fmt_hv[] = "[hv]  hardware version%16.2f\n";
+const char_t PROGMEM fmt_id[] = "[id]  TinyG ID%30s\n";
+
+void hw_print_fb(cmdObj_t *cmd) { text_print_flt(cmd, fmt_fb);}
+void hw_print_fv(cmdObj_t *cmd) { text_print_flt(cmd, fmt_fv);}
+//void hw_print_hp(cmdObj_t *cmd) { text_print_flt(cmd, fmt_hp);}
+void hw_print_hv(cmdObj_t *cmd) { text_print_flt(cmd, fmt_hv);}
+void hw_print_id(cmdObj_t *cmd) { text_print_str(cmd, fmt_id);}
+
+#endif //__TEXT_MODE 

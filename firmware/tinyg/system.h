@@ -39,9 +39,7 @@
 #ifndef system_h
 #define system_h
 
-void sys_init(void);					// master hardware init
-void sys_port_bindings(float hw_version);
-void sys_get_id(char *id);
+#include "config.h"
 
 #define SYS_ID_LEN 12					// length of system ID string from sys_get_id()
 
@@ -169,5 +167,24 @@ typedef struct deviceSingleton {
 	PORT_t *out_port[MOTORS];	// bindings for output ports (GPIO1)
 } deviceSingleton_t;
 deviceSingleton_t device;
+
+
+/*** function prototypes ***/
+
+void sys_init(void);					// master hardware init
+void sys_port_bindings(float hw_version);
+void sys_get_id(char *id);
+
+void hw_print_fb(cmdObj_t *cmd);
+void hw_print_fv(cmdObj_t *cmd);
+//void hw_print_hp(cmdObj_t *cmd);
+void hw_print_hv(cmdObj_t *cmd);
+void hw_print_id(cmdObj_t *cmd);
+
+//+++++ REMOVE +++++
+extern const char_t PROGMEM fmt_fb[];
+extern const char_t PROGMEM fmt_fv[];
+extern const char_t PROGMEM fmt_hv[];
+extern const char_t PROGMEM fmt_id[];
 
 #endif

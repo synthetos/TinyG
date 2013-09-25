@@ -611,64 +611,6 @@ void cm_program_end(void);										// M2
 void cm_exec_program_stop(void);
 void cm_exec_program_end(void);
 
-
-/************************************************************************************
- ************************************************************************************
- ************************************************************************************
- * SUPPORT FOR INTERFACE AND CONFIGURATION FUNCTIONS
- ************************************************************************************
- ************************************************************************************
- ************************************************************************************/
-
-/* externs for global strings */
-
-extern const char_t PROGMEM fmt_vel[];		// gcode model reporting
-extern const char_t PROGMEM fmt_vel[];
-extern const char_t PROGMEM fmt_line[];
-extern const char_t PROGMEM fmt_feed[];
-extern const char_t PROGMEM fmt_stat[];
-extern const char_t PROGMEM fmt_macs[];
-extern const char_t PROGMEM fmt_cycs[];
-extern const char_t PROGMEM fmt_mots[];
-extern const char_t PROGMEM fmt_hold[];
-extern const char_t PROGMEM fmt_home[];
-extern const char_t PROGMEM fmt_unit[];
-extern const char_t PROGMEM fmt_coor[];
-extern const char_t PROGMEM fmt_momo[];
-extern const char_t PROGMEM fmt_plan[];
-extern const char_t PROGMEM fmt_path[];
-extern const char_t PROGMEM fmt_dist[];
-extern const char_t PROGMEM fmt_frmo[];
-extern const char_t PROGMEM fmt_tool[];
-extern const char_t PROGMEM fmt_cofs[];
-extern const char_t PROGMEM fmt_cloc[];
-
-extern const char_t PROGMEM fmt_pos[];
-extern const char_t PROGMEM fmt_mpos[];
-extern const char_t PROGMEM fmt_ofs[];
-extern const char_t PROGMEM fmt_hom[];
-
-extern const char_t PROGMEM fmt_gpl[];		// gcode defaults
-extern const char_t PROGMEM fmt_gun[];
-extern const char_t PROGMEM fmt_gco[];
-extern const char_t PROGMEM fmt_gpa[];
-extern const char_t PROGMEM fmt_gdi[];
-
-extern const char_t PROGMEM fmt_Xam[];		// axis settings
-extern const char_t PROGMEM fmt_Xfr[];
-extern const char_t PROGMEM fmt_Xvm[];
-extern const char_t PROGMEM fmt_Xtm[];
-extern const char_t PROGMEM fmt_Xjm[];
-extern const char_t PROGMEM fmt_Xjh[];
-extern const char_t PROGMEM fmt_Xjd[];
-extern const char_t PROGMEM fmt_Xra[];
-extern const char_t PROGMEM fmt_Xsn[];
-extern const char_t PROGMEM fmt_Xsx[];
-extern const char_t PROGMEM fmt_Xsv[];
-extern const char_t PROGMEM fmt_Xlv[];
-extern const char_t PROGMEM fmt_Xlb[];
-extern const char_t PROGMEM fmt_Xzb[];
-
 /*--- interface functions for cmdArray ---*/
 
 stat_t cm_get_line(cmdObj_t *cmd);		// get runtime line number
@@ -745,5 +687,53 @@ void cm_print_sv(cmdObj_t *cmd);
 void cm_print_lv(cmdObj_t *cmd);
 void cm_print_lb(cmdObj_t *cmd);
 void cm_print_zb(cmdObj_t *cmd);
+
+//+++++ REMOVE +++++
+extern const char_t PROGMEM fmt_vel[];		// gcode model reporting
+extern const char_t PROGMEM fmt_vel[];
+extern const char_t PROGMEM fmt_line[];
+extern const char_t PROGMEM fmt_feed[];
+extern const char_t PROGMEM fmt_stat[];
+extern const char_t PROGMEM fmt_macs[];
+extern const char_t PROGMEM fmt_cycs[];
+extern const char_t PROGMEM fmt_mots[];
+extern const char_t PROGMEM fmt_hold[];
+extern const char_t PROGMEM fmt_home[];
+extern const char_t PROGMEM fmt_unit[];
+extern const char_t PROGMEM fmt_coor[];
+extern const char_t PROGMEM fmt_momo[];
+extern const char_t PROGMEM fmt_plan[];
+extern const char_t PROGMEM fmt_path[];
+extern const char_t PROGMEM fmt_dist[];
+extern const char_t PROGMEM fmt_frmo[];
+extern const char_t PROGMEM fmt_tool[];
+extern const char_t PROGMEM fmt_cofs[];
+extern const char_t PROGMEM fmt_cloc[];
+
+extern const char_t PROGMEM fmt_pos[];
+extern const char_t PROGMEM fmt_mpos[];
+extern const char_t PROGMEM fmt_ofs[];
+extern const char_t PROGMEM fmt_hom[];
+
+extern const char_t PROGMEM fmt_gpl[];		// gcode defaults
+extern const char_t PROGMEM fmt_gun[];
+extern const char_t PROGMEM fmt_gco[];
+extern const char_t PROGMEM fmt_gpa[];
+extern const char_t PROGMEM fmt_gdi[];
+
+extern const char_t PROGMEM fmt_Xam[];		// axis settings
+extern const char_t PROGMEM fmt_Xfr[];
+extern const char_t PROGMEM fmt_Xvm[];
+extern const char_t PROGMEM fmt_Xtm[];
+extern const char_t PROGMEM fmt_Xjm[];
+extern const char_t PROGMEM fmt_Xjh[];
+extern const char_t PROGMEM fmt_Xjd[];
+extern const char_t PROGMEM fmt_Xra[];
+extern const char_t PROGMEM fmt_Xsn[];
+extern const char_t PROGMEM fmt_Xsx[];
+extern const char_t PROGMEM fmt_Xsv[];
+extern const char_t PROGMEM fmt_Xlv[];
+extern const char_t PROGMEM fmt_Xlb[];
+extern const char_t PROGMEM fmt_Xzb[];
 
 #endif // _CANONICAL_MACHINE_H_

@@ -48,7 +48,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.70	// Moved stepper config interface functions to stepper module
+#define TINYG_FIRMWARE_BUILD   		392.71	// Refactoring the way text mode print functions work
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number

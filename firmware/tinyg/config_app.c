@@ -40,6 +40,7 @@
 #include "gpio.h"
 #include "pwm.h"
 #include "report.h"
+#include "system.h"
 #include "test.h"
 #include "util.h"
 #include "help.h"
@@ -134,10 +135,10 @@ const char_t PROGMEM fmt_flt[] = "%f\n";	// generic format for floats
 const char_t PROGMEM fmt_str[] = "%s\n";	// generic format for string message (with no formatting)
 */
 // System group and ungrouped formatting strings
-const char_t PROGMEM fmt_fb[] = "[fb]  firmware build%18.2f\n";
-const char_t PROGMEM fmt_fv[] = "[fv]  firmware version%16.2f\n";
-const char_t PROGMEM fmt_hv[] = "[hv]  hardware version%16.2f\n";
-const char_t PROGMEM fmt_id[] = "[id]  TinyG ID%30s\n";
+//const char_t PROGMEM fmt_fb[] = "[fb]  firmware build%18.2f\n";
+//const char_t PROGMEM fmt_fv[] = "[fv]  firmware version%16.2f\n";
+//const char_t PROGMEM fmt_hv[] = "[hv]  hardware version%16.2f\n";
+//const char_t PROGMEM fmt_id[] = "[id]  TinyG ID%30s\n";
 
 const char_t PROGMEM fmt_ja[] = "[ja]  junction acceleration%8.0f%S\n";
 const char_t PROGMEM fmt_ct[] = "[ct]  chordal tolerance%16.3f%S\n";
@@ -163,7 +164,7 @@ const char_t PROGMEM fmt_qv[] = "[qv]  queue report verbosity%7d [0=off,1=filter
 const char_t PROGMEM fmt_baud[] = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
 const char_t PROGMEM fmt_net[] = "[net]  network mode%16d [0=master]\n";
 
-const char_t PROGMEM fmt_qr[] = "qr:%d\n";
+//const char_t PROGMEM fmt_qr[] = "qr:%d\n";
 const char_t PROGMEM fmt_rx[] = "rx:%d\n";
 
 const char_t PROGMEM fmt_mt[] = "[mt]  motor idle timeout%14.2f Sec\n";
@@ -214,11 +215,11 @@ const char_t PROGMEM fmt_p1pof[] = "[p1pof] pwm phase off   %15.3f [0..1]\n";
 
 const cfgItem_t PROGMEM cfgArray[] = {
 	// group token flags p, format*, print_func, get_func, set_func, target for get/set,   	default value
-	{ "sys", "fb", _f07, 2, fmt_fb, print_flt, get_flt, set_nul, (float *)&cs.fw_build,   TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
-	{ "sys", "fv", _f07, 3, fmt_fv, print_flt, get_flt, set_nul, (float *)&cs.fw_version, TINYG_FIRMWARE_VERSION },
-//	{ "sys", "hp", _f07, 0, fmt_hp, print_flt, get_flt, set_flt, (float *)&cs.hw_platform,TINYG_HARDWARE_PLATFORM },
-	{ "sys", "hv", _f07, 0, fmt_hv, print_flt, get_flt, set_hv,  (float *)&cs.hw_version, TINYG_HARDWARE_VERSION },
-	{ "sys", "id", _fns, 0, fmt_id, print_str, get_id,  set_nul, (float *)&cs.null, 0 },		// device ID (ASCII signature)
+	{ "sys", "fb", _f07, 2, fmt_fb, hw_print_fb, get_flt, set_nul, (float *)&cs.fw_build,   TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
+	{ "sys", "fv", _f07, 3, fmt_fv, hw_print_fv, get_flt, set_nul, (float *)&cs.fw_version, TINYG_FIRMWARE_VERSION },
+//	{ "sys", "hp", _f07, 0, fmt_hp, hw_print_hp, get_flt, set_flt, (float *)&cs.hw_platform,TINYG_HARDWARE_PLATFORM },
+	{ "sys", "hv", _f07, 0, fmt_hv, hw_print_hv, get_flt, set_hv,  (float *)&cs.hw_version, TINYG_HARDWARE_VERSION },
+	{ "sys", "id", _fns, 0, fmt_id, hw_print_id, get_id,  set_nul, (float *)&cs.null, 0 },		// device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
 	{ "",   "vel", _f00, 2, fmt_vel,  cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },	// current velocity
@@ -269,7 +270,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "hom","homc",_f00, 0, fmt_hom, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_C], false },// C homed
 
 	// Reports, tests, help, and messages
-	{ "", "sr",  _f00, 0, fmt_nul, sr_print,  sr_get,  sr_set,  (float *)&cs.null, 0 }, // status report object
+	{ "", "sr",  _f00, 0, fmt_nul, sr_print_sr, sr_get,  sr_set,  (float *)&cs.null, 0 }, // status report object
 	{ "", "qr",  _f00, 0, fmt_qr,  print_int, qr_get,  set_nul, (float *)&cs.null, 0 },	// queue report setting
 	{ "", "er",  _f00, 0, fmt_nul, print_nul, rpt_er,  set_nul, (float *)&cs.null, 0 },	// invoke bogus exception report for testing
 	{ "", "qf",  _f00, 0, fmt_nul, print_nul, get_nul, run_qf,  (float *)&cs.null, 0 },	// queue flush
@@ -498,12 +499,12 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys","ja",  _f07, 0, fmt_ja, print_lin, get_flu, set_flu, (float *)&cm.junction_acceleration,	JUNCTION_ACCELERATION },
 	{ "sys","ct",  _f07, 4, fmt_ct, print_lin, get_flu, set_flu, (float *)&cm.chordal_tolerance,		CHORDAL_TOLERANCE },
 	{ "sys","st",  _f07, 0, fmt_st, print_ui8, get_ui8, cm_set_sw,  (float *)&sw.switch_type,			SWITCH_TYPE },
-	{ "sys","mt",  _f07, 2, fmt_mt, print_flt, get_flt, st_set_mt,  (float *)&st.motor_idle_timeout, 		MOTOR_IDLE_TIMEOUT},
+	{ "sys","mt",  _f07, 2, fmt_mt, print_flt, get_flt, st_set_mt,  (float *)&st.motor_idle_timeout, 	MOTOR_IDLE_TIMEOUT},
 	{ "",   "me",  _f00, 0, fmt_me, print_str, st_set_me,  st_set_me,  (float *)&cs.null, 0 },
 	{ "",   "md",  _f00, 0, fmt_md, print_str, st_set_md,  st_set_md,  (float *)&cs.null, 0 },
 
 	{ "sys","ej",  _f07, 0, fmt_ej, print_ui8, get_ui8, set_01,  (float *)&cfg.comm_mode,				COMM_MODE },
-	{ "sys","jv",  _f07, 0, fmt_jv, print_ui8, get_ui8, json_set_jv,  (float *)&js.json_verbosity,			JSON_VERBOSITY },
+	{ "sys","jv",  _f07, 0, fmt_jv, print_ui8, get_ui8, json_set_jv,  (float *)&js.json_verbosity,		JSON_VERBOSITY },
 	{ "sys","tv",  _f07, 0, fmt_tv, print_ui8, get_ui8, set_01,  (float *)&cfg.text_verbosity,			TEXT_VERBOSITY },
 	{ "sys","qv",  _f07, 0, fmt_qv, print_ui8, get_ui8, set_0123,(float *)&qr.queue_report_verbosity,	QR_VERBOSITY },
 	{ "sys","sv",  _f07, 0, fmt_sv, print_ui8, get_ui8, set_012, (float *)&sr.status_report_verbosity,	SR_VERBOSITY },
@@ -758,9 +759,6 @@ static stat_t get_id(cmdObj_t *cmd)
 /**** REPORT AND COMMAND FUNCTIONS ********************************************************
  * run_qf() - request a planner buffer flush
  * get_rx()	- get bytes available in RX buffer
- * set_mt() - set motor disable timeout in seconds
- * set_md() - disable all motors
- * set_me() - enable motors with $Npm=0
  * set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
  * get_gc()	- get gcode block
  * run_gc()	- launch the gcode parser on a block of gcode
@@ -779,25 +777,6 @@ static stat_t get_rx(cmdObj_t *cmd)
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
-/*
-static stat_t set_mt(cmdObj_t *cmd)
-{
-	st_set_motor_idle_timeout(cmd->value);	
-	return (STAT_OK);
-}
-
-static stat_t set_md(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
-{
-	st_deenergize_motors();
-	return (STAT_OK);
-}
-
-static stat_t set_me(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
-{
-	st_energize_motors();
-	return (STAT_OK);
-}
-*/
 /* run_sx()	- send XOFF, XON --- test only 
 static stat_t run_sx(cmdObj_t *cmd)
 {
