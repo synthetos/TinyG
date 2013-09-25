@@ -1441,6 +1441,51 @@ static const char_t PROGMEM msg_am03[] = "[radius]";
 static PGM_P const  PROGMEM msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03};
 
 
+/***** HELPERS *********************************************************************
+ *
+ * cm_get_axis_char()	- return ASCII char for axis given the axis number
+ * cm_get_axis()		- return axis number or -1 if NA
+ * cm_get_axis_type()	- return 0 -f axis is linear, 1 if rotary, -1 if NA
+ * cm_get_pos_axis()	- return axis number for pos values or -1 if none - e.g. posx
+ */
+
+char_t cm_get_axis_char(const int8_t axis)
+{
+	char_t axis_char[] = "XYZABC";
+	if ((axis < 0) || (axis > AXES)) return (' ');
+	return (axis_char[axis]);
+}
+
+int8_t cm_get_axis(const index_t index)
+{
+	char_t *ptr;
+	char_t tmp[CMD_TOKEN_LEN+1];
+	char_t axes[] = {"xyzabc"};
+
+	strcpy_P(tmp, cfgArray[index].token);
+	if ((ptr = strchr(axes, tmp[0])) == NULL) { return (-1);}
+	return (ptr - axes);
+}
+
+int8_t cm_get_axis_type(const index_t index)
+{
+	int8_t axis = cm_get_axis(index);
+	if (axis >= AXIS_A) return (1);
+	if (axis == -1) return (-1);
+	return (0);
+}
+
+int8_t cm_get_pos_axis(const index_t index)
+{
+	char_t *ptr;
+	char_t tmp[CMD_TOKEN_LEN+1];
+	char_t axes[] = {"xyzabc"};
+
+	strcpy_P(tmp, cfgArray[index].token);
+	if ((ptr = strchr(axes, tmp[3])) == NULL) { return (-1);}
+	return (ptr - axes);
+}
+
 /**** Functions called directly from cmdArray table - mostly wrappers ****
  * _get_msg_helper() - helper to get string values
  *
@@ -1541,7 +1586,7 @@ stat_t cm_get_vel(cmdObj_t *cmd)
 
 stat_t cm_get_pos(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_work_position(ACTIVE_MODEL, get_pos_axis(cmd->index));
+	cmd->value = cm_get_work_position(ACTIVE_MODEL, cm_get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1549,7 +1594,7 @@ stat_t cm_get_pos(cmdObj_t *cmd)
 
 stat_t cm_get_mpos(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_absolute_position(RUNTIME, get_pos_axis(cmd->index));
+	cmd->value = cm_get_absolute_position(RUNTIME, cm_get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1557,7 +1602,7 @@ stat_t cm_get_mpos(cmdObj_t *cmd)
 
 stat_t cm_get_ofs(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_work_offset(ACTIVE_MODEL, get_pos_axis(cmd->index));
+	cmd->value = cm_get_work_offset(ACTIVE_MODEL, cm_get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1621,6 +1666,17 @@ stat_t cm_set_sw(cmdObj_t *cmd)			// switch setting
 	return (STAT_OK);
 }
 
+/*
+ * Commands
+ *
+ * cm_run_qf() - flush planner queue 
+ */
+
+stat_t cm_run_qf(cmdObj_t *cmd) 
+{
+	cm_request_queue_flush();
+	return (STAT_OK);
+}
 
 /***********************************************************************************
  * TEXT MODE SUPPORT
@@ -1752,7 +1808,7 @@ static void _print_axis_ui8(cmdObj_t *cmd, const char_t *format)
 
 static void _print_axis_flt(cmdObj_t *cmd, const char_t *format)
 {
-	if (get_axis_type(cmd->index) == 0) {	// linear
+	if (cm_get_axis_type(cmd->index) == 0) {	// linear
 		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, 
 				 (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
 	} else {
@@ -1791,7 +1847,7 @@ void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
 void _print_pos_helper(cmdObj_t *cmd, const char_t *format, uint8_t units)
 {
 	char_t axes[6] = {"XYZABC"};
-	uint8_t axis = get_pos_axis(cmd->index);
+	uint8_t axis = cm_get_pos_axis(cmd->index);
 	if (axis >= AXIS_A) { units = DEGREES;}
 	fprintf_P(stderr, format, axes[axis], cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
 }

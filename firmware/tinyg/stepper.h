@@ -279,6 +279,8 @@ stat_t st_prep_line(float steps[], float microseconds);
 uint16_t st_get_stepper_run_magic(void);
 uint16_t st_get_stepper_prep_magic(void);
 
+int8_t st_get_motor(const index_t index);
+
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);
 stat_t st_set_mi(cmdObj_t *cmd);
@@ -286,6 +288,10 @@ stat_t st_set_pm(cmdObj_t *cmd);
 stat_t st_set_mt(cmdObj_t *cmd);
 stat_t st_set_md(cmdObj_t *cmd);
 stat_t st_set_me(cmdObj_t *cmd);
+
+void st_print_mt(cmdObj_t *cmd);
+void st_print_me(cmdObj_t *cmd);
+void st_print_md(cmdObj_t *cmd);
 
 void st_print_ma(cmdObj_t *cmd);
 void st_print_sa(cmdObj_t *cmd);

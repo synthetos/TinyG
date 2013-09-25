@@ -613,6 +613,13 @@ void cm_exec_program_end(void);
 
 /*--- interface functions for cmdArray ---*/
 
+stat_t cm_run_qf(cmdObj_t *cmd);
+
+char_t cm_get_axis_char(const int8_t axis);
+int8_t cm_get_axis(const index_t index);
+int8_t cm_get_axis_type(const index_t index);
+int8_t cm_get_pos_axis(const index_t index);
+
 stat_t cm_get_line(cmdObj_t *cmd);		// get runtime line number
 stat_t cm_get_stat(cmdObj_t *cmd);		// get combined machine state as value and string
 stat_t cm_get_macs(cmdObj_t *cmd);		// get raw machine state as value and string

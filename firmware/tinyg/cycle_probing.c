@@ -209,7 +209,7 @@ static stat_t _probing_error_exit(int8_t axis)
 		cmd_add_conditional_message_P((const char_t *)PSTR("*** WARNING *** Probing error: Specified axis(es) cannot use probe"));
 	} else {
 		char message[CMD_MESSAGE_LEN];
-		sprintf_P(message, PSTR("*** WARNING *** Probing error: %c axis settings misconfigured"), get_axis_char(axis));
+		sprintf_P(message, PSTR("*** WARNING *** Probing error: %c axis settings misconfigured"), cm_get_axis_char(axis));
 		cmd_add_conditional_message((const char_t *)message);
 	}
 	cmd_print_list(STAT_PROBING_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);

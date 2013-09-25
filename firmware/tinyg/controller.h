@@ -85,7 +85,4 @@ void tg_set_primary_source(uint8_t dev);
 void tg_set_secondary_source(uint8_t dev);
 void tg_text_response(const uint8_t status, const char *buf);
 
-void hardware_request_hard_reset(void);
-void hardware_request_bootloader(void);
-
 #endif

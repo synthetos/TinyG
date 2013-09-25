@@ -31,11 +31,13 @@
  *	- add watchdog timer functions
  *
  */
+#include <avr/interrupt.h>
 
 #include "tinyg.h"	// #1
 #include "config.h"	// #2
 #include "system.h"
 #include "switch.h"
+#include "controller.h"
 #include "text_parser.h"
 #include "xmega/xmega_init.h"
 
@@ -128,8 +130,31 @@ void sys_get_id(char *id)
 	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 	 	// Clean up NVM Command register 
 }
 
-/***** END OF SYSTEM FUNCTIONS *****/
+/*
+ * Bootloader Handlers
+ *
+ * hw_run_boot() - invoke boot form the cfgArray
+ * hw_request_bootloader()
+ * hw_request_bootloader_handler() - executes a software reset using CCPWrite
+ */
 
+stat_t hw_run_boot(cmdObj_t *cmd)
+{
+	hw_request_bootloader();
+	return(STAT_OK);
+}
+
+void hw_request_bootloader() { cs.bootloader_requested = true;}
+
+stat_t hw_bootloader_handler(void)
+{
+	if (cs.bootloader_requested == false) { return (STAT_NOOP);}
+	cli();
+	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
+	return (STAT_EAGAIN);					// never gets here but keeps the compiler happy
+}
+
+/***** END OF SYSTEM FUNCTIONS *****/
 
 
 /***********************************************************************************
@@ -162,6 +187,7 @@ stat_t hw_get_id(cmdObj_t *cmd)
 	ritorno(cmd_copy_string(cmd, tmp));
 	return (STAT_OK);
 }
+
 
 /***********************************************************************************
  * TEXT MODE SUPPORT

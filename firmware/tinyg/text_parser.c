@@ -242,29 +242,13 @@ void tx_print_flt(cmdObj_t *cmd) { text_print_flt(cmd, fmt_flt);}
  *	NOTE: format's are passed in as flash strings (PROGMEM)
  */
 
-void text_print_nul(cmdObj_t *cmd, const char_t *format) {}
+void text_print_nul(cmdObj_t *cmd, const char_t *format) { fprintf_P(stderr, format);}	// just print the format string
+void text_print_str(cmdObj_t *cmd, const char_t *format) { fprintf_P(stderr, format, *cmd->stringp);}
+void text_print_ui8(cmdObj_t *cmd, const char_t *format) { fprintf_P(stderr, format, (uint8_t)cmd->value);}
+void text_print_int(cmdObj_t *cmd, const char_t *format) { fprintf_P(stderr, format, (uint32_t)cmd->value);}
+void text_print_flt(cmdObj_t *cmd, const char_t *format) { fprintf_P(stderr, format, cmd->value);}
 
-void text_print_str(cmdObj_t *cmd, const char_t *format)
-{
-	fprintf_P(stderr, format, *cmd->stringp);
-}
-
-void text_print_ui8(cmdObj_t *cmd, const char_t *format)
-{
-	fprintf_P(stderr, format, (uint8_t)cmd->value);
-}
-
-void text_print_int(cmdObj_t *cmd, const char_t *format)
-{
-	fprintf_P(stderr, format, (uint32_t)cmd->value);
-}
-
-void text_print_flt(cmdObj_t *cmd, const char_t *format)
-{
-	fprintf_P(stderr, format, cmd->value);
-}
-
-void text_print_flt_units(cmdObj_t *cmd, const char_t *format, const char_t *units)
+void text_print_flt_units(cmdObj_t *cmd, const char_t *format, const char_t *units) 
 {
 	fprintf_P(stderr, format, cmd->value, units);
 }

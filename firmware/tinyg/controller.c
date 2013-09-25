@@ -136,7 +136,7 @@ static void _controller_HSM()
 //----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
 												// Order is important:
 	DISPATCH(hardware_hard_reset_handler());	// 1. handle hard reset requests
-	DISPATCH(hardware_bootloader_handler());	// 2. handle requests to enter bootloader
+	DISPATCH(hw_bootloader_handler());			// 2. handle requests to enter bootloader
 	DISPATCH(_alarm_idler());					// 3. idle in alarm state (shutdown)
 //	DISPATCH( poll_switches());					// 4. run a switch polling cycle
 	DISPATCH(_limit_switch_handler());			// 5. limit switch has been thrown
@@ -383,6 +383,7 @@ stat_t hardware_hard_reset_handler(void)
  * hardware_request_bootloader()
  * hareware_request_bootloader_handler() - executes a software reset using CCPWrite
  */
+/*
 void hardware_request_bootloader() { cs.bootloader_requested = true;}
 
 stat_t hardware_bootloader_handler(void)
@@ -392,7 +393,7 @@ stat_t hardware_bootloader_handler(void)
 	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
 	return (STAT_EAGAIN);					// never gets here but keeps the compiler happy
 }
-
+*/
 
 //============================================================================
 //=========== MOVE TO text_parser.c ==========================================

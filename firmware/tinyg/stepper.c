@@ -45,6 +45,7 @@
 //#include "motateTimers.h"
 //#include "hardware.h"
 #include "system.h"				// Xmega only. Goes away in favor of hardware.h
+#include "text_parser.h"
 #include "util.h"
 
 #include <avr/interrupt.h>
@@ -567,10 +568,32 @@ void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode)
  * Functions to get and set variables from the cfgArray table
  ***********************************************************************************/
 
-// helper. This function will need to be rethought if microstep morphing is implemented
+/*
+ * st_get_motor() - helper to return motor number as an index or -1 if na
+ */
+
+int8_t st_get_motor(const index_t index)
+{
+	char_t *ptr;
+	char_t motors[] = {"1234"};
+	char_t tmp[CMD_TOKEN_LEN+1];
+
+	strcpy_P(tmp, cfgArray[index].group);
+	if ((ptr = strchr(motors, tmp[0])) == NULL) {
+		return (-1);
+	}
+	return (ptr - motors);
+}
+
+/*
+ * _set_motor_steps_per_unit() - what it says
+ *
+ * This function will need to be rethought if microstep morphing is implemented
+ */
+
 static stat_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
 {
-	uint8_t m = get_motor(cmd->index);
+	uint8_t m = st_get_motor(cmd->index);
 	st.m[m].steps_per_unit = (360 / (st.m[m].step_angle / st.m[m].microsteps) / st.m[m].travel_rev);
 	return (STAT_OK);
 }
@@ -594,7 +617,7 @@ stat_t st_set_mi(cmdObj_t *cmd)			// motor microsteps
 	}
 	set_ui8(cmd);							// set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);
-	st_set_microsteps(get_motor(cmd->index), (uint8_t)cmd->value);
+	st_set_microsteps(st_get_motor(cmd->index), (uint8_t)cmd->value);
 	return (STAT_OK);
 }
 
@@ -602,9 +625,9 @@ stat_t st_set_pm(cmdObj_t *cmd)			// motor power mode
 { 
 	ritorno (set_01(cmd));
 	if (fp_ZERO(cmd->value)) { // people asked this setting take effect immediately, hence:
-		st_energize_motor(get_motor(cmd->index));
+		st_energize_motor(st_get_motor(cmd->index));
 	} else {
-		st_deenergize_motor(get_motor(cmd->index));
+		st_deenergize_motor(st_get_motor(cmd->index));
 	}
 	return (STAT_OK);
 }
@@ -641,13 +664,16 @@ stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initia
 const char_t PROGMEM fmt_mt[] = "[mt]  motor idle timeout%14.2f Sec\n";
 const char_t PROGMEM fmt_me[] = "motors energized\n";
 const char_t PROGMEM fmt_md[] = "motors de-energized\n";
-
 const char_t PROGMEM fmt_0ma[] = "[%s%s] m%s map to axis%15d [0=X,1=Y,2=Z...]\n";
 const char_t PROGMEM fmt_0sa[] = "[%s%s] m%s step angle%20.3f%S\n";
 const char_t PROGMEM fmt_0tr[] = "[%s%s] m%s travel per revolution%9.3f%S\n";
 const char_t PROGMEM fmt_0mi[] = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
 const char_t PROGMEM fmt_0po[] = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
 const char_t PROGMEM fmt_0pm[] = "[%s%s] m%s power management%10d [0=remain powered,1=power down when idle]\n";
+
+void st_print_mt(cmdObj_t *cmd) { text_print_flt(cmd, fmt_mt);}
+void st_print_me(cmdObj_t *cmd) { text_print_nul(cmd, fmt_me);}
+void st_print_md(cmdObj_t *cmd) { text_print_nul(cmd, fmt_md);}
 
 static void _print_motor_ui8(cmdObj_t *cmd, const char_t *format)
 {

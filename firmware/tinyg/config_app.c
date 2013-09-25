@@ -72,10 +72,9 @@ static stat_t _do_all(cmdObj_t *cmd);		// print all parameters
 
 static stat_t get_gc(cmdObj_t *cmd);		// get current gcode block
 static stat_t run_gc(cmdObj_t *cmd);		// run a gcode block
-static stat_t run_boot(cmdObj_t *cmd);		// jump to the bootloader
+//static stat_t run_boot(cmdObj_t *cmd);		// jump to the bootloader
 //static stat_t run_sx(cmdObj_t *cmd);		// send XOFF, XON
 
-static stat_t run_qf(cmdObj_t *cmd);		// execute a queue flush block
 static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 
 // communications settings
@@ -219,12 +218,12 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "", "sr",  _f00, 0, fmt_nul, sr_print_sr, sr_get,  sr_set,  (float *)&cs.null, 0 }, // status report object
 	{ "", "qr",  _f00, 0, fmt_qr,  qr_print_qr, qr_get,  set_nul, (float *)&cs.null, 0 },	// queue report setting
 	{ "", "er",  _f00, 0, fmt_nul, tx_print_nul, rpt_er,  set_nul, (float *)&cs.null, 0 },	// invoke bogus exception report for testing
-	{ "", "qf",  _f00, 0, fmt_nul, tx_print_nul, get_nul, run_qf,  (float *)&cs.null, 0 },	// queue flush
+	{ "", "qf",  _f00, 0, fmt_nul, tx_print_nul, get_nul, cm_run_qf,  (float *)&cs.null, 0 },	// queue flush
 	{ "", "rx",  _f00, 0, fmt_rx,  tx_print_int, get_rx,  set_nul, (float *)&cs.null, 0 },	// space in RX buffer
 	{ "", "msg", _f00, 0, fmt_str, tx_print_str, get_nul, set_nul, (float *)&cs.null, 0 },	// string for generic messages
 	{ "", "defa",_f00, 0, fmt_nul, tx_print_nul, print_defaults_help, set_defaults,(float *)&cs.null,0},	// set/print defaults / help screen
 	{ "", "test",_f00, 0, fmt_nul, tx_print_nul, print_test_help, tg_test, (float *)&cs.null,0 },			// run tests, print test help screen
-	{ "", "boot",_f00, 0, fmt_nul, tx_print_nul, print_boot_loader_help,run_boot,(float *)&cs.null,0 },
+	{ "", "boot",_f00, 0, fmt_nul, tx_print_nul, print_boot_loader_help, hw_run_boot,(float *)&cs.null,0 },
 	{ "", "help",_f00, 0, fmt_nul, tx_print_nul, print_config_help, set_nul, (float *)&cs.null,0 },		// prints config help screen
 	{ "", "h",   _f00, 0, fmt_nul, tx_print_nul, print_config_help, set_nul, (float *)&cs.null,0 },		// alias for "help"
 //	{ "", "sx",  _f00, 0, fmt_nul, tx_print_nul, run_sx,  run_sx , (float *)&cs.null, 0 },					// send XOFF, XON test
@@ -445,7 +444,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys","ja",  _f07, 0, fmt_ja, cm_print_ja, get_flu, set_flu, (float *)&cm.junction_acceleration,	JUNCTION_ACCELERATION },
 	{ "sys","ct",  _f07, 4, fmt_ct, cm_print_ct, get_flu, set_flu, (float *)&cm.chordal_tolerance,		CHORDAL_TOLERANCE },
 	{ "sys","st",  _f07, 0, fmt_st, cm_print_st, get_ui8, cm_set_sw,  (float *)&sw.switch_type,			SWITCH_TYPE },
-	{ "sys","mt",  _f07, 2, fmt_mt, print_flt, get_flt, st_set_mt,  (float *)&st.motor_idle_timeout, 	MOTOR_IDLE_TIMEOUT},
+	{ "sys","mt",  _f07, 2, fmt_mt, st_print_mt, get_flt, st_set_mt,  (float *)&st.motor_idle_timeout, 	MOTOR_IDLE_TIMEOUT},
 	{ "",   "me",  _f00, 0, fmt_me, tx_print_str, st_set_me,  st_set_me,  (float *)&cs.null, 0 },
 	{ "",   "md",  _f00, 0, fmt_md, tx_print_str, st_set_md,  st_set_md,  (float *)&cs.null, 0 },
 
@@ -584,65 +583,6 @@ uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_G
  **** APPLICATION SPECIFIC FUNCTIONS ***********************************************
  ***********************************************************************************/
 
-/***** HELPERS *********************************************************************
- *
- * get_motor()		- return motor number as an index or -1 if na
- * get_axis_char()	- return ASCII char for axis given the axis number
- * get_axis()		- return axis number or -1 if NA
- * get_axis_type()	- return 0 -f axis is linear, 1 if rotary, -1 if NA
- * get_pos_axis()	- return axis number for pos values or -1 if none - e.g. posx
- */
-
-int8_t get_motor(const index_t index)
-{
-	char_t *ptr;
-	char_t motors[] = {"1234"};
-	char_t tmp[CMD_TOKEN_LEN+1];
-
-	strcpy_P(tmp, cfgArray[index].group);
-	if ((ptr = strchr(motors, tmp[0])) == NULL) {
-		return (-1);
-	}
-	return (ptr - motors);
-}
-
-char_t get_axis_char(const int8_t axis)
-{
-	char_t axis_char[] = "XYZABC";
-	if ((axis < 0) || (axis > AXES)) return (' ');
-	return (axis_char[axis]);
-}
-
-int8_t get_axis(const index_t index)
-{
-	char_t *ptr;
-	char_t tmp[CMD_TOKEN_LEN+1];
-	char_t axes[] = {"xyzabc"};
-
-	strcpy_P(tmp, cfgArray[index].token);
-	if ((ptr = strchr(axes, tmp[0])) == NULL) { return (-1);}
-	return (ptr - axes);
-}
-
-int8_t get_axis_type(const index_t index)
-{
-	int8_t axis = get_axis(index);
-	if (axis >= AXIS_A) return (1);
-	if (axis == -1) return (-1);
-	return (0);
-}
-
-int8_t get_pos_axis(const index_t index)
-{
-	char_t *ptr;
-	char_t tmp[CMD_TOKEN_LEN+1];
-	char_t axes[] = {"xyzabc"};
-
-	strcpy_P(tmp, cfgArray[index].token);
-	if ((ptr = strchr(axes, tmp[3])) == NULL) { return (-1);}
-	return (ptr - axes);
-}
-
 /***** DOMAIN SPECIFIC EXTENSIONS TO GENERIC FUNCTIONS ************************
  * get_flu()   - get floating point number with Gcode units conversion
  * set_flu()   - set floating point number with Gcode units conversion
@@ -679,196 +619,6 @@ void print_rot(cmdObj_t *cmd)
 	fprintf(stderr, get_format(cmd->index, format), cmd->value, (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
 }
 
-/******* SYSTEM ID AND CONTROL VARIABLES ****************************************************
- * set_hv() - set hardware version number
- * get_id() - get device ID (signature)
- */
- /*
-static stat_t set_hv(cmdObj_t *cmd) 
-{
-	if (cmd->value > TINYG_HARDWARE_VERSION_MAX) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	set_flt(cmd);					// record the hardware version
-	sys_port_bindings(cmd->value);	// reset port bindings
-	switch_init();					// re-initialize the GPIO ports
-//+++++	gpio_init();					// re-initialize the GPIO ports
-	return (STAT_OK);
-}
-
-static stat_t get_id(cmdObj_t *cmd) 
-{
-	char_t tmp[SYS_ID_LEN];
-	sys_get_id(tmp);
-	cmd->objtype = TYPE_STRING;
-	ritorno(cmd_copy_string(cmd, tmp));
-	return (STAT_OK);
-}
-*/
-
-/**** REPORT AND COMMAND FUNCTIONS ********************************************************
- * run_qf() - request a planner buffer flush
- * get_rx()	- get bytes available in RX buffer
- * set_jv() - set JSON verbosity level (exposed) - for details see jsonVerbosity in config.h
- * get_gc()	- get gcode block
- * run_gc()	- launch the gcode parser on a block of gcode
- * run_home() - invoke a homing cycle
- * run_boot() - request boot loader entry
- */
-static stat_t run_qf(cmdObj_t *cmd) 
-{
-	cm_request_queue_flush();
-	return (STAT_OK);
-}
-
-static stat_t get_rx(cmdObj_t *cmd)
-{
-	cmd->value = (float)xio_get_usb_rx_free();
-	cmd->objtype = TYPE_INTEGER;
-	return (STAT_OK);
-}
-/* run_sx()	- send XOFF, XON --- test only 
-static stat_t run_sx(cmdObj_t *cmd)
-{
-	xio_putc(XIO_DEV_USB, XOFF);
-	xio_putc(XIO_DEV_USB, XON);
-	return (STAT_OK);
-}
-*/
-/*
-static stat_t set_jv(cmdObj_t *cmd) 
-{
-	if (cmd->value > JV_VERBOSE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	js.json_verbosity = cmd->value;
-
-	js.echo_json_footer = false;
-	js.echo_json_messages = false;
-	js.echo_json_configs = false;
-	js.echo_json_linenum = false;
-	js.echo_json_gcode_block = false;
-
-	if (cmd->value >= JV_FOOTER) 	{ js.echo_json_footer = true;}
-	if (cmd->value >= JV_MESSAGES)	{ js.echo_json_messages = true;}
-	if (cmd->value >= JV_CONFIGS)	{ js.echo_json_configs = true;}
-	if (cmd->value >= JV_LINENUM)	{ js.echo_json_linenum = true;}
-	if (cmd->value >= JV_VERBOSE)	{ js.echo_json_gcode_block = true;}
-
-	return(STAT_OK);
-}
-*/
-static stat_t get_gc(cmdObj_t *cmd)
-{
-	ritorno(cmd_copy_string(cmd, cs.in_buf));
-	cmd->objtype = TYPE_STRING;
-	return (STAT_OK);
-}
-
-static stat_t run_gc(cmdObj_t *cmd)
-{
-	return(gc_gcode_parser(*cmd->stringp));
-}
-
-static stat_t run_boot(cmdObj_t *cmd)
-{
-	hardware_request_bootloader();
-	return(STAT_OK);
-}
-
-/*
-static void print_ss(cmdObj_t *cmd)			// print switch state
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->token, cmd->value);
-}
-*/
-
-/**** COMMUNICATIONS SETTINGS *************************************************
- * set_ic() - ignore CR or LF on RX
- * set_ec() - enable CRLF on TX
- * set_ee() - enable character echo
- * set_ex() - enable XON/XOFF or RTS/CTS flow control
- * set_baud() - set USB baud rate
- *	The above assume USB is the std device
- */
-static stat_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
-{
-	if (fp_NOT_ZERO(cmd->value)) { 
-		(void)xio_ctrl(XIO_DEV_USB, yes);
-	} else { 
-		(void)xio_ctrl(XIO_DEV_USB, no);
-	}
-	return (STAT_OK);
-}
-
-/* REMOVED - too easy to make the board appear to be bricked
-static stat_t set_ic(cmdObj_t *cmd) 				// ignore CR or LF on RX
-{
-	if (cmd->value > IGNORE_LF) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	cfg.ignore_crlf = (uint8_t)cmd->value;
-	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
-	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORELF);
-
-	if (cfg.ignore_crlf == IGNORE_CR) {				// $ic=1
-		(void)xio_ctrl(XIO_DEV_USB, XIO_IGNORECR);
-	} else if (cfg.ignore_crlf == IGNORE_LF) {		// $ic=2
-		(void)xio_ctrl(XIO_DEV_USB, XIO_IGNORELF);
-	}
-	return (STAT_OK);
-}
-*/
-
-static stat_t set_ec(cmdObj_t *cmd) 				// expand CR to CRLF on TX
-{
-	if (cmd->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	cfg.enable_cr = (uint8_t)cmd->value;
-	return(_set_comm_helper(cmd, XIO_CRLF, XIO_NOCRLF));
-}
-
-static stat_t set_ee(cmdObj_t *cmd) 				// enable character echo
-{
-	if (cmd->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	cfg.enable_echo = (uint8_t)cmd->value;
-	return(_set_comm_helper(cmd, XIO_ECHO, XIO_NOECHO));
-}
-
-static stat_t set_ex(cmdObj_t *cmd)				// enable XON/XOFF or RTS/CTS flow control
-{
-	if (cmd->value > FLOW_CONTROL_RTS) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	cfg.enable_flow_control = (uint8_t)cmd->value;
-	return(_set_comm_helper(cmd, XIO_XOFF, XIO_NOXOFF));
-}
-
-/*
- * set_baud() - set USB baud rate
- *
- *	See xio_usart.h for valid values. Works as a callback.
- *	The initial routine changes the baud config setting and sets a flag
- *	Then it posts a user message indicating the new baud rate
- *	Then it waits for the TX buffer to empty (so the message is sent)
- *	Then it performs the callback to apply the new baud rate
- */
-
-static stat_t set_baud(cmdObj_t *cmd)
-{
-	uint8_t baud = (uint8_t)cmd->value;
-	if ((baud < 1) || (baud > 6)) {
-		cmd_add_conditional_message_P(PSTR("*** WARNING *** Illegal baud rate specified"));
-		return (STAT_INPUT_VALUE_UNSUPPORTED);
-	}
-	cfg.usb_baud_rate = baud;
-	cfg.usb_baud_flag = true;
-	char_t message[CMD_MESSAGE_LEN]; 
-	sprintf_P(message, PSTR("*** NOTICE *** Restting baud rate to %S"),(PGM_P)pgm_read_word(&msg_baud[baud]));
-	cmd_add_conditional_message(message);
-	return (STAT_OK);
-}
-
-stat_t set_baud_callback(void)
-{
-	if (cfg.usb_baud_flag == false) { return(STAT_NOOP);}
-	cfg.usb_baud_flag = false;
-	xio_set_baud(XIO_DEV_USB, cfg.usb_baud_rate);
-	return (STAT_OK);
-}
 
 /**** UberGroup Operations ****************************************************
  * Uber groups are groups of groups organized for convenience:
@@ -932,3 +682,144 @@ static stat_t _do_all(cmdObj_t *cmd)	// print all parameters
 
 	return (_do_offsets(cmd));			// print all offsets
 }
+
+/**** REPORT AND COMMAND FUNCTIONS ********************************************************
+ * get_gc()	- get gcode block
+ * run_gc()	- launch the gcode parser on a block of gcode
+ * run_boot() - request boot loader entry
+ */
+
+static stat_t get_gc(cmdObj_t *cmd)
+{
+	ritorno(cmd_copy_string(cmd, cs.in_buf));
+	cmd->objtype = TYPE_STRING;
+	return (STAT_OK);
+}
+
+static stat_t run_gc(cmdObj_t *cmd)
+{
+	return(gc_gcode_parser(*cmd->stringp));
+}
+/*
+static stat_t run_boot(cmdObj_t *cmd)
+{
+	hardware_request_bootloader();
+	return(STAT_OK);
+}
+*/
+/* run_sx()	- send XOFF, XON --- test only 
+static stat_t run_sx(cmdObj_t *cmd)
+{
+	xio_putc(XIO_DEV_USB, XOFF);
+	xio_putc(XIO_DEV_USB, XON);
+	return (STAT_OK);
+}
+*/
+/*
+static void print_ss(cmdObj_t *cmd)			// print switch state
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->token, cmd->value);
+}
+*/
+
+/**** COMMUNICATIONS FUNCTIONS ******************************************************
+ * set_ic() - ignore CR or LF on RX
+ * set_ec() - enable CRLF on TX
+ * set_ee() - enable character echo
+ * set_ex() - enable XON/XOFF or RTS/CTS flow control
+ * set_baud() - set USB baud rate
+ * get_rx()	- get bytes available in RX buffer
+ *
+ *	The above assume USB is the std device
+ */
+static stat_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
+{
+	if (fp_NOT_ZERO(cmd->value)) { 
+		(void)xio_ctrl(XIO_DEV_USB, yes);
+	} else { 
+		(void)xio_ctrl(XIO_DEV_USB, no);
+	}
+	return (STAT_OK);
+}
+
+/* REMOVED - too easy to make the board appear to be bricked
+static stat_t set_ic(cmdObj_t *cmd) 				// ignore CR or LF on RX
+{
+	if (cmd->value > IGNORE_LF) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	cfg.ignore_crlf = (uint8_t)cmd->value;
+	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
+	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORELF);
+
+	if (cfg.ignore_crlf == IGNORE_CR) {				// $ic=1
+		(void)xio_ctrl(XIO_DEV_USB, XIO_IGNORECR);
+	} else if (cfg.ignore_crlf == IGNORE_LF) {		// $ic=2
+		(void)xio_ctrl(XIO_DEV_USB, XIO_IGNORELF);
+	}
+	return (STAT_OK);
+}
+*/
+
+static stat_t set_ec(cmdObj_t *cmd) 				// expand CR to CRLF on TX
+{
+	if (cmd->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	cfg.enable_cr = (uint8_t)cmd->value;
+	return(_set_comm_helper(cmd, XIO_CRLF, XIO_NOCRLF));
+}
+
+static stat_t set_ee(cmdObj_t *cmd) 				// enable character echo
+{
+	if (cmd->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	cfg.enable_echo = (uint8_t)cmd->value;
+	return(_set_comm_helper(cmd, XIO_ECHO, XIO_NOECHO));
+}
+
+static stat_t set_ex(cmdObj_t *cmd)				// enable XON/XOFF or RTS/CTS flow control
+{
+	if (cmd->value > FLOW_CONTROL_RTS) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	cfg.enable_flow_control = (uint8_t)cmd->value;
+	return(_set_comm_helper(cmd, XIO_XOFF, XIO_NOXOFF));
+}
+
+static stat_t get_rx(cmdObj_t *cmd)
+{
+	cmd->value = (float)xio_get_usb_rx_free();
+	cmd->objtype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+/*
+ * set_baud() - set USB baud rate
+ *
+ *	See xio_usart.h for valid values. Works as a callback.
+ *	The initial routine changes the baud config setting and sets a flag
+ *	Then it posts a user message indicating the new baud rate
+ *	Then it waits for the TX buffer to empty (so the message is sent)
+ *	Then it performs the callback to apply the new baud rate
+ */
+
+static stat_t set_baud(cmdObj_t *cmd)
+{
+	uint8_t baud = (uint8_t)cmd->value;
+	if ((baud < 1) || (baud > 6)) {
+		cmd_add_conditional_message_P(PSTR("*** WARNING *** Illegal baud rate specified"));
+		return (STAT_INPUT_VALUE_UNSUPPORTED);
+	}
+	cfg.usb_baud_rate = baud;
+	cfg.usb_baud_flag = true;
+	char_t message[CMD_MESSAGE_LEN]; 
+	sprintf_P(message, PSTR("*** NOTICE *** Restting baud rate to %S"),(PGM_P)pgm_read_word(&msg_baud[baud]));
+	cmd_add_conditional_message(message);
+	return (STAT_OK);
+}
+
+stat_t set_baud_callback(void)
+{
+	if (cfg.usb_baud_flag == false) { return(STAT_NOOP);}
+	cfg.usb_baud_flag = false;
+	xio_set_baud(XIO_DEV_USB, cfg.usb_baud_rate);
+	return (STAT_OK);
+}
+
+
