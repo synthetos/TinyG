@@ -53,10 +53,36 @@ typedef struct pwmStruct { 			// one per PWM channel
 extern pwmConfig_t pwm_cfg;			// config struct
 extern pwmStruct_t pwm[];			// array of PWMs (usually 2, see system.h)
 
+/*** function prototypes ***/
 
 void pwm_init(void);
 stat_t pwm_set_freq(uint8_t channel, float freq);
 stat_t pwm_set_duty(uint8_t channel, float duty);
+
+void pwm_print_p1frq(cmdObj_t *cmd);
+void pwm_print_p1csl(cmdObj_t *cmd);
+void pwm_print_p1csh(cmdObj_t *cmd);
+void pwm_print_p1cpl(cmdObj_t *cmd);
+void pwm_print_p1cph(cmdObj_t *cmd);
+void pwm_print_p1wsl(cmdObj_t *cmd);
+void pwm_print_p1wsh(cmdObj_t *cmd);
+void pwm_print_p1wpl(cmdObj_t *cmd);
+void pwm_print_p1wph(cmdObj_t *cmd);
+void pwm_print_p1pof(cmdObj_t *cmd);
+
+
+//+++++ REMOVE +++++
+
+extern const char_t PROGMEM fmt_p1frq[];
+extern const char_t PROGMEM fmt_p1csl[];
+extern const char_t PROGMEM fmt_p1csh[];
+extern const char_t PROGMEM fmt_p1cpl[];
+extern const char_t PROGMEM fmt_p1cph[];
+extern const char_t PROGMEM fmt_p1wsl[];
+extern const char_t PROGMEM fmt_p1wsh[];
+extern const char_t PROGMEM fmt_p1wpl[];
+extern const char_t PROGMEM fmt_p1wph[];
+extern const char_t PROGMEM fmt_p1pof[];
 
 
 //#define __UNIT_TEST_PWM		// uncomment to enable PWM unit tests

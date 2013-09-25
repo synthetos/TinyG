@@ -222,7 +222,22 @@ void text_print_multiline_formatted(cmdObj_t *cmd)
 }
 
 /*
- * Text print primitives
+ * Text print primitives using generic formats
+ */
+const char_t PROGMEM fmt_nul[] = "";
+const char_t PROGMEM fmt_str[] = "%s\n";	// generic format for string message (with no formatting)
+const char_t PROGMEM fmt_ui8[] = "%d\n";	// generic format for ui8s
+const char_t PROGMEM fmt_int[] = "%d\n";	// generic format for ui8s
+const char_t PROGMEM fmt_flt[] = "%f\n";	// generic format for floats
+
+void tx_print_nul(cmdObj_t *cmd) {}
+void tx_print_str(cmdObj_t *cmd) { text_print_str(cmd, fmt_str);}
+void tx_print_ui8(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_ui8);}
+void tx_print_int(cmdObj_t *cmd) { text_print_int(cmd, fmt_int);}
+void tx_print_flt(cmdObj_t *cmd) { text_print_flt(cmd, fmt_flt);}
+
+/*
+ * Text print primitives using external formats
  *
  *	NOTE: format's are passed in as flash strings (PROGMEM)
  */

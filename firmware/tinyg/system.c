@@ -34,8 +34,8 @@
 
 #include "tinyg.h"	// #1
 #include "config.h"	// #2
-
 #include "system.h"
+#include "switch.h"
 #include "text_parser.h"
 #include "xmega/xmega_init.h"
 
@@ -137,8 +137,31 @@ void sys_get_id(char *id)
  * Functions to get and set variables from the cfgArray table
  ***********************************************************************************/
 
+/*
+ * hw_set_hv() - set hardware version number
+ */
+stat_t hw_set_hv(cmdObj_t *cmd) 
+{
+	if (cmd->value > TINYG_HARDWARE_VERSION_MAX) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	set_flt(cmd);					// record the hardware version
+	sys_port_bindings(cmd->value);	// reset port bindings
+	switch_init();					// re-initialize the GPIO ports
+//+++++	gpio_init();					// re-initialize the GPIO ports
+	return (STAT_OK);
+}
 
+/*
+ * hw_get_id() - get device ID (signature)
+ */
 
+stat_t hw_get_id(cmdObj_t *cmd) 
+{
+	char_t tmp[SYS_ID_LEN];
+	sys_get_id(tmp);
+	cmd->objtype = TYPE_STRING;
+	ritorno(cmd_copy_string(cmd, tmp));
+	return (STAT_OK);
+}
 
 /***********************************************************************************
  * TEXT MODE SUPPORT

@@ -55,9 +55,12 @@ typedef struct txtSingleton {		// text mode data
 
 extern txtSingleton_t txt;
 
-/*
- * Global Scope Functions
- */
+extern const char_t PROGMEM fmt_nul[];
+extern const char_t PROGMEM fmt_ui8[];
+extern const char_t PROGMEM fmt_flt[];
+extern const char_t PROGMEM fmt_str[];
+
+/**** Global Scope Functions ****/
 
 stat_t text_parser(char_t *str);
 void text_response(const stat_t status, char_t *buf);
@@ -65,6 +68,12 @@ void text_print_list(stat_t status, uint8_t flags);
 void text_print_inline_pairs(cmdObj_t *cmd);
 void text_print_inline_values(cmdObj_t *cmd);
 void text_print_multiline_formatted(cmdObj_t *cmd);
+
+void tx_print_nul(cmdObj_t *cmd);
+void tx_print_str(cmdObj_t *cmd);
+void tx_print_ui8(cmdObj_t *cmd);
+void tx_print_int(cmdObj_t *cmd);
+void tx_print_flt(cmdObj_t *cmd);
 
 void text_print_nul(cmdObj_t *cmd, const char_t *format);
 void text_print_str(cmdObj_t *cmd, const char_t *format);

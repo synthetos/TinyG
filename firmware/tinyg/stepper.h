@@ -287,6 +287,28 @@ stat_t st_set_mt(cmdObj_t *cmd);
 stat_t st_set_md(cmdObj_t *cmd);
 stat_t st_set_me(cmdObj_t *cmd);
 
+void st_print_ma(cmdObj_t *cmd);
+void st_print_sa(cmdObj_t *cmd);
+void st_print_tr(cmdObj_t *cmd);
+void st_print_mi(cmdObj_t *cmd);
+void st_print_po(cmdObj_t *cmd);
+void st_print_pm(cmdObj_t *cmd);
+
+
+//+++++ REMOVE +++++
+
+extern const char_t PROGMEM fmt_mt[];
+extern const char_t PROGMEM fmt_me[];
+extern const char_t PROGMEM fmt_md[];
+extern const char_t PROGMEM fmt_0ma[];
+extern const char_t PROGMEM fmt_0sa[];
+extern const char_t PROGMEM fmt_0tr[];
+extern const char_t PROGMEM fmt_0mi[];
+extern const char_t PROGMEM fmt_0po[];
+extern const char_t PROGMEM fmt_0pm[];
+
+
+/************************************************************************************/
 
 #ifdef __DEBUG
 void st_dump_stepper_state(void);

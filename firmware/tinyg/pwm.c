@@ -31,6 +31,7 @@
 #include "system.h"
 #include "pwm.h"
 #include "gpio.h"
+#include "text_parser.h"
 
 /***** PWM defines, structures and memory allocation *****
  *
@@ -174,6 +175,48 @@ stat_t pwm_set_duty(uint8_t chan, float duty)
 	pwm[chan].timer->CCB = (uint16_t)(period_scalar * duty) + 1;
 	return (STAT_OK);
 }
+
+
+/***********************************************************************************
+ * CONFIGURATION AND INTERFACE FUNCTIONS
+ * Functions to get and set variables from the cfgArray table
+ ***********************************************************************************/
+
+
+
+
+/***********************************************************************************
+ * TEXT MODE SUPPORT
+ * Functions to print variables from the cfgArray table
+ ***********************************************************************************/
+
+#ifdef __TEXT_MODE
+
+const char_t PROGMEM fmt_p1frq[] = "[p1frq] pwm frequency   %15.3f Hz\n";
+const char_t PROGMEM fmt_p1csl[] = "[p1csl] pwm cw speed lo %15.3f RPM\n";
+const char_t PROGMEM fmt_p1csh[] = "[p1csh] pwm cw speed hi %15.3f RPM\n";
+const char_t PROGMEM fmt_p1cpl[] = "[p1cpl] pwm cw phase lo %15.3f [0..1]\n";
+const char_t PROGMEM fmt_p1cph[] = "[p1cph] pwm cw phase hi %15.3f [0..1]\n";
+const char_t PROGMEM fmt_p1wsl[] = "[p1wsl] pwm ccw speed lo%15.3f RPM\n";
+const char_t PROGMEM fmt_p1wsh[] = "[p1wsh] pwm ccw speed hi%15.3f RPM\n";
+const char_t PROGMEM fmt_p1wpl[] = "[p1wpl] pwm ccw phase lo%15.3f [0..1]\n";
+const char_t PROGMEM fmt_p1wph[] = "[p1wph] pwm ccw phase hi%15.3f [0..1]\n";
+const char_t PROGMEM fmt_p1pof[] = "[p1pof] pwm phase off   %15.3f [0..1]\n";
+
+
+void pwm_print_p1frq(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1frq);}
+void pwm_print_p1csl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1csl);}
+void pwm_print_p1csh(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1csh);}
+void pwm_print_p1cpl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1cpl);}
+void pwm_print_p1cph(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1cph);}
+void pwm_print_p1wsl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wsl);}
+void pwm_print_p1wsh(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wsh);}
+void pwm_print_p1wpl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wpl);}
+void pwm_print_p1wph(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wph);}
+void pwm_print_p1pof(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1pof);}
+
+#endif //__TEXT_MODE 
+
 
 //###########################################################################
 //##### UNIT TESTS ##########################################################

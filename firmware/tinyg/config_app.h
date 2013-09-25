@@ -176,13 +176,6 @@ enum cmdType {						// classification of commands
 	CMD_TYPE_LINENUM				// cmd object carries a gcode line number
 };
 
-/*** Print format strings ***/
-
-const char_t PROGMEM WEAK fmt_nul[] = "";
-const char_t PROGMEM WEAK fmt_ui8[] = "%d\n";	// generic format for ui8s
-const char_t PROGMEM WEAK fmt_flt[] = "%f\n";	// generic format for floats
-const char_t PROGMEM WEAK fmt_str[] = "%s\n";	// generic format for string message (with no formatting)
-
 /***********************************************************************************
  **** APPLICATION_SPECIFIC CONFIG STRUCTURE(S) *************************************
  ***********************************************************************************/

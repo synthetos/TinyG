@@ -175,6 +175,9 @@ void sys_init(void);					// master hardware init
 void sys_port_bindings(float hw_version);
 void sys_get_id(char *id);
 
+stat_t hw_set_hv(cmdObj_t *cmd);
+stat_t hw_get_id(cmdObj_t *cmd);
+
 void hw_print_fb(cmdObj_t *cmd);
 void hw_print_fv(cmdObj_t *cmd);
 //void hw_print_hp(cmdObj_t *cmd);

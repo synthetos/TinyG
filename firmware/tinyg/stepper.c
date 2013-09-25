@@ -561,9 +561,11 @@ void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode)
 	}
 }
 
-/*
- * Configuration and display interfaces
- */
+
+/***********************************************************************************
+ * CONFIGURATION AND INTERFACE FUNCTIONS
+ * Functions to get and set variables from the cfgArray table
+ ***********************************************************************************/
 
 // helper. This function will need to be rethought if microstep morphing is implemented
 static stat_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
@@ -625,6 +627,46 @@ stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initia
 	return (STAT_OK);
 }
 
+
+/***********************************************************************************
+ * TEXT MODE SUPPORT
+ * Functions to print variables from the cfgArray table
+ ***********************************************************************************/
+
+#ifdef __TEXT_MODE
+
+/*
+ * Motor settings print functions
+ */
+const char_t PROGMEM fmt_mt[] = "[mt]  motor idle timeout%14.2f Sec\n";
+const char_t PROGMEM fmt_me[] = "motors energized\n";
+const char_t PROGMEM fmt_md[] = "motors de-energized\n";
+
+const char_t PROGMEM fmt_0ma[] = "[%s%s] m%s map to axis%15d [0=X,1=Y,2=Z...]\n";
+const char_t PROGMEM fmt_0sa[] = "[%s%s] m%s step angle%20.3f%S\n";
+const char_t PROGMEM fmt_0tr[] = "[%s%s] m%s travel per revolution%9.3f%S\n";
+const char_t PROGMEM fmt_0mi[] = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
+const char_t PROGMEM fmt_0po[] = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
+const char_t PROGMEM fmt_0pm[] = "[%s%s] m%s power management%10d [0=remain powered,1=power down when idle]\n";
+
+static void _print_motor_ui8(cmdObj_t *cmd, const char_t *format)
+{
+	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value);
+}
+
+static void _print_motor_flt(cmdObj_t *cmd, const char_t *format)
+{
+	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value);
+}
+
+void st_print_ma(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0ma);}
+void st_print_sa(cmdObj_t *cmd) { _print_motor_flt(cmd, fmt_0sa);}
+void st_print_tr(cmdObj_t *cmd) { _print_motor_flt(cmd, fmt_0tr);}
+void st_print_mi(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0mi);}
+void st_print_po(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0po);}
+void st_print_pm(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0pm);}
+
+#endif // __TEXT_MODE
 
 /**** DEBUG routines ****/
 /*
