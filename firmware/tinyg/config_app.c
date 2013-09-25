@@ -119,13 +119,6 @@ static PGM_P const  PROGMEM msg_sw[] = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg
  * NOTE: DO NOT USE TABS IN FORMAT STRINGS
  */
 
-const char_t PROGMEM fmt_ja[] = "[ja]  junction acceleration%8.0f%S\n";
-const char_t PROGMEM fmt_ct[] = "[ct]  chordal tolerance%16.3f%S\n";
-const char_t PROGMEM fmt_ml[] = "[ml]  min line segment%17.3f%S\n";
-const char_t PROGMEM fmt_ma[] = "[ma]  min arc segment%18.3f%S\n";
-const char_t PROGMEM fmt_ms[] = "[ms]  min segment time%13.0f uSec\n";
-const char_t PROGMEM fmt_st[] = "[st]  switch type%18d [0=NO,1=NC]\n";
-
 const char_t PROGMEM fmt_si[] = "[si]  status interval%14.0f ms\n";
 const char_t PROGMEM fmt_fs[] = "[fs]  footer style%17d [0=new,1=old]\n";
 
@@ -449,12 +442,12 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "g30","g30c",_fin, 3, fmt_cloc, cm_print_corr, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_C], 0 },
 
 	// System parameters
-	{ "sys","ja",  _f07, 0, fmt_ja, print_lin, get_flu, set_flu, (float *)&cm.junction_acceleration,	JUNCTION_ACCELERATION },
-	{ "sys","ct",  _f07, 4, fmt_ct, print_lin, get_flu, set_flu, (float *)&cm.chordal_tolerance,		CHORDAL_TOLERANCE },
-	{ "sys","st",  _f07, 0, fmt_st, print_ui8, get_ui8, cm_set_sw,  (float *)&sw.switch_type,			SWITCH_TYPE },
+	{ "sys","ja",  _f07, 0, fmt_ja, cm_print_ja, get_flu, set_flu, (float *)&cm.junction_acceleration,	JUNCTION_ACCELERATION },
+	{ "sys","ct",  _f07, 4, fmt_ct, cm_print_ct, get_flu, set_flu, (float *)&cm.chordal_tolerance,		CHORDAL_TOLERANCE },
+	{ "sys","st",  _f07, 0, fmt_st, cm_print_st, get_ui8, cm_set_sw,  (float *)&sw.switch_type,			SWITCH_TYPE },
 	{ "sys","mt",  _f07, 2, fmt_mt, print_flt, get_flt, st_set_mt,  (float *)&st.motor_idle_timeout, 	MOTOR_IDLE_TIMEOUT},
-	{ "",   "me",  _f00, 0, fmt_me, print_str, st_set_me,  st_set_me,  (float *)&cs.null, 0 },
-	{ "",   "md",  _f00, 0, fmt_md, print_str, st_set_md,  st_set_md,  (float *)&cs.null, 0 },
+	{ "",   "me",  _f00, 0, fmt_me, tx_print_str, st_set_me,  st_set_me,  (float *)&cs.null, 0 },
+	{ "",   "md",  _f00, 0, fmt_md, tx_print_str, st_set_md,  st_set_md,  (float *)&cs.null, 0 },
 
 	{ "sys","ej",  _f07, 0, fmt_ej, print_ui8, get_ui8, set_01,  (float *)&cfg.comm_mode,				COMM_MODE },
 	{ "sys","jv",  _f07, 0, fmt_jv, print_ui8, get_ui8, json_set_jv,  (float *)&js.json_verbosity,		JSON_VERBOSITY },
@@ -491,9 +484,9 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "",   "gc",  _f00, 0, fmt_nul, tx_print_nul, get_gc,  run_gc,  (float *)&cs.null, 0 }, // gcode block - must be last in this group
 
 	// "hidden" parameters (not in system group)
-	{ "",   "ms",  _fip, 0, fmt_ms, print_lin, get_flt, set_flt, (float *)&cm.estd_segment_usec,		NOM_SEGMENT_USEC },
-	{ "",   "ml",  _fip, 4, fmt_ml, print_lin, get_flu, set_flu, (float *)&cm.min_segment_len,			MIN_LINE_LENGTH },
-	{ "",   "ma",  _fip, 4, fmt_ma, print_lin, get_flu, set_flu, (float *)&cm.arc_segment_len,			ARC_SEGMENT_LENGTH },
+	{ "",   "ms",  _fip, 0, fmt_ms, cm_print_ms, get_flt, set_flt, (float *)&cm.estd_segment_usec,		NOM_SEGMENT_USEC },
+	{ "",   "ml",  _fip, 4, fmt_ml, cm_print_ml, get_flu, set_flu, (float *)&cm.min_segment_len,			MIN_LINE_LENGTH },
+	{ "",   "ma",  _fip, 4, fmt_ma, cm_print_ma, get_flu, set_flu, (float *)&cm.arc_segment_len,			ARC_SEGMENT_LENGTH },
 	{ "",   "qrh", _fip, 0, fmt_ui8,tx_print_ui8, get_ui8, set_ui8, (float *)&qr.queue_report_hi_water,	QR_HI_WATER },
 	{ "",   "qrl", _fip, 0, fmt_ui8,tx_print_ui8, get_ui8, set_ui8, (float *)&qr.queue_report_lo_water,	QR_LO_WATER },
 	{ "",   "fd",  _fip, 0, fmt_ui8,tx_print_ui8, get_ui8, set_01,  (float *)&js.json_footer_depth,		JSON_FOOTER_DEPTH },

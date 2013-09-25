@@ -643,7 +643,7 @@ stat_t cm_set_sw(cmdObj_t *cmd);		// must run any time you change a switch setti
 
 /*--- text_mode support functions ---*/
 
-void cm_print_vel(cmdObj_t *cmd);
+void cm_print_vel(cmdObj_t *cmd);		// model state reporting
 void cm_print_feed(cmdObj_t *cmd);
 void cm_print_line(cmdObj_t *cmd);
 void cm_print_stat(cmdObj_t *cmd);
@@ -661,7 +661,7 @@ void cm_print_dist(cmdObj_t *cmd);
 void cm_print_frmo(cmdObj_t *cmd);
 void cm_print_tool(cmdObj_t *cmd);
 
-void cm_print_gpl(cmdObj_t *cmd);
+void cm_print_gpl(cmdObj_t *cmd);		// Gcode defaults
 void cm_print_gun(cmdObj_t *cmd);
 void cm_print_gco(cmdObj_t *cmd);
 void cm_print_gpa(cmdObj_t *cmd);
@@ -673,7 +673,14 @@ void cm_print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM 
 void cm_print_corl(cmdObj_t *cmd);		// print coordinate offsets with linear units
 void cm_print_corr(cmdObj_t *cmd);		// print coordinate offsets with rotary units
 
-void cm_print_am(cmdObj_t *cmd);
+void cm_print_ja(cmdObj_t *cmd);		// global CM settings
+void cm_print_ct(cmdObj_t *cmd);
+void cm_print_ml(cmdObj_t *cmd);
+void cm_print_ma(cmdObj_t *cmd);
+void cm_print_ms(cmdObj_t *cmd);
+void cm_print_st(cmdObj_t *cmd);
+
+void cm_print_am(cmdObj_t *cmd);		// axis print functions
 void cm_print_fr(cmdObj_t *cmd);
 void cm_print_vm(cmdObj_t *cmd);
 void cm_print_tm(cmdObj_t *cmd);
@@ -720,6 +727,13 @@ extern const char_t PROGMEM fmt_gun[];
 extern const char_t PROGMEM fmt_gco[];
 extern const char_t PROGMEM fmt_gpa[];
 extern const char_t PROGMEM fmt_gdi[];
+
+extern const char_t PROGMEM fmt_ja[];
+extern const char_t PROGMEM fmt_ct[];
+extern const char_t PROGMEM fmt_ml[];
+extern const char_t PROGMEM fmt_ma[];
+extern const char_t PROGMEM fmt_ms[];
+extern const char_t PROGMEM fmt_st[];
 
 extern const char_t PROGMEM fmt_Xam[];		// axis settings
 extern const char_t PROGMEM fmt_Xfr[];

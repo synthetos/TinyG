@@ -1691,6 +1691,23 @@ void cm_print_gco(cmdObj_t *cmd) { text_print_int(cmd, fmt_gco);}
 void cm_print_gpa(cmdObj_t *cmd) { text_print_int(cmd, fmt_gpa);}
 void cm_print_gdi(cmdObj_t *cmd) { text_print_int(cmd, fmt_gdi);}
 
+/*
+ * system state print functions
+ */
+
+const char_t PROGMEM fmt_ja[] = "[ja]  junction acceleration%8.0f%S\n";
+const char_t PROGMEM fmt_ct[] = "[ct]  chordal tolerance%16.3f%S\n";
+const char_t PROGMEM fmt_ml[] = "[ml]  min line segment%17.3f%S\n";
+const char_t PROGMEM fmt_ma[] = "[ma]  min arc segment%18.3f%S\n";
+const char_t PROGMEM fmt_ms[] = "[ms]  min segment time%13.0f uSec\n";
+const char_t PROGMEM fmt_st[] = "[st]  switch type%18d [0=NO,1=NC]\n";
+
+void cm_print_ja(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_ct(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_ml(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ml, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_ma(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ma, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_ms(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ms, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_st(cmdObj_t *cmd) { text_print_flt(cmd, fmt_st);}
 
 /*
  * axis print functions
