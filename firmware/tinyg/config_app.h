@@ -209,12 +209,6 @@ extern cfgParameters_t cfg;
  **** EXPOSED APPLICATION SPECIFIC FUNCTIONS ***************************************
  ***********************************************************************************/
 
-stat_t set_flu(cmdObj_t *cmd);
-stat_t get_flu(cmdObj_t *cmd);
-
-void print_lin(cmdObj_t *cmd);
-void print_rot(cmdObj_t *cmd);
-
 stat_t set_baud_callback(void);
 
 void co_print_ec(cmdObj_t *cmd);

@@ -256,7 +256,6 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 
 /**** Externs - See canonical_machine.c for allocation ****/
 
-//extern cmConfig_t 	 cm_cfg;	// canonical machine configuration values
 extern cmSingleton_t cm;		// canonical machine controller singleton
 extern GCodeState_t  gm;		// core gcode model state
 extern GCodeStateX_t gmx;		// extended gcode model state
@@ -345,11 +344,6 @@ enum cmFeedholdState {				// feedhold_state machine
 enum cmHomingState {				// applies to cm.homing_state
 	HOMING_NOT_HOMED = 0,			// machine is not homed (0=false)
 	HOMING_HOMED = 1				// machine is homed (1=true)
-};
-
-enum cmStatusReportRequest {
-	SR_TIMED_REQUEST = 0,			// request a status report at next timer interval
-	SR_IMMEDIATE_REQUEST			// request a status report ASAP
 };
 
 /* The difference between NextAction and MotionMode is that NextAction is 
@@ -676,9 +670,7 @@ void cm_print_gdi(cmdObj_t *cmd);
 
 void cm_print_lin(cmdObj_t *cmd);		// generic print for linear values 
 void cm_print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
-void cm_print_mpos(cmdObj_t *cmd);		// print runtime work position always in MM uints
-void cm_print_corl(cmdObj_t *cmd);		// print coordinate offsets with linear units
-void cm_print_corr(cmdObj_t *cmd);		// print coordinate offsets with rotary units
+void cm_print_mpo(cmdObj_t *cmd);		// print runtime work position always in MM uints
 
 void cm_print_ja(cmdObj_t *cmd);		// global CM settings
 void cm_print_ct(cmdObj_t *cmd);
@@ -726,7 +718,7 @@ extern const char_t PROGMEM fmt_frmo[];
 extern const char_t PROGMEM fmt_tool[];
 
 extern const char_t PROGMEM fmt_pos[];
-extern const char_t PROGMEM fmt_mpos[];
+extern const char_t PROGMEM fmt_mpo[];
 extern const char_t PROGMEM fmt_ofs[];
 extern const char_t PROGMEM fmt_hom[];
 

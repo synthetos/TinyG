@@ -83,6 +83,8 @@ static stat_t set_baud(cmdObj_t *cmd);		// set USB baud rate
 static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 //static stat_t run_sx(cmdObj_t *cmd);		// send XOFF, XON
 
+static void print_nul(cmdObj_t *cmd) {}
+
 /***********************************************************************************
  **** FLASH STRINGS AND STRING ARRAYS **********************************************
  ***********************************************************************************/
@@ -156,12 +158,12 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "",   "frmo",_f00, 0, fmt_frmo, cm_print_frmo, cm_get_frmo, set_nul,(float *)&cs.null, 0 },	// feed rate mode
 	{ "",   "tool",_f00, 0, fmt_tool, cm_print_tool, cm_get_toolv,set_nul,(float *)&cs.null, 0 },	// active tool
 
-	{ "mpo","mpox",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// X machine position
-	{ "mpo","mpoy",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// Y machine position
-	{ "mpo","mpoz",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// Z machine position
-	{ "mpo","mpoa",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// A machine position
-	{ "mpo","mpob",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// B machine position
-	{ "mpo","mpoc",_f00, 3, fmt_mpos, cm_print_mpos, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// C machine position
+	{ "mpo","mpox",_f00, 3, fmt_mpo, cm_print_mpo, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// X machine position
+	{ "mpo","mpoy",_f00, 3, fmt_mpo, cm_print_mpo, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// Y machine position
+	{ "mpo","mpoz",_f00, 3, fmt_mpo, cm_print_mpo, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// Z machine position
+	{ "mpo","mpoa",_f00, 3, fmt_mpo, cm_print_mpo, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// A machine position
+	{ "mpo","mpob",_f00, 3, fmt_mpo, cm_print_mpo, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// B machine position
+	{ "mpo","mpoc",_f00, 3, fmt_mpo, cm_print_mpo, cm_get_mpos, set_nul,(float *)&cs.null, 0 },// C machine position
 
 	{ "pos","posx",_f00, 3, fmt_pos, cm_print_pos, cm_get_pos, set_nul,(float *)&cs.null, 0 },	// X work position
 	{ "pos","posy",_f00, 3, fmt_pos, cm_print_pos, cm_get_pos, set_nul,(float *)&cs.null, 0 },	// Y work position
@@ -170,12 +172,12 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "pos","posb",_f00, 3, fmt_pos, cm_print_pos, cm_get_pos, set_nul,(float *)&cs.null, 0 },	// B work position
 	{ "pos","posc",_f00, 3, fmt_pos, cm_print_pos, cm_get_pos, set_nul,(float *)&cs.null, 0 },	// C work position
 
-	{ "ofs","ofsx",_f00, 3, fmt_ofs, cm_print_mpos, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// X work offset
-	{ "ofs","ofsy",_f00, 3, fmt_ofs, cm_print_mpos, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// Y work offset
-	{ "ofs","ofsz",_f00, 3, fmt_ofs, cm_print_mpos, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// Z work offset
-	{ "ofs","ofsa",_f00, 3, fmt_ofs, cm_print_mpos, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// A work offset 
-	{ "ofs","ofsb",_f00, 3, fmt_ofs, cm_print_mpos, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// B work offset 
-	{ "ofs","ofsc",_f00, 3, fmt_ofs, cm_print_mpos, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// C work offset
+	{ "ofs","ofsx",_f00, 3, fmt_ofs, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// X work offset
+	{ "ofs","ofsy",_f00, 3, fmt_ofs, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// Y work offset
+	{ "ofs","ofsz",_f00, 3, fmt_ofs, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// Z work offset
+	{ "ofs","ofsa",_f00, 3, fmt_ofs, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// A work offset 
+	{ "ofs","ofsb",_f00, 3, fmt_ofs, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// B work offset 
+	{ "ofs","ofsc",_f00, 3, fmt_ofs, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// C work offset
 
 	{ "hom","home",_f00, 0, fmt_home,cm_print_home, cm_get_home, cm_run_home,(float *)&cs.null, 0 },	   // homing state, invoke homing cycle
 	{ "hom","homx",_f00, 0, fmt_hom, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_X], false },// X homed - Homing status group
@@ -554,25 +556,6 @@ uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_G
  **** APPLICATION SPECIFIC FUNCTIONS ***********************************************
  ***********************************************************************************/
 
-/***** DOMAIN SPECIFIC EXTENSIONS TO GENERIC FUNCTIONS ************************
- * get_flu()   - get floating point number with Gcode units conversion
- * set_flu()   - set floating point number with Gcode units conversion
- */
-stat_t set_flu(cmdObj_t *cmd)
-{
-	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= MM_PER_INCH;
-	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
-	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-	cmd->objtype = TYPE_FLOAT;
-	return(STAT_OK);
-}
-
-stat_t get_flu(cmdObj_t *cmd)
-{
-	get_flt(cmd);
-	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
-	return (STAT_OK);
-}
 
 /**** UberGroup Operations ****************************************************
  * Uber groups are groups of groups organized for convenience:

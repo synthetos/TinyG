@@ -39,6 +39,11 @@ enum srVerbosity {					// status report enable and verbosity
 	SR_VERBOSE						// reports all values specified
 };
 
+enum cmStatusReportRequest {
+	SR_TIMED_REQUEST = 0,			// request a status report at next timer interval
+	SR_IMMEDIATE_REQUEST			// request a status report ASAP
+};
+
 enum qrVerbosity {					// planner queue enable and verbosity
 	QR_OFF = 0,						// no response is provided
 	QR_FILTERED,					// queue depth reported only above hi-water mark and below lo-water mark  
@@ -120,10 +125,8 @@ void qr_print_qr(cmdObj_t *cmd);
 
 
 //+++++ REMOVE +++++
-
 extern const char_t PROGMEM fmt_si[];
 extern const char_t PROGMEM fmt_sv[];
-
 extern const char_t PROGMEM fmt_qr[];
 extern const char_t PROGMEM fmt_qv[];
 

@@ -340,22 +340,18 @@ stat_t set_012(cmdObj_t *cmd);		// set a 0, 1 or 2 value with validation
 stat_t set_0123(cmdObj_t *cmd);		// set a 0, 1, 2 or 3 value with validation
 stat_t set_int(cmdObj_t *cmd);		// set uint32_t integer value
 stat_t set_flt(cmdObj_t *cmd);		// set floating point value
+stat_t set_flu(cmdObj_t *cmd);		// set floating point number with G20/G21 units conversion
+stat_t get_flu(cmdObj_t *cmd);		// get floating point number with G20/G21 units conversion
 
 stat_t get_nul(cmdObj_t *cmd);		// get null value type
 stat_t get_ui8(cmdObj_t *cmd);		// get uint8_t value
 stat_t get_int(cmdObj_t *cmd);		// get uint32_t integer value
 stat_t get_flt(cmdObj_t *cmd);		// get floating point value
 
-void print_nul(cmdObj_t *cmd);		// print nothing (no operation)
-//void print_str(cmdObj_t *cmd);		// print a string value
-//void print_ui8(cmdObj_t *cmd);		// print unit8_t value
-//void print_int(cmdObj_t *cmd);		// print uint32_t integer value
-//void print_flt(cmdObj_t *cmd);		// print floating point value
-
-//char_t *get_format(const index_t index, char_t *format);
-
 stat_t set_grp(cmdObj_t *cmd);		// set data for a group
 stat_t get_grp(cmdObj_t *cmd);		// get data for a group
+
+//void print_nul(cmdObj_t *cmd);		// print nothing (no operation)
 
 // object and list functions
 void cmd_get_cmdObj(cmdObj_t *cmd);

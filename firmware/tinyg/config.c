@@ -253,44 +253,25 @@ stat_t set_flt(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-/* Generic prints()
- *	print_nul() - print nothing
- *	print_str() - print string value
- *	print_ui8() - print uint8_t value w/no units or unit conversion
- *	print_int() - print integer value w/no units or unit conversion
- *	print_flt() - print float value w/no units or unit conversion
+/***** DOMAIN SPECIFIC EXTENSIONS TO GENERIC FUNCTIONS ************************
+ * get_flu()   - get floating point number with Gcode units conversion
+ * set_flu()   - set floating point number with Gcode units conversion
  */
-void print_nul(cmdObj_t *cmd) {}
-
-/*
-void print_str(cmdObj_t *cmd)
+stat_t set_flu(cmdObj_t *cmd)
 {
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), *cmd->stringp);
+	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= MM_PER_INCH;
+	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
+	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->objtype = TYPE_FLOAT;
+	return(STAT_OK);
 }
 
-void print_ui8(cmdObj_t *cmd)
+stat_t get_flu(cmdObj_t *cmd)
 {
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), (uint8_t)cmd->value);
+	get_flt(cmd);
+	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
+	return (STAT_OK);
 }
-
-void print_int(cmdObj_t *cmd)
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), (uint32_t)cmd->value);
-}
-
-void print_flt(cmdObj_t *cmd)
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->value);
-}
-*/
 
 /******************************************************************************
  * Group operations

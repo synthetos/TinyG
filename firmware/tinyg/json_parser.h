@@ -36,7 +36,6 @@
 
 #define FOOTER_REVISION 1
 #define JSON_OUTPUT_STRING_MAX (OUTPUT_BUFFER_LEN)
-//#define JSON_MAX_DEPTH 4
 
 enum jsonVerbosity {
 	JV_SILENT = 0,					// no response is provided for any command
