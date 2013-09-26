@@ -98,21 +98,6 @@ static const char_t PROGMEM msg_units2[] = " deg";
 static PGM_P const  PROGMEM msg_units[] = { msg_units0, msg_units1, msg_units2 };
 #define DEGREE_INDEX 2
 
-static const char_t PROGMEM msg_baud0[] = "0";
-static const char_t PROGMEM msg_baud1[] = "9600";
-static const char_t PROGMEM msg_baud2[] = "19200";
-static const char_t PROGMEM msg_baud3[] = "38400";
-static const char_t PROGMEM msg_baud4[] = "57600";
-static const char_t PROGMEM msg_baud5[] = "115200";
-static const char_t PROGMEM msg_baud6[] = "230400";
-static PGM_P const  PROGMEM msg_baud[] = { msg_baud0, msg_baud1, msg_baud2, msg_baud3, msg_baud4, msg_baud5, msg_baud6 };
-
-static const char_t PROGMEM msg_sw0[] = "Disabled";
-static const char_t PROGMEM msg_sw1[] = "NO homing";
-static const char_t PROGMEM msg_sw2[] = "NO homing & limit";
-static const char_t PROGMEM msg_sw3[] = "NC homing";
-static const char_t PROGMEM msg_sw4[] = "NC homing & limit";
-static PGM_P const  PROGMEM msg_sw[] = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
 
 //const char_t PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
 
@@ -552,11 +537,6 @@ uint8_t cmd_index_is_single(index_t index) { return ((index <= CMD_INDEX_END_SIN
 uint8_t cmd_index_is_group(index_t index) { return (((index >= CMD_INDEX_START_GROUPS) && (index < CMD_INDEX_START_UBER_GROUPS)) ? true : false);}
 uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_GROUPS) ? true : false);}
 
-/***********************************************************************************
- **** APPLICATION SPECIFIC FUNCTIONS ***********************************************
- ***********************************************************************************/
-
-
 /**** UberGroup Operations ****************************************************
  * Uber groups are groups of groups organized for convenience:
  *	- motors	- group of all motor groups
@@ -620,6 +600,18 @@ static stat_t _do_all(cmdObj_t *cmd)	// print all parameters
 	return (_do_offsets(cmd));			// print all offsets
 }
 
+/***********************************************************************************
+ **** APPLICATION SPECIFIC FUNCTIONS ***********************************************
+ ***********************************************************************************/
+
+/*
+static const char_t PROGMEM msg_sw0[] = "Disabled";
+static const char_t PROGMEM msg_sw1[] = "NO homing";
+static const char_t PROGMEM msg_sw2[] = "NO homing & limit";
+static const char_t PROGMEM msg_sw3[] = "NC homing";
+static const char_t PROGMEM msg_sw4[] = "NC homing & limit";
+static PGM_P const  PROGMEM msg_sw[] = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
+*/
 /**** REPORT AND COMMAND FUNCTIONS ********************************************************
  * get_gc()	- get gcode block
  * run_gc()	- launch the gcode parser on a block of gcode
@@ -663,6 +655,7 @@ static void print_ss(cmdObj_t *cmd)			// print switch state
  *
  *	The above assume USB is the std device
  */
+
 static stat_t _set_comm_helper(cmdObj_t *cmd, uint32_t yes, uint32_t no)
 {
 	if (fp_NOT_ZERO(cmd->value)) { 
@@ -727,6 +720,14 @@ static stat_t get_rx(cmdObj_t *cmd)
  *	Then it waits for the TX buffer to empty (so the message is sent)
  *	Then it performs the callback to apply the new baud rate
  */
+static const char_t PROGMEM msg_baud0[] = "0";
+static const char_t PROGMEM msg_baud1[] = "9600";
+static const char_t PROGMEM msg_baud2[] = "19200";
+static const char_t PROGMEM msg_baud3[] = "38400";
+static const char_t PROGMEM msg_baud4[] = "57600";
+static const char_t PROGMEM msg_baud5[] = "115200";
+static const char_t PROGMEM msg_baud6[] = "230400";
+static PGM_P const  PROGMEM msg_baud[] = { msg_baud0, msg_baud1, msg_baud2, msg_baud3, msg_baud4, msg_baud5, msg_baud6 };
 
 static stat_t set_baud(cmdObj_t *cmd)
 {

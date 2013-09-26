@@ -658,9 +658,12 @@ stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initia
 
 #ifdef __TEXT_MODE
 
-/*
- * Motor settings print functions
- */
+static const char_t PROGMEM msg_units0[] = " in";	// used by generic print functions
+static const char_t PROGMEM msg_units1[] = " mm";
+static const char_t PROGMEM msg_units2[] = " deg";
+static PGM_P const  PROGMEM msg_units[] = { msg_units0, msg_units1, msg_units2 };
+#define DEGREE_INDEX 2
+
 const char_t PROGMEM fmt_mt[] = "[mt]  motor idle timeout%14.2f Sec\n";
 const char_t PROGMEM fmt_me[] = "motors energized\n";
 const char_t PROGMEM fmt_md[] = "motors de-energized\n";
@@ -679,15 +682,15 @@ static void _print_motor_ui8(cmdObj_t *cmd, const char_t *format)
 {
 	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value);
 }
-
-static void _print_motor_flt(cmdObj_t *cmd, const char_t *format)
+static void _print_motor_flt_units(cmdObj_t *cmd, const char_t *format, uint8_t units)
 {
-	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value);
+	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value,
+			 (PGM_P)pgm_read_word(&msg_units[units]));
 }
 
 void st_print_ma(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0ma);}
-void st_print_sa(cmdObj_t *cmd) { _print_motor_flt(cmd, fmt_0sa);}
-void st_print_tr(cmdObj_t *cmd) { _print_motor_flt(cmd, fmt_0tr);}
+void st_print_sa(cmdObj_t *cmd) { _print_motor_flt_units(cmd, fmt_0sa, DEGREE_INDEX);}
+void st_print_tr(cmdObj_t *cmd) { _print_motor_flt_units(cmd, fmt_0tr, cm_get_units_mode(MODEL));}
 void st_print_mi(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0mi);}
 void st_print_po(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0po);}
 void st_print_pm(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0pm);}

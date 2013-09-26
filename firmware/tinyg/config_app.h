@@ -218,6 +218,8 @@ void co_print_baud(cmdObj_t *cmd);
 void co_print_net(cmdObj_t *cmd);
 void co_print_rx(cmdObj_t *cmd);
 
+//extern PGM_P const  PROGMEM msg_units[];
+
 #ifdef __cplusplus
 }
 #endif
