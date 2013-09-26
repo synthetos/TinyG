@@ -316,7 +316,7 @@ stat_t set_defaults(cmdObj_t *cmd);
 // main entry points for core access functions
 stat_t cmd_get(cmdObj_t *cmd);		// get value
 stat_t cmd_set(cmdObj_t *cmd);		// set value
-void cmd_print(cmdObj_t *cmd);		// formatted print
+void cmd_print(cmdObj_t *cmd);		// formatted print (text mode)
 void cmd_persist(cmdObj_t *cmd);	// persistence
 
 // helpers

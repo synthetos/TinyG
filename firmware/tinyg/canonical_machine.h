@@ -567,8 +567,8 @@ stat_t cm_set_inverse_feed_rate_mode(uint8_t mode);				// True= inv mode
 stat_t cm_set_path_control(uint8_t mode);						// G61, G61.1, G64
 stat_t cm_straight_feed(float target[], float flags[]);			// G1
 stat_t cm_arc_feed(float target[], float flags[], 				// G2, G3
-					float i, float j, float k, 
-					float radius, uint8_t motion_mode);
+				   float i, float j, float k, 
+				   float radius, uint8_t motion_mode);
 stat_t cm_dwell(float seconds);									// G4, P parameter
 
 stat_t cm_set_spindle_speed(float speed);						// S parameter
@@ -605,7 +605,7 @@ void cm_program_end(void);										// M2
 void cm_exec_program_stop(void);
 void cm_exec_program_end(void);
 
-/*--- interface functions for cmdArray ---*/
+/*--- cmdArray interface functions ---*/
 
 stat_t cm_run_qf(cmdObj_t *cmd);
 
@@ -696,61 +696,5 @@ void cm_print_zb(cmdObj_t *cmd);
 
 void cm_print_cofs(cmdObj_t *cmd);
 void cm_print_cloc(cmdObj_t *cmd);
-
-//+++++ REMOVE +++++
-extern const char_t PROGMEM fmt_vel[];		// gcode model reporting
-extern const char_t PROGMEM fmt_vel[];
-extern const char_t PROGMEM fmt_line[];
-extern const char_t PROGMEM fmt_feed[];
-extern const char_t PROGMEM fmt_stat[];
-extern const char_t PROGMEM fmt_macs[];
-extern const char_t PROGMEM fmt_cycs[];
-extern const char_t PROGMEM fmt_mots[];
-extern const char_t PROGMEM fmt_hold[];
-extern const char_t PROGMEM fmt_home[];
-extern const char_t PROGMEM fmt_unit[];
-extern const char_t PROGMEM fmt_coor[];
-extern const char_t PROGMEM fmt_momo[];
-extern const char_t PROGMEM fmt_plan[];
-extern const char_t PROGMEM fmt_path[];
-extern const char_t PROGMEM fmt_dist[];
-extern const char_t PROGMEM fmt_frmo[];
-extern const char_t PROGMEM fmt_tool[];
-
-extern const char_t PROGMEM fmt_pos[];
-extern const char_t PROGMEM fmt_mpo[];
-extern const char_t PROGMEM fmt_ofs[];
-extern const char_t PROGMEM fmt_hom[];
-
-extern const char_t PROGMEM fmt_gpl[];		// gcode defaults
-extern const char_t PROGMEM fmt_gun[];
-extern const char_t PROGMEM fmt_gco[];
-extern const char_t PROGMEM fmt_gpa[];
-extern const char_t PROGMEM fmt_gdi[];
-
-extern const char_t PROGMEM fmt_ja[];
-extern const char_t PROGMEM fmt_ct[];
-extern const char_t PROGMEM fmt_ml[];
-extern const char_t PROGMEM fmt_ma[];
-extern const char_t PROGMEM fmt_ms[];
-extern const char_t PROGMEM fmt_st[];
-
-extern const char_t PROGMEM fmt_Xam[];		// axis settings
-extern const char_t PROGMEM fmt_Xfr[];
-extern const char_t PROGMEM fmt_Xvm[];
-extern const char_t PROGMEM fmt_Xtm[];
-extern const char_t PROGMEM fmt_Xjm[];
-extern const char_t PROGMEM fmt_Xjh[];
-extern const char_t PROGMEM fmt_Xjd[];
-extern const char_t PROGMEM fmt_Xra[];
-extern const char_t PROGMEM fmt_Xsn[];
-extern const char_t PROGMEM fmt_Xsx[];
-extern const char_t PROGMEM fmt_Xsv[];
-extern const char_t PROGMEM fmt_Xlv[];
-extern const char_t PROGMEM fmt_Xlb[];
-extern const char_t PROGMEM fmt_Xzb[];
-
-extern const char_t PROGMEM fmt_cofs[];
-extern const char_t PROGMEM fmt_cloc[];
 
 #endif // _CANONICAL_MACHINE_H_

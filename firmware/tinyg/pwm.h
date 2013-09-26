@@ -71,20 +71,6 @@ void pwm_print_p1wph(cmdObj_t *cmd);
 void pwm_print_p1pof(cmdObj_t *cmd);
 
 
-//+++++ REMOVE +++++
-
-extern const char_t PROGMEM fmt_p1frq[];
-extern const char_t PROGMEM fmt_p1csl[];
-extern const char_t PROGMEM fmt_p1csh[];
-extern const char_t PROGMEM fmt_p1cpl[];
-extern const char_t PROGMEM fmt_p1cph[];
-extern const char_t PROGMEM fmt_p1wsl[];
-extern const char_t PROGMEM fmt_p1wsh[];
-extern const char_t PROGMEM fmt_p1wpl[];
-extern const char_t PROGMEM fmt_p1wph[];
-extern const char_t PROGMEM fmt_p1pof[];
-
-
 //#define __UNIT_TEST_PWM		// uncomment to enable PWM unit tests
 #ifdef __UNIT_TEST_PWM
 void pwm_unit_tests(void);

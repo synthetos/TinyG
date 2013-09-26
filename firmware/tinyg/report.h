@@ -124,13 +124,6 @@ void qr_print_qv(cmdObj_t *cmd);
 void qr_print_qr(cmdObj_t *cmd);
 
 
-//+++++ REMOVE +++++
-extern const char_t PROGMEM fmt_si[];
-extern const char_t PROGMEM fmt_sv[];
-extern const char_t PROGMEM fmt_qr[];
-extern const char_t PROGMEM fmt_qv[];
-
-
 /* unit test setup */
 //#define __UNIT_TEST_REPORT	// uncomment to enable report unit tests
 #ifdef __UNIT_TEST_REPORT

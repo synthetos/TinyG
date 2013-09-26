@@ -87,11 +87,6 @@ void js_print_ej(cmdObj_t *cmd);
 void js_print_jv(cmdObj_t *cmd);
 void js_print_fs(cmdObj_t *cmd);
 
-//++++ remove +++/
-extern const char_t PROGMEM fmt_ej[];
-extern const char_t PROGMEM fmt_jv[];
-extern const char_t PROGMEM fmt_fs[];
-
 /* unit test setup */
 
 //#define __UNIT_TEST_JSON				// uncomment to enable JSON unit tests
