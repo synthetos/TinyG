@@ -186,16 +186,22 @@ stat_t hw_run_boot(cmdObj_t *cmd);
 stat_t hw_set_hv(cmdObj_t *cmd);
 stat_t hw_get_id(cmdObj_t *cmd);
 
-void hw_print_fb(cmdObj_t *cmd);
-void hw_print_fv(cmdObj_t *cmd);
-//void hw_print_hp(cmdObj_t *cmd);
-void hw_print_hv(cmdObj_t *cmd);
-void hw_print_id(cmdObj_t *cmd);
+#ifdef __TEXT_MODE
 
-//+++++ REMOVE +++++
-extern const char_t PROGMEM fmt_fb[];
-extern const char_t PROGMEM fmt_fv[];
-extern const char_t PROGMEM fmt_hv[];
-extern const char_t PROGMEM fmt_id[];
+	void hw_print_fb(cmdObj_t *cmd);
+	void hw_print_fv(cmdObj_t *cmd);
+//	void hw_print_hp(cmdObj_t *cmd);
+	void hw_print_hv(cmdObj_t *cmd);
+	void hw_print_id(cmdObj_t *cmd);
+
+#else
+
+	#define hw_print_fb tx_print_nul
+	#define hw_print_fv tx_print_nul
+//	#define hw_print_hp tx_print_nul
+	#define hw_print_hv tx_print_nul
+	#define hw_print_id tx_print_nul
+
+#endif // __TEXT_MODE
 
 #endif

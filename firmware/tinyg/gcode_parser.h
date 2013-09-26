@@ -26,5 +26,7 @@
  */
 
 stat_t gc_gcode_parser(char_t *block);
+stat_t gc_get_gc(cmdObj_t *cmd);
+stat_t gc_run_gc(cmdObj_t *cmd);
 
 #endif

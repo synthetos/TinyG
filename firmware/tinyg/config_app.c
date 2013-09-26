@@ -26,8 +26,8 @@
  * See config_app.h for a detailed description of config objects and the config table
  */
 
-#include "tinyg.h"
-#include "config.h"
+#include "tinyg.h"		// #1
+#include "config.h"		// #2
 #include "controller.h"
 #include "canonical_machine.h"
 #include "gcode_parser.h"
@@ -68,11 +68,6 @@ static stat_t _do_axes(cmdObj_t *cmd);		// print parameters for all axis groups
 static stat_t _do_offsets(cmdObj_t *cmd);	// print offsets for G54-G59, G92
 static stat_t _do_all(cmdObj_t *cmd);		// print all parameters
 
-// system and application control settings and functions
-
-static stat_t get_gc(cmdObj_t *cmd);		// get current gcode block
-static stat_t run_gc(cmdObj_t *cmd);		// run a gcode block
-
 // communications settings and functions
 
 //static stat_t set_ic(cmdObj_t *cmd);		// ignore CR or LF on RX input
@@ -82,8 +77,6 @@ static stat_t set_ex(cmdObj_t *cmd);		// enable XON/XOFF and RTS/CTS flow contro
 static stat_t set_baud(cmdObj_t *cmd);		// set USB baud rate
 static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 //static stat_t run_sx(cmdObj_t *cmd);		// send XOFF, XON
-
-static void print_nul(cmdObj_t *cmd) {}
 
 /***********************************************************************************
  **** FLASH STRINGS AND STRING ARRAYS **********************************************
@@ -97,7 +90,6 @@ static const char_t PROGMEM msg_units1[] = " mm";
 static const char_t PROGMEM msg_units2[] = " deg";
 static PGM_P const  PROGMEM msg_units[] = { msg_units0, msg_units1, msg_units2 };
 #define DEGREE_INDEX 2
-
 
 //const char_t PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
 
@@ -408,7 +400,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 
 	{ "sys","ej",  _f07, 0, js_print_ej,  get_ui8,   set_01,     (float *)&cfg.comm_mode,			COMM_MODE },
 	{ "sys","jv",  _f07, 0, js_print_jv,  get_ui8,   json_set_jv,(float *)&js.json_verbosity,		JSON_VERBOSITY },
-	{ "sys","tv",  _f07, 0, tx_print_tv,  get_ui8,   set_01,     (float *)&cfg.text_verbosity,		TEXT_VERBOSITY },
+	{ "sys","tv",  _f07, 0, tx_print_tv,  get_ui8,   set_01,     (float *)&txt.text_verbosity,		TEXT_VERBOSITY },
 	{ "sys","qv",  _f07, 0, qr_print_qv,  get_ui8,   set_0123,   (float *)&qr.queue_report_verbosity,QR_VERBOSITY },
 	{ "sys","sv",  _f07, 0, sr_print_sv,  get_ui8,   set_012,    (float *)&sr.status_report_verbosity,SR_VERBOSITY },
 	{ "sys","si",  _f07, 0, sr_print_si,  get_int,   sr_set_si,  (float *)&sr.status_report_interval,STATUS_REPORT_INTERVAL_MS },
@@ -438,7 +430,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys","gco", _f07, 0, cm_print_gco, get_ui8, set_ui8, (float *)&cm.coord_system,	GCODE_DEFAULT_COORD_SYSTEM },
 	{ "sys","gpa", _f07, 0, cm_print_gpa, get_ui8, set_012, (float *)&cm.path_control,	GCODE_DEFAULT_PATH_CONTROL },
 	{ "sys","gdi", _f07, 0, cm_print_gdi, get_ui8, set_01,  (float *)&cm.distance_mode,	GCODE_DEFAULT_DISTANCE_MODE },
-	{ "",   "gc",  _f00, 0, tx_print_nul, get_gc,  run_gc,  (float *)&cs.null, 0 }, // gcode block - must be last in this group
+	{ "",   "gc",  _f00, 0, tx_print_nul, gc_get_gc, gc_run_gc,(float *)&cs.null, 0 }, // gcode block - must be last in this group
 
 	// "hidden" parameters (not in system group)
 	{ "",   "ms",  _fip, 0, cm_print_ms,  get_flt, set_flt, (float *)&cm.estd_segment_usec,		NOM_SEGMENT_USEC },
@@ -450,72 +442,72 @@ const cfgItem_t PROGMEM cfgArray[] = {
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
-	{ "","se00",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[0],0 },
-	{ "","se01",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[1],0 },
-	{ "","se02",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[2],0 },
-	{ "","se03",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[3],0 },
-	{ "","se04",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[4],0 },
-	{ "","se05",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[5],0 },
-	{ "","se06",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[6],0 },
-	{ "","se07",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[7],0 },
-	{ "","se08",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[8],0 },
-	{ "","se09",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[9],0 },
-	{ "","se10",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[10],0 },
-	{ "","se11",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[11],0 },
-	{ "","se12",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[12],0 },
-	{ "","se13",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[13],0 },
-	{ "","se14",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[14],0 },
-	{ "","se15",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[15],0 },
-	{ "","se16",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[16],0 },
-	{ "","se17",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[17],0 },
-	{ "","se18",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[18],0 },
-	{ "","se19",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[19],0 },
-	{ "","se20",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[20],0 },
-	{ "","se21",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[21],0 },
-	{ "","se22",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[22],0 },
-	{ "","se23",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[23],0 },
-	{ "","se24",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[24],0 },
-	{ "","se25",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[25],0 },
-	{ "","se26",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[26],0 },
-	{ "","se27",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[27],0 },
-	{ "","se28",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[28],0 },
-	{ "","se29",_fpe, 0, print_nul, get_int, set_int,(float *)&sr.status_report_list[29],0 },
+	{ "","se00",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[0],0 },
+	{ "","se01",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[1],0 },
+	{ "","se02",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[2],0 },
+	{ "","se03",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[3],0 },
+	{ "","se04",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[4],0 },
+	{ "","se05",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[5],0 },
+	{ "","se06",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[6],0 },
+	{ "","se07",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[7],0 },
+	{ "","se08",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[8],0 },
+	{ "","se09",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[9],0 },
+	{ "","se10",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[10],0 },
+	{ "","se11",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[11],0 },
+	{ "","se12",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[12],0 },
+	{ "","se13",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[13],0 },
+	{ "","se14",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[14],0 },
+	{ "","se15",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[15],0 },
+	{ "","se16",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[16],0 },
+	{ "","se17",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[17],0 },
+	{ "","se18",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[18],0 },
+	{ "","se19",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[19],0 },
+	{ "","se20",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[20],0 },
+	{ "","se21",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[21],0 },
+	{ "","se22",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[22],0 },
+	{ "","se23",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[23],0 },
+	{ "","se24",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[24],0 },
+	{ "","se25",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[25],0 },
+	{ "","se26",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[26],0 },
+	{ "","se27",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[27],0 },
+	{ "","se28",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[28],0 },
+	{ "","se29",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[29],0 },
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with CMD_COUNT_GROUPS below ****
-	{ "","sys",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// system group
-	{ "","p1", _f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// PWM 1 group
-	{ "","1",  _f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// motor groups
-	{ "","2",  _f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","3",  _f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","4",  _f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","x",  _f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis groups
-	{ "","y",  _f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","z",  _f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","a",  _f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","b",  _f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","c",  _f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","ss", _f00, 0, print_nul, get_grp, set_nul,(float *)&cs.null,0 },
-	{ "","g54",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// coord offset groups
-	{ "","g55",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","g56",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","g57",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","g58",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","g59",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","g92",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// origin offsets
-	{ "","g28",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// g28 home position
-	{ "","g30",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// g30 home position
-	{ "","mpo",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// machine position group
-	{ "","pos",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// work position group
-	{ "","ofs",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// work offset group
-	{ "","hom",_f00, 0, print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis homing state group
+	{ "","sys",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// system group
+	{ "","p1", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// PWM 1 group
+	{ "","1",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// motor groups
+	{ "","2",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","3",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","4",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","x",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis groups
+	{ "","y",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","z",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","a",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","b",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","c",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","ss", _f00, 0, tx_print_nul, get_grp, set_nul,(float *)&cs.null,0 },
+	{ "","g54",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// coord offset groups
+	{ "","g55",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","g56",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","g57",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","g58",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","g59",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","g92",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// origin offsets
+	{ "","g28",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// g28 home position
+	{ "","g30",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// g30 home position
+	{ "","mpo",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// machine position group
+	{ "","pos",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// work position group
+	{ "","ofs",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// work offset group
+	{ "","hom",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis homing state group
 
 	// Uber-group (groups of groups, for text-mode displays only)
 	// *** Must agree with CMD_COUNT_UBER_GROUPS below ****
-	{ "", "m", _f00, 0, print_nul, _do_motors, set_nul,(float *)&cs.null,0 },
-	{ "", "q", _f00, 0, print_nul, _do_axes,   set_nul,(float *)&cs.null,0 },
-	{ "", "o", _f00, 0, print_nul, _do_offsets,set_nul,(float *)&cs.null,0 },
-	{ "", "$", _f00, 0, print_nul, _do_all,    set_nul,(float *)&cs.null,0 }
+	{ "", "m", _f00, 0, tx_print_nul, _do_motors, set_nul,(float *)&cs.null,0 },
+	{ "", "q", _f00, 0, tx_print_nul, _do_axes,   set_nul,(float *)&cs.null,0 },
+	{ "", "o", _f00, 0, tx_print_nul, _do_offsets,set_nul,(float *)&cs.null,0 },
+	{ "", "$", _f00, 0, tx_print_nul, _do_all,    set_nul,(float *)&cs.null,0 }
 };
 
 /***** Make sure these defines line up with any changes in the above table *****/
@@ -601,49 +593,10 @@ static stat_t _do_all(cmdObj_t *cmd)	// print all parameters
 }
 
 /***********************************************************************************
- **** APPLICATION SPECIFIC FUNCTIONS ***********************************************
+ * CONFIGURATION AND INTERFACE FUNCTIONS
+ * Functions to get and set variables from the cfgArray table
+ * Most of these can be found in their respective modules.
  ***********************************************************************************/
-
-/*
-static const char_t PROGMEM msg_sw0[] = "Disabled";
-static const char_t PROGMEM msg_sw1[] = "NO homing";
-static const char_t PROGMEM msg_sw2[] = "NO homing & limit";
-static const char_t PROGMEM msg_sw3[] = "NC homing";
-static const char_t PROGMEM msg_sw4[] = "NC homing & limit";
-static PGM_P const  PROGMEM msg_sw[] = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
-*/
-/**** REPORT AND COMMAND FUNCTIONS ********************************************************
- * get_gc()	- get gcode block
- * run_gc()	- launch the gcode parser on a block of gcode
- */
-
-static stat_t get_gc(cmdObj_t *cmd)
-{
-	ritorno(cmd_copy_string(cmd, cs.in_buf));
-	cmd->objtype = TYPE_STRING;
-	return (STAT_OK);
-}
-
-static stat_t run_gc(cmdObj_t *cmd)
-{
-	return(gc_gcode_parser(*cmd->stringp));
-}
-/* run_sx()	- send XOFF, XON --- test only 
-static stat_t run_sx(cmdObj_t *cmd)
-{
-	xio_putc(XIO_DEV_USB, XOFF);
-	xio_putc(XIO_DEV_USB, XON);
-	return (STAT_OK);
-}
-*/
-/*
-static void print_ss(cmdObj_t *cmd)			// print switch state
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->token, cmd->value);
-}
-*/
 
 /**** COMMUNICATIONS FUNCTIONS ******************************************************
  * set_ic() - ignore CR or LF on RX
@@ -752,9 +705,12 @@ stat_t set_baud_callback(void)
 	return (STAT_OK);
 }
 
-/**********************************************************************
- * TEXT PRINTS
- **********************************************************************/
+/***********************************************************************************
+ * TEXT MODE SUPPORT
+ * Functions to print variables from the cfgArray table
+ ***********************************************************************************/
+
+#ifdef __TEXT_MODE
 
 //const char_t PROGMEM fmt_ic[] = "[ic]  ignore CR or LF on RX%8d [0=off,1=CR,2=LF]\n";
 const char_t PROGMEM fmt_ec[] = "[ec]  expand LF to CRLF on TX%6d [0=off,1=on]\n";
@@ -770,5 +726,8 @@ void co_print_ex(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_ex);}
 void co_print_baud(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_baud);}
 void co_print_net(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_net);}
 void co_print_rx(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_rx);}
+
+#endif // __TEXT_MODE
+
 
 

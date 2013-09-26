@@ -48,7 +48,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.75	// Some fixes to text formatting
+#define TINYG_FIRMWARE_BUILD   		392.76	// Implemented __TEXT_MODE switch
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
@@ -57,7 +57,7 @@
 
 /****** COMPILE-TIME SETTINGS ******/
 
-#define __TEXT_MODE							// enables text support in modules
+//#define __TEXT_MODE							// enables text support in modules
 
 
 /****** DEVELOPMENT SETTINGS ******/

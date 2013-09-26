@@ -697,36 +697,3 @@ void st_print_pm(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0pm);}
 
 #endif // __TEXT_MODE
 
-/**** DEBUG routines ****/
-/*
- * st_dump_stepper_state()
- */
-
-#ifdef __DEBUG
-
-static const char sts_sing[] PROGMEM = "stSingleton dda_ticks (remaining):%d\n";
-static const char sts_timr[] PROGMEM = "  timer %s  enabled:%d  period:%d\n";
-static const char sts_motr[] PROGMEM = "  motor[%d] pol:%d  steps:%d  counter:%d\n";
-
-void st_dump_stepper_state()
-{
-	uint8_t i;
-
-	fprintf_P(stderr, (PGM_P)sts_sing, st_run.dda_ticks_downcount);
-
-	fprintf_P(stderr, (PGM_P)sts_timr, "dda", TIMER_DDA.CTRLA, TIMER_DDA.PER);
-	fprintf_P(stderr, (PGM_P)sts_timr, "dwl", TIMER_DWELL.CTRLA, TIMER_DWELL.PER);
-	fprintf_P(stderr, (PGM_P)sts_timr, "load", TIMER_LOAD.CTRLA, TIMER_LOAD.PER);
-	fprintf_P(stderr, (PGM_P)sts_timr, "exec", TIMER_EXEC.CTRLA, TIMER_EXEC.PER);
-
-	for (i=0; i<MOTORS; i++) {
-		fprintf_P(stderr, (PGM_P)sts_motr, i, 
-			st.m[i].polarity,
-			st_run.m[i].phase_increment,
-			st_run.m[i].phase_accumulator);
-	}
-}
-
-// dump_set_f_dda(*f_dda, *dda_substeps, major_axis_steps, microseconds, f_dda_base);
-
-#endif

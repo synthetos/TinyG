@@ -83,9 +83,19 @@ void json_print_object(cmdObj_t *cmd);
 void json_print_response(uint8_t status);
 void json_print_list(stat_t status, uint8_t flags);
 
-void js_print_ej(cmdObj_t *cmd);
-void js_print_jv(cmdObj_t *cmd);
-void js_print_fs(cmdObj_t *cmd);
+#ifdef __TEXT_MODE
+
+	void js_print_ej(cmdObj_t *cmd);
+	void js_print_jv(cmdObj_t *cmd);
+	void js_print_fs(cmdObj_t *cmd);
+
+#else
+
+	#define js_print_ej tx_print_nul
+	#define js_print_jv tx_print_nul
+	#define js_print_fs tx_print_nul
+
+#endif // __TEXT_MODE
 
 /* unit test setup */
 

@@ -59,17 +59,33 @@ void pwm_init(void);
 stat_t pwm_set_freq(uint8_t channel, float freq);
 stat_t pwm_set_duty(uint8_t channel, float duty);
 
-void pwm_print_p1frq(cmdObj_t *cmd);
-void pwm_print_p1csl(cmdObj_t *cmd);
-void pwm_print_p1csh(cmdObj_t *cmd);
-void pwm_print_p1cpl(cmdObj_t *cmd);
-void pwm_print_p1cph(cmdObj_t *cmd);
-void pwm_print_p1wsl(cmdObj_t *cmd);
-void pwm_print_p1wsh(cmdObj_t *cmd);
-void pwm_print_p1wpl(cmdObj_t *cmd);
-void pwm_print_p1wph(cmdObj_t *cmd);
-void pwm_print_p1pof(cmdObj_t *cmd);
+#ifdef __TEXT_MODE
 
+	void pwm_print_p1frq(cmdObj_t *cmd);
+	void pwm_print_p1csl(cmdObj_t *cmd);
+	void pwm_print_p1csh(cmdObj_t *cmd);
+	void pwm_print_p1cpl(cmdObj_t *cmd);
+	void pwm_print_p1cph(cmdObj_t *cmd);
+	void pwm_print_p1wsl(cmdObj_t *cmd);
+	void pwm_print_p1wsh(cmdObj_t *cmd);
+	void pwm_print_p1wpl(cmdObj_t *cmd);
+	void pwm_print_p1wph(cmdObj_t *cmd);
+	void pwm_print_p1pof(cmdObj_t *cmd);
+
+#else
+
+	#define pwm_print_p1frq tx_print_nul
+	#define pwm_print_p1csl tx_print_nul
+	#define pwm_print_p1csh tx_print_nul
+	#define pwm_print_p1cpl tx_print_nul
+	#define pwm_print_p1cph tx_print_nul
+	#define pwm_print_p1wsl tx_print_nul
+	#define pwm_print_p1wsh tx_print_nul
+	#define pwm_print_p1wpl tx_print_nul
+	#define pwm_print_p1wph tx_print_nul
+	#define pwm_print_p1pof tx_print_nul
+
+#endif // __TEXT_MODE
 
 //#define __UNIT_TEST_PWM		// uncomment to enable PWM unit tests
 #ifdef __UNIT_TEST_PWM

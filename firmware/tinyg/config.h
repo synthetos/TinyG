@@ -34,32 +34,30 @@
 #include "config_app.h"	// is present at the end of this file 
 */
 
+
 /**** Config System Overview and Usage ***
  *
  *	--- Config objects and the config list ---
  *
- *	The config system provides a structured way to access and set configuration variables.
- *	It also provides a way to get an arbitrary variable for reporting. Config operates
- *	as a collection of "objects" (OK, so they are not really objects) that encapsulate
- *	each variable. The objects are collected into a list (the body), which also may have  
- *	header and footer objects. This way the internals don't care about how the variable
- *	is represented or communicated externally as all operations occur on the cmdObj list. 
+ *	The config system provides a structured way to get, set and print configuration variables.
+ *	The config system operates as a list of "objects" (OK, so they are not really objects)
+ *	that encapsulate each variable. The list may also may have header and footer objects. 
+ * 
  *	The list is populated by the text_parser or the JSON_parser depending on the mode.
- *	The lists are also used for responses and are read out (printed) by a text-mode or
- *	JSON serialization function.
+ *	This way the internals don't care about how the variable is represented or communicated 
+ *	externally as all internal operations occur on the cmdObjs, not the wire form (text or JSON).
  */
 /*	--- Config variables, tables and strings ---
  *
  *	Each configuration value is identified by a short mnemonic string (token). The token 
  *	is resolved to an index into the cfgArray which is an array of structures with the 
  *	static assignments for each variable. The cfgArray contains typed data in program 
- *	memory (PROGMEM).
- * 
+ *	memory (PROGMEM, in the AVR).
+ *
  *	Each cfgItem has:
  *	 - group string identifying what group the variable is part of; or "" if no group
  *	 - token string - the token for that variable - pre-pended with the group (if present)
  *	 - operations flags - e.g. if the value should be initialized and/or persisted to NVM
- *	 - pointer to a formatted print string also in program memory (Used only for text mode)
  *	 - function pointer for formatted print() method for text-mode readouts
  *	 - function pointer for get() method - gets value from memory
  *	 - function pointer for set() method - sets value and runs functions
@@ -93,52 +91,44 @@
  *
  *	Adding a new value to config (or changing an existing one) involves touching the following places:
  *
- *	 - Add a formatting string to fmt_XXX strings. Not needed if there is no text-mode print function
- *	   of you are using one of the generic print strings.
- * 
- *	 - Create a new record in cfgArray[]. Use existing ones for examples. You can usually use existing
- *	   functions for get and set; or create a new one if you need a specialized function.
+ *	 - Create a new record in cfgArray[]. Use existing ones for examples. 
  *
- *	   The ordering of group displays is set by the order of items in cfgArray. None of the other 
+ *	 - Create functions for print, get, and set. You can often use existing generic fucntions for
+ *	   get and set, and sometimes print. If print requires any custom text it requires it's own function
+ *	   Look in the modules for examples - e.g. at the end of canoonical_machine.c 
+ *
+ *	 - The ordering of group displays is set by the order of items in cfgArray. None of the other 
  *	   orders matter but are generally kept sequenced for easier reading and code maintenance. Also,
  *	   Items earlier in the array will resolve token searches faster than ones later in the array.
  *
  *	   Note that matching will occur from the most specific to the least specific, meaning that
  *	   if tokens overlap the longer one should be earlier in the array: "gco" should precede "gc".
  */
-/*  --- Rules, guidelines and random stuff
- *
- *	It's the responsibility of the object creator to set the index. Downstream functions
- *	all expect a valid index. Set the index by calling cmd_get_index(). This also validates
- *	the token and group if no lookup exists.
- */
 
 /**** cmdObj lists ****
  *
- * 	Commands and groups of commands are processed internally a doubly linked list of
- *	cmdObj_t structures. This isolates the command and config internals from the 
- *	details of communications, parsing and display in text mode and JSON mode.
+ * 	Commands and groups of commands are processed internally a doubly linked list of cmdObj_t 
+ *	structures. This isolates the command and config internals from the details of communications,
+ *	parsing and display in text mode and JSON mode.
  *
- *	The first element of the list is designated the response header element ("r") 
- *	but the list can also be serialized as a simple object by skipping over the header
+ *	The first element of the list is designated the response header element ("r") but the list 
+ *	can also be serialized as a simple object by skipping over the header
  *
- *	To use the cmd list first reset it by calling cmd_reset_list(). This initializes
- *	the header, marks the the objects as TYPE_EMPTY (-1), resets the shared string, 
- *	relinks all objects with NX and PV pointers, and makes the last element the 
- *	terminating element by setting its NX pointer to NULL. The terminating element 
- *	may carry data, and will be processed.
+ *	To use the cmd list first reset it by calling cmd_reset_list(). This initializes the header, 
+ *	marks the the objects as TYPE_EMPTY (-1), resets the shared string, relinks all objects with 
+ *	NX and PV pointers, and makes the last element the terminating element by setting its NX 
+ *	pointer to NULL. The terminating element may carry data, and will be processed.
  *
- *	When you use the list you can terminate your own last element, or just leave the 
- *	EMPTY elements to be skipped over during output serialization.
+ *	When you use the list you can terminate your own last element, or just leave the EMPTY elements 
+ *	to be skipped over during output serialization.
  * 
- * 	We don't use recursion so parent/child nesting relationships are captured in a 
- *	'depth' variable, This must remain consistent if the curlies are to work out. 
- *	In general you should not have to track depth explicitly if you use cmd_reset_list()
- *	or the accessor functions like cmd_add_integer() or cmd_add_message(). 
- *	If you see problems with curlies check the depth values in the lists.
+ * 	We don't use recursion so parent/child nesting relationships are captured in a 'depth' variable, 
+ *	This must remain consistent if the curlies are to work out. In general you should not have to 
+ *	track depth explicitly if you use cmd_reset_list() or the accessor functions like 
+ *	cmd_add_integer() or cmd_add_message(). If you see problems with curlies check the depth values
+ *	in the lists.
  *
- *	Use the cmd_print_list() dispatcher for all JSON and text output. Do not simply 
- *	run through printf.
+ *	Use the cmd_print_list() dispatcher for all JSON and text output. Do not simply run through printf.
  */
 /*	Token and Group Fields
  * 
@@ -156,19 +146,26 @@
  *	  - JSON-mode display for single - element value e.g. xvm. Concatenate as above
  *	  - JSON-mode display of a parent/child group. Parent is named grp, children nems are tokens
  */
-/*	Cmd object string handling
+/*	--- Cmd object string handling ---
  *
- *	It's very expensive to allocate sufficient string space to each cmdObj, so cmds 
- *	use a cheater's malloc. A single string of length CMD_SHARED_STRING_LEN is shared
- *	by all cmdObjs for all strings. The observation is that the total rendered output
- *	in JSON or text mode cannot exceed the size of the output buffer (typ 256 bytes),
- *	So some number less than that is sufficient for shared strings. This is all mediated 
- *	through cmd_copy_string() and cmd_copy_string_P(), and cmd_reset_list().
+ *	It's very expensive to allocate sufficient string space to each cmdObj, so cmds use a cheater's 
+ *	malloc. A single string of length CMD_SHARED_STRING_LEN is shared by all cmdObjs for all strings. 
+ *	The observation is that the total rendered output in JSON or text mode cannot exceed the size of 
+ *	the output buffer (typ 256 bytes), So some number less than that is sufficient for shared strings. 
+ *	This is all mediated through cmd_copy_string(), cmd_copy_string_P(), and cmd_reset_list().
  */
-/*	Other Notes:
+/*  --- Setting cmdObj indexes ---
  *
- *	CMD_BODY_LEN needs to allow for one parent JSON object and enough children
- *	to complete the largest possible operation - usually the status report.
+ *	It's the responsibility of the object creator to set the index. Downstream functions
+ *	all expect a valid index. Set the index by calling cmd_get_index(). This also validates
+ *	the token and group if no lookup exists. Setting the index is an expensive operation 
+ *	(linear table scan), so there are some exceptions where the index does not need to be set. 
+ *	These cases are put in the code, commented out, and explained.
+ */
+/*	--- Other Notes:---
+ *
+ *	CMD_BODY_LEN needs to allow for one parent JSON object and enough children to complete the 
+ *	largest possible operation - usually the status report.
  */
 
  /***********************************************************************************
@@ -188,7 +185,7 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 
 #define CMD_SHARED_STRING_LEN 512	// shared string for string values
 #define CMD_BODY_LEN 30				// body elements - allow for 1 parent + N children
-									// (each body element takes 25 bytes of RAM)
+									// (each body element takes about 30 bytes of RAM)
 
 // Stuff you probably don't want to change 
 
@@ -199,19 +196,15 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 #define CMD_LIST_LEN (CMD_BODY_LEN+2)// +2 allows for a header and a footer
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 
-//#define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS 	// max number of status report elements - see cfgArray
-//									// **** must also line up in cfgArray, se00 - seXX ****
-
 #define NVM_VALUE_LEN 4				// NVM value length (float, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
 
-/*
-enum lineTermination {				// REMOVED. Too easy to make the board non-responsive (not a total brick, but close)
-	IGNORE_OFF = 0,					// accept either CR or LF as termination on RX text line
-	IGNORE_CR,						// ignore CR on RX
-	IGNORE_LF						// ignore LF on RX
+enum tgCommunicationsMode {
+	TEXT_MODE = 0,					// text command line mode
+	JSON_MODE,						// strict JSON construction
+	JSON_MODE_RELAXED				// relaxed JSON construction (future)
 };
-*/
+
 enum flowControl {
 	FLOW_CONTROL_OFF = 0,			// flow control disabled
 	FLOW_CONTROL_XON,				// flow control uses XON/XOFF
@@ -228,13 +221,13 @@ enum objType {						// object / value typing for config and JSON
 	TYPE_ARRAY,						// value is array element count, values are CSV ASCII in string field
 	TYPE_PARENT						// object is a parent to a sub-object
 };
-
-enum tgCommunicationsMode {
-	TEXT_MODE = 0,					// text command line mode
-	JSON_MODE,						// strict JSON construction
-	JSON_MODE_RELAXED				// relaxed JSON construction (future)
+/*
+enum lineTermination {				// REMOVED. Too easy to make the board non-responsive (not a total brick, but close)
+	IGNORE_OFF = 0,					// accept either CR or LF as termination on RX text line
+	IGNORE_CR,						// ignore CR on RX
+	IGNORE_LF						// ignore LF on RX
 };
-
+*/
 /*
 enum tgCommunicationsSticky {
 	NOT_STICKY = 0,					// communications mode changes automatically
@@ -307,8 +300,7 @@ extern const cfgItem_t cfgArray[];
 #define cmd_header cmd_list
 #define cmd_body  (cmd_list+1)
 
-/**** Generic function prototypes ****/
-// See config_app.h for application-specific functions
+/**** Prototypes for generic config functions - see individual modules for application-specific functions  ****/
 
 void config_init(void);
 stat_t set_defaults(cmdObj_t *cmd);

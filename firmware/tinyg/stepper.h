@@ -378,16 +378,32 @@ stat_t st_set_mt(cmdObj_t *cmd);
 stat_t st_set_md(cmdObj_t *cmd);
 stat_t st_set_me(cmdObj_t *cmd);
 
-void st_print_mt(cmdObj_t *cmd);
-void st_print_me(cmdObj_t *cmd);
-void st_print_md(cmdObj_t *cmd);
+#ifdef __TEXT_MODE
 
-void st_print_ma(cmdObj_t *cmd);
-void st_print_sa(cmdObj_t *cmd);
-void st_print_tr(cmdObj_t *cmd);
-void st_print_mi(cmdObj_t *cmd);
-void st_print_po(cmdObj_t *cmd);
-void st_print_pm(cmdObj_t *cmd);
+	void st_print_mt(cmdObj_t *cmd);
+	void st_print_me(cmdObj_t *cmd);
+	void st_print_md(cmdObj_t *cmd);
+	void st_print_ma(cmdObj_t *cmd);
+	void st_print_sa(cmdObj_t *cmd);
+	void st_print_tr(cmdObj_t *cmd);
+	void st_print_mi(cmdObj_t *cmd);
+	void st_print_po(cmdObj_t *cmd);
+	void st_print_pm(cmdObj_t *cmd);
+
+#else 
+
+	#define st_print_mt tx_print_nul
+	#define st_print_me tx_print_nul
+	#define st_print_md tx_print_nul
+	#define st_print_ma tx_print_nul
+	#define st_print_sa tx_print_nul
+	#define st_print_tr tx_print_nul
+	#define st_print_mi tx_print_nul
+	#define st_print_po tx_print_nul
+	#define st_print_pm tx_print_nul
+
+#endif // __TEXT_MODE
+
 
 #ifdef __DEBUG
 void st_dump_stepper_state(void);

@@ -458,6 +458,18 @@ void json_print_response(uint8_t status)
 	fprintf(stderr, "%s", cs.out_buf);
 }
 
+/*
+ * json_print_list() - command to select and produce a JSON formatted output
+ */
+
+void json_print_list(stat_t status, uint8_t flags)
+{
+	switch (flags) {
+		case JSON_NO_PRINT: { break; } 
+		case JSON_OBJECT_FORMAT: { json_print_object(cmd_body); break; }
+		case JSON_RESPONSE_FORMAT: { json_print_response(status); break; }
+	}
+}
 
 /***********************************************************************************
  * CONFIGURATION AND INTERFACE FUNCTIONS
@@ -510,28 +522,13 @@ void js_print_ej(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_ej);}
 void js_print_jv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_jv);}
 void js_print_fs(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_fs);}
 
-
-/*
- * json_print_list() - command to select and produce a JSON formatted output
- */
-
-void json_print_list(stat_t status, uint8_t flags)
-{
-	switch (flags) {
-		case JSON_NO_PRINT: { break; } 
-		case JSON_OBJECT_FORMAT: { json_print_object(cmd_body); break; }
-		case JSON_RESPONSE_FORMAT: { json_print_response(status); break; }
-	}
-}
-
-
-#endif //__TEXT_MODE 
+#endif // __TEXT_MODE 
 
 
 
-//###########################################################################
-//##### UNIT TESTS ##########################################################
-//###########################################################################
+/****************************************************************************
+ ***** Unit Tests ***********************************************************
+ ****************************************************************************/
 
 #if defined (__UNIT_TESTS) && defined (__UNIT_TEST_JSON)
 

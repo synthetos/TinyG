@@ -45,50 +45,66 @@ enum textFormats {					// text output print modes
 typedef struct txtSingleton {		// text mode data
 
 	/*** config values (PUBLIC) ***/
+
 	char_t format[CMD_FORMAT_LEN+1];
 
 	/*** runtime values (PRIVATE) ***/
 
+	uint8_t text_verbosity;			// see enum in this file for settings
+
 } txtSingleton_t;
-
-/**** Externs - See report.c for allocation ****/
-
 extern txtSingleton_t txt;
-
-extern const char_t PROGMEM fmt_nul[];
-extern const char_t PROGMEM fmt_ui8[];
-extern const char_t PROGMEM fmt_flt[];
-extern const char_t PROGMEM fmt_str[];
 
 /**** Global Scope Functions ****/
 
-stat_t text_parser(char_t *str);
-void text_response(const stat_t status, char_t *buf);
-void text_print_list(stat_t status, uint8_t flags);
-void text_print_inline_pairs(cmdObj_t *cmd);
-void text_print_inline_values(cmdObj_t *cmd);
-void text_print_multiline_formatted(cmdObj_t *cmd);
+#ifdef __TEXT_MODE
 
-void tx_print_tv(cmdObj_t *cmd);
+	stat_t text_parser(char_t *str);
+	void text_response(const stat_t status, char_t *buf);
+	void text_print_list(stat_t status, uint8_t flags);
+	void text_print_inline_pairs(cmdObj_t *cmd);
+	void text_print_inline_values(cmdObj_t *cmd);
+	void text_print_multiline_formatted(cmdObj_t *cmd);
 
-void tx_print_nul(cmdObj_t *cmd);
-void tx_print_str(cmdObj_t *cmd);
-void tx_print_ui8(cmdObj_t *cmd);
-void tx_print_int(cmdObj_t *cmd);
-void tx_print_flt(cmdObj_t *cmd);
+	void tx_print_nul(cmdObj_t *cmd);
+	void tx_print_str(cmdObj_t *cmd);
+	void tx_print_ui8(cmdObj_t *cmd);
+	void tx_print_int(cmdObj_t *cmd);
+	void tx_print_flt(cmdObj_t *cmd);
 
-void text_print_nul(cmdObj_t *cmd, const char_t *format);
-void text_print_str(cmdObj_t *cmd, const char_t *format);
-void text_print_ui8(cmdObj_t *cmd, const char_t *format);
-void text_print_int(cmdObj_t *cmd, const char_t *format);
-void text_print_flt(cmdObj_t *cmd, const char_t *format);
+	void text_print_nul(cmdObj_t *cmd, const char_t *format);
+	void text_print_str(cmdObj_t *cmd, const char_t *format);
+	void text_print_ui8(cmdObj_t *cmd, const char_t *format);
+	void text_print_int(cmdObj_t *cmd, const char_t *format);
+	void text_print_flt(cmdObj_t *cmd, const char_t *format);
+	void text_print_flt_units(cmdObj_t *cmd, const char_t *format, const char_t *units);
 
-void text_print_flt_units(cmdObj_t *cmd, const char_t *format, const char_t *units);
+	void tx_print_tv(cmdObj_t *cmd);
 
-extern const char_t PROGMEM fmt_tv[];
+#else
+
+	#define text_parser text_parser_stub
+	#define text_response text_response_stub
+	#define text_print_list text_print_list_stub
+	#define tx_print_nul tx_print_stub
+	#define tx_print_ui8 tx_print_stub
+	#define tx_print_int tx_print_stub
+	#define tx_print_flt tx_print_stub
+	#define tx_print_str tx_print_stub
+	#define tx_print_tv tx_print_stub
+
+	void tx_print_stub(cmdObj_t *cmd);
+
+#endif
+
+stat_t text_parser_stub(char_t *str);
+void text_response_stub(const stat_t status, char_t *buf);
+void text_print_list_stub(stat_t status, uint8_t flags);
 
 
-/* unit test setup */
+/****************************************************************************
+ ***** Unit Tests ***********************************************************
+ ****************************************************************************/
 
 //#define __UNIT_TEST_TEXT				// uncomment to enable TEXT unit tests
 #ifdef __UNIT_TEST_TEXT

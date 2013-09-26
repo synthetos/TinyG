@@ -28,8 +28,8 @@
  *	See config.h for a Config system overview and a bunch of details.
  */
 
-#include "tinyg.h"			// config reaches into almost everything
-#include "config.h"
+#include "tinyg.h"		// #1
+#include "config.h"		// #2
 #include "report.h"
 #include "controller.h"
 #include "canonical_machine.h"

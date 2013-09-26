@@ -41,18 +41,16 @@
 extern "C"{
 #endif
 
-#ifndef __TEXT_MODE					// insert text stubs
+txtSingleton_t txt;					// declare the singleton for either __TEXT_MODE setting
 
-stat_t text_parser(char_t *str) { return (STAT_OK);}
-void text_response(const stat_t status, char_t *buf) { return;}
-void text_print_list(stat_t status, uint8_t flags) { return;}
-void text_print_inline_pairs(cmdObj_t *cmd) { return;}
-void text_print_inline_values(cmdObj_t *cmd) { return;}
-void text_print_multiline_formatted(cmdObj_t *cmd) { return;}
+#ifndef __TEXT_MODE
+
+stat_t text_parser_stub(char_t *str) {return (STAT_OK);}
+void text_response_stub(const stat_t status, char_t *buf) {}
+void text_print_list_stub (stat_t status, uint8_t flags) {}
+void tx_print_stub(cmdObj_t *cmd) {}
 
 #else // __TEXT_MODE
-
-txtSingleton_t txt;
 
 static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd);
 
@@ -147,7 +145,7 @@ static const char prompt_err[] PROGMEM = "tinyg [%s] err: %s: %s ";
 
 void text_response(const stat_t status, char_t *buf)
 {
-	if (cfg.text_verbosity == TV_SILENT) return;	// skip all this
+	if (txt.text_verbosity == TV_SILENT) return;	// skip all this
 
 	char units[] = "inch";
 	if (cm_get_units_mode(MODEL) != INCHES) { strcpy(units, "mm"); }
@@ -222,17 +220,8 @@ void text_print_multiline_formatted(cmdObj_t *cmd)
 }
 
 /*
- * Text formatted print
- */
-
-const char_t PROGMEM fmt_tv[] = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
-
-void tx_print_tv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_tv);}
-
-/*
  * Text print primitives using generic formats
  */
-const char_t PROGMEM fmt_nul[] = "";
 const char_t PROGMEM fmt_str[] = "%s\n";	// generic format for string message (with no formatting)
 const char_t PROGMEM fmt_ui8[] = "%d\n";	// generic format for ui8s
 const char_t PROGMEM fmt_int[] = "%d\n";	// generic format for ui8s
@@ -261,8 +250,17 @@ void text_print_flt_units(cmdObj_t *cmd, const char_t *format, const char_t *uni
 	fprintf_P(stderr, format, cmd->value, units);
 }
 
+/*
+ * Formatted print supporting the text parser
+ */
+const char_t PROGMEM fmt_tv[] = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
+
+void tx_print_tv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_tv);}
+
+
+#endif // __TEXT_MODE
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
-#endif // __TEXT_MODE

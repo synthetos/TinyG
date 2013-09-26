@@ -116,12 +116,23 @@ void qr_clear_queue_report(void);
 void qr_request_queue_report(int8_t buffers);
 stat_t qr_queue_report_callback(void);
 
-void sr_print_sr(cmdObj_t *cmd);
-void sr_print_si(cmdObj_t *cmd);
-void sr_print_sv(cmdObj_t *cmd);
+#ifdef __TEXT_MODE
 
-void qr_print_qv(cmdObj_t *cmd);
-void qr_print_qr(cmdObj_t *cmd);
+	void sr_print_sr(cmdObj_t *cmd);
+	void sr_print_si(cmdObj_t *cmd);
+	void sr_print_sv(cmdObj_t *cmd);
+	void qr_print_qv(cmdObj_t *cmd);
+	void qr_print_qr(cmdObj_t *cmd);
+
+#else
+
+	#define sr_print_sr tx_print_nul
+	#define sr_print_si tx_print_nul
+	#define sr_print_sv tx_print_nul
+	#define qr_print_qv tx_print_nul
+	#define qr_print_qr tx_print_nul
+
+#endif // __TEXT_MODE
 
 
 /* unit test setup */

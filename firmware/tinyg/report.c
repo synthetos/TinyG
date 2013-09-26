@@ -454,19 +454,6 @@ stat_t sr_set_si(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-/*********************************************************************************
- * TEXT PRINTS
- * sr_print_sr() - produce SR text output
- */
-
-const char_t PROGMEM fmt_si[] = "[si]  status interval%14.0f ms\n";
-const char_t PROGMEM fmt_sv[] = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
-
-void sr_print_sr(cmdObj_t *cmd) { sr_populate_unfiltered_status_report();}
-void sr_print_si(cmdObj_t *cmd) { text_print_flt(cmd, fmt_si);}
-void sr_print_sv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_sv);}
-
-
 /*****************************************************************************
  * Queue Reports
  *
@@ -557,6 +544,23 @@ uint8_t qr_queue_report_callback()
 	return (STAT_OK);
 */
 
+
+/***********************************************************************************
+ * TEXT MODE SUPPORT
+ * Functions to print variables from the cfgArray table
+ ***********************************************************************************/
+
+#ifdef __TEXT_MODE
+/*
+ * sr_print_sr() - produce SR text output
+ */
+const char_t PROGMEM fmt_si[] = "[si]  status interval%14.0f ms\n";
+const char_t PROGMEM fmt_sv[] = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
+
+void sr_print_sr(cmdObj_t *cmd) { sr_populate_unfiltered_status_report();}
+void sr_print_si(cmdObj_t *cmd) { text_print_flt(cmd, fmt_si);}
+void sr_print_sv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_sv);}
+
 /*
  * qr_print_qr() - produce QR text output
  */
@@ -566,8 +570,11 @@ const char_t PROGMEM fmt_qv[] = "[qv]  queue report verbosity%7d [0=off,1=filter
 void qr_print_qr(cmdObj_t *cmd) { text_print_int(cmd, fmt_qr);}
 void qr_print_qv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_qv);}
 
+#endif // __TEXT_MODE
+
+
 /****************************************************************************
- ***** Report Unit Tests ****************************************************
+ ***** Unit Tests ***********************************************************
  ****************************************************************************/
 
 #ifdef __UNIT_TESTS

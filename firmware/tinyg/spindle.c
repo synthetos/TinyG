@@ -25,14 +25,14 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "tinyg.h"
+#include "tinyg.h"		// #1
+#include "config.h"		// #2
 #include "gpio.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "spindle.h"
 #include "planner.h"
 #include "system.h"
-#include "config.h"
 #include "pwm.h"
 
 static void _exec_spindle_control(float *value, float *flag);

@@ -644,57 +644,116 @@ stat_t cm_set_sw(cmdObj_t *cmd);		// must run any time you change a switch setti
 
 /*--- text_mode support functions ---*/
 
-void cm_print_vel(cmdObj_t *cmd);		// model state reporting
-void cm_print_feed(cmdObj_t *cmd);
-void cm_print_line(cmdObj_t *cmd);
-void cm_print_stat(cmdObj_t *cmd);
-void cm_print_macs(cmdObj_t *cmd);
-void cm_print_cycs(cmdObj_t *cmd);
-void cm_print_mots(cmdObj_t *cmd);
-void cm_print_hold(cmdObj_t *cmd);
-void cm_print_home(cmdObj_t *cmd);
-void cm_print_unit(cmdObj_t *cmd);
-void cm_print_coor(cmdObj_t *cmd);
-void cm_print_momo(cmdObj_t *cmd);
-void cm_print_plan(cmdObj_t *cmd);
-void cm_print_path(cmdObj_t *cmd);
-void cm_print_dist(cmdObj_t *cmd);
-void cm_print_frmo(cmdObj_t *cmd);
-void cm_print_tool(cmdObj_t *cmd);
+#ifdef __TEXT_MODE
 
-void cm_print_gpl(cmdObj_t *cmd);		// Gcode defaults
-void cm_print_gun(cmdObj_t *cmd);
-void cm_print_gco(cmdObj_t *cmd);
-void cm_print_gpa(cmdObj_t *cmd);
-void cm_print_gdi(cmdObj_t *cmd);
+	void cm_print_vel(cmdObj_t *cmd);		// model state reporting
+	void cm_print_feed(cmdObj_t *cmd);
+	void cm_print_line(cmdObj_t *cmd);
+	void cm_print_stat(cmdObj_t *cmd);
+	void cm_print_macs(cmdObj_t *cmd);
+	void cm_print_cycs(cmdObj_t *cmd);
+	void cm_print_mots(cmdObj_t *cmd);
+	void cm_print_hold(cmdObj_t *cmd);
+	void cm_print_home(cmdObj_t *cmd);
+	void cm_print_unit(cmdObj_t *cmd);
+	void cm_print_coor(cmdObj_t *cmd);
+	void cm_print_momo(cmdObj_t *cmd);
+	void cm_print_plan(cmdObj_t *cmd);
+	void cm_print_path(cmdObj_t *cmd);
+	void cm_print_dist(cmdObj_t *cmd);
+	void cm_print_frmo(cmdObj_t *cmd);
+	void cm_print_tool(cmdObj_t *cmd);
 
-void cm_print_lin(cmdObj_t *cmd);		// generic print for linear values 
-void cm_print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
-void cm_print_mpo(cmdObj_t *cmd);		// print runtime work position always in MM uints
+	void cm_print_gpl(cmdObj_t *cmd);		// Gcode defaults
+	void cm_print_gun(cmdObj_t *cmd);
+	void cm_print_gco(cmdObj_t *cmd);
+	void cm_print_gpa(cmdObj_t *cmd);
+	void cm_print_gdi(cmdObj_t *cmd);
 
-void cm_print_ja(cmdObj_t *cmd);		// global CM settings
-void cm_print_ct(cmdObj_t *cmd);
-void cm_print_ml(cmdObj_t *cmd);
-void cm_print_ma(cmdObj_t *cmd);
-void cm_print_ms(cmdObj_t *cmd);
-void cm_print_st(cmdObj_t *cmd);
+	void cm_print_lin(cmdObj_t *cmd);		// generic print for linear values 
+	void cm_print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
+	void cm_print_mpo(cmdObj_t *cmd);		// print runtime work position always in MM uints
 
-void cm_print_am(cmdObj_t *cmd);		// axis print functions
-void cm_print_fr(cmdObj_t *cmd);
-void cm_print_vm(cmdObj_t *cmd);
-void cm_print_tm(cmdObj_t *cmd);
-void cm_print_jm(cmdObj_t *cmd);
-void cm_print_jh(cmdObj_t *cmd);
-void cm_print_jd(cmdObj_t *cmd);
-void cm_print_ra(cmdObj_t *cmd);
-void cm_print_sn(cmdObj_t *cmd);
-void cm_print_sx(cmdObj_t *cmd);
-void cm_print_sv(cmdObj_t *cmd);
-void cm_print_lv(cmdObj_t *cmd);
-void cm_print_lb(cmdObj_t *cmd);
-void cm_print_zb(cmdObj_t *cmd);
+	void cm_print_ja(cmdObj_t *cmd);		// global CM settings
+	void cm_print_ct(cmdObj_t *cmd);
+	void cm_print_ml(cmdObj_t *cmd);
+	void cm_print_ma(cmdObj_t *cmd);
+	void cm_print_ms(cmdObj_t *cmd);
+	void cm_print_st(cmdObj_t *cmd);
 
-void cm_print_cofs(cmdObj_t *cmd);
-void cm_print_cloc(cmdObj_t *cmd);
+	void cm_print_am(cmdObj_t *cmd);		// axis print functions
+	void cm_print_fr(cmdObj_t *cmd);
+	void cm_print_vm(cmdObj_t *cmd);
+	void cm_print_tm(cmdObj_t *cmd);
+	void cm_print_jm(cmdObj_t *cmd);
+	void cm_print_jh(cmdObj_t *cmd);
+	void cm_print_jd(cmdObj_t *cmd);
+	void cm_print_ra(cmdObj_t *cmd);
+	void cm_print_sn(cmdObj_t *cmd);
+	void cm_print_sx(cmdObj_t *cmd);
+	void cm_print_sv(cmdObj_t *cmd);
+	void cm_print_lv(cmdObj_t *cmd);
+	void cm_print_lb(cmdObj_t *cmd);
+	void cm_print_zb(cmdObj_t *cmd);
+
+	void cm_print_cofs(cmdObj_t *cmd);
+	void cm_print_cloc(cmdObj_t *cmd);
+
+#else // __TEXT_MODE
+
+	#define cm_print_vel tx_print_nul		// model state reporting
+	#define cm_print_feed tx_print_nul
+	#define cm_print_line tx_print_nul
+	#define cm_print_stat tx_print_nul
+	#define cm_print_macs tx_print_nul
+	#define cm_print_cycs tx_print_nul
+	#define cm_print_mots tx_print_nul
+	#define cm_print_hold tx_print_nul
+	#define cm_print_home tx_print_nul
+	#define cm_print_unit tx_print_nul
+	#define cm_print_coor tx_print_nul
+	#define cm_print_momo tx_print_nul
+	#define cm_print_plan tx_print_nul
+	#define cm_print_path tx_print_nul
+	#define cm_print_dist tx_print_nul
+	#define cm_print_frmo tx_print_nul
+	#define cm_print_tool tx_print_nul
+
+	#define cm_print_gpl tx_print_nul		// Gcode defaults
+	#define cm_print_gun tx_print_nul
+	#define cm_print_gco tx_print_nul
+	#define cm_print_gpa tx_print_nul
+	#define cm_print_gdi tx_print_nul
+
+	#define cm_print_lin tx_print_nul		// generic print for linear values 
+	#define cm_print_pos tx_print_nul		// print runtime work position in prevailing units
+	#define cm_print_mpo tx_print_nul		// print runtime work position always in MM uints
+
+	#define cm_print_ja tx_print_nul		// global CM settings
+	#define cm_print_ct tx_print_nul
+	#define cm_print_ml tx_print_nul
+	#define cm_print_ma tx_print_nul
+	#define cm_print_ms tx_print_nul
+	#define cm_print_st tx_print_nul
+
+	#define cm_print_am tx_print_nul		// axis print functions
+	#define cm_print_fr tx_print_nul
+	#define cm_print_vm tx_print_nul
+	#define cm_print_tm tx_print_nul
+	#define cm_print_jm tx_print_nul
+	#define cm_print_jh tx_print_nul
+	#define cm_print_jd tx_print_nul
+	#define cm_print_ra tx_print_nul
+	#define cm_print_sn tx_print_nul
+	#define cm_print_sx tx_print_nul
+	#define cm_print_sv tx_print_nul
+	#define cm_print_lv tx_print_nul
+	#define cm_print_lb tx_print_nul
+	#define cm_print_zb tx_print_nul
+
+	#define cm_print_cofs tx_print_nul
+	#define cm_print_cloc tx_print_nul
+
+#endif // __TEXT_MODE
 
 #endif // _CANONICAL_MACHINE_H_

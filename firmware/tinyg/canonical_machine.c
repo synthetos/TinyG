@@ -84,9 +84,8 @@
  *
  */
 
-#include "tinyg.h"
-#include "util.h"
-#include "config.h"
+#include "tinyg.h"		// #1
+#include "config.h"		// #2
 #include "text_parser.h"
 #include "canonical_machine.h"
 #include "plan_arc.h"
@@ -97,6 +96,7 @@
 #include "gpio.h"
 #include "switch.h"
 #include "system.h"
+#include "util.h"
 #include "xio/xio.h"			// for serial queue flush
 
 /***********************************************************************************
@@ -1351,6 +1351,7 @@ static const char_t PROGMEM msg_units0[] = " in";	// used by generic print funct
 static const char_t PROGMEM msg_units1[] = " mm";
 static const char_t PROGMEM msg_units2[] = " deg";
 static PGM_P const  PROGMEM msg_units[] = { msg_units0, msg_units1, msg_units2 };
+#define GET_UNITS(a) (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(a)])
 #define DEGREE_INDEX 2
 
 static const char_t PROGMEM msg_g20[] = "G20 - inches mode";
@@ -1524,7 +1525,8 @@ stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value)
 	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg[value*2]))); // hack alert: direct computation of index
 	return (STAT_OK);
 //	return((char_t *)pgm_read_word(&msg[(uint8_t)value]));
-//  ARM code:
+
+// ARM code:
 //	cmd->value = (float)value;
 //	cmd->objtype = TYPE_INTEGER;
 //	return (cmd_copy_string(cmd, msg_array[value]));
@@ -1615,7 +1617,7 @@ stat_t cm_run_home(cmdObj_t *cmd)
 }
 
 /* 
- * AXIS FUNCTIONS
+ * AXIS GET AND SET FUNCTIONS
  *
  * cm_get_am()	- get axis mode w/enumeration string
  * cm_set_am()	- set axis mode w/exception handling for axis type
@@ -1670,6 +1672,8 @@ stat_t cm_set_sw(cmdObj_t *cmd)			// switch setting
  * Commands
  *
  * cm_run_qf() - flush planner queue 
+ * get_gc()	- get gcode block
+ * run_gc()	- launch the gcode parser on a block of gcode
  */
 
 stat_t cm_run_qf(cmdObj_t *cmd) 
@@ -1678,6 +1682,24 @@ stat_t cm_run_qf(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
+/*
+static const char_t PROGMEM msg_sw0[] = "Disabled";
+static const char_t PROGMEM msg_sw1[] = "NO homing";
+static const char_t PROGMEM msg_sw2[] = "NO homing & limit";
+static const char_t PROGMEM msg_sw3[] = "NC homing";
+static const char_t PROGMEM msg_sw4[] = "NC homing & limit";
+static PGM_P const  PROGMEM msg_sw[] = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
+*/
+
+/* run_sx()	- send XOFF, XON --- test only 
+static stat_t run_sx(cmdObj_t *cmd)
+{
+	xio_putc(XIO_DEV_USB, XOFF);
+	xio_putc(XIO_DEV_USB, XON);
+	return (STAT_OK);
+}
+*/
+
 /***********************************************************************************
  * TEXT MODE SUPPORT
  * Functions to print variables from the cfgArray table
@@ -1685,11 +1707,64 @@ stat_t cm_run_qf(cmdObj_t *cmd)
 
 #ifdef __TEXT_MODE
 
-#define GET_UNITS(a) (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(a)])
-
 /*
- * model state print functions
- */
+void cm_print_vel(cmdObj_t *cmd)  { text_print_flt_units(cmd, fmt_vel, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_feed(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_feed, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_line(cmdObj_t *cmd) { text_print_int(cmd, fmt_line);}
+void cm_print_stat(cmdObj_t *cmd) { text_print_str(cmd, fmt_stat);}
+void cm_print_macs(cmdObj_t *cmd) { text_print_str(cmd, fmt_macs);}
+void cm_print_cycs(cmdObj_t *cmd) { text_print_str(cmd, fmt_cycs);}
+void cm_print_mots(cmdObj_t *cmd) { text_print_str(cmd, fmt_mots);}
+void cm_print_hold(cmdObj_t *cmd) { text_print_str(cmd, fmt_hold);}
+void cm_print_home(cmdObj_t *cmd) { text_print_str(cmd, fmt_home);}
+void cm_print_unit(cmdObj_t *cmd) { text_print_str(cmd, fmt_unit);}
+void cm_print_coor(cmdObj_t *cmd) { text_print_str(cmd, fmt_coor);}
+void cm_print_momo(cmdObj_t *cmd) { text_print_str(cmd, fmt_momo);}
+void cm_print_plan(cmdObj_t *cmd) { text_print_str(cmd, fmt_plan);}
+void cm_print_path(cmdObj_t *cmd) { text_print_str(cmd, fmt_path);}
+void cm_print_dist(cmdObj_t *cmd) { text_print_str(cmd, fmt_dist);}
+void cm_print_frmo(cmdObj_t *cmd) { text_print_str(cmd, fmt_frmo);}
+void cm_print_tool(cmdObj_t *cmd) { text_print_int(cmd, fmt_tool);}
+
+void cm_print_gpl(cmdObj_t *cmd) { text_print_int(cmd, fmt_gpl);}
+void cm_print_gun(cmdObj_t *cmd) { text_print_int(cmd, fmt_gun);}
+void cm_print_gco(cmdObj_t *cmd) { text_print_int(cmd, fmt_gco);}
+void cm_print_gpa(cmdObj_t *cmd) { text_print_int(cmd, fmt_gpa);}
+void cm_print_gdi(cmdObj_t *cmd) { text_print_int(cmd, fmt_gdi);}
+
+void cm_print_ja(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_ct(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_ml(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ml, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_ma(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ma, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_ms(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ms, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_st(cmdObj_t *cmd) { text_print_flt(cmd, fmt_st);}
+
+
+void cm_print_fr(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xfr);}
+void cm_print_vm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xvm);}
+void cm_print_tm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xtm);}
+void cm_print_jm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjm);}
+void cm_print_jh(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjh);}
+void cm_print_jd(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjd);}
+void cm_print_ra(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xra);}
+void cm_print_sn(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsn);}
+void cm_print_sx(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsx);}
+void cm_print_sv(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xsv);}
+void cm_print_lv(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xlv);}
+void cm_print_lb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xlb);}
+void cm_print_zb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xzb);}
+
+void cm_print_cofs(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cofs);}
+void cm_print_cloc(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cloc);}
+
+void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
+void cm_print_pos(cmdObj_t *cmd) { _print_pos_helper(cmd, fmt_pos, cm_get_units_mode(MODEL));}
+void cm_print_mpo(cmdObj_t *cmd) { _print_pos_helper(cmd, fmt_mpo, MILLIMETERS);}
+
+#else //__TEXT_MODE
+*/
+
+/* model state print functions */
 
 const char_t PROGMEM fmt_vel[]  = "Velocity:%17.3f%S/min\n";
 const char_t PROGMEM fmt_feed[] = "Feed rate:%16.3f%S/min\n";
@@ -1744,9 +1819,7 @@ void cm_print_gco(cmdObj_t *cmd) { text_print_int(cmd, fmt_gco);}
 void cm_print_gpa(cmdObj_t *cmd) { text_print_int(cmd, fmt_gpa);}
 void cm_print_gdi(cmdObj_t *cmd) { text_print_int(cmd, fmt_gdi);}
 
-/*
- * system state print functions
- */
+/* system state print functions */
 
 const char_t PROGMEM fmt_ja[] = "[ja]  junction acceleration%8.0f%S\n";
 const char_t PROGMEM fmt_ct[] = "[ct]  chordal tolerance%16.3f%S\n";
@@ -1867,6 +1940,15 @@ void _print_pos_helper(cmdObj_t *cmd, const char_t *format, uint8_t units)
 }
 void cm_print_pos(cmdObj_t *cmd) { _print_pos_helper(cmd, fmt_pos, cm_get_units_mode(MODEL));}
 void cm_print_mpo(cmdObj_t *cmd) { _print_pos_helper(cmd, fmt_mpo, MILLIMETERS);}
+
+/*
+void print_ss(cmdObj_t *cmd)			// print switch state
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->token, cmd->value);
+}
+*/
 
 #endif // __TEXT_MODE
 

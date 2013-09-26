@@ -24,11 +24,12 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "tinyg.h"
-#include "util.h"
-#include "config.h"
+#include "tinyg.h"		// #1
+#include "config.h"		// #2
+#include "controller.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
+#include "util.h"
 #include "xio/xio.h"				// for char definitions
 
 struct gcodeParserSingleton {	 	  // struct to manage globals
@@ -482,4 +483,28 @@ static stat_t _execute_gcode_block()
 	}
 	return (status);
 }
+
+/***********************************************************************************
+ * CONFIGURATION AND INTERFACE FUNCTIONS
+ * Functions to get and set variables from the cfgArray table
+ ***********************************************************************************/
+
+stat_t gc_get_gc(cmdObj_t *cmd)
+{
+	ritorno(cmd_copy_string(cmd, cs.in_buf));
+	cmd->objtype = TYPE_STRING;
+	return (STAT_OK);
+}
+
+stat_t gc_run_gc(cmdObj_t *cmd)
+{
+	return(gc_gcode_parser(*cmd->stringp));
+}
+
+/***********************************************************************************
+ * TEXT MODE SUPPORT
+ * Functions to print variables from the cfgArray table
+ ***********************************************************************************/
+
+// none
 
