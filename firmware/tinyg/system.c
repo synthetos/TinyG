@@ -55,26 +55,26 @@ void sys_init()
 
 void sys_port_bindings(float hw_version)
 {
-	device.st_port[0] = &PORT_MOTOR_1;
-	device.st_port[1] = &PORT_MOTOR_2;
-	device.st_port[2] = &PORT_MOTOR_3;
-	device.st_port[3] = &PORT_MOTOR_4;
+	hw.st_port[0] = &PORT_MOTOR_1;
+	hw.st_port[1] = &PORT_MOTOR_2;
+	hw.st_port[2] = &PORT_MOTOR_3;
+	hw.st_port[3] = &PORT_MOTOR_4;
 
-	device.sw_port[0] = &PORT_SWITCH_X;
-	device.sw_port[1] = &PORT_SWITCH_Y;
-	device.sw_port[2] = &PORT_SWITCH_Z;
-	device.sw_port[3] = &PORT_SWITCH_A;
+	hw.sw_port[0] = &PORT_SWITCH_X;
+	hw.sw_port[1] = &PORT_SWITCH_Y;
+	hw.sw_port[2] = &PORT_SWITCH_Z;
+	hw.sw_port[3] = &PORT_SWITCH_A;
 
 	if (hw_version > 6.9) {
-		device.out_port[0] = &PORT_OUT_V7_X;
-		device.out_port[1] = &PORT_OUT_V7_Y;
-		device.out_port[2] = &PORT_OUT_V7_Z;
-		device.out_port[3] = &PORT_OUT_V7_A;
+		hw.out_port[0] = &PORT_OUT_V7_X;
+		hw.out_port[1] = &PORT_OUT_V7_Y;
+		hw.out_port[2] = &PORT_OUT_V7_Z;
+		hw.out_port[3] = &PORT_OUT_V7_A;
 	} else {
-		device.out_port[0] = &PORT_OUT_V6_X;
-		device.out_port[1] = &PORT_OUT_V6_Y;
-		device.out_port[2] = &PORT_OUT_V6_Z;
-		device.out_port[3] = &PORT_OUT_V6_A;
+		hw.out_port[0] = &PORT_OUT_V6_X;
+		hw.out_port[1] = &PORT_OUT_V6_Y;
+		hw.out_port[2] = &PORT_OUT_V6_Z;
+		hw.out_port[3] = &PORT_OUT_V6_A;
 	}
 }
 

@@ -81,21 +81,21 @@ void switch_init(void)
 
 		// setup input bits and interrupts (previously set to inputs by st_init())
 		if (sw.mode[MIN_SWITCH(i)] != SW_MODE_DISABLED) {
-			device.sw_port[i]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input - see 13.14.14
-			device.sw_port[i]->PIN6CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
-			device.sw_port[i]->INT0MASK = SW_MIN_BIT_bm;	 	// interrupt on min switch
+			hw.sw_port[i]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input - see 13.14.14
+			hw.sw_port[i]->PIN6CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
+			hw.sw_port[i]->INT0MASK = SW_MIN_BIT_bm;	 	// interrupt on min switch
 		} else {
-			device.sw_port[i]->INT0MASK = 0;	 				// disable interrupt
+			hw.sw_port[i]->INT0MASK = 0;	 				// disable interrupt
 		}
 		if (sw.mode[MAX_SWITCH(i)] != SW_MODE_DISABLED) {
-			device.sw_port[i]->DIRCLR = SW_MAX_BIT_bm;		 	// set max input - see 13.14.14
-			device.sw_port[i]->PIN7CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
-			device.sw_port[i]->INT1MASK = SW_MAX_BIT_bm;		// max on INT1
+			hw.sw_port[i]->DIRCLR = SW_MAX_BIT_bm;		 	// set max input - see 13.14.14
+			hw.sw_port[i]->PIN7CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
+			hw.sw_port[i]->INT1MASK = SW_MAX_BIT_bm;		// max on INT1
 		} else {
-			device.sw_port[i]->INT1MASK = 0;
+			hw.sw_port[i]->INT1MASK = 0;
 		}
 		// set interrupt levels. Interrupts must be enabled in main()
-		device.sw_port[i]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
+		hw.sw_port[i]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
 	}
 	reset_switches();
 }
@@ -185,14 +185,14 @@ uint8_t read_switch(uint8_t sw_num)
 
 	uint8_t read = 0;
 	switch (sw_num) {
-		case SW_MIN_X: { read = device.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_X: { read = device.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Y: { read = device.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Y: { read = device.sw_port[AXIS_Y]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Z: { read = device.sw_port[AXIS_Z]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Z: { read = device.sw_port[AXIS_Z]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_A: { read = device.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_A: { read = device.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_X: { read = hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_X: { read = hw.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Y: { read = hw.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Y: { read = hw.sw_port[AXIS_Y]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Z: { read = hw.sw_port[AXIS_Z]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Z: { read = hw.sw_port[AXIS_Z]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_A: { read = hw.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_A: { read = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
 	}
 	if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
 		sw.state[sw_num] = ((read == 0) ? SW_CLOSED : SW_OPEN);// confusing. An NO switch drives the pin LO when thrown

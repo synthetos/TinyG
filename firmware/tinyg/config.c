@@ -35,6 +35,7 @@
 #include "canonical_machine.h"
 #include "json_parser.h"
 #include "text_parser.h"
+#include "system.h"
 #include "help.h"
 #include "util.h"
 #include "xio/xio.h"
@@ -108,8 +109,8 @@ void config_init()
 	cfg.magic_end = MAGICNUM;
 
 	cm_set_units_mode(MILLIMETERS);			// must do inits in MM mode
-	cfg.nvm_base_addr = NVM_BASE_ADDR;
-	cfg.nvm_profile_base = cfg.nvm_base_addr;
+	hw.nvm_base_addr = NVM_BASE_ADDR;
+	hw.nvm_profile_base = hw.nvm_base_addr;
 	cmd->index = 0;							// this will read the first record in NVM
 
 	cmd_read_NVM_value(cmd);
@@ -676,7 +677,7 @@ void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags)
 stat_t cmd_read_NVM_value(cmdObj_t *cmd)
 {
 	int8_t nvm_byte_array[NVM_VALUE_LEN];
-	uint16_t nvm_address = cfg.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
+	uint16_t nvm_address = hw.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
 	(void)EEPROM_ReadBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
 	memcpy(&cmd->value, &nvm_byte_array, NVM_VALUE_LEN);
 	return (STAT_OK);
@@ -691,7 +692,7 @@ stat_t cmd_write_NVM_value(cmdObj_t *cmd)
 		cmd->value = tmp;
 		int8_t nvm_byte_array[NVM_VALUE_LEN];
 		memcpy(&nvm_byte_array, &tmp, NVM_VALUE_LEN);
-		uint16_t nvm_address = cfg.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
+		uint16_t nvm_address = hw.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
 		(void)EEPROM_WriteBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
 	}
 	return (STAT_OK);

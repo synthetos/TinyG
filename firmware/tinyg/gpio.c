@@ -161,27 +161,27 @@ void gpio_led_toggle(uint8_t led)
 
 uint8_t gpio_read_bit(uint8_t b)
 {
-	if (b & 0x08) { return (device.out_port[0]->IN & GPIO1_OUT_BIT_bm); }
-	if (b & 0x04) { return (device.out_port[1]->IN & GPIO1_OUT_BIT_bm); }
-	if (b & 0x02) { return (device.out_port[2]->IN & GPIO1_OUT_BIT_bm); }
-	if (b & 0x01) { return (device.out_port[3]->IN & GPIO1_OUT_BIT_bm); }
+	if (b & 0x08) { return (hw.out_port[0]->IN & GPIO1_OUT_BIT_bm); }
+	if (b & 0x04) { return (hw.out_port[1]->IN & GPIO1_OUT_BIT_bm); }
+	if (b & 0x02) { return (hw.out_port[2]->IN & GPIO1_OUT_BIT_bm); }
+	if (b & 0x01) { return (hw.out_port[3]->IN & GPIO1_OUT_BIT_bm); }
 	return (0);
 }
 
 void gpio_set_bit_on(uint8_t b)
 {
-	if (b & 0x08) { device.out_port[0]->OUTSET = GPIO1_OUT_BIT_bm; }
-	if (b & 0x04) { device.out_port[1]->OUTSET = GPIO1_OUT_BIT_bm; }
-	if (b & 0x02) { device.out_port[2]->OUTSET = GPIO1_OUT_BIT_bm; }
-	if (b & 0x01) { device.out_port[3]->OUTSET = GPIO1_OUT_BIT_bm; }
+	if (b & 0x08) { hw.out_port[0]->OUTSET = GPIO1_OUT_BIT_bm; }
+	if (b & 0x04) { hw.out_port[1]->OUTSET = GPIO1_OUT_BIT_bm; }
+	if (b & 0x02) { hw.out_port[2]->OUTSET = GPIO1_OUT_BIT_bm; }
+	if (b & 0x01) { hw.out_port[3]->OUTSET = GPIO1_OUT_BIT_bm; }
 }
 
 void gpio_set_bit_off(uint8_t b)
 {
-	if (b & 0x08) { device.out_port[0]->OUTCLR = GPIO1_OUT_BIT_bm; }
-	if (b & 0x04) { device.out_port[1]->OUTCLR = GPIO1_OUT_BIT_bm; }
-	if (b & 0x02) { device.out_port[2]->OUTCLR = GPIO1_OUT_BIT_bm; }
-	if (b & 0x01) { device.out_port[3]->OUTCLR = GPIO1_OUT_BIT_bm; }
+	if (b & 0x08) { hw.out_port[0]->OUTCLR = GPIO1_OUT_BIT_bm; }
+	if (b & 0x04) { hw.out_port[1]->OUTCLR = GPIO1_OUT_BIT_bm; }
+	if (b & 0x02) { hw.out_port[2]->OUTCLR = GPIO1_OUT_BIT_bm; }
+	if (b & 0x01) { hw.out_port[3]->OUTCLR = GPIO1_OUT_BIT_bm; }
 }
 
 // DEPRECATED CODE THAT MIGHT STILL BE USEFUL

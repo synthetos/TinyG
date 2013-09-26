@@ -161,13 +161,17 @@ enum cfgPortBits {			// motor control port bit positions
 	not assigned to the designated function - ur unpredicatable results will occur
 */
 
-typedef struct deviceSingleton {
+typedef struct hmSingleton {
 	PORT_t *st_port[MOTORS];	// bindings for stepper motor ports (stepper.c)
 	PORT_t *sw_port[MOTORS];	// bindings for switch ports (GPIO2)
 	PORT_t *out_port[MOTORS];	// bindings for output ports (GPIO1)
-} deviceSingleton_t;
-deviceSingleton_t device;
 
+	// Non-volatile RAM
+	uint16_t nvm_base_addr;			// NVM base address
+	uint16_t nvm_profile_base;		// NVM base address of current profile
+
+} hwSingleton_t;
+hwSingleton_t hw;
 
 /*** function prototypes ***/
 

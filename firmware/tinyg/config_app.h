@@ -58,8 +58,8 @@ typedef struct cfgParameters {
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
 
 	// Non-volatile RAM
-	uint16_t nvm_base_addr;			// NVM base address
-	uint16_t nvm_profile_base;		// NVM base address of current profile
+//	uint16_t nvm_base_addr;			// NVM base address
+//	uint16_t nvm_profile_base;		// NVM base address of current profile
 
 	uint16_t magic_end;
 } cfgParameters_t;

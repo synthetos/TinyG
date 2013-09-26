@@ -92,8 +92,8 @@ void stepper_init()
 
 	// setup ports
 	for (uint8_t i=0; i<MOTORS; i++) {
-		device.st_port[i]->DIR = MOTOR_PORT_DIR_gm;  // sets outputs for motors & GPIO1, and GPIO2 inputs
-		device.st_port[i]->OUT = MOTOR_ENABLE_BIT_bm;// zero port bits AND disable motor
+		hw.st_port[i]->DIR = MOTOR_PORT_DIR_gm;  // sets outputs for motors & GPIO1, and GPIO2 inputs
+		hw.st_port[i]->OUT = MOTOR_ENABLE_BIT_bm;// zero port bits AND disable motor
 	}
 	// setup DDA timer
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// turn timer off
@@ -548,17 +548,17 @@ stat_t st_prep_line(float steps[], float microseconds)
 void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode)
 {
 	if (microstep_mode == 8) {
-		device.st_port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
-		device.st_port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
+		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
+		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
 	} else if (microstep_mode == 4) {
-		device.st_port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
-		device.st_port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
+		hw.st_port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
+		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
 	} else if (microstep_mode == 2) {
-		device.st_port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
-		device.st_port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
+		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
+		hw.st_port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
 	} else if (microstep_mode == 1) {
-		device.st_port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
-		device.st_port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
+		hw.st_port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
+		hw.st_port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
 	}
 }
 
