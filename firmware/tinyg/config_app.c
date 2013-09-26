@@ -79,21 +79,6 @@ static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 //static stat_t run_sx(cmdObj_t *cmd);		// send XOFF, XON
 
 /***********************************************************************************
- **** FLASH STRINGS AND STRING ARRAYS **********************************************
- ***********************************************************************************/
-/* Format strings for printf() formatting
- * NOTE: DO NOT USE TABS IN FORMAT STRINGS
- */
-
-static const char_t PROGMEM msg_units0[] = " in";	// used by generic print functions
-static const char_t PROGMEM msg_units1[] = " mm";
-static const char_t PROGMEM msg_units2[] = " deg";
-static PGM_P const  PROGMEM msg_units[] = { msg_units0, msg_units1, msg_units2 };
-#define DEGREE_INDEX 2
-
-//const char_t PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
-
-/***********************************************************************************
  **** CONFIG TABLE  ****************************************************************
  ***********************************************************************************
  *	NOTES:
@@ -597,6 +582,8 @@ static stat_t _do_all(cmdObj_t *cmd)	// print all parameters
  * Functions to get and set variables from the cfgArray table
  * Most of these can be found in their respective modules.
  ***********************************************************************************/
+
+//const char_t PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
 
 /**** COMMUNICATIONS FUNCTIONS ******************************************************
  * set_ic() - ignore CR or LF on RX

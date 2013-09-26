@@ -155,10 +155,7 @@ void st_set_motor_idle_timeout(float seconds)
 	st.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(seconds, IDLE_TIMEOUT_SECONDS_MIN));
 }
 
-void st_set_motor_power(const uint8_t motor)
-{
-
-}
+void st_set_motor_power(const uint8_t motor) { }
 
 void st_energize_motor(const uint8_t motor)
 {
