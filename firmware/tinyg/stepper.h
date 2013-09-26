@@ -348,16 +348,10 @@ extern stConfig_t st;
 void stepper_init(void);
 uint8_t stepper_isbusy(void);
 
-void st_set_motor_idle_timeout(float seconds);
 void st_set_motor_power(const uint8_t motor);
-void st_energize_motor(const uint8_t motor);
-void st_deenergize_motor(const uint8_t motor);
-void st_energize_motors(void);
-void st_deenergize_motors(void);
+stat_t st_energize_motors(void);
+stat_t st_deenergize_motors(void);
 stat_t st_motor_power_callback(void);
-
-void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode);
-void st_set_power_mode(const uint8_t motor, const uint8_t power_mode);
 
 uint8_t st_test_prep_state(void);
 void st_request_exec_move(void);

@@ -141,23 +141,14 @@ magic_t st_get_stepper_prep_magic() { return (st_prep.magic_start);}
 /*
  * Motor power management functions
  *
- * st_set_motor_idle_timeout()	- set timeout parameter
- * st_set_motor_power()			 - set motor a specified power level
- * st_energize_motor()			 - apply power to a motor
- * st_deenergize_motor()		 - remove power from a motor
- * st_energize_motors()			 - apply power to all motors
- * st_deenergize_motors()		 - remove power from all motors
- * st_motor_power_callback()	 - callback to manage motor power sequencing
+ * _energize_motor()			- apply power to a motor
+ * _deenergize_motor()			- remove power from a motor
+ * st_set_motor_power()			- set motor a specified power level
+ * st_energize_motors()			- apply power to all motors
+ * st_deenergize_motors()		- remove power from all motors
+ * st_motor_power_callback()	- callback to manage motor power sequencing
  */
-
-void st_set_motor_idle_timeout(float seconds)
-{
-	st.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(seconds, IDLE_TIMEOUT_SECONDS_MIN));
-}
-
-void st_set_motor_power(const uint8_t motor) { }
-
-void st_energize_motor(const uint8_t motor)
+static void _energize_motor(const uint8_t motor)
 {
 	switch(motor) {
 		case (MOTOR_1): { PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; break; }
@@ -169,7 +160,7 @@ void st_energize_motor(const uint8_t motor)
 	st_run.m[motor].power_state = MOTOR_START_IDLE_TIMEOUT;
 }
 
-void st_deenergize_motor(const uint8_t motor)
+static void _deenergize_motor(const uint8_t motor)
 {
 	switch (motor) {
 		case (MOTOR_1): { PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; break; }
@@ -180,19 +171,23 @@ void st_deenergize_motor(const uint8_t motor)
 	st_run.m[motor].power_state = MOTOR_OFF;
 }
 
-void st_energize_motors()
+void st_set_motor_power(const uint8_t motor) { }
+
+stat_t st_energize_motors()
 {
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
-		st_energize_motor(motor);
+		_energize_motor(motor);
 		st_run.m[motor].power_state = MOTOR_START_IDLE_TIMEOUT;
 	}
+	return (STAT_OK);
 }
 
-void st_deenergize_motors()
+stat_t st_deenergize_motors()
 {
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
-		st_deenergize_motor(motor);
+		_deenergize_motor(motor);
 	}
+	return (STAT_OK);
 }
 
 stat_t st_motor_power_callback() 	// called by controller
@@ -212,7 +207,7 @@ stat_t st_motor_power_callback() 	// called by controller
 				case (MOTOR_TIME_IDLE_TIMEOUT): {
 					if (SysTickTimer_getValue() > st_run.m[motor].power_systick ) { 
 						st_run.m[motor].power_state = MOTOR_IDLE;
-						st_deenergize_motor(motor);
+						_deenergize_motor(motor);
 					}
 					break;
 				}
@@ -228,7 +223,7 @@ stat_t st_motor_power_callback() 	// called by controller
 				case (MOTOR_TIME_IDLE_TIMEOUT): {
 					if (SysTickTimer_getValue() > st_run.m[motor].power_systick ) { 
 						st_run.m[motor].power_state = MOTOR_IDLE;
-						st_deenergize_motor(motor);
+						_deenergize_motor(motor);
 					}
 					break;
 				}
@@ -536,13 +531,13 @@ stat_t st_prep_line(float steps[], float microseconds)
 }
 
 /* 
- * st_set_microsteps() - set microsteps in hardware
+ * _set_microsteps() - set microsteps in hardware
  *
  *	For now the microstep_mode is the same as the microsteps (1,2,4,8)
  *	This may change if microstep morphing is implemented.
  */
 
-void st_set_microsteps(const uint8_t motor, const uint8_t microstep_mode)
+static void _set_microsteps(const uint8_t motor, const uint8_t microstep_mode)
 {
 	if (microstep_mode == 8) {
 		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
@@ -584,27 +579,27 @@ int8_t st_get_motor(const index_t index)
 
 /*
  * _set_motor_steps_per_unit() - what it says
- *
  * This function will need to be rethought if microstep morphing is implemented
  */
 
-static stat_t _set_motor_steps_per_unit(cmdObj_t *cmd) 
+static void _set_motor_steps_per_unit(cmdObj_t *cmd) 
 {
 	uint8_t m = st_get_motor(cmd->index);
 	st.m[m].steps_per_unit = (360 / (st.m[m].step_angle / st.m[m].microsteps) / st.m[m].travel_rev);
-	return (STAT_OK);
 }
 
 stat_t st_set_sa(cmdObj_t *cmd)			// motor step angle
 { 
 	set_flt(cmd);
-	return(_set_motor_steps_per_unit(cmd)); 
+	_set_motor_steps_per_unit(cmd); 
+	return(STAT_OK);
 }
 
 stat_t st_set_tr(cmdObj_t *cmd)			// motor travel per revolution
 { 
 	set_flu(cmd);
-	return(_set_motor_steps_per_unit(cmd)); 
+	_set_motor_steps_per_unit(cmd); 
+	return(STAT_OK);
 }
 
 stat_t st_set_mi(cmdObj_t *cmd)			// motor microsteps
@@ -614,7 +609,7 @@ stat_t st_set_mi(cmdObj_t *cmd)			// motor microsteps
 	}
 	set_ui8(cmd);							// set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);
-	st_set_microsteps(st_get_motor(cmd->index), (uint8_t)cmd->value);
+	_set_microsteps(st_get_motor(cmd->index), (uint8_t)cmd->value);
 	return (STAT_OK);
 }
 
@@ -622,29 +617,27 @@ stat_t st_set_pm(cmdObj_t *cmd)			// motor power mode
 { 
 	ritorno (set_01(cmd));
 	if (fp_ZERO(cmd->value)) { // people asked this setting take effect immediately, hence:
-		st_energize_motor(st_get_motor(cmd->index));
+		_energize_motor(st_get_motor(cmd->index));
 	} else {
-		st_deenergize_motor(st_get_motor(cmd->index));
+		_deenergize_motor(st_get_motor(cmd->index));
 	}
 	return (STAT_OK);
 }
 
 stat_t st_set_mt(cmdObj_t *cmd)
 {
-	st_set_motor_idle_timeout(cmd->value);	
+	st.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(cmd->value, IDLE_TIMEOUT_SECONDS_MIN));
 	return (STAT_OK);
 }
 
 stat_t st_set_md(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
-	st_deenergize_motors();
-	return (STAT_OK);
+	return(st_deenergize_motors());
 }
 
 stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
-	st_energize_motors();
-	return (STAT_OK);
+	return(st_energize_motors());
 }
 
 
@@ -679,6 +672,7 @@ static void _print_motor_ui8(cmdObj_t *cmd, const char_t *format)
 {
 	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value);
 }
+
 static void _print_motor_flt_units(cmdObj_t *cmd, const char_t *format, uint8_t units)
 {
 	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value,

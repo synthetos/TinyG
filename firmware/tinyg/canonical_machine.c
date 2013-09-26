@@ -1347,6 +1347,10 @@ void cm_program_end()
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
 
+// Strings for writing settings as cmdObj string values
+
+#ifdef __TEXT_MODE
+
 static const char_t PROGMEM msg_units0[] = " in";	// used by generic print functions
 static const char_t PROGMEM msg_units1[] = " mm";
 static const char_t PROGMEM msg_units2[] = " deg";
@@ -1441,8 +1445,28 @@ static const char_t PROGMEM msg_am02[] = "[inhibited]";
 static const char_t PROGMEM msg_am03[] = "[radius]";
 static PGM_P const  PROGMEM msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03};
 
+#else
 
-/***** HELPERS *********************************************************************
+#define msg_units NULL
+#define msg_unit NULL
+#define msg_stat NULL
+#define msg_macs NULL
+#define msg_cycs NULL
+#define msg_mots NULL
+#define msg_hold NULL
+#define msg_home NULL
+#define msg_coor NULL
+#define msg_momo NULL
+#define msg_plan NULL
+#define msg_path NULL
+#define msg_dist NULL
+#define msg_frmo NULL
+#define msg_am NULL
+
+
+#endif // __TEXT_MODE
+
+/***** AXIS HELPERS *****************************************************************
  *
  * cm_get_axis_char()	- return ASCII char for axis given the axis number
  * cm_get_axis()		- return axis number or -1 if NA
@@ -1522,7 +1546,9 @@ stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value)
 {
 	cmd->value = (float)value;
 	cmd->objtype = TYPE_INTEGER;
+#ifdef __TEXT_MODE
 	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg[value*2]))); // hack alert: direct computation of index
+#endif
 	return (STAT_OK);
 //	return((char_t *)pgm_read_word(&msg[(uint8_t)value]));
 
@@ -1594,7 +1620,7 @@ stat_t cm_get_pos(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-stat_t cm_get_mpos(cmdObj_t *cmd) 
+stat_t cm_get_mpo(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_absolute_position(RUNTIME, cm_get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);

@@ -84,7 +84,6 @@ int xio_putc_usb(const char c, FILE *stream)
 ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
 	// If the CTS pin (FTDI's RTS) is HIGH, then we cannot send anything, so exit
-//	if (USBu.port->IN & USB_CTS_bm) {
 	if ((cfg.enable_flow_control == FLOW_CONTROL_RTS) && (USBu.port->IN & USB_CTS_bm)) {
 		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// force another TX interrupt
 		return;
@@ -110,29 +109,6 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// force another interrupt
 	}
 } 
-
-/*
-	if (USBu.fc_char == NUL) {						// normal char TX path
-		// If the CTS pin (FTDI's RTS) is HIGH, then we cannot send more.
-		if ((USBu.port->IN & USB_CTS_bm)) {
-			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;	// force another TX interrupt
-			return;
-		}
-		
-		if (USBu.tx_buf_head != USBu.tx_buf_tail) {	// buffer has data
-			advance_buffer(USBu.tx_buf_tail, TX_BUFFER_SIZE);
-			USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];
-		} else {
-			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;	// force another interrupt
-		}
-	} else {										// need to send XON or XOFF
-	// comment out the XON/XOFF indicator for efficient ISR handling
-	//	if (USBu.fc_char == XOFF) { gpio_set_bit_on(0x01);// turn on XOFF LED
-	//	} else { gpio_set_bit_off(0x01);}				// turn off XOFF LED
-		USBu.usart->DATA = USBu.fc_char;
-		USBu.fc_char = NUL;
-	}
-*/
 
 /*
  * Pin Change (edge-detect) interrupt for CTS pin.

@@ -46,13 +46,10 @@
 #define MOTOR_IDLE_TIMEOUT			2				// seconds to maintain motor at full power before idling
 
 // Communications and reporting settings
-//#define COMM_MODE					TEXT_MODE		// one of: TEXT_MODE, JSON_MODE
 #define COMM_MODE					JSON_MODE		// one of: TEXT_MODE, JSON_MODE
 #define NETWORK_MODE				NETWORK_STANDALONE
 #define TEXT_VERBOSITY				TV_VERBOSE		// one of: TV_SILENT, TV_VERBOSE
 
-//#define JSON_VERBOSITY				JV_MESSAGES		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
-//#define JSON_VERBOSITY				JV_LINENUM		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 #define JSON_VERBOSITY				JV_VERBOSE		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 #define JSON_FOOTER_DEPTH			0				// 0 = new style, 1 = old style
 //#define JSON_FOOTER_DEPTH			1				// 0 = new style, 1 = old style
@@ -77,8 +74,8 @@
 #define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_EXPAND_CR				false
 #define COM_ENABLE_ECHO				false
-#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON
-//#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_RTS
+
+#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON	// FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS 
 
 /**** MACHINE PROFILES ******************************************************/
 
