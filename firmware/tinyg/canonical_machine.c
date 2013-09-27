@@ -96,7 +96,7 @@
 #include "report.h"
 #include "gpio.h"
 #include "switch.h"
-#include "system.h"
+#include "hardware.h"
 #include "util.h"
 #include "xio/xio.h"			// for serial queue flush
 
@@ -1690,14 +1690,6 @@ stat_t cm_set_jrk(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-stat_t cm_set_sw(cmdObj_t *cmd)			// switch setting
-{
-	if (cmd->value > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	set_ui8(cmd);
-	switch_init();
-	return (STAT_OK);
-}
-
 /*
  * Commands
  *
@@ -1712,87 +1704,12 @@ stat_t cm_run_qf(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-/*
-static const char_t PROGMEM msg_sw0[] = "Disabled";
-static const char_t PROGMEM msg_sw1[] = "NO homing";
-static const char_t PROGMEM msg_sw2[] = "NO homing & limit";
-static const char_t PROGMEM msg_sw3[] = "NC homing";
-static const char_t PROGMEM msg_sw4[] = "NC homing & limit";
-static PGM_P const  PROGMEM msg_sw[] = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
-*/
-
-/* run_sx()	- send XOFF, XON --- test only 
-static stat_t run_sx(cmdObj_t *cmd)
-{
-	xio_putc(XIO_DEV_USB, XOFF);
-	xio_putc(XIO_DEV_USB, XON);
-	return (STAT_OK);
-}
-*/
-
 /***********************************************************************************
  * TEXT MODE SUPPORT
  * Functions to print variables from the cfgArray table
  ***********************************************************************************/
 
 #ifdef __TEXT_MODE
-
-/*
-void cm_print_vel(cmdObj_t *cmd)  { text_print_flt_units(cmd, fmt_vel, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_feed(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_feed, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_line(cmdObj_t *cmd) { text_print_int(cmd, fmt_line);}
-void cm_print_stat(cmdObj_t *cmd) { text_print_str(cmd, fmt_stat);}
-void cm_print_macs(cmdObj_t *cmd) { text_print_str(cmd, fmt_macs);}
-void cm_print_cycs(cmdObj_t *cmd) { text_print_str(cmd, fmt_cycs);}
-void cm_print_mots(cmdObj_t *cmd) { text_print_str(cmd, fmt_mots);}
-void cm_print_hold(cmdObj_t *cmd) { text_print_str(cmd, fmt_hold);}
-void cm_print_home(cmdObj_t *cmd) { text_print_str(cmd, fmt_home);}
-void cm_print_unit(cmdObj_t *cmd) { text_print_str(cmd, fmt_unit);}
-void cm_print_coor(cmdObj_t *cmd) { text_print_str(cmd, fmt_coor);}
-void cm_print_momo(cmdObj_t *cmd) { text_print_str(cmd, fmt_momo);}
-void cm_print_plan(cmdObj_t *cmd) { text_print_str(cmd, fmt_plan);}
-void cm_print_path(cmdObj_t *cmd) { text_print_str(cmd, fmt_path);}
-void cm_print_dist(cmdObj_t *cmd) { text_print_str(cmd, fmt_dist);}
-void cm_print_frmo(cmdObj_t *cmd) { text_print_str(cmd, fmt_frmo);}
-void cm_print_tool(cmdObj_t *cmd) { text_print_int(cmd, fmt_tool);}
-
-void cm_print_gpl(cmdObj_t *cmd) { text_print_int(cmd, fmt_gpl);}
-void cm_print_gun(cmdObj_t *cmd) { text_print_int(cmd, fmt_gun);}
-void cm_print_gco(cmdObj_t *cmd) { text_print_int(cmd, fmt_gco);}
-void cm_print_gpa(cmdObj_t *cmd) { text_print_int(cmd, fmt_gpa);}
-void cm_print_gdi(cmdObj_t *cmd) { text_print_int(cmd, fmt_gdi);}
-
-void cm_print_ja(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_ct(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_ml(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ml, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_ma(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ma, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_ms(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ms, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_st(cmdObj_t *cmd) { text_print_flt(cmd, fmt_st);}
-
-
-void cm_print_fr(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xfr);}
-void cm_print_vm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xvm);}
-void cm_print_tm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xtm);}
-void cm_print_jm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjm);}
-void cm_print_jh(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjh);}
-void cm_print_jd(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjd);}
-void cm_print_ra(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xra);}
-void cm_print_sn(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsn);}
-void cm_print_sx(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsx);}
-void cm_print_sv(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xsv);}
-void cm_print_lv(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xlv);}
-void cm_print_lb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xlb);}
-void cm_print_zb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xzb);}
-
-void cm_print_cofs(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cofs);}
-void cm_print_cloc(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cloc);}
-
-void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
-void cm_print_pos(cmdObj_t *cmd) { _print_pos_helper(cmd, fmt_pos, cm_get_units_mode(MODEL));}
-void cm_print_mpo(cmdObj_t *cmd) { _print_pos_helper(cmd, fmt_mpo, MILLIMETERS);}
-
-#else //__TEXT_MODE
-*/
 
 /* model state print functions */
 
@@ -1856,14 +1773,12 @@ const char_t PROGMEM fmt_ct[] = "[ct]  chordal tolerance%16.3f%S\n";
 const char_t PROGMEM fmt_ml[] = "[ml]  min line segment%17.3f%S\n";
 const char_t PROGMEM fmt_ma[] = "[ma]  min arc segment%18.3f%S\n";
 const char_t PROGMEM fmt_ms[] = "[ms]  min segment time%13.0f uSec\n";
-const char_t PROGMEM fmt_st[] = "[st]  switch type%18d [0=NO,1=NC]\n";
 
 void cm_print_ja(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ct(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ml(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ml, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ma(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ma, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ms(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ms, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_st(cmdObj_t *cmd) { text_print_flt(cmd, fmt_st);}
 
 /*
  * axis print functions
@@ -1902,7 +1817,7 @@ const char_t PROGMEM fmt_Xlb[] = "[%s%s] %s latch backoff%18.3f%S\n";
 const char_t PROGMEM fmt_Xzb[] = "[%s%s] %s zero backoff%19.3f%S\n";
 
 const char_t PROGMEM fmt_cofs[] = "[%s%s] %s %s offset%20.3f%S\n";
-const char_t PROGMEM fmt_cloc[] = "[%s%s] %s %s location%18.3f%S\n";
+const char_t PROGMEM fmt_cpos[] = "[%s%s] %s %s position%18.3f%S\n";
 
 static void _print_axis_ui8(cmdObj_t *cmd, const char_t *format)
 {
@@ -1946,7 +1861,7 @@ void cm_print_lb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xlb);}
 void cm_print_zb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xzb);}
 
 void cm_print_cofs(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cofs);}
-void cm_print_cloc(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cloc);}
+void cm_print_cpos(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cpos);}
 
 void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
 {

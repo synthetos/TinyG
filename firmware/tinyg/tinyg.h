@@ -48,12 +48,11 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.79	// Some final cleanup before finishing this refactoring pass
+#define TINYG_FIRMWARE_BUILD   		392.80	// Updates while porting over to ARM; moved switch accessors and print to switch module
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8
-
 
 /****** COMPILE-TIME SETTINGS ******/
 

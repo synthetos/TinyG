@@ -32,7 +32,7 @@
 #include "canonical_machine.h"
 #include "spindle.h"
 #include "planner.h"
-#include "system.h"
+#include "hardware.h"
 #include "pwm.h"
 
 static void _exec_spindle_control(float *value, float *flag);

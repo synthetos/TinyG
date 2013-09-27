@@ -42,7 +42,7 @@
 #include "plan_arc.h"
 #include "planner.h"
 #include "stepper.h"
-#include "system.h"
+#include "hardware.h"
 #include "switch.h"
 #include "gpio.h"
 #include "report.h"

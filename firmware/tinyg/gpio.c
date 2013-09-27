@@ -52,7 +52,7 @@
 #include "util.h"
 #include "config.h"
 #include "controller.h"
-#include "system.h"							// gpio port bits are mapped here
+#include "hardware.h"
 //#include "switch.h"
 #include "gpio.h"
 #include "canonical_machine.h"

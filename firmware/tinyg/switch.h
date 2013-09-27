@@ -129,6 +129,17 @@ void reset_switches(void);
 uint8_t read_switch(uint8_t sw_num);
 void sw_show_switch(void);
 
+stat_t sw_set_st(cmdObj_t *cmd);
+stat_t sw_set_sw(cmdObj_t *cmd);
+
+
+#ifdef __TEXT_MODE
+	void sw_print_st(cmdObj_t *cmd);
+#else 
+	#define sw_print_st tx_print_stub
+#endif // __TEXT_MODE
+
+
 /*============== G2 switch code - completely different, for now ===================
 
 *

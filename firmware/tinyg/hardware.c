@@ -36,24 +36,26 @@
 
 #include "tinyg.h"	// #1
 #include "config.h"	// #2
-#include "system.h"
+#include "hardware.h"
 #include "switch.h"
 #include "controller.h"
 #include "text_parser.h"
-#include "xmega/xmega_rtc.h"
 #include "xmega/xmega_init.h"
+//#include "xmega/xmega_rtc.h"
+
+static void _port_bindings(float hw_version);
 
 /*
  * sys_init() - lowest level hardware init
  */
 
-void sys_init() 
+void hardware_init() 
 {
 	xmega_init();		// set system clock
-	sys_port_bindings(TINYG_HARDWARE_VERSION);
+	_port_bindings(TINYG_HARDWARE_VERSION);
 }
 
-void sys_port_bindings(float hw_version)
+static void _port_bindings(float hw_version)
 {
 	hw.st_port[0] = &PORT_MOTOR_1;
 	hw.st_port[1] = &PORT_MOTOR_2;
@@ -79,7 +81,7 @@ void sys_port_bindings(float hw_version)
 }
 
 /*
- * sys_get_id() - get a human readable signature
+ * hw_get_id() - get a human readable signature
  *
  *	Produces a unique deviceID based on the factory calibration data. Format is:
  *		123456-ABC
@@ -103,15 +105,17 @@ enum {
 	COORDY1,    // Wafer Coordinate Y Byte 1 
 }; 
 
-uint8_t sys_read_calibration_byte(uint8_t index)
+/* UNUSED
+static uint8_t _read_calibration_byte(uint8_t index)
 { 
 	NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc; 	// Load NVM Command register to read the calibration row
 	uint8_t result = pgm_read_byte(index); 
 	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 	 	// Clean up NVM Command register 
 	return(result); 
 }
+*/
 
-void sys_get_id(char *id)
+static void _get_id(char *id)
 {
 	char printable[33] = {"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"};
 	uint8_t i;
@@ -195,9 +199,9 @@ stat_t hw_set_hv(cmdObj_t *cmd)
 {
 	if (cmd->value > TINYG_HARDWARE_VERSION_MAX) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	set_flt(cmd);					// record the hardware version
-	sys_port_bindings(cmd->value);	// reset port bindings
+	_port_bindings(cmd->value);		// reset port bindings
 	switch_init();					// re-initialize the GPIO ports
-//+++++	gpio_init();					// re-initialize the GPIO ports
+//+++++	gpio_init();				// re-initialize the GPIO ports
 	return (STAT_OK);
 }
 
@@ -208,7 +212,7 @@ stat_t hw_set_hv(cmdObj_t *cmd)
 stat_t hw_get_id(cmdObj_t *cmd) 
 {
 	char_t tmp[SYS_ID_LEN];
-	sys_get_id(tmp);
+	_get_id(tmp);
 	cmd->objtype = TYPE_STRING;
 	ritorno(cmd_copy_string(cmd, tmp));
 	return (STAT_OK);

@@ -16,7 +16,6 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 /* This file contains application specific data for the config system:
  *	- application-specific functions and function prototypes 
  *	- application-specific message and print format strings
@@ -39,12 +38,16 @@
 #include "switch.h"
 #include "pwm.h"
 #include "report.h"
-#include "system.h"
+#include "hardware.h"
 #include "test.h"
 #include "util.h"
 #include "help.h"
 #include "network.h"
 #include "xio/xio.h"
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 /*** structures ***/
 
@@ -81,7 +84,7 @@ static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
  *	  This means that if shorter tokens overlap longer ones the longer one
  *	  must precede the shorter one. E.g. "gco" needs to come before "gc"
  *
- *	- Mark group strings for entries that have no group as nul -->" ". 
+ *	- Mark group strings for entries that have no group as nul -->"". 
  *	  This is important for group expansion.
  *
  *	- Groups do not have groups. Neither do uber-groups, e.g.
@@ -97,10 +100,10 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "sys", "id", _fns, 0, hw_print_id, hw_get_id, set_nul,  (float *)&cs.null, 0 },  // device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
-	{ "",   "vel", _f00, 2, cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },	// current velocity
-	{ "",   "feed",_f00, 2, cm_print_feed, get_flu,  	set_nul,(float *)&cs.null, 0 },	// feed rate
 	{ "",   "n",   _fin, 0, cm_print_line, cm_get_line, set_int,(float *)&gm.linenum,0 },// Gcode line number - gets model or runtime line number
 	{ "",   "line",_fin, 0, cm_print_line, cm_get_line, set_int,(float *)&gm.linenum,0 },// Gcode line number - gets model or runtime line number
+	{ "",   "vel", _f00, 2, cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },	// current velocity
+	{ "",   "feed",_f00, 2, cm_print_feed, get_flu,  	set_nul,(float *)&cs.null, 0 },	// feed rate
 	{ "",   "stat",_f00, 0, cm_print_stat, cm_get_stat, set_nul,(float *)&cs.null, 0 },	// combined machine state
 	{ "",   "macs",_f00, 0, cm_print_macs, cm_get_macs, set_nul,(float *)&cs.null, 0 },	// raw machine state
 	{ "",   "cycs",_f00, 0, cm_print_cycs, cm_get_cycs, set_nul,(float *)&cs.null, 0 },	// cycle state
@@ -217,8 +220,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "x","xjm",_fip, 0, cm_print_jm, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_X].jerk_max,		X_JERK_MAX },
 	{ "x","xjh",_fip, 0, cm_print_jh, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_X].jerk_homing,		X_JERK_HOMING },
 	{ "x","xjd",_fip, 4, cm_print_jd, get_flu,   set_flu,   (float *)&cm.a[AXIS_X].junction_dev,	X_JUNCTION_DEVIATION },
-	{ "x","xsn",_fip, 0, cm_print_sn, get_ui8,   cm_set_sw, (float *)&sw.mode[0],					X_SWITCH_MODE_MIN },
-	{ "x","xsx",_fip, 0, cm_print_sx, get_ui8,   cm_set_sw, (float *)&sw.mode[1],					X_SWITCH_MODE_MAX },
+	{ "x","xsn",_fip, 0, cm_print_sn, get_ui8,   sw_set_sw, (float *)&sw.mode[0],					X_SWITCH_MODE_MIN },
+	{ "x","xsx",_fip, 0, cm_print_sx, get_ui8,   sw_set_sw, (float *)&sw.mode[1],					X_SWITCH_MODE_MAX },
 	{ "x","xsv",_fip, 0, cm_print_sv, get_flu,   set_flu,   (float *)&cm.a[AXIS_X].search_velocity,	X_SEARCH_VELOCITY },
 	{ "x","xlv",_fip, 0, cm_print_lv, get_flu,   set_flu,   (float *)&cm.a[AXIS_X].latch_velocity,	X_LATCH_VELOCITY },
 	{ "x","xlb",_fip, 3, cm_print_lb, get_flu,   set_flu,   (float *)&cm.a[AXIS_X].latch_backoff,	X_LATCH_BACKOFF },
@@ -231,8 +234,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "y","yjm",_fip, 0, cm_print_jm, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_Y].jerk_max,		Y_JERK_MAX },
 	{ "y","yjh",_fip, 0, cm_print_jh, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_Y].jerk_homing,		Y_JERK_HOMING },
 	{ "y","yjd",_fip, 4, cm_print_jd, get_flu,   set_flu,   (float *)&cm.a[AXIS_Y].junction_dev,	Y_JUNCTION_DEVIATION },
-	{ "y","ysn",_fip, 0, cm_print_sn, get_ui8,   cm_set_sw, (float *)&sw.mode[2],					Y_SWITCH_MODE_MIN },
-	{ "y","ysx",_fip, 0, cm_print_sx, get_ui8,   cm_set_sw, (float *)&sw.mode[3],					Y_SWITCH_MODE_MAX },
+	{ "y","ysn",_fip, 0, cm_print_sn, get_ui8,   sw_set_sw, (float *)&sw.mode[2],					Y_SWITCH_MODE_MIN },
+	{ "y","ysx",_fip, 0, cm_print_sx, get_ui8,   sw_set_sw, (float *)&sw.mode[3],					Y_SWITCH_MODE_MAX },
 	{ "y","ysv",_fip, 0, cm_print_sv, get_flu,   set_flu,   (float *)&cm.a[AXIS_Y].search_velocity,	Y_SEARCH_VELOCITY },
 	{ "y","ylv",_fip, 0, cm_print_lv, get_flu,   set_flu,   (float *)&cm.a[AXIS_Y].latch_velocity,	Y_LATCH_VELOCITY },
 	{ "y","ylb",_fip, 3, cm_print_lb, get_flu,   set_flu,   (float *)&cm.a[AXIS_Y].latch_backoff,	Y_LATCH_BACKOFF },
@@ -245,8 +248,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "z","zjm",_fip, 0, cm_print_jm, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_Z].jerk_max,		Z_JERK_MAX },
 	{ "z","zjh",_fip, 0, cm_print_jh, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_Z].jerk_homing, 	Z_JERK_HOMING },
 	{ "z","zjd",_fip, 4, cm_print_jd, get_flu,   set_flu,   (float *)&cm.a[AXIS_Z].junction_dev,	Z_JUNCTION_DEVIATION },
-	{ "z","zsn",_fip, 0, cm_print_sn, get_ui8,   cm_set_sw, (float *)&sw.mode[4],					Z_SWITCH_MODE_MIN },
-	{ "z","zsx",_fip, 0, cm_print_sx, get_ui8,   cm_set_sw, (float *)&sw.mode[5],					Z_SWITCH_MODE_MAX },
+	{ "z","zsn",_fip, 0, cm_print_sn, get_ui8,   sw_set_sw, (float *)&sw.mode[4],					Z_SWITCH_MODE_MIN },
+	{ "z","zsx",_fip, 0, cm_print_sx, get_ui8,   sw_set_sw, (float *)&sw.mode[5],					Z_SWITCH_MODE_MAX },
 	{ "z","zsv",_fip, 0, cm_print_sv, get_flu,   set_flu,   (float *)&cm.a[AXIS_Z].search_velocity,	Z_SEARCH_VELOCITY },
 	{ "z","zlv",_fip, 0, cm_print_lv, get_flu,   set_flu,   (float *)&cm.a[AXIS_Z].latch_velocity,	Z_LATCH_VELOCITY },
 	{ "z","zlb",_fip, 3, cm_print_lb, get_flu,   set_flu,   (float *)&cm.a[AXIS_Z].latch_backoff,	Z_LATCH_BACKOFF },
@@ -260,8 +263,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "a","ajh",_fip, 0, cm_print_jh, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_A].jerk_homing, 	A_JERK_HOMING },
 	{ "a","ajd",_fip, 4, cm_print_jd, get_flt,   set_flt,   (float *)&cm.a[AXIS_A].junction_dev,	A_JUNCTION_DEVIATION },
 	{ "a","ara",_fip, 3, cm_print_ra, get_flt,   set_flt,   (float *)&cm.a[AXIS_A].radius,			A_RADIUS},
-	{ "a","asn",_fip, 0, cm_print_sn, get_ui8,   cm_set_sw, (float *)&sw.mode[6],					A_SWITCH_MODE_MIN },
-	{ "a","asx",_fip, 0, cm_print_sx, get_ui8,   cm_set_sw, (float *)&sw.mode[7],					A_SWITCH_MODE_MAX },
+	{ "a","asn",_fip, 0, cm_print_sn, get_ui8,   sw_set_sw, (float *)&sw.mode[6],					A_SWITCH_MODE_MIN },
+	{ "a","asx",_fip, 0, cm_print_sx, get_ui8,   sw_set_sw, (float *)&sw.mode[7],					A_SWITCH_MODE_MAX },
 	{ "a","asv",_fip, 0, cm_print_sv, get_flt,   set_flt,   (float *)&cm.a[AXIS_A].search_velocity,	A_SEARCH_VELOCITY },
 	{ "a","alv",_fip, 0, cm_print_lv, get_flt,   set_flt,   (float *)&cm.a[AXIS_A].latch_velocity,	A_LATCH_VELOCITY },
 	{ "a","alb",_fip, 3, cm_print_lb, get_flt,   set_flt,   (float *)&cm.a[AXIS_A].latch_backoff,	A_LATCH_BACKOFF },
@@ -275,8 +278,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 //	{ "b","bjh",_fip, 0, cm_print_jh, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_B].jerk_homing,		B_JERK_HOMING },
 	{ "b","bjd",_fip, 0, cm_print_jd, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].junction_dev,	B_JUNCTION_DEVIATION },
 	{ "b","bra",_fip, 3, cm_print_ra, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].radius,			B_RADIUS },
-//	{ "b","asn",_fip, 0, cm_print_sn, get_ui8,   cm_set_sw, (float *)&sw.mode[6],					B_SWITCH_MODE_MIN },
-//	{ "b","asx",_fip, 0, cm_print_sx, get_ui8,   cm_set_sw, (float *)&sw.mode[7],					B_SWITCH_MODE_MAX },
+//	{ "b","asn",_fip, 0, cm_print_sn, get_ui8,   sw_set_sw, (float *)&sw.mode[6],					B_SWITCH_MODE_MIN },
+//	{ "b","asx",_fip, 0, cm_print_sx, get_ui8,   sw_set_sw, (float *)&sw.mode[7],					B_SWITCH_MODE_MAX },
 //	{ "b","bsv",_fip, 0, cm_print_sv, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].search_velocity,	B_SEARCH_VELOCITY },
 //	{ "b","blv",_fip, 0, cm_print_lv, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].latch_velocity,	B_LATCH_VELOCITY },
 //	{ "b","blb",_fip, 3, cm_print_lb, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].latch_backoff,	B_LATCH_BACKOFF },
@@ -290,8 +293,8 @@ const cfgItem_t PROGMEM cfgArray[] = {
 //	{ "c","cjh",_fip, 0, cm_print_jh, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_C].jerk_homing, 	C_JERK_HOMING },
 	{ "c","cjd",_fip, 0, cm_print_jd, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].junction_dev,	C_JUNCTION_DEVIATION },
 	{ "c","cra",_fip, 3, cm_print_ra, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].radius,			C_RADIUS },
-//	{ "c","csn",_fip, 0, cm_print_sn, get_ui8,   cm_set_sw, (float *)&sw.mode[6],					C_SWITCH_MODE_MIN },
-//	{ "c","csx",_fip, 0, cm_print_sx, get_ui8,   cm_set_sw, (float *)&sw.mode[7],					C_SWITCH_MODE_MAX },
+//	{ "c","csn",_fip, 0, cm_print_sn, get_ui8,   sw_set_sw, (float *)&sw.mode[6],					C_SWITCH_MODE_MIN },
+//	{ "c","csx",_fip, 0, cm_print_sx, get_ui8,   sw_set_sw, (float *)&sw.mode[7],					C_SWITCH_MODE_MAX },
 //	{ "c","csv",_fip, 0, cm_print_sv, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].search_velocity,	C_SEARCH_VELOCITY },
 //	{ "c","clv",_fip, 0, cm_print_lv, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].latch_velocity,	C_LATCH_VELOCITY },
 //	{ "c","clb",_fip, 3, cm_print_lb, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].latch_backoff,	C_LATCH_BACKOFF },
@@ -359,24 +362,25 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "g92","g92b",_fin, 3, cm_print_cofs, get_flt, set_nul,(float *)&gmx.origin_offset[AXIS_B], 0 },
 	{ "g92","g92c",_fin, 3, cm_print_cofs, get_flt, set_nul,(float *)&gmx.origin_offset[AXIS_C], 0 },
 
-	{ "g28","g28x",_fin, 3, cm_print_cloc, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_X], 0 },// g28 handled differently
-	{ "g28","g28y",_fin, 3, cm_print_cloc, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_Y], 0 },
-	{ "g28","g28z",_fin, 3, cm_print_cloc, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_Z], 0 },
-	{ "g28","g28a",_fin, 3, cm_print_cloc, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_A], 0 },
-	{ "g28","g28b",_fin, 3, cm_print_cloc, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_B], 0 },
-	{ "g28","g28c",_fin, 3, cm_print_cloc, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_C], 0 },
+	// Coordinate positions (G28, G30)
+	{ "g28","g28x",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_X], 0 },// g28 handled differently
+	{ "g28","g28y",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_Y], 0 },
+	{ "g28","g28z",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_Z], 0 },
+	{ "g28","g28a",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_A], 0 },
+	{ "g28","g28b",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_B], 0 },
+	{ "g28","g28c",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_C], 0 },
 
-	{ "g30","g30x",_fin, 3, cm_print_cloc, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_X], 0 },// g30 handled differently
-	{ "g30","g30y",_fin, 3, cm_print_cloc, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_Y], 0 },
-	{ "g30","g30z",_fin, 3, cm_print_cloc, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_Z], 0 },
-	{ "g30","g30a",_fin, 3, cm_print_cloc, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_A], 0 },
-	{ "g30","g30b",_fin, 3, cm_print_cloc, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_B], 0 },
-	{ "g30","g30c",_fin, 3, cm_print_cloc, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_C], 0 },
+	{ "g30","g30x",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_X], 0 },// g30 handled differently
+	{ "g30","g30y",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_Y], 0 },
+	{ "g30","g30z",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_Z], 0 },
+	{ "g30","g30a",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_A], 0 },
+	{ "g30","g30b",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_B], 0 },
+	{ "g30","g30c",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_C], 0 },
 
 	// System parameters
 	{ "sys","ja",  _f07, 0, cm_print_ja,  get_flu,   set_flu,    (float *)&cm.junction_acceleration,JUNCTION_ACCELERATION },
 	{ "sys","ct",  _f07, 4, cm_print_ct,  get_flu,   set_flu,    (float *)&cm.chordal_tolerance,	CHORDAL_TOLERANCE },
-	{ "sys","st",  _f07, 0, cm_print_st,  get_ui8,   cm_set_sw,  (float *)&sw.switch_type,			SWITCH_TYPE },
+	{ "sys","st",  _f07, 0, sw_print_st,  get_ui8,   sw_set_st,  (float *)&sw.switch_type,			SWITCH_TYPE },
 	{ "sys","mt",  _f07, 2, st_print_mt,  get_flt,   st_set_mt,  (float *)&st.motor_idle_timeout, 	MOTOR_IDLE_TIMEOUT},
 	{ "",   "me",  _f00, 0, tx_print_str, st_set_me, st_set_me,  (float *)&cs.null, 0 },
 	{ "",   "md",  _f00, 0, tx_print_str, st_set_md, st_set_md,  (float *)&cs.null, 0 },
@@ -464,13 +468,15 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "","2",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","3",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","4",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+//	{ "","5",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+//	{ "","6",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","x",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis groups
 	{ "","y",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","z",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","a",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","b",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","c",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-	{ "","ss", _f00, 0, tx_print_nul, get_grp, set_nul,(float *)&cs.null,0 },
+//	{ "","ss", _f00, 0, tx_print_nul, get_grp, set_nul,(float *)&cs.null,0 },
 	{ "","g54",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// coord offset groups
 	{ "","g55",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","g56",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
@@ -495,7 +501,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 
 /***** Make sure these defines line up with any changes in the above table *****/
 
-#define CMD_COUNT_GROUPS 		26		// count of simple groups
+#define CMD_COUNT_GROUPS 		25		// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 		// count of uber-groups
 
 /* <DO NOT MESS WITH THESE DEFINES> */
@@ -526,7 +532,7 @@ uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_G
  * _do_all()		- get and print all groups uber group
  */
 
-static stat_t _do_group_list(cmdObj_t *cmd, char_t list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
+static stat_t _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
 {
 	for (uint8_t i=0; i < CMD_MAX_OBJECTS; i++) {
 		if (list[i][0] == NUL) { return (STAT_COMPLETE);}
@@ -543,19 +549,20 @@ static stat_t _do_group_list(cmdObj_t *cmd, char_t list[][CMD_TOKEN_LEN+1]) // h
 
 static stat_t _do_motors(cmdObj_t *cmd)	// print parameters for all motor groups
 {
-	char_t list[][CMD_TOKEN_LEN+1] = {"1","2","3","4",""}; // must have a terminating element
+//	char list[][CMD_TOKEN_LEN+1] = {"1","2","3","4","5","6",""}; // must have a terminating element
+	char list[][CMD_TOKEN_LEN+1] = {"1","2","3","4",""}; // must have a terminating element
 	return (_do_group_list(cmd, list));
 }
 
 static stat_t _do_axes(cmdObj_t *cmd)	// print parameters for all axis groups
 {
-	char_t list[][CMD_TOKEN_LEN+1] = {"x","y","z","a","b","c",""}; // must have a terminating element
+	char list[][CMD_TOKEN_LEN+1] = {"x","y","z","a","b","c",""}; // must have a terminating element
 	return (_do_group_list(cmd, list));
 }
 
 static stat_t _do_offsets(cmdObj_t *cmd)	// print offset parameters for G54-G59,G92, G28, G30
 {
-	char_t list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92","g28","g30",""}; // must have a terminating element
+	char list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92","g28","g30",""}; // must have a terminating element
 	return (_do_group_list(cmd, list));
 }
 
@@ -580,8 +587,6 @@ static stat_t _do_all(cmdObj_t *cmd)	// print all parameters
  * Functions to get and set variables from the cfgArray table
  * Most of these can be found in their respective modules.
  ***********************************************************************************/
-
-//const char_t PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
 
 /**** COMMUNICATIONS FUNCTIONS ******************************************************
  * set_ic() - ignore CR or LF on RX
@@ -649,6 +654,15 @@ static stat_t get_rx(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
+/* run_sx()	- send XOFF, XON --- test only 
+static stat_t run_sx(cmdObj_t *cmd)
+{
+	xio_putc(XIO_DEV_USB, XOFF);
+	xio_putc(XIO_DEV_USB, XON);
+	return (STAT_OK);
+}
+*/
+
 /*
  * set_baud() - set USB baud rate
  *
@@ -714,3 +728,7 @@ void co_print_net(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_net);}
 void co_print_rx(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_rx);}
 
 #endif // __TEXT_MODE
+
+#ifdef __cplusplus
+}
+#endif

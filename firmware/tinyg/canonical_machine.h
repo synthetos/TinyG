@@ -637,7 +637,6 @@ stat_t cm_get_am(cmdObj_t *cmd);		// get axis mode
 stat_t cm_set_am(cmdObj_t *cmd);		// set axis mode
 stat_t cm_get_jrk(cmdObj_t *cmd);		// get jerk with 1,000,000 correction
 stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
-stat_t cm_set_sw(cmdObj_t *cmd);		// must run any time you change a switch setting
 
 /*--- text_mode support functions ---*/
 
@@ -694,7 +693,7 @@ stat_t cm_set_sw(cmdObj_t *cmd);		// must run any time you change a switch setti
 	void cm_print_zb(cmdObj_t *cmd);
 
 	void cm_print_cofs(cmdObj_t *cmd);
-	void cm_print_cloc(cmdObj_t *cmd);
+	void cm_print_cpos(cmdObj_t *cmd);
 
 #else // __TEXT_MODE
 
@@ -749,7 +748,7 @@ stat_t cm_set_sw(cmdObj_t *cmd);		// must run any time you change a switch setti
 	#define cm_print_zb tx_print_stub
 
 	#define cm_print_cofs tx_print_stub
-	#define cm_print_cloc tx_print_stub
+	#define cm_print_cpos tx_print_stub
 
 #endif // __TEXT_MODE
 

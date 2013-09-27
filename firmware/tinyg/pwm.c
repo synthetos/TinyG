@@ -27,8 +27,8 @@
 
 #include <avr/interrupt.h>
 
-#include "tinyg.h"
-#include "system.h"
+#include "tinyg.h"		// #1
+#include "hardware.h"	// #2
 #include "pwm.h"
 #include "gpio.h"
 #include "text_parser.h"

@@ -41,7 +41,7 @@
 #include "config.h"
 #include "stepper.h" 	
 #include "planner.h"
-#include "system.h"				// Xmega only. Goes away in favor of hardware.h
+#include "hardware.h"
 #include "text_parser.h"
 #include "util.h"
 

@@ -46,9 +46,10 @@
 #include "util.h"
 #include "config.h"
 #include "controller.h"
-#include "system.h"							// gpio port bits are mapped here
+#include "hardware.h"
 #include "switch.h"
 #include "canonical_machine.h"
+#include "text_parser.h"
 #include "xio/xio.h"						// signals
 
 /*
@@ -226,20 +227,47 @@ void sw_show_switch(void) {}
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
 
+stat_t sw_set_st(cmdObj_t *cmd)			// switch type (global)
+{
+//	if (cmd->value > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	set_01(cmd);
+	switch_init();
+	return (STAT_OK);
+}
+
+stat_t sw_set_sw(cmdObj_t *cmd)			// switch setting
+{
+	if (cmd->value > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	set_ui8(cmd);
+	switch_init();
+	return (STAT_OK);
+}
+
 
 /***********************************************************************************
  * TEXT MODE SUPPORT
  * Functions to print variables from the cfgArray table
  ***********************************************************************************/
 
+#ifdef __TEXT_MODE
+
+const char_t PROGMEM fmt_st[] = "[st]  switch type%18d [0=NO,1=NC]\n";
+void sw_print_st(cmdObj_t *cmd) { text_print_flt(cmd, fmt_st);}
+
+//const char_t PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
+//void sw_print_ss(cmdObj_t *cmd) { fprintf(stderr, fmt_ss, cmd->token, (uint8_t)cmd->value);}
+
 /*
-void print_ss(cmdObj_t *cmd)			// print switch state
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->token, cmd->value);
-}
+static const char_t PROGMEM msg_sw0[] = "Disabled";
+static const char_t PROGMEM msg_sw1[] = "NO homing";
+static const char_t PROGMEM msg_sw2[] = "NO homing & limit";
+static const char_t PROGMEM msg_sw3[] = "NC homing";
+static const char_t PROGMEM msg_sw4[] = "NC homing & limit";
+static PGM_P const  PROGMEM msg_sw[] = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
 */
+
+
+#endif
 
 /*============== G2 switch code - completely different, for now ===================
 

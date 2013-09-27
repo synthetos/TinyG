@@ -35,7 +35,7 @@
 #include "canonical_machine.h"
 #include "json_parser.h"
 #include "text_parser.h"
-#include "system.h"
+#include "hardware.h"
 #include "help.h"
 #include "util.h"
 #include "xio/xio.h"

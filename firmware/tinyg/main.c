@@ -22,7 +22,7 @@
 #include <avr/interrupt.h>
 
 #include "tinyg.h"				// #1 There are some dependencies
-#include "system.h"
+#include "hardware.h"
 #include "util.h"				// #2
 #include "config.h"				// #3
 #include "controller.h"
@@ -61,7 +61,7 @@ int main(void)
 	cli();
 
 	// system and drivers
-	sys_init();						// system hardware setup 			- must be first
+	hardware_init();				// system hardware setup 			- must be first
 	rtc_init();						// real time counter
 	xio_init();						// xmega io subsystem
 	stepper_init(); 				// stepper subsystem 				- must precede gpio_init()

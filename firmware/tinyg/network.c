@@ -37,7 +37,7 @@
 #include "network.h"
 #include "controller.h"
 #include "gpio.h"
-#include "system.h"
+#include "hardware.h"
 #include "xio/xio.h"
 
 /*

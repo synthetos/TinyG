@@ -36,8 +36,8 @@
  *  LO	Serial TX for USB & RS-485			(set in xio_usart.h)
  *	LO	Real time clock interrupt			(set in xmega_rtc.h)
  */
-#ifndef system_h
-#define system_h
+#ifndef hardware_h
+#define hardware_h
 
 #include "config.h"
 
@@ -176,10 +176,7 @@ hwSingleton_t hw;
 
 /*** function prototypes ***/
 
-void sys_init(void);					// master hardware init
-void sys_port_bindings(float hw_version);
-void sys_get_id(char *id);
-
+void hardware_init(void);			// master hardware init
 void hw_request_hard_reset();
 void hw_hard_reset(void);
 stat_t hw_hard_reset_handler(void);

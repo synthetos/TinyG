@@ -21,7 +21,7 @@
 #include <avr/interrupt.h>
 
 #include "../tinyg.h"
-#include "../system.h"
+#include "../hardware.h"
 #include "xmega_init.h"
 
 void xmega_init_clocks(void);
