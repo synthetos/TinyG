@@ -24,9 +24,6 @@
 extern "C"{
 #endif
 
-//#include <stdbool.h>
-
-
  /***********************************************************************************
   **** APPLICATION_SPECIFIC DEFINITIONS AND SETTINGS ********************************
   ***********************************************************************************/
@@ -64,7 +61,6 @@ typedef struct cfgParameters {
 	uint16_t magic_end;
 } cfgParameters_t;
 extern cfgParameters_t cfg;
-
 
 /***********************************************************************************
  * CONFIGURATION AND INTERFACE FUNCTIONS

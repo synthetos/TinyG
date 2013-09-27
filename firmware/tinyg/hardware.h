@@ -36,17 +36,21 @@
  *  LO	Serial TX for USB & RS-485			(set in xio_usart.h)
  *	LO	Real time clock interrupt			(set in xmega_rtc.h)
  */
-#ifndef hardware_h
-#define hardware_h
+#ifndef HARDWARE_H_ONCE
+#define HARDWARE_H_ONCE
 
 #include "config.h"
 
-#define SYS_ID_LEN 12					// length of system ID string from sys_get_id()
+#ifdef __cplusplus
+extern "C"{
+#endif
 
-/* CPU clock */	
+/**** Global System Defines ****/
 
-#undef F_CPU							// set for delays
+#undef F_CPU							// CPU clock - set for delays
 #define F_CPU 32000000UL				// should always precede <avr/delay.h>
+#define MILLISECONDS_PER_TICK 1			// MS for system tick (systick * N)
+#define SYS_ID_LEN 12					// length of system ID string from sys_get_id()
 
 // Clock Crystal Config. Pick one:
 //#define __CLOCK_INTERNAL_32MHZ TRUE	// use internal oscillator
@@ -206,4 +210,8 @@ stat_t hw_get_id(cmdObj_t *cmd);
 
 #endif // __TEXT_MODE
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif	// end of include guard: HARDWARE_H_ONCE

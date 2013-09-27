@@ -34,8 +34,8 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>			// used for software reset
 
-#include "tinyg.h"	// #1
-#include "config.h"	// #2
+#include "tinyg.h"		// #1
+#include "config.h"		// #2
 #include "hardware.h"
 #include "switch.h"
 #include "controller.h"
@@ -43,10 +43,14 @@
 #include "xmega/xmega_init.h"
 //#include "xmega/xmega_rtc.h"
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 static void _port_bindings(float hw_version);
 
 /*
- * sys_init() - lowest level hardware init
+ * hardware_init() - lowest level hardware init
  */
 
 void hardware_init() 
@@ -239,3 +243,7 @@ void hw_print_hv(cmdObj_t *cmd) { text_print_flt(cmd, fmt_hv);}
 void hw_print_id(cmdObj_t *cmd) { text_print_str(cmd, fmt_id);}
 
 #endif //__TEXT_MODE 
+
+#ifdef __cplusplus
+}
+#endif

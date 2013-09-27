@@ -50,7 +50,7 @@
  *	Depending on the need, any one of these contexts may be called for reporting or by 
  *	a function. Most typically, all new commends from the gcode parser work form the MODEL 
  *	context, and status reports pull from the RUNTIME while in motion, and from MODEL when 
- *	at rest. A conveneience is provided in the ACTIVE_MODEL pointer to point to the right 
+ *	at rest. A convenience is provided in the ACTIVE_MODEL pointer to point to the right 
  *	context.
  */
 /* --- Synchronizing command execution ---
@@ -99,6 +99,10 @@
 #include "hardware.h"
 #include "util.h"
 #include "xio/xio.h"			// for serial queue flush
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 /***********************************************************************************
  **** STRUCTURE ALLOCATIONS ********************************************************
@@ -236,6 +240,7 @@ void cm_set_model_linenum(uint32_t linenum)
 	gm.linenum = linenum;		// you must first set the model line number,
 	cmd_add_object("n");		// then add the line number to the cmd list
 //++++ The above is not the same as the ARM version	
+//	cmd_add_object((const char_t *)"n"); // then add the line number to the cmd list
 }
 
 /***********************************************************************************
@@ -941,7 +946,6 @@ stat_t cm_dwell(float seconds)
 	gm.parameter = seconds;
 	mp_dwell(seconds);
 	return (STAT_OK);
-
 }
 
 stat_t cm_straight_feed(float target[], float flags[])
@@ -1888,4 +1892,6 @@ void cm_print_mpo(cmdObj_t *cmd) { _print_pos_helper(cmd, fmt_mpo, MILLIMETERS);
 
 #endif // __TEXT_MODE
 
-
+#ifdef __cplusplus
+}
+#endif

@@ -752,4 +752,8 @@ stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 
 #endif // __TEXT_MODE
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif // _CANONICAL_MACHINE_H_
