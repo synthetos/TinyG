@@ -215,7 +215,7 @@ static stat_t _command_dispatch()
 		}
 		case 'H': { 							// intercept help screens
 			cfg.comm_mode = TEXT_MODE;
-			help_general(NULL);
+			help_general((cmdObj_t *)NULL);
 			text_response(STAT_OK, cs.bufp);
 			break;
 		}

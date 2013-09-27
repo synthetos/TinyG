@@ -20,18 +20,23 @@
 #ifndef help_h
 #define help_h
 
-#ifdef __TEXT_MODE
-	stat_t help_general(void);
+#ifdef __HELP_SCREENS
+
+	stat_t help_general(cmdObj_t *cmd);
 	stat_t help_config(cmdObj_t *cmd);
 	stat_t help_test(cmdObj_t *cmd);
 	stat_t help_defaults(cmdObj_t *cmd);
 	stat_t help_boot_loader(cmdObj_t *cmd);
+
 #else
-	#define help_general tx_print_stub
-	#define help_config tx_print_stub
-	#define help_test tx_print_stub
-	#define help_defaults tx_print_stub
-	#define help_boot_loader tx_print_stub
-#endif
+
+	stat_t help_stub(cmdObj_t *cmd);
+	#define help_general help_stub
+	#define help_config help_stub
+	#define help_test help_stub
+	#define help_defaults help_stub
+	#define help_boot_loader help_stub
+
+#endif // __HELP_SCREENS
 
 #endif

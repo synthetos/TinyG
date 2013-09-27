@@ -48,7 +48,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.78	// Included help files in __TEXT_MODE
+#define TINYG_FIRMWARE_BUILD   		392.78	// Added __HELP_SCREENS and __CANNED_TESTS defines
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
@@ -57,8 +57,9 @@
 
 /****** COMPILE-TIME SETTINGS ******/
 
-//#define __TEXT_MODE							// comment out to disable text mode support
-//#define __CANNED_TESTS 					// comment out to remove canned tests
+#define __TEXT_MODE							// comment out to disable text mode support (saves ~9Kb)
+#define __HELP_SCREENS						// comment out to disable help screens 		(saves ~3.5Kb)
+#define __CANNED_TESTS 						// comment out to remove canned tests 		(saves ~12Kb)
 
 /****** DEVELOPMENT SETTINGS ******/
 

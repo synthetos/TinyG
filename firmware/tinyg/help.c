@@ -29,7 +29,9 @@
 
 // help helper functions (snicker)
 
-#ifdef __TEXT_MODE
+stat_t help_stub(cmdObj_t *cmd) {return (STAT_OK);}
+
+#ifdef __HELP_SCREENS
 
 static void _status_report_advisory()
 {
@@ -52,7 +54,7 @@ Have fun\n"));
 /*
  * help_general() - help invoked as h from the command line
  */
-uint8_t help_general()
+uint8_t help_general(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG Help ####\n"));
 fprintf_P(stderr, PSTR("\
@@ -163,4 +165,4 @@ _postscript();
 return(STAT_OK);
 }
 
-#endif // __TEXT_MODE
+#endif // __HELP_SCREENS

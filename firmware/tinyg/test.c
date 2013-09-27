@@ -17,16 +17,16 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "tinyg.h"				// #1 unfortunately, there are some dependencies
-#include "util.h"				// #2
-#include "config.h"				// #3
+#include "tinyg.h"			// #1
+#include "config.h"			// #2
 #include "controller.h"
 #include "planner.h"
 #include "test.h"
+#include "util.h"
 #include "xio/xio.h"
 
 // regression test files
-#ifndef __SUPPRESS_CANNED_TESTS
+#ifdef __CANNED_TESTS
 
 #include "tests/test_001_smoke.h" 			// basic functionality
 #include "tests/test_002_homing.h"			// G28.1 homing cycles
@@ -57,7 +57,7 @@ uint8_t tg_test(cmdObj_t *cmd)
 {
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (STAT_OK);}
-#ifndef __SUPPRESS_CANNED_TESTS
+#ifdef __CANNED_TESTS
 		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke),PGM_FLAGS); break;}
 		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
 		case 3: { xio_open(XIO_DEV_PGM, PGMFILE(&test_squares),PGM_FLAGS); break;}
@@ -95,194 +95,10 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
-// avrdude -p x192a3 -c avr109 -b 115200 -P COM19
-// avrdude -e -p atxmega192a3 -c avrispmkii -P usb -U boot:w:xboot-boot.hex
-
 //	xio_queue_RX_string_usb("T4\n");
 //	xio_queue_RX_string_usb("M6\n");
 //	xio_queue_RX_string_usb("M6T4\n");
 //	xio_queue_RX_string_usb("$tool\n");
-
-//	xio_queue_RX_string_usb("n23t4\n");
-//	xio_queue_RX_string_usb("$line\n");
-	xio_queue_RX_string_usb("$unit\n");
-
-//	xio_queue_RX_string_usb("{\"g55\":{\"z\":-53.668}}\n");
-//	xio_queue_RX_string_usb("G0 X0.1 Y0.1\n");
-//	xio_queue_RX_string_usb("g28.3 x0 y0\n");
-
-//	xio_queue_RX_string_usb("G53 G01 F150  Y115.00\n");
-//	xio_queue_RX_string_usb("!\n");
-//	xio_queue_RX_string_usb("%\n");
-//	xio_queue_RX_string_usb("~\n");
-//	xio_queue_RX_string_usb("M00");
-
-//	xio_queue_RX_string_usb("{\"x\":{\"jm\":6000000000}}\n");
-//	xio_queue_RX_string_usb("{\"y\":{\"jm\":6000000000}}\n");
-
-//	xio_queue_RX_string_usb("g0 z10\n");
-
-//	xio_queue_RX_string_usb("{\n");					// malformed JSON test
-//	xio_queue_RX_string_usb("{\"gc\":}\n");			// malformed JSON test
-//	xio_queue_RX_string_usb("{\"\":}\n");
-//	xio_queue_RX_string_usb("{\"\":\"\"}\n");
-//	xio_queue_RX_string_usb("{gibberish}\n");
-
-//	xio_queue_RX_string_usb("{\"gc\":\"N78 (Row 2 Copy 9-1)\"}\n");
-//	xio_queue_RX_string_usb("{\"g54\":\"\"}\n");
-//	xio_queue_RX_string_usb("{\"sys\":{\"gco\":1}}\n");
-//	xio_queue_RX_string_usb("{\"ss0\":\"\"}\n");
-//	xio_queue_RX_string_usb("$ss0\n");
-//	xio_queue_RX_string_usb("{\"ss\":\"\"}\n");
-
-//	xio_queue_RX_string_usb("g1 f100 x100\n");		// Feedhold/queue flush test
-//	xio_queue_RX_string_usb("!\n");
-//	xio_queue_RX_string_usb("%\n");
-//	xio_queue_RX_string_usb("~\n");
-
-/*
-	xio_queue_RX_string_usb("g1 f1800 x0.0005\n");	// Small move test for G61.1
-	xio_queue_RX_string_usb("g20\n");
-	xio_queue_RX_string_usb("m2\n");
-*/
-//	xio_queue_RX_string_usb("$xam=1\n");
-//	xio_queue_RX_string_usb("$1po=1\n");
-//	xio_queue_RX_string_usb("$g54x=20.00\n");
-//	xio_queue_RX_string_usb("$x\n");				// display a group
-//	xio_queue_RX_string_usb("{\"xam\":1}\n");
-
-/*  DWELL TESTS
-G0 X1 Y1
-M8
-G4 P2 (WAIT FOR CYLINDER - DOWN)
-M9
-G4 P2 (WAIT FOR CYLINDER - UP)
-M30 (END OF CODE)
-*/
-
-//	xio_queue_RX_string_usb("$me\n");
-//	xio_queue_RX_string_usb("G0 X0.01 Y0.01\n");
-//	xio_queue_RX_string_usb("M8 G4 P0.001\n");
-//	xio_queue_RX_string_usb("G1 X10 Y10 F1000\n");
-//	xio_queue_RX_string_usb("M8 G4 P2\n");
-//	xio_queue_RX_string_usb("X0 Y0\n");
-//	xio_queue_RX_string_usb("G4 P2\n");
-//	xio_queue_RX_string_usb("M9\n");
-//	xio_queue_RX_string_usb("M30\n");
-
-
-//	xio_queue_RX_string_usb("$net\n");
-
-//	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"mpox\":true,\"mpoy\":true}}\n");
-
-//	xio_queue_RX_string_usb("M3 S1000\n");
-//	xio_queue_RX_string_usb("$test=4\n");
-//	xio_queue_RX_string_usb("g20\n");
-//	xio_queue_RX_string_usb("{\"xvm\":100}\n");
-//	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
-
-//	xio_queue_RX_string_usb("$qf\n");
-//	xio_queue_RX_string_usb("$defau=1\n");
-//	xio_queue_RX_string_usb("$id\n");
-//	xio_queue_RX_string_usb("{\n");
-//	xio_queue_RX_string_usb("G3 X28.949238578680202 Y33.51776649746193 I2.1091370558375635 J-2.1091370558375635 F1524\n");
-//	xio_queue_RX_string_usb("{\"gc\":\"g0x1.2y1.3\"}\n");
-
-//	xio_queue_RX_string_usb("g0x2\n");			// G0 smoke test
-//	xio_queue_RX_string_usb("{\"gc\":\"g2\"}\n");// G0 smoke test in JSON
-
-	// text parser test cases
-//	xio_queue_RX_string_usb("?\n");				// text mode status report
-//	xio_queue_RX_string_usb("$$\n");			// show all request
-//	xio_queue_RX_string_usb("$ec=1\n");			// turn CR expansion on
-//	xio_queue_RX_string_usb("$qr\n");			// invoke QR report
-//	xio_queue_RX_string_usb("$ej=1\n");			// enable JSON mode
-//	xio_queue_RX_string_usb("$n\n");			// ubergroup request
-//	xio_queue_RX_string_usb("$xvm=16,000\n");	// comma skipping
-//	xio_queue_RX_string_usb("$a\n");			// match a group
-//	xio_queue_RX_string_usb("$xabcdefghij\n");	// overrun
-//	xio_queue_RX_string_usb("$x=1\n");			// trying to set a group
-
-//	xio_queue_RX_string_usb("$hv=6\n");				// set to text mode
-//	xio_queue_RX_string_usb("$hv=7\n");				// set to text mode
-//	xio_queue_RX_string_usb("N100 (MSG*** message test with line number and gcode command ***)\n");
-//	xio_queue_RX_string_usb("(MSG*** message test with no line number or gcode command ***)\n");
-//	xio_queue_RX_string_usb("N100\n");			// just the line number
-//	xio_queue_RX_string_usb("N100 g0 x1\n");	// line number and command
-//	xio_queue_RX_string_usb("N100 g0x1 (MSG*** message test with gcode command and line number ***)\n");
-
-//	xio_queue_RX_string_usb("$test=2\n");
-//	xio_queue_RX_string_usb("$$\n");
-//	xio_queue_RX_string_usb("m3\n");
-//	xio_queue_RX_string_usb("$sys\n");
-//	xio_queue_RX_string_usb("$xvm\n");
-//	xio_queue_RX_string_usb("$xasasas=42\n");// bad command
-//	xio_queue_RX_string_usb("$test=51\n");	// run braid fragment to test short-line handling
-
-//	xio_queue_RX_string_usb("{\"sr\":{\"vel\":true,\"posa\":true,\"posx\":true,\"gc\":true,\"feed\":true,\"posy\":true,\"line\":true,\"stat\":true,\"posz\":true}}\n");
-//	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");
-//	xio_queue_RX_string_usb("{\"ej\":1}\n");
-//	xio_queue_RX_string_usb("{\"z\":{\"sn\":1}}\n");
-//	xio_queue_RX_string_usb("{\"zsn\":1}\n");
-//	xio_queue_RX_string_usb("{\"hom\":\"\"}\n");
-
-//	xio_queue_RX_string_usb("{\"rx\":\"\"}\n");
-//	xio_queue_RX_string_usb("{\"x\":20}\n");
-//	xio_queue_RX_string_usb("{\"1\":{\"po\":\"\"}}\n");
-//	xio_queue_RX_string_usb("{\"c\":\"\"}\n");
-
-//	xio_queue_RX_string_usb("{\"sr\":{\"posx\":true}}\n");
-//	xio_queue_RX_string_usb("{\"baud\":6}\n");
-//	xio_queue_RX_string_usb("{\"gc\":\"n20g0x1y1.1\"}\n");
-//	xio_queue_RX_string_usb("{\"gc\":\"g0x20y30z40\"}\n");
-//	xio_queue_RX_string_usb("{\"gc\":\"g0x30\"}\n");
-//	xio_queue_RX_string_usb("{\"gc\":\"g0x40\"}\n");
-//	xio_queue_RX_string_usb("{\"gc\":\"g0x0\"}\n");
-//	xio_queue_RX_string_usb("{\"gc\":\"g20\"}\n");
-//	xio_queue_RX_string_usb("{\"qr\":\"\"}\n");
-//	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
-//	xio_queue_RX_string_usb("{\"sys\":\"\"}\n");
-//	xio_queue_RX_string_usb("{\"sr\":\"\"}\n");
-//	xio_queue_RX_string_usb("{\"mpo\":\"\"}\n");
-
-//	xio_queue_RX_string_usb("g92a0\n");
-//	xio_queue_RX_string_usb("g0a3\n");			// should be a=3. Instead it's a=1
-
-//	xio_queue_RX_string_usb("t3\n");			// change tool
-
-//	xio_queue_RX_string_usb("$h\n");
-//	xio_queue_RX_string_usb("$m\n");
-//	xio_queue_RX_string_usb("$$\n");
-//	xio_queue_RX_string_usb("?\n");
-//	xio_queue_RX_string_usb("$sr\n");
-//	xio_queue_RX_string_usb("$x\n");
-//	xio_queue_RX_string_usb("\n");
-
-//	xio_queue_RX_string_usb("g00xqwrsdfs\n");
-//	xio_queue_RX_string_usb("g0x1000\n");
-
-//	xio_queue_RX_string_usb("g00g17g21g40g49g80g90\n");
-//	xio_queue_RX_string_usb("g2x0y0i1f2000\n");
-//	xio_queue_RX_string_usb("f3000\n");
-//	xio_queue_RX_string_usb("g80\n");
-
-/*
-	xio_queue_RX_string_usb("N0000 G91\n");
-	xio_queue_RX_string_usb("N0010 M6 T1\n");
-	xio_queue_RX_string_usb("N0020 G00 Z2.0000\n");
-	xio_queue_RX_string_usb("N0030 M03\n");
-	xio_queue_RX_string_usb("N0040 G00 X21.5000 Y13.0000\n");
-	xio_queue_RX_string_usb("N0050 G00 Z0.5000\n");
-	xio_queue_RX_string_usb("N0060 G01 Z-0.5000 F100 S1000\n");
-	xio_queue_RX_string_usb("N0070 G02 I20.0000 J13.0000 F100.0\n");
-*/
-
-//	xio_queue_RX_string_usb("$aam=3\n");
-//	xio_queue_RX_string_usb("$\n");
-//	xio_queue_RX_string_usb("$4tr=720\n");
-//	xio_queue_RX_string_usb("g0 a360\n");
-//	xio_queue_RX_string_usb("m3\n");
-//	xio_queue_RX_string_usb("g0 x10\n");
 
 /* Run test file */
 //	xio_queue_RX_string_usb("$test=12\n");		// run test file
@@ -495,59 +311,6 @@ M30 (END OF CODE)
 	xio_queue_RX_string_usb("{\"gc\":\"N26 X5.130Y-34.005\"}\n");
 	xio_queue_RX_string_usb("{\"gc\":\"N27 X5.376Y-34.064\"}\n");
 */
-#endif
+#endif // __CANNED_STARTUP
 }
 
-/***** Debug Functions ******/
-#ifdef __DEBUG
-
-/* Note: these dump routines pack a lot of characters into the USART TX buffer
- * and can kill the running instance. I'll have to figure out how to prevent that,
- * but in the mean time if you might want to use them you should go into xio_usart.h 
- * and temporarily change to the following settings:
- * 
- *	//#define BUFFER_T uint8_t		// faster, but limits buffer to 255 char max
- *	#define BUFFER_T uint16_t		// slower, but larger buffers
- *
- *	// USART ISR TX buffer size
- *	//#define TX_BUFFER_SIZE (BUFFER_T)64
- *	//#define TX_BUFFER_SIZE (BUFFER_T)128
- *	//#define TX_BUFFER_SIZE (BUFFER_T)255
- *	//#define TX_BUFFER_SIZE (BUFFER_T)256	// uint16_t buffer type is required
- *	//#define TX_BUFFER_SIZE (BUFFER_T)1024
- *	#define TX_BUFFER_SIZE (BUFFER_T)2048
- */
-
-void dump_everything()
-{
-//	tg_dump_controller_state();
-	mp_dump_running_plan_buffer();	
-	mp_dump_runtime_state();
-	st_dump_stepper_state();
-
-	for (uint8_t i=0; i<PLANNER_BUFFER_POOL_SIZE; i++) {
-		mp_dump_plan_buffer_by_index(i);
-	}
-}
-
-void roll_over_and_die()
-{
-	tg_system_reset();
-	tg_application_reset();
-}
-
-void print_scalar(const char *label, float value)
-{
-	fprintf_P(stderr,PSTR("%S %8.4f\n"),label,value); 
-}
-
-void print_vector(const char *label, float vector[], uint8_t count)
-{
-	fprintf_P(stderr,PSTR("%S"),label); 
-	for (uint8_t i=0; i<count; i++) {
-		fprintf_P(stderr,PSTR("  %5.4f"),vector[i]);
-	} 	
-	fprintf_P(stderr,PSTR("\n"));
-}
-
-#endif	// __DEBUG
