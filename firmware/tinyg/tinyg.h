@@ -80,10 +80,74 @@
 /******************************************************************************
  ***** PLATFORM COMPATIBILITY *************************************************
  ******************************************************************************/
+#undef __AVR
+#define __AVR
+//#undef __ARM
+//#define __ARM
 
-//#ifdef __AVR
+/**** AVR Compatibility ****/
+#ifdef __AVR
 #include <avr/pgmspace.h>
-//#endif
+
+typedef char char_t;
+typedef const char PROGMEM *char_P;		// access to PROGMEM arrays of PROGMEM strings
+
+#define GET_VALUE(a) pgm_read_word(&cfgArray[cmd->index].a)
+#define GET_UNITS(a) (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(a)])
+
+//#define SysTickTimer.getValue SysTickTimer_getValue
+#endif // __AVR
+
+/**** ARM Compatibility ****/
+#ifdef __ARM
+#define PROGMEM						// ignore PROGMEM declarations in ARM/GCC++
+#define PSTR (const char *)			// AVR macro is:  PSTR(s) ((const PROGMEM char *)(s))
+#define PGM_P const char_t *		// USAGE: (PGM_P) -- must be used in a cast
+
+typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
+typedef const char *char_P;			// ARM/C++ version requires this typedef instead
+
+#define GET_VALUE(a) cfgArray[cmd->index].a;
+
+
+/**** String handling help ***
+ *
+ * In the ARM/GCC++ version char_t is typedef'd to uint8_t because in C++
+ * uint8_t and char are distinct types. In AVR char_t is typedef'd to char
+ *
+ * The ARM stdio functions we are using still use char as input and output. 
+ * The macros below do the casts for most cases, but not all. Vararg functions 
+ * like the printf() family need special handling. These require explicit 
+ * casts as per:
+ *
+ *   printf((const char *)"Good Morning Hoboken!\n");
+ *
+ * The AVR also has "_P" variants that take PROGMEM strings as args. On the
+ * ARM/GCC++ the _P functions are just aliases of the non-P variants. 
+ *
+ * Lastly, we use macros to "neutralize" AVR's PROGMEM and other AVRisms.
+ */
+#define strncpy(d,s,l) (char_t *)strncpy((char *)d, (char *)s, l)
+#define strpbrk(d,s) (char_t *)strpbrk((char *)d, (char *)s)
+#define strcpy(d,s) (char_t *)strcpy((char *)d, (char *)s)
+#define strcat(d,s) (char_t *)strcat((char *)d, (char *)s)
+#define strstr(d,s) (char_t *)strstr((char *)d, (char *)s)
+#define strchr(d,s) (char_t *)strchr((char *)d, (char)s)
+#define strcmp(d,s) strcmp((char *)d, (char *)s)
+#define strtod(d,p) strtod((char *)d, (char **)p)
+#define strtof(d,p) strtof((char *)d, (char **)p)
+#define strlen(s) strlen((char *)s)
+#define isdigit(c) isdigit((char) c)
+#define isalnum(c) isalnum((char) c)
+#define tolower(c) (char_t)tolower((char) c)
+#define toupper(c) (char_t)toupper((char) c)
+
+#define printf_P printf		
+#define fprintf_P fprintf
+#define sprintf_P sprintf
+#define strcpy_P strcpy
+
+#endif // __ARM
 
 /******************************************************************************
  ***** TINYG APPLICATION DEFINITIONS ******************************************
@@ -125,20 +189,6 @@ typedef uint16_t magic_t;		// magic number size
 #define PWM_1	0
 #define PWM_2	1
 
-//#ifdef __AVR_GCC
-
-/*************************************************************************
- * String handling help - strings are handled as uint8_t's typedef'd to char_t
- */
-typedef char char_t;					// C version 
-//typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
-
-typedef const char PROGMEM *char_P;		// access to PROGMEM arrays of PROGMEM strings
-//typedef const char *char_P;			// ARM/C++ version requires this typedef instead
-
-//#define SysTickTimer.getValue SysTickTimer_getValue
-
-//#endif // __AVR_GCC
 
 /* 
  * STATUS CODES

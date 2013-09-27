@@ -1615,7 +1615,7 @@ stat_t cm_get_vel(cmdObj_t *cmd)
 		cmd->value = mp_get_runtime_velocity();
 		if (cm_get_units_mode(RUNTIME) == INCHES) cmd->value *= INCH_PER_MM;
 	}
-	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->precision = (int8_t)GET_VALUE(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
@@ -1623,7 +1623,7 @@ stat_t cm_get_vel(cmdObj_t *cmd)
 stat_t cm_get_pos(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_work_position(ACTIVE_MODEL, _get_pos_axis(cmd->index));
-	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->precision = (int8_t)GET_VALUE(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
@@ -1631,7 +1631,7 @@ stat_t cm_get_pos(cmdObj_t *cmd)
 stat_t cm_get_mpo(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_absolute_position(RUNTIME, _get_pos_axis(cmd->index));
-	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->precision = (int8_t)GET_VALUE(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
@@ -1639,7 +1639,7 @@ stat_t cm_get_mpo(cmdObj_t *cmd)
 stat_t cm_get_ofs(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_work_offset(ACTIVE_MODEL, _get_pos_axis(cmd->index));
-	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->precision = (int8_t)GET_VALUE(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }

@@ -3,6 +3,7 @@
  * Part of TinyG project
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2013 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -72,6 +73,10 @@ static void _request_load_move(void);
 
 // handy macro
 #define _f_to_period(f) (uint16_t)((float)F_CPU / (float)f)
+
+/************************************************************************************
+ **** CODE **************************************************************************
+ ************************************************************************************/
 
 /* 
  * stepper_init() - initialize stepper motor subsystem 
@@ -175,7 +180,7 @@ static void _deenergize_motor(const uint8_t motor)
 	st_run.m[motor].power_state = MOTOR_OFF;
 }
 
-void st_set_motor_power(const uint8_t motor) { }
+void st_set_motor_power(const uint8_t motor) { } // code for PWM driven Vref goes here
 
 stat_t st_energize_motors()
 {
@@ -310,6 +315,11 @@ ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
    	}
 	
 }
+/****************************************************************************************
+ * Exec sequencing code - computes and prepares next load segment
+ * st_request_exec_move()	- SW interrupt to request to execute a move
+ * exec_timer interrupt		- interrupt handler for calling exec function
+ */
 
 /* Software interrupts
  *
@@ -369,7 +379,6 @@ static void _load_move()
 			st_run.m[MOTOR_1].phase_accumulator = -(st_run.dda_ticks_downcount);
 		}
 		if (st_run.m[MOTOR_1].phase_increment != 0) {		// meaning motor is supposed to run
-			// For ideal optimizations, only set or clear a bit at a time.
 			if (st_prep.m[MOTOR_1].dir == 0) {
 				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm;// CW motion (bit cleared)
 			} else {
@@ -476,7 +485,7 @@ void st_prep_dwell(float microseconds)
 	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * F_DWELL);
 }
 
-/*
+/***********************************************************************************
  * st_prep_line() - Prepare the next move for the loader
  *
  *	This function does the math on the next pulse segment and gets it ready for 

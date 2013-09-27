@@ -2,6 +2,7 @@
  * Part of TinyG project
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2013 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -384,9 +385,4 @@ stat_t st_set_me(cmdObj_t *cmd);
 #endif // __TEXT_MODE
 
 
-#ifdef __DEBUG
-void st_dump_stepper_state(void);
-#endif
-
-
-#endif
+#endif	// End of include guard: STEPPER_H_ONCE

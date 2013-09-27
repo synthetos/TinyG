@@ -25,8 +25,12 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef report_h
-#define report_h
+#ifndef REPORT_H_ONCE
+#define REPORT_H_ONCE
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 /**** Configs, Definitions and Structures ****/
 
@@ -144,5 +148,9 @@ void sr_unit_tests(void);
 #define	REPORT_UNITS
 #endif // __UNIT_TEST_REPORT
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif // End of include guard: REPORT_H_ONCE
 
