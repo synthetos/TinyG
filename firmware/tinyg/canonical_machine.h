@@ -701,58 +701,58 @@ stat_t cm_set_sw(cmdObj_t *cmd);		// must run any time you change a switch setti
 
 #else // __TEXT_MODE
 
-	#define cm_print_vel tx_print_nul		// model state reporting
-	#define cm_print_feed tx_print_nul
-	#define cm_print_line tx_print_nul
-	#define cm_print_stat tx_print_nul
-	#define cm_print_macs tx_print_nul
-	#define cm_print_cycs tx_print_nul
-	#define cm_print_mots tx_print_nul
-	#define cm_print_hold tx_print_nul
-	#define cm_print_home tx_print_nul
-	#define cm_print_unit tx_print_nul
-	#define cm_print_coor tx_print_nul
-	#define cm_print_momo tx_print_nul
-	#define cm_print_plan tx_print_nul
-	#define cm_print_path tx_print_nul
-	#define cm_print_dist tx_print_nul
-	#define cm_print_frmo tx_print_nul
-	#define cm_print_tool tx_print_nul
+	#define cm_print_vel tx_print_stub		// model state reporting
+	#define cm_print_feed tx_print_stub
+	#define cm_print_line tx_print_stub
+	#define cm_print_stat tx_print_stub
+	#define cm_print_macs tx_print_stub
+	#define cm_print_cycs tx_print_stub
+	#define cm_print_mots tx_print_stub
+	#define cm_print_hold tx_print_stub
+	#define cm_print_home tx_print_stub
+	#define cm_print_unit tx_print_stub
+	#define cm_print_coor tx_print_stub
+	#define cm_print_momo tx_print_stub
+	#define cm_print_plan tx_print_stub
+	#define cm_print_path tx_print_stub
+	#define cm_print_dist tx_print_stub
+	#define cm_print_frmo tx_print_stub
+	#define cm_print_tool tx_print_stub
 
-	#define cm_print_gpl tx_print_nul		// Gcode defaults
-	#define cm_print_gun tx_print_nul
-	#define cm_print_gco tx_print_nul
-	#define cm_print_gpa tx_print_nul
-	#define cm_print_gdi tx_print_nul
+	#define cm_print_gpl tx_print_stub		// Gcode defaults
+	#define cm_print_gun tx_print_stub
+	#define cm_print_gco tx_print_stub
+	#define cm_print_gpa tx_print_stub
+	#define cm_print_gdi tx_print_stub
 
-	#define cm_print_lin tx_print_nul		// generic print for linear values 
-	#define cm_print_pos tx_print_nul		// print runtime work position in prevailing units
-	#define cm_print_mpo tx_print_nul		// print runtime work position always in MM uints
+	#define cm_print_lin tx_print_stub		// generic print for linear values 
+	#define cm_print_pos tx_print_stub		// print runtime work position in prevailing units
+	#define cm_print_mpo tx_print_stub		// print runtime work position always in MM uints
 
-	#define cm_print_ja tx_print_nul		// global CM settings
-	#define cm_print_ct tx_print_nul
-	#define cm_print_ml tx_print_nul
-	#define cm_print_ma tx_print_nul
-	#define cm_print_ms tx_print_nul
-	#define cm_print_st tx_print_nul
+	#define cm_print_ja tx_print_stub		// global CM settings
+	#define cm_print_ct tx_print_stub
+	#define cm_print_ml tx_print_stub
+	#define cm_print_ma tx_print_stub
+	#define cm_print_ms tx_print_stub
+	#define cm_print_st tx_print_stub
 
-	#define cm_print_am tx_print_nul		// axis print functions
-	#define cm_print_fr tx_print_nul
-	#define cm_print_vm tx_print_nul
-	#define cm_print_tm tx_print_nul
-	#define cm_print_jm tx_print_nul
-	#define cm_print_jh tx_print_nul
-	#define cm_print_jd tx_print_nul
-	#define cm_print_ra tx_print_nul
-	#define cm_print_sn tx_print_nul
-	#define cm_print_sx tx_print_nul
-	#define cm_print_sv tx_print_nul
-	#define cm_print_lv tx_print_nul
-	#define cm_print_lb tx_print_nul
-	#define cm_print_zb tx_print_nul
+	#define cm_print_am tx_print_stub		// axis print functions
+	#define cm_print_fr tx_print_stub
+	#define cm_print_vm tx_print_stub
+	#define cm_print_tm tx_print_stub
+	#define cm_print_jm tx_print_stub
+	#define cm_print_jh tx_print_stub
+	#define cm_print_jd tx_print_stub
+	#define cm_print_ra tx_print_stub
+	#define cm_print_sn tx_print_stub
+	#define cm_print_sx tx_print_stub
+	#define cm_print_sv tx_print_stub
+	#define cm_print_lv tx_print_stub
+	#define cm_print_lb tx_print_stub
+	#define cm_print_zb tx_print_stub
 
-	#define cm_print_cofs tx_print_nul
-	#define cm_print_cloc tx_print_nul
+	#define cm_print_cofs tx_print_stub
+	#define cm_print_cloc tx_print_stub
 
 #endif // __TEXT_MODE
 

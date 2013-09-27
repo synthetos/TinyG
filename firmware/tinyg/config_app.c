@@ -37,19 +37,14 @@
 #include "planner.h"
 #include "stepper.h"
 #include "switch.h"
-#include "gpio.h"
 #include "pwm.h"
 #include "report.h"
 #include "system.h"
 #include "test.h"
 #include "util.h"
 #include "help.h"
-
-#include "system.h"
 #include "network.h"
-
 #include "xio/xio.h"
-#include "xmega/xmega_eeprom.h"
 
 /*** structures ***/
 
@@ -156,12 +151,13 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "", "qf",  _f00, 0, tx_print_nul, get_nul, cm_run_qf,(float *)&cs.null, 0 },	// queue flush
 	{ "", "rx",  _f00, 0, tx_print_int, get_rx,  set_nul,  (float *)&cs.null, 0 },	// space in RX buffer
 	{ "", "msg", _f00, 0, tx_print_str, get_nul, set_nul,  (float *)&cs.null, 0 },	// string for generic messages
-	{ "", "defa",_f00, 0, tx_print_nul, print_defaults_help, set_defaults,(float *)&cs.null,0},	// set/print defaults / help screen
-	{ "", "test",_f00, 0, tx_print_nul, print_test_help, tg_test, (float *)&cs.null,0 },		// run tests, print test help screen
-	{ "", "boot",_f00, 0, tx_print_nul, print_boot_loader_help, hw_run_boot,(float *)&cs.null,0 },
-	{ "", "help",_f00, 0, tx_print_nul, print_config_help, set_nul, (float *)&cs.null,0 },		// prints config help screen
-	{ "", "h",   _f00, 0, tx_print_nul, print_config_help, set_nul, (float *)&cs.null,0 },		// alias for "help"
-//	{ "", "sx",  _f00, 0, tx_print_nul, run_sx,  run_sx ,  (float *)&cs.null, 0 },				// send XOFF, XON test
+//	{ "", "sx",  _f00, 0, tx_print_nul, run_sx,  run_sx ,  (float *)&cs.null, 0 },	// send XOFF, XON test
+
+	{ "", "defa",_f00, 0, tx_print_nul, help_defaults,	 set_defaults,(float *)&cs.null,0 },	// set/print defaults / help screen
+	{ "", "test",_f00, 0, tx_print_nul, help_test,		 tg_test, 	  (float *)&cs.null,0 },	// run tests, print test help screen
+	{ "", "boot",_f00, 0, tx_print_nul, help_boot_loader,hw_run_boot, (float *)&cs.null,0 },
+	{ "", "help",_f00, 0, tx_print_nul, help_config,	 set_nul, 	  (float *)&cs.null,0 },	// prints config help screen
+	{ "", "h",   _f00, 0, tx_print_nul, help_config,	 set_nul, 	  (float *)&cs.null,0 },	// alias for "help"
 
 	// Motor parameters
 	{ "1","1ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st.m[MOTOR_1].motor_map,	M1_MOTOR_MAP },

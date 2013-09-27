@@ -136,7 +136,7 @@ void config_init()
 stat_t set_defaults(cmdObj_t *cmd) 
 {
 	if (fp_FALSE(cmd->value)) {				// failsafe. Must set true or no action occurs
-		print_defaults_help(cmd);
+		help_defaults(cmd);
 		return (STAT_OK);
 	}
 	cm_set_units_mode(MILLIMETERS);			// must do inits in MM mode

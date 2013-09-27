@@ -89,12 +89,12 @@ stat_t set_baud_callback(void);
 
 #else 
 
-	#define co_print_ec tx_print_nul
-	#define co_print_ee tx_print_nul
-	#define co_print_ex tx_print_nul
-	#define co_print_baud tx_print_nul
-	#define co_print_net tx_print_nul
-	#define co_print_rx tx_print_nul
+	#define co_print_ec tx_print_stub
+	#define co_print_ee tx_print_stub
+	#define co_print_ex tx_print_stub
+	#define co_print_baud tx_print_stub
+	#define co_print_net tx_print_stub
+	#define co_print_rx tx_print_stub
 
 #endif // __TEXT_MODE
 

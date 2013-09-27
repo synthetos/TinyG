@@ -126,11 +126,11 @@ stat_t qr_queue_report_callback(void);
 
 #else
 
-	#define sr_print_sr tx_print_nul
-	#define sr_print_si tx_print_nul
-	#define sr_print_sv tx_print_nul
-	#define qr_print_qv tx_print_nul
-	#define qr_print_qr tx_print_nul
+	#define sr_print_sr tx_print_stub
+	#define sr_print_si tx_print_stub
+	#define sr_print_sv tx_print_stub
+	#define qr_print_qv tx_print_stub
+	#define qr_print_qr tx_print_stub
 
 #endif // __TEXT_MODE
 
