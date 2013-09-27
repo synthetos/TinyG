@@ -100,6 +100,7 @@
  *	b7	(in) max limit switch on GPIO 2 (note: motor controls and GPIO2 port mappings are not the same)
  */
 #define MOTOR_PORT_DIR_gm 0x3F	// dir settings: lower 6 out, upper 2 in
+//#define MOTOR_PORT_DIR_gm 0x00	// dir settings: all inputs
 
 enum cfgPortBits {			// motor control port bit positions
 	STEP_BIT_bp = 0,		// bit 0
@@ -200,11 +201,11 @@ stat_t hw_get_id(cmdObj_t *cmd);
 
 #else
 
-	#define hw_print_fb tx_print_nul
-	#define hw_print_fv tx_print_nul
-//	#define hw_print_hp tx_print_nul
-	#define hw_print_hv tx_print_nul
-	#define hw_print_id tx_print_nul
+	#define hw_print_fb tx_print_stub
+	#define hw_print_fv tx_print_stub
+//	#define hw_print_hp tx_print_stub
+	#define hw_print_hv tx_print_stub
+	#define hw_print_id tx_print_stub
 
 #endif // __TEXT_MODE
 

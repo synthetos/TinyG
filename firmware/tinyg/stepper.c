@@ -34,19 +34,20 @@
  *	not suffice for other stepper driver hardware.
  */
 /* 
- * See stepper.h for a detailed explanation of this part of the code 
+ * See stepper.h for a detailed explanation of this module
  */
 
 #include "tinyg.h"
 #include "config.h"
 #include "stepper.h" 	
 #include "planner.h"
-//#include "motatePins.h"		// defined in hardware.h   Not needed here
-//#include "motateTimers.h"
-//#include "hardware.h"
 #include "system.h"				// Xmega only. Goes away in favor of hardware.h
 #include "text_parser.h"
 #include "util.h"
+
+//#include "motatePins.h"		// defined in hardware.h   Not needed here
+//#include "motateTimers.h"
+//#include "hardware.h"
 
 #include <avr/interrupt.h>
 #include "xmega/xmega_rtc.h"	// Xmega only. Goes away with RTC refactoring
@@ -68,6 +69,9 @@ static stPrepSingleton_t st_prep;
 
 static void _load_move(void);
 static void _request_load_move(void);
+
+// handy macro
+#define _f_to_period(f) (uint16_t)((float)F_CPU / (float)f)
 
 /* 
  * stepper_init() - initialize stepper motor subsystem 
@@ -307,19 +311,11 @@ ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
 	
 }
 
-/* Software interrupts to fire the above
- * st_test_exec_state()	   - return TRUE if exec/prep can run
- * _request_load_move()    - SW interrupt to request to load a move
- *	st_request_exec_move() - SW interrupt to request to execute a move
+/* Software interrupts
+ *
+ * st_request_exec_move() - SW interrupt to request to execute a move
+ * _request_load_move()   - SW interrupt to request to load a move
  */
-
-uint8_t st_test_exec_state()
-{
-	if (st_prep.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
-		return (true);
-	}
-	return (false);
-}
 
 void st_request_exec_move()
 {
@@ -346,7 +342,7 @@ static void _request_load_move()
  *	provided to allow a non-ISR to request a load (see st_request_load_move())
  */
 
-void _load_move()
+static void _load_move()
 {
 	if (st_run.dda_ticks_downcount != 0) return;					// exit if it's still busy
 

@@ -74,16 +74,16 @@ stat_t pwm_set_duty(uint8_t channel, float duty);
 
 #else
 
-	#define pwm_print_p1frq tx_print_nul
-	#define pwm_print_p1csl tx_print_nul
-	#define pwm_print_p1csh tx_print_nul
-	#define pwm_print_p1cpl tx_print_nul
-	#define pwm_print_p1cph tx_print_nul
-	#define pwm_print_p1wsl tx_print_nul
-	#define pwm_print_p1wsh tx_print_nul
-	#define pwm_print_p1wpl tx_print_nul
-	#define pwm_print_p1wph tx_print_nul
-	#define pwm_print_p1pof tx_print_nul
+	#define pwm_print_p1frq tx_print_stub
+	#define pwm_print_p1csl tx_print_stub
+	#define pwm_print_p1csh tx_print_stub
+	#define pwm_print_p1cpl tx_print_stub
+	#define pwm_print_p1cph tx_print_stub
+	#define pwm_print_p1wsl tx_print_stub
+	#define pwm_print_p1wsh tx_print_stub
+	#define pwm_print_p1wpl tx_print_stub
+	#define pwm_print_p1wph tx_print_stub
+	#define pwm_print_p1pof tx_print_stub
 
 #endif // __TEXT_MODE
 

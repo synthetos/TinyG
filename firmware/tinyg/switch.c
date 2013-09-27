@@ -220,6 +220,27 @@ void sw_show_switch(void)
 void sw_show_switch(void) {}
 #endif
 
+/***********************************************************************************
+ * CONFIGURATION AND INTERFACE FUNCTIONS
+ * Functions to get and set variables from the cfgArray table
+ * These functions are not part of the NIST defined functions
+ ***********************************************************************************/
+
+
+/***********************************************************************************
+ * TEXT MODE SUPPORT
+ * Functions to print variables from the cfgArray table
+ ***********************************************************************************/
+
+/*
+void print_ss(cmdObj_t *cmd)			// print switch state
+{
+	cmd_get(cmd);
+	char_t format[CMD_FORMAT_LEN+1];
+	fprintf(stderr, get_format(cmd->index, format), cmd->token, cmd->value);
+}
+*/
+
 /*============== G2 switch code - completely different, for now ===================
 
 #include "tinyg2.h"

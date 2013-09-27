@@ -25,63 +25,64 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /*
- * This code is a loose implementation of Kramer, Proctor and Messina's
- * canonical machining functions as described in the NIST RS274/NGC v3
+ * 	This code is a loose implementation of Kramer, Proctor and Messina's canonical 
+ *	machining functions as described in the NIST RS274/NGC v3
  *
- * The canonical machine is the layer between the Gcode parser and the
- * motion control code for a specific robot. It keeps state and executes
- * commands - passing the stateless commands to the motion control layer. 
+ *	The canonical machine is the layer between the Gcode parser and the motion control 
+ *	code for a specific robot. It keeps state and executes commands - passing the 
+ *	stateless commands to the motion planning layer. 
  */
-/* --- System state contexts and canonical machine command execution ---
+/* --- System state contexts - Gcode models ---
  *
  *	Useful reference for doing C callbacks http://www.newty.de/fpt/fpt.html
  *
  *	There are 3 temporal contexts for system state:
- *	  - The Gcode model in the canonical machine (the "model" context, held in gm)
- *	  - The machine model used by the planner for planning ("planner" context, held in mm)
- *	  - The "runtime" context used for move execution (held in mr)
+ *	  - The gcode model in the canonical machine (the MODEL context, held in gm)
+ *	  - The gcode model used by the planner (PLANNER context, held in bf's and mm)
+ *	  - The gcode model used during motion for reporting (RUNTIME context, held in mr)
  *
- *	Functions in the canonical machine may apply to one or more contexts. Commands that
- *	apply to the Gcode model and/or planner are executed immediately (i.e. when called)
+ *	It's a bit more complicated than this. The 'gm' struct contains the core Gcode model
+ *	context. This originates in the canonical machine and is copied to each planner buffer
+ *	(bf buffer) during motion planning. Finally, the gm context is passed to the runtime 
+ *	(mr) for the RUNTIME context. So at last count the Gcode model exists in as many as 
+ *	30 copies in the system. (1+28+1)
  *
- *	Commands that affect the runtime need to be synchronized with movement and are 
- *	therefore queued into the planner queue and execute from the queue - Synchronous commands
+ *	Depending on the need, any one of these contexts may be called for reporting or by 
+ *	a function. Most typically, all new commends from the gcode parser work form the MODEL 
+ *	context, and status reports pull from the RUNTIME while in motion, and from MODEL when 
+ *	at rest. A conveneience is provided in the ACTIVE_MODEL pointer to point to the right 
+ *	context.
+ */
+/* --- Synchronizing command execution ---
  *
- *	There are a few commands that affect all 3 contexts and are therefore executed
- *	to the gm amd mm structs and are also queued to execute their runtine part.  
+ *	Some gcode commands only set the MODEL state for interpretation of the current Gcode 
+ *	block. For example, cm_set_feed_rate(). This sets the MODEL so the move time is 
+ *	properly calculated for the current (and subsequent) blocks, so it's effected 
+ *	immediately.
  *
- *	The applicable context is in the function name as "model", "planner" or "runtime"
+ *	"Synchronous commands" are commands that affect the runtime need to be synchronized 
+ *	with movement. Examples include G4 dwells, program stops and ends, and most M commands. 
+ *	These are queued into the planner queue and execute from the queue. Synchronous commands 
+ *	work like this:
  *
- *	Synchronous commands work like this:
+ *	  - Call the cm_xxx_xxx() function which will do any input validation and return an 
+ *		error if it detects one.
  *
- *	  - Call the cm_xxx_xxx() function which will do any input validation and 
- *		return an error if it detects one.
- *
- *	  - The cm_ function calls mp_queue_command(). Arguments are a callback to
- *		the _exec_...() function, which is the runtime execution routine, and
- *		any arguments that rae needed by the runtime. See typedef for *exec in
- *		planner.h for details
+ *	  - The cm_ function calls mp_queue_command(). Arguments are a callback to the _exec_...() 
+ *		function, which is the runtime execution routine, and any arguments that are needed 
+ *		by the runtime. See typedef for *exec in planner.h for details
  *
  *	  - mp_queue_command() stores the callback and the args in a planner buffer.
  *
- *	  - When planner execution reaches the buffer is tectures the callback w/ the 
- *		args.  Take careful note that the callback executes under an interrupt, 
- *		so beware of variables that may need to be Volatile.
+ *	  - When planner execution reaches the buffer it executes the callback w/ the args. 
+ *		Take careful note that the callback executes under an interrupt, so beware of 
+ *		variables that may need to be volatile.
  *
- *	Notes:
- *	  - The synchronous command execution mechanism uses 2 vectors in the bf buffer
- *		to store and return values for the callback. It's obvious, but impractical
- *		to pass the entire bf buffer to the callback as some of these commands are 
- *		actually executed locally and have no buffer.
- *
- *	  - Commands that are used to set the gm model state for interpretation of the
- *		current Gcode block. For example, cm_set_feed_rate(). This sets the model
- *		so the move time is properly calculated for the current (and subsequent) 
- *		blocks, so it's effected immediately. Note that the "feed rate" (actually 
- *		move time) is carried forward into the planner - planned moves are not 
- *		affected by upstream changes to the gm model. Many other vars also fall into
- *		this category.
- *
+ *	Note:
+ *	  - The synchronous command execution mechanism uses 2 vectors in the bf buffer to store 
+ *		and return values for the callback. It's obvious, but impractical to pass the entire 
+ *		bf buffer to the callback as some of these commands are actually executed locally 
+ *		and have no buffer.
  */
 
 #include "tinyg.h"		// #1
@@ -113,6 +114,8 @@ GCodeInput_t  gf;		// gcode input flags - transient
  **** GENERIC STATIC FUNCTIONS AND VARIABLES ***************************************
  ***********************************************************************************/
 
+#define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
+
 // command execution callbacks from planner queue
 static void _exec_offset(float *value, float *flag);
 static void _exec_change_tool(float *value, float *flag);
@@ -122,7 +125,9 @@ static void _exec_flood_coolant_control(float *value, float *flag);
 static void _exec_absolute_origin(float *value, float *flag);
 static void _exec_program_finalize(float *value, float *flag);
 
-#define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
+static int8_t _get_axis(const index_t index);
+static int8_t _get_axis_type(const index_t index);
+static int8_t _get_pos_axis(const index_t index);
 
 /***********************************************************************************
  **** CODE *************************************************************************
@@ -251,7 +256,7 @@ void cm_set_model_linenum(uint32_t linenum)
  *	- G92 offsets are added "on top of" the coord system offsets -- if origin_offset_enable == true
  *	- G28 and G30 moves; these are run in absolute coordinates
  *
- * The offsets themselves are considered static, are kept in cfg, and are supposed to be persistent.
+ * The offsets themselves are considered static, are kept in cm, and are supposed to be persistent.
  *
  * To reduce complexity and data load the following is done:
  *	- Full data for coordinates/offsets is only accessible by the canonical machine, not the downstream
@@ -404,7 +409,7 @@ void cm_set_model_target(float target[], float flag[])
 /* 
  * cm_conditional_set_model_position() - set endpoint position; uses internal canonical coordinates only
  *
- * 	This routine sets the endpoint position in the gccode model if the move was
+ * 	This routine sets the endpoint position in the gccode model if the move was 
  *	successfully completed (no errors). Leaving the endpoint position alone for 
  *	errors allows too-short-lines to accumulate into longer lines (line interpolation).
  *
@@ -420,53 +425,50 @@ void cm_conditional_set_model_position(stat_t status)
 }
 
 /*
- * cm_set_move_times() - capture optimal and minimum move times into the gcode_state
- * _get_move_times() - get minimum and optimal move times
+ * cm_set_move_times() 	- capture optimal and minimum move times into the gcode_state
+ * _get_move_times() 	- get minimum and optimal move times
  *
- *	The minimum time is the fastest the move can be performed given the velocity 
- *	constraints on each participating axis - regardless of the feed rate requested. 
- *	The minimum time is the time limited by the rate-limiting axis. The minimum 
- *	time is needed to compute the optimal time and is recorded for possible 
- *	feed override computation..
+ *	"Minimum time" is the fastest the move can be performed given the velocity constraints 
+ *	on each participating axis - regardless of the feed rate requested. The minimum time is 
+ *	the time limited by the rate-limiting axis. The minimum time is needed to compute the 
+ *	optimal time and is recorded for possible feed override computation..
  *
- *	The optimal time is either the time resulting from the requested feed rate or 
- *	the minimum time if the requested feed rate is not achievable. Optimal times for 
- *	traverses are always the minimum time.
+ *	"Optimal time" is either the time resulting from the requested feed rate or the minimum 
+ *	time if the requested feed rate is not achievable. Optimal times for traverses are always 
+ *	the minimum time.
  *
- *	Axis modes are taken into account by having cm_set_target() load the targets 
- *	before calling this function.
+ *	Axis modes are taken into account by having cm_set_target() load the targets before 
+ *	calling this function.
  *
  *	The following times are compared and the longest is returned:
  *	  -	G93 inverse time (if G93 is active)
  *	  -	time for coordinated move at requested feed rate
  *	  -	time that the slowest axis would require for the move
  *
- *	Returns:
- *	  - Optimal time returned as the function return
- *	  - Minimum time is set via the function argument
+ *	Sets the following variables in the gcode_state struct
+ *	  - move_time is set to optimal time
+ *	  - minimum_time is set to minimum time
  */
 /* --- NIST RS274NGC_v3 Guidance ---
  *
- * The following is verbatim text from NIST RS274NGC_v3. As I interpret A for 
- * moves that combine both linear and rotational movement, the feed rate should
- * apply to the XYZ movement, with the rotational axis (or axes) timed to start
- * and end at the same time the linear move is performed. It is possible under 
- * this case for the rotational move to rate-limit the linear move.
+ *	The following is verbatim text from NIST RS274NGC_v3. As I interpret A for moves that 
+ *	combine both linear and rotational movement, the feed rate should apply to the XYZ 
+ *	movement, with the rotational axis (or axes) timed to start and end at the same time 
+ *	the linear move is performed. It is possible under this case for the rotational move 
+ *	to rate-limit the linear move.
  *
  * 	2.1.2.5 Feed Rate
  *
- *	The rate at which the controlled point or the axes move is nominally a steady 
- *	rate which may be set by the user. In the Interpreter, the interpretation of 
- *	the feed rate is as follows unless inverse time feed rate mode is being used 
- *	in the RS274/NGC view (see Section 3.5.19). The canonical machining functions 
- *	view of feed rate, as described in Section 4.3.5.1, has conditions under which 
- *	the set feed rate is applied differently, but none of these is used in the 
- *	Interpreter.
+ *	The rate at which the controlled point or the axes move is nominally a steady rate 
+ *	which may be set by the user. In the Interpreter, the interpretation of the feed 
+ *	rate is as follows unless inverse time feed rate mode is being used in the 
+ *	RS274/NGC view (see Section 3.5.19). The canonical machining functions view of feed 
+ *	rate, as described in Section 4.3.5.1, has conditions under which the set feed rate 
+ *	is applied differently, but none of these is used in the Interpreter.
  *
  *	A. 	For motion involving one or more of the X, Y, and Z axes (with or without 
- *		simultaneous rotational axis motion), the feed rate means length units 
- *		per minute along the programmed XYZ path, as if the rotational axes were 
- *		not moving.
+ *		simultaneous rotational axis motion), the feed rate means length units per
+ *		minute along the programmed XYZ path, as if the rotational axes were not moving.
  *
  *	B.	For motion of one rotational axis with X, Y, and Z axes not moving, the 
  *		feed rate means degrees per minute rotation of the rotational axis.
@@ -540,12 +542,9 @@ stat_t _test_soft_limits()
 }
 
 /*************************************************************************
- *
  * CANONICAL MACHINING FUNCTIONS
- *
  *	Values are passed in pre-unit_converted state (from gn structure)
  *	All operations occur on gm (current model state)
- *
  ************************************************************************/
 
 /* 
@@ -561,7 +560,7 @@ stat_t _test_soft_limits()
 void canonical_machine_init()
 {
 // If you can assume all memory has been zeroed by a hard reset you don't need this code:
-//	memset(&cm, 0, sizeof(cm));		// reset canonicalMachineSingleton
+//	memset(&cm, 0, sizeof(cm));		// do not reset canonicalMachineSingleton once it's been initialized
 	memset(&gn, 0, sizeof(gn));		// clear all values, pointers and status
 	memset(&gf, 0, sizeof(gf));
 	memset(&gm, 0, sizeof(gm));
@@ -658,7 +657,7 @@ stat_t cm_select_plane(uint8_t plane)
 }
 
 /*
- * cm_set_units_mode() - G20, G21 (AFFECTS MODEL ONLY)
+ * cm_set_units_mode() - G20, G21 (affects MODEL only)
  */
 stat_t cm_set_units_mode(uint8_t mode)
 {
@@ -667,7 +666,7 @@ stat_t cm_set_units_mode(uint8_t mode)
 }
 
 /*
- * cm_set_distance_mode() - G90, G91 (AFFECTS MODEL ONLY)
+ * cm_set_distance_mode() - G90, G91 (affects MODEL only)
  */
 stat_t cm_set_distance_mode(uint8_t mode)
 {
@@ -676,12 +675,14 @@ stat_t cm_set_distance_mode(uint8_t mode)
 }
 
 /*
- * cm_set_coord_offsets() - G10 L2 Pn (AFFECTS MODEL ONLY)
+ * cm_set_coord_offsets() - G10 L2 Pn (affects MODEL only)
  *
- *	This function applies the offset to the GM model but does not persist the 
- *	offsets during the Gcode cycle. The persist flag is used to persist offsets
- *	once the cycle has ended. You can also use $g54x - $g59c config functions 
- *	to change offsets.
+ *	This function applies the offset to the GM model but does not persist the offsets 
+ *	during the Gcode cycle. The persist flag is used to persist offsets once the cycle 
+ *	has ended. You can also use $g54x - $g59c config functions to change offsets.
+ *
+ *	It also does not reset the work_offsets which may be accomplished by calling 
+ *	cm_set_work_offsets() immediately afterwards.
  */
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 {
@@ -724,7 +725,6 @@ static void _exec_offset(float *value, float *flag)
 /*
  * cm_set_absolute_origin() - G28.3 - model, planner and queue to runtime
  * _exec_absolute_origin()  - callback from planner
- * cm_set_axis_origin()		- set the origin of a single axis - model and planner
  *
  *	cm_set_absolute_origin() takes a vector of origins (presumably 0's, but not 
  *	necessarily) and applies them to all axes where the corresponding position 
@@ -732,13 +732,7 @@ static void _exec_offset(float *value, float *flag)
  *
  *	This is a 2 step process. The model and planner contexts are set immediately,
  *	the runtime command is queued and synchronized woth the planner queue.
- *
- *	This is an "unofficial gcode" command to allow arbitrarily setting an axis 
- *	to an absolute position. This is needed to support the Otherlab infinite 
- *	Y axis. USE: With the axis(or axes) where you want it, issue g92.4 y0 
- *	(for example). The Y axis will now be set to 0 (or whatever value provided)
  */
-
 stat_t cm_set_absolute_origin(float origin[], float flag[])
 {
 	float value[AXES];
@@ -763,6 +757,14 @@ static void _exec_absolute_origin(float *value, float *flag)
 	}
 }
 
+/*
+ * cm_set_axis_origin()	- set the origin of a single axis - model and planner
+ *
+ *	This is an "unofficial gcode" command to allow arbitrarily setting an axis 
+ *	to an absolute position. This is needed to support the Otherlab infinite 
+ *	Y axis. USE: With the axis(or axes) where you want it, issue g92.4 y0 
+ *	(for example). The Y axis will now be set to 0 (or whatever value provided)
+ */
 void cm_set_axis_origin(uint8_t axis, const float position)
 {
 	gmx.position[axis] = position;
@@ -781,12 +783,12 @@ void cm_set_axis_origin(uint8_t axis, const float position)
  */
 stat_t cm_set_origin_offsets(float offset[], float flag[])
 {
-	// set offsets in the Gcode model context
+	// set offsets in the Gcode model extended context
 	gmx.origin_offset_enable = 1;
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
 			gmx.origin_offset[axis] = gmx.position[axis] - 
-									 cm.offset[gm.coord_system][axis] - _to_millimeters(offset[axis]);
+									  cm.offset[gm.coord_system][axis] - _to_millimeters(offset[axis]);
 		}
 	}
 	// now pass the offset to the callback - setting the coordinate system also applies the offsets
@@ -917,7 +919,7 @@ stat_t cm_set_inverse_feed_rate_mode(uint8_t mode)
 }
 
 /*
- * cm_set_path_control() - G61, G61.1, G64
+ * cm_set_path_control() - G61, G61.1, G64 (affects MODEL only)
  */
 
 stat_t cm_set_path_control(uint8_t mode)
@@ -937,7 +939,7 @@ stat_t cm_set_path_control(uint8_t mode)
 stat_t cm_dwell(float seconds)
 {
 	gm.parameter = seconds;
-	(void)mp_dwell(seconds);
+	mp_dwell(seconds);
 	return (STAT_OK);
 
 }
@@ -979,7 +981,8 @@ stat_t cm_straight_feed(float target[], float flags[])
  * cm_select_tool() - T parameter
  * cm_change_tool() - M6 (This might become a complete tool change cycle)
  *
- * These functions are stubbed out for now and don't actually do anything
+ * Note: These functions don't actually do anything for now, and there's a bug 
+ *		 where T and M in different blocks don;t work correctly
  */
 
 stat_t cm_select_tool(uint8_t tool_select)
@@ -1005,8 +1008,6 @@ static void _exec_change_tool(float *value, float *flag)
 {
 	gm.tool = (uint8_t)value[0];
 }
-
-//void cm_sync_tool_number(uint8_t tool) { mp_sync_command(SYNC_TOOL_NUMBER, (float)tool);}
 
 /* 
  * Miscellaneous Functions (4.3.9)
@@ -1481,7 +1482,8 @@ char_t cm_get_axis_char(const int8_t axis)
 	return (axis_char[axis]);
 }
 
-int8_t cm_get_axis(const index_t index)
+//int8_t cm_get_axis(const index_t index)
+static int8_t _get_axis(const index_t index)
 {
 	char_t *ptr;
 	char_t tmp[CMD_TOKEN_LEN+1];
@@ -1492,15 +1494,17 @@ int8_t cm_get_axis(const index_t index)
 	return (ptr - axes);
 }
 
-int8_t cm_get_axis_type(const index_t index)
+//int8_t cm_get_axis_type(const index_t index)
+static int8_t _get_axis_type(const index_t index)
 {
-	int8_t axis = cm_get_axis(index);
+	int8_t axis = _get_axis(index);
 	if (axis >= AXIS_A) return (1);
 	if (axis == -1) return (-1);
 	return (0);
 }
 
-int8_t cm_get_pos_axis(const index_t index)
+//int8_t cm_get_pos_axis(const index_t index)
+static int8_t _get_pos_axis(const index_t index)
 {
 	char_t *ptr;
 	char_t tmp[CMD_TOKEN_LEN+1];
@@ -1614,7 +1618,7 @@ stat_t cm_get_vel(cmdObj_t *cmd)
 
 stat_t cm_get_pos(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_work_position(ACTIVE_MODEL, cm_get_pos_axis(cmd->index));
+	cmd->value = cm_get_work_position(ACTIVE_MODEL, _get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1622,7 +1626,7 @@ stat_t cm_get_pos(cmdObj_t *cmd)
 
 stat_t cm_get_mpo(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_absolute_position(RUNTIME, cm_get_pos_axis(cmd->index));
+	cmd->value = cm_get_absolute_position(RUNTIME, _get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1630,7 +1634,7 @@ stat_t cm_get_mpo(cmdObj_t *cmd)
 
 stat_t cm_get_ofs(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_work_offset(ACTIVE_MODEL, cm_get_pos_axis(cmd->index));
+	cmd->value = cm_get_work_offset(ACTIVE_MODEL, _get_pos_axis(cmd->index));
 	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1907,7 +1911,7 @@ static void _print_axis_ui8(cmdObj_t *cmd, const char_t *format)
 
 static void _print_axis_flt(cmdObj_t *cmd, const char_t *format)
 {
-	if (cm_get_axis_type(cmd->index) == 0) {	// linear
+	if (_get_axis_type(cmd->index) == 0) {	// linear
 		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, 
 				 (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
 	} else {
@@ -1918,7 +1922,7 @@ static void _print_axis_flt(cmdObj_t *cmd, const char_t *format)
 
 static void _print_axis_coord_flt(cmdObj_t *cmd, const char_t *format)
 {
-	if (cm_get_axis_type(cmd->index) == 0) {	// linear
+	if (_get_axis_type(cmd->index) == 0) {	// linear
 		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->token, cmd->value, 
 				 (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
 	} else {
@@ -1960,21 +1964,12 @@ void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
 void _print_pos_helper(cmdObj_t *cmd, const char_t *format, uint8_t units)
 {
 	char_t axes[6] = {"XYZABC"};
-	uint8_t axis = cm_get_pos_axis(cmd->index);
+	uint8_t axis = _get_pos_axis(cmd->index);
 	if (axis >= AXIS_A) { units = DEGREES;}
 	fprintf_P(stderr, format, axes[axis], cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
 }
 void cm_print_pos(cmdObj_t *cmd) { _print_pos_helper(cmd, fmt_pos, cm_get_units_mode(MODEL));}
 void cm_print_mpo(cmdObj_t *cmd) { _print_pos_helper(cmd, fmt_mpo, MILLIMETERS);}
-
-/*
-void print_ss(cmdObj_t *cmd)			// print switch state
-{
-	cmd_get(cmd);
-	char_t format[CMD_FORMAT_LEN+1];
-	fprintf(stderr, get_format(cmd->index, format), cmd->token, cmd->value);
-}
-*/
 
 #endif // __TEXT_MODE
 

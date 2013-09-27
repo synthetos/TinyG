@@ -367,7 +367,20 @@ void json_print_object(cmdObj_t *cmd)
 }
 
 /*
- * json_print_response() - JSON responses with headers, footers and observes JSON verbosity 
+ * json_print_list() - command to select and produce a JSON formatted output
+ */
+
+void json_print_list(stat_t status, uint8_t flags)
+{
+	switch (flags) {
+		case JSON_NO_PRINT: { break; } 
+		case JSON_OBJECT_FORMAT: { json_print_object(cmd_body); break; }
+		case JSON_RESPONSE_FORMAT: { json_print_response(status); break; }
+	}
+}
+
+/*
+ * json_print_response() - JSON responses with headers, footers and observing JSON verbosity 
  *
  *	A footer is returned for every setting except $jv=0
  *
@@ -456,19 +469,6 @@ void json_print_response(uint8_t status)
 	while (cs.out_buf[strcount2] != ',') { strcount2--; }// find start of checksum
 	sprintf((char *)cs.out_buf + strcount2 + 1, "%d%s", compute_checksum(cs.out_buf, strcount2), tail);
 	fprintf(stderr, "%s", cs.out_buf);
-}
-
-/*
- * json_print_list() - command to select and produce a JSON formatted output
- */
-
-void json_print_list(stat_t status, uint8_t flags)
-{
-	switch (flags) {
-		case JSON_NO_PRINT: { break; } 
-		case JSON_OBJECT_FORMAT: { json_print_object(cmd_body); break; }
-		case JSON_RESPONSE_FORMAT: { json_print_response(status); break; }
-	}
 }
 
 /***********************************************************************************

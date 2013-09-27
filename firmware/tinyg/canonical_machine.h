@@ -49,7 +49,7 @@ extern "C"{
  * CANONICAL MACHINE STRUCTURES
  */
 
-typedef struct cmConfigAxis {
+typedef struct cmAxis {
 	uint8_t axis_mode;				// see tgAxisMode in gcode.h
 	float feedrate_max;				// max velocity in mm/min or deg/min
 	float velocity_max;				// max velocity in mm/min or deg/min
@@ -204,7 +204,7 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 
 	uint16_t magic_end;
 
-}  GCodeStateX_t;
+} GCodeStateX_t;
 
 typedef struct GCodeInput {				// Gcode model inputs - meaning depends on context
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
@@ -527,7 +527,7 @@ void cm_set_model_linenum(uint32_t linenum);
 void cm_set_model_target(float target[], float flag[]);
 void cm_conditional_set_model_position(stat_t status);
 
-/*--- canonical machining functions ---*/
+/*--- canonical machining functions (loosely patterned after NIST) ---*/
 
 void canonical_machine_init(void);
 void canonical_machine_alarm(uint8_t value);					// emergency shutdown
@@ -610,9 +610,6 @@ void cm_exec_program_end(void);
 stat_t cm_run_qf(cmdObj_t *cmd);
 
 char_t cm_get_axis_char(const int8_t axis);
-int8_t cm_get_axis(const index_t index);
-int8_t cm_get_axis_type(const index_t index);
-int8_t cm_get_pos_axis(const index_t index);
 
 stat_t cm_get_line(cmdObj_t *cmd);		// get runtime line number
 stat_t cm_get_stat(cmdObj_t *cmd);		// get combined machine state as value and string

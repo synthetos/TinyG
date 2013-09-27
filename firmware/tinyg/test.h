@@ -24,6 +24,7 @@
 uint8_t tg_test(cmdObj_t *cmd);
 void tg_canned_startup(void);
 
+
 /***** DEBUG support ******
  *
  *	DEBUGs are print statements you probably only want enabled during 

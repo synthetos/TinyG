@@ -75,13 +75,13 @@ extern jsSingleton_t js;
 
 /**** Function Prototypes ****/
 
-stat_t json_set_jv(cmdObj_t *cmd);
-
 void json_parser(char_t *str);
 uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size);
 void json_print_object(cmdObj_t *cmd);
 void json_print_response(uint8_t status);
 void json_print_list(stat_t status, uint8_t flags);
+
+stat_t json_set_jv(cmdObj_t *cmd);
 
 #ifdef __TEXT_MODE
 
@@ -91,9 +91,9 @@ void json_print_list(stat_t status, uint8_t flags);
 
 #else
 
-	#define js_print_ej tx_print_nul
-	#define js_print_jv tx_print_nul
-	#define js_print_fs tx_print_nul
+	#define js_print_ej tx_print_stub
+	#define js_print_jv tx_print_stub
+	#define js_print_fs tx_print_stub
 
 #endif // __TEXT_MODE
 
