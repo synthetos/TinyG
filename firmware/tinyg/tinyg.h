@@ -48,7 +48,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.80	// Updates while porting over to ARM; moved switch accessors and print to switch module
+#define TINYG_FIRMWARE_BUILD   		392.81	// Fixed units reporting bug; lots of G2 alignment stuff
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
@@ -65,17 +65,11 @@
 //#define __CANNED_STARTUP					// run any canned startup moves
 //#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
 //#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
-//#define __UNIT_TESTS						// master enable for unit tests; uncomment modules in .h files
-//#define __DEBUG							// complies debug functions found in test.c
+//#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
 
-// UNIT_TESTS exist for various modules are can be enabled at the end of their .h files
-
-// bringing in new functionality
-//#define __PLAN_R2							// comment out to use R1 planner functions
-
-#ifndef WEAK
-#define WEAK  __attribute__ ((weak))
-#endif
+//#ifndef WEAK
+//#define WEAK  __attribute__ ((weak))
+//#endif
 
 /******************************************************************************
  ***** PLATFORM COMPATIBILITY *************************************************
@@ -87,12 +81,13 @@
 
 /**** AVR Compatibility ****/
 #ifdef __AVR
-#include <avr/pgmspace.h>
+#include <avr/pgmspace.h>			// defines PROGMEM, PSTR, PGM_P (must be first)
 
 typedef char char_t;
-typedef const char PROGMEM *char_P;		// access to PROGMEM arrays of PROGMEM strings
+typedef const char PROGMEM *char_P;	// access to PROGMEM arrays of PROGMEM strings
 
-#define GET_VALUE(a) pgm_read_word(&cfgArray[cmd->index].a)
+#define GET_TABLE_ITEM(a) pgm_read_word(&cfgArray[cmd->index].a)// get value from cfgArray
+#define GET_TEXT_ITEM(b,a) (PGM_P)pgm_read_word(&b[a])			// get text from an array of strings in PGM
 #define GET_UNITS(a) (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(a)])
 
 //#define SysTickTimer.getValue SysTickTimer_getValue
@@ -102,13 +97,14 @@ typedef const char PROGMEM *char_P;		// access to PROGMEM arrays of PROGMEM stri
 #ifdef __ARM
 #define PROGMEM						// ignore PROGMEM declarations in ARM/GCC++
 #define PSTR (const char *)			// AVR macro is:  PSTR(s) ((const PROGMEM char *)(s))
-#define PGM_P const char_t *		// USAGE: (PGM_P) -- must be used in a cast
+#define PGM_P const char *			// USAGE: (PGM_P) -- must be used in a cast
 
 typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
 typedef const char *char_P;			// ARM/C++ version requires this typedef instead
 
-#define GET_VALUE(a) cfgArray[cmd->index].a;
-
+#define GET_TABLE_ITEM(a) cfgArray[cmd->index].a;// get value from cfgArray
+#define GET_TEXT_ITEM(b,a) b[a]					 // get text from an array of strings in PGM
+#define GET_UNITS(a) (PGM_P)msg_units[cm_get_units_mode(a)]
 
 /**** String handling help ***
  *

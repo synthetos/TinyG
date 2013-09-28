@@ -131,7 +131,6 @@ static void _exec_program_finalize(float *value, float *flag);
 
 static int8_t _get_axis(const index_t index);
 static int8_t _get_axis_type(const index_t index);
-static int8_t _get_pos_axis(const index_t index);
 
 /***********************************************************************************
  **** CODE *************************************************************************
@@ -1474,9 +1473,8 @@ static PGM_P const PROGMEM msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03};
 /***** AXIS HELPERS *****************************************************************
  *
  * cm_get_axis_char()	- return ASCII char for axis given the axis number
- * cm_get_axis()		- return axis number or -1 if NA
- * cm_get_axis_type()	- return 0 -f axis is linear, 1 if rotary, -1 if NA
- * cm_get_pos_axis()	- return axis number for pos values or -1 if none - e.g. posx
+ * _get_axis()		- return axis number or -1 if NA
+ * _get_axis_type()	- return 0 -f axis is linear, 1 if rotary, -1 if NA
  */
 
 char_t cm_get_axis_char(const int8_t axis)
@@ -1486,19 +1484,21 @@ char_t cm_get_axis_char(const int8_t axis)
 	return (axis_char[axis]);
 }
 
-//int8_t cm_get_axis(const index_t index)
 static int8_t _get_axis(const index_t index)
 {
 	char_t *ptr;
 	char_t tmp[CMD_TOKEN_LEN+1];
 	char_t axes[] = {"xyzabc"};
 
-	strcpy_P(tmp, cfgArray[index].token);
-	if ((ptr = strchr(axes, tmp[0])) == NULL) { return (-1);}
+	strcpy_P(tmp, cfgArray[index].token);			// kind of a hack. Looks for an axis
+	if ((ptr = strchr(axes, tmp[0])) == NULL) { 	// character in the 0 and 3 positions
+		if ((ptr = strchr(axes, tmp[3])) == NULL) { // to accommodate 'xam' and 'g54x' styles
+			return (-1);
+		}
+	}
 	return (ptr - axes);
 }
 
-//int8_t cm_get_axis_type(const index_t index)
 static int8_t _get_axis_type(const index_t index)
 {
 	int8_t axis = _get_axis(index);
@@ -1507,17 +1507,6 @@ static int8_t _get_axis_type(const index_t index)
 	return (0);
 }
 
-//int8_t cm_get_pos_axis(const index_t index)
-static int8_t _get_pos_axis(const index_t index)
-{
-	char_t *ptr;
-	char_t tmp[CMD_TOKEN_LEN+1];
-	char_t axes[] = {"xyzabc"};
-
-	strcpy_P(tmp, cfgArray[index].token);
-	if ((ptr = strchr(axes, tmp[3])) == NULL) { return (-1);}
-	return (ptr - axes);
-}
 
 /**** Functions called directly from cmdArray table - mostly wrappers ****
  * _get_msg_helper() - helper to get string values
@@ -1615,31 +1604,35 @@ stat_t cm_get_vel(cmdObj_t *cmd)
 		cmd->value = mp_get_runtime_velocity();
 		if (cm_get_units_mode(RUNTIME) == INCHES) cmd->value *= INCH_PER_MM;
 	}
-	cmd->precision = (int8_t)GET_VALUE(precision);
+//	cmd->precision = (int8_t)GET_TABLE_ITEM(precision);
+	cmd->precision = GET_TABLE_ITEM(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
 stat_t cm_get_pos(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_work_position(ACTIVE_MODEL, _get_pos_axis(cmd->index));
-	cmd->precision = (int8_t)GET_VALUE(precision);
+	cmd->value = cm_get_work_position(ACTIVE_MODEL, _get_axis(cmd->index));
+//	cmd->precision = (int8_t)GET_TABLE_ITEM(precision);
+	cmd->precision = GET_TABLE_ITEM(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
 stat_t cm_get_mpo(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_absolute_position(RUNTIME, _get_pos_axis(cmd->index));
-	cmd->precision = (int8_t)GET_VALUE(precision);
+	cmd->value = cm_get_absolute_position(RUNTIME, _get_axis(cmd->index));
+//	cmd->precision = (int8_t)GET_TABLE_ITEM(precision);
+	cmd->precision = GET_TABLE_ITEM(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
 stat_t cm_get_ofs(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_work_offset(ACTIVE_MODEL, _get_pos_axis(cmd->index));
-	cmd->precision = (int8_t)GET_VALUE(precision);
+	cmd->value = cm_get_work_offset(ACTIVE_MODEL, _get_axis(cmd->index));
+//	cmd->precision = (int8_t)GET_TABLE_ITEM(precision);
+	cmd->precision = GET_TABLE_ITEM(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
@@ -1789,7 +1782,8 @@ void cm_print_ms(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ms, GET_UNITS(AC
  *
  *	_print_axis_ui8() - helper to print an integer value with no units
  *	_print_axis_flt() - helper to print a floating point linear value in prevailing units
- * 
+ *	_print_pos_helper()
+ *
  *	cm_print_am()
  *	cm_print_fr()
  *	cm_print_vm()
@@ -1803,6 +1797,9 @@ void cm_print_ms(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ms, GET_UNITS(AC
  *	cm_print_lv()
  *	cm_print_lb()
  *	cm_print_zb()
+ *
+ *	cm_print_pos() - print position with unit displays for MM or Inches
+ * 	cm_print_mpo() - print position with fixed unit display - always in Degrees or MM
  */
 
 const char PROGMEM fmt_Xam[] = "[%s%s] %s axis mode%18d %S\n";
@@ -1830,25 +1827,32 @@ static void _print_axis_ui8(cmdObj_t *cmd, const char *format)
 
 static void _print_axis_flt(cmdObj_t *cmd, const char *format)
 {
+	char *units;
 	if (_get_axis_type(cmd->index) == 0) {	// linear
-//		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, 
-//				 (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
-		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, GET_UNITS(MODEL));
-	} else {
-		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value,
-				 (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
+		units = (char *)GET_UNITS(MODEL);
+		} else {
+		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
 	}
+	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, units);
 }
 
 static void _print_axis_coord_flt(cmdObj_t *cmd, const char *format)
 {
+	char *units;
 	if (_get_axis_type(cmd->index) == 0) {	// linear
-		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->token, cmd->value, 
-				 (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
+		units = (char *)GET_UNITS(MODEL);
 	} else {
-		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->token, cmd->value,
-				 (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
+		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
 	}
+	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->token, cmd->value, units);
+}
+
+void _print_pos(cmdObj_t *cmd, const char *format, uint8_t units)
+{
+	char_t axes[6] = {"XYZABC"};
+	uint8_t axis = _get_axis(cmd->index);
+	if (axis >= AXIS_A) { units = DEGREES;}
+	fprintf_P(stderr, format, axes[axis], cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
 }
 
 void cm_print_fr(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xfr);}
@@ -1871,25 +1875,11 @@ void cm_print_cpos(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cpos);}
 void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
 {
 	fprintf_P(stderr, fmt_Xam, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
-			 (PGM_P)pgm_read_word(&msg_am[(uint8_t)cmd->value]));
+			 (PGM_P)GET_TEXT_ITEM(msg_am, (uint8_t)cmd->value));
 }
 
-/*
- * print position
- *
- *	_print_pos_helper()
- *	cm_print_pos() - print position with unit displays for MM or Inches
- * 	cm_print_mpo() - print position with fixed unit display - always in Degrees or MM
- */
-void _print_pos_helper(cmdObj_t *cmd, const char *format, uint8_t units)
-{
-	char_t axes[6] = {"XYZABC"};
-	uint8_t axis = _get_pos_axis(cmd->index);
-	if (axis >= AXIS_A) { units = DEGREES;}
-	fprintf_P(stderr, format, axes[axis], cmd->value, (PGM_P)pgm_read_word(&msg_units[(uint8_t)units]));
-}
-void cm_print_pos(cmdObj_t *cmd) { _print_pos_helper(cmd, fmt_pos, cm_get_units_mode(MODEL));}
-void cm_print_mpo(cmdObj_t *cmd) { _print_pos_helper(cmd, fmt_mpo, MILLIMETERS);}
+void cm_print_pos(cmdObj_t *cmd) { _print_pos(cmd, fmt_pos, cm_get_units_mode(MODEL));}
+void cm_print_mpo(cmdObj_t *cmd) { _print_pos(cmd, fmt_mpo, MILLIMETERS);}
 
 #endif // __TEXT_MODE
 

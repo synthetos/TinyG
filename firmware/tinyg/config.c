@@ -190,15 +190,6 @@ stat_t get_flt(cmdObj_t *cmd)
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
-/*
-char_t *get_format(const index_t i, char_t *format)
-{
-	strncpy_P(format, (PGM_P)pgm_read_word(&cfgArray[i].format), CMD_FORMAT_LEN);
-	return (format);
-}
-*/
-//ARM version:
-//char *get_format(const index_t index) { return ((char *)cfgArray[index].format); }
 
 /* Generic sets()
  *	set_nul() - set nothing (returns STAT_NOOP)
@@ -254,24 +245,38 @@ stat_t set_flt(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-/***** DOMAIN SPECIFIC EXTENSIONS TO GENERIC FUNCTIONS ************************
- * get_flu()   - get floating point number with Gcode units conversion
- * set_flu()   - set floating point number with Gcode units conversion
+/***** GCODE SPECIFIC EXTENSIONS TO GENERIC FUNCTIONS *****/
+
+/*
+ * get_flu() - get floating point number with G20/G21 units conversion
+ *
+ * The number "getted" will be in internal canonical units (mm), which is  
+ * returned in external units (inches or mm) 
  */
-stat_t set_flu(cmdObj_t *cmd)
-{
-	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= MM_PER_INCH;
-	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
-	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-	cmd->objtype = TYPE_FLOAT;
-	return(STAT_OK);
-}
 
 stat_t get_flu(cmdObj_t *cmd)
 {
 	get_flt(cmd);
 	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
 	return (STAT_OK);
+}
+
+/*
+ * set_flu() - set floating point number with G20/G21 units conversion
+ *
+ * The number "setted" will have been delivered in external units (inches or mm).
+ * It is written to the target memory location in internal canonical units (mm),
+ * but the original cmd->value is not changed so display works correctly.
+ */
+
+stat_t set_flu(cmdObj_t *cmd)
+{
+	float tmp_value = cmd->value;
+	if (cm_get_units_mode(MODEL) == INCHES) tmp_value *= MM_PER_INCH; // convert to canonical units
+	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = tmp_value;
+	cmd->precision = (int8_t)GET_TABLE_ITEM(precision);
+	cmd->objtype = TYPE_FLOAT;
+	return(STAT_OK);
 }
 
 /******************************************************************************
