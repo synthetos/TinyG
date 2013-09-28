@@ -64,19 +64,19 @@ cmdObj_t cmd_list[CMD_LIST_LEN];	// JSON header element
 stat_t cmd_set(cmdObj_t *cmd)
 {
 	if (cmd->index >= cmd_index_max()) { return (STAT_INTERNAL_RANGE_ERROR);}
-	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].set)))(cmd));
+	return (((fptrCmd)GET_TABLE_WORD(set))(cmd));
 }
 
 stat_t cmd_get(cmdObj_t *cmd)
 {
 	if (cmd->index >= cmd_index_max()) { return(STAT_INTERNAL_RANGE_ERROR);}
-	return (((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd));
+	return (((fptrCmd)GET_TABLE_WORD(get))(cmd));
 }
 
 void cmd_print(cmdObj_t *cmd)
 {
 	if (cmd->index >= cmd_index_max()) return;
-	((fptrPrint)(pgm_read_word(&cfgArray[cmd->index].print)))(cmd);
+	((fptrCmd)GET_TABLE_WORD(print))(cmd);
 }
 
 void cmd_persist(cmdObj_t *cmd)
@@ -85,7 +85,8 @@ void cmd_persist(cmdObj_t *cmd)
 	return;
 #endif
 	if (cmd_index_lt_groups(cmd->index) == false) return;
-	if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_PERSIST) {
+//	if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_PERSIST) {
+	if (GET_TABLE_BYTE(flags) & F_PERSIST) {
 		cmd_write_NVM_value(cmd);
 	}
 }
@@ -120,7 +121,8 @@ void config_init()
 	} else {								// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
 		for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {
-			if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
+//			if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
+			if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
 				strcpy_P(cmd->token, cfgArray[cmd->index].token);	// read the token from the array
 				cmd_read_NVM_value(cmd);
 				cmd_set(cmd);
@@ -171,22 +173,22 @@ stat_t get_nul(cmdObj_t *cmd)
 
 stat_t get_ui8(cmdObj_t *cmd)
 {
-	cmd->value = (float)*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target));
+	cmd->value = (float)*((uint8_t *)GET_TABLE_WORD(target));
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
 stat_t get_int(cmdObj_t *cmd)
 {
-	cmd->value = (float)*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target));
+	cmd->value = (float)*((uint32_t *)GET_TABLE_WORD(target));
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
 stat_t get_flt(cmdObj_t *cmd)
 {
-	cmd->value = *((float *)pgm_read_word(&cfgArray[cmd->index].target));
-	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->value = *((float *)GET_TABLE_WORD(target));
+	cmd->precision = (int8_t)GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
 }
@@ -204,7 +206,8 @@ stat_t set_nul(cmdObj_t *cmd) { return (STAT_NOOP);}
 
 stat_t set_ui8(cmdObj_t *cmd)
 {
-	*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
+//	*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
+	*((uint8_t *)GET_TABLE_WORD(target)) = cmd->value;
 	cmd->objtype = TYPE_INTEGER;
 	return(STAT_OK);
 }
@@ -232,15 +235,18 @@ stat_t set_0123(cmdObj_t *cmd)
 
 stat_t set_int(cmdObj_t *cmd)
 {
-	*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
+//	*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
+	*((uint32_t *)GET_TABLE_WORD(target)) = cmd->value;
 	cmd->objtype = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
 stat_t set_flt(cmdObj_t *cmd)
 {
-	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
-	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+//	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
+	*((float *)GET_TABLE_WORD(target)) = cmd->value;
+//	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return(STAT_OK);
 }
@@ -273,8 +279,10 @@ stat_t set_flu(cmdObj_t *cmd)
 {
 	float tmp_value = cmd->value;
 	if (cm_get_units_mode(MODEL) == INCHES) tmp_value *= MM_PER_INCH; // convert to canonical units
-	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = tmp_value;
-	cmd->precision = (int8_t)GET_TABLE_ITEM(precision);
+//	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = tmp_value;
+	*((float *)GET_TABLE_WORD(target)) = tmp_value;
+//	cmd->precision = (int8_t)GET_TABLE_WORD(precision);
+	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return(STAT_OK);
 }
@@ -472,12 +480,12 @@ stat_t cmd_persist_offsets(uint8_t flag)
  * cmd_add_conditional_message()	- add a message to cmd body if messages are enabled
  * cmd_add_conditional_message_P()	- add a program memory message to cmd body if enabled
  *
- *	Note: Functions that return a cmd pointer point to the object that was modified
- *	or a NULL pointer if there was an error
+ *	Note: Functions that return a cmd pointer point to the object that was modified or
+ *	a NULL pointer if there was an error.
  *
- *	Note Adding a really large integer (like a checksum value) may lose precision 
- *	due to the cast to a float. Sometimes it's better to load an integer as a 
- *	string if all you want to do is display it.
+ *	Note: Adding a really large integer (like a checksum value) may lose precision due
+ *	to the cast to a float. Sometimes it's better to load an integer as a string if 
+ *	all you want to do is display it.
  */
 
 void cmd_get_cmdObj(cmdObj_t *cmd)
@@ -499,7 +507,7 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
 		}
 	}
-	((fptrCmd)(pgm_read_word(&cfgArray[cmd->index].get)))(cmd);	// populate the value
+	((fptrCmd)GET_TABLE_WORD(get))(cmd);	// populate the value
 }
  
 cmdObj_t *cmd_reset_obj(cmdObj_t *cmd)		// clear a single cmdObj structure

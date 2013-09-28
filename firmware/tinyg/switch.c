@@ -258,11 +258,11 @@ void sw_print_st(cmdObj_t *cmd) { text_print_flt(cmd, fmt_st);}
 //void sw_print_ss(cmdObj_t *cmd) { fprintf(stderr, fmt_ss, cmd->token, (uint8_t)cmd->value);}
 
 /*
-static const char_t PROGMEM msg_sw0[] = "Disabled";
-static const char_t PROGMEM msg_sw1[] = "NO homing";
-static const char_t PROGMEM msg_sw2[] = "NO homing & limit";
-static const char_t PROGMEM msg_sw3[] = "NC homing";
-static const char_t PROGMEM msg_sw4[] = "NC homing & limit";
+static const char PROGMEM msg_sw0[] = "Disabled";
+static const char PROGMEM msg_sw1[] = "NO homing";
+static const char PROGMEM msg_sw2[] = "NO homing & limit";
+static const char PROGMEM msg_sw3[] = "NC homing";
+static const char PROGMEM msg_sw4[] = "NC homing & limit";
 static PGM_P const  PROGMEM msg_sw[] = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
 */
 

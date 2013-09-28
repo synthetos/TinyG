@@ -692,7 +692,8 @@ static stat_t set_baud(cmdObj_t *cmd)
 	cfg.usb_baud_rate = baud;
 	cfg.usb_baud_flag = true;
 	char_t message[CMD_MESSAGE_LEN]; 
-	sprintf_P(message, PSTR("*** NOTICE *** Restting baud rate to %S"),(PGM_P)pgm_read_word(&msg_baud[baud]));
+//	sprintf_P(message, PSTR("*** NOTICE *** Restting baud rate to %S"),(PGM_P)pgm_read_word(&msg_baud[baud]));
+	sprintf_P(message, PSTR("*** NOTICE *** Restting baud rate to %S"),(PGM_P)GET_TEXT_ITEM(msg_baud, baud));
 	cmd_add_conditional_message(message);
 	return (STAT_OK);
 }

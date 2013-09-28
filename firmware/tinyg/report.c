@@ -58,85 +58,85 @@ qrSingleton_t qr;
  * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
  */
 
-static const char_t PROGMEM stat_00[] = "OK";
-static const char_t PROGMEM stat_01[] = "Error";
-static const char_t PROGMEM stat_02[] = "Eagain";
-static const char_t PROGMEM stat_03[] = "Noop";
-static const char_t PROGMEM stat_04[] = "Complete";
-static const char_t PROGMEM stat_05[] = "Terminated";
-static const char_t PROGMEM stat_06[] = "Hard reset";
-static const char_t PROGMEM stat_07[] = "End of line";
-static const char_t PROGMEM stat_08[] = "End of file";
-static const char_t PROGMEM stat_09[] = "File not open";
-static const char_t PROGMEM stat_10[] = "Max file size exceeded";
-static const char_t PROGMEM stat_11[] = "No such device";
-static const char_t PROGMEM stat_12[] = "Buffer empty";
-static const char_t PROGMEM stat_13[] = "Buffer full";
-static const char_t PROGMEM stat_14[] = "Buffer full - fatal";
-static const char_t PROGMEM stat_15[] = "Initializing";
-static const char_t PROGMEM stat_16[] = "Entering boot loader";
-static const char_t PROGMEM stat_17[] = "Function is stubbed";
-static const char_t PROGMEM stat_18[] = "stat_18";
-static const char_t PROGMEM stat_19[] = "stat_19";
+static const char PROGMEM stat_00[] = "OK";
+static const char PROGMEM stat_01[] = "Error";
+static const char PROGMEM stat_02[] = "Eagain";
+static const char PROGMEM stat_03[] = "Noop";
+static const char PROGMEM stat_04[] = "Complete";
+static const char PROGMEM stat_05[] = "Terminated";
+static const char PROGMEM stat_06[] = "Hard reset";
+static const char PROGMEM stat_07[] = "End of line";
+static const char PROGMEM stat_08[] = "End of file";
+static const char PROGMEM stat_09[] = "File not open";
+static const char PROGMEM stat_10[] = "Max file size exceeded";
+static const char PROGMEM stat_11[] = "No such device";
+static const char PROGMEM stat_12[] = "Buffer empty";
+static const char PROGMEM stat_13[] = "Buffer full";
+static const char PROGMEM stat_14[] = "Buffer full - fatal";
+static const char PROGMEM stat_15[] = "Initializing";
+static const char PROGMEM stat_16[] = "Entering boot loader";
+static const char PROGMEM stat_17[] = "Function is stubbed";
+static const char PROGMEM stat_18[] = "stat_18";
+static const char PROGMEM stat_19[] = "stat_19";
 
-static const char_t PROGMEM stat_20[] = "Internal error";
-static const char_t PROGMEM stat_21[] = "Internal range error";
-static const char_t PROGMEM stat_22[] = "Floating point error";
-static const char_t PROGMEM stat_23[] = "Divide by zero";
-static const char_t PROGMEM stat_24[] = "Invalid Address";
-static const char_t PROGMEM stat_25[] = "Read-only address";
-static const char_t PROGMEM stat_26[] = "Initialization failure";
-static const char_t PROGMEM stat_27[] = "System alarm - shutting down";
-static const char_t PROGMEM stat_28[] = "Memory fault or corruption";
-static const char_t PROGMEM stat_29[] = "stat_29";
-static const char_t PROGMEM stat_30[] = "stat_30";
-static const char_t PROGMEM stat_31[] = "stat_31";
-static const char_t PROGMEM stat_32[] = "stat_32";
-static const char_t PROGMEM stat_33[] = "stat_33";
-static const char_t PROGMEM stat_34[] = "stat_34";
-static const char_t PROGMEM stat_35[] = "stat_35";
-static const char_t PROGMEM stat_36[] = "stat_36";
-static const char_t PROGMEM stat_37[] = "stat_37";
-static const char_t PROGMEM stat_38[] = "stat_38";
-static const char_t PROGMEM stat_39[] = "stat_39";
+static const char PROGMEM stat_20[] = "Internal error";
+static const char PROGMEM stat_21[] = "Internal range error";
+static const char PROGMEM stat_22[] = "Floating point error";
+static const char PROGMEM stat_23[] = "Divide by zero";
+static const char PROGMEM stat_24[] = "Invalid Address";
+static const char PROGMEM stat_25[] = "Read-only address";
+static const char PROGMEM stat_26[] = "Initialization failure";
+static const char PROGMEM stat_27[] = "System alarm - shutting down";
+static const char PROGMEM stat_28[] = "Memory fault or corruption";
+static const char PROGMEM stat_29[] = "stat_29";
+static const char PROGMEM stat_30[] = "stat_30";
+static const char PROGMEM stat_31[] = "stat_31";
+static const char PROGMEM stat_32[] = "stat_32";
+static const char PROGMEM stat_33[] = "stat_33";
+static const char PROGMEM stat_34[] = "stat_34";
+static const char PROGMEM stat_35[] = "stat_35";
+static const char PROGMEM stat_36[] = "stat_36";
+static const char PROGMEM stat_37[] = "stat_37";
+static const char PROGMEM stat_38[] = "stat_38";
+static const char PROGMEM stat_39[] = "stat_39";
 
-static const char_t PROGMEM stat_40[] = "Unrecognized command";
-static const char_t PROGMEM stat_41[] = "Expected command letter";
-static const char_t PROGMEM stat_42[] = "Bad number format";
-static const char_t PROGMEM stat_43[] = "Input exceeds max length";
-static const char_t PROGMEM stat_44[] = "Input value too small";
-static const char_t PROGMEM stat_45[] = "Input value too large";
-static const char_t PROGMEM stat_46[] = "Input value range error";
-static const char_t PROGMEM stat_47[] = "Input value unsupported";
-static const char_t PROGMEM stat_48[] = "JSON syntax error";
-static const char_t PROGMEM stat_49[] = "JSON input has too many pairs";	// current longest message: 30 chars
-static const char_t PROGMEM stat_50[] = "JSON output too long";
-static const char_t PROGMEM stat_51[] = "Out of buffer space";
-static const char_t PROGMEM stat_52[] = "Config rejected during cycle";
-static const char_t PROGMEM stat_53[] = "stat_53";
-static const char_t PROGMEM stat_54[] = "stat_54";
-static const char_t PROGMEM stat_55[] = "stat_55";
-static const char_t PROGMEM stat_56[] = "stat_56";
-static const char_t PROGMEM stat_57[] = "stat_57";
-static const char_t PROGMEM stat_58[] = "stat_58";
-static const char_t PROGMEM stat_59[] = "stat_59";
+static const char PROGMEM stat_40[] = "Unrecognized command";
+static const char PROGMEM stat_41[] = "Expected command letter";
+static const char PROGMEM stat_42[] = "Bad number format";
+static const char PROGMEM stat_43[] = "Input exceeds max length";
+static const char PROGMEM stat_44[] = "Input value too small";
+static const char PROGMEM stat_45[] = "Input value too large";
+static const char PROGMEM stat_46[] = "Input value range error";
+static const char PROGMEM stat_47[] = "Input value unsupported";
+static const char PROGMEM stat_48[] = "JSON syntax error";
+static const char PROGMEM stat_49[] = "JSON input has too many pairs";	// current longest message: 30 chars
+static const char PROGMEM stat_50[] = "JSON output too long";
+static const char PROGMEM stat_51[] = "Out of buffer space";
+static const char PROGMEM stat_52[] = "Config rejected during cycle";
+static const char PROGMEM stat_53[] = "stat_53";
+static const char PROGMEM stat_54[] = "stat_54";
+static const char PROGMEM stat_55[] = "stat_55";
+static const char PROGMEM stat_56[] = "stat_56";
+static const char PROGMEM stat_57[] = "stat_57";
+static const char PROGMEM stat_58[] = "stat_58";
+static const char PROGMEM stat_59[] = "stat_59";
 
-static const char_t PROGMEM stat_60[] = "Move less than minimum length";
-static const char_t PROGMEM stat_61[] = "Move less than minimum time";
-static const char_t PROGMEM stat_62[] = "Gcode block skipped";
-static const char_t PROGMEM stat_63[] = "Gcode input error";
-static const char_t PROGMEM stat_64[] = "Gcode feedrate error";
-static const char_t PROGMEM stat_65[] = "Gcode axis word missing";
-static const char_t PROGMEM stat_66[] = "Gcode modal group violation";
-static const char_t PROGMEM stat_67[] = "Homing cycle failed";
-static const char_t PROGMEM stat_68[] = "Max travel exceeded";
-static const char_t PROGMEM stat_69[] = "Max spindle speed exceeded";
-static const char_t PROGMEM stat_70[] = "Arc specification error";
-static const char_t PROGMEM stat_71[] = "Soft limit exceeded";
-static const char_t PROGMEM stat_72[] = "Command not accepted";
-static const char_t PROGMEM stat_73[] = "Probing cycle failed";
+static const char PROGMEM stat_60[] = "Move less than minimum length";
+static const char PROGMEM stat_61[] = "Move less than minimum time";
+static const char PROGMEM stat_62[] = "Gcode block skipped";
+static const char PROGMEM stat_63[] = "Gcode input error";
+static const char PROGMEM stat_64[] = "Gcode feedrate error";
+static const char PROGMEM stat_65[] = "Gcode axis word missing";
+static const char PROGMEM stat_66[] = "Gcode modal group violation";
+static const char PROGMEM stat_67[] = "Homing cycle failed";
+static const char PROGMEM stat_68[] = "Max travel exceeded";
+static const char PROGMEM stat_69[] = "Max spindle speed exceeded";
+static const char PROGMEM stat_70[] = "Arc specification error";
+static const char PROGMEM stat_71[] = "Soft limit exceeded";
+static const char PROGMEM stat_72[] = "Command not accepted";
+static const char PROGMEM stat_73[] = "Probing cycle failed";
 
-PGM_P const PROGMEM stat_msg[] = {			// AVR/GCC version
+static PGM_P const PROGMEM stat_msg[] = {	// AVR/GCC version
 //static const char_t *stat_msg[] = {		// ARM/GCC++ version
 	stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
 	stat_10, stat_11, stat_12, stat_13, stat_14, stat_15, stat_16, stat_17, stat_18, stat_19,
@@ -150,16 +150,19 @@ PGM_P const PROGMEM stat_msg[] = {			// AVR/GCC version
 
 char *get_status_message(stat_t status)
 {
+#ifdef __AVR
 	strncpy_P(status_message,(PGM_P)pgm_read_word(&stat_msg[status]), STATUS_MESSAGE_LEN);
 	return (status_message);
-/* ARM code
-	return ((const char *)stat_msg[status]);
-*/
+#endif
+#ifdef __ARM
+//	return ((const char *)stat_msg[status]);
+	return (stat_msg[status]);
+#endif
 }
 
 /*
- * rpt_exception()	- generate an exception message - always in JSON format
- * rpt_er()			- send a bogus exception report for testing purposes (it's not real)
+ * rpt_exception() - generate an exception message - always in JSON format
+ * rpt_er()		   - send a bogus exception report for testing purposes (it's not real)
  */
 void rpt_exception(uint8_t status, int16_t value)
 {
@@ -564,8 +567,8 @@ void sr_print_sv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_sv);}
 /*
  * qr_print_qr() - produce QR text output
  */
-const char_t PROGMEM fmt_qr[] = "qr:%d\n";
-const char_t PROGMEM fmt_qv[] = "[qv]  queue report verbosity%7d [0=off,1=filtered,2=verbose]\n";
+const char PROGMEM fmt_qr[] = "qr:%d\n";
+const char PROGMEM fmt_qv[] = "[qv]  queue report verbosity%7d [0=off,1=filtered,2=verbose]\n";
 
 void qr_print_qr(cmdObj_t *cmd) { text_print_int(cmd, fmt_qr);}
 void qr_print_qv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_qv);}

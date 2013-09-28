@@ -48,7 +48,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.81	// Fixed units reporting bug; lots of G2 alignment stuff
+#define TINYG_FIRMWARE_BUILD   		392.82	// Changed pgm_read_word and byte references to cross-platform macros
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
@@ -86,7 +86,9 @@
 typedef char char_t;
 typedef const char PROGMEM *char_P;	// access to PROGMEM arrays of PROGMEM strings
 
-#define GET_TABLE_ITEM(a) pgm_read_word(&cfgArray[cmd->index].a)// get value from cfgArray
+// The table getters rely on cmd->index having been set
+#define GET_TABLE_WORD(a) pgm_read_word(&cfgArray[cmd->index].a)// get word value from cfgArray
+#define GET_TABLE_BYTE(a) pgm_read_byte(&cfgArray[cmd->index].a)// get byte value from cfgArray
 #define GET_TEXT_ITEM(b,a) (PGM_P)pgm_read_word(&b[a])			// get text from an array of strings in PGM
 #define GET_UNITS(a) (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(a)])
 
@@ -102,7 +104,9 @@ typedef const char PROGMEM *char_P;	// access to PROGMEM arrays of PROGMEM strin
 typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
 typedef const char *char_P;			// ARM/C++ version requires this typedef instead
 
-#define GET_TABLE_ITEM(a) cfgArray[cmd->index].a;// get value from cfgArray
+// The table getters rely on cmd->index having been set
+#define GET_TABLE_WORD(a) cfgArray[cmd->index].a;// get word value from cfgArray
+#define GET_TABLE_BYTE(a) cfgArray[cmd->index].a)// get byte value from cfgArray
 #define GET_TEXT_ITEM(b,a) b[a]					 // get text from an array of strings in PGM
 #define GET_UNITS(a) (PGM_P)msg_units[cm_get_units_mode(a)]
 
