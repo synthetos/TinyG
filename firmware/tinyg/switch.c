@@ -251,10 +251,10 @@ stat_t sw_set_sw(cmdObj_t *cmd)			// switch setting
 
 #ifdef __TEXT_MODE
 
-const char_t PROGMEM fmt_st[] = "[st]  switch type%18d [0=NO,1=NC]\n";
+const char PROGMEM fmt_st[] = "[st]  switch type%18d [0=NO,1=NC]\n";
 void sw_print_st(cmdObj_t *cmd) { text_print_flt(cmd, fmt_st);}
 
-//const char_t PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
+//const char PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
 //void sw_print_ss(cmdObj_t *cmd) { fprintf(stderr, fmt_ss, cmd->token, (uint8_t)cmd->value);}
 
 /*

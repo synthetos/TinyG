@@ -30,6 +30,10 @@
 
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 enum textVerbosity {
 	TV_SILENT = 0,					// no response is provided
 	TV_VERBOSE						// response is provided. Error responses ech message and failed commands
@@ -72,12 +76,12 @@ extern txtSingleton_t txt;
 	void tx_print_int(cmdObj_t *cmd);
 	void tx_print_flt(cmdObj_t *cmd);
 
-	void text_print_nul(cmdObj_t *cmd, const char_t *format);
-	void text_print_str(cmdObj_t *cmd, const char_t *format);
-	void text_print_ui8(cmdObj_t *cmd, const char_t *format);
-	void text_print_int(cmdObj_t *cmd, const char_t *format);
-	void text_print_flt(cmdObj_t *cmd, const char_t *format);
-	void text_print_flt_units(cmdObj_t *cmd, const char_t *format, const char_t *units);
+	void text_print_nul(cmdObj_t *cmd, const char *format);
+	void text_print_str(cmdObj_t *cmd, const char *format);
+	void text_print_ui8(cmdObj_t *cmd, const char *format);
+	void text_print_int(cmdObj_t *cmd, const char *format);
+	void text_print_flt(cmdObj_t *cmd, const char *format);
+	void text_print_flt_units(cmdObj_t *cmd, const char *format, const char_t *units);
 
 	void tx_print_tv(cmdObj_t *cmd);
 
@@ -114,4 +118,8 @@ void text_unit_tests(void);
 #define	TEXT_UNITS
 #endif // __UNIT_TEST_TEXT
 
-#endif // TEXT_PARSER_H_ONCE
+#ifdef __cplusplus
+}
+#endif
+
+#endif // End of include guard: TEXT_PARSER_H_ONCE

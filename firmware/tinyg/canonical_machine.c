@@ -1356,99 +1356,99 @@ void cm_program_end()
 
 #ifdef __TEXT_MODE
 
-static const char_t PROGMEM msg_units0[] = " in";	// used by generic print functions
-static const char_t PROGMEM msg_units1[] = " mm";
-static const char_t PROGMEM msg_units2[] = " deg";
-static PGM_P const  PROGMEM msg_units[] = { msg_units0, msg_units1, msg_units2 };
+static const char  PROGMEM msg_units0[] = " in";	// used by generic print functions
+static const char  PROGMEM msg_units1[] = " mm";
+static const char  PROGMEM msg_units2[] = " deg";
+static PGM_P const PROGMEM msg_units[] = { msg_units0, msg_units1, msg_units2 };
 #define GET_UNITS(a) (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(a)])
 #define DEGREE_INDEX 2
 
-static const char_t PROGMEM msg_g20[] = "G20 - inches mode";
-static const char_t PROGMEM msg_g21[] = "G21 - millimeter mode";
-static PGM_P const  PROGMEM msg_unit[] = { msg_g20, msg_g21 };
+static const char  PROGMEM msg_g20[] = "G20 - inches mode";
+static const char  PROGMEM msg_g21[] = "G21 - millimeter mode";
+static PGM_P const PROGMEM msg_unit[] = { msg_g20, msg_g21 };
 
-static const char_t PROGMEM msg_stat0[] = "Initializing";	// combined state (stat) uses this array
-static const char_t PROGMEM msg_stat1[] = "Ready";
-static const char_t PROGMEM msg_stat2[] = "Shutdown";
-static const char_t PROGMEM msg_stat3[] = "Stop";
-static const char_t PROGMEM msg_stat4[] = "End";
-static const char_t PROGMEM msg_stat5[] = "Run";
-static const char_t PROGMEM msg_stat6[] = "Hold";
-static const char_t PROGMEM msg_stat7[] = "Probe";
-static const char_t PROGMEM msg_stat8[] = "Cycle";
-static const char_t PROGMEM msg_stat9[] = "Homing";
-static const char_t PROGMEM msg_stat10[] = "Jog";
-static PGM_P const  PROGMEM msg_stat[] = { msg_stat0, msg_stat1, msg_stat2, msg_stat3, msg_stat4, msg_stat5, 
+static const char  PROGMEM msg_stat0[] = "Initializing";	// combined state (stat) uses this array
+static const char  PROGMEM msg_stat1[] = "Ready";
+static const char  PROGMEM msg_stat2[] = "Shutdown";
+static const char  PROGMEM msg_stat3[] = "Stop";
+static const char  PROGMEM msg_stat4[] = "End";
+static const char  PROGMEM msg_stat5[] = "Run";
+static const char  PROGMEM msg_stat6[] = "Hold";
+static const char  PROGMEM msg_stat7[] = "Probe";
+static const char  PROGMEM msg_stat8[] = "Cycle";
+static const char  PROGMEM msg_stat9[] = "Homing";
+static const char  PROGMEM msg_stat10[] = "Jog";
+static PGM_P const PROGMEM msg_stat[] = { msg_stat0, msg_stat1, msg_stat2, msg_stat3, msg_stat4, msg_stat5, 
 										   msg_stat6, msg_stat7, msg_stat8, msg_stat9, msg_stat10};
 
-static const char_t PROGMEM msg_macs0[] = "Initializing";
-static const char_t PROGMEM msg_macs1[] = "Reset";
-static const char_t PROGMEM msg_macs2[] = "Cycle";
-static const char_t PROGMEM msg_macs3[] = "Stop";
-static const char_t PROGMEM msg_macs4[] = "End";
-static PGM_P const  PROGMEM msg_macs[] = { msg_macs0, msg_macs1, msg_macs2, msg_macs3 , msg_macs4};
+static const char  PROGMEM msg_macs0[] = "Initializing";
+static const char  PROGMEM msg_macs1[] = "Reset";
+static const char  PROGMEM msg_macs2[] = "Cycle";
+static const char  PROGMEM msg_macs3[] = "Stop";
+static const char  PROGMEM msg_macs4[] = "End";
+static PGM_P const PROGMEM msg_macs[] = { msg_macs0, msg_macs1, msg_macs2, msg_macs3 , msg_macs4};
 
-static const char_t PROGMEM msg_cycs0[] = "Off";
-static const char_t PROGMEM msg_cycs1[] = "Started";
-static const char_t PROGMEM msg_cycs2[] = "Homing";
-static const char_t PROGMEM msg_cycs3[] = "Probe";
-static PGM_P const  PROGMEM msg_cycs[] = { msg_cycs0, msg_cycs1, msg_cycs2, msg_cycs3 };
+static const char  PROGMEM msg_cycs0[] = "Off";
+static const char  PROGMEM msg_cycs1[] = "Started";
+static const char  PROGMEM msg_cycs2[] = "Homing";
+static const char  PROGMEM msg_cycs3[] = "Probe";
+static PGM_P const PROGMEM msg_cycs[] = { msg_cycs0, msg_cycs1, msg_cycs2, msg_cycs3 };
 
-static const char_t PROGMEM msg_mots0[] = "Stop";
-static const char_t PROGMEM msg_mots1[] = "Run";
-static const char_t PROGMEM msg_mots2[] = "Hold";
-static PGM_P const  PROGMEM msg_mots[] = { msg_mots0, msg_mots1, msg_mots2 };
+static const char  PROGMEM msg_mots0[] = "Stop";
+static const char  PROGMEM msg_mots1[] = "Run";
+static const char  PROGMEM msg_mots2[] = "Hold";
+static PGM_P const PROGMEM msg_mots[] = { msg_mots0, msg_mots1, msg_mots2 };
 
-static const char_t PROGMEM msg_hold0[] = "Off";
-static const char_t PROGMEM msg_hold1[] = "Sync";
-static const char_t PROGMEM msg_hold2[] = "Plan";
-static const char_t PROGMEM msg_hold3[] = "Decel";
-static const char_t PROGMEM msg_hold4[] = "Hold";
-static PGM_P const  PROGMEM msg_hold[] = { msg_hold0, msg_hold1, msg_hold2, msg_hold3, msg_hold4 };
+static const char  PROGMEM msg_hold0[] = "Off";
+static const char  PROGMEM msg_hold1[] = "Sync";
+static const char  PROGMEM msg_hold2[] = "Plan";
+static const char  PROGMEM msg_hold3[] = "Decel";
+static const char  PROGMEM msg_hold4[] = "Hold";
+static PGM_P const PROGMEM msg_hold[] = { msg_hold0, msg_hold1, msg_hold2, msg_hold3, msg_hold4 };
 
-static const char_t PROGMEM msg_home0[] = "Not Homed";
-static const char_t PROGMEM msg_home1[] = "Homed";
-static PGM_P const  PROGMEM msg_home[] = { msg_home0, msg_home1 };
+static const char  PROGMEM msg_home0[] = "Not Homed";
+static const char  PROGMEM msg_home1[] = "Homed";
+static PGM_P const PROGMEM msg_home[] = { msg_home0, msg_home1 };
 
-static const char_t PROGMEM msg_g53[] = "G53 - machine coordinate system";
-static const char_t PROGMEM msg_g54[] = "G54 - coordinate system 1";
-static const char_t PROGMEM msg_g55[] = "G55 - coordinate system 2";
-static const char_t PROGMEM msg_g56[] = "G56 - coordinate system 3";
-static const char_t PROGMEM msg_g57[] = "G57 - coordinate system 4";
-static const char_t PROGMEM msg_g58[] = "G58 - coordinate system 5";
-static const char_t PROGMEM msg_g59[] = "G59 - coordinate system 6";
-static PGM_P const  PROGMEM msg_coor[] = { msg_g53, msg_g54, msg_g55, msg_g56, msg_g57, msg_g58, msg_g59 };
+static const char  PROGMEM msg_g53[] = "G53 - machine coordinate system";
+static const char  PROGMEM msg_g54[] = "G54 - coordinate system 1";
+static const char  PROGMEM msg_g55[] = "G55 - coordinate system 2";
+static const char  PROGMEM msg_g56[] = "G56 - coordinate system 3";
+static const char  PROGMEM msg_g57[] = "G57 - coordinate system 4";
+static const char  PROGMEM msg_g58[] = "G58 - coordinate system 5";
+static const char  PROGMEM msg_g59[] = "G59 - coordinate system 6";
+static PGM_P const PROGMEM msg_coor[] = { msg_g53, msg_g54, msg_g55, msg_g56, msg_g57, msg_g58, msg_g59 };
 
-static const char_t PROGMEM msg_g00[] = "G0  - linear traverse (seek)";
-static const char_t PROGMEM msg_g01[] = "G1  - linear feed";
-static const char_t PROGMEM msg_g02[] = "G2  - clockwise arc feed";
-static const char_t PROGMEM msg_g03[] = "G3  - counter clockwise arc feed";
-static const char_t PROGMEM msg_g80[] = "G80 - cancel motion mode (none active)";
-static PGM_P const  PROGMEM msg_momo[] = { msg_g00, msg_g01, msg_g02, msg_g03, msg_g80 };
+static const char  PROGMEM msg_g00[] = "G0  - linear traverse (seek)";
+static const char  PROGMEM msg_g01[] = "G1  - linear feed";
+static const char  PROGMEM msg_g02[] = "G2  - clockwise arc feed";
+static const char  PROGMEM msg_g03[] = "G3  - counter clockwise arc feed";
+static const char  PROGMEM msg_g80[] = "G80 - cancel motion mode (none active)";
+static PGM_P const PROGMEM msg_momo[] = { msg_g00, msg_g01, msg_g02, msg_g03, msg_g80 };
 
-static const char_t PROGMEM msg_g17[] = "G17 - XY plane";
-static const char_t PROGMEM msg_g18[] = "G18 - XZ plane";
-static const char_t PROGMEM msg_g19[] = "G19 - YZ plane";
-static PGM_P const  PROGMEM msg_plan[] = { msg_g17, msg_g18, msg_g19 };
+static const char  PROGMEM msg_g17[] = "G17 - XY plane";
+static const char  PROGMEM msg_g18[] = "G18 - XZ plane";
+static const char  PROGMEM msg_g19[] = "G19 - YZ plane";
+static PGM_P const PROGMEM msg_plan[] = { msg_g17, msg_g18, msg_g19 };
 
-static const char_t PROGMEM msg_g61[] = "G61 - exact stop mode";
-static const char_t PROGMEM msg_g6a[] = "G61.1 - exact path mode";
-static const char_t PROGMEM msg_g64[] = "G64 - continuous mode";
-static PGM_P const  PROGMEM msg_path[] = { msg_g61, msg_g61, msg_g64 };
+static const char  PROGMEM msg_g61[] = "G61 - exact stop mode";
+static const char  PROGMEM msg_g6a[] = "G61.1 - exact path mode";
+static const char  PROGMEM msg_g64[] = "G64 - continuous mode";
+static PGM_P const PROGMEM msg_path[] = { msg_g61, msg_g61, msg_g64 };
 
-static const char_t PROGMEM msg_g90[] = "G90 - absolute distance mode";
-static const char_t PROGMEM msg_g91[] = "G91 - incremental distance mode";
-static PGM_P const  PROGMEM msg_dist[] = { msg_g90, msg_g91 };
+static const char  PROGMEM msg_g90[] = "G90 - absolute distance mode";
+static const char  PROGMEM msg_g91[] = "G91 - incremental distance mode";
+static PGM_P const PROGMEM msg_dist[] = { msg_g90, msg_g91 };
 
-static const char_t PROGMEM msg_g94[] = "G94 - units-per-minute mode (i.e. feedrate mode)";
-static const char_t PROGMEM msg_g93[] = "G93 - inverse time mode";
-static PGM_P const  PROGMEM msg_frmo[] = { msg_g94, msg_g93 };
+static const char  PROGMEM msg_g94[] = "G94 - units-per-minute mode (i.e. feedrate mode)";
+static const char  PROGMEM msg_g93[] = "G93 - inverse time mode";
+static PGM_P const PROGMEM msg_frmo[] = { msg_g94, msg_g93 };
 
-static const char_t PROGMEM msg_am00[] = "[disabled]";
-static const char_t PROGMEM msg_am01[] = "[standard]";
-static const char_t PROGMEM msg_am02[] = "[inhibited]";
-static const char_t PROGMEM msg_am03[] = "[radius]";
-static PGM_P const  PROGMEM msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03};
+static const char  PROGMEM msg_am00[] = "[disabled]";
+static const char  PROGMEM msg_am01[] = "[standard]";
+static const char  PROGMEM msg_am02[] = "[inhibited]";
+static const char  PROGMEM msg_am03[] = "[radius]";
+static PGM_P const PROGMEM msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03};
 
 #else
 
@@ -1717,34 +1717,34 @@ stat_t cm_run_qf(cmdObj_t *cmd)
 
 /* model state print functions */
 
-const char_t PROGMEM fmt_vel[]  = "Velocity:%17.3f%S/min\n";
-const char_t PROGMEM fmt_feed[] = "Feed rate:%16.3f%S/min\n";
-const char_t PROGMEM fmt_line[] = "Line number:%10.0f\n";
-const char_t PROGMEM fmt_stat[] = "Machine state:       %s\n"; // combined machine state
-const char_t PROGMEM fmt_macs[] = "Raw machine state:   %s\n"; // raw machine state
-const char_t PROGMEM fmt_cycs[] = "Cycle state:         %s\n";
-const char_t PROGMEM fmt_mots[] = "Motion state:        %s\n";
-const char_t PROGMEM fmt_hold[] = "Feedhold state:      %s\n";
-const char_t PROGMEM fmt_home[] = "Homing state:        %s\n";
-const char_t PROGMEM fmt_unit[] = "Units:               %s\n"; // units mode as ASCII string
-const char_t PROGMEM fmt_coor[] = "Coordinate system:   %s\n";
-const char_t PROGMEM fmt_momo[] = "Motion mode:         %s\n";
-const char_t PROGMEM fmt_plan[] = "Plane:               %s\n";
-const char_t PROGMEM fmt_path[] = "Path Mode:           %s\n";
-const char_t PROGMEM fmt_dist[] = "Distance mode:       %s\n";
-const char_t PROGMEM fmt_frmo[] = "Feed rate mode:      %s\n";
-const char_t PROGMEM fmt_tool[] = "Tool number          %d\n";
+const char PROGMEM fmt_vel[]  = "Velocity:%17.3f%S/min\n";
+const char PROGMEM fmt_feed[] = "Feed rate:%16.3f%S/min\n";
+const char PROGMEM fmt_line[] = "Line number:%10.0f\n";
+const char PROGMEM fmt_stat[] = "Machine state:       %s\n"; // combined machine state
+const char PROGMEM fmt_macs[] = "Raw machine state:   %s\n"; // raw machine state
+const char PROGMEM fmt_cycs[] = "Cycle state:         %s\n";
+const char PROGMEM fmt_mots[] = "Motion state:        %s\n";
+const char PROGMEM fmt_hold[] = "Feedhold state:      %s\n";
+const char PROGMEM fmt_home[] = "Homing state:        %s\n";
+const char PROGMEM fmt_unit[] = "Units:               %s\n"; // units mode as ASCII string
+const char PROGMEM fmt_coor[] = "Coordinate system:   %s\n";
+const char PROGMEM fmt_momo[] = "Motion mode:         %s\n";
+const char PROGMEM fmt_plan[] = "Plane:               %s\n";
+const char PROGMEM fmt_path[] = "Path Mode:           %s\n";
+const char PROGMEM fmt_dist[] = "Distance mode:       %s\n";
+const char PROGMEM fmt_frmo[] = "Feed rate mode:      %s\n";
+const char PROGMEM fmt_tool[] = "Tool number          %d\n";
 
-const char_t PROGMEM fmt_pos[] = "%c position:%15.3f%S\n";
-const char_t PROGMEM fmt_mpo[] = "%c machine posn:%11.3f%S\n";
-const char_t PROGMEM fmt_ofs[] = "%c work offset:%12.3f%S\n";
-const char_t PROGMEM fmt_hom[] = "%c axis homing state:%2.0f\n";
+const char PROGMEM fmt_pos[] = "%c position:%15.3f%S\n";
+const char PROGMEM fmt_mpo[] = "%c machine posn:%11.3f%S\n";
+const char PROGMEM fmt_ofs[] = "%c work offset:%12.3f%S\n";
+const char PROGMEM fmt_hom[] = "%c axis homing state:%2.0f\n";
 
-const char_t PROGMEM fmt_gpl[] = "[gpl] default gcode plane%10d [0=G17,1=G18,2=G19]\n";
-const char_t PROGMEM fmt_gun[] = "[gun] default gcode units mode%5d [0=G20,1=G21]\n";
-const char_t PROGMEM fmt_gco[] = "[gco] default gcode coord system%3d [1-6 (G54-G59)]\n";
-const char_t PROGMEM fmt_gpa[] = "[gpa] default gcode path control%3d [0=G61,1=G61.1,2=G64]\n";
-const char_t PROGMEM fmt_gdi[] = "[gdi] default gcode distance mode%2d [0=G90,1=G91]\n";
+const char PROGMEM fmt_gpl[] = "[gpl] default gcode plane%10d [0=G17,1=G18,2=G19]\n";
+const char PROGMEM fmt_gun[] = "[gun] default gcode units mode%5d [0=G20,1=G21]\n";
+const char PROGMEM fmt_gco[] = "[gco] default gcode coord system%3d [1-6 (G54-G59)]\n";
+const char PROGMEM fmt_gpa[] = "[gpa] default gcode path control%3d [0=G61,1=G61.1,2=G64]\n";
+const char PROGMEM fmt_gdi[] = "[gdi] default gcode distance mode%2d [0=G90,1=G91]\n";
 
 void cm_print_vel(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_vel, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_feed(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_feed, GET_UNITS(ACTIVE_MODEL));}
@@ -1772,11 +1772,11 @@ void cm_print_gdi(cmdObj_t *cmd) { text_print_int(cmd, fmt_gdi);}
 
 /* system state print functions */
 
-const char_t PROGMEM fmt_ja[] = "[ja]  junction acceleration%8.0f%S\n";
-const char_t PROGMEM fmt_ct[] = "[ct]  chordal tolerance%16.3f%S\n";
-const char_t PROGMEM fmt_ml[] = "[ml]  min line segment%17.3f%S\n";
-const char_t PROGMEM fmt_ma[] = "[ma]  min arc segment%18.3f%S\n";
-const char_t PROGMEM fmt_ms[] = "[ms]  min segment time%13.0f uSec\n";
+const char PROGMEM fmt_ja[] = "[ja]  junction acceleration%8.0f%S\n";
+const char PROGMEM fmt_ct[] = "[ct]  chordal tolerance%16.3f%S\n";
+const char PROGMEM fmt_ml[] = "[ml]  min line segment%17.3f%S\n";
+const char PROGMEM fmt_ma[] = "[ma]  min arc segment%18.3f%S\n";
+const char PROGMEM fmt_ms[] = "[ms]  min segment time%13.0f uSec\n";
 
 void cm_print_ja(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ct(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
@@ -1805,41 +1805,42 @@ void cm_print_ms(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ms, GET_UNITS(AC
  *	cm_print_zb()
  */
 
-const char_t PROGMEM fmt_Xam[] = "[%s%s] %s axis mode%18d %S\n";
-const char_t PROGMEM fmt_Xfr[] = "[%s%s] %s feedrate maximum%15.3f%S/min\n";
-const char_t PROGMEM fmt_Xvm[] = "[%s%s] %s velocity maximum%15.3f%S/min\n";
-const char_t PROGMEM fmt_Xtm[] = "[%s%s] %s travel maximum%17.3f%S\n";
-const char_t PROGMEM fmt_Xjm[] = "[%s%s] %s jerk maximum%15.0f%S/min^3 * 1 million\n";
-const char_t PROGMEM fmt_Xjh[] = "[%s%s] %s jerk homing%16.0f%S/min^3 * 1 million\n";
-const char_t PROGMEM fmt_Xjd[] = "[%s%s] %s junction deviation%14.4f%S (larger is faster)\n";
-const char_t PROGMEM fmt_Xra[] = "[%s%s] %s radius value%20.4f%S\n";
-const char_t PROGMEM fmt_Xsn[] = "[%s%s] %s switch min%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
-const char_t PROGMEM fmt_Xsx[] = "[%s%s] %s switch max%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
-const char_t PROGMEM fmt_Xsv[] = "[%s%s] %s search velocity%16.3f%S/min\n";
-const char_t PROGMEM fmt_Xlv[] = "[%s%s] %s latch velocity%17.3f%S/min\n";
-const char_t PROGMEM fmt_Xlb[] = "[%s%s] %s latch backoff%18.3f%S\n";
-const char_t PROGMEM fmt_Xzb[] = "[%s%s] %s zero backoff%19.3f%S\n";
+const char PROGMEM fmt_Xam[] = "[%s%s] %s axis mode%18d %S\n";
+const char PROGMEM fmt_Xfr[] = "[%s%s] %s feedrate maximum%15.3f%S/min\n";
+const char PROGMEM fmt_Xvm[] = "[%s%s] %s velocity maximum%15.3f%S/min\n";
+const char PROGMEM fmt_Xtm[] = "[%s%s] %s travel maximum%17.3f%S\n";
+const char PROGMEM fmt_Xjm[] = "[%s%s] %s jerk maximum%15.0f%S/min^3 * 1 million\n";
+const char PROGMEM fmt_Xjh[] = "[%s%s] %s jerk homing%16.0f%S/min^3 * 1 million\n";
+const char PROGMEM fmt_Xjd[] = "[%s%s] %s junction deviation%14.4f%S (larger is faster)\n";
+const char PROGMEM fmt_Xra[] = "[%s%s] %s radius value%20.4f%S\n";
+const char PROGMEM fmt_Xsn[] = "[%s%s] %s switch min%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
+const char PROGMEM fmt_Xsx[] = "[%s%s] %s switch max%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
+const char PROGMEM fmt_Xsv[] = "[%s%s] %s search velocity%16.3f%S/min\n";
+const char PROGMEM fmt_Xlv[] = "[%s%s] %s latch velocity%17.3f%S/min\n";
+const char PROGMEM fmt_Xlb[] = "[%s%s] %s latch backoff%18.3f%S\n";
+const char PROGMEM fmt_Xzb[] = "[%s%s] %s zero backoff%19.3f%S\n";
 
-const char_t PROGMEM fmt_cofs[] = "[%s%s] %s %s offset%20.3f%S\n";
-const char_t PROGMEM fmt_cpos[] = "[%s%s] %s %s position%18.3f%S\n";
+const char PROGMEM fmt_cofs[] = "[%s%s] %s %s offset%20.3f%S\n";
+const char PROGMEM fmt_cpos[] = "[%s%s] %s %s position%18.3f%S\n";
 
-static void _print_axis_ui8(cmdObj_t *cmd, const char_t *format)
+static void _print_axis_ui8(cmdObj_t *cmd, const char *format)
 {
 	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value);
 }
 
-static void _print_axis_flt(cmdObj_t *cmd, const char_t *format)
+static void _print_axis_flt(cmdObj_t *cmd, const char *format)
 {
 	if (_get_axis_type(cmd->index) == 0) {	// linear
-		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, 
-				 (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
+//		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, 
+//				 (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(MODEL)]));
+		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, GET_UNITS(MODEL));
 	} else {
 		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value,
 				 (PGM_P)pgm_read_word(&msg_units[DEGREE_INDEX]));
 	}
 }
 
-static void _print_axis_coord_flt(cmdObj_t *cmd, const char_t *format)
+static void _print_axis_coord_flt(cmdObj_t *cmd, const char *format)
 {
 	if (_get_axis_type(cmd->index) == 0) {	// linear
 		fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->token, cmd->value, 
@@ -1880,7 +1881,7 @@ void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
  *	cm_print_pos() - print position with unit displays for MM or Inches
  * 	cm_print_mpo() - print position with fixed unit display - always in Degrees or MM
  */
-void _print_pos_helper(cmdObj_t *cmd, const char_t *format, uint8_t units)
+void _print_pos_helper(cmdObj_t *cmd, const char *format, uint8_t units)
 {
 	char_t axes[6] = {"XYZABC"};
 	uint8_t axis = _get_pos_axis(cmd->index);

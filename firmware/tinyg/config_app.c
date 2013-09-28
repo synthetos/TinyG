@@ -673,14 +673,14 @@ static stat_t run_sx(cmdObj_t *cmd)
  *	Then it performs the callback to apply the new baud rate
  */
 
-static const char_t PROGMEM msg_baud0[] = "0";
-static const char_t PROGMEM msg_baud1[] = "9600";
-static const char_t PROGMEM msg_baud2[] = "19200";
-static const char_t PROGMEM msg_baud3[] = "38400";
-static const char_t PROGMEM msg_baud4[] = "57600";
-static const char_t PROGMEM msg_baud5[] = "115200";
-static const char_t PROGMEM msg_baud6[] = "230400";
-static PGM_P const  PROGMEM msg_baud[] = { msg_baud0, msg_baud1, msg_baud2, msg_baud3, msg_baud4, msg_baud5, msg_baud6 };
+static const char  PROGMEM msg_baud0[] = "0";
+static const char  PROGMEM msg_baud1[] = "9600";
+static const char  PROGMEM msg_baud2[] = "19200";
+static const char  PROGMEM msg_baud3[] = "38400";
+static const char  PROGMEM msg_baud4[] = "57600";
+static const char  PROGMEM msg_baud5[] = "115200";
+static const char  PROGMEM msg_baud6[] = "230400";
+static PGM_P const PROGMEM msg_baud[] = { msg_baud0, msg_baud1, msg_baud2, msg_baud3, msg_baud4, msg_baud5, msg_baud6 };
 
 static stat_t set_baud(cmdObj_t *cmd)
 {
@@ -712,13 +712,13 @@ stat_t set_baud_callback(void)
 
 #ifdef __TEXT_MODE
 
-//const char_t PROGMEM fmt_ic[] = "[ic]  ignore CR or LF on RX%8d [0=off,1=CR,2=LF]\n";
-const char_t PROGMEM fmt_ec[] = "[ec]  expand LF to CRLF on TX%6d [0=off,1=on]\n";
-const char_t PROGMEM fmt_ee[] = "[ee]  enable echo%18d [0=off,1=on]\n";
-const char_t PROGMEM fmt_ex[] = "[ex]  enable flow control%10d [0=off,1=XON/XOFF, 2=RTS/CTS]\n";
-const char_t PROGMEM fmt_baud[] = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
-const char_t PROGMEM fmt_net[] = "[net]  network mode%16d [0=master]\n";
-const char_t PROGMEM fmt_rx[] = "rx:%d\n";
+//const char PROGMEM fmt_ic[] = "[ic]  ignore CR or LF on RX%8d [0=off,1=CR,2=LF]\n";
+const char PROGMEM fmt_ec[] = "[ec]  expand LF to CRLF on TX%6d [0=off,1=on]\n";
+const char PROGMEM fmt_ee[] = "[ee]  enable echo%18d [0=off,1=on]\n";
+const char PROGMEM fmt_ex[] = "[ex]  enable flow control%10d [0=off,1=XON/XOFF, 2=RTS/CTS]\n";
+const char PROGMEM fmt_baud[] = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
+const char PROGMEM fmt_net[] = "[net]  network mode%16d [0=master]\n";
+const char PROGMEM fmt_rx[] = "rx:%d\n";
 
 void co_print_ec(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_ec);}
 void co_print_ee(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_ee);}

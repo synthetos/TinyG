@@ -554,8 +554,8 @@ uint8_t qr_queue_report_callback()
 /*
  * sr_print_sr() - produce SR text output
  */
-const char_t PROGMEM fmt_si[] = "[si]  status interval%14.0f ms\n";
-const char_t PROGMEM fmt_sv[] = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
+const char PROGMEM fmt_si[] = "[si]  status interval%14.0f ms\n";
+const char PROGMEM fmt_sv[] = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
 
 void sr_print_sr(cmdObj_t *cmd) { sr_populate_unfiltered_status_report();}
 void sr_print_si(cmdObj_t *cmd) { text_print_flt(cmd, fmt_si);}
