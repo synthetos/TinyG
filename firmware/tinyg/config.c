@@ -41,6 +41,10 @@
 #include "xio/xio.h"
 #include "xmega/xmega_eeprom.h"
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 /***********************************************************************************
  **** STRUCTURE ALLOCATIONS ********************************************************
  ***********************************************************************************/
@@ -138,14 +142,14 @@ void config_init()
 stat_t set_defaults(cmdObj_t *cmd) 
 {
 	if (fp_FALSE(cmd->value)) {				// failsafe. Must set true or no action occurs
-		help_defaults(cmd);
+		help_defa(cmd);
 		return (STAT_OK);
 	}
 	cm_set_units_mode(MILLIMETERS);			// must do inits in MM mode
 
 	for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {
-		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
-			cmd->value = (float)pgm_read_float(&cfgArray[cmd->index].def_value);
+		if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
+			cmd->value = GET_TABLE_FLOAT(def_value);
 			strcpy_P(cmd->token, cfgArray[cmd->index].token);
 			cmd_set(cmd);
 			cmd_persist(cmd);				// persist must occur when no other interrupts are firing
@@ -214,23 +218,20 @@ stat_t set_ui8(cmdObj_t *cmd)
 
 stat_t set_01(cmdObj_t *cmd)
 {
-	if (cmd->value > 1) 
-	return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
-	return (set_ui8(cmd));					// else
+	if (cmd->value > 1) return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
+	return (set_ui8(cmd));										// else
 }
 
 stat_t set_012(cmdObj_t *cmd)
 {
-	if (cmd->value > 2)
-	return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
-	return (set_ui8(cmd));					// else
+	if (cmd->value > 2) return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
+	return (set_ui8(cmd));										// else
 }
 
 stat_t set_0123(cmdObj_t *cmd)
 {
-	if (cmd->value > 3)
-	return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
-	return (set_ui8(cmd));					// else
+	if (cmd->value > 3) return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
+	return (set_ui8(cmd));										// else
 }
 
 stat_t set_int(cmdObj_t *cmd)
@@ -244,8 +245,9 @@ stat_t set_int(cmdObj_t *cmd)
 stat_t set_flt(cmdObj_t *cmd)
 {
 //	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
-	*((float *)GET_TABLE_WORD(target)) = cmd->value;
 //	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
+
+	*((float *)GET_TABLE_WORD(target)) = cmd->value;
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return(STAT_OK);
@@ -496,12 +498,14 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 	cmd_reset_obj(cmd);
 	cmd->index = tmp;
 
-	strcpy_P(cmd->token, cfgArray[cmd->index].token);	// token field is always terminated
-	strcpy_P(cmd->group, cfgArray[cmd->index].group);	// group field is always terminated
+	strcpy_P(cmd->token, cfgArray[cmd->index].token); // token field is always terminated
+	strcpy_P(cmd->group, cfgArray[cmd->index].group); // group field is always terminated
 
 	// special processing for system groups and stripping tokens for groups
 	if (cmd->group[0] != NUL) {
-		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_NOSTRIP) {
+//		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_NOSTRIP) {
+//		if (GET_TABLE_BYTE(flags) & F_NOSTRIP) {
+		if (cfgArray[cmd->index].flags & F_NOSTRIP) {
 			cmd->group[0] = NUL;
 		} else {
 			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
@@ -678,26 +682,31 @@ void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags)
 	}
 }
 
-/******************************************************************************
- ***** EEPROM access functions ************************************************
- ******************************************************************************
+/************************************************************************************
+ ***** EEPROM access functions ******************************************************
+ ************************************************************************************
  * cmd_read_NVM_value()	 - return value (as float) by index
- * cmd_write_NVM_value() - write to NVM by index, but only if the value has 
- * 	changed (see 331.09 or earlier for token/value record-oriented routines)
+ * cmd_write_NVM_value() - write to NVM by index, but only if the value has changed
  *
  *	It's the responsibility of the caller to make sure the index does not exceed range
  */
 stat_t cmd_read_NVM_value(cmdObj_t *cmd)
 {
+#ifdef __AVR
 	int8_t nvm_byte_array[NVM_VALUE_LEN];
 	uint16_t nvm_address = hw.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
 	(void)EEPROM_ReadBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
 	memcpy(&cmd->value, &nvm_byte_array, NVM_VALUE_LEN);
+#endif // __AVR
+#ifdef __ARM
+	//+++++ No ARM persistence yet
+#endif // __ARM
 	return (STAT_OK);
 }
 
 stat_t cmd_write_NVM_value(cmdObj_t *cmd)
 {
+#ifdef __AVR
 	if (cm.cycle_state != CYCLE_OFF) return (STAT_FILE_NOT_OPEN);	// can't write when machine is moving
 	float tmp = cmd->value;
 	ritorno(cmd_read_NVM_value(cmd));
@@ -708,6 +717,10 @@ stat_t cmd_write_NVM_value(cmdObj_t *cmd)
 		uint16_t nvm_address = hw.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
 		(void)EEPROM_WriteBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
 	}
+#endif // __AVR
+#ifdef __ARM
+	//+++++ No ARM persistence yet
+#endif // __ARM
 	return (STAT_OK);
 }
 
@@ -802,3 +815,6 @@ void cfg_unit_tests()
 #endif
 #endif
 
+#ifdef __cplusplus
+}
+#endif // __cplusplus

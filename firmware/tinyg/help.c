@@ -18,14 +18,15 @@
  */
 
 #include "tinyg.h"
-#include "util.h"
 #include "config.h"
-#include "report.h"
-#include "controller.h"
 #include "help.h"
+#include "report.h"
+//#include "controller.h"
+//#include "util.h"
 
-//static void _status_report_advisory(void);
-//static void _postscript(void);
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 // help helper functions (snicker)
 
@@ -141,13 +142,13 @@ return(STAT_OK);
 }
 
 /*
- * help_defaults() - help invoked for defaults
+ * help_defa() - help invoked for defaults
  */
-stat_t help_defaults(cmdObj_t *cmd)
+stat_t help_defa(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG RESTORE DEFAULTS Help ####\n"));
 fprintf_P(stderr, PSTR("\
-Enter $defaults=1 to reset the system to the factory default values.\n\
+Enter $defa=1 to reset the system to the factory default values.\n\
 This will overwrite any changes you have made.\n"));
 _postscript();
 return(STAT_OK);
@@ -166,3 +167,7 @@ return(STAT_OK);
 }
 
 #endif // __HELP_SCREENS
+
+#ifdef __cplusplus
+}
+#endif

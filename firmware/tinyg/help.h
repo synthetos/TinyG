@@ -17,15 +17,19 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef help_h
-#define help_h
+#ifndef HELP_H_ONCE
+#define HELP_H_ONCE
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 #ifdef __HELP_SCREENS
 
 	stat_t help_general(cmdObj_t *cmd);
 	stat_t help_config(cmdObj_t *cmd);
 	stat_t help_test(cmdObj_t *cmd);
-	stat_t help_defaults(cmdObj_t *cmd);
+	stat_t help_defa(cmdObj_t *cmd);
 	stat_t help_boot_loader(cmdObj_t *cmd);
 
 #else
@@ -34,9 +38,13 @@
 	#define help_general help_stub
 	#define help_config help_stub
 	#define help_test help_stub
-	#define help_defaults help_stub
+	#define help_defa help_stub
 	#define help_boot_loader help_stub
 
 #endif // __HELP_SCREENS
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif // End of include guard: HELP_H_ONCE
