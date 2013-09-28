@@ -35,6 +35,10 @@
 #include "util.h"
 #include "xio/xio.h"				// for char definitions
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 /**** Allocation ****/
 
 jsSingleton_t js;
@@ -44,7 +48,6 @@ jsSingleton_t js;
 static stat_t _json_parser_kernal(char_t *str);
 static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth);
 static stat_t _normalize_json_string(char_t *str, uint16_t size);
-
 
 /****************************************************************************
  * json_parser() - exposed part of JSON parser
@@ -733,3 +736,7 @@ void _test_parser()
 }
 
 #endif // __UNIT_TEST_JSON
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus

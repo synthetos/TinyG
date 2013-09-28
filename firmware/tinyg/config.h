@@ -25,15 +25,18 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef config_h
-#define config_h
+#ifndef CONFIG_H_ONCE
+#define CONFIG_H_ONCE
 
-#include <stdbool.h>
+//#include <stdbool.h>
 
 /***** PLEASE NOTE *****
 #include "config_app.h"	// is present at the end of this file 
 */
 
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 /**** Config System Overview and Usage ***
  *
@@ -176,13 +179,11 @@
 //typedef uint8_t index_t;			// use this if there are < 255 indexed objects
 typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 
-// defines allocated from stack (not-pre-allocated)
-
+									// defines allocated from stack (not-pre-allocated)
 #define CMD_FORMAT_LEN 128			// print formatting string max length
 #define CMD_MESSAGE_LEN 128			// sufficient space to contain end-user messages
 
-// pre-allocated defines (take RAM permanently)
-
+									// pre-allocated defines (take RAM permanently)
 #define CMD_SHARED_STRING_LEN 512	// shared string for string values
 #define CMD_BODY_LEN 30				// body elements - allow for 1 parent + N children
 									// (each body element takes about 30 bytes of RAM)
@@ -211,16 +212,6 @@ enum flowControl {
 	FLOW_CONTROL_RTS				// flow control uses RTS/CTS
 };
 
-enum objType {						// object / value typing for config and JSON
-	TYPE_EMPTY = -1,				// object has no value (which is not the same as "NULL")
-	TYPE_NULL = 0,					// value is 'null' (meaning the JSON null value)
-	TYPE_BOOL,						// value is "true" (1) or "false"(0)
-	TYPE_INTEGER,					// value is a uint32_t
-	TYPE_FLOAT,						// value is a floating point number
-	TYPE_STRING,					// value is in string field
-	TYPE_ARRAY,						// value is array element count, values are CSV ASCII in string field
-	TYPE_PARENT						// object is a parent to a sub-object
-};
 /*
 enum lineTermination {				// REMOVED. Too easy to make the board non-responsive (not a total brick, but close)
 	IGNORE_OFF = 0,					// accept either CR or LF as termination on RX text line
@@ -234,6 +225,17 @@ enum tgCommunicationsSticky {
 	STICKY							// communications mode does not change
 };
 */
+
+enum objType {						// object / value typing for config and JSON
+	TYPE_EMPTY = -1,				// object has no value (which is not the same as "NULL")
+	TYPE_NULL = 0,					// value is 'null' (meaning the JSON null value)
+	TYPE_BOOL,						// value is "true" (1) or "false"(0)
+	TYPE_INTEGER,					// value is a uint32_t
+	TYPE_FLOAT,						// value is a floating point number
+	TYPE_STRING,					// value is in string field
+	TYPE_ARRAY,						// value is array element count, values are CSV ASCII in string field
+	TYPE_PARENT						// object is a parent to a sub-object
+};
 
 /**** operations flags and shorthand ****/
 
@@ -257,7 +259,7 @@ typedef struct cmdString {				// shared string object
 #else
 	uint16_t wp;						// use this string array index value is string len > 255 bytes
 #endif
-	char string[CMD_SHARED_STRING_LEN];
+	char_t string[CMD_SHARED_STRING_LEN];
 	uint16_t magic_end;
 } cmdStr_t;
 
@@ -354,8 +356,8 @@ stat_t cmd_copy_string(cmdObj_t *cmd, const char *src);
 cmdObj_t *cmd_add_object(const char *token);
 cmdObj_t *cmd_add_integer(const char *token, const uint32_t value);
 cmdObj_t *cmd_add_float(const char *token, const float value);
-cmdObj_t *cmd_add_string(const char *token, const char *string);
-cmdObj_t *cmd_add_conditional_message(const char *string);
+cmdObj_t *cmd_add_string(const char *token, const char_t *string);
+cmdObj_t *cmd_add_conditional_message(const char_t *string);
 void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
 
 stat_t cmd_read_NVM_value(cmdObj_t *cmd);
@@ -382,4 +384,10 @@ void cfg_unit_tests(void);
 #define	CONFIG_UNITS
 #endif // __UNIT_TEST_CONFIG
 
+
+#ifdef __cplusplus
+}
 #endif
+
+#endif // _CONFIG_H_
+

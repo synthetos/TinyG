@@ -9,14 +9,6 @@
  * Free Software Foundation. You should have received a copy of the GNU General Public
  * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
  *
- * As a special exception, you may use this file as part of a software library without
- * restriction. Specifically, if other files instantiate templates or use macros or
- * inline functions from this file, or you compile this file and link it with  other
- * files to produce an executable, this file does not by itself cause the resulting
- * executable to be covered by the GNU General Public License. This exception does not
- * however invalidate any other reasons why the executable file might be covered by the
- * GNU General Public License.
- *
  * THE SOFTWARE IS DISTRIBUTED IN THE HOPE THAT IT WILL BE USEFUL, BUT WITHOUT ANY
  * WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
@@ -31,6 +23,10 @@
 #include "canonical_machine.h"
 #include "util.h"
 #include "xio/xio.h"				// for char definitions
+
+#ifdef __cplusplus
+extern "C"{
+#endif // __cplusplus
 
 struct gcodeParserSingleton {	 	  // struct to manage globals
 	uint8_t modals[MODAL_GROUP_COUNT];// collects modal groups in a block
@@ -193,7 +189,10 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
 /*
  * _point() - isolate the decimal point value as an integer
  */
-static uint8_t _point(float value) { return((uint8_t)(value*10 - trunc(value)*10));}
+static uint8_t _point(float value) 
+{
+	return((uint8_t)(value*10 - trunc(value)*10));	// isolate the decimal point as an int
+}
 
 /*
  * _validate_gcode_block() - check for some gross Gcode block semantic violations
@@ -228,7 +227,7 @@ static stat_t _validate_gcode_block()
  *	contain only uppercase characters and signed floats (no whitespace).
  *
  *	A number of implicit things happen when the gn struct is zeroed:
- *	  - inverse feed rate mode is cancelled - set back to units_per_minute mode
+ *	  - inverse feed rate mode is canceled - set back to units_per_minute mode
  */
 static stat_t _parse_gcode_block(char_t *buf) 
 {
@@ -508,3 +507,7 @@ stat_t gc_run_gc(cmdObj_t *cmd)
 
 // none
 
+#ifdef __cplusplus
+}
+#endif
+

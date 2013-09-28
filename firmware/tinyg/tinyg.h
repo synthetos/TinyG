@@ -88,10 +88,10 @@ typedef char char_t;				// see ARM for why this is here
 typedef const char PROGMEM *char_P;	// access to PROGMEM arrays of PROGMEM strings
 
 // The table getters rely on cmd->index having been set
-#define GET_TABLE_WORD(a) pgm_read_word(&cfgArray[cmd->index].a)// get word value from cfgArray
-#define GET_TABLE_BYTE(a) pgm_read_byte(&cfgArray[cmd->index].a)// get byte value from cfgArray
-#define GET_TABLE_FLOAT(a) pgm_read_float(&cfgArray[cmd->index].a)// get float value from cfgArray
-#define GET_TEXT_ITEM(b,a) (PGM_P)pgm_read_word(&b[a])			// get text from an array of strings in PGM
+#define GET_TABLE_WORD(a)  pgm_read_word(&cfgArray[cmd->index].a)	// get word value from cfgArray
+#define GET_TABLE_BYTE(a)  pgm_read_byte(&cfgArray[cmd->index].a)	// get byte value from cfgArray
+#define GET_TABLE_FLOAT(a) pgm_read_float(&cfgArray[cmd->index].a)	// get float value from cfgArray
+#define GET_TEXT_ITEM(b,a) (PGM_P)pgm_read_word(&b[a])				// get text from an array of strings in PGM
 #define GET_UNITS(a) (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(a)])
 
 //#define SysTickTimer.getValue SysTickTimer_getValue
@@ -111,10 +111,10 @@ typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
 typedef const char *char_P;			// ARM/C++ version requires this typedef instead
 
 // The table getters rely on cmd->index having been set
-#define GET_TABLE_WORD(a) cfgArray[cmd->index].a;// get word value from cfgArray
-#define GET_TABLE_BYTE(a) cfgArray[cmd->index].a)// get byte value from cfgArray
-#define GET_TABLE_FLOAT(a) cfgArray[cmd->index].a)// get byte value from cfgArray
-#define GET_TEXT_ITEM(b,a) b[a]					 // get text from an array of strings in PGM
+#define GET_TABLE_WORD(a)  cfgArray[cmd->index].a	// get word value from cfgArray
+#define GET_TABLE_BYTE(a)  cfgArray[cmd->index].a	// get byte value from cfgArray
+#define GET_TABLE_FLOAT(a) cfgArray[cmd->index].a	// get byte value from cfgArray
+#define GET_TEXT_ITEM(b,a) b[a]						// get text from an array of strings in PGM
 #define GET_UNITS(a) (PGM_P)msg_units[cm_get_units_mode(a)]
 
 /* The ARM stdio functions we are using still use char as input and output. The macros 

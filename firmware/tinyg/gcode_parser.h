@@ -17,9 +17,12 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef gcode_h
-#define gcode_h
-#include "tinyg.h"
+#ifndef GCODE_PARSER_H_ONCE
+#define GCODE_PARSER_H_ONCE
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 /*
  * Global Scope Functions
@@ -29,4 +32,8 @@ stat_t gc_gcode_parser(char_t *block);
 stat_t gc_get_gc(cmdObj_t *cmd);
 stat_t gc_run_gc(cmdObj_t *cmd);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif // End of include guard: GCODE_PARSER_H_ONCE
