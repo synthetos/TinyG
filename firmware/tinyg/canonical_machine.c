@@ -236,10 +236,8 @@ void cm_set_model_arc_radius(float r)
 
 void cm_set_model_linenum(uint32_t linenum)
 {
-	gm.linenum = linenum;		// you must first set the model line number,
-	cmd_add_object("n");		// then add the line number to the cmd list
-//++++ The above is not the same as the ARM version	
-//	cmd_add_object((const char_t *)"n"); // then add the line number to the cmd list
+	gm.linenum = linenum;					// you must first set the model line number,
+	cmd_add_object((const char_t *)"n");	// then add the line number to the cmd list
 }
 
 /***********************************************************************************
@@ -1138,7 +1136,7 @@ stat_t cm_spindle_override_factor(uint8_t flag)	// M50.1
 
 void cm_message(char *message)
 {
-	cmd_add_string("msg",message);
+	cmd_add_string((const char_t *)"msg",message);
 //	cmd_add_conditional_message(message);	// conditional version
 }
 
@@ -1544,16 +1542,18 @@ stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value)
 	cmd->objtype = TYPE_INTEGER;
 
 #ifdef __TEXT_MODE
-#ifdef __AVR
-	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg[value*2]))); // hack alert: direct computation of index
-#endif
-#ifdef __ARM
-	ritorno(cmd_copy_string(cmd, (const char_t *)msg[value]));
-#endif
-#endif
+	#ifdef __AVR
+		char_t buf[CMD_SHARED_STRING_LEN];
+		strncpy_P(buf, (PGM_P)pgm_read_word(&msg[value*2]), CMD_SHARED_STRING_LEN);// hack alert: direct computation of index
+		ritorno(cmd_copy_string(cmd, buf));
+	//	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg[value*2]))); // hack alert: direct computation of index
+	#endif // __AVR
+	#ifdef __ARM
+		ritorno(cmd_copy_string(cmd, (const char_t *)msg[value]));
+	#endif // __ARM
+#endif // __TEXT_MODE
 
 	return (STAT_OK);
-//	return((char_t *)pgm_read_word(&msg[(uint8_t)value]));
 }
 
 stat_t cm_get_stat(cmdObj_t *cmd)
@@ -1605,7 +1605,6 @@ stat_t cm_get_vel(cmdObj_t *cmd)
 		cmd->value = mp_get_runtime_velocity();
 		if (cm_get_units_mode(RUNTIME) == INCHES) cmd->value *= INCH_PER_MM;
 	}
-//	cmd->precision = (int8_t)GET_TABLE_WORD(precision);
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1614,7 +1613,6 @@ stat_t cm_get_vel(cmdObj_t *cmd)
 stat_t cm_get_pos(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_work_position(ACTIVE_MODEL, _get_axis(cmd->index));
-//	cmd->precision = (int8_t)GET_TABLE_WORD(precision);
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1623,7 +1621,6 @@ stat_t cm_get_pos(cmdObj_t *cmd)
 stat_t cm_get_mpo(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_absolute_position(RUNTIME, _get_axis(cmd->index));
-//	cmd->precision = (int8_t)GET_TABLE_WORD(precision);
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1632,7 +1629,6 @@ stat_t cm_get_mpo(cmdObj_t *cmd)
 stat_t cm_get_ofs(cmdObj_t *cmd) 
 {
 	cmd->value = cm_get_work_offset(ACTIVE_MODEL, _get_axis(cmd->index));
-//	cmd->precision = (int8_t)GET_TABLE_WORD(precision);
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1850,7 +1846,7 @@ static void _print_axis_coord_flt(cmdObj_t *cmd, const char *format)
 
 void _print_pos(cmdObj_t *cmd, const char *format, uint8_t units)
 {
-	char_t axes[6] = {"XYZABC"};
+	char axes[] = {"XYZABC"};
 	uint8_t axis = _get_axis(cmd->index);
 	if (axis >= AXIS_A) { units = DEGREES;}
 	fprintf_P(stderr, format, axes[axis], cmd->value, (PGM_P)GET_TEXT_ITEM(msg_units, units));
@@ -1873,14 +1869,14 @@ void cm_print_zb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xzb);}
 void cm_print_cofs(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cofs);}
 void cm_print_cpos(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cpos);}
 
+void cm_print_pos(cmdObj_t *cmd) { _print_pos(cmd, fmt_pos, cm_get_units_mode(MODEL));}
+void cm_print_mpo(cmdObj_t *cmd) { _print_pos(cmd, fmt_mpo, MILLIMETERS);}
+
 void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
 {
 	fprintf_P(stderr, fmt_Xam, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
 			 (PGM_P)GET_TEXT_ITEM(msg_am, (uint8_t)cmd->value));
 }
-
-void cm_print_pos(cmdObj_t *cmd) { _print_pos(cmd, fmt_pos, cm_get_units_mode(MODEL));}
-void cm_print_mpo(cmdObj_t *cmd) { _print_pos(cmd, fmt_mpo, MILLIMETERS);}
 
 #endif // __TEXT_MODE
 

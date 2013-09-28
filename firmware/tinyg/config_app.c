@@ -686,7 +686,7 @@ static stat_t set_baud(cmdObj_t *cmd)
 {
 	uint8_t baud = (uint8_t)cmd->value;
 	if ((baud < 1) || (baud > 6)) {
-		cmd_add_conditional_message_P(PSTR("*** WARNING *** Illegal baud rate specified"));
+		cmd_add_conditional_message((const char_t *)"*** WARNING *** Unsupported baud rate specified");
 		return (STAT_INPUT_VALUE_UNSUPPORTED);
 	}
 	cfg.usb_baud_rate = baud;

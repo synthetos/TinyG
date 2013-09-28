@@ -194,24 +194,24 @@ void _startup_helper(stat_t status, const char *msg)
 	cmd_add_object((const char_t *)"fv");
 	cmd_add_object((const char_t *)"hv");
 	cmd_add_object((const char_t *)"id");
-	cmd_add_string_P((const char_t *)"msg", (const char_t *)msg);	
+	cmd_add_string((const char_t *)"msg", (const char_t *)msg);	
 	json_print_response(status);
 #endif
 }
 
 void rpt_print_initializing_message(void)
 {
-	_startup_helper(STAT_INITIALIZING, PSTR(INIT_MESSAGE));
+	_startup_helper(STAT_INITIALIZING, (const char_t *)INIT_MESSAGE);
 }
 
 void rpt_print_loading_configs_message(void)
 {
-	_startup_helper(STAT_INITIALIZING, PSTR("Loading configs from EEPROM"));
+	_startup_helper(STAT_INITIALIZING, (const char_t *)"Loading configs from EEPROM");
 }
 
 void rpt_print_system_ready_message(void)
 {
-	_startup_helper(STAT_OK, PSTR("SYSTEM READY"));
+	_startup_helper(STAT_OK, (const char_t *)"SYSTEM READY");
 	if (cfg.comm_mode == TEXT_MODE) { text_response(STAT_OK, (char_t *)"");}// prompt
 }
 

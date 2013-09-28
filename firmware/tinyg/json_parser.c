@@ -407,8 +407,7 @@ void json_print_response(uint8_t status)
 	cmdObj_t *cmd = cmd_body;
 	if (status == STAT_JSON_SYNTAX_ERROR) {
 		cmd_reset_list();
-		cmd_add_string("err", escape_string(cs.in_buf, cs.saved_buf));
-// alt:	cmd_add_string((const char_t *)"err", escape_string(cs.in_buf, cs.saved_buf));
+		cmd_add_string((const char_t *)"err", escape_string(cs.in_buf, cs.saved_buf));
 
 	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
 		uint8_t cmd_type;
@@ -617,7 +616,7 @@ void _test_serialize()
 
 	// response parent with one element w/footer
 	cmd_reset_list();								// works with the header/body/footer list
-	cmd_add_string("msg", "test message");
+	cmd_add_string((const char_t *)"msg", (const char_t *)"test message");
 	_add_array(cmd, "1,0,12,1234");					// fake out a footer
 	json_serialize(cmd_header, cs.out_buf, sizeof(cs.out_buf));
 	_printit();

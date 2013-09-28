@@ -464,21 +464,17 @@ stat_t cmd_persist_offsets(uint8_t flag)
 	return (STAT_OK);
 }
 
-
 /******************************************************************************
  * cmdObj low-level object and list operations
  * cmd_get_cmdObj()		- setup a cmd object by providing the index
  * cmd_reset_obj()		- quick clear for a new cmd object
  * cmd_reset_list()		- clear entire header, body and footer for a new use
  * cmd_copy_string()	- used to write a string to shared string storage and link it
- * cmd_copy_string_P()	- same, but for progmem string sources
  * cmd_add_object()		- write contents of parameter to  first free object in the body
  * cmd_add_integer()	- add an integer value to end of cmd body (Note 1)
  * cmd_add_float()		- add a floating point value to end of cmd body
  * cmd_add_string()		- add a string object to end of cmd body
- * cmd_add_string_P()	- add a program memory string as a string object to end of cmd body
- * cmd_add_conditional_message()	- add a message to cmd body if messages are enabled
- * cmd_add_conditional_message_P()	- add a program memory message to cmd body if enabled
+ * cmd_add_conditional_message() - add a message to cmd body if messages are enabled
  *
  *	Note: Functions that return a cmd pointer point to the object that was modified or
  *	a NULL pointer if there was an error.
@@ -486,6 +482,15 @@ stat_t cmd_persist_offsets(uint8_t flag)
  *	Note: Adding a really large integer (like a checksum value) may lose precision due
  *	to the cast to a float. Sometimes it's better to load an integer as a string if 
  *	all you want to do is display it.
+ *
+ *	Note: A trick is to cast all string constants for cmd_copy_string(), cmd_add_object(), 
+ *	cmd_add_string() and cmd_add_conditional_message() to (const char_t *). Examples:
+ *
+ *		cmd_add_string((const char_t *)"msg", string);
+ *
+ *	On the AVR this will save a little static RAM. The "msg" string will occupy flash 
+ *	as an initializer and be instantiated in stack RAM when the function executes. 
+ *	On the ARM (however) this will put the string into flash and skip RAM allocation.
  */
 
 void cmd_get_cmdObj(cmdObj_t *cmd)
@@ -529,7 +534,7 @@ cmdObj_t *cmd_reset_obj(cmdObj_t *cmd)		// clear a single cmdObj structure
 			cmd->depth = cmd->pv->depth;
 		}
 	}
-	return (cmd);
+	return (cmd);							// return pointer to cmd as a convenience to callers
 }
 
 cmdObj_t *cmd_reset_list()					// clear the header and response body
@@ -563,12 +568,14 @@ stat_t cmd_copy_string(cmdObj_t *cmd, const char_t *src)
 	return (STAT_OK);
 }
 
+/* UNUSED
 stat_t cmd_copy_string_P(cmdObj_t *cmd, const char_t *src_P)
 {
 	char_t buf[CMD_SHARED_STRING_LEN];
 	strncpy_P(buf, src_P, CMD_SHARED_STRING_LEN);
 	return (cmd_copy_string(cmd, buf));
 }
+*/
 
 cmdObj_t *cmd_add_object(const char_t *token)  // add an object to the body using a token
 {
@@ -635,24 +642,28 @@ cmdObj_t *cmd_add_string(const char_t *token, const char_t *string) // add a str
 	return (NULL);
 }
 
+cmdObj_t *cmd_add_conditional_message(const char_t *string)	// conditionally add a message object to the body
+{
+	if ((cfg.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
+	return(cmd_add_string((const char_t *)"msg", string));
+}
+
+/* UNUSED
 cmdObj_t *cmd_add_string_P(const char_t *token, const char_t *string)
 {
 	char_t message[CMD_MESSAGE_LEN]; 
 	sprintf_P(message, string);
 	return(cmd_add_string(token, message));
 }
-
-cmdObj_t *cmd_add_conditional_message(const char_t *string)		// conditionally add a message object to the body
-{
-	if ((cfg.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
-	return(cmd_add_string("msg", string));
-}
-
+*/
+/*
 cmdObj_t *cmd_add_conditional_message_P(const char_t *string)	// conditionally add a message object to the body
 {
 	if ((cfg.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
-	return(cmd_add_string_P("msg", string));
+//	return(cmd_add_string_P("msg", string));
+	return(cmd_add_string((const char_t *)"msg", string));
 }
+*/
 
 /**** cmd_print_list() - print cmd_array as JSON or text **********************
  *
