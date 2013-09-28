@@ -89,10 +89,7 @@ void cmd_persist(cmdObj_t *cmd)
 	return;
 #endif
 	if (cmd_index_lt_groups(cmd->index) == false) return;
-//	if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_PERSIST) {
-	if (GET_TABLE_BYTE(flags) & F_PERSIST) {
-		cmd_write_NVM_value(cmd);
-	}
+	if (GET_TABLE_BYTE(flags) & F_PERSIST) cmd_write_NVM_value(cmd);
 }
 
 /******************************************************************************
@@ -125,7 +122,6 @@ void config_init()
 	} else {								// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
 		for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {
-//			if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_INITIALIZE) {
 			if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
 				strcpy_P(cmd->token, cfgArray[cmd->index].token);	// read the token from the array
 				cmd_read_NVM_value(cmd);
@@ -281,9 +277,11 @@ stat_t set_flu(cmdObj_t *cmd)
 {
 	float tmp_value = cmd->value;
 	if (cm_get_units_mode(MODEL) == INCHES) tmp_value *= MM_PER_INCH; // convert to canonical units
+
 //	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = tmp_value;
-	*((float *)GET_TABLE_WORD(target)) = tmp_value;
 //	cmd->precision = (int8_t)GET_TABLE_WORD(precision);
+
+	*((float *)GET_TABLE_WORD(target)) = tmp_value;
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return(STAT_OK);
@@ -457,7 +455,7 @@ stat_t cmd_persist_offsets(uint8_t flag)
 		for (uint8_t i=1; i<=COORDS; i++) {
 			for (uint8_t j=0; j<AXES; j++) {
 				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
-				cmd.index = cmd_get_index("", cmd.token);
+				cmd.index = cmd_get_index((const char_t *)"", cmd.token);
 				cmd.value = cm.offset[i][j];
 				cmd_persist(&cmd);				// only writes changed values
 			}
@@ -503,9 +501,7 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 
 	// special processing for system groups and stripping tokens for groups
 	if (cmd->group[0] != NUL) {
-//		if (pgm_read_byte(&cfgArray[cmd->index].flags) & F_NOSTRIP) {
-//		if (GET_TABLE_BYTE(flags) & F_NOSTRIP) {
-		if (cfgArray[cmd->index].flags & F_NOSTRIP) {
+		if (GET_TABLE_BYTE(flags) & F_NOSTRIP) {
 			cmd->group[0] = NUL;
 		} else {
 			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
@@ -583,7 +579,7 @@ cmdObj_t *cmd_add_object(const char_t *token)  // add an object to the body usin
 			continue;
 		}
 		// load the index from the token or die trying
-		if ((cmd->index = cmd_get_index("",token)) == NO_MATCH) { return (NULL);}
+		if ((cmd->index = cmd_get_index((const char_t *)"",token)) == NO_MATCH) { return (NULL);}
 		cmd_get_cmdObj(cmd);				// populate the object from the index
 		return (cmd);
 	}
@@ -632,7 +628,7 @@ cmdObj_t *cmd_add_string(const char_t *token, const char_t *string) // add a str
 		}
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		if (cmd_copy_string(cmd, string) != STAT_OK) { return (NULL);}
-		cmd->index = cmd_get_index("", cmd->token);
+		cmd->index = cmd_get_index((const char_t *)"", cmd->token);
 		cmd->objtype = TYPE_STRING;
 		return (cmd);
 	}
@@ -768,9 +764,9 @@ void cfg_unit_tests()
 //	print_configs("$", '1');					// filter for motor 1
 //	print_configs("$", 'x');					// filter for x axis
 
-	i = cmd_get_index("fb");
-	i = cmd_get_index("xfr");
-	i = cmd_get_index("g54");
+	i = cmd_get_index((const char_t *)"fb");
+	i = cmd_get_index((const char_t *)"xfr");
+	i = cmd_get_index((const char_t *)"g54");
 
 //	i = get_pos_axis(55);
 //	i = get_pos_axis(73);

@@ -539,7 +539,7 @@ static stat_t _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // hel
 		cmd_reset_list();
 		cmd = cmd_body;
 		strncpy(cmd->token, list[i], CMD_TOKEN_LEN);
-		cmd->index = cmd_get_index("", cmd->token);
+		cmd->index = cmd_get_index((const char_t *)"", cmd->token);
 //		cmd->objtype = TYPE_PARENT;
 		cmd_get_cmdObj(cmd);
 		cmd_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);

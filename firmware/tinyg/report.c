@@ -270,14 +270,13 @@ void sr_init_status_report()
 	sr.status_report_requested = false;
 	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
 
-	const char_t nul[] = "";
 	const char_t se00[] = "se00";
-	cmd->index = cmd_get_index(nul, se00);				// set first SR persistence index
+	cmd->index = cmd_get_index((const char_t *)"", se00);	// set first SR persistence index
 
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
 		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
 		sr.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
-		cmd->value = cmd_get_index(nul, sr_defaults[i]);// load the index for the SR element
+		cmd->value = cmd_get_index((const char_t *)"", sr_defaults[i]);// load the index for the SR element
 		cmd_set(cmd);
 		cmd_persist(cmd);								// conditionally persist - automatic by cmd_persis()
 		cmd->index++;									// increment SR NVM index
@@ -373,14 +372,13 @@ stat_t sr_run_text_status_report()
 
 stat_t sr_populate_unfiltered_status_report()
 {
-	const char_t nul[] = "";
 	const char_t sr_str[] = "sr";
 	char_t tmp[CMD_TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
 
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object
 	strcpy(cmd->token, sr_str);
-	cmd->index = cmd_get_index(nul, sr_str);// set the index - may be needed by calling function
+	cmd->index = cmd_get_index((const char_t *)"", sr_str);// set the index - may be needed by calling function
 	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
@@ -417,7 +415,7 @@ uint8_t sr_populate_filtered_status_report()
 
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object
 	strcpy(cmd->token, sr_str);
-//	cmd->index = cmd_get_index(nul, sr_str);// OMITTED - set the index - may be needed by calling function
+//	cmd->index = cmd_get_index((const char_t *)"", sr_str);// OMITTED - set the index - may be needed by calling function
 	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
