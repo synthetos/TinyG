@@ -70,6 +70,7 @@ static stPrepSingleton_t st_prep;
 
 static void _load_move(void);
 static void _request_load_move(void);
+//static void _clear_diagnostic_counters(void);
 
 // handy macro
 #define _f_to_period(f) (uint16_t)((float)F_CPU / (float)f)
@@ -680,7 +681,6 @@ static void _print_motor_ui8(cmdObj_t *cmd, const char *format)
 
 static void _print_motor_flt_units(cmdObj_t *cmd, const char *format, uint8_t units)
 {
-//	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, (PGM_P)pgm_read_word(&msg_units[units]));
 	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, GET_TEXT_ITEM(msg_units, units));
 }
 

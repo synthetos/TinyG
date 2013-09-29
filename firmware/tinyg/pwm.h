@@ -25,8 +25,12 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef pwm_h
-#define pwm_h
+#ifndef PWM_H_ONCE
+#define PWM_H_ONCE
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 typedef struct pwmConfigChannel {
   	float frequency;				// base frequency for PWM driver, in Hz
@@ -95,4 +99,8 @@ void pwm_unit_tests(void);
 #define	PWM_UNITS
 #endif
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif	// End of include guard: PWM_H_ONCE
