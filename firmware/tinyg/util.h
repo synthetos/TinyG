@@ -100,9 +100,9 @@ uint16_t compute_checksum(char const *string, const uint16_t length);
 
 #ifndef min
 #define min(a,b) \
-   ({ __typeof__ (a) termA = (a); \
-      __typeof__ (b) termB = (b); \
-      termA<termB ? termA:termB; })
+   ({ __typeof__ (a) term1 = (a); \
+      __typeof__ (b) term2 = (b); \
+      term1<term2 ? term1:term2; })
 #endif
 
 #ifndef avg

@@ -91,10 +91,13 @@ typedef const char PROGMEM *char_P;	// access to PROGMEM arrays of PROGMEM strin
 #define GET_TABLE_WORD(a)  pgm_read_word(&cfgArray[cmd->index].a)	// get word value from cfgArray
 #define GET_TABLE_BYTE(a)  pgm_read_byte(&cfgArray[cmd->index].a)	// get byte value from cfgArray
 #define GET_TABLE_FLOAT(a) pgm_read_float(&cfgArray[cmd->index].a)	// get float value from cfgArray
-#define GET_TEXT_ITEM(b,a) (PGM_P)pgm_read_word(&b[a])				// get text from an array of strings in PGM
-#define GET_UNITS(a) (PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(a)])
 
-//#define SysTickTimer.getValue SysTickTimer_getValue
+// get text from an array of strings in PGM and convert to RAM string
+#define GET_TEXT_ITEM(b,a) strcpy_P(status_message,(PGM_P)pgm_read_word(&b[a])) 
+
+// get units from array of strings in PGM and convert to RAM string
+#define GET_UNITS(a) 	   strcpy_P(status_message,(PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(a)]))
+
 #endif // __AVR
 
 /************************************************************************************
@@ -115,7 +118,8 @@ typedef const char_t *char_P;			// ARM/C++ version requires this typedef instead
 #define GET_TABLE_BYTE(a)  cfgArray[cmd->index].a	// get byte value from cfgArray
 #define GET_TABLE_FLOAT(a) cfgArray[cmd->index].a	// get byte value from cfgArray
 #define GET_TEXT_ITEM(b,a) b[a]						// get text from an array of strings in PGM
-#define GET_UNITS(a) (PGM_P)msg_units[cm_get_units_mode(a)]
+#define GET_UNITS(a) msg_units[cm_get_units_mode(a)]
+//#define S2s(S) S									// don't convert PROGMEN string to RAM string
 
 /* The ARM stdio functions we are using still use char as input and output. The macros 
  * below do the casts for most cases, but not all. Vararg functions like the printf() 
