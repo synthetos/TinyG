@@ -22,9 +22,9 @@
 #include <avr/interrupt.h>
 
 #include "tinyg.h"				// #1 There are some dependencies
+#include "config.h"				// #2
 #include "hardware.h"
-#include "util.h"				// #2
-#include "config.h"				// #3
+#include "util.h"
 #include "controller.h"
 #include "canonical_machine.h"
 #include "json_parser.h"

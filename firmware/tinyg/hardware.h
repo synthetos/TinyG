@@ -41,9 +41,8 @@
 
 #include "config.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
+//#include "motatePins.h"
+//#include "motateTimers.h" // for Motate::timer_number
 
 /**** Global System Defines ****/
 
@@ -51,6 +50,10 @@ extern "C"{
 #define F_CPU 32000000UL				// should always precede <avr/delay.h>
 #define MILLISECONDS_PER_TICK 1			// MS for system tick (systick * N)
 #define SYS_ID_LEN 12					// length of system ID string from sys_get_id()
+
+/************************************************************************************
+ **** AVR XMEGA SPECIFIC HARDWARE ***************************************************
+ ************************************************************************************/
 
 // Clock Crystal Config. Pick one:
 //#define __CLOCK_INTERNAL_32MHZ TRUE	// use internal oscillator
@@ -209,9 +212,5 @@ stat_t hw_get_id(cmdObj_t *cmd);
 	#define hw_print_id tx_print_stub
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif	// end of include guard: HARDWARE_H_ONCE

@@ -26,7 +26,6 @@
  */
 /* ------
  * Notes:
- *	- add full interrupt tables and dummy interrupt routine (maybe)
  *	- add crystal oscillator failover
  *	- add watchdog timer functions
  *
@@ -84,8 +83,18 @@ static void _port_bindings(float hw_version)
 	}
 }
 
+/* UNUSED
+static uint8_t _read_calibration_byte(uint8_t index)
+{ 
+	NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc; 	// Load NVM Command register to read the calibration row
+	uint8_t result = pgm_read_byte(index); 
+	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 	 	// Clean up NVM Command register 
+	return(result); 
+}
+*/
+
 /*
- * hw_get_id() - get a human readable signature
+ * _get_id() - get a human readable signature
  *
  *	Produces a unique deviceID based on the factory calibration data. Format is:
  *		123456-ABC
@@ -109,17 +118,7 @@ enum {
 	COORDY1,    // Wafer Coordinate Y Byte 1 
 }; 
 
-/* UNUSED
-static uint8_t _read_calibration_byte(uint8_t index)
-{ 
-	NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc; 	// Load NVM Command register to read the calibration row
-	uint8_t result = pgm_read_byte(index); 
-	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 	 	// Clean up NVM Command register 
-	return(result); 
-}
-*/
-
-static void _get_id(char *id)
+static void _get_id(char_t *id)
 {
 	char printable[33] = {"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"};
 	uint8_t i;
@@ -188,6 +187,19 @@ stat_t hw_bootloader_handler(void)
  ***********************************************************************************/
 
 /*
+ * hw_get_id() - get device ID (signature)
+ */
+
+stat_t hw_get_id(cmdObj_t *cmd) 
+{
+	char_t tmp[SYS_ID_LEN];
+	_get_id(tmp);
+	cmd->objtype = TYPE_STRING;
+	ritorno(cmd_copy_string(cmd, tmp));
+	return (STAT_OK);
+}
+
+/*
  * hw_run_boot() - invoke boot form the cfgArray
  */
 stat_t hw_run_boot(cmdObj_t *cmd)
@@ -209,20 +221,6 @@ stat_t hw_set_hv(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-/*
- * hw_get_id() - get device ID (signature)
- */
-
-stat_t hw_get_id(cmdObj_t *cmd) 
-{
-	char_t tmp[SYS_ID_LEN];
-	_get_id(tmp);
-	cmd->objtype = TYPE_STRING;
-	ritorno(cmd_copy_string(cmd, tmp));
-	return (STAT_OK);
-}
-
-
 /***********************************************************************************
  * TEXT MODE SUPPORT
  * Functions to print variables from the cfgArray table
@@ -232,7 +230,7 @@ stat_t hw_get_id(cmdObj_t *cmd)
 
 const char PROGMEM fmt_fb[] = "[fb]  firmware build%18.2f\n";
 const char PROGMEM fmt_fv[] = "[fv]  firmware version%16.2f\n";
-//const char PROGMEM fmt_hv[] = "[hp]  hardware platform%15.2f\n";
+//const char PROGMEM fmt_hp[] = "[hp]  hardware platform%15.2f\n";
 const char PROGMEM fmt_hv[] = "[hv]  hardware version%16.2f\n";
 const char PROGMEM fmt_id[] = "[id]  TinyG ID%30s\n";
 

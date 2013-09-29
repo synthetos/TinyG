@@ -205,7 +205,7 @@ static stat_t _homing_error_exit(int8_t axis)
 	} else {
 		char message[CMD_MESSAGE_LEN];
 		sprintf_P(message, PSTR("*** WARNING *** Homing error: %c axis settings misconfigured"), cm_get_axis_char(axis));
-		cmd_add_conditional_message(message);
+		cmd_add_conditional_message((char_t *)message);
 	}
 	cmd_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 

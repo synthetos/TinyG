@@ -43,8 +43,8 @@
 #include <avr/interrupt.h>
 
 #include "tinyg.h"
-#include "util.h"
 #include "config.h"
+#include "util.h"
 #include "controller.h"
 #include "hardware.h"
 #include "switch.h"
