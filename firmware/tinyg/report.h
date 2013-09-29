@@ -113,7 +113,7 @@ uint8_t sr_populate_filtered_status_report(void);
 stat_t sr_get(cmdObj_t *cmd);
 stat_t sr_set(cmdObj_t *cmd);
 stat_t sr_set_si(cmdObj_t *cmd);
-void sr_print_sr(cmdObj_t *cmd);
+//void sr_print_sr(cmdObj_t *cmd);
 
 stat_t qr_get(cmdObj_t *cmd); 
 void qr_clear_queue_report(void);

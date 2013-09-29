@@ -44,8 +44,11 @@
 #include "xmega/xmega_rtc.h"
 //#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
 
+/**** Random global variables ****/
+char status_message[STATUS_MESSAGE_LEN];// allocate string for global use
+stat_t status_code;						// allocate a variable for this macro
+
 static void _unit_tests(void);
-//stat_t status_code;				// declared in main.c
 
 /*
  * Inits and MAIN

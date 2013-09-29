@@ -204,10 +204,10 @@ typedef uint16_t magic_t;		// magic number size
 
 typedef uint8_t stat_t;
 #define STATUS_MESSAGE_LEN 48			// status message string storage allocation
-char status_message[STATUS_MESSAGE_LEN];// allocate string for global use
 
-stat_t status_code;						// allocate a variable for this macro
-//extern stat_t status_code;			// declared in main.cpp
+extern stat_t status_code;				// declared in main.c
+extern char status_message[];			// declared in main.c
+
 #define ritorno(a) if((status_code=a) != STAT_OK) { return(status_code); }
 
 // OS, communications and low-level status (must align with XIO_xxxx codes in xio.h)

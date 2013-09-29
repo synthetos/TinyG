@@ -183,21 +183,19 @@ static void _deenergize_motor(const uint8_t motor)
 
 void st_set_motor_power(const uint8_t motor) { } // code for PWM driven Vref goes here
 
-stat_t st_energize_motors()
+void st_energize_motors()
 {
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 		_energize_motor(motor);
 		st_run.m[motor].power_state = MOTOR_START_IDLE_TIMEOUT;
 	}
-	return (STAT_OK);
 }
 
-stat_t st_deenergize_motors()
+void st_deenergize_motors()
 {
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 		_deenergize_motor(motor);
 	}
-	return (STAT_OK);
 }
 
 stat_t st_motor_power_callback() 	// called by controller
@@ -638,12 +636,14 @@ stat_t st_set_mt(cmdObj_t *cmd)
 
 stat_t st_set_md(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
-	return(st_deenergize_motors());
+	st_deenergize_motors();
+	return (STAT_OK);
 }
 
 stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
-	return(st_energize_motors());
+	st_energize_motors();
+	return (STAT_OK);
 }
 
 
