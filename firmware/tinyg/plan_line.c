@@ -38,6 +38,10 @@
 #include "util.h"
 //#include "xio/xio.h"			// uncomment for debugging
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 // aline planner routines / feedhold planning
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
 static void _calculate_trapezoid(mpBuf_t *bf);
@@ -1021,13 +1025,9 @@ static stat_t _exec_aline(mpBuf_t *bf)
 	// Look for the end of the decel to go into HOLD state
 	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == STAT_OK)) {
 		cm.hold_state = FEEDHOLD_HOLD;
-//		cm.motion_state = MOTION_HOLD;
 		cm_set_motion_state(MOTION_HOLD);
 
 //		mp_free_run_buffer();				// free bf and send a status report
-//+++++ DIAGNOSTIC
-//+++++ DOES THIS NEED TO SET CURRENT POSITION TO FIX THE G28.4 ERROR?
-//		printf("HOLD: posX: %6.3f, posY: %6.3f\n", (double)mr.position[AXIS_X], (double)mr.gm.target[AXIS_Y]);
 		sr_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
 
@@ -1045,8 +1045,6 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		mr.section_state = MOVE_STATE_OFF;
 		bf->nx->replannable = false;			// prevent overplanning (Note 2)
 		if (bf->move_state == MOVE_STATE_RUN) {
-//+++++ DIAGNOSTIC
-//			printf("HOLD2: posX: %6.3f, posY: %6.3f\n", (double)mr.position[AXIS_X], (double)mr.gm.target[AXIS_Y]);
 			mp_free_run_buffer();				// free bf if it's actually done
 		}
 	}
@@ -1553,4 +1551,8 @@ static void _test_get_junction_vmax()
 }
 
 #endif // __UNIT_TEST_PLANNER
+#endif
+
+#ifdef __cplusplus
+}
 #endif

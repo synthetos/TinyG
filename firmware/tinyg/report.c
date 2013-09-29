@@ -137,7 +137,7 @@ static const char PROGMEM stat_72[] = "Command not accepted";
 static const char PROGMEM stat_73[] = "Probing cycle failed";
 
 static PGM_P const PROGMEM stat_msg[] = {	// AVR/GCC version
-//static const char_t *stat_msg[] = {		// ARM/GCC++ version
+//static const char *stat_msg[] = {		// ARM/GCC++ version
 	stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
 	stat_10, stat_11, stat_12, stat_13, stat_14, stat_15, stat_16, stat_17, stat_18, stat_19,
 	stat_20, stat_21, stat_22, stat_23, stat_24, stat_25, stat_26, stat_27, stat_28, stat_29,
@@ -155,8 +155,7 @@ char *get_status_message(stat_t status)
 	return (status_message);
 #endif
 #ifdef __ARM
-//	return ((const char *)stat_msg[status]);
-	return (stat_msg[status]);
+	return ((char *)stat_msg[status]);
 #endif
 }
 
@@ -268,10 +267,8 @@ void sr_init_status_report()
 {
 	cmdObj_t *cmd = cmd_reset_list();	// used for status report persistence locations
 	sr.status_report_requested = false;
-	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
-
-	const char_t se00[] = "se00";
-	cmd->index = cmd_get_index((const char_t *)"", se00);	// set first SR persistence index
+	char_t sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
+	cmd->index = cmd_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
 
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
 		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
@@ -544,7 +541,6 @@ uint8_t qr_queue_report_callback()
 	cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (STAT_OK);
 */
-
 
 /***********************************************************************************
  * TEXT MODE SUPPORT

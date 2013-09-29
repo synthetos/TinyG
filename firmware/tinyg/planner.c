@@ -78,9 +78,9 @@ mpMoveRuntimeSingleton_t mr;	// context for line runtime
  * Local Scope Data and Functions
  */
 #define _bump(a) ((a<PLANNER_BUFFER_POOL_SIZE-1)?(a+1):0) // buffer incr & wrap
-#define spindle_speed move_time		// local alias for spindle_speed to the time variable
-#define value_vector gm.target		// alias for vector of values
-#define flag_vector unit			// alias for vector of flags
+#define spindle_speed move_time	// local alias for spindle_speed to the time variable
+#define value_vector gm.target	// alias for vector of values
+#define flag_vector unit		// alias for vector of flags
 
 // execution routines (NB: These are all called from the LO interrupt)
 static stat_t _exec_dwell(mpBuf_t *bf);

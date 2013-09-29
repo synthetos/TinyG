@@ -35,21 +35,28 @@
 #include "tinyg.h"
 #include "util.h"
 
-/**** Vector functions ****
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+/**** Vector utilities ****
  * copy_vector()			- copy vector of arbitrary length
  * copy_axis_vector()		- copy an axis vector
- * set_unit_vector()		- populate a unit vector by pos. & target
  * get_axis_vector_length()	- return the length of an axis vector
  * set_vector()				- load values into vector form
  * set_vector_by_axis()		- load a single value into a zero vector
  */
 
+float vector[AXES];	// statically allocated global for vector utilities
+
+/*
 void copy_vector(float dst[], const float src[], uint8_t length) 
 {
 	for (uint8_t i=0; i<length; i++) {
 		dst[i] = src[i];
 	}
 }
+*/
 
 void copy_axis_vector(float dst[], const float src[]) 
 {
@@ -114,7 +121,7 @@ float *set_vector_by_axis(float value, uint8_t axis)
  *
  * Implementation tip: Order the min and max values from most to least likely in the calling args
  *
- * (*) Macro min4 is about 20uSec, inline function version is closer to 10 uSec
+ * (*) Macro min4 is about 20uSec, inline function version is closer to 10 uSec (Xmega 32 MHz)
  * 	#define min3(a,b,c) (min(min(a,b),c))
  *	#define min4(a,b,c,d) (min(min(a,b),min(c,d)))
  *	#define max3(a,b,c) (max(max(a,b),c))
@@ -155,9 +162,23 @@ inline float max4(float x1, float x2, float x3, float x4)
 	return (max);
 }
 
-/*
- * isnumber() - isdigit that also accepts plus, minus, and decimal point
+/**** String utilities ****
+ * strcpy_U() 	   - strcpy workalike to get around initial NUL for blank string - possibly wrong
+ * isnumber() 	   - isdigit that also accepts plus, minus, and decimal point
+ * escape_string() - add escapes to a string - currently for quotes only
+ * read_float()    - read a float from a normalized char array
  */
+
+/*
+uint8_t * strcpy_U( uint8_t * dst, const uint8_t * src )
+{
+	uint16_t index = 0;
+	do {
+		dst[index] = src[index];	
+	} while (src[index++] != 0);
+	return dst;
+}
+*/
 
 uint8_t isnumber(char c)
 {
@@ -166,10 +187,6 @@ uint8_t isnumber(char c)
 	if (c == '+') { return (true); }
 	return (isdigit(c));
 }
-
-/*
- * escape_string() - add escapes to a string - currently for quotes only
- */
 
 char_t *escape_string(char_t *dst, char_t *src) 
 {
@@ -183,29 +200,6 @@ char_t *escape_string(char_t *dst, char_t *src)
 	return (start_dst);
 }
 
-/* 
- * read_float() - read a float from a normalized char array
- *
- *	buf			normalized char array (line)
- *	i			char array index must point to start of number
- *	float_ptr	pointer to float to write value into
- *
- *	The line is normalized when it is all caps, has no white space,
- *	no non-alphnumeric characters, and no newline or CR.
- */
-
-uint8_t read_float(char *buf, uint8_t *i, float *float_ptr) 
-{
-	char *start = buf + *i;
-	char *end;
-  
-	*float_ptr = strtod(start, &end);
-	if(end == start) { 
-		return(false); 
-	}
-	*i = (uint8_t)(end - buf);
-	return(true);
-}
 
 /* 
  * compute_checksum() - calculate the checksum for a string
@@ -231,3 +225,7 @@ uint16_t compute_checksum(char const *string, const uint16_t length)
     return (h % HASHMASK);
 }
 
+
+#ifdef __cplusplus
+}
+#endif

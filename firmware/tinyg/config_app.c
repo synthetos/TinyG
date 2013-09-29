@@ -301,16 +301,16 @@ const cfgItem_t PROGMEM cfgArray[] = {
 //	{ "c","czb",_fip, 3, cm_print_zb, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].zero_backoff,	C_ZERO_BACKOFF },
 
 	// PWM settings
-    { "p1","p1frq",_fip, 0, pwm_print_p1frq, get_flt, set_flt,(float *)&pwm_cfg.p.frequency,	P1_PWM_FREQUENCY },
-    { "p1","p1csl",_fip, 0, pwm_print_p1csl, get_flt, set_flt,(float *)&pwm_cfg.p.cw_speed_lo,	P1_CW_SPEED_LO },
-    { "p1","p1csh",_fip, 0, pwm_print_p1csh, get_flt, set_flt,(float *)&pwm_cfg.p.cw_speed_hi,	P1_CW_SPEED_HI },
-    { "p1","p1cpl",_fip, 3, pwm_print_p1cpl, get_flt, set_flt,(float *)&pwm_cfg.p.cw_phase_lo,	P1_CW_PHASE_LO },
-    { "p1","p1cph",_fip, 3, pwm_print_p1cph, get_flt, set_flt,(float *)&pwm_cfg.p.cw_phase_hi,	P1_CW_PHASE_HI },
-    { "p1","p1wsl",_fip, 0, pwm_print_p1wsl, get_flt, set_flt,(float *)&pwm_cfg.p.ccw_speed_lo,	P1_CCW_SPEED_LO },
-    { "p1","p1wsh",_fip, 0, pwm_print_p1wsh, get_flt, set_flt,(float *)&pwm_cfg.p.ccw_speed_hi,	P1_CCW_SPEED_HI },
-    { "p1","p1wpl",_fip, 3, pwm_print_p1wpl, get_flt, set_flt,(float *)&pwm_cfg.p.ccw_phase_lo,	P1_CCW_PHASE_LO },
-    { "p1","p1wph",_fip, 3, pwm_print_p1wph, get_flt, set_flt,(float *)&pwm_cfg.p.ccw_phase_hi,	P1_CCW_PHASE_HI },
-    { "p1","p1pof",_fip, 3, pwm_print_p1pof, get_flt, set_flt,(float *)&pwm_cfg.p.phase_off,	P1_PWM_PHASE_OFF },
+    { "p1","p1frq",_fip, 0, pwm_print_p1frq, get_flt, set_flt,(float *)&pwm.c[PWM_1].frequency,		P1_PWM_FREQUENCY },
+    { "p1","p1csl",_fip, 0, pwm_print_p1csl, get_flt, set_flt,(float *)&pwm.c[PWM_1].cw_speed_lo,	P1_CW_SPEED_LO },
+    { "p1","p1csh",_fip, 0, pwm_print_p1csh, get_flt, set_flt,(float *)&pwm.c[PWM_1].cw_speed_hi,	P1_CW_SPEED_HI },
+    { "p1","p1cpl",_fip, 3, pwm_print_p1cpl, get_flt, set_flt,(float *)&pwm.c[PWM_1].cw_phase_lo,	P1_CW_PHASE_LO },
+    { "p1","p1cph",_fip, 3, pwm_print_p1cph, get_flt, set_flt,(float *)&pwm.c[PWM_1].cw_phase_hi,	P1_CW_PHASE_HI },
+    { "p1","p1wsl",_fip, 0, pwm_print_p1wsl, get_flt, set_flt,(float *)&pwm.c[PWM_1].ccw_speed_lo,	P1_CCW_SPEED_LO },
+    { "p1","p1wsh",_fip, 0, pwm_print_p1wsh, get_flt, set_flt,(float *)&pwm.c[PWM_1].ccw_speed_hi,	P1_CCW_SPEED_HI },
+    { "p1","p1wpl",_fip, 3, pwm_print_p1wpl, get_flt, set_flt,(float *)&pwm.c[PWM_1].ccw_phase_lo,	P1_CCW_PHASE_LO },
+    { "p1","p1wph",_fip, 3, pwm_print_p1wph, get_flt, set_flt,(float *)&pwm.c[PWM_1].ccw_phase_hi,	P1_CCW_PHASE_HI },
+    { "p1","p1pof",_fip, 3, pwm_print_p1pof, get_flt, set_flt,(float *)&pwm.c[PWM_1].phase_off,		P1_PWM_PHASE_OFF },
 
 	// Coordinate system offsets (G54-G59 and G92)
 	{ "g54","g54x",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G54][AXIS_X], G54_X_OFFSET },

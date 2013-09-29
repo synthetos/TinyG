@@ -25,8 +25,12 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef spindle_h
-#define spindle_h 
+#ifndef SPINDLE_H_ONCE
+#define SPINDLE_H_ONCE
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 /*
  * Global Scope Functions
@@ -38,4 +42,8 @@ void cm_exec_spindle_control(uint8_t spindle_mode);
 stat_t cm_set_spindle_speed(float speed);
 void cm_exec_spindle_speed(float speed);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif	// End of include guard: SPINDLE_H_ONCE

@@ -32,23 +32,27 @@
  *	  - support for debugging routines
  */  
 
-#ifndef util_h
-#define util_h
+#ifndef UTIL_H_ONCE
+#define UTIL_H_ONCE
+/*
+#include <stdint.h>
+#include "sam.h"
 
-/****** Global Scope Variables and Functions ******/
+#include "MotateTimers.h"
+using Motate::delay;
+using Motate::SysTickTimer;
+*/
+#ifdef __cplusplus
+extern "C"{
+#endif
 
-float vector[AXES];				// vector of axes for passing to subroutines
+//****** Global Scope Variables and Functions ******
 
-float min3(float x1, float x2, float x3);
-float min4(float x1, float x2, float x3, float x4);
-float max3(float x1, float x2, float x3);
-float max4(float x1, float x2, float x3, float x4);
-uint8_t isnumber(char c);
-char_t *escape_string(char_t *dst, char_t *src);
-uint8_t read_float(char *buf, uint8_t *i, float *float_ptr);
-uint16_t compute_checksum(char const *string, const uint16_t length);
+//*** vector utilities ***
 
-void copy_vector(float dst[], const float src[], uint8_t length);
+extern float vector[AXES]; // vector of axes for passing to subroutines
+
+//void copy_vector(float dst[], const float src[], uint8_t length);
 void copy_axis_vector(float dst[], const float src[]);
 uint8_t vector_equal(const float a[], const float b[]) ;
 float get_axis_vector_length(const float a[], const float b[]);
@@ -56,7 +60,35 @@ float *set_vector(float x, float y, float z, float a, float b, float c);
 float *set_vector_by_axis(float value, uint8_t axis);
 #define clear_vector(a) memset(a,0,sizeof(a))
 
-/***** Math Support *****/
+/*
+#define copy_axis_vector(dst,src) ( dst[AXIS_X] = src[AXIS_X];\
+									dst[AXIS_Y] = src[AXIS_Y];\
+									dst[AXIS_Z] = src[AXIS_Z];\
+									dst[AXIS_A] = src[AXIS_A];\
+									dst[AXIS_B] = src[AXIS_B];\
+									dst[AXIS_C] = src[AXIS_C]; )
+*/
+
+//*** math utilities ***
+
+float min3(float x1, float x2, float x3);
+float min4(float x1, float x2, float x3, float x4);
+float max3(float x1, float x2, float x3);
+float max4(float x1, float x2, float x3, float x4);
+
+//*** string utilities ***
+
+//uint8_t *strcpy_U( uint8_t *dst, const uint8_t * src );
+uint8_t isnumber(char c);
+char_t *escape_string(char_t *dst, char_t *src);
+uint16_t compute_checksum(char const *string, const uint16_t length);
+
+
+//***** Math Support *****
+
+#ifndef square
+#define square(x) ((x)*(x))		/* UNSAFE */
+#endif
 
 // side-effect safe forms of min and max
 #ifndef max
@@ -112,6 +144,12 @@ float *set_vector_by_axis(float value, uint8_t axis);
 #define RADIAN (57.2957795)
 //		M_PI is pi as defined in math.h
 //		M_SQRT2 is radical2 as defined in math.h
+#ifndef M_SQRT3
 #define M_SQRT3 (1.73205080756888)
+#endif
 
-#endif	// util_h
+#ifdef __cplusplus
+}
+#endif
+
+#endif	// End of include guard: UTIL_H_ONCE

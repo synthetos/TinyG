@@ -48,7 +48,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.83	// Mode G2 alignment changes
+#define TINYG_FIRMWARE_BUILD   		392.84	// Rearranged PWM control and config structures
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
@@ -108,7 +108,7 @@ typedef const char PROGMEM *char_P;	// access to PROGMEM arrays of PROGMEM strin
 // In the ARM/GCC++ version char_t is typedef'd to uint8_t because in C++ uint8_t and char
 // are distinct types and we want chars to behave as uint8's
 typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
-typedef const char *char_P;			// ARM/C++ version requires this typedef instead
+typedef const char_t *char_P;			// ARM/C++ version requires this typedef instead
 
 // The table getters rely on cmd->index having been set
 #define GET_TABLE_WORD(a)  cfgArray[cmd->index].a	// get word value from cfgArray

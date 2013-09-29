@@ -28,18 +28,19 @@
 #include <avr/interrupt.h>
 
 #include "tinyg.h"		// #1
-#include "hardware.h"	// #2
-#include "pwm.h"
-#include "gpio.h"
+#include "config.h"		// #2
+#include "hardware.h"
 #include "text_parser.h"
+#include "gpio.h"
+#include "pwm.h"
+
 
 /***** PWM defines, structures and memory allocation *****
  *
  * Three are two PWM channels - 
  */
 
-pwmConfig_t pwm_cfg;		// config struct
-pwmStruct_t pwm[PWMS];		// array of PWMs (usually 2, see system.h)
+pwmSingleton_t pwm;
 
 // defines common to all PWM channels
 //#define PWM_TIMER_TYPE	TC1_struct	// PWM uses TC1's
@@ -85,18 +86,18 @@ void pwm_init()
 	gpio_set_bit_off(SPINDLE_PWM);
 
 	// setup PWM channel 1
-	memset(&pwm[PWM_1], 0, sizeof(pwmStruct_t));		// clear parent structure 
-	pwm[PWM_1].timer = &TIMER_PWM1;						// bind timer struct to PWM struct array
-	pwm[PWM_1].ctrla = PWM1_CTRLA_CLKSEL;				// initialize starting clock operating range
-	pwm[PWM_1].timer->CTRLB = PWM1_CTRLB;
-	pwm[PWM_1].timer->INTCTRLB = PWM1_INTCTRLB;			// set interrupt level	
+	memset(&pwm.p[PWM_1], 0, sizeof(pwmChannel_t));		// clear parent structure 
+	pwm.p[PWM_1].timer = &TIMER_PWM1;					// bind timer struct to PWM struct array
+	pwm.p[PWM_1].ctrla = PWM1_CTRLA_CLKSEL;				// initialize starting clock operating range
+	pwm.p[PWM_1].timer->CTRLB = PWM1_CTRLB;
+	pwm.p[PWM_1].timer->INTCTRLB = PWM1_INTCTRLB;		// set interrupt level	
 
 	// setup PWM channel 2
-	memset(&pwm[PWM_2], 0, sizeof(pwmStruct_t));		// clear all values, pointers and status
-	pwm[PWM_2].timer = &TIMER_PWM2;
-	pwm[PWM_2].ctrla = PWM2_CTRLA_CLKSEL;
-	pwm[PWM_2].timer->CTRLB = PWM2_CTRLB;
-	pwm[PWM_2].timer->INTCTRLB = PWM2_INTCTRLB;
+	memset(&pwm.p[PWM_2], 0, sizeof(pwmChannel_t));		// clear all values, pointers and status
+	pwm.p[PWM_2].timer = &TIMER_PWM2;
+	pwm.p[PWM_2].ctrla = PWM2_CTRLA_CLKSEL;
+	pwm.p[PWM_2].timer->CTRLB = PWM2_CTRLB;
+	pwm.p[PWM_2].timer->INTCTRLB = PWM2_INTCTRLB;
 }
 
 /*
@@ -132,20 +133,20 @@ stat_t pwm_set_freq(uint8_t chan, float freq)
 	// set the period and the prescaler
 	float prescale = F_CPU/65536/freq;	// optimal non-integer prescaler value
 	if (prescale <= 1) { 
-		pwm[chan].timer->PER = F_CPU/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV1_gc;
+		pwm.p[chan].timer->PER = F_CPU/freq;
+		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV1_gc;
 	} else if (prescale <= 2) { 
-		pwm[chan].timer->PER = F_CPU/2/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV2_gc;
+		pwm.p[chan].timer->PER = F_CPU/2/freq;
+		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV2_gc;
 	} else if (prescale <= 4) { 
-		pwm[chan].timer->PER = F_CPU/4/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV4_gc;
+		pwm.p[chan].timer->PER = F_CPU/4/freq;
+		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV4_gc;
 	} else if (prescale <= 8) { 
-		pwm[chan].timer->PER = F_CPU/8/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV8_gc;
+		pwm.p[chan].timer->PER = F_CPU/8/freq;
+		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV8_gc;
 	} else { 
-		pwm[chan].timer->PER = F_CPU/64/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV64_gc;
+		pwm.p[chan].timer->PER = F_CPU/64/freq;
+		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV64_gc;
 	}
 	return (STAT_OK);
 }
@@ -171,8 +172,8 @@ stat_t pwm_set_duty(uint8_t chan, float duty)
 	// Ffrq = Fper/(2N(CCA+1))
 	// Fpwm = Fper/((N(PER+1))
 	
-    float period_scalar = pwm[chan].timer->PER;
-	pwm[chan].timer->CCB = (uint16_t)(period_scalar * duty) + 1;
+    float period_scalar = pwm.p[chan].timer->PER;
+	pwm.p[chan].timer->CCB = (uint16_t)(period_scalar * duty) + 1;
 	return (STAT_OK);
 }
 

@@ -35,6 +35,10 @@
 #include "hardware.h"
 #include "pwm.h"
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 static void _exec_spindle_control(float *value, float *flag);
 static void _exec_spindle_speed(float *value, float *flag);
 
@@ -43,11 +47,11 @@ static void _exec_spindle_speed(float *value, float *flag);
  */
 void sp_init()
 {
-    if( pwm_cfg.p.frequency < 0 )
-        pwm_cfg.p.frequency = 0;
+    if( pwm.c[PWM_1].frequency < 0 )
+        pwm.c[PWM_1].frequency = 0;
     
-    pwm_set_freq(PWM_1, pwm_cfg.p.frequency);
-    pwm_set_duty(PWM_1, pwm_cfg.p.phase_off);
+    pwm_set_freq(PWM_1, pwm.c[PWM_1].frequency);
+    pwm_set_duty(PWM_1, pwm.c[PWM_1].phase_off);
 }
 
 /*
@@ -56,16 +60,16 @@ void sp_init()
 float cm_get_spindle_pwm( uint8_t spindle_mode )
 {
     float speed_lo=0, speed_hi=0, phase_lo=0, phase_hi=0;
-    if (spindle_mode==SPINDLE_CW ) {
-        speed_lo = pwm_cfg.p.cw_speed_lo;
-        speed_hi = pwm_cfg.p.cw_speed_hi;
-        phase_lo = pwm_cfg.p.cw_phase_lo;
-        phase_hi = pwm_cfg.p.cw_phase_hi;
-    } else if (spindle_mode==SPINDLE_CCW ) {
-        speed_lo = pwm_cfg.p.ccw_speed_lo;
-        speed_hi = pwm_cfg.p.ccw_speed_hi;
-        phase_lo = pwm_cfg.p.ccw_phase_lo;
-        phase_hi = pwm_cfg.p.ccw_phase_hi;
+    if (spindle_mode == SPINDLE_CW ) {
+        speed_lo = pwm.c[PWM_1].cw_speed_lo;
+        speed_hi = pwm.c[PWM_1].cw_speed_hi;
+        phase_lo = pwm.c[PWM_1].cw_phase_lo;
+        phase_hi = pwm.c[PWM_1].cw_phase_hi;
+    } else if (spindle_mode == SPINDLE_CCW ) {
+        speed_lo = pwm.c[PWM_1].ccw_speed_lo;
+        speed_hi = pwm.c[PWM_1].ccw_speed_hi;
+        phase_lo = pwm.c[PWM_1].ccw_phase_lo;
+        phase_hi = pwm.c[PWM_1].ccw_phase_hi;
     }
     
     if (spindle_mode==SPINDLE_CW || spindle_mode==SPINDLE_CCW ) {
@@ -78,7 +82,7 @@ float cm_get_spindle_pwm( uint8_t spindle_mode )
         return (speed * (phase_hi - phase_lo)) + phase_lo;
         
     } else
-        return pwm_cfg.p.phase_off;
+        return pwm.c[PWM_1].phase_off;
 }
 
 /*
@@ -138,4 +142,6 @@ static void _exec_spindle_speed(float *value, float *flag)
 	pwm_set_duty(PWM_1, cm_get_spindle_pwm(gm.spindle_mode) ); // update spindle speed if we're running
 }
 
-
+#ifdef __cplusplus
+}
+#endif
