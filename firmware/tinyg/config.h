@@ -254,13 +254,13 @@ enum objType {						// object / value typing for config and JSON
 
 typedef struct cmdString {				// shared string object
 	uint16_t magic_start;
-#if (CMD_SHARED_STRING_LEN < 256)
+  #if (CMD_SHARED_STRING_LEN < 256)
 	uint8_t wp;							// use this string array index value if string len < 256 bytes
-#else
+  #else
 	uint16_t wp;						// use this string array index value is string len > 255 bytes
-#endif
+  #endif
 	char_t string[CMD_SHARED_STRING_LEN];
-	uint16_t magic_end;
+	uint16_t magic_end;					// guard to detect string buffer underruns
 } cmdStr_t;
 
 typedef struct cmdObject {				// depending on use, not all elements may be populated

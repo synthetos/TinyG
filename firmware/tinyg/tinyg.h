@@ -111,15 +111,15 @@ typedef const char PROGMEM *char_P;	// access to PROGMEM arrays of PROGMEM strin
 // In the ARM/GCC++ version char_t is typedef'd to uint8_t because in C++ uint8_t and char
 // are distinct types and we want chars to behave as uint8's
 typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
-typedef const char_t *char_P;			// ARM/C++ version requires this typedef instead
+typedef const char_t *char_P;		// ARM/C++ version requires this typedef instead
 
 // The table getters rely on cmd->index having been set
 #define GET_TABLE_WORD(a)  cfgArray[cmd->index].a	// get word value from cfgArray
 #define GET_TABLE_BYTE(a)  cfgArray[cmd->index].a	// get byte value from cfgArray
 #define GET_TABLE_FLOAT(a) cfgArray[cmd->index].a	// get byte value from cfgArray
+
 #define GET_TEXT_ITEM(b,a) b[a]						// get text from an array of strings in PGM
 #define GET_UNITS(a) msg_units[cm_get_units_mode(a)]
-//#define S2s(S) S									// don't convert PROGMEN string to RAM string
 
 /* The ARM stdio functions we are using still use char as input and output. The macros 
  * below do the casts for most cases, but not all. Vararg functions like the printf() 
