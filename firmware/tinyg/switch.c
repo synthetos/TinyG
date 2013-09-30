@@ -263,7 +263,7 @@ static const char PROGMEM msg_sw1[] = "NO homing";
 static const char PROGMEM msg_sw2[] = "NO homing & limit";
 static const char PROGMEM msg_sw3[] = "NC homing";
 static const char PROGMEM msg_sw4[] = "NC homing & limit";
-static PGM_P const  PROGMEM msg_sw[] = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
+static const char PROGMEM *msg_sw[] = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
 */
 
 

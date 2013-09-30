@@ -24,9 +24,9 @@
 
  Project setup notes:
  ref: http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=117023
- `
- `  Yes it's definitely worth making WinAVR work. To install WinAVR for the project use 
- `  Project-Configuration Options and under Custom Options untick the "Use toolchain" box 
+ 
+    Yes it's definitely worth making WinAVR work. To install WinAVR for the project use 
+    Project-Configuration Options and under Custom Options untick the "Use toolchain" box 
     then set the top one to \winavr\bin\avr-gcc.exe 	(C:\WinAVR-20100110\bin\avr-gcc.exe)
     and the lower one to 	\winavr\utils\bin\make.exe	(C:\WinAVR-20100110\utils\bin\make.exe)
  */
@@ -42,7 +42,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-
 
 //#include "MotatePins.h"
 

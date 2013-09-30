@@ -187,7 +187,7 @@ static stat_t _command_dispatch()
 			break;
 		}
 		// handle end-of-file from file devices
-		if (status == STAT_EOF) {					// EOF can come from file devices only
+		if (status == STAT_EOF) {				// EOF can come from file devices only
 			if (cfg.comm_mode == TEXT_MODE) {
 				fprintf_P(stderr, (const PROGMEM char *)("End of command file\n"));
 			} else {
