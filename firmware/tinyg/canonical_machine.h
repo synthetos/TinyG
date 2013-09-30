@@ -589,7 +589,7 @@ stat_t cm_select_tool(uint8_t tool);							// T parameter
 stat_t cm_change_tool(uint8_t tool);							// M6
 
 // canonical machine commands not called from gcode dispatcher
-void cm_message(char *message);									// msg to console (e.g. Gcode comments)
+void cm_message(char_t *message);								// msg to console (e.g. Gcode comments)
 
 stat_t cm_feedhold_sequencing_callback(void);					// process feedhold, cycle start and queue flush requests
 void cm_request_feedhold(void);
@@ -606,8 +606,6 @@ void cm_exec_program_stop(void);
 void cm_exec_program_end(void);
 
 /*--- cmdArray interface functions ---*/
-
-stat_t cm_run_qf(cmdObj_t *cmd);
 
 char_t cm_get_axis_char(const int8_t axis);
 
@@ -631,6 +629,7 @@ stat_t cm_get_pos(cmdObj_t *cmd);		// get runtime work position...
 stat_t cm_get_mpo(cmdObj_t *cmd);		// get runtime machine position...
 stat_t cm_get_ofs(cmdObj_t *cmd);		// get runtime work offset...
 
+stat_t cm_run_qf(cmdObj_t *cmd);		// run queue flush
 stat_t cm_run_home(cmdObj_t *cmd);		// start homing cycle
 
 stat_t cm_get_am(cmdObj_t *cmd);		// get axis mode
@@ -691,7 +690,6 @@ stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 	void cm_print_lv(cmdObj_t *cmd);
 	void cm_print_lb(cmdObj_t *cmd);
 	void cm_print_zb(cmdObj_t *cmd);
-
 	void cm_print_cofs(cmdObj_t *cmd);
 	void cm_print_cpos(cmdObj_t *cmd);
 
@@ -746,7 +744,6 @@ stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 	#define cm_print_lv tx_print_stub
 	#define cm_print_lb tx_print_stub
 	#define cm_print_zb tx_print_stub
-
 	#define cm_print_cofs tx_print_stub
 	#define cm_print_cpos tx_print_stub
 

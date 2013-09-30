@@ -63,7 +63,7 @@ extern arc_t ar;
 
 // function prototypes
 
-stat_t cm_arc(const GCodeState_t *gm,
+stat_t cm_arc(const GCodeState_t *gm_arc,
 			  const float i, 
 			  const float j, 
 			  const float k, 

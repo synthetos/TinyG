@@ -51,7 +51,7 @@ static float _get_theta(const float x, const float y);
  *
  *  Parts of this routine were originally sourced from the grbl project.
  */
-stat_t cm_arc(const GCodeState_t *gm, 		// gcode model state
+stat_t cm_arc(const GCodeState_t *gm_arc, 	// gcode model state
 			  const float i,
 			  const float j,
 			  const float k,
@@ -72,13 +72,13 @@ stat_t cm_arc(const GCodeState_t *gm, 		// gcode model state
 	if (ar.length < cm.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE_ERROR); // too short to draw
 
 	// load the arc controller singleton
-	memcpy(&ar.gm, gm, sizeof(GCodeState_t));		// get the entire GCode context - some will be overwritten to run segments
+	memcpy(&ar.gm, gm_arc, sizeof(GCodeState_t));	// get the entire GCode context - some will be overwritten to run segments
 	copy_axis_vector(ar.position, gmx.position);	// set initial arc position from gcode model
 
-	ar.endpoint[axis_1] = gm->target[0];			// save the arc endpoint
-	ar.endpoint[axis_2] = gm->target[1];
-	ar.endpoint[axis_linear] = gm->target[2];
-	ar.arc_time = gm->move_time;
+	ar.endpoint[axis_1] = gm_arc->target[0];			// save the arc endpoint
+	ar.endpoint[axis_2] = gm_arc->target[1];
+	ar.endpoint[axis_linear] = gm_arc->target[2];
+	ar.arc_time = gm_arc->move_time;
 	ar.theta = theta;
 	ar.radius = radius;
 	ar.axis_1 = axis_1;
@@ -168,7 +168,8 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 	gm.motion_mode = motion_mode;
 
 	// trap zero feed rate condition
-	if ((gm.inverse_feed_rate_mode == false) && (gm.feed_rate == 0)) {
+//	if ((gm.inverse_feed_rate_mode == false) && (gm.feed_rate == 0)) {
+	if ((gm.inverse_feed_rate_mode == false) && (fp_ZERO(gm.feed_rate))) {	
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
 
@@ -238,7 +239,8 @@ static stat_t _compute_center_arc()
 	// compute angular travel and invert if gcode wants a counterclockwise arc
 	// if angular travel is zero interpret it as a full circle
 	float angular_travel = theta_end - theta_start;
-	if (angular_travel == 0) {
+//	if (angular_travel == 0) {
+	if (fp_ZERO(angular_travel)) {		
 		if (gm.motion_mode == MOTION_MODE_CCW_ARC) { 
 			angular_travel -= 2*M_PI;
 		} else {

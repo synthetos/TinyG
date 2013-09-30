@@ -373,15 +373,15 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 
 static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 {
-	float vector[AXES] = {0,0,0,0,0,0};
+	float vect[AXES] = {0,0,0,0,0,0};
 	float flags[] = {false, false, false, false, false, false};
 
-	vector[axis] = target;
+	vect[axis] = target;
 	flags[axis] = true;
 	cm_set_feed_rate(velocity);
 	mp_flush_planner();										// don't use cm_request_queue_flush() here
 	cm_request_cycle_start();
-	ritorno(cm_straight_feed(vector, flags));
+	ritorno(cm_straight_feed(vect, flags));
 	return (STAT_EAGAIN);
 }
 

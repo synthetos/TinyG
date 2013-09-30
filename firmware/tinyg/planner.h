@@ -246,7 +246,7 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
 
-stat_t mp_aline(const GCodeState_t *gm);
+stat_t mp_aline(const GCodeState_t *gm_line);
 
 stat_t mp_plan_hold_callback(void);
 stat_t mp_end_hold(void);

@@ -207,9 +207,10 @@ enum prepBufferState {
 
 // Stepper power management settings
 // Min/Max timeouts allowed for motor disable. Allow for inertial stop; must be non-zero
-#define IDLE_TIMEOUT_SECONDS_MIN 	0.1				 // seconds !!! SHOULD NEVER BE ZERO !!!
-#define IDLE_TIMEOUT_SECONDS_MAX   (4294967295/1000) // for conversion to uint32_t
-#define IDLE_TIMEOUT_SECONDS 		0.1				 // seconds in DISABLE_AXIS_WHEN_IDLE mode
+#define IDLE_TIMEOUT_SECONDS_MIN 	0.1			 // seconds !!! SHOULD NEVER BE ZERO !!!
+//#define IDLE_TIMEOUT_SECONDS_MAX   (4294967295/1000) // for conversion to uint32_t
+#define IDLE_TIMEOUT_SECONDS_MAX	4294967UL	// (4294967295/1000) -- for conversion to uint32_t
+#define IDLE_TIMEOUT_SECONDS 		0.1			// seconds in DISABLE_AXIS_WHEN_IDLE mode
 
 /* DDA substepping
  * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping.

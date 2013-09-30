@@ -95,7 +95,7 @@ uint8_t mp_get_runtime_busy()
  *	This function uses constant jerk motion equations to plan acceleration 
  *	and deceleration. The jerk is the rate of change of acceleration; it's
  *	the 1st derivative of acceleration, and the 3rd derivative of position. 
- *	Jerk is a measure of impact to the machine. Controlling jerk smoothes 
+ *	Jerk is a measure of impact to the machine. Controlling jerk smooths 
  *	transitions between moves and allows for faster feeds while controlling 
  *	machine oscillations and other undesirable side-effects.
  *
@@ -104,24 +104,24 @@ uint8_t mp_get_runtime_busy()
  *
  *	Note: Returning a status that is not STAT_OK means the endpoint is NOT
  *	advanced. So lines that are too short to move will accumulate and get 
- *	executed once the accumlated error exceeds the minimums 
+ *	executed once the accumulated error exceeds the minimums 
  */
 
-stat_t mp_aline(const GCodeState_t *gm)
+stat_t mp_aline(const GCodeState_t *gm_line)
 {
 	mpBuf_t *bf; 						// current move pointer
 	float exact_stop = 0;
 	float junction_velocity;
 
 	// trap error conditions
-	float length = get_axis_vector_length(gm->target, mm.position);
+	float length = get_axis_vector_length(gm_line->target, mm.position);
 	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE_ERROR);}
-	if (gm->move_time < MIN_TIME_MOVE) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}
+	if (gm_line->move_time < MIN_TIME_MOVE) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) { return (STAT_BUFFER_FULL_FATAL);} // never supposed to fail
 
-	memcpy(&bf->gm, gm, sizeof(GCodeState_t));	// copy model state into planner
+	memcpy(&bf->gm, gm_line, sizeof(GCodeState_t));	// copy model state into planner
 	bf->bf_func = _exec_aline;					// register the callback to the exec function
 	bf->length = length;
 
@@ -283,8 +283,16 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 		_calculate_trapezoid(bp);
 
 		// test for optimally planned trapezoids - only need to check various exit conditions
-		if ((bp->exit_velocity == bp->exit_vmax) || (bp->exit_velocity == bp->nx->entry_vmax) || 
-		   ((bp->pv->replannable == false) && (bp->exit_velocity == bp->entry_velocity + bp->delta_vmax))) {
+//		if ((bp->exit_velocity == bp->exit_vmax) || (bp->exit_velocity == bp->nx->entry_vmax) || 
+//		   ((bp->pv->replannable == false) && (bp->exit_velocity == bp->entry_velocity + bp->delta_vmax))) {
+//			bp->replannable = false;
+
+		// test for optimally planned trapezoids - only need to check various exit conditions
+		if ( ( (fp_EQ(bp->exit_velocity, bp->exit_vmax)) ||
+			   (fp_EQ(bp->exit_velocity, bp->nx->entry_vmax)) )  ||
+			 ( (bp->pv->replannable == false) &&
+			   (fp_EQ(bp->exit_velocity, (bp->entry_velocity + bp->delta_vmax))) ) ) {
+
 			bp->replannable = false;
 		}
 	}
