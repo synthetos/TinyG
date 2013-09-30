@@ -48,7 +48,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.84	// Rearranged PWM control and config structures
+#define TINYG_FIRMWARE_BUILD   		392.85	// Refactored text display strings to agree with ARM/C++ - UNTESTED
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
@@ -85,7 +85,6 @@
 #include <avr/pgmspace.h>			// defines PROGMEM, PSTR, PGM_P (must be first)
 
 typedef char char_t;				// see ARM for why this is here
-typedef const char PROGMEM *char_P;	// access to PROGMEM arrays of PROGMEM strings
 
 // The table getters rely on cmd->index having been set
 #define GET_TABLE_WORD(a)  pgm_read_word(&cfgArray[cmd->index].a)	// get word value from cfgArray
@@ -103,7 +102,8 @@ typedef const char PROGMEM *char_P;	// access to PROGMEM arrays of PROGMEM strin
 /************************************************************************************
  **** ARM Compatibility ************************************************************/
 #ifdef __ARM
-// Use macros to "neutralize" AVR's PROGMEM and other AVRisms.
+
+// Use macros to fake out AVR's PROGMEM and other AVRisms.
 #define PROGMEM						// ignore PROGMEM declarations in ARM/GCC++
 #define PSTR (const char *)			// AVR macro is:  PSTR(s) ((const PROGMEM char *)(s))
 #define PGM_P const char *			// USAGE: (PGM_P) -- must be used in a cast
@@ -111,7 +111,6 @@ typedef const char PROGMEM *char_P;	// access to PROGMEM arrays of PROGMEM strin
 // In the ARM/GCC++ version char_t is typedef'd to uint8_t because in C++ uint8_t and char
 // are distinct types and we want chars to behave as uint8's
 typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
-typedef const char_t *char_P;		// ARM/C++ version requires this typedef instead
 
 // The table getters rely on cmd->index having been set
 #define GET_TABLE_WORD(a)  cfgArray[cmd->index].a	// get word value from cfgArray

@@ -1353,99 +1353,98 @@ void cm_program_end()
 
 #ifdef __TEXT_MODE
 
-static const char  PROGMEM msg_units0[] = " in";	// used by generic print functions
-static const char  PROGMEM msg_units1[] = " mm";
-static const char  PROGMEM msg_units2[] = " deg";
-static PGM_P const PROGMEM msg_units[] = { msg_units0, msg_units1, msg_units2 };
+static const char PROGMEM msg_units0[] = " in";	// used by generic print functions
+static const char PROGMEM msg_units1[] = " mm";
+static const char PROGMEM msg_units2[] = " deg";
+static const char PROGMEM *msg_units[] = { msg_units0, msg_units1, msg_units2 };
 #define DEGREE_INDEX 2
 
-static const char  PROGMEM msg_am00[] = "[disabled]";
-static const char  PROGMEM msg_am01[] = "[standard]";
-static const char  PROGMEM msg_am02[] = "[inhibited]";
-static const char  PROGMEM msg_am03[] = "[radius]";
-static PGM_P const PROGMEM msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03};
+static const char PROGMEM msg_am00[] = "[disabled]";
+static const char PROGMEM msg_am01[] = "[standard]";
+static const char PROGMEM msg_am02[] = "[inhibited]";
+static const char PROGMEM msg_am03[] = "[radius]";
+static const char PROGMEM *msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03};
 
-static const char  PROGMEM msg_g20[] = "G20 - inches mode";
-static const char  PROGMEM msg_g21[] = "G21 - millimeter mode";
-static PGM_P const PROGMEM msg_unit[] = { msg_g20, msg_g21 };
+static const char PROGMEM msg_g20[] = "G20 - inches mode";
+static const char PROGMEM msg_g21[] = "G21 - millimeter mode";
+static const char PROGMEM *msg_unit[] = { msg_g20, msg_g21 };
 
-static const char  PROGMEM msg_stat0[] = "Initializing";	// combined state (stat) uses this array
-static const char  PROGMEM msg_stat1[] = "Ready";
-static const char  PROGMEM msg_stat2[] = "Shutdown";
-static const char  PROGMEM msg_stat3[] = "Stop";
-static const char  PROGMEM msg_stat4[] = "End";
-static const char  PROGMEM msg_stat5[] = "Run";
-static const char  PROGMEM msg_stat6[] = "Hold";
-static const char  PROGMEM msg_stat7[] = "Probe";
-static const char  PROGMEM msg_stat8[] = "Cycle";
-static const char  PROGMEM msg_stat9[] = "Homing";
-static const char  PROGMEM msg_stat10[] = "Jog";
-static PGM_P const PROGMEM msg_stat[] = { msg_stat0, msg_stat1, msg_stat2, msg_stat3, msg_stat4, msg_stat5, 
-										   msg_stat6, msg_stat7, msg_stat8, msg_stat9, msg_stat10};
+static const char PROGMEM msg_stat0[] = "Initializing";	// combined state (stat) uses this array
+static const char PROGMEM msg_stat1[] = "Ready";
+static const char PROGMEM msg_stat2[] = "Shutdown";
+static const char PROGMEM msg_stat3[] = "Stop";
+static const char PROGMEM msg_stat4[] = "End";
+static const char PROGMEM msg_stat5[] = "Run";
+static const char PROGMEM msg_stat6[] = "Hold";
+static const char PROGMEM msg_stat7[] = "Probe";
+static const char PROGMEM msg_stat8[] = "Cycle";
+static const char PROGMEM msg_stat9[] = "Homing";
+static const char PROGMEM msg_stat10[] = "Jog";
+static const char PROGMEM *msg_stat[] = { msg_stat0, msg_stat1, msg_stat2, msg_stat3, msg_stat4, msg_stat5, 
+										  msg_stat6, msg_stat7, msg_stat8, msg_stat9, msg_stat10};
 
-static const char  PROGMEM msg_macs0[] = "Initializing";
-static const char  PROGMEM msg_macs1[] = "Reset";
-static const char  PROGMEM msg_macs2[] = "Cycle";
-static const char  PROGMEM msg_macs3[] = "Stop";
-static const char  PROGMEM msg_macs4[] = "End";
-static PGM_P const PROGMEM msg_macs[] = { msg_macs0, msg_macs1, msg_macs2, msg_macs3 , msg_macs4};
+static const char PROGMEM msg_macs0[] = "Initializing";
+static const char PROGMEM msg_macs1[] = "Reset";
+static const char PROGMEM msg_macs2[] = "Cycle";
+static const char PROGMEM msg_macs3[] = "Stop";
+static const char PROGMEM msg_macs4[] = "End";
+static const char PROGMEM *msg_macs[] = { msg_macs0, msg_macs1, msg_macs2, msg_macs3 , msg_macs4};
 
-static const char  PROGMEM msg_cycs0[] = "Off";
-static const char  PROGMEM msg_cycs1[] = "Started";
-static const char  PROGMEM msg_cycs2[] = "Homing";
-static const char  PROGMEM msg_cycs3[] = "Probe";
-static PGM_P const PROGMEM msg_cycs[] = { msg_cycs0, msg_cycs1, msg_cycs2, msg_cycs3 };
+static const char PROGMEM msg_cycs0[] = "Off";
+static const char PROGMEM msg_cycs1[] = "Started";
+static const char PROGMEM msg_cycs2[] = "Homing";
+static const char PROGMEM msg_cycs3[] = "Probe";
+static const char PROGMEM *msg_cycs[] = { msg_cycs0, msg_cycs1, msg_cycs2, msg_cycs3 };
 
-static const char  PROGMEM msg_mots0[] = "Stop";
-static const char  PROGMEM msg_mots1[] = "Run";
-static const char  PROGMEM msg_mots2[] = "Hold";
-static PGM_P const PROGMEM msg_mots[] = { msg_mots0, msg_mots1, msg_mots2 };
+static const char PROGMEM msg_mots0[] = "Stop";
+static const char PROGMEM msg_mots1[] = "Run";
+static const char PROGMEM msg_mots2[] = "Hold";
+static const char PROGMEM *msg_mots[] = { msg_mots0, msg_mots1, msg_mots2 };
 
-static const char  PROGMEM msg_hold0[] = "Off";
-static const char  PROGMEM msg_hold1[] = "Sync";
-static const char  PROGMEM msg_hold2[] = "Plan";
-static const char  PROGMEM msg_hold3[] = "Decel";
-static const char  PROGMEM msg_hold4[] = "Hold";
-static PGM_P const PROGMEM msg_hold[] = { msg_hold0, msg_hold1, msg_hold2, msg_hold3, msg_hold4 };
+static const char PROGMEM msg_hold0[] = "Off";
+static const char PROGMEM msg_hold1[] = "Sync";
+static const char PROGMEM msg_hold2[] = "Plan";
+static const char PROGMEM msg_hold3[] = "Decel";
+static const char PROGMEM msg_hold4[] = "Hold";
+static const char PROGMEM *msg_hold[] = { msg_hold0, msg_hold1, msg_hold2, msg_hold3, msg_hold4 };
 
-static const char  PROGMEM msg_home0[] = "Not Homed";
-static const char  PROGMEM msg_home1[] = "Homed";
-static PGM_P const PROGMEM msg_home[] = { msg_home0, msg_home1 };
+static const char PROGMEM msg_home0[] = "Not Homed";
+static const char PROGMEM msg_home1[] = "Homed";
+static const char PROGMEM *msg_home[] = { msg_home0, msg_home1 };
 
-static const char  PROGMEM msg_g53[] = "G53 - machine coordinate system";
-static const char  PROGMEM msg_g54[] = "G54 - coordinate system 1";
-static const char  PROGMEM msg_g55[] = "G55 - coordinate system 2";
-static const char  PROGMEM msg_g56[] = "G56 - coordinate system 3";
-static const char  PROGMEM msg_g57[] = "G57 - coordinate system 4";
-static const char  PROGMEM msg_g58[] = "G58 - coordinate system 5";
-static const char  PROGMEM msg_g59[] = "G59 - coordinate system 6";
-static PGM_P const PROGMEM msg_coor[] = { msg_g53, msg_g54, msg_g55, msg_g56, msg_g57, msg_g58, msg_g59 };
+static const char PROGMEM msg_g53[] = "G53 - machine coordinate system";
+static const char PROGMEM msg_g54[] = "G54 - coordinate system 1";
+static const char PROGMEM msg_g55[] = "G55 - coordinate system 2";
+static const char PROGMEM msg_g56[] = "G56 - coordinate system 3";
+static const char PROGMEM msg_g57[] = "G57 - coordinate system 4";
+static const char PROGMEM msg_g58[] = "G58 - coordinate system 5";
+static const char PROGMEM msg_g59[] = "G59 - coordinate system 6";
+static const char PROGMEM *msg_coor[] = { msg_g53, msg_g54, msg_g55, msg_g56, msg_g57, msg_g58, msg_g59 };
 
-static const char  PROGMEM msg_g00[] = "G0  - linear traverse (seek)";
-static const char  PROGMEM msg_g01[] = "G1  - linear feed";
-static const char  PROGMEM msg_g02[] = "G2  - clockwise arc feed";
-static const char  PROGMEM msg_g03[] = "G3  - counter clockwise arc feed";
-static const char  PROGMEM msg_g80[] = "G80 - cancel motion mode (none active)";
-static PGM_P const PROGMEM msg_momo[] = { msg_g00, msg_g01, msg_g02, msg_g03, msg_g80 };
+static const char PROGMEM msg_g00[] = "G0  - linear traverse (seek)";
+static const char PROGMEM msg_g01[] = "G1  - linear feed";
+static const char PROGMEM msg_g02[] = "G2  - clockwise arc feed";
+static const char PROGMEM msg_g03[] = "G3  - counter clockwise arc feed";
+static const char PROGMEM msg_g80[] = "G80 - cancel motion mode (none active)";
+static const char PROGMEM *msg_momo[] = { msg_g00, msg_g01, msg_g02, msg_g03, msg_g80 };
 
-static const char  PROGMEM msg_g17[] = "G17 - XY plane";
-static const char  PROGMEM msg_g18[] = "G18 - XZ plane";
-static const char  PROGMEM msg_g19[] = "G19 - YZ plane";
-static PGM_P const PROGMEM msg_plan[] = { msg_g17, msg_g18, msg_g19 };
+static const char PROGMEM msg_g17[] = "G17 - XY plane";
+static const char PROGMEM msg_g18[] = "G18 - XZ plane";
+static const char PROGMEM msg_g19[] = "G19 - YZ plane";
+static const char PROGMEM *msg_plan[] = { msg_g17, msg_g18, msg_g19 };
 
-static const char  PROGMEM msg_g61[] = "G61 - exact stop mode";
-static const char  PROGMEM msg_g6a[] = "G61.1 - exact path mode";
-static const char  PROGMEM msg_g64[] = "G64 - continuous mode";
-static PGM_P const PROGMEM msg_path[] = { msg_g61, msg_g61, msg_g64 };
+static const char PROGMEM msg_g61[] = "G61 - exact stop mode";
+static const char PROGMEM msg_g6a[] = "G61.1 - exact path mode";
+static const char PROGMEM msg_g64[] = "G64 - continuous mode";
+static const char PROGMEM *msg_path[] = { msg_g61, msg_g61, msg_g64 };
 
-static const char  PROGMEM msg_g90[] = "G90 - absolute distance mode";
-static const char  PROGMEM msg_g91[] = "G91 - incremental distance mode";
-static PGM_P const PROGMEM msg_dist[] = { msg_g90, msg_g91 };
+static const char PROGMEM msg_g90[] = "G90 - absolute distance mode";
+static const char PROGMEM msg_g91[] = "G91 - incremental distance mode";
+static const char PROGMEM *msg_dist[] = { msg_g90, msg_g91 };
 
-static const char  PROGMEM msg_g94[] = "G94 - units-per-minute mode (i.e. feedrate mode)";
-static const char  PROGMEM msg_g93[] = "G93 - inverse time mode";
-static PGM_P const PROGMEM msg_frmo[] = { msg_g94, msg_g93 };
-
+static const char PROGMEM msg_g94[] = "G94 - units-per-minute mode (i.e. feedrate mode)";
+static const char PROGMEM msg_g93[] = "G93 - inverse time mode";
+static const char PROGMEM *msg_frmo[] = { msg_g94, msg_g93 };
 
 #else
 
@@ -1537,7 +1536,32 @@ static int8_t _get_axis_type(const index_t index)
  * cm_print_corr()- print coordinate offsets with rotary units
  */
 
-stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value)
+stat_t _get_msg_helper(cmdObj_t *cmd, const char *msg_array[], uint8_t value)
+{
+	cmd->value = (float)value;
+	cmd->objtype = TYPE_INTEGER;
+	
+	#ifdef __TEXT_MODE
+	#ifdef __AVR
+	char_t buf[CMD_SHARED_STRING_LEN];
+	strncpy_P(buf, (PGM_P)pgm_read_word(&msg_array[value*2]), CMD_SHARED_STRING_LEN);// hack alert: direct computation of index
+	//		ritorno(cmd_copy_string(cmd, buf));
+	return(cmd_copy_string(cmd, buf));
+	#endif // __AVR
+	#ifdef __ARM
+	//		ritorno(cmd_copy_string(cmd, (const char_t *)msg[value]));
+	//		cmd_copy_string(cmd, (const char_t *)msg[value]);
+	//		cmd_copy_string(cmd, &msg[value]);
+	//		cmd_copy_string(cmd, (const char_t *)&msg[value]);
+	return(cmd_copy_string(cmd, (const char_t *)msg_array[value]));
+	#endif // __ARM
+	#else // __TEXT_MODE
+	return (STAT_OK);
+	#endif // __TEXT_MODE
+}
+
+/*
+stat_t _get_msg_helper(cmdObj_t *cmd, const char *msg_array[], uint8_t value)
 {
 	cmd->value = (float)value;
 	cmd->objtype = TYPE_INTEGER;
@@ -1545,44 +1569,40 @@ stat_t _get_msg_helper(cmdObj_t *cmd, char_P msg, uint8_t value)
 #ifdef __TEXT_MODE
 	#ifdef __AVR
 		char_t buf[CMD_SHARED_STRING_LEN];
-		strncpy_P(buf, (PGM_P)pgm_read_word(&msg[value*2]), CMD_SHARED_STRING_LEN);// hack alert: direct computation of index
+		strncpy_P(buf, (PGM_P)pgm_read_word(&msg_array[value*2]), CMD_SHARED_STRING_LEN);// hack alert: direct computation of index
 		ritorno(cmd_copy_string(cmd, buf));
 	//	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg[value*2]))); // hack alert: direct computation of index
 	#endif // __AVR
 	#ifdef __ARM
-		ritorno(cmd_copy_string(cmd, (const char_t *)msg[value]));
+		ritorno(cmd_copy_string(cmd, (const char_t *)msg_array[value]));
 	#endif // __ARM
 #endif // __TEXT_MODE
 
 	return (STAT_OK);
 }
-
-stat_t cm_get_stat(cmdObj_t *cmd)
-{
-	return(_get_msg_helper(cmd, (char_P)msg_stat, cm_get_combined_state()));
-
-// how to do this w/o calling the helper routine - See 331.09 for original routines
-//	cmd->value = cm_get_machine_state();
+*/
+// Example of cm_get_stat() w/o calling the helper routine - See 331.09 for original routines
+//	cmd->value = cm_get_combined_state();
 //	cmd->objtype = TYPE_INTEGER;
 //	ritorno(cmd_copy_string_P(cmd, (PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN));
 //	return (STAT_OK);
 
 //	strncpy_P(cmd->string_value,(PGM_P)pgm_read_word(&msg_stat[(uint8_t)cmd->value]),CMD_STRING_LEN);
-}
 
-stat_t cm_get_macs(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_macs, cm_get_machine_state()));}
-stat_t cm_get_cycs(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_cycs, cm_get_cycle_state()));}
-stat_t cm_get_mots(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_mots, cm_get_motion_state()));}
-stat_t cm_get_hold(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_hold, cm_get_hold_state()));}
-stat_t cm_get_home(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_home, cm_get_homing_state()));}
+stat_t cm_get_stat(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_stat, cm_get_combined_state()));}
+stat_t cm_get_macs(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_macs, cm_get_machine_state()));}
+stat_t cm_get_cycs(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_cycs, cm_get_cycle_state()));}
+stat_t cm_get_mots(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_mots, cm_get_motion_state()));}
+stat_t cm_get_hold(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_hold, cm_get_hold_state()));}
+stat_t cm_get_home(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_home, cm_get_homing_state()));}
 
-stat_t cm_get_unit(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_unit, cm_get_units_mode(ACTIVE_MODEL)));}
-stat_t cm_get_coor(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_coor, cm_get_coord_system(ACTIVE_MODEL)));}
-stat_t cm_get_momo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_momo, cm_get_motion_mode(ACTIVE_MODEL)));}
-stat_t cm_get_plan(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_plan, cm_get_select_plane(ACTIVE_MODEL)));}
-stat_t cm_get_path(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_path, cm_get_path_control(ACTIVE_MODEL)));}
-stat_t cm_get_dist(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_dist, cm_get_distance_mode(ACTIVE_MODEL)));}
-stat_t cm_get_frmo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, (char_P)msg_frmo, cm_get_inverse_feed_rate_mode(ACTIVE_MODEL)));}
+stat_t cm_get_unit(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_unit, cm_get_units_mode(ACTIVE_MODEL)));}
+stat_t cm_get_coor(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_coor, cm_get_coord_system(ACTIVE_MODEL)));}
+stat_t cm_get_momo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_momo, cm_get_motion_mode(ACTIVE_MODEL)));}
+stat_t cm_get_plan(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_plan, cm_get_select_plane(ACTIVE_MODEL)));}
+stat_t cm_get_path(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_path, cm_get_path_control(ACTIVE_MODEL)));}
+stat_t cm_get_dist(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_dist, cm_get_distance_mode(ACTIVE_MODEL)));}
+stat_t cm_get_frmo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_frmo, cm_get_inverse_feed_rate_mode(ACTIVE_MODEL)));}
 
 stat_t cm_get_toolv(cmdObj_t *cmd)
 {
@@ -1654,7 +1674,7 @@ stat_t cm_run_home(cmdObj_t *cmd)
 stat_t cm_get_am(cmdObj_t *cmd)
 {
 	get_ui8(cmd);
-	return(_get_msg_helper(cmd, (char_P)msg_am, cmd->value)); // see 331.09 for old method
+	return(_get_msg_helper(cmd, msg_am, cmd->value));
 }
 
 stat_t cm_set_am(cmdObj_t *cmd)		// axis mode
