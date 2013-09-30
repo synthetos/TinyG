@@ -449,58 +449,57 @@ void mp_dump_plan_buffer_by_index(uint8_t index) { _dump_plan_buffer(&mb.bf[inde
 
 static void _dump_plan_buffer(mpBuf_t *bf)
 {
-	fprintf_P(stderr, (const PROGMEM char *)("***Runtime Buffer[%d] bstate:%d  mtype:%d  mstate:%d  replan:%d\n"),
-	_get_buffer_index(bf),
-	bf->buffer_state,
-	bf->move_type,
-	bf->move_state,
-	bf->replannable);
+	fprintf_P(stderr, PSTR("***Runtime Buffer[%d] bstate:%d  mtype:%d  mstate:%d  replan:%d\n"),
+			_get_buffer_index(bf),
+			bf->buffer_state,
+			bf->move_type,
+			bf->move_state,
+			bf->replannable);
 
-	print_scalar((const PROGMEM char *)("line number:     "), bf->linenum);
-	print_vector((const PROGMEM char *)("position:        "), mm.position, AXES);
-	print_vector((const PROGMEM char *)("target:          "), bf->target, AXES);
-	print_vector((const PROGMEM char *)("unit:            "), bf->unit, AXES);
-	print_scalar((const PROGMEM char *)("jerk:            "), bf->jerk);
-	print_scalar((const PROGMEM char *)("time:            "), bf->time);
-	print_scalar((const PROGMEM char *)("length:          "), bf->length);
-	print_scalar((const PROGMEM char *)("head_length:     "), bf->head_length);
-	print_scalar((const PROGMEM char *)("body_length:     "), bf->body_length);
-	print_scalar((const PROGMEM char *)("tail_length:     "), bf->tail_length);
-	print_scalar((const PROGMEM char *)("entry_velocity:  "), bf->entry_velocity);
-	print_scalar((const PROGMEM char *)("cruise_velocity: "), bf->cruise_velocity);
-	print_scalar((const PROGMEM char *)("exit_velocity:   "), bf->exit_velocity);
-	print_scalar((const PROGMEM char *)("exit_vmax:       "), bf->exit_vmax);
-	print_scalar((const PROGMEM char *)("entry_vmax:      "), bf->entry_vmax);
-	print_scalar((const PROGMEM char *)("cruise_vmax:     "), bf->cruise_vmax);
-	print_scalar((const PROGMEM char *)("delta_vmax:      "), bf->delta_vmax);
-	print_scalar((const PROGMEM char *)("braking_velocity:"), bf->braking_velocity);
+	print_scalar(PSTR("line number:     "), bf->linenum);
+	print_vector(PSTR("position:        "), mm.position, AXES);
+	print_vector(PSTR("target:          "), bf->target, AXES);
+	print_vector(PSTR("unit:            "), bf->unit, AXES);
+	print_scalar(PSTR("jerk:            "), bf->jerk);
+	print_scalar(PSTR("time:            "), bf->time);
+	print_scalar(PSTR("length:          "), bf->length);
+	print_scalar(PSTR("head_length:     "), bf->head_length);
+	print_scalar(PSTR("body_length:     "), bf->body_length);
+	print_scalar(PSTR("tail_length:     "), bf->tail_length);
+	print_scalar(PSTR("entry_velocity:  "), bf->entry_velocity);
+	print_scalar(PSTR("cruise_velocity: "), bf->cruise_velocity);
+	print_scalar(PSTR("exit_velocity:   "), bf->exit_velocity);
+	print_scalar(PSTR("exit_vmax:       "), bf->exit_vmax);
+	print_scalar(PSTR("entry_vmax:      "), bf->entry_vmax);
+	print_scalar(PSTR("cruise_vmax:     "), bf->cruise_vmax);
+	print_scalar(PSTR("delta_vmax:      "), bf->delta_vmax);
+	print_scalar(PSTR("braking_velocity:"), bf->braking_velocity);
 }
 
 void mp_dump_runtime_state(void)
 {
-	fprintf_P(stderr, (const PROGMEM char *)("***Runtime Singleton (mr)\n"));
-	print_scalar((const PROGMEM char *)("line number:       "), mr.linenum);
-	print_vector((const PROGMEM char *)("position:          "), mr.position, AXES);
-	print_vector((const PROGMEM char *)("target:            "), mr.target, AXES);
-	print_scalar((const PROGMEM char *)("length:            "), mr.length);
+	fprintf_P(stderr, PSTR("***Runtime Singleton (mr)\n"));
+	print_scalar(PSTR("line number:       "), mr.linenum);
+	print_vector(PSTR("position:          "), mr.position, AXES);
+	print_vector(PSTR("target:            "), mr.target, AXES);
+	print_scalar(PSTR("length:            "), mr.length);
 
-	print_scalar((const PROGMEM char *)("move_time:         "), mr.move_time);
-//	print_scalar((const PROGMEM char *)("accel_time;        "), mr.accel_time);
-//	print_scalar((const PROGMEM char *)("elapsed_accel_time:"), mr.elapsed_accel_time);
-	print_scalar((const PROGMEM char *)("midpoint_velocity: "), mr.midpoint_velocity);
-//	print_scalar((const PROGMEM char *)("midpoint_accel:    "), mr.midpoint_acceleration);
-//	print_scalar((const PROGMEM char *)("jerk_div2:         "), mr.jerk_div2);
+	print_scalar(PSTR("move_time:         "), mr.move_time);
+//	print_scalar(PSTR("accel_time;        "), mr.accel_time);
+//	print_scalar(PSTR("elapsed_accel_time:"), mr.elapsed_accel_time);
+	print_scalar(PSTR("midpoint_velocity: "), mr.midpoint_velocity);
+//	print_scalar(PSTR("midpoint_accel:    "), mr.midpoint_acceleration);
+//	print_scalar(PSTR("jerk_div2:         "), mr.jerk_div2);
 
-	print_scalar((const PROGMEM char *)("segments:          "), mr.segments);
-	print_scalar((const PROGMEM char *)("segment_count:     "), mr.segment_count);
-	print_scalar((const PROGMEM char *)("segment_move_time: "), mr.segment_move_time);
-//	print_scalar((const PROGMEM char *)("segment_accel_time:"), mr.segment_accel_time);
-	print_scalar((const PROGMEM char *)("microseconds:      "), mr.microseconds);
-	print_scalar((const PROGMEM char *)("segment_length:	  "), mr.segment_length);
-	print_scalar((const PROGMEM char *)("segment_velocity:  "), mr.segment_velocity);
+	print_scalar(PSTR("segments:          "), mr.segments);
+	print_scalar(PSTR("segment_count:     "), mr.segment_count);
+	print_scalar(PSTR("segment_move_time: "), mr.segment_move_time);
+//	print_scalar(PSTR("segment_accel_time:"), mr.segment_accel_time);
+	print_scalar(PSTR("microseconds:      "), mr.microseconds);
+	print_scalar(PSTR("segment_length:	  "), mr.segment_length);
+	print_scalar(PSTR("segment_velocity:  "), mr.segment_velocity);
 }
 #endif // __DEBUG
-
 
 #ifdef __cplusplus
 }
