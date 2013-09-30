@@ -76,7 +76,7 @@ uint8_t tg_test(cmdObj_t *cmd)
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 #endif
 		default: {
-			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
+			fprintf_P(stderr,(const PROGMEM char *)("Test #%d not found\n"),(uint8_t)cmd->value);
 			return (STAT_ERROR);
 		}
 	}

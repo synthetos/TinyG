@@ -204,7 +204,7 @@ static stat_t _homing_error_exit(int8_t axis)
 		cmd_add_conditional_message((const char_t *)"*** WARNING *** Homing error: Specified axis(es) cannot be homed");;
 	} else {
 		char message[CMD_MESSAGE_LEN];
-		sprintf_P(message, PSTR("*** WARNING *** Homing error: %c axis settings misconfigured"), cm_get_axis_char(axis));
+		sprintf_P(message, (const PROGMEM char *)("*** WARNING *** Homing error: %c axis settings misconfigured"), cm_get_axis_char(axis));
 		cmd_add_conditional_message((char_t *)message);
 	}
 	cmd_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
@@ -468,7 +468,7 @@ int8_t _get_next_axes(int8_t axis)
 		}
 	}
 	if (next_axis == AXES) {
-//		fprintf_P(stderr, PSTR("***** Homing failed: none or disabled/inhibited axes specified\n"));
+//		fprintf_P(stderr, (const PROGMEM char *)("***** Homing failed: none or disabled/inhibited axes specified\n"));
 		return (-2);	// didn't find any axes to process
 	}
 

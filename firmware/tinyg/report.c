@@ -136,8 +136,7 @@ static const char PROGMEM stat_71[] = "Soft limit exceeded";
 static const char PROGMEM stat_72[] = "Command not accepted";
 static const char PROGMEM stat_73[] = "Probing cycle failed";
 
-static PGM_P const PROGMEM stat_msg[] = {	// AVR/GCC version
-//static const char *stat_msg[] = {		// ARM/GCC++ version
+static const char PROGMEM *stat_msg[] = {
 	stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
 	stat_10, stat_11, stat_12, stat_13, stat_14, stat_15, stat_16, stat_17, stat_18, stat_19,
 	stat_20, stat_21, stat_22, stat_23, stat_24, stat_25, stat_26, stat_27, stat_28, stat_29,
@@ -150,13 +149,18 @@ static PGM_P const PROGMEM stat_msg[] = {	// AVR/GCC version
 
 char *get_status_message(stat_t status)
 {
+	return(GET_TEXT_ITEM(stat_msg, status));
+/*
 #ifdef __AVR
-	strncpy_P(status_message,(PGM_P)pgm_read_word(&stat_msg[status]), STATUS_MESSAGE_LEN);
-	return (status_message);
+//	strncpy_P(status_message,(const char *)pgm_read_word(&stat_msg[status]), STATUS_MESSAGE_LEN);
+//	return (status_message);
+	return(strcpy_P(status_message,(const char *)pgm_read_word(&stat_msg[status])));
+
 #endif
 #ifdef __ARM
 	return ((char *)stat_msg[status]);
 #endif
+*/
 }
 
 /*
@@ -165,7 +169,7 @@ char *get_status_message(stat_t status)
  */
 void rpt_exception(uint8_t status, int16_t value)
 {
-	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\",\"val\":%d}}\n"), 
+	printf_P((const PROGMEM char *)("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\",\"val\":%d}}\n"), 
 		TINYG_FIRMWARE_BUILD, status, get_status_message(status), value);
 }
 
@@ -200,17 +204,17 @@ void _startup_helper(stat_t status, const char *msg)
 
 void rpt_print_initializing_message(void)
 {
-	_startup_helper(STAT_INITIALIZING, (const char_t *)INIT_MESSAGE);
+	_startup_helper(STAT_INITIALIZING, (const char_t PROGMEM *)INIT_MESSAGE);
 }
 
 void rpt_print_loading_configs_message(void)
 {
-	_startup_helper(STAT_INITIALIZING, (const char_t *)"Loading configs from EEPROM");
+	_startup_helper(STAT_INITIALIZING, (const char_t PROGMEM *)"Loading configs from EEPROM");
 }
 
 void rpt_print_system_ready_message(void)
 {
-	_startup_helper(STAT_OK, (const char_t *)"SYSTEM READY");
+	_startup_helper(STAT_OK, (const char_t PROGMEM *)"SYSTEM READY");
 	if (cfg.comm_mode == TEXT_MODE) { text_response(STAT_OK, (char_t *)"");}// prompt
 }
 
@@ -535,7 +539,7 @@ uint8_t qr_queue_report_callback()
 	cmd->nx = NULL;							// terminate the list
 
 	// make a qr object and print it
-	sprintf_P(cmd->token, PSTR("qr"));
+	sprintf_P(cmd->token, (const PROGMEM char *)("qr"));
 	cmd->value = qr.buffers_available;
 	cmd->objtype = TYPE_INTEGER;
 	cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);

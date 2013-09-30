@@ -48,7 +48,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.86	// Cleanup - UNTESTED
+#define TINYG_FIRMWARE_BUILD   		392.87	// Removing PSTRs for ARM compatibility - UNTESTED
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
@@ -92,10 +92,10 @@ typedef char char_t;				// see ARM for why this is here
 #define GET_TABLE_FLOAT(a) pgm_read_float(&cfgArray[cmd->index].a)	// get float value from cfgArray
 
 // get text from an array of strings in PGM and convert to RAM string
-#define GET_TEXT_ITEM(b,a) strcpy_P(status_message,(PGM_P)pgm_read_word(&b[a])) 
+#define GET_TEXT_ITEM(b,a) strcpy_P(status_message,(const char *)pgm_read_word(&b[a])) 
 
 // get units from array of strings in PGM and convert to RAM string
-#define GET_UNITS(a) 	   strcpy_P(status_message,(PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(a)]))
+#define GET_UNITS(a) 	   strcpy_P(status_message,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]))
 
 #endif // __AVR
 
@@ -103,13 +103,15 @@ typedef char char_t;				// see ARM for why this is here
  **** ARM Compatibility ************************************************************/
 #ifdef __ARM
 
-// Use macros to fake out AVR's PROGMEM and other AVRisms.
-#define PROGMEM						// ignore PROGMEM declarations in ARM/GCC++
-#define PSTR (const char *)			// AVR macro is:  PSTR(s) ((const PROGMEM char *)(s))
-#define PGM_P const char *			// USAGE: (PGM_P) -- must be used in a cast
+// Ignore <avr/pgmspace.h>'s  __ATTR_PROGMEM__ attributes in ARM/GCC++
+// Also, do not use PSTR or PGM_P. Instead use:
+//		PSTR is		(const PROGMEM char *)
+//		PGM_P is	 const char *
+#define PROGMEM
 
 // In the ARM/GCC++ version char_t is typedef'd to uint8_t because in C++ uint8_t and char
-// are distinct types and we want chars to behave as uint8's
+// are distinct types and we want chars to behave as uint8's. Except when they are destined
+// to be passed directly to a printf() family function, in which case why bother
 typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
 
 // The table getters rely on cmd->index having been set
@@ -139,10 +141,10 @@ typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
 #define strtod(d,p) strtod((char *)d, (char **)p)
 #define strtof(d,p) strtof((char *)d, (char **)p)
 #define strlen(s) strlen((char *)s)
-#define isdigit(c) isdigit((char) c)
-#define isalnum(c) isalnum((char) c)
-#define tolower(c) (char_t)tolower((char) c)
-#define toupper(c) (char_t)toupper((char) c)
+#define isdigit(c) isdigit((char)c)
+#define isalnum(c) isalnum((char)c)
+#define tolower(c) (char_t)tolower((char)c)
+#define toupper(c) (char_t)toupper((char)c)
 
 #define printf_P printf		// these functions want char * as inputs, not char_t *
 #define fprintf_P fprintf	// just sayin'

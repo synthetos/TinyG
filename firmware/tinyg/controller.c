@@ -189,7 +189,7 @@ static stat_t _command_dispatch()
 		// handle end-of-file from file devices
 		if (status == STAT_EOF) {					// EOF can come from file devices only
 			if (cfg.comm_mode == TEXT_MODE) {
-				fprintf_P(stderr, PSTR("End of command file\n"));
+				fprintf_P(stderr, (const PROGMEM char *)("End of command file\n"));
 			} else {
 				rpt_exception(STAT_EOF, 0);		// not really an exception
 			}
