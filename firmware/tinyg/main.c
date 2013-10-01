@@ -24,7 +24,6 @@
 #include "tinyg.h"				// #1 There are some dependencies
 #include "config.h"				// #2
 #include "hardware.h"
-#include "util.h"
 #include "controller.h"
 #include "canonical_machine.h"
 #include "json_parser.h"
@@ -38,12 +37,23 @@
 #include "gpio.h"
 #include "test.h"
 #include "pwm.h"
+#include "util.h"
 
 #include "xio/xio.h"
 #include "xmega/xmega_interrupts.h"
 #include "xmega/xmega_rtc.h"
 //#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
 
+#ifdef __cplusplus
+extern "C"{
+#endif // __cplusplus
+
+void _init() __attribute__ ((weak));
+void _init() {;}
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 static void _unit_tests(void);
 
@@ -184,8 +194,7 @@ static const char PROGMEM stat_71[] = "Soft limit exceeded";
 static const char PROGMEM stat_72[] = "Command not accepted";
 static const char PROGMEM stat_73[] = "Probing cycle failed";
 
-static PGM_P const PROGMEM stat_msg[] = {	// AVR/GCC version
-//static const char *stat_msg[] = {		// ARM/GCC++ version
+static const char PROGMEM *stat_msg[] = {
 	stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
 	stat_10, stat_11, stat_12, stat_13, stat_14, stat_15, stat_16, stat_17, stat_18, stat_19,
 	stat_20, stat_21, stat_22, stat_23, stat_24, stat_25, stat_26, stat_27, stat_28, stat_29,

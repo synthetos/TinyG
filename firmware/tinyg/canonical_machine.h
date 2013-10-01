@@ -479,8 +479,8 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 	AXIS_INHIBITED,					// axis is computed but not activated
 	AXIS_RADIUS,					// rotary axis calibrated to circumference
 };	// ordering must be preserved. See cm_set_move_times()
-#define AXIS_MAX_LINEAR AXIS_INHIBITED
-#define AXIS_MAX_ROTARY AXIS_RADIUS
+#define AXIS_MODE_MAX_LINEAR AXIS_INHIBITED
+#define AXIS_MODE_MAX_ROTARY AXIS_RADIUS
 
 /*****************************************************************************
  * FUNCTION PROTOTYPES
