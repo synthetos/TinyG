@@ -39,12 +39,18 @@
 #ifndef HARDWARE_H_ONCE
 #define HARDWARE_H_ONCE
 
+////////////////////////////
+/////// AVR VERSION ////////
+////////////////////////////
+
 #include "config.h"
 
 //#include "motatePins.h"
 //#include "motateTimers.h" // for Motate::timer_number
 
-/**** Global System Defines ****/
+/*************************
+ * Global System Defines *
+ *************************/
 
 #undef F_CPU							// CPU clock - set for delays
 #define F_CPU 32000000UL				// should always precede <avr/delay.h>
@@ -153,6 +159,32 @@ enum cfgPortBits {			// motor control port bit positions
 #define TIMER_5				TCC1		// unallocated timer
 #define TIMER_PWM1			TCD1		// PWM timer #1 (see pwm.c)
 #define TIMER_PWM2			TCE1		// PWM timer #2	(see pwm.c)
+
+/* Timer setup for stepper and dwells */
+
+#define F_DDA 				(float)50000	// DDA frequency in hz.
+#define F_DWELL				(float)10000	// Dwell count frequency in hz.
+#define SWI_PERIOD 			100				// cycles you have to shut off SW interrupt
+#define TIMER_PERIOD_MIN	(20)		// used to trap bad timer loads
+
+#define STEP_TIMER_TYPE		TC0_struct 		// stepper subsubstem uses all the TC0's
+#define STEP_TIMER_DISABLE 	0				// turn timer off (clock = 0 Hz)
+#define STEP_TIMER_ENABLE	1				// turn timer clock on (F_CPU = 32 Mhz)
+#define STEP_TIMER_WGMODE	0				// normal mode (count to TOP and rollover)
+
+#define TIMER_DDA_ISR_vect	TCC0_OVF_vect	// must agree with assignment in system.h
+#define TIMER_DWELL_ISR_vect TCD0_OVF_vect	// must agree with assignment in system.h
+#define TIMER_LOAD_ISR_vect	TCE0_OVF_vect	// must agree with assignment in system.h
+#define TIMER_EXEC_ISR_vect	TCF0_OVF_vect	// must agree with assignment in system.h
+
+#define TIMER_OVFINTLVL_HI	3				// timer interrupt level (3=hi)
+#define	TIMER_OVFINTLVL_MED 2;				// timer interrupt level (2=med)
+#define	TIMER_OVFINTLVL_LO  1;				// timer interrupt level (1=lo)
+
+#define TIMER_DDA_INTLVL 	TIMER_OVFINTLVL_HI
+#define TIMER_DWELL_INTLVL	TIMER_OVFINTLVL_HI
+#define TIMER_LOAD_INTLVL	TIMER_OVFINTLVL_HI
+#define TIMER_EXEC_INTLVL	TIMER_OVFINTLVL_LO
 
 
 /**** Device singleton - global structure to allow iteration through similar devices ****/

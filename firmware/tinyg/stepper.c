@@ -565,10 +565,10 @@ static void _set_microsteps(const uint8_t motor, const uint8_t microstep_mode)
  ***********************************************************************************/
 
 /*
- * st_get_motor() - helper to return motor number as an index or -1 if na
+ * _get_motor() - helper to return motor number as an index or -1 if na
  */
 
-int8_t st_get_motor(const index_t index)
+static int8_t _get_motor(const index_t index)
 {
 	char_t *ptr;
 	char_t motors[] = {"1234"};
@@ -588,7 +588,7 @@ int8_t st_get_motor(const index_t index)
 
 static void _set_motor_steps_per_unit(cmdObj_t *cmd) 
 {
-	uint8_t m = st_get_motor(cmd->index);
+	uint8_t m = _get_motor(cmd->index);
 	st.m[m].steps_per_unit = (360 / (st.m[m].step_angle / st.m[m].microsteps) / st.m[m].travel_rev);
 }
 
@@ -613,7 +613,7 @@ stat_t st_set_mi(cmdObj_t *cmd)			// motor microsteps
 	}
 	set_ui8(cmd);							// set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);
-	_set_microsteps(st_get_motor(cmd->index), (uint8_t)cmd->value);
+	_set_microsteps(_get_motor(cmd->index), (uint8_t)cmd->value);
 	return (STAT_OK);
 }
 
@@ -621,9 +621,9 @@ stat_t st_set_pm(cmdObj_t *cmd)			// motor power mode
 { 
 	ritorno (set_01(cmd));
 	if (fp_ZERO(cmd->value)) { // people asked this setting take effect immediately, hence:
-		_energize_motor(st_get_motor(cmd->index));
+		_energize_motor(_get_motor(cmd->index));
 	} else {
-		_deenergize_motor(st_get_motor(cmd->index));
+		_deenergize_motor(_get_motor(cmd->index));
 	}
 	return (STAT_OK);
 }

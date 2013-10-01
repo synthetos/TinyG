@@ -177,9 +177,10 @@
 #ifndef stepper_h
 #define stepper_h
 
-/*
- * Stepper configs and constants
- */
+/*********************************
+ * Stepper configs and constants *
+ *********************************/
+//See hardware.h for platform specific stepper definitions
 
 // Currently there is no distinction between IDLE and OFF (DEENERGIZED)
 // In the future IDLE will be powered at a low, torque-maintaining current
@@ -229,48 +230,8 @@ enum prepBufferState {
  */
 #define ACCUMULATOR_RESET_FACTOR 2	// amount counter range can safely change
 
-/* Platform specific */
-
-#ifdef __AVR
-
-#define F_DDA 				(float)50000	// DDA frequency in hz.
-#define F_DWELL				(float)10000	// Dwell count frequency in hz.
-#define SWI_PERIOD 			100				// cycles you have to shut off SW interrupt
-#define TIMER_PERIOD_MIN	(20)		// used to trap bad timer loads
-
-/* Xmega Timer setup */
-#define STEP_TIMER_TYPE		TC0_struct 		// stepper subsubstem uses all the TC0's
-#define STEP_TIMER_DISABLE 	0				// turn timer off (clock = 0 Hz)
-#define STEP_TIMER_ENABLE	1				// turn timer clock on (F_CPU = 32 Mhz)
-#define STEP_TIMER_WGMODE	0				// normal mode (count to TOP and rollover)
-
-#define TIMER_DDA_ISR_vect	TCC0_OVF_vect	// must agree with assignment in system.h
-#define TIMER_DWELL_ISR_vect TCD0_OVF_vect	// must agree with assignment in system.h
-#define TIMER_LOAD_ISR_vect	TCE0_OVF_vect	// must agree with assignment in system.h
-#define TIMER_EXEC_ISR_vect	TCF0_OVF_vect	// must agree with assignment in system.h
-
-#define TIMER_OVFINTLVL_HI	3				// timer interrupt level (3=hi)
-#define	TIMER_OVFINTLVL_MED 2;				// timer interrupt level (2=med)
-#define	TIMER_OVFINTLVL_LO  1;				// timer interrupt level (1=lo)
-
-#define TIMER_DDA_INTLVL 	TIMER_OVFINTLVL_HI
-#define TIMER_DWELL_INTLVL	TIMER_OVFINTLVL_HI
-#define TIMER_LOAD_INTLVL	TIMER_OVFINTLVL_HI
-#define TIMER_EXEC_INTLVL	TIMER_OVFINTLVL_LO
-#endif // __AVR
-
-#ifdef __ARM
-
-//#define FREQUENCY_DDA		50000UL
-#define FREQUENCY_DDA		100000UL
-#define FREQUENCY_DWELL		1000UL
-#define FREQUENCY_SGI		200000UL		// 200,000 Hz means software interrupts will fire 5 uSec after being called
-//#define _f_to_period(f) (uint16_t)((float)F_CPU / (float)f)		// handy macro
-
-#endif // __ARM
-
 /*
- * Stepper structures
+ * Stepper control structures
  *
  *	There are 4 sets of structures involved in this operation;
  *
@@ -346,19 +307,18 @@ extern stConfig_t st;
 void stepper_init(void);
 uint8_t stepper_isbusy(void);
 
-void st_set_motor_power(const uint8_t motor);
+uint16_t st_get_stepper_run_magic(void);
+uint16_t st_get_stepper_prep_magic(void);
+
 void st_energize_motors(void);
 void st_deenergize_motors(void);
+void st_set_motor_power(const uint8_t motor);
 stat_t st_motor_power_callback(void);
 
-uint8_t st_test_prep_state(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(float microseconds);
 stat_t st_prep_line(float steps[], float microseconds);
-
-uint16_t st_get_stepper_run_magic(void);
-uint16_t st_get_stepper_prep_magic(void);
 
 int8_t st_get_motor(const index_t index);
 
