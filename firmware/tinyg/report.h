@@ -93,7 +93,6 @@ extern qrSingleton_t qr;
 /**** Function Prototypes ****/
 // Note: If you are looking for the defaults for the status report see settings.h
 
-char *get_status_message(stat_t status);
 void rpt_print_message(char *msg);
 void rpt_exception(uint8_t status, int16_t value);
 stat_t rpt_er(cmdObj_t *cmd);

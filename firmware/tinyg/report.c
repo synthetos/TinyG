@@ -27,11 +27,9 @@
 
 #include "tinyg.h"
 #include "config.h"
-#include "controller.h"
 #include "report.h"
 #include "json_parser.h"
 #include "text_parser.h"
-#include "canonical_machine.h"
 #include "planner.h"
 #include "settings.h"
 #include "util.h"
@@ -47,119 +45,7 @@ extern "C"{
 srSingleton_t sr;
 qrSingleton_t qr;
 
-/**** Status and Exception Messages **************************************************
- * rpt_get_status_message() - return the status message
- * rpt_exception() - send an exception report (JSON formatted)
- *
- * See tinyg.h for status codes. These strings must align with the status codes in tinyg.h
- * The number of elements in the indexing array must match the # of strings
- *
- * Reference for putting display strings and string arrays in AVR program memory:
- * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
- */
-
-static const char PROGMEM stat_00[] = "OK";
-static const char PROGMEM stat_01[] = "Error";
-static const char PROGMEM stat_02[] = "Eagain";
-static const char PROGMEM stat_03[] = "Noop";
-static const char PROGMEM stat_04[] = "Complete";
-static const char PROGMEM stat_05[] = "Terminated";
-static const char PROGMEM stat_06[] = "Hard reset";
-static const char PROGMEM stat_07[] = "End of line";
-static const char PROGMEM stat_08[] = "End of file";
-static const char PROGMEM stat_09[] = "File not open";
-static const char PROGMEM stat_10[] = "Max file size exceeded";
-static const char PROGMEM stat_11[] = "No such device";
-static const char PROGMEM stat_12[] = "Buffer empty";
-static const char PROGMEM stat_13[] = "Buffer full";
-static const char PROGMEM stat_14[] = "Buffer full - fatal";
-static const char PROGMEM stat_15[] = "Initializing";
-static const char PROGMEM stat_16[] = "Entering boot loader";
-static const char PROGMEM stat_17[] = "Function is stubbed";
-static const char PROGMEM stat_18[] = "stat_18";
-static const char PROGMEM stat_19[] = "stat_19";
-
-static const char PROGMEM stat_20[] = "Internal error";
-static const char PROGMEM stat_21[] = "Internal range error";
-static const char PROGMEM stat_22[] = "Floating point error";
-static const char PROGMEM stat_23[] = "Divide by zero";
-static const char PROGMEM stat_24[] = "Invalid Address";
-static const char PROGMEM stat_25[] = "Read-only address";
-static const char PROGMEM stat_26[] = "Initialization failure";
-static const char PROGMEM stat_27[] = "System alarm - shutting down";
-static const char PROGMEM stat_28[] = "Memory fault or corruption";
-static const char PROGMEM stat_29[] = "stat_29";
-static const char PROGMEM stat_30[] = "stat_30";
-static const char PROGMEM stat_31[] = "stat_31";
-static const char PROGMEM stat_32[] = "stat_32";
-static const char PROGMEM stat_33[] = "stat_33";
-static const char PROGMEM stat_34[] = "stat_34";
-static const char PROGMEM stat_35[] = "stat_35";
-static const char PROGMEM stat_36[] = "stat_36";
-static const char PROGMEM stat_37[] = "stat_37";
-static const char PROGMEM stat_38[] = "stat_38";
-static const char PROGMEM stat_39[] = "stat_39";
-
-static const char PROGMEM stat_40[] = "Unrecognized command";
-static const char PROGMEM stat_41[] = "Expected command letter";
-static const char PROGMEM stat_42[] = "Bad number format";
-static const char PROGMEM stat_43[] = "Input exceeds max length";
-static const char PROGMEM stat_44[] = "Input value too small";
-static const char PROGMEM stat_45[] = "Input value too large";
-static const char PROGMEM stat_46[] = "Input value range error";
-static const char PROGMEM stat_47[] = "Input value unsupported";
-static const char PROGMEM stat_48[] = "JSON syntax error";
-static const char PROGMEM stat_49[] = "JSON input has too many pairs";	// current longest message: 30 chars
-static const char PROGMEM stat_50[] = "JSON output too long";
-static const char PROGMEM stat_51[] = "Out of buffer space";
-static const char PROGMEM stat_52[] = "Config rejected during cycle";
-static const char PROGMEM stat_53[] = "stat_53";
-static const char PROGMEM stat_54[] = "stat_54";
-static const char PROGMEM stat_55[] = "stat_55";
-static const char PROGMEM stat_56[] = "stat_56";
-static const char PROGMEM stat_57[] = "stat_57";
-static const char PROGMEM stat_58[] = "stat_58";
-static const char PROGMEM stat_59[] = "stat_59";
-
-static const char PROGMEM stat_60[] = "Move less than minimum length";
-static const char PROGMEM stat_61[] = "Move less than minimum time";
-static const char PROGMEM stat_62[] = "Gcode block skipped";
-static const char PROGMEM stat_63[] = "Gcode input error";
-static const char PROGMEM stat_64[] = "Gcode feedrate error";
-static const char PROGMEM stat_65[] = "Gcode axis word missing";
-static const char PROGMEM stat_66[] = "Gcode modal group violation";
-static const char PROGMEM stat_67[] = "Homing cycle failed";
-static const char PROGMEM stat_68[] = "Max travel exceeded";
-static const char PROGMEM stat_69[] = "Max spindle speed exceeded";
-static const char PROGMEM stat_70[] = "Arc specification error";
-static const char PROGMEM stat_71[] = "Soft limit exceeded";
-static const char PROGMEM stat_72[] = "Command not accepted";
-static const char PROGMEM stat_73[] = "Probing cycle failed";
-
-static PGM_P const PROGMEM stat_msg[] = {	// AVR/GCC version
-//static const char *stat_msg[] = {		// ARM/GCC++ version
-	stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
-	stat_10, stat_11, stat_12, stat_13, stat_14, stat_15, stat_16, stat_17, stat_18, stat_19,
-	stat_20, stat_21, stat_22, stat_23, stat_24, stat_25, stat_26, stat_27, stat_28, stat_29,
-	stat_30, stat_31, stat_32, stat_33, stat_34, stat_35, stat_36, stat_37, stat_38, stat_39,
-	stat_40, stat_41, stat_42, stat_43, stat_44, stat_45, stat_46, stat_47, stat_48, stat_49,
-	stat_50, stat_51, stat_52, stat_53, stat_54, stat_55, stat_56, stat_57, stat_58, stat_59,
-	stat_60, stat_61, stat_62, stat_63, stat_64, stat_65, stat_66, stat_67, stat_68, stat_69,
-	stat_70, stat_71, stat_72, stat_73
-};
-
-char *get_status_message(stat_t status)
-{
-#ifdef __AVR
-	strncpy_P(status_message,(PGM_P)pgm_read_word(&stat_msg[status]), STATUS_MESSAGE_LEN);
-	return (status_message);
-#endif
-#ifdef __ARM
-	return ((char *)stat_msg[status]);
-#endif
-}
-
-/*
+/**** Exception Messages ************************************************************
  * rpt_exception() - generate an exception message - always in JSON format
  * rpt_er()		   - send a bogus exception report for testing purposes (it's not real)
  */

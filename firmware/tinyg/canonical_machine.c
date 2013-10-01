@@ -1568,11 +1568,13 @@ stat_t _get_msg_helper(cmdObj_t *cmd, const char *msg_array[], uint8_t value)
 {
 	cmd->value = (float)value;
 	cmd->objtype = TYPE_INTEGER;
-	
+	return(cmd_copy_string(cmd, (const char_t *)GET_TEXT_ITEM(msg_array, value)));
+/*	
 #ifdef __TEXT_MODE
 	#ifdef __AVR
 		char buf[CMD_SHARED_STRING_LEN];
-		strncpy_P(buf, (PGM_P)pgm_read_word(&msg_array[value*2]), CMD_SHARED_STRING_LEN);// hack alert: direct computation of index
+//		strncpy_P(buf, (PGM_P)pgm_read_word(&msg_array[value*2]), CMD_SHARED_STRING_LEN);// hack alert: direct computation of index
+		strncpy_P(buf, (PGM_P)pgm_read_word(&msg_array[value]), CMD_SHARED_STRING_LEN);// hack alert: direct computation of index
 		return(cmd_copy_string(cmd, buf));
 	#endif // __AVR
 	#ifdef __ARM
@@ -1581,6 +1583,7 @@ stat_t _get_msg_helper(cmdObj_t *cmd, const char *msg_array[], uint8_t value)
 #else // __TEXT_MODE
 	return (STAT_OK);
 #endif // __TEXT_MODE
+*/
 }
 
 // Example of cm_get_stat() w/o calling the helper routine - See 331.09 for original routines

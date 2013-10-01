@@ -47,7 +47,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.88	// Reverted to 392.86
+#define TINYG_FIRMWARE_BUILD   		392.89	// Work on status messages
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
@@ -78,8 +78,9 @@
 //#undef __ARM
 //#define __ARM
 
-/************************************************************************************
- **** AVR Compatibility *************************************************************/
+/*********************
+ * AVR Compatibility *
+ *********************/
 #ifdef __AVR
 #include <avr/pgmspace.h>			// defines PROGMEM, PSTR, PGM_P (must be first)
 
@@ -91,15 +92,16 @@ typedef char char_t;				// see ARM for why this is here
 #define GET_TABLE_FLOAT(a) pgm_read_float(&cfgArray[cmd->index].a)	// get float value from cfgArray
 
 // get text from an array of strings in PGM and convert to RAM string
-#define GET_TEXT_ITEM(b,a) strcpy_P(status_message,(PGM_P)pgm_read_word(&b[a])) 
+#define GET_TEXT_ITEM(b,a) strcpy_P(shared_buf,(PGM_P)pgm_read_word(&b[a])) 
 
 // get units from array of strings in PGM and convert to RAM string
-#define GET_UNITS(a) 	   strcpy_P(status_message,(PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(a)]))
+#define GET_UNITS(a) 	   strcpy_P(shared_buf,(PGM_P)pgm_read_word(&msg_units[cm_get_units_mode(a)]))
 
 #endif // __AVR
 
-/************************************************************************************
- **** ARM Compatibility ************************************************************/
+/*********************
+ * ARM Compatibility *
+ *********************/
 #ifdef __ARM
 
 // Use macros to fake out AVR's PROGMEM and other AVRisms.
@@ -116,7 +118,7 @@ typedef uint8_t char_t;				// C++ version uses uint8_t as char_t
 #define GET_TABLE_BYTE(a)  cfgArray[cmd->index].a	// get byte value from cfgArray
 #define GET_TABLE_FLOAT(a) cfgArray[cmd->index].a	// get byte value from cfgArray
 
-#define GET_TEXT_ITEM(b,a) b[a]						// get text from an array of strings in PGM
+#define GET_TEXT_ITEM(b,a) b[a]						// get text from an array of strings in flash
 #define GET_UNITS(a) msg_units[cm_get_units_mode(a)]
 
 /* The ARM stdio functions we are using still use char as input and output. The macros 
@@ -191,7 +193,7 @@ typedef uint16_t magic_t;		// magic number size
 #define PWM_2	1
 
 
-/* 
+/************************************************************************************ 
  * STATUS CODES
  *
  * The first code range (0-19) is aligned with the XIO codes and must be so.
@@ -207,8 +209,10 @@ typedef uint16_t magic_t;		// magic number size
 typedef uint8_t stat_t;
 #define STATUS_MESSAGE_LEN 48			// status message string storage allocation
 
-extern stat_t status_code;				// declared in main.c
-extern char status_message[];			// declared in main.c
+extern stat_t status_code;				// allocated in main.c
+extern char shared_buf[];				// allocated in main.c
+
+char *get_status_message(stat_t status);
 
 #define ritorno(a) if((status_code=a) != STAT_OK) { return(status_code); }
 
