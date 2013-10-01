@@ -673,20 +673,21 @@ static stat_t run_sx(cmdObj_t *cmd)
  *	Then it performs the callback to apply the new baud rate
  */
 
-static const char  PROGMEM msg_baud0[] = "0";
-static const char  PROGMEM msg_baud1[] = "9600";
-static const char  PROGMEM msg_baud2[] = "19200";
-static const char  PROGMEM msg_baud3[] = "38400";
-static const char  PROGMEM msg_baud4[] = "57600";
-static const char  PROGMEM msg_baud5[] = "115200";
-static const char  PROGMEM msg_baud6[] = "230400";
-static PGM_P const PROGMEM msg_baud[] = { msg_baud0, msg_baud1, msg_baud2, msg_baud3, msg_baud4, msg_baud5, msg_baud6 };
+static const char PROGMEM msg_baud0[] = "0";
+static const char PROGMEM msg_baud1[] = "9600";
+static const char PROGMEM msg_baud2[] = "19200";
+static const char PROGMEM msg_baud3[] = "38400";
+static const char PROGMEM msg_baud4[] = "57600";
+static const char PROGMEM msg_baud5[] = "115200";
+static const char PROGMEM msg_baud6[] = "230400";
+static const char PROGMEM *msg_baud[] = { msg_baud0, msg_baud1, msg_baud2, msg_baud3, msg_baud4, msg_baud5, msg_baud6 };
 
 static stat_t set_baud(cmdObj_t *cmd)
 {
 	uint8_t baud = (uint8_t)cmd->value;
 	if ((baud < 1) || (baud > 6)) {
-		cmd_add_conditional_message((const char_t *)"*** WARNING *** Unsupported baud rate specified");
+//		cmd_add_conditional_message((const char_t *)"*** WARNING *** Unsupported baud rate specified");
+		cmd_add_conditional_message(PSTR("*** WARNING *** Unsupported baud rate specified"));
 		return (STAT_INPUT_VALUE_UNSUPPORTED);
 	}
 	cfg.usb_baud_rate = baud;

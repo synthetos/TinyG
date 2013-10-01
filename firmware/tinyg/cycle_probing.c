@@ -226,29 +226,6 @@ static stat_t _probing_error_exit(int8_t axis)
 	cm.cycle_state = CYCLE_OFF;
 	cm_cycle_end();
 	return (STAT_PROBING_CYCLE_FAILED);
-
-
-/* Rob's code:
-	cmd_reset_list();
-	char message[CMD_MESSAGE_LEN]; 
-	if (axis == -2) {
-		sprintf_P(message, PSTR("*** WARNING *** Probing error: Specified axis(es) cannot use probe"));
-	} else {
-		sprintf_P(message, PSTR("*** WARNING *** Probing error: %S axis settings misconfigured"), (PGM_P)pgm_read_word(&msg_axis[axis]));
-	}
-//	cmd_add_string((const char_t *)"msg",message);
-	cmd_add_message(message);
-	cmd_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_INLINE_PAIRS, JSON_RESPONSE_FORMAT);
-
-	mp_flush_planner(); 						// should be stopped, but in case of switch closure
-	cm_set_coord_system(pb.saved_coord_system);	// restore to work coordinate system
-	cm_set_units_mode(pb.saved_units_mode);
-	cm_set_distance_mode(pb.saved_distance_mode);
-	cm_set_feed_rate(pb.saved_feed_rate);
-	cm_set_motion_mode(MOTION_MODE_CANCEL_MOTION_MODE);
-	cm.cycle_state = CYCLE_OFF;
-	return (STAT_PROBING_CYCLE_FAILED);
-*/
 }
 
 /* Homing axis moves - these execute in sequence for each axis

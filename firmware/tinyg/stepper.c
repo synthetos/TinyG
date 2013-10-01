@@ -654,10 +654,10 @@ stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initia
 
 #ifdef __TEXT_MODE
 
-static const char  PROGMEM msg_units0[] = " in";	// used by generic print functions
-static const char  PROGMEM msg_units1[] = " mm";
-static const char  PROGMEM msg_units2[] = " deg";
-static PGM_P const PROGMEM msg_units[] = { msg_units0, msg_units1, msg_units2 };
+static const char PROGMEM msg_units0[] = " in";	// used by generic print functions
+static const char PROGMEM msg_units1[] = " mm";
+static const char PROGMEM msg_units2[] = " deg";
+static const char PROGMEM *msg_units[] = { msg_units0, msg_units1, msg_units2 };
 #define DEGREE_INDEX 2
 
 const char PROGMEM fmt_mt[] = "[mt]  motor idle timeout%14.2f Sec\n";
