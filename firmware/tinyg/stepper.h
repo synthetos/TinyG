@@ -207,10 +207,9 @@ enum prepBufferState {
 
 // Stepper power management settings
 // Min/Max timeouts allowed for motor disable. Allow for inertial stop; must be non-zero
-#define IDLE_TIMEOUT_SECONDS_MIN 	0.1			 // seconds !!! SHOULD NEVER BE ZERO !!!
-//#define IDLE_TIMEOUT_SECONDS_MAX   (4294967295/1000) // for conversion to uint32_t
-#define IDLE_TIMEOUT_SECONDS_MAX	4294967UL	// (4294967295/1000) -- for conversion to uint32_t
-#define IDLE_TIMEOUT_SECONDS 		0.1			// seconds in DISABLE_AXIS_WHEN_IDLE mode
+#define IDLE_TIMEOUT_SECONDS_MIN 	(float)0.1		// seconds !!! SHOULD NEVER BE ZERO !!!
+#define IDLE_TIMEOUT_SECONDS_MAX	(float)4294967	// (4294967295/1000) -- for conversion to uint32_t
+#define IDLE_TIMEOUT_SECONDS 		(float)0.1		// seconds in DISABLE_AXIS_WHEN_IDLE mode
 
 /* DDA substepping
  * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping.
@@ -230,15 +229,16 @@ enum prepBufferState {
  */
 #define ACCUMULATOR_RESET_FACTOR 2	// amount counter range can safely change
 
-/* Timer settings for stepper module. See system.h for timer assignments
- */
-#define F_DDA 		(float)50000			// DDA frequency in hz.
-#define F_DWELL		(float)10000			// Dwell count frequency in hz.
-#define SWI_PERIOD 	100						// cycles you have to shut off SW interrupt
-#define TIMER_PERIOD_MIN (20)				// used to trap bad timer loads
+/* Platform specific */
 
-/* Xmega Timer setup
- */
+#ifdef __AVR
+
+#define F_DDA 				(float)50000	// DDA frequency in hz.
+#define F_DWELL				(float)10000	// Dwell count frequency in hz.
+#define SWI_PERIOD 			100				// cycles you have to shut off SW interrupt
+#define TIMER_PERIOD_MIN	(20)		// used to trap bad timer loads
+
+/* Xmega Timer setup */
 #define STEP_TIMER_TYPE		TC0_struct 		// stepper subsubstem uses all the TC0's
 #define STEP_TIMER_DISABLE 	0				// turn timer off (clock = 0 Hz)
 #define STEP_TIMER_ENABLE	1				// turn timer clock on (F_CPU = 32 Mhz)
@@ -257,6 +257,17 @@ enum prepBufferState {
 #define TIMER_DWELL_INTLVL	TIMER_OVFINTLVL_HI
 #define TIMER_LOAD_INTLVL	TIMER_OVFINTLVL_HI
 #define TIMER_EXEC_INTLVL	TIMER_OVFINTLVL_LO
+#endif // __AVR
+
+#ifdef __ARM
+
+//#define FREQUENCY_DDA		50000UL
+#define FREQUENCY_DDA		100000UL
+#define FREQUENCY_DWELL		1000UL
+#define FREQUENCY_SGI		200000UL		// 200,000 Hz means software interrupts will fire 5 uSec after being called
+//#define _f_to_period(f) (uint16_t)((float)F_CPU / (float)f)		// handy macro
+
+#endif // __ARM
 
 /*
  * Stepper structures

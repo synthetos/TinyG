@@ -168,7 +168,6 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 	gm.motion_mode = motion_mode;
 
 	// trap zero feed rate condition
-//	if ((gm.inverse_feed_rate_mode == false) && (gm.feed_rate == 0)) {
 	if ((gm.inverse_feed_rate_mode == false) && (fp_ZERO(gm.feed_rate))) {	
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
@@ -239,7 +238,6 @@ static stat_t _compute_center_arc()
 	// compute angular travel and invert if gcode wants a counterclockwise arc
 	// if angular travel is zero interpret it as a full circle
 	float angular_travel = theta_end - theta_start;
-//	if (angular_travel == 0) {
 	if (fp_ZERO(angular_travel)) {		
 		if (gm.motion_mode == MOTION_MODE_CCW_ARC) { 
 			angular_travel -= 2*M_PI;

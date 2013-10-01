@@ -672,7 +672,6 @@ static stat_t run_sx(cmdObj_t *cmd)
  *	Then it waits for the TX buffer to empty (so the message is sent)
  *	Then it performs the callback to apply the new baud rate
  */
-
 static const char PROGMEM msg_baud0[] = "0";
 static const char PROGMEM msg_baud1[] = "9600";
 static const char PROGMEM msg_baud2[] = "19200";

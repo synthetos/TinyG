@@ -47,7 +47,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.91	// Removed PGM_P references - UNTESTED
+#define TINYG_FIRMWARE_BUILD   		392.92	// Stepper.h alignment - UNTESTED
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
