@@ -1394,6 +1394,7 @@ static const char PROGMEM msg_am01[] = "[standard]";
 static const char PROGMEM msg_am02[] = "[inhibited]";
 static const char PROGMEM msg_am03[] = "[radius]";
 static const char PROGMEM *msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03};
+//static PGM_P const PROGMEM msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03};
 
 static const char PROGMEM msg_g20[] = "G20 - inches mode";
 static const char PROGMEM msg_g21[] = "G21 - millimeter mode";

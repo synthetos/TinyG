@@ -150,6 +150,12 @@
     <Compile Include="gpio.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="hardware.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="hardware.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="help.c">
       <SubType>compile</SubType>
     </Compile>
@@ -259,12 +265,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="switch.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="system.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="system.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="test.c">

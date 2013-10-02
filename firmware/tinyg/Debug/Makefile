@@ -48,6 +48,7 @@ C_SRCS +=  \
 ../cycle_probing.c \
 ../gcode_parser.c \
 ../gpio.c \
+../hardware.c \
 ../help.c \
 ../json_parser.c \
 ../kinematics.c \
@@ -61,7 +62,6 @@ C_SRCS +=  \
 ../spindle.c \
 ../stepper.c \
 ../switch.c \
-../system.c \
 ../test.c \
 ../text_parser.c \
 ../util.c \
@@ -93,6 +93,7 @@ cycle_homing.o \
 cycle_probing.o \
 gcode_parser.o \
 gpio.o \
+hardware.o \
 help.o \
 json_parser.o \
 kinematics.o \
@@ -106,7 +107,6 @@ report.o \
 spindle.o \
 stepper.o \
 switch.o \
-system.o \
 test.o \
 text_parser.o \
 util.o \
@@ -132,6 +132,7 @@ cycle_homing.o \
 cycle_probing.o \
 gcode_parser.o \
 gpio.o \
+hardware.o \
 help.o \
 json_parser.o \
 kinematics.o \
@@ -145,7 +146,6 @@ report.o \
 spindle.o \
 stepper.o \
 switch.o \
-system.o \
 test.o \
 text_parser.o \
 util.o \
@@ -171,6 +171,7 @@ cycle_homing.d \
 cycle_probing.d \
 gcode_parser.d \
 gpio.d \
+hardware.d \
 help.d \
 json_parser.d \
 kinematics.d \
@@ -184,7 +185,6 @@ report.d \
 spindle.d \
 stepper.d \
 switch.d \
-system.d \
 test.d \
 text_parser.d \
 util.d \
@@ -210,6 +210,7 @@ cycle_homing.d \
 cycle_probing.d \
 gcode_parser.d \
 gpio.d \
+hardware.d \
 help.d \
 json_parser.d \
 kinematics.d \
@@ -223,7 +224,6 @@ report.d \
 spindle.d \
 stepper.d \
 switch.d \
-system.d \
 test.d \
 text_parser.d \
 util.d \

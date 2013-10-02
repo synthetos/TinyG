@@ -991,7 +991,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		if (cm.hold_state == FEEDHOLD_HOLD) { return (STAT_NOOP);}// stops here if holding
 
 		// initialization to process the new incoming bf buffer
-		memcpy(&mr.gm, &bf->gm, sizeof(GCodeState_t));	// copy in the gcode model state
+		memcpy(&mr.gm, &(bf->gm), sizeof(GCodeState_t));	// copy in the gcode model state
 		bf->replannable = false;
 		if (fp_ZERO(bf->length)) {
 			mr.move_state = MOVE_STATE_OFF;				// reset mr buffer

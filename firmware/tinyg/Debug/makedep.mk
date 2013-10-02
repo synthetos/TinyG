@@ -18,6 +18,8 @@ gcode_parser.c
 
 gpio.c
 
+hardware.c
+
 help.c
 
 json_parser.c
@@ -43,8 +45,6 @@ spindle.c
 stepper.c
 
 switch.c
-
-system.c
 
 test.c
 

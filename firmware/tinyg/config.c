@@ -206,7 +206,6 @@ stat_t set_nul(cmdObj_t *cmd) { return (STAT_NOOP);}
 
 stat_t set_ui8(cmdObj_t *cmd)
 {
-//	*((uint8_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	*((uint8_t *)GET_TABLE_WORD(target)) = cmd->value;
 	cmd->objtype = TYPE_INTEGER;
 	return(STAT_OK);
@@ -232,7 +231,6 @@ stat_t set_0123(cmdObj_t *cmd)
 
 stat_t set_int(cmdObj_t *cmd)
 {
-//	*((uint32_t *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
 	*((uint32_t *)GET_TABLE_WORD(target)) = cmd->value;
 	cmd->objtype = TYPE_INTEGER;
 	return(STAT_OK);
@@ -240,9 +238,6 @@ stat_t set_int(cmdObj_t *cmd)
 
 stat_t set_flt(cmdObj_t *cmd)
 {
-//	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = cmd->value;
-//	cmd->precision = (int8_t)pgm_read_word(&cfgArray[cmd->index].precision);
-
 	*((float *)GET_TABLE_WORD(target)) = cmd->value;
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
@@ -277,10 +272,6 @@ stat_t set_flu(cmdObj_t *cmd)
 {
 	float tmp_value = cmd->value;
 	if (cm_get_units_mode(MODEL) == INCHES) tmp_value *= MM_PER_INCH; // convert to canonical units
-
-//	*((float *)pgm_read_word(&cfgArray[cmd->index].target)) = tmp_value;
-//	cmd->precision = (int8_t)GET_TABLE_WORD(precision);
-
 	*((float *)GET_TABLE_WORD(target)) = tmp_value;
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
