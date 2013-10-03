@@ -17,8 +17,8 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef xmega_rtc_h
-#define xmga_rtc_h
+#ifndef XMEGA_RTC_H_ONCE
+#define XMEGA_RTC_H_ONCE
 
 #define RTC_MILLISECONDS 10							// interrupt on every 10 RTC ticks (~10 ms)
 
@@ -39,4 +39,4 @@ extern rtClock_t rtc;
 void rtc_init(void);								// initialize and start general timer
 uint32_t SysTickTimer_getValue();					// *** this will become a Motate object method
 
-#endif
+#endif // End of include guard: XMEGA_RTC_H_ONCE
