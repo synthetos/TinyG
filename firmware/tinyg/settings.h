@@ -77,7 +77,7 @@
 
 /**** MACHINE PROFILES ******************************************************/
 
-// machine default profiles - chose only one:
+// machine default profiles - choose only one:
 
 #include "settings/settings_default.h"					// Default settings for release
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
