@@ -1670,8 +1670,8 @@ stat_t cm_set_am(cmdObj_t *cmd)		// axis mode
  *
  *	Jerk values are stored in the system in "raw" format. This makes for some pretty big 
  *	numbers for people to deal with. These functions will accept raw jerk numbers or if they 
- *	Are less than 1,000,000 they rae bumped in and out of raw form. JSON mode always
- *	reports full raw jerk values, but will accept either form
+ *	Are less than 1,000,000 they are bumped in and out of raw form. JSON mode always
+ *	reports full raw jerk values, but will accept either form.
  */
 stat_t cm_get_jrk(cmdObj_t *cmd)
 {
@@ -1852,12 +1852,18 @@ static void _print_axis_coord_flt(cmdObj_t *cmd, const char *format)
 	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->token, cmd->value, units);
 }
 
-void _print_pos(cmdObj_t *cmd, const char *format, uint8_t units)
+static void _print_pos(cmdObj_t *cmd, const char *format, uint8_t units)
 {
 	char axes[] = {"XYZABC"};
 	uint8_t axis = _get_axis(cmd->index);
 	if (axis >= AXIS_A) { units = DEGREES;}
 	fprintf_P(stderr, format, axes[axis], cmd->value, GET_TEXT_ITEM(msg_units, units));
+}
+
+void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
+{
+	fprintf_P(stderr, fmt_Xam, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
+	GET_TEXT_ITEM(msg_am, (uint8_t)cmd->value));
 }
 
 void cm_print_fr(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xfr);}
@@ -1879,12 +1885,6 @@ void cm_print_cpos(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cpos);}
 
 void cm_print_pos(cmdObj_t *cmd) { _print_pos(cmd, fmt_pos, cm_get_units_mode(MODEL));}
 void cm_print_mpo(cmdObj_t *cmd) { _print_pos(cmd, fmt_mpo, MILLIMETERS);}
-
-void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
-{
-	fprintf_P(stderr, fmt_Xam, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
-					  GET_TEXT_ITEM(msg_am, (uint8_t)cmd->value));
-}
 
 #endif // __TEXT_MODE
 

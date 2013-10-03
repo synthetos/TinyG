@@ -75,11 +75,12 @@ void _startup_helper(stat_t status, const char *msg)
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
 	cmd_reset_list();
-	cmd_add_object((const char_t *)"fb");
-	cmd_add_object((const char_t *)"fv");
-	cmd_add_object((const char_t *)"hv");
-	cmd_add_object((const char_t *)"id");
-	cmd_add_string((const char_t *)"msg", (const char_t *)msg);	
+	cmd_add_object((const char_t *)"fv");		// firmware version
+	cmd_add_object((const char_t *)"fb");		// firmware build
+	cmd_add_object((const char_t *)"hp");		// hardware platform
+	cmd_add_object((const char_t *)"hv");		// hardware version
+	cmd_add_object((const char_t *)"id");		// hardware ID
+	cmd_add_string((const char_t *)"msg", (const char_t *)msg);	// startup message
 	json_print_response(status);
 #endif
 }

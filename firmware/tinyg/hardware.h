@@ -235,7 +235,7 @@ stat_t hw_get_id(cmdObj_t *cmd);
 
 	void hw_print_fb(cmdObj_t *cmd);
 	void hw_print_fv(cmdObj_t *cmd);
-//	void hw_print_hp(cmdObj_t *cmd);
+	void hw_print_hp(cmdObj_t *cmd);
 	void hw_print_hv(cmdObj_t *cmd);
 	void hw_print_id(cmdObj_t *cmd);
 
@@ -243,7 +243,7 @@ stat_t hw_get_id(cmdObj_t *cmd);
 
 	#define hw_print_fb tx_print_stub
 	#define hw_print_fv tx_print_stub
-//	#define hw_print_hp tx_print_stub
+	#define hw_print_hp tx_print_stub
 	#define hw_print_hv tx_print_stub
 	#define hw_print_id tx_print_stub
 

@@ -230,13 +230,13 @@ stat_t hw_set_hv(cmdObj_t *cmd)
 
 const char PROGMEM fmt_fb[] = "[fb]  firmware build%18.2f\n";
 const char PROGMEM fmt_fv[] = "[fv]  firmware version%16.2f\n";
-//const char PROGMEM fmt_hp[] = "[hp]  hardware platform%15.2f\n";
+const char PROGMEM fmt_hp[] = "[hp]  hardware platform%15.2f\n";
 const char PROGMEM fmt_hv[] = "[hv]  hardware version%16.2f\n";
 const char PROGMEM fmt_id[] = "[id]  TinyG ID%30s\n";
 
 void hw_print_fb(cmdObj_t *cmd) { text_print_flt(cmd, fmt_fb);}
 void hw_print_fv(cmdObj_t *cmd) { text_print_flt(cmd, fmt_fv);}
-//void hw_print_hp(cmdObj_t *cmd) { text_print_flt(cmd, fmt_hp);}
+void hw_print_hp(cmdObj_t *cmd) { text_print_flt(cmd, fmt_hp);}
 void hw_print_hv(cmdObj_t *cmd) { text_print_flt(cmd, fmt_hv);}
 void hw_print_id(cmdObj_t *cmd) { text_print_str(cmd, fmt_id);}
 

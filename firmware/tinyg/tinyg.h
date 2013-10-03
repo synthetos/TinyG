@@ -47,7 +47,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.95	// Fixed bug in jerk display in text mode
+#define TINYG_FIRMWARE_BUILD   		392.96	// Added hardware platform value as'hp' parameter, also added to startup strings
 #define TINYG_FIRMWARE_VERSION		0.97	// major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
