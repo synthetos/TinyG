@@ -36,6 +36,7 @@
  *  LO	Serial TX for USB & RS-485			(set in xio_usart.h)
  *	LO	Real time clock interrupt			(set in xmega_rtc.h)
  */
+
 #ifndef HARDWARE_H_ONCE
 #define HARDWARE_H_ONCE
 
@@ -44,9 +45,12 @@
 ////////////////////////////
 
 #include "config.h"
+#include <avr/interrupt.h>
+#include "xmega/xmega_rtc.h"			// Xmega only. Goes away with RTC refactoring
 
+// uncomment once motate Xmega port is available
 //#include "motatePins.h"
-//#include "motateTimers.h" // for Motate::timer_number
+//#include "motateTimers.h"				// for Motate::timer_number
 
 /*************************
  * Global System Defines *

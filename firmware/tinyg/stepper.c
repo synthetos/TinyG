@@ -48,10 +48,9 @@
 
 //#include "motatePins.h"		// defined in hardware.h   Not needed here
 //#include "motateTimers.h"
-//#include "hardware.h"
 
-#include <avr/interrupt.h>
-#include "xmega/xmega_rtc.h"	// Xmega only. Goes away with RTC refactoring
+//#include <avr/interrupt.h>
+//#include "xmega/xmega_rtc.h"	// Xmega only. Goes away with RTC refactoring
 
 //#define ENABLE_DIAGNOSTICS
 #ifdef ENABLE_DIAGNOSTICS

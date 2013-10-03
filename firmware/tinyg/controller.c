@@ -49,8 +49,8 @@
 #include "util.h"
 #include "help.h"
 #include "xio/xio.h"
-#include "xmega/xmega_rtc.h"
 #include "xmega/xmega_init.h"
+//#include "xmega/xmega_rtc.h"	// included via hardware.h
 
 // local helpers
 static void _controller_HSM(void);

@@ -28,6 +28,8 @@
 #include "../stepper.h"
 #include "xmega_rtc.h"
 
+rtClock_t rtc;		// allocate clock control struct
+
 /* 
  * rtc_init() - initialize and start the clock
  *

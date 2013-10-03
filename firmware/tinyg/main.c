@@ -41,7 +41,7 @@
 
 #include "xio/xio.h"
 #include "xmega/xmega_interrupts.h"
-#include "xmega/xmega_rtc.h"
+//#include "xmega/xmega_rtc.h"		// included via hardware.h
 //#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
 
 #ifdef __cplusplus
