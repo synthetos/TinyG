@@ -41,7 +41,7 @@ enum cmdType {						// classification of commands
  **** APPLICATION_SPECIFIC CONFIG STRUCTURE(S) *************************************
  ***********************************************************************************/
 
-typedef struct cfgParameters {
+typedef struct cfgParameters {		// mostly communciations variables at this point
 	uint16_t magic_start;			// magic number to test memory integrity
 
 	// communications settings
@@ -51,12 +51,10 @@ typedef struct cfgParameters {
 	uint8_t enable_flow_control;	// enable XON/XOFF or RTS/CTS flow control
 //	uint8_t ignore_crlf;			// ignore CR or LF on RX --- these 4 are shadow settings for XIO cntrl bits
 
+	uint8_t jerk_million_flag;		// flag set internnally to 1 to divide by 1 million, 0 to not
+
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
-
-	// Non-volatile RAM
-//	uint16_t nvm_base_addr;			// NVM base address
-//	uint16_t nvm_profile_base;		// NVM base address of current profile
 
 	uint16_t magic_end;
 } cfgParameters_t;
