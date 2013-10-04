@@ -595,9 +595,9 @@ void canonical_machine_init()
 }
 
 /*
- * canonical_machine_alarm() - alarm state; shut down machine
+ * cm_alarm() - alarm state; send an exception report and shut down machine
  */
-void canonical_machine_alarm(uint8_t value)
+stat_t cm_alarm(stat_t status)
 {
 	// stop the steppers and the spindle
 	st_deenergize_motors();
@@ -610,22 +610,20 @@ void canonical_machine_alarm(uint8_t value)
 //	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
-	rpt_exception(STAT_ALARMED,value);		// send shutdown message
+	rpt_exception(status);					// send shutdown message
 	cm.machine_state = MACHINE_ALARM;
+	return (status);
 }
 
 /*
  * cm_assertions() - test assertions, return error code if violation exists
- *
- *	Returns status code (0 if everything is OK) 
- *	and sets a value if there is a failure.
  */
-stat_t cm_assertions(uint8_t *value)
+stat_t cm_assertions()
 {
-	if (cm.magic_start != MAGICNUM) *value = 3;
-	if (cm.magic_end   != MAGICNUM) *value = 4;
-
-	if (*value != 0) { return (STAT_MEMORY_FAULT); }
+	if ((cm.magic_start 	!= MAGICNUM) || (cm.magic_end 	  != MAGICNUM)) return (STAT_MEMORY_FAULT);
+	if ((gmx.magic_start 	!= MAGICNUM) || (gmx.magic_end 	  != MAGICNUM)) return (STAT_MEMORY_FAULT);
+	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end 	  != MAGICNUM)) return (STAT_MEMORY_FAULT);
+	if ((cmdStr.magic_start != MAGICNUM) || (cmdStr.magic_end != MAGICNUM)) return (STAT_MEMORY_FAULT);
 	return (STAT_OK);
 }
 

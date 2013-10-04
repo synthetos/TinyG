@@ -49,15 +49,19 @@ qrSingleton_t qr;
  * rpt_exception() - generate an exception message - always in JSON format
  * rpt_er()		   - send a bogus exception report for testing purposes (it's not real)
  */
-void rpt_exception(uint8_t status, int16_t value)
+//void rpt_exception(uint8_t status, int16_t value)
+void rpt_exception(uint8_t status)
 {
-	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\",\"val\":%d}}\n"), 
-		TINYG_FIRMWARE_BUILD, status, get_status_message(status), value);
+	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\"}}\n"), 
+		TINYG_FIRMWARE_BUILD, status, get_status_message(status));
+
+//	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\",\"val\":%d}}\n"), 
+//		TINYG_FIRMWARE_BUILD, status, get_status_message(status), value);
 }
 
 stat_t rpt_er(cmdObj_t *cmd) 
 {
-	rpt_exception(STAT_INTERNAL_ERROR, 42);	// bogus exception report
+	rpt_exception(STAT_GENERIC_EXCEPTION_REPORT);	// bogus exception report
 	return (STAT_OK);
 }
 
@@ -272,7 +276,7 @@ stat_t sr_populate_unfiltered_status_report()
 		strcat(tmp, cmd->token);
 		strcpy(cmd->token, tmp);
 		if ((cmd = cmd->nx) == NULL) 
-			return (STAT_OK);				 // should never be NULL unless SR length exceeds available buffer array 
+			return (cm_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array 
 	}
 	return (STAT_OK);
 }

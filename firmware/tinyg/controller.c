@@ -191,7 +191,7 @@ static stat_t _command_dispatch()
 			if (cfg.comm_mode == TEXT_MODE) {
 				fprintf_P(stderr, PSTR("End of command file\n"));
 			} else {
-				rpt_exception(STAT_EOF, 0);		// not really an exception
+				rpt_exception(STAT_EOF);		// not really an exception
 			}
 			tg_reset_source();					// reset to default source
 		}
@@ -317,7 +317,18 @@ static stat_t _limit_switch_handler(void)
 	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
 	if (get_limit_switch_thrown() == false) return (STAT_NOOP);
 //	cm_alarm(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
-	canonical_machine_alarm(sw.sw_num_thrown);
+	cm_alarm(sw.sw_num_thrown);
+	return (STAT_OK);
+}
+
+/* 
+ * _controller_assertions() - check memory integrity of controller
+ */
+stat_t _controller_assertions()
+{
+	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) {
+		return (STAT_MEMORY_FAULT);
+	}
 	return (STAT_OK);
 }
 
@@ -326,39 +337,42 @@ static stat_t _limit_switch_handler(void)
  */
 uint8_t _system_assertions()
 {
-	uint8_t value = 0;
+//	uint8_t value = 0;
 	uint8_t status;
 
 	for (;true;) {	// run once "loop"
 
-		if ((status = cm_assertions(&value)) != STAT_OK)  { break; }
+		if ((status = _controller_assertions()) != STAT_OK)  break;
+		if ((status = cm_assertions()) != STAT_OK) break;
+		if ((status = mp_assertions()) != STAT_OK) break;
+		if ((status = st_assertions()) != STAT_OK) break;
 
-		if (cs.magic_start				!= MAGICNUM) { value = 1; }		// Note: reported VALue is offset by ALARM_MEMORY_OFFSET
-		if (cs.magic_end				!= MAGICNUM) { value = 2; }
+//		if (rtc.magic_end 		!= MAGICNUM) { value = 19; }
+//		xio_assertions(&value);									// run xio assertions
+
+//		if (cs.magic_start				!= MAGICNUM) { value = 1; }		// Note: reported VALue is offset by ALARM_MEMORY_OFFSET
+//		if (cs.magic_end				!= MAGICNUM) { value = 2; }
 //		if (cm.magic_start 				!= MAGICNUM) { value = 3; }
 //		if (cm.magic_end				!= MAGICNUM) { value = 4; }
-		if (gmx.magic_start				!= MAGICNUM) { value = 5; }
-		if (gmx.magic_end 				!= MAGICNUM) { value = 6; }
-		if (cfg.magic_start				!= MAGICNUM) { value = 7; }
-		if (cfg.magic_end				!= MAGICNUM) { value = 8; }
-		if (cmdStr.magic_start			!= MAGICNUM) { value = 9; }
-		if (cmdStr.magic_end			!= MAGICNUM) { value = 10; }
-		if (mb.magic_start				!= MAGICNUM) { value = 11; }
-		if (mb.magic_end				!= MAGICNUM) { value = 12; }
-		if (mr.magic_start				!= MAGICNUM) { value = 13; }
-		if (mr.magic_end				!= MAGICNUM) { value = 14; }
-		if (ar.magic_start				!= MAGICNUM) { value = 15; }
-		if (ar.magic_end				!= MAGICNUM) { value = 16; }
-		if (st_get_stepper_run_magic()	!= MAGICNUM) { value = 17; }
-		if (st_get_stepper_prep_magic()	!= MAGICNUM) { value = 18; }
-		if (rtc.magic_end 		!= MAGICNUM) { value = 19; }
-		xio_assertions(&value);									// run xio assertions
+//		if (gmx.magic_start				!= MAGICNUM) { value = 5; }
+//		if (gmx.magic_end 				!= MAGICNUM) { value = 6; }
+//		if (cfg.magic_start				!= MAGICNUM) { value = 7; }
+//		if (cfg.magic_end				!= MAGICNUM) { value = 8; }
+//		if (cmdStr.magic_start			!= MAGICNUM) { value = 9; }
+//		if (cmdStr.magic_end			!= MAGICNUM) { value = 10; }
+//		if (mb.magic_start				!= MAGICNUM) { value = 11; }
+//		if (mb.magic_end				!= MAGICNUM) { value = 12; }
+//		if (mr.magic_start				!= MAGICNUM) { value = 13; }
+//		if (mr.magic_end				!= MAGICNUM) { value = 14; }
+//		if (arc.magic_start				!= MAGICNUM) { value = 15; }
+//		if (arc.magic_end				!= MAGICNUM) { value = 16; }
+//		if (st_get_stepper_run_magic()	!= MAGICNUM) { value = 17; }
+//		if (st_get_stepper_prep_magic()	!= MAGICNUM) { value = 18; }
 		break;
 	}
-
-	if (value == 0) { return (STAT_OK);}
-	rpt_exception(STAT_MEMORY_FAULT, value);
-	canonical_machine_alarm(ALARM_MEMORY_OFFSET + value);	
-	return (STAT_EAGAIN);
+	if (status == 0) return (STAT_OK);
+//	rpt_exception(status);
+	cm_alarm(status);		// report exception and shut down
+	return (STAT_EAGAIN);	// do not allow main loop to advance beyond this point
 }
 

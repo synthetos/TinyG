@@ -130,6 +130,16 @@ void stepper_init()
 }
 
 /*
+ * st_assertions() - test assertions, return error code if violation exists
+ */
+stat_t st_assertions()
+{
+	if (st_run.magic_start  != MAGICNUM) return (STAT_MEMORY_FAULT);
+	if (st_prep.magic_start != MAGICNUM) return (STAT_MEMORY_FAULT);
+	return (STAT_OK);
+}
+
+/*
  * stepper_isbusy() - return TRUE if motors are running or a dwell is running
  */
 inline uint8_t stepper_isbusy()
@@ -139,13 +149,6 @@ inline uint8_t stepper_isbusy()
 	} 
 	return (true);
 }
-
-/*
- * Magic Numbers for assertions
- */
-
-magic_t st_get_stepper_run_magic() { return (st_run.magic_start);}
-magic_t st_get_stepper_prep_magic() { return (st_prep.magic_start);}
 
 /*
  * Motor power management functions

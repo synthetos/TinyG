@@ -94,7 +94,6 @@ static void _dump_plan_buffer(mpBuf_t *bf);
 /* 
  * planner_init()
  */
-
 void planner_init()
 {
 // If you can can assume all memory has been zeroed by a hard reset you don;t need these next 2 lines
@@ -103,9 +102,23 @@ void planner_init()
 
 	mr.magic_start = MAGICNUM;
 	mr.magic_end = MAGICNUM;
-	ar.magic_start = MAGICNUM;
-	ar.magic_end = MAGICNUM;
+	arc.magic_start = MAGICNUM;
+	arc.magic_end = MAGICNUM;
 	mp_init_buffers();
+
+//	cm_plan_arc_init();			// for now all this does is set up the asstertions correctly
+//	cm_plan_line_init();		// ditto
+}
+
+/*
+ * mp_assertions() - test assertions, return error code if violation exists
+ */
+stat_t mp_assertions()
+{
+	if ((mb.magic_start  != MAGICNUM) || (mb.magic_end 	 != MAGICNUM)) return (STAT_MEMORY_FAULT);
+	if ((mr.magic_start  != MAGICNUM) || (mr.magic_end 	 != MAGICNUM)) return (STAT_MEMORY_FAULT);
+	if ((arc.magic_start != MAGICNUM) || (arc.magic_end  != MAGICNUM)) return (STAT_MEMORY_FAULT);
+	return (STAT_OK);
 }
 
 /* 
@@ -170,7 +183,8 @@ stat_t mp_exec_move()
 		if (cm.motion_state == MOTION_STOP) cm_set_motion_state(MOTION_RUN);
 	}
 	if (bf->bf_func != NULL) { return (bf->bf_func(bf));} 	// run the move callback in the planner buffer
-	return (STAT_INTERNAL_ERROR);		// never supposed to get here
+	return(cm_alarm(STAT_INTERNAL_ERROR));	// never supposed to get here
+//	return (STAT_INTERNAL_ERROR);
 }
 
 /************************************************************************************
@@ -433,7 +447,7 @@ uint8_t mp_get_buffer_index(mpBuf_t *bf)
 		}
 		b = b->pv;
 	}
-	return (PLANNER_BUFFER_POOL_SIZE);	// should never happen
+	return(cm_alarm(PLANNER_BUFFER_POOL_SIZE));	// should never happen
 }
 #endif
 

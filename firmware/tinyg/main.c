@@ -134,8 +134,8 @@ static const char PROGMEM stat_14[] = "Buffer full - fatal";
 static const char PROGMEM stat_15[] = "Initializing";
 static const char PROGMEM stat_16[] = "Entering boot loader";
 static const char PROGMEM stat_17[] = "Function is stubbed";
-static const char PROGMEM stat_18[] = "stat_18";
-static const char PROGMEM stat_19[] = "stat_19";
+static const char PROGMEM stat_18[] = "18";
+static const char PROGMEM stat_19[] = "19";
 
 static const char PROGMEM stat_20[] = "Internal error";
 static const char PROGMEM stat_21[] = "Internal range error";
@@ -146,17 +146,17 @@ static const char PROGMEM stat_25[] = "Read-only address";
 static const char PROGMEM stat_26[] = "Initialization failure";
 static const char PROGMEM stat_27[] = "System alarm - shutting down";
 static const char PROGMEM stat_28[] = "Memory fault or corruption";
-static const char PROGMEM stat_29[] = "stat_29";
-static const char PROGMEM stat_30[] = "stat_30";
-static const char PROGMEM stat_31[] = "stat_31";
-static const char PROGMEM stat_32[] = "stat_32";
-static const char PROGMEM stat_33[] = "stat_33";
-static const char PROGMEM stat_34[] = "stat_34";
-static const char PROGMEM stat_35[] = "stat_35";
-static const char PROGMEM stat_36[] = "stat_36";
-static const char PROGMEM stat_37[] = "stat_37";
-static const char PROGMEM stat_38[] = "stat_38";
-static const char PROGMEM stat_39[] = "stat_39";
+static const char PROGMEM stat_29[] = "29";
+static const char PROGMEM stat_30[] = "30";
+static const char PROGMEM stat_31[] = "31";
+static const char PROGMEM stat_32[] = "32";
+static const char PROGMEM stat_33[] = "33";
+static const char PROGMEM stat_34[] = "34";
+static const char PROGMEM stat_35[] = "35";
+static const char PROGMEM stat_36[] = "36";
+static const char PROGMEM stat_37[] = "37";
+static const char PROGMEM stat_38[] = "38";
+static const char PROGMEM stat_39[] = "39";
 
 static const char PROGMEM stat_40[] = "Unrecognized command";
 static const char PROGMEM stat_41[] = "Expected command letter";
@@ -171,13 +171,13 @@ static const char PROGMEM stat_49[] = "JSON input has too many pairs";	// curren
 static const char PROGMEM stat_50[] = "JSON output too long";
 static const char PROGMEM stat_51[] = "Out of buffer space";
 static const char PROGMEM stat_52[] = "Config rejected during cycle";
-static const char PROGMEM stat_53[] = "stat_53";
-static const char PROGMEM stat_54[] = "stat_54";
-static const char PROGMEM stat_55[] = "stat_55";
-static const char PROGMEM stat_56[] = "stat_56";
-static const char PROGMEM stat_57[] = "stat_57";
-static const char PROGMEM stat_58[] = "stat_58";
-static const char PROGMEM stat_59[] = "stat_59";
+static const char PROGMEM stat_53[] = "53";
+static const char PROGMEM stat_54[] = "54";
+static const char PROGMEM stat_55[] = "55";
+static const char PROGMEM stat_56[] = "56";
+static const char PROGMEM stat_57[] = "57";
+static const char PROGMEM stat_58[] = "58";
+static const char PROGMEM stat_59[] = "59";
 
 static const char PROGMEM stat_60[] = "Move less than minimum length";
 static const char PROGMEM stat_61[] = "Move less than minimum time";
@@ -193,6 +193,41 @@ static const char PROGMEM stat_70[] = "Arc specification error";
 static const char PROGMEM stat_71[] = "Soft limit exceeded";
 static const char PROGMEM stat_72[] = "Command not accepted";
 static const char PROGMEM stat_73[] = "Probing cycle failed";
+static const char PROGMEM stat_74[] = "74";
+static const char PROGMEM stat_75[] = "75";
+static const char PROGMEM stat_76[] = "76";
+static const char PROGMEM stat_77[] = "77";
+static const char PROGMEM stat_78[] = "78";
+static const char PROGMEM stat_79[] = "79";
+static const char PROGMEM stat_80[] = "80";
+static const char PROGMEM stat_81[] = "81";
+static const char PROGMEM stat_82[] = "82";
+static const char PROGMEM stat_83[] = "83";
+static const char PROGMEM stat_84[] = "84";
+static const char PROGMEM stat_85[] = "85";
+static const char PROGMEM stat_86[] = "86";
+static const char PROGMEM stat_87[] = "87";
+static const char PROGMEM stat_88[] = "88";
+static const char PROGMEM stat_89[] = "89";
+static const char PROGMEM stat_90[] = "90";
+static const char PROGMEM stat_91[] = "91";
+static const char PROGMEM stat_92[] = "92";
+static const char PROGMEM stat_93[] = "93";
+static const char PROGMEM stat_94[] = "94";
+static const char PROGMEM stat_95[] = "95";
+static const char PROGMEM stat_96[] = "96";
+static const char PROGMEM stat_97[] = "97";
+static const char PROGMEM stat_98[] = "98";
+static const char PROGMEM stat_99[] = "99";
+
+static const char PROGMEM stat_100[] = "Generic assertion failure";
+static const char PROGMEM stat_101[] = "Generic exception report";
+static const char PROGMEM stat_102[] = "Memory fault detected";
+static const char PROGMEM stat_103[] = "Stack overflow detected";
+static const char PROGMEM stat_104[] = "Controller assertion failure";
+static const char PROGMEM stat_105[] = "Canonical machine assertion failure";
+static const char PROGMEM stat_106[] = "Planner assertion failure";
+static const char PROGMEM stat_107[] = "Stepper assertion failure";
 
 static const char PROGMEM *stat_msg[] = {
 	stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
@@ -202,7 +237,10 @@ static const char PROGMEM *stat_msg[] = {
 	stat_40, stat_41, stat_42, stat_43, stat_44, stat_45, stat_46, stat_47, stat_48, stat_49,
 	stat_50, stat_51, stat_52, stat_53, stat_54, stat_55, stat_56, stat_57, stat_58, stat_59,
 	stat_60, stat_61, stat_62, stat_63, stat_64, stat_65, stat_66, stat_67, stat_68, stat_69,
-	stat_70, stat_71, stat_72, stat_73
+	stat_70, stat_71, stat_72, stat_73, stat_74, stat_75, stat_76, stat_77, stat_78, stat_79, 
+	stat_80, stat_81, stat_82, stat_83, stat_84, stat_85, stat_86, stat_87, stat_88, stat_89,
+	stat_90, stat_91, stat_92, stat_93, stat_94, stat_95, stat_96, stat_97, stat_98, stat_99,
+	stat_100, stat_101, stat_102, stat_103, stat_104, stat_105, stat_106, stat_107
 };
 
 char *get_status_message(stat_t status)

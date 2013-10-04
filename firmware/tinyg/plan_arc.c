@@ -31,7 +31,7 @@ extern "C"{
 
 // Allocate arc planner singleton structure
 
-arc_t ar;
+arc_t arc;
 
 /*
  * Local functions
@@ -40,6 +40,17 @@ static stat_t _compute_center_arc(void);
 static stat_t _get_arc_radius(void);
 static float _get_arc_time (const float linear_travel, const float angular_travel, const float radius);
 static float _get_theta(const float x, const float y);
+
+/*
+ * cm_plan_arc_init() - setup an arc structure initially
+ */
+/*
+void cm_plan_arc_init()
+{
+	arc.magic_start = MAGICNUM;
+	arc.magic_end = MAGICNUM;
+}
+*/
 
 /*****************************************************************************
  * cm_arc() - setup an arc move for runtime
@@ -63,48 +74,48 @@ stat_t cm_arc(const GCodeState_t *gm_arc, 	// gcode model state
 			  const uint8_t axis_2,  		// circle plane in tool space
 			  const uint8_t axis_linear)	// linear travel if helical motion
 {
-	if (ar.run_state != MOVE_STATE_OFF) { return (STAT_INTERNAL_ERROR); } // (not supposed to fail)
+	if (arc.run_state != MOVE_STATE_OFF) { return (STAT_INTERNAL_ERROR); } // (not supposed to fail)
 
-	ar.gm.linenum = cm_get_linenum(MODEL);
+	arc.gm.linenum = cm_get_linenum(MODEL);
 
 	// length is the total mm of travel of the helix (or just a planar arc)
-	ar.length = hypot(angular_travel * radius, fabs(linear_travel));	
-	if (ar.length < cm.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE_ERROR); // too short to draw
+	arc.length = hypot(angular_travel * radius, fabs(linear_travel));	
+	if (arc.length < cm.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE_ERROR); // too short to draw
 
 	// load the arc controller singleton
-	memcpy(&ar.gm, gm_arc, sizeof(GCodeState_t));	// get the entire GCode context - some will be overwritten to run segments
-	copy_axis_vector(ar.position, gmx.position);	// set initial arc position from gcode model
+	memcpy(&arc.gm, gm_arc, sizeof(GCodeState_t));	// get the entire GCode context - some will be overwritten to run segments
+	copy_axis_vector(arc.position, gmx.position);	// set initial arc position from gcode model
 
-	ar.endpoint[axis_1] = gm_arc->target[0];		// save the arc endpoint
-	ar.endpoint[axis_2] = gm_arc->target[1];
-	ar.endpoint[axis_linear] = gm_arc->target[2];
-	ar.arc_time = gm_arc->move_time;
-	ar.theta = theta;
-	ar.radius = radius;
-	ar.axis_1 = axis_1;
-	ar.axis_2 = axis_2;
-	ar.axis_linear = axis_linear;
-	ar.angular_travel = angular_travel;
-	ar.linear_travel = linear_travel;
+	arc.endpoint[axis_1] = gm_arc->target[0];		// save the arc endpoint
+	arc.endpoint[axis_2] = gm_arc->target[1];
+	arc.endpoint[axis_linear] = gm_arc->target[2];
+	arc.arc_time = gm_arc->move_time;
+	arc.theta = theta;
+	arc.radius = radius;
+	arc.axis_1 = axis_1;
+	arc.axis_2 = axis_2;
+	arc.axis_linear = axis_linear;
+	arc.angular_travel = angular_travel;
+	arc.linear_travel = linear_travel;
 	
 	// Find the minimum number of segments that meets these constraints...
-	float segments_required_for_chordal_accuracy = ar.length / sqrt(4*cm.chordal_tolerance * (2 * radius - cm.chordal_tolerance));
-	float segments_required_for_minimum_distance = ar.length / cm.arc_segment_len;
-	float segments_required_for_minimum_time = ar.arc_time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
-	ar.segments = floor(min3(segments_required_for_chordal_accuracy,
+	float segments_required_for_chordal_accuracy = arc.length / sqrt(4*cm.chordal_tolerance * (2 * radius - cm.chordal_tolerance));
+	float segments_required_for_minimum_distance = arc.length / cm.arc_segment_len;
+	float segments_required_for_minimum_time = arc.arc_time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
+	arc.segments = floor(min3(segments_required_for_chordal_accuracy,
 							 segments_required_for_minimum_distance,
 							 segments_required_for_minimum_time));
 
-	ar.segments = max(ar.segments,1);				//...but is at least 1 segment
-	ar.gm.move_time = ar.arc_time / ar.segments;	// gcode state struct gets segment_time, not arc time
+	arc.segments = max(arc.segments,1);				//...but is at least 1 segment
+	arc.gm.move_time = arc.arc_time / arc.segments;	// gcode state struct gets segment_time, not arc time
 
-	ar.segment_count = (uint32_t)ar.segments;
-	ar.segment_theta = ar.angular_travel / ar.segments;
-	ar.segment_linear_travel = ar.linear_travel / ar.segments;
-	ar.center_1 = ar.position[ar.axis_1] - sin(ar.theta) * ar.radius;
-	ar.center_2 = ar.position[ar.axis_2] - cos(ar.theta) * ar.radius;
-	ar.gm.target[ar.axis_linear] = ar.position[ar.axis_linear];
-	ar.run_state = MOVE_STATE_RUN;
+	arc.segment_count = (uint32_t)arc.segments;
+	arc.segment_theta = arc.angular_travel / arc.segments;
+	arc.segment_linear_travel = arc.linear_travel / arc.segments;
+	arc.center_1 = arc.position[arc.axis_1] - sin(arc.theta) * arc.radius;
+	arc.center_2 = arc.position[arc.axis_2] - cos(arc.theta) * arc.radius;
+	arc.gm.target[arc.axis_linear] = arc.position[arc.axis_linear];
+	arc.run_state = MOVE_STATE_RUN;
 	return (STAT_OK);
 }
 
@@ -120,23 +131,23 @@ stat_t cm_arc(const GCodeState_t *gm_arc, 	// gcode model state
 
 stat_t cm_arc_callback() 
 {
-	if (ar.run_state == MOVE_STATE_OFF) { return (STAT_NOOP);}
-//	if (mp_get_planner_buffers_available() == 0) { return (STAT_EAGAIN);}
-	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { return (STAT_EAGAIN);}
-	if (ar.run_state == MOVE_STATE_RUN) {
-		if (--ar.segment_count > 0) {
-			ar.theta += ar.segment_theta;
-			ar.gm.target[ar.axis_1] = ar.center_1 + sin(ar.theta) * ar.radius;
-			ar.gm.target[ar.axis_2] = ar.center_2 + cos(ar.theta) * ar.radius;
-			ar.gm.target[ar.axis_linear] += ar.segment_linear_travel;
-			mp_aline(&ar.gm);								// run the line
-			copy_axis_vector(ar.position, ar.gm.target);	// update arc current position	
+	if (arc.run_state == MOVE_STATE_OFF) { return (STAT_NOOP);}
+	if (mp_get_planner_buffers_available() == 0) { return (STAT_EAGAIN);}
+//	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { return (STAT_EAGAIN);}
+	if (arc.run_state == MOVE_STATE_RUN) {
+		if (--arc.segment_count > 0) {
+			arc.theta += arc.segment_theta;
+			arc.gm.target[arc.axis_1] = arc.center_1 + sin(arc.theta) * arc.radius;
+			arc.gm.target[arc.axis_2] = arc.center_2 + cos(arc.theta) * arc.radius;
+			arc.gm.target[arc.axis_linear] += arc.segment_linear_travel;
+			mp_aline(&arc.gm);								// run the line
+			copy_axis_vector(arc.position, arc.gm.target);	// update arc current position	
 			return (STAT_EAGAIN);
 		} else {
-			mp_aline(&ar.gm);		// do last segment to the exact endpoint
+			mp_aline(&arc.gm);		// do last segment to the exact endpoint
 		}
 	}
-	ar.run_state = MOVE_STATE_OFF;
+	arc.run_state = MOVE_STATE_OFF;
 	return (STAT_OK);
 }
 
@@ -148,7 +159,7 @@ stat_t cm_arc_callback()
 
 void cm_abort_arc() 
 {
-	ar.run_state = MOVE_STATE_OFF;
+	arc.run_state = MOVE_STATE_OFF;
 }
 
 /*****************************************************************************

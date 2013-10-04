@@ -47,8 +47,8 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.97	// More work on jerk display. Alsmost out of minor build revision numbers for this refactoring effort
-#define TINYG_FIRMWARE_VERSION		0.97	// major version
+#define TINYG_FIRMWARE_BUILD   		392.98	// Changes to the assertions to simplfy and modularize
+#define TINYG_FIRMWARE_VERSION		0.97	// major version 
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8
@@ -248,7 +248,8 @@ char *get_status_message(stat_t status);
 #define	STAT_READ_ONLY_ADDRESS 25
 #define	STAT_INIT_FAIL 26
 #define	STAT_ALARMED 27
-#define	STAT_MEMORY_FAULT 28
+//#define	STAT_MEMORY_FAULT 28
+#define	STAT_ERROR_28 28
 #define	STAT_ERROR_29 29
 #define	STAT_ERROR_30 30
 #define	STAT_ERROR_31 31
@@ -298,9 +299,42 @@ char *get_status_message(stat_t status);
 #define	STAT_SOFT_LIMIT_EXCEEDED 71			// soft limit error
 #define	STAT_COMMAND_NOT_ACCEPTED 72		// command cannot be accepted at this time
 #define	STAT_PROBING_CYCLE_FAILED 73		// probing cycle did not complete
+#define	STAT_ERROR_74 74
+#define	STAT_ERROR_75 75
+#define	STAT_ERROR_76 76
+#define	STAT_ERROR_77 77
+#define	STAT_ERROR_78 78
+#define	STAT_ERROR_79 79
+#define	STAT_ERROR_80 80
+#define	STAT_ERROR_81 81
+#define	STAT_ERROR_82 82
+#define	STAT_ERROR_83 83
+#define	STAT_ERROR_84 84
+#define	STAT_ERROR_85 85
+#define	STAT_ERROR_86 86
+#define	STAT_ERROR_87 87
+#define	STAT_ERROR_88 88
+#define	STAT_ERROR_89 89
+#define	STAT_ERROR_90 90
+#define	STAT_ERROR_91 91
+#define	STAT_ERROR_92 92
+#define	STAT_ERROR_93 93
+#define	STAT_ERROR_94 94
+#define	STAT_ERROR_95 95
+#define	STAT_ERROR_96 96
+#define	STAT_ERROR_97 97
+#define	STAT_ERROR_98 98
+#define	STAT_ERROR_99 99
 
-/*** Alarm States ***/
-#define ALARM_LIMIT_OFFSET 0
-#define ALARM_MEMORY_OFFSET 10
+// Assertions failures
+#define	STAT_GENERIC_ASSERTION_FAILURE 100	// generic assertion failure - unclassified
+#define STAT_GENERIC_EXCEPTION_REPORT 101	// used for test
+#define	STAT_MEMORY_FAULT 102				// generic memory corruption detected by magic numbers
+#define	STAT_STACK_OVERFLOW 103
+#define	STAT_CONTROLLER_ASSERTION_FAILURE 104
+#define	STAT_CANONICAL_MACHINE_ASSERTION_FAILURE 105
+#define	STAT_PLANNER_ASSERTION_FAILURE 106
+#define	STAT_STEPPER_ASSERTION_FAILURE 107
+
 
 #endif // End of include guard: TINYG2_H_ONCE

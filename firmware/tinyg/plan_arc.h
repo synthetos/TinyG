@@ -59,7 +59,7 @@ typedef struct arArcSingleton {	// persistent planner and runtime variables
 
 	magic_t magic_end;
 } arc_t;
-extern arc_t ar;
+extern arc_t arc;
 
 // function prototypes
 

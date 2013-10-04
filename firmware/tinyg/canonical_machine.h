@@ -530,8 +530,12 @@ void cm_conditional_set_model_position(stat_t status);
 /*--- canonical machining functions (loosely patterned after NIST) ---*/
 
 void canonical_machine_init(void);
-void canonical_machine_alarm(uint8_t value);					// enter alarm state
-stat_t cm_assertions(uint8_t *value);
+void cm_plan_arc_init(void);
+void cm_plan_line_init(void);
+
+stat_t cm_alarm(stat_t status);									// enter alarm state. returns same status code
+stat_t cm_assertions(void);
+
 stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
 
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
