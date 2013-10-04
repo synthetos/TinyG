@@ -305,11 +305,8 @@ extern stConfig_t st;
 /**** FUNCTION PROTOTYPES ****/
 
 void stepper_init(void);
-stat_t st_assertions(void);
 uint8_t stepper_isbusy(void);
-
-//uint16_t st_get_stepper_run_magic(void);
-//uint16_t st_get_stepper_prep_magic(void);
+stat_t st_assertions(void);
 
 void st_energize_motors(void);
 void st_deenergize_motors(void);

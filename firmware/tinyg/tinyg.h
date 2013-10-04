@@ -47,7 +47,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.98	// Changes to the assertions to simplfy and modularize
+#define TINYG_FIRMWARE_BUILD   		392.99	// Cleanup after assertions changes
 #define TINYG_FIRMWARE_VERSION		0.97	// major version 
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
@@ -326,7 +326,7 @@ char *get_status_message(stat_t status);
 #define	STAT_ERROR_98 98
 #define	STAT_ERROR_99 99
 
-// Assertions failures
+// Assertion failures
 #define	STAT_GENERIC_ASSERTION_FAILURE 100	// generic assertion failure - unclassified
 #define STAT_GENERIC_EXCEPTION_REPORT 101	// used for test
 #define	STAT_MEMORY_FAULT 102				// generic memory corruption detected by magic numbers
@@ -335,6 +335,6 @@ char *get_status_message(stat_t status);
 #define	STAT_CANONICAL_MACHINE_ASSERTION_FAILURE 105
 #define	STAT_PLANNER_ASSERTION_FAILURE 106
 #define	STAT_STEPPER_ASSERTION_FAILURE 107
-
+#define	STAT_XIO_ASSERTION_FAILURE 108
 
 #endif // End of include guard: TINYG2_H_ONCE

@@ -46,12 +46,6 @@
 #include "text_parser.h"
 #include "util.h"
 
-//#include "motatePins.h"		// defined in hardware.h   Not needed here
-//#include "motateTimers.h"
-
-//#include <avr/interrupt.h>
-//#include "xmega/xmega_rtc.h"	// Xmega only. Goes away with RTC refactoring
-
 //#define ENABLE_DIAGNOSTICS
 #ifdef ENABLE_DIAGNOSTICS
 #define INCREMENT_DIAGNOSTIC_COUNTER(motor) st_run.m[motor].step_count_diagnostic++;

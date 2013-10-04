@@ -530,9 +530,6 @@ void cm_conditional_set_model_position(stat_t status);
 /*--- canonical machining functions (loosely patterned after NIST) ---*/
 
 void canonical_machine_init(void);
-void cm_plan_arc_init(void);
-void cm_plan_line_init(void);
-
 stat_t cm_alarm(stat_t status);									// enter alarm state. returns same status code
 stat_t cm_assertions(void);
 

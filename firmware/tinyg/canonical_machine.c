@@ -610,8 +610,8 @@ stat_t cm_alarm(stat_t status)
 //	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
-	rpt_exception(status);					// send shutdown message
 	cm.machine_state = MACHINE_ALARM;
+	rpt_exception(status);					// send shutdown message
 	return (status);
 }
 

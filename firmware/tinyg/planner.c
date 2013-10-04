@@ -105,9 +105,6 @@ void planner_init()
 	arc.magic_start = MAGICNUM;
 	arc.magic_end = MAGICNUM;
 	mp_init_buffers();
-
-//	cm_plan_arc_init();			// for now all this does is set up the asstertions correctly
-//	cm_plan_line_init();		// ditto
 }
 
 /*

@@ -30,11 +30,11 @@
 
 // application specific stuff that's littered into the USB handler
 #include "../tinyg.h"
+#include "../config.h"					// needed to find flow control setting
 #include "../network.h"
 #include "../hardware.h"
 #include "../controller.h"
 #include "../canonical_machine.h"		// trapped characters communicate directly with the canonical machine
-#include "../config.h"					// needed to find flow control setting
 
 // Fast accessors
 #define USB ds[XIO_DEV_USB]

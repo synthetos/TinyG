@@ -256,8 +256,39 @@ void xio_set_stderr(const uint8_t dev)
  *	Returns status code (0 if everything is OK) 
  *	and sets a value if there is a failure.
  */
-uint8_t xio_assertions(uint8_t *value)
+uint8_t xio_assertions()
 {
+/*
+	stat_t status = STAT_OK;
+	if (ds[XIO_DEV_USB].magic_start		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_USB].magic_end		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_RS485].magic_start	!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_RS485].magic_end		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI1].magic_start	!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI1].magic_end		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI2].magic_start	!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI2].magic_end		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_PGM].magic_start		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (stderr != xio.stderr_shadow) 				 status = (STAT_XIO_ASSERTION_FAILURE);
+	return (status);
+}
+*/
+	if (ds[XIO_DEV_USB].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_USB].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_RS485].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_RS485].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI1].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI1].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI2].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI2].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_PGM].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (stderr != xio.stderr_shadow) 				 return (STAT_XIO_ASSERTION_FAILURE);
+	return (STAT_OK);
+}
+
+/*
 	if (ds[XIO_DEV_USB].magic_start		!= MAGICNUM) { *value = 100; }
 	if (ds[XIO_DEV_USB].magic_end		!= MAGICNUM) { *value = 101; }
 	if (ds[XIO_DEV_RS485].magic_start	!= MAGICNUM) { *value = 102; }
@@ -269,10 +300,9 @@ uint8_t xio_assertions(uint8_t *value)
 	if (ds[XIO_DEV_PGM].magic_start		!= MAGICNUM) { *value = 108; }
 	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) { *value = 109; }
 	if (stderr != xio.stderr_shadow) 				 { *value = 200; } 
-
 	if (*value != 0) { return (STAT_MEMORY_FAULT); }
-	return (STAT_OK);
 }
+*/
 
 /*****************************************************************************
  * UNIT TESTS 

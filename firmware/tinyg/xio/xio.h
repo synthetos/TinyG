@@ -174,7 +174,8 @@ void xio_set_stdout(const uint8_t dev);
 void xio_set_stderr(const uint8_t dev);
 
 // assertions
-uint8_t xio_assertions(uint8_t *value);
+uint8_t xio_assertions(void);
+
 
 /*************************************************************************
  * SUPPORTING DEFINTIONS - SHOULD NOT NEED TO CHANGE
@@ -371,4 +372,4 @@ void xio_unit_tests(void);
 #define	XIO_UNITS
 #endif // __UNIT_TEST_XIO
 
-#endif
+#endif	// xio_h
