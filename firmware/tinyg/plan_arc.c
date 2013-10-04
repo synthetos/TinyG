@@ -67,7 +67,7 @@ stat_t cm_arc(const GCodeState_t *gm_arc, 	// gcode model state
 
 	ar.gm.linenum = cm_get_linenum(MODEL);
 
-	// length is the total mm of travel of the helix (or just arc)
+	// length is the total mm of travel of the helix (or just a planar arc)
 	ar.length = hypot(angular_travel * radius, fabs(linear_travel));	
 	if (ar.length < cm.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE_ERROR); // too short to draw
 
@@ -75,7 +75,7 @@ stat_t cm_arc(const GCodeState_t *gm_arc, 	// gcode model state
 	memcpy(&ar.gm, gm_arc, sizeof(GCodeState_t));	// get the entire GCode context - some will be overwritten to run segments
 	copy_axis_vector(ar.position, gmx.position);	// set initial arc position from gcode model
 
-	ar.endpoint[axis_1] = gm_arc->target[0];			// save the arc endpoint
+	ar.endpoint[axis_1] = gm_arc->target[0];		// save the arc endpoint
 	ar.endpoint[axis_2] = gm_arc->target[1];
 	ar.endpoint[axis_linear] = gm_arc->target[2];
 	ar.arc_time = gm_arc->move_time;
@@ -121,7 +121,8 @@ stat_t cm_arc(const GCodeState_t *gm_arc, 	// gcode model state
 stat_t cm_arc_callback() 
 {
 	if (ar.run_state == MOVE_STATE_OFF) { return (STAT_NOOP);}
-	if (mp_get_planner_buffers_available() == 0) { return (STAT_EAGAIN);}
+//	if (mp_get_planner_buffers_available() == 0) { return (STAT_EAGAIN);}
+	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { return (STAT_EAGAIN);}
 	if (ar.run_state == MOVE_STATE_RUN) {
 		if (--ar.segment_count > 0) {
 			ar.theta += ar.segment_theta;

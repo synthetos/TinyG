@@ -331,6 +331,7 @@ enum xioCodes {
     0x24    $       dollar      TinyG / grbl out-of-cycle settings prefix
     0x25    &       ampersand   universal symbol for logical AND (not used here)    
     0x26    %       percent		Queue Flush character (trapped and removed from serial stream)
+								Also sometimes used as a file-start and file-end character in Gcode files
     0x27    '       single quote	
     0x28    (       open paren  Gcode comments
     0x29    )       close paren Gcode comments

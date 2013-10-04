@@ -327,27 +327,34 @@ static stat_t _limit_switch_handler(void)
 uint8_t _system_assertions()
 {
 	uint8_t value = 0;
+	uint8_t status;
 
-	if (cs.magic_start				!= MAGICNUM) { value = 1; }		// Note: reported VALue is offset by ALARM_MEMORY_OFFSET
-	if (cs.magic_end				!= MAGICNUM) { value = 2; }
-	if (cm.magic_start 				!= MAGICNUM) { value = 3; }
-	if (cm.magic_end				!= MAGICNUM) { value = 4; }
-	if (gmx.magic_start				!= MAGICNUM) { value = 5; }
-	if (gmx.magic_end 				!= MAGICNUM) { value = 6; }
-	if (cfg.magic_start				!= MAGICNUM) { value = 7; }
-	if (cfg.magic_end				!= MAGICNUM) { value = 8; }
-	if (cmdStr.magic_start			!= MAGICNUM) { value = 9; }
-	if (cmdStr.magic_end			!= MAGICNUM) { value = 10; }
-	if (mb.magic_start				!= MAGICNUM) { value = 11; }
-	if (mb.magic_end				!= MAGICNUM) { value = 12; }
-	if (mr.magic_start				!= MAGICNUM) { value = 13; }
-	if (mr.magic_end				!= MAGICNUM) { value = 14; }
-	if (ar.magic_start				!= MAGICNUM) { value = 15; }
-	if (ar.magic_end				!= MAGICNUM) { value = 16; }
-	if (st_get_stepper_run_magic()	!= MAGICNUM) { value = 17; }
-	if (st_get_stepper_prep_magic()	!= MAGICNUM) { value = 18; }
-	if (rtc.magic_end 		!= MAGICNUM) { value = 19; }
-	xio_assertions(&value);									// run xio assertions
+	for (;true;) {	// run once "loop"
+
+		if ((status = cm_assertions(&value)) != STAT_OK)  { break; }
+
+		if (cs.magic_start				!= MAGICNUM) { value = 1; }		// Note: reported VALue is offset by ALARM_MEMORY_OFFSET
+		if (cs.magic_end				!= MAGICNUM) { value = 2; }
+//		if (cm.magic_start 				!= MAGICNUM) { value = 3; }
+//		if (cm.magic_end				!= MAGICNUM) { value = 4; }
+		if (gmx.magic_start				!= MAGICNUM) { value = 5; }
+		if (gmx.magic_end 				!= MAGICNUM) { value = 6; }
+		if (cfg.magic_start				!= MAGICNUM) { value = 7; }
+		if (cfg.magic_end				!= MAGICNUM) { value = 8; }
+		if (cmdStr.magic_start			!= MAGICNUM) { value = 9; }
+		if (cmdStr.magic_end			!= MAGICNUM) { value = 10; }
+		if (mb.magic_start				!= MAGICNUM) { value = 11; }
+		if (mb.magic_end				!= MAGICNUM) { value = 12; }
+		if (mr.magic_start				!= MAGICNUM) { value = 13; }
+		if (mr.magic_end				!= MAGICNUM) { value = 14; }
+		if (ar.magic_start				!= MAGICNUM) { value = 15; }
+		if (ar.magic_end				!= MAGICNUM) { value = 16; }
+		if (st_get_stepper_run_magic()	!= MAGICNUM) { value = 17; }
+		if (st_get_stepper_prep_magic()	!= MAGICNUM) { value = 18; }
+		if (rtc.magic_end 		!= MAGICNUM) { value = 19; }
+		xio_assertions(&value);									// run xio assertions
+		break;
+	}
 
 	if (value == 0) { return (STAT_OK);}
 	rpt_exception(STAT_MEMORY_FAULT, value);

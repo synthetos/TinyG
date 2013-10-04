@@ -93,12 +93,12 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 
 	/**** Runtime variables (PRIVATE) ****/
 
-	uint8_t combined_state;			// combination of states for display purposes
-	uint8_t machine_state;			// machine/cycle/motion is the actual machine state
-	uint8_t cycle_state;
-	uint8_t motion_state;
-	uint8_t hold_state;				// feedhold sub-state machine
-	uint8_t homing_state;			// homing cycle sub-state machine
+	uint8_t combined_state;			// stat: combination of states for display purposes
+	uint8_t machine_state;			// macs: machine/cycle/motion is the actual machine state
+	uint8_t cycle_state;			// cycs
+	uint8_t motion_state;			// momo
+	uint8_t hold_state;				// hold: feedhold sub-state machine
+	uint8_t homing_state;			// home: homing cycle sub-state machine
 	uint8_t homed[AXES];			// individual axis homing flags
 	uint8_t	g28_flag;				// true = complete a G28 move
 	uint8_t	g30_flag;				// true = complete a G30 move
@@ -370,8 +370,8 @@ enum cmNextAction {						// these are in order to optimized CASE statement
 };
 
 enum cmMotionMode {						// G Modal Group 1
-	MOTION_MODE_STRAIGHT_TRAVERSE=0,	// G0 - seek
-	MOTION_MODE_STRAIGHT_FEED,			// G1 - feed
+	MOTION_MODE_STRAIGHT_TRAVERSE=0,	// G0 - straight traverse
+	MOTION_MODE_STRAIGHT_FEED,			// G1 - straight feed
 	MOTION_MODE_CW_ARC,					// G2 - arc feed
 	MOTION_MODE_CCW_ARC,				// G3 - arc feed
 	MOTION_MODE_CANCEL_MOTION_MODE,		// G80
@@ -530,8 +530,8 @@ void cm_conditional_set_model_position(stat_t status);
 /*--- canonical machining functions (loosely patterned after NIST) ---*/
 
 void canonical_machine_init(void);
-void canonical_machine_alarm(uint8_t value);					// emergency shutdown
-
+void canonical_machine_alarm(uint8_t value);					// enter alarm state
+stat_t cm_assertions(uint8_t *value);
 stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
 
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
@@ -609,7 +609,8 @@ void cm_exec_program_end(void);
 
 char_t cm_get_axis_char(const int8_t axis);
 
-stat_t cm_get_line(cmdObj_t *cmd);		// get runtime line number
+stat_t cm_get_mline(cmdObj_t *cmd);		// get model line number
+stat_t cm_get_line(cmdObj_t *cmd);		// get active (model or runtime) line number
 stat_t cm_get_stat(cmdObj_t *cmd);		// get combined machine state as value and string
 stat_t cm_get_macs(cmdObj_t *cmd);		// get raw machine state as value and string
 stat_t cm_get_cycs(cmdObj_t *cmd);		// get raw cycle state (etc etc)...

@@ -57,7 +57,7 @@
 #define SR_VERBOSITY				SR_FILTERED		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 #define STATUS_REPORT_MIN_MS		50				// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250				// milliseconds - set $SV=0 to disable
-#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","tool", "stat"
+#define SR_DEFAULTS "line","n","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","tool", "stat"
 
 #define QR_VERBOSITY				QR_OFF			// one of: QR_OFF, QR_FILTERED, QR_VERBOSE
 #define QR_HI_WATER					20
@@ -91,9 +91,9 @@
 //#include "settings/settings_pocketcnc_linear.h"		// PocketCNC 5 axis mill - linear settings
 //#include "settings/settings_pocketcnc_rotary.h"		// PocketCNC 5 axis mill - rotary settings
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
-//#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
+#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
-#include "settings/settings_zen7x12.h"				// Zen Toolworks 7x12
+//#include "settings/settings_zen7x12.h"				// Zen Toolworks 7x12
 
 /*** Handle optional modules that may not be in every machine ***/
 

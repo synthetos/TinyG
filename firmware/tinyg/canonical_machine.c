@@ -614,6 +614,22 @@ void canonical_machine_alarm(uint8_t value)
 	cm.machine_state = MACHINE_ALARM;
 }
 
+/*
+ * cm_assertions() - test assertions, return error code if violation exists
+ *
+ *	Returns status code (0 if everything is OK) 
+ *	and sets a value if there is a failure.
+ */
+stat_t cm_assertions(uint8_t *value)
+{
+	if (cm.magic_start != MAGICNUM) *value = 3;
+	if (cm.magic_end   != MAGICNUM) *value = 4;
+
+	if (*value != 0) { return (STAT_MEMORY_FAULT); }
+	return (STAT_OK);
+}
+
+
 /**************************
  * Representation (4.3.3) *
  **************************/
@@ -1554,7 +1570,8 @@ static int8_t _get_axis_type(const index_t index)
  * cm_get_frmo() - get model gcode feed rate mode
  * cm_get_tool() - get tool
  * cm_get_feed() - get feed rate 
- * cm_get_line() - get runtime line number for status reports
+ * cm_get_mline()- get model line number for status reports
+ * cm_get_line() - get active (model or runtime) line number for status reports
  * cm_get_vel()  - get runtime velocity
  * cm_get_ofs()  - get runtime work offset
  * cm_get_pos()  - get runtime work position
@@ -1591,6 +1608,13 @@ stat_t cm_get_frmo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_frmo, cm_get
 stat_t cm_get_toolv(cmdObj_t *cmd)
 {
 	cmd->value = (float)cm_get_tool(ACTIVE_MODEL);
+	cmd->objtype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+stat_t cm_get_mline(cmdObj_t *cmd)
+{
+	cmd->value = (float)cm_get_linenum(MODEL);
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
