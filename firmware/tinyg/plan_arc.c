@@ -42,17 +42,10 @@ static float _get_arc_time (const float linear_travel, const float angular_trave
 static float _get_theta(const float x, const float y);
 
 static stat_t _setup_arc(const GCodeState_t *gm_arc, 	// gcode model state
-			  const float i,
-			  const float j,
-			  const float k,
-			  const float theta, 			// starting angle
-			  const float radius, 			// radius of the circle in mm
-			  const float angular_travel,	// radians along arc (+CW, -CCW)
+			  const float i, const float j, const float k,
+			  const float theta, const float radius, const float angular_travel, // radians along arc (+CW, -CCW)
 			  const float linear_travel, 
-			  const uint8_t axis_1, 		// circle plane in tool space
-			  const uint8_t axis_2,  		// circle plane in tool space
-			  const uint8_t axis_linear);	// linear travel if helical motion
-
+			  const uint8_t axis_1, const uint8_t axis_2, const uint8_t axis_linear);
 
 /*****************************************************************************
  * Canonical Machining arc functions (arc prep for planning and runtime)
@@ -140,7 +133,6 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 stat_t cm_arc_callback() 
 {
 	if (arc.run_state == MOVE_STATE_OFF) { return (STAT_NOOP);}
-//	if (mp_get_planner_buffers_available() == 0) { return (STAT_EAGAIN);}
 	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { return (STAT_EAGAIN);}
 	if (arc.run_state == MOVE_STATE_RUN) {
 		if (--arc.segment_count > 0) {
@@ -156,7 +148,6 @@ stat_t cm_arc_callback()
 			arc.run_state = MOVE_STATE_OFF;
 		}
 	}
-//	arc.run_state = MOVE_STATE_OFF;
 	return (STAT_OK);
 }
 
@@ -184,7 +175,7 @@ void cm_abort_arc()
  *
  *  Parts of this routine were originally sourced from the grbl project.
  */
-stat_t _setup_arc(const GCodeState_t *gm_arc, 	// gcode model state
+static stat_t _setup_arc(const GCodeState_t *gm_arc, 	// gcode model state
 			  const float i,
 			  const float j,
 			  const float k,
