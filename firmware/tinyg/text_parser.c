@@ -224,7 +224,8 @@ void text_print_multiline_formatted(cmdObj_t *cmd)
  */
 const char PROGMEM fmt_str[] = "%s\n";	// generic format for string message (with no formatting)
 const char PROGMEM fmt_ui8[] = "%d\n";	// generic format for ui8s
-const char PROGMEM fmt_int[] = "%d\n";	// generic format for ui8s
+//const char PROGMEM fmt_int[] = "%ud\n";	// generic format for ui16's and ui32s
+const char PROGMEM fmt_int[] = "%lu\n";	// generic format for ui16's and ui32s
 const char PROGMEM fmt_flt[] = "%f\n";	// generic format for floats
 
 void tx_print_nul(cmdObj_t *cmd) {}

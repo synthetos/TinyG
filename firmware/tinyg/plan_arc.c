@@ -41,28 +41,150 @@ static stat_t _get_arc_radius(void);
 static float _get_arc_time (const float linear_travel, const float angular_travel, const float radius);
 static float _get_theta(const float x, const float y);
 
+static stat_t _setup_arc(const GCodeState_t *gm_arc, 	// gcode model state
+			  const float i,
+			  const float j,
+			  const float k,
+			  const float theta, 			// starting angle
+			  const float radius, 			// radius of the circle in mm
+			  const float angular_travel,	// radians along arc (+CW, -CCW)
+			  const float linear_travel, 
+			  const uint8_t axis_1, 		// circle plane in tool space
+			  const uint8_t axis_2,  		// circle plane in tool space
+			  const uint8_t axis_linear);	// linear travel if helical motion
+
+
+/*****************************************************************************
+ * Canonical Machining arc functions (arc prep for planning and runtime)
+ *
+ * cm_arc_init()	 - initialize arcs
+ * cm_arc_feed() 	 - canonical machine entry point for arc
+ * cm_arc_callback() - mail-loop callback for arc generation
+ */
+
 /*
- * cm_plan_arc_init() - setup an arc structure initially
+ * cm_arc_init() - initialize arc structures
  */
 /*
-void cm_plan_arc_init()
+void cm_arc_init()
 {
 	arc.magic_start = MAGICNUM;
 	arc.magic_end = MAGICNUM;
 }
 */
 
-/*****************************************************************************
- * cm_arc() - setup an arc move for runtime
+/*
+ * cm_arc_feed() - canonical machine entry point for arc
  *
- *	Generates an arc by queueing line segments to the move buffer.
- *	The arc is approximated by generating a large number of tiny, linear
- *	segments. The length of the segments is configured in motion_control.h
- *	as MM_PER_ARC_SEGMENT.
+ * Generates an arc by queueing line segments to the move buffer.
+ * The arc is approximated by generating a large number of tiny, linear
+ * segments.
+ */
+
+stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
+				   float i, float j, float k, 		// offsets
+				   float radius, 					// non-zero sets radius mode
+				   uint8_t motion_mode)				// defined motion mode
+{
+	stat_t status = STAT_OK;
+
+	// copy parameters into the current state
+	gm.motion_mode = motion_mode;
+
+	// trap zero feed rate condition
+	if ((gm.inverse_feed_rate_mode == false) && (fp_ZERO(gm.feed_rate))) {	
+		return (STAT_GCODE_FEEDRATE_ERROR);
+	}
+
+	// Trap conditions where no arc movement will occur, 
+	// but the system is still in arc motion mode - this is not an error.
+	// This can happen when a F word or M word is by itself.
+	// (The tests below are organized for execution efficiency)
+	if ( fp_ZERO(i) && fp_ZERO(j) && fp_ZERO(k) && fp_ZERO(radius) ) {
+		if ( fp_ZERO((flags[AXIS_X] + flags[AXIS_Y] + flags[AXIS_Z] + flags[AXIS_A] + flags[AXIS_B] + flags[AXIS_C]))) {
+			return (STAT_OK);
+		}
+	}
+	// set parameters
+	cm_set_model_target(target,flags);
+	cm_set_model_arc_offset(i,j,k);
+	cm_set_model_arc_radius(radius);
+
+	// A non-zero radius is a radius arc. Compute the IJK offset coordinates.
+	// These will override any IJK offsets provided in the call
+	if (fp_NOT_ZERO(radius)) { ritorno(_get_arc_radius());}	// returns if error
+
+	// Introduce a short dwell if the machine is idle to enable the planning
+	// queue to begin to fill (avoids first block having to plan down to zero)
+// DOESN'T WORK - TRY SOMETHING ELSE
+//	if (st_isbusy() == false) {
+//		cm_dwell(PLANNER_STARTUP_DELAY_SECONDS);
+//	}
+
+	// execute the move
+	status = _compute_center_arc();
+	cm_conditional_set_model_position(status);	// set endpoint position if the move was successful
+	return (status);
+}
+
+/*
+ * cm_arc_callback() - generate an arc
+ *
+ *	cm_arc_callback() is structured as a continuation called by mp_move_dispatcher.
+ *	Each time it's called it queues as many arc segments (lines) as it can 
+ *	before it blocks, then returns.
  *
  *  Parts of this routine were originally sourced from the grbl project.
  */
-stat_t cm_arc(const GCodeState_t *gm_arc, 	// gcode model state
+
+stat_t cm_arc_callback() 
+{
+	if (arc.run_state == MOVE_STATE_OFF) { return (STAT_NOOP);}
+//	if (mp_get_planner_buffers_available() == 0) { return (STAT_EAGAIN);}
+	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { return (STAT_EAGAIN);}
+	if (arc.run_state == MOVE_STATE_RUN) {
+		if (--arc.segment_count > 0) {
+			arc.theta += arc.segment_theta;
+			arc.gm.target[arc.axis_1] = arc.center_1 + sin(arc.theta) * arc.radius;
+			arc.gm.target[arc.axis_2] = arc.center_2 + cos(arc.theta) * arc.radius;
+			arc.gm.target[arc.axis_linear] += arc.segment_linear_travel;
+			mp_aline(&arc.gm);								// run the line
+			copy_axis_vector(arc.position, arc.gm.target);	// update arc current position	
+			return (STAT_EAGAIN);
+		} else {
+			mp_aline(&arc.gm);		// do last segment to the exact endpoint
+			arc.run_state = MOVE_STATE_OFF;
+		}
+	}
+//	arc.run_state = MOVE_STATE_OFF;
+	return (STAT_OK);
+}
+
+/*
+ * cm_abort_arc() - stop arc movement without maintaining position
+ *
+ *	OK to call if no arc is running
+ */
+
+void cm_abort_arc() 
+{
+	arc.run_state = MOVE_STATE_OFF;
+}
+
+/************************************************************************************
+ * Arc helper functions
+ *
+ * _setup_arc()			 - set up arc singleton for an arc move
+ * _compute_center_arc() - compute arc from I and J (arc center point)
+ * _get_arc_radius() 	 - compute arc center (offset) from radius.
+ * _get_arc_time()		 - compute time to complete arc at current feed rate
+ */
+/*
+ * _setup_arc() - setup an arc move for runtime
+ *
+ *  Parts of this routine were originally sourced from the grbl project.
+ */
+stat_t _setup_arc(const GCodeState_t *gm_arc, 	// gcode model state
 			  const float i,
 			  const float j,
 			  const float k,
@@ -117,102 +239,6 @@ stat_t cm_arc(const GCodeState_t *gm_arc, 	// gcode model state
 	arc.gm.target[arc.axis_linear] = arc.position[arc.axis_linear];
 	arc.run_state = MOVE_STATE_RUN;
 	return (STAT_OK);
-}
-
-/*
- * cm_arc_callback() - generate an arc
- *
- *	ar_arc_callback() is structured as a continuation called by mp_move_dispatcher.
- *	Each time it's called it queues as many arc segments (lines) as it can 
- *	before it blocks, then returns.
- *
- *  Parts of this routine were originally sourced from the grbl project.
- */
-
-stat_t cm_arc_callback() 
-{
-	if (arc.run_state == MOVE_STATE_OFF) { return (STAT_NOOP);}
-	if (mp_get_planner_buffers_available() == 0) { return (STAT_EAGAIN);}
-//	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { return (STAT_EAGAIN);}
-	if (arc.run_state == MOVE_STATE_RUN) {
-		if (--arc.segment_count > 0) {
-			arc.theta += arc.segment_theta;
-			arc.gm.target[arc.axis_1] = arc.center_1 + sin(arc.theta) * arc.radius;
-			arc.gm.target[arc.axis_2] = arc.center_2 + cos(arc.theta) * arc.radius;
-			arc.gm.target[arc.axis_linear] += arc.segment_linear_travel;
-			mp_aline(&arc.gm);								// run the line
-			copy_axis_vector(arc.position, arc.gm.target);	// update arc current position	
-			return (STAT_EAGAIN);
-		} else {
-			mp_aline(&arc.gm);		// do last segment to the exact endpoint
-		}
-	}
-	arc.run_state = MOVE_STATE_OFF;
-	return (STAT_OK);
-}
-
-/*
- * cm_abort_arc() - stop arc movement without maintaining position
- *
- *	OK to call if no arc is running
- */
-
-void cm_abort_arc() 
-{
-	arc.run_state = MOVE_STATE_OFF;
-}
-
-/*****************************************************************************
- * Canonical Machining arc functions (arc prep for planning and runtime)
- * cm_arc_feed() 		 - entry point for arc prep
- * _compute_center_arc() - compute arc from I and J (arc center point)
- * _get_arc_radius() 	 - compute arc center (offset) from radius.
- * _get_arc_time()		 - compute time to complete arc at current feed rate
- */
-stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
-				   float i, float j, float k, 		// offsets
-				   float radius, 					// non-zero sets radius mode
-				   uint8_t motion_mode)				// defined motion mode
-{
-	stat_t status = STAT_OK;
-
-	// copy parameters into the current state
-	gm.motion_mode = motion_mode;
-
-	// trap zero feed rate condition
-	if ((gm.inverse_feed_rate_mode == false) && (fp_ZERO(gm.feed_rate))) {	
-		return (STAT_GCODE_FEEDRATE_ERROR);
-	}
-
-	// Trap conditions where no arc movement will occur, 
-	// but the system is still in arc motion mode - this is not an error.
-	// This can happen when a F word or M word is by itself.
-	// (The tests below are organized for execution efficiency)
-	if ( fp_ZERO(i) && fp_ZERO(j) && fp_ZERO(k) && fp_ZERO(radius) ) {
-		if ( fp_ZERO((flags[AXIS_X] + flags[AXIS_Y] + flags[AXIS_Z] + flags[AXIS_A] + flags[AXIS_B] + flags[AXIS_C]))) {
-			return (STAT_OK);
-		}
-	}
-	// set parameters
-	cm_set_model_target(target,flags);
-	cm_set_model_arc_offset(i,j,k);
-	cm_set_model_arc_radius(radius);
-
-	// A non-zero radius is a radius arc. Compute the IJK offset coordinates.
-	// These will override any IJK offsets provided in the call
-	if (fp_NOT_ZERO(radius)) { ritorno(_get_arc_radius());}	// returns if error
-
-	// Introduce a short dwell if the machine is idle to enable the planning
-	// queue to begin to fill (avoids first block having to plan down to zero)
-// DOESN'T WORK - TRY SOMETHING ELSE
-//	if (st_isbusy() == false) {
-//		cm_dwell(PLANNER_STARTUP_DELAY_SECONDS);
-//	}
-
-	// execute the move
-	status = _compute_center_arc();
-	cm_conditional_set_model_position(status);	// set endpoint position if the move was successful
-	return (status);
 }
 
 /*
@@ -273,7 +299,7 @@ static stat_t _compute_center_arc()
 	set_vector(gm.target[gmx.plane_axis_0], gm.target[gmx.plane_axis_1], gm.target[gmx.plane_axis_2],
 			   gm.target[AXIS_A], gm.target[AXIS_B], gm.target[AXIS_C]);
 
-	return(cm_arc(&gm, gmx.arc_offset[gmx.plane_axis_0],
+	return(_setup_arc(&gm, gmx.arc_offset[gmx.plane_axis_0],
 					   gmx.arc_offset[gmx.plane_axis_1],
 					   gmx.arc_offset[gmx.plane_axis_2],
 					   theta_start, radius_tmp, angular_travel, linear_travel, 

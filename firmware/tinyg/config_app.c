@@ -117,6 +117,7 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "",   "dist",_f00, 0, cm_print_dist, cm_get_dist, set_nul,(float *)&cs.null, 0 },	// distance mode
 	{ "",   "frmo",_f00, 0, cm_print_frmo, cm_get_frmo, set_nul,(float *)&cs.null, 0 },	// feed rate mode
 	{ "",   "tool",_f00, 0, cm_print_tool, cm_get_toolv,set_nul,(float *)&cs.null, 0 },	// active tool
+	{ "",   "tick",_f00, 0, tx_print_int,  get_int,     set_int,(float *)&rtc.sys_ticks, 0 },// tick count
 
 	{ "mpo","mpox",_f00, 3, cm_print_mpo, cm_get_mpo, set_nul,(float *)&cs.null, 0 },	// X machine position
 	{ "mpo","mpoy",_f00, 3, cm_print_mpo, cm_get_mpo, set_nul,(float *)&cs.null, 0 },	// Y machine position

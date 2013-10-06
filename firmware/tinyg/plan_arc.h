@@ -61,19 +61,7 @@ typedef struct arArcSingleton {	// persistent planner and runtime variables
 } arc_t;
 extern arc_t arc;
 
-// function prototypes
-
-stat_t cm_arc(const GCodeState_t *gm_arc,
-			  const float i, 
-			  const float j, 
-			  const float k, 
-			  const float theta,
-			  const float radius,
-			  const float angular_travel,
-			  const float linear_travel, 
-			  const uint8_t axis_1,
-			  const uint8_t axis_2,
-			  const uint8_t axis_linear);
+// function prototypes (see canonical_machine.h for others)
 
 stat_t cm_arc_callback(void);
 void cm_abort_arc(void);

@@ -47,7 +47,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		392.99	// Cleanup after assertions changes
+#define TINYG_FIRMWARE_BUILD   		393.02	// TEST BUILD - DO NOT USE: Repeatable failure for arc diagnosis
 #define TINYG_FIRMWARE_VERSION		0.97	// major version 
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
@@ -61,9 +61,9 @@
 
 /****** DEVELOPMENT SETTINGS ******/
 
-//#define __CANNED_STARTUP					// run any canned startup moves
-//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-//#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+#define __CANNED_STARTUP					// run any canned startup moves
+#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 //#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
 
 //#ifndef WEAK
