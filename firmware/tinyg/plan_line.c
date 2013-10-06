@@ -1,4 +1,4 @@
-/*
+ /*
  * plan_line.c - acceleration managed line planning and motion execution
  * Part of TinyG project
  *

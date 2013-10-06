@@ -27,7 +27,7 @@
 
 // regression test files
 #ifdef __CANNED_TESTS
-/*
+
 #include "tests/test_001_smoke.h" 			// basic functionality
 #include "tests/test_002_homing.h"			// G28.1 homing cycles
 #include "tests/test_003_squares.h"			// square moves
@@ -42,10 +42,9 @@
 #include "tests/test_012_slow_moves.h"		// slow move test
 #include "tests/test_013_coordinate_offsets.h"	// what it says
 #include "tests/test_014_microsteps.h"		// test all microstep settings
-#include "tests/test_050_mudflap.h"			// mudflap test - entire drawing
-#include "tests/test_051_braid.h"			// braid test - partial drawing
-*/
-#include "tests/test_052_ford.h"			// Ford arc failure test - partial drawing
+//#include "tests/test_050_mudflap.h"			// mudflap test - entire drawing
+//#include "tests/test_051_braid.h"			// braid test - partial drawing
+//#include "tests/test_052_ford.h"			// Ford arc failure test - partial drawing
 
 #endif
 
@@ -60,7 +59,7 @@ uint8_t tg_test(cmdObj_t *cmd)
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (STAT_OK);}
 #ifdef __CANNED_TESTS
-/*
+
 		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke),PGM_FLAGS); break;}
 		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
 		case 3: { xio_open(XIO_DEV_PGM, PGMFILE(&test_squares),PGM_FLAGS); break;}
@@ -75,10 +74,9 @@ uint8_t tg_test(cmdObj_t *cmd)
 		case 12: { xio_open(XIO_DEV_PGM, PGMFILE(&test_slow_moves),PGM_FLAGS); break;}
 		case 13: { xio_open(XIO_DEV_PGM, PGMFILE(&test_coordinate_offsets),PGM_FLAGS); break;}
 		case 14: { xio_open(XIO_DEV_PGM, PGMFILE(&test_microsteps),PGM_FLAGS); break;}
-		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
-		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
-*/
-		case 52: { xio_open(XIO_DEV_PGM, PGMFILE(&test_ford),PGM_FLAGS); break;}
+//		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
+//		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
+//		case 52: { xio_open(XIO_DEV_PGM, PGMFILE(&test_ford),PGM_FLAGS); break;}
 #endif
 		default: {
 			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
@@ -107,7 +105,7 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 /* Run test file */
 //	xio_queue_RX_string_usb("$test=52\n");		// run test file
-	xio_queue_RX_string_usb("{\"test\":52}\n");		// run test file
+//	xio_queue_RX_string_usb("{\"test\":52}\n");		// run test file
 
 /* Other command sequences */
 //	xio_queue_RX_string_usb("H\n");				// show help file
