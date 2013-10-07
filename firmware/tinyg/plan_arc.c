@@ -94,14 +94,21 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 	// This can happen when a F word or M word is by itself.
 	// (The tests below are organized for execution efficiency)
 	if ( fp_ZERO(i) && fp_ZERO(j) && fp_ZERO(k) && fp_ZERO(radius) ) {
-		if ( fp_ZERO((flags[AXIS_X] + flags[AXIS_Y] + flags[AXIS_Z] + flags[AXIS_A] + flags[AXIS_B] + flags[AXIS_C]))) {
+		if ( fp_ZERO((flags[AXIS_X] + flags[AXIS_Y] + flags[AXIS_Z] + 
+					  flags[AXIS_A] + flags[AXIS_B] + flags[AXIS_C]))) {
 			return (STAT_OK);
 		}
 	}
-	// set parameters
+	// set parameters and model state
 	cm_set_model_target(target,flags);
+	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
+
 	cm_set_model_arc_offset(i,j,k);
 	cm_set_model_arc_radius(radius);
+//	ritorno(_test_arc_soft_limits());
+
+	cm_set_work_offsets(&gm);						// capture the fully resolved offsets to the state
+	cm_cycle_start();								// if not already started
 
 	// A non-zero radius is a radius arc. Compute the IJK offset coordinates.
 	// These will override any IJK offsets provided in the call
@@ -114,7 +121,7 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 //		cm_dwell(PLANNER_STARTUP_DELAY_SECONDS);
 //	}
 
-	// execute the move
+	// execute the move by calling a bunch of helpers
 	status = _compute_center_arc();
 	cm_conditional_set_model_position(status);	// set endpoint position if the move was successful
 	return (status);
@@ -410,16 +417,15 @@ static stat_t _get_arc_radius()
 /*
  * _get_arc_time ()
  *
- *	This is a naiive rate-limiting function. The arc drawing time is computed 
- *	not to exceed the time taken in the slowest dimension - in the arc plane
- *	or in linear travel. Maximum feed rates are compared in each dimension,
- *	but the comparison assumes that the arc will have at least one segment
- *	where the unit vector is 1 in that dimension. This is not true for any
- *	arbitrary arc, with the result that the time returned may be less than 
- *	optimal.
+ *	This is a naiive rate-limiting function. The arc drawing time is computed not 
+ *	to exceed the time taken in the slowest dimension - in the arc plane or in 
+ *	linear travel. Maximum feed rates are compared in each dimension, but the 
+ *	comparison assumes that the arc will have at least one segment where the unit 
+ *	vector is 1 in that dimension. This is not true for any arbitrary arc, with 
+ *	the result that the time returned may be less than optimal.
  *
- *	Room for improvement: At least take the hypotenuse of the planar movement 
- *	and the linear travel into account, but how many people actually use helixes?
+ *	Room for improvement: At least take the hypotenuse of the planar movement and
+ *	the linear travel into account, but how many people actually use helixes?
  */
 
 static float _get_arc_time (const float linear_travel, 		// in mm
@@ -450,7 +456,7 @@ static float _get_arc_time (const float linear_travel, 		// in mm
 /* 
  * _get_theta(float x, float y)
  *
- *	Find the angle in radians of deviance from the positive y axis. 
+ *	Find the angle in radians of deviance from the positive y axis;
  *	negative angles to the left of y-axis, positive to the right.
  */
 

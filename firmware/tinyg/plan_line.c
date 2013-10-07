@@ -1001,13 +1001,14 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		if (cm.hold_state == FEEDHOLD_HOLD) { return (STAT_NOOP);}// stops here if holding
 
 		// initialization to process the new incoming bf buffer
-		memcpy(&mr.gm, &(bf->gm), sizeof(GCodeState_t));	// copy in the gcode model state
+		memcpy(&mr.gm, &(bf->gm), sizeof(GCodeState_t));// copy in the gcode model state
 		bf->replannable = false;
-		if (fp_ZERO(bf->length)) {
+														// too short lines have already been removed. 
+		if (fp_ZERO(bf->length)) {						// ...looks for an actual zero here.
 			mr.move_state = MOVE_STATE_OFF;				// reset mr buffer
 			mr.section_state = MOVE_STATE_OFF;
 			bf->nx->replannable = false;				// prevent overplanning (Note 2)
-			st_prep_null();								// call this to leep the loader happy
+			st_prep_null();								// call this to keep the loader happy
 			mp_free_run_buffer();
 			return (STAT_NOOP);
 		}

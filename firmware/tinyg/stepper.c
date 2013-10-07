@@ -280,7 +280,7 @@ ISR(TIMER_DDA_ISR_vect)
 		PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
 	}
 	if (--st_run.dda_ticks_downcount == 0) {			// end move
- 		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;			// disable DDA timer
+//+++++	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;			// disable DDA timer
 		_load_move();									// load the next move
 	}
 }
@@ -354,6 +354,7 @@ static void _load_move()
 	if (st_prep.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {		// if there are no moves to load...
 		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 			st_run.m[motor].power_state = MOTOR_START_IDLE_TIMEOUT;	// ...start motor power timeouts
+			TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;					// disable DDA timer +++++
 		}
 		return;
 	}
@@ -497,8 +498,8 @@ void st_prep_dwell(float microseconds)
 stat_t st_prep_line(float steps[], float microseconds)
 {
 	uint8_t i;
-	float f_dda = F_DDA;		// starting point for adjustment
-	float dda_substeps = DDA_SUBSTEPS;
+//	float f_dda = F_DDA;		// starting point for adjustment
+//	float dda_substeps = DDA_SUBSTEPS;
 
 	// *** defensive programming ***
 	// trap conditions that would prevent queueing the line
@@ -511,11 +512,16 @@ stat_t st_prep_line(float steps[], float microseconds)
 	// setup motor parameters
 	for (i=0; i<MOTORS; i++) {
 		st_prep.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
-		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * dda_substeps);
+//		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * dda_substeps);
+		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * DDA_SUBSTEPS);
 	}
-	st_prep.dda_period = _f_to_period(f_dda);
-	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * f_dda);
-	st_prep.dda_ticks_X_substeps = st_prep.dda_ticks * dda_substeps;
+//	st_prep.dda_period = _f_to_period(f_dda);
+//	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * f_dda);
+//	st_prep.dda_ticks_X_substeps = st_prep.dda_ticks * dda_substeps;
+
+	st_prep.dda_period = _f_to_period(F_DDA);
+	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * F_DDA);
+	st_prep.dda_ticks_X_substeps = st_prep.dda_ticks * DDA_SUBSTEPS;
 
 // 	FOOTNOTE: The above expression was previously computed as below but floating point 
 //  rounding errors caused subtle and nasty accumulated position errors:
@@ -531,13 +537,13 @@ stat_t st_prep_line(float steps[], float microseconds)
 }
 
 /* 
- * _set_microsteps() - set microsteps in hardware
+ * _set_hw_microsteps() - set microsteps in hardware
  *
  *	For now the microstep_mode is the same as the microsteps (1,2,4,8)
  *	This may change if microstep morphing is implemented.
  */
 
-static void _set_microsteps(const uint8_t motor, const uint8_t microstep_mode)
+static void _set_hw_microsteps(const uint8_t motor, const uint8_t microstep_mode)
 {
 	if (microstep_mode == 8) {
 		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
@@ -609,7 +615,7 @@ stat_t st_set_mi(cmdObj_t *cmd)			// motor microsteps
 	}
 	set_ui8(cmd);							// set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);
-	_set_microsteps(_get_motor(cmd->index), (uint8_t)cmd->value);
+	_set_hw_microsteps(_get_motor(cmd->index), (uint8_t)cmd->value);
 	return (STAT_OK);
 }
 
