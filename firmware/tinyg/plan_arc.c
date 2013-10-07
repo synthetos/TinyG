@@ -101,14 +101,14 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 	}
 	// set parameters and model state
 	cm_set_model_target(target,flags);
-	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
+//	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
 
 	cm_set_model_arc_offset(i,j,k);
 	cm_set_model_arc_radius(radius);
 //	ritorno(_test_arc_soft_limits());
 
-	cm_set_work_offsets(&gm);						// capture the fully resolved offsets to the state
-	cm_cycle_start();								// if not already started
+//	cm_set_work_offsets(&gm);						// capture the fully resolved offsets to the state
+//	cm_cycle_start();								// if not already started
 
 	// A non-zero radius is a radius arc. Compute the IJK offset coordinates.
 	// These will override any IJK offsets provided in the call
