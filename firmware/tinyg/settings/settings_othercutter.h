@@ -37,7 +37,7 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to Othercutter settings"
 
-#define JERK_MAX				900			// 900 million mm/(min^3)
+#define JERK_MAX				900000000	// yes, that's "900,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION		0.01		// default value, in mm
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
 
@@ -140,7 +140,7 @@
 #define A_VELOCITY_MAX 					60000.0				// deg/min
 #define A_FEEDRATE_MAX 					7200.0				// deg/min
 #define A_TRAVEL_MAX 					375.0
-#define A_JERK_MAX 						24000				// yes, 24 Billion
+#define A_JERK_MAX 						24000000000			// yes, 24 Billion
 #define A_JUNCTION_DEVIATION 			0.1
 #define A_RADIUS 						1.0					// deg
 #define A_SWITCH_MODE_MIN				SW_MODE_HOMING		// disable limit switch halt

@@ -15,8 +15,8 @@
 #define INIT_MESSAGE "Initializing configs to OtherFab OtherMill settings"
 
 
-#define JERK_MAX				762
-#define JERK_HOMING				1270
+#define JERK_MAX				762000000	// yes, that's "n00,000,000" mm/(min^3)
+#define JERK_HOMING				1270000000	// yes, that's "n00,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION		0.0508		// default value, in mm
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
 

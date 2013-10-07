@@ -54,14 +54,14 @@ typedef struct cmAxis {
 	float feedrate_max;				// max velocity in mm/min or deg/min
 	float velocity_max;				// max velocity in mm/min or deg/min
 	float travel_max;				// work envelope w/warned or rejected blocks
-	float jerk_max;					// max jerk (Jm) in mm/min^3 in divide-by-million form
+	float jerk_max;					// max jerk (Jm) in mm/min^3
 	float junction_dev;				// aka cornering delta
 	float radius;					// radius in mm for rotary axis modes
 	float search_velocity;			// homing search velocity
 	float latch_velocity;			// homing latch velocity
 	float latch_backoff;			// backoff from switches prior to homing latch movement
 	float zero_backoff;				// backoff from switches for machine zero
-	float jerk_homing;				// homing jerk (Jh) in mm/min^3 in divide-by-million form
+	float jerk_homing;				// homing jerk (Jh) in mm/min^3
 } cfgAxis_t;
 
 typedef struct cmSingleton {		// struct to manage cm globals and cycles
@@ -482,8 +482,6 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 #define AXIS_MODE_MAX_LINEAR AXIS_INHIBITED
 #define AXIS_MODE_MAX_ROTARY AXIS_RADIUS
 
-#define JERK_MULTIPLER ((float)1000000)
-
 /*****************************************************************************
  * FUNCTION PROTOTYPES
  */
@@ -634,7 +632,7 @@ stat_t cm_get_mpo(cmdObj_t *cmd);		// get runtime machine position...
 stat_t cm_get_ofs(cmdObj_t *cmd);		// get runtime work offset...
 
 stat_t cm_run_qf(cmdObj_t *cmd);		// run queue flush
-//stat_t cm_run_home(cmdObj_t *cmd);		// start homing cycle
+stat_t cm_run_home(cmdObj_t *cmd);		// start homing cycle
 
 stat_t cm_get_am(cmdObj_t *cmd);		// get axis mode
 stat_t cm_set_am(cmdObj_t *cmd);		// set axis mode

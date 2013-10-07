@@ -42,7 +42,7 @@
 #define INIT_MESSAGE "Initializing configs to HAMMER settings"
 
 #define VELOCITY_MAX			1000			// mm/min (converts to degrees / min)
-#define JERK_MAX 				40				// 40 million mm/(min^3)
+#define JERK_MAX 				40000000		// yes, that's "100,000,000" mm/(min^3)
 
 #define ROTARY_VELOCITY_MAX		28800
 #define ROTARY_JERK_MAX			1400000000	// 1.2b

@@ -90,7 +90,7 @@
 #define X_VELOCITY_MAX			15000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX			220					// xtm		travel between switches or crashes
-#define X_JERK_MAX				2500 				// xjm		2.5 billion mm/(min^3)
+#define X_JERK_MAX				2500000000			// xjm		yes, that's "2.5 billion" mm/(min^3)
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
@@ -105,7 +105,7 @@
 #define Y_VELOCITY_MAX			16000
 #define Y_FEEDRATE_MAX			Y_VELOCITY_MAX
 #define Y_TRAVEL_MAX			220
-#define Y_JERK_MAX				5000							// 5,000,000,000
+#define Y_JERK_MAX				5000000000			// 5,000,000,000
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN		SW_MODE_HOMING
 #define Y_SWITCH_MODE_MAX		SW_MODE_DISABLED
@@ -119,7 +119,7 @@
 #define Z_VELOCITY_MAX			800
 #define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX			100
-#define Z_JERK_MAX				50								// 50,000,000
+#define Z_JERK_MAX				50000000			// 50,000,000
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
 #define Z_SWITCH_MODE_MAX		SW_MODE_HOMING
@@ -133,7 +133,7 @@
 #define A_VELOCITY_MAX			60000
 #define A_FEEDRATE_MAX			48000
 #define A_TRAVEL_MAX			400					// degrees
-#define A_JERK_MAX				24000				// yes, 24 billion
+#define A_JERK_MAX				24000000000			// yes, 24 billion
 #define A_JUNCTION_DEVIATION	0.1
 #define A_RADIUS				1.0
 #define A_SWITCH_MODE_MIN		SW_MODE_HOMING
@@ -148,7 +148,7 @@
 #define B_VELOCITY_MAX			3600
 #define B_FEEDRATE_MAX			B_VELOCITY_MAX
 #define B_TRAVEL_MAX			-1
-#define B_JERK_MAX				20
+#define B_JERK_MAX				20000000
 #define B_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define B_RADIUS				1
 
@@ -156,7 +156,7 @@
 #define C_VELOCITY_MAX			3600
 #define C_FEEDRATE_MAX			C_VELOCITY_MAX
 #define C_TRAVEL_MAX			-1
-#define C_JERK_MAX				20
+#define C_JERK_MAX				20000000
 #define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define C_RADIUS				1
 

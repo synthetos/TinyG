@@ -304,7 +304,7 @@ static stat_t _homing_axis_start(int8_t axis)
 	}
 	// disable the limit switch parameter if there is no limit switch
 	if (get_switch_mode(hm.limit_switch) == SW_MODE_DISABLED) { hm.limit_switch = -1;}
-	hm.saved_jerk = cm.a[axis].jerk_max;					// save the max jerk value
+	hm.saved_jerk = cm.a[axis].jerk_max;				// save the max jerk value
 	return (_set_homing_func(_homing_axis_clear));			// start the clear
 }
 
@@ -340,7 +340,7 @@ static stat_t _homing_axis_backoff_limit(int8_t axis)		// back off cleared limit
 
 static stat_t _homing_axis_search(int8_t axis)				// start the search
 {
-	cm.a[axis].jerk_max = cm.a[axis].jerk_homing;			// use the homing jerk for search onward
+	cm.a[axis].jerk_max = cm.a[axis].jerk_homing;	// use the homing jerk for search onward
 	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
     return (_set_homing_func(_homing_axis_latch));
 }
@@ -363,6 +363,7 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 		cm_set_axis_origin(axis, 0);
 		mp_set_runtime_position(axis, 0);
 	} else {
+//		cm_set_axis_origin(axis, cm_get_runtime_work_position(axis));
 		cm_set_axis_origin(axis, cm_get_work_position(RUNTIME, axis));
 	}
 	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
