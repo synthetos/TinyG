@@ -1,8 +1,8 @@
 /*
- * settings_zen7x12.h - Probotix Fireball V90 machine profile
+ * settings_probitixV90.h - Probotix Fireball V90 machine profile
  * Part of TinyG project
  *
- * Copyright (c) 2011 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2011 - 2013 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -40,7 +40,7 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to Probotix Fireball V90 profile"
 
-#define JERK_MAX 				100000000	// yes, that's "100,000,000" mm/(min^3)
+#define JERK_MAX 				500			// 500 million mm/(min^3)
 #define JUNCTION_DEVIATION		0.05		// default value, in mm
 #define JUNCTION_ACCELERATION 	200000		// centripetal acceleration around corners
 
@@ -52,22 +52,22 @@
 #define M1_STEP_ANGLE 			1.8			// 1sa
 #define M1_TRAVEL_PER_REV		5.08		// 1tr
 #define M1_MICROSTEPS			8			// 1mi		1,2,4,8
-#define M1_POLARITY				0			// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE			1			// 1pm		TRUE=low power idle enabled 
+#define M1_POLARITY				1			// 1po		0=normal, 1=reversed
+#define M1_POWER_MODE			0			// 1pm		TRUE=low power idle enabled 
 
 #define M2_MOTOR_MAP	 		AXIS_Y
 #define M2_STEP_ANGLE			1.8
 #define M2_TRAVEL_PER_REV		5.08
 #define M2_MICROSTEPS			8
 #define M2_POLARITY				0
-#define M2_POWER_MODE			1
+#define M2_POWER_MODE			0
 
 #define M3_MOTOR_MAP			AXIS_Z
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		2.1166666
 #define M3_MICROSTEPS			8
-#define M3_POLARITY				0
-#define M3_POWER_MODE			1
+#define M3_POLARITY				1
+#define M3_POWER_MODE			0
 
 #define M4_MOTOR_MAP			AXIS_A
 #define M4_STEP_ANGLE			1.8

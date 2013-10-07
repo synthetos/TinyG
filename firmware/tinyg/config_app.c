@@ -140,13 +140,14 @@ const cfgItem_t PROGMEM cfgArray[] = {
 	{ "ofs","ofsb",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// B work offset 
 	{ "ofs","ofsc",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// C work offset
 
-	{ "hom","home",_f00, 0, cm_print_home, cm_get_home, cm_run_home,(float *)&cs.null, 0 },	   // homing state, invoke homing cycle
-	{ "hom","homx",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_X], false },// X homed - Homing status group
-	{ "hom","homy",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_Y], false },// Y homed
-	{ "hom","homz",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_Z], false },// Z homed
-	{ "hom","homa",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_A], false },// A homed
-	{ "hom","homb",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_B], false },// B homed
-	{ "hom","homc",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_C], false },// C homed
+//	{ "hom","home",_f00, 0, cm_print_home, cm_get_home, cm_run_home,(float *)&cs.null, 0 },		// homing state, invoke homing cycle
+	{ "hom","home",_f00, 0, cm_print_home, cm_get_home, set_nul,(float *)&cs.null, 0 },			// homing state
+	{ "hom","homx",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_X], false },	// X homed - Homing status group
+	{ "hom","homy",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_Y], false },	// Y homed
+	{ "hom","homz",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_Z], false },	// Z homed
+	{ "hom","homa",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_A], false },	// A homed
+	{ "hom","homb",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_B], false },	// B homed
+	{ "hom","homc",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_C], false },	// C homed
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, 0, sr_print_sr,  sr_get,  sr_set,   (float *)&cs.null, 0 },	// status report object

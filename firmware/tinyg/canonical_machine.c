@@ -1687,27 +1687,39 @@ stat_t cm_set_am(cmdObj_t *cmd)		// axis mode
 }
 
 /*
- * cm_get_jrk()	- get jerk value w/1,000,000 correction
- * cm_set_jrk()	- set jerk value w/1,000,000 correction
+ * cm_get_jrk()	- get jerk value from internal storage. No million conversion
+ * cm_set_jrk()	- set jerk value to internal storage. Down-convert large values
  *
- *	Jerk values are stored in the system in "raw" format. This makes for some pretty big 
- *	numbers for people to deal with. These functions will accept raw jerk numbers or if they 
- *	Are less than 1,000,000 they are bumped in and out of raw form. JSON mode always
- *	reports full raw jerk values, but will accept either form.
+ *	Jerl values are in mm/min^3 so the numbers can get pretty large. Numbers > 1 billion
+ *	Are common on faster machines. To make the interface easier to manage the raw jerk values
+ *	are stored in the system divided by 1 million, and are "rehydrated) on use. 
+ *
+ *	These jerk IO functions accept and display numbers in divide-by-million format. For 
+ *	backwards compatibility with older internfaces any number that is enterd as > 1 million
+ *	is ocnverted to dive-by-million form on input.
  */
 stat_t cm_get_jrk(cmdObj_t *cmd)
 {
 	get_flu(cmd);
+	return (STAT_OK);
+/*
+	get_flu(cmd);
 	if (cfg.comm_mode == TEXT_MODE) cmd->value /= 1000000;
 	return (STAT_OK);
+*/
 }
 
 stat_t cm_set_jrk(cmdObj_t *cmd)
 {
+	if (cmd->value > 1000000) cmd->value /= 1000000;
+	set_flu(cmd);
+	return(STAT_OK);
+/*
 	if (cmd->value < 1000000) cmd->value *= 1000000;
 	set_flu(cmd);
 	if (cfg.comm_mode == TEXT_MODE) cmd->value /= 1000000;
 	return(STAT_OK);
+*/
 }
 
 /*
@@ -1722,12 +1734,13 @@ stat_t cm_run_qf(cmdObj_t *cmd)
 	cm_request_queue_flush();
 	return (STAT_OK);
 }
-
+/*
 stat_t cm_run_home(cmdObj_t *cmd)
 {
 	if (fp_TRUE(cmd->value)) { cm_homing_cycle_start();}
 	return (STAT_OK);
 }
+*/
 
 /***********************************************************************************
  * TEXT MODE SUPPORT

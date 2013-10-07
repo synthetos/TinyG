@@ -162,7 +162,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 		bf->unit[AXIS_C] = diff / length;
 		jerk_squared += square(bf->unit[AXIS_C] * cm.a[AXIS_C].jerk_max);
 	}
-	bf->jerk = sqrt(jerk_squared);
+	bf->jerk = sqrt(jerk_squared) * JERK_MULTIPLER;
 
 	if (fabs(bf->jerk - mm.prev_jerk) < JERK_MATCH_PRECISION) {	// can we re-use jerk terms?
 		bf->cbrt_jerk = mm.prev_cbrt_jerk;

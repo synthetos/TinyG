@@ -40,8 +40,8 @@
 #define INIT_MESSAGE "Initializing configs to OMC OtherMill settings"
 
 
-#define JERK_MAX				600000000	// yes, that's "n00,000,000" mm/(min^3)
-#define JERK_HOMING				400000000	// yes, that's "n00,000,000" mm/(min^3)
+#define JERK_MAX				600			// 600 million mm/(min^3)
+#define JERK_HOMING				400			// 400 million,mm/(min^3)
 #define JUNCTION_DEVIATION		0.01		// default value, in mm
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
 
