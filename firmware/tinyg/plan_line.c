@@ -125,8 +125,8 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 
 	// trap error conditions
 	float length = get_axis_vector_length(gm_line->target, mm.position);
-	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE_ERROR);}
-	if (gm_line->move_time < MIN_TIME_MOVE) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}
+//	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE_ERROR);}
+//	if (gm_line->move_time < MIN_TIME_MOVE) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) { return(cm_alarm(STAT_BUFFER_FULL_FATAL));} // never supposed to fail
@@ -135,35 +135,35 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	bf->bf_func = _exec_aline;					// register the callback to the exec function
 	bf->length = length;
 
-	// Set unit vector and jerk terms - this is all done together for efficiency 
-	float jerk_squared = 0;
+	// compute both the unit vector and the jerk term in the same pass for efficiency
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
 	if (fp_NOT_ZERO(diff)) { 
 		bf->unit[AXIS_X] = diff / length;
-		jerk_squared += square(bf->unit[AXIS_X] * cm.a[AXIS_X].jerk_max);
+		bf->jerk = square(bf->unit[AXIS_X] * cm.a[AXIS_X].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Y] - mm.position[AXIS_Y])) { 
 		bf->unit[AXIS_Y] = diff / length;
-		jerk_squared += square(bf->unit[AXIS_Y] * cm.a[AXIS_Y].jerk_max);
+		bf->jerk += square(bf->unit[AXIS_Y] * cm.a[AXIS_Y].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Z] - mm.position[AXIS_Z])) { 
 		bf->unit[AXIS_Z] = diff / length;
-		jerk_squared += square(bf->unit[AXIS_Z] * cm.a[AXIS_Z].jerk_max);
+		bf->jerk += square(bf->unit[AXIS_Z] * cm.a[AXIS_Z].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_A] - mm.position[AXIS_A])) { 
 		bf->unit[AXIS_A] = diff / length;
-		jerk_squared += square(bf->unit[AXIS_A] * cm.a[AXIS_A].jerk_max);
+		bf->jerk += square(bf->unit[AXIS_A] * cm.a[AXIS_A].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_B] - mm.position[AXIS_B])) { 
 		bf->unit[AXIS_B] = diff / length;
-		jerk_squared += square(bf->unit[AXIS_B] * cm.a[AXIS_B].jerk_max);
+		bf->jerk += square(bf->unit[AXIS_B] * cm.a[AXIS_B].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_C] - mm.position[AXIS_C])) { 
 		bf->unit[AXIS_C] = diff / length;
-		jerk_squared += square(bf->unit[AXIS_C] * cm.a[AXIS_C].jerk_max);
+		bf->jerk += square(bf->unit[AXIS_C] * cm.a[AXIS_C].jerk_max);
 	}
-	bf->jerk = sqrt(jerk_squared) * JERK_MULTIPLER;
+	bf->jerk = sqrt(bf->jerk) * JERK_MULTIPLER;
 
+	// use a cached version of the previous jerk terms if possible
 	if (fabs(bf->jerk - mm.prev_jerk) < JERK_MATCH_PRECISION) {	// can we re-use jerk terms?
 		bf->cbrt_jerk = mm.prev_cbrt_jerk;
 		bf->recip_jerk = mm.prev_recip_jerk;
