@@ -47,7 +47,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		393.03	// Fixed fast arc bug that surfaced in the Ford emblem file
+#define TINYG_FIRMWARE_BUILD   		393.07	// trying to recover the branch
 #define TINYG_FIRMWARE_VERSION		0.97	// major version 
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
