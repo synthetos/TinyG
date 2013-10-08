@@ -482,6 +482,8 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 #define AXIS_MODE_MAX_LINEAR AXIS_INHIBITED
 #define AXIS_MODE_MAX_ROTARY AXIS_RADIUS
 
+#define JERK_MULTIPLIER ((float)1000000)
+
 /*****************************************************************************
  * FUNCTION PROTOTYPES
  */

@@ -1687,8 +1687,8 @@ stat_t cm_set_am(cmdObj_t *cmd)		// axis mode
 }
 
 /*
- * cm_get_jrk()	- get jerk value w/1,000,000 correction
- * cm_set_jrk()	- set jerk value w/1,000,000 correction
+ * cm_get_jrk()	- get jerk value 
+ * cm_set_jrk()	- set jerk value 
  *
  *	Jerk values are stored in the system in "raw" format. This makes for some pretty big 
  *	numbers for people to deal with. These functions will accept raw jerk numbers or if they 
@@ -1698,15 +1698,14 @@ stat_t cm_set_am(cmdObj_t *cmd)		// axis mode
 stat_t cm_get_jrk(cmdObj_t *cmd)
 {
 	get_flu(cmd);
-	if (cfg.comm_mode == TEXT_MODE) cmd->value /= 1000000;
+//	if (cfg.comm_mode == TEXT_MODE) cmd->value /= 1000000;
 	return (STAT_OK);
 }
 
 stat_t cm_set_jrk(cmdObj_t *cmd)
 {
-	if (cmd->value < 1000000) cmd->value *= 1000000;
+	if (cmd->value > 1000000) cmd->value /= 1000000;
 	set_flu(cmd);
-	if (cfg.comm_mode == TEXT_MODE) cmd->value /= 1000000;
 	return(STAT_OK);
 }
 

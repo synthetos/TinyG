@@ -41,7 +41,7 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to default settings"
 
-#define JERK_MAX 				20000000	// yes, that's "20,000,000" mm/(min^3)
+#define JERK_MAX 				20	// yes, that's "20,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION		0.05		// default value, in mm
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
 
@@ -138,7 +138,7 @@
 #define A_JERK_HOMING			A_JERK_MAX
 
 //#define A_VELOCITY_MAX 		172800
-//#define A_JERK_MAX 			5760000000
+//#define A_JERK_MAX 			5760
 //#define A_RADIUS 				0.19894368
 
 #define B_AXIS_MODE 			AXIS_DISABLED

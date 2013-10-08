@@ -280,7 +280,7 @@ ISR(TIMER_DDA_ISR_vect)
 		PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
 	}
 	if (--st_run.dda_ticks_downcount == 0) {			// end move
-//+++++	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;			// disable DDA timer
+		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;			// disable DDA timer
 		_load_move();									// load the next move
 	}
 }
@@ -354,7 +354,6 @@ static void _load_move()
 	if (st_prep.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {		// if there are no moves to load...
 		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 			st_run.m[motor].power_state = MOTOR_START_IDLE_TIMEOUT;	// ...start motor power timeouts
-			TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;					// disable DDA timer +++++
 		}
 		return;
 	}

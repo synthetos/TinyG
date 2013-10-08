@@ -42,10 +42,10 @@
 #define INIT_MESSAGE "Initializing configs to HAMMER settings"
 
 #define VELOCITY_MAX			1000			// mm/min (converts to degrees / min)
-#define JERK_MAX 				40000000		// yes, that's "100,000,000" mm/(min^3)
+#define JERK_MAX 				40		// yes, that's "100,000,000" mm/(min^3)
 
 #define ROTARY_VELOCITY_MAX		28800
-#define ROTARY_JERK_MAX			1400000000	// 1.2b
+#define ROTARY_JERK_MAX			1400	// 1.2b
 
 #define JUNCTION_DEVIATION		0.05		// default value, in mm
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
@@ -149,7 +149,7 @@
 //#define A_VELOCITY_MAX 		((VELOCITY_MAX/M4_TRAVEL_PER_REV)*360) // set to the same speed as X axis
 //#define A_VELOCITY_MAX 		172800
 //#define A_JERK_MAX 			(JERK_MAX*(360/M4_TRAVEL_PER_REV))
-//#define A_JERK_MAX 			5760000000
+//#define A_JERK_MAX 			5760
 //#define A_RADIUS 				0.19894368
 
 #define B_AXIS_MODE 			AXIS_STANDARD

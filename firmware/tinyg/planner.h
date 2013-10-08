@@ -67,13 +67,11 @@ enum moveState {
 #define MIN_LINE_LENGTH 		((float)0.08)		// Smallest line the system can plan (mm) (0.02)
 #define MIN_SEGMENT_LENGTH 		((float)0.05)		// Smallest accel/decel segment (mm). Set to produce ~10 ms segments (0.01)
 #define MIN_LENGTH_MOVE 		((float)0.001)		// millimeters
-//#define MIN_LENGTH_MOVE 		(EPSILON)
 
 #define JERK_MATCH_PRECISION 1000	// precision to which jerk must match to be considered effectively the same
 
-/* ESTD_SEGMENT_USEC	 Microseconds per planning segment
- *	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
- */
+// ESTD_SEGMENT_USEC	 Microseconds per planning segment
+//	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
 #define NOM_SEGMENT_USEC 		((float)5000)		// nominal segment time
 #define MIN_SEGMENT_USEC 		((float)2500)		// minimum segment time
 #define MIN_ARC_SEGMENT_USEC	((float)10000)		// minimum arc segment time
@@ -82,7 +80,7 @@ enum moveState {
 #define NOM_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
-#define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
+#define MIN_TIME_MOVE  			(MIN_SEGMENT_TIME) 	// minimum time a move can be is one segment
 
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.
