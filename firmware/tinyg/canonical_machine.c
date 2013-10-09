@@ -1394,102 +1394,103 @@ void cm_program_end()
  ***********************************************************************************/
 
 // Strings for writing settings as cmdObj string values
+// Ref: http://www.avrfreaks.net/index.php?name=PNphpBB2&file=printview&t=120881&start=0
 
 #ifdef __TEXT_MODE
 
-static const char PROGMEM msg_units0[] = " in";	// used by generic print functions
-static const char PROGMEM msg_units1[] = " mm";
-static const char PROGMEM msg_units2[] = " deg";
-static const char PROGMEM *msg_units[] = { msg_units0, msg_units1, msg_units2 };
+static const char msg_units0[] PROGMEM = " in";	// used by generic print functions
+static const char msg_units1[] PROGMEM = " mm";
+static const char msg_units2[] PROGMEM = " deg";
+static const char *const msg_units[] PROGMEM = { msg_units0, msg_units1, msg_units2 };
 #define DEGREE_INDEX 2
 
-static const char PROGMEM msg_am00[] = "[disabled]";
-static const char PROGMEM msg_am01[] = "[standard]";
-static const char PROGMEM msg_am02[] = "[inhibited]";
-static const char PROGMEM msg_am03[] = "[radius]";
-static const char PROGMEM *msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03};
-//static PGM_P const PROGMEM msg_am[] = { msg_am00, msg_am01, msg_am02, msg_am03};
+static const char msg_am00[] PROGMEM = "[disabled]";
+static const char msg_am01[] PROGMEM = "[standard]";
+static const char msg_am02[] PROGMEM = "[inhibited]";
+static const char msg_am03[] PROGMEM = "[radius]";
+static const char *const msg_am[] PROGMEM = { msg_am00, msg_am01, msg_am02, msg_am03};
 
-static const char PROGMEM msg_g20[] = "G20 - inches mode";
-static const char PROGMEM msg_g21[] = "G21 - millimeter mode";
-static const char PROGMEM *msg_unit[] = { msg_g20, msg_g21 };
+static const char msg_g20[] PROGMEM = "G20 - inches mode";
+static const char msg_g21[] PROGMEM = "G21 - millimeter mode";
+static const char *const msg_unit[] PROGMEM = { msg_g20, msg_g21 };
 
-static const char PROGMEM msg_stat0[] = "Initializing";	// combined state (stat) uses this array
-static const char PROGMEM msg_stat1[] = "Ready";
-static const char PROGMEM msg_stat2[] = "Shutdown";
-static const char PROGMEM msg_stat3[] = "Stop";
-static const char PROGMEM msg_stat4[] = "End";
-static const char PROGMEM msg_stat5[] = "Run";
-static const char PROGMEM msg_stat6[] = "Hold";
-static const char PROGMEM msg_stat7[] = "Probe";
-static const char PROGMEM msg_stat8[] = "Cycle";
-static const char PROGMEM msg_stat9[] = "Homing";
-static const char PROGMEM msg_stat10[] = "Jog";
-static const char PROGMEM *msg_stat[] = { msg_stat0, msg_stat1, msg_stat2, msg_stat3, msg_stat4, msg_stat5, 
-										  msg_stat6, msg_stat7, msg_stat8, msg_stat9, msg_stat10};
+static const char msg_stat0[] PROGMEM = "Initializing";	// combined state (stat) uses this array
+static const char msg_stat1[] PROGMEM = "Ready";
+static const char msg_stat2[] PROGMEM = "Shutdown";
+static const char msg_stat3[] PROGMEM = "Stop";
+static const char msg_stat4[] PROGMEM = "End";
+static const char msg_stat5[] PROGMEM = "Run";
+static const char msg_stat6[] PROGMEM = "Hold";
+static const char msg_stat7[] PROGMEM = "Probe";
+static const char msg_stat8[] PROGMEM = "Cycle";
+static const char msg_stat9[] PROGMEM = "Homing";
+static const char msg_stat10[] PROGMEM = "Jog";
+static const char *const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3, 
+												msg_stat4, msg_stat5, msg_stat6, msg_stat7, 
+												msg_stat8, msg_stat9, msg_stat10};
 
-static const char PROGMEM msg_macs0[] = "Initializing";
-static const char PROGMEM msg_macs1[] = "Reset";
-static const char PROGMEM msg_macs2[] = "Cycle";
-static const char PROGMEM msg_macs3[] = "Stop";
-static const char PROGMEM msg_macs4[] = "End";
-static const char PROGMEM *msg_macs[] = { msg_macs0, msg_macs1, msg_macs2, msg_macs3 , msg_macs4};
+static const char msg_macs0[] PROGMEM = "Initializing";
+static const char msg_macs1[] PROGMEM = "Reset";
+static const char msg_macs2[] PROGMEM = "Cycle";
+static const char msg_macs3[] PROGMEM = "Stop";
+static const char msg_macs4[] PROGMEM = "End";
+static const char *const msg_macs[] PROGMEM = { msg_macs0, msg_macs1, msg_macs2, msg_macs3 , msg_macs4};
 
-static const char PROGMEM msg_cycs0[] = "Off";
-static const char PROGMEM msg_cycs1[] = "Started";
-static const char PROGMEM msg_cycs2[] = "Homing";
-static const char PROGMEM msg_cycs3[] = "Probe";
-static const char PROGMEM *msg_cycs[] = { msg_cycs0, msg_cycs1, msg_cycs2, msg_cycs3 };
+static const char msg_cycs0[] PROGMEM = "Off";
+static const char msg_cycs1[] PROGMEM = "Started";
+static const char msg_cycs2[] PROGMEM = "Homing";
+static const char msg_cycs3[] PROGMEM = "Probe";
+static const char *const msg_cycs[] PROGMEM = { msg_cycs0, msg_cycs1, msg_cycs2, msg_cycs3 };
 
-static const char PROGMEM msg_mots0[] = "Stop";
-static const char PROGMEM msg_mots1[] = "Run";
-static const char PROGMEM msg_mots2[] = "Hold";
-static const char PROGMEM *msg_mots[] = { msg_mots0, msg_mots1, msg_mots2 };
+static const char msg_mots0[] PROGMEM = "Stop";
+static const char msg_mots1[] PROGMEM = "Run";
+static const char msg_mots2[] PROGMEM = "Hold";
+static const char *const msg_mots[] PROGMEM = { msg_mots0, msg_mots1, msg_mots2 };
 
-static const char PROGMEM msg_hold0[] = "Off";
-static const char PROGMEM msg_hold1[] = "Sync";
-static const char PROGMEM msg_hold2[] = "Plan";
-static const char PROGMEM msg_hold3[] = "Decel";
-static const char PROGMEM msg_hold4[] = "Hold";
-static const char PROGMEM *msg_hold[] = { msg_hold0, msg_hold1, msg_hold2, msg_hold3, msg_hold4 };
+static const char msg_hold0[] PROGMEM = "Off";
+static const char msg_hold1[] PROGMEM = "Sync";
+static const char msg_hold2[] PROGMEM = "Plan";
+static const char msg_hold3[] PROGMEM = "Decel";
+static const char msg_hold4[] PROGMEM = "Hold";
+static const char *const msg_hold[] PROGMEM = { msg_hold0, msg_hold1, msg_hold2, msg_hold3, msg_hold4 };
 
-static const char PROGMEM msg_home0[] = "Not Homed";
-static const char PROGMEM msg_home1[] = "Homed";
-static const char PROGMEM *msg_home[] = { msg_home0, msg_home1 };
+static const char msg_home0[] PROGMEM = "Not Homed";
+static const char msg_home1[] PROGMEM = "Homed";
+static const char *const msg_home[] PROGMEM = { msg_home0, msg_home1 };
 
-static const char PROGMEM msg_g53[] = "G53 - machine coordinate system";
-static const char PROGMEM msg_g54[] = "G54 - coordinate system 1";
-static const char PROGMEM msg_g55[] = "G55 - coordinate system 2";
-static const char PROGMEM msg_g56[] = "G56 - coordinate system 3";
-static const char PROGMEM msg_g57[] = "G57 - coordinate system 4";
-static const char PROGMEM msg_g58[] = "G58 - coordinate system 5";
-static const char PROGMEM msg_g59[] = "G59 - coordinate system 6";
-static const char PROGMEM *msg_coor[] = { msg_g53, msg_g54, msg_g55, msg_g56, msg_g57, msg_g58, msg_g59 };
+static const char msg_g53[] PROGMEM = "G53 - machine coordinate system";
+static const char msg_g54[] PROGMEM = "G54 - coordinate system 1";
+static const char msg_g55[] PROGMEM = "G55 - coordinate system 2";
+static const char msg_g56[] PROGMEM = "G56 - coordinate system 3";
+static const char msg_g57[] PROGMEM = "G57 - coordinate system 4";
+static const char msg_g58[] PROGMEM = "G58 - coordinate system 5";
+static const char msg_g59[] PROGMEM = "G59 - coordinate system 6";
+static const char *const msg_coor[] PROGMEM = { msg_g53, msg_g54, msg_g55, msg_g56, msg_g57, msg_g58, msg_g59 };
 
-static const char PROGMEM msg_g00[] = "G0  - linear traverse (seek)";
-static const char PROGMEM msg_g01[] = "G1  - linear feed";
-static const char PROGMEM msg_g02[] = "G2  - clockwise arc feed";
-static const char PROGMEM msg_g03[] = "G3  - counter clockwise arc feed";
-static const char PROGMEM msg_g80[] = "G80 - cancel motion mode (none active)";
-static const char PROGMEM *msg_momo[] = { msg_g00, msg_g01, msg_g02, msg_g03, msg_g80 };
+static const char msg_g00[] PROGMEM = "G0  - linear traverse (seek)";
+static const char msg_g01[] PROGMEM = "G1  - linear feed";
+static const char msg_g02[] PROGMEM = "G2  - clockwise arc feed";
+static const char msg_g03[] PROGMEM = "G3  - counter clockwise arc feed";
+static const char msg_g80[] PROGMEM = "G80 - cancel motion mode (none active)";
+static const char *const msg_momo[] PROGMEM = { msg_g00, msg_g01, msg_g02, msg_g03, msg_g80 };
 
-static const char PROGMEM msg_g17[] = "G17 - XY plane";
-static const char PROGMEM msg_g18[] = "G18 - XZ plane";
-static const char PROGMEM msg_g19[] = "G19 - YZ plane";
-static const char PROGMEM *msg_plan[] = { msg_g17, msg_g18, msg_g19 };
+static const char msg_g17[] PROGMEM = "G17 - XY plane";
+static const char msg_g18[] PROGMEM = "G18 - XZ plane";
+static const char msg_g19[] PROGMEM = "G19 - YZ plane";
+static const char *const msg_plan[] PROGMEM = { msg_g17, msg_g18, msg_g19 };
 
-static const char PROGMEM msg_g61[] = "G61 - exact stop mode";
-static const char PROGMEM msg_g6a[] = "G61.1 - exact path mode";
-static const char PROGMEM msg_g64[] = "G64 - continuous mode";
-static const char PROGMEM *msg_path[] = { msg_g61, msg_g61, msg_g64 };
+static const char msg_g61[] PROGMEM = "G61 - exact stop mode";
+static const char msg_g6a[] PROGMEM = "G61.1 - exact path mode";
+static const char msg_g64[] PROGMEM = "G64 - continuous mode";
+static const char *const msg_path[] PROGMEM = { msg_g61, msg_g61, msg_g64 };
 
-static const char PROGMEM msg_g90[] = "G90 - absolute distance mode";
-static const char PROGMEM msg_g91[] = "G91 - incremental distance mode";
-static const char PROGMEM *msg_dist[] = { msg_g90, msg_g91 };
+static const char msg_g90[] PROGMEM = "G90 - absolute distance mode";
+static const char msg_g91[] PROGMEM = "G91 - incremental distance mode";
+static const char *const msg_dist[] PROGMEM = { msg_g90, msg_g91 };
 
-static const char PROGMEM msg_g94[] = "G94 - units-per-minute mode (i.e. feedrate mode)";
-static const char PROGMEM msg_g93[] = "G93 - inverse time mode";
-static const char PROGMEM *msg_frmo[] = { msg_g94, msg_g93 };
+static const char msg_g94[] PROGMEM = "G94 - units-per-minute mode (i.e. feedrate mode)";
+static const char msg_g93[] PROGMEM = "G93 - inverse time mode";
+static const char *const msg_frmo[] PROGMEM = { msg_g94, msg_g93 };
 
 #else
 
@@ -1561,7 +1562,7 @@ static int8_t _get_axis_type(const index_t index)
  *
  * cm_get_unit() - get units mode as integer and display string
  * cm_get_coor() - get goodinate system
- * cm_get_momo() - get runtime motion mode
+ * cm_get_momo() - g7et runtime motion mode
  * cm_get_plan() - get model gcode plane select
  * cm_get_path() - get model gcode path control mode
  * cm_get_dist() - get model gcode distance mode
@@ -1581,7 +1582,7 @@ static int8_t _get_axis_type(const index_t index)
  * cm_print_corr()- print coordinate offsets with rotary units
  */
 
-stat_t _get_msg_helper(cmdObj_t *cmd, const char *msg_array[], uint8_t value)
+stat_t _get_msg_helper(cmdObj_t *cmd, const char *const msg_array[], uint8_t value)
 {
 	cmd->value = (float)value;
 	cmd->objtype = TYPE_INTEGER;
@@ -1737,34 +1738,34 @@ stat_t cm_run_home(cmdObj_t *cmd)
 
 /* model state print functions */
 
-const char PROGMEM fmt_vel[]  = "Velocity:%17.3f%s/min\n";
-const char PROGMEM fmt_feed[] = "Feed rate:%16.3f%s/min\n";
-const char PROGMEM fmt_line[] = "Line number:%10.0f\n";
-const char PROGMEM fmt_stat[] = "Machine state:       %s\n"; // combined machine state
-const char PROGMEM fmt_macs[] = "Raw machine state:   %s\n"; // raw machine state
-const char PROGMEM fmt_cycs[] = "Cycle state:         %s\n";
-const char PROGMEM fmt_mots[] = "Motion state:        %s\n";
-const char PROGMEM fmt_hold[] = "Feedhold state:      %s\n";
-const char PROGMEM fmt_home[] = "Homing state:        %s\n";
-const char PROGMEM fmt_unit[] = "Units:               %s\n"; // units mode as ASCII string
-const char PROGMEM fmt_coor[] = "Coordinate system:   %s\n";
-const char PROGMEM fmt_momo[] = "Motion mode:         %s\n";
-const char PROGMEM fmt_plan[] = "Plane:               %s\n";
-const char PROGMEM fmt_path[] = "Path Mode:           %s\n";
-const char PROGMEM fmt_dist[] = "Distance mode:       %s\n";
-const char PROGMEM fmt_frmo[] = "Feed rate mode:      %s\n";
-const char PROGMEM fmt_tool[] = "Tool number          %d\n";
+const char fmt_vel[]  PROGMEM = "Velocity:%17.3f%s/min\n";
+const char fmt_feed[] PROGMEM = "Feed rate:%16.3f%s/min\n";
+const char fmt_line[] PROGMEM = "Line number:%10.0f\n";
+const char fmt_stat[] PROGMEM = "Machine state:       %s\n"; // combined machine state
+const char fmt_macs[] PROGMEM = "Raw machine state:   %s\n"; // raw machine state
+const char fmt_cycs[] PROGMEM = "Cycle state:         %s\n";
+const char fmt_mots[] PROGMEM = "Motion state:        %s\n";
+const char fmt_hold[] PROGMEM = "Feedhold state:      %s\n";
+const char fmt_home[] PROGMEM = "Homing state:        %s\n";
+const char fmt_unit[] PROGMEM = "Units:               %s\n"; // units mode as ASCII string
+const char fmt_coor[] PROGMEM = "Coordinate system:   %s\n";
+const char fmt_momo[] PROGMEM = "Motion mode:         %s\n";
+const char fmt_plan[] PROGMEM = "Plane:               %s\n";
+const char fmt_path[] PROGMEM = "Path Mode:           %s\n";
+const char fmt_dist[] PROGMEM = "Distance mode:       %s\n";
+const char fmt_frmo[] PROGMEM = "Feed rate mode:      %s\n";
+const char fmt_tool[] PROGMEM = "Tool number          %d\n";
 
-const char PROGMEM fmt_pos[] = "%c position:%15.3f%s\n";
-const char PROGMEM fmt_mpo[] = "%c machine posn:%11.3f%s\n";
-const char PROGMEM fmt_ofs[] = "%c work offset:%12.3f%s\n";
-const char PROGMEM fmt_hom[] = "%c axis homing state:%2.0f\n";
+const char fmt_pos[] PROGMEM = "%c position:%15.3f%s\n";
+const char fmt_mpo[] PROGMEM = "%c machine posn:%11.3f%s\n";
+const char fmt_ofs[] PROGMEM = "%c work offset:%12.3f%s\n";
+const char fmt_hom[] PROGMEM = "%c axis homing state:%2.0f\n";
 
-const char PROGMEM fmt_gpl[] = "[gpl] default gcode plane%10d [0=G17,1=G18,2=G19]\n";
-const char PROGMEM fmt_gun[] = "[gun] default gcode units mode%5d [0=G20,1=G21]\n";
-const char PROGMEM fmt_gco[] = "[gco] default gcode coord system%3d [1-6 (G54-G59)]\n";
-const char PROGMEM fmt_gpa[] = "[gpa] default gcode path control%3d [0=G61,1=G61.1,2=G64]\n";
-const char PROGMEM fmt_gdi[] = "[gdi] default gcode distance mode%2d [0=G90,1=G91]\n";
+const char fmt_gpl[] PROGMEM = "[gpl] default gcode plane%10d [0=G17,1=G18,2=G19]\n";
+const char fmt_gun[] PROGMEM = "[gun] default gcode units mode%5d [0=G20,1=G21]\n";
+const char fmt_gco[] PROGMEM = "[gco] default gcode coord system%3d [1-6 (G54-G59)]\n";
+const char fmt_gpa[] PROGMEM = "[gpa] default gcode path control%3d [0=G61,1=G61.1,2=G64]\n";
+const char fmt_gdi[] PROGMEM = "[gdi] default gcode distance mode%2d [0=G90,1=G91]\n";
 
 void cm_print_vel(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_vel, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_feed(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_feed, GET_UNITS(ACTIVE_MODEL));}
@@ -1792,11 +1793,11 @@ void cm_print_gdi(cmdObj_t *cmd) { text_print_int(cmd, fmt_gdi);}
 
 /* system state print functions */
 
-const char PROGMEM fmt_ja[] = "[ja]  junction acceleration%8.0f%s\n";
-const char PROGMEM fmt_ct[] = "[ct]  chordal tolerance%16.3f%s\n";
-const char PROGMEM fmt_ml[] = "[ml]  min line segment%17.3f%s\n";
-const char PROGMEM fmt_ma[] = "[ma]  min arc segment%18.3f%s\n";
-const char PROGMEM fmt_ms[] = "[ms]  min segment time%13.0f uSec\n";
+const char fmt_ja[] PROGMEM = "[ja]  junction acceleration%8.0f%s\n";
+const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%16.3f%s\n";
+const char fmt_ml[] PROGMEM = "[ml]  min line segment%17.3f%s\n";
+const char fmt_ma[] PROGMEM = "[ma]  min arc segment%18.3f%s\n";
+const char fmt_ms[] PROGMEM = "[ms]  min segment time%13.0f uSec\n";
 
 void cm_print_ja(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ct(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
@@ -1829,22 +1830,22 @@ void cm_print_ms(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ms, GET_UNITS(AC
  * 	cm_print_mpo() - print position with fixed unit display - always in Degrees or MM
  */
 
-const char PROGMEM fmt_Xam[] = "[%s%s] %s axis mode%18d %s\n";
-const char PROGMEM fmt_Xfr[] = "[%s%s] %s feedrate maximum%15.3f%s/min\n";
-const char PROGMEM fmt_Xvm[] = "[%s%s] %s velocity maximum%15.3f%s/min\n";
-const char PROGMEM fmt_Xtm[] = "[%s%s] %s travel maximum%17.3f%s\n";
-const char PROGMEM fmt_Xjm[] = "[%s%s] %s jerk maximum%15.0f%s/min^3 * 1 million\n";
-const char PROGMEM fmt_Xjh[] = "[%s%s] %s jerk homing%16.0f%s/min^3 * 1 million\n";
-const char PROGMEM fmt_Xjd[] = "[%s%s] %s junction deviation%14.4f%s (larger is faster)\n";
-const char PROGMEM fmt_Xra[] = "[%s%s] %s radius value%20.4f%s\n";
-const char PROGMEM fmt_Xsn[] = "[%s%s] %s switch min%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
-const char PROGMEM fmt_Xsx[] = "[%s%s] %s switch max%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
-const char PROGMEM fmt_Xsv[] = "[%s%s] %s search velocity%16.3f%s/min\n";
-const char PROGMEM fmt_Xlv[] = "[%s%s] %s latch velocity%17.3f%s/min\n";
-const char PROGMEM fmt_Xlb[] = "[%s%s] %s latch backoff%18.3f%s\n";
-const char PROGMEM fmt_Xzb[] = "[%s%s] %s zero backoff%19.3f%s\n";
-const char PROGMEM fmt_cofs[] = "[%s%s] %s %s offset%20.3f%s\n";
-const char PROGMEM fmt_cpos[] = "[%s%s] %s %s position%18.3f%s\n";
+const char fmt_Xam[] PROGMEM = "[%s%s] %s axis mode%18d %s\n";
+const char fmt_Xfr[] PROGMEM = "[%s%s] %s feedrate maximum%15.3f%s/min\n";
+const char fmt_Xvm[] PROGMEM = "[%s%s] %s velocity maximum%15.3f%s/min\n";
+const char fmt_Xtm[] PROGMEM = "[%s%s] %s travel maximum%17.3f%s\n";
+const char fmt_Xjm[] PROGMEM = "[%s%s] %s jerk maximum%15.0f%s/min^3 * 1 million\n";
+const char fmt_Xjh[] PROGMEM = "[%s%s] %s jerk homing%16.0f%s/min^3 * 1 million\n";
+const char fmt_Xjd[] PROGMEM = "[%s%s] %s junction deviation%14.4f%s (larger is faster)\n";
+const char fmt_Xra[] PROGMEM = "[%s%s] %s radius value%20.4f%s\n";
+const char fmt_Xsn[] PROGMEM = "[%s%s] %s switch min%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
+const char fmt_Xsx[] PROGMEM = "[%s%s] %s switch max%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
+const char fmt_Xsv[] PROGMEM = "[%s%s] %s search velocity%16.3f%s/min\n";
+const char fmt_Xlv[] PROGMEM = "[%s%s] %s latch velocity%17.3f%s/min\n";
+const char fmt_Xlb[] PROGMEM = "[%s%s] %s latch backoff%18.3f%s\n";
+const char fmt_Xzb[] PROGMEM = "[%s%s] %s zero backoff%19.3f%s\n";
+const char fmt_cofs[] PROGMEM = "[%s%s] %s %s offset%20.3f%s\n";
+const char fmt_cpos[] PROGMEM = "[%s%s] %s %s position%18.3f%s\n";
 
 static void _print_axis_ui8(cmdObj_t *cmd, const char *format)
 {

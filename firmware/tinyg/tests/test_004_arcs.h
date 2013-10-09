@@ -6,7 +6,7 @@
  *	  - Comments are not allowed in the char array, but gcode comments are OK e.g. (g0 test)
  */
 
-const char PROGMEM test_arcs[] = "\
+const char test_arcs[] PROGMEM = "\
 /(msg**** Arc Test [v1] ****)\n\
 N1 g00g17g21g40g49g80g90\n\
 N10 g0x0y0\n\
@@ -39,7 +39,7 @@ N250 g0x0y0z0\n\
 N260 m30";
 
 /*
-const char PROGMEM test_arcs[] = "\
+const char test_arcs[] PROGMEM = "\
 /(msg**** Arc Test [v1] ****)\n\
 N1 g00g17g21g40g49g80g90\n\
 N10 g0x0y0\n\

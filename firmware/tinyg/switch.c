@@ -251,19 +251,19 @@ stat_t sw_set_sw(cmdObj_t *cmd)			// switch setting
 
 #ifdef __TEXT_MODE
 
-const char PROGMEM fmt_st[] = "[st]  switch type%18d [0=NO,1=NC]\n";
+static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0=NO,1=NC]\n";
 void sw_print_st(cmdObj_t *cmd) { text_print_flt(cmd, fmt_st);}
 
-//const char PROGMEM fmt_ss[]   = "Switch %s state:     %d\n";
+//static const char fmt_ss[] PROGMEM = "Switch %s state:     %d\n";
 //void sw_print_ss(cmdObj_t *cmd) { fprintf(stderr, fmt_ss, cmd->token, (uint8_t)cmd->value);}
 
 /*
-static const char PROGMEM msg_sw0[] = "Disabled";
-static const char PROGMEM msg_sw1[] = "NO homing";
-static const char PROGMEM msg_sw2[] = "NO homing & limit";
-static const char PROGMEM msg_sw3[] = "NC homing";
-static const char PROGMEM msg_sw4[] = "NC homing & limit";
-static const char PROGMEM *msg_sw[] = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
+static const char msg_sw0[] PROGMEM = "Disabled";
+static const char msg_sw1[] PROGMEM = "NO homing";
+static const char msg_sw2[] PROGMEM = "NO homing & limit";
+static const char msg_sw3[] PROGMEM = "NC homing";
+static const char msg_sw4[] PROGMEM = "NC homing & limit";
+static const char *const msg_sw[] PROGMEM = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
 */
 
 

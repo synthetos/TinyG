@@ -23,7 +23,7 @@
  *	  -	The character array should be derived from the filename (by convention)
  *	  - Comments are not allowed in the char array, but gcode comments are OK e.g. (g0 test)
  */
-const char PROGMEM test_smoke[] = "\
+const char test_smoke[] PROGMEM = "\
 (MSG**** Smoke Test [v1] ****)\n\
 G00 G17 G21 G40 G49 G80 G90\n\
 g0x0y0z0\n\

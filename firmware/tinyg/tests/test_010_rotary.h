@@ -5,7 +5,7 @@
  *	  -	The character array should be derived from the filename (by convention)
  *	  - Comments are not allowed in the char array, but gcode comments are OK e.g. (g0 test)
  */
-const char PROGMEM test_rotary[] = "\
+const char test_rotary[] PROGMEM = "\
 (MSG**** Rotary Axis Motion Test [v1] ****)\n\
 g00g17g21g40g49g80g90\n\
 g0x0y0z0a0b0c0\n\

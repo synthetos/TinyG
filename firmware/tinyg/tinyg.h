@@ -47,7 +47,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		393.09	// Removed minimum move time check in mp_aline()
+#define TINYG_FIRMWARE_BUILD   		394.01	// Changes to aligh AS4, AS6 and ARM C++ progrem memory constants
 #define TINYG_FIRMWARE_VERSION		0.97	// major version 
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
@@ -85,8 +85,8 @@
 #ifdef __AVR
 
 #include <avr/pgmspace.h>		// defines PROGMEM and PSTR
-#undef PROGMEM
-#define PROGMEM __attribute__((progmem))
+//#undef PROGMEM
+//#define PROGMEM __attribute__((progmem))
 
 typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 

@@ -23,7 +23,7 @@
   Setup a memory file (OK, it's really just a string)
   should be declared as so:
 
-	const char PROGMEM g0_test1[] = "\
+	const char g0_test1[] PROGMEM= "\
 	g0 x10 y20 z30\n\
 	g0 x0 y21 z-34.2";
 
@@ -84,7 +84,7 @@ typedef struct xioFILE {
  */
 void xio_init_file(void);
 FILE *xio_open_file(const uint8_t dev, const char *addr, const flags_t flags);
-int xio_gets_pgm(xioDev_t *d, char *buf, const int size);			// read string from program memory
+int xio_gets_pgm(xioDev_t *d, char *buf, const int size);		// read string from program memory
 int xio_getc_pgm(FILE *stream);									// get a character from PROGMEM
 int xio_putc_pgm(const char c, FILE *stream);					// always returns ERROR
 

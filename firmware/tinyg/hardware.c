@@ -228,11 +228,11 @@ stat_t hw_set_hv(cmdObj_t *cmd)
 
 #ifdef __TEXT_MODE
 
-const char PROGMEM fmt_fb[] = "[fb]  firmware build%18.2f\n";
-const char PROGMEM fmt_fv[] = "[fv]  firmware version%16.2f\n";
-const char PROGMEM fmt_hp[] = "[hp]  hardware platform%15.2f\n";
-const char PROGMEM fmt_hv[] = "[hv]  hardware version%16.2f\n";
-const char PROGMEM fmt_id[] = "[id]  TinyG ID%30s\n";
+static const char fmt_fb[] PROGMEM = "[fb]  firmware build%18.2f\n";
+static const char fmt_fv[] PROGMEM = "[fv]  firmware version%16.2f\n";
+static const char fmt_hp[] PROGMEM = "[hp]  hardware platform%15.2f\n"; 
+static const char fmt_hv[] PROGMEM = "[hv]  hardware version%16.2f\n";
+static const char fmt_id[] PROGMEM = "[id]  TinyG ID%30s\n";
 
 void hw_print_fb(cmdObj_t *cmd) { text_print_flt(cmd, fmt_fb);}
 void hw_print_fv(cmdObj_t *cmd) { text_print_flt(cmd, fmt_fv);}

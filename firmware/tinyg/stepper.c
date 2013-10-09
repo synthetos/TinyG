@@ -655,21 +655,21 @@ stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initia
 
 #ifdef __TEXT_MODE
 
-static const char PROGMEM msg_units0[] = " in";	// used by generic print functions
-static const char PROGMEM msg_units1[] = " mm";
-static const char PROGMEM msg_units2[] = " deg";
-static const char PROGMEM *msg_units[] = { msg_units0, msg_units1, msg_units2 };
+static const char msg_units0[] PROGMEM = " in";	// used by generic print functions
+static const char msg_units1[] PROGMEM = " mm";
+static const char msg_units2[] PROGMEM = " deg";
+static const char *const msg_units[] PROGMEM = { msg_units0, msg_units1, msg_units2 };
 #define DEGREE_INDEX 2
 
-const char PROGMEM fmt_mt[] = "[mt]  motor idle timeout%14.2f Sec\n";
-const char PROGMEM fmt_me[] = "motors energized\n";
-const char PROGMEM fmt_md[] = "motors de-energized\n";
-const char PROGMEM fmt_0ma[] = "[%s%s] m%s map to axis%15d [0=X,1=Y,2=Z...]\n";
-const char PROGMEM fmt_0sa[] = "[%s%s] m%s step angle%20.3f%s\n";
-const char PROGMEM fmt_0tr[] = "[%s%s] m%s travel per revolution%9.3f%s\n";
-const char PROGMEM fmt_0mi[] = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
-const char PROGMEM fmt_0po[] = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
-const char PROGMEM fmt_0pm[] = "[%s%s] m%s power management%10d [0=remain powered,1=power down when idle]\n";
+static const char fmt_mt[] PROGMEM = "[mt]  motor idle timeout%14.2f Sec\n";
+static const char fmt_me[] PROGMEM = "motors energized\n";
+static const char fmt_md[] PROGMEM = "motors de-energized\n";
+static const char fmt_0ma[] PROGMEM = "[%s%s] m%s map to axis%15d [0=X,1=Y,2=Z...]\n";
+static const char fmt_0sa[] PROGMEM = "[%s%s] m%s step angle%20.3f%s\n";
+static const char fmt_0tr[] PROGMEM = "[%s%s] m%s travel per revolution%9.3f%s\n";
+static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16d [1,2,4,8]\n"; 
+static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
+static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=remain powered,1=power down when idle]\n";
 
 void st_print_mt(cmdObj_t *cmd) { text_print_flt(cmd, fmt_mt);}
 void st_print_me(cmdObj_t *cmd) { text_print_nul(cmd, fmt_me);}
