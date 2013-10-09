@@ -15,10 +15,11 @@
     <AssemblyName>tinyg</AssemblyName>
     <Name>tinyg</Name>
     <RootNamespace>tinyg</RootNamespace>
-    <ToolchainFlavour>Native2</ToolchainFlavour>
+    <ToolchainFlavour>Native</ToolchainFlavour>
     <KeepTimersRunning>true</KeepTimersRunning>
     <OverrideVtor>false</OverrideVtor>
-    <OverrideVtorValue>exception_table</OverrideVtorValue>
+    <OverrideVtorValue>
+    </OverrideVtorValue>
     <eraseonlaunchrule>0</eraseonlaunchrule>
     <AsfVersion>2.11.1</AsfVersion>
     <avrtool>com.atmel.avrdbg.tool.simulator</avrtool>
