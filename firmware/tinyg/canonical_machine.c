@@ -193,19 +193,19 @@ uint8_t cm_get_path_control(GCodeState_t *gcode_state) { return gcode_state->pat
 uint8_t cm_get_distance_mode(GCodeState_t *gcode_state) { return gcode_state->distance_mode;}
 uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gcode_state) { return gcode_state->inverse_feed_rate_mode;}
 uint8_t cm_get_tool(GCodeState_t *gcode_state) { return gcode_state->tool;}
-uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spindle_mode;} 
+uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
 uint8_t	cm_get_block_delete_switch() { return gmx.block_delete_switch;}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
 
 void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode) { gcode_state->motion_mode = motion_mode;}
-void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode) { gcode_state->spindle_mode = spindle_mode;} 
+void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode) { gcode_state->spindle_mode = spindle_mode;}
 void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed) { gcode_state->spindle_speed = speed;}
 void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool) { gcode_state->tool = tool;}
 
-void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override) 
+void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override)
 {
 	gcode_state->absolute_override = absolute_override;
-	cm_set_work_offsets(MODEL);	// must reset offsets if you change absolute override	
+	cm_set_work_offsets(MODEL);	// must reset offsets if you change absolute override
 }
 
 /*
@@ -579,7 +579,7 @@ void canonical_machine_init()
 
 	gmx.block_delete_switch = true;
 
-	// never start a machine in a motion mode	
+	// never start a machine in a motion mode
 	gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
 
 	// reset request flags
@@ -590,7 +590,7 @@ void canonical_machine_init()
 	ACTIVE_MODEL = MODEL;			// setup initial Gcode model pointer
 
 	// signal that the machine is ready for action
-	cm.machine_state = MACHINE_READY;	
+	cm.machine_state = MACHINE_READY;
 	cm.combined_state = COMBINED_READY;
 }
 
@@ -626,7 +626,6 @@ stat_t cm_assertions()
 	if ((cmdStr.magic_start != MAGICNUM) || (cmdStr.magic_end != MAGICNUM)) return (STAT_MEMORY_FAULT);
 	return (STAT_OK);
 }
-
 
 /**************************
  * Representation (4.3.3) *
@@ -1051,9 +1050,9 @@ stat_t cm_mist_coolant_control(uint8_t mist_coolant)
 static void _exec_mist_coolant_control(float *value, float *flag)
 {
 	gm.mist_coolant = (uint8_t)value[0];
-	
+
 #ifdef __AVR
-	if (gm.mist_coolant == true) 
+	if (gm.mist_coolant == true)
 		gpio_set_bit_on(MIST_COOLANT_BIT);	// if
 	gpio_set_bit_off(MIST_COOLANT_BIT);		// else
 #endif // __AVR
@@ -1269,7 +1268,7 @@ stat_t cm_queue_flush()
 #endif
 	mp_flush_planner();				// flush planner queue
 
-	// Note: The following uses low-level mp calls for absolute position. 
+	// Note: The following uses low-level mp calls for absolute position.
 	//		 It could also use cm_get_absolute_position(RUNTIME, axis);
 
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
@@ -1341,7 +1340,7 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_flood_coolant_control(false);			// M9
 		cm_set_inverse_feed_rate_mode(false);
 	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);// NIST specifies G1, but we cancel motion mode. Safer.
-		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);	
+		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
 
 	sr_request_status_report(SR_IMMEDIATE_REQUEST);	// request a final status report (not unfiltered)
@@ -1425,8 +1424,8 @@ static const char msg_stat7[] PROGMEM = "Probe";
 static const char msg_stat8[] PROGMEM = "Cycle";
 static const char msg_stat9[] PROGMEM = "Homing";
 static const char msg_stat10[] PROGMEM = "Jog";
-static const char *const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3, 
-												msg_stat4, msg_stat5, msg_stat6, msg_stat7, 
+static const char *const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3,
+												msg_stat4, msg_stat5, msg_stat6, msg_stat7,
 												msg_stat8, msg_stat9, msg_stat10};
 
 static const char msg_macs0[] PROGMEM = "Initializing";
@@ -1562,13 +1561,13 @@ static int8_t _get_axis_type(const index_t index)
  *
  * cm_get_unit() - get units mode as integer and display string
  * cm_get_coor() - get goodinate system
- * cm_get_momo() - g7et runtime motion mode
+ * cm_get_momo() - get runtime motion mode
  * cm_get_plan() - get model gcode plane select
  * cm_get_path() - get model gcode path control mode
  * cm_get_dist() - get model gcode distance mode
  * cm_get_frmo() - get model gcode feed rate mode
  * cm_get_tool() - get tool
- * cm_get_feed() - get feed rate 
+ * cm_get_feed() - get feed rate
  * cm_get_mline()- get model line number for status reports
  * cm_get_line() - get active (model or runtime) line number for status reports
  * cm_get_vel()  - get runtime velocity
@@ -1699,7 +1698,6 @@ stat_t cm_set_am(cmdObj_t *cmd)		// axis mode
 stat_t cm_get_jrk(cmdObj_t *cmd)
 {
 	get_flu(cmd);
-//	if (cfg.comm_mode == TEXT_MODE) cmd->value /= 1000000;
 	return (STAT_OK);
 }
 

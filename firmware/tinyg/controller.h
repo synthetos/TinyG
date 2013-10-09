@@ -24,8 +24,12 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef controller_h
-#define controller_h
+#ifndef CONTROLLER_H_ONCE
+#define CONTROLLER_H_ONCE
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 //Note: requires #include tinyh.h --> #include <stdio.h> for FILE def'n
 
@@ -38,7 +42,7 @@
 #define LED_NORMAL_TIMER 1000			// blink rate for normal operation (in ms)
 #define LED_ALARM_TIMER 100				// blink rate for alarm state (in ms)
 
-struct controllerSingleton {			// main TG controller struct
+typedef struct controllerSingleton {			// main TG controller struct
 	uint16_t magic_start;				// magic number to test memory integity	
 	uint8_t state;						// controller state
 	float null;							// dumping ground for items with no target
@@ -67,14 +71,17 @@ struct controllerSingleton {			// main TG controller struct
 	char out_buf[OUTPUT_BUFFER_LEN];	// output buffer
 	char saved_buf[SAVED_BUFFER_LEN];	// save the input buffer
 	uint16_t magic_end;
-};
-struct controllerSingleton cs;			// controller state structure
+} controller_t;
+
+extern controller_t cs;					// controller state structure
 
 enum cmControllerState {				// manages startup lines
 	CONTROLLER_INITIALIZING = 0,		// controller is initializing - not ready for use
 	CONTROLLER_STARTUP,					// controller is running startup lines
 	CONTROLLER_READY					// controller is active and ready for use
 };
+
+/**** function prototypes ****/
 
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
 void controller_run(void);
@@ -85,4 +92,8 @@ void tg_set_primary_source(uint8_t dev);
 void tg_set_secondary_source(uint8_t dev);
 void tg_text_response(const uint8_t status, const char *buf);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif // End of include guard: CONTROLLER_H_ONCE

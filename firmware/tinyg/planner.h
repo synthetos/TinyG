@@ -68,7 +68,8 @@ enum moveState {
 #define MIN_SEGMENT_LENGTH 		((float)0.05)		// Smallest accel/decel segment (mm). Set to produce ~10 ms segments (0.01)
 #define MIN_LENGTH_MOVE 		((float)0.001)		// millimeters
 
-#define JERK_MATCH_PRECISION 1000	// precision to which jerk must match to be considered effectively the same
+#define JERK_MULTIPLIER			((float)1000000)
+#define JERK_MATCH_PRECISION	((float)1000)		// precision to which jerk must match to be considered effectively the same
 
 // ESTD_SEGMENT_USEC	 Microseconds per planning segment
 //	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed

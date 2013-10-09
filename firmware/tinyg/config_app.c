@@ -51,7 +51,7 @@ extern "C"{
 
 /*** structures ***/
 
-cfgParameters_t cfg; 						// application specific configuration parameters
+cfgParameters_t cfg; 				// application specific configuration parameters
 
 /***********************************************************************************
  **** application-specific internal functions **************************************
@@ -59,17 +59,17 @@ cfgParameters_t cfg; 						// application specific configuration parameters
 // See config.cpp/.h for generic variables and functions that are not specific to 
 // TinyG or the motion control application domain
 
-// helpers (most helpers are defined immediate above their usage so they don't need prototypes here)
+// helpers (most helpers are defined immediately above their usage so they don't need prototypes here)
 
 static stat_t _do_motors(cmdObj_t *cmd);	// print parameters for all motor groups
 static stat_t _do_axes(cmdObj_t *cmd);		// print parameters for all axis groups
-static stat_t _do_offsets(cmdObj_t *cmd);	// print offsets for G54-G59, G92
+static stat_t _do_offsets(cmdObj_t *cmd);	// print offset parameters for G54-G59,G92, G28, G30
 static stat_t _do_all(cmdObj_t *cmd);		// print all parameters
 
 // communications settings and functions
 
 //static stat_t set_ic(cmdObj_t *cmd);		// ignore CR or LF on RX input
-static stat_t set_ec(cmdObj_t *cmd);		// expand CRLF on TX outout
+static stat_t set_ec(cmdObj_t *cmd);		// expand CRLF on TX output
 static stat_t set_ee(cmdObj_t *cmd);		// enable character echo
 static stat_t set_ex(cmdObj_t *cmd);		// enable XON/XOFF and RTS/CTS flow control
 static stat_t set_baud(cmdObj_t *cmd);		// set USB baud rate
@@ -80,15 +80,18 @@ static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
  **** CONFIG TABLE  ****************************************************************
  ***********************************************************************************
  *	NOTES:
- *	- Token matching occurs from the most specific to the least specific.
- *	  This means that if shorter tokens overlap longer ones the longer one
- *	  must precede the shorter one. E.g. "gco" needs to come before "gc"
+ *	- Token matching occurs from the most specific to the least specific. This means
+ *	  that if shorter tokens overlap longer ones the longer one must precede the
+ *	  shorter one. E.g. "gco" needs to come before "gc"
  *
  *	- Mark group strings for entries that have no group as nul -->"". 
  *	  This is important for group expansion.
  *
  *	- Groups do not have groups. Neither do uber-groups, e.g.
  *	  'x' is --> { "", "x",  	and 'm' is --> { "", "m",  
+ *
+ *	NOTE: If the count of lines in cfgArray exceeds 255 you need to change index_t
+ *	uint16_t in the config.h file. 
  */
 
 const cfgItem_t cfgArray[] PROGMEM = {
@@ -117,7 +120,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "dist",_f00, 0, cm_print_dist, cm_get_dist, set_nul,(float *)&cs.null, 0 },	// distance mode
 	{ "",   "frmo",_f00, 0, cm_print_frmo, cm_get_frmo, set_nul,(float *)&cs.null, 0 },	// feed rate mode
 	{ "",   "tool",_f00, 0, cm_print_tool, cm_get_toolv,set_nul,(float *)&cs.null, 0 },	// active tool
-	{ "",   "tick",_f00, 0, tx_print_int,  get_int,     set_int,(float *)&rtc.sys_ticks, 0 },// tick count
+//	{ "",   "tick",_f00, 0, tx_print_int,  get_int,     set_int,(float *)&rtc.sys_ticks, 0 },// tick count
 
 	{ "mpo","mpox",_f00, 3, cm_print_mpo, cm_get_mpo, set_nul,(float *)&cs.null, 0 },	// X machine position
 	{ "mpo","mpoy",_f00, 3, cm_print_mpo, cm_get_mpo, set_nul,(float *)&cs.null, 0 },	// Y machine position
@@ -136,8 +139,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "ofs","ofsx",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// X work offset
 	{ "ofs","ofsy",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// Y work offset
 	{ "ofs","ofsz",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// Z work offset
-	{ "ofs","ofsa",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// A work offset 
-	{ "ofs","ofsb",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// B work offset 
+	{ "ofs","ofsa",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// A work offset
+	{ "ofs","ofsb",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// B work offset
 	{ "ofs","ofsc",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// C work offset
 
 	{ "hom","home",_f00, 0, cm_print_home, cm_get_home, cm_run_home,(float *)&cs.null, 0 },	   // homing state, invoke homing cycle
@@ -158,7 +161,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 //	{ "", "sx",  _f00, 0, tx_print_nul, run_sx,  run_sx ,  (float *)&cs.null, 0 },	// send XOFF, XON test
 
 #ifdef __HELP_SCREENS
-	{ "", "defa",_f00, 0, tx_print_nul, help_defa,	 	 set_defaults,(float *)&cs.null,0 },	// set/print defaults / help screen
+	{ "", "defa",_f00, 0, tx_print_nul, help_defa,		 set_defaults,(float *)&cs.null,0 },	// set/print defaults / help screen
 	{ "", "test",_f00, 0, tx_print_nul, help_test,		 tg_test, 	  (float *)&cs.null,0 },	// run tests, print test help screen
 	{ "", "boot",_f00, 0, tx_print_nul, help_boot_loader,hw_run_boot, (float *)&cs.null,0 },
 	{ "", "help",_f00, 0, tx_print_nul, help_config,	 set_nul, 	  (float *)&cs.null,0 },	// prints config help screen
@@ -519,12 +522,13 @@ uint8_t cmd_index_is_single(index_t index) { return ((index <= CMD_INDEX_END_SIN
 uint8_t cmd_index_is_group(index_t index) { return (((index >= CMD_INDEX_START_GROUPS) && (index < CMD_INDEX_START_UBER_GROUPS)) ? true : false);}
 uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_GROUPS) ? true : false);}
 
+
 /**** UberGroup Operations ****************************************************
  * Uber groups are groups of groups organized for convenience:
- *	- motors	- group of all motor groups
- *	- axes		- group of all axis groups
- *	- offsets	- group of all offsets and stored positions
- *	- all		- group of all groups
+ *	- motors		- group of all motor groups
+ *	- axes			- group of all axis groups
+ *	- offsets		- group of all offsets and stored positions
+ *	- all			- group of all groups
  *
  * _do_group_list()	- get and print all groups in the list (iteration)
  * _do_motors()		- get and print motor uber group 1-4

@@ -54,14 +54,14 @@ typedef struct cmAxis {
 	float feedrate_max;				// max velocity in mm/min or deg/min
 	float velocity_max;				// max velocity in mm/min or deg/min
 	float travel_max;				// work envelope w/warned or rejected blocks
-	float jerk_max;					// max jerk (Jm) in mm/min^3
+	float jerk_max;					// max jerk (Jm) in mm/min^3 divided by 1 million
+	float jerk_homing;				// homing jerk (Jh) in mm/min^3 divided by 1 million
 	float junction_dev;				// aka cornering delta
 	float radius;					// radius in mm for rotary axis modes
 	float search_velocity;			// homing search velocity
 	float latch_velocity;			// homing latch velocity
 	float latch_backoff;			// backoff from switches prior to homing latch movement
 	float zero_backoff;				// backoff from switches for machine zero
-	float jerk_homing;				// homing jerk (Jh) in mm/min^3
 } cfgAxis_t;
 
 typedef struct cmSingleton {		// struct to manage cm globals and cycles
@@ -372,8 +372,8 @@ enum cmNextAction {						// these are in order to optimized CASE statement
 enum cmMotionMode {						// G Modal Group 1
 	MOTION_MODE_STRAIGHT_TRAVERSE=0,	// G0 - straight traverse
 	MOTION_MODE_STRAIGHT_FEED,			// G1 - straight feed
-	MOTION_MODE_CW_ARC,					// G2 - arc feed
-	MOTION_MODE_CCW_ARC,				// G3 - arc feed
+	MOTION_MODE_CW_ARC,					// G2 - clockwise arc feed
+	MOTION_MODE_CCW_ARC,				// G3 - counter-clockwise arc feed
 	MOTION_MODE_CANCEL_MOTION_MODE,		// G80
 	MOTION_MODE_STRAIGHT_PROBE,			// G38.2
 	MOTION_MODE_CANNED_CYCLE_81,		// G81 - drilling
@@ -455,7 +455,7 @@ enum cmProgramFlow {
 	PROGRAM_END
 };
 
-enum cmSpindleState {				// spindle state settings (See system.h for bit settings)
+enum cmSpindleState {				// spindle state settings (See hardware.h for bit settings)
 	SPINDLE_OFF = 0,
 	SPINDLE_CW,
 	SPINDLE_CCW
@@ -477,12 +477,10 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 	AXIS_DISABLED = 0,				// kill axis
 	AXIS_STANDARD,					// axis in coordinated motion w/standard behaviors
 	AXIS_INHIBITED,					// axis is computed but not activated
-	AXIS_RADIUS,					// rotary axis calibrated to circumference
+	AXIS_RADIUS						// rotary axis calibrated to circumference
 };	// ordering must be preserved. See cm_set_move_times()
 #define AXIS_MODE_MAX_LINEAR AXIS_INHIBITED
 #define AXIS_MODE_MAX_ROTARY AXIS_RADIUS
-
-#define JERK_MULTIPLIER ((float)1000000)
 
 /*****************************************************************************
  * FUNCTION PROTOTYPES

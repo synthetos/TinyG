@@ -49,14 +49,10 @@ qrSingleton_t qr;
  * rpt_exception() - generate an exception message - always in JSON format
  * rpt_er()		   - send a bogus exception report for testing purposes (it's not real)
  */
-//void rpt_exception(uint8_t status, int16_t value)
 void rpt_exception(uint8_t status)
 {
 	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\"}}\n"), 
 		TINYG_FIRMWARE_BUILD, status, get_status_message(status));
-
-//	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\",\"val\":%d}}\n"), 
-//		TINYG_FIRMWARE_BUILD, status, get_status_message(status), value);
 }
 
 stat_t rpt_er(cmdObj_t *cmd) 
@@ -64,7 +60,6 @@ stat_t rpt_er(cmdObj_t *cmd)
 	rpt_exception(STAT_GENERIC_EXCEPTION_REPORT);	// bogus exception report
 	return (STAT_OK);
 }
-
 
 /**** Application Messages *********************************************************
  * rpt_print_initializing_message()	   - initializing configs from hard-coded profile
