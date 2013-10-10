@@ -1,6 +1,6 @@
 /*
  * canonical_machine.c - rs274/ngc canonical machine.
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
  * Copyright (c) 2010 - 2013 Alden S Hart, Jr.
  *

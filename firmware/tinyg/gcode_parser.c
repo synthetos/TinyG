@@ -21,6 +21,7 @@
 #include "controller.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
+#include "spindle.h"
 #include "util.h"
 #include "xio/xio.h"				// for char definitions
 
