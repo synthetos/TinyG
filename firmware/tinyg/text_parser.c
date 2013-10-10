@@ -253,7 +253,7 @@ void text_print_flt_units(cmdObj_t *cmd, const char_t *format, const char_t *uni
 /*
  * Formatted print supporting the text parser
  */
-const char PROGMEM fmt_tv[] = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
+static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
 
 void tx_print_tv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_tv);}
 

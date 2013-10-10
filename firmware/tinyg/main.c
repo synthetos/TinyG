@@ -16,7 +16,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* See github.coom/Synthetos/tinyg for code and docs on the wiki 
+/* See github.com/Synthetos/tinyg for code and docs on the wiki 
  */
 
 #include <avr/interrupt.h>
