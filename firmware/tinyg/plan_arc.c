@@ -1,8 +1,8 @@
 /*
  * plan_arc.c - arc planning and motion execution
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  * Portions copyright (c) 2009 Simen Svale Skogsrud
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
@@ -16,6 +16,10 @@
  * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+/* This module actually contains some parts that belong ion the canonical machine, 
+ * and other parts that belong at the motion planner level, but the whole thing is 
+ * treated as if it were part of the motion planner.
  */
 
 #include "tinyg.h"
@@ -44,7 +48,7 @@ static float _get_theta(const float x, const float y);
 static stat_t _setup_arc(const GCodeState_t *gm_arc, 	// gcode model state
 			  const float i, const float j, const float k,
 			  const float theta, const float radius, const float angular_travel, // radians along arc (+CW, -CCW)
-			  const float linear_travel, 
+			  const float linear_travel,
 			  const uint8_t axis_1, const uint8_t axis_2, const uint8_t axis_linear);
 
 /*****************************************************************************
@@ -53,6 +57,7 @@ static stat_t _setup_arc(const GCodeState_t *gm_arc, 	// gcode model state
  * cm_arc_init()	 - initialize arcs
  * cm_arc_feed() 	 - canonical machine entry point for arc
  * cm_arc_callback() - mail-loop callback for arc generation
+ * cm_abort_arc()	 - stop an arc in process
  */
 
 /*
@@ -73,7 +78,6 @@ void cm_arc_init()
  * The arc is approximated by generating a large number of tiny, linear
  * segments.
  */
-
 stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 				   float i, float j, float k, 		// offsets
 				   float radius, 					// non-zero sets radius mode
@@ -85,11 +89,11 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 	gm.motion_mode = motion_mode;
 
 	// trap zero feed rate condition
-	if ((gm.inverse_feed_rate_mode == false) && (fp_ZERO(gm.feed_rate))) {	
+	if ((gm.inverse_feed_rate_mode == false) && (fp_ZERO(gm.feed_rate))) {
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
 
-	// Trap conditions where no arc movement will occur, 
+	// Trap conditions where no arc movement will occur,
 	// but the system is still in arc motion mode - this is not an error.
 	// This can happen when a F word or M word is by itself.
 	// (The tests below are organized for execution efficiency)
@@ -199,7 +203,7 @@ static stat_t _setup_arc(const GCodeState_t *gm_arc, 	// gcode model state
 	arc.gm.linenum = cm_get_linenum(MODEL);
 
 	// length is the total mm of travel of the helix (or just a planar arc)
-	arc.length = hypot(angular_travel * radius, fabs(linear_travel));	
+	arc.length = hypot(angular_travel * radius, fabs(linear_travel));
 	if (arc.length < cm.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE_ERROR); // too short to draw
 
 	// load the arc controller singleton
@@ -223,8 +227,8 @@ static stat_t _setup_arc(const GCodeState_t *gm_arc, 	// gcode model state
 	float segments_required_for_minimum_distance = arc.length / cm.arc_segment_len;
 	float segments_required_for_minimum_time = arc.arc_time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
 	arc.segments = floor(min3(segments_required_for_chordal_accuracy,
-							 segments_required_for_minimum_distance,
-							 segments_required_for_minimum_time));
+							  segments_required_for_minimum_distance,
+							  segments_required_for_minimum_time));
 
 	arc.segments = max(arc.segments,1);				//...but is at least 1 segment
 	arc.gm.move_time = arc.arc_time / arc.segments;	// gcode state struct gets segment_time, not arc time
@@ -274,14 +278,14 @@ static stat_t _compute_center_arc()
 	// compute angular travel and invert if gcode wants a counterclockwise arc
 	// if angular travel is zero interpret it as a full circle
 	float angular_travel = theta_end - theta_start;
-	if (fp_ZERO(angular_travel)) {		
-		if (gm.motion_mode == MOTION_MODE_CCW_ARC) { 
+	if (fp_ZERO(angular_travel)) {
+		if (gm.motion_mode == MOTION_MODE_CCW_ARC) {
 			angular_travel -= 2*M_PI;
 		} else {
 			angular_travel = 2*M_PI;
 		}
 	} else {
-		if (gm.motion_mode == MOTION_MODE_CCW_ARC) { 
+		if (gm.motion_mode == MOTION_MODE_CCW_ARC) {
 			angular_travel -= 2*M_PI;
 		}
 	}
@@ -413,7 +417,7 @@ static stat_t _get_arc_radius()
 	gmx.arc_offset[gmx.plane_axis_1] = (y+(x*h_x2_div_d))/2;
 	return (STAT_OK);
 } 
-    
+
 /*
  * _get_arc_time ()
  *
@@ -427,7 +431,6 @@ static stat_t _get_arc_radius()
  *	Room for improvement: At least take the hypotenuse of the planar movement and
  *	the linear travel into account, but how many people actually use helixes?
  */
-
 static float _get_arc_time (const float linear_travel, 		// in mm
 							 const float angular_travel, 	// in radians
 							 const float radius)			// in mm
@@ -456,7 +459,7 @@ static float _get_arc_time (const float linear_travel, 		// in mm
 /* 
  * _get_theta(float x, float y)
  *
- *	Find the angle in radians of deviance from the positive y axis;
+ *	Find the angle in radians of deviance from the positive y axis
  *	negative angles to the left of y-axis, positive to the right.
  */
 
