@@ -1,8 +1,8 @@
 /*
- * gcode_interpreter.c - rs274/ngc Gcode parser.
+ * gcode_parser.c - rs274/ngc Gcode parser.
  * Part of TinyG project
  *
- * Copyright (c) 2010-2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -67,8 +67,8 @@ stat_t gc_gcode_parser(char_t *block)
 		return (STAT_NOOP);
 	}
 //	if (*msg != NUL) { // +++++ THIS HAS A SERIOUS BUG IN IT SO FOR NOW IT'S DISABLED
-//		(void)cm_message(msg);				// queue the message	
-//	}	
+//		(void)cm_message(msg);				// queue the message
+//	}
 	return(_parse_gcode_block(block));
 }
 
