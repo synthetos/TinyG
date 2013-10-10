@@ -33,8 +33,6 @@
 #include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "planner.h"
-//#include "stepper.h"
-//#include "report.h"
 #include "switch.h"
 
 #ifdef __cplusplus
@@ -53,7 +51,7 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 	uint8_t homing_closed;		// 0=open, 1=closed
 	uint8_t limit_closed;		// 0=open, 1=closed
 	uint8_t set_coordinates;	// G28.4 flag. true = set coords to zero at the end of homing cycle
-	uint8_t (*func)(int8_t axis);// binding for callback function state machine
+	stat_t (*func)(int8_t axis);// binding for callback function state machine
 
 	// per-axis parameters
 	float direction;			// set to 1 for positive (max), -1 for negative (to min);
@@ -61,7 +59,7 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 	float search_velocity;		// search speed as positive number
 	float latch_velocity;		// latch speed as positive number
 	float latch_backoff;		// max distance to back off switch during latch phase 
-	float zero_backoff;		// distance to back off switch before setting zero
+	float zero_backoff;			// distance to back off switch before setting zero
 	float max_clear_backoff;	// maximum distance of switch clearing backoffs before erring out
 
 	// state saved from gcode model
@@ -76,7 +74,7 @@ static struct hmHomingSingleton hm;
 
 /**** NOTE: global prototypes and other .h info is located in canonical_machine.h ****/
 
-static stat_t _set_homing_func(uint8_t (*func)(int8_t axis));
+static stat_t _set_homing_func(stat_t (*func)(int8_t axis));
 static stat_t _homing_axis_start(int8_t axis);
 static stat_t _homing_axis_clear(int8_t axis);
 static stat_t _homing_axis_backoff_home(int8_t axis);
@@ -100,8 +98,8 @@ static int8_t _get_next_axis(int8_t axis);
  *
  *	--- How does this work? ---
  *
- *	Homing is invoked using a G28.1 command with 1 or more axes specified in the
- *	command: e.g. g28.1 x0 y0 z0     (FYI: the number after each axis is irrelevant)
+ *	Homing is invoked using a G28.2 command with 1 or more axes specified in the
+ *	command: e.g. g28.2 x0 y0 z0     (FYI: the number after each axis is irrelevant)
  *
  *	Homing is always run in the following order - for each enabled axis:
  *	  Z,X,Y,A			Note: B and C cannot be homed
@@ -174,7 +172,7 @@ stat_t cm_homing_cycle_start_no_set(void)
 
 static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 {
-	mp_flush_planner(); 							// should be stopped, but in case of switch closure. 
+	mp_flush_planner(); 							// should be stopped, but in case of switch closure.
 													// don't use cm_request_queue_flush() here
 
 	cm_set_coord_system(hm.saved_coord_system);		// restore to work coordinate system
@@ -196,8 +194,8 @@ static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 
 static stat_t _homing_error_exit(int8_t axis)
 {
-	// Generate the warning message. Since the error exit returns via the homing callback 
-	// - and not the main controller - it requires its own display processing 
+	// Generate the warning message. Since the error exit returns via the homing callback
+	// - and not the main controller - it requires its own display processing
 	cmd_reset_list();
 
 	if (axis == -2) {
@@ -263,7 +261,7 @@ static stat_t _homing_axis_start(int8_t axis)
 		}
 	}
 	// trap gross mis-configurations
-	if ((fp_ZERO(cm.a[axis].search_velocity)) || (fp_ZERO(cm.a[axis].latch_velocity))) {	
+	if ((fp_ZERO(cm.a[axis].search_velocity)) || (fp_ZERO(cm.a[axis].latch_velocity))) {
 		return (_homing_error_exit(axis));
 	}
 	if ((cm.a[axis].travel_max <= 0) || (cm.a[axis].latch_backoff <= 0)) {
@@ -304,7 +302,7 @@ static stat_t _homing_axis_start(int8_t axis)
 	}
 	// disable the limit switch parameter if there is no limit switch
 	if (get_switch_mode(hm.limit_switch) == SW_MODE_DISABLED) { hm.limit_switch = -1;}
-	hm.saved_jerk = cm.a[axis].jerk_max;				// save the max jerk value
+	hm.saved_jerk = cm.a[axis].jerk_max;					// save the max jerk value
 	return (_set_homing_func(_homing_axis_clear));			// start the clear
 }
 
@@ -340,7 +338,7 @@ static stat_t _homing_axis_backoff_limit(int8_t axis)		// back off cleared limit
 
 static stat_t _homing_axis_search(int8_t axis)				// start the search
 {
-	cm.a[axis].jerk_max = cm.a[axis].jerk_homing;	// use the homing jerk for search onward
+	cm.a[axis].jerk_max = cm.a[axis].jerk_homing;			// use the homing jerk for search onward
 	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
     return (_set_homing_func(_homing_axis_latch));
 }
@@ -373,7 +371,7 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 
 static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 {
-	float vect[AXES] = {0,0,0,0,0,0};
+	float vect[] = {0,0,0,0,0,0};
 	float flags[] = {false, false, false, false, false, false};
 
 	vect[axis] = target;
@@ -401,36 +399,36 @@ static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
  *	user-specified axis homing orders
  */
 
-int8_t _get_next_axis(int8_t axis)
+static int8_t _get_next_axis(int8_t axis)
 {
 	if (axis == -1) {	// inelegant brute force solution
-		if (gf.target[AXIS_Z] == true) return (AXIS_Z);
-		if (gf.target[AXIS_X] == true) return (AXIS_X);
-		if (gf.target[AXIS_Y] == true) return (AXIS_Y);
-		if (gf.target[AXIS_A] == true) return (AXIS_A);
-//		if (gf.target[AXIS_B] == true) return (AXIS_B);
-//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+		if (fp_TRUE(gf.target[AXIS_Z])) return (AXIS_Z);
+		if (fp_TRUE(gf.target[AXIS_X])) return (AXIS_X);
+		if (fp_TRUE(gf.target[AXIS_Y])) return (AXIS_Y);
+		if (fp_TRUE(gf.target[AXIS_A])) return (AXIS_A);
+//		if (fp_TRUE(gf.target[AXIS_B])) return (AXIS_B);
+//		if (fp_TRUE(gf.target[AXIS_C])) return (AXIS_C);
 		return (-2);	// error
 	} else if (axis == AXIS_Z) {
-		if (gf.target[AXIS_X] == true) return (AXIS_X);
-		if (gf.target[AXIS_Y] == true) return (AXIS_Y);
-		if (gf.target[AXIS_A] == true) return (AXIS_A);
-//		if (gf.target[AXIS_B] == true) return (AXIS_B);
-//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+		if (fp_TRUE(gf.target[AXIS_X])) return (AXIS_X);
+		if (fp_TRUE(gf.target[AXIS_Y])) return (AXIS_Y);
+		if (fp_TRUE(gf.target[AXIS_A])) return (AXIS_A);
+//		if (fp_TRUE(gf.target[AXIS_B])) return (AXIS_B);
+//		if (fp_TRUE(gf.target[AXIS_C])) return (AXIS_C);
 	} else if (axis == AXIS_X) {
-		if (gf.target[AXIS_Y] == true) return (AXIS_Y);
-		if (gf.target[AXIS_A] == true) return (AXIS_A);
-//		if (gf.target[AXIS_B] == true) return (AXIS_B);
-//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+		if (fp_TRUE(gf.target[AXIS_Y])) return (AXIS_Y);
+		if (fp_TRUE(gf.target[AXIS_A])) return (AXIS_A);
+//		if (fp_TRUE(gf.target[AXIS_B])) return (AXIS_B);
+//		if (fp_TRUE(gf.target[AXIS_C])) return (AXIS_C);
 	} else if (axis == AXIS_Y) {
-		if (gf.target[AXIS_A] == true) return (AXIS_A);
-//		if (gf.target[AXIS_B] == true) return (AXIS_B);
-//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+		if (fp_TRUE(gf.target[AXIS_A])) return (AXIS_A);
+//		if (fp_TRUE(gf.target[AXIS_B])) return (AXIS_B);
+//		if (fp_TRUE(gf.target[AXIS_C])) return (AXIS_C);
 //	} else if (axis == AXIS_A) {
-//		if (gf.target[AXIS_B] == true) return (AXIS_B);
-//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+//		if (fp_TRUE(gf.target[AXIS_B])) return (AXIS_B);
+//		if (fp_TRUE(gf.target[AXIS_C])) return (AXIS_C);
 //	} else if (axis == AXIS_B) {
-//		if (gf.target[AXIS_C] == true) return (AXIS_C);
+//		if (fp_TRUE(gf.target[AXIS_C])) return (AXIS_C);
 	}
 	return (-1);	// done
 }
@@ -460,10 +458,10 @@ int8_t _get_next_axes(int8_t axis)
 	hm.axis2 = -1;
 
 	// Scan target vector for case where no valid axes are specified
-	for (next_axis = 0; next_axis < AXES; next_axis++) {	
-		if ((gf.target[next_axis] == true) &&
-			(cfg.a[next_axis].axis_mode != AXIS_INHIBITED) &&
-			(cfg.a[next_axis].axis_mode != AXIS_DISABLED)) {	
+	for (next_axis = 0; next_axis < AXES; next_axis++) {
+		if ((fp_TRUE(gf.target[next_axis])) &&
+			(cm.a[next_axis].axis_mode != AXIS_INHIBITED) &&
+			(cm.a[next_axis].axis_mode != AXIS_DISABLED)) {
 			break;
 		}
 	}
@@ -474,9 +472,9 @@ int8_t _get_next_axes(int8_t axis)
 
 	// Scan target vector from the current axis to find next axis or the end
 	for (next_axis = ++axis; next_axis < AXES; next_axis++) {
-		if (gf.target[next_axis] == true) { 
-			if ((cfg.a[next_axis].axis_mode == AXIS_INHIBITED) || 	
-				(cfg.a[next_axis].axis_mode == AXIS_DISABLED)) {	// Skip if axis disabled or inhibited
+		if (fp_TRUE(gf.target[next_axis])) {
+			if ((cm.a[next_axis].axis_mode == AXIS_INHIBITED) ||
+				(cm.a[next_axis].axis_mode == AXIS_DISABLED)) {	// Skip if axis disabled or inhibited
 				continue;
 			}
 			break;		// got a good one
