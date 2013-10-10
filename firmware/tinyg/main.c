@@ -1,8 +1,8 @@
 /*
  * main.c - TinyG - An embedded rs274/ngc CNC controller
- * Part of TinyG project
+ * This file is part of the TinyG project.
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -26,18 +26,13 @@
 #include "hardware.h"
 #include "controller.h"
 #include "canonical_machine.h"
-#include "json_parser.h"
-#include "gcode_parser.h"
 #include "report.h"
 #include "planner.h"
 #include "stepper.h"
-#include "spindle.h"
 #include "network.h"
 #include "switch.h"
-#include "gpio.h"
 #include "test.h"
 #include "pwm.h"
-#include "util.h"
 
 #include "xio/xio.h"
 #include "xmega/xmega_interrupts.h"
@@ -70,7 +65,7 @@ int main(void)
 
 	cli();
 
-	// system and drivers
+	// hardware and low-level drivers
 	hardware_init();				// system hardware setup 			- must be first
 	rtc_init();						// real time counter
 	xio_init();						// xmega io subsystem
@@ -79,13 +74,12 @@ int main(void)
 //	gpio_init();					// parallel IO
 	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()
 
-	// application structures
+	// application sub-systems
 	controller_init(STD_IN, STD_OUT, STD_ERR);// must be first app init; reqs xio_init()
 	config_init();					// config records from eeprom 		- must be next app init
-	net_init();						// reset std devices if required	- must follow config_init()
+	network_init();					// reset std devices if required	- must follow config_init()
 	planner_init();					// motion planning subsystem
 	canonical_machine_init();		// canonical machine				- must follow config_init()
-	sp_init();						// spindle PWM and variables
 
 	// now bring up the interrupts and get started
 	PMIC_SetVectorLocationToApplication();// as opposed to boot ROM

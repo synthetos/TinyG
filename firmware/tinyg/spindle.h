@@ -36,7 +36,7 @@ extern "C"{
  * Global Scope Functions
  */
 
-void sp_init();
+void cm_spindle_init();
 stat_t cm_spindle_control(uint8_t spindle_mode);
 void cm_exec_spindle_control(uint8_t spindle_mode);
 stat_t cm_set_spindle_speed(float speed);

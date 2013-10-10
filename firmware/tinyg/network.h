@@ -37,7 +37,7 @@ enum networkMode {
 	NETWORK_SLAVE
 };
 
-void net_init();
+void network_init();
 void net_forward(unsigned char c);
 uint8_t net_test_rxtx(uint8_t c);
 uint8_t net_test_loopback(uint8_t c);

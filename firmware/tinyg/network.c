@@ -45,9 +45,9 @@
  */
 
 /*
- * net_init()
+ * network_init()
  */
-void net_init() 
+void network_init() 
 {
 	// re-point IO if in slave mode
 	if (cs.network_mode == NETWORK_SLAVE) {

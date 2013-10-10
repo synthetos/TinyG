@@ -27,10 +27,8 @@
 
 #include "tinyg.h"		// #1
 #include "config.h"		// #2
-#include "gpio.h"
-#include "gcode_parser.h"
-#include "canonical_machine.h"
 #include "spindle.h"
+#include "gpio.h"
 #include "planner.h"
 #include "hardware.h"
 #include "pwm.h"
@@ -43,9 +41,9 @@ static void _exec_spindle_control(float *value, float *flag);
 static void _exec_spindle_speed(float *value, float *flag);
 
 /* 
- * sp_init()
+ * cm_spindle_init()
  */
-void sp_init()
+void cm_spindle_init()
 {
 	if( pwm.c[PWM_1].frequency < 0 )
 		pwm.c[PWM_1].frequency = 0;
