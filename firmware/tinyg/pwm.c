@@ -1,8 +1,8 @@
 /*
  * pwm.c - pulse width modulation drivers
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2012 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2012 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -38,8 +38,7 @@
 extern "C"{
 #endif
 
-/***** PWM defines, structures and memory allocation *****
- */
+/***** PWM defines, structures and memory allocation *****/
 
 pwmSingleton_t pwm;
 
@@ -173,7 +172,7 @@ stat_t pwm_set_duty(uint8_t chan, float duty)
 	// Ffrq = Fper/(2N(CCA+1))
 	// Fpwm = Fper/((N(PER+1))
 	
-    float period_scalar = pwm.p[chan].timer->PER;
+	float period_scalar = pwm.p[chan].timer->PER;
 	pwm.p[chan].timer->CCB = (uint16_t)(period_scalar * duty) + 1;
 	return (STAT_OK);
 }
@@ -184,7 +183,7 @@ stat_t pwm_set_duty(uint8_t chan, float duty)
  * Functions to get and set variables from the cfgArray table
  ***********************************************************************************/
 
-
+// none
 
 
 /***********************************************************************************
