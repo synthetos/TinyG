@@ -1,8 +1,8 @@
  /*
  * plan_line.c - acceleration managed line planning and motion execution
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  * Copyright (c) 2012 - 2013 Rob Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
@@ -89,23 +89,13 @@ uint8_t mp_get_runtime_busy()
 	return (false);
 }
 
-/*
- * cm_plan_line_init() - setup line structures initially
- */
-/*
-void cm_plan_line_init()
-{
-//	arc.magic_start = MAGICNUM;
-//	arc.magic_end = MAGICNUM;
-}
-*/
 /**************************************************************************
  * mp_aline() - plan a line with acceleration / deceleration
  *
  *	This function uses constant jerk motion equations to plan acceleration 
  *	and deceleration. The jerk is the rate of change of acceleration; it's
  *	the 1st derivative of acceleration, and the 3rd derivative of position. 
- *	Jerk is a measure of impact to the machine. Controlling jerk smooths 
+ *	Jerk is a measure of impact to the machine. Controlling jerk smoothes 
  *	transitions between moves and allows for faster feeds while controlling 
  *	machine oscillations and other undesirable side-effects.
  *
@@ -137,27 +127,27 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 
 	// compute both the unit vector and the jerk term in the same pass for efficiency
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
-	if (fp_NOT_ZERO(diff)) { 
+	if (fp_NOT_ZERO(diff)) {
 		bf->unit[AXIS_X] = diff / length;
 		bf->jerk = square(bf->unit[AXIS_X] * cm.a[AXIS_X].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Y] - mm.position[AXIS_Y])) { 
+	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Y] - mm.position[AXIS_Y])) {
 		bf->unit[AXIS_Y] = diff / length;
 		bf->jerk += square(bf->unit[AXIS_Y] * cm.a[AXIS_Y].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Z] - mm.position[AXIS_Z])) { 
+	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Z] - mm.position[AXIS_Z])) {
 		bf->unit[AXIS_Z] = diff / length;
 		bf->jerk += square(bf->unit[AXIS_Z] * cm.a[AXIS_Z].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_A] - mm.position[AXIS_A])) { 
+	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_A] - mm.position[AXIS_A])) {
 		bf->unit[AXIS_A] = diff / length;
 		bf->jerk += square(bf->unit[AXIS_A] * cm.a[AXIS_A].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_B] - mm.position[AXIS_B])) { 
+	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_B] - mm.position[AXIS_B])) {
 		bf->unit[AXIS_B] = diff / length;
 		bf->jerk += square(bf->unit[AXIS_B] * cm.a[AXIS_B].jerk_max);
 	}
-	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_C] - mm.position[AXIS_C])) { 
+	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_C] - mm.position[AXIS_C])) {
 		bf->unit[AXIS_C] = diff / length;
 		bf->jerk += square(bf->unit[AXIS_C] * cm.a[AXIS_C].jerk_max);
 	}
@@ -168,7 +158,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 		bf->recip_jerk = mm.prev_recip_jerk;
 	} else {
 		bf->cbrt_jerk = cbrt(bf->jerk);
-		bf->recip_jerk = 1/bf->jerk;			
+		bf->recip_jerk = 1/bf->jerk;
 		mm.prev_jerk = bf->jerk;
 		mm.prev_cbrt_jerk = bf->cbrt_jerk;
 		mm.prev_recip_jerk = bf->recip_jerk;
@@ -1002,8 +992,8 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		// initialization to process the new incoming bf buffer
 		memcpy(&mr.gm, &(bf->gm), sizeof(GCodeState_t));// copy in the gcode model state
 		bf->replannable = false;
-														// too short lines have already been removed. 
-		if (fp_ZERO(bf->length)) {						// ...looks for an actual zero here.
+														// too short lines have already been removed
+		if (fp_ZERO(bf->length)) {						// ...looks for an actual zero here
 			mr.move_state = MOVE_STATE_OFF;				// reset mr buffer
 			mr.section_state = MOVE_STATE_OFF;
 			bf->nx->replannable = false;				// prevent overplanning (Note 2)
