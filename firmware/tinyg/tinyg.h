@@ -47,7 +47,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		394.05	// Alignment changes to hardware.c
+#define TINYG_FIRMWARE_BUILD   		394.07	// Alignment changes to json_parser.c; added strtof mapping to strtod
 #define TINYG_FIRMWARE_VERSION		0.97	// major version 
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// default board revision number
@@ -101,6 +101,8 @@ typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 
 // get units from array of strings in PGM and convert to RAM string
 #define GET_UNITS(a) 	   strcpy_P(shared_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]))
+
+#define strtof strtod			// strtof is not in the AVR lib
 
 #endif // __AVR
 

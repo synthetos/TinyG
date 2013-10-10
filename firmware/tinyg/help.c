@@ -1,8 +1,8 @@
 /*
  * help.h - collected help routines
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -17,12 +17,10 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "tinyg.h"
-#include "config.h"
-#include "help.h"
+#include "tinyg.h"		// #1
+#include "config.h"		// #2
 #include "report.h"
-//#include "controller.h"
-//#include "util.h"
+#include "help.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -95,6 +93,7 @@ These commands are active for configuration:\n\
   $$   Show all settings\n\
   $h   Show this help screen\n\n\
 "));
+
 fprintf_P(stderr, PSTR("\
 Each $ command above also displays the token for each setting in [ ] brackets\n\
 To view settings enter a token:\n\n\

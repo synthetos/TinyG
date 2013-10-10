@@ -116,7 +116,7 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 		*rd = NUL;							// terminate at end of name
 		strncpy(cmd->token, str, CMD_TOKEN_LEN);
 		str = ++rd;
-		cmd->value = strtod(str, &rd);		// rd used as end pointer
+		cmd->value = strtof(str, &rd);		// rd used as end pointer
 		if (rd != str) {
 			cmd->objtype = TYPE_FLOAT;
 		}

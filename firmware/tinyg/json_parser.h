@@ -1,6 +1,6 @@
 /*
- * json_parser.c - JSON parser for TinyG
- * Part of TinyG project
+ * json_parser.h - JSON parser and JSON support for TinyG
+ * This file is part of the TinyG project
  *
  * Copyright (c) 2012 - 2013 Alden S. Hart, Jr.
  *

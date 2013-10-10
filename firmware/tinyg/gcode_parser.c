@@ -180,7 +180,7 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
 
 	// get-value general case
 	char *end; 
-	*value = strtod(*pstr, &end);
+	*value = strtof(*pstr, &end);
 	if(end == *pstr) { return(STAT_BAD_NUMBER_FORMAT); }	// more robust test then checking for value=0;
 	*pstr = end;
 	return (STAT_OK);			// pointer points to next character after the word
