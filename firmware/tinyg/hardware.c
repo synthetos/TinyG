@@ -1,8 +1,8 @@
 /*
- * system.c - general hardware support functions
- * Part of TinyG project
+ * hardware.c - general hardware support functions
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2011 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2011 - 2012 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -23,12 +23,6 @@
  * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-/* ------
- * Notes:
- *	- add crystal oscillator failover
- *	- add watchdog timer functions
- *
  */
 #include <avr/interrupt.h>
 #include <avr/wdt.h>			// used for software reset
@@ -96,11 +90,11 @@ static uint8_t _read_calibration_byte(uint8_t index)
 /*
  * _get_id() - get a human readable signature
  *
- *	Produces a unique deviceID based on the factory calibration data. Format is:
- *		123456-ABC
+ *	Produce a unique deviceID based on the factory calibration data.
+ *		Format is: 123456-ABC
  *
  *	The number part is a direct readout of the 6 digit lot number
- *	The alpha is the lo 5 bits of wafer number and XY coords in printable ASCII
+ *	The alpha is the low 5 bits of wafer number and XY coords in printable ASCII
  *	Refer to NVM_PROD_SIGNATURES_t in iox192a3.h for details.
  */
  
@@ -230,7 +224,7 @@ stat_t hw_set_hv(cmdObj_t *cmd)
 
 static const char fmt_fb[] PROGMEM = "[fb]  firmware build%18.2f\n";
 static const char fmt_fv[] PROGMEM = "[fv]  firmware version%16.2f\n";
-static const char fmt_hp[] PROGMEM = "[hp]  hardware platform%15.2f\n"; 
+static const char fmt_hp[] PROGMEM = "[hp]  hardware platform%15.2f\n";
 static const char fmt_hv[] PROGMEM = "[hv]  hardware version%16.2f\n";
 static const char fmt_id[] PROGMEM = "[id]  TinyG ID%30s\n";
 
