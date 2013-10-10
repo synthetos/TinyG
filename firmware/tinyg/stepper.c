@@ -40,7 +40,7 @@
 
 #include "tinyg.h"
 #include "config.h"
-#include "stepper.h" 	
+#include "stepper.h"
 #include "planner.h"
 #include "hardware.h"
 #include "text_parser.h"
@@ -77,7 +77,6 @@ static void _request_load_move(void);
  *
  *	Notes:
  *	  - This init requires sys_init() to be run beforehand
- *		This init is a precursor for gpio_init()
  * 	  - microsteps are setup during config_init()
  *	  - motor polarity is setup during config_init()
  *	  - high level interrupts must be enabled in main() once all inits are complete
@@ -88,6 +87,7 @@ void stepper_init()
 	memset(&st_run, 0, sizeof(st_run));			// clear all values, pointers and status
 	st_run.magic_start = MAGICNUM;
 	st_prep.magic_start = MAGICNUM;
+//	_clear_diagnostic_counters();
 
 	// Configure virtual ports
 	PORTCFG.VPCTRLA = PORTCFG_VP0MAP_PORT_MOTOR_1_gc | PORTCFG_VP1MAP_PORT_MOTOR_2_gc;
@@ -136,7 +136,7 @@ stat_t st_assertions()
 /*
  * stepper_isbusy() - return TRUE if motors are running or a dwell is running
  */
-inline uint8_t stepper_isbusy()
+uint8_t stepper_isbusy()
 {
 	if (st_run.dda_ticks_downcount == 0) {
 		return (false);
@@ -233,9 +233,9 @@ stat_t st_motor_power_callback() 	// called by controller
 				}
 			}
 
-//		} else if(cfg.m[motor].power_mode == MOTOR_POWER_REDUCED_WHEN_IDLE) {	// future
+//		} else if(st_run.m[motor].power_mode == MOTOR_POWER_REDUCED_WHEN_IDLE) {	// future
 			
-//		} else if(cfg.m[motor].power_mode == DYNAMIC_MOTOR_POWER) {				// future
+//		} else if(st_run.m[motor].power_mode == DYNAMIC_MOTOR_POWER) {				// future
 			
 		}
 	}
@@ -522,9 +522,9 @@ stat_t st_prep_line(float steps[], float microseconds)
 	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * F_DDA);
 	st_prep.dda_ticks_X_substeps = st_prep.dda_ticks * DDA_SUBSTEPS;
 
-// 	FOOTNOTE: The above expression was previously computed as below but floating point 
-//  rounding errors caused subtle and nasty accumulated position errors:
-//	st_prep.dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
+	// FOOTNOTE: The above expression was previously computed as below but floating
+	// point rounding errors caused subtle and nasty accumulated position errors:
+	// sp.dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
 
 	// anti-stall measure in case change in velocity between segments is too great 
 	if ((st_prep.dda_ticks * ACCUMULATOR_RESET_FACTOR) < st_prep.prev_ticks) {  // NB: uint32_t math
@@ -535,7 +535,7 @@ stat_t st_prep_line(float steps[], float microseconds)
 	return (STAT_OK);
 }
 
-/* 
+/*
  * _set_hw_microsteps() - set microsteps in hardware
  *
  *	For now the microstep_mode is the same as the microsteps (1,2,4,8)
@@ -667,7 +667,7 @@ static const char fmt_md[] PROGMEM = "motors de-energized\n";
 static const char fmt_0ma[] PROGMEM = "[%s%s] m%s map to axis%15d [0=X,1=Y,2=Z...]\n";
 static const char fmt_0sa[] PROGMEM = "[%s%s] m%s step angle%20.3f%s\n";
 static const char fmt_0tr[] PROGMEM = "[%s%s] m%s travel per revolution%9.3f%s\n";
-static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16d [1,2,4,8]\n"; 
+static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
 static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
 static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=remain powered,1=power down when idle]\n";
 

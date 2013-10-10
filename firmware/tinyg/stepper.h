@@ -173,9 +173,8 @@
  *	be thought of as a phase angle value for the DDA accumulation. Each 360
  *	degrees of phase angle results in a step being generated. 
  */
-
-#ifndef stepper_h
-#define stepper_h
+#ifndef STEPPER_H_ONCE
+#define STEPPER_H_ONCE
 
 /*********************************
  * Stepper configs and constants *
@@ -353,6 +352,5 @@ stat_t st_set_me(cmdObj_t *cmd);
 	#define st_print_pm tx_print_stub
 
 #endif // __TEXT_MODE
-
 
 #endif	// End of include guard: STEPPER_H_ONCE

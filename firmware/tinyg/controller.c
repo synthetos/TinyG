@@ -67,7 +67,6 @@ static stat_t _alarm_idler(void);
 static stat_t _normal_idler(void);
 static stat_t _limit_switch_handler(void);
 static stat_t _system_assertions(void);
-//static stat_t _cycle_start_handler(void);
 static stat_t _sync_to_planner(void);
 static stat_t _sync_to_tx_buffer(void);
 static stat_t _command_dispatch(void);
@@ -88,10 +87,11 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	cs.magic_start = MAGICNUM;
 	cs.magic_end = MAGICNUM;
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
-	cs.fw_version = TINYG_FIRMWARE_VERSION;	// NB: HW version is set from EEPROM
+	cs.fw_version = TINYG_FIRMWARE_VERSION;
+	cs.hw_platform = TINYG_HARDWARE_PLATFORM;		// NB: HW version is set from EEPROM
 
-	cs.linelen = 0;							// initialize index for read_line()
-	cs.state = CONTROLLER_STARTUP;			// ready to run startup lines
+	cs.linelen = 0;									// initialize index for read_line()
+	cs.state = CONTROLLER_STARTUP;					// ready to run startup lines
 	cs.hard_reset_requested = false;
 	cs.bootloader_requested = false;
 
@@ -99,7 +99,7 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
 	cs.default_src = std_in;
-	tg_set_primary_source(cs.default_src);	// set primary source
+	tg_set_primary_source(cs.default_src);
 }
 
 /* 
@@ -142,7 +142,7 @@ static void _controller_HSM()
  *  LO	Serial TX for USB & RS-485				// see xio_usart.h
  *	LO	Real time clock interrupt				// see xmega_rtc.h
  */
-//----- kernel level ISR handlers ----(flags are set in ISRs)-----------//
+//----- kernel level ISR handlers ----(flags are set in ISRs)------------------------//
 												// Order is important:
 	DISPATCH(hw_hard_reset_handler());			// 1. handle hard reset requests
 	DISPATCH(hw_bootloader_handler());			// 2. handle requests to enter bootloader
@@ -152,11 +152,9 @@ static void _controller_HSM()
 
 	DISPATCH(cm_feedhold_sequencing_callback());// 6a. feedhold state machine runner
 	DISPATCH(mp_plan_hold_callback());			// 6b. plan a feedhold from line runtime
+	DISPATCH(_system_assertions());				// 7. system integrity assertions
 
-//	DISPATCH(_cycle_start_handler());			// 7. cycle start requested
-	DISPATCH(_system_assertions());				// 8. system integrity assertions
-
-//----- planner hierarchy for gcode and cycles -------------------------//
+//----- planner hierarchy for gcode and cycles ---------------------------------------//
 
 	DISPATCH(st_motor_power_callback());		// stepper motor power sequencing
 //	DISPATCH(switch_debounce_callback());		// debounce switches
@@ -166,7 +164,7 @@ static void _controller_HSM()
 	DISPATCH(cm_homing_callback());				// G28.2 continuation
 	DISPATCH(cm_probe_callback());				// G38.2 continuation
 
-//----- command readers and parsers ------------------------------------//
+//----- command readers and parsers --------------------------------------------------//
 
 	DISPATCH(_sync_to_planner());				// ensure there is at least one free buffer in planning queue
 	DISPATCH(_sync_to_tx_buffer());				// sync with TX buffer (pseudo-blocking)
@@ -186,7 +184,7 @@ static void _controller_HSM()
 
 static stat_t _command_dispatch()
 {
-	uint8_t status;
+	stat_t status;
 
 	// read input line or return if not a completed line
 	// xio_gets() is a non-blocking workalike of fgets()
@@ -240,8 +238,8 @@ static stat_t _command_dispatch()
 		}
 		default: {								// anything else must be Gcode
 			if (cfg.comm_mode == JSON_MODE) {
-				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);	// use out_buf as temp
-				sprintf(cs.bufp,"{\"gc\":\"%s\"}\n", cs.out_buf);
+				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);					// use out_buf as temp
+				sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);	// '-8' is used for JSON chars
 				json_parser(cs.bufp);
 			} else {
 				text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
@@ -262,7 +260,7 @@ static stat_t _command_dispatch()
  *	(ctrl-x) or bootloader request can be processed.
  */
 
-static stat_t _alarm_idler(void)
+static stat_t _alarm_idler()
 {
 	if (cm_get_machine_state() != MACHINE_ALARM) { return (STAT_OK);}
 
@@ -270,10 +268,10 @@ static stat_t _alarm_idler(void)
 		cs.led_timer = SysTickTimer_getValue() + LED_ALARM_TIMER;
 		IndicatorLed_toggle();
 	}
-	return (STAT_EAGAIN);	 // EAGAIN prevents any other actions from running
+	return (STAT_EAGAIN);	// EAGAIN prevents any lower-priority actions from running
 }
 
-static stat_t _normal_idler(  )
+static stat_t _normal_idler()
 {
 /*
 	if (SysTickTimer_getValue() > cs.led_timer) {
@@ -342,9 +340,9 @@ stat_t _controller_assertions()
 /* 
  * _system_assertions() - check memory integrity and other assertions
  */
-uint8_t _system_assertions()
+stat_t _system_assertions()
 {
-	uint8_t status;
+	stat_t status;
 
 	for (;;) {	// run this loop only once, but enable breaks
 

@@ -66,10 +66,10 @@ typedef struct controllerSingleton {			// main TG controller struct
 	uint8_t bootloader_requested;		// flag to enter the bootloader
 	
 	// controller serial buffers
-	char *bufp;							// pointer to primary or secondary in buffer
-	char in_buf[INPUT_BUFFER_LEN];		// primary input buffer
-	char out_buf[OUTPUT_BUFFER_LEN];	// output buffer
-	char saved_buf[SAVED_BUFFER_LEN];	// save the input buffer
+	char_t *bufp;						// pointer to primary or secondary in buffer
+	char_t in_buf[INPUT_BUFFER_LEN];	// primary input buffer
+	char_t out_buf[OUTPUT_BUFFER_LEN];	// output buffer
+	char_t saved_buf[SAVED_BUFFER_LEN];	// save the input buffer
 	uint16_t magic_end;
 } controller_t;
 
@@ -77,9 +77,19 @@ extern controller_t cs;					// controller state structure
 
 enum cmControllerState {				// manages startup lines
 	CONTROLLER_INITIALIZING = 0,		// controller is initializing - not ready for use
+	CONTROLLER_NOT_CONNECTED,			// controller has not yet detected connection to USB (or other comm channel)
+	CONTROLLER_CONNECTED,				// controller has connected to USB (or other comm channel)
+	CONTROLLER_STARTUP,					// controller is running startup messages and lines
+	CONTROLLER_READY					// controller is active and ready for use
+};
+
+/*
+enum cmControllerState {				// manages startup lines
+	CONTROLLER_INITIALIZING = 0,		// controller is initializing - not ready for use
 	CONTROLLER_STARTUP,					// controller is running startup lines
 	CONTROLLER_READY					// controller is active and ready for use
 };
+*/
 
 /**** function prototypes ****/
 

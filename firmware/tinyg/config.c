@@ -159,10 +159,10 @@ stat_t set_defaults(cmdObj_t *cmd)
 /***** Generic Internal Functions *********************************************/
 
 /* Generic gets()
- *	get_nul() - get nothing (returns STAT_NOOP)
- *	get_ui8() - get value as 8 bit uint8_t w/o unit conversion
- *	get_int() - get value as 32 bit integer w/o unit conversion
- *	get_flt() - get value as float w/o unit conversion
+ *  get_nul() - get nothing (returns STAT_NOOP)
+ *  get_ui8() - get value as 8 bit uint8_t
+ *  get_int() - get value as 32 bit integer
+ *  get_flt() - get value as float
  *	get_format() - internal accessor for printf() format string
  */
 stat_t get_nul(cmdObj_t *cmd) 
@@ -194,13 +194,13 @@ stat_t get_flt(cmdObj_t *cmd)
 }
 
 /* Generic sets()
- *	set_nul() - set nothing (returns STAT_NOOP)
- *	set_ui8() - set value as 8 bit uint8_t value w/o unit conversion
- *	set_01()  - set a 0 or 1 uint8_t value with validation
- *	set_012() - set a 0, 1 or 2 uint8_t value with validation
+ *  set_nul() - set nothing (returns STAT_NOOP)
+ *  set_ui8() - set value as 8 bit uint8_t value
+ *  set_01()  - set a 0 or 1 uint8_t value with validation
+ *  set_012() - set a 0, 1 or 2 uint8_t value with validation
  *	set_0123()- set a 0, 1, 2 or 3 uint8_t value with validation
- *	set_int() - set value as 32 bit integer w/o unit conversion
- *	set_flt() - set value as float w/o unit conversion
+ *  set_int() - set value as 32 bit integer
+ *  set_flt() - set value as float
  */
 stat_t set_nul(cmdObj_t *cmd) { return (STAT_NOOP);}
 
@@ -278,7 +278,7 @@ stat_t set_flu(cmdObj_t *cmd)
 	return(STAT_OK);
 }
 
-/******************************************************************************
+/************************************************************************************
  * Group operations
  *
  *	Group operations work on parent/child groups where the parent is one of:
@@ -302,20 +302,20 @@ stat_t set_flu(cmdObj_t *cmd)
  *	  {"x":{"am":1,"fr":800,....}}	set multiple or all X axis parameters
  */
 
-/*
+/* 
  * get_grp() - read data from axis, motor, system or other group
  *
- *	get_grp() is a group expansion function that expands the parent group and 
- *	returns the values of all the children in that group. It expects the first 
- *	cmdObj in the cmdBody to have a valid group name in the token field. This 
- *	first object will be set to a TYPE_PARENT. The group field is left nul -  
- *	as the group field refers to a parent group, which this group has none.
+ *	get_grp() is a group expansion function that expands the parent group and returns 
+ *	the values of all the children in that group. It expects the first cmdObj in the 
+ *	cmdBody to have a valid group name in the token field. This first object will be set 
+ *	to a TYPE_PARENT. The group field is left nul - as the group field refers to a parent 
+ *	group, which this group has none.
  *
  *	All subsequent cmdObjs in the body will be populated with their values.
  *	The token field will be populated as will the parent name in the group field. 
  *
- *	The sys group is an exception where the childern carry a blank group field, 
- *	even though the sys parent is labeled as a TYPE_PARENT.
+ *	The sys group is an exception where the children carry a blank group field, even though 
+ *	the sys parent is labeled as a TYPE_PARENT.
  */
 
 stat_t get_grp(cmdObj_t *cmd)
@@ -371,11 +371,11 @@ uint8_t cmd_group_is_prefixed(char_t *group)
 	return (true);
 }
 
-/******************************************************************************
- ***** cmdObj functions *******************************************************
- ******************************************************************************/
+/***********************************************************************************
+ ***** cmdObj functions ************************************************************
+ ***********************************************************************************/
 
-/******************************************************************************
+/***********************************************************************************
  * cmdObj helper functions and other low-level cmd helpers
  */
 
@@ -395,26 +395,16 @@ index_t cmd_get_index(const char_t *group, const char_t *token)
 	index_t index_max = cmd_index_max();
 
 	for (index_t i=0; i < index_max; i++) {
-		if ((c = (char_t)pgm_read_byte(&cfgArray[i].token[0])) != str[0]) {	// 1st character mismatch 
-			continue;
-		}
-		if ((c = (char_t)pgm_read_byte(&cfgArray[i].token[1])) == NUL) {
-			if (str[1] == NUL) return(i);									// one character match
-		}
-		if (c != str[1]) continue;											// 2nd character mismatch
-		if ((c = (char_t)pgm_read_byte(&cfgArray[i].token[2])) == NUL) {
-			if (str[2] == NUL) return(i);									// two character match
-		}
-		if (c != str[2]) continue;											// 3rd character mismatch
-		if ((c = (char_t)pgm_read_byte(&cfgArray[i].token[3])) == NUL) {
-			if (str[3] == NUL) return(i);									// three character match
-		}
-		if (c != str[3]) continue;											// 4th character mismatch
-		if ((c = (char_t)pgm_read_byte(&cfgArray[i].token[4])) == NUL) {
-			if (str[4] == NUL) return(i);									// four character match
-		}
-		if (c != str[4]) continue;											// 5th character mismatch
-		return (i);															// five character match
+		if ((c = GET_TOKEN_BYTE(token[0])) != str[0]) {	continue; }					// 1st character mismatch
+		if ((c = GET_TOKEN_BYTE(token[1])) == NUL) { if (str[1] == NUL) return(i);}	// one character match
+		if (c != str[1]) continue;													// 2nd character mismatch
+		if ((c = GET_TOKEN_BYTE(token[2])) == NUL) { if (str[2] == NUL) return(i);}	// two character match
+		if (c != str[2]) continue;													// 3rd character mismatch
+		if ((c = GET_TOKEN_BYTE(token[3])) == NUL) { if (str[3] == NUL) return(i);}	// three character match
+		if (c != str[3]) continue;													// 4th character mismatch
+		if ((c = GET_TOKEN_BYTE(token[4])) == NUL) { if (str[4] == NUL) return(i);}	// four character match
+		if (c != str[4]) continue;													// 5th character mismatch
+		return (i);																	// five character match
 	}
 	return (NO_MATCH);
 }
@@ -471,16 +461,16 @@ stat_t cmd_persist_offsets(uint8_t flag)
  *	a NULL pointer if there was an error.
  *
  *	Note: Adding a really large integer (like a checksum value) may lose precision due
- *	to the cast to a float. Sometimes it's better to load an integer as a string if 
+ *	to the cast to a float. Sometimes it's better to load an integer as a string if
  *	all you want to do is display it.
  *
- *	Note: A trick is to cast all string constants for cmd_copy_string(), cmd_add_object(), 
+ *	Note: A trick is to cast all string constants for cmd_copy_string(), cmd_add_object(),
  *	cmd_add_string() and cmd_add_conditional_message() to (const char_t *). Examples:
  *
  *		cmd_add_string((const char_t *)"msg", string);
  *
- *	On the AVR this will save a little static RAM. The "msg" string will occupy flash 
- *	as an initializer and be instantiated in stack RAM when the function executes. 
+ *	On the AVR this will save a little static RAM. The "msg" string will occupy flash
+ *	as an initializer and be instantiated in stack RAM when the function executes.
  *	On the ARM (however) this will put the string into flash and skip RAM allocation.
  */
 
@@ -537,6 +527,7 @@ cmdObj_t *cmd_reset_list()					// clear the header and response body
 		cmd->nx = (cmd+1);
 		cmd->index = 0;
 		cmd->depth = 1;						// header and footer are corrected later
+		cmd->precision = 0;
 		cmd->objtype = TYPE_EMPTY;
 		cmd->token[0] = NUL;
 	}
@@ -638,23 +629,6 @@ cmdObj_t *cmd_add_conditional_message(const char_t *string)	// conditionally add
 	if ((cfg.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
 	return(cmd_add_string((const char_t *)"msg", string));
 }
-
-/* UNUSED
-cmdObj_t *cmd_add_string_P(const char_t *token, const char_t *string)
-{
-	char_t message[CMD_MESSAGE_LEN]; 
-	sprintf_P(message, string);
-	return(cmd_add_string(token, message));
-}
-*/
-/*
-cmdObj_t *cmd_add_conditional_message_P(const char_t *string)	// conditionally add a message object to the body
-{
-	if ((cfg.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
-//	return(cmd_add_string_P("msg", string));
-	return(cmd_add_string((const char_t *)"msg", string));
-}
-*/
 
 /**** cmd_print_list() - print cmd_array as JSON or text **********************
  *
