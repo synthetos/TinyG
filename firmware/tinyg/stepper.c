@@ -1,8 +1,8 @@
 /*
  * stepper.c - stepper motor controls
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  * Copyright (c) 2013 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
@@ -50,7 +50,7 @@
 #ifdef ENABLE_DIAGNOSTICS
 #define INCREMENT_DIAGNOSTIC_COUNTER(motor) st_run.m[motor].step_count_diagnostic++;
 #else
-#define INCREMENT_DIAGNOSTIC_COUNTER(motor)	// chose this one to disable counters
+#define INCREMENT_DIAGNOSTIC_COUNTER(motor)	// choose this one to disable counters
 #endif
 
 /**** Allocate structures ****/
@@ -476,8 +476,8 @@ void st_prep_null()
 void st_prep_dwell(float microseconds)
 {
 	st_prep.move_type = MOVE_TYPE_DWELL;
-	st_prep.dda_period = _f_to_period(F_DWELL);
-	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * F_DWELL);
+	st_prep.dda_period = _f_to_period(FREQUENCY_DWELL);
+	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * FREQUENCY_DWELL);
 }
 
 /***********************************************************************************
@@ -496,30 +496,21 @@ void st_prep_dwell(float microseconds)
 
 stat_t st_prep_line(float steps[], float microseconds)
 {
-	uint8_t i;
-//	float f_dda = F_DDA;		// starting point for adjustment
-//	float dda_substeps = DDA_SUBSTEPS;
-
 	// *** defensive programming ***
 	// trap conditions that would prevent queueing the line
 	if (st_prep.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);
-	} else if (isfinite(microseconds) == false) { return (STAT_MINIMUM_LENGTH_MOVE_ERROR);
+	} else if (isfinite(microseconds) == false) { return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
 	} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
 	st_prep.reset_flag = false;		// initialize accumulator reset flag for this move.
 
 	// setup motor parameters
-	for (i=0; i<MOTORS; i++) {
+	for (uint8_t i=0; i<MOTORS; i++) {
 		st_prep.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
-//		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * dda_substeps);
 		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * DDA_SUBSTEPS);
 	}
-//	st_prep.dda_period = _f_to_period(f_dda);
-//	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * f_dda);
-//	st_prep.dda_ticks_X_substeps = st_prep.dda_ticks * dda_substeps;
-
-	st_prep.dda_period = _f_to_period(F_DDA);
-	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * F_DDA);
+	st_prep.dda_period = _f_to_period(FREQUENCY_DDA);
+	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * FREQUENCY_DDA);
 	st_prep.dda_ticks_X_substeps = st_prep.dda_ticks * DDA_SUBSTEPS;
 
 	// FOOTNOTE: The above expression was previously computed as below but floating
