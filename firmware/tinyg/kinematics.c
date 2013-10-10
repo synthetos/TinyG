@@ -1,8 +1,8 @@
 /*
  * kinematics.c - inverse kinematics routines
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -31,6 +31,10 @@
 #include "stepper.h"
 #include "kinematics.h"
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 //static void _inverse_kinematics(float travel[], float joint[], float microseconds);
 
 /*
@@ -47,7 +51,6 @@
 
 void ik_kinematics(float travel[], float steps[], float microseconds)
 {
-//	uint8_t i;
 	float joint[AXES];
 
 //	_inverse_kinematics(travel, joint, microseconds);// you can insert inverse kinematics transformations here
@@ -62,14 +65,13 @@ void ik_kinematics(float travel[], float steps[], float microseconds)
 		if (st.m[MOTOR_2].motor_map == axis) { steps[MOTOR_2] = joint[axis] * st.m[MOTOR_2].steps_per_unit;}
 		if (st.m[MOTOR_3].motor_map == axis) { steps[MOTOR_3] = joint[axis] * st.m[MOTOR_3].steps_per_unit;}
 		if (st.m[MOTOR_4].motor_map == axis) { steps[MOTOR_4] = joint[axis] * st.m[MOTOR_4].steps_per_unit;}
-//		if (st.m[MOTOR_5].motor_map == axis) { steps[MOTOR_5] = joint[axis] * st.m[MOTOR_5].steps_per_unit;}
-//		if (st.m[MOTOR_6].motor_map == axis) { steps[MOTOR_6] = joint[axis] * st.m[MOTOR_6].steps_per_unit;}
-
+	//	if (st.m[MOTOR_5].motor_map == axis) { steps[MOTOR_5] = joint[axis] * st.m[MOTOR_5].steps_per_unit;}
+	//	if (st.m[MOTOR_6].motor_map == axis) { steps[MOTOR_6] = joint[axis] * st.m[MOTOR_6].steps_per_unit;}
+	}	
 	// the above is a loop unrolled version of this:
 	//	for (uint8_t motor=0; motor<MOTORS; motor++) {
 	//		if (st.m[motor].motor_map == axis) { steps[motor] = joint[axis] * st.m[motor].steps_per_unit;}
 	//	}
-	}
 }
 
 /*
@@ -111,4 +113,8 @@ void _ik_test_inverse_kinematics(void)
 }
 
 #endif
+#endif
+
+#ifdef __cplusplus
+}
 #endif
