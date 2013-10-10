@@ -1,8 +1,8 @@
 /*
  * report.c - TinyG status report and other reporting functions.
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S Hart, Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -34,6 +34,7 @@
 #include "settings.h"
 #include "util.h"
 #include "xio/xio.h"
+
 #include "xmega/xmega_rtc.h"
 
 #ifdef __cplusplus
@@ -86,17 +87,17 @@ void _startup_helper(stat_t status, const char *msg)
 
 void rpt_print_initializing_message(void)
 {
-	_startup_helper(STAT_INITIALIZING, (const char_t *)INIT_MESSAGE);
+	_startup_helper(STAT_INITIALIZING, PSTR(INIT_MESSAGE));
 }
 
 void rpt_print_loading_configs_message(void)
 {
-	_startup_helper(STAT_INITIALIZING, (const char_t *)"Loading configs from EEPROM");
+	_startup_helper(STAT_INITIALIZING, PSTR("Loading configs from EEPROM"));
 }
 
 void rpt_print_system_ready_message(void)
 {
-	_startup_helper(STAT_OK, (const char_t *)"SYSTEM READY");
+	_startup_helper(STAT_OK, PSTR("SYSTEM READY"));
 	if (cfg.comm_mode == TEXT_MODE) { text_response(STAT_OK, (char_t *)"");}// prompt
 }
 
@@ -271,7 +272,7 @@ stat_t sr_populate_unfiltered_status_report()
 		strcat(tmp, cmd->token);
 		strcpy(cmd->token, tmp);
 		if ((cmd = cmd->nx) == NULL) 
-			return (cm_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array 
+			return (cm_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array
 	}
 	return (STAT_OK);
 }

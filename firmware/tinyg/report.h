@@ -1,8 +1,8 @@
 /*
  * report.h - TinyG status report and other reporting functions
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -94,7 +94,6 @@ extern qrSingleton_t qr;
 // Note: If you are looking for the defaults for the status report see settings.h
 
 void rpt_print_message(char *msg);
-//void rpt_exception(uint8_t status, int16_t value);
 void rpt_exception(uint8_t status);
 
 stat_t rpt_er(cmdObj_t *cmd);
@@ -154,4 +153,3 @@ void sr_unit_tests(void);
 #endif
 
 #endif // End of include guard: REPORT_H_ONCE
-
