@@ -1,8 +1,8 @@
 /*
  * planner.c - cartesian trajectory planning and motion execution
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  * Copyright (c) 2012 - 2013 Rob Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
@@ -51,14 +51,12 @@
  *	Lower-level models should never use data from upper-level models as the data 
  *	may have changed and lead to unpredictable results.
  */
-
 #include "tinyg.h"
 #include "config.h"
 #include "canonical_machine.h"
 #include "plan_arc.h"
 #include "plan_line.h"
 #include "planner.h"
-#include "spindle.h"
 #include "stepper.h"
 #include "report.h"
 #include "util.h"
@@ -68,7 +66,7 @@
 extern "C"{
 #endif
 
-// Allocate global scope structures
+// Allocate planner structures
 
 mpBufferPool_t mb;				// move buffer queue
 mpMoveMasterSingleton_t mm;		// context for line planning
@@ -173,15 +171,14 @@ stat_t mp_exec_move()
 
 	if ((bf = mp_get_run_buffer()) == NULL) return (STAT_NOOP);	// NULL means nothing's running
 
-	// Manage cycle and motion state transitions. 
-	// Cycle auto-start for lines only. 
+	// Manage cycle and motion state transitions
+	// Cycle auto-start for lines only
 	if (bf->move_type == MOVE_TYPE_ALINE) {
 		if (cm.cycle_state == CYCLE_OFF) cm_cycle_start();
 		if (cm.motion_state == MOTION_STOP) cm_set_motion_state(MOTION_RUN);
 	}
 	if (bf->bf_func != NULL) { return (bf->bf_func(bf));} 	// run the move callback in the planner buffer
 	return(cm_alarm(STAT_INTERNAL_ERROR));	// never supposed to get here
-//	return (STAT_INTERNAL_ERROR);
 }
 
 /************************************************************************************
@@ -229,17 +226,16 @@ static stat_t _exec_command(mpBuf_t *bf)
 }
 
 /*************************************************************************
- * mp_dwell() 	  - queue a dwell
- * _exec_dwell() - dwell execution
+ * mp_dwell() 	 - queue a dwell
+ * _exec_dwell() - dwell execution 
  *
  * Dwells are performed by passing a dwell move to the stepper drivers.
  * When the stepper driver sees a dwell it times the dwell on a separate 
  * timer than the stepper pulse timer.
  */
-
-stat_t mp_dwell(float seconds) 
+stat_t mp_dwell(float seconds)
 {
-	mpBuf_t *bf; 
+	mpBuf_t *bf;
 
 	if ((bf = mp_get_write_buffer()) == NULL) {	// get write buffer or fail
 		return (STAT_BUFFER_FULL_FATAL);		// (not ever supposed to fail)
@@ -247,7 +243,7 @@ stat_t mp_dwell(float seconds)
 	bf->bf_func = _exec_dwell;					// register callback to dwell start
 	bf->gm.move_time = seconds;					// in seconds, not minutes
 	bf->move_state = MOVE_STATE_NEW;
-	mp_queue_write_buffer(MOVE_TYPE_DWELL); 
+	mp_queue_write_buffer(MOVE_TYPE_DWELL);
 	return (STAT_OK);
 }
 
@@ -380,11 +376,11 @@ mpBuf_t * mp_get_run_buffer()
 
 void mp_free_run_buffer()						// EMPTY current run buf & adv to next
 {
-	mp_clear_buffer(mb.r);						 // clear it out (& reset replannable)
-//	mb.r->buffer_state = MP_BUFFER_EMPTY;		 // redundant after the clear, above
-	mb.r = mb.r->nx;							 // advance to next run buffer
+	mp_clear_buffer(mb.r);						// clear it out (& reset replannable)
+//	mb.r->buffer_state = MP_BUFFER_EMPTY;		// redundant after the clear, above
+	mb.r = mb.r->nx;							// advance to next run buffer
 	if (mb.r->buffer_state == MP_BUFFER_QUEUED) {// only if queued...
-		mb.r->buffer_state = MP_BUFFER_PENDING;  // pend next buffer
+		mb.r->buffer_state = MP_BUFFER_PENDING;	// pend next buffer
 	}
 	if (mb.w == mb.r) cm_cycle_end();			// end the cycle if the queue empties
 	mb.buffers_available++;
@@ -436,7 +432,7 @@ void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp)
 #ifdef __DEBUG	// currently this routine is only used by debug routines
 uint8_t mp_get_buffer_index(mpBuf_t *bf) 
 {
-	mpBuf_t *b = bf;		// temp buffer pointer
+	mpBuf_t *b = bf;				// temp buffer pointer
 
 	for (uint8_t i=0; i < PLANNER_BUFFER_POOL_SIZE; i++) {
 		if (b->pv > b) {
