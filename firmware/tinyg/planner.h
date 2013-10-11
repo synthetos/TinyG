@@ -72,13 +72,12 @@ enum moveState {
 #define JERK_MULTIPLIER			((float)1000000)
 #define JERK_MATCH_PRECISION	((float)1000)		// precision to which jerk must match to be considered effectively the same
 
-// ESTD_SEGMENT_USEC	 Microseconds per planning segment
-//	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
+/* ESTD_SEGMENT_USEC	 Microseconds per planning segment
+ *	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
+ */
 #define NOM_SEGMENT_USEC 		((float)5000)		// nominal segment time
 #define MIN_SEGMENT_USEC 		((float)2500)		// minimum segment time
 #define MIN_ARC_SEGMENT_USEC	((float)10000)		// minimum arc segment time
-
-// derived from above
 #define NOM_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
@@ -90,7 +89,7 @@ enum moveState {
  *	start executing before the next block arrives from the serial port.
  *	This causes the machine to stutter once on startup.
  */
-#define PLANNER_STARTUP_DELAY_SECONDS 0.05	// in seconds
+#define PLANNER_STARTUP_DELAY_SECONDS ((float)0.05)	// in seconds
 
 /* PLANNER_BUFFER_POOL_SIZE
  *	Should be at least the number of buffers requires to support optimal 
@@ -101,21 +100,21 @@ enum moveState {
 #define PLANNER_BUFFER_HEADROOM 4			// buffers to reserve in planner before processing new input line
 
 /* Some parameters for _generate_trapezoid()
- * TRAPEZOID_ITERATION_MAX	 			Max iterations for convergence in the HT asymmetric case.
- * TRAPEZOID_ITERATION_ERROR_PERCENT	Error percentage for iteration convergence. As percent - 0.01 = 1%
- * TRAPEZOID_LENGTH_FIT_TOLERANCE		Tolerance for "exact fit" for H and T cases
- * TRAPEZOID_VELOCITY_TOLERANCE			Adaptive velocity tolerance term
+ * TRAPEZOID_ITERATION_MAX	 				Max iterations for convergence in the HT asymmetric case.
+ * TRAPEZOID_ITERATION_ERROR_PERCENT		Error percentage for iteration convergence. As percent - 0.01 = 1%
+ * TRAPEZOID_LENGTH_FIT_TOLERANCE			Tolerance for "exact fit" for H and T cases
+ * TRAPEZOID_VELOCITY_TOLERANCE				Adaptive velocity tolerance term
  */
-#define TRAPEZOID_ITERATION_MAX 10
-#define TRAPEZOID_ITERATION_ERROR_PERCENT 0.10
-#define TRAPEZOID_LENGTH_FIT_TOLERANCE (0.0001)	// allowable mm of error in planning phase
-#define TRAPEZOID_VELOCITY_TOLERANCE (max(2,bf->entry_velocity/100))
+#define TRAPEZOID_ITERATION_MAX				10
+#define TRAPEZOID_ITERATION_ERROR_PERCENT	((float)0.10)
+#define TRAPEZOID_LENGTH_FIT_TOLERANCE		((float)0.0001)	// allowable mm of error in planning phase
+#define TRAPEZOID_VELOCITY_TOLERANCE		(max(2,bf->entry_velocity/100))
 
 /*
  *	Macros and typedefs
  */
 
-typedef void (*cm_exec)(float[], float[]);		// callback to canonical_machine execution function
+typedef void (*cm_exec)(float[], float[]);	// callback to canonical_machine execution function
 
 /*
  *	Planner structures
@@ -169,7 +168,7 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 } mpBuf_t;
 
 typedef struct mpBufferPool {	// ring buffer for sub-moves
-	magic_t magic_start;		// magic number to test memory integity	
+	magic_t magic_start;		// magic number to test memory integrity
 	uint8_t buffers_available;	// running count of available buffers
 	mpBuf_t *w;					// get_write_buffer pointer
 	mpBuf_t *q;					// queue_write_buffer pointer
@@ -194,7 +193,7 @@ typedef struct mpMoveMasterSingleton {	// common variables for planning (move ma
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
-	magic_t magic_start;		// magic number to test memory integrity	
+	magic_t magic_start;		// magic number to test memory integrity
 	uint8_t move_state;			// state of the overall move
 	uint8_t section_state;		// state within a move section
 
@@ -238,8 +237,8 @@ extern mpMoveRuntimeSingleton_t mr;		// context for line runtime
 
 void planner_init(void);
 stat_t mp_assertions(void);
+
 void mp_flush_planner(void);
-void mp_init_buffers(void);
 void mp_set_planner_position(uint8_t axis, const float position);
 void mp_set_runtime_position(uint8_t axis, const float position);
 
@@ -256,6 +255,7 @@ stat_t mp_end_hold(void);
 stat_t mp_feed_rate_override(uint8_t flag, float parameter);
 
 // planner buffer handlers
+void mp_init_buffers(void);
 uint8_t mp_get_planner_buffers_available(void);
 void mp_clear_buffer(mpBuf_t *bf); 
 void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp);
@@ -272,7 +272,7 @@ mpBuf_t * mp_get_last_buffer(void);
 float mp_get_runtime_velocity(void);
 float mp_get_runtime_work_position(uint8_t axis);
 float mp_get_runtime_absolute_position(uint8_t axis);
-void mp_set_runtime_work_offset(float offset[]); 
+void mp_set_runtime_work_offset(float offset[]);
 void mp_zero_segment_velocity(void);
 uint8_t mp_get_runtime_busy(void);
 
@@ -298,4 +298,3 @@ void mp_plan_arc_unit_tests(void);
 #endif
 
 #endif	// End of include Guard: PLANNER_H_ONCE
-
