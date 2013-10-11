@@ -2,7 +2,7 @@
  * switch.c - switch handling functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -39,18 +39,14 @@
  *	and lockout subsequent interrupts for the defined lockout period. Ditto on the method.
  */
 
-
 #include <avr/interrupt.h>
 
 #include "tinyg.h"
 #include "config.h"
-#include "util.h"
-#include "controller.h"
-#include "hardware.h"
 #include "switch.h"
+#include "hardware.h"
 #include "canonical_machine.h"
 #include "text_parser.h"
-#include "xio/xio.h"						// signals
 
 /*
  * variables and settings 
