@@ -1,7 +1,8 @@
-/* stepper.h - stepper motor interface
- * Part of TinyG project
+/*
+ * stepper.h - stepper motor interface
+ * This file is part of TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  * Copyright (c) 2013 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
@@ -269,6 +270,7 @@ typedef struct stRunMotor { 		// one per controlled motor
 	uint8_t power_state;			// state machine for managing motor power
 	uint32_t power_systick;			// sys_tick for next state transition
 	uint32_t power_level;			// power level for this segment (FUTURE)
+//	uint8_t step_count_diagnostic;	// step count diagnostic
 } stRunMotor_t;
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
@@ -317,8 +319,6 @@ void st_prep_null(void);
 void st_prep_dwell(float microseconds);
 stat_t st_prep_line(float steps[], float microseconds);
 
-int8_t st_get_motor(const index_t index);
-
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);
 stat_t st_set_mi(cmdObj_t *cmd);
@@ -339,7 +339,7 @@ stat_t st_set_me(cmdObj_t *cmd);
 	void st_print_po(cmdObj_t *cmd);
 	void st_print_pm(cmdObj_t *cmd);
 
-#else 
+#else
 
 	#define st_print_mt tx_print_stub
 	#define st_print_me tx_print_stub
