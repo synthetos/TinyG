@@ -1,8 +1,8 @@
 /*
  * kinematics.h - inverse kinematics routines
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2011 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -25,8 +25,12 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef kinematics_h
-#define kinematics_h 
+#ifndef KINEMATICS_H_ONCE
+#define KINEMATICS_H_ONCE 
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 /*
  * Global Scope Functions
@@ -38,5 +42,9 @@ void ik_kinematics(float travel[], float steps[], float microseconds);
 //void ik_unit_tests(void);
 //#endif
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif // End of include Guard: KINEMATICS_H_ONCE
 

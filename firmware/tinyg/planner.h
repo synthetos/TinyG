@@ -1,8 +1,9 @@
 /*
  * planner.h - cartesian trajectory planning and motion execution
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2013 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,7 +29,7 @@
 #ifndef PLANNER_H_ONCE
 #define PLANNER_H_ONCE
 
-#include "canonical_machine.h"
+#include "canonical_machine.h"	// used for GCodeState_t
 
 #ifdef __cplusplus
 extern "C"{

@@ -1,8 +1,10 @@
 /*
- * system.h - system hardware device configuration values 
- * Part of TinyG project
+ * hardware.h - system hardware configuration - this file is platform specific
+ *			  - AVR Xmega version 
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * This file is part of the TinyG project
+ *
+ * Copyright (c) 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -44,7 +46,7 @@
 /////// AVR VERSION ////////
 ////////////////////////////
 
-#include "config.h"
+#include "config.h"						// needed for the stat_t typedef
 #include <avr/interrupt.h>
 #include "xmega/xmega_rtc.h"			// Xmega only. Goes away with RTC refactoring
 
@@ -206,9 +208,9 @@ enum cfgPortBits {			// motor control port bit positions
 */
 
 typedef struct hmSingleton {
-	PORT_t *st_port[MOTORS];	// bindings for stepper motor ports (stepper.c)
-	PORT_t *sw_port[MOTORS];	// bindings for switch ports (GPIO2)
-	PORT_t *out_port[MOTORS];	// bindings for output ports (GPIO1)
+	PORT_t *st_port[MOTORS];		// bindings for stepper motor ports (stepper.c)
+	PORT_t *sw_port[MOTORS];		// bindings for switch ports (GPIO2)
+	PORT_t *out_port[MOTORS];		// bindings for output ports (GPIO1)
 
 	// Non-volatile RAM
 	uint16_t nvm_base_addr;			// NVM base address

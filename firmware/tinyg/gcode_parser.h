@@ -1,6 +1,6 @@
 /*
- * gcode.h - rs274/ngc parser.
- * Part of TinyG project
+ * gcode_parser.h - rs274/ngc Gcode parser
+ * This file is part of the TinyG project
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
@@ -27,7 +27,6 @@ extern "C"{
 /*
  * Global Scope Functions
  */
-
 stat_t gc_gcode_parser(char_t *block);
 stat_t gc_get_gc(cmdObj_t *cmd);
 stat_t gc_run_gc(cmdObj_t *cmd);

@@ -1,9 +1,9 @@
 /*
  * plan_line.h - acceleration managed line planning and motion execution
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
- * Copyright (c) 2012 - 2013 Rob Giseburt
+ * Copyright (c) 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2013 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -26,9 +26,17 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef plan_line_h
-#define plan_line_h 
+#ifndef PLAN_LINE_H_ONCE
+#define PLAN_LINE_H_ONCE
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 // NOTE: function prototypes are in planner.h for ease of access by external files
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif // End of include Guard: PLAN_LINE_H_ONCE
