@@ -1,8 +1,8 @@
 /*
  * text_parser.h - text parser and text mode support for tinyg2
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -81,7 +81,7 @@ extern txtSingleton_t txt;
 	void text_print_ui8(cmdObj_t *cmd, const char *format);
 	void text_print_int(cmdObj_t *cmd, const char *format);
 	void text_print_flt(cmdObj_t *cmd, const char *format);
-	void text_print_flt_units(cmdObj_t *cmd, const char *format, const char_t *units);
+	void text_print_flt_units(cmdObj_t *cmd, const char *format, const char *units);
 
 	void tx_print_tv(cmdObj_t *cmd);
 

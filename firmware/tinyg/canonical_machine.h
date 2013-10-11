@@ -1,13 +1,13 @@
 /*
  * canonical_machine.h - rs274/ngc canonical machining functions
- * Part of TinyG project
+ * This file is part of the TinyG project
+ *
+ * Copyright (c) 2013 Alden S. Hart, Jr.
  *
  * This code is a loose implementation of Kramer, Proctor and Messina's
  * canonical machining functions as described in the NIST RS274/NGC v3
- *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
- *
- * This file ("the software") is free software: you can redistribute it and/or modify
+ */
+/* This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
  * Free Software Foundation. You should have received a copy of the GNU General Public
  * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.

@@ -1,8 +1,8 @@
 /*
- * config_app.h - application-specific part of configuration data
- * Part of TinyG project
+ * config_app.h - application-specific part of configuration sub-system
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -24,9 +24,9 @@
 extern "C"{
 #endif
 
- /***********************************************************************************
-  **** APPLICATION_SPECIFIC DEFINITIONS AND SETTINGS ********************************
-  ***********************************************************************************/
+/***********************************************************************************
+ **** APPLICATION_SPECIFIC DEFINITIONS AND SETTINGS ********************************
+ ***********************************************************************************/
 
 enum cmdType {						// classification of commands
 	CMD_TYPE_NULL = 0,
@@ -41,7 +41,7 @@ enum cmdType {						// classification of commands
  **** APPLICATION_SPECIFIC CONFIG STRUCTURE(S) *************************************
  ***********************************************************************************/
 
-typedef struct cfgParameters {		// mostly communciations variables at this point
+typedef struct cfgParameters {		// mostly communications variables at this point
 	uint16_t magic_start;			// magic number to test memory integrity
 
 	// communications settings
@@ -50,8 +50,6 @@ typedef struct cfgParameters {		// mostly communciations variables at this point
 	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_flow_control;	// enable XON/XOFF or RTS/CTS flow control
 //	uint8_t ignore_crlf;			// ignore CR or LF on RX --- these 4 are shadow settings for XIO cntrl bits
-
-	uint8_t jerk_million_flag;		// flag set internnally to 1 to divide by 1 million, 0 to not
 
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton

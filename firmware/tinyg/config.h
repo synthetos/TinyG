@@ -1,8 +1,8 @@
 /*
- * config.h - configuration sub-system
- * Part of TinyG project
+ * config.h - configuration sub-system generic part (see config_app for application part)
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -27,8 +27,6 @@
 
 #ifndef CONFIG_H_ONCE
 #define CONFIG_H_ONCE
-
-//#include <stdbool.h>
 
 /***** PLEASE NOTE *****
 #include "config_app.h"	// is present at the end of this file 
@@ -136,7 +134,7 @@ extern "C"{
 /*	Token and Group Fields
  * 
  *	The cmdObject struct (cmdObj_t) has strict rules on the use of the token and group fields.
- *	The follwing forms are legal which support the use cases listed:
+ *	The following forms are legal which support the use cases listed:
  *
  *	Forms
  *	  - group is NUL; token is full token including any group profix
@@ -171,12 +169,12 @@ extern "C"{
  *	largest possible operation - usually the status report.
  */
 
- /***********************************************************************************
-  **** DEFINITIONS AND SETTINGS *****************************************************
-  ***********************************************************************************/
+/***********************************************************************************
+ **** DEFINITIONS AND SETTINGS *****************************************************
+ ***********************************************************************************/
 
 // Sizing and footprints			// chose one based on # of elements in cmdArray
-//typedef uint8_t index_t;			// use this if there are < 255 indexed objects
+//typedef uint8_t index_t;			// use this if there are < 256 indexed objects
 typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 
 									// defines allocated from stack (not-pre-allocated)
@@ -249,7 +247,6 @@ enum objType {						// object / value typing for config and JSON
 #define _fns			F_NOSTRIP
 #define _f07			(F_INITIALIZE | F_PERSIST | F_NOSTRIP)
 
-
 /**** Structures ****/
 
 typedef struct cmdString {				// shared string object
@@ -283,7 +280,7 @@ typedef struct cfgItem {
 	char_t group[CMD_GROUP_LEN+1];		// group prefix (with NUL termination)
 	char_t token[CMD_TOKEN_LEN+1];		// token - stripped of group prefix (w/NUL termination)
 	uint8_t flags;						// operations flags - see defines below
- 	int8_t precision;					// decimal precision for display (JSON)
+	int8_t precision;					// decimal precision for display (JSON)
 //	const char_t *format;				// pointer to formatted print string in FLASH
 	fptrPrint print;					// print binding: aka void (*print)(cmdObj_t *cmd);
 	fptrCmd get;						// GET binding aka uint8_t (*get)(cmdObj_t *cmd)
@@ -291,7 +288,6 @@ typedef struct cfgItem {
 	float *target;						// target for writing config value
 	float def_value;					// default value for config item
 } cfgItem_t;
-
 
 /**** static allocation and definitions ****/
 
@@ -305,20 +301,20 @@ extern const cfgItem_t cfgArray[];
 /**** Prototypes for generic config functions - see individual modules for application-specific functions  ****/
 
 void config_init(void);
-stat_t set_defaults(cmdObj_t *cmd);
+stat_t set_defaults(cmdObj_t *cmd);		// reset config to default values
 
 // main entry points for core access functions
-stat_t cmd_get(cmdObj_t *cmd);		// get value
-stat_t cmd_set(cmdObj_t *cmd);		// set value
-void cmd_print(cmdObj_t *cmd);		// formatted print (text mode)
-void cmd_persist(cmdObj_t *cmd);	// persistence
+stat_t cmd_get(cmdObj_t *cmd);			// main entry point for get value
+stat_t cmd_set(cmdObj_t *cmd);			// main entry point for set value
+void cmd_print(cmdObj_t *cmd);			// main entry point for print value
+void cmd_persist(cmdObj_t *cmd);		// main entry point for persistence
 
 // helpers
 uint8_t cmd_get_type(cmdObj_t *cmd);
 stat_t cmd_persist_offsets(uint8_t flag);
 
-index_t cmd_get_index(const char *group, const char *token);
-index_t	cmd_index_max();
+index_t cmd_get_index(const char_t *group, const char_t *token);
+index_t	cmd_index_max(void);
 uint8_t cmd_index_lt_max(index_t index);
 uint8_t cmd_index_ge_max(index_t index);
 uint8_t cmd_index_is_single(index_t index);
@@ -345,33 +341,26 @@ stat_t get_flt(cmdObj_t *cmd);		// get floating point value
 stat_t set_grp(cmdObj_t *cmd);		// set data for a group
 stat_t get_grp(cmdObj_t *cmd);		// get data for a group
 
-//void print_nul(cmdObj_t *cmd);		// print nothing (no operation)
-
 // object and list functions
 void cmd_get_cmdObj(cmdObj_t *cmd);
 cmdObj_t *cmd_reset_obj(cmdObj_t *cmd);
 cmdObj_t *cmd_reset_list(void);
 
-stat_t cmd_copy_string(cmdObj_t *cmd, const char *src);
-cmdObj_t *cmd_add_object(const char *token);
-cmdObj_t *cmd_add_integer(const char *token, const uint32_t value);
-cmdObj_t *cmd_add_float(const char *token, const float value);
-cmdObj_t *cmd_add_string(const char *token, const char_t *string);
+stat_t cmd_copy_string(cmdObj_t *cmd, const char_t *src);
+cmdObj_t *cmd_add_object(const char_t *token);
+cmdObj_t *cmd_add_integer(const char_t *token, const uint32_t value);
+cmdObj_t *cmd_add_float(const char_t *token, const float value);
+cmdObj_t *cmd_add_string(const char_t *token, const char_t *string);
 cmdObj_t *cmd_add_conditional_message(const char_t *string);
 void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
 
 stat_t cmd_read_NVM_value(cmdObj_t *cmd);
 stat_t cmd_write_NVM_value(cmdObj_t *cmd);
 
-#ifdef __DEBUG
-void cfg_dump_NVM(const uint16_t start_record, const uint16_t end_record, char *label);
-#endif
-
 /*********************************************************************************************
  **** PLEASE NOTICE THAT CONFIG_APP.H IS HERE ************************************************
  *********************************************************************************************/
 #include "config_app.h"
-
 
 /*** Unit tests ***/
 
@@ -384,10 +373,8 @@ void cfg_unit_tests(void);
 #define	CONFIG_UNITS
 #endif // __UNIT_TEST_CONFIG
 
-
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _CONFIG_H_
-
+#endif // End of include guard: CONFIG_H_ONCE

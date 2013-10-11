@@ -1,9 +1,8 @@
 /*
- * tinyg.h - tinyg main header - Application GLOBALS 
- *			 (see also system.h and settings.h)
- * Part of TinyG project
+ * tinyg2.h - tinyg2 main header
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -17,18 +16,16 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/*
- * Is this code over documented? Possibly. 
+/* Is this code over documented? Possibly. 
  * We try to follow this (at least we are evolving to it). It's worth a read.
  * ftp://ftp.idsoftware.com/idstuff/doom3/source/CodeStyleConventions.doc
-
- Project setup notes:
- ref: http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=117023
- 
-    Yes it's definitely worth making WinAVR work. To install WinAVR for the project use 
-    Project-Configuration Options and under Custom Options untick the "Use toolchain" box 
-    then set the top one to \winavr\bin\avr-gcc.exe 	(C:\WinAVR-20100110\bin\avr-gcc.exe)
-    and the lower one to 	\winavr\utils\bin\make.exe	(C:\WinAVR-20100110\utils\bin\make.exe)
+ */
+/* Xmega project setup notes:
+ * from: http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=117023
+ * "Yes it's definitely worth making WinAVR work. To install WinAVR for the project use 
+ * Project-Configuration Options and under Custom Options untick the "Use toolchain" box 
+ * then set the top one to \winavr\bin\avr-gcc.exe  (C:\WinAVR-20100110\bin\avr-gcc.exe)
+ * and the lower one to \winavr\utils\bin\make.exe  (C:\WinAVR-20100110\utils\bin\make.exe)"
  */
 
 #ifndef TINYG_H_ONCE
@@ -47,11 +44,11 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		394.16	// Alignment changes to stepper and spindle
-#define TINYG_FIRMWARE_VERSION		0.97	// major version 
+#define TINYG_FIRMWARE_BUILD   		394.17	// Alignment changes to text_parser
+#define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
-#define TINYG_HARDWARE_VERSION		8		// default board revision number
-#define TINYG_HARDWARE_VERSION_MAX	8
+#define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
+#define TINYG_HARDWARE_VERSION_MAX (TINYG_HARDWARE_VERSION)
 
 /****** COMPILE-TIME SETTINGS ******/
 
@@ -85,8 +82,6 @@
 #ifdef __AVR
 
 #include <avr/pgmspace.h>		// defines PROGMEM and PSTR
-//#undef PROGMEM
-//#define PROGMEM __attribute__((progmem))
 
 typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 
@@ -102,6 +97,12 @@ typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 // get units from array of strings in PGM and convert to RAM string
 #define GET_UNITS(a) 	   strcpy_P(shared_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]))
 
+// IO settings
+#define STD_IN 	XIO_DEV_USB		// default IO settings
+#define STD_OUT	XIO_DEV_USB
+#define STD_ERR	XIO_DEV_USB
+
+// String compatibility
 #define strtof strtod			// strtof is not in the AVR lib
 
 #endif // __AVR
@@ -127,14 +128,21 @@ typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uin
 #define GET_TEXT_ITEM(b,a) b[a]						// get text from an array of strings in flash
 #define GET_UNITS(a) msg_units[cm_get_units_mode(a)]
 
-/* The ARM stdio functions we are using use char as input and output. The macros below
- * do the casts for most cases, but not all. Vararg functions like the printf() family
- * need special handling. These require explicit casts as per:
+// IO settings
+#define DEV_STDIN 0				// STDIO defaults - stdio is not yet used in the ARM version
+#define DEV_STDOUT 0
+#define DEV_STDERR 0
+
+/* String compatibility
+ *
+ * The ARM stdio functions we are using still use char as input and output. The macros
+ * below do the casts for most cases, but not all. Vararg functions like the printf()
+ * family need special handling. These like char * as input and require casts as per:
  *
  *   printf((const char *)"Good Morning Hoboken!\n");
  *
- * The AVR also has "_P" variants that take PROGMEM strings as args. 
- * On the ARM/GCC++ the _P functions are just aliases of the non-P variants. 
+ * The AVR also has "_P" variants that take PROGMEM strings as args.
+ * On the ARM/GCC++ the _P functions are just aliases of the non-P variants.
  */
 #define strncpy(d,s,l) (char_t *)strncpy((char *)d, (char *)s, l)
 #define strpbrk(d,s) (char_t *)strpbrk((char *)d, (char *)s)
@@ -146,10 +154,10 @@ typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uin
 #define strtod(d,p) strtod((char *)d, (char **)p)
 #define strtof(d,p) strtof((char *)d, (char **)p)
 #define strlen(s) strlen((char *)s)
-#define isdigit(c) isdigit((char) c)
-#define isalnum(c) isalnum((char) c)
-#define tolower(c) (char_t)tolower((char) c)
-#define toupper(c) (char_t)toupper((char) c)
+#define isdigit(c) isdigit((char)c)
+#define isalnum(c) isalnum((char)c)
+#define tolower(c) (char_t)tolower((char)c)
+#define toupper(c) (char_t)toupper((char)c)
 
 #define printf_P printf		// these functions want char * as inputs, not char_t *
 #define fprintf_P fprintf	// just sayin'
@@ -158,7 +166,6 @@ typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uin
 
 #endif // __ARM
 
-
 /******************************************************************************
  ***** TINYG APPLICATION DEFINITIONS ******************************************
  ******************************************************************************/
@@ -166,21 +173,16 @@ typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uin
 typedef uint16_t magic_t;		// magic number size
 #define MAGICNUM 0x12EF			// used for memory integrity assertions
 
-#define STD_IN 	XIO_DEV_USB		// default IO settings
-#define STD_OUT	XIO_DEV_USB
-#define STD_ERR	XIO_DEV_USB
-
 /***** Axes, motors & PWM channels used by the application *****/
 // Axes, motors & PWM channels must be defines (not enums) so #ifdef <value> can be used
 
-#define AXES 	6				// number of axes supported in this version
+#define AXES	6				// number of axes supported in this version
 #define MOTORS	4				// number of motors on the board
 #define COORDS	6				// number of supported coordinate systems (1-6)
 #define PWMS	2				// number of supported PWM channels
 
 // Note: If you change COORDS you must adjust the entries in cfgArray table in config.c
 
-// Axes, motors & PWM channels must be defines (not enums) so #ifdef <value> can be used
 #define AXIS_X	0
 #define AXIS_Y	1
 #define AXIS_Z	2
@@ -195,10 +197,11 @@ typedef uint16_t magic_t;		// magic number size
 #define MOTOR_2	1				// must be defines. enums don't work
 #define MOTOR_3	2
 #define MOTOR_4	3
+//#define MOTOR_5 4
+//#define MOTOR_6 5
 
 #define PWM_1	0
 #define PWM_2	1
-
 
 /************************************************************************************ 
  * STATUS CODES
@@ -231,7 +234,7 @@ char *get_status_message(stat_t status);
 #define STAT_TERMINATE 5				// operation terminated (gracefully)
 #define STAT_RESET 6					// operation was hard reset (sig kill)
 #define	STAT_EOL 7						// function returned end-of-line
-#define	STAT_EOF 8						// function returned end-of-file 
+#define	STAT_EOF 8						// function returned end-of-file
 #define	STAT_FILE_NOT_OPEN 9
 #define	STAT_FILE_SIZE_EXCEEDED 10
 #define	STAT_NO_SUCH_DEVICE 11
@@ -271,7 +274,7 @@ char *get_status_message(stat_t status);
 #define	STAT_UNRECOGNIZED_COMMAND 40		// parser didn't recognize the command
 #define	STAT_EXPECTED_COMMAND_LETTER 41		// malformed line to parser
 #define	STAT_BAD_NUMBER_FORMAT 42			// number format error
-#define	STAT_INPUT_EXCEEDS_MAX_LENGTH 43	// input string is too long 
+#define	STAT_INPUT_EXCEEDS_MAX_LENGTH 43	// input string is too long
 #define	STAT_INPUT_VALUE_TOO_SMALL 44		// input error: value is under minimum
 #define	STAT_INPUT_VALUE_TOO_LARGE 45		// input error: value is over maximum
 #define	STAT_INPUT_VALUE_RANGE_ERROR 46		// input error: value is out-of-range
@@ -293,7 +296,7 @@ char *get_status_message(stat_t status);
 #define	STAT_MINIMUM_LENGTH_MOVE_ERROR 60	// move is less than minimum length
 #define	STAT_MINIMUM_TIME_MOVE_ERROR 61		// move is less than minimum time
 #define	STAT_GCODE_BLOCK_SKIPPED 62			// block is too short - was skipped
-#define	STAT_GCODE_INPUT_ERROR 63			// general error for gcode input 
+#define	STAT_GCODE_INPUT_ERROR 63			// general error for gcode input
 #define	STAT_GCODE_FEEDRATE_ERROR 64		// move has no feedrate
 #define	STAT_GCODE_AXIS_WORD_MISSING 65		// command requires at least one axis present
 #define	STAT_MODAL_GROUP_VIOLATION 66		// gcode modal group error

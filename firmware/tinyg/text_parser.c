@@ -188,7 +188,7 @@ void text_print_inline_pairs(cmdObj_t *cmd)
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		if ((cmd = cmd->nx) == NULL) return;
-		if (cmd->objtype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}		
+		if (cmd->objtype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
 	}
 }
 
@@ -242,7 +242,7 @@ void text_print_ui8(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, forma
 void text_print_int(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format, (uint32_t)cmd->value);}
 void text_print_flt(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format, cmd->value);}
 
-void text_print_flt_units(cmdObj_t *cmd, const char_t *format, const char_t *units) 
+void text_print_flt_units(cmdObj_t *cmd, const char *format, const char *units) 
 {
 	fprintf_P(stderr, format, cmd->value, units);
 }
@@ -260,4 +260,3 @@ void tx_print_tv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_tv);}
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-
