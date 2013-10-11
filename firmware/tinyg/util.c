@@ -1,8 +1,8 @@
 /*
  * util.c - a random assortment of useful functions
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -24,13 +24,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* util.c/.h contains a dog's breakfast of supporting functions that are 
- * not specific to tinyg: including:
- *
+/* util contains a dog's breakfast of supporting functions that are not specific to tinyg: 
+ * including:
  *	  - math and min/max utilities and extensions 
  *	  - vector manipulation utilities
- *	  - support for debugging routines
- */ 
+ */
 
 #include "tinyg.h"
 #include "util.h"
@@ -50,27 +48,25 @@ extern "C"{
 float vector[AXES];	// statically allocated global for vector utilities
 
 /*
-void copy_vector(float dst[], const float src[], uint8_t length) 
+void copy_vector(float dst[], const float src[], uint8_t length)
 {
-	for (uint8_t i=0; i<length; i++) {
-		dst[i] = src[i];
-	}
+	for (uint8_t i=0; i<length; i++) { dst[i] = src[i]; }
 }
 */
 
-void copy_axis_vector(float dst[], const float src[]) 
+void copy_axis_vector(float dst[], const float src[])
 {
 	memcpy(dst, src, sizeof(float)*AXES);
 }
 
-uint8_t vector_equal(const float a[], const float b[]) 
+uint8_t vector_equal(const float a[], const float b[])
 {
 	if ((fp_EQ(a[AXIS_X], b[AXIS_X])) &&
-	 	(fp_EQ(a[AXIS_Y], b[AXIS_Y])) &&
-	 	(fp_EQ(a[AXIS_Z], b[AXIS_Z])) &&
-	 	(fp_EQ(a[AXIS_A], b[AXIS_A])) &&
-	 	(fp_EQ(a[AXIS_B], b[AXIS_B])) &&
-	 	(fp_EQ(a[AXIS_C], b[AXIS_C]))) {
+		(fp_EQ(a[AXIS_Y], b[AXIS_Y])) &&
+		(fp_EQ(a[AXIS_Z], b[AXIS_Z])) &&
+		(fp_EQ(a[AXIS_A], b[AXIS_A])) &&
+		(fp_EQ(a[AXIS_B], b[AXIS_B])) &&
+		(fp_EQ(a[AXIS_C], b[AXIS_C]))) {
 		return (true);
 	}
 	return (false);
@@ -128,7 +124,7 @@ float *set_vector_by_axis(float value, uint8_t axis)
  *	#define max4(a,b,c,d) (max(max(a,b),max(c,d)))
  */
 
-inline float min3(float x1, float x2, float x3)
+float min3(float x1, float x2, float x3)
 {
 	float min = x1;
 	if (x2 < min) { min = x2;} 
@@ -136,7 +132,7 @@ inline float min3(float x1, float x2, float x3)
 	return (min);
 }
 
-inline float min4(float x1, float x2, float x3, float x4)
+float min4(float x1, float x2, float x3, float x4)
 {
 	float min = x1;
 	if (x2 < min) { min = x2;} 
@@ -145,7 +141,7 @@ inline float min4(float x1, float x2, float x3, float x4)
 	return (min);
 }
 
-inline float max3(float x1, float x2, float x3)
+float max3(float x1, float x2, float x3)
 {
 	float max = x1;
 	if (x2 > max) { max = x2;} 
@@ -153,7 +149,7 @@ inline float max3(float x1, float x2, float x3)
 	return (max);
 }
 
-inline float max4(float x1, float x2, float x3, float x4)
+float max4(float x1, float x2, float x3, float x4)
 {
 	float max = x1;
 	if (x2 > max) { max = x2;} 
@@ -166,7 +162,6 @@ inline float max4(float x1, float x2, float x3, float x4)
  * strcpy_U() 	   - strcpy workalike to get around initial NUL for blank string - possibly wrong
  * isnumber() 	   - isdigit that also accepts plus, minus, and decimal point
  * escape_string() - add escapes to a string - currently for quotes only
- * read_float()    - read a float from a normalized char array
  */
 
 /*
@@ -180,7 +175,7 @@ uint8_t * strcpy_U( uint8_t * dst, const uint8_t * src )
 }
 */
 
-uint8_t isnumber(char c)
+uint8_t isnumber(char_t c)
 {
 	if (c == '.') { return (true); }
 	if (c == '-') { return (true); }
@@ -200,7 +195,6 @@ char_t *escape_string(char_t *dst, char_t *src)
 	return (start_dst);
 }
 
-
 /* 
  * compute_checksum() - calculate the checksum for a string
  * 
@@ -211,7 +205,7 @@ char_t *escape_string(char_t *dst, char_t *src)
  */
 #define HASHMASK 9999
 
-uint16_t compute_checksum(char const *string, const uint16_t length) 
+uint16_t compute_checksum(char_t const *string, const uint16_t length) 
 {
 	uint32_t h = 0;
 	uint16_t len = strlen(string);
@@ -224,7 +218,6 @@ uint16_t compute_checksum(char const *string, const uint16_t length)
     }
     return (h % HASHMASK);
 }
-
 
 #ifdef __cplusplus
 }

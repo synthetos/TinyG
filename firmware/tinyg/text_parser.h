@@ -28,8 +28,6 @@
 #ifndef TEXT_PARSER_H_ONCE
 #define TEXT_PARSER_H_ONCE
 
-#include <stdbool.h>
-
 #ifdef __cplusplus
 extern "C"{
 #endif
