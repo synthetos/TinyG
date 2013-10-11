@@ -33,9 +33,10 @@ extern "C"{
 #endif
 
 /**** Configs, Definitions and Structures ****/
+// Note: If you are looking for the defaults for the status report see settings.h
 
 #define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS 	// max number of status report elements - see cfgArray
-									// **** must also line up in cfgArray, se00 - seXX ****
+												// **** must also line up in cfgArray, se00 - seXX ****
 
 enum srVerbosity {					// status report enable and verbosity
 	SR_OFF = 0,						// no reports
@@ -50,7 +51,7 @@ enum cmStatusReportRequest {
 
 enum qrVerbosity {					// planner queue enable and verbosity
 	QR_OFF = 0,						// no response is provided
-	QR_FILTERED,					// queue depth reported only above hi-water mark and below lo-water mark  
+	QR_FILTERED,					// queue depth reported only above hi-water mark and below lo-water mark
 	QR_VERBOSE,						// queue depth reported for all buffers
 	QR_TRIPLE						// queue depth reported for all buffers, and buffers added, buffered removed
 };
@@ -91,7 +92,6 @@ extern srSingleton_t sr;
 extern qrSingleton_t qr;
 
 /**** Function Prototypes ****/
-// Note: If you are looking for the defaults for the status report see settings.h
 
 void rpt_print_message(char *msg);
 void rpt_exception(uint8_t status);
@@ -115,7 +115,7 @@ stat_t sr_set(cmdObj_t *cmd);
 stat_t sr_set_si(cmdObj_t *cmd);
 //void sr_print_sr(cmdObj_t *cmd);
 
-stat_t qr_get(cmdObj_t *cmd); 
+stat_t qr_get(cmdObj_t *cmd);
 void qr_clear_queue_report(void);
 void qr_request_queue_report(int8_t buffers);
 stat_t qr_queue_report_callback(void);

@@ -33,16 +33,16 @@ extern "C"{
 #endif
 
 typedef struct pwmConfigChannel {
-  	float frequency;				// base frequency for PWM driver, in Hz
+	float frequency;				// base frequency for PWM driver, in Hz
 	float cw_speed_lo;				// minimum clockwise spindle speed [0..N]
-    float cw_speed_hi;				// maximum clockwise spindle speed
-    float cw_phase_lo;				// pwm phase at minimum CW spindle speed, clamped [0..1]
-    float cw_phase_hi;				// pwm phase at maximum CW spindle speed, clamped [0..1]
+	float cw_speed_hi;				// maximum clockwise spindle speed
+	float cw_phase_lo;				// pwm phase at minimum CW spindle speed, clamped [0..1]
+	float cw_phase_hi;				// pwm phase at maximum CW spindle speed, clamped [0..1]
 	float ccw_speed_lo;				// minimum counter-clockwise spindle speed [0..N]
-    float ccw_speed_hi;				// maximum counter-clockwise spindle speed
-    float ccw_phase_lo;				// pwm phase at minimum CCW spindle speed, clamped [0..1]
-    float ccw_phase_hi;				// pwm phase at maximum CCW spindle speed, clamped
-    float phase_off;				// pwm phase when spindle is disabled
+	float ccw_speed_hi;				// maximum counter-clockwise spindle speed
+	float ccw_phase_lo;				// pwm phase at minimum CCW spindle speed, clamped [0..1]
+	float ccw_phase_hi;				// pwm phase at maximum CCW spindle speed, clamped
+	float phase_off;				// pwm phase when spindle is disabled
 } pwmConfigChannel_t;
 
 typedef struct pwmChannel {

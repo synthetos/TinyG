@@ -28,12 +28,12 @@
  *	and can be changed using the config commands. After initial load the EEPROM values 
  *	(or changed values) are used.
  *
- *	System and hardware settings that you shouldn't need to change are in system.h  
+ *	System and hardware settings that you shouldn't need to change are in hardware.h  
  *	Application settings that also shouldn't need to be changed are in tinyg.h
  */
 
-#ifndef _SETTINGS_H_
-#define _SETTINGS_H_
+#ifndef SETTINGS_H_ONCE
+#define SETTINGS_H_ONCE
 
 /**** GENERAL SETTINGS ******************************************************/
 
@@ -41,9 +41,9 @@
 // Do not assume these are the effective settings. Check the machine profile 
 
 // Machine configuration settings
-#define CHORDAL_TOLERANCE 			0.001			// chord accuracy for arc drawing
-#define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
-#define MOTOR_IDLE_TIMEOUT			2				// seconds to maintain motor at full power before idling
+#define CHORDAL_TOLERANCE 			0.001				// chord accuracy for arc drawing
+#define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
+#define MOTOR_IDLE_TIMEOUT			2.00				// seconds to maintain motor at full power before idling
 
 // Communications and reporting settings
 #define COMM_MODE					JSON_MODE		// one of: TEXT_MODE, JSON_MODE
@@ -57,7 +57,7 @@
 #define SR_VERBOSITY				SR_FILTERED		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 #define STATUS_REPORT_MIN_MS		50				// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250				// milliseconds - set $SV=0 to disable
-#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","tool", "stat"
+#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
 #define QR_VERBOSITY				QR_OFF			// one of: QR_OFF, QR_FILTERED, QR_VERBOSE
 #define QR_HI_WATER					20
@@ -74,14 +74,14 @@
 #define COM_IGNORE_CRLF				IGNORE_OFF		// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_EXPAND_CR				false
 #define COM_ENABLE_ECHO				false
-#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON	// FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS 
+#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON // FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
 
 /**** MACHINE PROFILES ******************************************************/
 
 // machine default profiles - chose only one:
 
 //#include "settings/settings_default.h"				// Default settings for release
-//#include "settings/settings_hammer.h"				// Hammer torque demo
+//#include "settings/settings_hammer.h"					// Hammer torque demo
 //#include "settings/settings_pendulum.h"				// Pendulum motion demo
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_mcgyver.h"				// debugging
@@ -112,4 +112,4 @@
 #define P1_PWM_PHASE_OFF                0.1
 #endif//P1_PWM_FREQUENCY
 
-#endif // _SETTINGS_H_
+#endif // End of include guard: SETTINGS_H_ONCE
