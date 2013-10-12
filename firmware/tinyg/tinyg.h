@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		394.18	// Desperately trying to get Atmel Studio 6 working again
+#define TINYG_FIRMWARE_BUILD   		394.19	// Diagnosing high-speed stutter problem in dev (edge works fine)
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)

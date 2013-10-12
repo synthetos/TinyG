@@ -209,10 +209,7 @@ uint16_t compute_checksum(char_t const *string, const uint16_t length)
 {
 	uint32_t h = 0;
 	uint16_t len = strlen(string);
-
-	if (length != 0) {
-		len = min(len, length);
-	}
+	if (length != 0) len = min(len, length);
     for (uint16_t i=0; i<len; i++) {
 		h = 31 * h + string[i];
     }
