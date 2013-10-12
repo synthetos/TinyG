@@ -277,23 +277,27 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 			bp->entry_velocity = bp->pv->exit_velocity;	// other blocks in the list
 		}
 		bp->cruise_velocity = bp->cruise_vmax;
-		bp->exit_velocity = min4(bp->exit_vmax, bp->nx->braking_velocity, bp->nx->entry_vmax,
-								(bp->entry_velocity + bp->delta_vmax));
+		bp->exit_velocity = min4( bp->exit_vmax, 
+								  bp->nx->entry_vmax,
+								  bp->nx->braking_velocity, 
+								 (bp->entry_velocity + bp->delta_vmax) );
+
 		_calculate_trapezoid(bp);
 
 		// test for optimally planned trapezoids - only need to check various exit conditions
-//		if ((bp->exit_velocity == bp->exit_vmax) || (bp->exit_velocity == bp->nx->entry_vmax) || 
-//		   ((bp->pv->replannable == false) && (bp->exit_velocity == bp->entry_velocity + bp->delta_vmax))) {
-//			bp->replannable = false;
-
-		// test for optimally planned trapezoids - only need to check various exit conditions
-		if ( ( (fp_EQ(bp->exit_velocity, bp->exit_vmax)) ||
-			   (fp_EQ(bp->exit_velocity, bp->nx->entry_vmax)) )  ||
-			 ( (bp->pv->replannable == false) &&
-			   (fp_EQ(bp->exit_velocity, (bp->entry_velocity + bp->delta_vmax))) ) ) {
-
+		if ((bp->exit_velocity == bp->exit_vmax) || (bp->exit_velocity == bp->nx->entry_vmax) || 
+		   ((bp->pv->replannable == false) && (bp->exit_velocity == bp->entry_velocity + bp->delta_vmax))) {
 			bp->replannable = false;
-		}
+		   }
+		   		
+		// test for optimally planned trapezoids - only need to check various exit conditions
+//		if ( ( (fp_EQ(bp->exit_velocity, bp->exit_vmax)) ||
+//			   (fp_EQ(bp->exit_velocity, bp->nx->entry_vmax)) )  ||
+//			 ( (bp->pv->replannable == false) &&
+//			   (fp_EQ(bp->exit_velocity, (bp->entry_velocity + bp->delta_vmax))) ) ) {
+//			bp->replannable = false;
+//		}
+
 	}
 	// finish up the last block move
 	bp->entry_velocity = bp->pv->exit_velocity;

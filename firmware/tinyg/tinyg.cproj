@@ -15,7 +15,7 @@
     <AssemblyName>tinyg</AssemblyName>
     <Name>tinyg</Name>
     <RootNamespace>tinyg</RootNamespace>
-    <ToolchainFlavour>Native</ToolchainFlavour>
+    <ToolchainFlavour>avr8bit</ToolchainFlavour>
     <KeepTimersRunning>true</KeepTimersRunning>
     <OverrideVtor>false</OverrideVtor>
     <OverrideVtorValue>
@@ -106,6 +106,10 @@
         <avrgcc.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcc.assembler.debugging.DebugLevel>
       </AvrGcc>
     </ToolchainSettings>
+    <UsesExternalMakeFile>False</UsesExternalMakeFile>
+    <BuildTarget>all</BuildTarget>
+    <CleanTarget>clean</CleanTarget>
+    <ExternalMakeFilePath>\\vmware-host\Shared Folders\Alden\Projects\proj38_TinyG\TinyG\firmware\tinyg\Debug\Makefile</ExternalMakeFilePath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="canonical_machine.c">
