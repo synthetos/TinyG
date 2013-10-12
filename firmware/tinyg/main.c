@@ -90,7 +90,7 @@ int main(void)
 	rpt_print_system_ready_message();// (LAST) announce system is ready
 
 	_unit_tests();					// run any unit tests that are enabled
-	tg_canned_startup();			// run any pre-loaded commands
+	run_canned_startup();			// run any pre-loaded commands
 	
 	while (true) {
 		controller_run(); 

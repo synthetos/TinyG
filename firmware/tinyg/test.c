@@ -27,7 +27,7 @@
 
 // regression test files
 #ifdef __CANNED_TESTS
-
+/*
 #include "tests/test_001_smoke.h" 			// basic functionality
 #include "tests/test_002_homing.h"			// G28.1 homing cycles
 #include "tests/test_003_squares.h"			// square moves
@@ -42,24 +42,25 @@
 #include "tests/test_012_slow_moves.h"		// slow move test
 #include "tests/test_013_coordinate_offsets.h"	// what it says
 #include "tests/test_014_microsteps.h"		// test all microstep settings
+*/
 //#include "tests/test_050_mudflap.h"			// mudflap test - entire drawing
-//#include "tests/test_051_braid.h"			// braid test - partial drawing
+#include "tests/test_051_braid.h"			// braid test - partial drawing
 //#include "tests/test_052_ford.h"			// Ford arc failure test - partial drawing
 
 #endif
 
 /*
- * tg_test() - system tests from FLASH invoked by $test=n command
+ * run_test() - system tests from FLASH invoked by $test=n command
  *
  * 	By convention the character array containing the test must have the same 
  *	name as the file name.
  */
-uint8_t tg_test(cmdObj_t *cmd)
+uint8_t run_test(cmdObj_t *cmd)
 {
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (STAT_OK);}
 #ifdef __CANNED_TESTS
-
+/*
 		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke),PGM_FLAGS); break;}
 		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
 		case 3: { xio_open(XIO_DEV_PGM, PGMFILE(&test_squares),PGM_FLAGS); break;}
@@ -74,8 +75,9 @@ uint8_t tg_test(cmdObj_t *cmd)
 		case 12: { xio_open(XIO_DEV_PGM, PGMFILE(&test_slow_moves),PGM_FLAGS); break;}
 		case 13: { xio_open(XIO_DEV_PGM, PGMFILE(&test_coordinate_offsets),PGM_FLAGS); break;}
 		case 14: { xio_open(XIO_DEV_PGM, PGMFILE(&test_microsteps),PGM_FLAGS); break;}
+*/
 //		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
-//		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
+		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 //		case 52: { xio_open(XIO_DEV_PGM, PGMFILE(&test_ford),PGM_FLAGS); break;}
 #endif
 		default: {
@@ -88,13 +90,13 @@ uint8_t tg_test(cmdObj_t *cmd)
 }
 
 /*
- * tg_canned_startup() - run a string on startup
+ * run_canned_startup() - run a string on startup
  *
  *	Pre-load the USB RX (input) buffer with some test strings that will be called 
  *	on startup. Be mindful of the char limit on the read buffer (RX_BUFFER_SIZE).
  *	It's best to create a test file for really complicated things.
  */
-void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
+void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
@@ -104,8 +106,8 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$tool\n");
 
 /* Run test file */
-//	xio_queue_RX_string_usb("$test=52\n");		// run test file
-//	xio_queue_RX_string_usb("{\"test\":52}\n");		// run test file
+//	xio_queue_RX_string_usb("$test=51\n");		// run test file
+	xio_queue_RX_string_usb("{\"test\":51}\n");	// run test file
 
 /* Other command sequences */
 //	xio_queue_RX_string_usb("H\n");				// show help file
@@ -141,7 +143,11 @@ void tg_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
 
 /* G0's */
-	xio_queue_RX_string_usb("g0 x0.0004\n");	// too short line
+//	xio_queue_RX_string_usb("g0 x0.0004\n");	// too short line
+//	xio_queue_RX_string_usb("g0 x0.04\n");		// very short line
+//	xio_queue_RX_string_usb("g0 x0.08\n");
+//	xio_queue_RX_string_usb("g0 x0.12\n");
+
 //	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
 //	xio_queue_RX_string_usb("g0 x0\n");
 //	xio_queue_RX_string_usb("g0 x2\n");

@@ -99,8 +99,8 @@ uint8_t mp_get_runtime_busy()
  *	transitions between moves and allows for faster feeds while controlling 
  *	machine oscillations and other undesirable side-effects.
  *
- * 	Note: All math is done in absolute coordinates using "float precision" 
- *	floating point (even though AVRgcc does this as single precision)
+ * 	Note: All math is done in absolute coordinates using single precision 
+ *	floating point (float).
  *
  *	Note: Returning a status that is not STAT_OK means the endpoint is NOT
  *	advanced. So lines that are too short to move will accumulate and get 
