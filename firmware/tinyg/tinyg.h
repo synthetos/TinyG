@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		394.19	// Diagnosing high-speed stutter problem in dev (edge works fine)
+#define TINYG_FIRMWARE_BUILD   		394.19	// Diagnosed high-speed stutter problem in dev
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -58,9 +58,9 @@
 
 /****** DEVELOPMENT SETTINGS ******/
 
-#define __CANNED_STARTUP					// run any canned startup moves
-#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+//#define __CANNED_STARTUP					// run any canned startup moves
+//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+//#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 //#define __ENABLE_PROBING					// comment out to take out experimental probing code
 //#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
 

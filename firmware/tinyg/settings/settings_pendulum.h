@@ -41,7 +41,7 @@
 #define INIT_MESSAGE "Initializing configs to PENDULUM demo profile"
 
 #define JUNCTION_DEVIATION		0.01	// default value, in mm - smaller is faster
-#define JUNCTION_ACCELERATION	2	// 2 million - centripetal acceleration around corners
+#define JUNCTION_ACCELERATION	2000000	// 2 million - centripetal acceleration around corners
 
 // *** settings.h overrides ***
 
