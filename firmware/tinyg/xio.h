@@ -125,9 +125,9 @@ typedef void (*x_flow_t)(xioDev_t *d);
  *	Sub-Includes and static allocations
  *************************************************************************/
 // Put all sub-includes here so only xio.h is needed elsewhere
-#include "xio_file.h"
-#include "xio_usart.h"
-#include "xio_spi.h"
+#include "xio/xio_file.h"
+#include "xio/xio_usart.h"
+#include "xio/xio_spi.h"
 
 // Static structure allocations
 xioDev_t 		ds[XIO_DEV_COUNT];			// allocate top-level dev structs

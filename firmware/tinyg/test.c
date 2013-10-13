@@ -23,7 +23,7 @@
 #include "planner.h"
 #include "test.h"
 #include "util.h"
-#include "xio/xio.h"
+#include "xio.h"
 
 // regression test files
 #ifdef __CANNED_TESTS

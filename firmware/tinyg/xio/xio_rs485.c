@@ -35,7 +35,7 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>					// needed for blocking character writes
 
-#include "xio.h"
+#include "../xio.h"
 #include "../xmega/xmega_interrupts.h"
 
 #include "../tinyg.h"					// needed for canonical machine

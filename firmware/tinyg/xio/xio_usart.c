@@ -25,7 +25,7 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>					// needed for blocking character writes
 
-#include "xio.h"						// includes for all devices are in here
+#include "../xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
 
 #include "../tinyg.h"					// needed for AXES definition

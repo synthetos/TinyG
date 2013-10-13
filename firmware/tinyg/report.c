@@ -33,7 +33,7 @@
 #include "planner.h"
 #include "settings.h"
 #include "util.h"
-#include "xio/xio.h"
+#include "xio.h"
 
 #include "xmega/xmega_rtc.h"
 

@@ -43,7 +43,7 @@
 #include "util.h"
 #include "help.h"
 #include "network.h"
-#include "xio/xio.h"
+#include "xio.h"
 
 #ifdef __cplusplus
 extern "C"{

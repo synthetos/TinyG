@@ -23,7 +23,7 @@
 #include <stdbool.h>			// true and false
 #include <string.h>				// for memset
 #include <avr/pgmspace.h>		// precursor for xio.h
-#include "xio.h"				// includes for all devices are in here
+#include "../xio.h"				// includes for all devices are in here
 
 /******************************************************************************
  * FILE CONFIGURATION RECORDS

@@ -98,7 +98,7 @@
 #include "switch.h"
 #include "hardware.h"
 #include "util.h"
-#include "xio/xio.h"			// for serial queue flush
+#include "xio.h"			// for serial queue flush
 
 #ifdef __cplusplus
 extern "C"{

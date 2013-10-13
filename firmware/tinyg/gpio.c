@@ -56,8 +56,7 @@
 //#include "switch.h"
 #include "gpio.h"
 #include "canonical_machine.h"
-#include "xio/xio.h"						// signals
-
+#include "xio.h"						// signals
 
 //======================== Parallel IO Functions ===============================
 

@@ -38,7 +38,7 @@
 #include "controller.h"
 #include "gpio.h"
 #include "hardware.h"
-#include "xio/xio.h"
+#include "xio.h"
 
 /*
  * Local Scope Functions and Data

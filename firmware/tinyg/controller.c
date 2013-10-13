@@ -48,7 +48,7 @@
 #include "report.h"
 #include "util.h"
 #include "help.h"
-#include "xio/xio.h"
+#include "xio.h"
 #include "xmega/xmega_init.h"
 //#include "xmega/xmega_rtc.h"	// included via hardware.h
 

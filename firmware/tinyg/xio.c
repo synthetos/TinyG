@@ -78,9 +78,9 @@
 #include <avr/pgmspace.h>			// precursor for xio.h
 
 #include "xio.h"					// all device includes are nested here
-#include "../tinyg.h"				// needed by init() for default source
-#include "../config.h"				// needed by init() for default source
-#include "../controller.h"			// needed by init() for default source
+#include "tinyg.h"					// needed by init() for default source
+#include "config.h"					// needed by init() for default source
+#include "controller.h"				// needed by init() for default source
 
 //
 typedef struct xioSingleton {

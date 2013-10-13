@@ -38,7 +38,7 @@
 #include "hardware.h"
 #include "help.h"
 #include "util.h"
-#include "xio/xio.h"
+#include "xio.h"
 #include "xmega/xmega_eeprom.h"
 
 #ifdef __cplusplus

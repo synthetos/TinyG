@@ -32,7 +32,7 @@
 #include "text_parser.h"
 #include "json_parser.h"
 #include "report.h"
-#include "xio/xio.h"				// for ASCII char definitions
+#include "xio.h"					// for ASCII char definitions
 
 #ifdef __cplusplus
 extern "C"{
