@@ -65,7 +65,7 @@ C_SRCS +=  \
 ../test.c \
 ../text_parser.c \
 ../util.c \
-../xio/xio.c \
+../xio.c \
 ../xio/xio_file.c \
 ../xio/xio_pgm.c \
 ../xio/xio_rs485.c \
@@ -110,7 +110,7 @@ switch.o \
 test.o \
 text_parser.o \
 util.o \
-xio/xio.o \
+xio.o \
 xio/xio_file.o \
 xio/xio_pgm.o \
 xio/xio_rs485.o \
@@ -149,7 +149,7 @@ switch.o \
 test.o \
 text_parser.o \
 util.o \
-xio/xio.o \
+xio.o \
 xio/xio_file.o \
 xio/xio_pgm.o \
 xio/xio_rs485.o \
@@ -188,7 +188,7 @@ switch.d \
 test.d \
 text_parser.d \
 util.d \
-xio/xio.d \
+xio.d \
 xio/xio_file.d \
 xio/xio_pgm.d \
 xio/xio_rs485.d \
@@ -227,7 +227,7 @@ switch.d \
 test.d \
 text_parser.d \
 util.d \
-xio/xio.d \
+xio.d \
 xio/xio_file.d \
 xio/xio_pgm.d \
 xio/xio_rs485.d \

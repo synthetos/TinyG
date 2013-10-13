@@ -52,7 +52,7 @@ text_parser.c
 
 util.c
 
-xio\xio.c
+xio.c
 
 xio\xio_file.c
 

@@ -340,10 +340,10 @@
     <Compile Include="util.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="xio\xio.c">
+    <Compile Include="xio.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="xio\xio.h">
+    <Compile Include="xio.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="xio\xio_file.c">
