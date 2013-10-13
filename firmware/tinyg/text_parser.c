@@ -56,10 +56,11 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd);
  * _text_parser_kernal() - helper for above
  *
  * Use cases handled:
- *	- $xfr=1200	set a parameter
- *	- $xfr		display a parameter
- *	- $x		display a group
- *	- ?			generate a status report (multiline format)
+ *	- $xfr=1200		set a parameter (strict separators))
+ *	- $xfr 1200		set a parameter (relaxed separators)
+ *	- $xfr			display a parameter
+ *	- $x			display a group
+ *	- ?				generate a status report (multiline format)
  */
 stat_t text_parser(char_t *str)
 {
@@ -125,7 +126,8 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 	}
 	strcpy_P(cmd->group, cfgArray[cmd->index].group);// capture the group string if there is one
 
-	if (strlen(cmd->group) > 0) {			// see if you need to strip the token
+	// see if you need to strip the token
+	if ((cmd_index_is_group(cmd->index)) && (cmd_group_is_prefixed(cmd->token))) {
 		wr = cmd->token;
 		rd = cmd->token + strlen(cmd->group);
 		while (*rd != NUL) { *(wr)++ = *(rd)++;}

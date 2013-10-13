@@ -113,7 +113,9 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("%\n");				// opening percent character
 //	xio_queue_RX_string_usb("$\n");				// display general group
 //	xio_queue_RX_string_usb("?\n");				// report
-//	Test signals - Note: requires test chars to be enabled
+	xio_queue_RX_string_usb("$ej=1\n");			// change to JSON mode
+
+/*	Test signals - Note: requires test chars to be enabled */
 //	xio_queue_RX_string_usb("^\n");				// reset 
 //	xio_queue_RX_string_usb("!\n");				// feedhold
 //	xio_queue_RX_string_usb("~\n");				// cycle start

@@ -51,9 +51,9 @@ enum cmStatusReportRequest {
 
 enum qrVerbosity {					// planner queue enable and verbosity
 	QR_OFF = 0,						// no response is provided
-	QR_FILTERED,					// queue depth reported only above hi-water mark and below lo-water mark
-	QR_VERBOSE,						// queue depth reported for all buffers
-	QR_TRIPLE						// queue depth reported for all buffers, and buffers added, buffered removed
+//	QR_FILTERED,					// queue depth reported only above hi-water mark and below lo-water mark
+	QR_SINGLE,						// queue depth reported
+	QR_TRIPLE						// queue depth reported for buffers, buffers added, buffered removed
 };
 
 typedef struct srSingleton {
@@ -74,8 +74,8 @@ typedef struct qrSingleton {		// data for queue reports
 
 	/*** config values (PUBLIC) ***/
 	uint8_t queue_report_verbosity;	// queue reports enabled and verbosity level
-	uint8_t queue_report_hi_water;
-	uint8_t queue_report_lo_water;
+//	uint8_t queue_report_hi_water;
+//	uint8_t queue_report_lo_water;
 
 	/*** runtime values (PRIVATE) ***/
 	uint8_t request;				// set to true to request a report

@@ -373,7 +373,7 @@ void qr_request_queue_report(int8_t buffers)
 	} else {
 		qr.buffers_removed -= buffers;
 	}
-
+/*
 	// perform filtration for QR_FILTERED reports
 	if (qr.queue_report_verbosity == QR_FILTERED) {
 		if (qr.buffers_available == qr.prev_available) {
@@ -384,6 +384,7 @@ void qr_request_queue_report(int8_t buffers)
 			return;
 		}
 	}
+*/
 	qr.prev_available = qr.buffers_available;
 	qr.request = true;
 }
@@ -394,7 +395,7 @@ uint8_t qr_queue_report_callback()
 	qr.request = false;
 
 	if (cfg.comm_mode == TEXT_MODE) {
-		if (qr.queue_report_verbosity == QR_VERBOSE) {
+		if (qr.queue_report_verbosity == QR_SINGLE) {
 			fprintf(stderr, "qr:%d\n", qr.buffers_available);
 		} else  {
 			if (qr.queue_report_verbosity == QR_TRIPLE) {
@@ -402,7 +403,7 @@ uint8_t qr_queue_report_callback()
 			}
 		}
 	} else {
-		if (qr.queue_report_verbosity == QR_VERBOSE) {
+		if (qr.queue_report_verbosity == QR_SINGLE) {
 			fprintf(stderr, "{\"qr\":%d}\n", qr.buffers_available);
 		} else {
 			if (qr.queue_report_verbosity == QR_TRIPLE) {
