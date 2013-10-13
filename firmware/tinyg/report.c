@@ -56,7 +56,7 @@ void rpt_exception(uint8_t status)
 		TINYG_FIRMWARE_BUILD, status, get_status_message(status));
 }
 
-stat_t rpt_er(cmdObj_t *cmd) 
+stat_t rpt_er(cmdObj_t *cmd)
 {
 	rpt_exception(STAT_GENERIC_EXCEPTION_REPORT);	// bogus exception report
 	return (STAT_OK);
@@ -373,18 +373,6 @@ void qr_request_queue_report(int8_t buffers)
 	} else {
 		qr.buffers_removed -= buffers;
 	}
-/*
-	// perform filtration for QR_FILTERED reports
-	if (qr.queue_report_verbosity == QR_FILTERED) {
-		if (qr.buffers_available == qr.prev_available) {
-			return;
-		}
-		if ((qr.buffers_available > qr.queue_report_lo_water) && 	// e.g. > 2 buffers available
-			(qr.buffers_available < qr.queue_report_hi_water)) {	// e.g. < 20 buffers available
-			return;
-		}
-	}
-*/
 	qr.prev_available = qr.buffers_available;
 	qr.request = true;
 }
@@ -457,7 +445,6 @@ void qr_print_qv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_qv);}
 
 #endif // __TEXT_MODE
 
-
 /****************************************************************************
  ***** Unit Tests ***********************************************************
  ****************************************************************************/
@@ -471,9 +458,8 @@ void sr_unit_tests(void)
 	cs.communications_mode = STAT_JSON_MODE;
 	sr_run_status_report();
 }
-
-#endif
-#endif
+#endif	// __UNIT_TESTS
+#endif	// __UNIT_TESTS_REPORT
 
 #ifdef __cplusplus
 }

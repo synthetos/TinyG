@@ -1,8 +1,8 @@
 /*
  * settings.h - default runtime settings
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -60,9 +60,7 @@
 #define STATUS_REPORT_INTERVAL_MS	250				// milliseconds - set $SV=0 to disable
 #define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
-#define QR_VERBOSITY				QR_OFF			// one of: QR_OFF, QR_FILTERED, QR_VERBOSE
-//#define QR_HI_WATER					20
-//#define QR_LO_WATER					2
+#define QR_VERBOSITY				QR_OFF			// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 
 // Gcode startup defaults
 #define GCODE_DEFAULT_UNITS			MILLIMETERS		// MILLIMETERS or INCHES

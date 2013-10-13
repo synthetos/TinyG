@@ -1,8 +1,8 @@
 /*
  * controller.c - tinyg controller and top level parser
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -24,17 +24,10 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* See the wiki for module details and additional information:
- *	 http://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Developer-Info
- */
 
-#include <avr/interrupt.h>
-#include <avr/wdt.h>			// used for software reset
-
-#include "tinyg.h"				// #1 unfortunately, there are some dependencies
+#include "tinyg.h"				// #1
 #include "config.h"				// #2
 #include "controller.h"
-#include "settings.h"
 #include "json_parser.h"
 #include "text_parser.h"
 #include "gcode_parser.h"
@@ -46,14 +39,12 @@
 #include "switch.h"
 #include "gpio.h"
 #include "report.h"
-#include "util.h"
 #include "help.h"
+#include "util.h"
 #include "xio.h"
-#include "xmega/xmega_init.h"
-//#include "xmega/xmega_rtc.h"	// included via hardware.h
 
 /***********************************************************************************
- **** STUCTURE ALLOCATIONS *********************************************************
+ **** STRUCTURE ALLOCATIONS *********************************************************
  ***********************************************************************************/
 
 controller_t cs;		// controller state structure

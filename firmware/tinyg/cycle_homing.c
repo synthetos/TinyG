@@ -1,8 +1,8 @@
 /*
- * cycle_homing.c - homing cycle extension to canonical_machine.c
+ * cycle_homing.c - homing cycle extension to canonical_machine
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S Hart, Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -88,7 +88,6 @@ static stat_t _homing_finalize_exit(int8_t axis);
 static stat_t _homing_error_exit(int8_t axis);
 static int8_t _get_next_axis(int8_t axis);
 //static int8_t _get_next_axes(int8_t axis);
-
 
 /*****************************************************************************
  * cm_homing_cycle_start()	- G28.1 homing cycle using limit switches

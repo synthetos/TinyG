@@ -150,7 +150,7 @@ static int8_t _get_axis_type(const index_t index);
  * cm_get_homing_state()
  * cm_set_motion_state() - adjusts active model pointer as well
  */
-uint8_t cm_get_combined_state() 
+uint8_t cm_get_combined_state()
 {
 	if (cm.cycle_state == CYCLE_OFF) { cm.combined_state = cm.machine_state;}
 	else if (cm.cycle_state == CYCLE_PROBE) { cm.combined_state = COMBINED_PROBE;}
@@ -159,7 +159,7 @@ uint8_t cm_get_combined_state()
 	else {
 		if (cm.motion_state == MOTION_RUN) cm.combined_state = COMBINED_RUN;
 		if (cm.motion_state == MOTION_HOLD) cm.combined_state = COMBINED_HOLD;
-	} 
+	}
 	return cm.combined_state;
 }
 

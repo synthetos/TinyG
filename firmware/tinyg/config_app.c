@@ -1,8 +1,8 @@
 /*
  * config_app.c - application-specific part of configuration data
- * Part of TinyG project
+ * This file is part of the TinyG2 project
  *
- * Copyright (c) 2013 Alden S. Hart Jr.
+ * Copyright (c) 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -80,6 +80,7 @@ static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
  **** CONFIG TABLE  ****************************************************************
  ***********************************************************************************
  *	NOTES:
+ *
  *	- Token matching occurs from the most specific to the least specific. This means
  *	  that if shorter tokens overlap longer ones the longer one must precede the
  *	  shorter one. E.g. "gco" needs to come before "gc"
@@ -153,8 +154,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, 0, sr_print_sr,  sr_get,  sr_set,   (float *)&cs.null, 0 },	// status report object
-//	{ "", "qri", _f00, 0, qr_print_qr,  qr_get_in,set_nul, (float *)&cs.null, 0 },	// queue report - blocks in
-//	{ "", "qro", _f00, 0, qr_print_qr,  qr_get_out,set_nul,(float *)&cs.null, 0 },	// queue report - block out
+//	{ "", "qri", _f00, 0, qr_print_qr,  qr_get_i,set_nul,  (float *)&cs.null, 0 },	// queue report - blocks in
+//	{ "", "qro", _f00, 0, qr_print_qr,  qr_get_o,set_nul,  (float *)&cs.null, 0 },	// queue report - block out
 	{ "", "qr",  _f00, 0, qr_print_qr,  qr_get,  set_nul,  (float *)&cs.null, 0 },	// queue report
 	{ "", "er",  _f00, 0, tx_print_nul, rpt_er,  set_nul,  (float *)&cs.null, 0 },	// invoke bogus exception report for testing
 	{ "", "qf",  _f00, 0, tx_print_nul, get_nul, cm_run_qf,(float *)&cs.null, 0 },	// queue flush
@@ -307,16 +308,16 @@ const cfgItem_t cfgArray[] PROGMEM = {
 //	{ "c","czb",_fip, 3, cm_print_zb, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].zero_backoff,	C_ZERO_BACKOFF },
 
 	// PWM settings
-    { "p1","p1frq",_fip, 0, pwm_print_p1frq, get_flt, set_flt,(float *)&pwm.c[PWM_1].frequency,		P1_PWM_FREQUENCY },
-    { "p1","p1csl",_fip, 0, pwm_print_p1csl, get_flt, set_flt,(float *)&pwm.c[PWM_1].cw_speed_lo,	P1_CW_SPEED_LO },
-    { "p1","p1csh",_fip, 0, pwm_print_p1csh, get_flt, set_flt,(float *)&pwm.c[PWM_1].cw_speed_hi,	P1_CW_SPEED_HI },
-    { "p1","p1cpl",_fip, 3, pwm_print_p1cpl, get_flt, set_flt,(float *)&pwm.c[PWM_1].cw_phase_lo,	P1_CW_PHASE_LO },
-    { "p1","p1cph",_fip, 3, pwm_print_p1cph, get_flt, set_flt,(float *)&pwm.c[PWM_1].cw_phase_hi,	P1_CW_PHASE_HI },
-    { "p1","p1wsl",_fip, 0, pwm_print_p1wsl, get_flt, set_flt,(float *)&pwm.c[PWM_1].ccw_speed_lo,	P1_CCW_SPEED_LO },
-    { "p1","p1wsh",_fip, 0, pwm_print_p1wsh, get_flt, set_flt,(float *)&pwm.c[PWM_1].ccw_speed_hi,	P1_CCW_SPEED_HI },
-    { "p1","p1wpl",_fip, 3, pwm_print_p1wpl, get_flt, set_flt,(float *)&pwm.c[PWM_1].ccw_phase_lo,	P1_CCW_PHASE_LO },
-    { "p1","p1wph",_fip, 3, pwm_print_p1wph, get_flt, set_flt,(float *)&pwm.c[PWM_1].ccw_phase_hi,	P1_CCW_PHASE_HI },
-    { "p1","p1pof",_fip, 3, pwm_print_p1pof, get_flt, set_flt,(float *)&pwm.c[PWM_1].phase_off,		P1_PWM_PHASE_OFF },
+	{ "p1","p1frq",_fip, 0, pwm_print_p1frq, get_flt, set_flt,(float *)&pwm.c[PWM_1].frequency,		P1_PWM_FREQUENCY },
+	{ "p1","p1csl",_fip, 0, pwm_print_p1csl, get_flt, set_flt,(float *)&pwm.c[PWM_1].cw_speed_lo,	P1_CW_SPEED_LO },
+	{ "p1","p1csh",_fip, 0, pwm_print_p1csh, get_flt, set_flt,(float *)&pwm.c[PWM_1].cw_speed_hi,	P1_CW_SPEED_HI },
+	{ "p1","p1cpl",_fip, 3, pwm_print_p1cpl, get_flt, set_flt,(float *)&pwm.c[PWM_1].cw_phase_lo,	P1_CW_PHASE_LO },
+	{ "p1","p1cph",_fip, 3, pwm_print_p1cph, get_flt, set_flt,(float *)&pwm.c[PWM_1].cw_phase_hi,	P1_CW_PHASE_HI },
+	{ "p1","p1wsl",_fip, 0, pwm_print_p1wsl, get_flt, set_flt,(float *)&pwm.c[PWM_1].ccw_speed_lo,	P1_CCW_SPEED_LO },
+	{ "p1","p1wsh",_fip, 0, pwm_print_p1wsh, get_flt, set_flt,(float *)&pwm.c[PWM_1].ccw_speed_hi,	P1_CCW_SPEED_HI },
+	{ "p1","p1wpl",_fip, 3, pwm_print_p1wpl, get_flt, set_flt,(float *)&pwm.c[PWM_1].ccw_phase_lo,	P1_CCW_PHASE_LO },
+	{ "p1","p1wph",_fip, 3, pwm_print_p1wph, get_flt, set_flt,(float *)&pwm.c[PWM_1].ccw_phase_hi,	P1_CCW_PHASE_HI },
+	{ "p1","p1pof",_fip, 3, pwm_print_p1pof, get_flt, set_flt,(float *)&pwm.c[PWM_1].phase_off,		P1_PWM_PHASE_OFF },
 
 	// Coordinate system offsets (G54-G59 and G92)
 	{ "g54","g54x",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G54][AXIS_X], G54_X_OFFSET },
@@ -429,8 +430,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "ms",  _fip, 0, cm_print_ms,  get_flt, set_flt, (float *)&cm.estd_segment_usec,		NOM_SEGMENT_USEC },
 	{ "",   "ml",  _fip, 4, cm_print_ml,  get_flu, set_flu, (float *)&cm.min_segment_len,		MIN_LINE_LENGTH },
 	{ "",   "ma",  _fip, 4, cm_print_ma,  get_flu, set_flu, (float *)&cm.arc_segment_len,		ARC_SEGMENT_LENGTH },
-//	{ "",   "qrh", _fip, 0, tx_print_ui8, get_ui8, set_ui8, (float *)&qr.queue_report_hi_water,	QR_HI_WATER },
-//	{ "",   "qrl", _fip, 0, tx_print_ui8, get_ui8, set_ui8, (float *)&qr.queue_report_lo_water,	QR_LO_WATER },
 	{ "",   "fd",  _fip, 0, tx_print_ui8, get_ui8, set_01,  (float *)&js.json_footer_depth,		JSON_FOOTER_DEPTH },
 
 	// Persistence for status report - must be in sequence

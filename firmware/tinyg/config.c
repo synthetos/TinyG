@@ -1,8 +1,8 @@
 /*
  * config.c - application independent configuration handling 
- * Part of TinyG project
+ * This file is part of the TinyG2 project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -64,7 +64,6 @@ cmdObj_t cmd_list[CMD_LIST_LEN];	// JSON header element
  * cmd_print()	- Output a formatted string for the value.
  * cmd_persist()- persist value to NVM. Takes special cases into account
  */
-
 stat_t cmd_set(cmdObj_t *cmd)
 {
 	if (cmd->index >= cmd_index_max()) { return (STAT_INTERNAL_RANGE_ERROR);}
@@ -92,7 +91,7 @@ void cmd_persist(cmdObj_t *cmd)
 	if (GET_TABLE_BYTE(flags) & F_PERSIST) cmd_write_NVM_value(cmd);
 }
 
-/******************************************************************************
+/************************************************************************************
  * config_init()  - called once on hard reset
  *
  * Performs one of 2 actions:
@@ -118,7 +117,7 @@ void config_init()
 	cmd_read_NVM_value(cmd);
 	if (cmd->value != cs.fw_build) {
 		cmd->value = true;					// case (1) NVM is not setup or not in revision
-		set_defaults(cmd);	
+		set_defaults(cmd);
 	} else {								// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
 		for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {

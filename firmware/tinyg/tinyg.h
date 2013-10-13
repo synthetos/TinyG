@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		394.23	// Changed cm_get_combined_state() so status codes work better during homing
+#define TINYG_FIRMWARE_BUILD   		394.24	// Porting recent changes to G2; Re-arranged main() for compatibility
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)

@@ -34,6 +34,7 @@
 #include "test.h"
 #include "pwm.h"
 #include "xio.h"
+
 #include "xmega/xmega_interrupts.h"
 //#include "xmega/xmega_rtc.h"		// included via hardware.h
 //#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
@@ -49,18 +50,46 @@ void _init() {;}
 }
 #endif // __cplusplus
 
+static void _application_init(void);
 static void _unit_tests(void);
 
-/*
- * Inits and MAIN
- */
+void init( void )
+{
+#ifdef __ARM
+	SystemInit();
+
+	// Disable watchdog
+	WDT->WDT_MR = WDT_MR_WDDIS;
+
+	// Initialize C library
+	__libc_init_array();
+#endif
+}
 
 int main(void)
 {
+	// system initialization
+//	init();
+//	delay(1);
+//	usb.attach();					// USB setup
+//	delay(1000);
+
+	// TinyG application setup
+	_application_init();
+	_unit_tests();					// run any unit tests that are enabled
+	run_canned_startup();			// run any pre-loaded commands
+	
+	// main loop
+	for (;;) {
+		controller_run( );			// single pass through the controller
+	}
+	return 0;
+}
+
+static void _application_init(void)
+{
 	// There are a lot of dependencies in the order of these inits.
 	// Don't change the ordering unless you understand this.
-	// Inits can assume that all memory has been zeroed by either 
-	// a hardware reset or a watchdog timer reset.
 
 	cli();
 
@@ -69,8 +98,8 @@ int main(void)
 	rtc_init();						// real time counter
 	xio_init();						// xmega io subsystem
 	stepper_init(); 				// stepper subsystem 				- must precede gpio_init()
-	switch_init();					// switches 
-//	gpio_init();					// parallel IO
+	switch_init();					// switches
+	//	gpio_init();					// parallel IO
 	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()
 
 	// application sub-systems
@@ -86,14 +115,7 @@ int main(void)
 	PMIC_EnableMediumLevel();
 	PMIC_EnableLowLevel();
 	sei();							// enable global interrupts
-	rpt_print_system_ready_message();// (LAST) announce system is ready
-
-	_unit_tests();					// run any unit tests that are enabled
-	run_canned_startup();			// run any pre-loaded commands
-	
-	while (true) {
-		controller_run(); 
-	}
+	rpt_print_system_ready_message();// (LAST) announce system is ready	
 }
 
 /**** Status Messages ***************************************************************
