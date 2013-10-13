@@ -152,17 +152,17 @@ static int8_t _get_axis_type(const index_t index);
  */
 uint8_t cm_get_combined_state() 
 {
-	if (cm.machine_state == MACHINE_CYCLE) {
+	if (cm.cycle_state == CYCLE_OFF) { cm.combined_state = cm.machine_state;}
+	else if (cm.cycle_state == CYCLE_PROBE) { cm.combined_state = COMBINED_PROBE;}
+	else if (cm.cycle_state == CYCLE_HOMING) { cm.combined_state = COMBINED_HOMING;}
+	else if (cm.cycle_state == CYCLE_JOG) { cm.combined_state = COMBINED_JOG;}
+	else {
 		if (cm.motion_state == MOTION_RUN) cm.combined_state = COMBINED_RUN;
 		if (cm.motion_state == MOTION_HOLD) cm.combined_state = COMBINED_HOLD;
-		if (cm.cycle_state == CYCLE_HOMING) cm.combined_state = COMBINED_HOMING;
-		if (cm.cycle_state == CYCLE_PROBE) cm.combined_state = COMBINED_PROBE;
-		if (cm.cycle_state == CYCLE_JOG) cm.combined_state = COMBINED_JOG;
-	} else {
-		cm.combined_state = cm.machine_state;
-	}
+	} 
 	return cm.combined_state;
 }
+
 uint8_t cm_get_machine_state() { return cm.machine_state;}
 uint8_t cm_get_cycle_state() { return cm.cycle_state;}
 uint8_t cm_get_motion_state() { return cm.motion_state;}
