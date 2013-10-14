@@ -358,8 +358,22 @@ void sr_print_sv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_sv);}
 
 /*****************************************************************************
  * Queue Reports
+ *
+ *	Queue reports can report three values:
+ *	  - qr	queue depth - # of buffers availabel in planner queue
+ *	  - qi	buffers added to planner queue since las report
+ *	  - qo	buffers removed from planner queue since last report
+ *
+ *	A QR_SINGLE report returns qr only. A QR_TRIPLE returns all 3 values
+ *
+ *	There are 2 ways to get queue reports:
+ *
+ *	 1.	Enable single ortriple queue reports iusing the QV variable. This will
+ *		return a queue report every time the buffer depth changes
+ *
+ *	 2.	Add qr, qi qne qo (or some combination) to the status report. This will
+ *		reeturn queue report data when status reports are generated.
  */
-
 /*
  * qr_init_queue_report() - initialize or clear queue report values
  */
@@ -373,19 +387,20 @@ void qr_init_queue_report()
 /*
  * qr_request_queue_report() - request a queue report
  *
- *	Records the buffers added and removed. This is important
+ *	Requests a queue report and also records the buffers added and removed
+ *	since the last init (usually re-initted when a report os generated).
  */
 void qr_request_queue_report(int8_t buffers)
 {
-	if (qr.queue_report_verbosity == QR_OFF) {
-//		qr.queue_report_requested = false;		// not actually needed
-		return;
-	}
 	qr.buffers_available = mp_get_planner_buffers_available();
 	if (buffers > 0) {
 		qr.buffers_added += buffers;
 	} else {
 		qr.buffers_removed -= buffers;
+	}
+	if (qr.queue_report_verbosity == QR_OFF) {
+//		qr.queue_report_requested = false;		// not actually needed
+		return;
 	}
 	qr.queue_report_requested = true;
 }
@@ -441,7 +456,8 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
  */
 stat_t qr_get(cmdObj_t *cmd) 
 {
-	cmd->value = (float)mp_get_planner_buffers_available();
+//	cmd->value = (float)mp_get_planner_buffers_available();
+	cmd->value = (float)qr.buffers_available;
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
@@ -450,6 +466,7 @@ stat_t qi_get(cmdObj_t *cmd)
 {
 	cmd->value = (float)qr.buffers_added;
 	cmd->objtype = TYPE_INTEGER;
+	qr.buffers_added = 0;				// reset it
 	return (STAT_OK);
 }
 
@@ -457,6 +474,7 @@ stat_t qo_get(cmdObj_t *cmd)
 {
 	cmd->value = (float)qr.buffers_removed;
 	cmd->objtype = TYPE_INTEGER;
+	qr.buffers_removed = 0;				// reset it
 	return (STAT_OK);
 }
 
