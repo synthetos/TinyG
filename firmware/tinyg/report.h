@@ -75,10 +75,10 @@ typedef struct qrSingleton {		// data for queue reports
 	uint8_t queue_report_verbosity;	// queue reports enabled and verbosity level
 
 	/*** runtime values (PRIVATE) ***/
-	uint8_t request;				// set to true to request a report
-	uint8_t buffers_available;		// stored value used by callback
-	uint8_t prev_available;			// used to filter reports
-	uint8_t buffers_added;			// buffers added since last report
+	uint8_t queue_report_requested;	// set to true to request a report
+	uint8_t buffers_available;		// stored buffer depth passed to by callback
+	uint8_t prev_available;			// buffers available at last count
+	uint8_t buffers_added;			// buffers added since last count
 	uint8_t buffers_removed;		// buffers removed since last report
 
 } qrSingleton_t;
@@ -99,23 +99,23 @@ void rpt_print_initializing_message(void);
 void rpt_print_system_ready_message(void);
 
 void sr_init_status_report(void);
-
 stat_t sr_set_status_report(cmdObj_t *cmd);
 stat_t sr_request_status_report(uint8_t request_type);
 stat_t sr_status_report_callback(void);
 stat_t sr_run_text_status_report(void);
-stat_t sr_populate_unfiltered_status_report(void);
-uint8_t sr_populate_filtered_status_report(void);
 
 stat_t sr_get(cmdObj_t *cmd);
 stat_t sr_set(cmdObj_t *cmd);
 stat_t sr_set_si(cmdObj_t *cmd);
 //void sr_print_sr(cmdObj_t *cmd);
 
-stat_t qr_get(cmdObj_t *cmd);
-void qr_clear_queue_report(void);
+void qr_init_queue_report(void);
 void qr_request_queue_report(int8_t buffers);
 stat_t qr_queue_report_callback(void);
+
+stat_t qr_get(cmdObj_t *cmd);
+stat_t qi_get(cmdObj_t *cmd);
+stat_t qo_get(cmdObj_t *cmd);
 
 #ifdef __TEXT_MODE
 
@@ -124,6 +124,8 @@ stat_t qr_queue_report_callback(void);
 	void sr_print_sv(cmdObj_t *cmd);
 	void qr_print_qv(cmdObj_t *cmd);
 	void qr_print_qr(cmdObj_t *cmd);
+	void qr_print_qi(cmdObj_t *cmd);
+	void qr_print_qo(cmdObj_t *cmd);
 
 #else
 
@@ -132,6 +134,8 @@ stat_t qr_queue_report_callback(void);
 	#define sr_print_sv tx_print_stub
 	#define qr_print_qv tx_print_stub
 	#define qr_print_qr tx_print_stub
+	#define qr_print_qi tx_print_stub
+	#define qr_print_qo tx_print_stub
 
 #endif // __TEXT_MODE
 
