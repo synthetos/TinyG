@@ -34,7 +34,7 @@
 
 // NOTE: This header requires <stdio.h> be included previously
 
-#define TINYG_FIRMWARE_BUILD  		380.05	// Promote version 0.96 to Master
+#define TINYG_FIRMWARE_BUILD  		380.08	// Fixed bug in very short lines (minimum time errors)
 #define TINYG_FIRMWARE_VERSION		0.96	// major version
 #define TINYG_HARDWARE_VERSION		8		// board revision number
 #define TINYG_HARDWARE_VERSION_MAX	8		// get ready for version 8

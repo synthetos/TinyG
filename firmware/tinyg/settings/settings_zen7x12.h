@@ -40,10 +40,13 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to Zen Toolworks 7x12 profile"
 
-#define JERK_MAX_LINEAR 		100000000	// yes, that's "100,000,000" mm/(min^3)
+#define MAX_VELOCITY			500
+//#define JERK_MAX_LINEAR 		100000000	// yes, that's "100,000,000" mm/(min^3)
+#define JERK_MAX_LINEAR 		40000000	// yes, that's "40,000,000" mm/(min^3)
 #define JERK_MAX_ROTARY 		10000000000	// yes, that's "10 billion" mm/(min^3)
 #define JUNCTION_DEVIATION		0.05		// default value, in mm
-#define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
+//#define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
+#define JUNCTION_ACCELERATION	70000		// centripetal acceleration around corners
 
 // *** settings.h overrides ***
 
@@ -53,7 +56,7 @@
 #define M1_STEP_ANGLE 			1.8			// 1sa
 #define M1_TRAVEL_PER_REV		1.25		// 1tr
 #define M1_MICROSTEPS			8			// 1mi		1,2,4,8
-#define M1_POLARITY				0			// 1po		0=normal, 1=reversed
+#define M1_POLARITY				1			// 1po		0=normal, 1=reversed
 #define M1_POWER_MODE			1			// 1pm		TRUE=low power idle enabled 
 
 #define M2_MOTOR_MAP	 		AXIS_Y
@@ -67,7 +70,7 @@
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		1.25
 #define M3_MICROSTEPS			8
-#define M3_POLARITY				0
+#define M3_POLARITY				1
 #define M3_POWER_MODE			1
 
 #define M4_MOTOR_MAP			AXIS_A
@@ -80,7 +83,7 @@
 // *** axis settings ***
 
 #define X_AXIS_MODE 			AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
-#define X_VELOCITY_MAX 			600 				// xvm		G0 max velocity in mm/min
+#define X_VELOCITY_MAX 			MAX_VELOCITY 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX 			475					// xtm		travel between switches or crashes
 #define X_JERK_MAX 				JERK_MAX_LINEAR		// xjm
@@ -94,7 +97,7 @@
 #define X_JERK_HOMING			X_JERK_MAX			// xjh
 
 #define Y_AXIS_MODE 			AXIS_STANDARD
-#define Y_VELOCITY_MAX 			600
+#define Y_VELOCITY_MAX 			MAX_VELOCITY
 #define Y_FEEDRATE_MAX 			Y_VELOCITY_MAX
 #define Y_TRAVEL_MAX 			200
 #define Y_JERK_MAX 				JERK_MAX_LINEAR
@@ -108,7 +111,7 @@
 #define Y_JERK_HOMING			Y_JERK_MAX
 
 #define Z_AXIS_MODE 			AXIS_STANDARD
-#define Z_VELOCITY_MAX 			500
+#define Z_VELOCITY_MAX 			MAX_VELOCITY
 #define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX 			75
 #define Z_JERK_MAX 				JERK_MAX_LINEAR

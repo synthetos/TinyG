@@ -140,7 +140,7 @@ stat_t mp_aline(const float target[], const float minutes, const float work_offs
 	// trap error conditions
 	float length = get_axis_vector_length(target, mm.position);
 	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE_ERROR);}
-	if (minutes < MIN_TIME_MOVE) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}
+//	if (minutes < MIN_TIME_MOVE) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}	// remove this line
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) { return (STAT_BUFFER_FULL_FATAL);} // never supposed to fail

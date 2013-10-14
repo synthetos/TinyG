@@ -73,14 +73,11 @@
 #define COM_EXPAND_CR				false
 #define COM_ENABLE_ECHO				false
 
-//#define COM_ENABLE_XON				true
-//#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_OFF
-//#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON
-#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_RTS
+#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON	// FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
 
 /**** MACHINE PROFILES ******************************************************/
 
-// machine default profiles - chose only one:
+// machine default profiles - choose only one:
 
 #include "settings/settings_default.h"					// Default settings for release
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3

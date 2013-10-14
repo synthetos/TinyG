@@ -57,9 +57,10 @@ enum moveState {
 /* The following must apply:
  *	  MM_PER_ARC_SEGMENT >= MIN_LINE_LENGTH >= MIN_SEGMENT_LENGTH 
  */
-#define ARC_SEGMENT_LENGTH 	0.1		// Arc segment size (mm).(0.03)
-#define MIN_LINE_LENGTH 	0.08	// Smallest line the system can plan (mm) (0.02)
-#define MIN_SEGMENT_LENGTH 	0.05	// Smallest accel/decel segment (mm). Set to produce ~10 ms segments (0.01)
+#define ARC_SEGMENT_LENGTH 		((float)0.1)		// Arc segment size (mm).(0.03)
+#define MIN_LINE_LENGTH 		((float)0.08)		// Smallest line the system can plan (mm) (0.02)
+#define MIN_SEGMENT_LENGTH 		((float)0.05)		// Smallest accel/decel segment (mm). Set to produce ~10 ms segments (0.01)
+#define MIN_LENGTH_MOVE 		((float)0.001)		// millimeters
 
 #define JERK_MATCH_PRECISION 1000	// precision to which jerk must match to be considered effectively the same
 
@@ -69,11 +70,12 @@ enum moveState {
 #define NOM_SEGMENT_USEC 		((float)5000)		// nominal segment time
 #define MIN_SEGMENT_USEC 		((float)2500)		// minimum segment time
 #define MIN_ARC_SEGMENT_USEC	((float)10000)		// minimum arc segment time
+
+//derived from above
 #define NOM_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
-#define MIN_LENGTH_MOVE 		(EPSILON)
-#define MIN_TIME_MOVE  			((float)0.0000001)
+#define MIN_TIME_MOVE  			MIN_SEGMENT_USEC	// minimum time a move can be is one segment
 
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.

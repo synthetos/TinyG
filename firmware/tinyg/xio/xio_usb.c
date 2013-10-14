@@ -30,6 +30,7 @@
 
 // application specific stuff that's littered into the USB handler
 #include "../tinyg.h"
+#include "../config.h"
 #include "../network.h"
 #include "../controller.h"
 #include "../canonical_machine.h"		// trapped characters communicate directly with the canonical machine
@@ -82,7 +83,8 @@ int xio_putc_usb(const char c, FILE *stream)
 ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
 	// If the CTS pin (FTDI's RTS) is HIGH, then we cannot send anything, so exit
-	if ((USBu.port->IN & USB_CTS_bm)) {
+//	if ((USBu.port->IN & USB_CTS_bm)) {
+	if ((cfg.enable_flow_control == FLOW_CONTROL_RTS) && (USBu.port->IN & USB_CTS_bm)) {
 		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// force another TX interrupt
 		return;
 	}
