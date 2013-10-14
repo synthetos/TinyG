@@ -26,7 +26,7 @@
  *		 After initial load the EEPROM values (or changed values) are used.
  *
  *		 System and hardware settings that you shouldn't need to change 
- *		 are in system.h  Application settings that also shouldn't need 
+ *		 are in hardware.h  Application settings that also shouldn't need 
  *		 to be changed are in tinyg.h
  */
 

@@ -1,8 +1,8 @@
 /*
- * settings_zen7x12.h - LumenLabs MicRo V3 machine profile
- * Part of TinyG project
+ * settings_liumenlabMicRoV3.h - LumenLabs MicRo V3 machine profile
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2011 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2011 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -29,7 +29,7 @@
  *		 After initial load the EEPROM values (or changed values) are used.
  *
  *		 System and hardware settings that you shouldn't need to change 
- *		 are in system.h  Application settings that also shouldn't need 
+ *		 are in hardware.h  Application settings that also shouldn't need 
  *		 to be changed are in tinyg.h
  */
 

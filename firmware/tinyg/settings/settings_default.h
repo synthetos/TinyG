@@ -1,8 +1,8 @@
 /*
  * settings_default.h - default machine profile
- * Part of TinyG project
+ * This file is part of the TinyG2 project
  *
- * Copyright (c) 2012 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2012 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -29,7 +29,7 @@
  *		 After initial load the EEPROM values (or changed values) are used.
  *
  *		 System and hardware settings that you shouldn't need to change 
- *		 are in system.h  Application settings that also shouldn't need 
+ *		 are in hardware.h  Application settings that also shouldn't need 
  *		 to be changed are in tinyg.h
  */
 /***********************************************************************/
@@ -41,7 +41,7 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to default settings"
 
-#define JERK_MAX 				20	// yes, that's "20,000,000" mm/(min^3)
+#define JERK_MAX 				20			// yes, that's "20,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION		0.05		// default value, in mm
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
 
@@ -76,6 +76,20 @@
 #define M4_MICROSTEPS			8
 #define M4_POLARITY				0
 #define M4_POWER_MODE			0
+
+#define M5_MOTOR_MAP			AXIS_B
+#define M5_STEP_ANGLE			1.8
+#define M5_TRAVEL_PER_REV		360			// degrees moved per motor rev
+#define M5_MICROSTEPS			8
+#define M5_POLARITY				0
+#define M5_POWER_MODE			1
+
+#define M6_MOTOR_MAP			AXIS_C
+#define M6_STEP_ANGLE			1.8
+#define M6_TRAVEL_PER_REV		360			// degrees moved per motor rev
+#define M6_MICROSTEPS			8
+#define M6_POLARITY				0
+#define M6_POWER_MODE			1
 
 // *** axis settings ***
 
@@ -121,7 +135,7 @@
 #define Z_ZERO_BACKOFF 			1
 #define Z_JERK_HOMING			Z_JERK_MAX
 
-						// A values are chosen to make the A motor react the same as X for testing
+// A values are chosen to make the A motor react the same as X for testing
 #define A_AXIS_MODE 			AXIS_RADIUS
 #define A_VELOCITY_MAX 			((X_VELOCITY_MAX/M1_TRAVEL_PER_REV)*360) // set to the same speed as X axis
 #define A_FEEDRATE_MAX 			A_VELOCITY_MAX
@@ -137,10 +151,6 @@
 #define A_ZERO_BACKOFF 			2
 #define A_JERK_HOMING			A_JERK_MAX
 
-//#define A_VELOCITY_MAX 		172800
-//#define A_JERK_MAX 			5760
-//#define A_RADIUS 				0.19894368
-
 #define B_AXIS_MODE 			AXIS_DISABLED
 #define B_VELOCITY_MAX 			3600
 #define B_FEEDRATE_MAX 			B_VELOCITY_MAX
@@ -148,6 +158,13 @@
 #define B_JERK_MAX 				JERK_MAX
 #define B_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define B_RADIUS 				1
+#define B_SWITCH_MODE_MIN 		SW_MODE_HOMING
+#define B_SWITCH_MODE_MAX 		SW_MODE_DISABLED
+#define B_SEARCH_VELOCITY 		600
+#define B_LATCH_VELOCITY 		100
+#define B_LATCH_BACKOFF 		5
+#define B_ZERO_BACKOFF 			2
+#define B_JERK_HOMING			A_JERK_MAX
 
 #define C_AXIS_MODE 			AXIS_DISABLED
 #define C_VELOCITY_MAX 			3600
@@ -156,6 +173,13 @@
 #define C_JERK_MAX 				JERK_MAX
 #define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define C_RADIUS				1
+#define C_SWITCH_MODE_MIN 		SW_MODE_HOMING
+#define C_SWITCH_MODE_MAX 		SW_MODE_DISABLED
+#define C_SEARCH_VELOCITY 		600
+#define C_LATCH_VELOCITY 		100
+#define C_LATCH_BACKOFF 		5
+#define C_ZERO_BACKOFF 			2
+#define C_JERK_HOMING			A_JERK_MAX
 
 // *** DEFAULT COORDINATE SYSTEM OFFSETS ***
 

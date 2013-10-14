@@ -1,8 +1,8 @@
 /*
  * settings_zen7x12.h - Zen Toolworks 7x12 machine profile
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2011 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2011 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -27,10 +27,6 @@
 /* Note: The values in this file are the default settings that are loaded
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
- *
- *		 System and hardware settings that you shouldn't need to change 
- *		 are in system.h  Application settings that also shouldn't need 
- *		 to be changed are in tinyg.h
  */
 
 /***********************************************************************/
@@ -95,7 +91,7 @@
 #define X_JERK_MAX 				JERK_MAX_LINEAR		// xjm
 #define X_JUNCTION_DEVIATION 	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
-#define X_SWITCH_MODE_MAX 		SW_MODE_LIMIT	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
+#define X_SWITCH_MODE_MAX 		SW_MODE_LIMIT		// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 //#define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SEARCH_VELOCITY 		500					// xsv		move in negative direction
 #define X_LATCH_VELOCITY 		100					// xlv		mm/min

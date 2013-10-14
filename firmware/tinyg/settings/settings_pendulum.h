@@ -1,8 +1,8 @@
 /*
- * settings_shapeoko375.h - Pendulum demo
- * Part of TinyG project
+ * settings_pendulum.h - Pendulum demo
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2013 Alden S. Hart Jr.
+ * Copyright (c) 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -29,7 +29,7 @@
  *		 After initial load the EEPROM values (or changed values) are used.
  *
  *		 System and hardware settings that you shouldn't need to change 
- *		 are in system.h  Application settings that also shouldn't need 
+ *		 are in hardware.h  Application settings that also shouldn't need 
  *		 to be changed are in tinyg.h
  */
 

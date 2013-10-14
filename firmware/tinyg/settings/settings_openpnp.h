@@ -1,5 +1,5 @@
 /*
- * settings_shapeoko375.h - Shapoko 375mm table
+ * settings_openpnp.h - OpenPNP settings
  * Part of TinyG project
  *
  * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
@@ -90,7 +90,7 @@
 #define X_VELOCITY_MAX			15000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX			220					// xtm		travel between switches or crashes
-#define X_JERK_MAX				2500			// xjm		yes, that's "2.5 billion" mm/(min^3)
+#define X_JERK_MAX				2500				// xjm		2.5 billion mm/(min^3)
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
@@ -98,8 +98,7 @@
 #define X_LATCH_VELOCITY		100					// xlv		mm/min
 #define X_LATCH_BACKOFF			20					// xlb		mm
 #define X_ZERO_BACKOFF			3					// xzb		mm
-//#define X_JERK_HOMING			X_JERK_MAX			// xjh
-#define X_JERK_HOMING			10000			// xjh
+#define X_JERK_HOMING			10000				// xjh
 
 #define Y_AXIS_MODE				AXIS_STANDARD
 #define Y_VELOCITY_MAX			16000

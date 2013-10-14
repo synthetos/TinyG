@@ -1,5 +1,6 @@
 /*
- * settings_othermill.h - Otherlab Mini Milling Machine
+ * settings_othermill.h - Other Machine Company Mini Milling Machine
+ * This file is part of the TinyG project
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -26,7 +27,7 @@
  *		 After initial load the EEPROM values (or changed values) are used.
  *
  *		 System and hardware settings that you shouldn't need to change 
- *		 are in system.h  Application settings that also shouldn't need 
+ *		 are in hardware.h  Application settings that also shouldn't need 
  *		 to be changed are in tinyg.h
  */
 
@@ -39,9 +40,8 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to OMC OtherMill settings"
 
-
-#define JERK_MAX				600	// yes, that's "n00,000,000" mm/(min^3)
-#define JERK_HOMING				400	// yes, that's "n00,000,000" mm/(min^3)
+#define JERK_MAX				600			// 600 million mm/(min^3)
+#define JERK_HOMING				400			// 400 million mm/(min^3)
 #define JUNCTION_DEVIATION		0.01		// default value, in mm
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
 

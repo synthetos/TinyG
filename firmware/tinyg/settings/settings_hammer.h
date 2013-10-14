@@ -1,5 +1,5 @@
 /*
- * settings_default.h - machine profile for hammer demo
+ * settings_hammer.h - machine profile for hammer demo
  * Part of TinyG project
  *
  * Copyright (c) 2013 Alden S. Hart Jr.
@@ -24,14 +24,6 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* Note: The values in this file are the default settings that are loaded
- * 		 into a virgin EEPROM, and can be changed using the config commands.
- *		 After initial load the EEPROM values (or changed values) are used.
- *
- *		 System and hardware settings that you shouldn't need to change 
- *		 are in system.h  Application settings that also shouldn't need 
- *		 to be changed are in tinyg.h
- */
 /***********************************************************************/
 /**** Default profile for hammer demo **********************************/
 /***********************************************************************/
@@ -42,7 +34,7 @@
 #define INIT_MESSAGE "Initializing configs to HAMMER settings"
 
 #define VELOCITY_MAX			1000			// mm/min (converts to degrees / min)
-#define JERK_MAX 				40		// yes, that's "100,000,000" mm/(min^3)
+#define JERK_MAX 				40				// 40 million mm/(min^3)
 
 #define ROTARY_VELOCITY_MAX		28800
 #define ROTARY_JERK_MAX			1400	// 1.2b
@@ -98,7 +90,7 @@
 #define X_SEARCH_VELOCITY 		500					// xsv		move in negative direction
 #define X_LATCH_VELOCITY 		100					// xlv		mm/min
 #define X_LATCH_BACKOFF 		2					// xlb		mm
-#define X_ZERO_BACKOFF 			0.25					// xzb		mm
+#define X_ZERO_BACKOFF 			0.25				// xzb		mm
 #define X_JERK_HOMING			X_JERK_MAX			// xjh
 
 #define Y_AXIS_MODE 			AXIS_STANDARD

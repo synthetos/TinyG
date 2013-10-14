@@ -1,8 +1,8 @@
 /*
- * settings_shapeoko375.h - Shapoko 375mm table
- * Part of TinyG project
+ * settings_shapeoko375.h - Shapeoko 375mm table
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2012 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -85,6 +85,21 @@
 #define M4_POLARITY				0
 #define M4_POWER_MODE			0
 
+#define M5_MOTOR_MAP			AXIS_B
+#define M5_STEP_ANGLE			1.8
+#define M5_TRAVEL_PER_REV		180		// degrees per motor rev - 1:2 gearing
+#define M5_MICROSTEPS			8
+#define M5_POLARITY				0
+#define M5_POWER_MODE			1
+
+#define M6_MOTOR_MAP			AXIS_C
+#define M6_STEP_ANGLE			1.8
+#define M6_TRAVEL_PER_REV		180		// degrees per motor rev - 1:2 gearing
+#define M6_MICROSTEPS			8
+#define M6_POLARITY				0
+#define M6_POWER_MODE			1
+
+
 /* Mapping for dual grantry setup
 #define M1_MOTOR_MAP 			AXIS_X	// 1ma
 #define M1_STEP_ANGLE			0.9		// 1sa
@@ -121,17 +136,14 @@
 #define X_VELOCITY_MAX			16000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX			220					// xtm		travel between switches or crashes
-//#define X_TRAVEL_MAX			300					// xtm		travel between switches or crashes
 #define X_JERK_MAX				5000				// xjm		yes, that's "5 billion" mm/(min^3)
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
-#define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
-//#define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
-#define X_SWITCH_MODE_MAX 		SW_MODE_LIMIT	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
+#define X_SWITCH_MODE_MIN		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
+#define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SEARCH_VELOCITY		3000				// xsv		minus means move to minimum switch
 #define X_LATCH_VELOCITY		100					// xlv		mm/min
 #define X_LATCH_BACKOFF			20					// xlb		mm
 #define X_ZERO_BACKOFF			3					// xzb		mm
-//#define X_JERK_HOMING			X_JERK_MAX			// xjh
 #define X_JERK_HOMING			10000				// xjh
 
 #define Y_AXIS_MODE				AXIS_STANDARD
@@ -166,7 +178,7 @@
 #define A_VELOCITY_MAX			60000
 #define A_FEEDRATE_MAX			48000
 #define A_TRAVEL_MAX			400					// degrees
-#define A_JERK_MAX				24000			// yes, 24 billion
+#define A_JERK_MAX				24000				// yes, 24 billion
 #define A_JUNCTION_DEVIATION	0.1
 #define A_RADIUS				1.0
 #define A_SWITCH_MODE_MIN		SW_MODE_HOMING
@@ -184,6 +196,13 @@
 #define B_JERK_MAX				20
 #define B_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define B_RADIUS				1
+#define B_SWITCH_MODE_MIN		SW_MODE_HOMING
+#define B_SWITCH_MODE_MAX		SW_MODE_DISABLED
+#define B_SEARCH_VELOCITY		6000
+#define B_LATCH_VELOCITY		1000
+#define B_LATCH_BACKOFF			5
+#define B_ZERO_BACKOFF			2
+#define B_JERK_HOMING			B_JERK_MAX
 
 #define C_AXIS_MODE				AXIS_DISABLED
 #define C_VELOCITY_MAX			3600
@@ -192,12 +211,19 @@
 #define C_JERK_MAX				20
 #define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define C_RADIUS				1
+#define C_SWITCH_MODE_MIN		SW_MODE_HOMING
+#define C_SWITCH_MODE_MAX		SW_MODE_DISABLED
+#define C_SEARCH_VELOCITY		6000
+#define C_LATCH_VELOCITY		1000
+#define C_LATCH_BACKOFF			5
+#define C_ZERO_BACKOFF			2
+#define C_JERK_HOMING			C_JERK_MAX
 
 #ifdef __PLAN_R2
 #undef  X_JERK_MAX
-#define X_JERK_MAX				6				// xjm
+#define X_JERK_MAX				6					// xjm
 #undef  Y_JERK_MAX
-#define Y_JERK_MAX				6				// xjm
+#define Y_JERK_MAX				6					// xjm
 #undef  Z_JERK_MAX
 #define Z_JERK_MAX				600000				//
 #endif
