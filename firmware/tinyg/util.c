@@ -33,6 +33,10 @@
 #include "tinyg.h"
 #include "util.h"
 
+#ifdef __AVR
+#include "xmega/xmega_rtc.h"
+#endif
+
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -215,6 +219,24 @@ uint16_t compute_checksum(char_t const *string, const uint16_t length)
     }
     return (h % HASHMASK);
 }
+
+/*
+ * SysTickTimer_getValue() - this is a hack to get around some compatibility problems
+ */
+
+#ifdef __AVR
+uint32_t SysTickTimer_getValue()
+{
+	return (rtc.sys_ticks);
+}
+#endif // __AVR
+
+#ifdef __ARM
+uint32_t SysTickTimer_getValue()
+{
+	return (SysTickTimer.getValue());
+}
+#endif // __ARM
 
 #ifdef __cplusplus
 }

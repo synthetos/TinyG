@@ -35,8 +35,6 @@
 #include "util.h"
 #include "xio.h"
 
-#include "xmega/xmega_rtc.h"
-
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -388,25 +386,39 @@ void qr_init_queue_report()
  * qr_request_queue_report() - request a queue report
  *
  *	Requests a queue report and also records the buffers added and removed
- *	since the last init (usually re-initted when a report os generated).
+ *	since the last init (usually re-initted when a report is generated).
  */
 void qr_request_queue_report(int8_t buffers)
 {
+	// skip accumulation and reporting while generating arcs
+	uint8_t motion_mode = cm_get_motion_mode(ACTIVE_MODEL);
+	if ((motion_mode == MOTION_MODE_CW_ARC) || 
+		(motion_mode == MOTION_MODE_CCW_ARC)) {
+		qr.queue_report_requested = false;
+		return;
+	}
+
+//	if ((cm_get_motion_mode(ACTIVE_MODEL) == MOTION_MODE_CW_ARC) || 
+//		(cm_get_motion_mode(ACTIVE_MODEL) == MOTION_MODE_CCW_ARC)) {
+//		return;
+//	}
+
+	// get buffer depth and added/removed count
 	qr.buffers_available = mp_get_planner_buffers_available();
 	if (buffers > 0) {
 		qr.buffers_added += buffers;
 	} else {
 		qr.buffers_removed -= buffers;
 	}
-	if (qr.queue_report_verbosity == QR_OFF) {
-//		qr.queue_report_requested = false;		// not actually needed
-		return;
+
+	// either return or request a report
+	if (qr.queue_report_verbosity != QR_OFF) {
+		qr.queue_report_requested = true;
 	}
-	qr.queue_report_requested = true;
 }
 
 /*
- * qr_queue_report_callback() - gernate a queue report if one has been requested
+ * qr_queue_report_callback() - generate a queue report if one has been requested
  */
 stat_t qr_queue_report_callback() 		// called by controller dispatcher
 {

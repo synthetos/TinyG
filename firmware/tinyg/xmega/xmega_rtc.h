@@ -37,6 +37,5 @@ typedef struct rtClock {
 extern rtClock_t rtc;
 
 void rtc_init(void);								// initialize and start general timer
-uint32_t SysTickTimer_getValue();					// *** this will become a Motate object method
 
 #endif // End of include guard: XMEGA_RTC_H_ONCE

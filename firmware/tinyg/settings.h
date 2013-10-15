@@ -61,7 +61,8 @@
 //#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 #define SR_DEFAULTS "line","qr","qi","qo","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
-#define QR_VERBOSITY				QR_OFF			// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
+//#define QR_VERBOSITY				QR_OFF			// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
+#define QR_VERBOSITY				QR_TRIPLE
 
 // Gcode startup defaults
 #define GCODE_DEFAULT_UNITS			MILLIMETERS		// MILLIMETERS or INCHES

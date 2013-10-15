@@ -22,10 +22,7 @@
 
 #include "../tinyg.h"
 #include "../config.h"
-#include "../report.h"
-#include "../gpio.h"
 #include "../switch.h"
-#include "../stepper.h"
 #include "xmega_rtc.h"
 
 rtClock_t rtc;		// allocate clock control struct
@@ -56,11 +53,6 @@ void rtc_init()
 	rtc.magic_end = MAGICNUM;
 }
 
-uint32_t SysTickTimer_getValue()
-{
-	return (rtc.sys_ticks);
-}
-
 /* 
  * rtc ISR 
  *
@@ -83,5 +75,5 @@ ISR(RTC_COMP_vect)
 	rtc.sys_ticks = ++rtc.rtc_ticks*10;		// advance both tick counters as appropriate
 
 	// callbacks to whatever you need to happen on each RTC tick go here:
-	switch_rtc_callback();					// switch debounceing
+	switch_rtc_callback();					// switch debouncing
 }

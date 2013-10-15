@@ -90,9 +90,7 @@ uint16_t compute_checksum(char_t const *string, const uint16_t length);
 
 //*** other utilities ***
 
-#ifdef __ARM
 uint32_t SysTickTimer_getValue(void);
-#endif
 
 //**** Math Support *****
 
