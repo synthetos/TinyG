@@ -37,13 +37,14 @@ extern "C"{
 
 #include "config.h"
 
-/* Defines */
+/* Defines and macros */
 
 #define MODEL 	(GCodeState_t *)&gm			// absolute pointer from canonical machine gm model
 #define PLANNER (GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
 #define RUNTIME (GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
 #define ACTIVE_MODEL cm.am					// active model pointer is maintained by state management
 
+#define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
 /*****************************************************************************
  * CANONICAL MACHINE STRUCTURES
@@ -186,17 +187,11 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
 	uint8_t l_word;						// L word - used by G10s
 
-	uint8_t plane_axis_0;		 		// actual axes of the selected plane
-	uint8_t plane_axis_1;		 		// ...(used in gm only)
-	uint8_t plane_axis_2; 
 	uint8_t origin_offset_enable;		// G92 offsets enabled/disabled.  0=disabled, 1=enabled
 	uint8_t block_delete_switch;		// set true to enable block deletes (true is default)
 
 	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
 	uint8_t	spindle_override_enable;	// TRUE = override enabled
-
-	float arc_radius;					// R - radius value in arc radius mode
-	float arc_offset[3];  				// IJK - used by arc commands
 
 // unimplemented gcode parameters
 //	float cutter_radius;				// D - cutter radius compensation (0 is off)
@@ -521,8 +516,6 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis);
 float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
 void cm_set_move_times(GCodeState_t *gcode_state);
 
-void cm_set_model_arc_offset(float i, float j, float k);
-void cm_set_model_arc_radius(float r);
 void cm_set_model_linenum(uint32_t linenum);
 void cm_set_model_target(float target[], float flag[]);
 void cm_conditional_set_model_position(stat_t status);
@@ -567,10 +560,10 @@ stat_t cm_set_feed_rate(float feed_rate);						// F parameter
 stat_t cm_set_inverse_feed_rate_mode(uint8_t mode);				// True= inv mode
 stat_t cm_set_path_control(uint8_t mode);						// G61, G61.1, G64
 stat_t cm_straight_feed(float target[], float flags[]);			// G1
+stat_t cm_dwell(float seconds);									// G4, P parameter
 stat_t cm_arc_feed(float target[], float flags[], 				// G2, G3
 				   float i, float j, float k, 
 				   float radius, uint8_t motion_mode);
-stat_t cm_dwell(float seconds);									// G4, P parameter
 
 // see spindle.h for spindle definitions - which would go right here
 

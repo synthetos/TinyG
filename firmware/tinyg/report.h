@@ -80,6 +80,7 @@ typedef struct qrSingleton {		// data for queue reports
 	uint8_t prev_available;			// buffers available at last count
 	uint8_t buffers_added;			// buffers added since last count
 	uint8_t buffers_removed;		// buffers removed since last report
+	uint8_t motion_mode;			//+++++ diagnostic
 
 } qrSingleton_t;
 

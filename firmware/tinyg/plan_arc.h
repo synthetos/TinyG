@@ -31,25 +31,27 @@ typedef struct arArcSingleton {	// persistent planner and runtime variables
 	magic_t magic_start;
 	uint8_t run_state;			// runtime state machine sequence
 
-	float endpoint[AXES];		// arc endpoint position
 	float position[AXES];		// accumulating runtime position
+	float offset[3]; 	 		// IJK offsets
 
 	float length;				// length of line or helix in mm
-	float arc_time;				// total running time for arc (derived)
+	float time;					// total running time for arc (derived)
 	float theta;				// total angle specified by arc
 	float radius;				// computed via offsets
 	float angular_travel;		// travel along the arc
 	float linear_travel;		// travel along linear axis of arc
-	uint8_t axis_1;				// arc plane axis
-	uint8_t axis_2;				// arc plane axis
-	uint8_t axis_linear;		// transverse axis (helical)
+	float arc_radius;			// R - radius value in arc radius mode
+
+	uint8_t plane_axis_0;		// arc plane axis 0 - e.g. X for G17
+	uint8_t plane_axis_1;		// arc plane axis 1 - e.g. Y for G17
+	uint8_t plane_axis_2; 		// arc plane axis 2 - linear axis (normal to plane)
 
 	float segments;				// number of segments in arc or blend
 	int32_t segment_count;		// count of running segments
 	float segment_theta;		// angular motion per segment
 	float segment_linear_travel;// linear motion per segment
-	float center_1;				// center of circle at axis 1 (typ X)
-	float center_2;				// center of circle at axis 2 (typ Y)
+	float center_0;				// center of circle at plane axis 0 (e.g. X for G17)
+	float center_1;				// center of circle at plane axis 1 (e.g. Y for G17)
 
 	GCodeState_t gm;			// Gcode state struct is passed for each arc segment. Usage:
 //	uint32_t linenum;			// line number of the arc feed move - same for each segment
@@ -61,8 +63,10 @@ typedef struct arArcSingleton {	// persistent planner and runtime variables
 } arc_t;
 extern arc_t arc;
 
-// function prototypes (see canonical_machine.h for others)
 
+/* arc function prototypes */
+
+//stat_t cm_arc_feed(...	// this one's in canonical_machine.h for convenience
 stat_t cm_arc_callback(void);
 void cm_abort_arc(void);
 

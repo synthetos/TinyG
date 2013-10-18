@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		395.03	// More work on triple queue reports
+#define TINYG_FIRMWARE_BUILD   		395.04	// Arc diagnostics
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -54,13 +54,13 @@
 
 #define __TEXT_MODE							// comment out to disable text mode support (saves ~9Kb)
 #define __HELP_SCREENS						// comment out to disable help screens 		(saves ~3.5Kb)
-#define __CANNED_TESTS 						// comment out to remove $tests 		(saves ~12Kb)
+//#define __CANNED_TESTS 						// comment out to remove $tests 		(saves ~12Kb)
 
 /****** DEVELOPMENT SETTINGS ******/
 
-//#define __CANNED_STARTUP					// run any canned startup moves
-//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-//#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+#define __CANNED_STARTUP					// run any canned startup moves
+#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 //#define __ENABLE_PROBING					// comment out to take out experimental probing code
 //#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
 
@@ -256,7 +256,6 @@ char *get_status_message(stat_t status);
 #define	STAT_READ_ONLY_ADDRESS 25
 #define	STAT_INIT_FAIL 26
 #define	STAT_ALARMED 27
-//#define	STAT_MEMORY_FAULT 28
 #define	STAT_ERROR_28 28
 #define	STAT_ERROR_29 29
 #define	STAT_ERROR_30 30

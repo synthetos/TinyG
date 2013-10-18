@@ -391,9 +391,10 @@ void qr_init_queue_report()
 void qr_request_queue_report(int8_t buffers)
 {
 	// skip accumulation and reporting while generating arcs
-	uint8_t motion_mode = cm_get_motion_mode(ACTIVE_MODEL);
-	if ((motion_mode == MOTION_MODE_CW_ARC) || 
-		(motion_mode == MOTION_MODE_CCW_ARC)) {
+//	uint8_t motion_mode = cm_get_motion_mode(ACTIVE_MODEL);
+	qr.motion_mode = cm_get_motion_mode(ACTIVE_MODEL);
+	if ((qr.motion_mode == MOTION_MODE_CW_ARC) || 
+		(qr.motion_mode == MOTION_MODE_CCW_ARC)) {
 		qr.queue_report_requested = false;
 		return;
 	}

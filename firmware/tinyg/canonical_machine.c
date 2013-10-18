@@ -118,8 +118,6 @@ GCodeInput_t  gf;		// gcode input flags - transient
  **** GENERIC STATIC FUNCTIONS AND VARIABLES ***************************************
  ***********************************************************************************/
 
-#define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
-
 // command execution callbacks from planner queue
 static void _exec_offset(float *value, float *flag);
 static void _exec_change_tool(float *value, float *flag);
@@ -206,30 +204,6 @@ void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_overri
 {
 	gcode_state->absolute_override = absolute_override;
 	cm_set_work_offsets(MODEL);	// must reset offsets if you change absolute override
-}
-
-/*
- * Arc initializers - these inhale gn values into the gmx struct
- *
- *	Input coordinates are in native block formats (gn form);
- *	i.e. they are not unit adjusted or otherwise pre-processed.
- *	The setters take care of coordinate system, units, and 
- *	distance mode conversions and normalizations.
- *
- * cm_set_model_arc_offset()  - set all IJK offsets
- * cm_set_model_radius()	  - set radius value
- */
-
-void cm_set_model_arc_offset(float i, float j, float k)
-{ 
-	gmx.arc_offset[0] = _to_millimeters(i);
-	gmx.arc_offset[1] = _to_millimeters(j);
-	gmx.arc_offset[2] = _to_millimeters(k);
-}
-
-void cm_set_model_arc_radius(float r) 
-{ 
-	gmx.arc_radius = _to_millimeters(r);
 }
 
 /*
@@ -658,19 +632,6 @@ stat_t cm_assertions()
 stat_t cm_select_plane(uint8_t plane) 
 {
 	gm.select_plane = plane;
-	if (plane == CANON_PLANE_YZ) {
-		gmx.plane_axis_0 = AXIS_Y;
-		gmx.plane_axis_1 = AXIS_Z;
-		gmx.plane_axis_2 = AXIS_X;
-	} else if (plane == CANON_PLANE_XZ) {
-		gmx.plane_axis_0 = AXIS_X;
-		gmx.plane_axis_1 = AXIS_Z;
-		gmx.plane_axis_2 = AXIS_Y;
-	} else {
-		gmx.plane_axis_0 = AXIS_X;
-		gmx.plane_axis_1 = AXIS_Y;
-		gmx.plane_axis_2 = AXIS_Z;
-	}
 	return (STAT_OK);
 }
 

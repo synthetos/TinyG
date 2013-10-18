@@ -44,9 +44,9 @@
 #include "tests/test_014_microsteps.h"		// test all microstep settings
 #include "tests/test_050_mudflap.h"			// mudflap test - entire drawing
 #include "tests/test_051_braid.h"			// braid test - partial drawing
-#include "tests/test_052_ford.h"			// Ford arc failure test - partial drawing
 
 #endif
+#include "tests/test_052_ford.h"			// Ford arc failure test - partial drawing
 
 /*
  * run_test() - system tests from FLASH invoked by $test=n command
@@ -76,8 +76,8 @@ uint8_t run_test(cmdObj_t *cmd)
 		case 14: { xio_open(XIO_DEV_PGM, PGMFILE(&test_microsteps),PGM_FLAGS); break;}
 		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
-		case 52: { xio_open(XIO_DEV_PGM, PGMFILE(&test_ford),PGM_FLAGS); break;}
 #endif
+		case 52: { xio_open(XIO_DEV_PGM, PGMFILE(&test_ford),PGM_FLAGS); break;}
 		default: {
 			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
 			return (STAT_ERROR);
@@ -105,7 +105,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 /* Run test file */
 //	xio_queue_RX_string_usb("$test=51\n");		// run test file
-//	xio_queue_RX_string_usb("{\"test\":51}\n");	// run test file
+//	xio_queue_RX_string_usb("{\"test\":52}\n");	// run test file
 
 /* Other command sequences */
 //	xio_queue_RX_string_usb("H\n");				// show help file
@@ -171,6 +171,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g2 f300 x10 y10 i8 j8\n");
 //	xio_queue_RX_string_usb("g2 f300 x10 y10 i5 j5\n");
 //	xio_queue_RX_string_usb("g2 f300 x3 y3 i1.5 j1.5\n");
+	xio_queue_RX_string_usb("g2 f300 x3 y3 z1.2 i1.5 j1.5 k0.5\n");
 //	xio_queue_RX_string_usb("g2 f300 i10 j10\n");				// G2 pocket arc
 //	xio_queue_RX_string_usb("f400\n");							// set feed rate while in arc motion mode
 //	xio_queue_RX_string_usb("g3 f300 i10 j10\n");				// G3 pocket arc
