@@ -171,7 +171,17 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g2 f300 x10 y10 i8 j8\n");
 //	xio_queue_RX_string_usb("g2 f300 x10 y10 i5 j5\n");
 //	xio_queue_RX_string_usb("g2 f300 x3 y3 i1.5 j1.5\n");
-	xio_queue_RX_string_usb("g2 f300 x3 y3 z1.2 i1.5 j1.5 k0.5\n");
+
+//	xio_queue_RX_string_usb("g17 g3 f300 x3 y0 z0.5 i1.5 j6\n");	// 13 segment XY arc
+
+//	xio_queue_RX_string_usb("g18\n");
+//	xio_queue_RX_string_usb("g18 g3 f3000 x3 y0.5 z0 i1.5 j6\n");	// __ segment XZ arc
+	xio_queue_RX_string_usb("g18 g3 f3000 x3 y0.5 z0 i1.5 k6\n");	// __ segment XZ arc
+
+//	xio_queue_RX_string_usb("g2 f300 x3 y3 z1.2 i1.5 j1.5 k0.5\n");	// 51 segment arc
+//	xio_queue_RX_string_usb("g2 f300 x3 y0 z0.5 i1.5 j6\n");		// 161 segment arc
+//	xio_queue_RX_string_usb("g2 f300 x1 y0.5 z0.25 i0.5 j0.5\n");	// __ segment arc
+
 //	xio_queue_RX_string_usb("g2 f300 i10 j10\n");				// G2 pocket arc
 //	xio_queue_RX_string_usb("f400\n");							// set feed rate while in arc motion mode
 //	xio_queue_RX_string_usb("g3 f300 i10 j10\n");				// G3 pocket arc
