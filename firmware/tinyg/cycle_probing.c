@@ -144,10 +144,10 @@ static int8_t _get_next_axis(int8_t axis);
 uint8_t cm_probe_cycle_start(void)
 {
 	// save relevant non-axis parameters from Gcode model
-	pb.saved_units_mode = gm.units_mode;
-	pb.saved_coord_system = gm.coord_system;
-	pb.saved_distance_mode = gm.distance_mode;
-	pb.saved_feed_rate = gm.feed_rate;
+	pb.saved_units_mode = cm.gm.units_mode;
+	pb.saved_coord_system = cm.gm.coord_system;
+	pb.saved_distance_mode = cm.gm.distance_mode;
+	pb.saved_feed_rate = cm.gm.feed_rate;
 	
 	pb.open_position = 0;
 	
@@ -398,25 +398,12 @@ uint8_t _set_pb_func(uint8_t (*func)(int8_t axis))
 int8_t _get_next_axis(int8_t axis)
 {
 	if (axis == -1) {	// Only one axis allowed for probing.  The order below is the priority 
-		if (gf.target[AXIS_Z] == true) return (AXIS_Z);
-		if (gf.target[AXIS_X] == true) return (AXIS_X);
-		if (gf.target[AXIS_Y] == true) return (AXIS_Y);
-		if (gf.target[AXIS_A] == true) return (AXIS_A);
-
+		if (cm.gf.target[AXIS_Z] == true) return (AXIS_Z);
+		if (cm.gf.target[AXIS_X] == true) return (AXIS_X);
+		if (cm.gf.target[AXIS_Y] == true) return (AXIS_Y);
+		if (cm.gf.target[AXIS_A] == true) return (AXIS_A);
 		return (-2);	// error
-	}/* else if (axis == AXIS_Z) {
-		if (gf.target[AXIS_X] == true) return (AXIS_X);
-		if (gf.target[AXIS_Y] == true) return (AXIS_Y);
-		if (gf.target[AXIS_A] == true) return (AXIS_A);
-
-	} else if (axis == AXIS_X) {
-		if (gf.target[AXIS_Y] == true) return (AXIS_Y);
-		if (gf.target[AXIS_A] == true) return (AXIS_A);
-
-	} else if (axis == AXIS_Y) {
-		if (gf.target[AXIS_A] == true) return (AXIS_A);
-
-	}*/
+	}
 	return (-1);	// done
 }
 

@@ -109,10 +109,10 @@ extern "C"{
  ***********************************************************************************/
 
 cmSingleton_t cm;		// canonical machine controller singleton
-GCodeState_t  gm;		// core gcode model state
-GCodeStateX_t gmx;		// extended gcode model state
-GCodeInput_t  gn;		// gcode input values - transient
-GCodeInput_t  gf;		// gcode input flags - transient
+//GCodeState_t  gm;		// core gcode model state
+//GCodeStateX_t gmx;	// extended gcode model state
+//GCodeInput_t  gn;		// gcode input values - transient
+//GCodeInput_t  gf;		// gcode input flags - transient
 
 /***********************************************************************************
  **** GENERIC STATIC FUNCTIONS AND VARIABLES ***************************************
@@ -192,7 +192,7 @@ uint8_t cm_get_distance_mode(GCodeState_t *gcode_state) { return gcode_state->di
 uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gcode_state) { return gcode_state->inverse_feed_rate_mode;}
 uint8_t cm_get_tool(GCodeState_t *gcode_state) { return gcode_state->tool;}
 uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
-uint8_t	cm_get_block_delete_switch() { return gmx.block_delete_switch;}
+uint8_t	cm_get_block_delete_switch() { return cm.gmx.block_delete_switch;}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
 
 void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode) { gcode_state->motion_mode = motion_mode;}
@@ -212,7 +212,7 @@ void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_overri
 
 void cm_set_model_linenum(uint32_t linenum)
 {
-	gm.linenum = linenum;					// you must first set the model line number,
+	cm.gm.linenum = linenum;				// you must first set the model line number,
 	cmd_add_object((const char_t *)"n");	// then add the line number to the cmd list
 }
 
@@ -253,9 +253,10 @@ void cm_set_model_linenum(uint32_t linenum)
 
 float cm_get_active_coord_offset(uint8_t axis)
 {
-	if (gm.absolute_override == true) return (0);		// no offset if in absolute override mode
-	float offset = cm.offset[gm.coord_system][axis];
-	if (gmx.origin_offset_enable == true) offset += gmx.origin_offset[axis]; // includes G5x and G92 compoenents
+	if (cm.gm.absolute_override == true) return (0);		// no offset if in absolute override mode
+	float offset = cm.offset[cm.gm.coord_system][axis];
+	if (cm.gmx.origin_offset_enable == true) 
+		offset += cm.gmx.origin_offset[axis]; 			// includes G5x and G92 compoenents
 	return (offset); 
 }
 
@@ -286,7 +287,7 @@ void cm_set_work_offsets(GCodeState_t *gcode_state)
  */
 float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis) 
 {
-	if (gcode_state == MODEL) return (gmx.position[axis]);
+	if (gcode_state == MODEL) return (cm.gmx.position[axis]);
 	return (mp_get_runtime_absolute_position(axis));
 }
 
@@ -306,7 +307,7 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
 	float position;
 
 	if (gcode_state == MODEL) {
-		position = gmx.position[axis] - cm_get_active_coord_offset(axis);
+		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis);
 	} else {
 		position = mp_get_runtime_work_position(axis);
 	}
@@ -361,10 +362,10 @@ void cm_set_model_target(float target[], float flag[])
 		if ((fp_FALSE(flag[axis])) || (cm.a[axis].axis_mode == AXIS_DISABLED)) {
 			continue;		// skip axis if not flagged for update or its disabled
 		} else if ((cm.a[axis].axis_mode == AXIS_STANDARD) || (cm.a[axis].axis_mode == AXIS_INHIBITED)) {
-			if (gm.distance_mode == ABSOLUTE_MODE) {
-				gm.target[axis] = cm_get_active_coord_offset(axis) + _to_millimeters(target[axis]);
+			if (cm.gm.distance_mode == ABSOLUTE_MODE) {
+				cm.gm.target[axis] = cm_get_active_coord_offset(axis) + _to_millimeters(target[axis]);
 			} else {
-				gm.target[axis] += _to_millimeters(target[axis]);
+				cm.gm.target[axis] += _to_millimeters(target[axis]);
 			}
 		}
 	}
@@ -375,10 +376,10 @@ void cm_set_model_target(float target[], float flag[])
 		} else {
 			tmp = _calc_ABC(axis, target, flag);
 		}
-		if (gm.distance_mode == ABSOLUTE_MODE) {
-			gm.target[axis] = tmp + cm_get_active_coord_offset(axis); // sacidu93's fix to Issue #22
+		if (cm.gm.distance_mode == ABSOLUTE_MODE) {
+			cm.gm.target[axis] = tmp + cm_get_active_coord_offset(axis); // sacidu93's fix to Issue #22
 		} else {
-			gm.target[axis] += tmp;
+			cm.gm.target[axis] += tmp;
 		}
 	}
 }
@@ -398,7 +399,7 @@ void cm_set_model_target(float target[], float flag[])
 
 void cm_conditional_set_model_position(stat_t status) 
 {
-	if (status == STAT_OK) copy_axis_vector(gmx.position, gm.target);
+	if (status == STAT_OK) copy_axis_vector(cm.gmx.position, cm.gm.target);
 }
 
 /*
@@ -472,30 +473,30 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 	float tmp_time=0;					// used in computation
 	gcode_state->minimum_time = JENNY; 	// arbitrarily large number
 
-	// NOTE: In the below code all references to 'gm.' read from the canonical machine gm, 
+	// NOTE: In the below code all references to 'cm.gm.' read from the canonical machine gm, 
 	//		 not the target gcode model, which is referenced as target_gm->  In most cases 
 	//		 the canonical machine will be the target, but this is not required.
 
 	// compute times for feed motion
-	if (gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
-		if (gm.inverse_feed_rate_mode == true) {
-			inv_time = gmx.inverse_feed_rate;
+	if (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
+		if (cm.gm.inverse_feed_rate_mode == true) {
+			inv_time = cm.gmx.inverse_feed_rate;
 		} else {
-			xyz_time = sqrt(square(gm.target[AXIS_X] - gmx.position[AXIS_X]) + // in mm
-							square(gm.target[AXIS_Y] - gmx.position[AXIS_Y]) +
-							square(gm.target[AXIS_Z] - gmx.position[AXIS_Z])) / gm.feed_rate; // in linear units
+			xyz_time = sqrt(square(cm.gm.target[AXIS_X] - cm.gmx.position[AXIS_X]) + // in mm
+							square(cm.gm.target[AXIS_Y] - cm.gmx.position[AXIS_Y]) +
+							square(cm.gm.target[AXIS_Z] - cm.gmx.position[AXIS_Z])) / cm.gm.feed_rate; // in linear units
 			if (fp_ZERO(xyz_time)) {
-				abc_time = sqrt(square(gm.target[AXIS_A] - gmx.position[AXIS_A]) + // in deg
-								square(gm.target[AXIS_B] - gmx.position[AXIS_B]) +
-								square(gm.target[AXIS_C] - gmx.position[AXIS_C])) / gm.feed_rate; // in degree units
+				abc_time = sqrt(square(cm.gm.target[AXIS_A] - cm.gmx.position[AXIS_A]) + // in deg
+								square(cm.gm.target[AXIS_B] - cm.gmx.position[AXIS_B]) +
+								square(cm.gm.target[AXIS_C] - cm.gmx.position[AXIS_C])) / cm.gm.feed_rate; // in degree units
 			}
 		}
 	}
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		if (gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
-			tmp_time = fabs(gm.target[axis] - gmx.position[axis]) / cm.a[axis].feedrate_max;
-		} else { // gm.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
-			tmp_time = fabs(gm.target[axis] - gmx.position[axis]) / cm.a[axis].velocity_max;
+		if (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
+			tmp_time = fabs(cm.gm.target[axis] - cm.gmx.position[axis]) / cm.a[axis].feedrate_max;
+		} else { // cm.gm.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
+			tmp_time = fabs(cm.gm.target[axis] - cm.gmx.position[axis]) / cm.a[axis].velocity_max;
 		}
 		max_time = max(max_time, tmp_time);
 		gcode_state->minimum_time = min(gcode_state->minimum_time, tmp_time);
@@ -511,8 +512,8 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 stat_t cm_test_soft_limits(float target[])
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-//		if ((gm.target[axis] > cm.a[axis].travel_max) ||
-//			(gm.target[axis] < cm.a[axis].travel_min)) 
+//		if ((cm.gm.target[axis] > cm.a[axis].travel_max) ||
+//			(cm.gm.target[axis] < cm.a[axis].travel_min)) 
 		if ((target[axis] > cm.a[axis].travel_max) ||
 			(target[axis] < cm.a[axis].travel_min)) 
 			return (STAT_SOFT_LIMIT_EXCEEDED);
@@ -535,16 +536,17 @@ stat_t cm_test_soft_limits(float target[])
 void canonical_machine_init()
 {
 // If you can assume all memory has been zeroed by a hard reset you don't need this code:
-//	memset(&cm, 0, sizeof(cm));		// do not reset canonicalMachineSingleton once it's been initialized
-	memset(&gn, 0, sizeof(gn));		// clear all values, pointers and status
-	memset(&gf, 0, sizeof(gf));
-	memset(&gm, 0, sizeof(gm));
+//	memset(&cm, 0, sizeof(cm));				// do not reset canonicalMachineSingleton once it's been initialized
+	memset(&cm.gm, 0, sizeof(GCodeState_t));// clear all values, pointers and status
+	memset(&cm.gn, 0, sizeof(GCodeInput_t));
+	memset(&cm.gf, 0, sizeof(GCodeInput_t));
+
 
 	// setup magic numbers
 	cm.magic_start = MAGICNUM;
 	cm.magic_end = MAGICNUM;
-	gmx.magic_start = MAGICNUM;
-	gmx.magic_end = MAGICNUM;
+	cm.gmx.magic_start = MAGICNUM;
+	cm.gmx.magic_end = MAGICNUM;
 
 	// set gcode defaults
 	cm_set_units_mode(cm.units_mode);
@@ -553,10 +555,10 @@ void canonical_machine_init()
 	cm_set_path_control(cm.path_control);
 	cm_set_distance_mode(cm.distance_mode);
 
-	gmx.block_delete_switch = true;
+	cm.gmx.block_delete_switch = true;
 
 	// never start a machine in a motion mode
-	gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
+	cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
 
 	// reset request flags
 	cm.feedhold_requested = false;
@@ -601,7 +603,7 @@ stat_t cm_alarm(stat_t status)
 stat_t cm_assertions()
 {
 	if ((cm.magic_start 	!= MAGICNUM) || (cm.magic_end 	  != MAGICNUM)) return (STAT_MEMORY_FAULT);
-	if ((gmx.magic_start 	!= MAGICNUM) || (gmx.magic_end 	  != MAGICNUM)) return (STAT_MEMORY_FAULT);
+	if ((cm.gmx.magic_start != MAGICNUM) || (cm.gmx.magic_end != MAGICNUM)) return (STAT_MEMORY_FAULT);
 	if ((arc.magic_start 	!= MAGICNUM) || (arc.magic_end    != MAGICNUM)) return (STAT_MEMORY_FAULT);
 	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end 	  != MAGICNUM)) return (STAT_MEMORY_FAULT);
 	if ((cmdStr.magic_start != MAGICNUM) || (cmdStr.magic_end != MAGICNUM)) return (STAT_MEMORY_FAULT);
@@ -635,7 +637,7 @@ stat_t cm_assertions()
  */
 stat_t cm_select_plane(uint8_t plane) 
 {
-	gm.select_plane = plane;
+	cm.gm.select_plane = plane;
 	return (STAT_OK);
 }
 
@@ -644,7 +646,7 @@ stat_t cm_select_plane(uint8_t plane)
  */
 stat_t cm_set_units_mode(uint8_t mode)
 {
-	gm.units_mode = mode;		// 0 = inches, 1 = mm.
+	cm.gm.units_mode = mode;		// 0 = inches, 1 = mm.
 	return(STAT_OK);
 }
 
@@ -653,7 +655,7 @@ stat_t cm_set_units_mode(uint8_t mode)
  */
 stat_t cm_set_distance_mode(uint8_t mode)
 {
-	gm.distance_mode = mode;		// 0 = absolute mode, 1 = incremental
+	cm.gm.distance_mode = mode;		// 0 = absolute mode, 1 = incremental
 	return (STAT_OK);
 }
 
@@ -687,7 +689,7 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
  */
 stat_t cm_set_coord_system(uint8_t coord_system)
 {
-	gm.coord_system = coord_system;
+	cm.gm.coord_system = coord_system;
 
 	float value[AXES] = { (float)coord_system,0,0,0,0,0 };	// pass coordinate system in value[0] element
 	mp_queue_command(_exec_offset, value, value);			// second vector (flags) is not used, so fake it
@@ -699,7 +701,7 @@ static void _exec_offset(float *value, float *flag)
 	uint8_t coord_system = ((uint8_t)value[0]);				// coordinate system is passed in value[0] element
 	float offsets[AXES];
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		offsets[axis] = cm.offset[coord_system][axis] + (gmx.origin_offset[axis] * gmx.origin_offset_enable);
+		offsets[axis] = cm.offset[coord_system][axis] + (cm.gmx.origin_offset[axis] * cm.gmx.origin_offset_enable);
 	}
 	mp_set_runtime_work_offset(offsets);
 //	cm_set_work_offsets(RUNTIME);
@@ -722,7 +724,7 @@ stat_t cm_set_absolute_origin(float origin[], float flag[])
 
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
-			value[axis] = cm.offset[gm.coord_system][axis] + _to_millimeters(origin[axis]);
+			value[axis] = cm.offset[cm.gm.coord_system][axis] + _to_millimeters(origin[axis]);
 			cm_set_axis_origin(axis, value[axis]);
 		}
 	}
@@ -750,8 +752,8 @@ static void _exec_absolute_origin(float *value, float *flag)
  */
 void cm_set_axis_origin(uint8_t axis, const float position)
 {
-	gmx.position[axis] = position;
-	gm.target[axis] = position;
+	cm.gmx.position[axis] = position;
+	cm.gm.target[axis] = position;
 	mp_set_planner_position(axis, position);
 }
 
@@ -767,42 +769,42 @@ void cm_set_axis_origin(uint8_t axis, const float position)
 stat_t cm_set_origin_offsets(float offset[], float flag[])
 {
 	// set offsets in the Gcode model extended context
-	gmx.origin_offset_enable = 1;
+	cm.gmx.origin_offset_enable = 1;
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
-			gmx.origin_offset[axis] = gmx.position[axis] - 
-									  cm.offset[gm.coord_system][axis] - _to_millimeters(offset[axis]);
+			cm.gmx.origin_offset[axis] = cm.gmx.position[axis] - 
+									  cm.offset[cm.gm.coord_system][axis] - _to_millimeters(offset[axis]);
 		}
 	}
 	// now pass the offset to the callback - setting the coordinate system also applies the offsets
-	float value[AXES] = { (float)gm.coord_system,0,0,0,0,0 }; // pass coordinate system in value[0] element
+	float value[AXES] = { (float)cm.gm.coord_system,0,0,0,0,0 }; // pass coordinate system in value[0] element
 	mp_queue_command(_exec_offset, value, value);				  // second vector is not used
 	return (STAT_OK);
 }
 
 stat_t cm_reset_origin_offsets()
 {
-	gmx.origin_offset_enable = 0;
+	cm.gmx.origin_offset_enable = 0;
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		gmx.origin_offset[axis] = 0;
+		cm.gmx.origin_offset[axis] = 0;
 	}
-	float value[AXES] = { (float)gm.coord_system,0,0,0,0,0 };
+	float value[AXES] = { (float)cm.gm.coord_system,0,0,0,0,0 };
 	mp_queue_command(_exec_offset, value, value);
 	return (STAT_OK);
 }
 
 stat_t cm_suspend_origin_offsets()
 {
-	gmx.origin_offset_enable = 0;
-	float value[AXES] = { (float)gm.coord_system,0,0,0,0,0 };
+	cm.gmx.origin_offset_enable = 0;
+	float value[AXES] = { (float)cm.gm.coord_system,0,0,0,0,0 };
 	mp_queue_command(_exec_offset, value, value);
 	return (STAT_OK);
 }
 
 stat_t cm_resume_origin_offsets()
 {
-	gmx.origin_offset_enable = 1;
-	float value[AXES] = { (float)gm.coord_system,0,0,0,0,0 };
+	cm.gmx.origin_offset_enable = 1;
+	float value[AXES] = { (float)cm.gm.coord_system,0,0,0,0,0 };
 	mp_queue_command(_exec_offset, value, value);
 	return (STAT_OK);
 }
@@ -816,15 +818,15 @@ stat_t cm_resume_origin_offsets()
 
 stat_t cm_straight_traverse(float target[], float flags[])
 {
-	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
+	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_model_target(target,flags);
-	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
-	ritorno(cm_test_soft_limits(gm.target));
+	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
+	ritorno(cm_test_soft_limits(cm.gm.target));
 
-	cm_set_work_offsets(&gm);					// capture the fully resolved offsets to the state
-	cm_set_move_times(&gm);						// set move time and minimum time in the state
+	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
+	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
 	cm_cycle_start();							// required for homing & other cycles
-	stat_t status = mp_aline(&gm);				// run the move
+	stat_t status = mp_aline(&cm.gm);			// run the move
 	cm_conditional_set_model_position(status);	// update position if the move was successful
 	return (status);
 }
@@ -838,7 +840,7 @@ stat_t cm_straight_traverse(float target[], float flags[])
 
 stat_t cm_set_g28_position(void)
 {
-	copy_axis_vector(gmx.g28_position, gmx.position);
+	copy_axis_vector(cm.gmx.g28_position, cm.gmx.position);
 	return (STAT_OK);
 }
 
@@ -848,12 +850,12 @@ stat_t cm_goto_g28_position(float target[], float flags[])
 	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
 	while (mp_get_planner_buffers_available() == 0); // make sure you have an available buffer
 	float f[] = {1,1,1,1,1,1};
-	return(cm_straight_traverse(gmx.g28_position, f));// execute actual stored move
+	return(cm_straight_traverse(cm.gmx.g28_position, f));// execute actual stored move
 }
 
 stat_t cm_set_g30_position(void)
 {
-	copy_axis_vector(gmx.g30_position, gmx.position);
+	copy_axis_vector(cm.gmx.g30_position, cm.gmx.position);
 	return (STAT_OK);
 }
 
@@ -863,7 +865,7 @@ stat_t cm_goto_g30_position(float target[], float flags[])
 	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
 	while (mp_get_planner_buffers_available() == 0); // make sure you have an available buffer
 	float f[] = {1,1,1,1,1,1};
-	return(cm_straight_traverse(gmx.g30_position, f));// execute actual stored move
+	return(cm_straight_traverse(cm.gmx.g30_position, f));// execute actual stored move
 }
 
 /********************************
@@ -880,10 +882,10 @@ stat_t cm_goto_g30_position(float target[], float flags[])
 
 stat_t cm_set_feed_rate(float feed_rate)
 {
-	if (gm.inverse_feed_rate_mode == true) {
-		gmx.inverse_feed_rate = feed_rate;	// minutes per motion for this block only
+	if (cm.gm.inverse_feed_rate_mode == true) {
+		cm.gmx.inverse_feed_rate = feed_rate;	// minutes per motion for this block only
 	} else {
-		gm.feed_rate = _to_millimeters(feed_rate);
+		cm.gm.feed_rate = _to_millimeters(feed_rate);
 	}
 	return (STAT_OK);
 }
@@ -897,7 +899,7 @@ stat_t cm_set_feed_rate(float feed_rate)
 
 stat_t cm_set_inverse_feed_rate_mode(uint8_t mode)
 {
-	gm.inverse_feed_rate_mode = mode;
+	cm.gm.inverse_feed_rate_mode = mode;
 	return (STAT_OK);
 }
 
@@ -907,7 +909,7 @@ stat_t cm_set_inverse_feed_rate_mode(uint8_t mode)
 
 stat_t cm_set_path_control(uint8_t mode)
 {
-	gm.path_control = mode;
+	cm.gm.path_control = mode;
 	return (STAT_OK);
 }
 
@@ -924,7 +926,7 @@ stat_t cm_set_path_control(uint8_t mode)
  */
 stat_t cm_dwell(float seconds)
 {
-	gm.parameter = seconds;
+	cm.gm.parameter = seconds;
 	mp_dwell(seconds);
 	return (STAT_OK);
 }
@@ -934,10 +936,10 @@ stat_t cm_dwell(float seconds)
  */
 stat_t cm_straight_feed(float target[], float flags[])
 {
-	gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
+	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 
 	// trap zero feed rate condition
-	if ((gm.inverse_feed_rate_mode == false) && (fp_ZERO(gm.feed_rate))) {
+	if ((cm.gm.inverse_feed_rate_mode == false) && (fp_ZERO(cm.gm.feed_rate))) {
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
 
@@ -948,13 +950,13 @@ stat_t cm_straight_feed(float target[], float flags[])
 //	}
 
 	cm_set_model_target(target, flags);
-	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
-	ritorno(cm_test_soft_limits(gm.target));
+	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
+	ritorno(cm_test_soft_limits(cm.gm.target));
 
-	cm_set_work_offsets(&gm);					// capture the fully resolved offsets to the state
-	cm_set_move_times(&gm);						// set move time and minimum time in the state
+	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
+	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
 	cm_cycle_start();							// required for homing & other cycles
-	stat_t status = mp_aline(&gm);				// run the move
+	stat_t status = mp_aline(&cm.gm);			// run the move
 	cm_conditional_set_model_position(status);	// update position if the move was successful
 	return (status);
 }
@@ -986,19 +988,19 @@ stat_t cm_select_tool(uint8_t tool_select)
 
 static void _exec_select_tool(float *value, float *flag)
 {
-	gm.tool_select = (uint8_t)value[0];
+	cm.gm.tool_select = (uint8_t)value[0];
 }
 
 stat_t cm_change_tool(uint8_t tool_change)
 {
-	float value[AXES] = { (float)gm.tool_select,0,0,0,0,0 };
+	float value[AXES] = { (float)cm.gm.tool_select,0,0,0,0,0 };
 	mp_queue_command(_exec_change_tool, value, value);
 	return (STAT_OK);
 }
 
 static void _exec_change_tool(float *value, float *flag)
 {
-	gm.tool = (uint8_t)value[0];
+	cm.gm.tool = (uint8_t)value[0];
 }
 
 /*********************************** 
@@ -1017,16 +1019,16 @@ stat_t cm_mist_coolant_control(uint8_t mist_coolant)
 }
 static void _exec_mist_coolant_control(float *value, float *flag)
 {
-	gm.mist_coolant = (uint8_t)value[0];
+	cm.gm.mist_coolant = (uint8_t)value[0];
 
 #ifdef __AVR
-	if (gm.mist_coolant == true)
+	if (cm.gm.mist_coolant == true)
 		gpio_set_bit_on(MIST_COOLANT_BIT);	// if
 	gpio_set_bit_off(MIST_COOLANT_BIT);		// else
 #endif // __AVR
 
 #ifdef __ARM
-	if (gm.mist_coolant == true)
+	if (cm.gm.mist_coolant == true)
 		coolant_enable_pin.set();	// if
 	coolant_enable_pin.clear();		// else
 #endif // __ARM
@@ -1040,10 +1042,10 @@ stat_t cm_flood_coolant_control(uint8_t flood_coolant)
 }
 static void _exec_flood_coolant_control(float *value, float *flag)
 {
-	gm.flood_coolant = (uint8_t)value[0];
+	cm.gm.flood_coolant = (uint8_t)value[0];
 
 #ifdef __AVR
-	if (gm.flood_coolant == true) {
+	if (cm.gm.flood_coolant == true) {
 		gpio_set_bit_on(FLOOD_COOLANT_BIT);
 	} else {
 		gpio_set_bit_off(FLOOD_COOLANT_BIT);
@@ -1053,7 +1055,7 @@ static void _exec_flood_coolant_control(float *value, float *flag)
 #endif // __AVR
 
 #ifdef __ARM
-	if (gm.flood_coolant == true) {
+	if (cm.gm.flood_coolant == true) {
 		coolant_enable_pin.set();
 	} else {
 		coolant_enable_pin.clear();
@@ -1078,62 +1080,62 @@ static void _exec_flood_coolant_control(float *value, float *flag)
 
 stat_t cm_override_enables(uint8_t flag)			// M48, M49
 {
-	gmx.feed_rate_override_enable = flag;
-	gmx.traverse_override_enable = flag;
-	gmx.spindle_override_enable = flag;
+	cm.gmx.feed_rate_override_enable = flag;
+	cm.gmx.traverse_override_enable = flag;
+	cm.gmx.spindle_override_enable = flag;
 	return (STAT_OK);
 }
 
 stat_t cm_feed_rate_override_enable(uint8_t flag)	// M50
 {
-	if (fp_TRUE(gf.parameter) && fp_ZERO(gn.parameter)) {
-		gmx.feed_rate_override_enable = false;
+	if (fp_TRUE(cm.gf.parameter) && fp_ZERO(cm.gn.parameter)) {
+		cm.gmx.feed_rate_override_enable = false;
 	} else {
-		gmx.feed_rate_override_enable = true;
+		cm.gmx.feed_rate_override_enable = true;
 	}
 	return (STAT_OK);
 }
 
 stat_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
 {
-	gmx.feed_rate_override_enable = flag;
-	gmx.feed_rate_override_factor = gn.parameter;
+	cm.gmx.feed_rate_override_enable = flag;
+	cm.gmx.feed_rate_override_factor = cm.gn.parameter;
 //	mp_feed_rate_override(flag, gn.parameter);		// replan the queue for new feed rate
 	return (STAT_OK);
 }
 
 stat_t cm_traverse_override_enable(uint8_t flag)	// M50.2
 {
-	if (fp_TRUE(gf.parameter) && fp_ZERO(gn.parameter)) {
-		gmx.traverse_override_enable = false;
+	if (fp_TRUE(cm.gf.parameter) && fp_ZERO(cm.gn.parameter)) {
+		cm.gmx.traverse_override_enable = false;
 	} else {
-		gmx.traverse_override_enable = true;
+		cm.gmx.traverse_override_enable = true;
 	}
 	return (STAT_OK);
 }
 
 stat_t cm_traverse_override_factor(uint8_t flag)	// M51
 {
-	gmx.traverse_override_enable = flag;
-	gmx.traverse_override_factor = gn.parameter;
+	cm.gmx.traverse_override_enable = flag;
+	cm.gmx.traverse_override_factor = cm.gn.parameter;
 //	mp_feed_rate_override(flag, gn.parameter);		// replan the queue for new feed rate
 	return (STAT_OK);
 }
 
 stat_t cm_spindle_override_enable(uint8_t flag)	// M51.1
 {
-	if (fp_TRUE(gf.parameter) && fp_ZERO(gn.parameter)) {
-		gmx.spindle_override_enable = false;
+	if (fp_TRUE(cm.gf.parameter) && fp_ZERO(cm.gn.parameter)) {
+		cm.gmx.spindle_override_enable = false;
 	} else {
-		gmx.spindle_override_enable = true;
+		cm.gmx.spindle_override_enable = true;
 	}
 	return (STAT_OK);
 }
 
 stat_t cm_spindle_override_factor(uint8_t flag)	// M50.1
 {
-	gmx.spindle_override_enable = flag;
-	gmx.spindle_override_factor = gn.parameter;
+	cm.gmx.spindle_override_enable = flag;
+	cm.gmx.spindle_override_factor = cm.gn.parameter;
 //	change spindle speed
 	return (STAT_OK);
 }
@@ -1241,8 +1243,8 @@ stat_t cm_queue_flush()
 
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		mp_set_planner_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
-		gmx.position[axis] = mp_get_runtime_absolute_position(axis);
-		gm.target[axis] = gmx.position[axis];
+		cm.gmx.position[axis] = mp_get_runtime_absolute_position(axis);
+		cm.gm.target[axis] = cm.gmx.position[axis];
 	}
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
 	_exec_program_finalize(value, value);			// finalize now, not later

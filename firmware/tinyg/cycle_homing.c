@@ -144,10 +144,10 @@ static int8_t _get_next_axis(int8_t axis);
 stat_t cm_homing_cycle_start(void)
 {
 	// save relevant non-axis parameters from Gcode model
-	hm.saved_units_mode = gm.units_mode;
-	hm.saved_coord_system = gm.coord_system;
-	hm.saved_distance_mode = gm.distance_mode;
-	hm.saved_feed_rate = gm.feed_rate;
+	hm.saved_units_mode = cm.gm.units_mode;
+	hm.saved_coord_system = cm.gm.coord_system;
+	hm.saved_distance_mode = cm.gm.distance_mode;
+	hm.saved_feed_rate = cm.gm.feed_rate;
 
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
@@ -401,33 +401,33 @@ static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 static int8_t _get_next_axis(int8_t axis)
 {
 	if (axis == -1) {	// inelegant brute force solution
-		if (fp_TRUE(gf.target[AXIS_Z])) return (AXIS_Z);
-		if (fp_TRUE(gf.target[AXIS_X])) return (AXIS_X);
-		if (fp_TRUE(gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(gf.target[AXIS_A])) return (AXIS_A);
-//		if (fp_TRUE(gf.target[AXIS_B])) return (AXIS_B);
-//		if (fp_TRUE(gf.target[AXIS_C])) return (AXIS_C);
+		if (fp_TRUE(cm.gf.target[AXIS_Z])) return (AXIS_Z);
+		if (fp_TRUE(cm.gf.target[AXIS_X])) return (AXIS_X);
+		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
+		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
+//		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
+//		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
 		return (-2);	// error
 	} else if (axis == AXIS_Z) {
-		if (fp_TRUE(gf.target[AXIS_X])) return (AXIS_X);
-		if (fp_TRUE(gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(gf.target[AXIS_A])) return (AXIS_A);
-//		if (fp_TRUE(gf.target[AXIS_B])) return (AXIS_B);
-//		if (fp_TRUE(gf.target[AXIS_C])) return (AXIS_C);
+		if (fp_TRUE(cm.gf.target[AXIS_X])) return (AXIS_X);
+		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
+		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
+//		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
+//		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
 	} else if (axis == AXIS_X) {
-		if (fp_TRUE(gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(gf.target[AXIS_A])) return (AXIS_A);
-//		if (fp_TRUE(gf.target[AXIS_B])) return (AXIS_B);
-//		if (fp_TRUE(gf.target[AXIS_C])) return (AXIS_C);
+		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
+		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
+//		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
+//		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
 	} else if (axis == AXIS_Y) {
-		if (fp_TRUE(gf.target[AXIS_A])) return (AXIS_A);
-//		if (fp_TRUE(gf.target[AXIS_B])) return (AXIS_B);
-//		if (fp_TRUE(gf.target[AXIS_C])) return (AXIS_C);
+		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
+//		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
+//		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
 //	} else if (axis == AXIS_A) {
-//		if (fp_TRUE(gf.target[AXIS_B])) return (AXIS_B);
-//		if (fp_TRUE(gf.target[AXIS_C])) return (AXIS_C);
+//		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
+//		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
 //	} else if (axis == AXIS_B) {
-//		if (fp_TRUE(gf.target[AXIS_C])) return (AXIS_C);
+//		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
 	}
 	return (-1);	// done
 }
@@ -458,7 +458,7 @@ int8_t _get_next_axes(int8_t axis)
 
 	// Scan target vector for case where no valid axes are specified
 	for (next_axis = 0; next_axis < AXES; next_axis++) {
-		if ((fp_TRUE(gf.target[next_axis])) &&
+		if ((fp_TRUE(cm.gf.target[next_axis])) &&
 			(cm.a[next_axis].axis_mode != AXIS_INHIBITED) &&
 			(cm.a[next_axis].axis_mode != AXIS_DISABLED)) {
 			break;
@@ -471,7 +471,7 @@ int8_t _get_next_axes(int8_t axis)
 
 	// Scan target vector from the current axis to find next axis or the end
 	for (next_axis = ++axis; next_axis < AXES; next_axis++) {
-		if (fp_TRUE(gf.target[next_axis])) {
+		if (fp_TRUE(cm.gf.target[next_axis])) {
 			if ((cm.a[next_axis].axis_mode == AXIS_INHIBITED) ||
 				(cm.a[next_axis].axis_mode == AXIS_DISABLED)) {	// Skip if axis disabled or inhibited
 				continue;

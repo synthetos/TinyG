@@ -39,79 +39,13 @@ extern "C"{
 
 /* Defines and macros */
 
-#define MODEL 	(GCodeState_t *)&gm			// absolute pointer from canonical machine gm model
+#define MODEL 	(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
 #define PLANNER (GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
 #define RUNTIME (GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
 #define ACTIVE_MODEL cm.am					// active model pointer is maintained by state management
 
-#define _to_millimeters(a) ((gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
+#define _to_millimeters(a) ((cm.gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
-/*****************************************************************************
- * CANONICAL MACHINE STRUCTURES
- */
-
-typedef struct cmAxis {
-	uint8_t axis_mode;				// see tgAxisMode in gcode.h
-	float feedrate_max;				// max velocity in mm/min or deg/min
-	float velocity_max;				// max velocity in mm/min or deg/min
-	float travel_max;				// max work envelope for soft limits
-	float travel_min;				// min work envelope for soft limits
-	float jerk_max;					// max jerk (Jm) in mm/min^3 divided by 1 million
-	float jerk_homing;				// homing jerk (Jh) in mm/min^3 divided by 1 million
-	float junction_dev;				// aka cornering delta
-	float radius;					// radius in mm for rotary axis modes
-	float search_velocity;			// homing search velocity
-	float latch_velocity;			// homing latch velocity
-	float latch_backoff;			// backoff from switches prior to homing latch movement
-	float zero_backoff;				// backoff from switches for machine zero
-} cfgAxis_t;
-
-typedef struct cmSingleton {		// struct to manage cm globals and cycles
-	magic_t magic_start;			// magic number to test memory integity	
-
-	/**** Config variables (PUBLIC) ****/
-
-	// system group settings
-	float junction_acceleration;	// centripetal acceleration max for cornering
-	float chordal_tolerance;		// arc chordal accuracy setting in mm
-
-	// hidden system settings
-	float min_segment_len;			// line drawing resolution in mm
-	float arc_segment_len;			// arc drawing resolution in mm
-	float estd_segment_usec;		// approximate segment time in microseconds
-
-	// gcode power-on default settings - defaults are not the same as the gm state
-	uint8_t coord_system;			// G10 active coordinate system default
-	uint8_t select_plane;			// G17,G18,G19 reset default
-	uint8_t units_mode;				// G20,G21 reset default
-	uint8_t path_control;			// G61,G61.1,G64 reset default
-	uint8_t distance_mode;			// G90,G91 reset default
-
-	// coordinate systems and offsets
-	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
-
-	// settings for axes X,Y,Z,A B,C
-	cfgAxis_t a[AXES];
-
-	/**** Runtime variables (PRIVATE) ****/
-
-	uint8_t combined_state;			// stat: combination of states for display purposes
-	uint8_t machine_state;			// macs: machine/cycle/motion is the actual machine state
-	uint8_t cycle_state;			// cycs
-	uint8_t motion_state;			// momo
-	uint8_t hold_state;				// hold: feedhold sub-state machine
-	uint8_t homing_state;			// home: homing cycle sub-state machine
-	uint8_t homed[AXES];			// individual axis homing flags
-	uint8_t	g28_flag;				// true = complete a G28 move
-	uint8_t	g30_flag;				// true = complete a G30 move
-	uint8_t g10_persist_flag;		//.G10 changed offsets - persist them
-	uint8_t feedhold_requested;		// feedhold character has been received
-	uint8_t queue_flush_requested;	// queue flush character has been received
-	uint8_t cycle_start_requested;	// cycle start character has been received (flag to end feedhold)
-	struct GCodeState *am;			// active Gcode model is maintained by state management
-
-	magic_t magic_end;
-} cmSingleton_t;
 
 /*****************************************************************************
  * GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
@@ -250,13 +184,86 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 
 } GCodeInput_t;
 
+/*****************************************************************************
+ * CANONICAL MACHINE STRUCTURES
+ */
+
+typedef struct cmAxis {
+	uint8_t axis_mode;				// see tgAxisMode in gcode.h
+	float feedrate_max;				// max velocity in mm/min or deg/min
+	float velocity_max;				// max velocity in mm/min or deg/min
+	float travel_max;				// max work envelope for soft limits
+	float travel_min;				// min work envelope for soft limits
+	float jerk_max;					// max jerk (Jm) in mm/min^3 divided by 1 million
+	float jerk_homing;				// homing jerk (Jh) in mm/min^3 divided by 1 million
+	float junction_dev;				// aka cornering delta
+	float radius;					// radius in mm for rotary axis modes
+	float search_velocity;			// homing search velocity
+	float latch_velocity;			// homing latch velocity
+	float latch_backoff;			// backoff from switches prior to homing latch movement
+	float zero_backoff;				// backoff from switches for machine zero
+} cfgAxis_t;
+
+typedef struct cmSingleton {		// struct to manage cm globals and cycles
+	magic_t magic_start;			// magic number to test memory integity	
+
+	/**** Config variables (PUBLIC) ****/
+
+	// system group settings
+	float junction_acceleration;	// centripetal acceleration max for cornering
+	float chordal_tolerance;		// arc chordal accuracy setting in mm
+
+	// hidden system settings
+	float min_segment_len;			// line drawing resolution in mm
+	float arc_segment_len;			// arc drawing resolution in mm
+	float estd_segment_usec;		// approximate segment time in microseconds
+
+	// gcode power-on default settings - defaults are not the same as the gm state
+	uint8_t coord_system;			// G10 active coordinate system default
+	uint8_t select_plane;			// G17,G18,G19 reset default
+	uint8_t units_mode;				// G20,G21 reset default
+	uint8_t path_control;			// G61,G61.1,G64 reset default
+	uint8_t distance_mode;			// G90,G91 reset default
+
+	// coordinate systems and offsets
+	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
+
+	// settings for axes X,Y,Z,A B,C
+	cfgAxis_t a[AXES];
+
+	/**** Runtime variables (PRIVATE) ****/
+
+	uint8_t combined_state;			// stat: combination of states for display purposes
+	uint8_t machine_state;			// macs: machine/cycle/motion is the actual machine state
+	uint8_t cycle_state;			// cycs
+	uint8_t motion_state;			// momo
+	uint8_t hold_state;				// hold: feedhold sub-state machine
+	uint8_t homing_state;			// home: homing cycle sub-state machine
+	uint8_t homed[AXES];			// individual axis homing flags
+	uint8_t	g28_flag;				// true = complete a G28 move
+	uint8_t	g30_flag;				// true = complete a G30 move
+	uint8_t g10_persist_flag;		//.G10 changed offsets - persist them
+	uint8_t feedhold_requested;		// feedhold character has been received
+	uint8_t queue_flush_requested;	// queue flush character has been received
+	uint8_t cycle_start_requested;	// cycle start character has been received (flag to end feedhold)
+	struct GCodeState *am;			// active Gcode model is maintained by state management
+
+	/**** Model states ****/
+	GCodeState_t  gm;				// core gcode model state
+	GCodeStateX_t gmx;				// extended gcode model state
+	GCodeInput_t  gn;				// gcode input values - transient
+	GCodeInput_t  gf;				// gcode input flags - transient
+
+	magic_t magic_end;
+} cmSingleton_t;
+
 /**** Externs - See canonical_machine.c for allocation ****/
 
 extern cmSingleton_t cm;		// canonical machine controller singleton
-extern GCodeState_t  gm;		// core gcode model state
-extern GCodeStateX_t gmx;		// extended gcode model state
-extern GCodeInput_t  gn;		// gcode input values - transient
-extern GCodeInput_t  gf;		// gcode input flags - transient
+//extern GCodeState_t  gm;		// core gcode model state
+//extern GCodeStateX_t gmx;		// extended gcode model state
+//extern GCodeInput_t  gn;		// gcode input values - transient
+//extern GCodeInput_t  gf;		// gcode input flags - transient
 
 /*****************************************************************************
  * 

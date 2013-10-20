@@ -72,11 +72,11 @@ float cm_get_spindle_pwm( uint8_t spindle_mode )
 		
 	if (spindle_mode==SPINDLE_CW || spindle_mode==SPINDLE_CCW ) {
 		// clamp spindle speed to lo/hi range
-		if( gm.spindle_speed < speed_lo ) gm.spindle_speed = speed_lo;
-		if( gm.spindle_speed > speed_hi ) gm.spindle_speed = speed_hi;
+		if( cm.gm.spindle_speed < speed_lo ) cm.gm.spindle_speed = speed_lo;
+		if( cm.gm.spindle_speed > speed_hi ) cm.gm.spindle_speed = speed_hi;
 
 		// normalize speed to [0..1]
-		float speed = (gm.spindle_speed - speed_lo) / (speed_hi - speed_lo);
+		float speed = (cm.gm.spindle_speed - speed_lo) / (speed_hi - speed_lo);
 		return (speed * (phase_hi - phase_lo)) + phase_lo;
 	} else {
 		return pwm.c[PWM_1].phase_off;
@@ -149,7 +149,7 @@ void cm_exec_spindle_speed(float speed)
 static void _exec_spindle_speed(float *value, float *flag)
 {
 	cm_set_spindle_speed_parameter(MODEL, value[0]);
-	pwm_set_duty(PWM_1, cm_get_spindle_pwm(gm.spindle_mode) ); // update spindle speed if we're running
+	pwm_set_duty(PWM_1, cm_get_spindle_pwm(cm.gm.spindle_mode) ); // update spindle speed if we're running
 }
 
 #ifdef __cplusplus

@@ -76,7 +76,7 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 				   uint8_t motion_mode)			 // defined motion mode
 {
 	// trap zero feed rate condition
-	if ((gm.inverse_feed_rate_mode == false) && (fp_ZERO(gm.feed_rate))) {
+	if ((cm.gm.inverse_feed_rate_mode == false) && (fp_ZERO(cm.gm.feed_rate))) {
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
 	// Trap conditions where no arc movement will occur, but the system is still in 
@@ -91,30 +91,30 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 
 	// set values in the Gcode model state & copy it (linenum was already captured)
 	cm_set_model_target(target, flags);
-	gm.motion_mode = motion_mode;
-	cm_set_work_offsets(&gm);					// capture the fully resolved offsets to gm
-	memcpy(&arc.gm, &gm, sizeof(GCodeState_t)); // copy GCode context to arc singleton - some will be overwritten to run segments
+	cm.gm.motion_mode = motion_mode;
+	cm_set_work_offsets(&cm.gm);					// capture the fully resolved offsets to gm
+	memcpy(&arc.gm, &cm.gm, sizeof(GCodeState_t));	// copy GCode context to arc singleton - some will be overwritten to run segments
 
 	// populate the arc control singleton
-//	copy_axis_vector(arc.endpoint, gm.target);	// +++++ Diagnostic - save target position
+//	copy_axis_vector(arc.endpoint, gm.target);		// +++++ Diagnostic - save target position
 
-	copy_axis_vector(arc.position, gmx.position);// set initial arc position from gcode model
-	arc.radius = _to_millimeters(radius);		// set arc radius or zero
-	arc.offset[0] = _to_millimeters(i);			// copy offsets with conversion to canonical form (mm)
+	copy_axis_vector(arc.position, cm.gmx.position);// set initial arc position from gcode model
+	arc.radius = _to_millimeters(radius);			// set arc radius or zero
+	arc.offset[0] = _to_millimeters(i);				// copy offsets with conversion to canonical form (mm)
 	arc.offset[1] = _to_millimeters(j);
 	arc.offset[2] = _to_millimeters(k);
 
 	// Set the arc plane for the current G17/G18/G19 setting 
 	// Plane axis 0 and 1 are the arc plane, 2 is the linear axis normal to the arc plane 
-	if (gm.select_plane == CANON_PLANE_XY) {	// G17 - the vast majority of arcs are in the G17 (XY) plane
+	if (cm.gm.select_plane == CANON_PLANE_XY) {	// G17 - the vast majority of arcs are in the G17 (XY) plane
 		arc.plane_axis_0 = AXIS_X;		
 		arc.plane_axis_1 = AXIS_Y;
 		arc.plane_axis_2 = AXIS_Z;
-	} else if (gm.select_plane == CANON_PLANE_XZ) {	// G18
+	} else if (cm.gm.select_plane == CANON_PLANE_XZ) {	// G18
 		arc.plane_axis_0 = AXIS_X;		
 		arc.plane_axis_1 = AXIS_Z;
 		arc.plane_axis_2 = AXIS_Y;
-	} else if (gm.select_plane == CANON_PLANE_YZ) {	// G19
+	} else if (cm.gm.select_plane == CANON_PLANE_YZ) {	// G19
 		arc.plane_axis_0 = AXIS_Y;
 		arc.plane_axis_1 = AXIS_Z;
 		arc.plane_axis_2 = AXIS_X;
@@ -208,13 +208,13 @@ static stat_t _compute_arc()
 	// if angular travel is zero interpret it as a full circle
 	arc.angular_travel = theta_end - arc.theta;
 	if (fp_ZERO(arc.angular_travel)) {
-		if (gm.motion_mode == MOTION_MODE_CCW_ARC) {
+		if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
 			arc.angular_travel -= 2*M_PI;
 		} else {
 			arc.angular_travel = 2*M_PI;
 		}
 	} else {
-		if (gm.motion_mode == MOTION_MODE_CCW_ARC) {
+		if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
 			arc.angular_travel -= 2*M_PI;
 		}
 	}
@@ -327,8 +327,8 @@ static stat_t _compute_arc()
 static stat_t _compute_arc_offsets_from_radius()
 {
 	// Calculate the change in position along each selected axis
-	float x = gm.target[arc.plane_axis_0]-gmx.position[arc.plane_axis_0];
-	float y = gm.target[arc.plane_axis_1]-gmx.position[arc.plane_axis_1];
+	float x = cm.gm.target[arc.plane_axis_0] - cm.gmx.position[arc.plane_axis_0];
+	float y = cm.gm.target[arc.plane_axis_1] - cm.gmx.position[arc.plane_axis_1];
 
 	// == -(h * 2 / d)
 	float h_x2_div_d = -sqrt(4 * square(arc.arc_radius) - (square(x) - square(y))) / hypot(x,y);
@@ -339,7 +339,7 @@ static stat_t _compute_arc_offsets_from_radius()
 	if(isnan(h_x2_div_d) == true) { return (STAT_FLOATING_POINT_ERROR);}
 
 	// Invert the sign of h_x2_div_d if circle is counter clockwise (see header notes)
-	if (gm.motion_mode == MOTION_MODE_CCW_ARC) { h_x2_div_d = -h_x2_div_d;}
+	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) { h_x2_div_d = -h_x2_div_d;}
 
 	// Negative R is g-code-alese for "I want a circle with more than 180 degrees
 	// of travel" (go figure!), even though it is advised against ever generating
@@ -376,10 +376,10 @@ static float _get_arc_time (const float linear_travel,	// in mm
 	float move_time=0;	// picks through the times and retains the slowest
 	float planar_travel = fabs(angular_travel * radius);// travel in arc plane
 
-	if (gm.inverse_feed_rate_mode == true) {
-		move_time = gmx.inverse_feed_rate;
+	if (cm.gm.inverse_feed_rate_mode == true) {
+		move_time = cm.gmx.inverse_feed_rate;
 	} else {
-		move_time = sqrt(square(planar_travel) + square(linear_travel)) / gm.feed_rate;
+		move_time = sqrt(square(planar_travel) + square(linear_travel)) / cm.gm.feed_rate;
 	}
 	if ((tmp = planar_travel/cm.a[arc.plane_axis_0].feedrate_max) > move_time) {
 		move_time = tmp;

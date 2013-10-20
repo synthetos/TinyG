@@ -104,8 +104,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys", "id", _fns, 0, hw_print_id, hw_get_id, set_nul,  (float *)&cs.null, 0 },  // device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
-	{ "",   "n",   _fin, 0, cm_print_line, cm_get_mline,set_int,(float *)&gm.linenum,0 },// Model line number
-	{ "",   "line",_fin, 0, cm_print_line, cm_get_line, set_int,(float *)&gm.linenum,0 },// Active line number - model or runtime line number
+	{ "",   "n",   _fin, 0, cm_print_line, cm_get_mline,set_int,(float *)&cm.gm.linenum,0 },// Model line number
+	{ "",   "line",_fin, 0, cm_print_line, cm_get_line, set_int,(float *)&cm.gm.linenum,0 },// Active line number - model or runtime line number
 	{ "",   "vel", _f00, 2, cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },	// current velocity
 	{ "",   "feed",_f00, 2, cm_print_feed, get_flu,  	set_nul,(float *)&cs.null, 0 },	// feed rate
 	{ "",   "stat",_f00, 0, cm_print_stat, cm_get_stat, set_nul,(float *)&cs.null, 0 },	// combined machine state
@@ -372,27 +372,27 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g59","g59b",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_B], G59_B_OFFSET },
 	{ "g59","g59c",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_C], G59_C_OFFSET },
 
-	{ "g92","g92x",_fin, 3, cm_print_cofs, get_flu, set_nul,(float *)&gmx.origin_offset[AXIS_X], 0 },// G92 handled differently
-	{ "g92","g92y",_fin, 3, cm_print_cofs, get_flu, set_nul,(float *)&gmx.origin_offset[AXIS_Y], 0 },
-	{ "g92","g92z",_fin, 3, cm_print_cofs, get_flu, set_nul,(float *)&gmx.origin_offset[AXIS_Z], 0 },
-	{ "g92","g92a",_fin, 3, cm_print_cofs, get_flt, set_nul,(float *)&gmx.origin_offset[AXIS_A], 0 },
-	{ "g92","g92b",_fin, 3, cm_print_cofs, get_flt, set_nul,(float *)&gmx.origin_offset[AXIS_B], 0 },
-	{ "g92","g92c",_fin, 3, cm_print_cofs, get_flt, set_nul,(float *)&gmx.origin_offset[AXIS_C], 0 },
+	{ "g92","g92x",_fin, 3, cm_print_cofs, get_flu, set_nul,(float *)&cm.gmx.origin_offset[AXIS_X], 0 },// G92 handled differently
+	{ "g92","g92y",_fin, 3, cm_print_cofs, get_flu, set_nul,(float *)&cm.gmx.origin_offset[AXIS_Y], 0 },
+	{ "g92","g92z",_fin, 3, cm_print_cofs, get_flu, set_nul,(float *)&cm.gmx.origin_offset[AXIS_Z], 0 },
+	{ "g92","g92a",_fin, 3, cm_print_cofs, get_flt, set_nul,(float *)&cm.gmx.origin_offset[AXIS_A], 0 },
+	{ "g92","g92b",_fin, 3, cm_print_cofs, get_flt, set_nul,(float *)&cm.gmx.origin_offset[AXIS_B], 0 },
+	{ "g92","g92c",_fin, 3, cm_print_cofs, get_flt, set_nul,(float *)&cm.gmx.origin_offset[AXIS_C], 0 },
 
 	// Coordinate positions (G28, G30)
-	{ "g28","g28x",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_X], 0 },// g28 handled differently
-	{ "g28","g28y",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_Y], 0 },
-	{ "g28","g28z",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&gmx.g28_position[AXIS_Z], 0 },
-	{ "g28","g28a",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_A], 0 },
-	{ "g28","g28b",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_B], 0 },
-	{ "g28","g28c",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&gmx.g28_position[AXIS_C], 0 },
+	{ "g28","g28x",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&cm.gmx.g28_position[AXIS_X], 0 },// g28 handled differently
+	{ "g28","g28y",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&cm.gmx.g28_position[AXIS_Y], 0 },
+	{ "g28","g28z",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&cm.gmx.g28_position[AXIS_Z], 0 },
+	{ "g28","g28a",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g28_position[AXIS_A], 0 },
+	{ "g28","g28b",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g28_position[AXIS_B], 0 },
+	{ "g28","g28c",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g28_position[AXIS_C], 0 },
 
-	{ "g30","g30x",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_X], 0 },// g30 handled differently
-	{ "g30","g30y",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_Y], 0 },
-	{ "g30","g30z",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&gmx.g30_position[AXIS_Z], 0 },
-	{ "g30","g30a",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_A], 0 },
-	{ "g30","g30b",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_B], 0 },
-	{ "g30","g30c",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&gmx.g30_position[AXIS_C], 0 },
+	{ "g30","g30x",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&cm.gmx.g30_position[AXIS_X], 0 },// g30 handled differently
+	{ "g30","g30y",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&cm.gmx.g30_position[AXIS_Y], 0 },
+	{ "g30","g30z",_fin, 3, cm_print_cpos, get_flu, set_nul,(float *)&cm.gmx.g30_position[AXIS_Z], 0 },
+	{ "g30","g30a",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g30_position[AXIS_A], 0 },
+	{ "g30","g30b",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g30_position[AXIS_B], 0 },
+	{ "g30","g30c",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g30_position[AXIS_C], 0 },
 
 	// System parameters
 	{ "sys","ja",  _f07, 0, cm_print_ja,  get_flu,   set_flu,    (float *)&cm.junction_acceleration,JUNCTION_ACCELERATION },
