@@ -54,7 +54,8 @@ typedef struct cmAxis {
 	uint8_t axis_mode;				// see tgAxisMode in gcode.h
 	float feedrate_max;				// max velocity in mm/min or deg/min
 	float velocity_max;				// max velocity in mm/min or deg/min
-	float travel_max;				// work envelope w/warned or rejected blocks
+	float travel_max;				// max work envelope for soft limits
+	float travel_min;				// min work envelope for soft limits
 	float jerk_max;					// max jerk (Jm) in mm/min^3 divided by 1 million
 	float jerk_homing;				// homing jerk (Jh) in mm/min^3 divided by 1 million
 	float junction_dev;				// aka cornering delta
@@ -519,6 +520,7 @@ void cm_set_move_times(GCodeState_t *gcode_state);
 void cm_set_model_linenum(uint32_t linenum);
 void cm_set_model_target(float target[], float flag[]);
 void cm_conditional_set_model_position(stat_t status);
+stat_t cm_test_soft_limits(float target[]);
 
 /*--- canonical machining functions (loosely patterned after NIST) ---*/
 
@@ -674,6 +676,7 @@ stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 	void cm_print_fr(cmdObj_t *cmd);
 	void cm_print_vm(cmdObj_t *cmd);
 	void cm_print_tm(cmdObj_t *cmd);
+	void cm_print_tn(cmdObj_t *cmd);
 	void cm_print_jm(cmdObj_t *cmd);
 	void cm_print_jh(cmdObj_t *cmd);
 	void cm_print_jd(cmdObj_t *cmd);
@@ -728,6 +731,7 @@ stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 	#define cm_print_fr tx_print_stub
 	#define cm_print_vm tx_print_stub
 	#define cm_print_tm tx_print_stub
+	#define cm_print_tn tx_print_stub
 	#define cm_print_jm tx_print_stub
 	#define cm_print_jh tx_print_stub
 	#define cm_print_jd tx_print_stub

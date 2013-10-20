@@ -44,6 +44,7 @@ static stat_t _compute_arc(void);
 static stat_t _compute_arc_offsets_from_radius(void);
 static float _get_arc_time (const float linear_travel, const float angular_travel, const float radius);
 static float _get_theta(const float x, const float y);
+static stat_t _test_arc_soft_limits(void);
 
 /*****************************************************************************
  * Canonical Machining arc functions (arc prep for planning and runtime)
@@ -57,13 +58,11 @@ static float _get_theta(const float x, const float y);
 /*
  * cm_arc_init() - initialize arc structures
  */
-/*
 void cm_arc_init()
 {
 	arc.magic_start = MAGICNUM;
 	arc.magic_end = MAGICNUM;
 }
-*/
 
 /*
  * cm_arc_feed() - canonical machine entry point for arc
@@ -97,7 +96,7 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 	memcpy(&arc.gm, &gm, sizeof(GCodeState_t)); // copy GCode context to arc singleton - some will be overwritten to run segments
 
 	// populate the arc control singleton
-	copy_axis_vector(arc.endpoint, gm.target);	// +++++ Diagnostic - save target position
+//	copy_axis_vector(arc.endpoint, gm.target);	// +++++ Diagnostic - save target position
 
 	copy_axis_vector(arc.position, gmx.position);// set initial arc position from gcode model
 	arc.radius = _to_millimeters(radius);		// set arc radius or zero
@@ -123,7 +122,7 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 
 	// compute arc runtime values and prep for execution by the callback
 	ritorno(_compute_arc());
-//	ritorno(_test_arc_soft_limits());			// test if arc will trip soft limits
+	ritorno(_test_arc_soft_limits());			// test if arc will trip soft limits
 	cm_cycle_start();							// if not already started
 	arc.run_state = MOVE_STATE_RUN;				// enable arc to be run from the callback
 	cm_conditional_set_model_position(STAT_OK);	// set endpoint position if the arc was successful
@@ -414,6 +413,17 @@ static float _get_theta(const float x, const float y)
 			return (-M_PI-theta);
 		}
 	}
+}
+
+
+/* 
+ * _test_arc_soft_limits() - return error code if soft limit is exceeded
+ *
+ *	Must be called with endpoint target in arc.gm struct
+ */
+static stat_t _test_arc_soft_limits()
+{
+	return (cm_test_soft_limits(arc.gm.target));
 }
 
 //##########################################

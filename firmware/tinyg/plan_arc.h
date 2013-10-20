@@ -65,9 +65,9 @@ typedef struct arArcSingleton {	// persistent planner and runtime variables
 extern arc_t arc;
 
 
-/* arc function prototypes */
+/* arc function prototypes */	// NOTE: See canonical_machine.h for cm_arc_feed() prototype
 
-//stat_t cm_arc_feed(...	// this one's in canonical_machine.h for convenience
+void cm_arc_init(void);
 stat_t cm_arc_callback(void);
 void cm_abort_arc(void);
 

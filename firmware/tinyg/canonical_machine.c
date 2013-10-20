@@ -504,16 +504,18 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 }
 
 /* 
- * _test_soft_limits() - return error code if soft limit is exceeded
+ * cm_test_soft_limits() - return error code if soft limit is exceeded
  *
  *	Must be called with target properly set in GM struct. Best done after cm_set_model_target() 
  */
-stat_t _test_soft_limits()
+stat_t cm_test_soft_limits(float target[])
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		if ((gm.target[axis] < 0) || (gm.target[axis] > cm.a[axis].travel_max)) {
+//		if ((gm.target[axis] > cm.a[axis].travel_max) ||
+//			(gm.target[axis] < cm.a[axis].travel_min)) 
+		if ((target[axis] > cm.a[axis].travel_max) ||
+			(target[axis] < cm.a[axis].travel_min)) 
 			return (STAT_SOFT_LIMIT_EXCEEDED);
-		}
 	}
 	return (STAT_OK);
 }
@@ -569,6 +571,7 @@ void canonical_machine_init()
 
 	// sub-system inits
 	cm_spindle_init();
+	cm_arc_init();
 }
 
 /*
@@ -599,6 +602,7 @@ stat_t cm_assertions()
 {
 	if ((cm.magic_start 	!= MAGICNUM) || (cm.magic_end 	  != MAGICNUM)) return (STAT_MEMORY_FAULT);
 	if ((gmx.magic_start 	!= MAGICNUM) || (gmx.magic_end 	  != MAGICNUM)) return (STAT_MEMORY_FAULT);
+	if ((arc.magic_start 	!= MAGICNUM) || (arc.magic_end    != MAGICNUM)) return (STAT_MEMORY_FAULT);
 	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end 	  != MAGICNUM)) return (STAT_MEMORY_FAULT);
 	if ((cmdStr.magic_start != MAGICNUM) || (cmdStr.magic_end != MAGICNUM)) return (STAT_MEMORY_FAULT);
 	return (STAT_OK);
@@ -815,7 +819,7 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_model_target(target,flags);
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
-//	ritorno(_test_soft_limits());
+	ritorno(cm_test_soft_limits(gm.target));
 
 	cm_set_work_offsets(&gm);					// capture the fully resolved offsets to the state
 	cm_set_move_times(&gm);						// set move time and minimum time in the state
@@ -945,7 +949,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 
 	cm_set_model_target(target, flags);
 	if (vector_equal(gm.target, gmx.position)) { return (STAT_OK); }
-//	ritorno(_test_soft_limits());
+	ritorno(cm_test_soft_limits(gm.target));
 
 	cm_set_work_offsets(&gm);					// capture the fully resolved offsets to the state
 	cm_set_move_times(&gm);						// set move time and minimum time in the state
@@ -1778,6 +1782,7 @@ void cm_print_ms(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ms, GET_UNITS(AC
  *	cm_print_fr()
  *	cm_print_vm()
  *	cm_print_tm()
+ *	cm_print_tn()
  *	cm_print_jm()
  *	cm_print_jh()
  *	cm_print_jd()
@@ -1796,6 +1801,7 @@ const char fmt_Xam[] PROGMEM = "[%s%s] %s axis mode%18d %s\n";
 const char fmt_Xfr[] PROGMEM = "[%s%s] %s feedrate maximum%15.3f%s/min\n";
 const char fmt_Xvm[] PROGMEM = "[%s%s] %s velocity maximum%15.3f%s/min\n";
 const char fmt_Xtm[] PROGMEM = "[%s%s] %s travel maximum%17.3f%s\n";
+const char fmt_Xtn[] PROGMEM = "[%s%s] %s travel minimum%17.3f%s\n";
 const char fmt_Xjm[] PROGMEM = "[%s%s] %s jerk maximum%15.0f%s/min^3 * 1 million\n";
 const char fmt_Xjh[] PROGMEM = "[%s%s] %s jerk homing%16.0f%s/min^3 * 1 million\n";
 const char fmt_Xjd[] PROGMEM = "[%s%s] %s junction deviation%14.4f%s (larger is faster)\n";
@@ -1853,6 +1859,7 @@ void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
 void cm_print_fr(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xfr);}
 void cm_print_vm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xvm);}
 void cm_print_tm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xtm);}
+void cm_print_tn(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xtn);}
 void cm_print_jm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjm);}
 void cm_print_jh(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjh);}
 void cm_print_jd(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjd);}

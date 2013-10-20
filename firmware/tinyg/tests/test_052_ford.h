@@ -12,6 +12,8 @@ N5 G0 Z3.0\n\
 /N6 ( T0 : 2.0 )\n\
 /N7 T0 M6\n\
 /N8 ( Handles pocket bad )\n\
+N9999 G1X0Y0";
+/*
 N9 G17\n\
 N10 M3 S1000\n\
 N11 G0 X94.9311 Y154.6277\n\
@@ -103,9 +105,8 @@ N96 G1 X94.8463 Y166.5212\n\
 N97 G1 X94.8761 Y166.6568\n\
 N98 G1 X94.8768 Y166.6601\n\
 N99 G2 X95.0758 Y165.7108 I-21.0567 J-4.9084\n\
-N9999 G1X0Y0\n\
-";
-
+N9999 G1X0Y0";
+*/
 /*
 const char test_ford[] PROGMEM = "\
 N1 G20 G40 G49 M6 T1\n\

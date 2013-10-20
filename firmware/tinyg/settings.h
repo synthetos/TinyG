@@ -77,6 +77,13 @@
 #define COM_ENABLE_ECHO				false
 #define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON // FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
 
+#define X_TRAVEL_MIN				0
+#define Y_TRAVEL_MIN				0
+#define Z_TRAVEL_MIN				0
+#define A_TRAVEL_MIN				-1				// -1 means infinite, no limit
+#define B_TRAVEL_MIN				-1
+#define C_TRAVEL_MIN				-1
+
 /**** MACHINE PROFILES ******************************************************/
 
 // machine default profiles - choose only one:

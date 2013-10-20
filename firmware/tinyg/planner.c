@@ -100,8 +100,6 @@ void planner_init()
 
 	mr.magic_start = MAGICNUM;
 	mr.magic_end = MAGICNUM;
-	arc.magic_start = MAGICNUM;
-	arc.magic_end = MAGICNUM;
 	mp_init_buffers();
 }
 
@@ -112,7 +110,6 @@ stat_t mp_assertions()
 {
 	if ((mb.magic_start  != MAGICNUM) || (mb.magic_end 	 != MAGICNUM)) return (STAT_MEMORY_FAULT);
 	if ((mr.magic_start  != MAGICNUM) || (mr.magic_end 	 != MAGICNUM)) return (STAT_MEMORY_FAULT);
-	if ((arc.magic_start != MAGICNUM) || (arc.magic_end  != MAGICNUM)) return (STAT_MEMORY_FAULT);
 	return (STAT_OK);
 }
 
