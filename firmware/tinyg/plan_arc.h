@@ -33,9 +33,7 @@ typedef struct arArcSingleton {	// persistent planner and runtime variables
 
 	float position[AXES];		// accumulating runtime position
 	float offset[3]; 	 		// IJK offsets
-
-	float endpoint[AXES];		// +++++ Diagnostic for actual endpoint position
-	float error;				// +++++ Diagnostic for endpoint error term 
+	float endpoint[AXES];
 
 	float length;				// length of line or helix in mm
 	float time;					// total running time for arc (derived)

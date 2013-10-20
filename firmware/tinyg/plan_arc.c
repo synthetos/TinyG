@@ -41,7 +41,7 @@ arc_t arc;
 // Local functions
 
 static stat_t _compute_arc(void);
-static stat_t _compute_arc_radius(void);
+static stat_t _compute_arc_offsets_from_radius(void);
 static float _get_arc_time (const float linear_travel, const float angular_travel, const float radius);
 static float _get_theta(const float x, const float y);
 
@@ -68,22 +68,18 @@ void cm_arc_init()
 /*
  * cm_arc_feed() - canonical machine entry point for arc
  *
- * Generates an arc by queueing line segments to the move buffer.
- * The arc is approximated by generating a large number of tiny, linear
- * segments.
+ * Generates an arc by queueing line segments to the move buffer. The arc is 
+ * approximated by generating a large number of tiny, linear segments.
  */
 stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 				   float i, float j, float k, 	 // raw arc offsets
 				   float radius, 				 // non-zero radius implies radius mode
 				   uint8_t motion_mode)			 // defined motion mode
 {
-	//// TRAP EXCEPTIONS ////
-
 	// trap zero feed rate condition
 	if ((gm.inverse_feed_rate_mode == false) && (fp_ZERO(gm.feed_rate))) {
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
-
 	// Trap conditions where no arc movement will occur, but the system is still in 
 	// arc motion mode - this is not an error. This can happen when a F word or M 
 	// word is by itself.(The tests below are organized for execution efficiency)
@@ -94,8 +90,6 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 		}
 	}
 
-	//// SETUP ARC PARAMETERS ////
-
 	// set values in the Gcode model state & copy it (linenum was already captured)
 	cm_set_model_target(target, flags);
 	gm.motion_mode = motion_mode;
@@ -103,49 +97,44 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 	memcpy(&arc.gm, &gm, sizeof(GCodeState_t)); // copy GCode context to arc singleton - some will be overwritten to run segments
 
 	// populate the arc control singleton
-	arc.radius = _to_millimeters(radius);		// set arc radius or zero
+	copy_axis_vector(arc.endpoint, gm.target);	// +++++ Diagnostic - save target position
 
-	// set axes to selected arc plane
-	if (gm.select_plane == CANON_PLANE_XY) {		// G17
-		arc.plane_axis_0 = AXIS_X;
+	copy_axis_vector(arc.position, gmx.position);// set initial arc position from gcode model
+	arc.radius = _to_millimeters(radius);		// set arc radius or zero
+	arc.offset[0] = _to_millimeters(i);			// copy offsets with conversion to canonical form (mm)
+	arc.offset[1] = _to_millimeters(j);
+	arc.offset[2] = _to_millimeters(k);
+
+	// Set the arc plane for the current G17/G18/G19 setting 
+	// Plane axis 0 and 1 are the arc plane, 2 is the linear axis normal to the arc plane 
+	if (gm.select_plane == CANON_PLANE_XY) {	// G17 - the vast majority of arcs are in the G17 (XY) plane
+		arc.plane_axis_0 = AXIS_X;		
 		arc.plane_axis_1 = AXIS_Y;
 		arc.plane_axis_2 = AXIS_Z;
 	} else if (gm.select_plane == CANON_PLANE_XZ) {	// G18
-		arc.plane_axis_0 = AXIS_X;
+		arc.plane_axis_0 = AXIS_X;		
 		arc.plane_axis_1 = AXIS_Z;
 		arc.plane_axis_2 = AXIS_Y;
-	} else { // gm.select_plane == CANON_PLANE_YZ	// G19
+	} else if (gm.select_plane == CANON_PLANE_YZ) {	// G19
 		arc.plane_axis_0 = AXIS_Y;
 		arc.plane_axis_1 = AXIS_Z;
 		arc.plane_axis_2 = AXIS_X;
 	}
-	// set target based on selected plane
-	arc.gm.target[0] = gm.target[arc.plane_axis_0];
-	arc.gm.target[1] = gm.target[arc.plane_axis_1];
-	arc.gm.target[2] = gm.target[arc.plane_axis_2];
 
-	// set offset based on selected plane
-	arc.offset[arc.plane_axis_0] = _to_millimeters(i);
-	arc.offset[arc.plane_axis_1] = _to_millimeters(j);
-	arc.offset[arc.plane_axis_2] = _to_millimeters(k);
-
-	copy_axis_vector(arc.position, gmx.position);	// set initial arc position from gcode model
-	copy_axis_vector(arc.endpoint, arc.gm.target);	// ++++++ diagnostic
-
-	ritorno(_compute_arc());						// compute arc runtime values
-//	ritorno(_test_arc_soft_limits());				// test if arc will trip soft limits
-	cm_cycle_start();								// if not already started
-	arc.run_state = MOVE_STATE_RUN;					// enable arc to be run from the callback
-	cm_conditional_set_model_position(STAT_OK);		// set endpoint position if the arc was successful
+	// compute arc runtime values and prep for execution by the callback
+	ritorno(_compute_arc());
+//	ritorno(_test_arc_soft_limits());			// test if arc will trip soft limits
+	cm_cycle_start();							// if not already started
+	arc.run_state = MOVE_STATE_RUN;				// enable arc to be run from the callback
+	cm_conditional_set_model_position(STAT_OK);	// set endpoint position if the arc was successful
 	return (STAT_OK);
 }
 
 /*
  * cm_arc_callback() - generate an arc
  *
- *	cm_arc_callback() is structured as a continuation called by mp_move_dispatcher.
- *	Each time it's called it queues as many arc segments (lines) as it can 
- *	before it blocks, then returns.
+ *	cm_arc_callback() is called from the controller main loop. Each time it's called it 
+ *	queues as many arc segments (lines) as it can before it blocks, then returns.
  *
  *  Parts of this routine were originally sourced from the grbl project.
  */
@@ -162,12 +151,8 @@ stat_t cm_arc_callback()
 	mp_aline(&arc.gm);								// run the line
 	copy_axis_vector(arc.position, arc.gm.target);	// update arc current position	
 
-	if (--arc.segment_count > 0) {
-		return (STAT_EAGAIN);
-	} else {
-		fprintf(stderr, "%s", "DONE");
-		return (STAT_OK);
-	}
+	if (--arc.segment_count > 0) return (STAT_EAGAIN);
+	arc.run_state = MOVE_STATE_OFF;
 	return (STAT_OK);
 }
 
@@ -196,24 +181,26 @@ void cm_abort_arc()
  *                *     O ----T   <- theta_end (e.g. 90 degrees: theta_end == PI/2)
  *                *   /
  *                  C   <- theta_start (e.g. -145 degrees: theta_start == -PI*(3/4))
+ *
+ *  Parts of this routine were originally sourced from the grbl project.
  */
 static stat_t _compute_arc()
 {
 
 	// A non-zero radius value indicated a radius arc
 	// Compute IJK offset coordinates. These override any current IJK offsets
-	if (fp_NOT_ZERO(arc.radius)) { ritorno(_compute_arc_radius());}	// returns if error
+	if (fp_NOT_ZERO(arc.radius)) ritorno(_compute_arc_offsets_from_radius()); // returns if error
 
 	// Calculate the theta (angle) of the current point (see header notes)
 	// Arc.theta is starting point for theta (theta_start)
-	arc.theta = _get_theta(-arc.offset[0], -arc.offset[1]);
-	if(isnan(arc.theta) == true) { return(STAT_ARC_SPECIFICATION_ERROR);}
+	arc.theta = _get_theta(-arc.offset[arc.plane_axis_0], -arc.offset[arc.plane_axis_1]);
+	if(isnan(arc.theta) == true) return(STAT_ARC_SPECIFICATION_ERROR);
 
 	// calculate the theta (angle) of the target point
 	float theta_end = _get_theta(
-		arc.gm.target[0] - arc.offset[0] - arc.position[arc.plane_axis_0], 
- 		arc.gm.target[1] - arc.offset[1] - arc.position[arc.plane_axis_1]);
-	if(isnan(theta_end) == true) { return (STAT_ARC_SPECIFICATION_ERROR); }
+		arc.gm.target[arc.plane_axis_0] - arc.offset[arc.plane_axis_0] - arc.position[arc.plane_axis_0], 
+ 		arc.gm.target[arc.plane_axis_1] - arc.offset[arc.plane_axis_1] - arc.position[arc.plane_axis_1]);
+	if(isnan(theta_end) == true) return (STAT_ARC_SPECIFICATION_ERROR);
 
 	// ensure that the difference is positive so we have clockwise travel
 	if (theta_end < arc.theta) { theta_end += 2*M_PI; }
@@ -235,8 +222,8 @@ static stat_t _compute_arc()
 
 	// Find the radius, calculate travel in the depth axis of the helix,
 	// and compute the time it should take to perform the move
-	arc.radius = hypot(arc.offset[0], arc.offset[1]);
-	arc.linear_travel = arc.gm.target[2] - arc.position[arc.plane_axis_2];
+	arc.radius = hypot(arc.offset[arc.plane_axis_0], arc.offset[arc.plane_axis_1]);
+	arc.linear_travel = arc.gm.target[arc.plane_axis_2] - arc.position[arc.plane_axis_2];
 
 	// length is the total mm of travel of the helix (or just a planar arc)
 	arc.length = hypot(arc.angular_travel * arc.radius, fabs(arc.linear_travel));
@@ -254,7 +241,6 @@ static stat_t _compute_arc()
 
 	arc.segments = max(arc.segments, 1);		//...but is at least 1 segment
 	arc.gm.move_time = arc.time / arc.segments;	// gcode state struct gets segment_time, not arc time
-
 	arc.segment_count = (int32_t)arc.segments;
 	arc.segment_theta = arc.angular_travel / arc.segments;
 	arc.segment_linear_travel = arc.linear_travel / arc.segments;
@@ -265,10 +251,10 @@ static stat_t _compute_arc()
 }
 
 /* 
- * _compute_arc_radius() - compute arc center (offset) from radius. 
+ * _compute_arc_offsets_from_radius() - compute arc center (offset) from radius. 
  *
- *  We need to calculate the center of the circle that has the designated 
- *	radius and passes through both the current position and the target position
+ *  Needs to calculate the center of the circle that has the designated radius and 
+ *	passes through both the current position and the target position
  *		  
  *	This method calculates the following set of equations where:
  *	`  [x,y] is the vector from current to target position, 
@@ -279,7 +265,7 @@ static stat_t _compute_arc()
  *	A vector perpendicular to the travel vector [-y,x] is scaled to the length
  *	of h [-y/d*h, x/d*h] and added to the center of the travel vector [x/2,y/2]
  *	to form the new point [i,j] at [x/2-y/d*h, y/2+x/d*h] which will be the 
- *	center of our arc.
+ *	center of the arc.
  *        
  *		d^2 == x^2 + y^2
  *		h^2 == r^2 - (d/2)^2
@@ -319,7 +305,7 @@ static stat_t _compute_arc()
  * ----Computing clockwise vs counter-clockwise motion ----
  *
  *	The counter clockwise circle lies to the left of the target direction. 
- *	When offset is positive, the left hand circle will be generated - 
+ *	When offset is positive the left hand circle will be generated - 
  *	when it is negative the right hand circle is generated.
  *
  *                                   T  <-- Target position
@@ -334,23 +320,16 @@ static stat_t _compute_arc()
  *  h_x2_div_d is positive           |             h_x2_div_d is negative
  *                                   |
  *                                   C  <-- Current position
+ *
+ *
+ *	Assumes arc singleton has been pre-loaded with target and position.
+ *	Parts of this routine were originally sourced from the grbl project.
  */
-/*
- * Assumes arc singleton has been loaded with target, offset and position, and that
- * target and offset have plane-axis reordering done previously (G17/G18/G19).
- * Position does not, as it's absolute.
- */
-static stat_t _compute_arc_radius()
+static stat_t _compute_arc_offsets_from_radius()
 {
 	// Calculate the change in position along each selected axis
-//	float x = gm.target[arc.plane_axis_0]-gmx.position[arc.plane_axis_0];
-//	float y = gm.target[arc.plane_axis_1]-gmx.position[arc.plane_axis_1];
-	float x = arc.gm.target[0] - arc.position[arc.plane_axis_0];
-	float y = arc.gm.target[1] - arc.position[arc.plane_axis_1];
-
-	arc.offset[0] = 0;	// reset the offsets
-	arc.offset[1] = 0;
-	arc.offset[2] = 0;
+	float x = gm.target[arc.plane_axis_0]-gmx.position[arc.plane_axis_0];
+	float y = gm.target[arc.plane_axis_1]-gmx.position[arc.plane_axis_1];
 
 	// == -(h * 2 / d)
 	float h_x2_div_d = -sqrt(4 * square(arc.arc_radius) - (square(x) - square(y))) / hypot(x,y);
@@ -373,6 +352,7 @@ static stat_t _compute_arc_radius()
 	// Complete the operation by calculating the actual center of the arc
 	arc.offset[arc.plane_axis_0] = (x-(y*h_x2_div_d))/2;
 	arc.offset[arc.plane_axis_1] = (y+(x*h_x2_div_d))/2;
+	arc.offset[arc.plane_axis_2] = 0;
 	return (STAT_OK);
 }
 

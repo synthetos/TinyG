@@ -105,7 +105,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 /* Run test file */
 //	xio_queue_RX_string_usb("$test=51\n");		// run test file
-//	xio_queue_RX_string_usb("{\"test\":52}\n");	// run test file
+	xio_queue_RX_string_usb("{\"test\":52}\n");	// run test file
 
 /* Other command sequences */
 //	xio_queue_RX_string_usb("H\n");				// show help file
@@ -172,11 +172,9 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g2 f300 x10 y10 i5 j5\n");
 //	xio_queue_RX_string_usb("g2 f300 x3 y3 i1.5 j1.5\n");
 
-//	xio_queue_RX_string_usb("g17 g3 f300 x3 y0 z0.5 i1.5 j6\n");	// 13 segment XY arc
-
-//	xio_queue_RX_string_usb("g18\n");
-//	xio_queue_RX_string_usb("g18 g3 f3000 x3 y0.5 z0 i1.5 j6\n");	// __ segment XZ arc
-	xio_queue_RX_string_usb("g18 g3 f3000 x3 y0.5 z0 i1.5 k6\n");	// __ segment XZ arc
+//	xio_queue_RX_string_usb("g17 g3 f3000 x3.0 y0.0 z0.5 i1.5 j6.0 k0.0\n"); // 13 segment XY arc
+//	xio_queue_RX_string_usb("g18 g3 f3000 x3.0 y0.5 z0.0 i1.5.j0 0 k6.0\n"); // 13 segment XZ arc
+//	xio_queue_RX_string_usb("g19 g3 f3000 x0.5 y3.0 z0.0 i0.0 j1.5 k6.0\n"); // 13 segment YZ arc
 
 //	xio_queue_RX_string_usb("g2 f300 x3 y3 z1.2 i1.5 j1.5 k0.5\n");	// 51 segment arc
 //	xio_queue_RX_string_usb("g2 f300 x3 y0 z0.5 i1.5 j6\n");		// 161 segment arc
