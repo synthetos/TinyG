@@ -19,6 +19,8 @@ See these links for more details.
 * [TinyG Github](https://github.com/synthetos/TinyG)
 * [Synthetos Web Store](https://www.synthetos.com/webstore/)
 
+**See [TinyG G2 Arduino Due ARM Port](https://github.com/synthetos/g2)] and the [G2 wiki](https://github.com/synthetos/g2/wiki)
+
 
 CURRENT MASTER VERSION
 ========
