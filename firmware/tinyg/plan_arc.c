@@ -109,15 +109,15 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 	if (cm.gm.select_plane == CANON_PLANE_XY) {	// G17 - the vast majority of arcs are in the G17 (XY) plane
 		arc.plane_axis_0 = AXIS_X;		
 		arc.plane_axis_1 = AXIS_Y;
-		arc.plane_axis_2 = AXIS_Z;
+		arc.plane_axis_linear = AXIS_Z;
 	} else if (cm.gm.select_plane == CANON_PLANE_XZ) {	// G18
 		arc.plane_axis_0 = AXIS_X;		
 		arc.plane_axis_1 = AXIS_Z;
-		arc.plane_axis_2 = AXIS_Y;
+		arc.plane_axis_linear = AXIS_Y;
 	} else if (cm.gm.select_plane == CANON_PLANE_YZ) {	// G19
 		arc.plane_axis_0 = AXIS_Y;
 		arc.plane_axis_1 = AXIS_Z;
-		arc.plane_axis_2 = AXIS_X;
+		arc.plane_axis_linear = AXIS_X;
 	}
 
 	// compute arc runtime values and prep for execution by the callback
@@ -146,7 +146,7 @@ stat_t cm_arc_callback()
 	arc.theta += arc.segment_theta;
 	arc.gm.target[arc.plane_axis_0] = arc.center_0 + sin(arc.theta) * arc.radius;
 	arc.gm.target[arc.plane_axis_1] = arc.center_1 + cos(arc.theta) * arc.radius;
-	arc.gm.target[arc.plane_axis_2] += arc.segment_linear_travel;
+	arc.gm.target[arc.plane_axis_linear] += arc.segment_linear_travel;
 	mp_aline(&arc.gm);								// run the line
 	copy_axis_vector(arc.position, arc.gm.target);	// update arc current position	
 
@@ -222,7 +222,7 @@ static stat_t _compute_arc()
 	// Find the radius, calculate travel in the depth axis of the helix,
 	// and compute the time it should take to perform the move
 	arc.radius = hypot(arc.offset[arc.plane_axis_0], arc.offset[arc.plane_axis_1]);
-	arc.linear_travel = arc.gm.target[arc.plane_axis_2] - arc.position[arc.plane_axis_2];
+	arc.linear_travel = arc.gm.target[arc.plane_axis_linear] - arc.position[arc.plane_axis_linear];
 
 	// length is the total mm of travel of the helix (or just a planar arc)
 	arc.length = hypot(arc.angular_travel * arc.radius, fabs(arc.linear_travel));
@@ -245,7 +245,7 @@ static stat_t _compute_arc()
 	arc.segment_linear_travel = arc.linear_travel / arc.segments;
 	arc.center_0 = arc.position[arc.plane_axis_0] - sin(arc.theta) * arc.radius;
 	arc.center_1 = arc.position[arc.plane_axis_1] - cos(arc.theta) * arc.radius;
-	arc.gm.target[arc.plane_axis_2] = arc.position[arc.plane_axis_2];	// initialize the linear target
+	arc.gm.target[arc.plane_axis_linear] = arc.position[arc.plane_axis_linear];	// initialize the linear target
 	return (STAT_OK);
 }
 
@@ -331,7 +331,7 @@ static stat_t _compute_arc_offsets_from_radius()
 	float y = cm.gm.target[arc.plane_axis_1] - cm.gmx.position[arc.plane_axis_1];
 
 	// == -(h * 2 / d)
-	float h_x2_div_d = -sqrt(4 * square(arc.arc_radius) - (square(x) - square(y))) / hypot(x,y);
+	float h_x2_div_d = -sqrt(4 * square(arc.radius) - (square(x) - square(y))) / hypot(x,y);
 
 	// If r is smaller than d the arc is now traversing the complex plane beyond
 	// the reach of any real CNC, and thus - for practical reasons - we will 
@@ -346,12 +346,12 @@ static stat_t _compute_arc_offsets_from_radius()
 	// such circles in a single line of g-code. By inverting the sign of 
 	// h_x2_div_d the center of the circles is placed on the opposite side of 
 	// the line of travel and thus we get the unadvisably long arcs as prescribed.
-	if (arc.arc_radius < 0) { h_x2_div_d = -h_x2_div_d; }
+	if (arc.radius < 0) { h_x2_div_d = -h_x2_div_d; }
 
 	// Complete the operation by calculating the actual center of the arc
 	arc.offset[arc.plane_axis_0] = (x-(y*h_x2_div_d))/2;
 	arc.offset[arc.plane_axis_1] = (y+(x*h_x2_div_d))/2;
-	arc.offset[arc.plane_axis_2] = 0;
+	arc.offset[arc.plane_axis_linear] = 0;
 	return (STAT_OK);
 }
 
@@ -387,7 +387,7 @@ static float _get_arc_time (const float linear_travel,	// in mm
 	if ((tmp = planar_travel/cm.a[arc.plane_axis_1].feedrate_max) > move_time) {
 		move_time = tmp;
 	}
-	if ((tmp = fabs(linear_travel/cm.a[arc.plane_axis_2].feedrate_max)) > move_time) {
+	if ((tmp = fabs(linear_travel/cm.a[arc.plane_axis_linear].feedrate_max)) > move_time) {
 		move_time = tmp;
 	}
 	return (move_time);
@@ -419,11 +419,66 @@ static float _get_theta(const float x, const float y)
 /* 
  * _test_arc_soft_limits() - return error code if soft limit is exceeded
  *
- *	Must be called with endpoint target in arc.gm struct
+ *	Test if arc extends beyond arc plane boundaries set in soft limits.
+ *
+ *	The arc starting position (S) and target (T) define 2 points that divide the 
+ *	arc plane into 9 rectangles. The center of the arc is (C). S and T define the 
+ *	endpoints of two possible arcs; one that is less than or equal to 180 degrees (acute) 
+ *	and one that is greater than 180 degrees (obtuse), depending on the location of (C).
+ *
+ *	-------------------------------  plane boundaries in X and Y
+ *  |         |         |         |
+ *  |    1    |    2    |    3    |
+ *  |                   |         |
+ *	--------- S -------------------
+ *  |                   |         |
+ *  |    4    |    5    |    6    |
+ *  |         |                   |
+ *	------------------- T ---------
+ *  |        C|                   |  C shows one of many possible center locations
+ *  |    7    |    8    |    9    |
+ *  |         |         |         |
+ *	-------------------------------
+ *
+ *	C will fall along a diagnonal bisecting 7, 5 and 3, but there is some tolerance in the 
+ *	circle algorithm that allows C to deviate from the centerline slightly. As the centerline 
+ *	approaches the line connecting S and T the acute arcs will be "above" S and T in sections 
+ *	5 or 3, and the obtuse arcs will be "below" in sections 5 or 7. But it's simpler, because 
+ *	we know if the arc is greater than 180 degrees if the angular travel value is > pi.
+ *
+ *	The example below only tests the X axis (0 axis), but testing the other axis is similar
+ *
+ *	  - If Cx <= Sx and arc is acute; no test is needed
+ *
+ *	  - If Cx <= Sx and arc is obtuse; test if the radius is greater than 
+ *			the distance from Cx to the negative X boundary
+ *
+ *	  - If Sx < Cx < Tx and arc is acute; test if the radius is greater than
+ *			the distance from Cx to the positive X boundary
+ *	
+ *	  - If Sx < Cx < Tx and arc is obtuse; test if the radius is greater than
+ *			the distance from Cx to the positive X boundary
+ *
+ *	The arc plane is defined by 0 and 1 depending on G17/G18/G19 plane selected,
+ *	corresponding to arc pane XY, XZ, YZ, respectively.
+ *	
+ *	Must be called with all the following set in the arc struct
+ *	  -	arc starting position (arc.position)
+ *	  - arc ending position (arc.gm.target)
+ *	  - arc center (arc.center_0, arc.center_1)
+ *	  - arc.radius (arc.radius)
+ *	  - arc angular travel in radians (arc.angular_travel)
+ *	  - max and min travel in axis 0 and axis 1 (in cm struct)
+ *
  */
 static stat_t _test_arc_soft_limits()
 {
+	// test is target falls outside boundaries. This is a 3 dimensional test
 	return (cm_test_soft_limits(arc.gm.target));
+
+	// test the 4 arc center point
+	if (arc.target[arc.plane_axis_0] 
+	return(STAT_OK);
 }
 
 //##########################################
