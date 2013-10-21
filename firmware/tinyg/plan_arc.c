@@ -109,20 +109,20 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 	if (cm.gm.select_plane == CANON_PLANE_XY) {	// G17 - the vast majority of arcs are in the G17 (XY) plane
 		arc.plane_axis_0 = AXIS_X;		
 		arc.plane_axis_1 = AXIS_Y;
-		arc.plane_axis_linear = AXIS_Z;
+		arc.linear_axis  = AXIS_Z;
 	} else if (cm.gm.select_plane == CANON_PLANE_XZ) {	// G18
 		arc.plane_axis_0 = AXIS_X;		
 		arc.plane_axis_1 = AXIS_Z;
-		arc.plane_axis_linear = AXIS_Y;
+		arc.linear_axis  = AXIS_Y;
 	} else if (cm.gm.select_plane == CANON_PLANE_YZ) {	// G19
 		arc.plane_axis_0 = AXIS_Y;
 		arc.plane_axis_1 = AXIS_Z;
-		arc.plane_axis_linear = AXIS_X;
+		arc.linear_axis  = AXIS_X;
 	}
 
 	// compute arc runtime values and prep for execution by the callback
 	ritorno(_compute_arc());
-	ritorno(_test_arc_soft_limits());			// test if arc will trip soft limits
+//	ritorno(_test_arc_soft_limits());			// test if arc will trip soft limits
 	cm_cycle_start();							// if not already started
 	arc.run_state = MOVE_STATE_RUN;				// enable arc to be run from the callback
 	cm_conditional_set_model_position(STAT_OK);	// set endpoint position if the arc was successful
@@ -146,7 +146,7 @@ stat_t cm_arc_callback()
 	arc.theta += arc.segment_theta;
 	arc.gm.target[arc.plane_axis_0] = arc.center_0 + sin(arc.theta) * arc.radius;
 	arc.gm.target[arc.plane_axis_1] = arc.center_1 + cos(arc.theta) * arc.radius;
-	arc.gm.target[arc.plane_axis_linear] += arc.segment_linear_travel;
+	arc.gm.target[arc.linear_axis] += arc.segment_linear_travel;
 	mp_aline(&arc.gm);								// run the line
 	copy_axis_vector(arc.position, arc.gm.target);	// update arc current position	
 
@@ -222,7 +222,7 @@ static stat_t _compute_arc()
 	// Find the radius, calculate travel in the depth axis of the helix,
 	// and compute the time it should take to perform the move
 	arc.radius = hypot(arc.offset[arc.plane_axis_0], arc.offset[arc.plane_axis_1]);
-	arc.linear_travel = arc.gm.target[arc.plane_axis_linear] - arc.position[arc.plane_axis_linear];
+	arc.linear_travel = arc.gm.target[arc.linear_axis] - arc.position[arc.linear_axis];
 
 	// length is the total mm of travel of the helix (or just a planar arc)
 	arc.length = hypot(arc.angular_travel * arc.radius, fabs(arc.linear_travel));
@@ -245,7 +245,7 @@ static stat_t _compute_arc()
 	arc.segment_linear_travel = arc.linear_travel / arc.segments;
 	arc.center_0 = arc.position[arc.plane_axis_0] - sin(arc.theta) * arc.radius;
 	arc.center_1 = arc.position[arc.plane_axis_1] - cos(arc.theta) * arc.radius;
-	arc.gm.target[arc.plane_axis_linear] = arc.position[arc.plane_axis_linear];	// initialize the linear target
+	arc.gm.target[arc.linear_axis] = arc.position[arc.linear_axis];	// initialize the linear target
 	return (STAT_OK);
 }
 
@@ -351,7 +351,7 @@ static stat_t _compute_arc_offsets_from_radius()
 	// Complete the operation by calculating the actual center of the arc
 	arc.offset[arc.plane_axis_0] = (x-(y*h_x2_div_d))/2;
 	arc.offset[arc.plane_axis_1] = (y+(x*h_x2_div_d))/2;
-	arc.offset[arc.plane_axis_linear] = 0;
+	arc.offset[arc.linear_axis] = 0;
 	return (STAT_OK);
 }
 
@@ -387,7 +387,7 @@ static float _get_arc_time (const float linear_travel,	// in mm
 	if ((tmp = planar_travel/cm.a[arc.plane_axis_1].feedrate_max) > move_time) {
 		move_time = tmp;
 	}
-	if ((tmp = fabs(linear_travel/cm.a[arc.plane_axis_linear].feedrate_max)) > move_time) {
+	if ((tmp = fabs(linear_travel/cm.a[arc.linear_axis].feedrate_max)) > move_time) {
 		move_time = tmp;
 	}
 	return (move_time);
@@ -477,7 +477,7 @@ static stat_t _test_arc_soft_limits()
 	return (cm_test_soft_limits(arc.gm.target));
 
 	// test the 4 arc center point
-	if (arc.target[arc.plane_axis_0] 
+//	if (arc.gm.target[arc.plane_axis_0] 
 	return(STAT_OK);
 }
 

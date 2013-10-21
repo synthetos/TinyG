@@ -821,7 +821,7 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_model_target(target,flags);
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
-	ritorno(cm_test_soft_limits(cm.gm.target));
+//	ritorno(cm_test_soft_limits(cm.gm.target));
 
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
@@ -951,7 +951,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 
 	cm_set_model_target(target, flags);
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
-	ritorno(cm_test_soft_limits(cm.gm.target));
+//	ritorno(cm_test_soft_limits(cm.gm.target));
 
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
