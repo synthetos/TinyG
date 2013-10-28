@@ -44,14 +44,13 @@ extern "C"{
 srSingleton_t sr;
 qrSingleton_t qr;
 
-
 /**** Exception Messages ************************************************************
  * rpt_exception() - generate an exception message - always in JSON format
  * rpt_er()		   - send a bogus exception report for testing purposes (it's not real)
  */
 void rpt_exception(uint8_t status)
 {
-	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\"}}\n"), 
+	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\"}}\n"),
 		TINYG_FIRMWARE_BUILD, status, get_status_message(status));
 }
 
@@ -99,7 +98,6 @@ void rpt_print_system_ready_message(void)
 	_startup_helper(STAT_OK, PSTR("SYSTEM READY"));
 	if (cfg.comm_mode == TEXT_MODE) { text_response(STAT_OK, (char_t *)"");}// prompt
 }
-
 
 /*****************************************************************************
  * Status Reports
@@ -212,10 +210,20 @@ stat_t sr_set_status_report(cmdObj_t *cmd)
 stat_t sr_request_status_report(uint8_t request_type)
 {
 	if (request_type == SR_IMMEDIATE_REQUEST) {
+#ifdef __ARM
+		sr.status_report_systick = SysTickTimer.getValue();
+#endif
+#ifdef __AVR
 		sr.status_report_systick = SysTickTimer_getValue();
+#endif
 	}
 	if ((request_type == SR_TIMED_REQUEST) && (sr.status_report_requested == false)) {
+#ifdef __ARM
+		sr.status_report_systick = SysTickTimer.getValue() + sr.status_report_interval;
+#endif
+#ifdef __AVR
 		sr.status_report_systick = SysTickTimer_getValue() + sr.status_report_interval;
+#endif
 	}
 	sr.status_report_requested = true;
 	return (STAT_OK);
@@ -225,7 +233,12 @@ stat_t sr_status_report_callback() 		// called by controller dispatcher
 {
 	if (sr.status_report_verbosity == SR_OFF) return (STAT_NOOP);
 	if (sr.status_report_requested == false) return (STAT_NOOP);
+#ifdef __ARM
+	if (SysTickTimer.getValue() < sr.status_report_systick) return (STAT_NOOP);
+#endif
+#ifdef __AVR
 	if (SysTickTimer_getValue() < sr.status_report_systick) return (STAT_NOOP);
+#endif
 
 	sr.status_report_requested = false;		// disable reports until requested again
 
@@ -517,7 +530,6 @@ void qr_print_qo(cmdObj_t *cmd) { text_print_int(cmd, fmt_qo);}
 void qr_print_qv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_qv);}
 
 #endif // __TEXT_MODE
-
 
 
 /****************************************************************************

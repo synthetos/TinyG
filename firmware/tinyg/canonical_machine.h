@@ -2,10 +2,10 @@
  * canonical_machine.h - rs274/ngc canonical machining functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
  *
  * This code is a loose implementation of Kramer, Proctor and Messina's
- * canonical machining functions as described in the NIST RS274/NGC v3
+ * canonical machining functions as described in the NIST RS274/NGC v37
  */
 /* This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -46,7 +46,6 @@ extern "C"{
 
 #define _to_millimeters(a) ((cm.gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
-
 /*****************************************************************************
  * GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
  *
@@ -58,7 +57,7 @@ extern "C"{
  *	 The gm core struct is copied and passed as context to the runtime where it is 
  *	 used for planning, replanning, and reporting.
  *
- * - gmx is the extended gcode model variabales that are only used by the canonical 
+ * - gmx is the extended gcode model variables that are only used by the canonical 
  *	 machine and do not need to be passed further down.
  *
  * - gn is used by the gcode interpreter and is re-initialized for each 
@@ -67,7 +66,7 @@ extern "C"{
  *	 some state elements are necessarily restored from gm.
  *
  * - gf is used by the gcode parser interpreter to hold flags for any data 
- *	 that has changed in gn during the parse. gf.target[] values are also used 
+ *	 that has changed in gn during the parse. cm.gf.target[] values are also used 
  *	 by the canonical machine during set_target().
  *
  * - cfg (config struct in config.h) is also used heavily and contains some 
@@ -106,7 +105,7 @@ extern "C"{
 } GCodeState_t;
 
 typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by model and arcs
-	uint16_t magic_start;				// magic number to test memory integity
+	uint16_t magic_start;				// magic number to test memory integrity
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t program_flow;				// used only by the gcode_parser
 

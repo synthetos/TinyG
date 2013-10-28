@@ -177,7 +177,10 @@ static void _deenergize_motor(const uint8_t motor)
 	st_run.m[motor].power_state = MOTOR_OFF;
 }
 
-void st_set_motor_power(const uint8_t motor) { } // code for PWM driven Vref goes here
+static void _set_motor_power_level(const uint8_t motor, const float power_level)
+{
+	return;	
+}
 
 void st_energize_motors()
 {
@@ -369,11 +372,12 @@ static void _load_move()
 		// If axis has 0 steps the direction setting can be omitted
 		// If axis has 0 steps enabling motors is req'd to support power mode = 1
 
-		st_run.m[MOTOR_1].phase_increment = st_prep.m[MOTOR_1].phase_increment;	// set steps
-		if (st_prep.reset_flag == true) {					// compensate for pulse phasing
-			st_run.m[MOTOR_1].phase_accumulator = -(st_run.dda_ticks_downcount);
-		}
-		if (st_run.m[MOTOR_1].phase_increment != 0) {		// meaning motor is supposed to run
+		// setup motor 1
+		// the if() either sets the accumulation value or zeroes the counter
+		if ((st_run.m[MOTOR_1].phase_increment = st_prep.m[MOTOR_1].phase_increment) != 0) {
+			if (st_prep.reset_flag == true) {				// compensate for pulse phasing
+				st_run.m[MOTOR_1].phase_accumulator = -(st_run.dda_ticks_downcount);
+			}
 			if (st_prep.m[MOTOR_1].dir == 0) {
 				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm;// CW motion (bit cleared)
 			} else {
@@ -388,11 +392,10 @@ static void _load_move()
 			}
 		}
 
-		st_run.m[MOTOR_2].phase_increment = st_prep.m[MOTOR_2].phase_increment;
-		if (st_prep.reset_flag == true) {
-			st_run.m[MOTOR_2].phase_accumulator = -(st_run.dda_ticks_downcount);
-		}
-		if (st_run.m[MOTOR_2].phase_increment != 0) {
+		if ((st_run.m[MOTOR_2].phase_increment = st_prep.m[MOTOR_2].phase_increment) != 0) {
+			if (st_prep.reset_flag == true) {
+				st_run.m[MOTOR_2].phase_accumulator = -(st_run.dda_ticks_downcount);
+			}
 			if (st_prep.m[MOTOR_2].dir == 0) {
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm;
 			} else {
@@ -407,11 +410,10 @@ static void _load_move()
 			}
 		}
 
-		st_run.m[MOTOR_3].phase_increment = st_prep.m[MOTOR_3].phase_increment;
-		if (st_prep.reset_flag == true) {
-			st_run.m[MOTOR_3].phase_accumulator = -(st_run.dda_ticks_downcount);
-		}
-		if (st_run.m[MOTOR_3].phase_increment != 0) {
+		if ((st_run.m[MOTOR_3].phase_increment = st_prep.m[MOTOR_3].phase_increment) != 0) {
+			if (st_prep.reset_flag == true) {
+				st_run.m[MOTOR_3].phase_accumulator = -(st_run.dda_ticks_downcount);
+			}
 			if (st_prep.m[MOTOR_3].dir == 0) {
 				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm;
 			} else {
@@ -426,11 +428,10 @@ static void _load_move()
 			}
 		}
 
-		st_run.m[MOTOR_4].phase_increment = st_prep.m[MOTOR_4].phase_increment;
-		if (st_prep.reset_flag == true) {
-			st_run.m[MOTOR_4].phase_accumulator = (st_run.dda_ticks_downcount);
-		}
-		if (st_run.m[MOTOR_4].phase_increment != 0) {
+		if ((st_run.m[MOTOR_4].phase_increment = st_prep.m[MOTOR_4].phase_increment) != 0) {
+			if (st_prep.reset_flag == true) {
+				st_run.m[MOTOR_4].phase_accumulator = (st_run.dda_ticks_downcount);
+			}
 			if (st_prep.m[MOTOR_4].dir == 0) {
 				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm;
 			} else {

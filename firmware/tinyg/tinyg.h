@@ -1,5 +1,5 @@
 /*
- * tinyg2.h - tinyg2 main header
+ * tinyg.h - tinyg main header
  * This file is part of the TinyG project
  *
  * Copyright (c) 2013 Alden S. Hart, Jr.
@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		396.03	// Testing arc refactoring
+#define TINYG_FIRMWARE_BUILD   		397.05	// Changed stepper load routine - refactor only (not functionally)
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
