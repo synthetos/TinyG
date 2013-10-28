@@ -86,6 +86,13 @@
 #define M4_POLARITY				0
 #define M4_POWER_MODE			0
 
+#define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M6_POWER_LEVEL			MOTOR_POWER_LEVEL
+
 // *** axis settings ***
 
 #define X_AXIS_MODE 			AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values

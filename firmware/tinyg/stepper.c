@@ -534,21 +534,33 @@ stat_t st_prep_line(float steps[], float microseconds)
  *	This may change if microstep morphing is implemented.
  */
 
-static void _set_hw_microsteps(const uint8_t motor, const uint8_t microstep_mode)
+static void _set_hw_microsteps(const uint8_t motor, const uint8_t microsteps)
 {
-	if (microstep_mode == 8) {
+#ifdef __ARM
+	switch (motor) {
+		case (MOTOR_1): { motor_1.setMicrosteps(microsteps); break; }
+		case (MOTOR_2): { motor_2.setMicrosteps(microsteps); break; }
+		case (MOTOR_3): { motor_3.setMicrosteps(microsteps); break; }
+		case (MOTOR_4): { motor_4.setMicrosteps(microsteps); break; }
+		case (MOTOR_5): { motor_5.setMicrosteps(microsteps); break; }
+		case (MOTOR_6): { motor_6.setMicrosteps(microsteps); break; }
+	}
+#endif //__ARM
+#ifdef __AVR
+	if (microsteps == 8) {
 		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
 		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
-	} else if (microstep_mode == 4) {
+		} else if (microsteps == 4) {
 		hw.st_port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
 		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
-	} else if (microstep_mode == 2) {
+		} else if (microsteps == 2) {
 		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
 		hw.st_port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
-	} else if (microstep_mode == 1) {
+		} else if (microsteps == 1) {
 		hw.st_port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
 		hw.st_port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
 	}
+#endif // __AVR
 }
 
 
@@ -564,7 +576,7 @@ static void _set_hw_microsteps(const uint8_t motor, const uint8_t microstep_mode
 static int8_t _get_motor(const index_t index)
 {
 	char_t *ptr;
-	char_t motors[] = {"1234"};
+	char_t motors[] = {"123456"};
 	char_t tmp[CMD_TOKEN_LEN+1];
 
 	strcpy_P(tmp, cfgArray[index].group);
@@ -627,18 +639,45 @@ stat_t st_set_mt(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
+/*
+ * st_set_md() - disable motor power
+ * st_set_me() - enable motor power
+ *
+ * Calling me or md with NULL will enable or disable all motors
+ * Setting a value of 0 will enable or disable all motors
+ * Setting a value from 1 to MOTORS will enable or disable that motor only
+ */ 
 stat_t st_set_md(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
-	st_deenergize_motors();
+	if (((uint8_t)cmd->value == 0) || (cmd->objtype == TYPE_NULL)) {
+		st_deenergize_motors();
+	} else {
+		_deenergize_motor((uint8_t)cmd->value-1);
+	}
 	return (STAT_OK);
 }
 
 stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
-	st_energize_motors();
+	if (((uint8_t)cmd->value == 0) || (cmd->objtype == TYPE_NULL)) {
+		st_energize_motors();
+	} else {
+		_energize_motor((uint8_t)cmd->value-1);
+	}
 	return (STAT_OK);
 }
 
+stat_t st_set_mp(cmdObj_t *cmd)	// motor power level
+{
+	if (cmd->value < (float)0) cmd->value = 0;
+	if (cmd->value > (float)1) cmd->value = 1;
+	set_flt(cmd);				// set the value in the motor config struct (st)
+	
+	uint8_t motor = _get_motor(cmd->index);
+	st_run.m[motor].power_level = cmd->value;
+	_set_motor_power_level(motor, cmd->value);
+	return(STAT_OK);
+}
 
 /***********************************************************************************
  * TEXT MODE SUPPORT
@@ -653,15 +692,16 @@ static const char msg_units2[] PROGMEM = " deg";
 static const char *const msg_units[] PROGMEM = { msg_units0, msg_units1, msg_units2 };
 #define DEGREE_INDEX 2
 
-static const char fmt_mt[] PROGMEM = "[mt]  motor idle timeout%14.2f Sec\n";
 static const char fmt_me[] PROGMEM = "motors energized\n";
 static const char fmt_md[] PROGMEM = "motors de-energized\n";
+static const char fmt_mt[] PROGMEM = "[mt]  motor idle timeout%14.2f Sec\n";
 static const char fmt_0ma[] PROGMEM = "[%s%s] m%s map to axis%15d [0=X,1=Y,2=Z...]\n";
 static const char fmt_0sa[] PROGMEM = "[%s%s] m%s step angle%20.3f%s\n";
 static const char fmt_0tr[] PROGMEM = "[%s%s] m%s travel per revolution%9.3f%s\n";
 static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
 static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
 static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=remain powered,1=power down when idle]\n";
+static const char fmt_0mp[] PROGMEM = "[%s%s] m%s motor power level%13.3f [0.000=minimum, 1.000=maximum]\n";
 
 void st_print_mt(cmdObj_t *cmd) { text_print_flt(cmd, fmt_mt);}
 void st_print_me(cmdObj_t *cmd) { text_print_nul(cmd, fmt_me);}
@@ -677,12 +717,18 @@ static void _print_motor_flt_units(cmdObj_t *cmd, const char *format, uint8_t un
 	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, GET_TEXT_ITEM(msg_units, units));
 }
 
+static void _print_motor_flt(cmdObj_t *cmd, const char *format)
+{
+	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value);
+}
+
 void st_print_ma(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0ma);}
 void st_print_sa(cmdObj_t *cmd) { _print_motor_flt_units(cmd, fmt_0sa, DEGREE_INDEX);}
 void st_print_tr(cmdObj_t *cmd) { _print_motor_flt_units(cmd, fmt_0tr, cm_get_units_mode(MODEL));}
 void st_print_mi(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0mi);}
 void st_print_po(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0po);}
 void st_print_pm(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0pm);}
+void st_print_mp(cmdObj_t *cmd) { _print_motor_flt(cmd, fmt_0mp);}
 
 #endif // __TEXT_MODE
 
