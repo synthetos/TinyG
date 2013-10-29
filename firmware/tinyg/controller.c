@@ -43,6 +43,10 @@
 #include "util.h"
 #include "xio.h"
 
+#ifdef __ARM
+#include "Reset.h"
+#endif
+
 /***********************************************************************************
  **** STRUCTURE ALLOCATIONS *********************************************************
  ***********************************************************************************/
@@ -185,49 +189,49 @@ static stat_t _command_dispatch()
 			break;
 		}
 		// handle end-of-file from file devices
-		if (status == STAT_EOF) {				// EOF can come from file devices only
+		if (status == STAT_EOF) {						// EOF can come from file devices only
 			if (cfg.comm_mode == TEXT_MODE) {
 				fprintf_P(stderr, PSTR("End of command file\n"));
 			} else {
-				rpt_exception(STAT_EOF);		// not really an exception
+				rpt_exception(STAT_EOF);				// not really an exception
 			}
-			tg_reset_source();					// reset to default source
+			tg_reset_source();							// reset to default source
 		}
-		return (status);						// Note: STAT_EAGAIN, errors, etc. will drop through
+		return (status);								// Note: STAT_EAGAIN, errors, etc. will drop through
 	}
 	cs.linelen = strlen(cs.in_buf)+1;					// linelen only tracks primary input
 	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 
 	// dispatch the new text line
-	switch (toupper(*cs.bufp)) {				// first char
+	switch (toupper(*cs.bufp)) {						// first char
 
 		case '!': { cm_request_feedhold(); break; }		// include for diagnostics
 		case '%': { cm_request_queue_flush(); break; }
 		case '~': { cm_request_cycle_start(); break; }
 
-		case NUL: { 							// blank line (just a CR)
+		case NUL: { 									// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {
 				text_response(STAT_OK, cs.saved_buf);
 			}
 			break;
 		}
-		case 'H': { 							// intercept help screens
+		case 'H': { 									// intercept help screens
 			cfg.comm_mode = TEXT_MODE;
 			help_general((cmdObj_t *)NULL);
 			text_response(STAT_OK, cs.bufp);
 			break;
 		}
-		case '$': case '?':{ 					// text-mode configs
+		case '$': case '?':{ 							// text-mode configs
 			cfg.comm_mode = TEXT_MODE;
 			text_response(text_parser(cs.bufp), cs.saved_buf);
 			break;
 		}
-		case '{': { 							// JSON input
+		case '{': { 									// JSON input
 			cfg.comm_mode = JSON_MODE;
 			json_parser(cs.bufp);
 			break;
 		}
-		default: {								// anything else must be Gcode
+		default: {										// anything else must be Gcode
 			if (cfg.comm_mode == JSON_MODE) {
 				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);					// use out_buf as temp
 				sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);	// '-8' is used for JSON chars
@@ -331,6 +335,37 @@ stat_t _controller_assertions()
 /* 
  * _system_assertions() - check memory integrity and other assertions
  */
+#define alarmo(a) if((status_code=a) != STAT_OK) { cm_alarm(status_code); return(status_code); }
+
+stat_t _system_assertions()
+{
+	alarmo(_controller_assertions());
+	alarmo(cm_assertions());
+	alarmo(mp_assertions());
+	alarmo(st_assertions());
+	alarmo(xio_assertions());
+	return (STAT_OK);
+}
+
+/*
+stat_t _system_assertions_helper()
+{
+	ritorno(_controller_assertions());
+	ritorno(cm_assertions());
+	ritorno(mp_assertions());
+	ritorno(st_assertions());
+	ritorno(xio_assertions());
+	return (STAT_OK);
+}
+
+stat_t _system_assertions()
+{
+	ritorno(_system_assertions_helper());
+	cm_alarm(status_code);	// else report exception and shut down
+	return (STAT_EAGAIN);	// do not allow main loop to advance beyond this point	
+}
+*/
+/*
 stat_t _system_assertions()
 {
 	stat_t status;
@@ -338,17 +373,14 @@ stat_t _system_assertions()
 	for (;;) {	// run this loop only once, but enable breaks
 
 		if ((status = _controller_assertions()) != STAT_OK)  break;
-		if ((status = cm_assertions()) != STAT_OK) break;
-		if ((status = mp_assertions()) != STAT_OK) break;
-		if ((status = st_assertions()) != STAT_OK) break;
-		if ((status = xio_assertions()) != STAT_OK) break;
-//		if (rtc.magic_end 		!= MAGICNUM) { value = 19; }
-//		xio_assertions(&value);									// run xio assertions
-
+		if ((status = cm_assertions())	!= STAT_OK) break;
+		if ((status = mp_assertions())	!= STAT_OK) break;
+		if ((status = st_assertions())	!= STAT_OK) break;
+		if ((status = xio_assertions())	!= STAT_OK) break;
 		break;
 	}
 	if (status == STAT_OK) return (STAT_OK);
 	cm_alarm(status);		// else report exception and shut down
 	return (STAT_EAGAIN);	// do not allow main loop to advance beyond this point
 }
-
+*/

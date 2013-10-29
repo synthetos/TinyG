@@ -530,7 +530,7 @@ stat_t st_prep_line(float steps[], float microseconds)
 /*
  * _set_hw_microsteps() - set microsteps in hardware
  *
- *	For now the microstep_mode is the same as the microsteps (1,2,4,8)
+ *	For now the microsteps is the same as the microsteps (1,2,4,8)
  *	This may change if microstep morphing is implemented.
  */
 
@@ -550,13 +550,13 @@ static void _set_hw_microsteps(const uint8_t motor, const uint8_t microsteps)
 	if (microsteps == 8) {
 		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
 		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
-		} else if (microsteps == 4) {
+	} else if (microsteps == 4) {
 		hw.st_port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
 		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_1_bm;
-		} else if (microsteps == 2) {
+	} else if (microsteps == 2) {
 		hw.st_port[motor]->OUTSET = MICROSTEP_BIT_0_bm;
 		hw.st_port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
-		} else if (microsteps == 1) {
+	} else if (microsteps == 1) {
 		hw.st_port[motor]->OUTCLR = MICROSTEP_BIT_0_bm;
 		hw.st_port[motor]->OUTCLR = MICROSTEP_BIT_1_bm;
 	}

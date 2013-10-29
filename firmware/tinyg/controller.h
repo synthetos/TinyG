@@ -55,6 +55,7 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t default_src;				// default source device
 	uint8_t network_mode;				// 0=master, 1=repeater, 2=slave
 	uint16_t linelen;					// length of currently processing line
+	uint16_t read_index;				// length of line being read
 
 	// system state variables
 	uint8_t led_state;		// LEGACY	// 0=off, 1=on
