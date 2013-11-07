@@ -87,7 +87,7 @@
 #define X_VELOCITY_MAX 			1600 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX 			400					// xtm		travel between switches or crashes
-#define X_JERK_MAX 				JERK_MAX			// xjm
+#define X_TRAVEL_MIN			0					// xtn		monimum travel for soft limits
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
@@ -101,6 +101,7 @@
 #define Y_VELOCITY_MAX			1600
 #define Y_FEEDRATE_MAX			Y_VELOCITY_MAX
 #define Y_TRAVEL_MAX			300
+#define Y_TRAVEL_MIN			0
 #define Y_JERK_MAX				JERK_MAX
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN		SW_MODE_HOMING
@@ -115,6 +116,7 @@
 #define Z_VELOCITY_MAX			1600
 #define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX			75
+#define Z_TRAVEL_MIN			0
 #define Z_JERK_MAX				JERK_MAX
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_HOMING
@@ -129,6 +131,8 @@
 #define A_VELOCITY_MAX			3600
 #define A_FEEDRATE_MAX			A_VELOCITY_MAX
 #define A_TRAVEL_MAX			-1
+#define A_TRAVEL_MAX 			-1										// -1 means infinite, no limit
+#define X_JERK_MAX 				JERK_MAX			// xjm
 #define A_JERK_MAX				JERK_MAX
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define A_RADIUS				1
@@ -144,6 +148,7 @@
 #define B_VELOCITY_MAX			3600
 #define B_FEEDRATE_MAX			B_VELOCITY_MAX
 #define B_TRAVEL_MAX			-1
+#define B_TRAVEL_MIN			-1
 #define B_JERK_MAX				JERK_MAX
 #define B_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define B_RADIUS				1
@@ -152,6 +157,7 @@
 #define C_VELOCITY_MAX			3600
 #define C_FEEDRATE_MAX			C_VELOCITY_MAX
 #define C_TRAVEL_MAX			-1
+#define C_TRAVEL_MIN			-1
 #define C_JERK_MAX				JERK_MAX
 #define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define C_RADIUS				1

@@ -105,6 +105,7 @@
 #define X_VELOCITY_MAX 					15000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 					1000				// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX 					320					// xtm		travel between switches or crashes
+#define X_TRAVEL_MIN					0					// xtn		monimum travel for soft limits
 #define X_JERK_MAX 						JERK_MAX			// xjm
 #define X_JUNCTION_DEVIATION			JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 				SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
@@ -119,6 +120,7 @@
 #define Y_VELOCITY_MAX 					15000
 #define Y_FEEDRATE_MAX 					1000
 #define Y_TRAVEL_MAX 					-1					// Y-axis is infinite
+#define Y_TRAVEL_MIN					0
 #define Y_JERK_MAX 						JERK_MAX
 #define Y_JUNCTION_DEVIATION 			JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN				SW_MODE_DISABLED	// Y-axis is infinite
@@ -133,6 +135,7 @@
 #define Z_VELOCITY_MAX 					10000
 #define Z_FEEDRATE_MAX 					1000
 #define Z_TRAVEL_MAX 					25
+#define Z_TRAVEL_MIN					0
 #define Z_JERK_MAX 						JERK_MAX			// 200 Million
 #define Z_JUNCTION_DEVIATION 			JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN				SW_MODE_DISABLED
@@ -147,7 +150,8 @@
 #define A_VELOCITY_MAX 					60000.0				// deg/min
 #define A_FEEDRATE_MAX 					7200.0				// deg/min
 #define A_TRAVEL_MAX 					375.0
-#define A_JERK_MAX 						24000			// yes, 24 Billion
+#define A_TRAVEL_MAX 					-1					// -1 means infinite, no limit
+#define A_JERK_MAX 						24000				// yes, 24 Billion
 #define A_JUNCTION_DEVIATION 			0.1
 #define A_RADIUS 						1.0					// deg
 #define A_SWITCH_MODE_MIN				SW_MODE_HOMING		// disable limit switch halt
@@ -162,6 +166,7 @@
 #define B_VELOCITY_MAX 					3600
 #define B_FEEDRATE_MAX 					B_VELOCITY_MAX
 #define B_TRAVEL_MAX 					-1
+#define B_TRAVEL_MIN					-1
 #define B_JERK_MAX 						JERK_MAX
 #define B_JUNCTION_DEVIATION 			JUNCTION_DEVIATION
 #define B_RADIUS 						1
@@ -170,6 +175,7 @@
 #define C_VELOCITY_MAX 					3600
 #define C_FEEDRATE_MAX 					C_VELOCITY_MAX
 #define C_TRAVEL_MAX 					-1
+#define C_TRAVEL_MIN					-1
 #define C_JERK_MAX 						JERK_MAX
 #define C_JUNCTION_DEVIATION 			JUNCTION_DEVIATION
 #define C_RADIUS 						1
