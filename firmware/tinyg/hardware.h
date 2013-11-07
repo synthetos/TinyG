@@ -1,8 +1,10 @@
 /*
- * system.h - system hardware device configuration values 
- * Part of TinyG project
+ * hardware.h - system hardware configuration - this file is platform specific
+ *			  - AVR Xmega version 
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * This file is part of the TinyG project
+ *
+ * Copyright (c) 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -36,19 +38,34 @@
  *  LO	Serial TX for USB & RS-485			(set in xio_usart.h)
  *	LO	Real time clock interrupt			(set in xmega_rtc.h)
  */
-#ifndef system_h
-#define system_h
 
-void sys_init(void);					// master hardware init
-void sys_port_bindings(float hw_version);
-void sys_get_id(char *id);
+#ifndef HARDWARE_H_ONCE
+#define HARDWARE_H_ONCE
 
+////////////////////////////
+/////// AVR VERSION ////////
+////////////////////////////
+
+#include "config.h"						// needed for the stat_t typedef
+#include <avr/interrupt.h>
+#include "xmega/xmega_rtc.h"			// Xmega only. Goes away with RTC refactoring
+
+// uncomment once motate Xmega port is available
+//#include "motatePins.h"
+//#include "motateTimers.h"				// for Motate::timer_number
+
+/*************************
+ * Global System Defines *
+ *************************/
+
+#undef F_CPU							// CPU clock - set for delays
+#define F_CPU 32000000UL				// should always precede <avr/delay.h>
+#define MILLISECONDS_PER_TICK 1			// MS for system tick (systick * N)
 #define SYS_ID_LEN 12					// length of system ID string from sys_get_id()
 
-/* CPU clock */	
-
-#undef F_CPU							// set for delays
-#define F_CPU 32000000UL				// should always precede <avr/delay.h>
+/************************************************************************************
+ **** AVR XMEGA SPECIFIC HARDWARE ***************************************************
+ ************************************************************************************/
 
 // Clock Crystal Config. Pick one:
 //#define __CLOCK_INTERNAL_32MHZ TRUE	// use internal oscillator
@@ -102,6 +119,7 @@ void sys_get_id(char *id);
  *	b7	(in) max limit switch on GPIO 2 (note: motor controls and GPIO2 port mappings are not the same)
  */
 #define MOTOR_PORT_DIR_gm 0x3F	// dir settings: lower 6 out, upper 2 in
+//#define MOTOR_PORT_DIR_gm 0x00	// dir settings: all inputs
 
 enum cfgPortBits {			// motor control port bit positions
 	STEP_BIT_bp = 0,		// bit 0
@@ -148,6 +166,32 @@ enum cfgPortBits {			// motor control port bit positions
 #define TIMER_PWM1			TCD1		// PWM timer #1 (see pwm.c)
 #define TIMER_PWM2			TCE1		// PWM timer #2	(see pwm.c)
 
+/* Timer setup for stepper and dwells */
+
+#define FREQUENCY_DDA 		(float)50000	// DDA frequency in hz.
+#define FREQUENCY_DWELL		(float)10000	// Dwell count frequency in hz.
+#define SWI_PERIOD 			100				// cycles you have to shut off SW interrupt
+#define TIMER_PERIOD_MIN	(20)			// used to trap bad timer loads
+
+#define STEP_TIMER_TYPE		TC0_struct 		// stepper subsubstem uses all the TC0's
+#define STEP_TIMER_DISABLE 	0				// turn timer off (clock = 0 Hz)
+#define STEP_TIMER_ENABLE	1				// turn timer clock on (F_CPU = 32 Mhz)
+#define STEP_TIMER_WGMODE	0				// normal mode (count to TOP and rollover)
+
+#define TIMER_DDA_ISR_vect	TCC0_OVF_vect	// must agree with assignment in system.h
+#define TIMER_DWELL_ISR_vect TCD0_OVF_vect	// must agree with assignment in system.h
+#define TIMER_LOAD_ISR_vect	TCE0_OVF_vect	// must agree with assignment in system.h
+#define TIMER_EXEC_ISR_vect	TCF0_OVF_vect	// must agree with assignment in system.h
+
+#define TIMER_OVFINTLVL_HI	3				// timer interrupt level (3=hi)
+#define	TIMER_OVFINTLVL_MED 2;				// timer interrupt level (2=med)
+#define	TIMER_OVFINTLVL_LO  1;				// timer interrupt level (1=lo)
+
+#define TIMER_DDA_INTLVL 	TIMER_OVFINTLVL_HI
+#define TIMER_DWELL_INTLVL	TIMER_OVFINTLVL_HI
+#define TIMER_LOAD_INTLVL	TIMER_OVFINTLVL_HI
+#define TIMER_EXEC_INTLVL	TIMER_OVFINTLVL_LO
+
 
 /**** Device singleton - global structure to allow iteration through similar devices ****/
 /*
@@ -163,11 +207,48 @@ enum cfgPortBits {			// motor control port bit positions
 	not assigned to the designated function - ur unpredicatable results will occur
 */
 
-typedef struct deviceSingleton {
-	PORT_t *st_port[MOTORS];	// bindings for stepper motor ports (stepper.c)
-	PORT_t *sw_port[MOTORS];	// bindings for switch ports (GPIO2)
-	PORT_t *out_port[MOTORS];	// bindings for output ports (GPIO1)
-} deviceSingleton_t;
-deviceSingleton_t device;
+typedef struct hmSingleton {
+	PORT_t *st_port[MOTORS];		// bindings for stepper motor ports (stepper.c)
+	PORT_t *sw_port[MOTORS];		// bindings for switch ports (GPIO2)
+	PORT_t *out_port[MOTORS];		// bindings for output ports (GPIO1)
 
-#endif
+	// Non-volatile RAM
+	uint16_t nvm_base_addr;			// NVM base address
+	uint16_t nvm_profile_base;		// NVM base address of current profile
+
+} hwSingleton_t;
+hwSingleton_t hw;
+
+/*** function prototypes ***/
+
+void hardware_init(void);			// master hardware init
+void hw_request_hard_reset();
+void hw_hard_reset(void);
+stat_t hw_hard_reset_handler(void);
+
+void hw_request_bootloader(void);
+stat_t hw_bootloader_handler(void);
+stat_t hw_run_boot(cmdObj_t *cmd);
+
+stat_t hw_set_hv(cmdObj_t *cmd);
+stat_t hw_get_id(cmdObj_t *cmd);
+
+#ifdef __TEXT_MODE
+
+	void hw_print_fb(cmdObj_t *cmd);
+	void hw_print_fv(cmdObj_t *cmd);
+	void hw_print_hp(cmdObj_t *cmd);
+	void hw_print_hv(cmdObj_t *cmd);
+	void hw_print_id(cmdObj_t *cmd);
+
+#else
+
+	#define hw_print_fb tx_print_stub
+	#define hw_print_fv tx_print_stub
+	#define hw_print_hp tx_print_stub
+	#define hw_print_hv tx_print_stub
+	#define hw_print_id tx_print_stub
+
+#endif // __TEXT_MODE
+
+#endif	// end of include guard: HARDWARE_H_ONCE

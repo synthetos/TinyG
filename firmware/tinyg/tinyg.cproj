@@ -15,7 +15,7 @@
     <AssemblyName>tinyg</AssemblyName>
     <Name>tinyg</Name>
     <RootNamespace>tinyg</RootNamespace>
-    <ToolchainFlavour>Native</ToolchainFlavour>
+    <ToolchainFlavour>avr8bit</ToolchainFlavour>
     <KeepTimersRunning>true</KeepTimersRunning>
     <OverrideVtor>false</OverrideVtor>
     <OverrideVtorValue>
@@ -80,32 +80,36 @@
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <ToolchainSettings>
       <AvrGcc>
-  <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
-  <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
-  <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
-  <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
-  <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
-  <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
-  <avrgcc.compiler.symbols.DefSymbols>
-    <ListValues>
-      <Value>F_CPU=32000000UL</Value>
-    </ListValues>
-  </avrgcc.compiler.symbols.DefSymbols>
-  <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
-  <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
-  <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
-  <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
-  <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
-  <avrgcc.linker.general.UseVprintfLibrary>True</avrgcc.linker.general.UseVprintfLibrary>
-  <avrgcc.linker.libraries.Libraries>
-    <ListValues>
-      <Value>printf_flt</Value>
-      <Value>libm</Value>
-    </ListValues>
-  </avrgcc.linker.libraries.Libraries>
-  <avrgcc.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcc.assembler.debugging.DebugLevel>
-</AvrGcc>
+        <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+        <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+        <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+        <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
+        <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+        <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+        <avrgcc.compiler.symbols.DefSymbols>
+          <ListValues>
+            <Value>F_CPU=32000000UL</Value>
+          </ListValues>
+        </avrgcc.compiler.symbols.DefSymbols>
+        <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
+        <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+        <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+        <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
+        <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+        <avrgcc.linker.general.UseVprintfLibrary>True</avrgcc.linker.general.UseVprintfLibrary>
+        <avrgcc.linker.libraries.Libraries>
+          <ListValues>
+            <Value>printf_flt</Value>
+            <Value>libm</Value>
+          </ListValues>
+        </avrgcc.linker.libraries.Libraries>
+        <avrgcc.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcc.assembler.debugging.DebugLevel>
+      </AvrGcc>
     </ToolchainSettings>
+    <UsesExternalMakeFile>False</UsesExternalMakeFile>
+    <BuildTarget>all</BuildTarget>
+    <CleanTarget>clean</CleanTarget>
+    <ExternalMakeFilePath>\\vmware-host\Shared Folders\Alden\Projects\proj38_TinyG\TinyG\firmware\tinyg\Debug\Makefile</ExternalMakeFilePath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="canonical_machine.c">
@@ -120,6 +124,12 @@
     <Compile Include="config.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="config_app.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="config_app.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="controller.c">
       <SubType>compile</SubType>
     </Compile>
@@ -127,6 +137,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="cycle_homing.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="cycle_probing.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="gcode_parser.c">
@@ -139,6 +152,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="gpio.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="hardware.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="hardware.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="help.c">
@@ -246,10 +265,10 @@
     <Compile Include="stepper.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="system.c">
+    <Compile Include="switch.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="system.h">
+    <Compile Include="switch.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="test.c">
@@ -306,6 +325,12 @@
     <Compile Include="tests\test_051_braid.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="text_parser.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="text_parser.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="tinyg.h">
       <SubType>compile</SubType>
     </Compile>
@@ -315,10 +340,10 @@
     <Compile Include="util.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="xio\xio.c">
+    <Compile Include="xio.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="xio\xio.h">
+    <Compile Include="xio.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="xio\xio_file.c">

@@ -1,8 +1,8 @@
 /*
  * help.h - collected help routines
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -17,24 +17,43 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-//#include <ctype.h>
-#include <stdio.h>
-#include <avr/pgmspace.h>
-
-#include "tinyg.h"
-#include "util.h"
-#include "config.h"
+#include "tinyg.h"		// #1
+#include "config.h"		// #2
 #include "report.h"
-#include "controller.h"
 #include "help.h"
 
-static void _status_report_advisory(void);
-static void _postscript(void);
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+// help helper functions (snicker)
+
+stat_t help_stub(cmdObj_t *cmd) {return (STAT_OK);}
+
+#ifdef __HELP_SCREENS
+
+static void _status_report_advisory()
+{
+fprintf_P(stderr, PSTR("\n\
+Note: TinyG generates automatic status reports by default\n\
+This can be disabled by entering $sv=0\n\
+See the wiki below for more details.\n\
+"));
+}
+
+static void _postscript()
+{
+fprintf_P(stderr, PSTR("\n\
+For detailed TinyG info see: https://github.com/synthetos/TinyG/wiki/\n\
+For the latest firmware see: https://github.com/synthetos/TinyG\n\
+Please log any issues at http://www.synthetos.com/forums\n\
+Have fun\n"));
+} 
 
 /*
- * print_general_help() - help invoked as h from the command line
+ * help_general() - help invoked as h from the command line
  */
-uint8_t print_general_help()
+uint8_t help_general(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG Help ####\n"));
 fprintf_P(stderr, PSTR("\
@@ -58,9 +77,9 @@ return(STAT_OK);
 }
 
 /*
- * print_config_help() - help invoked as $h
+ * help_config() - help invoked as $h
  */
-stat_t print_config_help(cmdObj_t *cmd)
+stat_t help_config(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG CONFIGURATION Help ####\n"));
 fprintf_P(stderr, PSTR("\
@@ -74,6 +93,7 @@ These commands are active for configuration:\n\
   $$   Show all settings\n\
   $h   Show this help screen\n\n\
 "));
+
 fprintf_P(stderr, PSTR("\
 Each $ command above also displays the token for each setting in [ ] brackets\n\
 To view settings enter a token:\n\n\
@@ -90,9 +110,9 @@ return(STAT_OK);
 }
 
 /*
- * print_test_help() - help invoked for tests
+ * help_test() - help invoked for tests
  */
-stat_t print_test_help(cmdObj_t *cmd)
+stat_t help_test(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG SELF TEST Help ####\n"));
 fprintf_P(stderr, PSTR("\
@@ -121,22 +141,22 @@ return(STAT_OK);
 }
 
 /*
- * print_defaults_help() - help invoked for defaults
+ * help_defa() - help invoked for defaults
  */
-stat_t print_defaults_help(cmdObj_t *cmd)
+stat_t help_defa(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG RESTORE DEFAULTS Help ####\n"));
 fprintf_P(stderr, PSTR("\
-Enter $defaults=1 to reset the system to the factory default values.\n\
+Enter $defa=1 to reset the system to the factory default values.\n\
 This will overwrite any changes you have made.\n"));
 _postscript();
 return(STAT_OK);
 }
 
 /*
- * print_boot_loader_help()
+ * help_boot_loader()
  */
-stat_t print_boot_loader_help(cmdObj_t *cmd)
+stat_t help_boot_loader(cmdObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n#### TinyG BOOT LOADER Help ####\n"));
 fprintf_P(stderr, PSTR("\
@@ -145,50 +165,8 @@ _postscript();
 return(STAT_OK);
 }
 
-// help helper functions (snicker)
+#endif // __HELP_SCREENS
 
-static void _status_report_advisory()
-{
-fprintf_P(stderr, PSTR("\n\
-Note: TinyG generates automatic status reports by default\n\
-This can be disabled by entering $sv=0\n\
-See the wiki below for more details.\n\
-"));
+#ifdef __cplusplus
 }
-
-static void _postscript()
-{
-fprintf_P(stderr, PSTR("\n\
-For detailed TinyG info see: https://github.com/synthetos/TinyG/wiki/\n\
-For the latest firmware see: https://github.com/synthetos/TinyG\n\
-Please log any issues at http://www.synthetos.com/forums\n\
-Have fun\n"));
-} 
-
-
-//****************************
-//***** diagnostic dumps *****
-//****************************
-
-void dump_set_f_dda(float f_dda,
-					float dda_substeps, 
-					float major_axis_steps, 
-					float microseconds,
-					float f_dda_base)
-{
-/* UNCOMMENT IF YOU NEED THIS
-fprintf_P(stderr, PSTR("dump_set_f_dda()\n\
-  f_dda            %f\n\
-  f_dda_base       %f\n\
-  dda_substeps     %f\n\
-  major_axis_steps %f\n\
-  microseconds     %f\n"),
-
-  f_dda, 
-  f_dda_base,
-  dda_substeps, 
-  major_axis_steps, 
-  microseconds);
-*/
-}
-
+#endif

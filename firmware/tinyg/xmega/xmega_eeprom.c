@@ -494,7 +494,7 @@ void EEPROM_FlushBuffer( void )
 
 void EEPROM_WriteByte(uint16_t address, uint8_t value) 
 {
-	EEPROM_DisableMapping();				// ++++ SAFETY
+	EEPROM_DisableMapping();				// *** SAFETY ***
 	EEPROM_FlushBuffer();					// prevent unintentional write
 	NVM.CMD = NVM_CMD_LOAD_EEPROM_BUFFER_gc;// load page_load command
 	NVM.ADDR0 = address & 0xFF; 			// set buffer addresses
@@ -521,7 +521,7 @@ void EEPROM_WriteByte(uint16_t address, uint8_t value)
 
 uint8_t EEPROM_ReadByte(uint16_t address)
 {
-	EEPROM_DisableMapping();				// ++++ SAFETY
+	EEPROM_DisableMapping();				// *** SAFETY ***
 	EEPROM_WaitForNVM();					// Wait until NVM is not busy
 	NVM.ADDR0 = address & 0xFF;				// set read address
 	NVM.ADDR1 = (address >> 8) & EEPROM_ADDR1_MASK_gm;
@@ -692,11 +692,11 @@ void EEPROM_unit_tests()
 void _EEPROM_test_write_and_read()
 {
 	uint16_t address = 0;
-	char tbuf[16];
+	char_t tbuf[16];
 
 	EEPROM_WriteString(address, "0123456789", TRUE);	// 10 chars + termination
 	EEPROM_ReadString(address, tbuf, 16);
-	printf("%s\n", tbuf);
+	printf("%s\n", (char *)tbuf);
 }
 
 void _EEPROM_test_write()

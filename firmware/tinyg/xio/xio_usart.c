@@ -25,7 +25,7 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>					// needed for blocking character writes
 
-#include "xio.h"						// includes for all devices are in here
+#include "../xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
 
 #include "../tinyg.h"					// needed for AXES definition
@@ -125,7 +125,10 @@ FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags)
 	memset (dx, 0, sizeof(xioUsart_t));				// clear all values
 	xio_reset_working_flags(d);
 	xio_ctrl_generic(d, flags);						// setup control flags	
-	if (d->flag_xoff) dx->fc_state_rx = FC_IN_XON;	// transfer flow control setting 
+	if (d->flag_xoff) {								// initialize flow control settings
+		dx->fc_state_rx = FC_IN_XON;
+		dx->fc_state_tx = FC_IN_XON;
+	}
 
 	// setup internal RX/TX control buffers
 	dx->rx_buf_head = 1;		// can't use location 0 in circular buffer
@@ -170,7 +173,7 @@ void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
  *
  * xio_xoff_usart() - send XOFF flow control for USART devices
  * xio_xon_usart()  - send XON flow control for USART devices
- * xio_fc_usart()   - Usart device flow control callback
+ * xio_fc_usart() - Usart device flow control callback
  * xio_get_tx_bufcount_usart() - returns number of chars in TX buffer
  * xio_get_rx_bufcount_usart() - returns number of chars in RX buffer
  *

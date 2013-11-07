@@ -15,19 +15,13 @@
  * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * ------
- * Notes:
- *	- add full interrupt tables and dummy interrupt routine (maybe)
- *	- add crystal oscillator failover
- *	- add watchdog timer functions
  */
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
 #include "../tinyg.h"
-#include "../system.h"
+#include "../hardware.h"
 #include "xmega_init.h"
 
 void xmega_init_clocks(void);

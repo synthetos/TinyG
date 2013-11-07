@@ -35,10 +35,11 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>					// needed for blocking character writes
 
-#include "xio.h"
+#include "../xio.h"
 #include "../xmega/xmega_interrupts.h"
 
 #include "../tinyg.h"					// needed for canonical machine
+#include "../hardware.h"				// needed for hardware reset
 #include "../controller.h"				// needed for trapping kill char
 #include "../canonical_machine.h"		// needed for fgeedhold and cycle start
 
@@ -158,7 +159,7 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)		// serial port C0 RX isr
 
 	// trap async commands - do not insert into RX queue
 	if (c == CHAR_RESET) {	 						// trap Kill character
-		tg_request_reset();							// call app-specific sig handler
+		hw_request_hard_reset();
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {						// trap feedhold signal

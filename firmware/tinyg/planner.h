@@ -1,8 +1,9 @@
 /*
  * planner.h - cartesian trajectory planning and motion execution
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2013 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -25,8 +26,14 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef planner_h
-#define planner_h 
+#ifndef PLANNER_H_ONCE
+#define PLANNER_H_ONCE
+
+#include "canonical_machine.h"	// used for GCodeState_t
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 enum moveType {				// bf->move_type values 
 	MOVE_TYPE_NULL = 0,		// null move - does a no-op
@@ -62,7 +69,8 @@ enum moveState {
 #define MIN_SEGMENT_LENGTH 		((float)0.05)		// Smallest accel/decel segment (mm). Set to produce ~10 ms segments (0.01)
 #define MIN_LENGTH_MOVE 		((float)0.001)		// millimeters
 
-#define JERK_MATCH_PRECISION 1000	// precision to which jerk must match to be considered effectively the same
+#define JERK_MULTIPLIER			((float)1000000)
+#define JERK_MATCH_PRECISION	((float)1000)		// precision to which jerk must match to be considered effectively the same
 
 /* ESTD_SEGMENT_USEC	 Microseconds per planning segment
  *	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
@@ -70,20 +78,18 @@ enum moveState {
 #define NOM_SEGMENT_USEC 		((float)5000)		// nominal segment time
 #define MIN_SEGMENT_USEC 		((float)2500)		// minimum segment time
 #define MIN_ARC_SEGMENT_USEC	((float)10000)		// minimum arc segment time
-
-//derived from above
 #define NOM_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
-#define MIN_TIME_MOVE  			MIN_SEGMENT_USEC	// minimum time a move can be is one segment
+#define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
 
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.
  *  If you don;t do this the first block will always plan to zero as it will
  *	start executing before the next block arrives from the serial port.
- *	This cuases the machine to stutter once on startup.
+ *	This causes the machine to stutter once on startup.
  */
-#define PLANNER_STARTUP_DELAY_SECONDS 0.05	// in seconds
+#define PLANNER_STARTUP_DELAY_SECONDS ((float)0.05)	// in seconds
 
 /* PLANNER_BUFFER_POOL_SIZE
  *	Should be at least the number of buffers requires to support optimal 
@@ -94,24 +100,21 @@ enum moveState {
 #define PLANNER_BUFFER_HEADROOM 4			// buffers to reserve in planner before processing new input line
 
 /* Some parameters for _generate_trapezoid()
- * TRAPEZOID_ITERATION_MAX	 			Max iterations for convergence in the HT asymmetric case.
- * TRAPEZOID_ITERATION_ERROR_PERCENT	Error percentage for iteration convergence. As percent - 0.01 = 1%
- * TRAPEZOID_LENGTH_FIT_TOLERANCE		Tolerance for "exact fit" for H and T cases
- * TRAPEZOID_VELOCITY_TOLERANCE			Adaptive velocity tolerance term
+ * TRAPEZOID_ITERATION_MAX	 				Max iterations for convergence in the HT asymmetric case.
+ * TRAPEZOID_ITERATION_ERROR_PERCENT		Error percentage for iteration convergence. As percent - 0.01 = 1%
+ * TRAPEZOID_LENGTH_FIT_TOLERANCE			Tolerance for "exact fit" for H and T cases
+ * TRAPEZOID_VELOCITY_TOLERANCE				Adaptive velocity tolerance term
  */
-#define TRAPEZOID_ITERATION_MAX 10
-#define TRAPEZOID_ITERATION_ERROR_PERCENT 0.10
-#define TRAPEZOID_LENGTH_FIT_TOLERANCE (0.0001)	// allowable mm of error in planning phase
-#define TRAPEZOID_VELOCITY_TOLERANCE (max(2,bf->entry_velocity/100))
+#define TRAPEZOID_ITERATION_MAX				10
+#define TRAPEZOID_ITERATION_ERROR_PERCENT	((float)0.10)
+#define TRAPEZOID_LENGTH_FIT_TOLERANCE		((float)0.0001)	// allowable mm of error in planning phase
+#define TRAPEZOID_VELOCITY_TOLERANCE		(max(2,bf->entry_velocity/100))
 
 /*
  *	Macros and typedefs
  */
 
-//#define MP_LINE(t,m,o,n) ((cfg.enable_acceleration == TRUE) ? mp_aline(t,m,o,n) : mp_line(t,m))
-#define MP_LINE(t,m,o,n) (mp_aline(t,m,o,n))	// non-planned lines are disabled
-
-typedef void (*cm_exec)(uint8_t, float);	// callback to canonical_machine execution function
+typedef void (*cm_exec)(float[], float[]);	// callback to canonical_machine execution function
 
 /*
  *	Planner structures
@@ -130,26 +133,21 @@ enum mpBufferState {			// bf->buffer_state values
 typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;		// static pointer to previous buffer
 	struct mpBuffer *nx;		// static pointer to next buffer
-	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function - passes *bf, returns stat_t
+	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function
 	cm_exec cm_func;			// callback to canonical machine execution function
-	uint32_t linenum;			// runtime line number; or line index if not numbered
-	uint8_t motion_mode;		// runtime motion mode for status reporting
+
 	uint8_t buffer_state;		// used to manage queueing/dequeueing
 	uint8_t move_type;			// used to dispatch to run routine
 	uint8_t move_code;			// byte that can be used by used exec functions
 	uint8_t move_state;			// move state machine sequence
 	uint8_t replannable;		// TRUE if move can be replanned
 
-	float target[AXES];			// target position in floating point
 	float unit[AXES];			// unit vector for axis scaling & planning
-	float work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
-	float time;					// line, helix or dwell time in minutes
-	float min_time;				// minimum time for the move - for rate override replanning
+	float length;				// total length of line or helix in mm
 	float head_length;
 	float body_length;
 	float tail_length;
-	float length;				// total length of line or helix in mm
 								// *** SEE NOTES ON THESE VARIABLES, in aline() ***
 	float entry_velocity;		// entry velocity requested for the move
 	float cruise_velocity;		// cruise velocity requested & achieved
@@ -164,21 +162,24 @@ typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
 	float jerk;					// maximum linear jerk term for this move
 	float recip_jerk;			// 1/Jm used for planning (compute-once)
 	float cbrt_jerk;			// cube root of Jm used for planning (compute-once)
+
+	GCodeState_t gm;			// Gode model state - passed from model, used by planner and runtime
+
 } mpBuf_t;
 
 typedef struct mpBufferPool {	// ring buffer for sub-moves
-	uint16_t magic_start;		// magic number to test memory integity	
+	magic_t magic_start;		// magic number to test memory integrity
 	uint8_t buffers_available;	// running count of available buffers
 	mpBuf_t *w;					// get_write_buffer pointer
 	mpBuf_t *q;					// queue_write_buffer pointer
 	mpBuf_t *r;					// get/end_run_buffer pointer
 	mpBuf_t bf[PLANNER_BUFFER_POOL_SIZE];// buffer storage
-	uint16_t magic_end;
+	magic_t magic_end;
 } mpBufferPool_t;
 
 typedef struct mpMoveMasterSingleton {	// common variables for planning (move master)
 	float position[AXES];		// final move position for planning purposes
-	float ms_in_queue;			// total ms of movement & dwell in planner queue
+//	float ms_in_queue;			// UNUSED - total ms of movement & dwell in planner queue
 	float prev_jerk;			// jerk values cached from previous move
 	float prev_recip_jerk;
 	float prev_cbrt_jerk;
@@ -192,17 +193,13 @@ typedef struct mpMoveMasterSingleton {	// common variables for planning (move ma
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
-	uint16_t magic_start;		// magic number to test memory integity	
-	uint32_t linenum;			// runtime line/block number of BF being executed
-	uint8_t motion_mode;		// runtime motion mode for status reports
+	magic_t magic_start;		// magic number to test memory integrity
 	uint8_t move_state;			// state of the overall move
 	uint8_t section_state;		// state within a move section
 
 	float endpoint[AXES];		// final target for bf (used to correct rounding errors)
 	float position[AXES];		// current move position
-	float target[AXES];			// target move position
 	float unit[AXES];			// unit vector for axis scaling & planning
-	float work_offset[AXES];	// offset from the work coordinate system (for reporting only)
 
 	float head_length;			// copies of bf variables of same name
 	float body_length;
@@ -212,7 +209,6 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float exit_velocity;
 
 	float length;				// length of line in mm
-	float move_time;			// total running time (derived)
 	float midpoint_velocity;	// velocity at accel/decel midpoint
 	float jerk;					// max linear jerk
 
@@ -222,40 +218,44 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float microseconds;			// line or segment time in microseconds
 	float segment_length;		// computed length for aline segment
 	float segment_velocity;		// computed velocity for aline segment
-	float forward_diff_1;      // forward difference level 1 (Acceleration)
-	float forward_diff_2;      // forward difference level 2 (Jerk - constant)
-	uint16_t magic_end;
+	float forward_diff_1;		// forward difference level 1 (Acceleration)
+	float forward_diff_2;		// forward difference level 2 (Jerk - constant)
+
+	GCodeState_t gm;			// gocode model state currently executing
+
+	magic_t magic_end;
 } mpMoveRuntimeSingleton_t;
 
-
-// Allocate global scope structs
-mpBufferPool_t mb;				// move buffer queue
-mpMoveMasterSingleton_t mm;		// context for line planning
-mpMoveRuntimeSingleton_t mr;	// context for line runtime
+// Reference global scope structures
+extern mpBufferPool_t mb;				// move buffer queue
+extern mpMoveMasterSingleton_t mm;		// context for line planning
+extern mpMoveRuntimeSingleton_t mr;		// context for line runtime
 
 /*
  * Global Scope Functions
  */
 
-void mp_init(void);
-void mp_init_buffers(void);
+void planner_init(void);
+stat_t mp_assertions(void);
 
 void mp_flush_planner(void);
-float *mp_get_plan_position(float position[]);
-void mp_set_plan_position(const float position[]);
-void mp_set_axes_position(const float position[]);
-void mp_set_axis_position(uint8_t axis, const float position);
+void mp_set_planner_position(uint8_t axis, const float position);
+void mp_set_runtime_position(uint8_t axis, const float position);
 
 stat_t mp_exec_move(void);
-void mp_queue_command(void(*cm_exec)(uint8_t, float), uint8_t int_val, float float_val);
+void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *flag);
+
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
-stat_t mp_aline(const float target[], const float minutes, const float work_offset[], const float min_time);
+
+stat_t mp_aline(const GCodeState_t *gm_line);
+
 stat_t mp_plan_hold_callback(void);
 stat_t mp_end_hold(void);
 stat_t mp_feed_rate_override(uint8_t flag, float parameter);
 
 // planner buffer handlers
+void mp_init_buffers(void);
 uint8_t mp_get_planner_buffers_available(void);
 void mp_clear_buffer(mpBuf_t *bf); 
 void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp);
@@ -269,16 +269,12 @@ mpBuf_t * mp_get_last_buffer(void);
 #define mp_get_next_buffer(b) ((mpBuf_t *)(b->nx))
 
 // plan_line.c functions
-uint8_t mp_isbusy(void);
-uint8_t mp_get_runtime_motion_mode(void);
-float mp_get_runtime_linenum(void);
 float mp_get_runtime_velocity(void);
 float mp_get_runtime_work_position(uint8_t axis);
-float mp_get_runtime_machine_position(uint8_t axis);
-float mp_get_runtime_work_offset(uint8_t axis);
-float mp_get_runtime_work_scaling(uint8_t axis);
-void mp_set_runtime_work_offset(float offset[]); 
+float mp_get_runtime_absolute_position(uint8_t axis);
+void mp_set_runtime_work_offset(float offset[]);
 void mp_zero_segment_velocity(void);
+uint8_t mp_get_runtime_busy(void);
 
 #ifdef __DEBUG
 void mp_dump_running_plan_buffer(void);
@@ -297,5 +293,8 @@ void mp_plan_arc_unit_tests(void);
 #define	PLANNER_UNITS
 #endif // end __UNIT_TEST_PLANNER
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif	// End of include Guard: PLANNER_H_ONCE

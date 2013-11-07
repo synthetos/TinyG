@@ -125,18 +125,16 @@ typedef void (*x_flow_t)(xioDev_t *d);
  *	Sub-Includes and static allocations
  *************************************************************************/
 // Put all sub-includes here so only xio.h is needed elsewhere
-#include "xio_file.h"
-#include "xio_usart.h"
-#include "xio_spi.h"
-//#include "xio_signals.h"
+#include "xio/xio_file.h"
+#include "xio/xio_usart.h"
+#include "xio/xio_spi.h"
 
 // Static structure allocations
 xioDev_t 		ds[XIO_DEV_COUNT];			// allocate top-level dev structs
 xioUsart_t 		us[XIO_DEV_USART_COUNT];	// USART extended IO structs
 xioSpi_t 		spi[XIO_DEV_SPI_COUNT];		// SPI extended IO structs
 xioFile_t 		fs[XIO_DEV_FILE_COUNT];		// FILE extended IO structs
-//xioSignals_t	sig;						// signal flags
-extern struct controllerSingleton tg;	// needed by init() for default source
+extern struct controllerSingleton tg;		// needed by init() for default source
 
 /*************************************************************************
  *	Function Prototypes and Macros
@@ -176,7 +174,8 @@ void xio_set_stdout(const uint8_t dev);
 void xio_set_stderr(const uint8_t dev);
 
 // assertions
-uint8_t xio_assertions(uint8_t *value);
+uint8_t xio_assertions(void);
+
 
 /*************************************************************************
  * SUPPORTING DEFINTIONS - SHOULD NOT NEED TO CHANGE
@@ -333,6 +332,7 @@ enum xioCodes {
     0x24    $       dollar      TinyG / grbl out-of-cycle settings prefix
     0x25    &       ampersand   universal symbol for logical AND (not used here)    
     0x26    %       percent		Queue Flush character (trapped and removed from serial stream)
+								Also sometimes used as a file-start and file-end character in Gcode files
     0x27    '       single quote	
     0x28    (       open paren  Gcode comments
     0x29    )       close paren Gcode comments
@@ -372,4 +372,4 @@ void xio_unit_tests(void);
 #define	XIO_UNITS
 #endif // __UNIT_TEST_XIO
 
-#endif
+#endif	// xio_h

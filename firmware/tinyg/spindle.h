@@ -1,8 +1,8 @@
 /*
  * spindle.h - spindle driver
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -25,17 +25,27 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef spindle_h
-#define spindle_h 
+#ifndef SPINDLE_H_ONCE
+#define SPINDLE_H_ONCE
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 /*
  * Global Scope Functions
  */
 
-void sp_init();
-stat_t cm_spindle_control(uint8_t spindle_mode);
-void cm_exec_spindle_control(uint8_t spindle_mode);
-stat_t cm_set_spindle_speed(float speed);
-void cm_exec_spindle_speed(float speed);
+void cm_spindle_init();
 
+stat_t cm_set_spindle_speed(float speed);			// S parameter
+void cm_exec_spindle_speed(float speed);			// callback for above
+
+stat_t cm_spindle_control(uint8_t spindle_mode);	// M3, M4, M5 integrated spindle control
+void cm_exec_spindle_control(uint8_t spindle_mode);	// callback for above
+
+#ifdef __cplusplus
+}
 #endif
+
+#endif	// End of include guard: SPINDLE_H_ONCE

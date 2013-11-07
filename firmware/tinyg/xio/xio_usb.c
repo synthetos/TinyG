@@ -25,13 +25,14 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>					// needed for blocking TX
 
-#include "xio.h"						// includes for all devices are in here
+#include "../xio.h"						// includes for all devices are in here
 #include "../xmega/xmega_interrupts.h"
 
 // application specific stuff that's littered into the USB handler
 #include "../tinyg.h"
-#include "../config.h"
+#include "../config.h"					// needed to find flow control setting
 #include "../network.h"
+#include "../hardware.h"
 #include "../controller.h"
 #include "../canonical_machine.h"		// trapped characters communicate directly with the canonical machine
 
@@ -83,7 +84,6 @@ int xio_putc_usb(const char c, FILE *stream)
 ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
 	// If the CTS pin (FTDI's RTS) is HIGH, then we cannot send anything, so exit
-//	if ((USBu.port->IN & USB_CTS_bm)) {
 	if ((cfg.enable_flow_control == FLOW_CONTROL_RTS) && (USBu.port->IN & USB_CTS_bm)) {
 		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// force another TX interrupt
 		return;
@@ -119,6 +119,7 @@ ISR(USB_CTS_ISR_vect)
 	USBu.usart->CTRLA = CTRLA_RXON_TXON;		// force another interrupt
 }
 
+
 /* 
  * USB_RX_ISR - USB receiver interrupt (RX)
  *
@@ -137,21 +138,18 @@ ISR(USB_CTS_ISR_vect)
  *	- Flow control should cut off at high water mark, re-enable at low water mark
  *	- High water mark should have about 4 - 8 bytes left in buffer (~95% full) 
  *	- Low water mark about 50% full
- *
- *  See https://www.synthetos.com/wiki/index.php?title=Projects:TinyG-Module-Details#Notes_on_Circular_Buffers
- *  for a discussion of how the circular buffers work
  */
 
 ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int 
 {
 	char c = USBu.usart->DATA;					// can only read DATA once
 
-	if (tg.network_mode == NETWORK_MASTER) {	// forward character if you are a master
+	if (cs.network_mode == NETWORK_MASTER) {	// forward character if you are a master
 		net_forward(c);
 	}
 	// trap async commands - do not insert character into RX queue
 	if (c == CHAR_RESET) {	 					// trap Kill signal
-		tg_request_reset();
+		hw_request_hard_reset();
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal
@@ -179,8 +177,8 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 	}
 
 	// filter out CRs and LFs if they are to be ignored
-	if ((c == CR) && (USB.flag_ignorecr)) return;
-	if ((c == LF) && (USB.flag_ignorelf)) return;
+//	if ((c == CR) && (USB.flag_ignorecr)) return;	// REMOVED IGNORE_CR and IGNORE LF handling
+//	if ((c == LF) && (USB.flag_ignorelf)) return;
 
 	// normal character path
 	advance_buffer(USBu.rx_buf_head, RX_BUFFER_SIZE);
@@ -217,9 +215,7 @@ void xio_reset_usb_rx_buffers(void)
 	USB.len = 0;
 	USB.flag_in_line = false;
 
-	// reset interrupt circular buffer
+	// reset RX interrupt circular buffer
 	USBu.rx_buf_head = 1;		// can't use location 0 in circular buffer
 	USBu.rx_buf_tail = 1;
-	USBu.tx_buf_head = 1;
-	USBu.tx_buf_tail = 1;
 }

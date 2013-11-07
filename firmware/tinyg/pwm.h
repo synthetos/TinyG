@@ -1,8 +1,8 @@
 /*
  * pwm.h - pulse width modulation drivers
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2012 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2012 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -25,13 +25,71 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef pwm_h
-#define pwm_h
+#ifndef PWM_H_ONCE
+#define PWM_H_ONCE
+
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+typedef struct pwmConfigChannel {
+	float frequency;				// base frequency for PWM driver, in Hz
+	float cw_speed_lo;				// minimum clockwise spindle speed [0..N]
+	float cw_speed_hi;				// maximum clockwise spindle speed
+	float cw_phase_lo;				// pwm phase at minimum CW spindle speed, clamped [0..1]
+	float cw_phase_hi;				// pwm phase at maximum CW spindle speed, clamped [0..1]
+	float ccw_speed_lo;				// minimum counter-clockwise spindle speed [0..N]
+	float ccw_speed_hi;				// maximum counter-clockwise spindle speed
+	float ccw_phase_lo;				// pwm phase at minimum CCW spindle speed, clamped [0..1]
+	float ccw_phase_hi;				// pwm phase at maximum CCW spindle speed, clamped
+	float phase_off;				// pwm phase when spindle is disabled
+} pwmConfigChannel_t;
+
+typedef struct pwmChannel {
+	uint8_t ctrla;					// byte needed to active CTRLA (it's dynamic - rest are static)
+	TC1_t *timer;					// assumes TC1 flavor timers used for PWM channels
+} pwmChannel_t;
+
+typedef struct pwmSingleton {
+	pwmConfigChannel_t  c[PWMS];	// array of channel configs
+	pwmChannel_t 		p[PWMS];	// array of PWM channels
+} pwmSingleton_t;
+
+extern pwmSingleton_t pwm;
+
+/*** function prototypes ***/
 
 void pwm_init(void);
 stat_t pwm_set_freq(uint8_t channel, float freq);
 stat_t pwm_set_duty(uint8_t channel, float duty);
 
+#ifdef __TEXT_MODE
+
+	void pwm_print_p1frq(cmdObj_t *cmd);
+	void pwm_print_p1csl(cmdObj_t *cmd);
+	void pwm_print_p1csh(cmdObj_t *cmd);
+	void pwm_print_p1cpl(cmdObj_t *cmd);
+	void pwm_print_p1cph(cmdObj_t *cmd);
+	void pwm_print_p1wsl(cmdObj_t *cmd);
+	void pwm_print_p1wsh(cmdObj_t *cmd);
+	void pwm_print_p1wpl(cmdObj_t *cmd);
+	void pwm_print_p1wph(cmdObj_t *cmd);
+	void pwm_print_p1pof(cmdObj_t *cmd);
+
+#else
+
+	#define pwm_print_p1frq tx_print_stub
+	#define pwm_print_p1csl tx_print_stub
+	#define pwm_print_p1csh tx_print_stub
+	#define pwm_print_p1cpl tx_print_stub
+	#define pwm_print_p1cph tx_print_stub
+	#define pwm_print_p1wsl tx_print_stub
+	#define pwm_print_p1wsh tx_print_stub
+	#define pwm_print_p1wpl tx_print_stub
+	#define pwm_print_p1wph tx_print_stub
+	#define pwm_print_p1pof tx_print_stub
+
+#endif // __TEXT_MODE
 
 //#define __UNIT_TEST_PWM		// uncomment to enable PWM unit tests
 #ifdef __UNIT_TEST_PWM
@@ -41,4 +99,8 @@ void pwm_unit_tests(void);
 #define	PWM_UNITS
 #endif
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif	// End of include guard: PWM_H_ONCE

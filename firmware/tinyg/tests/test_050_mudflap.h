@@ -9,7 +9,7 @@ N25 G92 X0 Y0 Z0\n\
 N30 X0.076 Y0.341\n\
 
  */
-const char PROGMEM test_mudflap[] = "\
+const char test_mudflap[] PROGMEM = "\
 N1 G20\n\
 N5 G40 G17\n\
 N10 T1 M06\n\

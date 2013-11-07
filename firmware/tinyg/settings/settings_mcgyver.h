@@ -1,6 +1,3 @@
-/*
- * settings_othermill.h - Otherlab Mini Milling Machine
- */
 /* Note: The values in this file are the default settings that are loaded
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
@@ -18,8 +15,8 @@
 #define INIT_MESSAGE "Initializing configs to OtherFab OtherMill settings"
 
 
-#define JERK_MAX				762000000	// yes, that's "n00,000,000" mm/(min^3)
-#define JERK_HOMING				1270000000	// yes, that's "n00,000,000" mm/(min^3)
+#define JERK_MAX				762			// yes, that's "n00,000,000" mm/(min^3)
+#define JERK_HOMING				1270		// yes, that's "n00,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION		0.0508		// default value, in mm
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
 
@@ -108,7 +105,7 @@
 #define Z_VELOCITY_MAX 			600
 #define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX 			75
-#define Z_JERK_MAX 				20000000			// 20 million
+#define Z_JERK_MAX 				20			// 20 million
 #define Z_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
 #define Z_SWITCH_MODE_MAX		SW_MODE_HOMING

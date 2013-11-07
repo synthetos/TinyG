@@ -1,8 +1,8 @@
 /*
  * help.h - collected help and assorted display routines
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -17,17 +17,34 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef help_h
-#define help_h
+#ifndef HELP_H_ONCE
+#define HELP_H_ONCE
 
-stat_t print_general_help(void);
-stat_t print_config_help(cmdObj_t *cmd);
-stat_t print_test_help(cmdObj_t *cmd);
-stat_t print_defaults_help(cmdObj_t *cmd);
-stat_t print_boot_loader_help(cmdObj_t *cmd);
-
-void dump_set_f_dda(float f_dda, float dda_substeps, 
-					float major_axis_steps, 
-					float microseconds,
-					float f_dda_base);
+#ifdef __cplusplus
+extern "C"{
 #endif
+
+#ifdef __HELP_SCREENS
+
+	stat_t help_general(cmdObj_t *cmd);
+	stat_t help_config(cmdObj_t *cmd);
+	stat_t help_test(cmdObj_t *cmd);
+	stat_t help_defa(cmdObj_t *cmd);
+	stat_t help_boot_loader(cmdObj_t *cmd);
+
+#else
+
+	stat_t help_stub(cmdObj_t *cmd);
+	#define help_general help_stub
+	#define help_config help_stub
+	#define help_test help_stub
+	#define help_defa help_stub
+	#define help_boot_loader help_stub
+
+#endif // __HELP_SCREENS
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // End of include guard: HELP_H_ONCE

@@ -7,7 +7,7 @@
  *
  * Turn the bits on and off in sequence so you can see the LEDs light in a chain 
  */
-const char PROGMEM test_Mcodes[] = "\
+const char test_Mcodes[] PROGMEM = "\
 (MSG**** Mcodes test [v1] ****)\n\
 g55\n\
 g0x0y0\n\

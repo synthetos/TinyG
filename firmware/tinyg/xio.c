@@ -78,9 +78,9 @@
 #include <avr/pgmspace.h>			// precursor for xio.h
 
 #include "xio.h"					// all device includes are nested here
-#include "../tinyg.h"				// needed by init() for default source
-#include "../config.h"				// needed by init() for default source
-#include "../controller.h"			// needed by init() for default source
+#include "tinyg.h"					// needed by init() for default source
+#include "config.h"					// needed by init() for default source
+#include "controller.h"				// needed by init() for default source
 
 //
 typedef struct xioSingleton {
@@ -256,8 +256,39 @@ void xio_set_stderr(const uint8_t dev)
  *	Returns status code (0 if everything is OK) 
  *	and sets a value if there is a failure.
  */
-uint8_t xio_assertions(uint8_t *value)
+uint8_t xio_assertions()
 {
+/*
+	stat_t status = STAT_OK;
+	if (ds[XIO_DEV_USB].magic_start		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_USB].magic_end		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_RS485].magic_start	!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_RS485].magic_end		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI1].magic_start	!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI1].magic_end		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI2].magic_start	!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI2].magic_end		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_PGM].magic_start		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) status = (STAT_XIO_ASSERTION_FAILURE);
+	if (stderr != xio.stderr_shadow) 				 status = (STAT_XIO_ASSERTION_FAILURE);
+	return (status);
+}
+*/
+	if (ds[XIO_DEV_USB].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_USB].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_RS485].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_RS485].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI1].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI1].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI2].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI2].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_PGM].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (stderr != xio.stderr_shadow) 				 return (STAT_XIO_ASSERTION_FAILURE);
+	return (STAT_OK);
+}
+
+/*
 	if (ds[XIO_DEV_USB].magic_start		!= MAGICNUM) { *value = 100; }
 	if (ds[XIO_DEV_USB].magic_end		!= MAGICNUM) { *value = 101; }
 	if (ds[XIO_DEV_RS485].magic_start	!= MAGICNUM) { *value = 102; }
@@ -269,10 +300,9 @@ uint8_t xio_assertions(uint8_t *value)
 	if (ds[XIO_DEV_PGM].magic_start		!= MAGICNUM) { *value = 108; }
 	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) { *value = 109; }
 	if (stderr != xio.stderr_shadow) 				 { *value = 200; } 
-
 	if (*value != 0) { return (STAT_MEMORY_FAULT); }
-	return (STAT_OK);
 }
+*/
 
 /*****************************************************************************
  * UNIT TESTS 
@@ -311,7 +341,7 @@ static void _spi_putc()
 static void _spi_loopback()
 {
 	FILE * fdev;
-	char buf[10] = "tester\n";
+	char_t buf[10] = "tester\n";
 //	uint8_t i=0;
 	uint32_t j=0;
 
@@ -319,7 +349,7 @@ static void _spi_loopback()
 	xio_set_stdout(XIO_DEV_SPI1);
 	while (true) {
 //		for (i=0; i<7; i++) { xio_putc_spi(buf[i], fdev);}
-		printf("%s",buf);
+		printf("%s", (char *)buf);
 		for (j=(DELAY*0.76); j>0; j--);
 	}
 }

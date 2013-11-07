@@ -1,8 +1,8 @@
 /*
  * report.c - TinyG status report and other reporting functions.
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S Hart, Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -25,159 +25,61 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include <avr/pgmspace.h>
-
 #include "tinyg.h"
-#include "util.h"
 #include "config.h"
-#include "json_parser.h"
-#include "controller.h"
-#include "planner.h"
-#include "gcode_parser.h"
-#include "canonical_machine.h"
 #include "report.h"
+#include "json_parser.h"
+#include "text_parser.h"
+#include "planner.h"
 #include "settings.h"
-#include "xio/xio.h"
-#include "xmega/xmega_rtc.h"
+#include "util.h"
+#include "xio.h"
 
-/**** Status and Exception Messages **************************************************
- * rpt_get_status_message() - return the status message
- * rpt_exception() - send an exception report (JSON formatted)
- *
- * These strings must align with the status codes in tinyg.h
- * The number of elements in the indexing array must match the # of strings
- * Reference for putting display strings and string arrays in program memory:
- * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+/**** Allocation ****/
+
+srSingleton_t sr;
+qrSingleton_t qr;
+
+/**** Exception Messages ************************************************************
+ * rpt_exception() - generate an exception message - always in JSON format
+ * rpt_er()		   - send a bogus exception report for testing purposes (it's not real)
  */
-static const char msg_sc00[] PROGMEM = "OK";
-static const char msg_sc01[] PROGMEM = "Error";
-static const char msg_sc02[] PROGMEM = "Eagain";
-static const char msg_sc03[] PROGMEM = "Noop";
-static const char msg_sc04[] PROGMEM = "Complete";
-static const char msg_sc05[] PROGMEM = "Terminated";
-static const char msg_sc06[] PROGMEM = "Hard reset";
-static const char msg_sc07[] PROGMEM = "End of line";
-static const char msg_sc08[] PROGMEM = "End of file";
-static const char msg_sc09[] PROGMEM = "File not open";
-static const char msg_sc10[] PROGMEM = "Max file size exceeded";
-static const char msg_sc11[] PROGMEM = "No such device";
-static const char msg_sc12[] PROGMEM = "Buffer empty";
-static const char msg_sc13[] PROGMEM = "Buffer full";
-static const char msg_sc14[] PROGMEM = "Buffer full - fatal";
-static const char msg_sc15[] PROGMEM = "Initializing";
-static const char msg_sc16[] PROGMEM = "Entering boot loader";
-static const char msg_sc17[] PROGMEM = "17";
-static const char msg_sc18[] PROGMEM = "18";
-static const char msg_sc19[] PROGMEM = "19";
-
-static const char msg_sc20[] PROGMEM = "Internal error";
-static const char msg_sc21[] PROGMEM = "Internal range error";
-static const char msg_sc22[] PROGMEM = "Floating point error";
-static const char msg_sc23[] PROGMEM = "Divide by zero";
-static const char msg_sc24[] PROGMEM = "Invalid Address";
-static const char msg_sc25[] PROGMEM = "Read-only address";
-static const char msg_sc26[] PROGMEM = "Initialization failure";
-static const char msg_sc27[] PROGMEM = "System alarmed";
-static const char msg_sc28[] PROGMEM = "Memory fault or corruption";
-static const char msg_sc29[] PROGMEM = "29";
-static const char msg_sc30[] PROGMEM = "30";
-static const char msg_sc31[] PROGMEM = "31";
-static const char msg_sc32[] PROGMEM = "32";
-static const char msg_sc33[] PROGMEM = "33";
-static const char msg_sc34[] PROGMEM = "34";
-static const char msg_sc35[] PROGMEM = "35";
-static const char msg_sc36[] PROGMEM = "36";
-static const char msg_sc37[] PROGMEM = "37";
-static const char msg_sc38[] PROGMEM = "38";
-static const char msg_sc39[] PROGMEM = "39";
-
-static const char msg_sc40[] PROGMEM = "Unrecognized command";
-static const char msg_sc41[] PROGMEM = "Expected command letter";
-static const char msg_sc42[] PROGMEM = "Bad number format";
-static const char msg_sc43[] PROGMEM = "Input exceeds max length";
-static const char msg_sc44[] PROGMEM = "Input value too small";
-static const char msg_sc45[] PROGMEM = "Input value too large";
-static const char msg_sc46[] PROGMEM = "Input value range error";
-static const char msg_sc47[] PROGMEM = "Input value unsupported";
-static const char msg_sc48[] PROGMEM = "JSON syntax error";
-static const char msg_sc49[] PROGMEM = "JSON input has too many pairs";
-static const char msg_sc50[] PROGMEM = "JSON output too long";
-static const char msg_sc51[] PROGMEM = "Out of buffer space";
-static const char msg_sc52[] PROGMEM = "Config not taken during machining cycle";
-static const char msg_sc53[] PROGMEM = "53";
-static const char msg_sc54[] PROGMEM = "54";
-static const char msg_sc55[] PROGMEM = "55";
-static const char msg_sc56[] PROGMEM = "56";
-static const char msg_sc57[] PROGMEM = "57";
-static const char msg_sc58[] PROGMEM = "58";
-static const char msg_sc59[] PROGMEM = "59";
-
-static const char msg_sc60[] PROGMEM = "Move less than minimum length";
-static const char msg_sc61[] PROGMEM = "Move less than minimum time";
-static const char msg_sc62[] PROGMEM = "Gcode block skipped";
-static const char msg_sc63[] PROGMEM = "Gcode input error";
-static const char msg_sc64[] PROGMEM = "Gcode feedrate error";
-static const char msg_sc65[] PROGMEM = "Gcode axis word missing";
-static const char msg_sc66[] PROGMEM = "Gcode modal group violation";
-static const char msg_sc67[] PROGMEM = "Homing cycle failed";
-static const char msg_sc68[] PROGMEM = "Max travel exceeded";
-static const char msg_sc69[] PROGMEM = "Max spindle speed exceeded";
-static const char msg_sc70[] PROGMEM = "Arc specification error";
-
-PGM_P const msgStatusMessage[] PROGMEM = {
-	msg_sc00, msg_sc01, msg_sc02, msg_sc03, msg_sc04, msg_sc05, msg_sc06, msg_sc07, msg_sc08, msg_sc09,
-	msg_sc10, msg_sc11, msg_sc12, msg_sc13, msg_sc14, msg_sc15, msg_sc16, msg_sc17, msg_sc18, msg_sc19,
-	msg_sc20, msg_sc21, msg_sc22, msg_sc23, msg_sc24, msg_sc25, msg_sc26, msg_sc27, msg_sc28, msg_sc29,
-	msg_sc30, msg_sc31, msg_sc32, msg_sc33, msg_sc34, msg_sc35, msg_sc36, msg_sc37, msg_sc38, msg_sc39,
-	msg_sc40, msg_sc41, msg_sc42, msg_sc43, msg_sc44, msg_sc45, msg_sc46, msg_sc47, msg_sc48, msg_sc49,
-	msg_sc50, msg_sc51, msg_sc52, msg_sc53, msg_sc54, msg_sc55, msg_sc56, msg_sc57, msg_sc58, msg_sc59,
-	msg_sc60, msg_sc61, msg_sc62, msg_sc63, msg_sc64, msg_sc65, msg_sc66, msg_sc67, msg_sc68, msg_sc69,
-	msg_sc70
-};
-
-char *rpt_get_status_message(uint8_t status, char *msg) 
+void rpt_exception(uint8_t status)
 {
-	strncpy_P(msg,(PGM_P)pgm_read_word(&msgStatusMessage[status]), STATUS_MESSAGE_LEN);
-	return (msg);
+	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\"}}\n"),
+		TINYG_FIRMWARE_BUILD, status, get_status_message(status));
 }
 
-void rpt_exception(uint8_t status, int16_t value)
+stat_t rpt_er(cmdObj_t *cmd)
 {
-	char msg[STATUS_MESSAGE_LEN];
-	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\",\"val\":%d}}\n"), 
-		TINYG_FIRMWARE_BUILD, status, rpt_get_status_message(status, msg), value);
+	rpt_exception(STAT_GENERIC_EXCEPTION_REPORT);	// bogus exception report
+	return (STAT_OK);
 }
 
 /**** Application Messages *********************************************************
- * rpt_print_message() 				   - print a character string passed as argument
  * rpt_print_initializing_message()	   - initializing configs from hard-coded profile
  * rpt_print_loading_configs_message() - loading configs from EEPROM
  * rpt_print_system_ready_message()    - system ready message
  *
  *	These messages are always in JSON format to allow UIs to sync
  */
-/*
-void rpt_print_message(char *msg)
-{
-	cmd_add_string("msg", msg);
-	cmd_print_list(STAT_OK, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
-}
-*/
 
-void _startup_helper(uint8_t status, const char *msg)
+void _startup_helper(stat_t status, const char *msg)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
+	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
 	cmd_reset_list();
-	cmd_add_object("fb");
-	cmd_add_object("fv");
-	cmd_add_object("hv");
-	cmd_add_object("id");
-	cmd_add_string_P("msg", msg);
-	js_print_json_response(status);
+	cmd_add_object((const char_t *)"fv");		// firmware version
+	cmd_add_object((const char_t *)"fb");		// firmware build
+	cmd_add_object((const char_t *)"hp");		// hardware platform
+	cmd_add_object((const char_t *)"hv");		// hardware version
+	cmd_add_object((const char_t *)"id");		// hardware ID
+	cmd_add_string((const char_t *)"msg", (const char_t *)msg);	// startup message
+	json_print_response(status);
 #endif
 }
 
@@ -194,7 +96,7 @@ void rpt_print_loading_configs_message(void)
 void rpt_print_system_ready_message(void)
 {
 	_startup_helper(STAT_OK, PSTR("SYSTEM READY"));
-	if (cfg.comm_mode == TEXT_MODE) { tg_text_response(STAT_OK, "");}// prompt
+	if (cfg.comm_mode == TEXT_MODE) { text_response(STAT_OK, (char_t *)"");}// prompt
 }
 
 /*****************************************************************************
@@ -238,27 +140,27 @@ void rpt_print_system_ready_message(void)
  *		the system into text mode.
  *
  *	  - Automatic status reports in text mode return CSV format according to si setting
- *
- *	  - grbl compatibility forms are not yet supported.
  */
+static stat_t _populate_unfiltered_status_report(void);
+static uint8_t _populate_filtered_status_report(void);
 
 /* 
- * rpt_init_status_report()
+ * sr_init_status_report()
  *
- *	Call this function to completely re-initialze the status report
- *	Sets SR list to hard-coded defaults and re-initializes sr values in NVM
+ *	Call this function to completely re-initialize the status report
+ *	Sets SR list to hard-coded defaults and re-initializes SR values in NVM
  */
-void rpt_init_status_report()
+void sr_init_status_report()
 {
 	cmdObj_t *cmd = cmd_reset_list();	// used for status report persistence locations
-	char sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
-	cm.status_report_counter = (cfg.status_report_interval / RTC_MILLISECONDS);	// RTC fires every 10 ms
+	sr.status_report_requested = false;
+	char_t sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
+	cmd->index = cmd_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
 
-	cmd->index = cmd_get_index("","se00");				// set first SR persistence index
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
 		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
-		cfg.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
-		cmd->value = cmd_get_index("", sr_defaults[i]);	// load the index for the SR element
+		sr.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
+		cmd->value = cmd_get_index((const char_t *)"", sr_defaults[i]);// load the index for the SR element
 		cmd_set(cmd);
 		cmd_persist(cmd);								// conditionally persist - automatic by cmd_persis()
 		cmd->index++;									// increment SR NVM index
@@ -266,18 +168,18 @@ void rpt_init_status_report()
 }
 
 /* 
- * rpt_set_status_report() - interpret an sr setup string and return current report
+ * sr_set_status_report() - interpret an SR setup string and return current report
  */
-stat_t rpt_set_status_report(cmdObj_t *cmd)
+stat_t sr_set_status_report(cmdObj_t *cmd)
 {
 	uint8_t elements = 0;
 	index_t status_report_list[CMD_STATUS_REPORT_LEN];
 	memset(status_report_list, 0, sizeof(status_report_list));
-	index_t sr_start = cmd_get_index("","se00");		// set first SR persistence index
+	index_t sr_start = cmd_get_index((const char_t *)"",(const char_t *)"se00");// set first SR persistence index
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if (((cmd = cmd->nx) == NULL) || (cmd->objtype == TYPE_EMPTY)) { break;}
-		if ((cmd->objtype == TYPE_BOOL) && (cmd->value == true)) {
+		if ((cmd->objtype == TYPE_BOOL) && (fp_TRUE(cmd->value))) {
 			status_report_list[i] = cmd->index;
 			cmd->value = cmd->index;					// persist the index as the value
 			cmd->index = sr_start + i;					// index of the SR persistence location
@@ -288,17 +190,14 @@ stat_t rpt_set_status_report(cmdObj_t *cmd)
 		}
 	}
 	if (elements == 0) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	memcpy(cfg.status_report_list, status_report_list, sizeof(status_report_list));
-	rpt_populate_unfiltered_status_report();			// return current values
+	memcpy(sr.status_report_list, status_report_list, sizeof(status_report_list));
+	_populate_unfiltered_status_report();			// return current values
 	return (STAT_OK);
 }
 
 /* 
- * rpt_run_text_status_report()	- generate a text mode status report in multiline format
- * rpt_request_status_report()	- request a status report to run after minimum interval
- * rpt_force_status_report()	- request a status report to run at the next main loop opporunity
- * rpt_status_report_rtc_callback()	- real-time clock downcount for minimum reporting interval
- * rpt_status_report_callback()	- main loop callback to send a report if one is ready
+ * sr_request_status_report()	- request a status report to run after minimum interval
+ * sr_status_report_callback()	- main loop callback to send a report if one is ready
  *
  *	Status reports can be request from a number of sources including:
  *	  - direct request from command line in the form of ? or {"sr:""}
@@ -308,186 +207,258 @@ stat_t rpt_set_status_report(cmdObj_t *cmd)
  *	Status reports are generally returned with minimal delay (from the controller callback), 
  *	but will not be provided more frequently than the status report interval
  */
-void rpt_run_text_status_report()
+stat_t sr_request_status_report(uint8_t request_type)
 {
-	rpt_populate_unfiltered_status_report();
-	cmd_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
-}
-
-void rpt_request_status_report(uint8_t request_type)
-{
-	cm.status_report_request = request_type;
-}
-
-void rpt_status_report_rtc_callback() 		// called by 10ms real-time clock
-{
-	if (--cm.status_report_counter == 0) {
-		cm.status_report_request = SR_IMMEDIATE_REQUEST;	// promote to immediate request
-		cm.status_report_counter = (cfg.status_report_interval / RTC_MILLISECONDS);	// reset minimum interval
+	if (request_type == SR_IMMEDIATE_REQUEST) {
+#ifdef __ARM
+		sr.status_report_systick = SysTickTimer.getValue();
+#endif
+#ifdef __AVR
+		sr.status_report_systick = SysTickTimer_getValue();
+#endif
 	}
+	if ((request_type == SR_TIMED_REQUEST) && (sr.status_report_requested == false)) {
+#ifdef __ARM
+		sr.status_report_systick = SysTickTimer.getValue() + sr.status_report_interval;
+#endif
+#ifdef __AVR
+		sr.status_report_systick = SysTickTimer_getValue() + sr.status_report_interval;
+#endif
+	}
+	sr.status_report_requested = true;
+	return (STAT_OK);
 }
 
-stat_t rpt_status_report_callback() 		// called by controller dispatcher
+stat_t sr_status_report_callback() 		// called by controller dispatcher
 {
-	if ((cfg.status_report_verbosity == SR_OFF) || 
-		(cm.status_report_request != SR_IMMEDIATE_REQUEST)) {
-		return (STAT_NOOP);
-	}
-	if (cfg.status_report_verbosity == SR_FILTERED) {
-		if (rpt_populate_filtered_status_report() == true) {
-			cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
-		}
+	if (sr.status_report_verbosity == SR_OFF) return (STAT_NOOP);
+	if (sr.status_report_requested == false) return (STAT_NOOP);
+#ifdef __ARM
+	if (SysTickTimer.getValue() < sr.status_report_systick) return (STAT_NOOP);
+#endif
+#ifdef __AVR
+	if (SysTickTimer_getValue() < sr.status_report_systick) return (STAT_NOOP);
+#endif
+
+	sr.status_report_requested = false;		// disable reports until requested again
+
+	if (sr.status_report_verbosity == SR_VERBOSE) {
+		_populate_unfiltered_status_report();
 	} else {
-		rpt_populate_unfiltered_status_report();
-		cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
+		if (_populate_filtered_status_report() == false) {	// no new data
+			return (STAT_OK);
+		}
 	}
-//	cm.status_report_counter = (cfg.status_report_interval / RTC_PERIOD);	// reset minimum interval
-	cm.status_report_request = SR_NO_REQUEST;
+	cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
+	return (STAT_OK);
+}
+
+/* 
+ * sr_run_text_status_report() - generate a text mode status report in multiline format
+ */
+stat_t sr_run_text_status_report()
+{
+	_populate_unfiltered_status_report();
+	cmd_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 	return (STAT_OK);
 }
 
 /*
- * rpt_populate_unfiltered_status_report() - populate cmdObj body with status values
+ * _populate_unfiltered_status_report() - populate cmdObj body with status values
  *
  *	Designed to be run as a response; i.e. have a "r" header and a footer.
  */
-
-void rpt_populate_unfiltered_status_report()
+static stat_t _populate_unfiltered_status_report()
 {
-	char tmp[CMD_TOKEN_LEN+1];
+	const char_t sr_str[] = "sr";
+	char_t tmp[CMD_TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
+
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object
-	strcpy(cmd->token, "sr");
-//	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
-	cmd->index = cmd_get_index("","sr");	// set the index - may be needed by calling function
+	strcpy(cmd->token, sr_str);
+	cmd->index = cmd_get_index((const char_t *)"", sr_str);// set the index - may be needed by calling function
 	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
+		if ((cmd->index = sr.status_report_list[i]) == 0) { break;}
 		cmd_get_cmdObj(cmd);
 		strcpy(tmp, cmd->group);			// concatenate groups and tokens
 		strcat(tmp, cmd->token);
 		strcpy(cmd->token, tmp);
-		if ((cmd = cmd->nx) == NULL) return; // should never be NULL unless SR length exceeds available buffer array 
+		if ((cmd = cmd->nx) == NULL) 
+			return (cm_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array
 	}
+	return (STAT_OK);
 }
 
 /*
- * rpt_populate_filtered_status_report() - populate cmdObj body with status values
+ * _populate_filtered_status_report() - populate cmdObj body with status values
  *
  *	Designed to be displayed as a JSON object; i;e; no footer or header
  *	Returns 'true' if the report has new data, 'false' if there is nothing to report.
  *
- *	NOTE: Unlike rpt_populate_unfiltered_status_report(), this function does NOT set 
+ *	NOTE: Unlike sr_populate_unfiltered_status_report(), this function does NOT set 
  *	the SR index, which is a relatively expensive operation. In current use this 
  *	doesn't matter, but if the caller assumes its set it may lead to a side-effect (bug)
  *
  *	NOTE: Room for improvement - look up the SR index initially and cache it, use the 
  *		  cached value for all remaining reports.
  */
-uint8_t rpt_populate_filtered_status_report()
+static uint8_t _populate_filtered_status_report()
 {
+	const char_t sr_str[] = "sr";
 	uint8_t has_data = false;
-	char tmp[CMD_TOKEN_LEN+1];
+	char_t tmp[CMD_TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
 
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object
-	strcpy(cmd->token, "sr");
-//	sprintf_P(cmd->token, PSTR("sr"));		// alternate form of above: less RAM, more FLASH & cycles
-//	cmd->index = cmd_get_index("","sr");	// OMITTED - set the index - may be needed by calling function
+	strcpy(cmd->token, sr_str);
+//	cmd->index = cmd_get_index((const char_t *)"", sr_str);// OMITTED - set the index - may be needed by calling function
 	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if ((cmd->index = cfg.status_report_list[i]) == 0) { break;}
+		if ((cmd->index = sr.status_report_list[i]) == 0) { break;}
 
 		cmd_get_cmdObj(cmd);
-		if (cfg.status_report_value[i] == cmd->value) {	// float == comparison runs the risk of overreporting. So be it
+		if (fp_EQ(cmd->value, sr.status_report_value[i])) {
 			cmd->objtype = TYPE_EMPTY;
 			continue;
 		} else {
 			strcpy(tmp, cmd->group);		// flatten out groups
 			strcat(tmp, cmd->token);
 			strcpy(cmd->token, tmp);
-			cfg.status_report_value[i] = cmd->value;
+			sr.status_report_value[i] = cmd->value;
 			if ((cmd = cmd->nx) == NULL) return (false); // should never be NULL unless SR length exceeds available buffer array
 			has_data = true;
 		}
 	}
-//	cmd->pv->nx = NULL;						// back up one and terminate the body
 	return (has_data);
 }
 
+/* 
+ * Wrappers and Setters - for calling from cmdArray table
+ *
+ * sr_get()		- run status report
+ * sr_set()		- set status report elements
+ * sr_set_si()	- set status report interval
+ */
+stat_t sr_get(cmdObj_t *cmd) { return (_populate_unfiltered_status_report());}
+stat_t sr_set(cmdObj_t *cmd) { return (sr_set_status_report(cmd));}
+
+stat_t sr_set_si(cmdObj_t *cmd)
+{
+	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
+	sr.status_report_interval = (uint32_t)cmd->value;
+	return(STAT_OK);
+}
+
+/*********************
+ * TEXT MODE SUPPORT *
+ *********************/
+#ifdef __TEXT_MODE
+
+static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms\n";
+static const char fmt_sv[] PROGMEM = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
+
+void sr_print_sr(cmdObj_t *cmd) { _populate_unfiltered_status_report();}
+void sr_print_si(cmdObj_t *cmd) { text_print_flt(cmd, fmt_si);}
+void sr_print_sv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_sv);}
+
+#endif // __TEXT_MODE
+
+
 /*****************************************************************************
  * Queue Reports
- * rpt_request_queue_report()	- request a queue report with current values
- * rpt_queue_report_callback()	- run the queue report w/stored values
+ *
+ *	Queue reports can report three values:
+ *	  - qr	queue depth - # of buffers availabel in planner queue
+ *	  - qi	buffers added to planner queue since las report
+ *	  - qo	buffers removed from planner queue since last report
+ *
+ *	A QR_SINGLE report returns qr only. A QR_TRIPLE returns all 3 values
+ *
+ *	There are 2 ways to get queue reports:
+ *
+ *	 1.	Enable single ortriple queue reports iusing the QV variable. This will
+ *		return a queue report every time the buffer depth changes
+ *
+ *	 2.	Add qr, qi qne qo (or some combination) to the status report. This will
+ *		reeturn queue report data when status reports are generated.
  */
-
-struct qrIndexes {				// static data for queue reports
-	uint8_t request;			// set to true to request a report
-	uint8_t buffers_available;	// stored value used by callback
-	uint8_t prev_available;		// used to filter reports
-	uint8_t buffers_added;		// buffers added since last report
-	uint8_t buffers_removed;	// buffers removed since last report
-};
-static struct qrIndexes qr;
-
-void rpt_clear_queue_report()
+/*
+ * qr_init_queue_report() - initialize or clear queue report values
+ */
+void qr_init_queue_report()
 {
-	qr.request = false;
+	qr.queue_report_requested = false;
 	qr.buffers_added = 0;
 	qr.buffers_removed = 0;
 }
 
-void rpt_request_queue_report(int8_t buffers)
-//void rpt_request_queue_report()
+/*
+ * qr_request_queue_report() - request a queue report
+ *
+ *	Requests a queue report and also records the buffers added and removed
+ *	since the last init (usually re-initted when a report is generated).
+ */
+void qr_request_queue_report(int8_t buffers)
 {
-	if (cfg.queue_report_verbosity == QR_OFF) return;
+	// skip accumulation and reporting while generating arcs
+//	uint8_t motion_mode = cm_get_motion_mode(ACTIVE_MODEL);
+	qr.motion_mode = cm_get_motion_mode(ACTIVE_MODEL);
+	if ((qr.motion_mode == MOTION_MODE_CW_ARC) || 
+		(qr.motion_mode == MOTION_MODE_CCW_ARC)) {
+		qr.queue_report_requested = false;
+		return;
+	}
 
+//	if ((cm_get_motion_mode(ACTIVE_MODEL) == MOTION_MODE_CW_ARC) || 
+//		(cm_get_motion_mode(ACTIVE_MODEL) == MOTION_MODE_CCW_ARC)) {
+//		return;
+//	}
+
+	// get buffer depth and added/removed count
 	qr.buffers_available = mp_get_planner_buffers_available();
-
 	if (buffers > 0) {
 		qr.buffers_added += buffers;
 	} else {
 		qr.buffers_removed -= buffers;
 	}
 
-	// perform filtration for QR_FILTERED reports
-	if (cfg.queue_report_verbosity == QR_FILTERED) {
-		if (qr.buffers_available == qr.prev_available) {
-			return;
-		}
-		if ((qr.buffers_available > cfg.queue_report_lo_water) && 	// e.g. > 2 buffers available
-			(qr.buffers_available < cfg.queue_report_hi_water)) {	// e.g. < 20 buffers available
-			return;
-		}
+	// either return or request a report
+	if (qr.queue_report_verbosity != QR_OFF) {
+		qr.queue_report_requested = true;
 	}
-	qr.prev_available = qr.buffers_available;
-	qr.request = true;
 }
 
-uint8_t rpt_queue_report_callback()
+/*
+ * qr_queue_report_callback() - generate a queue report if one has been requested
+ */
+stat_t qr_queue_report_callback() 		// called by controller dispatcher
 {
-	if (qr.request == false) { return (STAT_NOOP);}
-	qr.request = false;
+	if (qr.queue_report_verbosity == QR_OFF) { return (STAT_NOOP);}
+	if (qr.queue_report_requested == false) { return (STAT_NOOP);}
+	qr.queue_report_requested = false;
 
 	if (cfg.comm_mode == TEXT_MODE) {
-		if (cfg.queue_report_verbosity == QR_VERBOSE) {
+		if (qr.queue_report_verbosity == QR_SINGLE) {
 			fprintf(stderr, "qr:%d\n", qr.buffers_available);
-		} else  if (cfg.queue_report_verbosity == QR_TRIPLE) {
-			fprintf(stderr, "qr:%d,added:%d,removed:%d\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+		} else  {
+			fprintf(stderr, "qr:%d, qi:%d, qo:%d\n", qr.buffers_available,qr.buffers_added,qr.buffers_removed);
 		}
 	} else {
-		if (cfg.queue_report_verbosity == QR_VERBOSE) {
+		if (qr.queue_report_verbosity == QR_SINGLE) {
 			fprintf(stderr, "{\"qr\":%d}\n", qr.buffers_available);
-		} else  if (cfg.queue_report_verbosity == QR_TRIPLE) {
-			fprintf(stderr, "{\"qr\":[%d,%d,%d]}\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
-			rpt_clear_queue_report();
+		} else {
+			fprintf(stderr, "{\"qr\":%d,\"qi\":%d,\"qo\":%d}\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
 		}
 	}
+	qr_init_queue_report();
 	return (STAT_OK);
+}
 
-/*
+/* Alternate Formulation for a Single report - using cmdObj list
+
 	// get a clean cmd object
 //	cmdObj_t *cmd = cmd_reset_list();		// normally you do a list reset but the following is more time efficient
 	cmdObj_t *cmd = cmd_body;
@@ -501,10 +472,68 @@ uint8_t rpt_queue_report_callback()
 	cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (STAT_OK);
 */
+
+/* 
+ * Wrappers and Setters - for calling from cmdArray table
+ *
+ * qr_get() - run a queue report (as data)
+ * qi_get() - run a queue report - buffers in
+ * qo_get() - run a queue report - buffers out
+ */
+stat_t qr_get(cmdObj_t *cmd) 
+{
+//	cmd->value = (float)mp_get_planner_buffers_available();
+	cmd->value = (float)qr.buffers_available;
+	cmd->objtype = TYPE_INTEGER;
+	return (STAT_OK);
 }
 
+stat_t qi_get(cmdObj_t *cmd) 
+{
+	cmd->value = (float)qr.buffers_added;
+	cmd->objtype = TYPE_INTEGER;
+	qr.buffers_added = 0;				// reset it
+	return (STAT_OK);
+}
+
+stat_t qo_get(cmdObj_t *cmd) 
+{
+	cmd->value = (float)qr.buffers_removed;
+	cmd->objtype = TYPE_INTEGER;
+	qr.buffers_removed = 0;				// reset it
+	return (STAT_OK);
+}
+
+/*********************
+ * TEXT MODE SUPPORT *
+ *********************/
+#ifdef __TEXT_MODE
+
+//static const char fmt_qr_single[] PROGMEM = "qr:%d\n";
+//static const char fmt_qr_triple[] PROGMEM = "qr:%d, qi:%d, qo:%d\n";
+static const char fmt_qr[] PROGMEM = "qr:%d\n";
+static const char fmt_qi[] PROGMEM = "qi:%d\n";
+static const char fmt_qo[] PROGMEM = "qo:%d\n";
+static const char fmt_qv[] PROGMEM = "[qv]  queue report verbosity%7d [0=off,1=single,2=triple]\n";
+
+/*
+void qr_print_qr(cmdObj_t *cmd) { 
+	if (qr.queue_report_verbosity == QR_TRIPLE) {
+		text_print_int(cmd, fmt_qr);}
+		
+	}
+}
+*/
+void qr_print_qr(cmdObj_t *cmd) { text_print_int(cmd, fmt_qr);}
+void qr_print_qi(cmdObj_t *cmd) { text_print_int(cmd, fmt_qi);}
+void qr_print_qo(cmdObj_t *cmd) { text_print_int(cmd, fmt_qo);}
+void qr_print_qv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_qv);}
+
+#endif // __TEXT_MODE
+
+
 /****************************************************************************
- ***** Report Unit Tests ****************************************************
+ ***** Unit Tests ***********************************************************
  ****************************************************************************/
 
 #ifdef __UNIT_TESTS
@@ -513,9 +542,12 @@ uint8_t rpt_queue_report_callback()
 void sr_unit_tests(void)
 {
 	sr_init();
-	tg.communications_mode = STAT_JSON_MODE;
+	cs.communications_mode = STAT_JSON_MODE;
 	sr_run_status_report();
 }
+#endif	// __UNIT_TESTS
+#endif	// __UNIT_TESTS_REPORT
 
-#endif
+#ifdef __cplusplus
+}
 #endif

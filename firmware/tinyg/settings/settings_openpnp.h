@@ -1,5 +1,5 @@
 /*
- * settings_shapeoko375.h - Shapoko 375mm table
+ * settings_openpnp.h - OpenPNP settings
  * Part of TinyG project
  *
  * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
@@ -84,13 +84,21 @@
 #define M4_POLARITY				0
 #define M4_POWER_MODE			1
 
+#define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M6_POWER_LEVEL			MOTOR_POWER_LEVEL
+
 // *** axis settings ***
 
 #define X_AXIS_MODE				AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
 #define X_VELOCITY_MAX			15000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX			220					// xtm		travel between switches or crashes
-#define X_JERK_MAX				2500000000			// xjm		yes, that's "2.5 billion" mm/(min^3)
+#define X_TRAVEL_MIN			0					// xtn		monimum travel for soft limits
+#define X_JERK_MAX				2500				// xjm		2.5 billion mm/(min^3)
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
@@ -98,14 +106,14 @@
 #define X_LATCH_VELOCITY		100					// xlv		mm/min
 #define X_LATCH_BACKOFF			20					// xlb		mm
 #define X_ZERO_BACKOFF			3					// xzb		mm
-//#define X_JERK_HOMING			X_JERK_MAX			// xjh
-#define X_JERK_HOMING			10000000000			// xjh
+#define X_JERK_HOMING			10000				// xjh
 
 #define Y_AXIS_MODE				AXIS_STANDARD
 #define Y_VELOCITY_MAX			16000
 #define Y_FEEDRATE_MAX			Y_VELOCITY_MAX
 #define Y_TRAVEL_MAX			220
-#define Y_JERK_MAX				5000000000			// 5,000,000,000
+#define Y_TRAVEL_MIN			0
+#define Y_JERK_MAX				5000				// 5,000,000,000
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN		SW_MODE_HOMING
 #define Y_SWITCH_MODE_MAX		SW_MODE_DISABLED
@@ -113,13 +121,14 @@
 #define Y_LATCH_VELOCITY		100
 #define Y_LATCH_BACKOFF			20
 #define Y_ZERO_BACKOFF			3
-#define Y_JERK_HOMING			10000000000			// xjh
+#define Y_JERK_HOMING			10000				// xjh
 
 #define Z_AXIS_MODE				AXIS_STANDARD
 #define Z_VELOCITY_MAX			800
 #define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX			100
-#define Z_JERK_MAX				50000000			// 50,000,000
+#define Z_TRAVEL_MIN			0
+#define Z_JERK_MAX				50					// 50,000,000
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
 #define Z_SWITCH_MODE_MAX		SW_MODE_HOMING
@@ -127,13 +136,14 @@
 #define Z_LATCH_VELOCITY		100
 #define Z_LATCH_BACKOFF			20
 #define Z_ZERO_BACKOFF			10
-#define Z_JERK_HOMING			1000000000			// xjh
+#define Z_JERK_HOMING			1000				// xjh
 
 #define A_AXIS_MODE				AXIS_STANDARD
 #define A_VELOCITY_MAX			60000
 #define A_FEEDRATE_MAX			48000
 #define A_TRAVEL_MAX			400					// degrees
-#define A_JERK_MAX				24000000000			// yes, 24 billion
+#define A_TRAVEL_MAX 			-1					// -1 means infinite, no limit
+#define A_JERK_MAX				24000				// yes, 24 billion
 #define A_JUNCTION_DEVIATION	0.1
 #define A_RADIUS				1.0
 #define A_SWITCH_MODE_MIN		SW_MODE_HOMING
@@ -148,7 +158,8 @@
 #define B_VELOCITY_MAX			3600
 #define B_FEEDRATE_MAX			B_VELOCITY_MAX
 #define B_TRAVEL_MAX			-1
-#define B_JERK_MAX				20000000
+#define B_TRAVEL_MIN			-1
+#define B_JERK_MAX				20
 #define B_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define B_RADIUS				1
 
@@ -156,15 +167,16 @@
 #define C_VELOCITY_MAX			3600
 #define C_FEEDRATE_MAX			C_VELOCITY_MAX
 #define C_TRAVEL_MAX			-1
-#define C_JERK_MAX				20000000
+#define C_TRAVEL_MIN			-1
+#define C_JERK_MAX				20
 #define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define C_RADIUS				1
 
 #ifdef __PLAN_R2
 #undef  X_JERK_MAX
-#define X_JERK_MAX				6000000				// xjm
+#define X_JERK_MAX				6				// xjm
 #undef  Y_JERK_MAX
-#define Y_JERK_MAX				6000000				// xjm
+#define Y_JERK_MAX				6				// xjm
 #undef  Z_JERK_MAX
 #define Z_JERK_MAX				600000				//
 #endif

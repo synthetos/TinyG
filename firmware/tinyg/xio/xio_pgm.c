@@ -22,7 +22,7 @@
 #include <stdio.h>						// precursor for xio.h
 #include <stdbool.h>					// true and false
 #include <avr/pgmspace.h>				// precursor for xio.h
-#include "xio.h"						// includes for all devices are in here
+#include "../xio.h"						// includes for all devices are in here
 
 // Fast accessors (cheating)
 #define PGM ds[XIO_DEV_PGM]				// device struct accessor

@@ -10,7 +10,7 @@ x0\n\
 y0";
  */
 
-const char PROGMEM test_slow_moves[] = "\
+const char test_slow_moves[] PROGMEM = "\
 (MSG**** Test accuracy of slow moves [v1] ****)\n\
 g55\n\
 g0x0y0\n\

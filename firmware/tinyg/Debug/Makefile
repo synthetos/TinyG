@@ -42,10 +42,13 @@ SUBDIRS :=  \
 C_SRCS +=  \
 ../canonical_machine.c \
 ../config.c \
+../config_app.c \
 ../controller.c \
 ../cycle_homing.c \
+../cycle_probing.c \
 ../gcode_parser.c \
 ../gpio.c \
+../hardware.c \
 ../help.c \
 ../json_parser.c \
 ../kinematics.c \
@@ -58,10 +61,11 @@ C_SRCS +=  \
 ../report.c \
 ../spindle.c \
 ../stepper.c \
-../system.c \
+../switch.c \
 ../test.c \
+../text_parser.c \
 ../util.c \
-../xio/xio.c \
+../xio.c \
 ../xio/xio_file.c \
 ../xio/xio_pgm.c \
 ../xio/xio_rs485.c \
@@ -83,10 +87,13 @@ ASM_SRCS +=
 OBJS +=  \
 canonical_machine.o \
 config.o \
+config_app.o \
 controller.o \
 cycle_homing.o \
+cycle_probing.o \
 gcode_parser.o \
 gpio.o \
+hardware.o \
 help.o \
 json_parser.o \
 kinematics.o \
@@ -99,10 +106,11 @@ pwm.o \
 report.o \
 spindle.o \
 stepper.o \
-system.o \
+switch.o \
 test.o \
+text_parser.o \
 util.o \
-xio/xio.o \
+xio.o \
 xio/xio_file.o \
 xio/xio_pgm.o \
 xio/xio_rs485.o \
@@ -118,10 +126,13 @@ xmega/xmega_rtc.o
 OBJS_AS_ARGS +=  \
 canonical_machine.o \
 config.o \
+config_app.o \
 controller.o \
 cycle_homing.o \
+cycle_probing.o \
 gcode_parser.o \
 gpio.o \
+hardware.o \
 help.o \
 json_parser.o \
 kinematics.o \
@@ -134,10 +145,11 @@ pwm.o \
 report.o \
 spindle.o \
 stepper.o \
-system.o \
+switch.o \
 test.o \
+text_parser.o \
 util.o \
-xio/xio.o \
+xio.o \
 xio/xio_file.o \
 xio/xio_pgm.o \
 xio/xio_rs485.o \
@@ -153,10 +165,13 @@ xmega/xmega_rtc.o
 C_DEPS +=  \
 canonical_machine.d \
 config.d \
+config_app.d \
 controller.d \
 cycle_homing.d \
+cycle_probing.d \
 gcode_parser.d \
 gpio.d \
+hardware.d \
 help.d \
 json_parser.d \
 kinematics.d \
@@ -169,10 +184,11 @@ pwm.d \
 report.d \
 spindle.d \
 stepper.d \
-system.d \
+switch.d \
 test.d \
+text_parser.d \
 util.d \
-xio/xio.d \
+xio.d \
 xio/xio_file.d \
 xio/xio_pgm.d \
 xio/xio_rs485.d \
@@ -188,10 +204,13 @@ xmega/xmega_rtc.d
 C_DEPS_AS_ARGS +=  \
 canonical_machine.d \
 config.d \
+config_app.d \
 controller.d \
 cycle_homing.d \
+cycle_probing.d \
 gcode_parser.d \
 gpio.d \
+hardware.d \
 help.d \
 json_parser.d \
 kinematics.d \
@@ -204,10 +223,11 @@ pwm.d \
 report.d \
 spindle.d \
 stepper.d \
-system.d \
+switch.d \
 test.d \
+text_parser.d \
 util.d \
-xio/xio.d \
+xio.d \
 xio/xio_file.d \
 xio/xio_pgm.d \
 xio/xio_rs485.d \
@@ -231,6 +251,14 @@ OUTPUT_FILE_DEP:= ./makedep.mk
 LIB_DEP+= 
 
 # AVR32/GNU C Compiler
+
+
+
+
+
+
+
+
 
 
 

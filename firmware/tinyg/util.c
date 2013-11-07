@@ -1,8 +1,8 @@
 /*
  * util.c - a random assortment of useful functions
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -24,59 +24,53 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* util.c/.h contains a dog's breakfast of supporting functions that are 
- * not specific to tinyg: including:
- *
+/* util contains a dog's breakfast of supporting functions that are not specific to tinyg: 
+ * including:
  *	  - math and min/max utilities and extensions 
  *	  - vector manipulation utilities
- *	  - support for debugging routines
- */  
-#include <ctype.h>
-#include <stdio.h>				// precursor for xio.h
-#include <stdlib.h>
-#include <stdbool.h>
-#include <math.h>
-#include <string.h>
-#include <avr/pgmspace.h>		// precursor for xio.h
+ */
 
 #include "tinyg.h"
 #include "util.h"
-#include "config.h"
-#include "controller.h"
-#include "canonical_machine.h"
-#include "planner.h"
-#include "stepper.h"
-#include "report.h"
 
-/**** Vector functions ****
+#ifdef __AVR
+#include "xmega/xmega_rtc.h"
+#endif
+
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+/**** Vector utilities ****
  * copy_vector()			- copy vector of arbitrary length
  * copy_axis_vector()		- copy an axis vector
- * set_unit_vector()		- populate a unit vector by pos. & target
  * get_axis_vector_length()	- return the length of an axis vector
  * set_vector()				- load values into vector form
  * set_vector_by_axis()		- load a single value into a zero vector
  */
 
-void copy_vector(float dst[], const float src[], uint8_t length) 
-{
-	for (uint8_t i=0; i<length; i++) {
-		dst[i] = src[i];
-	}
-}
+float vector[AXES];	// statically allocated global for vector utilities
 
-void copy_axis_vector(float dst[], const float src[]) 
+/*
+void copy_vector(float dst[], const float src[], uint8_t length)
+{
+	for (uint8_t i=0; i<length; i++) { dst[i] = src[i]; }
+}
+*/
+
+void copy_axis_vector(float dst[], const float src[])
 {
 	memcpy(dst, src, sizeof(float)*AXES);
 }
 
-uint8_t vector_equal(const float a[], const float b[]) 
+uint8_t vector_equal(const float a[], const float b[])
 {
 	if ((fp_EQ(a[AXIS_X], b[AXIS_X])) &&
-	 	(fp_EQ(a[AXIS_Y], b[AXIS_Y])) &&
-	 	(fp_EQ(a[AXIS_Z], b[AXIS_Z])) &&
-	 	(fp_EQ(a[AXIS_A], b[AXIS_A])) &&
-	 	(fp_EQ(a[AXIS_B], b[AXIS_B])) &&
-	 	(fp_EQ(a[AXIS_C], b[AXIS_C]))) {
+		(fp_EQ(a[AXIS_Y], b[AXIS_Y])) &&
+		(fp_EQ(a[AXIS_Z], b[AXIS_Z])) &&
+		(fp_EQ(a[AXIS_A], b[AXIS_A])) &&
+		(fp_EQ(a[AXIS_B], b[AXIS_B])) &&
+		(fp_EQ(a[AXIS_C], b[AXIS_C]))) {
 		return (true);
 	}
 	return (false);
@@ -127,14 +121,14 @@ float *set_vector_by_axis(float value, uint8_t axis)
  *
  * Implementation tip: Order the min and max values from most to least likely in the calling args
  *
- * (*) Macro min4 is about 20uSec, inline function version is closer to 10 uSec
+ * (*) Macro min4 is about 20uSec, inline function version is closer to 10 uSec (Xmega 32 MHz)
  * 	#define min3(a,b,c) (min(min(a,b),c))
  *	#define min4(a,b,c,d) (min(min(a,b),min(c,d)))
  *	#define max3(a,b,c) (max(max(a,b),c))
  *	#define max4(a,b,c,d) (max(max(a,b),max(c,d)))
  */
 
-inline float min3(float x1, float x2, float x3)
+float min3(float x1, float x2, float x3)
 {
 	float min = x1;
 	if (x2 < min) { min = x2;} 
@@ -142,7 +136,7 @@ inline float min3(float x1, float x2, float x3)
 	return (min);
 }
 
-inline float min4(float x1, float x2, float x3, float x4)
+float min4(float x1, float x2, float x3, float x4)
 {
 	float min = x1;
 	if (x2 < min) { min = x2;} 
@@ -151,7 +145,7 @@ inline float min4(float x1, float x2, float x3, float x4)
 	return (min);
 }
 
-inline float max3(float x1, float x2, float x3)
+float max3(float x1, float x2, float x3)
 {
 	float max = x1;
 	if (x2 > max) { max = x2;} 
@@ -159,7 +153,7 @@ inline float max3(float x1, float x2, float x3)
 	return (max);
 }
 
-inline float max4(float x1, float x2, float x3, float x4)
+float max4(float x1, float x2, float x3, float x4)
 {
 	float max = x1;
 	if (x2 > max) { max = x2;} 
@@ -168,11 +162,24 @@ inline float max4(float x1, float x2, float x3, float x4)
 	return (max);
 }
 
-/*
- * isnumber() - isdigit that also accepts plus, minus, and decimal point
+/**** String utilities ****
+ * strcpy_U() 	   - strcpy workalike to get around initial NUL for blank string - possibly wrong
+ * isnumber() 	   - isdigit that also accepts plus, minus, and decimal point
+ * escape_string() - add escapes to a string - currently for quotes only
  */
 
-uint8_t isnumber(char c)
+/*
+uint8_t * strcpy_U( uint8_t * dst, const uint8_t * src )
+{
+	uint16_t index = 0;
+	do {
+		dst[index] = src[index];	
+	} while (src[index++] != 0);
+	return dst;
+}
+*/
+
+uint8_t isnumber(char_t c)
 {
 	if (c == '.') { return (true); }
 	if (c == '-') { return (true); }
@@ -180,28 +187,16 @@ uint8_t isnumber(char c)
 	return (isdigit(c));
 }
 
-/* 
- * read_float() - read a float from a normalized char array
- *
- *	buf			normalized char array (line)
- *	i			char array index must point to start of number
- *	float_ptr	pointer to float to write value into
- *
- *	The line is normalized when it is all caps, has no white space,
- *	no non-alphnumeric characters, and no newline or CR.
- */
-
-uint8_t read_float(char *buf, uint8_t *i, float *float_ptr) 
+char_t *escape_string(char_t *dst, char_t *src) 
 {
-	char *start = buf + *i;
-	char *end;
-  
-	*float_ptr = strtod(start, &end);
-	if(end == start) { 
-		return(false); 
+	char_t c;
+	char_t *start_dst = dst;
+
+	while ((c = *(src++)) != 0) {	// NUL
+		if (c == '"') { *(dst++) = '\\'; }
+		*(dst++) = c;
 	}
-	*i = (uint8_t)(end - buf);
-	return(true);
+	return (start_dst);
 }
 
 /* 
@@ -214,17 +209,35 @@ uint8_t read_float(char *buf, uint8_t *i, float *float_ptr)
  */
 #define HASHMASK 9999
 
-uint16_t compute_checksum(char const *string, const uint16_t length) 
+uint16_t compute_checksum(char_t const *string, const uint16_t length) 
 {
 	uint32_t h = 0;
 	uint16_t len = strlen(string);
-
-	if (length != 0) {
-		len = min(len, length);
-	}
+	if (length != 0) len = min(len, length);
     for (uint16_t i=0; i<len; i++) {
 		h = 31 * h + string[i];
     }
     return (h % HASHMASK);
 }
 
+/*
+ * SysTickTimer_getValue() - this is a hack to get around some compatibility problems
+ */
+
+#ifdef __AVR
+uint32_t SysTickTimer_getValue()
+{
+	return (rtc.sys_ticks);
+}
+#endif // __AVR
+
+#ifdef __ARM
+uint32_t SysTickTimer_getValue()
+{
+	return (SysTickTimer.getValue());
+}
+#endif // __ARM
+
+#ifdef __cplusplus
+}
+#endif

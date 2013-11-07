@@ -21,8 +21,9 @@
 
 //#include <stdio.h>					// needed for FILE def'n
 
-uint8_t tg_test(cmdObj_t *cmd);
-void tg_canned_startup(void);
+uint8_t run_test(cmdObj_t *cmd);
+void run_canned_startup(void);
+
 
 /***** DEBUG support ******
  *

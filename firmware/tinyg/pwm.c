@@ -1,8 +1,8 @@
 /*
  * pwm.c - pulse width modulation drivers
- * Part of TinyG project
+ * This file is part of the TinyG project
  *
- * Copyright (c) 2012 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2012 - 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -25,20 +25,22 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <string.h>				// needed for memset
 #include <avr/interrupt.h>
-#include <avr/io.h>
 
-#include "tinyg.h"
-#include "system.h"
-#include "pwm.h"
+#include "tinyg.h"		// #1
+#include "config.h"		// #2
+#include "hardware.h"
+#include "text_parser.h"
 #include "gpio.h"
+#include "pwm.h"
 
-/***** PWM defines, structures and memory allocation *****
- *
- * Three are two PWM channels - 
- */
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+/***** PWM defines, structures and memory allocation *****/
+
+pwmSingleton_t pwm;
 
 // defines common to all PWM channels
 //#define PWM_TIMER_TYPE	TC1_struct	// PWM uses TC1's
@@ -69,12 +71,6 @@
 #define PWM2_ISR_vect		TCE1_CCB_vect		// must match timer assignments in system.h
 #define PWM2_INTCTRLB		0					// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
 
-typedef struct pwmStruct { 			// one per PWM channel
-	uint8_t ctrla;					// byte needed to active CTRLA (it's dynamic - rest are static)
-	TC1_t *timer;					// assumes TC1 flavor timers used for PWM channels
-} pwmStruct_t;
-static pwmStruct_t pwm[PWMS];		// array of PWMs (usually 2, see system.h)
-
 /***** PWM code *****/
 /* 
  * pwm_init() - initialize pwm channels
@@ -90,18 +86,18 @@ void pwm_init()
 	gpio_set_bit_off(SPINDLE_PWM);
 
 	// setup PWM channel 1
-	memset(&pwm[PWM_1], 0, sizeof(pwmStruct_t));		// clear parent structure 
-	pwm[PWM_1].timer = &TIMER_PWM1;						// bind timer struct to PWM struct array
-	pwm[PWM_1].ctrla = PWM1_CTRLA_CLKSEL;				// initialize starting clock operating range
-	pwm[PWM_1].timer->CTRLB = PWM1_CTRLB;
-	pwm[PWM_1].timer->INTCTRLB = PWM1_INTCTRLB;			// set interrupt level	
+	memset(&pwm.p[PWM_1], 0, sizeof(pwmChannel_t));		// clear parent structure 
+	pwm.p[PWM_1].timer = &TIMER_PWM1;					// bind timer struct to PWM struct array
+	pwm.p[PWM_1].ctrla = PWM1_CTRLA_CLKSEL;				// initialize starting clock operating range
+	pwm.p[PWM_1].timer->CTRLB = PWM1_CTRLB;
+	pwm.p[PWM_1].timer->INTCTRLB = PWM1_INTCTRLB;		// set interrupt level	
 
 	// setup PWM channel 2
-	memset(&pwm[PWM_2], 0, sizeof(pwmStruct_t));		// clear all values, pointers and status
-	pwm[PWM_2].timer = &TIMER_PWM2;
-	pwm[PWM_2].ctrla = PWM2_CTRLA_CLKSEL;
-	pwm[PWM_2].timer->CTRLB = PWM2_CTRLB;
-	pwm[PWM_2].timer->INTCTRLB = PWM2_INTCTRLB;
+	memset(&pwm.p[PWM_2], 0, sizeof(pwmChannel_t));		// clear all values, pointers and status
+	pwm.p[PWM_2].timer = &TIMER_PWM2;
+	pwm.p[PWM_2].ctrla = PWM2_CTRLA_CLKSEL;
+	pwm.p[PWM_2].timer->CTRLB = PWM2_CTRLB;
+	pwm.p[PWM_2].timer->INTCTRLB = PWM2_INTCTRLB;
 }
 
 /*
@@ -137,20 +133,20 @@ stat_t pwm_set_freq(uint8_t chan, float freq)
 	// set the period and the prescaler
 	float prescale = F_CPU/65536/freq;	// optimal non-integer prescaler value
 	if (prescale <= 1) { 
-		pwm[chan].timer->PER = F_CPU/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV1_gc;
+		pwm.p[chan].timer->PER = F_CPU/freq;
+		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV1_gc;
 	} else if (prescale <= 2) { 
-		pwm[chan].timer->PER = F_CPU/2/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV2_gc;
+		pwm.p[chan].timer->PER = F_CPU/2/freq;
+		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV2_gc;
 	} else if (prescale <= 4) { 
-		pwm[chan].timer->PER = F_CPU/4/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV4_gc;
+		pwm.p[chan].timer->PER = F_CPU/4/freq;
+		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV4_gc;
 	} else if (prescale <= 8) { 
-		pwm[chan].timer->PER = F_CPU/8/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV8_gc;
+		pwm.p[chan].timer->PER = F_CPU/8/freq;
+		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV8_gc;
 	} else { 
-		pwm[chan].timer->PER = F_CPU/64/freq;
-		pwm[chan].timer->CTRLA = TC_CLKSEL_DIV64_gc;
+		pwm.p[chan].timer->PER = F_CPU/64/freq;
+		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV64_gc;
 	}
 	return (STAT_OK);
 }
@@ -176,14 +172,55 @@ stat_t pwm_set_duty(uint8_t chan, float duty)
 	// Ffrq = Fper/(2N(CCA+1))
 	// Fpwm = Fper/((N(PER+1))
 	
-    float period_scalar = pwm[chan].timer->PER;
-	pwm[chan].timer->CCB = (uint16_t)(period_scalar * duty) + 1;
+	float period_scalar = pwm.p[chan].timer->PER;
+	pwm.p[chan].timer->CCB = (uint16_t)(period_scalar * duty) + 1;
 	return (STAT_OK);
 }
 
-//###########################################################################
-//##### UNIT TESTS ##########################################################
-//###########################################################################
+
+/***********************************************************************************
+ * CONFIGURATION AND INTERFACE FUNCTIONS
+ * Functions to get and set variables from the cfgArray table
+ ***********************************************************************************/
+
+// none
+
+
+/***********************************************************************************
+ * TEXT MODE SUPPORT
+ * Functions to print variables from the cfgArray table
+ ***********************************************************************************/
+
+#ifdef __TEXT_MODE
+
+static const char fmt_p1frq[] PROGMEM = "[p1frq] pwm frequency   %15.3f Hz\n";
+static const char fmt_p1csl[] PROGMEM = "[p1csl] pwm cw speed lo %15.3f RPM\n";
+static const char fmt_p1csh[] PROGMEM = "[p1csh] pwm cw speed hi %15.3f RPM\n";
+static const char fmt_p1cpl[] PROGMEM = "[p1cpl] pwm cw phase lo %15.3f [0..1]\n";
+static const char fmt_p1cph[] PROGMEM = "[p1cph] pwm cw phase hi %15.3f [0..1]\n";
+static const char fmt_p1wsl[] PROGMEM = "[p1wsl] pwm ccw speed lo%15.3f RPM\n";
+static const char fmt_p1wsh[] PROGMEM = "[p1wsh] pwm ccw speed hi%15.3f RPM\n";
+static const char fmt_p1wpl[] PROGMEM = "[p1wpl] pwm ccw phase lo%15.3f [0..1]\n";
+static const char fmt_p1wph[] PROGMEM = "[p1wph] pwm ccw phase hi%15.3f [0..1]\n";
+static const char fmt_p1pof[] PROGMEM = "[p1pof] pwm phase off   %15.3f [0..1]\n";
+
+void pwm_print_p1frq(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1frq);}
+void pwm_print_p1csl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1csl);}
+void pwm_print_p1csh(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1csh);}
+void pwm_print_p1cpl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1cpl);}
+void pwm_print_p1cph(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1cph);}
+void pwm_print_p1wsl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wsl);}
+void pwm_print_p1wsh(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wsh);}
+void pwm_print_p1wpl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wpl);}
+void pwm_print_p1wph(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wph);}
+void pwm_print_p1pof(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1pof);}
+
+#endif //__TEXT_MODE 
+
+
+/****************************************************************************
+ ***** Unit Tests ***********************************************************
+ ****************************************************************************/
 
 #ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_PWM
@@ -216,4 +253,8 @@ void pwm_unit_tests()
 }
 
 #endif // __UNIT_TEST_PWM
+#endif
+
+#ifdef __cplusplus
+}
 #endif
