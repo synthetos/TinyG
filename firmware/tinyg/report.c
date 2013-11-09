@@ -286,7 +286,7 @@ static stat_t _populate_unfiltered_status_report()
 		strcat(tmp, cmd->token);
 		strcpy(cmd->token, tmp);
 		if ((cmd = cmd->nx) == NULL) 
-			return (cm_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array
+			return (cm_hard_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array
 	}
 	return (STAT_OK);
 }

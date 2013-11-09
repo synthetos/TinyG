@@ -158,6 +158,7 @@ uint8_t cm_get_combined_state()
 		if (cm.motion_state == MOTION_RUN) cm.combined_state = COMBINED_RUN;
 		if (cm.motion_state == MOTION_HOLD) cm.combined_state = COMBINED_HOLD;
 	}
+	if (cm.machine_state == MACHINE_SHUTDOWN) { cm.combined_state = MACHINE_SHUTDOWN;}
 	return cm.combined_state;
 }
 
@@ -577,9 +578,19 @@ void canonical_machine_init()
 }
 
 /*
- * cm_alarm() - alarm state; send an exception report and shut down machine
+ * cm_soft_alarm() - alarm state; send an exception report and stop processing input
+ * cm_hard_alarm() - alarm state; send an exception report and shut down machine
+ *
+ *	Fascinating: http://www.cncalarms.com/
  */
-stat_t cm_alarm(stat_t status)
+stat_t cm_soft_alarm(stat_t status)
+{
+	rpt_exception(status);					// send alarm message
+	cm.machine_state = MACHINE_ALARM;
+	return (status);
+}
+
+stat_t cm_hard_alarm(stat_t status)
 {
 	// stop the steppers and the spindle
 	st_deenergize_motors();
@@ -592,7 +603,7 @@ stat_t cm_alarm(stat_t status)
 //	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
-	cm.machine_state = MACHINE_ALARM;
+	cm.machine_state = MACHINE_SHUTDOWN;
 	rpt_exception(status);					// send shutdown message
 	return (status);
 }

@@ -319,7 +319,7 @@ static stat_t _limit_switch_handler(void)
 	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
 	if (get_limit_switch_thrown() == false) return (STAT_NOOP);
 //	cm_alarm(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
-	cm_alarm(sw.sw_num_thrown);
+	cm_hard_alarm(sw.sw_num_thrown);
 	return (STAT_OK);
 }
 
@@ -335,7 +335,7 @@ stat_t _controller_assertions()
 /* 
  * _system_assertions() - check memory integrity and other assertions
  */
-#define alarmo(a) if((status_code=a) != STAT_OK) { cm_alarm(status_code); return(status_code); }
+#define alarmo(a) if((status_code=a) != STAT_OK) { cm_hard_alarm(status_code); return(status_code); }
 
 stat_t _system_assertions()
 {

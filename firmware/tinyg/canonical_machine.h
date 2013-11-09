@@ -299,7 +299,7 @@ extern cmSingleton_t cm;		// canonical machine controller singleton
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
 	COMBINED_INITIALIZING = 0,		// [0] machine is initializing
 	COMBINED_READY,					// [1] machine is ready for use
-	COMBINED_ALARM,					// [2] machine is in alarm state (shut down)
+	COMBINED_ALARM,					// [2] machine in soft alarm state
 	COMBINED_PROGRAM_STOP,			// [3] program stop or no more blocks
 	COMBINED_PROGRAM_END,			// [4] program end
 	COMBINED_RUN,					// [5] motion is running
@@ -307,17 +307,19 @@ enum cmCombinedState {				// check alignment with messages in config.c / msg_sta
 	COMBINED_PROBE,					// [7] probe cycle active
 	COMBINED_CYCLE,					// [8] machine is running (cycling)
 	COMBINED_HOMING,				// [9] homing is treated as a cycle
-	COMBINED_JOG					// [10] jogging is treated as a cycle
+	COMBINED_JOG,					// [10] jogging is treated as a cycle
+	COMBINED_SHUTDOWN				// [11] machine in hard alarm state (shutdown)
 };
 //#### END CRITICAL REGION ####
 
 enum cmMachineState {
 	MACHINE_INITIALIZING = 0,		// machine is initializing
 	MACHINE_READY,					// machine is ready for use
-	MACHINE_ALARM,					// machine is in alarm state (shutdown)
+	MACHINE_ALARM,					// machine in soft alarm state
 	MACHINE_PROGRAM_STOP,			// program stop or no more blocks
 	MACHINE_PROGRAM_END,			// program end
 	MACHINE_CYCLE,					// machine is running (cycling)
+	MACHINE_SHUTDOWN				// machine in hard alarm state (shutdown)
 };
 
 enum cmCycleState {
@@ -531,7 +533,8 @@ stat_t cm_test_soft_limits(float target[]);
 /*--- canonical machining functions (loosely patterned after NIST) ---*/
 
 void canonical_machine_init(void);
-stat_t cm_alarm(stat_t status);									// enter alarm state. returns same status code
+stat_t cm_soft_alarm(stat_t status);							// enter soft alarm state. returns same status code
+stat_t cm_hard_alarm(stat_t status);							// enter hard alarm state. returns same status code
 stat_t cm_assertions(void);
 
 stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
