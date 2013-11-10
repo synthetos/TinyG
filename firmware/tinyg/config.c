@@ -467,6 +467,7 @@ stat_t cmd_persist_offsets(uint8_t flag)
  * cmd_get_cmdObj()		- setup a cmd object by providing the index
  * cmd_reset_obj()		- quick clear for a new cmd object
  * cmd_reset_list()		- clear entire header, body and footer for a new use
+ * cmd_cvt_string()		- converts a string from flash to ram for AVR. ARM is a pass-through
  * cmd_copy_string()	- used to write a string to shared string storage and link it
  * cmd_add_object()		- write contents of parameter to  first free object in the body
  * cmd_add_integer()	- add an integer value to end of cmd body (Note 1)
@@ -555,6 +556,17 @@ cmdObj_t *cmd_reset_list()					// clear the header and response body
 	cmd->objtype = TYPE_PARENT;
 	strcpy(cmd->token, "r");
 	return (cmd_body);						// this is a convenience for calling routines
+}
+
+char_t *cmd_cvt_string(const char_t *pgm_string)
+{
+#ifdef __AVR
+	strncpy_P(shared_buf, pgm_string, STATUS_MESSAGE_LEN);
+	return (shared_buf);
+#endif
+#ifdef __ARM
+	return (pgm_string);
+#endif
 }
 
 stat_t cmd_copy_string(cmdObj_t *cmd, const char_t *src)
@@ -649,7 +661,7 @@ cmdObj_t *cmd_add_string(const char_t *token, const char_t *string) // add a str
 			if ((cmd = cmd->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
 			continue;
 		}
-		strncpy(cmd->token, token, CMD_TOKEN_LEN);
+		strncpy(cmd->token, token, CMD_TOKEN_LEN);			// expects string to in RAM if on AVRs
 		if (cmd_copy_string(cmd, string) != STAT_OK) { return (NULL);}
 		cmd->index = cmd_get_index((const char_t *)"", cmd->token);
 		cmd->objtype = TYPE_STRING;

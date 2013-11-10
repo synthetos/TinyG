@@ -349,6 +349,7 @@ void cmd_get_cmdObj(cmdObj_t *cmd);
 cmdObj_t *cmd_reset_obj(cmdObj_t *cmd);
 cmdObj_t *cmd_reset_list(void);
 
+char_t *cmd_cvt_string(const char_t *pgm_string);
 stat_t cmd_copy_string(cmdObj_t *cmd, const char_t *src);
 cmdObj_t *cmd_add_object(const char_t *token);
 cmdObj_t *cmd_add_integer(const char_t *token, const uint32_t value);

@@ -184,7 +184,6 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 {
 	mp_flush_planner(); 							// FIXME: not sure what to do on exit
-
 	cm_set_coord_system(jog.saved_coord_system);	// restore to work coordinate system
 	cm_set_units_mode(jog.saved_units_mode);
 	cm_set_distance_mode(jog.saved_distance_mode);
@@ -192,7 +191,6 @@ static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;						// required
 	cm_cycle_end();
-
 	return (STAT_OK);
 }
 
@@ -201,19 +199,8 @@ static stat_t _jogging_error_exit(int8_t axis)
 {
 	// Generate the warning message. Since the error exit returns via the jogging callback 
 	// - and not the main controller - it requires its own display processing 
-	cmd_reset_list();
-
-	// if (axis == -2) {
-	// 	cmd_add_conditional_message((const char_t *)"*** WARNING *** Jogging error: Specified axis cannot be jogged");
-	// } else {
-	// 	char message[CMD_MESSAGE_LEN];
-	// 	sprintf_P(message, PSTR("*** WARNING *** Homing error: %c axis settings misconfigured"), cm_get_axis_char(axis));
-	// 	cmd_add_conditional_message((char_t *)message);
-	// }
-	// cmd_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
-
-	// clean up and exit
-	_jogging_finalize_exit(axis);
+//	cmd_reset_list();
+	_jogging_finalize_exit(axis);				// clean up
 	return (STAT_JOGGING_CYCLE_FAILED);			// jogging state
 }
 */
