@@ -65,10 +65,7 @@ static struct jmJoggingSingleton jog;
 static stat_t _set_jogging_func(uint8_t (*func)(int8_t axis));
 static stat_t _jogging_axis_start(int8_t axis);
 static stat_t _jogging_axis_jog(int8_t axis);
-//static stat_t _jogging_axis_move(int8_t axis, float target, float velocity);
-//static stat_t _jogging_error_exit(int8_t axis);
 static stat_t _jogging_finalize_exit(int8_t axis);
-
 
 /*****************************************************************************
  * cm_jogging_cycle_start()	- jogging cycle using soft limits
@@ -90,10 +87,7 @@ static stat_t _jogging_finalize_exit(int8_t axis);
 static stat_t _set_jogging_func(uint8_t (*func)(int8_t axis));
 static stat_t _jogging_axis_start(int8_t axis);
 static stat_t _jogging_axis_jog(int8_t axis);
-//static stat_t _jogging_axis_move(int8_t axis, float target, float velocity);
-//static stat_t _jogging_error_exit(int8_t axis);
 static stat_t _jogging_finalize_exit(int8_t axis);
-
 
 stat_t cm_jogging_cycle_start(uint8_t axis)
 {

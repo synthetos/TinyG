@@ -179,7 +179,8 @@ stat_t get_ui8(cmdObj_t *cmd)
 
 stat_t get_int(cmdObj_t *cmd)
 {
-	cmd->value = (float)*((uint32_t *)GET_TABLE_WORD(target));
+//	cmd->value = (float)*((uint32_t *)GET_TABLE_WORD(target));
+	cmd->value = *((uint32_t *)GET_TABLE_WORD(target));
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
