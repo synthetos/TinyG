@@ -363,7 +363,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g56","g56a",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_A], G56_A_OFFSET },
 	{ "g56","g56b",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_B], G56_B_OFFSET },
 	{ "g56","g56c",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_C], G56_C_OFFSET },
-
+#if 0
 	{ "g57","g57x",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_X], G57_X_OFFSET },
 	{ "g57","g57y",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_Y], G57_Y_OFFSET },
 	{ "g57","g57z",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_Z], G57_Z_OFFSET },
@@ -384,6 +384,29 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g59","g59a",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_A], G59_A_OFFSET },
 	{ "g59","g59b",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_B], G59_B_OFFSET },
 	{ "g59","g59c",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_C], G59_C_OFFSET },
+
+#else // HACK: use these registers since I can't get the command table to load correctly (Estee)
+	{ "g57","g57x",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_X], G57_X_OFFSET },
+	{ "g57","g57y",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_Y], G57_Y_OFFSET },
+	{ "g57","g57z",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_Z], G57_Z_OFFSET },
+	{ "g57","g57a",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_A], G57_A_OFFSET },
+	{ "g57","g57b",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_B], G57_B_OFFSET },
+	{ "g57","g57c",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_C], G57_C_OFFSET },
+	
+	{ "g58","g58x",_fip, 0, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G58][AXIS_X], G58_X_OFFSET },
+	{ "g58","g58y",_fip, 0, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G58][AXIS_Y], G58_Y_OFFSET },
+	{ "g58","g58a",_fip, 0, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G58][AXIS_A], G58_A_OFFSET },
+	{ "g58","g58z",_fip, 0, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G58][AXIS_Z], G58_Z_OFFSET },
+	{ "g58","g58b",_fip, 0, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G58][AXIS_B], G58_B_OFFSET },
+	{ "g58","g58c",_fip, 0, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G58][AXIS_C], G58_C_OFFSET },
+
+	{ "g59","g59x",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_X], G59_X_OFFSET },
+	{ "g59","g59y",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_Y], G59_Y_OFFSET },
+	{ "g59","g59z",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_Z], G59_Z_OFFSET },
+	{ "g59","g59a",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_A], G59_A_OFFSET },
+	{ "g59","g59b",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_B], G59_B_OFFSET },
+	{ "g59","g59c",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_C], G59_C_OFFSET },
+#endif
 
 	{ "g92","g92x",_fin, 3, cm_print_cofs, get_flu, set_nul,(float *)&cm.gmx.origin_offset[AXIS_X], 0 },// G92 handled differently
 	{ "g92","g92y",_fin, 3, cm_print_cofs, get_flu, set_nul,(float *)&cm.gmx.origin_offset[AXIS_Y], 0 },
@@ -407,6 +430,12 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g30","g30b",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g30_position[AXIS_B], 0 },
 	{ "g30","g30c",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g30_position[AXIS_C], 0 },
 
+	// this is a 128bit UUID for identifing a previously commited job state
+//	{ "jid","jida",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[0], 0},
+//	{ "jid","jidb",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[1], 0},
+//	{ "jid","jidc",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[2], 0},
+//	{ "jid","jidd",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[3], 0},
+
 	// System parameters
 	{ "sys","ja",  _f07, 0, cm_print_ja,  get_flu,   set_flu,    (float *)&cm.junction_acceleration,JUNCTION_ACCELERATION },
 	{ "sys","ct",  _f07, 4, cm_print_ct,  get_flu,   set_flu,    (float *)&cm.chordal_tolerance,	CHORDAL_TOLERANCE },
@@ -429,6 +458,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 //	{ "sys","fs",  _f07, 0, js_print_fs,  get_ui8,   set_ui8,    (float *)&js.json_footer_style,	0 },
 	{ "sys","baud",_fns, 0, co_print_baud,get_ui8,   set_baud,   (float *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
 	{ "sys","net", _fip, 0, co_print_net, get_ui8,   set_ui8,    (float *)&cs.network_mode,			NETWORK_MODE },
+//	{ "sys","name",_fpe, 0, co_print_name,get_str,   set_str,    (float *)&cs.name, 0 },
 
 	// switch state readers
 /*
@@ -519,6 +549,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","ofs",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// work offset group
 	{ "","hom",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis homing state group
 	{ "","jog",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis jogging state group
+//	{ "","jid",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// job ID group
 
 	// Uber-group (groups of groups, for text-mode displays only)
 	// *** Must agree with CMD_COUNT_UBER_GROUPS below ****

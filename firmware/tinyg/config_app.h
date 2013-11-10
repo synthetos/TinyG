@@ -58,12 +58,19 @@ typedef struct cfgParameters {		// mostly communications variables at this point
 } cfgParameters_t;
 extern cfgParameters_t cfg;
 
+
 /***********************************************************************************
  * CONFIGURATION AND INTERFACE FUNCTIONS
  * Functions to get and set variables from the cfgArray table
  ***********************************************************************************/
 
 stat_t set_baud_callback(void);
+
+// job config
+void job_print_job(cmdObj_t *cmd);
+stat_t job_get(cmdObj_t *cmd);
+stat_t job_set(cmdObj_t *cmd);
+uint8_t job_report_callback();
 
 /***********************************************************************************
  * TEXT MODE SUPPORT
@@ -89,6 +96,7 @@ stat_t set_baud_callback(void);
 	#define co_print_rx tx_print_stub
 
 #endif // __TEXT_MODE
+
 
 #ifdef __cplusplus
 }

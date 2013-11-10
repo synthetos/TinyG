@@ -90,6 +90,11 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	cs.hard_reset_requested = false;
 	cs.bootloader_requested = false;
 
+	cs.job_id[0] = 0;								// clear the job_id
+	cs.job_id[1] = 0;
+	cs.job_id[2] = 0;
+	cs.job_id[3] = 0;
+
 	xio_set_stdin(std_in);
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
@@ -348,40 +353,79 @@ stat_t _system_assertions()
 	return (STAT_OK);
 }
 
-/*
-stat_t _system_assertions_helper()
+
+/***********************************************************************************
+ * JOB ID
+ ***********************************************************************************/
+
+#if 0
+stat_t job_populate_job_report()
 {
-	ritorno(_controller_assertions());
-	ritorno(cm_assertions());
-	ritorno(mp_assertions());
-	ritorno(st_assertions());
-	ritorno(xio_assertions());
+	const char_t job_str[] = "job";
+	char_t tmp[CMD_TOKEN_LEN+1];
+	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
+
+	cmd->objtype = TYPE_PARENT; 			// setup the parent object
+	strcpy(cmd->token, job_str);
+
+	//cmd->index = cmd_get_index((const char_t *)"", job_str);// set the index - may be needed by calling function
+	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
+
+	index_t job_start = cmd_get_index((const char_t *)"",(const char_t *)"job1");// set first job persistence index
+	for (uint8_t i=0; i<4; i++) {
+		
+		cmd->index = job_start + i;
+
+		cmd_get_cmdObj(cmd);
+		strcpy(tmp, cmd->group);			// concatenate groups and tokens
+		strcat(tmp, cmd->token);
+		strcpy(cmd->token, tmp);
+		if ((cmd = cmd->nx) == NULL) 
+			return (STAT_OK);				 // should never be NULL unless SR length exceeds available buffer array 
+	}
+
+	// for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
+	// 	if ((cmd->index = sr.status_report_list[i]) == 0) { break;}
+	// 	cmd_get_cmdObj(cmd);
+	// 	strcpy(tmp, cmd->group);			// concatenate groups and tokens
+	// 	strcat(tmp, cmd->token);
+	// 	strcpy(cmd->token, tmp);
+	// 	if ((cmd = cmd->nx) == NULL) 
+	// 		return (STAT_OK);				 // should never be NULL unless SR length exceeds available buffer array 
+	// }
 	return (STAT_OK);
 }
 
-stat_t _system_assertions()
+stat_t job_set_job_report(cmdObj_t *cmd)
 {
-	ritorno(_system_assertions_helper());
-	cm_alarm(status_code);	// else report exception and shut down
-	return (STAT_EAGAIN);	// do not allow main loop to advance beyond this point	
-}
-*/
-/*
-stat_t _system_assertions()
-{
-	stat_t status;
+	index_t job_start = cmd_get_index((const char_t *)"",(const char_t *)"job1");// set first job persistence index
 
-	for (;;) {	// run this loop only once, but enable breaks
-
-		if ((status = _controller_assertions()) != STAT_OK)  break;
-		if ((status = cm_assertions())	!= STAT_OK) break;
-		if ((status = mp_assertions())	!= STAT_OK) break;
-		if ((status = st_assertions())	!= STAT_OK) break;
-		if ((status = xio_assertions())	!= STAT_OK) break;
-		break;
+	for (uint8_t i=0; i<4; i++) {
+		if (((cmd = cmd->nx) == NULL) || (cmd->objtype == TYPE_EMPTY)) { break;}
+		if (cmd->objtype == TYPE_INTEGER) {
+			cs.job_id[i] = cmd->value;
+			cmd->index = job_start + i;					// index of the SR persistence location
+			cmd_persist(cmd);
+		} else {
+			return (STAT_INPUT_VALUE_UNSUPPORTED);
+		}
 	}
-	if (status == STAT_OK) return (STAT_OK);
-	cm_alarm(status);		// else report exception and shut down
-	return (STAT_EAGAIN);	// do not allow main loop to advance beyond this point
+	job_populate_job_report();			// return current values
+	return (STAT_OK);
 }
-*/
+
+void job_print_job(cmdObj_t *cmd) { job_populate_job_report();}
+stat_t job_get(cmdObj_t *cmd) { return (job_populate_job_report());}
+stat_t job_set(cmdObj_t *cmd) { return (job_set_job_report(cmd));}
+
+uint8_t job_report_callback()
+{
+	if (cfg.comm_mode == TEXT_MODE) {
+		// no-op, job_ids are client app state
+	} else {		
+		fprintf(stderr, "{\"job\":[%lu,%lu,%lu,%lu]}\n", cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );
+		//job_clear_report();
+	}
+	return (STAT_OK);
+}
+#endif
