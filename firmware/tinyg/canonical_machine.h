@@ -245,6 +245,7 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint8_t feedhold_requested;		// feedhold character has been received
 	uint8_t queue_flush_requested;	// queue flush character has been received
 	uint8_t cycle_start_requested;	// cycle start character has been received (flag to end feedhold)
+	float jogging_dest;				// jogging direction as a relative move from current position
 	struct GCodeState *am;			// active Gcode model is maintained by state management
 
 	/**** Model states ****/
@@ -486,6 +487,10 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 #define AXIS_MODE_MAX_LINEAR AXIS_INHIBITED
 #define AXIS_MODE_MAX_ROTARY AXIS_RADIUS
 
+/*** Jogging Parameters ***/
+
+#define JOGGING_START_VELOCITY ((float)10.0)
+
 /*****************************************************************************
  * FUNCTION PROTOTYPES
  */
@@ -497,6 +502,7 @@ uint8_t cm_get_cycle_state(void);
 uint8_t cm_get_motion_state(void);
 uint8_t cm_get_hold_state(void);
 uint8_t cm_get_homing_state(void);
+uint8_t cm_get_jogging_state(void);
 void cm_set_motion_state(uint8_t motion_state);
 
 uint32_t cm_get_linenum(GCodeState_t *gcode_state);
@@ -547,6 +553,10 @@ stat_t cm_homing_cycle_start_no_set(void);						// G28.4
 stat_t cm_homing_callback(void);								// G28.2 main loop callback
 stat_t cm_set_absolute_origin(float origin[], float flags[]);	// G28.3  (special function)
 void cm_set_axis_origin(uint8_t axis, const float position);	// set absolute position (used by G28's)
+
+stat_t cm_jogging_callback(void);								// jogging cycle main loop
+stat_t cm_jogging_cycle_start(uint8_t axis);					// {"jogx":-100.3}
+float cm_get_jogging_dest(void);
 
 stat_t cm_set_g28_position(void);								// G28.1
 stat_t cm_goto_g28_position(float target[], float flags[]); 	// G28
@@ -636,6 +646,11 @@ stat_t cm_get_ofs(cmdObj_t *cmd);		// get runtime work offset...
 
 stat_t cm_run_qf(cmdObj_t *cmd);		// run queue flush
 stat_t cm_run_home(cmdObj_t *cmd);		// start homing cycle
+
+stat_t cm_run_jogx(cmdObj_t *cmd);		// start jogging cycle for x
+stat_t cm_run_jogy(cmdObj_t *cmd);		// start jogging cycle for y
+stat_t cm_run_jogz(cmdObj_t *cmd);		// start jogging cycle for z
+stat_t cm_run_joga(cmdObj_t *cmd);		// start jogging cycle for a
 
 stat_t cm_get_am(cmdObj_t *cmd);		// get axis mode
 stat_t cm_set_am(cmdObj_t *cmd);		// set axis mode

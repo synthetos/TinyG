@@ -1363,6 +1363,7 @@ void cm_program_end()
 	mp_queue_command(_exec_program_finalize, value, value);
 }
 
+
 /**************************************
  * END OF CANONICAL MACHINE FUNCTIONS *
  **************************************/
@@ -1706,6 +1707,46 @@ stat_t cm_run_home(cmdObj_t *cmd)
 {
 	if (fp_TRUE(cmd->value)) { cm_homing_cycle_start();}
 	return (STAT_OK);
+}
+
+/***********************************************************************************
+ * AXIS JOGGING
+ ***********************************************************************************/
+
+float cm_get_jogging_dest(void)
+{
+	return cm.jogging_dest;
+}
+
+stat_t cm_run_jogx(cmdObj_t *cmd)
+{
+	set_flt(cmd);
+	cm_jogging_cycle_start(AXIS_X);
+	return (STAT_OK);
+}
+
+stat_t cm_run_jogy(cmdObj_t *cmd)
+{
+	set_flt(cmd);
+	cm_jogging_cycle_start(AXIS_Y);
+	return (STAT_OK);
+
+}
+
+stat_t cm_run_jogz(cmdObj_t *cmd)
+{
+	set_flt(cmd);
+	cm_jogging_cycle_start(AXIS_Z);
+	return (STAT_OK);
+
+}
+
+stat_t cm_run_joga(cmdObj_t *cmd)
+{
+	set_flt(cmd);
+	cm_jogging_cycle_start(AXIS_A);
+	return (STAT_OK);
+
 }
 
 /***********************************************************************************
