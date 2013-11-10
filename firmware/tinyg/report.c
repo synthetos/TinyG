@@ -68,7 +68,7 @@ stat_t rpt_er(cmdObj_t *cmd)
  *	These messages are always in JSON format to allow UIs to sync
  */
 
-void _startup_helper(stat_t status, const char *msg)
+void _startup_helper(stat_t status, const char_t *const msg )
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
@@ -78,7 +78,8 @@ void _startup_helper(stat_t status, const char *msg)
 	cmd_add_object((const char_t *)"hp");		// hardware platform
 	cmd_add_object((const char_t *)"hv");		// hardware version
 	cmd_add_object((const char_t *)"id");		// hardware ID
-	cmd_add_string((const char_t *)"msg", (const char_t *)msg);	// startup message
+//	cmd_add_string((const char_t *)"msg", (const char_t *)msg);	// startup message
+//	cmd_add_string((const char_t *)"msg", msg);	// startup message
 	json_print_response(status);
 #endif
 }
