@@ -344,11 +344,11 @@ static stat_t _homing_error_exit(int8_t axis)
 	cmd_reset_list();
 
 	if (axis == -2) {
-		cmd_add_conditional_message((const char_t *)"*** WARNING *** Homing error: Specified axis(es) cannot be homed");;
+		cmd_conditional_message((const char_t *)"*** WARNING *** Homing error: Specified axis(es) cannot be homed");;
 	} else {
 		char message[CMD_MESSAGE_LEN];
 		sprintf_P(message, PSTR("*** WARNING *** Homing error: %c axis settings misconfigured"), cm_get_axis_char(axis));
-		cmd_add_conditional_message((char_t *)message);
+		cmd_conditional_message((char_t *)message);
 	}
 	cmd_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 

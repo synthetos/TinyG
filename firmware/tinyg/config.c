@@ -558,17 +558,6 @@ cmdObj_t *cmd_reset_list()					// clear the header and response body
 	return (cmd_body);						// this is a convenience for calling routines
 }
 
-char_t *cmd_cvt_string(const char_t *pgm_string)
-{
-#ifdef __AVR
-	strncpy_P(shared_buf, pgm_string, STATUS_MESSAGE_LEN);
-	return (shared_buf);
-#endif
-#ifdef __ARM
-	return (pgm_string);
-#endif
-}
-
 stat_t cmd_copy_string(cmdObj_t *cmd, const char_t *src)
 {
 	if ((cmdStr.wp + strlen(src)) > CMD_SHARED_STRING_LEN) { return (STAT_BUFFER_FULL);}
@@ -653,6 +642,7 @@ cmdObj_t *cmd_add_float(const char_t *token, const float value)	// add a float o
 	return (NULL);
 }
 
+// ASSUMES A RAM STRING. If you need to post a FLASH string use pstr2str to convert it to a RAM string
 cmdObj_t *cmd_add_string(const char_t *token, const char_t *string) // add a string object to the body
 {
 	cmdObj_t *cmd = cmd_body;
@@ -670,7 +660,12 @@ cmdObj_t *cmd_add_string(const char_t *token, const char_t *string) // add a str
 	return (NULL);
 }
 
-cmdObj_t *cmd_add_conditional_message(const char_t *string)	// conditionally add a message object to the body
+/*
+ * cm_conditional_message() - queue a RAM string as a message in the response (conditionally)
+ *
+ *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
+ */
+cmdObj_t *cmd_conditional_message(const char_t *string)	// conditionally add a message object to the body
 {
 	if ((cfg.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
 	return(cmd_add_string((const char_t *)"msg", string));

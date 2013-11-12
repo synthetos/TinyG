@@ -1152,13 +1152,15 @@ stat_t cm_spindle_override_factor(uint8_t flag)	// M50.1
 }
 
 /*
- * cm_message() - queue a message to the response string (unconditionally)
+ * cm_message() 			- queue a RAM string as a message in the response (unconditionally)
+ *
+ *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
  */
-
 void cm_message(char_t *message)
 {
 	cmd_add_string((const char_t *)"msg", message);	// add message to the response object
 }
+
 
 /******************************
  * Program Functions (4.3.10) *

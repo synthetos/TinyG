@@ -744,15 +744,15 @@ static stat_t set_baud(cmdObj_t *cmd)
 {
 	uint8_t baud = (uint8_t)cmd->value;
 	if ((baud < 1) || (baud > 6)) {
-		cmd_add_conditional_message((const char_t *)"*** WARNING *** Unsupported baud rate specified");
-//		cmd_add_conditional_message(PSTR("*** WARNING *** Unsupported baud rate specified"));
+		cmd_conditional_message((const char_t *)"*** WARNING *** Unsupported baud rate specified");
+//		cmd_conditional_message(PSTR("*** WARNING *** Unsupported baud rate specified"));
 		return (STAT_INPUT_VALUE_UNSUPPORTED);
 	}
 	cfg.usb_baud_rate = baud;
 	cfg.usb_baud_flag = true;
 	char_t message[CMD_MESSAGE_LEN]; 
 	sprintf_P(message, PSTR("*** NOTICE *** Resetting baud rate to %s"),GET_TEXT_ITEM(msg_baud, baud));
-	cmd_add_conditional_message(message);
+	cmd_conditional_message(message);
 	return (STAT_OK);
 }
 

@@ -199,6 +199,28 @@ char_t *escape_string(char_t *dst, char_t *src)
 	return (start_dst);
 }
 
+/*
+ * pstr2str()	   - return an AVR style progmem string as a RAM string. No effect on ARMs
+ *
+ *	This function deals with FLASH memory string confusion between the AVR serias and ARMs. 
+ *	AVRs typicallhave xxxxx_P() functions which take strings from FLASH as args. On the ARM
+ *	There is no need for this as strings are handled identically in FLASH and RAM. 
+ *
+ *	This function copies a string from FLASH to a pre-allocated RAM buffer - see main.c for 
+ *	allocation and max length. On the ARM it's a pass through that just returns the address 
+ *	of the input string
+ */
+char_t *pstr2str(const char_t *pgm_string)
+{
+#ifdef __AVR
+	strncpy_P(shared_buf, pgm_string, STATUS_MESSAGE_LEN);
+	return (shared_buf);
+#endif
+#ifdef __ARM
+	return (pgm_string);
+#endif
+}
+
 /* 
  * compute_checksum() - calculate the checksum for a string
  * 

@@ -78,7 +78,7 @@ void _startup_helper(stat_t status, const char_t *msg )
 	cmd_add_object((const char_t *)"hp");		// hardware platform
 	cmd_add_object((const char_t *)"hv");		// hardware version
 	cmd_add_object((const char_t *)"id");		// hardware ID
-	cmd_add_string((const char_t *)"msg", cmd_cvt_string(msg));	// startup message
+	cmd_add_string((const char_t *)"msg", pstr2str(msg));	// startup message
 	json_print_response(status);
 #endif
 }
