@@ -200,11 +200,11 @@ char_t *escape_string(char_t *dst, char_t *src)
 }
 
 /*
- * pstr2str()	   - return an AVR style progmem string as a RAM string. No effect on ARMs
+ * pstr2str() - return an AVR style progmem string as a RAM string. No effect on ARMs
  *
  *	This function deals with FLASH memory string confusion between the AVR serias and ARMs. 
- *	AVRs typicallhave xxxxx_P() functions which take strings from FLASH as args. On the ARM
- *	There is no need for this as strings are handled identically in FLASH and RAM. 
+ *	AVRs typically have xxxxx_P() functions which take strings from FLASH as args. 
+ *	On ARMs there is no need for this as strings are handled identically in FLASH and RAM. 
  *
  *	This function copies a string from FLASH to a pre-allocated RAM buffer - see main.c for 
  *	allocation and max length. On the ARM it's a pass through that just returns the address 

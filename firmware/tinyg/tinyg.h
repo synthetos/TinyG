@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		398.08	// moved help screens to text parser
+#define TINYG_FIRMWARE_BUILD   		398.09	// fleshed out soft limits; added alarm state and $clear command
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -308,7 +308,7 @@ char *get_status_message(stat_t status);
 #define	STAT_COMMAND_NOT_ACCEPTED 72		// command cannot be accepted at this time
 #define	STAT_PROBING_CYCLE_FAILED 73		// probing cycle did not complete
 #define	STAT_JOGGING_CYCLE_FAILED 74		// jogging cycle did not complete
-#define	STAT_ERROR_75 75
+#define	STAT_MACHINE_ALARMED 75				// machine is alarmed. Command not processed
 #define	STAT_ERROR_76 76
 #define	STAT_ERROR_77 77
 #define	STAT_ERROR_78 78

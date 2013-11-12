@@ -109,10 +109,6 @@ extern "C"{
  ***********************************************************************************/
 
 cmSingleton_t cm;		// canonical machine controller singleton
-//GCodeState_t  gm;		// core gcode model state
-//GCodeStateX_t gmx;	// extended gcode model state
-//GCodeInput_t  gn;		// gcode input values - transient
-//GCodeInput_t  gf;		// gcode input flags - transient
 
 /***********************************************************************************
  **** GENERIC STATIC FUNCTIONS AND VARIABLES ***************************************
@@ -509,15 +505,17 @@ void cm_set_move_times(GCodeState_t *gcode_state)
  * cm_test_soft_limits() - return error code if soft limit is exceeded
  *
  *	Must be called with target properly set in GM struct. Best done after cm_set_model_target() 
+ *	Note: setting max or min to -1 means no limit is set, which is why the > 0 test is in there
  */
 stat_t cm_test_soft_limits(float target[])
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-//		if ((cm.gm.target[axis] > cm.a[axis].travel_max) ||
-//			(cm.gm.target[axis] < cm.a[axis].travel_min)) 
-		if ((target[axis] > cm.a[axis].travel_max) ||
-			(target[axis] < cm.a[axis].travel_min)) 
+		if ((cm.a[axis].travel_max > 0) && (target[axis] > cm.a[axis].travel_max)) {
 			return (STAT_SOFT_LIMIT_EXCEEDED);
+		}
+		if ((cm.a[axis].travel_min > 0) && (target[axis] < cm.a[axis].travel_min)) {
+			return (STAT_SOFT_LIMIT_EXCEEDED);
+		}
 	}
 	return (STAT_OK);
 }
@@ -580,6 +578,7 @@ void canonical_machine_init()
 /*
  * cm_soft_alarm() - alarm state; send an exception report and stop processing input
  * cm_hard_alarm() - alarm state; send an exception report and shut down machine
+ * cm_clear() 	   - clear soft alarm
  *
  *	Fascinating: http://www.cncalarms.com/
  */
@@ -588,6 +587,16 @@ stat_t cm_soft_alarm(stat_t status)
 	rpt_exception(status);					// send alarm message
 	cm.machine_state = MACHINE_ALARM;
 	return (status);
+}
+
+stat_t cm_clear(cmdObj_t *cmd)				// clear soft alarm
+{
+	if (cm.cycle_state != CYCLE_OFF) {
+		cm.machine_state = MACHINE_CYCLE;
+	} else {
+		cm.machine_state = MACHINE_PROGRAM_STOP;
+	}
+	return (STAT_OK);
 }
 
 stat_t cm_hard_alarm(stat_t status)
@@ -832,7 +841,7 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_model_target(target,flags);
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
-//	ritorno(cm_test_soft_limits(cm.gm.target));
+	ritorno(cm_test_soft_limits(cm.gm.target));
 
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
@@ -962,7 +971,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 
 	cm_set_model_target(target, flags);
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
-//	ritorno(cm_test_soft_limits(cm.gm.target));
+	ritorno(cm_test_soft_limits(cm.gm.target));
 
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state

@@ -211,7 +211,7 @@ static stat_t _command_dispatch()
 	// dispatch the new text line
 	switch (toupper(*cs.bufp)) {						// first char
 
-		case '!': { cm_request_feedhold(); break; }		// include for diagnostics
+		case '!': { cm_request_feedhold(); break; }		// include for AVR diagnostics and ARM serial
 		case '%': { cm_request_queue_flush(); break; }
 		case '~': { cm_request_cycle_start(); break; }
 
@@ -221,15 +221,7 @@ static stat_t _command_dispatch()
 			}
 			break;
 		}
-/*
-		case 'H': { 									// intercept help screens
-			cfg.comm_mode = TEXT_MODE;
-			help_general((cmdObj_t *)NULL);
-			text_response(STAT_OK, cs.bufp);
-			break;
-		}
-*/
-		case '$': case '?': case 'H': { 				// ways to enter text mode
+		case '$': case '?': case 'H': { 				// Text mode input
 			cfg.comm_mode = TEXT_MODE;
 			text_response(text_parser(cs.bufp), cs.saved_buf);
 			break;

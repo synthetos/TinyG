@@ -541,6 +541,7 @@ stat_t cm_test_soft_limits(float target[]);
 void canonical_machine_init(void);
 stat_t cm_soft_alarm(stat_t status);							// enter soft alarm state. returns same status code
 stat_t cm_hard_alarm(stat_t status);							// enter hard alarm state. returns same status code
+stat_t cm_clear(cmdObj_t *cmd);
 stat_t cm_assertions(void);
 
 stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets

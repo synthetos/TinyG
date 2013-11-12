@@ -129,6 +129,7 @@ static stat_t _json_parser_kernal(char_t *str)
 	if (cmd->objtype == TYPE_NULL){					// means GET the value
 		ritorno(cmd_get(cmd));						// ritorno returns w/status on any errors
 	} else {
+		if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED); 
 		ritorno(cmd_set(cmd));						// set value or call a function (e.g. gcode)
 		cmd_persist(cmd);
 	}

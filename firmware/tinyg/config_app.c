@@ -168,6 +168,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "qf",  _f00, 0, tx_print_nul, get_nul, cm_run_qf,(float *)&cs.null, 0 },	// queue flush
 	{ "", "rx",  _f00, 0, tx_print_int, get_rx,  set_nul,  (float *)&cs.null, 0 },	// space in RX buffer
 	{ "", "msg", _f00, 0, tx_print_str, get_nul, set_nul,  (float *)&cs.null, 0 },	// string for generic messages
+	{ "", "clear",_f00,0, tx_print_nul, cm_clear,cm_clear, (float *)&cs.null, 0 },	// GET a clear to clear soft alarm
 //	{ "", "sx",  _f00, 0, tx_print_nul, run_sx,  run_sx ,  (float *)&cs.null, 0 },	// send XOFF, XON test
 
 #ifdef __HELP_SCREENS
