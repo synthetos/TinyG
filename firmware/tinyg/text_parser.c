@@ -32,6 +32,7 @@
 #include "text_parser.h"
 #include "json_parser.h"
 #include "report.h"
+#include "help.h"
 #include "xio.h"					// for ASCII char definitions
 
 #ifdef __cplusplus
@@ -70,6 +71,10 @@ stat_t text_parser(char_t *str)
 	// pre-process the command 
 	if (str[0] == '?') {					// handle status report case
 		sr_run_text_status_report();
+		return (STAT_OK);
+	}
+	if (str[0] == 'H') {					// print help screens
+		help_general((cmdObj_t *)NULL);
 		return (STAT_OK);
 	}
 	if ((str[0] == '$') && (str[1] == NUL)) { // treat a lone $ as a sys request

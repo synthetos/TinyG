@@ -39,7 +39,7 @@
 #include "switch.h"
 #include "gpio.h"
 #include "report.h"
-#include "help.h"
+//#include "help.h"
 #include "util.h"
 #include "xio.h"
 
@@ -221,13 +221,15 @@ static stat_t _command_dispatch()
 			}
 			break;
 		}
+/*
 		case 'H': { 									// intercept help screens
 			cfg.comm_mode = TEXT_MODE;
 			help_general((cmdObj_t *)NULL);
 			text_response(STAT_OK, cs.bufp);
 			break;
 		}
-		case '$': case '?':{ 							// text-mode configs
+*/
+		case '$': case '?': case 'H': { 				// ways to enter text mode
 			cfg.comm_mode = TEXT_MODE;
 			text_response(text_parser(cs.bufp), cs.saved_buf);
 			break;
