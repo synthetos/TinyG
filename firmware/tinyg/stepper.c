@@ -63,7 +63,6 @@ static stPrepSingleton_t st_prep;
 
 static void _load_move(void);
 static void _request_load_move(void);
-//static void _clear_diagnostic_counters(void);
 
 // handy macro
 #define _f_to_period(f) (uint16_t)((float)F_CPU / (float)f)
@@ -71,6 +70,36 @@ static void _request_load_move(void);
 /************************************************************************************
  **** CODE **************************************************************************
  ************************************************************************************/
+
+#define __STEP_DIAGNOSTICS
+
+void _clear_step_counters(void)
+{
+	for (uint8_t i=0; i<MOTORS; i++) {
+		st_run.m[i].step_counter = 0;
+	}
+}
+
+void st_end_cycle(void)
+{
+	for (uint8_t i=0; i<MOTORS; i++) {
+		st_run.m[i].phase_accumulator = 0;
+		st_run.m[i].phase_increment = 0;
+	}
+
+	printf("Motor 1: %lu\n", st_run.m[0].step_counter);
+	printf("Motor 2: %lu\n", st_run.m[1].step_counter);
+	printf("Motor 3: %lu\n", st_run.m[2].step_counter);
+	printf("Motor 4: %lu\n", st_run.m[3].step_counter);
+
+//	printf("Motor 1: %lu, motor 2: %lu, motor 3: %lu, motor 4: %lu\n", 
+//		st_run.m[0].step_counter,
+//		st_run.m[1].step_counter,
+//		st_run.m[2].step_counter,
+//		st_run.m[3].step_counter);
+
+	_clear_step_counters();
+}
 
 /* 
  * stepper_init() - initialize stepper motor subsystem 
@@ -87,7 +116,7 @@ void stepper_init()
 	memset(&st_run, 0, sizeof(st_run));			// clear all values, pointers and status
 	st_run.magic_start = MAGICNUM;
 	st_prep.magic_start = MAGICNUM;
-//	_clear_diagnostic_counters();
+	_clear_step_counters();						// ++++ DIAGNOSTIC
 
 	// Configure virtual ports
 	PORTCFG.VPCTRLA = PORTCFG_VP0MAP_PORT_MOTOR_1_gc | PORTCFG_VP1MAP_PORT_MOTOR_2_gc;
@@ -266,21 +295,37 @@ ISR(TIMER_DDA_ISR_vect)
 		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;		// turn step bit on
  		st_run.m[MOTOR_1].phase_accumulator -= st_run.dda_ticks_X_substeps;
 		PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;		// turn step bit off in ~1 uSec
+
+#ifdef __STEP_DIAGNOSTICS
+		st_run.m[MOTOR_1].step_counter++;
+#endif
 	}
 	if ((st_run.m[MOTOR_2].phase_accumulator += st_run.m[MOTOR_2].phase_increment) > 0) {
 		PORT_MOTOR_2_VPORT.OUT |= STEP_BIT_bm;
  		st_run.m[MOTOR_2].phase_accumulator -= st_run.dda_ticks_X_substeps;
 		PORT_MOTOR_2_VPORT.OUT &= ~STEP_BIT_bm;
+
+#ifdef __STEP_DIAGNOSTICS
+		st_run.m[MOTOR_2].step_counter++;
+#endif
 	}
 	if ((st_run.m[MOTOR_3].phase_accumulator += st_run.m[MOTOR_3].phase_increment) > 0) {
 		PORT_MOTOR_3_VPORT.OUT |= STEP_BIT_bm;
  		st_run.m[MOTOR_3].phase_accumulator -= st_run.dda_ticks_X_substeps;
 		PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;
+
+#ifdef __STEP_DIAGNOSTICS
+		st_run.m[MOTOR_3].step_counter++;
+#endif
 	}
 	if ((st_run.m[MOTOR_4].phase_accumulator += st_run.m[MOTOR_4].phase_increment) > 0) {
 		PORT_MOTOR_4_VPORT.OUT |= STEP_BIT_bm;
  		st_run.m[MOTOR_4].phase_accumulator -= st_run.dda_ticks_X_substeps;
 		PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
+
+#ifdef __STEP_DIAGNOSTICS
+		st_run.m[MOTOR_4].step_counter++;
+#endif
 	}
 	if (--st_run.dda_ticks_downcount == 0) {			// end move
 		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;			// disable DDA timer
@@ -493,7 +538,26 @@ void st_prep_dwell(float microseconds)
  * Args:
  *	steps[] are signed relative motion in steps (can be non-integer values)
  *	Microseconds - how many microseconds the segment should run 
- */
+ *
+ * Detailed code walk through (rather than put comments throughout the function)
+ *	  - steps[] are defined for each motor (joint). These are *exact* distance 
+ *		measurements that are faithfully reproduced must maintain positional accuracy. 
+ *		Steps are floats that are signed for direction and typically have fractional 
+ *		values. Motors that are not in the move should are set by the caller as 0 steps.
+ *
+ *	  - microseconds is the time the entire move should take. If timing is not 100%
+ *		accurate this will affect the move velocity, but not the distance traveled.
+ *	  	The move time must be bounded or it's an error (see error traps in code).
+ *
+ *	  - Prep can only occur if the prep buffer is not being used for a load. An attempt
+ *		to run prep during a load is an error.
+ *
+ *	  - (Ignore the reset_flag for now)
+ *
+ *	  - The motor (joint) loop runs for each motor:
+ *		- The sign is extracted from steps and xor'ed with polarity to derive direction
+ *		- 
+ */		
 
 stat_t st_prep_line(float steps[], float microseconds)
 {
@@ -507,8 +571,17 @@ stat_t st_prep_line(float steps[], float microseconds)
 
 	// setup motor parameters
 	for (uint8_t i=0; i<MOTORS; i++) {
+		if (fp_ZERO(steps[i])) {
+			st_prep.m[i].phase_increment = 0;	// leave direction alone, however
+			continue;
+		}
 		st_prep.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
+//		st_prep.m[i].dir_changed = st_prep.m[i].dir ^ st_prep.m[i].dir_previous;
+//		st_prep.m[i].dir_previous = st_prep.m[i].dir;
+
 		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * DDA_SUBSTEPS);
+//		st_prep.m[i].residual_scale_factor = (float)
+		
 	}
 	st_prep.dda_period = _f_to_period(FREQUENCY_DDA);
 	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * FREQUENCY_DDA);

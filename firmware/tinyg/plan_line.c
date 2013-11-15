@@ -1039,7 +1039,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		cm.hold_state = FEEDHOLD_HOLD;
 		cm_set_motion_state(MOTION_HOLD);
 
-//		mp_free_run_buffer();				// free bf and send a status report
+//		mp_free_run_buffer();					// free bf and send a status report
 		sr_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
 

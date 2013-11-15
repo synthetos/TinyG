@@ -510,6 +510,8 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 stat_t cm_test_soft_limits(float target[])
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (cm.homed[axis] != true) continue;		// don't test axes that are not homed
+
 		if ((cm.a[axis].travel_max > 0) && (target[axis] > cm.a[axis].travel_max)) {
 			return (STAT_SOFT_LIMIT_EXCEEDED);
 		}
@@ -1335,6 +1337,7 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
 
+	st_end_cycle();									// reset steppers at end of cycle
 	sr_request_status_report(SR_IMMEDIATE_REQUEST);	// request a final status report (not unfiltered)
 	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
 }

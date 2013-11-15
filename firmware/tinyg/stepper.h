@@ -271,7 +271,8 @@ typedef struct stRunMotor { 		// one per controlled motor
 	uint8_t power_state;			// state machine for managing motor power
 	uint32_t power_systick;			// sys_tick for next state transition
 	float power_level;				// power level for this segment (ARM only)
-	uint8_t step_count_diagnostic;	// step count diagnostic
+	int32_t step_counter_incr;		// step count increment: +1 or -1 +++++
+	int32_t step_counter;			// step count diagnostic +++++
 } stRunMotor_t;
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
@@ -286,7 +287,11 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 
 typedef struct stPrepMotor {
  	uint32_t phase_increment; 		// total steps in axis times substep factor
+ 	uint32_t phase_increment_previous;
+	float residual_scale_factor;	// factor to scale previous accumulator residual
 	int8_t dir;						// direction
+	int8_t dir_previous;			// direction of previous segment
+	int8_t dir_changed;				// set 1 if direction changed
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
@@ -308,6 +313,7 @@ extern stConfig_t st;
 
 void stepper_init(void);
 uint8_t stepper_isbusy(void);
+void st_end_cycle(void);
 stat_t st_assertions(void);
 
 void st_energize_motors(void);

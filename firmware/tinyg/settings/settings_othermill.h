@@ -103,6 +103,7 @@
 #define M4_MICROSTEPS 			8					// 1mi		1,2,4,8
 #define M4_POLARITY 			0					// 1po		0=normal, 1=reversed
 #define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
+#define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M3_MOTOR_MAP 			AXIS_Y
 #define M3_STEP_ANGLE 			1.8
@@ -110,6 +111,7 @@
 #define M3_MICROSTEPS 			8
 #define M3_POLARITY 			1
 #define M3_POWER_MODE 			0					
+#define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP 			AXIS_Z
 #define M2_STEP_ANGLE 			15
@@ -117,6 +119,7 @@
 #define M2_MICROSTEPS 			8
 #define M2_POLARITY 			1
 #define M2_POWER_MODE 			0					
+#define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M1_MOTOR_MAP 			AXIS_A
 #define M1_STEP_ANGLE 			1.8
@@ -124,11 +127,8 @@
 #define M1_MICROSTEPS 			8
 #define M1_POLARITY 			1			
 #define M1_POWER_MODE 			1					
-
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
-#define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
-#define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
-#define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
+
 #define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
 #define M6_POWER_LEVEL			MOTOR_POWER_LEVEL
 
@@ -138,7 +138,7 @@
 #define X_VELOCITY_MAX 			1500 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX 			150					// xtr		travel between switches or crashes
-#define X_TRAVEL_MIN			0					// xtn		monimum travel for soft limits
+#define X_TRAVEL_MIN			0					// xtn		minimum travel for soft limits
 #define X_JERK_MAX 				JERK_MAX			// xjm
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
