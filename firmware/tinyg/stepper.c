@@ -299,7 +299,7 @@ ISR(TIMER_DDA_ISR_vect)
 		PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;		// turn step bit off in ~1 uSec
 
 #ifdef __STEP_DIAGNOSTICS
-		st_run.m[MOTOR_1].step_counter++;
+		st_run.m[MOTOR_1].step_counter =+ st_run.m[MOTOR_1].step_counter_incr;
 #endif
 	}
 	if ((st_run.m[MOTOR_2].phase_accumulator += st_run.m[MOTOR_2].phase_increment) > 0) {
@@ -308,7 +308,7 @@ ISR(TIMER_DDA_ISR_vect)
 		PORT_MOTOR_2_VPORT.OUT &= ~STEP_BIT_bm;
 
 #ifdef __STEP_DIAGNOSTICS
-		st_run.m[MOTOR_2].step_counter++;
+		st_run.m[MOTOR_2].step_counter =+ st_run.m[MOTOR_2].step_counter_incr;
 #endif
 	}
 	if ((st_run.m[MOTOR_3].phase_accumulator += st_run.m[MOTOR_3].phase_increment) > 0) {
@@ -317,7 +317,7 @@ ISR(TIMER_DDA_ISR_vect)
 		PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;
 
 #ifdef __STEP_DIAGNOSTICS
-		st_run.m[MOTOR_3].step_counter++;
+		st_run.m[MOTOR_3].step_counter =+ st_run.m[MOTOR_3].step_counter_incr;
 #endif
 	}
 	if ((st_run.m[MOTOR_4].phase_accumulator += st_run.m[MOTOR_4].phase_increment) > 0) {
@@ -326,7 +326,7 @@ ISR(TIMER_DDA_ISR_vect)
 		PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
 
 #ifdef __STEP_DIAGNOSTICS
-		st_run.m[MOTOR_4].step_counter++;
+		st_run.m[MOTOR_4].step_counter =+ st_run.m[MOTOR_4].step_counter_incr;
 #endif
 	}
 	if (--st_run.dda_ticks_downcount == 0) {			// end move
@@ -430,6 +430,9 @@ static void _load_move()
 			} else {
 				PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;	// CCW motion
 			}
+#ifdef __STEP_DIAGNOSTICS
+			st_run.m[MOTOR_1].step_counter_incr = st_prep.m[MOTOR_1].step_counter_incr;
+#endif
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;	// energize motor
 			st_run.m[MOTOR_1].power_state = MOTOR_RUNNING;
 		} else {
@@ -448,6 +451,9 @@ static void _load_move()
 			} else {
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
+#ifdef __STEP_DIAGNOSTICS
+			st_run.m[MOTOR_2].step_counter_incr = st_prep.m[MOTOR_2].step_counter_incr;
+#endif
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_2].power_state = MOTOR_RUNNING;
 		} else {
@@ -466,6 +472,9 @@ static void _load_move()
 			} else {
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
+#ifdef __STEP_DIAGNOSTICS
+			st_run.m[MOTOR_3].step_counter_incr = st_prep.m[MOTOR_3].step_counter_incr;
+#endif
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_3].power_state = MOTOR_RUNNING;
 		} else {
@@ -484,6 +493,9 @@ static void _load_move()
 			} else {
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
+#ifdef __STEP_DIAGNOSTICS
+			st_run.m[MOTOR_4].step_counter_incr = st_prep.m[MOTOR_4].step_counter_incr;
+#endif
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_4].power_state = MOTOR_RUNNING;
 		} else {
@@ -582,6 +594,11 @@ stat_t st_prep_line(float steps[], float microseconds)
 			continue;
 		}
 		st_prep.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
+		if (st_prep.m[i].dir == 1) {
+			st_prep.m[i].step_counter_incr = 1;
+		} else {
+			st_prep.m[i].step_counter_incr = -1;
+		}
 //		st_prep.m[i].dir_changed = st_prep.m[i].dir ^ st_prep.m[i].dir_previous;
 //		st_prep.m[i].dir_previous = st_prep.m[i].dir;
 

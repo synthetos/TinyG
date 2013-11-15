@@ -269,9 +269,9 @@ typedef struct stRunMotor { 		// one per controlled motor
 	int32_t phase_increment;		// total steps in axis times substeps factor
 	int32_t phase_accumulator;		// DDA phase angle accumulator for axis
 	uint8_t power_state;			// state machine for managing motor power
-	uint32_t power_systick;			// sys_tick for next state transition
+	uint32_t power_systick;			// sys_tick for next motor power state transition
 	float power_level;				// power level for this segment (ARM only)
-	int32_t step_counter_incr;		// step count increment: +1 or -1 +++++
+	int8_t step_counter_incr;		// step count increment: +1 or -1 +++++
 	int32_t step_counter;			// step count diagnostic +++++
 } stRunMotor_t;
 
@@ -289,9 +289,10 @@ typedef struct stPrepMotor {
  	int32_t phase_increment; 		// total steps in axis times substep factor
  	int32_t phase_increment_previous;
 	float residual_scale_factor;	// factor to scale previous accumulator residual
+	int8_t step_counter_incr;		// step count increment: +1 or -1 +++++
 	int8_t dir;						// direction
-	int8_t dir_previous;			// direction of previous segment
-	int8_t dir_changed;				// set 1 if direction changed
+//	int8_t dir_previous;			// direction of previous segment
+//	int8_t dir_changed;				// set 1 if direction changed
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
