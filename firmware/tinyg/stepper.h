@@ -286,8 +286,8 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 // Must be careful about volatiles in this one
 
 typedef struct stPrepMotor {
- 	uint32_t phase_increment; 		// total steps in axis times substep factor
- 	uint32_t phase_increment_previous;
+ 	int32_t phase_increment; 		// total steps in axis times substep factor
+ 	int32_t phase_increment_previous;
 	float residual_scale_factor;	// factor to scale previous accumulator residual
 	int8_t dir;						// direction
 	int8_t dir_previous;			// direction of previous segment

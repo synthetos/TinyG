@@ -82,23 +82,22 @@ void _clear_step_counters(void)
 
 void st_end_cycle(void)
 {
+#ifdef __STEP_DIAGNOSTICS
+
+	for (uint8_t i=0; i<MOTORS; i++) {
+	printf("Motor %d steps: %lu  Increment: %0.6f  Residual: %0.6f\n", i+1, 
+		st_run.m[i].step_counter, 
+		(double)((double)st_run.m[i].phase_increment / DDA_SUBSTEPS), 
+		(double)((double)st_run.m[i].phase_accumulator / DDA_SUBSTEPS));
+	}
+	_clear_step_counters();
+#endif
+	// zero out the accumulator before next cycle. Do increment for good measure
 	for (uint8_t i=0; i<MOTORS; i++) {
 		st_run.m[i].phase_accumulator = 0;
 		st_run.m[i].phase_increment = 0;
 	}
 
-	printf("Motor 1: %lu\n", st_run.m[0].step_counter);
-	printf("Motor 2: %lu\n", st_run.m[1].step_counter);
-	printf("Motor 3: %lu\n", st_run.m[2].step_counter);
-	printf("Motor 4: %lu\n", st_run.m[3].step_counter);
-
-//	printf("Motor 1: %lu, motor 2: %lu, motor 3: %lu, motor 4: %lu\n", 
-//		st_run.m[0].step_counter,
-//		st_run.m[1].step_counter,
-//		st_run.m[2].step_counter,
-//		st_run.m[3].step_counter);
-
-	_clear_step_counters();
 }
 
 /* 
@@ -116,7 +115,10 @@ void stepper_init()
 	memset(&st_run, 0, sizeof(st_run));			// clear all values, pointers and status
 	st_run.magic_start = MAGICNUM;
 	st_prep.magic_start = MAGICNUM;
-	_clear_step_counters();						// ++++ DIAGNOSTIC
+
+#ifdef __STEP_DIAGNOSTICS
+	_clear_step_counters();
+#endif
 
 	// Configure virtual ports
 	PORTCFG.VPCTRLA = PORTCFG_VP0MAP_PORT_MOTOR_1_gc | PORTCFG_VP1MAP_PORT_MOTOR_2_gc;
@@ -556,8 +558,12 @@ void st_prep_dwell(float microseconds)
  *
  *	  - The motor (joint) loop runs for each motor:
  *		- The sign is extracted from steps and xor'ed with polarity to derive direction
- *		- 
- */		
+ *		- The phase increment is a conversion of the floating point step count to a fixed
+ *		  precision binary with precision set by DDA_SUBSTEPS multiplier, typically 100,000.
+ *		  The phase increment is the amount the DDA will accumulate for each tick of the
+ *		  50 KHz pulse clock
+
+ */
 
 stat_t st_prep_line(float steps[], float microseconds)
 {
