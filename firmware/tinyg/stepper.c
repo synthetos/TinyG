@@ -587,25 +587,44 @@ stat_t st_prep_line(float steps[], float microseconds)
 	}
 	st_prep.reset_flag = false;		// initialize accumulator reset flag for this move.
 
+	double fraction;
+
 	// setup motor parameters
 	for (uint8_t i=0; i<MOTORS; i++) {
+
+		// skip motors with zero movement
 		if (fp_ZERO(steps[i])) {
 			st_prep.m[i].phase_increment = 0;	// leave direction alone, however
 			continue;
 		}
-		st_prep.m[i].dir = ((steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
+
+		fraction = fmod(steps[i], 1.0);			 // get fractional part
+		st_prep.m[i].dir = ((steps[i] < 0)? 1:0);// get direction w/o polarity correction
+
+#ifdef __STEP_DIAGNOSTIC
 		if (st_prep.m[i].dir == 1) {
-			st_prep.m[i].step_counter_incr = 1;
+			st_prep.m[i].step_counter_incr = 1;	// positive movement
 		} else {
 			st_prep.m[i].step_counter_incr = -1;
 		}
-//		st_prep.m[i].dir_changed = st_prep.m[i].dir ^ st_prep.m[i].dir_previous;
-//		st_prep.m[i].dir_previous = st_prep.m[i].dir;
+#endif
 
-		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * DDA_SUBSTEPS);
-//		st_prep.m[i].residual_scale_factor = (float)
-		
+		// If the direction remains the same add the fractional steps from 
+		// the previous move to the current move. If it changes, subtract it
+
+		steps[i] = fabs(steps[i]);
+		if ((st_prep.m[i].dir ^ st_prep.m[i].previous_dir) == 0) {	// direction same 
+			steps[i] += st_prep.m[i].previous_fraction;
+		} else {
+			steps[i] -= st_prep.m[i].previous_fraction;
+		}
+//		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * DDA_SUBSTEPS);
+		st_prep.m[i].phase_increment = (uint32_t)(steps[i] * DDA_SUBSTEPS);
+		st_prep.m[i].previous_fraction = fraction;
+		st_prep.m[i].previous_dir = st_prep.m[i].dir;
+		st_prep.m[i].dir ^= st.m[i].polarity; 	// correct direction for polarity
 	}
+
 	st_prep.dda_period = _f_to_period(FREQUENCY_DDA);
 	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * FREQUENCY_DDA);
 	st_prep.dda_ticks_X_substeps = st_prep.dda_ticks * DDA_SUBSTEPS;
