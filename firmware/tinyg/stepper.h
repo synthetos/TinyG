@@ -219,7 +219,7 @@ enum prepBufferState {
  *
  *	Set to 1 to disable, but don't do this or you will lose a lot of accuracy.
  */
-#define DDA_SUBSTEPS 100000		// 100,000 accumulates substeps to 6 decimal places
+#define DDA_SUBSTEPS 100000			// 100,000 accumulates substeps to 6 decimal places
 
 /* Accumulator resets
  * 	You want to reset the DDA accumulators if the new ticks value is way less 

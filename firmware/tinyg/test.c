@@ -27,7 +27,6 @@
 
 // regression test files
 #ifdef __CANNED_TESTS
-
 #include "tests/test_001_smoke.h" 			// basic functionality
 #include "tests/test_002_homing.h"			// G28.1 homing cycles
 #include "tests/test_003_squares.h"			// square moves
@@ -44,9 +43,11 @@
 #include "tests/test_014_microsteps.h"		// test all microstep settings
 #include "tests/test_050_mudflap.h"			// mudflap test - entire drawing
 #include "tests/test_051_braid.h"			// braid test - partial drawing
-
 #endif
-#include "tests/test_052_ford.h"			// Ford arc failure test - partial drawing
+
+#ifdef __CANNED_TEST_99
+#include "tests/test_099.h"					// general test file. varies over time
+#endif
 
 /*
  * run_test() - system tests from FLASH invoked by $test=n command
@@ -59,7 +60,6 @@ uint8_t run_test(cmdObj_t *cmd)
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (STAT_OK);}
 #ifdef __CANNED_TESTS
-
 		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke),PGM_FLAGS); break;}
 		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
 		case 3: { xio_open(XIO_DEV_PGM, PGMFILE(&test_squares),PGM_FLAGS); break;}
@@ -77,7 +77,9 @@ uint8_t run_test(cmdObj_t *cmd)
 		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 #endif
-		case 52: { xio_open(XIO_DEV_PGM, PGMFILE(&test_ford),PGM_FLAGS); break;}
+#ifdef __CANNED_TEST_99
+		case 99: { xio_open(XIO_DEV_PGM, PGMFILE(&test_99),PGM_FLAGS); break;}
+#endif
 		default: {
 			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
 			return (STAT_ERROR);

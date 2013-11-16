@@ -579,10 +579,13 @@ void st_prep_dwell(float microseconds)
 
  */
 
-#define __BASELINE_PREP
+//#define __ORIGINAL_PREP_CODE
 
 stat_t st_prep_line(float steps[], float microseconds)
 {
+	uint8_t direction;				// direction of the current move (no polarity correction)
+	double fraction;				// fractional steps for this motor in the current move
+
 	// *** defensive programming ***
 	// trap conditions that would prevent queueing the line
 	if (st_prep.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);
@@ -591,57 +594,51 @@ stat_t st_prep_line(float steps[], float microseconds)
 	}
 	st_prep.reset_flag = false;		// initialize accumulator reset flag for this move.
 
-#ifdef __BASELINE_PREP 				// baseline version with no corrections 
 	// setup motor parameters
 	for (uint8_t i=0; i<MOTORS; i++) {
-		st_prep.m[i].direction = ((steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
-		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * DDA_SUBSTEPS);
-	
-		// __STEP_DIAGNOSTICS ++++
-		if (steps[i] > 0) { 		// positive movement
-			st_prep.m[i].step_counter_incr = 1;
+
+#ifdef __STEP_DIAGNOSTICS
+		if ((direction = signbit(steps[i])) == 0) {	// 0 = positive movement
+			st_prep.m[i].step_counter_incr = +1;
 		} else {
 			st_prep.m[i].step_counter_incr = -1;
 		}
-	}
-#else	// __BASELINE_PREP
+#endif // __STEP_DIAGNOSTICS
 
-	double fraction;				// fractional steps for this motor in the current move
-	uint8_t direction;				// direction of the current move (no polarity correction)
+#ifdef __ORIGINAL_PREP_CODE 						// original code with no corrections 
 
-	// setup motor parameters
-	for (uint8_t i=0; i<MOTORS; i++) {
+		st_prep.m[i].direction = ((steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
+		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * DDA_SUBSTEPS);
 
-		// skip motors with zero movement. Leave previous values alone (carry forward)
+#else	// *NOT* __ORIGINAL_PREP_CODE
+
 		if (fp_ZERO(steps[i])) {
-			st_prep.m[i].phase_increment = 0;
+			st_prep.m[i].phase_increment = 0;		// leave direction alone, however
 			continue;
 		}
 
-		fraction = fmod(steps[i], 1.0);			// get fractional part
-		direction = ((steps[i] < 0) ? 1 : 0);	// get direction w/o polarity correction
-
-		if (direction == 1) {
-			st_prep.m[i].step_counter_incr = 1;	// positive movement
-		} else {
-			st_prep.m[i].step_counter_incr = -1;
-		}
+		st_prep.m[i].direction = ((steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
+		fraction = fmod(steps[i], 1);				// get fractional part of step count
 
 		// If the direction is the same as the previous move add the fractional steps 
 		// from the previous move to the current move. If it changed, subtract it
-		steps[i] = fabs(steps[i]);
+		steps[i] = fabs(steps[i]);					// easier to work with abs value of steps
 		if ((direction ^ st_prep.m[i].previous_direction) == 0) {	// direction same 
 			steps[i] += st_prep.m[i].previous_fraction;
 		} else {
 			steps[i] -= st_prep.m[i].previous_fraction;
 		}
 		st_prep.m[i].phase_increment = (uint32_t)(steps[i] * DDA_SUBSTEPS);
-		st_prep.m[i].previous_fraction = fraction;
-		st_prep.m[i].previous_dir = st_prep.m[i].dir;
-		st_prep.m[i].dir ^= st.m[i].polarity; 	// correct direction for polarity
-	}
+//		st_prep.m[i].phase_increment = (uint32_t)(roundf(steps[i]) * DDA_SUBSTEPS);
 
-#endif	// __BASELINE_PREP
+
+		// need these values for hte next segment
+		st_prep.m[i].previous_direction = direction;
+		st_prep.m[i].previous_fraction = fraction;
+
+#endif	// __ORIGINAL_PREP_CODE
+
+	}
 
 	st_prep.dda_period = _f_to_period(FREQUENCY_DDA);
 	st_prep.dda_ticks = (uint32_t)((microseconds/1000000) * FREQUENCY_DDA);
