@@ -299,7 +299,7 @@ ISR(TIMER_DDA_ISR_vect)
 		PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;		// turn step bit off in ~1 uSec
 
 #ifdef __STEP_DIAGNOSTICS
-		st_run.m[MOTOR_1].step_counter =+ st_run.m[MOTOR_1].step_counter_incr;
+		st_run.m[MOTOR_1].step_counter += st_run.m[MOTOR_1].step_counter_incr;
 #endif
 	}
 	if ((st_run.m[MOTOR_2].phase_accumulator += st_run.m[MOTOR_2].phase_increment) > 0) {
@@ -308,7 +308,7 @@ ISR(TIMER_DDA_ISR_vect)
 		PORT_MOTOR_2_VPORT.OUT &= ~STEP_BIT_bm;
 
 #ifdef __STEP_DIAGNOSTICS
-		st_run.m[MOTOR_2].step_counter =+ st_run.m[MOTOR_2].step_counter_incr;
+		st_run.m[MOTOR_2].step_counter += st_run.m[MOTOR_2].step_counter_incr;
 #endif
 	}
 	if ((st_run.m[MOTOR_3].phase_accumulator += st_run.m[MOTOR_3].phase_increment) > 0) {
@@ -317,7 +317,7 @@ ISR(TIMER_DDA_ISR_vect)
 		PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;
 
 #ifdef __STEP_DIAGNOSTICS
-		st_run.m[MOTOR_3].step_counter =+ st_run.m[MOTOR_3].step_counter_incr;
+		st_run.m[MOTOR_3].step_counter += st_run.m[MOTOR_3].step_counter_incr;
 #endif
 	}
 	if ((st_run.m[MOTOR_4].phase_accumulator += st_run.m[MOTOR_4].phase_increment) > 0) {
@@ -326,7 +326,7 @@ ISR(TIMER_DDA_ISR_vect)
 		PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
 
 #ifdef __STEP_DIAGNOSTICS
-		st_run.m[MOTOR_4].step_counter =+ st_run.m[MOTOR_4].step_counter_incr;
+		st_run.m[MOTOR_4].step_counter += st_run.m[MOTOR_4].step_counter_incr;
 #endif
 	}
 	if (--st_run.dda_ticks_downcount == 0) {			// end move
@@ -587,38 +587,37 @@ stat_t st_prep_line(float steps[], float microseconds)
 	}
 	st_prep.reset_flag = false;		// initialize accumulator reset flag for this move.
 
-	double fraction;
+	double fraction;				// fractional steps for this motor in the current move
+	uint8_t direction;				// direction of the current move (no polarity correction)
 
 	// setup motor parameters
 	for (uint8_t i=0; i<MOTORS; i++) {
 
-		// skip motors with zero movement
+		// skip motors with zero movement. Leave previous values alone (carry forward)
 		if (fp_ZERO(steps[i])) {
-			st_prep.m[i].phase_increment = 0;	// leave direction alone, however
+			st_prep.m[i].phase_increment = 0;
 			continue;
 		}
 
-		fraction = fmod(steps[i], 1.0);			 // get fractional part
-		st_prep.m[i].dir = ((steps[i] < 0)? 1:0);// get direction w/o polarity correction
+		fraction = fmod(steps[i], 1.0);			// get fractional part
+		direction = ((steps[i] < 0) ? 1 : 0);	// get direction w/o polarity correction
 
 #ifdef __STEP_DIAGNOSTIC
-		if (st_prep.m[i].dir == 1) {
+		if (direction == 1) {
 			st_prep.m[i].step_counter_incr = 1;	// positive movement
 		} else {
 			st_prep.m[i].step_counter_incr = -1;
 		}
 #endif
 
-		// If the direction remains the same add the fractional steps from 
-		// the previous move to the current move. If it changes, subtract it
-
+		// If the direction is the same as the previous move add the fractional steps 
+		// from the previous move to the current move. If it changed, subtract it
 		steps[i] = fabs(steps[i]);
-		if ((st_prep.m[i].dir ^ st_prep.m[i].previous_dir) == 0) {	// direction same 
+		if ((direction ^ st_prep.m[i].previous_direction) == 0) {	// direction same 
 			steps[i] += st_prep.m[i].previous_fraction;
 		} else {
 			steps[i] -= st_prep.m[i].previous_fraction;
 		}
-//		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * DDA_SUBSTEPS);
 		st_prep.m[i].phase_increment = (uint32_t)(steps[i] * DDA_SUBSTEPS);
 		st_prep.m[i].previous_fraction = fraction;
 		st_prep.m[i].previous_dir = st_prep.m[i].dir;

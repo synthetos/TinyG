@@ -46,7 +46,9 @@ OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_
 LINKONLYOBJECTS = 
 
 ## Build
-all: $(TARGET) tinyg.hex tinyg.eep tinyg.lss## Compile
+all: $(TARGET) tinyg.hex tinyg.eep tinyg.lss size
+
+## Compile
 util.o: ../util.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
@@ -170,6 +172,10 @@ $(TARGET): $(OBJECTS)
 
 %.lss: $(TARGET)
 	avr-objdump -h -S $< > $@
+
+size: ${TARGET}
+	@echo
+	@avr-size -C --mcu=${MCU} ${TARGET}
 
 ## Clean target
 .PHONY: clean
