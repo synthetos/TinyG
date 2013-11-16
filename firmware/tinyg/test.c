@@ -106,8 +106,8 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$tool\n");
 
 /* Run test file */
-//	xio_queue_RX_string_usb("$test=51\n");		// run test file
-//	xio_queue_RX_string_usb("{\"test\":52}\n");	// run test file
+//	xio_queue_RX_string_usb("$test=99\n");		// run test file
+	xio_queue_RX_string_usb("{\"test\":99}\n");	// run test file
 
 /* Other command sequences */
 //	xio_queue_RX_string_usb("H\n");				// show help file
@@ -148,7 +148,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0 x0.04\n");		// very short line
 //	xio_queue_RX_string_usb("g0 x0.08\n");
 //	xio_queue_RX_string_usb("g0 x0.12\n");
-	xio_queue_RX_string_usb("g0 x-20\n");
+//	xio_queue_RX_string_usb("g0 x-20\n");
 
 //	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
 //	xio_queue_RX_string_usb("g0 x0\n");

@@ -161,8 +161,8 @@ void stepper_init()
  */
 stat_t st_assertions()
 {
-	if (st_run.magic_start  != MAGICNUM) return (STAT_MEMORY_FAULT);
-	if (st_prep.magic_start != MAGICNUM) return (STAT_MEMORY_FAULT);
+	if (st_run.magic_start  != MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
+	if (st_prep.magic_start != MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
 	return (STAT_OK);
 }
 

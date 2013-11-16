@@ -58,7 +58,7 @@ controller_t cs;		// controller state structure
  ***********************************************************************************/
 
 static void _controller_HSM(void);
-static stat_t _alarm_idler(void);
+static stat_t _shutdown_idler(void);
 static stat_t _normal_idler(void);
 static stat_t _limit_switch_handler(void);
 static stat_t _system_assertions(void);
@@ -146,7 +146,7 @@ static void _controller_HSM()
 												// Order is important:
 	DISPATCH(hw_hard_reset_handler());			// 1. handle hard reset requests
 	DISPATCH(hw_bootloader_handler());			// 2. handle requests to enter bootloader
-	DISPATCH(_alarm_idler());					// 3. idle in alarm state (shutdown)
+	DISPATCH(_shutdown_idler());				// 3. idle in hard alarm state (shutdown)
 //	DISPATCH( poll_switches());					// 4. run a switch polling cycle
 	DISPATCH(_limit_switch_handler());			// 5. limit switch has been thrown
 
@@ -246,7 +246,7 @@ static stat_t _command_dispatch()
 
 /**** Local Utilities ********************************************************/
 /*
- * _alarm_idler() - blink rapidly and prevent further activity from occurring
+ * _shutdown_idler() - blink rapidly and prevent further activity from occurring
  * _normal_idler() - blink Indicator LED slowly to show everything is OK
  *
  *	Alarm idler flashes indicator LED rapidly to show everything is not OK. 
@@ -255,9 +255,9 @@ static stat_t _command_dispatch()
  *	(ctrl-x) or bootloader request can be processed.
  */
 
-static stat_t _alarm_idler()
+static stat_t _shutdown_idler()
 {
-	if (cm_get_machine_state() != MACHINE_ALARM) { return (STAT_OK);}
+	if (cm_get_machine_state() != MACHINE_SHUTDOWN) { return (STAT_OK);}
 
 	if (SysTickTimer_getValue() > cs.led_timer) {
 		cs.led_timer = SysTickTimer_getValue() + LED_ALARM_TIMER;
