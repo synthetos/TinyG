@@ -288,7 +288,7 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 typedef struct stPrepMotor {
  	int32_t phase_increment; 		// total steps in axis times substep factor
 	int8_t step_counter_incr;		// step count increment: +1 or -1 +++++
-	int8_t dir;						// travel direction corrected for polarity
+	int8_t direction;						// travel direction corrected for polarity
 	int8_t previous_direction;		// uncorrected traval direction of previous segment
 	float previous_fraction;		// fractional step from previous segment
 } stPrepMotor_t;
