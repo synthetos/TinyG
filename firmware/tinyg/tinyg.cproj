@@ -139,6 +139,9 @@
     <Compile Include="cycle_homing.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="cycle_jogging.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="cycle_probing.c">
       <SubType>compile</SubType>
     </Compile>
@@ -325,6 +328,9 @@
     <Compile Include="tests\test_051_braid.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="tests\test_099.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="text_parser.c">
       <SubType>compile</SubType>
     </Compile>
@@ -403,11 +409,6 @@
     <Folder Include="tests\" />
     <Folder Include="xio\" />
     <Folder Include="xmega\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="tests\saicdu93_diagnostics.txt">
-      <SubType>compile</SubType>
-    </None>
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
 </Project>
