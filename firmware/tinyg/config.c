@@ -122,7 +122,7 @@ void config_init()
 		rpt_print_loading_configs_message();
 		for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {
 			if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
-				strcpy_P(cmd->token, cfgArray[cmd->index].token);	// read the token from the array
+				strncpy_P(cmd->token, cfgArray[cmd->index].token, CMD_TOKEN_LEN);	// read the token from the array
 				cmd_read_NVM_value(cmd);
 				cmd_set(cmd);
 			}
@@ -145,7 +145,7 @@ stat_t set_defaults(cmdObj_t *cmd)
 	for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {
 		if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
 			cmd->value = GET_TABLE_FLOAT(def_value);
-			strcpy_P(cmd->token, cfgArray[cmd->index].token);
+			strncpy_P(cmd->token, cfgArray[cmd->index].token, CMD_TOKEN_LEN);
 			cmd_set(cmd);
 			cmd_persist(cmd);				// persist must occur when no other interrupts are firing
 		}
@@ -341,7 +341,7 @@ stat_t get_grp(cmdObj_t *cmd)
 	char_t group[CMD_GROUP_LEN+1];			// group string retrieved from cfgArray child
 	cmd->objtype = TYPE_PARENT;				// make first object the parent 
 	for (index_t i=0; cmd_index_is_single(i); i++) {
-		strcpy_P(group, cfgArray[i].group);  // don't need strncpy as it's always terminated
+		strncpy_P(group, cfgArray[i].group, CMD_GROUP_LEN);  // don't technically need strncpy as it's always terminated
 		if (strcmp(parent_group, group) != 0) continue;
 		(++cmd)->index = i;
 		cmd_get_cmdObj(cmd);
@@ -406,7 +406,7 @@ index_t cmd_get_index(const char_t *group, const char_t *token)
 {
 	char_t c;
 	char_t str[CMD_TOKEN_LEN+1];
-	strcpy(str, group);
+	strncpy(str, group, CMD_GROUP_LEN);
 	strcat(str, token);
 
 	index_t index_max = cmd_index_max();
@@ -500,15 +500,15 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 	cmd_reset_obj(cmd);
 	cmd->index = tmp;
 
-	strcpy_P(cmd->token, cfgArray[cmd->index].token); // token field is always terminated
-	strcpy_P(cmd->group, cfgArray[cmd->index].group); // group field is always terminated
+	strncpy_P(cmd->token, cfgArray[cmd->index].token, CMD_TOKEN_LEN); // NB: token field is always terminated
+	strncpy_P(cmd->group, cfgArray[cmd->index].group, CMD_GROUP_LEN); // NB: group field is always terminated
 
 	// special processing for system groups and stripping tokens for groups
 	if (cmd->group[0] != NUL) {
 		if (GET_TABLE_BYTE(flags) & F_NOSTRIP) {
 			cmd->group[0] = NUL;
 		} else {
-			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
+			strncpy(cmd->token, &cmd->token[strlen(cmd->group)], CMD_TOKEN_LEN); // strip group from the token
 		}
 	}
 	((fptrCmd)GET_TABLE_WORD(get))(cmd);	// populate the value
@@ -563,6 +563,8 @@ stat_t cmd_copy_string(cmdObj_t *cmd, const char_t *src)
 	if ((cmdStr.wp + strlen(src)) > CMD_SHARED_STRING_LEN) { return (STAT_BUFFER_FULL);}
 	char_t *dst = &cmdStr.string[cmdStr.wp];
 	strcpy(dst, src);						// copy string to current head position
+											// already been tested for string buffer overflow
+
 	cmdStr.wp += strlen(src)+1;				// advance head for next string
 	cmd->stringp = (char_t (*)[])dst;
 	return (STAT_OK);

@@ -1225,11 +1225,23 @@ static stat_t _exec_aline_tail()
 static stat_t _exec_aline_segment(uint8_t correction_flag)
 {
 	float travel[AXES];
-//	float steps[MOTORS];
+	float steps[MOTORS];
 
+/* The below is a re-arranged and loop unrolled version of this:
+	for (uint8_t i=0; i < AXES; i++) {	// don't do the error correction if you are going into a hold
+		if ((correction_flag == true) && (mr.segment_count == 1) && 
+			(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
+			mr.gm.target[i] = mr.endpoint[i];	// rounding error correction for last segment
+		} else {
+			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * mr.segment_velocity * mr.segment_move_time);
+		}
+		travel[i] = mr.gm.target[i] - mr.position[i];
+	}
+*/
 	// Multiply computed length by the unit vector to get the contribution for each axis. 
 	// Set the target in absolute coords and compute relative steps.
 	// Don't do the endpoint correction if you are going into a hold
+
 	if ((correction_flag == true) && (mr.segment_count == 1) && 
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
 		mr.gm.target[AXIS_X] = mr.endpoint[AXIS_X]; // correct any accumulated rounding errors in last segment
@@ -1238,7 +1250,6 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 		mr.gm.target[AXIS_A] = mr.endpoint[AXIS_A];
 		mr.gm.target[AXIS_B] = mr.endpoint[AXIS_B];
 		mr.gm.target[AXIS_C] = mr.endpoint[AXIS_C];
-
 	} else {
 		float intermediate = mr.segment_velocity * mr.segment_move_time;
 		mr.gm.target[AXIS_X] = mr.position[AXIS_X] + (mr.unit[AXIS_X] * intermediate);
@@ -1248,7 +1259,6 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 		mr.gm.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * intermediate);
 		mr.gm.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * intermediate);
 	}
-
 	travel[AXIS_X] = mr.gm.target[AXIS_X] - mr.position[AXIS_X];
 	travel[AXIS_Y] = mr.gm.target[AXIS_Y] - mr.position[AXIS_Y];
 	travel[AXIS_Z] = mr.gm.target[AXIS_Z] - mr.position[AXIS_Z];
@@ -1256,24 +1266,13 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	travel[AXIS_B] = mr.gm.target[AXIS_B] - mr.position[AXIS_B];
 	travel[AXIS_C] = mr.gm.target[AXIS_C] - mr.position[AXIS_C];
 
-/* The above is a re-arranged and loop unrolled version of this:
-	for (uint8_t i=0; i < AXES; i++) {	// don't do the error correction if you are going into a hold
-		if ((correction_flag == true) && (mr.segment_count == 1) && 
-			(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_STARTED)) {
-			mr.gm.target[i] = mr.endpoint[i];	// rounding error correction for last segment
-		} else {
-			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * mr.segment_velocity * mr.segment_move_time);
-		}
-		travel[i] = mr.gm.target[i] - mr.position[i];
-	}
-*/
 	// prep the segment for the steppers and adjust the variables for the next iteration
-//	ik_kinematics(travel, steps, mr.microseconds);
-//	if (st_prep_line(steps, mr.microseconds) == STAT_OK) {
+//	ik_kinematics(travel, vector, mr.microseconds);		// handy refactoring for easier debugging
+//	if (st_prep_line(vector, mr.microseconds) == STAT_OK) {
 
-	ik_kinematics(travel, vector, mr.microseconds);
-	if (st_prep_line(vector, mr.microseconds) == STAT_OK) {
-//		copy_axis_vector(mr.position, mr.gm.target); 	// is this...
+	ik_kinematics(travel, steps, mr.microseconds);
+	if (st_prep_line(steps, mr.microseconds) == STAT_OK) {
+//		copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
 		mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	
 		mr.position[AXIS_Y] = mr.gm.target[AXIS_Y];
 		mr.position[AXIS_Z] = mr.gm.target[AXIS_Z];

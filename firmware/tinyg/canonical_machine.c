@@ -1527,9 +1527,9 @@ static int8_t _get_axis(const index_t index)
 	char_t tmp[CMD_TOKEN_LEN+1];
 	char_t axes[] = {"xyzabc"};
 
-	strcpy_P(tmp, cfgArray[index].token);			// kind of a hack. Looks for an axis
-	if ((ptr = strchr(axes, tmp[0])) == NULL) { 	// character in the 0 and 3 positions
-		if ((ptr = strchr(axes, tmp[3])) == NULL) { // to accommodate 'xam' and 'g54x' styles
+	strncpy_P(tmp, cfgArray[index].token,CMD_TOKEN_LEN);	// kind of a hack. Looks for an axis
+	if ((ptr = strchr(axes, tmp[0])) == NULL) { 			// character in the 0 and 3 positions
+		if ((ptr = strchr(axes, tmp[3])) == NULL) { 		// to accommodate 'xam' and 'g54x' styles
 			return (-1);
 		}
 	}

@@ -155,7 +155,7 @@ void text_response(const stat_t status, char_t *buf)
 	if (txt.text_verbosity == TV_SILENT) return;	// skip all this
 
 	char units[] = "inch";
-	if (cm_get_units_mode(MODEL) != INCHES) { strcpy(units, "mm"); }
+	if (cm_get_units_mode(MODEL) != INCHES) { strcpy(units, "mm"); } // (no need to length check the copy)
 
 	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP)) {
 		fprintf_P(stderr, prompt_ok, units);

@@ -213,7 +213,7 @@ char_t *escape_string(char_t *dst, char_t *src)
 char_t *pstr2str(const char_t *pgm_string)
 {
 #ifdef __AVR
-	strncpy_P(shared_buf, pgm_string, STATUS_MESSAGE_LEN);
+	strncpy_P(shared_buf, pgm_string, SHARED_BUF_LEN);
 	return (shared_buf);
 #endif
 #ifdef __ARM

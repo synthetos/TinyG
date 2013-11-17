@@ -45,8 +45,8 @@
 #include "tests/test_051_braid.h"			// braid test - partial drawing
 #endif
 
-#ifdef __CANNED_TEST_99
-#include "tests/test_099.h"					// general test file. varies over time
+#ifdef __TEST_99
+#include "tests/test_099.h"					// diagnostic test file. used to diagnose specific issues
 #endif
 
 /*
@@ -77,7 +77,7 @@ uint8_t run_test(cmdObj_t *cmd)
 		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 #endif
-#ifdef __CANNED_TEST_99
+#ifdef __TEST_99
 		case 99: { xio_open(XIO_DEV_PGM, PGMFILE(&test_99),PGM_FLAGS); break;}
 #endif
 		default: {
@@ -105,9 +105,9 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("M6T4\n");
 //	xio_queue_RX_string_usb("$tool\n");
 
-/* Run test file */
-//	xio_queue_RX_string_usb("$test=99\n");		// run test file
-//	xio_queue_RX_string_usb("{\"test\":99}\n");	// run test file
+/* Run test file - __TEST_99 must be enabled*/
+//	xio_queue_RX_string_usb("$test=99\n");		// run test file in text mode - __TEXT_MODE must be enabled
+//	xio_queue_RX_string_usb("{\"test\":99}\n");	// run test file in JSON mode
 
 /* Other command sequences */
 //	xio_queue_RX_string_usb("H\n");				// show help file
@@ -148,7 +148,8 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0 x0.04\n");		// very short line
 //	xio_queue_RX_string_usb("g0 x0.08\n");
 //	xio_queue_RX_string_usb("g0 x0.12\n");
-	xio_queue_RX_string_usb("g0 x20y20\n");
+//	xio_queue_RX_string_usb("g0 x20y20\n");
+	xio_queue_RX_string_usb("g0 x-300 y-400\n");
 
 //	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
 //	xio_queue_RX_string_usb("g0 x0\n");

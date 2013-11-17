@@ -628,14 +628,14 @@ static stat_t _do_offsets(cmdObj_t *cmd)	// print offset parameters for G54-G59,
 
 static stat_t _do_all(cmdObj_t *cmd)	// print all parameters
 {
-	strcpy(cmd->token,"sys");			// print system group
+	strcpy(cmd->token,"sys");			// print system group (no need to length check the copy)
 	get_grp(cmd);
 	cmd_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 
 	_do_motors(cmd);					// print all motor groups
 	_do_axes(cmd);						// print all axis groups
 
-	strcpy(cmd->token,"p1");			// print PWM group		
+	strcpy(cmd->token,"p1");			// print PWM group	(no need to length check the copy)	
 	get_grp(cmd);
 	cmd_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 

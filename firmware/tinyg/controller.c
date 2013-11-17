@@ -232,11 +232,11 @@ static stat_t _command_dispatch()
 			break;
 		}
 		default: {										// anything else must be Gcode
-			if (cfg.comm_mode == JSON_MODE) {
-				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);					// use out_buf as temp
-				sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);	// '-8' is used for JSON chars
+			if (cfg.comm_mode == JSON_MODE) {			// run it as JSON...
+				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);	// use out_buf as temp
+				sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);
 				json_parser(cs.bufp);
-			} else {
+			} else {									//...or run it as text
 				text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
 			}
 		}
@@ -318,9 +318,10 @@ static stat_t _limit_switch_handler(void)
 {
 	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
 	if (get_limit_switch_thrown() == false) return (STAT_NOOP);
-//	cm_alarm(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
-	cm_hard_alarm(sw.sw_num_thrown);
-	return (STAT_OK);
+//	cm_alarm(gpio_get_sw_thrown); 		// unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
+//	cm_hard_alarm(sw.sw_num_thrown);	// no longer the correct behavior
+	return(cm_hard_alarm(STAT_LIMIT_SWITCH_HIT));
+//	return (STAT_OK);
 }
 
 /* 
@@ -347,7 +348,6 @@ stat_t _system_assertions()
 	return (STAT_OK);
 }
 
-
 /***********************************************************************************
  * JOB ID
  ***********************************************************************************/
@@ -360,7 +360,7 @@ stat_t job_populate_job_report()
 	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
 
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object
-	strcpy(cmd->token, job_str);
+	strncpy(cmd->token, job_str, CMD_TOKEN_LEN);
 
 	//cmd->index = cmd_get_index((const char_t *)"", job_str);// set the index - may be needed by calling function
 	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
@@ -371,22 +371,12 @@ stat_t job_populate_job_report()
 		cmd->index = job_start + i;
 
 		cmd_get_cmdObj(cmd);
-		strcpy(tmp, cmd->group);			// concatenate groups and tokens
+		strncpy(tmp, cmd->group, CMD_GROUP_LEN);// concatenate groups and tokens
 		strcat(tmp, cmd->token);
-		strcpy(cmd->token, tmp);
+		strncpy(cmd->token, tmp, CMD_TOKEN_LEN);
 		if ((cmd = cmd->nx) == NULL) 
 			return (STAT_OK);				 // should never be NULL unless SR length exceeds available buffer array 
 	}
-
-	// for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-	// 	if ((cmd->index = sr.status_report_list[i]) == 0) { break;}
-	// 	cmd_get_cmdObj(cmd);
-	// 	strcpy(tmp, cmd->group);			// concatenate groups and tokens
-	// 	strcat(tmp, cmd->token);
-	// 	strcpy(cmd->token, tmp);
-	// 	if ((cmd = cmd->nx) == NULL) 
-	// 		return (STAT_OK);				 // should never be NULL unless SR length exceeds available buffer array 
-	// }
 	return (STAT_OK);
 }
 

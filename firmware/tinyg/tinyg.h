@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		399.08	// test diagnostics drift
+#define TINYG_FIRMWARE_BUILD   		399.09	// diagnostics drift test - Fixed serial TX lockup bug
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -55,7 +55,7 @@
 #define __TEXT_MODE							// comment out to disable text mode support (saves ~9Kb)
 #define __HELP_SCREENS						// comment out to disable help screens 		(saves ~3.5Kb)
 #define __CANNED_TESTS 						// comment out to remove $tests 			(saves ~12Kb)
-#define __CANNED_TEST_99 					// comment out to remove test 99
+#define __TEST_99 							// comment out to remove diagnostic test 99
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -93,10 +93,10 @@ typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 #define GET_TOKEN_BYTE(a)  (char_t)pgm_read_byte(&cfgArray[i].a)	// get token byte value from cfgArray
 
 // get text from an array of strings in PGM and convert to RAM string
-#define GET_TEXT_ITEM(b,a) strcpy_P(shared_buf,(const char *)pgm_read_word(&b[a])) 
+#define GET_TEXT_ITEM(b,a) strncpy_P(shared_buf,(const char *)pgm_read_word(&b[a]),SHARED_BUF_LEN) 
 
 // get units from array of strings in PGM and convert to RAM string
-#define GET_UNITS(a) 	   strcpy_P(shared_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]))
+#define GET_UNITS(a) 	   strncpy_P(shared_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]),SHARED_BUF_LEN)
 
 // IO settings
 #define STD_IN 	XIO_DEV_USB		// default IO settings
@@ -218,7 +218,7 @@ typedef uint16_t magic_t;		// magic number size
  * It returns only if an error occurred. (ritorno is Italian for return) 
  */
 typedef uint8_t stat_t;
-#define STATUS_MESSAGE_LEN 48			// status message string storage allocation
+#define SHARED_BUF_LEN 64				// string and status message string storage allocation
 
 extern stat_t status_code;				// allocated in main.c
 extern char shared_buf[];				// allocated in main.c
@@ -310,7 +310,7 @@ char *get_status_message(stat_t status);
 #define	STAT_PROBING_CYCLE_FAILED 73		// probing cycle did not complete
 #define	STAT_JOGGING_CYCLE_FAILED 74		// jogging cycle did not complete
 #define	STAT_MACHINE_ALARMED 75				// machine is alarmed. Command not processed
-#define	STAT_ERROR_76 76
+#define	STAT_LIMIT_SWITCH_HIT 76			// a limit switch was hit causing sutdown
 #define	STAT_ERROR_77 77
 #define	STAT_ERROR_78 78
 #define	STAT_ERROR_79 79
@@ -335,7 +335,7 @@ char *get_status_message(stat_t status);
 #define	STAT_ERROR_98 98
 #define	STAT_ERROR_99 99
 
-// Assertion failures
+// Assertion failures and application specific other fatal errors 
 #define	STAT_GENERIC_ASSERTION_FAILURE 100	// generic assertion failure - unclassified
 #define STAT_GENERIC_EXCEPTION_REPORT 101	// used for test
 #define	STAT_MEMORY_FAULT 102				// generic memory corruption detected by magic numbers
@@ -345,5 +345,8 @@ char *get_status_message(stat_t status);
 #define	STAT_PLANNER_ASSERTION_FAILURE 106
 #define	STAT_STEPPER_ASSERTION_FAILURE 107
 #define	STAT_XIO_ASSERTION_FAILURE 108
+#define	STAT_PREP_LINE_MOVE_TIME_IS_INFINITE 109
+#define	STAT_PREP_LINE_MOVE_TIME_IS_NAN 110
+
 
 #endif // End of include guard: TINYG2_H_ONCE

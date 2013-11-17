@@ -228,7 +228,7 @@ enum prepBufferState {
  *	phasing between segments. However, if the new accumulator is going to be 
  *	much less than the old one you must reset it or risk motor stalls.
  */
-#define ACCUMULATOR_RESET_FACTOR 2	// amount counter range can safely change
+#define ACCUMULATOR_RESET_FACTOR 2	// amount phase accumulator range can safely change
 
 /*
  * Stepper control structures
@@ -271,8 +271,8 @@ typedef struct stRunMotor { 		// one per controlled motor
 	uint8_t power_state;			// state machine for managing motor power
 	uint32_t power_systick;			// sys_tick for next motor power state transition
 	float power_level;				// power level for this segment (ARM only)
-	int8_t step_counter_incr;		// step count increment: +1 or -1 +++++
-	int32_t step_counter;			// step count diagnostic +++++
+	int8_t pulse_counter_incr;		// +1 or -1; used by __STEP_DIAGNOSTICS
+	int32_t pulse_counter;			// step count register; used by __STEP_DIAGNOSTICS
 } stRunMotor_t;
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
@@ -288,11 +288,9 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 typedef struct stPrepMotor {
 	int8_t direction;				// travel direction corrected for polarity
  	int32_t phase_increment; 		// total steps in axis times substep factor
- 	int32_t previous_increment; 	// phase increment value from previous segment
 	int8_t previous_signbit;		// uncorrected travel direction of previous segment
-	int8_t direction_flip;			// flag to zero accumulator becuase direction changed
-//	float previous_fraction;		// fractional step from previous segment
-	int8_t step_counter_incr;		// step count increment: +1 or -1 +++++
+	int8_t direction_flip;			// flag to zero accumulator when direction changes
+	int8_t pulse_counter_incr;		// +1 or -1; used by __STEP_DIAGNOSTICS
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {

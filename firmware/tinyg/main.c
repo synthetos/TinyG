@@ -99,7 +99,7 @@ static void _application_init(void)
 	xio_init();						// xmega io subsystem
 	stepper_init(); 				// stepper subsystem 				- must precede gpio_init()
 	switch_init();					// switches
-	//	gpio_init();					// parallel IO
+//	gpio_init();					// parallel IO
 	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()
 
 	// application sub-systems
@@ -114,8 +114,8 @@ static void _application_init(void)
 	PMIC_EnableHighLevel();			// all levels are used, so don't bother to abstract them
 	PMIC_EnableMediumLevel();
 	PMIC_EnableLowLevel();
-	sei();							// enable global interrupts
-	rpt_print_system_ready_message();// (LAST) announce system is ready	
+	sei();							 // enable global interrupts
+	rpt_print_system_ready_message();// (LAST) announce system is ready
 }
 
 /**** Status Messages ***************************************************************
@@ -128,8 +128,8 @@ static void _application_init(void)
  * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
  */
 
-stat_t status_code;						// allocate a variable for this macro
-char shared_buf[STATUS_MESSAGE_LEN];	// allocate string for global use
+stat_t status_code;					// allocate a variable for this macro
+char shared_buf[SHARED_BUF_LEN];	// allocate string for global use
 
 static const char stat_00[] PROGMEM = "OK";
 static const char stat_01[] PROGMEM = "Error";
@@ -182,7 +182,7 @@ static const char stat_45[] PROGMEM = "Input value too large";
 static const char stat_46[] PROGMEM = "Input value range error";
 static const char stat_47[] PROGMEM = "Input value unsupported";
 static const char stat_48[] PROGMEM = "JSON syntax error";
-static const char stat_49[] PROGMEM = "JSON input has too many pairs";	// current longest message: 30 chars
+static const char stat_49[] PROGMEM = "JSON input has too many pairs";
 static const char stat_50[] PROGMEM = "JSON output too long";
 static const char stat_51[] PROGMEM = "Out of buffer space";
 static const char stat_52[] PROGMEM = "Config rejected during cycle";
@@ -209,8 +209,8 @@ static const char stat_71[] PROGMEM = "Soft limit exceeded";
 static const char stat_72[] PROGMEM = "Command not accepted";
 static const char stat_73[] PROGMEM = "Probing cycle failed";
 static const char stat_74[] PROGMEM = "Jogging cycle failed";
-static const char stat_75[] PROGMEM = "Machine is alarmed. Command not processed";
-static const char stat_76[] PROGMEM = "76";
+static const char stat_75[] PROGMEM = "Machine is alarmed - Command not processed";	// current longest message 43 chars (including NUL)
+static const char stat_76[] PROGMEM = "Limit switch hit - Shutdown occurred";
 static const char stat_77[] PROGMEM = "77";
 static const char stat_78[] PROGMEM = "78";
 static const char stat_79[] PROGMEM = "79";
@@ -244,6 +244,8 @@ static const char stat_105[] PROGMEM = "Canonical machine assertion failure";
 static const char stat_106[] PROGMEM = "Planner assertion failure";
 static const char stat_107[] PROGMEM = "Stepper assertion failure";
 static const char stat_108[] PROGMEM = "Extended IO assertion failure";
+static const char stat_109[] PROGMEM = "st_prep_line() move time is infinite";
+static const char stat_110[] PROGMEM = "st_prep_line() move time is NAN";
 
 static const char *const stat_msg[] PROGMEM = {
 	stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
@@ -256,7 +258,8 @@ static const char *const stat_msg[] PROGMEM = {
 	stat_70, stat_71, stat_72, stat_73, stat_74, stat_75, stat_76, stat_77, stat_78, stat_79,
 	stat_80, stat_81, stat_82, stat_83, stat_84, stat_85, stat_86, stat_87, stat_88, stat_89,
 	stat_90, stat_91, stat_92, stat_93, stat_94, stat_95, stat_96, stat_97, stat_98, stat_99,
-	stat_100, stat_101, stat_102, stat_103, stat_104, stat_105, stat_106, stat_107, stat_108
+	stat_100, stat_101, stat_102, stat_103, stat_104, stat_105, stat_106, stat_107, stat_108, stat_109, 
+	stat_110
 };
 
 char *get_status_message(stat_t status)

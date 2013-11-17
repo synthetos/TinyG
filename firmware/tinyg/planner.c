@@ -175,7 +175,7 @@ stat_t mp_exec_move()
 		if (cm.motion_state == MOTION_STOP) cm_set_motion_state(MOTION_RUN);
 	}
 	if (bf->bf_func != NULL) { return (bf->bf_func(bf));} 	// run the move callback in the planner buffer
-	return(cm_hard_alarm(STAT_INTERNAL_ERROR));	// never supposed to get here
+	return(cm_hard_alarm(STAT_INTERNAL_ERROR));				// never supposed to get here
 }
 
 /************************************************************************************

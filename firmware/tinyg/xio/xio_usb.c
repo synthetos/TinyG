@@ -106,9 +106,9 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 		advance_buffer(USBu.tx_buf_tail, TX_BUFFER_SIZE);
 		USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];
 	} else {
-		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// force another interrupt
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// buffer has no data; force another interrupt
 	}
-} 
+}
 
 /*
  * Pin Change (edge-detect) interrupt for CTS pin.

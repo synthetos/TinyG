@@ -30,14 +30,21 @@
  ******************************************************************************/
 
 // Serial IO Interrupt levels
-#define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc)
+// Maps both RX and TX to medium interrupt levels
+#define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_MED_gc)
 #define CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
-#define CTRLA_RXON_TXOFF_TXCON (USART_RXCINTLVL_MED_gc | USART_TXCINTLVL_LO_gc)
-#define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_LO_gc | USART_TXCINTLVL_LO_gc)
-#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_LO_gc)
-// alternate: map TX to MED interrupt levels
-//#define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_MED_gc | USART_TXCINTLVL_MED_gc)
-//#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_MED_gc)
+#define CTRLA_RXON_TXOFF_TXCON (USART_RXCINTLVL_MED_gc | USART_TXCINTLVL_MED_gc)
+#define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_MED_gc | USART_TXCINTLVL_MED_gc)
+#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_MED_gc)
+
+// Maps RX to medium and TX to lo interrupt levels
+// But don't use this or exception reports and other prints from medium interrupts
+// can cause the system to lock up if the TX buffer is full. See xio.h for explanation.
+//#define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc)
+//#define CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
+//#define CTRLA_RXON_TXOFF_TXCON (USART_RXCINTLVL_MED_gc | USART_TXCINTLVL_LO_gc)
+//#define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_LO_gc | USART_TXCINTLVL_LO_gc)
+//#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_LO_gc)
 
 // Buffer sizing
 #define buffer_t uint_fast8_t					// fast, but limits buffer to 255 char max
@@ -140,7 +147,7 @@ enum xioBAUDRATES {         		// BSEL	  BSCALE
 };
 
 enum xioFCState { 
-		FC_DISABLED = 0,			// flo control is disabled
+		FC_DISABLED = 0,			// flow control is disabled
 		FC_IN_XON,					// normal, un-flow-controlled state
 		FC_IN_XOFF					// flow controlled state
 };

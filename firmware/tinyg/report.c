@@ -274,7 +274,7 @@ static stat_t _populate_unfiltered_status_report()
 	char_t tmp[CMD_TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
 
-	cmd->objtype = TYPE_PARENT; 			// setup the parent object
+	cmd->objtype = TYPE_PARENT; 			// setup the parent object (no length checking required)
 	strcpy(cmd->token, sr_str);
 	cmd->index = cmd_get_index((const char_t *)"", sr_str);// set the index - may be needed by calling function
 	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
@@ -282,9 +282,9 @@ static stat_t _populate_unfiltered_status_report()
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = sr.status_report_list[i]) == 0) { break;}
 		cmd_get_cmdObj(cmd);
-		strcpy(tmp, cmd->group);			// concatenate groups and tokens
+		strncpy(tmp, cmd->group, CMD_GROUP_LEN);// concatenate groups and tokens
 		strcat(tmp, cmd->token);
-		strcpy(cmd->token, tmp);
+		strncpy(cmd->token, tmp, CMD_TOKEN_LEN);
 		if ((cmd = cmd->nx) == NULL) 
 			return (cm_hard_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array
 	}
@@ -311,7 +311,7 @@ static uint8_t _populate_filtered_status_report()
 	char_t tmp[CMD_TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
 
-	cmd->objtype = TYPE_PARENT; 			// setup the parent object
+	cmd->objtype = TYPE_PARENT; 			// setup the parent object (no need to length check the copy)
 	strcpy(cmd->token, sr_str);
 //	cmd->index = cmd_get_index((const char_t *)"", sr_str);// OMITTED - set the index - may be needed by calling function
 	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
@@ -324,9 +324,9 @@ static uint8_t _populate_filtered_status_report()
 			cmd->objtype = TYPE_EMPTY;
 			continue;
 		} else {
-			strcpy(tmp, cmd->group);		// flatten out groups
+			strncpy(tmp, cmd->group, CMD_GROUP_LEN);// flatten out groups
 			strcat(tmp, cmd->token);
-			strcpy(cmd->token, tmp);
+			strncpy(cmd->token, tmp, CMD_TOKEN_LEN);
 			sr.status_report_value[i] = cmd->value;
 			if ((cmd = cmd->nx) == NULL) return (false); // should never be NULL unless SR length exceeds available buffer array
 			has_data = true;
