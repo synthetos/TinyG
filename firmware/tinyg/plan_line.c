@@ -1225,8 +1225,7 @@ static stat_t _exec_aline_tail()
 static stat_t _exec_aline_segment(uint8_t correction_flag)
 {
 	float travel[AXES];
-	float steps[MOTORS];
-
+//	float steps[MOTORS];
 
 	// Multiply computed length by the unit vector to get the contribution for each axis. 
 	// Set the target in absolute coords and compute relative steps.
@@ -1269,22 +1268,22 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	}
 */
 	// prep the segment for the steppers and adjust the variables for the next iteration
-	ik_kinematics(travel, steps, mr.microseconds);
-	if (st_prep_line(steps, mr.microseconds) == STAT_OK) {
-		copy_axis_vector(mr.position, mr.gm.target); 	// update runtime position	
-/* TRY THIS
-		mr.position[AXIS_X] = mr.gm.target[AXIS_X];
+//	ik_kinematics(travel, steps, mr.microseconds);
+//	if (st_prep_line(steps, mr.microseconds) == STAT_OK) {
+
+	ik_kinematics(travel, vector, mr.microseconds);
+	if (st_prep_line(vector, mr.microseconds) == STAT_OK) {
+//		copy_axis_vector(mr.position, mr.gm.target); 	// is this...
+		mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	
 		mr.position[AXIS_Y] = mr.gm.target[AXIS_Y];
 		mr.position[AXIS_Z] = mr.gm.target[AXIS_Z];
 		mr.position[AXIS_A] = mr.gm.target[AXIS_A];
 		mr.position[AXIS_B] = mr.gm.target[AXIS_B];
 		mr.position[AXIS_C] = mr.gm.target[AXIS_C];	
-*/	
 	}
 	if (--mr.segment_count == 0) return (STAT_OK);		// this section has run all its segments
 	return (STAT_EAGAIN);								// this section still has more segments to run
 }
-
 
 /****** UNIT TESTS ******/
 

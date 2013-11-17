@@ -286,11 +286,12 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 // Must be careful about volatiles in this one
 
 typedef struct stPrepMotor {
+	int8_t direction;				// travel direction corrected for polarity
  	int32_t phase_increment; 		// total steps in axis times substep factor
+ 	int32_t previous_increment; 	// phase increment value from previous segment
+//	int8_t previous_direction;		// uncorrected traval direction of previous segment
+//	float previous_fraction;		// fractional step from previous segment
 	int8_t step_counter_incr;		// step count increment: +1 or -1 +++++
-	int8_t direction;						// travel direction corrected for polarity
-	int8_t previous_direction;		// uncorrected traval direction of previous segment
-	float previous_fraction;		// fractional step from previous segment
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
@@ -298,10 +299,10 @@ typedef struct stPrepSingleton {
 	uint8_t move_type;				// move type
 	volatile uint8_t exec_state;	// move execution state 
 	volatile uint8_t reset_flag;	// TRUE if accumulator should be reset
-	uint32_t prev_ticks;			// tick count from previous move
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
+	uint32_t previous_dda_ticks;	// tick count from previous move
 //	float segment_velocity;			// record segment velocity for diagnostics
 	stPrepMotor_t m[MOTORS];		// per-motor structs
 } stPrepSingleton_t;
