@@ -79,17 +79,23 @@ static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 /***********************************************************************************
  **** CONFIG TABLE  ****************************************************************
  ***********************************************************************************
- *	NOTES:
+ *
+ *	NOTES AND CAVEATS
  *
  *	- Token matching occurs from the most specific to the least specific. This means
  *	  that if shorter tokens overlap longer ones the longer one must precede the
  *	  shorter one. E.g. "gco" needs to come before "gc"
  *
- *	- Mark group strings for entries that have no group as nul -->"". 
+ *	- Mark group strings for entries that have no group as nul -->  "". 
  *	  This is important for group expansion.
  *
  *	- Groups do not have groups. Neither do uber-groups, e.g.
  *	  'x' is --> { "", "x",  	and 'm' is --> { "", "m",  
+ *
+ *	- Be careful not to define groups longer than CMD_GROUP_LEN (3) and tokens longer
+ *	  than CMD_TOKEN_LEN (5). (See config.h for lengths). The combined group + token 
+ *	  cannot exceed CMD_TOKEN_LEN. String functions working on the table assume these 
+ *	  rules are followed and do not check lengths or perform other validation.
  *
  *	NOTE: If the count of lines in cfgArray exceeds 255 you need to change index_t
  *	uint16_t in the config.h file. 
@@ -562,7 +568,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 /***** Make sure these defines line up with any changes in the above table *****/
 
-#define CMD_COUNT_GROUPS 		26		// count of simple groups
+#define CMD_COUNT_GROUPS 		27		// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 		// count of uber-groups
 
 /* <DO NOT MESS WITH THESE DEFINES> */
@@ -598,7 +604,8 @@ static stat_t _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // hel
 		if (list[i][0] == NUL) { return (STAT_COMPLETE);}
 		cmd_reset_list();
 		cmd = cmd_body;
-		strncpy(cmd->token, list[i], CMD_TOKEN_LEN);
+//		strncpy(cmd->token, list[i], CMD_TOKEN_LEN);
+		strcpy(cmd->token, list[i]);	// assumes input list is well behaved
 		cmd->index = cmd_get_index((const char_t *)"", cmd->token);
 //		cmd->objtype = TYPE_PARENT;
 		cmd_get_cmdObj(cmd);

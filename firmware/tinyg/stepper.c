@@ -84,7 +84,7 @@ void st_end_cycle(void)
 
 	for (uint8_t i=0; i<MOTORS; i++) {
 //		printf("Motor %d steps: %li  Increment: %0.6f  Residual: %0.6f\n", 	// text display
-		printf("{\"%d\":{\"step\":%li.\"incr\":%0.6f,\"phas\":%0.6f}}\n", 	// JSON display
+		printf("{\"%d\":{\"step\":%li,\"incr\":%0.6f,\"phas\":%0.6f}}\n", 	// JSON display
 			i+1, st_run.m[i].pulse_counter, 
 			(double)((double)st_run.m[i].phase_increment / DDA_SUBSTEPS), 
 			(double)((double)st_run.m[i].phase_accumulator / DDA_SUBSTEPS));
@@ -670,7 +670,8 @@ static int8_t _get_motor(const index_t index)
 	char_t motors[] = {"123456"};
 	char_t tmp[CMD_TOKEN_LEN+1];
 	
-	strncpy_P(tmp, cfgArray[index].group, CMD_GROUP_LEN);
+//	strncpy_P(tmp, cfgArray[index].group, CMD_GROUP_LEN);
+	strcpy_P(tmp, cfgArray[index].group);	// assumes group strings in the array are well behaved
 	if ((ptr = strchr(motors, tmp[0])) == NULL) {
 		return (-1);
 	}

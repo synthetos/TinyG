@@ -37,7 +37,7 @@ extern "C"{
 
 #include "config.h"
 
-/* Defines and macros */
+/* Defines, Macros, and  Assorted Parameters */
 
 #define MODEL 	(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
 #define PLANNER (GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
@@ -45,6 +45,9 @@ extern "C"{
 #define ACTIVE_MODEL cm.am					// active model pointer is maintained by state management
 
 #define _to_millimeters(a) ((cm.gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
+
+#define JOGGING_START_VELOCITY ((float)10.0)
+#define DISABLE_SOFT_LIMIT (-1000000)
 
 /*****************************************************************************
  * GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
@@ -260,10 +263,7 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 /**** Externs - See canonical_machine.c for allocation ****/
 
 extern cmSingleton_t cm;		// canonical machine controller singleton
-//extern GCodeState_t  gm;		// core gcode model state
-//extern GCodeStateX_t gmx;		// extended gcode model state
-//extern GCodeInput_t  gn;		// gcode input values - transient
-//extern GCodeInput_t  gf;		// gcode input flags - transient
+
 
 /*****************************************************************************
  * 
@@ -486,10 +486,6 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 };	// ordering must be preserved. See cm_set_move_times()
 #define AXIS_MODE_MAX_LINEAR AXIS_INHIBITED
 #define AXIS_MODE_MAX_ROTARY AXIS_RADIUS
-
-/*** Jogging Parameters ***/
-
-#define JOGGING_START_VELOCITY ((float)10.0)
 
 /*****************************************************************************
  * FUNCTION PROTOTYPES

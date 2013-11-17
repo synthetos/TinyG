@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		399.10	// OK, this one's much better
+#define TINYG_FIRMWARE_BUILD   		399.11	// Cleanup and more testing
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -55,7 +55,7 @@
 #define __TEXT_MODE							// comment out to disable text mode support (saves ~9Kb)
 #define __HELP_SCREENS						// comment out to disable help screens 		(saves ~3.5Kb)
 #define __CANNED_TESTS 						// comment out to remove $tests 			(saves ~12Kb)
-#define __TEST_99 							// comment out to remove diagnostic test 99
+//#define __TEST_99 							// comment out to remove diagnostic test 99
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -93,12 +93,10 @@ typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 #define GET_TOKEN_BYTE(a)  (char_t)pgm_read_byte(&cfgArray[i].a)	// get token byte value from cfgArray
 
 // get text from an array of strings in PGM and convert to RAM string
-//#define GET_TEXT_ITEM(b,a) strncpy_P(shared_buf,(const char *)pgm_read_word(&b[a]),SHARED_BUF_LEN) 
-#define GET_TEXT_ITEM(b,a) strcpy_P(shared_buf,(const char *)pgm_read_word(&b[a])) 
+#define GET_TEXT_ITEM(b,a) strncpy_P(shared_buf,(const char *)pgm_read_word(&b[a]),SHARED_BUF_LEN) 
 
 // get units from array of strings in PGM and convert to RAM string
-//#define GET_UNITS(a) 	   strncpy_P(shared_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]),SHARED_BUF_LEN)
-#define GET_UNITS(a) 	   strcpy_P(shared_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]))
+#define GET_UNITS(a) 	   strncpy_P(shared_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]),SHARED_BUF_LEN)
 
 // IO settings
 #define STD_IN 	XIO_DEV_USB		// default IO settings

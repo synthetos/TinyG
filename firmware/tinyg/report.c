@@ -288,10 +288,6 @@ static stat_t _populate_unfiltered_status_report()
 		strcat(tmp, cmd->token);
 		strcpy(cmd->token, tmp);			//...or here.
 
-//		strcpy(tmp, cmd->group);// concatenate groups and tokens
-//		strcat(tmp, cmd->token);
-//		strcpy(cmd->token, tmp);
-
 		if ((cmd = cmd->nx) == NULL) 
 			return (cm_hard_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array
 	}
@@ -556,7 +552,6 @@ stat_t job_populate_job_report()
 	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
 
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object
-//	strncpy(cmd->token, job_str, CMD_TOKEN_LEN);
 	strcpy(cmd->token, job_str);
 
 	//cmd->index = cmd_get_index((const char_t *)"", job_str);// set the index - may be needed by calling function
@@ -566,13 +561,13 @@ stat_t job_populate_job_report()
 	for (uint8_t i=0; i<4; i++) {
 		
 		cmd->index = job_start + i;
-
 		cmd_get_cmdObj(cmd);
+
 		strcpy(tmp, cmd->group);			// concatenate groups and tokens - do NOT use strncpy()
 		strcat(tmp, cmd->token);
 		strcpy(cmd->token, tmp);
-		if ((cmd = cmd->nx) == NULL) 
-			return (STAT_OK);				 // should never be NULL unless SR length exceeds available buffer array 
+
+		if ((cmd = cmd->nx) == NULL) return (STAT_OK); // should never be NULL unless SR length exceeds available buffer array 
 	}
 	return (STAT_OK);
 }

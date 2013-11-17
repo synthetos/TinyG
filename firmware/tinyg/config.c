@@ -122,8 +122,7 @@ void config_init()
 		rpt_print_loading_configs_message();
 		for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {
 			if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
-//				strncpy_P(cmd->token, cfgArray[cmd->index].token, CMD_TOKEN_LEN);	// read the token from the array
-				strcpy_P(cmd->token, cfgArray[cmd->index].token);	// read the token from the array
+				strcpy_P(cmd->token, cfgArray[cmd->index].token);// read token from array
 				cmd_read_NVM_value(cmd);
 				cmd_set(cmd);
 			}
@@ -146,7 +145,6 @@ stat_t set_defaults(cmdObj_t *cmd)
 	for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {
 		if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
 			cmd->value = GET_TABLE_FLOAT(def_value);
-//			strncpy_P(cmd->token, cfgArray[cmd->index].token, CMD_TOKEN_LEN);
 			strcpy_P(cmd->token, cfgArray[cmd->index].token);
 			cmd_set(cmd);
 			cmd_persist(cmd);				// persist must occur when no other interrupts are firing
@@ -339,12 +337,11 @@ stat_t set_flu(cmdObj_t *cmd)
 
 stat_t get_grp(cmdObj_t *cmd)
 {
-	char_t *parent_group = cmd->token;		// token in the parent cmd object is the group
-	char_t group[CMD_GROUP_LEN+1];			// group string retrieved from cfgArray child
-	cmd->objtype = TYPE_PARENT;				// make first object the parent 
+	char_t *parent_group = cmd->token;			// token in the parent cmd object is the group
+	char_t group[CMD_GROUP_LEN+1];				// group string retrieved from cfgArray child
+	cmd->objtype = TYPE_PARENT;					// make first object the parent 
 	for (index_t i=0; cmd_index_is_single(i); i++) {
-//		strncpy_P(group, cfgArray[i].group, CMD_GROUP_LEN);  // don't technically need strncpy as it's always terminated
-		strcpy_P(group, cfgArray[i].group);  // don't need strncpy as it's always terminated
+		strcpy_P(group, cfgArray[i].group);
 		if (strcmp(parent_group, group) != 0) continue;
 		(++cmd)->index = i;
 		cmd_get_cmdObj(cmd);
@@ -409,8 +406,7 @@ index_t cmd_get_index(const char_t *group, const char_t *token)
 {
 	char_t c;
 	char_t str[CMD_TOKEN_LEN+1];
-//	strncpy(str, group, CMD_GROUP_LEN);
-	strcpy(str, group);		// we assume the "group" is well behaved coming in
+	strcpy(str, group);		// assume group and token obey combined length limits
 	strcat(str, token);
 
 	index_t index_max = cmd_index_max();
@@ -504,8 +500,6 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 	cmd_reset_obj(cmd);
 	cmd->index = tmp;
 
-//	strncpy_P(cmd->token, cfgArray[cmd->index].token, CMD_TOKEN_LEN); // NB: token field is always terminated
-//	strncpy_P(cmd->group, cfgArray[cmd->index].group, CMD_GROUP_LEN); // NB: group field is always terminated
 	strcpy_P(cmd->token, cfgArray[cmd->index].token); // NB: token field is always terminated
 	strcpy_P(cmd->group, cfgArray[cmd->index].group); // NB: group field is always terminated
 
@@ -514,7 +508,6 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 		if (GET_TABLE_BYTE(flags) & F_NOSTRIP) {
 			cmd->group[0] = NUL;
 		} else {
-//			strncpy(cmd->token, &cmd->token[strlen(cmd->group)], CMD_TOKEN_LEN); // strip group from the token
 			strcpy(cmd->token, &cmd->token[strlen(cmd->group)]); // strip group from the token
 		}
 	}
@@ -610,7 +603,6 @@ cmdObj_t *cmd_add_integer(const char_t *token, const uint32_t value)// add an in
 			if ((cmd = cmd->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
 			continue;
 		}
-//		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		strcpy(cmd->token, token);
 		cmd->value = (float) value;
 		cmd->objtype = TYPE_INTEGER;
@@ -627,7 +619,6 @@ cmdObj_t *cmd_add_data(const char_t *token, const uint32_t value)// add an integ
 			if ((cmd = cmd->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
 			continue;
 		}
-//		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		strcpy(cmd->token, token);
 		float *v = (float*)&value;
 		cmd->value = *v;
@@ -645,7 +636,6 @@ cmdObj_t *cmd_add_float(const char_t *token, const float value)	// add a float o
 			if ((cmd = cmd->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
 			continue;
 		}
-//		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		strcpy(cmd->token, token);
 		cmd->value = value;
 		cmd->objtype = TYPE_FLOAT;
@@ -663,7 +653,6 @@ cmdObj_t *cmd_add_string(const char_t *token, const char_t *string) // add a str
 			if ((cmd = cmd->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
 			continue;
 		}
-//		strncpy(cmd->token, token, CMD_TOKEN_LEN);			// expects string to be in RAM if on AVRs
 		strcpy(cmd->token, token);							// expects string to be in RAM if on AVRs
 		if (cmd_copy_string(cmd, string) != STAT_OK) { return (NULL);}
 		cmd->index = cmd_get_index((const char_t *)"", cmd->token);
