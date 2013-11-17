@@ -96,6 +96,16 @@ void st_end_cycle(void)
 //	}
 }
 
+stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
+{
+#ifdef __STEP_DIAGNOSTICS
+	_clear_pulse_counters();
+	st_end_cycle();
+#endif
+	return(STAT_OK);
+}
+
+
 /* 
  * stepper_init() - initialize stepper motor subsystem 
  *

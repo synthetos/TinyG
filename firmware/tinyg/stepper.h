@@ -333,6 +333,7 @@ stat_t st_set_mt(cmdObj_t *cmd);
 stat_t st_set_md(cmdObj_t *cmd);
 stat_t st_set_me(cmdObj_t *cmd);
 stat_t st_set_mp(cmdObj_t *cmd);
+stat_t st_clc(cmdObj_t *cmd);
 
 #ifdef __TEXT_MODE
 
