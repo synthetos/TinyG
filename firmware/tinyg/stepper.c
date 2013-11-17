@@ -434,6 +434,8 @@ static void _load_move()
 //			st_run.m[MOTOR_1].phase_accumulator = st_run.m[MOTOR_1].phase_accumulator / st_prep.m[MOTOR_1].previous_increment;
 //			st_run.m[MOTOR_1].phase_accumulator /= st_prep.m[MOTOR_1].previous_increment;
 
+			if (st_prep.m[MOTOR_1].direction_flip) 	st_run.m[MOTOR_1].phase_accumulator = 0;
+
 			if (st_prep.m[MOTOR_1].direction == 0) {
 				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm;// CW motion (bit cleared)
 			} else {
@@ -455,6 +457,7 @@ static void _load_move()
 //			if (st_prep.reset_flag == true) {
 //				st_run.m[MOTOR_2].phase_accumulator = -(st_run.dda_ticks_downcount);
 //			}
+			if (st_prep.m[MOTOR_2].direction_flip) 	st_run.m[MOTOR_2].phase_accumulator = 0;
 			if (st_prep.m[MOTOR_2].direction == 0) {
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm;
 			} else {
@@ -479,6 +482,7 @@ static void _load_move()
 //			if (fp_ZERO(st_run.m[MOTOR_3].phase_accumulator)) {	// initialize accumulator if zero
 //				st_run.m[MOTOR_3].phase_accumulator = st_prep.dda_ticks_X_substeps;
 //			}
+			if (st_prep.m[MOTOR_3].direction_flip) 	st_run.m[MOTOR_3].phase_accumulator = 0;
 			if (st_prep.m[MOTOR_3].direction == 0) {
 				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm;
 			} else {
@@ -503,6 +507,7 @@ static void _load_move()
 //			if (fp_ZERO(st_run.m[MOTOR_4].phase_accumulator)) {	// initialize accumulator if zero
 //				st_run.m[MOTOR_4].phase_accumulator = st_prep.dda_ticks_X_substeps;
 //			}
+			if (st_prep.m[MOTOR_4].direction_flip) 	st_run.m[MOTOR_4].phase_accumulator = 0;
 			if (st_prep.m[MOTOR_4].direction == 0) {
 				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm;
 			} else {
@@ -592,62 +597,32 @@ void st_prep_dwell(float microseconds)
 
  */
 
-//#define __ORIGINAL_PREP_CODE
-
 stat_t st_prep_line(float steps[], float microseconds)
 {
-//	uint8_t direction;				// direction of the current move (no polarity correction)
-//	double fraction;				// fractional steps for this motor in the current move
-
 	// *** defensive programming ***
 	// trap conditions that would prevent queueing the line
 	if (st_prep.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);
 	} else if (isfinite(microseconds) == false) { return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
 	} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
-	st_prep.reset_flag = false;		// initialize accumulator reset flag for this move.
+//	st_prep.reset_flag = false;		// initialize accumulator reset flag for this move.
 
 	// setup motor parameters
 	for (uint8_t i=0; i<MOTORS; i++) {
 
 #ifdef __STEP_DIAGNOSTICS
-		if (signbit(steps[i]) == 0) {	// 0 = positive movement
-			st_prep.m[i].step_counter_incr = +1;
-		} else {
-			st_prep.m[i].step_counter_incr = -1;
-		}
-#endif // __STEP_DIAGNOSTICS
-
-#ifdef __ORIGINAL_PREP_CODE 						// original code with no corrections 
-
-		st_prep.m[i].direction = ((steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
-		st_prep.m[i].phase_increment = (uint32_t)fabs(steps[i] * DDA_SUBSTEPS);
-
-#else	// *NOT* __ORIGINAL_PREP_CODE
+		st_prep.m[i].step_counter_incr = steps[i] / fabs(steps[i]);
+#endif
 
 		if (fp_ZERO(steps[i])) {
 			st_prep.m[i].phase_increment = 0;		// leave direction alone, however
 			continue;
 		}
-
-		st_prep.m[i].direction = ((steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
-//		fraction = fmod(steps[i], 1);				// get fractional part of step count
-
-		// If the direction is the same as the previous move add the fractional steps 
-		// from the previous move to the current move. If it changed, subtract it
-		steps[i] = fabs(steps[i]);					// easier to work with abs value of steps
-//		if ((direction ^ st_prep.m[i].previous_direction) == 0) {	// direction same 
-//			steps[i] += st_prep.m[i].previous_fraction;
-//		} else {
-//			steps[i] -= st_prep.m[i].previous_fraction;
-//		}
+		st_prep.m[i].direction = ((steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;	// ORIGINAL CODE LINE
+		st_prep.m[i].direction_flip = (signbit(steps[i]) ^ st_prep.m[i].previous_signbit); // 1 = direction change
+		st_prep.m[i].previous_signbit = (signbit(steps[i]));
 		st_prep.m[i].previous_increment = st_prep.m[i].phase_increment;	// save it
-		st_prep.m[i].phase_increment = (uint32_t)(steps[i] * DDA_SUBSTEPS);
-//		st_prep.m[i].previous_direction = direction;
-//		st_prep.m[i].previous_fraction = fraction;
-
-#endif	// __ORIGINAL_PREP_CODE
-
+		st_prep.m[i].phase_increment = (uint32_t)(fabs(steps[i]) * DDA_SUBSTEPS);// ORIGINAL CODE LINE
 	}
 
 	st_prep.dda_period = _f_to_period(FREQUENCY_DDA);
@@ -655,7 +630,7 @@ stat_t st_prep_line(float steps[], float microseconds)
 	st_prep.dda_ticks_X_substeps = (microseconds / 1000000) * FREQUENCY_DDA * DDA_SUBSTEPS;
 
 	// FOOTNOTE: The above expressions are extremely sensitive to the order of operands
-	// to avoid long-term accuracy errors due to round offf. One earlier attempt was:
+	// to avoid long-term accuracy errors due to round off error. One failed attempt was:
 	// sp.dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
 
 	// anti-stall measure in case change in velocity between segments is too great 

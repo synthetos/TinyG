@@ -289,7 +289,8 @@ typedef struct stPrepMotor {
 	int8_t direction;				// travel direction corrected for polarity
  	int32_t phase_increment; 		// total steps in axis times substep factor
  	int32_t previous_increment; 	// phase increment value from previous segment
-//	int8_t previous_direction;		// uncorrected traval direction of previous segment
+	int8_t previous_signbit;		// uncorrected travel direction of previous segment
+	int8_t direction_flip;			// flag to zero accumulator becuase direction changed
 //	float previous_fraction;		// fractional step from previous segment
 	int8_t step_counter_incr;		// step count increment: +1 or -1 +++++
 } stPrepMotor_t;
