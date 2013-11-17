@@ -233,7 +233,7 @@ static stat_t _command_dispatch()
 		}
 		default: {										// anything else must be Gcode
 			if (cfg.comm_mode == JSON_MODE) {			// run it as JSON...
-				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);	// use out_buf as temp
+				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);	// -8 is for extra JSON chars (use out_buf as temp)
 				sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);
 				json_parser(cs.bufp);
 			} else {									//...or run it as text
@@ -348,68 +348,4 @@ stat_t _system_assertions()
 	return (STAT_OK);
 }
 
-/***********************************************************************************
- * JOB ID
- ***********************************************************************************/
 
-#if 0
-stat_t job_populate_job_report()
-{
-	const char_t job_str[] = "job";
-	char_t tmp[CMD_TOKEN_LEN+1];
-	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
-
-	cmd->objtype = TYPE_PARENT; 			// setup the parent object
-	strncpy(cmd->token, job_str, CMD_TOKEN_LEN);
-
-	//cmd->index = cmd_get_index((const char_t *)"", job_str);// set the index - may be needed by calling function
-	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
-
-	index_t job_start = cmd_get_index((const char_t *)"",(const char_t *)"job1");// set first job persistence index
-	for (uint8_t i=0; i<4; i++) {
-		
-		cmd->index = job_start + i;
-
-		cmd_get_cmdObj(cmd);
-		strncpy(tmp, cmd->group, CMD_GROUP_LEN);// concatenate groups and tokens
-		strcat(tmp, cmd->token);
-		strncpy(cmd->token, tmp, CMD_TOKEN_LEN);
-		if ((cmd = cmd->nx) == NULL) 
-			return (STAT_OK);				 // should never be NULL unless SR length exceeds available buffer array 
-	}
-	return (STAT_OK);
-}
-
-stat_t job_set_job_report(cmdObj_t *cmd)
-{
-	index_t job_start = cmd_get_index((const char_t *)"",(const char_t *)"job1");// set first job persistence index
-
-	for (uint8_t i=0; i<4; i++) {
-		if (((cmd = cmd->nx) == NULL) || (cmd->objtype == TYPE_EMPTY)) { break;}
-		if (cmd->objtype == TYPE_INTEGER) {
-			cs.job_id[i] = cmd->value;
-			cmd->index = job_start + i;					// index of the SR persistence location
-			cmd_persist(cmd);
-		} else {
-			return (STAT_INPUT_VALUE_UNSUPPORTED);
-		}
-	}
-	job_populate_job_report();			// return current values
-	return (STAT_OK);
-}
-
-void job_print_job(cmdObj_t *cmd) { job_populate_job_report();}
-stat_t job_get(cmdObj_t *cmd) { return (job_populate_job_report());}
-stat_t job_set(cmdObj_t *cmd) { return (job_set_job_report(cmd));}
-
-uint8_t job_report_callback()
-{
-	if (cfg.comm_mode == TEXT_MODE) {
-		// no-op, job_ids are client app state
-	} else {		
-		fprintf(stderr, "{\"job\":[%lu,%lu,%lu,%lu]}\n", cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );
-		//job_clear_report();
-	}
-	return (STAT_OK);
-}
-#endif

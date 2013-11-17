@@ -69,6 +69,7 @@ typedef struct srSingleton {
 
 } srSingleton_t;
 
+
 typedef struct qrSingleton {		// data for queue reports
 
 	/*** config values (PUBLIC) ***/

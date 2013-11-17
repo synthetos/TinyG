@@ -486,7 +486,8 @@ void json_print_response(uint8_t status)
 	char tail[MAX_TAIL_LEN+1];
 
 	while (cs.out_buf[strcount] != '0') { strcount--; }	// find end of checksum
-	strncpy(tail, cs.out_buf + strcount + 1, MAX_TAIL_LEN);	// save the json termination
+//	strncpy(tail, cs.out_buf + strcount + 1, MAX_TAIL_LEN);	// save the json termination
+	strcpy(tail, cs.out_buf + strcount + 1);			// save the json termination
 
 	while (cs.out_buf[strcount2] != ',') { strcount2--; }// find start of checksum
 	sprintf((char *)cs.out_buf + strcount2 + 1, "%d%s", compute_checksum(cs.out_buf, strcount2), tail);

@@ -669,7 +669,7 @@ static int8_t _get_motor(const index_t index)
 	char_t *ptr;
 	char_t motors[] = {"123456"};
 	char_t tmp[CMD_TOKEN_LEN+1];
-
+	
 	strncpy_P(tmp, cfgArray[index].group, CMD_GROUP_LEN);
 	if ((ptr = strchr(motors, tmp[0])) == NULL) {
 		return (-1);

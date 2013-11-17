@@ -114,7 +114,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("\n\n");			// 2 null lines
 //	xio_queue_RX_string_usb("%\n");				// opening percent character
 //	xio_queue_RX_string_usb("$\n");				// display general group
-//	xio_queue_RX_string_usb("?\n");				// report
+	xio_queue_RX_string_usb("?\n");				// report
 
 /*	Test signals - Note: requires test chars to be enabled */
 //	xio_queue_RX_string_usb("^\n");				// reset 
@@ -149,7 +149,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0 x0.08\n");
 //	xio_queue_RX_string_usb("g0 x0.12\n");
 //	xio_queue_RX_string_usb("g0 x20y20\n");
-	xio_queue_RX_string_usb("g0 x-300 y-400\n");
+//	xio_queue_RX_string_usb("g0 x-300 y-400\n");
 
 //	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
 //	xio_queue_RX_string_usb("g0 x0\n");

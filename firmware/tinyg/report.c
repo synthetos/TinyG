@@ -28,6 +28,7 @@
 #include "tinyg.h"
 #include "config.h"
 #include "report.h"
+#include "controller.h"
 #include "json_parser.h"
 #include "text_parser.h"
 #include "planner.h"
@@ -282,9 +283,15 @@ static stat_t _populate_unfiltered_status_report()
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
 		if ((cmd->index = sr.status_report_list[i]) == 0) { break;}
 		cmd_get_cmdObj(cmd);
-		strncpy(tmp, cmd->group, CMD_GROUP_LEN);// concatenate groups and tokens
+
+		strcpy(tmp, cmd->group);			// flatten out groups - WARNING - you cannot use strncpy here...
 		strcat(tmp, cmd->token);
-		strncpy(cmd->token, tmp, CMD_TOKEN_LEN);
+		strcpy(cmd->token, tmp);			//...or here.
+
+//		strcpy(tmp, cmd->group);// concatenate groups and tokens
+//		strcat(tmp, cmd->token);
+//		strcpy(cmd->token, tmp);
+
 		if ((cmd = cmd->nx) == NULL) 
 			return (cm_hard_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array
 	}
@@ -324,9 +331,9 @@ static uint8_t _populate_filtered_status_report()
 			cmd->objtype = TYPE_EMPTY;
 			continue;
 		} else {
-			strncpy(tmp, cmd->group, CMD_GROUP_LEN);// flatten out groups
+			strcpy(tmp, cmd->group);		// flatten out groups - WARNING - you cannot use strncpy here...
 			strcat(tmp, cmd->token);
-			strncpy(cmd->token, tmp, CMD_TOKEN_LEN);
+			strcpy(cmd->token, tmp);		//...or here.
 			sr.status_report_value[i] = cmd->value;
 			if ((cmd = cmd->nx) == NULL) return (false); // should never be NULL unless SR length exceeds available buffer array
 			has_data = true;
@@ -530,6 +537,78 @@ void qr_print_qo(cmdObj_t *cmd) { text_print_int(cmd, fmt_qo);}
 void qr_print_qv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_qv);}
 
 #endif // __TEXT_MODE
+
+
+/*****************************************************************************
+ * JOB ID REPORTS
+ *
+ *	job_populate_job_report()
+ *	job_set_job_report()
+ *	job_report_callback()
+ *	job_get()
+ *	job_set()
+ *	job_print_job()
+ */
+stat_t job_populate_job_report()
+{
+	const char_t job_str[] = "job";
+	char_t tmp[CMD_TOKEN_LEN+1];
+	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
+
+	cmd->objtype = TYPE_PARENT; 			// setup the parent object
+//	strncpy(cmd->token, job_str, CMD_TOKEN_LEN);
+	strcpy(cmd->token, job_str);
+
+	//cmd->index = cmd_get_index((const char_t *)"", job_str);// set the index - may be needed by calling function
+	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
+
+	index_t job_start = cmd_get_index((const char_t *)"",(const char_t *)"job1");// set first job persistence index
+	for (uint8_t i=0; i<4; i++) {
+		
+		cmd->index = job_start + i;
+
+		cmd_get_cmdObj(cmd);
+		strcpy(tmp, cmd->group);			// concatenate groups and tokens - do NOT use strncpy()
+		strcat(tmp, cmd->token);
+		strcpy(cmd->token, tmp);
+		if ((cmd = cmd->nx) == NULL) 
+			return (STAT_OK);				 // should never be NULL unless SR length exceeds available buffer array 
+	}
+	return (STAT_OK);
+}
+
+stat_t job_set_job_report(cmdObj_t *cmd)
+{
+	index_t job_start = cmd_get_index((const char_t *)"",(const char_t *)"job1");// set first job persistence index
+
+	for (uint8_t i=0; i<4; i++) {
+		if (((cmd = cmd->nx) == NULL) || (cmd->objtype == TYPE_EMPTY)) { break;}
+		if (cmd->objtype == TYPE_INTEGER) {
+			cs.job_id[i] = cmd->value;
+			cmd->index = job_start + i;					// index of the SR persistence location
+			cmd_persist(cmd);
+		} else {
+			return (STAT_INPUT_VALUE_UNSUPPORTED);
+		}
+	}
+	job_populate_job_report();			// return current values
+	return (STAT_OK);
+}
+
+uint8_t job_report_callback()
+{
+	if (cfg.comm_mode == TEXT_MODE) {
+		// no-op, job_ids are client app state
+	} else {		
+		fprintf(stderr, "{\"job\":[%lu,%lu,%lu,%lu]}\n", cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );
+		//job_clear_report();
+	}
+	return (STAT_OK);
+}
+
+stat_t job_get(cmdObj_t *cmd) { return (job_populate_job_report());}
+stat_t job_set(cmdObj_t *cmd) { return (job_set_job_report(cmd));}
+void job_print_job(cmdObj_t *cmd) { job_populate_job_report();}
 
 
 /****************************************************************************
