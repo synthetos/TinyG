@@ -186,8 +186,8 @@
 #define A_AXIS_MODE 			AXIS_RADIUS
 #define A_VELOCITY_MAX 			((X_VELOCITY_MAX/M1_TRAVEL_PER_REV)*360) // set to the same speed as X axis
 #define A_FEEDRATE_MAX 			A_VELOCITY_MAX
-#define A_TRAVEL_MAX 			DISABLE_SOFT_LIMIT						// use for infinite axes
-#define A_TRAVEL_MIN			DISABLE_SOFT_LIMIT
+#define A_TRAVEL_MAX 			0										// set both to 0 to disable soft limits for infinite axes
+#define A_TRAVEL_MIN			0
 #define A_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628)) 
@@ -202,8 +202,8 @@
 #define B_AXIS_MODE 			AXIS_RADIUS
 #define B_VELOCITY_MAX 			((X_VELOCITY_MAX/M1_TRAVEL_PER_REV)*360) // set to the same speed as X axis
 #define B_FEEDRATE_MAX 			B_VELOCITY_MAX
-#define B_TRAVEL_MAX 			DISABLE_SOFT_LIMIT
-#define B_TRAVEL_MIN			DISABLE_SOFT_LIMIT
+#define B_TRAVEL_MAX 			0
+#define B_TRAVEL_MIN			0
 #define B_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
 #define B_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define B_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628)) 
@@ -218,8 +218,8 @@
 #define C_AXIS_MODE 			AXIS_RADIUS
 #define C_VELOCITY_MAX 			((X_VELOCITY_MAX/M1_TRAVEL_PER_REV)*360) // set to the same speed as X axis
 #define C_FEEDRATE_MAX 			C_VELOCITY_MAX
-#define C_TRAVEL_MAX 			DISABLE_SOFT_LIMIT
-#define C_TRAVEL_MIN			DISABLE_SOFT_LIMIT
+#define C_TRAVEL_MAX 			0
+#define C_TRAVEL_MIN			0
 #define C_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
 #define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define C_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628)) 
