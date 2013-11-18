@@ -47,7 +47,7 @@
 #include "util.h"
 
 // enable debug diagnostics
-#define __STEP_DIAGNOSTICS	// Uncomment this only for debugging. Steals valuable cycles.
+//#define __STEP_DIAGNOSTICS	// Uncomment this only for debugging. Steals valuable cycles.
 
 /**** Allocate structures ****/
 
@@ -309,34 +309,34 @@ ISR(TIMER_DDA_ISR_vect)
 {
 	if ((st_run.m[MOTOR_1].phase_accumulator += st_run.m[MOTOR_1].phase_increment) > 0) {
 		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;		// turn step bit on
- 		st_run.m[MOTOR_1].phase_accumulator -= st_run.dda_ticks_X_substeps;
-		PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;		// turn step bit off in ~1 uSec
+		st_run.m[MOTOR_1].phase_accumulator -= st_run.dda_ticks_X_substeps;
+//		PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;		// turn step bit off in ~1 uSec
 		RUN_PULSE_COUNTER(0);
 	}
 	if ((st_run.m[MOTOR_2].phase_accumulator += st_run.m[MOTOR_2].phase_increment) > 0) {
 		PORT_MOTOR_2_VPORT.OUT |= STEP_BIT_bm;
- 		st_run.m[MOTOR_2].phase_accumulator -= st_run.dda_ticks_X_substeps;
-		PORT_MOTOR_2_VPORT.OUT &= ~STEP_BIT_bm;
+		st_run.m[MOTOR_2].phase_accumulator -= st_run.dda_ticks_X_substeps;
+//		PORT_MOTOR_2_VPORT.OUT &= ~STEP_BIT_bm;
 		RUN_PULSE_COUNTER(1);
 	}
 	if ((st_run.m[MOTOR_3].phase_accumulator += st_run.m[MOTOR_3].phase_increment) > 0) {
 		PORT_MOTOR_3_VPORT.OUT |= STEP_BIT_bm;
- 		st_run.m[MOTOR_3].phase_accumulator -= st_run.dda_ticks_X_substeps;
-		PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;
+		st_run.m[MOTOR_3].phase_accumulator -= st_run.dda_ticks_X_substeps;
+//		PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;
 		RUN_PULSE_COUNTER(2);
 	}
 	if ((st_run.m[MOTOR_4].phase_accumulator += st_run.m[MOTOR_4].phase_increment) > 0) {
 		PORT_MOTOR_4_VPORT.OUT |= STEP_BIT_bm;
- 		st_run.m[MOTOR_4].phase_accumulator -= st_run.dda_ticks_X_substeps;
-		PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
+		st_run.m[MOTOR_4].phase_accumulator -= st_run.dda_ticks_X_substeps;
+//		PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
 		RUN_PULSE_COUNTER(3);
 	}
 
 	// hack for pulse stretching for using external drivers.
-//	PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;				// turn step bits off
-//	PORT_MOTOR_2_VPORT.OUT &= ~STEP_BIT_bm;
-//	PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;
-//	PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
+	PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;				// turn step bits off
+	PORT_MOTOR_2_VPORT.OUT &= ~STEP_BIT_bm;
+	PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;
+	PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
 
 	if (--st_run.dda_ticks_downcount == 0) {			// end move
 		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;			// disable DDA timer
