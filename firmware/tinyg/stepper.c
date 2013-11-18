@@ -74,6 +74,7 @@ void _clear_pulse_counters(void)
 	for (uint8_t i=0; i<MOTORS; i++) {
 		st_run.m[i].pulse_counter = 0;
 		st_run.m[i].phase_accumulator = 0;
+		st_prep.m[i].steps_diagnostic = 0;
 	}
 }
 #endif
@@ -83,9 +84,10 @@ void st_end_cycle(void)
 #ifdef __STEP_DIAGNOSTICS
 
 	for (uint8_t i=0; i<MOTORS; i++) {
-//		printf("Motor %d steps: %li  Increment: %0.6f  Residual: %0.6f\n", 	// text display
-		printf("{\"%d\":{\"step\":%li,\"incr\":%0.6f,\"phas\":%0.6f}}\n", 	// JSON display
+//		printf("Motor %d steps: %li [%06f] Increment: %0.6f  Residual: %0.6f\n", 	// text display
+		printf("{\"%d\":{\"step\":%li,\"steps\"%06f,\"incr\":%0.6f,\"phas\":%0.6f}}\n", 	// JSON display
 			i+1, st_run.m[i].pulse_counter, 
+			(double)st_prep.m[i].steps_diagnostic,
 			(double)((double)st_run.m[i].phase_increment / DDA_SUBSTEPS), 
 			(double)((double)st_run.m[i].phase_accumulator / DDA_SUBSTEPS));
 	}
@@ -435,7 +437,8 @@ static void _load_move()
 		if ((st_run.m[MOTOR_1].phase_increment = st_prep.m[MOTOR_1].phase_increment) != 0) {
 
 			// Reset phase accumulator to avoid motor stall if large speed change occurs
-			if (st_prep.reset_flag) { st_run.m[MOTOR_1].phase_accumulator = -(st_run.dda_ticks_downcount);}
+//			if (st_prep.reset_flag) { st_run.m[MOTOR_1].phase_accumulator = -(st_run.dda_ticks_downcount);}
+			st_run.m[MOTOR_1].phase_accumulator *= st_prep.m[MOTOR_1].phase_correction_factor;
 
 			// Reset the phase accumulator if the direction reversed 
 			if (st_prep.m[MOTOR_1].direction_flip) { st_run.m[MOTOR_1].phase_accumulator = 0;}
@@ -461,7 +464,8 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_2].phase_increment = st_prep.m[MOTOR_2].phase_increment) != 0) {
-			if (st_prep.reset_flag) { st_run.m[MOTOR_2].phase_accumulator = -(st_run.dda_ticks_downcount);}
+//			if (st_prep.reset_flag) { st_run.m[MOTOR_2].phase_accumulator = -(st_run.dda_ticks_downcount);}
+			st_run.m[MOTOR_2].phase_accumulator *= st_prep.m[MOTOR_2].phase_correction_factor;
 			if (st_prep.m[MOTOR_2].direction_flip) 	st_run.m[MOTOR_2].phase_accumulator = 0;
 			if (st_prep.m[MOTOR_2].direction == 0)
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
@@ -578,7 +582,9 @@ void st_prep_dwell(float microseconds)
  *		  precision binary with precision set by DDA_SUBSTEPS multiplier, typically 100,000.
  *		  The phase increment is the amount the DDA will accumulate for each tick of the
  *		  50 KHz pulse clock
-
+ *
+ *	  - The phase_increment is the number of steps in the move for that motor multipled by 
+ *		the sub-step factor. So it's actually steps plus some fractional step 
  */
 
 stat_t st_prep_line(float steps[], float microseconds)
@@ -594,6 +600,8 @@ stat_t st_prep_line(float steps[], float microseconds)
 	// setup motor parameters
 	for (uint8_t i=0; i<MOTORS; i++) {
 
+		st_prep.m[i].steps_diagnostic += steps[i];
+
 		if (fp_ZERO(steps[i])) {
 			st_prep.m[i].phase_increment = 0;		// skip this motor but leave all else alone
 			continue;
@@ -602,6 +610,9 @@ stat_t st_prep_line(float steps[], float microseconds)
 		st_prep.m[i].direction_flip = (signbit(steps[i]) ^ st_prep.m[i].previous_signbit); // 1 = direction change
 		st_prep.m[i].previous_signbit = (signbit(steps[i]));
 		st_prep.m[i].phase_increment = (uint32_t)(fabs(steps[i]) * DDA_SUBSTEPS);
+//		st_prep.m[i].phase_correction_factor = st_prep.m[i].previous_increment / st_prep.m[i].phase_increment;
+		st_prep.m[i].phase_correction_factor = 1;
+		st_prep.m[i].previous_increment = st_prep.m[i].phase_increment;
 
 #ifdef __STEP_DIAGNOSTICS
 		st_prep.m[i].pulse_counter_incr = steps[i] / fabs(steps[i]);
@@ -619,9 +630,9 @@ stat_t st_prep_line(float steps[], float microseconds)
 	// Anti-stall measure in case velocity drops dramatically between segments 
 	// This normally does not happen in well-behaved decelerations
 	st_prep.reset_flag = false;
-	if ((st_prep.dda_ticks * ACCUMULATOR_RESET_FACTOR) < st_prep.previous_dda_ticks) { // NB: uint32_t math
-		st_prep.reset_flag = true;
-	}
+//	if ((st_prep.dda_ticks * ACCUMULATOR_RESET_FACTOR) < st_prep.previous_dda_ticks) { // NB: uint32_t math
+//		st_prep.reset_flag = true;
+//	}
 	st_prep.previous_dda_ticks = st_prep.dda_ticks;
 
 	st_prep.move_type = MOVE_TYPE_ALINE;
