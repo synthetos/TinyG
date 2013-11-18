@@ -114,7 +114,9 @@ void stepper_init()
 {
 	memset(&st_run, 0, sizeof(st_run));			// clear all values, pointers and status
 	st_run.magic_start = MAGICNUM;
+	st_run.magic_end = MAGICNUM;
 	st_prep.magic_start = MAGICNUM;
+	st_prep.magic_end = MAGICNUM;
 
 #ifdef __STEP_DIAGNOSTICS
 	_clear_step_counters();
