@@ -47,7 +47,7 @@
 #include "util.h"
 
 // enable debug diagnostics
-//#define __STEP_DIAGNOSTICS	// Uncomment this only for debugging. Steals valuable cycles.
+#define __STEP_DIAGNOSTICS	// Uncomment this only for debugging. Steals valuable cycles.
 
 /**** Allocate structures ****/
 
@@ -438,7 +438,7 @@ static void _load_move()
 
 			// Reset phase accumulator to avoid motor stall if large speed change occurs
 //			if (st_prep.reset_flag) { st_run.m[MOTOR_1].phase_accumulator = -(st_run.dda_ticks_downcount);}
-			st_run.m[MOTOR_1].phase_accumulator *= st_prep.m[MOTOR_1].phase_correction_factor;
+//			st_run.m[MOTOR_1].phase_accumulator *= st_prep.m[MOTOR_1].phase_correction_factor;
 
 			// Reset the phase accumulator if the direction reversed 
 			if (st_prep.m[MOTOR_1].direction_flip) { st_run.m[MOTOR_1].phase_accumulator = 0;}
@@ -465,7 +465,7 @@ static void _load_move()
 
 		if ((st_run.m[MOTOR_2].phase_increment = st_prep.m[MOTOR_2].phase_increment) != 0) {
 //			if (st_prep.reset_flag) { st_run.m[MOTOR_2].phase_accumulator = -(st_run.dda_ticks_downcount);}
-			st_run.m[MOTOR_2].phase_accumulator *= st_prep.m[MOTOR_2].phase_correction_factor;
+//			st_run.m[MOTOR_2].phase_accumulator *= st_prep.m[MOTOR_2].phase_correction_factor;
 			if (st_prep.m[MOTOR_2].direction_flip) 	st_run.m[MOTOR_2].phase_accumulator = 0;
 			if (st_prep.m[MOTOR_2].direction == 0)
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
@@ -481,7 +481,7 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_3].phase_increment = st_prep.m[MOTOR_3].phase_increment) != 0) {
-			if (st_prep.reset_flag) { st_run.m[MOTOR_3].phase_accumulator = -(st_run.dda_ticks_downcount);}
+//			if (st_prep.reset_flag) { st_run.m[MOTOR_3].phase_accumulator = -(st_run.dda_ticks_downcount);}
 			if (st_prep.m[MOTOR_3].direction_flip) 	st_run.m[MOTOR_3].phase_accumulator = 0;
 			if (st_prep.m[MOTOR_3].direction == 0)
 				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else
@@ -497,7 +497,7 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_4].phase_increment = st_prep.m[MOTOR_4].phase_increment) != 0) {
-			if (st_prep.reset_flag) { st_run.m[MOTOR_4].phase_accumulator = (st_run.dda_ticks_downcount);}
+//			if (st_prep.reset_flag) { st_run.m[MOTOR_4].phase_accumulator = (st_run.dda_ticks_downcount);}
 			if (st_prep.m[MOTOR_4].direction_flip) 	st_run.m[MOTOR_4].phase_accumulator = 0;
 			if (st_prep.m[MOTOR_4].direction == 0)
 				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
@@ -597,26 +597,38 @@ stat_t st_prep_line(float steps[], float microseconds)
 	} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
 
+	double int_steps;
+	double fraction;
+
 	// setup motor parameters
 	for (uint8_t i=0; i<MOTORS; i++) {
 
+#ifdef __STEP_DIAGNOSTICS
 		st_prep.m[i].steps_diagnostic += steps[i];
+		st_prep.m[i].pulse_counter_incr = steps[i] / fabs(steps[i]);  // set incr to +1 or -1
+#endif
 
+		// skip this motor if there are no new steps. Leave all recorded values intact.
 		if (fp_ZERO(steps[i])) {
-			st_prep.m[i].phase_increment = 0;		// skip this motor but leave all else alone
+			st_prep.m[i].phase_increment = 0;			// skip this motor but leave all else alone
 			continue;
 		}
+
+		// set direction bit and look for sign changes 
 		st_prep.m[i].direction = ((steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;	// compensate for polarity
 		st_prep.m[i].direction_flip = (signbit(steps[i]) ^ st_prep.m[i].previous_signbit); // 1 = direction change
 		st_prep.m[i].previous_signbit = (signbit(steps[i]));
-		st_prep.m[i].phase_increment = (uint32_t)(fabs(steps[i]) * DDA_SUBSTEPS);
-//		st_prep.m[i].phase_correction_factor = st_prep.m[i].previous_increment / st_prep.m[i].phase_increment;
-		st_prep.m[i].phase_correction_factor = 1;
-		st_prep.m[i].previous_increment = st_prep.m[i].phase_increment;
 
-#ifdef __STEP_DIAGNOSTICS
-		st_prep.m[i].pulse_counter_incr = steps[i] / fabs(steps[i]);
-#endif
+		// accumulate steps and forward whole steps to loader
+		st_prep.m[i].step_accumulator += steps[i];					// accumulate + or - steps
+		fraction = modf(st_prep.m[i].step_accumulator, &int_steps);	// get integer steps to run
+		st_prep.m[i].step_accumulator -= int_steps;					// leave residual in accumulator
+		st_prep.m[i].phase_increment = (uint32_t)(fabs(int_steps) * DDA_SUBSTEPS);
+
+		// compute phase correction factors
+//		st_prep.m[i].phase_correction_factor = st_prep.m[i].previous_increment / st_prep.m[i].phase_increment;
+//		st_prep.m[i].phase_correction_factor = 1;
+//		st_prep.m[i].previous_increment = st_prep.m[i].phase_increment;
 	}
 
 	// NOTE: The following expressions are extremely sensitive to the order of operands
