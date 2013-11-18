@@ -215,7 +215,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float segments;				// number of segments in arc or blend
 	uint32_t segment_count;		// count of running segments
 	float segment_move_time;	// actual time increment per aline segment
-	float microseconds;			// line or segment time in microseconds
+	double microseconds;		// line or segment time in microseconds (double precision on ARM)
 	float segment_length;		// computed length for aline segment
 	float segment_velocity;		// computed velocity for aline segment
 	float forward_diff_1;		// forward difference level 1 (Acceleration)

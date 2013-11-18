@@ -172,8 +172,8 @@ enum cfgPortBits {			// motor control port bit positions
 
 /* Timer setup for stepper and dwells */
 
-#define FREQUENCY_DDA 		(float)50000	// DDA frequency in hz.
-#define FREQUENCY_DWELL		(float)10000	// Dwell count frequency in hz.
+#define FREQUENCY_DDA 		(double)50000	// DDA frequency in hz.
+#define FREQUENCY_DWELL		(double)10000	// Dwell count frequency in hz.
 #define SWI_PERIOD 			100				// cycles you have to shut off SW interrupt
 #define TIMER_PERIOD_MIN	(20)			// used to trap bad timer loads
 
