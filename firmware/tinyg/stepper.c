@@ -74,7 +74,7 @@ void _clear_pulse_counters(void)
 	for (uint8_t i=0; i<MOTORS; i++) {
 		st_run.m[i].pulse_counter = 0;
 		st_run.m[i].phase_accumulator = 0;
-		st_prep.m[i].steps_diagnostic = 0;
+		st_prep.m[i].steps_total = 0;
 	}
 }
 #endif
@@ -87,7 +87,7 @@ void st_end_cycle(void)
 //		printf("Motor %d steps: %li [%06f] Increment: %0.6f  Residual: %0.6f\n", 	// text display
 		printf("{\"%d\":{\"step\":%li,\"steps\"%06f,\"incr\":%0.6f,\"phas\":%0.6f}}\n", 	// JSON display
 			i+1, st_run.m[i].pulse_counter, 
-			(double)st_prep.m[i].steps_diagnostic,
+			(double)st_prep.m[i].steps_total,
 			(double)((double)st_run.m[i].phase_increment / DDA_SUBSTEPS), 
 			(double)((double)st_run.m[i].phase_accumulator / DDA_SUBSTEPS));
 	}
@@ -435,13 +435,12 @@ static void _load_move()
 		// setup motor 1
 		// the if() either sets the increment value or zeroes it
 		if ((st_run.m[MOTOR_1].phase_increment = st_prep.m[MOTOR_1].phase_increment) != 0) {
+			st_run.m[MOTOR_1].phase_accumulator = 0; 				// reset phase accumulator always
 
 			// Reset phase accumulator to avoid motor stall if large speed change occurs
 //			if (st_prep.reset_flag) { st_run.m[MOTOR_1].phase_accumulator = -(st_run.dda_ticks_downcount);}
-//			st_run.m[MOTOR_1].phase_accumulator *= st_prep.m[MOTOR_1].phase_correction_factor;
-
 			// Reset the phase accumulator if the direction reversed 
-			if (st_prep.m[MOTOR_1].direction_flip) { st_run.m[MOTOR_1].phase_accumulator = 0;}
+//			if (st_prep.m[MOTOR_1].direction_flip) { st_run.m[MOTOR_1].phase_accumulator = 0;}
 
 			// Set the direction bit in hardware
 			if (st_prep.m[MOTOR_1].direction == 0) 
@@ -464,9 +463,9 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_2].phase_increment = st_prep.m[MOTOR_2].phase_increment) != 0) {
+			st_run.m[MOTOR_2].phase_accumulator = 0;
 //			if (st_prep.reset_flag) { st_run.m[MOTOR_2].phase_accumulator = -(st_run.dda_ticks_downcount);}
-//			st_run.m[MOTOR_2].phase_accumulator *= st_prep.m[MOTOR_2].phase_correction_factor;
-			if (st_prep.m[MOTOR_2].direction_flip) 	st_run.m[MOTOR_2].phase_accumulator = 0;
+//			if (st_prep.m[MOTOR_2].direction_flip) 	st_run.m[MOTOR_2].phase_accumulator = 0;
 			if (st_prep.m[MOTOR_2].direction == 0)
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -481,8 +480,9 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_3].phase_increment = st_prep.m[MOTOR_3].phase_increment) != 0) {
+			st_run.m[MOTOR_3].phase_accumulator = 0;
 //			if (st_prep.reset_flag) { st_run.m[MOTOR_3].phase_accumulator = -(st_run.dda_ticks_downcount);}
-			if (st_prep.m[MOTOR_3].direction_flip) 	st_run.m[MOTOR_3].phase_accumulator = 0;
+//			if (st_prep.m[MOTOR_3].direction_flip) 	st_run.m[MOTOR_3].phase_accumulator = 0;
 			if (st_prep.m[MOTOR_3].direction == 0)
 				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -497,8 +497,9 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_4].phase_increment = st_prep.m[MOTOR_4].phase_increment) != 0) {
+			st_run.m[MOTOR_4].phase_accumulator = 0;
 //			if (st_prep.reset_flag) { st_run.m[MOTOR_4].phase_accumulator = (st_run.dda_ticks_downcount);}
-			if (st_prep.m[MOTOR_4].direction_flip) 	st_run.m[MOTOR_4].phase_accumulator = 0;
+//			if (st_prep.m[MOTOR_4].direction_flip) 	st_run.m[MOTOR_4].phase_accumulator = 0;
 			if (st_prep.m[MOTOR_4].direction == 0)
 				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -598,13 +599,13 @@ stat_t st_prep_line(float steps[], float microseconds)
 	}
 
 	double int_steps;
-	double fraction;
+//	double fraction;
 
 	// setup motor parameters
 	for (uint8_t i=0; i<MOTORS; i++) {
 
 #ifdef __STEP_DIAGNOSTICS
-		st_prep.m[i].steps_diagnostic += steps[i];
+		st_prep.m[i].steps_total += steps[i];
 		st_prep.m[i].pulse_counter_incr = steps[i] / fabs(steps[i]);  // set incr to +1 or -1
 #endif
 
@@ -621,7 +622,8 @@ stat_t st_prep_line(float steps[], float microseconds)
 
 		// accumulate steps and forward whole steps to loader
 		st_prep.m[i].step_accumulator += steps[i];					// accumulate + or - steps
-		fraction = modf(st_prep.m[i].step_accumulator, &int_steps);	// get integer steps to run
+//		fraction = modf(st_prep.m[i].step_accumulator, &int_steps);	// get integer steps to run
+		modf(st_prep.m[i].step_accumulator, &int_steps);			// get integer steps to run
 		st_prep.m[i].step_accumulator -= int_steps;					// leave residual in accumulator
 		st_prep.m[i].phase_increment = (uint32_t)(fabs(int_steps) * DDA_SUBSTEPS);
 
@@ -641,7 +643,7 @@ stat_t st_prep_line(float steps[], float microseconds)
 
 	// Anti-stall measure in case velocity drops dramatically between segments 
 	// This normally does not happen in well-behaved decelerations
-	st_prep.reset_flag = false;
+//	st_prep.reset_flag = false;
 //	if ((st_prep.dda_ticks * ACCUMULATOR_RESET_FACTOR) < st_prep.previous_dda_ticks) { // NB: uint32_t math
 //		st_prep.reset_flag = true;
 //	}

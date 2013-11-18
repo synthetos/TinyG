@@ -151,9 +151,9 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0 x20y20\n");
 //	xio_queue_RX_string_usb("g0 x-300 y-400\n");
 
-//	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
-	xio_queue_RX_string_usb("g0 x2\n");
-	xio_queue_RX_string_usb("g0 x0\n");
+	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
+//	xio_queue_RX_string_usb("g0 x2\n");
+//	xio_queue_RX_string_usb("g0 x0\n");
 //	xio_queue_RX_string_usb("g0 x3\n");
 //	xio_queue_RX_string_usb("g0 y3\n");
 //	xio_queue_RX_string_usb("g0 x10\n");

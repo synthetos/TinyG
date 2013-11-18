@@ -290,11 +290,11 @@ typedef struct stPrepMotor {
 	int8_t direction_flip;			// flag to zero accumulator when direction changes
 	int8_t previous_signbit;		// uncorrected travel direction of previous segment
  	int32_t phase_increment; 		// total steps in axis times substep factor
-//	int32_t previous_increment; 	// increment from previous segment
-	float phase_correction_factor;	// phase_accumulation correction factor
 	float step_accumulator;			// accumulated steps to pulse out
-	float steps_diagnostic;			// total steps accumulated 
+	float steps_total;				// total steps accumulated. used by __STEP_DIAGNOSTICS
 	int8_t pulse_counter_incr;		// +1 or -1; used by __STEP_DIAGNOSTICS
+//	int32_t previous_increment; 	// increment from previous segment
+//	float phase_correction_factor;	// phase_accumulation correction factor
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
