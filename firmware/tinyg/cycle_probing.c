@@ -144,11 +144,16 @@ static int8_t _get_next_axis(int8_t axis);
 uint8_t cm_probe_cycle_start(void)
 {
 	// save relevant non-axis parameters from Gcode model
-	pb.saved_units_mode = cm.gm.units_mode;
-	pb.saved_coord_system = cm.gm.coord_system;
-	pb.saved_distance_mode = cm.gm.distance_mode;
-	pb.saved_feed_rate = cm.gm.feed_rate;
+//	pb.saved_units_mode = cm.gm.units_mode;
+//	pb.saved_coord_system = cm.gm.coord_system;
+//	pb.saved_distance_mode = cm.gm.distance_mode;
+//	pb.saved_feed_rate = cm.gm.feed_rate;
 	
+	pb.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);			//cm.gm.units_mode;
+	pb.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);		//cm.gm.coord_system;
+	pb.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);	//cm.gm.distance_mode;
+	pb.saved_feed_rate = cm_get_distance_mode(ACTIVE_MODEL);		//cm.gm.feed_rate;
+
 	pb.open_position = 0;
 	
 	// set working values
