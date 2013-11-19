@@ -280,9 +280,9 @@ typedef struct stConfig {			// stepper configs
 typedef struct stRunMotor { 		// one per controlled motor
 	int32_t substep_increment;		// total steps in axis times substeps factor
 	int32_t substep_accumulator;	// DDA phase angle accumulator for axis
+	float power_level;				// power level for this segment (ARM only)
 	uint8_t power_state;			// state machine for managing motor power
 	uint32_t power_systick;			// sys_tick for next motor power state transition
-	float power_level;				// power level for this segment (ARM only)
 #ifdef __STEP_DIAGNOSTICS
 	int32_t step_counter;			// step count register
 	int8_t step_counter_incr;		// set to +1 or -1
@@ -291,6 +291,8 @@ typedef struct stRunMotor { 		// one per controlled motor
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
+	uint8_t end_flag;				// set true when playing out the remaining substeps
+	int8_t end_motor;				// motor channel to use during end phase
 	int32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	int32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t m[MOTORS];			// runtime motor structures
@@ -307,6 +309,7 @@ typedef struct stPrepMotor {
  	int32_t substep_increment; 		// total steps in axis times substep factor
 	float step_accumulator;			// accumulated steps to pulse out
 #ifdef __STEP_DIAGNOSTICS
+	float steps;					// current step value
 	float steps_total;				// total steps accumulated
 	int8_t step_counter_incr;		// set to +1 or -1
 #endif
@@ -320,7 +323,8 @@ typedef struct stPrepSingleton {
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
-//	uint32_t previous_dda_ticks;	// tick count from previous move
+	int8_t end_motor;				// motor channel to use during end phase
+	double microseconds;			// diagnostis ++++++
 	stPrepMotor_t m[MOTORS];		// per-motor structs
 	uint16_t magic_end;
 } stPrepSingleton_t;

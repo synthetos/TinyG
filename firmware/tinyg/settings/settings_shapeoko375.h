@@ -237,8 +237,8 @@
 #define B_AXIS_MODE				AXIS_DISABLED
 #define B_VELOCITY_MAX			3600
 #define B_FEEDRATE_MAX			B_VELOCITY_MAX
-#define B_TRAVEL_MAX			-1
-#define B_TRAVEL_MIN			-1
+#define B_TRAVEL_MAX			0
+#define B_TRAVEL_MIN			0
 #define B_JERK_MAX				20
 #define B_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define B_RADIUS				1
@@ -253,8 +253,8 @@
 #define C_AXIS_MODE				AXIS_DISABLED
 #define C_VELOCITY_MAX			3600
 #define C_FEEDRATE_MAX			C_VELOCITY_MAX
-#define C_TRAVEL_MAX			-1
-#define C_TRAVEL_MIN			-1
+#define C_TRAVEL_MAX			0
+#define C_TRAVEL_MIN			0
 #define C_JERK_MAX				20
 #define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define C_RADIUS				1
