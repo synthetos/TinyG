@@ -493,6 +493,45 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "ma",  _fip, 4, cm_print_ma,  get_flu, set_flu, (float *)&cm.arc_segment_len,		ARC_SEGMENT_LENGTH },
 	{ "",   "fd",  _fip, 0, tx_print_ui8, get_ui8, set_01,  (float *)&js.json_footer_depth,		JSON_FOOTER_DEPTH },
 
+	// User defined data slots (10's values must precede '1')
+	{ "ud","ud10", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[10], USER_DATA_10 },
+	{ "ud","ud11", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[11], USER_DATA_11 },
+	{ "ud","ud12", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[12], USER_DATA_12 },
+	{ "ud","ud13", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[13], USER_DATA_13 },
+	{ "ud","ud14", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[14], USER_DATA_14 },
+	{ "ud","ud15", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[15], USER_DATA_15 },
+	{ "ud","ud0", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[0], USER_DATA_0 },
+	{ "ud","ud1", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[1], USER_DATA_1 },
+	{ "ud","ud2", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[2], USER_DATA_2 },
+	{ "ud","ud3", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[3], USER_DATA_3 },
+	{ "ud","ud4", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[4], USER_DATA_4 },
+	{ "ud","ud5", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[5], USER_DATA_5 },
+	{ "ud","ud6", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[6], USER_DATA_6 },
+	{ "ud","ud7", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[7], USER_DATA_7 },
+	{ "ud","ud8", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[8], USER_DATA_8 },
+	{ "ud","ud9", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data[9], USER_DATA_9 },
+
+/*
+	{ "ud","ud10", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[10], USER_DATA_10 },
+	{ "ud","ud11", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[11], USER_DATA_11 },
+	{ "ud","ud12", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[12], USER_DATA_12 },
+	{ "ud","ud13", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[13], USER_DATA_13 },
+	{ "ud","ud14", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[14], USER_DATA_14 },
+	{ "ud","ud15", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[15], USER_DATA_15 },
+	{ "ud","ud0", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[0], USER_DATA_0 },
+	{ "ud","ud1", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[1], USER_DATA_1 },
+	{ "ud","ud2", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[2], USER_DATA_2 },
+	{ "ud","ud3", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[3], USER_DATA_3 },
+	{ "ud","ud4", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[4], USER_DATA_4 },
+	{ "ud","ud5", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[5], USER_DATA_5 },
+	{ "ud","ud6", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[6], USER_DATA_6 },
+	{ "ud","ud7", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[7], USER_DATA_7 },
+	{ "ud","ud8", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[8], USER_DATA_8 },
+	{ "ud","ud9", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data[9], USER_DATA_9 },
+
+*/
+//*** Do not put new data elements below this line. Groups will not work if you do (CMD_INDEX_END_SINGLES) ***//
+
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
 	{ "","se00",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[0],0 },
@@ -558,7 +597,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","hom",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis homing state group
 	{ "","jog",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis jogging state group
 	{ "","jid",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// job ID group
-
+	{ "","ud", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group
+	
 	// Uber-group (groups of groups, for text-mode displays only)
 	// *** Must agree with CMD_COUNT_UBER_GROUPS below ****
 	{ "", "m", _f00, 0, tx_print_nul, _do_motors, set_nul,(float *)&cs.null,0 },
@@ -569,7 +609,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 /***** Make sure these defines line up with any changes in the above table *****/
 
-#define CMD_COUNT_GROUPS 		27		// count of simple groups
+#define CMD_COUNT_GROUPS 		28		// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 		// count of uber-groups
 
 /* <DO NOT MESS WITH THESE DEFINES> */
