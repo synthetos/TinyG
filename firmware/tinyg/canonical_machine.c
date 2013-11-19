@@ -154,7 +154,8 @@ uint8_t cm_get_combined_state()
 		if (cm.motion_state == MOTION_RUN) cm.combined_state = COMBINED_RUN;
 		if (cm.motion_state == MOTION_HOLD) cm.combined_state = COMBINED_HOLD;
 	}
-	if (cm.machine_state == MACHINE_SHUTDOWN) { cm.combined_state = MACHINE_SHUTDOWN;}
+	if (cm.machine_state == MACHINE_SHUTDOWN) { cm.combined_state = COMBINED_SHUTDOWN;}
+
 	return cm.combined_state;
 }
 
@@ -1291,6 +1292,7 @@ stat_t cm_queue_flush()
  * cm_program_stop()			- M0
  * cm_optional_program_stop()	- M1	
  * cm_program_end()				- M2, M30
+ * cm_machine_ready()			puts machine into a READY state
  *
  * cm_program_end() implements M2 and M30
  * The END behaviors are defined by NIST 3.6.1 are:
@@ -1384,6 +1386,18 @@ void cm_program_end()
 	mp_queue_command(_exec_program_finalize, value, value);
 }
 
+/*
+ * cm_machine_ready()
+ *
+ *	Puts machine in a READY state if in PROGRAM_STOP or PROGRAM_END state
+ *	This is used to change state for null moves so status reports return STOP in that case
+ */
+void cm_machine_ready()
+{
+	if ((cm.machine_state == MACHINE_PROGRAM_STOP) || (cm.machine_state == MACHINE_PROGRAM_END)) {
+		cm.machine_state = MACHINE_READY;
+	}
+}
 
 /**************************************
  * END OF CANONICAL MACHINE FUNCTIONS *

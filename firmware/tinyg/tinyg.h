@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		401.03	// Added 16 slots and a group for user-defined data (ud)/ User data is in INT, not DATA format. Need to discuss
+#define TINYG_FIRMWARE_BUILD   		401.04	// Broke user data into 4 groups of 4 values - uda, udb, udc, udd, 0-3 each
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)

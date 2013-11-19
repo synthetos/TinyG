@@ -299,7 +299,7 @@ extern cmSingleton_t cm;		// canonical machine controller singleton
 // #### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT #### 
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
 	COMBINED_INITIALIZING = 0,		// [0] machine is initializing
-	COMBINED_READY,					// [1] machine is ready for use
+	COMBINED_READY,					// [1] machine is ready for use. Also used to force STOP state for null moves
 	COMBINED_ALARM,					// [2] machine in soft alarm state
 	COMBINED_PROGRAM_STOP,			// [3] program stop or no more blocks
 	COMBINED_PROGRAM_END,			// [4] program end
@@ -309,7 +309,7 @@ enum cmCombinedState {				// check alignment with messages in config.c / msg_sta
 	COMBINED_CYCLE,					// [8] machine is running (cycling)
 	COMBINED_HOMING,				// [9] homing is treated as a cycle
 	COMBINED_JOG,					// [10] jogging is treated as a cycle
-	COMBINED_SHUTDOWN				// [11] machine in hard alarm state (shutdown)
+	COMBINED_SHUTDOWN,				// [11] machine in hard alarm state (shutdown)
 };
 //#### END CRITICAL REGION ####
 
@@ -320,7 +320,7 @@ enum cmMachineState {
 	MACHINE_PROGRAM_STOP,			// program stop or no more blocks
 	MACHINE_PROGRAM_END,			// program end
 	MACHINE_CYCLE,					// machine is running (cycling)
-	MACHINE_SHUTDOWN				// machine in hard alarm state (shutdown)
+	MACHINE_SHUTDOWN,				// machine in hard alarm state (shutdown)
 };
 
 enum cmCycleState {
@@ -615,6 +615,7 @@ void cm_optional_program_stop(void);							// M1
 void cm_program_end(void);										// M2
 void cm_exec_program_stop(void);
 void cm_exec_program_end(void);
+void cm_machine_ready(void);
 
 /*--- cmdArray interface functions ---*/
 

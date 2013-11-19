@@ -113,21 +113,21 @@
 
 /*** User-Defined Data Defaults ***/
 
-#define USER_DATA_0		0
-#define USER_DATA_1		0
-#define USER_DATA_2		0
-#define USER_DATA_3		0
-#define USER_DATA_4		0
-#define USER_DATA_5		0
-#define USER_DATA_6		0
-#define USER_DATA_7		0
-#define USER_DATA_8		0
-#define USER_DATA_9		0
-#define USER_DATA_10	0
-#define USER_DATA_11	0
-#define USER_DATA_12	0
-#define USER_DATA_13	0
-#define USER_DATA_14	0
-#define USER_DATA_15	0
+#define USER_DATA_A0	0
+#define USER_DATA_A1	0
+#define USER_DATA_A2	0
+#define USER_DATA_A3	0
+#define USER_DATA_B0	0
+#define USER_DATA_B1	0
+#define USER_DATA_B2	0
+#define USER_DATA_B3	0
+#define USER_DATA_C0	0
+#define USER_DATA_C1	0
+#define USER_DATA_C2	0
+#define USER_DATA_C3	0
+#define USER_DATA_D0	0
+#define USER_DATA_D1	0
+#define USER_DATA_D2	0
+#define USER_DATA_D3	0
 
 #endif // End of include guard: SETTINGS_H_ONCE
