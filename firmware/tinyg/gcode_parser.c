@@ -486,10 +486,6 @@ static stat_t _execute_gcode_block()
 		if (cm.gn.program_flow == PROGRAM_STOP) { cm_program_stop(); }
 		else { cm_program_end(); }
 	}
-
-	if ((status == STAT_MINIMUM_LENGTH_MOVE_ERROR) || (status == STAT_MINIMUM_TIME_MOVE_ERROR)) {
-		cm_machine_ready();
-	}
 	return (status);
 }
 

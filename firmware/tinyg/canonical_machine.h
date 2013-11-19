@@ -615,7 +615,6 @@ void cm_optional_program_stop(void);							// M1
 void cm_program_end(void);										// M2
 void cm_exec_program_stop(void);
 void cm_exec_program_end(void);
-void cm_machine_ready(void);
 
 /*--- cmdArray interface functions ---*/
 
