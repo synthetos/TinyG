@@ -92,8 +92,9 @@ typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 #define GET_TABLE_FLOAT(a) pgm_read_float(&cfgArray[cmd->index].a)	// get float value from cfgArray
 #define GET_TOKEN_BYTE(i,a) (char_t)pgm_read_byte(&cfgArray[i].a)	// get token byte value from cfgArray
 
-// populate the token string given the index
+// populate the shared buffer with the token string given the index
 #define GET_TOKEN_STRING(i,a) strcpy_P(a, (char *)&cfgArray[(index_t)i].token);
+//#define GET_TOKEN_STRING(i) strcpy_P(shared_buf, (char *)&cfgArray[(index_t)i].token);
 
 // get text from an array of strings in PGM and convert to RAM string
 #define GET_TEXT_ITEM(b,a) strncpy_P(shared_buf,(const char *)pgm_read_word(&b[a]),SHARED_BUF_LEN) 

@@ -152,17 +152,9 @@ uint8_t _is_stat(cmdObj_t *cmd)
 {
 	char_t tok[CMD_TOKEN_LEN+1];
 	
-//	strcpy_P(sr.token, (char *)&cfgArray[(index_t)cmd->value].token);
 	GET_TOKEN_STRING(cmd->value, tok);
-
-//	if ((tok[0] = 's') && (tok[1] = 't') && (tok[2] = 'a') && (tok[3] = 't')) {
-//		return (true);
-//	}
-	if (strcmp(tok, "stat") == 0) {
-		return (true);
-	}
+	if (strcmp(tok, "stat") == 0) { return (true);}
 	return (false);
-
 }
 
 /* 
@@ -346,9 +338,18 @@ static uint8_t _populate_filtered_status_report()
 		if ((cmd->index = sr.status_report_list[i]) == 0) { break;}
 
 		cmd_get_cmdObj(cmd);
+
+		// do not report values that have not changed...
+		// ...except for stat=3 (STOP), which is an exception
 		if (fp_EQ(cmd->value, sr.status_report_value[i])) {
-			cmd->objtype = TYPE_EMPTY;
-			continue;
+			if (cmd->index != sr.stat_index) {
+				if (fp_EQ(cmd->value, COMBINED_PROGRAM_STOP)) {
+					cmd->objtype = TYPE_EMPTY;
+					continue;
+				}
+			}
+
+		// report anything that has changed
 		} else {
 			strcpy(tmp, cmd->group);		// flatten out groups - WARNING - you cannot use strncpy here...
 			strcat(tmp, cmd->token);
