@@ -145,10 +145,10 @@ static int8_t _get_next_axis(int8_t axis);
 stat_t cm_homing_cycle_start(void)
 {
 	// save relevant non-axis parameters from Gcode model
-	hm.saved_units_mode = cm.gm.units_mode;
-	hm.saved_coord_system = cm.gm.coord_system;
-	hm.saved_distance_mode = cm.gm.distance_mode;
-	hm.saved_feed_rate = cm.gm.feed_rate;
+	hm.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL); //cm.gm.units_mode;
+	hm.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL); //cm.gm.coord_system;
+	hm.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);//cm.gm.distance_mode;
+	hm.saved_feed_rate = cm_get_distance_mode(ACTIVE_MODEL); //cm.gm.feed_rate;
 
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
