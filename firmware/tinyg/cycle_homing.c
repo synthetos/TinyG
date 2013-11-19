@@ -209,7 +209,7 @@ static stat_t _homing_axis_start(int8_t axis)
 	}
 
 	// clear the homed flag for axis so we'll be able to move
-	//cm.homed[axis] = false;
+	cm.homed[axis] = false;
 
 	// calc travel distance
 	float travel_dist = fabs(cm.a[axis].travel_max - cm.a[axis].travel_min) + cm.a[axis].latch_backoff;
