@@ -46,6 +46,8 @@
 #include "text_parser.h"
 #include "util.h"
 
+#define __OLD_STEPPER_CODE
+
 /**** Allocate structures ****/
 
 stConfig_t st;
@@ -444,8 +446,10 @@ static void _load_move()
 		// if() either sets the substep increment value or zeroes it
 		if ((st_run.m[MOTOR_1].substep_increment = st_prep.m[MOTOR_1].substep_increment) != 0) {
 
+#ifndef __OLD_STEPPER_CODE
 			// Reset substep accumulator for each new move segment
 			st_run.m[MOTOR_1].substep_accumulator = 0;
+#endif
 
 			// Set the direction bit in hardware
 			if (st_prep.m[MOTOR_1].direction == 0) 
@@ -468,7 +472,9 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_2].substep_increment = st_prep.m[MOTOR_2].substep_increment) != 0) {
+#ifndef __OLD_STEPPER_CODE
 			st_run.m[MOTOR_2].substep_accumulator = 0;
+#endif
 			if (st_prep.m[MOTOR_2].direction == 0)
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -483,7 +489,9 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_3].substep_increment = st_prep.m[MOTOR_3].substep_increment) != 0) {
+#ifndef __OLD_STEPPER_CODE
 			st_run.m[MOTOR_3].substep_accumulator = 0;
+#endif
 			if (st_prep.m[MOTOR_3].direction == 0)
 				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -498,7 +506,9 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_4].substep_increment = st_prep.m[MOTOR_4].substep_increment) != 0) {
+#ifndef __OLD_STEPPER_CODE
 			st_run.m[MOTOR_4].substep_accumulator = 0;
+#endif
 			if (st_prep.m[MOTOR_4].direction == 0)
 				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -613,6 +623,13 @@ stat_t st_prep_line(double flt_steps[], double microseconds)
 		st_prep.m[i].steps_total += flt_steps[i];
 		st_prep.m[i].step_counter_incr = flt_steps[i] / fabs(flt_steps[i]);  // set incr to +1 or -1
 #endif
+
+#ifdef __OLD_STEPPER_CODE
+		st_prep.m[i].direction = ((flt_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;	// compensate for polarity
+		st_prep.m[i].substep_increment = (int32_t)(fabs(flt_steps[i]) * DDA_SUBSTEPS);
+		st_prep.m[i].steps = flt_steps[i];	// ++++ just for diagnostics
+
+#else // *NOT* __OLD_STEPPER_CODE 
 		// skip this motor if there are no new steps. Leave all recorded values intact.
 		if (fp_ZERO(flt_steps[i])) {
 			st_prep.m[i].substep_increment = 0;						// skip this motor but leave all else alone
@@ -638,6 +655,9 @@ stat_t st_prep_line(double flt_steps[], double microseconds)
 //		st_prep.m[i].substep_correction_factor = st_prep.m[i].previous_increment / st_prep.m[i].substep_increment;
 //		st_prep.m[i].substep_correction_factor = 1;
 //		st_prep.m[i].previous_increment = st_prep.m[i].substep_increment;
+
+#endif // __OLD_STEPPER_CODE 
+
 	}
 	st_prep.microseconds = microseconds;		// ++++ diagnostic only	
 
