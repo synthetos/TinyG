@@ -48,6 +48,8 @@ qrSingleton_t qr;
 /**** Exception Messages ************************************************************
  * rpt_exception() - generate an exception message - always in JSON format
  * rpt_er()		   - send a bogus exception report for testing purposes (it's not real)
+ *
+ * WARNING: Do not call this function from MED or HI interrupts (LO is OK)
  */
 void rpt_exception(uint8_t status)
 {
