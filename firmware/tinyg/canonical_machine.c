@@ -154,7 +154,8 @@ uint8_t cm_get_combined_state()
 		if (cm.motion_state == MOTION_RUN) cm.combined_state = COMBINED_RUN;
 		if (cm.motion_state == MOTION_HOLD) cm.combined_state = COMBINED_HOLD;
 	}
-	if (cm.machine_state == MACHINE_SHUTDOWN) { cm.combined_state = MACHINE_SHUTDOWN;}
+	if (cm.machine_state == MACHINE_SHUTDOWN) { cm.combined_state = COMBINED_SHUTDOWN;}
+
 	return cm.combined_state;
 }
 
@@ -1291,6 +1292,7 @@ stat_t cm_queue_flush()
  * cm_program_stop()			- M0
  * cm_optional_program_stop()	- M1	
  * cm_program_end()				- M2, M30
+ * cm_machine_ready()			puts machine into a READY state
  *
  * cm_program_end() implements M2 and M30
  * The END behaviors are defined by NIST 3.6.1 are:
@@ -1383,7 +1385,6 @@ void cm_program_end()
 	float value[AXES] = { (float)MACHINE_PROGRAM_END, 0,0,0,0,0 };
 	mp_queue_command(_exec_program_finalize, value, value);
 }
-
 
 /**************************************
  * END OF CANONICAL MACHINE FUNCTIONS *

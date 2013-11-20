@@ -26,8 +26,8 @@
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
  *
- *		 System and hardware settings that you shouldn't need to change
- *		 are in hardware.h  Application settings that also shouldn't need
+ *		 System and hardware settings that you shouldn't need to change 
+ *		 are in hardware.h  Application settings that also shouldn't need 
  *		 to be changed are in tinyg.h
  */
 
@@ -35,11 +35,11 @@
 /**** Otherlab OtherMill profile ***************************************/
 /***********************************************************************/
 
-// ***> NOTE: The init message must be a single line with no CRs or LFs
+// ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to OMC OtherMill settings"
 
 #define JERK_MAX				500			// 500 million mm/(min^3)
-#define JERK_HOMING				1000		// 1000 million mm/(min^3)		// Jerk during homing needs to stop *fast*
+#define JERK_HOMING				1000		// 1000 million mm/(min^3)
 #define JUNCTION_DEVIATION		0.01		// default value, in mm
 #define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
 #define LATCH_VELOCITY          25			// reeeeally slow for accuracy
@@ -51,7 +51,7 @@
 // *** settings.h overrides ***
 // Note: there are some commented test values below
 
-#undef  SR_DEFAULTS
+#undef SR_DEFAULTS
 #define SR_DEFAULTS 			"mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
 
 #undef	SWITCH_TYPE
@@ -96,7 +96,7 @@
 #define M4_TRAVEL_PER_REV 		5.08				// 1tr
 #define M4_MICROSTEPS 			8					// 1mi		1,2,4,8
 #define M4_POLARITY 			0					// 1po		0=normal, 1=reversed
-#define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled
+#define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
 #define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M3_MOTOR_MAP 			AXIS_Y
@@ -104,7 +104,7 @@
 #define M3_TRAVEL_PER_REV 		5.08				// 1tr
 #define M3_MICROSTEPS 			8
 #define M3_POLARITY 			1
-#define M3_POWER_MODE 			0
+#define M3_POWER_MODE 			0					
 #define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP 			AXIS_Z
@@ -124,8 +124,8 @@
 #define M1_STEP_ANGLE 			1.8
 #define M1_TRAVEL_PER_REV 		360					// degrees moved per motor rev
 #define M1_MICROSTEPS 			8
-#define M1_POLARITY 			1
-#define M1_POWER_MODE 			1
+#define M1_POLARITY 			1			
+#define M1_POWER_MODE 			1					
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
@@ -186,11 +186,11 @@
 #define A_AXIS_MODE 			AXIS_RADIUS
 #define A_VELOCITY_MAX 			((X_VELOCITY_MAX/M1_TRAVEL_PER_REV)*360) // set to the same speed as X axis
 #define A_FEEDRATE_MAX 			A_VELOCITY_MAX
-#define A_TRAVEL_MIN			0
-#define A_TRAVEL_MAX 			0					// -1 means infinite, no limit
+#define A_TRAVEL_MAX 			0				// max=0 min=0 means infinite, no limit
+#define A_TRAVEL_MIN 			0
 #define A_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
-#define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628))
+#define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628)) 
 #define A_SWITCH_MODE_MIN 		SW_MODE_HOMING
 #define A_SWITCH_MODE_MAX 		SW_MODE_DISABLED
 #define A_SEARCH_VELOCITY 		600

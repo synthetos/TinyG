@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		400.03	// Playing with pulse timing
+#define TINYG_FIRMWARE_BUILD   		401.05	// Working on exception to filtered status reports for stat=3
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -59,9 +59,9 @@
 
 /****** DEVELOPMENT SETTINGS ******/
 
-#define __CANNED_STARTUP					// run any canned startup moves
-#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
+//#define __CANNED_STARTUP					// run any canned startup moves
+//#define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
+//#define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 //#define __ENABLE_PROBING					// comment out to take out experimental probing code
 //#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
 
@@ -90,7 +90,11 @@ typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 #define GET_TABLE_WORD(a)  pgm_read_word(&cfgArray[cmd->index].a)	// get word value from cfgArray
 #define GET_TABLE_BYTE(a)  pgm_read_byte(&cfgArray[cmd->index].a)	// get byte value from cfgArray
 #define GET_TABLE_FLOAT(a) pgm_read_float(&cfgArray[cmd->index].a)	// get float value from cfgArray
-#define GET_TOKEN_BYTE(a)  (char_t)pgm_read_byte(&cfgArray[i].a)	// get token byte value from cfgArray
+#define GET_TOKEN_BYTE(i,a) (char_t)pgm_read_byte(&cfgArray[i].a)	// get token byte value from cfgArray
+
+// populate the shared buffer with the token string given the index
+#define GET_TOKEN_STRING(i,a) strcpy_P(a, (char *)&cfgArray[(index_t)i].token);
+//#define GET_TOKEN_STRING(i) strcpy_P(shared_buf, (char *)&cfgArray[(index_t)i].token);
 
 // get text from an array of strings in PGM and convert to RAM string
 #define GET_TEXT_ITEM(b,a) strncpy_P(shared_buf,(const char *)pgm_read_word(&b[a]),SHARED_BUF_LEN) 
@@ -120,13 +124,16 @@ typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uin
 								// because in C++ uint8_t and char are distinct types and 
 								// we want chars to behave as uint8's
 
-													// gets rely on cmd->index having been set
-#define GET_TABLE_WORD(a)  cfgArray[cmd->index].a	// get word value from cfgArray
-#define GET_TABLE_BYTE(a)  cfgArray[cmd->index].a	// get byte value from cfgArray
-#define GET_TABLE_FLOAT(a) cfgArray[cmd->index].a	// get byte value from cfgArray
-#define GET_TOKEN_BYTE(a)  (char_t)cfgArray[i].a	// get token byte value from cfgArray
+														// gets rely on cmd->index having been set
+#define GET_TABLE_WORD(a)  cfgArray[cmd->index].a		// get word value from cfgArray
+#define GET_TABLE_BYTE(a)  cfgArray[cmd->index].a		// get byte value from cfgArray
+#define GET_TABLE_FLOAT(a) cfgArray[cmd->index].a		// get byte value from cfgArray
+#define GET_TOKEN_BYTE(i,a) (char_t)cfgArray[i].a		// get token byte value from cfgArray
 
-#define GET_TEXT_ITEM(b,a) b[a]						// get text from an array of strings in flash
+// populate the token string given the index
+//#define GET_TOKEN_STRING(i,a) (char_t)cfgArray[i].token)// populate the token string given the index
+
+#define GET_TEXT_ITEM(b,a) b[a]							// get text from an array of strings in flash
 #define GET_UNITS(a) msg_units[cm_get_units_mode(a)]
 
 // IO settings

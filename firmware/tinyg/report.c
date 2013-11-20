@@ -48,6 +48,9 @@ qrSingleton_t qr;
 /**** Exception Messages ************************************************************
  * rpt_exception() - generate an exception message - always in JSON format
  * rpt_er()		   - send a bogus exception report for testing purposes (it's not real)
+ *
+ * WARNING: Do not call this function from MED or HI interrupts (LO is OK) or there is 
+ *			a potential for deadlock in the TX buffer.
  */
 void rpt_exception(uint8_t status)
 {
@@ -140,10 +143,19 @@ void rpt_print_system_ready_message(void)
  *		report in multi-line format. Additionally, a line starting with ? will put 
  *		the system into text mode.
  *
- *	  - Automatic status reports in text mode return CSV format according to si setting
+ *	  - Automatic status reports in text mode return CSV format according to $si setting
  */
 static stat_t _populate_unfiltered_status_report(void);
 static uint8_t _populate_filtered_status_report(void);
+
+uint8_t _is_stat(cmdObj_t *cmd)
+{
+	char_t tok[CMD_TOKEN_LEN+1];
+	
+	GET_TOKEN_STRING(cmd->value, tok);
+	if (strcmp(tok, "stat") == 0) { return (true);}
+	return (false);
+}
 
 /* 
  * sr_init_status_report()
@@ -157,11 +169,14 @@ void sr_init_status_report()
 	sr.status_report_requested = false;
 	char_t sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
 	cmd->index = cmd_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
+	sr.stat_index = 0;
 
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
 		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
 		sr.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
 		cmd->value = cmd_get_index((const char_t *)"", sr_defaults[i]);// load the index for the SR element
+		if (_is_stat(cmd) == true) 
+			sr.stat_index = cmd->value;					// identify index for 'stat' if status is in the report
 		cmd_set(cmd);
 		cmd_persist(cmd);								// conditionally persist - automatic by cmd_persis()
 		cmd->index++;									// increment SR NVM index
@@ -323,9 +338,18 @@ static uint8_t _populate_filtered_status_report()
 		if ((cmd->index = sr.status_report_list[i]) == 0) { break;}
 
 		cmd_get_cmdObj(cmd);
+
+		// do not report values that have not changed...
+		// ...except for stat=3 (STOP), which is an exception
 		if (fp_EQ(cmd->value, sr.status_report_value[i])) {
-			cmd->objtype = TYPE_EMPTY;
-			continue;
+			if (cmd->index != sr.stat_index) {
+				if (fp_EQ(cmd->value, COMBINED_PROGRAM_STOP)) {
+					cmd->objtype = TYPE_EMPTY;
+					continue;
+				}
+			}
+
+		// report anything that has changed
 		} else {
 			strcpy(tmp, cmd->group);		// flatten out groups - WARNING - you cannot use strncpy here...
 			strcat(tmp, cmd->token);

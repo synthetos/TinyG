@@ -145,10 +145,15 @@ static int8_t _get_next_axis(int8_t axis);
 stat_t cm_homing_cycle_start(void)
 {
 	// save relevant non-axis parameters from Gcode model
-	hm.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL); //cm.gm.units_mode;
-	hm.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL); //cm.gm.coord_system;
-	hm.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);//cm.gm.distance_mode;
-	hm.saved_feed_rate = cm_get_distance_mode(ACTIVE_MODEL); //cm.gm.feed_rate;
+//	hm.saved_units_mode = cm.gm.units_mode;
+//	hm.saved_coord_system = cm.gm.coord_system;
+//	hm.saved_distance_mode = cm.gm.distance_mode;
+//	hm.saved_feed_rate = cm.gm.feed_rate;
+
+	hm.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);			//cm.gm.units_mode;
+	hm.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);		//cm.gm.coord_system;
+	hm.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);	//cm.gm.distance_mode;
+	hm.saved_feed_rate = cm_get_distance_mode(ACTIVE_MODEL);		//cm.gm.feed_rate;
 
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
@@ -204,6 +209,10 @@ static stat_t _homing_axis_start(int8_t axis)
 			cm.homing_state = HOMING_HOMED;
 			return (_set_homing_func(_homing_finalize_exit));
 		} else if (axis == -2) { 							// -2 is error
+//			cm_set_units_mode(hm.saved_units_mode);
+//			cm_set_distance_mode(hm.saved_distance_mode);
+//			cm.cycle_state = CYCLE_OFF;
+//			cm_cycle_end();
 			return (_homing_error_exit(-2));
 		}
 	}
@@ -211,13 +220,14 @@ static stat_t _homing_axis_start(int8_t axis)
 	// clear the homed flag for axis so we'll be able to move
 	cm.homed[axis] = false;
 
-	// calc travel distance
-	float travel_dist = fabs(cm.a[axis].travel_max - cm.a[axis].travel_min) + cm.a[axis].latch_backoff;
-
 	// trap gross mis-configurations
 	if ((fp_ZERO(cm.a[axis].search_velocity)) || (fp_ZERO(cm.a[axis].latch_velocity))) {
 		return (_homing_error_exit(axis));
 	}
+
+	// calculate and test travel distance
+	// ASH: +++++ Not sure how this is going to work with min/max disabled, or -1000000 disables
+	float travel_dist = fabs(cm.a[axis].travel_max - cm.a[axis].travel_min) + cm.a[axis].latch_backoff;
 	if ((travel_dist == 0) || (cm.a[axis].latch_backoff <= 0)) {
 		return (_homing_error_exit(axis));
 	}
@@ -237,7 +247,8 @@ static stat_t _homing_axis_start(int8_t axis)
 	if (hm.min_mode & SW_HOMING_BIT) {
 		hm.homing_switch = MIN_SWITCH(axis);				// the min is the homing switch
 		hm.limit_switch = MAX_SWITCH(axis);					// the max would be the limit switch
-		hm.search_travel = -travel_dist;			// search travels in negative direction
+//		hm.search_travel = -cm.a[axis].travel_max;			// search travels in negative direction
+		hm.search_travel = -travel_dist;					// search travels in negative direction
 		hm.latch_backoff = cm.a[axis].latch_backoff;		// latch travels in positive direction
 		hm.zero_backoff = cm.a[axis].zero_backoff;
 
@@ -245,7 +256,8 @@ static stat_t _homing_axis_start(int8_t axis)
 	} else {
 		hm.homing_switch = MAX_SWITCH(axis);				// the max is the homing switch
 		hm.limit_switch = MIN_SWITCH(axis);					// the min would be the limit switch
-		hm.search_travel = travel_dist;			// search travels in positive direction
+//		hm.search_travel = cm.a[axis].travel_max;			// search travels in positive direction
+		hm.search_travel = travel_dist;						// search travels in positive direction
 		hm.latch_backoff = -cm.a[axis].latch_backoff;		// latch travels in negative direction
 		hm.zero_backoff = -cm.a[axis].zero_backoff;
 	}
@@ -317,7 +329,6 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 		mp_set_runtime_position(axis, 0);
 		cm.homed[axis] = true;
 	} else {
-//		cm_set_axis_origin(axis, cm_get_runtime_work_position(axis));
 		cm_set_axis_origin(axis, cm_get_work_position(RUNTIME, axis));
 	}
 	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
@@ -375,6 +386,7 @@ static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 	cm_set_distance_mode(hm.saved_distance_mode);
 	cm_set_feed_rate(hm.saved_feed_rate);
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
+//	cm.homing_state = HOMING_HOMED;
 	cm.cycle_state = CYCLE_OFF;						// required
 	cm_cycle_end();
 //+++++ DIAGNOSTIC +++++

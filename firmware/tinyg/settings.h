@@ -58,7 +58,8 @@
 #define SR_VERBOSITY				SR_FILTERED		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 #define STATUS_REPORT_MIN_MS		100				// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250				// milliseconds - set $SV=0 to disable
-#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+//#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","stat","momo"
 //#define SR_DEFAULTS "line","qr","qi","qo","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
 #define QR_VERBOSITY				QR_OFF			// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
@@ -109,5 +110,25 @@
 #define P1_CCW_PHASE_HI                 0.2
 #define P1_PWM_PHASE_OFF                0.1
 #endif//P1_PWM_FREQUENCY
+
+
+/*** User-Defined Data Defaults ***/
+
+#define USER_DATA_A0	0
+#define USER_DATA_A1	0
+#define USER_DATA_A2	0
+#define USER_DATA_A3	0
+#define USER_DATA_B0	0
+#define USER_DATA_B1	0
+#define USER_DATA_B2	0
+#define USER_DATA_B3	0
+#define USER_DATA_C0	0
+#define USER_DATA_C1	0
+#define USER_DATA_C2	0
+#define USER_DATA_C3	0
+#define USER_DATA_D0	0
+#define USER_DATA_D1	0
+#define USER_DATA_D2	0
+#define USER_DATA_D3	0
 
 #endif // End of include guard: SETTINGS_H_ONCE
