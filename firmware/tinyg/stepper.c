@@ -46,7 +46,7 @@
 #include "text_parser.h"
 #include "util.h"
 
-#define __OLD_STEPPER_CODE
+//#define __OLD_STEPPER_CODE
 
 /**** Allocate structures ****/
 
@@ -306,47 +306,35 @@ stat_t st_motor_power_callback() 	// called by controller
 
 ISR(TIMER_DDA_ISR_vect)
 {
-	if (st_run.end_flag == false) {
-		if ((st_run.m[MOTOR_1].substep_accumulator += st_run.m[MOTOR_1].substep_increment) > 0) {
-			PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;		// turn step bit on
-			st_run.m[MOTOR_1].substep_accumulator -= st_run.dda_ticks_X_substeps;
-			RUN_STEP_COUNTER(0);
-		}
-		if ((st_run.m[MOTOR_2].substep_accumulator += st_run.m[MOTOR_2].substep_increment) > 0) {
-			PORT_MOTOR_2_VPORT.OUT |= STEP_BIT_bm;
-			st_run.m[MOTOR_2].substep_accumulator -= st_run.dda_ticks_X_substeps;
-			RUN_STEP_COUNTER(1);
-		}
-		if ((st_run.m[MOTOR_3].substep_accumulator += st_run.m[MOTOR_3].substep_increment) > 0) {
-			PORT_MOTOR_3_VPORT.OUT |= STEP_BIT_bm;
-			st_run.m[MOTOR_3].substep_accumulator -= st_run.dda_ticks_X_substeps;
-			RUN_STEP_COUNTER(2);
-		}
-		if ((st_run.m[MOTOR_4].substep_accumulator += st_run.m[MOTOR_4].substep_increment) > 0) {
-			PORT_MOTOR_4_VPORT.OUT |= STEP_BIT_bm;
-			st_run.m[MOTOR_4].substep_accumulator -= st_run.dda_ticks_X_substeps;
-			RUN_STEP_COUNTER(3);
-		}
-
-		// turn step bits off - pulse stretching for using external drivers.
-		PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 5 uSec pulse width
-		PORT_MOTOR_2_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 4 uSec
-		PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 3 uSec
-		PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 2 uSec
-
-		if (--st_run.dda_ticks_downcount != 0) return;
+	if ((st_run.m[MOTOR_1].substep_accumulator += st_run.m[MOTOR_1].substep_increment) > 0) {
+		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;		// turn step bit on
+		st_run.m[MOTOR_1].substep_accumulator -= st_run.dda_ticks_X_substeps;
+		RUN_STEP_COUNTER(0);
 	}
-	// Run the end phase of the segment. 
-	// Play out the residual step fraction time, but no pulse
-
-	// sometimes there is no actual move. In which case just exit now
-	if (st_run.m[st_run.end_motor].substep_increment != 0) {
-		st_run.end_flag = true;
-		if ((st_run.m[st_run.end_motor].substep_accumulator += 
-			 st_run.m[st_run.end_motor].substep_increment) < 0) {
-			 return;
-		}
+	if ((st_run.m[MOTOR_2].substep_accumulator += st_run.m[MOTOR_2].substep_increment) > 0) {
+		PORT_MOTOR_2_VPORT.OUT |= STEP_BIT_bm;
+		st_run.m[MOTOR_2].substep_accumulator -= st_run.dda_ticks_X_substeps;
+		RUN_STEP_COUNTER(1);
 	}
+	if ((st_run.m[MOTOR_3].substep_accumulator += st_run.m[MOTOR_3].substep_increment) > 0) {
+		PORT_MOTOR_3_VPORT.OUT |= STEP_BIT_bm;
+		st_run.m[MOTOR_3].substep_accumulator -= st_run.dda_ticks_X_substeps;
+		RUN_STEP_COUNTER(2);
+	}
+	if ((st_run.m[MOTOR_4].substep_accumulator += st_run.m[MOTOR_4].substep_increment) > 0) {
+		PORT_MOTOR_4_VPORT.OUT |= STEP_BIT_bm;
+		st_run.m[MOTOR_4].substep_accumulator -= st_run.dda_ticks_X_substeps;
+		RUN_STEP_COUNTER(3);
+	}
+
+	// turn step bits off - pulse stretching for using external drivers.
+	PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 5 uSec pulse width
+	PORT_MOTOR_2_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 4 uSec
+	PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 3 uSec
+	PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 2 uSec
+
+	if (--st_run.dda_ticks_downcount != 0) return;
+
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// disable DDA timer
 	_load_move();								// load the next move
 }
@@ -446,10 +434,10 @@ static void _load_move()
 		// if() either sets the substep increment value or zeroes it
 		if ((st_run.m[MOTOR_1].substep_increment = st_prep.m[MOTOR_1].substep_increment) != 0) {
 
-#ifndef __OLD_STEPPER_CODE
+//#ifndef __OLD_STEPPER_CODE
 			// Reset substep accumulator for each new move segment
-			st_run.m[MOTOR_1].substep_accumulator = 0;
-#endif
+			st_run.m[MOTOR_1].substep_accumulator = st_prep.m[MOTOR_1].substep_accumulator;
+//#endif
 
 			// Set the direction bit in hardware
 			if (st_prep.m[MOTOR_1].direction == 0) 
@@ -472,9 +460,9 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_2].substep_increment = st_prep.m[MOTOR_2].substep_increment) != 0) {
-#ifndef __OLD_STEPPER_CODE
-			st_run.m[MOTOR_2].substep_accumulator = 0;
-#endif
+//#ifndef __OLD_STEPPER_CODE
+			st_run.m[MOTOR_2].substep_accumulator = st_prep.m[MOTOR_2].substep_accumulator;
+//#endif
 			if (st_prep.m[MOTOR_2].direction == 0)
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -489,9 +477,9 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_3].substep_increment = st_prep.m[MOTOR_3].substep_increment) != 0) {
-#ifndef __OLD_STEPPER_CODE
-			st_run.m[MOTOR_3].substep_accumulator = 0;
-#endif
+//#ifndef __OLD_STEPPER_CODE
+			st_run.m[MOTOR_3].substep_accumulator = st_prep.m[MOTOR_3].substep_accumulator;
+//#endif
 			if (st_prep.m[MOTOR_3].direction == 0)
 				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -506,9 +494,9 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_4].substep_increment = st_prep.m[MOTOR_4].substep_increment) != 0) {
-#ifndef __OLD_STEPPER_CODE
-			st_run.m[MOTOR_4].substep_accumulator = 0;
-#endif
+//#ifndef __OLD_STEPPER_CODE
+			st_run.m[MOTOR_4].substep_accumulator = st_prep.m[MOTOR_4].substep_accumulator;
+//#endif
 			if (st_prep.m[MOTOR_4].direction == 0)
 				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -522,8 +510,8 @@ static void _load_move()
 			}
 		}
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
-		st_run.end_flag = false;							// this gets used later
-		st_run.end_motor = st_prep.end_motor;				// what motor to use during end phase
+//		st_run.end_flag = false;							// this gets used later
+//		st_run.end_motor = st_prep.end_motor;				// what motor to use during end phase
 
 	// handle dwells
 	} else if (st_prep.move_type == MOVE_TYPE_DWELL) {
@@ -612,54 +600,7 @@ stat_t st_prep_line(double flt_steps[], double microseconds)
 	} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
 
-	// setup motor parameters
-
-	st_prep.end_motor =-1;		// uninitialized value for motor to use in end processing
-
-	double int_steps;
-	for (uint8_t i=0; i<MOTORS; i++) {
-
-#ifdef __STEP_DIAGNOSTICS
-		st_prep.m[i].steps_total += flt_steps[i];
-		st_prep.m[i].step_counter_incr = flt_steps[i] / fabs(flt_steps[i]);  // set incr to +1 or -1
-#endif
-
-#ifdef __OLD_STEPPER_CODE
-		st_prep.m[i].direction = ((flt_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;	// compensate for polarity
-		st_prep.m[i].substep_increment = (int32_t)(fabs(flt_steps[i]) * DDA_SUBSTEPS);
-		st_prep.m[i].steps = flt_steps[i];	// ++++ just for diagnostics
-
-#else // *NOT* __OLD_STEPPER_CODE 
-		// skip this motor if there are no new steps. Leave all recorded values intact.
-		if (fp_ZERO(flt_steps[i])) {
-			st_prep.m[i].substep_increment = 0;						// skip this motor but leave all else alone
-			continue;
-		}
-		st_prep.m[i].steps = flt_steps[i];	// ++++ just for diagnostics
-
-		// set direction bit and look for sign changes 
-		st_prep.m[i].direction = ((flt_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;	// compensate for polarity
-//		st_prep.m[i].direction_flip = (signbit(flt_steps[i]) ^ st_prep.m[i].previous_signbit); // 1 = direction change
-//		st_prep.m[i].previous_signbit = (signbit(flt_steps[i]));
-
-		// accumulate steps and forward whole steps to loader
-		st_prep.m[i].step_accumulator += flt_steps[i];				// accumulate + or - steps
-		modf(st_prep.m[i].step_accumulator, &int_steps);			// get integer steps to run
-		st_prep.m[i].step_accumulator -= int_steps;					// leave fractions in accumulator
-		st_prep.m[i].substep_increment = (int32_t)(fabs(int_steps) * DDA_SUBSTEPS);
-
-		// pick the end motor
-		st_prep.end_motor = i;
-
-		// compute phase correction factors
-//		st_prep.m[i].substep_correction_factor = st_prep.m[i].previous_increment / st_prep.m[i].substep_increment;
-//		st_prep.m[i].substep_correction_factor = 1;
-//		st_prep.m[i].previous_increment = st_prep.m[i].substep_increment;
-
-#endif // __OLD_STEPPER_CODE 
-
-	}
-	st_prep.microseconds = microseconds;		// ++++ diagnostic only	
+	// setup common parameters
 
 	// NOTE: The following expressions are sensitive to casting and execution order to 
 	// avoid long-term accuracy errors due to round off error. One earlier failed attempt was:
@@ -669,11 +610,45 @@ stat_t st_prep_line(double flt_steps[], double microseconds)
 	double dda_ticks = ((microseconds / 1000000) * FREQUENCY_DDA);
 	st_prep.dda_ticks = (int32_t)dda_ticks;
 	st_prep.dda_ticks_X_substeps = (int32_t)(dda_ticks * DDA_SUBSTEPS);
+	st_prep.microseconds = microseconds;		// ++++ diagnostic only	
 
-//	st_prep.dda_ticks = (int32_t)(((double)microseconds / (double)1000000) * (double)FREQUENCY_DDA);
-//	st_prep.dda_ticks_X_substeps = (int32_t)(((double)microseconds / (double)1000000) * (double)FREQUENCY_DDA * (double)DDA_SUBSTEPS);
-//	st_prep.previous_dda_ticks = st_prep.dda_ticks;
+	// setup motor parameters
 
+	double int_steps;
+	double frc_steps;
+	for (uint8_t i=0; i<MOTORS; i++) {
+
+#ifdef __STEP_DIAGNOSTICS
+		st_prep.m[i].steps_total += flt_steps[i];
+		st_prep.m[i].step_counter_incr = flt_steps[i] / fabs(flt_steps[i]);  // set incr to +1 or -1
+#endif
+
+		// skip this motor if there are no new steps. Leave all recorded values intact.
+		if (fp_ZERO(flt_steps[i])) {
+			st_prep.m[i].substep_increment = 0;						// skip this motor but leave all else alone
+			continue;
+		}
+
+		st_prep.m[i].direction = ((flt_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;	// compensate for polarity
+		st_prep.m[i].substep_increment = (int32_t)(fabs(flt_steps[i]) * DDA_SUBSTEPS);
+		st_prep.m[i].steps = flt_steps[i];	// ++++ just for diagnostics
+
+		// Compute one half of the fractional step as the initial accumulated substeps.
+		// Initialize the substep accumulator the maximum negative excursion. If there are 
+		// pulses in the move (integer steps >= 1) then scale the accumulator to 1/2 of 
+		// the fractional part. This right-shifts the pulse train to the mid-point of the segment
+
+//		frc_steps = modf(flt_steps[i], &int_steps);
+//		st_prep.m[i].substep_accumulator = (int32_t)(-(dda_ticks * DDA_SUBSTEPS) / (int_steps * 2));
+		st_prep.m[i].substep_accumulator = (int32_t)(-(dda_ticks * DDA_SUBSTEPS) / (flt_steps[i] * 2));
+/*
+		if (int_steps < 1) {
+			st_prep.m[i].substep_accumulator = (int32_t)(-(dda_ticks * DDA_SUBSTEPS));
+		} else {
+			st_prep.m[i].substep_accumulator = (int32_t)(-(dda_ticks * DDA_SUBSTEPS) / (frc_steps);
+		}
+*/
+	}
 	st_prep.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }

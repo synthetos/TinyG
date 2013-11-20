@@ -104,7 +104,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("M6\n");
 //	xio_queue_RX_string_usb("M6T4\n");
 //	xio_queue_RX_string_usb("$tool\n");
-	xio_queue_RX_string_usb("$ud\n");
+//	xio_queue_RX_string_usb("$ud\n");
 
 /* Run test file - __TEST_99 must be enabled*/
 //	xio_queue_RX_string_usb("$test=99\n");		// run test file in text mode - __TEXT_MODE must be enabled
@@ -149,6 +149,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0 x0.04\n");		// very short line
 //	xio_queue_RX_string_usb("g0 x0.08\n");
 //	xio_queue_RX_string_usb("g0 x0.12\n");
+	xio_queue_RX_string_usb("g0 x20\n");
 //	xio_queue_RX_string_usb("g0 x20y20\n");
 //	xio_queue_RX_string_usb("g0 x-300 y-400\n");
 
