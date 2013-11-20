@@ -279,7 +279,7 @@ typedef struct stConfig {			// stepper configs
 
 typedef struct stRunMotor { 		// one per controlled motor
 	int32_t substep_increment;		// total steps in axis times substeps factor
-	int32_t substep_accumulator;	// DDA phase angle accumulator for axis
+	int32_t substep_accumulator;	// DDA phase angle accumulator
 	float power_level;				// power level for this segment (ARM only)
 	uint8_t power_state;			// state machine for managing motor power
 	uint32_t power_systick;			// sys_tick for next motor power state transition
@@ -291,8 +291,8 @@ typedef struct stRunMotor { 		// one per controlled motor
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
-	uint8_t end_flag;				// set true when playing out the remaining substeps
-	int8_t end_motor;				// motor channel to use during end phase
+//	uint8_t end_flag;				// set true when playing out the remaining substeps
+//	int8_t end_motor;				// motor channel to use during end phase
 	int32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	int32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t m[MOTORS];			// runtime motor structures
@@ -304,9 +304,8 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 
 typedef struct stPrepMotor {
 	int8_t direction;				// travel direction corrected for polarity
-//	int8_t direction_flip;			// flag to zero accumulator when direction changes
-//	int8_t previous_signbit;		// uncorrected travel direction of previous segment
  	int32_t substep_increment; 		// total steps in axis times substep factor
+	int32_t substep_accumulator;	// starting DDA phase angle accumulator
 	float step_accumulator;			// accumulated steps to pulse out
 #ifdef __STEP_DIAGNOSTICS
 	float steps;					// current step value
