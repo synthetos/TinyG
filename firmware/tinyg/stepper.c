@@ -629,10 +629,6 @@ stat_t st_prep_line(double flt_steps[], double microseconds)
 			continue;
 		}
 
-		st_prep.m[i].direction = ((flt_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;	// compensate for polarity
-		st_prep.m[i].substep_increment = (int32_t)(fabs(flt_steps[i]) * DDA_SUBSTEPS);
-		st_prep.m[i].steps = flt_steps[i];	// ++++ just for diagnostics
-
 		// Compute one half of the fractional step as the initial accumulated substeps.
 		// Initialize the substep accumulator the maximum negative excursion. If there are 
 		// pulses in the move (integer steps >= 1) then scale the accumulator to 1/2 of 
@@ -648,6 +644,10 @@ stat_t st_prep_line(double flt_steps[], double microseconds)
 			st_prep.m[i].substep_accumulator = (int32_t)(-(dda_ticks * DDA_SUBSTEPS) / (frc_steps);
 		}
 */
+		st_prep.m[i].substep_increment = (int32_t)(fabs(flt_steps[i]) * DDA_SUBSTEPS);
+		st_prep.m[i].steps = flt_steps[i];	// ++++ just for diagnostics
+		st_prep.m[i].direction = ((flt_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;	// compensate for polarity
+
 	}
 	st_prep.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);

@@ -306,7 +306,7 @@ typedef struct stPrepMotor {
 	int8_t direction;				// travel direction corrected for polarity
  	int32_t substep_increment; 		// total steps in axis times substep factor
 	int32_t substep_accumulator;	// starting DDA phase angle accumulator
-	float step_accumulator;			// accumulated steps to pulse out
+//	float step_accumulator;			// accumulated steps to pulse out
 #ifdef __STEP_DIAGNOSTICS
 	float steps;					// current step value
 	float steps_total;				// total steps accumulated
@@ -322,7 +322,7 @@ typedef struct stPrepSingleton {
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
-	int8_t end_motor;				// motor channel to use during end phase
+//	int8_t end_motor;				// motor channel to use during end phase
 	double microseconds;			// diagnostis ++++++
 	stPrepMotor_t m[MOTORS];		// per-motor structs
 	uint16_t magic_end;
