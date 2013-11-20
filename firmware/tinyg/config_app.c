@@ -371,7 +371,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g56","g56a",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_A], G56_A_OFFSET },
 	{ "g56","g56b",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_B], G56_B_OFFSET },
 	{ "g56","g56c",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_C], G56_C_OFFSET },
-#if 0
+#if 1
 	{ "g57","g57x",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_X], G57_X_OFFSET },
 	{ "g57","g57y",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_Y], G57_Y_OFFSET },
 	{ "g57","g57z",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_Z], G57_Z_OFFSET },
@@ -438,11 +438,11 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g30","g30b",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g30_position[AXIS_B], 0 },
 	{ "g30","g30c",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g30_position[AXIS_C], 0 },
 
-	// this is a 128bit UUID for identifing a previously commited job state
-	{ "jid","jida",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[0], 0},
-	{ "jid","jidb",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[1], 0},
-	{ "jid","jidc",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[2], 0},
-	{ "jid","jidd",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[3], 0},
+//	// this is a 128bit UUID for identifing a previously commited job state
+//	{ "jid","jida",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[0], 0},
+//	{ "jid","jidb",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[1], 0},
+//	{ "jid","jidc",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[2], 0},
+//	{ "jid","jidd",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[3], 0},
 
 	// System parameters
 	{ "sys","ja",  _f07, 0, cm_print_ja,  get_flu,   set_flu,    (float *)&cm.junction_acceleration,JUNCTION_ACCELERATION },
@@ -494,22 +494,22 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "fd",  _fip, 0, tx_print_ui8, get_ui8, set_01,  (float *)&js.json_footer_depth,		JSON_FOOTER_DEPTH },
 
 	// User defined data groups
-	{ "uda","uda0", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_a[0], USER_DATA_A0 },
-	{ "uda","uda1", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_a[1], USER_DATA_A1 },
-	{ "uda","uda2", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_a[2], USER_DATA_A2 },
-	{ "uda","uda3", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_a[3], USER_DATA_A3 },
-	{ "udb","udb0", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_b[0], USER_DATA_B0 },
-	{ "udb","udb1", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_b[1], USER_DATA_B1 },
-	{ "udb","udb2", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_b[2], USER_DATA_B2 },
-	{ "udb","udb3", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_b[3], USER_DATA_B3 },
-	{ "udc","udc0", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_c[0], USER_DATA_C0 },
-	{ "udc","udc1", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_c[1], USER_DATA_C1 },
-	{ "udc","udc2", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_c[2], USER_DATA_C2 },
-	{ "udc","udc3", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_c[3], USER_DATA_C3 },
-	{ "udd","udd0", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_d[0], USER_DATA_D0 },
-	{ "udd","udd1", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_d[1], USER_DATA_D1 },
-	{ "udd","udd2", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_d[2], USER_DATA_D2 },
-	{ "udd","udd3", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_d[3], USER_DATA_D3 },
+	{ "uda","uda0", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_a[0], USER_DATA_A0 },
+	{ "uda","uda1", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_a[1], USER_DATA_A1 },
+	{ "uda","uda2", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_a[2], USER_DATA_A2 },
+	{ "uda","uda3", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_a[3], USER_DATA_A3 },
+	{ "udb","udb0", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_b[0], USER_DATA_B0 },
+	{ "udb","udb1", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_b[1], USER_DATA_B1 },
+	{ "udb","udb2", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_b[2], USER_DATA_B2 },
+	{ "udb","udb3", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_b[3], USER_DATA_B3 },
+	{ "udc","udc0", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_c[0], USER_DATA_C0 },
+	{ "udc","udc1", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_c[1], USER_DATA_C1 },
+	{ "udc","udc2", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_c[2], USER_DATA_C2 },
+	{ "udc","udc3", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_c[3], USER_DATA_C3 },
+	{ "udd","udd0", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[0], USER_DATA_D0 },
+	{ "udd","udd1", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[1], USER_DATA_D1 },
+	{ "udd","udd2", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[2], USER_DATA_D2 },
+	{ "udd","udd3", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[3], USER_DATA_D3 },
 
 //*** Do not put new data elements below this line. Groups will not work if you do (CMD_INDEX_END_SINGLES) ***//
 
@@ -577,7 +577,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","ofs",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// work offset group
 	{ "","hom",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis homing state group
 	{ "","jog",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis jogging state group
-	{ "","jid",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// job ID group
+//	{ "","jid",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// job ID group
 	{ "","uda", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group
 	{ "","udb", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group
 	{ "","udc", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group
@@ -593,7 +593,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 /***** Make sure these defines line up with any changes in the above table *****/
 
-#define CMD_COUNT_GROUPS 		31		// count of simple groups
+#define CMD_COUNT_GROUPS 		30		// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 		// count of uber-groups
 
 /* <DO NOT MESS WITH THESE DEFINES> */

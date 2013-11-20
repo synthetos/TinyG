@@ -71,7 +71,7 @@ static void _request_load_move(void);
  **** CODE **************************************************************************
  ************************************************************************************/
 
-#define __STEP_DIAGNOSTICS
+//#define __STEP_DIAGNOSTICS
 
 void _clear_step_counters(void)
 {
@@ -577,7 +577,7 @@ void st_prep_dwell(float microseconds)
 
  */
 
-stat_t st_prep_line(float steps[], float microseconds)
+stat_t st_prep_line(double steps[], float microseconds)
 {
 	// *** defensive programming ***
 	// trap conditions that would prevent queueing the line

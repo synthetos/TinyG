@@ -40,8 +40,8 @@
 		204C3038183D4E670058D2F2 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 7;
+			dstPath = "$(PROJECT_DIR)/../../othercam/Othercam/";
+			dstSubfolderSpec = 0;
 			files = (
 				204C3039183D50BD0058D2F2 /* tinyg.hex in CopyFiles */,
 			);
@@ -487,7 +487,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",

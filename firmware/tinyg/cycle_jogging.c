@@ -101,7 +101,8 @@ stat_t cm_jogging_cycle_start(uint8_t axis)
 	jog.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);		//cm.gm.coord_system;
 	jog.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);	//cm.gm.distance_mode;
 	jog.saved_feed_rate = cm_get_distance_mode(ACTIVE_MODEL);		//cm.gm.feed_rate;
-
+    jog.saved_jerk = cm.a[axis].jerk_max;
+    
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
 	cm_set_distance_mode(ABSOLUTE_MODE);
@@ -162,6 +163,7 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 	mp_flush_planner();									// don't use cm_request_queue_flush() here
 	cm_request_cycle_start();
 
+#if 0
 	float ramp_dist = 2.0;
 	float steps = 0.0;
 	float max_steps = 25;
@@ -177,6 +179,10 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 		velocity = jog.velocity_start + (jog.velocity_max - jog.velocity_start) * scale;
 		offset += ramp_dist * steps/max_steps;
 	}
+#else
+    // use a really slow jerk so we ramp up speed
+    cm.a[axis].jerk_max = 25;
+#endif
 
 	// final move
 	cm_set_feed_rate(jog.velocity_max);
@@ -189,6 +195,7 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 {
 	mp_flush_planner(); 							// FIXME: not sure what to do on exit
+    cm.a[axis].jerk_max = jog.saved_jerk;
 	cm_set_coord_system(jog.saved_coord_system);	// restore to work coordinate system
 	cm_set_units_mode(jog.saved_units_mode);
 	cm_set_distance_mode(jog.saved_distance_mode);
@@ -196,6 +203,9 @@ static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;						// required
 	cm_cycle_end();
+    
+    printf("{\"jog\":0}\n");
+    
 	return (STAT_OK);
 }
 
