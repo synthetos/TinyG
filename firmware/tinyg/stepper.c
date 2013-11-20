@@ -68,12 +68,13 @@ static void _request_load_move(void);
 
 #ifdef __STEP_DIAGNOSTICS
 
-void _clear_step_counters(void)
+void _clear_step_diagnostics(void)
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
 		st_run.m[i].step_counter = 0;
 		st_run.m[i].substep_accumulator = 0;
 		st_prep.m[i].steps_total = 0;
+		st_prep.segment_count = 0;
 	}
 }
 #endif
@@ -95,7 +96,7 @@ void st_end_cycle(void)
 stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
 {
 #ifdef __STEP_DIAGNOSTICS
-	_clear_step_counters();
+	_clear_step_diagnostics();
 	st_end_cycle();
 #endif
 	return(STAT_OK);
@@ -122,7 +123,7 @@ void stepper_init()
 
 
 #ifdef __STEP_DIAGNOSTICS
-	_clear_step_counters();
+	_clear_step_diagnostics();
 #endif
 
 	// Configure virtual ports
@@ -573,26 +574,42 @@ void st_prep_dwell(double microseconds)
  *		An attempt to run prep during a load is an error.
  *	  - Sanity checks are run on the microseconds to make sure no timing errors are present.
  *
- *	  - The motor (joint) loop runs for each motor:
+ *	  - Generate common values used by all motors, including the number of DDA ticks the 
+ *		stepper interrupt will process, and multiply by DDA_SUBSTEPS for use elsewhere.
+ *
+ *	  - The motor loop runs for each motor:
  *
  *		- If the motor has zero steps the substep increment should be zeroed and no other 
- *		  manipulation should be performed on the data for that motor. This preserves motion
- *		  direction (sign) and any accumulated fractional steps. It also preserves step 
- *		  diagnostics values.
+ *		  manipulation should be performed for that motor. This preserves motion direction 
+ *		  (sign) and leaves all other values untouched.
  *
- *		- The direction is processed next. The sign is extracted from steps and xor'ed with 
- *		  polarity to derive direction.
+ *		- Process the direction by extracting the sign and correcting for polarity.
  *
- *		- Step count is determined by adding the new step value to the step_accumulator then 
- *		  removing the integer part from the accumulator. The integer steps are converted to
- *		  substeps and made positive, as the direction is set by the direction bit.
+ *		- Compute the number of steps that should actually be delivered in this segment.
+ *		  This number will likely be different than the incoming_steps argument
  *
- *	  - Finishing up, the number of DDA clock ticks needed to run the move is computed from the 
- *		move time. This is also converted to a substeps number for use by the DDA interrupt.
+ *		  Add the incoming step value (complete with fraction) to the step_accumulator.
+ *
+ *		  Set substep_increment based on the accumulated steps. This part ensures that the
+ *		  right number of steps are produced for each segment but does not guarantee the 
+ *		  correct timing of the pulse(s) in the segment.
+ *
+ *		- Correct the timing of the pulse(s) in the segment.
+ *
+ *		  Find the time remaining after the N pulses have fired. This time is the remainder of
+ *		  the last pulse period (assuming pulses start at the beginning of the period) plus the 
+ *		  fractional steps. Assume that the pulse width is negligible (for now)
+ *
+ *		  Divide the remaining time between the front and the back of the segment, effectively
+ *		  centering the pulse train in time within the segment. Pulse trains of 0 pulses also
+ * 		  work - they just never step.
+ *
+ * NOTE:  Many of the expressions are sensitive to casting and execution order to avoid long-term 
+ *		  accuracy errors due to floating point round off. One earlier failed attempt was:
+ *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
  */
-stat_t st_prep_line(double flt_steps[], double microseconds)
+stat_t st_prep_line(double incoming_steps[], double microseconds)
 {
-	// *** defensive programming ***
 	// trap conditions that would prevent queueing the line
 	if (st_prep.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);
 	} else if (isinf(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));
@@ -601,53 +618,46 @@ stat_t st_prep_line(double flt_steps[], double microseconds)
 	}
 
 	// setup common parameters
-
-	// NOTE: The following expressions are sensitive to casting and execution order to 
-	// avoid long-term accuracy errors due to round off error. One earlier failed attempt was:
-	// sp.dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
+	st_prep.microseconds = microseconds;				// +++++ DIAGNOSTIC	
+	st_prep.segment_count++;							// +++++ DIAGNOSTIC	
 
 	st_prep.dda_period = _f_to_period(FREQUENCY_DDA);
 	double dda_ticks = ((microseconds / 1000000) * FREQUENCY_DDA);
 	st_prep.dda_ticks = (int32_t)dda_ticks;
 	st_prep.dda_ticks_X_substeps = (int32_t)(dda_ticks * DDA_SUBSTEPS);
-	st_prep.microseconds = microseconds;		// ++++ diagnostic only	
+
 
 	// setup motor parameters
+	double integer_steps;
+	double fractional_steps;
+//	double tmp;
 
-	double int_steps;
-	double frc_steps;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
-#ifdef __STEP_DIAGNOSTICS
-		st_prep.m[i].steps_total += flt_steps[i];
-		st_prep.m[i].step_counter_incr = flt_steps[i] / fabs(flt_steps[i]);  // set incr to +1 or -1
-#endif
-
 		// skip this motor if there are no new steps. Leave all recorded values intact.
-		if (fp_ZERO(flt_steps[i])) {
-			st_prep.m[i].substep_increment = 0;						// skip this motor but leave all else alone
-			continue;
-		}
+		if (fp_ZERO(incoming_steps[i])) { st_prep.m[i].substep_increment = 0; continue;}
 
-		// Compute one half of the fractional step as the initial accumulated substeps.
-		// Initialize the substep accumulator the maximum negative excursion. If there are 
-		// pulses in the move (integer steps >= 1) then scale the accumulator to 1/2 of 
-		// the fractional part. This right-shifts the pulse train to the mid-point of the segment
+		// set direction bit, compensated for polarity
+		st_prep.m[i].direction = ((incoming_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
 
-//		frc_steps = modf(flt_steps[i], &int_steps);
-//		st_prep.m[i].substep_accumulator = (int32_t)(-(dda_ticks * DDA_SUBSTEPS) / (int_steps * 2));
-		st_prep.m[i].substep_accumulator = (int32_t)(-(dda_ticks * DDA_SUBSTEPS) / (flt_steps[i] * 2));
-/*
-		if (int_steps < 1) {
-			st_prep.m[i].substep_accumulator = (int32_t)(-(dda_ticks * DDA_SUBSTEPS));
-		} else {
-			st_prep.m[i].substep_accumulator = (int32_t)(-(dda_ticks * DDA_SUBSTEPS) / (frc_steps);
-		}
-*/
-		st_prep.m[i].substep_increment = (int32_t)(fabs(flt_steps[i]) * DDA_SUBSTEPS);
-		st_prep.m[i].steps = flt_steps[i];	// ++++ just for diagnostics
-		st_prep.m[i].direction = ((flt_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;	// compensate for polarity
+		// compute the number of steps that should be deliverd in this segment
+		st_prep.m[i].step_accumulator += incoming_steps[i];
+		st_prep.m[i].substep_increment = (int32_t)(fabs(st_prep.m[i].step_accumulator) * DDA_SUBSTEPS);
+		
+		// correct the pulse train timing
+		fractional_steps = modf(st_prep.m[i].step_accumulator, &integer_steps);
+//		tmp = -(dda_ticks * DDA_SUBSTEPS * (1 + fractional_steps)) / (2 * st_prep.m[i].step_accumulator);
+//		st_prep.m[i].substep_accumulator = (int32_t)(tmp);
 
+		st_prep.m[i].substep_accumulator = (int32_t)(-(dda_ticks * DDA_SUBSTEPS * (1 + fractional_steps)));;
+
+		// remove the integer steps executed during this segment from the step accumulator
+		st_prep.m[i].step_accumulator -= integer_steps;
+
+		// +++++ DIAGNOSTIC: some diagnostics. Can be removed
+		st_prep.m[i].steps = incoming_steps[i];
+		st_prep.m[i].steps_total += incoming_steps[i];
+		st_prep.m[i].step_counter_incr = incoming_steps[i] / fabs(incoming_steps[i]); // set to +1 or -1
 	}
 	st_prep.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
