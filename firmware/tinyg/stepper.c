@@ -433,6 +433,7 @@ static void _load_move()
 	if (st_prep.move_type == MOVE_TYPE_ALINE) {
 		st_run.dda_ticks_downcount = st_prep.dda_ticks;
 		st_run.dda_ticks_X_substeps = st_prep.dda_ticks_X_substeps;
+		int32_t half_ticks = -(st_run.dda_ticks_X_substeps / 2);		// used for direction chage compensation
 		TIMER_DDA.PER = st_prep.dda_period;
 
 		// Setup MOTOR_1
@@ -448,6 +449,15 @@ static void _load_move()
 			if (st_prep.m[MOTOR_1].direction == 0) 
 				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm; else 	// CW motion (bit cleared)
 				PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;			// CCW motion
+
+			// Compensate for direction change in the accumulator
+			if (st_prep.m[MOTOR_1].direction_change == true) {
+				if (st_run.m[MOTOR_1].substep_accumulator > half_ticks) {
+					st_run.m[MOTOR_1].substep_accumulator += half_ticks;
+				} else {
+					st_run.m[MOTOR_1].substep_accumulator -= half_ticks;
+				}
+			}
 
 			// Enable the stepper and start motor power management
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;			// energize motor
@@ -465,6 +475,11 @@ static void _load_move()
 			if (st_prep.m[MOTOR_2].direction == 0)
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
+			if (st_prep.m[MOTOR_2].direction_change == true) {
+				if (st_run.m[MOTOR_2].substep_accumulator > half_ticks)
+					st_run.m[MOTOR_2].substep_accumulator += half_ticks; else 
+					st_run.m[MOTOR_2].substep_accumulator -= half_ticks;
+			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_2].power_state = MOTOR_RUNNING;
 			SETUP_STEP_COUNTER(1);
@@ -479,6 +494,11 @@ static void _load_move()
 			if (st_prep.m[MOTOR_3].direction == 0)
 				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
+			if (st_prep.m[MOTOR_3].direction_change == true) {
+				if (st_run.m[MOTOR_3].substep_accumulator > half_ticks)
+					st_run.m[MOTOR_3].substep_accumulator += half_ticks; else 
+					st_run.m[MOTOR_3].substep_accumulator -= half_ticks;
+			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_3].power_state = MOTOR_RUNNING;
 			SETUP_STEP_COUNTER(2);
@@ -493,6 +513,11 @@ static void _load_move()
 			if (st_prep.m[MOTOR_4].direction == 0)
 				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
+			if (st_prep.m[MOTOR_4].direction_change == true) {
+				if (st_run.m[MOTOR_4].substep_accumulator > half_ticks)
+					st_run.m[MOTOR_4].substep_accumulator += half_ticks; else 
+					st_run.m[MOTOR_4].substep_accumulator -= half_ticks;
+			}
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_4].power_state = MOTOR_RUNNING;
 			SETUP_STEP_COUNTER(3);
