@@ -46,7 +46,7 @@
 #include "text_parser.h"
 #include "util.h"
 
-//#define __OLD_STEPPER_CODE
+#define __OLD_STEPPER_CODE
 
 /**** Allocate structures ****/
 
@@ -72,6 +72,7 @@ void _clear_step_diagnostics(void)
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
 		st_run.m[i].step_counter = 0;
+		st_run.m[i].substep_increment = 0;
 		st_run.m[i].substep_accumulator = 0;
 		st_prep.m[i].steps_total = 0;
 		st_prep.segment_count = 0;
@@ -81,12 +82,27 @@ void _clear_step_diagnostics(void)
 
 void st_end_cycle(void)
 {
+	double err;
+	double err_pct;
+
 #ifdef __STEP_DIAGNOSTICS
 	for (uint8_t i=0; i<MOTORS; i++) {
-//		printf("Motor %d steps: %li [%06f] Increment: %0.6f  Residual: %0.6f\n", 		// text display
-		printf("{\"%d\":{\"step\":%li,\"steps\":%06f,\"incr\":%0.6f,\"phas\":%0.6f}}\n",// JSON display
+//		printf("Motor %d steps: %li [%0.3f] Increment: %0.6f  Residual: %0.6f\n", 		// text display
+
+//		printf("{\"%d\":{\"step\":%li,\"steps\":%0.3f,\"err\":%0.2f,\"incr\":%0.6f,\"phas\":%0.6f}}\n",// JSON display
+
+		err = (abs(st_run.m[i].step_counter) - fabs(st_prep.m[i].steps_total));
+	
+		if (fp_ZERO(st_prep.m[i].steps_total)) {
+			err_pct = 0;
+		} else {
+			err_pct = (err / st_prep.m[i].steps_total) * 100;
+		}
+
+		printf("{\"%d\":{\"step\":%li,\"steps\":%0.3f,\"err\":[%0.2f, %0.2f],\"incr\":%0.6f,\"accum\":%0.6f}}\n",// JSON display
 			i+1, st_run.m[i].step_counter, 
 			(double)st_prep.m[i].steps_total,
+			(double)err, err_pct,
 			(double)((double)st_run.m[i].substep_increment / DDA_SUBSTEPS), 
 			(double)((double)st_run.m[i].substep_accumulator / DDA_SUBSTEPS));
 	}
@@ -336,8 +352,8 @@ ISR(TIMER_DDA_ISR_vect)
 
 	if (--st_run.dda_ticks_downcount != 0) return;
 
-	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;		// disable DDA timer
-	_load_move();								// load the next move
+	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// disable DDA timer
+	_load_move();										// load the next move
 }
 
 ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
@@ -435,11 +451,10 @@ static void _load_move()
 		// if() either sets the substep increment value or zeroes it
 		if ((st_run.m[MOTOR_1].substep_increment = st_prep.m[MOTOR_1].substep_increment) != 0) {
 
-//#ifndef __OLD_STEPPER_CODE
+#ifndef __OLD_STEPPER_CODE
 			// Reset substep accumulator for each new move segment
 			st_run.m[MOTOR_1].substep_accumulator = st_prep.m[MOTOR_1].substep_accumulator;
-//#endif
-
+#endif
 			// Set the direction bit in hardware
 			if (st_prep.m[MOTOR_1].direction == 0) 
 				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm; else 	// CW motion (bit cleared)
@@ -461,9 +476,9 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_2].substep_increment = st_prep.m[MOTOR_2].substep_increment) != 0) {
-//#ifndef __OLD_STEPPER_CODE
+#ifndef __OLD_STEPPER_CODE
 			st_run.m[MOTOR_2].substep_accumulator = st_prep.m[MOTOR_2].substep_accumulator;
-//#endif
+#endif
 			if (st_prep.m[MOTOR_2].direction == 0)
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -478,9 +493,9 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_3].substep_increment = st_prep.m[MOTOR_3].substep_increment) != 0) {
-//#ifndef __OLD_STEPPER_CODE
+#ifndef __OLD_STEPPER_CODE
 			st_run.m[MOTOR_3].substep_accumulator = st_prep.m[MOTOR_3].substep_accumulator;
-//#endif
+#endif
 			if (st_prep.m[MOTOR_3].direction == 0)
 				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -495,9 +510,9 @@ static void _load_move()
 		}
 
 		if ((st_run.m[MOTOR_4].substep_increment = st_prep.m[MOTOR_4].substep_increment) != 0) {
-//#ifndef __OLD_STEPPER_CODE
+#ifndef __OLD_STEPPER_CODE
 			st_run.m[MOTOR_4].substep_accumulator = st_prep.m[MOTOR_4].substep_accumulator;
-//#endif
+#endif
 			if (st_prep.m[MOTOR_4].direction == 0)
 				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -511,8 +526,6 @@ static void _load_move()
 			}
 		}
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
-//		st_run.end_flag = false;							// this gets used later
-//		st_run.end_motor = st_prep.end_motor;				// what motor to use during end phase
 
 	// handle dwells
 	} else if (st_prep.move_type == MOVE_TYPE_DWELL) {
@@ -618,47 +631,66 @@ stat_t st_prep_line(double incoming_steps[], double microseconds)
 	}
 
 	// setup common parameters
-	st_prep.microseconds = microseconds;				// +++++ DIAGNOSTIC	
-	st_prep.segment_count++;							// +++++ DIAGNOSTIC	
-
 	st_prep.dda_period = _f_to_period(FREQUENCY_DDA);
 	double dda_ticks = ((microseconds / 1000000) * FREQUENCY_DDA);
 	st_prep.dda_ticks = (int32_t)dda_ticks;
-	st_prep.dda_ticks_X_substeps = (int32_t)(dda_ticks * DDA_SUBSTEPS);
-
+//	st_prep.dda_ticks_X_substeps = (int32_t)(dda_ticks * DDA_SUBSTEPS);
+//	st_prep.dda_ticks_X_substeps = (int32_t)(st_prep.dda_ticks * DDA_SUBSTEPS);
+	st_prep.dda_ticks_X_substeps = st_prep.dda_ticks * DDA_SUBSTEPS;  // truncates raw dda_ticks. This is important.
 
 	// setup motor parameters
-	double integer_steps;
-	double fractional_steps;
+//	double integer_steps;
+//	double fractional_steps;
 //	double tmp;
 
 	for (uint8_t i=0; i<MOTORS; i++) {
 
+		// +++++ DIAGNOSTIC: some diagnostics. Can be removed
+		st_prep.m[i].steps = incoming_steps[i];
+		st_prep.m[i].steps_total += incoming_steps[i];
+		st_prep.m[i].step_counter_incr = incoming_steps[i] / fabs(incoming_steps[i]); // set to +1 or -1
+
+#ifdef __OLD_STEPPER_CODE
+
+		st_prep.m[i].direction = ((incoming_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
+
+//		st_prep.m[i].substep_increment = (int32_t)(fabs(incoming_steps[i] * (DDA_SUBSTEPS + 1000)));
+//		st_prep.m[i].substep_increment = (int32_t)(fabs(incoming_steps[i] * (DDA_SUBSTEPS + 200)));
+//		st_prep.m[i].substep_increment = fabs(incoming_steps[i] * (DDA_SUBSTEPS + 200));
+		st_prep.m[i].substep_increment = fabs(incoming_steps[i] * DDA_SUBSTEPS);
+
+#else 
 		// skip this motor if there are no new steps. Leave all recorded values intact.
 		if (fp_ZERO(incoming_steps[i])) { st_prep.m[i].substep_increment = 0; continue;}
+
+		printf("%f\n", incoming_steps[i]);
 
 		// set direction bit, compensated for polarity
 		st_prep.m[i].direction = ((incoming_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
 
 		// compute the number of steps that should be deliverd in this segment
 		st_prep.m[i].step_accumulator += incoming_steps[i];
-		st_prep.m[i].substep_increment = (int32_t)(fabs(st_prep.m[i].step_accumulator) * DDA_SUBSTEPS);
+//		st_prep.m[i].substep_increment = (int32_t)(fabs(st_prep.m[i].step_accumulator) * DDA_SUBSTEPS);
+		st_prep.m[i].substep_increment = fabs(st_prep.m[i].step_accumulator) * DDA_SUBSTEPS;
 		
 		// correct the pulse train timing
 		fractional_steps = modf(st_prep.m[i].step_accumulator, &integer_steps);
 //		tmp = -(dda_ticks * DDA_SUBSTEPS * (1 + fractional_steps)) / (2 * st_prep.m[i].step_accumulator);
 //		st_prep.m[i].substep_accumulator = (int32_t)(tmp);
 
-		st_prep.m[i].substep_accumulator = (int32_t)(-(dda_ticks * DDA_SUBSTEPS * (1 + fractional_steps)));;
+//		st_prep.m[i].substep_accumulator = (int32_t)(-(dda_ticks * DDA_SUBSTEPS * (1 + fractional_steps)));
+//		st_prep.m[i].substep_accumulator = (int32_t)(-dda_ticks * DDA_SUBSTEPS * fractional_steps);
+		st_prep.m[i].substep_accumulator = -dda_ticks * DDA_SUBSTEPS * fractional_steps;
+//		st_prep.m[i].substep_accumulator = 0;
 
 		// remove the integer steps executed during this segment from the step accumulator
 		st_prep.m[i].step_accumulator -= integer_steps;
-
-		// +++++ DIAGNOSTIC: some diagnostics. Can be removed
-		st_prep.m[i].steps = incoming_steps[i];
-		st_prep.m[i].steps_total += incoming_steps[i];
-		st_prep.m[i].step_counter_incr = incoming_steps[i] / fabs(incoming_steps[i]); // set to +1 or -1
+#endif
 	}
+	// +++++ DIAGNOSTIC: some diagnostics. Can be removed
+	st_prep.microseconds = microseconds;
+	st_prep.segment_count++;
+	
 	st_prep.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }

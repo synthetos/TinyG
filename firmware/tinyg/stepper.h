@@ -289,8 +289,8 @@ typedef struct stRunMotor { 		// one per controlled motor
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
-	int32_t dda_ticks_downcount;	// tick down-counter (unscaled)
-	int32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
+	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
+	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t m[MOTORS];			// runtime motor structures
 	uint16_t magic_end;
 } stRunSingleton_t;
@@ -300,7 +300,7 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 
 typedef struct stPrepMotor {
 	int8_t direction;				// travel direction corrected for polarity
- 	int32_t substep_increment; 		// total steps in axis times substep factor
+	int32_t substep_increment; 		// total steps in axis times substep factor
 	int32_t substep_accumulator;	// starting DDA phase angle accumulator
 	double steps;					// current step value
 	double step_accumulator;		// accumulated steps to pulse out
