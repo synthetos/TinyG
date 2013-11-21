@@ -245,7 +245,7 @@
 #define G55_Z_OFFSET 0
 #define G55_A_OFFSET 0
 #define G55_B_OFFSET 0
-#define G55_C_OFFSET 20         // this is where we currently store the tool offset
+#define G55_C_OFFSET -20         // this is where we currently store the tool offset
 
 #define G56_X_OFFSET 0
 #define G56_Y_OFFSET 0
