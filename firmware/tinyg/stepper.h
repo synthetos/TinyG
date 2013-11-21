@@ -225,18 +225,18 @@ enum prepBufferState {
 #define IDLE_TIMEOUT_SECONDS 		(double)0.1		// seconds in DISABLE_AXIS_WHEN_IDLE mode
 
 /* DDA substepping
- * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping.
+ * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping in the DDA.
  *	Substepping is a fixed.point substitute allowing integer math (rather than FP) to be
  *	used in the pulse generation (DDA) and make pulse timing interpolation more accurate. 
  *	The loss of number range implies that the overall maximum length move is shortened 
  *	(which is true), but this is compensated for the fact that long moves are broken up 
- *	into a series of (5 ms) short moves by the planner so that feed holds and overrides 
+ *	into a series of short moves (5 ms) by the planner so that feed holds and overrides 
  *	can interrupt a long move.
  *
  *	This value is set for maximum accuracy; best not to mess with this.
  */
-//#define DDA_SUBSTEPS (double)100000	// 100,000 accumulates substeps to 6 decimal places
-#define DDA_SUBSTEPS (double)4095		// value has been carefully set to minimize errors. Don't mess.
+#define DDA_SUBSTEPS (double)100000	// 100,000 accumulates substeps to 6 decimal places
+//#define DDA_SUBSTEPS (double)4095		// value has been carefully set to minimize errors
 
 /*
  * Stepper control structures
@@ -316,6 +316,9 @@ typedef struct stPrepSingleton {
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
+  #ifdef __STEP_DIAGNOSTICS
+	uint32_t segment_number;
+  #endif
 	stPrepMotor_t m[MOTORS];		// per-motor structs
 	uint16_t magic_end;
 } stPrepSingleton_t;

@@ -73,6 +73,7 @@ void _clear_step_diagnostics(void)
 		st_run.m[i].substep_increment = 0;
 		st_run.m[i].substep_accumulator = 0;
 		st_prep.m[i].steps_total = 0;
+		st_prep.segment_number = 0;
 	}
 }
 #endif
@@ -591,6 +592,9 @@ stat_t st_prep_line(double incoming_steps[], double microseconds)
 		st_prep.m[i].step_counter_incr = incoming_steps[i] / fabs(incoming_steps[i]); // set to +1 or -1
 #endif
 	}
+#ifdef __STEP_DIAGNOSTICS
+	st_prep.segment_number++;
+#endif
 	st_prep.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }
