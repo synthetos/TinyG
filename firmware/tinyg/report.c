@@ -342,12 +342,12 @@ static uint8_t _populate_filtered_status_report()
 		// do not report values that have not changed...
 		// ...except for stat=3 (STOP), which is an exception
 		if (fp_EQ(cmd->value, sr.status_report_value[i])) {
-			if (cmd->index != sr.stat_index) {
-				if (fp_EQ(cmd->value, COMBINED_PROGRAM_STOP)) {
+//			if (cmd->index != sr.stat_index) {
+//				if (fp_EQ(cmd->value, COMBINED_PROGRAM_STOP)) {
 					cmd->objtype = TYPE_EMPTY;
 					continue;
-				}
-			}
+//				}
+//			}
 
 		// report anything that has changed
 		} else {
