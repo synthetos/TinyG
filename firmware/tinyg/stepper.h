@@ -30,14 +30,23 @@
  *	A number of additional steps are taken to optimize interpolation and pulse train
  *	accuracy and minimize pulse jitter.
  *
- *	  - The DDA accepts and processes fractional motor steps. Steps are passed to the 
- *		move queue as floats, and do not need to be integer values. The DDA implements 
- *		fractional steps and interpolation by extending the counter range downward using 
- *		a fixed-point binary number whose precision is set using DDA_SUBSTEPS. 
+ *	  - The DDA accepts and processes fractional motor steps (flt_steps). Steps are passed 
+ *		to the DDA as floats and do not need to be whole numbers. The prep_line() function
+ *		accumulates fractional steps and converts them to whole steps for the loader and
+ *		actual pulse generaation function (DDA interrupt).
+ *
+ *		The step values are multiplied by a fixed number (e.g. 100000) and referred to as
+ *		"substeps". Performing DDA accumulation as substeps allows for more accurate step
+ *		timing and therefore less jitter. This value is set using DDA_SUBSTEPS.
  *
  *    - The DDA is not used as a 'ramp' for acceleration management. Accel is computed 
  *		as 3rd order (controlled jerk) equations that generate accel/decel segments to 
  *		the DDA in much the same way arc drawing is approximated. 
+ *
+ *		If you enable the step diagnostics you will see that the planner and exec functions
+ *		accurately generate the right number of fractional steps for the move during the 
+ *		accel/cruise/decel phases. The theoretical value and the calucalted value collected
+ *		in steps_total agree to within 0.0001% or better.
  *
  *    - Constant Rate DDA clock: The DDA runs at a constant, maximum rate for every 
  *		segment regardless of actual step rate required. This means that the DDA clock 
@@ -177,6 +186,9 @@
 #ifndef STEPPER_H_ONCE
 #define STEPPER_H_ONCE
 
+// enable debug diagnostics
+#define __STEP_DIAGNOSTICS	// Uncomment this only for debugging. Steals valuable cycles.
+
 /*********************************
  * Stepper configs and constants *
  *********************************/
@@ -208,9 +220,9 @@ enum prepBufferState {
 
 // Stepper power management settings
 // Min/Max timeouts allowed for motor disable. Allow for inertial stop; must be non-zero
-#define IDLE_TIMEOUT_SECONDS_MIN 	(float)0.1		// seconds !!! SHOULD NEVER BE ZERO !!!
-#define IDLE_TIMEOUT_SECONDS_MAX	(float)4294967	// (4294967295/1000) -- for conversion to uint32_t
-#define IDLE_TIMEOUT_SECONDS 		(float)0.1		// seconds in DISABLE_AXIS_WHEN_IDLE mode
+#define IDLE_TIMEOUT_SECONDS_MIN 	(double)0.1		// seconds !!! SHOULD NEVER BE ZERO !!!
+#define IDLE_TIMEOUT_SECONDS_MAX	(double)4294967	// (4294967295/1000) -- for conversion to uint32_t
+#define IDLE_TIMEOUT_SECONDS 		(double)0.1		// seconds in DISABLE_AXIS_WHEN_IDLE mode
 
 /* DDA substepping
  * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping.
@@ -219,7 +231,7 @@ enum prepBufferState {
  *
  *	Set to 1 to disable, but don't do this or you will lose a lot of accuracy.
  */
-#define DDA_SUBSTEPS 100000		// 100,000 accumulates substeps to 6 decimal places
+#define DDA_SUBSTEPS (double)100000		// 100,000 accumulates substeps to 6 decimal places
 
 /* Accumulator resets
  * 	You want to reset the DDA accumulators if the new ticks value is way less 
@@ -228,7 +240,7 @@ enum prepBufferState {
  *	phasing between segments. However, if the new accumulator is going to be 
  *	much less than the old one you must reset it or risk motor stalls.
  */
-#define ACCUMULATOR_RESET_FACTOR 2	// amount counter range can safely change
+#define ACCUMULATOR_RESET_FACTOR 2	// amount phase accumulator range can safely change
 
 /*
  * Stepper control structures
@@ -266,33 +278,34 @@ typedef struct stConfig {			// stepper configs
 // Runtime structure. Used exclusively by step generation ISR (HI)
 
 typedef struct stRunMotor { 		// one per controlled motor
-	int32_t phase_increment;		// total steps in axis times substeps factor
-	int32_t phase_accumulator;		// DDA phase angle accumulator for axis
+	int32_t substep_increment;		// total steps in axis times substeps factor
+	int32_t substep_accumulator;	// DDA phase angle accumulator
+	float power_level;				// power level for this segment (ARM only)
 	uint8_t power_state;			// state machine for managing motor power
 	uint32_t power_systick;			// sys_tick for next motor power state transition
-	float power_level;				// power level for this segment (ARM only)
-	int8_t step_counter_incr;		// step count increment: +1 or -1 +++++
-	int32_t step_counter;			// step count diagnostic +++++
+	int32_t step_counter;			// step count register		// +++++ DIAGNOSTIC
+	int8_t step_counter_incr;		// set to +1 or -1			// +++++ DIAGNOSTIC
 } stRunMotor_t;
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
-	int32_t dda_ticks_downcount;	// tick down-counter (unscaled)
-	int32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
+	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
+	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t m[MOTORS];			// runtime motor structures
+	uint16_t magic_end;
 } stRunSingleton_t;
 
 // Prep-time structure. Used by exec/prep ISR (MED) and read-only during load
 // Must be careful about volatiles in this one
 
 typedef struct stPrepMotor {
- 	int32_t phase_increment; 		// total steps in axis times substep factor
- 	int32_t phase_increment_previous;
-	float residual_scale_factor;	// factor to scale previous accumulator residual
-	int8_t step_counter_incr;		// step count increment: +1 or -1 +++++
-	int8_t dir;						// direction
-//	int8_t dir_previous;			// direction of previous segment
-//	int8_t dir_changed;				// set 1 if direction changed
+	int8_t direction;				// travel direction corrected for polarity
+	int32_t substep_increment; 		// total steps in axis times substep factor
+	int32_t substep_accumulator;	// starting DDA phase angle accumulator
+	double steps;					// current step value
+	double step_accumulator;		// accumulated steps to pulse out
+	double steps_total;				// total steps accumulated	// +++++ DIAGNOSTIC
+	int8_t step_counter_incr;		// set to +1 or -1			// +++++ DIAGNOSTIC
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
@@ -300,12 +313,12 @@ typedef struct stPrepSingleton {
 	uint8_t move_type;				// move type
 	volatile uint8_t exec_state;	// move execution state 
 	volatile uint8_t reset_flag;	// TRUE if accumulator should be reset
-	uint32_t prev_ticks;			// tick count from previous move
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
-//	float segment_velocity;			// record segment velocity for diagnostics
+	double microseconds;			// +++++ DIAGNOSTIC
 	stPrepMotor_t m[MOTORS];		// per-motor structs
+	uint16_t magic_end;
 } stPrepSingleton_t;
 
 extern stConfig_t st;
@@ -324,8 +337,8 @@ stat_t st_motor_power_callback(void);
 
 void st_request_exec_move(void);
 void st_prep_null(void);
-void st_prep_dwell(float microseconds);
-stat_t st_prep_line(double steps[], float microseconds);
+void st_prep_dwell(double microseconds);
+stat_t st_prep_line(double incoming_steps[], double microseconds);
 
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);
@@ -335,6 +348,7 @@ stat_t st_set_mt(cmdObj_t *cmd);
 stat_t st_set_md(cmdObj_t *cmd);
 stat_t st_set_me(cmdObj_t *cmd);
 stat_t st_set_mp(cmdObj_t *cmd);
+stat_t st_clc(cmdObj_t *cmd);
 
 #ifdef __TEXT_MODE
 
