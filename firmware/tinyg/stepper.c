@@ -94,6 +94,9 @@ void st_end_cycle(void)
 			(double)((double)st_run.m[i].substep_increment / DDA_SUBSTEPS), 
 			(double)((double)st_run.m[i].substep_accumulator / DDA_SUBSTEPS));
 	}
+
+	st_run.initialized = false;	// set false to force stepper registers to initialize
+
 #endif
 }
 
@@ -162,6 +165,7 @@ void stepper_init()
 	TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
 	st_prep.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
+	st_run.initialized = false;	// set false to force stepper registers to initialize
 }
 
 /*
@@ -498,6 +502,16 @@ static void _load_move()
 				st_run.m[MOTOR_4].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
+
+		// perform some first-time initializations if this is a new cycle
+		if (st_run.initialized == false) {
+			st_run.m[MOTOR_1].substep_accumulator = -st_run.dda_ticks_X_substeps;	
+			st_run.m[MOTOR_2].substep_accumulator = -st_run.dda_ticks_X_substeps;	
+			st_run.m[MOTOR_3].substep_accumulator = -st_run.dda_ticks_X_substeps;	
+			st_run.m[MOTOR_4].substep_accumulator = -st_run.dda_ticks_X_substeps;	
+			st_run.initialized = true;
+		}
+
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
 
 	// handle dwells
@@ -581,9 +595,15 @@ stat_t st_prep_line(double incoming_steps[], double microseconds)
 	// - the amount to increment the substeb accumulator must be *exactly* the incoming steps 
 	//	 times the substep multipler or positional drift will occur
 
+	uint8_t previous_direction;
+
 	for (uint8_t i=0; i<MOTORS; i++) {
         if (fp_ZERO(incoming_steps[i])) { st_prep.m[i].substep_increment = 0; continue;}
+
+		previous_direction = st_prep.m[i].direction;
 		st_prep.m[i].direction = ((incoming_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
+		st_prep.m[i].direction_change = st_prep.m[i].direction ^ previous_direction;
+
 		st_prep.m[i].substep_increment = fabs(incoming_steps[i] * DDA_SUBSTEPS);
 
 #ifdef __STEP_DIAGNOSTICS
