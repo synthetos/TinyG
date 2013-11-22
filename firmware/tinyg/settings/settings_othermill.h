@@ -171,7 +171,7 @@
 #endif
 #define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX 			0
-#define Z_TRAVEL_MIN			-75
+#define Z_TRAVEL_MIN			-66
 #define Z_JERK_MAX 				JERK_MAX			// 200 million
 #define Z_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
