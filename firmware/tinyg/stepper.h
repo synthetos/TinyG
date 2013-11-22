@@ -225,22 +225,18 @@ enum prepBufferState {
 #define IDLE_TIMEOUT_SECONDS 		(double)0.1		// seconds in DISABLE_AXIS_WHEN_IDLE mode
 
 /* DDA substepping
- * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping.
- *	Substepping is kind of like microsteps done in software to make
- *	interpolation more accurate.
+ * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping in the DDA.
+ *	Substepping is a fixed.point substitute allowing integer math (rather than FP) to be
+ *	used in the pulse generation (DDA) and make pulse timing interpolation more accurate. 
+ *	The loss of number range implies that the overall maximum length move is shortened 
+ *	(which is true), but this is compensated for the fact that long moves are broken up 
+ *	into a series of short moves (5 ms) by the planner so that feed holds and overrides 
+ *	can interrupt a long move.
  *
- *	Set to 1 to disable, but don't do this or you will lose a lot of accuracy.
+ *	This value is set for maximum accuracy; best not to mess with this.
  */
-#define DDA_SUBSTEPS (double)100000		// 100,000 accumulates substeps to 6 decimal places
-
-/* Accumulator resets
- * 	You want to reset the DDA accumulators if the new ticks value is way less 
- *	than previous value, but otherwise you should leave the accumulators alone.
- *	Preserving the accumulator value from the previous segment aligns pulse 
- *	phasing between segments. However, if the new accumulator is going to be 
- *	much less than the old one you must reset it or risk motor stalls.
- */
-#define ACCUMULATOR_RESET_FACTOR 2	// amount phase accumulator range can safely change
+#define DDA_SUBSTEPS (double)100000	// 100,000 accumulates substeps to 6 decimal places
+//#define DDA_SUBSTEPS (double)4095		// value has been carefully set to minimize errors
 
 /*
  * Stepper control structures
@@ -283,12 +279,15 @@ typedef struct stRunMotor { 		// one per controlled motor
 	float power_level;				// power level for this segment (ARM only)
 	uint8_t power_state;			// state machine for managing motor power
 	uint32_t power_systick;			// sys_tick for next motor power state transition
-	int32_t step_counter;			// step count register		// +++++ DIAGNOSTIC
-	int8_t step_counter_incr;		// set to +1 or -1			// +++++ DIAGNOSTIC
+  #ifdef __STEP_DIAGNOSTICS
+	int32_t step_counter;			// step count register	DIAGNOSTIC
+	int8_t step_counter_incr;		// set to +1 or -1		DIAGNOSTIC
+  #endif
 } stRunMotor_t;
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
+	uint8_t initialized;			// set true if stepper system is initialized
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t m[MOTORS];			// runtime motor structures
@@ -300,12 +299,15 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 
 typedef struct stPrepMotor {
 	int8_t direction;				// travel direction corrected for polarity
+	uint8_t direction_change;		// set true if direction changed
 	int32_t substep_increment; 		// total steps in axis times substep factor
 	int32_t substep_accumulator;	// starting DDA phase angle accumulator
 	double steps;					// current step value
 	double step_accumulator;		// accumulated steps to pulse out
-	double steps_total;				// total steps accumulated	// +++++ DIAGNOSTIC
-	int8_t step_counter_incr;		// set to +1 or -1			// +++++ DIAGNOSTIC
+  #ifdef __STEP_DIAGNOSTICS
+	double steps_total;				// total steps accumulated	DIAGNOSTIC
+	int8_t step_counter_incr;		// set to +1 or -1			DIAGNOSTIC
+  #endif
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
@@ -316,7 +318,9 @@ typedef struct stPrepSingleton {
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
-	double microseconds;			// +++++ DIAGNOSTIC
+  #ifdef __STEP_DIAGNOSTICS
+	uint32_t segment_number;
+  #endif
 	stPrepMotor_t m[MOTORS];		// per-motor structs
 	uint16_t magic_end;
 } stPrepSingleton_t;

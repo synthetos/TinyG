@@ -73,6 +73,7 @@ void _clear_step_diagnostics(void)
 		st_run.m[i].substep_increment = 0;
 		st_run.m[i].substep_accumulator = 0;
 		st_prep.m[i].steps_total = 0;
+		st_prep.segment_number = 0;
 	}
 }
 #endif
@@ -81,14 +82,21 @@ void st_end_cycle(void)
 {
 #ifdef __STEP_DIAGNOSTICS
 	for (uint8_t i=0; i<MOTORS; i++) {
-//		printf("Motor %d steps: %li [%0.3f] Increment: %0.6f  Residual: %0.6f\n", 		// text display
-		printf("{\"%d\":{\"step\":%li,\"steps\":%0.3f,\"err\":%0.2f,\"incr\":%0.6f,\"phas\":%0.6f}}\n",// JSON display
-			i+1, st_run.m[i].step_counter, 
+
+//		printf("Motor %d step: %0.0f Steps:%0.3f Increment: %0.6f  Accumulator: %0.6f\n", // text display
+
+		printf("{\"%d\":{\"step\":%0.0f,\"steps\":%0.3f,\"err\":%0.2f,\"incr\":%0.6f,\"accum\":%0.6f}}\n",
+
+			i+1,
+			(double)st_run.m[i].step_counter, 
 			(double)st_prep.m[i].steps_total,
-			(double)(abs(st_run.m[i].step_counter) - fabs(st_prep.m[i].steps_total)),
+			(double)((double)fabs(st_run.m[i].step_counter) - fabs(st_prep.m[i].steps_total)),
 			(double)((double)st_run.m[i].substep_increment / DDA_SUBSTEPS), 
 			(double)((double)st_run.m[i].substep_accumulator / DDA_SUBSTEPS));
 	}
+
+	st_run.initialized = false;	// set false to force stepper registers to initialize
+
 #endif
 }
 
@@ -157,6 +165,7 @@ void stepper_init()
 	TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
 	st_prep.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
+	st_run.initialized = false;	// set false to force stepper registers to initialize
 }
 
 /*
@@ -327,7 +336,7 @@ ISR(TIMER_DDA_ISR_vect)
 		RUN_STEP_COUNTER(3);
 	}
 
-	// turn step bits off - pulse stretching for using external drivers.
+	// pulse stretching for using external drivers.- turn step bits off
 	PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 5 uSec pulse width
 	PORT_MOTOR_2_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 4 uSec
 	PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 3 uSec
@@ -424,30 +433,38 @@ static void _load_move()
 	if (st_prep.move_type == MOVE_TYPE_ALINE) {
 		st_run.dda_ticks_downcount = st_prep.dda_ticks;
 		st_run.dda_ticks_X_substeps = st_prep.dda_ticks_X_substeps;
+		int32_t half_ticks = -(st_run.dda_ticks_X_substeps / 2);		// used for direction chage compensation
 		TIMER_DDA.PER = st_prep.dda_period;
 
 		// Setup MOTOR_1
 
-		// These sections are somewhat optimized for execution speed. The whole load
-		// operation is supposed to take < 10 uSec. Be careful if you mess with this.
+		// These sections are somewhat optimized for execution speed. The whole load operation
+		// is supposed to take < 10 uSec (Xmega). Be careful if you mess with this.
 
 		// if() either sets the substep increment value or zeroes it
 		if ((st_run.m[MOTOR_1].substep_increment = st_prep.m[MOTOR_1].substep_increment) != 0) {
 
 			// Set the direction bit in hardware
+		 	// NB: If motor has 0 steps the direction setting is skipped
 			if (st_prep.m[MOTOR_1].direction == 0) 
 				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm; else 	// CW motion (bit cleared)
 				PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;			// CCW motion
+
+			// Compensate for direction change in the accumulator
+			if (st_prep.m[MOTOR_1].direction_change == true) {
+				if (st_run.m[MOTOR_1].substep_accumulator > half_ticks) {
+					st_run.m[MOTOR_1].substep_accumulator += half_ticks;
+				} else {
+					st_run.m[MOTOR_1].substep_accumulator -= half_ticks;
+				}
+			}
 
 			// Enable the stepper and start motor power management
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;			// energize motor
 			st_run.m[MOTOR_1].power_state = MOTOR_RUNNING;			// set power management state
 			SETUP_STEP_COUNTER(0);									// setup diagnostic pulse counter
 
-		} else {
-		 	// If axis has 0 steps the direction setting should be omitted
-			// If axis has 0 steps enabling motors is req'd to support power mode = 1
-
+		} else {  // Motor has 0 steps; might need to energize motor for power mode processing
 			if (st.m[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;		// energize motor
 				st_run.m[MOTOR_1].power_state = MOTOR_START_IDLE_TIMEOUT;
@@ -458,6 +475,11 @@ static void _load_move()
 			if (st_prep.m[MOTOR_2].direction == 0)
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
+			if (st_prep.m[MOTOR_2].direction_change == true) {
+				if (st_run.m[MOTOR_2].substep_accumulator > half_ticks)
+					st_run.m[MOTOR_2].substep_accumulator += half_ticks; else 
+					st_run.m[MOTOR_2].substep_accumulator -= half_ticks;
+			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_2].power_state = MOTOR_RUNNING;
 			SETUP_STEP_COUNTER(1);
@@ -472,6 +494,11 @@ static void _load_move()
 			if (st_prep.m[MOTOR_3].direction == 0)
 				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
+			if (st_prep.m[MOTOR_3].direction_change == true) {
+				if (st_run.m[MOTOR_3].substep_accumulator > half_ticks)
+					st_run.m[MOTOR_3].substep_accumulator += half_ticks; else 
+					st_run.m[MOTOR_3].substep_accumulator -= half_ticks;
+			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_3].power_state = MOTOR_RUNNING;
 			SETUP_STEP_COUNTER(2);
@@ -486,6 +513,11 @@ static void _load_move()
 			if (st_prep.m[MOTOR_4].direction == 0)
 				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
+			if (st_prep.m[MOTOR_4].direction_change == true) {
+				if (st_run.m[MOTOR_4].substep_accumulator > half_ticks)
+					st_run.m[MOTOR_4].substep_accumulator += half_ticks; else 
+					st_run.m[MOTOR_4].substep_accumulator -= half_ticks;
+			}
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.m[MOTOR_4].power_state = MOTOR_RUNNING;
 			SETUP_STEP_COUNTER(3);
@@ -495,6 +527,16 @@ static void _load_move()
 				st_run.m[MOTOR_4].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
+
+		// perform some first-time initializations if this is a new cycle
+		if (st_run.initialized == false) {
+			st_run.m[MOTOR_1].substep_accumulator = -st_run.dda_ticks_X_substeps;	
+			st_run.m[MOTOR_2].substep_accumulator = -st_run.dda_ticks_X_substeps;	
+			st_run.m[MOTOR_3].substep_accumulator = -st_run.dda_ticks_X_substeps;	
+			st_run.m[MOTOR_4].substep_accumulator = -st_run.dda_ticks_X_substeps;	
+			st_run.initialized = true;
+		}
+
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
 
 	// handle dwells
@@ -563,33 +605,41 @@ stat_t st_prep_line(double incoming_steps[], double microseconds)
 	} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
 
-	// setup common parameters
+	// setup segment parameters
+	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
+	// - ticks_X_substeps must be exact or errors will build up in the substep accumulators 
+	//	 leading to long term accuracy errors (drift)
+
 	st_prep.dda_period = _f_to_period(FREQUENCY_DDA);
-	double dda_ticks = ((microseconds / 1000000) * FREQUENCY_DDA);
-	st_prep.dda_ticks = (int32_t)dda_ticks;
-	st_prep.dda_ticks_X_substeps = st_prep.dda_ticks * DDA_SUBSTEPS;  // truncates raw dda_ticks. This is important.
+	st_prep.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
+	st_prep.dda_ticks_X_substeps = st_prep.dda_ticks * DDA_SUBSTEPS;
 
 	// setup motor parameters
-	for (uint8_t i=0; i<MOTORS; i++) {
+	// - skip this motor if there are no new steps. Leave direction value intact.
+	// - set the direction; compensate for polarity
+	// - the amount to increment the substeb accumulator must be *exactly* the incoming steps 
+	//	 times the substep multipler or positional drift will occur
 
-		// skip this motor if there are no new steps. Leave all recorded values intact.
+	uint8_t previous_direction;
+
+	for (uint8_t i=0; i<MOTORS; i++) {
         if (fp_ZERO(incoming_steps[i])) { st_prep.m[i].substep_increment = 0; continue;}
 
-		// set the direction; compensate for polarity
+		previous_direction = st_prep.m[i].direction;
 		st_prep.m[i].direction = ((incoming_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
+		st_prep.m[i].direction_change = st_prep.m[i].direction ^ previous_direction;
 
-		// the amount to increment the substeb accumulator is just the steps * the substep multipler
 		st_prep.m[i].substep_increment = fabs(incoming_steps[i] * DDA_SUBSTEPS);
 
-		// +++++ DIAGNOSTIC: some diagnostics. Can be removed
+#ifdef __STEP_DIAGNOSTICS
 		st_prep.m[i].steps = incoming_steps[i];
 		st_prep.m[i].steps_total += incoming_steps[i];
 		st_prep.m[i].step_counter_incr = incoming_steps[i] / fabs(incoming_steps[i]); // set to +1 or -1
-
+#endif
 	}
-	// +++++ DIAGNOSTIC: some diagnostics. Can be removed
-	st_prep.microseconds = microseconds;
-	
+#ifdef __STEP_DIAGNOSTICS
+	st_prep.segment_number++;
+#endif
 	st_prep.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }
