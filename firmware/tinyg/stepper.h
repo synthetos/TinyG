@@ -302,9 +302,11 @@ typedef struct stPrepMotor {
 	uint8_t direction_change;		// set true if direction changed
 	int32_t substep_increment; 		// total steps in axis times substep factor
 	int32_t substep_accumulator;	// starting DDA phase angle accumulator
-	double steps;					// current step value
-	double step_accumulator;		// accumulated steps to pulse out
   #ifdef __STEP_DIAGNOSTICS
+	double steps_record;			// DIAGNOSTIC current step value
+	int32_t substep_accum_record;	// DIAGNOSTIC record of previous ending accumulator
+	double steps;					// current step value
+//	double step_accumulator;		// accumulated steps to pulse out
 	double steps_total;				// total steps accumulated	DIAGNOSTIC
 	int8_t step_counter_incr;		// set to +1 or -1			DIAGNOSTIC
   #endif
