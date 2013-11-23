@@ -28,49 +28,49 @@
 /* 
  *	Coordinated motion (line drawing) is performed using a classic Bresenham DDA. 
  *	A number of additional steps are taken to optimize interpolation and pulse train
- *	accuracy and minimize pulse jitter.
- *
- *	  - The DDA accepts and processes fractional motor steps (flt_steps). Steps are passed 
- *		to the DDA as floats and do not need to be whole numbers. The prep_line() function
- *		accumulates fractional steps and converts them to whole steps for the loader and
- *		actual pulse generaation function (DDA interrupt).
- *
- *		The step values are multiplied by a fixed number (e.g. 100000) and referred to as
- *		"substeps". Performing DDA accumulation as substeps allows for more accurate step
- *		timing and therefore less jitter. This value is set using DDA_SUBSTEPS.
+ *	timing accuracy to minimize pulse jitter and make for very smooth motion and surface
+ *	finish.
  *
  *    - The DDA is not used as a 'ramp' for acceleration management. Accel is computed 
- *		as 3rd order (controlled jerk) equations that generate accel/decel segments to 
- *		the DDA in much the same way arc drawing is approximated. 
+ *		upstream in the motion planner as 3rd order (controlled jerk) equations. These
+ *		generate accel/decel segments that rae passed to the DDA for step output.
+ *
+ *	  - The DDA accepts and processes fractional motor steps as floating point (doubles) 
+ *		from the planner. Steps do not need to be whole numbers, and are not expected to be. 
+ *		The step values are converted to integer by multiplying by a fixed-point precision 
+ *		(DDA_SUBSTEPS, 100000). Rounding is performed to avoid a truncation bias.
  *
  *		If you enable the step diagnostics you will see that the planner and exec functions
  *		accurately generate the right number of fractional steps for the move during the 
- *		accel/cruise/decel phases. The theoretical value and the calucalted value collected
+ *		accel/cruise/decel phases. The theoretical value and the calculated value collected
  *		in steps_total agree to within 0.0001% or better.
  *
  *    - Constant Rate DDA clock: The DDA runs at a constant, maximum rate for every 
  *		segment regardless of actual step rate required. This means that the DDA clock 
- *		is not tuned to the step rate (or a multiple) of the major axis, as many other 
- *		DDAs do. Running the DDA flat out might appear to be "wasteful", but it ensures 
- *		that the best aliasing results are achieved. 
+ *		is not tuned to the step rate (or a multiple) of the major axis, as is typical
+ *		for most DDAs. Running the DDA flat out might appear to be "wasteful", but it ensures 
+ *		that the best aliasing results are achieved.
  *
  *		The observation is that TinyG is a hard real-time system in which every clock cycle 
  *		is knowable and can be accounted for. So if the system is capable of sustaining
  *		max pulse rate for the fastest move, it's capable of sustaining this rate for any
- *		move. So just run it flat out and get the best pulse resolution for all moves. 
- *		If we were running from batteries we might not be so cavalier about this.
+ *		move. So we just run it flat out and get the best pulse resolution for all moves. 
+ *		If we were running from batteries or otherwise cared about the energy budget we 
+ *		might not be so cavalier about this.
  *
- *    - Pulse phasing is preserved between segments if possible. This makes for smoother
- *		motion, particularly at very low speeds and short segment lengths (avoids pulse 
- *		jitter). Phase continuity is achieved by simply not resetting the DDA counters 
- *		across segments. In some cases the differences between timer values across 
- *		segments are too large for this to work, and you risk motor stalls due to pulse 
- *		starvation. These cases are detected and the counters are reset to prevent stalling.
+ *		At 50 KHz constant clock rate we have 20 uSec between pulse timer (DDA) interrupts. 
+ *		On the Xmega we consume <10 uSec in the interrupt - a whopping 50% of available cycles 
+ *		going into pulse generation. On the ARM this is less of an issue, and we run a 
+ *		100 Khz (or higher) pulse rate.
  *
- *    - Pulse phasing is also helped by minimizing the time spent loading the next move 
- *		segment. To this end as much as possible about that move is pre-computed during 
- *		move execution. Also, all moves are loaded from the interrupt level, avoiding 
- *		the need for mutual exclusion locking or volatiles (which slow things down).
+ *    - Pulse timing is also helped by minimizing the time spent loading the next move 
+ *		segment. The time budget for the load is less than the time remaining before the 
+ *		next DDA clock tick. This means that the load must take < 10 uSec or the time  
+ *		between pulses will stretch out when changing segments. This does not affect 
+ *		positional accuracy but it would affect jitter and smoothness. To this end as much 
+ *		as possible about that move is pre-computed during move execution (prep cycles). 
+ *		Also, all moves are loaded from the DDA interrupt level (HI), avoiding the need 
+ *		for mutual exclusion locking or volatiles (which slow things down).
  */
 /**** Line planning and execution ****
  *
@@ -287,7 +287,7 @@ typedef struct stRunMotor { 		// one per controlled motor
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
-	uint8_t initialized;			// set true if stepper system is initialized
+	uint8_t cycle_start_flag;		// true for first segment in a cycle
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t m[MOTORS];			// runtime motor structures
@@ -321,7 +321,10 @@ typedef struct stPrepSingleton {
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
   #ifdef __STEP_DIAGNOSTICS
+  	double fraction;
+	double integer;
 	uint32_t segment_number;
+	uint8_t breakpoint;
   #endif
 	stPrepMotor_t m[MOTORS];		// per-motor structs
 	uint16_t magic_end;

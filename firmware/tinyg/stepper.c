@@ -25,17 +25,8 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* 	This module provides the low-level stepper drivers and some related
- * 	functions. It dequeues lines queued by the motor_queue routines.
- * 	This is some of the most heavily optimized code in the project.
- *
- *	Note that if you want to use this for something other than TinyG
- *	you may need to stretch the step pulses. They run about 1 uSec 
- *	which is fine for the TI DRV8811/DRV8818 chips in TinyG but may 
- *	not suffice for other stepper driver hardware.
- */
-/* 
- * See stepper.h for a detailed explanation of this module
+/* 	This module provides the low-level stepper drivers and some related functions.
+ *	See stepper.h for a detailed explanation of this module.
  */
 
 #include "tinyg.h"
@@ -95,8 +86,8 @@ void st_end_cycle(void)
 			(double)((double)st_run.m[i].substep_accumulator / DDA_SUBSTEPS));
 	}
 
-	st_run.initialized = false;	// set false to force stepper registers to initialize
-
+	st_run.cycle_start_flag = true;	// set true to start accumulator at the correct value
+	st_prep.segment_number = 0;
 #endif
 }
 
@@ -164,8 +155,8 @@ void stepper_init()
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
+	st_run.cycle_start_flag = true;				// set true to start accumulator at the correct value
 	st_prep.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
-	st_run.initialized = false;	// set false to force stepper registers to initialize
 }
 
 /*
@@ -521,12 +512,12 @@ static void _load_move()
 		}
 
 		// perform some first-time initializations if this is a new cycle
-		if (st_run.initialized == false) {
+		if (st_run.cycle_start_flag == true) {
 			st_run.m[MOTOR_1].substep_accumulator = -st_run.dda_ticks_X_substeps;	
 			st_run.m[MOTOR_2].substep_accumulator = -st_run.dda_ticks_X_substeps;	
 			st_run.m[MOTOR_3].substep_accumulator = -st_run.dda_ticks_X_substeps;	
 			st_run.m[MOTOR_4].substep_accumulator = -st_run.dda_ticks_X_substeps;	
-			st_run.initialized = true;
+			st_run.cycle_start_flag = false;
 		}
 
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
@@ -588,6 +579,7 @@ void st_prep_dwell(double microseconds)
  *		  accuracy errors due to floating point round off. One earlier failed attempt was:
  *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
  */
+
 stat_t st_prep_line(double incoming_steps[], double microseconds)
 {
 	// trap conditions that would prevent queueing the line
@@ -596,6 +588,14 @@ stat_t st_prep_line(double incoming_steps[], double microseconds)
 	} else if (isnan(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));
 	} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
+
+#ifdef __STEP_DIAGNOSTICS
+	st_prep.segment_number++;
+
+	if (st_prep.segment_number == 26) {
+		st_prep.breakpoint = st_prep.segment_number;
+	}
+#endif
 
 	// setup segment parameters
 	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
@@ -609,8 +609,11 @@ stat_t st_prep_line(double incoming_steps[], double microseconds)
 	// setup motor parameters
 	// - skip this motor if there are no new steps. Leave direction value intact.
 	// - set the direction; compensate for polarity
-	// - the amount to increment the substeb accumulator must be *exactly* the incoming steps 
-	//	 times the substep multipler or positional drift will occur
+	// - detect direction changes. Needed for accumulator adjustment
+	// - compute substeb increment. The accumulator must be *exactly* the incoming steps 
+	//	 times the substep multipler or positional drift will occur. Rounding is performed 
+	//	 to eliminate a negative bias in the int32 conversion that results 
+	//	 in long-term negative drift. Rounding is the same regardless of fabs / round ordering.
 
 	uint8_t previous_direction;
 
@@ -621,21 +624,31 @@ stat_t st_prep_line(double incoming_steps[], double microseconds)
 		st_prep.m[i].direction = ((incoming_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
 		st_prep.m[i].direction_change = st_prep.m[i].direction ^ previous_direction;
 
-		st_prep.m[i].substep_increment = fabs((incoming_steps[i] + 0.000005) * DDA_SUBSTEPS);
+//		st_prep.m[i].substep_increment = round(fabs(incoming_steps[i] * DDA_SUBSTEPS));
+//		st_prep.m[i].substep_increment = round(fabs((incoming_steps[i] - ((double)0.1/DDA_SUBSTEPS)) * DDA_SUBSTEPS));
+
+		st_prep.fraction = fabs(incoming_steps[i]);
+		st_prep.fraction *= DDA_SUBSTEPS;
+		st_prep.fraction = modf(st_prep.fraction, &st_prep.integer);
+		if (st_prep.fraction > 0.5) st_prep.integer++;
+		st_prep.m[i].substep_increment = (int32_t)st_prep.integer;
+
+//		st_prep.m[i].substep_increment = round(fabs((incoming_steps[i] - ((double)0.1/DDA_SUBSTEPS)) * DDA_SUBSTEPS));
 
 #ifdef __STEP_DIAGNOSTICS
 		st_prep.m[i].steps = incoming_steps[i];
 		st_prep.m[i].steps_total += incoming_steps[i];
 		st_prep.m[i].step_counter_incr = incoming_steps[i] / fabs(incoming_steps[i]); // set to +1 or -1
 
-//		if (i == MOTOR_1) {	// print X axis values
-//			printf("%0.6f,%li\n", st_prep.m[i].steps_record, st_prep.m[i].substep_accum_record);
-//		}
+		// print X axis values
+//		if (i == MOTOR_1)
+//			printf("%lu,%0.9f,%li,%li\n", st_prep.segment_number, st_prep.m[i].steps, st_prep.m[i].substep_increment,st_prep.m[i].substep_accum_record);
+//			printf("%lu,%0.9f,%li,%li\n", st_prep.segment_number, st_prep.m[i].steps_record, st_prep.m[i].substep_increment,st_prep.m[i].substep_accum_record);
+//			printf("%0.8f,%li\n", st_prep.m[i].steps_record, st_prep.m[i].substep_accum_record);
+//			printf("%0.8f\n", st_prep.m[i].steps_record);
+
 #endif
 	}
-#ifdef __STEP_DIAGNOSTICS
-	st_prep.segment_number++;
-#endif
 	st_prep.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }
