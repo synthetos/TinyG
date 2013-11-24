@@ -235,7 +235,8 @@ enum prepBufferState {
  *
  *	This value is set for maximum accuracy; best not to mess with this.
  */
-#define DDA_SUBSTEPS (double)100000	// 100,000 accumulates substeps to 6 decimal places
+#define DDA_SUBSTEPS (double)5000000	// 100,000 accumulates substeps to 6 decimal places
+//#define DDA_SUBSTEPS (double)100000	// 100,000 accumulates substeps to 6 decimal places
 //#define DDA_SUBSTEPS (double)4095		// value has been carefully set to minimize errors
 
 /*
@@ -274,7 +275,7 @@ typedef struct stConfig {			// stepper configs
 // Runtime structure. Used exclusively by step generation ISR (HI)
 
 typedef struct stRunMotor { 		// one per controlled motor
-	int32_t substep_increment;		// total steps in axis times substeps factor
+	uint32_t substep_increment;		// total steps in axis times substeps factor
 	int32_t substep_accumulator;	// DDA phase angle accumulator
 	float power_level;				// power level for this segment (ARM only)
 	uint8_t power_state;			// state machine for managing motor power
@@ -300,7 +301,7 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 typedef struct stPrepMotor {
 	int8_t direction;				// travel direction corrected for polarity
 	uint8_t direction_change;		// set true if direction changed
-	int32_t substep_increment; 		// total steps in axis times substep factor
+	uint32_t substep_increment; 		// total steps in axis times substep factor
 	int32_t substep_accumulator;	// starting DDA phase angle accumulator
   #ifdef __STEP_DIAGNOSTICS
 	double steps_record;			// DIAGNOSTIC current step value

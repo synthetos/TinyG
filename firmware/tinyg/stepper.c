@@ -624,14 +624,15 @@ stat_t st_prep_line(double incoming_steps[], double microseconds)
 		st_prep.m[i].direction = ((incoming_steps[i] < 0) ? 1 : 0) ^ st.m[i].polarity;
 		st_prep.m[i].direction_change = st_prep.m[i].direction ^ previous_direction;
 
-//		st_prep.m[i].substep_increment = round(fabs(incoming_steps[i] * DDA_SUBSTEPS));
+		st_prep.m[i].substep_increment = round(fabs(incoming_steps[i] * DDA_SUBSTEPS));
+//		st_prep.m[i].substep_increment = fabs(round(incoming_steps[i] * DDA_SUBSTEPS));
 //		st_prep.m[i].substep_increment = round(fabs((incoming_steps[i] - ((double)0.1/DDA_SUBSTEPS)) * DDA_SUBSTEPS));
 
-		st_prep.fraction = fabs(incoming_steps[i]);
-		st_prep.fraction *= DDA_SUBSTEPS;
-		st_prep.fraction = modf(st_prep.fraction, &st_prep.integer);
-		if (st_prep.fraction > 0.5) st_prep.integer++;
-		st_prep.m[i].substep_increment = (int32_t)st_prep.integer;
+//		st_prep.fraction = fabs(incoming_steps[i]);
+//		st_prep.fraction *= DDA_SUBSTEPS;
+//		st_prep.fraction = modf(st_prep.fraction, &st_prep.integer);
+//		if (st_prep.fraction > 0.49999) st_prep.integer++;
+//		st_prep.m[i].substep_increment = (int32_t)st_prep.integer;
 
 //		st_prep.m[i].substep_increment = round(fabs((incoming_steps[i] - ((double)0.1/DDA_SUBSTEPS)) * DDA_SUBSTEPS));
 
@@ -641,11 +642,13 @@ stat_t st_prep_line(double incoming_steps[], double microseconds)
 		st_prep.m[i].step_counter_incr = incoming_steps[i] / fabs(incoming_steps[i]); // set to +1 or -1
 
 		// print X axis values
-//		if (i == MOTOR_1)
+		if (i == MOTOR_1)
+			printf("%li\n", st_prep.m[i].substep_increment);
 //			printf("%lu,%0.9f,%li,%li\n", st_prep.segment_number, st_prep.m[i].steps, st_prep.m[i].substep_increment,st_prep.m[i].substep_accum_record);
 //			printf("%lu,%0.9f,%li,%li\n", st_prep.segment_number, st_prep.m[i].steps_record, st_prep.m[i].substep_increment,st_prep.m[i].substep_accum_record);
 //			printf("%0.8f,%li\n", st_prep.m[i].steps_record, st_prep.m[i].substep_accum_record);
-//			printf("%0.8f\n", st_prep.m[i].steps_record);
+//			printf("%0.8f\n", st_prep.m[i].steps);
+
 
 #endif
 	}

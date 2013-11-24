@@ -50,12 +50,15 @@
 #define COMM_MODE					JSON_MODE		// one of: TEXT_MODE, JSON_MODE
 #define NETWORK_MODE				NETWORK_STANDALONE
 #define TEXT_VERBOSITY				TV_VERBOSE		// one of: TV_SILENT, TV_VERBOSE
+//#define TEXT_VERBOSITY				TV_SILENT		// one of: TV_SILENT, TV_VERBOSE
 
 #define JSON_VERBOSITY				JV_MESSAGES		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+//#define JSON_VERBOSITY				JV_SILENT		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 //#define JSON_VERBOSITY				JV_VERBOSE		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 #define JSON_FOOTER_DEPTH			0				// 0 = new style, 1 = old style
 
 #define SR_VERBOSITY				SR_FILTERED		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+//#define SR_VERBOSITY				SR_OFF		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 #define STATUS_REPORT_MIN_MS		100				// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250				// milliseconds - set $SV=0 to disable
 #define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
