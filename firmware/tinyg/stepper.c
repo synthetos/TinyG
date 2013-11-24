@@ -642,8 +642,8 @@ stat_t st_prep_line(double incoming_steps[], double microseconds)
 		st_prep.m[i].step_counter_incr = incoming_steps[i] / fabs(incoming_steps[i]); // set to +1 or -1
 
 		// print X axis values
-		if (i == MOTOR_1)
-			printf("%li\n", st_prep.m[i].substep_increment);
+//		if (i == MOTOR_1)
+//			printf("%li\n", st_prep.m[i].substep_increment);
 //			printf("%lu,%0.9f,%li,%li\n", st_prep.segment_number, st_prep.m[i].steps, st_prep.m[i].substep_increment,st_prep.m[i].substep_accum_record);
 //			printf("%lu,%0.9f,%li,%li\n", st_prep.segment_number, st_prep.m[i].steps_record, st_prep.m[i].substep_increment,st_prep.m[i].substep_accum_record);
 //			printf("%0.8f,%li\n", st_prep.m[i].steps_record, st_prep.m[i].substep_accum_record);
