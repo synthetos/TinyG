@@ -86,7 +86,7 @@ void st_end_cycle(void)
 			(double)((double)st_run.m[i].substep_accumulator / DDA_SUBSTEPS));
 	}
 
-	st_run.cycle_start_flag = true;	// set true to start accumulator at the correct value
+//	st_run.reset_accumulator_flag = true;	// set true to start accumulator at the initial value
 	st_prep.segment_number = 0;
 #endif
 }
@@ -155,7 +155,7 @@ void stepper_init()
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
-	st_run.cycle_start_flag = true;				// set true to start accumulator at the correct value
+	st_run.reset_accumulator_flag = true;		// start accumulator at proper initial value (max negative)
 	st_prep.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
 }
 
@@ -512,12 +512,12 @@ static void _load_move()
 		}
 
 		// perform some first-time initializations if this is a new cycle
-		if (st_run.cycle_start_flag == true) {
+		if (st_run.reset_accumulator_flag == true) {
 			st_run.m[MOTOR_1].substep_accumulator = -st_run.dda_ticks_X_substeps;	
 			st_run.m[MOTOR_2].substep_accumulator = -st_run.dda_ticks_X_substeps;	
 			st_run.m[MOTOR_3].substep_accumulator = -st_run.dda_ticks_X_substeps;	
 			st_run.m[MOTOR_4].substep_accumulator = -st_run.dda_ticks_X_substeps;	
-			st_run.cycle_start_flag = false;
+			st_run.reset_accumulator_flag = false;
 		}
 
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
