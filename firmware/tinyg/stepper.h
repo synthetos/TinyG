@@ -269,35 +269,37 @@ typedef struct cfgMotor {			// per-motor configs
 
 typedef struct stConfig {			// stepper configs
 	float motor_idle_timeout;		// seconds before setting motors to idle current (currently this is OFF)
-	cfgMotor_t m[MOTORS];			// settings for motors 1-4
+	cfgMotor_t mot[MOTORS];			// settings for motors 1-4
 } stConfig_t;
+
+// Encoder structure - used by both runtime and prep (and also planner)
+
+typedef struct stEncoder { 			// one real or virtual encoder per controlled motor
+	int8_t step_counter_sign;		// set to +1 or -1
+//	int32_t steps;					// accurate count of steps emitted by this axis
+	double steps;					// accurate count of steps emitted by this axis
+	float position;					// measured or counted position	(mm)
+	float target;					// target position (mm)
+	float error;					// error between target and position (mm)
+} stEncoder_t;
 
 // Runtime structure. Used exclusively by step generation ISR (HI)
 
 typedef struct stRunMotor { 		// one per controlled motor
 	uint32_t substep_increment;		// total steps in axis times substeps factor
 	int32_t substep_accumulator;	// DDA phase angle accumulator
-
 	float power_level;				// power level for this segment (ARM only)
 	uint8_t power_state;			// state machine for managing motor power
 	uint32_t power_systick;			// sys_tick for next motor power state transition
 } stRunMotor_t;
-
-typedef struct stRunEncoder { 		// one real or virtual encoder per controlled motor
-	int8_t step_counter_sign;		// set to +1 or -1
-	int32_t step_counter;			// accurate count of steps emitted by this axis
-	float position;					// measured or counted position	(mm)
-	float target;					// target position (mm)
-	float error;					// error between target and position (mm)
-} stRunEncoder_t;
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
 	uint8_t reset_accumulator;		// set true to reset accumulator to max negative (it's starting value)
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
-	stRunMotor_t m[MOTORS];			// runtime motor structures
-	stRunEncoder_t e[MOTORS];		// runtime encoder structures
+	stRunMotor_t mot[MOTORS];			// runtime motor structures
+	stEncoder_t enc[MOTORS];		// runtime encoder structures
 	uint16_t magic_end;
 } stRunSingleton_t;
 
@@ -308,21 +310,7 @@ typedef struct stPrepMotor {
 	int8_t direction;				// travel direction corrected for polarity
 	uint8_t direction_change;		// set true if direction changed
 	uint32_t substep_increment; 	// total steps in axis times substep factor
-//	int32_t substep_accumulator;	// starting DDA phase angle accumulator
-//	double step_accumulator;		// accumulated steps to pulse out
 } stPrepMotor_t;
-
-typedef struct stPrepEncoder {
-	int8_t step_counter_sign;		// set to +1 or -1
-	int32_t step_counter;			// accurate count of steps emitted by this axis
-	float position;					// measured or counted position	(mm)
-	float target;					// target position (mm)
-	float error;					// error between target and position (mm)
-  #ifdef __STEP_DIAGNOSTICS
-//	double steps;					// current step value
-	double steps_total;				// total steps accumulated	DIAGNOSTIC
-  #endif
-} stPrepEncoder_t;
 
 typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integrity	
@@ -332,18 +320,12 @@ typedef struct stPrepSingleton {
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
-  #ifdef __STEP_DIAGNOSTICS
-// 	double fraction;
-//	double integer;
-//	uint32_t segment_number;
-//	uint8_t breakpoint;
-  #endif
-	stPrepMotor_t m[MOTORS];		// pre time motor structs
-	stPrepEncoder_t e[MOTORS];		// prep time encoder structs
+	stPrepMotor_t mot[MOTORS];		// pre time motor structs
+	stEncoder_t enc[MOTORS];			// prep time encoder structs
 	uint16_t magic_end;
 } stPrepSingleton_t;
 
-extern stConfig_t st;
+extern stConfig_t st_cfg;
 
 /**** FUNCTION PROTOTYPES ****/
 
