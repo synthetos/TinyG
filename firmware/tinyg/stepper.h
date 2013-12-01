@@ -277,21 +277,27 @@ typedef struct stConfig {			// stepper configs
 typedef struct stRunMotor { 		// one per controlled motor
 	uint32_t substep_increment;		// total steps in axis times substeps factor
 	int32_t substep_accumulator;	// DDA phase angle accumulator
+
 	float power_level;				// power level for this segment (ARM only)
 	uint8_t power_state;			// state machine for managing motor power
 	uint32_t power_systick;			// sys_tick for next motor power state transition
-  #ifdef __STEP_DIAGNOSTICS
-	int32_t step_counter;			// step count register	DIAGNOSTIC
-	int8_t step_counter_incr;		// set to +1 or -1		DIAGNOSTIC
-  #endif
 } stRunMotor_t;
+
+typedef struct stRunEncoder { 		// one real or virtual encoder per controlled motor
+	int8_t step_counter_sign;		// set to +1 or -1
+	int32_t step_counter;			// accurate count of steps emitted by this axis
+	float position;					// measured or counted position	(mm)
+	float target;					// target position (mm)
+	float error;					// error between target and position (mm)
+} stRunEncoder_t;
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
-	uint8_t reset_accumulator_flag;	// set true to reset accumulator to max negative (it's starting value)
+	uint8_t reset_accumulator;		// set true to reset accumulator to max negative (it's starting value)
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t m[MOTORS];			// runtime motor structures
+	stRunEncoder_t e[MOTORS];		// runtime encoder structures
 	uint16_t magic_end;
 } stRunSingleton_t;
 
@@ -301,33 +307,39 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 typedef struct stPrepMotor {
 	int8_t direction;				// travel direction corrected for polarity
 	uint8_t direction_change;		// set true if direction changed
-	uint32_t substep_increment; 		// total steps in axis times substep factor
-	int32_t substep_accumulator;	// starting DDA phase angle accumulator
-  #ifdef __STEP_DIAGNOSTICS
-	double steps_record;			// DIAGNOSTIC current step value
-	int32_t substep_accum_record;	// DIAGNOSTIC record of previous ending accumulator
-	double steps;					// current step value
+	uint32_t substep_increment; 	// total steps in axis times substep factor
+//	int32_t substep_accumulator;	// starting DDA phase angle accumulator
 //	double step_accumulator;		// accumulated steps to pulse out
-	double steps_total;				// total steps accumulated	DIAGNOSTIC
-	int8_t step_counter_incr;		// set to +1 or -1			DIAGNOSTIC
-  #endif
 } stPrepMotor_t;
+
+typedef struct stPrepEncoder {
+	int8_t step_counter_sign;		// set to +1 or -1
+	int32_t step_counter;			// accurate count of steps emitted by this axis
+	float position;					// measured or counted position	(mm)
+	float target;					// target position (mm)
+	float error;					// error between target and position (mm)
+  #ifdef __STEP_DIAGNOSTICS
+//	double steps;					// current step value
+	double steps_total;				// total steps accumulated	DIAGNOSTIC
+  #endif
+} stPrepEncoder_t;
 
 typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integrity	
 	uint8_t move_type;				// move type
 	volatile uint8_t exec_state;	// move execution state 
-	volatile uint8_t reset_flag;	// TRUE if accumulator should be reset
+	uint8_t reset_target;			// set true to reset target position and transfer target to position
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
   #ifdef __STEP_DIAGNOSTICS
-  	double fraction;
-	double integer;
-	uint32_t segment_number;
-	uint8_t breakpoint;
+// 	double fraction;
+//	double integer;
+//	uint32_t segment_number;
+//	uint8_t breakpoint;
   #endif
-	stPrepMotor_t m[MOTORS];		// per-motor structs
+	stPrepMotor_t m[MOTORS];		// pre time motor structs
+	stPrepEncoder_t e[MOTORS];		// prep time encoder structs
 	uint16_t magic_end;
 } stPrepSingleton_t;
 
@@ -337,7 +349,8 @@ extern stConfig_t st;
 
 void stepper_init(void);
 uint8_t stepper_isbusy(void);
-void st_end_cycle(void);
+void st_cycle_start(void);
+void st_cycle_end(void);
 stat_t st_assertions(void);
 
 void st_energize_motors(void);
@@ -348,7 +361,9 @@ stat_t st_motor_power_callback(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(double microseconds);
-stat_t st_prep_line(double incoming_steps[], double microseconds);
+stat_t st_prep_line(double incoming_steps[], double microseconds, float target[], uint8_t *reset_target);
+
+void st_movement_measured(double steps[]);
 
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);

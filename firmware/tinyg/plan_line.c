@@ -795,7 +795,7 @@ stat_t mp_plan_hold_callback()
 	float braking_length;		// distance required to brake to zero from braking_velocity
 
 	// examine and process mr buffer
-	mr_available_length = get_axis_vector_length(mr.endpoint, mr.position);
+	mr_available_length = get_axis_vector_length(mr.target, mr.position);
 
 /*	mr_available_length = 
 		(sqrt(square(mr.endpoint[AXIS_X] - mr.position[AXIS_X]) +
@@ -993,7 +993,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 	if (mr.move_state == MOVE_STATE_OFF) {
 		if (cm.hold_state == FEEDHOLD_HOLD) { return (STAT_NOOP);}// stops here if holding
 
-		// initialization to process the new incoming bf buffer
+		// initialization to process the new incoming bf buffer (Gcode block)
 		memcpy(&mr.gm, &(bf->gm), sizeof(GCodeState_t));// copy in the gcode model state
 		bf->replannable = false;
 														// too short lines have already been removed
@@ -1016,7 +1016,15 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		mr.cruise_velocity = bf->cruise_velocity;
 		mr.exit_velocity = bf->exit_velocity;
 		copy_axis_vector(mr.unit, bf->unit);
-		copy_axis_vector(mr.endpoint, bf->gm.target);	// save the final target of the move
+		copy_axis_vector(mr.target, bf->gm.target);	// save the final target of the move
+		mr.reset_target = true;
+
+		// perform error correction using position measurement feedback 
+//		st_movement_measured(mr.movement_measured);				// get the measurement vector
+//		for (uint8_t i=AXIS_X; i<AXES; i++) {
+//			mr.movement_computed[i] = mr.target_computed[i] - mr.position[i];
+//			mr.movement_error[i] = mr.movement_measured[i] - mr.movement_computed[i];
+//		}
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -1231,7 +1239,7 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	for (uint8_t i=0; i < AXES; i++) {	// don't do the error correction if you are going into a hold
 		if ((correction_flag == true) && (mr.segment_count == 1) && 
 			(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-			mr.gm.target[i] = mr.endpoint[i];	// rounding error correction for last segment
+			mr.gm.target[i] = mr.target_computed[i];	// rounding error correction for last segment
 		} else {
 			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * mr.segment_velocity * mr.segment_move_time);
 		}
@@ -1244,12 +1252,12 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 
 	if ((correction_flag == true) && (mr.segment_count == 1) && 
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-		mr.gm.target[AXIS_X] = mr.endpoint[AXIS_X]; // correct any accumulated rounding errors in last segment
-		mr.gm.target[AXIS_Y] = mr.endpoint[AXIS_Y];
-		mr.gm.target[AXIS_Z] = mr.endpoint[AXIS_Z];
-		mr.gm.target[AXIS_A] = mr.endpoint[AXIS_A];
-		mr.gm.target[AXIS_B] = mr.endpoint[AXIS_B];
-		mr.gm.target[AXIS_C] = mr.endpoint[AXIS_C];
+		mr.gm.target[AXIS_X] = mr.target[AXIS_X]; // correct any accumulated rounding errors in last segment
+		mr.gm.target[AXIS_Y] = mr.target[AXIS_Y];
+		mr.gm.target[AXIS_Z] = mr.target[AXIS_Z];
+		mr.gm.target[AXIS_A] = mr.target[AXIS_A];
+		mr.gm.target[AXIS_B] = mr.target[AXIS_B];
+		mr.gm.target[AXIS_C] = mr.target[AXIS_C];
 	} else {
 		float intermediate = mr.segment_velocity * mr.segment_move_time;
 		mr.gm.target[AXIS_X] = mr.position[AXIS_X] + (mr.unit[AXIS_X] * intermediate);
@@ -1271,7 +1279,7 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 //	if (st_prep_line(vector, mr.microseconds) == STAT_OK) {
 
 	ik_kinematics(travel, steps, mr.microseconds);
-	if (st_prep_line(steps, mr.microseconds) == STAT_OK) {
+	if (st_prep_line(steps, mr.microseconds, mr.target, &mr.reset_target) == STAT_OK) {
 //		copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
 		mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	
 		mr.position[AXIS_Y] = mr.gm.target[AXIS_Y];
