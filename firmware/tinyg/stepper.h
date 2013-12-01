@@ -197,7 +197,7 @@
 // Currently there is no distinction between IDLE and OFF (DEENERGIZED)
 // In the future IDLE will be powered at a low, torque-maintaining current
 
-enum motorPowerState {				// used w/start and stop flags to sequence motor power
+enum stMotorPowerState {			// used w/start and stop flags to sequence motor power
 	MOTOR_OFF = 0,					// motor is stopped and deenergized
 	MOTOR_IDLE,						// motor is stopped and may be partially energized for torque maintenance
 	MOTOR_TIME_IDLE_TIMEOUT,		// run idle timeout
@@ -206,14 +206,14 @@ enum motorPowerState {				// used w/start and stop flags to sequence motor power
 	MOTOR_RUNNING					// motor is running (and fully energized)
 };
 
-enum cmStepperPowerMode {
+enum stStepperPowerMode {
 	MOTOR_ENERGIZED_DURING_CYCLE=0,	// motor is fully powered during cycles
 	MOTOR_IDLE_WHEN_STOPPED,		// idle motor shortly after it's stopped - even in cycle
 	MOTOR_POWER_REDUCED_WHEN_IDLE,	// enable Vref current reduction (not implemented yet)
 	DYNAMIC_MOTOR_POWER				// adjust motor current with velocity (not implemented yet)
 };
 
-enum prepBufferState {
+enum stPrepBufferState {
 	PREP_BUFFER_OWNED_BY_LOADER = 0,// staging buffer is ready for load
 	PREP_BUFFER_OWNED_BY_EXEC		// staging buffer is being loaded
 };
@@ -275,11 +275,12 @@ typedef struct stConfig {			// stepper configs
 // Encoder structure - used by both runtime and prep (and also planner)
 
 typedef struct stEncoder { 			// one real or virtual encoder per controlled motor
-	int8_t step_counter_sign;		// set to +1 or -1
-//	int32_t steps;					// accurate count of steps emitted by this axis
-	double steps;					// accurate count of steps emitted by this axis
-	float position;					// measured or counted position	(mm)
+	int8_t step_sign;				// set to +1 or -1
+	int16_t steps;					// steps counted during step generation
+	int32_t steps_total;			// steps collected from counters
+	float steps_float;				// incoming steps steps
 	float target;					// target position (mm)
+	float position;					// measured or counted position	(mm)
 	float error;					// error between target and position (mm)
 } stEncoder_t;
 
@@ -316,7 +317,8 @@ typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integrity	
 	volatile uint8_t exec_state;	// move execution state 
 	uint8_t move_type;				// move type
-	uint8_t reset_target;			// set true to reset target position and transfer target to position
+	uint8_t target_new;				// true if new target should be counted
+	uint8_t target_done;			// true if target is ready for transfer
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
@@ -343,9 +345,9 @@ stat_t st_motor_power_callback(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(double microseconds);
-stat_t st_prep_line(double incoming_steps[], double microseconds, float target[], uint8_t *reset_target);
+stat_t st_prep_line(double incoming_steps[], double microseconds, float target[], uint8_t *target_new);
 
-void st_movement_measured(double steps[]);
+stEncoder_t *st_read_encoder(const uint8_t motor);
 
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);

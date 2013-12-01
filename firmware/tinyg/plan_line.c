@@ -1017,7 +1017,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		mr.exit_velocity = bf->exit_velocity;
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.target, bf->gm.target);	// save the final target of the move
-		mr.reset_target = true;
+		mr.target_new = true;
 
 		// perform error correction using position measurement feedback 
 //		st_movement_measured(mr.movement_measured);				// get the measurement vector
@@ -1279,7 +1279,7 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 //	if (st_prep_line(vector, mr.microseconds) == STAT_OK) {
 
 	ik_kinematics(travel, steps, mr.microseconds);
-	if (st_prep_line(steps, mr.microseconds, mr.target, &mr.reset_target) == STAT_OK) {
+	if (st_prep_line(steps, mr.microseconds, mr.target, &mr.target_new) == STAT_OK) {
 //		copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
 		mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	
 		mr.position[AXIS_Y] = mr.gm.target[AXIS_Y];

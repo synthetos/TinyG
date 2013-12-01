@@ -196,7 +196,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	magic_t magic_start;			// magic number to test memory integrity
 	uint8_t move_state;				// state of the overall move
 	uint8_t section_state;			// state within a move section
-	uint8_t reset_target;			// set true if new Gcode block. Resets stepper measurements
+	uint8_t target_new;				// set true if new Gcode block. Resets encoder measurements
 
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float position[AXES];			// current move position
