@@ -95,14 +95,42 @@ void en_reset_encoders()
 }
 
 /* 
- * en_set_target() - set target in encoder
- * en_add_incoming_steps() - add new incoming steps
+ * en_update_target() - provide a new target for encoder error term
+ * en_update_position() - add accumulated steps into the working position
+ *
+ *	This pair of routines works in tandem to generate an error term. 
+ *	The whole thing is very dependent on timing. The target must be set first.
+ *	When the position is updated it compares the position to the target and 
+ *	populates the error term. A positive error means the position is beyond
+ *	the target. Negative is reversed.
+ *
+ *	en_update_position() should be performed from within a prop cycle to 
+ *	synchronize with the stepper interrupts (and stay out of their way)
  */
 
-void en_set_target(const uint8_t motor, float target)
+void en_update_target(const uint8_t motor, float target)
 {
 	en.en[motor].target = target;
 }
+
+//void en_update_position(const uint8_t motor, int32_t steps)
+void en_update_position(const uint8_t motor)
+{
+	en.en[motor].steps_total_display = en.en[motor].steps_total;
+
+	// these next 2 lines are a critical region
+//	cli();
+	en.en[motor].position += en.en[motor].steps_total / st_cfg.mot[motor].steps_per_unit;
+	en.en[motor].steps_total = 0;
+//	sei();
+	en.en[motor].error = en.en[motor].position - en.en[motor].target;
+}
+
+/*
+ * en_add_incoming_steps() - add new incoming steps
+ *
+ * This is a handy diagnostic. It's not used for anything else.
+ */
 
 void en_add_incoming_steps(const uint8_t motor, float steps)
 {
@@ -110,34 +138,20 @@ void en_add_incoming_steps(const uint8_t motor, float steps)
 }
 
 /*
- * en_read_encoder() - read encoder values
- */
-
-enEncoder_t *en_read_encoder(const uint8_t motor)
-{
-	// !!!! There is a race condition here if steps_total is updated in the midst
-	cli();
-	en.en[motor].position += en.en[motor].steps_total / st_cfg.mot[motor].steps_per_unit;
-	en.en[motor].steps_total = 0;
-	sei();
-	return (&en.en[motor]);
-}
-
-/*
  * en_print_encoder()
+ *	(double)((double)fabs(en.en[i].steps_total) - fabs(en.en[i].steps_float)),
  */
 
 void en_print_encoders()
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
-		en_read_encoder(i);	// update position
-		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"steps_tot\":%0.0f,\"st_err\":%0.3f,\"tgt\":%0.5f,\"pos\":%0.5f}}\n",
+		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"steps_tot\":%0.0f,\"tgt\":%0.5f,\"pos\":%0.5f,\"st_err\":%0.5f}}\n",
 			i+1,
 			(double)en.en[i].steps_float,
-			(double)en.en[i].steps_total, 
-			(double)((double)fabs(en.en[i].steps_total) - fabs(en.en[i].steps_float)),
+			(double)en.en[i].steps_total_display, 
 			(double)en.en[i].target,
-			(double)en.en[i].position);
+			(double)en.en[i].position,
+			(double)en.en[i].error);
 	}
 }
 

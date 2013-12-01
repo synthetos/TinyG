@@ -93,6 +93,7 @@ typedef struct enEncoder { 			// one real or virtual encoder per controlled moto
 	int8_t step_sign;				// set to +1 or -1
 	int16_t steps_run;				// steps counted during stepper interrupt
 	int32_t steps_total;			// steps accumulated from steps_run
+	int32_t steps_total_display;	// total steps saved for display purposes
 	float steps_float;				// incoming steps steps +++++ DIAGNOSTIC ONLY
 	float target;					// target position (mm)
 	float position;					// measured or counted position	(mm)
@@ -114,10 +115,10 @@ void encoder_init(void);
 stat_t en_assertions(void);
 void en_reset_encoder(const uint8_t motor);
 void en_reset_encoders(void);
-void en_set_target(const uint8_t motor, float target);
+void en_update_target(const uint8_t motor, float target);
+void en_update_position(const uint8_t motor);
 void en_add_incoming_steps(const uint8_t motor, float steps);
-enEncoder_t *en_read_encoder(const uint8_t motor);
+//enEncoder_t *en_read_encoder(const uint8_t motor);
 void en_print_encoders(void);
-
 
 #endif	// End of include guard: ENCODER_H_ONCE

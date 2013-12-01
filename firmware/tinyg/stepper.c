@@ -594,6 +594,13 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 
 	uint8_t previous_direction;
 	for (uint8_t i=0; i<MOTORS; i++) {
+
+		// collect encoder position (do this before you rejeect an axis for 0 steps)
+		if (en.en[i].steps_total != 0) {
+			en_update_position(i); 				// update position & zero step count
+		}
+
+		// determine if the axis needs to be updated
         if (fp_ZERO(incoming_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
 
 		st_pre.mot[i].substep_increment = round(fabs(incoming_steps[i] * DDA_SUBSTEPS));
@@ -608,24 +615,15 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
-		// encoder operations (step counters)
-//		if (st_pre.reset_stepper_runtime == true) {
-//			st_pre.reset_stepper_runtime = false;
-//			en.en[i].steps_total = 0;
-//			en.en[i].steps_float = 0;
-//			en.en[i].position = cm.gmx.position[i];
-//		}
-
-		if (st_pre.target_new == true) {
-			en_set_target(i, target[i]);
-//			en.en[i].target = target[i];	
-		}
+		// encoder stuff (step counting)
 		en_add_incoming_steps(i, incoming_steps[i]);
-//		en.en[i].steps_float += incoming_steps[i];			// +++++ DIAGNOSTIC ONLY
-		if (st_pre.target_done == true) {
-			st_pre.target_done = false;
-			en_read_encoder(i);
+		if (st_pre.target_new == true) {
+			en_update_target(i, target[i]);
 		}
+//		if (st_pre.target_done == true) {
+//			st_pre.target_done = false;
+//			en_read_encoder(i);
+//		}
 	}
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
