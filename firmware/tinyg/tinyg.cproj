@@ -93,6 +93,7 @@
       <Value>F_CPU=32000000UL</Value>
     </ListValues>
   </avrgcc.compiler.symbols.DefSymbols>
+  <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
   <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
   <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
   <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
@@ -144,6 +145,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="cycle_probing.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="encoder.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="encoder.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="gcode_parser.c">
