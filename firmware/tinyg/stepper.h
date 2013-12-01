@@ -296,7 +296,6 @@ typedef struct stRunMotor { 		// one per controlled motor
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
-//	uint8_t reset_accumulator;		// set true to reset accumulator to max negative (it's starting value)
 	uint8_t init_steppers;			// resets accumulator and direction change
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor

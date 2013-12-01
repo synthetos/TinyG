@@ -58,7 +58,8 @@ static void _update_encoder(const uint8_t motor);
 
 /*
  * st_cycle_start()
- * st_cycle_end()
+ *
+ * Called from cm_cycle_start(). Initializes values for beginning a new cycle.
  */
 
 void st_cycle_start(void)
@@ -66,26 +67,41 @@ void st_cycle_start(void)
 	for (uint8_t i=0; i<MOTORS; i++) {
 		st_pre.enc[i].steps = 0;
 		st_run.enc[i].steps = 0;
+		st_pre.enc[i].steps_total = 0;
+		st_run.enc[i].steps_total = 0;
+		st_pre.enc[i].steps_float = 0;
+		st_pre.enc[i].position = cm.gmx.position[i];
 	}
 	st_run.init_steppers = true;
 }
+
+/*
+ * st_cycle_start()
+ * st_cycle_end()
+ */
 
 void st_cycle_end(void)
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
 		st_pre.enc[i].steps_total = st_run.enc[i].steps_total;	// copy counted steps
+		_update_encoder(i);
 
 #ifdef __STEP_DIAGNOSTICS
 //		printf("Motor %d steps(r): %0.0f steps(p):%0.3f Increment: %0.6f  Accumulator: %0.6f\n", // text display
-		printf("{\"%d\":{\"st_FLT\":%0.3f,\"st_run\":%0.0f,\"st_pre\":%0.0f,\"st_err\":%0.3f,\"incr\":%0.6f,\"accum\":%0.6f}}\n",
+//		printf("{\"%d\":{\"st_FLT\":%0.3f,\"st_run\":%0.0f,\"st_pre\":%0.0f,\"st_err\":%0.3f,\"incr\":%0.6f,\"accum\":%0.6f}}\n",
+//		printf("{\"%d\":{\"st_FLT\":%0.3f,\"st_run\":%0.0f,\"st_pre\":%0.0f,\"st_err\":%0.3f,\"tgt\":%0.5f,\"pos\":%0.5f}}\n",
+		printf("{\"%d\":{\"steps_flt\":%0.3f,\"steps_run\":%0.0f,\"st_err\":%0.3f,\"tgt\":%0.5f,\"pos\":%0.5f}}\n",
 
 			i+1,
-			(double)st_pre.enc[i].steps_float, 
+			(double)st_pre.enc[i].steps_float,
 			(double)st_run.enc[i].steps_total, 
-			(double)st_pre.enc[i].steps_total,
-			(double)((double)fabs(st_run.enc[i].steps_total) - fabs(st_pre.enc[i].steps_total)),
-			(double)((double)st_run.mot[i].substep_increment / DDA_SUBSTEPS), 
-			(double)((double)st_run.mot[i].substep_accumulator / DDA_SUBSTEPS));
+//			(double)st_pre.enc[i].steps_total,
+//			(double)((double)fabs(st_run.enc[i].steps_total) - fabs(st_pre.enc[i].steps_total)),
+			(double)((double)fabs(st_run.enc[i].steps_total) - fabs(st_pre.enc[i].steps_float)),
+			(double)st_pre.enc[i].target,
+			(double)st_pre.enc[i].position);
+//			(double)((double)st_run.mot[i].substep_increment / DDA_SUBSTEPS), 
+//			(double)((double)st_run.mot[i].substep_accumulator / DDA_SUBSTEPS));
 #endif
 	}
 
@@ -662,21 +678,19 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 			st_pre.mot[i].direction = DIRECTION_CCW ^ st_cfg.mot[i].polarity;
 			st_pre.enc[i].step_sign = -1;
 		}
-//		st_pre.mot[i].direction = ((incoming_steps[i] < 0) ? 1 : 0) ^ st_cfg.mot[i].polarity;
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 		// encoder operations (step counters)
 		if (st_pre.target_new == true) {
 			st_pre.enc[i].target = target[i];	
-			st_pre.enc[i].steps_total = 0;
-			st_pre.enc[i].steps_float = 0;
+//			st_pre.enc[i].steps_total = 0;
+//			st_pre.enc[i].steps_float = 0;
 		}
-//		st_pre.enc[i].step_sign = incoming_steps[i] / fabs(incoming_steps[i]); // +1 or -1
 		st_pre.enc[i].steps_total = st_run.enc[i].steps_total;	// copy counted steps
 		st_pre.enc[i].steps_float += incoming_steps[i];			// +++++ DIAGNOSTIC ONLY
 		if (st_pre.target_done == true) {
-			st_pre.target_done == false;
-			_update_encoder(i);
+			st_pre.target_done = false;
+//			_update_encoder(i);
 		}
 	}
 	st_pre.move_type = MOVE_TYPE_ALINE;
@@ -690,6 +704,8 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 
 static void _update_encoder(const uint8_t motor)
 {
+	st_pre.enc[motor].position += st_pre.enc[motor].steps_total /
+								  st_cfg.mot[motor].steps_per_unit;
 	return;
 }
 
