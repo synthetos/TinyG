@@ -32,6 +32,7 @@
 #include "tinyg.h"
 #include "config.h"
 #include "stepper.h"
+#include "encoder.h"
 #include "planner.h"
 #include "hardware.h"
 #include "text_parser.h"
@@ -42,12 +43,12 @@
 stConfig_t st_cfg;
 static stRunSingleton_t st_run;
 static stPrepSingleton_t st_pre;
+//static stEncoders_t enc;
 
 /**** Setup local functions ****/
 
 static void _load_move(void);
 static void _request_load_move(void);
-static void _update_encoder(const uint8_t motor);
 
 // handy macro
 #define _f_to_period(f) (uint16_t)((float)F_CPU / (float)f)
@@ -55,83 +56,6 @@ static void _update_encoder(const uint8_t motor);
 /************************************************************************************
  **** CODE **************************************************************************
  ************************************************************************************/
-
-/*
- * st_cycle_start()
- *
- * Called from cm_cycle_start(). Initializes values for beginning a new cycle.
- */
-
-void st_cycle_start(void)
-{
-	for (uint8_t i=0; i<MOTORS; i++) {
-		st_pre.enc[i].steps = 0;
-		st_run.enc[i].steps = 0;
-		st_pre.enc[i].steps_total = 0;
-		st_run.enc[i].steps_total = 0;
-		st_pre.enc[i].steps_float = 0;
-		st_pre.enc[i].position = cm.gmx.position[i];
-	}
-	st_run.init_steppers = true;
-}
-
-/*
- * st_cycle_start()
- * st_cycle_end()
- */
-
-void st_cycle_end(void)
-{
-	for (uint8_t i=0; i<MOTORS; i++) {
-		st_pre.enc[i].steps_total = st_run.enc[i].steps_total;	// copy counted steps
-		_update_encoder(i);
-
-#ifdef __STEP_DIAGNOSTICS
-//		printf("Motor %d steps(r): %0.0f steps(p):%0.3f Increment: %0.6f  Accumulator: %0.6f\n", // text display
-//		printf("{\"%d\":{\"st_FLT\":%0.3f,\"st_run\":%0.0f,\"st_pre\":%0.0f,\"st_err\":%0.3f,\"incr\":%0.6f,\"accum\":%0.6f}}\n",
-//		printf("{\"%d\":{\"st_FLT\":%0.3f,\"st_run\":%0.0f,\"st_pre\":%0.0f,\"st_err\":%0.3f,\"tgt\":%0.5f,\"pos\":%0.5f}}\n",
-		printf("{\"%d\":{\"steps_flt\":%0.3f,\"steps_run\":%0.0f,\"st_err\":%0.3f,\"tgt\":%0.5f,\"pos\":%0.5f}}\n",
-
-			i+1,
-			(double)st_pre.enc[i].steps_float,
-			(double)st_run.enc[i].steps_total, 
-//			(double)st_pre.enc[i].steps_total,
-//			(double)((double)fabs(st_run.enc[i].steps_total) - fabs(st_pre.enc[i].steps_total)),
-			(double)((double)fabs(st_run.enc[i].steps_total) - fabs(st_pre.enc[i].steps_float)),
-			(double)st_pre.enc[i].target,
-			(double)st_pre.enc[i].position);
-//			(double)((double)st_run.mot[i].substep_increment / DDA_SUBSTEPS), 
-//			(double)((double)st_run.mot[i].substep_accumulator / DDA_SUBSTEPS));
-#endif
-	}
-
-//	st_run.reset_accumulator_flag = true;	// set true to start accumulator at the initial value
-//	st_pre.segment_number = 0;
-}
-
-#ifdef __STEP_DIAGNOSTICS
-
-void _clear_step_diagnostics(void)
-{
-	for (uint8_t i=0; i<MOTORS; i++) {
-		st_run.mot[i].substep_increment = 0;
-		st_run.mot[i].substep_accumulator = 0;
-		st_run.enc[i].steps = 0;
-		st_pre.enc[i].steps = 0;
-//		st_pre.segment_number = 0;
-	}
-}
-#endif
-
-stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
-{
-#ifdef __STEP_DIAGNOSTICS
-	_clear_step_diagnostics();
-	st_cycle_end();
-#endif
-	return(STAT_OK);
-}
-
 
 /* 
  * stepper_init() - initialize stepper motor subsystem 
@@ -160,7 +84,7 @@ void stepper_init()
 	PORTCFG.VPCTRLA = PORTCFG_VP0MAP_PORT_MOTOR_1_gc | PORTCFG_VP1MAP_PORT_MOTOR_2_gc;
 	PORTCFG.VPCTRLB = PORTCFG_VP2MAP_PORT_MOTOR_3_gc | PORTCFG_VP3MAP_PORT_MOTOR_4_gc;
 
-	// setup ports
+	// setup ports and data structures
 	for (uint8_t i=0; i<MOTORS; i++) {
 		hw.st_port[i]->DIR = MOTOR_PORT_DIR_gm;  // sets outputs for motors & GPIO1, and GPIO2 inputs
 		hw.st_port[i]->OUT = MOTOR_ENABLE_BIT_bm;// zero port bits AND disable motor
@@ -187,7 +111,7 @@ void stepper_init()
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
-	st_run.init_steppers = true;				// start accumulator at proper initial value (max negative)
+//	st_run.reset_stepper_runtime = true;		// setp accumulator and other values
 	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
 }
 
@@ -201,6 +125,32 @@ stat_t st_assertions()
 	if (st_pre.magic_end	!= MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
 	if (st_pre.magic_start	!= MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
 	return (STAT_OK);
+}
+
+/*
+ * st_cycle_start()
+ * st_cycle_end()
+ * st_clc()
+ *
+ * st_cycle_start() called from cm_cycle_start(). Initializes values for beginning a new cycle.
+ */
+
+void st_cycle_start(void)
+{
+	st_pre.reset_stepper_runtime = true;		// for prep phase inits
+	st_run.reset_stepper_runtime = true;		// for run phase inits
+	en_reset_encoders();
+}
+
+void st_cycle_end(void)
+{
+	en_print_encoders();
+}
+
+stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
+{
+	st_cycle_end();
+	return(STAT_OK);
 }
 
 /*
@@ -334,22 +284,22 @@ ISR(TIMER_DDA_ISR_vect)
 	if ((st_run.mot[MOTOR_1].substep_accumulator += st_run.mot[MOTOR_1].substep_increment) > 0) {
 		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;		// turn step bit on
 		st_run.mot[MOTOR_1].substep_accumulator -= st_run.dda_ticks_X_substeps;
-		st_run.enc[MOTOR_1].steps += st_run.enc[MOTOR_1].step_sign;	
+		en.en[MOTOR_1].steps_run += en.en[MOTOR_1].step_sign;	
 	}
 	if ((st_run.mot[MOTOR_2].substep_accumulator += st_run.mot[MOTOR_2].substep_increment) > 0) {
 		PORT_MOTOR_2_VPORT.OUT |= STEP_BIT_bm;
 		st_run.mot[MOTOR_2].substep_accumulator -= st_run.dda_ticks_X_substeps;
-		st_run.enc[MOTOR_2].steps += st_run.enc[MOTOR_2].step_sign;	
+		en.en[MOTOR_2].steps_run += en.en[MOTOR_2].step_sign;	
 	}
 	if ((st_run.mot[MOTOR_3].substep_accumulator += st_run.mot[MOTOR_3].substep_increment) > 0) {
 		PORT_MOTOR_3_VPORT.OUT |= STEP_BIT_bm;
 		st_run.mot[MOTOR_3].substep_accumulator -= st_run.dda_ticks_X_substeps;
-		st_run.enc[MOTOR_3].steps += st_run.enc[MOTOR_3].step_sign;	
+		en.en[MOTOR_3].steps_run += en.en[MOTOR_3].step_sign;	
 	}
 	if ((st_run.mot[MOTOR_4].substep_accumulator += st_run.mot[MOTOR_4].substep_increment) > 0) {
 		PORT_MOTOR_4_VPORT.OUT |= STEP_BIT_bm;
 		st_run.mot[MOTOR_4].substep_accumulator -= st_run.dda_ticks_X_substeps;
-		st_run.enc[MOTOR_4].steps += st_run.enc[MOTOR_4].step_sign;	
+		en.en[MOTOR_4].steps_run += en.en[MOTOR_4].step_sign;	
 	}
 
 	// pulse stretching for using external drivers.- turn step bits off
@@ -448,8 +398,8 @@ static void _load_move()
 			st_pre.target_done = true;			// steps counted to target are ready for collection
 		}
 
-		if (st_run.init_steppers == true) {		// setup direction bits and initial accumulator value
-			st_run.init_steppers = false;
+		if (st_run.reset_stepper_runtime == true) {	// setup direction bits and initial accumulator value
+			st_run.reset_stepper_runtime = false;
 
 			st_pre.mot[MOTOR_1].direction_change = true;
 			st_pre.mot[MOTOR_2].direction_change = true;
@@ -490,7 +440,7 @@ static void _load_move()
 			// Enable the stepper and start motor power management
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;			// energize motor
 			st_run.mot[MOTOR_1].power_state = MOTOR_RUNNING;		// set power management state
-			st_run.enc[MOTOR_1].step_sign = st_pre.enc[MOTOR_1].step_sign;
+			en.en[MOTOR_1].step_sign = st_pre.mot[MOTOR_1].step_sign;
 
 		} else {  // Motor has 0 steps; might need to energize motor for power mode processing
 			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
@@ -499,9 +449,9 @@ static void _load_move()
 			}
 		}
 
-		// move counted steps to target steps and zero out step counter for next target
-		st_run.enc[MOTOR_1].steps_total += st_run.enc[MOTOR_1].steps;
-		st_run.enc[MOTOR_1].steps = 0;
+		// accumulate counted steps to total steps and zero out counted steps for the next segment
+		en.en[MOTOR_1].steps_total += en.en[MOTOR_1].steps_run;
+		en.en[MOTOR_1].steps_run = 0;
 
 		//**** MOTOR_2 LOAD ****
 
@@ -514,15 +464,15 @@ static void _load_move()
 			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_2].power_state = MOTOR_RUNNING;
-			st_run.enc[MOTOR_2].step_sign = st_pre.enc[MOTOR_2].step_sign;
+			en.en[MOTOR_2].step_sign = st_pre.mot[MOTOR_2].step_sign;
 		} else {
 			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_2].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		st_run.enc[MOTOR_2].steps_total += st_run.enc[MOTOR_2].steps;
-		st_run.enc[MOTOR_2].steps = 0;
+		en.en[MOTOR_2].steps_total += en.en[MOTOR_2].steps_run;
+		en.en[MOTOR_2].steps_run = 0;
 
 		//**** MOTOR_3 LOAD ****
 
@@ -535,15 +485,15 @@ static void _load_move()
 			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_3].power_state = MOTOR_RUNNING;
-			st_run.enc[MOTOR_3].step_sign = st_pre.enc[MOTOR_3].step_sign;
+			en.en[MOTOR_3].step_sign = st_pre.mot[MOTOR_3].step_sign;
 		} else {
 			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_3].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		st_run.enc[MOTOR_3].steps_total += st_run.enc[MOTOR_3].steps;
-		st_run.enc[MOTOR_3].steps = 0;
+		en.en[MOTOR_3].steps_total += en.en[MOTOR_3].steps_run;
+		en.en[MOTOR_3].steps_run = 0;
 
 		//**** MOTOR_4 LOAD ****
 
@@ -556,15 +506,15 @@ static void _load_move()
 			}
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_4].power_state = MOTOR_RUNNING;
-			st_run.enc[MOTOR_4].step_sign = st_pre.enc[MOTOR_4].step_sign;
+			en.en[MOTOR_4].step_sign = st_pre.mot[MOTOR_4].step_sign;
 		} else {
 			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_4].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		st_run.enc[MOTOR_4].steps_total += st_run.enc[MOTOR_4].steps;
-		st_run.enc[MOTOR_4].steps = 0;
+		en.en[MOTOR_4].steps_total += en.en[MOTOR_4].steps_run;
+		en.en[MOTOR_4].steps_run = 0;
 
 		//**** do this last ****
 
@@ -580,28 +530,6 @@ static void _load_move()
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here) 
 	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
 	st_request_exec_move();									// exec and prep next move
-}
-
-/* 
- * st_prep_null() - Keeps the loader happy. Otherwise performs no action
- *
- *	Used by M codes, tool and spindle changes
- */
-
-void st_prep_null()
-{
-	st_pre.move_type = MOVE_TYPE_NULL;
-}
-
-/* 
- * st_prep_dwell() 	 - Add a dwell to the move buffer
- */
-
-void st_prep_dwell(double microseconds)
-{
-	st_pre.move_type = MOVE_TYPE_DWELL;
-	st_pre.dda_period = _f_to_period(FREQUENCY_DWELL);
-	st_pre.dda_ticks = (uint32_t)((microseconds/1000000) * FREQUENCY_DWELL);
 }
 
 /***********************************************************************************
@@ -673,47 +601,57 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 		previous_direction = st_pre.mot[i].direction;
 		if (incoming_steps[i] >= 0) {					// positive direction
 			st_pre.mot[i].direction = DIRECTION_CW ^ st_cfg.mot[i].polarity;
-			st_pre.enc[i].step_sign = 1;
+			st_pre.mot[i].step_sign = 1;
 		} else {			
 			st_pre.mot[i].direction = DIRECTION_CCW ^ st_cfg.mot[i].polarity;
-			st_pre.enc[i].step_sign = -1;
+			st_pre.mot[i].step_sign = -1;
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 		// encoder operations (step counters)
+//		if (st_pre.reset_stepper_runtime == true) {
+//			st_pre.reset_stepper_runtime = false;
+//			en.en[i].steps_total = 0;
+//			en.en[i].steps_float = 0;
+//			en.en[i].position = cm.gmx.position[i];
+//		}
+
 		if (st_pre.target_new == true) {
-			st_pre.enc[i].target = target[i];	
-//			st_pre.enc[i].steps_total = 0;
-//			st_pre.enc[i].steps_float = 0;
+			en_set_target(i, target[i]);
+//			en.en[i].target = target[i];	
 		}
-		st_pre.enc[i].steps_total = st_run.enc[i].steps_total;	// copy counted steps
-		st_pre.enc[i].steps_float += incoming_steps[i];			// +++++ DIAGNOSTIC ONLY
+		en_add_incoming_steps(i, incoming_steps[i]);
+//		en.en[i].steps_float += incoming_steps[i];			// +++++ DIAGNOSTIC ONLY
 		if (st_pre.target_done == true) {
 			st_pre.target_done = false;
-//			_update_encoder(i);
+			en_read_encoder(i);
 		}
 	}
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }
 
-/*
- * _update_encoder() - updates runtime encoders with current values
- * st_read_encoder() - read runtime encoders into an encoder struct
+/* 
+ * st_prep_null() - Keeps the loader happy. Otherwise performs no action
+ *
+ *	Used by M codes, tool and spindle changes
  */
 
-static void _update_encoder(const uint8_t motor)
+void st_prep_null()
 {
-	st_pre.enc[motor].position += st_pre.enc[motor].steps_total /
-								  st_cfg.mot[motor].steps_per_unit;
-	return;
+	st_pre.move_type = MOVE_TYPE_NULL;
 }
 
-stEncoder_t *st_read_encoder(const uint8_t motor)
-{
-	return (&st_run.enc[motor]);
-}
+/* 
+ * st_prep_dwell() 	 - Add a dwell to the move buffer
+ */
 
+void st_prep_dwell(double microseconds)
+{
+	st_pre.move_type = MOVE_TYPE_DWELL;
+	st_pre.dda_period = _f_to_period(FREQUENCY_DWELL);
+	st_pre.dda_ticks = (uint32_t)((microseconds/1000000) * FREQUENCY_DWELL);
+}
 
 /*
  * _set_hw_microsteps() - set microsteps in hardware

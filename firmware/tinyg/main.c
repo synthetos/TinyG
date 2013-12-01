@@ -29,6 +29,7 @@
 #include "report.h"
 #include "planner.h"
 #include "stepper.h"
+#include "encoder.h"
 #include "network.h"
 #include "switch.h"
 #include "test.h"
@@ -98,6 +99,7 @@ static void _application_init(void)
 	rtc_init();						// real time counter
 	xio_init();						// xmega io subsystem
 	stepper_init(); 				// stepper subsystem 				- must precede gpio_init()
+	encoder_init(); 				// encoders
 	switch_init();					// switches
 //	gpio_init();					// parallel IO
 	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()

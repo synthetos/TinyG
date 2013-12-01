@@ -15,7 +15,7 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
-CFLAGS += -gdwarf-2 -std=gnu99 -Wall                  -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -gdwarf-2 -std=gnu99 -Wall                        -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
 
 ## Assembly specific flags
@@ -40,7 +40,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 LIBS = -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o planner.o report.o spindle.o stepper.o hardware.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio_pgm.o xio_rs485.o xio_usart.o pwm.o plan_line.o plan_arc.o xio_spi.o xio_file.o network.o config_app.o text_parser.o switch.o cycle_probing.o cycle_jogging.o xio.o 
+OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o planner.o report.o spindle.o stepper.o hardware.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio_pgm.o xio_rs485.o xio_usart.o pwm.o plan_line.o plan_arc.o xio_spi.o xio_file.o network.o config_app.o text_parser.o switch.o cycle_probing.o cycle_jogging.o xio.o encoder.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -158,6 +158,9 @@ cycle_jogging.o: ../cycle_jogging.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 xio.o: ../xio.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+encoder.o: ../encoder.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link

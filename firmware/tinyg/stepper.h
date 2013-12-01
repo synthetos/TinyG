@@ -187,7 +187,7 @@
 #define STEPPER_H_ONCE
 
 // enable debug diagnostics
-#define __STEP_DIAGNOSTICS	// Uncomment this only for debugging. Steals valuable cycles.
+//#define __STEP_DIAGNOSTICS	// Uncomment this only for debugging. Steals valuable cycles.
 
 /*********************************
  * Stepper configs and constants *
@@ -256,7 +256,26 @@ enum stPrepBufferState {
  *	the stepper inner-loops better.
  */
 
-typedef struct cfgMotor {			// per-motor configs
+// Encoder structure
+/*
+typedef struct stEncoderMotor { 	// one real or virtual encoder per controlled motor
+	uint8_t motor;					// motor encoder is mapped to 
+	int8_t step_sign;				// set to +1 or -1
+	int16_t steps_run;				// steps counted during stepper interrupt
+	int32_t steps_total;			// steps accumulated from steps_run
+	float steps_float;				// incoming steps steps +++++ DIAGNOSTIC ONLY
+	float target;					// target position (mm)
+	float position;					// measured or counted position	(mm)
+	float error;					// error between target and position (mm)
+} stEncoder_t;
+
+typedef struct stEncoders {
+	stEncoder_t enc[MOTORS];		// runtime encoder structures
+} stEncoders_t;
+*/
+// Motor config structure
+
+typedef struct stConfigMotor {		// per-motor configs
 	uint8_t	motor_map;				// map motor to axis
   	uint8_t microsteps;				// microsteps to apply for each axis (ex: 8)
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor direction
@@ -265,26 +284,14 @@ typedef struct cfgMotor {			// per-motor configs
 	float step_angle;				// degrees per whole step (ex: 1.8)
 	float travel_rev;				// mm or deg of travel per motor revolution
 	float steps_per_unit;			// steps (usteps)/mm or deg of travel
-} cfgMotor_t;
+} stConfigMotor_t;
 
 typedef struct stConfig {			// stepper configs
 	float motor_idle_timeout;		// seconds before setting motors to idle current (currently this is OFF)
-	cfgMotor_t mot[MOTORS];			// settings for motors 1-4
+	stConfigMotor_t mot[MOTORS];	// settings for motors 1-4
 } stConfig_t;
 
-// Encoder structure - used by both runtime and prep (and also planner)
-
-typedef struct stEncoder { 			// one real or virtual encoder per controlled motor
-	int8_t step_sign;				// set to +1 or -1
-	int16_t steps;					// steps counted during step generation
-	int32_t steps_total;			// steps collected from counters
-	float steps_float;				// incoming steps steps +++++ DIAGNOSTIC ONLY
-	float target;					// target position (mm)
-	float position;					// measured or counted position	(mm)
-	float error;					// error between target and position (mm)
-} stEncoder_t;
-
-// Runtime structure. Used exclusively by step generation ISR (HI)
+// Motor runtime structure. Used exclusively by step generation ISR (HI)
 
 typedef struct stRunMotor { 		// one per controlled motor
 	uint32_t substep_increment;		// total steps in axis times substeps factor
@@ -296,18 +303,19 @@ typedef struct stRunMotor { 		// one per controlled motor
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
-	uint8_t init_steppers;			// resets accumulator and direction change
+	uint8_t reset_stepper_runtime;	// initialize steppers for a new run
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t mot[MOTORS];		// runtime motor structures
-	stEncoder_t enc[MOTORS];		// runtime encoder structures
+//	stEncoder_t enc[MOTORS];		// runtime encoder structures
 	uint16_t magic_end;
 } stRunSingleton_t;
 
-// Prep-time structure. Used by exec/prep ISR (MED) and read-only during load
+// Motor prep structure. Used by exec/prep ISR (MED) and read-only during load
 // Must be careful about volatiles in this one
 
 typedef struct stPrepMotor {
+	int8_t step_sign;				// set to +1 or -1 for encoders
 	int8_t direction;				// travel direction corrected for polarity
 	uint8_t direction_change;		// set true if direction changed
 	uint32_t substep_increment; 	// total steps in axis times substep factor
@@ -317,13 +325,14 @@ typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integrity	
 	volatile uint8_t exec_state;	// move execution state 
 	uint8_t move_type;				// move type
+	uint8_t reset_stepper_runtime;	// initialize steppers for a new run
 	uint8_t target_new;				// true if new target should be counted
 	uint8_t target_done;			// true if target is ready for transfer
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
 	stPrepMotor_t mot[MOTORS];		// prep time motor structs
-	stEncoder_t enc[MOTORS];		// prep time encoder structs
+//	stEncoder_t enc[MOTORS];		// prep time encoder structs
 	uint16_t magic_end;
 } stPrepSingleton_t;
 
@@ -347,7 +356,7 @@ void st_prep_null(void);
 void st_prep_dwell(double microseconds);
 stat_t st_prep_line(double incoming_steps[], double microseconds, float target[], uint8_t *target_new);
 
-stEncoder_t *st_read_encoder(const uint8_t motor);
+//stEncoder_t *st_read_encoder(const uint8_t motor);
 
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);
