@@ -278,7 +278,7 @@ typedef struct stEncoder { 			// one real or virtual encoder per controlled moto
 	int8_t step_sign;				// set to +1 or -1
 	int16_t steps;					// steps counted during step generation
 	int32_t steps_total;			// steps collected from counters
-	float steps_float;				// incoming steps steps
+	float steps_float;				// incoming steps steps +++++ DIAGNOSTIC ONLY
 	float target;					// target position (mm)
 	float position;					// measured or counted position	(mm)
 	float error;					// error between target and position (mm)
@@ -296,7 +296,8 @@ typedef struct stRunMotor { 		// one per controlled motor
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
-	uint8_t reset_accumulator;		// set true to reset accumulator to max negative (it's starting value)
+//	uint8_t reset_accumulator;		// set true to reset accumulator to max negative (it's starting value)
+	uint8_t init_steppers;			// resets accumulator and direction change
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t mot[MOTORS];		// runtime motor structures

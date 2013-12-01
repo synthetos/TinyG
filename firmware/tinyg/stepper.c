@@ -66,13 +66,12 @@ void st_cycle_start(void)
 	for (uint8_t i=0; i<MOTORS; i++) {
 		st_pre.enc[i].steps = 0;
 		st_run.enc[i].steps = 0;
-	}	
+	}
+	st_run.init_steppers = true;
 }
 
 void st_cycle_end(void)
 {
-
-
 	for (uint8_t i=0; i<MOTORS; i++) {
 		st_pre.enc[i].steps_total = st_run.enc[i].steps_total;	// copy counted steps
 
@@ -81,7 +80,7 @@ void st_cycle_end(void)
 		printf("{\"%d\":{\"st_FLT\":%0.3f,\"st_run\":%0.0f,\"st_pre\":%0.0f,\"st_err\":%0.3f,\"incr\":%0.6f,\"accum\":%0.6f}}\n",
 
 			i+1,
-			(double)st_run.enc[i].steps_float, 
+			(double)st_pre.enc[i].steps_float, 
 			(double)st_run.enc[i].steps_total, 
 			(double)st_pre.enc[i].steps_total,
 			(double)((double)fabs(st_run.enc[i].steps_total) - fabs(st_pre.enc[i].steps_total)),
@@ -172,7 +171,7 @@ void stepper_init()
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
-	st_run.reset_accumulator = true;			// start accumulator at proper initial value (max negative)
+	st_run.init_steppers = true;				// start accumulator at proper initial value (max negative)
 	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
 }
 
@@ -426,7 +425,29 @@ static void _load_move()
 	// handle aline loads first (most common case)  NB: there are no more lines, only alines
 	if (st_pre.move_type == MOVE_TYPE_ALINE) {
 
-		// setup the new segment
+		//**** initializations and state management ****
+
+		if (st_pre.target_new == true) {		// collecting steps for a target
+			st_pre.target_new = false;
+			st_pre.target_done = true;			// steps counted to target are ready for collection
+		}
+
+		if (st_run.init_steppers == true) {		// setup direction bits and initial accumulator value
+			st_run.init_steppers = false;
+
+			st_pre.mot[MOTOR_1].direction_change = true;
+			st_pre.mot[MOTOR_2].direction_change = true;
+			st_pre.mot[MOTOR_3].direction_change = true;
+			st_pre.mot[MOTOR_4].direction_change = true;
+
+			st_run.mot[MOTOR_1].substep_accumulator = 0; // will become max negative during per-motor setup;
+			st_run.mot[MOTOR_2].substep_accumulator = 0;
+			st_run.mot[MOTOR_3].substep_accumulator = 0;
+			st_run.mot[MOTOR_4].substep_accumulator = 0;
+		}
+
+		//**** setup the new segment ****
+
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		st_run.dda_ticks_X_substeps = st_pre.dda_ticks_X_substeps;
 		TIMER_DDA.PER = st_pre.dda_period;
@@ -441,13 +462,12 @@ static void _load_move()
 		if ((st_run.mot[MOTOR_1].substep_increment = st_pre.mot[MOTOR_1].substep_increment) != 0) {
 
 			// Set the direction bit in hardware
-		 	// NB: If motor has 0 steps the direction setting is skipped
-			if (st_pre.mot[MOTOR_1].direction == 0) 
-				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm; else 	// CW motion (bit cleared)
-				PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;			// CCW motion
-
 			// Compensate for direction change in the accumulator
+		 	// NB: If motor has 0 steps this is all skipped
 			if (st_pre.mot[MOTOR_1].direction_change == true) {
+				if (st_pre.mot[MOTOR_1].direction == DIRECTION_CW) 		// CW motion (bit cleared)
+					PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
+					PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;			// CCW motion
 				st_run.mot[MOTOR_1].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_1].substep_accumulator);
 			}
 
@@ -470,11 +490,12 @@ static void _load_move()
 		//**** MOTOR_2 LOAD ****
 
 		if ((st_run.mot[MOTOR_2].substep_increment = st_pre.mot[MOTOR_2].substep_increment) != 0) {
-			if (st_pre.mot[MOTOR_2].direction == 0)
-				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
-				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
-			if (st_pre.mot[MOTOR_2].direction_change == true) st_run.mot[MOTOR_2].substep_accumulator = 
-				-(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_2].substep_accumulator);
+			if (st_pre.mot[MOTOR_2].direction_change == true) {
+				if (st_pre.mot[MOTOR_2].direction == DIRECTION_CW)
+					PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
+					PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm; 
+				st_run.mot[MOTOR_2].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_2].substep_accumulator);
+			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_2].power_state = MOTOR_RUNNING;
 			st_run.enc[MOTOR_2].step_sign = st_pre.enc[MOTOR_2].step_sign;
@@ -490,11 +511,12 @@ static void _load_move()
 		//**** MOTOR_3 LOAD ****
 
 		if ((st_run.mot[MOTOR_3].substep_increment = st_pre.mot[MOTOR_3].substep_increment) != 0) {
-			if (st_pre.mot[MOTOR_3].direction == 0)
-				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else
-				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
-			if (st_pre.mot[MOTOR_3].direction_change == true) st_run.mot[MOTOR_3].substep_accumulator = 
-				-(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_3].substep_accumulator);
+			if (st_pre.mot[MOTOR_3].direction_change == true) {
+				if (st_pre.mot[MOTOR_3].direction == DIRECTION_CW)
+					PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
+					PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
+				st_run.mot[MOTOR_3].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_3].substep_accumulator);
+			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_3].power_state = MOTOR_RUNNING;
 			st_run.enc[MOTOR_3].step_sign = st_pre.enc[MOTOR_3].step_sign;
@@ -510,11 +532,12 @@ static void _load_move()
 		//**** MOTOR_4 LOAD ****
 
 		if ((st_run.mot[MOTOR_4].substep_increment = st_pre.mot[MOTOR_4].substep_increment) != 0) {
-			if (st_pre.mot[MOTOR_4].direction == 0)
-				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
-				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
-			if (st_pre.mot[MOTOR_4].direction_change == true) st_run.mot[MOTOR_4].substep_accumulator = 
-				-(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_4].substep_accumulator);
+			if (st_pre.mot[MOTOR_4].direction_change == true) {
+				if (st_pre.mot[MOTOR_4].direction == DIRECTION_CW)
+					PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else
+					PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
+				st_run.mot[MOTOR_4].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_4].substep_accumulator);
+			}
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_4].power_state = MOTOR_RUNNING;
 			st_run.enc[MOTOR_4].step_sign = st_pre.enc[MOTOR_4].step_sign;
@@ -527,21 +550,7 @@ static void _load_move()
 		st_run.enc[MOTOR_4].steps_total += st_run.enc[MOTOR_4].steps;
 		st_run.enc[MOTOR_4].steps = 0;
 
-		//**** initializations and state management ****
-
-		// collecting steps for a target
-		if (st_pre.target_new == true) {
-			st_pre.target_new = false;
-			st_pre.target_done = true;			// steps counted to target are ready for collection
-		}
-
-		if (st_run.reset_accumulator == true) {
-			st_run.mot[MOTOR_1].substep_accumulator = -st_run.dda_ticks_X_substeps;	
-			st_run.mot[MOTOR_2].substep_accumulator = -st_run.dda_ticks_X_substeps;	
-			st_run.mot[MOTOR_3].substep_accumulator = -st_run.dda_ticks_X_substeps;	
-			st_run.mot[MOTOR_4].substep_accumulator = -st_run.dda_ticks_X_substeps;	
-			st_run.reset_accumulator = false;
-		}
+		//**** do this last ****
 
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
 
@@ -643,26 +652,33 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 	for (uint8_t i=0; i<MOTORS; i++) {
         if (fp_ZERO(incoming_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
 
-		previous_direction = st_pre.mot[i].direction;
-		st_pre.mot[i].direction = ((incoming_steps[i] < 0) ? 1 : 0) ^ st_cfg.mot[i].polarity;
-		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 		st_pre.mot[i].substep_increment = round(fabs(incoming_steps[i] * DDA_SUBSTEPS));
-		st_pre.enc[i].step_sign = incoming_steps[i] / fabs(incoming_steps[i]); // +1 or -1
+
+		previous_direction = st_pre.mot[i].direction;
+		if (incoming_steps[i] >= 0) {					// positive direction
+			st_pre.mot[i].direction = DIRECTION_CW ^ st_cfg.mot[i].polarity;
+			st_pre.enc[i].step_sign = 1;
+		} else {			
+			st_pre.mot[i].direction = DIRECTION_CCW ^ st_cfg.mot[i].polarity;
+			st_pre.enc[i].step_sign = -1;
+		}
+//		st_pre.mot[i].direction = ((incoming_steps[i] < 0) ? 1 : 0) ^ st_cfg.mot[i].polarity;
+		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 		// encoder operations (step counters)
-		st_pre.enc[i].steps_float += incoming_steps[i];
-		st_pre.enc[i].steps_total = st_run.enc[i].steps_total;	// copy counted steps
-
 		if (st_pre.target_new == true) {
 			st_pre.enc[i].target = target[i];	
 			st_pre.enc[i].steps_total = 0;
 			st_pre.enc[i].steps_float = 0;
 		}
+//		st_pre.enc[i].step_sign = incoming_steps[i] / fabs(incoming_steps[i]); // +1 or -1
+		st_pre.enc[i].steps_total = st_run.enc[i].steps_total;	// copy counted steps
+		st_pre.enc[i].steps_float += incoming_steps[i];			// +++++ DIAGNOSTIC ONLY
 		if (st_pre.target_done == true) {
+			st_pre.target_done == false;
 			_update_encoder(i);
 		}
 	}
-
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }
