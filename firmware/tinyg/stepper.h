@@ -298,7 +298,7 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint8_t reset_accumulator;		// set true to reset accumulator to max negative (it's starting value)
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
-	stRunMotor_t mot[MOTORS];			// runtime motor structures
+	stRunMotor_t mot[MOTORS];		// runtime motor structures
 	stEncoder_t enc[MOTORS];		// runtime encoder structures
 	uint16_t magic_end;
 } stRunSingleton_t;
@@ -314,18 +314,18 @@ typedef struct stPrepMotor {
 
 typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integrity	
-	uint8_t move_type;				// move type
 	volatile uint8_t exec_state;	// move execution state 
+	uint8_t move_type;				// move type
 	uint8_t reset_target;			// set true to reset target position and transfer target to position
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
-	stPrepMotor_t mot[MOTORS];		// pre time motor structs
-	stEncoder_t enc[MOTORS];			// prep time encoder structs
+	stPrepMotor_t mot[MOTORS];		// prep time motor structs
+	stEncoder_t enc[MOTORS];		// prep time encoder structs
 	uint16_t magic_end;
 } stPrepSingleton_t;
 
-extern stConfig_t st_cfg;
+extern stConfig_t st_cfg;			// only the config struct is exposed. The rest are private
 
 /**** FUNCTION PROTOTYPES ****/
 

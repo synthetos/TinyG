@@ -146,6 +146,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 /* G0's */
 //	xio_queue_RX_string_usb("g0 x0.0004\n");	// too short line
+//	xio_queue_RX_string_usb("g0 x0.02\n");		// shortest executable line (about)
 //	xio_queue_RX_string_usb("g0 x0.04\n");		// very short line
 //	xio_queue_RX_string_usb("g0 x0.08\n");
 //	xio_queue_RX_string_usb("g0 x0.12\n");

@@ -63,6 +63,7 @@ static void _request_load_move(void);
 void st_cycle_start(void)
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
+		st_pre.enc[i].steps = 0;
 		st_run.enc[i].steps = 0;
 	}	
 }
@@ -626,6 +627,8 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
 	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
+	st_pre.reset_target = *reset_target;
+	*reset_target = false;
 
 	// setup motor parameters
 	// - skip this motor if there are no new steps. Leave direction value intact.
@@ -645,27 +648,15 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 		st_pre.mot[i].substep_increment = round(fabs(incoming_steps[i] * DDA_SUBSTEPS));
 		st_pre.enc[i].step_counter_sign = incoming_steps[i] / fabs(incoming_steps[i]); // +1 or -1
+		if (st_pre.reset_target == true) { st_pre.enc[i].steps = 0;}
 
 #ifdef __STEP_DIAGNOSTICS
-//		st_pre.enc[i].steps = incoming_steps[i];
 		st_pre.enc[i].steps += incoming_steps[i];
-
-		// print X axis values
-//		if (i == MOTOR_1)
-//			printf("%li\n", st_pre.mot[i].substep_increment);
-//			printf("%lu,%0.9f,%li,%li\n", st_pre.segment_number, st_pre.mot[i].steps, st_pre.mot[i].substep_increment,st_pre.mot[i].substep_accum_record);
-//			printf("%lu,%0.9f,%li,%li\n", st_pre.segment_number, st_pre.mot[i].steps_record, st_pre.mot[i].substep_increment,st_pre.mot[i].substep_accum_record);
-//			printf("%0.8f,%li\n", st_pre.mot[i].steps_record, st_pre.mot[i].substep_accum_record);
-//			printf("%0.8f\n", st_pre.mot[i].steps);
+//		if (i == MOTOR_1)		// print only X axis values
+//			printf("%0.8f\n", st_pre.enc[i].steps);
 #endif
 	}
 
-	// special handling for target reset
-	st_pre.reset_target = *reset_target;
-	*reset_target = false;
-//	if (reset_target == true) { st_pre.enc[i].steps = 0;}
-
-	// exit
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }
