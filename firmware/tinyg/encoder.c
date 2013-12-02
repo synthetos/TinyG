@@ -35,10 +35,6 @@
 #include "canonical_machine.h"
 #include "hardware.h"
 
-//#include "planner.h"
-//#include "text_parser.h"
-//#include "util.h"
-
 /**** Allocate Structures ****/
 
 enEncoders_t en;
@@ -56,10 +52,7 @@ void encoder_init()
 	memset(&en, 0, sizeof(en));		// clear all values, pointers and status
 	en.magic_end = MAGICNUM;
 	en.magic_start = MAGICNUM;
-
-	for (uint8_t i=0; i<MOTORS; i++) {
-		en_reset_encoder(i);
-	}
+	en_reset_encoders();
 }
 
 /*
@@ -74,7 +67,7 @@ stat_t en_assertions()
 }
 
 /* 
- * en_reset_encoder() - initialize encoder
+ * en_reset_encoder() - initialize encoder values and position
  * en_reset_encoders() - initialize encoders
  */
 
@@ -95,7 +88,7 @@ void en_reset_encoders()
 }
 
 /* 
- * en_update_target() - provide a new target for encoder error term
+ * en_new_target() - provide a new target for encoder error term
  * en_update_position() - add accumulated steps into the working position
  *
  *	This pair of routines works in tandem to generate an error term. 
@@ -108,9 +101,9 @@ void en_reset_encoders()
  *	synchronize with the stepper interrupts (and stay out of their way)
  */
 
-void en_update_target(const uint8_t motor, float target)
+void en_new_target(const uint8_t motor, float target)
 {
-	en.en[motor].target = target;
+	en.en[motor].target_new = target;
 }
 
 //void en_update_position(const uint8_t motor, int32_t steps)
@@ -124,6 +117,9 @@ void en_update_position(const uint8_t motor)
 	en.en[motor].steps_total = 0;
 //	sei();
 	en.en[motor].error = en.en[motor].position - en.en[motor].target;
+
+	// transfer the staged target to the actual target variable
+	en.en[motor].target = en.en[motor].target_new;
 }
 
 /*

@@ -138,7 +138,6 @@ stat_t st_assertions()
 void st_cycle_start(void)
 {
 	st_pre.reset_stepper_runtime = true;		// for prep phase inits
-	st_run.reset_stepper_runtime = true;		// for run phase inits
 	en_reset_encoders();
 }
 
@@ -393,23 +392,22 @@ static void _load_move()
 
 		//**** initializations and state management ****
 
-		if (st_pre.target_new == true) {		// collecting steps for a target
-			st_pre.target_new = false;
-			st_pre.target_done = true;			// steps counted to target are ready for collection
-		}
+		if (st_pre.reset_stepper_runtime == true) {	// setup direction bits and initial accumulator value
+			st_pre.reset_stepper_runtime = false;
 
-		if (st_run.reset_stepper_runtime == true) {	// setup direction bits and initial accumulator value
-			st_run.reset_stepper_runtime = false;
+			for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
+				st_pre.mot[motor].direction_change = true;
+				st_run.mot[motor].substep_accumulator = 0; // will become max negative during per-motor setup;
+			}
+//			st_pre.mot[MOTOR_1].direction_change = true;
+//			st_pre.mot[MOTOR_2].direction_change = true;
+//			st_pre.mot[MOTOR_3].direction_change = true;
+//			st_pre.mot[MOTOR_4].direction_change = true;
 
-			st_pre.mot[MOTOR_1].direction_change = true;
-			st_pre.mot[MOTOR_2].direction_change = true;
-			st_pre.mot[MOTOR_3].direction_change = true;
-			st_pre.mot[MOTOR_4].direction_change = true;
-
-			st_run.mot[MOTOR_1].substep_accumulator = 0; // will become max negative during per-motor setup;
-			st_run.mot[MOTOR_2].substep_accumulator = 0;
-			st_run.mot[MOTOR_3].substep_accumulator = 0;
-			st_run.mot[MOTOR_4].substep_accumulator = 0;
+//			st_run.mot[MOTOR_1].substep_accumulator = 0; // will become max negative during per-motor setup;
+//			st_run.mot[MOTOR_2].substep_accumulator = 0;
+//			st_run.mot[MOTOR_3].substep_accumulator = 0;
+//			st_run.mot[MOTOR_4].substep_accumulator = 0;
 		}
 
 		//**** setup the new segment ****
@@ -436,20 +434,18 @@ static void _load_move()
 					PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;			// CCW motion
 				st_run.mot[MOTOR_1].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_1].substep_accumulator);
 			}
-
 			// Enable the stepper and start motor power management
-			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;			// energize motor
-			st_run.mot[MOTOR_1].power_state = MOTOR_RUNNING;		// set power management state
-			en.en[MOTOR_1].step_sign = st_pre.mot[MOTOR_1].step_sign;
+			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;				// energize motor
+			st_run.mot[MOTOR_1].power_state = MOTOR_RUNNING;			// set power management state
+			en.en[MOTOR_1].step_sign = st_pre.mot[MOTOR_1].step_sign;	// transfer in the signed step increment
 
 		} else {  // Motor has 0 steps; might need to energize motor for power mode processing
 			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
-				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;		// energize motor
+				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;			// energize motor
 				st_run.mot[MOTOR_1].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-
-		// accumulate counted steps to total steps and zero out counted steps for the next segment
+		// accumulate counted steps to total steps and zero out counted steps for the new segment
 		en.en[MOTOR_1].steps_total += en.en[MOTOR_1].steps_run;
 		en.en[MOTOR_1].steps_run = 0;
 
@@ -580,8 +576,6 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
 	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
-	st_pre.target_new = *target_new;
-	*target_new = false;
 
 	// setup motor parameters
 	// - skip this motor if there are no new steps. Leave direction value intact.
@@ -616,15 +610,19 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 		// encoder stuff (step counting)
-		en_add_incoming_steps(i, incoming_steps[i]);
-		if (st_pre.target_new == true) {
-			en_update_target(i, target[i]);
-		}
-//		if (st_pre.target_done == true) {
-//			st_pre.target_done = false;
-//			en_read_encoder(i);
-//		}
+		en_add_incoming_steps(i, incoming_steps[i]);				// add steps to the encoder as a diagnostic
+		if (*target_new == true) { en_new_target(i, target[i]);}	// stage next target to encoder
+		if (st_pre.update_encoder_position == true) { en_update_position(i);}
 	}
+	// encoder sequencing post-processing. See encoder.h for details
+	if (st_pre.update_encoder_position== true) {	// turn off the read processing (you just completed) 
+		st_pre.update_encoder_position = false;
+	}
+	if (*target_new == true) {
+		*target_new = false;						// resets target flag in mr struct as well
+		st_pre.update_encoder_position = true;		// set uup for next prep cycle
+	}
+
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }

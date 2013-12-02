@@ -235,9 +235,8 @@ enum stPrepBufferState {
  *
  *	This value is set for maximum accuracy; best not to mess with this.
  */
-#define DDA_SUBSTEPS (double)5000000	// 100,000 accumulates substeps to 6 decimal places
+#define DDA_SUBSTEPS (double)5000000	// 5,000,000 accumulates substeps to max decimal places
 //#define DDA_SUBSTEPS (double)100000	// 100,000 accumulates substeps to 6 decimal places
-//#define DDA_SUBSTEPS (double)4095		// value has been carefully set to minimize errors
 
 /*
  * Stepper control structures
@@ -256,23 +255,6 @@ enum stPrepBufferState {
  *	the stepper inner-loops better.
  */
 
-// Encoder structure
-/*
-typedef struct stEncoderMotor { 	// one real or virtual encoder per controlled motor
-	uint8_t motor;					// motor encoder is mapped to 
-	int8_t step_sign;				// set to +1 or -1
-	int16_t steps_run;				// steps counted during stepper interrupt
-	int32_t steps_total;			// steps accumulated from steps_run
-	float steps_float;				// incoming steps steps +++++ DIAGNOSTIC ONLY
-	float target;					// target position (mm)
-	float position;					// measured or counted position	(mm)
-	float error;					// error between target and position (mm)
-} stEncoder_t;
-
-typedef struct stEncoders {
-	stEncoder_t enc[MOTORS];		// runtime encoder structures
-} stEncoders_t;
-*/
 // Motor config structure
 
 typedef struct stConfigMotor {		// per-motor configs
@@ -303,11 +285,9 @@ typedef struct stRunMotor { 		// one per controlled motor
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
-	uint8_t reset_stepper_runtime;	// initialize steppers for a new run
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t mot[MOTORS];		// runtime motor structures
-//	stEncoder_t enc[MOTORS];		// runtime encoder structures
 	uint16_t magic_end;
 } stRunSingleton_t;
 
@@ -326,13 +306,12 @@ typedef struct stPrepSingleton {
 	volatile uint8_t exec_state;	// move execution state 
 	uint8_t move_type;				// move type
 	uint8_t reset_stepper_runtime;	// initialize steppers for a new run
-	uint8_t target_new;				// true if new target should be counted
-	uint8_t target_done;			// true if target is ready for transfer
+	uint8_t update_encoder_position;// true if encoder should be read during this prep cycle
+
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
 	stPrepMotor_t mot[MOTORS];		// prep time motor structs
-//	stEncoder_t enc[MOTORS];		// prep time encoder structs
 	uint16_t magic_end;
 } stPrepSingleton_t;
 
