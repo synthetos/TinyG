@@ -88,8 +88,8 @@ void en_reset_encoders()
 }
 
 /* 
- * en_new_target() - provide a new target for encoder error term
- * en_update_position() - add accumulated steps into the working position
+ * en_set_target() 	 - provide a new target
+ * en_get_position() - process position, error term and stage next position measurement
  *
  *	This pair of routines works in tandem to generate an error term. 
  *	The whole thing is very dependent on timing. The target must be set first.
@@ -97,29 +97,30 @@ void en_reset_encoders()
  *	populates the error term. A positive error means the position is beyond
  *	the target. Negative is reversed.
  *
- *	en_update_position() should be performed from within a prop cycle to 
- *	synchronize with the stepper interrupts (and stay out of their way)
+ *	en_get_position() contains a critical region. Postion is updated from steps_total, 
+ *	which is cleared in the next statement. Ideally this would be atomic.
+ *
+ *	en_get_position() is typically called form LO interrupt by exec() or prep().
+ *	The only other things that should write to steps_total are:
+ *	  _load_move() which runs from HI interrupt but is sequenced with exec and prep
+ *	  en_reset_encoder() which is called from st_cycle_start at the beginning of cycles
+ *	  encopder_init()
  */
 
-void en_new_target(const uint8_t motor, float target)
+void en_set_target(const uint8_t motor, float target)
 {
-	en.en[motor].target_new = target;
+	en.en[motor].next_target = target;
 }
 
-//void en_update_position(const uint8_t motor, int32_t steps)
-void en_update_position(const uint8_t motor)
+void en_get_position(const uint8_t motor)
 {
 	en.en[motor].steps_total_display = en.en[motor].steps_total;
-
-	// these next 2 lines are a critical region
-//	cli();
+	//cli();	// critical region
 	en.en[motor].position += en.en[motor].steps_total / st_cfg.mot[motor].steps_per_unit;
 	en.en[motor].steps_total = 0;
-//	sei();
+	//sei();
 	en.en[motor].error = en.en[motor].position - en.en[motor].target;
-
-	// transfer the staged target to the actual target variable
-	en.en[motor].target = en.en[motor].target_new;
+	en.en[motor].target = en.en[motor].next_target;	// transfer staged target to the actual target variable
 }
 
 /*

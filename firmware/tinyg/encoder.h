@@ -45,30 +45,61 @@
  *	Calling this file "encoders" is kind of a lie, at least for now. There are no encoders. 
  *	Instead the steppers count steps to provide a "truth" reference for position. In the 
  *	future when we have real encoders we'll stop counting steps and actually measure the 
- *	position. Which will be a lot easier than how this file works.
+ *	position. Which will be a lot easier than how this module currently works.
  *
- *	The challenge is that you can't read the 
+ *	*** Measuring poosition and getting the error term ***
  *
- *	How this file works (timing is everything). 
+ *	The challenge is that you can't just go "from here to there" because the system is so
+ *	heavily queued (pipelined). (1) The planner has a bunch of moves buffered behind the 
+ *	current, running move, and (2) because of stepper sequencing by the time you can get 
+ *	an accurate position reading your target has moved on - i.e. your position reading 
+ *	relates to "yesterday's target".
  *
- *	  -	The encoder structure carries the variables needed to capture targets, count steps
- *		from the stepper interrupt and calculate position and error terms.
+ *	Referring to ASCII art in stepper.h and reproduced here:
  *
- *	  -	Start with initialization (goes without saying)
+ *  step/load (~5000uSec)          [L1][segment1][L2][segment2][L3][segment3][L4][segment4][Lb1][segmentb1]
+ *  prep (100 uSec)            [P1]       [P2]          [P3]          [P4]          [Pb1]          [Pb2]
+ *  exec (400 uSec)         [EXEC1]    [EXEC2]       [EXEC3]       [EXEC4]       [EXECb1]       [EXECb2]
+ *  plan (<4ms)  [planmoveA][plan move B][plan move C][plan move D][plan move E] etc.
  *
- *	  - Reset encoders at the start of a machining cycle. This zeros all counts and sets the 
- *		position to the current machine position as known by the Gcode model (i.e. above the 
- *		planner and runtime models).
+ *	You can collect the target for moveA as early as the end of [planmoveA]. The system will 
+ *	not reach that target position until the end of [segment4]. Data from Segment4 can only be 
+ *	processed during the EXECb2 (or Pb2) interval as it's the first time that is not time-critical 
+ *	and you actually have enough cycles to calculate the position and error terms. 
  *
- *	  - When the move exec sends the first segment of a new Gcode block to the prep function
- *		it passes the target for the block and a flag indicating that this is a new block.
- *		The prep function seeds the encoder by calling en_new_target(). This puts the new 
- *		target in a staging variable as the position for the current target is (probably) 
- *		still being accumulated.
+ *	Additionally, by this time the target in Gcode model knows about has advanced quite a bit, 
+ *	so the moveA target needs to be saved somewhere. Targets are propagagted downward to the planner
+ *	runtime (the EXEC), but the exec will haved moved on to move2 by the time we need it. So moveA's
+ *	target needs to be saved somewhere.
  *
- *	  - 
+ *	*** Applying the error term for error correction ***
  *
+ *	So if you want to use the error from moveA to correct moveB it has to be done in a region that 
+ *	is not already running (i.e. the head, body, or tail) as moveB is already 2 segments into run.
+ *	Since most moves in very short line Gcode files are body only, for practical purposes the 
+ *	correction will be applied to moveC. (It's possible to recompute the body of moveB, but it may 
+ *	not be worth the trouble).
  *
+ *	*** How this file works ***
+ *
+ *	- The encoder structure carries the variables needed to capture targets, count steps
+ *	  from the stepper interrupt and calculate the position and error terms.
+ *
+ *	- Start with initialization (goes without saying)
+ *
+ *	- Use en_reset_encoder() to reset the encoders at the start of a machining cycle. This zeros 
+ *	  all counts and sets the position to the current machine position as known by the Gcode model 
+ *	  (i.e. above the planner and runtime models).
+ *
+ *	- When the move exec sends the first segment of a new Gcode block to the prep function
+ *	  it passes the target for the block and a flag indicating that this is a new block.
+ *	  The prep function seeds the encoder by calling en_set_target(). This puts the new 
+ *	  target in a staging variable.
+ *
+ *  - The en.position_ready flag indicates that the move is complete. The exec or prep function 
+ *	  should check the flag and call en_get_position(). This must be done in the segment window 
+ *	  immediately following the flag set or the position will be corrupted as new data arrives.
+ *	  The position and error term will remain stable until the next call to en_get_position().
  */
 #ifndef ENCODER_H_ONCE
 #define ENCODER_H_ONCE
@@ -86,7 +117,7 @@ typedef struct enEncoder { 			// one real or virtual encoder per controlled moto
 	int32_t steps_total;			// steps accumulated from steps_run
 	int32_t steps_total_display;	// total steps saved for display purposes
 	float steps_float;				// incoming steps steps +++++ DIAGNOSTIC ONLY
-	float target_new;				// new target position - for staging (in mm)
+	float next_target;				// next target position - for staging (in mm)
 	float target;					// target position (in mm)
 	float position;					// measured or counted position	(in mm)
 	float error;					// error between target and position (in mm)
@@ -94,6 +125,7 @@ typedef struct enEncoder { 			// one real or virtual encoder per controlled moto
 
 typedef struct enEncoders {
 	magic_t magic_start;
+	uint8_t position_ready;			// signal that position is ready.
 	enEncoder_t en[MOTORS];			// runtime encoder structures
 	magic_t magic_end;
 } enEncoders_t;
@@ -107,8 +139,8 @@ void encoder_init(void);
 stat_t en_assertions(void);
 void en_reset_encoder(const uint8_t motor);
 void en_reset_encoders(void);
-void en_new_target(const uint8_t motor, float target);
-void en_update_position(const uint8_t motor);
+void en_set_target(const uint8_t motor, float target);
+void en_get_position(const uint8_t motor);
 void en_add_incoming_steps(const uint8_t motor, float steps);
 //enEncoder_t *en_read_encoder(const uint8_t motor);
 void en_print_encoders(void);

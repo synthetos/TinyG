@@ -72,23 +72,64 @@
  *		Also, all moves are loaded from the DDA interrupt level (HI), avoiding the need 
  *		for mutual exclusion locking or volatiles (which slow things down).
  */
-/**** Line planning and execution ****
+/* 
+ **** Move generation overview and timing illustration ****
+ *
+ *	This ASCII art illustrates a 4 segment move to show the timing of the stepper sequencing.
+ *	The move begins with the planner planning move A [planmoveA]. When this is done the 
+ *	computations for the first segment of the move's S curve are performed by EXEC1. 
+ *	When these calculations are done exec calls the segment preparation function [P1] which
+ *	turns the results into the values needed for the loader (so the loader can be as fast as 
+ *	possible). The combined exec/prep takes about 400 uSec. When prep is done segment 1 is 
+ *	loaded into the stepper runtime [L1], where it will pulse out steps for the duration of 
+ *	the segment, which is about 5 Msec. The L1 load operation itself takes about 10 uSec.
+ *
+ *	Now the move is pulsing out segment 1 (at HI interrupt level). Once the L1 loader is 
+ *	finished it invokes the exec function for the next segment (at LO interrupt level).
+ *	[EXEC2] and [P2] compute and prepare the segment 2 for the loader so it can be loaded 
+ *	as soon as segment 1 is complete [L2]. The process repeats. Move B continues as well.
+ *
+ *    step/load (~5000uSec)          [L1][segment1][L2][segment2][L3][segment3][L4][segment4][Lb1]
+ *    prep (100 uSec)            [P1]       [P2]          [P3]          [P4]          [Pb1]
+ *    exec (400 uSec)         [EXEC1]    [EXEC2]       [EXEC3]       [EXEC4]       [EXECb1]
+ *    plan (<4ms)  [planmoveA][plan move B][plan move C][plan move D][plan move E] etc.
+ *
+ *	While all this is happening subsequent moves (B, C, and D) are being planned in background. 
+ *	As long as a move takes less than the segment times (5ms x N) the timing budget is satisfied,
+ *
+ *	A few things worth noting:
+ *	  -	This scheme uses 2 interrupt levels and background, for 3 levels of execution:
+ *		- step generation and loads occur at HI interrupt level
+ *		- exec and prep occur at LO interrupt level (leaving MED for serial IO)
+ *		- move planning occurs in background managed by the controller
+ *
+ *	  -	Because of the way the timing is laid out there is no contention for resources between
+ *		the step generation, loader, exec, and prep phases. Very few volatiles or mutexes are
+ *		necessary. With the exception of step generation (which occurs continuously) you can
+ *		count on load, exec and prep not stepping on each other's variables.
+ */
+/**** Line planning and execution (in more detail) ****
  *
  *	Move planning, execution and pulse generation takes place at 3 levels:
  *
  *	Move planning occurs in the main-loop. The canonical machine calls the planner to 
- *	generate lines, arcs, dwells and synchronous stop/starts. The planner module generates 
- *	blocks (bf's) that hold parameters for lines and the other move types. The blocks 
- *	are backplanned to join lines, and to take dwells and stops into account. ("plan" stage).
+ *	generate lines, arcs, dwells, synchronous stop/starts, and any other cvommand that 
+ *	needs to be syncronized wsith motion. The planner module generates blocks (bf's) 
+ *	that hold parameters for lines and the other move types. The blocks are backplanned 
+ *	to join lines and to take dwells and stops into account. ("plan" stage).
  *
- *	Arc movement is planned above the above the line planner. The arc planner generates 
- *	short lines that are passed to the line planner.
+ *	Arc movement is planned above the line planner. The arc planner generates short 
+ *	lines that are passed to the line planner.
+ *
+ *	Once lines are planned the must be broken up into "segments" of about 5 milliseconds
+ *	to be run. These segments are how S curves are generated. This is the job of the move 
+ *	runtime (aka. exec or mr).
  *
  *	Move execution and load prep takes place at the LOW interrupt level. Move execution 
  *	generates the next acceleration, cruise, or deceleration segment for planned lines, 
  *	or just transfers parameters needed for dwells and stops. This layer also prepares 
- *	moves for loading by pre-calculating the values needed by the DDA, and converting the 
- *	executed move into parameters that can be directly loaded into the steppers ("exec" 
+ *	segments for loading by pre-calculating the values needed by the DDA and converting 
+ *	the segment into parameters that can be directly loaded into the steppers ("exec" 
  *	and "prep" stages).
  *
  *	Pulse train generation takes place at the HI interrupt level. The stepper DDA fires 
@@ -111,10 +152,14 @@
  *		using a software interrupt (actually a timer, since that's all we've got).
  *
  *	  - As a result of the above, the EXEC handler fires at the LO interrupt level. It 
- *		computes the next accel/decel segment for the current move (i.e. the move in the 
- *		planner's runtime buffer) by calling back to the exec routine in planner.c. 
- *		Or it gets and runs the next buffer in the planning queue - depending on the 
- *		move_type and state. 
+ *		computes the next accel/decel or cruise (body) segment for the current move 
+ *		(i.e. the move in the planner's runtime buffer) by calling back to the exec 
+ *		routine in planner.c. If there are no more segments to run for the move the 
+ *		exec first gets the next buffer in the planning queue and begins execution.
+ *
+ *		In some cases the mext "move" is not actually a move, but a dewll, stop, IO 
+ *		operation (e.g. M5). In this case it executes the requested operation, and may 
+ *		attempt to get the next buffer from the planner when its done.
  *
  *	  - Once the segment has been computed the exec handler finshes up by running the 
  *		PREP routine in stepper.c. This computes the DDA values and gets the segment 
@@ -306,7 +351,7 @@ typedef struct stPrepSingleton {
 	volatile uint8_t exec_state;	// move execution state 
 	uint8_t move_type;				// move type
 	uint8_t reset_stepper_runtime;	// initialize steppers for a new run
-	uint8_t update_encoder_position;// true if encoder should be read during this prep cycle
+//	uint8_t get_encoder_position;	// true if encoder should be read during the next prep cycle
 
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move

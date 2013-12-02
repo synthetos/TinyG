@@ -309,6 +309,7 @@ ISR(TIMER_DDA_ISR_vect)
 
 	if (--st_run.dda_ticks_downcount != 0) return;
 
+	en.position_ready = true;							// signal that position is ready.
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// disable DDA timer
 	_load_move();										// load the next move
 }
@@ -589,10 +590,10 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 	uint8_t previous_direction;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
-		// collect encoder position (do this before you rejeect an axis for 0 steps)
-		if (en.en[i].steps_total != 0) {
-			en_update_position(i); 				// update position & zero step count
-		}
+		// collect encoder position (do this before you reject an axis for 0 steps)
+//		if (en.en[i].steps_total != 0) {
+//			en_get_position(i); 					// update position & zero step count
+//		}
 
 		// determine if the axis needs to be updated
         if (fp_ZERO(incoming_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
@@ -600,7 +601,7 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 		st_pre.mot[i].substep_increment = round(fabs(incoming_steps[i] * DDA_SUBSTEPS));
 
 		previous_direction = st_pre.mot[i].direction;
-		if (incoming_steps[i] >= 0) {					// positive direction
+		if (incoming_steps[i] >= 0) {				// positive direction
 			st_pre.mot[i].direction = DIRECTION_CW ^ st_cfg.mot[i].polarity;
 			st_pre.mot[i].step_sign = 1;
 		} else {			
@@ -610,18 +611,13 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 		// encoder stuff (step counting)
-		en_add_incoming_steps(i, incoming_steps[i]);				// add steps to the encoder as a diagnostic
-		if (*target_new == true) { en_new_target(i, target[i]);}	// stage next target to encoder
-		if (st_pre.update_encoder_position == true) { en_update_position(i);}
+		en_add_incoming_steps(i, incoming_steps[i]);			// add steps to the encoder as a diagnostic
+		if (*target_new == true) en_set_target(i, target[i]);	// stage next target to encoder
+		if (en.position_ready == true) en_get_position(i);
 	}
 	// encoder sequencing post-processing. See encoder.h for details
-	if (st_pre.update_encoder_position== true) {	// turn off the read processing (you just completed) 
-		st_pre.update_encoder_position = false;
-	}
-	if (*target_new == true) {
-		*target_new = false;						// resets target flag in mr struct as well
-		st_pre.update_encoder_position = true;		// set uup for next prep cycle
-	}
+	if (en.position_ready == true) en.position_ready = false;	// turn off the position processing (you just completed)
+	if (*target_new == true) *target_new = false;				// resets target flag in mr struct as well
 
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
