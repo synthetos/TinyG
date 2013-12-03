@@ -34,6 +34,7 @@
 #include "planner.h"
 #include "kinematics.h"
 #include "stepper.h"
+#include "encoder.h"
 #include "report.h"
 #include "util.h"
 //#include "xio/xio.h"			// uncomment for debugging
@@ -985,6 +986,34 @@ stat_t mp_end_hold()
  *	Note: For a direct math implementation see build 357.xx or earlier
  *		  Builds 358 onward have only forward difference code
  */
+
+static void _exec_adjust_error(mpBuf_t *bf) 
+{
+	float pos_err;
+
+	for (uint8_t i=AXIS_X; i<AXES; i++) {
+		pos_err = en.en[i].position_error;
+		if (pos_err < (POS_ERROR_THRESHOLD_LOW * st_cfg.mot[i].units_per_step)) {
+			continue;
+		}
+		if (pos_err < 0) {
+			bf->body_length += pos_err;
+		} else {
+			if (pos_err < bf->body_length) {
+				bf->body_length -= pos_err;
+			} else {
+				if (pos_err < bf->head_length) {
+					bf->head_length -= pos_err;
+				} else {
+					if (pos_err < bf->tail_length) {
+						bf->tail_length -= pos_err;
+					}
+				}
+			}
+		}
+	}
+}
+
 static stat_t _exec_aline(mpBuf_t *bf)
 {
 	if (bf->move_state == MOVE_STATE_OFF) { return (STAT_NOOP);} 
@@ -1005,6 +1034,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 			mp_free_run_buffer();
 			return (STAT_NOOP);
 		}
+		_exec_adjust_error(bf);							// insert error correction here.
 		bf->move_state = MOVE_STATE_RUN;
 		mr.move_state = MOVE_STATE_HEAD;
 		mr.section_state = MOVE_STATE_NEW;

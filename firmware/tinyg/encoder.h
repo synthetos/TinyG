@@ -90,6 +90,7 @@
 
 /**** Configs and Constants ****/
 
+#define POS_ERROR_THRESHOLD_LOW	  2 // error correction threshold multipler for units_per_step
 
 /**** Structures ****/
 
@@ -99,8 +100,8 @@ typedef struct enEncoder { 			// one real or virtual encoder per controlled moto
 	int32_t target_steps_next;		// next target position - for staging
 	int32_t target_steps;			// target position in steps
 	int32_t position_steps;			// counted position	in steps
-	int32_t error_steps;			// step error between target and position
-	float error_distance;			// distance error between target and position in mm
+	int32_t position_error_steps;	// step error between target and position
+	float position_error;			// distance error between target and position in mm
 	float position_steps_float;		// incoming steps steps +++++ DIAGNOSTIC ONLY
 } enEncoder_t;
 

@@ -111,8 +111,8 @@ void en_compute_position_error()
 {
 	en.last_segment = false;	// reset the calling condition (could do an interlock here, but not really needed)
 	for (uint8_t i=0; i<MOTORS; i++) {
-		en.en[i].error_steps = en.en[i].position_steps - en.en[i].target_steps;
-		en.en[i].error_distance = (float)en.en[i].error_steps * st_cfg.mot[i].units_per_step;
+		en.en[i].position_error_steps = en.en[i].position_steps - en.en[i].target_steps;
+		en.en[i].position_error = (float)en.en[i].position_error_steps * st_cfg.mot[i].units_per_step;
 		en.en[i].target_steps = en.en[i].target_steps_next;	// transfer staged target to working target
 	}
 }
@@ -142,8 +142,8 @@ void en_print_encoder(const uint8_t motor)
 		(double)en.en[motor].position_steps_float,
 		en.en[motor].position_steps, 
 		en.en[motor].target_steps,
-		en.en[motor].error_steps,
-		(double)en.en[motor].error_distance);
+		en.en[motor].position_error_steps,
+		(double)en.en[motor].position_error);
 }
 
 void en_print_encoders()
@@ -156,8 +156,8 @@ void en_print_encoders()
 			(double)en.en[i].position_steps_float,
 			en.en[i].position_steps, 
 			en.en[i].target_steps,
-			en.en[i].error_steps,
-			(double)en.en[i].error_distance);
+			en.en[i].position_error_steps,
+			(double)en.en[i].position_error);
 	}
 }
 
