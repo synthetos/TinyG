@@ -2,7 +2,7 @@
  * encoder.c - encoder interface
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -23,9 +23,6 @@
  * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-/* 	This module provides the low-level stepper drivers and some related functions.
- *	See stepper.h for a detailed explanation of this module.
  */
 
 #include "tinyg.h"
@@ -73,18 +70,24 @@ stat_t en_assertions()
  *
  *	Usage:
  *	
- *	This trio of routines works together to generate the error term.
+ *	These three routines work together to generate the error terms.
  * 
- *	Reset the encoders after homing and/or at the start of a cycle. This establishes the
- *	"step grid" relative to the current machine position.
+ *	- Call en_reset_encoder() to reset the encoders at the start of a machining cycle. 
+ *	  This zeros all counts and sets the position to the current machine position as 
+ *	  known by the Gcode model (i.e. above the planner and runtime models). This 
+ *	  establishes the "step grid" relative to the current machine position.
  *
- *	Update the target position when st_prep_line() sees a new target. This saves the
- *	target values so they can be used later for generating the error term.
+ *	- When EXEC sends the first segment of a new Gcode block to the prep function it
+ *	  passes the target for the block and a flag indicating that this is a new block.
+ *	  PREP call en_update_target() to pass the target to the encoder for safe keeping.
+ *	  This saves the target so it can be used later for generating the error term.
  *
- *	Compute the error term in the segment interval following the last segment of a move.
- *	This is signalled by the steppers setting the "last_segment" flag. This function does
- *	not need to be called for every move end, but if it is called it can only be called once
- *	or the target staging will be messed up. Call this function from st_prep_line();
+ *  - The en.last_segment flag indicates that the move is complete. PREP checks this
+ *	  flag and calls en_compute_position_error(). This must be done in the segment window 
+ *	  *immediately* following the flag set or the position will be corrupted as new 
+ *	  steps arrive. The position and error term remain stable until the next call.
+ *	  This function does not need to be called for every move end, but if it is called 
+ *	  it can only be called once or the target staging will be messed up. 
  */
 
 void en_reset_encoders()
@@ -106,6 +109,7 @@ void en_update_target(const float target[])
 
 void en_compute_position_error()
 {
+	en.last_segment = false;	// reset the calling condition (could do an interlock here, but not really needed)
 	for (uint8_t i=0; i<MOTORS; i++) {
 		en.en[i].error_steps = en.en[i].position_steps - en.en[i].target_steps;
 		en.en[i].error_distance = (float)en.en[i].error_steps * st_cfg.mot[i].units_per_step;

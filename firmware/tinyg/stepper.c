@@ -111,7 +111,7 @@ void stepper_init()
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
-//	st_run.reset_stepper_runtime = true;		// setp accumulator and other values
+	st_pre.reset_steppers = true;				// setup accumulator and other values
 	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
 }
 
@@ -137,7 +137,7 @@ stat_t st_assertions()
 
 void st_cycle_start(void)
 {
-	st_pre.reset_stepper_runtime = true;		// for prep phase inits
+	st_pre.reset_steppers = true;	// signals load phase inits
 	en_reset_encoders();
 }
 
@@ -393,22 +393,12 @@ static void _load_move()
 
 		//**** initializations and state management ****
 
-		if (st_pre.reset_stepper_runtime == true) {	// setup direction bits and initial accumulator value
-			st_pre.reset_stepper_runtime = false;
-
+		if (st_pre.reset_steppers == true) {			// setup direction bits and initial accumulator value
+			st_pre.reset_steppers = false;
 			for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 				st_pre.mot[motor].direction_change = true;
 				st_run.mot[motor].substep_accumulator = 0; // will become max negative during per-motor setup;
 			}
-//			st_pre.mot[MOTOR_1].direction_change = true;
-//			st_pre.mot[MOTOR_2].direction_change = true;
-//			st_pre.mot[MOTOR_3].direction_change = true;
-//			st_pre.mot[MOTOR_4].direction_change = true;
-
-//			st_run.mot[MOTOR_1].substep_accumulator = 0; // will become max negative during per-motor setup;
-//			st_run.mot[MOTOR_2].substep_accumulator = 0;
-//			st_run.mot[MOTOR_3].substep_accumulator = 0;
-//			st_run.mot[MOTOR_4].substep_accumulator = 0;
 		}
 
 		//**** setup the new segment ****
@@ -446,8 +436,8 @@ static void _load_move()
 				st_run.mot[MOTOR_1].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		// accumulate counted steps to total steps and zero out counted steps for the new segment
-		en.en[MOTOR_1].position_steps += en.en[MOTOR_1].steps_run;
+		// accumulate counted steps to the step position and zero out counted steps for the segment currently being loaded
+		en.en[MOTOR_1].position_steps += en.en[MOTOR_1].steps_run;		// NB: steps_run can be + or - value
 		en.en[MOTOR_1].steps_run = 0;
 
 		//**** MOTOR_2 LOAD ****
@@ -539,22 +529,19 @@ static void _load_move()
  *	floats and converted to their appropriate integer types for the loader. 
  *
  * Args:
- *	  - steps[] are signed relative motion in steps (can be non-integer values).
- *	  	Steps[] are defined for each motor (joint). These are *exact* distance 
- *		measurements that must be faithfully reproduced t0 maintain positional accuracy. 
- *		Steps are doubles that are signed for direction and typically have fractional 
- *		values. Motors that are not in the move should be set to 0 steps on input.
+ *	  - steps[] are signed relative motion in steps for each motor. Steps are floats 
+ *		that typically have fractional values (fractional steps). The sign indicates
+ *		direction. Motors that are not in the move should be 0 steps on input.
  *
  *	  - microseconds - how many microseconds the segment should run. If timing is not 
  *		100% accurate this will affect the move velocity, but not the distance traveled.
  *
- *	  - target[] is a vector used to (1) pass in the next target, and (2) return the error
- *		from the previous move. When new_target is true, target should contain the endpoint
- *		position of the current move. On return from calling prep_line() target[] contains 
- *		the error accumulated from the previous target value.
+ *	  - target[] is a vector used to record the next target position for use by the encoders. 
+ *		When new_target is true, target should contain the endpoint position of the current 
+ *		move. 
  *
- *	  - new_target - resets the target counters and triggers the error calculation. It's 
- *		passed as a pointer so it can be reset from within this function.
+ *	  - new_target is a flag to signal that the target should be captured. It's passed 
+ *		as a pointer so it can be reset from within this function.
  *
  * NOTE:  Many of the expressions are sensitive to casting and execution order to avoid long-term 
  *		  accuracy errors due to floating point round off. One earlier failed attempt was:
@@ -571,29 +558,23 @@ stat_t st_prep_line(float incoming_steps[], float microseconds, float target[], 
 	}
 	// setup segment parameters
 	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
-	// - ticks_X_substeps must be exact or errors will build up in the substep accumulators 
-	//	 leading to long term accuracy errors (drift)
+	// - ticks_X_substeps is the maximum depth of the DDA accumulator (as a negative number)
 
 	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
 	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
 
 	// setup motor parameters
-	// - skip this motor if there are no new steps. Leave direction value intact.
-	// - set the direction; compensate for polarity
-	// - detect direction changes. Needed for accumulator adjustment
-	// - compute substeb increment. The accumulator must be *exactly* the incoming steps 
-	//	 times the substep multipler or positional drift will occur. Rounding is performed 
-	//	 to eliminate a negative bias in the int32 conversion that results 
-	//	 in long-term negative drift. Rounding is the same regardless of fabs / round ordering.
 
 	uint8_t previous_direction;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
-		// determine if the axis needs to be updated
+		// Skip this motor if there are no new steps. Leave all values intact.
         if (fp_ZERO(incoming_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
 
-		st_pre.mot[i].substep_increment = round(fabs(incoming_steps[i] * DDA_SUBSTEPS));
+		// Direction - set the direction, compensating for polarity. 
+		// Set the step_sign which is used by the stepper IRQ to accumulate step position
+		// Detect direction changes. Needed for accumulator adjustment
 
 		previous_direction = st_pre.mot[i].direction;
 		if (incoming_steps[i] >= 0) {				// positive direction
@@ -604,6 +585,13 @@ stat_t st_prep_line(float incoming_steps[], float microseconds, float target[], 
 			st_pre.mot[i].step_sign = -1;
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
+
+		// Compute substeb increment. The accumulator must be *exactly* the incoming 
+		// fractional steps times the substep multipler or positional drift will occur. 
+		// Rounding is performed to eliminate a negative bias in the int32 conversion 
+		// that results in long-term negative drift. (fabs/round order doesn't matter)
+
+		st_pre.mot[i].substep_increment = round(fabs(incoming_steps[i] * DDA_SUBSTEPS));
 	}
 
 	// encoder sequencing / processing. See encoder.h for details

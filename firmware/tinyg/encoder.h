@@ -2,7 +2,7 @@
  * encoder.h - encoder interface
  * This file is part of TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2013 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -27,22 +27,26 @@
 /*
  * ERROR CORRECTION
  *
- *	The purpose of this module is to calculate an error term between the programmed position
- *	(target) and the actual measured position (position). The error term is used during move 
- *	execution (exec) to adjust the move to cancel accumulated positional errors.
+ *	The purpose of this module is to calculate an error term between the programmed 
+ *	position (target) and the actual measured position (position). The error term is 
+ *	used during move execution (exec) to adjust the move to compensate for accumulated 
+ *	positional errors. It's also the basis of closed-loop (servoed) systems.
  *
- *	Positional error occurs due to floating poiunt numerical inaccuracies. TinyG uses 32 bit
- *	floating point (GCC 32 bit, which is NOT IEEE 32 bit). Errors creep in during planning,
- *	move execution, and stepper output phases. Many steps have been taken to minimize errors
- *	at all these stages, but they still occur. In most cases the errors are not noticable as 
- *	they fall below the step resolution for most jobs. For jobs that run > 1 hour the errors 
- *	can accumulate and send results off by as much as a couple millimeters if not corrected.  
- *	Note: Going to doubles would reduce the errors but not eliminate them altogether.
+ *	Positional error occurs due to floating poiunt numerical inaccuracies. TinyG uses 
+ *	32 bit floating point (GCC 32 bit, which is NOT IEEE 32 bit). Errors creep in 
+ *	during planning, move execution, and stepper output phases. Many measures have 
+ *	been taken to minimize errors throughout the process, but they still occur. In most
+ *	cases the errors are not noticable as they fall below the step resolution for most 
+ *	jobs. For jobs that run > 1 hour the errors can accumulate and send results off 
+ *	by as much as a couple millimeters if not corrected. 
+ *
+ *	Note: Going to doubles (from floats) would reduce the errors but not eliminate 
+ *	them altogether. But this moot on AVRGCC which only does single precision floats.
  */
 /* 
  * ENCODERS	
  *
- *	Calling this file "encoders" is kind of a lie, at least for now. There are no encoders. 
+ *	Calling this file "encoders" is kind of a lie, at least for now. There are no encoders.
  *	Instead the steppers count steps to provide a "truth" reference for position. In the 
  *	future when we have real encoders we'll stop counting steps and actually measure the 
  *	position. Which will be a lot easier than how this module currently works.
@@ -57,19 +61,19 @@
  *
  *	Referring to ASCII art in stepper.h and reproduced here:
  *
- *  step/load (~5000uSec)          [L1][segment1][L2][segment2][L3][segment3][L4][segment4][Lb1][segmentb1]
- *  prep (100 uSec)            [P1]       [P2]          [P3]          [P4]          [Pb1]          [Pb2]
- *  exec (400 uSec)         [EXEC1]    [EXEC2]       [EXEC3]       [EXEC4]       [EXECb1]       [EXECb2]
- *  plan (<4ms)  [planmoveA][plan move B][plan move C][plan move D][plan move E] etc.
+ *  LOAD/STEP (~5000uSec)          [L1][Segment1][L2][Segment2][L3][Segment3][L4][Segment4][Lb1][Segmentb1]
+ *  PREP (100 uSec)            [P1]       [P2]          [P3]          [P4]          [Pb1]          [Pb2]
+ *  EXEC (400 uSec)         [EXEC1]    [EXEC2]       [EXEC3]       [EXEC4]       [EXECb1]       [EXECb2]
+ *  PLAN (<4ms)  [PLANmoveA][PLANmoveB][PLANmoveC][PLANmoveD][PLANmoveE] etc.
  *
- *	You can collect the target for moveA as early as the end of [planmoveA]. The system will 
- *	not reach that target position until the end of [segment4]. Data from Segment4 can only be 
- *	processed during the EXECb2 (or Pb2) interval as it's the first time that is not time-critical 
- *	and you actually have enough cycles to calculate the position and error terms. 
+ *	You can collect the target for moveA as early as the end of [PLANmoveA]. The system will 
+ *	not reach that target position until the end of [Segment4]. Data from Segment4 can only be 
+ *	processed during the EXECb2 or Pb2 interval as it's the first time that is not time-critical 
+ *	and you actually have enough cycles to calculate the position and error terms. We use Pb2.
  *
  *	Additionally, by this time the target in Gcode model knows about has advanced quite a bit, 
- *	so the moveA target needs to be saved somewhere. Targets are propagagted downward to the planner
- *	runtime (the EXEC), but the exec will haved moved on to move2 by the time we need it. So moveA's
+ *	so the moveA target needs to be saved somewhere. Targets are propagated downward to the planner
+ *	runtime (the EXEC), but the exec will haved moved on to moveB by the time we need it. So moveA's
  *	target needs to be saved somewhere.
  *
  *	*** Applying the error term for error correction ***
@@ -79,27 +83,6 @@
  *	Since most moves in very short line Gcode files are body only, for practical purposes the 
  *	correction will be applied to moveC. (It's possible to recompute the body of moveB, but it may 
  *	not be worth the trouble).
- *
- *	*** How this file works ***
- *
- *	- The encoder structure carries the variables needed to capture targets, count steps
- *	  from the stepper interrupt and calculate the position and error terms.
- *
- *	- Start with initialization (goes without saying)
- *
- *	- Use en_reset_encoder() to reset the encoders at the start of a machining cycle. This zeros 
- *	  all counts and sets the position to the current machine position as known by the Gcode model 
- *	  (i.e. above the planner and runtime models).
- *
- *	- When the move exec sends the first segment of a new Gcode block to the prep function
- *	  it passes the target for the block and a flag indicating that this is a new block.
- *	  The prep function seeds the encoder by calling en_set_target(). This puts the new 
- *	  target in a staging variable.
- *
- *  - The en.position_ready flag indicates that the move is complete. The exec or prep function 
- *	  should check the flag and call en_get_position(). This must be done in the segment window 
- *	  immediately following the flag set or the position will be corrupted as new data arrives.
- *	  The position and error term will remain stable until the next call to en_get_position().
  */
 #ifndef ENCODER_H_ONCE
 #define ENCODER_H_ONCE

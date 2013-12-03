@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		402.13	// clean up and test encoders
+#define TINYG_FIRMWARE_BUILD   		402.14	// documentation pass for encoders
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -68,7 +68,6 @@
   #define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
   #define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 #endif
-//#define __ENABLE_PROBING					// comment out to take out experimental probing code
 //#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
 
 //#ifndef WEAK

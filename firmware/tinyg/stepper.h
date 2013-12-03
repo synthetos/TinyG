@@ -75,38 +75,52 @@
 /* 
  **** Move generation overview and timing illustration ****
  *
- *	This ASCII art illustrates a 4 segment move to show the timing of the stepper sequencing.
- *	The move begins with the planner planning move A [planmoveA]. When this is done the 
- *	computations for the first segment of the move's S curve are performed by EXEC1. 
- *	When these calculations are done exec calls the segment preparation function [P1] which
- *	turns the results into the values needed for the loader (so the loader can be as fast as 
- *	possible). The combined exec/prep takes about 400 uSec. When prep is done segment 1 is 
- *	loaded into the stepper runtime [L1], where it will pulse out steps for the duration of 
- *	the segment, which is about 5 Msec. The L1 load operation itself takes about 10 uSec.
+ *	This ASCII art illustrates a 4 segment move to show stepper sequencing timing.
+ *
+ *    LOAD/STEP (~5000uSec)          [L1][segment1][L2][segment2][L3][segment3][L4][segment4][Lb1]
+ *    PREP (100 uSec)            [P1]       [P2]          [P3]          [P4]          [Pb1]
+ *    EXEC (400 uSec)         [EXEC1]    [EXEC2]       [EXEC3]       [EXEC4]       [EXECb1]
+ *    PLAN (<4ms)  [planmoveA][plan move B][plan move C][plan move D][plan move E] etc.
+ *
+ *	The move begins with the planner PLANning move A [planmoveA]. When this is done the 
+ *	computations for the first segment of move A's S curve are performed by the planner 
+ *	runtime, EXEC1. The runtime computes the number of segments and the segment-by-segment 
+ *	accelerations and decelerations for the move. Each call to EXEC generates the values 
+ *	for the next segment to be run. Once the move is running EXEC is executed as a 
+ *	callback from the step loader.
+ *
+ *	When the runtime calculations are done EXEC calls the segment PREParation function [P1].
+ *	PREP turns the EXEC results into values needed for the loader and does some encoder work.
+ *	The combined exec and prep take about 400 uSec. 
+ *
+ *	PREP takes care of heavy numerics and other cycle-intesive operations so the step loader 
+ *	L1 can run as fast as possible. The time budget for LOAD is about 10 uSec. In the diagram, 
+ *	when P1 is done segment 1 is loaded into the stepper runtime [L1]
+ *
+ *	Once the segment is loaded it will pulse out steps for the duration of the segment. 
+ *	Segment timing can vary, but segments take around 5 Msec to pulse out, which is 250 DDA 
+ *	ticks at a 50 KHz step clock.
  *
  *	Now the move is pulsing out segment 1 (at HI interrupt level). Once the L1 loader is 
  *	finished it invokes the exec function for the next segment (at LO interrupt level).
  *	[EXEC2] and [P2] compute and prepare the segment 2 for the loader so it can be loaded 
- *	as soon as segment 1 is complete [L2]. The process repeats. Move B continues as well.
- *
- *    step/load (~5000uSec)          [L1][segment1][L2][segment2][L3][segment3][L4][segment4][Lb1]
- *    prep (100 uSec)            [P1]       [P2]          [P3]          [P4]          [Pb1]
- *    exec (400 uSec)         [EXEC1]    [EXEC2]       [EXEC3]       [EXEC4]       [EXECb1]
- *    plan (<4ms)  [planmoveA][plan move B][plan move C][plan move D][plan move E] etc.
+ *	as soon as segment 1 is complete [L2]. When move A is done EXEC pulls the next move 
+ *	(moveB) from the planner queue, The process repeats until there are no more segments or moves.
  *
  *	While all this is happening subsequent moves (B, C, and D) are being planned in background. 
  *	As long as a move takes less than the segment times (5ms x N) the timing budget is satisfied,
  *
  *	A few things worth noting:
  *	  -	This scheme uses 2 interrupt levels and background, for 3 levels of execution:
- *		- step generation and loads occur at HI interrupt level
- *		- exec and prep occur at LO interrupt level (leaving MED for serial IO)
- *		- move planning occurs in background managed by the controller
+ *		- STEP pulsing and LOADs occur at HI interrupt level
+ *		- EXEC and PREP occur at LO interrupt level (leaving MED int level for serial IO)
+ *		- move PLANning occurs in background and is managed by the controller
  *
  *	  -	Because of the way the timing is laid out there is no contention for resources between
- *		the step generation, loader, exec, and prep phases. Very few volatiles or mutexes are
- *		necessary. With the exception of step generation (which occurs continuously) you can
- *		count on load, exec and prep not stepping on each other's variables.
+ *		the STEP, LOAD, EXEC, and PREP phases. PLANing is similarly isolated. Very few volatiles 
+ *		or mutexes are needed, which makes the code simpler and faster. With the exception of 
+ *		the actual values used in step generation (which runs continuously) you can count on 
+ *		LOAD, EXEC, PREP and PLAN not stepping on each other's variables.
  */
 /**** Line planning and execution (in more detail) ****
  *
@@ -310,8 +324,8 @@ typedef struct stConfigMotor {		// per-motor configs
 	float power_level;				// set 0.000 to 1.000 for PMW vref setting
 	float step_angle;				// degrees per whole step (ex: 1.8)
 	float travel_rev;				// mm or deg of travel per motor revolution
-	float steps_per_unit;			// steps (usteps)/mm or deg of travel
-	float units_per_step;			// mm or degrees of travel per step (ustep)
+	float steps_per_unit;			// microsteps per mm (or degree) of travel
+	float units_per_step;			// mm or degrees of travel per microstep
 } stConfigMotor_t;
 
 typedef struct stConfig {			// stepper configs
@@ -351,8 +365,7 @@ typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integrity	
 	volatile uint8_t exec_state;	// move execution state 
 	uint8_t move_type;				// move type
-	uint8_t reset_stepper_runtime;	// initialize steppers for a new run
-//	uint8_t get_encoder_position;	// true if encoder should be read during the next prep cycle
+	uint8_t reset_steppers;			// reset steppers for a new cycle
 
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
