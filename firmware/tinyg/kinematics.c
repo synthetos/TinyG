@@ -49,12 +49,12 @@ extern "C"{
  *	as floats and converted to fixed-point binary during queue loading. See stepper.c for details.
  */
 
-void ik_kinematics(double travel[], double steps[], double microseconds)
+void ik_kinematics(float travel[], float steps[], float microseconds)
 {
 	float joint[AXES];
 
 //	_inverse_kinematics(travel, joint, microseconds);// you can insert inverse kinematics transformations here
-	memcpy(joint, travel, sizeof(double)*AXES);		 //...or just do a memcopy for cartesian machines
+	memcpy(joint, travel, sizeof(float)*AXES);		 //...or just do a memcopy for cartesian machines
 
 	// Map motors to axes and convert length units to steps
 	// Most of the conversion math has already been done in during config in steps_per_unit()

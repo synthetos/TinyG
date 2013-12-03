@@ -143,7 +143,6 @@ void st_cycle_start(void)
 
 void st_cycle_end(void)
 {
-	en_get_position_error();
 	en_print_encoders();
 }
 
@@ -310,7 +309,7 @@ ISR(TIMER_DDA_ISR_vect)
 
 	if (--st_run.dda_ticks_downcount != 0) return;
 
-	en.position_ready = true;							// signal that position is ready.
+	en.last_segment = true;								// signal last segment in the move (position is ready).
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// disable DDA timer
 	_load_move();										// load the next move
 }
@@ -562,7 +561,7 @@ static void _load_move()
  *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
  */
 
-stat_t st_prep_line(double incoming_steps[], double microseconds, float target[], uint8_t *target_new)
+stat_t st_prep_line(float incoming_steps[], float microseconds, float target[], uint8_t *target_new)
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);
@@ -578,11 +577,6 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
 	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
-
-	if (*target_new == true) {
-		*target_new = false;				// reset target flag in mr struct
-		en_set_target(target);				// stage next target to encoder
-	}
 
 	// setup motor parameters
 	// - skip this motor if there are no new steps. Leave direction value intact.
@@ -610,23 +604,19 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 			st_pre.mot[i].step_sign = -1;
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
-
-		// encoder stuff (step counting)
-		en_add_incoming_steps(i, incoming_steps[i]);			// add steps to the encoder as a diagnostic
-//		if (en.position_ready == true) {
-//			en_get_position_error(i);
-//			printf("{\"en%d\":{\"steps.f\":%0.3f,\"steps_tot\":%d,\"tgt\":%0.5f,\"pos\":%0.5f,\"err\":%0.5f}}\n",
-//				i+1,
-//				(double)en.en[i].steps_float,
-//						en.en[i].steps_total_display, 
-//				(double)en.en[i].target,
-//				(double)en.en[i].position,
-//				(double)en.en[i].error);
-//		}
 	}
-	// encoder sequencing post-processing. See encoder.h for details
-	if (en.position_ready == true) en.position_ready = false;	// turn off the position processing (you just completed)
-//	if (*target_new == true) *target_new = false;				// resets target flag in mr struct as well
+
+	// encoder sequencing / processing. See encoder.h for details
+	en_update_incoming_steps(incoming_steps);		// add steps to the encoder as a diagnostic
+	if (*target_new == true) {
+		*target_new = false;						// reset target flag in mr struct
+		en_update_target(target);					// stage next target to encoder
+//		en_print_encoder(MOTOR_1);					// ++++++ DIAGNOSTIC PRINTOUT
+	}
+	if (en.last_segment == true) {
+		en.last_segment = false;
+		en_compute_position_error();
+	}
 
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);

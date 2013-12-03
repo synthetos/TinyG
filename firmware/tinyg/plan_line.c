@@ -1232,8 +1232,8 @@ static stat_t _exec_aline_tail()
  */
 static stat_t _exec_aline_segment(uint8_t correction_flag)
 {
-	double travel[AXES];
-	double steps[MOTORS];
+	float travel[AXES];
+	float steps[MOTORS];
 
 /* The below is a re-arranged and loop unrolled version of this:
 	for (uint8_t i=0; i < AXES; i++) {	// don't do the error correction if you are going into a hold

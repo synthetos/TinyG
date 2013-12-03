@@ -379,7 +379,7 @@ stat_t st_motor_power_callback(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(double microseconds);
-stat_t st_prep_line(double incoming_steps[], double microseconds, float target[], uint8_t *target_new);
+stat_t st_prep_line(float incoming_steps[], float microseconds, float target[], uint8_t *target_new);
 
 //stEncoder_t *st_read_encoder(const uint8_t motor);
 
