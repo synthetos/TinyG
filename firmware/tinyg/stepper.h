@@ -311,6 +311,7 @@ typedef struct stConfigMotor {		// per-motor configs
 	float step_angle;				// degrees per whole step (ex: 1.8)
 	float travel_rev;				// mm or deg of travel per motor revolution
 	float steps_per_unit;			// steps (usteps)/mm or deg of travel
+	float units_per_step;			// mm or degrees of travel per step (ustep)
 } stConfigMotor_t;
 
 typedef struct stConfig {			// stepper configs

@@ -111,16 +111,22 @@
 /**** Structures ****/
 
 typedef struct enEncoder { 			// one real or virtual encoder per controlled motor
-	uint8_t motor;					// motor encoder is mapped to 
+//	uint8_t motor;					// motor encoder is mapped to 
 	int8_t step_sign;				// set to +1 or -1
 	int16_t steps_run;				// steps counted during stepper interrupt
-	int32_t steps_total;			// steps accumulated from steps_run
-	int32_t steps_total_display;	// total steps saved for display purposes
-	float steps_float;				// incoming steps steps +++++ DIAGNOSTIC ONLY
-	float next_target;				// next target position - for staging (in mm)
-	float target;					// target position (in mm)
-	float position;					// measured or counted position	(in mm)
-	float error;					// error between target and position (in mm)
+//	int32_t steps_total;			// steps accumulated from steps_run
+//	int32_t steps_total_display;	// total steps saved for display purposes
+//	float next_target;				// next target position - for staging (in mm)
+//	float target;					// target position (in mm)
+//	float position;					// measured or counted position	(in mm)
+//	float error;					// error between target and position (in mm)
+
+	int32_t target_steps_next;		// next target position - for staging (in steps)
+	int32_t target_steps;			// target position (in steps)
+	int32_t position_steps;			// measured or counted position	(in steps)
+	int32_t error_steps;			// step error between target and position (in steps)
+	int32_t error_distance;			// distance error between target and position (in mm)
+	float position_steps_float;		// incoming steps steps +++++ DIAGNOSTIC ONLY
 } enEncoder_t;
 
 typedef struct enEncoders {
@@ -137,12 +143,13 @@ extern enEncoders_t en;
 
 void encoder_init(void);
 stat_t en_assertions(void);
-void en_reset_encoder(const uint8_t motor);
+//void en_reset_encoder(const uint8_t motor);
 void en_reset_encoders(void);
-void en_set_target(const uint8_t motor, float target);
-void en_get_position(const uint8_t motor);
+//void en_set_target(const uint8_t motor, float target);
+void en_set_target(const float target[]);
+//void en_get_position_error(const uint8_t motor);
+void en_get_position_error(void);
 void en_add_incoming_steps(const uint8_t motor, float steps);
-//enEncoder_t *en_read_encoder(const uint8_t motor);
 void en_print_encoders(void);
 
 #endif	// End of include guard: ENCODER_H_ONCE

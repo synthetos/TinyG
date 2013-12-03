@@ -143,6 +143,7 @@ void st_cycle_start(void)
 
 void st_cycle_end(void)
 {
+	en_get_position_error();
 	en_print_encoders();
 }
 
@@ -447,7 +448,7 @@ static void _load_move()
 			}
 		}
 		// accumulate counted steps to total steps and zero out counted steps for the new segment
-		en.en[MOTOR_1].steps_total += en.en[MOTOR_1].steps_run;
+		en.en[MOTOR_1].position_steps += en.en[MOTOR_1].steps_run;
 		en.en[MOTOR_1].steps_run = 0;
 
 		//**** MOTOR_2 LOAD ****
@@ -468,7 +469,7 @@ static void _load_move()
 				st_run.mot[MOTOR_2].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		en.en[MOTOR_2].steps_total += en.en[MOTOR_2].steps_run;
+		en.en[MOTOR_2].position_steps += en.en[MOTOR_2].steps_run;
 		en.en[MOTOR_2].steps_run = 0;
 
 		//**** MOTOR_3 LOAD ****
@@ -489,7 +490,7 @@ static void _load_move()
 				st_run.mot[MOTOR_3].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		en.en[MOTOR_3].steps_total += en.en[MOTOR_3].steps_run;
+		en.en[MOTOR_3].position_steps += en.en[MOTOR_3].steps_run;
 		en.en[MOTOR_3].steps_run = 0;
 
 		//**** MOTOR_4 LOAD ****
@@ -510,7 +511,7 @@ static void _load_move()
 				st_run.mot[MOTOR_4].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		en.en[MOTOR_4].steps_total += en.en[MOTOR_4].steps_run;
+		en.en[MOTOR_4].position_steps += en.en[MOTOR_4].steps_run;
 		en.en[MOTOR_4].steps_run = 0;
 
 		//**** do this last ****
@@ -578,6 +579,11 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
 
+	if (*target_new == true) {
+		*target_new = false;				// reset target flag in mr struct
+		en_set_target(target);				// stage next target to encoder
+	}
+
 	// setup motor parameters
 	// - skip this motor if there are no new steps. Leave direction value intact.
 	// - set the direction; compensate for polarity
@@ -589,11 +595,6 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 
 	uint8_t previous_direction;
 	for (uint8_t i=0; i<MOTORS; i++) {
-
-		// collect encoder position (do this before you reject an axis for 0 steps)
-//		if (en.en[i].steps_total != 0) {
-//			en_get_position(i); 					// update position & zero step count
-//		}
 
 		// determine if the axis needs to be updated
         if (fp_ZERO(incoming_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
@@ -612,12 +613,20 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
 
 		// encoder stuff (step counting)
 		en_add_incoming_steps(i, incoming_steps[i]);			// add steps to the encoder as a diagnostic
-		if (*target_new == true) en_set_target(i, target[i]);	// stage next target to encoder
-		if (en.position_ready == true) en_get_position(i);
+//		if (en.position_ready == true) {
+//			en_get_position_error(i);
+//			printf("{\"en%d\":{\"steps.f\":%0.3f,\"steps_tot\":%d,\"tgt\":%0.5f,\"pos\":%0.5f,\"err\":%0.5f}}\n",
+//				i+1,
+//				(double)en.en[i].steps_float,
+//						en.en[i].steps_total_display, 
+//				(double)en.en[i].target,
+//				(double)en.en[i].position,
+//				(double)en.en[i].error);
+//		}
 	}
 	// encoder sequencing post-processing. See encoder.h for details
 	if (en.position_ready == true) en.position_ready = false;	// turn off the position processing (you just completed)
-	if (*target_new == true) *target_new = false;				// resets target flag in mr struct as well
+//	if (*target_new == true) *target_new = false;				// resets target flag in mr struct as well
 
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
@@ -628,7 +637,6 @@ stat_t st_prep_line(double incoming_steps[], double microseconds, float target[]
  *
  *	Used by M codes, tool and spindle changes
  */
-
 void st_prep_null()
 {
 	st_pre.move_type = MOVE_TYPE_NULL;
@@ -637,7 +645,6 @@ void st_prep_null()
 /* 
  * st_prep_dwell() 	 - Add a dwell to the move buffer
  */
-
 void st_prep_dwell(double microseconds)
 {
 	st_pre.move_type = MOVE_TYPE_DWELL;
@@ -651,7 +658,6 @@ void st_prep_dwell(double microseconds)
  *	For now the microsteps is the same as the microsteps (1,2,4,8)
  *	This may change if microstep morphing is implemented.
  */
-
 static void _set_hw_microsteps(const uint8_t motor, const uint8_t microsteps)
 {
 #ifdef __ARM
@@ -713,7 +719,11 @@ static int8_t _get_motor(const index_t index)
 static void _set_motor_steps_per_unit(cmdObj_t *cmd) 
 {
 	uint8_t m = _get_motor(cmd->index);
-	st_cfg.mot[m].steps_per_unit = (360 / (st_cfg.mot[m].step_angle / st_cfg.mot[m].microsteps) / st_cfg.mot[m].travel_rev);
+//	st_cfg.mot[m].steps_per_unit = (360 / (st_cfg.mot[m].step_angle / st_cfg.mot[m].microsteps) / st_cfg.mot[m].travel_rev);
+//	st_cfg.mot[m].units_per_step = st_cfg.mot[m].travel_rev / (360 / st_cfg.mot[m].step_angle) / st_cfg.mot[m].microsteps;
+//	faster and more numerically accurate formulation of the above:
+	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps);
+	st_cfg.mot[m].steps_per_unit = 1 / st_cfg.mot[m].units_per_step;
 }
 
 stat_t st_set_sa(cmdObj_t *cmd)			// motor step angle

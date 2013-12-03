@@ -68,60 +68,81 @@ stat_t en_assertions()
 
 /* 
  * en_reset_encoder() - initialize encoder values and position
- * en_reset_encoders() - initialize encoders
  */
-
+/*
 void en_reset_encoder(const uint8_t motor)
 {
 	en.en[motor].motor = motor;			// establish motor mapping
-	en.en[motor].steps_run = 0;
-	en.en[motor].steps_total = 0;
-	en.en[motor].steps_float = 0;
-	en.en[motor].position = cm.gmx.position[motor];
-}
+//	en.en[motor].steps_run = 0;
+//	en.en[motor].steps_total = 0;
+	en.en[motor].target_steps = 0;
+	en.en[motor].target_steps_next = 0;
+	en.en[motor].position_steps = cm.gmx.position[motor] * st_cfg.mot[motor].steps_per_unit;
 
+	en.en[motor].position_steps_float = 0;		//+++++ DIAGNOSTIC
+//	en.en[motor].position = cm.gmx.position[motor];
+}
+*/
 void en_reset_encoders()
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
-		en_reset_encoder(i);
+//		en.en[i].motor = i;						// establish motor mapping
+		en.en[i].target_steps = 0;
+		en.en[i].target_steps_next = 0;
+		en.en[i].position_steps = cm.gmx.position[i] * st_cfg.mot[i].steps_per_unit;
+		en.en[i].position_steps_float = 0;		//+++++ DIAGNOSTIC
 	}
 }
 
 /* 
  * en_set_target() 	 - provide a new target
- * en_get_position() - process position, error term and stage next position measurement
  *
  *	This pair of routines works in tandem to generate an error term. 
  *	The whole thing is very dependent on timing. The target must be set first.
  *	When the position is updated it compares the position to the target and 
  *	populates the error term. A positive error means the position is beyond
  *	the target. Negative is reversed.
- *
- *	en_get_position() contains a critical region. Postion is updated from steps_total, 
- *	which is cleared in the next statement. Ideally this would be atomic.
- *
- *	en_get_position() is typically called form LO interrupt by exec() or prep().
- *	The only other things that should write to steps_total are:
- *	  _load_move() which runs from HI interrupt but is sequenced with exec and prep
- *	  en_reset_encoder() which is called from st_cycle_start at the beginning of cycles
- *	  encopder_init()
  */
 
-void en_set_target(const uint8_t motor, float target)
+void en_set_target(const float target[])
 {
-	en.en[motor].next_target = target;
+	for (uint8_t i=0; i<MOTORS; i++) {
+		en.en[i].target_steps_next = target[i] * st_cfg.mot[i].steps_per_unit;
+	}
 }
 
-void en_get_position(const uint8_t motor)
+/*
+void en_set_target(const uint8_t motor, float target)
 {
-	en.en[motor].steps_total_display = en.en[motor].steps_total;
-	//cli();	// critical region
-	en.en[motor].position += en.en[motor].steps_total / st_cfg.mot[motor].steps_per_unit;
-	en.en[motor].steps_total = 0;
-	//sei();
-	en.en[motor].error = en.en[motor].position - en.en[motor].target;
-	en.en[motor].target = en.en[motor].next_target;	// transfer staged target to the actual target variable
+//	en.en[motor].next_target = target;
+	en.en[motor].target_steps_next = target * st_cfg.mot[motor].steps_per_unit;
 }
+*/
+/* 
+ * en_get_position_error() - process position, error term and stage next position measurement
+ */
+
+void en_get_position_error()
+{
+	for (uint8_t i=0; i<MOTORS; i++) {
+		en.en[i].error_steps = en.en[i].position_steps - en.en[i].target_steps;
+		en.en[i].error_distance = en.en[i].error_steps * st_cfg.mot[i].units_per_step;
+		en.en[i].target_steps = en.en[i].target_steps_next;	// transfer staged target to the actual target variable
+	}
+}
+
+/*
+void en_get_position_error(const uint8_t motor)
+{
+//	en.en[motor].position += en.en[motor].steps_total / st_cfg.mot[motor].steps_per_unit;
+//	en.en[motor].steps_total = 0;
+
+	en.en[motor].error_steps = en.en[motor].position_steps - en.en[motor].target_steps;
+	en.en[motor].error_distance = en.en[motor].error_steps * st_cfg.mot[motor].units_per_step;
+
+	en.en[motor].target_steps = en.en[motor].target_steps_next;	// transfer staged target to the actual target variable
+}
+*/
 
 /*
  * en_add_incoming_steps() - add new incoming steps
@@ -131,7 +152,7 @@ void en_get_position(const uint8_t motor)
 
 void en_add_incoming_steps(const uint8_t motor, float steps)
 {
-	en.en[motor].steps_float += steps;
+	en.en[motor].position_steps_float += steps;
 }
 
 /*
@@ -142,13 +163,13 @@ void en_add_incoming_steps(const uint8_t motor, float steps)
 void en_print_encoders()
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
-		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"steps_tot\":%0.0f,\"tgt\":%0.5f,\"pos\":%0.5f,\"st_err\":%0.5f}}\n",
+		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
 			i+1,
-			(double)en.en[i].steps_float,
-			(double)en.en[i].steps_total_display, 
-			(double)en.en[i].target,
-			(double)en.en[i].position,
-			(double)en.en[i].error);
+			(double)en.en[i].position_steps_float,
+			en.en[i].position_steps, 
+			en.en[i].target_steps,
+			en.en[i].error_steps,
+			(double)en.en[i].error_distance);
 	}
 }
 
