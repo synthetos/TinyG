@@ -596,16 +596,15 @@ stat_t st_prep_line(float incoming_steps[], float microseconds, float target[], 
 
 	// encoder sequencing / processing. See encoder.h for details
 	en_update_incoming_steps(incoming_steps);		// add steps to the encoder as a diagnostic
-	if (*target_new == true) {
-		*target_new = false;						// reset target flag in mr struct
-		en_update_target(target);					// stage next target to encoder
+//	if (*target_new == true) {
+//		*target_new = false;						// reset target flag in mr struct
+//		en_update_target(target);					// stage next target to encoder
 //		en_print_encoder(MOTOR_1);					// ++++++ DIAGNOSTIC PRINTOUT
-	}
+//	}
 	if (en.last_segment == true) {
 		en.last_segment = false;
 		en_compute_position_error();
 	}
-
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }

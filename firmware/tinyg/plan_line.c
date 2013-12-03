@@ -61,7 +61,8 @@ static stat_t _exec_aline_segment(uint8_t correction_flag);
 static void _init_forward_diffs(float t0, float t2);
 //static float _compute_next_segment_velocity(void);
 
-/* Runtime-specific setters and getters
+/* 
+ * Runtime-specific setters and getters
  *
  * mp_get_runtime_velocity() 		- returns current velocity (aggregate)
  * mp_get_runtime_machine_position() - returns current axis position in machine coordinates
@@ -76,6 +77,15 @@ float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]
 float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
 void mp_set_runtime_work_offset(float offset[]) { copy_axis_vector(mr.gm.work_offset, offset);}
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
+
+/* 
+ * mp_get_runtime_target_steps() - for use by encoder / error correction functions
+ */
+
+void mp_get_runtime_target_steps(float target_steps[])
+{
+	ik_kinematics(mr.target, target_steps);	
+}
 
 /* 
  * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
@@ -987,11 +997,13 @@ stat_t mp_end_hold()
  *		  Builds 358 onward have only forward difference code
  */
 
+/*
 static void _exec_adjust_error(mpBuf_t *bf) 
 {
 	float pos_err;
 
-	for (uint8_t i=AXIS_X; i<AXES; i++) {
+//	for (uint8_t i=AXIS_X; i<AXES; i++) {
+	for (uint8_t i=MOTOR_1; i<MOTORS; i++) {
 		pos_err = en.en[i].position_error;
 		if (pos_err < (POS_ERROR_THRESHOLD_LOW * st_cfg.mot[i].units_per_step)) {
 			continue;
@@ -1013,6 +1025,7 @@ static void _exec_adjust_error(mpBuf_t *bf)
 		}
 	}
 }
+*/
 
 static stat_t _exec_aline(mpBuf_t *bf)
 {
@@ -1034,7 +1047,6 @@ static stat_t _exec_aline(mpBuf_t *bf)
 			mp_free_run_buffer();
 			return (STAT_NOOP);
 		}
-		_exec_adjust_error(bf);							// insert error correction here.
 		bf->move_state = MOVE_STATE_RUN;
 		mr.move_state = MOVE_STATE_HEAD;
 		mr.section_state = MOVE_STATE_NEW;
@@ -1101,7 +1113,9 @@ static stat_t _exec_aline(mpBuf_t *bf)
 	return (status);
 }
 
-/* Forward difference math explained:
+/* 
+ * Forward difference math explained:
+ *
  * 	We're using two quadratic bezier curves end-to-end, forming the concave and convex 
  *	section of the s-curve. For each half we have three points:
  *
@@ -1305,10 +1319,10 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	travel[AXIS_C] = mr.gm.target[AXIS_C] - mr.position[AXIS_C];
 
 	// prep the segment for the steppers and adjust the variables for the next iteration
-//	ik_kinematics(travel, vector, mr.microseconds);		// handy refactoring for easier debugging
+//	ik_kinematics(travel, vector);						// handy vector for easier debugging
 //	if (st_prep_line(vector, mr.microseconds) == STAT_OK) {
 
-	ik_kinematics(travel, steps, mr.microseconds);
+	ik_kinematics(travel, steps);
 	if (st_prep_line(steps, mr.microseconds, mr.target, &mr.target_new) == STAT_OK) {
 //		copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
 		mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	

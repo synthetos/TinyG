@@ -27,6 +27,7 @@
 
 #include "tinyg.h"
 #include "config.h"
+#include "planner.h"
 #include "stepper.h"
 #include "encoder.h"
 #include "canonical_machine.h"
@@ -94,26 +95,30 @@ void en_reset_encoders()
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
 		en.en[i].target_steps = 0;
-		en.en[i].target_steps_next = 0;
+//		en.en[i].target_steps_next = 0;
 		en.en[i].position_steps = cm.gmx.position[i] * st_cfg.mot[i].steps_per_unit;
 		en.en[i].position_steps_float = en.en[i].position_steps;	// initial approximation
+		en.target_steps_next[i] = en.en[i].position_steps;
 	}
 }
-
+/*
 void en_update_target(const float target[])
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
 		en.en[i].target_steps_next = target[i] * st_cfg.mot[i].steps_per_unit;	// convert target to steps
 	}
 }
-
+*/
 void en_compute_position_error()
 {
 	en.last_segment = false;	// reset the calling condition (could do an interlock here, but not really needed)
+	mp_get_runtime_target_steps(en.target_steps_next);
+
 	for (uint8_t i=0; i<MOTORS; i++) {
 		en.en[i].position_error_steps = en.en[i].position_steps - en.en[i].target_steps;
 		en.en[i].position_error = (float)en.en[i].position_error_steps * st_cfg.mot[i].units_per_step;
-		en.en[i].target_steps = en.en[i].target_steps_next;	// transfer staged target to working target
+//		en.en[i].target_steps = (int32_t)en.target_steps_next[i];		// transfer staged target to working target
+		en.en[i].target_steps = (int32_t)round(en.target_steps_next[i]);// transfer staged target to working target
 	}
 }
 

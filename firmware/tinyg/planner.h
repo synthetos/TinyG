@@ -278,6 +278,7 @@ float mp_get_runtime_work_position(uint8_t axis);
 float mp_get_runtime_absolute_position(uint8_t axis);
 void mp_set_runtime_work_offset(float offset[]);
 void mp_zero_segment_velocity(void);
+void mp_get_runtime_target_steps(float target_steps[]);
 uint8_t mp_get_runtime_busy(void);
 
 #ifdef __DEBUG

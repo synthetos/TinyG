@@ -35,7 +35,7 @@
 extern "C"{
 #endif
 
-//static void _inverse_kinematics(double travel[], double joint[], double microseconds);
+//static void _inverse_kinematics(float travel[], float joint[]);
 
 /*
  * ik_kinematics() - wrapper routine for inverse kinematics
@@ -49,12 +49,12 @@ extern "C"{
  *	as floats and converted to fixed-point binary during queue loading. See stepper.c for details.
  */
 
-void ik_kinematics(float travel[], float steps[], float microseconds)
+void ik_kinematics(float travel[], float steps[])
 {
 	float joint[AXES];
 
-//	_inverse_kinematics(travel, joint, microseconds);// you can insert inverse kinematics transformations here
-	memcpy(joint, travel, sizeof(float)*AXES);		 //...or just do a memcopy for cartesian machines
+//	_inverse_kinematics(travel, joint);			// you can insert inverse kinematics transformations here
+	memcpy(joint, travel, sizeof(float)*AXES);	//...or just do a memcopy for cartesian machines
 
 	// Map motors to axes and convert length units to steps
 	// Most of the conversion math has already been done in during config in steps_per_unit()
@@ -86,7 +86,7 @@ void ik_kinematics(float travel[], float steps[], float microseconds)
  *	time it takes to complete the mp_exec_move() function.
  */
 /*
-static void _inverse_kinematics(double travel[], double joint[], double microseconds)
+static void _inverse_kinematics(float travel[], float joint[])
 {
 	for (uint8_t i=0; i<AXES; i++) {
 		joint[i] = travel[i];
