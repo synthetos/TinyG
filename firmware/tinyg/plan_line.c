@@ -57,7 +57,8 @@ static stat_t _exec_aline(mpBuf_t *bf);
 static stat_t _exec_aline_head(void);
 static stat_t _exec_aline_body(void);
 static stat_t _exec_aline_tail(void);
-static stat_t _exec_aline_segment(uint8_t correction_flag);
+static stat_t _exec_aline_segment(void);
+//static stat_t _exec_aline_segment(uint8_t correction_flag);
 static void _init_forward_diffs(float t0, float t2);
 //static float _compute_next_segment_velocity(void);
 
@@ -1023,7 +1024,7 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.target, bf->gm.target);	// save the final target of the move
 
-		// find out where the last segment for this move is so you can error correct and tell the encoders
+		// find the last segment for this move so you can error correct and tell the encoders
 		if (mr.tail_length > 0) { 
 			mr.last_segment_region = MOVE_STATE_TAIL; 
 		} else if (mr.body_length > 0) {
@@ -1137,7 +1138,8 @@ static stat_t _exec_aline_head()
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {				// concave part of accel curve (period 1)
 		mr.segment_velocity += mr.forward_diff_1;
-		if (_exec_aline_segment(false) == STAT_OK) { 		// set up for second half
+//		if (_exec_aline_segment(false) == STAT_OK) { 		// set up for second half
+		if (_exec_aline_segment() == STAT_OK) { 			// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = MOVE_STATE_RUN2;
 
@@ -1152,7 +1154,8 @@ static stat_t _exec_aline_head()
 	if (mr.section_state == MOVE_STATE_RUN2) {				// convex part of accel curve (period 2)
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
-		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
+//		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
+		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
 			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) return(STAT_OK); // ends the move
 			mr.move_state = MOVE_STATE_BODY;
 			mr.section_state = MOVE_STATE_NEW;
@@ -1183,10 +1186,11 @@ static stat_t _exec_aline_body()
 			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
 		}
 		
-		mr.section_state = MOVE_STATE_RUN2;
+		mr.section_state = MOVE_STATE_RUN2;					// uses RUN2 so last segment detection works
 	}
 	if (mr.section_state == MOVE_STATE_RUN2) {				// straight part (period 3)
-		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
+//		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
+		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
 			if (fp_ZERO(mr.tail_length)) return(STAT_OK);	// ends the move
 			mr.move_state = MOVE_STATE_TAIL;
 			mr.section_state = MOVE_STATE_NEW;
@@ -1215,7 +1219,8 @@ static stat_t _exec_aline_tail()
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {				// convex part (period 4)
 		mr.segment_velocity += mr.forward_diff_1;
-		if (_exec_aline_segment(false) == STAT_OK) {		// set up for second half
+//		if (_exec_aline_segment(false) == STAT_OK) {		// set up for second half
+		if (_exec_aline_segment() == STAT_OK) {				// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = MOVE_STATE_RUN2;
 
@@ -1230,7 +1235,8 @@ static stat_t _exec_aline_tail()
 	if (mr.section_state == MOVE_STATE_RUN2) {				// concave part (period 5)
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
-		return (_exec_aline_segment(true)); 				// ends the move or continues EAGAIN
+//		return (_exec_aline_segment(true)); 				// ends the move or continues EAGAIN
+		return (_exec_aline_segment()); 					// ends the move or continues EAGAIN
 	}
 	return(STAT_EAGAIN);									// should never get here
 }
@@ -1238,7 +1244,8 @@ static stat_t _exec_aline_tail()
 /*
  * _exec_aline_segment() - segment runner helper
  */
-static stat_t _exec_aline_segment(uint8_t correction_flag)
+//static stat_t _exec_aline_segment(uint8_t correction_flag)
+static stat_t _exec_aline_segment()
 {
 	float travel[AXES];
 	float steps[MOTORS];
@@ -1256,13 +1263,13 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	}
 */
 	// flag the last segment of the move for sampling the encoder
-
+/*
 	if ((mr.segment_count == 1) && 					// the count is the last segment...
 		(mr.section_state = MOVE_STATE_RUN2) && 	//...of the second half
 		(mr.move_state == mr.last_segment_region)) {//...of the last move region (head/body/tail)
 		last_segment_flag = true;					// flag this as the last segment
 	}
-
+*/
 	// Multiply computed length by the unit vector to get the contribution for each axis. 
 	// Set the target in absolute coords and compute relative steps.
 	// Don't do the endpoint correction if you are going into a hold
@@ -1270,11 +1277,19 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 //	if ((correction_flag == true) && (mr.segment_count == 1) && 
 //		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
 
-	if ((correction_flag == true) && 
-		(mr.segment_count == 1) && 					// the count is the last segment
-		(mr.section_state = MOVE_STATE_RUN2) && 	// ...of the second half
-		(cm.motion_state == MOTION_RUN) && 			// ...and not going into a hold 
-		(cm.cycle_state == CYCLE_MACHINING)) {		// ...and don't correct special cycles (homing, probing, jogging)
+//	if ((correction_flag == true) && 
+//		(mr.segment_count == 1) && 					// the count is the last segment
+//		(mr.section_state = MOVE_STATE_RUN2) && 	// ...of the second half
+//		(cm.motion_state == MOTION_RUN) && 			// ...and not going into a hold 
+//		(cm.cycle_state == CYCLE_MACHINING)) {		// ...and don't correct special cycles (homing, probing, jogging)
+
+	if ((mr.segment_count == 1) && 					// if this is the last segment...
+		(mr.move_state == mr.last_segment_region) &&//...of the last move region (head/body/tail)
+		(mr.section_state = MOVE_STATE_RUN2) && 	//...of the second half
+		(cm.motion_state == MOTION_RUN) && 			// ..and not going into a hold 
+		(cm.cycle_state == CYCLE_MACHINING)) {		// ..and isn't a special cycles (homing, probing, jogging)
+
+		last_segment_flag = true;					// flag this as the last segment
 
 		mr.gm.target[AXIS_X] = mr.target[AXIS_X];	// correct any accumulated rounding errors in last segment
 		mr.gm.target[AXIS_Y] = mr.target[AXIS_Y];
