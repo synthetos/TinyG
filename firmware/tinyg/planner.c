@@ -171,9 +171,9 @@ stat_t mp_exec_move()
 	// Manage cycle and motion state transitions
 	// Cycle auto-start for lines only
 	if (bf->move_type == MOVE_TYPE_ALINE) {
-		if (cm.cycle_state == CYCLE_OFF) {
-			cm_cycle_start();
-		}
+//		if (cm.cycle_state == CYCLE_OFF) {	// testing if this can be removed
+//			cm_cycle_start();				// this should already be taken care of by G0,G1,G2,G3
+//		}
 		if (cm.motion_state == MOTION_STOP) cm_set_motion_state(MOTION_RUN);
 	}
 	if (bf->bf_func != NULL) { return (bf->bf_func(bf));} 	// run the move callback in the planner buffer
