@@ -345,6 +345,7 @@ typedef struct stRunMotor { 		// one per controlled motor
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
+	uint8_t last_segment_flagged;	// flag from PREP to use during STEP
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t mot[MOTORS];		// runtime motor structures
@@ -366,6 +367,8 @@ typedef struct stPrepSingleton {
 	volatile uint8_t exec_state;	// move execution state 
 	uint8_t move_type;				// move type
 	uint8_t reset_steppers;			// reset steppers for a new cycle
+	uint8_t last_segment_flagged;	// flag from EXEC to transfer to LOAD
+	uint8_t last_segment_done;		// set by stepper ISR when last segment has finished
 
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
@@ -392,7 +395,7 @@ stat_t st_motor_power_callback(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(double microseconds);
-stat_t st_prep_line(float steps[], float microseconds, uint8_t *last_segment_flag);
+stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment_flagged);
 
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);

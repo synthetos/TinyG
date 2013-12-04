@@ -196,7 +196,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	uint8_t move_state;				// state of the overall move
 	uint8_t section_state;			// state within a move section
 	uint8_t last_segment_region;	// which region contains the last segment?
-	uint8_t last_segment_flag;		// flag indicating this is the last segment of the move
+//	uint8_t last_segment_flagged;	// flag indicating this is the last segment of the move
 	
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float position[AXES];			// current move position

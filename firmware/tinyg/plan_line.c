@@ -171,7 +171,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	// finish up the current block variables
 	if (cm_get_path_control(MODEL) != PATH_EXACT_STOP) { 	// exact stop cases already zeroed
 		bf->replannable = true;
-		exact_stop = 8675309;								// an arbitrarily large floating point number (Jenny)
+		exact_stop = 8675309;								// an arbitrarily large floating point number
 	}
 	bf->cruise_vmax = bf->length / bf->gm.move_time;		// target velocity requested
 	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);
@@ -1242,6 +1242,7 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 {
 	float travel[AXES];
 	float steps[MOTORS];
+	uint8_t last_segment_flag = false;		// transient flag for last segment of the move
 
 /* The below is a re-arranged and loop unrolled version of this:
 	for (uint8_t i=0; i < AXES; i++) {	// don't do the error correction if you are going into a hold
@@ -1283,12 +1284,12 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	travel[AXIS_C] = mr.gm.target[AXIS_C] - mr.position[AXIS_C];
 
 	if ((mr.segment_count == 1) && (mr.move_state == mr.last_segment_region)) {
-		mr.last_segment_flag = true;
+		last_segment_flag = true;
 	}
 
 	// prep the segment for the steppers and adjust the variables for the next iteration
 	ik_kinematics(travel, steps);
-	if (st_prep_line(steps, mr.microseconds, &mr.last_segment_flag) == STAT_OK) {
+	if (st_prep_line(steps, mr.microseconds, last_segment_flag) == STAT_OK) {
 //		copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
 		mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	
 		mr.position[AXIS_Y] = mr.gm.target[AXIS_Y];

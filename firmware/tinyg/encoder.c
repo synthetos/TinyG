@@ -75,18 +75,19 @@ stat_t en_assertions()
 
 void en_reset_encoders()
 {
+	mp_get_runtime_target_steps(en.target_steps_next);	// read initial target
+
 	for (uint8_t i=0; i<MOTORS; i++) {
-		en.en[i].target_steps = 0;
+		en.en[i].target_steps = (int32_t)round(en.target_steps_next[i]);// transfer initial target to working target
 		en.en[i].position_steps = cm.gmx.position[i] * st_cfg.mot[i].steps_per_unit;
-		en.en[i].position_steps_float = en.en[i].position_steps;	// initial approximation
-		en.target_steps_next[i] = en.en[i].position_steps;
+		en.en[i].position_steps_advisory = en.en[i].position_steps;		// initial approximation
 	}
 }
 
 /* 
- * en_compute_position_error()
+ * en_sample_position_error()
  *
- *	en_compute_position_error() should be called by PREP whenever the last_segment 
+ *	en_sample_position_error() should be called by PREP whenever the last_segment 
  *	flag is set (by the stepper ISR). The position results will be stable for the duration
  *	of the segment (5ms) immediately following the last_segment flag. It does a few things:
  *
@@ -98,34 +99,33 @@ void en_reset_encoders()
  *	  as it relates to the Axis (not the Motor) and assumes a cartesian machine. Error correction
  *	  should always be performed using position_error_steps, not the position_error_float.
  *
- *	  The error term remains stable until the next time en_compute_position_error() is called
+ *	  The error term remains stable until the next time en_sample_position_error() is called
  */
 
-void en_compute_position_error()
+void en_sample_position_error()
 {
 //	if (en.last_segment == false) return;	// Interlock. Should not run if flag is false.
-//	en.last_segment = false;				// reset the calling condition
 
 	mp_get_runtime_target_steps(en.target_steps_next);
 
 	for (uint8_t i=0; i<MOTORS; i++) {
 		en.en[i].position_error_steps = en.en[i].position_steps - en.en[i].target_steps;
-		en.en[i].position_error_float = (float)en.en[i].position_error_steps * st_cfg.mot[i].units_per_step;
+		en.en[i].position_error_advisory = (float)en.en[i].position_error_steps * st_cfg.mot[i].units_per_step;
 		en.en[i].target_steps = (int32_t)round(en.target_steps_next[i]);// transfer staged target to working target
 	}
 }
 
 /*
  * DIAGNOSTICS
- * en_update_float_steps() - add new incoming steps. Handy diagnostic. It's not used for anything else.
+ * en_update_position_steps_advisory() - add new incoming steps. Handy diagnostic. It's not used for anything else.
  * en_print_encoder()
  * en_print_encoders()
  */
 
-void en_update_float_steps(const float steps[])
+void en_update_position_steps_advisory(const float steps[])
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
-		en.en[i].position_steps_float += steps[i];
+		en.en[i].position_steps_advisory += steps[i];
 	}
 }
 
@@ -135,11 +135,11 @@ void en_print_encoder(const uint8_t motor)
 
 	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
 		motor+1,
-		(double)en.en[motor].position_steps_float,
+		(double)en.en[motor].position_steps_advisory,
 		en.en[motor].position_steps, 
 		en.en[motor].target_steps,
 		en.en[motor].position_error_steps,
-		(double)en.en[motor].position_error_float);
+		(double)en.en[motor].position_error_advisory);
 }
 
 void en_print_encoders()
@@ -149,11 +149,11 @@ void en_print_encoders()
 	for (uint8_t i=0; i<MOTORS; i++) {
 		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
 			i+1,
-			(double)en.en[i].position_steps_float,
+			(double)en.en[i].position_steps_advisory,
 			en.en[i].position_steps, 
 			en.en[i].target_steps,
 			en.en[i].position_error_steps,
-			(double)en.en[i].position_error_float);
+			(double)en.en[i].position_error_advisory);
 	}
 }
 

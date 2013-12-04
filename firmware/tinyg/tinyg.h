@@ -50,7 +50,7 @@
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
 #define TINYG_HARDWARE_VERSION_MAX (TINYG_HARDWARE_VERSION)
 
-#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
+//#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
 
 /****** COMPILE-TIME SETTINGS ******/
 

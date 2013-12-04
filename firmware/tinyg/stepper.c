@@ -309,6 +309,10 @@ ISR(TIMER_DDA_ISR_vect)
 
 	if (--st_run.dda_ticks_downcount != 0) return;
 
+	if (st_run.last_segment_flagged == true) {
+		st_pre.last_segment_done = true;
+	}
+
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// disable DDA timer
 	_load_move();										// load the next move
 }
@@ -392,11 +396,12 @@ static void _load_move()
 
 		//**** initializations and state management ****
 
-		if (st_pre.reset_steppers == true) {			// setup direction bits and initial accumulator value
+		st_run.last_segment_flagged = st_pre.last_segment_flagged;	// transfer flag state
+		if (st_pre.reset_steppers == true) {						// setup direction bits and initial accumulator value
 			st_pre.reset_steppers = false;
 			for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 				st_pre.mot[motor].direction_change = true;
-				st_run.mot[motor].substep_accumulator = 0; // will become max negative during per-motor setup;
+				st_run.mot[motor].substep_accumulator = 0; 			// will become max negative during per-motor setup;
 			}
 		}
 
@@ -547,7 +552,7 @@ static void _load_move()
  *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
  */
 
-stat_t st_prep_line(float steps[], float microseconds, uint8_t *last_segment_flag)
+stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment_flagged)
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);
@@ -563,10 +568,13 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t *last_segment_fla
 	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
 
-	// encoder sequencing / processing. See encoder.h for details
-	en_update_float_steps(steps);		// add steps to the encoder as a diagnostic
-	if (*last_segment_flag == true) en_compute_position_error();
-//	if (en.last_segment == true) en_compute_position_error();
+	// last segment flags and encoder processing. See encoder.h for details
+	en_update_position_steps_advisory(steps);			// add steps to encoder as a diagnostic
+	st_pre.last_segment_flagged = last_segment_flagged;	// transfer flag from EXEC to LOAD
+	if (st_pre.last_segment_done == true) {				// catch flag from STEP
+		st_pre.last_segment_done = false;
+		en_sample_position_error();						// take a sample for use in correction below
+	}
 
 	// setup motor parameters
 
@@ -591,14 +599,15 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t *last_segment_fla
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 		// error term processing - try positive errors first
-		if (*last_segment_flag == true) {
+/*
+		if (st_pre.last_segment_done == true) {
 			if (en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
 				steps[i] -= max(0, en.en[i].position_error_steps); // try to remove some steps
 			} else if (en.en[i].position_error_steps < -ERROR_CORRECTION_THRESHOLD) {
 				steps[i] += en.en[i].position_error_steps; 		   // add some steps
 			}
 		}
-
+*/
 		// Compute substeb increment. The accumulator must be *exactly* the incoming 
 		// fractional steps times the substep multipler or positional drift will occur. 
 		// Rounding is performed to eliminate a negative bias in the int32 conversion 
@@ -606,8 +615,7 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t *last_segment_fla
 
 		st_pre.mot[i].substep_increment = round(fabs(steps[i] * DDA_SUBSTEPS));
 	}
-	*last_segment_flag = false;	// reset the flag in the calling structure
-//	en.last_segment = false;
+	st_pre.last_segment_done = false;	// reset the segment done flag
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }

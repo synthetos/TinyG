@@ -100,13 +100,12 @@ typedef struct enEncoder { 			// one real or virtual encoder per controlled moto
 	int32_t target_steps;			// target position in steps
 	int32_t position_steps;			// counted position	in steps
 	int32_t position_error_steps;	// step error between target and position
-	float position_error_float;		// ADVISORY ONLY: error between target and position in mm
-	float position_steps_float;		// ADVISORY ONLY: incoming floating point steps
+	float position_error_advisory;	// ADVISORY ONLY: error between target and position in mm
+	float position_steps_advisory;	// ADVISORY ONLY: incoming floating point steps
 } enEncoder_t;
 
 typedef struct enEncoders {
 	magic_t magic_start;
-//	uint8_t last_segment;			// signal last segment finished - i.e. position is ready.
 	float target_steps_next[MOTORS];// incoming as floats, converted to int32's.		
 	enEncoder_t en[MOTORS];			// runtime encoder structures
 	magic_t magic_end;
@@ -120,8 +119,8 @@ extern enEncoders_t en;
 void encoder_init(void);
 stat_t en_assertions(void);
 void en_reset_encoders(void);
-void en_compute_position_error(void);
-void en_update_float_steps(const float steps[]);
+void en_sample_position_error(void);
+void en_update_position_steps_advisory(const float steps[]);
 void en_print_encoder(const uint8_t motor);
 void en_print_encoders(void);
 
