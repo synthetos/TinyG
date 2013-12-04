@@ -106,6 +106,7 @@ typedef struct enEncoder { 			// one real or virtual encoder per controlled moto
 
 typedef struct enEncoders {
 	magic_t magic_start;
+	float position_steps[MOTORS];	// incoming position as float steps. Convert to int32's
 	float target_steps_next[MOTORS];// incoming as floats, converted to int32's.		
 	enEncoder_t en[MOTORS];			// runtime encoder structures
 	magic_t magic_end;

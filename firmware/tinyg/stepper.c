@@ -128,17 +128,17 @@ stat_t st_assertions()
 }
 
 /*
- * st_cycle_start()
+ * st_cycle_start() - Initializes values for beginning a new cycle.
  * st_cycle_end()
  * st_clc()
  *
- * st_cycle_start() called from cm_cycle_start(). Initializes values for beginning a new cycle.
+ * st_cycle_start() is called from cm_cycle_start().  
  */
 
 void st_cycle_start(void)
 {
 	st_pre.reset_steppers = true;	// signals load phase inits
-	en_reset_encoders();
+	en_reset_encoders();			// see explanation in en_reset_encoders()
 }
 
 void st_cycle_end(void)

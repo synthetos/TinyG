@@ -30,6 +30,7 @@
 #include "planner.h"
 #include "stepper.h"
 #include "encoder.h"
+#include "kinematics.h"
 #include "canonical_machine.h"
 #include "hardware.h"
 
@@ -67,19 +68,51 @@ stat_t en_assertions()
 /* 
  * en_reset_encoders() - initialize encoder values and position
  *
- *	Call en_reset_encoder() to reset the encoders at the start of a machining cycle. 
- *	This zeros all counts and sets the position to the current machine position as 
- *	known by the Gcode model (i.e. above the planner and runtime models). This 
- *	establishes the "step grid" relative to the current machine position.
+ *	en_reset_encoder() reset the encoders at the start of a machining cycle.
+ *	This sets the position and target and zeros all step counts. Position and target
+ *	are delivered as floats in axis space (work space). These need to be converted to
+ *	integer steps in motor space (joint apsce). This establishes the "step grid" 
+ *	relative to the current machine position.
+ *
+ *	Reset is called on cycle start which can have the following cases:
+ *
+ *	  -	New cycle from G0. Position and target from Gcode model (MODEL). (canonical_machine, cm_straight_traverse()
+ *	  -	New cycle from G1. Position and target from Gcode model (MODEL). (canonical_machine, cm_straight_feed()
+ *	  -	New cycle from G2/G3. Position &target from Gcode model (MODEL). (plan_arc.c,  cm_arc_feed()
+ *
+ *	The above is also true of cycle starts called from within homing, probing, jogging or other canned cycles.
+ *
+ *	  - Cycle (re)start from feedhold. Position and target from runtime exec (RUNTIME);
+ *		(canonical_machine.c, cm_request_cycle_start() )		
+ *
+ *	  - mp_exec_move() can also perform a cycle start, but wouldn't this always be 
+ *		started by the calling G0/G1/G2/G3? Test this (planner.c, ln 175)
  */
 
-void en_reset_encoders()
+//void en_reset_encoders(GCodeState_t *model)
+void en_reset_encoders(void)
 {
-	mp_get_runtime_target_steps(en.target_steps_next);	// read initial target
+	GCodeState_t *model = MODEL;
+
+	// get position and target and transform to joint space as floats
+	if (model == MODEL) {
+		ik_kinematics(cm.gmx.position, en.position_steps);
+		ik_kinematics(model->target, en.target_steps_next);
+	} else {	// get it from the runtime
+		ik_kinematics(mr.position, en.position_steps);
+		ik_kinematics(mr.target, en.target_steps_next);
+	}
+
+//	mp_get_runtime_target_steps(en.target_steps_next);	// read initial target
+//	void mp_get_runtime_target_steps(float target_steps[]) 
+//	{ 
+//		ik_kinematics(mr.target, target_steps);
+//	} // transform to joint space
 
 	for (uint8_t i=0; i<MOTORS; i++) {
 		en.en[i].target_steps = (int32_t)round(en.target_steps_next[i]);// transfer initial target to working target
-		en.en[i].position_steps = cm.gmx.position[i] * st_cfg.mot[i].steps_per_unit;
+		en.en[i].position_steps = (int32_t)round(en.position_steps[i]);
+//		en.en[i].position_steps = cm.gmx.position[i] * st_cfg.mot[i].steps_per_unit;
 		en.en[i].position_steps_advisory = en.en[i].position_steps;		// initial approximation
 	}
 }

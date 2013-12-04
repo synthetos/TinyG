@@ -44,13 +44,13 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		403.03	// another attempt at adding in the error correction terms
+#define TINYG_FIRMWARE_BUILD   		403.04	// encoder reset and sample synchronization
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
 #define TINYG_HARDWARE_VERSION_MAX (TINYG_HARDWARE_VERSION)
 
-//#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
+#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
 
 /****** COMPILE-TIME SETTINGS ******/
 

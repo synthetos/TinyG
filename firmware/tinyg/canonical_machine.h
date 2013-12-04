@@ -28,8 +28,8 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _CANONICAL_MACHINE_H_
-#define _CANONICAL_MACHINE_H_
+#ifndef CANONICAL_MACHINE_H_ONCE
+#define CANONICAL_MACHINE_H_ONCE
 
 #ifdef __cplusplus
 extern "C"{
@@ -772,4 +772,4 @@ stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 }
 #endif
 
-#endif // _CANONICAL_MACHINE_H_
+#endif // End of include guard: CANONICAL_MACHINE_H_ONCE
