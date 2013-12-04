@@ -179,7 +179,6 @@ typedef struct mpBufferPool {	// ring buffer for sub-moves
 
 typedef struct mpMoveMasterSingleton {	// common variables for planning (move master)
 	float position[AXES];		// final move position for planning purposes
-//	float ms_in_queue;			// UNUSED - total ms of movement & dwell in planner queue
 	float prev_jerk;			// jerk values cached from previous move
 	float prev_recip_jerk;
 	float prev_cbrt_jerk;
@@ -196,8 +195,9 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	magic_t magic_start;			// magic number to test memory integrity
 	uint8_t move_state;				// state of the overall move
 	uint8_t section_state;			// state within a move section
-	uint8_t target_new;				// set true if new Gcode block. Resets encoder measurements
-
+	uint8_t last_segment_region;	// which region contains the last segment?
+	uint8_t last_segment_flag;		// flag indicating this is the last segment of the move
+	
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float position[AXES];			// current move position
 	float target[AXES];				// final target for bf (used to correct rounding errors)

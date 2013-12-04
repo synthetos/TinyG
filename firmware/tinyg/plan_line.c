@@ -65,11 +65,12 @@ static void _init_forward_diffs(float t0, float t2);
  * Runtime-specific setters and getters
  *
  * mp_get_runtime_velocity() 		- returns current velocity (aggregate)
- * mp_get_runtime_machine_position() - returns current axis position in machine coordinates
+ * mp_get_runtime_machine_position()- returns current axis position in machine coordinates
  * mp_get_runtime_work_position() 	- returns current axis position in work coordinates
  *									  that were in effect at move planning time
  * mp_set_runtime_work_offset()
  * mp_zero_segment_velocity() 		- correct velocity in last segment for reporting purposes
+ * mp_get_runtime_target_steps()	- populate target steps vector with steps transformed via inverse kinematics
  */
 
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
@@ -77,15 +78,7 @@ float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]
 float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
 void mp_set_runtime_work_offset(float offset[]) { copy_axis_vector(mr.gm.work_offset, offset);}
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
-
-/* 
- * mp_get_runtime_target_steps() - for use by encoder / error correction functions
- */
-
-void mp_get_runtime_target_steps(float target_steps[])
-{
-	ik_kinematics(mr.target, target_steps);	
-}
+void mp_get_runtime_target_steps(float target_steps[]) { ik_kinematics(mr.target, target_steps);} // transform to joint space
 
 /* 
  * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
@@ -997,36 +990,6 @@ stat_t mp_end_hold()
  *		  Builds 358 onward have only forward difference code
  */
 
-/*
-static void _exec_adjust_error(mpBuf_t *bf) 
-{
-	float pos_err;
-
-//	for (uint8_t i=AXIS_X; i<AXES; i++) {
-	for (uint8_t i=MOTOR_1; i<MOTORS; i++) {
-		pos_err = en.en[i].position_error;
-		if (pos_err < (POS_ERROR_THRESHOLD_LOW * st_cfg.mot[i].units_per_step)) {
-			continue;
-		}
-		if (pos_err < 0) {
-			bf->body_length += pos_err;
-		} else {
-			if (pos_err < bf->body_length) {
-				bf->body_length -= pos_err;
-			} else {
-				if (pos_err < bf->head_length) {
-					bf->head_length -= pos_err;
-				} else {
-					if (pos_err < bf->tail_length) {
-						bf->tail_length -= pos_err;
-					}
-				}
-			}
-		}
-	}
-}
-*/
-
 static stat_t _exec_aline(mpBuf_t *bf)
 {
 	if (bf->move_state == MOVE_STATE_OFF) { return (STAT_NOOP);} 
@@ -1059,14 +1022,15 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		mr.exit_velocity = bf->exit_velocity;
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.target, bf->gm.target);	// save the final target of the move
-		mr.target_new = true;
 
-		// perform error correction using position measurement feedback 
-//		st_movement_measured(mr.movement_measured);				// get the measurement vector
-//		for (uint8_t i=AXIS_X; i<AXES; i++) {
-//			mr.movement_computed[i] = mr.target_computed[i] - mr.position[i];
-//			mr.movement_error[i] = mr.movement_measured[i] - mr.movement_computed[i];
-//		}
+		// find out where the last segment is going to be so you can tell the encoders
+		if (mr.tail_length > 0) { 
+			mr.last_segment_region = MOVE_STATE_TAIL; 
+		} else if (mr.body_length > 0) {
+			mr.last_segment_region = MOVE_STATE_BODY;
+		} else {
+			mr.last_segment_region = MOVE_STATE_HEAD;
+		}
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -1318,12 +1282,13 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	travel[AXIS_B] = mr.gm.target[AXIS_B] - mr.position[AXIS_B];
 	travel[AXIS_C] = mr.gm.target[AXIS_C] - mr.position[AXIS_C];
 
-	// prep the segment for the steppers and adjust the variables for the next iteration
-//	ik_kinematics(travel, vector);						// handy vector for easier debugging
-//	if (st_prep_line(vector, mr.microseconds) == STAT_OK) {
+	if ((mr.segment_count == 1) && (mr.move_state == mr.last_segment_region)) {
+		mr.last_segment_flag = true;
+	}
 
+	// prep the segment for the steppers and adjust the variables for the next iteration
 	ik_kinematics(travel, steps);
-	if (st_prep_line(steps, mr.microseconds, mr.target, &mr.target_new) == STAT_OK) {
+	if (st_prep_line(steps, mr.microseconds, &mr.last_segment_flag) == STAT_OK) {
 //		copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
 		mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	
 		mr.position[AXIS_Y] = mr.gm.target[AXIS_Y];

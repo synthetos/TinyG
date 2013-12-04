@@ -309,7 +309,6 @@ ISR(TIMER_DDA_ISR_vect)
 
 	if (--st_run.dda_ticks_downcount != 0) return;
 
-	en.last_segment = true;								// signal last segment in the move (position is ready).
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// disable DDA timer
 	_load_move();										// load the next move
 }
@@ -337,8 +336,8 @@ ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
 		   	_request_load_move();
 	   	}
    	}
-	
 }
+
 /****************************************************************************************
  * Exec sequencing code - computes and prepares next load segment
  * st_request_exec_move()	- SW interrupt to request to execute a move
@@ -548,7 +547,7 @@ static void _load_move()
  *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
  */
 
-stat_t st_prep_line(float incoming_steps[], float microseconds, float target[], uint8_t *target_new)
+stat_t st_prep_line(float steps[], float microseconds, uint8_t *last_segment_flag)
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);
@@ -564,20 +563,25 @@ stat_t st_prep_line(float incoming_steps[], float microseconds, float target[], 
 	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
 
+	// encoder sequencing / processing. See encoder.h for details
+	en_update_float_steps(steps);		// add steps to the encoder as a diagnostic
+	if (*last_segment_flag == true) en_compute_position_error();
+//	if (en.last_segment == true) en_compute_position_error();
+
 	// setup motor parameters
 
 	uint8_t previous_direction;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
 		// Skip this motor if there are no new steps. Leave all values intact.
-        if (fp_ZERO(incoming_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
+        if (fp_ZERO(steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
 
 		// Direction - set the direction, compensating for polarity. 
 		// Set the step_sign which is used by the stepper IRQ to accumulate step position
 		// Detect direction changes. Needed for accumulator adjustment
 
 		previous_direction = st_pre.mot[i].direction;
-		if (incoming_steps[i] >= 0) {				// positive direction
+		if (steps[i] >= 0) {					// positive direction
 			st_pre.mot[i].direction = DIRECTION_CW ^ st_cfg.mot[i].polarity;
 			st_pre.mot[i].step_sign = 1;
 		} else {			
@@ -586,25 +590,24 @@ stat_t st_prep_line(float incoming_steps[], float microseconds, float target[], 
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
+		// error term processing - try positive errors first
+		if (*last_segment_flag == true) {
+			if (en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
+				steps[i] -= max(0, en.en[i].position_error_steps); // try to remove some steps
+			} else if (en.en[i].position_error_steps < -ERROR_CORRECTION_THRESHOLD) {
+				steps[i] += en.en[i].position_error_steps; 		   // add some steps
+			}
+		}
+
 		// Compute substeb increment. The accumulator must be *exactly* the incoming 
 		// fractional steps times the substep multipler or positional drift will occur. 
 		// Rounding is performed to eliminate a negative bias in the int32 conversion 
 		// that results in long-term negative drift. (fabs/round order doesn't matter)
 
-		st_pre.mot[i].substep_increment = round(fabs(incoming_steps[i] * DDA_SUBSTEPS));
+		st_pre.mot[i].substep_increment = round(fabs(steps[i] * DDA_SUBSTEPS));
 	}
-
-	// encoder sequencing / processing. See encoder.h for details
-	en_update_incoming_steps(incoming_steps);		// add steps to the encoder as a diagnostic
-//	if (*target_new == true) {
-//		*target_new = false;						// reset target flag in mr struct
-//		en_update_target(target);					// stage next target to encoder
-//		en_print_encoder(MOTOR_1);					// ++++++ DIAGNOSTIC PRINTOUT
-//	}
-	if (en.last_segment == true) {
-		en.last_segment = false;
-		en_compute_position_error();
-	}
+	*last_segment_flag = false;	// reset the flag in the calling structure
+//	en.last_segment = false;
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }
