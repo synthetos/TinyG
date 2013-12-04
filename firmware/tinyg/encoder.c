@@ -51,7 +51,7 @@ void encoder_init()
 	memset(&en, 0, sizeof(en));		// clear all values, pointers and status
 	en.magic_end = MAGICNUM;
 	en.magic_start = MAGICNUM;
-	en_reset_encoders();
+//	en_reset_encoders();
 }
 
 /*
