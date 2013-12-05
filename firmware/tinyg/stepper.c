@@ -111,7 +111,7 @@ void stepper_init()
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
-	st_pre.reset_steppers = true;				// setup accumulator and other values
+//	st_pre.cycle_start = true;					// setup accumulator and other values
 	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
 }
 
@@ -137,7 +137,7 @@ stat_t st_assertions()
 
 void st_cycle_start(void)
 {
-	st_pre.reset_steppers = true;	// signals load phase inits
+	st_pre.cycle_start = true;		// triggers stepper resets
 	en_reset_encoders();			// see explanation in en_reset_encoders()
 }
 
@@ -309,10 +309,6 @@ ISR(TIMER_DDA_ISR_vect)
 
 	if (--st_run.dda_ticks_downcount != 0) return;
 
-	if (st_run.last_segment_flagged == true) {
-		st_pre.last_segment_done = true;
-	}
-
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// disable DDA timer
 	_load_move();										// load the next move
 }
@@ -396,9 +392,8 @@ static void _load_move()
 
 		//**** initializations and state management ****
 
-		st_run.last_segment_flagged = st_pre.last_segment_flagged;	// transfer flag state
-		if (st_pre.reset_steppers == true) {						// setup direction bits and initial accumulator value
-			st_pre.reset_steppers = false;
+		if (st_pre.cycle_start == true) {						// setup direction bits and initial accumulator value
+			st_pre.cycle_start = false;
 			for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 				st_pre.mot[motor].direction_change = true;
 				st_run.mot[motor].substep_accumulator = 0; 			// will become max negative during per-motor setup;
@@ -552,7 +547,7 @@ static void _load_move()
  *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
  */
 
-stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment_flagged)
+stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);
@@ -567,14 +562,6 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment_flag
 	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
 	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
-
-	// last segment flags and encoder processing. See encoder.h for details
-	en_update_position_steps_advisory(steps);			// add steps to encoder as a diagnostic
-	st_pre.last_segment_flagged = last_segment_flagged;	// transfer flag from EXEC to LOAD
-	if (st_pre.last_segment_done == true) {				// catch flag from STEP
-		st_pre.last_segment_done = false;
-		en_sample_position_error();						// take a sample for use in correction below
-	}
 
 	// setup motor parameters
 
@@ -599,8 +586,9 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment_flag
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 		// error term processing - try positive errors first
+
 /*
-		if (st_pre.last_segment_done == true) {
+		if (st_pre.last_segment == true) {
 			if (en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
 				steps[i] -= max(0, en.en[i].position_error_steps); // try to remove some steps
 			} else if (en.en[i].position_error_steps < -ERROR_CORRECTION_THRESHOLD) {
@@ -615,7 +603,19 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment_flag
 
 		st_pre.mot[i].substep_increment = round(fabs(steps[i] * DDA_SUBSTEPS));
 	}
-	st_pre.last_segment_done = false;	// reset the segment done flag
+
+	// Process last segment flag and encoder. See encoder.h for details
+	// Note: last_segment flag is grabbed AFTER all processing is done so it's actually
+	// used by the next pass through PREP. This eliminates having to send the flag down 
+	// through LOAD and STEP and picking it up again here.
+
+	en_update_position_steps_advisory(steps);	// add steps to encoder as a diagnostic
+	if (st_pre.last_segment == true) {
+		st_pre.last_segment = false;
+		en_sample_position_error();				// take a sample for use in correction below
+	}
+	st_pre.last_segment = last_segment;			// capture flag so it's used next time
+
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }

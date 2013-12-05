@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		403.07	// refined detection of last segment in EXEC functions
+#define TINYG_FIRMWARE_BUILD   		403.08	// simplified last segment flag handling
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
