@@ -1265,7 +1265,7 @@ static stat_t _exec_aline_segment()
 	// flag the last segment of the move for sampling the encoder
 /*
 	if ((mr.segment_count == 1) && 					// the count is the last segment...
-		(mr.section_state = MOVE_STATE_RUN2) && 	//...of the second half
+		(mr.section_state == MOVE_STATE_RUN2) && 	//...of the second half
 		(mr.move_state == mr.last_segment_region)) {//...of the last move region (head/body/tail)
 		last_segment_flag = true;					// flag this as the last segment
 	}
@@ -1279,13 +1279,13 @@ static stat_t _exec_aline_segment()
 
 //	if ((correction_flag == true) && 
 //		(mr.segment_count == 1) && 					// the count is the last segment
-//		(mr.section_state = MOVE_STATE_RUN2) && 	// ...of the second half
+//		(mr.section_state == MOVE_STATE_RUN2) && 	// ...of the second half
 //		(cm.motion_state == MOTION_RUN) && 			// ...and not going into a hold 
 //		(cm.cycle_state == CYCLE_MACHINING)) {		// ...and don't correct special cycles (homing, probing, jogging)
 
 	if ((mr.segment_count == 1) && 					// if this is the last segment...
 		(mr.move_state == mr.last_segment_region) &&//...of the last move region (head/body/tail)
-		(mr.section_state = MOVE_STATE_RUN2) && 	//...of the second half
+		(mr.section_state == MOVE_STATE_RUN2) && 	//...of the second half
 		(cm.motion_state == MOTION_RUN) && 			// ..and not going into a hold 
 		(cm.cycle_state == CYCLE_MACHINING)) {		// ..and isn't a special cycles (homing, probing, jogging)
 

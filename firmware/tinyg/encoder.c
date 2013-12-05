@@ -164,7 +164,7 @@ void en_update_position_steps_advisory(const float steps[])
 
 void en_print_encoder(const uint8_t motor)
 {
-//	en_compute_position_error();
+//	en_sample_position_error();
 
 	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
 		motor+1,
@@ -177,7 +177,7 @@ void en_print_encoder(const uint8_t motor)
 
 void en_print_encoders()
 {
-//	en_compute_position_error();
+	en_sample_position_error();
 
 	for (uint8_t i=0; i<MOTORS; i++) {
 		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
