@@ -309,6 +309,9 @@ ISR(TIMER_DDA_ISR_vect)
 
 	if (--st_run.dda_ticks_downcount != 0) return;
 
+	if (st_run.last_segment_staged == true)
+		st_pre.last_segment_run = true;
+
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// disable DDA timer
 	_load_move();										// load the next move
 }
@@ -405,6 +408,7 @@ static void _load_move()
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		st_run.dda_ticks_X_substeps = st_pre.dda_ticks_X_substeps;
 		TIMER_DDA.PER = st_pre.dda_period;
+		st_run.last_segment_staged = st_pre.last_segment_staged;
 
 		//**** MOTOR_1 LOAD ****
 
@@ -566,12 +570,24 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
 	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
 	// - ticks_X_substeps is the maximum depth of the DDA accumulator (as a negative number)
 
+	st_pre.segment_count++;
+
 	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
 	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
 
-	en_update_position_steps_advisory(steps);					 // add steps to encoder as a diagnostic
-	if (st_pre.last_segment == true) en_sample_position_error(); // take a sample for use in correction below
+
+	// last segment processing
+	if (last_segment == true) {
+		st_pre.trap++;
+	}
+
+	st_pre.last_segment_staged = last_segment;	// set up for transfter to st_run.last_segment
+	if (st_pre.last_segment_run == true) {
+		st_pre.last_segment_run = false;
+		en_sample_position_error(); 			// take a sample for use in corrections below
+	}
+	en_update_position_steps_advisory(steps);	// add steps to encoder as a diagnostic
 
 	// setup motor parameters
 
@@ -606,7 +622,7 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
 			}
 		}
 */
-
+/*+++
 		if (st_pre.last_segment == true) {
 			if (en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
 				if (steps[i] > en.en[i].position_error_steps) {
@@ -618,6 +634,7 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
 				printf("%li",en.en[i].position_error_steps);
 			}
 		}
+*/
 /*
 		if (st_pre.last_segment == true) {
 			if (en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
@@ -643,10 +660,15 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
 	// Note: last_segment flag is grabbed AFTER all processing is done so it's actually
 	// used by the next pass through PREP. This eliminates having to send the flag down 
 	// through LOAD and STEP and picking it up again here.
-
-	if (st_pre.last_segment == true) st_pre.last_segment = false;
+/*
+	if (st_pre.last_segment == true) 			// reset the last segment flag now that you are done
+		st_pre.last_segment = false;
 	st_pre.last_segment = last_segment;			// capture flag so it's used next time
 
+	if (st_pre.last_segment == true) {
+		st_pre.trap++;
+	}
+*/	
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }

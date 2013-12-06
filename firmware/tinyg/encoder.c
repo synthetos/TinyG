@@ -144,9 +144,10 @@ void en_sample_position_error()
 	for (uint8_t i=0; i<MOTORS; i++) {
 		en.en[i].position_error_steps = en.en[i].position_steps - en.en[i].target_steps;
 		en.en[i].position_error_advisory = (float)en.en[i].position_error_steps * st_cfg.mot[i].units_per_step;
+		en_print_encoder(i);
 		en.en[i].target_steps = (int32_t)round(en.target_steps_next[i]);// transfer staged target to working target
 	}
-
+/*
 	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
 		MOTOR_2+1,
 		(double)en.en[MOTOR_2].position_steps_advisory,
@@ -162,7 +163,7 @@ void en_sample_position_error()
 		en.en[MOTOR_3].target_steps,
 		en.en[MOTOR_3].position_error_steps,
 		(double)en.en[MOTOR_3].position_error_advisory);
-
+*/
 }
 
 /*
@@ -181,8 +182,6 @@ void en_update_position_steps_advisory(const float steps[])
 
 void en_print_encoder(const uint8_t motor)
 {
-//	en_sample_position_error();
-
 	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
 		motor+1,
 		(double)en.en[motor].position_steps_advisory,
