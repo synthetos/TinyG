@@ -88,82 +88,52 @@ stat_t en_assertions()
  *		started by the calling G0/G1/G2/G3? Test this (planner.c, ln 175)
  */
 
-//void en_reset_encoders(GCodeState_t *model)
 void en_reset_encoders(void)
 {
-//	GCodeState_t *model = MODEL;
-
 	// get position and target and transform to joint space as floats
-//	if (model == MODEL) {
-		ik_kinematics(cm.gm.target, en.target_steps_next);
-		ik_kinematics(cm.gmx.position, en.position_steps);
-//		ik_kinematics(model->target, en.target_steps_next);
-//	} else {	// get it from the runtime
-//		ik_kinematics(mr.position, en.position_steps);
-//		ik_kinematics(mr.target, en.target_steps_next);
-//	}
-
-//	mp_get_runtime_target_steps(en.target_steps_next);	// read initial target
-//	void mp_get_runtime_target_steps(float target_steps[]) 
-//	{ 
-//		ik_kinematics(mr.target, target_steps);
-//	} // transform to joint space
+	ik_kinematics(cm.gm.target, en.target_steps_next);
+	ik_kinematics(cm.gmx.position, en.position_steps);
 
 	for (uint8_t i=0; i<MOTORS; i++) {
 		en.en[i].target_steps = (int32_t)round(en.target_steps_next[i]);// transfer initial target to working target
 		en.en[i].position_steps = (int32_t)round(en.position_steps[i]);
-//		en.en[i].position_steps = cm.gmx.position[i] * st_cfg.mot[i].steps_per_unit;
-		en.en[i].position_steps_advisory = en.en[i].position_steps;		// initial approximation
+		en.en[i].position_advisory = en.en[i].position_steps;		// initial approximation
 	}
 }
 
 /* 
- * en_sample_position_error()
+ * en_sample_encoders()
  *
- *	en_sample_position_error() should be called by PREP whenever the last_segment 
- *	flag is set (by the stepper ISR). The position results will be stable for the duration
- *	of the segment (5ms) immediately following the last_segment flag. It does a few things:
+ *	en_sample_encoders() should be only be called when the position steps reading has 
+ *	caught up with the target steps. This means that it must be synchronized with the 
+ *	when the last segment has completed being pulsed out by the stepper ISR. This 
+ *	synchronization is handled by the PREP routine. See explanation in encoder.h.
+ *
+ *	en_sample_encoders() does a few things:
  *
  *	- It loads the target currently in the EXEC runtime, which is one move ahead of the 
- *	  move that was just counted. This saves the target so it can be used later for 
- *	  computing the error term for the next move.
+ *	  move that was just run. This saves the target so it can be used later for computing 
+ *	  the error term for the next move.
  *
  *  - It computes the position error in steps and in MM. The MM ppsition is advisory only
  *	  as it relates to the Axis (not the Motor) and assumes a cartesian machine. Error correction
- *	  should always be performed using position_error_steps, not the position_error_float.
+ *	  should always be performed using position_error_steps, not position_error_advisory.
  *
- *	  The error term remains stable until the next time en_sample_position_error() is called
+ *	  The error terms remain stable until the next time en_sample_position_error() is called
  */
 
-void en_sample_position_error()
+void en_sample_encoders(int32_t flag)
 {
-//	if (en.last_segment == false) return;	// Interlock. Should not run if flag is false.
+	if (flag != 0) return;	// Interlock. Should not be run if anything other than 0
 
 	mp_get_runtime_target_steps(en.target_steps_next);
 
 	for (uint8_t i=0; i<MOTORS; i++) {
-		en.en[i].position_error_steps = en.en[i].position_steps - en.en[i].target_steps;
-		en.en[i].position_error_advisory = (float)en.en[i].position_error_steps * st_cfg.mot[i].units_per_step;
-		en_print_encoder(i);
+		en.en[i].error_steps = en.en[i].position_steps - en.en[i].target_steps;
+		en.en[i].error_advisory = (float)en.en[i].error_steps * st_cfg.mot[i].units_per_step;
+//		en_print_encoder(i);											//++++++ DIAGNOSTIC
 		en.en[i].target_steps = (int32_t)round(en.target_steps_next[i]);// transfer staged target to working target
 	}
-/*
-	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
-		MOTOR_2+1,
-		(double)en.en[MOTOR_2].position_steps_advisory,
-		en.en[MOTOR_2].position_steps, 
-		en.en[MOTOR_2].target_steps,
-		en.en[MOTOR_2].position_error_steps,
-		(double)en.en[MOTOR_2].position_error_advisory);
-
-	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n\n",
-		MOTOR_3+1,
-		(double)en.en[MOTOR_3].position_steps_advisory,
-		en.en[MOTOR_3].position_steps, 
-		en.en[MOTOR_3].target_steps,
-		en.en[MOTOR_3].position_error_steps,
-		(double)en.en[MOTOR_3].position_error_advisory);
-*/
 }
 
 /*
@@ -176,7 +146,7 @@ void en_sample_position_error()
 void en_update_position_steps_advisory(const float steps[])
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
-		en.en[i].position_steps_advisory += steps[i];
+		en.en[i].position_advisory += steps[i];
 	}
 }
 
@@ -184,25 +154,25 @@ void en_print_encoder(const uint8_t motor)
 {
 	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
 		motor+1,
-		(double)en.en[motor].position_steps_advisory,
+		(double)en.en[motor].position_advisory,
 		en.en[motor].position_steps, 
 		en.en[motor].target_steps,
-		en.en[motor].position_error_steps,
-		(double)en.en[motor].position_error_advisory);
+		en.en[motor].error_steps,
+		(double)en.en[motor].error_advisory);
 }
 
 void en_print_encoders()
 {
-	en_sample_position_error();
+	en_sample_encoders(0);
 
 	for (uint8_t i=0; i<MOTORS; i++) {
 		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
 			i+1,
-			(double)en.en[i].position_steps_advisory,
+			(double)en.en[i].position_advisory,
 			en.en[i].position_steps, 
 			en.en[i].target_steps,
-			en.en[i].position_error_steps,
-			(double)en.en[i].position_error_advisory);
+			en.en[i].error_steps,
+			(double)en.en[i].error_advisory);
 	}
 }
 

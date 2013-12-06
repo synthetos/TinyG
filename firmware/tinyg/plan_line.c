@@ -1251,37 +1251,10 @@ static stat_t _exec_aline_segment()
 	float steps[MOTORS];
 	uint8_t last_segment_flag = false;		// transient flag for last segment of the move
 
-/* The below is a re-arranged and loop unrolled version of this:
-	for (uint8_t i=0; i < AXES; i++) {	// don't do the error correction if you are going into a hold
-		if ((correction_flag == true) && (mr.segment_count == 1) && 
-			(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-			mr.gm.target[i] = mr.target_computed[i];	// rounding error correction for last segment
-		} else {
-			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * mr.segment_velocity * mr.segment_move_time);
-		}
-		travel[i] = mr.gm.target[i] - mr.position[i];
-	}
-*/
 	// flag the last segment of the move for sampling the encoder
-/*
-	if ((mr.segment_count == 1) && 					// the count is the last segment...
-		(mr.section_state == MOVE_STATE_RUN2) && 	//...of the second half
-		(mr.move_state == mr.last_segment_region)) {//...of the last move region (head/body/tail)
-		last_segment_flag = true;					// flag this as the last segment
-	}
-*/
 	// Multiply computed length by the unit vector to get the contribution for each axis. 
 	// Set the target in absolute coords and compute relative steps.
 	// Don't do the endpoint correction if you are going into a hold
-
-//	if ((correction_flag == true) && (mr.segment_count == 1) && 
-//		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-
-//	if ((correction_flag == true) && 
-//		(mr.segment_count == 1) && 					// the count is the last segment
-//		(mr.section_state == MOVE_STATE_RUN2) && 	// ...of the second half
-//		(cm.motion_state == MOTION_RUN) && 			// ...and not going into a hold 
-//		(cm.cycle_state == CYCLE_MACHINING)) {		// ...and don't correct special cycles (homing, probing, jogging)
 
 	if ((mr.segment_count == 1) && 					// if this is the last segment...
 		(mr.move_state == mr.last_segment_region) &&//...of the last move region (head/body/tail)

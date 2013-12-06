@@ -95,13 +95,13 @@
 /**** Structures ****/
 
 typedef struct enEncoder { 			// one real or virtual encoder per controlled motor
-	int8_t step_sign;				// set to +1 or -1
+	int8_t  step_sign;				// set to +1 or -1
 	int16_t steps_run;				// steps counted during stepper interrupt
 	int32_t target_steps;			// target position in steps
 	int32_t position_steps;			// counted position	in steps
-	float position_steps_advisory;	// ADVISORY ONLY: incoming floating point steps
-	int32_t position_error_steps;	// step error between target and position
-	float position_error_advisory;	// ADVISORY ONLY: error between target and position in mm
+	float   position_advisory;		// ADVISORY ONLY: incoming floating point steps
+	int32_t error_steps;			// step error between target and position
+	float   error_advisory;			// ADVISORY ONLY: error between target and position in mm
 } enEncoder_t;
 
 typedef struct enEncoders {
@@ -120,7 +120,7 @@ extern enEncoders_t en;
 void encoder_init(void);
 stat_t en_assertions(void);
 void en_reset_encoders(void);
-void en_sample_position_error(void);
+void en_sample_encoders(int32_t flag);
 void en_update_position_steps_advisory(const float steps[]);
 void en_print_encoder(const uint8_t motor);
 void en_print_encoders(void);
