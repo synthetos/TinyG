@@ -51,7 +51,6 @@ void encoder_init()
 	memset(&en, 0, sizeof(en));		// clear all values, pointers and status
 	en.magic_end = MAGICNUM;
 	en.magic_start = MAGICNUM;
-//	en_reset_encoders();
 }
 
 /*
@@ -92,16 +91,17 @@ stat_t en_assertions()
 //void en_reset_encoders(GCodeState_t *model)
 void en_reset_encoders(void)
 {
-	GCodeState_t *model = MODEL;
+//	GCodeState_t *model = MODEL;
 
 	// get position and target and transform to joint space as floats
-	if (model == MODEL) {
+//	if (model == MODEL) {
+		ik_kinematics(cm.gm.target, en.target_steps_next);
 		ik_kinematics(cm.gmx.position, en.position_steps);
-		ik_kinematics(model->target, en.target_steps_next);
-	} else {	// get it from the runtime
-		ik_kinematics(mr.position, en.position_steps);
-		ik_kinematics(mr.target, en.target_steps_next);
-	}
+//		ik_kinematics(model->target, en.target_steps_next);
+//	} else {	// get it from the runtime
+//		ik_kinematics(mr.position, en.position_steps);
+//		ik_kinematics(mr.target, en.target_steps_next);
+//	}
 
 //	mp_get_runtime_target_steps(en.target_steps_next);	// read initial target
 //	void mp_get_runtime_target_steps(float target_steps[]) 
@@ -146,6 +146,23 @@ void en_sample_position_error()
 		en.en[i].position_error_advisory = (float)en.en[i].position_error_steps * st_cfg.mot[i].units_per_step;
 		en.en[i].target_steps = (int32_t)round(en.target_steps_next[i]);// transfer staged target to working target
 	}
+
+	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
+		MOTOR_2+1,
+		(double)en.en[MOTOR_2].position_steps_advisory,
+		en.en[MOTOR_2].position_steps, 
+		en.en[MOTOR_2].target_steps,
+		en.en[MOTOR_2].position_error_steps,
+		(double)en.en[MOTOR_2].position_error_advisory);
+
+	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n\n",
+		MOTOR_3+1,
+		(double)en.en[MOTOR_3].position_steps_advisory,
+		en.en[MOTOR_3].position_steps, 
+		en.en[MOTOR_3].target_steps,
+		en.en[MOTOR_3].position_error_steps,
+		(double)en.en[MOTOR_3].position_error_advisory);
+
 }
 
 /*

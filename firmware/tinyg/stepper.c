@@ -545,6 +545,13 @@ static void _load_move()
  * NOTE:  Many of the expressions are sensitive to casting and execution order to avoid long-term 
  *		  accuracy errors due to floating point round off. One earlier failed attempt was:
  *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
+ *
+ * NOTE:  The handling of the last_segment flag is a bit squirrely. If last_segment is true 
+ *		  in the input args then st_pre.last_segment is set at the END of that prep call.
+ *		  On the NEXT prep call st_pre.last_segment is acted on and reset. This synchronizes
+ *		  the prep with the LOAD and STEP that actually delivered the last segment. If the 
+ *		  last_segment is indeed the last segment of the moves in the planner the final prep 
+ *		  will never be called - but this is OK as no more correction is required or possible.
  */
 
 stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
@@ -562,6 +569,9 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
 	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
 	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
+
+	en_update_position_steps_advisory(steps);					 // add steps to encoder as a diagnostic
+	if (st_pre.last_segment == true) en_sample_position_error(); // take a sample for use in correction below
 
 	// setup motor parameters
 
@@ -596,6 +606,31 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
 			}
 		}
 */
+
+		if (st_pre.last_segment == true) {
+			if (en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
+				if (steps[i] > en.en[i].position_error_steps) {
+					steps[i] -= en.en[i].position_error_steps;		// remove some steps
+					printf("%li",en.en[i].position_error_steps);
+				}
+			} else if (-en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
+				steps[i] -= en.en[i].position_error_steps;			// add some steps
+				printf("%li",en.en[i].position_error_steps);
+			}
+		}
+/*
+		if (st_pre.last_segment == true) {
+			if (en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
+				if (steps[i] > ERROR_CORRECTION_THRESHOLD) {
+					steps[i] -= 1;									// remove a step
+					printf("-");
+				}
+			} else if (-en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
+				steps[i] += 1;
+				printf("+");
+			}
+		}
+*/
 		// Compute substeb increment. The accumulator must be *exactly* the incoming 
 		// fractional steps times the substep multipler or positional drift will occur. 
 		// Rounding is performed to eliminate a negative bias in the int32 conversion 
@@ -609,11 +644,7 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
 	// used by the next pass through PREP. This eliminates having to send the flag down 
 	// through LOAD and STEP and picking it up again here.
 
-	en_update_position_steps_advisory(steps);	// add steps to encoder as a diagnostic
-	if (st_pre.last_segment == true) {
-		st_pre.last_segment = false;
-		en_sample_position_error();				// take a sample for use in correction below
-	}
+	if (st_pre.last_segment == true) st_pre.last_segment = false;
 	st_pre.last_segment = last_segment;			// capture flag so it's used next time
 
 	st_pre.move_type = MOVE_TYPE_ALINE;

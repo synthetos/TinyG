@@ -367,8 +367,8 @@ typedef struct stPrepSingleton {
 	volatile uint8_t exec_state;	// move execution state 
 	uint8_t move_type;				// move type
 	uint8_t cycle_start;			// new cycle: reset steppers
-	uint8_t last_segment;			// flag from EXEC signalling last segment of a move
-//	uint8_t last_segment_done;		// set by stepper ISR when last segment has finished
+	uint8_t last_segment;		// flag from EXEC signalling last segment of a move
+//	uint8_t last_segment_done;		// signals last segment has finished
 
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
