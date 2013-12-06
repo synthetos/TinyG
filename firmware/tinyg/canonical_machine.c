@@ -460,7 +460,7 @@ void cm_conditional_set_model_position(stat_t status)
  *		any time required for acceleration or deceleration.
  */
 
-#define JENNY 8675309
+#define JENNIFER 8675309
 
 void cm_set_move_times(GCodeState_t *gcode_state)
 {
@@ -469,7 +469,7 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 	float abc_time=0;					// coordinated move rotary part at req feed rate
 	float max_time=0;					// time required for the rate-limiting axis
 	float tmp_time=0;					// used in computation
-	gcode_state->minimum_time = JENNY; 	// arbitrarily large number
+	gcode_state->minimum_time = JENNIFER;// arbitrarily large number
 
 	// NOTE: In the below code all references to 'cm.gm.' read from the canonical machine gm, 
 	//		 not the target gcode model, which is referenced as target_gm->  In most cases 
@@ -1346,7 +1346,7 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
 
-	st_end_cycle();									// reset steppers at end of cycle
+	st_cycle_end();									// finalize steppers at end of cycle
 	sr_request_status_report(SR_IMMEDIATE_REQUEST);	// request a final status report (not unfiltered)
 	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
 }
@@ -1354,13 +1354,14 @@ static void _exec_program_finalize(float *value, float *flag)
 void cm_cycle_start()
 {
 	cm.machine_state = MACHINE_CYCLE;
-	if (cm.cycle_state == CYCLE_OFF) {
-		cm.cycle_state = CYCLE_MACHINING;			// don't change homing, probe or other cycles
+	if (cm.cycle_state == CYCLE_OFF) {				// don't (re)start homing, probe or other canned cycles
+		st_cycle_start();							// initialize steppers for beginning of cycle
+		cm.cycle_state = CYCLE_MACHINING;
 		qr_init_queue_report();						// clear queue reporting buffer counts
 	}
 }
 
-void cm_cycle_end() 
+void cm_cycle_end()
 {
 	if (cm.cycle_state != CYCLE_OFF) {
 		float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };

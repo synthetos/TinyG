@@ -119,8 +119,8 @@ uint32_t SysTickTimer_getValue(void);
 #endif
 
 #ifndef EPSILON
-#define EPSILON		((float)0.00001)		// allowable rounding error for floats
-//#define EPSILON 	((float)0.000001)		// allowable rounding error for floats
+//#define EPSILON		((float)0.00001)		// allowable rounding error for floats
+#define EPSILON 	((float)0.000001)		// allowable rounding error for floats
 #endif
 
 #ifndef fp_EQ

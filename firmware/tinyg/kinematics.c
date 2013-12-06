@@ -35,7 +35,7 @@
 extern "C"{
 #endif
 
-//static void _inverse_kinematics(double travel[], double joint[], double microseconds);
+//static void _inverse_kinematics(float travel[], float joint[]);
 
 /*
  * ik_kinematics() - wrapper routine for inverse kinematics
@@ -49,28 +49,28 @@ extern "C"{
  *	as floats and converted to fixed-point binary during queue loading. See stepper.c for details.
  */
 
-void ik_kinematics(double travel[], double steps[], double microseconds)
+void ik_kinematics(float travel[], float steps[])
 {
 	float joint[AXES];
 
-//	_inverse_kinematics(travel, joint, microseconds);// you can insert inverse kinematics transformations here
-	memcpy(joint, travel, sizeof(double)*AXES);		 //...or just do a memcopy for cartesian machines
+//	_inverse_kinematics(travel, joint);			// you can insert inverse kinematics transformations here
+	memcpy(joint, travel, sizeof(float)*AXES);	//...or just do a memcopy for cartesian machines
 
 	// Map motors to axes and convert length units to steps
 	// Most of the conversion math has already been done in during config in steps_per_unit()
 	// which takes axis travel, step angle and microsteps into account.
 	for (uint8_t axis=0; axis<AXES; axis++) {
 		if (cm.a[axis].axis_mode == AXIS_INHIBITED) { joint[axis] = 0;}
-		if (st.m[MOTOR_1].motor_map == axis) { steps[MOTOR_1] = joint[axis] * st.m[MOTOR_1].steps_per_unit;}
-		if (st.m[MOTOR_2].motor_map == axis) { steps[MOTOR_2] = joint[axis] * st.m[MOTOR_2].steps_per_unit;}
-		if (st.m[MOTOR_3].motor_map == axis) { steps[MOTOR_3] = joint[axis] * st.m[MOTOR_3].steps_per_unit;}
-		if (st.m[MOTOR_4].motor_map == axis) { steps[MOTOR_4] = joint[axis] * st.m[MOTOR_4].steps_per_unit;}
-	//	if (st.m[MOTOR_5].motor_map == axis) { steps[MOTOR_5] = joint[axis] * st.m[MOTOR_5].steps_per_unit;}
-	//	if (st.m[MOTOR_6].motor_map == axis) { steps[MOTOR_6] = joint[axis] * st.m[MOTOR_6].steps_per_unit;}
+		if (st_cfg.mot[MOTOR_1].motor_map == axis) { steps[MOTOR_1] = joint[axis] * st_cfg.mot[MOTOR_1].steps_per_unit;}
+		if (st_cfg.mot[MOTOR_2].motor_map == axis) { steps[MOTOR_2] = joint[axis] * st_cfg.mot[MOTOR_2].steps_per_unit;}
+		if (st_cfg.mot[MOTOR_3].motor_map == axis) { steps[MOTOR_3] = joint[axis] * st_cfg.mot[MOTOR_3].steps_per_unit;}
+		if (st_cfg.mot[MOTOR_4].motor_map == axis) { steps[MOTOR_4] = joint[axis] * st_cfg.mot[MOTOR_4].steps_per_unit;}
+	//	if (st_cfg.mot[MOTOR_5].motor_map == axis) { steps[MOTOR_5] = joint[axis] * st_cfg.mot[MOTOR_5].steps_per_unit;}
+	//	if (st_cfg.mot[MOTOR_6].motor_map == axis) { steps[MOTOR_6] = joint[axis] * st_cfg.mot[MOTOR_6].steps_per_unit;}
 	}	
 	// the above is a loop unrolled version of this:
 	//	for (uint8_t motor=0; motor<MOTORS; motor++) {
-	//		if (st.m[motor].motor_map == axis) { steps[motor] = joint[axis] * st.m[motor].steps_per_unit;}
+	//		if (st_cfg.mot[motor].motor_map == axis) { steps[motor] = joint[axis] * st_cfg.mot[motor].steps_per_unit;}
 	//	}
 }
 
@@ -86,7 +86,7 @@ void ik_kinematics(double travel[], double steps[], double microseconds)
  *	time it takes to complete the mp_exec_move() function.
  */
 /*
-static void _inverse_kinematics(double travel[], double joint[], double microseconds)
+static void _inverse_kinematics(float travel[], float joint[])
 {
 	for (uint8_t i=0; i<AXES; i++) {
 		joint[i] = travel[i];

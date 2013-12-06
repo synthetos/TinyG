@@ -16,6 +16,8 @@ cycle_jogging.c
 
 cycle_probing.c
 
+encoder.c
+
 gcode_parser.c
 
 gpio.c

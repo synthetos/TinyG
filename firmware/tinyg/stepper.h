@@ -28,67 +28,122 @@
 /* 
  *	Coordinated motion (line drawing) is performed using a classic Bresenham DDA. 
  *	A number of additional steps are taken to optimize interpolation and pulse train
- *	accuracy and minimize pulse jitter.
- *
- *	  - The DDA accepts and processes fractional motor steps (flt_steps). Steps are passed 
- *		to the DDA as floats and do not need to be whole numbers. The prep_line() function
- *		accumulates fractional steps and converts them to whole steps for the loader and
- *		actual pulse generaation function (DDA interrupt).
- *
- *		The step values are multiplied by a fixed number (e.g. 100000) and referred to as
- *		"substeps". Performing DDA accumulation as substeps allows for more accurate step
- *		timing and therefore less jitter. This value is set using DDA_SUBSTEPS.
+ *	timing accuracy to minimize pulse jitter and make for very smooth motion and surface
+ *	finish.
  *
  *    - The DDA is not used as a 'ramp' for acceleration management. Accel is computed 
- *		as 3rd order (controlled jerk) equations that generate accel/decel segments to 
- *		the DDA in much the same way arc drawing is approximated. 
+ *		upstream in the motion planner as 3rd order (controlled jerk) equations. These
+ *		generate accel/decel segments that rae passed to the DDA for step output.
+ *
+ *	  - The DDA accepts and processes fractional motor steps as floating point (doubles) 
+ *		from the planner. Steps do not need to be whole numbers, and are not expected to be. 
+ *		The step values are converted to integer by multiplying by a fixed-point precision 
+ *		(DDA_SUBSTEPS, 100000). Rounding is performed to avoid a truncation bias.
  *
  *		If you enable the step diagnostics you will see that the planner and exec functions
  *		accurately generate the right number of fractional steps for the move during the 
- *		accel/cruise/decel phases. The theoretical value and the calucalted value collected
+ *		accel/cruise/decel phases. The theoretical value and the calculated value collected
  *		in steps_total agree to within 0.0001% or better.
  *
  *    - Constant Rate DDA clock: The DDA runs at a constant, maximum rate for every 
  *		segment regardless of actual step rate required. This means that the DDA clock 
- *		is not tuned to the step rate (or a multiple) of the major axis, as many other 
- *		DDAs do. Running the DDA flat out might appear to be "wasteful", but it ensures 
- *		that the best aliasing results are achieved. 
+ *		is not tuned to the step rate (or a multiple) of the major axis, as is typical
+ *		for most DDAs. Running the DDA flat out might appear to be "wasteful", but it ensures 
+ *		that the best aliasing results are achieved.
  *
  *		The observation is that TinyG is a hard real-time system in which every clock cycle 
  *		is knowable and can be accounted for. So if the system is capable of sustaining
  *		max pulse rate for the fastest move, it's capable of sustaining this rate for any
- *		move. So just run it flat out and get the best pulse resolution for all moves. 
- *		If we were running from batteries we might not be so cavalier about this.
+ *		move. So we just run it flat out and get the best pulse resolution for all moves. 
+ *		If we were running from batteries or otherwise cared about the energy budget we 
+ *		might not be so cavalier about this.
  *
- *    - Pulse phasing is preserved between segments if possible. This makes for smoother
- *		motion, particularly at very low speeds and short segment lengths (avoids pulse 
- *		jitter). Phase continuity is achieved by simply not resetting the DDA counters 
- *		across segments. In some cases the differences between timer values across 
- *		segments are too large for this to work, and you risk motor stalls due to pulse 
- *		starvation. These cases are detected and the counters are reset to prevent stalling.
+ *		At 50 KHz constant clock rate we have 20 uSec between pulse timer (DDA) interrupts. 
+ *		On the Xmega we consume <10 uSec in the interrupt - a whopping 50% of available cycles 
+ *		going into pulse generation. On the ARM this is less of an issue, and we run a 
+ *		100 Khz (or higher) pulse rate.
  *
- *    - Pulse phasing is also helped by minimizing the time spent loading the next move 
- *		segment. To this end as much as possible about that move is pre-computed during 
- *		move execution. Also, all moves are loaded from the interrupt level, avoiding 
- *		the need for mutual exclusion locking or volatiles (which slow things down).
+ *    - Pulse timing is also helped by minimizing the time spent loading the next move 
+ *		segment. The time budget for the load is less than the time remaining before the 
+ *		next DDA clock tick. This means that the load must take < 10 uSec or the time  
+ *		between pulses will stretch out when changing segments. This does not affect 
+ *		positional accuracy but it would affect jitter and smoothness. To this end as much 
+ *		as possible about that move is pre-computed during move execution (prep cycles). 
+ *		Also, all moves are loaded from the DDA interrupt level (HI), avoiding the need 
+ *		for mutual exclusion locking or volatiles (which slow things down).
  */
-/**** Line planning and execution ****
+/* 
+ **** Move generation overview and timing illustration ****
+ *
+ *	This ASCII art illustrates a 4 segment move to show stepper sequencing timing.
+ *
+ *    LOAD/STEP (~5000uSec)          [L1][segment1][L2][segment2][L3][segment3][L4][segment4][Lb1]
+ *    PREP (100 uSec)            [P1]       [P2]          [P3]          [P4]          [Pb1]
+ *    EXEC (400 uSec)         [EXEC1]    [EXEC2]       [EXEC3]       [EXEC4]       [EXECb1]
+ *    PLAN (<4ms)  [planmoveA][plan move B][plan move C][plan move D][plan move E] etc.
+ *
+ *	The move begins with the planner PLANning move A [planmoveA]. When this is done the 
+ *	computations for the first segment of move A's S curve are performed by the planner 
+ *	runtime, EXEC1. The runtime computes the number of segments and the segment-by-segment 
+ *	accelerations and decelerations for the move. Each call to EXEC generates the values 
+ *	for the next segment to be run. Once the move is running EXEC is executed as a 
+ *	callback from the step loader.
+ *
+ *	When the runtime calculations are done EXEC calls the segment PREParation function [P1].
+ *	PREP turns the EXEC results into values needed for the loader and does some encoder work.
+ *	The combined exec and prep take about 400 uSec. 
+ *
+ *	PREP takes care of heavy numerics and other cycle-intesive operations so the step loader 
+ *	L1 can run as fast as possible. The time budget for LOAD is about 10 uSec. In the diagram, 
+ *	when P1 is done segment 1 is loaded into the stepper runtime [L1]
+ *
+ *	Once the segment is loaded it will pulse out steps for the duration of the segment. 
+ *	Segment timing can vary, but segments take around 5 Msec to pulse out, which is 250 DDA 
+ *	ticks at a 50 KHz step clock.
+ *
+ *	Now the move is pulsing out segment 1 (at HI interrupt level). Once the L1 loader is 
+ *	finished it invokes the exec function for the next segment (at LO interrupt level).
+ *	[EXEC2] and [P2] compute and prepare the segment 2 for the loader so it can be loaded 
+ *	as soon as segment 1 is complete [L2]. When move A is done EXEC pulls the next move 
+ *	(moveB) from the planner queue, The process repeats until there are no more segments or moves.
+ *
+ *	While all this is happening subsequent moves (B, C, and D) are being planned in background. 
+ *	As long as a move takes less than the segment times (5ms x N) the timing budget is satisfied,
+ *
+ *	A few things worth noting:
+ *	  -	This scheme uses 2 interrupt levels and background, for 3 levels of execution:
+ *		- STEP pulsing and LOADs occur at HI interrupt level
+ *		- EXEC and PREP occur at LO interrupt level (leaving MED int level for serial IO)
+ *		- move PLANning occurs in background and is managed by the controller
+ *
+ *	  -	Because of the way the timing is laid out there is no contention for resources between
+ *		the STEP, LOAD, EXEC, and PREP phases. PLANing is similarly isolated. Very few volatiles 
+ *		or mutexes are needed, which makes the code simpler and faster. With the exception of 
+ *		the actual values used in step generation (which runs continuously) you can count on 
+ *		LOAD, EXEC, PREP and PLAN not stepping on each other's variables.
+ */
+/**** Line planning and execution (in more detail) ****
  *
  *	Move planning, execution and pulse generation takes place at 3 levels:
  *
  *	Move planning occurs in the main-loop. The canonical machine calls the planner to 
- *	generate lines, arcs, dwells and synchronous stop/starts. The planner module generates 
- *	blocks (bf's) that hold parameters for lines and the other move types. The blocks 
- *	are backplanned to join lines, and to take dwells and stops into account. ("plan" stage).
+ *	generate lines, arcs, dwells, synchronous stop/starts, and any other cvommand that 
+ *	needs to be syncronized wsith motion. The planner module generates blocks (bf's) 
+ *	that hold parameters for lines and the other move types. The blocks are backplanned 
+ *	to join lines and to take dwells and stops into account. ("plan" stage).
  *
- *	Arc movement is planned above the above the line planner. The arc planner generates 
- *	short lines that are passed to the line planner.
+ *	Arc movement is planned above the line planner. The arc planner generates short 
+ *	lines that are passed to the line planner.
+ *
+ *	Once lines are planned the must be broken up into "segments" of about 5 milliseconds
+ *	to be run. These segments are how S curves are generated. This is the job of the move 
+ *	runtime (aka. exec or mr).
  *
  *	Move execution and load prep takes place at the LOW interrupt level. Move execution 
  *	generates the next acceleration, cruise, or deceleration segment for planned lines, 
  *	or just transfers parameters needed for dwells and stops. This layer also prepares 
- *	moves for loading by pre-calculating the values needed by the DDA, and converting the 
- *	executed move into parameters that can be directly loaded into the steppers ("exec" 
+ *	segments for loading by pre-calculating the values needed by the DDA and converting 
+ *	the segment into parameters that can be directly loaded into the steppers ("exec" 
  *	and "prep" stages).
  *
  *	Pulse train generation takes place at the HI interrupt level. The stepper DDA fires 
@@ -111,10 +166,14 @@
  *		using a software interrupt (actually a timer, since that's all we've got).
  *
  *	  - As a result of the above, the EXEC handler fires at the LO interrupt level. It 
- *		computes the next accel/decel segment for the current move (i.e. the move in the 
- *		planner's runtime buffer) by calling back to the exec routine in planner.c. 
- *		Or it gets and runs the next buffer in the planning queue - depending on the 
- *		move_type and state. 
+ *		computes the next accel/decel or cruise (body) segment for the current move 
+ *		(i.e. the move in the planner's runtime buffer) by calling back to the exec 
+ *		routine in planner.c. If there are no more segments to run for the move the 
+ *		exec first gets the next buffer in the planning queue and begins execution.
+ *
+ *		In some cases the mext "move" is not actually a move, but a dewll, stop, IO 
+ *		operation (e.g. M5). In this case it executes the requested operation, and may 
+ *		attempt to get the next buffer from the planner when its done.
  *
  *	  - Once the segment has been computed the exec handler finshes up by running the 
  *		PREP routine in stepper.c. This computes the DDA values and gets the segment 
@@ -187,7 +246,7 @@
 #define STEPPER_H_ONCE
 
 // enable debug diagnostics
-#define __STEP_DIAGNOSTICS	// Uncomment this only for debugging. Steals valuable cycles.
+//#define __STEP_DIAGNOSTICS	// Uncomment this only for debugging. Steals valuable cycles.
 
 /*********************************
  * Stepper configs and constants *
@@ -197,7 +256,7 @@
 // Currently there is no distinction between IDLE and OFF (DEENERGIZED)
 // In the future IDLE will be powered at a low, torque-maintaining current
 
-enum motorPowerState {				// used w/start and stop flags to sequence motor power
+enum stMotorPowerState {			// used w/start and stop flags to sequence motor power
 	MOTOR_OFF = 0,					// motor is stopped and deenergized
 	MOTOR_IDLE,						// motor is stopped and may be partially energized for torque maintenance
 	MOTOR_TIME_IDLE_TIMEOUT,		// run idle timeout
@@ -206,14 +265,14 @@ enum motorPowerState {				// used w/start and stop flags to sequence motor power
 	MOTOR_RUNNING					// motor is running (and fully energized)
 };
 
-enum cmStepperPowerMode {
+enum stStepperPowerMode {
 	MOTOR_ENERGIZED_DURING_CYCLE=0,	// motor is fully powered during cycles
 	MOTOR_IDLE_WHEN_STOPPED,		// idle motor shortly after it's stopped - even in cycle
 	MOTOR_POWER_REDUCED_WHEN_IDLE,	// enable Vref current reduction (not implemented yet)
 	DYNAMIC_MOTOR_POWER				// adjust motor current with velocity (not implemented yet)
 };
 
-enum prepBufferState {
+enum stPrepBufferState {
 	PREP_BUFFER_OWNED_BY_LOADER = 0,// staging buffer is ready for load
 	PREP_BUFFER_OWNED_BY_EXEC		// staging buffer is being loaded
 };
@@ -235,8 +294,8 @@ enum prepBufferState {
  *
  *	This value is set for maximum accuracy; best not to mess with this.
  */
-#define DDA_SUBSTEPS (double)100000	// 100,000 accumulates substeps to 6 decimal places
-//#define DDA_SUBSTEPS (double)4095		// value has been carefully set to minimize errors
+#define DDA_SUBSTEPS (double)5000000	// 5,000,000 accumulates substeps to max decimal places
+//#define DDA_SUBSTEPS (double)100000	// 100,000 accumulates substeps to 6 decimal places
 
 /*
  * Stepper control structures
@@ -255,7 +314,9 @@ enum prepBufferState {
  *	the stepper inner-loops better.
  */
 
-typedef struct cfgMotor {			// per-motor configs
+// Motor config structure
+
+typedef struct stConfigMotor {		// per-motor configs
 	uint8_t	motor_map;				// map motor to axis
   	uint8_t microsteps;				// microsteps to apply for each axis (ex: 8)
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor direction
@@ -263,77 +324,67 @@ typedef struct cfgMotor {			// per-motor configs
 	float power_level;				// set 0.000 to 1.000 for PMW vref setting
 	float step_angle;				// degrees per whole step (ex: 1.8)
 	float travel_rev;				// mm or deg of travel per motor revolution
-	float steps_per_unit;			// steps (usteps)/mm or deg of travel
-} cfgMotor_t;
+	float steps_per_unit;			// microsteps per mm (or degree) of travel
+	float units_per_step;			// mm or degrees of travel per microstep
+} stConfigMotor_t;
 
 typedef struct stConfig {			// stepper configs
 	float motor_idle_timeout;		// seconds before setting motors to idle current (currently this is OFF)
-	cfgMotor_t m[MOTORS];			// settings for motors 1-4
+	stConfigMotor_t mot[MOTORS];	// settings for motors 1-4
 } stConfig_t;
 
-// Runtime structure. Used exclusively by step generation ISR (HI)
+// Motor runtime structure. Used exclusively by step generation ISR (HI)
 
 typedef struct stRunMotor { 		// one per controlled motor
-	int32_t substep_increment;		// total steps in axis times substeps factor
+	uint32_t substep_increment;		// total steps in axis times substeps factor
 	int32_t substep_accumulator;	// DDA phase angle accumulator
 	float power_level;				// power level for this segment (ARM only)
 	uint8_t power_state;			// state machine for managing motor power
 	uint32_t power_systick;			// sys_tick for next motor power state transition
-  #ifdef __STEP_DIAGNOSTICS
-	int32_t step_counter;			// step count register	DIAGNOSTIC
-	int8_t step_counter_incr;		// set to +1 or -1		DIAGNOSTIC
-  #endif
 } stRunMotor_t;
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
-	uint8_t initialized;			// set true if stepper system is initialized
+//	uint8_t last_segment_flagged;	// flag from PREP to use during STEP
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
-	stRunMotor_t m[MOTORS];			// runtime motor structures
+	stRunMotor_t mot[MOTORS];		// runtime motor structures
 	uint16_t magic_end;
 } stRunSingleton_t;
 
-// Prep-time structure. Used by exec/prep ISR (MED) and read-only during load
+// Motor prep structure. Used by exec/prep ISR (MED) and read-only during load
 // Must be careful about volatiles in this one
 
 typedef struct stPrepMotor {
+	int8_t step_sign;				// set to +1 or -1 for encoders
 	int8_t direction;				// travel direction corrected for polarity
 	uint8_t direction_change;		// set true if direction changed
-	int32_t substep_increment; 		// total steps in axis times substep factor
-	int32_t substep_accumulator;	// starting DDA phase angle accumulator
-  #ifdef __STEP_DIAGNOSTICS
-	double steps_record;			// DIAGNOSTIC current step value
-	int32_t substep_accum_record;	// DIAGNOSTIC record of previous ending accumulator
-	double steps;					// current step value
-//	double step_accumulator;		// accumulated steps to pulse out
-	double steps_total;				// total steps accumulated	DIAGNOSTIC
-	int8_t step_counter_incr;		// set to +1 or -1			DIAGNOSTIC
-  #endif
+	uint32_t substep_increment; 	// total steps in axis times substep factor
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integrity	
-	uint8_t move_type;				// move type
 	volatile uint8_t exec_state;	// move execution state 
-	volatile uint8_t reset_flag;	// TRUE if accumulator should be reset
+	uint8_t move_type;				// move type
+	uint8_t cycle_start;			// new cycle: reset steppers
+	uint8_t last_segment;		// flag from EXEC signalling last segment of a move
+//	uint8_t last_segment_done;		// signals last segment has finished
+
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
-  #ifdef __STEP_DIAGNOSTICS
-	uint32_t segment_number;
-  #endif
-	stPrepMotor_t m[MOTORS];		// per-motor structs
+	stPrepMotor_t mot[MOTORS];		// prep time motor structs
 	uint16_t magic_end;
 } stPrepSingleton_t;
 
-extern stConfig_t st;
+extern stConfig_t st_cfg;			// only the config struct is exposed. The rest are private
 
 /**** FUNCTION PROTOTYPES ****/
 
 void stepper_init(void);
 uint8_t stepper_isbusy(void);
-void st_end_cycle(void);
+void st_cycle_start(void);
+void st_cycle_end(void);
 stat_t st_assertions(void);
 
 void st_energize_motors(void);
@@ -344,7 +395,7 @@ stat_t st_motor_power_callback(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(double microseconds);
-stat_t st_prep_line(double incoming_steps[], double microseconds);
+stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment_flagged);
 
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);

@@ -179,7 +179,6 @@ typedef struct mpBufferPool {	// ring buffer for sub-moves
 
 typedef struct mpMoveMasterSingleton {	// common variables for planning (move master)
 	float position[AXES];		// final move position for planning purposes
-//	float ms_in_queue;			// UNUSED - total ms of movement & dwell in planner queue
 	float prev_jerk;			// jerk values cached from previous move
 	float prev_recip_jerk;
 	float prev_cbrt_jerk;
@@ -193,43 +192,48 @@ typedef struct mpMoveMasterSingleton {	// common variables for planning (move ma
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
-	magic_t magic_start;		// magic number to test memory integrity
-	uint8_t move_state;			// state of the overall move
-	uint8_t section_state;		// state within a move section
+	magic_t magic_start;			// magic number to test memory integrity
+	uint8_t move_state;				// state of the overall move
+	uint8_t section_state;			// state within a move section
+	uint8_t last_segment_region;	// which region contains the last segment?
+//	uint8_t last_segment_flagged;	// flag indicating this is the last segment of the move
+	
+	float unit[AXES];				// unit vector for axis scaling & planning
+	float position[AXES];			// current move position
+	float target[AXES];				// final target for bf (used to correct rounding errors)
 
-	float endpoint[AXES];		// final target for bf (used to correct rounding errors)
-	float position[AXES];		// current move position
-	float unit[AXES];			// unit vector for axis scaling & planning
+	float position_actual[AXES];	// measured position
+	float position_error[AXES];		// error from measured position
 
-	float head_length;			// copies of bf variables of same name
+	float head_length;				// copies of bf variables of same name
 	float body_length;
 	float tail_length;
 	float entry_velocity;
 	float cruise_velocity;
 	float exit_velocity;
 
-	float length;				// length of line in mm
-	float midpoint_velocity;	// velocity at accel/decel midpoint
-	float jerk;					// max linear jerk
+	float length;					// length of line in mm
+	float midpoint_velocity;		// velocity at accel/decel midpoint
+	float jerk;						// max linear jerk
 
-	float segments;				// number of segments in arc or blend
-	uint32_t segment_count;		// count of running segments
-	float segment_move_time;	// actual time increment per aline segment
-	double microseconds;		// line or segment time in microseconds (double precision on ARM)
-	float segment_length;		// computed length for aline segment
-	float segment_velocity;		// computed velocity for aline segment
-	float forward_diff_1;		// forward difference level 1 (Acceleration)
-	float forward_diff_2;		// forward difference level 2 (Jerk - constant)
+	float segments;					// number of segments in arc or blend
+	uint32_t segment_count;			// count of running segments
+	float segment_move_time;		// actual time increment per aline segment
+	double microseconds;			// line or segment time in microseconds (double precision on ARM)
+	float segment_length;			// computed length for aline segment
+	float segment_velocity;			// computed velocity for aline segment
+	float forward_diff_1;			// forward difference level 1 (Acceleration)
+	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
 
-	GCodeState_t gm;			// gocode model state currently executing
+	GCodeState_t gm;				// gocode model state currently executing
 
 	magic_t magic_end;
 } mpMoveRuntimeSingleton_t;
 
 // Reference global scope structures
-extern mpBufferPool_t mb;				// move buffer queue
-extern mpMoveMasterSingleton_t mm;		// context for line planning
-extern mpMoveRuntimeSingleton_t mr;		// context for line runtime
+extern mpBufferPool_t mb;			// move buffer queue
+extern mpMoveMasterSingleton_t mm;	// context for line planning
+extern mpMoveRuntimeSingleton_t mr;	// context for line runtime
 
 /*
  * Global Scope Functions
@@ -274,6 +278,7 @@ float mp_get_runtime_work_position(uint8_t axis);
 float mp_get_runtime_absolute_position(uint8_t axis);
 void mp_set_runtime_work_offset(float offset[]);
 void mp_zero_segment_velocity(void);
+void mp_get_runtime_target_steps(float target_steps[]);
 uint8_t mp_get_runtime_busy(void);
 
 #ifdef __DEBUG
