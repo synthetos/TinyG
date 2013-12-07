@@ -131,8 +131,7 @@ void en_sample_encoders(int32_t flag)
 	for (uint8_t i=0; i<MOTORS; i++) {
 		en.en[i].error_steps = en.en[i].position_steps - en.en[i].target_steps;
 		en.en[i].error_advisory = (float)en.en[i].error_steps * st_cfg.mot[i].units_per_step;
-		if (i==MOTOR_3)
-			en_print_encoder(i);	//++++++ DIAGNOSTIC
+//		if (i==MOTOR_3) en_print_encoder(i);	//++++++ DIAGNOSTIC
 		en.en[i].target_steps = (int32_t)round(en.target_steps_next[i]);// transfer staged target to working target
 	}
 }
@@ -153,7 +152,8 @@ void en_update_position_steps_advisory(const float steps[])
 
 void en_print_encoder(const uint8_t motor)
 {
-	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
+	printf("%d,%0.2f,%li,%li,%li,%0.3f\n",
+//	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
 		motor+1,
 		(double)en.en[motor].position_advisory,
 		en.en[motor].position_steps, 

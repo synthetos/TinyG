@@ -5,6 +5,94 @@
  *	  -	The character array should be derived from the filename (by convention)
  *	  - Comments are not allowed in the char array, but gcode comments are OK e.g. (g0 test)
  */
+
+/**** ROUND 2 of MOON TESTS FOR ACCURACY ****/
+
+/*
+(removed 1)
+G1Y25.20F800.0\n\
+X25.90Y25.28\n\
+X25.84Y25.41\n\
+X25.78Y25.51\n\
+Y-0.51\n\
+X25.76Y-0.54\n\
+X25.66Y-0.67\n\
+Y25.67\n\
+X25.54Y25.76\n\
+X25.53Y25.77\n\
+Y-0.77\n\
+X25.40Y-0.84\n\
+Y25.84\n\
+X25.28Y25.89\n\
+Y-0.89\n\
+X25.15Y-0.92\n\
+Y25.92\n\
+X25.02Y25.94\n\
+Y25.06\n\
+
+*/
+
+const char test_99[] PROGMEM = "\
+G17\n\
+(G0Z3.0\n\
+(G0X0.00Y0.00\n\
+(S1600M3\n\
+(G4P3\n\
+(G0X25.91Y-0.20Z3.00\n\
+G92X25.00Y-0.20Z3.00\n\
+(G4P0.25\n\
+G1Z0.00F200.0\n\
+(G4P0.25\n\
+(removed 1)\n\
+N100Y25.04Z-0.39\n\
+N101Y24.94Z-0.40\n\
+N102Y24.84Z-0.41\n\
+N103Y24.71Z-0.40\n\
+N104Y24.59Z-0.40\n\
+N105Y24.54Z-0.41\n\
+N106Y24.41Z-0.38\n\
+N107Y24.31Z-0.38\n\
+N108Y24.21Z-0.38\n\
+N109Y24.11Z-0.40\n\
+N110Y24.01Z-0.43\n\
+N111Y23.91Z-0.47\n\
+N112Y23.76Z-0.56\n\
+N113Y23.66Z-0.64\n\
+N114Y23.59Z-0.72\n\
+N115Y23.56Z-0.73\n\
+N116Y23.54Z-0.71\n\
+N117Y23.46Z-0.62\n\
+N118Y23.39Z-0.56\n\
+N119Y23.31Z-0.51\n\
+N120Y23.24Z-0.47\n\
+N121Y23.14Z-0.43\n\
+N122Y23.04Z-0.40\n\
+N123Y22.94Z-0.39\n\
+N124Y22.81Z-0.39\n\
+N125Y22.69Z-0.40\n\
+N126Y22.59Z-0.43\n\
+N127Y22.54Z-0.45\n\
+N128Y22.44Z-0.47\n\
+N129Y22.34Z-0.50\n\
+N130Y22.24Z-0.49\n\
+N131Y22.11Z-0.50\n\
+N132Y22.01Z-0.51\n\
+N133Y21.91Z-0.52\n\
+N134Y21.86Z-0.53\n\
+N135Y21.74Z-0.50\n\
+N136Y21.64Z-0.49\n\
+N137Y21.54Z-0.50\n\
+N138Y21.44Z-0.51\n\
+N139Y21.34Z-0.54\n\
+N140Y21.26Z-0.57\n\
+N141Y21.24Z-0.57\n\
+N142Y21.14Z-0.55\n\
+N143Y21.04Z-0.55\n\
+N144Y20.94Z-0.56\n\
+N145Y20.81Z-0.58\n\
+N146Y20.71Z-0.59";
+
+/**** ROUND 1 of MOON TESTS FOR ACCURACY ****/
 /*
 G0X0.00Y0.00Z0.00\n\
 G0Z3.0\n\
@@ -35,6 +123,7 @@ Y25.92\n\
 X25.02Y25.94\n\
 Y25.06\n\
 */
+/*
 const char test_99[] PROGMEM = "\
 G17\n\
 G92X0.00Y25.00Z0.00\n\
@@ -215,12 +304,9 @@ Y8.86Z-0.53\n\
 Y8.74Z-0.54\n\
 Y8.64Z-0.57\n\
 Y8.54Z-0.60";
-
-/*
-g0x10y10z10\n\
 */
 
-/* back and forth test
+/****** back and forth test *****
 
 const char test_99[] PROGMEM = "\
 g92x10y10z10\n\
@@ -429,7 +515,6 @@ x10y10z10";
 /*
 x0 y0 z0";
 */
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 //// FORD EMBLEM DIAGNOSTIC TESTS - TURNED OUT TO NEED ARC REFACTORING ////////////////////////

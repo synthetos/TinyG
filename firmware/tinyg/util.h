@@ -58,8 +58,7 @@ float get_axis_vector_length(const float a[], const float b[]);
 uint8_t vector_equal(const float a[], const float b[]);
 float *set_vector(float x, float y, float z, float a, float b, float c);
 float *set_vector_by_axis(float value, uint8_t axis);
-//void copy_vector(float dst[], const float src[], uint8_t length);
-
+void copy_vector(float dst[], const float src[], uint8_t length);
 void copy_axis_vector(float dst[], const float src[]);
 /*
 #define copy_axis_vector(dst,src) ( dst[AXIS_X] = src[AXIS_X];\
