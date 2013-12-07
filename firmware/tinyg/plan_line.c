@@ -1247,9 +1247,9 @@ static stat_t _exec_aline_tail()
 //static stat_t _exec_aline_segment(uint8_t correction_flag)
 static stat_t _exec_aline_segment()
 {
-	float travel[AXES];
+//	float travel[AXES];
 	float steps[MOTORS];
-	uint8_t last_segment_flag = false;		// transient flag for last segment of the move
+//	uint8_t last_segment_flag = false;		// transient flag for last segment of the move
 
 	// flag the last segment of the move for sampling the encoder
 	// Multiply computed length by the unit vector to get the contribution for each axis. 
@@ -1262,7 +1262,7 @@ static stat_t _exec_aline_segment()
 		(cm.motion_state == MOTION_RUN) && 			// ..and not going into a hold 
 		(cm.cycle_state == CYCLE_MACHINING)) {		// ..and isn't a special cycles (homing, probing, jogging)
 
-		last_segment_flag = true;					// flag this as the last segment
+//		last_segment_flag = true;					// flag this as the last segment
 
 		mr.gm.target[AXIS_X] = mr.target[AXIS_X];	// correct any accumulated rounding errors in last segment
 		mr.gm.target[AXIS_Y] = mr.target[AXIS_Y];
@@ -1279,13 +1279,14 @@ static stat_t _exec_aline_segment()
 		mr.gm.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * intermediate);
 		mr.gm.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * intermediate);
 	}
+/*
 	travel[AXIS_X] = mr.gm.target[AXIS_X] - mr.position[AXIS_X];
 	travel[AXIS_Y] = mr.gm.target[AXIS_Y] - mr.position[AXIS_Y];
 	travel[AXIS_Z] = mr.gm.target[AXIS_Z] - mr.position[AXIS_Z];
 	travel[AXIS_A] = mr.gm.target[AXIS_A] - mr.position[AXIS_A];
 	travel[AXIS_B] = mr.gm.target[AXIS_B] - mr.position[AXIS_B];
 	travel[AXIS_C] = mr.gm.target[AXIS_C] - mr.position[AXIS_C];
-
+*/
 	// move positions and targets around and read the encoder data
 
 	for (uint8_t i=0; i<MOTORS; i++) {
@@ -1297,7 +1298,12 @@ static stat_t _exec_aline_segment()
 
 	// prep the segment for the steppers and adjust the variables for the next iteration
 	ik_kinematics(mr.gm.target, mr.target_steps_0);
-	ik_kinematics(travel, steps);
+
+	for (uint8_t i=0; i<MOTORS; i++) {
+//		mr.travel[i] = mr.target_steps_0[i] - mr.target_steps_1[i];
+		steps[i] = mr.target_steps_0[i] - mr.target_steps_1[i];
+	}
+//	ik_kinematics(travel, steps);
 //	if (st_prep_line(steps, mr.microseconds, last_segment_flag) == STAT_OK) {
 	if (st_prep_line(steps, mr.microseconds, mr.encoder_error) == STAT_OK) {
 //		copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...

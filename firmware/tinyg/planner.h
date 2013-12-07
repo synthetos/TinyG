@@ -200,6 +200,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
+//	float travel[MOTORS];				// target_stes_0 - target_steps_1
 
 	float target_steps_0[MOTORS];	// current MR target (absolute target as steps)
 	float target_steps_1[MOTORS];	// current MR position (target from previous segment)
