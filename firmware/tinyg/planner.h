@@ -201,17 +201,11 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
 
-	float position_steps_i32[MOTORS];
-	float target_steps[MOTORS];		// transformed target for encoder use
-	float target_steps_1[MOTORS];	// target steps from previous segment
-	float target_steps_2[MOTORS];	// target steps from previous previous segment
-	float target_steps_3[MOTORS];	// target steps from previous previous segment
-	float target_steps_4[MOTORS];	// target steps from previous previous segment
-//	float position_steps[MOTORS];	// transformed position for encoder use
-//	float position_steps_1[MOTORS];	// position steps from previous segment
-//	float position_steps_2[MOTORS];	// position steps from previous previous segment
-//	int32_t target_steps[MOTORS];	// transformed target for encoder use
-//	int32_t position_steps[MOTORS];	// transformed position for encoder use
+	float target_steps_0[MOTORS];	// current MR target (absolute target as steps)
+	float target_steps_1[MOTORS];	// current MR position (target from previous segment)
+	float target_steps_2[MOTORS];	// current encoder sample (target from 2nd previous segment)
+	int32_t encoder_steps[MOTORS];	// encoder position - should be same as target_steps_2 
+	int32_t encoder_error[MOTORS];
 
 	float head_length;				// copies of bf variables of same name
 	float body_length;

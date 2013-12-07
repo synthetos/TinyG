@@ -120,6 +120,7 @@ extern enEncoders_t en;
 void encoder_init(void);
 stat_t en_assertions(void);
 void en_reset_encoders(void);
+int32_t en_sample_encoder(uint8_t motor);
 void en_sample_encoders(int32_t flag);
 void en_update_position_steps_advisory(const float steps[]);
 void en_print_encoder(const uint8_t motor);

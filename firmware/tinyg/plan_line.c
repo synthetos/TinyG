@@ -1257,8 +1257,8 @@ static stat_t _exec_aline_segment()
 	// Don't do the endpoint correction if you are going into a hold
 
 	if ((mr.segment_count == 1) && 					// if this is the last segment...
-		(mr.move_state == mr.last_segment_region) &&//...of the last move region (head/body/tail)
 		(mr.section_state == MOVE_STATE_RUN2) && 	//...of the second half
+		(mr.move_state == mr.last_segment_region) &&//...of the final region of the move (head/body/tail)
 		(cm.motion_state == MOTION_RUN) && 			// ..and not going into a hold 
 		(cm.cycle_state == CYCLE_MACHINING)) {		// ..and isn't a special cycles (homing, probing, jogging)
 
@@ -1286,18 +1286,20 @@ static stat_t _exec_aline_segment()
 	travel[AXIS_B] = mr.gm.target[AXIS_B] - mr.position[AXIS_B];
 	travel[AXIS_C] = mr.gm.target[AXIS_C] - mr.position[AXIS_C];
 
-	// prep the segment for the steppers and adjust the variables for the next iteration
-	copy_vector(mr.target_steps_4, mr.target_steps_3, MOTORS);
-	copy_vector(mr.target_steps_3, mr.target_steps_2, MOTORS);
-	copy_vector(mr.target_steps_2, mr.target_steps_1, MOTORS);
-	copy_vector(mr.target_steps_1, mr.target_steps, MOTORS);
-//	copy_vector(mr.position_steps_2, mr.position_steps_1, MOTORS);
-//	copy_vector(mr.position_steps_1, mr.position_steps, MOTORS);
+	// move positions and targets around and read the encoder data
 
-	ik_kinematics(mr.gm.target, mr.target_steps);
-//	ik_kinematics(mr.position, mr.position_steps);
+	for (uint8_t i=0; i<MOTORS; i++) {
+		mr.target_steps_2[i] = mr.target_steps_1[i];
+		mr.target_steps_1[i] = mr.target_steps_0[i];
+		mr.encoder_steps[i] = en_sample_encoder(i);
+		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.target_steps_2[i];
+	}
+
+	// prep the segment for the steppers and adjust the variables for the next iteration
+	ik_kinematics(mr.gm.target, mr.target_steps_0);
 	ik_kinematics(travel, steps);
-	if (st_prep_line(steps, mr.microseconds, last_segment_flag) == STAT_OK) {
+//	if (st_prep_line(steps, mr.microseconds, last_segment_flag) == STAT_OK) {
+	if (st_prep_line(steps, mr.microseconds, mr.encoder_error) == STAT_OK) {
 //		copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
 		mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	
 		mr.position[AXIS_Y] = mr.gm.target[AXIS_Y];
@@ -1306,12 +1308,6 @@ static stat_t _exec_aline_segment()
 		mr.position[AXIS_B] = mr.gm.target[AXIS_B];
 		mr.position[AXIS_C] = mr.gm.target[AXIS_C];	
 	}
-
-	mr.position_steps_i32[0] = en.en[0].position_steps;	//++++++++++++++++
-	mr.position_steps_i32[1] = en.en[1].position_steps;
-	mr.position_steps_i32[2] = en.en[2].position_steps;
-	mr.position_steps_i32[3] = en.en[3].position_steps;
-
 	if (--mr.segment_count == 0) return (STAT_OK);		// this section has run all its segments
 	return (STAT_EAGAIN);								// this section still has more segments to run
 }

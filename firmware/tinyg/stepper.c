@@ -110,7 +110,6 @@ void stepper_init()
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = SWI_PERIOD;				// set period
 
-//	st_pre.cycle_start = true;					// setup accumulator and other values
 	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
 }
 
@@ -308,9 +307,6 @@ ISR(TIMER_DDA_ISR_vect)
 
 	if (--st_run.dda_ticks_downcount != 0) return;
 
-//	if (st_run.last_segment_staged == true)		++++++
-//		st_pre.last_segment_run = true;
-
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// disable DDA timer
 	_load_move();										// load the next move
 }
@@ -407,7 +403,6 @@ static void _load_move()
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		st_run.dda_ticks_X_substeps = st_pre.dda_ticks_X_substeps;
 		TIMER_DDA.PER = st_pre.dda_period;
-//++++		st_run.last_segment_staged = st_pre.last_segment_staged;
 
 		//**** MOTOR_1 LOAD ****
 
@@ -557,7 +552,8 @@ static void _load_move()
  *		  will never be called - but this is OK as no more correction is required or possible.
  */
 
-stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
+//stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
+stat_t st_prep_line(float steps[], float microseconds, int32_t encoder_error[])
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);
@@ -572,25 +568,6 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
 	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
 	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
-
-	// last segment processing
-
-//	st_pre.segment_count++;			//+++++ DIAGNOSTIC
-	if (last_segment == true) {
-		st_pre.last_segment = 3;				// wait 2 prep cycles to sample the encoder
-	}
-	if (--st_pre.last_segment == 0) {
-		en_sample_encoders(st_pre.last_segment); // take a sample for use in corrections below
-	}
-/*
-	// (old style)
-	st_pre.last_segment_staged = last_segment;	// set up for transfter to st_run.last_segment
-	if (st_pre.last_segment_run == true) {
-		st_pre.last_segment_run = false;
-//		en_sample_position_error(); 			// take a sample for use in corrections below
-	}
-*/
-	en_update_position_steps_advisory(steps);	// add steps to encoder as a diagnostic
 
 	// setup motor parameters
 

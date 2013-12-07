@@ -122,6 +122,11 @@ void en_reset_encoders(void)
  *	  The error terms remain stable until the next time en_sample_position_error() is called
  */
 
+int32_t en_sample_encoder(uint8_t motor)
+{
+	return(en.en[motor].position_steps);
+}
+
 void en_sample_encoders(int32_t flag)
 {
 	if (flag != 0) return;	// Interlock. Should not be run if anything other than 0
