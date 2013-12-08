@@ -1138,7 +1138,6 @@ static stat_t _exec_aline_head()
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {				// concave part of accel curve (period 1)
 		mr.segment_velocity += mr.forward_diff_1;
-//		if (_exec_aline_segment(false) == STAT_OK) { 		// set up for second half
 		if (_exec_aline_segment() == STAT_OK) { 			// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = MOVE_STATE_RUN2;
@@ -1154,7 +1153,6 @@ static stat_t _exec_aline_head()
 	if (mr.section_state == MOVE_STATE_RUN2) {				// convex part of accel curve (period 2)
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
-//		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
 		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
 			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) return(STAT_OK); // ends the move
 			mr.move_state = MOVE_STATE_BODY;
@@ -1189,7 +1187,6 @@ static stat_t _exec_aline_body()
 		mr.section_state = MOVE_STATE_RUN2;					// uses RUN2 so last segment detection works
 	}
 	if (mr.section_state == MOVE_STATE_RUN2) {				// straight part (period 3)
-//		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
 		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
 			if (fp_ZERO(mr.tail_length)) return(STAT_OK);	// ends the move
 			mr.move_state = MOVE_STATE_TAIL;
@@ -1219,7 +1216,6 @@ static stat_t _exec_aline_tail()
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {				// convex part (period 4)
 		mr.segment_velocity += mr.forward_diff_1;
-//		if (_exec_aline_segment(false) == STAT_OK) {		// set up for second half
 		if (_exec_aline_segment() == STAT_OK) {				// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = MOVE_STATE_RUN2;
@@ -1235,7 +1231,6 @@ static stat_t _exec_aline_tail()
 	if (mr.section_state == MOVE_STATE_RUN2) {				// concave part (period 5)
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
-//		return (_exec_aline_segment(true)); 				// ends the move or continues EAGAIN
 		return (_exec_aline_segment()); 					// ends the move or continues EAGAIN
 	}
 	return(STAT_EAGAIN);									// should never get here
@@ -1247,22 +1242,16 @@ static stat_t _exec_aline_tail()
 //static stat_t _exec_aline_segment(uint8_t correction_flag)
 static stat_t _exec_aline_segment()
 {
-//	float travel[AXES];
 	float steps[MOTORS];
-//	uint8_t last_segment_flag = false;		// transient flag for last segment of the move
 
-	// flag the last segment of the move for sampling the encoder
-	// Multiply computed length by the unit vector to get the contribution for each axis. 
-	// Set the target in absolute coords and compute relative steps.
-	// Don't do the endpoint correction if you are going into a hold
+	// Identify the last segment of the move for endpoint error correction
+	// Don't do the endpoint correction if you are going into a hold or in a special cycle
 
 	if ((mr.segment_count == 1) && 					// if this is the last segment...
 		(mr.section_state == MOVE_STATE_RUN2) && 	//...of the second half
 		(mr.move_state == mr.last_segment_region) &&//...of the final region of the move (head/body/tail)
 		(cm.motion_state == MOTION_RUN) && 			// ..and not going into a hold 
 		(cm.cycle_state == CYCLE_MACHINING)) {		// ..and isn't a special cycles (homing, probing, jogging)
-
-//		last_segment_flag = true;					// flag this as the last segment
 
 		mr.gm.target[AXIS_X] = mr.target[AXIS_X];	// correct any accumulated rounding errors in last segment
 		mr.gm.target[AXIS_Y] = mr.target[AXIS_Y];
@@ -1279,32 +1268,22 @@ static stat_t _exec_aline_segment()
 		mr.gm.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * intermediate);
 		mr.gm.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * intermediate);
 	}
-/*
-	travel[AXIS_X] = mr.gm.target[AXIS_X] - mr.position[AXIS_X];
-	travel[AXIS_Y] = mr.gm.target[AXIS_Y] - mr.position[AXIS_Y];
-	travel[AXIS_Z] = mr.gm.target[AXIS_Z] - mr.position[AXIS_Z];
-	travel[AXIS_A] = mr.gm.target[AXIS_A] - mr.position[AXIS_A];
-	travel[AXIS_B] = mr.gm.target[AXIS_B] - mr.position[AXIS_B];
-	travel[AXIS_C] = mr.gm.target[AXIS_C] - mr.position[AXIS_C];
-*/
-	// move positions and targets around and read the encoder data
+
+	// move target and positions around and read the encoder data
 
 	for (uint8_t i=0; i<MOTORS; i++) {
-		mr.target_steps_2[i] = mr.target_steps_1[i];
-		mr.target_steps_1[i] = mr.target_steps_0[i];
-		mr.encoder_steps[i] = en_sample_encoder(i);
-		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.target_steps_2[i];
+//		mr.delayed_steps[i] = mr.position_steps[i];	// previous segment position becomes delayed
+		mr.position_steps[i] = mr.target_steps[i];	// previous segment's target becomes poaition
+		mr.encoder_steps[i] = en_sample_encoder(i);	// get the current encoder values
+		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.delayed_steps[i];
 	}
 
 	// prep the segment for the steppers and adjust the variables for the next iteration
-	ik_kinematics(mr.gm.target, mr.target_steps_0);
+	ik_kinematics(mr.gm.target, mr.target_steps);
 
 	for (uint8_t i=0; i<MOTORS; i++) {
-//		mr.travel[i] = mr.target_steps_0[i] - mr.target_steps_1[i];
-		steps[i] = mr.target_steps_0[i] - mr.target_steps_1[i];
+		steps[i] = mr.target_steps[i] - mr.position_steps[i];
 	}
-//	ik_kinematics(travel, steps);
-//	if (st_prep_line(steps, mr.microseconds, last_segment_flag) == STAT_OK) {
 	if (st_prep_line(steps, mr.microseconds, mr.encoder_error) == STAT_OK) {
 //		copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
 		mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	
