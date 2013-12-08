@@ -1033,11 +1033,11 @@ static stat_t _exec_aline(mpBuf_t *bf)
 
 		// find the last segment for this move for error correction
 		if (mr.tail_length > 0) { 
-			mr.last_segment_region = MOVE_STATE_TAIL; 
+			mr.final_section = MOVE_SECTION_TAIL; 
 		} else if (mr.body_length > 0) {
-			mr.last_segment_region = MOVE_STATE_BODY;
+			mr.final_section = MOVE_SECTION_BODY; 
 		} else {
-			mr.last_segment_region = MOVE_STATE_HEAD;
+			mr.final_section = MOVE_SECTION_HEAD; 
 		}
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
@@ -1141,6 +1141,7 @@ static stat_t _exec_aline_head()
 			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
 		}
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
+		mr.section = MOVE_SECTION_HEAD;
 		mr.section_state = MOVE_STATE_RUN1;
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {				// concave part of accel curve (period 1)
@@ -1189,8 +1190,8 @@ static stat_t _exec_aline_body()
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
 			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-		}
-		
+		}		
+		mr.section = MOVE_SECTION_BODY;
 		mr.section_state = MOVE_STATE_RUN2;					// uses RUN2 so last segment detection works
 	}
 	if (mr.section_state == MOVE_STATE_RUN2) {				// straight part (period 3)
@@ -1219,6 +1220,7 @@ static stat_t _exec_aline_tail()
 			return(STAT_GCODE_BLOCK_SKIPPED);					// exit without advancing position
 		}
 		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
+		mr.section = MOVE_SECTION_TAIL;
 		mr.section_state = MOVE_STATE_RUN1;
 	}
 	if (mr.section_state == MOVE_STATE_RUN1) {				// convex part (period 4)
@@ -1256,7 +1258,7 @@ static stat_t _exec_aline_segment()
 
 	if ((mr.segment_count == 1) && 					// if this is the last segment...
 		(mr.section_state == MOVE_STATE_RUN2) && 	//...of the second half
-		(mr.move_state == mr.last_segment_region) &&//...of the final region of the move (head/body/tail)
+		(mr.section == mr.final_section) &&			//...of the final section of the move (head/body/tail)
 		(cm.motion_state == MOTION_RUN) && 			// ..and not going into a hold 
 		(cm.cycle_state == CYCLE_MACHINING)) {		// ..and isn't a special cycles (homing, probing, jogging)
 
@@ -1275,14 +1277,23 @@ static stat_t _exec_aline_segment()
 		mr.gm.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * intermediate);
 		mr.gm.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * intermediate);
 	}
-
+/*
+	// Somewhat different treatment of the way-point problem from above
+	// Treat the target generation more as a "from here to there" problem, similar to
+	// the way a servo works. Send the segment towards a target and when it gets there 
+	// perform the ultimate correction to get it to the exact position.
+	float intermediate = mr.segment_velocity * mr.segment_time;
+	for (uint8_t i=0; i<AXES; i++) {	// generate the expected target
+		mr.gm.target[i] = mr.position[i] + (mr.unit[i] * intermediate);
+	}
+*/	 
 	// move target and positions around and read the encoder data
 
 	for (uint8_t i=0; i<MOTORS; i++) {
-		mr.delayed_steps[i] = mr.position_steps[i];	// previous segment position becomes delayed
-		mr.position_steps[i] = mr.target_steps[i];	// previous segment's target becomes poaition
-		mr.encoder_steps[i] = en_sample_encoder(i);	// get the current encoder values
-		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.delayed_steps[i];
+		mr.projected_steps[i] = mr.position_steps[i];// previous segment position becomes projected
+		mr.position_steps[i] = mr.target_steps[i];	 // previous segment's target becomes poaition
+		mr.encoder_steps[i] = en_sample_encoder(i);	 // get the current encoder values
+		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.projected_steps[i];
 	}
 
 	// prep the segment for the steppers and adjust the variables for the next iteration
