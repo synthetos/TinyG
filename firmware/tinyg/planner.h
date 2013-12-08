@@ -47,17 +47,17 @@ enum moveType {				// bf->move_type values
 };
 
 enum moveState {
-	MOVE_STATE_OFF = 0,		// move inactive (MUST BE ZERO)
-	MOVE_STATE_NEW,			// general value if you need an initialization
-	MOVE_STATE_RUN,			// general run state (for non-acceleration moves) 
-	MOVE_STATE_SKIP			// mark a skipped block
+	MOVE_OFF = 0,			// move inactive (MUST BE ZERO)
+	MOVE_NEW,				// general value if you need an initialization
+	MOVE_RUN,				// general run state (for non-acceleration moves) 
+	MOVE_SKIP				// mark a skipped block
 };
 
 enum sectionState {
-	SECTION_STATE_OFF = 0,	// move inactive (MUST BE ZERO)
-	SECTION_STATE_NEW,		// general value if you need an initialization
-	SECTION_STATE_RUN1,		// general run state (for non-acceleration moves) 
-	SECTION_STATE_RUN2		// used for sub-states
+	SECTION_OFF = 0,		// move inactive (MUST BE ZERO)
+	SECTION_NEW,			// general value if you need an initialization
+	SECTION_RUN1,			// general run state (for non-acceleration moves) 
+	SECTION_RUN2			// used for sub-states
 };
 
 enum moveSection {
