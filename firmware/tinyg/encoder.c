@@ -131,7 +131,8 @@ void en_sample_encoders(int32_t flag)
 {
 	if (flag != 0) return;	// Interlock. Should not be run if anything other than 0
 
-	mp_get_runtime_target_steps(en.target_steps_next);
+//	mp_get_runtime_target_steps(en.target_steps_next);
+	ik_kinematics(mr.target, en.target_steps_next);
 
 	for (uint8_t i=0; i<MOTORS; i++) {
 		en.en[i].error_steps = en.en[i].position_steps - en.en[i].target_steps;
@@ -172,9 +173,10 @@ void en_print_encoders()
 	en_sample_encoders(0);
 
 	for (uint8_t i=0; i<MOTORS; i++) {
-		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
+//		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
+		printf("{\"en%d\":{\"pos\":%li,\"tgt\":%li,\"err\":%li,\"err_adv\":%0.5f}}\n",
 			i+1,
-			(double)en.en[i].position_advisory,
+//			(double)en.en[i].position_advisory,
 			en.en[i].position_steps, 
 			en.en[i].target_steps,
 			en.en[i].error_steps,

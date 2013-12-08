@@ -79,7 +79,7 @@ float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]
 float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
 void mp_set_runtime_work_offset(float offset[]) { copy_axis_vector(mr.gm.work_offset, offset);}
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
-void mp_get_runtime_target_steps(float target_steps[]) { ik_kinematics(mr.target, target_steps);} // transform to joint space
+//void mp_get_runtime_target_steps(float target_steps[]) { ik_kinematics(mr.target, target_steps);} // transform to joint space
 
 /* 
  * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
@@ -1024,7 +1024,14 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.target, bf->gm.target);	// save the final target of the move
 
-		// find the last segment for this move so you can error correct and tell the encoders
+		// generate the section targets for enpoint corrections
+		for (uint8_t i=0; i<AXES; i++) {
+			mr.target_head[i] = mr.position[i] + mr.unit[i] * mr.head_length;
+			mr.target_body[i] = mr.position[i] + mr.unit[i] * mr.body_length;
+			mr.target_tail[i] = mr.position[i] + mr.unit[i] * mr.tail_length;
+		}
+
+		// find the last segment for this move for error correction
 		if (mr.tail_length > 0) { 
 			mr.last_segment_region = MOVE_STATE_TAIL; 
 		} else if (mr.body_length > 0) {
@@ -1128,9 +1135,9 @@ static stat_t _exec_aline_head()
 		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
 		mr.gm.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec)); // # of segments in *each half*
-		mr.segment_move_time = mr.gm.move_time / (2 * mr.segments);
+		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
 		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
+		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
 			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
 		}
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
@@ -1177,10 +1184,10 @@ static stat_t _exec_aline_body()
 		}
 		mr.gm.move_time = mr.body_length / mr.cruise_velocity;
 		mr.segments = ceil(uSec(mr.gm.move_time) / cm.estd_segment_usec);
-		mr.segment_move_time = mr.gm.move_time / mr.segments;
+		mr.segment_time = mr.gm.move_time / mr.segments;
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
+		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
 			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
 		}
 		
@@ -1206,9 +1213,9 @@ static stat_t _exec_aline_tail()
 		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
 		mr.gm.move_time = mr.tail_length / mr.midpoint_velocity;
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec));// # of segments in *each half*
-		mr.segment_move_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
+		mr.segment_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
 		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
+		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
 			return(STAT_GCODE_BLOCK_SKIPPED);					// exit without advancing position
 		}
 		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
@@ -1260,7 +1267,7 @@ static stat_t _exec_aline_segment()
 		mr.gm.target[AXIS_B] = mr.target[AXIS_B];
 		mr.gm.target[AXIS_C] = mr.target[AXIS_C];
 	} else {
-		float intermediate = mr.segment_velocity * mr.segment_move_time;
+		float intermediate = mr.segment_velocity * mr.segment_time;
 		mr.gm.target[AXIS_X] = mr.position[AXIS_X] + (mr.unit[AXIS_X] * intermediate);
 		mr.gm.target[AXIS_Y] = mr.position[AXIS_Y] + (mr.unit[AXIS_Y] * intermediate);
 		mr.gm.target[AXIS_Z] = mr.position[AXIS_Z] + (mr.unit[AXIS_Z] * intermediate);
@@ -1272,7 +1279,7 @@ static stat_t _exec_aline_segment()
 	// move target and positions around and read the encoder data
 
 	for (uint8_t i=0; i<MOTORS; i++) {
-//		mr.delayed_steps[i] = mr.position_steps[i];	// previous segment position becomes delayed
+		mr.delayed_steps[i] = mr.position_steps[i];	// previous segment position becomes delayed
 		mr.position_steps[i] = mr.target_steps[i];	// previous segment's target becomes poaition
 		mr.encoder_steps[i] = en_sample_encoder(i);	// get the current encoder values
 		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.delayed_steps[i];

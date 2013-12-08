@@ -59,6 +59,12 @@ enum moveState {
 };
 #define MOVE_STATE_RUN1 MOVE_STATE_RUN // a convenience
 
+enum moveSection {
+	MOVE_SECTION_HEAD = 0,	// acceleration
+	MOVE_SECTION_BODY,		// cruise 
+	MOVE_SECTION_TAIL		// deceleration
+};
+
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
 /* The following must apply:
@@ -201,6 +207,10 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
 
+	float target_head[AXES];
+	float target_body[AXES];
+	float target_tail[AXES];
+
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
 	float position_steps[MOTORS];	// current MR position (target from previous segment)
 	float delayed_steps[MOTORS];	// current encoder sample (target from 2nd previous segment) ++++DIAGNOSTIC
@@ -220,7 +230,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 
 	float segments;					// number of segments in arc or blend
 	uint32_t segment_count;			// count of running segments
-	float segment_move_time;		// actual time increment per aline segment
+	float segment_time;				// actual time increment per aline segment
 	double microseconds;			// line or segment time in microseconds (double precision on ARM)
 	float segment_length;			// computed length for aline segment
 	float segment_velocity;			// computed velocity for aline segment
