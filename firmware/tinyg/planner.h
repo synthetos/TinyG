@@ -50,19 +50,20 @@ enum moveState {
 	MOVE_STATE_OFF = 0,		// move inactive (MUST BE ZERO)
 	MOVE_STATE_NEW,			// general value if you need an initialization
 	MOVE_STATE_RUN,			// general run state (for non-acceleration moves) 
-	MOVE_STATE_RUN2,		// used for sub-states
-	MOVE_STATE_HEAD,		// aline() acceleration portions
-	MOVE_STATE_BODY,		// aline() cruise portions
-	MOVE_STATE_TAIL,		// aline() deceleration portions
-	MOVE_STATE_SKIP,		// mark a skipped block
-	MOVE_STATE_END			// move is marked as done (used by dwells)
+	MOVE_STATE_SKIP			// mark a skipped block
 };
-#define MOVE_STATE_RUN1 MOVE_STATE_RUN // a convenience
+
+enum sectionState {
+	SECTION_STATE_OFF = 0,	// move inactive (MUST BE ZERO)
+	SECTION_STATE_NEW,		// general value if you need an initialization
+	SECTION_STATE_RUN1,		// general run state (for non-acceleration moves) 
+	SECTION_STATE_RUN2		// used for sub-states
+};
 
 enum moveSection {
-	MOVE_SECTION_HEAD = 0,	// acceleration
-	MOVE_SECTION_BODY,		// cruise 
-	MOVE_SECTION_TAIL		// deceleration
+	SECTION_HEAD = 0,		// acceleration
+	SECTION_BODY,			// cruise 
+	SECTION_TAIL			// deceleration
 };
 
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
@@ -200,8 +201,8 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
 	magic_t magic_start;			// magic number to test memory integrity
 	uint8_t move_state;				// state of the overall move
-	uint8_t section_state;			// state within a move section
 	uint8_t section;				// what section is the move in?
+	uint8_t section_state;			// state within a move section
 	uint8_t final_section;			// what is the final section?
 	uint8_t last_segment;
 	
