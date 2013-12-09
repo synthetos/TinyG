@@ -47,7 +47,7 @@ extern "C"{
 #define _to_millimeters(a) ((cm.gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
 #define JOGGING_START_VELOCITY ((float)10.0)
-#define DISABLE_SOFT_LIMIT (-1000000)
+//#define DISABLE_SOFT_LIMIT (-1000000)
 
 /*****************************************************************************
  * GCODE MODEL - The following GCodeModel/GCodeInput structs are used:

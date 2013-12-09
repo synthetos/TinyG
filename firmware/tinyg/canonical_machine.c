@@ -514,19 +514,25 @@ void cm_set_move_times(GCodeState_t *gcode_state)
  */
 stat_t cm_test_soft_limits(float target[])
 {
-	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		if (cm.homed[axis] != true) continue;		// don't test axes that are not homed
+    // don't test any soft limits while homing... we don't know where we are yet.
+    if( cm.cycle_state == CYCLE_HOMING )
+        return (STAT_OK);
+    
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+//        if (cm.homed[axis] != true) continue;             this test fails during homing cycle, not sure why...
+        
+        // min == max; limits disabled for this axis
+        if (fp_EQ(cm.a[axis].travel_min, cm.a[axis].travel_max)) continue;
 
-		if (fp_EQ(cm.a[axis].travel_min, cm.a[axis].travel_max)) continue;
+        if ((target[axis] < cm.a[axis].travel_min)) {
+            return (STAT_SOFT_LIMIT_EXCEEDED);
+        }
 
-		if ((cm.a[axis].travel_min > DISABLE_SOFT_LIMIT) && (target[axis] < cm.a[axis].travel_min)) {
-			return (STAT_SOFT_LIMIT_EXCEEDED);
-		}
-
-		if ((cm.a[axis].travel_max > DISABLE_SOFT_LIMIT) && (target[axis] > cm.a[axis].travel_max)) {
-			return (STAT_SOFT_LIMIT_EXCEEDED);
-		}
-	}
+        if ((target[axis] > cm.a[axis].travel_max)) {
+            return (STAT_SOFT_LIMIT_EXCEEDED);
+        }
+    }
+    
 	return (STAT_OK);
 }
 

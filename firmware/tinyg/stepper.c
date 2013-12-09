@@ -143,7 +143,9 @@ void st_cycle_start(void)
 
 void st_cycle_end(void)
 {
+#ifdef __STEP_DIAGNOSTICS
 	en_print_encoders();
+#endif
 }
 
 stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
