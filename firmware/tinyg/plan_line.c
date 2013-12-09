@@ -1023,13 +1023,15 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.target, bf->gm.target);	// save the final target of the move
 
-		// generate the section targets for enpoint corrections
+		// generate the section targets for enpoint detection / correction
+//		for (uint8_t s=0; s<SECTIONS; s++ ) {
 		for (uint8_t i=0; i<AXES; i++) {
-			mr.target_head[i] = mr.position[i] + mr.unit[i] * mr.head_length;
-			mr.target_body[i] = mr.position[i] + mr.unit[i] * mr.body_length;
-			mr.target_tail[i] = mr.position[i] + mr.unit[i] * mr.tail_length;
+			mr.section_target[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
+			mr.section_target[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
+			mr.section_target[SECTION_TAIL][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length + mr.tail_length);
 		}
-
+///		}
+		
 		// mark the last segment for this move for error correction
 		if (mr.tail_length > 0) { mr.final_section = SECTION_TAIL; } else 
 		if (mr.body_length > 0) { mr.final_section = SECTION_BODY; } 
@@ -1244,11 +1246,12 @@ static stat_t _exec_aline_tail()
 //static stat_t _exec_aline_segment(uint8_t correction_flag)
 static stat_t _exec_aline_segment()
 {
+	stat_t status = STAT_EAGAIN;
 	float steps[MOTORS];
 
 	// Identify the last segment of the move for endpoint error correction
 	// Don't do the endpoint correction if you are going into a hold or in a special cycle
-
+/*
 	if ((mr.segment_count == 1) && 					// if this is the last segment...
 		(mr.section_state == SECTION_RUN2) && 		//...of the second half
 		(mr.section == mr.final_section) &&			//...of the final section of the move (head/body/tail)
@@ -1262,24 +1265,35 @@ static stat_t _exec_aline_segment()
 		mr.gm.target[AXIS_B] = mr.target[AXIS_B];
 		mr.gm.target[AXIS_C] = mr.target[AXIS_C];
 	} else {
-		float intermediate = mr.segment_velocity * mr.segment_time;
-		mr.gm.target[AXIS_X] = mr.position[AXIS_X] + (mr.unit[AXIS_X] * intermediate);
-		mr.gm.target[AXIS_Y] = mr.position[AXIS_Y] + (mr.unit[AXIS_Y] * intermediate);
-		mr.gm.target[AXIS_Z] = mr.position[AXIS_Z] + (mr.unit[AXIS_Z] * intermediate);
-		mr.gm.target[AXIS_A] = mr.position[AXIS_A] + (mr.unit[AXIS_A] * intermediate);
-		mr.gm.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * intermediate);
-		mr.gm.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * intermediate);
+		float distance = mr.segment_velocity * mr.segment_time;
+		mr.gm.target[AXIS_X] = mr.position[AXIS_X] + (mr.unit[AXIS_X] * distance);
+		mr.gm.target[AXIS_Y] = mr.position[AXIS_Y] + (mr.unit[AXIS_Y] * distance);
+		mr.gm.target[AXIS_Z] = mr.position[AXIS_Z] + (mr.unit[AXIS_Z] * distance);
+		mr.gm.target[AXIS_A] = mr.position[AXIS_A] + (mr.unit[AXIS_A] * distance);
+		mr.gm.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * distance);
+		mr.gm.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * distance);
 	}
-/*
+*/
 	// Somewhat different treatment of the way-point problem from above
 	// Treat the target generation more as a "from here to there" problem, similar to
 	// the way a servo works. Send the segment towards a target and when it gets there 
 	// perform the ultimate correction to get it to the exact position.
-	float intermediate = mr.segment_velocity * mr.segment_time;
-	for (uint8_t i=0; i<AXES; i++) {	// generate the expected target
-		mr.gm.target[i] = mr.position[i] + (mr.unit[i] * intermediate);
+
+	// Generate the expected target
+	// Compute distance to section target
+
+	float section_distance = 0;
+	float segment_distance = mr.segment_velocity * mr.segment_time;
+	for (uint8_t i=0; i<AXES; i++) {
+		mr.gm.target[i] = mr.position[i] + mr.unit[i] * segment_distance;
+		section_distance += square(mr.section_target[mr.section][i] -  mr.gm.target[i]);
 	}
-*/	 
+	section_distance = sqrt(section_distance);
+	if (section_distance < segment_distance) {
+		copy_axis_vector(mr.gm.target, mr.section_target[mr.section]);
+		status = STAT_OK;
+	}
+	
 	// move target and positions around and read the encoder data
 
 	for (uint8_t i=0; i<MOTORS; i++) {
@@ -1304,8 +1318,9 @@ static stat_t _exec_aline_segment()
 		mr.position[AXIS_B] = mr.gm.target[AXIS_B];
 		mr.position[AXIS_C] = mr.gm.target[AXIS_C];	
 	}
-	if (--mr.segment_count == 0) return (STAT_OK);		// this section has run all its segments
-	return (STAT_EAGAIN);								// this section still has more segments to run
+	if (--mr.segment_count == 0) return (STAT_OK);		// failsafe: this section has run all its segments
+	return (status);
+//	return (STAT_EAGAIN);								// this section still has more segments to run
 }
 
 /****** UNIT TESTS ******/

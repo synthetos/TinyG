@@ -65,6 +65,7 @@ enum moveSection {
 	SECTION_BODY,			// cruise 
 	SECTION_TAIL			// deceleration
 };
+#define SECTIONS 3
 
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
@@ -209,10 +210,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
-
-	float target_head[AXES];		// endpoint for head
-	float target_body[AXES];		// endpoint for body
-	float target_tail[AXES];		// endppint for tail
+	float section_target[SECTIONS][AXES];// targets for each move section
 
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
 	float position_steps[MOTORS];	// current MR position (target from previous segment)
@@ -235,7 +233,6 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	uint32_t segment_count;			// count of running segments
 	float segment_time;				// actual time increment per aline segment
 	double microseconds;			// line or segment time in microseconds (double precision on ARM)
-	float segment_length;			// computed length for aline segment
 	float segment_velocity;			// computed velocity for aline segment
 	float forward_diff_1;			// forward difference level 1 (Acceleration)
 	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
