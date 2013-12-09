@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		405.01	// experimenting with endpoint detection by distance, not count
+#define TINYG_FIRMWARE_BUILD   		405.02	// testing endpoint detection by distance, not count
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -52,7 +52,7 @@
 
 /****** COMPILE-TIME SETTINGS ******/
 
-//#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
+#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
 
 #ifndef __SIMULATION
   #define __TEXT_MODE						// comment out to disable text mode support (saves ~9Kb)

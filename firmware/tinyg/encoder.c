@@ -30,8 +30,8 @@
 #include "planner.h"
 #include "stepper.h"
 #include "encoder.h"
-#include "kinematics.h"
-#include "canonical_machine.h"
+//#include "kinematics.h"
+//#include "canonical_machine.h"
 #include "hardware.h"
 
 /**** Allocate Structures ****/
@@ -90,6 +90,7 @@ stat_t en_assertions()
 
 void en_reset_encoders(void)
 {
+/*
 	// get position and target and transform to joint space as floats
 	ik_kinematics(cm.gm.target, en.target_steps_next);
 	ik_kinematics(cm.gmx.position, en.position_steps);
@@ -99,6 +100,7 @@ void en_reset_encoders(void)
 		en.en[i].position_steps = (int32_t)round(en.position_steps[i]);
 		en.en[i].position_advisory = en.en[i].position_steps;		// initial approximation
 	}
+*/
 }
 
 /* 
@@ -124,21 +126,23 @@ void en_reset_encoders(void)
 
 int32_t en_sample_encoder(uint8_t motor)
 {
-	return(en.en[motor].position_steps);
+	en.en[motor].encoder_target_steps = (int32_t)mr.position_deferred_steps[motor];
+	en.en[motor].error_steps = en.en[motor].encoder_steps - en.en[motor].encoder_target_steps;
+	return(en.en[motor].encoder_steps);
 }
 
 void en_sample_encoders(int32_t flag)
 {
-	if (flag != 0) return;	// Interlock. Should not be run if anything other than 0
+//	if (flag != 0) return;	// Interlock. Should not be run if anything other than 0
 
 //	mp_get_runtime_target_steps(en.target_steps_next);
-	ik_kinematics(mr.target, en.target_steps_next);
+//	ik_kinematics(mr.target, en.target_steps_next);
 
 	for (uint8_t i=0; i<MOTORS; i++) {
-		en.en[i].error_steps = en.en[i].position_steps - en.en[i].target_steps;
-		en.en[i].error_advisory = (float)en.en[i].error_steps * st_cfg.mot[i].units_per_step;
+		en.en[i].error_steps = en.en[i].encoder_steps - en.en[i].encoder_target_steps;
+		en.en[i].encoder_error_advisory = (float)en.en[i].error_steps * st_cfg.mot[i].units_per_step;
 //		if (i==MOTOR_3) en_print_encoder(i);	//++++++ DIAGNOSTIC
-		en.en[i].target_steps = (int32_t)round(en.target_steps_next[i]);// transfer staged target to working target
+		en.en[i].encoder_target_steps = (int32_t)round(en.target_steps_next[i]);// transfer staged target to working target
 	}
 }
 
@@ -152,7 +156,7 @@ void en_sample_encoders(int32_t flag)
 void en_update_position_steps_advisory(const float steps[])
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
-		en.en[i].position_advisory += steps[i];
+		en.en[i].encoder_position_advisory += steps[i];
 	}
 }
 
@@ -161,26 +165,26 @@ void en_print_encoder(const uint8_t motor)
 	printf("%d,%0.2f,%li,%li,%li,%0.3f\n",
 //	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
 		motor+1,
-		(double)en.en[motor].position_advisory,
-		en.en[motor].position_steps, 
-		en.en[motor].target_steps,
+		(double)en.en[motor].encoder_position_advisory,
+		en.en[motor].encoder_steps, 
+		en.en[motor].encoder_target_steps,
 		en.en[motor].error_steps,
-		(double)en.en[motor].error_advisory);
+		(double)en.en[motor].encoder_error_advisory);
 }
 
 void en_print_encoders()
 {
-	en_sample_encoders(0);
+//	en_sample_encoders(0);
 
 	for (uint8_t i=0; i<MOTORS; i++) {
 //		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
 		printf("{\"en%d\":{\"pos\":%li,\"tgt\":%li,\"err\":%li,\"err_adv\":%0.5f}}\n",
 			i+1,
 //			(double)en.en[i].position_advisory,
-			en.en[i].position_steps, 
-			en.en[i].target_steps,
+			en.en[i].encoder_steps, 
+			en.en[i].encoder_target_steps,
 			en.en[i].error_steps,
-			(double)en.en[i].error_advisory);
+			(double)en.en[i].encoder_error_advisory);
 	}
 }
 

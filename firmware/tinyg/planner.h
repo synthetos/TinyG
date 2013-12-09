@@ -204,8 +204,6 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	uint8_t move_state;				// state of the overall move
 	uint8_t section;				// what section is the move in?
 	uint8_t section_state;			// state within a move section
-	uint8_t final_section;			// what is the final section?
-	uint8_t last_segment;
 	
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float target[AXES];				// final target for bf (used to correct rounding errors)
@@ -214,7 +212,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
 	float position_steps[MOTORS];	// current MR position (target from previous segment)
-	float projected_steps[MOTORS];	// should will align with next encoder sample (target from 2nd previous segment)
+	float position_deferred_steps[MOTORS];	// should will align with next encoder sample (target from 2nd previous segment)
 	int32_t encoder_steps[MOTORS];	// encoder position - should be same as target_steps_2 
 	int32_t encoder_error[MOTORS];
 
@@ -225,7 +223,6 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float cruise_velocity;
 	float exit_velocity;
 
-	float length;					// length of line in mm
 	float midpoint_velocity;		// velocity at accel/decel midpoint
 	float jerk;						// max linear jerk
 

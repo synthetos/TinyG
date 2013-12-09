@@ -37,7 +37,7 @@
 #include "encoder.h"
 #include "report.h"
 #include "util.h"
-//#include "xio/xio.h"			// uncomment for debugging
+//#include "xio.h"			// uncomment for debugging
 
 #ifdef __cplusplus
 extern "C"{
@@ -58,7 +58,6 @@ static stat_t _exec_aline_head(void);
 static stat_t _exec_aline_body(void);
 static stat_t _exec_aline_tail(void);
 static stat_t _exec_aline_segment(void);
-//static stat_t _exec_aline_segment(uint8_t correction_flag);
 static void _init_forward_diffs(float t0, float t2);
 //static float _compute_next_segment_velocity(void);
 
@@ -1024,18 +1023,16 @@ static stat_t _exec_aline(mpBuf_t *bf)
 		copy_axis_vector(mr.target, bf->gm.target);	// save the final target of the move
 
 		// generate the section targets for enpoint detection / correction
-//		for (uint8_t s=0; s<SECTIONS; s++ ) {
 		for (uint8_t i=0; i<AXES; i++) {
 			mr.section_target[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
 			mr.section_target[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
 			mr.section_target[SECTION_TAIL][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length + mr.tail_length);
 		}
-///		}
 		
 		// mark the last segment for this move for error correction
-		if (mr.tail_length > 0) { mr.final_section = SECTION_TAIL; } else 
-		if (mr.body_length > 0) { mr.final_section = SECTION_BODY; } 
-		else { mr.final_section = SECTION_HEAD; }
+//		if (mr.tail_length > 0) { mr.final_section = SECTION_TAIL; } else 
+//		if (mr.body_length > 0) { mr.final_section = SECTION_BODY; } 
+//		else { mr.final_section = SECTION_HEAD; }
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -1249,38 +1246,9 @@ static stat_t _exec_aline_segment()
 	stat_t status = STAT_EAGAIN;
 	float steps[MOTORS];
 
-	// Identify the last segment of the move for endpoint error correction
-	// Don't do the endpoint correction if you are going into a hold or in a special cycle
-/*
-	if ((mr.segment_count == 1) && 					// if this is the last segment...
-		(mr.section_state == SECTION_RUN2) && 		//...of the second half
-		(mr.section == mr.final_section) &&			//...of the final section of the move (head/body/tail)
-		(cm.motion_state == MOTION_RUN) && 			// ..and not going into a hold 
-		(cm.cycle_state == CYCLE_MACHINING)) {		// ..and isn't a special cycles (homing, probing, jogging)
-
-		mr.gm.target[AXIS_X] = mr.target[AXIS_X];	// correct any accumulated rounding errors in last segment
-		mr.gm.target[AXIS_Y] = mr.target[AXIS_Y];
-		mr.gm.target[AXIS_Z] = mr.target[AXIS_Z];
-		mr.gm.target[AXIS_A] = mr.target[AXIS_A];
-		mr.gm.target[AXIS_B] = mr.target[AXIS_B];
-		mr.gm.target[AXIS_C] = mr.target[AXIS_C];
-	} else {
-		float distance = mr.segment_velocity * mr.segment_time;
-		mr.gm.target[AXIS_X] = mr.position[AXIS_X] + (mr.unit[AXIS_X] * distance);
-		mr.gm.target[AXIS_Y] = mr.position[AXIS_Y] + (mr.unit[AXIS_Y] * distance);
-		mr.gm.target[AXIS_Z] = mr.position[AXIS_Z] + (mr.unit[AXIS_Z] * distance);
-		mr.gm.target[AXIS_A] = mr.position[AXIS_A] + (mr.unit[AXIS_A] * distance);
-		mr.gm.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * distance);
-		mr.gm.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * distance);
-	}
-*/
-	// Somewhat different treatment of the way-point problem from above
-	// Treat the target generation more as a "from here to there" problem, similar to
-	// the way a servo works. Send the segment towards a target and when it gets there 
+	// Treat the target generation as a "from here to there" problem, similar to the
+	// way a servo works. Send the segment towards a target and when it gets there 
 	// perform the ultimate correction to get it to the exact position.
-
-	// Generate the expected target
-	// Compute distance to section target
 
 	float section_distance = 0;
 	float segment_distance = mr.segment_velocity * mr.segment_time;
@@ -1289,38 +1257,35 @@ static stat_t _exec_aline_segment()
 		section_distance += square(mr.section_target[mr.section][i] -  mr.gm.target[i]);
 	}
 	section_distance = sqrt(section_distance);
-	if (section_distance < segment_distance) {
+	if ((section_distance < segment_distance) || (--mr.segment_count == 0)) { // seg count is a failsafe
 		copy_axis_vector(mr.gm.target, mr.section_target[mr.section]);
 		status = STAT_OK;
 	}
 	
-	// move target and positions around and read the encoder data
+	// prep the segment for the steppers and adjust the variables for the next iteration
 
 	for (uint8_t i=0; i<MOTORS; i++) {
-		mr.projected_steps[i] = mr.position_steps[i];// previous segment position becomes projected
+		mr.position_deferred_steps[i] = mr.position_steps[i];// previous segment position becomes projected
 		mr.position_steps[i] = mr.target_steps[i];	 // previous segment's target becomes poaition
 		mr.encoder_steps[i] = en_sample_encoder(i);	 // get the current encoder values
-		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.projected_steps[i];
+		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.position_deferred_steps[i];
 	}
-
-	// prep the segment for the steppers and adjust the variables for the next iteration
 	ik_kinematics(mr.gm.target, mr.target_steps);
-
 	for (uint8_t i=0; i<MOTORS; i++) {
 		steps[i] = mr.target_steps[i] - mr.position_steps[i];
 	}
-	if (st_prep_line(steps, mr.microseconds, mr.encoder_error) == STAT_OK) {
-//		copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
-		mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	
-		mr.position[AXIS_Y] = mr.gm.target[AXIS_Y];
-		mr.position[AXIS_Z] = mr.gm.target[AXIS_Z];
-		mr.position[AXIS_A] = mr.gm.target[AXIS_A];
-		mr.position[AXIS_B] = mr.gm.target[AXIS_B];
-		mr.position[AXIS_C] = mr.gm.target[AXIS_C];	
-	}
-	if (--mr.segment_count == 0) return (STAT_OK);		// failsafe: this section has run all its segments
+
+	ritorno(st_prep_line(steps, mr.microseconds, mr.encoder_error));
+
+//	copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
+	mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	
+	mr.position[AXIS_Y] = mr.gm.target[AXIS_Y];
+	mr.position[AXIS_Z] = mr.gm.target[AXIS_Z];
+	mr.position[AXIS_A] = mr.gm.target[AXIS_A];
+	mr.position[AXIS_B] = mr.gm.target[AXIS_B];
+	mr.position[AXIS_C] = mr.gm.target[AXIS_C];	
+
 	return (status);
-//	return (STAT_EAGAIN);								// this section still has more segments to run
 }
 
 /****** UNIT TESTS ******/
