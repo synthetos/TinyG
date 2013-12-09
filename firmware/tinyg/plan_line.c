@@ -1134,13 +1134,13 @@ static stat_t _exec_aline_head()
 		}
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 		mr.section = SECTION_HEAD;
-		mr.section_state = SECTION_RUN1;
+		mr.section_state = SECTION_1st_HALF;
 	}
-	if (mr.section_state == SECTION_RUN1) {					// concave part of accel curve (period 1)
+	if (mr.section_state == SECTION_1st_HALF) {				// concave part of accel curve (period 1)
 		mr.segment_velocity += mr.forward_diff_1;
 		if (_exec_aline_segment() == STAT_OK) { 			// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
-			mr.section_state = SECTION_RUN2;
+			mr.section_state = SECTION_2nd_HALF;
 
 			// Here's a trick: The second half of the S starts at the end of the first,
 			//  And the only thing that changes is the sign of mr.forward_diff_2
@@ -1150,7 +1150,7 @@ static stat_t _exec_aline_head()
 		}
 		return(STAT_EAGAIN);
 	}
-	if (mr.section_state == SECTION_RUN2) {					// convex part of accel curve (period 2)
+	if (mr.section_state == SECTION_2nd_HALF) {				// convex part of accel curve (period 2)
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
 		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
@@ -1184,9 +1184,9 @@ static stat_t _exec_aline_body()
 			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
 		}		
 		mr.section = SECTION_BODY;
-		mr.section_state = SECTION_RUN2;					// uses RUN2 so last segment detection works
+		mr.section_state = SECTION_2nd_HALF;				// uses PERIOD_2 so last segment detection works
 	}
-	if (mr.section_state == SECTION_RUN2) {					// straight part (period 3)
+	if (mr.section_state == SECTION_2nd_HALF) {				// straight part (period 3)
 		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
 			if (fp_ZERO(mr.tail_length)) return(STAT_OK);	// ends the move
 			mr.section = SECTION_TAIL;
@@ -1213,13 +1213,13 @@ static stat_t _exec_aline_tail()
 		}
 		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
 		mr.section = SECTION_TAIL;
-		mr.section_state = SECTION_RUN1;
+		mr.section_state = SECTION_1st_HALF;
 	}
-	if (mr.section_state == SECTION_RUN1) {					// convex part (period 4)
+	if (mr.section_state == SECTION_1st_HALF) {				// convex part (period 4)
 		mr.segment_velocity += mr.forward_diff_1;
 		if (_exec_aline_segment() == STAT_OK) {				// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
-			mr.section_state = SECTION_RUN2;
+			mr.section_state = SECTION_2nd_HALF;
 
 			// Here's a trick: The second half of the S starts at the end of the first,
 			//  And the only thing that changes is the sign of mr.forward_diff_2
@@ -1229,7 +1229,7 @@ static stat_t _exec_aline_tail()
 		}
 		return(STAT_EAGAIN);
 	}
-	if (mr.section_state == SECTION_RUN2) {					// concave part (period 5)
+	if (mr.section_state == SECTION_2nd_HALF) {				// concave part (period 5)
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
 		return (_exec_aline_segment()); 					// ends the move or continues EAGAIN
@@ -1257,10 +1257,12 @@ static stat_t _exec_aline_segment()
 		section_distance += square(mr.section_target[mr.section][i] -  mr.gm.target[i]);
 	}
 	section_distance = sqrt(section_distance);
-	if ((section_distance < segment_distance) || (--mr.segment_count == 0)) { // seg count is a failsafe
+	if ((section_distance < segment_distance) || 
+		((mr.segment_count == 1) && (mr.section_state == SECTION_2nd_HALF))) {
 		copy_axis_vector(mr.gm.target, mr.section_target[mr.section]);
 		status = STAT_OK;
 	}
+	if (--mr.segment_count == 0) status = STAT_OK; 	// finishes the 1st half 
 	
 	// prep the segment for the steppers and adjust the variables for the next iteration
 
@@ -1275,16 +1277,17 @@ static stat_t _exec_aline_segment()
 		steps[i] = mr.target_steps[i] - mr.position_steps[i];
 	}
 
+	// prep the move. return if there's an error
 	ritorno(st_prep_line(steps, mr.microseconds, mr.encoder_error));
-
-//	copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
+	copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
+/*
 	mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	
 	mr.position[AXIS_Y] = mr.gm.target[AXIS_Y];
 	mr.position[AXIS_Z] = mr.gm.target[AXIS_Z];
 	mr.position[AXIS_A] = mr.gm.target[AXIS_A];
 	mr.position[AXIS_B] = mr.gm.target[AXIS_B];
 	mr.position[AXIS_C] = mr.gm.target[AXIS_C];	
-
+*/
 	return (status);
 }
 

@@ -53,19 +53,19 @@ enum moveState {
 	MOVE_SKIP				// mark a skipped block
 };
 
-enum sectionState {
-	SECTION_OFF = 0,		// move inactive (MUST BE ZERO)
-	SECTION_NEW,			// general value if you need an initialization
-	SECTION_RUN1,			// general run state (for non-acceleration moves) 
-	SECTION_RUN2			// used for sub-states
-};
-
 enum moveSection {
 	SECTION_HEAD = 0,		// acceleration
 	SECTION_BODY,			// cruise 
 	SECTION_TAIL			// deceleration
 };
 #define SECTIONS 3
+
+enum sectionState {
+	SECTION_OFF = 0,		// section inactive
+	SECTION_NEW,			// uninitialized section
+	SECTION_1st_HALF,		// first half of S curve
+	SECTION_2nd_HALF		// second half of S curve or running a BODY (cruise)
+};
 
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 

@@ -98,10 +98,10 @@ typedef struct enEncoder { 			// one real or virtual encoder per controlled moto
 	int8_t  step_sign;				// set to +1 or -1
 	int16_t steps_run;				// steps counted during stepper interrupt
 	int32_t encoder_steps;			// counted encoder position	in steps
-	int32_t encoder_target_steps;	// target position in steps
+	int32_t target_steps;			// target position in steps
 	int32_t error_steps;			// step error between target and position
-	float   encoder_position_advisory; // ADVISORY ONLY: incoming floating point steps
-	float   encoder_error_advisory;	   // ADVISORY ONLY: error between target and position in mm
+	float   position_advisory; 		// ADVISORY ONLY: incoming floating point steps
+	float   error_advisory;	  		// ADVISORY ONLY: error between target and position in mm
 } enEncoder_t;
 
 typedef struct enEncoders {
