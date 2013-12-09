@@ -611,11 +611,11 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
 			if (en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
 				if (steps[i] > en.en[i].position_error_steps) {
 					steps[i] -= en.en[i].position_error_steps;		// remove some steps
-					printf("%li",en.en[i].position_error_steps);
+//					printf("%li",en.en[i].position_error_steps);
 				}
 			} else if (-en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
 				steps[i] -= en.en[i].position_error_steps;			// add some steps
-				printf("%li",en.en[i].position_error_steps);
+//				printf("%li",en.en[i].position_error_steps);
 			}
 		}
 /*

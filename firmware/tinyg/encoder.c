@@ -147,21 +147,21 @@ void en_sample_position_error()
 		en.en[i].target_steps = (int32_t)round(en.target_steps_next[i]);// transfer staged target to working target
 	}
 
-	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
-		MOTOR_2+1,
-		(double)en.en[MOTOR_2].position_steps_advisory,
-		en.en[MOTOR_2].position_steps, 
-		en.en[MOTOR_2].target_steps,
-		en.en[MOTOR_2].position_error_steps,
-		(double)en.en[MOTOR_2].position_error_advisory);
+//	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
+//		MOTOR_2+1,
+//		(double)en.en[MOTOR_2].position_steps_advisory,
+//		en.en[MOTOR_2].position_steps, 
+//		en.en[MOTOR_2].target_steps,
+//		en.en[MOTOR_2].position_error_steps,
+//		(double)en.en[MOTOR_2].position_error_advisory);
 
-	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n\n",
-		MOTOR_3+1,
-		(double)en.en[MOTOR_3].position_steps_advisory,
-		en.en[MOTOR_3].position_steps, 
-		en.en[MOTOR_3].target_steps,
-		en.en[MOTOR_3].position_error_steps,
-		(double)en.en[MOTOR_3].position_error_advisory);
+//	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n\n",
+//		MOTOR_3+1,
+//		(double)en.en[MOTOR_3].position_steps_advisory,
+//		en.en[MOTOR_3].position_steps, 
+//		en.en[MOTOR_3].target_steps,
+//		en.en[MOTOR_3].position_error_steps,
+//		(double)en.en[MOTOR_3].position_error_advisory);
 
 }
 

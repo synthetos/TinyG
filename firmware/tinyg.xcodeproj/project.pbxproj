@@ -50,6 +50,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		20018E811852910E00634338 /* encoder.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = encoder.c; sourceTree = "<group>"; };
+		20018E821852910E00634338 /* encoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = encoder.h; sourceTree = "<group>"; };
 		204C2F5A183D4B960058D2F2 /* canonical_machine.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = canonical_machine.c; sourceTree = "<group>"; };
 		204C2F5B183D4B960058D2F2 /* canonical_machine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = canonical_machine.h; sourceTree = "<group>"; };
 		204C2F5C183D4B960058D2F2 /* config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = config.c; sourceTree = "<group>"; };
@@ -203,6 +205,8 @@
 		204C2F59183D4B960058D2F2 /* tinyg */ = {
 			isa = PBXGroup;
 			children = (
+				20018E811852910E00634338 /* encoder.c */,
+				20018E821852910E00634338 /* encoder.h */,
 				204C2F5A183D4B960058D2F2 /* canonical_machine.c */,
 				204C2F5B183D4B960058D2F2 /* canonical_machine.h */,
 				204C2F5C183D4B960058D2F2 /* config.c */,
@@ -593,6 +597,7 @@
 				204C3034183D4E220058D2F2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
