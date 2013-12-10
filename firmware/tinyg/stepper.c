@@ -143,7 +143,7 @@ void st_cycle_start(void)
 
 void st_cycle_end(void)
 {
-	mp_print_positions();
+	mp_print_motor_positions();
 }
 
 stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
@@ -554,8 +554,7 @@ static void _load_move()
  *		  will never be called - but this is OK as no more correction is required or possible.
  */
 
-//stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
-stat_t st_prep_line(float steps[], float microseconds, int32_t encoder_error[])
+stat_t st_prep_line(float steps[], float microseconds, float encoder_error[])
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);

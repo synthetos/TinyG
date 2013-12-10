@@ -213,8 +213,8 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
 	float position_steps[MOTORS];	// current MR position (target from previous segment)
 	float position_delayed[MOTORS];	// will align with next encoder sample (target from 2nd previous segment)
-	int32_t encoder_steps[MOTORS];	// encoder position - should be same as target_steps_2 
-	int32_t encoder_error[MOTORS];
+	float encoder_position[MOTORS];// encoder position - should be same as target_steps_2 
+	float encoder_error[MOTORS];
 
 	float head_length;				// copies of bf variables of same name
 	float body_length;
@@ -292,8 +292,8 @@ uint8_t mp_get_runtime_busy(void);
 // plan_exec.c functions
 stat_t mp_exec_move(void);
 stat_t mp_exec_aline(mpBuf_t *bf);
-void mp_print_position(const uint8_t motor);
-void mp_print_positions(void);
+void mp_print_motor_position(const uint8_t motor);
+void mp_print_motor_positions(void);
 
 #ifdef __DEBUG
 void mp_dump_running_plan_buffer(void);
