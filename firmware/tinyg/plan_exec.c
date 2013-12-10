@@ -289,12 +289,13 @@ static stat_t _exec_aline_head()
 		mr.segments = uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec); // # of segments in *each half*
 
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
-		mr.segment_count = (uint32_t)mr.segments;
+//		mr.segment_count = (uint32_t)mr.segments;
+		mr.segment_count = (uint32_t)round(mr.segments);
 
-		mr.microseconds = NOM_SEGMENT_USEC;
-//		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-//			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-//		}
+//		mr.microseconds = NOM_SEGMENT_USEC;
+		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
+			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
+		}
 
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 		mr.section = SECTION_HEAD;
@@ -346,12 +347,13 @@ static stat_t _exec_aline_body()
 
 		mr.segment_time = mr.gm.move_time / mr.segments;
 		mr.segment_velocity = mr.cruise_velocity;
-		mr.segment_count = (uint32_t)mr.segments;
+//		mr.segment_count = (uint32_t)mr.segments;
+		mr.segment_count = (uint32_t)round(mr.segments);
 
-		mr.microseconds = NOM_SEGMENT_USEC;
-//		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-//			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-//		}		
+//		mr.microseconds = NOM_SEGMENT_USEC;
+		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
+			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
+		}		
 
 		mr.section = SECTION_BODY;
 		mr.section_state = SECTION_2nd_HALF;				// uses PERIOD_2 so last segment detection works
@@ -380,12 +382,13 @@ static stat_t _exec_aline_tail()
 		mr.segments = uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec);// # of segments in *each half*
 
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
-		mr.segment_count = (uint32_t)mr.segments;
+//		mr.segment_count = (uint32_t)mr.segments;
+		mr.segment_count = (uint32_t)round(mr.segments);
 
-		mr.microseconds = NOM_SEGMENT_USEC;
-//		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-//			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-//		}
+//		mr.microseconds = NOM_SEGMENT_USEC;
+		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
+			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
+		}
 
 		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
 		mr.section = SECTION_TAIL;
@@ -435,7 +438,7 @@ static stat_t _exec_aline_segment()
 	section_distance = sqrt(section_distance);
 	if ((section_distance < segment_distance) || 
 		((mr.segment_count == 1) && (mr.section_state == SECTION_2nd_HALF))) {
-		copy_axis_vector(mr.gm.target, mr.section_target[mr.section]);
+//		copy_axis_vector(mr.gm.target, mr.section_target[mr.section]);
 		status = STAT_OK;
 	}
 	if (--mr.segment_count == 0) status = STAT_OK; 	// finishes the 1st half 
@@ -475,7 +478,7 @@ static stat_t _exec_aline_segment()
 
 void mp_print_motor_position(const uint8_t motor)
 {
-	printf("{\"m%d\":{\"tgt\":%0.0f,\"pos\":%0.0f,\"dly\":%0.0f,\"enc\":%0.0f,\"err\":%0.0f}}\n",
+	printf("{\"m%d\":{\"tgt\":%0.3f,\"pos\":%0.3f,\"dly\":%0.3f,\"enc\":%0.3f,\"err\":%0.3f}}\n",
 		motor+1,
 		(double)mr.target_steps[motor],
 		(double)mr.position_steps[motor],
@@ -486,9 +489,16 @@ void mp_print_motor_position(const uint8_t motor)
 
 void mp_print_motor_positions()
 {
+	printf("\n");
+	mp_print_motor_position(MOTOR_1);
+	mp_print_motor_position(MOTOR_2);
+//	mp_print_motor_position(MOTOR_3);
+//	mp_print_motor_position(MOTOR_4);
+/*
 	for (uint8_t i=0; i<MOTORS; i++) {
 		mp_print_motor_position(i);
 	}
+*/
 }
 
 #ifdef __cplusplus

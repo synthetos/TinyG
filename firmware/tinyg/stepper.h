@@ -295,7 +295,6 @@ enum stPrepBufferState {
  *	This value is set for maximum accuracy; best not to mess with this.
  */
 #define DDA_SUBSTEPS (double)5000000	// 5,000,000 accumulates substeps to max decimal places
-//#define DDA_SUBSTEPS (double)100000	// 100,000 accumulates substeps to 6 decimal places
 
 /*
  * Stepper control structures
