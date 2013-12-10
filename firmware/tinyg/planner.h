@@ -292,6 +292,8 @@ uint8_t mp_get_runtime_busy(void);
 // plan_exec.c functions
 stat_t mp_exec_move(void);
 stat_t mp_exec_aline(mpBuf_t *bf);
+void mp_print_position(const uint8_t motor);
+void mp_print_positions(void);
 
 #ifdef __DEBUG
 void mp_dump_running_plan_buffer(void);

@@ -31,7 +31,6 @@
 #include "stepper.h"
 #include "encoder.h"
 #include "kinematics.h"
-//#include "canonical_machine.h"
 #include "hardware.h"
 
 /**** Allocate Structures ****/
@@ -68,10 +67,10 @@ stat_t en_assertions()
  * en_reset_encoders() - initialize encoder values and position
  *
  *	en_reset_encoder() reset the encoders at the start of a machining cycle.
- *	This sets the position and target and zeros all step counts. Position and target
- *	are delivered as floats in axis space (work space). These need to be converted to
- *	integer steps in motor space (joint apsce). This establishes the "step grid" 
- *	relative to the current machine position.
+ *	This sets the encoder_position to match the MODEL position. This establishes 
+ *	the "step grid" relative to the current machine position. Note that 
+ *	encoder_position is in integer steps, so it's not an exact representation 
+ *	of machine position except if the machine is at zero. 
  *
  *	Reset is called on cycle start which can have the following cases:
  *
@@ -90,110 +89,29 @@ stat_t en_assertions()
 
 void en_reset_encoders(void)
 {
-//	float target_steps[MOTORS];
-//	ik_kinematics(cm.gm.target, target_steps);
-
 	float initial_position[MOTORS];
 	ik_kinematics(cm.gmx.position, initial_position);	// as steps in floating point
 
 	for (uint8_t i=0; i<MOTORS; i++) {
 		en.en[i].encoder_position = (int32_t)round(initial_position[i]);
 	}
-
-//	for (uint8_t i=0; i<MOTORS; i++) {
-//		en.en[i].target_steps = (int32_t)round(target_steps[i]);// transfer initial target to working target
-//		en.en[i].encoder_position = (int32_t)round(initial_position[i]);
-//		en.en[i].advisory_position = en.en[i].position_steps;		// initial approximation
-//	}
 }
 
 /* 
- * en_sample_encoders()
+ * en_sample_encoder()
  *
- *	en_sample_encoders() should be only be called when the position steps reading has 
- *	caught up with the target steps. This means that it must be synchronized with the 
- *	when the last segment has completed being pulsed out by the stepper ISR. This 
- *	synchronization is handled by the PREP routine. See explanation in encoder.h.
- *
- *	en_sample_encoders() does a few things:
- *
- *	- It loads the target currently in the EXEC runtime, which is one move ahead of the 
- *	  move that was just run. This saves the target so it can be used later for computing 
- *	  the error term for the next move.
- *
- *  - It computes the position error in steps and in MM. The MM ppsition is advisory only
- *	  as it relates to the Axis (not the Motor) and assumes a cartesian machine. Error correction
- *	  should always be performed using position_error_steps, not position_error_advisory.
- *
- *	  The error terms remain stable until the next time en_sample_position_error() is called
+ *	The stepper ISR count steps into steps_run(). These values are accumulated to 
+ *	encoder_position during LOAD (HI interrupt level). The encoder position is 
+ *	therefore always stable. But be advised: the position lags target and position
+ *	valaues elsewherein the system becuase the sample is taken when the steps for 
+ *	that segment are complete.
  */
 
 int32_t en_sample_encoder(uint8_t motor)
 {
-//	en.en[motor].target_steps = (int32_t)mr.position_delayed[motor];
-//	en.en[motor].error_steps = en.en[motor].encoder_steps - en.en[motor].target_steps;
 	return(en.en[motor].encoder_position);
 }
-/*
-void en_sample_encoders(int32_t flag)
-{
-//	if (flag != 0) return;	// Interlock. Should not be run if anything other than 0
 
-//	mp_get_runtime_target_steps(en.target_steps_next);
-//	ik_kinematics(mr.target, en.target_steps_next);
-
-	for (uint8_t i=0; i<MOTORS; i++) {
-		en.en[i].error_steps = en.en[i].encoder_steps - en.en[i].target_steps;
-		en.en[i].error_advisory = (float)en.en[i].error_steps * st_cfg.mot[i].units_per_step;
-//		if (i==MOTOR_3) en_print_encoder(i);	//++++++ DIAGNOSTIC
-		en.en[i].target_steps = (int32_t)round(en.target_steps_next[i]);// transfer staged target to working target
-	}
-}
-*/
-
-/*
- * DIAGNOSTICS
- * en_update_position_steps_advisory() - add new incoming steps. Handy diagnostic. It's not used for anything else.
- * en_print_encoder()
- * en_print_encoders()
- */
-/*
-void en_update_position_steps_advisory(const float steps[])
-{
-	for (uint8_t i=0; i<MOTORS; i++) {
-		en.en[i].position_advisory += steps[i];
-	}
-}
-*/
-/*
-void en_print_encoder(const uint8_t motor)
-{
-	printf("%d,%0.2f,%li,%li,%li,%0.3f\n",
-//	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
-		motor+1,
-		(double)en.en[motor].position_advisory,
-		en.en[motor].encoder_steps, 
-		en.en[motor].target_steps,
-		en.en[motor].error_steps,
-		(double)en.en[motor].error_advisory);
-}
-
-void en_print_encoders()
-{
-//	en_sample_encoders(0);
-
-	for (uint8_t i=0; i<MOTORS; i++) {
-//		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
-		printf("{\"en%d\":{\"pos\":%li,\"tgt\":%li,\"err\":%li,\"err_adv\":%0.5f}}\n",
-			i+1,
-//			(double)en.en[i].position_advisory,
-			en.en[i].encoder_steps, 
-			en.en[i].target_steps,
-			en.en[i].error_steps,
-			(double)en.en[i].error_advisory);
-	}
-}
-*/
 
 /***********************************************************************************
  * CONFIGURATION AND INTERFACE FUNCTIONS

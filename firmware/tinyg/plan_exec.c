@@ -191,11 +191,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 			mr.section_target[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
 			mr.section_target[SECTION_TAIL][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length + mr.tail_length);
 		}
-		
-		// mark the last segment for this move for error correction
-//		if (mr.tail_length > 0) { mr.final_section = SECTION_TAIL; } else 
-//		if (mr.body_length > 0) { mr.final_section = SECTION_BODY; } 
-//		else { mr.final_section = SECTION_HEAD; }
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -453,9 +448,16 @@ static stat_t _exec_aline_segment()
 */
 	return (status);
 }
+
+
 /*
-void _print_position(const uint8_t motor)
+ * mp_print_position()
+ * mp_print_position2()
+ */
+
+void mp_print_position(const uint8_t motor)
 {
+/*
 	printf("%d,%0.2f,%li,%li,%li,%0.3f\n",
 //	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
 		motor+1,
@@ -464,11 +466,14 @@ void _print_position(const uint8_t motor)
 		en.en[motor].target_steps,
 		en.en[motor].error_steps,
 		(double)en.en[motor].error_advisory);
+*/
 }
 
-void _print_positions()
+void mp_print_positions()
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
+		mp_print_position(i);
+/*
 //		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
 		printf("{\"en%d\":{\"pos\":%li,\"tgt\":%li,\"err\":%li,\"err_adv\":%0.5f}}\n",
 			i+1,
@@ -477,9 +482,9 @@ void _print_positions()
 			en.en[i].target_steps,
 			en.en[i].error_steps,
 			(double)en.en[i].error_advisory);
+*/
 	}
 }
-*/
 
 #ifdef __cplusplus
 }
