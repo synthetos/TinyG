@@ -59,8 +59,7 @@
 #include "planner.h"
 #include "stepper.h"
 #include "report.h"
-#include "util.h"
-//#include "xio/xio.h"			// uncomment for debugging
+//#include "xio.h"			// uncomment for debugging
 
 #ifdef __cplusplus
 extern "C"{
@@ -153,31 +152,6 @@ void mp_set_planner_position(uint8_t axis, const float position)
 void mp_set_runtime_position(uint8_t axis, const float position)
 {
 	mr.position[axis] = position;
-}
-
-/*************************************************************************
- * mp_exec_move() - execute runtime functions to prep move for steppers
- *
- *	Dequeues the buffer queue and executes the move continuations.
- *	Manages run buffers and other details
- */
-
-stat_t mp_exec_move()
-{
-	mpBuf_t *bf;
-
-	if ((bf = mp_get_run_buffer()) == NULL) return (STAT_NOOP);	// NULL means nothing's running
-
-	// Manage cycle and motion state transitions
-	// Cycle auto-start for lines only
-	if (bf->move_type == MOVE_TYPE_ALINE) {
-//		if (cm.cycle_state == CYCLE_OFF) {	// testing if this can be removed
-//			cm_cycle_start();				// this should already be taken care of by G0,G1,G2,G3
-//		}
-		if (cm.motion_state == MOTION_STOP) cm_set_motion_state(MOTION_RUN);
-	}
-	if (bf->bf_func != NULL) { return (bf->bf_func(bf));} 	// run the move callback in the planner buffer
-	return(cm_hard_alarm(STAT_INTERNAL_ERROR));				// never supposed to get here
 }
 
 /************************************************************************************
