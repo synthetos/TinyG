@@ -52,7 +52,7 @@
 
 /****** COMPILE-TIME SETTINGS ******/
 
-//#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
+#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
 
 #ifndef __SIMULATION
   #define __TEXT_MODE						// comment out to disable text mode support (saves ~9Kb)

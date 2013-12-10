@@ -109,7 +109,6 @@ void stepper_init()
 	TIMER_EXEC.CTRLB = STEP_TIMER_WGMODE;		// waveform mode
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = SWI_PERIOD;				// set period
-
 	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
 }
 
@@ -136,12 +135,15 @@ stat_t st_assertions()
 void st_cycle_start(void)
 {
 	st_pre.cycle_start = true;		// triggers stepper resets
-	en_reset_encoders();			// see explanation in en_reset_encoders()
+	for (uint8_t i=0; i<MOTORS; i++) {
+		st_pre.mot[i].cycle_start = true;
+	}
+	en_reset_encoders();
 }
 
 void st_cycle_end(void)
 {
-	en_print_encoders();
+	mp_print_positions();
 }
 
 stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
@@ -434,7 +436,7 @@ static void _load_move()
 			}
 		}
 		// accumulate counted steps to the step position and zero out counted steps for the segment currently being loaded
-		en.en[MOTOR_1].encoder_steps += en.en[MOTOR_1].steps_run;		// NB: steps_run can be + or - value
+		en.en[MOTOR_1].encoder_position += en.en[MOTOR_1].steps_run;// NB: steps_run can be + or - value
 		en.en[MOTOR_1].steps_run = 0;
 
 		//**** MOTOR_2 LOAD ****
@@ -455,7 +457,7 @@ static void _load_move()
 				st_run.mot[MOTOR_2].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		en.en[MOTOR_2].encoder_steps += en.en[MOTOR_2].steps_run;
+		en.en[MOTOR_2].encoder_position += en.en[MOTOR_2].steps_run;
 		en.en[MOTOR_2].steps_run = 0;
 
 		//**** MOTOR_3 LOAD ****
@@ -476,7 +478,7 @@ static void _load_move()
 				st_run.mot[MOTOR_3].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		en.en[MOTOR_3].encoder_steps += en.en[MOTOR_3].steps_run;
+		en.en[MOTOR_3].encoder_position += en.en[MOTOR_3].steps_run;
 		en.en[MOTOR_3].steps_run = 0;
 
 		//**** MOTOR_4 LOAD ****
@@ -497,7 +499,7 @@ static void _load_move()
 				st_run.mot[MOTOR_4].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		en.en[MOTOR_4].encoder_steps += en.en[MOTOR_4].steps_run;
+		en.en[MOTOR_4].encoder_position += en.en[MOTOR_4].steps_run;
 		en.en[MOTOR_4].steps_run = 0;
 
 		//**** do this last ****

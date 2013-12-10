@@ -430,10 +430,10 @@ static stat_t _exec_aline_segment()
 	// prep the segment for the steppers and adjust the variables for the next iteration
 
 	for (uint8_t i=0; i<MOTORS; i++) {
-		mr.position_deferred_steps[i] = mr.position_steps[i];// previous segment position becomes projected
-		mr.position_steps[i] = mr.target_steps[i];	 // previous segment's target becomes poaition
-		mr.encoder_steps[i] = en_sample_encoder(i);	 // get the current encoder values
-		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.position_deferred_steps[i];
+		mr.position_delayed[i] = mr.position_steps[i];// previous segment position becomes delayed
+		mr.position_steps[i] = mr.target_steps[i];	 // previous segment's target becomes position
+		mr.encoder_steps[i] = en_sample_encoder(i);	 // get the current encoder position
+		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.position_delayed[i];
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);
 	for (uint8_t i=0; i<MOTORS; i++) {
@@ -453,7 +453,33 @@ static stat_t _exec_aline_segment()
 */
 	return (status);
 }
+/*
+void _print_position(const uint8_t motor)
+{
+	printf("%d,%0.2f,%li,%li,%li,%0.3f\n",
+//	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
+		motor+1,
+		(double)en.en[motor].position_advisory,
+		en.en[motor].encoder_steps, 
+		en.en[motor].target_steps,
+		en.en[motor].error_steps,
+		(double)en.en[motor].error_advisory);
+}
 
+void _print_positions()
+{
+	for (uint8_t i=0; i<MOTORS; i++) {
+//		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
+		printf("{\"en%d\":{\"pos\":%li,\"tgt\":%li,\"err\":%li,\"err_adv\":%0.5f}}\n",
+			i+1,
+//			(double)en.en[i].position_advisory,
+			en.en[i].encoder_steps, 
+			en.en[i].target_steps,
+			en.en[i].error_steps,
+			(double)en.en[i].error_advisory);
+	}
+}
+*/
 
 #ifdef __cplusplus
 }

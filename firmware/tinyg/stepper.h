@@ -345,7 +345,6 @@ typedef struct stRunMotor { 		// one per controlled motor
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
-	uint8_t last_segment_staged;	// flag from PREP to use during STEP
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t mot[MOTORS];		// runtime motor structures
@@ -356,9 +355,10 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 // Must be careful about volatiles in this one
 
 typedef struct stPrepMotor {
+	uint8_t cycle_start;			// new cycle: reset stepper on its first movement
+	uint8_t direction_change;		// set true if direction changed
 	int8_t step_sign;				// set to +1 or -1 for encoders
 	int8_t direction;				// travel direction corrected for polarity
-	uint8_t direction_change;		// set true if direction changed
 	uint32_t substep_increment; 	// total steps in axis times substep factor
 } stPrepMotor_t;
 
@@ -367,12 +367,6 @@ typedef struct stPrepSingleton {
 	volatile uint8_t exec_state;	// move execution state 
 	uint8_t move_type;				// move type
 	uint8_t cycle_start;			// new cycle: reset steppers
-	int32_t last_segment;			// counts out 2 PREP cycles before processing last segment
-//	uint8_t last_segment_staged;	// flag from EXEC signalling last segment of a move
-//	uint8_t last_segment_run;		// signals last segment has finished & OK to sample
-//	uint32_t segment_count;			//+++++ DIAGNOSTIC
-//	uint8_t trap;					//+++++ DIAGNOSTIC
-
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
