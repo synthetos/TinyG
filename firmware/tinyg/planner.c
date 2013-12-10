@@ -55,7 +55,6 @@
 #include "config.h"
 #include "canonical_machine.h"
 #include "plan_arc.h"
-#include "plan_line.h"
 #include "planner.h"
 #include "stepper.h"
 #include "report.h"

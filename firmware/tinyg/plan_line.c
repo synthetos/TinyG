@@ -30,7 +30,6 @@
 #include "config.h"
 #include "controller.h"
 #include "canonical_machine.h"
-#include "plan_line.h"
 #include "planner.h"
 #include "kinematics.h"
 #include "stepper.h"

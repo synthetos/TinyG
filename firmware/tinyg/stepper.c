@@ -391,7 +391,7 @@ static void _load_move()
 	if (st_pre.move_type == MOVE_TYPE_ALINE) {
 
 		//**** initializations and state management ****
-
+/*
 		if (st_pre.cycle_start == true) {						// setup direction bits and initial accumulator value
 			st_pre.cycle_start = false;
 			for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
@@ -399,7 +399,7 @@ static void _load_move()
 				st_run.mot[motor].substep_accumulator = 0; 			// will become max negative during per-motor setup;
 			}
 		}
-
+*/
 		//**** setup the new segment ****
 
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
@@ -411,9 +411,16 @@ static void _load_move()
 		// These sections are somewhat optimized for execution speed. The whole load operation
 		// is supposed to take < 10 uSec (Xmega). Be careful if you mess with this.
 
-		// if() either sets the substep increment value or zeroes it
+		// The if() statement either sets the substep increment value or zeroes it
 
 		if ((st_run.mot[MOTOR_1].substep_increment = st_pre.mot[MOTOR_1].substep_increment) != 0) {
+
+			// First time initialization
+			if (st_pre.mot[MOTOR_1].cycle_start == true) {				// setup direction bits and initial accumulator value
+				st_pre.mot[MOTOR_1].cycle_start = false;
+				st_pre.mot[MOTOR_1].direction_change = true;
+				st_run.mot[MOTOR_1].substep_accumulator = 0; 			// will become max negative during per-motor setup;
+			}
 
 			// Set the direction bit in hardware
 			// Compensate for direction change in the accumulator
@@ -424,6 +431,7 @@ static void _load_move()
 					PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;			// CCW motion
 				st_run.mot[MOTOR_1].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_1].substep_accumulator);
 			}
+
 			// Enable the stepper and start motor power management
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;				// energize motor
 			st_run.mot[MOTOR_1].power_state = MOTOR_RUNNING;			// set power management state
@@ -442,6 +450,11 @@ static void _load_move()
 		//**** MOTOR_2 LOAD ****
 
 		if ((st_run.mot[MOTOR_2].substep_increment = st_pre.mot[MOTOR_2].substep_increment) != 0) {
+			if (st_pre.mot[MOTOR_2].cycle_start == true) {
+				st_pre.mot[MOTOR_2].cycle_start = false;
+				st_pre.mot[MOTOR_2].direction_change = true;
+				st_run.mot[MOTOR_2].substep_accumulator = 0;
+			}
 			if (st_pre.mot[MOTOR_2].direction_change == true) {
 				if (st_pre.mot[MOTOR_2].direction == DIRECTION_CW)
 					PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
@@ -463,6 +476,11 @@ static void _load_move()
 		//**** MOTOR_3 LOAD ****
 
 		if ((st_run.mot[MOTOR_3].substep_increment = st_pre.mot[MOTOR_3].substep_increment) != 0) {
+			if (st_pre.mot[MOTOR_3].cycle_start == true) {
+				st_pre.mot[MOTOR_3].cycle_start = false;
+				st_pre.mot[MOTOR_3].direction_change = true;
+				st_run.mot[MOTOR_3].substep_accumulator = 0;
+			}
 			if (st_pre.mot[MOTOR_3].direction_change == true) {
 				if (st_pre.mot[MOTOR_3].direction == DIRECTION_CW)
 					PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
@@ -484,6 +502,11 @@ static void _load_move()
 		//**** MOTOR_4 LOAD ****
 
 		if ((st_run.mot[MOTOR_4].substep_increment = st_pre.mot[MOTOR_4].substep_increment) != 0) {
+			if (st_pre.mot[MOTOR_4].cycle_start == true) {
+				st_pre.mot[MOTOR_4].cycle_start = false;
+				st_pre.mot[MOTOR_4].direction_change = true;
+				st_run.mot[MOTOR_4].substep_accumulator = 0;
+			}
 			if (st_pre.mot[MOTOR_4].direction_change == true) {
 				if (st_pre.mot[MOTOR_4].direction == DIRECTION_CW)
 					PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else

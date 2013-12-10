@@ -48,7 +48,6 @@ static stat_t _exec_aline_segment(void);
 static void _init_forward_diffs(float t0, float t2);
 //static float _compute_next_segment_velocity(void);
 
-
 /*************************************************************************
  * mp_exec_move() - execute runtime functions to prep move for steppers
  *
@@ -287,15 +286,12 @@ static stat_t _exec_aline_head()
 
 //		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec)); // # of segments in *each half*
 		mr.segments = uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec); // # of segments in *each half*
-
-		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
-//		mr.segment_count = (uint32_t)mr.segments;
 		mr.segment_count = (uint32_t)round(mr.segments);
-
-//		mr.microseconds = NOM_SEGMENT_USEC;
-		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-		}
+		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
+		mr.microseconds = NOM_SEGMENT_USEC;
+//		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
+//			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
+//		}
 
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 		mr.section = SECTION_HEAD;
@@ -304,7 +300,7 @@ static stat_t _exec_aline_head()
 	if (mr.section_state == SECTION_1st_HALF) {				// concave part of accel curve (period 1)
 		mr.segment_velocity += mr.forward_diff_1;
 		if (_exec_aline_segment() == STAT_OK) { 			// set up for second half
-			mr.segment_count = (uint32_t)mr.segments;
+			mr.segment_count = (uint32_t)round(mr.segments);
 			mr.section_state = SECTION_2nd_HALF;
 
 			// Here's a trick: The second half of the S starts at the end of the first,
@@ -397,7 +393,8 @@ static stat_t _exec_aline_tail()
 	if (mr.section_state == SECTION_1st_HALF) {				// convex part (period 4)
 		mr.segment_velocity += mr.forward_diff_1;
 		if (_exec_aline_segment() == STAT_OK) {				// set up for second half
-			mr.segment_count = (uint32_t)mr.segments;
+//			mr.segment_count = (uint32_t)mr.segments;
+			mr.segment_count = (uint32_t)round(mr.segments);
 			mr.section_state = SECTION_2nd_HALF;
 
 			// Here's a trick: The second half of the S starts at the end of the first,
