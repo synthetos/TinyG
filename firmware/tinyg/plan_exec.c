@@ -185,12 +185,14 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.target, bf->gm.target);		// save the final target of the move
 
+/*
 		// generate the section targets for enpoint detection / correction
 		for (uint8_t i=0; i<AXES; i++) {
 			mr.section_target[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
 			mr.section_target[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
 			mr.section_target[SECTION_TAIL][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length + mr.tail_length);
 		}
+*/
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -284,12 +286,22 @@ static stat_t _exec_aline_head()
 		}
 		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
 		mr.gm.move_time = mr.head_length / mr.midpoint_velocity;// time for entire accel region
+
+#ifndef __ALT_SEGMENTS
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec)); // # of segments in *each half*
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
 			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
 		}
+#else
+		mr.segments = uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec); // # of segments in *each half*
+		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
+		mr.segment_count = (uint32_t)round(mr.segments);
+		if (mr.segment_time < MIN_SEGMENT_TIME) return(STAT_GCODE_BLOCK_SKIPPED);	// exit without advancing position
+		mr.microseconds = NOM_SEGMENT_USEC;
+#endif
+
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 		mr.section = SECTION_HEAD;
 		mr.section_state = SECTION_1st_HALF;
@@ -297,7 +309,11 @@ static stat_t _exec_aline_head()
 	if (mr.section_state == SECTION_1st_HALF) {				// concave part of accel curve (period 1)
 		mr.segment_velocity += mr.forward_diff_1;
 		if (_exec_aline_segment() == STAT_OK) { 			// set up for second half
+#ifndef __ALT_SEGMENTS
 			mr.segment_count = (uint32_t)mr.segments;
+#else
+			mr.segment_count = (uint32_t)round(mr.segments);			
+#endif
 			mr.section_state = SECTION_2nd_HALF;
 
 			// Here's a trick: The second half of the S starts at the end of the first,
@@ -334,13 +350,23 @@ static stat_t _exec_aline_body()
 			return(_exec_aline_tail());						// skip ahead to tail periods
 		}
 		mr.gm.move_time = mr.body_length / mr.cruise_velocity;
+
+#ifndef __ALT_SEGMENTS
 		mr.segments = ceil(uSec(mr.gm.move_time) / cm.estd_segment_usec);
 		mr.segment_time = mr.gm.move_time / mr.segments;
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
 			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-		}		
+		}
+#else
+		mr.segments = uSec(mr.gm.move_time) / cm.estd_segment_usec; // # of segments in body
+		mr.segment_time = mr.gm.move_time / mr.segments;
+		mr.segment_count = (uint32_t)round(mr.segments);
+		if (mr.segment_time < MIN_SEGMENT_TIME) return(STAT_GCODE_BLOCK_SKIPPED);	// exit without advancing position
+		mr.microseconds = NOM_SEGMENT_USEC;
+#endif
+
 		mr.section = SECTION_BODY;
 		mr.section_state = SECTION_2nd_HALF;				// uses PERIOD_2 so last segment detection works
 	}
@@ -363,12 +389,22 @@ static stat_t _exec_aline_tail()
 		if (fp_ZERO(mr.tail_length)) { return(STAT_OK);}	// end the move
 		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
 		mr.gm.move_time = mr.tail_length / mr.midpoint_velocity;
+
+#ifndef __ALT_SEGMENTS
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec));// # of segments in *each half*
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
 			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
 		}
+#else
+		mr.segments = uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec); // # of segments in *each half*
+		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
+		mr.segment_count = (uint32_t)round(mr.segments);
+		if (mr.segment_time < MIN_SEGMENT_TIME) return(STAT_GCODE_BLOCK_SKIPPED);	// exit without advancing position
+		mr.microseconds = NOM_SEGMENT_USEC;
+#endif
+
 		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
 		mr.section = SECTION_TAIL;
 		mr.section_state = SECTION_1st_HALF;
@@ -376,7 +412,11 @@ static stat_t _exec_aline_tail()
 	if (mr.section_state == SECTION_1st_HALF) {				// convex part (period 4)
 		mr.segment_velocity += mr.forward_diff_1;
 		if (_exec_aline_segment() == STAT_OK) {				// set up for second half
+#ifndef __ALT_SEGMENTS
 			mr.segment_count = (uint32_t)mr.segments;
+#else
+			mr.segment_count = (uint32_t)round(mr.segments);
+#endif
 			mr.section_state = SECTION_2nd_HALF;
 
 			// Here's a trick: The second half of the S starts at the end of the first,
@@ -398,7 +438,7 @@ static stat_t _exec_aline_tail()
 /*
  * _exec_aline_segment() - segment runner helper
  */
-//static stat_t _exec_aline_segment(uint8_t correction_flag)
+
 static stat_t _exec_aline_segment()
 {
 //	stat_t status = STAT_EAGAIN;
@@ -408,13 +448,14 @@ static stat_t _exec_aline_segment()
 	// way a servo works. Send the segment towards a target and when it gets there 
 	// perform the ultimate correction to get it to the exact position.
 
-	float section_distance = 0;
+//	float section_distance = 0;
 	float segment_distance = mr.segment_velocity * mr.segment_time;
 	for (uint8_t i=0; i<AXES; i++) {
 		mr.gm.target[i] = mr.position[i] + mr.unit[i] * segment_distance;
-		section_distance += square(mr.section_target[mr.section][i] -  mr.gm.target[i]);
+//		section_distance += square(mr.section_target[mr.section][i] -  mr.gm.target[i]);
 	}
-	section_distance = sqrt(section_distance);
+//	section_distance = sqrt(section_distance);
+
 //	if ((section_distance < segment_distance) || 
 //		((mr.segment_count == 1) && (mr.section_state == SECTION_2nd_HALF))) {
 //		copy_axis_vector(mr.gm.target, mr.section_target[mr.section]);
