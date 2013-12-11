@@ -230,6 +230,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		if (bf->move_state == MOVE_RUN) {
 			mp_free_run_buffer();				// free bf if it's actually done
 		}
+		mp_print_motor_position(MOTOR_1);		//++++++DIAGNOSTIC
 	}
 	return (status);
 }
@@ -261,7 +262,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 // NOTE: t1 will always be == t0, so we don't pass it
 static void _init_forward_diffs(float t0, float t2)
 {
-	float H_squared = square(1/mr.segments);
+//	float H_squared = square(1/mr.segments);
+	float H_squared = square(1/(float)mr.segment_count);
 	// A = T[0] - 2*T[1] + T[2], if T[0] == T[1], then it becomes - T[0] + T[2]
 	float AH_squared = (t2 - t0) * H_squared;
 	
@@ -416,7 +418,7 @@ static stat_t _exec_aline_tail()
 /*
  * _exec_aline_segment() - segment runner helper
  */
-//static stat_t _exec_aline_segment(uint8_t correction_flag)
+
 static stat_t _exec_aline_segment()
 {
 	stat_t status = STAT_EAGAIN;
@@ -427,18 +429,19 @@ static stat_t _exec_aline_segment()
 	// perform the ultimate correction to get it to the exact position.
 
 	float section_distance = 0;
-	float segment_distance = mr.segment_velocity * mr.segment_time;
+	float segment_distance = (mr.segment_velocity * mr.segment_time) * 0.999;
 	for (uint8_t i=0; i<AXES; i++) {
 		mr.gm.target[i] = mr.position[i] + mr.unit[i] * segment_distance;
 		section_distance += square(mr.section_target[mr.section][i] -  mr.gm.target[i]);
 	}
 	section_distance = sqrt(section_distance);
-	if ((section_distance < segment_distance) || 
-		((mr.segment_count == 1) && (mr.section_state == SECTION_2nd_HALF))) {
-//		copy_axis_vector(mr.gm.target, mr.section_target[mr.section]);
-		status = STAT_OK;
-	}
-	if (--mr.segment_count == 0) status = STAT_OK; 	// finishes the 1st half 
+//	if ((section_distance < segment_distance) || 
+//		((mr.segment_count == 1) && (mr.section_state == SECTION_2nd_HALF))) {
+////		copy_axis_vector(mr.gm.target, mr.section_target[mr.section]);
+//		status = STAT_OK;
+//	}
+	if (--mr.segment_count == 0) 
+		status = STAT_OK; 	// finishes the 1st half 
 	
 	// prep the segment for the steppers and adjust the variables for the next iteration
 
@@ -489,7 +492,7 @@ void mp_print_motor_positions()
 	printf("\n");
 	mp_print_motor_position(MOTOR_1);
 	mp_print_motor_position(MOTOR_2);
-//	mp_print_motor_position(MOTOR_3);
+	mp_print_motor_position(MOTOR_3);
 //	mp_print_motor_position(MOTOR_4);
 /*
 	for (uint8_t i=0; i<MOTORS; i++) {
