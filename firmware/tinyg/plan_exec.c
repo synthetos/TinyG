@@ -183,7 +183,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		mr.cruise_velocity = bf->cruise_velocity;
 		mr.exit_velocity = bf->exit_velocity;
 		copy_axis_vector(mr.unit, bf->unit);
-		copy_axis_vector(mr.target, bf->gm.target);	// save the final target of the move
+		copy_axis_vector(mr.target, bf->gm.target);		// save the final target of the move
 
 		// generate the section targets for enpoint detection / correction
 		for (uint8_t i=0; i<AXES; i++) {
@@ -460,13 +460,14 @@ static stat_t _exec_aline_segment()
 
 void mp_print_motor_position(const uint8_t motor)
 {
-	printf("{\"m%d\":{\"tgt\":%0.3f,\"pos\":%0.3f,\"dly\":%0.3f,\"enc\":%0.3f,\"err\":%0.3f}}\n",
+	printf("{\"m%d\":{\"tgt\":%0.3f,\"pos\":%0.3f,\"dly\":%0.3f,\"enc\":%0.3f,\"err\":%0.3f,mm:%0.5f}}\n",
 		motor+1,
 		(double)mr.target_steps[motor],
 		(double)mr.position_steps[motor],
 		(double)mr.position_delayed[motor],
 		(double)mr.encoder_position[motor],
-		(double)mr.encoder_error[motor]);
+		(double)mr.encoder_error[motor],
+		(double)(mr.encoder_error[motor] * st_cfg.mot[motor].units_per_step));
 }
 
 void mp_print_motor_positions()

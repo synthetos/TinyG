@@ -554,8 +554,7 @@ static void _load_move()
  *		  will never be called - but this is OK as no more correction is required or possible.
  */
 
-//stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
-stat_t st_prep_line(float steps[], float microseconds, int32_t encoder_error[])
+stat_t st_prep_line(float steps[], float microseconds, float encoder_error[])
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);
@@ -719,9 +718,6 @@ static int8_t _get_motor(const index_t index)
 static void _set_motor_steps_per_unit(cmdObj_t *cmd) 
 {
 	uint8_t m = _get_motor(cmd->index);
-//	st_cfg.mot[m].steps_per_unit = (360 / (st_cfg.mot[m].step_angle / st_cfg.mot[m].microsteps) / st_cfg.mot[m].travel_rev);
-//	st_cfg.mot[m].units_per_step = st_cfg.mot[m].travel_rev / (360 / st_cfg.mot[m].step_angle) / st_cfg.mot[m].microsteps;
-//	faster and more numerically accurate formulation of the above:
 	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps);
 	st_cfg.mot[m].steps_per_unit = 1 / st_cfg.mot[m].units_per_step;
 }
