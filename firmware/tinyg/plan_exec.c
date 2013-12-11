@@ -264,7 +264,11 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 // NOTE: t1 will always be == t0, so we don't pass it
 static void _init_forward_diffs(float t0, float t2)
 {
+#ifndef __ALT_SEGMENTS
 	float H_squared = square(1/mr.segments);
+#else
+	float H_squared = square(1/round(mr.segments));
+#endif
 	// A = T[0] - 2*T[1] + T[2], if T[0] == T[1], then it becomes - T[0] + T[2]
 	float AH_squared = (t2 - t0) * H_squared;
 	
@@ -478,19 +482,10 @@ static stat_t _exec_aline_segment()
 
 	// prep the move. return if there's an error
 	ritorno(st_prep_line(steps, mr.microseconds, mr.encoder_error));
-	copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
-/*
-	mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	
-	mr.position[AXIS_Y] = mr.gm.target[AXIS_Y];
-	mr.position[AXIS_Z] = mr.gm.target[AXIS_Z];
-	mr.position[AXIS_A] = mr.gm.target[AXIS_A];
-	mr.position[AXIS_B] = mr.gm.target[AXIS_B];
-	mr.position[AXIS_C] = mr.gm.target[AXIS_C];	
-*/
+	copy_axis_vector(mr.position, mr.gm.target); 	// update position from target
 	if (--mr.segment_count == 0) 
 		return(STAT_OK);
 	return (STAT_EAGAIN);
-//	return (status);
 }
 
 
