@@ -401,7 +401,7 @@ static stat_t _exec_aline_tail()
 //static stat_t _exec_aline_segment(uint8_t correction_flag)
 static stat_t _exec_aline_segment()
 {
-	stat_t status = STAT_EAGAIN;
+//	stat_t status = STAT_EAGAIN;
 	float steps[MOTORS];
 
 	// Treat the target generation as a "from here to there" problem, similar to the
@@ -415,20 +415,20 @@ static stat_t _exec_aline_segment()
 		section_distance += square(mr.section_target[mr.section][i] -  mr.gm.target[i]);
 	}
 	section_distance = sqrt(section_distance);
-	if ((section_distance < segment_distance) || 
-		((mr.segment_count == 1) && (mr.section_state == SECTION_2nd_HALF))) {
-		copy_axis_vector(mr.gm.target, mr.section_target[mr.section]);
-		status = STAT_OK;
-	}
-	if (--mr.segment_count == 0) status = STAT_OK; 	// finishes the 1st half 
+//	if ((section_distance < segment_distance) || 
+//		((mr.segment_count == 1) && (mr.section_state == SECTION_2nd_HALF))) {
+//		copy_axis_vector(mr.gm.target, mr.section_target[mr.section]);
+//		status = STAT_OK;
+//	}
+//	if (--mr.segment_count == 0) status = STAT_OK; 	// finishes the 1st half 
 	
 	// prep the segment for the steppers and adjust the variables for the next iteration
 
 	for (uint8_t i=0; i<MOTORS; i++) {
 		mr.position_delayed[i] = mr.position_steps[i];// previous segment position becomes delayed
 		mr.position_steps[i] = mr.target_steps[i];	 // previous segment's target becomes position
-		mr.encoder_steps[i] = en_sample_encoder(i);	 // get the current encoder position
-		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.position_delayed[i];
+		mr.encoder_position[i] = en_sample_encoder(i);	 // get the current encoder position
+		mr.encoder_error[i] = mr.encoder_position[i] - (int32_t)mr.position_delayed[i];
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);
 	for (uint8_t i=0; i<MOTORS; i++) {
@@ -446,44 +446,41 @@ static stat_t _exec_aline_segment()
 	mr.position[AXIS_B] = mr.gm.target[AXIS_B];
 	mr.position[AXIS_C] = mr.gm.target[AXIS_C];	
 */
-	return (status);
+	if (--mr.segment_count == 0) 
+		return(STAT_OK);
+	return (STAT_EAGAIN);
+//	return (status);
 }
 
 
 /*
- * mp_print_position()
- * mp_print_position2()
+ * mp_print_motor_position()
+ * mp_print_motor_positions()
  */
 
-void mp_print_position(const uint8_t motor)
+void mp_print_motor_position(const uint8_t motor)
 {
-/*
-	printf("%d,%0.2f,%li,%li,%li,%0.3f\n",
-//	printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
+	printf("{\"m%d\":{\"tgt\":%0.3f,\"pos\":%0.3f,\"dly\":%0.3f,\"enc\":%0.3f,\"err\":%0.3f}}\n",
 		motor+1,
-		(double)en.en[motor].position_advisory,
-		en.en[motor].encoder_steps, 
-		en.en[motor].target_steps,
-		en.en[motor].error_steps,
-		(double)en.en[motor].error_advisory);
-*/
+		(double)mr.target_steps[motor],
+		(double)mr.position_steps[motor],
+		(double)mr.position_delayed[motor],
+		(double)mr.encoder_position[motor],
+		(double)mr.encoder_error[motor]);
 }
 
-void mp_print_positions()
+void mp_print_motor_positions()
 {
-	for (uint8_t i=0; i<MOTORS; i++) {
-		mp_print_position(i);
+	printf("\n");
+	mp_print_motor_position(MOTOR_1);
+	mp_print_motor_position(MOTOR_2);
+	mp_print_motor_position(MOTOR_3);
+//	mp_print_motor_position(MOTOR_4);
 /*
-//		printf("{\"en%d\":{\"steps_flt\":%0.3f,\"pos_st\":%li,\"tgt_st\":%li,\"err_st\":%li,\"err_d\":%0.5f}}\n",
-		printf("{\"en%d\":{\"pos\":%li,\"tgt\":%li,\"err\":%li,\"err_adv\":%0.5f}}\n",
-			i+1,
-//			(double)en.en[i].position_advisory,
-			en.en[i].encoder_steps, 
-			en.en[i].target_steps,
-			en.en[i].error_steps,
-			(double)en.en[i].error_advisory);
-*/
+	for (uint8_t i=0; i<MOTORS; i++) {
+		mp_print_motor_position(i);
 	}
+*/
 }
 
 #ifdef __cplusplus

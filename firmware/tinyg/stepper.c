@@ -143,7 +143,7 @@ void st_cycle_start(void)
 
 void st_cycle_end(void)
 {
-	mp_print_positions();
+	mp_print_motor_positions();
 }
 
 stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep

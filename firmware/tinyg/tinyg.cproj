@@ -216,9 +216,6 @@
     <Compile Include="plan_line.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="plan_line.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="pwm.c">
       <SubType>compile</SubType>
     </Compile>
