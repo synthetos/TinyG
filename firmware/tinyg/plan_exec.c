@@ -441,22 +441,36 @@ static stat_t _exec_aline_tail()
 /*
  * _exec_aline_segment() - segment runner helper
  */
+#define _FACTOR_ACCEL ((float)(0.9656))
+#define _FACTOR_DECEL ((float)(1/_FACTOR_ACCEL))
 
 static stat_t _exec_aline_segment()
 {
 	uint8_t i;
+	uint8_t seg = 0;
 	float steps[MOTORS];
-	float section_distance = 0;
+//	float section_distance = 0;
 
 	// Compute the new target from the velocity yielded by the forward difference
 	float segment_distance = mr.segment_velocity * mr.segment_time;
+
+	if (mr.section == SECTION_HEAD) {
+		segment_distance *= _FACTOR_ACCEL;
+	} else {
+		segment_distance *= _FACTOR_DECEL;
+	}
+
 	for (i=0; i<AXES; i++) {
 		mr.gm.target[i] = mr.position[i] + mr.unit[i] * segment_distance;
-		section_distance += square(mr.section_target[mr.section][i] -  mr.gm.target[i]);
+//		section_distance += square(mr.section_target[mr.section][i] -  mr.gm.target[i]);
 	}
-	section_distance = sqrt(section_distance);
-//	printf("%07f\n",(double)segment_distance);
-	printf("%08f\n",(double)mr.gm.target[0]);
+//	section_distance = sqrt(section_distance);
+//	printf("%0.7f\n",(double)segment_distance);
+	printf("%0.9f\n",(double)mr.gm.target[0]);
+//	printf("%0.9f, %0.7f\n",(double)mr.gm.target[0],(double)segment_distance);
+
+	// Perform target endpoint corrections
+
 
 	// Prep the segment for the steppers and adjust the variables for the next iteration. 
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
