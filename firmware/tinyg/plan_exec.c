@@ -445,42 +445,29 @@ static stat_t _exec_aline_tail()
 
 static stat_t _exec_aline_segment()
 {
-//	stat_t status = STAT_EAGAIN;
+	uint8_t i;
 	float steps[MOTORS];
 
-	// Treat the target generation as a "from here to there" problem, similar to the
-	// way a servo works. Send the segment towards a target and when it gets there 
-	// perform the ultimate correction to get it to the exact position.
-
-//	float section_distance = 0;
+	// Compute the new target from the velocity yielded by the forward difference
 	float segment_distance = mr.segment_velocity * mr.segment_time;
-	for (uint8_t i=0; i<AXES; i++) {
+	for (i=0; i<AXES; i++) {
 		mr.gm.target[i] = mr.position[i] + mr.unit[i] * segment_distance;
-//		section_distance += square(mr.section_target[mr.section][i] -  mr.gm.target[i]);
 	}
-//	section_distance = sqrt(section_distance);
 
-//	if ((section_distance < segment_distance) || 
-//		((mr.segment_count == 1) && (mr.section_state == SECTION_2nd_HALF))) {
-//		copy_axis_vector(mr.gm.target, mr.section_target[mr.section]);
-//		status = STAT_OK;
-//	}
-//	if (--mr.segment_count == 0) status = STAT_OK; 	// finishes the 1st half 
-	
-	// prep the segment for the steppers and adjust the variables for the next iteration
-
-	for (uint8_t i=0; i<MOTORS; i++) {
-		mr.position_delayed[i] = mr.position_steps[i];// previous segment position becomes delayed
-		mr.position_steps[i] = mr.target_steps[i];	 // previous segment's target becomes position
-		mr.encoder_position[i] = en_sample_encoder(i);	 // get the current encoder position
+	// Prep the segment for the steppers and adjust the variables for the next iteration. 
+	// Bucket-brigade the old target down the chain before getting the new target from kinematics
+	for (i=0; i<MOTORS; i++) {
+		mr.position_delayed[i] = mr.position_steps[i];	// previous segment position becomes delayed
+		mr.position_steps[i] = mr.target_steps[i];	 	// previous segment's target becomes position
+		mr.encoder_position[i] = en_sample_encoder(i);	// get the current encoder position
 		mr.encoder_error[i] = mr.encoder_position[i] - (int32_t)mr.position_delayed[i];
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);
-	for (uint8_t i=0; i<MOTORS; i++) {
+	for (i=0; i<MOTORS; i++) {
 		steps[i] = mr.target_steps[i] - mr.position_steps[i];
 	}
 
-	// prep the move. return if there's an error
+	// Prep the move. Return if there's an error
 	ritorno(st_prep_line(steps, mr.microseconds, mr.encoder_error));
 	copy_axis_vector(mr.position, mr.gm.target); 	// update position from target
 	if (--mr.segment_count == 0) 

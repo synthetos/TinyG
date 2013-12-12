@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		405.10	// merged recovery into dev - unsuccessful run with alternate segment strategy
+#define TINYG_FIRMWARE_BUILD   		405.11	// added discrete first-time initializations
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -52,7 +52,7 @@
 
 /****** COMPILE-TIME SETTINGS ******/
 
-#define __ALT_SEGMENTS
+//#define __ALT_SEGMENTS
 //#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
 
 #ifndef __SIMULATION

@@ -366,7 +366,7 @@ typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integrity	
 	volatile uint8_t exec_state;	// move execution state 
 	uint8_t move_type;				// move type
-	uint8_t cycle_start;			// new cycle: reset steppers
+//	uint8_t cycle_start;			// new cycle: reset steppers
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
