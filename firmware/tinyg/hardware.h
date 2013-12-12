@@ -174,13 +174,22 @@ enum cfgPortBits {			// motor control port bit positions
 
 #define FREQUENCY_DDA 		(double)50000	// DDA frequency in hz.
 #define FREQUENCY_DWELL		(double)10000	// Dwell count frequency in hz.
-#define SWI_PERIOD 			100				// cycles you have to shut off SW interrupt
-#define TIMER_PERIOD_MIN	(20)			// used to trap bad timer loads
+#define LOAD_TIMER_PERIOD 	100				// cycles you have to shut off SW interrupt
+#define EXEC_TIMER_PERIOD 	100				// cycles you have to shut off SW interrupt
+#define EXEC_TIMER_PERIOD_LONG 100			// cycles you have to shut off SW interrupt
 
 #define STEP_TIMER_TYPE		TC0_struct 		// stepper subsubstem uses all the TC0's
 #define STEP_TIMER_DISABLE 	0				// turn timer off (clock = 0 Hz)
 #define STEP_TIMER_ENABLE	1				// turn timer clock on (F_CPU = 32 Mhz)
 #define STEP_TIMER_WGMODE	0				// normal mode (count to TOP and rollover)
+
+#define LOAD_TIMER_DISABLE 	0				// turn load timer off (clock = 0 Hz)
+#define LOAD_TIMER_ENABLE	1				// turn load timer clock on (F_CPU = 32 Mhz)
+#define LOAD_TIMER_WGMODE	0				// normal mode (count to TOP and rollover)
+
+#define EXEC_TIMER_DISABLE 	0				// turn exec timer off (clock = 0 Hz)
+#define EXEC_TIMER_ENABLE	1				// turn exec timer clock on (F_CPU = 32 Mhz)
+#define EXEC_TIMER_WGMODE	0				// normal mode (count to TOP and rollover)
 
 #define TIMER_DDA_ISR_vect	TCC0_OVF_vect	// must agree with assignment in system.h
 #define TIMER_DWELL_ISR_vect TCD0_OVF_vect	// must agree with assignment in system.h

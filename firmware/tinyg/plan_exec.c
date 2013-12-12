@@ -185,14 +185,13 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.target, bf->gm.target);		// save the final target of the move
 
-/*
+
 		// generate the section targets for enpoint detection / correction
 		for (uint8_t i=0; i<AXES; i++) {
 			mr.section_target[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
 			mr.section_target[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
 			mr.section_target[SECTION_TAIL][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length + mr.tail_length);
 		}
-*/
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -447,12 +446,17 @@ static stat_t _exec_aline_segment()
 {
 	uint8_t i;
 	float steps[MOTORS];
+	float section_distance = 0;
 
 	// Compute the new target from the velocity yielded by the forward difference
 	float segment_distance = mr.segment_velocity * mr.segment_time;
 	for (i=0; i<AXES; i++) {
 		mr.gm.target[i] = mr.position[i] + mr.unit[i] * segment_distance;
+		section_distance += square(mr.section_target[mr.section][i] -  mr.gm.target[i]);
 	}
+	section_distance = sqrt(section_distance);
+//	printf("%07f\n",(double)segment_distance);
+	printf("%08f\n",(double)mr.gm.target[0]);
 
 	// Prep the segment for the steppers and adjust the variables for the next iteration. 
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics

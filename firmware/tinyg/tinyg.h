@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		405.11	// added discrete first-time initializations
+#define TINYG_FIRMWARE_BUILD   		405.12	// more diagnostics
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -52,8 +52,8 @@
 
 /****** COMPILE-TIME SETTINGS ******/
 
-//#define __ALT_SEGMENTS
-//#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
+//#define __ALT_SEGMENTS			// uncomment to use rounded segment counts instead of ceiling truncated
+#define __SIMULATION			// shorthand to keep from having to comment and uncomment the below:
 
 #ifndef __SIMULATION
   #define __TEXT_MODE						// comment out to disable text mode support (saves ~9Kb)
