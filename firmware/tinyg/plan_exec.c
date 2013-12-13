@@ -472,8 +472,12 @@ static stat_t _exec_aline_segment()
 	//**** finish up ****
 
 //	printf("%0.7f\n",(double)segment_distance);
-//	printf("%0.9f\n",(double)mr.gm.target[0]);
 //	printf("%0.9f, %0.7f\n",(double)mr.gm.target[0],(double)segment_distance);
+
+//	printf("%0.9f\n",(double)mr.gm.target[0]);
+	printf("%0.9f\n",(double)mr.segment_velocity);
+
+//	printf("%lu,%0.9f\n",mr.segment_count,(double)mr.gm.target[0]);
 
 	// Prep the segment. Return if there's an error
 	ritorno(st_prep_line(steps, mr.microseconds, mr.encoder_error));
