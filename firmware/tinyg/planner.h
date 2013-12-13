@@ -235,6 +235,12 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float forward_diff_1;			// forward difference level 1 (Acceleration)
 	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
 
+	float jerk_div2;				// OLD CODE
+	float midpoint_acceleration;	// OLD CODE
+	float accel_time;				// OLD CODE
+	float segment_accel_time;		// OLD CODE
+	float elapsed_accel_time;		// OLD CODE
+
 	GCodeState_t gm;				// gocode model state currently executing
 
 	magic_t magic_end;
@@ -244,6 +250,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 extern mpBufferPool_t mb;			// move buffer queue
 extern mpMoveMasterSingleton_t mm;	// context for line planning
 extern mpMoveRuntimeSingleton_t mr;	// context for line runtime
+extern mpMoveRuntimeSingleton_t mr2;// testing old accel code
 
 /*
  * Global Scope Functions
