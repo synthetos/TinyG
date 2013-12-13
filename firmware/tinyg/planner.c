@@ -70,7 +70,7 @@ extern "C"{
 mpBufferPool_t mb;				// move buffer queue
 mpMoveMasterSingleton_t mm;		// context for line planning
 mpMoveRuntimeSingleton_t mr;	// context for line runtime
-mpMoveRuntimeSingleton_t mr2;	// test runtime
+//mpMoveRuntimeSingleton_t mr2;	// test runtime
 
 /*
  * Local Scope Data and Functions
