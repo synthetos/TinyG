@@ -150,6 +150,26 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "ofs","ofsb",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// B work offset
 	{ "ofs","ofsc",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// C work offset
 
+	{ "mst","mst1",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_1], 0 },  // Motor 1 target steps
+	{ "mst","mst2",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_2], 0 },  // Motor 2 target steps
+	{ "mst","mst3",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_3], 0 },  // Motor 3 target steps
+	{ "mst","mst4",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_4], 0 },  // Motor 4 target steps
+
+	{ "msp","msp1",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_1], 0 },// Motor 1 position steps
+	{ "msp","msp2",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_2], 0 },// Motor 2 position steps
+	{ "msp","msp3",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_3], 0 },// Motor 3 position steps
+	{ "msp","msp4",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_4], 0 },// Motor 4 position steps
+
+	{ "msn","msn1",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_1], 0 }, // Motor 1 eNcoder steps
+	{ "msn","msn2",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_2], 0 }, // Motor 2 eNcoder steps
+	{ "msn","msn3",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_3], 0 }, // Motor 3 eNcoder steps
+	{ "msn","msn4",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_4], 0 }, // Motor 4 eNcoder steps
+
+	{ "mse","mse1",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_1], 0 }, // Motor 1 error steps
+	{ "mse","mse2",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_2], 0 }, // Motor 2 error steps
+	{ "mse","mse3",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_3], 0 }, // Motor 3 error steps
+	{ "mse","mse4",_f00, 4, tx_print_nul, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_4], 0 }, // Motor 4 error steps
+
 	{ "hom","home",_f00, 0, cm_print_home, cm_get_home, cm_run_home,(float *)&cs.null, 0 },	   // homing state, invoke homing cycle
 	{ "hom","homx",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_X], false },// X homed - Homing status group
 	{ "hom","homy",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_Y], false },// Y homed
@@ -575,6 +595,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","mpo",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// machine position group
 	{ "","pos",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// work position group
 	{ "","ofs",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// work offset group
+	{ "","mst",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// motor target steps group
+	{ "","msp",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// motor position steps group
+	{ "","msn",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// motor encoder steps group
+	{ "","mse",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// motor encoder error group
 	{ "","hom",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis homing state group
 	{ "","jog",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis jogging state group
 	{ "","jid",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// job ID group
@@ -593,7 +617,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 /***** Make sure these defines line up with any changes in the above table *****/
 
-#define CMD_COUNT_GROUPS 		31		// count of simple groups
+#define CMD_COUNT_GROUPS 		35		// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 		// count of uber-groups
 
 /* <DO NOT MESS WITH THESE DEFINES> */

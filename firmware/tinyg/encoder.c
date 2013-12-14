@@ -93,7 +93,7 @@ void en_reset_encoders(void)
 	ik_kinematics(cm.gmx.position, initial_position);	// as steps in floating point
 
 	for (uint8_t i=0; i<MOTORS; i++) {
-		en.en[i].encoder_position = (int32_t)round(initial_position[i]);
+		en.en[i].encoder_steps = (int32_t)round(initial_position[i]);
 	}
 }
 
@@ -109,7 +109,7 @@ void en_reset_encoders(void)
 
 int32_t en_sample_encoder(uint8_t motor)
 {
-	return(en.en[motor].encoder_position);
+	return(en.en[motor].encoder_steps);
 }
 
 

@@ -469,8 +469,8 @@ static stat_t _exec_aline_segment()
 	for (i=0; i<MOTORS; i++) {
 		mr.position_delayed[i] = mr.position_steps[i];		// previous segment position becomes delayed
 		mr.position_steps[i] = mr.target_steps[i];	 		// previous segment's target becomes position
-		mr.encoder_position[i] = en_sample_encoder(i);		// get the current encoder position
-		mr.encoder_error[i] = mr.encoder_position[i] - (int32_t)mr.position_delayed[i];
+		mr.encoder_steps[i] = en_sample_encoder(i);		// get the current encoder position
+		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.position_delayed[i];
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);
 	for (i=0; i<MOTORS; i++) {								  // NB: This only works for cartesian kinematics
@@ -502,7 +502,7 @@ void mp_print_motor_position(const uint8_t motor)
 		(double)mr.target_steps[motor],
 		(double)mr.position_steps[motor],
 		(double)mr.position_delayed[motor],
-		(double)mr.encoder_position[motor],
+		(double)mr.encoder_steps[motor],
 		(double)mr.encoder_error[motor],
 		(double)(mr.encoder_error[motor] * st_cfg.mot[motor].units_per_step));
 }

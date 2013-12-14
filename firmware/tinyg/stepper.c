@@ -390,16 +390,6 @@ static void _load_move()
 	// handle aline loads first (most common case)  NB: there are no more lines, only alines
 	if (st_pre.move_type == MOVE_TYPE_ALINE) {
 
-		//**** initializations and state management ****
-/*
-		if (st_pre.cycle_start == true) {						// setup direction bits and initial accumulator value
-			st_pre.cycle_start = false;
-			for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
-				st_pre.mot[motor].direction_change = true;
-				st_run.mot[motor].substep_accumulator = 0; 			// will become max negative during per-motor setup;
-			}
-		}
-*/
 		//**** setup the new segment ****
 
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
@@ -442,7 +432,7 @@ static void _load_move()
 			}
 		}
 		// accumulate counted steps to the step position and zero out counted steps for the segment currently being loaded
-		en.en[MOTOR_1].encoder_position += en.en[MOTOR_1].steps_run;// NB: steps_run can be + or - value
+		en.en[MOTOR_1].encoder_steps += en.en[MOTOR_1].steps_run;// NB: steps_run can be + or - value
 		en.en[MOTOR_1].steps_run = 0;
 
 		//**** MOTOR_2 LOAD ****
@@ -468,7 +458,7 @@ static void _load_move()
 				st_run.mot[MOTOR_2].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		en.en[MOTOR_2].encoder_position += en.en[MOTOR_2].steps_run;
+		en.en[MOTOR_2].encoder_steps += en.en[MOTOR_2].steps_run;
 		en.en[MOTOR_2].steps_run = 0;
 
 		//**** MOTOR_3 LOAD ****
@@ -494,7 +484,7 @@ static void _load_move()
 				st_run.mot[MOTOR_3].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		en.en[MOTOR_3].encoder_position += en.en[MOTOR_3].steps_run;
+		en.en[MOTOR_3].encoder_steps += en.en[MOTOR_3].steps_run;
 		en.en[MOTOR_3].steps_run = 0;
 
 		//**** MOTOR_4 LOAD ****
@@ -520,7 +510,7 @@ static void _load_move()
 				st_run.mot[MOTOR_4].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		en.en[MOTOR_4].encoder_position += en.en[MOTOR_4].steps_run;
+		en.en[MOTOR_4].encoder_steps += en.en[MOTOR_4].steps_run;
 		en.en[MOTOR_4].steps_run = 0;
 
 		//**** do this last ****

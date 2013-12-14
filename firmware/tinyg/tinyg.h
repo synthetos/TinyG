@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		405.17	// testing jerk-based and forward differencing execs
+#define TINYG_FIRMWARE_BUILD   		406.01	// added steps and encoder values to cfgArray table for status reporting
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -60,7 +60,7 @@
   #define __HELP_SCREENS					// comment out to disable help screens 		(saves ~3.5Kb)
   #define __CANNED_TESTS 					// comment out to remove $tests 			(saves ~12Kb)
 #endif
-  #define __TEST_99 						// comment out to remove diagnostic test 99
+//  #define __TEST_99 						// comment out to remove diagnostic test 99
 
 /****** DEVELOPMENT SETTINGS ******/
 

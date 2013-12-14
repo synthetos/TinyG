@@ -96,7 +96,7 @@
 typedef struct enEncoder { 			// one real or virtual encoder per controlled motor
 	int8_t  step_sign;				// set to +1 or -1
 	int16_t steps_run;				// steps counted during stepper interrupt
-	int32_t encoder_position;		// counted encoder position	in steps
+	int32_t encoder_steps;			// counted encoder position	in steps
 } enEncoder_t;
 
 typedef struct enEncoders {

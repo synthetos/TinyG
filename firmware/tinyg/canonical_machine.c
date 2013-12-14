@@ -1518,9 +1518,9 @@ static const char *const msg_frmo[] PROGMEM = { msg_g94, msg_g93 };
 
 /***** AXIS HELPERS *****************************************************************
  *
- * cm_get_axis_char()	- return ASCII char for axis given the axis number
- * _get_axis()		- return axis number or -1 if NA
- * _get_axis_type()	- return 0 -f axis is linear, 1 if rotary, -1 if NA
+ * cm_get_axis_char() - return ASCII char for axis given the axis number
+ * _get_axis()		  - return axis number or -1 if NA
+ * _get_axis_type()	  - return 0 -f axis is linear, 1 if rotary, -1 if NA
  */
 
 char_t cm_get_axis_char(const int8_t axis)
