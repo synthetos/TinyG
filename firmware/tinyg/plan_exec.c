@@ -267,11 +267,14 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 // NOTE: t1 will always be == t0, so we don't pass it
 static void _init_forward_diffs(float t0, float t2)
 {
-	float H_squared = square(1/mr.segments);
+//	float H_squared = square(1/mr.segments);
+//	// A = T[0] - 2*T[1] + T[2], if T[0] == T[1], then it becomes - T[0] + T[2]
+//	float AH_squared = (t2 - t0) * H_squared;
+
 	// A = T[0] - 2*T[1] + T[2], if T[0] == T[1], then it becomes - T[0] + T[2]
-	float AH_squared = (t2 - t0) * H_squared;
+	float AH_squared = (t2 - t0) * square(1/mr.segments); // square(1/mr.segments) is H_squared
 	
-	// Ah²+Bh, and B=2 * (T[1] - T[0]), if T[0] == T[1], then it becomes simply Ah^2
+	// Ah^2 + Bh, and B=2 * (T[1] - T[0]), if T[0] == T[1], then it becomes simply Ah^2
 	mr.forward_diff_1 = AH_squared;
 	mr.forward_diff_2 = 2*AH_squared;
 	mr.segment_velocity = t0;
@@ -291,40 +294,43 @@ static stat_t _exec_aline_head()
 		mr.gm.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec)); // # of segments in *each half*
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
-#ifdef __JERK_EXEC
+
+		// 4 lines needed by jerk-based exec
 		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.entry_velocity) / mr.jerk);
 		mr.midpoint_acceleration = 2 * (mr.cruise_velocity - mr.entry_velocity) / mr.accel_time;
 		mr.segment_accel_time = mr.accel_time / (2 * mr.segments);	// time to advance for each segment
 		mr.elapsed_accel_time = mr.segment_accel_time / 2;			// elapsed time starting point (offset)
-#endif
-		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-		}
+
+		// line needed by fwd-diff exec
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 
+		mr.segment_count = (uint32_t)mr.segments;
+		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
+			return(STAT_GCODE_BLOCK_SKIPPED);					// exit without advancing position
+		}
 		mr.section = SECTION_HEAD;
 		mr.section_state = SECTION_1st_HALF;
 	}
 	if (mr.section_state == SECTION_1st_HALF) {					// concave part of accel curve (period 1)
 #ifdef __JERK_EXEC
 		mr.segment_velocity = mr.entry_velocity + (square(mr.elapsed_accel_time) * mr.jerk_div2);
-#else
-		mr.segment_velocity += mr.forward_diff_1;
-#endif
 		if (_exec_aline_segment() == STAT_OK) { 				// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = SECTION_2nd_HALF;
-#ifdef __JERK_EXEC
 			mr.elapsed_accel_time = mr.segment_accel_time / 2;	// start time from midpoint of segment
+		}
 #else
+		mr.segment_velocity += mr.forward_diff_1;
+		if (_exec_aline_segment() == STAT_OK) { 				// set up for second half
+			mr.segment_count = (uint32_t)mr.segments;
+			mr.section_state = SECTION_2nd_HALF;
 			// Here's a trick: The second half of the S starts at the end of the first,
 			//  And the only thing that changes is the sign of mr.forward_diff_2
 			mr.forward_diff_2 = -mr.forward_diff_2;
 		} else {
 			mr.forward_diff_1 += mr.forward_diff_2;
-#endif
 		}
+#endif
 		return(STAT_EAGAIN);
 	}
 	if (mr.section_state == SECTION_2nd_HALF) {					// convex part of accel curve (period 2)
@@ -390,39 +396,43 @@ static stat_t _exec_aline_tail()
 		mr.gm.move_time = mr.tail_length / mr.midpoint_velocity;
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec));// # of segments in *each half*
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
-#ifdef __JERK_EXEC
+
+		// 4 lines needed by jerk-based exec
 		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.exit_velocity) / mr.jerk);
 		mr.midpoint_acceleration = 2 * (mr.cruise_velocity - mr.exit_velocity) / mr.accel_time;
 		mr.segment_accel_time = mr.accel_time / (2 * mr.segments);// time to advance for each segment
 		mr.elapsed_accel_time = mr.segment_accel_time / 2; //compute time from midpoint of segment
-#endif
+
+		// line needed by fwd-diff exec
+		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
+
 		mr.segment_count = (uint32_t)mr.segments;
 		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
 			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
 		}
-		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
 		mr.section = SECTION_TAIL;
 		mr.section_state = SECTION_1st_HALF;
 	}
 	if (mr.section_state == SECTION_1st_HALF) {				// convex part (period 4)
 #ifdef __JERK_EXEC
 		mr.segment_velocity = mr.cruise_velocity - (square(mr.elapsed_accel_time) * mr.jerk_div2);
-#else
-		mr.segment_velocity += mr.forward_diff_1;
-#endif
 		if (_exec_aline_segment() == STAT_OK) {				// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = SECTION_2nd_HALF;
-#ifdef __JERK_EXEC
-			mr.elapsed_accel_time = mr.segment_accel_time / 2;	// start time from midpoint of segment
+			mr.elapsed_accel_time = mr.segment_accel_time / 2;// start time from midpoint of segment
+		}
 #else
+		mr.segment_velocity += mr.forward_diff_1;
+		if (_exec_aline_segment() == STAT_OK) {				// set up for second half
+			mr.segment_count = (uint32_t)mr.segments;
+			mr.section_state = SECTION_2nd_HALF;
 			// Here's a trick: The second half of the S starts at the end of the first,
 			//  And the only thing that changes is the sign of mr.forward_diff_2
 			mr.forward_diff_2 = -mr.forward_diff_2;
 		} else {
 			mr.forward_diff_1 += mr.forward_diff_2;
-#endif
 		}
+#endif
 		return(STAT_EAGAIN);
 	}
 	if (mr.section_state == SECTION_2nd_HALF) {				// concave part (period 5)
@@ -442,52 +452,41 @@ static stat_t _exec_aline_tail()
 /*
  * _exec_aline_segment() - segment runner helper
  */
-//#define _FACTOR_ACCEL ((float)(0.9656))
-#define _FACTOR_ACCEL ((float)(1))
-#define _FACTOR_DECEL ((float)(1/_FACTOR_ACCEL))
 
 static stat_t _exec_aline_segment()
 {
 	uint8_t i;
 	float steps[MOTORS];
 
-	// Compute the new target from the velocity yielded by the forward difference
+	// Compute the new target w/segment_velocity from the head/body/tail function
 	float segment_distance = mr.segment_velocity * mr.segment_time;
 	for (i=0; i<AXES; i++) {
 		mr.gm.target[i] = mr.position[i] + mr.unit[i] * segment_distance;
 	}
+
 	// Prep the segment for the steppers and adjust the variables for the next iteration. 
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
 	for (i=0; i<MOTORS; i++) {
-		mr.position_delayed[i] = mr.position_steps[i];	// previous segment position becomes delayed
-		mr.position_steps[i] = mr.target_steps[i];	 	// previous segment's target becomes position
-		mr.encoder_position[i] = en_sample_encoder(i);	// get the current encoder position
+		mr.position_delayed[i] = mr.position_steps[i];		// previous segment position becomes delayed
+		mr.position_steps[i] = mr.target_steps[i];	 		// previous segment's target becomes position
+		mr.encoder_position[i] = en_sample_encoder(i);		// get the current encoder position
 		mr.encoder_error[i] = mr.encoder_position[i] - (int32_t)mr.position_delayed[i];
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);
-	for (i=0; i<MOTORS; i++) {
-		steps[i] = mr.target_steps[i] - mr.position_steps[i];
-	}
+	for (i=0; i<MOTORS; i++) {								  // NB: This only works for cartesian kinematics
+		steps[i] = mr.target_steps[i] - mr.position_steps[i]; // Otherwise must transform the travel distance
+	}														  // Verify this assumption (pretty sure it's true)
 
-	//**** finish up ****
-
-//	printf("%0.7f\n",(double)segment_distance);
-//	printf("%0.9f, %0.7f\n",(double)mr.gm.target[0],(double)segment_distance);
-
-//	printf("%0.9f\n",(double)mr.gm.target[0]);
-	printf("%0.9f\n",(double)mr.segment_velocity);
-
-//	printf("%lu,%0.9f\n",mr.segment_count,(double)mr.gm.target[0]);
-
-	// Prep the segment. Return if there's an error
+	// Call the stepper prep function. Return if there's an error
 	ritorno(st_prep_line(steps, mr.microseconds, mr.encoder_error));
-#ifdef __JERK_EXEC
-	mr.elapsed_accel_time += mr.segment_accel_time; // NB: ignored if running the body
-#endif
-	copy_axis_vector(mr.position, mr.gm.target); 	// update position from target
+	copy_axis_vector(mr.position, mr.gm.target); 			// update position from target
+	mr.elapsed_accel_time += mr.segment_accel_time;			// line needed by jerk-based exec
+															// NB: ignored if running the body
+//	printf("%0.9f\n",(double)mr.segment_velocity);
+//	printf("%lu,%0.9f\n",mr.segment_count,(double)mr.gm.target[0]);
+//	printf("%0.9f\n",(double)mr.gm.target[0]);
 
-	if (--mr.segment_count == 0)
-		return(STAT_OK);
+	if (--mr.segment_count == 0) return(STAT_OK);
 	return (STAT_EAGAIN);
 }
 
