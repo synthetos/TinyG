@@ -46,8 +46,6 @@ static stat_t _exec_aline_body(void);
 static stat_t _exec_aline_tail(void);
 static stat_t _exec_aline_segment(void);
 static void _init_forward_diffs(float t0, float t2);
-//static float _compute_next_segment_velocity(void);
-
 
 /*************************************************************************
  * mp_exec_move() - execute runtime functions to prep move for steppers
@@ -189,13 +187,12 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.target, bf->gm.target);		// save the final target of the move
 
-/*		// generate the section targets for endpoint detection / correction
+		// generate the section targets for endpoint position correction
 		for (uint8_t i=0; i<AXES; i++) {
 			mr.section_target[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
 			mr.section_target[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
 			mr.section_target[SECTION_TAIL][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length + mr.tail_length);
 		}
-*/
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -264,19 +261,14 @@ stat_t mp_exec_aline(mpBuf_t *bf)
  *  forward_diff_2 = 2Ah^2 = 2*(T[0] - 2*T[1] + T[2])h*h
  */
 
-// NOTE: t1 will always be == t0, so we don't pass it
-static void _init_forward_diffs(float t0, float t2)
+static void _init_forward_diffs(float t0, float t2)		// NB: t1 will always be == t0, so we don't pass it
 {
-//	float H_squared = square(1/mr.segments);
-//	// A = T[0] - 2*T[1] + T[2], if T[0] == T[1], then it becomes - T[0] + T[2]
-//	float AH_squared = (t2 - t0) * H_squared;
-
 	// A = T[0] - 2*T[1] + T[2], if T[0] == T[1], then it becomes - T[0] + T[2]
 	float AH_squared = (t2 - t0) * square(1/mr.segments); // square(1/mr.segments) is H_squared
 	
 	// Ah^2 + Bh, and B=2 * (T[1] - T[0]), if T[0] == T[1], then it becomes simply Ah^2
 	mr.forward_diff_1 = AH_squared;
-	mr.forward_diff_2 = 2*AH_squared;
+	mr.forward_diff_2 = AH_squared * 2;
 	mr.segment_velocity = t0;
 }
 

@@ -208,13 +208,17 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
-//	float section_target[SECTIONS][AXES];// targets for each move section
+	float section_target[SECTIONS][AXES];// targets for each move section
+
 
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
 	float position_steps[MOTORS];	// current MR position (target from previous segment)
 	float position_delayed[MOTORS];	// will align with next encoder sample (target from 2nd previous segment)
+
 	float encoder_steps[MOTORS];	// encoder position in steps - should be same as position_delayed
-	float encoder_error[MOTORS];	// integer different between encoder and delayed positions
+	float encoder_error[MOTORS];	// difference between encoder_steps and position_delayed
+	float encoder_feed[MOTORS];		// feedforward error correction in fractional steps
+
 
 	float head_length;				// copies of bf variables of same name
 	float body_length;
