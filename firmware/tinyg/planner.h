@@ -91,6 +91,16 @@ enum sectionState {
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
 
+/* MAX_CORRECTION_MM
+ * MAX_CORRECTION_STEP
+ *	These values set the maximum millimeters that can be corrected in a single segment and
+ *	the maximum fractional steps that can be corrected in a single segment. They are used 
+ *	by the feedforward and feedback error correction functions (respectively) to meter out 
+ *	corrections across multiple segments.
+ */
+#define MAX_CORRECTION_MM		(float)0.01
+#define MAX_CORRECTION_STEP		(float)0.10
+
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.
  *  If you don;t do this the first block will always plan to zero as it will
@@ -210,15 +220,18 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float position[AXES];			// current move position
 	float section_target[SECTIONS][AXES];// targets for each move section
 
+	float position_error[AXES];		// mathematical position error relative to known endpoints
+	float feedforward_error[AXES];	// error correction being applied to target
+	uint8_t feedforward_count;
 
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
 	float position_steps[MOTORS];	// current MR position (target from previous segment)
-	float position_delayed[MOTORS];	// will align with next encoder sample (target from 2nd previous segment)
+	float delayed_steps[MOTORS];	// will align with next encoder sample (target from 2nd previous segment)
 
 	float encoder_steps[MOTORS];	// encoder position in steps - should be same as position_delayed
 	float encoder_error[MOTORS];	// difference between encoder_steps and position_delayed
-	float encoder_feed[MOTORS];		// feedforward error correction in fractional steps
-
+	float feedback_error[MOTORS];	// encoder feedback error correction in fractional steps
+	uint8_t feedback_count;
 
 	float head_length;				// copies of bf variables of same name
 	float body_length;

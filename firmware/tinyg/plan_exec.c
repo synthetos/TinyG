@@ -448,21 +448,40 @@ static stat_t _exec_aline_tail()
 static stat_t _exec_aline_segment()
 {
 	uint8_t i;
+	stat_t status = STAT_EAGAIN;
 	float steps[MOTORS];
+	float feedforward_correction;	// amount to adjust target for endpoint position error
 
 	// Compute the new target w/segment_velocity from the head/body/tail function
 	float segment_distance = mr.segment_velocity * mr.segment_time;
 	for (i=0; i<AXES; i++) {
 		mr.gm.target[i] = mr.position[i] + mr.unit[i] * segment_distance;
+
+		// A positive feedforward error means that the computed target has overshot 
+		// the actual endpoint. Negative means is's short of the target
+		feedforward_correction = min(fabs(mr.feedforward_error[i]), MAX_CORRECTION_MM);
+		if (mr.feedforward_error[i] < 0) feedforward_correction *= -1;
+		mr.feedforward_error[i] -= feedforward_correction;
+		mr.gm.target[i] -= feedforward_correction;
+	}
+
+	// Perform endpoint target correction
+	if (--mr.segment_count == 0) {
+		status = STAT_OK;									// start the next half or the next move section.
+		if (mr.section_state == SECTION_2nd_HALF) {			// time to sample the endpoint vs the target
+			for (i=0; i<AXES; i++) {
+				mr.feedforward_error[i] += mr.gm.target[i] - mr.section_target[mr.section][i];
+			}
+		}
 	}
 
 	// Prep the segment for the steppers and adjust the variables for the next iteration. 
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
 	for (i=0; i<MOTORS; i++) {
-		mr.position_delayed[i] = mr.position_steps[i];		// previous segment position becomes delayed
+		mr.delayed_steps[i] = mr.position_steps[i];			// previous segment position becomes delayed
 		mr.position_steps[i] = mr.target_steps[i];	 		// previous segment's target becomes position
-		mr.encoder_steps[i] = en_sample_encoder(i);		// get the current encoder position
-		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.position_delayed[i];
+		mr.encoder_steps[i] = en_sample_encoder(i);			// get the current encoder position
+		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.delayed_steps[i];
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);
 	for (i=0; i<MOTORS; i++) {								  // NB: This only works for cartesian kinematics
@@ -478,8 +497,7 @@ static stat_t _exec_aline_segment()
 //	printf("%lu,%0.9f\n",mr.segment_count,(double)mr.gm.target[0]);
 //	printf("%0.9f\n",(double)mr.gm.target[0]);
 
-	if (--mr.segment_count == 0) return(STAT_OK);
-	return (STAT_EAGAIN);
+	return (status);
 }
 
 /*
@@ -493,7 +511,7 @@ void mp_print_motor_position(const uint8_t motor)
 		motor+1,
 		(double)mr.target_steps[motor],
 		(double)mr.position_steps[motor],
-		(double)mr.position_delayed[motor],
+		(double)mr.delayed_steps[motor],
 		(double)mr.encoder_steps[motor],
 		(double)mr.encoder_error[motor],
 		(double)(mr.encoder_error[motor] * st_cfg.mot[motor].units_per_step));

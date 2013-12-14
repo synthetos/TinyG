@@ -603,34 +603,6 @@ stat_t st_prep_line(float steps[], float microseconds, float encoder_error[])
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
-		// error term processing - try positive errors first
-
-/*+++
-		if (st_pre.last_segment == true) {
-			if (en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
-				if (steps[i] > en.en[i].position_error_steps) {
-					steps[i] -= en.en[i].position_error_steps;		// remove some steps
-					printf("%li",en.en[i].position_error_steps);
-				}
-			} else if (-en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
-				steps[i] -= en.en[i].position_error_steps;			// add some steps
-				printf("%li",en.en[i].position_error_steps);
-			}
-		}
-*/
-/*
-		if (st_pre.last_segment == true) {
-			if (en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
-				if (steps[i] > ERROR_CORRECTION_THRESHOLD) {
-					steps[i] -= 1;									// remove a step
-					printf("-");
-				}
-			} else if (-en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
-				steps[i] += 1;
-				printf("+");
-			}
-		}
-*/
 		// Compute substeb increment. The accumulator must be *exactly* the incoming 
 		// fractional steps times the substep multipler or positional drift will occur. 
 		// Rounding is performed to eliminate a negative bias in the int32 conversion 
