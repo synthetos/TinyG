@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		406.04	// changed the way stepper resets work, re-arranged assertions
+#define TINYG_FIRMWARE_BUILD   		406.05	// testing and cleanup - stepper reset still not right for initial negative movement
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)

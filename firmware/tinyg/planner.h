@@ -221,8 +221,8 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float section_target[SECTIONS][AXES];// targets for each move section
 
 	float position_error[AXES];		// mathematical position error relative to known endpoints
-	float feedforward_error[AXES];	// error correction being applied to target
-	uint8_t feedforward_count;
+	float position_correction[AXES];// error correction being applied to target
+//	uint8_t position_correction_count;
 
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
 	float position_steps[MOTORS];	// current MR position (target from previous segment)
@@ -230,8 +230,8 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 
 	float encoder_steps[MOTORS];	// encoder position in steps - should be same as position_delayed
 	float encoder_error[MOTORS];	// difference between encoder_steps and position_delayed
-	float feedback_error[MOTORS];	// encoder feedback error correction in fractional steps
-	uint8_t feedback_count;
+	float encoder_correction[MOTORS];// encoder feedback error correction in fractional steps
+//	uint8_t encoder_correction_count;
 
 	float head_length;				// copies of bf variables of same name
 	float body_length;
@@ -242,21 +242,21 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float exit_velocity;
 
 	float midpoint_velocity;		// velocity at accel/decel midpoint
+	float midpoint_acceleration;	// JERK BASED EXEC CODE
 	float jerk;						// max linear jerk
+	float jerk_div2;				// JERK BASED EXEC CODE
 
 	float segments;					// number of segments in arc or blend
 	uint32_t segment_count;			// count of running segments
-	float segment_time;				// actual time increment per aline segment
-	float microseconds;				// line or segment time in microseconds
 	float segment_velocity;			// computed velocity for aline segment
+	float segment_time;				// actual time increment per aline segment
+
+	float accel_time;				// JERK BASED EXEC CODE
+	float segment_accel_time;		// JERK BASED EXEC CODE
+	float elapsed_accel_time;		// JERK BASED EXEC CODE
+	float microseconds;				// line or segment time in microseconds
 	float forward_diff_1;			// forward difference level 1 (Acceleration)
 	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
-
-	float jerk_div2;				// OLD CODE
-	float midpoint_acceleration;	// OLD CODE
-	float accel_time;				// OLD CODE
-	float segment_accel_time;		// OLD CODE
-	float elapsed_accel_time;		// OLD CODE
 
 	GCodeState_t gm;				// gocode model state currently executing
 

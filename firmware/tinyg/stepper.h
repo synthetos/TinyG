@@ -355,7 +355,7 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 // Must be careful about volatiles in this one
 
 typedef struct stPrepMotor {
-	uint8_t cycle_start;			// new cycle: reset stepper on its first movement
+//	uint8_t cycle_start;			// new cycle: reset stepper on its first movement
 	uint8_t direction_change;		// set true if direction changed
 	int8_t step_sign;				// set to +1 or -1 for encoders
 	int8_t direction;				// travel direction corrected for polarity
@@ -366,7 +366,6 @@ typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integrity	
 	volatile uint8_t exec_state;	// move execution state 
 	uint8_t move_type;				// move type
-//	uint8_t cycle_start;			// new cycle: reset steppers
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor

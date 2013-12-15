@@ -450,7 +450,7 @@ static stat_t _exec_aline_segment()
 	uint8_t i;
 	stat_t status = STAT_EAGAIN;
 	float steps[MOTORS];
-	float feedforward_correction;	// amount to adjust target for endpoint position error
+	float position_correction;		// amount to adjust target for endpoint position error
 
 	// Compute the new target w/segment_velocity from the head/body/tail function
 	float segment_distance = mr.segment_velocity * mr.segment_time;
@@ -459,10 +459,10 @@ static stat_t _exec_aline_segment()
 
 		// A positive feedforward error means that the computed target has overshot 
 		// the actual endpoint. Negative means is's short of the target
-		feedforward_correction = min(fabs(mr.feedforward_error[i]), MAX_CORRECTION_MM);
-		if (mr.feedforward_error[i] < 0) feedforward_correction *= -1;
-		mr.feedforward_error[i] -= feedforward_correction;
-		mr.gm.target[i] -= feedforward_correction;
+		position_correction = min(fabs(mr.position_correction[i]), MAX_CORRECTION_MM);
+		if (mr.position_correction[i] < 0) position_correction *= -1;
+		mr.position_correction[i] -= position_correction;
+		mr.gm.target[i] -= position_correction;
 	}
 
 	// Perform endpoint target correction
@@ -470,7 +470,7 @@ static stat_t _exec_aline_segment()
 		status = STAT_OK;									// start the next half or the next move section.
 		if (mr.section_state == SECTION_2nd_HALF) {			// time to sample the endpoint vs the target
 			for (i=0; i<AXES; i++) {
-				mr.feedforward_error[i] += mr.gm.target[i] - mr.section_target[mr.section][i];
+				mr.position_correction[i] += mr.gm.target[i] - mr.section_target[mr.section][i];
 			}
 		}
 	}
