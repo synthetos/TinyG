@@ -69,15 +69,7 @@ static void _request_load_move(void);
 void stepper_init()
 {
 	memset(&st_run, 0, sizeof(st_run));			// clear all values, pointers and status
-	st_run.magic_end = MAGICNUM;
-	st_run.magic_start = MAGICNUM;
-	st_pre.magic_end = MAGICNUM;
-	st_pre.magic_start = MAGICNUM;
-
-
-#ifdef __STEP_DIAGNOSTICS
-	_clear_step_diagnostics();
-#endif
+	stepper_init_assertions();
 
 	// Configure virtual ports
 	PORTCFG.VPCTRLA = PORTCFG_VP0MAP_PORT_MOTOR_1_gc | PORTCFG_VP1MAP_PORT_MOTOR_2_gc;
@@ -110,12 +102,24 @@ void stepper_init()
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = EXEC_TIMER_PERIOD;			// set period
 	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
+
+	st_reset();									// reset steppers to known state
 }
 
 /*
- * st_assertions() - test assertions, return error code if violation exists
+ * stepper_init_assertions() - test assertions, return error code if violation exists
+ * stepper_test_assertions() - test assertions, return error code if violation exists
  */
-stat_t st_assertions()
+
+void stepper_init_assertions()
+{
+	st_run.magic_end = MAGICNUM;
+	st_run.magic_start = MAGICNUM;
+	st_pre.magic_end = MAGICNUM;
+	st_pre.magic_start = MAGICNUM;
+}
+
+stat_t stepper_test_assertions()
 {
 	if (st_run.magic_end	!= MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
 	if (st_run.magic_start	!= MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
@@ -125,6 +129,18 @@ stat_t st_assertions()
 }
 
 /*
+ * stepper_isbusy() - return TRUE if motors are running or a dwell is running
+ */
+
+uint8_t stepper_isbusy()
+{
+	if (st_run.dda_ticks_downcount == 0) 
+		return (false);
+	return (true);
+}
+
+/*
+ * st_reset() - reset stepper internals
  * st_cycle_start() - Initializes values for beginning a new cycle.
  * st_cycle_end()
  * st_clc()
@@ -132,13 +148,24 @@ stat_t st_assertions()
  * st_cycle_start() is called from cm_cycle_start().  
  */
 
+void st_reset()
+{
+	for (uint8_t i=0; i<MOTORS; i++) {
+		st_pre.mot[MOTOR_1].direction_change = true;
+		st_run.mot[MOTOR_1].substep_accumulator = 0;			// will become max negative during per-motor setup;
+	}
+	en_reset_encoders();
+}
+
 void st_cycle_start(void)
 {
-//	st_pre.cycle_start = true;		// triggers stepper resets
+/*
+	st_pre.cycle_start = true;		// triggers stepper resets
 	for (uint8_t i=0; i<MOTORS; i++) {
 		st_pre.mot[i].cycle_start = true;
 	}
 	en_reset_encoders();
+*/
 }
 
 void st_cycle_end(void)
@@ -150,17 +177,6 @@ stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
 {
 	st_cycle_end();
 	return(STAT_OK);
-}
-
-/*
- * stepper_isbusy() - return TRUE if motors are running or a dwell is running
- */
-uint8_t stepper_isbusy()
-{
-	if (st_run.dda_ticks_downcount == 0) {
-		return (false);
-	} 
-	return (true);
 }
 
 /*
@@ -406,11 +422,11 @@ static void _load_move()
 		if ((st_run.mot[MOTOR_1].substep_increment = st_pre.mot[MOTOR_1].substep_increment) != 0) {
 
 			// First time initialization
-			if (st_pre.mot[MOTOR_1].cycle_start == true) {				// setup direction bits and initial accumulator value
-				st_pre.mot[MOTOR_1].cycle_start = false;
-				st_pre.mot[MOTOR_1].direction_change = true;
-				st_run.mot[MOTOR_1].substep_accumulator = 0;			// will become max negative during per-motor setup;
-			}
+//			if (st_pre.mot[MOTOR_1].cycle_start == true) {				// setup direction bits and initial accumulator value
+//				st_pre.mot[MOTOR_1].cycle_start = false;
+//				st_pre.mot[MOTOR_1].direction_change = true;
+//				st_run.mot[MOTOR_1].substep_accumulator = 0;			// will become max negative during per-motor setup;
+//			}
 			// Set the direction bit in hardware
 			// Compensate for direction change in the accumulator
 		 	// NB: If motor has 0 steps this is all skipped
@@ -438,11 +454,11 @@ static void _load_move()
 		//**** MOTOR_2 LOAD ****
 
 		if ((st_run.mot[MOTOR_2].substep_increment = st_pre.mot[MOTOR_2].substep_increment) != 0) {
-			if (st_pre.mot[MOTOR_2].cycle_start == true) {
-				st_pre.mot[MOTOR_2].cycle_start = false;
-				st_pre.mot[MOTOR_2].direction_change = true;
-				st_run.mot[MOTOR_2].substep_accumulator = 0;
-			}
+//			if (st_pre.mot[MOTOR_2].cycle_start == true) {
+//				st_pre.mot[MOTOR_2].cycle_start = false;
+//				st_pre.mot[MOTOR_2].direction_change = true;
+//				st_run.mot[MOTOR_2].substep_accumulator = 0;
+//			}
 			if (st_pre.mot[MOTOR_2].direction_change == true) {
 				if (st_pre.mot[MOTOR_2].direction == DIRECTION_CW)
 					PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
@@ -464,11 +480,11 @@ static void _load_move()
 		//**** MOTOR_3 LOAD ****
 
 		if ((st_run.mot[MOTOR_3].substep_increment = st_pre.mot[MOTOR_3].substep_increment) != 0) {
-			if (st_pre.mot[MOTOR_3].cycle_start == true) {
-				st_pre.mot[MOTOR_3].cycle_start = false;
-				st_pre.mot[MOTOR_3].direction_change = true;
-				st_run.mot[MOTOR_3].substep_accumulator = 0;
-			}
+//			if (st_pre.mot[MOTOR_3].cycle_start == true) {
+//				st_pre.mot[MOTOR_3].cycle_start = false;
+//				st_pre.mot[MOTOR_3].direction_change = true;
+//				st_run.mot[MOTOR_3].substep_accumulator = 0;
+//			}
 			if (st_pre.mot[MOTOR_3].direction_change == true) {
 				if (st_pre.mot[MOTOR_3].direction == DIRECTION_CW)
 					PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
@@ -490,11 +506,11 @@ static void _load_move()
 		//**** MOTOR_4 LOAD ****
 
 		if ((st_run.mot[MOTOR_4].substep_increment = st_pre.mot[MOTOR_4].substep_increment) != 0) {
-			if (st_pre.mot[MOTOR_4].cycle_start == true) {
-				st_pre.mot[MOTOR_4].cycle_start = false;
-				st_pre.mot[MOTOR_4].direction_change = true;
-				st_run.mot[MOTOR_4].substep_accumulator = 0;
-			}
+//			if (st_pre.mot[MOTOR_4].cycle_start == true) {
+//				st_pre.mot[MOTOR_4].cycle_start = false;
+//				st_pre.mot[MOTOR_4].direction_change = true;
+//				st_run.mot[MOTOR_4].substep_accumulator = 0;
+//			}
 			if (st_pre.mot[MOTOR_4].direction_change == true) {
 				if (st_pre.mot[MOTOR_4].direction == DIRECTION_CW)
 					PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else

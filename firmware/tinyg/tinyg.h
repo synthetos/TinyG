@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		406.03	// another run at endpoint error correction
+#define TINYG_FIRMWARE_BUILD   		406.04	// changed the way stepper resets work, re-arranged assertions
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -59,8 +59,9 @@
   #define __TEXT_MODE						// comment out to disable text mode support (saves ~9Kb)
   #define __HELP_SCREENS					// comment out to disable help screens 		(saves ~3.5Kb)
   #define __CANNED_TESTS 					// comment out to remove $tests 			(saves ~12Kb)
+  #define __TEST_99 						// comment out to remove diagnostic test 99
 #endif
-//  #define __TEST_99 						// comment out to remove diagnostic test 99
+
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -69,7 +70,8 @@
   #define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
   #define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 #endif
-//#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
+// #define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
+ 
 
 //#ifndef WEAK
 //#define WEAK  __attribute__ ((weak))

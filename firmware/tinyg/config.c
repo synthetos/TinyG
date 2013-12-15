@@ -100,14 +100,12 @@ void cmd_persist(cmdObj_t *cmd)
  *
  *	You can assume the cfg struct has been zeroed by a hard reset. 
  *	Do not clear it as the version and build numbers have already been set by tg_init()
+ *
+ * NOTE: Config assertions are handled from the controller
  */
 void config_init()
 {
 	cmdObj_t *cmd = cmd_reset_list();
-	cmdStr.magic_start = MAGICNUM;
-	cmdStr.magic_end = MAGICNUM;
-	cfg.magic_start = MAGICNUM;
-	cfg.magic_end = MAGICNUM;
 
 	cm_set_units_mode(MILLIMETERS);			// must do inits in MM mode
 	hw.nvm_base_addr = NVM_BASE_ADDR;

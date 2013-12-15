@@ -97,16 +97,21 @@ void planner_init()
 // If you can can assume all memory has been zeroed by a hard reset you don;t need these next 2 lines
 	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
 	memset(&mm, 0, sizeof(mm));	// clear all values, pointers and status
-
-	mr.magic_start = MAGICNUM;
-	mr.magic_end = MAGICNUM;
+	planner_init_assertions();
 	mp_init_buffers();
 }
 
 /*
- * mp_assertions() - test assertions, return error code if violation exists
+ * planner_init_assertions()
+ * planner_test_assertions() - test assertions, return error code if violation exists
  */
-stat_t mp_assertions()
+void planner_init_assertions()
+{
+	mr.magic_start = MAGICNUM;
+	mr.magic_end = MAGICNUM;
+}
+
+stat_t planner_test_assertions()
 {
 	if ((mb.magic_start  != MAGICNUM) || (mb.magic_end 	 != MAGICNUM)) return (STAT_PLANNER_ASSERTION_FAILURE);
 	if ((mr.magic_start  != MAGICNUM) || (mr.magic_end 	 != MAGICNUM)) return (STAT_PLANNER_ASSERTION_FAILURE);

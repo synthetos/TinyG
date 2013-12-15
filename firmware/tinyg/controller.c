@@ -79,8 +79,7 @@ stat_t hardware_bootloader_handler(void);
 
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err) 
 {
-	cs.magic_start = MAGICNUM;
-	cs.magic_end = MAGICNUM;
+	controller_init_assertions();
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
 	cs.fw_version = TINYG_FIRMWARE_VERSION;
 	cs.hw_platform = TINYG_HARDWARE_PLATFORM;		// NB: HW version is set from EEPROM
@@ -100,6 +99,31 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	xio_set_stderr(std_err);
 	cs.default_src = std_in;
 	tg_set_primary_source(cs.default_src);
+}
+
+/* 
+ * controller_init_assertions()
+ * controller_test_assertions() - check memory integrity of controller
+ */
+
+void controller_init_assertions()
+{
+	cs.magic_start = MAGICNUM;
+	cs.magic_end = MAGICNUM;
+
+	cfg.magic_start = MAGICNUM;		// assertions for config system are handled from the controller
+	cfg.magic_end = MAGICNUM;
+	cmdStr.magic_start = MAGICNUM;
+	cmdStr.magic_end = MAGICNUM;
+}
+
+stat_t controller_test_assertions()
+{
+	if ((cs.magic_start 	!= MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end 	  != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+	if ((cmdStr.magic_start != MAGICNUM) || (cmdStr.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+
+	return (STAT_OK);
 }
 
 /* 
@@ -325,26 +349,17 @@ static stat_t _limit_switch_handler(void)
 }
 
 /* 
- * _controller_assertions() - check memory integrity of controller
- */
-stat_t _controller_assertions()
-{
-	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_MEMORY_FAULT);
-	return (STAT_OK);
-}
-
-/* 
  * _system_assertions() - check memory integrity and other assertions
  */
-#define alarmo(a) if((status_code=a) != STAT_OK) { cm_hard_alarm(status_code); return(status_code); }
+#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) { cm_hard_alarm(status_code); return(status_code); }
 
 stat_t _system_assertions()
 {
-	alarmo(_controller_assertions());
-	alarmo(cm_assertions());
-	alarmo(mp_assertions());
-	alarmo(st_assertions());
-	alarmo(xio_assertions());
+	emergency___everybody_to_get_from_street(controller_test_assertions());
+	emergency___everybody_to_get_from_street(canonical_machine_test_assertions());
+	emergency___everybody_to_get_from_street(planner_test_assertions());
+	emergency___everybody_to_get_from_street(stepper_test_assertions());
+	emergency___everybody_to_get_from_street(xio_test_assertions());
 	return (STAT_OK);
 }
 

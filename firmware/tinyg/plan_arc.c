@@ -59,9 +59,8 @@ static float _get_theta(const float x, const float y);
  * cm_arc_init() - initialize arc structures
  */
 void cm_arc_init()
-{
-	arc.magic_start = MAGICNUM;
-	arc.magic_end = MAGICNUM;
+{ 
+	return;
 }
 
 /*
