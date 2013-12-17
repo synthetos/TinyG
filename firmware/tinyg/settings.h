@@ -66,10 +66,10 @@
 #define STATUS_REPORT_INTERVAL_MS	250				// milliseconds - set $SV=0 to disable
 
 // Must be formatted correctly.or your board won't start.
-//#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 //#define SR_DEFAULTS "mst1","msp1","msn1","mse1","mst2","msp2","msn2","mse2","mst3","msp3","msn3","mse3","stat"
 //#define SR_DEFAULTS "posx","mst1","mse1","posy","mst2","mse2","posz","mst3","mse3","stat"
-#define SR_DEFAULTS "posx","mse1","posy","mse2","posz","mse3","stat"
+//#define SR_DEFAULTS "posx","mse1","posy","mse2","posz","mse3","stat"
 //#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","stat","momo"
 //#define SR_DEFAULTS "line","qr","qi","qo","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
