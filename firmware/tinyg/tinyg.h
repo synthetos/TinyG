@@ -44,23 +44,24 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		403.09	// testing error correction
+#define TINYG_FIRMWARE_BUILD   		406.05	// testing and cleanup - stepper reset still not right for initial negative movement
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
 #define TINYG_HARDWARE_VERSION_MAX (TINYG_HARDWARE_VERSION)
 
-//#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
-
 /****** COMPILE-TIME SETTINGS ******/
+
+#define __JERK_EXEC				// comment to use forward difference based exec vs jerk computed exec
+//#define __SIMULATION			// shorthand to keep from having to comment and uncomment the below:
 
 #ifndef __SIMULATION
   #define __TEXT_MODE						// comment out to disable text mode support (saves ~9Kb)
   #define __HELP_SCREENS					// comment out to disable help screens 		(saves ~3.5Kb)
   #define __CANNED_TESTS 					// comment out to remove $tests 			(saves ~12Kb)
-//  #define __TEST_99 						// comment out to remove diagnostic test 99
-#endif
   #define __TEST_99 						// comment out to remove diagnostic test 99
+#endif
+
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -69,7 +70,8 @@
   #define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
   #define __SUPPRESS_STARTUP_MESSAGES 		// what it says
 #endif
-//#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
+// #define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
+ 
 
 //#ifndef WEAK
 //#define WEAK  __attribute__ ((weak))

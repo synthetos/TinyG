@@ -51,12 +51,11 @@ extern "C"{
 
 float vector[AXES];	// statically allocated global for vector utilities
 
-/*
+
 void copy_vector(float dst[], const float src[], uint8_t length)
 {
 	for (uint8_t i=0; i<length; i++) { dst[i] = src[i]; }
 }
-*/
 
 void copy_axis_vector(float dst[], const float src[])
 {

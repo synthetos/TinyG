@@ -87,16 +87,14 @@ enum cmControllerState {				// manages startup lines
 /**** function prototypes ****/
 
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
+void controller_init_assertions(void);
+stat_t controller_test_assertions(void);
 void controller_run(void);
 //void controller_reset(void);
 
 void tg_reset_source(void);
 void tg_set_primary_source(uint8_t dev);
 void tg_set_secondary_source(uint8_t dev);
-
-//void tg_text_response(const uint8_t status, const char *buf);
-//void tg_reset(void);
-//void tg_application_startup(void);
 
 #ifdef __cplusplus
 }

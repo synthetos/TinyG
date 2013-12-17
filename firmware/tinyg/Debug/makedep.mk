@@ -38,6 +38,8 @@ planner.c
 
 plan_arc.c
 
+plan_exec.c
+
 plan_line.c
 
 pwm.c

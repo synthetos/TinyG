@@ -47,17 +47,25 @@ enum moveType {				// bf->move_type values
 };
 
 enum moveState {
-	MOVE_STATE_OFF = 0,		// move inactive (MUST BE ZERO)
-	MOVE_STATE_NEW,			// general value if you need an initialization
-	MOVE_STATE_RUN,			// general run state (for non-acceleration moves) 
-	MOVE_STATE_RUN2,		// used for sub-states
-	MOVE_STATE_HEAD,		// aline() acceleration portions
-	MOVE_STATE_BODY,		// aline() cruise portions
-	MOVE_STATE_TAIL,		// aline() deceleration portions
-	MOVE_STATE_SKIP,		// mark a skipped block
-	MOVE_STATE_END			// move is marked as done (used by dwells)
+	MOVE_OFF = 0,			// move inactive (MUST BE ZERO)
+	MOVE_NEW,				// general value if you need an initialization
+	MOVE_RUN,				// general run state (for non-acceleration moves) 
+	MOVE_SKIP				// mark a skipped block
 };
-#define MOVE_STATE_RUN1 MOVE_STATE_RUN // a convenience
+
+enum moveSection {
+	SECTION_HEAD = 0,		// acceleration
+	SECTION_BODY,			// cruise 
+	SECTION_TAIL			// deceleration
+};
+#define SECTIONS 3
+
+enum sectionState {
+	SECTION_OFF = 0,		// section inactive
+	SECTION_NEW,			// uninitialized section
+	SECTION_1st_HALF,		// first half of S curve
+	SECTION_2nd_HALF		// second half of S curve or running a BODY (cruise)
+};
 
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
@@ -82,6 +90,16 @@ enum moveState {
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
+
+/* MAX_CORRECTION_MM
+ * MAX_CORRECTION_STEP
+ *	These values set the maximum millimeters that can be corrected in a single segment and
+ *	the maximum fractional steps that can be corrected in a single segment. They are used 
+ *	by the feedforward and feedback error correction functions (respectively) to meter out 
+ *	corrections across multiple segments.
+ */
+#define MAX_CORRECTION_MM		(float)0.01
+#define MAX_CORRECTION_STEP		(float)0.10
 
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.
@@ -194,34 +212,49 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
 	magic_t magic_start;			// magic number to test memory integrity
 	uint8_t move_state;				// state of the overall move
+	uint8_t section;				// what section is the move in?
 	uint8_t section_state;			// state within a move section
-	uint8_t last_segment_region;	// which region contains the last segment?
-//	uint8_t last_segment_flagged;	// flag indicating this is the last segment of the move
 	
 	float unit[AXES];				// unit vector for axis scaling & planning
-	float position[AXES];			// current move position
 	float target[AXES];				// final target for bf (used to correct rounding errors)
+	float position[AXES];			// current move position
+	float section_target[SECTIONS][AXES];// targets for each move section
 
-	float position_actual[AXES];	// measured position
-	float position_error[AXES];		// error from measured position
+	float position_error[AXES];		// mathematical position error relative to known endpoints
+	float position_correction[AXES];// error correction being applied to target
+//	uint8_t position_correction_count;
+
+	float target_steps[MOTORS];		// current MR target (absolute target as steps)
+	float position_steps[MOTORS];	// current MR position (target from previous segment)
+	float delayed_steps[MOTORS];	// will align with next encoder sample (target from 2nd previous segment)
+
+	float encoder_steps[MOTORS];	// encoder position in steps - should be same as position_delayed
+	float encoder_error[MOTORS];	// difference between encoder_steps and position_delayed
+	float encoder_correction[MOTORS];// encoder feedback error correction in fractional steps
+//	uint8_t encoder_correction_count;
 
 	float head_length;				// copies of bf variables of same name
 	float body_length;
 	float tail_length;
+	
 	float entry_velocity;
 	float cruise_velocity;
 	float exit_velocity;
 
-	float length;					// length of line in mm
 	float midpoint_velocity;		// velocity at accel/decel midpoint
+	float midpoint_acceleration;	// JERK BASED EXEC CODE
 	float jerk;						// max linear jerk
+	float jerk_div2;				// JERK BASED EXEC CODE
 
 	float segments;					// number of segments in arc or blend
 	uint32_t segment_count;			// count of running segments
-	float segment_move_time;		// actual time increment per aline segment
-	double microseconds;			// line or segment time in microseconds (double precision on ARM)
-	float segment_length;			// computed length for aline segment
 	float segment_velocity;			// computed velocity for aline segment
+	float segment_time;				// actual time increment per aline segment
+
+	float accel_time;				// JERK BASED EXEC CODE
+	float segment_accel_time;		// JERK BASED EXEC CODE
+	float elapsed_accel_time;		// JERK BASED EXEC CODE
+	float microseconds;				// line or segment time in microseconds
 	float forward_diff_1;			// forward difference level 1 (Acceleration)
 	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
 
@@ -234,19 +267,20 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 extern mpBufferPool_t mb;			// move buffer queue
 extern mpMoveMasterSingleton_t mm;	// context for line planning
 extern mpMoveRuntimeSingleton_t mr;	// context for line runtime
+//extern mpMoveRuntimeSingleton_t mr2;// testing old accel code
 
 /*
  * Global Scope Functions
  */
 
 void planner_init(void);
-stat_t mp_assertions(void);
+void planner_init_assertions(void);
+stat_t planner_test_assertions(void);
 
 void mp_flush_planner(void);
 void mp_set_planner_position(uint8_t axis, const float position);
 void mp_set_runtime_position(uint8_t axis, const float position);
 
-stat_t mp_exec_move(void);
 void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *flag);
 
 stat_t mp_dwell(const float seconds);
@@ -280,6 +314,12 @@ void mp_set_runtime_work_offset(float offset[]);
 void mp_zero_segment_velocity(void);
 void mp_get_runtime_target_steps(float target_steps[]);
 uint8_t mp_get_runtime_busy(void);
+
+// plan_exec.c functions
+stat_t mp_exec_move(void);
+stat_t mp_exec_aline(mpBuf_t *bf);
+void mp_print_motor_position(const uint8_t motor);
+void mp_print_motor_positions(void);
 
 #ifdef __DEBUG
 void mp_dump_running_plan_buffer(void);

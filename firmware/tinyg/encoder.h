@@ -24,6 +24,40 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+/* 
+ * ENCODERS	
+ *
+ *	Calling this file "encoders" is kind of a lie, at least for now. There are no encoders.
+ *	Instead the steppers count steps to provide a "truth" reference for position. In the 
+ *	future when we have real encoders we'll stop counting steps and actually measure the 
+ *	position. Which should be a lot easier than how this module currently works.
+ *
+ *	*** Measuring position ***
+ *
+ *	The challenge is that you can't just measure the position at any arbitrary point 
+ *	because the system is so heavily queued (pipelined) by the planner queue and the stepper
+ *	sequencing. 
+ *
+ *	You only know where the machine should be at known "targets", which are at the end of 
+ *	each move section (end of head, body, and tail). You need to take encoder readings at
+ *	these points. This synchronication is taken care of by the Target, Position, Position_delayed 
+ *	sequence in plan_exec. Referring to ASCII art in stepper.h and reproduced here:
+ *
+ *  LOAD/STEP (~5000uSec)          [L1][Segment1][L2][Segment2][L3][Segment3][L4][Segment4][Lb1][Segmentb1]
+ *  PREP (100 uSec)            [P1]       [P2]          [P3]          [P4]          [Pb1]          [Pb2]
+ *  EXEC (400 uSec)         [EXEC1]    [EXEC2]       [EXEC3]       [EXEC4]       [EXECb1]       [EXECb2]
+ *  PLAN (<4ms)  [PLANmoveA][PLANmoveB][PLANmoveC][PLANmoveD][PLANmoveE] etc.
+ *
+ *	You can collect the target for moveA as early as the end of [PLANmoveA]. The system will 
+ *	not reach that target position until the end of [Segment4]. Data from Segment4 can only be 
+ *	processed during the EXECb2 or Pb2 interval as it's the first time that is not time-critical 
+ *	and you actually have enough cycles to calculate the position and error terms. We use Pb2.
+ *
+ *	Additionally, by this time the target in Gcode model knows about has advanced quite a bit, 
+ *	so the moveA target needs to be saved somewhere. Targets are propagated downward to the planner
+ *	runtime (the EXEC), but the exec will haved moved on to moveB by the time we need it. So moveA's
+ *	target needs to be saved somewhere.
+ */
 /*
  * ERROR CORRECTION
  *
@@ -42,39 +76,6 @@
  *
  *	Note: Going to doubles (from floats) would reduce the errors but not eliminate 
  *	them altogether. But this moot on AVRGCC which only does single precision floats.
- */
-/* 
- * ENCODERS	
- *
- *	Calling this file "encoders" is kind of a lie, at least for now. There are no encoders.
- *	Instead the steppers count steps to provide a "truth" reference for position. In the 
- *	future when we have real encoders we'll stop counting steps and actually measure the 
- *	position. Which will be a lot easier than how this module currently works.
- *
- *	*** Measuring poosition and getting the error term ***
- *
- *	The challenge is that you can't just go "from here to there" because the system is so
- *	heavily queued (pipelined). (1) The planner has a bunch of moves buffered behind the 
- *	current, running move, and (2) because of stepper sequencing by the time you can get 
- *	an accurate position reading your target has moved on - i.e. your position reading 
- *	relates to "yesterday's target".
- *
- *	Referring to ASCII art in stepper.h and reproduced here:
- *
- *  LOAD/STEP (~5000uSec)          [L1][Segment1][L2][Segment2][L3][Segment3][L4][Segment4][Lb1][Segmentb1]
- *  PREP (100 uSec)            [P1]       [P2]          [P3]          [P4]          [Pb1]          [Pb2]
- *  EXEC (400 uSec)         [EXEC1]    [EXEC2]       [EXEC3]       [EXEC4]       [EXECb1]       [EXECb2]
- *  PLAN (<4ms)  [PLANmoveA][PLANmoveB][PLANmoveC][PLANmoveD][PLANmoveE] etc.
- *
- *	You can collect the target for moveA as early as the end of [PLANmoveA]. The system will 
- *	not reach that target position until the end of [Segment4]. Data from Segment4 can only be 
- *	processed during the EXECb2 or Pb2 interval as it's the first time that is not time-critical 
- *	and you actually have enough cycles to calculate the position and error terms. We use Pb2.
- *
- *	Additionally, by this time the target in Gcode model knows about has advanced quite a bit, 
- *	so the moveA target needs to be saved somewhere. Targets are propagated downward to the planner
- *	runtime (the EXEC), but the exec will haved moved on to moveB by the time we need it. So moveA's
- *	target needs to be saved somewhere.
  *
  *	*** Applying the error term for error correction ***
  *
@@ -90,24 +91,16 @@
 
 /**** Configs and Constants ****/
 
-#define ERROR_CORRECTION_THRESHOLD	  2 // error correction threshold multipler for units_per_step
-
 /**** Structures ****/
 
 typedef struct enEncoder { 			// one real or virtual encoder per controlled motor
-	int8_t step_sign;				// set to +1 or -1
+	int8_t  step_sign;				// set to +1 or -1
 	int16_t steps_run;				// steps counted during stepper interrupt
-	int32_t target_steps;			// target position in steps
-	int32_t position_steps;			// counted position	in steps
-	int32_t position_error_steps;	// step error between target and position
-	float position_error_advisory;	// ADVISORY ONLY: error between target and position in mm
-	float position_steps_advisory;	// ADVISORY ONLY: incoming floating point steps
+	int32_t encoder_steps;			// counted encoder position	in steps
 } enEncoder_t;
 
 typedef struct enEncoders {
 	magic_t magic_start;
-	float position_steps[MOTORS];	// incoming position as float steps. Convert to int32's
-	float target_steps_next[MOTORS];// incoming as floats, converted to int32's.		
 	enEncoder_t en[MOTORS];			// runtime encoder structures
 	magic_t magic_end;
 } enEncoders_t;
@@ -120,9 +113,8 @@ extern enEncoders_t en;
 void encoder_init(void);
 stat_t en_assertions(void);
 void en_reset_encoders(void);
-void en_sample_position_error(void);
-void en_update_position_steps_advisory(const float steps[]);
-void en_print_encoder(const uint8_t motor);
-void en_print_encoders(void);
+int32_t en_sample_encoder(uint8_t motor);
+void en_sample_encoders(int32_t flag);
+
 
 #endif	// End of include guard: ENCODER_H_ONCE

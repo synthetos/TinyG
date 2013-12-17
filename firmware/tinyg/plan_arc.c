@@ -59,9 +59,8 @@ static float _get_theta(const float x, const float y);
  * cm_arc_init() - initialize arc structures
  */
 void cm_arc_init()
-{
-	arc.magic_start = MAGICNUM;
-	arc.magic_end = MAGICNUM;
+{ 
+	return;
 }
 
 /*
@@ -124,7 +123,7 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 	ritorno(_compute_arc());
 //	ritorno(_test_arc_soft_limits());			// test if arc will trip soft limits
 	cm_cycle_start();							// if not already started
-	arc.run_state = MOVE_STATE_RUN;				// enable arc to be run from the callback
+	arc.run_state = MOVE_RUN;					// enable arc to be run from the callback
 	cm_conditional_set_model_position(STAT_OK);	// set endpoint position if the arc was successful
 	return (STAT_OK);
 }
@@ -140,7 +139,7 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 
 stat_t cm_arc_callback() 
 {
-	if (arc.run_state == MOVE_STATE_OFF) { return (STAT_NOOP);}
+	if (arc.run_state == MOVE_OFF) { return (STAT_NOOP);}
 	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { return (STAT_EAGAIN);}
 
 	arc.theta += arc.segment_theta;
@@ -151,7 +150,7 @@ stat_t cm_arc_callback()
 	copy_axis_vector(arc.position, arc.gm.target);	// update arc current position	
 
 	if (--arc.segment_count > 0) return (STAT_EAGAIN);
-	arc.run_state = MOVE_STATE_OFF;
+	arc.run_state = MOVE_OFF;
 	return (STAT_OK);
 }
 
@@ -163,7 +162,7 @@ stat_t cm_arc_callback()
 
 void cm_abort_arc() 
 {
-	arc.run_state = MOVE_STATE_OFF;
+	arc.run_state = MOVE_OFF;
 }
 
 /*

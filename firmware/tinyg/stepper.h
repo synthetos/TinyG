@@ -345,7 +345,6 @@ typedef struct stRunMotor { 		// one per controlled motor
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
 	uint16_t magic_start;			// magic number to test memory integrity	
-//	uint8_t last_segment_flagged;	// flag from PREP to use during STEP
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t mot[MOTORS];		// runtime motor structures
@@ -356,9 +355,10 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 // Must be careful about volatiles in this one
 
 typedef struct stPrepMotor {
+//	uint8_t cycle_start;			// new cycle: reset stepper on its first movement
+	uint8_t direction_change;		// set true if direction changed
 	int8_t step_sign;				// set to +1 or -1 for encoders
 	int8_t direction;				// travel direction corrected for polarity
-	uint8_t direction_change;		// set true if direction changed
 	uint32_t substep_increment; 	// total steps in axis times substep factor
 } stPrepMotor_t;
 
@@ -366,10 +366,6 @@ typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integrity	
 	volatile uint8_t exec_state;	// move execution state 
 	uint8_t move_type;				// move type
-	uint8_t cycle_start;			// new cycle: reset steppers
-	uint8_t last_segment;		// flag from EXEC signalling last segment of a move
-//	uint8_t last_segment_done;		// signals last segment has finished
-
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
@@ -382,10 +378,13 @@ extern stConfig_t st_cfg;			// only the config struct is exposed. The rest are p
 /**** FUNCTION PROTOTYPES ****/
 
 void stepper_init(void);
+void stepper_init_assertions(void);
+stat_t stepper_test_assertions(void);
 uint8_t stepper_isbusy(void);
+
+void st_reset(void);
 void st_cycle_start(void);
 void st_cycle_end(void);
-stat_t st_assertions(void);
 
 void st_energize_motors(void);
 void st_deenergize_motors(void);
@@ -395,7 +394,7 @@ stat_t st_motor_power_callback(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(double microseconds);
-stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment_flagged);
+stat_t st_prep_line(float steps[], float microseconds, float encoder_error[]);
 
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);
