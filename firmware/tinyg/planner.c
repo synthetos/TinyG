@@ -55,7 +55,7 @@
 #include "config.h"
 #include "canonical_machine.h"
 #include "plan_arc.h"
-#include "plan_line.h"
+//#include "plan_line.h"
 #include "planner.h"
 #include "stepper.h"
 #include "report.h"
@@ -153,29 +153,6 @@ void mp_set_planner_position(uint8_t axis, const float position)
 void mp_set_runtime_position(uint8_t axis, const float position)
 {
 	mr.position[axis] = position;
-}
-
-/*************************************************************************
- * mp_exec_move() - execute runtime functions to prep move for steppers
- *
- *	Dequeues the buffer queue and executes the move continuations.
- *	Manages run buffers and other details
- */
-
-stat_t mp_exec_move()
-{
-	mpBuf_t *bf;
-
-	if ((bf = mp_get_run_buffer()) == NULL) return (STAT_NOOP);	// NULL means nothing's running
-
-	// Manage cycle and motion state transitions
-	// Cycle auto-start for lines only
-	if (bf->move_type == MOVE_TYPE_ALINE) {
-		if (cm.cycle_state == CYCLE_OFF) cm_cycle_start();
-		if (cm.motion_state == MOTION_STOP) cm_set_motion_state(MOTION_RUN);
-	}
-	if (bf->bf_func != NULL) { return (bf->bf_func(bf));} 	// run the move callback in the planner buffer
-	return(cm_alarm(STAT_INTERNAL_ERROR));	// never supposed to get here
 }
 
 /************************************************************************************

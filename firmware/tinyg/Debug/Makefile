@@ -57,6 +57,7 @@ C_SRCS +=  \
 ../network.c \
 ../planner.c \
 ../plan_arc.c \
+../plan_exec.c \
 ../plan_line.c \
 ../pwm.c \
 ../report.c \
@@ -103,6 +104,7 @@ main.o \
 network.o \
 planner.o \
 plan_arc.o \
+plan_exec.o \
 plan_line.o \
 pwm.o \
 report.o \
@@ -142,6 +144,7 @@ main.o \
 network.o \
 planner.o \
 plan_arc.o \
+plan_exec.o \
 plan_line.o \
 pwm.o \
 report.o \
@@ -181,6 +184,7 @@ main.d \
 network.d \
 planner.d \
 plan_arc.d \
+plan_exec.d \
 plan_line.d \
 pwm.d \
 report.d \
@@ -220,6 +224,7 @@ main.d \
 network.d \
 planner.d \
 plan_arc.d \
+plan_exec.d \
 plan_line.d \
 pwm.d \
 report.d \
@@ -252,6 +257,8 @@ OUTPUT_FILE_DEP:= ./makedep.mk
 LIB_DEP+= 
 
 # AVR32/GNU C Compiler
+
+
 
 
 

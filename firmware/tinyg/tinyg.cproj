@@ -204,6 +204,9 @@
     <Compile Include="plan_arc.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="plan_exec.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="plan_line.c">
       <SubType>compile</SubType>
     </Compile>

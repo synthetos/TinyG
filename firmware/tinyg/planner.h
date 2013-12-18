@@ -242,7 +242,6 @@ void mp_flush_planner(void);
 void mp_set_planner_position(uint8_t axis, const float position);
 void mp_set_runtime_position(uint8_t axis, const float position);
 
-stat_t mp_exec_move(void);
 void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *flag);
 
 stat_t mp_dwell(const float seconds);
@@ -275,6 +274,12 @@ float mp_get_runtime_absolute_position(uint8_t axis);
 void mp_set_runtime_work_offset(float offset[]);
 void mp_zero_segment_velocity(void);
 uint8_t mp_get_runtime_busy(void);
+
+// plan_exec.c functions
+stat_t mp_exec_move(void);
+stat_t mp_exec_aline(mpBuf_t *bf);
+void mp_print_motor_position(const uint8_t motor);
+void mp_print_motor_positions(void);
 
 #ifdef __DEBUG
 void mp_dump_running_plan_buffer(void);
