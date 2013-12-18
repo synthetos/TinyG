@@ -47,6 +47,7 @@ C_SRCS +=  \
 ../cycle_homing.c \
 ../cycle_jogging.c \
 ../cycle_probing.c \
+../encoder.c \
 ../gcode_parser.c \
 ../gpio.c \
 ../hardware.c \
@@ -94,6 +95,7 @@ controller.o \
 cycle_homing.o \
 cycle_jogging.o \
 cycle_probing.o \
+encoder.o \
 gcode_parser.o \
 gpio.o \
 hardware.o \
@@ -134,6 +136,7 @@ controller.o \
 cycle_homing.o \
 cycle_jogging.o \
 cycle_probing.o \
+encoder.o \
 gcode_parser.o \
 gpio.o \
 hardware.o \
@@ -174,6 +177,7 @@ controller.d \
 cycle_homing.d \
 cycle_jogging.d \
 cycle_probing.d \
+encoder.d \
 gcode_parser.d \
 gpio.d \
 hardware.d \
@@ -214,6 +218,7 @@ controller.d \
 cycle_homing.d \
 cycle_jogging.d \
 cycle_probing.d \
+encoder.d \
 gcode_parser.d \
 gpio.d \
 hardware.d \
@@ -257,6 +262,8 @@ OUTPUT_FILE_DEP:= ./makedep.mk
 LIB_DEP+= 
 
 # AVR32/GNU C Compiler
+
+
 
 
 

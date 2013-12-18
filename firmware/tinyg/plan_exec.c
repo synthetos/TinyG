@@ -31,7 +31,7 @@
 #include "planner.h"
 #include "kinematics.h"
 #include "stepper.h"
-//#include "encoder.h"
+#include "encoder.h"
 #include "report.h"
 #include "util.h"
 //#include "xio.h"			// uncomment for debugging
@@ -517,7 +517,7 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 	}
 */
 	// prep the segment for the steppers and adjust the variables for the next iteration
-	ik_kinematics(travel, steps, mr.microseconds);
+	ik_kinematics(travel, steps);
 	if (st_prep_line(steps, mr.microseconds) == STAT_OK) {
 		copy_axis_vector(mr.position, mr.gm.target); 	// update runtime position	
 		mr.elapsed_accel_time += mr.segment_accel_time;	// line needed by __JERK_EXEC

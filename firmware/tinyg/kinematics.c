@@ -49,7 +49,7 @@ extern "C"{
  *	as floats and converted to fixed-point binary during queue loading. See stepper.c for details.
  */
 
-void ik_kinematics(float travel[], float steps[], float microseconds)
+void ik_kinematics(float travel[], float steps[])
 {
 	float joint[AXES];
 
