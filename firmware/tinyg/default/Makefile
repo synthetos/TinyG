@@ -7,6 +7,7 @@ PROJECT = tinyg
 MCU = atxmega192a3
 TARGET = tinyg.elf
 CC = avr-gcc
+TINYG_FIRMWARE_BUILD = 403.10
 
 CPP = avr-g++
 
@@ -15,6 +16,7 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
+CFLAGS += -DTINYG_FIRMWARE_BUILD=$(TINYG_FIRMWARE_BUILD)
 CFLAGS += -gdwarf-2 -std=gnu99 -Wall          -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
 
@@ -46,7 +48,7 @@ OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_
 LINKONLYOBJECTS = 
 
 ## Build
-all: $(TARGET) tinyg.hex tinyg.eep tinyg.lss
+all: $(TARGET) tinyg.hex tinyg.eep tinyg.lss install
 
 ## Compile
 util.o: ../util.c
@@ -175,6 +177,9 @@ $(TARGET): $(OBJECTS)
 
 %.lss: $(TARGET)
 	avr-objdump -h -S $< > $@
+
+install:
+	cp ./tinyg.hex ~/Desktop/tinyg-${TINYG_FIRMWARE_BUILD}.hex
 
 ## Clean target
 .PHONY: clean
