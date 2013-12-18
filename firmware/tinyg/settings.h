@@ -67,7 +67,7 @@
 // Gcode startup defaults
 #define GCODE_DEFAULT_UNITS			MILLIMETERS		// MILLIMETERS or INCHES
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY	// CANON_PLANE_XY, CANON_PLANE_XZ, or CANON_PLANE_YZ
-#define GCODE_DEFAULT_COORD_SYSTEM	G54				// G54, G55, G56, G57, G58 or G59
+#define GCODE_DEFAULT_COORD_SYSTEM	G55				// G54, G55, G56, G57, G58 or G59
 #define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
 
@@ -81,13 +81,13 @@
 
 // machine default profiles - choose only one:
 
-#include "settings/settings_default.h"				// Default settings for release
+//#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_hammer.h"					// Hammer torque demo
 //#include "settings/settings_pendulum.h"				// Pendulum motion demo
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othercutter.h"			// Otherfab OtherCutter
-//#include "settings/settings_othermill.h"				// Otherfab OtherMill
+#include "settings/settings_othermill.h"				// Otherfab OtherMill
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
 //#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer

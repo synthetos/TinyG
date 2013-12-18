@@ -31,7 +31,7 @@
  *		 to be changed are in tinyg.h
  */
 
-#define __DEBUG // debug settings that make a Zen 7x12 look mechanically like an othermill
+//#define __DEBUG // debug settings that make a Zen 7x12 look mechanically like an othermill
 
 /***********************************************************************/
 /**** Otherlab OtherMill profile ***************************************/
@@ -50,7 +50,8 @@
 
 #undef  SR_DEFAULTS
 #ifndef __DEBUG
-#define SR_DEFAULTS 			"stat"
+//#define SR_DEFAULTS 			"stat"
+#define SR_DEFAULTS 			"mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
 #else
 #define SR_DEFAULTS 			"mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
 #endif
@@ -75,7 +76,7 @@
 #define COM_ENABLE_QR			true
 
 #undef 	QR_VERBOSITY
-#define QR_VERBOSITY			QR_VERBOSE
+#define QR_VERBOSITY			QR_SINGLE
 
 #undef COM_ENABLE_FLOW_CONTROL
 #define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON
@@ -97,38 +98,38 @@
 
 // *** motor settings ***
 
-#define M4_MOTOR_MAP 			AXIS_X				// 1ma
-#define M4_STEP_ANGLE 			1.8					// 1sa
-#define M4_TRAVEL_PER_REV 		5.08				// 1tr
-#define M4_MICROSTEPS 			8					// 1mi		1,2,4,8
-#define M4_POLARITY 			0					// 1po		0=normal, 1=reversed
-#define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
-
-#define M3_MOTOR_MAP 			AXIS_Y
-#define M3_STEP_ANGLE 			1.8
-#define M4_TRAVEL_PER_REV 		5.08				// 1tr
-#define M3_MICROSTEPS 			8
-#define M3_POLARITY 			1
-#define M3_POWER_MODE 			0					
-
-#define M2_MOTOR_MAP 			AXIS_Z
-#define M2_STEP_ANGLE 			15
-#define M2_TRAVEL_PER_REV 		1.27
-#define M2_MICROSTEPS 			8
-#define M2_POLARITY 			1
-#define M2_POWER_MODE 			0					
-
 #define M1_MOTOR_MAP 			AXIS_A
 #define M1_STEP_ANGLE 			1.8
 #define M1_TRAVEL_PER_REV 		360					// degrees moved per motor rev
 #define M1_MICROSTEPS 			8
 #define M1_POLARITY 			1			
 #define M1_POWER_MODE 			1					
-
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
+
+#define M2_MOTOR_MAP 			AXIS_Z
+#define M2_STEP_ANGLE 			15
+#define M2_TRAVEL_PER_REV 		1.27
+#define M2_MICROSTEPS 			8
+#define M2_POLARITY 			1
+#define M2_POWER_MODE 			0				
 #define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
+
+#define M3_MOTOR_MAP 			AXIS_Y
+#define M3_STEP_ANGLE 			1.8
+#define M3_TRAVEL_PER_REV 		5.08				// 1tr
+#define M3_MICROSTEPS 			8
+#define M3_POLARITY 			1
+#define M3_POWER_MODE 			0					
 #define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
+
+#define M4_MOTOR_MAP 			AXIS_X				// 1ma
+#define M4_STEP_ANGLE 			1.8					// 1sa
+#define M4_TRAVEL_PER_REV 		5.08				// 1tr
+#define M4_MICROSTEPS 			8					// 1mi		1,2,4,8
+#define M4_POLARITY 			0					// 1po		0=normal, 1=reversed
+#define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
 #define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
+
 #define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
 #define M6_POWER_LEVEL			MOTOR_POWER_LEVEL
 
@@ -165,8 +166,8 @@
 #define Y_JERK_HOMING			JERK_HOMING
 
 #define Z_AXIS_MODE 			AXIS_STANDARD
-#define Z_VELOCITY_MAX 			1000
-#define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
+#define Z_VELOCITY_MAX 			800
+#define Z_FEEDRATE_MAX 			1000
 #define Z_TRAVEL_MAX 			80
 #define Z_TRAVEL_MIN			0
 #define Z_JERK_MAX 				JERK_MAX			// 200 million
@@ -184,7 +185,7 @@
 #define A_VELOCITY_MAX 			((X_VELOCITY_MAX/M1_TRAVEL_PER_REV)*360) // set to the same speed as X axis
 #define A_FEEDRATE_MAX 			A_VELOCITY_MAX
 #define A_TRAVEL_MAX 			-1
-#define A_TRAVEL_MAX 			-1					// -1 means infinite, no limit
+#define A_TRAVEL_MIN 			-1
 #define A_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628)) 
@@ -349,7 +350,7 @@
 
 #define G55_X_OFFSET 0			// but the again, so is everyting else (at least for start)
 #define G55_Y_OFFSET 0
-#define G55_Z_OFFSET 0
+#define G55_Z_OFFSET -60.054	// return to home
 #define G55_A_OFFSET 0
 #define G55_B_OFFSET 0
 #define G55_C_OFFSET 0
