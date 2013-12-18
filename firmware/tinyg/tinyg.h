@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		397.19	// introduced revised stepper structures
+#define TINYG_FIRMWARE_BUILD   		397.19	// introduced new stepper functions
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -351,5 +351,7 @@ char *get_status_message(stat_t status);
 #define	STAT_PLANNER_ASSERTION_FAILURE 106
 #define	STAT_STEPPER_ASSERTION_FAILURE 107
 #define	STAT_XIO_ASSERTION_FAILURE 108
+#define	STAT_PREP_LINE_MOVE_TIME_IS_INFINITE 109
+#define	STAT_PREP_LINE_MOVE_TIME_IS_NAN 110
 
 #endif // End of include guard: TINYG2_H_ONCE

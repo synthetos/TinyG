@@ -244,6 +244,8 @@ static const char stat_105[] PROGMEM = "Canonical machine assertion failure";
 static const char stat_106[] PROGMEM = "Planner assertion failure";
 static const char stat_107[] PROGMEM = "Stepper assertion failure";
 static const char stat_108[] PROGMEM = "Extended IO assertion failure";
+static const char stat_109[] PROGMEM = "st_prep_line() move time is infinite";
+static const char stat_110[] PROGMEM = "st_prep_line() move time is NAN";
 
 static const char *const stat_msg[] PROGMEM = {
 	stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
@@ -256,7 +258,8 @@ static const char *const stat_msg[] PROGMEM = {
 	stat_70, stat_71, stat_72, stat_73, stat_74, stat_75, stat_76, stat_77, stat_78, stat_79,
 	stat_80, stat_81, stat_82, stat_83, stat_84, stat_85, stat_86, stat_87, stat_88, stat_89,
 	stat_90, stat_91, stat_92, stat_93, stat_94, stat_95, stat_96, stat_97, stat_98, stat_99,
-	stat_100, stat_101, stat_102, stat_103, stat_104, stat_105, stat_106, stat_107, stat_108
+	stat_100, stat_101, stat_102, stat_103, stat_104, stat_105, stat_106, stat_107, stat_108, stat_109,
+	stat_110
 };
 
 char *get_status_message(stat_t status)
