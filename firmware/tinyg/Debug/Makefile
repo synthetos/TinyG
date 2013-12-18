@@ -45,6 +45,7 @@ C_SRCS +=  \
 ../config_app.c \
 ../controller.c \
 ../cycle_homing.c \
+../cycle_jogging.c \
 ../cycle_probing.c \
 ../gcode_parser.c \
 ../gpio.c \
@@ -90,6 +91,7 @@ config.o \
 config_app.o \
 controller.o \
 cycle_homing.o \
+cycle_jogging.o \
 cycle_probing.o \
 gcode_parser.o \
 gpio.o \
@@ -128,6 +130,7 @@ config.o \
 config_app.o \
 controller.o \
 cycle_homing.o \
+cycle_jogging.o \
 cycle_probing.o \
 gcode_parser.o \
 gpio.o \
@@ -166,6 +169,7 @@ config.d \
 config_app.d \
 controller.d \
 cycle_homing.d \
+cycle_jogging.d \
 cycle_probing.d \
 gcode_parser.d \
 gpio.d \
@@ -204,6 +208,7 @@ config.d \
 config_app.d \
 controller.d \
 cycle_homing.d \
+cycle_jogging.d \
 cycle_probing.d \
 gcode_parser.d \
 gpio.d \
@@ -247,6 +252,8 @@ OUTPUT_FILE_DEP:= ./makedep.mk
 LIB_DEP+= 
 
 # AVR32/GNU C Compiler
+
+
 
 
 

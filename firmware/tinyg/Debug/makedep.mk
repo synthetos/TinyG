@@ -12,6 +12,8 @@ controller.c
 
 cycle_homing.c
 
+cycle_jogging.c
+
 cycle_probing.c
 
 gcode_parser.c

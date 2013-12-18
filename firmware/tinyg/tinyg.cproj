@@ -141,6 +141,9 @@
     <Compile Include="cycle_homing.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="cycle_jogging.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="cycle_probing.c">
       <SubType>compile</SubType>
     </Compile>
