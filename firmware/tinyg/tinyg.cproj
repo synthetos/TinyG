@@ -15,7 +15,6 @@
     <AssemblyName>tinyg</AssemblyName>
     <Name>tinyg</Name>
     <RootNamespace>tinyg</RootNamespace>
-    <ToolchainFlavour>avr8bit</ToolchainFlavour>
     <KeepTimersRunning>true</KeepTimersRunning>
     <OverrideVtor>false</OverrideVtor>
     <OverrideVtorValue>
@@ -29,15 +28,18 @@
       <ToolName>AVR Simulator</ToolName>
       <ToolNumber>
       </ToolNumber>
-      <KeepTimersRunning>true</KeepTimersRunning>
-      <OverrideVtor>false</OverrideVtor>
-      <OverrideVtorValue>
-      </OverrideVtorValue>
       <Channel>
         <host>127.0.0.1</host>
         <port>1226</port>
         <ssl>False</ssl>
       </Channel>
+      <ToolOptions>
+        <InterfaceProperties>
+          <JtagEnableExtResetOnStartSession>false</JtagEnableExtResetOnStartSession>
+        </InterfaceProperties>
+        <InterfaceName>
+        </InterfaceName>
+      </ToolOptions>
     </com_atmel_avrdbg_tool_simulator>
     <AsfFrameworkConfig>
       <framework-data>
@@ -55,17 +57,17 @@
     <RamSnippetAddress>0x20000000</RamSnippetAddress>
     <UncachedRange />
     <BootSegment>0</BootSegment>
+    <ToolchainFlavour>Native</ToolchainFlavour>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <ToolchainSettings>
-      <AvrGcc xmlns="">
+      <AvrGcc>
         <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
         <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
         <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
         <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
         <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
         <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
-        <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
         <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
         <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
         <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
@@ -202,9 +204,6 @@
     <Compile Include="plan_line.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="plan_line.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="pwm.c">
       <SubType>compile</SubType>
     </Compile>
@@ -325,6 +324,9 @@
     <Compile Include="tests\test_051_braid.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="tests\test_099.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="text_parser.c">
       <SubType>compile</SubType>
     </Compile>
@@ -403,11 +405,6 @@
     <Folder Include="tests\" />
     <Folder Include="xio\" />
     <Folder Include="xmega\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="tests\saicdu93_diagnostics.txt">
-      <SubType>compile</SubType>
-    </None>
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
 </Project>

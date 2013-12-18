@@ -229,6 +229,7 @@ enum objType {						// object / value typing for config and JSON
 	TYPE_NULL = 0,					// value is 'null' (meaning the JSON null value)
 	TYPE_BOOL,						// value is "true" (1) or "false"(0)
 	TYPE_INTEGER,					// value is a uint32_t
+	TYPE_DATA,						// value is blind cast to uint32_t
 	TYPE_FLOAT,						// value is a floating point number
 	TYPE_STRING,					// value is in string field
 	TYPE_ARRAY,						// value is array element count, values are CSV ASCII in string field
@@ -329,6 +330,7 @@ stat_t set_01(cmdObj_t *cmd);		// set a 0 or 1 value with validation
 stat_t set_012(cmdObj_t *cmd);		// set a 0, 1 or 2 value with validation
 stat_t set_0123(cmdObj_t *cmd);		// set a 0, 1, 2 or 3 value with validation
 stat_t set_int(cmdObj_t *cmd);		// set uint32_t integer value
+stat_t set_data(cmdObj_t *cmd);		// set uint32_t integer value blind cast
 stat_t set_flt(cmdObj_t *cmd);		// set floating point value
 stat_t set_flu(cmdObj_t *cmd);		// set floating point number with G20/G21 units conversion
 stat_t get_flu(cmdObj_t *cmd);		// get floating point number with G20/G21 units conversion
@@ -336,6 +338,7 @@ stat_t get_flu(cmdObj_t *cmd);		// get floating point number with G20/G21 units 
 stat_t get_nul(cmdObj_t *cmd);		// get null value type
 stat_t get_ui8(cmdObj_t *cmd);		// get uint8_t value
 stat_t get_int(cmdObj_t *cmd);		// get uint32_t integer value
+stat_t get_data(cmdObj_t *cmd);		// get uint32_t integer value blind cast
 stat_t get_flt(cmdObj_t *cmd);		// get floating point value
 
 stat_t set_grp(cmdObj_t *cmd);		// set data for a group

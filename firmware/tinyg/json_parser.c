@@ -226,7 +226,18 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 		cmd->objtype = TYPE_STRING;
 		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);} // find the end of the string
 		*tmp = NUL;
-		ritorno(cmd_copy_string(cmd, *pstr));
+
+//		ritorno(cmd_copy_string(cmd, *pstr));
+		// if string begins with 0x it might be data, needs to be at least 3 chars long
+		if( strlen(*pstr)>=3 && (*pstr)[0]=='0' && (*pstr)[1]=='x')
+		{
+			uint32_t *v = (uint32_t*)&cmd->value;
+			*v = strtoul(*pstr, 0L, 0);
+			cmd->objtype = TYPE_DATA;
+		} else {
+			ritorno(cmd_copy_string(cmd, *pstr));
+		}
+	
 		*pstr = ++tmp;
 
 	// boolean true/false
@@ -319,6 +330,10 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 			if		(cmd->objtype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "\"\"");} // Note that that "" is NOT null.
 			else if (cmd->objtype == TYPE_INTEGER)	{
 				str += (char_t)sprintf((char *)str, "%1.0f", (double)cmd->value);
+			}
+			else if (cmd->objtype == TYPE_DATA)	{
+				uint32_t *v = (uint32_t*)&cmd->value;
+				str += (char_t)sprintf((char *)str, "\"0x%lx\"", *v);
 			}
 			else if (cmd->objtype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*cmd->stringp);}
 			else if (cmd->objtype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*cmd->stringp);}
@@ -677,6 +692,16 @@ static cmdObj_t * _add_integer(cmdObj_t *cmd, char_t *token, uint32_t integer)
 	cmd->value = (float)integer;
 	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
 	cmd->objtype = TYPE_INTEGER;
+	return (cmd->nx);
+}
+
+cmdObj_t * _add_data(cmdObj_t *cmd, char *token, uint32_t integer)
+{
+	strncpy(cmd->token, token, CMD_TOKEN_LEN);
+	uint32_t *v = (uint32_t*)&cmd->value;
+	*v = integer;
+	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
+	cmd->objtype = TYPE_DATA;
 	return (cmd->nx);
 }
 

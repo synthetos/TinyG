@@ -184,6 +184,14 @@ stat_t get_int(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
+stat_t get_data(cmdObj_t *cmd)
+{
+	uint32_t *v = (uint32_t*)&cmd->value;
+	*v = *((uint32_t *)GET_TABLE_WORD(target));
+	cmd->objtype = TYPE_DATA;
+	return (STAT_OK);
+}
+
 stat_t get_flt(cmdObj_t *cmd)
 {
 	cmd->value = *((float *)GET_TABLE_WORD(target));
@@ -232,6 +240,14 @@ stat_t set_int(cmdObj_t *cmd)
 {
 	*((uint32_t *)GET_TABLE_WORD(target)) = cmd->value;
 	cmd->objtype = TYPE_INTEGER;
+	return(STAT_OK);
+}
+
+stat_t set_data(cmdObj_t *cmd)
+{
+	uint32_t *v = (uint32_t*)&cmd->value;
+	*((uint32_t *)GET_TABLE_WORD(target)) = *v;
+	cmd->objtype = TYPE_DATA;
 	return(STAT_OK);
 }
 
@@ -585,6 +601,23 @@ cmdObj_t *cmd_add_integer(const char_t *token, const uint32_t value)// add an in
 		strncpy(cmd->token, token, CMD_TOKEN_LEN);
 		cmd->value = (float) value;
 		cmd->objtype = TYPE_INTEGER;
+		return (cmd);
+	}
+	return (NULL);
+}
+
+cmdObj_t *cmd_add_data(const char_t *token, const uint32_t value)// add an integer object to the body
+{
+	cmdObj_t *cmd = cmd_body;
+	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
+		if (cmd->objtype != TYPE_EMPTY) {
+			if ((cmd = cmd->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
+			continue;
+		}
+		strcpy(cmd->token, token);
+		float *v = (float*)&value;
+		cmd->value = *v;
+		cmd->objtype = TYPE_DATA;
 		return (cmd);
 	}
 	return (NULL);
