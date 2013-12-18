@@ -112,4 +112,24 @@
 #define P1_PWM_PHASE_OFF                0.1
 #endif//P1_PWM_FREQUENCY
 
+
+/*** User-Defined Data Defaults ***/
+
+#define USER_DATA_A0	0
+#define USER_DATA_A1	0
+#define USER_DATA_A2	0
+#define USER_DATA_A3	0
+#define USER_DATA_B0	0
+#define USER_DATA_B1	0
+#define USER_DATA_B2	0
+#define USER_DATA_B3	0
+#define USER_DATA_C0	0
+#define USER_DATA_C1	0
+#define USER_DATA_C2	0
+#define USER_DATA_C3	0
+#define USER_DATA_D0	0
+#define USER_DATA_D1	0
+#define USER_DATA_D2	0
+#define USER_DATA_D3	0
+
 #endif // End of include guard: SETTINGS_H_ONCE

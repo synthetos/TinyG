@@ -187,14 +187,13 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.target, bf->gm.target);		// save the final target of the move
-/*
+
 		// generate the section targets for endpoint position correction
 		for (uint8_t i=0; i<AXES; i++) {
 			mr.section_target[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
 			mr.section_target[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
 			mr.section_target[SECTION_TAIL][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length + mr.tail_length);
 		}
-*/
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -263,10 +262,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 
 static void _init_forward_diffs(float t0, float t2)		// NB: t1 will always be == t0, so we don't pass it
 {
-//	float H_squared = square(1/mr.segments);
-//	// A = T[0] - 2*T[1] + T[2], if T[0] == T[1], then it becomes - T[0] + T[2]
-//	float AH_squared = (t2 - t0) * H_squared;
-	
 	// A = T[0] - 2*T[1] + T[2], if T[0] == T[1], then it becomes - T[0] + T[2]
 	float AH_squared = (t2 - t0) * square(1/mr.segments); // square(1/mr.segments) is H_squared
 
@@ -472,11 +467,13 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * intermediate);
 		}
 	}
-#else	// new error correction
+#else // new error correction
 	// Multiply computed length by the unit vector to get the contribution for each axis. 
 	// Set the target in absolute coords and compute relative steps.
 	// Don't do the endpoint correction if you are going into a hold
-	if ((correction_flag == true) && (mr.segment_count == 1) && 
+	uint8_t end_flag = correction_flag;
+	
+	if ((end_flag == true) && (mr.segment_count == 1) && 
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
 
 		printf("M[0]:%0.4f, %0.4f\n", (double)mr.gm.target[AXIS_X], (double)mr.target[AXIS_X]);	// +++++ DIAGNOSTIC

@@ -54,6 +54,12 @@ typedef struct cfgParameters {		// mostly communications variables at this point
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
 
+	// user-defined data groups
+	uint32_t user_data_a[4];
+	uint32_t user_data_b[4];
+	uint32_t user_data_c[4];
+	uint32_t user_data_d[4];
+
 	uint16_t magic_end;
 } cfgParameters_t;
 extern cfgParameters_t cfg;

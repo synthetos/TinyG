@@ -66,9 +66,12 @@ stat_t gc_gcode_parser(char_t *block)
 	if (block_delete_flag == true) {
 		return (STAT_NOOP);
 	}
-//	if (*msg != NUL) { // +++++ THIS HAS A SERIOUS BUG IN IT SO FOR NOW IT'S DISABLED
-//		(void)cm_message(msg);				// queue the message
-//	}
+	
+	// queue a "(MSG" response
+	if (*msg != NUL) {
+		(void)cm_message(msg);				// queue the message
+	}
+
 	return(_parse_gcode_block(block));
 }
 

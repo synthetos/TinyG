@@ -220,6 +220,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
+	float section_target[SECTIONS][AXES];// targets for each move section
 
 	float position_error[AXES];		// mathematical position error relative to known endpoints
 	float position_correction[AXES];// error correction being applied to target
