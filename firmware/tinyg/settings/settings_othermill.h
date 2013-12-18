@@ -31,7 +31,7 @@
  *		 to be changed are in tinyg.h
  */
 
-#define __DEBUG // debug settings that make a Zen 7x12 look mechanically like an othermill
+//#define __DEBUG // debug settings that make a Zen 7x12 look mechanically like an othermill
 
 /***********************************************************************/
 /**** Otherlab OtherMill profile ***************************************/
@@ -94,21 +94,13 @@
 
 // *** motor settings ***
 
-#define M4_MOTOR_MAP 			AXIS_X				// 1ma
-#define M4_STEP_ANGLE 			1.8					// 1sa
-#define M4_TRAVEL_PER_REV 		5.08				// 1tr
-#define M4_MICROSTEPS 			8					// 1mi		1,2,4,8
-#define M4_POLARITY 			0					// 1po		0=normal, 1=reversed
-#define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
-#define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
-
-#define M3_MOTOR_MAP 			AXIS_Y
-#define M3_STEP_ANGLE 			1.8
-#define M3_TRAVEL_PER_REV 		5.08				// 1tr
-#define M3_MICROSTEPS 			8
-#define M3_POLARITY 			1
-#define M3_POWER_MODE 			0					
-#define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M1_MOTOR_MAP 			AXIS_A
+#define M1_STEP_ANGLE 			1.8
+#define M1_TRAVEL_PER_REV 		360					// degrees moved per motor rev
+#define M1_MICROSTEPS 			8
+#define M1_POLARITY 			1
+#define M1_POWER_MODE 			1
+#define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP 			AXIS_Z
 #if HAS_CANSTACK_Z_AXIS
@@ -123,13 +115,21 @@
 #define M2_POWER_MODE 			0
 #define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
-#define M1_MOTOR_MAP 			AXIS_A
-#define M1_STEP_ANGLE 			1.8
-#define M1_TRAVEL_PER_REV 		360					// degrees moved per motor rev
-#define M1_MICROSTEPS 			8
-#define M1_POLARITY 			1			
-#define M1_POWER_MODE 			1					
-#define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M3_MOTOR_MAP 			AXIS_Y
+#define M3_STEP_ANGLE 			1.8
+#define M3_TRAVEL_PER_REV 		5.08				// 1tr
+#define M3_MICROSTEPS 			8
+#define M3_POLARITY 			1
+#define M3_POWER_MODE 			0
+#define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
+
+#define M4_MOTOR_MAP 			AXIS_X				// 1ma
+#define M4_STEP_ANGLE 			1.8					// 1sa
+#define M4_TRAVEL_PER_REV 		5.08				// 1tr
+#define M4_MICROSTEPS 			8					// 1mi		1,2,4,8
+#define M4_POLARITY 			0					// 1po		0=normal, 1=reversed
+#define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled
+#define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
 #define M6_POWER_LEVEL			MOTOR_POWER_LEVEL
@@ -168,9 +168,9 @@
 
 #define Z_AXIS_MODE 			AXIS_STANDARD
 #if HAS_CANSTACK_Z_AXIS
-#define Z_VELOCITY_MAX 			1000
+#define Z_VELOCITY_MAX 			800
 #else
-#define Z_VELOCITY_MAX 			X_VELOCITY_MAX
+#define Z_VELOCITY_MAX 			Z_VELOCITY_MAX
 #endif
 #define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX 			0
@@ -365,7 +365,7 @@
 
 #define G55_X_OFFSET 0			// but the again, so is everyting else (at least for start)
 #define G55_Y_OFFSET 0
-#define G55_Z_OFFSET 0
+#define G55_Z_OFFSET -60.054	// mm
 #define G55_A_OFFSET 0
 #define G55_B_OFFSET 0
 #define G55_C_OFFSET 20         // this is where we currently store the tool offset

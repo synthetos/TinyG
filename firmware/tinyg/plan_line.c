@@ -804,10 +804,6 @@ stat_t mp_plan_hold_callback()
 */
 
 	braking_velocity = _compute_next_segment_velocity();
-	// compute next_segment velocity
-//	braking_velocity = mr.segment_velocity;
-//	if (mr.section != SECTION_BODY) { braking_velocity += mr.forward_diff_1;}
-
 	braking_length = _get_target_length(braking_velocity, 0, bp); // bp is OK to use here
 	
 	// Hack to prevent Case 2 moves for perfect-fit decels. Happens in homing situations
@@ -899,13 +895,12 @@ stat_t mp_end_hold()
 			cm_set_motion_state(MOTION_STOP);
 			return (STAT_NOOP);
 		}
-		cm.motion_state = MOTION_RUN;
+//		cm.motion_state = MOTION_RUN;
+		cm_set_motion_state(MOTION_RUN);
 		st_request_exec_move();					// restart the steppers
 	}
 	return (STAT_OK);
 }
-
-
 
 /****** UNIT TESTS ******/
 
