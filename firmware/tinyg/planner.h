@@ -45,20 +45,6 @@ enum moveType {				// bf->move_type values
 	MOVE_TYPE_STOP,			// program stop
 	MOVE_TYPE_END			// program end
 };
-/*
-enum moveState {
-	MOVE_STATE_OFF = 0,		// move inactive (MUST BE ZERO)
-	MOVE_STATE_NEW,			// general value if you need an initialization
-	MOVE_STATE_RUN,			// general run state (for non-acceleration moves) 
-	MOVE_STATE_RUN2,		// used for sub-states
-	MOVE_STATE_HEAD,		// aline() acceleration portions
-	MOVE_STATE_BODY,		// aline() cruise portions
-	MOVE_STATE_TAIL,		// aline() deceleration portions
-	MOVE_STATE_SKIP,		// mark a skipped block
-	MOVE_STATE_END			// move is marked as done (used by dwells)
-};
-#define MOVE_STATE_RUN1 MOVE_STATE_RUN // a convenience
-*/
 
 enum moveState {
 	MOVE_OFF = 0,			// move inactive (MUST BE ZERO)
@@ -231,32 +217,52 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	uint8_t section;				// what section is the move in?
 	uint8_t section_state;			// state within a move section
 
-	float endpoint[AXES];			// final target for bf (used to correct rounding errors)
-	float position[AXES];			// current move position
 	float unit[AXES];				// unit vector for axis scaling & planning
+	float target[AXES];				// final target for bf (used to correct rounding errors)
+	float position[AXES];			// current move position
 
 	float position_error[AXES];		// mathematical position error relative to known endpoints
 	float position_correction[AXES];// error correction being applied to target
 
+//	float target_steps[MOTORS];		// current MR target (absolute target as steps)
+//	float position_steps[MOTORS];	// current MR position (target from previous segment)
+//	float delayed_steps[MOTORS];	// will align with next encoder sample (target from 2nd previous segment)
+
+//	float encoder_steps[MOTORS];	// encoder position in steps - should be same as position_delayed
+//	float encoder_error[MOTORS];	// difference between encoder_steps and position_delayed
+//	float encoder_correction[MOTORS];// encoder feedback error correction in fractional steps
+
 	float head_length;				// copies of bf variables of same name
 	float body_length;
 	float tail_length;
+
 	float entry_velocity;
 	float cruise_velocity;
 	float exit_velocity;
 
-	float length;					// length of line in mm
 	float midpoint_velocity;		// velocity at accel/decel midpoint
+	float midpoint_acceleration;	// JERK BASED EXEC CODE
 	float jerk;						// max linear jerk
+	float jerk_div2;				// JERK BASED EXEC CODE
+
+//	float length;					// length of line in mm
 
 	float segments;					// number of segments in arc or blend
 	uint32_t segment_count;			// count of running segments
-	float segment_move_time;		// actual time increment per aline segment
-	float microseconds;				// line or segment time in microseconds
-	float segment_length;			// computed length for aline segment
 	float segment_velocity;			// computed velocity for aline segment
+	float segment_time;				// actual time increment per aline segment
+
+	float accel_time;				// JERK BASED EXEC CODE
+	float segment_accel_time;		// JERK BASED EXEC CODE
+	float elapsed_accel_time;		// JERK BASED EXEC CODE
+	float microseconds;				// line or segment time in microseconds
 	float forward_diff_1;			// forward difference level 1 (Acceleration)
 	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
+
+//	float microseconds;				// line or segment time in microseconds
+//	float segment_length;			// computed length for aline segment
+//	float forward_diff_1;			// forward difference level 1 (Acceleration)
+//	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
 
 	GCodeState_t gm;				// gcode model state currently executing
 
