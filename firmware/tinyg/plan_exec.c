@@ -387,7 +387,7 @@ static stat_t _exec_aline_tail()
 /*
  * _exec_aline_segment() - segment runner helper
  */
-//#define __ORIG_CORRECTION_CODE
+#define __ORIG_CORRECTION_CODE
 static stat_t _exec_aline_segment(uint8_t correction_flag)
 {
 	float travel[AXES];
@@ -434,7 +434,9 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 		if (fabs(mr.position_correction[i]) > MIN_CORRECTION_MM) {
 			mr.gm.target[i] += min(mr.position_correction[i], MAX_CORRECTION_MM);
 			mr.position_correction[i] -= min(mr.position_correction[i], MAX_CORRECTION_MM);
-			printf("C[%d]:%0.4f, %0.4f\n", i, (double)mr.gm.target[AXIS_Z], (double)mr.position_correction[AXIS_Z]);	// +++++ DIAGNOSTIC
+			if (i == AXIS_Z) {
+				printf("C[%d]:%0.4f, %0.4f\n", i, (double)mr.gm.target[AXIS_Z], (double)mr.position_correction[AXIS_Z]);	// +++++ DIAGNOSTIC
+			}
 		}
 	}
 
