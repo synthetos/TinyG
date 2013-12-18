@@ -348,7 +348,7 @@ ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
 	// exec_move
    	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
 	   	if (mp_exec_move() != STAT_NOOP) {
-		   	st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
+ 		   	st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
 		   	_request_load_move();
 	   	}
    	}

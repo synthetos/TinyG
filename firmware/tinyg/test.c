@@ -118,8 +118,9 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("?\n");				// report
 
 /*	Test signals - Note: requires test chars to be enabled */
+	xio_queue_RX_string_usb("g1 f500 x30\n");
 //	xio_queue_RX_string_usb("^\n");				// reset 
-//	xio_queue_RX_string_usb("!\n");				// feedhold
+	xio_queue_RX_string_usb("!\n");				// feedhold
 //	xio_queue_RX_string_usb("~\n");				// cycle start
 
 /* Configs and controls */
@@ -146,7 +147,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 /* G0's */
 
-	xio_queue_RX_string_usb("g0 x0.3\n");
+//	xio_queue_RX_string_usb("g0 x0.3\n");
 //	xio_queue_RX_string_usb("x0\n");
 /*
 	xio_queue_RX_string_usb("g0 x1\n");

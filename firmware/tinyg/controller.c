@@ -64,6 +64,7 @@ static stat_t _limit_switch_handler(void);
 static stat_t _system_assertions(void);
 static stat_t _sync_to_planner(void);
 static stat_t _sync_to_tx_buffer(void);
+static stat_t _sync_to_time(void);
 static stat_t _command_dispatch(void);
 
 // prep for export to other modules:
@@ -88,6 +89,9 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	cs.state = CONTROLLER_STARTUP;					// ready to run startup lines
 	cs.hard_reset_requested = false;
 	cs.bootloader_requested = false;
+
+	cs.sync_to_time_state = 0;
+	cs.sync_to_time_time = 0;
 
 	cs.job_id[0] = 0;								// clear the job_id
 	cs.job_id[1] = 0;
@@ -194,6 +198,7 @@ static void _controller_HSM()
 	DISPATCH(_sync_to_planner());				// ensure there is at least one free buffer in planning queue
 	DISPATCH(_sync_to_tx_buffer());				// sync with TX buffer (pseudo-blocking)
 	DISPATCH(set_baud_callback());				// perform baud rate update (must be after TX sync)
+	DISPATCH(_sync_to_time());					// delay function for testing
 	DISPATCH(_command_dispatch());				// read and execute next command
 	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
 }
@@ -318,6 +323,7 @@ void tg_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
 /*
  * _sync_to_tx_buffer() - return eagain if TX queue is backed up
  * _sync_to_planner() - return eagain if planner is not ready for a new command
+ * _sync_to_time() - return eagain if planner is not ready for a new command
  */
 static stat_t _sync_to_tx_buffer()
 {
@@ -334,6 +340,19 @@ static stat_t _sync_to_planner()
 	}
 	return (STAT_OK);
 }
+
+static stat_t _sync_to_time()
+{
+	if (cs.sync_to_time_time == 0) {		// initial pass
+		cs.sync_to_time_time = SysTickTimer_getValue() + 100; //ms
+		return (STAT_OK);
+	}
+	if (SysTickTimer_getValue() < cs.sync_to_time_time) {
+		return (STAT_EAGAIN);
+	}
+	return (STAT_OK);
+}
+
 
 /*
  * _limit_switch_handler() - shut down system if limit switch fired

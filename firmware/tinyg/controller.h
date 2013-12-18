@@ -64,6 +64,9 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t hard_reset_requested;		// flag to perform a hard reset
 	uint8_t bootloader_requested;		// flag to enter the bootloader
 
+	uint8_t sync_to_time_state;
+	uint32_t sync_to_time_time;
+
 	int32_t job_id[4];					// uuid to identify the job
 
 	// controller serial buffers
