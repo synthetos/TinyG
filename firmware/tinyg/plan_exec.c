@@ -472,32 +472,36 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * intermediate);
 		}
 	}
-#else	// different error correction
+#else	// new error correction
 	// Multiply computed length by the unit vector to get the contribution for each axis. 
 	// Set the target in absolute coords and compute relative steps.
 	// Don't do the endpoint correction if you are going into a hold
 	if ((correction_flag == true) && (mr.segment_count == 1) && 
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-		printf("M[2]:%0.4f, %0.4f\n", (double)mr.gm.target[AXIS_Z], (double)mr.endpoint[AXIS_Z]);	// +++++ DIAGNOSTIC
+
+		printf("M[0]:%0.4f, %0.4f\n", (double)mr.gm.target[AXIS_X], (double)mr.target[AXIS_X]);	// +++++ DIAGNOSTIC
+		printf("M[1]:%0.4f, %0.4f\n", (double)mr.gm.target[AXIS_Y], (double)mr.target[AXIS_Y]);	// +++++ DIAGNOSTIC
+		printf("M[2]:%0.4f, %0.4f\n", (double)mr.gm.target[AXIS_Z], (double)mr.target[AXIS_Z]);	// +++++ DIAGNOSTIC
+
 		// A positive correction means that distance will be added to the subsequent moves,
 		// looked at another way, that the target fell short of the endpoint. Neg is opposite.
 		for (i=0; i<AXES; i++) {
-			mr.position_correction[i] += (mr.endpoint[i] - mr.gm.target[i]);
+			mr.position_correction[i] += (mr.target[i] - mr.gm.target[i]);
 		}
 	} else {
-		float intermediate = mr.segment_velocity * mr.segment_move_time;
+		float segment_length = mr.segment_velocity * mr.segment_time;
 		for (i=0; i<AXES; i++) {
-			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * intermediate);
+			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * segment_length);
 		}
 	}
 	// corrected for position error
-	for (i=0; i<AXES; i++) {
+	for (i=0; i<AXIS_A; i++) {			// NOTE - only 3 axes.
 		if (fabs(mr.position_correction[i]) > MIN_CORRECTION_MM) {
 			mr.gm.target[i] += min(mr.position_correction[i], MAX_CORRECTION_MM);
 			mr.position_correction[i] -= min(mr.position_correction[i], MAX_CORRECTION_MM);
-			if (i == AXIS_Z) {
+//			if (i == AXIS_Z) {
 				printf("C[%d]:%0.4f, %0.4f\n", i, (double)mr.gm.target[AXIS_Z], (double)mr.position_correction[AXIS_Z]);	// +++++ DIAGNOSTIC
-			}
+//			}			
 		}
 	}
 #endif
