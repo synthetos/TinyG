@@ -216,7 +216,7 @@ stat_t mp_dwell(float seconds)
 	}
 	bf->bf_func = _exec_dwell;					// register callback to dwell start
 	bf->gm.move_time = seconds;					// in seconds, not minutes
-	bf->move_state = MOVE_STATE_NEW;
+	bf->move_state = MOVE_NEW;
 	mp_queue_write_buffer(MOVE_TYPE_DWELL);
 	return (STAT_OK);
 }
@@ -327,7 +327,7 @@ void mp_unget_write_buffer()
 void mp_queue_write_buffer(const uint8_t move_type)
 {
 	mb.q->move_type = move_type;
-	mb.q->move_state = MOVE_STATE_NEW;
+	mb.q->move_state = MOVE_NEW;
 	mb.q->buffer_state = MP_BUFFER_QUEUED;
 	mb.q = mb.q->nx;							// advance the queued buffer pointer
 	st_request_exec_move();						// request a move exec if not busy
@@ -374,7 +374,7 @@ mpBuf_t * mp_get_last_buffer(void)
 	if (bf == NULL) { return(NULL);}
 
 	do {
-		if ((bp->nx->move_state == MOVE_STATE_OFF) || (bp->nx == bf)) { 
+		if ((bp->nx->move_state == MOVE_OFF) || (bp->nx == bf)) { 
 			return (bp); 
 		}
 	} while ((bp = mp_get_next_buffer(bp)) != bf);

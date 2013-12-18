@@ -77,7 +77,7 @@ void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
 
 uint8_t mp_get_runtime_busy()
 {
-	if ((stepper_isbusy() == true) || (mr.move_state > MOVE_STATE_NEW)) return (true);
+	if ((stepper_isbusy() == true) || (mr.move_state == MOVE_RUN)) return (true);
 	return (false);
 }
 
@@ -308,7 +308,7 @@ static void _reset_replannable_list()
 	mpBuf_t *bp = bf;
 	do {
 		bp->replannable = true;
-	} while (((bp = mp_get_next_buffer(bp)) != bf) && (bp->move_state != MOVE_STATE_OFF));
+	} while (((bp = mp_get_next_buffer(bp)) != bf) && (bp->move_state != MOVE_OFF));
 }
 
 /*
@@ -418,7 +418,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			} else if (bf->length > MIN_BODY_LENGTH) {		// run this as a 1 segment body
 				bf->body_length = bf->length;
 			} else {
-				bf->move_state = MOVE_STATE_SKIP;			// tell runtime to skip the block
+				bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
 			}
 			return;
 		}
@@ -432,7 +432,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			} else if (bf->length > MIN_BODY_LENGTH) {		// run this as a 1 segment body
 				bf->body_length = bf->length;
 			} else {
-				bf->move_state = MOVE_STATE_SKIP;			// tell runtime to skip the block
+				bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
 			}
 			return;
 		}
@@ -766,13 +766,12 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
  *		  code in this module, but the code is so complicated I just left it
  *		  organized for clarity and hoped for the best from compiler optimization. 
  */
-/*
+
 static float _compute_next_segment_velocity()
 {
-	if (mr.move_state == MOVE_STATE_BODY) { return (mr.segment_velocity);}
+	if (mr.section == SECTION_BODY) { return (mr.segment_velocity);}
 	return (mr.segment_velocity + mr.forward_diff_1);
 }
-*/
 
 stat_t mp_plan_hold_callback()
 {
@@ -798,13 +797,12 @@ stat_t mp_plan_hold_callback()
 			  square(mr.endpoint[AXIS_C] - mr.position[AXIS_C])));
 */
 
-//	braking_velocity = _compute_next_segment_velocity();
 	// compute next_segment velocity
-	braking_velocity = mr.segment_velocity;
-	if (mr.move_state != MOVE_STATE_BODY) { braking_velocity +=	mr.forward_diff_1;}
-
+//	braking_velocity = mr.segment_velocity;
+//	if (mr.section != SECTION_BODY) { braking_velocity += mr.forward_diff_1;}
+	braking_velocity = _compute_next_segment_velocity();
 	braking_length = _get_target_length(braking_velocity, 0, bp); // bp is OK to use here
-	
+
 	// Hack to prevent Case 2 moves for perfect-fit decels. Happens in homing situations
 	// The real fix: The braking velocity cannot simply be the mr.segment_velocity as this
 	// is the velocity of the last segment, not the one that's going to be executed next.
@@ -820,14 +818,14 @@ stat_t mp_plan_hold_callback()
 		mr.exit_velocity = 0;
 		mr.tail_length = braking_length;
 		mr.cruise_velocity = braking_velocity;
-		mr.move_state = MOVE_STATE_TAIL;
-		mr.section_state = MOVE_STATE_NEW;
+		mr.section = SECTION_TAIL;
+		mr.section_state = SECTION_NEW;
 
 		// re-use bp+0 to be the hold point and to run the remaining block length
 		bp->length = mr_available_length - braking_length;
 		bp->delta_vmax = _get_target_velocity(0, bp->length, bp);
 		bp->entry_vmax = 0;						// set bp+0 as hold point
-		bp->move_state = MOVE_STATE_NEW;		// tell _exec to re-use the bf buffer
+		bp->move_state = MOVE_NEW;				// tell _exec to re-use the bf buffer
 
 		_reset_replannable_list();				// make it replan all the blocks
 		_plan_block_list(mp_get_last_buffer(), &mr_flag);
@@ -838,15 +836,15 @@ stat_t mp_plan_hold_callback()
 	// Case 2: deceleration exceeds length remaining in mr buffer
 	// First, replan mr to minimum (but non-zero) exit velocity
 
-	mr.move_state = MOVE_STATE_TAIL;
-	mr.section_state = MOVE_STATE_NEW;
+	mr.section = SECTION_TAIL;
+	mr.section_state = SECTION_NEW;
 	mr.tail_length = mr_available_length;
 	mr.cruise_velocity = braking_velocity;
 	mr.exit_velocity = braking_velocity - _get_target_velocity(0, mr_available_length, bp);	
 
 	// Find the point where deceleration reaches zero. This could span multiple buffers.
 	braking_velocity = mr.exit_velocity;		// adjust braking velocity downward
-	bp->move_state = MOVE_STATE_NEW;			// tell _exec to re-use buffer
+	bp->move_state = MOVE_NEW;					// tell _exec to re-use buffer
 	for (uint8_t i=0; i<PLANNER_BUFFER_POOL_SIZE; i++) {// a safety to avoid wraparound
 		mp_copy_buffer(bp, bp->nx);				// copy bp+1 into bp+0 (and onward...)
 		if (bp->move_type != MOVE_TYPE_ALINE) {	// skip any non-move buffers
