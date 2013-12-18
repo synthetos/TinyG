@@ -449,7 +449,6 @@ static stat_t _exec_aline_tail()
 /*
  * _exec_aline_segment() - segment runner helper
  */
-#define __ORIG_CORRECTION_CODE
 static stat_t _exec_aline_segment(uint8_t correction_flag)
 {
 	float travel[AXES];
@@ -501,17 +500,12 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 			}
 		}
 	}
-
 #endif
+	for (i=0; i<AXES; i++) {
+		travel[i] = mr.gm.target[i] - mr.position[i];
+	}
 
-	travel[AXIS_X] = mr.gm.target[AXIS_X] - mr.position[AXIS_X];
-	travel[AXIS_Y] = mr.gm.target[AXIS_Y] - mr.position[AXIS_Y];
-	travel[AXIS_Z] = mr.gm.target[AXIS_Z] - mr.position[AXIS_Z];
-	travel[AXIS_A] = mr.gm.target[AXIS_A] - mr.position[AXIS_A];
-	travel[AXIS_B] = mr.gm.target[AXIS_B] - mr.position[AXIS_B];
-	travel[AXIS_C] = mr.gm.target[AXIS_C] - mr.position[AXIS_C];
-
-/* The above is a re-arranged and loop unrolled version of this:
+/* The above is a re-arranged version of this:
 	for (uint8_t i=0; i < AXES; i++) {	// don't do the error correction if you are going into a hold
 		if ((correction_flag == true) && (mr.segment_count == 1) && 
 			(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_STARTED)) {
