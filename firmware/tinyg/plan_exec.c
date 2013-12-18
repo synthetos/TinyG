@@ -387,33 +387,58 @@ static stat_t _exec_aline_tail()
 /*
  * _exec_aline_segment() - segment runner helper
  */
+//#define __ORIG_CORRECTION_CODE
 static stat_t _exec_aline_segment(uint8_t correction_flag)
 {
 	float travel[AXES];
 	float steps[MOTORS];
+	uint8_t i;
 
+#ifdef __ORIG_CORRECTION_CODE
 
 	// Multiply computed length by the unit vector to get the contribution for each axis. 
 	// Set the target in absolute coords and compute relative steps.
 	// Don't do the endpoint correction if you are going into a hold
 	if ((correction_flag == true) && (mr.segment_count == 1) && 
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-		mr.gm.target[AXIS_X] = mr.endpoint[AXIS_X]; // correct any accumulated rounding errors in last segment
-		mr.gm.target[AXIS_Y] = mr.endpoint[AXIS_Y];
-		mr.gm.target[AXIS_Z] = mr.endpoint[AXIS_Z];
-		mr.gm.target[AXIS_A] = mr.endpoint[AXIS_A];
-		mr.gm.target[AXIS_B] = mr.endpoint[AXIS_B];
-		mr.gm.target[AXIS_C] = mr.endpoint[AXIS_C];
-
+		printf("m[2]:%0.4f, %0.4f\n", (double)mr.gm.target[AXIS_Z], (double)mr.endpoint[AXIS_Z]);	// +++++ DIAGNOSTIC
+		for (i=0; i<AXES; i++) {
+			mr.gm.target[i] = mr.endpoint[i]; // correct any accumulated rounding errors in last segment
+		}
 	} else {
 		float intermediate = mr.segment_velocity * mr.segment_move_time;
-		mr.gm.target[AXIS_X] = mr.position[AXIS_X] + (mr.unit[AXIS_X] * intermediate);
-		mr.gm.target[AXIS_Y] = mr.position[AXIS_Y] + (mr.unit[AXIS_Y] * intermediate);
-		mr.gm.target[AXIS_Z] = mr.position[AXIS_Z] + (mr.unit[AXIS_Z] * intermediate);
-		mr.gm.target[AXIS_A] = mr.position[AXIS_A] + (mr.unit[AXIS_A] * intermediate);
-		mr.gm.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * intermediate);
-		mr.gm.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * intermediate);
+		for (i=0; i<AXES; i++) {
+			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * intermediate);
+		}
 	}
+#else	// different error correction
+	// Multiply computed length by the unit vector to get the contribution for each axis. 
+	// Set the target in absolute coords and compute relative steps.
+	// Don't do the endpoint correction if you are going into a hold
+	if ((correction_flag == true) && (mr.segment_count == 1) && 
+		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
+		printf("M[2]:%0.4f, %0.4f\n", (double)mr.gm.target[AXIS_Z], (double)mr.endpoint[AXIS_Z]);	// +++++ DIAGNOSTIC
+		// A positive correction means that distance will be added to the subsequent moves,
+		// looked at another way, that the target fell short of the endpoint. Neg is opposite.
+		for (i=0; i<AXES; i++) {
+			mr.position_correction[i] += (mr.endpoint[i] - mr.gm.target[i]);
+		}
+	} else {
+		float intermediate = mr.segment_velocity * mr.segment_move_time;
+		for (i=0; i<AXES; i++) {
+			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * intermediate);
+		}
+	}
+	// corrected for position error
+	for (i=0; i<AXES; i++) {
+		if (fabs(mr.position_correction[i]) > MIN_CORRECTION_MM) {
+			mr.gm.target[i] += min(mr.position_correction[i], MAX_CORRECTION_MM);
+			mr.position_correction[i] -= min(mr.position_correction[i], MAX_CORRECTION_MM);
+			printf("C[%d]:%0.4f, %0.4f\n", i, (double)mr.gm.target[AXIS_Z], (double)mr.position_correction[AXIS_Z]);	// +++++ DIAGNOSTIC
+		}
+	}
+
+#endif
 
 	travel[AXIS_X] = mr.gm.target[AXIS_X] - mr.position[AXIS_X];
 	travel[AXIS_Y] = mr.gm.target[AXIS_Y] - mr.position[AXIS_Y];

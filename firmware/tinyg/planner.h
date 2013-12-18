@@ -83,6 +83,17 @@ enum moveState {
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
 
+/* MAX_CORRECTION_MM
+ * MAX_CORRECTION_STEP
+ *	These values set the maximum millimeters that can be corrected in a single segment and
+ *	the maximum fractional steps that can be corrected in a single segment. They are used 
+ *	by the feedforward and feedback error correction functions (respectively) to meter out 
+ *	corrections across multiple segments.
+ */
+#define MIN_CORRECTION_MM		(float)0.0001	// don't bother correcting
+#define MAX_CORRECTION_MM		(float)0.001	// max you can correct in a single step
+#define MAX_CORRECTION_STEP		(float)0.10
+
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.
  *  If you don;t do this the first block will always plan to zero as it will
@@ -193,35 +204,38 @@ typedef struct mpMoveMasterSingleton {	// common variables for planning (move ma
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
-	magic_t magic_start;		// magic number to test memory integrity
-	uint8_t move_state;			// state of the overall move
-	uint8_t section_state;		// state within a move section
+	magic_t magic_start;			// magic number to test memory integrity
+	uint8_t move_state;				// state of the overall move
+	uint8_t section_state;			// state within a move section
 
-	float endpoint[AXES];		// final target for bf (used to correct rounding errors)
-	float position[AXES];		// current move position
-	float unit[AXES];			// unit vector for axis scaling & planning
+	float endpoint[AXES];			// final target for bf (used to correct rounding errors)
+	float position[AXES];			// current move position
+	float unit[AXES];				// unit vector for axis scaling & planning
 
-	float head_length;			// copies of bf variables of same name
+	float position_error[AXES];		// mathematical position error relative to known endpoints
+	float position_correction[AXES];// error correction being applied to target
+
+	float head_length;				// copies of bf variables of same name
 	float body_length;
 	float tail_length;
 	float entry_velocity;
 	float cruise_velocity;
 	float exit_velocity;
 
-	float length;				// length of line in mm
-	float midpoint_velocity;	// velocity at accel/decel midpoint
-	float jerk;					// max linear jerk
+	float length;					// length of line in mm
+	float midpoint_velocity;		// velocity at accel/decel midpoint
+	float jerk;						// max linear jerk
 
-	float segments;				// number of segments in arc or blend
-	uint32_t segment_count;		// count of running segments
-	float segment_move_time;	// actual time increment per aline segment
-	float microseconds;			// line or segment time in microseconds
-	float segment_length;		// computed length for aline segment
-	float segment_velocity;		// computed velocity for aline segment
-	float forward_diff_1;		// forward difference level 1 (Acceleration)
-	float forward_diff_2;		// forward difference level 2 (Jerk - constant)
+	float segments;					// number of segments in arc or blend
+	uint32_t segment_count;			// count of running segments
+	float segment_move_time;		// actual time increment per aline segment
+	float microseconds;				// line or segment time in microseconds
+	float segment_length;			// computed length for aline segment
+	float segment_velocity;			// computed velocity for aline segment
+	float forward_diff_1;			// forward difference level 1 (Acceleration)
+	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
 
-	GCodeState_t gm;			// gocode model state currently executing
+	GCodeState_t gm;				// gcode model state currently executing
 
 	magic_t magic_end;
 } mpMoveRuntimeSingleton_t;
