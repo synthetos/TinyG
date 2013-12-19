@@ -46,7 +46,8 @@
 
 // WARNING: Older Othermill machines use a 15deg can stack for their Z axis.
 // new machines use a stepper which has the same config as the other axis.
-#define HAS_CANSTACK_Z_AXIS 0
+//#define HAS_CANSTACK_Z_AXIS 0
+#define HAS_CANSTACK_Z_AXIS 1		// Earlier machines
 
 // *** settings.h overrides ***
 // Note: there are some commented test values below

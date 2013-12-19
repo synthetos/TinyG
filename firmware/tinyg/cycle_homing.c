@@ -90,9 +90,9 @@ static int8_t _get_next_axis(int8_t axis);
 //static int8_t _get_next_axes(int8_t axis);
 
 /*****************************************************************************
- * cm_homing_cycle_start()	- G28.1 homing cycle using limit switches
+ * cm_homing_cycle_start()	- G28.2 homing cycle using limit switches
  *
- * Homing works from a G28.1 according to the following writeup: 
+ * Homing works from a G28.2 according to the following writeup: 
  *	https://github.com/synthetos/TinyG/wiki/TinyG-Homing-(version-0.95-and-above)
  *
  *	--- How does this work? ---
@@ -263,9 +263,9 @@ static stat_t _homing_axis_start(int8_t axis)
 	if ((fp_ZERO(cm.a[axis].search_velocity)) || (fp_ZERO(cm.a[axis].latch_velocity))) {
 		return (_homing_error_exit(axis));
 	}
-	if ((cm.a[axis].travel_max <= 0) || (cm.a[axis].latch_backoff <= 0)) {
-		return (_homing_error_exit(axis));
-	}
+//	if ((cm.a[axis].travel_max < 0) || (cm.a[axis].latch_backoff < 0)) {
+//		return (_homing_error_exit(axis));
+//	}
 
 	// determine the switch setup and that config is OK
 	hm.min_mode = get_switch_mode(MIN_SWITCH(axis));
@@ -282,7 +282,8 @@ static stat_t _homing_axis_start(int8_t axis)
 	if (hm.min_mode & SW_HOMING_BIT) {
 		hm.homing_switch = MIN_SWITCH(axis);				// the min is the homing switch
 		hm.limit_switch = MAX_SWITCH(axis);					// the max would be the limit switch
-		hm.search_travel = -cm.a[axis].travel_max;			// search travels in negative direction
+//		hm.search_travel = -cm.a[axis].travel_max;			// search travels in negative direction
+		hm.search_travel = -fabs(cm.a[axis].travel_max - cm.a[axis].travel_min);	// search travels in negative direction
 		hm.latch_backoff = cm.a[axis].latch_backoff;		// latch travels in positive direction
 		hm.zero_backoff = cm.a[axis].zero_backoff;
 
@@ -290,7 +291,8 @@ static stat_t _homing_axis_start(int8_t axis)
 	} else {
 		hm.homing_switch = MAX_SWITCH(axis);				// the max is the homing switch
 		hm.limit_switch = MIN_SWITCH(axis);					// the min would be the limit switch
-		hm.search_travel = cm.a[axis].travel_max;			// search travels in positive direction
+//		hm.search_travel = cm.a[axis].travel_max;			// search travels in positive direction
+		hm.search_travel = fabs(cm.a[axis].travel_max - cm.a[axis].travel_min);	// search travels in positive direction
 		hm.latch_backoff = -cm.a[axis].latch_backoff;		// latch travels in negative direction
 		hm.zero_backoff = -cm.a[axis].zero_backoff;
 	}
