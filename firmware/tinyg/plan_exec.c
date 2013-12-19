@@ -446,9 +446,9 @@ static stat_t _exec_aline_tail()
  */
 static stat_t _exec_aline_segment(uint8_t correction_flag)
 {
+	uint8_t i;
 	float travel[AXES];
 	float steps[MOTORS];
-	uint8_t i;
 
 #ifdef __ORIG_CORRECTION_CODE
 
@@ -467,7 +467,7 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * segment_length);
 		}
 	}
-#else // new error correction (NB: Not working correctly - causes major drift for some reason)
+#else // new error correction
 	// Multiply computed length by the unit vector to get the contribution for each axis. 
 	// Set the target in absolute coords and compute relative steps.
 	// Don't do the endpoint correction if you are going into a hold

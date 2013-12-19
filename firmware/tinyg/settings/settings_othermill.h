@@ -31,8 +31,6 @@
  *		 to be changed are in tinyg.h
  */
 
-//#define __DEBUG // debug settings that make a Zen 7x12 look mechanically like an othermill
-
 /***********************************************************************/
 /**** Otherlab OtherMill profile ***************************************/
 /***********************************************************************/
@@ -48,8 +46,7 @@
 
 // WARNING: Older Othermill machines use a 15deg can stack for their Z axis.
 // new machines use a stepper which has the same config as the other axis.
-//#define HAS_CANSTACK_Z_AXIS 0
-#define HAS_CANSTACK_Z_AXIS 1				// Alden's machine - and some others
+#define HAS_CANSTACK_Z_AXIS 0
 
 // *** settings.h overrides ***
 // Note: there are some commented test values below
@@ -79,11 +76,11 @@
 #define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON
 
 #undef GCODE_DEFAULT_COORD_SYSTEM
-#undef GCODE_DEFAULT_UNITS
+#undef GCODE_DEFAULT_UNITS 
 #undef GCODE_DEFAULT_PLANE
 #undef GCODE_DEFAULT_COORD_SYSTEM
 #undef GCODE_DEFAULT_PATH_CONTROL
-#undef GCODE_DEFAULT_DISTANCE_MODE
+#undef GCODE_DEFAULT_DISTANCE_MODEs
 
 #define GCODE_DEFAULT_UNITS			MILLIMETERS		// MILLIMETERS or INCHES
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY	// CANON_PLANE_XY, CANON_PLANE_XZ, or CANON_PLANE_YZ
@@ -99,7 +96,7 @@
 #define M4_TRAVEL_PER_REV 		5.08				// 1tr
 #define M4_MICROSTEPS 			8					// 1mi		1,2,4,8
 #define M4_POLARITY 			0					// 1po		0=normal, 1=reversed
-#define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled
+#define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
 #define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M3_MOTOR_MAP 			AXIS_Y
@@ -107,7 +104,7 @@
 #define M3_TRAVEL_PER_REV 		5.08				// 1tr
 #define M3_MICROSTEPS 			8
 #define M3_POLARITY 			1
-#define M3_POWER_MODE 			0
+#define M3_POWER_MODE 			0					
 #define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP 			AXIS_Z
@@ -120,15 +117,15 @@
 #endif
 #define M2_MICROSTEPS 			8
 #define M2_POLARITY 			1
-#define M2_POWER_MODE 			0
+#define M2_POWER_MODE 			0					
 #define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M1_MOTOR_MAP 			AXIS_A
 #define M1_STEP_ANGLE 			1.8
 #define M1_TRAVEL_PER_REV 		360					// degrees moved per motor rev
 #define M1_MICROSTEPS 			8
-#define M1_POLARITY 			1
-#define M1_POWER_MODE 			1
+#define M1_POLARITY 			1			
+#define M1_POWER_MODE 			1					
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
@@ -193,7 +190,7 @@
 #define A_TRAVEL_MAX 			-1					// -1 means infinite, no limit
 #define A_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
-#define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628))
+#define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628)) 
 #define A_SWITCH_MODE_MIN 		SW_MODE_HOMING
 #define A_SWITCH_MODE_MAX 		SW_MODE_DISABLED
 #define A_SEARCH_VELOCITY 		600
