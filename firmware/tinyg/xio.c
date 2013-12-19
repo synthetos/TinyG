@@ -90,7 +90,6 @@ xioSingleton_t xio;
 
 /*
  * xio_init() - initialize entire xio sub-system
- * xio_reset_working_flags()
  */
 void xio_init()
 {
@@ -108,6 +107,37 @@ void xio_init()
 	xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
 	xio_open(XIO_DEV_SPI2, 0, SPI_FLAGS);
 }
+
+/*
+ * xio_init_assertions()
+ * xio_test_assertions() - validate operating state
+ *
+ * NOTE: xio device assertions are set up as part of xio_open_generic()
+ *		 This system is kind of brittle right now becuase if a device is 
+ *		 not set up then it will fail in the assertions test. Need to fix this.
+ */
+
+void xio_init_assertions() {}
+
+uint8_t xio_test_assertions()
+{
+	if (ds[XIO_DEV_USB].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_USB].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_RS485].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_RS485].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI1].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI1].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI2].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (ds[XIO_DEV_SPI2].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+//	if (ds[XIO_DEV_PGM].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+//	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (stderr != xio.stderr_shadow) 				 return (STAT_XIO_ASSERTION_FAILURE);
+	return (STAT_OK);
+}
+
+/*
+ * xio_reset_working_flags()
+ */
 
 void xio_reset_working_flags(xioDev_t *d)
 {

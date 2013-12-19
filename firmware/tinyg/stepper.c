@@ -69,9 +69,7 @@ static void _request_load_move(void);
 void stepper_init()
 {
 	memset(&st_run, 0, sizeof(st_run));			// clear all values, pointers and status
-//	stepper_init_assertions();
-	st_run.magic_start = MAGICNUM;
-	st_pre.magic_start = MAGICNUM;
+	stepper_init_assertions();
 
 	// Configure virtual ports
 	PORTCFG.VPCTRLA = PORTCFG_VP0MAP_PORT_MOTOR_1_gc | PORTCFG_VP1MAP_PORT_MOTOR_2_gc;
@@ -109,12 +107,24 @@ void stepper_init()
 }
 
 /*
- * st_assertions() - test assertions, return error code if violation exists
+ * stepper_init_assertions() - test assertions, return error code if violation exists
+ * stepper_test_assertions() - test assertions, return error code if violation exists
  */
-stat_t st_assertions()
+
+void stepper_init_assertions()
 {
-	if (st_run.magic_start  != MAGICNUM) return (STAT_MEMORY_FAULT);
-	if (st_pre.magic_start != MAGICNUM) return (STAT_MEMORY_FAULT);
+	st_run.magic_end = MAGICNUM;
+	st_run.magic_start = MAGICNUM;
+	st_pre.magic_end = MAGICNUM;
+	st_pre.magic_start = MAGICNUM;
+}
+
+stat_t stepper_test_assertions()
+{
+	if (st_run.magic_end	!= MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
+	if (st_run.magic_start	!= MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
+	if (st_pre.magic_end	!= MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
+	if (st_pre.magic_start	!= MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
 	return (STAT_OK);
 }
 

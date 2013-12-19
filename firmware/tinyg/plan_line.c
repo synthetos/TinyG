@@ -111,7 +111,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 //	if (gm_line->move_time < MIN_TIME_MOVE) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}	// remove this line
 
 	// get a cleared buffer and setup move variables
-	if ((bf = mp_get_write_buffer()) == NULL) { return(cm_alarm(STAT_BUFFER_FULL_FATAL));} // never supposed to fail
+	if ((bf = mp_get_write_buffer()) == NULL) { return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL));} // never supposed to fail
 
 	memcpy(&bf->gm, gm_line, sizeof(GCodeState_t));	// copy model state into planner
 	bf->bf_func = mp_exec_aline;					// register the callback to the exec function

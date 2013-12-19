@@ -314,8 +314,9 @@ extern stConfig_t st_cfg;			// only the config struct is exposed. The rest are p
 /**** FUNCTION PROTOTYPES ****/
 
 void stepper_init(void);
+void stepper_init_assertions(void);
+stat_t stepper_test_assertions(void);
 uint8_t stepper_isbusy(void);
-stat_t st_assertions(void);
 
 void st_energize_motors(void);
 void st_deenergize_motors(void);

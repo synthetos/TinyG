@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		397.28	// jogging
+#define TINYG_FIRMWARE_BUILD   		397.29	// soft limits installed - untested
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -314,9 +314,9 @@ char *get_status_message(stat_t status);
 #define	STAT_SOFT_LIMIT_EXCEEDED 71			// soft limit error
 #define	STAT_COMMAND_NOT_ACCEPTED 72		// command cannot be accepted at this time
 #define	STAT_PROBING_CYCLE_FAILED 73		// probing cycle did not complete
-#define	STAT_ERROR_74 74
-#define	STAT_ERROR_75 75
-#define	STAT_ERROR_76 76
+#define	STAT_JOGGING_CYCLE_FAILED 74		// jogging cycle did not complete
+#define	STAT_MACHINE_ALARMED 75				// machine is alarmed. Command not processed
+#define	STAT_LIMIT_SWITCH_HIT 76			// a limit switch was hit causing sutdown
 #define	STAT_ERROR_77 77
 #define	STAT_ERROR_78 78
 #define	STAT_ERROR_79 79

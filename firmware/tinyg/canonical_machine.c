@@ -154,6 +154,8 @@ uint8_t cm_get_combined_state()
 		if (cm.motion_state == MOTION_RUN) cm.combined_state = COMBINED_RUN;
 		if (cm.motion_state == MOTION_HOLD) cm.combined_state = COMBINED_HOLD;
 	}
+	if (cm.machine_state == MACHINE_SHUTDOWN) { cm.combined_state = COMBINED_SHUTDOWN;}
+
 	return cm.combined_state;
 }
 
@@ -458,7 +460,7 @@ void cm_conditional_set_model_position(stat_t status)
  *		any time required for acceleration or deceleration.
  */
 
-#define JENNY 8675309
+#define JENNIFER 8675309
 
 void cm_set_move_times(GCodeState_t *gcode_state)
 {
@@ -467,7 +469,7 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 	float abc_time=0;					// coordinated move rotary part at req feed rate
 	float max_time=0;					// time required for the rate-limiting axis
 	float tmp_time=0;					// used in computation
-	gcode_state->minimum_time = JENNY; 	// arbitrarily large number
+	gcode_state->minimum_time = JENNIFER;// arbitrarily large number
 
 	// NOTE: In the below code all references to 'cm.gm.' read from the canonical machine gm, 
 	//		 not the target gcode model, which is referenced as target_gm->  In most cases 
@@ -503,16 +505,27 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 /* 
  * cm_test_soft_limits() - return error code if soft limit is exceeded
  *
- *	Must be called with target properly set in GM struct. Best done after cm_set_model_target() 
+ *	Must be called with target properly set in GM struct. Best done after cm_set_model_target().
+ *
+ *	Tests for soft limit for any homed axis if min and max are different values. You can set min 
+ *	and max to 0,0 to disable soft limits for an axis. Also will not test a min or a max if the 
+ *	value is < -1000000 (negative one million). This allows a single end to be tested w/the other 
+ *	disabled, should that requirement ever arise.
  */
 stat_t cm_test_soft_limits(float target[])
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-//		if ((cm.gm.target[axis] > cm.a[axis].travel_max) ||
-//			(cm.gm.target[axis] < cm.a[axis].travel_min)) 
-		if ((target[axis] > cm.a[axis].travel_max) ||
-			(target[axis] < cm.a[axis].travel_min)) 
+		if (cm.homed[axis] != true) continue;		// don't test axes that are not homed
+
+		if (fp_EQ(cm.a[axis].travel_min, cm.a[axis].travel_max)) continue;
+
+		if ((cm.a[axis].travel_min > DISABLE_SOFT_LIMIT) && (target[axis] < cm.a[axis].travel_min)) {
 			return (STAT_SOFT_LIMIT_EXCEEDED);
+		}
+
+		if ((cm.a[axis].travel_max > DISABLE_SOFT_LIMIT) && (target[axis] > cm.a[axis].travel_max)) {
+			return (STAT_SOFT_LIMIT_EXCEEDED);
+		}
 	}
 	return (STAT_OK);
 }
@@ -537,12 +550,14 @@ void canonical_machine_init()
 	memset(&cm.gn, 0, sizeof(GCodeInput_t));
 	memset(&cm.gf, 0, sizeof(GCodeInput_t));
 
-
+	canonical_machine_init_assertions();
+/*
 	// setup magic numbers
 	cm.magic_start = MAGICNUM;
 	cm.magic_end = MAGICNUM;
 	cm.gmx.magic_start = MAGICNUM;
 	cm.gmx.magic_end = MAGICNUM;
+*/
 
 	// set gcode defaults
 	cm_set_units_mode(cm.units_mode);
@@ -573,9 +588,52 @@ void canonical_machine_init()
 }
 
 /*
- * cm_alarm() - alarm state; send an exception report and shut down machine
+ * canonical_machine_init_assertions()
+ * canonical_machine_test_assertions() - test assertions, return error code if violation exists
  */
-stat_t cm_alarm(stat_t status)
+void canonical_machine_init_assertions(void)
+{
+	cm.magic_start = MAGICNUM;
+	cm.magic_end = MAGICNUM;
+	cm.gmx.magic_start = MAGICNUM;
+	cm.gmx.magic_end = MAGICNUM;
+	arc.magic_start = MAGICNUM;
+	arc.magic_end = MAGICNUM;
+}
+
+stat_t canonical_machine_test_assertions(void)
+{
+	if ((cm.magic_start 	!= MAGICNUM) || (cm.magic_end 	  != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
+	if ((cm.gmx.magic_start != MAGICNUM) || (cm.gmx.magic_end != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
+	if ((arc.magic_start 	!= MAGICNUM) || (arc.magic_end    != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
+	return (STAT_OK);
+}
+
+/*
+ * cm_soft_alarm() - alarm state; send an exception report and stop processing input
+ * cm_hard_alarm() - alarm state; send an exception report and shut down machine
+ * cm_clear() 	   - clear soft alarm
+ *
+ *	Fascinating: http://www.cncalarms.com/
+ */
+stat_t cm_soft_alarm(stat_t status)
+{
+	rpt_exception(status);					// send alarm message
+	cm.machine_state = MACHINE_ALARM;
+	return (status);
+}
+
+stat_t cm_clear(cmdObj_t *cmd)				// clear soft alarm
+{
+	if (cm.cycle_state != CYCLE_OFF) {
+		cm.machine_state = MACHINE_CYCLE;
+	} else {
+		cm.machine_state = MACHINE_PROGRAM_STOP;
+	}
+	return (STAT_OK);
+}
+
+stat_t cm_hard_alarm(stat_t status)
 {
 	// stop the steppers and the spindle
 	st_deenergize_motors();
@@ -588,23 +646,11 @@ stat_t cm_alarm(stat_t status)
 //	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
 
-	cm.machine_state = MACHINE_ALARM;
 	rpt_exception(status);					// send shutdown message
+	cm.machine_state = MACHINE_SHUTDOWN;
 	return (status);
 }
 
-/*
- * cm_assertions() - test assertions, return error code if violation exists
- */
-stat_t cm_assertions()
-{
-	if ((cm.magic_start 	!= MAGICNUM) || (cm.magic_end 	  != MAGICNUM)) return (STAT_MEMORY_FAULT);
-	if ((cm.gmx.magic_start != MAGICNUM) || (cm.gmx.magic_end != MAGICNUM)) return (STAT_MEMORY_FAULT);
-	if ((arc.magic_start 	!= MAGICNUM) || (arc.magic_end    != MAGICNUM)) return (STAT_MEMORY_FAULT);
-	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end 	  != MAGICNUM)) return (STAT_MEMORY_FAULT);
-	if ((cmdStr.magic_start != MAGICNUM) || (cmdStr.magic_end != MAGICNUM)) return (STAT_MEMORY_FAULT);
-	return (STAT_OK);
-}
 
 /**************************
  * Representation (4.3.3) *
@@ -817,7 +863,7 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_model_target(target,flags);
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
-//	ritorno(cm_test_soft_limits(cm.gm.target));
+	ritorno(cm_test_soft_limits(cm.gm.target));
 
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
@@ -938,16 +984,9 @@ stat_t cm_straight_feed(float target[], float flags[])
 	if ((cm.gm.inverse_feed_rate_mode == false) && (fp_ZERO(cm.gm.feed_rate))) {
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
-
-	// Introduce a short delay if the machine is not busy to enable the planning
-	// queue to begin to fill (avoids first block having to plan down to zero)
-//	if (st_isbusy() == false) {
-//		cm_dwell(PLANNER_STARTUP_DELAY_SECONDS);
-//	}
-
 	cm_set_model_target(target, flags);
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
-//	ritorno(cm_test_soft_limits(cm.gm.target));
+	ritorno(cm_test_soft_limits(cm.gm.target));
 
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state

@@ -79,8 +79,8 @@ stat_t hardware_bootloader_handler(void);
 
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err) 
 {
-	cs.magic_start = MAGICNUM;
-	cs.magic_end = MAGICNUM;
+	controller_init_assertions();
+
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
 	cs.fw_version = TINYG_FIRMWARE_VERSION;
 	cs.hw_platform = TINYG_HARDWARE_PLATFORM;		// NB: HW version is set from EEPROM
@@ -95,6 +95,31 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	xio_set_stderr(std_err);
 	cs.default_src = std_in;
 	tg_set_primary_source(cs.default_src);
+}
+
+/* 
+ * controller_init_assertions()
+ * controller_test_assertions() - check memory integrity of controller
+ */
+
+void controller_init_assertions()
+{
+	cs.magic_start = MAGICNUM;
+	cs.magic_end = MAGICNUM;
+
+	cfg.magic_start = MAGICNUM;		// assertions for config system are handled from the controller
+	cfg.magic_end = MAGICNUM;
+	cmdStr.magic_start = MAGICNUM;
+	cmdStr.magic_end = MAGICNUM;
+}
+
+stat_t controller_test_assertions()
+{
+	if ((cs.magic_start 	!= MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end 	  != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+	if ((cmdStr.magic_start != MAGICNUM) || (cmdStr.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+
+	return (STAT_OK);
 }
 
 /* 
@@ -319,8 +344,9 @@ static stat_t _limit_switch_handler(void)
 {
 	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
 	if (get_limit_switch_thrown() == false) return (STAT_NOOP);
-//	cm_alarm(gpio_get_sw_thrown); // unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
-	cm_alarm(sw.sw_num_thrown);
+//	cm_alarm(gpio_get_sw_thrown); 		// unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
+//	cm_hard_alarm(sw.sw_num_thrown);	// no longer the correct behavior
+	return(cm_hard_alarm(STAT_LIMIT_SWITCH_HIT));
 	return (STAT_OK);
 }
 
@@ -336,52 +362,14 @@ stat_t _controller_assertions()
 /* 
  * _system_assertions() - check memory integrity and other assertions
  */
-#define alarmo(a) if((status_code=a) != STAT_OK) { cm_alarm(status_code); return(status_code); }
+#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) { cm_hard_alarm(status_code); return(status_code); }
 
 stat_t _system_assertions()
 {
-	alarmo(_controller_assertions());
-	alarmo(cm_assertions());
-	alarmo(mp_assertions());
-	alarmo(st_assertions());
-	alarmo(xio_assertions());
+	emergency___everybody_to_get_from_street(controller_test_assertions());
+	emergency___everybody_to_get_from_street(canonical_machine_test_assertions());
+	emergency___everybody_to_get_from_street(planner_test_assertions());
+	emergency___everybody_to_get_from_street(stepper_test_assertions());
+	emergency___everybody_to_get_from_street(xio_test_assertions());
 	return (STAT_OK);
 }
-
-/*
-stat_t _system_assertions_helper()
-{
-	ritorno(_controller_assertions());
-	ritorno(cm_assertions());
-	ritorno(mp_assertions());
-	ritorno(st_assertions());
-	ritorno(xio_assertions());
-	return (STAT_OK);
-}
-
-stat_t _system_assertions()
-{
-	ritorno(_system_assertions_helper());
-	cm_alarm(status_code);	// else report exception and shut down
-	return (STAT_EAGAIN);	// do not allow main loop to advance beyond this point	
-}
-*/
-/*
-stat_t _system_assertions()
-{
-	stat_t status;
-
-	for (;;) {	// run this loop only once, but enable breaks
-
-		if ((status = _controller_assertions()) != STAT_OK)  break;
-		if ((status = cm_assertions())	!= STAT_OK) break;
-		if ((status = mp_assertions())	!= STAT_OK) break;
-		if ((status = st_assertions())	!= STAT_OK) break;
-		if ((status = xio_assertions())	!= STAT_OK) break;
-		break;
-	}
-	if (status == STAT_OK) return (STAT_OK);
-	cm_alarm(status);		// else report exception and shut down
-	return (STAT_EAGAIN);	// do not allow main loop to advance beyond this point
-}
-*/
