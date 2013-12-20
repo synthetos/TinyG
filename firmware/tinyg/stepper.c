@@ -141,11 +141,8 @@ uint8_t stepper_isbusy()
 
 /*
  * st_reset() - reset stepper internals
- * st_cycle_start() - Initializes values for beginning a new cycle.
+ * st_cycle_start() - Initializes values for beginning a new cycle (called from cm_cycle_start())
  * st_cycle_end()
- * st_clc()
- *
- * st_cycle_start() is called from cm_cycle_start().  
  */
 
 void st_reset()
@@ -171,12 +168,6 @@ void st_cycle_start(void)
 void st_cycle_end(void)
 {
 	mp_print_motor_positions();
-}
-
-stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
-{
-	st_cycle_end();
-	return(STAT_OK);
 }
 
 /*

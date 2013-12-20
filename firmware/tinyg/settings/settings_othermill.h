@@ -89,7 +89,6 @@
 #define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
 
-
 // *** motor settings ***
 
 #define M4_MOTOR_MAP 			AXIS_X				// 1ma

@@ -170,11 +170,12 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "msg", _f00, 0, tx_print_str, get_nul, set_nul,  (float *)&cs.null, 0 },	// string for generic messages
 	{ "", "clear",_f00,0, tx_print_nul, cm_clear,cm_clear, (float *)&cs.null, 0 },	// GET a clear to clear soft alarm
 //	{ "", "sx",  _f00, 0, tx_print_nul, run_sx,  run_sx ,  (float *)&cs.null, 0 },	// send XOFF, XON test
-	{ "", "test",_f00, 0, tx_print_nul, help_test,		 run_test, 	  (float *)&cs.null,0 },	// run tests, print test help screen
 
-#ifdef __HELP_SCREENS
+	{ "", "test",_f00, 0, tx_print_nul, help_test,		 run_test, 	  (float *)&cs.null,0 },	// run tests, print test help screen
 	{ "", "defa",_f00, 0, tx_print_nul, help_defa,		 set_defaults,(float *)&cs.null,0 },	// set/print defaults / help screen
 	{ "", "boot",_f00, 0, tx_print_nul, help_boot_loader,hw_run_boot, (float *)&cs.null,0 },
+
+#ifdef __HELP_SCREENS
 	{ "", "help",_f00, 0, tx_print_nul, help_config,	 set_nul, 	  (float *)&cs.null,0 },	// prints config help screen
 	{ "", "h",   _f00, 0, tx_print_nul, help_config,	 set_nul, 	  (float *)&cs.null,0 },	// alias for "help"
 #endif
@@ -237,8 +238,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "x","xam",_fip, 0, cm_print_am, cm_get_am, cm_set_am, (float *)&cm.a[AXIS_X].axis_mode,		X_AXIS_MODE },
 	{ "x","xvm",_fip, 0, cm_print_vm, get_flu,   set_flu,   (float *)&cm.a[AXIS_X].velocity_max,	X_VELOCITY_MAX },
 	{ "x","xfr",_fip, 0, cm_print_fr, get_flu,   set_flu,   (float *)&cm.a[AXIS_X].feedrate_max,	X_FEEDRATE_MAX },
-	{ "x","xtm",_fip, 0, cm_print_tm, get_flu,   set_flu,   (float *)&cm.a[AXIS_X].travel_max,		X_TRAVEL_MAX },
 	{ "x","xtn",_fip, 0, cm_print_tn, get_flu,   set_flu,   (float *)&cm.a[AXIS_X].travel_min,		X_TRAVEL_MIN },
+	{ "x","xtm",_fip, 0, cm_print_tm, get_flu,   set_flu,   (float *)&cm.a[AXIS_X].travel_max,		X_TRAVEL_MAX },
 	{ "x","xjm",_fip, 0, cm_print_jm, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_X].jerk_max,		X_JERK_MAX },
 	{ "x","xjh",_fip, 0, cm_print_jh, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_X].jerk_homing,		X_JERK_HOMING },
 	{ "x","xjd",_fip, 4, cm_print_jd, get_flu,   set_flu,   (float *)&cm.a[AXIS_X].junction_dev,	X_JUNCTION_DEVIATION },
@@ -252,8 +253,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "y","yam",_fip, 0, cm_print_am, cm_get_am, cm_set_am, (float *)&cm.a[AXIS_Y].axis_mode,		Y_AXIS_MODE },
 	{ "y","yvm",_fip, 0, cm_print_vm, get_flu,   set_flu,   (float *)&cm.a[AXIS_Y].velocity_max,	Y_VELOCITY_MAX },
 	{ "y","yfr",_fip, 0, cm_print_fr, get_flu,   set_flu,   (float *)&cm.a[AXIS_Y].feedrate_max,	Y_FEEDRATE_MAX },
-	{ "y","ytm",_fip, 0, cm_print_tm, get_flu,   set_flu,   (float *)&cm.a[AXIS_Y].travel_max,		Y_TRAVEL_MAX },
 	{ "y","ytn",_fip, 0, cm_print_tn, get_flu,   set_flu,   (float *)&cm.a[AXIS_Y].travel_min,		Y_TRAVEL_MIN },
+	{ "y","ytm",_fip, 0, cm_print_tm, get_flu,   set_flu,   (float *)&cm.a[AXIS_Y].travel_max,		Y_TRAVEL_MAX },
 	{ "y","yjm",_fip, 0, cm_print_jm, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_Y].jerk_max,		Y_JERK_MAX },
 	{ "y","yjh",_fip, 0, cm_print_jh, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_Y].jerk_homing,		Y_JERK_HOMING },
 	{ "y","yjd",_fip, 4, cm_print_jd, get_flu,   set_flu,   (float *)&cm.a[AXIS_Y].junction_dev,	Y_JUNCTION_DEVIATION },
@@ -267,8 +268,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "z","zam",_fip, 0, cm_print_am, cm_get_am, cm_set_am, (float *)&cm.a[AXIS_Z].axis_mode,		Z_AXIS_MODE },
 	{ "z","zvm",_fip, 0, cm_print_vm, get_flu,   set_flu,   (float *)&cm.a[AXIS_Z].velocity_max,	Z_VELOCITY_MAX },
 	{ "z","zfr",_fip, 0, cm_print_fr, get_flu,   set_flu,   (float *)&cm.a[AXIS_Z].feedrate_max,	Z_FEEDRATE_MAX },
-	{ "z","ztm",_fip, 0, cm_print_tm, get_flu,   set_flu,   (float *)&cm.a[AXIS_Z].travel_max,		Z_TRAVEL_MAX },
 	{ "z","ztn",_fip, 0, cm_print_tn, get_flu,   set_flu,   (float *)&cm.a[AXIS_Z].travel_min,		Z_TRAVEL_MIN },
+	{ "z","ztm",_fip, 0, cm_print_tm, get_flu,   set_flu,   (float *)&cm.a[AXIS_Z].travel_max,		Z_TRAVEL_MAX },
 	{ "z","zjm",_fip, 0, cm_print_jm, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_Z].jerk_max,		Z_JERK_MAX },
 	{ "z","zjh",_fip, 0, cm_print_jh, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_Z].jerk_homing, 	Z_JERK_HOMING },
 	{ "z","zjd",_fip, 4, cm_print_jd, get_flu,   set_flu,   (float *)&cm.a[AXIS_Z].junction_dev,	Z_JUNCTION_DEVIATION },
@@ -282,8 +283,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "a","aam",_fip, 0, cm_print_am, cm_get_am, cm_set_am, (float *)&cm.a[AXIS_A].axis_mode,		A_AXIS_MODE },
 	{ "a","avm",_fip, 0, cm_print_vm, get_flt,   set_flt,   (float *)&cm.a[AXIS_A].velocity_max,	A_VELOCITY_MAX },
 	{ "a","afr",_fip, 0, cm_print_fr, get_flt,   set_flt,   (float *)&cm.a[AXIS_A].feedrate_max,	A_FEEDRATE_MAX },
-	{ "a","atm",_fip, 0, cm_print_tm, get_flt,   set_flt,   (float *)&cm.a[AXIS_A].travel_max,		A_TRAVEL_MAX },
 	{ "a","atn",_fip, 0, cm_print_tn, get_flu,   set_flu,   (float *)&cm.a[AXIS_A].travel_min,		A_TRAVEL_MIN },
+	{ "a","atm",_fip, 0, cm_print_tm, get_flt,   set_flt,   (float *)&cm.a[AXIS_A].travel_max,		A_TRAVEL_MAX },
 	{ "a","ajm",_fip, 0, cm_print_jm, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_A].jerk_max,		A_JERK_MAX },
 	{ "a","ajh",_fip, 0, cm_print_jh, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_A].jerk_homing, 	A_JERK_HOMING },
 	{ "a","ajd",_fip, 4, cm_print_jd, get_flt,   set_flt,   (float *)&cm.a[AXIS_A].junction_dev,	A_JUNCTION_DEVIATION },
@@ -298,8 +299,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "b","bam",_fip, 0, cm_print_am, cm_get_am, cm_set_am, (float *)&cm.a[AXIS_B].axis_mode,		B_AXIS_MODE },
 	{ "b","bvm",_fip, 0, cm_print_vm, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].velocity_max,	B_VELOCITY_MAX },
 	{ "b","bfr",_fip, 0, cm_print_fr, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].feedrate_max,	B_FEEDRATE_MAX },
-	{ "b","btm",_fip, 0, cm_print_tm, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].travel_max,		B_TRAVEL_MAX },
 	{ "b","btn",_fip, 0, cm_print_tn, get_flu,   set_flu,   (float *)&cm.a[AXIS_B].travel_min,		B_TRAVEL_MIN },
+	{ "b","btm",_fip, 0, cm_print_tm, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].travel_max,		B_TRAVEL_MAX },
 	{ "b","bjm",_fip, 0, cm_print_jm, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_B].jerk_max,		B_JERK_MAX },
 	{ "b","bjd",_fip, 0, cm_print_jd, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].junction_dev,	B_JUNCTION_DEVIATION },
 	{ "b","bra",_fip, 3, cm_print_ra, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].radius,			B_RADIUS },
@@ -316,6 +317,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "c","cam",_fip, 0, cm_print_am, cm_get_am, cm_set_am, (float *)&cm.a[AXIS_C].axis_mode,		C_AXIS_MODE },
 	{ "c","cvm",_fip, 0, cm_print_vm, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].velocity_max,	C_VELOCITY_MAX },
 	{ "c","cfr",_fip, 0, cm_print_fr, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].feedrate_max,	C_FEEDRATE_MAX },
+	{ "c","ctn",_fip, 0, cm_print_tn, get_flu,   set_flu,   (float *)&cm.a[AXIS_C].travel_min,		C_TRAVEL_MIN },
 	{ "c","ctm",_fip, 0, cm_print_tm, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].travel_max,		C_TRAVEL_MAX },
 	{ "c","cjm",_fip, 0, cm_print_jm, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_C].jerk_max,		C_JERK_MAX },
 	{ "c","ctn",_fip, 0, cm_print_tn, get_flu,   set_flu,   (float *)&cm.a[AXIS_C].travel_min,		C_TRAVEL_MIN },
@@ -365,7 +367,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g56","g56b",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_B], G56_B_OFFSET },
 	{ "g56","g56c",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G56][AXIS_C], G56_C_OFFSET },
 
-#if 0
 	{ "g57","g57x",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_X], G57_X_OFFSET },
 	{ "g57","g57y",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_Y], G57_Y_OFFSET },
 	{ "g57","g57z",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G57][AXIS_Z], G57_Z_OFFSET },
@@ -386,8 +387,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g59","g59a",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_A], G59_A_OFFSET },
 	{ "g59","g59b",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_B], G59_B_OFFSET },
 	{ "g59","g59c",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_C], G59_C_OFFSET },
-
-#else // HACK: use these registers since I can't get the command table to load correctly (Estee)
+/*
+ // HACK: use these registers since I can't get the command table to load correctly (Estee)
 	{ "g57","g57x",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_X], G57_X_OFFSET },
 	{ "g57","g57y",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_Y], G57_Y_OFFSET },
 	{ "g57","g57z",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_Z], G57_Z_OFFSET },
@@ -408,7 +409,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g59","g59a",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_A], G59_A_OFFSET },
 	{ "g59","g59b",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_B], G59_B_OFFSET },
 	{ "g59","g59c",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_C], G59_C_OFFSET },
-#endif
+*/
+
 	{ "g92","g92x",_fin, 3, cm_print_cofs, get_flu, set_nul,(float *)&cm.gmx.origin_offset[AXIS_X], 0 },// G92 handled differently
 	{ "g92","g92y",_fin, 3, cm_print_cofs, get_flu, set_nul,(float *)&cm.gmx.origin_offset[AXIS_Y], 0 },
 	{ "g92","g92z",_fin, 3, cm_print_cofs, get_flu, set_nul,(float *)&cm.gmx.origin_offset[AXIS_Z], 0 },
@@ -456,7 +458,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","ec",  _f07, 0, co_print_ec,  get_ui8,   set_ec,     (float *)&cfg.enable_cr,			COM_EXPAND_CR },
 	{ "sys","ee",  _f07, 0, co_print_ee,  get_ui8,   set_ee,     (float *)&cfg.enable_echo,			COM_ENABLE_ECHO },
 	{ "sys","ex",  _f07, 0, co_print_ex,  get_ui8,   set_ex,     (float *)&cfg.enable_flow_control,	COM_ENABLE_FLOW_CONTROL },
-//	{ "sys","fs",  _f07, 0, js_print_fs,  get_ui8,   set_ui8,    (float *)&js.json_footer_style,	0 },
 	{ "sys","baud",_fns, 0, co_print_baud,get_ui8,   set_baud,   (float *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
 	{ "sys","net", _fip, 0, co_print_net, get_ui8,   set_ui8,    (float *)&cs.network_mode,			NETWORK_MODE },
 
@@ -480,10 +481,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "gc",  _f00, 0, tx_print_nul, gc_get_gc, gc_run_gc,(float *)&cs.null, 0 }, // gcode block - must be last in this group
 
 	// "hidden" parameters (not in system group)
-	{ "",   "ms",  _fip, 0, cm_print_ms,  get_flt, set_flt, (float *)&cm.estd_segment_usec,		NOM_SEGMENT_USEC },
-	{ "",   "ml",  _fip, 4, cm_print_ml,  get_flu, set_flu, (float *)&cm.min_segment_len,		MIN_LINE_LENGTH },
-	{ "",   "ma",  _fip, 4, cm_print_ma,  get_flu, set_flu, (float *)&cm.arc_segment_len,		ARC_SEGMENT_LENGTH },
-	{ "",   "fd",  _fip, 0, tx_print_ui8, get_ui8, set_01,  (float *)&js.json_footer_depth,		JSON_FOOTER_DEPTH },
+	{ "",   "ms",  _fip, 0, cm_print_ms,  get_flt, set_flt, (float *)&cm.estd_segment_usec,	NOM_SEGMENT_USEC },
+	{ "",   "ml",  _fip, 4, cm_print_ml,  get_flu, set_flu, (float *)&cm.min_segment_len,	MIN_LINE_LENGTH },
+	{ "",   "ma",  _fip, 4, cm_print_ma,  get_flu, set_flu, (float *)&cm.arc_segment_len,	ARC_SEGMENT_LENGTH },
+	{ "",   "fd",  _fip, 0, tx_print_ui8, get_ui8, set_01,  (float *)&js.json_footer_depth,	JSON_FOOTER_DEPTH },
 
 	// User defined data groups
 	{ "uda","uda0", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_a[0], USER_DATA_A0 },
@@ -571,18 +572,24 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	// *** Must agree with CMD_COUNT_GROUPS below ****
 	{ "","sys",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// system group
 	{ "","p1", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// PWM 1 group
+
 	{ "","1",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// motor groups
 	{ "","2",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","3",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","4",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+#if (MOTORS >= 5)
 //	{ "","5",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+#endif
+#if (MOTORS >= 5)
 //	{ "","6",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+#endif
 	{ "","x",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis groups
 	{ "","y",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","z",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","a",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","b",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","c",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+
 //	{ "","ss", _f00, 0, tx_print_nul, get_grp, set_nul,(float *)&cs.null,0 },
 	{ "","g54",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// coord offset groups
 	{ "","g55",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
@@ -593,12 +600,14 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","g92",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// origin offsets
 	{ "","g28",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// g28 home position
 	{ "","g30",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// g30 home position
+
 	{ "","mpo",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// machine position group
 	{ "","pos",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// work position group
 	{ "","ofs",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// work offset group
 	{ "","hom",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis homing state group
 	{ "","jog",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis jogging state group
 	{ "","jid",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// job ID group
+
 	{ "","uda", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group
 	{ "","udb", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group
 	{ "","udc", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group

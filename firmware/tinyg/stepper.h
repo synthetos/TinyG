@@ -318,6 +318,10 @@ void stepper_init_assertions(void);
 stat_t stepper_test_assertions(void);
 uint8_t stepper_isbusy(void);
 
+void st_reset(void);
+void st_cycle_start(void);
+void st_cycle_end(void);
+
 void st_energize_motors(void);
 void st_deenergize_motors(void);
 void st_set_motor_power(const uint8_t motor);

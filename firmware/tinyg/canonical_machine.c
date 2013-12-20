@@ -551,13 +551,6 @@ void canonical_machine_init()
 	memset(&cm.gf, 0, sizeof(GCodeInput_t));
 
 	canonical_machine_init_assertions();
-/*
-	// setup magic numbers
-	cm.magic_start = MAGICNUM;
-	cm.magic_end = MAGICNUM;
-	cm.gmx.magic_start = MAGICNUM;
-	cm.gmx.magic_end = MAGICNUM;
-*/
 
 	// set gcode defaults
 	cm_set_units_mode(cm.units_mode);
@@ -863,12 +856,14 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_model_target(target,flags);
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
-	ritorno(cm_test_soft_limits(cm.gm.target));
+	stat_t status = cm_test_soft_limits(cm.gm.target);
+	if (status != STAT_OK) return (cm_soft_alarm(status));
+//	ritorno(cm_test_soft_limits(cm.gm.target));
 
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
 	cm_cycle_start();							// required for homing & other cycles
-	stat_t status = mp_aline(&cm.gm);			// run the move
+	status = mp_aline(&cm.gm);					// run the move
 	cm_conditional_set_model_position(status);	// update position if the move was successful
 	return (status);
 }
@@ -986,12 +981,14 @@ stat_t cm_straight_feed(float target[], float flags[])
 	}
 	cm_set_model_target(target, flags);
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
-	ritorno(cm_test_soft_limits(cm.gm.target));
+	stat_t status = cm_test_soft_limits(cm.gm.target);
+	if (status != STAT_OK) return (cm_soft_alarm(status));
+//	ritorno(cm_test_soft_limits(cm.gm.target));
 
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
 	cm_cycle_start();							// required for homing & other cycles
-	stat_t status = mp_aline(&cm.gm);			// run the move
+	status = mp_aline(&cm.gm);					// run the move
 	cm_conditional_set_model_position(status);	// update position if the move was successful
 	return (status);
 }
@@ -1176,7 +1173,9 @@ stat_t cm_spindle_override_factor(uint8_t flag)	// M50.1
 }
 
 /*
- * cm_message() - queue a message to the response string (unconditionally)
+ * cm_message() - queue a RAM string as a message in the response (unconditionally)
+ *
+ *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
  */
 
 void cm_message(char_t *message)
@@ -1191,13 +1190,14 @@ void cm_message(char_t *message)
  * This group implements stop, start, end, and hold. 
  * It is extended beyond the NIST spec to handle various situations.
  *
+ *	_exec_program_finalize()
  *	cm_cycle_start()			(no Gcode)  Do a cycle start right now
  *	cm_cycle_end()				(no Gcode)	Do a cycle end right now
  *	cm_feedhold()				(no Gcode)	Initiate a feedhold right now	
  *	cm_program_stop()			(M0, M60)	Queue a program stop
  *	cm_optional_program_stop()	(M1)
  *	cm_program_end()			(M2, M30)
- *	_exec_program_finalize()
+ *	cm_machine_ready()			puts machine into a READY state
  *
  * cm_program_stop and cm_optional_program_stop are synchronous Gcode 
  * commands that are received through the interpreter. They cause all motion
@@ -1348,6 +1348,7 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
 
+	st_cycle_end();							// finalize steppers at end of cycle
 	sr_request_status_report(SR_IMMEDIATE_REQUEST);	// request a final status report (not unfiltered)
 	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
 }
@@ -1355,10 +1356,12 @@ static void _exec_program_finalize(float *value, float *flag)
 void cm_cycle_start()
 {
 	cm.machine_state = MACHINE_CYCLE;
-	if (cm.cycle_state == CYCLE_OFF) {
-		cm.cycle_state = CYCLE_MACHINING;			// don't change homing, probe or other cycles
+	if (cm.cycle_state == CYCLE_OFF) {				// don't (re)start homing, probe or other canned cycles
+		st_cycle_start();							// initialize steppers for beginning of cycle
+		cm.cycle_state = CYCLE_MACHINING;
 		qr_init_queue_report();						// clear queue reporting buffer counts
 	}
+
 }
 
 void cm_cycle_end() 
