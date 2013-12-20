@@ -660,13 +660,13 @@ uint8_t cmd_index_lt_groups(index_t index) { return ((index <= CMD_INDEX_START_G
  * _do_all()		- get and print all groups uber group
  */
 
-static stat_t _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // helper to print multiple groups in a list
+static stat_t _do_group_list(cmdObj_t *cmd, char list[][TOKEN_LEN+1]) // helper to print multiple groups in a list
 {
 	for (uint8_t i=0; i < CMD_MAX_OBJECTS; i++) {
 		if (list[i][0] == NUL) { return (STAT_COMPLETE);}
 		cmd_reset_list();
 		cmd = cmd_body;
-		strncpy(cmd->token, list[i], CMD_TOKEN_LEN);
+		strncpy(cmd->token, list[i], TOKEN_LEN);
 		cmd->index = cmd_get_index((const char_t *)"", cmd->token);
 //		cmd->objtype = TYPE_PARENT;
 		cmd_get_cmdObj(cmd);
@@ -677,20 +677,20 @@ static stat_t _do_group_list(cmdObj_t *cmd, char list[][CMD_TOKEN_LEN+1]) // hel
 
 static stat_t _do_motors(cmdObj_t *cmd)	// print parameters for all motor groups
 {
-//	char list[][CMD_TOKEN_LEN+1] = {"1","2","3","4","5","6",""}; // must have a terminating element
-	char list[][CMD_TOKEN_LEN+1] = {"1","2","3","4",""}; // must have a terminating element
+//	char list[][TOKEN_LEN+1] = {"1","2","3","4","5","6",""}; // must have a terminating element
+	char list[][TOKEN_LEN+1] = {"1","2","3","4",""}; // must have a terminating element
 	return (_do_group_list(cmd, list));
 }
 
 static stat_t _do_axes(cmdObj_t *cmd)	// print parameters for all axis groups
 {
-	char list[][CMD_TOKEN_LEN+1] = {"x","y","z","a","b","c",""}; // must have a terminating element
+	char list[][TOKEN_LEN+1] = {"x","y","z","a","b","c",""}; // must have a terminating element
 	return (_do_group_list(cmd, list));
 }
 
 static stat_t _do_offsets(cmdObj_t *cmd)	// print offset parameters for G54-G59,G92, G28, G30
 {
-	char list[][CMD_TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92","g28","g30",""}; // must have a terminating element
+	char list[][TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92","g28","g30",""}; // must have a terminating element
 	return (_do_group_list(cmd, list));
 }
 

@@ -287,32 +287,6 @@ stat_t st_motor_power_callback() 	// called by controller
  */
 
 ISR(TIMER_DDA_ISR_vect)
-/*{
-	if ((st_run.mot[MOTOR_1].substep_accumulator += st_run.mot[MOTOR_1].substep_increment) > 0) {
-		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;		// turn step bit on
- 		st_run.mot[MOTOR_1].substep_accumulator -= st_run.dda_ticks_X_substeps;
-		PORT_MOTOR_1_VPORT.OUT &= ~STEP_BIT_bm;		// turn step bit off in ~1 uSec
-	}
-	if ((st_run.mot[MOTOR_2].substep_accumulator += st_run.mot[MOTOR_2].substep_increment) > 0) {
-		PORT_MOTOR_2_VPORT.OUT |= STEP_BIT_bm;
- 		st_run.mot[MOTOR_2].substep_accumulator -= st_run.dda_ticks_X_substeps;
-		PORT_MOTOR_2_VPORT.OUT &= ~STEP_BIT_bm;
-	}
-	if ((st_run.mot[MOTOR_3].substep_accumulator += st_run.mot[MOTOR_3].substep_increment) > 0) {
-		PORT_MOTOR_3_VPORT.OUT |= STEP_BIT_bm;
- 		st_run.mot[MOTOR_3].substep_accumulator -= st_run.dda_ticks_X_substeps;
-		PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;
-	}
-	if ((st_run.mot[MOTOR_4].substep_accumulator += st_run.mot[MOTOR_4].substep_increment) > 0) {
-		PORT_MOTOR_4_VPORT.OUT |= STEP_BIT_bm;
- 		st_run.mot[MOTOR_4].substep_accumulator -= st_run.dda_ticks_X_substeps;
-		PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;
-	}
-	if (--st_run.dda_ticks_downcount == 0) {			// end move
-		TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;			// disable DDA timer
-		_load_move();									// load the next move
-	}
-}*/
 {
 	if ((st_run.mot[MOTOR_1].substep_accumulator += st_run.mot[MOTOR_1].substep_increment) > 0) {
 		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;		// turn step bit on
@@ -682,7 +656,7 @@ static int8_t _get_motor(const index_t index)
 {
 	char_t *ptr;
 	char_t motors[] = {"123456"};
-	char_t tmp[CMD_TOKEN_LEN+1];
+	char_t tmp[TOKEN_LEN+1];
 
 	strcpy_P(tmp, cfgArray[index].group);
 	if ((ptr = strchr(motors, tmp[0])) == NULL) {

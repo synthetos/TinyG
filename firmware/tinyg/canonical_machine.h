@@ -528,7 +528,7 @@ void cm_set_move_times(GCodeState_t *gcode_state);
 
 void cm_set_model_linenum(uint32_t linenum);
 void cm_set_model_target(float target[], float flag[]);
-void cm_conditional_set_model_position(stat_t status);
+void cm_set_model_position(stat_t status);
 stat_t cm_test_soft_limits(float target[]);
 
 /*--- canonical machining functions (loosely patterned after NIST) ---*/

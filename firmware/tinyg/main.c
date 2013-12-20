@@ -129,7 +129,7 @@ static void _application_init(void)
  */
 
 stat_t status_code;						// allocate a variable for this macro
-char shared_buf[STATUS_MESSAGE_LEN];	// allocate string for global use
+char shared_buf[MESSAGE_LEN];			// allocate string for global use
 
 static const char stat_00[] PROGMEM = "OK";
 static const char stat_01[] PROGMEM = "Error";

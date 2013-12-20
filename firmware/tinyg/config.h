@@ -189,8 +189,8 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 // Stuff you probably don't want to change 
 
 #define NO_MATCH (index_t)0xFFFF
-#define CMD_GROUP_LEN 3				// max length of group prefix
-#define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
+#define GROUP_LEN 3					// max length of group prefix
+#define TOKEN_LEN 5					// mnemonic token string: group prefix + short token
 #define CMD_FOOTER_LEN 18			// sufficient space to contain a JSON footer array
 #define CMD_LIST_LEN (CMD_BODY_LEN+2)// +2 allows for a header and a footer
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
@@ -269,8 +269,8 @@ typedef struct cmdObject {				// depending on use, not all elements may be popul
 	int8_t objtype;						// see objType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
 	float value;						// numeric value
-	char_t token[CMD_TOKEN_LEN+1];		// full mnemonic token for lookup
-	char_t group[CMD_GROUP_LEN+1];		// group prefix or NUL if not in a group
+	char_t group[GROUP_LEN+1];			// group prefix or NUL if not in a group
+	char_t token[TOKEN_LEN+1];			// full mnemonic token for lookup
 	char_t (*stringp)[];				// pointer to array of characters from shared character array
 } cmdObj_t; 							// OK, so it's not REALLY an object
 
@@ -278,8 +278,8 @@ typedef uint8_t (*fptrCmd)(cmdObj_t *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj_t *cmd);// required for PROGMEM access
 
 typedef struct cfgItem {
-	char_t group[CMD_GROUP_LEN+1];		// group prefix (with NUL termination)
-	char_t token[CMD_TOKEN_LEN+1];		// token - stripped of group prefix (w/NUL termination)
+	char_t group[GROUP_LEN+1];			// group prefix (with NUL termination)
+	char_t token[TOKEN_LEN+1];			// token - stripped of group prefix (w/NUL termination)
 	uint8_t flags;						// operations flags - see defines below
 	int8_t precision;					// decimal precision for display (JSON)
 //	const char_t *format;				// pointer to formatted print string in FLASH

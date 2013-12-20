@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		397.29	// soft limits installed - untested
+#define TINYG_FIRMWARE_BUILD   		397.30	// found errant memory error - shared_buf overrun
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -54,7 +54,7 @@
 
 #define __ORIG_CORRECTION_CODE
 #define __JERK_EXEC		// comment to use forward difference based exec vs jerk computed exec
-#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
+//#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
 
 #ifndef __SIMULATION
   #define __TEXT_MODE						// comment out to disable text mode support (saves ~9Kb)
@@ -100,10 +100,10 @@ typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 #define GET_TOKEN_BYTE(a)  (char_t)pgm_read_byte(&cfgArray[i].a)	// get token byte value from cfgArray
 
 // get text from an array of strings in PGM and convert to RAM string
-#define GET_TEXT_ITEM(b,a) strcpy_P(shared_buf,(const char *)pgm_read_word(&b[a])) 
+#define GET_TEXT_ITEM(b,a) strncpy_P(shared_buf,(const char *)pgm_read_word(&b[a]), MESSAGE_LEN-1) 
 
 // get units from array of strings in PGM and convert to RAM string
-#define GET_UNITS(a) 	   strcpy_P(shared_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]))
+#define GET_UNITS(a) 	   strncpy_P(shared_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]), MESSAGE_LEN-1)
 
 // IO settings
 #define STD_IN 	XIO_DEV_USB		// default IO settings
@@ -224,9 +224,9 @@ typedef uint16_t magic_t;		// magic number size
  * It returns only if an error occurred. (ritorno is Italian for return) 
  */
 typedef uint8_t stat_t;
-#define STATUS_MESSAGE_LEN 48			// status message string storage allocation
-
 extern stat_t status_code;				// allocated in main.c
+
+#define MESSAGE_LEN 80					// global message string storage allocation
 extern char shared_buf[];				// allocated in main.c
 
 char *get_status_message(stat_t status);

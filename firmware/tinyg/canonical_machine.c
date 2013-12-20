@@ -383,7 +383,7 @@ void cm_set_model_target(float target[], float flag[])
 }
 
 /* 
- * cm_conditional_set_model_position() - set endpoint position; uses internal canonical coordinates only
+ * cm_set_model_position() - set endpoint position; uses internal canonical coordinates only
  *
  * 	This routine sets the endpoint position in the gccode model if the move was 
  *	successfully completed (no errors). Leaving the endpoint position alone for 
@@ -394,8 +394,7 @@ void cm_set_model_target(float target[], float flag[])
  *	the planner(s) and steppers will still be processing the action and the real tool 
  *	position is still close to the starting point. 
  */
-
-void cm_conditional_set_model_position(stat_t status) 
+void cm_set_model_position(stat_t status) 
 {
 	if (status == STAT_OK) copy_axis_vector(cm.gmx.position, cm.gm.target);
 }
@@ -864,7 +863,7 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
 	cm_cycle_start();							// required for homing & other cycles
 	status = mp_aline(&cm.gm);					// run the move
-	cm_conditional_set_model_position(status);	// update position if the move was successful
+	cm_set_model_position(status);				// update position if the move was successful
 	return (status);
 }
 
@@ -989,7 +988,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
 	cm_cycle_start();							// required for homing & other cycles
 	status = mp_aline(&cm.gm);					// run the move
-	cm_conditional_set_model_position(status);	// update position if the move was successful
+	cm_set_model_position(status);				// update position if the move was successful
 	return (status);
 }
 
@@ -1536,12 +1535,12 @@ char_t cm_get_axis_char(const int8_t axis)
 static int8_t _get_axis(const index_t index)
 {
 	char_t *ptr;
-	char_t tmp[CMD_TOKEN_LEN+1];
+	char_t tmp[TOKEN_LEN+1];
 	char_t axes[] = {"xyzabc"};
 
-	strcpy_P(tmp, cfgArray[index].token);			// kind of a hack. Looks for an axis
-	if ((ptr = strchr(axes, tmp[0])) == NULL) { 	// character in the 0 and 3 positions
-		if ((ptr = strchr(axes, tmp[3])) == NULL) { // to accommodate 'xam' and 'g54x' styles
+	strncpy_P(tmp, cfgArray[index].token, TOKEN_LEN);	// kind of a hack. Looks for an axis
+	if ((ptr = strchr(axes, tmp[0])) == NULL) {			// character in the 0 and 3 positions
+		if ((ptr = strchr(axes, tmp[3])) == NULL) {		// to accommodate 'xam' and 'g54x' styles
 			return (-1);
 		}
 	}

@@ -99,7 +99,7 @@ static stat_t _json_parser_kernal(char_t *str)
 	stat_t status;
 	int8_t depth;
 	cmdObj_t *cmd = cmd_reset_list();				// get a fresh cmdObj list
-	char_t group[CMD_GROUP_LEN+1] = {""};			// group identifier - starts as NUL
+	char_t group[GROUP_LEN+1] = {""};			// group identifier - starts as NUL
 	int8_t i = CMD_BODY_LEN;
 
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
@@ -112,14 +112,14 @@ static stat_t _json_parser_kernal(char_t *str)
 		}
 		// propagate the group from previous NV pair (if relevant)
 		if (group[0] != NUL) {
-			strncpy(cmd->group, group, CMD_GROUP_LEN);// copy the parent's group to this child
+			strncpy(cmd->group, group, GROUP_LEN);// copy the parent's group to this child
 		}
 		// validate the token and get the index
 		if ((cmd->index = cmd_get_index(cmd->group, cmd->token)) == NO_MATCH) {
 			return (STAT_UNRECOGNIZED_COMMAND);
 		}
 		if ((cmd_index_is_group(cmd->index)) && (cmd_group_is_prefixed(cmd->token))) {
-			strncpy(group, cmd->token, CMD_GROUP_LEN);// record the group ID
+			strncpy(group, cmd->token, GROUP_LEN);// record the group ID
 		}
 		if ((cmd = cmd->nx) == NULL) return (STAT_JSON_TOO_MANY_PAIRS);// Not supposed to encounter a NULL
 	} while (status != STAT_OK);					// breaks when parsing is complete
@@ -195,7 +195,7 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 	if ((*pstr = strchr(*pstr, '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);}
 	if ((tmp = strchr(++(*pstr), '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);}
 	*tmp = NUL;
-	strncpy(cmd->token, *pstr, CMD_TOKEN_LEN);	// copy the string to the token
+	strncpy(cmd->token, *pstr, TOKEN_LEN);		// copy the string to the token
 
 	// --- Process value part ---  (organized from most to least frequently encountered)
 	*pstr = ++tmp;
@@ -671,7 +671,7 @@ static cmdObj_t * _reset_array()
 
 static cmdObj_t * _add_parent(cmdObj_t *cmd, char_t *token)
 {
-	strncpy(cmd->token, token, CMD_TOKEN_LEN);
+	strncpy(cmd->token, token, TOKEN_LEN);
 	cmd->nx->depth = cmd->depth+1;
 	cmd->objtype = TYPE_PARENT;
 	return (cmd->nx);
@@ -679,7 +679,7 @@ static cmdObj_t * _add_parent(cmdObj_t *cmd, char_t *token)
 
 static cmdObj_t * _add_string(cmdObj_t *cmd, char_t *token, char_t *string)
 {
-	strncpy(cmd->token, token, CMD_TOKEN_LEN);
+	strncpy(cmd->token, token, TOKEN_LEN);
 	cmd_copy_string(cmd, string);
 	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
 	cmd->objtype = TYPE_STRING;
@@ -688,7 +688,7 @@ static cmdObj_t * _add_string(cmdObj_t *cmd, char_t *token, char_t *string)
 
 static cmdObj_t * _add_integer(cmdObj_t *cmd, char_t *token, uint32_t integer)
 {
-	strncpy(cmd->token, token, CMD_TOKEN_LEN);
+	strncpy(cmd->token, token, TOKEN_LEN);
 	cmd->value = (float)integer;
 	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
 	cmd->objtype = TYPE_INTEGER;
@@ -697,7 +697,7 @@ static cmdObj_t * _add_integer(cmdObj_t *cmd, char_t *token, uint32_t integer)
 
 cmdObj_t * _add_data(cmdObj_t *cmd, char *token, uint32_t integer)
 {
-	strncpy(cmd->token, token, CMD_TOKEN_LEN);
+	strncpy(cmd->token, token, TOKEN_LEN);
 	uint32_t *v = (uint32_t*)&cmd->value;
 	*v = integer;
 	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}

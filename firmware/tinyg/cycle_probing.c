@@ -195,7 +195,6 @@ static stat_t _probing_finalize_exit(int8_t axis)	// third part of return to hom
 	return (STAT_OK);
 }
 
-
 /* 
  * _probing_error_exit()
  */

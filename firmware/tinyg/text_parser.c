@@ -109,10 +109,10 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 	// parse fields into the cmd struct
 	cmd->objtype = TYPE_NULL;
 	if ((rd = strpbrk(str, separators)) == NULL) { // no value part
-		strncpy(cmd->token, str, CMD_TOKEN_LEN);
+		strncpy(cmd->token, str, TOKEN_LEN);
 	} else {
 		*rd = NUL;							// terminate at end of name
-		strncpy(cmd->token, str, CMD_TOKEN_LEN);
+		strncpy(cmd->token, str, TOKEN_LEN);
 		str = ++rd;
 		cmd->value = strtof(str, &rd);		// rd used as end pointer
 		if (rd != str) {

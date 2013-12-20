@@ -154,7 +154,7 @@ void sr_init_status_report()
 {
 	cmdObj_t *cmd = cmd_reset_list();	// used for status report persistence locations
 	sr.status_report_requested = false;
-	char_t sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
+	char_t sr_defaults[CMD_STATUS_REPORT_LEN][TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
 	cmd->index = cmd_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
 
 	for (uint8_t i=0; i < CMD_STATUS_REPORT_LEN ; i++) {
@@ -271,7 +271,7 @@ stat_t sr_run_text_status_report()
 static stat_t _populate_unfiltered_status_report()
 {
 	const char_t sr_str[] = "sr";
-	char_t tmp[CMD_TOKEN_LEN+1];
+	char_t tmp[TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
 
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object
@@ -308,7 +308,7 @@ static uint8_t _populate_filtered_status_report()
 {
 	const char_t sr_str[] = "sr";
 	uint8_t has_data = false;
-	char_t tmp[CMD_TOKEN_LEN+1];
+	char_t tmp[TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
 
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object
