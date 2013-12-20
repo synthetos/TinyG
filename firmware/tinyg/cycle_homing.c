@@ -271,6 +271,9 @@ static stat_t _homing_axis_start(int8_t axis)
 	hm.min_mode = get_switch_mode(MIN_SWITCH(axis));
 	hm.max_mode = get_switch_mode(MAX_SWITCH(axis));
 
+	// un-home the axis or soft limits will trip when you try to move it
+	cm.homed[axis] = false;
+
 	if ( ((hm.min_mode & SW_HOMING_BIT) ^ (hm.max_mode & SW_HOMING_BIT)) == 0) {// one or the other must be homing
 		return (_homing_error_exit(axis));					// axis cannot be homed
 	}
