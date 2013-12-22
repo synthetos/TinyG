@@ -485,32 +485,37 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "udd","udd3", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_d[3], USER_DATA_D3 },
 
 	{ "_te","_tex",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_X], 0 },  // X target endpoint
-	{ "_te","_tey",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Y], 0 },  // Y target endpoint
-	{ "_te","_tez",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Z], 0 },  // Z target endpoint
+	{ "_te","_tey",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Y], 0 },
+	{ "_te","_tez",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Z], 0 },
 
 	{ "_tr","_trx",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_X], 0 },  // X target runtime
-	{ "_tr","_try",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_Y], 0 },  // Y target runtime
-	{ "_tr","_trz",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_Z], 0 },  // Z target runtime
+	{ "_tr","_try",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_Y], 0 },
+	{ "_tr","_trz",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_Z], 0 },
 
 	{ "_ts","_ts1",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_1], 0 },  // Motor 1 target steps
-	{ "_ts","_ts2",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_2], 0 },  // Motor 2 target steps
-	{ "_ts","_ts3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_3], 0 },  // Motor 3 target steps
-	{ "_ts","_ts4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_4], 0 },  // Motor 4 target steps
+	{ "_ts","_ts2",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_2], 0 },
+	{ "_ts","_ts3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_3], 0 },
+	{ "_ts","_ts4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_4], 0 },
 
 	{ "_ps","_ps1",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_1], 0 },// Motor 1 position steps
-	{ "_ps","_ps2",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_2], 0 },// Motor 2 position steps
-	{ "_ps","_ps3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_3], 0 },// Motor 3 position steps
-	{ "_ps","_ps4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_4], 0 },// Motor 4 position steps
+	{ "_ps","_ps2",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_2], 0 },
+	{ "_ps","_ps3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_3], 0 },
+	{ "_ps","_ps4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_4], 0 },
+
+	{ "_ds","_ds1",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.delayed_steps[MOTOR_1], 0 },// Motor 1 delayed steps
+	{ "_ds","_ds2",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.delayed_steps[MOTOR_2], 0 },
+	{ "_ds","_ds3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.delayed_steps[MOTOR_3], 0 },
+	{ "_ds","_ds4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.delayed_steps[MOTOR_4], 0 },
 
 	{ "_ns","_ns1",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_1], 0 }, // Motor 1 eNcoder steps
-	{ "_ns","_ns2",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_2], 0 }, // Motor 2 eNcoder steps
-	{ "_ns","_ns3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_3], 0 }, // Motor 3 eNcoder steps
-	{ "_ns","_ns4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_4], 0 }, // Motor 4 eNcoder steps
+	{ "_ns","_ns2",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_2], 0 },
+	{ "_ns","_ns3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_3], 0 },
+	{ "_ns","_ns4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_4], 0 },
 
 	{ "_es","_es1",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_1], 0 }, // Motor 1 error steps
-	{ "_es","_es2",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_2], 0 }, // Motor 2 error steps
-	{ "_es","_es3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_3], 0 }, // Motor 3 error steps
-	{ "_es","_es4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_4], 0 }, // Motor 4 error steps
+	{ "_es","_es2",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_2], 0 },
+	{ "_es","_es3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_3], 0 },
+	{ "_es","_es4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_4], 0 },
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
@@ -594,6 +599,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","_tr",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// target axis runtime group
 	{ "","_ts",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// target motor steps group
 	{ "","_ps",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// position motor steps group
+	{ "","_ds",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// delayed motor steps group
 	{ "","_ns",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// encoder motor steps group
 	{ "","_es",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// encoder motor error group
 
@@ -607,7 +613,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 /***** Make sure these defines line up with any changes in the above table *****/
 
-#define CMD_COUNT_GROUPS 		37		// count of simple groups
+#define CMD_COUNT_GROUPS 		38		// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 		// count of uber-groups
 
 /* <DO NOT MESS WITH THESE DEFINES> */

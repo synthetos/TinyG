@@ -544,15 +544,15 @@ static void _load_move()
  *	Microseconds - how many microseconds the segment should run 
  */
 
-stat_t st_prep_line(float steps[], float microseconds)
-//stat_t st_prep_line(float steps[], float microseconds, float encoder_error[])
+//stat_t st_prep_line(float steps[], float microseconds)
+stat_t st_prep_line(float steps[], float microseconds, float encoder_error[])
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));
-//		} else if (isinf(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));
-//		} else if (isnan(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));
-		} else if (isinf(microseconds)) { return (STAT_PREP_LINE_MOVE_TIME_IS_INFINITE);
-		} else if (isnan(microseconds)) { return (STAT_PREP_LINE_MOVE_TIME_IS_NAN);
+		} else if (isinf(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// not supposed to happen
+		} else if (isnan(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// not supposed to happen
+//		} else if (isinf(microseconds)) { return (STAT_PREP_LINE_MOVE_TIME_IS_INFINITE);
+//		} else if (isnan(microseconds)) { return (STAT_PREP_LINE_MOVE_TIME_IS_NAN);
 		} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
 	// setup segment parameters
@@ -586,7 +586,7 @@ stat_t st_prep_line(float steps[], float microseconds)
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
-		// fractional steps times the substep multipler or positional drift will occur.
+		// fractional steps times the substep multiplier or positional drift will occur.
 		// Rounding is performed to eliminate a negative bias in the int32 conversion
 		// that results in long-term negative drift. (fabs/round order doesn't matter)
 
