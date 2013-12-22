@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		397.31	// homing mods to accommodate soft limits
+#define TINYG_FIRMWARE_BUILD   		397.32	// more homing work
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -317,12 +317,12 @@ char *get_status_message(stat_t status);
 #define	STAT_JOGGING_CYCLE_FAILED 74		// jogging cycle did not complete
 #define	STAT_MACHINE_ALARMED 75				// machine is alarmed. Command not processed
 #define	STAT_LIMIT_SWITCH_HIT 76			// a limit switch was hit causing sutdown
-#define	STAT_ERROR_77 77
-#define	STAT_ERROR_78 78
-#define	STAT_ERROR_79 79
-#define	STAT_ERROR_80 80
-#define	STAT_ERROR_81 81
-#define	STAT_ERROR_82 82
+#define	STAT_HOMING_ERROR_BAD_OR_NO_AXIS 77
+#define	STAT_HOMING_ERROR_ZERO_SEARCH_VELOCITY 78
+#define	STAT_HOMING_ERROR_ZERO_LATCH_VELOCITY 79
+#define	STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IS_ZERO 80
+#define	STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF 81
+#define	STAT_HOMING_ERROR_SWITCH_MISCONFIGURATION 82
 #define	STAT_ERROR_83 83
 #define	STAT_ERROR_84 84
 #define	STAT_ERROR_85 85
