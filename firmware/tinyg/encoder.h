@@ -88,8 +88,14 @@
 #ifndef ENCODER_H_ONCE
 #define ENCODER_H_ONCE
 
-
 /**** Configs and Constants ****/
+
+/**** Macros ****/
+// used to abstract the encoder code out of the stepper so it can be managed in one place
+
+#define SET_ENCODER_SIGN(m,s)	en.en[m].step_sign = s;
+#define INCREMENT_ENCODER(m)	en.en[m].steps_run += en.en[m].step_sign;
+#define ACCUMULATE_ENCODER(m)	en.en[m].encoder_steps += en.en[m].steps_run; en.en[m].steps_run = 0;
 
 /**** Structures ****/
 
