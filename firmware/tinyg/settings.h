@@ -42,6 +42,7 @@
 
 // Machine configuration settings
 #define CHORDAL_TOLERANCE 			0.001			// chord accuracy for arc drawing
+#define SOFT_LIMIT_ENABLE			0				// 0 = off, 1 = on
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 #define MOTOR_IDLE_TIMEOUT			2.00			// seconds to maintain motor at full power before idling
 #define MOTOR_POWER_LEVEL			25				// default motor power level (ARM only)

@@ -214,6 +214,7 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	// system group settings
 	float junction_acceleration;	// centripetal acceleration max for cornering
 	float chordal_tolerance;		// arc chordal accuracy setting in mm
+	uint8_t soft_limit_enable;
 
 	// hidden system settings
 	float min_segment_len;			// line drawing resolution in mm
@@ -689,6 +690,7 @@ stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 
 	void cm_print_ja(cmdObj_t *cmd);		// global CM settings
 	void cm_print_ct(cmdObj_t *cmd);
+	void cm_print_sl(cmdObj_t *cmd);
 	void cm_print_ml(cmdObj_t *cmd);
 	void cm_print_ma(cmdObj_t *cmd);
 	void cm_print_ms(cmdObj_t *cmd);
@@ -744,6 +746,7 @@ stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 
 	#define cm_print_ja tx_print_stub		// global CM settings
 	#define cm_print_ct tx_print_stub
+	#define cm_print_sl tx_print_stub
 	#define cm_print_ml tx_print_stub
 	#define cm_print_ma tx_print_stub
 	#define cm_print_ms tx_print_stub

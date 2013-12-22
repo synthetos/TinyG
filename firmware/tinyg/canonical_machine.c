@@ -513,17 +513,19 @@ void cm_set_move_times(GCodeState_t *gcode_state)
  */
 stat_t cm_test_soft_limits(float target[])
 {
-	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		if (cm.homed[axis] != true) continue;		// don't test axes that are not homed
+	if (cm.soft_limit_enable == true) {
+		for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+			if (cm.homed[axis] != true) continue;		// don't test axes that are not homed
 
-		if (fp_EQ(cm.a[axis].travel_min, cm.a[axis].travel_max)) continue;
+			if (fp_EQ(cm.a[axis].travel_min, cm.a[axis].travel_max)) continue;
 
-		if ((cm.a[axis].travel_min > DISABLE_SOFT_LIMIT) && (target[axis] < cm.a[axis].travel_min)) {
-			return (STAT_SOFT_LIMIT_EXCEEDED);
-		}
+			if ((cm.a[axis].travel_min > DISABLE_SOFT_LIMIT) && (target[axis] < cm.a[axis].travel_min)) {
+				return (STAT_SOFT_LIMIT_EXCEEDED);
+			}
 
-		if ((cm.a[axis].travel_max > DISABLE_SOFT_LIMIT) && (target[axis] > cm.a[axis].travel_max)) {
-			return (STAT_SOFT_LIMIT_EXCEEDED);
+			if ((cm.a[axis].travel_max > DISABLE_SOFT_LIMIT) && (target[axis] > cm.a[axis].travel_max)) {
+				return (STAT_SOFT_LIMIT_EXCEEDED);
+			}
 		}
 	}
 	return (STAT_OK);
@@ -857,7 +859,6 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) return (cm_soft_alarm(status));
-//	ritorno(cm_test_soft_limits(cm.gm.target));
 
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
@@ -982,7 +983,6 @@ stat_t cm_straight_feed(float target[], float flags[])
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) return (cm_soft_alarm(status));
-//	ritorno(cm_test_soft_limits(cm.gm.target));
 
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
@@ -1840,12 +1840,14 @@ void cm_print_gdi(cmdObj_t *cmd) { text_print_int(cmd, fmt_gdi);}
 
 const char fmt_ja[] PROGMEM = "[ja]  junction acceleration%8.0f%s\n";
 const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%16.3f%s\n";
+const char fmt_sl[] PROGMEM = "[sl]  soft limit enable%12d\n";
 const char fmt_ml[] PROGMEM = "[ml]  min line segment%17.3f%s\n";
 const char fmt_ma[] PROGMEM = "[ma]  min arc segment%18.3f%s\n";
 const char fmt_ms[] PROGMEM = "[ms]  min segment time%13.0f uSec\n";
 
 void cm_print_ja(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ct(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_sl(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_sl);}
 void cm_print_ml(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ml, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ma(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ma, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ms(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ms, GET_UNITS(ACTIVE_MODEL));}
