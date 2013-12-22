@@ -566,6 +566,14 @@ stat_t st_prep_line(float steps[], float microseconds, float encoder_error[])
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
+		// Perform step correction
+		if (encoder_error[i] > STEP_CORRECTION_THRESHOLD) {
+			steps[i] += STEP_CORRECTION_AMOUNT;
+		}
+		if (encoder_error[i] < -STEP_CORRECTION_THRESHOLD) {
+			steps[i] -= STEP_CORRECTION_AMOUNT;
+		}
+
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
 		// fractional steps times the substep multiplier or positional drift will occur.
 		// Rounding is performed to eliminate a negative bias in the int32 conversion

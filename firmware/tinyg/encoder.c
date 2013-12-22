@@ -66,11 +66,10 @@ stat_t en_assertions()
 /* 
  * en_reset_encoders() - initialize encoder values and position
  *
- *	en_reset_encoder() reset the encoders at the start of a machining cycle.
- *	This sets the encoder_position to match the MODEL position. This establishes 
- *	the "step grid" relative to the current machine position. Note that 
- *	encoder_position is in integer steps, so it's not an exact representation 
- *	of machine position except if the machine is at zero. 
+ *	en_reset_encoder() sets the encoder_position to match the MODEL position. 
+ *	This establishes the "step grid" relative to the current machine position. 
+ *	Note that encoder_position is in integer steps, so it's not an exact 
+ *	representation of machine position except if the machine is at zero. 
  *
  *	Reset is called on cycle start which can have the following cases:
  *

@@ -182,8 +182,6 @@ static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 	cm.homing_state = HOMING_HOMED;
 	cm.cycle_state = CYCLE_OFF;						// required
 	cm_cycle_end();
-//+++++ DIAGNOSTIC +++++
-//	printf("Homed: posX: %6.3f, posY: %6.3f\n", (double)gm.position[AXIS_X], (double)gm.target[AXIS_Y]);
 	return (STAT_OK);
 }
 
@@ -217,7 +215,6 @@ static stat_t _homing_error_exit(int8_t axis, stat_t status)
 	cm.cycle_state = CYCLE_OFF;
 	cm_cycle_end();
 	return (STAT_HOMING_CYCLE_FAILED);			// homing state remains HOMING_NOT_HOMED
-//	return (status);
 }
 
 /* Homing axis moves - these execute in sequence for each axis

@@ -464,6 +464,7 @@ static stat_t _exec_aline_segment()
 
 	// Prep the segment for the steppers and adjust the variables for the next iteration.
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
+	// 
 	for (i=0; i<MOTORS; i++) {
 		mr.delayed_steps[i] = mr.position_steps[i];			// previous segment position becomes delayed
 		mr.position_steps[i] = mr.target_steps[i];	 		// previous segment's target becomes position
