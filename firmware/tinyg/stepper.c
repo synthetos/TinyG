@@ -536,7 +536,7 @@ stat_t st_prep_line(float steps[], float microseconds)
 //stat_t st_prep_line(float steps[], float microseconds, float encoder_error[])
 {
 	// trap conditions that would prevent queueing the line
-	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);
+	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));
 //		} else if (isinf(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));
 //		} else if (isnan(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));
 		} else if (isinf(microseconds)) { return (STAT_PREP_LINE_MOVE_TIME_IS_INFINITE);

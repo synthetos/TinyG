@@ -44,7 +44,8 @@ extern "C"{
 static stat_t _exec_aline_head(void);
 static stat_t _exec_aline_body(void);
 static stat_t _exec_aline_tail(void);
-static stat_t _exec_aline_segment(uint8_t correction_flag);
+//static stat_t _exec_aline_segment(uint8_t correction_flag);
+static stat_t _exec_aline_segment(void);
 static void _init_forward_diffs(float t0, float t2);
 
 
@@ -64,14 +65,11 @@ stat_t mp_exec_move()
 	// Manage cycle and motion state transitions
 	// Cycle auto-start for lines only
 	if (bf->move_type == MOVE_TYPE_ALINE) {
-//		if (cm.cycle_state == CYCLE_OFF) {	// testing if this can be removed
-//			cm_cycle_start();				// this should already be taken care of by G0,G1,G2,G3
-//		}
 		if (cm.motion_state == MOTION_STOP) cm_set_motion_state(MOTION_RUN);
 	}
 	if (bf->bf_func != NULL) { return (bf->bf_func(bf));} 	// run the move callback in the planner buffer
-//	return(cm_hard_alarm(STAT_INTERNAL_ERROR));				// never supposed to get here
-	return(STAT_INTERNAL_ERROR);				// never supposed to get here
+	return(cm_hard_alarm(STAT_INTERNAL_ERROR));				// never supposed to get here
+//	return(STAT_INTERNAL_ERROR);				// never supposed to get here
 }
 
 /*************************************************************************/
@@ -203,7 +201,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	if (mr.section == SECTION_BODY) { status = _exec_aline_body();} else
 	if (mr.section == SECTION_TAIL) { status = _exec_aline_tail();} else 
 	if (mr.move_state == MOVE_SKIP) { status = STAT_OK;}
-	else { return (STAT_INTERNAL_ERROR);}
+	else { return(cm_hard_alarm(STAT_INTERNAL_ERROR));}	// never supposed to get here
+//	else { return (STAT_INTERNAL_ERROR);}
 
 	// Feedhold processing. Refer to canonical_machine.h for state machine
 	// Catch the feedhold request and start the planning the hold
@@ -305,14 +304,16 @@ static stat_t _exec_aline_head()
 	if (mr.section_state == SECTION_1st_HALF) {				// concave part of accel curve (period 1)
 #ifdef __JERK_EXEC
 		mr.segment_velocity = mr.entry_velocity + (square(mr.elapsed_accel_time) * mr.jerk_div2);
-		if (_exec_aline_segment(false) == STAT_OK) { 			// set up for second half
+//		if (_exec_aline_segment(false) == STAT_OK) { 			// set up for second half
+		if (_exec_aline_segment() == STAT_OK) { 			// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = SECTION_2nd_HALF;
 			mr.elapsed_accel_time = mr.segment_accel_time / 2;	// start time from midpoint of segment
 		}
 #else
 		mr.segment_velocity += mr.forward_diff_1;
-		if (_exec_aline_segment(false) == STAT_OK) { 			// set up for second half
+//		if (_exec_aline_segment(false) == STAT_OK) { 			// set up for second half
+		if (_exec_aline_segment() == STAT_OK) { 			// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = SECTION_2nd_HALF;
 			// Here's a trick: The second half of the S starts at the end of the first,
@@ -333,7 +334,8 @@ static stat_t _exec_aline_head()
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
 #endif
-		if (_exec_aline_segment(false) == STAT_OK) {			// OK means this section is done
+//		if (_exec_aline_segment(false) == STAT_OK) {			// OK means this section is done
+		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
 			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) return(STAT_OK); // ends the move
 			mr.section = SECTION_BODY;
 			mr.section_state = SECTION_NEW;
@@ -367,7 +369,8 @@ static stat_t _exec_aline_body()
 		mr.section_state = SECTION_2nd_HALF;				// uses PERIOD_2 so last segment detection works
 	}
 	if (mr.section_state == SECTION_2nd_HALF) {				// straight part (period 3)
-		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
+//		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
+		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
 			if (fp_ZERO(mr.tail_length)) return(STAT_OK);	// ends the move
 			mr.section = SECTION_TAIL;
 			mr.section_state = SECTION_NEW;
@@ -408,14 +411,16 @@ static stat_t _exec_aline_tail()
 	if (mr.section_state == SECTION_1st_HALF) {				// convex part (period 4)
 #ifdef __JERK_EXEC
 		mr.segment_velocity = mr.cruise_velocity - (square(mr.elapsed_accel_time) * mr.jerk_div2);
-		if (_exec_aline_segment(false) == STAT_OK) {				// set up for second half
+//		if (_exec_aline_segment(false) == STAT_OK) {				// set up for second half
+		if (_exec_aline_segment() == STAT_OK) {				// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = SECTION_2nd_HALF;
 			mr.elapsed_accel_time = mr.segment_accel_time / 2;// start time from midpoint of segment
 		}
 #else
 		mr.segment_velocity += mr.forward_diff_1;
-		if (_exec_aline_segment(false) == STAT_OK) {				// set up for second half
+//		if (_exec_aline_segment(false) == STAT_OK) {				// set up for second half
+		if (_exec_aline_segment() == STAT_OK) {				// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = SECTION_2nd_HALF;
 			// Here's a trick: The second half of the S starts at the end of the first,
@@ -436,7 +441,8 @@ static stat_t _exec_aline_tail()
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
 #endif
-		return (_exec_aline_segment(true)); 					// ends the move or continues EAGAIN
+//		return (_exec_aline_segment(true)); 					// ends the move or continues EAGAIN
+		return (_exec_aline_segment()); 					// ends the move or continues EAGAIN
 	}
 	return(STAT_EAGAIN);									// should never get here
 }
@@ -444,19 +450,29 @@ static stat_t _exec_aline_tail()
 /*
  * _exec_aline_segment() - segment runner helper
  */
-static stat_t _exec_aline_segment(uint8_t correction_flag)
+//static stat_t _exec_aline_segment(uint8_t correction_flag)
+static stat_t _exec_aline_segment()
 {
 	uint8_t i;
 	float travel[AXES];
 	float steps[MOTORS];
+
+	mr.segment_count--;		// used to look for the last segment
 
 #ifdef __ORIG_CORRECTION_CODE
 
 	// Multiply computed length by the unit vector to get the contribution for each axis. 
 	// Set the target in absolute coords and compute relative steps.
 	// Don't do the endpoint correction if you are going into a hold
-	if ((correction_flag == true) && (mr.segment_count == 1) && 
+
+//	if ((correction_flag == true) && (mr.segment_count == 1) && 
+//		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
+
+	if ((mr.section == SECTION_TAIL) && 
+		(mr.section_state == SECTION_2nd_HALF) && 
+		(mr.segment_count == 0) &&
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
+
 //		printf("m[2]:%0.4f, %0.4f\n", (double)mr.gm.target[AXIS_Z], (double)mr.target[AXIS_Z]);	// +++++ DIAGNOSTIC
 		for (i=0; i<AXES; i++) {
 			mr.gm.target[i] = mr.target[i]; // correct any accumulated rounding errors in last segment
@@ -468,11 +484,25 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 		}
 	}
 #else // new error correction
+
+	if ((correction_flag == true) && (mr.segment_count == 1) &&
+	(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
+		//		printf("m[2]:%0.4f, %0.4f\n", (double)mr.gm.target[AXIS_Z], (double)mr.target[AXIS_Z]);	// +++++ DIAGNOSTIC
+		for (i=0; i<AXES; i++) {
+			mr.gm.target[i] = mr.target[i]; // correct any accumulated rounding errors in last segment
+		}
+		} else {
+		float segment_length = mr.segment_velocity * mr.segment_time;
+		for (i=0; i<AXES; i++) {
+			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * segment_length);
+		}
+	}
+
+/*
 	// Multiply computed length by the unit vector to get the contribution for each axis. 
 	// Set the target in absolute coords and compute relative steps.
 	// Don't do the endpoint correction if you are going into a hold
 	uint8_t end_flag = correction_flag;
-	
 	if ((end_flag == true) && (mr.segment_count == 1) && 
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
 
@@ -501,6 +531,7 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 //			}			
 		}
 	}
+*/
 #endif
 	for (i=0; i<AXES; i++) {
 		travel[i] = mr.gm.target[i] - mr.position[i];
@@ -523,7 +554,8 @@ static stat_t _exec_aline_segment(uint8_t correction_flag)
 		copy_axis_vector(mr.position, mr.gm.target); 	// update runtime position	
 		mr.elapsed_accel_time += mr.segment_accel_time;	// line needed by __JERK_EXEC
 	}
-	if (--mr.segment_count == 0) return (STAT_OK);		// this section has run all its segments
+//	if (--mr.segment_count == 0) return (STAT_OK);		// this section has run all its segments
+	if (mr.segment_count == 0) return (STAT_OK);		// this section has run all its segments
 	return (STAT_EAGAIN);								// this section still has more segments to run
 }
 
