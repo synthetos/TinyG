@@ -47,7 +47,7 @@
 // WARNING: Older Othermill machines use a 15deg can stack for their Z axis.
 // new machines use a stepper which has the same config as the other axis.
 //#define HAS_CANSTACK_Z_AXIS 0
-#define HAS_CANSTACK_Z_AXIS 1		// Earlier machines
+#define HAS_CANSTACK_Z_AXIS 1				// Earlier machines
 
 // *** settings.h overrides ***
 // Note: there are some commented test values below
@@ -136,14 +136,14 @@
 #define X_AXIS_MODE 			AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
 #define X_VELOCITY_MAX 			1500 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
-#define X_TRAVEL_MAX 			138					// xtr		travel between switches or crashes
 #define X_TRAVEL_MIN			0					// xtn		minimum travel for soft limits
+#define X_TRAVEL_MAX 			138					// xtr		travel between switches or crashes
 #define X_JERK_MAX 				JERK_MAX			// xjm
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SEARCH_VELOCITY 		(X_FEEDRATE_MAX/3)	// xsv
-#define X_LATCH_VELOCITY 		LATCH_VELOCITY	// xlv		mm/min
+#define X_LATCH_VELOCITY 		LATCH_VELOCITY		// xlv		mm/min
 #define X_LATCH_BACKOFF 		5					// xlb		mm
 #define X_ZERO_BACKOFF 			0					// xzb		mm
 #define X_JERK_HOMING			JERK_HOMING			// xjh
@@ -151,8 +151,8 @@
 #define Y_AXIS_MODE 			AXIS_STANDARD
 #define Y_VELOCITY_MAX 			X_VELOCITY_MAX
 #define Y_FEEDRATE_MAX 			Y_VELOCITY_MAX
-#define Y_TRAVEL_MAX 			115
 #define Y_TRAVEL_MIN			0
+#define Y_TRAVEL_MAX 			115
 #define Y_JERK_MAX 				JERK_MAX
 #define Y_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN		SW_MODE_HOMING
@@ -170,8 +170,8 @@
 #define Z_VELOCITY_MAX 			X_VELOCITY_MAX
 #endif
 #define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
-#define Z_TRAVEL_MAX 			0
 #define Z_TRAVEL_MIN			-75
+#define Z_TRAVEL_MAX 			0
 #define Z_JERK_MAX 				JERK_MAX			// 200 million
 #define Z_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED

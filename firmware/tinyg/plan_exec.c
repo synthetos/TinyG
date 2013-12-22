@@ -68,7 +68,6 @@ stat_t mp_exec_move()
 	}
 	if (bf->bf_func != NULL) { return (bf->bf_func(bf));} 	// run the move callback in the planner buffer
 	return(cm_hard_alarm(STAT_INTERNAL_ERROR));				// never supposed to get here
-//	return(STAT_INTERNAL_ERROR);				// never supposed to get here
 }
 
 /*************************************************************************/
@@ -201,7 +200,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	if (mr.section == SECTION_TAIL) { status = _exec_aline_tail();} else 
 	if (mr.move_state == MOVE_SKIP) { status = STAT_OK;}
 	else { return(cm_hard_alarm(STAT_INTERNAL_ERROR));}	// never supposed to get here
-//	else { return (STAT_INTERNAL_ERROR);}
 
 	// Feedhold processing. Refer to canonical_machine.h for state machine
 	// Catch the feedhold request and start the planning the hold
@@ -446,39 +444,14 @@ static stat_t _exec_aline_tail()
 static stat_t _exec_aline_segment()
 {
 	uint8_t i;
-//	float travel[AXES];
 	float steps[MOTORS];
 
+	// Either compute the new segment target or use the section endpoints
+	// Don't do the endpoint correction if you are going into a hold
+
 	mr.segment_count--;		// used to look for the last segment
-
-#ifdef __ORIG_CORRECTION_CODE
-
-	// Multiply computed length by the unit vector to get the contribution for each axis. 
-	// Set the target in absolute coords and compute relative steps.
-	// Don't do the endpoint correction if you are going into a hold
-	if ((mr.section == SECTION_TAIL) && 
-		(mr.section_state == SECTION_2nd_HALF) && 
-		(mr.segment_count == 0) &&
-		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-
-//		printf("m[2]:%0.4f, %0.4f\n", (double)mr.gm.target[AXIS_Z], (double)mr.target[AXIS_Z]);	// +++++ DIAGNOSTIC
-		for (i=0; i<AXES; i++) {
-			mr.gm.target[i] = mr.target[i]; // correct any accumulated rounding errors in last segment
-		}
-	} else {
-		float segment_length = mr.segment_velocity * mr.segment_time;
-		for (i=0; i<AXES; i++) {
-			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * segment_length);
-		}
-	}
-#else // new error correction
-
-	// Multiply computed length by the unit vector to get the contribution for each axis.
-	// Set the target in absolute coords and compute relative steps.
-	// Don't do the endpoint correction if you are going into a hold
 	if ((mr.section_state == SECTION_2nd_HALF) && (mr.segment_count == 0) &&
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-
 		for (i=0; i<AXES; i++) {
 			mr.gm.target[i] = mr.section_target[mr.section][i]; // correct any accumulated rounding errors in last segment
 		}
@@ -488,21 +461,6 @@ static stat_t _exec_aline_segment()
 			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * segment_length);
 		}
 	}
-#endif
-/*
-	for (i=0; i<AXES; i++) {
-		travel[i] = mr.gm.target[i] - mr.position[i];
-	}
-	// prep the segment for the steppers and adjust the variables for the next iteration
-	ik_kinematics(travel, steps);
-	if (st_prep_line(steps, mr.microseconds) == STAT_OK) {
-		copy_axis_vector(mr.position, mr.gm.target); 	// update runtime position	
-		mr.elapsed_accel_time += mr.segment_accel_time;	// line needed by __JERK_EXEC
-	}
-//	if (--mr.segment_count == 0) return (STAT_OK);		// this section has run all its segments
-	if (mr.segment_count == 0) return (STAT_OK);		// this section has run all its segments
-	return (STAT_EAGAIN);								// this section still has more segments to run
-*/
 
 	// Prep the segment for the steppers and adjust the variables for the next iteration.
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
@@ -516,6 +474,7 @@ static stat_t _exec_aline_segment()
 	for (i=0; i<MOTORS; i++) {								  // NB: This only works for Cartesian kinematics
 		steps[i] = mr.target_steps[i] - mr.position_steps[i]; // Otherwise must transform the travel distance
 	}														  // Verify this assumption (pretty sure it's true)
+
 	// Call the stepper prep function. Return if there's an error
 	ritorno(st_prep_line(steps, mr.microseconds, mr.encoder_error));
 	copy_axis_vector(mr.position, mr.gm.target); 			// update position from target

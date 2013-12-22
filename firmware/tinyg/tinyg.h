@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		397.34	// some encoder and reporting enhancements
+#define TINYG_FIRMWARE_BUILD   		397.35	// soft limit $clear is working - needs more testing
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -52,7 +52,6 @@
 
 /****** COMPILE-TIME SETTINGS ******/
 
-//#define __ORIG_CORRECTION_CODE
 #define __JERK_EXEC		// comment to use forward difference based exec vs jerk computed exec
 //#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
 

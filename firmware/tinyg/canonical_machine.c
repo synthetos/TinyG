@@ -617,10 +617,10 @@ stat_t cm_soft_alarm(stat_t status)
 
 stat_t cm_clear(cmdObj_t *cmd)				// clear soft alarm
 {
-	if (cm.cycle_state != CYCLE_OFF) {
-		cm.machine_state = MACHINE_CYCLE;
-	} else {
+	if (cm.cycle_state == CYCLE_OFF) {
 		cm.machine_state = MACHINE_PROGRAM_STOP;
+	} else {
+		cm.machine_state = MACHINE_CYCLE;
 	}
 	return (STAT_OK);
 }

@@ -129,6 +129,7 @@ static stat_t _json_parser_kernal(char_t *str)
 	if (cmd->objtype == TYPE_NULL){					// means GET the value
 		ritorno(cmd_get(cmd));						// ritorno returns w/status on any errors
 	} else {
+		if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED);
 		ritorno(cmd_set(cmd));						// set value or call a function (e.g. gcode)
 		cmd_persist(cmd);
 	}
@@ -209,7 +210,8 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 	
 	// numbers
 	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
-		cmd->value = strtof(*pstr, &tmp);			// tmp is the end pointer
+//		cmd->value = strtof(*pstr, &tmp);			// tmp is the end pointer
+		cmd->value = (float)strtod(*pstr, &tmp);	// tmp is the end pointer
 		if(tmp == *pstr) { return (STAT_BAD_NUMBER_FORMAT);}
 		cmd->objtype = TYPE_FLOAT;
 

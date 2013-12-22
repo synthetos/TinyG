@@ -32,6 +32,7 @@
 #include "text_parser.h"
 #include "json_parser.h"
 #include "report.h"
+#include "help.h"
 #include "xio.h"					// for ASCII char definitions
 
 #ifdef __cplusplus
@@ -67,11 +68,17 @@ stat_t text_parser(char_t *str)
 	cmdObj_t *cmd = cmd_reset_list();		// returns first object in the body
 	stat_t status = STAT_OK;
 
-	// pre-process the command 
+	// trap special displays
 	if (str[0] == '?') {					// handle status report case
 		sr_run_text_status_report();
 		return (STAT_OK);
 	}
+	if (str[0] == 'H') {					// print help screens
+		help_general((cmdObj_t *)NULL);
+		return (STAT_OK);
+	}
+
+	// pre-process the command
 	if ((str[0] == '$') && (str[1] == NUL)) { // treat a lone $ as a sys request
 		strcat(str,"sys");
 	}
@@ -83,6 +90,7 @@ stat_t text_parser(char_t *str)
 			return (STAT_OK);				// return for uber-group displays so they don't print twice
 		}
 	} else { 								// process SET and RUN commands
+		if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED);
 		status = cmd_set(cmd);				// set (or run) single value
 		cmd_persist(cmd);					// conditionally persist depending on flags in array
 	}
