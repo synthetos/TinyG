@@ -216,7 +216,6 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	uint8_t move_state;				// state of the overall move
 	uint8_t section;				// what section is the move in?
 	uint8_t section_state;			// state within a move section
-	uint8_t last_segment;
 
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float target[AXES];				// final target for bf (used to correct rounding errors)

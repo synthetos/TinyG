@@ -387,29 +387,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g59","g59a",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_A], G59_A_OFFSET },
 	{ "g59","g59b",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_B], G59_B_OFFSET },
 	{ "g59","g59c",_fip, 3, cm_print_cofs, get_flu, set_flu,(float *)&cm.offset[G59][AXIS_C], G59_C_OFFSET },
-/*
- // HACK: use these registers since I can't get the command table to load correctly (Estee)
-	{ "g57","g57x",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_X], G57_X_OFFSET },
-	{ "g57","g57y",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_Y], G57_Y_OFFSET },
-	{ "g57","g57z",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_Z], G57_Z_OFFSET },
-	{ "g57","g57a",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_A], G57_A_OFFSET },
-	{ "g57","g57b",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_B], G57_B_OFFSET },
-	{ "g57","g57c",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G57][AXIS_C], G57_C_OFFSET },
-
-	{ "g58","g58x",_fip, 0, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G58][AXIS_X], G58_X_OFFSET },
-	{ "g58","g58y",_fip, 0, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G58][AXIS_Y], G58_Y_OFFSET },
-	{ "g58","g58a",_fip, 0, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G58][AXIS_A], G58_A_OFFSET },
-	{ "g58","g58z",_fip, 0, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G58][AXIS_Z], G58_Z_OFFSET },
-	{ "g58","g58b",_fip, 0, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G58][AXIS_B], G58_B_OFFSET },
-	{ "g58","g58c",_fip, 0, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G58][AXIS_C], G58_C_OFFSET },
-
-	{ "g59","g59x",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_X], G59_X_OFFSET },
-	{ "g59","g59y",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_Y], G59_Y_OFFSET },
-	{ "g59","g59z",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_Z], G59_Z_OFFSET },
-	{ "g59","g59a",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_A], G59_A_OFFSET },
-	{ "g59","g59b",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_B], G59_B_OFFSET },
-	{ "g59","g59c",_fip, 3, cm_print_cofs, get_data, set_data,(float *)&cm.offset[G59][AXIS_C], G59_C_OFFSET },
-*/
 
 	{ "g92","g92x",_fin, 3, cm_print_cofs, get_flu, set_nul,(float *)&cm.gmx.origin_offset[AXIS_X], 0 },// G92 handled differently
 	{ "g92","g92y",_fin, 3, cm_print_cofs, get_flu, set_nul,(float *)&cm.gmx.origin_offset[AXIS_Y], 0 },

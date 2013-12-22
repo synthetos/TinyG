@@ -44,7 +44,6 @@ extern "C"{
 static stat_t _exec_aline_head(void);
 static stat_t _exec_aline_body(void);
 static stat_t _exec_aline_tail(void);
-//static stat_t _exec_aline_segment(uint8_t correction_flag);
 static stat_t _exec_aline_segment(void);
 static void _init_forward_diffs(float t0, float t2);
 
@@ -304,7 +303,6 @@ static stat_t _exec_aline_head()
 	if (mr.section_state == SECTION_1st_HALF) {				// concave part of accel curve (period 1)
 #ifdef __JERK_EXEC
 		mr.segment_velocity = mr.entry_velocity + (square(mr.elapsed_accel_time) * mr.jerk_div2);
-//		if (_exec_aline_segment(false) == STAT_OK) { 			// set up for second half
 		if (_exec_aline_segment() == STAT_OK) { 			// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = SECTION_2nd_HALF;
@@ -312,7 +310,6 @@ static stat_t _exec_aline_head()
 		}
 #else
 		mr.segment_velocity += mr.forward_diff_1;
-//		if (_exec_aline_segment(false) == STAT_OK) { 			// set up for second half
 		if (_exec_aline_segment() == STAT_OK) { 			// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = SECTION_2nd_HALF;
@@ -334,7 +331,6 @@ static stat_t _exec_aline_head()
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
 #endif
-//		if (_exec_aline_segment(false) == STAT_OK) {			// OK means this section is done
 		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
 			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) return(STAT_OK); // ends the move
 			mr.section = SECTION_BODY;
@@ -369,7 +365,6 @@ static stat_t _exec_aline_body()
 		mr.section_state = SECTION_2nd_HALF;				// uses PERIOD_2 so last segment detection works
 	}
 	if (mr.section_state == SECTION_2nd_HALF) {				// straight part (period 3)
-//		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
 		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
 			if (fp_ZERO(mr.tail_length)) return(STAT_OK);	// ends the move
 			mr.section = SECTION_TAIL;
@@ -411,7 +406,6 @@ static stat_t _exec_aline_tail()
 	if (mr.section_state == SECTION_1st_HALF) {				// convex part (period 4)
 #ifdef __JERK_EXEC
 		mr.segment_velocity = mr.cruise_velocity - (square(mr.elapsed_accel_time) * mr.jerk_div2);
-//		if (_exec_aline_segment(false) == STAT_OK) {				// set up for second half
 		if (_exec_aline_segment() == STAT_OK) {				// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = SECTION_2nd_HALF;
@@ -419,7 +413,6 @@ static stat_t _exec_aline_tail()
 		}
 #else
 		mr.segment_velocity += mr.forward_diff_1;
-//		if (_exec_aline_segment(false) == STAT_OK) {				// set up for second half
 		if (_exec_aline_segment() == STAT_OK) {				// set up for second half
 			mr.segment_count = (uint32_t)mr.segments;
 			mr.section_state = SECTION_2nd_HALF;
@@ -441,7 +434,6 @@ static stat_t _exec_aline_tail()
 		mr.segment_velocity += mr.forward_diff_1;
 		mr.forward_diff_1 += mr.forward_diff_2;
 #endif
-//		return (_exec_aline_segment(true)); 					// ends the move or continues EAGAIN
 		return (_exec_aline_segment()); 					// ends the move or continues EAGAIN
 	}
 	return(STAT_EAGAIN);									// should never get here
@@ -450,7 +442,7 @@ static stat_t _exec_aline_tail()
 /*
  * _exec_aline_segment() - segment runner helper
  */
-//static stat_t _exec_aline_segment(uint8_t correction_flag)
+
 static stat_t _exec_aline_segment()
 {
 	uint8_t i;
@@ -485,13 +477,13 @@ static stat_t _exec_aline_segment()
 	}
 #else // new error correction
 
-	if ((correction_flag == true) && (mr.segment_count == 1) &&
-	(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-		//		printf("m[2]:%0.4f, %0.4f\n", (double)mr.gm.target[AXIS_Z], (double)mr.target[AXIS_Z]);	// +++++ DIAGNOSTIC
+	if ((mr.section_state == SECTION_2nd_HALF) && (mr.segment_count == 0) &&
+		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
+
 		for (i=0; i<AXES; i++) {
-			mr.gm.target[i] = mr.target[i]; // correct any accumulated rounding errors in last segment
+			mr.gm.target[i] = mr.section_target[mr.section][i]; // correct any accumulated rounding errors in last segment
 		}
-		} else {
+	} else {
 		float segment_length = mr.segment_velocity * mr.segment_time;
 		for (i=0; i<AXES; i++) {
 			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * segment_length);
