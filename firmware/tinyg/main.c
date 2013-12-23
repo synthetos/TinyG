@@ -29,6 +29,7 @@
 #include "report.h"
 #include "planner.h"
 #include "stepper.h"
+#include "encoder.h"
 #include "network.h"
 #include "switch.h"
 #include "test.h"
