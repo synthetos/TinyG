@@ -221,9 +221,15 @@ enum prepBufferState {
 //#define DDA_SUBSTEPS				(float)100000	// 100,000 accumulates substeps to 6 decimal places
 
 /* Step correction settings
+ *	Step correction settings determine how the encoder error is fed back to correct position.
+ *	Since the and step error are running 2 segments behind the current segment you have to be careful 
+ *	not to overcompensate. The threshold determines if a correction should be applied, and the amount
+ *	is how much. If threshold is to small and/or amount too large you will get a runaway correction
+ *	and error will grow instead of shrink
  */
-#define STEP_CORRECTION_THRESHOLD	(float)1.0		// magnitude of step error to apply correction 
-#define STEP_CORRECTION_AMOUNT		(float)0.1		// step correction that can be applied in a single cycle
+#define STEP_CORRECTION_THRESHOLD	(float)1.01		// magnitude of step error to apply correction 
+#define STEP_CORRECTION_AMOUNT		(float)0.10		// step correction to apply in a single segment
+#define STEP_CORRECTION_SAMPLE_RATE	5				// number of segments to wait between error samples
 
 /*
  * Stepper control structures
@@ -283,7 +289,6 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 // Must be careful about volatiles in this one
 
 typedef struct stPrepMotor {
-//	uint8_t cycle_start;			// new cycle: reset stepper on its first movement
 	uint8_t direction_change;		// set true if direction changed
 	int8_t step_sign;				// set to +1 or -1 for encoders
 	int8_t direction;				// travel direction corrected for polarity
@@ -294,10 +299,7 @@ typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integrity
 	volatile uint8_t exec_state;	// move execution state
 	uint8_t move_type;				// move type
-
-//	float correction_amount;		// step correction that can be applied to a segment
-//	uint32_t correction_backoff;
-//	uint32_t correction_backoff;
+	uint8_t correction_samples;		// down count for sample rate
 	
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
@@ -318,7 +320,8 @@ uint8_t stepper_isbusy(void);
 void st_reset(void);
 void st_cycle_start(void);
 void st_cycle_end(void);
-
+stat_t st_clc(cmdObj_t *cmd);
+	
 void st_energize_motors(void);
 void st_deenergize_motors(void);
 void st_set_motor_power(const uint8_t motor);
@@ -327,7 +330,7 @@ stat_t st_motor_power_callback(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(float microseconds);
-stat_t st_prep_line(float steps[], float microseconds, float encoder_error[]);
+stat_t st_prep_line(float steps[], float microseconds, float step_error[]);
 
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);

@@ -98,8 +98,9 @@ static void _application_init(void)
 	rtc_init();						// real time counter
 	xio_init();						// xmega io subsystem
 	stepper_init(); 				// stepper subsystem 				- must precede gpio_init()
+	encoder_init();					// virtual encoders
 	switch_init();					// switches
-	//	gpio_init();					// parallel IO
+//	gpio_init();					// parallel IO
 	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()
 
 	// application sub-systems
@@ -217,8 +218,8 @@ static const char stat_79[] PROGMEM = "Homing Error - Latch velocity is zero";
 static const char stat_80[] PROGMEM = "Homing Error - Travel min/max is zero";
 static const char stat_81[] PROGMEM = "Homing Error - Negative latch backoff";
 static const char stat_82[] PROGMEM = "Homing Error - Homing switches misconfigured";
-static const char stat_83[] PROGMEM = "83";
-static const char stat_84[] PROGMEM = "84";
+static const char stat_83[] PROGMEM = "st_prep_line() move time is infinite";
+static const char stat_84[] PROGMEM = "st_prep_line() move time is NAN";
 static const char stat_85[] PROGMEM = "85";
 static const char stat_86[] PROGMEM = "86";
 static const char stat_87[] PROGMEM = "87";
@@ -239,13 +240,12 @@ static const char stat_100[] PROGMEM = "Generic assertion failure";
 static const char stat_101[] PROGMEM = "Generic exception report";
 static const char stat_102[] PROGMEM = "Memory fault detected";
 static const char stat_103[] PROGMEM = "Stack overflow detected";
-static const char stat_104[] PROGMEM = "Controller assertion failure";
-static const char stat_105[] PROGMEM = "Canonical machine assertion failure";
-static const char stat_106[] PROGMEM = "Planner assertion failure";
-static const char stat_107[] PROGMEM = "Stepper assertion failure";
-static const char stat_108[] PROGMEM = "Extended IO assertion failure";
-static const char stat_109[] PROGMEM = "st_prep_line() move time is infinite";
-static const char stat_110[] PROGMEM = "st_prep_line() move time is NAN";
+static const char stat_104[] PROGMEM = "Extended IO assertion failure";
+static const char stat_105[] PROGMEM = "Controller assertion failure";
+static const char stat_106[] PROGMEM = "Canonical machine assertion failure";
+static const char stat_107[] PROGMEM = "Planner assertion failure";
+static const char stat_108[] PROGMEM = "Stepper assertion failure";
+static const char stat_109[] PROGMEM = "Encoder assertion failure";
 
 static const char *const stat_msg[] PROGMEM = {
 	stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
@@ -258,8 +258,7 @@ static const char *const stat_msg[] PROGMEM = {
 	stat_70, stat_71, stat_72, stat_73, stat_74, stat_75, stat_76, stat_77, stat_78, stat_79,
 	stat_80, stat_81, stat_82, stat_83, stat_84, stat_85, stat_86, stat_87, stat_88, stat_89,
 	stat_90, stat_91, stat_92, stat_93, stat_94, stat_95, stat_96, stat_97, stat_98, stat_99,
-	stat_100, stat_101, stat_102, stat_103, stat_104, stat_105, stat_106, stat_107, stat_108, stat_109,
-	stat_110
+	stat_100, stat_101, stat_102, stat_103, stat_104, stat_105, stat_106, stat_107, stat_108, stat_109
 };
 
 char *get_status_message(stat_t status)

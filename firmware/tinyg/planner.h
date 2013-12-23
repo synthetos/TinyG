@@ -228,10 +228,8 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
 	float position_steps[MOTORS];	// current MR position (target from previous segment)
 	float delayed_steps[MOTORS];	// will align with next encoder sample (target from 2nd previous segment)
-
 	float encoder_steps[MOTORS];	// encoder position in steps - should be same as position_delayed
-	float encoder_error[MOTORS];	// difference between encoder_steps and position_delayed
-//	float encoder_correction[MOTORS];// encoder feedback error correction in fractional steps
+	float step_error[MOTORS];		// difference between encoder_steps and delayed_steps
 
 	float head_length;				// copies of bf variables of same name
 	float body_length;
@@ -245,8 +243,6 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float midpoint_acceleration;	// JERK BASED EXEC CODE
 	float jerk;						// max linear jerk
 	float jerk_div2;				// JERK BASED EXEC CODE
-
-//	float length;					// length of line in mm
 
 	float segments;					// number of segments in arc or blend
 	uint32_t segment_count;			// count of running segments
@@ -321,6 +317,8 @@ void mp_zero_segment_velocity(void);
 uint8_t mp_get_runtime_busy(void);
 
 // plan_exec.c functions
+void mp_init_runtime(void);
+void mp_reset_step_counts(void);
 stat_t mp_exec_move(void);
 stat_t mp_exec_aline(mpBuf_t *bf);
 void mp_print_motor_position(const uint8_t motor);

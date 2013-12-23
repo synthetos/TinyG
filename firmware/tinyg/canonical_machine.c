@@ -792,6 +792,7 @@ void cm_set_axis_origin(uint8_t axis, const float position)
 	cm.gmx.position[axis] = position;
 	cm.gm.target[axis] = position;
 	mp_set_planner_position(axis, position);
+	mp_reset_step_counts();	// step counters are in motor space: resets all step counters
 	en_reset_encoders();	// encoders are in motor space: resets all encoders accordingly
 }
 

@@ -70,8 +70,8 @@
 #undef	COM_ENABLE_QR
 #define COM_ENABLE_QR				true
 
-//#undef 	QR_VERBOSITY
-//#define QR_VERBOSITY				QR_SINGLE
+#undef 	QR_VERBOSITY
+#define QR_VERBOSITY				QR_SINGLE
 
 #undef COM_ENABLE_FLOW_CONTROL
 #define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON
@@ -110,7 +110,7 @@
 #define M2_MOTOR_MAP 			AXIS_Z
 #if HAS_CANSTACK_Z_AXIS
 #define M2_STEP_ANGLE 			15
-#define M2_TRAVEL_PER_REV 		1.27
+#define M2_TRAVEL_PER_REV 		1.27254
 #else
 #define M2_STEP_ANGLE 			1.8
 #define M2_TRAVEL_PER_REV 		5.08

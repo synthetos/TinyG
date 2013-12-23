@@ -117,10 +117,10 @@ extern enEncoders_t en;
 /**** FUNCTION PROTOTYPES ****/
 
 void encoder_init(void);
-stat_t en_assertions(void);
-void en_reset_encoders(void);
-int32_t en_sample_encoder(uint8_t motor);
-void en_sample_encoders(int32_t flag);
+void encoder_init_assertions(void);
+stat_t encoder_test_assertions(void);
 
+void en_reset_encoders(void);
+int32_t en_read_encoder(uint8_t motor);
 
 #endif	// End of include guard: ENCODER_H_ONCE

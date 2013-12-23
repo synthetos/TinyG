@@ -146,6 +146,22 @@ stat_t mp_exec_move()
  *	Note: For a direct math implementation see build 357.xx or earlier
  *		  Builds 358 onward have only forward difference code
  */
+
+void mp_init_runtime()
+{
+	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
+	planner_init_assertions();
+}
+
+void mp_reset_step_counts()
+{
+	for (uint8_t i=0; i < MOTORS; i++) {
+		mr.target_steps[i] = 0;
+		mr.position_steps[i] = 0;
+		mr.delayed_steps[i] = 0;		
+	}
+}
+
 stat_t mp_exec_aline(mpBuf_t *bf)
 {
 	if (bf->move_state == MOVE_OFF) { return (STAT_NOOP);} 
@@ -439,6 +455,12 @@ static stat_t _exec_aline_tail()
 
 /*
  * _exec_aline_segment() - segment runner helper
+ *
+ * NOTE ON STEP ERROR CORRECTION:
+ * 
+ *	The step_error term is positive if the calculated target steps are > the encoder reading.
+ *	(Note that the target value must be delayed by 2 segments to align with the encoder reading,
+ *	hence the delayed_steps term).
  */
 
 static stat_t _exec_aline_segment()
@@ -464,12 +486,21 @@ static stat_t _exec_aline_segment()
 
 	// Prep the segment for the steppers and adjust the variables for the next iteration.
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
-	// 
+
 	for (i=0; i<MOTORS; i++) {
 		mr.delayed_steps[i] = mr.position_steps[i];			// previous segment position becomes delayed
 		mr.position_steps[i] = mr.target_steps[i];	 		// previous segment's target becomes position
-		mr.encoder_steps[i] = en_sample_encoder(i);			// get the current encoder position
-		mr.encoder_error[i] = mr.encoder_steps[i] - (int32_t)mr.delayed_steps[i];
+		mr.encoder_steps[i] = en_read_encoder(i);			// get the current encoder position
+//		mr.step_error[i] = mr.delayed_steps[i] - mr.encoder_steps[i];
+
+//		mr.step_error[i] = -(mr.encoder_steps[i] - mr.delayed_steps[i]); // NB: Needed for starting the delay pipeline
+
+/* last night's style */
+		mr.step_error[i] = mr.encoder_steps[i] - (int32_t)mr.delayed_steps[i];
+		mr.step_error[i] = mr.encoder_steps[i] - mr.delayed_steps[i];
+		if (mr.delayed_steps[i] < 0) {						
+			mr.step_error[i] = -mr.step_error[i];
+		}
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);
 	for (i=0; i<MOTORS; i++) {								  // NB: This only works for Cartesian kinematics
@@ -477,7 +508,7 @@ static stat_t _exec_aline_segment()
 	}														  // Verify this assumption (pretty sure it's true)
 
 	// Call the stepper prep function. Return if there's an error
-	ritorno(st_prep_line(steps, mr.microseconds, mr.encoder_error));
+	ritorno(st_prep_line(steps, mr.microseconds, mr.step_error));
 	copy_axis_vector(mr.position, mr.gm.target); 			// update position from target
 	mr.elapsed_accel_time += mr.segment_accel_time;			// line needed by jerk-based exec
 															// NB: ignored if running the body

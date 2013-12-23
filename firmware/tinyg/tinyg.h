@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		397.36	// soft limit enable/disable switch
+#define TINYG_FIRMWARE_BUILD   		397.37	// checkpoint on error correction
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -322,8 +322,8 @@ char *get_status_message(stat_t status);
 #define	STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IS_ZERO 80
 #define	STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF 81
 #define	STAT_HOMING_ERROR_SWITCH_MISCONFIGURATION 82
-#define	STAT_ERROR_83 83
-#define	STAT_ERROR_84 84
+#define	STAT_PREP_LINE_MOVE_TIME_IS_INFINITE 83
+#define	STAT_PREP_LINE_MOVE_TIME_IS_NAN 84
 #define	STAT_ERROR_85 85
 #define	STAT_ERROR_86 86
 #define	STAT_ERROR_87 87
@@ -345,12 +345,11 @@ char *get_status_message(stat_t status);
 #define STAT_GENERIC_EXCEPTION_REPORT 101	// used for test
 #define	STAT_MEMORY_FAULT 102				// generic memory corruption detected by magic numbers
 #define	STAT_STACK_OVERFLOW 103
-#define	STAT_CONTROLLER_ASSERTION_FAILURE 104
-#define	STAT_CANONICAL_MACHINE_ASSERTION_FAILURE 105
-#define	STAT_PLANNER_ASSERTION_FAILURE 106
-#define	STAT_STEPPER_ASSERTION_FAILURE 107
-#define	STAT_XIO_ASSERTION_FAILURE 108
-#define	STAT_PREP_LINE_MOVE_TIME_IS_INFINITE 109
-#define	STAT_PREP_LINE_MOVE_TIME_IS_NAN 110
+#define	STAT_XIO_ASSERTION_FAILURE 104
+#define	STAT_CONTROLLER_ASSERTION_FAILURE 105
+#define	STAT_CANONICAL_MACHINE_ASSERTION_FAILURE 106
+#define	STAT_PLANNER_ASSERTION_FAILURE 107
+#define	STAT_STEPPER_ASSERTION_FAILURE 108
+#define	STAT_ENCODER_ASSERTION_FAILURE 109
 
 #endif // End of include guard: TINYG2_H_ONCE

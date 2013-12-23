@@ -148,8 +148,8 @@ uint8_t stepper_isbusy()
 void st_reset()
 {
 	for (uint8_t i=0; i<MOTORS; i++) {
-		st_pre.mot[MOTOR_1].direction_change = true;
-		st_run.mot[MOTOR_1].substep_accumulator = 0;			// will become max negative during per-motor setup;
+		st_pre.mot[i].direction_change = true;
+		st_run.mot[i].substep_accumulator = 0;			// will become max negative during per-motor setup;
 	}
 //	en_reset_encoders();
 }
@@ -168,6 +168,14 @@ void st_cycle_start(void)
 void st_cycle_end(void)
 {
 	mp_print_motor_positions();
+}
+
+stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
+{
+	st_reset();
+	en_reset_encoders();
+	mp_init_runtime();
+	return(STAT_OK);
 }
 
 /*
@@ -528,7 +536,7 @@ static void _load_move()
  *	Microseconds - how many microseconds the segment should run 
  */
 
-stat_t st_prep_line(float steps[], float microseconds, float encoder_error[])
+stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));
@@ -567,13 +575,24 @@ stat_t st_prep_line(float steps[], float microseconds, float encoder_error[])
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 		// Perform step correction
-		if (encoder_error[i] > STEP_CORRECTION_THRESHOLD) {
-			steps[i] += STEP_CORRECTION_AMOUNT;
-		}
-		if (encoder_error[i] < -STEP_CORRECTION_THRESHOLD) {
+//		if ((step_error[i] > STEP_CORRECTION_THRESHOLD) || (step_error[i] < -STEP_CORRECTION_THRESHOLD))  {
+//			steps[i] -= STEP_CORRECTION_AMOUNT;
+//		}
+/*
+		if (step_error[i] > STEP_CORRECTION_THRESHOLD) {
 			steps[i] -= STEP_CORRECTION_AMOUNT;
 		}
-
+		if (step_error[i] < -STEP_CORRECTION_THRESHOLD) {
+			steps[i] += STEP_CORRECTION_AMOUNT;
+		}
+*/
+/* last night's style */
+		if (--st_pre.correction_samples < 0) {
+			st_pre.correction_samples = STEP_CORRECTION_SAMPLE_RATE;
+			if (step_error[i] > STEP_CORRECTION_THRESHOLD) steps[i] += STEP_CORRECTION_AMOUNT;
+			if (step_error[i] < -STEP_CORRECTION_THRESHOLD) steps[i] -= STEP_CORRECTION_AMOUNT;
+		}
+		
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
 		// fractional steps times the substep multiplier or positional drift will occur.
 		// Rounding is performed to eliminate a negative bias in the int32 conversion

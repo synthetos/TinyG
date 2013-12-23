@@ -36,8 +36,7 @@
         <InterfaceProperties>
           <JtagEnableExtResetOnStartSession>false</JtagEnableExtResetOnStartSession>
         </InterfaceProperties>
-        <InterfaceName>
-        </InterfaceName>
+        <InterfaceName>PDI</InterfaceName>
       </ToolOptions>
     </com_atmel_avrdbg_tool_simulator>
     <AsfFrameworkConfig>

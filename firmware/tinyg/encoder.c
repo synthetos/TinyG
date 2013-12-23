@@ -48,42 +48,34 @@ enEncoders_t en;
 void encoder_init()
 {
 	memset(&en, 0, sizeof(en));		// clear all values, pointers and status
+	encoder_init_assertions();
+}
+
+/*
+ * encoder_init_assertions() - initialize encoder assertions
+ * encoder_test_assertions() - test assertions, return error code if violation exists
+ */
+
+void encoder_init_assertions()
+{
 	en.magic_end = MAGICNUM;
 	en.magic_start = MAGICNUM;
 }
 
-/*
- * en_assertions() - test assertions, return error code if violation exists
- */
-
-stat_t en_assertions()
+stat_t encoder_test_assertions()
 {
-	if (en.magic_end   != MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
-	if (en.magic_start != MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
+	if (en.magic_end   != MAGICNUM) return (STAT_ENCODER_ASSERTION_FAILURE);
+	if (en.magic_start != MAGICNUM) return (STAT_ENCODER_ASSERTION_FAILURE);
 	return (STAT_OK);
 }
 
 /* 
- * en_reset_encoders() - initialize encoder values and position
+ * en_reset_encoders() - set encoder values to current initial position
  *
  *	en_reset_encoder() sets the encoder_position to match the MODEL position. 
  *	This establishes the "step grid" relative to the current machine position. 
  *	Note that encoder_position is in integer steps, so it's not an exact 
  *	representation of machine position except if the machine is at zero. 
- *
- *	Reset is called on cycle start which can have the following cases:
- *
- *	  -	New cycle from G0. Position and target from Gcode model (MODEL). (canonical_machine, cm_straight_traverse()
- *	  -	New cycle from G1. Position and target from Gcode model (MODEL). (canonical_machine, cm_straight_feed()
- *	  -	New cycle from G2/G3. Position &target from Gcode model (MODEL). (plan_arc.c,  cm_arc_feed()
- *
- *	The above is also true of cycle starts called from within homing, probing, jogging or other canned cycles.
- *
- *	  - Cycle (re)start from feedhold. Position and target from runtime exec (RUNTIME);
- *		(canonical_machine.c, cm_request_cycle_start() )		
- *
- *	  - mp_exec_move() can also perform a cycle start, but wouldn't this always be 
- *		started by the calling G0/G1/G2/G3? Test this (planner.c, ln 175)
  */
 
 void en_reset_encoders(void)
@@ -97,7 +89,7 @@ void en_reset_encoders(void)
 }
 
 /* 
- * en_sample_encoder()
+ * en_read_encoder()
  *
  *	The stepper ISR count steps into steps_run(). These values are accumulated to 
  *	encoder_position during LOAD (HI interrupt level). The encoder position is 
@@ -106,7 +98,7 @@ void en_reset_encoders(void)
  *	that segment are complete.
  */
 
-int32_t en_sample_encoder(uint8_t motor)
+int32_t en_read_encoder(uint8_t motor)
 {
 	return(en.en[motor].encoder_steps);
 }

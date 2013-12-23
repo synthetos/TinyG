@@ -168,16 +168,17 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "qf",  _f00, 0, tx_print_nul, get_nul, cm_run_qf,(float *)&cs.null, 0 },	// queue flush
 	{ "", "rx",  _f00, 0, tx_print_int, get_rx,  set_nul,  (float *)&cs.null, 0 },	// space in RX buffer
 	{ "", "msg", _f00, 0, tx_print_str, get_nul, set_nul,  (float *)&cs.null, 0 },	// string for generic messages
+	{ "", "clc", _f00, 0, tx_print_nul, st_clc, st_clc,    (float *)&cs.null, 0 },	// clear diagnostic step counters
 	{ "", "clear",_f00,0, tx_print_nul, cm_clear,cm_clear, (float *)&cs.null, 0 },	// GET a clear to clear soft alarm
 //	{ "", "sx",  _f00, 0, tx_print_nul, run_sx,  run_sx ,  (float *)&cs.null, 0 },	// send XOFF, XON test
 
-	{ "", "test",_f00, 0, tx_print_nul, help_test,		 run_test, 	  (float *)&cs.null,0 },	// run tests, print test help screen
-	{ "", "defa",_f00, 0, tx_print_nul, help_defa,		 set_defaults,(float *)&cs.null,0 },	// set/print defaults / help screen
+	{ "", "test",_f00, 0, tx_print_nul, help_test, run_test, (float *)&cs.null,0 },	// run tests, print test help screen
+	{ "", "defa",_f00, 0, tx_print_nul, help_defa, set_defaults,(float *)&cs.null,0 },	// set/print defaults / help screen
 	{ "", "boot",_f00, 0, tx_print_nul, help_boot_loader,hw_run_boot, (float *)&cs.null,0 },
 
 #ifdef __HELP_SCREENS
-	{ "", "help",_f00, 0, tx_print_nul, help_config,	 set_nul, 	  (float *)&cs.null,0 },	// prints config help screen
-	{ "", "h",   _f00, 0, tx_print_nul, help_config,	 set_nul, 	  (float *)&cs.null,0 },	// alias for "help"
+	{ "", "help",_f00, 0, tx_print_nul, help_config, set_nul, (float *)&cs.null,0 },  // prints config help screen
+	{ "", "h",   _f00, 0, tx_print_nul, help_config, set_nul, (float *)&cs.null,0 },  // alias for "help"
 #endif
 
 	// Motor parameters
@@ -513,10 +514,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "_ns","_ns3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_3], 0 },
 	{ "_ns","_ns4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_4], 0 },
 
-	{ "_es","_es1",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_1], 0 }, // Motor 1 error steps
-	{ "_es","_es2",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_2], 0 },
-	{ "_es","_es3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_3], 0 },
-	{ "_es","_es4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_error[MOTOR_4], 0 },
+	{ "_es","_es1",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.step_error[MOTOR_1], 0 }, // Motor 1 error steps
+	{ "_es","_es2",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.step_error[MOTOR_2], 0 },
+	{ "_es","_es3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.step_error[MOTOR_3], 0 },
+	{ "_es","_es4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.step_error[MOTOR_4], 0 },
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***

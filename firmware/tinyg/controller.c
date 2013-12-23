@@ -35,6 +35,7 @@
 #include "plan_arc.h"
 #include "planner.h"
 #include "stepper.h"
+#include "encoder.h"
 #include "hardware.h"
 #include "switch.h"
 #include "gpio.h"
@@ -365,6 +366,7 @@ stat_t _system_assertions()
 	emergency___everybody_to_get_from_street(canonical_machine_test_assertions());
 	emergency___everybody_to_get_from_street(planner_test_assertions());
 	emergency___everybody_to_get_from_street(stepper_test_assertions());
+	emergency___everybody_to_get_from_street(encoder_test_assertions());
 	emergency___everybody_to_get_from_street(xio_test_assertions());
 	return (STAT_OK);
 }
