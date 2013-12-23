@@ -91,6 +91,11 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	cs.hard_reset_requested = false;
 	cs.bootloader_requested = false;
 
+	cs.job_id[0] = 0;								// clear the job_id
+	cs.job_id[1] = 0;
+	cs.job_id[2] = 0;
+	cs.job_id[3] = 0;
+
 	xio_set_stdin(std_in);
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
@@ -233,7 +238,7 @@ static stat_t _command_dispatch()
 	// dispatch the new text line
 	switch (toupper(*cs.bufp)) {						// first char
 
-		case '!': { cm_request_feedhold(); break; }		// include for diagnostics
+		case '!': { cm_request_feedhold(); break; }		// include for AVR diagnostics and ARM serial
 		case '%': { cm_request_queue_flush(); break; }
 		case '~': { cm_request_cycle_start(); break; }
 
@@ -254,11 +259,11 @@ static stat_t _command_dispatch()
 			break;
 		}
 		default: {										// anything else must be Gcode
-			if (cfg.comm_mode == JSON_MODE) {
+			if (cfg.comm_mode == JSON_MODE) {			// run it as JSON...
 				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);					// use out_buf as temp
 				sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);	// '-8' is used for JSON chars
 				json_parser(cs.bufp);
-			} else {
+			} else {									//...or run it as text
 				text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
 			}
 		}
@@ -316,6 +321,7 @@ void tg_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
 /*
  * _sync_to_tx_buffer() - return eagain if TX queue is backed up
  * _sync_to_planner() - return eagain if planner is not ready for a new command
+ * _sync_to_time() - return eagain if planner is not ready for a new command
  */
 static stat_t _sync_to_tx_buffer()
 {
@@ -332,7 +338,19 @@ static stat_t _sync_to_planner()
 	}
 	return (STAT_OK);
 }
-
+/*
+static stat_t _sync_to_time()
+{
+	if (cs.sync_to_time_time == 0) {		// initial pass
+		cs.sync_to_time_time = SysTickTimer_getValue() + 100; //ms
+		return (STAT_OK);
+	}
+	if (SysTickTimer_getValue() < cs.sync_to_time_time) {
+		return (STAT_EAGAIN);
+	}
+	return (STAT_OK);
+}
+*/
 /*
  * _limit_switch_handler() - shut down system if limit switch fired
  */
@@ -343,15 +361,6 @@ static stat_t _limit_switch_handler(void)
 //	cm_alarm(gpio_get_sw_thrown); 		// unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
 //	cm_hard_alarm(sw.sw_num_thrown);	// no longer the correct behavior
 	return(cm_hard_alarm(STAT_LIMIT_SWITCH_HIT));
-	return (STAT_OK);
-}
-
-/* 
- * _controller_assertions() - check memory integrity of controller
- */
-stat_t _controller_assertions()
-{
-	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_MEMORY_FAULT);
 	return (STAT_OK);
 }
 

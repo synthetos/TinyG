@@ -99,10 +99,6 @@ void tg_reset_source(void);
 void tg_set_primary_source(uint8_t dev);
 void tg_set_secondary_source(uint8_t dev);
 
-//void tg_text_response(const uint8_t status, const char *buf);
-//void tg_reset(void);
-//void tg_application_startup(void);
-
 #ifdef __cplusplus
 }
 #endif

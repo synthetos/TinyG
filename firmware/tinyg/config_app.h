@@ -71,6 +71,12 @@ extern cfgParameters_t cfg;
 
 stat_t set_baud_callback(void);
 
+// job config
+void job_print_job(cmdObj_t *cmd);
+stat_t job_get(cmdObj_t *cmd);
+stat_t job_set(cmdObj_t *cmd);
+uint8_t job_report_callback();
+
 /***********************************************************************************
  * TEXT MODE SUPPORT
  * Functions to print variables from the cfgArray table

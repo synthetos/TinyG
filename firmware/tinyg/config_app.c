@@ -79,20 +79,26 @@ static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
 /***********************************************************************************
  **** CONFIG TABLE  ****************************************************************
  ***********************************************************************************
- *	NOTES:
+ *
+ *	NOTES AND CAVEATS
  *
  *	- Token matching occurs from the most specific to the least specific. This means
  *	  that if shorter tokens overlap longer ones the longer one must precede the
  *	  shorter one. E.g. "gco" needs to come before "gc"
  *
- *	- Mark group strings for entries that have no group as nul -->"". 
+ *	- Mark group strings for entries that have no group as nul -->  "".
  *	  This is important for group expansion.
  *
  *	- Groups do not have groups. Neither do uber-groups, e.g.
- *	  'x' is --> { "", "x",  	and 'm' is --> { "", "m",  
+ *	  'x' is --> { "", "x",  	and 'm' is --> { "", "m",
+ *
+ *	- Be careful not to define groups longer than CMD_GROUP_LEN (3) and tokens longer
+ *	  than CMD_TOKEN_LEN (5). (See config.h for lengths). The combined group + token
+ *	  cannot exceed CMD_TOKEN_LEN. String functions working on the table assume these
+ *	  rules are followed and do not check lengths or perform other validation.
  *
  *	NOTE: If the count of lines in cfgArray exceeds 255 you need to change index_t
- *	uint16_t in the config.h file. 
+ *	uint16_t in the config.h file.
  */
 
 const cfgItem_t cfgArray[] PROGMEM = {
@@ -186,53 +192,53 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "1","1sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_1].step_angle,	M1_STEP_ANGLE },
 	{ "1","1tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
 	{ "1","1mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_1].microsteps,	M1_MICROSTEPS },
-	{ "1","1po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_1].polarity,		M1_POLARITY },
+	{ "1","1po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_1].polarity,	M1_POLARITY },
 	{ "1","1pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_1].power_mode,	M1_POWER_MODE },
-	{ "1","1mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_1].power_level,	M1_POWER_LEVEL },
+	{ "1","1mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_1].power_level,M1_POWER_LEVEL },
 #if (MOTORS >= 2)
 	{ "2","2ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_2].motor_map,	M2_MOTOR_MAP },
 	{ "2","2sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_2].step_angle,	M2_STEP_ANGLE },
 	{ "2","2tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_2].travel_rev,	M2_TRAVEL_PER_REV },
 	{ "2","2mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_2].microsteps,	M2_MICROSTEPS },
-	{ "2","2po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_2].polarity,		M2_POLARITY },
+	{ "2","2po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_2].polarity,	M2_POLARITY },
 	{ "2","2pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_2].power_mode,	M2_POWER_MODE },
-	{ "2","2mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_2].power_level,	M2_POWER_LEVEL},
+	{ "2","2mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_2].power_level,M2_POWER_LEVEL},
 #endif
 #if (MOTORS >= 3)
 	{ "3","3ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_3].motor_map,	M3_MOTOR_MAP },
 	{ "3","3sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_3].step_angle,	M3_STEP_ANGLE },
 	{ "3","3tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_3].travel_rev,	M3_TRAVEL_PER_REV },
 	{ "3","3mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_3].microsteps,	M3_MICROSTEPS },
-	{ "3","3po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_3].polarity,		M3_POLARITY },
+	{ "3","3po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_3].polarity,	M3_POLARITY },
 	{ "3","3pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_3].power_mode,	M3_POWER_MODE },
-	{ "3","3mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_3].power_level,	M3_POWER_LEVEL },
+	{ "3","3mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_3].power_level,M3_POWER_LEVEL },
 #endif
 #if (MOTORS >= 4)
 	{ "4","4ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_4].motor_map,	M4_MOTOR_MAP },
 	{ "4","4sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_4].step_angle,	M4_STEP_ANGLE },
 	{ "4","4tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_4].travel_rev,	M4_TRAVEL_PER_REV },
 	{ "4","4mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_4].microsteps,	M4_MICROSTEPS },
-	{ "4","4po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_4].polarity,		M4_POLARITY },
+	{ "4","4po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_4].polarity,	M4_POLARITY },
 	{ "4","4pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_4].power_mode,	M4_POWER_MODE },
-	{ "4","4mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_4].power_level,	M4_POWER_LEVEL },
+	{ "4","4mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_4].power_level,M4_POWER_LEVEL },
 #endif
 #if (MOTORS >= 5)
 	{ "5","5ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_5].motor_map,	M5_MOTOR_MAP },
 	{ "5","5sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_5].step_angle,	M5_STEP_ANGLE },
 	{ "5","5tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_5].travel_rev,	M5_TRAVEL_PER_REV },
 	{ "5","5mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_5].microsteps,	M5_MICROSTEPS },
-	{ "5","5po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_5].polarity,		M5_POLARITY },
+	{ "5","5po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_5].polarity,	M5_POLARITY },
 	{ "5","5pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_5].power_mode,	M5_POWER_MODE },
-	{ "5","5mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_5].power_level,	M5_POWER_LEVEL },
+	{ "5","5mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_5].power_level,M5_POWER_LEVEL },
 #endif
 #if (MOTORS >= 6)
 	{ "6","6ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_6].motor_map,	M6_MOTOR_MAP },
 	{ "6","6sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_6].step_angle,	M6_STEP_ANGLE },
 	{ "6","6tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_6].travel_rev,	M6_TRAVEL_PER_REV },
 	{ "6","6mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_6].microsteps,	M6_MICROSTEPS },
-	{ "6","6po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_6].polarity,		M6_POLARITY },
+	{ "6","6po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_6].polarity,	M6_POLARITY },
 	{ "6","6pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_6].power_mode,	M6_POWER_MODE },
-	{ "6","6mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_6].power_level,	M6_POWER_LEVEL },
+	{ "6","6mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_6].power_level,M6_POWER_LEVEL },
 #endif
 
 	// Axis parameters
@@ -564,7 +570,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #if (MOTORS >= 5)
 //	{ "","5",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 #endif
-#if (MOTORS >= 5)
+#if (MOTORS >= 6)
 //	{ "","6",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 #endif
 	{ "","x",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis groups
@@ -798,8 +804,8 @@ static stat_t set_baud(cmdObj_t *cmd)
 {
 	uint8_t baud = (uint8_t)cmd->value;
 	if ((baud < 1) || (baud > 6)) {
-//		cmd_add_conditional_message((const char_t *)"*** WARNING *** Unsupported baud rate specified");
-		cmd_add_conditional_message(PSTR("*** WARNING *** Unsupported baud rate specified"));
+		cmd_add_conditional_message((const char_t *)"*** WARNING *** Unsupported baud rate specified");
+//		cmd_add_conditional_message(PSTR("*** WARNING *** Unsupported baud rate specified"));
 		return (STAT_INPUT_VALUE_UNSUPPORTED);
 	}
 	cfg.usb_baud_rate = baud;

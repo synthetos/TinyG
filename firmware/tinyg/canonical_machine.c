@@ -1758,7 +1758,6 @@ stat_t cm_run_jogy(cmdObj_t *cmd)
 	set_flt(cmd);
 	cm_jogging_cycle_start(AXIS_Y);
 	return (STAT_OK);
-
 }
 
 stat_t cm_run_jogz(cmdObj_t *cmd)
@@ -1766,7 +1765,6 @@ stat_t cm_run_jogz(cmdObj_t *cmd)
 	set_flt(cmd);
 	cm_jogging_cycle_start(AXIS_Z);
 	return (STAT_OK);
-
 }
 
 stat_t cm_run_joga(cmdObj_t *cmd)
@@ -1774,7 +1772,6 @@ stat_t cm_run_joga(cmdObj_t *cmd)
 	set_flt(cmd);
 	cm_jogging_cycle_start(AXIS_A);
 	return (STAT_OK);
-
 }
 
 /***********************************************************************************
