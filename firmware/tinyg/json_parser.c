@@ -210,7 +210,6 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 	
 	// numbers
 	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
-//		cmd->value = strtof(*pstr, &tmp);			// tmp is the end pointer
 		cmd->value = (float)strtod(*pstr, &tmp);	// tmp is the end pointer
 		if(tmp == *pstr) { return (STAT_BAD_NUMBER_FORMAT);}
 		cmd->objtype = TYPE_FLOAT;

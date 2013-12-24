@@ -55,12 +55,11 @@
 #include "config.h"
 #include "canonical_machine.h"
 #include "plan_arc.h"
-//#include "plan_line.h"
 #include "planner.h"
 #include "stepper.h"
 #include "report.h"
 #include "util.h"
-//#include "xio/xio.h"			// uncomment for debugging
+//#include "xio.h"			// uncomment for debugging
 
 #ifdef __cplusplus
 extern "C"{
@@ -422,6 +421,20 @@ uint8_t mp_get_buffer_index(mpBuf_t *bf)
 	return(cm_alarm(PLANNER_BUFFER_POOL_SIZE));	// should never happen
 }
 #endif
+
+/****************************
+ * END OF PLANNER FUNCTIONS *
+ ****************************/
+
+/***********************************************************************************
+ * CONFIGURATION AND INTERFACE FUNCTIONS
+ * Functions to get and set variables from the cfgArray table
+ ***********************************************************************************/
+
+/***********************************************************************************
+ * TEXT MODE SUPPORT
+ * Functions to print variables from the cfgArray table
+ ***********************************************************************************/
 
 //####################################################################################
 //##### UNIT TESTS AND DEBUG CODE ####################################################
