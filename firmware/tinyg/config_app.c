@@ -472,25 +472,25 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "fd",  _fip, 0, tx_print_ui8, get_ui8, set_01,  (float *)&js.json_footer_depth,	JSON_FOOTER_DEPTH },
 
 	// User defined data groups
-	{ "uda","uda0", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_a[0], USER_DATA_A0 },
-	{ "uda","uda1", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_a[1], USER_DATA_A1 },
-	{ "uda","uda2", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_a[2], USER_DATA_A2 },
-	{ "uda","uda3", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_a[3], USER_DATA_A3 },
+	{ "uda","uda0", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_a[0], USER_DATA_A0 },
+	{ "uda","uda1", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_a[1], USER_DATA_A1 },
+	{ "uda","uda2", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_a[2], USER_DATA_A2 },
+	{ "uda","uda3", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_a[3], USER_DATA_A3 },
 
-	{ "udb","udb0", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_b[0], USER_DATA_B0 },
-	{ "udb","udb1", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_b[1], USER_DATA_B1 },
-	{ "udb","udb2", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_b[2], USER_DATA_B2 },
-	{ "udb","udb3", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_b[3], USER_DATA_B3 },
+	{ "udb","udb0", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_b[0], USER_DATA_B0 },
+	{ "udb","udb1", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_b[1], USER_DATA_B1 },
+	{ "udb","udb2", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_b[2], USER_DATA_B2 },
+	{ "udb","udb3", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_b[3], USER_DATA_B3 },
 
-	{ "udc","udc0", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_c[0], USER_DATA_C0 },
-	{ "udc","udc1", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_c[1], USER_DATA_C1 },
-	{ "udc","udc2", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_c[2], USER_DATA_C2 },
-	{ "udc","udc3", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_c[3], USER_DATA_C3 },
+	{ "udc","udc0", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_c[0], USER_DATA_C0 },
+	{ "udc","udc1", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_c[1], USER_DATA_C1 },
+	{ "udc","udc2", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_c[2], USER_DATA_C2 },
+	{ "udc","udc3", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_c[3], USER_DATA_C3 },
 
-	{ "udd","udd0", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_d[0], USER_DATA_D0 },
-	{ "udd","udd1", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_d[1], USER_DATA_D1 },
-	{ "udd","udd2", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_d[2], USER_DATA_D2 },
-	{ "udd","udd3", _fip, 0, tx_print_int, get_int, set_int,(float *)&cfg.user_data_d[3], USER_DATA_D3 },
+	{ "udd","udd0", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[0], USER_DATA_D0 },
+	{ "udd","udd1", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[1], USER_DATA_D1 },
+	{ "udd","udd2", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[2], USER_DATA_D2 },
+	{ "udd","udd3", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[3], USER_DATA_D3 },
 
 	{ "_te","_tex",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_X], 0 },  // X target endpoint
 	{ "_te","_tey",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Y], 0 },

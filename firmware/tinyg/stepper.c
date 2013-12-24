@@ -101,8 +101,8 @@ void stepper_init()
 	TIMER_EXEC.CTRLB = EXEC_TIMER_WGMODE;		// waveform mode
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = EXEC_TIMER_PERIOD;			// set period
-	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
 
+	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
 	st_reset();									// reset steppers to known state
 }
 

@@ -73,6 +73,9 @@
 #undef 	QR_VERBOSITY
 #define QR_VERBOSITY				QR_SINGLE
 
+#undef SR_VERBOSITY
+#define SR_VERBOSITY				SR_FILTERED
+
 #undef COM_ENABLE_FLOW_CONTROL
 #define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON
 
@@ -186,8 +189,8 @@
 #define A_AXIS_MODE 			AXIS_RADIUS
 #define A_VELOCITY_MAX 			((X_VELOCITY_MAX/M1_TRAVEL_PER_REV)*360) // set to the same speed as X axis
 #define A_FEEDRATE_MAX 			A_VELOCITY_MAX
-#define A_TRAVEL_MIN			-1
-#define A_TRAVEL_MAX 			-1					// -1 means infinite, no limit
+#define A_TRAVEL_MAX 			0				// max=0 min=0 means infinite, no limit
+#define A_TRAVEL_MIN 			0
 #define A_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628)) 
@@ -202,8 +205,8 @@
 #define B_AXIS_MODE 			AXIS_DISABLED
 #define B_VELOCITY_MAX 			3600
 #define B_FEEDRATE_MAX 			B_VELOCITY_MAX
-#define B_TRAVEL_MAX 			-1
-#define B_TRAVEL_MIN			-1
+#define B_TRAVEL_MAX 			0
+#define B_TRAVEL_MIN			0
 #define B_JERK_MAX 				JERK_MAX
 #define B_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define B_RADIUS 				1
@@ -211,8 +214,8 @@
 #define C_AXIS_MODE 			AXIS_DISABLED
 #define C_VELOCITY_MAX 			3600
 #define C_FEEDRATE_MAX 			C_VELOCITY_MAX
-#define C_TRAVEL_MAX 			-1
-#define C_TRAVEL_MIN			-1
+#define C_TRAVEL_MAX 			0
+#define C_TRAVEL_MIN			0
 #define C_JERK_MAX 				JERK_MAX
 #define C_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define C_RADIUS 				1
@@ -245,7 +248,7 @@
 #define G55_Z_OFFSET 0
 #define G55_A_OFFSET 0
 #define G55_B_OFFSET 0
-#define G55_C_OFFSET 20         // this is where we currently store the tool offset
+#define G55_C_OFFSET -20         // this is where we currently store the tool offset
 
 #define G56_X_OFFSET 0
 #define G56_Y_OFFSET 0
