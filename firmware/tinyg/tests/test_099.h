@@ -1,12 +1,12 @@
 /* 
- * test_052_ford.h 
+ * test_099.h- Arbitrary test for debugging
  *
  * Notes:
  *	  -	The character array should be derived from the filename (by convention)
  *	  - Comments are not allowed in the char array, but gcode comments are OK e.g. (g0 test)
  */
 
-const char test_ford[] PROGMEM = "\
+const char test_99[] PROGMEM = "\
 N4 G21 G90 G64 G40\n\
 N5 G0 Z3.0\n\
 /N6 ( T0 : 2.0 )\n\

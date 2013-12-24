@@ -46,7 +46,10 @@
 #include "tests/test_051_braid.h"			// braid test - partial drawing
 
 #endif
-#include "tests/test_052_ford.h"			// Ford arc failure test - partial drawing
+
+#ifdef __TEST_99
+#include "tests/test_099.h"					// diagnostic test file. used to diagnose specific issues
+#endif
 
 /*
  * run_test() - system tests from FLASH invoked by $test=n command
@@ -77,7 +80,9 @@ uint8_t run_test(cmdObj_t *cmd)
 		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 #endif
-		case 52: { xio_open(XIO_DEV_PGM, PGMFILE(&test_ford),PGM_FLAGS); break;}
+#ifdef __TEST_99
+		case 99: { xio_open(XIO_DEV_PGM, PGMFILE(&test_99),PGM_FLAGS); break;}
+#endif
 		default: {
 			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
 			return (STAT_ERROR);

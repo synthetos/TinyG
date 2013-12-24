@@ -339,22 +339,22 @@ ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
 }
 
 ISR(TIMER_LOAD_ISR_vect) {								// load steppers SW interrupt
- 	TIMER_LOAD.CTRLA = STEP_TIMER_DISABLE;				// disable SW interrupt timer
+	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;				// disable SW interrupt timer
 	_load_move();
 }
 
 ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
- 	TIMER_EXEC.CTRLA = STEP_TIMER_DISABLE;				// disable SW interrupt timer
+	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;				// disable SW interrupt timer
 
 	// exec_move
-   	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
-	   	if (mp_exec_move() != STAT_NOOP) {
-		   	st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
-		   	_request_load_move();
-	   	}
-   	}
-	
+	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
+		if (mp_exec_move() != STAT_NOOP) {
+			st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
+			_request_load_move();
+		}
+	}
 }
+
 /****************************************************************************************
  * Exec sequencing code - computes and prepares next load segment
  * st_request_exec_move()	- SW interrupt to request to execute a move
@@ -381,7 +381,7 @@ static void _request_load_move()
 		TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
 		TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;			// trigger a HI interrupt
 	} 	// else don't bother to interrupt. You'll just trigger an
-	// interrupt and find out the load routine is not ready for you
+		// interrupt and find out the load routine is not ready for you
 }
 
 /*
@@ -532,8 +532,18 @@ static void _load_move()
  *	floats and converted to their appropriate integer types for the loader. 
  *
  * Args:
- *	steps[] are signed relative motion in steps (can be non-integer values)
- *	Microseconds - how many microseconds the segment should run 
+ *	  - steps[] are signed relative motion in steps for each motor. Steps are floats
+ *		that typically have fractional values (fractional steps). The sign indicates
+ *		direction. Motors that are not in the move should be 0 steps on input.
+ *
+ *	  - microseconds - how many microseconds the segment should run. If timing is not
+ *		100% accurate this will affect the move velocity, but not the distance traveled.
+ *
+ *	  - step_error[] is a vector of measured errors to the step count. Used for correction.
+ *
+ * NOTE:  Many of the expressions are sensitive to casting and execution order to avoid long-term
+ *		  accuracy errors due to floating point round off. One earlier failed attempt was:
+ *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
  */
 
 stat_t st_prep_line(float steps[], float microseconds, float step_error[])

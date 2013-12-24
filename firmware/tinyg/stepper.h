@@ -28,58 +28,118 @@
 /* 
  *	Coordinated motion (line drawing) is performed using a classic Bresenham DDA. 
  *	A number of additional steps are taken to optimize interpolation and pulse train
- *	accuracy and minimize pulse jitter.
- *
- *	  - The DDA accepts and processes fractional motor steps. Steps are passed to the 
- *		move queue as floats, and do not need to be integer values. The DDA implements 
- *		fractional steps and interpolation by extending the counter range downward using 
- *		a fixed-point binary number whose precision is set using DDA_SUBSTEPS. 
+ *	timing accuracy to minimize pulse jitter and make for very smooth motion and surface
+ *	finish.
  *
  *    - The DDA is not used as a 'ramp' for acceleration management. Accel is computed 
- *		as 3rd order (controlled jerk) equations that generate accel/decel segments to 
- *		the DDA in much the same way arc drawing is approximated. 
+ *		upstream in the motion planner as 3rd order (controlled jerk) equations. These
+ *		generate accel/decel segments that are passed to the DDA for step output.
+ *
+ *	  - The DDA accepts and processes fractional motor steps as floating point nuymbers 
+ *		from the planner. Steps do not need to be whole numbers, and are not expected to be. 
+ *		The step values are converted to integer by multiplying by a fixed-point precision 
+ *		(DDA_SUBSTEPS, 100000). Rounding is performed to avoid a truncation bias.
  *
  *    - Constant Rate DDA clock: The DDA runs at a constant, maximum rate for every 
  *		segment regardless of actual step rate required. This means that the DDA clock 
- *		is not tuned to the step rate (or a multiple) of the major axis, as many other 
- *		DDAs do. Running the DDA flat out might appear to be "wasteful", but it ensures 
- *		that the best aliasing results are achieved. 
+ *		is not tuned to the step rate (or a multiple) of the major axis, as is typical
+ *		for most DDAs. Running the DDA flat out might appear to be "wasteful", but it ensures 
+ *		that the best aliasing results are achieved, and is part of maintaining step accuracy 
+ *		across motion segments.
  *
  *		The observation is that TinyG is a hard real-time system in which every clock cycle 
  *		is knowable and can be accounted for. So if the system is capable of sustaining
  *		max pulse rate for the fastest move, it's capable of sustaining this rate for any
- *		move. So just run it flat out and get the best pulse resolution for all moves. 
- *		If we were running from batteries we might not be so cavalier about this.
+ *		move. So we just run it flat out and get the best pulse resolution for all moves. 
+ *		If we were running from batteries or otherwise cared about the energy budget we 
+ *		might not be so cavalier about this.
  *
- *    - Pulse phasing is preserved between segments if possible. This makes for smoother
- *		motion, particularly at very low speeds and short segment lengths (avoids pulse 
- *		jitter). Phase continuity is achieved by simply not resetting the DDA counters 
- *		across segments. In some cases the differences between timer values across 
- *		segments are too large for this to work, and you risk motor stalls due to pulse 
- *		starvation. These cases are detected and the counters are reset to prevent stalling.
+ *		At 50 KHz constant clock rate we have 20 uSec between pulse timer (DDA) interrupts. 
+ *		On the Xmega we consume <10 uSec in the interrupt - a whopping 50% of available cycles 
+ *		going into pulse generation. On the ARM this is less of an issue, and we run a 
+ *		100 Khz (or higher) pulse rate.
  *
- *    - Pulse phasing is also helped by minimizing the time spent loading the next move 
- *		segment. To this end as much as possible about that move is pre-computed during 
- *		move execution. Also, all moves are loaded from the interrupt level, avoiding 
- *		the need for mutual exclusion locking or volatiles (which slow things down).
+ *    - Pulse timing is also helped by minimizing the time spent loading the next move 
+ *		segment. The time budget for the load is less than the time remaining before the 
+ *		next DDA clock tick. This means that the load must take < 10 uSec or the time  
+ *		between pulses will stretch out when changing segments. This does not affect 
+ *		positional accuracy but it would affect jitter and smoothness. To this end as much 
+ *		as possible about that move is pre-computed during move execution (prep cycles). 
+ *		Also, all moves are loaded from the DDA interrupt level (HI), avoiding the need 
+ *		for mutual exclusion locking or volatiles (which slow things down).
  */
-/**** Line planning and execution ****
+/* 
+ **** Move generation overview and timing illustration ****
+ *
+ *	This ASCII art illustrates a 4 segment move to show stepper sequencing timing.
+ *
+ *    LOAD/STEP (~5000uSec)          [L1][segment1][L2][segment2][L3][segment3][L4][segment4][Lb1]
+ *    PREP (100 uSec)            [P1]       [P2]          [P3]          [P4]          [Pb1]
+ *    EXEC (400 uSec)         [EXEC1]    [EXEC2]       [EXEC3]       [EXEC4]       [EXECb1]
+ *    PLAN (<4ms)  [planmoveA][plan move B][plan move C][plan move D][plan move E] etc.
+ *
+ *	The move begins with the planner PLANning move A [planmoveA]. When this is done the 
+ *	computations for the first segment of move A's S curve are performed by the planner 
+ *	runtime, EXEC1. The runtime computes the number of segments and the segment-by-segment 
+ *	accelerations and decelerations for the move. Each call to EXEC generates the values 
+ *	for the next segment to be run. Once the move is running EXEC is executed as a 
+ *	callback from the step loader.
+ *
+ *	When the runtime calculations are done EXEC calls the segment PREParation function [P1].
+ *	PREP turns the EXEC results into values needed for the loader and does some encoder work.
+ *	The combined exec and prep take about 400 uSec. 
+ *
+ *	PREP takes care of heavy numerics and other cycle-intesive operations so the step loader 
+ *	L1 can run as fast as possible. The time budget for LOAD is about 10 uSec. In the diagram, 
+ *	when P1 is done segment 1 is loaded into the stepper runtime [L1]
+ *
+ *	Once the segment is loaded it will pulse out steps for the duration of the segment. 
+ *	Segment timing can vary, but segments take around 5 Msec to pulse out, which is 250 DDA 
+ *	ticks at a 50 KHz step clock.
+ *
+ *	Now the move is pulsing out segment 1 (at HI interrupt level). Once the L1 loader is 
+ *	finished it invokes the exec function for the next segment (at LO interrupt level).
+ *	[EXEC2] and [P2] compute and prepare the segment 2 for the loader so it can be loaded 
+ *	as soon as segment 1 is complete [L2]. When move A is done EXEC pulls the next move 
+ *	(moveB) from the planner queue, The process repeats until there are no more segments or moves.
+ *
+ *	While all this is happening subsequent moves (B, C, and D) are being planned in background. 
+ *	As long as a move takes less than the segment times (5ms x N) the timing budget is satisfied,
+ *
+ *	A few things worth noting:
+ *	  -	This scheme uses 2 interrupt levels and background, for 3 levels of execution:
+ *		- STEP pulsing and LOADs occur at HI interrupt level
+ *		- EXEC and PREP occur at LO interrupt level (leaving MED int level for serial IO)
+ *		- move PLANning occurs in background and is managed by the controller
+ *
+ *	  -	Because of the way the timing is laid out there is no contention for resources between
+ *		the STEP, LOAD, EXEC, and PREP phases. PLANing is similarly isolated. Very few volatiles 
+ *		or mutexes are needed, which makes the code simpler and faster. With the exception of 
+ *		the actual values used in step generation (which runs continuously) you can count on 
+ *		LOAD, EXEC, PREP and PLAN not stepping on each other's variables.
+ */
+/**** Line planning and execution (in more detail) ****
  *
  *	Move planning, execution and pulse generation takes place at 3 levels:
  *
  *	Move planning occurs in the main-loop. The canonical machine calls the planner to 
- *	generate lines, arcs, dwells and synchronous stop/starts. The planner module generates 
- *	blocks (bf's) that hold parameters for lines and the other move types. The blocks 
- *	are backplanned to join lines, and to take dwells and stops into account. ("plan" stage).
+ *	generate lines, arcs, dwells, synchronous stop/starts, and any other cvommand that 
+ *	needs to be syncronized wsith motion. The planner module generates blocks (bf's) 
+ *	that hold parameters for lines and the other move types. The blocks are backplanned 
+ *	to join lines and to take dwells and stops into account. ("plan" stage).
  *
- *	Arc movement is planned above the above the line planner. The arc planner generates 
- *	short lines that are passed to the line planner.
+ *	Arc movement is planned above the line planner. The arc planner generates short 
+ *	lines that are passed to the line planner.
+ *
+ *	Once lines are planned the must be broken up into "segments" of about 5 milliseconds
+ *	to be run. These segments are how S curves are generated. This is the job of the move 
+ *	runtime (aka. exec or mr).
  *
  *	Move execution and load prep takes place at the LOW interrupt level. Move execution 
  *	generates the next acceleration, cruise, or deceleration segment for planned lines, 
  *	or just transfers parameters needed for dwells and stops. This layer also prepares 
- *	moves for loading by pre-calculating the values needed by the DDA, and converting the 
- *	executed move into parameters that can be directly loaded into the steppers ("exec" 
+ *	segments for loading by pre-calculating the values needed by the DDA and converting 
+ *	the segment into parameters that can be directly loaded into the steppers ("exec" 
  *	and "prep" stages).
  *
  *	Pulse train generation takes place at the HI interrupt level. The stepper DDA fires 
@@ -102,10 +162,14 @@
  *		using a software interrupt (actually a timer, since that's all we've got).
  *
  *	  - As a result of the above, the EXEC handler fires at the LO interrupt level. It 
- *		computes the next accel/decel segment for the current move (i.e. the move in the 
- *		planner's runtime buffer) by calling back to the exec routine in planner.c. 
- *		Or it gets and runs the next buffer in the planning queue - depending on the 
- *		move_type and state. 
+ *		computes the next accel/decel or cruise (body) segment for the current move 
+ *		(i.e. the move in the planner's runtime buffer) by calling back to the exec 
+ *		routine in planner.c. If there are no more segments to run for the move the 
+ *		exec first gets the next buffer in the planning queue and begins execution.
+ *
+ *		In some cases the mext "move" is not actually a move, but a dewll, stop, IO 
+ *		operation (e.g. M5). In this case it executes the requested operation, and may 
+ *		attempt to get the next buffer from the planner when its done.
  *
  *	  - Once the segment has been computed the exec handler finshes up by running the 
  *		PREP routine in stepper.c. This computes the DDA values and gets the segment 
@@ -194,7 +258,7 @@ enum motorPowerState {					// used w/start and stop flags to sequence motor powe
 	MOTOR_RUNNING						// motor is running (and fully energized)
 };
 
-enum cmStepperPowerMode {
+enum motorPowerMode {
 	MOTOR_ENERGIZED_DURING_CYCLE=0,		// motor is fully powered during cycles
 	MOTOR_IDLE_WHEN_STOPPED,			// idle motor shortly after it's stopped - even in cycle
 	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction (not implemented yet)
@@ -213,9 +277,15 @@ enum prepBufferState {
 #define IDLE_TIMEOUT_SECONDS 		(float)0.1		// seconds in DISABLE_AXIS_WHEN_IDLE mode
 
 /* DDA substepping
- * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping.
- *	Substepping is kind of like microsteps done in software to make
- *	interpolation more accurate.
+ * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping in the DDA.
+ *	Substepping is a fixed.point substitute allowing integer math (rather than FP) to be
+ *	used in the pulse generation (DDA) and make pulse timing interpolation more accurate. 
+ *	The loss of number range implies that the overall maximum length move is shortened 
+ *	(which is true), but this is compensated for the fact that long moves are broken up 
+ *	into a series of short moves (5 ms) by the planner so that feed holds and overrides 
+ *	can interrupt a long move.
+ *
+ *	This value is set for maximum accuracy; best not to mess with this.
  */
 #define DDA_SUBSTEPS				(float)5000000	// 5,000,000 accumulates substeps to max decimal places
 //#define DDA_SUBSTEPS				(float)100000	// 100,000 accumulates substeps to 6 decimal places

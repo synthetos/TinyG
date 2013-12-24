@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		397.40	// diffmerge pass against 406.06 dev branch
+#define TINYG_FIRMWARE_BUILD   		397.41	// diffmerge pass against 406.06 dev branch
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -133,9 +133,11 @@ typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uin
 #define GET_TABLE_WORD(a)  cfgArray[cmd->index].a	// get word value from cfgArray
 #define GET_TABLE_BYTE(a)  cfgArray[cmd->index].a	// get byte value from cfgArray
 #define GET_TABLE_FLOAT(a) cfgArray[cmd->index].a	// get byte value from cfgArray
-#define GET_TOKEN_BYTE(a)  (char_t)cfgArray[i].a	// get token byte value from cfgArray
+#define GET_TOKEN_BYTE(i,a) (char_t)cfgArray[i].a	// get token byte value from cfgArray
 
 #define GET_TOKEN_STRING(i,a) cfgArray[(index_t)i].a
+//#define GET_TOKEN_STRING(i,a) (char_t)cfgArray[i].token)// populate the token string given the index
+
 #define GET_TEXT_ITEM(b,a) b[a]						// get text from an array of strings in flash
 #define GET_UNITS(a) msg_units[cm_get_units_mode(a)]
 
@@ -188,10 +190,10 @@ typedef uint16_t magic_t;		// magic number size
 // Axes, motors & PWM channels must be defines (not enums) so #ifdef <value> can be used
 
 #define AXES		6			// number of axes supported in this version
+#define HOMING_AXES	4			// number of axes that can be homed (assumes Zxyabc sequence)
 #define MOTORS		4			// number of motors on the board
 #define COORDS		6			// number of supported coordinate systems (1-6)
 #define PWMS		2			// number of supported PWM channels
-#define HOMING_AXES	4			// number of axes that can be homed	
 
 // Note: If you change COORDS you must adjust the entries in cfgArray table in config.c
 
@@ -209,11 +211,11 @@ typedef uint16_t magic_t;		// magic number size
 #define MOTOR_2		1			// must be defines. enums don't work
 #define MOTOR_3		2
 #define MOTOR_4		3
-//#define MOTOR_5	4
-//#define MOTOR_6	5
+#define MOTOR_5		4
+#define MOTOR_6		5
 
-#define PWM_1	0
-#define PWM_2	1
+#define PWM_1		0
+#define PWM_2		1
 
 /************************************************************************************ 
  * STATUS CODES

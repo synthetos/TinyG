@@ -32,27 +32,28 @@
  *	#include "xio_signals.h"
  *	(possibly more)
  */
-/* CAVEAT EMPTOR: File under "watch your ass":
+/* 
+ * CAVEAT EMPTOR: File under "watch your ass":
  *
- * 	  - Short story: Do not call ANYTHING that can print (i.e. send chars to the TX
- *		buffer) from a medium or hi interrupt. This obviously includes any printf()
- *		function, but also exception reports, cm_soft_alarm(), cm_hard_alarm() and a
+ * 	  - Short story: Do not call ANYTHING that can print (i.e. send chars to the TX 
+ *		buffer) from a medium or hi interrupt. This obviously includes any printf() 
+ *		function, but also exception reports, cm_soft_alarm(), cm_hard_alarm() and a 
  *		few other functions that call stdio print functions.
  *
- * 	  - Longer Story: The stdio printf() functions use character drivers provided by
+ * 	  - Longer Story: The stdio printf() functions use character drivers provided by 
  *		tinyg to access the low-level Xmega devices. Specifically xio_putc_usb() in xio_usb.c,
- *		and xio_putc_rs485() in xio_rs485.c. Since stdio does not understand non-blocking
- *		IO these functions must block if there is no space in the TX buffer. Blocking is
+ *		and xio_putc_rs485() in xio_rs485.c. Since stdio does not understand non-blocking 
+ *		IO these functions must block if there is no space in the TX buffer. Blocking is 
  *		accomplished using sleep_mode(). The IO system is the only place where sleep_mode()
  *		is used. Everything else in TinyG is non-blocking. Sleep is woken (exited) whenever
  *		any interrupt fires. So there must always be a viable interrupt source running when
  *		you enter a sleep or the system will hang (lock up). In the IO functions this is the
- *		TX interrupts, which fire when space becomes available in the USART for a TX char. This
+ *		TX interupts, which fire when space becomes available in the USART for a TX char. This
  *		Means you cannot call a print function at or above the level of the TX interrupts,
  *		which are set to medium.
  */
-#ifndef xio_h
-#define xio_h
+#ifndef XIO_H_ONCE
+#define XIO_H_ONCE
 
 /*************************************************************************
  *	Device configurations
@@ -194,10 +195,6 @@ void xio_init_stdio(void);				// set std devs & do startup prompt
 void xio_set_stdin(const uint8_t dev);
 void xio_set_stdout(const uint8_t dev);
 void xio_set_stderr(const uint8_t dev);
-
-// assertions
-uint8_t xio_assertions(void);
-
 
 /*************************************************************************
  * SUPPORTING DEFINTIONS - SHOULD NOT NEED TO CHANGE
@@ -394,4 +391,4 @@ void xio_unit_tests(void);
 #define	XIO_UNITS
 #endif // __UNIT_TEST_XIO
 
-#endif	// xio_h
+#endif	// end of include guard: XIO_H_ONCE
