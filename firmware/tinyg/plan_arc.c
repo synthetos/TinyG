@@ -44,7 +44,7 @@ static stat_t _compute_arc(void);
 static stat_t _compute_arc_offsets_from_radius(void);
 static float _get_arc_time (const float linear_travel, const float angular_travel, const float radius);
 static float _get_theta(const float x, const float y);
-static stat_t _test_arc_soft_limits(void);
+//static stat_t _test_arc_soft_limits(void);
 
 /*****************************************************************************
  * Canonical Machining arc functions (arc prep for planning and runtime)
@@ -460,7 +460,7 @@ static float _get_theta(const float x, const float y)
  *			the distance from Cx to the positive X boundary
  *
  *	The arc plane is defined by 0 and 1 depending on G17/G18/G19 plane selected,
- *	corresponding to arc pane XY, XZ, YZ, respectively.
+ *	corresponding to arc planes XY, XZ, YZ, respectively.
  *	
  *	Must be called with all the following set in the arc struct
  *	  -	arc starting position (arc.position)
@@ -471,6 +471,7 @@ static float _get_theta(const float x, const float y)
  *	  - max and min travel in axis 0 and axis 1 (in cm struct)
  *
  */
+/*
 static stat_t _test_arc_soft_limits()
 {
 	// test is target falls outside boundaries. This is a 3 dimensional test
@@ -480,6 +481,7 @@ static stat_t _test_arc_soft_limits()
 //	if (arc.gm.target[arc.plane_axis_0] 
 	return(STAT_OK);
 }
+*/
 
 //##########################################
 //############## UNIT TESTS ################

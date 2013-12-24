@@ -188,12 +188,12 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 
 // Stuff you probably don't want to change 
 
-#define NO_MATCH (index_t)0xFFFF
 #define GROUP_LEN 3					// max length of group prefix
 #define TOKEN_LEN 5					// mnemonic token string: group prefix + short token
 #define CMD_FOOTER_LEN 18			// sufficient space to contain a JSON footer array
 #define CMD_LIST_LEN (CMD_BODY_LEN+2)// +2 allows for a header and a footer
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
+#define NO_MATCH (index_t)0xFFFF
 
 #define NVM_VALUE_LEN 4				// NVM value length (float, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
