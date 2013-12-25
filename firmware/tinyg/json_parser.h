@@ -103,7 +103,7 @@ stat_t json_set_jv(cmdObj_t *cmd);
 
 /* unit test setup */
 
-//#define __UNIT_TEST_JSON				// uncomment to enable JSON unit tests
+#define __UNIT_TEST_JSON				// uncomment to enable JSON unit tests
 #ifdef __UNIT_TEST_JSON
 void js_unit_tests(void);
 #define	JSON_UNITS js_unit_tests();

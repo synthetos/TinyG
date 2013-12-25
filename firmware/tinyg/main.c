@@ -26,6 +26,7 @@
 #include "hardware.h"
 #include "controller.h"
 #include "canonical_machine.h"
+#include "json_parser.h"		// required for unit tests only
 #include "report.h"
 #include "planner.h"
 #include "stepper.h"
@@ -76,7 +77,9 @@ int main(void)
 //	delay(1000);
 
 	// TinyG application setup
+#ifndef __UNIT_TESTS
 	_application_init();
+#endif
 	_unit_tests();					// run any unit tests that are enabled
 	run_canned_startup();			// run any pre-loaded commands
 	
@@ -278,7 +281,7 @@ static void _unit_tests(void)
 //	EEPROM_UNITS;			// if you want this you must include the .h file in this file
 	CONFIG_UNITS;
 	JSON_UNITS;
-	GPIO_UNITS;
+//	GPIO_UNITS;
 	REPORT_UNITS;
 	PLANNER_UNITS;
 	PWM_UNITS;

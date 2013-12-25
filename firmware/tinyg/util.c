@@ -169,7 +169,7 @@ float max4(float x1, float x2, float x3, float x4)
  */
 
 /*
-uint8_t * strcpy_U( uint8_t * dst, const uint8_t * src )
+char_t * strcpy_U( char_t * dst, const char_t * src )
 {
 	uint16_t index = 0;
 	do {

@@ -290,6 +290,7 @@ typedef struct cfgItem {
 	float def_value;					// default value for config item
 } cfgItem_t;
 
+
 /**** static allocation and definitions ****/
 
 extern cmdStr_t cmdStr;

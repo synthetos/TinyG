@@ -47,6 +47,7 @@ jsSingleton_t js;
 
 static stat_t _json_parser_kernal(char_t *str);
 static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth);
+static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth);
 static stat_t _normalize_json_string(char_t *str, uint16_t size);
 
 /****************************************************************************
@@ -107,7 +108,8 @@ static stat_t _json_parser_kernal(char_t *str)
 	// parse the JSON command into the cmd body
 	do {
 		if (--i == 0) { return (STAT_JSON_TOO_MANY_PAIRS); } // length error
-		if ((status = _get_nv_pair_strict(cmd, &str, &depth)) > STAT_EAGAIN) { // erred out
+//		if ((status = _get_nv_pair_strict(cmd, &str, &depth)) > STAT_EAGAIN) { // erred out
+		if ((status = _get_nv_pair_relaxed(cmd, &str, &depth)) > STAT_EAGAIN) { // erred out
 			return (status);
 		}
 		// propagate the group from previous NV pair (if relevant)
@@ -162,6 +164,144 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size)
 	}
 	*wr = NUL;
 	return (STAT_OK);
+}
+
+/*
+ * _get_nv_pair_relaxed() - get the next name-value pair w/relaxed JSON rules
+ *
+ *	Parse the next statement and populate the command object (cmdObj).
+ *
+ *	Leaves string pointer (str) on the first character following the object.
+ *	Which is the character just past the ',' separator if it's a multi-valued 
+ *	object or the terminating NUL if single object or the last in a multi.
+ *
+ *	Keeps track of tree depth and closing braces as much as it has to.
+ *	If this were to be extended to track multiple parents or more than two
+ *	levels deep it would have to track closing curlies - which it does not.
+ *
+ *	ASSUMES INPUT STRING HAS FIRST BEEN NORMALIZED BY _normalize_json_string()
+ *
+ *	If a group prefix is passed in it will be pre-pended to any name parsed
+ *	to form a token string. For example, if "x" is provided as a group and 
+ *	"fr" is found in the name string the parser will search for "xfr" in the 
+ *	cfgArray.
+ */
+/*	RELAXED RULES
+ * 
+ *	Quotes are accepted but not needed on names 
+ *	Quotes are required for string values
+ */
+
+#define MAX_PAD_CHARS 8
+#define MAX_NAME_CHARS 32
+
+static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
+{
+	uint8_t i;
+	char_t *tmp;
+	char_t leaders[] = {"{\""};					// open curly and quote
+	char_t separators[] = {":\""};				// colon and quote
+	char_t terminators[] = {"},\""};			// close curly, comma and quote
+	char_t value[] = {"\".-+"};					// quote, period, minus and plus
+
+	cmd_reset_obj(cmd);							// wipes the object and sets the depth
+
+	// --- Process name part ---
+	// Find, terminate and set pointers for the name. Allow for leading and trailing name quotes.
+	char_t * name = *pstr;
+	for (i=0; true; i++, (*pstr)++) {
+		if (strchr(leaders, (int)**pstr) == NULL) { 			// find leading character of name
+			name = (*pstr)++;
+			break;
+		}
+		if (i == MAX_PAD_CHARS) return (STAT_JSON_SYNTAX_ERROR);
+	}
+
+	// Find the end of name, NUL terminate and copy token
+	for (i=0; true; i++, (*pstr)++) {
+		if (strchr(separators, (int)**pstr) != NULL) {
+			*(*pstr)++ = NUL;
+			strncpy(cmd->token, name, TOKEN_LEN+1);			// copy the string to the token
+			break;
+		}
+		if (i == MAX_NAME_CHARS) return (STAT_JSON_SYNTAX_ERROR);
+	}
+
+	// --- Process value part ---  (organized from most to least frequently encountered)
+
+	// Find the start of the value part
+	for (i=0; true; i++, (*pstr)++) {
+		if (isalnum((int)**pstr)) break;
+		if (strchr(value, (int)**pstr) != NULL) break;
+		if (i == MAX_PAD_CHARS) return (STAT_JSON_SYNTAX_ERROR);
+	}
+
+	// nulls (gets)
+	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { // process null value
+		cmd->objtype = TYPE_NULL;
+		cmd->value = TYPE_NULL;
+	
+	// numbers
+	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
+		cmd->value = (float)strtod(*pstr, &tmp);	// tmp is the end pointer
+		if(tmp == *pstr) { return (STAT_BAD_NUMBER_FORMAT);}
+		cmd->objtype = TYPE_FLOAT;
+
+	// object parent
+	} else if (**pstr == '{') { 
+		cmd->objtype = TYPE_PARENT;
+//		*depth += 1;							// cmd_reset_obj() sets the next object's level so this is redundant
+		(*pstr)++;
+		return(STAT_EAGAIN);					// signal that there is more to parse
+
+	// strings
+	} else if (**pstr == '\"') { 				// value is a string
+		(*pstr)++;
+		cmd->objtype = TYPE_STRING;
+		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);} // find the end of the string
+		*tmp = NUL;
+
+		// if string begins with 0x it might be data, needs to be at least 3 chars long
+		if( strlen(*pstr)>=3 && (*pstr)[0]=='0' && (*pstr)[1]=='x')
+		{
+			uint32_t *v = (uint32_t*)&cmd->value;
+			*v = strtoul(*pstr, 0L, 0);
+			cmd->objtype = TYPE_DATA;
+		} else {
+			ritorno(cmd_copy_string(cmd, *pstr));
+		}
+	
+		*pstr = ++tmp;
+
+	// boolean true/false
+	} else if (**pstr == 't') { 
+		cmd->objtype = TYPE_BOOL;
+		cmd->value = true;
+	} else if (**pstr == 'f') { 
+		cmd->objtype = TYPE_BOOL;
+		cmd->value = false;
+
+	// arrays
+	} else if (**pstr == '[') {
+		cmd->objtype = TYPE_ARRAY;
+		ritorno(cmd_copy_string(cmd, *pstr));	// copy array into string for error displays
+		return (STAT_INPUT_VALUE_UNSUPPORTED);	// return error as the parser doesn't do input arrays yet
+
+	// general error condition
+	} else { return (STAT_JSON_SYNTAX_ERROR); }	// ill-formed JSON
+
+	// process comma separators and end curlies
+	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { // advance to terminator or err out
+		return (STAT_JSON_SYNTAX_ERROR);
+	}
+	if (**pstr == '}') { 
+		*depth -= 1;							// pop up a nesting level
+		(*pstr)++;								// advance to comma or whatever follows
+	}
+	if (**pstr == ',') { return (STAT_EAGAIN);}	// signal that there is more to parse
+
+	(*pstr)++;
+	return (STAT_OK);							// signal that parsing is complete
 }
 
 /*
@@ -565,8 +705,8 @@ static void _printit(void);
 
 void js_unit_tests()
 {
-//	_test_parser();
-	_test_serialize();
+	_test_parser();
+//	_test_serialize();
 }
 
 static void _test_serialize()
@@ -727,7 +867,15 @@ static void _test_parser()
 
 // success cases
 
-	// single NV pair cases
+	// success cases
+//	json_parser((char_t *)"{\"gc\":\"g0x100\"}\n");
+//	json_parser((char_t *)"{gc:\"g0x100\"}\n");
+//	json_parser((char_t *)"{xvm:1000}\n");
+//	json_parser((char_t *)"{xvm:n}\n");
+	json_parser((char_t *)"{x:{vm:1200, fr:1100}}\n");
+	json_parser((char_t *)"{uda:{1:"0x3",2:"0x4"}}\n");
+
+/*
 	json_parser((char_t *)"{\"config_version\":null}\n");		// simple null test
 	json_parser((char_t *)"{\"config_profile\":true}\n");		// simple true test
 	json_parser((char_t *)"{\"prompt\":false}\n");				// simple false test
@@ -749,7 +897,7 @@ static void _test_parser()
 	json_parser((char_t *)"{\"parent_case1\":{\"child_null\":null}}\n");		// parent w/single child
 	json_parser((char_t *)"{\"parent_case2\":{\"child_num\":23456}}\n");		// parent w/single child
 	json_parser((char_t *)"{\"parent_case3\":{\"child_str\":\"stringdata\"}}\n");// parent w/single child
-
+*/
 // error cases
 
 	json_parser((char_t *)"{\"err_1\":36000x\n}");				// illegal number 
