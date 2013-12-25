@@ -202,7 +202,7 @@ static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 	char_t leaders[] = {"{\""};					// open curly and quote
 	char_t separators[] = {":\""};				// colon and quote
 	char_t terminators[] = {"},\""};			// close curly, comma and quote
-	char_t value[] = {"\".-+"};					// quote, period, minus and plus
+	char_t value[] = {"{\".-+"};				// open curly, quote, period, minus and plus
 
 	cmd_reset_obj(cmd);							// wipes the object and sets the depth
 
@@ -873,7 +873,7 @@ static void _test_parser()
 //	json_parser((char_t *)"{xvm:1000}\n");
 //	json_parser((char_t *)"{xvm:n}\n");
 	json_parser((char_t *)"{x:{vm:1200, fr:1100}}\n");
-	json_parser((char_t *)"{uda:{1:"0x3",2:"0x4"}}\n");
+	json_parser((char_t *)"{uda:{1:\"0x3\",2:\"0x4\"}}\n");
 
 /*
 	json_parser((char_t *)"{\"config_version\":null}\n");		// simple null test
